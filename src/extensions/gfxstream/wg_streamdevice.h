@@ -25,7 +25,7 @@
 
 #include <wg_geo.h>
 
-#include <wg_gfxdevice.h>
+#include <wg_gfxdevice_gen1.h>
 #include <wg_streamencoder.h>
 #include <wg_streamsurface.h>
 
@@ -36,7 +36,7 @@ namespace wg
 	typedef	StrongPtr<StreamDevice> StreamDevice_p;
 	typedef	WeakPtr<StreamDevice>	StreamDevice_wp;
 
-	class StreamDevice : public GfxDevice
+	class StreamDevice : public GfxDeviceGen1
 	{
 	public:
 

@@ -25,7 +25,7 @@
 
 #include <wg_geo.h>
 
-#include <wg_gfxdevice.h>
+#include <wg_gfxdevice_gen1.h>
 #include <wg_pluginsurfacefactory.h>
 #include <wg_pluginedgemapfactory.h>
 
@@ -38,7 +38,7 @@ namespace wg
 	typedef	StrongPtr<PluginGfxDevice> PluginGfxDevice_p;
 	typedef	WeakPtr<PluginGfxDevice>	PluginGfxDevice_wp;
 
-	class PluginGfxDevice : public GfxDevice
+	class PluginGfxDevice : public GfxDeviceGen1
 	{
 	public:
 

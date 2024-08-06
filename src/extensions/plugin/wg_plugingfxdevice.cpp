@@ -123,7 +123,7 @@ namespace wg
         int retVal = PluginCalls::gfxDevice->setClipList(m_cDevice, nRectangles, (wg_rectSPX*)pRectangles);
 
         if (retVal)
-            GfxDevice::setClipList(nRectangles, pRectangles);
+            GfxDeviceGen1::setClipList(nRectangles, pRectangles);
 
         return retVal;
     }
@@ -133,7 +133,7 @@ namespace wg
     void PluginGfxDevice::resetClipList()
     {
         PluginCalls::gfxDevice->resetClipList(m_cDevice);
-        GfxDevice::resetClipList();
+        GfxDeviceGen1::resetClipList();
     }
 
     //____ pushClipList() ________________________________________________________
@@ -143,7 +143,7 @@ namespace wg
         int retVal = PluginCalls::gfxDevice->pushClipList(m_cDevice, nRectangles, (wg_rectSPX*)pRectangles);
 
         if( retVal )
-            GfxDevice::pushClipList(nRectangles, pRectangles);
+            GfxDeviceGen1::pushClipList(nRectangles, pRectangles);
 
         return retVal;
     }
@@ -154,7 +154,7 @@ namespace wg
     {
         int retVal = PluginCalls::gfxDevice->popClipList(m_cDevice);
         if( retVal )
-            GfxDevice::popClipList();
+            GfxDeviceGen1::popClipList();
         
         return retVal;
     }
@@ -184,7 +184,7 @@ namespace wg
 
     void PluginGfxDevice::setTintColor( HiColor color )
     {
-        GfxDevice::setTintColor(color);
+        GfxDeviceGen1::setTintColor(color);
 
         PluginCalls::gfxDevice->setTintColor(m_cDevice, *(wg_color*)&color);
     }
@@ -202,7 +202,7 @@ namespace wg
 
     void PluginGfxDevice::setTintGradient(const RectSPX& rect, const Gradient& gradient)
     {
-        GfxDevice::setTintGradient(rect, gradient);
+        GfxDeviceGen1:setTintGradient(rect, gradient);
         
         PluginCalls::gfxDevice->setTintGradient(m_cDevice, (const wg_rectSPX*)&rect, (const wg_gradient*)&gradient);
     }
@@ -211,7 +211,7 @@ namespace wg
 
     void PluginGfxDevice::clearTintGradient()
     {
-        GfxDevice::clearTintGradient();
+        GfxDeviceGen1::clearTintGradient();
 
         PluginCalls::gfxDevice->clearTintGradient(m_cDevice);
     }
@@ -226,7 +226,7 @@ namespace wg
         int retVal = PluginCalls::gfxDevice->setBlendMode(m_cDevice, (wg_blendMode)blendMode);
 
         if( retVal )
-            GfxDevice::setBlendMode(blendMode);
+            GfxDeviceGen1::setBlendMode(blendMode);
 
         return retVal;
     }
@@ -249,7 +249,7 @@ namespace wg
         int retVal = PluginCalls::gfxDevice->setBlitSource(m_cDevice, static_cast<PluginSurface*>(pSource)->cObject());
 
         if( retVal )
-            GfxDevice::setBlitSource(pSource);
+            GfxDeviceGen1::setBlitSource(pSource);
 
         return retVal;
     }
@@ -261,14 +261,14 @@ namespace wg
         // This method can not be correctly implemented without huge performance loss,
 		// so we just assume that blitSource also was set through plugin.
 
-        return GfxDevice::blitSource();
+        return GfxDeviceGen1::blitSource();
     }
 
     //____ setMorphFactor() ______________________________________________________
 
     void PluginGfxDevice::setMorphFactor(float factor)
     {
-        GfxDevice::setMorphFactor(factor);
+        GfxDeviceGen1::setMorphFactor(factor);
 
         PluginCalls::gfxDevice->setMorphFactor(m_cDevice, m_morphFactor);
     }
@@ -284,7 +284,7 @@ namespace wg
 
 	void PluginGfxDevice::setBlurMatrices( spx radius, const float red[9], const float green[9], const float blue[9] )
 	{
-		GfxDevice::setBlurMatrices(radius, red, green, blue);
+		GfxDeviceGen1::setBlurMatrices(radius, red, green, blue);
 
 		return PluginCalls::gfxDevice->setBlurMatrices(m_cDevice, radius, red, green, blue );
 	}
@@ -293,7 +293,7 @@ namespace wg
 
 	void PluginGfxDevice::setFixedBlendColor( HiColor color )
 	{
-		GfxDevice::setFixedBlendColor(color);
+		GfxDeviceGen1::setFixedBlendColor(color);
 
 		PluginCalls::gfxDevice->setFixedBlendColor(m_cDevice, *(wg_color*)&color);
 	}
@@ -311,7 +311,7 @@ namespace wg
 
     void PluginGfxDevice::setRenderLayer(int layer)
     {
-        GfxDevice::setRenderLayer(layer);
+        GfxDeviceGen1::setRenderLayer(layer);
        
         PluginCalls::gfxDevice->setRenderLayer(m_cDevice, m_renderLayer);
     }
@@ -330,7 +330,7 @@ namespace wg
         int bOk = PluginCalls::gfxDevice->beginRender(m_cDevice);
 
         if (bOk)
-            GfxDevice::beginRender();
+            GfxDeviceGen1::beginRender();
         return bOk;
 	}
 
@@ -341,7 +341,7 @@ namespace wg
         int bOk = PluginCalls::gfxDevice->endRender(m_cDevice);
 
         if (bOk)
-            GfxDevice::endRender();
+            GfxDeviceGen1::endRender();
         return bOk;
     }
 
@@ -350,14 +350,14 @@ namespace wg
     void PluginGfxDevice::flush()
     {
         PluginCalls::gfxDevice->flushDevice(m_cDevice);
-        GfxDevice::flush();
+        GfxDeviceGen1::flush();
     }
 
     //____ endCanvasUpdate() _________________________________________________________
 
     void PluginGfxDevice::endCanvasUpdate()
     {
-		GfxDevice::endCanvasUpdate();
+		GfxDeviceGen1::endCanvasUpdate();
         PluginCalls::gfxDevice->endCanvasUpdate(m_cDevice);
     }
 
@@ -593,7 +593,7 @@ namespace wg
 
     bool PluginGfxDevice::_beginCanvasUpdate(CanvasRef canvasRef, Surface * pCanvasSurface, int nUpdateRects, const RectSPX* pUpdateRects, CanvasLayers * pLayers, int startLayer)
     {     
-		if( GfxDevice::_beginCanvasUpdate(canvasRef, pCanvasSurface, nUpdateRects, pUpdateRects, pLayers, startLayer) )
+		if( GfxDeviceGen1::_beginCanvasUpdate(canvasRef, pCanvasSurface, nUpdateRects, pUpdateRects, pLayers, startLayer) )
 		{
 			auto pCABILayers = wg_dynamic_cast<PluginCanvasLayers_p>(pLayers);
 			wg_obj cAPILayers = pCABILayers ? pCABILayers->cObject() : 0;

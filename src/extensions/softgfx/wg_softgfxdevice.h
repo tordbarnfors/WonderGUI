@@ -24,7 +24,7 @@
 #pragma once
 
 #include <wg_geo.h>
-#include <wg_gfxdevice.h>
+#include <wg_gfxdevice_gen1.h>
 #include <wg_softsurface.h>
 
 namespace wg
@@ -44,7 +44,7 @@ namespace wg
 	typedef	StrongPtr<SoftGfxDevice>	SoftGfxDevice_p;
 	typedef	WeakPtr<SoftGfxDevice>	SoftGfxDevice_wp;
 
-	class SoftGfxDevice : public GfxDevice
+	class SoftGfxDevice : public GfxDeviceGen1
 	{
 		friend class SoftSurface;
 		friend class LinearGfxDevice;

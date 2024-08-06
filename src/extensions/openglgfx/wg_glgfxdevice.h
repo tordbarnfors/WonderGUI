@@ -37,7 +37,7 @@
 #	endif
 #endif
 
-#include <wg_gfxdevice.h>
+#include <wg_gfxdevice_gen1.h>
 #include <wg_glsurface.h>
 
 namespace wg
@@ -47,7 +47,7 @@ namespace wg
 	typedef	StrongPtr<GlGfxDevice> GlGfxDevice_p;
 	typedef	WeakPtr<GlGfxDevice>	GlGfxDevice_wp;
 
-	class GlGfxDevice : public GfxDevice
+	class GlGfxDevice : public GfxDeviceGen1
 	{
 		friend class GlSurface;
 

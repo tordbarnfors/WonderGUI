@@ -84,7 +84,9 @@ namespace wg
 	class	CanvasLayers : public Object	
 	{
 		friend class GfxDevice;
-		
+		friend class GfxDeviceGen1;
+		friend class GfxDeviceGen2;
+
 	public:
 
 		//.____ Blueprint _________________________________________
@@ -101,7 +103,7 @@ namespace wg
 				: format(format), blendFunc(blendFunc), clearFunc(clearFunc), preBlendCanvasFunc(preBlendCanvasFunc), preBlendFunc(preBlendFunc) {}
 */
 
-			PixelFormat format = PixelFormat::BGRA_8;
+			PixelFormat format = PixelFormat::Undefined;
 
 			std::function<void(GfxDevice* pDevice)> blendFunc = nullptr;
 			std::function<void(GfxDevice* pDevice)> clearFunc = nullptr;

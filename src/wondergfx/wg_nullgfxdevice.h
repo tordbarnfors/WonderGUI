@@ -25,7 +25,7 @@
 #pragma once
 
 #include <wg_gfxtypes.h>
-#include <wg_gfxdevice.h>
+#include <wg_gfxdevice_gen1.h>
 
 namespace wg
 {
@@ -36,7 +36,7 @@ namespace wg
 	typedef	StrongPtr<NullGfxDevice>	NullGfxDevice_p;
 	typedef	WeakPtr<NullGfxDevice>	NullGfxDevice_wp;
 
-	class NullGfxDevice : public GfxDevice
+	class NullGfxDevice : public GfxDeviceGen1
 	{
 	public:
 		//.____ Creation ________________________________________________

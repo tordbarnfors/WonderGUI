@@ -259,7 +259,7 @@ namespace wg
 
     bool StreamDevice::setClipList(int nRectangles, const RectSPX * pRectangles)
     {
-        GfxDevice::setClipList(nRectangles, pRectangles);
+        GfxDeviceGen1::setClipList(nRectangles, pRectangles);
 
         (*m_pEncoder) << GfxStream::Header{ GfxChunkId::SetClipList, GfxStream::SpxFormat::Int32_dec, (uint16_t)(nRectangles * 16) };
         (*m_pEncoder) << GfxStream::WriteBytes{ nRectangles * 16, pRectangles };
@@ -270,7 +270,7 @@ namespace wg
 
     void StreamDevice::resetClipList()
     {
-        GfxDevice::resetClipList();
+        GfxDeviceGen1::resetClipList();
 
         (*m_pEncoder) << GfxStream::Header{ GfxChunkId::ResetClipList, GfxStream::SpxFormat::Int32_dec, 0 };
     }
@@ -279,7 +279,7 @@ namespace wg
 
     bool StreamDevice::pushClipList(int nRectangles, const RectSPX* pRectangles)
     {
-        GfxDevice::pushClipList(nRectangles, pRectangles);
+        GfxDeviceGen1::pushClipList(nRectangles, pRectangles);
 
         (*m_pEncoder) << GfxStream::Header{ GfxChunkId::PushClipList, GfxStream::SpxFormat::Int32_dec, (uint16_t)(nRectangles * 16) };
         (*m_pEncoder) << GfxStream::WriteBytes{ nRectangles * 16, pRectangles };
@@ -290,7 +290,7 @@ namespace wg
 
     bool StreamDevice::popClipList()
     {
-        GfxDevice::popClipList();
+        GfxDeviceGen1::popClipList();
 
         (*m_pEncoder) << GfxStream::Header{ GfxChunkId::PopClipList, GfxStream::SpxFormat::Int32_dec, 0};
         return true;
@@ -303,7 +303,7 @@ namespace wg
 		if( color == m_tintColor )
 			return;
 
-        GfxDevice::setTintColor(color);
+        GfxDeviceGen1::setTintColor(color);
     }
 
     //____ setTintGradient() _______________________________________________________
@@ -313,7 +313,7 @@ namespace wg
 		if( m_bTintGradient && rect == m_tintGradientRect && m_tintGradient == gradient )
 			return;
 
-        GfxDevice::setTintGradient(rect, gradient);
+        GfxDeviceGen1::setTintGradient(rect, gradient);
 
         (*m_pEncoder) << GfxStream::Header{ GfxChunkId::SetTintGradient, GfxStream::SpxFormat::Int32_dec, 16 + GfxStream::GradientSize };
         (*m_pEncoder) << rect;
@@ -327,7 +327,7 @@ namespace wg
 		if( m_bTintGradient == false )
 			return;
 
-        GfxDevice::clearTintGradient();
+        GfxDeviceGen1::clearTintGradient();
 
         (*m_pEncoder) << GfxStream::Header{ GfxChunkId::ClearTintGradient, GfxStream::SpxFormat::Int32_dec, 0 };
     }
@@ -345,7 +345,7 @@ namespace wg
 		if( blendMode == m_blendMode )
 			return true;
 
-        GfxDevice::setBlendMode(blendMode);
+        GfxDeviceGen1::setBlendMode(blendMode);
 		return true;
     }
 
@@ -362,7 +362,7 @@ namespace wg
 		if( pSource == m_pBlitSource )
 			return true;
 
-        GfxDevice::setBlitSource(pSource);
+        GfxDeviceGen1::setBlitSource(pSource);
         return true;
     }
 
@@ -373,7 +373,7 @@ namespace wg
 		if( factor == m_morphFactor )
 			return;
 
-        GfxDevice::setMorphFactor(factor);
+        GfxDeviceGen1::setMorphFactor(factor);
 
         (*m_pEncoder) << GfxStream::Header{ GfxChunkId::SetMorphFactor, GfxStream::SpxFormat::Int32_dec, 4 };
         (*m_pEncoder) << factor;
@@ -386,7 +386,7 @@ namespace wg
 		if( color == m_fixedBlendColor )
 			return;
 
-		GfxDevice::setFixedBlendColor(color);
+		GfxDeviceGen1::setFixedBlendColor(color);
 
 		(*m_pEncoder) << GfxStream::Header{ GfxChunkId::SetFixedBlendColor, GfxStream::SpxFormat::Int32_dec, 8 };
 		(*m_pEncoder) << color;
@@ -399,7 +399,7 @@ namespace wg
 		if( layer == m_renderLayer )
 			return;
 
-        GfxDevice::setRenderLayer(layer);
+        GfxDeviceGen1::setRenderLayer(layer);
     }
 
 	//____ beginRender() ___________________________________________________________
@@ -411,7 +411,7 @@ namespace wg
 
 		(*m_pEncoder) << GfxStream::Header{ GfxChunkId::BeginRender, GfxStream::SpxFormat::Int32_dec, 0 };
 
-        GfxDevice::setBlitSource(nullptr);                 // We don't optimize blit source between frames.
+        GfxDeviceGen1::setBlitSource(nullptr);                 // We don't optimize blit source between frames.
 		m_pStreamedBlitSource = nullptr;
 
 		m_bRendering = true;
@@ -453,7 +453,7 @@ namespace wg
 		m_stateStack.pop_back();
 
         (*m_pEncoder) << GfxStream::Header{ GfxChunkId::EndCanvasUpdate, GfxStream::SpxFormat::Int32_dec, 0 };
-		GfxDevice::endCanvasUpdate();
+		GfxDeviceGen1::endCanvasUpdate();
     }
 
     //____ fill() __________________________________________________________________
@@ -1177,7 +1177,7 @@ namespace wg
 		m_stateStack.push_back({ m_streamedBlendMode, m_streamedTintColor, m_streamedRenderLayer});
 
 
-		if( !GfxDevice::_beginCanvasUpdate(canvasRef, pCanvasSurface, nUpdateRects, pUpdateRects, pLayers, startLayer) )
+		if( !GfxDeviceGen1::_beginCanvasUpdate(canvasRef, pCanvasSurface, nUpdateRects, pUpdateRects, pLayers, startLayer) )
 		{
 			m_stateStack.pop_back();
 			return false;

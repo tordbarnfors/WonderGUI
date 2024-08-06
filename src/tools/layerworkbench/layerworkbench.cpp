@@ -219,7 +219,7 @@ bool MyApp::setupGUI(Visitor* pVisitor)
 		.outlineColor = Color::Black,
 		.outlineThickness = 1,
 		.padding = 4,
-		.spacing = 2,
+		.spacing = 2
 	});
 
 	auto pEntryMain2 = BoxSkin::create( {

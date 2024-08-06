@@ -1,0 +1,762 @@
+/*=========================================================================
+
+						 >>> WonderGUI <<<
+
+  This file is part of Tord Jansson's WonderGUI Graphics Toolkit
+  and copyright (c) Tord Jansson, Sweden [tord.jansson@gmail.com].
+
+							-----------
+
+  The WonderGUI Graphics Toolkit is free software; you can redistribute
+  this file and/or modify it under the terms of the GNU General Public
+  License as published by the Free Software Foundation; either
+  version 2 of the License, or (at your option) any later version.
+
+							-----------
+
+  The WonderGUI Graphics Toolkit is also available for use in commercial
+  closed-source projects under a separate license. Interested parties
+  should contact Tord Jansson [tord.jansson@gmail.com] for details.
+
+=========================================================================*/
+
+#include <algorithm>
+#include <cmath>
+#include <cstring>
+
+#include <wg_gfxdevice_gen2.h>
+#include <wg_geo.h>
+#include <wg_gfxutil.h>
+#include <wg_gfxbase.h>
+
+using namespace std;
+using namespace wg::Util;
+
+namespace wg
+{
+
+	const TypeInfo GfxDeviceGen2::TYPEINFO = { "GfxDeviceGen2", &Object::TYPEINFO };
+
+	// Transforms for flipping movement over SOURCE when blitting
+
+	const int GfxDeviceGen2::s_blitFlipTransforms[GfxFlip_size][2][2] = { { 1,0,0,1 },			// Normal
+																{ -1,0,0,1 },			// FlipX
+																{ 1,0,0,-1 },			// FlipY
+																{ 0,-1,1,0 },			// Rot90
+																{ 0,1,1,0 },			// Rot90FlipX
+																{ 0,-1,-1,0 },			// Rot90FlipY
+																{ -1,0,0,-1 },			// Rot180
+																{ 1,0,0,-1 },			// Rot180FlipX
+																{ -1,0,0,1 },			// Rot180FlipY
+																{ 0,1,-1,0 },			// Rot270
+																{ 0,-1,-1,0 },			// Rot270FlipX
+																{ 0,1,1,0 } };			// Rot270FlipY
+
+	const int GfxDeviceGen2::s_blitFlipOffsets[GfxFlip_size][2] = { { 0,0 },				// Normal
+															{ 1,0 },				// FlipX
+															{ 0,1 },				// FlipY
+															{ 0,1 },				// Rot90
+															{ 0,0 },				// Rot90FlipX
+															{ 1,1 },				// Rot90FlipY
+															{ 1,1 },				// Rot180
+															{ 0,1 },				// Rot180FlipX
+															{ 1,0 },				// Rot180FlipY
+															{ 1,0 },				// Rot270
+															{ 1,1 },				// Rot270FlipX
+															{ 0,0 } };				// Rot270FlipY
+
+	// Transforms for flipping movement over CANVAS when drawing
+/*
+	static const int drawFlipTransforms[GfxFlip_size][2][2] = { { 1,0,0,1 },		// Normal
+															{ -1,0,0,1 },			// FlipX
+															{ 1,0,0,-1 },			// FlipY
+															{ 0,1,-1,0 },			// Rot90
+															{ 0,1,1,0 },			// Rot90FlipX
+															{ 0,-1,-1,0 },			// Rot90FlipY
+															{ -1,0,0,-1 },			// Rot180
+															{ 1,0,0,-1 },			// Rot180FlipX
+															{ -1,0,0,1 },			// Rot180FlipY
+															{ 0,-1,1,0 },			// Rot270
+															{ 0,-1,-1,0 },			// Rot270FlipX
+															{ 0,1,1,0 } };			// Rot270FlipY
+*/
+
+
+
+
+
+
+//____ constructor _____________________________________________________________
+
+	GfxDeviceGen2::GfxDeviceGen2()
+	{
+	}
+
+	//____ Destructor _________________________________________________________
+
+	GfxDeviceGen2::~GfxDeviceGen2()
+	{
+	}
+
+	//____ typeInfo() _________________________________________________________
+
+	const TypeInfo& GfxDeviceGen2::typeInfo(void) const
+	{
+		return TYPEINFO;
+	}
+
+	//____ canvas() ______________________________________________________________
+
+	const CanvasInfo& GfxDeviceGen2::canvas() const
+	{
+		if (m_canvasStack.empty())
+			return m_dummyCanvasInfo;
+		else
+			return m_canvasStack.back().info;
+	}
+
+	//____ canvasLayers() _____________________________________________________
+
+	CanvasLayers_p GfxDeviceGen2::canvasLayers() const
+	{
+		if (m_canvasStack.empty())
+			return nullptr;
+
+		return m_canvasStack.back().pLayerInfo;
+	}
+
+	//____ canvasSize() _______________________________________________________
+
+	SizeSPX GfxDeviceGen2::canvasSize() const
+	{
+		if (m_canvasStack.empty())
+			return { 0,0 };
+
+		return m_canvasStack.back().info.size;
+	}
+
+	//____ setClipList() ______________________________________________________
+
+	bool GfxDeviceGen2::setClipList(int nRectangles, const RectSPX* pRectangles)
+	{
+		if (!m_pActiveClipList)
+			return false;
+
+		RectSPX bounds;
+		if (nRectangles == 0)
+			bounds = { m_pActiveClipList->bounds.x, m_pActiveClipList->bounds.y, 0, 0 };
+		else
+		{
+			bounds = *pRectangles;
+			for (int i = 1; i < nRectangles; i++)
+				bounds.growToContain(pRectangles[i]);
+
+
+			if (!m_pActiveCanvas->updateRects.bounds.contains(bounds) )
+			{
+				GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "ClipList contains rectangels outside canvas update rectangles. ClipList not set.",
+					this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				return false;
+			}
+		}
+
+		m_pActiveClipList->nRects = nRectangles;
+		m_pActiveClipList->pRects = pRectangles;
+		m_pActiveClipList->bounds = bounds;
+		return true;
+	}
+
+	//____ resetClipList() ____________________________________________________
+
+	void GfxDeviceGen2::resetClipList()
+	{
+		if (m_pActiveClipList)
+			* m_pActiveClipList = m_pActiveCanvas->updateRects;
+	}
+
+	//____ pushClipList() _____________________________________________________
+
+	bool GfxDeviceGen2::pushClipList(int nRectangles, const RectSPX* pRectangles)
+	{
+		if (!m_pActiveCanvas)
+		{
+			//TODO: Error handling.
+
+			return false;
+		}
+
+		RectSPX bounds;
+		if (nRectangles == 0)
+			bounds = { m_pActiveClipList->bounds.x, m_pActiveClipList->bounds.y, 0, 0 };
+		else
+		{
+			bounds = *pRectangles;
+			for (int i = 1; i < nRectangles; i++)
+				bounds.growToContain(pRectangles[i]);
+
+
+			if (!m_pActiveCanvas->updateRects.bounds.contains(bounds))
+			{
+				GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "ClipList contains rectangels outside canvas update rectangles. ClipList not set.",
+					this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				return false;
+			}
+		}
+
+		m_pActiveCanvas->clipListStack.emplace_back( ClipList{ nRectangles, pRectangles, bounds });
+
+		m_pActiveClipList = &m_pActiveCanvas->clipListStack.back();
+		return true;
+	}
+
+	//____ popClipList() ______________________________________________________
+
+	bool GfxDeviceGen2::popClipList()
+	{
+		if (!m_pActiveCanvas)
+		{
+			//TODO: Error handling!
+
+			return false;
+		}
+
+		if (m_pActiveCanvas->clipListStack.size() == 1)
+		{
+			//TODO: Error handling!
+
+			return false;
+		}
+
+		m_pActiveCanvas->clipListStack.pop_back();
+		m_pActiveClipList = &m_pActiveCanvas->clipListStack.back();
+		return true;
+	}
+
+	//____ clipList() _________________________________________________________
+
+	const RectSPX*	GfxDeviceGen2::clipList() const
+	{
+		if (!m_pActiveClipList)
+			return nullptr;
+
+		return m_pActiveClipList->pRects;
+	}
+
+	//____ clipListSize() _____________________________________________________
+
+	int GfxDeviceGen2::clipListSize() const
+	{
+		if (!m_pActiveClipList)
+			return 0;
+
+		return m_pActiveClipList->nRects;
+	}
+
+	//____ clipBounds() _______________________________________________________
+
+	const RectSPX& GfxDeviceGen2::clipBounds() const
+	{
+		if (!m_pActiveClipList)
+			return RectSPX();
+
+		return m_pActiveClipList->bounds;
+	}
+
+	//____ tintColor() ________________________________________________________
+
+	void GfxDeviceGen2::setTintColor(HiColor color)
+	{
+		if (color != m_renderState.tintColor)
+		{
+			m_renderState.tintColor = color;
+			m_renderState.stateChanges |= int(StateChange::TintColor);
+		}
+	}
+
+	//____ tintColor() ________________________________________________________
+
+	HiColor GfxDeviceGen2::tintColor() const
+	{
+		return m_renderState.tintColor;
+	}
+
+	//____ setTintGradient() __________________________________________________
+
+	void GfxDeviceGen2::setTintGradient(const RectSPX& rect, const Gradient& gradient)
+	{
+		if (m_renderState.bTintGradient == false || rect != m_renderState.tintGradientRect ||
+			gradient != m_renderState.tintGradient)
+		{
+			m_renderState.bTintGradient = true;
+			m_renderState.tintGradientRect = rect;
+			m_renderState.tintGradient = gradient;
+			m_renderState.stateChanges |= int(StateChange::TintGradient);
+		}
+	}
+
+	//____ clearTintGradient() ________________________________________________
+
+	void GfxDeviceGen2::clearTintGradient()
+	{
+		if (m_renderState.bTintGradient)
+		{
+			m_renderState.bTintGradient = false;
+			m_renderState.stateChanges |= int(StateChange::TintGradient);
+		}
+	}
+
+	//____ setBlendMode() _____________________________________________________
+
+	bool GfxDeviceGen2::setBlendMode(BlendMode blendMode)
+	{
+		if (blendMode != m_renderState.blendMode)
+		{
+			//TODO: Check that blendMode is supported.
+
+			m_renderState.blendMode = blendMode;
+			m_renderState.stateChanges |= int(StateChange::BlendMode);
+		}
+
+		return true;
+	}
+
+	//____ blendMode() ________________________________________________________
+
+	BlendMode GfxDeviceGen2::blendMode() const
+	{
+		return m_renderState.blendMode;
+	}
+
+	//____ setBlitSource() ____________________________________________________
+
+	bool GfxDeviceGen2::setBlitSource(Surface* pSource)
+	{
+		if (pSource->typeInfo() != surfaceType())
+		{
+			//TODO: Error handling!
+
+			return false;
+		}
+
+		if (pSource != m_renderState.blitSource)
+		{
+			m_renderState.blitSource = pSource;
+			m_renderState.stateChanges |= int(StateChange::BlitSource);
+		}
+
+		return true;
+	}
+
+	//____ blitSource() _______________________________________________________
+
+	Surface_p GfxDeviceGen2::blitSource() const
+	{
+		return m_renderState.blitSource;
+	}
+
+	//____ setMorphFactor() ___________________________________________________
+
+	void GfxDeviceGen2::setMorphFactor(float factor)
+	{
+		if (factor != m_renderState.morphFactor)
+		{
+			m_renderState.morphFactor = factor;
+			m_renderState.stateChanges |= int(StateChange::MorphFactor);
+		}
+	}
+
+	//____ morphFactor() ______________________________________________________
+
+	float GfxDeviceGen2::morphFactor() const
+	{
+		return m_renderState.morphFactor;
+	}
+
+	//____ setBlurMatrices() __________________________________________________
+
+	void GfxDeviceGen2::setBlurMatrices(spx radius, const float red[9], const float green[9], const float blue[9])
+	{
+		bool bModified = radius != m_renderState.blurRadius;
+
+		if (!bModified)
+		{
+			for (int i = 0; i < 9; i++)
+			{
+				if (red[i] != m_renderState.blurMtxR[i] || green[i] != m_renderState.blurMtxG[i] || blue[i] != m_renderState.blurMtxB[i])
+				{
+					bModified = true;
+					break;
+				}
+			}
+		}
+
+		if (bModified)
+		{
+			m_renderState.blurRadius = radius;
+
+			for (int i = 0; i < 9; i++)
+			{
+				m_renderState.blurMtxR[i] = red[i];
+				m_renderState.blurMtxG[i] = green[i];
+				m_renderState.blurMtxB[i] = blue[i];
+			}
+
+			m_renderState.stateChanges |= int(StateChange::Blur);
+		}
+	}
+
+	//____ setFixedBlendColor() _______________________________________________
+
+	void GfxDeviceGen2::setFixedBlendColor(HiColor color)
+	{
+		if (m_renderState.fixedBlendColor != color)
+		{
+			m_renderState.fixedBlendColor = color;
+			m_renderState.stateChanges |= int(StateChange::FixedBlendColor);
+		}
+	}
+
+	//____ fixedBlendColor() __________________________________________________
+
+	HiColor GfxDeviceGen2::fixedBlendColor() const
+	{
+		return m_renderState.fixedBlendColor;
+	}
+
+	//____ setRenderLayer() ___________________________________________________
+
+	void GfxDeviceGen2::setRenderLayer(int layer)
+	{
+
+		if (!m_pActiveCanvas)
+		{
+			//TODO: Error handling!
+
+			return;
+		}
+
+		if (layer == m_pActiveCanvas->activeLayer)
+			return;
+
+
+		// Collect all RenderState changes done over this session of rendering
+		// to the current layer and add them to the other layers.
+
+		auto sessionStateChanges = m_pActiveLayer->currentState.stateChanges | m_renderState.stateChanges;
+
+		for (auto& layer : m_pActiveCanvas->layers)
+		{
+			layer.currentState.stateChanges |= sessionStateChanges;
+		}
+
+		// Any stateChanges still not applied to our layer are remembered
+
+		m_pActiveLayer->currentState.stateChanges = m_renderState.stateChanges;
+
+		// Switch layer
+
+		m_pActiveCanvas->activeLayer = layer;
+		m_pActiveLayer = &m_pActiveCanvas->layers[layer];
+
+		// No new render states but mark that stored ones needs to be set.
+
+		m_renderState.stateChanges = int(StateChange::IncludeFromLayer);
+	}
+
+	//____ renderLayer() ______________________________________________________
+
+	int GfxDeviceGen2::renderLayer() const
+	{
+		if (!m_pActiveCanvas)
+		{
+			//TODO: Error handling!
+
+			return;
+		}
+
+		return m_pActiveCanvas->activeLayer;
+	}
+
+	//____ beginRender() ______________________________________________________
+
+	bool GfxDeviceGen2::beginRender()
+	{
+		if (m_bRendering)
+		{
+			//TODO: Error handling!
+
+			return false;
+		}
+
+		m_bRendering = true;
+		return true;
+	}
+
+	//____ endRender() ________________________________________________________
+
+	bool GfxDeviceGen2::endRender()
+	{
+		if (!m_bRendering)
+		{
+			//TODO: Error handling!
+
+			return false;
+		}
+
+		m_bRendering = false;
+
+		if (!m_canvasStack.empty())
+		{
+			//TODO: Error handling!
+		}
+
+		return true;
+	}
+
+	//____ isRendering() ______________________________________________________
+
+	bool GfxDeviceGen2::isRendering()
+	{
+		return m_bRendering;
+	}
+
+	//____ isIdle() ___________________________________________________________
+
+	bool GfxDeviceGen2::isIdle()
+	{
+		return !m_bRendering;
+	}
+
+	//____ flush() ____________________________________________________________
+
+	void GfxDeviceGen2::flush()
+	{
+		return;
+	}
+
+	//____ _beginCanvasUpdate() _______________________________________________
+
+	bool GfxDeviceGen2::_beginCanvasUpdate(CanvasRef ref, Surface* pCanvas, int nUpdateRects, const RectSPX* pUpdateRects, CanvasLayers* pLayers, int startLayer)
+	{
+		// Error checking
+
+		if (ref == CanvasRef::None && pCanvas == nullptr)
+		{
+			//TODO: Error handling!
+
+			return false;
+		}
+
+		if (pCanvas && !pCanvas->canBeCanvas())
+		{
+			//TODO: Error handling!
+
+			return false;
+		}
+
+		// Add our canvas entry
+
+		m_canvasStack.emplace_back();
+		auto& entry = m_canvasStack.back();
+
+		// Fill in info.
+
+		if (ref != CanvasRef::None)
+		{
+			entry.info = canvas(ref);
+		}
+		else
+		{
+			entry.info.ref = CanvasRef::None;
+			entry.info.pSurface = pCanvas;
+			entry.info.format = pCanvas->pixelFormat();
+			entry.info.scale = pCanvas->scale();
+			entry.info.size = pCanvas->pixelSize() * 64;
+		}
+
+		// Fill in update rects.
+
+		if (nUpdateRects > 0)
+		{
+			RectSPX bounds = pUpdateRects[0];
+			for (int i = 1; i < nUpdateRects; i++)
+				bounds.growToContain(pUpdateRects[i]);
+
+			entry.updateRects.nRects = nUpdateRects;
+			entry.updateRects.pRects = pUpdateRects;
+			entry.updateRects.bounds = bounds;
+		}
+		else
+		{
+			entry.updateRects.nRects = 1;
+			entry.updateRects.pRects = &entry.updateRects.bounds;
+			entry.updateRects.bounds = entry.info.size;
+		}
+
+		// Fill in clip-rects.
+
+		entry.clipListStack.emplace_back(entry.updateRects);
+		
+		// Setup layers
+
+		entry.pLayerInfo = pLayers;
+
+		int nLayers = pLayers ? pLayers->size() + 1 : 1;
+		entry.layers.resize(nLayers);
+
+		int activeLayer = 0;
+		if (startLayer != -1)
+			activeLayer = startLayer;
+		else if (pLayers)
+			activeLayer = pLayers->baseLayer();
+
+		entry.activeLayer = activeLayer;
+
+		// Setup pointers
+
+		m_pActiveClipList = &entry.clipListStack.back();
+		m_pActiveLayer = &entry.layers[activeLayer];
+		m_pActiveCanvas = &entry;
+
+		// Run clear functions (if present)
+		// They will end up as commands first in the command buffers.
+
+		if (pLayers)
+		{
+			if (pLayers->m_clearCanvasFunc)
+			{
+				entry.activeLayer = 0;
+				pLayers->m_clearCanvasFunc(this);
+				entry.activeLayer = activeLayer;
+			}
+
+			if (activeLayer != 0 && pLayers->m_layers[activeLayer].clearFunc)
+				pLayers->m_layers[activeLayer].clearFunc(this);
+		}
+
+		//
+
+
+
+		return true;
+	}
+
+	//____ endCanvasUpdate() __________________________________________________
+
+	void GfxDeviceGen2::endCanvasUpdate()
+	{
+		flattenLayers();
+		m_canvasStack.pop_back();
+	}
+
+	//____ flattenLayers() ____________________________________________________
+
+	void GfxDeviceGen2::flattenLayers()
+	{
+		auto& canvasData = m_canvasStack.back();
+	
+		_setBuffers (&*canvasData.coords.begin(), &*canvasData.coords.end(), &*canvasData.data.begin(), &*canvasData.data.end() );
+
+		for (int i = 0; i < canvasData.layers.size(); i++)
+		{
+			_processCommands( &*canvasData.layers[i].commandBuffer.begin(), &*canvasData.layers[i].commandBuffer.end() );
+
+		}
+	}
+
+	//____ fill() _____________________________________________________________
+
+	void GfxDeviceGen2::fill(HiColor color)
+	{
+		if (!m_pActiveCanvas)
+		{
+			//TODO: Error handling!
+
+			return;
+		}
+
+		// Skip calls that won't affect destination
+
+		if (color.a == 0 && (m_renderState.blendMode == BlendMode::Blend))
+			return;
+
+		//
+
+		if (m_pActiveLayer->currentState.stateChanges.any())
+			_encodeStateChanges();
+
+		m_pActiveLayer->commandBuffer.push_back(int(Command::Fill));
+
+		const RectSPX* pRect = m_pActiveClipList->pRects;
+		auto& coords = m_pActiveCanvas->coords;
+
+		for (int i = 0; i < m_pActiveClipList->nRects; i++)
+		{
+
+			spx		dx1 = pRect->x;
+			spx		dx2 = pRect->x + pRect->w;
+			spx		dy1 = pRect->y;
+			spx		dy2 = pRect->y + pRect->h;
+
+			coords.emplace_back(dx1, dy1);
+			coords.emplace_back(dx2, dy1);
+			coords.emplace_back(dx2, dy2);
+			coords.emplace_back(dx1, dy1);
+			coords.emplace_back(dx2, dy2);
+			coords.emplace_back(dx1, dy2);
+		}
+
+
+
+	}
+
+	//____ _encodeStateChanges() ______________________________________________
+
+	void GfxDeviceGen2::_encodeStateChanges()
+	{
+
+		uint8_t	statesChanged = m_renderState.stateChanges;
+
+		// Include stored changes if they have not been encoded yet
+
+		if (statesChanged & uint8_t(StateChange::IncludeFromLayer))
+		{
+			statesChanged |= m_pActiveLayer->currentState.stateChanges;
+			m_pActiveLayer->currentState.stateChanges = 0;
+			statesChanged &= ~ uint8_t(StateChange::IncludeFromLayer);
+		}
+
+		//
+
+		auto& cmdBuffer = m_pActiveLayer->commandBuffer;
+
+		cmdBuffer.push_back(int(Command::StateChange));
+		cmdBuffer.push_back(statesChanged);
+
+		if (statesChanged & uint8_t(StateChange::BlendMode))
+		{
+			cmdBuffer.push_back(int(m_renderState.blendMode));
+		}
+
+		if (statesChanged & uint8_t(StateChange::BlendMode))
+		{
+			Object* pSource = m_renderState.blitSource.rawPtr();
+
+			cmdBuffer.push_back(m_objectStack.size());
+			m_objectStack.push_back(pSource);
+			pSource->retain();
+		}
+
+		if (statesChanged & uint8_t(StateChange::Blur))
+		{
+			cmdBuffer.push_back(int(m_renderState.blendMode));
+		}
+
+
+		// Store state changes for this layer session.
+
+		m_pActiveLayer->currentState.stateChanges |= m_renderState.stateChanges;
+	}
+
+
+}

@@ -165,6 +165,8 @@ namespace wg
 	class Surface : public Object
 	{
 		friend class GfxDevice;
+		friend class GfxDeviceGen1;
+		friend class GfxDeviceGen2;
 
 	public:
 

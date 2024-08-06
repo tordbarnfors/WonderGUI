@@ -24,7 +24,7 @@
 #include <cmath>
 #include <cstring>
 
-#include <wg_gfxdevice.h>
+#include <wg_gfxdevice_gen1.h>
 #include <wg_geo.h>
 #include <wg_gfxutil.h>
 #include <wg_gfxbase.h>
@@ -35,11 +35,11 @@ using namespace wg::Util;
 namespace wg
 {
 
-	const TypeInfo GfxDevice::TYPEINFO = { "GfxDevice", &Object::TYPEINFO };
+	const TypeInfo GfxDeviceGen1::TYPEINFO = { "GfxDeviceGen1", &Object::TYPEINFO };
 
 	// Transforms for flipping movement over SOURCE when blitting
 
-	const int GfxDevice::s_blitFlipTransforms[GfxFlip_size][2][2] = { { 1,0,0,1 },			// Normal
+	const int GfxDeviceGen1::s_blitFlipTransforms[GfxFlip_size][2][2] = { { 1,0,0,1 },			// Normal
 																{ -1,0,0,1 },			// FlipX
 																{ 1,0,0,-1 },			// FlipY
 																{ 0,-1,1,0 },			// Rot90
@@ -52,7 +52,7 @@ namespace wg
 																{ 0,-1,-1,0 },			// Rot270FlipX
 																{ 0,1,1,0 } };			// Rot270FlipY
 
-	const int GfxDevice::s_blitFlipOffsets[GfxFlip_size][2] = {	{ 0,0 },				// Normal
+	const int GfxDeviceGen1::s_blitFlipOffsets[GfxFlip_size][2] = {	{ 0,0 },				// Normal
 															{ 1,0 },				// FlipX
 															{ 0,1 },				// FlipY
 															{ 0,1 },				// Rot90
@@ -88,26 +88,26 @@ namespace wg
 
 	//____ constructor _____________________________________________________________
 
-	GfxDevice::GfxDevice()
+	GfxDeviceGen1::GfxDeviceGen1()
 	{
 	}
 
 	//____ Destructor _________________________________________________________
 
-	GfxDevice::~GfxDevice()
+	GfxDeviceGen1::~GfxDeviceGen1()
 	{
 	}
 
 	//____ typeInfo() _________________________________________________________
 
-	const TypeInfo& GfxDevice::typeInfo(void) const
+	const TypeInfo& GfxDeviceGen1::typeInfo(void) const
 	{
 		return TYPEINFO;
 	}
 
 	//____ setClipList() __________________________________________________________
 
-	bool GfxDevice::setClipList(int nRectangles, const RectSPX* pRectangles)
+	bool GfxDeviceGen1::setClipList(int nRectangles, const RectSPX* pRectangles)
 	{
 		RectSPX bounds;
 		if( nRectangles == 0 )
@@ -136,7 +136,7 @@ namespace wg
 
 	//____ resetClipList() __________________________________________________________
 
-	void GfxDevice::resetClipList()
+	void GfxDeviceGen1::resetClipList()
 	{
 		m_clipBounds = m_canvasUpdateBounds;
 		m_pClipRects = m_pCanvasUpdateRects;
@@ -146,7 +146,7 @@ namespace wg
 
 	//____ pushClipList() _____________________________________________________
 
-	bool GfxDevice::pushClipList(int nRectangles, const RectSPX* pRectangles)
+	bool GfxDeviceGen1::pushClipList(int nRectangles, const RectSPX* pRectangles)
 	{
 		m_clipListStack.push_back({ m_nClipRects,m_pClipRects,m_clipBounds });
 
@@ -178,7 +178,7 @@ namespace wg
 
 	//____ popClipList() ______________________________________________________
 
-	bool GfxDevice::popClipList()
+	bool GfxDeviceGen1::popClipList()
 	{
 		if (m_clipListStack.empty())
 		{
@@ -200,14 +200,14 @@ namespace wg
 
 	//____ setTintColor() __________________________________________________________
 
-	void GfxDevice::setTintColor( HiColor color )
+	void GfxDeviceGen1::setTintColor( HiColor color )
 	{
 		m_tintColor = color;
 	}
 
 	//____ setTintGradient() __________________________________________________
 
-	void GfxDevice::setTintGradient(const RectSPX& rect, const Gradient& gradient)
+	void GfxDeviceGen1::setTintGradient(const RectSPX& rect, const Gradient& gradient)
 	{
 		m_tintGradientRect = rect;
 		m_tintGradient = gradient;
@@ -216,14 +216,14 @@ namespace wg
 
 	//____ clearTintGradient() ________________________________________________
 
-	void GfxDevice::clearTintGradient()
+	void GfxDeviceGen1::clearTintGradient()
 	{
 		m_bTintGradient = false;
 	}
 
 	//____ setBlendMode() __________________________________________________________
 
-	bool GfxDevice::setBlendMode( BlendMode blendMode )
+	bool GfxDeviceGen1::setBlendMode( BlendMode blendMode )
 	{
 		if (blendMode == BlendMode::Undefined)
 			m_blendMode = BlendMode::Blend;
@@ -235,7 +235,7 @@ namespace wg
 
 	//____ setBlitSource() ____________________________________________________
 
-	bool GfxDevice::setBlitSource(Surface * pSource)
+	bool GfxDeviceGen1::setBlitSource(Surface * pSource)
 	{
 		m_pBlitSource = pSource;
 		return true;
@@ -243,7 +243,7 @@ namespace wg
 
 	//____ setMorphFactor() ____________________________________________________
 
-	void GfxDevice::setMorphFactor(float factor)
+	void GfxDeviceGen1::setMorphFactor(float factor)
 	{
 		limit(factor, 0.f, 1.f);
 		m_morphFactor = factor;
@@ -251,7 +251,7 @@ namespace wg
 
 	//____ setBlurMatrices() _____________________________________________________
 
-	void GfxDevice::setBlurMatrices( spx radius, const float red[9], const float green[9], const float blue[9] )
+	void GfxDeviceGen1::setBlurMatrices( spx radius, const float red[9], const float green[9], const float blue[9] )
 	{
 		m_blurRadius = radius;
 		
@@ -266,14 +266,14 @@ namespace wg
 
 	//____ setFixedBlendColor() __________________________________________________
 
-	void GfxDevice::setFixedBlendColor( HiColor color )
+	void GfxDeviceGen1::setFixedBlendColor( HiColor color )
 	{
 		m_fixedBlendColor = color;
 	}
 
 	//____ setRenderLayer() ___________________________________________________
 
-	void GfxDevice::setRenderLayer(int layer)
+	void GfxDeviceGen1::setRenderLayer(int layer)
 	{
 		if (layer == m_renderLayer)
 			return;
@@ -293,7 +293,7 @@ namespace wg
 
 	//____ _clearRenderLayer() _____________________________________________________
 
-	void GfxDevice::_clearRenderLayer()
+	void GfxDeviceGen1::_clearRenderLayer()
 	{
 		if (m_renderLayer > 0 )
 		{
@@ -342,7 +342,7 @@ namespace wg
 
 	//____ beginRender() ___________________________________________________________
 
-	bool GfxDevice::beginRender()
+	bool GfxDeviceGen1::beginRender()
 	{
 		if( m_bRendering )
 			return false;
@@ -353,7 +353,7 @@ namespace wg
 
 	//____ endRender() ________________________________________________________
 
-	bool GfxDevice::endRender()
+	bool GfxDeviceGen1::endRender()
 	{
 		if( !m_bRendering )
 			return false;
@@ -364,12 +364,12 @@ namespace wg
 
 	//____ isRendering() _______________________________________________________
 	/**
-	 * @brief Check if GfxDevice is in rendering state.
+	 * @brief Check if GfxDeviceGen1 is in rendering state.
 	 *
-	 * Check if GfxDevice is in rendering state, e.g. beginRender() has been called
+	 * Check if GfxDeviceGen1 is in rendering state, e.g. beginRender() has been called
 	 * but not yet followed by endRender().
 	 *
-	 * Please note that GfxDevice might remain busy for an undefined time drawing
+	 * Please note that GfxDeviceGen1 might remain busy for an undefined time drawing
 	 * graphics after endRender() has been called if rendering is done
 	 * asynchronously. To determine if all graphics has been rendered to the
 	 * framebuffer you should call isIdle() instead.
@@ -377,7 +377,7 @@ namespace wg
 	 * @return True if between beginRender()/endRender() calls.
 	 */
 
-	bool GfxDevice::isRendering()
+	bool GfxDeviceGen1::isRendering()
 	{
 		return m_bRendering;
 	};
@@ -386,7 +386,7 @@ namespace wg
 	/**
 	 * @brief Check if all rendering has completed.
 	 *
-	 * Check if GfxDevice has fully completed rendering all issued graphics commands
+	 * Check if GfxDeviceGen1 has fully completed rendering all issued graphics commands
 	 * and the canvas content is up-to-date.
 	 *
 	 * This method will start returning false once beginRender() has been called
@@ -395,7 +395,7 @@ namespace wg
 	 * @return True if all rendering has completed.
 	 */
 
-	bool GfxDevice::isIdle()
+	bool GfxDeviceGen1::isIdle()
 	{
 		return !m_bRendering;
 	}
@@ -404,25 +404,25 @@ namespace wg
 	/**
 	 * @brief Flush internal rendering queue.
 	 *
-	 * Most GfxDevices, except for SoftGfxDevice, queues rendering calls
+	 * Most GfxDeviceGen1s, except for SoftGfxDeviceGen1, queues rendering calls
 	 * in order to optimize for speed by sending them in bulk to the underlying
 	 * rendering library.
 	 *
-	 * A call to flush() forces the GfxDevice to immediately send all queued rendering
+	 * A call to flush() forces the GfxDeviceGen1 to immediately send all queued rendering
 	 * calls.
 	 *
 	 * Calling flush only makes sense between beginRender() and endRender() since endRender()
 	 * flushes for you.
 	 */
 
-	void GfxDevice::flush()
+	void GfxDeviceGen1::flush()
 	{
 	}
 
 
 	//____ _beginCanvasUpdate() ________________________________________________
 
-	bool GfxDevice::_beginCanvasUpdate(CanvasRef ref, Surface * pSurface, int nUpdateRects, const RectSPX* pUpdateRects, CanvasLayers * pCanvasLayers, int startLayer )
+	bool GfxDeviceGen1::_beginCanvasUpdate(CanvasRef ref, Surface * pSurface, int nUpdateRects, const RectSPX* pUpdateRects, CanvasLayers * pCanvasLayers, int startLayer )
 	{
 
 		SizeSPX sz;
@@ -547,7 +547,7 @@ namespace wg
 
 	//____ endCanvasUpdate() __________________________________________________
 
-	void GfxDevice::endCanvasUpdate()
+	void GfxDeviceGen1::endCanvasUpdate()
 	{
 /*		// Sanity checks
 
@@ -692,14 +692,14 @@ namespace wg
 	 * @return Nothing.
 	 */
 
-	void GfxDevice::fill(HiColor col)
+	void GfxDeviceGen1::fill(HiColor col)
 	{
 		fill(m_canvas.size, col);
 	}
 
 	//____ drawLine() __________________________________________________
 
-	void GfxDevice::drawLine(CoordSPX begin, Direction dir, spx length, HiColor color, spx thickness)
+	void GfxDeviceGen1::drawLine(CoordSPX begin, Direction dir, spx length, HiColor color, spx thickness)
 	{
 		CoordSPX end;
 
@@ -729,14 +729,14 @@ namespace wg
 
 	//____ blit() __________________________________________________________________
 
-	void GfxDevice::blit(CoordSPX dest)
+	void GfxDeviceGen1::blit(CoordSPX dest)
 	{
 		assert(m_pBlitSource != nullptr);
 
 		_transformBlitSimple({ dest, m_pBlitSource->pixelSize()*64 }, { 0,0 }, s_blitFlipTransforms[0], OpType::Blit);
 	}
 
-	void GfxDevice::blit(CoordSPX dest, const RectSPX& src)
+	void GfxDeviceGen1::blit(CoordSPX dest, const RectSPX& src)
 	{
 		assert(m_pBlitSource != nullptr);
 
@@ -745,7 +745,7 @@ namespace wg
 
 	//____ flipBlit() _________________________________________________________
 
-	void GfxDevice::flipBlit(CoordSPX dest, GfxFlip flip)
+	void GfxDeviceGen1::flipBlit(CoordSPX dest, GfxFlip flip)
 	{
 		assert(m_pBlitSource != nullptr);
 
@@ -761,7 +761,7 @@ namespace wg
 		_transformBlitSimple({ dest, dstSize }, { ofsX, ofsY }, s_blitFlipTransforms[(int)flip], OpType::Blit);
 	}
 
-	void GfxDevice::flipBlit(CoordSPX dest, const RectSPX& src, GfxFlip flip)
+	void GfxDeviceGen1::flipBlit(CoordSPX dest, const RectSPX& src, GfxFlip flip)
 	{
 		assert(m_pBlitSource != nullptr);
 
@@ -780,14 +780,14 @@ namespace wg
 
 	//____ stretchBlit() ___________________________________________________________
 
-	void GfxDevice::stretchBlit(const RectSPX& dest )
+	void GfxDeviceGen1::stretchBlit(const RectSPX& dest )
 	{
 		assert(m_pBlitSource != nullptr);
 
 		stretchBlit(dest, RectSPX(0, 0, m_pBlitSource->pixelSize()*64) );
 	}
 
-	void GfxDevice::stretchBlit(const RectSPX& dest, const RectSPX& src )
+	void GfxDeviceGen1::stretchBlit(const RectSPX& dest, const RectSPX& src )
 	{
 		assert(m_pBlitSource != nullptr);
 
@@ -836,14 +836,14 @@ namespace wg
 
 	//____ stretchFlipBlit() _____________________________________________________
 
-	void GfxDevice::stretchFlipBlit(const RectSPX& dest, GfxFlip flip)
+	void GfxDeviceGen1::stretchFlipBlit(const RectSPX& dest, GfxFlip flip)
 	{
 		assert(m_pBlitSource != nullptr);
 
 		stretchFlipBlit(dest, RectSPX(0, 0, m_pBlitSource->pixelSize()*64), flip);
 	}
 
-	void GfxDevice::stretchFlipBlit(const RectSPX& dest, const RectSPX& src, GfxFlip flip)
+	void GfxDeviceGen1::stretchFlipBlit(const RectSPX& dest, const RectSPX& src, GfxFlip flip)
 	{
 		assert(m_pBlitSource != nullptr);
 
@@ -895,7 +895,7 @@ namespace wg
 
 	//____ precisionBlit() ____________________________________________________
 
-	void GfxDevice::precisionBlit(const RectSPX& dest, const RectF& _src)
+	void GfxDeviceGen1::precisionBlit(const RectSPX& dest, const RectF& _src)
 	{
 		assert(m_pBlitSource != nullptr);
 
@@ -923,7 +923,7 @@ namespace wg
 
 	//____ transformBlit() ________________________________________________
 
-	void GfxDevice::transformBlit(const RectSPX& dest, CoordF src, const float transform[2][2])
+	void GfxDeviceGen1::transformBlit(const RectSPX& dest, CoordF src, const float transform[2][2])
 	{
 		assert(m_pBlitSource != nullptr);
 
@@ -941,7 +941,7 @@ namespace wg
 
 	//____ rotScaleBlit() _____________________________________________________
 
-	void GfxDevice::rotScaleBlit(const RectSPX& dest, float rotationDegrees, float scale, CoordF srcCenter, CoordF destCenter)
+	void GfxDeviceGen1::rotScaleBlit(const RectSPX& dest, float rotationDegrees, float scale, CoordF srcCenter, CoordF destCenter)
 	{
 		assert(m_pBlitSource != nullptr);
 
@@ -977,7 +977,7 @@ namespace wg
 
 	//____ tile() _____________________________________________________________
 
-	void GfxDevice::tile(const RectSPX& dest, CoordSPX shift)
+	void GfxDeviceGen1::tile(const RectSPX& dest, CoordSPX shift)
 	{
 		assert(m_pBlitSource != nullptr);
 
@@ -992,7 +992,7 @@ namespace wg
 
 	//____ flipTile() _________________________________________________________
 
-	void GfxDevice::flipTile(const RectSPX& dest, GfxFlip flip, CoordSPX shift)
+	void GfxDeviceGen1::flipTile(const RectSPX& dest, GfxFlip flip, CoordSPX shift)
 	{
 		assert(m_pBlitSource != nullptr);
 
@@ -1019,7 +1019,7 @@ namespace wg
 
 	//____ scaleTile() _________________________________________________________
 
-	void GfxDevice::scaleTile(const RectSPX& dest, float scale, CoordSPX shift)
+	void GfxDeviceGen1::scaleTile(const RectSPX& dest, float scale, CoordSPX shift)
 	{
 		assert(m_pBlitSource != nullptr);
 
@@ -1043,7 +1043,7 @@ namespace wg
 
 	//____ scaleFlipTile() _________________________________________________________
 
-	void GfxDevice::scaleFlipTile(const RectSPX& dest, float scale, GfxFlip flip, CoordSPX shift)
+	void GfxDeviceGen1::scaleFlipTile(const RectSPX& dest, float scale, GfxFlip flip, CoordSPX shift)
 	{
 		assert(m_pBlitSource != nullptr);
 
@@ -1072,14 +1072,14 @@ namespace wg
 
 	//____ blur() __________________________________________________________________
 
-	void GfxDevice::blur(CoordSPX dest)
+	void GfxDeviceGen1::blur(CoordSPX dest)
 	{
 		assert(m_pBlitSource != nullptr);
 
 		_transformBlitSimple({ dest, m_pBlitSource->pixelSize() * 64 }, { 0,0 }, s_blitFlipTransforms[0], OpType::Blur);
 	}
 
-	void GfxDevice::blur(CoordSPX dest, const RectSPX& src)
+	void GfxDeviceGen1::blur(CoordSPX dest, const RectSPX& src)
 	{
 		assert(m_pBlitSource != nullptr);
 
@@ -1088,14 +1088,14 @@ namespace wg
 
 	//____ stretchBlur() ___________________________________________________________
 
-	void GfxDevice::stretchBlur(const RectSPX& dest )
+	void GfxDeviceGen1::stretchBlur(const RectSPX& dest )
 	{
 		assert(m_pBlitSource != nullptr);
 
 		stretchBlur(dest, RectSPX(0, 0, m_pBlitSource->pixelSize()*64) );
 	}
 
-	void GfxDevice::stretchBlur(const RectSPX& dest, const RectSPX& src )
+	void GfxDeviceGen1::stretchBlur(const RectSPX& dest, const RectSPX& src )
 	{
 		assert(m_pBlitSource != nullptr);
 
@@ -1144,7 +1144,7 @@ namespace wg
 
 	//____ transformBlur() ________________________________________________
 
-	void GfxDevice::transformBlur(const RectSPX& dest, CoordF src, const float transform[2][2])
+	void GfxDeviceGen1::transformBlur(const RectSPX& dest, CoordF src, const float transform[2][2])
 	{
 		assert(m_pBlitSource != nullptr);
 
@@ -1160,7 +1160,7 @@ namespace wg
 
 	//____ rotScaleBlur() _____________________________________________________
 
-	void GfxDevice::rotScaleBlur(const RectSPX& dest, float rotationDegrees, float scale, CoordF srcCenter, CoordF destCenter)
+	void GfxDeviceGen1::rotScaleBlur(const RectSPX& dest, float rotationDegrees, float scale, CoordF srcCenter, CoordF destCenter)
 	{
 		assert(m_pBlitSource != nullptr);
 
@@ -1195,7 +1195,7 @@ namespace wg
 
 	//____ blitNinePatch() ________________________________________________
 
-	void GfxDevice::blitNinePatch(const RectSPX& dstRect, const BorderSPX& dstFrame, const NinePatch& patch, int scale)
+	void GfxDeviceGen1::blitNinePatch(const RectSPX& dstRect, const BorderSPX& dstFrame, const NinePatch& patch, int scale)
 	{
 		if( !m_pBlitSource )
 		{
@@ -1377,21 +1377,21 @@ namespace wg
 
 	//____ drawWave() ______________________________________________________
 
-	void GfxDevice::drawWave(const RectSPX& dest, const WaveLine * pTopBorder, const WaveLine * pBottomBorder, HiColor frontFill, HiColor backFill )
+	void GfxDeviceGen1::drawWave(const RectSPX& dest, const WaveLine * pTopBorder, const WaveLine * pBottomBorder, HiColor frontFill, HiColor backFill )
 	{
 		_transformDrawWave(dest, pTopBorder, pBottomBorder, frontFill, backFill, s_blitFlipTransforms[(int)GfxFlip::None] );
 	}
 
 	//____ flipDrawWave() ______________________________________________________
 
-	void GfxDevice::flipDrawWave(const RectSPX& dest, const WaveLine * pTopBorder, const WaveLine * pBottomBorder, HiColor frontFill, HiColor backFill, GfxFlip flip )
+	void GfxDeviceGen1::flipDrawWave(const RectSPX& dest, const WaveLine * pTopBorder, const WaveLine * pBottomBorder, HiColor frontFill, HiColor backFill, GfxFlip flip )
 	{
 		_transformDrawWave(dest, pTopBorder, pBottomBorder, frontFill, backFill, s_blitFlipTransforms[(int)flip] );
 	}
 
 	//____ _transformDrawWave() ______________________________________________________
 
-	void GfxDevice::_transformDrawWave(const RectSPX& _destIn, const WaveLine * pTopBorder, const WaveLine * pBottomBorder, HiColor frontFill, HiColor backFill, const int simpleTransform[2][2] )
+	void GfxDeviceGen1::_transformDrawWave(const RectSPX& _destIn, const WaveLine * pTopBorder, const WaveLine * pBottomBorder, HiColor frontFill, HiColor backFill, const int simpleTransform[2][2] )
 	{
 		//TODO: If borders have different colors and cross, colors are not swapped.
 
@@ -1568,7 +1568,7 @@ namespace wg
 
 	//____ drawElipse() ______________________________________________________
 
-	void GfxDevice::drawElipse(const RectSPX& canvas, spx thickness, HiColor fillColor, spx outlineThickness, HiColor outlineColor )
+	void GfxDeviceGen1::drawElipse(const RectSPX& canvas, spx thickness, HiColor fillColor, spx outlineThickness, HiColor outlineColor )
 	{
 		auto pCurveTab = GfxBase::curveTab();
 		int curveTabSize = GfxBase::curveTabSize();
@@ -1801,7 +1801,7 @@ namespace wg
 
 	//____ drawPieChart() _____________________________________________________
 
-	void GfxDevice::drawPieChart(const RectSPX& _canvas, float start, int nSlices, const float * _pSliceSizes, const HiColor * pSliceColors, float hubSize, HiColor hubColor, HiColor backColor, bool bRectangular)
+	void GfxDeviceGen1::drawPieChart(const RectSPX& _canvas, float start, int nSlices, const float * _pSliceSizes, const HiColor * pSliceColors, float hubSize, HiColor hubColor, HiColor backColor, bool bRectangular)
 	{
 		static const int c_maxSlices = c_maxSegments - 2;
 
@@ -2148,21 +2148,21 @@ namespace wg
 
 	//____ drawSegments() ______________________________________________________
 
-	void GfxDevice::drawSegments(const RectSPX& dest, int nSegments, const HiColor * pSegmentColors, int nEdgeStrips, const int * pEdgeStrips, int edgeStripPitch, TintMode tintMode )
+	void GfxDeviceGen1::drawSegments(const RectSPX& dest, int nSegments, const HiColor * pSegmentColors, int nEdgeStrips, const int * pEdgeStrips, int edgeStripPitch, TintMode tintMode )
 	{
 		_transformDrawSegments( dest, nSegments, pSegmentColors, nEdgeStrips, pEdgeStrips, edgeStripPitch, tintMode, s_blitFlipTransforms[(int)GfxFlip::None] );
 	}
 
 	//____ flipDrawSegments() ______________________________________________________
 
-	void GfxDevice::flipDrawSegments(const RectSPX& dest, int nSegments, const HiColor * pSegmentColors, int nEdgeStrips, const int * pEdgeStrips, int edgeStripPitch, GfxFlip flip, TintMode tintMode)
+	void GfxDeviceGen1::flipDrawSegments(const RectSPX& dest, int nSegments, const HiColor * pSegmentColors, int nEdgeStrips, const int * pEdgeStrips, int edgeStripPitch, GfxFlip flip, TintMode tintMode)
 	{
 		_transformDrawSegments(dest, nSegments, pSegmentColors, nEdgeStrips, pEdgeStrips, edgeStripPitch, tintMode, s_blitFlipTransforms[(int)flip] );
 	}
 
 	//____ drawEdgemap() __________________________________________________________
 
-	void GfxDevice::drawEdgemap(CoordSPX dest, Edgemap * pEdgemap )
+	void GfxDeviceGen1::drawEdgemap(CoordSPX dest, Edgemap * pEdgemap )
 	{
 		flipDrawEdgemap(dest,pEdgemap,GfxFlip::None);
 	}
@@ -2170,14 +2170,14 @@ namespace wg
 
 	//____ _clipListWasChanged() _________________________________________________
 
-	void GfxDevice::_clipListWasChanged()
+	void GfxDeviceGen1::_clipListWasChanged()
 	{
 		// Do nothing.
 	}
 
 	//____ _traceLine() __________________________________________________________
 
-	void GfxDevice::_traceLine(int * pDest, int nPoints, const WaveLine * pWave, int offset)
+	void GfxDeviceGen1::_traceLine(int * pDest, int nPoints, const WaveLine * pWave, int offset)
 	{
 		auto pCurveTab = GfxBase::curveTab();
 		int curveTabSize = GfxBase::curveTabSize();
@@ -2277,7 +2277,7 @@ namespace wg
 
 	//____ _stretchBlitWithRigidPartX() _______________________________________
 
-	void GfxDevice::_stretchBlitWithRigidPartX(const RectSPX& src, const RectSPX& dst, spx rigidPartOfs, spx rigidPartLength, spx rigidPartLengthDst)
+	void GfxDeviceGen1::_stretchBlitWithRigidPartX(const RectSPX& src, const RectSPX& dst, spx rigidPartOfs, spx rigidPartLength, spx rigidPartLengthDst)
 	{
 		int leftSrcLen = rigidPartOfs;
 		int rightSrcLen = src.w - rigidPartOfs - rigidPartLength;
@@ -2301,7 +2301,7 @@ namespace wg
 
 	//____ _stretchBlitWithRigidPartY() _______________________________________
 
-	void GfxDevice::_stretchBlitWithRigidPartY(const RectSPX& src, const RectSPX& dst, spx rigidPartOfs, spx rigidPartLength, spx rigidPartLengthDst)
+	void GfxDeviceGen1::_stretchBlitWithRigidPartY(const RectSPX& src, const RectSPX& dst, spx rigidPartOfs, spx rigidPartLength, spx rigidPartLengthDst)
 	{
 		int topSrcLen = rigidPartOfs;
 		int bottomSrcLen = src.h - rigidPartOfs - rigidPartLength;

@@ -471,7 +471,7 @@ const uint8_t SoftGfxDevice::s_fast8_channel_6[64] = {		0x00, 0x04, 0x08, 0x0c, 
 		if (color == m_tintColor)
 			return;
 
-		GfxDevice::setTintColor(color);
+		GfxDeviceGen1::setTintColor(color);
 		_updateTintSettings();
 
 /*
@@ -503,7 +503,7 @@ const uint8_t SoftGfxDevice::s_fast8_channel_6[64] = {		0x00, 0x04, 0x08, 0x0c, 
 
 	void SoftGfxDevice::setTintGradient(const RectI& rect, const Gradient& gradient)
 	{
-		GfxDevice::setTintGradient(rect, gradient);
+		GfxDeviceGen1::setTintGradient(rect, gradient);
 		m_colTrans.tintRect = Util::align(rect) / 64;
 		_updateTintSettings();
 	}
@@ -512,7 +512,7 @@ const uint8_t SoftGfxDevice::s_fast8_channel_6[64] = {		0x00, 0x04, 0x08, 0x0c, 
 
 	void SoftGfxDevice::clearTintGradient()
 	{
-		GfxDevice::clearTintGradient();
+		GfxDeviceGen1::clearTintGradient();
 		_updateTintSettings();
 	}
 
@@ -631,7 +631,7 @@ const uint8_t SoftGfxDevice::s_fast8_channel_6[64] = {		0x00, 0x04, 0x08, 0x0c, 
 		if (blendMode == m_blendMode)
 			return true;
 
-		bool retVal = GfxDevice::setBlendMode(blendMode);
+		bool retVal = GfxDeviceGen1::setBlendMode(blendMode);
 		if (retVal)
 			_updateBlitFunctions();
 		return retVal;
@@ -658,7 +658,7 @@ const uint8_t SoftGfxDevice::s_fast8_channel_6[64] = {		0x00, 0x04, 0x08, 0x0c, 
 
 	void SoftGfxDevice::setBlurMatrices( spx radius, const float red[9], const float green[9], const float blue[9] )
 	{
-		GfxDevice::setBlurMatrices(radius, red, green, blue);
+		GfxDeviceGen1::setBlurMatrices(radius, red, green, blue);
 
 		spx cornerRadius = radius * 724 / 1024;
 		
@@ -2243,7 +2243,7 @@ const uint8_t SoftGfxDevice::s_fast8_channel_6[64] = {		0x00, 0x04, 0x08, 0x0c, 
 		if (!pSource || !pSource->isInstanceOf(SoftSurface::TYPEINFO))
 		{
 			m_pBlitSource = nullptr;
-			GfxDevice::m_pBlitSource = nullptr;
+			GfxDeviceGen1::m_pBlitSource = nullptr;
 			return false;
 		}
 
@@ -2252,12 +2252,12 @@ const uint8_t SoftGfxDevice::s_fast8_channel_6[64] = {		0x00, 0x04, 0x08, 0x0c, 
 		if (!pSrcSurf->m_pData)
 		{
 			m_pBlitSource = nullptr;
-			GfxDevice::m_pBlitSource = nullptr;
+			GfxDeviceGen1::m_pBlitSource = nullptr;
 			return false;
 		}
 
 		m_pBlitSource = pSrcSurf;
-		GfxDevice::m_pBlitSource = pSource;
+		GfxDeviceGen1::m_pBlitSource = pSource;
 
 		_updateBlitFunctions();
 		return true;
