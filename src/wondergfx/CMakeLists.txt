@@ -36,6 +36,8 @@ set( SOURCES
 	wg_gfxutil.h
 	wg_gradient.cpp
 	wg_gradient.h
+	wg_gradyent.cpp
+	wg_gradyent.h
 	wg_gridwalker.cpp
 	wg_gridwalker.h
 	wg_nullgfxdevice.cpp
@@ -60,6 +62,8 @@ set( SOURCES
 	wg_surfacewriter.h
 	wg_sysfont.cpp
 	wg_sysfont.h
+	wg_tintmap.cpp
+	wg_tintmap.h
 	wg_transitions.cpp
 	wg_transitions.h
 	wg_waveform.cpp

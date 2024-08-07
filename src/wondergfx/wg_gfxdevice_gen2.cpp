@@ -284,24 +284,41 @@ namespace wg
 
 	void GfxDeviceGen2::setTintGradient(const RectSPX& rect, const Gradient& gradient)
 	{
-		if (m_renderState.bTintGradient == false || rect != m_renderState.tintGradientRect ||
-			gradient != m_renderState.tintGradient)
-		{
-			m_renderState.bTintGradient = true;
-			m_renderState.tintGradientRect = rect;
-			m_renderState.tintGradient = gradient;
-			m_renderState.stateChanges |= int(StateChange::TintGradient);
-		}
+		// Gen2 does not have tint gradients. Maybe we try to translate them into
+		// Tintmaps, but probably not. Probably better to change the calls
 	}
 
 	//____ clearTintGradient() ________________________________________________
 
 	void GfxDeviceGen2::clearTintGradient()
 	{
-		if (m_renderState.bTintGradient)
+		// Gen2 does not have tint gradients. Maybe we try to translate them into
+		// Tintmaps, but probably not. Probably better to change the calls
+	}
+
+	//____ setTintmap() _______________________________________________________
+
+	void GfxDeviceGen2::setTintmap(const RectSPX& rect, Tintmap* pTintmap)
+	{
+		if (pTintmap != m_renderState.pTintmap || rect != m_renderState.tintmapRect )
 		{
-			m_renderState.bTintGradient = false;
-			m_renderState.stateChanges |= int(StateChange::TintGradient);
+			m_renderState.pTintmap = pTintmap;
+			m_renderState.tintmapRect = rect;
+
+			m_renderState.stateChanges |= int(StateChange::TintMap);
+		}
+	}
+
+	//____ clearTintmap() _____________________________________________________
+
+	void GfxDeviceGen2::clearTintmap()
+	{
+		if (m_renderState.pTintmap)
+		{
+			m_renderState.pTintmap = nullptr;
+			m_renderState.tintmapRect.clear();
+
+			m_renderState.stateChanges |= int(StateChange::TintMap);
 		}
 	}
 
@@ -682,10 +699,11 @@ namespace wg
 
 		//
 
-		if (m_pActiveLayer->currentState.stateChanges.any())
+		if (m_pActiveLayer->currentState.stateChanges != 0)
 			_encodeStateChanges();
 
 		m_pActiveLayer->commandBuffer.push_back(int(Command::Fill));
+		m_pActiveLayer->commandBuffer.push_back(m_pActiveClipList->nRects);
 
 		const RectSPX* pRect = m_pActiveClipList->pRects;
 		auto& coords = m_pActiveCanvas->coords;
@@ -705,10 +723,56 @@ namespace wg
 			coords.emplace_back(dx2, dy2);
 			coords.emplace_back(dx1, dy2);
 		}
+	}
+
+	//____ fill() _____________________________________________________________
+
+	void GfxDeviceGen2::fill(const RectSPX& rect, HiColor color)
+	{
+		if (!m_pActiveCanvas)
+		{
+			//TODO: Error handling!
+
+			return;
+		}
+
+		// Skip calls that won't affect destination
+
+		if (color.a == 0 && (m_renderState.blendMode == BlendMode::Blend))
+			return;
+
+		//
+
+		if (m_pActiveLayer->currentState.stateChanges != 0)
+			_encodeStateChanges();
+
+		m_pActiveLayer->commandBuffer.push_back(int(Command::Fill));
+
+		int nRects = 0;
+
+		for (int i = 0; i < m_pActiveClipList->nRects; i++)
+		{
+			RectSPX rect = RectSPX::overlap(m_pActiveClipList->pRects, rect);
+			auto& coords = m_pActiveCanvas->coords;
 
 
+
+			spx		dx1 = pRect->x;
+			spx		dx2 = pRect->x + pRect->w;
+			spx		dy1 = pRect->y;
+			spx		dy2 = pRect->y + pRect->h;
+
+			coords.emplace_back(dx1, dy1);
+			coords.emplace_back(dx2, dy1);
+			coords.emplace_back(dx2, dy2);
+			coords.emplace_back(dx1, dy1);
+			coords.emplace_back(dx2, dy2);
+			coords.emplace_back(dx1, dy2);
+		}
 
 	}
+
+
 
 	//____ _encodeStateChanges() ______________________________________________
 
@@ -723,7 +787,7 @@ namespace wg
 		{
 			statesChanged |= m_pActiveLayer->currentState.stateChanges;
 			m_pActiveLayer->currentState.stateChanges = 0;
-			statesChanged &= ~ uint8_t(StateChange::IncludeFromLayer);
+			statesChanged &= ~uint8_t(StateChange::IncludeFromLayer);
 		}
 
 		//
@@ -733,18 +797,54 @@ namespace wg
 		cmdBuffer.push_back(int(Command::StateChange));
 		cmdBuffer.push_back(statesChanged);
 
-		if (statesChanged & uint8_t(StateChange::BlendMode))
-		{
-			cmdBuffer.push_back(int(m_renderState.blendMode));
-		}
-
-		if (statesChanged & uint8_t(StateChange::BlendMode))
+		if (statesChanged & uint8_t(StateChange::BlitSource))
 		{
 			Object* pSource = m_renderState.blitSource.rawPtr();
 
 			cmdBuffer.push_back(m_objectStack.size());
 			m_objectStack.push_back(pSource);
 			pSource->retain();
+		}
+
+		if (statesChanged & uint8_t(StateChange::BlendMode))
+		{
+			cmdBuffer.push_back(int(m_renderState.blendMode));
+		}
+
+
+		if (statesChanged & uint8_t(StateChange::TintColor))
+		{
+			cmdBuffer.push_back(m_renderState.tintColor.r);
+			cmdBuffer.push_back(m_renderState.tintColor.g);
+			cmdBuffer.push_back(m_renderState.tintColor.b);
+			cmdBuffer.push_back(m_renderState.tintColor.a);
+		}
+
+		if (statesChanged & uint8_t(StateChange::TintMap))
+		{
+			Object* pTintmap = m_renderState.pTintmap.rawPtr();
+
+			cmdBuffer.push_back(m_objectStack.size());
+			m_objectStack.push_back(pTintmap);
+			pTintmap->retain();
+
+			cmdBuffer.push_back(m_renderState.tintmapRect.x);
+			cmdBuffer.push_back(m_renderState.tintmapRect.y);
+			cmdBuffer.push_back(m_renderState.tintmapRect.w);
+			cmdBuffer.push_back(m_renderState.tintmapRect.h);
+		}
+
+		if (statesChanged & uint8_t(StateChange::MorphFactor))
+		{
+			cmdBuffer.push_back(m_renderState.morphFactor * 4096);
+		}
+
+		if (statesChanged & uint8_t(StateChange::FixedBlendColor))
+		{
+			cmdBuffer.push_back(m_renderState.fixedBlendColor.r);
+			cmdBuffer.push_back(m_renderState.fixedBlendColor.g);
+			cmdBuffer.push_back(m_renderState.fixedBlendColor.b);
+			cmdBuffer.push_back(m_renderState.fixedBlendColor.a);
 		}
 
 		if (statesChanged & uint8_t(StateChange::Blur))

@@ -221,6 +221,20 @@ namespace wg
 		m_bTintGradient = false;
 	}
 
+	//____ setTintmap() _______________________________________________________
+
+	void GfxDeviceGen1::setTintmap(const RectSPX& rect, Tintmap* pTintmap)
+	{
+
+	}
+
+	//____ clearTintmap() _____________________________________________________
+
+	void GfxDeviceGen1::clearTintmap()
+	{
+
+	}
+
 	//____ setBlendMode() __________________________________________________________
 
 	bool GfxDeviceGen1::setBlendMode( BlendMode blendMode )

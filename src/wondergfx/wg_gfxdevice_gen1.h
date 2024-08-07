@@ -103,6 +103,9 @@ namespace wg
 		virtual void		setTintGradient(const RectSPX& rect, const Gradient& gradient);
 		virtual void		clearTintGradient();
 
+		virtual void		setTintmap(const RectSPX& rect, Tintmap* pTintmap);
+		virtual void		clearTintmap();
+
 		virtual bool		setBlendMode( BlendMode blendMode );
 		virtual BlendMode 	blendMode() const { return m_blendMode; }
 

@@ -31,6 +31,7 @@
 #include <wg_color.h>
 #include <wg_gradient.h>
 #include <wg_edgemap.h>
+#include <wg_tintmap.h>
 
 
 #include <wg_geo.h>
@@ -132,6 +133,9 @@ namespace wg
 
 		virtual void		setTintGradient(const RectSPX& rect, const Gradient& gradient) = 0;
 		virtual void		clearTintGradient() = 0;
+
+		virtual void		setTintmap(const RectSPX& rect, Tintmap* pTintmap) = 0;
+		virtual void		clearTintmap() = 0;
 
 		virtual bool		setBlendMode( BlendMode blendMode ) = 0;
 		virtual BlendMode 	blendMode() const = 0;
