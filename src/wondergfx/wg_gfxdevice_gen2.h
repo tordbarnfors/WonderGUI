@@ -28,6 +28,7 @@
 #include <bitset>
 
 #include <wg_gfxdevice.h>
+#include <wg_gfxbackend.h>
 
 #include <wg_pointers.h>
 #include <wg_gfxtypes.h>
@@ -59,14 +60,16 @@ namespace wg
 
 
 
-
-
 	//____ GfxDeviceGen2 __________________________________________________________
 
 	class GfxDeviceGen2 : public GfxDevice
 	{
 	public:
 
+		//.____ Creation __________________________________________
+
+		static GfxDeviceGen2_p	create( GfxBackend * pBackend = nullptr );
+		
 		//.____ Identification __________________________________________
 
 		const TypeInfo& typeInfo(void) const override;
@@ -74,11 +77,14 @@ namespace wg
 
 		//.____ Misc _____________________________________________________
 
+		bool				setBackend( GfxBackend * pBackend );
+		GfxBackend_p		backend() const { return  m_pBackend; }
+
 		const CanvasInfo&	canvas() const override;
-		const CanvasInfo	canvas(CanvasRef ref) const override = 0;
+		const CanvasInfo	canvas(CanvasRef ref) const override;
 
 		CanvasLayers_p 		canvasLayers() const;
-
+		
 		//.____ Geometry _________________________________________________
 
 		SizeSPX		canvasSize() const override;
@@ -142,8 +148,8 @@ namespace wg
 		// Draw methods.
 
 		void	fill(HiColor color) override;
-		void	fill(const RectSPX& rect, HiColor color) override {}
-
+		void	fill(const RectSPX& rect, HiColor color) override;
+		
 		void    plotPixels(int nCoords, const CoordSPX* pCoords, const HiColor* pColors) override {}
 
 		void	drawLine(CoordSPX begin, CoordSPX end, HiColor color, spx thickness = 64) override {}
@@ -151,8 +157,8 @@ namespace wg
 
 		// Blit methods
 
-		void	blit(CoordSPX dest) override {}
-		void	blit(CoordSPX dest, const RectSPX& src) override {}
+		void	blit(CoordSPX dest) override;
+		void	blit(CoordSPX dest, const RectSPX& src) override;
 
 		void	flipBlit(CoordSPX dest, GfxFlip flip) override {}
 		void	flipBlit(CoordSPX dest, const RectSPX& src, GfxFlip flip) override {}
@@ -206,37 +212,28 @@ namespace wg
 
 
 	protected:
-		GfxDeviceGen2();
+
+		typedef GfxBackend::Command Command;
+		typedef GfxBackend::StateChange StateChange;
+		typedef GfxBackend::Transform Transform;
+
+
+		GfxDeviceGen2( GfxBackend * pBackend );
 		virtual ~GfxDeviceGen2();
 
-		virtual bool _beginCanvasUpdate(CanvasRef ref, Surface* pCanvas, int nUpdateRects, const RectSPX* pUpdateRects, CanvasLayers* pLayers, int startLayer);
+		bool _beginCanvasUpdate(CanvasRef ref, Surface* pCanvas, int nUpdateRects, const RectSPX* pUpdateRects, CanvasLayers* pLayers, int startLayer);
 
-		// 
+		void _transformBlitSimple(const RectSPX& _dest, CoordSPX src, int transformOfs, Command cmd);
 
-		virtual void	_setBuffers(CoordSPX* pCoordsBeg, CoordSPX* pCoordsEnd, int32_t* pDataBeg, int32_t* pDataEnd) = 0;
-		virtual void	_processCommands( int32_t* pBeg, int32_t * pEnd) = 0;
-		virtual void	_resetStates(int32_t* pBeg, int32_t* pEnd) = 0;
+		
+		//
 
 		void _encodeStateChanges();
 
 
 
+
 		//
-
-		const static int	c_maxSegments = 16;
-
-		enum class Command
-		{
-			None,
-			StateChange,
-			Fill,
-			FillSubPixel,				// Includes start/direction lines.
-			Plot,
-			LineFromTo,
-			Blit,
-			Blur,
-			Segments,
-		};
 
 		struct ClipList
 		{
@@ -244,20 +241,7 @@ namespace wg
 			const RectSPX*	pRects;
 			RectSPX			bounds;
 		};
-
-		enum class StateChange : uint8_t
-		{
-			BlitSource		= 1,
-			BlendMode		= 1 << 1,
-			TintColor		= 1 << 2,
-			TintMap			= 1 << 3,
-			MorphFactor		= 1 << 4,
-			FixedBlendColor	= 1 << 5,
-			Blur			= 1 << 6,
-
-			IncludeFromLayer= 1 << 7
-		};
-
+		
 
 		struct RenderState
 		{
@@ -283,9 +267,11 @@ namespace wg
 
 		struct RenderLayer
 		{
-			RenderState		currentState;
+			RenderState			currentState;
 
-			std::vector<int>	commandBuffer;
+			std::vector<int>	commands;
+
+			std::vector<spx>	coords;
 		};
 
 
@@ -298,8 +284,8 @@ namespace wg
 			std::vector<RenderLayer>	layers;
 			std::vector<ClipList>		clipListStack;
 
-			std::vector<CoordSPX>		coords;
-			std::vector<int32_t>		data;
+			std::vector<Transform>		transforms;			// Excluding the first 12 standardard ones for flip.
+			std::vector<Object*>		objects;
 
 			CanvasLayers_p				pLayerInfo;
 		};
@@ -313,14 +299,14 @@ namespace wg
 
 
 		std::vector<RenderCanvas>	m_canvasStack;
-		std::vector<Object*>		m_objectStack;
 
-		static const int			s_blitFlipTransforms[GfxFlip_size][2][2];
 		static const int			s_blitFlipOffsets[GfxFlip_size][2];
 
 		CanvasInfo					m_dummyCanvasInfo;
-
-
+		RectSPX						m_dummyRect;
+		
+		GfxBackend_p				m_pBackend;
+		
 
 	};
 
