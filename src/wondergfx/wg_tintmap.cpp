@@ -21,71 +21,18 @@
 =========================================================================*/
 
 
-#include <wg_gradient.h>
+#include <wg_tintmap.h>
 
 namespace wg
 {
 
-	const Gradient Gradient::Undefined = Gradient();
+	const TypeInfo Tintmap::TYPEINFO = { "Tintmap", &Object::TYPEINFO };
 
+	//____ typeInfo() _________________________________________________________
 
-	//____ constructor ________________________________________________________
-
-	Gradient::Gradient(Placement start, HiColor startColor, HiColor endColor)
+	const TypeInfo& Tintmap::typeInfo(void) const
 	{
-		switch (start)
-		{
-		case Placement::Center:
-			topLeft = topRight = bottomRight = bottomLeft = startColor;
-			break;
-
-		case Placement::NorthWest:
-			topLeft = startColor;
-			bottomRight = endColor;
-			topRight = bottomLeft = HiColor::mix(startColor, endColor, 2048);
-			break;
-
-		case Placement::North:
-			topLeft = topRight = startColor;
-			bottomLeft = bottomRight = endColor;
-			break;
-
-		case Placement::NorthEast:
-			topRight = startColor;
-			bottomLeft = endColor;
-			topLeft = bottomRight = HiColor::mix(startColor, endColor, 2048);
-			break;
-
-		case Placement::East:
-			topRight = bottomRight = startColor;
-			topLeft = bottomLeft = endColor;
-			break;
-
-		case Placement::SouthEast:
-			bottomRight = startColor;
-			topLeft = endColor;
-			bottomLeft = topRight = HiColor::mix(startColor, endColor, 2048);
-			break;
-
-		case Placement::South:
-			bottomLeft = bottomRight = startColor;
-			topLeft = topRight = endColor;
-			break;
-
-		case Placement::SouthWest:
-			bottomLeft = startColor;
-			topRight = endColor;
-			bottomRight = topLeft = HiColor::mix(startColor, endColor, 2048);
-			break;
-
-		case Placement::West:
-			topLeft = bottomLeft = startColor;
-			topRight = bottomRight = endColor;
-			break;
-				
-		default:
-			return;
-		}
+		return TYPEINFO;
 	}
 
 }

@@ -35,7 +35,10 @@ using namespace wg::Util;
 namespace wg
 {
 
-	const TypeInfo GfxDeviceGen2::TYPEINFO = { "GfxDeviceGen2", &Object::TYPEINFO };
+	const TypeInfo GfxDeviceGen2::TYPEINFO = { "GfxDeviceGen2", &GfxDevice::TYPEINFO };
+
+	const TypeInfo s_surfaceType = { "SurfaceType is not used in GfxDevice Gen 2", &Surface::TYPEINFO };
+
 
 
 	const int GfxDeviceGen2::s_blitFlipOffsets[GfxFlip_size][2] = { { 0,0 },				// Normal
@@ -77,6 +80,14 @@ const TypeInfo& GfxDeviceGen2::typeInfo(void) const
 {
 	return TYPEINFO;
 }
+
+//____ surfaceType() __________________________________________________________
+
+const TypeInfo& GfxDeviceGen2::surfaceType(void) const
+{
+	return s_surfaceType;
+}
+
 
 //____ setBackend() ___________________________________________________________
 
@@ -122,6 +133,21 @@ CanvasLayers_p GfxDeviceGen2::canvasLayers() const
 
 	return m_canvasStack.back().pLayerInfo;
 }
+
+//____ surfaceFactory() _______________________________________________________
+
+SurfaceFactory_p GfxDeviceGen2::surfaceFactory()
+{
+	return m_pBackend ? m_pBackend->surfaceFactory() : nullptr;
+}
+
+//____ edgemapFactory() _______________________________________________________
+
+EdgemapFactory_p GfxDeviceGen2::edgemapFactory()
+{
+	return m_pBackend ? m_pBackend->edgemapFactory() : nullptr;
+}
+
 
 //____ canvasSize() _______________________________________________________
 
@@ -486,7 +512,7 @@ int GfxDeviceGen2::renderLayer() const
 	{
 		//TODO: Error handling!
 
-		return;
+		return 0;
 	}
 
 	return m_pActiveCanvas->activeLayer;

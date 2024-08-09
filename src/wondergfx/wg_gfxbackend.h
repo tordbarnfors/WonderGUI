@@ -118,6 +118,10 @@ namespace wg
 
 		virtual const CanvasInfo *	canvasInfo(CanvasRef ref) const = 0;
 
+		virtual SurfaceFactory_p	surfaceFactory() = 0;
+		virtual EdgemapFactory_p	edgemapFactory() = 0;
+
+
 		virtual int		maxSegments() const = 0;
 
 

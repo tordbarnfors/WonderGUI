@@ -75,6 +75,8 @@ namespace wg
 		const TypeInfo& typeInfo(void) const override;
 		const static TypeInfo	TYPEINFO;
 
+		const TypeInfo& surfaceType(void) const override;
+
 		//.____ Misc _____________________________________________________
 
 		bool				setBackend( GfxBackend * pBackend );
@@ -85,6 +87,9 @@ namespace wg
 
 		CanvasLayers_p 		canvasLayers() const;
 		
+		SurfaceFactory_p	surfaceFactory() override;
+		EdgemapFactory_p	edgemapFactory() override;
+
 		//.____ Geometry _________________________________________________
 
 		SizeSPX		canvasSize() const override;
