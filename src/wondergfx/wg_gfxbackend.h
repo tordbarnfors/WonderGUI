@@ -122,7 +122,7 @@ namespace wg
 		virtual EdgemapFactory_p	edgemapFactory() = 0;
 
 
-		virtual int		maxSegments() const = 0;
+		virtual int		maxEdges() const = 0;
 
 
 

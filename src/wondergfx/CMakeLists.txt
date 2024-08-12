@@ -42,6 +42,8 @@ set( SOURCES
 	wg_gradyent.h
 	wg_gridwalker.cpp
 	wg_gridwalker.h
+	wg_backendlogger.cpp
+	wg_backendlogger.h
 	wg_nullgfxdevice.cpp
 	wg_nullgfxdevice.h
 	wg_patches.impl.h
