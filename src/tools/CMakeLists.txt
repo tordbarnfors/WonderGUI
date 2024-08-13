@@ -3,6 +3,7 @@
 add_subdirectory(fontgenerator)
 add_subdirectory(gfxdevicetester)
 add_subdirectory(gfxworkbench)
+add_subdirectory(gfxworkbench-gen2)
 add_subdirectory(helloworld)
 add_subdirectory(image2surf)
 add_subdirectory(packlayouttester)
@@ -33,6 +34,7 @@ set_target_properties(
 	testplugin
 	fontgenerator
 	gfxworkbench
+	gfxworkbench-gen2
 	helloworld
 	image2surf
 	packlayouttester
