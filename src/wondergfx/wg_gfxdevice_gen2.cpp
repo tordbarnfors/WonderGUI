@@ -693,6 +693,13 @@ bool GfxDeviceGen2::_beginCanvasUpdate(CanvasRef ref, Surface* pCanvas, int nUpd
 
 void GfxDeviceGen2::endCanvasUpdate()
 {
+	if (m_canvasStack.empty())
+	{
+		//TODO: Errorhandling!!!
+
+		return;
+	}
+
 	flattenLayers();
 	m_canvasStack.pop_back();
 }
@@ -712,15 +719,20 @@ void GfxDeviceGen2::flattenLayers()
 		m_pBackend->setCanvas(canvasData.info.pSurface);
 
 	if( !canvasData.transforms.empty() )
-		m_pBackend->setTransforms( &*canvasData.transforms.begin(), &*canvasData.transforms.end() );
+		m_pBackend->setTransforms( canvasData.transforms.data(), canvasData.transforms.data() + canvasData.transforms.size() );
 	
 	if( !canvasData.objects.empty() )
-		m_pBackend->setObjects( &*canvasData.objects.begin(), &*canvasData.objects.end() );
+		m_pBackend->setObjects( canvasData.objects.data(), canvasData.objects.data() + canvasData.objects.size() );
 	
 	for (int i = 0; i < canvasData.layers.size(); i++)
 	{
-		m_pBackend->setCoords(&*canvasData.layers[i].coords.begin(), &*canvasData.layers[i].coords.end() );
-		m_pBackend->processCommands( &*canvasData.layers[i].commands.begin(), &*canvasData.layers[i].commands.end() );
+		spx * pCoordsBeg = canvasData.layers[i].coords.data();
+		spx * pCoordsEnd = pCoordsBeg + canvasData.layers[i].coords.size();
+		m_pBackend->setCoords(pCoordsBeg, pCoordsEnd );
+
+		int32_t* pCommandsBeg = canvasData.layers[i].commands.data();
+		int32_t* pCommandsEnd = pCommandsBeg + canvasData.layers[i].commands.size();
+		m_pBackend->processCommands( pCommandsBeg, pCommandsEnd );
 	}
 	
 	// Release objects
@@ -799,14 +811,14 @@ void GfxDeviceGen2::fill(const RectSPX& rect, HiColor color)
 
 	for (int i = 0; i < m_pActiveClipList->nRects; i++)
 	{
-		RectSPX rect = RectSPX::overlap(m_pActiveClipList->pRects[i], rect);
+		RectSPX clipped = RectSPX::overlap(m_pActiveClipList->pRects[i], rect);
 
-		if( !rect.isEmpty() )
+		if( !clipped.isEmpty() )
 		{
-			coords.emplace_back(rect.x);
-			coords.emplace_back(rect.y);
-			coords.emplace_back(rect.w);
-			coords.emplace_back(rect.h);
+			coords.emplace_back(clipped.x);
+			coords.emplace_back(clipped.y);
+			coords.emplace_back(clipped.w);
+			coords.emplace_back(clipped.h);
 
 			nRects++;
 		}

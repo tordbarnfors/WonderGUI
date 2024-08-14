@@ -112,9 +112,12 @@ namespace wg
 			else
 				*m_pStream << ", ";
 
-			*m_pStream << *p;
+			*m_pStream << *p++;
+
+			rows++;
 		}
 
+		*m_pStream << std::endl;
 
 		if (m_pBackend)
 			m_pBackend->setCoords(pBeg, pEnd);

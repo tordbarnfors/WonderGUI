@@ -27,6 +27,10 @@
 #include <wg_softkernels_rgb555be_base.h>
 #include <wg_softkernels_rgb555be_extras.h>
 
+#include <wg_gfxdevice_gen2.h>
+#include <wg_gfxbackend.h>
+#include <wg_backendlogger.h>
+
 using namespace wg;
 
 void 			translateEvents();
@@ -88,12 +92,18 @@ int main ( int argc, char** argv )
 		format = PixelFormat::BGR_8_sRGB;
 
 	Blob_p pCanvasBlob = Blob::create( pWinSurf->pixels, 0);
-	SoftSurface_p pCanvas = SoftSurface::create({ .format = format, .size = SizeI(pWinSurf->w,pWinSurf->h) }, pCanvasBlob, pWinSurf->pitch);
+	SoftSurface_p pCanvas = SoftSurface::create({ .canvas = true, .format = format, .size = SizeI(pWinSurf->w,pWinSurf->h) }, pCanvasBlob, pWinSurf->pitch);
 
-	SoftGfxDevice_p pGfxDevice = SoftGfxDevice::create();
-	addDefaultSoftKernels(pGfxDevice);
+	auto pBackendLogger = BackendLogger::create(std::cout, nullptr);
+
+	GfxDevice_p pGfxDevice = GfxDeviceGen2::create(pBackendLogger);
+
+
+
+	
+//	addDefaultSoftKernels(pGfxDevice);
 //	addBaseSoftKernelsForRGB565BECanvas(pGfxDevice);
-	addBaseSoftKernelsForRGB555BECanvas(pGfxDevice);
+//	addBaseSoftKernelsForRGB555BECanvas(pGfxDevice);
 
 	
 	// First we load the 24-bit bmp containing the button graphics.
@@ -181,15 +191,15 @@ int main ( int argc, char** argv )
 	
 	}
  */
-/*
+
 	auto pFocusSkin = ColorSkin::create({ .states = { {State::Default, Color::Red}, {State::Focused, Color::Green} } });
 	auto pHoverSkin = ColorSkin::create({ .states = { {State::Default, Color::Red}, {State::Hovered, Color::Green} } });
 	auto pHoverAndFocusSkin = ColorSkin::create({ .states = { {State::Default, Color::Red}, {State::Hovered, Color::Yellow}, {State::Focused, Color::Blue} } });
 	auto pSelectedHoverAndFocusSkin = ColorSkin::create({ .states = { {State::Default, Color::Red}, {State::Selected, Color::Pink}, {State::Hovered, Color::Yellow}, {State::Focused, Color::Blue} } });
 
 	auto pHoverWithFocusSkin = ColorSkin::create({ .states = {  {State::Selected, Color::Purple}, {State::Default, Color::Red}, {State::HoveredFocused, Color::Red}, {State::Hovered, Color::Yellow}, {State::Focused, Color::Blue} } });
-*/
-	
+
+/*
 	float redMtx[9] = {	0.14f,0.1f,0.14f,
 						0.1f, 0.0f, 0.1f,
 						0.14f, 0.1f, 0.14f};
@@ -207,6 +217,7 @@ int main ( int argc, char** argv )
 	int dirX = 64, dirY = 64;
 
 	CoordSPX ball = {0,0};
+*/
 
 	//------------------------------------------------------
 	// Program Main Loop
@@ -229,17 +240,17 @@ int main ( int argc, char** argv )
 		pGfxDevice->fill(Color8::Black);
 		
 		//
-		/*
+		
 		 pFocusSkin->_render(pGfxDevice, RectSPX(5, 5, 20, 20) * 64, 64, State::HoveredFocused);
 		 pHoverSkin->_render(pGfxDevice, RectSPX(5, 30, 20, 20) * 64, 64, State::HoveredFocused);
 		 pHoverAndFocusSkin->_render(pGfxDevice, RectSPX(5, 55, 20, 20) * 64, 64, State::SelectedHoveredFocused);
 		 pSelectedHoverAndFocusSkin->_render(pGfxDevice, RectSPX(5, 80, 20, 20) * 64, 64, State::SelectedHoveredFocused);
 		 pHoverWithFocusSkin->_render(pGfxDevice, RectSPX(5, 105, 20, 20) * 64, 64, State::SelectedHoveredFocused);
-		 */
+		
 		
 		//
 		
-		
+/*
 		ball.x += dirX;
 		ball.y += dirY;
 		
@@ -273,6 +284,7 @@ int main ( int argc, char** argv )
 		
 		std::swap(pCanvas1, pCanvas2);
 
+*/
 		//
 /*
 		for( int i = 0 ; i < GfxFlip_size ; i++ )
