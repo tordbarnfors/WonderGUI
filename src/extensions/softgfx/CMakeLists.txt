@@ -18,6 +18,9 @@ set(SOURCES
 
 	wg_softbackend.cpp
 	wg_softbackend.h
+	wg_softbackend_kernels.cpp
+	wg_softbackend_kernels.h
+	wg_softbackendstanza.impl.h
 	wg_softkernels_default.cpp
 	wg_softkernels_default.h
 	wg_softkernels_tinylinear.cpp

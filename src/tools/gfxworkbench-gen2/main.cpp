@@ -30,6 +30,9 @@
 #include <wg_gfxdevice_gen2.h>
 #include <wg_gfxbackend.h>
 #include <wg_backendlogger.h>
+#include <wg_softbackend.h>
+#include <wg_softbackend_kernels.h>
+
 
 using namespace wg;
 
@@ -94,7 +97,11 @@ int main ( int argc, char** argv )
 	Blob_p pCanvasBlob = Blob::create( pWinSurf->pixels, 0);
 	SoftSurface_p pCanvas = SoftSurface::create({ .canvas = true, .format = format, .size = SizeI(pWinSurf->w,pWinSurf->h) }, pCanvasBlob, pWinSurf->pitch);
 
-	auto pBackendLogger = BackendLogger::create(std::cout, nullptr);
+	auto pSoftBackend = SoftBackend::create();
+	addDefaultSoftKernels(pSoftBackend);
+
+
+	auto pBackendLogger = BackendLogger::create(std::cout, pSoftBackend);
 
 	GfxDevice_p pGfxDevice = GfxDeviceGen2::create(pBackendLogger);
 
@@ -496,3 +503,4 @@ MouseButton translateMouseButton( uint8_t button )
 			return MouseButton::None;
 	}
 }
+

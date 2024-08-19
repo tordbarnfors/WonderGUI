@@ -40,6 +40,7 @@ namespace wg
 
 	class SoftBackend : public GfxBackend
 	{
+
 	public:
 
 		//.____ Creation __________________________________________
@@ -140,9 +141,23 @@ namespace wg
 		typedef	void(*LineOp_p)(uint8_t* pRow, int rowInc, int pixelInc, int length, int width, int pos, int slope, HiColor color, const ColTrans& tint, CoordI patchPos);
 		typedef	void(*ClipLineOp_p)(int clipStart, int clipEnd, uint8_t* pRow, int rowInc, int pixelInc, int length, int width, int pos, int slope, HiColor color, const ColTrans& tint, CoordI patchPos);
 		typedef	void(*FillOp_p)(uint8_t* pDst, int pitchX, int pitchY, int nLines, int lineLength, HiColor col, const ColTrans& tint, CoordI patchPos);
-		typedef	void(*StraightBlitOp_p)(const uint8_t* pSrc, uint8_t* pDst, const SoftSurface* pSrcSurf, const Pitches& pitches, int nLines, int lineLength, const ColTrans& tint, CoordI patchPos, const int simpleTransform[2][2]);
-		typedef	void(*TransformBlitOp_p)(const SoftSurface* pSrcSurf, BinalCoord pos, const binalInt matrix[2][2], uint8_t* pDst, int dstPitchX, int dstPitchY, int nLines, int lineLength, const ColTrans& tint, CoordI patchPos);
-		typedef void(*SegmentOp_p)(int clipBeg, int clipEnd, uint8_t* pStripStart, int pixelPitch, int nEdges, SegmentEdge* pEdges, const int16_t* pSegmentColors, const HiColor ** pSegmentTintmaps, const bool* pTransparentSegments, const bool* pOpaqueSegments, const ColTrans& tint);
+		typedef	void(*StraightBlitOp_p)(const uint8_t* pSrc, uint8_t* pDst, const SoftSurface* pSrcSurf, const Pitches& pitches, int nLines, int lineLength, const ColTrans& tint, CoordI patchPos, const Transform * pMatrix);
+		typedef	void(*TransformBlitOp_p)(const SoftSurface* pSrcSurf, BinalCoord pos, const Transform * pMatrix, uint8_t* pDst, int dstPitchX, int dstPitchY, int nLines, int lineLength, const ColTrans& tint, CoordI patchPos);
+		typedef void(*SegmentOp_p)(int clipBeg, int clipEnd, uint8_t* pStripStart, int pixelPitch, int nEdges, SegmentEdge* pEdges, const int16_t* pSegmentColors, const HiColor ** pSegmentTintmaps, const bool* pTransparentSegments, const bool* pOpaqueSegments, const Transform * pMatrix);
+
+		static const int16_t 	s_channel_4_1[256];
+		static const int16_t	s_channel_4_2[256];
+		static const int16_t	s_channel_5[32];
+		static const int16_t	s_channel_6[64];
+		static const uint8_t	s_fast8_channel_4_1[256];
+		static const uint8_t 	s_fast8_channel_4_2[256];
+		static const uint8_t	s_fast8_channel_5[32];
+		static const uint8_t	s_fast8_channel_6[64];
+
+		static int 				s_mulTab[256];
+
+		static int16_t			s_limit4096Tab[4097 * 3];
+
 
 		//.____ Control ______________________________________________________
 
@@ -173,33 +188,69 @@ namespace wg
 		virtual ~SoftBackend();
 
 		void _initTables();
+		bool _setupDestFormatKernels(PixelFormat format);
+
+		void	_updateBlitFunctions();
+		void	_updateTintMode();
+
+		const static int	c_maxSegments = 16;
+
 
 		std::vector<CanvasInfo>	m_definedCanvases;
 
 		SurfaceFactory_p	m_pSurfaceFactory;
 		EdgemapFactory_p	m_pEdgemapFactory;
 
+		Object **			m_pObjectsBeg = nullptr;
+		Object **			m_pObjectsEnd = nullptr;
+
+		spx *				m_pCoordsBeg = nullptr;
+		spx *				m_pCoordsEnd = nullptr;
+
+		Transform *			m_pTransformsBeg = nullptr;
+		Transform *			m_pTransformsEnd = nullptr;
+
+		SoftSurface_p		m_pCanvas;
+		PixelBuffer			m_buffer;
+		uint8_t*			m_pCanvasPixels;	// Pixels of render layer surface
+		int					m_canvasPixelBits = 0;					// PixelBits of render layer surface
+		PixelFormat			m_canvasPixelFormat = PixelFormat::Undefined;
+		int					m_canvasPitch = 0;
+
+		BlendMode			m_blendMode = BlendMode::Blend;
+		TintMode			m_tintMode = TintMode::None;
+
+		ColTrans			m_colTrans;
+
+		SoftSurface_p		m_pBlitSource;
+
+		bool				m_bBlitFunctionNeedsUpdate = true;
+
+//		PixelBuffer		m_canvasPixelBuffer;
+//		uint8_t* m_pCanvasPixels;	// Pixels of render layer surface
 
 		static int				s_lineThicknessTable[17];
 
-		static int 				s_mulTab[256];
-
-		static int16_t			s_limit4096Tab[4097 * 3];
 
 		static bool				s_bTablesInitialized;
 
-		static const int16_t 	s_channel_4_1[256];
-		static const int16_t	s_channel_4_2[256];
-		static const int16_t	s_channel_5[32];
-		static const int16_t	s_channel_6[64];
-		static const uint8_t	s_fast8_channel_4_1[256];
-		static const uint8_t 	s_fast8_channel_4_2[256];
-		static const uint8_t	s_fast8_channel_5[32];
-		static const uint8_t	s_fast8_channel_6[64];
 
 
 
+		//
 
+		typedef void(SoftBackend::* StraightBlitProxy_Op)(const RectI& dest, CoordI src, const Transform& matrix, CoordI patchPos, StraightBlitOp_p pPassOneOp);
+		typedef void(SoftBackend::* TransformBlitProxy_Op)(const RectI& dest, BinalCoord pos, const Transform& matrix, CoordI patchPos, TransformBlitOp_p pPassOneOp);
+
+
+		void	_onePassStraightBlit(const RectI& dest, CoordI pos, const Transform& matrix, CoordI patchPos, StraightBlitOp_p pPassOneOp);
+		void	_twoPassStraightBlit(const RectI& dest, CoordI pos, const Transform& matrix, CoordI patchPos, StraightBlitOp_p pPassOneOp);
+
+		void	_onePassTransformBlit(const RectI& dest, BinalCoord pos, const Transform& matrix, CoordI patchPos, TransformBlitOp_p pPassOneOp);
+		void	_twoPassTransformBlit(const RectI& dest, BinalCoord pos, const Transform& matrix, CoordI patchPos, TransformBlitOp_p pPassOneOp);
+
+		void	_dummyStraightBlit(const RectI& dest, CoordI pos, const Transform& matrix, CoordI patchPos, StraightBlitOp_p pPassOneOp);
+		void	_dummyTransformBlit(const RectI& dest, BinalCoord pos, const Transform& matrix, CoordI patchPos, TransformBlitOp_p pPassOneOp);
 
 		//
 
@@ -249,6 +300,31 @@ namespace wg
 		std::vector<SinglePassBlitKernels>			m_singlePassBlitKernels;
 		std::vector<SinglePassStraightBlitKernels>	m_singlePassStraightBlitKernels;
 		std::vector<SinglePassTransformBlitKernels>	m_singlePassTransformBlitKernels;
+
+		// These are called to perform blit/tile operations
+
+		StraightBlitProxy_Op	m_pStraightBlitOp = nullptr;		// Function called to perform a straight blit.
+		StraightBlitProxy_Op	m_pStraightTileOp = nullptr;		// Function called to perform a straight tile.
+		StraightBlitProxy_Op	m_pStraightBlurOp = nullptr;		// Function called to perform a straight blur.
+
+		TransformBlitProxy_Op m_pTransformBlitOp = nullptr;		// Function called to perform a transform blit.
+		TransformBlitProxy_Op m_pTransformClipBlitOp = nullptr;	// Function called to perform a transform clip blit.
+		TransformBlitProxy_Op m_pTransformTileOp = nullptr;		// Function called to perform a transform tile.
+		TransformBlitProxy_Op m_pTransformBlurOp = nullptr;		// Function called to perform a transform blur.
+
+
+		// These need to be provided to calls to StraightBlitProxy_Op and TransformBlitProxy_Op.
+
+		StraightBlitOp_p		m_pStraightBlitFirstPassOp = nullptr;
+		StraightBlitOp_p		m_pStraightTileFirstPassOp = nullptr;
+		StraightBlitOp_p		m_pStraightBlurFirstPassOp = nullptr;
+		TransformBlitOp_p		m_pTransformBlitFirstPassOp = nullptr;
+		TransformBlitOp_p		m_pTransformClipBlitFirstPassOp = nullptr;
+		TransformBlitOp_p		m_pTransformTileFirstPassOp = nullptr;
+		TransformBlitOp_p		m_pTransformBlurFirstPassOp = nullptr;
+
+		StraightBlitOp_p		m_pBlitSecondPassOp = nullptr;		// Second pass is same for straight and transform blits and tiles (always a simple blit).
+
 
 
 		//

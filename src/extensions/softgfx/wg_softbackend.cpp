@@ -23,6 +23,8 @@
 #include <wg_softbackend.h>
 #include <wg_softsurfacefactory.h>
 #include <wg_softedgemapfactory.h>
+#include <wg_gfxbase.h>
+
 
 
 namespace wg
@@ -197,52 +199,291 @@ namespace wg
 	}
 
 
-	//____ () _____________________________________________
+	//____ beginRender() _____________________________________________
 
 	void SoftBackend::beginRender()
 	{
 	}
 
-	//____ () _____________________________________________
+	//____ endRender() _____________________________________________
 
 	void SoftBackend::endRender()
 	{
+		if (m_pCanvas)
+		{
+			m_pCanvas->freePixelBuffer(m_buffer);
+			m_pCanvas = nullptr;
+		}
 	}
 
-	//____ () _____________________________________________
-
-	void SoftBackend::setCanvas(Surface* pSurface)
-	{
-	}
-
-	//____ () _____________________________________________
+	//____ setCanvas() _____________________________________________
 
 	void SoftBackend::setCanvas(CanvasRef ref)
 	{
+		auto pInfo = canvasInfo(ref);
+
+		if (!pInfo)
+		{
+			//TODO: Error handling!
+
+			return;
+		}
+
+		setCanvas(pInfo->pSurface);
 	}
 
-	//____ () _____________________________________________
+	void SoftBackend::setCanvas(Surface* _pSurface)
+	{
+		auto pSurface = dynamic_cast<SoftSurface*>(_pSurface);
+
+		if (m_pCanvas)
+		{
+			m_pCanvas->freePixelBuffer(m_buffer);
+		}
+
+		m_pCanvas = pSurface;
+
+		m_buffer = m_pCanvas->allocPixelBuffer();
+		m_pCanvasPixels		= m_buffer.pixels;
+		m_canvasPixelFormat = m_buffer.format;
+		m_canvasPitch		= m_buffer.pitch;
+		m_canvasPixelBits	= m_pCanvas->pixelDescription()->bits;
+	}
+
+
+
+	//____ setObjects() _____________________________________________
 
 	void SoftBackend::setObjects(Object** pBeg, Object** pEnd)
 	{
+		m_pObjectsBeg = pBeg;
+		m_pObjectsEnd = pEnd;
 	}
 
-	//____ () _____________________________________________
+	//____ setCoords() _____________________________________________
 
 	void SoftBackend::setCoords(spx* pBeg, spx* pEnd)
 	{
+		m_pCoordsBeg = pBeg;
+		m_pCoordsEnd = pEnd;
 	}
 
-	//____ () _____________________________________________
+	//____ setTransforms() _____________________________________________
 
 	void SoftBackend::setTransforms(Transform* pBeg, Transform* pEnd)
 	{
+		m_pTransformsBeg = pBeg;
+		m_pTransformsEnd = pEnd;
 	}
 
-	//____ () _____________________________________________
+	//____ processCommands() _____________________________________________
 
 	void SoftBackend::processCommands(int32_t* pBeg, int32_t* pEnd)
 	{
+		spx *		pCoords = m_pCoordsBeg;
+		Transform*	pTransforms = m_pTransformsBeg;
+
+
+		auto p = pBeg;
+		while (p < pEnd)
+		{
+			auto cmd = Command(*p++);
+			switch (cmd)
+			{
+			case Command::None:
+				break;
+
+			case Command::StateChange:
+			{
+				int32_t statesChanged = *p++;
+
+				if (statesChanged & uint8_t(StateChange::BlitSource))
+				{
+					int32_t objectOfs = *p++;
+
+					auto pBlitSource = static_cast<SoftSurface*>(m_pObjectsBeg[objectOfs]);
+
+					if (!pBlitSource || !m_pBlitSource || pBlitSource->pixelFormat() != m_pBlitSource->pixelFormat() ||
+						pBlitSource->sampleMethod() != m_pBlitSource->sampleMethod())
+						m_bBlitFunctionNeedsUpdate = true;
+
+					m_pBlitSource = pBlitSource;
+				}
+
+				if (statesChanged & uint8_t(StateChange::BlendMode))
+				{
+					m_blendMode = (BlendMode)*p++;
+
+					m_bBlitFunctionNeedsUpdate = true;
+				}
+
+				if (statesChanged & uint8_t(StateChange::TintColor))
+				{
+					m_colTrans.flatTintColor.r = *p++;
+					m_colTrans.flatTintColor.g = *p++;
+					m_colTrans.flatTintColor.b = *p++;
+					m_colTrans.flatTintColor.a = *p++;
+
+					_updateTintMode();
+				}
+
+				if (statesChanged & uint8_t(StateChange::TintMap))
+				{
+					int32_t objectOfs = *p++;
+					int32_t	x = *p++;
+					int32_t	y = *p++;
+					int32_t	w = *p++;
+					int32_t	h = *p++;
+
+					m_colTrans.tintRect = RectI(x, y, w, h);
+
+					auto pTintMap = static_cast<Tintmap*>(m_pObjectsBeg[objectOfs]);
+
+					//TODO: Set pTintAxisX/Y
+
+					_updateTintMode();
+				}
+
+				if (statesChanged & uint8_t(StateChange::MorphFactor))
+				{
+					m_colTrans.morphFactor = *p++;
+				}
+
+				if (statesChanged & uint8_t(StateChange::FixedBlendColor))
+				{
+					m_colTrans.fixedBlendColor.r = *p++;
+					m_colTrans.fixedBlendColor.g = *p++;
+					m_colTrans.fixedBlendColor.b = *p++;
+					m_colTrans.fixedBlendColor.a = *p++;
+				}
+
+				if (statesChanged & uint8_t(StateChange::Blur))
+				{
+					//TODO: Implement!!!	
+
+					assert(false);
+				}
+
+				break;
+			}
+
+			case Command::Fill:
+			{
+				int32_t nRects = *p++;
+
+				int32_t r = *p++;
+				int32_t g = *p++;
+				int32_t b = *p++;
+				int32_t a = *p++;
+
+				HiColor col(r, g, b, a);
+
+				FillOp_p pFunc = nullptr;
+
+				auto pKernels = m_pKernels[(int)m_pCanvas->pixelFormat()];
+				if (pKernels)
+					pFunc = pKernels->pFillKernels[(int)m_tintMode][(int)m_blendMode];
+
+				if (!pFunc)
+				{
+					//TODO: Error handling!!!
+
+					break;
+				}
+
+				for (int i = 0; i < nRects; i++)
+				{
+					RectSPX* pPatch = reinterpret_cast<RectSPX*>(pCoords);
+					pCoords += 4;
+
+					uint8_t* pDst = m_pCanvasPixels + (pPatch->y/64) *m_canvasPitch + (pPatch->x/64) * m_canvasPixelBits/8;
+					pFunc(pDst, m_canvasPixelBits/8, m_canvasPitch - (pPatch->w/64) * (m_canvasPixelBits/8), (pPatch->h/64), (pPatch->w/64), col, m_colTrans, pPatch->pos());
+				}
+				break;
+			}
+
+			case Command::FillSubPixel:
+			case Command::Plot:
+			case Command::Line:
+			case Command::Blur:
+			case Command::DrawEdgemap:
+			{
+				//TODO: Implement!!!	
+
+				assert(false);
+				break;
+			}
+
+			case Command::Blit:
+			{
+				if (m_bBlitFunctionNeedsUpdate)
+				{
+					_updateBlitFunctions();
+					m_bBlitFunctionNeedsUpdate = false;
+				}
+
+				int32_t nRects = *p++;
+				int32_t transform = *p++;
+
+				int32_t srcX = *p++;
+				int32_t srcY = *p++;
+				int32_t dstX = *p++;
+				int32_t dstY = *p++;
+
+				bool bTiling = m_pCanvas->isTiling();
+
+				if (transform <= int(GfxFlip_max) )
+				{
+					const Transform& mtx = s_blitFlipTransforms[transform];
+
+					// Step forward _src by half a pixel, so we start from correct pixel.
+
+					srcX += (mtx.xx + mtx.yx) * 32;
+					srcY += (mtx.xy + mtx.yy) * 32;
+
+					//
+
+					for (int i = 0; i < nRects; i++)
+					{
+						RectI	patch;
+
+						patch.x = *p++ / 64;
+						patch.y = *p++ / 64;
+						patch.w = *p++ / 64;
+						patch.h = *p++ / 64;
+
+						CoordI src = { srcX / 64, srcY / 64 };
+						CoordI dest = { dstX / 64, dstY / 64 };
+
+						CoordI	patchOfs = patch.pos() - dest;
+
+
+						//
+
+						src.x += patchOfs.x * mtx.xx + patchOfs.y * mtx.yx;
+						src.y += patchOfs.x * mtx.xy + patchOfs.y * mtx.yy;
+
+						if (bTiling)
+							(this->*m_pStraightBlitOp)(patch, src, mtx, patch.pos(), m_pStraightBlitFirstPassOp);
+						else
+							(this->*m_pStraightTileOp)(patch, src, mtx, patch.pos(), m_pStraightTileFirstPassOp);
+					}
+				}
+				else
+				{
+
+				}
+
+
+
+
+				break;
+			}
+
+			default:
+				break;
+			}
+		}
 	}
 
 	//____ defineCanvas() _____________________________________________
@@ -310,13 +551,480 @@ namespace wg
 	}
 
 
-	//____ () _____________________________________________
+	//____ maxEdges() _____________________________________________
 
 	int SoftBackend::maxEdges() const
 	{
-
+		return c_maxSegments;
 	}
 
+	//____ setFillKernel() ____________________________________________________
+
+	bool SoftBackend::setFillKernel(TintMode tintMode, BlendMode blendMode, PixelFormat destFormat, FillOp_p pKernel)
+	{
+		if (!_setupDestFormatKernels(destFormat))
+			return false;
+
+		m_pKernels[(int)destFormat]->pFillKernels[(int)tintMode][(int)blendMode] = pKernel;
+		return true;
+	}
+
+	//____ setStraightBlitKernel() ____________________________________________
+
+	bool SoftBackend::setStraightBlitKernel(PixelFormat sourceFormat, SoftBackend::ReadOp readOp, TintMode tintMode, BlendMode blendMode, PixelFormat destFormat, StraightBlitOp_p pKernel)
+	{
+		bool success = false;
+
+		if (_setupDestFormatKernels(destFormat))
+		{
+			int singlePassKernelsIdx = m_pKernels[(int)destFormat]->singlePassBlitKernels[(int)sourceFormat];
+			if (singlePassKernelsIdx == 0)
+			{
+				m_singlePassBlitKernels.emplace_back();
+				singlePassKernelsIdx = (int)m_singlePassBlitKernels.size();
+				m_pKernels[(int)destFormat]->singlePassBlitKernels[(int)sourceFormat] = (uint16_t)singlePassKernelsIdx;
+			}
+			singlePassKernelsIdx--;
+
+			int straightBlitKernelsIdx = m_singlePassBlitKernels[singlePassKernelsIdx].straightBlitKernels[(int)blendMode];
+			if (straightBlitKernelsIdx == 0)
+			{
+				m_singlePassStraightBlitKernels.emplace_back();
+				straightBlitKernelsIdx = (int)m_singlePassStraightBlitKernels.size();
+				m_singlePassBlitKernels[singlePassKernelsIdx].straightBlitKernels[(int)blendMode] = straightBlitKernelsIdx;
+			}
+			straightBlitKernelsIdx--;
+
+			m_singlePassStraightBlitKernels[straightBlitKernelsIdx].pKernels[(int)readOp][(int)tintMode] = pKernel;
+			success = true;
+
+			if (sourceFormat == PixelFormat::Undefined && readOp == ReadOp::Normal)
+				m_pKernels[(int)destFormat]->pStraightBlitFromHiColorKernels[(int)tintMode][(int)blendMode] = pKernel;
+
+			if (sourceFormat == PixelFormat::BGRA_8_linear && readOp == ReadOp::Normal)
+				m_pKernels[(int)destFormat]->pStraightBlitFromBGRA8Kernels[(int)tintMode][(int)blendMode] = pKernel;
+		}
+
+		if (destFormat == PixelFormat::Undefined && blendMode == BlendMode::Replace && tintMode == TintMode::None)			// Special case for HiColor destination.
+		{
+			m_pStraightMoveToHiColorKernels[(int)sourceFormat][(int)readOp] = pKernel;
+			success = true;
+		}
+
+		if (destFormat == PixelFormat::BGRA_8_linear && blendMode == BlendMode::Replace && tintMode == TintMode::None)		// Special case for HiColor destination.
+		{
+			m_pStraightMoveToBGRA8Kernels[(int)sourceFormat][(int)readOp] = pKernel;
+			success = true;
+		}
+
+		return success;
+	}
+
+	//____ _onePassStraightBlit() _____________________________________________
+
+	void SoftBackend::_onePassStraightBlit(const RectI& dest, CoordI src, const Transform& mtx, CoordI patchPos, StraightBlitOp_p pPassOneOp)
+	{
+		const SoftSurface* pSource = m_pBlitSource;
+
+		int srcPixelBytes = pSource->m_pPixelDescription->bits / 8;
+		int dstPixelBytes = m_canvasPixelBits / 8;
+
+		Pitches pitches;
+
+		pitches.srcX = srcPixelBytes * mtx.xx + pSource->m_pitch * mtx.xy;
+		pitches.dstX = dstPixelBytes;
+		pitches.srcY = srcPixelBytes * mtx.yx + pSource->m_pitch * mtx.yy - pitches.srcX * dest.w;
+		pitches.dstY = m_canvasPitch - dstPixelBytes * dest.w;
+
+		uint8_t* pDst = m_pCanvasPixels + dest.y * m_canvasPitch + dest.x * dstPixelBytes;
+		uint8_t* pSrc = pSource->m_pData + src.y * pSource->m_pitch + src.x * srcPixelBytes;
+
+		pPassOneOp(pSrc, pDst, pSource, pitches, dest.h, dest.w, m_colTrans, patchPos, &mtx);
+	}
+
+	//____ _twoPassStraightBlit() _____________________________________________
+
+	void SoftBackend::_twoPassStraightBlit(const RectI& dest, CoordI src, const Transform& mtx, CoordI patchPos, StraightBlitOp_p pPassOneOp)
+	{
+		SoftSurface* pSource = m_pBlitSource;
+
+		int srcPixelBytes = pSource->m_pPixelDescription->bits / 8;
+		int dstPixelBytes = m_canvasPixelBits / 8;
+
+		Pitches pitchesPass1, pitchesPass2;
+
+		pitchesPass1.srcX = srcPixelBytes * mtx.xx + pSource->m_pitch * mtx.xy;
+		pitchesPass1.dstX = 8;
+		pitchesPass1.srcY = srcPixelBytes * mtx.yx + pSource->m_pitch * mtx.yy - pitchesPass1.srcX * dest.w;
+		pitchesPass1.dstY = 0;
+
+		pitchesPass2.srcX = 8;
+		pitchesPass2.dstX = dstPixelBytes;
+		pitchesPass2.srcY = 0;
+		pitchesPass2.dstY = m_canvasPitch - dstPixelBytes * dest.w;
+
+		int chunkLines;
+
+		if (dest.w >= 2048)
+			chunkLines = 1;
+		else if (dest.w * dest.h <= 2048)
+			chunkLines = dest.h;
+		else
+			chunkLines = 2048 / dest.w;
+
+		int memBufferSize = chunkLines * dest.w * 8;
+
+		uint8_t* pChunkBuffer = (uint8_t*)GfxBase::memStackAlloc(memBufferSize);
+
+		int line = 0;
+
+		while (line < dest.h)
+		{
+			int thisChunkLines = std::min(dest.h - line, chunkLines);
+
+			uint8_t* pDst = m_pCanvasPixels + (dest.y + line) * m_canvasPitch + dest.x * dstPixelBytes;
+			uint8_t* pSrc = pSource->m_pData + src.y * pSource->m_pitch + line * int(srcPixelBytes * mtx.yx + pSource->m_pitch * mtx.yy) + src.x * srcPixelBytes;
+			//			uint8_t * pSrc = pSource->m_pData + (src.y+line) * pSource->m_pitch + src.x * srcPixelBytes;
+
+			pPassOneOp(pSrc, pChunkBuffer, pSource, pitchesPass1, thisChunkLines, dest.w, m_colTrans, { 0,0 }, &mtx);
+			m_pBlitSecondPassOp(pChunkBuffer, pDst, pSource, pitchesPass2, thisChunkLines, dest.w, m_colTrans, patchPos, nullptr);
+
+			patchPos.y += thisChunkLines;
+			line += thisChunkLines;
+		}
+
+		GfxBase::memStackFree(memBufferSize);
+	}
+
+	//____ _onePassTransformBlit() ____________________________________________
+
+	void SoftBackend::_onePassTransformBlit(const RectI& dest, BinalCoord pos, const Transform& mtx, CoordI patchPos, TransformBlitOp_p pPassOneOp)
+	{
+		const SoftSurface* pSource = m_pBlitSource;
+
+		int dstPixelBytes = m_canvasPixelBits / 8;
+
+		uint8_t* pDst = m_pCanvasPixels + dest.y * m_canvasPitch + dest.x * dstPixelBytes;
+
+		pPassOneOp(pSource, pos, &mtx, pDst, dstPixelBytes, m_canvasPitch - dstPixelBytes * dest.w, dest.h, dest.w, m_colTrans, patchPos);
+	}
+
+
+	//____ _twoPassTransformBlit() ____________________________________________
+
+	void SoftBackend::_twoPassTransformBlit(const RectI& dest, BinalCoord pos, const Transform& mtx,
+		CoordI patchPos, TransformBlitOp_p pPassOneOp)
+	{
+		const SoftSurface* pSource = m_pBlitSource;
+
+		int dstPixelBytes = m_canvasPixelBits / 8;
+
+		Pitches pitchesPass2;
+
+		pitchesPass2.srcX = 8;
+		pitchesPass2.dstX = dstPixelBytes;
+		pitchesPass2.srcY = 0;
+		pitchesPass2.dstY = m_canvasPitch - dstPixelBytes * dest.w;
+
+		int chunkLines;
+
+		if (dest.w >= 2048)
+			chunkLines = 1;
+		else if (dest.w * dest.h <= 2048)
+			chunkLines = dest.h;
+		else
+			chunkLines = 2048 / dest.w;
+
+		int memBufferSize = chunkLines * dest.w * 8;
+
+		uint8_t* pChunkBuffer = (uint8_t*)GfxBase::memStackAlloc(memBufferSize);
+
+		int line = 0;
+
+		while (line < dest.h)
+		{
+			int thisChunkLines = std::min(dest.h - line, chunkLines);
+
+			uint8_t* pDst = m_pCanvasPixels + (dest.y + line) * m_canvasPitch + dest.x * dstPixelBytes;
+
+			pPassOneOp(pSource, pos, &mtx, pChunkBuffer, 8, 0, thisChunkLines, dest.w, m_colTrans, { 0,0 });
+			m_pBlitSecondPassOp(pChunkBuffer, pDst, pSource, pitchesPass2, thisChunkLines, dest.w, m_colTrans, patchPos, nullptr);
+
+			pos.x += mtx.yx * thisChunkLines;
+			pos.y += mtx.yy * thisChunkLines;
+
+			patchPos.y += thisChunkLines;
+			line += thisChunkLines;
+		}
+
+		GfxBase::memStackFree(memBufferSize);
+	}
+
+	//____ _dummyStraightBlit() _________________________________________________
+
+	void SoftBackend::_dummyStraightBlit(const RectI& dest, CoordI pos, const Transform& mtx, CoordI patchPos, StraightBlitOp_p pPassOneOp)
+	{
+		if (m_blendMode == BlendMode::Ignore)
+			return;
+
+		char errorMsg[1024];
+
+		snprintf(errorMsg, 1024, "Failed blit operation. SoftGfxDevice is missing straight blit kernel for:\n source format = %s\n tile = %s\n tint mode = %s\n blend mode = %s\n, dest format = %s\n", toString(m_pBlitSource->pixelFormat()),
+			m_pBlitSource->isTiling() ? "true" : "false",
+			toString(m_colTrans.mode),
+			toString(m_blendMode),
+			toString(m_canvasPixelFormat));
+
+		GfxBase::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, errorMsg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+	}
+
+	//____ _dummyTransformBlit() ________________________________________________
+
+	void SoftBackend::_dummyTransformBlit(const RectI& dest, BinalCoord pos, const Transform& mtx, CoordI patchPos, TransformBlitOp_p pPassOneOp)
+	{
+/*
+		if (m_blendMode == BlendMode::Ignore)
+			return;
+
+		char errorMsg[1024];
+		snprintf(errorMsg, 1024, "Failed blit operation. SoftGfxDevice is missing transform blit kernel for:\n source format = %s\n sample method = %s\n tile = %s\n clip = %s\n tint mode = %s\n blend mode = %s\n, dest format = %s\n", toString(m_pBlitSource->pixelFormat()),
+			toString(m_pBlitSource->sampleMethod()),
+			m_pBlitSource->isTiling() ? "true" : "false",
+			m_bClipSource ? "true" : "false",
+			toString(m_colTrans.mode),
+			toString(m_blendMode),
+			toString(m_canvasPixelFormat));
+
+		GfxBase::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, errorMsg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+*/
+	}
+
+	//____ _updateBlitFunctions() _____________________________________________
+
+	void SoftBackend::_updateBlitFunctions()
+	{
+		// Start with dummy kernels.
+
+		m_pStraightBlitOp = &SoftBackend::_dummyStraightBlit;
+		m_pStraightTileOp = &SoftBackend::_dummyStraightBlit;
+		m_pStraightBlurOp = &SoftBackend::_dummyStraightBlit;
+
+		m_pTransformBlitOp = &SoftBackend::_dummyTransformBlit;
+		m_pTransformClipBlitOp = &SoftBackend::_dummyTransformBlit;
+		m_pTransformTileOp = &SoftBackend::_dummyTransformBlit;
+		m_pTransformBlurOp = &SoftBackend::_dummyTransformBlit;
+
+		// Sanity checking...
+
+		if (/*!m_pRenderLayerSurface ||*/ !m_pBlitSource /*|| !m_pCanvasPixels*/ || !m_pBlitSource->m_pData || m_blendMode == BlendMode::Ignore)
+			return;
+
+		//
+
+		SampleMethod	sampleMethod = m_pBlitSource->sampleMethod();
+		PixelFormat		srcFormat = m_pBlitSource->m_pixelFormat;
+		PixelFormat		dstFormat = m_canvasPixelFormat;
+
+		BlendMode		blendMode = m_blendMode;
+
+		if (m_pKernels[(int)dstFormat] == nullptr)
+			return;
+
+		// Optimize BlendMode
+
+		// TODO: Optimize by having flag for alpha in m_colTrans, which also is calculated on gradient tints.
+
+		if (m_colTrans.mode == TintMode::None || (m_colTrans.mode == TintMode::Flat && m_colTrans.flatTintColor.a == 4096))
+		{
+			// TODO: Optimize by using a lookup table.
+
+			if (blendMode == BlendMode::Blend && (srcFormat == PixelFormat::RGB_565_bigendian ||
+				srcFormat == PixelFormat::RGB_555_bigendian || srcFormat == PixelFormat::BGR_8_sRGB ||
+				srcFormat == PixelFormat::BGR_8_linear || srcFormat == PixelFormat::BGR_565_linear ||
+				srcFormat == PixelFormat::BGRX_8_sRGB || srcFormat == PixelFormat::BGRX_8_linear))
+			{
+				blendMode = BlendMode::Replace;
+			}
+		}
+
+		// Add two-pass rendering fallback.
+
+		auto pixelDescSource = Util::pixelFormatToDescription(srcFormat);
+		auto pixelDescDest = Util::pixelFormatToDescription(dstFormat);
+
+		if ((pixelDescDest.colorSpace == ColorSpace::Linear || dstFormat == PixelFormat::Alpha_8) && (pixelDescSource.colorSpace == ColorSpace::Linear || srcFormat == PixelFormat::Alpha_8))
+		{
+			m_pStraightBlitFirstPassOp = m_pStraightMoveToBGRA8Kernels[(int)srcFormat][int(ReadOp::Normal)];
+			m_pStraightTileFirstPassOp = m_pStraightMoveToBGRA8Kernels[(int)srcFormat][int(ReadOp::Tile)];
+			m_pStraightBlurFirstPassOp = m_pStraightMoveToBGRA8Kernels[(int)srcFormat][int(ReadOp::Blur)];
+			m_pTransformBlitFirstPassOp = m_pTransformMoveToBGRA8Kernels[(int)srcFormat][(int)sampleMethod][int(ReadOp::Normal)];
+			m_pTransformTileFirstPassOp = m_pTransformMoveToBGRA8Kernels[(int)srcFormat][(int)sampleMethod][int(ReadOp::Tile)];
+			m_pTransformClipBlitFirstPassOp = m_pTransformMoveToBGRA8Kernels[(int)srcFormat][(int)sampleMethod][int(ReadOp::Clip)];
+			m_pTransformBlurFirstPassOp = m_pTransformMoveToBGRA8Kernels[(int)srcFormat][(int)sampleMethod][int(ReadOp::Blur)];
+
+			m_pBlitSecondPassOp = m_pKernels[(int)dstFormat]->pStraightBlitFromBGRA8Kernels[(int)m_colTrans.mode][(int)blendMode];
+		}
+		else
+		{
+			m_pStraightBlitFirstPassOp = m_pStraightMoveToHiColorKernels[(int)srcFormat][int(ReadOp::Normal)];
+			m_pStraightTileFirstPassOp = m_pStraightMoveToHiColorKernels[(int)srcFormat][int(ReadOp::Tile)];
+			m_pStraightBlurFirstPassOp = m_pStraightMoveToHiColorKernels[(int)srcFormat][int(ReadOp::Blur)];
+			m_pTransformBlitFirstPassOp = m_pTransformMoveToHiColorKernels[(int)srcFormat][(int)sampleMethod][int(ReadOp::Normal)];
+			m_pTransformTileFirstPassOp = m_pTransformMoveToHiColorKernels[(int)srcFormat][(int)sampleMethod][int(ReadOp::Tile)];
+			m_pTransformClipBlitFirstPassOp = m_pTransformMoveToHiColorKernels[(int)srcFormat][(int)sampleMethod][int(ReadOp::Clip)];
+			m_pTransformBlurFirstPassOp = m_pTransformMoveToHiColorKernels[(int)srcFormat][(int)sampleMethod][int(ReadOp::Blur)];
+
+			m_pBlitSecondPassOp = m_pKernels[(int)dstFormat]->pStraightBlitFromHiColorKernels[(int)m_colTrans.mode][(int)blendMode];
+		}
+
+
+		// Try to find suitable one-pass kernels.
+
+		StraightBlitOp_p	pStraightBlitSinglePassKernel = nullptr;
+		StraightBlitOp_p	pStraightTileSinglePassKernel = nullptr;
+		StraightBlitOp_p	pStraightBlurSinglePassKernel = nullptr;
+		TransformBlitOp_p	pTransformBlitSinglePassKernel = nullptr;
+		TransformBlitOp_p	pTransformTileSinglePassKernel = nullptr;
+		TransformBlitOp_p	pTransformClipBlitSinglePassKernel = nullptr;
+		TransformBlitOp_p	pTransformBlurSinglePassKernel = nullptr;
+
+
+		int singleBlitKernelsIdx = m_pKernels[(int)dstFormat]->singlePassBlitKernels[(int)srcFormat];
+		if (singleBlitKernelsIdx > 0)
+		{
+			auto pSingleBlitKernels = &m_singlePassBlitKernels[singleBlitKernelsIdx - 1];
+
+			int straightBlitKernelsIdx = pSingleBlitKernels->straightBlitKernels[(int)blendMode];
+			int transformBlitKernelsIdx = pSingleBlitKernels->transformBlitKernels[(int)blendMode];
+
+			if (straightBlitKernelsIdx > 0)
+			{
+				auto pStraightBlitKernels = m_singlePassStraightBlitKernels[straightBlitKernelsIdx - 1].pKernels;
+
+				pStraightBlitSinglePassKernel = pStraightBlitKernels[int(ReadOp::Normal)][int(m_colTrans.mode)];
+				pStraightTileSinglePassKernel = pStraightBlitKernels[int(ReadOp::Tile)][int(m_colTrans.mode)];
+				pStraightBlurSinglePassKernel = pStraightBlitKernels[int(ReadOp::Blur)][int(m_colTrans.mode)];
+			}
+
+			if (transformBlitKernelsIdx > 0)
+			{
+				auto pTransformBlitKernels = m_singlePassTransformBlitKernels[transformBlitKernelsIdx - 1].pKernels;
+
+				pTransformBlitSinglePassKernel = pTransformBlitKernels[(int)sampleMethod][int(ReadOp::Normal)][int(m_colTrans.mode)];
+				pTransformTileSinglePassKernel = pTransformBlitKernels[(int)sampleMethod][int(ReadOp::Tile)][int(m_colTrans.mode)];
+				pTransformClipBlitSinglePassKernel = pTransformBlitKernels[(int)sampleMethod][int(ReadOp::Clip)][int(m_colTrans.mode)];
+				pTransformBlurSinglePassKernel = pTransformBlitKernels[(int)sampleMethod][int(ReadOp::Blur)][int(m_colTrans.mode)];
+			}
+		}
+
+		// Set kernels to use
+
+		if (pStraightBlitSinglePassKernel)
+		{
+			m_pStraightBlitOp = &SoftBackend::_onePassStraightBlit;
+			m_pStraightBlitFirstPassOp = pStraightBlitSinglePassKernel;
+		}
+		else if (m_pStraightBlitFirstPassOp && m_pBlitSecondPassOp)
+			m_pStraightBlitOp = &SoftBackend::_twoPassStraightBlit;
+
+
+		if (pStraightTileSinglePassKernel)
+		{
+			m_pStraightTileOp = &SoftBackend::_onePassStraightBlit;
+			m_pStraightTileFirstPassOp = pStraightTileSinglePassKernel;
+		}
+		else if (m_pStraightTileFirstPassOp && m_pBlitSecondPassOp)
+			m_pStraightTileOp = &SoftBackend::_twoPassStraightBlit;
+
+		if (pStraightBlurSinglePassKernel)
+		{
+			m_pStraightBlurOp = &SoftBackend::_onePassStraightBlit;
+			m_pStraightBlurFirstPassOp = pStraightBlurSinglePassKernel;
+		}
+		else if (m_pStraightBlurFirstPassOp && m_pBlitSecondPassOp)
+			m_pStraightBlurOp = &SoftBackend::_twoPassStraightBlit;
+
+
+
+		if (pTransformBlitSinglePassKernel)
+		{
+			m_pTransformBlitOp = &SoftBackend::_onePassTransformBlit;
+			m_pTransformBlitFirstPassOp = pTransformBlitSinglePassKernel;
+		}
+		else if (m_pTransformBlitFirstPassOp && m_pBlitSecondPassOp)
+			m_pTransformBlitOp = &SoftBackend::_twoPassTransformBlit;
+
+
+		if (pTransformClipBlitSinglePassKernel)
+		{
+			m_pTransformClipBlitOp = &SoftBackend::_onePassTransformBlit;
+			m_pTransformClipBlitFirstPassOp = pTransformClipBlitSinglePassKernel;
+		}
+		else if (m_pTransformClipBlitFirstPassOp && m_pBlitSecondPassOp)
+			m_pTransformClipBlitOp = &SoftBackend::_twoPassTransformBlit;
+
+
+		if (pTransformTileSinglePassKernel)
+		{
+			m_pTransformTileOp = &SoftBackend::_onePassTransformBlit;
+			m_pTransformTileFirstPassOp = pTransformTileSinglePassKernel;
+		}
+		else if (m_pTransformTileFirstPassOp && m_pBlitSecondPassOp)
+			m_pTransformTileOp = &SoftBackend::_twoPassTransformBlit;
+
+		if (pTransformBlurSinglePassKernel)
+		{
+			m_pTransformBlurOp = &SoftBackend::_onePassTransformBlit;
+			m_pTransformBlurFirstPassOp = pTransformBlurSinglePassKernel;
+		}
+		else if (m_pTransformBlurFirstPassOp && m_pBlitSecondPassOp)
+			m_pTransformBlurOp = &SoftBackend::_twoPassTransformBlit;
+
+
+		return;
+	}
+
+	//____ _updateTintMode() ___________________________________________________
+
+	void SoftBackend::_updateTintMode()
+	{
+		TintMode mode;
+
+		if (!m_colTrans.pTintAxisX && !m_colTrans.pTintAxisY)
+			mode = m_colTrans.flatTintColor.isOpaqueWhite() ? TintMode::None : TintMode::Flat;
+		else if (m_colTrans.pTintAxisX && m_colTrans.pTintAxisY)
+			mode = TintMode::GradientXY;
+		else if (m_colTrans.pTintAxisX)
+			mode = TintMode::GradientX;
+		else
+			mode = TintMode::GradientY;
+
+		if (mode != m_colTrans.mode)
+		{
+			m_colTrans.mode = mode;
+			m_bBlitFunctionNeedsUpdate = true;
+		}
+	}
+
+	//____ _setupDestFormatKernels() _____________________________________________
+
+	bool SoftBackend::_setupDestFormatKernels(PixelFormat format)
+	{
+		if (format != PixelFormat::BGR_8_sRGB && format != PixelFormat::BGR_8_linear &&
+			format != PixelFormat::BGRX_8_sRGB && format != PixelFormat::BGRX_8_linear &&
+			format != PixelFormat::BGRA_8_sRGB && format != PixelFormat::BGRA_8_linear &&
+			format != PixelFormat::BGRA_4_linear && format != PixelFormat::BGR_565_linear &&
+			format != PixelFormat::Alpha_8 && format != PixelFormat::RGB_565_bigendian &&
+			format != PixelFormat::RGB_555_bigendian)
+		{
+			return false;
+		}
+
+		if (!m_pKernels[(int)format])
+			m_pKernels[(int)format] = new DestFormatKernels();
+
+		return true;
+	}
 
 	//____ _initTables() ____________________________________________________
 
@@ -352,7 +1060,19 @@ namespace wg
 		}
 	}
 
+	//____ DestFormatKernels::constructor ________________________________________
 
+	SoftBackend::DestFormatKernels::DestFormatKernels()
+	{
+		std::memset(this, 0, sizeof(DestFormatKernels));
+	}
+
+	//____ SinglePassBlitKernels::constructor ____________________________________
+
+	SoftBackend::SinglePassBlitKernels::SinglePassBlitKernels()
+	{
+		std::memset(this, 0, sizeof(SinglePassBlitKernels));
+	}
 
 
 } // namespace wg
