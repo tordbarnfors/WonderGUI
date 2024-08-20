@@ -70,8 +70,9 @@ namespace wg
 		SurfaceFactory_p	surfaceFactory() override;
 		EdgemapFactory_p	edgemapFactory() override;
 
-		int		maxEdges() const;
+		int		maxEdges() const override;
 
+		const TypeInfo& surfaceType(void) const override;
 
 
 	protected:

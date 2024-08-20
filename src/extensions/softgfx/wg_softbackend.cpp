@@ -558,6 +558,14 @@ namespace wg
 		return c_maxSegments;
 	}
 
+	//____ surfaceType() ______________________________________________________
+
+	const TypeInfo& SoftBackend::surfaceType(void) const
+	{
+		return SoftSurface::TYPEINFO;
+	}
+
+
 	//____ setFillKernel() ____________________________________________________
 
 	bool SoftBackend::setFillKernel(TintMode tintMode, BlendMode blendMode, PixelFormat destFormat, FillOp_p pKernel)

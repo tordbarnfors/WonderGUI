@@ -37,7 +37,7 @@ namespace wg
 
 	const TypeInfo GfxDeviceGen2::TYPEINFO = { "GfxDeviceGen2", &GfxDevice::TYPEINFO };
 
-	const TypeInfo s_surfaceType = { "SurfaceType is not used in GfxDevice Gen 2", &Surface::TYPEINFO };
+	const TypeInfo s_surfaceType = { "Unkown SurfaceType, backend missing", &Surface::TYPEINFO };
 
 
 
@@ -85,7 +85,7 @@ const TypeInfo& GfxDeviceGen2::typeInfo(void) const
 
 const TypeInfo& GfxDeviceGen2::surfaceType(void) const
 {
-	return s_surfaceType;
+	return m_pBackend ? m_pBackend->surfaceType() : s_surfaceType;
 }
 
 
@@ -760,7 +760,7 @@ void GfxDeviceGen2::fill(HiColor color)
 
 	//
 
-	if (m_pActiveLayer->currentState.stateChanges != 0)
+	if (m_renderState.stateChanges != 0)
 		_encodeStateChanges();
 
 	m_pActiveLayer->commands.push_back(int(Command::Fill));
@@ -826,7 +826,7 @@ void GfxDeviceGen2::fill(const RectSPX& rect, HiColor color)
 
 	if( nRects > 0 )
 	{
-		if (m_pActiveLayer->currentState.stateChanges != 0)
+		if (m_renderState.stateChanges != 0)
 			_encodeStateChanges();
 
 		m_pActiveLayer->commands.push_back(int(Command::Fill));
@@ -907,7 +907,7 @@ void GfxDeviceGen2::_transformBlitSimple(const RectSPX& _dest, CoordSPX src, int
 	
 	if( nRects > 0 )
 	{
-		if (m_pActiveLayer->currentState.stateChanges != 0)
+		if (m_renderState.stateChanges != 0)
 			_encodeStateChanges();
 
 		m_pActiveLayer->commands.push_back(int(cmd));
@@ -1003,6 +1003,8 @@ void GfxDeviceGen2::_encodeStateChanges()
 	// Store state changes for this layer session.
 
 	m_pActiveLayer->currentState.stateChanges |= m_renderState.stateChanges;
+
+	m_renderState.stateChanges = 0;
 }
 
 

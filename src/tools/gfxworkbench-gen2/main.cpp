@@ -161,11 +161,11 @@ int main ( int argc, char** argv )
 	pPrinter->setGfxDevice(pGfxDevice);
 	pPrinter->setCursorOrigo({0,20*64});
 	
-/*
-	pSDLSurf = SDL_LoadBMP( "resources/definitely_srgb.bmp" );
+
+	pSDLSurf = SDL_LoadBMP( "resources/simple_button.bmp" );
 	SoftSurface_p pSRGBSurface = SoftSurface::create({ .format = PixelFormat::BGRA_8_sRGB, .size = SizeI(pSDLSurf->w, pSDLSurf->h) }, (unsigned char*)pSDLSurf->pixels, PixelFormat::BGRA_8_sRGB, pSDLSurf->pitch, 0);
 	SDL_FreeSurface(pSDLSurf);
-*/
+
 
 	//
 /*
@@ -255,6 +255,10 @@ int main ( int argc, char** argv )
 		 pHoverWithFocusSkin->_render(pGfxDevice, RectSPX(5, 105, 20, 20) * 64, 64, State::SelectedHoveredFocused);
 		
 		
+		 pGfxDevice->setBlitSource(pSRGBSurface);
+		 pGfxDevice->blit({ 0,0 });
+
+
 		//
 		
 /*

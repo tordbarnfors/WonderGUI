@@ -1466,7 +1466,7 @@ void _fill(uint8_t* pDst, int pitchX, int pitchY, int nLines, int lineLength, Hi
 //_____ _straight_blit() ____________________________________________________________
 
 template<PixelFormat SRCFORMAT, TintMode TINT, BlendMode BLEND, PixelFormat DSTFORMAT, SoftBackend::ReadOp READOP>
-void _straight_blit(const uint8_t* pSrc, uint8_t* pDst, const SoftSurface* pSrcSurf, const SoftBackend::Pitches& pitches, int nLines, int lineLength, const SoftBackend::ColTrans& tint, CoordI patchPos, const int simpleTransform[2][2])
+void _straight_blit(const uint8_t* pSrc, uint8_t* pDst, const SoftSurface* pSrcSurf, const SoftBackend::Pitches& pitches, int nLines, int lineLength, const SoftBackend::ColTrans& tint, CoordI patchPos, const SoftBackend::Transform * pMatrix)
 {
 	bool	bFast8 = false;
 	int		bits = 12;
@@ -1686,8 +1686,8 @@ void _straight_blit(const uint8_t* pSrc, uint8_t* pDst, const SoftSurface* pSrcS
 
 			if (READOP == SoftBackend::ReadOp::Tile || READOP == SoftBackend::ReadOp::Blur)
 			{
-				srcX += simpleTransform[0][0];
-				srcY += simpleTransform[0][1];
+				srcX += pMatrix->xx;
+				srcY += pMatrix->xy;
 			}
 			else
 				pSrc += pitches.srcX;
@@ -1697,8 +1697,8 @@ void _straight_blit(const uint8_t* pSrc, uint8_t* pDst, const SoftSurface* pSrcS
 
 		if (READOP == SoftBackend::ReadOp::Tile || READOP == SoftBackend::ReadOp::Blur)
 		{
-			srcX += simpleTransform[1][0];
-			srcY += simpleTransform[1][1];
+			srcX += pMatrix->yx;
+			srcY += pMatrix->yy;
 		}
 		else
 			pSrc += pitches.srcY;

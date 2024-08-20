@@ -81,6 +81,9 @@ namespace wg
 
 		int		maxEdges() const override;
 
+		const TypeInfo& surfaceType(void) const override;
+
+
 		//.____ Internal _____________________________________________________
 
 		struct Pitches

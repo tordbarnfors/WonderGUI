@@ -26,6 +26,8 @@ namespace wg
 {
 	const TypeInfo BackendLogger::TYPEINFO = { "BackendLogger", &GfxBackend::TYPEINFO };
 
+	const TypeInfo s_unspecifiedSurfaceType = { "SurfaceType Unspecified, real backend missing", &Surface::TYPEINFO };
+
 
 	//____ typeInfo() _________________________________________________________
 
@@ -263,6 +265,8 @@ namespace wg
 				int32_t dstY = *p++;
 
 				*m_pStream << "Blit: " << nRects << " rects with transform: " << transform << ", src: " << srcX << ", " << srcY << " dest: " << dstX << ", " << dstY << std::endl;
+
+				break;
 			}
 
 			default:
@@ -323,7 +327,7 @@ namespace wg
 		EdgemapFactory_p pFactory = nullptr;
 
 		if (m_pBackend)
-			m_pBackend->edgemapFactory();
+			pFactory = m_pBackend->edgemapFactory();
 
 		*m_pStream << "Called edgemapFactory(). Returned: " << pFactory.rawPtr() << std::endl;
 
@@ -337,12 +341,23 @@ namespace wg
 		int maxEdges = 0;
 
 		if (m_pBackend)
-			m_pBackend->edgemapFactory();
+			maxEdges = m_pBackend->maxEdges();
 
 		*m_pStream << "Called maxEdges(). Returned: " << maxEdges << std::endl;
 
 		return maxEdges;
 
+	}
+
+	//____ surfaceType() ______________________________________________________
+
+	const TypeInfo& BackendLogger::surfaceType(void) const
+	{
+		const TypeInfo& ref = m_pBackend ? m_pBackend->surfaceType() : s_unspecifiedSurfaceType;
+
+		*m_pStream << "Called surfaceType(). Returned: " << ref.className << std::endl;
+
+		return ref;
 	}
 
 

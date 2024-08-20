@@ -124,6 +124,8 @@ namespace wg
 
 		virtual int		maxEdges() const = 0;
 
+		virtual const TypeInfo& surfaceType(void) const = 0;
+
 
 
 	protected:
