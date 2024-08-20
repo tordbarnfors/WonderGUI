@@ -671,26 +671,96 @@ inline void	_blend_pixels(BlendMode mode, int morphFactor, PixelFormat destForma
 }
 
 
+//____ _color_tint_init() _________________________________________________
+
+inline void _color_tint_init(TintMode tintMode, const SoftBackend::ColTrans& tint, int bits, int16_t inB, int16_t inG, int16_t inR, int16_t inA,
+	int16_t& outB, int16_t& outG, int16_t& outR, int16_t& outA, HiColor*& pTintmapX, HiColor*&  pTintmapY, CoordI patchPos)
+{
+	if (tintMode == TintMode::None)
+	{
+		outR = inR;
+		outG = inG;
+		outB = inB;
+		outA = inA;
+	}
+
+	if (tintMode == TintMode::Flat)
+	{
+		outR = (inR * tint.flatTintColor.r) >> 12;
+		outG = (inG * tint.flatTintColor.g) >> 12;
+		outB = (inB * tint.flatTintColor.b) >> 12;
+		outA = (inA * tint.flatTintColor.a) >> 12;
+	}
+
+	if (tintMode == TintMode::GradientX || tintMode == TintMode::GradientXY)
+	{
+		pTintmapX = tint.pTintAxisX + patchPos.x - tint.tintRect.x;
+	}
+	
+	if (tintMode == TintMode::GradientY || tintMode == TintMode::GradientXY)
+	{
+		pTintmapX = tint.pTintAxisY + patchPos.y - tint.tintRect.y;
+	}
+}
+
+//____ _color_tint_line() _________________________________________________
+
+inline void _color_tint_line(TintMode tintMode, const SoftBackend::ColTrans& tint, int bits, int16_t inB, int16_t inG, int16_t inR, int16_t inA,
+							 int16_t& lineB, int16_t& lineG, int16_t& lineR, int16_t& lineA,
+							 int16_t& outB, int16_t& outG, int16_t& outR, int16_t& outA,
+							 HiColor*& pTintmapX, HiColor*&  pTintmapY, CoordI patchPos)
+{
+	if (tintMode == TintMode::GradientX || tintMode == TintMode::GradientXY )
+	{
+		pTintmapX = tint.pTintAxisX + patchPos.x - tint.tintRect.x;
+	}
+
+	if (tintMode == TintMode::GradientY )
+	{
+		outB = (inB * pTintmapY->b) >> 12;
+		outG = (inG * pTintmapY->g) >> 12;
+		outR = (inR * pTintmapY->r) >> 12;
+		outA = (inA * pTintmapY->a) >> 12;
+
+		pTintmapY++;
+	}
+
+	if (tintMode == TintMode::GradientXY )
+	{
+		lineB = (inB * pTintmapY->b) >> 12;
+		lineG = (inG * pTintmapY->g) >> 12;
+		lineR = (inR * pTintmapY->r) >> 12;
+		lineA = (inA * pTintmapY->a) >> 12;
+
+		pTintmapY++;
+	}
+}
+
 
 //____ _color_tint_pixel() ______________________________________________________
 
-inline void _color_tint_pixel(TintMode tintMode, int bits,
-	int16_t& outB, int16_t& outG, int16_t& outR, int16_t& outA,
-	uint32_t& xIncB, uint32_t& xIncG, uint32_t& xIncR, uint32_t& xIncA,
-	uint32_t& pixelB, uint32_t& pixelG, uint32_t& pixelR, uint32_t& pixelA)
+inline void _color_tint_pixel(TintMode tintMode, int16_t inB, int16_t inG, int16_t inR, int16_t inA,
+							  int16_t& lineB, int16_t& lineG, int16_t& lineR, int16_t& lineA,
+							  int16_t& outB, int16_t& outG, int16_t& outR, int16_t& outA, HiColor*& pTintmapX)
 {
-	if (tintMode == TintMode::GradientX || tintMode == TintMode::GradientXY)
+	if (tintMode == TintMode::GradientX)
 	{
-		outB = pixelB >> (18 - bits);
-		outG = pixelG >> (18 - bits);
-		outR = pixelR >> (18 - bits);
-		outA = pixelA >> (18 - bits);
+		outB = (inB * pTintmapX->b) >> 12;
+		outG = (inG * pTintmapX->g) >> 12;
+		outR = (inR * pTintmapX->r) >> 12;
+		outA = (inA * pTintmapX->a) >> 12;
 
-		pixelB += xIncB;
-		pixelG += xIncG;
-		pixelR += xIncR;
-		pixelA += xIncA;
+		pTintmapX++;
+	}
+	
+	if (tintMode == TintMode::GradientXY)
+	{
+		outB = (lineB * pTintmapX->b) >> 12;
+		outG = (lineG * pTintmapX->g) >> 12;
+		outR = (lineR * pTintmapX->r) >> 12;
+		outA = (lineA * pTintmapX->a) >> 12;
 
+		pTintmapX++;
 	}
 }
 
@@ -1341,26 +1411,21 @@ void _fill(uint8_t* pDst, int pitchX, int pitchY, int nLines, int lineLength, Hi
 	bool bFast8 = false;
 	int		bits = 12;
 
-	if (DSTFORMAT == PixelFormat::Alpha_8 || DSTFORMAT == PixelFormat::BGRA_4_linear ||
-		DSTFORMAT == PixelFormat::BGRA_8_linear || DSTFORMAT == PixelFormat::BGRX_8_linear ||
-		DSTFORMAT == PixelFormat::BGR_565_linear || DSTFORMAT == PixelFormat::RGB_565_bigendian ||
-		DSTFORMAT == PixelFormat::RGB_555_bigendian || DSTFORMAT == PixelFormat::BGR_8_linear)
+	if( TINT == TintMode::None || TINT == TintMode::Flat )
 	{
-		bFast8 = true;
-		bits = 8;
+		if (DSTFORMAT == PixelFormat::Alpha_8 || DSTFORMAT == PixelFormat::BGRA_4_linear ||
+			DSTFORMAT == PixelFormat::BGRA_8_linear || DSTFORMAT == PixelFormat::BGRX_8_linear ||
+			DSTFORMAT == PixelFormat::BGR_565_linear || DSTFORMAT == PixelFormat::RGB_565_bigendian ||
+			DSTFORMAT == PixelFormat::RGB_555_bigendian || DSTFORMAT == PixelFormat::BGR_8_linear)
+		{
+			bFast8 = true;
+			bits = 8;
+		}
 	}
 
 	// Step 1: Read source pixels and prepare tint
 
-	uint32_t	leftB, leftG, leftR, leftA;						// Left side colors when tinting Y
-	uint32_t	rightB, rightG, rightR, rightA;					// Right side colors when tinting X
-	uint32_t	leftIncB, leftIncG, leftIncR, leftIncA;
-	uint32_t	rightIncB, rightIncG, rightIncR, rightIncA;
-	uint32_t	xIncB, xIncG, xIncR, xIncA;
-	uint32_t	pixelB, pixelG, pixelR, pixelA;
-
 	int16_t srcB, srcG, srcR, srcA;
-	int16_t tintedB, tintedG, tintedR, tintedA;
 
 	if (bFast8)
 	{
@@ -1379,12 +1444,16 @@ void _fill(uint8_t* pDst, int pitchX, int pitchY, int nLines, int lineLength, Hi
 		srcA = col.a;
 	}
 
-/*
+	// Prepare Tint
+	
+	int16_t tintedB, tintedG, tintedR, tintedA;
+
+	HiColor * pTintmapX;
+	HiColor * pTintmapY;
+	
 	_color_tint_init(TINT, tint, bits, srcB, srcG, srcR, srcA, tintedB, tintedG, tintedR, tintedA,
-		leftB, leftG, leftR, leftA, rightB, rightG, rightR, rightA,
-		leftIncB, leftIncG, leftIncR, leftIncA, rightIncB, rightIncG, rightIncR, rightIncA,
-		xIncB, xIncG, xIncR, xIncA, patchPos);
-*/
+		pTintmapX, pTintmapY, patchPos);
+
 
 	// Step 2: Setup fixed blend color
 	
@@ -1411,27 +1480,22 @@ void _fill(uint8_t* pDst, int pitchX, int pitchY, int nLines, int lineLength, Hi
 	{
 
 		// Step 3: Apply any vertical tint gradient
-/*
-		_color_tint_line(TINT, tint, bits, srcB, srcG, srcR, srcA, tintedB, tintedG, tintedR, tintedA,
-			leftB, leftG, leftR, leftA, rightB, rightG, rightR, rightA,
-			leftIncB, leftIncG, leftIncR, leftIncA, rightIncB, rightIncG, rightIncR, rightIncA,
-			xIncB, xIncG, xIncR, xIncA, pixelB, pixelG, pixelR, pixelA, patchPos);
-*/
+
+		int16_t lineB, lineG, lineR, lineA;
+
+		_color_tint_line(TINT, tint, bits, srcB, srcG, srcR, srcA,
+						 lineB, lineG, lineR, lineA,
+						 tintedB, tintedG, tintedR, tintedA,
+						 pTintmapX, pTintmapY, patchPos);
 
 		for (int x = 0; x < lineLength; x++)
 		{
 			// Step 4: Apply any horizontal tint gradient
-/*
-			_color_tint_pixel(TINT, bits, tintedB, tintedG, tintedR, tintedA, xIncB, xIncG, xIncR, xIncA,
-				pixelB, pixelG, pixelR, pixelA);
-*/
 
-			tintedB = srcB;
-			tintedG = srcG;
-			tintedR = srcR;
-			tintedA = srcA;
-
-
+			_color_tint_pixel(TINT, srcB, srcG, srcR, srcA,
+							 lineB, lineG, lineR, lineA,
+							 tintedB, tintedG, tintedR, tintedA,
+							 pTintmapX);
 
 			// Step 5: Get color components of background pixel blending into backX
 			// Step 6: Blend srcX and backX into outX

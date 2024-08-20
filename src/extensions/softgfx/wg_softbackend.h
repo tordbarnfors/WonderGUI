@@ -225,6 +225,11 @@ namespace wg
 
 		ColTrans			m_colTrans;
 
+		HiColor *			m_pTintmapXBuffer = nullptr;
+		HiColor *			m_pTintmapYBuffer = nullptr;
+		int					m_tintmapXBufferSize = 0;
+		int					m_tintmapYBufferSize = 0;
+		
 		SoftSurface_p		m_pBlitSource;
 
 		bool				m_bBlitFunctionNeedsUpdate = true;

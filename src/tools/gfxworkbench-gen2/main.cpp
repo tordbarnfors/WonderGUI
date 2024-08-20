@@ -163,7 +163,7 @@ int main ( int argc, char** argv )
 	
 
 	pSDLSurf = SDL_LoadBMP( "resources/simple_button.bmp" );
-	SoftSurface_p pSRGBSurface = SoftSurface::create({ .format = PixelFormat::BGRA_8_sRGB, .size = SizeI(pSDLSurf->w, pSDLSurf->h) }, (unsigned char*)pSDLSurf->pixels, PixelFormat::BGRA_8_sRGB, pSDLSurf->pitch, 0);
+	SoftSurface_p pSRGBSurface = SoftSurface::create({ .format = PixelFormat::BGRA_8_sRGB, .size = SizeI(pSDLSurf->w, pSDLSurf->h) }, (unsigned char*)pSDLSurf->pixels, PixelFormat::BGR_8, pSDLSurf->pitch, 0);
 	SDL_FreeSurface(pSDLSurf);
 
 

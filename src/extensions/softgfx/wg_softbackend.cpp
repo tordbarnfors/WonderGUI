@@ -330,17 +330,43 @@ namespace wg
 				if (statesChanged & uint8_t(StateChange::TintMap))
 				{
 					int32_t objectOfs = *p++;
-					int32_t	x = *p++;
-					int32_t	y = *p++;
-					int32_t	w = *p++;
-					int32_t	h = *p++;
+					int32_t	x = *p++ / 64;
+					int32_t	y = *p++ / 64;
+					int32_t	w = *p++ / 64;
+					int32_t	h = *p++ / 64;
 
 					m_colTrans.tintRect = RectI(x, y, w, h);
 
-					auto pTintMap = static_cast<Tintmap*>(m_pObjectsBeg[objectOfs]);
+					auto pTintmap = static_cast<Tintmap*>(m_pObjectsBeg[objectOfs]);
 
-					//TODO: Set pTintAxisX/Y
+					if( pTintmap->isHorizontal() )
+					{
+						if( m_tintmapXBufferSize < w )
+						{
+							delete m_pTintmapXBuffer;
+							m_pTintmapXBuffer = new HiColor[w];
+							m_tintmapXBufferSize = w;
+						}
+						m_colTrans.pTintAxisX = m_pTintmapXBuffer;
+					}
+					else
+						m_colTrans.pTintAxisX = nullptr;
 
+					if( pTintmap->isVertical() )
+					{
+						if( m_tintmapYBufferSize < h )
+						{
+							delete m_pTintmapYBuffer;
+							m_pTintmapYBuffer = new HiColor[h];
+							m_tintmapYBufferSize = h;
+						}
+						m_colTrans.pTintAxisY = m_pTintmapYBuffer;
+					}
+					else
+						m_colTrans.pTintAxisY = nullptr;
+
+					pTintmap->exportAxisColors({w*64,h*64}, m_pTintmapXBuffer, m_pTintmapYBuffer);
+					
 					_updateTintMode();
 				}
 
@@ -447,10 +473,10 @@ namespace wg
 					{
 						RectI	patch;
 
-						patch.x = *p++ / 64;
-						patch.y = *p++ / 64;
-						patch.w = *p++ / 64;
-						patch.h = *p++ / 64;
+						patch.x = *pCoords++ / 64;
+						patch.y = *pCoords++ / 64;
+						patch.w = *pCoords++ / 64;
+						patch.h = *pCoords++ / 64;
 
 						CoordI src = { srcX / 64, srcY / 64 };
 						CoordI dest = { dstX / 64, dstY / 64 };
@@ -464,9 +490,9 @@ namespace wg
 						src.y += patchOfs.x * mtx.xy + patchOfs.y * mtx.yy;
 
 						if (bTiling)
-							(this->*m_pStraightBlitOp)(patch, src, mtx, patch.pos(), m_pStraightBlitFirstPassOp);
-						else
 							(this->*m_pStraightTileOp)(patch, src, mtx, patch.pos(), m_pStraightTileFirstPassOp);
+						else
+							(this->*m_pStraightBlitOp)(patch, src, mtx, patch.pos(), m_pStraightBlitFirstPassOp);
 					}
 				}
 				else

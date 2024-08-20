@@ -67,140 +67,133 @@ namespace wg
 		const TypeInfo&		typeInfo(void) const override;
 		const static TypeInfo	TYPEINFO;
 
-		virtual const TypeInfo&	surfaceType( void ) const = 0;
+		const TypeInfo&	surfaceType( void ) const override = 0;
 
 		//.____ Misc _______________________________________________________
 
-		inline const CanvasInfo&	canvas() const { return m_canvas; }
-		virtual const CanvasInfo	canvas(CanvasRef ref) const = 0;
+		inline const CanvasInfo&	canvas() const override { return m_canvas; }
+		const CanvasInfo			canvas(CanvasRef ref) const override = 0;
 
-		inline CanvasLayers_p 		canvasLayers() const { return m_pCanvasLayers; }
-
-		virtual SurfaceFactory_p	surfaceFactory() = 0;
-		virtual EdgemapFactory_p	edgemapFactory() = 0;
+		inline CanvasLayers_p 		canvasLayers() const override { return m_pCanvasLayers; }
 
 		static constexpr int		maxSegments() { return c_maxSegments; }
 		
 		//.____ Geometry _________________________________________________
 
-		inline 	SizeSPX		canvasSize() const { return m_canvas.size; }
+		inline 	SizeSPX		canvasSize() const override { return m_canvas.size; }
 
 
 		//.____ State _________________________________________________
 
-		virtual bool		setClipList(int nRectangles, const RectSPX * pRectangles);
-		virtual void		resetClipList();
-		virtual bool		pushClipList(int nRectangles, const RectSPX* pRectangles);
-		virtual bool		popClipList();
+		bool		setClipList(int nRectangles, const RectSPX * pRectangles) override;
+		void		resetClipList() override;
+		bool		pushClipList(int nRectangles, const RectSPX* pRectangles) override;
+		bool		popClipList() override;
 
-		virtual const RectSPX*	clipList() const { return m_pClipRects; }
-		virtual int			clipListSize() const { return m_nClipRects; }
-		virtual const RectSPX&	clipBounds() const { return m_clipBounds; }
+		const RectSPX*	clipList() const override { return m_pClipRects; }
+		int			clipListSize() const override { return m_nClipRects; }
+		const RectSPX&	clipBounds() const override { return m_clipBounds; }
 
-		virtual void		setTintColor( HiColor color );
-		virtual HiColor		tintColor() const { return m_tintColor; }
+		void		setTintColor( HiColor color ) override;
+		HiColor		tintColor() const override { return m_tintColor; }
 
-		virtual void		setTintGradient(const RectSPX& rect, const Gradient& gradient);
-		virtual void		clearTintGradient();
+		void		setTintGradient(const RectSPX& rect, const Gradient& gradient) override;
+		void		clearTintGradient() override;
 
-		virtual void		setTintmap(const RectSPX& rect, Tintmap* pTintmap);
-		virtual void		clearTintmap();
+		void		setTintmap(const RectSPX& rect, Tintmap* pTintmap) override;
+		void		clearTintmap() override;
 
-		virtual bool		setBlendMode( BlendMode blendMode );
-		virtual BlendMode 	blendMode() const { return m_blendMode; }
+		bool		setBlendMode( BlendMode blendMode ) override;
+		BlendMode 	blendMode() const override { return m_blendMode; }
 
-		virtual bool		setBlitSource(Surface * pSource);
-		virtual Surface_p 	blitSource() const { return m_pBlitSource; }
+		bool		setBlitSource(Surface * pSource) override;
+		Surface_p 	blitSource() const override { return m_pBlitSource; }
 
-		virtual void		setMorphFactor(float factor);
-		virtual float		morphFactor() const { return m_morphFactor; }
+		void		setMorphFactor(float factor) override;
+		float		morphFactor() const override { return m_morphFactor; }
 
-		virtual void		setBlurMatrices( spx radius, const float red[9], const float green[9], const float blue[9] );
+		void		setBlurMatrices( spx radius, const float red[9], const float green[9], const float blue[9] ) override;
 		
-		virtual void		setFixedBlendColor( HiColor color );
-		virtual HiColor		fixedBlendColor() const { return m_fixedBlendColor; }
+		void		setFixedBlendColor( HiColor color ) override;
+		HiColor		fixedBlendColor() const  override{ return m_fixedBlendColor; }
 
-		virtual void		setRenderLayer(int layer);
-		virtual int			renderLayer() const { return m_renderLayer; }
+		void		setRenderLayer(int layer) override;
+		int			renderLayer() const  override { return m_renderLayer; }
 
 		
 		
 		
 		//.____ Rendering ________________________________________________
 
-		virtual bool	beginRender();
-		virtual bool	endRender();
-		virtual bool    isRendering();
-		virtual bool	isIdle();
-		virtual void	flush();
+		bool	beginRender() override;
+		bool	endRender() override;
+		bool    isRendering() override;
+		bool	isIdle() override;
+		void	flush() override;
 
-        inline bool     beginCanvasUpdate( CanvasRef canvas, int nUpdateRects = 0, const RectSPX* pUpdateRects = nullptr, CanvasLayers * pLayers = nullptr, int startLayer = -1 );
-        inline bool     beginCanvasUpdate( Surface * pCanvas, int nUpdateRects = 0, const RectSPX* pUpdateRects = nullptr, CanvasLayers * pLayers = nullptr, int startLayer = -1 );
-        virtual void    endCanvasUpdate();
+        inline bool     beginCanvasUpdate( CanvasRef canvas, int nUpdateRects = 0, const RectSPX* pUpdateRects = nullptr, CanvasLayers * pLayers = nullptr, int startLayer = -1 ) override;
+        inline bool     beginCanvasUpdate( Surface * pCanvas, int nUpdateRects = 0, const RectSPX* pUpdateRects = nullptr, CanvasLayers * pLayers = nullptr, int startLayer = -1 ) override;
+        void    		endCanvasUpdate() override;
 
         
 		// Draw methods.
 
-		virtual void	fill(HiColor color);
-		virtual void	fill( const RectSPX& rect, HiColor color ) = 0;
-
-		virtual void    plotPixels( int nCoords, const CoordSPX * pCoords, const HiColor * pColors) = 0;
-
-	 	virtual void	drawLine( CoordSPX begin, CoordSPX end, HiColor color, spx thickness = 64 ) = 0;
-		virtual void	drawLine( CoordSPX begin, Direction dir, spx length, HiColor color, spx thickness = 64 );
+		void	fill(HiColor color) override;
+		void	fill( const RectSPX& rect, HiColor color ) override = 0;
+		void	drawLine( CoordSPX begin, CoordSPX end, HiColor color, spx thickness = 64 ) override = 0;
+		void	drawLine( CoordSPX begin, Direction dir, spx length, HiColor color, spx thickness = 64 ) override;
 
 		// Blit methods
 
-		virtual void	blit(CoordSPX dest);
-		virtual void	blit(CoordSPX dest, const RectSPX& src);
+		void	blit(CoordSPX dest) override;
+		void	blit(CoordSPX dest, const RectSPX& src) override;
 
-		virtual void	flipBlit(CoordSPX dest, GfxFlip flip );
-		virtual void	flipBlit(CoordSPX dest, const RectSPX& src, GfxFlip flip );
+		void	flipBlit(CoordSPX dest, GfxFlip flip ) override;
+		void	flipBlit(CoordSPX dest, const RectSPX& src, GfxFlip flip ) override;
 
-		virtual void	stretchBlit(const RectSPX& dest);
-		virtual void	stretchBlit(const RectSPX& dest, const RectSPX& src);
+		void	stretchBlit(const RectSPX& dest) override;
+		void	stretchBlit(const RectSPX& dest, const RectSPX& src) override;
 
-		virtual void	stretchFlipBlit(const RectSPX& dest, GfxFlip flip);
-		virtual void	stretchFlipBlit(const RectSPX& dest, const RectSPX& src, GfxFlip flip);
+		void	stretchFlipBlit(const RectSPX& dest, GfxFlip flip) override;
+		void	stretchFlipBlit(const RectSPX& dest, const RectSPX& src, GfxFlip flip) override;
 
-		virtual void	precisionBlit(const RectSPX& dest, const RectF& srcSPX);
-		virtual void	transformBlit(const RectSPX& dest, CoordF srcSPX, const float transform[2][2]);
-		virtual void	rotScaleBlit(const RectSPX& dest, float rotationDegrees, float scale, CoordF srcCenter = { 0.5f, 0.5f }, CoordF destCenter = { 0.5f,0.5f });
+		void	precisionBlit(const RectSPX& dest, const RectF& srcSPX) override;
+		void	transformBlit(const RectSPX& dest, CoordF srcSPX, const float transform[2][2]) override;
+		void	rotScaleBlit(const RectSPX& dest, float rotationDegrees, float scale, CoordF srcCenter = { 0.5f, 0.5f }, CoordF destCenter = { 0.5f,0.5f }) override;
 
-		virtual void	tile(const RectSPX& dest, CoordSPX shift = { 0,0 });
-		virtual void	flipTile(const RectSPX& dest, GfxFlip flip, CoordSPX shift = { 0,0 });
+		void	tile(const RectSPX& dest, CoordSPX shift = { 0,0 }) override;
+		void	flipTile(const RectSPX& dest, GfxFlip flip, CoordSPX shift = { 0,0 }) override;
 
-		virtual void	scaleTile(const RectSPX& dest, float scale, CoordSPX shift = { 0,0 });
-		virtual void	scaleFlipTile(const RectSPX& dest, float scale, GfxFlip flip, CoordSPX shift = { 0,0 });
-
-		virtual void	blur(CoordSPX dest);
-		virtual void	blur(CoordSPX dest, const RectSPX& src);
-		virtual void	stretchBlur(const RectSPX& dest);
-		virtual void	stretchBlur(const RectSPX& dest, const RectSPX& src);
-		virtual void	transformBlur(const RectSPX& dest, CoordF srcSPX, const float transform[2][2]);
-		virtual void	rotScaleBlur(const RectSPX& dest, float rotationDegrees, float scale, CoordF srcCenter = { 0.5f, 0.5f }, CoordF destCenter = { 0.5f,0.5f });
+		void	scaleTile(const RectSPX& dest, float scale, CoordSPX shift = { 0,0 }) override;
+		void	scaleFlipTile(const RectSPX& dest, float scale, GfxFlip flip, CoordSPX shift = { 0,0 }) override;
+		void	blur(CoordSPX dest) override;
+		void	blur(CoordSPX dest, const RectSPX& src) override;
+		void	stretchBlur(const RectSPX& dest) override;
+		void	stretchBlur(const RectSPX& dest, const RectSPX& src) override;
+		void	transformBlur(const RectSPX& dest, CoordF srcSPX, const float transform[2][2]) override;
+		void	rotScaleBlur(const RectSPX& dest, float rotationDegrees, float scale, CoordF srcCenter = { 0.5f, 0.5f }, CoordF destCenter = { 0.5f,0.5f }) override;
 
 
 		// Draw segments methods
 
-		virtual void	drawWave(const RectSPX& dest, const WaveLine * pTopBorder, const WaveLine * pBottomBorder, HiColor frontFill, HiColor backFill);
-		virtual void	flipDrawWave(const RectSPX& dest, const WaveLine * pTopBorder, const WaveLine * pBottomBorder, HiColor frontFill, HiColor backFill, GfxFlip flip);
+		void	drawWave(const RectSPX& dest, const WaveLine * pTopBorder, const WaveLine * pBottomBorder, HiColor frontFill, HiColor backFill) override;
+		void	flipDrawWave(const RectSPX& dest, const WaveLine * pTopBorder, const WaveLine * pBottomBorder, HiColor frontFill, HiColor backFill, GfxFlip flip) override;
 
-		virtual void	drawElipse(const RectSPX& canvas, spx thickness, HiColor color, spx outlineThickness = 0, HiColor outlineColor = HiColor::Black);
+		void	drawElipse(const RectSPX& canvas, spx thickness, HiColor color, spx outlineThickness = 0, HiColor outlineColor = HiColor::Black) override;
 
-		virtual void	drawPieChart(const RectSPX& canvas, float start, int nSlices, const float * pSliceSizes, const HiColor * pSliceColors, float hubSize = 0.f, HiColor hubColor = HiColor::Transparent, HiColor backColor = HiColor::Transparent, bool bRectangular = false);
+		void	drawPieChart(const RectSPX& canvas, float start, int nSlices, const float * pSliceSizes, const HiColor * pSliceColors, float hubSize = 0.f, HiColor hubColor = HiColor::Transparent, HiColor backColor = HiColor::Transparent, bool bRectangular = false) override;
 
-		virtual void	drawSegments(const RectSPX& dest, int nSegments, const HiColor * pSegmentColors, int nEdgeStrips, const int * pEdgeStrips, int edgeStripPitch, TintMode tintMode = TintMode::Flat );
-		virtual void	flipDrawSegments(const RectSPX& dest, int nSegments, const HiColor * pSegmentColors, int nEdgeStrips, const int * pEdgeStrips, int edgeStripPitch, GfxFlip flip, TintMode tintMode = TintMode::Flat);
+		void	drawSegments(const RectSPX& dest, int nSegments, const HiColor * pSegmentColors, int nEdgeStrips, const int * pEdgeStrips, int edgeStripPitch, TintMode tintMode = TintMode::Flat ) override;
+		void	flipDrawSegments(const RectSPX& dest, int nSegments, const HiColor * pSegmentColors, int nEdgeStrips, const int * pEdgeStrips, int edgeStripPitch, GfxFlip flip, TintMode tintMode = TintMode::Flat) override;
 
-		virtual void	drawEdgemap(CoordSPX dest, Edgemap * pEdgemap );
-		virtual void	flipDrawEdgemap(CoordSPX dest, Edgemap * pEdgemap, GfxFlip flip) = 0;
+		void	drawEdgemap(CoordSPX dest, Edgemap * pEdgemap ) override;
+		void	flipDrawEdgemap(CoordSPX dest, Edgemap * pEdgemap, GfxFlip flip)  override = 0;
 
 				
 
 		// Special draw/blit methods
 
-		virtual void	blitNinePatch(const RectSPX& dstRect, const BorderSPX& dstFrame, const NinePatch& patch, int scale);
+		void	blitNinePatch(const RectSPX& dstRect, const BorderSPX& dstFrame, const NinePatch& patch, int scale) override;
 
 
 

@@ -85,7 +85,7 @@ namespace wg
 		const CanvasInfo&	canvas() const override;
 		const CanvasInfo	canvas(CanvasRef ref) const override;
 
-		CanvasLayers_p 		canvasLayers() const;
+		CanvasLayers_p 		canvasLayers() const override;
 		
 		SurfaceFactory_p	surfaceFactory() override;
 		EdgemapFactory_p	edgemapFactory() override;

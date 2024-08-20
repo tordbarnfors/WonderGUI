@@ -888,7 +888,7 @@ void GfxDeviceGen2::_transformBlitSimple(const RectSPX& _dest, CoordSPX src, int
 	auto& coords = m_pActiveLayer->coords;
 
 	//TODO: Proper 26:6 support
-	RectI dest = roundToPixels(_dest);
+	RectSPX dest = align(_dest);
 
 	for (int i = 0; i < m_pActiveClipList->nRects; i++)
 	{
