@@ -54,6 +54,21 @@ namespace wg
 															{ 1,1 },				// Rot270FlipX
 															{ 0,0 } };				// Rot270FlipY
 
+	const int GfxDeviceGen2::s_blitFlipTransforms[GfxFlip_size][2][2] = {
+	{ 1,0,0,1 },			// Normal
+	{ -1,0,0,1 },			// FlipX
+	{ 1,0,0,-1 },			// FlipY
+	{ 0,-1,1,0 },			// Rot90
+	{ 0,1,1,0 },			// Rot90FlipX
+	{ 0,-1,-1,0 },			// Rot90FlipY
+	{ -1,0,0,-1 },			// Rot180
+	{ 1,0,0,-1 },			// Rot180FlipX
+	{ -1,0,0,1 },			// Rot180FlipY
+	{ 0,1,-1,0 },			// Rot270
+	{ 0,-1,-1,0 },			// Rot270FlipX
+	{ 0,1,1,0 }				// Rot270FlipY
+	};
+
 
 //____ create _____________________________________________________________
 
@@ -885,6 +900,55 @@ void GfxDeviceGen2::blit(CoordSPX dest, const RectSPX& src)
 		return;
 
 	_transformBlitSimple({ dest, src.size() }, src.pos(), 0, Command::Blit);
+}
+
+//____ flipBlit() _________________________________________________________
+
+void GfxDeviceGen2::flipBlit(CoordSPX dest, GfxFlip flip)
+{
+	if (!m_pActiveCanvas)
+	{
+		//TODO: Error handling!
+
+		return;
+	}
+
+	if (m_renderState.blitSource == nullptr)
+		return;
+
+	SizeSPX srcSize = m_renderState.blitSource->pixelSize() * 64;
+
+	spx ofsX = srcSize.w * s_blitFlipOffsets[(int)flip][0];
+	spx ofsY = srcSize.h * s_blitFlipOffsets[(int)flip][1];
+
+	SizeSPX dstSize = srcSize;
+	if (s_blitFlipTransforms[(int)flip][0][0] == 0)
+		swap(dstSize.w, dstSize.h);
+
+	_transformBlitSimple({ dest, dstSize }, { ofsX, ofsY }, int(flip), Command::Blit);
+}
+
+void GfxDeviceGen2::flipBlit(CoordSPX dest, const RectSPX& src, GfxFlip flip)
+{
+	if (!m_pActiveCanvas)
+	{
+		//TODO: Error handling!
+
+		return;
+	}
+
+	if (m_renderState.blitSource == nullptr)
+		return;
+
+	spx ofsX = src.x + src.w * s_blitFlipOffsets[(int)flip][0];
+	spx ofsY = src.y + src.h * s_blitFlipOffsets[(int)flip][1];
+
+	SizeSPX dstSize = src.size();
+	if (s_blitFlipTransforms[(int)flip][0][0] == 0)
+		swap(dstSize.w, dstSize.h);
+
+
+	_transformBlitSimple({ dest, dstSize }, { ofsX, ofsY }, int(flip), Command::Blit);
 }
 
 

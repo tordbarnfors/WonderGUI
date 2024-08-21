@@ -165,8 +165,8 @@ namespace wg
 		void	blit(CoordSPX dest) override;
 		void	blit(CoordSPX dest, const RectSPX& src) override;
 
-		void	flipBlit(CoordSPX dest, GfxFlip flip) override {}
-		void	flipBlit(CoordSPX dest, const RectSPX& src, GfxFlip flip) override {}
+		void	flipBlit(CoordSPX dest, GfxFlip flip) override;
+		void	flipBlit(CoordSPX dest, const RectSPX& src, GfxFlip flip) override;
 
 		void	stretchBlit(const RectSPX& dest) override {}
 		void	stretchBlit(const RectSPX& dest, const RectSPX& src) override {}
@@ -308,13 +308,13 @@ namespace wg
 		std::vector<RenderCanvas>	m_canvasStack;
 
 		static const int			s_blitFlipOffsets[GfxFlip_size][2];
+		static const int			s_blitFlipTransforms[GfxFlip_size][2][2];
 
 		CanvasInfo					m_dummyCanvasInfo;
 		RectSPX						m_dummyRect;
 		
 		GfxBackend_p				m_pBackend;
 		
-
 	};
 
 	bool GfxDeviceGen2::beginCanvasUpdate(CanvasRef ref, int nUpdateRects, const RectSPX* pUpdateRects, CanvasLayers* pLayers, int startLayer)
