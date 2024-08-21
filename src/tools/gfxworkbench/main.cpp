@@ -190,12 +190,7 @@ int main ( int argc, char** argv )
 	auto pHoverWithFocusSkin = ColorSkin::create({ .states = {  {State::Selected, Color::Purple}, {State::Default, Color::Red}, {State::HoveredFocused, Color::Red}, {State::Hovered, Color::Yellow}, {State::Focused, Color::Blue} } });
 */
 	
-	float redMtx[9] = {	0.14f,0.1f,0.14f,
-						0.1f, 0.0f, 0.1f,
-						0.14f, 0.1f, 0.14f};
-	
-	float blueMtx[9] = {0.15f, 0.15f, 0.15f, 0, 0.4f, 0, 0,0,0};
-	float greenMtx[9] = {0,0,0, 0,0.7f,0, 0,0,0};
+
 
 	auto pCanvas1 = SoftSurface::create({ .canvas = true, .format = PixelFormat::BGRX_8_sRGB, .size = {320,200} } );
 	auto pCanvas2 = SoftSurface::create({ .canvas = true, .format = PixelFormat::BGRX_8_sRGB, .size = {320,200} } );
@@ -288,9 +283,19 @@ int main ( int argc, char** argv )
 		if( ball.y > 200*64 || ball.y < 0 )
 			dirY = -dirY;
 
+
+		auto pBlurbrush = Blurbrush::create({
+			.blue = { 0.15f, 0.15f, 0.15f, 0, 0.4f, 0, 0,0,0 },
+			.green = { 0,0,0, 0,0.7f,0, 0,0,0 },
+			.red = { 0.14f,0.1f,0.14f,
+					0.1f, 0.0f, 0.1f,
+					0.14f, 0.1f, 0.14f },
+			.size = 64 * 4
+			});
+
 		
 		
-		pGfxDevice->setBlurMatrices(64*4, redMtx, greenMtx, blueMtx);
+		pGfxDevice->setBlurbrush(pBlurbrush);
 		
 		pGfxDevice->beginCanvasUpdate(pCanvas1);
 		pGfxDevice->fill( RectSPX(ball.x,ball.y,20*64,20*64), Color::White );

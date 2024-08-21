@@ -654,12 +654,13 @@ const uint8_t SoftGfxDevice::s_fast8_channel_6[64] = {		0x00, 0x04, 0x08, 0x0c, 
 		m_colTrans.fixedBlendColor = color;
 	}
 
-	//____ setBlurMatrices() _____________________________________________________
+	//____ setBlurbrush() _____________________________________________________
 
-	void SoftGfxDevice::setBlurMatrices( spx radius, const float red[9], const float green[9], const float blue[9] )
+	void SoftGfxDevice::setBlurbrush( Blurbrush * pBrush )
 	{
-		GfxDeviceGen1::setBlurMatrices(radius, red, green, blue);
+		GfxDeviceGen1::setBlurbrush(pBrush);
 
+		spx radius = pBrush->size();
 		spx cornerRadius = radius * 724 / 1024;
 		
 		m_colTrans.blurOfsSPX[0] = { -cornerRadius, -cornerRadius };
@@ -677,9 +678,9 @@ const uint8_t SoftGfxDevice::s_fast8_channel_6[64] = {		0x00, 0x04, 0x08, 0x0c, 
 			m_colTrans.blurOfsPixel[i].x = (m_colTrans.blurOfsSPX[i].x)/64;
 			m_colTrans.blurOfsPixel[i].y = (m_colTrans.blurOfsSPX[i].y)/64;
 
-			m_colTrans.blurMtxR[i] = int(red[i] * 65536);
-			m_colTrans.blurMtxG[i] = int(green[i] * 65536);
-			m_colTrans.blurMtxB[i] = int(blue[i] * 65536);
+			m_colTrans.blurMtxR[i] = int(pBrush->red()[i] * 65536);
+			m_colTrans.blurMtxG[i] = int(pBrush->green()[i] * 65536);
+			m_colTrans.blurMtxB[i] = int(pBrush->blue()[i] * 65536);
 		}
 		
 	}

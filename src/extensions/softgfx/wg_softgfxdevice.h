@@ -81,7 +81,8 @@ namespace wg
 		bool		setBlendMode(BlendMode blendMode) override;
 		void		setMorphFactor(float factor) override;
 		void		setFixedBlendColor( HiColor color ) override;
-		void		setBlurMatrices( spx radius, const float red[9], const float green[9], const float blue[9] ) override;
+
+		void		setBlurbrush(Blurbrush* pBrush) override;
 
 		//.____ Rendering ________________________________________________
 

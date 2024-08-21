@@ -5,6 +5,8 @@ set( SOURCES
 	wg_bitmapcache.h
 	wg_bitmapfont.cpp
 	wg_bitmapfont.h
+	wg_blurbrush.cpp
+	wg_blurbrush.h
 	wg_canvaslayers.cpp
 	wg_canvaslayers.h
 	wg_color.cpp

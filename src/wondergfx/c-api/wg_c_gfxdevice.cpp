@@ -197,9 +197,11 @@ float wg_getMorphFactor(wg_obj device)
 	return getPtr(device)->morphFactor();
 }
 
-void wg_setBlurMatrices(wg_obj device, wg_spx radius, const float red[9], const float green[9], const float blue[9] )
+void wg_setBlurbrush(wg_obj device, wg_obj brush )
 {
-	getPtr(device)->setBlurMatrices( radius, red, green, blue );
+	Blurbrush* pBrush = brush == 0 ? nullptr : static_cast<Blurbrush*>(reinterpret_cast<Object*>(brush));
+
+	getPtr(device)->setBlurbrush( pBrush );
 }
 
 

@@ -31,12 +31,6 @@ namespace wg
 	
 	Glow::Glow(Widget* pWidget) : Component(pWidget)
 	{
-		for (int i = 0; i < 9; i++)
-		{
-			m_redMtx[i] = 0.1f;
-			m_greenMtx[i] = 0.1f;
-			m_blueMtx[i] = 0.1f;
-		}
 	}
 
 	//____ setActive() ____________________________________________________________
@@ -114,70 +108,13 @@ namespace wg
 		return m_refreshRate;
 	}
 
-	//____ setSampleRadius() __________________________________________________
+	//____ setBlurbrush() ______________________________________________________
 
-	void Glow::setSampleRadius(spx radius)
+	void Glow::setBlurbrush(Blurbrush * pBrush)
 	{
-		m_radius = radius;
+		m_pBrush = pBrush;
 	}
 
-	//____ sampleRadius() _____________________________________________________
-
-	spx Glow::sampleRadius() const
-	{
-		return m_radius;
-	}
-
-	//____ setMatrices() ______________________________________________________
-
-	void Glow::setMatrices(const float red[9], const float green[9], const float blue[9])
-	{
-		std::memcpy(m_redMtx, red, sizeof(float[9]));
-		std::memcpy(m_greenMtx, green, sizeof(float[9]));
-		std::memcpy(m_blueMtx, blue, sizeof(float[9]));
-	}
-
-	//____ setRedMatrix() _____________________________________________________
-
-	void Glow::setRedMatrix(const float matrix[9])
-	{
-		std::memcpy(m_redMtx, matrix, sizeof(float[9]));
-	}
-
-	//____ redMatrix() ________________________________________________________
-
-	const float* Glow::redMatrix() const
-	{
-		return m_redMtx;
-	}
-
-	//____ setGreenMatrix() ___________________________________________________
-
-	void Glow::setGreenMatrix(const float matrix[9])
-	{
-		std::memcpy(m_greenMtx, matrix, sizeof(float[9]));
-	}
-
-	//____ greenMatrix() ______________________________________________________
-
-	const float* Glow::greenMatrix() const
-	{
-		return m_greenMtx;
-	}
-
-	//____ setBlueMatrix() ____________________________________________________
-
-	void Glow::setBlueMatrix(const float matrix[9])
-	{
-		std::memcpy(m_blueMtx, matrix, sizeof(float[9]));
-	}
-
-	//____ blueMatrix() _______________________________________________________
-
-	const float* Glow::blueMatrix() const
-	{
-		return m_blueMtx;
-	}
 
 	//____ setPixelResolution() _______________________________________________
 
@@ -226,7 +163,7 @@ namespace wg
 	void Glow::_initFromBlueprint(const Blueprint& bp)
 	{
 		m_refreshRate	= bp.refreshRate;
-		m_radius		= bp.radius;
+		m_pBrush		= bp.blurbrush;
 
 		m_resolution	= bp.resolution;
 
@@ -350,7 +287,7 @@ namespace wg
 		{
 			pDevice->beginCanvasUpdate(m_surface[1]);
 			pDevice->setBlitSource(m_surface[0]);
-			pDevice->setBlurMatrices(m_radius, m_redMtx, m_greenMtx, m_blueMtx);
+			pDevice->setBlurbrush(m_pBrush);
 			pDevice->blur(destRect.pos(), srcRect);
 			pDevice->setTintColor(m_seedTint);
 			pDevice->setBlendMode(m_seedBlend);

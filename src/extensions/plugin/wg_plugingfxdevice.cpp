@@ -280,13 +280,13 @@ namespace wg
         return PluginCalls::gfxDevice->getMorphFactor(m_cDevice);
     }
 
-	//____ setBlurMatrices() _____________________________________________________
+	//____ setBlurbrush() _____________________________________________________
 
-	void PluginGfxDevice::setBlurMatrices( spx radius, const float red[9], const float green[9], const float blue[9] )
+	void PluginGfxDevice::setBlurbrush( Blurbrush * pBrush )
 	{
-		GfxDeviceGen1::setBlurMatrices(radius, red, green, blue);
+		GfxDeviceGen1::setBlurbrush(pBrush);
 
-		return PluginCalls::gfxDevice->setBlurMatrices(m_cDevice, radius, red, green, blue );
+		return PluginCalls::gfxDevice->setBlurbrush(m_cDevice, static_cast<PluginBlurbrush*>(pBrush)->cObject());
 	}
 
 	//____ setFixedBlendColor() __________________________________________________

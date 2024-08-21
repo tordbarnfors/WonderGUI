@@ -183,7 +183,7 @@ void wg_populatePluginInterface(wg_plugin_interface * pHeader)
 	pBody->gfxDevice.flipDrawEdgemap		= &wg_flipDrawEdgemap;
 	pBody->gfxDevice.blitNinePatch			= &wg_blitNinePatch;
 
-	pBody->gfxDevice.setBlurMatrices		= &wg_setBlurMatrices;
+	pBody->gfxDevice.setBlurbrush			= &wg_setBlurbrush;
 	pBody->gfxDevice.setFixedBlendColor		= &wg_setFixedBlendColor;
 	pBody->gfxDevice.getFixedBlendColor		= &wg_getFixedBlendColor;
 	

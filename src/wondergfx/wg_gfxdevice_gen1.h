@@ -94,14 +94,19 @@ namespace wg
 		int			clipListSize() const override { return m_nClipRects; }
 		const RectSPX&	clipBounds() const override { return m_clipBounds; }
 
+		void		setTint(HiColor color) override;
+		void		setTint(const RectSPX& rect, Tintmap* pTintmap) override;
+		void		clearTint() override;
+
+		bool		isTinting() const override;
+		Tintmap_p	tintmap() const override;
+		RectSPX		tintmapRect() const override;
+
 		void		setTintColor( HiColor color ) override;
 		HiColor		tintColor() const override { return m_tintColor; }
 
 		void		setTintGradient(const RectSPX& rect, const Gradient& gradient) override;
 		void		clearTintGradient() override;
-
-		void		setTintmap(const RectSPX& rect, Tintmap* pTintmap) override;
-		void		clearTintmap() override;
 
 		bool		setBlendMode( BlendMode blendMode ) override;
 		BlendMode 	blendMode() const override { return m_blendMode; }
@@ -111,9 +116,10 @@ namespace wg
 
 		void		setMorphFactor(float factor) override;
 		float		morphFactor() const override { return m_morphFactor; }
-
-		void		setBlurMatrices( spx radius, const float red[9], const float green[9], const float blue[9] ) override;
 		
+		void		setBlurbrush(Blurbrush* pBrush) override;
+		Blurbrush_p	blurbrush() const override;
+
 		void		setFixedBlendColor( HiColor color ) override;
 		HiColor		fixedBlendColor() const  override{ return m_fixedBlendColor; }
 
@@ -273,7 +279,9 @@ namespace wg
 		CanvasInfo		m_dummyCanvas;			// Returned when calling canvas() with an undefined reference.
 		CanvasLayers_p	m_pCanvasLayers;
 
-		Surface_p	m_pBlitSource;
+		Surface_p		m_pBlitSource;
+
+		Blurbrush_p		m_pBlurbrush;
 
 		int			m_renderLayer = 0;
 
@@ -300,13 +308,6 @@ namespace wg
 		bool        m_bRendering = false;
 		
 		bool		m_bIsProxyDevice = false;		// Set by subclasses that just wrap calls and rendering is performed elsewhere.
-
-		spx			m_blurRadius = 64;
-		
-		float		m_blurMtxR[9];
-		float		m_blurMtxG[9];
-		float		m_blurMtxB[9];
-		float		m_blurMtxA[9];
 	};
 
 

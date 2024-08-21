@@ -89,7 +89,7 @@ namespace wg
         void        setMorphFactor(float factor) override;
         float		morphFactor() const override;
 
-		void		setBlurMatrices( spx radius, const float red[9], const float green[9], const float blue[9] ) override;
+		void		setBlurbrush( Blurbrush * pBrush) override;
 		
 		void		setFixedBlendColor( HiColor color ) override;
 		HiColor		fixedBlendColor() const override;

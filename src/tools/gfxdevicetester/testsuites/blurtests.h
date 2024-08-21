@@ -1,4 +1,5 @@
 #include "testsuite.h"
+#include <wg_blurbrush.h>
 
 class BlurTests : public TestSuite
 {
@@ -7,7 +8,7 @@ public:
 	{
 		name = "BlurTests";
 
-		addTest("Blur", &BlurTests::setBlurMatrices, &BlurTests::blur, &BlurTests::dummy);
+		addTest("Blur", &BlurTests::setBlurbrush, &BlurTests::blur, &BlurTests::dummy);
 	}
 
 	bool init(GfxDevice * pDevice, const RectI& canvas, WonderApp::Visitor * pAppVisitor)
@@ -36,19 +37,26 @@ public:
 		return true;
 	}
 
-	bool setBlurMatrices(GfxDevice * pDevice, const RectI& canvas)
+	bool setBlurbrush(GfxDevice* pDevice, const RectI& canvas)
 	{
-		m_pBlurSurface[0]->fill( HiColor::Transparent );
-		m_pBlurSurface[1]->fill( HiColor::Transparent );
+		m_pBlurSurface[0]->fill(HiColor::Transparent);
+		m_pBlurSurface[1]->fill(HiColor::Transparent);
 
-		float redMtx[9] = {	0.14f,0.1f,0.14f,
+		float redMtx[9] = { 0.14f,0.1f,0.14f,
 							0.1f, 0.0f, 0.1f,
-							0.14f, 0.1f, 0.14f};
-		
-		float blueMtx[9] = {0.15f, 0.15f, 0.15f, 0, 0.4f, 0, 0,0,0};
-		float greenMtx[9] = {0,0,0, 0,0.7f,0, 0,0,0};
-		
-		pDevice->setBlurMatrices(64*4, redMtx, greenMtx, blueMtx);
+							0.14f, 0.1f, 0.14f };
+
+		float blueMtx[9] = { 0.15f, 0.15f, 0.15f, 0, 0.4f, 0, 0,0,0 };
+		float greenMtx[9] = { 0,0,0, 0,0.7f,0, 0,0,0 };
+
+		auto pBrush = Blurbrush::create({
+			.blue = { 0.15f, 0.15f, 0.15f, 0, 0.4f, 0, 0,0,0 },
+			.green = {0,0,0, 0,0.7f,0, 0,0,0},
+			.red = { 0.14f,0.1f,0.14f, 0.1f, 0.0f, 0.1f, 0.14f, 0.1f, 0.14f },
+			.size = 64 * 4
+		});
+
+		pDevice->setBlurbrush(pBrush);
 
 		pDevice->beginCanvasUpdate(m_pCanvasSurface);
 		pDevice->setBlendMode(BlendMode::Replace);

@@ -248,6 +248,24 @@ namespace wg
 		m_canvasPixelFormat = m_buffer.format;
 		m_canvasPitch		= m_buffer.pitch;
 		m_canvasPixelBits	= m_pCanvas->pixelDescription()->bits;
+
+		// Reset states
+
+		m_blendMode = BlendMode::Blend;
+		m_tintMode = TintMode::None;
+
+		m_pBlitSource = nullptr;
+		m_bBlitFunctionNeedsUpdate = true;
+
+		m_colTrans.mode = TintMode::None;
+		m_colTrans.flatTintColor = HiColor::White;
+		m_colTrans.tintRect.clear();
+		m_colTrans.pTintAxisX = nullptr;
+		m_colTrans.pTintAxisY = nullptr;
+		m_colTrans.morphFactor = 2048;
+		m_colTrans.fixedBlendColor = HiColor::White;
+
+		_updateBlur(nullptr);
 	}
 
 
@@ -385,7 +403,11 @@ namespace wg
 
 				if (statesChanged & uint8_t(StateChange::Blur))
 				{
-					//TODO: Implement!!!	
+					int32_t objectOfs = *p++;
+
+					auto pBlurbrush = static_cast<Blurbrush*>(m_pObjectsBeg[objectOfs]);
+					
+					_updateBlur(pBlurbrush);
 
 					assert(false);
 				}
@@ -803,11 +825,18 @@ namespace wg
 
 		char errorMsg[1024];
 
-		snprintf(errorMsg, 1024, "Failed blit operation. SoftGfxDevice is missing straight blit kernel for:\n source format = %s\n tile = %s\n tint mode = %s\n blend mode = %s\n, dest format = %s\n", toString(m_pBlitSource->pixelFormat()),
-			m_pBlitSource->isTiling() ? "true" : "false",
-			toString(m_colTrans.mode),
-			toString(m_blendMode),
-			toString(m_canvasPixelFormat));
+		if (m_pBlitSource == nullptr)
+		{
+			snprintf(errorMsg, 1024, "Failed blit operation. Blit source is not set.");
+		}
+		else
+		{
+			snprintf(errorMsg, 1024, "Failed blit operation. SoftGfxDevice is missing straight blit kernel for:\n source format = %s\n tile = %s\n tint mode = %s\n blend mode = %s\n, dest format = %s\n", toString(m_pBlitSource->pixelFormat()),
+				m_pBlitSource->isTiling() ? "true" : "false",
+				toString(m_colTrans.mode),
+				toString(m_blendMode),
+				toString(m_canvasPixelFormat));
+		}
 
 		GfxBase::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, errorMsg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 	}
@@ -1039,6 +1068,54 @@ namespace wg
 			m_bBlitFunctionNeedsUpdate = true;
 		}
 	}
+
+	//____ _updateBlur() _____________________________________________________
+
+	void SoftBackend::_updateBlur(Blurbrush * pBrush)
+	{
+		spx radius = pBrush ? pBrush->size() : s_defaultBlurRadius;
+		spx cornerRadius = radius * 724 / 1024;
+
+		m_colTrans.blurOfsSPX[0] = { -cornerRadius, -cornerRadius };
+		m_colTrans.blurOfsSPX[1] = { 0, -radius };
+		m_colTrans.blurOfsSPX[2] = { cornerRadius, -cornerRadius };
+		m_colTrans.blurOfsSPX[3] = { -radius, 0 };
+		m_colTrans.blurOfsSPX[4] = { 0, 0 };
+		m_colTrans.blurOfsSPX[5] = { radius, 0 };
+		m_colTrans.blurOfsSPX[6] = { -cornerRadius, cornerRadius };
+		m_colTrans.blurOfsSPX[7] = { 0, radius };
+		m_colTrans.blurOfsSPX[8] = { cornerRadius, cornerRadius };
+
+		if (pBrush)
+		{
+			for (int i = 0; i < 9; i++)
+			{
+				m_colTrans.blurOfsPixel[i].x = (m_colTrans.blurOfsSPX[i].x) / 64;
+				m_colTrans.blurOfsPixel[i].y = (m_colTrans.blurOfsSPX[i].y) / 64;
+
+				m_colTrans.blurMtxR[i] = pBrush->red()[i];
+				m_colTrans.blurMtxG[i] = pBrush->green()[i];
+				m_colTrans.blurMtxB[i] = pBrush->blue()[i];
+			}
+
+		}
+		else
+		{
+			for (int i = 0; i < 9; i++)
+			{
+				m_colTrans.blurOfsPixel[i].x = (m_colTrans.blurOfsSPX[i].x) / 64;
+				m_colTrans.blurOfsPixel[i].y = (m_colTrans.blurOfsSPX[i].y) / 64;
+
+				m_colTrans.blurMtxR[i] = s_defaultBlur[i];
+				m_colTrans.blurMtxG[i] = s_defaultBlur[i];
+				m_colTrans.blurMtxB[i] = s_defaultBlur[i];
+			}
+
+		}
+
+
+	}
+
 
 	//____ _setupDestFormatKernels() _____________________________________________
 

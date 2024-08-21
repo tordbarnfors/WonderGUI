@@ -244,7 +244,7 @@ typedef struct wg_gfxdevice_calls_struct
 	void				(*flipDrawEdgemap)(wg_obj device, wg_coordSPX dest, wg_obj edgemap, wg_gfxFlip flip);
 	void				(*blitNinePatch)(wg_obj device, const wg_rectSPX* dstRect, const wg_borderSPX* dstFrame, const wg_ninePatch* patch, int scale);
 
-	void				(*setBlurMatrices)(wg_obj device, wg_spx radius, const float red[9], const float green[9], const float blue[9] );
+	void				(*setBlurbrush)(wg_obj device, wg_obj brush );
 	void				(*setFixedBlendColor)(wg_obj device, wg_color color );
 	wg_color			(*getFixedBlendColor)(wg_obj device);
 	

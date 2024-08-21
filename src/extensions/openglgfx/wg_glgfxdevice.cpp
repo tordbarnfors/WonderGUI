@@ -719,23 +719,23 @@ namespace wg
 		m_commandBuffer[m_commandOfs++] = (int)(factor*1024);
 	}
 
-	//____ setBlurMatrices() _____________________________________________________
+	//____ setBlurbrush() _____________________________________________________
 
-	void GlGfxDevice::setBlurMatrices(spx radius, const float red[9], const float green[9], const float blue[9])
+	void GlGfxDevice::setBlurbrush(Blurbrush * pBrush)
 	{
-		GfxDevice::setBlurMatrices(radius, red, green, blue);
+		GfxDevice::setBlurbrush(pBrush);
 		_endCommand();
 		_beginStateCommand(Command::SetBlurMatrices, 28);
 
-		m_commandBuffer[m_commandOfs++] = radius;
+		m_commandBuffer[m_commandOfs++] = pBrush->size();
 
 		// Copy floats as they are
 
-		memcpy(m_commandBuffer + m_commandOfs, red, sizeof(float) * 9);
+		memcpy(m_commandBuffer + m_commandOfs, pBrush->red(), sizeof(float) * 9);
 		m_commandOfs += 9;
-		memcpy(m_commandBuffer + m_commandOfs, green, sizeof(float) * 9);
+		memcpy(m_commandBuffer + m_commandOfs, pBrush->green(), sizeof(float) * 9);
 		m_commandOfs += 9;
-		memcpy(m_commandBuffer + m_commandOfs, blue, sizeof(float) * 9);
+		memcpy(m_commandBuffer + m_commandOfs, pBrush->blue(), sizeof(float) * 9);
 		m_commandOfs += 9;
 	}
 

@@ -106,15 +106,14 @@ namespace wg
 		int			clipListSize() const override;
 		const RectSPX& clipBounds() const override;
 
-		void		setTintColor(HiColor color) override;
+		void		setTint(HiColor color) override;
+		void		setTint(const RectSPX& rect, Tintmap* pTintmap) override;
+		void		clearTint() override;
+
+		bool		isTinting() const override;
 		HiColor		tintColor() const override;
-
-		void		setTintGradient(const RectSPX& rect, const Gradient& gradient) override;
-		void		clearTintGradient() override;
-
-		void		setTintmap(const RectSPX& rect, Tintmap* pTintmap) override;
-		void		clearTintmap() override;
-
+		Tintmap_p	tintmap() const override;
+		RectSPX		tintmapRect() const override;
 
 		bool		setBlendMode(BlendMode blendMode) override;
 		BlendMode 	blendMode() const override;
@@ -125,7 +124,8 @@ namespace wg
 		void		setMorphFactor(float factor) override;
 		float		morphFactor() const override;
 
-		void		setBlurMatrices(spx radius, const float red[9], const float green[9], const float blue[9]) override;
+		void		setBlurbrush(Blurbrush* pBrush) override;
+		Blurbrush_p	blurbrush() const override;
 
 		void		setFixedBlendColor(HiColor color) override;
 		HiColor		fixedBlendColor() const override;
@@ -208,11 +208,15 @@ namespace wg
 		void	flipDrawEdgemap(CoordSPX dest, Edgemap* pEdgemap, GfxFlip flip) override {}
 
 
-
 		// Special draw/blit methods
 
 		void	blitNinePatch(const RectSPX& dstRect, const BorderSPX& dstFrame, const NinePatch& patch, int scale) override {}
 
+		//.____ Deprecated _______________________________________________________________
+
+		void		setTintColor(HiColor color) override;
+		void		setTintGradient(const RectSPX& rect, const Gradient& gradient) override;
+		void		clearTintGradient() override;
 
 
 
@@ -222,57 +226,33 @@ namespace wg
 		typedef GfxBackend::StateChange StateChange;
 		typedef GfxBackend::Transform Transform;
 
-
-		GfxDeviceGen2( GfxBackend * pBackend );
-		virtual ~GfxDeviceGen2();
-
-		bool _beginCanvasUpdate(CanvasRef ref, Surface* pCanvas, int nUpdateRects, const RectSPX* pUpdateRects, CanvasLayers* pLayers, int startLayer);
-
-		void _transformBlitSimple(const RectSPX& _dest, CoordSPX src, int transformOfs, Command cmd);
-
-		
-		//
-
-		void _encodeStateChanges();
-
-
-
-
-		//
-
 		struct ClipList
 		{
 			int				nRects;
-			const RectSPX*	pRects;
+			const RectSPX* pRects;
 			RectSPX			bounds;
 		};
-		
+
 
 		struct RenderState
 		{
 			Surface_p		blitSource;
 
-			uint8_t			stateChanges		= 0;
-
-			HiColor			tintColor			= HiColor::Undefined;
+			HiColor			tintColor = HiColor::Undefined;
 
 			RectSPX			tintmapRect;
 			Tintmap_p		pTintmap;
-			BlendMode		blendMode			= BlendMode::Blend;
-			float			morphFactor			= 0.5f;
-			HiColor			fixedBlendColor		= HiColor::White;
+			BlendMode		blendMode = BlendMode::Blend;
+			float			morphFactor = 0.5f;
+			HiColor			fixedBlendColor = HiColor::White;
 
-			spx				blurRadius			= 64;
-			float			blurMtxR[9]			= { 0.1f, 0.1f, 0.1f, 0.1f, 0.2f, 0.1f, 0.1f, 0.1f, 0.1f };
-			float			blurMtxG[9]			= { 0.1f, 0.1f, 0.1f, 0.1f, 0.2f, 0.1f, 0.1f, 0.1f, 0.1f };
-			float			blurMtxB[9]			= { 0.1f, 0.1f, 0.1f, 0.1f, 0.2f, 0.1f, 0.1f, 0.1f, 0.1f };
-			float			blurMtxA[9]			= { 0.1f, 0.1f, 0.1f, 0.1f, 0.2f, 0.1f, 0.1f, 0.1f, 0.1f };
+			Blurbrush_p		pBlurbrush;
 		};
 
 
 		struct RenderLayer
 		{
-			RenderState			currentState;
+			RenderState			encodedState;				// State encoded in commands
 
 			std::vector<int>	commands;
 
@@ -293,8 +273,30 @@ namespace wg
 			std::vector<Object*>		objects;
 
 			CanvasLayers_p				pLayerInfo;
+
+			RenderState					savedState;			// Saved when we begin a new canvas so we can return 
+															// to our right state when that ends and we pop back.
 		};
 
+		//
+
+
+		GfxDeviceGen2( GfxBackend * pBackend );
+		virtual ~GfxDeviceGen2();
+
+		bool _beginCanvasUpdate(CanvasRef ref, Surface* pCanvas, int nUpdateRects, const RectSPX* pUpdateRects, CanvasLayers* pLayers, int startLayer);
+
+		void _transformBlitSimple(const RectSPX& _dest, CoordSPX src, int transformOfs, Command cmd);
+
+		
+		//
+
+		void _resetState(RenderState& state);
+		void _encodeStateChanges();
+
+		//
+
+		uint8_t						m_stateChanges = 0;
 
 		bool						m_bRendering = false;
 		RenderState					m_renderState;

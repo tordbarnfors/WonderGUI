@@ -20,40 +20,43 @@
 
 =========================================================================*/
 
-#include <wg_gfxbackend.h>
+
+#include <wg_blurbrush.h>
 
 namespace wg
 {
-	const TypeInfo GfxBackend::TYPEINFO = { "GfxBackend", &Object::TYPEINFO };
 
-	// Transforms for flipping movement over SOURCE when blitting
-
-const GfxBackend::Transform GfxBackend::s_blitFlipTransforms[GfxFlip_size] = {
-	{ 1,0,0,1 },			// Normal
-	{ -1,0,0,1 },			// FlipX
-	{ 1,0,0,-1 },			// FlipY
-	{ 0,-1,1,0 },			// Rot90
-	{ 0,1,1,0 },			// Rot90FlipX
-	{ 0,-1,-1,0 },			// Rot90FlipY
-	{ -1,0,0,-1 },			// Rot180
-	{ 1,0,0,-1 },			// Rot180FlipX
-	{ -1,0,0,1 },			// Rot180FlipY
-	{ 0,1,-1,0 },			// Rot270
-	{ 0,-1,-1,0 },			// Rot270FlipX
-	{ 0,1,1,0 }				// Rot270FlipY
-};
-
-const int GfxBackend::s_defaultBlur[9] = { 6553, 6553, 6553, 6553, 6553, 6553, 6553, 6553, 6553 };
-const spx GfxBackend::s_defaultBlurRadius = 4 * 64;
+	const TypeInfo Blurbrush::TYPEINFO = { "Blurbrush", &Object::TYPEINFO };
 
 
+	//____ create() ____________________________________________________________
+
+	Blurbrush_p	Blurbrush::create(const Blueprint& blueprint)
+	{
+		return Blurbrush_p(new Blurbrush(blueprint));
+	}
+
+	//____ constructor _________________________________________________________
+
+	Blurbrush::Blurbrush(const Blueprint& bp)
+	{
+		m_radius = bp.size;
+		for (int i = 0; i < 9; i++)
+		{
+			m_blueMtx[i] = bp.blue[i];
+			m_greenMtx[i] = bp.green[i];
+			m_redMtx[i] = bp.red[i];
+		}
+	}
 
 	//____ typeInfo() _________________________________________________________
 
-	const TypeInfo& GfxBackend::typeInfo(void) const
+	const TypeInfo& Blurbrush::typeInfo(void) const
 	{
 		return TYPEINFO;
 	}
 
+}
 
-} // namespace wg
+
+

@@ -32,6 +32,7 @@
 #include <wg_gradient.h>
 #include <wg_edgemap.h>
 #include <wg_tintmap.h>
+#include <wg_blurbrush.h>
 
 
 #include <wg_geo.h>
@@ -128,14 +129,14 @@ namespace wg
 		virtual int			clipListSize() const = 0;
 		virtual const RectSPX& clipBounds() const = 0;
 
-		virtual void		setTintColor( HiColor color ) = 0;
+		virtual void		setTint(HiColor color) = 0;
+		virtual void		setTint(const RectSPX& rect, Tintmap* pTintmap) = 0;
+		virtual void		clearTint() = 0;
+	
+		virtual bool		isTinting() const = 0;
 		virtual HiColor		tintColor() const = 0;
-
-		virtual void		setTintGradient(const RectSPX& rect, const Gradient& gradient) = 0;
-		virtual void		clearTintGradient() = 0;
-
-		virtual void		setTintmap(const RectSPX& rect, Tintmap* pTintmap) = 0;
-		virtual void		clearTintmap() = 0;
+		virtual Tintmap_p	tintmap() const = 0;
+		virtual RectSPX		tintmapRect() const = 0;
 
 		virtual bool		setBlendMode( BlendMode blendMode ) = 0;
 		virtual BlendMode 	blendMode() const = 0;
@@ -146,7 +147,9 @@ namespace wg
 		virtual void		setMorphFactor(float factor) = 0;
 		virtual float		morphFactor() const = 0;
 
-		virtual void		setBlurMatrices( spx radius, const float red[9], const float green[9], const float blue[9] ) = 0;
+		virtual void		setBlurbrush(Blurbrush* pBrush) = 0;
+		virtual Blurbrush_p	blurbrush() const = 0;
+
 		
 		virtual void		setFixedBlendColor( HiColor color ) = 0;
 		virtual HiColor		fixedBlendColor() const = 0;
@@ -233,6 +236,11 @@ namespace wg
 
 		virtual void	blitNinePatch(const RectSPX& dstRect, const BorderSPX& dstFrame, const NinePatch& patch, int scale) = 0;
 
+		// Deprecated
+
+		virtual void		setTintColor(HiColor color) = 0;
+		virtual void		setTintGradient(const RectSPX& rect, const Gradient& gradient) = 0;
+		virtual void		clearTintGradient() = 0;
 
 
 	protected:

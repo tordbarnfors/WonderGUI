@@ -84,8 +84,8 @@ namespace wg
 		{
 			BlitSource		= 1,
 			BlendMode		= 1 << 1,
-			TintColor		= 1 << 2,
-			TintMap			= 1 << 3,
+			TintColor		= 1 << 2,		// In GfxDevice this is used to mark any change in tint
+			TintMap			= 1 << 3,		// Not used in GfxDevice.
 			MorphFactor		= 1 << 4,
 			FixedBlendColor	= 1 << 5,
 			Blur			= 1 << 6,
@@ -133,6 +133,9 @@ namespace wg
 		virtual ~GfxBackend() {};
 
 		static const Transform			s_blitFlipTransforms[GfxFlip_size];
+		static const int				s_defaultBlur[9];
+		static const spx				s_defaultBlurRadius;
+
 	};
 
 } // namespace wg

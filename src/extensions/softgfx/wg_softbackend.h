@@ -195,6 +195,8 @@ namespace wg
 
 		void	_updateBlitFunctions();
 		void	_updateTintMode();
+		void	_updateBlur(Blurbrush * pBrush);
+
 
 		const static int	c_maxSegments = 16;
 
@@ -213,6 +215,8 @@ namespace wg
 		Transform *			m_pTransformsBeg = nullptr;
 		Transform *			m_pTransformsEnd = nullptr;
 
+		// Canvas related
+
 		SoftSurface_p		m_pCanvas;
 		PixelBuffer			m_buffer;
 		uint8_t*			m_pCanvasPixels;	// Pixels of render layer surface
@@ -220,19 +224,24 @@ namespace wg
 		PixelFormat			m_canvasPixelFormat = PixelFormat::Undefined;
 		int					m_canvasPitch = 0;
 
+		// Current state
+
 		BlendMode			m_blendMode = BlendMode::Blend;
 		TintMode			m_tintMode = TintMode::None;
 
 		ColTrans			m_colTrans;
 
+		SoftSurface_p		m_pBlitSource;
+
+		bool				m_bBlitFunctionNeedsUpdate = true;
+
+		// Tintmap buffer
+
 		HiColor *			m_pTintmapXBuffer = nullptr;
 		HiColor *			m_pTintmapYBuffer = nullptr;
 		int					m_tintmapXBufferSize = 0;
 		int					m_tintmapYBufferSize = 0;
-		
-		SoftSurface_p		m_pBlitSource;
 
-		bool				m_bBlitFunctionNeedsUpdate = true;
 
 //		PixelBuffer		m_canvasPixelBuffer;
 //		uint8_t* m_pCanvasPixels;	// Pixels of render layer surface

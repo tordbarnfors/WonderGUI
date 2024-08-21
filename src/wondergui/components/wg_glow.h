@@ -29,6 +29,7 @@
 #include <wg_geo.h>
 #include <wg_skin.h>
 #include <wg_util.h>
+#include <wg_blurbrush.h>
 
 namespace wg
 {
@@ -48,8 +49,9 @@ namespace wg
 		{
 			bool				active = false;
 
+			Blurbrush_p			blurbrush;
+
 			int					refreshRate = 30;
-			spx					radius = 96;
 
 			SizeI				resolution;
 
@@ -80,19 +82,8 @@ namespace wg
 
 		//.____ Appearance _____________________________________________
 
-		void				setSampleRadius(spx radius);
-		spx					sampleRadius() const;
-
-		void				setMatrices(const float red[9], const float green[9], const float blue[9]);
-
-		void				setRedMatrix(const float matrix[9]);
-		const float*		redMatrix() const;
-
-		void				setGreenMatrix(const float matrix[9]);
-		const float*		greenMatrix() const;
-
-		void				setBlueMatrix(const float matrix[9]);
-		const float*		blueMatrix() const;
+		void				setBlurbrush(Blurbrush* pBrush);
+		Blurbrush_p			blurbrush() const { return m_pBrush;  }
 
 		void				setPixelResolution(SizeI pixels);
 		SizeI				pixelResolution() const;
@@ -114,13 +105,9 @@ namespace wg
 		SizeI				_glowResolution();
 		Surface_p			_createGlowCanvas( SurfaceFactory * pFactory );
 
-
-		float				m_redMtx[9];
-		float				m_greenMtx[9];
-		float				m_blueMtx[9];
+		Blurbrush_p			m_pBrush;
 
 		int					m_refreshRate = 30;
-		spx					m_radius = 96;
 
 		Surface_p			m_surface[2];
 		SizeI				m_resolution;

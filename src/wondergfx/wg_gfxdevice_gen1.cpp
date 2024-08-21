@@ -198,6 +198,51 @@ namespace wg
 		return true;
 	}
 
+	//____ setTint() ___________________________________________________________
+
+	void GfxDeviceGen1::setTint(HiColor color)
+	{
+		setTintColor(color);
+	}
+
+	void GfxDeviceGen1::setTint(const RectSPX& rect, Tintmap* pTintmap)
+	{
+		// Do nothing. Not supported in Gen1
+	}
+
+	//____ clearTint() _________________________________________________________
+
+	void GfxDeviceGen1::clearTint()
+	{
+		clearTintGradient();
+		setTintColor(HiColor::White);
+	}
+
+	//____ isTinting() _________________________________________________________
+
+	bool GfxDeviceGen1::isTinting() const
+	{
+		return (m_tintColor != HiColor::White || m_bTintGradient);
+	}
+
+	//____ tintmap() ___________________________________________________________
+
+	Tintmap_p	GfxDeviceGen1::tintmap() const
+	{
+		//Tintmaps not supportd in Gen1
+
+		return nullptr;
+	}
+
+	//____ tintmapRect() _____________________________________________________
+
+	RectSPX		GfxDeviceGen1::tintmapRect() const
+	{
+		//Tintmaps not supportd in Gen1
+
+		return RectSPX();
+	}
+
 	//____ setTintColor() __________________________________________________________
 
 	void GfxDeviceGen1::setTintColor( HiColor color )
@@ -219,20 +264,6 @@ namespace wg
 	void GfxDeviceGen1::clearTintGradient()
 	{
 		m_bTintGradient = false;
-	}
-
-	//____ setTintmap() _______________________________________________________
-
-	void GfxDeviceGen1::setTintmap(const RectSPX& rect, Tintmap* pTintmap)
-	{
-
-	}
-
-	//____ clearTintmap() _____________________________________________________
-
-	void GfxDeviceGen1::clearTintmap()
-	{
-
 	}
 
 	//____ setBlendMode() __________________________________________________________
@@ -263,20 +294,20 @@ namespace wg
 		m_morphFactor = factor;
 	}
 
-	//____ setBlurMatrices() _____________________________________________________
+	//____ setBlurbrush() _____________________________________________________
 
-	void GfxDeviceGen1::setBlurMatrices( spx radius, const float red[9], const float green[9], const float blue[9] )
+	void GfxDeviceGen1::setBlurbrush(Blurbrush* pBrush)
 	{
-		m_blurRadius = radius;
-		
-		for( int i = 0 ; i < 9 ; i++ )
-		{
-			m_blurMtxR[i] = red[i];
-			m_blurMtxG[i] = green[i];
-			m_blurMtxB[i] = blue[i];
-		}
+		if (pBrush != m_pBlurbrush)
+			m_pBlurbrush = pBrush;
 	}
 
+	//____ blurbrush() _________________________________________________________
+
+	Blurbrush_p	GfxDeviceGen1::blurbrush() const
+	{
+		return m_pBlurbrush;
+	}
 
 	//____ setFixedBlendColor() __________________________________________________
 
