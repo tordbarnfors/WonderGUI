@@ -145,7 +145,7 @@ namespace wg
 		typedef	void(*ClipLineOp_p)(int clipStart, int clipEnd, uint8_t* pRow, int rowInc, int pixelInc, int length, int width, int pos, int slope, HiColor color, const ColTrans& tint, CoordI patchPos);
 		typedef	void(*FillOp_p)(uint8_t* pDst, int pitchX, int pitchY, int nLines, int lineLength, HiColor col, const ColTrans& tint, CoordI patchPos);
 		typedef	void(*StraightBlitOp_p)(const uint8_t* pSrc, uint8_t* pDst, const SoftSurface* pSrcSurf, const Pitches& pitches, int nLines, int lineLength, const ColTrans& tint, CoordI patchPos, const Transform * pMatrix);
-		typedef	void(*TransformBlitOp_p)(const SoftSurface* pSrcSurf, BinalCoord pos, const Transform * pMatrix, uint8_t* pDst, int dstPitchX, int dstPitchY, int nLines, int lineLength, const ColTrans& tint, CoordI patchPos);
+		typedef	void(*TransformBlitOp_p)(const SoftSurface* pSrcSurf, BinalCoord pos, const binalInt matrix[2][2], uint8_t* pDst, int dstPitchX, int dstPitchY, int nLines, int lineLength, const ColTrans& tint, CoordI patchPos);
 		typedef void(*SegmentOp_p)(int clipBeg, int clipEnd, uint8_t* pStripStart, int pixelPitch, int nEdges, SegmentEdge* pEdges, const int16_t* pSegmentColors, const HiColor ** pSegmentTintmaps, const bool* pTransparentSegments, const bool* pOpaqueSegments, const Transform * pMatrix);
 
 		static const int16_t 	s_channel_4_1[256];
@@ -178,11 +178,10 @@ namespace wg
 		bool	setClipLineKernel(BlendMode blendMode, PixelFormat destFormat, ClipLineOp_p pKernel);
 
 		bool	setSegmentStripKernel(bool bTint, BlendMode blendMode, PixelFormat destFormat, SegmentOp_p pKernel);
-
+ */
 
 		bool	setTransformBlitKernel(PixelFormat sourceFormat, SampleMethod sampleMethod, ReadOp readOp,
 			TintMode tintMode, BlendMode blendMode, PixelFormat destFormat, TransformBlitOp_p pKernel);
-*/
 
 
 
@@ -257,17 +256,17 @@ namespace wg
 		//
 
 		typedef void(SoftBackend::* StraightBlitProxy_Op)(const RectI& dest, CoordI src, const Transform& matrix, CoordI patchPos, StraightBlitOp_p pPassOneOp);
-		typedef void(SoftBackend::* TransformBlitProxy_Op)(const RectI& dest, BinalCoord pos, const Transform& matrix, CoordI patchPos, TransformBlitOp_p pPassOneOp);
+		typedef void(SoftBackend::* TransformBlitProxy_Op)(const RectI& dest, BinalCoord pos, const binalInt transformMatrix[2][2], CoordI patchPos, TransformBlitOp_p pPassOneOp);
 
 
 		void	_onePassStraightBlit(const RectI& dest, CoordI pos, const Transform& matrix, CoordI patchPos, StraightBlitOp_p pPassOneOp);
 		void	_twoPassStraightBlit(const RectI& dest, CoordI pos, const Transform& matrix, CoordI patchPos, StraightBlitOp_p pPassOneOp);
 
-		void	_onePassTransformBlit(const RectI& dest, BinalCoord pos, const Transform& matrix, CoordI patchPos, TransformBlitOp_p pPassOneOp);
-		void	_twoPassTransformBlit(const RectI& dest, BinalCoord pos, const Transform& matrix, CoordI patchPos, TransformBlitOp_p pPassOneOp);
+		void	_onePassTransformBlit(const RectI& dest, BinalCoord pos, const binalInt transformMatrix[2][2], CoordI patchPos, TransformBlitOp_p pPassOneOp);
+		void	_twoPassTransformBlit(const RectI& dest, BinalCoord pos, const binalInt transformMatrix[2][2], CoordI patchPos, TransformBlitOp_p pPassOneOp);
 
 		void	_dummyStraightBlit(const RectI& dest, CoordI pos, const Transform& matrix, CoordI patchPos, StraightBlitOp_p pPassOneOp);
-		void	_dummyTransformBlit(const RectI& dest, BinalCoord pos, const Transform& matrix, CoordI patchPos, TransformBlitOp_p pPassOneOp);
+		void	_dummyTransformBlit(const RectI& dest, BinalCoord pos, const binalInt transformMatrix[2][2], CoordI patchPos, TransformBlitOp_p pPassOneOp);
 
 		//
 

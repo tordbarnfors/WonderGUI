@@ -2602,7 +2602,7 @@ pBackend->setStraightBlitKernel( PixelFormat::RGB_565_bigendian, SoftBackend::Re
 pBackend->setStraightBlitKernel( PixelFormat::RGB_555_bigendian, SoftBackend::ReadOp::Normal, TintMode::None, BlendMode::Replace, PixelFormat::BGRA_8_linear, _straight_blit<PixelFormat::RGB_555_bigendian, TintMode::None, BlendMode::Replace, PixelFormat::BGRA_8_linear, SoftBackend::ReadOp::Normal> );
 pBackend->setStraightBlitKernel( PixelFormat::RGB_555_bigendian, SoftBackend::ReadOp::Tile, TintMode::None, BlendMode::Replace, PixelFormat::BGRA_8_linear, _straight_blit<PixelFormat::RGB_555_bigendian, TintMode::None, BlendMode::Replace, PixelFormat::BGRA_8_linear, SoftBackend::ReadOp::Tile> );
 pBackend->setStraightBlitKernel( PixelFormat::RGB_555_bigendian, SoftBackend::ReadOp::Blur, TintMode::None, BlendMode::Replace, PixelFormat::BGRA_8_linear, _straight_blit<PixelFormat::RGB_555_bigendian, TintMode::None, BlendMode::Replace, PixelFormat::BGRA_8_linear, SoftBackend::ReadOp::Blur> );
-/*
+
 pBackend->setTransformBlitKernel( PixelFormat::BGR_8_sRGB, SampleMethod::Nearest, SoftBackend::ReadOp::Normal, TintMode::None, BlendMode::Replace, PixelFormat::Undefined,  _transform_blit<PixelFormat::BGR_8_sRGB, SampleMethod::Nearest, TintMode::None, BlendMode::Replace, PixelFormat::Undefined, SoftBackend::ReadOp::Normal> );
 pBackend->setTransformBlitKernel( PixelFormat::BGR_8_sRGB, SampleMethod::Nearest, SoftBackend::ReadOp::Clip, TintMode::None, BlendMode::Replace, PixelFormat::Undefined, _transform_blit<PixelFormat::BGR_8_sRGB, SampleMethod::Nearest, TintMode::None, BlendMode::Replace, PixelFormat::Undefined, SoftBackend::ReadOp::Clip> );
 pBackend->setTransformBlitKernel( PixelFormat::BGR_8_sRGB, SampleMethod::Nearest, SoftBackend::ReadOp::Tile, TintMode::None, BlendMode::Replace, PixelFormat::Undefined, _transform_blit<PixelFormat::BGR_8_sRGB, SampleMethod::Nearest, TintMode::None, BlendMode::Replace, PixelFormat::Undefined, SoftBackend::ReadOp::Tile> );
@@ -2812,7 +2812,7 @@ pBackend->setTransformBlitKernel( PixelFormat::RGB_555_bigendian, SampleMethod::
 pBackend->setTransformBlitKernel( PixelFormat::RGB_555_bigendian, SampleMethod::Bilinear, SoftBackend::ReadOp::Clip, TintMode::None, BlendMode::Replace, PixelFormat::BGRA_8_linear, _transform_blit<PixelFormat::RGB_555_bigendian, SampleMethod::Bilinear, TintMode::None, BlendMode::Replace, PixelFormat::BGRA_8_linear, SoftBackend::ReadOp::Clip> );
 pBackend->setTransformBlitKernel( PixelFormat::RGB_555_bigendian, SampleMethod::Bilinear, SoftBackend::ReadOp::Tile, TintMode::None, BlendMode::Replace, PixelFormat::BGRA_8_linear, _transform_blit<PixelFormat::RGB_555_bigendian, SampleMethod::Bilinear, TintMode::None, BlendMode::Replace, PixelFormat::BGRA_8_linear, SoftBackend::ReadOp::Tile> );
 pBackend->setTransformBlitKernel( PixelFormat::RGB_555_bigendian, SampleMethod::Bilinear, SoftBackend::ReadOp::Blur, TintMode::None, BlendMode::Replace, PixelFormat::BGRA_8_linear, _transform_blit<PixelFormat::RGB_555_bigendian, SampleMethod::Bilinear, TintMode::None, BlendMode::Replace, PixelFormat::BGRA_8_linear, SoftBackend::ReadOp::Blur> );
-*/
+
 
 pBackend->setStraightBlitKernel( PixelFormat::BGR_8_sRGB, SoftBackend::ReadOp::Normal, TintMode::None, BlendMode::Replace, PixelFormat::BGR_8_sRGB, _straight_blit<PixelFormat::BGR_8_sRGB, TintMode::None, BlendMode::Replace, PixelFormat::BGR_8_sRGB, SoftBackend::ReadOp::Normal> );
 pBackend->setStraightBlitKernel( PixelFormat::BGR_8_sRGB, SoftBackend::ReadOp::Tile, TintMode::None, BlendMode::Replace, PixelFormat::BGR_8_sRGB, _straight_blit<PixelFormat::BGR_8_sRGB, TintMode::None, BlendMode::Replace, PixelFormat::BGR_8_sRGB, SoftBackend::ReadOp::Tile> );
@@ -3282,7 +3282,7 @@ pBackend->setStraightBlitKernel( PixelFormat::RGB_555_bigendian, SoftBackend::Re
 pBackend->setStraightBlitKernel( PixelFormat::RGB_555_bigendian, SoftBackend::ReadOp::Normal, TintMode::None, BlendMode::Blend, PixelFormat::BGRA_8_linear, _straight_blit<PixelFormat::RGB_555_bigendian, TintMode::None, BlendMode::Blend, PixelFormat::BGRA_8_linear, SoftBackend::ReadOp::Normal> );
 pBackend->setStraightBlitKernel( PixelFormat::RGB_555_bigendian, SoftBackend::ReadOp::Tile, TintMode::None, BlendMode::Blend, PixelFormat::BGRA_8_linear, _straight_blit<PixelFormat::RGB_555_bigendian, TintMode::None, BlendMode::Blend, PixelFormat::BGRA_8_linear, SoftBackend::ReadOp::Tile> );
 pBackend->setStraightBlitKernel( PixelFormat::RGB_555_bigendian, SoftBackend::ReadOp::Blur, TintMode::None, BlendMode::Blend, PixelFormat::BGRA_8_linear, _straight_blit<PixelFormat::RGB_555_bigendian, TintMode::None, BlendMode::Blend, PixelFormat::BGRA_8_linear, SoftBackend::ReadOp::Blur> );
-/*
+
 pBackend->setTransformBlitKernel( PixelFormat::BGR_8_sRGB, SampleMethod::Nearest, SoftBackend::ReadOp::Normal, TintMode::None, BlendMode::Replace, PixelFormat::BGR_8_sRGB, _transform_blit<PixelFormat::BGR_8_sRGB, SampleMethod::Nearest, TintMode::None, BlendMode::Replace, PixelFormat::BGR_8_sRGB, SoftBackend::ReadOp::Normal> );
 pBackend->setTransformBlitKernel( PixelFormat::BGR_8_sRGB, SampleMethod::Bilinear, SoftBackend::ReadOp::Normal, TintMode::None, BlendMode::Replace, PixelFormat::BGR_8_sRGB, _transform_blit<PixelFormat::BGR_8_sRGB, SampleMethod::Bilinear, TintMode::None, BlendMode::Replace, PixelFormat::BGR_8_sRGB, SoftBackend::ReadOp::Normal> );
 pBackend->setTransformBlitKernel( PixelFormat::BGR_8_sRGB, SampleMethod::Nearest, SoftBackend::ReadOp::Clip, TintMode::None, BlendMode::Replace, PixelFormat::BGR_8_sRGB, _transform_blit<PixelFormat::BGR_8_sRGB, SampleMethod::Nearest, TintMode::None, BlendMode::Replace, PixelFormat::BGR_8_sRGB, SoftBackend::ReadOp::Clip> );
@@ -4531,7 +4531,7 @@ pBackend->setTransformBlitKernel( PixelFormat::RGB_555_bigendian, SampleMethod::
 pBackend->setTransformBlitKernel( PixelFormat::RGB_555_bigendian, SampleMethod::Bilinear, SoftBackend::ReadOp::Tile, TintMode::None, BlendMode::Blend, PixelFormat::BGRA_8_linear, _transform_blit<PixelFormat::RGB_555_bigendian, SampleMethod::Bilinear, TintMode::None, BlendMode::Blend, PixelFormat::BGRA_8_linear, SoftBackend::ReadOp::Tile> );
 pBackend->setTransformBlitKernel( PixelFormat::RGB_555_bigendian, SampleMethod::Nearest, SoftBackend::ReadOp::Blur, TintMode::None, BlendMode::Blend, PixelFormat::BGRA_8_linear, _transform_blit<PixelFormat::RGB_555_bigendian, SampleMethod::Nearest, TintMode::None, BlendMode::Blend, PixelFormat::BGRA_8_linear, SoftBackend::ReadOp::Blur> );
 pBackend->setTransformBlitKernel( PixelFormat::RGB_555_bigendian, SampleMethod::Bilinear, SoftBackend::ReadOp::Blur, TintMode::None, BlendMode::Blend, PixelFormat::BGRA_8_linear, _transform_blit<PixelFormat::RGB_555_bigendian, SampleMethod::Bilinear, TintMode::None, BlendMode::Blend, PixelFormat::BGRA_8_linear, SoftBackend::ReadOp::Blur> );
-*/
+
 
     return true;
 }

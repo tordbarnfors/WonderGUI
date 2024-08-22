@@ -1030,7 +1030,7 @@ void GfxDeviceGen2::_encodeStateChanges()
 
 	auto& cmdBuffer = m_pActiveLayer->commands;
 
-	int commandOfs = cmdBuffer.size();
+	int commandOfs = (int) cmdBuffer.size();
 
 	cmdBuffer.push_back(int(Command::StateChange));
 	cmdBuffer.push_back(0);										// States changed to be filled in later.

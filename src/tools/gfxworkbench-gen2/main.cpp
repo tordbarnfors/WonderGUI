@@ -33,6 +33,8 @@
 #include <wg_softbackend.h>
 #include <wg_softbackend_kernels.h>
 
+#include <wg_gradyent.h>
+
 
 using namespace wg;
 
@@ -161,8 +163,8 @@ int main ( int argc, char** argv )
 	pPrinter->setGfxDevice(pGfxDevice);
 	pPrinter->setCursorOrigo({0,20*64});
 	
-
-	pSDLSurf = SDL_LoadBMP( "resources/simple_button.bmp" );
+	pSDLSurf = SDL_LoadBMP( "resources/What-Goes-Up-3.bmp" );
+//	pSDLSurf = SDL_LoadBMP( "resources/simple_button.bmp" );
 	SoftSurface_p pSRGBSurface = SoftSurface::create({ .format = PixelFormat::BGRA_8_sRGB, .size = SizeI(pSDLSurf->w, pSDLSurf->h) }, (unsigned char*)pSDLSurf->pixels, PixelFormat::BGR_8, pSDLSurf->pitch, 0);
 	SDL_FreeSurface(pSDLSurf);
 
@@ -230,6 +232,9 @@ int main ( int argc, char** argv )
 	// Program Main Loop
 	//------------------------------------------------------
 
+	auto pGradient = Gradyent::create(Color::Black, Color::White, Color::White, Color::Red );
+	
+	
 	while( !bQuit )
 	{
 		// Loop through SDL events, translate them to WonderGUI events
@@ -247,13 +252,17 @@ int main ( int argc, char** argv )
 		pGfxDevice->fill(Color8::Black);
 		
 		//
+
+		pGfxDevice->setTint( RectSPX(0,0,512,512)*64, pGradient);
+//		pGfxDevice->fill( RectSPX(50,50,100,100)*64, Color::White );
 		
+/*
 		 pFocusSkin->_render(pGfxDevice, RectSPX(5, 5, 20, 20) * 64, 64, State::HoveredFocused);
 		 pHoverSkin->_render(pGfxDevice, RectSPX(5, 30, 20, 20) * 64, 64, State::HoveredFocused);
 		 pHoverAndFocusSkin->_render(pGfxDevice, RectSPX(5, 55, 20, 20) * 64, 64, State::SelectedHoveredFocused);
 		 pSelectedHoverAndFocusSkin->_render(pGfxDevice, RectSPX(5, 80, 20, 20) * 64, 64, State::SelectedHoveredFocused);
 		 pHoverWithFocusSkin->_render(pGfxDevice, RectSPX(5, 105, 20, 20) * 64, 64, State::SelectedHoveredFocused);
-		
+*/
 		
 		 pGfxDevice->setBlitSource(pSRGBSurface);
 		 pGfxDevice->blit({ 0,0 });

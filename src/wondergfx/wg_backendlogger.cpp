@@ -198,7 +198,7 @@ namespace wg
 					int32_t	w = *p++;
 					int32_t	h = *p++;
 
-					*m_pStream << "TintMap: " << objectOfs << " rect: " << x << ", " << y << ", " << w << ", " << "h" << std::endl;
+					*m_pStream << "TintMap: " << objectOfs << " rect: " << x << ", " << y << ", " << w << ", " << h << std::endl;
 				}
 
 				if (statesChanged & uint8_t(StateChange::MorphFactor))
