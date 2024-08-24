@@ -134,7 +134,7 @@ namespace wg
         void    stretchFlipBlit(const RectSPX& dest, const RectSPX& src, GfxFlip flip) override;
 
 		void	precisionBlit(const RectSPX& dest, const RectF& srcSPX) override;
-		void	transformBlit(const RectSPX& dest, CoordF srcSPX, const float transform[2][2]) override;
+		void	transformBlit(const RectSPX& dest, CoordF srcSPX, const Transform& transform) override;
         void    rotScaleBlit(const RectSPX& dest, float rotationDegrees, float scale, CoordF srcCenter = { 0.5f, 0.5f }, CoordF destCenter = { 0.5f,0.5f }) override;
 
         void    tile(const RectSPX& dest, CoordSPX shift = { 0,0 }) override;
@@ -147,7 +147,7 @@ namespace wg
 		void	blur(CoordSPX dest, const RectSPX& src) override;
 		void	stretchBlur(const RectSPX& dest) override;
 		void	stretchBlur(const RectSPX& dest, const RectSPX& src) override;
-		void	transformBlur(const RectSPX& dest, CoordF srcSPX, const float transform[2][2]) override;
+		void	transformBlur(const RectSPX& dest, CoordF srcSPX, const Transform& transform) override;
 		void	rotScaleBlur(const RectSPX& dest, float rotationDegrees, float scale, CoordF srcCenter = { 0.5f, 0.5f }, CoordF destCenter = { 0.5f,0.5f }) override;
 
 		

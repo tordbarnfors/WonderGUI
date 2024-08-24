@@ -197,6 +197,12 @@ typedef enum
 	WG_GFXFLIP_ROT270_FLIP_Y,
 } wg_gfxFlip;
 
+typedef struct
+{
+	float	xx, xy;		// Increment of X and Y position in source when increasing destination along X-axis
+	float	yx, yy;		// Increment of X and Y position in source when increasing destination along Y-axis
+}  wg_transform;
+
 //____ wg_canvasRef ____________________________________________________________
 
 typedef enum

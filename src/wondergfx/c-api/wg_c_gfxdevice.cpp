@@ -368,9 +368,9 @@ void wg_precisionBlit(wg_obj device, const wg_rectSPX* dest, const wg_rectF* src
 }
 
 
-void wg_transformBlit(wg_obj device, const wg_rectSPX* dest, wg_coordF srcSPX, const float transform[2][2])
+void wg_transformBlit(wg_obj device, const wg_rectSPX* dest, wg_coordF srcSPX, const wg_transform * pTransform)
 {
-	getPtr(device)->transformBlit(*(const RectSPX*)dest, {srcSPX.x, srcSPX.y}, transform );
+	getPtr(device)->transformBlit(*(const RectSPX*)dest, {srcSPX.x, srcSPX.y}, * reinterpret_cast<const wg::Transform*>(pTransform) );
 }
 
 
@@ -477,9 +477,9 @@ void wg_stretchBlurRect(wg_obj device, const wg_rectSPX* dest, const wg_rectSPX*
 	getPtr(device)->stretchBlur( *(const RectSPX*)dest, *(const RectSPX*)src );
 }
 
-void wg_transformBlur(wg_obj device, const wg_rectSPX* dest, wg_coordF srcSPX, const float transform[2][2])
+void wg_transformBlur(wg_obj device, const wg_rectSPX* dest, wg_coordF srcSPX, const wg_transform* pTransform)
 {
-	getPtr(device)->transformBlur(*(const RectSPX*)dest, {srcSPX.x, srcSPX.y}, transform );
+	getPtr(device)->transformBlur(*(const RectSPX*)dest, {srcSPX.x, srcSPX.y}, *reinterpret_cast<const wg::Transform*>(pTransform) );
 }
 
 void wg_rotScaleBlur(wg_obj device, const wg_rectSPX* dest, float rotationDegrees, float scale, wg_coordF srcCenter, wg_coordF destCenter)

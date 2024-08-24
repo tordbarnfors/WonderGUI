@@ -725,7 +725,7 @@ namespace wg
 
 	//____ transformBlit() _______________________________________________________
 
-	void StreamDevice::transformBlit(const RectSPX& dest, CoordF srcSPX, const float transform[2][2])
+	void StreamDevice::transformBlit(const RectSPX& dest, CoordF srcSPX, const Transform& transform)
 	{
 		if( _clippedOut( dest ) )
 			return;
@@ -738,10 +738,10 @@ namespace wg
 		(*m_pEncoder) << GfxStream::Header{ GfxChunkId::PrecisionBlit, spxFormat, GfxStream::spxSize(spxFormat)*4 + 24 };
 		(*m_pEncoder) << dest;
 		(*m_pEncoder) << srcSPX;
-		(*m_pEncoder) << transform[0][0];
-		(*m_pEncoder) << transform[0][1];
-		(*m_pEncoder) << transform[1][0];
-		(*m_pEncoder) << transform[1][1];
+		(*m_pEncoder) << transform.xx;
+		(*m_pEncoder) << transform.xy;
+		(*m_pEncoder) << transform.yx;
+		(*m_pEncoder) << transform.yy;
 	}
 
     //____ rotScaleBlit() ___________________________________________________________

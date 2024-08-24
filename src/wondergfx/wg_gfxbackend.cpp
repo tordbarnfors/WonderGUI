@@ -28,7 +28,7 @@ namespace wg
 
 	// Transforms for flipping movement over SOURCE when blitting
 
-const GfxBackend::Transform GfxBackend::s_blitFlipTransforms[GfxFlip_size] = {
+const Transform			GfxBackend::s_blitFlipTransforms[GfxFlip_size] = {
 	{ 1,0,0,1 },			// Normal
 	{ -1,0,0,1 },			// FlipX
 	{ 1,0,0,-1 },			// FlipY

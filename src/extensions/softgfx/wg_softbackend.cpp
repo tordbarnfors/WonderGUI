@@ -452,7 +452,6 @@ namespace wg
 			case Command::FillSubPixel:
 			case Command::Plot:
 			case Command::Line:
-			case Command::Blur:
 			case Command::DrawEdgemap:
 			{
 				//TODO: Implement!!!	
@@ -461,7 +460,10 @@ namespace wg
 				break;
 			}
 
+			case Command::Blur:
 			case Command::Blit:
+			case Command::ClipBlit:
+			case Command::Tile:
 			{
 				if (m_bBlitFunctionNeedsUpdate)
 				{
@@ -472,12 +474,11 @@ namespace wg
 				int32_t nRects = *p++;
 				int32_t transform = *p++;
 
-				int32_t srcX = *p++;
-				int32_t srcY = *p++;
-				int32_t dstX = *p++;
-				int32_t dstY = *p++;
+				spx srcX = *p++;
+				spx srcY = *p++;
+				spx dstX = *p++;
+				spx dstY = *p++;
 
-				bool bTiling = m_pCanvas->isTiling();
 
 				if (transform <= int(GfxFlip_max) )
 				{
@@ -510,19 +511,58 @@ namespace wg
 						src.x += patchOfs.x * mtx.xx + patchOfs.y * mtx.yx;
 						src.y += patchOfs.x * mtx.xy + patchOfs.y * mtx.yy;
 
-						if (bTiling)
+						if (cmd == Command::Blit)
+							(this->*m_pStraightBlitOp)(patch, src, mtx, patch.pos(), m_pStraightBlitFirstPassOp);
+						else if (cmd == Command::Tile)
 							(this->*m_pStraightTileOp)(patch, src, mtx, patch.pos(), m_pStraightTileFirstPassOp);
 						else
-							(this->*m_pStraightBlitOp)(patch, src, mtx, patch.pos(), m_pStraightBlitFirstPassOp);
+							(this->*m_pStraightBlurOp)(patch, src, mtx, patch.pos(), m_pStraightBlurFirstPassOp);
 					}
 				}
 				else
 				{
+					binalInt transform[2][2];
 
+					transform[0][0] = binalInt(pTransforms->xx * BINAL_MUL);
+					transform[0][1] = binalInt(pTransforms->xy * BINAL_MUL);
+					transform[1][0] = binalInt(pTransforms->yx * BINAL_MUL);
+					transform[1][1] = binalInt(pTransforms->yy * BINAL_MUL);
+
+					pTransforms++;
+
+					//
+
+					for (int i = 0; i < nRects; i++)
+					{
+						RectI	patch;
+
+						patch.x = *pCoords++ / 64;
+						patch.y = *pCoords++ / 64;
+						patch.w = *pCoords++ / 64;
+						patch.h = *pCoords++ / 64;
+
+						BinalCoord src = { srcX * (BINAL_MUL / 64), srcY * (BINAL_MUL / 64) };
+						CoordI dest = { dstX / 64, dstY / 64 };
+
+						CoordI	patchOfs = patch.pos() - dest;
+
+						//
+
+						src.x += patchOfs.x * transform[0][0] + patchOfs.y * transform[1][0];
+						src.y += patchOfs.x * transform[0][1] + patchOfs.y * transform[1][1];
+
+						//
+
+						if( cmd == Command::Blit)
+							(this->*m_pTransformBlitOp)(patch, src, transform, patch.pos(), m_pTransformBlitFirstPassOp);
+						else if (cmd == Command::ClipBlit)
+							(this->*m_pTransformClipBlitOp)(patch, src, transform, patch.pos(), m_pTransformClipBlitFirstPassOp);
+						else if (cmd == Command::Tile)
+							(this->*m_pTransformTileOp)(patch, src, transform, patch.pos(), m_pTransformTileFirstPassOp);
+						else
+							(this->*m_pTransformBlurOp)(patch, src, transform, patch.pos(), m_pTransformBlurFirstPassOp);
+					}
 				}
-
-
-
 
 				break;
 			}

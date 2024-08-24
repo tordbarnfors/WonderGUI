@@ -138,6 +138,8 @@ namespace wg
 			*m_pStream << p->xx << ", " << p->xy << std::endl;
 			*m_pStream << p->yx << ", " << p->yy << std::endl;
 			*m_pStream << std::endl;
+
+			p++;
 		}
 
 		if (m_pBackend)
@@ -247,6 +249,7 @@ namespace wg
 			case Command::Line:
 			case Command::Blur:
 			case Command::DrawEdgemap:
+			case Command::Tile:
 			{
 				//TODO: Implement!!!	
 
@@ -268,6 +271,22 @@ namespace wg
 
 				break;
 			}
+
+			case Command::ClipBlit:
+			{
+				int32_t nRects = *p++;
+				int32_t transform = *p++;
+
+				int32_t srcX = *p++;
+				int32_t srcY = *p++;
+				int32_t dstX = *p++;
+				int32_t dstY = *p++;
+
+				*m_pStream << "ClipBlit: " << nRects << " rects with transform: " << transform << ", src: " << srcX << ", " << srcY << " dest: " << dstX << ", " << dstY << std::endl;
+
+				break;
+			}
+
 
 			default:
 				*m_pStream << "ERROR: Unknown command (" << int(cmd) << ")" << std::endl;

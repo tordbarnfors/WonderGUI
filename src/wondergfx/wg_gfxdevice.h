@@ -198,7 +198,7 @@ namespace wg
 		virtual void	stretchFlipBlit(const RectSPX& dest, const RectSPX& src, GfxFlip flip) = 0;
 
 		virtual void	precisionBlit(const RectSPX& dest, const RectF& srcSPX) = 0;
-		virtual void	transformBlit(const RectSPX& dest, CoordF srcSPX, const float transform[2][2]) = 0;
+		virtual void	transformBlit(const RectSPX& dest, CoordF srcSPX, const Transform& transform) = 0;
 		virtual void	rotScaleBlit(const RectSPX& dest, float rotationDegrees, float scale, CoordF srcCenter = { 0.5f, 0.5f }, CoordF destCenter = { 0.5f,0.5f }) = 0;
 
 		virtual void	tile(const RectSPX& dest, CoordSPX shift = { 0,0 }) = 0;
@@ -211,7 +211,7 @@ namespace wg
 		virtual void	blur(CoordSPX dest, const RectSPX& src) = 0;
 		virtual void	stretchBlur(const RectSPX& dest) = 0;
 		virtual void	stretchBlur(const RectSPX& dest, const RectSPX& src) = 0;
-		virtual void	transformBlur(const RectSPX& dest, CoordF srcSPX, const float transform[2][2]) = 0;
+		virtual void	transformBlur(const RectSPX& dest, CoordF srcSPX, const Transform& transform) = 0;
 		virtual void	rotScaleBlur(const RectSPX& dest, float rotationDegrees, float scale, CoordF srcCenter = { 0.5f, 0.5f }, CoordF destCenter = { 0.5f,0.5f }) = 0;
 
 

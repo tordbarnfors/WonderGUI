@@ -449,9 +449,9 @@ namespace wg
 
 	//____ transformBlit() _______________________________________________________
 
-	void PluginGfxDevice::transformBlit(const RectSPX& dest, CoordF srcSPX, const float transform[2][2])
+	void PluginGfxDevice::transformBlit(const RectSPX& dest, CoordF srcSPX, const Transform& transform)
 	{
-        PluginCalls::gfxDevice->transformBlit(m_cDevice, (wg_rectSPX*)&dest, {srcSPX.x,srcSPX.y}, transform);
+        PluginCalls::gfxDevice->transformBlit(m_cDevice, (wg_rectSPX*)&dest, {srcSPX.x,srcSPX.y}, reinterpret_cast<const wg_transform*>(&transform) );
 	}
 
     //____ rotScaleBlit() _____________________________________________________
@@ -514,9 +514,9 @@ namespace wg
 
 	//____ transformBlur() _______________________________________________________
 
-	void PluginGfxDevice::transformBlur(const RectSPX& dest, CoordF srcSPX, const float transform[2][2])
+	void PluginGfxDevice::transformBlur(const RectSPX& dest, CoordF srcSPX, const Transform& transform)
 	{
-		PluginCalls::gfxDevice->transformBlur(m_cDevice, (wg_rectSPX*)&dest, {srcSPX.x,srcSPX.y}, transform);
+		PluginCalls::gfxDevice->transformBlur(m_cDevice, (wg_rectSPX*)&dest, {srcSPX.x,srcSPX.y}, reinterpret_cast<const wg_transform*>(&transform) );
 	}
 
 	//____ rotScaleBlur() ________________________________________________________

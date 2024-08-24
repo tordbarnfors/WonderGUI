@@ -59,12 +59,6 @@ namespace wg
 	class GfxBackend : public Object
 	{
 	public:
-
-		struct Transform
-		{
-			float	xx,xy;		// Increment of X and Y position in source when increasing destination along X-axis
-			float	yx,yy;		// Increment of X and Y position in source when increasing destination along Y-axis
-		};
 		
 		
 		enum class Command
@@ -76,6 +70,8 @@ namespace wg
 			Plot,
 			Line,
 			Blit,
+			ClipBlit,
+			Tile,
 			Blur,
 			DrawEdgemap
 		};

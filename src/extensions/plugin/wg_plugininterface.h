@@ -228,7 +228,7 @@ typedef struct wg_gfxdevice_calls_struct
 	void				(*stretchFlipBlit)(wg_obj device, const wg_rectSPX* dest, wg_gfxFlip flip);
 	void				(*stretchFlipBlitRect)(wg_obj device, const wg_rectSPX* dest, const wg_rectSPX* src, wg_gfxFlip flip);
 	void				(*precisionBlit)(wg_obj device, const wg_rectSPX* dest, const wg_rectF* srcSPX);
-	void				(*transformBlit)(wg_obj device, const wg_rectSPX* dest, wg_coordF srcSPX, const float transform[2][2]);
+	void				(*transformBlit)(wg_obj device, const wg_rectSPX* dest, wg_coordF srcSPX, const wg_transform * pTransform);
 	void				(*rotScaleBlit)(wg_obj device, const wg_rectSPX* dest, float rotationDegrees, float scale, wg_coordF srcCenter, wg_coordF destCenter);
 	void				(*tile)(wg_obj device, const wg_rectSPX* dest, wg_coordSPX shift);
 	void				(*flipTile)(wg_obj device, const wg_rectSPX* dest, wg_gfxFlip flip, wg_coordSPX shift);
@@ -252,7 +252,7 @@ typedef struct wg_gfxdevice_calls_struct
 	void				(*blurRect)(wg_obj device, wg_coordSPX dest, const wg_rectSPX* src);
 	void				(*stretchBlur)(wg_obj device, const wg_rectSPX* dest);
 	void				(*stretchBlurRect)(wg_obj device, const wg_rectSPX* dest, const wg_rectSPX* src);
-	void				(*transformBlur)(wg_obj device, const wg_rectSPX* dest, wg_coordF srcSPX, const float transform[2][2]);
+	void				(*transformBlur)(wg_obj device, const wg_rectSPX* dest, wg_coordF srcSPX, const wg_transform * pTransform);
 	void				(*rotScaleBlur)(wg_obj device, const wg_rectSPX* dest, float rotationDegrees, float scale, wg_coordF srcCenter, wg_coordF destCenter);
 
 	

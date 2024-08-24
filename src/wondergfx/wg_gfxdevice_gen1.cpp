@@ -968,16 +968,16 @@ namespace wg
 
 	//____ transformBlit() ________________________________________________
 
-	void GfxDeviceGen1::transformBlit(const RectSPX& dest, CoordF src, const float transform[2][2])
+	void GfxDeviceGen1::transformBlit(const RectSPX& dest, CoordF src, const Transform& transform)
 	{
 		assert(m_pBlitSource != nullptr);
 
 		binalInt	mtx[2][2];
 
-		mtx[0][0] = binalInt(transform[0][0]*BINAL_MUL);
-		mtx[0][1] = binalInt(transform[0][1]*BINAL_MUL);
-		mtx[1][0] = binalInt(transform[1][0]*BINAL_MUL);
-		mtx[1][1] = binalInt(transform[1][1]*BINAL_MUL);
+		mtx[0][0] = binalInt(transform.xx*BINAL_MUL);
+		mtx[0][1] = binalInt(transform.xy*BINAL_MUL);
+		mtx[1][0] = binalInt(transform.yx*BINAL_MUL);
+		mtx[1][1] = binalInt(transform.yy*BINAL_MUL);
 
 		OpType type = m_pBlitSource->isTiling() ? OpType::Tile : OpType::Blit;
 
@@ -1189,16 +1189,16 @@ namespace wg
 
 	//____ transformBlur() ________________________________________________
 
-	void GfxDeviceGen1::transformBlur(const RectSPX& dest, CoordF src, const float transform[2][2])
+	void GfxDeviceGen1::transformBlur(const RectSPX& dest, CoordF src, const Transform& transform)
 	{
 		assert(m_pBlitSource != nullptr);
 
 		binalInt	mtx[2][2];
 
-		mtx[0][0] = binalInt(transform[0][0]*BINAL_MUL);
-		mtx[0][1] = binalInt(transform[0][1]*BINAL_MUL);
-		mtx[1][0] = binalInt(transform[1][0]*BINAL_MUL);
-		mtx[1][1] = binalInt(transform[1][1]*BINAL_MUL);
+		mtx[0][0] = binalInt(transform.xx * BINAL_MUL);
+		mtx[0][1] = binalInt(transform.xy * BINAL_MUL);
+		mtx[1][0] = binalInt(transform.yx * BINAL_MUL);
+		mtx[1][1] = binalInt(transform.yy * BINAL_MUL);
 
 		_transformBlitComplex(dest, { toBinalInt(src.x), toBinalInt(src.y) }, mtx, OpType::Blur);
 	}

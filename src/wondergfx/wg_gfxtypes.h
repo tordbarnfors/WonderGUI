@@ -337,6 +337,14 @@ namespace wg
 		Rot270FlipY,
 	};
 
+	//____ Transform _________________________________________________________
+
+	struct Transform
+	{
+		float	xx, xy;		// Increment of X and Y position in source when increasing destination along X-axis
+		float	yx, yy;		// Increment of X and Y position in source when increasing destination along Y-axis
+	};
+
 	//____ TransitionCurve ________________________________________________________
 
 	enum class TransitionCurve	//. autoExtras

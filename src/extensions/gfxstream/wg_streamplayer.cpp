@@ -575,14 +575,14 @@ namespace wg
 		{
 			RectSPX		dest;
 			CoordF		source;
-			float		transform[2][2];
+			Transform	transform;
 
 			*m_pDecoder >> dest;
 			*m_pDecoder >> source;
-			*m_pDecoder >> transform[0][0];
-			*m_pDecoder >> transform[0][1];
-			*m_pDecoder >> transform[1][0];
-			*m_pDecoder >> transform[1][1];
+			*m_pDecoder >> transform.xx;
+			*m_pDecoder >> transform.xy;
+			*m_pDecoder >> transform.yx;
+			*m_pDecoder >> transform.yy;
 
 			m_pDevice->transformBlit(dest, source, transform);
 			break;

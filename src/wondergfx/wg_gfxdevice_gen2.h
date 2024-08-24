@@ -168,28 +168,28 @@ namespace wg
 		void	flipBlit(CoordSPX dest, GfxFlip flip) override;
 		void	flipBlit(CoordSPX dest, const RectSPX& src, GfxFlip flip) override;
 
-		void	stretchBlit(const RectSPX& dest) override {}
-		void	stretchBlit(const RectSPX& dest, const RectSPX& src) override {}
+		void	stretchBlit(const RectSPX& dest) override;
+		void	stretchBlit(const RectSPX& dest, const RectSPX& src) override;
 
-		void	stretchFlipBlit(const RectSPX& dest, GfxFlip flip) override {}
-		void	stretchFlipBlit(const RectSPX& dest, const RectSPX& src, GfxFlip flip) override {}
+		void	stretchFlipBlit(const RectSPX& dest, GfxFlip flip) override;
+		void	stretchFlipBlit(const RectSPX& dest, const RectSPX& src, GfxFlip flip) override;
 
-		void	precisionBlit(const RectSPX& dest, const RectF& srcSPX) override {}
-		void	transformBlit(const RectSPX& dest, CoordF srcSPX, const float transform[2][2]) override {}
-		void	rotScaleBlit(const RectSPX& dest, float rotationDegrees, float scale, CoordF srcCenter = { 0.5f, 0.5f }, CoordF destCenter = { 0.5f,0.5f }) override {}
+		void	precisionBlit(const RectSPX& dest, const RectF& srcSPX) override;
+		void	transformBlit(const RectSPX& dest, CoordF srcSPX, const Transform& transform) override;
+		void	rotScaleBlit(const RectSPX& dest, float rotationDegrees, float scale, CoordF srcCenter = { 0.5f, 0.5f }, CoordF destCenter = { 0.5f,0.5f }) override;
 
-		void	tile(const RectSPX& dest, CoordSPX shift = { 0,0 }) override {}
-		void	flipTile(const RectSPX& dest, GfxFlip flip, CoordSPX shift = { 0,0 }) override {}
+		void	tile(const RectSPX& dest, CoordSPX shift = { 0,0 }) override;
+		void	flipTile(const RectSPX& dest, GfxFlip flip, CoordSPX shift = { 0,0 }) override;
 
-		void	scaleTile(const RectSPX& dest, float scale, CoordSPX shift = { 0,0 }) override {}
-		void	scaleFlipTile(const RectSPX& dest, float scale, GfxFlip flip, CoordSPX shift = { 0,0 }) override {}
+		void	scaleTile(const RectSPX& dest, float scale, CoordSPX shift = { 0,0 }) override;
+		void	scaleFlipTile(const RectSPX& dest, float scale, GfxFlip flip, CoordSPX shift = { 0,0 }) override;
 
-		void	blur(CoordSPX dest) override {}
-		void	blur(CoordSPX dest, const RectSPX& src) override {}
-		void	stretchBlur(const RectSPX& dest) override {}
-		void	stretchBlur(const RectSPX& dest, const RectSPX& src) override {}
-		void	transformBlur(const RectSPX& dest, CoordF srcSPX, const float transform[2][2]) override {}
-		void	rotScaleBlur(const RectSPX& dest, float rotationDegrees, float scale, CoordF srcCenter = { 0.5f, 0.5f }, CoordF destCenter = { 0.5f,0.5f }) override {}
+		void	blur(CoordSPX dest) override;
+		void	blur(CoordSPX dest, const RectSPX& src) override;
+		void	stretchBlur(const RectSPX& dest) override;
+		void	stretchBlur(const RectSPX& dest, const RectSPX& src) override;
+		void	transformBlur(const RectSPX& dest, CoordF srcSPX, const Transform& transform) override;
+		void	rotScaleBlur(const RectSPX& dest, float rotationDegrees, float scale, CoordF srcCenter = { 0.5f, 0.5f }, CoordF destCenter = { 0.5f,0.5f }) override;
 
 
 		// Draw segments methods
@@ -210,7 +210,7 @@ namespace wg
 
 		// Special draw/blit methods
 
-		void	blitNinePatch(const RectSPX& dstRect, const BorderSPX& dstFrame, const NinePatch& patch, int scale) override {}
+		void	blitNinePatch(const RectSPX& dstRect, const BorderSPX& dstFrame, const NinePatch& patch, int scale) override;
 
 		//.____ Deprecated _______________________________________________________________
 
@@ -224,12 +224,11 @@ namespace wg
 
 		typedef GfxBackend::Command Command;
 		typedef GfxBackend::StateChange StateChange;
-		typedef GfxBackend::Transform Transform;
 
 		struct ClipList
 		{
 			int				nRects;
-			const RectSPX* pRects;
+			const RectSPX*	pRects;
 			RectSPX			bounds;
 		};
 
@@ -287,8 +286,12 @@ namespace wg
 		bool _beginCanvasUpdate(CanvasRef ref, Surface* pCanvas, int nUpdateRects, const RectSPX* pUpdateRects, CanvasLayers* pLayers, int startLayer);
 
 		void _transformBlitSimple(const RectSPX& _dest, CoordSPX src, int transformOfs, Command cmd);
+		void _transformBlitComplex(const RectSPX& _dest, CoordF _src, const Transform& matrix, Command cmd);
 
-		
+		void _stretchBlitWithRigidPartX(const RectSPX& src, const RectSPX& dst, spx rigidPartOfs, spx rigidPartLength, spx rigidPartLengthDst);
+		void _stretchBlitWithRigidPartY(const RectSPX& src, const RectSPX& dst, spx rigidPartOfs, spx rigidPartLength, spx rigidPartLengthDst);
+
+
 		//
 
 		void _resetState(RenderState& state);

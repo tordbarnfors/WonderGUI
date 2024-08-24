@@ -265,7 +265,9 @@ int main ( int argc, char** argv )
 */
 		
 		 pGfxDevice->setBlitSource(pSRGBSurface);
-		 pGfxDevice->blit({ 0,0 });
+//		 pGfxDevice->blit({ 0,0 });
+
+		 pGfxDevice->rotScaleBlit(RectSPX(128, 128, 256, 256) * 64, 45, 0.5f);
 
 
 		//
