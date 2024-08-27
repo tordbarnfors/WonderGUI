@@ -247,7 +247,7 @@ namespace wg
 		m_pCanvasPixels		= m_buffer.pixels;
 		m_canvasPixelFormat = m_buffer.format;
 		m_canvasPitch		= m_buffer.pitch;
-		m_canvasPixelBits	= m_pCanvas->pixelDescription()->bits;
+		m_canvasPixelBytes	= m_pCanvas->pixelDescription()->bits/8;
 
 		// Reset states
 
@@ -285,6 +285,14 @@ namespace wg
 		m_pCoordsEnd = pEnd;
 	}
 
+	//____ setColors() _____________________________________________
+
+	void SoftBackend::setColors(HiColor* pBeg, HiColor* pEnd)
+	{
+		m_pColorsBeg = pBeg;
+		m_pColorsEnd = pEnd;
+	}
+
 	//____ setTransforms() _____________________________________________
 
 	void SoftBackend::setTransforms(Transform* pBeg, Transform* pEnd)
@@ -299,6 +307,7 @@ namespace wg
 	{
 		spx *		pCoords = m_pCoordsBeg;
 		Transform*	pTransforms = m_pTransformsBeg;
+		HiColor*	pColors = m_pColorsBeg;
 
 
 		auto p = pBeg;
@@ -336,11 +345,7 @@ namespace wg
 
 				if (statesChanged & uint8_t(StateChange::TintColor))
 				{
-					m_colTrans.flatTintColor.r = *p++;
-					m_colTrans.flatTintColor.g = *p++;
-					m_colTrans.flatTintColor.b = *p++;
-					m_colTrans.flatTintColor.a = *p++;
-
+					m_colTrans.flatTintColor = *pColors++;
 					_updateTintMode();
 				}
 
@@ -394,10 +399,7 @@ namespace wg
 
 				if (statesChanged & uint8_t(StateChange::FixedBlendColor))
 				{
-					m_colTrans.fixedBlendColor.r = *p++;
-					m_colTrans.fixedBlendColor.g = *p++;
-					m_colTrans.fixedBlendColor.b = *p++;
-					m_colTrans.fixedBlendColor.a = *p++;
+					m_colTrans.fixedBlendColor = *pColors++;
 				}
 
 				if (statesChanged & uint8_t(StateChange::Blur))
@@ -418,38 +420,192 @@ namespace wg
 			{
 				int32_t nRects = *p++;
 
-				int32_t r = *p++;
-				int32_t g = *p++;
-				int32_t b = *p++;
-				int32_t a = *p++;
-
-				HiColor col(r, g, b, a);
+				HiColor&  col = * pColors++;
 
 				FillOp_p pFunc = nullptr;
 
+				// Optimize calls
+
+				BlendMode blendMode = m_blendMode;
+				if (blendMode == BlendMode::Blend && col.a == 4096 && (m_colTrans.mode == TintMode::None || (m_colTrans.mode == TintMode::Flat && m_colTrans.flatTintColor.a == 4096)) )
+				{
+					blendMode = BlendMode::Replace;
+				}
+
 				auto pKernels = m_pKernels[(int)m_pCanvas->pixelFormat()];
 				if (pKernels)
-					pFunc = pKernels->pFillKernels[(int)m_colTrans.mode][(int)m_blendMode];
+					pFunc = pKernels->pFillKernels[(int)m_colTrans.mode][(int)blendMode];
 
 				if (!pFunc)
 				{
-					//TODO: Error handling!!!
+					pCoords += 4 * nRects;
 
+					if (blendMode == BlendMode::Ignore)
+						break;
+
+					char errorMsg[1024];
+
+					snprintf(errorMsg, 1024, "Failed fill operation. SoftGfxDevice is missing fill kernel for TintMode::%s, BlendMode::%s onto surface of PixelFormat:%s.",
+						toString(m_colTrans.mode),
+						toString(blendMode),
+						toString(m_pCanvas->pixelFormat()));
+
+					GfxBase::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, errorMsg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 					break;
 				}
 
 				for (int i = 0; i < nRects; i++)
 				{
-					RectI patch = (* reinterpret_cast<RectSPX*>(pCoords))/64;
+					RectI patch = (* reinterpret_cast<RectSPX*>(pCoords));
 					pCoords += 4;
 
-					uint8_t* pDst = m_pCanvasPixels + patch.y * m_canvasPitch + patch.x * m_canvasPixelBits/8;
-					pFunc(pDst, m_canvasPixelBits/8, m_canvasPitch - patch.w * (m_canvasPixelBits/8), patch.h, patch.w, col, m_colTrans, patch.pos());
+					if (((patch.x | patch.y | patch.w | patch.h) & 63) == 0)
+					{
+						// Pixel aligned fill
+
+						patch /= 64;
+
+						uint8_t* pDst = m_pCanvasPixels + patch.y * m_canvasPitch + patch.x * m_canvasPixelBytes;
+						pFunc(pDst, m_canvasPixelBytes, m_canvasPitch - patch.w * m_canvasPixelBytes, patch.h, patch.w, col, m_colTrans, patch.pos());
+					}
+					else
+					{
+						// Subpixel fill
+
+
+						// Fill all but anti-aliased edges
+
+						int x1 = ((patch.x + 63) >> 6);
+						int y1 = ((patch.y + 63) >> 6);
+						int x2 = ((patch.x + patch.w) >> 6);
+						int y2 = ((patch.y + patch.h) >> 6);
+
+						uint8_t* pDst = m_pCanvasPixels + y1 * m_canvasPitch + x1 * m_canvasPixelBytes;
+						pFunc(pDst, m_canvasPixelBytes, m_canvasPitch - (x2 - x1) * m_canvasPixelBytes, y2 - y1, x2 - x1, col, m_colTrans, { x1,y1 });
+
+						//
+
+						BlendMode	edgeBlendMode = (blendMode == BlendMode::Replace) ? BlendMode::Blend : blendMode; // Need to blend edges and corners even if fill is replace
+
+						FillOp_p pEdgeFunc = pKernels->pFillKernels[(int)m_colTrans.mode][(int)edgeBlendMode];
+
+						if (pEdgeFunc == nullptr)
+						{
+							pCoords += (nRects - i - 1) * 4;
+
+							if (blendMode == BlendMode::Ignore)
+								break;
+
+							char errorMsg[1024];
+
+							snprintf(errorMsg, 1024, "Failed fill operation. SoftGfxDevice is missing fill kernel for TintMode::%s, BlendMode::%s onto surface of PixelFormat:%s.",
+								toString(m_colTrans.mode),
+								toString(blendMode),
+								toString(m_pCanvas->pixelFormat()));
+
+							GfxBase::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, errorMsg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+							break;
+						}
+
+						// Draw the sides
+
+						int aaLeft = (4096 - (patch.x & 0x3F) * 64) & 4095;
+						int aaTop = (4096 - (patch.y & 0x3F) * 64) & 4095;
+						int aaRight = ((patch.x + patch.w) & 0x3F) * 64;
+						int aaBottom = ((patch.y + patch.h) & 0x3F) * 64;
+
+						int aaTopLeft = aaTop * aaLeft / 4096;
+						int aaTopRight = aaTop * aaRight / 4096;
+						int aaBottomLeft = aaBottom * aaLeft / 4096;
+						int aaBottomRight = aaBottom * aaRight / 4096;
+
+
+						if (blendMode != BlendMode::Replace)
+						{
+							int alpha = col.a;
+
+							aaLeft = aaLeft * alpha >> 12;
+							aaTop = aaTop * alpha >> 12;
+							aaRight = aaRight * alpha >> 12;
+							aaBottom = aaBottom * alpha >> 12;
+
+							aaTopLeft = aaTopLeft * alpha >> 12;
+							aaTopRight = aaTopRight * alpha >> 12;
+							aaBottomLeft = aaBottomLeft * alpha >> 12;
+							aaBottomRight = aaBottomRight * alpha >> 12;
+						}
+
+						RectI pixelPatch = patch / 64;
+						HiColor color = col;
+
+						if (aaTop != 0)
+						{
+							uint8_t* pDst = m_pCanvasPixels + pixelPatch.y * m_canvasPitch + x1 * m_canvasPixelBytes;
+							int length = x2 - x1;
+							color.a = aaTop;
+							pEdgeFunc(pDst, m_canvasPixelBytes, 0, 1, length, color, m_colTrans, { x1,pixelPatch.y });
+						}
+
+						if (aaBottom != 0)
+						{
+							uint8_t* pDst = m_pCanvasPixels + y2 * m_canvasPitch + x1 * m_canvasPixelBytes;
+							int length = x2 - x1;
+							color.a = aaBottom;
+							pEdgeFunc(pDst, m_canvasPixelBytes, 0, 1, length, color, m_colTrans, { x1,y2 });
+						}
+
+						if (aaLeft != 0)
+						{
+							uint8_t* pDst = m_pCanvasPixels + y1 * m_canvasPitch + pixelPatch.x * m_canvasPixelBytes;
+							int length = y2 - y1;
+							color.a = aaLeft;
+							pEdgeFunc(pDst, m_canvasPitch, 0, 1, length, color, m_colTrans, { pixelPatch.x, y1 });
+						}
+
+						if (aaRight != 0)
+						{
+							uint8_t* pDst = m_pCanvasPixels + y1 * m_canvasPitch + x2 * m_canvasPixelBytes;
+							int length = y2 - y1;
+							color.a = aaRight;
+							pEdgeFunc(pDst, m_canvasPitch, 0, 1, length, color, m_colTrans, { x2, y1 });
+						}
+
+						// Draw corner pieces
+
+
+						if (aaTopLeft != 0)
+						{
+							uint8_t* pDst = m_pCanvasPixels + pixelPatch.y * m_canvasPitch + pixelPatch.x * m_canvasPixelBytes;
+							color.a = aaTopLeft;
+							pEdgeFunc(pDst, 0, 0, 1, 1, color, m_colTrans, { pixelPatch.x, pixelPatch.y });
+						}
+
+						if (aaTopRight != 0)
+						{
+							uint8_t* pDst = m_pCanvasPixels + pixelPatch.y * m_canvasPitch + x2 * m_canvasPixelBytes;
+							color.a = aaTopRight;
+							pEdgeFunc(pDst, 0, 0, 1, 1, color, m_colTrans, { x2, pixelPatch.y });
+						}
+
+						if (aaBottomLeft != 0)
+						{
+							uint8_t* pDst = m_pCanvasPixels + y2 * m_canvasPitch + pixelPatch.x * m_canvasPixelBytes;
+							color.a = aaBottomLeft;
+							pEdgeFunc(pDst, 0, 0, 1, 1, color, m_colTrans, { pixelPatch.x, y2 });
+						}
+
+						if (aaBottomRight != 0)
+						{
+							uint8_t* pDst = m_pCanvasPixels + y2 * m_canvasPitch + x2 * m_canvasPixelBytes;
+							color.a = aaBottomRight;
+							pEdgeFunc(pDst, 0, 0, 1, 1, color, m_colTrans, { x2, y2 });
+						}
+
+					}
 				}
 				break;
 			}
 
-			case Command::FillSubPixel:
 			case Command::Plot:
 			case Command::Line:
 			case Command::DrawEdgemap:
@@ -768,7 +924,7 @@ namespace wg
 		const SoftSurface* pSource = m_pBlitSource;
 
 		int srcPixelBytes = pSource->m_pPixelDescription->bits / 8;
-		int dstPixelBytes = m_canvasPixelBits / 8;
+		int dstPixelBytes = m_canvasPixelBytes;
 
 		Pitches pitches;
 
@@ -790,7 +946,7 @@ namespace wg
 		SoftSurface* pSource = m_pBlitSource;
 
 		int srcPixelBytes = pSource->m_pPixelDescription->bits / 8;
-		int dstPixelBytes = m_canvasPixelBits / 8;
+		int dstPixelBytes = m_canvasPixelBytes;
 
 		Pitches pitchesPass1, pitchesPass2;
 
@@ -843,7 +999,7 @@ namespace wg
 	{
 		const SoftSurface* pSource = m_pBlitSource;
 
-		int dstPixelBytes = m_canvasPixelBits / 8;
+		int dstPixelBytes = m_canvasPixelBytes;
 
 		uint8_t* pDst = m_pCanvasPixels + dest.y * m_canvasPitch + dest.x * dstPixelBytes;
 
@@ -858,7 +1014,7 @@ namespace wg
 	{
 		const SoftSurface* pSource = m_pBlitSource;
 
-		int dstPixelBytes = m_canvasPixelBits / 8;
+		int dstPixelBytes = m_canvasPixelBytes;
 
 		Pitches pitchesPass2;
 

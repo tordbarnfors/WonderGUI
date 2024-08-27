@@ -60,17 +60,15 @@ namespace wg
 	{
 	public:
 		
-		
 		enum class Command
 		{
 			None,
 			StateChange,
 			Fill,
-			FillSubPixel,				// Includes start/direction lines.
 			Plot,
 			Line,
 			Blit,
-			ClipBlit,
+			ClipBlit,					// Might be blitting from outside source surface.
 			Tile,
 			Blur,
 			DrawEdgemap
@@ -106,6 +104,7 @@ namespace wg
 		virtual void	setObjects(Object** pBeg, Object** pEnd) = 0;
 
 		virtual void	setCoords(spx* pBeg, spx* pEnd) = 0;
+		virtual void	setColors(HiColor* pBeg, HiColor* pEnd) = 0;
 		virtual void	setTransforms(Transform * pBeg, Transform * pEnd) = 0;
 
 		virtual void	processCommands( int32_t* pBeg, int32_t * pEnd) = 0;

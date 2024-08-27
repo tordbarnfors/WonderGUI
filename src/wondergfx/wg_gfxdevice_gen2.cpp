@@ -29,6 +29,8 @@
 #include <wg_gfxutil.h>
 #include <wg_gfxbase.h>
 
+#include <wg_gradyent.h>
+
 using namespace std;
 using namespace wg::Util;
 
@@ -378,16 +380,51 @@ HiColor GfxDeviceGen2::tintColor() const
 
 void GfxDeviceGen2::setTintGradient(const RectSPX& rect, const Gradient& gradient)
 {
-	// Gen2 does not have tint gradients. Maybe we try to translate them into
-	// Tintmaps, but probably not. Probably better to change the calls
+	HiColor bottom = (gradient.bottomLeft.r + gradient.bottomRight.r / 2,
+		gradient.bottomLeft.g + gradient.bottomRight.g / 2,
+		gradient.bottomLeft.b + gradient.bottomRight.b / 2,
+		gradient.bottomLeft.a + gradient.bottomRight.a / 2);
+
+	HiColor top = (gradient.topLeft.r + gradient.topRight.r / 2,
+		gradient.topLeft.g + gradient.topRight.g / 2,
+		gradient.topLeft.b + gradient.topRight.b / 2,
+		gradient.topLeft.a + gradient.topRight.a / 2);
+
+	HiColor left = (gradient.topLeft.r + gradient.bottomLeft.r / 2,
+		gradient.topLeft.g + gradient.bottomLeft.g / 2,
+		gradient.topLeft.b + gradient.bottomLeft.b / 2,
+		gradient.topLeft.a + gradient.bottomLeft.a / 2);
+
+	HiColor right = (gradient.topRight.r + gradient.bottomRight.r / 2,
+		gradient.topRight.g + gradient.bottomRight.g / 2,
+		gradient.topRight.b + gradient.bottomRight.b / 2,
+		gradient.topRight.a + gradient.bottomRight.a / 2);
+
+	float yDiff = (bottom.r - top.r) * (bottom.r - top.r) +
+					(bottom.g - top.g) * (bottom.g - top.g) +
+					(bottom.b - top.b) * (bottom.b - top.b) +
+					(bottom.a - top.a) * (bottom.a - top.a);
+
+	float xDiff = (left.r - right.r) * (left.r - right.r) +
+		(left.g - right.g) * (left.g - right.g) +
+		(left.b - right.b) * (left.b - right.b) +
+		(left.a - right.a) * (left.a - right.a);
+
+	Gradyent_p pGradyent;
+
+	if (xDiff > yDiff)
+		pGradyent = Gradyent::create(HiColor::White, HiColor::White, left, right);
+	else
+		pGradyent = Gradyent::create(top, bottom, HiColor::White, HiColor::White);
+
+	setTint(rect, pGradyent);
 }
 
 //____ clearTintGradient() ________________________________________________
 
 void GfxDeviceGen2::clearTintGradient()
 {
-	// Gen2 does not have tint gradients. Maybe we try to translate them into
-	// Tintmaps, but probably not. Probably better to change the calls
+	clearTint();
 }
 
 //____ setBlendMode() _____________________________________________________
@@ -761,6 +798,10 @@ void GfxDeviceGen2::flattenLayers()
 		spx * pCoordsEnd = pCoordsBeg + canvasData.layers[i].coords.size();
 		m_pBackend->setCoords(pCoordsBeg, pCoordsEnd );
 
+		HiColor* pColorsBeg = canvasData.layers[i].colors.data();
+		HiColor* pColorsEnd = pColorsBeg + canvasData.layers[i].colors.size();
+		m_pBackend->setColors(pColorsBeg, pColorsEnd);
+
 		int32_t* pCommandsBeg = canvasData.layers[i].commands.data();
 		int32_t* pCommandsEnd = pCommandsBeg + canvasData.layers[i].commands.size();
 		m_pBackend->processCommands( pCommandsBeg, pCommandsEnd );
@@ -797,11 +838,7 @@ void GfxDeviceGen2::fill(HiColor color)
 	m_pActiveLayer->commands.push_back(int(Command::Fill));
 	m_pActiveLayer->commands.push_back(m_pActiveClipList->nRects);
 
-	m_pActiveLayer->commands.push_back( color.r );
-	m_pActiveLayer->commands.push_back( color.g );
-	m_pActiveLayer->commands.push_back( color.b );
-	m_pActiveLayer->commands.push_back( color.a );
-	
+	m_pActiveLayer->colors.push_back(color);
 
 	const RectSPX* pRect = m_pActiveClipList->pRects;
 	auto& coords = m_pActiveLayer->coords;
@@ -844,7 +881,7 @@ void GfxDeviceGen2::fill(const RectSPX& rect, HiColor color)
 	{
 		RectSPX clipped = RectSPX::overlap(m_pActiveClipList->pRects[i], rect);
 
-		if( !clipped.isEmpty() )
+		if (!clipped.isEmpty())
 		{
 			coords.emplace_back(clipped.x);
 			coords.emplace_back(clipped.y);
@@ -855,7 +892,7 @@ void GfxDeviceGen2::fill(const RectSPX& rect, HiColor color)
 		}
 	}
 
-	if( nRects > 0 )
+	if (nRects > 0)
 	{
 		if (m_stateChanges != 0)
 			_encodeStateChanges();
@@ -863,10 +900,161 @@ void GfxDeviceGen2::fill(const RectSPX& rect, HiColor color)
 		m_pActiveLayer->commands.push_back(int(Command::Fill));
 		m_pActiveLayer->commands.push_back(nRects);
 
-		m_pActiveLayer->commands.push_back( color.r );
-		m_pActiveLayer->commands.push_back( color.g );
-		m_pActiveLayer->commands.push_back( color.b );
-		m_pActiveLayer->commands.push_back( color.a );
+		m_pActiveLayer->colors.push_back(color);
+	}
+}
+
+//____ plotPixels() ____________________________________________________________
+
+void GfxDeviceGen2::plotPixels(int nCoords, const CoordSPX* pCoords, const HiColor* pColors)
+{
+	if (!m_pActiveCanvas)
+	{
+		//TODO: Error handling!
+
+		return;
+	}
+
+	int nCoordsPassed = 0;
+
+	auto& coords = m_pActiveLayer->coords;
+	auto& commands = m_pActiveLayer->commands;
+	auto& colors = m_pActiveLayer->colors;
+
+	int commandOfs = commands.size();
+
+	commands.push_back(int(Command::Plot));
+	commands.push_back(0);						// Space for ammount
+
+	for (int i = 0; i < nCoords; i++)
+	{
+		for (int i = 0; i < m_pActiveClipList->nRects; i++)
+		{
+			if (m_pActiveClipList->pRects[i].contains(pCoords[i]) )
+			{
+				coords.emplace_back( align(pCoords->x) );
+				coords.emplace_back( align(pCoords->y) );
+
+				colors.push_back(pColors[i]);
+
+				nCoordsPassed++;
+				break;
+			}
+		}
+	}
+
+	if (nCoordsPassed > 0)
+	{
+		if (m_stateChanges != 0)
+			_encodeStateChanges();
+
+		commands[commandOfs + 1] = nCoordsPassed;
+	}
+	else
+		commands.resize(commandOfs);
+}
+
+//____ drawLine() (start/direction) __________________________________________
+
+void GfxDeviceGen2::drawLine(CoordSPX begin, Direction dir, spx length, HiColor color, spx thickness)
+{
+	RectSPX rect;
+
+	switch (dir)
+	{
+	case Direction::Up:
+		rect.x = begin.x - thickness / 2;
+		rect.y = begin.y - length;
+		rect.w = thickness;
+		rect.h = length;
+		break;
+	case Direction::Down:
+		rect.x = begin.x - thickness / 2;
+		rect.y = begin.y ;
+		rect.w = thickness;
+		rect.h = length;
+		break;
+	case Direction::Left:
+		rect.x = begin.x;
+		rect.y = begin.y - thickness / 2;
+		rect.w = length;
+		rect.h = thickness;
+		break;
+	case Direction::Right:
+		rect.x = begin.x - length;
+		rect.y = begin.y - thickness / 2;
+		rect.w = length;
+		rect.h = thickness;
+		break;
+	}
+
+	fill(rect, color);
+
+}
+
+//____ drawLine() (from/to) __________________________________________
+
+void GfxDeviceGen2::drawLine(CoordSPX beg, CoordSPX end, HiColor color, spx thickness)
+{
+	if (!m_pActiveCanvas)
+	{
+		//TODO: Error handling!
+
+		return;
+	}
+
+	// Skip calls that won't affect destination
+
+	if (color.a == 0 && (m_renderState.blendMode == BlendMode::Blend))
+		return;
+
+
+	int nRects = 0;
+
+	auto& commands = m_pActiveLayer->commands;
+	int commandsOfs = commands.size();
+
+	m_pActiveLayer->commands.push_back(int(Command::Line));
+	m_pActiveLayer->commands.push_back(thickness);
+	m_pActiveLayer->commands.push_back(nRects);
+
+	for (int i = 0; i < m_pActiveClipList->nRects; i++)
+	{
+		RectSPX rect = m_pActiveClipList->pRects[i];
+		rect.x -= (thickness/2)+1;
+		rect.y -= (thickness/2)+1;
+		rect.w += thickness+1;
+		rect.h += thickness+1;
+
+		if ( rect.intersectsWithOrContains(beg,end, 8) );
+		{
+			commands.push_back(m_pActiveClipList->pRects[i].x);
+			commands.push_back(m_pActiveClipList->pRects[i].y);
+			commands.push_back(m_pActiveClipList->pRects[i].w);
+			commands.push_back(m_pActiveClipList->pRects[i].h);
+
+			nRects++;
+			break;
+		}
+	}
+
+	if (nRects > 0)
+	{
+		if (m_stateChanges != 0)
+			_encodeStateChanges();
+
+		commands[commandsOfs + 2] = nRects;
+
+		m_pActiveLayer->coords.push_back(beg.x);
+		m_pActiveLayer->coords.push_back(beg.y);
+		m_pActiveLayer->coords.push_back(end.x);
+		m_pActiveLayer->coords.push_back(end.y);
+
+		m_pActiveLayer->colors.push_back(color);
+	}
+	else
+	{
+		commands.resize(commandsOfs);
 	}
 }
 
@@ -1010,13 +1198,13 @@ void GfxDeviceGen2::stretchBlit(const RectSPX& dest, const RectSPX& src)
 			// We want last src sample to be taken as close to the end of the source
 			// rectangle as possible in order to get a more balanced representation.
 
-			mtx.xx = src.w / 64 / (dest.w / 64);
+			mtx.xx = src.w / 64.f / (dest.w / 64);
 			mtx.xy = 0;
 			mtx.yx = 0;
-			mtx.yy = src.h / 64 / (dest.h / 64);
+			mtx.yy = src.h / 64.f / (dest.h / 64);
 		}
 
-		_transformBlitComplex(dest, { src.x / 64.f, src.y / 64.f }, mtx, Command::Blit);
+		_transformBlitComplex(dest, { src.x, src.y }, mtx, Command::Blit);
 	}
 }
 
@@ -1070,8 +1258,8 @@ void GfxDeviceGen2::stretchFlipBlit(const RectSPX& dest, const RectSPX& src, Gfx
 		else
 			scaleY = srcH / ((dest.h / 64) - 1);
 
-		ofsX = (src.x / 64.f) + (srcW * s_blitFlipOffsets[(int)flip][0]);
-		ofsY = (src.y / 64.f) + (srcH * s_blitFlipOffsets[(int)flip][1]);
+		ofsX = src.x + (srcW * s_blitFlipOffsets[(int)flip][0]);
+		ofsY = src.y + (srcH * s_blitFlipOffsets[(int)flip][1]);
 	}
 	else
 	{
@@ -1092,7 +1280,7 @@ void GfxDeviceGen2::stretchFlipBlit(const RectSPX& dest, const RectSPX& src, Gfx
 	mtx.yx = scaleX * s_blitFlipTransforms[(int)flip][1][0];
 	mtx.yy = scaleY * s_blitFlipTransforms[(int)flip][1][1];
 
-	_transformBlitComplex(dest, { ofsX, ofsY }, mtx, Command::Blit);
+	_transformBlitComplex(dest, { int(ofsX*64), int(ofsY*64) }, mtx, Command::Blit);
 }
 
 //____ precisionBlit() ____________________________________________________
@@ -1126,7 +1314,7 @@ void GfxDeviceGen2::precisionBlit(const RectSPX& dest, const RectF& src)
 		mtx.yy = src.h / (dest.h / 64);
 	}
 
-	_transformBlitComplex(dest, src.pos(), mtx, Command::Blit);
+	_transformBlitComplex(dest, { int(src.x), int(src.y) }, mtx, Command::Blit);
 }
 
 //____ transformBlit() ________________________________________________
@@ -1145,7 +1333,7 @@ void GfxDeviceGen2::transformBlit(const RectSPX& dest, CoordF src, const Transfo
 
 	Command cmd = m_renderState.blitSource->isTiling() ? Command::Tile : Command::ClipBlit;
 
-	_transformBlitComplex(dest, { src.x, src.y }, transform, cmd);
+	_transformBlitComplex(dest, { int(src.x), int(src.y) }, transform, cmd);
 }
 
 //____ rotScaleBlit() _____________________________________________________
@@ -1186,12 +1374,12 @@ void GfxDeviceGen2::rotScaleBlit(const RectSPX& dest, float rotationDegrees, flo
 	//		src.x -= dest.w / 2.f * mtx[0][0] + dest.h / 2.f * mtx[1][0];
 	//		src.y -= dest.w / 2.f * mtx[0][1] + dest.h / 2.f * mtx[1][1];
 
-	src.x -= (dest.w * destCenter.x * mtx.xx + dest.h * destCenter.y * mtx.yx) / 64;
-	src.y -= (dest.w * destCenter.x * mtx.xy + dest.h * destCenter.y * mtx.yy) / 64;
+	src.x -= dest.w * destCenter.x * mtx.xx + dest.h * destCenter.y * mtx.yx;
+	src.y -= dest.w * destCenter.x * mtx.xy + dest.h * destCenter.y * mtx.yy;
 
 	Command cmd = pSource->isTiling() ? Command::Tile : Command::ClipBlit;
 
-	_transformBlitComplex(dest, { src.x,src.y }, mtx, cmd);
+	_transformBlitComplex(dest, { int(src.x),int(src.y) }, mtx, cmd);
 }
 
 //____ tile() _____________________________________________________________
@@ -1285,7 +1473,7 @@ void GfxDeviceGen2::scaleTile(const RectSPX& dest, float scale, CoordSPX shift)
 	mtx.yx = 0;
 	mtx.yy = 1 / scale;
 
-	CoordF sh = { shift.x / (64*scale), shift.y / (64*scale) };
+	CoordSPX sh = { int(shift.x / scale), int(shift.y / scale) };
 
 	_transformBlitComplex(dest, sh, mtx, Command::Tile);
 }
@@ -1320,11 +1508,11 @@ void GfxDeviceGen2::scaleFlipTile(const RectSPX& dest, float scale, GfxFlip flip
 	mtx.yy = s_blitFlipTransforms[(int)flip][1][1] / scale;
 
 	SizeI srcSize = pSource->pixelSize();
-	float ofsX = (srcSize.w - 1) * s_blitFlipOffsets[(int)flip][0];
-	float ofsY = (srcSize.h - 1) * s_blitFlipOffsets[(int)flip][1];
+	spx ofsX = (srcSize.w - 1) * s_blitFlipOffsets[(int)flip][0] * 64;
+	spx ofsY = (srcSize.h - 1) * s_blitFlipOffsets[(int)flip][1] * 64;
 
-	ofsX += (shift.x * mtx.xx + shift.y * mtx.yx) / 64;
-	ofsY += (shift.x * mtx.xy + shift.y * mtx.yy) / 64;
+	ofsX += shift.x * mtx.xx + shift.y * mtx.yx;
+	ofsY += shift.x * mtx.xy + shift.y * mtx.yy;
 
 	_transformBlitComplex(dest, { ofsX,ofsY }, mtx, Command::Tile);
 }
@@ -1426,7 +1614,7 @@ void GfxDeviceGen2::stretchBlur(const RectSPX& dest, const RectSPX& src)
 			mtx.yy = src.h / 64 / (dest.h / 64);
 		}
 
-		_transformBlitComplex(dest, { src.x / 64.f, src.y / 64.f }, mtx, Command::Blur);
+		_transformBlitComplex(dest, { src.x, src.y }, mtx, Command::Blur);
 	}
 }
  
@@ -1444,7 +1632,7 @@ void GfxDeviceGen2::transformBlur(const RectSPX& dest, CoordF src, const Transfo
 	if (m_renderState.blitSource == nullptr)
 		return;
 
-	_transformBlitComplex(dest, { src.x, src.y }, transform, Command::Blur);
+	_transformBlitComplex(dest, { int(src.x), int(src.y) }, transform, Command::Blur);
 }
 
 //____ rotScaleBlur() _____________________________________________________
@@ -1466,7 +1654,7 @@ void GfxDeviceGen2::rotScaleBlur(const RectSPX& dest, float rotationDegrees, flo
 	if (pSource->m_size.w * scale < 1.f || pSource->m_size.h * scale < 1.f)			// Values very close to zero gives overflow in calculations.
 		return;
 
-	CoordF		src;
+	CoordSPX	src;
 	Transform	mtx;
 
 	float	sz = (float)sin(-rotationDegrees * 3.14159265 / 180);
@@ -1480,13 +1668,13 @@ void GfxDeviceGen2::rotScaleBlur(const RectSPX& dest, float rotationDegrees, flo
 	mtx.yx = -sz * scale;
 	mtx.yy = cz * scale;
 
-	src = { srcCenter.x * pSource->m_size.w, srcCenter.y * pSource->m_size.h };
+	src = { int(srcCenter.x * pSource->m_size.w * 64), int(srcCenter.y * pSource->m_size.h * 64) };
 
 	//		src.x -= dest.w / 2.f * mtx[0][0] + dest.h / 2.f * mtx[1][0];
 	//		src.y -= dest.w / 2.f * mtx[0][1] + dest.h / 2.f * mtx[1][1];
 
-	src.x -= (dest.w * destCenter.x * mtx.xx + dest.h * destCenter.y * mtx.yx) / 64;
-	src.y -= (dest.w * destCenter.x * mtx.xy + dest.h * destCenter.y * mtx.yy) / 64;
+	src.x -= dest.w * destCenter.x * mtx.xx + dest.h * destCenter.y * mtx.yx;
+	src.y -= dest.w * destCenter.x * mtx.xy + dest.h * destCenter.y * mtx.yy;
 
 	_transformBlitComplex(dest, { src.x,src.y }, mtx, Command::Blur);
 }
@@ -1682,6 +1870,62 @@ void GfxDeviceGen2::blitNinePatch(const RectSPX& dstRect, const BorderSPX& dstFr
 	}
 }
 
+//____ drawEdgemap() ___________________________________________________________
+
+void GfxDeviceGen2::drawEdgemap(CoordSPX dest, Edgemap* pEdgemap)
+{
+	flipDrawEdgemap(dest, pEdgemap, GfxFlip::None);
+}
+
+//____ flipDrawEdgemap() _______________________________________________________
+
+void GfxDeviceGen2::flipDrawEdgemap(CoordSPX dest, Edgemap* pEdgemap, GfxFlip flip)
+{
+	if (!m_pActiveCanvas)
+	{
+		//TODO: Error handling!
+
+		return;
+	}
+
+	RectSPX rect = { dest, pEdgemap->pixelSize() * 64 };
+
+	int nRects = 0;
+	auto& coords = m_pActiveLayer->coords;
+
+	for (int i = 0; i < m_pActiveClipList->nRects; i++)
+	{
+		RectSPX clipped = RectSPX::overlap(m_pActiveClipList->pRects[i], rect);
+
+		if (!clipped.isEmpty())
+		{
+			coords.emplace_back(clipped.x);
+			coords.emplace_back(clipped.y);
+			coords.emplace_back(clipped.w);
+			coords.emplace_back(clipped.h);
+
+			nRects++;
+		}
+	}
+
+	if (nRects > 0)
+	{
+		if (m_stateChanges != 0)
+			_encodeStateChanges();
+
+		m_pActiveLayer->commands.push_back(int(Command::DrawEdgemap));
+		m_pActiveLayer->commands.push_back(m_pActiveCanvas->objects.size());
+		m_pActiveLayer->commands.push_back(dest.x);
+		m_pActiveLayer->commands.push_back(dest.y);
+		m_pActiveLayer->commands.push_back(int(flip));
+		m_pActiveLayer->commands.push_back(nRects);
+
+		m_pActiveCanvas->objects.emplace_back(pEdgemap);
+	}
+}
+
+
+
 //____ _stretchBlitWithRigidPartX() _______________________________________
 
 void GfxDeviceGen2::_stretchBlitWithRigidPartX(const RectSPX& src, const RectSPX& dst, spx rigidPartOfs, spx rigidPartLength, spx rigidPartLengthDst)
@@ -1783,7 +2027,7 @@ void GfxDeviceGen2::_transformBlitSimple(const RectSPX& _dest, CoordSPX src, int
 
 //____ _transformBlitComplex() _______________________________________________
 
-void GfxDeviceGen2::_transformBlitComplex(const RectSPX& _dest, CoordF src, const Transform& matrix, Command cmd)
+void GfxDeviceGen2::_transformBlitComplex(const RectSPX& _dest, CoordSPX src, const Transform& matrix, Command cmd)
 {
 	// Clip and render the patches
 
@@ -1825,8 +2069,8 @@ void GfxDeviceGen2::_transformBlitComplex(const RectSPX& _dest, CoordF src, cons
 		m_pActiveLayer->commands.push_back(nRects);
 
 		m_pActiveLayer->commands.push_back(transformOfs);
-		m_pActiveLayer->commands.push_back(src.x*64);
-		m_pActiveLayer->commands.push_back(src.y*64);
+		m_pActiveLayer->commands.push_back(src.x);
+		m_pActiveLayer->commands.push_back(src.y);
 		m_pActiveLayer->commands.push_back(dest.x);
 		m_pActiveLayer->commands.push_back(dest.y);
 	}
@@ -1862,6 +2106,7 @@ void GfxDeviceGen2::_encodeStateChanges()
 	//
 
 	auto& cmdBuffer = m_pActiveLayer->commands;
+	auto& colorBuffer = m_pActiveLayer->colors;
 
 	int commandOfs = (int) cmdBuffer.size();
 
@@ -1905,26 +2150,22 @@ void GfxDeviceGen2::_encodeStateChanges()
 		{
 			if (!newState.tintColor.isUndefined())
 			{
-				cmdBuffer.push_back(m_renderState.tintColor.r);
-				cmdBuffer.push_back(m_renderState.tintColor.g);
-				cmdBuffer.push_back(m_renderState.tintColor.b);
-				cmdBuffer.push_back(m_renderState.tintColor.a);
-
+				colorBuffer.push_back(newState.tintColor);
 				encodedState.tintColor = newState.tintColor;
 				statesChanged |= int(StateChange::TintColor);
 			}
 			else
 			{
-				Object* pTintmap = m_renderState.pTintmap.rawPtr();
+				Object* pTintmap = newState.pTintmap.rawPtr();
 
 				cmdBuffer.push_back((int)m_pActiveCanvas->objects.size());
 				m_pActiveCanvas->objects.push_back(pTintmap);
 				pTintmap->retain();
 
-				cmdBuffer.push_back(m_renderState.tintmapRect.x);
-				cmdBuffer.push_back(m_renderState.tintmapRect.y);
-				cmdBuffer.push_back(m_renderState.tintmapRect.w);
-				cmdBuffer.push_back(m_renderState.tintmapRect.h);
+				cmdBuffer.push_back(newState.tintmapRect.x);
+				cmdBuffer.push_back(newState.tintmapRect.y);
+				cmdBuffer.push_back(newState.tintmapRect.w);
+				cmdBuffer.push_back(newState.tintmapRect.h);
 
 				encodedState.pTintmap = newState.pTintmap;
 				encodedState.tintmapRect = newState.tintmapRect;
@@ -1948,10 +2189,7 @@ void GfxDeviceGen2::_encodeStateChanges()
 	{
 		if (newState.fixedBlendColor != encodedState.fixedBlendColor)
 		{
-			cmdBuffer.push_back(m_renderState.fixedBlendColor.r);
-			cmdBuffer.push_back(m_renderState.fixedBlendColor.g);
-			cmdBuffer.push_back(m_renderState.fixedBlendColor.b);
-			cmdBuffer.push_back(m_renderState.fixedBlendColor.a);
+			colorBuffer.push_back(newState.fixedBlendColor);
 			encodedState.fixedBlendColor = newState.fixedBlendColor;
 			statesChanged |= int(StateChange::FixedBlendColor);
 		}

@@ -834,8 +834,8 @@ const uint8_t SoftGfxDevice::s_fast8_channel_6[64] = {		0x00, 0x04, 0x08, 0x0c, 
 
 				// Draw the sides
 
-				int aaLeft = 4096 - (patch.x & 0x3F) * 64;
-				int aaTop = 4096 - (patch.y & 0x3F) * 64;
+				int aaLeft = (4096 - (patch.x & 0x3F) * 64) & 4095;
+				int aaTop = (4096 - (patch.y & 0x3F) * 64) & 4095;
 				int aaRight = ((patch.x + patch.w) & 0x3F) * 64;
 				int aaBottom = ((patch.y + patch.h) & 0x3F) * 64;
 
@@ -1094,7 +1094,6 @@ const uint8_t SoftGfxDevice::s_fast8_channel_6[64] = {		0x00, 0x04, 0x08, 0x0c, 
 
 	void SoftGfxDevice::drawLine(CoordSPX _begin, Direction dir, spx _length, HiColor _col, spx _thickness)
 	{
-
 		float thickness = _thickness / 64.f;
 
 		//TODO: Proper 26:6 support

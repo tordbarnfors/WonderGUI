@@ -62,7 +62,8 @@ namespace wg
 
 		void	setObjects(Object** pBeg, Object** pEnd) override;
 
-		void	setCoords(spx* pBeg, spx* pEnd) override;
+		void	setCoords(spx * pBeg, spx * pEnd) override;
+		void	setColors(HiColor * pBeg, HiColor * pEnd) override;
 		void	setTransforms(Transform * pBeg, Transform * pEnd) override;
 
 		void	processCommands( int32_t* pBeg, int32_t * pEnd) override;
@@ -211,6 +212,9 @@ namespace wg
 		spx *				m_pCoordsBeg = nullptr;
 		spx *				m_pCoordsEnd = nullptr;
 
+		HiColor*			m_pColorsBeg = nullptr;
+		HiColor*			m_pColorsEnd = nullptr;
+
 		Transform *			m_pTransformsBeg = nullptr;
 		Transform *			m_pTransformsEnd = nullptr;
 
@@ -219,14 +223,14 @@ namespace wg
 		SoftSurface_p		m_pCanvas;
 		PixelBuffer			m_buffer;
 		uint8_t*			m_pCanvasPixels;	// Pixels of render layer surface
-		int					m_canvasPixelBits = 0;					// PixelBits of render layer surface
+		int					m_canvasPixelBytes = 0;			// Bytes per pixel of render layer surface
 		PixelFormat			m_canvasPixelFormat = PixelFormat::Undefined;
 		int					m_canvasPitch = 0;
 
 		// Current state
 
 		BlendMode			m_blendMode = BlendMode::Blend;
-		TintMode			m_tintMode = TintMode::None;
+//		TintMode			m_tintMode = TintMode::None;
 
 		ColTrans			m_colTrans;
 

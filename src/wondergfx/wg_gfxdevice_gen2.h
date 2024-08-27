@@ -155,10 +155,10 @@ namespace wg
 		void	fill(HiColor color) override;
 		void	fill(const RectSPX& rect, HiColor color) override;
 		
-		void    plotPixels(int nCoords, const CoordSPX* pCoords, const HiColor* pColors) override {}
+		void    plotPixels(int nCoords, const CoordSPX* pCoords, const HiColor* pColors) override;
 
-		void	drawLine(CoordSPX begin, CoordSPX end, HiColor color, spx thickness = 64) override {}
-		void	drawLine(CoordSPX begin, Direction dir, spx length, HiColor color, spx thickness = 64) override {}
+		void	drawLine(CoordSPX begin, CoordSPX end, HiColor color, spx thickness = 64) override;
+		void	drawLine(CoordSPX begin, Direction dir, spx length, HiColor color, spx thickness = 64) override;
 
 		// Blit methods
 
@@ -204,8 +204,8 @@ namespace wg
 		void	drawSegments(const RectSPX& dest, int nSegments, const HiColor* pSegmentColors, int nEdgeStrips, const int* pEdgeStrips, int edgeStripPitch, TintMode tintMode = TintMode::Flat) override {}
 		void	flipDrawSegments(const RectSPX& dest, int nSegments, const HiColor* pSegmentColors, int nEdgeStrips, const int* pEdgeStrips, int edgeStripPitch, GfxFlip flip, TintMode tintMode = TintMode::Flat) override {}
 
-		void	drawEdgemap(CoordSPX dest, Edgemap* pEdgemap) override {}
-		void	flipDrawEdgemap(CoordSPX dest, Edgemap* pEdgemap, GfxFlip flip) override {}
+		void	drawEdgemap(CoordSPX dest, Edgemap* pEdgemap) override;
+		void	flipDrawEdgemap(CoordSPX dest, Edgemap* pEdgemap, GfxFlip flip) override;
 
 
 		// Special draw/blit methods
@@ -253,9 +253,10 @@ namespace wg
 		{
 			RenderState			encodedState;				// State encoded in commands
 
-			std::vector<int>	commands;
+			std::vector<int>		commands;
 
-			std::vector<spx>	coords;
+			std::vector<spx>		coords;
+			std::vector<HiColor>	colors;
 		};
 
 
@@ -286,7 +287,7 @@ namespace wg
 		bool _beginCanvasUpdate(CanvasRef ref, Surface* pCanvas, int nUpdateRects, const RectSPX* pUpdateRects, CanvasLayers* pLayers, int startLayer);
 
 		void _transformBlitSimple(const RectSPX& _dest, CoordSPX src, int transformOfs, Command cmd);
-		void _transformBlitComplex(const RectSPX& _dest, CoordF _src, const Transform& matrix, Command cmd);
+		void _transformBlitComplex(const RectSPX& _dest, CoordSPX _src, const Transform& matrix, Command cmd);
 
 		void _stretchBlitWithRigidPartX(const RectSPX& src, const RectSPX& dst, spx rigidPartOfs, spx rigidPartLength, spx rigidPartLengthDst);
 		void _stretchBlitWithRigidPartY(const RectSPX& src, const RectSPX& dst, spx rigidPartOfs, spx rigidPartLength, spx rigidPartLengthDst);

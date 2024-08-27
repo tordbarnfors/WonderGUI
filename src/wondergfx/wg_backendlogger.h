@@ -60,6 +60,7 @@ namespace wg
 		void	setCanvas( CanvasRef ref ) override;
 		void	setObjects(Object** pBeg, Object** pEnd) override;
 		void	setCoords(spx* pBeg, spx* pEnd) override;
+		void	setColors(HiColor* pBeg, HiColor* pEnd) override;
 		void	setTransforms(Transform * pBeg, Transform * pEnd) override;
 		void	processCommands(int32_t* pBeg, int32_t* pEnd) override;
 
@@ -79,6 +80,10 @@ namespace wg
 		BackendLogger(std::ostream& stream, GfxBackend* pBackend) : m_pBackend(pBackend), m_pStream(&stream) {}
 
 		virtual ~BackendLogger() {};
+
+		HiColor*		m_pColorsBeg = nullptr;
+		HiColor*		m_pColorsEnd = nullptr;
+
 
 		GfxBackend_p	m_pBackend;
 

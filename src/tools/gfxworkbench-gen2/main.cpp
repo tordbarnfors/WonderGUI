@@ -253,7 +253,7 @@ int main ( int argc, char** argv )
 		
 		//
 
-		pGfxDevice->setTint( RectSPX(0,0,512,512)*64, pGradient);
+//		pGfxDevice->setTint( RectSPX(0,0,512,512)*64, pGradient);
 //		pGfxDevice->fill( RectSPX(50,50,100,100)*64, Color::White );
 		
 /*
@@ -267,7 +267,19 @@ int main ( int argc, char** argv )
 		 pGfxDevice->setBlitSource(pSRGBSurface);
 //		 pGfxDevice->blit({ 0,0 });
 
-		 pGfxDevice->rotScaleBlit(RectSPX(128, 128, 256, 256) * 64, 45, 0.5f);
+//		 pGfxDevice->rotScaleBlit(RectSPX(128, 128, 256, 256) * 64, 45, 0.5f);
+
+		 for (int i = 0; i < 5; i++)
+		 {
+			 RectF rect = { 10.f + i * 25.f, 10.f + i * 0.25f, 20.f, 10.f };
+
+			 for (int j = 0; j < 5; j++)
+			 {
+				 pGfxDevice->fill(RectSPX(rect * 64), Color::White);
+				 rect.y += 12.f;
+				 rect.x += 0.25f;
+			 }
+		 }
 
 
 		//

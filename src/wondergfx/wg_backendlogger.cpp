@@ -28,7 +28,6 @@ namespace wg
 
 	const TypeInfo s_unspecifiedSurfaceType = { "SurfaceType Unspecified, real backend missing", &Surface::TYPEINFO };
 
-
 	//____ typeInfo() _________________________________________________________
 
 	const TypeInfo& BackendLogger::typeInfo(void) const
@@ -36,7 +35,7 @@ namespace wg
 		return TYPEINFO;
 	}
 
-	//____ beginRender()_______________________________________________
+	//____ beginRender() _______________________________________________
 
 	void BackendLogger::beginRender()
 	{
@@ -46,7 +45,7 @@ namespace wg
 			m_pBackend->beginRender();
 	}
 
-	//____ endRender()_______________________________________________
+	//____ endRender() _______________________________________________
 
 	void BackendLogger::endRender()
 	{
@@ -56,7 +55,7 @@ namespace wg
 			m_pBackend->endRender();
 	}
 
-	//____ setCanvas()_______________________________________________
+	//____ setCanvas() _______________________________________________
 
 	void BackendLogger::setCanvas(Surface* pSurface)
 	{
@@ -77,7 +76,7 @@ namespace wg
 			m_pBackend->setCanvas(ref);
 	}
 
-	//____ setObjects()_______________________________________________
+	//____ setObjects() _______________________________________________
 
 	void BackendLogger::setObjects(Object** pBeg, Object** pEnd)
 	{
@@ -95,7 +94,7 @@ namespace wg
 			m_pBackend->setObjects(pBeg,pEnd);
 	}
 
-	//____ setCoords()_______________________________________________
+	//____ setCoords() _______________________________________________
 
 	void BackendLogger::setCoords(spx* pBeg, spx* pEnd)
 	{
@@ -125,7 +124,33 @@ namespace wg
 			m_pBackend->setCoords(pBeg, pEnd);
 	}
 
-	//____ setTransforms()_______________________________________________
+	//____ setColors() ___________________________________________________
+
+	void BackendLogger::setColors(HiColor* pBeg, HiColor* pEnd)
+	{
+		*m_pStream << "SET COLORS: Amount = " << int(pEnd - pBeg) << std::endl;
+
+		m_pColorsBeg = pBeg;
+		m_pColorsEnd = pEnd;
+
+		HiColor* p = pBeg;
+
+		while (p < pEnd)
+		{
+			*m_pStream << p->r << ", " << p->g << std::endl;
+			*m_pStream << p->b << ", " << p->a << std::endl;
+			*m_pStream << std::endl;
+
+			p++;
+		}
+
+		if (m_pBackend)
+			m_pBackend->setColors(pBeg, pEnd);
+	}
+
+
+
+	//____ setTransforms() _______________________________________________
 
 	void BackendLogger::setTransforms(Transform* pBeg, Transform* pEnd)
 	{
@@ -146,11 +171,13 @@ namespace wg
 			m_pBackend->setTransforms(pBeg, pEnd);
 	}
 
-	//____ processCommands()_______________________________________________
+	//____ processCommands() _______________________________________________
 
 	void BackendLogger::processCommands(int32_t* pBeg, int32_t* pEnd)
 	{
 		*m_pStream << "PROCESS COMMANDS:" << std::endl;
+
+		HiColor* pColors = m_pColorsBeg;
 
 		auto p = pBeg;
 		while (p < pEnd)
@@ -184,12 +211,9 @@ namespace wg
 
 				if (statesChanged & uint8_t(StateChange::TintColor))
 				{
-					int32_t r = *p++;
-					int32_t g = *p++;
-					int32_t b = *p++;
-					int32_t a = *p++;
+					HiColor& col = *pColors++;
 
-					*m_pStream << "TintColor: " << r << ", " << g << ", " << b << ", " << a << std::endl;
+					*m_pStream << "TintColor: " << col.r << ", " << col.g << ", " << col.b << ", " << col.a << std::endl;
 				}
 
 				if (statesChanged & uint8_t(StateChange::TintMap))
@@ -212,12 +236,9 @@ namespace wg
 
 				if (statesChanged & uint8_t(StateChange::FixedBlendColor))
 				{
-					int32_t r = *p++;
-					int32_t g = *p++;
-					int32_t b = *p++;
-					int32_t a = *p++;
+					HiColor& col = *pColors++;
 
-					*m_pStream << "FixedBlendColor: " << r << ", " << g << ", " << b << ", " << a << std::endl;
+					*m_pStream << "FixedBlendColor: " << col.r << ", " << col.g << ", " << col.b << ", " << col.a << std::endl;
 				}
 
 				if (statesChanged & uint8_t(StateChange::Blur))
@@ -234,46 +255,65 @@ namespace wg
 			{
 				int32_t nRects = *p++;
 
-				int32_t r = *p++;
-				int32_t g = *p++;
-				int32_t b = *p++;
-				int32_t a = *p++;
+				HiColor& col = *pColors++;
 
-				*m_pStream << "Fill: " << nRects << " rects with: " << r << ", " << g << ", " << b << ", " << a << std::endl;
+				*m_pStream << "Fill: " << nRects << " rects with: " << col.r << ", " << col.g << ", " << col.b << ", " << col.a << std::endl;
 
 				break;
 			}
 
-			case Command::FillSubPixel:
 			case Command::Plot:
+			{
+				int32_t nPlots = *p++;
+
+				*m_pStream << "Plot: " << nPlots << " points." << std::endl;	
+
+				pColors += nPlots;
+				break;
+			}
+
 			case Command::Line:
-			case Command::Blur:
-			case Command::DrawEdgemap:
-			case Command::Tile:
 			{
-				//TODO: Implement!!!	
-
-				assert(false);
-				break;
-			}
-
-			case Command::Blit:
-			{
+				spx thickness = *p++;
 				int32_t nRects = *p++;
+
+				p += 4 * nRects;
+
+				HiColor col = * pColors++;
+
+				*m_pStream << "Line with color: " << col.r << ", " << col.g << ", " << col.b << ", " << col.a
+							<< " thickness: " << thickness << " points." << std::endl;
+				*m_pStream << " passing through " << nRects << " rectangles." << std::endl;
+			}
+
+			case Command::DrawEdgemap:
+			{
+				int32_t objectOfs = *p++;
+				spx destX = *p++;
+				spx destY = *p++;
 				int32_t transform = *p++;
+				int32_t	nRects = *p++;
 
-				int32_t srcX = *p++;
-				int32_t srcY = *p++;
-				int32_t dstX = *p++;
-				int32_t dstY = *p++;
-
-				*m_pStream << "Blit: " << nRects << " rects with transform: " << transform << ", src: " << srcX << ", " << srcY << " dest: " << dstX << ", " << dstY << std::endl;
+				*m_pStream << "DrawEdgemap: " << objectOfs << " at: " << destX << ", " << destY << ", with transform: " << transform 
+					<< " split into " << nRects << " rectangles." << std::endl;
 
 				break;
 			}
 
+			case Command::Blur:
+			case Command::Tile:
+			case Command::Blit:
 			case Command::ClipBlit:
 			{
+				if (cmd == Command::Blur)
+					*m_pStream << "Blur: ";
+				else if (cmd == Command::Tile)
+					*m_pStream << "Tile: ";
+				else if (cmd == Command::Blit)
+					*m_pStream << "Blit: ";
+				else if (cmd == Command::ClipBlit)
+					*m_pStream << "ClipBlit: ";
+
 				int32_t nRects = *p++;
 				int32_t transform = *p++;
 
@@ -282,11 +322,10 @@ namespace wg
 				int32_t dstX = *p++;
 				int32_t dstY = *p++;
 
-				*m_pStream << "ClipBlit: " << nRects << " rects with transform: " << transform << ", src: " << srcX << ", " << srcY << " dest: " << dstX << ", " << dstY << std::endl;
+				*m_pStream << nRects << " rects with transform: " << transform << ", src: " << srcX << ", " << srcY << " dest: " << dstX << ", " << dstY << std::endl;
 
 				break;
 			}
-
 
 			default:
 				*m_pStream << "ERROR: Unknown command (" << int(cmd) << ")" << std::endl;
