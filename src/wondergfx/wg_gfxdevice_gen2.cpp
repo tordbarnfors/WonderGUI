@@ -380,25 +380,25 @@ HiColor GfxDeviceGen2::tintColor() const
 
 void GfxDeviceGen2::setTintGradient(const RectSPX& rect, const Gradient& gradient)
 {
-	HiColor bottom = (gradient.bottomLeft.r + gradient.bottomRight.r / 2,
-		gradient.bottomLeft.g + gradient.bottomRight.g / 2,
-		gradient.bottomLeft.b + gradient.bottomRight.b / 2,
-		gradient.bottomLeft.a + gradient.bottomRight.a / 2);
+	HiColor bottom( (gradient.bottomLeft.r + gradient.bottomRight.r) / 2,
+						(gradient.bottomLeft.g + gradient.bottomRight.g) / 2,
+						(gradient.bottomLeft.b + gradient.bottomRight.b) / 2,
+						(gradient.bottomLeft.a + gradient.bottomRight.a) / 2 );
 
-	HiColor top = (gradient.topLeft.r + gradient.topRight.r / 2,
-		gradient.topLeft.g + gradient.topRight.g / 2,
-		gradient.topLeft.b + gradient.topRight.b / 2,
-		gradient.topLeft.a + gradient.topRight.a / 2);
+	HiColor top( (gradient.topLeft.r + gradient.topRight.r) / 2,
+		(gradient.topLeft.g + gradient.topRight.g) / 2,
+		(gradient.topLeft.b + gradient.topRight.b) / 2,
+		(gradient.topLeft.a + gradient.topRight.a) / 2);
 
-	HiColor left = (gradient.topLeft.r + gradient.bottomLeft.r / 2,
-		gradient.topLeft.g + gradient.bottomLeft.g / 2,
-		gradient.topLeft.b + gradient.bottomLeft.b / 2,
-		gradient.topLeft.a + gradient.bottomLeft.a / 2);
+	HiColor left( (gradient.topLeft.r + gradient.bottomLeft.r) / 2,
+		(gradient.topLeft.g + gradient.bottomLeft.g) / 2,
+		(gradient.topLeft.b + gradient.bottomLeft.b) / 2,
+		(gradient.topLeft.a + gradient.bottomLeft.a) / 2);
 
-	HiColor right = (gradient.topRight.r + gradient.bottomRight.r / 2,
-		gradient.topRight.g + gradient.bottomRight.g / 2,
-		gradient.topRight.b + gradient.bottomRight.b / 2,
-		gradient.topRight.a + gradient.bottomRight.a / 2);
+	HiColor right( (gradient.topRight.r + gradient.bottomRight.r) / 2,
+		(gradient.topRight.g + gradient.bottomRight.g) / 2,
+		(gradient.topRight.b + gradient.bottomRight.b) / 2,
+		(gradient.topRight.a + gradient.bottomRight.a) / 2);
 
 	float yDiff = (bottom.r - top.r) * (bottom.r - top.r) +
 					(bottom.g - top.g) * (bottom.g - top.g) +
@@ -454,7 +454,7 @@ BlendMode GfxDeviceGen2::blendMode() const
 
 bool GfxDeviceGen2::setBlitSource(Surface* pSource)
 {
-	if (pSource->typeInfo() != surfaceType())
+	if (pSource && pSource->typeInfo() != surfaceType())
 	{
 		//TODO: Error handling!
 
@@ -809,8 +809,11 @@ void GfxDeviceGen2::flattenLayers()
 	
 	// Release objects
 	
-	for( auto pObj : canvasData.objects )
-		pObj->release();
+	for (auto pObj : canvasData.objects)
+	{
+		if( pObj )
+			pObj->release();
+	}
 
 }
 
@@ -921,19 +924,14 @@ void GfxDeviceGen2::plotPixels(int nCoords, const CoordSPX* pCoords, const HiCol
 	auto& commands = m_pActiveLayer->commands;
 	auto& colors = m_pActiveLayer->colors;
 
-	int commandOfs = commands.size();
-
-	commands.push_back(int(Command::Plot));
-	commands.push_back(0);						// Space for ammount
-
 	for (int i = 0; i < nCoords; i++)
 	{
-		for (int i = 0; i < m_pActiveClipList->nRects; i++)
+		for (int r = 0; r < m_pActiveClipList->nRects; r++)
 		{
-			if (m_pActiveClipList->pRects[i].contains(pCoords[i]) )
+			if (m_pActiveClipList->pRects[r].contains(pCoords[i]) )
 			{
-				coords.emplace_back( align(pCoords->x) );
-				coords.emplace_back( align(pCoords->y) );
+				coords.emplace_back( align(pCoords[i].x));
+				coords.emplace_back( align(pCoords[i].y));
 
 				colors.push_back(pColors[i]);
 
@@ -948,10 +946,9 @@ void GfxDeviceGen2::plotPixels(int nCoords, const CoordSPX* pCoords, const HiCol
 		if (m_stateChanges != 0)
 			_encodeStateChanges();
 
-		commands[commandOfs + 1] = nCoordsPassed;
+		commands.push_back(int(Command::Plot));
+		commands.push_back(nCoordsPassed);						// Space for ammount
 	}
-	else
-		commands.resize(commandOfs);
 }
 
 //____ drawLine() (start/direction) __________________________________________
@@ -1301,17 +1298,17 @@ void GfxDeviceGen2::precisionBlit(const RectSPX& dest, const RectF& src)
 
 	if (m_renderState.blitSource->sampleMethod() == SampleMethod::Bilinear)
 	{
-		mtx.xx = src.w / (dest.w / 64);
+		mtx.xx = src.w / dest.w;
 		mtx.xy = 0;
 		mtx.yx = 0;
-		mtx.yy = src.h / (dest.h / 64);
+		mtx.yy = src.h / dest.h;
 	}
 	else
 	{
-		mtx.xx = src.w / (dest.w / 64);
+		mtx.xx = src.w / dest.w;
 		mtx.xy = 0;
 		mtx.yx = 0;
-		mtx.yy = src.h / (dest.h / 64);
+		mtx.yy = src.h / dest.h;
 	}
 
 	_transformBlitComplex(dest, { int(src.x), int(src.y) }, mtx, Command::Blit);
@@ -1369,7 +1366,7 @@ void GfxDeviceGen2::rotScaleBlit(const RectSPX& dest, float rotationDegrees, flo
 	mtx.yx = -sz * scale;
 	mtx.yy = cz * scale;
 
-	src = { srcCenter.x * pSource->m_size.w, srcCenter.y * pSource->m_size.h  };
+	src = { srcCenter.x * pSource->m_size.w*64, srcCenter.y * pSource->m_size.h*64  };
 
 	//		src.x -= dest.w / 2.f * mtx[0][0] + dest.h / 2.f * mtx[1][0];
 	//		src.y -= dest.w / 2.f * mtx[0][1] + dest.h / 2.f * mtx[1][1];
@@ -2125,7 +2122,8 @@ void GfxDeviceGen2::_encodeStateChanges()
 		{
 			cmdBuffer.push_back((int)m_pActiveCanvas->objects.size());
 			m_pActiveCanvas->objects.push_back(pSource);
-			pSource->retain();
+			if( pSource )
+				pSource->retain();
 
 			encodedState.blitSource = pSource;
 			statesChanged |= int(StateChange::BlitSource);
@@ -2160,7 +2158,9 @@ void GfxDeviceGen2::_encodeStateChanges()
 
 				cmdBuffer.push_back((int)m_pActiveCanvas->objects.size());
 				m_pActiveCanvas->objects.push_back(pTintmap);
-				pTintmap->retain();
+				
+				if( pTintmap )
+					pTintmap->retain();
 
 				cmdBuffer.push_back(newState.tintmapRect.x);
 				cmdBuffer.push_back(newState.tintmapRect.y);
@@ -2204,7 +2204,8 @@ void GfxDeviceGen2::_encodeStateChanges()
 
 			cmdBuffer.push_back((int)m_pActiveCanvas->objects.size());
 			m_pActiveCanvas->objects.push_back(pBlurbrush);
-			pBlurbrush->retain();
+			if( pBlurbrush )
+				pBlurbrush->retain();
 
 			encodedState.pBlurbrush = newState.pBlurbrush;
 			statesChanged |= int(StateChange::Blur);

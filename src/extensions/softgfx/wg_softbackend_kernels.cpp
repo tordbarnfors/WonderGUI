@@ -145,127 +145,8 @@ int	wg_addDefaultSoftKernels( wg_obj device )
 bool wg::addDefaultSoftKernels( SoftBackend * pBackend )
 {
 
-/*
-pBackend->setPlotKernel( BlendMode::Replace, PixelFormat::BGR_8_sRGB, _plot<BlendMode::Replace, TintMode::None, PixelFormat::BGR_8_sRGB> );
-pBackend->setPlotKernel( BlendMode::Replace, PixelFormat::BGR_8_linear, _plot<BlendMode::Replace, TintMode::None, PixelFormat::BGR_8_linear> );
-pBackend->setPlotKernel( BlendMode::Replace, PixelFormat::BGRX_8_sRGB, _plot<BlendMode::Replace, TintMode::None, PixelFormat::BGRX_8_sRGB> );
-pBackend->setPlotKernel( BlendMode::Replace, PixelFormat::BGRX_8_linear, _plot<BlendMode::Replace, TintMode::None, PixelFormat::BGRX_8_linear> );
-pBackend->setPlotKernel( BlendMode::Replace, PixelFormat::BGRA_8_sRGB, _plot<BlendMode::Replace, TintMode::None, PixelFormat::BGRA_8_sRGB> );
-pBackend->setPlotKernel( BlendMode::Replace, PixelFormat::BGRA_8_linear, _plot<BlendMode::Replace, TintMode::None, PixelFormat::BGRA_8_linear> );
-pBackend->setPlotKernel( BlendMode::Replace, PixelFormat::Alpha_8, _plot<BlendMode::Replace, TintMode::None, PixelFormat::Alpha_8> );
-pBackend->setPlotKernel( BlendMode::Replace, PixelFormat::BGRA_4_linear, _plot<BlendMode::Replace, TintMode::None, PixelFormat::BGRA_4_linear> );
-pBackend->setPlotKernel( BlendMode::Replace, PixelFormat::BGR_565_linear, _plot<BlendMode::Replace, TintMode::None, PixelFormat::BGR_565_linear> );
-pBackend->setPlotKernel( BlendMode::Replace, PixelFormat::RGB_565_bigendian, _plot<BlendMode::Replace, TintMode::None, PixelFormat::RGB_565_bigendian> );
-pBackend->setPlotKernel( BlendMode::Replace, PixelFormat::RGB_555_bigendian, _plot<BlendMode::Replace, TintMode::None, PixelFormat::RGB_555_bigendian> );
 
-pBackend->setPlotKernel( BlendMode::Blend, PixelFormat::BGR_8_sRGB, _plot<BlendMode::Blend, TintMode::None, PixelFormat::BGR_8_sRGB> );
-pBackend->setPlotKernel( BlendMode::Blend, PixelFormat::BGR_8_linear, _plot<BlendMode::Blend, TintMode::None, PixelFormat::BGR_8_linear> );
-pBackend->setPlotKernel( BlendMode::Blend, PixelFormat::BGRX_8_sRGB, _plot<BlendMode::Blend, TintMode::None, PixelFormat::BGRX_8_sRGB> );
-pBackend->setPlotKernel( BlendMode::Blend, PixelFormat::BGRX_8_linear, _plot<BlendMode::Blend, TintMode::None, PixelFormat::BGRX_8_linear> );
-pBackend->setPlotKernel( BlendMode::Blend, PixelFormat::BGRA_8_sRGB, _plot<BlendMode::Blend, TintMode::None, PixelFormat::BGRA_8_sRGB> );
-pBackend->setPlotKernel( BlendMode::Blend, PixelFormat::BGRA_8_linear, _plot<BlendMode::Blend, TintMode::None, PixelFormat::BGRA_8_linear> );
-pBackend->setPlotKernel( BlendMode::Blend, PixelFormat::Alpha_8, _plot<BlendMode::Blend, TintMode::None, PixelFormat::Alpha_8> );
-pBackend->setPlotKernel( BlendMode::Blend, PixelFormat::BGRA_4_linear, _plot<BlendMode::Blend, TintMode::None, PixelFormat::BGRA_4_linear> );
-pBackend->setPlotKernel( BlendMode::Blend, PixelFormat::BGR_565_linear, _plot<BlendMode::Blend, TintMode::None, PixelFormat::BGR_565_linear> );
-pBackend->setPlotKernel( BlendMode::Blend, PixelFormat::RGB_565_bigendian, _plot<BlendMode::Blend, TintMode::None, PixelFormat::RGB_565_bigendian> );
-pBackend->setPlotKernel( BlendMode::Blend, PixelFormat::RGB_555_bigendian, _plot<BlendMode::Blend, TintMode::None, PixelFormat::RGB_555_bigendian> );
 
-pBackend->setPlotKernel( BlendMode::Add, PixelFormat::BGR_8_sRGB, _plot<BlendMode::Add, TintMode::None, PixelFormat::BGR_8_sRGB> );
-pBackend->setPlotKernel( BlendMode::Add, PixelFormat::BGR_8_linear, _plot<BlendMode::Add, TintMode::None, PixelFormat::BGR_8_linear> );
-pBackend->setPlotKernel( BlendMode::Add, PixelFormat::BGRX_8_sRGB, _plot<BlendMode::Add, TintMode::None, PixelFormat::BGRX_8_sRGB> );
-pBackend->setPlotKernel( BlendMode::Add, PixelFormat::BGRX_8_linear, _plot<BlendMode::Add, TintMode::None, PixelFormat::BGRX_8_linear> );
-pBackend->setPlotKernel( BlendMode::Add, PixelFormat::BGRA_8_sRGB, _plot<BlendMode::Add, TintMode::None, PixelFormat::BGRA_8_sRGB> );
-pBackend->setPlotKernel( BlendMode::Add, PixelFormat::BGRA_8_linear, _plot<BlendMode::Add, TintMode::None, PixelFormat::BGRA_8_linear> );
-pBackend->setPlotKernel( BlendMode::Add, PixelFormat::Alpha_8, _plot<BlendMode::Add, TintMode::None, PixelFormat::Alpha_8> );
-pBackend->setPlotKernel( BlendMode::Add, PixelFormat::BGRA_4_linear, _plot<BlendMode::Add, TintMode::None, PixelFormat::BGRA_4_linear> );
-pBackend->setPlotKernel( BlendMode::Add, PixelFormat::BGR_565_linear, _plot<BlendMode::Add, TintMode::None, PixelFormat::BGR_565_linear> );
-pBackend->setPlotKernel( BlendMode::Add, PixelFormat::RGB_565_bigendian, _plot<BlendMode::Add, TintMode::None, PixelFormat::RGB_565_bigendian> );
-pBackend->setPlotKernel( BlendMode::Add, PixelFormat::RGB_555_bigendian, _plot<BlendMode::Add, TintMode::None, PixelFormat::RGB_555_bigendian> );
-
-pBackend->setPlotKernel( BlendMode::Subtract, PixelFormat::BGR_8_sRGB, _plot<BlendMode::Subtract, TintMode::None, PixelFormat::BGR_8_sRGB> );
-pBackend->setPlotKernel( BlendMode::Subtract, PixelFormat::BGR_8_linear, _plot<BlendMode::Subtract, TintMode::None, PixelFormat::BGR_8_linear> );
-pBackend->setPlotKernel( BlendMode::Subtract, PixelFormat::BGRX_8_sRGB, _plot<BlendMode::Subtract, TintMode::None, PixelFormat::BGRX_8_sRGB> );
-pBackend->setPlotKernel( BlendMode::Subtract, PixelFormat::BGRX_8_linear, _plot<BlendMode::Subtract, TintMode::None, PixelFormat::BGRX_8_linear> );
-pBackend->setPlotKernel( BlendMode::Subtract, PixelFormat::BGRA_8_sRGB, _plot<BlendMode::Subtract, TintMode::None, PixelFormat::BGRA_8_sRGB> );
-pBackend->setPlotKernel( BlendMode::Subtract, PixelFormat::BGRA_8_linear, _plot<BlendMode::Subtract, TintMode::None, PixelFormat::BGRA_8_linear> );
-pBackend->setPlotKernel( BlendMode::Subtract, PixelFormat::Alpha_8, _plot<BlendMode::Subtract, TintMode::None, PixelFormat::Alpha_8> );
-pBackend->setPlotKernel( BlendMode::Subtract, PixelFormat::BGRA_4_linear, _plot<BlendMode::Subtract, TintMode::None, PixelFormat::BGRA_4_linear> );
-pBackend->setPlotKernel( BlendMode::Subtract, PixelFormat::BGR_565_linear, _plot<BlendMode::Subtract, TintMode::None, PixelFormat::BGR_565_linear> );
-pBackend->setPlotKernel( BlendMode::Subtract, PixelFormat::RGB_565_bigendian, _plot<BlendMode::Subtract, TintMode::None, PixelFormat::RGB_565_bigendian> );
-pBackend->setPlotKernel( BlendMode::Subtract, PixelFormat::RGB_555_bigendian, _plot<BlendMode::Subtract, TintMode::None, PixelFormat::RGB_555_bigendian> );
-
-pBackend->setPlotKernel( BlendMode::Multiply, PixelFormat::BGR_8_sRGB, _plot<BlendMode::Multiply, TintMode::None, PixelFormat::BGR_8_sRGB> );
-pBackend->setPlotKernel( BlendMode::Multiply, PixelFormat::BGR_8_linear, _plot<BlendMode::Multiply, TintMode::None, PixelFormat::BGR_8_linear> );
-pBackend->setPlotKernel( BlendMode::Multiply, PixelFormat::BGRX_8_sRGB, _plot<BlendMode::Multiply, TintMode::None, PixelFormat::BGRX_8_sRGB> );
-pBackend->setPlotKernel( BlendMode::Multiply, PixelFormat::BGRX_8_linear, _plot<BlendMode::Multiply, TintMode::None, PixelFormat::BGRX_8_linear> );
-pBackend->setPlotKernel( BlendMode::Multiply, PixelFormat::BGRA_8_sRGB, _plot<BlendMode::Multiply, TintMode::None, PixelFormat::BGRA_8_sRGB> );
-pBackend->setPlotKernel( BlendMode::Multiply, PixelFormat::BGRA_8_linear, _plot<BlendMode::Multiply, TintMode::None, PixelFormat::BGRA_8_linear> );
-pBackend->setPlotKernel( BlendMode::Multiply, PixelFormat::Alpha_8, _plot<BlendMode::Multiply, TintMode::None, PixelFormat::Alpha_8> );
-pBackend->setPlotKernel( BlendMode::Multiply, PixelFormat::BGRA_4_linear, _plot<BlendMode::Multiply, TintMode::None, PixelFormat::BGRA_4_linear> );
-pBackend->setPlotKernel( BlendMode::Multiply, PixelFormat::BGR_565_linear, _plot<BlendMode::Multiply, TintMode::None, PixelFormat::BGR_565_linear> );
-pBackend->setPlotKernel( BlendMode::Multiply, PixelFormat::RGB_565_bigendian, _plot<BlendMode::Multiply, TintMode::None, PixelFormat::RGB_565_bigendian> );
-pBackend->setPlotKernel( BlendMode::Multiply, PixelFormat::RGB_555_bigendian, _plot<BlendMode::Multiply, TintMode::None, PixelFormat::RGB_555_bigendian> );
-
-pBackend->setPlotKernel( BlendMode::Invert, PixelFormat::BGR_8_sRGB, _plot<BlendMode::Invert, TintMode::None, PixelFormat::BGR_8_sRGB> );
-pBackend->setPlotKernel( BlendMode::Invert, PixelFormat::BGR_8_linear, _plot<BlendMode::Invert, TintMode::None, PixelFormat::BGR_8_linear> );
-pBackend->setPlotKernel( BlendMode::Invert, PixelFormat::BGRX_8_sRGB, _plot<BlendMode::Invert, TintMode::None, PixelFormat::BGRX_8_sRGB> );
-pBackend->setPlotKernel( BlendMode::Invert, PixelFormat::BGRX_8_linear, _plot<BlendMode::Invert, TintMode::None, PixelFormat::BGRX_8_linear> );
-pBackend->setPlotKernel( BlendMode::Invert, PixelFormat::BGRA_8_sRGB, _plot<BlendMode::Invert, TintMode::None, PixelFormat::BGRA_8_sRGB> );
-pBackend->setPlotKernel( BlendMode::Invert, PixelFormat::BGRA_8_linear, _plot<BlendMode::Invert, TintMode::None, PixelFormat::BGRA_8_linear> );
-pBackend->setPlotKernel( BlendMode::Invert, PixelFormat::Alpha_8, _plot<BlendMode::Invert, TintMode::None, PixelFormat::Alpha_8> );
-pBackend->setPlotKernel( BlendMode::Invert, PixelFormat::BGRA_4_linear, _plot<BlendMode::Invert, TintMode::None, PixelFormat::BGRA_4_linear> );
-pBackend->setPlotKernel( BlendMode::Invert, PixelFormat::BGR_565_linear, _plot<BlendMode::Invert, TintMode::None, PixelFormat::BGR_565_linear> );
-pBackend->setPlotKernel( BlendMode::Invert, PixelFormat::RGB_565_bigendian, _plot<BlendMode::Invert, TintMode::None, PixelFormat::RGB_565_bigendian> );
-pBackend->setPlotKernel( BlendMode::Invert, PixelFormat::RGB_555_bigendian, _plot<BlendMode::Invert, TintMode::None, PixelFormat::RGB_555_bigendian> );
-
-pBackend->setPlotKernel( BlendMode::Min, PixelFormat::BGR_8_sRGB, _plot<BlendMode::Min, TintMode::None, PixelFormat::BGR_8_sRGB> );
-pBackend->setPlotKernel( BlendMode::Min, PixelFormat::BGR_8_linear, _plot<BlendMode::Min, TintMode::None, PixelFormat::BGR_8_linear> );
-pBackend->setPlotKernel( BlendMode::Min, PixelFormat::BGRX_8_sRGB, _plot<BlendMode::Min, TintMode::None, PixelFormat::BGRX_8_sRGB> );
-pBackend->setPlotKernel( BlendMode::Min, PixelFormat::BGRX_8_linear, _plot<BlendMode::Min, TintMode::None, PixelFormat::BGRX_8_linear> );
-pBackend->setPlotKernel( BlendMode::Min, PixelFormat::BGRA_8_sRGB, _plot<BlendMode::Min, TintMode::None, PixelFormat::BGRA_8_sRGB> );
-pBackend->setPlotKernel( BlendMode::Min, PixelFormat::BGRA_8_linear, _plot<BlendMode::Min, TintMode::None, PixelFormat::BGRA_8_linear> );
-pBackend->setPlotKernel( BlendMode::Min, PixelFormat::Alpha_8, _plot<BlendMode::Min, TintMode::None, PixelFormat::Alpha_8> );
-pBackend->setPlotKernel( BlendMode::Min, PixelFormat::BGRA_4_linear, _plot<BlendMode::Min, TintMode::None, PixelFormat::BGRA_4_linear> );
-pBackend->setPlotKernel( BlendMode::Min, PixelFormat::BGR_565_linear, _plot<BlendMode::Min, TintMode::None, PixelFormat::BGR_565_linear> );
-pBackend->setPlotKernel( BlendMode::Min, PixelFormat::RGB_565_bigendian, _plot<BlendMode::Min, TintMode::None, PixelFormat::RGB_565_bigendian> );
-pBackend->setPlotKernel( BlendMode::Min, PixelFormat::RGB_555_bigendian, _plot<BlendMode::Min, TintMode::None, PixelFormat::RGB_555_bigendian> );
-
-pBackend->setPlotKernel( BlendMode::Max, PixelFormat::BGR_8_sRGB, _plot<BlendMode::Max, TintMode::None, PixelFormat::BGR_8_sRGB> );
-pBackend->setPlotKernel( BlendMode::Max, PixelFormat::BGR_8_linear, _plot<BlendMode::Max, TintMode::None, PixelFormat::BGR_8_linear> );
-pBackend->setPlotKernel( BlendMode::Max, PixelFormat::BGRX_8_sRGB, _plot<BlendMode::Max, TintMode::None, PixelFormat::BGRX_8_sRGB> );
-pBackend->setPlotKernel( BlendMode::Max, PixelFormat::BGRX_8_linear, _plot<BlendMode::Max, TintMode::None, PixelFormat::BGRX_8_linear> );
-pBackend->setPlotKernel( BlendMode::Max, PixelFormat::BGRA_8_sRGB, _plot<BlendMode::Max, TintMode::None, PixelFormat::BGRA_8_sRGB> );
-pBackend->setPlotKernel( BlendMode::Max, PixelFormat::BGRA_8_linear, _plot<BlendMode::Max, TintMode::None, PixelFormat::BGRA_8_linear> );
-pBackend->setPlotKernel( BlendMode::Max, PixelFormat::Alpha_8, _plot<BlendMode::Max, TintMode::None, PixelFormat::Alpha_8> );
-pBackend->setPlotKernel( BlendMode::Max, PixelFormat::BGRA_4_linear, _plot<BlendMode::Max, TintMode::None, PixelFormat::BGRA_4_linear> );
-pBackend->setPlotKernel( BlendMode::Max, PixelFormat::BGR_565_linear, _plot<BlendMode::Max, TintMode::None, PixelFormat::BGR_565_linear> );
-pBackend->setPlotKernel( BlendMode::Max, PixelFormat::RGB_565_bigendian, _plot<BlendMode::Max, TintMode::None, PixelFormat::RGB_565_bigendian> );
-pBackend->setPlotKernel( BlendMode::Max, PixelFormat::RGB_555_bigendian, _plot<BlendMode::Max, TintMode::None, PixelFormat::RGB_555_bigendian> );
-
-pBackend->setPlotKernel( BlendMode::Morph, PixelFormat::BGR_8_sRGB, _plot<BlendMode::Morph, TintMode::None, PixelFormat::BGR_8_sRGB> );
-pBackend->setPlotKernel( BlendMode::Morph, PixelFormat::BGR_8_linear, _plot<BlendMode::Morph, TintMode::None, PixelFormat::BGR_8_linear> );
-pBackend->setPlotKernel( BlendMode::Morph, PixelFormat::BGRX_8_sRGB, _plot<BlendMode::Morph, TintMode::None, PixelFormat::BGRX_8_sRGB> );
-pBackend->setPlotKernel( BlendMode::Morph, PixelFormat::BGRX_8_linear, _plot<BlendMode::Morph, TintMode::None, PixelFormat::BGRX_8_linear> );
-pBackend->setPlotKernel( BlendMode::Morph, PixelFormat::BGRA_8_sRGB, _plot<BlendMode::Morph, TintMode::None, PixelFormat::BGRA_8_sRGB> );
-pBackend->setPlotKernel( BlendMode::Morph, PixelFormat::BGRA_8_linear, _plot<BlendMode::Morph, TintMode::None, PixelFormat::BGRA_8_linear> );
-pBackend->setPlotKernel( BlendMode::Morph, PixelFormat::Alpha_8, _plot<BlendMode::Morph, TintMode::None, PixelFormat::Alpha_8> );
-pBackend->setPlotKernel( BlendMode::Morph, PixelFormat::BGRA_4_linear, _plot<BlendMode::Morph, TintMode::None, PixelFormat::BGRA_4_linear> );
-pBackend->setPlotKernel( BlendMode::Morph, PixelFormat::BGR_565_linear, _plot<BlendMode::Morph, TintMode::None, PixelFormat::BGR_565_linear> );
-pBackend->setPlotKernel( BlendMode::Morph, PixelFormat::RGB_565_bigendian, _plot<BlendMode::Morph, TintMode::None, PixelFormat::RGB_565_bigendian> );
-pBackend->setPlotKernel( BlendMode::Morph, PixelFormat::RGB_555_bigendian, _plot<BlendMode::Morph, TintMode::None, PixelFormat::RGB_555_bigendian> );
-
-pBackend->setPlotKernel( BlendMode::BlendFixedColor, PixelFormat::BGR_8_sRGB, _plot<BlendMode::BlendFixedColor, TintMode::None, PixelFormat::BGR_8_sRGB> );
-pBackend->setPlotKernel( BlendMode::BlendFixedColor, PixelFormat::BGR_8_linear, _plot<BlendMode::BlendFixedColor, TintMode::None, PixelFormat::BGR_8_linear> );
-pBackend->setPlotKernel( BlendMode::BlendFixedColor, PixelFormat::BGRX_8_sRGB, _plot<BlendMode::BlendFixedColor, TintMode::None, PixelFormat::BGRX_8_sRGB> );
-pBackend->setPlotKernel( BlendMode::BlendFixedColor, PixelFormat::BGRX_8_linear, _plot<BlendMode::BlendFixedColor, TintMode::None, PixelFormat::BGRX_8_linear> );
-pBackend->setPlotKernel( BlendMode::BlendFixedColor, PixelFormat::BGRA_8_sRGB, _plot<BlendMode::BlendFixedColor, TintMode::None, PixelFormat::BGRA_8_sRGB> );
-pBackend->setPlotKernel( BlendMode::BlendFixedColor, PixelFormat::BGRA_8_linear, _plot<BlendMode::BlendFixedColor, TintMode::None, PixelFormat::BGRA_8_linear> );
-pBackend->setPlotKernel( BlendMode::BlendFixedColor, PixelFormat::Alpha_8, _plot<BlendMode::BlendFixedColor, TintMode::None, PixelFormat::Alpha_8> );
-pBackend->setPlotKernel( BlendMode::BlendFixedColor, PixelFormat::BGRA_4_linear, _plot<BlendMode::BlendFixedColor, TintMode::None, PixelFormat::BGRA_4_linear> );
-pBackend->setPlotKernel( BlendMode::BlendFixedColor, PixelFormat::BGR_565_linear, _plot<BlendMode::BlendFixedColor, TintMode::None, PixelFormat::BGR_565_linear> );
-pBackend->setPlotKernel( BlendMode::BlendFixedColor, PixelFormat::RGB_565_bigendian, _plot<BlendMode::BlendFixedColor, TintMode::None, PixelFormat::RGB_565_bigendian> );
-pBackend->setPlotKernel( BlendMode::BlendFixedColor, PixelFormat::RGB_555_bigendian, _plot<BlendMode::BlendFixedColor, TintMode::None, PixelFormat::RGB_555_bigendian> );
-*/
 
 pBackend->setFillKernel( TintMode::None, BlendMode::Replace, PixelFormat::BGR_8_sRGB, _fill<TintMode::None,BlendMode::Replace, PixelFormat::BGR_8_sRGB> );
 pBackend->setFillKernel( TintMode::None, BlendMode::Replace, PixelFormat::BGR_8_linear, _fill<TintMode::None,BlendMode::Replace, PixelFormat::BGR_8_linear> );
@@ -941,6 +822,7 @@ pBackend->setLineKernel( BlendMode::BlendFixedColor, PixelFormat::BGRA_4_linear,
 pBackend->setLineKernel( BlendMode::BlendFixedColor, PixelFormat::BGR_565_linear, _draw_line<BlendMode::BlendFixedColor, TintMode::None, PixelFormat::BGR_565_linear> );
 pBackend->setLineKernel( BlendMode::BlendFixedColor, PixelFormat::RGB_565_bigendian, _draw_line<BlendMode::BlendFixedColor, TintMode::None, PixelFormat::RGB_565_bigendian> );
 pBackend->setLineKernel( BlendMode::BlendFixedColor, PixelFormat::RGB_555_bigendian, _draw_line<BlendMode::BlendFixedColor, TintMode::None, PixelFormat::RGB_555_bigendian> );
+*/
 
 pBackend->setClipLineKernel( BlendMode::Replace, PixelFormat::BGR_8_sRGB, _clip_draw_line<BlendMode::Replace, TintMode::None, PixelFormat::BGR_8_sRGB> );
 pBackend->setClipLineKernel( BlendMode::Replace, PixelFormat::BGR_8_linear, _clip_draw_line<BlendMode::Replace, TintMode::None, PixelFormat::BGR_8_linear> );
@@ -1181,6 +1063,7 @@ pBackend->setPlotListKernel( BlendMode::BlendFixedColor, PixelFormat::BGRA_4_lin
 pBackend->setPlotListKernel( BlendMode::BlendFixedColor, PixelFormat::BGR_565_linear, _plot_list<BlendMode::BlendFixedColor, TintMode::None, PixelFormat::BGR_565_linear> );
 pBackend->setPlotListKernel( BlendMode::BlendFixedColor, PixelFormat::RGB_565_bigendian, _plot_list<BlendMode::BlendFixedColor, TintMode::None, PixelFormat::RGB_565_bigendian> );
 pBackend->setPlotListKernel( BlendMode::BlendFixedColor, PixelFormat::RGB_555_bigendian, _plot_list<BlendMode::BlendFixedColor, TintMode::None, PixelFormat::RGB_555_bigendian> );
+/*
 
 pBackend->setSegmentStripKernel( false, BlendMode::Replace, PixelFormat::BGR_8_sRGB,  _draw_segment_strip<0, BlendMode::Replace, PixelFormat::BGR_8_sRGB> );
 pBackend->setSegmentStripKernel( true, BlendMode::Replace, PixelFormat::BGR_8_sRGB, _draw_segment_strip<1, BlendMode::Replace, PixelFormat::BGR_8_sRGB> );

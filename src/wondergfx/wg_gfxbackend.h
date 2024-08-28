@@ -127,6 +127,8 @@ namespace wg
 		GfxBackend() {};
 		virtual ~GfxBackend() {};
 
+
+
 		static const Transform			s_blitFlipTransforms[GfxFlip_size];
 		static const int				s_defaultBlur[9];
 		static const spx				s_defaultBlurRadius;

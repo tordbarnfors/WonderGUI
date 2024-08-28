@@ -26,6 +26,7 @@
 #include <wg_gfxbase.h>
 
 
+using namespace std;
 
 namespace wg
 {
@@ -306,7 +307,6 @@ namespace wg
 	void SoftBackend::processCommands(int32_t* pBeg, int32_t* pEnd)
 	{
 		spx *		pCoords = m_pCoordsBeg;
-		Transform*	pTransforms = m_pTransformsBeg;
 		HiColor*	pColors = m_pColorsBeg;
 
 
@@ -607,7 +607,197 @@ namespace wg
 			}
 
 			case Command::Plot:
+			{
+				int nCoords = *p++;
+
+				const int pitch = m_canvasPitch;
+				const int pixelBytes = m_canvasPixelBytes;
+
+				PlotListOp_p pOp = nullptr;
+				auto pKernels = m_pKernels[(int)m_pCanvas->pixelFormat()];
+				if (pKernels)
+					pOp = pKernels->pPlotListKernels[(int)m_blendMode];
+
+				if (pOp == nullptr)
+				{
+					if (m_blendMode == BlendMode::Ignore)
+						break;
+
+					char errorMsg[1024];
+
+					snprintf(errorMsg, 1024, "Failed plotPixels operation. SoftGfxDevice is missing plotList kernel for BlendMode::%s onto surface of PixelFormat:%s.",
+						toString(m_blendMode),
+						toString(m_pCanvas->pixelFormat()));
+
+					GfxBase::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, errorMsg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+					break;
+				}
+
+				pOp(nCoords, (CoordSPX*) pCoords, pColors, m_pCanvasPixels, pixelBytes, pitch, m_colTrans);
+
+				break;
+			}
+
 			case Command::Line:
+			{
+				spx thickness = * p++;
+				int32_t nClipRects = * p++;
+
+				CoordSPX beg = { *pCoords++, *pCoords++ };
+				CoordSPX end = { *pCoords++, *pCoords++ };
+
+				HiColor color = *pColors++;
+
+				const RectSPX * pClipRects = reinterpret_cast<const RectSPX*>(p);
+				p += 4 * nClipRects;
+
+
+				//TODO: Proper 26:6 support
+				beg = Util::roundToPixels(beg);
+				end = Util::roundToPixels(end);
+
+
+
+				HiColor fillColor = color;
+				
+				if( m_colTrans.mode == TintMode::Flat )
+				fillColor = fillColor * m_colTrans.flatTintColor;
+
+				//
+
+				ClipLineOp_p pOp = nullptr;
+
+				auto pKernels = m_pKernels[(int)m_pCanvas->pixelFormat()];
+				if (pKernels)
+					pOp = pKernels->pClipLineKernels[(int)m_blendMode];
+
+				if (pOp == nullptr)
+				{
+					if (m_blendMode == BlendMode::Ignore)
+						return;
+
+					char errorMsg[1024];
+
+					snprintf(errorMsg, 1024, "Failed drawLine operation. SoftGfxDevice is missing clipLine kernel for BlendMode::%s onto surface of PixelFormat:%s.",
+						toString(m_blendMode),
+						toString(m_pCanvas->pixelFormat()));
+
+					GfxBase::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, errorMsg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+					return;
+				}
+
+
+				uint8_t* pRow;
+				int		rowInc, pixelInc;
+				int 	length, width;
+				int		pos, slope;
+				int		clipStart, clipEnd;
+
+				if (std::abs(beg.x - end.x) > std::abs(beg.y - end.y))
+				{
+					// Prepare mainly horizontal line segment
+
+					if (beg.x > end.x)
+						swap(beg, end);
+
+					length = end.x - beg.x;
+					slope = ((end.y - beg.y) * 65536) / length;
+
+					width = _scaleLineThickness(thickness / 64.f, slope);
+					pos = (beg.y << 16) - width / 2 + 32768;
+
+					rowInc = m_canvasPixelBytes;
+					pixelInc = m_canvasPitch;
+
+					pRow = m_pCanvasPixels + beg.x * rowInc;
+
+					// Loop through patches
+
+					for (int i = 0; i < nClipRects; i++)
+					{
+						// Do clipping
+
+						const RectI clip = pClipRects[i] / 64;
+
+						int _length = length;
+						int _pos = pos;
+						uint8_t* _pRow = pRow;
+
+						if (beg.x < clip.x)
+						{
+							int cut = clip.x - beg.x;
+							_length -= cut;
+							_pRow += rowInc * cut;
+							_pos += slope * cut;
+						}
+
+						if (end.x > clip.x + clip.w)
+							_length -= end.x - (clip.x + clip.w);
+
+						clipStart = clip.y << 16;
+						clipEnd = (clip.y + clip.h) << 16;
+
+						//  Draw
+
+						pOp(clipStart, clipEnd, _pRow, rowInc, pixelInc, _length, width, _pos, slope, fillColor, m_colTrans, { 0,0 });
+					}
+				}
+				else
+				{
+					// Prepare mainly vertical line segment
+
+					if (beg.y > end.y)
+						swap(beg, end);
+
+					length = end.y - beg.y;
+					if (length == 0)
+						return;											// TODO: Should stil draw the caps!
+
+					// Need multiplication instead of shift as operand might be negative
+					slope = ((end.x - beg.x) * 65536) / length;
+					width = _scaleLineThickness(thickness / 64.f, slope);
+					pos = (beg.x << 16) - width / 2 + 32768;
+
+					rowInc = m_canvasPitch;
+					pixelInc = m_canvasPixelBytes;
+
+					pRow = m_pCanvasPixels + beg.y * rowInc;
+
+					// Loop through patches
+
+					for (int i = 0; i < nClipRects; i++)
+					{
+						// Do clipping
+
+						const RectI clip = pClipRects[i] / 64;
+
+						int _length = length;
+						int _pos = pos;
+						uint8_t* _pRow = pRow;
+
+						if (beg.y < clip.y)
+						{
+							int cut = clip.y - beg.y;
+							_length -= cut;
+							_pRow += rowInc * cut;
+							_pos += slope * cut;
+						}
+
+						if (end.y > clip.y + clip.h)
+							_length -= end.y - (clip.y + clip.h);
+
+						clipStart = clip.x << 16;
+						clipEnd = (clip.x + clip.w) << 16;
+
+						//  Draw
+
+						pOp(clipStart, clipEnd, _pRow, rowInc, pixelInc, _length, width, _pos, slope, fillColor, m_colTrans, { 0,0 });
+					}
+				}
+				break;
+			}
+
+
 			case Command::DrawEdgemap:
 			{
 				//TODO: Implement!!!	
@@ -677,14 +867,15 @@ namespace wg
 				}
 				else
 				{
-					binalInt transform[2][2];
+					binalInt mtx[2][2];
 
-					transform[0][0] = binalInt(pTransforms->xx * BINAL_MUL);
-					transform[0][1] = binalInt(pTransforms->xy * BINAL_MUL);
-					transform[1][0] = binalInt(pTransforms->yx * BINAL_MUL);
-					transform[1][1] = binalInt(pTransforms->yy * BINAL_MUL);
+					Transform* pTransform = &m_pTransformsBeg[transform - GfxFlip_size];
 
-					pTransforms++;
+					mtx[0][0] = binalInt(pTransform->xx * BINAL_MUL);
+					mtx[0][1] = binalInt(pTransform->xy * BINAL_MUL);
+					mtx[1][0] = binalInt(pTransform->yx * BINAL_MUL);
+					mtx[1][1] = binalInt(pTransform->yy * BINAL_MUL);
+
 
 					//
 
@@ -704,19 +895,19 @@ namespace wg
 
 						//
 
-						src.x += patchOfs.x * transform[0][0] + patchOfs.y * transform[1][0];
-						src.y += patchOfs.x * transform[0][1] + patchOfs.y * transform[1][1];
+						src.x += patchOfs.x * mtx[0][0] + patchOfs.y * mtx[1][0];
+						src.y += patchOfs.x * mtx[0][1] + patchOfs.y * mtx[1][1];
 
 						//
 
 						if( cmd == Command::Blit)
-							(this->*m_pTransformBlitOp)(patch, src, transform, patch.pos(), m_pTransformBlitFirstPassOp);
+							(this->*m_pTransformBlitOp)(patch, src, mtx, patch.pos(), m_pTransformBlitFirstPassOp);
 						else if (cmd == Command::ClipBlit)
-							(this->*m_pTransformClipBlitOp)(patch, src, transform, patch.pos(), m_pTransformClipBlitFirstPassOp);
+							(this->*m_pTransformClipBlitOp)(patch, src, mtx, patch.pos(), m_pTransformClipBlitFirstPassOp);
 						else if (cmd == Command::Tile)
-							(this->*m_pTransformTileOp)(patch, src, transform, patch.pos(), m_pTransformTileFirstPassOp);
+							(this->*m_pTransformTileOp)(patch, src, mtx, patch.pos(), m_pTransformTileFirstPassOp);
 						else
-							(this->*m_pTransformBlurOp)(patch, src, transform, patch.pos(), m_pTransformBlurFirstPassOp);
+							(this->*m_pTransformBlurOp)(patch, src, mtx, patch.pos(), m_pTransformBlurFirstPassOp);
 					}
 				}
 
@@ -808,6 +999,38 @@ namespace wg
 		return SoftSurface::TYPEINFO;
 	}
 
+	//____ setPlotListKernel() ________________________________________________
+
+	bool SoftBackend::setPlotListKernel(BlendMode blendMode, PixelFormat destFormat, PlotListOp_p pKernel)
+	{
+		if (!_setupDestFormatKernels(destFormat))
+			return false;
+
+		m_pKernels[(int)destFormat]->pPlotListKernels[(int)blendMode] = pKernel;
+		return true;
+	}
+
+	//____ setLineKernel() ____________________________________________________
+
+	bool SoftBackend::setLineKernel(BlendMode blendMode, PixelFormat destFormat, LineOp_p pKernel)
+	{
+		if (!_setupDestFormatKernels(destFormat))
+			return false;
+
+		m_pKernels[(int)destFormat]->pLineKernels[(int)blendMode] = pKernel;
+		return true;
+	}
+
+	//____ setClipLineKernel() ________________________________________________
+
+	bool SoftBackend::setClipLineKernel(BlendMode blendMode, PixelFormat destFormat, ClipLineOp_p pKernel)
+	{
+		if (!_setupDestFormatKernels(destFormat))
+			return false;
+
+		m_pKernels[(int)destFormat]->pClipLineKernels[(int)blendMode] = pKernel;
+		return true;
+	}
 
 	//____ setFillKernel() ____________________________________________________
 
@@ -1410,6 +1633,23 @@ namespace wg
 
 			s_bTablesInitialized = true;
 		}
+	}
+
+	//____ _scaleLineThickness() ___________________________________________________
+
+	int SoftBackend::_scaleLineThickness(float thickness, int slope)
+	{
+		slope = std::abs(slope);
+
+		int scale = s_lineThicknessTable[slope >> 12];
+
+		if (slope < (1 << 16))
+		{
+			int scale2 = s_lineThicknessTable[(slope >> 12) + 1];
+			scale += ((scale2 - scale) * (slope & 0xFFF)) >> 12;
+		}
+
+		return (int)(thickness * scale);
 	}
 
 	//____ DestFormatKernels::constructor ________________________________________

@@ -140,8 +140,7 @@ namespace wg
 			int			coverageInc;		// Increment of coverage for each full pixel we progress
 		};
 
-		typedef	void(*PlotOp_p)(uint8_t* pDst, HiColor col, const ColTrans& tint);
-		typedef	void(*PlotListOp_p)(const RectI& clip, int nCoords, const CoordI* pCoords, const HiColor* pColors, uint8_t* pCanvas, int pitchX, int pitchY, const ColTrans& tint);
+		typedef	void(*PlotListOp_p)(int nCoords, const CoordSPX* pCoords, const HiColor* pColors, uint8_t* pCanvas, int pitchX, int pitchY, const ColTrans& tint);
 		typedef	void(*LineOp_p)(uint8_t* pRow, int rowInc, int pixelInc, int length, int width, int pos, int slope, HiColor color, const ColTrans& tint, CoordI patchPos);
 		typedef	void(*ClipLineOp_p)(int clipStart, int clipEnd, uint8_t* pRow, int rowInc, int pixelInc, int length, int width, int pos, int slope, HiColor color, const ColTrans& tint, CoordI patchPos);
 		typedef	void(*FillOp_p)(uint8_t* pDst, int pitchX, int pitchY, int nLines, int lineLength, HiColor col, const ColTrans& tint, CoordI patchPos);
@@ -171,15 +170,14 @@ namespace wg
 										BlendMode blendMode, PixelFormat destFormat, StraightBlitOp_p pKernel);
 
 		
-/*
-		bool	setPlotKernel(BlendMode blendMode, PixelFormat destFormat, PlotOp_p pKernel);
+
 		bool	setPlotListKernel(BlendMode blendMode, PixelFormat destFormat, PlotListOp_p pKernel);
 
 		bool	setLineKernel(BlendMode blendMode, PixelFormat destFormat, LineOp_p pKernel);
 		bool	setClipLineKernel(BlendMode blendMode, PixelFormat destFormat, ClipLineOp_p pKernel);
 
-		bool	setSegmentStripKernel(bool bTint, BlendMode blendMode, PixelFormat destFormat, SegmentOp_p pKernel);
- */
+//		bool	setSegmentStripKernel(bool bTint, BlendMode blendMode, PixelFormat destFormat, SegmentOp_p pKernel);
+
 
 		bool	setTransformBlitKernel(PixelFormat sourceFormat, SampleMethod sampleMethod, ReadOp readOp,
 			TintMode tintMode, BlendMode blendMode, PixelFormat destFormat, TransformBlitOp_p pKernel);
@@ -196,6 +194,8 @@ namespace wg
 		void	_updateBlitFunctions();
 		void	_updateTintMode();
 		void	_updateBlur(Blurbrush * pBrush);
+
+		int		_scaleLineThickness(float thickness, int slope);
 
 
 		const static int	c_maxSegments = 16;
@@ -296,7 +296,6 @@ namespace wg
 		{
 			DestFormatKernels();
 
-			PlotOp_p 				pPlotKernels[BlendMode_size];
 			LineOp_p 				pLineKernels[BlendMode_size];
 			ClipLineOp_p			pClipLineKernels[BlendMode_size];
 			FillOp_p				pFillKernels[TintMode_size][BlendMode_size];

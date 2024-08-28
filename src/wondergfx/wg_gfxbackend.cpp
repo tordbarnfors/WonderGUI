@@ -48,12 +48,12 @@ const spx GfxBackend::s_defaultBlurRadius = 4 * 64;
 
 
 
-	//____ typeInfo() _________________________________________________________
+//____ typeInfo() _________________________________________________________
 
-	const TypeInfo& GfxBackend::typeInfo(void) const
-	{
-		return TYPEINFO;
-	}
+const TypeInfo& GfxBackend::typeInfo(void) const
+{
+	return TYPEINFO;
+}
 
 
 } // namespace wg

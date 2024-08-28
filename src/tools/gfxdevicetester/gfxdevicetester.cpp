@@ -4,7 +4,10 @@
 
 #include "gfxdevicetester.h"
 
+#include <wondergfx.h>
 #include <wondergfxstream.h>
+#include <wg_softbackend.h>
+#include <wg_softbackend_kernels.h>
 
 #include "testsuites/testsuite.h"
 
@@ -173,6 +176,19 @@ void GfxDeviceTester::setup_testdevices()
 
 //	g_testdevices.push_back(pReferenceDevice);
 
+	// Gen2 with SoftBackend
+
+	auto pSoftBackend = SoftBackend::create();
+	addDefaultSoftKernels(pSoftBackend);
+
+	auto pGen2GfxDevice = GfxDeviceGen2::create( pSoftBackend );
+
+	auto pGen2CanvasSurface = SoftSurface::create(canvasBP);
+	auto pGen2SoftDevice = Device::create("Gen2 Software (SoftGfxDevice)", pGen2GfxDevice, CanvasRef::None, pGen2CanvasSurface, this);
+
+	g_testdevices.push_back(pGen2SoftDevice);
+
+
 	// Native
 
 	auto pNativeGfxDevice = Base::defaultGfxDevice();
@@ -180,8 +196,8 @@ void GfxDeviceTester::setup_testdevices()
 	
 	auto pNativeDevice = Device::create(nativeDeviceName, pNativeGfxDevice, CanvasRef::None, Base::defaultSurfaceFactory()->createSurface(canvasBP), this );
 	
-	g_testdevices.push_back(pNativeDevice);
-
+//	g_testdevices.push_back(pNativeDevice);
+	
 	// Linear
 	
 	auto pLinearOutputBlob = Blob::create(512*512*4);

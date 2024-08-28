@@ -25,18 +25,25 @@
 
 #include <wondergear.h>
 
+#include <wg_backendlogger.h>
 #include <wg_bitmapcache.h>
 #include <wg_bitmapfont.h>
 #include <wg_canvaslayers.h>
 #include <wg_color.h>
 #include <wg_dummyfont.h>
+#include <wg_edgemap.h>
+#include <wg_edgemapfactory.h>
+#include <wg_edgemaptools.h>
 #include <wg_font.h>
 #include <wg_geo.h>
+#include <wg_gfxbackend.h>
 #include <wg_gfxbase.h>
 #include <wg_gfxdevice.h>
+#include <wg_gfxdevice_gen2.h>
 #include <wg_gfxtypes.h>
 #include <wg_gfxutil.h>
 #include <wg_gradient.h>
+#include <wg_gradyent.h>
 #include <wg_gridwalker.h>
 #include <wg_nullgfxdevice.h>
 #include <wg_patches.h>
@@ -48,8 +55,8 @@
 #include <wg_surfacereader.h>
 #include <wg_surfacewriter.h>
 #include <wg_sysfont.h>
-#include <wg_edgemap.h>
-#include <wg_edgemapfactory.h>
-#include <wg_edgemaptools.h>
+#include <wg_tintmap.h>
+#include <wg_transitions.h>
+#include <wg_waveform.h>
 
 #endif //WONDERGFX_DOT_H
