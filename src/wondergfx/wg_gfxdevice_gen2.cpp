@@ -761,15 +761,26 @@ void GfxDeviceGen2::endCanvasUpdate()
 	if (m_canvasStack.empty())
 	{
 		//TODO: Errorhandling!!!
-
+		
 		return;
 	}
-
+	
 	flattenLayers();
 	m_canvasStack.pop_back();
-
+	
 	if (!m_canvasStack.empty())
+	{
 		m_renderState = m_canvasStack.back().savedState;
+		m_pActiveCanvas = &m_canvasStack.back();
+		m_pActiveLayer = &m_pActiveCanvas->layers[m_pActiveCanvas->activeLayer];
+		m_pActiveClipList = &m_pActiveCanvas->clipListStack.back();
+	}
+	else
+	{
+		m_pActiveCanvas = nullptr;
+		m_pActiveLayer = nullptr;
+		m_pActiveClipList = nullptr;
+	}
 }
 
 //____ flattenLayers() ____________________________________________________
@@ -1006,11 +1017,16 @@ void GfxDeviceGen2::drawLine(CoordSPX beg, CoordSPX end, HiColor color, spx thic
 		return;
 
 
+
+
+	if (m_stateChanges != 0)
+		_encodeStateChanges();
+
 	int nRects = 0;
 
 	auto& commands = m_pActiveLayer->commands;
-	int commandsOfs = commands.size();
-
+	int commandsOfs = (int) commands.size();
+	
 	m_pActiveLayer->commands.push_back(int(Command::Line));
 	m_pActiveLayer->commands.push_back(thickness);
 	m_pActiveLayer->commands.push_back(nRects);
@@ -1037,9 +1053,6 @@ void GfxDeviceGen2::drawLine(CoordSPX beg, CoordSPX end, HiColor color, spx thic
 
 	if (nRects > 0)
 	{
-		if (m_stateChanges != 0)
-			_encodeStateChanges();
-
 		commands[commandsOfs + 2] = nRects;
 
 		m_pActiveLayer->coords.push_back(beg.x);
@@ -1175,12 +1188,31 @@ void GfxDeviceGen2::stretchBlit(const RectSPX& dest, const RectSPX& src)
 	{
 		Transform	mtx;
 
+/*
+ if (m_pBlitSource->sampleMethod() == SampleMethod::Bilinear)
+ {
+	 if (dest.w == 64)
+		 mtx[0][0] = 0;
+	 else
+		 mtx[0][0] = binalInt(src.w-64) * (BINAL_MUL/64) / ((dest.w/64) - 1);
+
+	 mtx[0][1] = 0;
+	 mtx[1][0] = 0;
+
+	 if( dest.h == 64)
+		 mtx[1][1] = 0;
+	 else
+		 mtx[1][1] = binalInt(src.h-64) * (BINAL_MUL/64) / ((dest.h/64) - 1);
+ }
+ */
+		
+		
 		if (m_renderState.blitSource->sampleMethod() == SampleMethod::Bilinear)
 		{
 			if (dest.w == 64)
 				mtx.xx = 0;
 			else
-				mtx.xx = ((src.w - 64) / 64.f) / ((dest.w / 64) - 1);
+				mtx.xx = ((src.w - 65) / 64.f) / ((dest.w / 64) - 1);
 
 			mtx.xy = 0;
 			mtx.yx = 0;
@@ -1188,7 +1220,7 @@ void GfxDeviceGen2::stretchBlit(const RectSPX& dest, const RectSPX& src)
 			if (dest.h == 64)
 				mtx.yy = 0;
 			else
-				mtx.yy = ((src.h - 64) / 64.f) / ((dest.h / 64) - 1);
+				mtx.yy = ((src.h - 65) / 64.f) / ((dest.h / 64) - 1);
 		}
 		else
 		{
@@ -1911,7 +1943,7 @@ void GfxDeviceGen2::flipDrawEdgemap(CoordSPX dest, Edgemap* pEdgemap, GfxFlip fl
 			_encodeStateChanges();
 
 		m_pActiveLayer->commands.push_back(int(Command::DrawEdgemap));
-		m_pActiveLayer->commands.push_back(m_pActiveCanvas->objects.size());
+		m_pActiveLayer->commands.push_back(int(m_pActiveCanvas->objects.size()));
 		m_pActiveLayer->commands.push_back(dest.x);
 		m_pActiveLayer->commands.push_back(dest.y);
 		m_pActiveLayer->commands.push_back(int(flip));
@@ -2059,7 +2091,7 @@ void GfxDeviceGen2::_transformBlitComplex(const RectSPX& _dest, CoordSPX src, co
 		if (m_stateChanges != 0)
 			_encodeStateChanges();
 
-		int transformOfs = m_pActiveCanvas->transforms.size() + GfxFlip_size;
+		int transformOfs = int(m_pActiveCanvas->transforms.size()) + GfxFlip_size;
 		m_pActiveCanvas->transforms.emplace_back(matrix);
 
 		m_pActiveLayer->commands.push_back(int(cmd));
