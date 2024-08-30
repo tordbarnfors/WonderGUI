@@ -2090,3 +2090,437 @@ void _transform_blit(const SoftSurface* pSrcSurf, BinalCoord pos, const binalInt
 		pDst += dstPitchY;
 	}
 }
+
+//____ _add_segment_color() _______________________________________________
+
+inline void _add_segment_color(bool GRADIENT, int blendFraction, int offset, const int16_t* pSegmentColor, const HiColor * pSegmentTintmap, int& accB, int& accG, int& accR, int& accA)
+{
+	if (GRADIENT)
+	{
+		accB += (blendFraction >> 4) * pSegmentTintmap[offset].b;
+		accG += (blendFraction >> 4) * pSegmentTintmap[offset].g;
+		accR += (blendFraction >> 4) * pSegmentTintmap[offset].r;
+		accA += blendFraction << 8;
+	}
+	else
+	{
+		accR += (blendFraction * pSegmentColor[0]) >> 4;
+		accG += (blendFraction * pSegmentColor[1]) >> 4;
+		accB += (blendFraction * pSegmentColor[2]) >> 4;
+		accA += blendFraction << 8;
+	}
+}
+
+
+//____ _draw_segment_strip() _______________________________________________
+
+template<bool GRADIENT, BlendMode BLEND, PixelFormat DSTFORMAT>
+void _draw_segment_strip(int colBeg, int colEnd, uint8_t* pStripStart, int pixelPitch, int nEdges, SoftBackend::SegmentEdge* pEdges, const int16_t* pSegmentColors, const HiColor** pSegmentTintmaps, const bool* pTransparentSegments, const bool* pOpaqueSegments, const SoftBackend::ColTrans& tint)
+{
+
+	bool bFast8 = false;
+	int		bits = 12;
+
+	if (DSTFORMAT == PixelFormat::Alpha_8 || DSTFORMAT == PixelFormat::BGRA_4_linear ||
+		DSTFORMAT == PixelFormat::BGRA_8_linear || DSTFORMAT == PixelFormat::BGRX_8_linear ||
+		DSTFORMAT == PixelFormat::BGR_565_linear || DSTFORMAT == PixelFormat::RGB_565_bigendian ||
+		DSTFORMAT == PixelFormat::RGB_555_bigendian || DSTFORMAT == PixelFormat::BGR_8_linear)
+	{
+		bFast8 = true;
+		bits = 8;
+	}
+
+
+	// Setup fixed blend color
+
+	int16_t fixedB, fixedG, fixedR, fixedA;
+
+	if (bFast8)
+	{
+		const uint8_t* pPackTab = HiColor::packLinearTab;
+
+		fixedB = pPackTab[tint.fixedBlendColor.b];
+		fixedG = pPackTab[tint.fixedBlendColor.g];
+		fixedR = pPackTab[tint.fixedBlendColor.r];
+		fixedA = pPackTab[tint.fixedBlendColor.a];
+	}
+	else
+	{
+		fixedB = tint.fixedBlendColor.b;
+		fixedG = tint.fixedBlendColor.g;
+		fixedR = tint.fixedBlendColor.r;
+		fixedA = tint.fixedBlendColor.a;
+	}
+
+
+	// Render the column
+
+	int offset = colBeg;				// 24.8 format, but binals cleared (always pointing at beginning of full pixel).
+	uint8_t* pDst = pStripStart + (offset >> 8) * pixelPitch;
+
+	const HiColor * pSegmentTintmap = GRADIENT ? *pSegmentTintmaps++ : nullptr;
+
+
+	while (offset < colEnd)
+	{
+		if (nEdges == 0 || offset + 255 < pEdges[0].begin)
+		{
+			// We are fully inside a segment, no need to take any edge into account.
+
+			int end = nEdges == 0 ? colEnd : pEdges[0].begin;
+
+			if (*pTransparentSegments)									// This test is still valid in GRADIENT mode.
+			{
+				pDst = pStripStart + (end >> 8) * pixelPitch;
+				offset = end & 0xFFFFFF00;												// Just skip segment since it is transparent
+			}
+			else
+			{
+				int16_t inB, inG, inR, inA;
+
+				if (GRADIENT == false)
+				{
+					if (bFast8)
+					{
+						inR = HiColor::packLinearTab[pSegmentColors[0]];
+						inG = HiColor::packLinearTab[pSegmentColors[1]];
+						inB = HiColor::packLinearTab[pSegmentColors[2]];
+						inA = HiColor::packLinearTab[pSegmentColors[3]];
+					}
+					else
+					{
+						inR = pSegmentColors[0];
+						inG = pSegmentColors[1];
+						inB = pSegmentColors[2];
+						inA = pSegmentColors[3];
+					}
+				}
+
+				if (*pOpaqueSegments)
+				{
+					while (offset + 255 < end)
+					{
+						if (GRADIENT)
+						{
+							if (bFast8)
+							{
+								inB = HiColor::packLinearTab[pSegmentTintmap[offset >> 8].b];
+								inG = HiColor::packLinearTab[pSegmentTintmap[offset >> 8].g];
+								inR = HiColor::packLinearTab[pSegmentTintmap[offset >> 8].r];
+								inA = HiColor::packLinearTab[pSegmentTintmap[offset >> 8].a];
+
+							}
+							else
+							{
+								inB = pSegmentTintmap[offset >> 8].b;
+								inG = pSegmentTintmap[offset >> 8].g;
+								inR = pSegmentTintmap[offset >> 8].r;
+								inA = pSegmentTintmap[offset >> 8].a;
+							}
+						}
+
+						if (bFast8)
+						{
+							_write_pixel_fast8(pDst, DSTFORMAT, inB, inG, inR, inA);
+						}
+						else
+						{
+							_write_pixel(pDst, DSTFORMAT, inB, inG, inR, inA);
+						}
+
+						pDst += pixelPitch;
+						offset += 256;
+					}
+				}
+				else
+				{
+					while (offset + 255 < end)
+					{
+						if (GRADIENT)
+						{
+							if (bFast8)
+							{
+								inB = HiColor::packLinearTab[pSegmentTintmap[offset >> 8].b];
+								inG = HiColor::packLinearTab[pSegmentTintmap[offset >> 8].g];
+								inR = HiColor::packLinearTab[pSegmentTintmap[offset >> 8].r];
+								inA = HiColor::packLinearTab[pSegmentTintmap[offset >> 8].a];
+							}
+							else
+							{
+								inB = pSegmentTintmap[offset >> 8].b;
+								inG = pSegmentTintmap[offset >> 8].g;
+								inR = pSegmentTintmap[offset >> 8].r;
+								inA = pSegmentTintmap[offset >> 8].a;
+							}
+						}
+
+						int16_t backB, backG, backR, backA;
+						int16_t outB, outG, outR, outA;
+
+						if (bFast8)
+						{
+							_read_pixel_fast8(pDst, DSTFORMAT, nullptr, nullptr, backB, backG, backR, backA);
+							_blend_pixels_fast8(BLEND, tint.morphFactor, DSTFORMAT, inB, inG, inR, inA, backB, backG, backR, backA,
+								outB, outG, outR, outA, fixedB, fixedG, fixedR, fixedA);
+							_write_pixel_fast8(pDst, DSTFORMAT, outB, outG, outR, outA);
+						}
+						else
+						{
+							_read_pixel(pDst, DSTFORMAT, nullptr, nullptr, backB, backG, backR, backA);
+							_blend_pixels(BLEND, tint.morphFactor, DSTFORMAT, inB, inG, inR, inA, backB, backG, backR, backA,
+								outB, outG, outR, outA, fixedB, fixedG, fixedR, fixedA);
+							_write_pixel(pDst, DSTFORMAT, outB, outG, outR, outA);
+						}
+
+						pDst += pixelPitch;
+						offset += 256;
+					}
+
+				}
+			}
+		}
+		else
+		{
+			{
+				int edge = 0;
+
+				int	segmentFractions[SoftBackend::c_maxSegments];
+				int remainingFractions = 65536;
+
+				while (edge < nEdges && offset + 255 >= pEdges[edge].begin)
+				{
+					int frac;				// Fractions of pixel below edge.
+
+					if (offset + 255 < pEdges[edge].end)
+					{
+						int beginHeight = 256 - (pEdges[edge].begin & 0xFF);
+						int coverageInc = (pEdges[edge].coverageInc * beginHeight) >> 8;
+
+						frac = ((pEdges[edge].coverage + coverageInc / 2) * beginHeight) >> 8;
+
+						pEdges[edge].coverage += coverageInc;
+						pEdges[edge].begin = offset + 256;
+					}
+					else
+					{
+						frac = ((((pEdges[edge].coverage + 65536) / 2) * (pEdges[edge].end - pEdges[edge].begin)) >> 8)
+							+ (256 - (pEdges[edge].end & 0xFF)) * 65536 / 256;
+					}
+
+					segmentFractions[edge] = remainingFractions - frac;
+
+					//						if (segmentFractions[edge] < 0 || segmentFractions[edge] > 65536)
+					//							int err = 1;
+
+					remainingFractions = frac;
+					edge++;
+				}
+
+				segmentFractions[edge] = remainingFractions;
+
+				int16_t backB, backG, backR, backA;
+
+				_read_pixel(pDst, DSTFORMAT, nullptr, nullptr, backB, backG, backR, backA);
+
+				int16_t outB = 0, outG = 0, outR = 0, outA = 0;
+
+				int accB = 0;
+				int accG = 0;
+				int accR = 0;
+				int accA = 0;
+
+				if (BLEND == BlendMode::Replace)
+				{
+					for (int i = 0; i <= edge; i++)
+					{
+						int blendFraction = segmentFractions[i];
+						_add_segment_color(GRADIENT, blendFraction, offset >> 8, &pSegmentColors[i * 4], pSegmentTintmap, accB, accG, accR, accA);
+					}
+
+					outB = accB >> 12;
+					outG = accG >> 12;
+					outR = accR >> 12;
+					outA = accA >> 12;
+				}
+
+				if (BLEND == BlendMode::Blend)
+				{
+					int backFraction = 65536;
+
+					for (int i = 0; i <= edge; i++)
+					{
+						int alpha = GRADIENT ? pSegmentTintmap[offset >> 8].a : pSegmentColors[i * 4 + 3];
+						int blendFraction = ((segmentFractions[i] * alpha) / 4096);
+						backFraction -= blendFraction;
+						_add_segment_color(GRADIENT, blendFraction, offset >> 8, &pSegmentColors[i * 4], pSegmentTintmap, accB, accG, accR, accA);
+					}
+
+					outB = (accB >> 12) + ((backB * backFraction) >> 16);
+					outG = (accG >> 12) + ((backG * backFraction) >> 16);
+					outR = (accR >> 12) + ((backR * backFraction) >> 16);
+					outA = (accA >> 12) + ((backA * backFraction) >> 16);	// This should be correct... 							
+				}
+
+				if (BLEND == BlendMode::BlendFixedColor)
+				{
+					int backFraction = 65536;
+
+					for (int i = 0; i <= edge; i++)
+					{
+						int alpha = GRADIENT ? pSegmentTintmap[offset >> 8].a : pSegmentColors[i * 4 + 3];
+						int blendFraction = ((segmentFractions[i] * alpha) / 4096);
+						backFraction -= blendFraction;
+						_add_segment_color(GRADIENT, blendFraction, offset >> 8, &pSegmentColors[i * 4], pSegmentTintmap, accB, accG, accR, accA);
+					}
+
+					outB = (accB >> 12) + ((fixedB * backFraction) >> 16);
+					outG = (accG >> 12) + ((fixedG * backFraction) >> 16);
+					outR = (accR >> 12) + ((fixedR * backFraction) >> 16);
+					outA = (accA >> 12) + ((fixedA * backFraction) >> 16);	// This should be correct...
+				}
+
+				if (BLEND == BlendMode::Add)
+				{
+					for (int i = 0; i <= edge; i++)
+					{
+						int alpha = GRADIENT ? pSegmentTintmap[offset >> 8].a : pSegmentColors[i * 4 + 3];
+						int blendFraction = ((segmentFractions[i] * alpha) / 4096);
+						_add_segment_color(GRADIENT, blendFraction, offset >> 8, &pSegmentColors[i * 4], pSegmentTintmap, accB, accG, accR, accA);
+					}
+
+					outB = SoftBackend::s_limit4096Tab[4097 + backB + (accB >> 12)];
+					outG = SoftBackend::s_limit4096Tab[4097 + backG + (accG >> 12)];
+					outR = SoftBackend::s_limit4096Tab[4097 + backR + (accR >> 12)];
+					outA = backA;
+				}
+
+				if (BLEND == BlendMode::Subtract)
+				{
+					for (int i = 0; i <= edge; i++)
+					{
+						int alpha = GRADIENT ? pSegmentTintmap[offset >> 8].a : pSegmentColors[i * 4 + 3];
+						int blendFraction = ((segmentFractions[i] * alpha) / 4096);
+						_add_segment_color(GRADIENT, blendFraction, offset >> 8, &pSegmentColors[i * 4], pSegmentTintmap, accB, accG, accR, accA);
+					}
+
+					outB = SoftBackend::s_limit4096Tab[4097 + backB - (accB >> 12)];
+					outG = SoftBackend::s_limit4096Tab[4097 + backG - (accG >> 12)];
+					outR = SoftBackend::s_limit4096Tab[4097 + backR - (accR >> 12)];
+					outA = backA;
+				}
+
+				if (BLEND == BlendMode::Multiply)
+				{
+					for (int i = 0; i <= edge; i++)
+					{
+						int blendFraction = segmentFractions[i];
+						_add_segment_color(GRADIENT, blendFraction, offset >> 8, &pSegmentColors[i * 4], pSegmentTintmap, accB, accG, accR, accA);
+					}
+
+					outB = (backB * (accB >> 12)) >> 12;
+					outG = (backG * (accG >> 12)) >> 12;
+					outR = (backR * (accR >> 12)) >> 12;
+					outA = backA;
+				}
+
+				if (BLEND == BlendMode::Invert)
+				{
+					for (int i = 0; i <= edge; i++)
+					{
+						int blendFraction = segmentFractions[i];
+						_add_segment_color(GRADIENT, blendFraction, offset >> 8, &pSegmentColors[i * 4], pSegmentTintmap, accB, accG, accR, accA);
+					}
+
+					int srcB2 = accB >> 12;
+					int srcG2 = accG >> 12;
+					int srcR2 = accR >> 12;
+
+					outB = (srcB2 * (4096 - backB) + backB * (4096 - srcB2)) >> 12;
+					outG = (srcG2 * (4096 - backG) + backG * (4096 - srcG2)) >> 12;
+					outR = (srcR2 * (4096 - backR) + backR * (4096 - srcR2)) >> 12;
+					outA = backA;
+				}
+
+				if (BLEND == BlendMode::Min)
+				{
+					int backFraction = 65536;
+
+					for (int i = 0; i <= edge; i++)
+					{
+						int alpha = GRADIENT ? pSegmentTintmap[offset >> 8].a : pSegmentColors[i * 4 + 3];
+						int blendFraction = ((segmentFractions[i] * alpha) / 4096);
+						backFraction -= blendFraction;
+						_add_segment_color(GRADIENT, blendFraction, offset >> 8, &pSegmentColors[i * 4], pSegmentTintmap, accB, accG, accR, accA);
+					}
+
+					int16_t srcB = (accB >> 12) + ((backB * backFraction) >> 16);
+					int16_t srcG = (accG >> 12) + ((backG * backFraction) >> 16);
+					int16_t srcR = (accR >> 12) + ((backR * backFraction) >> 16);
+
+					outB = std::min(backB, srcB);
+					outG = std::min(backG, srcG);
+					outR = std::min(backR, srcR);
+				}
+
+				if (BLEND == BlendMode::Max)
+				{
+					int backFraction = 65536;
+
+					for (int i = 0; i <= edge; i++)
+					{
+						int alpha = GRADIENT ? pSegmentTintmap[offset >> 8].a : pSegmentColors[i * 4 + 3];
+						int blendFraction = ((segmentFractions[i] * alpha) / 4096);
+						backFraction -= blendFraction;
+						_add_segment_color(GRADIENT, blendFraction, offset >> 8, &pSegmentColors[i * 4], pSegmentTintmap, accB, accG, accR, accA);
+					}
+
+					int16_t srcB = (accB >> 12) + ((backB * backFraction) >> 16);
+					int16_t srcG = (accG >> 12) + ((backG * backFraction) >> 16);
+					int16_t srcR = (accR >> 12) + ((backR * backFraction) >> 16);
+
+					outB = std::max(backB, srcB);
+					outG = std::max(backG, srcG);
+					outR = std::max(backR, srcR);
+				}
+
+				if (BLEND == BlendMode::Morph)
+				{
+					int backFraction = 65536;
+
+					for (int i = 0; i <= edge; i++)
+					{
+						int alpha = GRADIENT ? pSegmentTintmap[offset >> 8].a : pSegmentColors[i * 4 + 3];
+						int blendFraction = ((segmentFractions[i] * alpha) / 4096);
+						backFraction -= blendFraction;
+						_add_segment_color(GRADIENT, blendFraction, offset >> 8, &pSegmentColors[i * 4], pSegmentTintmap, accB, accG, accR, accA);
+					}
+
+					int invMorph = 4096 - tint.morphFactor;
+
+					outB = (backB * invMorph + (accB >> 12) * tint.morphFactor) >> 12;
+					outG = (backG * invMorph + (accG >> 12) * tint.morphFactor) >> 12;
+					outR = (backR * invMorph + (accR >> 12) * tint.morphFactor) >> 12;
+					outA = (backA * invMorph + (backFraction >> 4) * tint.morphFactor) >> 12;
+				}
+
+				_write_pixel(pDst, DSTFORMAT, outB, outG, outR, outA);
+			}
+			pDst += pixelPitch;
+			offset += 256;
+		}
+
+		while (nEdges > 0 && offset >= pEdges[0].end)
+		{
+			pEdges++;
+			nEdges--;
+
+			pTransparentSegments++;
+			pOpaqueSegments++;
+			if (GRADIENT)
+				pSegmentTintmap = * pSegmentTintmaps++;
+			else
+				pSegmentColors += 4;
+
+		}
+	}
+}

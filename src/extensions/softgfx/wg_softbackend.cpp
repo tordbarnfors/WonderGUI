@@ -23,6 +23,7 @@
 #include <wg_softbackend.h>
 #include <wg_softsurfacefactory.h>
 #include <wg_softedgemapfactory.h>
+#include <wg_softedgemap.h>
 #include <wg_gfxbase.h>
 
 
@@ -800,9 +801,593 @@ namespace wg
 
 			case Command::DrawEdgemap:
 			{
-				//TODO: Implement!!!	
+				int32_t objectOfs = *p++;
+				auto pEdgemap = static_cast<SoftEdgemap*>(m_pObjectsBeg[objectOfs]);
 
-				assert(false);
+				int32_t	destX = *p++;
+				int32_t	destY = *p++;
+
+				int32_t	flip = *p++;
+
+				int32_t nRects = *p++;
+				RectSPX * pRects = reinterpret_cast<RectSPX*>(pCoords);
+
+				pCoords += nRects * 4;
+
+				int32_t nSegments = pEdgemap->segments();
+				const HiColor * pSegmentColors = pEdgemap->colors();
+
+				int nEdgeStrips = pEdgemap->m_size.w + 1;
+
+				int edgeStripPitch = pEdgemap->m_nbSegments - 1;
+
+				//TODO: Proper 26:6 support
+				RectI _dest = { Util::roundToPixels(destX), Util::roundToPixels(destY), pEdgemap->m_size };
+
+				RectI dest = _dest;
+
+				SegmentEdge edges[c_maxSegments - 1];
+
+				int xPitch = m_canvasPixelBytes;
+				int yPitch = m_canvasPitch;
+
+				// We need to modify our transform since we are moving the destination pointer, not the source pointer, according to the transform.
+
+				int simpleTransform[2][2];
+
+				auto& mtx = s_blitFlipTransforms[flip];
+
+				simpleTransform[0][0] = mtx.xx;
+				simpleTransform[1][1] = mtx.yy;
+
+				if (mtx.xx == 0 || mtx.yy == 0)
+				{
+					simpleTransform[0][1] = mtx.yx;
+					simpleTransform[1][0] = mtx.xy;
+				}
+				else
+				{
+					simpleTransform[0][1] = mtx.xy;
+					simpleTransform[1][0] = mtx.yx;
+				}
+
+				// Calculate pitches
+
+				int colPitch = simpleTransform[0][0] * xPitch + simpleTransform[0][1] * yPitch;
+				int rowPitch = simpleTransform[1][0] * xPitch + simpleTransform[1][1] * yPitch;
+
+				// Calculate start coordinate
+
+				CoordI start = dest.pos();
+
+				if (simpleTransform[0][0] + simpleTransform[1][0] < 0)
+					start.x += dest.w - 1;
+
+				if (simpleTransform[0][1] + simpleTransform[1][1] < 0)
+					start.y += dest.h - 1;
+
+				// Detect if strip columns are lined horizontally or verically
+
+				bool bHorizontalColumns = (abs(colPitch) == xPitch);
+
+				// Limit size of destination rect by number of edgestrips.
+
+				if (bHorizontalColumns)
+				{
+					if (dest.w > nEdgeStrips - 1)
+					{
+						if (colPitch < 0)
+							dest.x += dest.w - nEdgeStrips - 1;
+
+						dest.w = nEdgeStrips - 1;
+					}
+				}
+				else
+				{
+					if (dest.h > nEdgeStrips - 1)
+					{
+						if (colPitch < 0)
+							dest.y += dest.h - nEdgeStrips - 1;
+
+						dest.h = nEdgeStrips - 1;
+					}
+				}
+
+				// Apply tinting
+
+				int16_t	colors[c_maxSegments * 4][4];				// RGBA order of elements
+				bool	transparentSegments[c_maxSegments];
+				bool	opaqueSegments[c_maxSegments];
+
+/*
+				SegmentGradient* pGradientsY = nullptr;
+				SegmentGradient* pGradientsX = nullptr;
+				int		gradientsYBufferSize = 0;
+				int		gradientsXBufferSize = 0;
+*/
+
+
+				// Determine combined tint-mode
+
+				bool	bTintX = false;
+				bool	bTintY = false;
+
+				if (m_colTrans.mode != TintMode::None)
+				{
+					if (m_colTrans.mode == TintMode::GradientXY)
+					{
+						bTintX = bTintY = true;
+					}
+					else
+					{
+						if (m_colTrans.mode == TintMode::GradientY)
+							bTintY = true;
+						if (m_colTrans.mode == TintMode::GradientX)
+							bTintX = true;
+					}
+				}
+
+				// Unpack input colors and fill in transparentSegments
+
+				if (!bTintX && !bTintY)
+				{
+					// If we just use flat tinting (or no tint at all), we tint our segment colors right away
+
+					for (int i = 0; i < nSegments; i++)
+					{
+						colors[i][0] = (pSegmentColors[i].r * m_colTrans.flatTintColor.r) >> 12;
+						colors[i][1] = (pSegmentColors[i].g * m_colTrans.flatTintColor.g) >> 12;
+						colors[i][2] = (pSegmentColors[i].b * m_colTrans.flatTintColor.b) >> 12;
+						colors[i][3] = (pSegmentColors[i].a * m_colTrans.flatTintColor.a) >> 12;
+
+						transparentSegments[i] = (colors[i][3] == 0);
+						opaqueSegments[i] = (colors[i][3] == 4096);
+					}
+				}
+				else
+				{
+					int colorsPerSegment = bTintX && bTintY ? 4 : 2;
+
+					for (int i = 0; i < nSegments * colorsPerSegment; i++)
+					{
+						colors[i][0] = pSegmentColors[i].r;
+						colors[i][1] = pSegmentColors[i].g;
+						colors[i][2] = pSegmentColors[i].b;
+						colors[i][3] = pSegmentColors[i].a;
+					}
+				}
+
+
+				// If we instead have gradients we have things to take care of...
+/*
+				if (bTintX || bTintY)
+				{
+					// Generate the buffers that we will need
+
+					if (bTintY)
+					{
+						gradientsYBufferSize = sizeof(SegmentGradient) * nSegments;
+						pGradientsY = (SegmentGradient*)GfxBase::memStackAlloc(gradientsYBufferSize);
+					}
+
+					if (bTintX)
+					{
+						// We use two gradients per segment in X, one for top and bottom of rectangle each.
+
+						gradientsXBufferSize = sizeof(SegmentGradient) * nSegments * 2;
+						pGradientsX = (SegmentGradient*)GfxBase::memStackAlloc(gradientsXBufferSize);
+					}
+
+
+					// Calculate RGBA values from m_colTrans for our four corners.
+
+					int		baseB[4], baseG[4], baseR[4], baseA[4];
+					int		tempB[4], tempG[4], tempR[4], tempA[4];
+
+					_colTransRect(tempB, tempG, tempR, tempA, _dest);
+
+					// Rotate the colors of our four corners if we are flipped
+
+					static const int cornerSwitchMap[2][2][2][4] =
+					{ {{{0,3,2,1},				// [ 0,-1,-1, 0] = Rot90FlipY
+						{1,2,3,0}},				// [ 0,-1, 1, 0] = Rot90
+						{{3,0,1,2},				// [ 0, 1,-1, 0] = Rot270
+						{2,1,0,3}}},			// [ 0, 1, 1, 0] = Rot90FlipX
+						{{{2,3,0,1},			// [-1, 0, 0,-1] = Rot180
+						{1,0,3,2}},				// [-1, 0, 0, 1] = FlipX
+						{{3,2,1,0},				// [ 1, 0, 0,-1] = FlipY
+						{0,1,2,3}}} };			// [ 1, 0, 0, 1] = Normal
+
+					int i1, i2, i3;
+					if (_simpleTransform[0][0] == 0)
+					{
+						i1 = 0;
+						i2 = _simpleTransform[0][1] == 1 ? 1 : 0;
+						i3 = _simpleTransform[1][0] == 1 ? 1 : 0;
+					}
+					else
+					{
+						i1 = 1;
+						i2 = _simpleTransform[0][0] == 1 ? 1 : 0;
+						i3 = _simpleTransform[1][1] == 1 ? 1 : 0;
+					}
+
+					const int* pSwitch = cornerSwitchMap[i1][i2][i3];
+
+					for (int i = 0; i < 4; i++)
+					{
+						int n = pSwitch[i];
+						baseB[i] = tempB[n];
+						baseG[i] = tempG[n];
+						baseR[i] = tempR[n];
+						baseA[i] = tempA[n];
+					}
+
+					// Lets process each segment
+
+					for (int seg = 0; seg < nSegments; seg++)
+					{
+
+						int		segB[4], segG[4], segR[4], segA[4];
+
+						// Calculate RGBA values for our four corners
+
+						if (tintMode == TintMode::Flat)
+						{
+							for (int i = 0; i < 4; i++)
+							{
+								segR[i] = baseR[i] * colors[seg][0];
+								segG[i] = baseG[i] * colors[seg][1];
+								segB[i] = baseB[i] * colors[seg][2];
+								segA[i] = baseA[i] * colors[seg][3];
+							}
+						}
+						else
+						{
+							if (tintMode == TintMode::GradientX)
+							{
+								segR[0] = baseR[0] * colors[seg * 2][0];
+								segG[0] = baseG[0] * colors[seg * 2][1];
+								segB[0] = baseB[0] * colors[seg * 2][2];
+								segA[0] = baseA[0] * colors[seg * 2][3];
+
+								segR[1] = baseR[1] * colors[seg * 2 + 1][0];
+								segG[1] = baseG[1] * colors[seg * 2 + 1][1];
+								segB[1] = baseB[1] * colors[seg * 2 + 1][2];
+								segA[1] = baseA[1] * colors[seg * 2 + 1][3];
+
+								segR[2] = baseR[2] * colors[seg * 2 + 1][0];
+								segG[2] = baseG[2] * colors[seg * 2 + 1][1];
+								segB[2] = baseB[2] * colors[seg * 2 + 1][2];
+								segA[2] = baseA[2] * colors[seg * 2 + 1][3];
+
+								segR[3] = baseR[3] * colors[seg * 2][0];
+								segG[3] = baseG[3] * colors[seg * 2][1];
+								segB[3] = baseB[3] * colors[seg * 2][2];
+								segA[3] = baseA[3] * colors[seg * 2][3];
+							}
+							else if (tintMode == TintMode::GradientY)
+							{
+								segR[0] = baseR[0] * colors[seg * 2][0];
+								segG[0] = baseG[0] * colors[seg * 2][1];
+								segB[0] = baseB[0] * colors[seg * 2][2];
+								segA[0] = baseA[0] * colors[seg * 2][3];
+
+								segR[1] = baseR[1] * colors[seg * 2][0];
+								segG[1] = baseG[1] * colors[seg * 2][1];
+								segB[1] = baseB[1] * colors[seg * 2][2];
+								segA[1] = baseA[1] * colors[seg * 2][3];
+
+								segR[2] = baseR[2] * colors[seg * 2 + 1][0];
+								segG[2] = baseG[2] * colors[seg * 2 + 1][1];
+								segB[2] = baseB[2] * colors[seg * 2 + 1][2];
+								segA[2] = baseA[2] * colors[seg * 2 + 1][3];
+
+								segR[3] = baseR[3] * colors[seg * 2 + 1][0];
+								segG[3] = baseG[3] * colors[seg * 2 + 1][1];
+								segB[3] = baseB[3] * colors[seg * 2 + 1][2];
+								segA[3] = baseA[3] * colors[seg * 2 + 1][3];
+							}
+							else
+							{
+								segR[0] = baseR[0] * colors[seg * 4][0];
+								segG[0] = baseG[0] * colors[seg * 4][1];
+								segB[0] = baseB[0] * colors[seg * 4][2];
+								segA[0] = baseA[0] * colors[seg * 4][3];
+
+								segR[1] = baseR[1] * colors[seg * 4 + 1][0];
+								segG[1] = baseG[1] * colors[seg * 4 + 1][1];
+								segB[1] = baseB[1] * colors[seg * 4 + 1][2];
+								segA[1] = baseA[1] * colors[seg * 4 + 1][3];
+
+								segR[2] = baseR[2] * colors[seg * 4 + 2][0];
+								segG[2] = baseG[2] * colors[seg * 4 + 2][1];
+								segB[2] = baseB[2] * colors[seg * 4 + 2][2];
+								segA[2] = baseA[2] * colors[seg * 4 + 2][3];
+
+								segR[3] = baseR[3] * colors[seg * 4 + 3][0];
+								segG[3] = baseG[3] * colors[seg * 4 + 3][1];
+								segB[3] = baseB[3] * colors[seg * 4 + 3][2];
+								segA[3] = baseA[3] * colors[seg * 4 + 3][3];
+							}
+						}
+
+						// We now have the segments corner colors. Let's save
+						// that information in the correct format for future
+						// processing depending on tint mode.
+
+						// Filling in the x-gradient if we have one. Two SegmentGradient structs for
+						// each segment, one for gradient along top and of dest rectangle and one along the bottom.
+
+						if (bTintX)
+						{
+							// Fill in top gradient
+
+							auto p = &pGradientsX[seg * 2];
+
+							p->begB = segB[0];
+							p->begG = segG[0];
+							p->begR = segR[0];
+							p->begA = segA[0];
+
+							p->incB = (segB[1] - segB[0]) / dest.w;
+							p->incG = (segG[1] - segG[0]) / dest.w;
+							p->incR = (segR[1] - segR[0]) / dest.w;
+							p->incA = (segA[1] - segA[0]) / dest.w;
+
+							// Fill in bottom gradient
+
+							p++;
+
+							p->begB = segB[3];
+							p->begG = segG[3];
+							p->begR = segR[3];
+							p->begA = segA[3];
+
+							p->incB = (segB[2] - segB[3]) / dest.w;
+							p->incG = (segG[2] - segG[3]) / dest.w;
+							p->incR = (segR[2] - segR[3]) / dest.w;
+							p->incA = (segA[2] - segA[3]) / dest.w;
+						}
+
+						// If we don't have any x-gradient we can fill in y-gradient once and for all
+
+						if (bTintY && !bTintX)
+						{
+							auto p = &pGradientsY[seg];
+
+							p->begB = segB[0];
+							p->begG = segG[0];
+							p->begR = segR[0];
+							p->begA = segA[0];
+
+							p->incB = (segB[3] - segB[0]) / dest.h;
+							p->incG = (segG[3] - segG[0]) / dest.h;
+							p->incR = (segR[3] - segR[0]) / dest.h;
+							p->incA = (segA[3] - segA[0]) / dest.h;
+						}
+
+						// Possibly mark this segment as transparent
+
+						transparentSegments[seg] = (segA[0] + segA[1] + segA[2] + segA[3] == 0);
+						opaqueSegments[seg] = (segA[0] + segA[1] + segA[2] + segA[3] == 4096 * 4096 * 4);
+					}
+				}
+
+*/
+				// Modify opaqueSegments if our state isn't blend
+
+				if (m_blendMode != BlendMode::Blend && m_blendMode != BlendMode::BlendFixedColor)
+				{
+					bool val = (m_blendMode == BlendMode::Replace);
+
+					for (int seg = 0; seg < nSegments; seg++)
+						opaqueSegments[seg] = val;
+				}
+
+				// Modify transparentSegments if our state is BlendFixedColor
+
+				if (m_blendMode == BlendMode::BlendFixedColor)
+				{
+					for (int seg = 0; seg < nSegments; seg++)
+						transparentSegments[seg] = false;
+				}
+
+				// Set start position and clip dest
+
+				uint8_t* pOrigo = m_pCanvasPixels + start.y * yPitch + start.x * xPitch;
+
+
+				SegmentOp_p	pOp = nullptr;
+				auto pKernels = m_pKernels[(int)m_pCanvas->pixelFormat()];
+				if (pKernels)
+					pOp = pKernels->pSegmentKernels[(int)bTintY][(int)m_blendMode];
+
+				if (pOp == nullptr)
+				{
+					if (m_blendMode == BlendMode::Ignore)
+						return;
+
+					char errorMsg[1024];
+
+					snprintf(errorMsg, 1024, "Failed draw segments operation. SoftGfxDevice is missing segments kernel %s Y-tint for BlendMode::%s onto surface of PixelFormat:%s.",
+						bTintY ? "with" : "without",
+						toString(m_blendMode),
+						toString(m_pCanvas->pixelFormat()));
+
+					GfxBase::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, errorMsg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+					return;
+				}
+
+				// Loop through patches
+
+				for (int patchIdx = 0; patchIdx < nRects; patchIdx++)
+				{
+					// Clip patch
+
+					RectI patch = RectI::overlap(dest, pRects[patchIdx] / 64);
+					if (patch.w == 0 || patch.h == 0)
+						continue;
+
+					// Calculate stripstart, clipBeg/clipEnd and first edge for patch
+
+					int columnOfs;
+					int rowOfs;
+
+					int columns;
+					int rows;
+
+					if (bHorizontalColumns)
+					{
+						columnOfs = colPitch > 0 ? patch.x - dest.x : dest.right() - patch.right();
+						rowOfs = rowPitch > 0 ? patch.y - dest.y : dest.bottom() - patch.bottom();
+
+						columns = patch.w;
+						rows = patch.h;
+					}
+					else
+					{
+						columnOfs = colPitch > 0 ? patch.y - dest.y : dest.bottom() - patch.bottom();
+						rowOfs = rowPitch > 0 ? patch.x - dest.x : dest.right() - patch.right();
+
+						columns = patch.h;
+						rows = patch.w;
+					}
+
+					
+					pEdgemap->samples();
+
+					const int* pEdgeStrips = pEdgemap->m_pSamples + columnOfs * edgeStripPitch;
+					uint8_t* pStripStart = pOrigo + columnOfs * colPitch;
+
+					int clipBeg = rowOfs * 256;
+					int clipEnd = clipBeg + (rows * 256);
+
+					for (int x = 0; x < columns; x++)
+					{
+						int nEdges = 0;
+						int skippedSegments = 0;
+
+						for (int y = 0; y < nSegments - 1; y++)
+						{
+							int beg = pEdgeStrips[y] * 4;
+							int end = pEdgeStrips[y + edgeStripPitch] * 4;
+
+							if (beg > end)
+								swap(beg, end);
+
+							if (beg >= clipEnd)
+								break;
+
+							if (end > clipBeg)
+							{
+								int coverageInc = (end == beg) ? 0 : (65536 * 256) / (end - beg);
+								int coverage = 0;
+
+								if (beg < clipBeg)
+								{
+									int cut = clipBeg - beg;
+									beg = clipBeg;
+									coverage += (coverageInc * cut) >> 8;
+								}
+
+								if (end > clipEnd)
+									end = clipEnd;
+
+
+								edges[nEdges].begin = beg;
+								edges[nEdges].end = end;
+								edges[nEdges].coverage = coverage;
+								edges[nEdges].coverageInc = coverageInc;
+								nEdges++;
+							}
+							else
+								skippedSegments++;
+						}
+
+						// Update tinting if we have X-gradient
+
+						const int16_t* pColors = &colors[skippedSegments][0];
+/*
+						if (bTintX)
+						{
+							if (bTintY)
+							{
+								auto pOut = pGradientsY + skippedSegments;
+								auto pIn = pGradientsX + skippedSegments * 2;
+
+								for (int i = 0; i < nEdges + 1; i++)
+								{
+									int beg = pIn[0].begB + pIn[0].incB * columnOfs;
+									int inc = (pIn[1].begB + pIn[1].incB * columnOfs - beg) / dest.h;
+									pOut[i].begB = beg;
+									pOut[i].incB = inc;
+
+									beg = pIn[0].begG + pIn[0].incG * columnOfs;
+									inc = (pIn[1].begG + pIn[1].incG * columnOfs - beg) / dest.h;
+									pOut[i].begG = beg;
+									pOut[i].incG = inc;
+
+									beg = pIn[0].begR + pIn[0].incR * columnOfs;
+									inc = (pIn[1].begR + pIn[1].incR * columnOfs - beg) / dest.h;
+									pOut[i].begR = beg;
+									pOut[i].incR = inc;
+
+									beg = pIn[0].begA + pIn[0].incA * columnOfs;
+									inc = (pIn[1].begA + pIn[1].incA * columnOfs - beg) / dest.h;
+									pOut[i].begA = beg;
+									pOut[i].incA = inc;
+
+									pIn += 2;
+								}
+							}
+							else
+							{
+								// We just use the color array and fill in correct color values for this column.
+
+								auto pGrad = pGradientsX + skippedSegments * 2;
+
+								for (int i = 0; i < nEdges + 1; i++)
+								{
+									colors[i][0] = (pGrad->begR + pGrad->incR * columnOfs) >> 12;
+									colors[i][1] = (pGrad->begG + pGrad->incG * columnOfs) >> 12;
+									colors[i][2] = (pGrad->begB + pGrad->incB * columnOfs) >> 12;
+									colors[i][3] = (pGrad->begA + pGrad->incA * columnOfs) >> 12;
+									pGrad += 2;												// Skipping bottom gradient data since we don't need it.
+								}
+
+								pColors = &colors[0][0];
+							}
+						}
+*/
+
+						//
+//						auto gradientPointer = pGradientsY != nullptr ? pGradientsY + skippedSegments : nullptr;
+
+						auto gradientPointer = nullptr;
+
+						pOp(clipBeg, clipEnd, pStripStart, rowPitch, nEdges, edges, pColors, gradientPointer, transparentSegments + skippedSegments, opaqueSegments + skippedSegments, m_colTrans);
+						pEdgeStrips += edgeStripPitch;
+						pStripStart += colPitch;
+						columnOfs++;
+					}
+				}
+
+				// Free what we have reserved on the memStack.
+
+/*
+				if (gradientsXBufferSize > 0)
+					GfxBase::memStackFree(gradientsXBufferSize);
+
+				if (gradientsYBufferSize > 0)
+					GfxBase::memStackFree(gradientsYBufferSize);
+
+*/
+
+
+
+
+
 				break;
 			}
 
@@ -1139,6 +1724,16 @@ namespace wg
 		return success;
 	}
 
+	//____ setSegmentStripKernel() ____________________________________________
+
+	bool SoftBackend::setSegmentStripKernel(bool bTint, BlendMode blendMode, PixelFormat destFormat, SegmentOp_p pKernel)
+	{
+		if (!_setupDestFormatKernels(destFormat))
+			return false;
+
+		m_pKernels[(int)destFormat]->pSegmentKernels[bTint][(int)blendMode] = pKernel;
+		return true;
+	}
 
 	//____ _onePassStraightBlit() _____________________________________________
 

@@ -1063,7 +1063,7 @@ pBackend->setPlotListKernel( BlendMode::BlendFixedColor, PixelFormat::BGRA_4_lin
 pBackend->setPlotListKernel( BlendMode::BlendFixedColor, PixelFormat::BGR_565_linear, _plot_list<BlendMode::BlendFixedColor, TintMode::None, PixelFormat::BGR_565_linear> );
 pBackend->setPlotListKernel( BlendMode::BlendFixedColor, PixelFormat::RGB_565_bigendian, _plot_list<BlendMode::BlendFixedColor, TintMode::None, PixelFormat::RGB_565_bigendian> );
 pBackend->setPlotListKernel( BlendMode::BlendFixedColor, PixelFormat::RGB_555_bigendian, _plot_list<BlendMode::BlendFixedColor, TintMode::None, PixelFormat::RGB_555_bigendian> );
-/*
+
 
 pBackend->setSegmentStripKernel( false, BlendMode::Replace, PixelFormat::BGR_8_sRGB,  _draw_segment_strip<0, BlendMode::Replace, PixelFormat::BGR_8_sRGB> );
 pBackend->setSegmentStripKernel( true, BlendMode::Replace, PixelFormat::BGR_8_sRGB, _draw_segment_strip<1, BlendMode::Replace, PixelFormat::BGR_8_sRGB> );
@@ -1294,7 +1294,7 @@ pBackend->setSegmentStripKernel( false, BlendMode::BlendFixedColor, PixelFormat:
 pBackend->setSegmentStripKernel( true, BlendMode::BlendFixedColor, PixelFormat::RGB_565_bigendian, _draw_segment_strip<1, BlendMode::BlendFixedColor, PixelFormat::RGB_565_bigendian> );
 pBackend->setSegmentStripKernel( false, BlendMode::BlendFixedColor, PixelFormat::RGB_555_bigendian,  _draw_segment_strip<0, BlendMode::BlendFixedColor, PixelFormat::RGB_555_bigendian> );
 pBackend->setSegmentStripKernel( true, BlendMode::BlendFixedColor, PixelFormat::RGB_555_bigendian, _draw_segment_strip<1, BlendMode::BlendFixedColor, PixelFormat::RGB_555_bigendian> );
-*/
+
 
 pBackend->setStraightBlitKernel( PixelFormat::Undefined, SoftBackend::ReadOp::Normal, TintMode::None, BlendMode::Replace, PixelFormat::BGR_8_sRGB, _straight_blit<PixelFormat::Undefined, TintMode::None, BlendMode::Replace, PixelFormat::BGR_8_sRGB, SoftBackend::ReadOp::Normal> );
 pBackend->setStraightBlitKernel( PixelFormat::Undefined, SoftBackend::ReadOp::Normal, TintMode::None, BlendMode::Replace, PixelFormat::BGR_8_linear, _straight_blit<PixelFormat::Undefined, TintMode::None, BlendMode::Replace, PixelFormat::BGR_8_linear, SoftBackend::ReadOp::Normal> );

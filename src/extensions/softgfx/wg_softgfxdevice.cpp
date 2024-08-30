@@ -2274,8 +2274,7 @@ const uint8_t SoftGfxDevice::s_fast8_channel_6[64] = {		0x00, 0x04, 0x08, 0x0c, 
 		}
 		
 		auto pWave = static_cast<SoftEdgemap*>(pEdgemap);
-
-		
+	
 		_transformDrawSegments( {dest, pWave->m_size*64}, pWave->m_nbRenderSegments, pWave->m_pRenderColors,
 							   pWave->m_size.w+1, pWave->m_pSamples, pWave->m_nbSegments-1, pWave->m_tintMode,
 							   s_blitFlipTransforms[(int)GfxFlip::None] );

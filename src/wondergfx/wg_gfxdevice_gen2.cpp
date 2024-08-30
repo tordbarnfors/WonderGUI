@@ -1950,6 +1950,7 @@ void GfxDeviceGen2::flipDrawEdgemap(CoordSPX dest, Edgemap* pEdgemap, GfxFlip fl
 		m_pActiveLayer->commands.push_back(nRects);
 
 		m_pActiveCanvas->objects.emplace_back(pEdgemap);
+		pEdgemap->retain();
 	}
 }
 

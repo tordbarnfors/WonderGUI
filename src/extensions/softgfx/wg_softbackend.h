@@ -146,7 +146,7 @@ namespace wg
 		typedef	void(*FillOp_p)(uint8_t* pDst, int pitchX, int pitchY, int nLines, int lineLength, HiColor col, const ColTrans& tint, CoordI patchPos);
 		typedef	void(*StraightBlitOp_p)(const uint8_t* pSrc, uint8_t* pDst, const SoftSurface* pSrcSurf, const Pitches& pitches, int nLines, int lineLength, const ColTrans& tint, CoordI patchPos, const Transform * pMatrix);
 		typedef	void(*TransformBlitOp_p)(const SoftSurface* pSrcSurf, BinalCoord pos, const binalInt matrix[2][2], uint8_t* pDst, int dstPitchX, int dstPitchY, int nLines, int lineLength, const ColTrans& tint, CoordI patchPos);
-		typedef void(*SegmentOp_p)(int clipBeg, int clipEnd, uint8_t* pStripStart, int pixelPitch, int nEdges, SegmentEdge* pEdges, const int16_t* pSegmentColors, const HiColor ** pSegmentTintmaps, const bool* pTransparentSegments, const bool* pOpaqueSegments, const Transform * pMatrix);
+		typedef void(*SegmentOp_p)(int clipBeg, int clipEnd, uint8_t* pStripStart, int pixelPitch, int nEdges, SegmentEdge* pEdges, const int16_t* pSegmentColors, const HiColor ** pSegmentTintmaps, const bool* pTransparentSegments, const bool* pOpaqueSegments, const ColTrans& tint);
 
 		static const int16_t 	s_channel_4_1[256];
 		static const int16_t	s_channel_4_2[256];
@@ -160,6 +160,8 @@ namespace wg
 		static int 				s_mulTab[256];
 
 		static int16_t			s_limit4096Tab[4097 * 3];
+
+		const static int	c_maxSegments = 16;
 
 
 		//.____ Control ______________________________________________________
@@ -176,7 +178,7 @@ namespace wg
 		bool	setLineKernel(BlendMode blendMode, PixelFormat destFormat, LineOp_p pKernel);
 		bool	setClipLineKernel(BlendMode blendMode, PixelFormat destFormat, ClipLineOp_p pKernel);
 
-//		bool	setSegmentStripKernel(bool bTint, BlendMode blendMode, PixelFormat destFormat, SegmentOp_p pKernel);
+		bool	setSegmentStripKernel(bool bTint, BlendMode blendMode, PixelFormat destFormat, SegmentOp_p pKernel);
 
 
 		bool	setTransformBlitKernel(PixelFormat sourceFormat, SampleMethod sampleMethod, ReadOp readOp,
@@ -198,7 +200,6 @@ namespace wg
 		int		_scaleLineThickness(float thickness, int slope);
 
 
-		const static int	c_maxSegments = 16;
 
 
 		std::vector<CanvasInfo>	m_definedCanvases;
