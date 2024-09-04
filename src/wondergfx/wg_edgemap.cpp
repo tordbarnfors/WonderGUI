@@ -89,6 +89,35 @@ namespace wg
 		return true;
 	}
 
+	//____ setTintmaps() _________________________________________________________
+
+	bool Edgemap::setTintmaps( int begin, int end, const Tintmap_p * pTintmaps )
+	{
+		if( !m_pTintmaps )
+		{
+			//TODO: Error handling!
+			return false;
+		}
+
+		if( begin < 0 || end < begin || end > m_nbSegments )
+		{
+			//TODO: Error handling!
+
+			return false;
+		}
+		
+		for( int i = begin ; i < end ; i++ )
+		{
+			m_pTintmaps[i]->release();
+			m_pTintmaps[i] = * pTintmaps++;
+			m_pTintmaps[i]->retain();
+		}
+			
+		return true;
+	}
+
+
+
 
 	//____ colors() ______________________________________________________________
 
@@ -104,6 +133,12 @@ namespace wg
 		return m_pGradients;
 	}
 
+	//____ tintmaps() ___________________________________________________________
+
+	Tintmap * const * Edgemap::tintmaps() const
+	{
+		return m_pTintmaps;
+	}
 
 
 	//____ color() ____________________________________________________________
@@ -126,6 +161,16 @@ namespace wg
 		return m_pGradients[segment];
 	}
 
+	//____ tintmap() ____________________________________________________________
+
+	Tintmap_p Edgemap::tintmap(int segment) const
+	{
+		if( segment < 0 || segment >= m_nbSegments || m_pTintmaps == nullptr )
+			return nullptr;
+
+		return m_pTintmaps[segment];
+	}
+
 	//____ _validateBlueprint() __________________________________________________
 
 	bool Edgemap::_validateBlueprint(const Blueprint& bp)
@@ -138,10 +183,7 @@ namespace wg
 		if( bp.segments <= 0 || bp.segments > maxSegments )
 			return false;
 
-		if( bp.colors == nullptr && bp.gradients == nullptr )
-			return false;
-
-		if( bp.colors != nullptr && bp.gradients != nullptr )
+		if( int(bp.colors != nullptr) + int(bp.gradients != nullptr) + int(bp.tintmaps != nullptr) != 1 )
 			return false;
 
 		return true;

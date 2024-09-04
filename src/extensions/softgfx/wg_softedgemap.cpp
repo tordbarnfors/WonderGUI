@@ -40,7 +40,7 @@ SoftEdgemap_p	SoftEdgemap::create( const Blueprint& blueprint )
 	return SoftEdgemap_p( new SoftEdgemap(blueprint) );
 }
 
-SoftEdgemap_p SoftEdgemap::create( const Edgemap::Blueprint& blueprint, SampleOrigo origo, const float * pSamples, int edges, int edgePitch, int samplePitch)
+SoftEdgemap_p SoftEdgemap::create( const Blueprint& blueprint, SampleOrigo origo, const float * pSamples, int edges, int edgePitch, int samplePitch)
 {
 	if( !_validateBlueprint(blueprint) )
 		return nullptr;
@@ -56,7 +56,7 @@ SoftEdgemap_p SoftEdgemap::create( const Edgemap::Blueprint& blueprint, SampleOr
 	return p;
 }
 
-SoftEdgemap_p SoftEdgemap::create( const Edgemap::Blueprint& blueprint, SampleOrigo origo, const spx * pSamples, int edges, int edgePitch, int samplePitch)
+SoftEdgemap_p SoftEdgemap::create( const Blueprint& blueprint, SampleOrigo origo, const spx * pSamples, int edges, int edgePitch, int samplePitch)
 {
 	if( !_validateBlueprint(blueprint) )
 		return nullptr;
@@ -81,9 +81,10 @@ SoftEdgemap::SoftEdgemap(const Blueprint& bp) : Edgemap(bp)
 	int sampleArraySize = (bp.size.w+1) * bp.segments * sizeof(spx);
 	int colorArraySize = bp.colors ? bp.segments*sizeof(HiColor) : 0;
 	int gradientArraySize = bp.gradients ? bp.segments*sizeof(Gradient) : 0;
-	int renderColorsBytes = bp.gradients ? bp.segments * sizeof(HiColor) * 4 : 0;		// Reserve space for XY-gradient colors.
+	int tintmapArraySize = bp.tintmaps ? bp.segments*sizeof(Tintmap*) : 0;
+	int renderColorsBytes = (bp.gradients || bp.tintmaps) ? bp.segments * sizeof(HiColor) * 4 : 0;		// Reserve space for XY-gradient colors.
 
-	int bytes = sampleArraySize + colorArraySize + gradientArraySize + renderColorsBytes;
+	int bytes = sampleArraySize + colorArraySize + gradientArraySize + tintmapArraySize + renderColorsBytes;
 	
 	m_pBuffer = new char[bytes];
 	
@@ -98,8 +99,21 @@ SoftEdgemap::SoftEdgemap(const Blueprint& bp) : Edgemap(bp)
 		m_pRenderColors = (HiColor*) pBuffer;
 		pBuffer += renderColorsBytes;
 	}
-
-	if( colorArraySize > 0 )
+	else if( tintmapArraySize > 0 )
+	{
+		m_pTintmaps = (Tintmap**) pBuffer;
+		
+		for( int i = 0 ; i < bp.segments ; i++ )
+		{
+			m_pTintmaps[i] = bp.tintmaps[i];
+			m_pTintmaps[i]->retain();
+		}
+			
+		pBuffer += tintmapArraySize;
+		m_pRenderColors = (HiColor*) pBuffer;
+		pBuffer += renderColorsBytes;
+	}
+	else if( colorArraySize > 0 )
 	{
 		m_pColors = (HiColor*) pBuffer;
 		memcpy(m_pColors, bp.colors, colorArraySize);
@@ -117,6 +131,16 @@ SoftEdgemap::SoftEdgemap(const Blueprint& bp) : Edgemap(bp)
 
 SoftEdgemap::~SoftEdgemap()
 {
+	// Decrease reference count of tintmaps.
+
+	if( m_pTintmaps )
+	{
+		for( int i = 0 ; i < m_nbSegments ; i++ )
+			m_pTintmaps[i]->release();
+	}
+
+	// Delete our buffer
+	
 	delete [] m_pBuffer;
 }
 
@@ -360,6 +384,23 @@ void SoftEdgemap::_updateRenderColors()
 	else
 	{
 		m_tintMode = TintMode::Flat;
+	}
+	
+	// Generate render colors from Tintmaps as well as we can to support legacy implementations.
+	
+	if( m_pTintmaps )
+	{
+		m_tintMode = TintMode::GradientXY;
+		
+		for( int i = 0 ; i < m_nbSegments ; i++ )
+		{
+			Gradient grad = m_pTintmaps[i]->exportGradient();
+			
+			m_pRenderColors[i*4]   = grad.topLeft;
+			m_pRenderColors[i*4+1] = grad.topRight;
+			m_pRenderColors[i*4+2] = grad.bottomRight;
+			m_pRenderColors[i*4+3] = grad.bottomLeft;
+		}
 	}
 }
 

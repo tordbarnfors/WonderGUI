@@ -29,6 +29,7 @@
 #include <wg_color.h>
 #include <wg_geo.h>
 #include <wg_gradient.h>
+#include <wg_tintmap.h>
 
 namespace wg
 {
@@ -45,9 +46,10 @@ namespace wg
 		
 		struct Blueprint
 		{
-			const HiColor*		colors 		= nullptr;			// Edgemap has either colors or gradients, never both. Setting one is mandatory.
+			const HiColor*		colors 		= nullptr;			// Edgemap has either colors, gradients, or tintmaps never more than one of them. Setting one is mandatory.
 			Finalizer_p			finalizer	= nullptr;
-			const Gradient *	gradients 	= nullptr;			// Edgemap has either colors or gradients, never both. Setting one is mandatory.
+			const Gradient *	gradients 	= nullptr;			// Edgemap has either colors, gradients, or tintmaps never more than one of them. Setting one is mandatory.
+			const Tintmap_p * 	tintmaps	= nullptr;			// Needs to have one tintmap per segement if any. So size() must be 0 or equal to segments.
 			int					segments	= 0;				// Mandatory.
 			SizeI				size;							// Mandatory.
 		};
@@ -68,14 +70,18 @@ namespace wg
 		inline int		renderSegments() const { return m_nbRenderSegments; }
 
 		virtual bool	setColors( int begin, int end, const HiColor * pColors );
-		virtual bool	setGradients( int begin, int end, const Gradient * pGradients );
-		
 		virtual const HiColor * colors() const;
-		virtual const Gradient * gradients() const;
-		
 		virtual HiColor	color(int segment) const;
+
+		virtual bool	setGradients( int begin, int end, const Gradient * pGradients );
+		virtual const Gradient * gradients() const;
 		virtual Gradient gradient(int segment) const;
 
+		virtual bool	setTintmaps( int begin, int end, const Tintmap_p * pTintmaps );
+		virtual Tintmap * const * tintmaps() const;
+		virtual Tintmap_p tintmap(int segment) const;
+
+		
 		//.____ Content _______________________________________________________
 
 		inline int		segments() const { return m_nbSegments; }
@@ -111,6 +117,7 @@ namespace wg
 
 		HiColor*	m_pColors = nullptr;		// Initialized by subclass.
 		Gradient*	m_pGradients = nullptr;		// Initialized by subclass.
+		Tintmap**	m_pTintmaps = nullptr;		// Initialized by subclass.
    };
 
 

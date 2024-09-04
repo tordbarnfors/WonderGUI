@@ -139,14 +139,21 @@ namespace wg
 			int			coverage;			// 0-65536
 			int			coverageInc;		// Increment of coverage for each full pixel we progress
 		};
-
+		
+		enum class StripSource
+		{
+			Colors,
+			Tintmaps,
+			ColorsAndTintmaps,
+		};
+		
 		typedef	void(*PlotListOp_p)(int nCoords, const CoordSPX* pCoords, const HiColor* pColors, uint8_t* pCanvas, int pitchX, int pitchY, const ColTrans& tint);
 		typedef	void(*LineOp_p)(uint8_t* pRow, int rowInc, int pixelInc, int length, int width, int pos, int slope, HiColor color, const ColTrans& tint, CoordI patchPos);
 		typedef	void(*ClipLineOp_p)(int clipStart, int clipEnd, uint8_t* pRow, int rowInc, int pixelInc, int length, int width, int pos, int slope, HiColor color, const ColTrans& tint, CoordI patchPos);
 		typedef	void(*FillOp_p)(uint8_t* pDst, int pitchX, int pitchY, int nLines, int lineLength, HiColor col, const ColTrans& tint, CoordI patchPos);
 		typedef	void(*StraightBlitOp_p)(const uint8_t* pSrc, uint8_t* pDst, const SoftSurface* pSrcSurf, const Pitches& pitches, int nLines, int lineLength, const ColTrans& tint, CoordI patchPos, const Transform * pMatrix);
 		typedef	void(*TransformBlitOp_p)(const SoftSurface* pSrcSurf, BinalCoord pos, const binalInt matrix[2][2], uint8_t* pDst, int dstPitchX, int dstPitchY, int nLines, int lineLength, const ColTrans& tint, CoordI patchPos);
-		typedef void(*SegmentOp_p)(int clipBeg, int clipEnd, uint8_t* pStripStart, int pixelPitch, int nEdges, SegmentEdge* pEdges, const int16_t* pSegmentColors, const HiColor ** pSegmentTintmaps, const bool* pTransparentSegments, const bool* pOpaqueSegments, const ColTrans& tint);
+		typedef void(*SegmentOp_p)(int clipBeg, int clipEnd, uint8_t* pStripStart, int pixelPitch, int nEdges, SegmentEdge* pEdges, const int16_t* pSegmentColors, const HiColor * pSegmentTintmap, int segmentTintmapPitch, const bool* pTransparentSegments, const bool* pOpaqueSegments, const ColTrans& tint);
 
 		static const int16_t 	s_channel_4_1[256];
 		static const int16_t	s_channel_4_2[256];
@@ -178,7 +185,7 @@ namespace wg
 		bool	setLineKernel(BlendMode blendMode, PixelFormat destFormat, LineOp_p pKernel);
 		bool	setClipLineKernel(BlendMode blendMode, PixelFormat destFormat, ClipLineOp_p pKernel);
 
-		bool	setSegmentStripKernel(bool bTint, BlendMode blendMode, PixelFormat destFormat, SegmentOp_p pKernel);
+		bool	setSegmentStripKernel(SoftBackend::StripSource, BlendMode blendMode, PixelFormat destFormat, SegmentOp_p pKernel);
 
 
 		bool	setTransformBlitKernel(PixelFormat sourceFormat, SampleMethod sampleMethod, ReadOp readOp,
@@ -301,7 +308,7 @@ namespace wg
 			ClipLineOp_p			pClipLineKernels[BlendMode_size];
 			FillOp_p				pFillKernels[TintMode_size][BlendMode_size];
 			PlotListOp_p			pPlotListKernels[BlendMode_size];
-			SegmentOp_p				pSegmentKernels[2][BlendMode_size];
+			SegmentOp_p				pSegmentKernels[3][BlendMode_size];
 
 			StraightBlitOp_p		pStraightBlitFromHiColorKernels[TintMode_size][BlendMode_size];
 			StraightBlitOp_p		pStraightBlitFromBGRA8Kernels[TintMode_size][BlendMode_size];

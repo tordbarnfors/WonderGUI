@@ -35,6 +35,16 @@ namespace wg
 		return TYPEINFO;
 	}
 
+
+	//____ _exportDummyColors() __________________________________________________
+
+	void Tintmap::_exportDummyColors(spx length, HiColor * pOutput)
+	{
+		int len = length / 64;
+
+		for( int i = 0 ; i < len ; i++ )
+			* pOutput ++ = HiColor::White;
+	}
 }
 
 

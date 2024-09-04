@@ -661,7 +661,7 @@ bool GfxDeviceGen2::_beginCanvasUpdate(CanvasRef ref, Surface* pCanvas, int nUpd
 	if (m_pActiveCanvas)
 	{
 		m_pActiveCanvas->savedState = m_renderState;
-		_resetState(m_renderState);
+		m_pActiveCanvas->savedStateChanges = m_stateChanges;
 	}
 
 	// Add our canvas entry
@@ -771,6 +771,7 @@ void GfxDeviceGen2::endCanvasUpdate()
 	if (!m_canvasStack.empty())
 	{
 		m_renderState = m_canvasStack.back().savedState;
+		m_stateChanges = m_canvasStack.back().savedStateChanges;
 		m_pActiveCanvas = &m_canvasStack.back();
 		m_pActiveLayer = &m_pActiveCanvas->layers[m_pActiveCanvas->activeLayer];
 		m_pActiveClipList = &m_pActiveCanvas->clipListStack.back();

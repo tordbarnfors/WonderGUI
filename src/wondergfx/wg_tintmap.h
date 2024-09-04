@@ -28,6 +28,7 @@
 #include <wg_gfxtypes.h>
 #include <wg_geo.h>
 #include <wg_color.h>
+#include <wg_gradient.h>
 
 namespace wg
 {
@@ -54,10 +55,16 @@ namespace wg
 
 		//.____ Render ________________________________________________
 
-		virtual void exportAxisColors(SizeSPX size, HiColor* pAxisX, HiColor* pAxisY) = 0;
+		virtual void exportHorizontalColors(spx length, HiColor* pOutput) = 0;
+		virtual void exportVerticalColors(spx length, HiColor* pOutput) = 0;
 
+		virtual Gradient exportGradient() = 0;			// To support legacy code.
+		
 	protected:
 
+		void _exportDummyColors(spx length, HiColor * pOutput);
+
+		
 		bool	m_bOpaque;
 		bool	m_bVertical;
 		bool	m_bHorizontal;

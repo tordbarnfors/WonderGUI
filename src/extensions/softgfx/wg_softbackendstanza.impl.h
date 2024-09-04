@@ -2093,29 +2093,40 @@ void _transform_blit(const SoftSurface* pSrcSurf, BinalCoord pos, const binalInt
 
 //____ _add_segment_color() _______________________________________________
 
-inline void _add_segment_color(bool GRADIENT, int blendFraction, int offset, const int16_t* pSegmentColor, const HiColor * pSegmentTintmap, int& accB, int& accG, int& accR, int& accA)
+inline void _add_segment_color(SoftBackend::StripSource SOURCE, int blendFraction, int offset, const int16_t* pSegmentColor, const HiColor * pSegmentTintmap, int& accB, int& accG, int& accR, int& accA)
 {
-	if (GRADIENT)
-	{
-		accB += (blendFraction >> 4) * pSegmentTintmap[offset].b;
-		accG += (blendFraction >> 4) * pSegmentTintmap[offset].g;
-		accR += (blendFraction >> 4) * pSegmentTintmap[offset].r;
-		accA += blendFraction << 8;
-	}
-	else
+	if (SOURCE == SoftBackend::StripSource::Colors)
 	{
 		accR += (blendFraction * pSegmentColor[0]) >> 4;
 		accG += (blendFraction * pSegmentColor[1]) >> 4;
 		accB += (blendFraction * pSegmentColor[2]) >> 4;
 		accA += blendFraction << 8;
 	}
+
+	if (SOURCE == SoftBackend::StripSource::Tintmaps)
+	{
+		accB += (blendFraction * pSegmentTintmap[offset].b) >> 4;
+		accG += (blendFraction * pSegmentTintmap[offset].g) >> 4;
+		accR += (blendFraction * pSegmentTintmap[offset].r) >> 4;
+		accA += blendFraction << 8;
+	}
+
+	if (SOURCE == SoftBackend::StripSource::ColorsAndTintmaps)
+	{
+		accB += (blendFraction >> 4) * ((pSegmentTintmap[offset].b * pSegmentColor[2]) >> 12);
+		accG += (blendFraction >> 4) * ((pSegmentTintmap[offset].g * pSegmentColor[1]) >> 12);
+		accR += (blendFraction >> 4) * ((pSegmentTintmap[offset].r * pSegmentColor[0]) >> 12);
+		accA += blendFraction << 8;
+	}
+
 }
+
 
 
 //____ _draw_segment_strip() _______________________________________________
 
-template<bool GRADIENT, BlendMode BLEND, PixelFormat DSTFORMAT>
-void _draw_segment_strip(int colBeg, int colEnd, uint8_t* pStripStart, int pixelPitch, int nEdges, SoftBackend::SegmentEdge* pEdges, const int16_t* pSegmentColors, const HiColor** pSegmentTintmaps, const bool* pTransparentSegments, const bool* pOpaqueSegments, const SoftBackend::ColTrans& tint)
+template<SoftBackend::StripSource SOURCE, BlendMode BLEND, PixelFormat DSTFORMAT>
+void _draw_segment_strip(int colBeg, int colEnd, uint8_t* pStripStart, int pixelPitch, int nEdges, SoftBackend::SegmentEdge* pEdges, const int16_t* pSegmentColors, const HiColor* pSegmentTintmap, int segmentTintmapPitch, const bool* pTransparentSegments, const bool* pOpaqueSegments, const SoftBackend::ColTrans& tint)
 {
 
 	bool bFast8 = false;
@@ -2158,9 +2169,6 @@ void _draw_segment_strip(int colBeg, int colEnd, uint8_t* pStripStart, int pixel
 	int offset = colBeg;				// 24.8 format, but binals cleared (always pointing at beginning of full pixel).
 	uint8_t* pDst = pStripStart + (offset >> 8) * pixelPitch;
 
-	const HiColor * pSegmentTintmap = GRADIENT ? *pSegmentTintmaps++ : nullptr;
-
-
 	while (offset < colEnd)
 	{
 		if (nEdges == 0 || offset + 255 < pEdges[0].begin)
@@ -2178,7 +2186,7 @@ void _draw_segment_strip(int colBeg, int colEnd, uint8_t* pStripStart, int pixel
 			{
 				int16_t inB, inG, inR, inA;
 
-				if (GRADIENT == false)
+				if (SOURCE == SoftBackend::StripSource::Colors)
 				{
 					if (bFast8)
 					{
@@ -2200,7 +2208,7 @@ void _draw_segment_strip(int colBeg, int colEnd, uint8_t* pStripStart, int pixel
 				{
 					while (offset + 255 < end)
 					{
-						if (GRADIENT)
+						if (SOURCE == SoftBackend::StripSource::Tintmaps)
 						{
 							if (bFast8)
 							{
@@ -2216,6 +2224,24 @@ void _draw_segment_strip(int colBeg, int colEnd, uint8_t* pStripStart, int pixel
 								inG = pSegmentTintmap[offset >> 8].g;
 								inR = pSegmentTintmap[offset >> 8].r;
 								inA = pSegmentTintmap[offset >> 8].a;
+							}
+						}
+						
+						if (SOURCE == SoftBackend::StripSource::ColorsAndTintmaps)
+						{
+							if (bFast8)
+							{
+								inB = HiColor::packLinearTab[(pSegmentTintmap[offset >> 8].b * pSegmentColors[2]) >> 12];
+								inG = HiColor::packLinearTab[(pSegmentTintmap[offset >> 8].g * pSegmentColors[1]) >> 12];
+								inR = HiColor::packLinearTab[(pSegmentTintmap[offset >> 8].r * pSegmentColors[0]) >> 12];
+								inA = HiColor::packLinearTab[(pSegmentTintmap[offset >> 8].a * pSegmentColors[3]) >> 12];
+							}
+							else
+							{
+								inB = (pSegmentTintmap[offset >> 8].b * pSegmentColors[2]) >> 12;
+								inG = (pSegmentTintmap[offset >> 8].g * pSegmentColors[1]) >> 12;
+								inR = (pSegmentTintmap[offset >> 8].r * pSegmentColors[0]) >> 12;
+								inA = (pSegmentTintmap[offset >> 8].a * pSegmentColors[3]) >> 12;
 							}
 						}
 
@@ -2236,7 +2262,7 @@ void _draw_segment_strip(int colBeg, int colEnd, uint8_t* pStripStart, int pixel
 				{
 					while (offset + 255 < end)
 					{
-						if (GRADIENT)
+						if (SOURCE == SoftBackend::StripSource::Tintmaps)
 						{
 							if (bFast8)
 							{
@@ -2251,6 +2277,24 @@ void _draw_segment_strip(int colBeg, int colEnd, uint8_t* pStripStart, int pixel
 								inG = pSegmentTintmap[offset >> 8].g;
 								inR = pSegmentTintmap[offset >> 8].r;
 								inA = pSegmentTintmap[offset >> 8].a;
+							}
+						}
+
+						if (SOURCE == SoftBackend::StripSource::ColorsAndTintmaps)
+						{
+							if (bFast8)
+							{
+								inB = HiColor::packLinearTab[(pSegmentTintmap[offset >> 8].b * pSegmentColors[2]) >> 12];
+								inG = HiColor::packLinearTab[(pSegmentTintmap[offset >> 8].g * pSegmentColors[1]) >> 12];
+								inR = HiColor::packLinearTab[(pSegmentTintmap[offset >> 8].r * pSegmentColors[0]) >> 12];
+								inA = HiColor::packLinearTab[(pSegmentTintmap[offset >> 8].a * pSegmentColors[3]) >> 12];
+							}
+							else
+							{
+								inB = (pSegmentTintmap[offset >> 8].b * pSegmentColors[2]) >> 12;
+								inG = (pSegmentTintmap[offset >> 8].g * pSegmentColors[1]) >> 12;
+								inR = (pSegmentTintmap[offset >> 8].r * pSegmentColors[0]) >> 12;
+								inA = (pSegmentTintmap[offset >> 8].a * pSegmentColors[3]) >> 12;
 							}
 						}
 
@@ -2334,7 +2378,7 @@ void _draw_segment_strip(int colBeg, int colEnd, uint8_t* pStripStart, int pixel
 					for (int i = 0; i <= edge; i++)
 					{
 						int blendFraction = segmentFractions[i];
-						_add_segment_color(GRADIENT, blendFraction, offset >> 8, &pSegmentColors[i * 4], pSegmentTintmap, accB, accG, accR, accA);
+						_add_segment_color(SOURCE, blendFraction, offset >> 8, &pSegmentColors[i * 4], pSegmentTintmap + i * segmentTintmapPitch, accB, accG, accR, accA);
 					}
 
 					outB = accB >> 12;
@@ -2349,10 +2393,19 @@ void _draw_segment_strip(int colBeg, int colEnd, uint8_t* pStripStart, int pixel
 
 					for (int i = 0; i <= edge; i++)
 					{
-						int alpha = GRADIENT ? pSegmentTintmap[offset >> 8].a : pSegmentColors[i * 4 + 3];
+						int alpha;
+						
+						if( SOURCE == SoftBackend::StripSource::Colors)
+							alpha = pSegmentColors[i * 4 + 3];
+						if( SOURCE == SoftBackend::StripSource::Tintmaps )
+							alpha = pSegmentTintmap[offset >> 8].a;
+						if( SOURCE == SoftBackend::StripSource::ColorsAndTintmaps )
+							alpha = pSegmentColors[i * 4 + 3] * pSegmentTintmap[offset >> 8].a / 4096;
+
+						
 						int blendFraction = ((segmentFractions[i] * alpha) / 4096);
 						backFraction -= blendFraction;
-						_add_segment_color(GRADIENT, blendFraction, offset >> 8, &pSegmentColors[i * 4], pSegmentTintmap, accB, accG, accR, accA);
+						_add_segment_color(SOURCE, blendFraction, offset >> 8, &pSegmentColors[i * 4], pSegmentTintmap + i * segmentTintmapPitch, accB, accG, accR, accA);
 					}
 
 					outB = (accB >> 12) + ((backB * backFraction) >> 16);
@@ -2367,10 +2420,18 @@ void _draw_segment_strip(int colBeg, int colEnd, uint8_t* pStripStart, int pixel
 
 					for (int i = 0; i <= edge; i++)
 					{
-						int alpha = GRADIENT ? pSegmentTintmap[offset >> 8].a : pSegmentColors[i * 4 + 3];
+						int alpha;
+						
+						if( SOURCE == SoftBackend::StripSource::Colors)
+							alpha = pSegmentColors[i * 4 + 3];
+						if( SOURCE == SoftBackend::StripSource::Tintmaps )
+							alpha = pSegmentTintmap[offset >> 8].a;
+						if( SOURCE == SoftBackend::StripSource::ColorsAndTintmaps )
+							alpha = pSegmentColors[i * 4 + 3] * pSegmentTintmap[offset >> 8].a / 4096;
+
 						int blendFraction = ((segmentFractions[i] * alpha) / 4096);
 						backFraction -= blendFraction;
-						_add_segment_color(GRADIENT, blendFraction, offset >> 8, &pSegmentColors[i * 4], pSegmentTintmap, accB, accG, accR, accA);
+						_add_segment_color(SOURCE, blendFraction, offset >> 8, &pSegmentColors[i * 4], pSegmentTintmap + i * segmentTintmapPitch, accB, accG, accR, accA);
 					}
 
 					outB = (accB >> 12) + ((fixedB * backFraction) >> 16);
@@ -2383,9 +2444,17 @@ void _draw_segment_strip(int colBeg, int colEnd, uint8_t* pStripStart, int pixel
 				{
 					for (int i = 0; i <= edge; i++)
 					{
-						int alpha = GRADIENT ? pSegmentTintmap[offset >> 8].a : pSegmentColors[i * 4 + 3];
+						int alpha;
+						
+						if( SOURCE == SoftBackend::StripSource::Colors)
+							alpha = pSegmentColors[i * 4 + 3];
+						if( SOURCE == SoftBackend::StripSource::Tintmaps )
+							alpha = pSegmentTintmap[offset >> 8].a;
+						if( SOURCE == SoftBackend::StripSource::ColorsAndTintmaps )
+							alpha = pSegmentColors[i * 4 + 3] * pSegmentTintmap[offset >> 8].a / 4096;
+
 						int blendFraction = ((segmentFractions[i] * alpha) / 4096);
-						_add_segment_color(GRADIENT, blendFraction, offset >> 8, &pSegmentColors[i * 4], pSegmentTintmap, accB, accG, accR, accA);
+						_add_segment_color(SOURCE, blendFraction, offset >> 8, &pSegmentColors[i * 4], pSegmentTintmap + i * segmentTintmapPitch, accB, accG, accR, accA);
 					}
 
 					outB = SoftBackend::s_limit4096Tab[4097 + backB + (accB >> 12)];
@@ -2398,9 +2467,17 @@ void _draw_segment_strip(int colBeg, int colEnd, uint8_t* pStripStart, int pixel
 				{
 					for (int i = 0; i <= edge; i++)
 					{
-						int alpha = GRADIENT ? pSegmentTintmap[offset >> 8].a : pSegmentColors[i * 4 + 3];
+						int alpha;
+						
+						if( SOURCE == SoftBackend::StripSource::Colors)
+							alpha = pSegmentColors[i * 4 + 3];
+						if( SOURCE == SoftBackend::StripSource::Tintmaps )
+							alpha = pSegmentTintmap[offset >> 8].a;
+						if( SOURCE == SoftBackend::StripSource::ColorsAndTintmaps )
+							alpha = pSegmentColors[i * 4 + 3] * pSegmentTintmap[offset >> 8].a / 4096;
+
 						int blendFraction = ((segmentFractions[i] * alpha) / 4096);
-						_add_segment_color(GRADIENT, blendFraction, offset >> 8, &pSegmentColors[i * 4], pSegmentTintmap, accB, accG, accR, accA);
+						_add_segment_color(SOURCE, blendFraction, offset >> 8, &pSegmentColors[i * 4], pSegmentTintmap + i * segmentTintmapPitch, accB, accG, accR, accA);
 					}
 
 					outB = SoftBackend::s_limit4096Tab[4097 + backB - (accB >> 12)];
@@ -2414,7 +2491,7 @@ void _draw_segment_strip(int colBeg, int colEnd, uint8_t* pStripStart, int pixel
 					for (int i = 0; i <= edge; i++)
 					{
 						int blendFraction = segmentFractions[i];
-						_add_segment_color(GRADIENT, blendFraction, offset >> 8, &pSegmentColors[i * 4], pSegmentTintmap, accB, accG, accR, accA);
+						_add_segment_color(SOURCE, blendFraction, offset >> 8, &pSegmentColors[i * 4], pSegmentTintmap + i * segmentTintmapPitch, accB, accG, accR, accA);
 					}
 
 					outB = (backB * (accB >> 12)) >> 12;
@@ -2428,7 +2505,7 @@ void _draw_segment_strip(int colBeg, int colEnd, uint8_t* pStripStart, int pixel
 					for (int i = 0; i <= edge; i++)
 					{
 						int blendFraction = segmentFractions[i];
-						_add_segment_color(GRADIENT, blendFraction, offset >> 8, &pSegmentColors[i * 4], pSegmentTintmap, accB, accG, accR, accA);
+						_add_segment_color(SOURCE, blendFraction, offset >> 8, &pSegmentColors[i * 4], pSegmentTintmap + i * segmentTintmapPitch, accB, accG, accR, accA);
 					}
 
 					int srcB2 = accB >> 12;
@@ -2447,10 +2524,18 @@ void _draw_segment_strip(int colBeg, int colEnd, uint8_t* pStripStart, int pixel
 
 					for (int i = 0; i <= edge; i++)
 					{
-						int alpha = GRADIENT ? pSegmentTintmap[offset >> 8].a : pSegmentColors[i * 4 + 3];
+						int alpha;
+						
+						if( SOURCE == SoftBackend::StripSource::Colors)
+							alpha = pSegmentColors[i * 4 + 3];
+						if( SOURCE == SoftBackend::StripSource::Tintmaps )
+							alpha = pSegmentTintmap[offset >> 8].a;
+						if( SOURCE == SoftBackend::StripSource::ColorsAndTintmaps )
+							alpha = pSegmentColors[i * 4 + 3] * pSegmentTintmap[offset >> 8].a / 4096;
+
 						int blendFraction = ((segmentFractions[i] * alpha) / 4096);
 						backFraction -= blendFraction;
-						_add_segment_color(GRADIENT, blendFraction, offset >> 8, &pSegmentColors[i * 4], pSegmentTintmap, accB, accG, accR, accA);
+						_add_segment_color(SOURCE, blendFraction, offset >> 8, &pSegmentColors[i * 4], pSegmentTintmap + i * segmentTintmapPitch, accB, accG, accR, accA);
 					}
 
 					int16_t srcB = (accB >> 12) + ((backB * backFraction) >> 16);
@@ -2468,10 +2553,18 @@ void _draw_segment_strip(int colBeg, int colEnd, uint8_t* pStripStart, int pixel
 
 					for (int i = 0; i <= edge; i++)
 					{
-						int alpha = GRADIENT ? pSegmentTintmap[offset >> 8].a : pSegmentColors[i * 4 + 3];
+						int alpha;
+						
+						if( SOURCE == SoftBackend::StripSource::Colors)
+							alpha = pSegmentColors[i * 4 + 3];
+						if( SOURCE == SoftBackend::StripSource::Tintmaps )
+							alpha = pSegmentTintmap[offset >> 8].a;
+						if( SOURCE == SoftBackend::StripSource::ColorsAndTintmaps )
+							alpha = pSegmentColors[i * 4 + 3] * pSegmentTintmap[offset >> 8].a / 4096;
+
 						int blendFraction = ((segmentFractions[i] * alpha) / 4096);
 						backFraction -= blendFraction;
-						_add_segment_color(GRADIENT, blendFraction, offset >> 8, &pSegmentColors[i * 4], pSegmentTintmap, accB, accG, accR, accA);
+						_add_segment_color(SOURCE, blendFraction, offset >> 8, &pSegmentColors[i * 4], pSegmentTintmap + i * segmentTintmapPitch, accB, accG, accR, accA);
 					}
 
 					int16_t srcB = (accB >> 12) + ((backB * backFraction) >> 16);
@@ -2489,10 +2582,18 @@ void _draw_segment_strip(int colBeg, int colEnd, uint8_t* pStripStart, int pixel
 
 					for (int i = 0; i <= edge; i++)
 					{
-						int alpha = GRADIENT ? pSegmentTintmap[offset >> 8].a : pSegmentColors[i * 4 + 3];
+						int alpha;
+						
+						if( SOURCE == SoftBackend::StripSource::Colors)
+							alpha = pSegmentColors[i * 4 + 3];
+						if( SOURCE == SoftBackend::StripSource::Tintmaps )
+							alpha = pSegmentTintmap[offset >> 8].a;
+						if( SOURCE == SoftBackend::StripSource::ColorsAndTintmaps )
+							alpha = pSegmentColors[i * 4 + 3] * pSegmentTintmap[offset >> 8].a / 4096;
+
 						int blendFraction = ((segmentFractions[i] * alpha) / 4096);
 						backFraction -= blendFraction;
-						_add_segment_color(GRADIENT, blendFraction, offset >> 8, &pSegmentColors[i * 4], pSegmentTintmap, accB, accG, accR, accA);
+						_add_segment_color(SOURCE, blendFraction, offset >> 8, &pSegmentColors[i * 4], pSegmentTintmap + i * segmentTintmapPitch, accB, accG, accR, accA);
 					}
 
 					int invMorph = 4096 - tint.morphFactor;
@@ -2516,8 +2617,8 @@ void _draw_segment_strip(int colBeg, int colEnd, uint8_t* pStripStart, int pixel
 
 			pTransparentSegments++;
 			pOpaqueSegments++;
-			if (GRADIENT)
-				pSegmentTintmap = * pSegmentTintmaps++;
+			if (SOURCE == SoftBackend::StripSource::Tintmaps || SOURCE == SoftBackend::StripSource::ColorsAndTintmaps)
+				pSegmentTintmap += segmentTintmapPitch;
 			else
 				pSegmentColors += 4;
 

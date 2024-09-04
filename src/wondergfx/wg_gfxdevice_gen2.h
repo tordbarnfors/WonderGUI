@@ -276,6 +276,8 @@ namespace wg
 
 			RenderState					savedState;			// Saved when we begin a new canvas so we can return 
 															// to our right state when that ends and we pop back.
+			uint8_t						savedStateChanges;
+			
 		};
 
 		//

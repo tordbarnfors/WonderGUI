@@ -25,6 +25,7 @@
 #pragma once
 
 #include <wg_tintmap.h>
+#include <wg_gradient.h>
 
 namespace wg
 {
@@ -50,7 +51,10 @@ namespace wg
 
 		//.____ Render ________________________________________________
 
-		void exportAxisColors(SizeSPX size, HiColor* pAxisX, HiColor* pAxisY) override;
+		void exportHorizontalColors(spx length, HiColor* pOutput) override;
+		void exportVerticalColors(spx length, HiColor* pOutput) override;
+
+		Gradient exportGradient() override;
 
 	protected:
 

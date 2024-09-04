@@ -61,41 +61,66 @@ namespace wg
 		return TYPEINFO;
 	}
 
-	//____ exportAxisColors() ____________________________________________________
+	//____ exportHorizontalColors() ______________________________________________
 
-	void Gradyent::exportAxisColors(SizeSPX size, HiColor* pAxisX, HiColor* pAxisY)
+	void Gradyent::exportHorizontalColors(spx length, HiColor* pOutput)
 	{
-		if (m_bHorizontal && pAxisX )
+		if( !m_bHorizontal )
 		{
-			int len = size.w / 64;
-			for (int i = 0; i < len; i++)
-			{
-				HiColor col;
+			_exportDummyColors(length, pOutput);
+			return;
+		}
+		
+		int len = length / 64;
+		for (int i = 0; i < len; i++)
+		{
+			HiColor col;
 
-				col.r = m_left.r + ((int(m_right.r) - int(m_left.r)) * i / len);
-				col.g = m_left.g + ((int(m_right.g) - int(m_left.g)) * i / len);
-				col.b = m_left.b + ((int(m_right.b) - int(m_left.b)) * i / len);
-				col.a = m_left.a + ((int(m_right.a) - int(m_left.a)) * i / len);
+			col.r = m_left.r + ((int(m_right.r) - int(m_left.r)) * i / len);
+			col.g = m_left.g + ((int(m_right.g) - int(m_left.g)) * i / len);
+			col.b = m_left.b + ((int(m_right.b) - int(m_left.b)) * i / len);
+			col.a = m_left.a + ((int(m_right.a) - int(m_left.a)) * i / len);
 
-				pAxisX[i] = col;
-			}
+			pOutput[i] = col;
+		}
+	}
+
+	//____ exportVerticalColors() ________________________________________________
+
+	void Gradyent::exportVerticalColors(spx length, HiColor* pOutput)
+	{
+		if( !m_bVertical )
+		{
+			_exportDummyColors(length, pOutput);
+			return;
 		}
 
-		if (m_bVertical && pAxisY)
+		int len = length / 64;
+		for (int i = 0; i < len; i++)
 		{
-			int len = size.h / 64;
-			for (int i = 0; i < len; i++)
-			{
-				HiColor col;
+			HiColor col;
 
-				col.r = m_top.r + ((int(m_bottom.r) - int(m_top.r)) * i / len);
-				col.g = m_top.g + ((int(m_bottom.g) - int(m_top.g)) * i / len);
-				col.b = m_top.b + ((int(m_bottom.b) - int(m_top.b)) * i / len);
-				col.a = m_top.a + ((int(m_bottom.a) - int(m_top.a)) * i / len);
+			col.r = m_top.r + ((int(m_bottom.r) - int(m_top.r)) * i / len);
+			col.g = m_top.g + ((int(m_bottom.g) - int(m_top.g)) * i / len);
+			col.b = m_top.b + ((int(m_bottom.b) - int(m_top.b)) * i / len);
+			col.a = m_top.a + ((int(m_bottom.a) - int(m_top.a)) * i / len);
 
-				pAxisY[i] = col;
-			}
+			pOutput[i] = col;
 		}
+	}
+
+	//____ exportGradient() ______________________________________________________
+
+	Gradient Gradyent::exportGradient()
+	{
+		Gradient g;
+		
+		g.topLeft = m_top * m_left;
+		g.bottomLeft = m_bottom * m_left;
+		g.topRight = m_top * m_right;
+		g.bottomRight = m_bottom * m_right;
+
+		return g;
 	}
 
 

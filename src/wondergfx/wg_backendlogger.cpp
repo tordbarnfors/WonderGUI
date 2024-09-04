@@ -284,6 +284,8 @@ namespace wg
 				*m_pStream << "Line with color: " << col.r << ", " << col.g << ", " << col.b << ", " << col.a
 							<< " thickness: " << thickness << " points." << std::endl;
 				*m_pStream << " passing through " << nRects << " rectangles." << std::endl;
+				
+				break;
 			}
 
 			case Command::DrawEdgemap:
