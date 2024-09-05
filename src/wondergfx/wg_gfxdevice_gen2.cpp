@@ -30,6 +30,7 @@
 #include <wg_gfxbase.h>
 
 #include <wg_gradyent.h>
+#include <wg_waveform.h>
 
 using namespace std;
 using namespace wg::Util;
@@ -1954,6 +1955,132 @@ void GfxDeviceGen2::flipDrawEdgemap(CoordSPX dest, Edgemap* pEdgemap, GfxFlip fl
 		pEdgemap->retain();
 	}
 }
+
+//____ drawWave() ____________________________________________________________
+
+void GfxDeviceGen2::drawWave(const RectSPX& dest, const WaveLine* pTopBorder, const WaveLine* pBottomBorder, HiColor frontFill, HiColor backFill)
+{
+	flipDrawWave(dest, pTopBorder, pBottomBorder, frontFill, backFill, GfxFlip::None);
+}
+
+//____ flipDrawWave() __________________________________________________________
+
+void GfxDeviceGen2::flipDrawWave(const RectSPX& dest, const WaveLine* pTopBorder, const WaveLine* pBottomBorder, HiColor frontFill, HiColor backFill, GfxFlip flip)
+{
+	if (!m_pActiveCanvas || !m_pBackend )
+	{
+		//TODO: Error handling!
+
+		return;
+	}
+
+	RectI pixDest = dest / 64;
+
+	// Create waveform
+
+	auto pWave = Waveform::create( WGBP(Waveform, 
+		_.size = dest.size()/64, 
+		_.color = frontFill, 
+		_.topOutlineThickness = pTopBorder->thickness, 
+		_.bottomOutlineThickness = pBottomBorder->thickness,
+		_.outlineColor = pTopBorder->color ),
+		m_pBackend->edgemapFactory() );
+
+	int samplesWanted = pixDest.w + 1;
+
+	// Reserve temporary work buffers, we need to convert samples from 24:8 to spx (26:6) format.
+
+	auto pBuffer = GfxBase::memStackAlloc(samplesWanted * sizeof(spx) * 2 );
+	auto pTopWaveSamples = (spx*)pBuffer;
+	auto pBottomWaveSamples = pTopWaveSamples + samplesWanted;
+
+	// Fill in top border samples
+
+	int spl = 0;
+	int copySamples = std::min(samplesWanted, pTopBorder->length);
+
+	while (spl < copySamples)
+	{
+		pTopWaveSamples[spl] = pTopBorder->pWave[spl];
+		spl++;
+	}
+
+	while (spl < samplesWanted)
+		pTopWaveSamples[spl++] = pTopBorder->hold;
+
+	// Fill in bottom border samples
+
+	spl = 0;
+	copySamples = std::min(samplesWanted, pBottomBorder->length);
+
+	while (spl < copySamples)
+	{
+		pBottomWaveSamples[spl] = pBottomBorder->pWave[spl];
+		spl++;
+	}
+
+	while (spl < samplesWanted)
+		pBottomWaveSamples[spl++] = pBottomBorder->hold;
+
+	// Set samples and return temporary memory
+
+	pWave->setSamples(0, samplesWanted, pTopWaveSamples, pBottomWaveSamples);
+
+	GfxBase::memStackFree(samplesWanted * sizeof(spx) * 2);
+
+	// Render
+
+	auto pEdgemap = pWave->refresh();
+
+	flipDrawEdgemap(dest.pos(), pEdgemap, flip);
+}
+
+//____ drawSegments() ________________________________________________________
+
+void GfxDeviceGen2::drawSegments(const RectSPX& dest, int nSegments, const HiColor* pSegmentColors, int nEdgeStrips, const int* pEdgeStrips, int edgeStripPitch, TintMode tintMode)
+{
+	flipDrawSegments(dest, nSegments, pSegmentColors, nEdgeStrips, pEdgeStrips, edgeStripPitch, GfxFlip::None, tintMode);
+}
+
+//____ flipDrawSegments() ______________________________________________________
+
+void GfxDeviceGen2::flipDrawSegments(const RectSPX& dest, int nSegments, const HiColor* pSegmentColors, int nEdgeStrips, const int* pEdgeStrips, int edgeStripPitch, GfxFlip flip, TintMode tintMode)
+{
+	if (!m_pActiveCanvas || !m_pBackend)
+	{
+		//TODO: Error handling!
+
+		return;
+	}
+
+
+	auto pFactory = m_pBackend->edgemapFactory();
+
+	auto pEdgemap = pFactory->createEdgemap(WGBP(Edgemap,
+		_.size = dest.size() / 64,
+		_.segments = nSegments,
+		_.colors = pSegmentColors
+	));
+
+	pEdgemap->importSamples(SampleOrigo::Top, pEdgeStrips, 0, nSegments-1, 0, nEdgeStrips, 1, edgeStripPitch );
+
+	flipDrawEdgemap(dest.pos(), pEdgemap, flip);
+}
+
+//____ drawElipse() ____________________________________________________________
+
+void GfxDeviceGen2::drawElipse(const RectSPX& canvas, spx thickness, HiColor color, spx outlineThickness, HiColor outlineColor)
+{
+
+}
+
+//____ drawPieChart() __________________________________________________________
+
+void GfxDeviceGen2::drawPieChart(const RectSPX& canvas, float start, int nSlices, const float* pSliceSizes, const HiColor* pSliceColors, float hubSize, HiColor hubColor, HiColor backColor, bool bRectangular)
+{
+
+}
+
 
 
 

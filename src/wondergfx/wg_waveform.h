@@ -87,14 +87,14 @@ namespace wg
 		
 		int			nbSamples() const { return m_nbSamples;  }
 		
-		void setSamples( int sampleBegin, int sampleEnd, spx * pTopSamples, spx * pBottomSamples );
-		void setSamples( int sampleBegin, int sampleEnd, float * pTopSamples, float * pBottomSamples );
+		void		setSamples( int sampleBegin, int sampleEnd, spx * pTopSamples, spx * pBottomSamples );
+		void		setSamples( int sampleBegin, int sampleEnd, float * pTopSamples, float * pBottomSamples );
 
-		void setFlatTopLine( int sampleBegin, int sampleEnd, spx sample );
-		void setFlatTopLine( int sampleBegin, int sampleEnd, float sample );
+		void		setFlatTopLine( int sampleBegin, int sampleEnd, spx sample );
+		void		setFlatTopLine( int sampleBegin, int sampleEnd, float sample );
 
-		void setFlatBottomLine( int sampleBegin, int sampleEnd, spx sample );
-		void setFlatBottomLine( int sampleBegin, int sampleEnd, float sample );
+		void		setFlatBottomLine( int sampleBegin, int sampleEnd, spx sample );
+		void		setFlatBottomLine( int sampleBegin, int sampleEnd, float sample );
 
 		Edgemap_p	refresh();
 				
