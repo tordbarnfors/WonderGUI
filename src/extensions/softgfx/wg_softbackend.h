@@ -111,6 +111,8 @@ namespace wg
 
 			HiColor		flatTintColor;	// Used in TintMode::Color
 
+			bool		bTintOpaque;	// Set if the tint is opaque.
+
 			// Following used in TintMode GradientX, GradientY and GradientXY.
 
 			RectI		tintRect;

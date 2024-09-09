@@ -308,6 +308,8 @@ const RectSPX& GfxDeviceGen2::clipBounds() const
 
 void GfxDeviceGen2::setTint(HiColor color)
 {
+	assert(color.isValid());
+
 	if (color != m_renderState.tintColor || m_renderState.pTintmap)
 	{
 		m_renderState.tintColor = color;
@@ -320,6 +322,8 @@ void GfxDeviceGen2::setTint(HiColor color)
 
 void GfxDeviceGen2::setTint(const RectSPX& rect, Tintmap* pTintmap)
 {
+	assert(pTintmap);
+
 	if (pTintmap != m_renderState.pTintmap || rect != m_renderState.tintmapRect )
 	{
 		m_renderState.tintColor = HiColor::Undefined;
@@ -1951,7 +1955,7 @@ void GfxDeviceGen2::flipDrawEdgemap(CoordSPX dest, Edgemap* pEdgemap, GfxFlip fl
 		m_pActiveLayer->commands.push_back(int(flip));
 		m_pActiveLayer->commands.push_back(nRects);
 
-		m_pActiveCanvas->objects.emplace_back(pEdgemap);
+		m_pActiveCanvas->objects.push_back(pEdgemap);
 		pEdgemap->retain();
 	}
 }
@@ -2067,20 +2071,588 @@ void GfxDeviceGen2::flipDrawSegments(const RectSPX& dest, int nSegments, const H
 	flipDrawEdgemap(dest.pos(), pEdgemap, flip);
 }
 
-//____ drawElipse() ____________________________________________________________
+//____ drawElipse() ______________________________________________________
 
-void GfxDeviceGen2::drawElipse(const RectSPX& canvas, spx thickness, HiColor color, spx outlineThickness, HiColor outlineColor)
+void GfxDeviceGen2::drawElipse(const RectSPX& canvas, spx thickness, HiColor fillColor, spx outlineThickness, HiColor outlineColor)
 {
+	auto pCurveTab = GfxBase::curveTab();
+	int curveTabSize = GfxBase::curveTabSize();
+
+
+	// Center and corners in 26.6 format.
+
+	int x1 = (int)canvas.x;
+	int y1 = (int)canvas.y;
+	int x2 = (int)(canvas.x + canvas.w);
+	int y2 = (int)(canvas.y + canvas.h);
+
+	CoordI center = { (x1 + x2) / 2, (y1 + y2) / 2 };
+
+	// Outer rect of elipse rounded to full pixels.
+
+	RectI outerRect;
+	outerRect.x = x1 >> 6;
+	outerRect.y = y1 >> 6;
+	outerRect.w = ((x2 + 63) >> 6) - outerRect.x;
+	outerRect.h = ((y2 + 63) >> 6) - outerRect.y;
+
+	// Adjusted clip
+
+	RectI clip = RectI::overlap(m_pActiveClipList->bounds / 64, outerRect);
+	if (clip.w == 0 || clip.h == 0)
+		return;
+
+	int clipLeft = clip.x - outerRect.x;
+
+	// Calculate maximum width and height from center for the 4 edges of the elipse.
+
+	int radiusY[4];
+	radiusY[0] = (y2 - y1) / 2;
+	radiusY[1] = (int)(radiusY[0] - outlineThickness);
+	radiusY[2] = (int)(radiusY[1] - thickness);
+	radiusY[3] = (int)(radiusY[2] - outlineThickness);
+
+	int radiusX[4];
+	radiusX[0] = (x2 - x1) / 2;
+	radiusX[1] = (int)(radiusX[0] - outlineThickness);
+	radiusX[2] = (int)(radiusX[1] - thickness);
+	radiusX[3] = (int)(radiusX[2] - outlineThickness);
+
+	// Reserve buffer for our line traces
+
+	int samplePoints = clip.w + 1;
+
+	int bufferSize = samplePoints * sizeof(int) * 4 * 2;		// length+1 * sizeof(int) * 4 separate traces * 2 halves.
+	int* pBuffer = (int*)GfxBase::memStackAlloc(bufferSize);
+
+	// Do line traces.
+
+	int yMid = (center.y & 0xFFFFFFC0) - outerRect.y * 64;
+	int yAdjust = center.y & 0x3F;						// Compensate for center not being on pixel boundary.
+	int centerOfs = center.x - (outerRect.x << 6);
+	int samplePitch = 4;
+
+	for (int edge = 0; edge < 4; edge++)
+	{
+		int* pOutUpper = pBuffer + edge;
+		int* pOutLower = pBuffer + 3 - edge + samplePoints * 4;
+
+		if (radiusX[edge] <= 0 || radiusY[edge] <= 0)
+		{
+			for (int sample = 0; sample < samplePoints; sample++)
+			{
+				pOutUpper[sample * samplePitch] = yMid;
+				pOutLower[sample * samplePitch] = yMid;
+			}
+		}
+		else
+		{
+			//TODO: We need to handle subpixels better here.
+			// We should increase curvePos with the real xStart offset (could be as much as 63/64 of a pixel)
+			// and handle xMid similarly.
+
+			int xStart = (centerOfs - radiusX[edge] + 63) >> 6;		// First pixel-edge inside curve.
+			int xMid = (centerOfs) >> 6;							// Pixel edge on or right before center.
+			int xEnd = (centerOfs + radiusX[edge]) >> 6;			// Last pixel-edge inside curve.
+
+
+			int curveInc = int(int64_t((65536 * 64) - 1) * (curveTabSize - 1) / radiusX[edge]); // Keep as many decimals as possible, this is important!
+			int curvePos = int((((radiusX[edge] - centerOfs) & 0x3F) * ((int64_t)curveInc)) >> 6);
+
+			if (clipLeft > 0)
+			{
+				xStart -= clipLeft;
+				xMid -= clipLeft;
+				xEnd -= clipLeft;
+
+				if (xStart < 0)
+					curvePos += (-xStart) * curveInc;
+			}
+
+			// Clip xStart, xMid and xEnd
+
+			if (xEnd >= samplePoints)
+			{
+				xEnd = samplePoints - 1;
+
+				xStart = min(xStart, xEnd);
+				xMid = min(xMid, xEnd);
+			}
+
+			//
+
+			int sample = 0;
+			while (sample < xStart)
+			{
+				pOutUpper[sample * samplePitch] = yMid;
+				pOutLower[sample * samplePitch] = yMid;
+				sample++;
+			}
+
+			while (sample <= xMid)
+			{
+				int i = curvePos >> 16;
+				uint32_t f = curvePos & 0xFFFF;
+
+				uint32_t heightFactor = (pCurveTab[i] * (65535 - f) + pCurveTab[i + 1] * f) >> 16;
+				int height = ((radiusY[edge] >> 16) * heightFactor) + ((radiusY[edge] & 0xFFFF) * heightFactor >> 16);  // = (radiusY[edge] * heightFactor) / 65536, but without overflow.
+
+				pOutUpper[sample * samplePitch] = yMid + yAdjust - height;
+				pOutLower[sample * samplePitch] = yMid + yAdjust + height;
+				sample++;
+				curvePos += curveInc;
+			}
+
+			curvePos = (curveTabSize - 1) * 65536 * 2 - curvePos;
+
+			while (sample <= xEnd)
+			{
+				int i = curvePos >> 16;
+				uint32_t f = curvePos & 0xFFFF;
+
+				uint32_t heightFactor = (pCurveTab[i] * (65535 - f) + pCurveTab[i + 1] * f) >> 16;
+				int height = ((radiusY[edge] >> 16) * heightFactor) + ((radiusY[edge] & 0xFFFF) * heightFactor >> 16); // = (radiusY[edge] * heightFactor) / 65536, but without overflow.
+
+				pOutUpper[sample * samplePitch] = yMid + yAdjust - height;
+				pOutLower[sample * samplePitch] = yMid + yAdjust + height;
+				sample++;
+				curvePos -= curveInc;
+			}
+
+			while (sample < samplePoints)
+			{
+				pOutUpper[sample * samplePitch] = yMid;
+				pOutLower[sample * samplePitch] = yMid;
+				sample++;
+			}
+
+			// Take care of left and right edges that needs more calculations to get the angle right.
+
+			int pixFracLeft = (xStart << 6) - (centerOfs - radiusX[edge]);
+			int pixFracRight = (centerOfs + radiusX[edge]) & 0x3F;
+
+			if (pixFracLeft > 0 && xStart > 0 && xStart <= samplePoints)
+			{
+				pOutUpper[(xStart - 1) * samplePitch] = pOutUpper[xStart * samplePitch] + (yMid + yAdjust - pOutUpper[xStart * samplePitch]) * 64 / pixFracLeft;
+				pOutLower[(xStart - 1) * samplePitch] = pOutLower[xStart * samplePitch] + (yMid + yAdjust - pOutLower[xStart * samplePitch]) * 64 / pixFracLeft;
+
+			}
+			if (pixFracRight > 0 && xEnd < samplePoints - 1 && xEnd >= -1)
+			{
+				pOutUpper[(xEnd + 1) * samplePitch] = pOutUpper[xEnd * samplePitch] + (yMid + yAdjust - pOutUpper[xEnd * samplePitch]) * 64 / pixFracRight;
+				pOutLower[(xEnd + 1) * samplePitch] = pOutLower[xEnd * samplePitch] + (yMid + yAdjust - pOutLower[xEnd * samplePitch]) * 64 / pixFracRight;
+			}
+
+		}
+	}
+
+	// Split clip rectangles into upper and lower half, so we clip at the middle.
+
+	int split = min(clip.y + clip.h, outerRect.y + (yMid >> 6)) * 64;
+
+	int nClipRects = m_pActiveClipList->nRects;
+	auto pClipRects = m_pActiveClipList->pRects;
+
+	int clipBufferSize = sizeof(RectSPX) * nClipRects * 2;
+	RectSPX* pTopClips = (RectSPX*)GfxBase::memStackAlloc(clipBufferSize);
+	RectSPX* pBottomClips = pTopClips + nClipRects;
+	int nTopClips = 0;
+	int nBottomClips = 0;
+
+	for (int i = 0; i < nClipRects; i++)
+	{
+		const RectSPX& clip = pClipRects[i];
+
+		if (clip.y < split)
+		{
+			pTopClips[nTopClips] = clip;
+			if (clip.bottom() > split)
+				pTopClips[nTopClips].h = split - clip.y;
+			nTopClips++;
+		}
+		if (clip.bottom() > split)
+		{
+			pBottomClips[nBottomClips] = clip;
+			if (clip.y < split)
+			{
+				pBottomClips[nBottomClips].h -= split - clip.y;
+				pBottomClips[nBottomClips].y = split;
+			}
+			nBottomClips++;
+		}
+	}
+
+	// Render columns
+
+	HiColor	col[5];
+	col[0] = HiColor::Transparent;
+	col[1] = outlineColor;
+	col[2] = fillColor;
+	col[3] = outlineColor;
+	col[4] = HiColor::Transparent;
+
+	const RectI* pOldClipRects = pClipRects;
+	int nOldClipRects = nClipRects;
+
+	setClipList(nTopClips, pTopClips);
+	drawSegments(RectSPX(clip.x, outerRect.y, clip.w, outerRect.h) * 64, 5, col, samplePoints, pBuffer, 4);
+	setClipList(nBottomClips, pBottomClips);
+	drawSegments(RectSPX(clip.x, outerRect.y, clip.w, outerRect.h) * 64, 5, col, samplePoints, pBuffer + samplePoints * 4, 4);
+	setClipList(nOldClipRects, pOldClipRects);
+
+	// Free temporary work memory
+
+	GfxBase::memStackFree(clipBufferSize);
+	GfxBase::memStackFree(bufferSize);
 
 }
 
-//____ drawPieChart() __________________________________________________________
+//____ drawPieChart() _____________________________________________________
 
-void GfxDeviceGen2::drawPieChart(const RectSPX& canvas, float start, int nSlices, const float* pSliceSizes, const HiColor* pSliceColors, float hubSize, HiColor hubColor, HiColor backColor, bool bRectangular)
+void GfxDeviceGen2::drawPieChart(const RectSPX& _canvas, float start, int nSlices, const float* _pSliceSizes, const HiColor* pSliceColors, float hubSize, HiColor hubColor, HiColor backColor, bool bRectangular)
 {
+	static const int c_maxSlices = c_maxSegments - 2;
 
+	if (nSlices < 0 || nSlices > c_maxSlices)
+	{
+		//TODO: Error handling;
+		return;
+	}
+
+	//TODO: Early out if no slices, no hud and no background
+	//TODO: Replace with fill if no hub, no slices.
+
+	RectI canvas = _canvas / 64;
+	canvas.w = (canvas.w + 1) & 0xFFFFFFFC;
+	canvas.h = (canvas.h + 1) & 0xFFFFFFFC;
+
+	if (canvas.w <= 0 || canvas.h <= 0 || (hubSize == 1.f && !bRectangular))
+		return;
+
+
+	// Setup our slices
+
+	struct Slice
+	{
+		float ofs;
+		float size;
+		HiColor color;
+	};
+
+	Slice slices[c_maxSlices + 2];			// Maximum two extra slices in the end. Beginning offset + end transparency.
+
+	float totalSize = 0.f;
+
+	// Trim our slices, so we have a length of most 1.0.
+
+	Slice trimmedSlices[c_maxSlices + 1];
+
+	float ofs = start;
+	for (int i = 0; i < nSlices; i++)
+	{
+		if (ofs >= 1.f)
+			ofs = fmod(ofs, 1.f);
+
+		float sliceSize = _pSliceSizes[i];
+
+		if (totalSize + sliceSize >= 1.f)
+		{
+			trimmedSlices[i] = { ofs, 1.f - totalSize, pSliceColors[i] };
+			totalSize = 1.f;
+			nSlices = i + 1;
+			break;
+		}
+
+
+		trimmedSlices[i] = { ofs,sliceSize, pSliceColors[i] };
+		totalSize += sliceSize;
+		ofs += sliceSize;
+	}
+
+	// Adding an empty slice at end if totalSize < 1.0
+
+	if (totalSize < 0.9999f)
+	{
+		if (ofs >= 1.f)
+			ofs = fmod(ofs, 1.f);
+
+		trimmedSlices[nSlices++] = { ofs,1.f - totalSize, backColor };
+	}
+
+	// Find first slice (one with smallest offset)
+
+	int		firstSlice = 0, lastSlice;
+	float	firstSliceOfs = 1.f;
+
+	for (int i = 0; i < nSlices; i++)
+	{
+		if (trimmedSlices[i].ofs < firstSliceOfs)
+		{
+			firstSlice = i;
+			firstSliceOfs = trimmedSlices[i].ofs;
+		}
+
+	}
+
+	// Find last slice
+
+	if (firstSlice == 0)
+		lastSlice = nSlices - 1;
+	else
+		lastSlice = firstSlice - 1;
+
+	// Take care of possible rounding errors on inparameters
+
+	if (firstSliceOfs < 0.0001f)
+		trimmedSlices[firstSlice].ofs = firstSliceOfs = 0.f;
+
+	// Rearrange our slices so we start from offset 0. Possibly adding one more slice in the beginning.
+
+	int sliceIdx = 0;
+
+	if (nSlices == 1)
+	{
+		slices[sliceIdx++] = { 0.f, 1.f, trimmedSlices[0].color };
+	}
+	else
+	{
+		// Fill in rollover from last slice (or transparent gap) due to rotation
+
+		if (firstSliceOfs > 0.f)
+			slices[sliceIdx++] = { 0.f, firstSliceOfs, trimmedSlices[lastSlice].color };
+
+		// Our buffer is circular, take care of slices from first slice to end of buffer.
+
+		for (int i = firstSlice; i < nSlices; i++)
+			slices[sliceIdx++] = trimmedSlices[i];
+
+		// Take care of slices from beginning of buffer to last slice.
+
+		if (lastSlice < firstSlice)
+		{
+			for (int i = 0; i <= lastSlice; i++)
+				slices[sliceIdx++] = trimmedSlices[i];
+		}
+
+		// Correct for any rollover or inprecision for last slice
+
+		slices[sliceIdx - 1].size = 1.f - slices[sliceIdx - 1].ofs;
+	}
+
+	nSlices = sliceIdx;			// Repurpose this variable
+
+	// Slices now in order, lets render the quadrants
+
+	int quadW = canvas.w / 2, quadH = canvas.h / 2;
+
+	RectI quadCanvas[4] = { {canvas.x + quadW, canvas.y, quadW, quadH },
+							{canvas.x + quadW, canvas.y + quadH, quadW, quadH},
+							{canvas.x, canvas.y + quadH, quadW, quadH},
+							{canvas.x, canvas.y, quadW, quadH} };
+
+	GfxFlip quadFlip[4] = { GfxFlip::None, GfxFlip::Rot90, GfxFlip::Rot180, GfxFlip::Rot270 };
+
+	HiColor colors[c_maxSegments];
+
+	int maxSegments = nSlices + 2;
+	int edgePitch = maxSegments - 1;
+	int bufferSize = (quadW + 1) * edgePitch * sizeof(int);
+
+	int* pBuffer = (int*)GfxBase::memStackAlloc(bufferSize);
+
+
+	auto pCurveTab = GfxBase::curveTab();
+	int curveTabSize = GfxBase::curveTabSize();
+
+	// Setting the outer edge (same for all quads)
+
+	if (bRectangular)
+	{
+		int* pEdge = pBuffer;
+		for (int i = 0; i <= quadW; i++)
+		{
+			*pEdge = 0;
+			pEdge += edgePitch;
+		}
+	}
+	else
+	{
+		int* pEdge = pBuffer;
+
+		int curveTabInc = ((curveTabSize << 16) - 1) / (quadW);
+
+		int curveTabOfs = 0;
+		for (int i = 0; i <= quadW; i++)
+		{
+			*pEdge = (quadH << 6) - ((pCurveTab[(curveTabSize - 1) - (curveTabOfs >> 16)] * quadH) >> 10);
+			pEdge += edgePitch;
+			curveTabOfs += curveTabInc;
+		}
+	}
+
+	// Generating an inner edge if we have one.
+	// Storing it separately, used for all 4 quads. Copied into right place later.
+
+	int* pHubBuffer = nullptr;
+	int hubBufferSize = 0;
+	if (hubSize > 0.f)
+	{
+		hubBufferSize = (quadW + 1) * sizeof(int);
+		pHubBuffer = (int*)GfxBase::memStackAlloc(hubBufferSize);
+
+		int* p = pHubBuffer;
+
+		int ringW = int(hubSize * quadW);
+		int ringH = int(hubSize * quadH);
+
+		int inc = ((curveTabSize << 16) - 1) / (ringW);
+		int ofs = 0;
+
+		for (int i = 0; i <= ringW; i++)
+		{
+			*p++ = (quadH << 6) - ((pCurveTab[(curveTabSize - 1) - (ofs >> 16)] * ringH) >> 10);
+			ofs += inc;
+		}
+
+		int maxVal = quadH << 6;
+		for (int i = ringW + 1; i <= quadW; i++)
+			*p++ = maxVal;
+	}
+
+	//
+
+	for (int quad = 0; quad < 4; quad++)
+	{
+		int nSegments = 0;
+		Slice* pSlice = slices;
+		Slice* pSliceEnd = slices + nSlices;
+
+		float quadStartOfs = 0.25f * quad;
+
+		// Add background as first segment
+
+		colors[nSegments] = backColor;
+		nSegments++;
+
+		// Find first slice to include
+
+		while (pSlice != pSliceEnd && pSlice->ofs + pSlice->size < quadStartOfs)
+			pSlice++;
+
+		colors[nSegments] = pSlice->color;
+		nSegments++;
+		pSlice++;
+
+		// Generate edges for all following slices included
+
+		while (pSlice != pSliceEnd && pSlice->ofs < quadStartOfs + 0.25f)
+		{
+			int* pEdge = pBuffer + nSegments - 1;
+
+			// Set startvalue and decrease per strip.
+
+			int value = quadH << 6;
+			int dec;
+
+			float rot = (pSlice->ofs - quadStartOfs);
+
+			if (rot == 0.f)
+			{
+				value = 0;
+				dec = 0;
+			}
+			else
+			{
+				rot *= 3.14159265358979f * 2;
+				float s = sin(rot);
+				float c = cos(rot);
+
+				float decF = (c / s) * (quadH << 12) / float(quadW);
+
+				if (decF > 400000 * 4096)
+					decF = 400000 * 4096;
+
+				dec = int(decF);
+			}
+
+			// Fill in the edge
+
+			int strip;
+			int precisionValue = value << 6;
+			for (strip = 0; strip <= quadW && value >= pEdge[-1]; strip++)
+			{
+				*pEdge = value;
+				pEdge += edgePitch;
+				precisionValue -= dec;
+				value = precisionValue >> 6;
+			}
+
+			while (strip <= quadW)
+			{
+				*pEdge = pEdge[-1];
+				pEdge += edgePitch;
+				strip++;
+			}
+
+			colors[nSegments] = pSlice->color;
+			nSegments++;
+			pSlice++;
+		}
+
+		// Add edge for hub if present
+
+		if (pHubBuffer)
+		{
+			int* pEdge = pBuffer + nSegments - 1;
+
+			for (int i = 0; i <= quadW; i++)
+			{
+				int value = pHubBuffer[i];
+				*pEdge = value;
+
+				int* pPrev = pEdge - 1;
+				while (*pPrev > value)
+				{
+					*pPrev = value;
+					pPrev--;
+				}
+
+				pEdge += edgePitch;
+			}
+
+			colors[nSegments] = hubColor;
+			nSegments++;
+		}
+
+		// Draw
+
+		int* pEdges = pBuffer;
+		HiColor* pColors = colors;
+		if (bRectangular)
+		{
+			pEdges++;
+			pColors++;
+			nSegments--;
+		}
+
+		int16_t		alphaCheck = 0;
+		for (int i = 0; i < nSegments; i++)
+			alphaCheck |= pColors[i].a;
+
+		if (alphaCheck == 0)
+			continue;
+
+		if (nSegments == 1)
+			fill(quadCanvas[quad], pColors[0]);
+		else
+			flipDrawSegments(quadCanvas[quad] * 64, nSegments, pColors, quadW + 1, pEdges, edgePitch, quadFlip[quad], TintMode::Flat );
+	}
+
+	if (hubBufferSize != 0)
+		GfxBase::memStackFree(hubBufferSize);
+
+	GfxBase::memStackFree(bufferSize);
 }
-
 
 
 
@@ -2307,20 +2879,16 @@ void GfxDeviceGen2::_encodeStateChanges()
 			newState.pTintmap != encodedState.pTintmap ||
 			newState.tintmapRect != encodedState.tintmapRect)
 		{
-			if (!newState.tintColor.isUndefined())
-			{
-				colorBuffer.push_back(newState.tintColor);
-				encodedState.tintColor = newState.tintColor;
-				statesChanged |= int(StateChange::TintColor);
-			}
-			else
+			if( newState.pTintmap )
 			{
 				Object* pTintmap = newState.pTintmap.rawPtr();
 
+				assert(pTintmap);
+
 				cmdBuffer.push_back((int)m_pActiveCanvas->objects.size());
 				m_pActiveCanvas->objects.push_back(pTintmap);
-				
-				if( pTintmap )
+
+				if (pTintmap)
 					pTintmap->retain();
 
 				cmdBuffer.push_back(newState.tintmapRect.x);
@@ -2332,6 +2900,16 @@ void GfxDeviceGen2::_encodeStateChanges()
 				encodedState.tintmapRect = newState.tintmapRect;
 
 				statesChanged |= int(StateChange::TintMap);
+			}
+			else
+			{
+				if( newState.tintColor.isUndefined() )
+					colorBuffer.push_back(HiColor::White);
+				else
+					colorBuffer.push_back(newState.tintColor);
+				encodedState.tintColor = newState.tintColor;
+
+				statesChanged |= int(StateChange::TintColor);
 			}
 		}
 	}

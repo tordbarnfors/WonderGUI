@@ -87,7 +87,11 @@ namespace wg
 		while (p < pEnd)
 		{
 			auto pObj = *p++;
-			*m_pStream << pObj << " (" << pObj->typeInfo().className << ")" << std::endl;
+			if( pObj )
+				*m_pStream << pObj << " (" << pObj->typeInfo().className << ")" << std::endl;
+			else
+				*m_pStream << "nullptr" << std::endl;
+
 		}
 
 		if (m_pBackend)
@@ -243,9 +247,9 @@ namespace wg
 
 				if (statesChanged & uint8_t(StateChange::Blur))
 				{
-					//TODO: Implement!!!	
+					int32_t objectOfs = *p++;
 
-					assert(false);
+					*m_pStream << "BlurBrush: " << objectOfs << std::endl;					
 				}
 
 				break;

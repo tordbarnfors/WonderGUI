@@ -260,6 +260,7 @@ namespace wg
 
 		m_colTrans.mode = TintMode::None;
 		m_colTrans.flatTintColor = HiColor::White;
+		m_colTrans.bTintOpaque = true;
 		m_colTrans.tintRect.clear();
 		m_colTrans.pTintAxisX = nullptr;
 		m_colTrans.pTintAxisY = nullptr;
@@ -347,6 +348,10 @@ namespace wg
 				if (statesChanged & uint8_t(StateChange::TintColor))
 				{
 					m_colTrans.flatTintColor = *pColors++;
+					m_colTrans.pTintAxisX = nullptr;
+					m_colTrans.pTintAxisY = nullptr;
+
+					m_colTrans.bTintOpaque = (m_colTrans.flatTintColor.a == 4096);
 					_updateTintMode();
 				}
 
@@ -361,6 +366,7 @@ namespace wg
 					m_colTrans.tintRect = RectI(x, y, w, h);
 
 					auto pTintmap = static_cast<Tintmap*>(m_pObjectsBeg[objectOfs]);
+
 
 					if( pTintmap->isHorizontal() )
 					{
@@ -393,6 +399,7 @@ namespace wg
 					else
 						m_colTrans.pTintAxisY = nullptr;
 					
+					m_colTrans.bTintOpaque = pTintmap->isOpaque();
 					_updateTintMode();
 				}
 
@@ -413,8 +420,6 @@ namespace wg
 					auto pBlurbrush = static_cast<Blurbrush*>(m_pObjectsBeg[objectOfs]);
 					
 					_updateBlur(pBlurbrush);
-
-					assert(false);
 				}
 
 				break;
@@ -931,11 +936,14 @@ namespace wg
 				{
 					for( int i = 0 ; i < nSegments ; i++ )
 					{
-						if( pTintmaps[i]->isHorizontal() )
-							bTintX = true;
+						if (pTintmaps[i])
+						{
+							if (pTintmaps[i]->isHorizontal())
+								bTintX = true;
 
-						if( pTintmaps[i]->isVertical() )
-							bTintY = true;
+							if (pTintmaps[i]->isVertical())
+								bTintY = true;
+						}
 					}
 				}
 				
@@ -992,8 +1000,16 @@ namespace wg
 
 							for( int i = 0 ; i < nSegments ; i++ )
 							{
-								pTintmaps[i]->exportHorizontalColors(_dest.w*64, pOutput);
-								pOutput += _dest.w;
+								if (pTintmaps[i])
+								{
+									pTintmaps[i]->exportHorizontalColors(_dest.w * 64, pOutput);
+									pOutput += _dest.w;
+								}
+								else
+								{
+									for (int j = 0; j < _dest.w; j++)
+										*pOutput++ = HiColor::Transparent;
+								}
 							}
 						}
 						else
@@ -1005,14 +1021,7 @@ namespace wg
 								for( int j = 0 ; j < _dest.w ; j++ )
 									* pOutput++ = pSegmentColors[i];
 							}
-						}
-						
-						// Possibly add in global tint, which might need to be rotated, offset and reversed
-						
-						if( m_colTrans.mode == TintMode::GradientY || m_colTrans.mode == TintMode::GradientXY )
-						{
-							// TODO: Add global tint
-						}
+						}						
 					}
 					
 					if (bTintY)
@@ -1034,8 +1043,16 @@ namespace wg
 
 							for( int i = 0 ; i < nSegments ; i++ )
 							{
-								pTintmaps[i]->exportVerticalColors(_dest.h*64, pOutput);
-								pOutput += _dest.h;
+								if (pTintmaps[i])
+								{
+									pTintmaps[i]->exportVerticalColors(_dest.h * 64, pOutput);
+									pOutput += _dest.h;
+								}
+								else
+								{
+									for (int j = 0; j < _dest.h; j++)
+										*pOutput++ = HiColor::Transparent;
+								}
 							}
 						}
 						else
@@ -1047,17 +1064,97 @@ namespace wg
 								for( int j = 0 ; j < _dest.h ; j++ )
 									* pOutput++ = pSegmentColors[i];
 							}
-						}
-						
-						// Possibly add in global tint, which might need to be rotated, offset and reversed
-						
-						if( m_colTrans.mode == TintMode::GradientX || m_colTrans.mode == TintMode::GradientXY )
-						{
-							// TODO: Add global tint
-						}
+						}						
 					}
 
-					// TODO: Mark transparent and opaque segments
+					// Possibly add in global tint, which might need to be rotated, offset and reversed
+
+					if (m_colTrans.mode == TintMode::Flat)
+					{
+						if (m_colTrans.flatTintColor == HiColor::White)
+						{
+							// We only apply tintColor once, so we only modify one of the color lists.
+
+							if (pTintColorsX)
+							{
+								for (int i = 0; i < nSegments * _dest.w; i++)
+									pTintColorsX[i] *= m_colTrans.flatTintColor;
+							}
+							else if (pTintColorsY)
+							{
+								for (int i = 0; i < nSegments * _dest.h; i++)
+									pTintColorsY[i] *= m_colTrans.flatTintColor;
+							}
+						}
+					}
+					else if (m_colTrans.mode == TintMode::GradientX || m_colTrans.mode == TintMode::GradientY || m_colTrans.mode == TintMode::GradientXY)
+					{
+						HiColor* pGlobalsX = m_colTrans.pTintAxisX ? m_colTrans.pTintAxisX + _dest.x - m_colTrans.tintRect.x : nullptr;
+						HiColor* pGlobalsY = m_colTrans.pTintAxisY ? m_colTrans.pTintAxisY + _dest.y - m_colTrans.tintRect.y : nullptr;
+
+						int pitchX = 1;
+						int pitchY = 1;
+
+						if (pGlobalsX)
+						{
+							HiColor* pDest = pTintColorsX;
+							for (int seg = 0; seg < nSegments; seg++)
+							{
+								HiColor* pSrc = pGlobalsX;
+
+								for (int i = 0; i < _dest.w; i++)
+								{
+									*pDest++ *= *pSrc;
+									pSrc += pitchX;
+								}
+							}
+						}
+
+						if (pGlobalsY)
+						{
+							HiColor* pDest = pTintColorsY;
+							for (int seg = 0; seg < nSegments; seg++)
+							{
+								HiColor* pSrc = pGlobalsY;
+
+								for (int i = 0; i < _dest.h; i++)
+								{
+									*pDest++ *= *pSrc;
+									pSrc += pitchY;
+								}
+							}
+						}
+
+					}
+
+
+
+					// Mark transparent and opaque segments
+					
+					if (m_colTrans.bTintOpaque)
+					{
+						for (int i = 0; i < nSegments; i++)
+						{
+							if (pTintmaps[i])
+							{
+								opaqueSegments[i] = pTintmaps[i]->isOpaque();
+								transparentSegments[i] = false;
+							}
+							else
+							{
+								opaqueSegments[i] = false;
+								transparentSegments[i] = true;
+							}
+						}
+					}
+					else
+					{
+						for (int i = 0; i < nSegments; i++)
+						{
+							opaqueSegments[i] = false;
+							transparentSegments[i] = (pTintmaps[i] == nullptr);
+						}
+					}
 				}
 
 
@@ -1230,11 +1327,11 @@ namespace wg
 
 				// Free what we have reservhed on the memStack.
 
-				if (tintBufferSizeX > 0)
-					GfxBase::memStackFree(tintBufferSizeX);
-
 				if (tintBufferSizeY > 0)
 					GfxBase::memStackFree(tintBufferSizeY);
+
+				if (tintBufferSizeX > 0)
+					GfxBase::memStackFree(tintBufferSizeX);
 
 				break;
 			}

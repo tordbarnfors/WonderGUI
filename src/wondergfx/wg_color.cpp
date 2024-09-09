@@ -367,10 +367,6 @@ namespace wg
 		kNewColor.b = b + k.b;
 		kNewColor.a = a + k.a;
 
-		if (kNewColor.r > 4096) kNewColor.r = 4096;
-		if (kNewColor.g > 4096) kNewColor.g = 4096;
-		if (kNewColor.b > 4096) kNewColor.b = 4096;
-		if (kNewColor.a > 4096) kNewColor.a = 4096;
 		return kNewColor;
 	}
 
@@ -383,10 +379,6 @@ namespace wg
 		kNewColor.b = b - k.b;
 		kNewColor.a = a - k.a;
 
-		if (kNewColor.r < 4096) kNewColor.r = 0;
-		if (kNewColor.g < 4096) kNewColor.g = 0;
-		if (kNewColor.b < 4096) kNewColor.b = 0;
-		if (kNewColor.a < 4096) kNewColor.a = 0;
 		return kNewColor;
 	}
 
@@ -398,11 +390,6 @@ namespace wg
 		kNewColor.g = (uint16_t)((float)g * f);
 		kNewColor.b = (uint16_t)((float)b * f);
 		kNewColor.a = (uint16_t)((float)a * f);
-
-		if (kNewColor.r > 4096) kNewColor.r = 4096;
-		if (kNewColor.g > 4096) kNewColor.g = 4096;
-		if (kNewColor.b > 4096) kNewColor.b = 4096;
-		if (kNewColor.a > 4096) kNewColor.a = 4096;
 
 		return kNewColor;
 	}
@@ -417,6 +404,52 @@ namespace wg
 		kNewColor.a = (uint16_t)(((int)a * (int)k.a) / 4096);
 		return kNewColor;
 	}
+
+	//-------------------------------------------------------------------
+	HiColor& HiColor::operator+=(const HiColor& k)
+	{
+		r += k.r;
+		g += k.g;
+		b += k.b;
+		a += k.a;
+
+		return *this;
+	}
+
+	//-------------------------------------------------------------------
+	HiColor& HiColor::operator-=(const HiColor& k)
+	{
+		r -= k.r;
+		g -= k.g;
+		b -= k.b;
+		a -= k.a;
+
+		return *this;
+	}
+
+	//-------------------------------------------------------------------
+	HiColor& HiColor::operator*=(float f)
+	{
+		r = (uint16_t)((float)r * f);
+		g = (uint16_t)((float)g * f);
+		b = (uint16_t)((float)b * f);
+		a = (uint16_t)((float)a * f);
+
+		return *this;
+	}
+
+
+	//-------------------------------------------------------------------
+	HiColor& HiColor::operator*=(const HiColor& k)
+	{
+		r = (uint16_t)(((int)r * (int)k.r) / 4096);
+		g = (uint16_t)(((int)g * (int)k.g) / 4096);
+		b = (uint16_t)(((int)b * (int)k.b) / 4096);
+		a = (uint16_t)(((int)a * (int)k.a) / 4096);
+
+		return *this;
+	}
+
 
 	//____ _initTables() ______________________________________________________
 
