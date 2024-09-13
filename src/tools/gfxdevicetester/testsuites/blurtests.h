@@ -49,14 +49,12 @@ public:
 		float blueMtx[9] = { 0.15f, 0.15f, 0.15f, 0, 0.4f, 0, 0,0,0 };
 		float greenMtx[9] = { 0,0,0, 0,0.7f,0, 0,0,0 };
 
-		auto pBrush = Blurbrush::create({
+		m_pBrush = Blurbrush::create({
 			.blue = { 0.15f, 0.15f, 0.15f, 0, 0.4f, 0, 0,0,0 },
 			.green = {0,0,0, 0,0.7f,0, 0,0,0},
 			.red = { 0.14f,0.1f,0.14f, 0.1f, 0.0f, 0.1f, 0.14f, 0.1f, 0.14f },
 			.size = 64 * 4
 		});
-
-		pDevice->setBlurbrush(pBrush);
 
 		pDevice->beginCanvasUpdate(m_pCanvasSurface);
 		pDevice->setBlendMode(BlendMode::Replace);
@@ -87,6 +85,8 @@ public:
 			pDevice->beginCanvasUpdate(m_pBlurSurface[1]);
 			pDevice->setBlitSource(m_pBlurSurface[0]);
 
+			pDevice->setBlurbrush(m_pBrush);
+
 			pDevice->blur({0,0});
 			pDevice->endCanvasUpdate();
 
@@ -94,6 +94,8 @@ public:
 		}
 		
 		pDevice->setBlitSource(m_pBlurSurface[0]);
+
+		pDevice->setBlurbrush(m_pBrush);
 		pDevice->blur(canvas);
 		return true;
 	}
@@ -102,4 +104,6 @@ public:
 private:
 	Surface_p	m_pCanvasSurface;
 	Surface_p	m_pBlurSurface[2];
+
+	Blurbrush_p	m_pBrush;
 };

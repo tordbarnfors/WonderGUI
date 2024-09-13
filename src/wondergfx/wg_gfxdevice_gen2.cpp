@@ -1239,7 +1239,7 @@ void GfxDeviceGen2::stretchBlit(const RectSPX& dest, const RectSPX& src)
 			mtx.yy = src.h / 64.f / (dest.h / 64);
 		}
 
-		_transformBlitComplex(dest, { src.x, src.y }, mtx, Command::Blit);
+		_transformBlitComplex(dest, { src.x*16, src.y*16 }, mtx, Command::Blit);
 	}
 }
 
@@ -1315,7 +1315,7 @@ void GfxDeviceGen2::stretchFlipBlit(const RectSPX& dest, const RectSPX& src, Gfx
 	mtx.yx = scaleX * s_blitFlipTransforms[(int)flip][1][0];
 	mtx.yy = scaleY * s_blitFlipTransforms[(int)flip][1][1];
 
-	_transformBlitComplex(dest, { int(ofsX*64), int(ofsY*64) }, mtx, Command::Blit);
+	_transformBlitComplex(dest, { int(ofsX*1024), int(ofsY*1024) }, mtx, Command::Blit);
 }
 
 //____ precisionBlit() ____________________________________________________
@@ -1349,7 +1349,7 @@ void GfxDeviceGen2::precisionBlit(const RectSPX& dest, const RectF& src)
 		mtx.yy = src.h / dest.h;
 	}
 
-	_transformBlitComplex(dest, { int(src.x), int(src.y) }, mtx, Command::Blit);
+	_transformBlitComplex(dest, { int(src.x*16), int(src.y*16) }, mtx, Command::Blit);
 }
 
 //____ transformBlit() ________________________________________________
@@ -1368,7 +1368,7 @@ void GfxDeviceGen2::transformBlit(const RectSPX& dest, CoordF src, const Transfo
 
 	Command cmd = m_renderState.blitSource->isTiling() ? Command::Tile : Command::ClipBlit;
 
-	_transformBlitComplex(dest, { int(src.x), int(src.y) }, transform, cmd);
+	_transformBlitComplex(dest, { int(src.x*16), int(src.y*16) }, transform, cmd);
 }
 
 //____ rotScaleBlit() _____________________________________________________
@@ -1414,7 +1414,7 @@ void GfxDeviceGen2::rotScaleBlit(const RectSPX& dest, float rotationDegrees, flo
 
 	Command cmd = pSource->isTiling() ? Command::Tile : Command::ClipBlit;
 
-	_transformBlitComplex(dest, { int(src.x),int(src.y) }, mtx, cmd);
+	_transformBlitComplex(dest, { int(src.x*16),int(src.y*16) }, mtx, cmd);
 }
 
 //____ tile() _____________________________________________________________
@@ -1508,7 +1508,7 @@ void GfxDeviceGen2::scaleTile(const RectSPX& dest, float scale, CoordSPX shift)
 	mtx.yx = 0;
 	mtx.yy = 1 / scale;
 
-	CoordSPX sh = { int(shift.x / scale), int(shift.y / scale) };
+	CoordSPX sh = { int(shift.x*16 / scale), int(shift.y*16 / scale) };
 
 	_transformBlitComplex(dest, sh, mtx, Command::Tile);
 }
@@ -1543,11 +1543,11 @@ void GfxDeviceGen2::scaleFlipTile(const RectSPX& dest, float scale, GfxFlip flip
 	mtx.yy = s_blitFlipTransforms[(int)flip][1][1] / scale;
 
 	SizeI srcSize = pSource->pixelSize();
-	spx ofsX = (srcSize.w - 1) * s_blitFlipOffsets[(int)flip][0] * 64;
-	spx ofsY = (srcSize.h - 1) * s_blitFlipOffsets[(int)flip][1] * 64;
+	spx ofsX = (srcSize.w - 1) * s_blitFlipOffsets[(int)flip][0] * 1024;
+	spx ofsY = (srcSize.h - 1) * s_blitFlipOffsets[(int)flip][1] * 1024;
 
-	ofsX += shift.x * mtx.xx + shift.y * mtx.yx;
-	ofsY += shift.x * mtx.xy + shift.y * mtx.yy;
+	ofsX += shift.x * 16 * mtx.xx + shift.y * 16 * mtx.yx;
+	ofsY += shift.x * 16 * mtx.xy + shift.y * 16 * mtx.yy;
 
 	_transformBlitComplex(dest, { ofsX,ofsY }, mtx, Command::Tile);
 }
@@ -1649,7 +1649,7 @@ void GfxDeviceGen2::stretchBlur(const RectSPX& dest, const RectSPX& src)
 			mtx.yy = src.h / 64 / (dest.h / 64);
 		}
 
-		_transformBlitComplex(dest, { src.x, src.y }, mtx, Command::Blur);
+		_transformBlitComplex(dest, { src.x*16, src.y*16 }, mtx, Command::Blur);
 	}
 }
  
@@ -1667,7 +1667,7 @@ void GfxDeviceGen2::transformBlur(const RectSPX& dest, CoordF src, const Transfo
 	if (m_renderState.blitSource == nullptr)
 		return;
 
-	_transformBlitComplex(dest, { int(src.x), int(src.y) }, transform, Command::Blur);
+	_transformBlitComplex(dest, { int(src.x*16), int(src.y*16) }, transform, Command::Blur);
 }
 
 //____ rotScaleBlur() _____________________________________________________
@@ -1703,7 +1703,7 @@ void GfxDeviceGen2::rotScaleBlur(const RectSPX& dest, float rotationDegrees, flo
 	mtx.yx = -sz * scale;
 	mtx.yy = cz * scale;
 
-	src = { int(srcCenter.x * pSource->m_size.w * 64), int(srcCenter.y * pSource->m_size.h * 64) };
+	src = { int(srcCenter.x * pSource->m_size.w * 1024), int(srcCenter.y * pSource->m_size.h * 1024) };
 
 	//		src.x -= dest.w / 2.f * mtx[0][0] + dest.h / 2.f * mtx[1][0];
 	//		src.y -= dest.w / 2.f * mtx[0][1] + dest.h / 2.f * mtx[1][1];
@@ -2757,8 +2757,8 @@ void GfxDeviceGen2::_transformBlitSimple(const RectSPX& _dest, CoordSPX src, int
 		m_pActiveLayer->commands.push_back(nRects);
 		
 		m_pActiveLayer->commands.push_back(transformOfs);
-		m_pActiveLayer->commands.push_back( align(src.x) );
-		m_pActiveLayer->commands.push_back( align(src.y) );
+		m_pActiveLayer->commands.push_back( align(src.x)*16 );		// Higher resolution on source than SPX: 22:10.
+		m_pActiveLayer->commands.push_back( align(src.y)*16 );
 		m_pActiveLayer->commands.push_back( dest.x );
 		m_pActiveLayer->commands.push_back( dest.y );
 	}
@@ -2766,7 +2766,7 @@ void GfxDeviceGen2::_transformBlitSimple(const RectSPX& _dest, CoordSPX src, int
 
 //____ _transformBlitComplex() _______________________________________________
 
-void GfxDeviceGen2::_transformBlitComplex(const RectSPX& _dest, CoordSPX src, const Transform& matrix, Command cmd)
+void GfxDeviceGen2::_transformBlitComplex(const RectSPX& _dest, CoordI src, const Transform& matrix, Command cmd)
 {
 	// Clip and render the patches
 

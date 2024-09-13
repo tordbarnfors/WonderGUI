@@ -1414,8 +1414,8 @@ namespace wg
 				int32_t nRects = *p++;
 				int32_t transform = *p++;
 
-				spx srcX = *p++;
-				spx srcY = *p++;
+				int srcX = *p++;
+				int srcY = *p++;
 				spx dstX = *p++;
 				spx dstY = *p++;
 
@@ -1426,8 +1426,8 @@ namespace wg
 
 					// Step forward _src by half a pixel, so we start from correct pixel.
 
-					srcX += (mtx.xx + mtx.yx) * 32;
-					srcY += (mtx.xy + mtx.yy) * 32;
+					srcX += (mtx.xx + mtx.yx) * 512;
+					srcY += (mtx.xy + mtx.yy) * 512;
 
 					//
 
@@ -1440,7 +1440,7 @@ namespace wg
 						patch.w = *pCoords++ / 64;
 						patch.h = *pCoords++ / 64;
 
-						CoordI src = { srcX / 64, srcY / 64 };
+						CoordI src = { srcX / 1024, srcY / 1024 };
 						CoordI dest = { dstX / 64, dstY / 64 };
 
 						CoordI	patchOfs = patch.pos() - dest;
@@ -1482,7 +1482,7 @@ namespace wg
 						patch.w = *pCoords++ / 64;
 						patch.h = *pCoords++ / 64;
 
-						BinalCoord src = { srcX * (BINAL_MUL / 64), srcY * (BINAL_MUL / 64) };
+						BinalCoord src = { srcX * (BINAL_MUL / 1024), srcY * (BINAL_MUL / 1024) };
 						CoordI dest = { dstX / 64, dstY / 64 };
 
 						CoordI	patchOfs = patch.pos() - dest;
@@ -2161,9 +2161,9 @@ namespace wg
 				m_colTrans.blurOfsPixel[i].x = (m_colTrans.blurOfsSPX[i].x) / 64;
 				m_colTrans.blurOfsPixel[i].y = (m_colTrans.blurOfsSPX[i].y) / 64;
 
-				m_colTrans.blurMtxR[i] = pBrush->red()[i];
-				m_colTrans.blurMtxG[i] = pBrush->green()[i];
-				m_colTrans.blurMtxB[i] = pBrush->blue()[i];
+				m_colTrans.blurMtxR[i] = pBrush->red()[i]*65536;
+				m_colTrans.blurMtxG[i] = pBrush->green()[i]*65536;
+				m_colTrans.blurMtxB[i] = pBrush->blue()[i]*65536;
 			}
 
 		}
