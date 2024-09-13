@@ -830,7 +830,16 @@ namespace wg
 				int edgeStripPitch = pEdgemap->m_nbSegments - 1;
 
 				//TODO: Proper 26:6 support
-				RectI _dest = { Util::roundToPixels(destX), Util::roundToPixels(destY), pEdgemap->m_size };
+
+
+				auto& mtx = s_blitFlipTransforms[flip];
+
+				RectI _dest = { 
+					Util::roundToPixels(destX), 
+					Util::roundToPixels(destY), 
+					pEdgemap->m_size.w * int(abs(mtx.xx)) + pEdgemap->m_size.h * int(abs(mtx.yx)),
+					pEdgemap->m_size.w * int(abs(mtx.xy)) + pEdgemap->m_size.h * int(abs(mtx.yy)),
+				};
 
 				RectI dest = _dest;
 
@@ -842,8 +851,6 @@ namespace wg
 				// We need to modify our transform since we are moving the destination pointer, not the source pointer, according to the transform.
 
 				int simpleTransform[2][2];
-
-				auto& mtx = s_blitFlipTransforms[flip];
 
 				simpleTransform[0][0] = mtx.xx;
 				simpleTransform[1][1] = mtx.yy;
@@ -922,9 +929,20 @@ namespace wg
 					else
 					{
 						if (m_colTrans.mode == TintMode::GradientY)
-							bTintY = true;
+						{
+							if (mtx.xy == 0 && mtx.yx == 0)
+								bTintY = true;
+							else
+								bTintX = true;
+						}
 						if (m_colTrans.mode == TintMode::GradientX)
-							bTintX = true;
+						{
+							if (mtx.xy == 0 && mtx.yx == 0)
+								bTintX = true;
+							else
+								bTintY = true;
+						}
+
 					}
 				}
 
@@ -983,11 +1001,13 @@ namespace wg
 				{
 					if (bTintX)
 					{
-						segmentPitchTintmapX = _dest.w;
+						int length = pEdgemap->m_size.w;
+
+						segmentPitchTintmapX = length;
 
 						// Generate the buffer that we will need
 
-						tintBufferSizeX = sizeof(HiColor) * nSegments * _dest.w;
+						tintBufferSizeX = sizeof(HiColor) * nSegments * length;
 						pTintColorsX = (HiColor*)GfxBase::memStackAlloc(tintBufferSizeX);
 						
 						// export segment tintmaps into our buffer
@@ -1002,12 +1022,12 @@ namespace wg
 							{
 								if (pTintmaps[i])
 								{
-									pTintmaps[i]->exportHorizontalColors(_dest.w * 64, pOutput);
-									pOutput += _dest.w;
+									pTintmaps[i]->exportHorizontalColors(length * 64, pOutput);
+									pOutput += length;
 								}
 								else
 								{
-									for (int j = 0; j < _dest.w; j++)
+									for (int j = 0; j < length; j++)
 										*pOutput++ = HiColor::Transparent;
 								}
 							}
@@ -1018,7 +1038,7 @@ namespace wg
 
 							for( int i = 0 ; i < nSegments ; i++ )
 							{
-								for( int j = 0 ; j < _dest.w ; j++ )
+								for( int j = 0 ; j < length ; j++ )
 									* pOutput++ = pSegmentColors[i];
 							}
 						}						
@@ -1026,11 +1046,13 @@ namespace wg
 					
 					if (bTintY)
 					{
-						segmentPitchTintmapY = _dest.h;
+						int length = pEdgemap->m_size.h;
+
+						segmentPitchTintmapY = length;
 						
 						// Generate the buffer that we will need
 
-						tintBufferSizeY = sizeof(HiColor) * nSegments * _dest.h;
+						tintBufferSizeY = sizeof(HiColor) * nSegments * length;
 						pTintColorsY = (HiColor*)GfxBase::memStackAlloc(tintBufferSizeY);
 						
 						// export segment tintmaps into our buffer
@@ -1045,12 +1067,12 @@ namespace wg
 							{
 								if (pTintmaps[i])
 								{
-									pTintmaps[i]->exportVerticalColors(_dest.h * 64, pOutput);
-									pOutput += _dest.h;
+									pTintmaps[i]->exportVerticalColors(length * 64, pOutput);
+									pOutput += length;
 								}
 								else
 								{
-									for (int j = 0; j < _dest.h; j++)
+									for (int j = 0; j < length; j++)
 										*pOutput++ = HiColor::Transparent;
 								}
 							}
@@ -1061,7 +1083,7 @@ namespace wg
 
 							for( int i = 0 ; i < nSegments ; i++ )
 							{
-								for( int j = 0 ; j < _dest.h ; j++ )
+								for( int j = 0 ; j < length ; j++ )
 									* pOutput++ = pSegmentColors[i];
 							}
 						}						
@@ -1077,12 +1099,12 @@ namespace wg
 
 							if (pTintColorsX)
 							{
-								for (int i = 0; i < nSegments * _dest.w; i++)
+								for (int i = 0; i < nSegments * pEdgemap->m_size.w; i++)
 									pTintColorsX[i] *= m_colTrans.flatTintColor;
 							}
 							else if (pTintColorsY)
 							{
-								for (int i = 0; i < nSegments * _dest.h; i++)
+								for (int i = 0; i < nSegments * pEdgemap->m_size.h; i++)
 									pTintColorsY[i] *= m_colTrans.flatTintColor;
 							}
 						}
@@ -1092,8 +1114,26 @@ namespace wg
 						HiColor* pGlobalsX = m_colTrans.pTintAxisX ? m_colTrans.pTintAxisX + _dest.x - m_colTrans.tintRect.x : nullptr;
 						HiColor* pGlobalsY = m_colTrans.pTintAxisY ? m_colTrans.pTintAxisY + _dest.y - m_colTrans.tintRect.y : nullptr;
 
-						int pitchX = 1;
-						int pitchY = 1;
+						int width = _dest.w;
+						int height = _dest.h;
+
+						int pitchX = mtx.xx + mtx.xy;
+						int pitchY = mtx.yx + mtx.yy;
+
+						if (mtx.xy != 0 || mtx.yx != 0)
+						{
+							std::swap(pGlobalsX, pGlobalsY);
+							std::swap(width, height);
+							std::swap(pitchX, pitchY);
+						}
+
+
+						if (pitchX < 0 && pGlobalsX)
+							pGlobalsX += width - 1;
+
+						if (pitchY < 0 && pGlobalsY)
+							pGlobalsY += height - 1;
+
 
 						if (pGlobalsX)
 						{
@@ -1102,7 +1142,7 @@ namespace wg
 							{
 								HiColor* pSrc = pGlobalsX;
 
-								for (int i = 0; i < _dest.w; i++)
+								for (int i = 0; i < width; i++)
 								{
 									*pDest++ *= *pSrc;
 									pSrc += pitchX;
@@ -1117,7 +1157,7 @@ namespace wg
 							{
 								HiColor* pSrc = pGlobalsY;
 
-								for (int i = 0; i < _dest.h; i++)
+								for (int i = 0; i < height; i++)
 								{
 									*pDest++ *= *pSrc;
 									pSrc += pitchY;
@@ -1133,27 +1173,51 @@ namespace wg
 					
 					if (m_colTrans.bTintOpaque)
 					{
-						for (int i = 0; i < nSegments; i++)
+						if (pTintmaps)
 						{
-							if (pTintmaps[i])
+							for (int i = 0; i < nSegments; i++)
 							{
-								opaqueSegments[i] = pTintmaps[i]->isOpaque();
-								transparentSegments[i] = false;
-							}
-							else
-							{
-								opaqueSegments[i] = false;
-								transparentSegments[i] = true;
+								if (pTintmaps[i])
+								{
+									opaqueSegments[i] = pTintmaps[i]->isOpaque();
+									transparentSegments[i] = false;
+								}
+								else
+								{
+									opaqueSegments[i] = false;
+									transparentSegments[i] = true;
+								}
 							}
 						}
+						else
+						{
+							for (int i = 0; i < nSegments; i++)
+							{
+								opaqueSegments[i] = (pSegmentColors[i].a == 4096);
+								transparentSegments[i] = (pSegmentColors[i].a == 0);
+							}
+						}
+
 					}
 					else
 					{
-						for (int i = 0; i < nSegments; i++)
+						if (pTintmaps)
 						{
-							opaqueSegments[i] = false;
-							transparentSegments[i] = (pTintmaps[i] == nullptr);
+							for (int i = 0; i < nSegments; i++)
+							{
+								opaqueSegments[i] = false;
+								transparentSegments[i] = (pTintmaps[i] == nullptr);
+							}
 						}
+						else
+						{
+							for (int i = 0; i < nSegments; i++)
+							{
+								opaqueSegments[i] = false;
+								transparentSegments[i] = (pSegmentColors[i].a == 0);
+							}
+						}
+
 					}
 				}
 

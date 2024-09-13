@@ -1923,7 +1923,16 @@ void GfxDeviceGen2::flipDrawEdgemap(CoordSPX dest, Edgemap* pEdgemap, GfxFlip fl
 		return;
 	}
 
-	RectSPX rect = { dest, pEdgemap->pixelSize() * 64 };
+	SizeSPX edgemapSize = pEdgemap->pixelSize() * 64;
+	const int(&transform)[2][2] = s_blitFlipTransforms[(int)flip];
+
+	RectSPX rect;
+
+	rect.x = dest.x;
+	rect.y = dest.y;
+	rect.w = edgemapSize.w * abs(transform[0][0]) + edgemapSize.h * abs(transform[1][0]);
+	rect.h = edgemapSize.w * abs(transform[0][1]) + edgemapSize.h * abs(transform[1][1]);
+
 
 	int nRects = 0;
 	auto& coords = m_pActiveLayer->coords;

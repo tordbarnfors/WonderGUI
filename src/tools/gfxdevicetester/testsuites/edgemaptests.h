@@ -65,6 +65,7 @@ public:
 			tintmapsX[i] = Gradyent::create(Color::White, Color::White, m_rainbowColors[i], Color::Black);
 			tintmapsY[i] = Gradyent::create(m_rainbowColors[i], Color::Black, Color::White, Color::White);
 			tintmapsXY[i] = Gradyent::create(m_rainbowColors[i], Color::Black, Color::Red, Color::Green);
+
 		}
 		
 		
@@ -77,11 +78,11 @@ public:
 		m_pEdgemapSPXGradientXY = pFactory->createEdgemap( WGBP(Edgemap, _.size = canvas.size()/64, _.segments = 8, _.tintmaps = tintmapsXY ),
 												  SampleOrigo::Top, sampleBuffer[0], 7 );
 
-		m_pSmallEdgemap = pFactory->createEdgemap(WGBP(Edgemap, _.size = { 100, 50 }, _.segments = 4, _.tintmaps = tintmapsXY),
+//		m_pSmallEdgemap = pFactory->createEdgemap(WGBP(Edgemap, _.size = { 100, 50 }, _.segments = 4, _.tintmaps = tintmapsXY),
+//			SampleOrigo::Top, sampleBuffer[0], 3, 513 );
+
+		m_pSmallEdgemap = pFactory->createEdgemap(WGBP(Edgemap, _.colors = m_rainbowColors, _.size = {100, 50}, _.segments = 4),
 			SampleOrigo::Top, sampleBuffer[0], 3, 513 );
-
-
-
 
 		return true;
 	}
@@ -97,10 +98,12 @@ public:
 
 	bool globalTint(GfxDevice* pDevice, const RectI& canvas)
 	{
-		pDevice->setTintGradient(RectSPX(100, 50, 250, 110)*64, Gradient(HiColor::TransparentWhite, HiColor::TransparentWhite, HiColor::White, HiColor::White));
+		pDevice->setTintGradient(RectSPX(100, 50, 250, 100)*64, Gradient(HiColor::TransparentWhite, HiColor::TransparentWhite, HiColor::White, HiColor::White));
 
-		pDevice->drawEdgemap(CoordSPX(100, 50) * 64, m_pSmallEdgemap);
-		pDevice->flipDrawEdgemap(CoordSPX(210, 50) * 64, m_pSmallEdgemap, GfxFlip::Rot90);
+//		pDevice->fill(RectSPX(100, 50, 250, 100) * 64, Color::Green);
+
+//		pDevice->drawEdgemap(CoordSPX(210, 50) * 64, m_pSmallEdgemap);
+		pDevice->flipDrawEdgemap(CoordSPX(100, 50) * 64, m_pSmallEdgemap, GfxFlip::Rot270);
 
 		pDevice->clearTintGradient();
 		return true;
@@ -123,7 +126,6 @@ public:
 
 	bool spxTopDownGradientsXY(GfxDevice * pDevice, const RectI& canvas)
 	{
-		
 		pDevice->drawEdgemap(canvas, m_pEdgemapSPXGradientXY );
 		return true;
 	}
