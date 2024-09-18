@@ -286,6 +286,7 @@ namespace wg
 	{
 		m_pCoordsBeg = pBeg;
 		m_pCoordsEnd = pEnd;
+		m_pCoordsPtr = pBeg;
 	}
 
 	//____ setColors() _____________________________________________
@@ -294,6 +295,7 @@ namespace wg
 	{
 		m_pColorsBeg = pBeg;
 		m_pColorsEnd = pEnd;
+		m_pColorsPtr = pBeg;
 	}
 
 	//____ setTransforms() _____________________________________________
@@ -308,8 +310,8 @@ namespace wg
 
 	void SoftBackend::processCommands(int32_t* pBeg, int32_t* pEnd)
 	{
-		spx *		pCoords = m_pCoordsBeg;
-		HiColor*	pColors = m_pColorsBeg;
+		spx *		pCoords = m_pCoordsPtr;
+		HiColor*	pColors = m_pColorsPtr;
 
 
 		auto p = pBeg;
@@ -1512,6 +1514,12 @@ namespace wg
 				break;
 			}
 		}
+
+		// Save progress.
+
+		m_pCoordsPtr = pCoords;
+		m_pColorsPtr = pColors;
+
 	}
 
 	//____ defineCanvas() _____________________________________________

@@ -187,7 +187,7 @@ namespace wg
 			bool				mipmap = false;
 			SampleMethod		sampleMethod = SampleMethod::Undefined;
 			int					scale = 0;
-			SizeI				size;					// Mandatory.
+			SizeI				size;					// Mandatory. Size in pixels.
 			bool				tiling = false;
 		};
 

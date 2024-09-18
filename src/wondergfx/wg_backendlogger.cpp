@@ -59,9 +59,9 @@ namespace wg
 
 	void BackendLogger::setCanvas(Surface* pSurface)
 	{
-		*m_pStream	<< "SET CANVAS: Surface = id: " << pSurface->identity() 
-					<< " pixelSize:  " << pSurface->pixelSize().w  << ", " << pSurface->pixelSize().h 
-					<< " format: = " << toString(pSurface->pixelFormat()) << std::endl;
+		*m_pStream	<< "SET CANVAS: ptr = " << pSurface << " id = " << pSurface->identity() 
+					<< " pixelSize = " << pSurface->pixelSize().w  << ", " << pSurface->pixelSize().h 
+					<< " format = " << toString(pSurface->pixelFormat()) << std::endl;
 
 		if (m_pBackend)
 			m_pBackend->setCanvas(pSurface);
@@ -88,9 +88,9 @@ namespace wg
 		{
 			auto pObj = *p++;
 			if( pObj )
-				*m_pStream << pObj << " (" << pObj->typeInfo().className << ")" << std::endl;
+				*m_pStream << "    " << pObj << " (" << pObj->typeInfo().className << ")" << std::endl;
 			else
-				*m_pStream << "nullptr" << std::endl;
+				*m_pStream << "    nullptr" << std::endl;
 
 		}
 
@@ -102,7 +102,11 @@ namespace wg
 
 	void BackendLogger::setCoords(spx* pBeg, spx* pEnd)
 	{
-		*m_pStream << "SET COORDS: Amount = " << int(pEnd - pBeg) << std::endl;
+		*m_pStream << "SET COORDS: Amount = " << int(pEnd - pBeg);
+
+		m_pCoordsBeg = pBeg;
+		m_pCoordsEnd = pEnd;
+		m_pCoordsPtr = pBeg;
 
 		spx * p = pBeg;
 
@@ -110,10 +114,10 @@ namespace wg
 
 		while (p < pEnd)
 		{
-			rows %= 10;
+			rows %= 8;
 
 			if (rows == 0)
-				*m_pStream << std::endl;
+				*m_pStream << std::endl << "   ";
 			else
 				*m_pStream << ", ";
 
@@ -136,15 +140,13 @@ namespace wg
 
 		m_pColorsBeg = pBeg;
 		m_pColorsEnd = pEnd;
+		m_pColorsPtr = pBeg;
 
 		HiColor* p = pBeg;
 
 		while (p < pEnd)
 		{
-			*m_pStream << p->r << ", " << p->g << std::endl;
-			*m_pStream << p->b << ", " << p->a << std::endl;
-			*m_pStream << std::endl;
-
+			*m_pStream << "    " << p->r << ", " << p->g << ", " << p->b << ", " << p->a << std::endl;
 			p++;
 		}
 
@@ -164,8 +166,8 @@ namespace wg
 
 		while (p < pEnd)
 		{
-			*m_pStream << p->xx << ", " << p->xy << std::endl;
-			*m_pStream << p->yx << ", " << p->yy << std::endl;
+			*m_pStream << "    " << p->xx << ", " << p->xy << std::endl;
+			*m_pStream << "    " << p->yx << ", " << p->yy << std::endl;
 			*m_pStream << std::endl;
 
 			p++;
@@ -181,7 +183,8 @@ namespace wg
 	{
 		*m_pStream << "PROCESS COMMANDS:" << std::endl;
 
-		HiColor* pColors = m_pColorsBeg;
+		HiColor* pColors = m_pColorsPtr;
+		spx* pCoords = m_pCoordsPtr;
 
 		auto p = pBeg;
 		while (p < pEnd)
@@ -195,7 +198,7 @@ namespace wg
 
 			case Command::StateChange:
 			{
-				*m_pStream << "StateChange" << std::endl;
+				*m_pStream << "    StateChange" << std::endl;
 
 				int32_t statesChanged = *p++;
 
@@ -203,21 +206,21 @@ namespace wg
 				{
 					int32_t objectOfs = *p++;
 
-					*m_pStream << "BlitSource: " << objectOfs << std::endl;
+					*m_pStream << "        BlitSource: " << objectOfs << std::endl;
 				}
 
 				if (statesChanged & uint8_t(StateChange::BlendMode))
 				{
 					BlendMode mode = (BlendMode)*p++;
 
-					*m_pStream << "BlendMode: " << toString(mode) << std::endl;
+					*m_pStream << "        BlendMode: " << toString(mode) << std::endl;
 				}
 
 				if (statesChanged & uint8_t(StateChange::TintColor))
 				{
 					HiColor& col = *pColors++;
 
-					*m_pStream << "TintColor: " << col.r << ", " << col.g << ", " << col.b << ", " << col.a << std::endl;
+					*m_pStream << "        TintColor: " << col.r << ", " << col.g << ", " << col.b << ", " << col.a << std::endl;
 				}
 
 				if (statesChanged & uint8_t(StateChange::TintMap))
@@ -228,28 +231,28 @@ namespace wg
 					int32_t	w = *p++;
 					int32_t	h = *p++;
 
-					*m_pStream << "TintMap: " << objectOfs << " rect: " << x << ", " << y << ", " << w << ", " << h << std::endl;
+					*m_pStream << "        TintMap: " << objectOfs << " rect: " << x << ", " << y << ", " << w << ", " << h << std::endl;
 				}
 
 				if (statesChanged & uint8_t(StateChange::MorphFactor))
 				{
 					float morphFactor = (*p++) / 4096.f;
 
-					*m_pStream << "MorphFactor: " << morphFactor << std::endl;
+					*m_pStream << "        MorphFactor: " << morphFactor << std::endl;
 				}
 
 				if (statesChanged & uint8_t(StateChange::FixedBlendColor))
 				{
 					HiColor& col = *pColors++;
 
-					*m_pStream << "FixedBlendColor: " << col.r << ", " << col.g << ", " << col.b << ", " << col.a << std::endl;
+					*m_pStream << "        FixedBlendColor: " << col.r << ", " << col.g << ", " << col.b << ", " << col.a << std::endl;
 				}
 
 				if (statesChanged & uint8_t(StateChange::Blur))
 				{
 					int32_t objectOfs = *p++;
 
-					*m_pStream << "BlurBrush: " << objectOfs << std::endl;					
+					*m_pStream << "        BlurBrush: " << objectOfs << std::endl;					
 				}
 
 				break;
@@ -261,8 +264,10 @@ namespace wg
 
 				HiColor& col = *pColors++;
 
-				*m_pStream << "Fill: " << nRects << " rects with: " << col.r << ", " << col.g << ", " << col.b << ", " << col.a << std::endl;
+				*m_pStream << "    Fill: " << nRects << " rects with color: " << col.r << ", " << col.g << ", " << col.b << ", " << col.a << std::endl;
 
+				_printRects(*m_pStream, nRects, reinterpret_cast<RectSPX*>(pCoords) );
+				pCoords += nRects * 4;
 				break;
 			}
 
@@ -270,9 +275,18 @@ namespace wg
 			{
 				int32_t nPlots = *p++;
 
-				*m_pStream << "Plot: " << nPlots << " points." << std::endl;	
+				*m_pStream << "    Plot: " << nPlots << " points.";	
+
+				for (int i = 0; i < nPlots; i++)
+				{
+					if ((i % 16) == 0)
+						*m_pStream << std::endl << "        ";
+
+					*m_pStream << pCoords[i];
+				}
 
 				pColors += nPlots;
+				pCoords += nPlots;
 				break;
 			}
 
@@ -285,10 +299,12 @@ namespace wg
 
 				HiColor col = * pColors++;
 
-				*m_pStream << "Line with color: " << col.r << ", " << col.g << ", " << col.b << ", " << col.a
+				*m_pStream << "    Draw line with color: " << col.r << ", " << col.g << ", " << col.b << ", " << col.a
 							<< " thickness: " << thickness << " points." << std::endl;
 				*m_pStream << " passing through " << nRects << " rectangles." << std::endl;
-				
+
+				_printRects(*m_pStream, nRects, reinterpret_cast<RectSPX*>(pCoords));
+				pCoords += nRects * 4;
 				break;
 			}
 
@@ -300,9 +316,11 @@ namespace wg
 				int32_t transform = *p++;
 				int32_t	nRects = *p++;
 
-				*m_pStream << "DrawEdgemap: " << objectOfs << " at: " << destX << ", " << destY << ", with transform: " << transform 
+				*m_pStream << "    DrawEdgemap: " << objectOfs << " at: " << destX << ", " << destY << ", with transform: " << transform 
 					<< " split into " << nRects << " rectangles." << std::endl;
 
+				_printRects(*m_pStream, nRects, reinterpret_cast<RectSPX*>(pCoords));
+				pCoords += nRects * 4;
 				break;
 			}
 
@@ -312,13 +330,13 @@ namespace wg
 			case Command::ClipBlit:
 			{
 				if (cmd == Command::Blur)
-					*m_pStream << "Blur: ";
+					*m_pStream << "    Blur: ";
 				else if (cmd == Command::Tile)
-					*m_pStream << "Tile: ";
+					*m_pStream << "    Tile: ";
 				else if (cmd == Command::Blit)
-					*m_pStream << "Blit: ";
+					*m_pStream << "    Blit: ";
 				else if (cmd == Command::ClipBlit)
-					*m_pStream << "ClipBlit: ";
+					*m_pStream << "    ClipBlit: ";
 
 				int32_t nRects = *p++;
 				int32_t transform = *p++;
@@ -330,6 +348,8 @@ namespace wg
 
 				*m_pStream << nRects << " rects with transform: " << transform << ", src: " << srcX << ", " << srcY << " dest: " << dstX << ", " << dstY << std::endl;
 
+				_printRects(*m_pStream, nRects, reinterpret_cast<RectSPX*>(pCoords));
+				pCoords += nRects * 4;
 				break;
 			}
 
@@ -339,6 +359,8 @@ namespace wg
 			}
 		}
 
+		m_pCoordsPtr = pCoords;
+		m_pColorsPtr = pColors;
 
 		if (m_pBackend)
 			m_pBackend->processCommands(pBeg, pEnd);
@@ -424,6 +446,15 @@ namespace wg
 		return ref;
 	}
 
+	//____ _printRects() _______________________________________________________
+
+	void BackendLogger::_printRects(std::ostream& stream, int nRects, RectSPX* pRects)
+	{
+		for (int i = 0; i < nRects; i++)
+		{
+			stream << "        " << pRects[i].x << ", " << pRects[i].y << ", " << pRects[i].w << ", " << pRects[i].h << std::endl;
+		}
+	}
 
 
 

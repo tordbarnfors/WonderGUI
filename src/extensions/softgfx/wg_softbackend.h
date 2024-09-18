@@ -69,7 +69,6 @@ namespace wg
 		void	processCommands( int32_t* pBeg, int32_t * pEnd) override;
 
 
-
 		//.____ Misc _________________________________________________________
 
 		bool	defineCanvas(CanvasRef ref, SoftSurface* pSurface);
@@ -221,9 +220,11 @@ namespace wg
 
 		spx *				m_pCoordsBeg = nullptr;
 		spx *				m_pCoordsEnd = nullptr;
+		spx *				m_pCoordsPtr = nullptr;
 
 		HiColor*			m_pColorsBeg = nullptr;
 		HiColor*			m_pColorsEnd = nullptr;
+		HiColor*			m_pColorsPtr = nullptr;
 
 		Transform *			m_pTransformsBeg = nullptr;
 		Transform *			m_pTransformsEnd = nullptr;

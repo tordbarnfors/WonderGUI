@@ -81,8 +81,16 @@ namespace wg
 
 		virtual ~BackendLogger() {};
 
+		void	_printRects(std::ostream& stream, int nRects, RectSPX* pRects);
+
 		HiColor*		m_pColorsBeg = nullptr;
 		HiColor*		m_pColorsEnd = nullptr;
+		HiColor*		m_pColorsPtr = nullptr;
+
+		spx*			m_pCoordsBeg = nullptr;
+		spx*			m_pCoordsEnd = nullptr;
+		spx*			m_pCoordsPtr = nullptr;
+
 
 
 		GfxBackend_p	m_pBackend;

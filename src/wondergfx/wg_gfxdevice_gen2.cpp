@@ -595,6 +595,7 @@ bool GfxDeviceGen2::beginRender()
 	}
 	
 	m_bRendering = true;
+	m_pBackend->beginRender();
 	return true;
 }
 
@@ -610,6 +611,7 @@ bool GfxDeviceGen2::endRender()
 	}
 
 	m_bRendering = false;
+	m_pBackend->endRender();
 
 	if (!m_canvasStack.empty())
 	{
@@ -737,9 +739,38 @@ bool GfxDeviceGen2::_beginCanvasUpdate(CanvasRef ref, Surface* pCanvas, int nUpd
 
 	_resetState(m_renderState);
 
+	// Create canvases for render layers that need them
 
-	// Run clear functions (if present)
-	// They will end up as commands first in the command buffers.
+	for (int i = 1; i < nLayers; i++)
+	{
+		auto& info = pLayers->m_layers[i - 1];
+		auto& layer = entry.layers[i];
+
+		if (info.format != PixelFormat::Undefined || info.blendFunc || info.clearFunc || info.preBlendFunc)
+		{
+			// Create our layer canvas
+
+			layer.pLayerCanvas = m_pBackend->surfaceFactory()->createSurface(WGBP(Surface,
+				_.size = entry.info.size / 64,
+				_.format = info.format,
+				_.canvas = true));
+
+			setRenderLayer(i);
+
+			if (info.clearFunc)
+			{
+				info.clearFunc(this);
+			}
+			else
+			{
+				setBlendMode(BlendMode::Replace);
+				fill(HiColor::TransparentBlack);
+				setBlendMode(BlendMode::Blend);
+			}
+		}
+	}
+
+	// Encode clearing of base canvas if clearCanvasFunc set.
 
 	if (pLayers)
 	{
@@ -749,9 +780,6 @@ bool GfxDeviceGen2::_beginCanvasUpdate(CanvasRef ref, Surface* pCanvas, int nUpd
 			pLayers->m_clearCanvasFunc(this);
 			entry.activeLayer = activeLayer;
 		}
-
-		if (activeLayer != 0 && pLayers->m_layers[activeLayer].clearFunc)
-			pLayers->m_layers[activeLayer].clearFunc(this);
 	}
 
 	//
@@ -770,7 +798,7 @@ void GfxDeviceGen2::endCanvasUpdate()
 		return;
 	}
 	
-	flattenLayers();
+	_doFlattenLayers();
 	m_canvasStack.pop_back();
 	
 	if (!m_canvasStack.empty())
@@ -790,38 +818,275 @@ void GfxDeviceGen2::endCanvasUpdate()
 }
 
 //____ flattenLayers() ____________________________________________________
+/*
+	Flatten layers within current cliprects and resets canvas for new
+	drawing operations.
+
+	This means that any drawing performed outside current cliprects is lost.
+*/
 
 void GfxDeviceGen2::flattenLayers()
 {
-	//TODO: All kinds of layer magic...
+	_doFlattenLayers(); 
+	_resetCanvas();
+}
+
+
+//____ clearLayers() ___________________________________________________________
+/*
+	Encodes clear commands into all layers. 
 	
-	
+	Resets blendmode, tint and renderlayer.
+
+	Current cliprects clips the clearing.
+*/
+
+void GfxDeviceGen2::clearLayers()
+{
+	auto& canvasEntry = m_canvasStack.back();
+
+	setBlendMode(BlendMode::Blend);
+	clearTint();
+
+	for (int i = 1; i < canvasEntry.layers.size(); i++)
+	{
+		auto& info = canvasEntry.pLayerInfo->m_layers[i - 1];
+		auto& layer = canvasEntry.layers[i];
+
+		if (layer.pLayerCanvas)
+		{
+			setRenderLayer(i);
+
+			if (info.clearFunc)
+			{
+				info.clearFunc(this);
+			}
+			else
+			{
+				setBlendMode(BlendMode::Replace);
+				fill(HiColor::TransparentBlack);
+				setBlendMode(BlendMode::Blend);
+			}
+		}
+	}
+
+	setRenderLayer(0);
+}
+
+
+//____ _resetCanvas() __________________________________________________________
+/*
+	Prepares the top canvas in the stack for a new round of rendering
+	after having flattened the layers, this involves:
+
+	* Clearing all buffers (commands, colors, coords, objects and stransforms)
+	* Resetting all layers render states.
+*/
+
+void GfxDeviceGen2::_resetCanvas()
+{
+	auto& canvasEntry = m_canvasStack.back();
+
+	canvasEntry.objects.clear();
+	canvasEntry.transforms.clear();
+
+	for (int i = 0; i < canvasEntry.layers.size(); i++)
+	{
+		auto& info = canvasEntry.pLayerInfo->m_layers[i - 1];
+		auto& layer = canvasEntry.layers[i];
+
+		layer.colors.clear();
+		layer.coords.clear();
+		layer.commands.clear();
+
+		_resetState(layer.encodedState);
+
+		layer.finalCommandsOfs = -1;
+	}
+}
+
+
+//____ _doFlattenLayers() ____________________________________________________
+
+void GfxDeviceGen2::_doFlattenLayers()
+{
 	auto& canvasData = m_canvasStack.back();
 
-	if( canvasData.info.ref != CanvasRef::None )
-		m_pBackend->setCanvas(canvasData.info.ref);
-	else
-		m_pBackend->setCanvas(canvasData.info.pSurface);
+	// Finalize additional layers
 
+	for (int i = 1; i < canvasData.layers.size(); i++)
+	{
+		auto& info = canvasData.pLayerInfo->m_layers[i - 1];
+		auto& layer = canvasData.layers[i];
+
+		if (layer.pLayerCanvas)
+		{
+			setRenderLayer(i);
+
+			// Encode preBlend call if any.
+
+			if (info.preBlendFunc)
+			{
+				setBlendMode(BlendMode::Blend);
+				clearTint();
+				info.preBlendFunc(this);
+			}
+
+			// Store length of commands before changing canvas
+
+			layer.finalCommandsOfs = layer.commands.size();
+
+			// Encode preBlendCanvasFunc if any.
+
+			if (info.preBlendCanvasFunc)
+			{
+				setBlendMode(BlendMode::Blend);
+				clearTint();
+				info.preBlendCanvasFunc(this);
+			}
+
+			// Encode blendFunc if present, otherwise encode default blit.
+
+			setBlendMode(BlendMode::Blend);
+			clearTint();
+			setBlitSource(layer.pLayerCanvas);
+
+			if (info.blendFunc)
+				info.blendFunc(this);
+			else
+				blit({ 0,0 });
+
+			setBlitSource(nullptr);				// Prevent layerCanvas from being retained.
+		}
+		else
+		{
+			// Encode preBlendCanvasFunc if set
+
+			if (info.preBlendCanvasFunc)
+			{
+				setRenderLayer(i);		// Write our commands to buffer to be processed
+				setBlendMode(BlendMode::Blend);
+				clearTint();
+
+				info.preBlendCanvasFunc(this);
+			}
+
+		}
+	}
+
+	// Encode finalizeCanvasFunc (if specified) into our last layer.
+
+	if (canvasData.pLayerInfo && canvasData.pLayerInfo->m_finalizeCanvasFunc)
+	{
+		setRenderLayer(canvasData.layers.size()-1);					// Write to buffer to be processed
+		setBlendMode(BlendMode::Blend);
+		clearTint();
+
+		canvasData.pLayerInfo->m_finalizeCanvasFunc(this);
+	}
+
+
+
+	// Send transforms and objects to backend
+		
 	if( !canvasData.transforms.empty() )
 		m_pBackend->setTransforms( canvasData.transforms.data(), canvasData.transforms.data() + canvasData.transforms.size() );
 	
 	if( !canvasData.objects.empty() )
 		m_pBackend->setObjects( canvasData.objects.data(), canvasData.objects.data() + canvasData.objects.size() );
 	
-	for (int i = 0; i < canvasData.layers.size(); i++)
+	// Render base layer
+
+	if (canvasData.info.ref != CanvasRef::None)
+		m_pBackend->setCanvas(canvasData.info.ref);
+	else
+		m_pBackend->setCanvas(canvasData.info.pSurface);
+
+	auto& baseLayer = canvasData.layers[0];
+
+	spx* pCoordsBeg = baseLayer.coords.data();
+	spx* pCoordsEnd = pCoordsBeg + baseLayer.coords.size();
+	m_pBackend->setCoords(pCoordsBeg, pCoordsEnd);
+
+	HiColor* pColorsBeg = baseLayer.colors.data();
+	HiColor* pColorsEnd = pColorsBeg + baseLayer.colors.size();
+	m_pBackend->setColors(pColorsBeg, pColorsEnd);
+
+	int32_t* pCommandsBeg = baseLayer.commands.data();
+	int32_t* pCommandsEnd = pCommandsBeg + baseLayer.commands.size();
+	m_pBackend->processCommands(pCommandsBeg, pCommandsEnd);
+
+
+	// Render additional layers
+
+	for (int i = 1; i < canvasData.layers.size(); i++)
 	{
-		spx * pCoordsBeg = canvasData.layers[i].coords.data();
-		spx * pCoordsEnd = pCoordsBeg + canvasData.layers[i].coords.size();
-		m_pBackend->setCoords(pCoordsBeg, pCoordsEnd );
+		// Check if we can do direct rendering
 
-		HiColor* pColorsBeg = canvasData.layers[i].colors.data();
-		HiColor* pColorsEnd = pColorsBeg + canvasData.layers[i].colors.size();
-		m_pBackend->setColors(pColorsBeg, pColorsEnd);
+		auto& info = canvasData.pLayerInfo->m_layers[i - 1];
+		auto& layer = canvasData.layers[i];
 
-		int32_t* pCommandsBeg = canvasData.layers[i].commands.data();
-		int32_t* pCommandsEnd = pCommandsBeg + canvasData.layers[i].commands.size();
-		m_pBackend->processCommands( pCommandsBeg, pCommandsEnd );
+		if (layer.pLayerCanvas)
+		{
+			setRenderLayer(i);
+
+			// Set layerCanvas as output destination
+
+			m_pBackend->setCanvas(layer.pLayerCanvas);
+
+			// Send buffers and layer-specific commands to backend
+
+			spx* pCoordsBeg = layer.coords.data();
+			spx* pCoordsEnd = pCoordsBeg + layer.coords.size();
+			m_pBackend->setCoords(pCoordsBeg, pCoordsEnd);
+
+			HiColor* pColorsBeg = layer.colors.data();
+			HiColor* pColorsEnd = pColorsBeg + layer.colors.size();
+			m_pBackend->setColors(pColorsBeg, pColorsEnd);
+
+			int32_t* pCommandsBeg = layer.commands.data();
+			int32_t* pCommandsEnd = pCommandsBeg + layer.finalCommandsOfs;
+			m_pBackend->processCommands(pCommandsBeg, pCommandsEnd);
+
+			// Set base canvas
+
+			if (canvasData.info.ref != CanvasRef::None)
+				m_pBackend->setCanvas(canvasData.info.ref);
+			else
+				m_pBackend->setCanvas(canvasData.info.pSurface);
+
+			// Send preBlendCanvas and blend commands to backend
+			// causing blending of layer canvas 
+
+			pCommandsBeg = layer.commands.data() + layer.finalCommandsOfs;
+			pCommandsEnd = layer.commands.data() + layer.commands.size();
+			m_pBackend->processCommands(pCommandsBeg, pCommandsEnd);
+
+		}
+		else
+		{
+
+			// Set backend canvas in case it has been changed
+
+			if (canvasData.info.ref != CanvasRef::None)
+				m_pBackend->setCanvas(canvasData.info.ref);
+			else
+				m_pBackend->setCanvas(canvasData.info.pSurface);
+
+			// Send buffers and commands to backend
+
+			spx* pCoordsBeg = layer.coords.data();
+			spx* pCoordsEnd = pCoordsBeg + layer.coords.size();
+			m_pBackend->setCoords(pCoordsBeg, pCoordsEnd);
+
+			HiColor* pColorsBeg = layer.colors.data();
+			HiColor* pColorsEnd = pColorsBeg + layer.colors.size();
+			m_pBackend->setColors(pColorsBeg, pColorsEnd);
+
+			int32_t* pCommandsBeg = layer.commands.data();
+			int32_t* pCommandsEnd = pCommandsBeg + layer.commands.size();
+			m_pBackend->processCommands(pCommandsBeg, pCommandsEnd);
+		}
 	}
 	
 	// Release objects

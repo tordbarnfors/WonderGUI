@@ -149,6 +149,7 @@ namespace wg
 		virtual void    endCanvasUpdate() override;
 
 		void			flattenLayers();
+		void			clearLayers();
 
 		// Draw methods.
 
@@ -236,27 +237,29 @@ namespace wg
 		struct RenderState
 		{
 			Surface_p		blitSource;
+			Tintmap_p		pTintmap;
+			Blurbrush_p		pBlurbrush;
 
 			HiColor			tintColor = HiColor::Undefined;
-
-			RectSPX			tintmapRect;
-			Tintmap_p		pTintmap;
-			BlendMode		blendMode = BlendMode::Blend;
-			float			morphFactor = 0.5f;
 			HiColor			fixedBlendColor = HiColor::White;
 
-			Blurbrush_p		pBlurbrush;
+			RectSPX			tintmapRect;
+			BlendMode		blendMode = BlendMode::Blend;
+			float			morphFactor = 0.5f;
 		};
 
 
 		struct RenderLayer
 		{
-			RenderState			encodedState;				// State encoded in commands
+			RenderState				encodedState;				// State encoded in commands
 
 			std::vector<int>		commands;
 
 			std::vector<spx>		coords;
 			std::vector<HiColor>	colors;
+
+			int						finalCommandsOfs = -1;
+			Surface_p				pLayerCanvas;				// Null for layer 0 or any layer rendering directly to layer 0.
 		};
 
 
@@ -289,7 +292,7 @@ namespace wg
 		bool _beginCanvasUpdate(CanvasRef ref, Surface* pCanvas, int nUpdateRects, const RectSPX* pUpdateRects, CanvasLayers* pLayers, int startLayer);
 
 		void _transformBlitSimple(const RectSPX& _dest, CoordSPX src, int transformOfs, Command cmd);
-		void _transformBlitComplex(const RectSPX& _dest, CoordSPX _src, const Transform& matrix, Command cmd);
+		void _transformBlitComplex(const RectSPX& _dest, CoordI _src, const Transform& matrix, Command cmd);
 
 		void _stretchBlitWithRigidPartX(const RectSPX& src, const RectSPX& dst, spx rigidPartOfs, spx rigidPartLength, spx rigidPartLengthDst);
 		void _stretchBlitWithRigidPartY(const RectSPX& src, const RectSPX& dst, spx rigidPartOfs, spx rigidPartLength, spx rigidPartLengthDst);
@@ -299,6 +302,8 @@ namespace wg
 
 		void _resetState(RenderState& state);
 		void _encodeStateChanges();
+		void _doFlattenLayers();
+		void _resetCanvas();
 
 		//
 

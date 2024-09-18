@@ -109,6 +109,7 @@ namespace wg
 
 		virtual void	processCommands( int32_t* pBeg, int32_t * pEnd) = 0;
 
+
 		//.____ Misc _________________________________________________________
 
 		virtual const CanvasInfo *	canvasInfo(CanvasRef ref) const = 0;
