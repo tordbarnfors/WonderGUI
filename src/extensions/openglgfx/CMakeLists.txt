@@ -1,6 +1,9 @@
 
 set(SOURCES
 
+	wg_glbackend.cpp
+	wg_glbackend.h
+	wg_glbackendshaders.cpp
 	wg_glgfxdevice.cpp
 	wg_glgfxdevice.h
 	wg_glshaders.cpp

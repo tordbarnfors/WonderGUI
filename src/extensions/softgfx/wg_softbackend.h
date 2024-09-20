@@ -56,7 +56,10 @@ namespace wg
 
 		void	beginRender() override;
 		void	endRender() override;
-		
+	
+		void	beginSession(const SessionInfo* pSession) override;
+		void	endSession() override;
+
 		void	setCanvas( Surface * pSurface ) override;
 		void	setCanvas( CanvasRef ref ) override;
 

@@ -281,6 +281,7 @@ namespace wg
 															// to our right state when that ends and we pop back.
 			uint8_t						savedStateChanges;
 			
+			GfxBackend::SessionInfo		sessionInfo;
 		};
 
 		//
@@ -325,7 +326,6 @@ namespace wg
 		RectSPX						m_dummyRect;
 		
 		GfxBackend_p				m_pBackend;
-		
 	};
 
 	bool GfxDeviceGen2::beginCanvasUpdate(CanvasRef ref, int nUpdateRects, const RectSPX* pUpdateRects, CanvasLayers* pLayers, int startLayer)

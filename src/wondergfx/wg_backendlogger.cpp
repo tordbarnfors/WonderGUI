@@ -55,6 +55,43 @@ namespace wg
 			m_pBackend->endRender();
 	}
 
+	//____ beginSession() ______________________________________________________
+
+	void BackendLogger::beginSession(const SessionInfo* pSession)
+	{
+		*m_pStream << "BEGIN SESSION" << std::endl;
+
+		*m_pStream << "    StateChanges:  " << pSession->nStateChanges << std::endl;
+		*m_pStream << "    Plots:         " << pSession->nPlots << std::endl;
+		*m_pStream << "    Fills:         " << pSession->nFill << std::endl;
+		*m_pStream << "    Lines:         " << pSession->nLines << std::endl;
+		*m_pStream << "    Blits:         " << pSession->nBlit << std::endl;
+		*m_pStream << "    Blurs:         " << pSession->nBlur << std::endl;
+		*m_pStream << "    EdgemapDraws:  " << pSession->nEdgemapDraws << std::endl;
+
+		*m_pStream << "    Points:        " << pSession->nPoints << std::endl;
+		*m_pStream << "    LineCoords:    " << pSession->nLineCoords << std::endl;
+		*m_pStream << "    LineClipRects: " << pSession->nLineClipRects << std::endl;
+		*m_pStream << "    Rects:         " << pSession->nRects << std::endl;
+		*m_pStream << "    Colors:        " << pSession->nColors << std::endl;
+		*m_pStream << "    Transforms:    " << pSession->nTransforms << std::endl;
+		*m_pStream << "    Objects:       " << pSession->nObjects << std::endl;
+
+
+		if (m_pBackend)
+			m_pBackend->beginSession(pSession);
+	}
+
+	//____ endSession() ________________________________________________________
+
+	void BackendLogger::endSession()
+	{
+		*m_pStream << "END SESSION" << std::endl;
+
+		if (m_pBackend)
+			m_pBackend->endSession();
+	}
+
 	//____ setCanvas() _______________________________________________
 
 	void BackendLogger::setCanvas(Surface* pSurface)
@@ -295,13 +332,15 @@ namespace wg
 				spx thickness = *p++;
 				int32_t nRects = *p++;
 
-				p += 4 * nRects;
+				CoordSPX beg = { *pCoords++, *pCoords++ };
+				CoordSPX end = { *pCoords++, *pCoords++ };
 
 				HiColor col = * pColors++;
 
-				*m_pStream << "    Draw line with color: " << col.r << ", " << col.g << ", " << col.b << ", " << col.a
-							<< " thickness: " << thickness << " points." << std::endl;
-				*m_pStream << " passing through " << nRects << " rectangles." << std::endl;
+				*m_pStream << "    Draw line from (" << beg.x << ", " << beg.y << ") to (" << end.x << ", " << end.y 
+							<< ") with color : " << col.r << ", " << col.g << ", " << col.b << ", " << col.a
+							<< " and thickness: " << thickness << "." << std::endl;
+				*m_pStream << "    Passing through " << nRects << " rectangles." << std::endl;
 
 				_printRects(*m_pStream, nRects, reinterpret_cast<RectSPX*>(pCoords));
 				pCoords += nRects * 4;

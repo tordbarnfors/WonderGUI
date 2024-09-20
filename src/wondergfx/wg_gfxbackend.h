@@ -59,7 +59,33 @@ namespace wg
 	class GfxBackend : public Object
 	{
 	public:
-		
+
+		struct SessionInfo
+		{
+			// Commands 
+
+			int		nStateChanges;		// Number of times state will change through session.
+			int		nPlots;				// Number of plot commands.
+			int		nLines;				// Number of line commands.
+			int		nFill;
+			int		nBlit;				// Includes Blit, ClipBlit och Tile.
+			int		nBlur;
+			int		nEdgemapDraws;
+
+			// Total content of coord buffers
+
+			int		nPoints;			// Total number of points to be plotted
+			int		nLineCoords;		// Total number of coordinates for line commands (=nLines*2)
+			int		nLineClipRects;		// Total number of clip rectangles for line commands.
+			int		nRects;				// Total number of rects for fill, blit, blur and edgemapDraw commands.
+
+			// Total size of other buffers
+
+			int		nColors;			// Total number of colors to be used through all commands.
+			int		nTransforms;		// Total number of transforms for session.
+			int		nObjects;			// Total number of object references for session.
+		};
+
 		enum class Command
 		{
 			None,
@@ -98,6 +124,9 @@ namespace wg
 		virtual void	beginRender() = 0;
 		virtual void	endRender() = 0;
 		
+		virtual void	beginSession( const SessionInfo * pSession ) = 0;
+		virtual void	endSession() = 0;
+
 		virtual void	setCanvas( Surface * pSurface ) = 0;
 		virtual void	setCanvas( CanvasRef ref ) = 0;
 

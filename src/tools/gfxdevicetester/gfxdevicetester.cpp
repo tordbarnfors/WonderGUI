@@ -9,6 +9,8 @@
 #include <wg_softbackend.h>
 #include <wg_softbackend_kernels.h>
 
+#include <wg_glbackend.h>
+
 #include "testsuites/testsuite.h"
 
 #include "testsuites/a8tests.h"
@@ -70,7 +72,7 @@ bool GfxDeviceTester::init( WonderApp::Visitor * pVisitor )
 {
 	m_pVisitor = pVisitor;
 
-	m_pWindow = pVisitor->createWindow({ .size = {800,700}, .title = "GfxDevice Tester" });
+	m_pWindow = pVisitor->createWindow({ .size = {1332,700}, .title = "GfxDevice Tester" });
 
 	//
     
@@ -186,9 +188,21 @@ void GfxDeviceTester::setup_testdevices()
 	auto pGen2GfxDevice = GfxDeviceGen2::create( pBackendLogger );
 
 	auto pGen2CanvasSurface = SoftSurface::create(canvasBP);
-	auto pGen2SoftDevice = Device::create("Gen2 Software (SoftGfxDevice)", pGen2GfxDevice, CanvasRef::None, pGen2CanvasSurface, this);
+	auto pGen2SoftDevice = Device::create("Gen2 Software (SoftBackend)", pGen2GfxDevice, CanvasRef::None, pGen2CanvasSurface, this);
 
-	g_testdevices.push_back(pGen2SoftDevice);
+//	g_testdevices.push_back(pGen2SoftDevice);
+
+	// Gen2 with GlBackend
+
+	auto pGlBackend = GlBackend::create();
+
+	auto pGen2GlGfxDevice = GfxDeviceGen2::create(pGlBackend);
+
+	auto pGen2GlCanvasSurface = GlSurface::create(canvasBP);
+	auto pGen2GlDevice = Device::create("Gen2 OpenGL (GlBackend)", pGen2GlGfxDevice, CanvasRef::None, pGen2GlCanvasSurface, this);
+
+	g_testdevices.push_back(pGen2GlDevice);
+
 
 
 	// Native
@@ -198,7 +212,7 @@ void GfxDeviceTester::setup_testdevices()
 	
 	auto pNativeDevice = Device::create(nativeDeviceName, pNativeGfxDevice, CanvasRef::None, Base::defaultSurfaceFactory()->createSurface(canvasBP), this );
 	
-//	g_testdevices.push_back(pNativeDevice);
+	g_testdevices.push_back(pNativeDevice);
 	
 	// Linear
 	

@@ -691,6 +691,10 @@ bool GfxDeviceGen2::_beginCanvasUpdate(CanvasRef ref, Surface* pCanvas, int nUpd
 		entry.info.size = pCanvas->pixelSize() * 64;
 	}
 
+	// Clear session info
+
+	memset(&entry.sessionInfo, 0, sizeof(entry.sessionInfo));
+
 	// Fill in update rects.
 
 	if (nUpdateRects > 0)
@@ -880,6 +884,7 @@ void GfxDeviceGen2::clearLayers()
 	after having flattened the layers, this involves:
 
 	* Clearing all buffers (commands, colors, coords, objects and stransforms)
+	* Clear session info
 	* Resetting all layers render states.
 */
 
@@ -889,6 +894,11 @@ void GfxDeviceGen2::_resetCanvas()
 
 	canvasEntry.objects.clear();
 	canvasEntry.transforms.clear();
+
+	// Clear session info
+
+	memset(&canvasEntry.sessionInfo, 0, sizeof(canvasEntry.sessionInfo));
+
 
 	for (int i = 0; i < canvasEntry.layers.size(); i++)
 	{
@@ -985,7 +995,12 @@ void GfxDeviceGen2::_doFlattenLayers()
 		canvasData.pLayerInfo->m_finalizeCanvasFunc(this);
 	}
 
+	// Start backend session
 
+	canvasData.sessionInfo.nObjects = canvasData.objects.size();
+	canvasData.sessionInfo.nTransforms = canvasData.transforms.size();
+
+	m_pBackend->beginSession(&canvasData.sessionInfo);
 
 	// Send transforms and objects to backend
 		
@@ -1089,6 +1104,10 @@ void GfxDeviceGen2::_doFlattenLayers()
 		}
 	}
 	
+	// End backend session
+
+	m_pBackend->endSession();
+
 	// Release objects
 	
 	for (auto pObj : canvasData.objects)
@@ -1096,7 +1115,6 @@ void GfxDeviceGen2::_doFlattenLayers()
 		if( pObj )
 			pObj->release();
 	}
-
 }
 
 //____ fill() _____________________________________________________________
@@ -1135,6 +1153,10 @@ void GfxDeviceGen2::fill(HiColor color)
 		coords.emplace_back(pRect->w);
 		coords.emplace_back(pRect->h);
 	}
+
+	m_pActiveCanvas->sessionInfo.nFill++;
+	m_pActiveCanvas->sessionInfo.nColors++;
+	m_pActiveCanvas->sessionInfo.nRects += m_pActiveClipList->nRects;
 }
 
 //____ fill() _____________________________________________________________
@@ -1186,6 +1208,10 @@ void GfxDeviceGen2::fill(const RectSPX& rect, HiColor color)
 		m_pActiveLayer->commands.push_back(nRects);
 
 		m_pActiveLayer->colors.push_back(color);
+
+		m_pActiveCanvas->sessionInfo.nFill++;
+		m_pActiveCanvas->sessionInfo.nColors++;
+		m_pActiveCanvas->sessionInfo.nRects += nRects;
 	}
 }
 
@@ -1230,6 +1256,10 @@ void GfxDeviceGen2::plotPixels(int nCoords, const CoordSPX* pCoords, const HiCol
 
 		commands.push_back(int(Command::Plot));
 		commands.push_back(nCoordsPassed);						// Space for ammount
+
+		m_pActiveCanvas->sessionInfo.nPlots++;
+		m_pActiveCanvas->sessionInfo.nPoints += nCoordsPassed;
+		m_pActiveCanvas->sessionInfo.nColors += nCoordsPassed;
 	}
 }
 
@@ -1287,24 +1317,32 @@ void GfxDeviceGen2::drawLine(CoordSPX beg, CoordSPX end, HiColor color, spx thic
 	if (color.a == 0 && (m_renderState.blendMode == BlendMode::Blend))
 		return;
 
-
-
-
 	if (m_stateChanges != 0)
 		_encodeStateChanges();
 
 	int nRects = 0;
 
 	auto& commands = m_pActiveLayer->commands;
+	auto& coords = m_pActiveLayer->coords;
+
 	int commandsOfs = (int) commands.size();
-	
-	m_pActiveLayer->commands.push_back(int(Command::Line));
-	m_pActiveLayer->commands.push_back(thickness);
-	m_pActiveLayer->commands.push_back(nRects);
+	int coordsOfs = (int)coords.size();
+
+	const RectSPX* pClipRects = m_pActiveClipList->pRects;
+
+	commands.push_back(int(Command::Line));
+	commands.push_back(thickness);
+	commands.push_back(nRects);
+
+	coords.push_back(beg.x);
+	coords.push_back(beg.y);
+	coords.push_back(end.x);
+	coords.push_back(end.y);
+
 
 	for (int i = 0; i < m_pActiveClipList->nRects; i++)
 	{
-		RectSPX rect = m_pActiveClipList->pRects[i];
+		RectSPX rect = pClipRects[i];
 		rect.x -= (thickness/2)+1;
 		rect.y -= (thickness/2)+1;
 		rect.w += thickness+1;
@@ -1312,10 +1350,10 @@ void GfxDeviceGen2::drawLine(CoordSPX beg, CoordSPX end, HiColor color, spx thic
 
 		if ( rect.intersectsWithOrContains(beg,end, 8) );
 		{
-			commands.push_back(m_pActiveClipList->pRects[i].x);
-			commands.push_back(m_pActiveClipList->pRects[i].y);
-			commands.push_back(m_pActiveClipList->pRects[i].w);
-			commands.push_back(m_pActiveClipList->pRects[i].h);
+			coords.push_back(pClipRects[i].x);
+			coords.push_back(pClipRects[i].y);
+			coords.push_back(pClipRects[i].w);
+			coords.push_back(pClipRects[i].h);
 
 			nRects++;
 			break;
@@ -1325,17 +1363,16 @@ void GfxDeviceGen2::drawLine(CoordSPX beg, CoordSPX end, HiColor color, spx thic
 	if (nRects > 0)
 	{
 		commands[commandsOfs + 2] = nRects;
-
-		m_pActiveLayer->coords.push_back(beg.x);
-		m_pActiveLayer->coords.push_back(beg.y);
-		m_pActiveLayer->coords.push_back(end.x);
-		m_pActiveLayer->coords.push_back(end.y);
-
 		m_pActiveLayer->colors.push_back(color);
+
+		m_pActiveCanvas->sessionInfo.nLines++;
+		m_pActiveCanvas->sessionInfo.nLineCoords++;
+		m_pActiveCanvas->sessionInfo.nLineClipRects += nRects;
 	}
 	else
 	{
 		commands.resize(commandsOfs);
+		coords.resize(coordsOfs);
 	}
 }
 
@@ -2231,6 +2268,10 @@ void GfxDeviceGen2::flipDrawEdgemap(CoordSPX dest, Edgemap* pEdgemap, GfxFlip fl
 
 		m_pActiveCanvas->objects.push_back(pEdgemap);
 		pEdgemap->retain();
+
+		m_pActiveCanvas->sessionInfo.nEdgemapDraws++;
+		m_pActiveCanvas->sessionInfo.nObjects++;
+		m_pActiveCanvas->sessionInfo.nRects++;
 	}
 }
 
@@ -3026,6 +3067,13 @@ void GfxDeviceGen2::_transformBlitSimple(const RectSPX& _dest, CoordSPX src, int
 		m_pActiveLayer->commands.push_back( align(src.y)*16 );
 		m_pActiveLayer->commands.push_back( dest.x );
 		m_pActiveLayer->commands.push_back( dest.y );
+
+		if (cmd == Command::Blur)
+			m_pActiveCanvas->sessionInfo.nBlur++;
+		else
+			m_pActiveCanvas->sessionInfo.nBlit++;
+
+		m_pActiveCanvas->sessionInfo.nRects += nRects;
 	}
 }
 
@@ -3077,6 +3125,13 @@ void GfxDeviceGen2::_transformBlitComplex(const RectSPX& _dest, CoordI src, cons
 		m_pActiveLayer->commands.push_back(src.y);
 		m_pActiveLayer->commands.push_back(dest.x);
 		m_pActiveLayer->commands.push_back(dest.y);
+
+		if (cmd == Command::Blur)
+			m_pActiveCanvas->sessionInfo.nBlur++;
+		else
+			m_pActiveCanvas->sessionInfo.nBlit++;
+
+		m_pActiveCanvas->sessionInfo.nRects += nRects;
 	}
 }
 
@@ -3184,6 +3239,8 @@ void GfxDeviceGen2::_encodeStateChanges()
 				encodedState.tintColor = newState.tintColor;
 
 				statesChanged |= int(StateChange::TintColor);
+
+				m_pActiveCanvas->sessionInfo.nColors++;
 			}
 		}
 	}
@@ -3205,6 +3262,8 @@ void GfxDeviceGen2::_encodeStateChanges()
 			colorBuffer.push_back(newState.fixedBlendColor);
 			encodedState.fixedBlendColor = newState.fixedBlendColor;
 			statesChanged |= int(StateChange::FixedBlendColor);
+
+			m_pActiveCanvas->sessionInfo.nColors++;
 		}
 
 	}
@@ -3231,9 +3290,14 @@ void GfxDeviceGen2::_encodeStateChanges()
 	if (statesChanged == 0)
 		cmdBuffer.resize(commandOfs);
 	else
+	{
 		cmdBuffer[commandOfs + 1] = statesChanged;
 
+		m_pActiveCanvas->sessionInfo.nStateChanges++;
+	}
+
 	m_stateChanges = 0;
+
 }
 
 

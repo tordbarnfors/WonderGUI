@@ -33,9 +33,9 @@ target_working_directory(gfxworkbench-gen2 ${WG_ROOT})
 
 target_link_libraries(gfxworkbench-gen2 PRIVATE
 	wgsoftgfx
-	wgopenglgfx
 	wggfxstream
 	wondergui 
+	wgopenglgfx
 	wgfreetypefont
 	${SDL2_LIBS}
 	${SDL2IMAGE_LIBS}

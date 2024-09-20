@@ -218,6 +218,21 @@ namespace wg
 		}
 	}
 
+	//____ _beginSession() _______________________________________________________
+
+	void SoftBackend::beginSession(const SessionInfo* pSession)
+	{
+
+	}
+
+	//____ _endSession() _______________________________________________________
+
+	void SoftBackend::endSession()
+	{
+
+	}
+
+
 	//____ setCanvas() _____________________________________________
 
 	void SoftBackend::setCanvas(CanvasRef ref)
@@ -659,8 +674,8 @@ namespace wg
 
 				HiColor color = *pColors++;
 
-				const RectSPX * pClipRects = reinterpret_cast<const RectSPX*>(p);
-				p += 4 * nClipRects;
+				const RectSPX * pClipRects = reinterpret_cast<const RectSPX*>(pCoords);
+				pCoords += 4 * nClipRects;
 
 
 				//TODO: Proper 26:6 support
@@ -1591,7 +1606,7 @@ namespace wg
 
 	int SoftBackend::maxEdges() const
 	{
-		return c_maxSegments;
+		return c_maxSegments-1;
 	}
 
 	//____ surfaceType() ______________________________________________________

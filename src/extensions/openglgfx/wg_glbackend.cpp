@@ -1,0 +1,1672 @@
+/*=========================================================================
+
+						 >>> WonderGUI <<<
+
+  This file is part of Tord Jansson's WonderGUI Graphics Toolkit
+  and copyright (c) Tord Jansson, Sweden [tord.jansson@gmail.com].
+
+							-----------
+
+  The WonderGUI Graphics Toolkit is free software; you can redistribute
+  this file and/or modify it under the terms of the GNU General Public
+  License as published by the Free Software Foundation; either
+  version 2 of the License, or (at your option) any later version.
+
+							-----------
+
+  The WonderGUI Graphics Toolkit is also available for use in commercial
+  closed-source projects under a separate license. Interested parties
+  should contact Tord Jansson [tord.jansson@gmail.com] for details.
+
+=========================================================================*/
+
+#include <cmath>
+#include <cstdlib>
+#include <cstdio>
+#include <cstring>
+
+#include <wg_glbackend.h>
+#include <wg_glsurface.h>
+#include <wg_glsurfacefactory.h>
+#include <wg_gledgemap.h>
+#include <wg_gledgemapfactory.h>
+#include <wg_gfxbase.h>
+#include <wg_gfxutil.h>
+
+using namespace std;
+using namespace wg::Util;
+
+namespace wg
+{
+const TypeInfo GlBackend::TYPEINFO = { "GlBackend", &GfxBackend::TYPEINFO };
+
+Blob_p			GlBackend::s_pShaderPrograms = nullptr;
+
+
+#define LOG_GLERROR(check) { GLenum err = check; if(err != 0) onGlError(err, this, &TYPEINFO, __func__, __FILE__, __LINE__ ); }
+
+#define LOG_INIT_GLERROR(check) { GLenum err = check; if(err != 0) { onGlError(err, this, &TYPEINFO, __func__, __FILE__, __LINE__ ); m_bFullyInitialized = false; } }
+
+
+//____ onGlError() _______________________________________________________________
+
+void GlBackend::onGlError(GLenum errorCode, const Object * pObject, const TypeInfo* pClassType, const char * func, const char * file, int line)
+{
+	char	buffer[1024];
+
+	const char * pErrorName;
+
+	switch( errorCode )
+	{
+		case GL_NO_ERROR:
+			pErrorName = "GL_NO_ERROR";
+			break;
+
+		case GL_INVALID_ENUM:
+			pErrorName = "GL_INVALID_ENUM";
+			break;
+
+		case GL_INVALID_VALUE:
+			pErrorName = "GL_INVALID_VALUE";
+			break;
+
+		case GL_INVALID_OPERATION:
+			pErrorName = "GL_INVALID_OPERATION";
+			break;
+
+		case GL_INVALID_FRAMEBUFFER_OPERATION:
+			pErrorName = "GL_INVALID_FRAMEBUFFER_OPERATION";
+			break;
+
+		case GL_OUT_OF_MEMORY:
+			pErrorName = "GL_OUT_OF_MEMORY";
+			break;
+/*
+		case GL_STACK_UNDERFLOW:
+			pErrorName = "GL_STACK_UNDERFLOW";
+			break;
+
+		case GL_STACK_OVERFLOW:
+			pErrorName = "GL_STACK_OVERFLOW";
+			break;
+*/
+		default:
+			pErrorName = "UNKNOWN GL ERROR! (should not happen)";
+			break;
+	}
+
+
+	snprintf( buffer, 1024, "OpenGL error 0x%x: %s", errorCode, pErrorName );
+	GfxBase::throwError(ErrorLevel::SilentError, ErrorCode::OpenGL, buffer, pObject, pClassType, func, file, line);
+}
+
+
+//____ create() _______________________________________________________________
+
+GlBackend_p GlBackend::create( int uboBindingPoint)
+{
+	GlBackend_p p(new GlBackend( uboBindingPoint ));
+
+	if( !p->m_bFullyInitialized )
+		return GlBackend_p(nullptr);
+
+	return p;
+}
+
+//____ setCanvas() _________________________________________________________
+
+void GlBackend::setCanvas(CanvasRef ref)
+{
+	if (ref == CanvasRef::Default)
+	{
+		m_pCommandQueue[m_commandQueueSize++] = (int)Command::None;
+		m_canvases.push_back(nullptr);
+	}
+	else
+	{
+		//TODO: Error handling!
+	}
+}
+
+void GlBackend::setCanvas(Surface* pSurface)
+{
+	m_pCommandQueue[m_commandQueueSize++] = (int) Command::None;
+	m_canvases.push_back(pSurface);
+}
+
+
+void GlBackend::_setCanvas(Surface* pSurface)
+{
+	GlSurface* pCanvas = static_cast<GlSurface*>(pSurface);
+
+	LOG_GLERROR(glGetError());
+
+	bool bWasAlphaOnly = m_bActiveCanvasIsA8;
+
+	SizeI size;
+
+	if (pCanvas)
+	{
+		size = pCanvas->pixelSize();
+
+		glEnable(GL_FRAMEBUFFER_SRGB);		// Always use SRGB on Canvas that is SRGB.
+
+		glBindFramebuffer(GL_FRAMEBUFFER, m_framebufferId);
+		glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, pCanvas->getTexture(), 0);
+
+		GLenum drawBuffers[1] = { GL_COLOR_ATTACHMENT0 };
+		glDrawBuffers(1, drawBuffers);
+
+		if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+		{
+			glBindFramebuffer(GL_FRAMEBUFFER, 0);
+			m_pActiveCanvas = nullptr;
+			m_activeCanvasSize = { size.w, size.h };
+			m_bMipmappedActiveCanvas = false;
+
+			//TODO: Signal error that we could not set the specified canvas.
+
+			return;
+		}
+	}
+	else
+	{
+		size = m_defaultCanvasSize;
+
+		if (GfxBase::defaultToSRGB())
+			glEnable(GL_FRAMEBUFFER_SRGB);
+		else
+			glDisable(GL_FRAMEBUFFER_SRGB);
+
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	}
+
+	glViewport(0, 0, size.w, size.h);
+	glScissor(0, 0, size.w, size.h);
+
+
+	// Updating canvas info for our shaders
+
+	m_canvasUBO.width = size.w;
+	m_canvasUBO.height = size.h;
+	m_canvasUBO.yOfs = pCanvas ? 0 : size.h;
+	m_canvasUBO.yMul = pCanvas ? 1 : -1;
+
+	glBindBuffer(GL_UNIFORM_BUFFER, m_canvasUBOId);
+	int b = true; // bools in GLSL are represented as 4 bytes, so we store it in an integer
+	glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(CanvasUBO), &m_canvasUBO);
+	glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
+	LOG_GLERROR(glGetError());
+
+	m_pActiveCanvas = pCanvas;
+	m_activeCanvasSize = { size.w, size.h };
+	m_bMipmappedActiveCanvas = m_pActiveCanvas ? m_pActiveCanvas->m_bMipmapped : false;
+
+	m_bActiveCanvasIsA8 = m_pActiveCanvas ? m_pActiveCanvas->pixelFormat() == PixelFormat::Alpha_8 : false;
+
+	if (m_bActiveCanvasIsA8 != bWasAlphaOnly)
+		_setBlendMode(m_activeBlendMode);
+}
+
+//____ setObjects() ________________________________________________________
+
+void GlBackend::setObjects(Object** pBeg, Object** pEnd)
+{
+	m_pObjectsBeg = pBeg;
+	m_pObjectsEnd = pEnd;
+}
+
+//____ setCoords() _________________________________________________________
+
+void GlBackend::setCoords(spx* pBeg, spx* pEnd)
+{
+	m_pCoordsBeg = pBeg;
+	m_pCoordsEnd = pEnd;
+	m_pCoordsPtr = pBeg;
+}
+
+//____ setColors() _________________________________________________________
+
+void GlBackend::setColors(HiColor* pBeg, HiColor* pEnd)
+{
+	m_pColorsBeg = pBeg;
+	m_pColorsEnd = pEnd;
+	m_pColorsPtr = pBeg;
+}
+
+//____ setTransforms() _____________________________________________________
+
+void GlBackend::setTransforms(Transform* pBeg, Transform* pEnd)
+{
+	m_pTransformsBeg = pBeg;
+	m_pTransformsEnd = pEnd;
+
+}
+
+//____ processCommands() _________________________________________________
+
+void GlBackend::processCommands(int32_t* pBeg, int32_t* pEnd)
+{
+	spx* pCoords = m_pCoordsPtr;
+	HiColor* pColors = m_pColorsPtr;
+
+	VertexGL *	pVertexGL	= m_pVertexBuffer + m_nVertices;
+	ColorGL*	pColorGL	= m_pColorBuffer + m_nColors;
+	int*		pCommandGL	= m_pCommandQueue + m_commandQueueSize;
+
+	auto p = pBeg;
+	while (p < pEnd)
+	{
+		auto cmd = Command(*p++);
+		switch (cmd)
+		{
+		case Command::None:
+			break;
+
+		case Command::StateChange:
+		{
+			int32_t statesChanged = *p++;
+
+			if (statesChanged & uint8_t(StateChange::BlitSource))
+			{
+				int32_t objectOfs = *p++;
+
+				auto pBlitSource = static_cast<GlSurface*>(m_pObjectsBeg[objectOfs]);
+
+			}
+
+			if (statesChanged & uint8_t(StateChange::BlendMode))
+			{
+				BlendMode blendMode = (BlendMode)*p++;
+			}
+
+			if (statesChanged & uint8_t(StateChange::TintColor))
+			{
+				HiColor tintColor = *pColors++;
+
+				if (tintColor == HiColor::White || tintColor == HiColor::Undefined)
+				{
+					m_tintColorOfs = -1;
+				}
+				else
+				{
+					m_tintColorOfs = pColorGL - m_pColorBuffer;
+
+					pColorGL->r = tintColor.r / 4096.f;
+					pColorGL->g = tintColor.g / 4096.f;
+					pColorGL->b = tintColor.b / 4096.f;
+					pColorGL->a = tintColor.a / 4096.f;
+					pColorGL++;
+				}
+			}
+
+			if (statesChanged & uint8_t(StateChange::TintMap))
+			{
+				int32_t objectOfs = *p++;
+				int32_t	x = *p++ / 64;
+				int32_t	y = *p++ / 64;
+				int32_t	w = *p++ / 64;
+				int32_t	h = *p++ / 64;
+
+
+//				m_colTrans.tintRect = RectI(x, y, w, h);
+
+				auto pTintmap = static_cast<Tintmap*>(m_pObjectsBeg[objectOfs]);
+
+				m_tintColorOfs = -1;
+
+			}
+
+			if (statesChanged & uint8_t(StateChange::MorphFactor))
+			{
+				int morphFactor = *p++;
+			}
+
+			if (statesChanged & uint8_t(StateChange::FixedBlendColor))
+			{
+				HiColor fixedBlendColor = *pColors++;
+			}
+
+			if (statesChanged & uint8_t(StateChange::Blur))
+			{
+				int32_t objectOfs = *p++;
+
+				auto pBlurbrush = static_cast<Blurbrush*>(m_pObjectsBeg[objectOfs]);
+			}
+
+			break;
+		}
+		case Command::Fill:
+		{
+			int32_t nRects = *p++;
+
+			HiColor& col = *pColors++;
+
+			// Add rects to vertex buffer
+
+			for (int i = 0; i < nRects; i++)
+			{
+				int	dx1 = (* pCoords++) >> 6;
+				int	dy1 = (*pCoords++) >> 6;
+				int dx2 = dx1 + ((*pCoords++) >> 6);
+				int dy2 = dy1 + ((*pCoords++) >> 6);
+
+				pVertexGL->coord.x = dx1;
+				pVertexGL->coord.y = dy1;
+				pVertexGL->colorsOfs = pColorGL - m_pColorBuffer;
+				pVertexGL->extrasOfs = 0;
+				pVertexGL->tintmapOfs = { 0.5,0.5 };
+				pVertexGL++;
+
+				pVertexGL->coord.x = dx2;
+				pVertexGL->coord.y = dy1;
+				pVertexGL->colorsOfs = pColorGL - m_pColorBuffer;
+				pVertexGL->extrasOfs = 0;
+				pVertexGL->tintmapOfs = { 0.5,0.5 };
+				pVertexGL++;
+
+				pVertexGL->coord.x = dx2;
+				pVertexGL->coord.y = dy2;
+				pVertexGL->colorsOfs = pColorGL - m_pColorBuffer;
+				pVertexGL->extrasOfs = 0;
+				pVertexGL->tintmapOfs = { 0.5,0.5 };
+				pVertexGL++;
+
+				pVertexGL->coord.x = dx1;
+				pVertexGL->coord.y = dy1;
+				pVertexGL->colorsOfs = pColorGL - m_pColorBuffer;
+				pVertexGL->extrasOfs = 0;
+				pVertexGL->tintmapOfs = { 0.5,0.5 };
+				pVertexGL++;
+
+				pVertexGL->coord.x = dx2;
+				pVertexGL->coord.y = dy2;
+				pVertexGL->colorsOfs = pColorGL - m_pColorBuffer;
+				pVertexGL->extrasOfs = 0;
+				pVertexGL->tintmapOfs = { 0.5,0.5 };
+				pVertexGL++;
+
+				pVertexGL->coord.x = dx1;
+				pVertexGL->coord.y = dy2;
+				pVertexGL->colorsOfs = pColorGL - m_pColorBuffer;
+				pVertexGL->extrasOfs = 0;
+				pVertexGL->tintmapOfs = { 0.5,0.5 };
+				pVertexGL++;
+			}
+
+			// Add colors to buffer
+
+			if (m_tintColorOfs >= 0)
+			{
+				ColorGL& tint = m_pColorBuffer[m_tintColorOfs];
+
+				pColorGL->r = (col.r / 4096.f) * tint.r;
+				pColorGL->g = (col.g / 4096.f) * tint.g;
+				pColorGL->b = (col.b / 4096.f) * tint.b;
+				pColorGL->a = (col.a / 4096.f) * tint.a;
+
+			}
+			else
+			{
+				pColorGL->r = col.r / 4096.f;
+				pColorGL->g = col.g / 4096.f;
+				pColorGL->b = col.b / 4096.f;
+				pColorGL->a = col.a / 4096.f;
+			}
+
+			pColorGL++;
+
+			// Store command
+
+			* pCommandGL++ = (int) Command::Fill;
+			* pCommandGL++ = nRects * 6;
+
+			break;
+		}
+
+		case Command::Plot:
+		{
+			int nCoords = *p++;
+
+			pCoords += nCoords;
+			pColors += nCoords;
+			break;
+		}
+
+		case Command::Line:
+		{
+			spx thickness = *p++;
+			int32_t nClipRects = *p++;
+
+			CoordSPX beg = { *pCoords++, *pCoords++ };
+			CoordSPX end = { *pCoords++, *pCoords++ };
+
+			HiColor color = *pColors++;
+
+			const RectSPX* pClipRects = reinterpret_cast<const RectSPX*>(pCoords);
+			pCoords += 4 * nClipRects;
+
+
+
+			break;
+		}
+
+		case Command::DrawEdgemap:
+		{
+			int32_t objectOfs = *p++;
+			auto pEdgemap = static_cast<GlEdgemap*>(m_pObjectsBeg[objectOfs]);
+
+			int32_t	destX = *p++;
+			int32_t	destY = *p++;
+
+			int32_t	flip = *p++;
+
+			int32_t nRects = *p++;
+			RectSPX* pRects = reinterpret_cast<RectSPX*>(pCoords);
+
+			pCoords += nRects * 4;
+			break;
+		}
+
+		case Command::Blur:
+		case Command::Blit:
+		case Command::ClipBlit:
+		case Command::Tile:
+		{
+			int32_t nRects = *p++;
+			int32_t transform = *p++;
+
+			int srcX = *p++;
+			int srcY = *p++;
+			spx dstX = *p++;
+			spx dstY = *p++;
+
+			pCoords += nRects * 4;
+
+			break;
+		}
+
+		default:
+			break;
+		} 
+	} 
+
+	// Save progress.
+
+	m_pCoordsPtr = pCoords;
+	m_pColorsPtr = pColors;
+
+	m_nVertices			= pVertexGL - m_pVertexBuffer;
+	m_nColors			= pColorGL	- m_pColorBuffer;
+	m_commandQueueSize	= pCommandGL- m_pCommandQueue;
+}
+
+
+//____ _setDrawUniforms() __________________________________________________
+
+void GlBackend::_setDrawUniforms(GLuint progId, int uboBindingPoint)
+{
+	LOG_GLERROR(glGetError());
+
+	GLint colorBufferIdLoc = glGetUniformLocation(progId, "colorBufferId");
+
+	LOG_GLERROR(glGetError());
+
+	if (colorBufferIdLoc != -1)
+	{
+		glUseProgram(progId);
+		glUniform1i(colorBufferIdLoc, 1);		// Needs to be set. Texture unit 1 is used for color buffer.
+	}
+
+	LOG_GLERROR(glGetError());
+
+	GLuint canvasIndex = glGetUniformBlockIndex(progId, "Canvas");
+
+	if( canvasIndex != GL_INVALID_INDEX)
+		glUniformBlockBinding(progId, canvasIndex, 0);
+
+	LOG_GLERROR(glGetError());
+}
+
+//____ _setBlitUniforms() __________________________________________________
+
+void GlBackend::_setBlitUniforms(GLuint progId, int uboBindingPoint)
+{
+	GLint extrasIdLoc = glGetUniformLocation(progId, "extrasId");
+	GLint texIdLoc = glGetUniformLocation(progId, "texId");
+
+	glUseProgram(progId);
+	glUniform1i(extrasIdLoc, 1);		// Needs to be set. Texture unit 1 is used for extras buffer.
+	glUniform1i(texIdLoc, 0);			// Needs to be set. Texture unit 0 is used for textures.
+}
+
+//____ _setPaletteBlitUniforms() __________________________________________________
+
+void GlBackend::_setPaletteBlitUniforms(GLuint progId, int uboBindingPoint)
+{
+	GLint extrasIdLoc = glGetUniformLocation(progId, "extrasId");
+	GLint texIdLoc = glGetUniformLocation(progId, "texId");
+	GLint paletteIdLoc = glGetUniformLocation(progId, "paletteId");
+
+	glUseProgram(progId);
+	glUniform1i(texIdLoc, 0);			// Needs to be set. Texture unit 0 is used for textures.
+	glUniform1i(extrasIdLoc, 1);		// Needs to be set. Texture unit 1 is used for extras buffer.
+	glUniform1i(paletteIdLoc, 2);			// Needs to be set. Texture unit 2 is used for palette.
+}
+
+//____ constructor _____________________________________________________________________
+
+GlBackend::GlBackend( int uboBindingPoint )
+{
+	// Get version number, set flags
+
+	GLint major, minor;
+	glGetIntegerv(GL_MAJOR_VERSION, &major);
+	glGetIntegerv(GL_MINOR_VERSION, &minor);
+
+	if((major == 4 && minor >= 1) || major > 4)
+	{
+		GLint formats = 0;
+		glGetIntegerv(GL_NUM_PROGRAM_BINARY_FORMATS, &formats);
+		m_bProgramBinariesSupported = (formats >= 1);
+	}
+		
+	//
+
+	m_bFullyInitialized = true;
+
+	_initTables();
+
+	_loadPrograms(uboBindingPoint);
+
+	if (!s_pShaderPrograms && m_bProgramBinariesSupported)
+		s_pShaderPrograms = _generateProgramBlob();
+
+
+	// Fill in our m_blitProgMatrix
+
+
+	for (int i = 0; i < PixelFormat_size; i++)
+	{
+		for (int j = 0; j < 2; j++)
+		{
+			m_blitProgMatrix[i][0][0][j] = m_blitProg[j];
+			m_blitProgMatrix[i][1][0][j] = m_blitProg[j];
+			m_blitProgMatrix[i][0][1][j] = m_blitGradientProg[j];
+			m_blitProgMatrix[i][1][1][j] = m_blitGradientProg[j];
+		}
+	}
+
+
+	m_blitProgMatrix[(int)PixelFormat::Alpha_8][0][0][0] = m_alphaBlitProg[0];
+	m_blitProgMatrix[(int)PixelFormat::Alpha_8][1][0][0] = m_alphaBlitProg[0];
+
+	m_blitProgMatrix[(int)PixelFormat::Alpha_8][0][1][0] = m_alphaBlitGradientProg[0];
+	m_blitProgMatrix[(int)PixelFormat::Alpha_8][1][1][0] = m_alphaBlitGradientProg[0];
+
+	m_blitProgMatrix[(int)PixelFormat::Index_8_linear][0][0][0] = m_paletteBlitNearestProg[0];
+	m_blitProgMatrix[(int)PixelFormat::Index_8_linear][1][0][0] = m_paletteBlitInterpolateProg[0];
+
+	m_blitProgMatrix[(int)PixelFormat::Index_8_linear][0][1][0] = m_paletteBlitNearestGradientProg[0];
+	m_blitProgMatrix[(int)PixelFormat::Index_8_linear][1][1][0] = m_paletteBlitInterpolateGradientProg[0];
+
+	m_blitProgMatrix[(int)PixelFormat::Index_8_sRGB][0][0][0] = m_paletteBlitNearestProg[0];
+	m_blitProgMatrix[(int)PixelFormat::Index_8_sRGB][1][0][0] = m_paletteBlitInterpolateProg[0];
+
+	m_blitProgMatrix[(int)PixelFormat::Index_8_sRGB][0][1][0] = m_paletteBlitNearestGradientProg[0];
+	m_blitProgMatrix[(int)PixelFormat::Index_8_sRGB][1][1][0] = m_paletteBlitInterpolateGradientProg[0];
+
+
+	m_blitProgMatrix[(int)PixelFormat::Alpha_8][0][0][1] = m_alphaBlitProg[1];
+	m_blitProgMatrix[(int)PixelFormat::Alpha_8][1][0][1] = m_alphaBlitProg[1];
+
+	m_blitProgMatrix[(int)PixelFormat::Alpha_8][0][1][1] = m_alphaBlitGradientProg[1];
+	m_blitProgMatrix[(int)PixelFormat::Alpha_8][1][1][1] = m_alphaBlitGradientProg[1];
+
+	m_blitProgMatrix[(int)PixelFormat::Index_8_linear][0][0][1] = m_paletteBlitNearestProg[1];
+	m_blitProgMatrix[(int)PixelFormat::Index_8_linear][1][0][1] = m_paletteBlitInterpolateProg[1];
+
+	m_blitProgMatrix[(int)PixelFormat::Index_8_linear][0][1][1] = m_paletteBlitNearestGradientProg[1];
+	m_blitProgMatrix[(int)PixelFormat::Index_8_linear][1][1][1] = m_paletteBlitInterpolateGradientProg[1];
+
+	m_blitProgMatrix[(int)PixelFormat::Index_8_sRGB][0][0][1] = m_paletteBlitNearestProg[1];
+	m_blitProgMatrix[(int)PixelFormat::Index_8_sRGB][1][0][1] = m_paletteBlitInterpolateProg[1];
+
+	m_blitProgMatrix[(int)PixelFormat::Index_8_sRGB][0][1][1] = m_paletteBlitNearestGradientProg[1];
+	m_blitProgMatrix[(int)PixelFormat::Index_8_sRGB][1][1][1] = m_paletteBlitInterpolateGradientProg[1];
+
+	LOG_INIT_GLERROR(glGetError());
+
+	// Create texture for segment colors
+
+	for (int seg = 0; seg < c_maxSegments; seg++)
+	{
+		for (int i = 0; i < 16 * 2 * 2 * 4; i++)
+		{
+			m_segmentsTintTexMap[seg][i] = 65535;
+		}
+	}
+
+
+	glGenTextures(1, &m_segmentsTintTexId);
+	glBindTexture(GL_TEXTURE_2D, m_segmentsTintTexId);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
+
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 2 * c_maxSegments, 2 * c_segmentsTintTexMapSize, 0, GL_BGRA, GL_UNSIGNED_SHORT, nullptr);
+
+	// Create the buffers we need for FrameBuffer and Vertices
+
+	glGenFramebuffers(1, &m_framebufferId);
+
+	glGenBuffers(1, &m_vertexBufferId);
+	glBindBuffer(GL_ARRAY_BUFFER, m_vertexBufferId);
+
+	// Create and initialize our VertexArray
+
+	glGenVertexArrays(1, &m_vertexArrayId);
+	glBindVertexArray(m_vertexArrayId);
+
+	glVertexAttribIPointer(		// Attribute: Coord
+		0,						// attribute number, must match the layout in the shader.
+		2,						// size
+		GL_INT,					// type
+		sizeof(VertexGL),		// stride
+		(void*)0				// array buffer offset
+	);
+
+	glVertexAttribPointer(		// Attribute: uv
+		1,						// attribute number, must match the layout in the shader.
+		2,						// size
+		GL_FLOAT,				// type
+		GL_TRUE,				// normalized?
+		sizeof(VertexGL),		// stride
+		(void*)(sizeof(CoordI))  // array buffer offset
+	);
+
+	glVertexAttribIPointer(		// Attribute: colorOfs
+		2,						// attribute number, must match the layout in the shader.
+		1,						// size
+		GL_INT,					// type
+		sizeof(VertexGL),			// stride
+		(void*)(sizeof(CoordI) + sizeof(CoordF))  // array buffer offset
+	);
+
+	glVertexAttribIPointer(		// Attribute: extrasOfs
+		3,						// attribute number, must match the layout in the shader.
+		1,						// size
+		GL_INT,					// type
+		sizeof(VertexGL),			// stride
+		(void*)(sizeof(CoordI) + sizeof(CoordF) + sizeof(int))  // array buffer offset
+	);
+
+	glVertexAttribPointer(		// Attribute: tintmapOfs
+		4,						// attribute number, must match the layout in the shader.
+		2,						// size
+		GL_FLOAT,				// type
+		GL_TRUE,				// normalized?
+		sizeof(VertexGL),			// stride
+		(void*)(sizeof(CoordI) + sizeof(CoordF) + sizeof(int)*2)  // array buffer offset
+	);
+
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+	LOG_INIT_GLERROR(glGetError());
+
+	// Create a buffer for our CanvasUBO
+
+	glGenBuffers(1, &m_canvasUBOId);
+	glBindBuffer(GL_UNIFORM_BUFFER, m_canvasUBOId);
+	glBufferData(GL_UNIFORM_BUFFER, sizeof(CanvasUBO), NULL, GL_STATIC_DRAW); 
+	glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
+	glBindBufferBase(GL_UNIFORM_BUFFER, 0, m_canvasUBOId);
+
+	LOG_INIT_GLERROR(glGetError());
+
+	// Create a TextureBufferObject for providing extra data to our shaders
+
+//		glGenBuffers(1, &m_extrasBufferId);
+//		glBindBuffer(GL_TEXTURE_BUFFER, m_extrasBufferId);
+//		glBufferData(GL_TEXTURE_BUFFER, c_extrasBufferSize * sizeof(GLfloat), NULL, GL_DYNAMIC_DRAW);
+
+	LOG_INIT_GLERROR(glGetError());
+
+//		glGenTextures(1, &m_extrasBufferTex);
+//		glActiveTexture(GL_TEXTURE1);
+//		glBindTexture(GL_TEXTURE_BUFFER, m_extrasBufferTex);
+//		glTexBuffer(GL_TEXTURE_BUFFER, GL_RGBA32F, m_extrasBufferId);
+//		glActiveTexture(GL_TEXTURE0);
+
+	LOG_INIT_GLERROR(glGetError());
+
+	glGenBuffers(1, &m_colorBufferId);
+	glBindBuffer(GL_TEXTURE_BUFFER, m_colorBufferId);
+//	glBufferData(GL_TEXTURE_BUFFER, 1024 * sizeof(GLfloat), NULL, GL_DYNAMIC_DRAW);
+
+	LOG_INIT_GLERROR(glGetError());
+
+	glGenTextures(1, &m_colorBufferTex);
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_BUFFER, m_colorBufferTex);
+	glTexBuffer(GL_TEXTURE_BUFFER, GL_RGBA32F, m_colorBufferId);
+	glActiveTexture(GL_TEXTURE0);
+
+
+
+	LOG_INIT_GLERROR(glGetError());
+}
+
+//____ Destructor ______________________________________________________________
+
+GlBackend::~GlBackend()
+{
+	LOG_GLERROR(glGetError());
+
+	glDeleteProgram(m_fillProg[0]);
+	glDeleteProgram(m_fillProg[1]);
+	glDeleteProgram(m_fillGradientProg[0]);
+	glDeleteProgram(m_fillGradientProg[1]);
+	glDeleteProgram(m_aaFillProg[0]);
+	glDeleteProgram(m_aaFillProg[1]);
+	glDeleteProgram(m_aaFillGradientProg[0]);
+	glDeleteProgram(m_aaFillGradientProg[1]);
+
+	glDeleteProgram(m_blurProg[0]);
+	glDeleteProgram(m_blurProg[1]);
+
+	glDeleteProgram(m_blitProg[0]);
+	glDeleteProgram(m_blitProg[1]);
+	glDeleteProgram(m_blitGradientProg[0]);
+	glDeleteProgram(m_blitGradientProg[1]);
+	glDeleteProgram(m_alphaBlitProg[0]);
+	glDeleteProgram(m_alphaBlitProg[1]);
+	glDeleteProgram(m_alphaBlitGradientProg[0]);
+	glDeleteProgram(m_alphaBlitGradientProg[1]);
+	glDeleteProgram(m_paletteBlitNearestProg[0]);
+	glDeleteProgram(m_paletteBlitNearestProg[1]);
+	glDeleteProgram(m_paletteBlitNearestGradientProg[0]);
+	glDeleteProgram(m_paletteBlitNearestGradientProg[1]);
+	glDeleteProgram(m_paletteBlitInterpolateProg[0]);
+	glDeleteProgram(m_paletteBlitInterpolateProg[1]);
+	glDeleteProgram(m_paletteBlitInterpolateGradientProg[0]);
+	glDeleteProgram(m_paletteBlitInterpolateGradientProg[1]);
+
+	glDeleteProgram(m_plotProg[0]);
+	glDeleteProgram(m_plotProg[1]);
+	glDeleteProgram(m_lineFromToProg[0]);
+	glDeleteProgram(m_lineFromToProg[1]);
+
+	for (int i = 1; i < c_maxSegments; i++)
+	{
+		glDeleteProgram(m_segmentsProg[i][0][0]);
+		glDeleteProgram(m_segmentsProg[i][0][1]);
+		glDeleteProgram(m_segmentsProg[i][1][0]);
+		glDeleteProgram(m_segmentsProg[i][1][1]);
+	}
+
+	glDeleteFramebuffers(1, &m_framebufferId);
+//		glDeleteTextures(1, &m_extrasBufferTex);
+	glDeleteTextures(1, &m_segmentsTintTexId);
+
+	glDeleteBuffers(1, &m_vertexBufferId);
+//		glDeleteBuffers(1, &m_extrasBufferId);
+
+	glDeleteVertexArrays(1, &m_vertexArrayId);
+
+	if( m_idleSync != 0 )
+		glDeleteSync(m_idleSync);
+
+	LOG_GLERROR(glGetError());
+}
+
+//____ typeInfo() _________________________________________________________
+
+const TypeInfo& GlBackend::typeInfo(void) const
+{
+	return TYPEINFO;
+}
+
+//____ surfaceType() _______________________________________________________
+
+const TypeInfo& GlBackend::surfaceType( void ) const
+{
+	return GlSurface::TYPEINFO;
+}
+
+//____ maxEdges() _____________________________________________
+
+int GlBackend::maxEdges() const
+{
+	return c_maxSegments - 1;
+}
+
+//____ surfaceFactory() ______________________________________________________
+
+SurfaceFactory_p GlBackend::surfaceFactory()
+{
+	if( !m_pSurfaceFactory )
+		m_pSurfaceFactory = GlSurfaceFactory::create();
+
+	return m_pSurfaceFactory;
+}
+
+//____ edgemapFactory() ______________________________________________________
+
+EdgemapFactory_p GlBackend::edgemapFactory()
+{
+	if (!m_pEdgemapFactory)
+		m_pEdgemapFactory = GlEdgemapFactory::create();
+
+	return m_pEdgemapFactory;
+}
+
+
+//____ setDefaultCanvas() ___________________________________________
+
+bool GlBackend::setDefaultCanvas(SizeSPX size, int scale)
+{
+	m_defaultCanvas.ref = CanvasRef::Default;		// Starts as Undefined until this method is called.
+	m_defaultCanvas.size = size;
+	m_defaultCanvas.scale = scale;
+	return true;
+}
+
+//____ canvas() ___________________________________________________________
+
+const CanvasInfo * GlBackend::canvasInfo(CanvasRef ref) const
+{
+	if (ref == CanvasRef::Default)
+		return &m_defaultCanvas;
+	else
+	{
+		//TODO: Error handling!
+		return &m_dummyCanvas;
+	}
+}
+
+//____ beginRender() ___________________________________________________________
+
+void GlBackend::beginRender()
+{
+	LOG_GLERROR(glGetError());
+
+//		if( m_bRendering == true )
+//			return false;
+
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+	{
+		//TODO: Error handling!
+		return;
+	}
+
+
+	// Remember GL states so we can restore in EndRender()
+
+	m_glDepthTest 		= glIsEnabled(GL_DEPTH_TEST);
+	m_glScissorTest 	= glIsEnabled(GL_SCISSOR_TEST);
+	m_glBlendEnabled  	= glIsEnabled(GL_BLEND);
+	m_glSRGBEnabled		= glIsEnabled(GL_FRAMEBUFFER_SRGB);
+	glGetIntegerv(GL_BLEND_SRC, &m_glBlendSrc);
+	glGetIntegerv(GL_BLEND_DST, &m_glBlendDst);
+	glGetIntegerv(GL_VIEWPORT, m_glViewport);
+	glGetIntegerv(GL_SCISSOR_BOX, m_glScissorBox);
+	glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING, &m_glReadFrameBuffer);
+	glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &m_glDrawFrameBuffer);
+
+	//  Modify states
+
+	glDisable(GL_DEPTH_TEST);
+	glEnable(GL_SCISSOR_TEST);
+
+
+	//
+
+//		m_bRendering = true;
+		
+	// Set our extras buffer and segments palette textures.
+/*
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_BUFFER, m_extrasBufferTex);
+	glActiveTexture(GL_TEXTURE3);
+	glBindTexture(GL_TEXTURE_2D, m_segmentsTintTexId);
+	glActiveTexture(GL_TEXTURE0);
+*/
+
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_BUFFER, m_colorBufferTex);
+	glActiveTexture(GL_TEXTURE0);
+
+
+	// Prepare for rendering
+
+	glBindVertexArray(m_vertexArrayId);
+
+
+//		glFinish();  //TODO: Remove.
+
+	//
+
+	LOG_GLERROR(glGetError());
+}
+
+//____ endRender() _____________________________________________________________
+
+void GlBackend::endRender()
+{
+	LOG_GLERROR(glGetError());
+//		if( m_bRendering == false )
+//			return false;
+
+	//
+
+ 	//glFinish(); //TODO: Remove.
+
+	// Restore render states from before beginRender()
+
+	if( m_glDepthTest )
+		glEnable(GL_DEPTH_TEST);
+
+	if( !m_glScissorTest )
+		glDisable(GL_SCISSOR_TEST);
+
+	if( m_glBlendEnabled )
+		glEnable(GL_BLEND);
+	else
+		glDisable(GL_BLEND);
+
+	if( m_glSRGBEnabled )
+		glEnable(GL_FRAMEBUFFER_SRGB);
+	else
+		glDisable(GL_FRAMEBUFFER_SRGB);
+
+	glBlendFunc( m_glBlendSrc, m_glBlendDst );
+	glViewport(m_glViewport[0], m_glViewport[1], m_glViewport[2], m_glViewport[3]);
+	glScissor(m_glScissorBox[0], m_glScissorBox[1], m_glScissorBox[2], m_glScissorBox[3]);
+	glBindFramebuffer(GL_READ_FRAMEBUFFER, m_glReadFrameBuffer);
+	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_glDrawFrameBuffer);
+
+	glBindVertexArray(0);
+
+	//TODO: Reenable
+
+	//if( m_idleSync != 0 )
+	//	glDeleteSync(m_idleSync);
+
+	//m_idleSync = glFenceSync( GL_SYNC_GPU_COMMANDS_COMPLETE, 0 );
+
+	glFlush();
+
+//
+
+	LOG_GLERROR(glGetError());
+//		m_bRendering = false;
+}
+
+//____ _beginSession() _______________________________________________________
+
+void GlBackend::beginSession(const SessionInfo* pSession)
+{
+	// Reserve buffer for coordinates
+
+	int nCoords = pSession->nPoints + pSession->nRects * 6;
+
+	m_pVertexBuffer = new VertexGL[nCoords];
+	m_nVertices = 0;
+
+	// Reserve buffer for colors
+
+	m_pColorBuffer = new ColorGL[pSession->nColors];
+	m_nColors = 0;
+
+	// Reserve buffer for commands
+
+/*
+	int		nStateChanges;		// Number of times state will change through session.
+	int		nPlots;				// Number of plot commands.
+	int		nLines;				// Number of line commands.
+	int		nFill;
+	int		nBlit;				// Includes Blit, ClipBlit och Tile.
+	int		nBlur;
+	int		nEdgemapDraws;
+*/
+
+	m_pCommandQueue = new int[pSession->nStateChanges * 16 + pSession->nFill * 2 + 1];
+	m_commandQueueSize = 0;
+}
+
+//____ _endSession() _______________________________________________________
+
+void GlBackend::endSession()
+{
+	LOG_GLERROR(glGetError());
+
+
+	// Send vertices to GPU
+
+	glBindBuffer(GL_ARRAY_BUFFER, m_vertexBufferId);
+	glBufferData(GL_ARRAY_BUFFER, m_nVertices * sizeof(VertexGL), m_pVertexBuffer, GL_DYNAMIC_DRAW);		// Orphan current buffer if still in use.
+//	glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+	LOG_GLERROR(glGetError());
+
+	// Send colors to GPU
+
+	glBindBuffer(GL_TEXTURE_BUFFER, m_colorBufferId);
+	glBufferData(GL_TEXTURE_BUFFER, m_nColors * sizeof(ColorGL), m_pColorBuffer, GL_DYNAMIC_DRAW);
+//	glBindBuffer(GL_TEXTURE_BUFFER, 0);
+
+	LOG_GLERROR(glGetError());
+
+	// Process command queue
+
+	glEnableVertexAttribArray(0);
+//	glEnableVertexAttribArray(1);
+	glEnableVertexAttribArray(2);
+//	glEnableVertexAttribArray(3);
+//	glEnableVertexAttribArray(4);
+
+	LOG_GLERROR(glGetError());
+
+	int* pCmd = m_pCommandQueue;
+	int* pEnd = m_pCommandQueue + m_commandQueueSize;
+
+	int vertexOfs = 0;
+	int canvasOfs = 0;
+
+	while (pCmd < pEnd)
+	{
+		Command cmd = (Command)*pCmd++;
+
+		switch (cmd)
+		{
+			case Command::None:
+			{
+				_setCanvas(m_canvases[canvasOfs++]);
+				break;
+			}
+
+			case Command::Fill:
+			{
+				int nVertices = *pCmd++;
+
+//					if (m_bGradientActive)
+//						glUseProgram(m_fillGradientProg[m_bActiveCanvasIsA8]);
+//					else
+						glUseProgram(m_fillProg[m_bActiveCanvasIsA8]);
+
+						VertexGL* p = m_pVertexBuffer + vertexOfs;
+						VertexGL* p2 = m_pVertexBuffer + vertexOfs + 1;
+						VertexGL* p3 = m_pVertexBuffer + vertexOfs + 2;
+
+				glDrawArrays(GL_TRIANGLES, vertexOfs, nVertices);
+				vertexOfs += nVertices;
+				break;
+			}
+
+			default:
+			{
+				assert(false);
+			}
+
+		}
+	}
+
+	glFlush();
+
+	LOG_GLERROR(glGetError());
+
+
+	// Release temporary buffers
+
+	delete[] m_pVertexBuffer;
+	m_pVertexBuffer = nullptr;
+
+	delete[] m_pColorBuffer;
+	m_pColorBuffer = nullptr;
+
+	delete[] m_pCommandQueue;
+	m_pCommandQueue = nullptr;
+
+	m_canvases.clear();
+}
+
+
+//____ _setBlendMode() _______________________________________________________
+
+void GlBackend::_setBlendMode(BlendMode mode)
+{
+	LOG_GLERROR(glGetError());
+
+	bool bAlphaOnly = m_bActiveCanvasIsA8;
+
+	switch (mode)
+	{
+	case BlendMode::Replace:
+		glBlendEquation(GL_FUNC_ADD);
+		glDisable(GL_BLEND);
+		break;
+
+	case BlendMode::Undefined:
+	case BlendMode::Blend:
+		glBlendEquation(GL_FUNC_ADD);
+		glEnable(GL_BLEND);
+		if (bAlphaOnly)
+			glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_COLOR);
+		else
+			glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+		break;
+
+	case BlendMode::Morph:
+		glBlendEquation(GL_FUNC_ADD);
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_CONSTANT_ALPHA, GL_ONE_MINUS_CONSTANT_ALPHA);
+		break;
+
+	case BlendMode::Add:
+		glBlendEquation(GL_FUNC_ADD);
+		glEnable(GL_BLEND);
+
+		if (bAlphaOnly)
+			glBlendFunc(GL_ONE, GL_ONE);
+		else
+			glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE, GL_ZERO, GL_ONE);
+
+		break;
+
+	case BlendMode::Subtract:
+		glEnable(GL_BLEND);
+		glBlendEquation(GL_FUNC_REVERSE_SUBTRACT);
+		if (bAlphaOnly)
+			glBlendFunc(GL_ONE, GL_ONE);
+		else
+			glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE, GL_ZERO, GL_ONE);
+		break;
+
+	case BlendMode::Multiply:
+		glBlendEquation(GL_FUNC_ADD);
+		glEnable(GL_BLEND);
+		if (bAlphaOnly)
+			glBlendFunc(GL_DST_COLOR, GL_ZERO);
+		else
+			glBlendFuncSeparate(GL_DST_COLOR, GL_ZERO, GL_ZERO, GL_ONE);
+		break;
+
+	case BlendMode::Invert:
+		glBlendEquation(GL_FUNC_ADD);
+		glEnable(GL_BLEND);
+		if (bAlphaOnly)
+			glBlendFunc(GL_ONE_MINUS_DST_COLOR, GL_ONE_MINUS_SRC_COLOR);
+		else
+			glBlendFuncSeparate(GL_ONE_MINUS_DST_COLOR, GL_ONE_MINUS_SRC_COLOR, GL_ZERO, GL_ONE);
+		break;
+
+	case BlendMode::Min:
+		glEnable(GL_BLEND);
+		if (bAlphaOnly)
+		{
+			glBlendEquation(GL_MIN);
+			glBlendFunc(GL_ONE, GL_ONE);
+		}
+		else
+		{
+			glBlendEquationSeparate(GL_MIN, GL_FUNC_ADD);
+			glBlendFuncSeparate(GL_ONE, GL_ONE, GL_ZERO, GL_ONE);
+		}
+		break;
+
+	case BlendMode::Max:
+		glEnable(GL_BLEND);
+		if (bAlphaOnly)
+		{
+			glBlendEquation(GL_MAX);
+			glBlendFunc(GL_ONE, GL_ONE);
+		}
+		else
+		{
+			glBlendEquationSeparate(GL_MAX, GL_FUNC_ADD);
+			glBlendFuncSeparate(GL_ONE, GL_ONE, GL_ZERO, GL_ONE);
+		}
+		break;
+
+	case BlendMode::Ignore:
+		glBlendEquation(GL_FUNC_ADD);
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_ZERO, GL_ONE);
+		break;
+
+	default:
+		assert(false);
+		break;
+	}
+
+	m_activeBlendMode = mode;
+
+	LOG_GLERROR(glGetError());
+}
+
+
+//____ _loadPrograms() ______________________________________________________________
+
+void GlBackend::_loadPrograms(int uboBindingPoint)
+{
+	int programNb = 0;
+
+	// Create and init Fill shader
+
+	for (int i = 0; i < 2; i++)
+	{
+		GLuint progId = _loadOrCompileProgram(programNb++, fillVertexShader, i == 0 ? fillFragmentShader : fillFragmentShader_A8);
+		_setDrawUniforms(progId, uboBindingPoint);
+		m_fillProg[i] = progId;
+		LOG_INIT_GLERROR(glGetError());
+	}
+
+	// Create and init Fill Gradient shader
+
+	for (int i = 0; i < 2; i++)
+	{
+		GLuint progId = _loadOrCompileProgram(programNb++, fillGradientVertexShader, i == 0 ? fillFragmentShader : fillFragmentShader_A8);
+		_setDrawUniforms(progId, uboBindingPoint);
+		m_fillGradientProg[i] = progId;
+		LOG_INIT_GLERROR(glGetError());
+	}
+
+	// Create and init AA-Fill shader
+
+	for (int i = 0; i < 2; i++)
+	{
+		GLuint progId = _loadOrCompileProgram(programNb++, aaFillVertexShader, i == 0 ? aaFillFragmentShader : aaFillFragmentShader_A8);
+		_setDrawUniforms(progId, uboBindingPoint);
+		m_aaFillProg[i] = progId;
+		LOG_INIT_GLERROR(glGetError());
+	}
+
+	// Create and init AA-Fill gradient shader
+
+	for (int i = 0; i < 2; i++)
+	{
+		GLuint progId = _loadOrCompileProgram(programNb++, aaFillGradientVertexShader, i == 0 ? aaFillFragmentShader : aaFillFragmentShader_A8);
+		_setDrawUniforms(progId, uboBindingPoint);
+		m_aaFillGradientProg[i] = progId;
+		LOG_INIT_GLERROR(glGetError());
+	}
+
+	// Create and init Blur shader
+
+	for (int i = 0; i < 2; i++)
+	{
+		GLuint progId = _loadOrCompileProgram(programNb++, i == 0 ? blitVertexShader : blitGradientVertexShader, blurFragmentShader);
+		_setBlitUniforms(progId, uboBindingPoint);
+
+		m_blurUniformLocation[i][0] = glGetUniformLocation(progId, "blurInfo.colorMtx");
+		m_blurUniformLocation[i][1] = glGetUniformLocation(progId, "blurInfo.offset");
+
+		m_blurProg[i] = progId;
+		LOG_INIT_GLERROR(glGetError());
+	}
+
+	// Create and init Blit shader
+
+	for (int i = 0; i < 2; i++)
+	{
+		GLuint progId = _loadOrCompileProgram(programNb++, blitVertexShader, i == 0 ? blitFragmentShader : blitFragmentShader_A8);
+		_setBlitUniforms(progId, uboBindingPoint);
+		m_blitProg[i] = progId;
+		LOG_INIT_GLERROR(glGetError());
+	}
+
+	// Create and init Gradient Blit shader
+
+	for (int i = 0; i < 2; i++)
+	{
+		GLuint progId = _loadOrCompileProgram(programNb++, blitGradientVertexShader, i == 0 ? blitFragmentShader : blitFragmentShader_A8);
+		_setBlitUniforms(progId, uboBindingPoint);
+		m_blitGradientProg[i] = progId;
+		LOG_INIT_GLERROR(glGetError());
+	}
+
+	// Create and init AlphaBlit shader (shader program for blitting from alpha-only texture)
+
+	for (int i = 0; i < 2; i++)
+	{
+		GLuint progId = _loadOrCompileProgram(programNb++, blitVertexShader, i == 0 ? alphaBlitFragmentShader : alphaBlitFragmentShader_A8);
+		_setBlitUniforms(progId, uboBindingPoint);
+		m_alphaBlitProg[i] = progId;
+		LOG_INIT_GLERROR(glGetError());
+	}
+
+	// Create and init AlphaBlit gradient shader (shader program for blitting from alpha-only texture)
+
+	for (int i = 0; i < 2; i++)
+	{
+		GLuint progId = _loadOrCompileProgram(programNb++, blitGradientVertexShader, i == 0 ? alphaBlitFragmentShader : alphaBlitFragmentShader_A8);
+		_setBlitUniforms(progId, uboBindingPoint);
+		m_alphaBlitGradientProg[i] = progId;
+		LOG_INIT_GLERROR(glGetError());
+	}
+
+	// Create and init Palette Blit shaders
+
+	for (int i = 0; i < 2; i++)
+	{
+		GLuint progId = _loadOrCompileProgram(programNb++, paletteBlitNearestVertexShader, i == 0 ? paletteBlitNearestFragmentShader : paletteBlitNearestFragmentShader_A8);
+		_setPaletteBlitUniforms(progId, uboBindingPoint);
+		m_paletteBlitNearestProg[i] = progId;
+		LOG_INIT_GLERROR(glGetError());
+	}
+
+	for (int i = 0; i < 2; i++)
+	{
+		GLuint progId = _loadOrCompileProgram(programNb++, paletteBlitInterpolateVertexShader, i == 0 ? paletteBlitInterpolateFragmentShader : paletteBlitInterpolateFragmentShader_A8);
+		_setPaletteBlitUniforms(progId, uboBindingPoint);
+		m_paletteBlitInterpolateProg[i] = progId;
+		LOG_INIT_GLERROR(glGetError());
+	}
+
+	// Create and init Palette Blit gradient shaders
+
+	for (int i = 0; i < 2; i++)
+	{
+		GLuint progId = _loadOrCompileProgram(programNb++, paletteBlitNearestGradientVertexShader, i == 0 ? paletteBlitNearestFragmentShader : paletteBlitNearestFragmentShader_A8);
+		_setPaletteBlitUniforms(progId, uboBindingPoint);
+		m_paletteBlitNearestGradientProg[i] = progId;
+		LOG_INIT_GLERROR(glGetError());
+	}
+
+	for (int i = 0; i < 2; i++)
+	{
+		GLuint progId = _loadOrCompileProgram(programNb++, paletteBlitInterpolateGradientVertexShader, i == 0 ? paletteBlitInterpolateFragmentShader : paletteBlitInterpolateFragmentShader_A8);
+		_setPaletteBlitUniforms(progId, uboBindingPoint);
+		m_paletteBlitInterpolateGradientProg[i] = progId;
+		LOG_INIT_GLERROR(glGetError());
+	}
+
+	// Create and init Plot shader
+
+	for (int i = 0; i < 2; i++)
+	{
+		GLuint progId = _loadOrCompileProgram(programNb++, plotVertexShader, i == 0 ? plotFragmentShader : plotFragmentShader_A8);
+		_setDrawUniforms(progId, uboBindingPoint);
+		m_plotProg[i] = progId;
+		LOG_INIT_GLERROR(glGetError());
+	}
+
+	// Create and init Line shader
+
+	for (int i = 0; i < 2; i++)
+	{
+		GLuint progId = _loadOrCompileProgram(programNb++, lineFromToVertexShader, i == 0 ? lineFromToFragmentShader : lineFromToFragmentShader_A8);
+		_setDrawUniforms(progId, uboBindingPoint);
+		m_lineFromToProg[i] = progId;
+		LOG_INIT_GLERROR(glGetError());
+	}
+
+	// Create and init Segment shaders
+
+	for (int i = 1; i < c_maxSegments; i++)
+	{
+		for (int canvType = 0; canvType < 2; canvType++)
+		{
+			std::string fragShader = canvType == 0 ? segmentsFragmentShader : segmentsFragmentShader_A8;
+			auto edgesPos = fragShader.find("$EDGES");
+			fragShader.replace(edgesPos, 6, std::to_string(i));
+
+			auto maxsegPos = fragShader.find("$MAXSEG");
+			fragShader.replace(maxsegPos, 7, std::to_string(c_maxSegments));
+
+			const char* pVertexShader = segmentsVertexShader;
+			for (int j = 0; j < 2; j++)
+			{
+				GLuint prog = _loadOrCompileProgram(programNb++, pVertexShader, fragShader.c_str());
+				m_segmentsProg[i][j][canvType] = prog;
+
+				GLint extrasIdLoc = glGetUniformLocation(prog, "extrasId");
+				GLint colorsIdLoc = glGetUniformLocation(prog, "colorsId");
+				GLint stripesIdLoc = glGetUniformLocation(prog, "stripesId");
+				GLint paletteIdLoc = glGetUniformLocation(prog, "paletteId");
+
+				glUseProgram(prog);
+				glUniform1i(extrasIdLoc, 1);		// Needs to be set. Texture unit 1 is used for extras buffer.
+				glUniform1i(colorsIdLoc, 1);		// Needs to be set. Texture unit 1 is used for extras buffer, which doubles as the colors buffer.
+				glUniform1i(stripesIdLoc, 1);		// Needs to be set. Texture unit 1 is used for segment stripes buffer.
+				glUniform1i(paletteIdLoc, 3);		// Needs to be set. Texture unit 3 is used for segment stripes buffer.
+
+				pVertexShader = segmentsVertexShaderGradient;
+			}
+		}
+	}
+
+	LOG_INIT_GLERROR(glGetError());
+}
+
+//____ _loadOrCompileProgram() __________________________________________________________
+
+GLuint GlBackend::_loadOrCompileProgram(int programNb, const char* pVertexShaderSource, const char* pFragmentShaderSource)
+{
+	GLuint  programID = glCreateProgram();
+
+	if (s_pShaderPrograms)
+	{
+		char* pBuffer = (char*)s_pShaderPrograms->data();
+		ProgramBlobHeader* pHeader = (ProgramBlobHeader*)pBuffer;
+
+		if (pHeader->version == c_versionNb && pHeader->nbPrograms == c_nbPrograms)
+		{
+			ProgramBlobEntry& prg = pHeader->programs[programNb];
+			glProgramBinary(programID, prg.binaryFormat, pBuffer + prg.offset, prg.size);
+		}
+	}
+
+	GLint linkStatus = 0;
+	glGetProgramiv(programID, GL_LINK_STATUS, &linkStatus);
+
+	if (linkStatus == false)
+	{
+		// Since a program failed to load we discard the whole programs blob.
+
+		s_pShaderPrograms = nullptr;
+
+		GLuint vertexShaderID = glCreateShader(GL_VERTEX_SHADER);
+		GLuint fragmentShaderID = glCreateShader(GL_FRAGMENT_SHADER);
+
+		glShaderSource(vertexShaderID, 1, &pVertexShaderSource, NULL);
+		glCompileShader(vertexShaderID);
+
+		glShaderSource(fragmentShaderID, 1, &pFragmentShaderSource, NULL);
+		glCompileShader(fragmentShaderID);
+
+		glAttachShader(programID, vertexShaderID);
+		glAttachShader(programID, fragmentShaderID);
+		glLinkProgram(programID);
+
+		// glLinkProgram doesn't use glGetError
+		int mess = 0;
+		glGetProgramiv(programID, GL_LINK_STATUS, &mess);
+		if (mess != GL_TRUE)
+		{
+			GLchar	vertexShaderLog[2048];
+			GLchar	fragmentShaderLog[2048];
+			GLchar	programInfoLog[2048];
+
+			GLsizei vertexShaderLogLength;
+			GLsizei fragmentShaderLogLength;
+			GLsizei programInfoLogLength;
+
+			glGetShaderInfoLog(vertexShaderID, 2048, &vertexShaderLogLength, vertexShaderLog);
+			glGetShaderInfoLog(fragmentShaderID, 2048, &fragmentShaderLogLength, fragmentShaderLog);
+			glGetProgramInfoLog(programID, 2048, &programInfoLogLength, programInfoLog);
+
+			char	buffer[2048 * 3 + 256];
+
+			snprintf(buffer, 2048*3+256, "Failed compiling OpenGL shader\nVertexShaderLog: %s\nFragmentShaderLog: %s\nProgramInfoLog: %s", vertexShaderLog, fragmentShaderLog, programInfoLog);
+			GfxBase::throwError(ErrorLevel::SilentError, ErrorCode::OpenGL, buffer, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+		}
+
+		glDetachShader(programID, vertexShaderID);
+		glDetachShader(programID, fragmentShaderID);
+
+		glDeleteShader(vertexShaderID);
+		glDeleteShader(fragmentShaderID);
+
+		LOG_GLERROR(glGetError());
+	}
+
+	return programID;
+}
+
+//____ _generateProgramBlob() __________________________________________________________
+
+Blob_p GlBackend::_generateProgramBlob()
+{
+	GLuint	programs[c_nbPrograms];
+
+	// Collect the programs
+
+	int prg = 0;
+
+	programs[prg++] = m_fillProg[0];
+	programs[prg++] = m_fillProg[1];
+
+	programs[prg++] = m_fillGradientProg[0];
+	programs[prg++] = m_fillGradientProg[1];
+
+	programs[prg++] = m_aaFillProg[0];
+	programs[prg++] = m_aaFillProg[1];
+
+	programs[prg++] = m_aaFillGradientProg[0];
+	programs[prg++] = m_aaFillGradientProg[1];
+
+	programs[prg++] = m_blurProg[0];
+	programs[prg++] = m_blurProg[1];
+
+	programs[prg++] = m_blitProg[0];
+	programs[prg++] = m_blitProg[1];
+
+	programs[prg++] = m_blitGradientProg[0];
+	programs[prg++] = m_blitGradientProg[1];
+
+	programs[prg++] = m_alphaBlitProg[0];
+	programs[prg++] = m_alphaBlitProg[1];
+
+	programs[prg++] = m_alphaBlitGradientProg[0];
+	programs[prg++] = m_alphaBlitGradientProg[1];
+
+	programs[prg++] = m_paletteBlitNearestProg[0];
+	programs[prg++] = m_paletteBlitNearestProg[1];
+
+	programs[prg++] = m_paletteBlitInterpolateProg[0];
+	programs[prg++] = m_paletteBlitInterpolateProg[1];
+
+	programs[prg++] = m_paletteBlitNearestGradientProg[0];
+	programs[prg++] = m_paletteBlitNearestGradientProg[1];
+
+	programs[prg++] = m_paletteBlitInterpolateGradientProg[0];
+	programs[prg++] = m_paletteBlitInterpolateGradientProg[1];
+
+	programs[prg++] = m_plotProg[0];
+	programs[prg++] = m_plotProg[1];
+
+	programs[prg++] = m_lineFromToProg[0];
+	programs[prg++] = m_lineFromToProg[1];
+
+	for (int i = 1; i < c_maxSegments; i++)
+	{
+		for (int canvType = 0; canvType < 2; canvType++)
+		{
+			programs[prg++] = m_segmentsProg[i][0][canvType];
+			programs[prg++] = m_segmentsProg[i][1][canvType];
+		}
+	}
+
+	assert(prg == c_nbPrograms);
+
+	// Store sizes and calculate space needed
+
+	int totalSize = 0;
+	int	programSize[c_nbPrograms];
+
+	for (int i = 0; i < c_nbPrograms; i++)
+	{
+		GLint	size;
+		glGetProgramiv(programs[i], GL_PROGRAM_BINARY_LENGTH, &size);
+		programSize[i] = size;
+		totalSize += size;
+	}
+
+	// Create our Blob
+
+	auto pBlob = Blob::create(sizeof(ProgramBlobHeader) + totalSize);
+
+	char* pBuffer = (char*)pBlob->data();
+
+	ProgramBlobHeader* pHeader = (ProgramBlobHeader*)pBuffer;
+
+	pHeader->version = c_versionNb;
+	pHeader->nbPrograms = c_nbPrograms;
+
+	// Get our program binaries
+
+	char* wpBinary = pBuffer + sizeof(ProgramBlobHeader);
+	int offset = sizeof(ProgramBlobHeader);
+	for (int i = 0; i < c_nbPrograms; i++)
+	{
+		pHeader->programs[i].offset = offset;
+		glGetProgramBinary(programs[i], programSize[i], &pHeader->programs[i].size, &pHeader->programs[i].binaryFormat, pBuffer + offset);
+		offset += pHeader->programs[i].size;
+	}
+
+	assert(wpBinary = pBuffer + sizeof(ProgramBlobHeader) + totalSize);
+
+	return pBlob;
+}
+
+//____ _initTables() ___________________________________________________________
+
+void GlBackend::_initTables()
+{
+	// Init lineThicknessTable
+
+	for (int i = 0; i < 17; i++)
+	{
+		double b = i / 16.0;
+		m_lineThicknessTable[i] = (float)Util::squareRoot(1.0 + b * b);
+	}
+
+	// Init sRGBtoLinearTable
+
+	float max = powf(255, 2.2f);
+
+	for (int i = 0; i < 256; i++)
+	{
+		m_sRGBtoLinearTable[i] = powf(float(i), 2.2f)/max;
+		m_linearToLinearTable[i] = i / 255.f;
+	}
+}
+
+
+//____ _scaleThickness() ___________________________________________________
+
+float GlBackend::_scaleThickness(float thickness, float slope)
+{
+	slope = std::abs(slope);
+
+	float scale = m_lineThicknessTable[(int)(slope * 16)];
+
+	if (slope < 1.f)
+	{
+		float scale2 = m_lineThicknessTable[(int)(slope * 16) + 1];
+		scale += (scale2 - scale)*((slope * 16) - ((int)(slope * 16)));
+	}
+
+	return thickness * scale;
+}
+
+} // namespace wg
+

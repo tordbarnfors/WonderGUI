@@ -54,6 +54,7 @@ namespace wg
 	{
 		friend class GlSurfaceFactory;
 		friend class GlGfxDevice;
+		friend class GlBackend;
 
 	public:
 
