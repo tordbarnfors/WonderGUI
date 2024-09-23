@@ -180,29 +180,35 @@ void GfxDeviceTester::setup_testdevices()
 
 	// Gen2 with SoftBackend
 
-	auto pSoftBackend = SoftBackend::create();
-	addDefaultSoftKernels(pSoftBackend);
+	{
+		auto pSoftBackend = SoftBackend::create();
+		addDefaultSoftKernels(pSoftBackend);
 
-	auto pBackendLogger = BackendLogger::create( std::cout, pSoftBackend );
+		auto pBackendLogger = BackendLogger::create( std::cout, pSoftBackend );
 	
-	auto pGen2GfxDevice = GfxDeviceGen2::create( pBackendLogger );
+		auto pGen2GfxDevice = GfxDeviceGen2::create( pBackendLogger );
 
-	auto pGen2CanvasSurface = SoftSurface::create(canvasBP);
-	auto pGen2SoftDevice = Device::create("Gen2 Software (SoftBackend)", pGen2GfxDevice, CanvasRef::None, pGen2CanvasSurface, this);
+		auto pGen2CanvasSurface = SoftSurface::create(canvasBP);
+		auto pGen2SoftDevice = Device::create("Gen2 Software (SoftBackend)", pGen2GfxDevice, CanvasRef::None, pGen2CanvasSurface, this);
 
-//	g_testdevices.push_back(pGen2SoftDevice);
+//		g_testdevices.push_back(pGen2SoftDevice);
+	}
 
 	// Gen2 with GlBackend
 
-	auto pGlBackend = GlBackend::create();
+	{
+		auto pBackend = GlBackend::create();
 
-	auto pGen2GlGfxDevice = GfxDeviceGen2::create(pGlBackend);
+		auto pBackendLogger = BackendLogger::create(std::cout, pBackend);
 
-	auto pGen2GlCanvasSurface = GlSurface::create(canvasBP);
-	auto pGen2GlDevice = Device::create("Gen2 OpenGL (GlBackend)", pGen2GlGfxDevice, CanvasRef::None, pGen2GlCanvasSurface, this);
 
-	g_testdevices.push_back(pGen2GlDevice);
+		auto pGen2GfxDevice = GfxDeviceGen2::create(pBackendLogger);
 
+		auto pCanvasSurface = GlSurface::create(canvasBP);
+		auto pGen2GlDevice = Device::create("Gen2 OpenGL (GlBackend)", pGen2GfxDevice, CanvasRef::None, pCanvasSurface, this);
+
+		g_testdevices.push_back(pGen2GlDevice);
+	}
 
 
 	// Native

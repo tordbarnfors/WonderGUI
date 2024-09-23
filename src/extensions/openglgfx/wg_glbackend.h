@@ -107,11 +107,10 @@ namespace wg
 		Blob_p	_generateProgramBlob();
 		GLuint  _loadOrCompileProgram(int programNb, const char* pVertexShaderSource, const char* pFragmentShaderSource);
 
-		void	_setDrawUniforms(GLuint progId, int uboBindingPoint);
-		void	_setBlitUniforms(GLuint progId, int uboBindingPoint);
-		void	_setPaletteBlitUniforms(GLuint progId, int uboBindingPoint);
+		void	_setUniforms(GLuint progId, int uboBindingPoint);
 
 		void	_setBlendMode(BlendMode mode);
+		void	_setBlitSource(GlSurface* pSurf);
 
 
 		void	_initTables();
@@ -162,6 +161,7 @@ namespace wg
 		CanvasInit		m_beginRenderOp = CanvasInit::Keep;
 
 		CoordF			m_blitSourceSize;
+		SampleMethod	m_blitSourceSampleMethod;
 
 		SizeI			m_defaultCanvasSize;
 		int				m_defaultCanvasScale = 64;
@@ -173,6 +173,7 @@ namespace wg
 		bool			m_bMipmappedActiveCanvas = false;                               // Set if currently active canvas is a surface that is mipmapped.
 		BlendMode		m_activeBlendMode = BlendMode::Blend;
 
+		GlSurface_p		m_pActiveBlitSource = nullptr;									// Currently active blit source in OpenGL, not to confuse with m_pBlitSource which might not be active yet.
 
 		// Device programs
 
@@ -381,10 +382,13 @@ namespace wg
 		ColorGL*	m_pColorBuffer = nullptr;
 		int			m_nColors = 0;
 
+		GLfloat*	m_pExtrasBuffer = nullptr;
+		int			m_extrasBufferSize = 0;
+
 		int*		m_pCommandQueue = nullptr;
 		int			m_commandQueueSize = 0;
 
-		std::vector<Surface*> m_canvases;
+		std::vector<Surface*> m_surfaces;
 
 		int			m_tintColorOfs = -1;		// Offset in m_pColorBuffer for tintColor if flat tint active.
 	};
