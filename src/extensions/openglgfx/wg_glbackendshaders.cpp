@@ -743,27 +743,35 @@ const char GlBackend::lineFromToFragmentShader_A8[] =
 "}                                      ";
 
 
+
 const char GlBackend::aaFillVertexShader[] =
 
 "#version 330 core\n"
 
-"uniform samplerBuffer extrasBufferId;								"
-"layout(location = 0) in ivec2 pos;                        "
-"layout(location = 2) in int extrasOfs;                    "
-"layout(location = 3) in int canvasInfoOfs;                "
-"layout(location = 4) in int tintInfoOfs;                "
+"layout(std140) uniform Canvas"
+"{"
+"	float  canvasWidth;"
+"	float  canvasHeight;"
+"	float  canvasYOfs;"
+"	float  canvasYMul;"
+"};"
+
+"uniform samplerBuffer colorBufferId;					    "
+"uniform samplerBuffer extrasBufferId;						"
+"layout(location = 0) in ivec2 pos;                         "
+"layout(location = 2) in int colorOfs;                      "
+"layout(location = 3) in int extrasOfs;                     "
 "out vec4 fragColor;                                        "
 "flat out vec4 rect;										"
 "void main()                                                "
 "{                                                          "
-"   vec4 canvasInfo = texelFetch(extrasBufferId, canvasInfoOfs);	"
-"   gl_Position.x = pos.x*2/canvasInfo.x - 1.0;            "
-"   gl_Position.y = (canvasInfo.z + canvasInfo.w*pos.y)*2/canvasInfo.y - 1.0;    "
+"   gl_Position.x = pos.x*2/canvasWidth - 1.0;              "
+"   gl_Position.y = (canvasYOfs + canvasYMul*pos.y)*2/canvasHeight - 1.0;    "
 "   gl_Position.z = 0.0;                                    "
 "   gl_Position.w = 1.0;                                    "
-"   fragColor = texelFetch(extrasBufferId, tintInfoOfs) * texelFetch(extrasBufferId, extrasOfs);			"
-"   rect = texelFetch(extrasBufferId, extrasOfs+1);				"
-"   rect.y = canvasInfo.z + canvasInfo.w*rect.y;							"
+"   fragColor = texelFetch(colorBufferId, colorOfs);		"
+"   rect = texelFetch(extrasBufferId, extrasOfs);			"
+"   rect.y = canvasYOfs + canvasYMul*rect.y;				"
 "   rect.zw += vec2(0.5f,0.5f);								"		// Adding offset here so we don't have to do it in pixel shader.
 "}                                                          ";
 

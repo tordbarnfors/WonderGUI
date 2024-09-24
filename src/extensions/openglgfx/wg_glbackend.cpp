@@ -119,7 +119,7 @@ void GlBackend::setCanvas(CanvasRef ref)
 {
 	if (ref == CanvasRef::Default)
 	{
-		m_pCommandQueue[m_commandQueueSize++] = (int)Command::None;
+		m_pCommandQueue[m_commandQueueSize++] = (int)CommandGL::SetCanvas;
 		m_surfaces.push_back(nullptr);
 	}
 	else
@@ -130,7 +130,7 @@ void GlBackend::setCanvas(CanvasRef ref)
 
 void GlBackend::setCanvas(Surface* pSurface)
 {
-	m_pCommandQueue[m_commandQueueSize++] = (int) Command::None;
+	m_pCommandQueue[m_commandQueueSize++] = (int) CommandGL::SetCanvas;
 	m_surfaces.push_back(pSurface);
 }
 
@@ -290,7 +290,7 @@ void GlBackend::processCommands(int32_t* pBeg, int32_t* pEnd)
 		{
 			int32_t statesChanged = *p++;
 
-			* pCommandGL++ = (int) Command::StateChange;
+			* pCommandGL++ = (int) CommandGL::StateChange;
 			* pCommandGL++ = statesChanged;
 
 			if (statesChanged & uint8_t(StateChange::BlitSource))
@@ -382,56 +382,117 @@ void GlBackend::processCommands(int32_t* pBeg, int32_t* pEnd)
 
 			HiColor& col = *pColors++;
 
+			bool	bStraightFill = true;
+			int		nRectsWritten = 0;
+			int		extrasOfs = 0;
+
 			// Add rects to vertex buffer
 
 			for (int i = 0; i < nRects; i++)
 			{
-				int	dx1 = (* pCoords++) >> 6;
-				int	dy1 = (*pCoords++) >> 6;
-				int dx2 = dx1 + ((*pCoords++) >> 6);
-				int dy2 = dy1 + ((*pCoords++) >> 6);
+	
+				int	dx1 = * pCoords++;
+				int	dy1 = * pCoords++;
+				int dx2 = dx1 + *pCoords++;
+				int dy2 = dy1 + *pCoords++;
+
+				if (((dx1 | dy1 | dx2 | dy2) & 63) == 0)
+				{
+					// Straight fill
+
+					if (!bStraightFill)
+					{
+						if( nRectsWritten > 0 )
+						{
+							*pCommandGL++ = (int)CommandGL::SubpixelFill;
+							*pCommandGL++ = nRectsWritten * 6;
+							nRectsWritten = 0;
+							extrasOfs = 0;
+						}
+						bStraightFill = true;
+					}
+				}
+				else
+				{
+					// Subpixel fill
+
+					if(bStraightFill)
+					{
+						if (nRectsWritten > 0)
+						{
+							*pCommandGL++ = (int)CommandGL::StraightFill;
+							*pCommandGL++ = nRectsWritten * 6;
+							nRectsWritten = 0;
+						}
+						bStraightFill = false;
+					}
+
+					extrasOfs = (pExtrasGL - m_pExtrasBuffer)/4;
+
+					// Provide rectangle center and radius as extras
+
+					RectSPX rect(dx1, dy1, dx2 - dx1, dy2 - dy1);
+
+					SizeF    radius(rect.w / (2.f * 64), rect.h / (2.f * 64));
+					CoordF    center((rect.x / 64.f) + radius.w, (rect.y / 64.f) + radius.h);
+
+					* pExtrasGL++ = center.x;
+					* pExtrasGL++ = center.y;
+					* pExtrasGL++ = radius.w;
+					* pExtrasGL++ = radius.h;
+
+					dx2 += 63;
+					dy2 += 63;
+				}
+
+				dx1 >>= 6;
+				dy1 >>= 6;
+				dx2 >>= 6;
+				dy2 >>= 6;
 
 				pVertexGL->coord.x = dx1;
 				pVertexGL->coord.y = dy1;
 				pVertexGL->colorsOfs = pColorGL - m_pColorBuffer;
-				pVertexGL->extrasOfs = 0;
+				pVertexGL->extrasOfs = extrasOfs;
 				pVertexGL->tintmapOfs = { 0.5,0.5 };
 				pVertexGL++;
 
 				pVertexGL->coord.x = dx2;
 				pVertexGL->coord.y = dy1;
 				pVertexGL->colorsOfs = pColorGL - m_pColorBuffer;
-				pVertexGL->extrasOfs = 0;
+				pVertexGL->extrasOfs = extrasOfs;
 				pVertexGL->tintmapOfs = { 0.5,0.5 };
 				pVertexGL++;
 
 				pVertexGL->coord.x = dx2;
 				pVertexGL->coord.y = dy2;
 				pVertexGL->colorsOfs = pColorGL - m_pColorBuffer;
-				pVertexGL->extrasOfs = 0;
+				pVertexGL->extrasOfs = extrasOfs;
 				pVertexGL->tintmapOfs = { 0.5,0.5 };
 				pVertexGL++;
 
 				pVertexGL->coord.x = dx1;
 				pVertexGL->coord.y = dy1;
 				pVertexGL->colorsOfs = pColorGL - m_pColorBuffer;
-				pVertexGL->extrasOfs = 0;
+				pVertexGL->extrasOfs = extrasOfs;
 				pVertexGL->tintmapOfs = { 0.5,0.5 };
 				pVertexGL++;
 
 				pVertexGL->coord.x = dx2;
 				pVertexGL->coord.y = dy2;
 				pVertexGL->colorsOfs = pColorGL - m_pColorBuffer;
-				pVertexGL->extrasOfs = 0;
+				pVertexGL->extrasOfs = extrasOfs;
 				pVertexGL->tintmapOfs = { 0.5,0.5 };
 				pVertexGL++;
 
 				pVertexGL->coord.x = dx1;
 				pVertexGL->coord.y = dy2;
 				pVertexGL->colorsOfs = pColorGL - m_pColorBuffer;
-				pVertexGL->extrasOfs = 0;
+				pVertexGL->extrasOfs = extrasOfs;
 				pVertexGL->tintmapOfs = { 0.5,0.5 };
 				pVertexGL++;
+
+				nRectsWritten++;
 			}
 
 			// Add colors to buffer
@@ -458,8 +519,8 @@ void GlBackend::processCommands(int32_t* pBeg, int32_t* pEnd)
 
 			// Store command
 
-			* pCommandGL++ = (int) Command::Fill;
-			* pCommandGL++ = nRects * 6;
+			* pCommandGL++ = (int) bStraightFill ? CommandGL::StraightFill : CommandGL::SubpixelFill;
+			* pCommandGL++ = nRectsWritten * 6;
 
 			break;
 		}
@@ -594,15 +655,15 @@ void GlBackend::processCommands(int32_t* pBeg, int32_t* pEnd)
 
 			if (m_blitSourceSampleMethod == SampleMethod::Bilinear)
 			{
-				* pExtrasGL++ = GLfloat(srcX >> 10) + 0.5f;
-				* pExtrasGL++ = GLfloat(srcY >> 10) + 0.5f;
+				* pExtrasGL++ = srcX / 1024.f + 0.5f;
+				* pExtrasGL++ = srcY / 1024.f + 0.5f;
 				* pExtrasGL++ = GLfloat(dstX >> 6) + 0.5f;
 				* pExtrasGL++ = GLfloat(dstY >> 6) + 0.5f;
 			}
 			else
 			{
-				*pExtrasGL++ = GLfloat(srcX >> 10);
-				*pExtrasGL++ = GLfloat(srcY >> 10);
+				*pExtrasGL++ = srcX / 1024.f;
+				*pExtrasGL++ = srcY / 1024.f;
 				*pExtrasGL++ = GLfloat(dstX >> 6) + 0.5f;
 				*pExtrasGL++ = GLfloat(dstY >> 6) + 0.5f;
 			}
@@ -617,7 +678,7 @@ void GlBackend::processCommands(int32_t* pBeg, int32_t* pEnd)
 
 			// Store command
 
-			*pCommandGL++ = (int)Command::Blit;
+			*pCommandGL++ = (int)CommandGL::Blit;
 			*pCommandGL++ = nRects * 6;
 
 			break;
@@ -1174,7 +1235,9 @@ void GlBackend::beginSession(const SessionInfo* pSession)
 
 	// Reserve buffer for extras
 
-	int nExtrasFloats = pSession->nBlit * 8;
+	int nExtrasFloats = 
+		pSession->nBlit * 8 
+		+ pSession->nRects * 4;			// This is for possible subpixel fills. We have no way of knowing exactly how much is needed.
 
 	m_pExtrasBuffer = new GLfloat[nExtrasFloats];
 	m_extrasBufferSize = 0;
@@ -1250,17 +1313,17 @@ void GlBackend::endSession()
 
 	while (pCmd < pEnd)
 	{
-		Command cmd = (Command)*pCmd++;
+		CommandGL cmd = (CommandGL)*pCmd++;
 
 		switch (cmd)
 		{
-			case Command::None:
+			case CommandGL::SetCanvas:
 			{
 				_setCanvas(m_surfaces[surfaceOfs++]);
 				break;
 			}
 
-			case Command::StateChange:
+			case CommandGL::StateChange:
 			{
 				int32_t statesChanged = *pCmd++;
 
@@ -1300,7 +1363,7 @@ void GlBackend::endSession()
 			}
 
 
-			case Command::Fill:
+			case CommandGL::StraightFill:
 			{
 				int nVertices = *pCmd++;
 
@@ -1314,7 +1377,22 @@ void GlBackend::endSession()
 				break;
 			}
 
-			case Command::Blit:
+			case CommandGL::SubpixelFill:
+			{
+				int nVertices = *pCmd++;
+
+//				if (m_bGradientActive)
+//					glUseProgram(m_aaFillGradientProg[m_bActiveCanvasIsA8]);
+//				else
+					glUseProgram(m_aaFillProg[m_bActiveCanvasIsA8]);
+
+				glDrawArrays(GL_TRIANGLES, vertexOfs, nVertices);
+				vertexOfs += nVertices;
+				break;
+			}
+
+
+			case CommandGL::Blit:
 			{
 				int nVertices = *pCmd++;
 

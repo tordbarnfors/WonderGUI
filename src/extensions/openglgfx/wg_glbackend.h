@@ -118,6 +118,16 @@ namespace wg
 
 		void	_setCanvas(Surface* pSurface);
 
+		enum CommandGL
+		{
+			SetCanvas,
+			StateChange,
+			StraightFill,
+			SubpixelFill,
+			Blit,
+
+		};
+
 
 		SurfaceFactory_p	m_pSurfaceFactory = nullptr;
 		EdgemapFactory_p	m_pEdgemapFactory = nullptr;
