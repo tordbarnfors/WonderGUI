@@ -121,6 +121,8 @@ void GlBackend::setCanvas(CanvasRef ref)
 	{
 		m_pCommandQueue[m_commandQueueSize++] = (int)CommandGL::SetCanvas;
 		m_surfaces.push_back(nullptr);
+
+		m_pCanvas = nullptr;
 	}
 	else
 	{
@@ -132,6 +134,8 @@ void GlBackend::setCanvas(Surface* pSurface)
 {
 	m_pCommandQueue[m_commandQueueSize++] = (int) CommandGL::SetCanvas;
 	m_surfaces.push_back(pSurface);
+
+	m_pCanvas = pSurface;
 }
 
 
@@ -171,7 +175,7 @@ void GlBackend::_setCanvas(Surface* pSurface)
 	}
 	else
 	{
-		size = m_defaultCanvasSize;
+		size = m_defaultCanvas.size / 64;
 
 		if (GfxBase::defaultToSRGB())
 			glEnable(GL_FRAMEBUFFER_SRGB);
@@ -529,25 +533,193 @@ void GlBackend::processCommands(int32_t* pBeg, int32_t* pEnd)
 		{
 			int nCoords = *p++;
 
-			pCoords += nCoords;
-			pColors += nCoords;
+			for (int pixel = 0; pixel < nCoords; pixel++)
+			{
+				pVertexGL->coord.x = * pCoords++ / 64;
+				pVertexGL->coord.y = * pCoords++ / 64;
+				pVertexGL->colorsOfs = pColorGL - m_pColorBuffer;
+				pVertexGL++;
+
+				HiColor col = * pColors++;
+
+				pColorGL->r = col.r / 4096.f;
+				pColorGL->g = col.g / 4096.f;
+				pColorGL->b = col.b / 4096.f;
+				pColorGL->a = col.a / 4096.f;
+
+				pColorGL++;
+
+			}
+
+			// Store command
+
+			*pCommandGL++ = CommandGL::Plot;
+			*pCommandGL++ = nCoords;
 			break;
 		}
 
 		case Command::Line:
 		{
-			spx thickness = *p++;
+			float thickness = *p++ / 64.f;
 			int32_t nClipRects = *p++;
+			int32_t nLines = *p++;
 
-			CoordSPX beg = { *pCoords++, *pCoords++ };
-			CoordSPX end = { *pCoords++, *pCoords++ };
-
-			HiColor color = *pColors++;
+			HiColor col = *pColors++;
 
 			const RectSPX* pClipRects = reinterpret_cast<const RectSPX*>(pCoords);
-			pCoords += 4 * nClipRects;
 
+			pCoords += nClipRects * 4;
 
+			// Calculate and store vertices
+
+			int nLinesWritten = 0;
+
+			for (int i = 0; i < nLines; i++)
+			{
+				CoordSPX begin = { *pCoords++, *pCoords++ };
+				CoordSPX end = { *pCoords++, *pCoords++ };
+
+				begin = roundToPixels(begin);
+				end = roundToPixels(end);
+
+				int 	length;
+				float   width;
+
+				float	slope;
+				float	s, w;
+				bool	bSteep;
+
+				CoordI	c1, c2, c3, c4;
+
+				if (std::abs(begin.x - end.x) > std::abs(begin.y - end.y))
+				{
+					// Prepare mainly horizontal line segment
+
+					if (begin.x > end.x)
+						swap(begin, end);
+
+					length = end.x - begin.x;
+					if (length == 0)
+						continue;											// TODO: Should stil draw the caps!
+
+					slope = ((float)(end.y - begin.y)) / length;
+					width = _scaleThickness(thickness, slope);
+					bSteep = false;
+
+					if( m_pCanvas )
+						s = ((begin.y + 0.5f) - (begin.x + 0.5f) * slope);
+					else
+						s = m_defaultCanvas.size.h / 64 - ((begin.y + 0.5f) - (begin.x + 0.5f) * slope);
+
+					w = width / 2 + 0.5f;
+
+					float   y1 = begin.y - width / 2;
+					float   y2 = end.y - width / 2;
+
+					c1.x = begin.x;
+					c1.y = int(y1) - 1;
+					c2.x = end.x;
+					c2.y = int(y2) - 1;
+					c3.x = end.x;
+					c3.y = int(y2 + width) + 2;
+					c4.x = begin.x;
+					c4.y = int(y1 + width) + 2;
+				}
+				else
+				{
+					// Prepare mainly vertical line segment
+
+					if (begin.y > end.y)
+						swap(begin, end);
+
+					length = end.y - begin.y;
+					if (length == 0)
+						continue;											// TODO: Should stil draw the caps!
+
+					slope = ((float)(end.x - begin.x)) / length;
+					width = _scaleThickness(thickness, slope);
+					bSteep = true;
+
+					s = (begin.x + 0.5f) - (m_canvasUBO.yOfs * m_canvasUBO.yMul + (begin.y + 0.5f)) * slope;
+					w = width / 2 + 0.5f;
+
+					float   x1 = begin.x - width / 2;
+					float   x2 = end.x - width / 2;
+
+					c1.x = int(x1) - 1;
+					c1.y = begin.y;
+					c2.x = int(x1 + width) + 2;
+					c2.y = begin.y;
+					c3.x = int(x2 + width) + 2;
+					c3.y = end.y;
+					c4.x = int(x2) - 1;
+					c4.y = end.y;
+				}
+
+				int extrasOfs = (pExtrasGL - m_pExtrasBuffer) / 4;
+				int colorsOfs = (pColorGL - m_pColorBuffer);
+
+				pVertexGL->coord = c1;
+				pVertexGL->colorsOfs = colorsOfs;
+				pVertexGL->extrasOfs = extrasOfs;
+				pVertexGL++;
+
+				pVertexGL->coord = c2;
+				pVertexGL->colorsOfs = colorsOfs;
+				pVertexGL->extrasOfs = extrasOfs;
+				pVertexGL++;
+
+				pVertexGL->coord = c3;
+				pVertexGL->colorsOfs = colorsOfs;
+				pVertexGL->extrasOfs = extrasOfs;
+				pVertexGL++;
+
+				pVertexGL->coord = c1;
+				pVertexGL->colorsOfs = colorsOfs;
+				pVertexGL->extrasOfs = extrasOfs;
+				pVertexGL++;
+
+				pVertexGL->coord = c3;
+				pVertexGL->colorsOfs = colorsOfs;
+				pVertexGL->extrasOfs = extrasOfs;
+				pVertexGL++;
+
+				pVertexGL->coord = c4;
+				pVertexGL->colorsOfs = colorsOfs;
+				pVertexGL->extrasOfs = extrasOfs;
+				pVertexGL++;
+
+				*pExtrasGL++ = s;
+				*pExtrasGL++ = w;
+				*pExtrasGL++ = slope;
+				*pExtrasGL++ = bSteep;
+
+				nLinesWritten++;
+			}
+
+			// Store command, with clip rects
+
+			if (nLinesWritten > 0)
+			{
+				*pCommandGL++ = CommandGL::Lines;
+				*pCommandGL++ = nClipRects;
+				*pCommandGL++ = nLinesWritten * 6;
+
+				for (int i = 0; i < nClipRects; i++)
+				{
+					RectSPX r = *pClipRects++;
+					*pCommandGL++ = r.x >> 6;
+					*pCommandGL++ = r.y >> 6;
+					*pCommandGL++ = r.w >> 6;
+					*pCommandGL++ = r.h >> 6;
+				}
+
+				pColorGL->r = col.r / 4096.f;
+				pColorGL->g = col.g / 4096.f;
+				pColorGL->b = col.b / 4096.f;
+				pColorGL->a = col.a / 4096.f;
+				pColorGL++;
+			}
 
 			break;
 		}
@@ -1217,7 +1389,7 @@ void GlBackend::beginSession(const SessionInfo* pSession)
 {
 	// Reserve buffer for coordinates
 
-	int nCoords = pSession->nPoints + pSession->nRects * 6;
+	int nCoords = pSession->nPoints + pSession->nRects * 6 + pSession->nLineCoords/2 * 6;
 
 	m_pVertexBuffer = new VertexGL[nCoords];
 	m_nVertices = 0;
@@ -1236,7 +1408,8 @@ void GlBackend::beginSession(const SessionInfo* pSession)
 	// Reserve buffer for extras
 
 	int nExtrasFloats = 
-		pSession->nBlit * 8 
+		pSession->nBlit * 8
+		+ pSession->nLineCoords/2 * 4
 		+ pSession->nRects * 4;			// This is for possible subpixel fills. We have no way of knowing exactly how much is needed.
 
 	m_pExtrasBuffer = new GLfloat[nExtrasFloats];
@@ -1258,6 +1431,8 @@ void GlBackend::beginSession(const SessionInfo* pSession)
 		pSession->nStateChanges * 16	//TODO: Check exactly size needed
 		+ pSession->nFill * 2 
 		+ pSession->nBlit * 2
+		+ pSession->nPlots * 2
+		+ pSession->nLines * 3 + pSession->nLineClipRects * 4
 		+ 1];							// TODO: Uggly hack to allow for exactly one setCanvas!
 
 	m_commandQueueSize = 0;
@@ -1362,6 +1537,15 @@ void GlBackend::endSession()
 
 			}
 
+			case CommandGL::Plot:
+			{
+				int nVertices = *pCmd++;
+				glUseProgram(m_plotProg[m_bActiveCanvasIsA8]);
+
+				glDrawArrays(GL_POINTS, vertexOfs, nVertices);
+				vertexOfs += nVertices;
+				break;
+			}
 
 			case CommandGL::StraightFill:
 			{
@@ -1391,6 +1575,29 @@ void GlBackend::endSession()
 				break;
 			}
 
+			case CommandGL::Lines:
+			{
+				int clipListLen = *pCmd++;
+				int nVertices = *pCmd++;
+
+				glUseProgram(m_lineFromToProg[m_bActiveCanvasIsA8]);
+
+				for (int i = 0; i < clipListLen; i++)
+				{
+					int x = *pCmd++;
+					int y = *pCmd++;
+					int w = *pCmd++;
+					int h = *pCmd++;
+
+					glScissor(x, y, w, h);
+					glDrawArrays(GL_TRIANGLES, vertexOfs, nVertices);
+				}
+
+				glScissor(0, 0, m_activeCanvasSize.w, m_activeCanvasSize.h);
+
+				vertexOfs += nVertices;
+				break;
+			}
 
 			case CommandGL::Blit:
 			{
@@ -1432,6 +1639,7 @@ void GlBackend::endSession()
 	m_pCommandQueue = nullptr;
 
 	m_surfaces.clear();
+	m_pCanvas = nullptr;
 }
 
 

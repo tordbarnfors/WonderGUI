@@ -75,7 +75,7 @@ namespace wg
 			// Total content of coord buffers
 
 			int		nPoints;			// Total number of points to be plotted
-			int		nLineCoords;		// Total number of coordinates for line commands (=nLines*2)
+			int		nLineCoords;		// Total number of coordinates for line commands (=total lines in line commands *2)
 			int		nLineClipRects;		// Total number of clip rectangles for line commands.
 			int		nRects;				// Total number of rects for fill, blit, blur and edgemapDraw commands.
 

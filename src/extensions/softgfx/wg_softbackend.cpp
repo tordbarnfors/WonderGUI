@@ -668,21 +668,12 @@ namespace wg
 			{
 				spx thickness = * p++;
 				int32_t nClipRects = * p++;
-
-				CoordSPX beg = { *pCoords++, *pCoords++ };
-				CoordSPX end = { *pCoords++, *pCoords++ };
+				int32_t nLines = *p++;
 
 				HiColor color = *pColors++;
 
 				const RectSPX * pClipRects = reinterpret_cast<const RectSPX*>(pCoords);
 				pCoords += 4 * nClipRects;
-
-
-				//TODO: Proper 26:6 support
-				beg = Util::roundToPixels(beg);
-				end = Util::roundToPixels(end);
-
-
 
 				HiColor fillColor = color;
 				
@@ -719,107 +710,119 @@ namespace wg
 				int		pos, slope;
 				int		clipStart, clipEnd;
 
-				if (std::abs(beg.x - end.x) > std::abs(beg.y - end.y))
+				for (int line = 0; line < nLines; line++)
 				{
-					// Prepare mainly horizontal line segment
+					CoordSPX beg = { *pCoords++, *pCoords++ };
+					CoordSPX end = { *pCoords++, *pCoords++ };
 
-					if (beg.x > end.x)
-						swap(beg, end);
+					//TODO: Proper 26:6 support
+					beg = Util::roundToPixels(beg);
+					end = Util::roundToPixels(end);
 
-					length = end.x - beg.x;
-					slope = ((end.y - beg.y) * 65536) / length;
 
-					width = _scaleLineThickness(thickness / 64.f, slope);
-					pos = (beg.y << 16) - width / 2 + 32768;
-
-					rowInc = m_canvasPixelBytes;
-					pixelInc = m_canvasPitch;
-
-					pRow = m_pCanvasPixels + beg.x * rowInc;
-
-					// Loop through patches
-
-					for (int i = 0; i < nClipRects; i++)
+					if (std::abs(beg.x - end.x) > std::abs(beg.y - end.y))
 					{
-						// Do clipping
+						// Prepare mainly horizontal line segment
 
-						const RectI clip = pClipRects[i] / 64;
+						if (beg.x > end.x)
+							swap(beg, end);
 
-						int _length = length;
-						int _pos = pos;
-						uint8_t* _pRow = pRow;
+						length = end.x - beg.x;
+						slope = ((end.y - beg.y) * 65536) / length;
 
-						if (beg.x < clip.x)
+						width = _scaleLineThickness(thickness / 64.f, slope);
+						pos = (beg.y << 16) - width / 2 + 32768;
+
+						rowInc = m_canvasPixelBytes;
+						pixelInc = m_canvasPitch;
+
+						pRow = m_pCanvasPixels + beg.x * rowInc;
+
+						// Loop through patches
+
+						for (int i = 0; i < nClipRects; i++)
 						{
-							int cut = clip.x - beg.x;
-							_length -= cut;
-							_pRow += rowInc * cut;
-							_pos += slope * cut;
+							// Do clipping
+
+							const RectI clip = pClipRects[i] / 64;
+
+							int _length = length;
+							int _pos = pos;
+							uint8_t* _pRow = pRow;
+
+							if (beg.x < clip.x)
+							{
+								int cut = clip.x - beg.x;
+								_length -= cut;
+								_pRow += rowInc * cut;
+								_pos += slope * cut;
+							}
+
+							if (end.x > clip.x + clip.w)
+								_length -= end.x - (clip.x + clip.w);
+
+							clipStart = clip.y << 16;
+							clipEnd = (clip.y + clip.h) << 16;
+
+							//  Draw
+
+							pOp(clipStart, clipEnd, _pRow, rowInc, pixelInc, _length, width, _pos, slope, fillColor, m_colTrans, { 0,0 });
 						}
+					}
+					else
+					{
+						// Prepare mainly vertical line segment
 
-						if (end.x > clip.x + clip.w)
-							_length -= end.x - (clip.x + clip.w);
+						if (beg.y > end.y)
+							swap(beg, end);
 
-						clipStart = clip.y << 16;
-						clipEnd = (clip.y + clip.h) << 16;
+						length = end.y - beg.y;
+						if (length == 0)
+							return;											// TODO: Should stil draw the caps!
 
-						//  Draw
+						// Need multiplication instead of shift as operand might be negative
+						slope = ((end.x - beg.x) * 65536) / length;
+						width = _scaleLineThickness(thickness / 64.f, slope);
+						pos = (beg.x << 16) - width / 2 + 32768;
 
-						pOp(clipStart, clipEnd, _pRow, rowInc, pixelInc, _length, width, _pos, slope, fillColor, m_colTrans, { 0,0 });
+						rowInc = m_canvasPitch;
+						pixelInc = m_canvasPixelBytes;
+
+						pRow = m_pCanvasPixels + beg.y * rowInc;
+
+						// Loop through patches
+
+						for (int i = 0; i < nClipRects; i++)
+						{
+							// Do clipping
+
+							const RectI clip = pClipRects[i] / 64;
+
+							int _length = length;
+							int _pos = pos;
+							uint8_t* _pRow = pRow;
+
+							if (beg.y < clip.y)
+							{
+								int cut = clip.y - beg.y;
+								_length -= cut;
+								_pRow += rowInc * cut;
+								_pos += slope * cut;
+							}
+
+							if (end.y > clip.y + clip.h)
+								_length -= end.y - (clip.y + clip.h);
+
+							clipStart = clip.x << 16;
+							clipEnd = (clip.x + clip.w) << 16;
+
+							//  Draw
+
+							pOp(clipStart, clipEnd, _pRow, rowInc, pixelInc, _length, width, _pos, slope, fillColor, m_colTrans, { 0,0 });
+						}
 					}
 				}
-				else
-				{
-					// Prepare mainly vertical line segment
 
-					if (beg.y > end.y)
-						swap(beg, end);
-
-					length = end.y - beg.y;
-					if (length == 0)
-						return;											// TODO: Should stil draw the caps!
-
-					// Need multiplication instead of shift as operand might be negative
-					slope = ((end.x - beg.x) * 65536) / length;
-					width = _scaleLineThickness(thickness / 64.f, slope);
-					pos = (beg.x << 16) - width / 2 + 32768;
-
-					rowInc = m_canvasPitch;
-					pixelInc = m_canvasPixelBytes;
-
-					pRow = m_pCanvasPixels + beg.y * rowInc;
-
-					// Loop through patches
-
-					for (int i = 0; i < nClipRects; i++)
-					{
-						// Do clipping
-
-						const RectI clip = pClipRects[i] / 64;
-
-						int _length = length;
-						int _pos = pos;
-						uint8_t* _pRow = pRow;
-
-						if (beg.y < clip.y)
-						{
-							int cut = clip.y - beg.y;
-							_length -= cut;
-							_pRow += rowInc * cut;
-							_pos += slope * cut;
-						}
-
-						if (end.y > clip.y + clip.h)
-							_length -= end.y - (clip.y + clip.h);
-
-						clipStart = clip.x << 16;
-						clipEnd = (clip.x + clip.w) << 16;
-
-						//  Draw
-
-						pOp(clipStart, clipEnd, _pRow, rowInc, pixelInc, _length, width, _pos, slope, fillColor, m_colTrans, { 0,0 });
-					}
-				}
 				break;
 			}
 

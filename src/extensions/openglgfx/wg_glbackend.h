@@ -122,6 +122,8 @@ namespace wg
 		{
 			SetCanvas,
 			StateChange,
+			Plot,
+			Lines,
 			StraightFill,
 			SubpixelFill,
 			Blit,
@@ -161,9 +163,6 @@ namespace wg
 		GLuint			m_framebufferId;
 		int				m_nSegments;								// Number of segments for current segment command.
 
-		int				m_canvasYstart;
-		int				m_canvasYmul;
-
 		GLsync          m_idleSync = 0;
 
 		bool			m_bFullyInitialized = false;
@@ -173,9 +172,9 @@ namespace wg
 		CoordF			m_blitSourceSize;
 		SampleMethod	m_blitSourceSampleMethod;
 
-		SizeI			m_defaultCanvasSize;
-		int				m_defaultCanvasScale = 64;
+		Surface_p		m_pCanvas = nullptr;
 
+		// "Active" members are updated and used in the rendering loop in endSession.
 
 		bool			m_bActiveCanvasIsA8 = false;
 		GlSurface_p		m_pActiveCanvas = nullptr;                                      // Currently active canvas in OpenGL, not to confuse with m_pCanvas which might not be active yet.

@@ -331,19 +331,25 @@ namespace wg
 			{
 				spx thickness = *p++;
 				int32_t nRects = *p++;
-
-				CoordSPX beg = { *pCoords++, *pCoords++ };
-				CoordSPX end = { *pCoords++, *pCoords++ };
+				int32_t nLines = *p++;
 
 				HiColor col = * pColors++;
 
-				*m_pStream << "    Draw line from (" << beg.x << ", " << beg.y << ") to (" << end.x << ", " << end.y 
-							<< ") with color : " << col.r << ", " << col.g << ", " << col.b << ", " << col.a
-							<< " and thickness: " << thickness << "." << std::endl;
-				*m_pStream << "    Passing through " << nRects << " rectangles." << std::endl;
+				*m_pStream << "    Draw " << nLines << " lines with color : " << col.r << ", " << col.g << ", " << col.b << ", " << col.a
+					<< " and thickness: " << thickness
+					<< ". Clipped by " << nRects << " rectangles:" << std::endl;
 
 				_printRects(*m_pStream, nRects, reinterpret_cast<RectSPX*>(pCoords));
 				pCoords += nRects * 4;
+
+				for (int i = 0; i < nLines; i++)
+				{
+					CoordSPX beg = { *pCoords++, *pCoords++ };
+					CoordSPX end = { *pCoords++, *pCoords++ };
+
+					*m_pStream << "        from (" << beg.x << ", " << beg.y << ") to(" << end.x << ", " << end.y << ")" << std::endl;
+				}
+
 				break;
 			}
 

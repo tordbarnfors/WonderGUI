@@ -1326,18 +1326,14 @@ void GfxDeviceGen2::drawLine(CoordSPX beg, CoordSPX end, HiColor color, spx thic
 	auto& coords = m_pActiveLayer->coords;
 
 	int commandsOfs = (int) commands.size();
-	int coordsOfs = (int)coords.size();
 
 	const RectSPX* pClipRects = m_pActiveClipList->pRects;
 
 	commands.push_back(int(Command::Line));
 	commands.push_back(thickness);
 	commands.push_back(nRects);
+	commands.push_back(1);					// nLines.  TODO: Take usage of and combine several calls!
 
-	coords.push_back(beg.x);
-	coords.push_back(beg.y);
-	coords.push_back(end.x);
-	coords.push_back(end.y);
 
 
 	for (int i = 0; i < m_pActiveClipList->nRects; i++)
@@ -1356,23 +1352,27 @@ void GfxDeviceGen2::drawLine(CoordSPX beg, CoordSPX end, HiColor color, spx thic
 			coords.push_back(pClipRects[i].h);
 
 			nRects++;
-			break;
 		}
 	}
 
 	if (nRects > 0)
 	{
+		coords.push_back(beg.x);
+		coords.push_back(beg.y);
+		coords.push_back(end.x);
+		coords.push_back(end.y);
+
 		commands[commandsOfs + 2] = nRects;
 		m_pActiveLayer->colors.push_back(color);
 
 		m_pActiveCanvas->sessionInfo.nLines++;
-		m_pActiveCanvas->sessionInfo.nLineCoords++;
+		m_pActiveCanvas->sessionInfo.nLineCoords+=2;
 		m_pActiveCanvas->sessionInfo.nLineClipRects += nRects;
+		m_pActiveCanvas->sessionInfo.nColors++;
 	}
 	else
 	{
 		commands.resize(commandsOfs);
-		coords.resize(coordsOfs);
 	}
 }
 
