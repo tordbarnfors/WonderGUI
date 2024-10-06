@@ -52,6 +52,35 @@ const char GlBackend::fillVertexShader[] =
 "   fragColor = texelFetch(colorBufferId, colorOfs);	   "
 "}                                                         ";
 
+const char GlBackend::fillTintmapVertexShader[] =
+
+"#version 330 core\n"
+
+"layout(std140) uniform Canvas"
+"{"
+"	float  canvasWidth;"
+"	float  canvasHeight;"
+"	float  canvasYOfs;"
+"	float  canvasYMul;"
+"};"
+
+"uniform samplerBuffer colorBufferId;					   "
+"layout(location = 0) in ivec2 pos;                        "
+"layout(location = 2) in int colorOfs;                     "
+"layout(location = 4) in vec2 tintmapOfs;                  "
+"out vec4 fragColor;                                       "
+"out vec2 tintmapUU;                                       "
+"void main()                                               "
+"{                                                         "
+"   gl_Position.x = pos.x*2/canvasWidth - 1.0;             "
+"   gl_Position.y = (canvasYOfs + canvasYMul*pos.y)*2/canvasHeight - 1.0;    "
+"   gl_Position.z = 0.0;                                   "
+"   gl_Position.w = 1.0;                                   "
+"   fragColor = texelFetch(colorBufferId, colorOfs);	   "
+"   tintmapUU = tintmapOfs;								   "
+"}                                                         ";
+
+
 const char GlBackend::fillGradientVertexShader[] =
 
 "#version 330 core\n"
@@ -114,6 +143,21 @@ const char GlBackend::fillFragmentShader[] =
 "{                                      "
 "   outColor = fragColor;                   "
 "}                                      ";
+
+const char GlBackend::fillFragmentShaderTintmap[] =
+
+"#version 330 core\n"
+"uniform samplerBuffer tintmapBufferId;	"
+"in vec4 fragColor;                     "
+"in vec2 tintmapUU;                     "
+"out vec4 outColor;                     "
+"void main()                            "
+"{                                      "
+"   outColor = texelFetch(tintmapBufferId, tintmapUU.u) "
+"               * texelFetch(tintmapBufferId, tintmapUU.v)"
+"	           * fragColor;  "
+"}                                      ";
+
 
 const char GlBackend::fillFragmentShader_A8[] =
 

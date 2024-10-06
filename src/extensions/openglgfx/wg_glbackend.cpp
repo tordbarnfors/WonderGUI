@@ -340,23 +340,92 @@ void GlBackend::processCommands(int32_t* pBeg, int32_t* pEnd)
 					pColorGL->a = tintColor.a / 4096.f;
 					pColorGL++;
 	 			}
+				m_bTintmapActive = false;
 			}
 
 			if (statesChanged & uint8_t(StateChange::TintMap))
 			{
 				int32_t objectOfs = *p++;
-				int32_t	x = *p++ / 64;
-				int32_t	y = *p++ / 64;
-				int32_t	w = *p++ / 64;
-				int32_t	h = *p++ / 64;
+				int32_t	x = *p++;
+				int32_t	y = *p++;
+				int32_t	w = *p++;
+				int32_t	h = *p++;
 
 
 //				m_colTrans.tintRect = RectI(x, y, w, h);
 
 				auto pTintmap = static_cast<Tintmap*>(m_pObjectsBeg[objectOfs]);
 
-				m_tintColorOfs = -1;
+				bool bHorizontal = false, bVertical = false;
 
+				m_bTintmapActive = true;
+				m_tintmapRect = RectI(x, y, w, h) / 64;
+
+				if (pTintmap->isHorizontal())
+				{
+					int nColors = w / 64;
+
+					m_tintmapBeginX = pColorGL - m_pColorBuffer;
+					m_tintmapEndX = pColorGL - m_pColorBuffer + nColors;
+
+
+					HiColor * pTmp = (HiColor*) GfxBase::memStackAlloc(sizeof(HiColor) * nColors);
+
+					pTintmap->exportHorizontalColors(w, pTmp);
+					for (int i = 0; i < nColors; i++)
+					{
+						pColorGL->r = pTmp->r / 4096.f;
+						pColorGL->g = pTmp->g / 4096.f;
+						pColorGL->b = pTmp->b / 4096.f;
+						pColorGL->a = pTmp->a / 4096.f;
+						pColorGL++;
+						pTmp++;
+					}
+
+					GfxBase::memStackFree(sizeof(HiColor) * nColors);
+					bHorizontal = true;
+				}
+				else
+				{
+					// Default to use white
+
+					m_tintmapBeginX = 0;
+					m_tintmapEndX = 0;
+				}
+
+
+				if (pTintmap->isVertical())
+				{
+					int nColors = h / 64;
+
+					m_tintmapBeginY = pColorGL - m_pColorBuffer;
+					m_tintmapEndY = pColorGL - m_pColorBuffer + nColors;
+
+					HiColor* pTmp = (HiColor*)GfxBase::memStackAlloc(sizeof(HiColor) * nColors);
+
+					pTintmap->exportHorizontalColors(h, pTmp);
+					for (int i = 0; i < nColors; i++)
+					{
+						pColorGL->r = pTmp->r / 4096.f;
+						pColorGL->g = pTmp->g / 4096.f;
+						pColorGL->b = pTmp->b / 4096.f;
+						pColorGL->a = pTmp->a / 4096.f;
+						pColorGL++;
+						pTmp++;
+					}
+
+					GfxBase::memStackFree(sizeof(HiColor) * nColors);
+					bVertical = true;
+				}
+				else
+				{
+					// Default to use white
+
+					m_tintmapBeginY= 0;
+					m_tintmapEndY = 0;
+				}
+
+				m_tintColorOfs = -1;
 			}
 
 			if (statesChanged & uint8_t(StateChange::MorphFactor))
@@ -390,6 +459,10 @@ void GlBackend::processCommands(int32_t* pBeg, int32_t* pEnd)
 			int		nRectsWritten = 0;
 			int		extrasOfs = 0;
 
+			// Setup Tintmap
+
+
+
 			// Add rects to vertex buffer
 
 			for (int i = 0; i < nRects; i++)
@@ -399,6 +472,7 @@ void GlBackend::processCommands(int32_t* pBeg, int32_t* pEnd)
 				int	dy1 = * pCoords++;
 				int dx2 = dx1 + *pCoords++;
 				int dy2 = dy1 + *pCoords++;
+
 
 				if (((dx1 | dy1 | dx2 | dy2) & 63) == 0)
 				{
@@ -454,46 +528,82 @@ void GlBackend::processCommands(int32_t* pBeg, int32_t* pEnd)
 				dx2 >>= 6;
 				dy2 >>= 6;
 
+
+				float tintmapBeginX, tintmapBeginY, tintmapEndX, tintmapEndY;
+
+				if (m_bTintmapActive)
+				{
+					if (m_tintmapBeginX == 0)
+					{
+						tintmapBeginX = 0.5f;
+						tintmapEndX = 0.5f;
+					}
+					else
+					{
+						tintmapBeginX = m_tintmapBeginX + (dx1 - m_tintmapRect.x) + 0.5f;
+						tintmapEndX = tintmapBeginX + (dx2 - dx1) + 0.5f;
+					}
+
+					if (m_tintmapBeginY == 0)
+					{
+						tintmapBeginY = 0.5f;
+						tintmapEndY = 0.5f;
+					}
+					else
+					{
+						tintmapBeginY = m_tintmapBeginY + (dy1 - m_tintmapRect.y) + 0.5f;
+						tintmapEndY = tintmapBeginY + (dy2 - dy1) + 0.5f;
+					}
+
+				}
+				else
+				{
+					tintmapBeginX = 0.5f;
+					tintmapBeginY = 0.5f; 
+					tintmapEndX = 0.5f;
+					tintmapEndY = 0.5f;
+				}
+
 				pVertexGL->coord.x = dx1;
 				pVertexGL->coord.y = dy1;
 				pVertexGL->colorsOfs = pColorGL - m_pColorBuffer;
 				pVertexGL->extrasOfs = extrasOfs;
-				pVertexGL->tintmapOfs = { 0.5,0.5 };
+				pVertexGL->tintmapOfs = { tintmapBeginX,tintmapBeginY };
 				pVertexGL++;
 
 				pVertexGL->coord.x = dx2;
 				pVertexGL->coord.y = dy1;
 				pVertexGL->colorsOfs = pColorGL - m_pColorBuffer;
 				pVertexGL->extrasOfs = extrasOfs;
-				pVertexGL->tintmapOfs = { 0.5,0.5 };
+				pVertexGL->tintmapOfs = { tintmapEndX,tintmapBeginY };
 				pVertexGL++;
 
 				pVertexGL->coord.x = dx2;
 				pVertexGL->coord.y = dy2;
 				pVertexGL->colorsOfs = pColorGL - m_pColorBuffer;
 				pVertexGL->extrasOfs = extrasOfs;
-				pVertexGL->tintmapOfs = { 0.5,0.5 };
+				pVertexGL->tintmapOfs = { tintmapEndX,tintmapEndY };
 				pVertexGL++;
 
 				pVertexGL->coord.x = dx1;
 				pVertexGL->coord.y = dy1;
 				pVertexGL->colorsOfs = pColorGL - m_pColorBuffer;
 				pVertexGL->extrasOfs = extrasOfs;
-				pVertexGL->tintmapOfs = { 0.5,0.5 };
+				pVertexGL->tintmapOfs = { tintmapBeginX,tintmapBeginY };
 				pVertexGL++;
 
 				pVertexGL->coord.x = dx2;
 				pVertexGL->coord.y = dy2;
 				pVertexGL->colorsOfs = pColorGL - m_pColorBuffer;
 				pVertexGL->extrasOfs = extrasOfs;
-				pVertexGL->tintmapOfs = { 0.5,0.5 };
+				pVertexGL->tintmapOfs = { tintmapEndX,tintmapEndY };
 				pVertexGL++;
 
 				pVertexGL->coord.x = dx1;
 				pVertexGL->coord.y = dy2;
 				pVertexGL->colorsOfs = pColorGL - m_pColorBuffer;
 				pVertexGL->extrasOfs = extrasOfs;
-				pVertexGL->tintmapOfs = { 0.5,0.5 };
+				pVertexGL->tintmapOfs = { tintmapBeginX,tintmapEndY };
 				pVertexGL++;
 
 				nRectsWritten++;
@@ -1396,7 +1506,7 @@ void GlBackend::beginSession(const SessionInfo* pSession)
 
 	// Reserve buffer for colors
 
-	m_pColorBuffer = new ColorGL[pSession->nColors+1];
+	m_pColorBuffer = new ColorGL[pSession->nColors+1+pSession->nTintmapColors];
 
 	m_pColorBuffer[0].r = 1.f;
 	m_pColorBuffer[0].g = 1.f;

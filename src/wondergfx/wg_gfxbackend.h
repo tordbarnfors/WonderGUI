@@ -84,6 +84,10 @@ namespace wg
 			int		nColors;			// Total number of colors to be used through all commands.
 			int		nTransforms;		// Total number of transforms for session.
 			int		nObjects;			// Total number of object references for session.
+
+			//
+
+			int		nTintmapColors;		// Total number of colors for tintmaps.
 		};
 
 		enum class Command

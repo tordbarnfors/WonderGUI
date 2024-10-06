@@ -3210,7 +3210,7 @@ void GfxDeviceGen2::_encodeStateChanges()
 		{
 			if( newState.pTintmap )
 			{
-				Object* pTintmap = newState.pTintmap.rawPtr();
+				Tintmap* pTintmap = newState.pTintmap.rawPtr();
 
 				assert(pTintmap);
 
@@ -3229,6 +3229,12 @@ void GfxDeviceGen2::_encodeStateChanges()
 				encodedState.tintmapRect = newState.tintmapRect;
 
 				statesChanged |= int(StateChange::TintMap);
+
+				if (pTintmap->isHorizontal())
+					m_pActiveCanvas->sessionInfo.nTintmapColors += newState.tintmapRect.w / 64;
+
+				if (pTintmap->isVertical())
+					m_pActiveCanvas->sessionInfo.nTintmapColors += newState.tintmapRect.h / 64;
 			}
 			else
 			{

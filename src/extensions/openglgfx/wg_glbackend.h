@@ -400,6 +400,15 @@ namespace wg
 		std::vector<Surface*> m_surfaces;
 
 		int			m_tintColorOfs = -1;		// Offset in m_pColorBuffer for tintColor if flat tint active.
+
+		bool		m_bTintmapActive = false;
+		RectI		m_tintmapRect;				// Measured in pixels.
+		int			m_tintmapBeginX	= -1;		// Offset in m_pColorBuffer
+		int			m_tintmapEndX	= -1;		// " -
+		int			m_tintmapBeginY = -1;
+		int			m_tintmapEndY	= -1;
+
+
 	};
 
 } // namespace wg
