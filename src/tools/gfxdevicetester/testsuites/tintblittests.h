@@ -90,7 +90,7 @@ public:
 	bool setOffsetTintXY(GfxDevice * pDevice, const RectI& canvas)
 	{
 		pDevice->setBlitSource(m_pImg);
-		pDevice->setTintGradient(RectI( 200,200,100,100 )*64, Gradient(Placement::NorthWest, Color::Black, Color::White));
+		pDevice->setTintGradient(RectI( 200,200,100,100 )*64, Gradient(Placement::NorthWest, Color::Red, Color::Blue));
 		return true;
 	}
 

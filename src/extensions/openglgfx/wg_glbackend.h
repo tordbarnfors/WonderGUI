@@ -195,10 +195,10 @@ namespace wg
 
 		GLuint  m_blurProg[2];									// [tintgradient]
 		GLuint  m_blitProg[2];									// [RGB/A_8 dest]
-		GLuint  m_blitGradientProg[2];							// [RGB/A_8 dest]
+		GLuint  m_blitTintmapProg[2];							// [RGB/A_8 dest]
 
 		GLuint  m_alphaBlitProg[2];								// [RGB/A_8 dest]
-		GLuint  m_alphaBlitGradientProg[2];						// [RGB/A_8 dest]
+		GLuint  m_alphaBlitTintmapProg[2];						// [RGB/A_8 dest]
 
 		GLuint  m_paletteBlitNearestProg[2];						// [RGB/A_8 dest]
 		GLuint  m_paletteBlitNearestGradientProg[2];				// [RGB/A_8 dest]
@@ -349,8 +349,11 @@ namespace wg
 		static const char fillFragmentShaderTintmap_A8[];
 
 		static const char blitVertexShader[];
+		static const char blitTintmapVertexShader[];
 		static const char blitFragmentShader[];
 		static const char blitFragmentShader_A8[];
+		static const char blitFragmentShaderTintmap[];
+		static const char blitFragmentShaderTintmap_A8[];
 		static const char blurFragmentShader[];
 		static const char plotVertexShader[];
 		static const char plotFragmentShader[];
@@ -374,6 +377,8 @@ namespace wg
 
 		static const char alphaBlitFragmentShader[];
 		static const char alphaBlitFragmentShader_A8[];
+		static const char alphaBlitFragmentShaderTintmap[];
+		static const char alphaBlitFragmentShaderTintmap_A8[];
 
 		static const char paletteBlitNearestVertexShader[];
 		static const char paletteBlitNearestFragmentShader[];
@@ -382,7 +387,6 @@ namespace wg
 		static const char paletteBlitInterpolateFragmentShader[];
 		static const char paletteBlitInterpolateFragmentShader_A8[];
 
-		static const char blitGradientVertexShader[];
 		static const char paletteBlitNearestGradientVertexShader[];
 		static const char paletteBlitInterpolateGradientVertexShader[];
 
