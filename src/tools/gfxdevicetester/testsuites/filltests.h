@@ -15,7 +15,7 @@ public:
 		addTest("GradientXYFill", &FillTests::gradientXYFill);
 		addTest("NonGradientFill", &FillTests::nonGradientFill);
 		addTest("SubpixelFill", &FillTests::subPixelFill);
-		addTest("SubpixelGradientXYFill", &FillTests::subPixelGradientXYFill);
+		addTest("SubpixelGradientXFill", &FillTests::subPixelGradientXFill);
 	}
 
 
@@ -129,9 +129,9 @@ public:
 		return true;
 	}
 
-	bool subPixelGradientXYFill(GfxDevice* pDevice, const RectSPX& canvas)
+	bool subPixelGradientXFill(GfxDevice* pDevice, const RectSPX& canvas)
 	{
-		pDevice->setTintGradient(canvas, Gradient(Placement::NorthWest, Color(255,0,0,255), Color(0,0,255,255)));
+		pDevice->setTintGradient(canvas, Gradient(Placement::West, Color(255,0,0,255), Color(0,0,255,255)));
 
 		for (int i = 0; i < 10; i++)
 		{

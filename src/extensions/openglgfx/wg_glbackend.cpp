@@ -218,6 +218,7 @@ void GlBackend::_setCanvas(Surface* pSurface)
 
 
 	m_activeBlendMode = BlendMode::Blend;
+	m_bTintmapIsActive = false;
 	m_tintColorOfs = -1;
 
 /*
@@ -340,7 +341,7 @@ void GlBackend::processCommands(int32_t* pBeg, int32_t* pEnd)
 					pColorGL->a = tintColor.a / 4096.f;
 					pColorGL++;
 	 			}
-				m_bTintmapActive = false;
+				m_bTintmap = false;
 			}
 
 			if (statesChanged & uint8_t(StateChange::TintMap))
@@ -358,7 +359,7 @@ void GlBackend::processCommands(int32_t* pBeg, int32_t* pEnd)
 
 				bool bHorizontal = false, bVertical = false;
 
-				m_bTintmapActive = true;
+				m_bTintmap = true;
 				m_tintmapRect = RectI(x, y, w, h) / 64;
 
 				if (pTintmap->isHorizontal())
@@ -403,7 +404,7 @@ void GlBackend::processCommands(int32_t* pBeg, int32_t* pEnd)
 
 					HiColor* pTmp = (HiColor*)GfxBase::memStackAlloc(sizeof(HiColor) * nColors);
 
-					pTintmap->exportHorizontalColors(h, pTmp);
+					pTintmap->exportVerticalColors(h, pTmp);
 					for (int i = 0; i < nColors; i++)
 					{
 						pColorGL->r = pTmp->r / 4096.f;
@@ -531,7 +532,7 @@ void GlBackend::processCommands(int32_t* pBeg, int32_t* pEnd)
 
 				float tintmapBeginX, tintmapBeginY, tintmapEndX, tintmapEndY;
 
-				if (m_bTintmapActive)
+				if (m_bTintmap)
 				{
 					if (m_tintmapBeginX == 0)
 					{
@@ -1009,6 +1010,16 @@ void GlBackend::_setUniforms(GLuint progId, int uboBindingPoint)
 		glUniform1i(colorBufferIdLoc, 1);		// Needs to be set. Texture unit 1 is used for color buffer.
 	}
 
+	GLint tintmapBufferIdLoc = glGetUniformLocation(progId, "tintmapBufferId");
+
+	LOG_GLERROR(glGetError());
+
+	if (tintmapBufferIdLoc != -1)
+	{
+		glUniform1i(tintmapBufferIdLoc, 1);		// Needs to be set. Texture unit 1 is used for color buffer.
+	}
+
+
 	LOG_GLERROR(glGetError());
 
 	GLint extrasBufferIdLoc = glGetUniformLocation(progId, "extrasBufferId");
@@ -1251,12 +1262,12 @@ GlBackend::~GlBackend()
 
 	glDeleteProgram(m_fillProg[0]);
 	glDeleteProgram(m_fillProg[1]);
-	glDeleteProgram(m_fillGradientProg[0]);
-	glDeleteProgram(m_fillGradientProg[1]);
+	glDeleteProgram(m_fillTintmapProg[0]);
+	glDeleteProgram(m_fillTintmapProg[1]);
 	glDeleteProgram(m_aaFillProg[0]);
 	glDeleteProgram(m_aaFillProg[1]);
-	glDeleteProgram(m_aaFillGradientProg[0]);
-	glDeleteProgram(m_aaFillGradientProg[1]);
+	glDeleteProgram(m_aaFillTintmapProg[0]);
+	glDeleteProgram(m_aaFillTintmapProg[1]);
 
 	glDeleteProgram(m_blurProg[0]);
 	glDeleteProgram(m_blurProg[1]);
@@ -1586,7 +1597,7 @@ void GlBackend::endSession()
 	glEnableVertexAttribArray(1);	// UV
 	glEnableVertexAttribArray(2);	// Colors
 	glEnableVertexAttribArray(3);	// Extras
-//	glEnableVertexAttribArray(4);	// Tintmap ofs
+	glEnableVertexAttribArray(4);	// Tintmap ofs
 
 	LOG_GLERROR(glGetError());
 
@@ -1625,10 +1636,12 @@ void GlBackend::endSession()
 
 				if (statesChanged & uint8_t(StateChange::TintColor))
 				{
+					m_bTintmapIsActive = false;
 				}
 
 				if (statesChanged & uint8_t(StateChange::TintMap))
 				{
+					m_bTintmapIsActive = true;
 				}
 
 				if (statesChanged & uint8_t(StateChange::MorphFactor))
@@ -1661,9 +1674,9 @@ void GlBackend::endSession()
 			{
 				int nVertices = *pCmd++;
 
-//					if (m_bGradientActive)
-//						glUseProgram(m_fillGradientProg[m_bActiveCanvasIsA8]);
-//					else
+					if (m_bTintmapIsActive)
+						glUseProgram(m_fillTintmapProg[m_bActiveCanvasIsA8]);
+					else
 						glUseProgram(m_fillProg[m_bActiveCanvasIsA8]);
 
 				glDrawArrays(GL_TRIANGLES, vertexOfs, nVertices);
@@ -1675,9 +1688,9 @@ void GlBackend::endSession()
 			{
 				int nVertices = *pCmd++;
 
-//				if (m_bGradientActive)
-//					glUseProgram(m_aaFillGradientProg[m_bActiveCanvasIsA8]);
-//				else
+				if (m_bTintmapIsActive)
+					glUseProgram(m_aaFillTintmapProg[m_bActiveCanvasIsA8]);
+				else
 					glUseProgram(m_aaFillProg[m_bActiveCanvasIsA8]);
 
 				glDrawArrays(GL_TRIANGLES, vertexOfs, nVertices);
@@ -1918,9 +1931,9 @@ void GlBackend::_loadPrograms(int uboBindingPoint)
 
 	for (int i = 0; i < 2; i++)
 	{
-		GLuint progId = _loadOrCompileProgram(programNb++, fillGradientVertexShader, i == 0 ? fillFragmentShader : fillFragmentShader_A8);
+		GLuint progId = _loadOrCompileProgram(programNb++, fillTintmapVertexShader, i == 0 ? fillFragmentShaderTintmap : fillFragmentShaderTintmap_A8);
 		_setUniforms(progId, uboBindingPoint);
-		m_fillGradientProg[i] = progId;
+		m_fillTintmapProg[i] = progId;
 		LOG_INIT_GLERROR(glGetError());
 	}
 
@@ -1938,9 +1951,9 @@ void GlBackend::_loadPrograms(int uboBindingPoint)
 
 	for (int i = 0; i < 2; i++)
 	{
-		GLuint progId = _loadOrCompileProgram(programNb++, aaFillGradientVertexShader, i == 0 ? aaFillFragmentShader : aaFillFragmentShader_A8);
+		GLuint progId = _loadOrCompileProgram(programNb++, aaFillTintmapVertexShader, i == 0 ? aaFillFragmentShaderTintmap : aaFillFragmentShaderTintmap_A8);
 		_setUniforms(progId, uboBindingPoint);
-		m_aaFillGradientProg[i] = progId;
+		m_aaFillTintmapProg[i] = progId;
 		LOG_INIT_GLERROR(glGetError());
 	}
 
@@ -2180,14 +2193,14 @@ Blob_p GlBackend::_generateProgramBlob()
 	programs[prg++] = m_fillProg[0];
 	programs[prg++] = m_fillProg[1];
 
-	programs[prg++] = m_fillGradientProg[0];
-	programs[prg++] = m_fillGradientProg[1];
+	programs[prg++] = m_fillTintmapProg[0];
+	programs[prg++] = m_fillTintmapProg[1];
 
 	programs[prg++] = m_aaFillProg[0];
 	programs[prg++] = m_aaFillProg[1];
 
-	programs[prg++] = m_aaFillGradientProg[0];
-	programs[prg++] = m_aaFillGradientProg[1];
+	programs[prg++] = m_aaFillTintmapProg[0];
+	programs[prg++] = m_aaFillTintmapProg[1];
 
 	programs[prg++] = m_blurProg[0];
 	programs[prg++] = m_blurProg[1];

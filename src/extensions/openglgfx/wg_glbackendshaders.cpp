@@ -52,6 +52,7 @@ const char GlBackend::fillVertexShader[] =
 "   fragColor = texelFetch(colorBufferId, colorOfs);	   "
 "}                                                         ";
 
+
 const char GlBackend::fillTintmapVertexShader[] =
 
 "#version 330 core\n"
@@ -69,7 +70,7 @@ const char GlBackend::fillTintmapVertexShader[] =
 "layout(location = 2) in int colorOfs;                     "
 "layout(location = 4) in vec2 tintmapOfs;                  "
 "out vec4 fragColor;                                       "
-"out vec2 tintmapUU;                                       "
+"out vec2 tintmapUU;                                      "
 "void main()                                               "
 "{                                                         "
 "   gl_Position.x = pos.x*2/canvasWidth - 1.0;             "
@@ -77,61 +78,8 @@ const char GlBackend::fillTintmapVertexShader[] =
 "   gl_Position.z = 0.0;                                   "
 "   gl_Position.w = 1.0;                                   "
 "   fragColor = texelFetch(colorBufferId, colorOfs);	   "
-"   tintmapUU = tintmapOfs;								   "
+"   tintmapUU  =  tintmapOfs;						  "
 "}                                                         ";
-
-
-const char GlBackend::fillGradientVertexShader[] =
-
-"#version 330 core\n"
-
-"layout(std140) uniform Canvas"
-"{"
-"	vec2   xcanvasSize;"
-"	int    xcanvasYOfs;"
-"	int    xcanvasYMul;"
-"   vec4   xflatTint;"
-"   ivec2  xtintRectPos;"
-"   ivec2  xtintRectSize;"
-"   vec4   xtopLeftTint;"
-"   vec4   xtopRightTint;"
-"   vec4   xbottomRightTint;"
-"   vec4   xbottomLeftTint;"
-"};"
-
-
-"uniform samplerBuffer extrasBufferId;						   "
-"layout(location = 0) in ivec2 pos;                        "
-"layout(location = 2) in int extrasOfs;                    "
-"layout(location = 3) in int canvasInfoOfs;                "
-"layout(location = 4) in int tintInfoOfs;					"
-"out vec4 fragColor;                                       "
-"void main()                                               "
-"{                                                         "
-"   vec4 canvasInfo = texelFetch(extrasBufferId, canvasInfoOfs);	"
-"   gl_Position.x = pos.x*2/canvasInfo.x - 1.0;            "
-"   gl_Position.y = (canvasInfo.z + canvasInfo.w*pos.y)*2/canvasInfo.y - 1.0;    "
-"   gl_Position.z = 0.0;                                   "
-"   gl_Position.w = 1.0;                                   "
-
-"   vec4 tintRect = texelFetch(extrasBufferId, tintInfoOfs+1);	"
-"   vec4 topLeftTint = texelFetch(extrasBufferId, tintInfoOfs+2);	"
-"   vec4 topRightTint = texelFetch(extrasBufferId, tintInfoOfs+3);	"
-"   vec4 bottomRightTint = texelFetch(extrasBufferId, tintInfoOfs+4);	"
-"   vec4 bottomLeftTint = texelFetch(extrasBufferId, tintInfoOfs+5);	"
-
-"   vec2 tintRectPos = tintRect.xy;	"
-"   vec2 tintRectSize = tintRect.zw;	"
-
-
-"	vec2 tintOfs = (pos - tintRectPos) / vec2(tintRectSize); "
-"   vec4 lineStartTint = topLeftTint + (bottomLeftTint - topLeftTint) * tintOfs.y;"
-"   vec4 lineEndTint = topRightTint + (bottomRightTint - topRightTint) * tintOfs.y;"
-"   vec4 gradientTint = lineStartTint + (lineEndTint - lineStartTint) * tintOfs.x;"
-
-"   fragColor = texelFetch(extrasBufferId, tintInfoOfs) * gradientTint * texelFetch(extrasBufferId, extrasOfs);		   "
-"}                                                         ";
-
 
 
 const char GlBackend::fillFragmentShader[] =
@@ -144,20 +92,6 @@ const char GlBackend::fillFragmentShader[] =
 "   outColor = fragColor;                   "
 "}                                      ";
 
-const char GlBackend::fillFragmentShaderTintmap[] =
-
-"#version 330 core\n"
-"uniform samplerBuffer tintmapBufferId;	"
-"in vec4 fragColor;                     "
-"in vec2 tintmapUU;                     "
-"out vec4 outColor;                     "
-"void main()                            "
-"{                                      "
-"   outColor = texelFetch(tintmapBufferId, tintmapUU.u) "
-"               * texelFetch(tintmapBufferId, tintmapUU.v)"
-"	           * fragColor;  "
-"}                                      ";
-
 
 const char GlBackend::fillFragmentShader_A8[] =
 
@@ -167,6 +101,35 @@ const char GlBackend::fillFragmentShader_A8[] =
 "void main()                            "
 "{                                      "
 "   outColor.r = fragColor.a;                   "
+"}                                      ";
+
+const char GlBackend::fillFragmentShaderTintmap[] =
+
+"#version 330 core\n"
+"uniform samplerBuffer tintmapBufferId;	"
+"in vec4 fragColor;                     "
+"in vec2 tintmapUU;                     "
+"out vec4 outColor;                     "
+"void main()                            "
+"{                                      "
+"   outColor = texelFetch(tintmapBufferId, int(tintmapUU.x) )"
+"               * texelFetch(tintmapBufferId, int(tintmapUU.y) )"
+"	           * fragColor;           "
+"}                                      ";
+
+
+const char GlBackend::fillFragmentShaderTintmap_A8[] =
+
+"#version 330 core\n"
+"uniform samplerBuffer tintmapBufferId;	"
+"in vec4 fragColor;                     "
+"in vec2 tintmapUU;                     "
+"out vec4 outColor;                     "
+"void main()                            "
+"{                                      "
+"   outColor.r = texelFetch(tintmapBufferId, int(tintmapUU.x) ).a"
+"               * texelFetch(tintmapBufferId, int(tintmapUU.y) ).a"
+"	           * fragColor.a;           "
 "}                                      ";
 
 
@@ -182,7 +145,6 @@ const char GlBackend::blitVertexShader[] =
 "	float  canvasYOfs;"
 "	float  canvasYMul;"
 "};"
-
 
 "uniform samplerBuffer extrasBufferId;						   "
 "uniform samplerBuffer colorBufferId;					   "
@@ -818,45 +780,42 @@ const char GlBackend::aaFillVertexShader[] =
 "   rect.zw += vec2(0.5f,0.5f);								"		// Adding offset here so we don't have to do it in pixel shader.
 "}                                                          ";
 
-const char GlBackend::aaFillGradientVertexShader[] =
+
+const char GlBackend::aaFillTintmapVertexShader[] =
 
 "#version 330 core\n"
 
-"uniform samplerBuffer extrasBufferId;								"
-"layout(location = 0) in ivec2 pos;                        "
-"layout(location = 2) in int extrasOfs;                    "
-"layout(location = 3) in int canvasInfoOfs;                "
-"layout(location = 4) in int tintInfoOfs;                "
+"layout(std140) uniform Canvas"
+"{"
+"	float  canvasWidth;"
+"	float  canvasHeight;"
+"	float  canvasYOfs;"
+"	float  canvasYMul;"
+"};"
+
+"uniform samplerBuffer colorBufferId;					    "
+"uniform samplerBuffer extrasBufferId;						"
+"layout(location = 0) in ivec2 pos;                         "
+"layout(location = 2) in int colorOfs;                      "
+"layout(location = 3) in int extrasOfs;                     "
+"layout(location = 4) in vec2 tintmapOfs;                   "
 "out vec4 fragColor;                                        "
 "flat out vec4 rect;										"
+"out vec2 tintmapUU;                                        "
 "void main()                                                "
 "{                                                          "
-"   vec4 canvasInfo = texelFetch(extrasBufferId, canvasInfoOfs);	"
-"   gl_Position.x = pos.x*2/canvasInfo.x - 1.0;            "
-"   gl_Position.y = (canvasInfo.z + canvasInfo.w*pos.y)*2/canvasInfo.y - 1.0;    "
+"   gl_Position.x = pos.x*2/canvasWidth - 1.0;              "
+"   gl_Position.y = (canvasYOfs + canvasYMul*pos.y)*2/canvasHeight - 1.0;    "
 "   gl_Position.z = 0.0;                                    "
 "   gl_Position.w = 1.0;                                    "
-
-"   vec4 tintRect = texelFetch(extrasBufferId, tintInfoOfs+1);	"
-"   vec4 topLeftTint = texelFetch(extrasBufferId, tintInfoOfs+2);	"
-"   vec4 topRightTint = texelFetch(extrasBufferId, tintInfoOfs+3);	"
-"   vec4 bottomRightTint = texelFetch(extrasBufferId, tintInfoOfs+4);	"
-"   vec4 bottomLeftTint = texelFetch(extrasBufferId, tintInfoOfs+5);	"
-
-"   vec2 tintRectPos = tintRect.xy;	"
-"   vec2 tintRectSize = tintRect.zw;	"
-
-"	vec2 tintOfs = (pos - tintRectPos) / vec2(tintRectSize); "
-"   vec4 lineStartTint = topLeftTint + (bottomLeftTint - topLeftTint) * tintOfs.y;"
-"   vec4 lineEndTint = topRightTint + (bottomRightTint - topRightTint) * tintOfs.y;"
-"   vec4 gradientTint = lineStartTint + (lineEndTint - lineStartTint) * tintOfs.x;"
-
-"   fragColor = texelFetch(extrasBufferId, tintInfoOfs) * gradientTint * texelFetch(extrasBufferId, extrasOfs);		   "
-
-"   rect = texelFetch(extrasBufferId, extrasOfs+1);				"
-"   rect.y = canvasInfo.z + canvasInfo.w*rect.y;							"
+"   fragColor = texelFetch(colorBufferId, colorOfs);		"
+"   rect = texelFetch(extrasBufferId, extrasOfs);			"
+"   rect.y = canvasYOfs + canvasYMul*rect.y;				"
 "   rect.zw += vec2(0.5f,0.5f);								"		// Adding offset here so we don't have to do it in pixel shader.
+"   tintmapUU  =  tintmapOfs;						        "
 "}                                                          ";
+
+
 
 
 
@@ -885,6 +844,44 @@ const char GlBackend::aaFillFragmentShader_A8[] =
 "	vec2 middleofs = abs(gl_FragCoord.xy - rect.xy);   "
 "	vec2 alphas = clamp(rect.zw  - middleofs, 0.f, 1.f);  "
 "	outColor.r = fragColor.a * alphas.x * alphas.y;  "
+"}                                      ";
+
+
+const char GlBackend::aaFillFragmentShaderTintmap[] =
+
+"#version 330 core\n"
+"uniform samplerBuffer tintmapBufferId;	"
+"in vec4 fragColor;						"
+"in vec2 tintmapUU;                     "
+"flat in vec4 rect;						"
+"out vec4 outColor;                     "
+"void main()                            "
+"{										"
+"   vec4 inColor = texelFetch(tintmapBufferId, int(tintmapUU.x) )"
+"               * texelFetch(tintmapBufferId, int(tintmapUU.y) )"
+"	           * fragColor;           "
+"   outColor.rgb = inColor.rgb;             "
+"	vec2 middleofs = abs(gl_FragCoord.xy - rect.xy);   "
+"	vec2 alphas = clamp(rect.zw  - middleofs, 0.f, 1.f);  "
+"	outColor.a = inColor.a * alphas.x * alphas.y;  "
+"}                                      ";
+
+const char GlBackend::aaFillFragmentShaderTintmap_A8[] =
+
+"#version 330 core\n"
+"uniform samplerBuffer tintmapBufferId;	"
+"in vec4 fragColor;						"
+"in vec2 tintmapUU;                     "
+"flat in vec4 rect;						"
+"out vec4 outColor;                     "
+"void main()                            "
+"{										"
+"   float inAlpha = texelFetch(tintmapBufferId, int(tintmapUU.x) ).a"
+"               * texelFetch(tintmapBufferId, int(tintmapUU.y) ).a"
+"	           * fragColor.a;           "
+"	vec2 middleofs = abs(gl_FragCoord.xy - rect.xy);   "
+"	vec2 alphas = clamp(rect.zw  - middleofs, 0.f, 1.f);  "
+"	outColor.r = inAlpha * alphas.x * alphas.y;  "
 "}                                      ";
 
 

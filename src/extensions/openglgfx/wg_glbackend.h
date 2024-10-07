@@ -183,14 +183,15 @@ namespace wg
 		BlendMode		m_activeBlendMode = BlendMode::Blend;
 
 		GlSurface_p		m_pActiveBlitSource = nullptr;									// Currently active blit source in OpenGL, not to confuse with m_pBlitSource which might not be active yet.
+		bool			m_bTintmapIsActive = false;
 
 		// Device programs
 
 		GLuint  m_fillProg[2];									// [RGB/A_8 dest]
-		GLuint  m_fillGradientProg[2];							// [RGB/A_8 dest]
+		GLuint  m_fillTintmapProg[2];							// [RGB/A_8 dest]
 
 		GLuint  m_aaFillProg[2];								// [RGB/A_8 dest]
-		GLuint  m_aaFillGradientProg[2];						// [RGB/A_8 dest]
+		GLuint  m_aaFillTintmapProg[2];							// [RGB/A_8 dest]
 
 		GLuint  m_blurProg[2];									// [tintgradient]
 		GLuint  m_blitProg[2];									// [RGB/A_8 dest]
@@ -341,8 +342,12 @@ namespace wg
 		//
 
 		static const char fillVertexShader[];
+		static const char fillTintmapVertexShader[];
 		static const char fillFragmentShader[];
 		static const char fillFragmentShader_A8[];
+		static const char fillFragmentShaderTintmap[];
+		static const char fillFragmentShaderTintmap_A8[];
+
 		static const char blitVertexShader[];
 		static const char blitFragmentShader[];
 		static const char blitFragmentShader_A8[];
@@ -354,8 +359,13 @@ namespace wg
 		static const char lineFromToFragmentShader[];
 		static const char lineFromToFragmentShader_A8[];
 		static const char aaFillVertexShader[];
+		static const char aaFillTintmapVertexShader[];
+
 		static const char aaFillFragmentShader[];
 		static const char aaFillFragmentShader_A8[];
+		static const char aaFillFragmentShaderTintmap[];
+		static const char aaFillFragmentShaderTintmap_A8[];
+
 
 		static const char segmentsVertexShader[];
 		static const char segmentsVertexShaderGradient[];
@@ -372,8 +382,6 @@ namespace wg
 		static const char paletteBlitInterpolateFragmentShader[];
 		static const char paletteBlitInterpolateFragmentShader_A8[];
 
-		static const char fillGradientVertexShader[];
-		static const char aaFillGradientVertexShader[];
 		static const char blitGradientVertexShader[];
 		static const char paletteBlitNearestGradientVertexShader[];
 		static const char paletteBlitInterpolateGradientVertexShader[];
@@ -401,7 +409,7 @@ namespace wg
 
 		int			m_tintColorOfs = -1;		// Offset in m_pColorBuffer for tintColor if flat tint active.
 
-		bool		m_bTintmapActive = false;
+		bool		m_bTintmap = false;
 		RectI		m_tintmapRect;				// Measured in pixels.
 		int			m_tintmapBeginX	= -1;		// Offset in m_pColorBuffer
 		int			m_tintmapEndX	= -1;		// " -
