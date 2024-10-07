@@ -743,7 +743,37 @@ Surface_p MyAppVisitor::loadSurface(const std::string& path, SurfaceFactory* pFa
 				palette[i].a = pSDLSurf->format->palette->colors[i].a;
 			}
 			pPalette = palette;
+
+			// Special copying of indexed pixels until copyPixels() supports indexed source.
+
+			if (!pFactory)
+				pFactory = Base::defaultSurfaceFactory();
+
+			bp.format = px;
+			bp.palette = pPalette;
+			bp.size = { pSDLSurf->w, pSDLSurf->h };
+
+			auto pSurface = pFactory->createSurface(bp);
+
+			auto pixBuf = pSurface->allocPixelBuffer();
+
+			auto pDest = pixBuf.pixels;
+			uint8_t * pSrc = (uint8_t*) pSDLSurf->pixels;
+
+			for(int y = 0; y < pSDLSurf->h; y++)
+			{
+				memcpy(pDest, pSrc, pSDLSurf->w);
+				pDest += pixBuf.pitch;
+				pSrc += pSDLSurf->pitch;
+			}
+
+			pSurface->pullPixels(pixBuf);
+			pSurface->freePixelBuffer(pixBuf);
+
+			SDL_FreeSurface(pSDLSurf);
+			return pSurface;
 		}
+
 		else if (format.A_mask > 0)
 			px = PixelFormat::BGRA_8;
 		else

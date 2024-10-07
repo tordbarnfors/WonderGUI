@@ -1141,14 +1141,14 @@ GlBackend::GlBackend( int uboBindingPoint )
 	m_blitProgMatrix[(int)PixelFormat::Index_8_linear][0][0][0] = m_paletteBlitNearestProg[0];
 	m_blitProgMatrix[(int)PixelFormat::Index_8_linear][1][0][0] = m_paletteBlitInterpolateProg[0];
 
-	m_blitProgMatrix[(int)PixelFormat::Index_8_linear][0][1][0] = m_paletteBlitNearestGradientProg[0];
-	m_blitProgMatrix[(int)PixelFormat::Index_8_linear][1][1][0] = m_paletteBlitInterpolateGradientProg[0];
+	m_blitProgMatrix[(int)PixelFormat::Index_8_linear][0][1][0] = m_paletteBlitNearestTintmapProg[0];
+	m_blitProgMatrix[(int)PixelFormat::Index_8_linear][1][1][0] = m_paletteBlitInterpolateTintmapProg[0];
 
 	m_blitProgMatrix[(int)PixelFormat::Index_8_sRGB][0][0][0] = m_paletteBlitNearestProg[0];
 	m_blitProgMatrix[(int)PixelFormat::Index_8_sRGB][1][0][0] = m_paletteBlitInterpolateProg[0];
 
-	m_blitProgMatrix[(int)PixelFormat::Index_8_sRGB][0][1][0] = m_paletteBlitNearestGradientProg[0];
-	m_blitProgMatrix[(int)PixelFormat::Index_8_sRGB][1][1][0] = m_paletteBlitInterpolateGradientProg[0];
+	m_blitProgMatrix[(int)PixelFormat::Index_8_sRGB][0][1][0] = m_paletteBlitNearestTintmapProg[0];
+	m_blitProgMatrix[(int)PixelFormat::Index_8_sRGB][1][1][0] = m_paletteBlitInterpolateTintmapProg[0];
 
 
 	m_blitProgMatrix[(int)PixelFormat::Alpha_8][0][0][1] = m_alphaBlitProg[1];
@@ -1160,14 +1160,14 @@ GlBackend::GlBackend( int uboBindingPoint )
 	m_blitProgMatrix[(int)PixelFormat::Index_8_linear][0][0][1] = m_paletteBlitNearestProg[1];
 	m_blitProgMatrix[(int)PixelFormat::Index_8_linear][1][0][1] = m_paletteBlitInterpolateProg[1];
 
-	m_blitProgMatrix[(int)PixelFormat::Index_8_linear][0][1][1] = m_paletteBlitNearestGradientProg[1];
-	m_blitProgMatrix[(int)PixelFormat::Index_8_linear][1][1][1] = m_paletteBlitInterpolateGradientProg[1];
+	m_blitProgMatrix[(int)PixelFormat::Index_8_linear][0][1][1] = m_paletteBlitNearestTintmapProg[1];
+	m_blitProgMatrix[(int)PixelFormat::Index_8_linear][1][1][1] = m_paletteBlitInterpolateTintmapProg[1];
 
 	m_blitProgMatrix[(int)PixelFormat::Index_8_sRGB][0][0][1] = m_paletteBlitNearestProg[1];
 	m_blitProgMatrix[(int)PixelFormat::Index_8_sRGB][1][0][1] = m_paletteBlitInterpolateProg[1];
 
-	m_blitProgMatrix[(int)PixelFormat::Index_8_sRGB][0][1][1] = m_paletteBlitNearestGradientProg[1];
-	m_blitProgMatrix[(int)PixelFormat::Index_8_sRGB][1][1][1] = m_paletteBlitInterpolateGradientProg[1];
+	m_blitProgMatrix[(int)PixelFormat::Index_8_sRGB][0][1][1] = m_paletteBlitNearestTintmapProg[1];
+	m_blitProgMatrix[(int)PixelFormat::Index_8_sRGB][1][1][1] = m_paletteBlitInterpolateTintmapProg[1];
 
 	LOG_INIT_GLERROR(glGetError());
 
@@ -1322,12 +1322,12 @@ GlBackend::~GlBackend()
 	glDeleteProgram(m_alphaBlitTintmapProg[1]);
 	glDeleteProgram(m_paletteBlitNearestProg[0]);
 	glDeleteProgram(m_paletteBlitNearestProg[1]);
-	glDeleteProgram(m_paletteBlitNearestGradientProg[0]);
-	glDeleteProgram(m_paletteBlitNearestGradientProg[1]);
+	glDeleteProgram(m_paletteBlitNearestTintmapProg[0]);
+	glDeleteProgram(m_paletteBlitNearestTintmapProg[1]);
 	glDeleteProgram(m_paletteBlitInterpolateProg[0]);
 	glDeleteProgram(m_paletteBlitInterpolateProg[1]);
-	glDeleteProgram(m_paletteBlitInterpolateGradientProg[0]);
-	glDeleteProgram(m_paletteBlitInterpolateGradientProg[1]);
+	glDeleteProgram(m_paletteBlitInterpolateTintmapProg[0]);
+	glDeleteProgram(m_paletteBlitInterpolateTintmapProg[1]);
 
 	glDeleteProgram(m_plotProg[0]);
 	glDeleteProgram(m_plotProg[1]);
@@ -1935,7 +1935,7 @@ void GlBackend::_setBlitSource(GlSurface* pSurf)
 
 		if (pSurf->m_pPalette)
 		{
-			glActiveTexture(GL_TEXTURE2);
+			glActiveTexture(GL_TEXTURE3);
 			GLuint paletteTex = pSurf->getPaletteTexture();
 			glBindTexture(GL_TEXTURE_2D, paletteTex);
 			glActiveTexture(GL_TEXTURE0);
@@ -2070,21 +2070,21 @@ void GlBackend::_loadPrograms(int uboBindingPoint)
 		LOG_INIT_GLERROR(glGetError());
 	}
 
-	// Create and init Palette Blit gradient shaders
+	// Create and init Palette Blit tintmap shaders
 
 	for (int i = 0; i < 2; i++)
 	{
-		GLuint progId = _loadOrCompileProgram(programNb++, paletteBlitNearestGradientVertexShader, i == 0 ? paletteBlitNearestFragmentShader : paletteBlitNearestFragmentShader_A8);
+		GLuint progId = _loadOrCompileProgram(programNb++, paletteBlitNearestTintmapVertexShader, i == 0 ? paletteBlitNearestFragmentShaderTintmap : paletteBlitNearestFragmentShaderTintmap_A8);
 		_setUniforms(progId, uboBindingPoint);
-		m_paletteBlitNearestGradientProg[i] = progId;
+		m_paletteBlitNearestTintmapProg[i] = progId;
 		LOG_INIT_GLERROR(glGetError());
 	}
 
 	for (int i = 0; i < 2; i++)
 	{
-		GLuint progId = _loadOrCompileProgram(programNb++, paletteBlitInterpolateGradientVertexShader, i == 0 ? paletteBlitInterpolateFragmentShader : paletteBlitInterpolateFragmentShader_A8);
+		GLuint progId = _loadOrCompileProgram(programNb++, paletteBlitInterpolateTintmapVertexShader, i == 0 ? paletteBlitInterpolateFragmentShaderTintmap : paletteBlitInterpolateFragmentShaderTintmap_A8);
 		_setUniforms(progId, uboBindingPoint);
-		m_paletteBlitInterpolateGradientProg[i] = progId;
+		m_paletteBlitInterpolateTintmapProg[i] = progId;
 		LOG_INIT_GLERROR(glGetError());
 	}
 
@@ -2264,11 +2264,11 @@ Blob_p GlBackend::_generateProgramBlob()
 	programs[prg++] = m_paletteBlitInterpolateProg[0];
 	programs[prg++] = m_paletteBlitInterpolateProg[1];
 
-	programs[prg++] = m_paletteBlitNearestGradientProg[0];
-	programs[prg++] = m_paletteBlitNearestGradientProg[1];
+	programs[prg++] = m_paletteBlitNearestTintmapProg[0];
+	programs[prg++] = m_paletteBlitNearestTintmapProg[1];
 
-	programs[prg++] = m_paletteBlitInterpolateGradientProg[0];
-	programs[prg++] = m_paletteBlitInterpolateGradientProg[1];
+	programs[prg++] = m_paletteBlitInterpolateTintmapProg[0];
+	programs[prg++] = m_paletteBlitInterpolateTintmapProg[1];
 
 	programs[prg++] = m_plotProg[0];
 	programs[prg++] = m_plotProg[1];

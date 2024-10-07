@@ -365,98 +365,69 @@ const char GlBackend::paletteBlitNearestVertexShader[] =
 
 "layout(std140) uniform Canvas"
 "{"
-"	vec2   xcanvasSize;"
-"	int    xcanvasYOfs;"
-"	int    xcanvasYMul;"
-"   vec4   xflatTint;"
-"   ivec2  xtintRectPos;"
-"   ivec2  xtintRectSize;"
-"   vec4   xtopLeftTint;"
-"   vec4   xtopRightTint;"
-"   vec4   xbottomRightTint;"
-"   vec4   xbottomLeftTint;"
+"	float  canvasWidth;"
+"	float  canvasHeight;"
+"	float  canvasYOfs;"
+"	float  canvasYMul;"
 "};"
 
 "uniform samplerBuffer extrasBufferId;						   "
+"uniform samplerBuffer colorBufferId;					   "
 "layout(location = 0) in ivec2 pos;                        "
 "layout(location = 1) in vec2 texSize;					   "
-"layout(location = 2) in int extrasOfs;                    "
-"layout(location = 3) in int canvasInfoOfs;                "
-"layout(location = 4) in int tintInfoOfs;                "
+"layout(location = 2) in int colorOfs;                    "
+"layout(location = 3) in int extrasOfs;                    "
 "out vec2 texUV;                                           "
 "out vec4 fragColor;                                       "
 "void main()                                               "
 "{                                                         "
-"   vec4 canvasInfo = texelFetch(extrasBufferId, canvasInfoOfs);	"
-"   gl_Position.x = pos.x*2/canvasInfo.x - 1.0;            "
-"   gl_Position.y = (canvasInfo.z + canvasInfo.w*pos.y)*2/canvasInfo.y - 1.0;    "
+"   gl_Position.x = pos.x*2/canvasWidth - 1.0;            "
+"   gl_Position.y = (canvasYOfs + canvasYMul*pos.y)*2/canvasHeight - 1.0;    "
 "   gl_Position.z = 0.0;                                   "
 "   gl_Position.w = 1.0;                                   "
-"   vec4 srcDst = texelFetch(extrasBufferId, extrasOfs);		   "
+"   vec4 srcDst = texelFetch(extrasBufferId, extrasOfs);	   "
 "   vec4 transform = texelFetch(extrasBufferId, extrasOfs+1);	   "
 "   vec2 src = srcDst.xy;                                  "
 "   vec2 dst = srcDst.zw;                                  "
-"   texUV.x = (src.x + (pos.x - dst.x) * transform.x + (pos.y - dst.y) * transform.z) / texSize.x; "
-"   texUV.y = (src.y + (pos.x - dst.x) * transform.y + (pos.y - dst.y) * transform.w) / texSize.y; "
-"   fragColor = texelFetch(extrasBufferId, tintInfoOfs);		   "
+"   texUV.x = (src.x + 0.0001f + (pos.x - dst.x) * transform.x + (pos.y - dst.y) * transform.z) / texSize.x; "      //TODO: Replace this ugly +0.02f fix with whatever is correct.
+"   texUV.y = (src.y + 0.0001f + (pos.x - dst.x) * transform.y + (pos.y - dst.y) * transform.w) / texSize.y; "      //TODO: Replace this ugly +0.02f fix with whatever is correct.
+"   fragColor = texelFetch(colorBufferId, colorOfs);				"
 "}                                                         ";
 
-const char GlBackend::paletteBlitNearestGradientVertexShader[] =
+
+const char GlBackend::paletteBlitNearestTintmapVertexShader[] =
 
 "#version 330 core\n"
 
 "layout(std140) uniform Canvas"
 "{"
-"	vec2   xcanvasSize;"
-"	int    xcanvasYOfs;"
-"	int    xcanvasYMul;"
-"   vec4   xflatTint;"
-"   ivec2  xtintRectPos;"
-"   ivec2  xtintRectSize;"
-"   vec4   xtopLeftTint;"
-"   vec4   xtopRightTint;"
-"   vec4   xbottomRightTint;"
-"   vec4   xbottomLeftTint;"
+"	float  canvasWidth;"
+"	float  canvasHeight;"
+"	float  canvasYOfs;"
+"	float  canvasYMul;"
 "};"
 
 "uniform samplerBuffer extrasBufferId;						   "
 "layout(location = 0) in ivec2 pos;                        "
 "layout(location = 1) in vec2 texSize;					   "
-"layout(location = 2) in int extrasOfs;                    "
-"layout(location = 3) in int canvasInfoOfs;                "
-"layout(location = 4) in int tintInfoOfs;                "
+"layout(location = 3) in int extrasOfs;                    "
+"layout(location = 4) in vec2 tintmapOfs;                  "
 "out vec2 texUV;                                           "
-"out vec4 fragColor;                                       "
+"out vec2 tintmapUU;                                      "
 "void main()                                               "
 "{                                                         "
-"   vec4 canvasInfo = texelFetch(extrasBufferId, canvasInfoOfs);	"
-"   gl_Position.x = pos.x*2/canvasInfo.x - 1.0;            "
-"   gl_Position.y = (canvasInfo.z + canvasInfo.w*pos.y)*2/canvasInfo.y - 1.0;    "
+"   gl_Position.x = pos.x*2/canvasWidth - 1.0;            "
+"   gl_Position.y = (canvasYOfs + canvasYMul*pos.y)*2/canvasHeight - 1.0;    "
 "   gl_Position.z = 0.0;                                   "
 "   gl_Position.w = 1.0;                                   "
-"   vec4 srcDst = texelFetch(extrasBufferId, extrasOfs);		   "
+"   vec4 srcDst = texelFetch(extrasBufferId, extrasOfs);	   "
 "   vec4 transform = texelFetch(extrasBufferId, extrasOfs+1);	   "
 "   vec2 src = srcDst.xy;                                  "
 "   vec2 dst = srcDst.zw;                                  "
-"   texUV.x = (src.x + (pos.x - dst.x) * transform.x + (pos.y - dst.y) * transform.z) / texSize.x; "
-"   texUV.y = (src.y + (pos.x - dst.x) * transform.y + (pos.y - dst.y) * transform.w) / texSize.y; "
-
-"   vec4 tintRect = texelFetch(extrasBufferId, tintInfoOfs+1);	"
-"   vec4 topLeftTint = texelFetch(extrasBufferId, tintInfoOfs+2);	"
-"   vec4 topRightTint = texelFetch(extrasBufferId, tintInfoOfs+3);	"
-"   vec4 bottomRightTint = texelFetch(extrasBufferId, tintInfoOfs+4);	"
-"   vec4 bottomLeftTint = texelFetch(extrasBufferId, tintInfoOfs+5);	"
-
-"   vec2 tintRectPos = tintRect.xy;	"
-"   vec2 tintRectSize = tintRect.zw;	"
-
-"	vec2 tintOfs = (pos - tintRectPos) / vec2(tintRectSize); "
-"   vec4 lineStartTint = topLeftTint + (bottomLeftTint - topLeftTint) * tintOfs.y;"
-"   vec4 lineEndTint = topRightTint + (bottomRightTint - topRightTint) * tintOfs.y;"
-"   vec4 gradientTint = lineStartTint + (lineEndTint - lineStartTint) * tintOfs.x;"
-
-"   fragColor = texelFetch(extrasBufferId, tintInfoOfs) * gradientTint;		   "
-"}                                                         ";
+"   texUV.x = (src.x + 0.0001f + (pos.x - dst.x) * transform.x + (pos.y - dst.y) * transform.z) / texSize.x; "      //TODO: Replace this ugly +0.02f fix with whatever is correct.
+"   texUV.y = (src.y + 0.0001f + (pos.x - dst.x) * transform.y + (pos.y - dst.y) * transform.w) / texSize.y; "      //TODO: Replace this ugly +0.02f fix with whatever is correct.
+"   tintmapUU  =  tintmapOfs;						  "
+"}														";
 
 
 const char GlBackend::paletteBlitNearestFragmentShader[] =
@@ -464,7 +435,7 @@ const char GlBackend::paletteBlitNearestFragmentShader[] =
 "#version 330 core\n"
 
 "uniform sampler2D texId;						"
-"uniform sampler2D paletteId;						"
+"uniform sampler2D paletteId;					"
 "in vec2 texUV;									"
 "in vec4 fragColor;								"
 "out vec4 color;								"
@@ -488,39 +459,69 @@ const char GlBackend::paletteBlitNearestFragmentShader_A8[] =
 "}												";
 
 
+const char GlBackend::paletteBlitNearestFragmentShaderTintmap[] =
+
+"#version 330 core\n"
+
+"uniform sampler2D texId;						"
+"uniform samplerBuffer tintmapBufferId;			"
+"uniform sampler2D paletteId;					"
+"in vec2 texUV;									"
+"in vec2 tintmapUU;								"
+"out vec4 color;								"
+"void main()									"
+"{												"
+"   vec4 fragColor = texelFetch(tintmapBufferId, int(tintmapUU.x) )"
+"               * texelFetch(tintmapBufferId, int(tintmapUU.y) ); "
+
+"   color = texture(paletteId, vec2(texture(texId, texUV).r,0.5f)) * fragColor;	"
+"}												";
+
+const char GlBackend::paletteBlitNearestFragmentShaderTintmap_A8[] =
+
+"#version 330 core\n"
+
+"uniform sampler2D texId;						"
+"uniform samplerBuffer tintmapBufferId;			"
+"uniform sampler2D paletteId;						"
+"in vec2 texUV;									"
+"in vec2 tintmapUU;								"
+"out vec4 color;								"
+"void main()									"
+"{												"
+"   float fragA = texelFetch(tintmapBufferId, int(tintmapUU.x) ).a"
+"               * texelFetch(tintmapBufferId, int(tintmapUU.y) ).a; "
+"   color.r = texture(paletteId, vec2(texture(texId, texUV).r,0.5f)).a * fragA;	"
+"}												";
+
+
+
 const char GlBackend::paletteBlitInterpolateVertexShader[] =
 
 "#version 330 core\n"
 
 "layout(std140) uniform Canvas"
 "{"
-"	vec2   xcanvasSize;"
-"	int    xcanvasYOfs;"
-"	int    xcanvasYMul;"
-"   vec4   xflatTint;"
-"   ivec2  xtintRectPos;"
-"   ivec2  xtintRectSize;"
-"   vec4   xtopLeftTint;"
-"   vec4   xtopRightTint;"
-"   vec4   xbottomRightTint;"
-"   vec4   xbottomLeftTint;"
+"	float  canvasWidth;"
+"	float  canvasHeight;"
+"	float  canvasYOfs;"
+"	float  canvasYMul;"
 "};"
 
 "uniform samplerBuffer extrasBufferId;						   "
+"uniform samplerBuffer colorBufferId;					   "
 "layout(location = 0) in ivec2 pos;                        "
 "layout(location = 1) in vec2 texSize;					   "
-"layout(location = 2) in int extrasOfs;                    "
-"layout(location = 3) in int canvasInfoOfs;                "
-"layout(location = 4) in int tintInfoOfs;                "
+"layout(location = 2) in int colorOfs;                    "
+"layout(location = 3) in int extrasOfs;                    "
 "out vec2 texUV00;                                         "
 "out vec2 texUV11;                                         "
 "out vec2 uvFrac;                                         "
 "out vec4 fragColor;                                       "
 "void main()                                               "
 "{                                                         "
-"   vec4 canvasInfo = texelFetch(extrasBufferId, canvasInfoOfs);	"
-"   gl_Position.x = pos.x*2/canvasInfo.x - 1.0;            "
-"   gl_Position.y = (canvasInfo.z + canvasInfo.w*pos.y)*2/canvasInfo.y - 1.0;    "
+"   gl_Position.x = pos.x*2/canvasWidth - 1.0;            "
+"   gl_Position.y = (canvasYOfs + canvasYMul*pos.y)*2/canvasHeight - 1.0;    "
 "   gl_Position.z = 0.0;                                   "
 "   gl_Position.w = 1.0;                                   "
 "   vec4 srcDst = texelFetch(extrasBufferId, extrasOfs);		   "
@@ -539,42 +540,35 @@ const char GlBackend::paletteBlitInterpolateVertexShader[] =
 "   uvFrac = texUV;"
 "   texUV00 = texUV/texSize;				"
 "   texUV11 = (texUV+1)/texSize;			"
-"   fragColor = texelFetch(extrasBufferId, tintInfoOfs);		   "
+"   fragColor = texelFetch(colorBufferId, colorOfs);				"
 "}                                                         ";
 
-const char GlBackend::paletteBlitInterpolateGradientVertexShader[] =
+
+const char GlBackend::paletteBlitInterpolateTintmapVertexShader[] =
 
 "#version 330 core\n"
 
 "layout(std140) uniform Canvas"
 "{"
-"	vec2   xcanvasSize;"
-"	int    xcanvasYOfs;"
-"	int    xcanvasYMul;"
-"   vec4   xflatTint;"
-"   ivec2  xtintRectPos;"
-"   ivec2  xtintRectSize;"
-"   vec4   xtopLeftTint;"
-"   vec4   xtopRightTint;"
-"   vec4   xbottomRightTint;"
-"   vec4   xbottomLeftTint;"
+"	float  canvasWidth;"
+"	float  canvasHeight;"
+"	float  canvasYOfs;"
+"	float  canvasYMul;"
 "};"
 
 "uniform samplerBuffer extrasBufferId;						   "
 "layout(location = 0) in ivec2 pos;                        "
 "layout(location = 1) in vec2 texSize;					   "
-"layout(location = 2) in int extrasOfs;                    "
-"layout(location = 3) in int canvasInfoOfs;                "
-"layout(location = 4) in int tintInfoOfs;                "
+"layout(location = 3) in int extrasOfs;                    "
+"layout(location = 4) in vec2 tintmapOfs;                  "
 "out vec2 texUV00;                                         "
 "out vec2 texUV11;                                         "
 "out vec2 uvFrac;                                         "
-"out vec4 fragColor;                                       "
+"out vec2 tintmapUU;                                      "
 "void main()                                               "
 "{                                                         "
-"   vec4 canvasInfo = texelFetch(extrasBufferId, canvasInfoOfs);	"
-"   gl_Position.x = pos.x*2/canvasInfo.x - 1.0;            "
-"   gl_Position.y = (canvasInfo.z + canvasInfo.w*pos.y)*2/canvasInfo.y - 1.0;    "
+"   gl_Position.x = pos.x*2/canvasWidth - 1.0;            "
+"   gl_Position.y = (canvasYOfs + canvasYMul*pos.y)*2/canvasHeight - 1.0;    "
 "   gl_Position.z = 0.0;                                   "
 "   gl_Position.w = 1.0;                                   "
 "   vec4 srcDst = texelFetch(extrasBufferId, extrasOfs);		   "
@@ -593,24 +587,13 @@ const char GlBackend::paletteBlitInterpolateGradientVertexShader[] =
 "   uvFrac = texUV;"
 "   texUV00 = texUV/texSize;				"
 "   texUV11 = (texUV+1)/texSize;			"
-
-"   vec4 tintRect = texelFetch(extrasBufferId, tintInfoOfs+1);	"
-"   vec4 topLeftTint = texelFetch(extrasBufferId, tintInfoOfs+2);	"
-"   vec4 topRightTint = texelFetch(extrasBufferId, tintInfoOfs+3);	"
-"   vec4 bottomRightTint = texelFetch(extrasBufferId, tintInfoOfs+4);	"
-"   vec4 bottomLeftTint = texelFetch(extrasBufferId, tintInfoOfs+5);	"
-
-"   vec2 tintRectPos = tintRect.xy;	"
-"   vec2 tintRectSize = tintRect.zw;	"
-
-
-"	vec2 tintOfs = (pos - tintRectPos) / vec2(tintRectSize); "
-"   vec4 lineStartTint = topLeftTint + (bottomLeftTint - topLeftTint) * tintOfs.y;"
-"   vec4 lineEndTint = topRightTint + (bottomRightTint - topRightTint) * tintOfs.y;"
-"   vec4 gradientTint = lineStartTint + (lineEndTint - lineStartTint) * tintOfs.x;"
-
-"   fragColor = texelFetch(extrasBufferId, tintInfoOfs) * gradientTint;		   "
+"   tintmapUU  =  tintmapOfs;						  "
 "}                                                         ";
+
+
+
+
+
 
 
 const char GlBackend::paletteBlitInterpolateFragmentShader[] =
@@ -667,6 +650,70 @@ const char GlBackend::paletteBlitInterpolateFragmentShader_A8[] =
 "   color.r = (out0 * (1-fract(uvFrac.y)) + out1 * fract(uvFrac.y)) * fragColor.a;	"
 "}												";
 
+
+const char GlBackend::paletteBlitInterpolateFragmentShaderTintmap[] =
+
+"#version 330 core\n"
+
+"uniform sampler2D texId;						"
+"uniform samplerBuffer tintmapBufferId;			"
+"uniform sampler2D paletteId;						"
+"in vec2 texUV00;								"
+"in vec2 texUV11;								"
+"in vec2 uvFrac;								"
+"in vec2 tintmapUU;								"
+"out vec4 color;								"
+"void main()									"
+"{												"
+"   float index00 = texture(texId, texUV00).r;		"
+"   float index01 = texture(texId, vec2(texUV11.x,texUV00.y) ).r;		"
+"   float index10 = texture(texId, vec2(texUV00.x,texUV11.y) ).r;		"
+"   float index11 = texture(texId, texUV11).r;		"
+"   vec4 color00 = texture(paletteId, vec2(index00,0.5f));	"
+"   vec4 color01 = texture(paletteId, vec2(index01,0.5f));	"
+"   vec4 color10 = texture(paletteId, vec2(index10,0.5f));	"
+"   vec4 color11 = texture(paletteId, vec2(index11,0.5f));	"
+
+"   vec4 out0 = color00 * (1-fract(uvFrac.x)) + color01 * fract(uvFrac.x);	"
+"   vec4 out1 = color10 * (1-fract(uvFrac.x)) + color11 * fract(uvFrac.x);	"
+
+"   vec4 fragColor = texelFetch(tintmapBufferId, int(tintmapUU.x) )"
+"               * texelFetch(tintmapBufferId, int(tintmapUU.y) ); "
+
+"   color = (out0 * (1-fract(uvFrac.y)) + out1 * fract(uvFrac.y)) * fragColor;	"
+"}												";
+
+const char GlBackend::paletteBlitInterpolateFragmentShaderTintmap_A8[] =
+
+"#version 330 core\n"
+
+"uniform sampler2D texId;						"
+"uniform samplerBuffer tintmapBufferId;			"
+"uniform sampler2D paletteId;						"
+"in vec2 texUV00;								"
+"in vec2 texUV11;								"
+"in vec2 uvFrac;								"
+"in vec2 tintmapUU;								"
+"out vec4 color;								"
+"void main()									"
+"{												"
+"   float index00 = texture(texId, texUV00).r;		"
+"   float index01 = texture(texId, vec2(texUV11.x,texUV00.y) ).r;		"
+"   float index10 = texture(texId, vec2(texUV00.x,texUV11.y) ).r;		"
+"   float index11 = texture(texId, texUV11).r;		"
+"   float color00 = texture(paletteId, vec2(index00,0.5f)).a;	"
+"   float color01 = texture(paletteId, vec2(index01,0.5f)).a;	"
+"   float color10 = texture(paletteId, vec2(index10,0.5f)).a;	"
+"   float color11 = texture(paletteId, vec2(index11,0.5f)).a;	"
+
+"   float out0 = color00 * (1-fract(uvFrac.x)) + color01 * fract(uvFrac.x);	"
+"   float out1 = color10 * (1-fract(uvFrac.x)) + color11 * fract(uvFrac.x);	"
+
+"   float fragA = texelFetch(tintmapBufferId, int(tintmapUU.x) ).a"
+"               * texelFetch(tintmapBufferId, int(tintmapUU.y) ).a; "
+
+"   color.r = (out0 * (1-fract(uvFrac.y)) + out1 * fract(uvFrac.y)) * fragA;	"
+"}												";
 
 
 const char GlBackend::plotVertexShader[] =

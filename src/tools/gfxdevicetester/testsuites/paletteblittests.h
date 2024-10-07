@@ -13,6 +13,9 @@ public:
 		addTest("PaletteStretchBlit", &PaletteBlitTests::setNearestPicture, &PaletteBlitTests::stretchBlit, &PaletteBlitTests::dummy);
 		addTest("PaletteStretchBlitInterpolated", &PaletteBlitTests::setInterpolatedPicture, &PaletteBlitTests::stretchBlit, &PaletteBlitTests::dummy);
 
+		addTest("PaletteBlitGradX", &PaletteBlitTests::setNearestPictureGradient, &PaletteBlitTests::rotScaleBlit, &PaletteBlitTests::clearTint);
+		addTest("PaletteBlitInterpolateGradX", &PaletteBlitTests::setInterpolatedPictureGradient, &PaletteBlitTests::rotScaleBlit, &PaletteBlitTests::clearTint);
+
 	}
 
 	bool init(GfxDevice * pDevice, const RectI& canvas, WonderApp::Visitor * pAppVisitor)
@@ -40,6 +43,13 @@ public:
 		return true;
 	}
 
+	bool clearTint(GfxDevice* pDevice, const RectI& canvas)
+	{
+		pDevice->clearTint();
+		return true;
+	}
+
+
 	bool setNearestPicture(GfxDevice * pDevice, const RectI& canvas)
 	{
 		pDevice->setBlitSource(m_pLeaves);
@@ -49,6 +59,20 @@ public:
 	bool setInterpolatedPicture(GfxDevice * pDevice, const RectI& canvas)
 	{
 		pDevice->setBlitSource(m_pLeavesInterpolated);
+		return true;
+	}
+
+	bool setNearestPictureGradient(GfxDevice* pDevice, const RectI& canvas)
+	{
+		pDevice->setBlitSource(m_pLeaves);
+		pDevice->setTintGradient(canvas, Gradient(Placement::West, Color::Red, Color::Blue));
+		return true;
+	}
+
+	bool setInterpolatedPictureGradient(GfxDevice* pDevice, const RectI& canvas)
+	{
+		pDevice->setBlitSource(m_pLeavesInterpolated);
+		pDevice->setTintGradient(canvas, Gradient(Placement::West, Color::Red, Color::Blue));
 		return true;
 	}
 
