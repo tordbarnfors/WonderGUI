@@ -62,6 +62,8 @@ namespace wg
 
 		struct SessionInfo
 		{
+			int		nCanvases;			// Number of setCanvas calls in session (may be less than this value).
+
 			// Commands 
 
 			int		nStateChanges;		// Number of times state will change through session.

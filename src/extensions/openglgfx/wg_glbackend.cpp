@@ -120,7 +120,7 @@ void GlBackend::setCanvas(CanvasRef ref)
 	if (ref == CanvasRef::Default)
 	{
 		m_pCommandQueue[m_commandQueueSize++] = (int)CommandGL::SetCanvas;
-		m_surfaces.push_back(nullptr);
+		m_objects.push_back(nullptr);
 
 		m_pCanvas = nullptr;
 	}
@@ -133,7 +133,7 @@ void GlBackend::setCanvas(CanvasRef ref)
 void GlBackend::setCanvas(Surface* pSurface)
 {
 	m_pCommandQueue[m_commandQueueSize++] = (int) CommandGL::SetCanvas;
-	m_surfaces.push_back(pSurface);
+	m_objects.push_back(pSurface);
 
 	m_pCanvas = pSurface;
 }
@@ -311,7 +311,7 @@ void GlBackend::processCommands(int32_t* pBeg, int32_t* pEnd)
 
 				// Save pointer for later processing, needs to be applied between draw calls.
 
-				m_surfaces.push_back(pSource);
+				m_objects.push_back(pSource);
 			}
 
 			if (statesChanged & uint8_t(StateChange::BlendMode))
@@ -446,6 +446,7 @@ void GlBackend::processCommands(int32_t* pBeg, int32_t* pEnd)
 				int32_t objectOfs = *p++;
 
 				auto pBlurbrush = static_cast<Blurbrush*>(m_pObjectsBeg[objectOfs]);
+				m_objects.push_back(pBlurbrush);
 			}
 
 			break;
@@ -851,7 +852,7 @@ void GlBackend::processCommands(int32_t* pBeg, int32_t* pEnd)
 			pCoords += nRects * 4;
 			break;
 		}
-
+/*
 		case Command::Blur:
 		{
 			int32_t nRects = *p++;
@@ -866,10 +867,12 @@ void GlBackend::processCommands(int32_t* pBeg, int32_t* pEnd)
 
 			break;
 		}
+*/
 
 		case Command::Blit:
 		case Command::ClipBlit:
 		case Command::Tile:
+		case Command::Blur:
 		{
 			int32_t nRects = *p++;
 			int32_t transform = *p++;
@@ -1001,7 +1004,9 @@ void GlBackend::processCommands(int32_t* pBeg, int32_t* pEnd)
 
 			// Store command
 
-			*pCommandGL++ = (int)CommandGL::Blit;
+			CommandGL commandGL = cmd == Command::Blur ? CommandGL::Blur : CommandGL::Blit;
+
+			*pCommandGL++ = (int) commandGL;
 			*pCommandGL++ = nRects * 6;
 
 			break;
@@ -1570,6 +1575,7 @@ void GlBackend::beginSession(const SessionInfo* pSession)
 
 	int nExtrasFloats = 
 		pSession->nBlit * 8
+		+ pSession->nBlur * 8
 		+ pSession->nLineCoords/2 * 4
 		+ pSession->nRects * 4;			// This is for possible subpixel fills. We have no way of knowing exactly how much is needed.
 
@@ -1578,23 +1584,14 @@ void GlBackend::beginSession(const SessionInfo* pSession)
 
 	// Reserve buffer for commands
 
-/*
-	int		nStateChanges;		// Number of times state will change through session.
-	int		nPlots;				// Number of plot commands.
-	int		nLines;				// Number of line commands.
-	int		nFill;
-	int		nBlit;				// Includes Blit, ClipBlit och Tile.
-	int		nBlur;
-	int		nEdgemapDraws;
-*/
-
 	m_pCommandQueue = new int[
 		pSession->nStateChanges * 16	//TODO: Check exactly size needed
 		+ pSession->nFill * 2 
 		+ pSession->nBlit * 2
+		+ pSession->nBlur * 2
 		+ pSession->nPlots * 2
 		+ pSession->nLines * 3 + pSession->nLineClipRects * 4
-		+ 1];							// TODO: Uggly hack to allow for exactly one setCanvas!
+		+ pSession->nCanvases];	
 
 	m_commandQueueSize = 0;
 }
@@ -1645,7 +1642,7 @@ void GlBackend::endSession()
 	int* pEnd = m_pCommandQueue + m_commandQueueSize;
 
 	int vertexOfs = 0;
-	int surfaceOfs = 0;
+	int objectOfs = 0;
 
 	while (pCmd < pEnd)
 	{
@@ -1655,7 +1652,7 @@ void GlBackend::endSession()
 		{
 			case CommandGL::SetCanvas:
 			{
-				_setCanvas(m_surfaces[surfaceOfs++]);
+				_setCanvas( static_cast<Surface*>(m_objects[objectOfs++]) );
 				break;
 			}
 
@@ -1665,7 +1662,7 @@ void GlBackend::endSession()
 
 				if (statesChanged & uint8_t(StateChange::BlitSource))
 				{
-					_setBlitSource(static_cast<GlSurface*>(m_surfaces[surfaceOfs++]));
+					_setBlitSource(static_cast<GlSurface*>(m_objects[objectOfs++]));
 				}
 
 				if (statesChanged & uint8_t(StateChange::BlendMode))
@@ -1694,6 +1691,9 @@ void GlBackend::endSession()
 
 				if (statesChanged & uint8_t(StateChange::Blur))
 				{
+					auto pBlurbrush = static_cast<Blurbrush*>(m_objects[objectOfs++]);
+
+					m_pActiveBlurbrush = pBlurbrush;
 				}
 
 				break;
@@ -1774,6 +1774,68 @@ void GlBackend::endSession()
 				break;
 			}
 
+			case CommandGL::Blur:
+			{
+				int nVertices = *pCmd++;
+
+				if( m_pActiveBlurbrush)
+				{
+					spx radius = m_pActiveBlurbrush->size();
+
+					for (int i = 0; i < 9; i++)
+					{
+						m_activeBlurInfo.colorMtx[i][0] = m_pActiveBlurbrush->red()[i];
+						m_activeBlurInfo.colorMtx[i][1] = m_pActiveBlurbrush->green()[i];
+						m_activeBlurInfo.colorMtx[i][2] = m_pActiveBlurbrush->blue()[i];
+						m_activeBlurInfo.colorMtx[i][3] = 0.f;
+					}
+
+					m_activeBlurInfo.colorMtx[4][3] = 1.f;
+
+					auto size = m_pActiveBlitSource->pixelSize();
+
+					float radiusX = radius / float(size.w * 64);
+					float radiusY = radius / float(size.h * 64);
+
+					m_activeBlurInfo.offset[0][0] = -radiusX * 0.7f;
+					m_activeBlurInfo.offset[0][1] = -radiusY * 0.7f;
+
+					m_activeBlurInfo.offset[1][0] = 0;
+					m_activeBlurInfo.offset[1][1] = -radiusY;
+
+					m_activeBlurInfo.offset[2][0] = radiusX * 0.7f;
+					m_activeBlurInfo.offset[2][1] = -radiusY * 0.7f;
+
+					m_activeBlurInfo.offset[3][0] = -radiusX;
+					m_activeBlurInfo.offset[3][1] = 0;
+
+					m_activeBlurInfo.offset[4][0] = 0;
+					m_activeBlurInfo.offset[4][1] = 0;
+
+					m_activeBlurInfo.offset[5][0] = radiusX;
+					m_activeBlurInfo.offset[5][1] = 0;
+
+					m_activeBlurInfo.offset[6][0] = -radiusX * 0.7f;
+					m_activeBlurInfo.offset[6][1] = radiusY * 0.7f;
+
+					m_activeBlurInfo.offset[7][0] = 0;
+					m_activeBlurInfo.offset[7][1] = radiusY;
+
+					m_activeBlurInfo.offset[8][0] = radiusX * 0.7f;
+					m_activeBlurInfo.offset[8][1] = radiusY * 0.7f;
+
+					glUseProgram(m_blurProg[m_bTintmapIsActive]);
+
+					glUniform2fv(m_blurUniformLocation[m_bTintmapIsActive][1], 9, (GLfloat*)m_activeBlurInfo.offset);
+					glUniform4fv(m_blurUniformLocation[m_bTintmapIsActive][0], 9, (GLfloat*)m_activeBlurInfo.colorMtx);
+
+					glDrawArrays(GL_TRIANGLES, vertexOfs, nVertices);
+				}
+
+				vertexOfs += nVertices;
+				break;
+			}
+
 			default:
 			{
 				assert(false);
@@ -1801,7 +1863,7 @@ void GlBackend::endSession()
 	delete[] m_pCommandQueue;
 	m_pCommandQueue = nullptr;
 
-	m_surfaces.clear();
+	m_objects.clear();
 	m_pCanvas = nullptr;
 }
 
@@ -1998,10 +2060,10 @@ void GlBackend::_loadPrograms(int uboBindingPoint)
 	}
 
 	// Create and init Blur shader
-/*
+
 	for (int i = 0; i < 2; i++)
 	{
-		GLuint progId = _loadOrCompileProgram(programNb++, i == 0 ? blitVertexShader : blitGradientVertexShader, blurFragmentShader);
+		GLuint progId = _loadOrCompileProgram(programNb++, i == 0 ? blitVertexShader : blitTintmapVertexShader, i == 0 ? blurFragmentShader : blurFragmentShaderTintmap );
 		_setUniforms(progId, uboBindingPoint);
 
 		m_blurUniformLocation[i][0] = glGetUniformLocation(progId, "blurInfo.colorMtx");
@@ -2010,7 +2072,7 @@ void GlBackend::_loadPrograms(int uboBindingPoint)
 		m_blurProg[i] = progId;
 		LOG_INIT_GLERROR(glGetError());
 	}
-*/
+
 
 	// Create and init Blit shader
 

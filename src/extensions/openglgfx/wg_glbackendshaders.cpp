@@ -235,7 +235,47 @@ const char GlBackend::blurFragmentShader[] =
 "	color += texture(texId, texUV + blurInfo.offset[6]) * blurInfo.colorMtx[6];"
 "	color += texture(texId, texUV + blurInfo.offset[7]) * blurInfo.colorMtx[7];"
 "	color += texture(texId, texUV + blurInfo.offset[8]) * blurInfo.colorMtx[8];"
+
+"   color *= fragColor;"
 "}												";
+
+
+const char GlBackend::blurFragmentShaderTintmap[] =
+
+"#version 330 core\n"
+
+"struct BlurInfo"
+"{"
+"	vec4   colorMtx[9];"
+"	vec2   offset[9];"
+"};"
+
+"uniform BlurInfo blurInfo;                     "
+"uniform sampler2D texId;						"
+"uniform samplerBuffer tintmapBufferId;			"
+"in vec2 texUV;									"
+"in vec2 tintmapUU;								"
+"out vec4 color;								"
+
+"void main()									"
+"{												"
+"	color = texture(texId, texUV + blurInfo.offset[0]) * blurInfo.colorMtx[0];"
+"	color += texture(texId, texUV + blurInfo.offset[1]) * blurInfo.colorMtx[1];"
+"	color += texture(texId, texUV + blurInfo.offset[2]) * blurInfo.colorMtx[2];"
+"	color += texture(texId, texUV + blurInfo.offset[3]) * blurInfo.colorMtx[3];"
+"   color += texture(texId, texUV + blurInfo.offset[4]) * blurInfo.colorMtx[4];  "
+"	color += texture(texId, texUV + blurInfo.offset[5]) * blurInfo.colorMtx[5];"
+"	color += texture(texId, texUV + blurInfo.offset[6]) * blurInfo.colorMtx[6];"
+"	color += texture(texId, texUV + blurInfo.offset[7]) * blurInfo.colorMtx[7];"
+"	color += texture(texId, texUV + blurInfo.offset[8]) * blurInfo.colorMtx[8];"
+
+"   vec4 fragColor = texelFetch(tintmapBufferId, int(tintmapUU.x) )"
+"               * texelFetch(tintmapBufferId, int(tintmapUU.y) ); "
+
+"   color *= fragColor;"
+"}												";
+
+
 
 
 const char GlBackend::blitFragmentShader[] =

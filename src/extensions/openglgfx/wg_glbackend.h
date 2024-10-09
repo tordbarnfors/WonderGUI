@@ -127,6 +127,7 @@ namespace wg
 			StraightFill,
 			SubpixelFill,
 			Blit,
+			Blur,
 
 		};
 
@@ -294,8 +295,9 @@ namespace wg
 		};
 
 
-		spx			m_activeBlurRadius;
 		BlurUniform	m_activeBlurInfo;
+		Blurbrush_p	m_pActiveBlurbrush;
+
 		GLint		m_blurUniformLocation[2][2];
 
 
@@ -355,6 +357,7 @@ namespace wg
 		static const char blitFragmentShaderTintmap[];
 		static const char blitFragmentShaderTintmap_A8[];
 		static const char blurFragmentShader[];
+		static const char blurFragmentShaderTintmap[];
 		static const char plotVertexShader[];
 		static const char plotFragmentShader[];
 		static const char plotFragmentShader_A8[];
@@ -416,7 +419,7 @@ namespace wg
 		int*		m_pCommandQueue = nullptr;
 		int			m_commandQueueSize = 0;
 
-		std::vector<Surface*> m_surfaces;
+		std::vector<Object*> m_objects;
 
 		int			m_tintColorOfs = -1;		// Offset in m_pColorBuffer for tintColor if flat tint active.
 

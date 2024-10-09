@@ -999,6 +999,7 @@ void GfxDeviceGen2::_doFlattenLayers()
 
 	canvasData.sessionInfo.nObjects = canvasData.objects.size();
 	canvasData.sessionInfo.nTransforms = canvasData.transforms.size();
+	canvasData.sessionInfo.nCanvases = canvasData.layers.size();
 
 	m_pBackend->beginSession(&canvasData.sessionInfo);
 
