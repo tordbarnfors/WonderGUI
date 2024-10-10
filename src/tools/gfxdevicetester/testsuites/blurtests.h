@@ -9,6 +9,8 @@ public:
 		name = "BlurTests";
 
 		addTest("Blur", &BlurTests::setBlurbrush, &BlurTests::blur, &BlurTests::dummy);
+		addTest("TintBlur", &BlurTests::setTintAndBlurbrush, &BlurTests::blur, &BlurTests::clearTint);
+		addTest("GradientBlur", &BlurTests::setGradientAndBlurbrush, &BlurTests::blur, &BlurTests::clearTint);
 	}
 
 	bool init(GfxDevice * pDevice, const RectI& canvas, WonderApp::Visitor * pAppVisitor)
@@ -34,6 +36,27 @@ public:
 
 	bool dummy(GfxDevice * pDevice, const RectI& canvas)
 	{
+		return true;
+	}
+
+	bool clearTint(GfxDevice* pDevice, const RectI& canvas)
+	{
+		pDevice->clearTint();
+		return true;
+	}
+
+	bool setTintAndBlurbrush(GfxDevice* pDevice, const RectI& canvas)
+	{
+		pDevice->setTint(Color::Blue);
+		setBlurbrush(pDevice, canvas);
+		return true;
+	}
+
+
+	bool setGradientAndBlurbrush(GfxDevice* pDevice, const RectI& canvas)
+	{
+		pDevice->setTintGradient(RectSPX(100, 100, 100, 100) * 64, Gradient(Placement::West, Color::Red, Color::Blue));
+		setBlurbrush(pDevice, canvas);
 		return true;
 	}
 
