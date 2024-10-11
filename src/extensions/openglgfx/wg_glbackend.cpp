@@ -859,18 +859,368 @@ void GlBackend::processCommands(int32_t* pBeg, int32_t* pEnd)
 
 			auto& mtx = s_blitFlipTransforms[flip];
 
-			RectSPX dest = {
+			RectSPX _destIn = {
 				destX,
 				destY,
 				pEdgemap->m_size.w * 64 * int(abs(mtx.xx)) + pEdgemap->m_size.h * 64 * int(abs(mtx.yx)),
 				pEdgemap->m_size.w * 64 * int(abs(mtx.xy)) + pEdgemap->m_size.h * 64 * int(abs(mtx.yy)),
 			};
 			/*
+
+	void GlGfxDevice::_transformDrawSegments( const RectSPX& _destIn, int nSegments, const HiColor * pSegmentColors, 
+	int nEdgeStrips, const int * pEdgeStrips, int edgeStripPitch, TintMode tintMode, const int simpleTransform[2][2] )
+
+
 			_transformDrawSegments(dest, pWave->m_nbRenderSegments, pWave->m_pRenderColors,
 				pWave->m_size.w + 1, pWave->m_pSamples, pWave->m_nbSegments - 1, pWave->m_tintMode,
 				transform);
 			*/
 
+			int nSegments = pEdgemap->m_nbRenderSegments;
+			const HiColor * pSegmentColors = pEdgemap->m_pRenderColors;
+			int nEdgeStrips = pEdgemap->m_size.w + 1;
+			const int* pEdgeStrips = pEdgemap->m_pSamples;
+			int edgeStripPitch = pEdgemap->m_nbSegments - 1;
+			TintMode tintMode = pEdgemap->m_tintMode;
+
+
+
+			//TODO: Proper 26:6 support
+			RectI _dest = roundToPixels(_destIn);
+
+			//
+
+			int extrasSpaceNeeded = 8 + 4 * (nEdgeStrips - 1) * (nSegments - 1);		// Various data + colors + strips
+
+	
+			// Do transformations
+
+			RectI dest = _dest;
+
+			int uIncX = mtx.xx;
+			int vIncX = mtx.xy;
+			int uIncY = mtx.yx;
+			int vIncY = mtx.yy;
+
+			// Possibly clip the destination rectangle if we have space for more columns than we have
+
+			int maxCol = (nEdgeStrips - 1);
+			if (uIncX != 0)								// Columns are aligned horizontally
+			{
+				if (dest.w > maxCol)
+				{
+					if (uIncX < 0)
+						dest.x += dest.w - maxCol;
+					dest.w = maxCol;
+				}
+			}
+			else										// Columns are aligned vertically
+			{
+				if (dest.h > maxCol)
+				{
+					if (uIncY < 0)
+						dest.y += dest.h - maxCol;
+					dest.h = maxCol;
+				}
+			}
+
+			// Calc topLeft UV values
+
+			int uTopLeft = 0;
+			int vTopLeft = 0;
+
+			if (uIncX + uIncY < 0)
+				uTopLeft = maxCol;
+
+			if (vIncX < 0)
+				vTopLeft = dest.w;
+			else if (vIncY < 0)
+				vTopLeft = dest.h;
+
+			// Setup vertices
+
+			for (int i = 0; i < nRects; i++)
+			{
+				RectI patch = (*pRects++) / 64;
+				
+				int		dx1 = patch.x;
+				int		dx2 = patch.x + patch.w;
+				int		dy1 = patch.y;
+				int		dy2 = patch.y + patch.h;
+
+				// Calc UV-coordinates. U is edge offset, V is pixel offset from begin in column.
+
+				float	u1 = (float)(uTopLeft + (patch.x - dest.x) * mtx.xx + (patch.y - dest.y) * mtx.yx);
+				float	v1 = (float)(vTopLeft + (patch.x - dest.x) * mtx.xy + (patch.y - dest.y) * mtx.yy);
+
+				float	u2 = (float)(uTopLeft + (patch.x + patch.w - dest.x) * mtx.xx + (patch.y - dest.y) * mtx.yx);
+				float	v2 = (float)(vTopLeft + (patch.x + patch.w - dest.x) * mtx.xy + (patch.y - dest.y) * mtx.yy);
+
+				float	u3 = (float)(uTopLeft + (patch.x + patch.w - dest.x) * mtx.xx + (patch.y + patch.h - dest.y) * mtx.yx);
+				float	v3 = (float)(vTopLeft + (patch.x + patch.w - dest.x) * mtx.xy + (patch.y + patch.h - dest.y) * mtx.yy);
+
+				float	u4 = (float)(uTopLeft + (patch.x - dest.x) * mtx.xx + (patch.y + patch.h - dest.y) * mtx.yx);
+				float	v4 = (float)(vTopLeft + (patch.x - dest.x) * mtx.xy + (patch.y + patch.h - dest.y) * mtx.yy);
+
+				CoordF	uv1 = { u1, v1 - 0.5f };
+				CoordF	uv2 = { u2, v2 - 0.5f };
+				CoordF	uv3 = { u3, v3 - 0.5f };
+				CoordF	uv4 = { u4, v4 - 0.5f };
+
+				int extrasOfs = (pExtrasGL - m_pExtrasBuffer) / 4;
+				int colorsOfs = (pColorGL - m_pColorBuffer);
+
+				//
+
+				pVertexGL->coord.x = dx1;
+				pVertexGL->coord.y = dy1;
+				pVertexGL->extrasOfs = extrasOfs;
+				pVertexGL->uv = uv1;
+				pVertexGL++;
+
+				pVertexGL->coord.x = dx2;
+				pVertexGL->coord.y = dy1;
+				pVertexGL->extrasOfs = extrasOfs;
+				pVertexGL->uv = uv2;
+				pVertexGL++;
+
+				pVertexGL->coord.x = dx2;
+				pVertexGL->coord.y = dy2;
+				pVertexGL->extrasOfs = extrasOfs;
+				pVertexGL->uv = uv3;
+				pVertexGL++;
+
+				pVertexGL->coord.x = dx1;
+				pVertexGL->coord.y = dy1;
+				pVertexGL->extrasOfs = extrasOfs;
+				pVertexGL->uv = uv1;
+				pVertexGL++;
+
+				pVertexGL->coord.x = dx2;
+				pVertexGL->coord.y = dy2;
+				pVertexGL->extrasOfs = extrasOfs;
+				pVertexGL->uv = uv3;
+				pVertexGL++;
+
+				pVertexGL->coord.x = dx1;
+				pVertexGL->coord.y = dy2;
+				pVertexGL->extrasOfs = extrasOfs;
+				pVertexGL->uv = uv4;
+				pVertexGL++;
+			}
+
+			// Setup extras data
+
+
+			// Add various data to extras
+
+			int edgeStripOfs = (pExtrasGL - m_pExtrasBuffer + 8);	// Offset for edgestrips in buffer.
+
+			pExtrasGL[0] = (GLfloat)nSegments;
+			pExtrasGL[1] = (GLfloat)edgeStripOfs / 4;
+			pExtrasGL[2] = (GLfloat)((_dest.w) * abs(mtx.xx) + (_dest.h) * abs(mtx.yx));
+			pExtrasGL[3] = (GLfloat)((_dest.w) * abs(mtx.xy) + (_dest.h) * abs(mtx.yy));
+			pExtrasGL[4] = GLfloat(0.25f / c_maxSegments);
+			pExtrasGL[5] = GLfloat(m_segmentsTintTexOfs + 0.25f) / c_segmentsTintTexMapSize;
+			pExtrasGL[6] = GLfloat(c_maxSegments * 2);
+			pExtrasGL[7] = GLfloat(c_segmentsTintTexMapSize * 2);
+
+			pExtrasGL += 8;												// Alignment for vec4 reads.
+
+			// Add colors to segmentsTintTexMap
+
+			const HiColor* pSegCol = pSegmentColors;
+
+			uint16_t* pMapRow = m_segmentsTintTexMap[m_segmentsTintTexOfs];
+			int			mapPitch = c_maxSegments * 4 * 2;
+
+			switch (tintMode)
+			{
+			case TintMode::None:
+			case TintMode::Flat:
+			{
+				for (int i = 0; i < nSegments; i++)
+				{
+					uint16_t r = uint16_t(int(pSegCol->r) * 65535 / 4096);
+					uint16_t g = uint16_t(int(pSegCol->g) * 65535 / 4096);
+					uint16_t b = uint16_t(int(pSegCol->b) * 65535 / 4096);
+					uint16_t a = uint16_t(int(pSegCol->a) * 65535 / 4096);
+
+					pMapRow[i * 8 + 0] = b;
+					pMapRow[i * 8 + 1] = g;
+					pMapRow[i * 8 + 2] = r;
+					pMapRow[i * 8 + 3] = a;
+					pMapRow[i * 8 + 4] = b;
+					pMapRow[i * 8 + 5] = g;
+					pMapRow[i * 8 + 6] = r;
+					pMapRow[i * 8 + 7] = a;
+
+					pMapRow[mapPitch + i * 8 + 0] = b;
+					pMapRow[mapPitch + i * 8 + 1] = g;
+					pMapRow[mapPitch + i * 8 + 2] = r;
+					pMapRow[mapPitch + i * 8 + 3] = a;
+					pMapRow[mapPitch + i * 8 + 4] = b;
+					pMapRow[mapPitch + i * 8 + 5] = g;
+					pMapRow[mapPitch + i * 8 + 6] = r;
+					pMapRow[mapPitch + i * 8 + 7] = a;
+					pSegCol++;
+				}
+				break;
+			}
+
+			case TintMode::GradientX:
+			{
+				for (int i = 0; i < nSegments; i++)
+				{
+					uint16_t r1 = uint16_t(int(pSegCol->r) * 65535 / 4096);
+					uint16_t g1 = uint16_t(int(pSegCol->g) * 65535 / 4096);
+					uint16_t b1 = uint16_t(int(pSegCol->b) * 65535 / 4096);
+					uint16_t a1 = uint16_t(int(pSegCol->a) * 65535 / 4096);
+					pSegCol++;
+
+					uint16_t r2 = uint16_t(int(pSegCol->r) * 65535 / 4096);
+					uint16_t g2 = uint16_t(int(pSegCol->g) * 65535 / 4096);
+					uint16_t b2 = uint16_t(int(pSegCol->b) * 65535 / 4096);
+					uint16_t a2 = uint16_t(int(pSegCol->a) * 65535 / 4096);
+					pSegCol++;
+
+					pMapRow[i * 8 + 0] = b1;
+					pMapRow[i * 8 + 1] = g1;
+					pMapRow[i * 8 + 2] = r1;
+					pMapRow[i * 8 + 3] = a1;
+					pMapRow[i * 8 + 4] = b2;
+					pMapRow[i * 8 + 5] = g2;
+					pMapRow[i * 8 + 6] = r2;
+					pMapRow[i * 8 + 7] = a2;
+
+					pMapRow[mapPitch + i * 8 + 0] = b1;
+					pMapRow[mapPitch + i * 8 + 1] = g1;
+					pMapRow[mapPitch + i * 8 + 2] = r1;
+					pMapRow[mapPitch + i * 8 + 3] = a1;
+					pMapRow[mapPitch + i * 8 + 4] = b2;
+					pMapRow[mapPitch + i * 8 + 5] = g2;
+					pMapRow[mapPitch + i * 8 + 6] = r2;
+					pMapRow[mapPitch + i * 8 + 7] = a2;
+				}
+				break;
+			}
+
+			case TintMode::GradientY:
+			{
+				for (int i = 0; i < nSegments; i++)
+				{
+					uint16_t r1 = uint16_t(int(pSegCol->r) * 65535 / 4096);
+					uint16_t g1 = uint16_t(int(pSegCol->g) * 65535 / 4096);
+					uint16_t b1 = uint16_t(int(pSegCol->b) * 65535 / 4096);
+					uint16_t a1 = uint16_t(int(pSegCol->a) * 65535 / 4096);
+					pSegCol++;
+
+					uint16_t r2 = uint16_t(int(pSegCol->r) * 65535 / 4096);
+					uint16_t g2 = uint16_t(int(pSegCol->g) * 65535 / 4096);
+					uint16_t b2 = uint16_t(int(pSegCol->b) * 65535 / 4096);
+					uint16_t a2 = uint16_t(int(pSegCol->a) * 65535 / 4096);
+					pSegCol++;
+
+					pMapRow[i * 8 + 0] = b1;
+					pMapRow[i * 8 + 1] = g1;
+					pMapRow[i * 8 + 2] = r1;
+					pMapRow[i * 8 + 3] = a1;
+					pMapRow[i * 8 + 4] = b1;
+					pMapRow[i * 8 + 5] = g1;
+					pMapRow[i * 8 + 6] = r1;
+					pMapRow[i * 8 + 7] = a1;
+
+					pMapRow[mapPitch + i * 8 + 0] = b2;
+					pMapRow[mapPitch + i * 8 + 1] = g2;
+					pMapRow[mapPitch + i * 8 + 2] = r2;
+					pMapRow[mapPitch + i * 8 + 3] = a2;
+					pMapRow[mapPitch + i * 8 + 4] = b2;
+					pMapRow[mapPitch + i * 8 + 5] = g2;
+					pMapRow[mapPitch + i * 8 + 6] = r2;
+					pMapRow[mapPitch + i * 8 + 7] = a2;
+				}
+				break;
+			}
+
+			case TintMode::GradientXY:
+			{
+				for (int i = 0; i < nSegments; i++)
+				{
+					pMapRow[i * 8 + 0] = uint16_t(int(pSegCol->b) * 65535 / 4096);
+					pMapRow[i * 8 + 1] = uint16_t(int(pSegCol->g) * 65535 / 4096);
+					pMapRow[i * 8 + 2] = uint16_t(int(pSegCol->r) * 65535 / 4096);
+					pMapRow[i * 8 + 3] = uint16_t(int(pSegCol->a) * 65535 / 4096);
+					pSegCol++;
+
+					pMapRow[i * 8 + 4] = uint16_t(int(pSegCol->b) * 65535 / 4096);
+					pMapRow[i * 8 + 5] = uint16_t(int(pSegCol->g) * 65535 / 4096);
+					pMapRow[i * 8 + 6] = uint16_t(int(pSegCol->r) * 65535 / 4096);
+					pMapRow[i * 8 + 7] = uint16_t(int(pSegCol->a) * 65535 / 4096);
+					pSegCol++;
+
+					pMapRow[mapPitch + i * 8 + 4] = uint16_t(int(pSegCol->b) * 65535 / 4096);
+					pMapRow[mapPitch + i * 8 + 5] = uint16_t(int(pSegCol->g) * 65535 / 4096);
+					pMapRow[mapPitch + i * 8 + 6] = uint16_t(int(pSegCol->r) * 65535 / 4096);
+					pMapRow[mapPitch + i * 8 + 7] = uint16_t(int(pSegCol->a) * 65535 / 4096);
+					pSegCol++;
+
+					pMapRow[mapPitch + i * 8 + 0] = uint16_t(int(pSegCol->b) * 65535 / 4096);
+					pMapRow[mapPitch + i * 8 + 1] = uint16_t(int(pSegCol->g) * 65535 / 4096);
+					pMapRow[mapPitch + i * 8 + 2] = uint16_t(int(pSegCol->r) * 65535 / 4096);
+					pMapRow[mapPitch + i * 8 + 3] = uint16_t(int(pSegCol->a) * 65535 / 4096);
+					pSegCol++;
+				}
+				break;
+			}
+			}
+
+			m_segmentsTintTexOfs++;
+
+			// Add edgestrips to extras
+
+			const int* pEdges = pEdgeStrips;
+
+			for (int i = 0; i < nEdgeStrips - 1; i++)
+			{
+				for (int j = 0; j < nSegments - 1; j++)
+				{
+					int edgeIn = pEdges[j];
+					int edgeOut = pEdges[edgeStripPitch + j];
+
+					if (edgeIn > edgeOut)
+						std::swap(edgeIn, edgeOut);
+
+					float increment = edgeOut == edgeIn ? 100.f : 64.f / (edgeOut - edgeIn);
+					float beginAdder;
+					float endAdder;
+
+					if ((edgeOut & 0xFFFFFFC0) <= (unsigned int)edgeIn)
+					{
+						float firstPixelCoverage = ((64 - (edgeOut & 0x3F)) + (edgeOut - edgeIn) / 2) / 64.f;
+
+						beginAdder = increment * (edgeIn & 0x3F) / 64.f + firstPixelCoverage;
+						endAdder = beginAdder;
+					}
+					else
+					{
+						int height = 64 - (edgeIn & 0x3F);
+						int width = (int)(increment * height);
+						float firstPixelCoverage = (height * width) / (2 * 4096.f);
+						float lastPixelCoverage = 1.f - (edgeOut & 0x3F) * increment * (edgeOut & 0x3F) / (2 * 4096.f);
+
+						beginAdder = increment * (edgeIn & 0x3F) / 64.f + firstPixelCoverage;
+						endAdder = lastPixelCoverage - (1.f - (edgeOut & 0x3F) * increment / 64.f);
+						// 					endAdder = lastPixelCoverage - ((edgeOut & 0xFFFFFF00)-edgeIn)*increment / 256.f;
+					}
+
+					*pExtrasGL++ = edgeIn / 64.f;					// Segment begin pixel
+					*pExtrasGL++ = increment;						// Segment increment
+					*pExtrasGL++ = beginAdder;					// Segment begin adder
+					*pExtrasGL++ = endAdder;						// Segment end adder
+				}
+
+				pEdges += edgeStripPitch;
+			}
 
 			break;
 		}
