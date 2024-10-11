@@ -36,6 +36,7 @@ namespace wg
 	class GlEdgemap : public Edgemap
 	{
 		friend class GlGfxDevice;
+		friend class GlBackend;
 	public:
 
 		//.____ Creation __________________________________________

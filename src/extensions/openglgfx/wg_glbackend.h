@@ -186,6 +186,8 @@ namespace wg
 		GlSurface_p		m_pActiveBlitSource = nullptr;									// Currently active blit source in OpenGL, not to confuse with m_pBlitSource which might not be active yet.
 		bool			m_bTintmapIsActive = false;
 
+		GLfloat			m_activeMorphFactor = 0.5f;
+
 		// Device programs
 
 		GLuint  m_fillProg[2];									// [RGB/A_8 dest]
@@ -233,26 +235,6 @@ namespace wg
 			ProgramBlobEntry	programs[c_nbPrograms];
 		};
 
-		//
-
-
-		struct GradientTintInfo
-		{
-			GLfloat flatTint[4];		// This needs to be placed first, so first part is identical to FlatTintInfo
-
-			RectF	tintRect;
-
-			GLfloat	topLeftTint[4];
-			GLfloat	topRightTint[4];
-			GLfloat	bottomRightTint[4];
-			GLfloat	bottomLeftTint[4];
-		};
-
-		struct FlatTintInfo
-		{
-			GLfloat flatTint[4];
-		};
-
 
 		//
 
@@ -275,8 +257,6 @@ namespace wg
 
 		CanvasInfo			m_defaultCanvas;
 		CanvasInfo			m_dummyCanvas;
-
-		GradientTintInfo	m_tintInfo;
 		
 		//
 

@@ -209,15 +209,16 @@ void GlBackend::_setCanvas(Surface* pSurface)
 
 	m_bActiveCanvasIsA8 = m_pActiveCanvas ? m_pActiveCanvas->pixelFormat() == PixelFormat::Alpha_8 : false;
 
-	if (m_bActiveCanvasIsA8 != bWasAlphaOnly)
-		_setBlendMode(m_activeBlendMode);
+//	if (m_bActiveCanvasIsA8 != bWasAlphaOnly)
+//		_setBlendMode(m_activeBlendMode);
 
 	// Reset states
 
-	_setBlendMode(BlendMode::Blend);
-
-
 	m_activeBlendMode = BlendMode::Blend;
+	_setBlendMode(m_activeBlendMode);
+
+
+	m_activeMorphFactor = 0.5f;
 	m_bTintmapIsActive = false;
 	m_tintColorOfs = -1;
 
@@ -433,11 +434,14 @@ void GlBackend::processCommands(int32_t* pBeg, int32_t* pEnd)
 			{
 				// Save for later processing, needs to be applied between draw calls.
 
-				int morphFactor = *p++;
+				*pCommandGL++ = *p++;
 			}
 
 			if (statesChanged & uint8_t(StateChange::FixedBlendColor))
 			{
+				// Just retrieve the value but do nothing. We use BlendMode::Blend 
+				// in place of BlendMode::BlendFixedColor.
+
 				HiColor fixedBlendColor = *pColors++;
 			}
 
@@ -850,6 +854,24 @@ void GlBackend::processCommands(int32_t* pBeg, int32_t* pEnd)
 			RectSPX* pRects = reinterpret_cast<RectSPX*>(pCoords);
 
 			pCoords += nRects * 4;
+
+			//
+
+			auto& mtx = s_blitFlipTransforms[flip];
+
+			RectSPX dest = {
+				destX,
+				destY,
+				pEdgemap->m_size.w * 64 * int(abs(mtx.xx)) + pEdgemap->m_size.h * 64 * int(abs(mtx.yx)),
+				pEdgemap->m_size.w * 64 * int(abs(mtx.xy)) + pEdgemap->m_size.h * 64 * int(abs(mtx.yy)),
+			};
+			/*
+			_transformDrawSegments(dest, pWave->m_nbRenderSegments, pWave->m_pRenderColors,
+				pWave->m_size.w + 1, pWave->m_pSamples, pWave->m_nbSegments - 1, pWave->m_tintMode,
+				transform);
+			*/
+
+
 			break;
 		}
 /*
@@ -1667,8 +1689,7 @@ void GlBackend::endSession()
 
 				if (statesChanged & uint8_t(StateChange::BlendMode))
 				{
-					auto blendMode = (BlendMode)*pCmd++;
-					_setBlendMode(blendMode);
+					m_activeBlendMode = (BlendMode)*pCmd++;
 				}
 
 				if (statesChanged & uint8_t(StateChange::TintColor))
@@ -1683,6 +1704,7 @@ void GlBackend::endSession()
 
 				if (statesChanged & uint8_t(StateChange::MorphFactor))
 				{
+					m_activeMorphFactor = *pCmd++ / 4096.f;
 				}
 
 				if (statesChanged & uint8_t(StateChange::FixedBlendColor))
@@ -1695,6 +1717,14 @@ void GlBackend::endSession()
 
 					m_pActiveBlurbrush = pBlurbrush;
 				}
+
+				// We postpone setting blend mode after having retrieved active morphFactor and fixedBlendColor
+
+				if (statesChanged & (uint8_t(StateChange::BlendMode) | uint8_t(StateChange::MorphFactor)) )
+				{
+					_setBlendMode(m_activeBlendMode);
+				}
+
 
 				break;
 
@@ -1884,6 +1914,7 @@ void GlBackend::_setBlendMode(BlendMode mode)
 		break;
 
 	case BlendMode::Undefined:
+	case BlendMode::BlendFixedColor:		// Defaults to Blend for BlendFixedColor which can not be implemented easily.
 	case BlendMode::Blend:
 		glBlendEquation(GL_FUNC_ADD);
 		glEnable(GL_BLEND);
@@ -1897,6 +1928,7 @@ void GlBackend::_setBlendMode(BlendMode mode)
 		glBlendEquation(GL_FUNC_ADD);
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_CONSTANT_ALPHA, GL_ONE_MINUS_CONSTANT_ALPHA);
+		glBlendColor(1.f, 1.f, 1.f, m_activeMorphFactor);
 		break;
 
 	case BlendMode::Add:
@@ -1975,8 +2007,6 @@ void GlBackend::_setBlendMode(BlendMode mode)
 		assert(false);
 		break;
 	}
-
-	m_activeBlendMode = mode;
 
 	LOG_GLERROR(glGetError());
 }
