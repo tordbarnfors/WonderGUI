@@ -967,8 +967,18 @@ void GlBackend::processCommands(int32_t* pBeg, int32_t* pEnd)
 				CoordF	uv3 = { u3, v3 - 0.5f };
 				CoordF	uv4 = { u4, v4 - 0.5f };
 
+				//
+
 				int extrasOfs = (pExtrasGL - m_pExtrasBuffer) / 4;
 				int colorsOfs = (pColorGL - m_pColorBuffer);
+
+
+				float tintmapBeginX, tintmapBeginY, tintmapEndX, tintmapEndY;
+
+				tintmapBeginX = colorsOfs + 0.5f;
+				tintmapBeginY = colorsOfs + 0.5f;
+				tintmapEndX = colorsOfs + 0.5f;
+				tintmapEndY = colorsOfs + 0.5f;
 
 				//
 
@@ -976,36 +986,42 @@ void GlBackend::processCommands(int32_t* pBeg, int32_t* pEnd)
 				pVertexGL->coord.y = dy1;
 				pVertexGL->extrasOfs = extrasOfs;
 				pVertexGL->uv = uv1;
+				pVertexGL->tintmapOfs = { tintmapBeginX, tintmapBeginY };
 				pVertexGL++;
 
 				pVertexGL->coord.x = dx2;
 				pVertexGL->coord.y = dy1;
 				pVertexGL->extrasOfs = extrasOfs;
 				pVertexGL->uv = uv2;
+				pVertexGL->tintmapOfs = { tintmapEndX, tintmapBeginY };
 				pVertexGL++;
 
 				pVertexGL->coord.x = dx2;
 				pVertexGL->coord.y = dy2;
 				pVertexGL->extrasOfs = extrasOfs;
 				pVertexGL->uv = uv3;
+				pVertexGL->tintmapOfs = { tintmapEndX, tintmapEndY };
 				pVertexGL++;
 
 				pVertexGL->coord.x = dx1;
 				pVertexGL->coord.y = dy1;
 				pVertexGL->extrasOfs = extrasOfs;
 				pVertexGL->uv = uv1;
+				pVertexGL->tintmapOfs = { tintmapBeginX, tintmapBeginY };
 				pVertexGL++;
 
 				pVertexGL->coord.x = dx2;
 				pVertexGL->coord.y = dy2;
 				pVertexGL->extrasOfs = extrasOfs;
 				pVertexGL->uv = uv3;
+				pVertexGL->tintmapOfs = { tintmapEndX, tintmapEndY };
 				pVertexGL++;
 
 				pVertexGL->coord.x = dx1;
 				pVertexGL->coord.y = dy2;
 				pVertexGL->extrasOfs = extrasOfs;
 				pVertexGL->uv = uv4;
+				pVertexGL->tintmapOfs = { tintmapBeginX, tintmapEndY };
 				pVertexGL++;
 			}
 
@@ -1014,25 +1030,19 @@ void GlBackend::processCommands(int32_t* pBeg, int32_t* pEnd)
 
 			// Add various data to extras
 
-			int edgeStripOfs = (pExtrasGL - m_pExtrasBuffer + 8);	// Offset for edgestrips in buffer.
+			int edgeStripOfs = (pExtrasGL - m_pExtrasBuffer + 4);	// Offset for edgestrips in buffer.
 
-			pExtrasGL[0] = (GLfloat)nSegments;
-			pExtrasGL[1] = (GLfloat)edgeStripOfs / 4;
-			pExtrasGL[2] = (GLfloat)((_dest.w) * abs(mtx.xx) + (_dest.h) * abs(mtx.yx));
-			pExtrasGL[3] = (GLfloat)((_dest.w) * abs(mtx.xy) + (_dest.h) * abs(mtx.yy));
-			pExtrasGL[4] = GLfloat(0.25f / c_maxSegments);
-			pExtrasGL[5] = GLfloat(m_segmentsTintTexOfs + 0.25f) / c_segmentsTintTexMapSize;
-			pExtrasGL[6] = GLfloat(c_maxSegments * 2);
-			pExtrasGL[7] = GLfloat(c_segmentsTintTexMapSize * 2);
+			* pExtrasGL++ = (GLfloat)nSegments;
+			* pExtrasGL++ = (GLfloat)edgeStripOfs / 4;
+			* pExtrasGL++ = 1;							// tintmapPitch
+			* pExtrasGL++ = 0;							// Dummy/filler
 
 			pExtrasGL += 8;												// Alignment for vec4 reads.
 
-			// Add colors to segmentsTintTexMap
+			// Add segment colors
+
 
 			const HiColor* pSegCol = pSegmentColors;
-
-			uint16_t* pMapRow = m_segmentsTintTexMap[m_segmentsTintTexOfs];
-			int			mapPitch = c_maxSegments * 4 * 2;
 
 			switch (tintMode)
 			{
@@ -1041,28 +1051,12 @@ void GlBackend::processCommands(int32_t* pBeg, int32_t* pEnd)
 			{
 				for (int i = 0; i < nSegments; i++)
 				{
-					uint16_t r = uint16_t(int(pSegCol->r) * 65535 / 4096);
-					uint16_t g = uint16_t(int(pSegCol->g) * 65535 / 4096);
-					uint16_t b = uint16_t(int(pSegCol->b) * 65535 / 4096);
-					uint16_t a = uint16_t(int(pSegCol->a) * 65535 / 4096);
+					pColorGL->r = pSegCol->r / 4096.f;
+					pColorGL->g = pSegCol->g / 4096.f;
+					pColorGL->b = pSegCol->b / 4096.f;
+					pColorGL->a = pSegCol->a / 4096.f;
 
-					pMapRow[i * 8 + 0] = b;
-					pMapRow[i * 8 + 1] = g;
-					pMapRow[i * 8 + 2] = r;
-					pMapRow[i * 8 + 3] = a;
-					pMapRow[i * 8 + 4] = b;
-					pMapRow[i * 8 + 5] = g;
-					pMapRow[i * 8 + 6] = r;
-					pMapRow[i * 8 + 7] = a;
-
-					pMapRow[mapPitch + i * 8 + 0] = b;
-					pMapRow[mapPitch + i * 8 + 1] = g;
-					pMapRow[mapPitch + i * 8 + 2] = r;
-					pMapRow[mapPitch + i * 8 + 3] = a;
-					pMapRow[mapPitch + i * 8 + 4] = b;
-					pMapRow[mapPitch + i * 8 + 5] = g;
-					pMapRow[mapPitch + i * 8 + 6] = r;
-					pMapRow[mapPitch + i * 8 + 7] = a;
+					pColorGL++;
 					pSegCol++;
 				}
 				break;
@@ -1070,111 +1064,19 @@ void GlBackend::processCommands(int32_t* pBeg, int32_t* pEnd)
 
 			case TintMode::GradientX:
 			{
-				for (int i = 0; i < nSegments; i++)
-				{
-					uint16_t r1 = uint16_t(int(pSegCol->r) * 65535 / 4096);
-					uint16_t g1 = uint16_t(int(pSegCol->g) * 65535 / 4096);
-					uint16_t b1 = uint16_t(int(pSegCol->b) * 65535 / 4096);
-					uint16_t a1 = uint16_t(int(pSegCol->a) * 65535 / 4096);
-					pSegCol++;
-
-					uint16_t r2 = uint16_t(int(pSegCol->r) * 65535 / 4096);
-					uint16_t g2 = uint16_t(int(pSegCol->g) * 65535 / 4096);
-					uint16_t b2 = uint16_t(int(pSegCol->b) * 65535 / 4096);
-					uint16_t a2 = uint16_t(int(pSegCol->a) * 65535 / 4096);
-					pSegCol++;
-
-					pMapRow[i * 8 + 0] = b1;
-					pMapRow[i * 8 + 1] = g1;
-					pMapRow[i * 8 + 2] = r1;
-					pMapRow[i * 8 + 3] = a1;
-					pMapRow[i * 8 + 4] = b2;
-					pMapRow[i * 8 + 5] = g2;
-					pMapRow[i * 8 + 6] = r2;
-					pMapRow[i * 8 + 7] = a2;
-
-					pMapRow[mapPitch + i * 8 + 0] = b1;
-					pMapRow[mapPitch + i * 8 + 1] = g1;
-					pMapRow[mapPitch + i * 8 + 2] = r1;
-					pMapRow[mapPitch + i * 8 + 3] = a1;
-					pMapRow[mapPitch + i * 8 + 4] = b2;
-					pMapRow[mapPitch + i * 8 + 5] = g2;
-					pMapRow[mapPitch + i * 8 + 6] = r2;
-					pMapRow[mapPitch + i * 8 + 7] = a2;
-				}
 				break;
 			}
 
 			case TintMode::GradientY:
 			{
-				for (int i = 0; i < nSegments; i++)
-				{
-					uint16_t r1 = uint16_t(int(pSegCol->r) * 65535 / 4096);
-					uint16_t g1 = uint16_t(int(pSegCol->g) * 65535 / 4096);
-					uint16_t b1 = uint16_t(int(pSegCol->b) * 65535 / 4096);
-					uint16_t a1 = uint16_t(int(pSegCol->a) * 65535 / 4096);
-					pSegCol++;
-
-					uint16_t r2 = uint16_t(int(pSegCol->r) * 65535 / 4096);
-					uint16_t g2 = uint16_t(int(pSegCol->g) * 65535 / 4096);
-					uint16_t b2 = uint16_t(int(pSegCol->b) * 65535 / 4096);
-					uint16_t a2 = uint16_t(int(pSegCol->a) * 65535 / 4096);
-					pSegCol++;
-
-					pMapRow[i * 8 + 0] = b1;
-					pMapRow[i * 8 + 1] = g1;
-					pMapRow[i * 8 + 2] = r1;
-					pMapRow[i * 8 + 3] = a1;
-					pMapRow[i * 8 + 4] = b1;
-					pMapRow[i * 8 + 5] = g1;
-					pMapRow[i * 8 + 6] = r1;
-					pMapRow[i * 8 + 7] = a1;
-
-					pMapRow[mapPitch + i * 8 + 0] = b2;
-					pMapRow[mapPitch + i * 8 + 1] = g2;
-					pMapRow[mapPitch + i * 8 + 2] = r2;
-					pMapRow[mapPitch + i * 8 + 3] = a2;
-					pMapRow[mapPitch + i * 8 + 4] = b2;
-					pMapRow[mapPitch + i * 8 + 5] = g2;
-					pMapRow[mapPitch + i * 8 + 6] = r2;
-					pMapRow[mapPitch + i * 8 + 7] = a2;
-				}
 				break;
 			}
 
 			case TintMode::GradientXY:
 			{
-				for (int i = 0; i < nSegments; i++)
-				{
-					pMapRow[i * 8 + 0] = uint16_t(int(pSegCol->b) * 65535 / 4096);
-					pMapRow[i * 8 + 1] = uint16_t(int(pSegCol->g) * 65535 / 4096);
-					pMapRow[i * 8 + 2] = uint16_t(int(pSegCol->r) * 65535 / 4096);
-					pMapRow[i * 8 + 3] = uint16_t(int(pSegCol->a) * 65535 / 4096);
-					pSegCol++;
-
-					pMapRow[i * 8 + 4] = uint16_t(int(pSegCol->b) * 65535 / 4096);
-					pMapRow[i * 8 + 5] = uint16_t(int(pSegCol->g) * 65535 / 4096);
-					pMapRow[i * 8 + 6] = uint16_t(int(pSegCol->r) * 65535 / 4096);
-					pMapRow[i * 8 + 7] = uint16_t(int(pSegCol->a) * 65535 / 4096);
-					pSegCol++;
-
-					pMapRow[mapPitch + i * 8 + 4] = uint16_t(int(pSegCol->b) * 65535 / 4096);
-					pMapRow[mapPitch + i * 8 + 5] = uint16_t(int(pSegCol->g) * 65535 / 4096);
-					pMapRow[mapPitch + i * 8 + 6] = uint16_t(int(pSegCol->r) * 65535 / 4096);
-					pMapRow[mapPitch + i * 8 + 7] = uint16_t(int(pSegCol->a) * 65535 / 4096);
-					pSegCol++;
-
-					pMapRow[mapPitch + i * 8 + 0] = uint16_t(int(pSegCol->b) * 65535 / 4096);
-					pMapRow[mapPitch + i * 8 + 1] = uint16_t(int(pSegCol->g) * 65535 / 4096);
-					pMapRow[mapPitch + i * 8 + 2] = uint16_t(int(pSegCol->r) * 65535 / 4096);
-					pMapRow[mapPitch + i * 8 + 3] = uint16_t(int(pSegCol->a) * 65535 / 4096);
-					pSegCol++;
-				}
 				break;
 			}
 			}
-
-			m_segmentsTintTexOfs++;
 
 			// Add edgestrips to extras
 
@@ -1713,10 +1615,8 @@ GlBackend::~GlBackend()
 
 	for (int i = 1; i < c_maxSegments; i++)
 	{
-		glDeleteProgram(m_segmentsProg[i][0][0]);
-		glDeleteProgram(m_segmentsProg[i][0][1]);
-		glDeleteProgram(m_segmentsProg[i][1][0]);
-		glDeleteProgram(m_segmentsProg[i][1][1]);
+		glDeleteProgram(m_segmentsProg[i][0]);
+		glDeleteProgram(m_segmentsProg[i][1]);
 	}
 
 	glDeleteFramebuffers(1, &m_framebufferId);
@@ -2563,25 +2463,18 @@ void GlBackend::_loadPrograms(int uboBindingPoint)
 			auto maxsegPos = fragShader.find("$MAXSEG");
 			fragShader.replace(maxsegPos, 7, std::to_string(c_maxSegments));
 
-			const char* pVertexShader = segmentsVertexShader;
-			for (int j = 0; j < 2; j++)
-			{
-				GLuint prog = _loadOrCompileProgram(programNb++, pVertexShader, fragShader.c_str());
-				m_segmentsProg[i][j][canvType] = prog;
+			GLuint prog = _loadOrCompileProgram(programNb++, segmentsVertexShader, fragShader.c_str());
+			m_segmentsProg[i][canvType] = prog;
 
-				GLint extrasIdLoc = glGetUniformLocation(prog, "extrasId");
-				GLint colorsIdLoc = glGetUniformLocation(prog, "colorsId");
-				GLint stripesIdLoc = glGetUniformLocation(prog, "stripesId");
-				GLint paletteIdLoc = glGetUniformLocation(prog, "paletteId");
+			GLint extrasIdLoc = glGetUniformLocation(prog, "extrasBufferId");
+			GLint stripesIdLoc = glGetUniformLocation(prog, "stripesId");
+			GLint paletteIdLoc = glGetUniformLocation(prog, "paletteId");
+			GLint paletteIdLoc = glGetUniformLocation(prog, "tintmapBufferId");
 
-				glUseProgram(prog);
-				glUniform1i(extrasIdLoc, 1);		// Needs to be set. Texture unit 1 is used for extras buffer.
-				glUniform1i(colorsIdLoc, 1);		// Needs to be set. Texture unit 1 is used for extras buffer, which doubles as the colors buffer.
-				glUniform1i(stripesIdLoc, 1);		// Needs to be set. Texture unit 1 is used for segment stripes buffer.
-				glUniform1i(paletteIdLoc, 3);		// Needs to be set. Texture unit 3 is used for segment stripes buffer.
-
-				pVertexShader = segmentsVertexShaderGradient;
-			}
+			glUseProgram(prog);
+			glUniform1i(extrasIdLoc, 2);		// Needs to be set. Texture unit 2 is used for extras buffer.
+			glUniform1i(stripesIdLoc, 2);		// Needs to be set. Texture unit 2 is used for segment stripes buffer.
+			glUniform1i(paletteIdLoc, 1);		// Needs to be set. Texture unit 1 is used for colors buffer.
 		}
 	}
 
@@ -2722,8 +2615,7 @@ Blob_p GlBackend::_generateProgramBlob()
 	{
 		for (int canvType = 0; canvType < 2; canvType++)
 		{
-			programs[prg++] = m_segmentsProg[i][0][canvType];
-			programs[prg++] = m_segmentsProg[i][1][canvType];
+			programs[prg++] = m_segmentsProg[i][canvType];
 		}
 	}
 

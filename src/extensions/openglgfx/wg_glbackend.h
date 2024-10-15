@@ -212,7 +212,7 @@ namespace wg
 		GLuint  m_plotProg[2];									// [RGB/A_8 dest]
 		GLuint  m_lineFromToProg[2];							// [RGB/A_8 dest]
 
-		GLuint	m_segmentsProg[c_maxSegments][2][2];			// [nb segments][base tint gradient][RGB/A_8 dest]
+		GLuint	m_segmentsProg[c_maxSegments][2];			// [nb segments][RGB/A_8 dest]
 
 		GLuint	m_blitProgMatrix[PixelFormat_size][2][2][2];	// [source format][interpolation][tintgradient][RGB/A_8 dest]
 
@@ -354,7 +354,6 @@ namespace wg
 
 
 		static const char segmentsVertexShader[];
-		static const char segmentsVertexShaderGradient[];
 		static const char segmentsFragmentShader[];
 		static const char segmentsFragmentShader_A8[];
 
