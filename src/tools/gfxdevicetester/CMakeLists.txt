@@ -19,6 +19,7 @@ set( SOURCES
 	testsuites/blittests.h
 	testsuites/canvasformattests.h
 	testsuites/canvaslayertests.h
+	testsuites/colortests.h
 	testsuites/edgemaptests.h
 	testsuites/edgemaptoolstests.h
 	testsuites/filltests.h

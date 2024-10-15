@@ -22,6 +22,7 @@
 #include "testsuites/blurtests.h"
 #include "testsuites/canvasformattests.h"
 #include "testsuites/canvaslayertests.h"
+#include "testsuites/colortests.h"
 #include "testsuites/filltests.h"
 #include "testsuites/linetests.h"
 #include "testsuites/mipmaptests.h"
@@ -591,6 +592,7 @@ void GfxDeviceTester::setup_tests()
 	add_testsuite([](){ return new EdgemapTests();});
 	add_testsuite([](){ return new EdgemapToolsTests();});
 	add_testsuite([](){ return new WaveformTests();});
+	add_testsuite([]() { return new ColorTests(); });
 
 	regen_testentries();
 }

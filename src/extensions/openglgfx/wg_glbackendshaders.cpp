@@ -1051,7 +1051,7 @@ const char GlBackend::segmentsVertexShader[] =
 "   stripesOfs = int(extras.y);							"
 "   tintmapPitch = int(extras.z);						"
 "   texUV = uv;											"
-"   paletteOfs = tintmapOfs;"
+"   tintmapUU = tintmapOfs;"
 "}                                                      ";
 
 
@@ -1060,7 +1060,6 @@ const char GlBackend::segmentsFragmentShader[] =
 "#version 330 core\n"
 "uniform samplerBuffer tintmapBufferId;	"
 "uniform samplerBuffer stripesId;				"
-"uniform sampler2D	paletteId;					"
 "in vec2 texUV;									"
 "flat in int segments;							"
 "flat in int stripesOfs;						"
@@ -1082,7 +1081,7 @@ const char GlBackend::segmentsFragmentShader[] =
 "	{"
 
 "		vec4 col = texelFetch(tintmapBufferId, tintmapX )"
-"			        * texelFetch(tintmapBufferId, tintmapY ):"
+"			        * texelFetch(tintmapBufferId, tintmapY );"
 
 "		tintmapX += tintmapPitch; "
 "		tintmapY += tintmapPitch; "
@@ -1105,7 +1104,7 @@ const char GlBackend::segmentsFragmentShader[] =
 "	}"
 
 "		vec4 col = texelFetch(tintmapBufferId, tintmapX )"
-"			        * texelFetch(tintmapBufferId, tintmapY ):"
+"			        * texelFetch(tintmapBufferId, tintmapY );"
 
 "	float useFactor = factor*col.a;"
 "	totalAlpha += useFactor;"
@@ -1121,7 +1120,6 @@ const char GlBackend::segmentsFragmentShader_A8[] =
 "#version 330 core\n"
 "uniform samplerBuffer tintmapBufferId;	"
 "uniform samplerBuffer stripesId;				"
-"uniform sampler2D	paletteId;					"
 "in vec2 texUV;									"
 "flat in int segments;							"
 "flat in int stripesOfs;						"
@@ -1142,7 +1140,7 @@ const char GlBackend::segmentsFragmentShader_A8[] =
 "	{"
 
 "		vec4 col = texelFetch(tintmapBufferId, tintmapX )"
-"			        * texelFetch(tintmapBufferId, tintmapY ):"
+"			        * texelFetch(tintmapBufferId, tintmapY );"
 
 "		tintmapX += tintmapPitch; "
 "		tintmapY += tintmapPitch; "
@@ -1164,7 +1162,7 @@ const char GlBackend::segmentsFragmentShader_A8[] =
 "	}"
 
 "		vec4 col = texelFetch(tintmapBufferId, tintmapX )"
-"			        * texelFetch(tintmapBufferId, tintmapY ):"
+"			        * texelFetch(tintmapBufferId, tintmapY );"
 "	float useFactor = factor*col.a;"
 "	totalAlpha += useFactor;"
 

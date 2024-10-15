@@ -128,6 +128,7 @@ namespace wg
 			SubpixelFill,
 			Blit,
 			Blur,
+			Edgemap
 
 		};
 

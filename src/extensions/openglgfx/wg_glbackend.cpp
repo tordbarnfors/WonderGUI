@@ -883,19 +883,10 @@ void GlBackend::processCommands(int32_t* pBeg, int32_t* pEnd)
 			int edgeStripPitch = pEdgemap->m_nbSegments - 1;
 			TintMode tintMode = pEdgemap->m_tintMode;
 
-
-
-			//TODO: Proper 26:6 support
-			RectI _dest = roundToPixels(_destIn);
-
-			//
-
-			int extrasSpaceNeeded = 8 + 4 * (nEdgeStrips - 1) * (nSegments - 1);		// Various data + colors + strips
-
 	
 			// Do transformations
 
-			RectI dest = _dest;
+			RectI dest = roundToPixels(_destIn);
 
 			int uIncX = mtx.xx;
 			int vIncX = mtx.xy;
@@ -976,9 +967,9 @@ void GlBackend::processCommands(int32_t* pBeg, int32_t* pEnd)
 				float tintmapBeginX, tintmapBeginY, tintmapEndX, tintmapEndY;
 
 				tintmapBeginX = colorsOfs + 0.5f;
-				tintmapBeginY = colorsOfs + 0.5f;
+				tintmapBeginY = colorsOfs + 1.5f;
 				tintmapEndX = colorsOfs + 0.5f;
-				tintmapEndY = colorsOfs + 0.5f;
+				tintmapEndY = colorsOfs + 1.5f;
 
 				//
 
@@ -1034,10 +1025,8 @@ void GlBackend::processCommands(int32_t* pBeg, int32_t* pEnd)
 
 			* pExtrasGL++ = (GLfloat)nSegments;
 			* pExtrasGL++ = (GLfloat)edgeStripOfs / 4;
-			* pExtrasGL++ = 1;							// tintmapPitch
+			* pExtrasGL++ = 2;							// tintmapPitch
 			* pExtrasGL++ = 0;							// Dummy/filler
-
-			pExtrasGL += 8;												// Alignment for vec4 reads.
 
 			// Add segment colors
 
@@ -1058,6 +1047,13 @@ void GlBackend::processCommands(int32_t* pBeg, int32_t* pEnd)
 
 					pColorGL++;
 					pSegCol++;
+
+					pColorGL->r = 1.f;
+					pColorGL->g = 1.f;
+					pColorGL->b = 1.f;
+					pColorGL->a = 1.f;
+					pColorGL++;
+
 				}
 				break;
 			}
@@ -1122,7 +1118,16 @@ void GlBackend::processCommands(int32_t* pBeg, int32_t* pEnd)
 				}
 
 				pEdges += edgeStripPitch;
+
 			}
+
+			//
+
+			*pCommandGL++ = CommandGL::Edgemap;
+			*pCommandGL++ = nSegments-1;
+			*pCommandGL++ = 6;
+
+
 
 			break;
 		}
@@ -1834,13 +1839,19 @@ void GlBackend::beginSession(const SessionInfo* pSession)
 
 	// Reserve buffer for colors
 
-	m_pColorBuffer = new ColorGL[pSession->nColors+1+pSession->nTintmapColors];
+	m_pColorBuffer = new ColorGL[
+		pSession->nColors+1
+	    + pSession->nTintmapColors
+		+ 100000						//TEMP CODE!!! To allow for Edgemap colors. 
+	];
 
-	m_pColorBuffer[0].r = 1.f;
+	// Always present white color used as default tint for blits.
+
+	m_pColorBuffer[0].r = 1.f;	
 	m_pColorBuffer[0].g = 1.f;
 	m_pColorBuffer[0].b = 1.f;
 	m_pColorBuffer[0].a = 1.f;
-	//	= { 1.f,1.f,1.f,1.f };	// Always present white color used as default tint for blits.
+	
 	m_nColors = 1;
 
 	// Reserve buffer for extras
@@ -1850,6 +1861,8 @@ void GlBackend::beginSession(const SessionInfo* pSession)
 		+ pSession->nBlur * 8
 		+ pSession->nLineCoords/2 * 4
 		+ pSession->nRects * 4;			// This is for possible subpixel fills. We have no way of knowing exactly how much is needed.
+
+	nExtrasFloats += 100000;			// TEMP CODE!!! To allow for Edgemap data.
 
 	m_pExtrasBuffer = new GLfloat[nExtrasFloats];
 	m_extrasBufferSize = 0;
@@ -1863,6 +1876,7 @@ void GlBackend::beginSession(const SessionInfo* pSession)
 		+ pSession->nBlur * 2
 		+ pSession->nPlots * 2
 		+ pSession->nLines * 3 + pSession->nLineClipRects * 4
+		+ pSession->nEdgemapDraws * 3
 		+ pSession->nCanvases];	
 
 	m_commandQueueSize = 0;
@@ -2112,6 +2126,17 @@ void GlBackend::endSession()
 					glDrawArrays(GL_TRIANGLES, vertexOfs, nVertices);
 				}
 
+				vertexOfs += nVertices;
+				break;
+			}
+
+			case CommandGL::Edgemap:
+			{
+				int nEdges = *pCmd++;
+				int nVertices = *pCmd++;
+				glUseProgram(m_segmentsProg[nEdges][m_bActiveCanvasIsA8]);
+
+				glDrawArrays(GL_TRIANGLES, vertexOfs, nVertices);
 				vertexOfs += nVertices;
 				break;
 			}
@@ -2460,15 +2485,11 @@ void GlBackend::_loadPrograms(int uboBindingPoint)
 			auto edgesPos = fragShader.find("$EDGES");
 			fragShader.replace(edgesPos, 6, std::to_string(i));
 
-			auto maxsegPos = fragShader.find("$MAXSEG");
-			fragShader.replace(maxsegPos, 7, std::to_string(c_maxSegments));
-
 			GLuint prog = _loadOrCompileProgram(programNb++, segmentsVertexShader, fragShader.c_str());
 			m_segmentsProg[i][canvType] = prog;
 
 			GLint extrasIdLoc = glGetUniformLocation(prog, "extrasBufferId");
 			GLint stripesIdLoc = glGetUniformLocation(prog, "stripesId");
-			GLint paletteIdLoc = glGetUniformLocation(prog, "paletteId");
 			GLint paletteIdLoc = glGetUniformLocation(prog, "tintmapBufferId");
 
 			glUseProgram(prog);
