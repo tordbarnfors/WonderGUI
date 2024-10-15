@@ -299,9 +299,6 @@ namespace wg
 		GLuint	m_extrasBufferTex;
 		GLuint	m_extrasBufferId;
 
-		GLuint 		m_segmentsTintTexId;													// GL texture handle.
-		uint16_t	m_segmentsTintTexMap[c_segmentsTintTexMapSize][c_maxSegments * 4 * 4];	// Horizontally aligned blocks of 2x2 pixels each, one for each segment color.
-
 
 		// GL states saved between BeginRender() and EndRender().
 

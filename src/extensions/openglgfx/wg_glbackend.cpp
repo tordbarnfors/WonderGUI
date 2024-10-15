@@ -1028,7 +1028,271 @@ void GlBackend::processCommands(int32_t* pBeg, int32_t* pEnd)
 			* pExtrasGL++ = 2;							// tintmapPitch
 			* pExtrasGL++ = 0;							// Dummy/filler
 
+
+			// Determine combined tint-mode, start with global m_colTrans...
+
+			bool	bTintX = false;
+			bool	bTintY = false;
+
+			if (m_bTintmap)
+			{
+				if (m_tintmapBeginY != m_tintmapEndY)
+				{
+					if (mtx.xy == 0 && mtx.yx == 0)
+						bTintY = true;
+					else
+						bTintX = true;
+				}
+				if (m_tintmapBeginX != m_tintmapEndX)
+				{
+					if (mtx.xy == 0 && mtx.yx == 0)
+						bTintX = true;
+					else
+						bTintY = true;
+				}
+			}
+
+			// ... add in tintmaps for segments
+
+			auto pTintmaps = pEdgemap->tintmaps();
+
+			if (pTintmaps)
+			{
+				for (int i = 0; i < nSegments; i++)
+				{
+					if (pTintmaps[i])
+					{
+						if (pTintmaps[i]->isHorizontal())
+							bTintX = true;
+
+						if (pTintmaps[i]->isVertical())
+							bTintY = true;
+					}
+				}
+			}
+
+
+			// Unpack input colors
+
+			if (!bTintX && !bTintY)
+			{
+				// If we just use flat tinting (or no tint at all), we tint our segment colors right away
+
+				if (m_tintColorOfs >= 0)
+				{
+					ColorGL& tint = m_pColorBuffer[m_tintColorOfs];
+
+					for (int i = 0; i < nSegments; i++)
+					{
+						pColorGL->r = pSegmentColors[i].r / 4096.f * tint.r;
+						pColorGL->g = pSegmentColors[i].g / 4096.f * tint.g;
+						pColorGL->b = pSegmentColors[i].b / 4096.f * tint.b;
+						pColorGL->a = pSegmentColors[i].a / 4096.f * tint.a;
+						pColorGL++;
+					}
+				}
+				else
+				{
+					for (int i = 0; i < nSegments; i++)
+					{
+						pColorGL->r = pSegmentColors[i].r / 4096.f;
+						pColorGL->g = pSegmentColors[i].g / 4096.f;
+						pColorGL->b = pSegmentColors[i].b / 4096.f;
+						pColorGL->a = pSegmentColors[i].a / 4096.f;
+						pColorGL++;
+					}
+				}
+			}
+
+
+			HiColor* pTintColorsX = nullptr;
+			HiColor* pTintColorsY = nullptr;
+
+			int		tintBufferSizeX = 0;
+			int		tintBufferSizeY = 0;
+
+			int		segmentPitchTintmapY = 0;
+			int		segmentPitchTintmapX = 0;
+
+
+			// If we instead have gradients we have things to take care of...
+
+			if (bTintX || bTintY)
+			{
+				if (bTintX)
+				{
+					int length = pEdgemap->m_size.w;
+
+					segmentPitchTintmapX = length;
+
+					// Generate the buffer that we will need
+
+					tintBufferSizeX = sizeof(HiColor) * nSegments * length;
+					pTintColorsX = (HiColor*)GfxBase::memStackAlloc(tintBufferSizeX);
+
+					// export segment tintmaps into our buffer
+
+					HiColor* pOutput = pTintColorsX;
+
+					if (pTintmaps)
+					{
+						// export segment tintmaps into our buffer
+
+						for (int i = 0; i < nSegments; i++)
+						{
+							if (pTintmaps[i])
+							{
+								pTintmaps[i]->exportHorizontalColors(length * 64, pOutput);
+								pOutput += length;
+							}
+							else
+							{
+								for (int j = 0; j < length; j++)
+									*pOutput++ = HiColor::Transparent;
+							}
+						}
+					}
+					else
+					{
+						// export segment colors into our buffer
+
+						for (int i = 0; i < nSegments; i++)
+						{
+							for (int j = 0; j < length; j++)
+								*pOutput++ = pSegmentColors[i];
+						}
+					}
+				}
+
+				if (bTintY)
+				{
+					int length = pEdgemap->m_size.h;
+
+					segmentPitchTintmapY = length;
+
+					// Generate the buffer that we will need
+
+					tintBufferSizeY = sizeof(HiColor) * nSegments * length;
+					pTintColorsY = (HiColor*)GfxBase::memStackAlloc(tintBufferSizeY);
+
+					// export segment tintmaps into our buffer
+
+					HiColor* pOutput = pTintColorsY;
+
+					if (pTintmaps)
+					{
+						// export segment tintmaps into our buffer
+
+						for (int i = 0; i < nSegments; i++)
+						{
+							if (pTintmaps[i])
+							{
+								pTintmaps[i]->exportVerticalColors(length * 64, pOutput);
+								pOutput += length;
+							}
+							else
+							{
+								for (int j = 0; j < length; j++)
+									*pOutput++ = HiColor::Transparent;
+							}
+						}
+					}
+					else
+					{
+						// export segment colors into our buffer
+
+						for (int i = 0; i < nSegments; i++)
+						{
+							for (int j = 0; j < length; j++)
+								*pOutput++ = pSegmentColors[i];
+						}
+					}
+				}
+
+				// Possibly add in global tint, which might need to be rotated, offset and reversed
+
+				if (m_colTrans.mode == TintMode::Flat)
+				{
+					if (m_colTrans.flatTintColor != HiColor::White)
+					{
+						// We only apply tintColor once, so we only modify one of the color lists.
+
+						if (pTintColorsX)
+						{
+							for (int i = 0; i < nSegments * pEdgemap->m_size.w; i++)
+								pTintColorsX[i] *= m_colTrans.flatTintColor;
+						}
+						else if (pTintColorsY)
+						{
+							for (int i = 0; i < nSegments * pEdgemap->m_size.h; i++)
+								pTintColorsY[i] *= m_colTrans.flatTintColor;
+						}
+					}
+				}
+				else if (m_colTrans.mode == TintMode::GradientX || m_colTrans.mode == TintMode::GradientY || m_colTrans.mode == TintMode::GradientXY)
+				{
+					HiColor* pGlobalsX = m_colTrans.pTintAxisX ? m_colTrans.pTintAxisX + _dest.x - m_colTrans.tintRect.x : nullptr;
+					HiColor* pGlobalsY = m_colTrans.pTintAxisY ? m_colTrans.pTintAxisY + _dest.y - m_colTrans.tintRect.y : nullptr;
+
+					int width = _dest.w;
+					int height = _dest.h;
+
+					int pitchX = mtx.xx + mtx.xy;
+					int pitchY = mtx.yx + mtx.yy;
+
+					if (mtx.xy != 0 || mtx.yx != 0)
+					{
+						std::swap(pGlobalsX, pGlobalsY);
+						std::swap(width, height);
+						std::swap(pitchX, pitchY);
+					}
+
+
+					if (pitchX < 0 && pGlobalsX)
+						pGlobalsX += width - 1;
+
+					if (pitchY < 0 && pGlobalsY)
+						pGlobalsY += height - 1;
+
+
+					if (pGlobalsX)
+					{
+						HiColor* pDest = pTintColorsX;
+						for (int seg = 0; seg < nSegments; seg++)
+						{
+							HiColor* pSrc = pGlobalsX;
+
+							for (int i = 0; i < width; i++)
+							{
+								*pDest++ *= *pSrc;
+								pSrc += pitchX;
+							}
+						}
+					}
+
+					if (pGlobalsY)
+					{
+						HiColor* pDest = pTintColorsY;
+						for (int seg = 0; seg < nSegments; seg++)
+						{
+							HiColor* pSrc = pGlobalsY;
+
+							for (int i = 0; i < height; i++)
+							{
+								*pDest++ *= *pSrc;
+								pSrc += pitchY;
+							}
+						}
+					}
+
+				}
+
+
 			// Add segment colors
+
+
+
+
 
 
 			const HiColor* pSegCol = pSegmentColors;

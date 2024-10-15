@@ -1113,7 +1113,7 @@ namespace wg
 
 					if (m_colTrans.mode == TintMode::Flat)
 					{
-						if (m_colTrans.flatTintColor == HiColor::White)
+						if (m_colTrans.flatTintColor != HiColor::White)
 						{
 							// We only apply tintColor once, so we only modify one of the color lists.
 
@@ -1237,7 +1237,6 @@ namespace wg
 								transparentSegments[i] = (pSegmentColors[i].a == 0);
 							}
 						}
-
 					}
 				}
 
