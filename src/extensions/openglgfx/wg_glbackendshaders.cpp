@@ -1036,7 +1036,8 @@ const char GlBackend::segmentsVertexShader[] =
 "out vec2 texUV;										"
 "flat out int segments;									"
 "flat out int stripesOfs;								"
-"flat out int tintmapPitch;								"
+"flat out int tintmapPitchX;							"
+"flat out int tintmapPitchY;							"
 "out vec2 tintmapUU;"
 
 "void main()											"
@@ -1049,7 +1050,8 @@ const char GlBackend::segmentsVertexShader[] =
 "   vec4 extras = texelFetch(extrasBufferId, extrasOfs);		"
 "   segments = int(extras.x);							"
 "   stripesOfs = int(extras.y);							"
-"   tintmapPitch = int(extras.z);						"
+"   tintmapPitchX = int(extras.z);						"
+"   tintmapPitchY = int(extras.w);						"
 "   texUV = uv;											"
 "   tintmapUU = tintmapOfs;"
 "}                                                      ";
@@ -1063,7 +1065,8 @@ const char GlBackend::segmentsFragmentShader[] =
 "in vec2 texUV;									"
 "flat in int segments;							"
 "flat in int stripesOfs;						"
-"flat in int tintmapPitch;						"
+"flat in int tintmapPitchX;						"
+"flat in int tintmapPitchY;						"
 "in vec2 tintmapUU;"
 
 "out vec4 color;								"
@@ -1083,8 +1086,8 @@ const char GlBackend::segmentsFragmentShader[] =
 "		vec4 col = texelFetch(tintmapBufferId, tintmapX )"
 "			        * texelFetch(tintmapBufferId, tintmapY );"
 
-"		tintmapX += tintmapPitch; "
-"		tintmapY += tintmapPitch; "
+"		tintmapX += tintmapPitchX; "
+"		tintmapY += tintmapPitchY; "
 
 "		vec4 edge = texelFetch(stripesId, stripesOfs + int(texUV.x)*(segments-1)+i );"
 
@@ -1123,7 +1126,8 @@ const char GlBackend::segmentsFragmentShader_A8[] =
 "in vec2 texUV;									"
 "flat in int segments;							"
 "flat in int stripesOfs;						"
-"flat in int tintmapPitch;						"
+"flat in int tintmapPitchX;						"
+"flat in int tintmapPitchY;						"
 "in vec2 tintmapUU;"
 
 "out vec4 color;								"
@@ -1142,8 +1146,8 @@ const char GlBackend::segmentsFragmentShader_A8[] =
 "		vec4 col = texelFetch(tintmapBufferId, tintmapX )"
 "			        * texelFetch(tintmapBufferId, tintmapY );"
 
-"		tintmapX += tintmapPitch; "
-"		tintmapY += tintmapPitch; "
+"		tintmapX += tintmapPitchX; "
+"		tintmapY += tintmapPitchY; "
 
 "		vec4 edge = texelFetch(stripesId, stripesOfs + int(texUV.x)*(segments-1)+i );"
 

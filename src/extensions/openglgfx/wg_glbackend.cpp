@@ -928,108 +928,17 @@ void GlBackend::processCommands(int32_t* pBeg, int32_t* pEnd)
 			else if (vIncY < 0)
 				vTopLeft = dest.h;
 
-			// Setup vertices
+			//
 
-			for (int i = 0; i < nRects; i++)
-			{
-				RectI patch = (*pRects++) / 64;
-				
-				int		dx1 = patch.x;
-				int		dx2 = patch.x + patch.w;
-				int		dy1 = patch.y;
-				int		dy2 = patch.y + patch.h;
-
-				// Calc UV-coordinates. U is edge offset, V is pixel offset from begin in column.
-
-				float	u1 = (float)(uTopLeft + (patch.x - dest.x) * mtx.xx + (patch.y - dest.y) * mtx.yx);
-				float	v1 = (float)(vTopLeft + (patch.x - dest.x) * mtx.xy + (patch.y - dest.y) * mtx.yy);
-
-				float	u2 = (float)(uTopLeft + (patch.x + patch.w - dest.x) * mtx.xx + (patch.y - dest.y) * mtx.yx);
-				float	v2 = (float)(vTopLeft + (patch.x + patch.w - dest.x) * mtx.xy + (patch.y - dest.y) * mtx.yy);
-
-				float	u3 = (float)(uTopLeft + (patch.x + patch.w - dest.x) * mtx.xx + (patch.y + patch.h - dest.y) * mtx.yx);
-				float	v3 = (float)(vTopLeft + (patch.x + patch.w - dest.x) * mtx.xy + (patch.y + patch.h - dest.y) * mtx.yy);
-
-				float	u4 = (float)(uTopLeft + (patch.x - dest.x) * mtx.xx + (patch.y + patch.h - dest.y) * mtx.yx);
-				float	v4 = (float)(vTopLeft + (patch.x - dest.x) * mtx.xy + (patch.y + patch.h - dest.y) * mtx.yy);
-
-				CoordF	uv1 = { u1, v1 - 0.5f };
-				CoordF	uv2 = { u2, v2 - 0.5f };
-				CoordF	uv3 = { u3, v3 - 0.5f };
-				CoordF	uv4 = { u4, v4 - 0.5f };
-
-				//
-
-				int extrasOfs = (pExtrasGL - m_pExtrasBuffer) / 4;
-				int colorsOfs = (pColorGL - m_pColorBuffer);
+			int extrasOfs = (pExtrasGL - m_pExtrasBuffer) / 4;
+			int colorsOfs = (pColorGL - m_pColorBuffer);
 
 
-				float tintmapBeginX, tintmapBeginY, tintmapEndX, tintmapEndY;
-
-				tintmapBeginX = colorsOfs + 0.5f;
-				tintmapBeginY = colorsOfs + 1.5f;
-				tintmapEndX = colorsOfs + 0.5f;
-				tintmapEndY = colorsOfs + 1.5f;
-
-				//
-
-				pVertexGL->coord.x = dx1;
-				pVertexGL->coord.y = dy1;
-				pVertexGL->extrasOfs = extrasOfs;
-				pVertexGL->uv = uv1;
-				pVertexGL->tintmapOfs = { tintmapBeginX, tintmapBeginY };
-				pVertexGL++;
-
-				pVertexGL->coord.x = dx2;
-				pVertexGL->coord.y = dy1;
-				pVertexGL->extrasOfs = extrasOfs;
-				pVertexGL->uv = uv2;
-				pVertexGL->tintmapOfs = { tintmapEndX, tintmapBeginY };
-				pVertexGL++;
-
-				pVertexGL->coord.x = dx2;
-				pVertexGL->coord.y = dy2;
-				pVertexGL->extrasOfs = extrasOfs;
-				pVertexGL->uv = uv3;
-				pVertexGL->tintmapOfs = { tintmapEndX, tintmapEndY };
-				pVertexGL++;
-
-				pVertexGL->coord.x = dx1;
-				pVertexGL->coord.y = dy1;
-				pVertexGL->extrasOfs = extrasOfs;
-				pVertexGL->uv = uv1;
-				pVertexGL->tintmapOfs = { tintmapBeginX, tintmapBeginY };
-				pVertexGL++;
-
-				pVertexGL->coord.x = dx2;
-				pVertexGL->coord.y = dy2;
-				pVertexGL->extrasOfs = extrasOfs;
-				pVertexGL->uv = uv3;
-				pVertexGL->tintmapOfs = { tintmapEndX, tintmapEndY };
-				pVertexGL++;
-
-				pVertexGL->coord.x = dx1;
-				pVertexGL->coord.y = dy2;
-				pVertexGL->extrasOfs = extrasOfs;
-				pVertexGL->uv = uv4;
-				pVertexGL->tintmapOfs = { tintmapBeginX, tintmapEndY };
-				pVertexGL++;
-			}
-
-			// Setup extras data
+			float tintmapBeginX, tintmapBeginY, tintmapEndX, tintmapEndY;
+			float tintmapPitchX, tintmapPitchY;
 
 
-			// Add various data to extras
-
-			int edgeStripOfs = (pExtrasGL - m_pExtrasBuffer + 4);	// Offset for edgestrips in buffer.
-
-			* pExtrasGL++ = (GLfloat)nSegments;
-			* pExtrasGL++ = (GLfloat)edgeStripOfs / 4;
-			* pExtrasGL++ = 2;							// tintmapPitch
-			* pExtrasGL++ = 0;							// Dummy/filler
-
-
-			// Determine combined tint-mode, start with global m_colTrans...
+			// Determine combined tint-mode, start with global tintmap...
 
 			bool	bTintX = false;
 			bool	bTintY = false;
@@ -1076,6 +985,14 @@ void GlBackend::processCommands(int32_t* pBeg, int32_t* pEnd)
 
 			if (!bTintX && !bTintY)
 			{
+				// No tintmaps applied at all, so we just put the segment colors in tintmapX
+				// and default white in tintmapY
+
+				tintmapBeginX = tintmapEndX = colorsOfs + 0.5f;
+				tintmapBeginY = tintmapEndY = 0.5f;
+				tintmapPitchX = 1.f;
+				tintmapPitchY = 0.f;
+
 				// If we just use flat tinting (or no tint at all), we tint our segment colors right away
 
 				if (m_tintColorOfs >= 0)
@@ -1103,54 +1020,60 @@ void GlBackend::processCommands(int32_t* pBeg, int32_t* pEnd)
 					}
 				}
 			}
-
-
-			HiColor* pTintColorsX = nullptr;
-			HiColor* pTintColorsY = nullptr;
-
-			int		tintBufferSizeX = 0;
-			int		tintBufferSizeY = 0;
-
-			int		segmentPitchTintmapY = 0;
-			int		segmentPitchTintmapX = 0;
-
-
-			// If we instead have gradients we have things to take care of...
-
-			if (bTintX || bTintY)
+			else
 			{
+				// If we instead have gradients we have things to take care of...
+
+				HiColor* pTintColorsY = nullptr;
+
+				int		tintBufferEntriesY = 0;
+
 				if (bTintX)
 				{
 					int length = pEdgemap->m_size.w;
 
-					segmentPitchTintmapX = length;
+					tintmapPitchX = length;
+					tintmapBeginX = (pColorGL - m_pColorBuffer) + 0.5f;
+					tintmapEndX = tintmapBeginX + length - 1;
 
-					// Generate the buffer that we will need
-
-					tintBufferSizeX = sizeof(HiColor) * nSegments * length;
-					pTintColorsX = (HiColor*)GfxBase::memStackAlloc(tintBufferSizeX);
 
 					// export segment tintmaps into our buffer
 
-					HiColor* pOutput = pTintColorsX;
-
 					if (pTintmaps)
 					{
+						// Generate temporary buffer for exported colors
+
+						HiColor* pTempArea = (HiColor*)GfxBase::memStackAlloc(length * sizeof(HiColor));
+
 						// export segment tintmaps into our buffer
 
 						for (int i = 0; i < nSegments; i++)
 						{
 							if (pTintmaps[i])
 							{
-								pTintmaps[i]->exportHorizontalColors(length * 64, pOutput);
-								pOutput += length;
+								pTintmaps[i]->exportHorizontalColors(length * 64, pTempArea);
+
+								for (int i = 0; i < length; i++)
+								{
+									pColorGL->r = pTempArea[i].r / 4096.f;
+									pColorGL->g = pTempArea[i].g / 4096.f;
+									pColorGL->b = pTempArea[i].b / 4096.f;
+									pColorGL->a = pTempArea[i].a / 4096.f;
+									pColorGL++;
+								}
 							}
 							else
 							{
+								ColorGL transparent = { 0.f, 0.f, 0.f, 0.f };
+
 								for (int j = 0; j < length; j++)
-									*pOutput++ = HiColor::Transparent;
+									* pColorGL++ = transparent;
 							}
 						}
+
+						// Release temporary memory
+
+						GfxBase::memStackFree(length * sizeof(HiColor));
 					}
 					else
 					{
@@ -1158,22 +1081,44 @@ void GlBackend::processCommands(int32_t* pBeg, int32_t* pEnd)
 
 						for (int i = 0; i < nSegments; i++)
 						{
+							ColorGL col;
+							col.r = pSegmentColors[i].r;
+							col.g = pSegmentColors[i].g;
+							col.b = pSegmentColors[i].b;
+							col.a = pSegmentColors[i].a;
+
 							for (int j = 0; j < length; j++)
-								*pOutput++ = pSegmentColors[i];
+								* pColorGL++ = col;
 						}
 					}
+				}
+				else
+				{
+
+					tintmapBeginX = tintmapEndX = (pColorGL - m_pColorBuffer) + 0.5f;;
+					tintmapPitchX = 1.f;
+
+					for (int i = 0; i < nSegments; i++)
+					{
+						pColorGL->r = pSegmentColors[i].r / 4096.f;
+						pColorGL->g = pSegmentColors[i].g / 4096.f;
+						pColorGL->b = pSegmentColors[i].b / 4096.f;
+						pColorGL->a = pSegmentColors[i].a / 4096.f;
+						pColorGL++;
+					} 
+
 				}
 
 				if (bTintY)
 				{
 					int length = pEdgemap->m_size.h;
 
-					segmentPitchTintmapY = length;
+					tintmapPitchY = length;
 
 					// Generate the buffer that we will need
 
-					tintBufferSizeY = sizeof(HiColor) * nSegments * length;
-					pTintColorsY = (HiColor*)GfxBase::memStackAlloc(tintBufferSizeY);
+					tintBufferEntriesY = nSegments * length;
+					pTintColorsY = (HiColor*)GfxBase::memStackAlloc(tintBufferEntriesY * sizeof(HiColor));
 
 					// export segment tintmaps into our buffer
 
@@ -1209,10 +1154,37 @@ void GlBackend::processCommands(int32_t* pBeg, int32_t* pEnd)
 					}
 				}
 
+				// Copy/convert colors into ColorGL format
+
+
+				tintmapBeginY = (pColorGL - m_pColorBuffer);
+
+				if (pTintColorsY)
+				{
+					for (int i = 0; i < tintBufferEntriesY; i++)
+					{
+						pColorGL->r = pTintColorsY[i].r / 4096.f;
+						pColorGL->g = pTintColorsY[i].g / 4096.f;
+						pColorGL->b = pTintColorsY[i].b / 4096.f;
+						pColorGL->a = pTintColorsY[i].a / 4096.f;
+						pColorGL++;
+					}
+
+					// Release temporary memory
+
+					GfxBase::memStackFree(tintBufferEntriesY * sizeof(HiColor));
+				}
+
+				tintmapEndY = (pColorGL - m_pColorBuffer) - 1;
+
+/*
 				// Possibly add in global tint, which might need to be rotated, offset and reversed
 
-				if (m_colTrans.mode == TintMode::Flat)
+				if (m_tintColorOfs >= 0)
 				{
+					ColorGL& tint = m_pColorBuffer[m_tintColorOfs];
+
+
 					if (m_colTrans.flatTintColor != HiColor::White)
 					{
 						// We only apply tintColor once, so we only modify one of the color lists.
@@ -1284,59 +1256,94 @@ void GlBackend::processCommands(int32_t* pBeg, int32_t* pEnd)
 							}
 						}
 					}
-
 				}
-
-
-			// Add segment colors
-
-
-
-
-
-
-			const HiColor* pSegCol = pSegmentColors;
-
-			switch (tintMode)
-			{
-			case TintMode::None:
-			case TintMode::Flat:
-			{
-				for (int i = 0; i < nSegments; i++)
-				{
-					pColorGL->r = pSegCol->r / 4096.f;
-					pColorGL->g = pSegCol->g / 4096.f;
-					pColorGL->b = pSegCol->b / 4096.f;
-					pColorGL->a = pSegCol->a / 4096.f;
-
-					pColorGL++;
-					pSegCol++;
-
-					pColorGL->r = 1.f;
-					pColorGL->g = 1.f;
-					pColorGL->b = 1.f;
-					pColorGL->a = 1.f;
-					pColorGL++;
-
-				}
-				break;
+*/
 			}
 
-			case TintMode::GradientX:
+			// Setup vertices
+
+			for (int i = 0; i < nRects; i++)
 			{
-				break;
+				RectI patch = (*pRects++) / 64;
+
+				int		dx1 = patch.x;
+				int		dx2 = patch.x + patch.w;
+				int		dy1 = patch.y;
+				int		dy2 = patch.y + patch.h;
+
+				// Calc UV-coordinates. U is edge offset, V is pixel offset from begin in column.
+
+				float	u1 = (float)(uTopLeft + (patch.x - dest.x) * mtx.xx + (patch.y - dest.y) * mtx.yx);
+				float	v1 = (float)(vTopLeft + (patch.x - dest.x) * mtx.xy + (patch.y - dest.y) * mtx.yy);
+
+				float	u2 = (float)(uTopLeft + (patch.x + patch.w - dest.x) * mtx.xx + (patch.y - dest.y) * mtx.yx);
+				float	v2 = (float)(vTopLeft + (patch.x + patch.w - dest.x) * mtx.xy + (patch.y - dest.y) * mtx.yy);
+
+				float	u3 = (float)(uTopLeft + (patch.x + patch.w - dest.x) * mtx.xx + (patch.y + patch.h - dest.y) * mtx.yx);
+				float	v3 = (float)(vTopLeft + (patch.x + patch.w - dest.x) * mtx.xy + (patch.y + patch.h - dest.y) * mtx.yy);
+
+				float	u4 = (float)(uTopLeft + (patch.x - dest.x) * mtx.xx + (patch.y + patch.h - dest.y) * mtx.yx);
+				float	v4 = (float)(vTopLeft + (patch.x - dest.x) * mtx.xy + (patch.y + patch.h - dest.y) * mtx.yy);
+
+				CoordF	uv1 = { u1, v1 - 0.5f };
+				CoordF	uv2 = { u2, v2 - 0.5f };
+				CoordF	uv3 = { u3, v3 - 0.5f };
+				CoordF	uv4 = { u4, v4 - 0.5f };
+
+				//
+
+				pVertexGL->coord.x = dx1;
+				pVertexGL->coord.y = dy1;
+				pVertexGL->extrasOfs = extrasOfs;
+				pVertexGL->uv = uv1;
+				pVertexGL->tintmapOfs = { tintmapBeginX, tintmapBeginY };
+				pVertexGL++;
+
+				pVertexGL->coord.x = dx2;
+				pVertexGL->coord.y = dy1;
+				pVertexGL->extrasOfs = extrasOfs;
+				pVertexGL->uv = uv2;
+				pVertexGL->tintmapOfs = { tintmapEndX, tintmapBeginY };
+				pVertexGL++;
+
+				pVertexGL->coord.x = dx2;
+				pVertexGL->coord.y = dy2;
+				pVertexGL->extrasOfs = extrasOfs;
+				pVertexGL->uv = uv3;
+				pVertexGL->tintmapOfs = { tintmapEndX, tintmapEndY };
+				pVertexGL++;
+
+				pVertexGL->coord.x = dx1;
+				pVertexGL->coord.y = dy1;
+				pVertexGL->extrasOfs = extrasOfs;
+				pVertexGL->uv = uv1;
+				pVertexGL->tintmapOfs = { tintmapBeginX, tintmapBeginY };
+				pVertexGL++;
+
+				pVertexGL->coord.x = dx2;
+				pVertexGL->coord.y = dy2;
+				pVertexGL->extrasOfs = extrasOfs;
+				pVertexGL->uv = uv3;
+				pVertexGL->tintmapOfs = { tintmapEndX, tintmapEndY };
+				pVertexGL++;
+
+				pVertexGL->coord.x = dx1;
+				pVertexGL->coord.y = dy2;
+				pVertexGL->extrasOfs = extrasOfs;
+				pVertexGL->uv = uv4;
+				pVertexGL->tintmapOfs = { tintmapBeginX, tintmapEndY };
+				pVertexGL++;
 			}
 
-			case TintMode::GradientY:
-			{
-				break;
-			}
+			// Setup extras data
 
-			case TintMode::GradientXY:
-			{
-				break;
-			}
-			}
+			int edgeStripOfs = (pExtrasGL - m_pExtrasBuffer + 4);	// Offset for edgestrips in buffer.
+
+			*pExtrasGL++ = (GLfloat)nSegments;
+			*pExtrasGL++ = (GLfloat)edgeStripOfs / 4;
+			*pExtrasGL++ = tintmapPitchX;
+			*pExtrasGL++ = tintmapPitchY;
+
 
 			// Add edgestrips to extras
 
@@ -1718,29 +1725,6 @@ GlBackend::GlBackend( int uboBindingPoint )
 	m_blitProgMatrix[(int)PixelFormat::Index_8_sRGB][1][1][1] = m_paletteBlitInterpolateTintmapProg[1];
 
 	LOG_INIT_GLERROR(glGetError());
-
-	// Create texture for segment colors
-
-	for (int seg = 0; seg < c_maxSegments; seg++)
-	{
-		for (int i = 0; i < 16 * 2 * 2 * 4; i++)
-		{
-			m_segmentsTintTexMap[seg][i] = 65535;
-		}
-	}
-
-
-	glGenTextures(1, &m_segmentsTintTexId);
-	glBindTexture(GL_TEXTURE_2D, m_segmentsTintTexId);
-
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
-
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 2 * c_maxSegments, 2 * c_segmentsTintTexMapSize, 0, GL_BGRA, GL_UNSIGNED_SHORT, nullptr);
 
 	// Create the buffers we need for FrameBuffer and Vertices
 
