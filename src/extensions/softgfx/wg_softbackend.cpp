@@ -841,6 +841,8 @@ namespace wg
 				int32_t nSegments = pEdgemap->segments();
 				const HiColor * pSegmentColors = pEdgemap->colors();
 
+				int	colorPitch = pEdgemap->_colorSegmentPitch();
+				
 				int nEdgeStrips = pEdgemap->m_size.w + 1;
 
 				int edgeStripPitch = pEdgemap->m_nbSegments - 1;
@@ -964,23 +966,11 @@ namespace wg
 
 				// ... add in tintmaps for segments
 				
-				auto pTintmaps = pEdgemap->tintmaps();
-
-				if( pTintmaps )
-				{
-					for( int i = 0 ; i < nSegments ; i++ )
-					{
-						if (pTintmaps[i])
-						{
-							if (pTintmaps[i]->isHorizontal())
-								bTintX = true;
-
-							if (pTintmaps[i]->isVertical())
-								bTintY = true;
-						}
-					}
-				}
+				if( pEdgemap->hasHorizontalTint() )
+					bTintX = true;
 				
+				if( pEdgemap->hasVerticalTint() )
+					bTintY = true;				
 
 				// Unpack input colors and fill in transparentSegments
 
@@ -988,15 +978,19 @@ namespace wg
 				{
 					// If we just use flat tinting (or no tint at all), we tint our segment colors right away
 
+					auto pColor = pSegmentColors;
+					
 					for (int i = 0; i < nSegments; i++)
 					{
-						colors[i][0] = (pSegmentColors[i].r * m_colTrans.flatTintColor.r) >> 12;
-						colors[i][1] = (pSegmentColors[i].g * m_colTrans.flatTintColor.g) >> 12;
-						colors[i][2] = (pSegmentColors[i].b * m_colTrans.flatTintColor.b) >> 12;
-						colors[i][3] = (pSegmentColors[i].a * m_colTrans.flatTintColor.a) >> 12;
-
+						colors[i][0] = (pColor->r * m_colTrans.flatTintColor.r) >> 12;
+						colors[i][1] = (pColor->g * m_colTrans.flatTintColor.g) >> 12;
+						colors[i][2] = (pColor->b * m_colTrans.flatTintColor.b) >> 12;
+						colors[i][3] = (pColor->a * m_colTrans.flatTintColor.a) >> 12;
+						pColor += colorPitch;
+						
 						transparentSegments[i] = (colors[i][3] == 0);
 						opaqueSegments[i] = (colors[i][3] == 4096);
+						
 					}
 				}
 
@@ -1029,35 +1023,14 @@ namespace wg
 						// export segment tintmaps into our buffer
 						
 						HiColor * pOutput = pTintColorsX;
-						
-						if( pTintmaps )
+						HiColor * pInput = pEdgemap->m_pColors;
+												
+						for( int i = 0 ; i < nSegments ; i++ )
 						{
-							// export segment tintmaps into our buffer
-
-							for( int i = 0 ; i < nSegments ; i++ )
-							{
-								if (pTintmaps[i])
-								{
-									pTintmaps[i]->exportHorizontalColors(length * 64, pOutput);
-									pOutput += length;
-								}
-								else
-								{
-									for (int j = 0; j < length; j++)
-										*pOutput++ = HiColor::Transparent;
-								}
-							}
+							memcpy( pOutput, pInput, sizeof(HiColor) * length);
+							pOutput += length;
+							pInput += pEdgemap->_colorSegmentPitch();
 						}
-						else
-						{
-							// export segment colors into our buffer
-
-							for( int i = 0 ; i < nSegments ; i++ )
-							{
-								for( int j = 0 ; j < length ; j++ )
-									* pOutput++ = pSegmentColors[i];
-							}
-						}						
 					}
 					
 					if (bTintY)
@@ -1074,35 +1047,14 @@ namespace wg
 						// export segment tintmaps into our buffer
 						
 						HiColor * pOutput = pTintColorsY;
-						
-						if( pTintmaps )
+						HiColor * pInput = pEdgemap->m_pColors + pEdgemap->m_size.w;
+												
+						for( int i = 0 ; i < nSegments ; i++ )
 						{
-							// export segment tintmaps into our buffer
-
-							for( int i = 0 ; i < nSegments ; i++ )
-							{
-								if (pTintmaps[i])
-								{
-									pTintmaps[i]->exportVerticalColors(length * 64, pOutput);
-									pOutput += length;
-								}
-								else
-								{
-									for (int j = 0; j < length; j++)
-										*pOutput++ = HiColor::Transparent;
-								}
-							}
+							memcpy( pOutput, pInput, sizeof(HiColor) * length);
+							pOutput += length;
+							pInput += pEdgemap->_colorSegmentPitch();
 						}
-						else
-						{
-							// export segment colors into our buffer
-
-							for( int i = 0 ; i < nSegments ; i++ )
-							{
-								for( int j = 0 ; j < length ; j++ )
-									* pOutput++ = pSegmentColors[i];
-							}
-						}						
 					}
 
 					// Possibly add in global tint, which might need to be rotated, offset and reversed
@@ -1184,54 +1136,23 @@ namespace wg
 					}
 
 
-
 					// Mark transparent and opaque segments
 					
 					if (m_colTrans.bTintOpaque)
 					{
-						if (pTintmaps)
+						for (int i = 0; i < nSegments; i++)
 						{
-							for (int i = 0; i < nSegments; i++)
-							{
-								if (pTintmaps[i])
-								{
-									opaqueSegments[i] = pTintmaps[i]->isOpaque();
-									transparentSegments[i] = false;
-								}
-								else
-								{
-									opaqueSegments[i] = false;
-									transparentSegments[i] = true;
-								}
-							}
-						}
-						else
-						{
-							for (int i = 0; i < nSegments; i++)
-							{
-								opaqueSegments[i] = (pSegmentColors[i].a == 4096);
-								transparentSegments[i] = (pSegmentColors[i].a == 0);
-							}
+							opaqueSegments[i] = pEdgemap->m_opaqueSegments.test(i);
+							transparentSegments[i] = pEdgemap->m_transparentSegments.test(i);
 						}
 
 					}
 					else
 					{
-						if (pTintmaps)
+						for (int i = 0; i < nSegments; i++)
 						{
-							for (int i = 0; i < nSegments; i++)
-							{
-								opaqueSegments[i] = false;
-								transparentSegments[i] = (pTintmaps[i] == nullptr);
-							}
-						}
-						else
-						{
-							for (int i = 0; i < nSegments; i++)
-							{
-								opaqueSegments[i] = false;
-								transparentSegments[i] = (pSegmentColors[i].a == 0);
-							}
+							opaqueSegments[i] = false;
+							transparentSegments[i] = pEdgemap->m_transparentSegments.test(i);
 						}
 					}
 				}

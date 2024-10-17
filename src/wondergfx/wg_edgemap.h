@@ -24,6 +24,8 @@
 #define WG_EDGEMAP_DOT_H
 #pragma once
 
+#include <bitset>
+
 #include <wg_object.h>
 #include <wg_gfxtypes.h>
 #include <wg_color.h>
@@ -69,17 +71,17 @@ namespace wg
 		virtual bool	setRenderSegments(int nSegments);
 		inline int		renderSegments() const { return m_nbRenderSegments; }
 
-		virtual bool	setColors( int begin, int end, const HiColor * pColors );
-		virtual const HiColor * colors() const;
-		virtual HiColor	color(int segment) const;
+		virtual bool	setColors( int begin, int end, const HiColor * pColors ) = 0;
+//		virtual const HiColor * colors() const;
+//		virtual HiColor	color(int segment) const;
 
-		virtual bool	setGradients( int begin, int end, const Gradient * pGradients );
-		virtual const Gradient * gradients() const;
-		virtual Gradient gradient(int segment) const;
+		virtual bool	setGradients( int begin, int end, const Gradient * pGradients ) = 0;
+//		virtual const Gradient * gradients() const;
+//		virtual Gradient gradient(int segment) const;
 
-		virtual bool	setTintmaps( int begin, int end, const Tintmap_p * pTintmaps );
-		virtual Tintmap * const * tintmaps() const;
-		virtual Tintmap_p tintmap(int segment) const;
+		virtual bool	setTintmaps( int begin, int end, const Tintmap_p * pTintmaps ) = 0;
+//		virtual Tintmap * const * tintmaps() const;
+//		virtual Tintmap_p tintmap(int segment) const;
 
 		
 		//.____ Content _______________________________________________________
@@ -87,6 +89,9 @@ namespace wg
 		inline int		segments() const { return m_nbSegments; }
 
 		inline int		samples() const { return m_size.w + 1; }
+
+		bool			hasHorizontalTint() const { return m_horrTintmaps.any(); }
+		bool			hasVerticalTint() const { return m_vertTintmaps.any(); }
 
 		virtual bool 	importSamples( SampleOrigo origo, const spx * pSource, int edgeBegin, int edgeEnd,
 									  int sampleBegin, int sampleEnd, int edgePitch = 0, int samplePitch = 0 ) = 0;
@@ -99,6 +104,7 @@ namespace wg
 
 		virtual bool 	exportSamples( SampleOrigo origo, float * pDestination, int edgeBegin, int edgeEnd,
 									  int sampleBegin, int sampleEnd, int edgePitch = 0, int samplePitch = 0 ) = 0;
+
 
 	protected:
 
@@ -115,9 +121,14 @@ namespace wg
 		int			m_nbSegments;
 		int			m_nbRenderSegments;
 
-		HiColor*	m_pColors = nullptr;		// Initialized by subclass.
-		Gradient*	m_pGradients = nullptr;		// Initialized by subclass.
-		Tintmap**	m_pTintmaps = nullptr;		// Initialized by subclass.
+		//
+		
+		std::bitset<maxSegments>	m_horrTintmaps;		// One bit for each segment. Set if color varies horizontally for that segment.
+		std::bitset<maxSegments>	m_vertTintmaps;		// One bit for each segment. Set if color varies vertically for that segment.
+		
+//		HiColor*	m_pColors = nullptr;		// Initialized by subclass.
+//		Gradient*	m_pGradients = nullptr;		// Initialized by subclass.
+//		Tintmap**	m_pTintmaps = nullptr;		// Initialized by subclass.
    };
 
 

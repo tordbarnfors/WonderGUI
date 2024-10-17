@@ -79,68 +79,99 @@ SoftEdgemap::SoftEdgemap(const Blueprint& bp) : Edgemap(bp)
 	// Setup buffers
 	
 	int sampleArraySize = (bp.size.w+1) * bp.segments * sizeof(spx);
-	int colorArraySize = bp.colors ? bp.segments*sizeof(HiColor) : 0;
-	int gradientArraySize = bp.gradients ? bp.segments*sizeof(Gradient) : 0;
-	int tintmapArraySize = bp.tintmaps ? bp.segments*sizeof(Tintmap*) : 0;
-	int renderColorsBytes = (bp.gradients || bp.tintmaps) ? bp.segments * sizeof(HiColor) * 4 : 0;		// Reserve space for XY-gradient colors.
+	int colorArraySize = (bp.size.w + bp.size.h) * bp.segments * sizeof(HiColor);	// We always reserve memory for a full set of tintmap colors.
+	int gradientArraySize = bp.segments*sizeof(Gradient);							// We keep a set of gradients for backward compatiblity
 
-	int bytes = sampleArraySize + colorArraySize + gradientArraySize + tintmapArraySize + renderColorsBytes;
+	int bytes = sampleArraySize + colorArraySize + gradientArraySize;
 	
 	m_pBuffer = new char[bytes];
-	
-	auto pBuffer = m_pBuffer;
-	
-	if( gradientArraySize > 0 )
-	{
-		m_pGradients = (Gradient*) pBuffer;
-		memcpy(m_pGradients, bp.gradients, gradientArraySize);
-		pBuffer += gradientArraySize;
 
-		m_pRenderColors = (HiColor*) pBuffer;
-		pBuffer += renderColorsBytes;
-	}
-	else if( tintmapArraySize > 0 )
+	m_pSamples = (spx*) m_pBuffer;
+	m_pColors = (HiColor*) (m_pBuffer + sampleArraySize);
+	m_pGradients = (Gradient*) (m_pColors + colorArraySize);
+	
+	int colorPitch = bp.size.w + bp.size.h;
+	
+	for( int seg = 0 ; seg < segments ; seg++ )
 	{
-		m_pTintmaps = (Tintmap**) pBuffer;
-		
-		for( int i = 0 ; i < bp.segments ; i++ )
+		auto pOutput = m_pColors + (seg * colorPitch);
+				
+		if( bp.tintmaps && bp.tintmaps[seg] )
 		{
-			m_pTintmaps[i] = bp.tintmaps[i];
-			m_pTintmaps[i]->retain();
-		}
+			auto pTintmap = bp.tintmaps[seg];
 			
-		pBuffer += tintmapArraySize;
-		m_pRenderColors = (HiColor*) pBuffer;
-		pBuffer += renderColorsBytes;
-	}
-	else if( colorArraySize > 0 )
-	{
-		m_pColors = (HiColor*) pBuffer;
-		memcpy(m_pColors, bp.colors, colorArraySize);
-		pBuffer += colorArraySize;
+			pTintmap->exportHorizontalColors(bp.size.w*64, pOutput);
+			pOutput += bp.size.w;
+			pTintmap->exportVerticalColors(bp.size.h*64, pOutput);
 
-		m_pRenderColors = m_pColors;
-	}
+			if( pTintmap->isHorizontal() )
+				m_horrTintmaps.set(seg);
 
-	_updateRenderColors();
+			if( pTintmap->isVertical() )
+				m_vertTintmaps.set(seg);
+			
+			if( pTintmap->isOpaque() )
+				m_opaqueSegments.set(seg);
+			
+			m_pGradients[seg] = pTintmap->exportGradient();
+		}
+		else if( bp.gradients )
+		{
+			auto& gradient = bp.gradients[seg];
+			
+			auto pTintmap = Gradyent::create(gradient);
+			
+			pTintmap->exportHorizontalColors(bp.size.w*64, pOutput);
+			pOutput += bp.size.w;
+			pTintmap->exportVerticalColors(bp.size.h*64, pOutput);
+
+			if( pTintmap->isHorizontal() )
+				m_horrTintmaps.set(seg);
+
+			if( pTintmap->isVertical() )
+				m_vertTintmaps.set(seg);
+			
+			if( pTintmap->isOpaque() )
+				m_opaqueSegments.set(seg);
+			else if( gradient.topLeft.a == 0 && gradient.topRight.a == 0 && gradient.bottomLeft.a == 0 && gradient.bottomRight.a == 0 )
+				m_transparentSegments.set(seg);
+			
+			m_pGradients[seg] = pTintmap->exportGradient();
+		}
+		else if( bp.colors )
+		{
+			for( int i = 0 ; i < bp.size.w ; i++ )
+				* pOutput++ = bp.colors[seg];
+
+			for( int i = 0 ; i < bp.size.h ; i++ )
+				* pOutput++ = HiColor::White;
+
+			if( bp.colors[seg].a == 0 )
+				m_transparentSegments.set(seg);
+			else if( bp.colors[seg].a = 4096 )
+				m_opaqueSegments.set(seg);
+			
+			m_pGradients[seg] = Gradient(bp.colors[seg], bp.colors[seg], bp.colors[seg], bp.colors[seg]);
+
+		}
+		else
+		{
+			for( int i = 0 ; i < bp.size.w + bp.size.h ; i++ )
+				* pOutput++ = HiColor::Transparent;
+
+			m_transparentSegments.set(seg);
+			
+			m_pGradients[seg] = Gradient(HiColor::Transparent, HiColor::Transparent, HiColor::Transparent, HiColor::Transparent);
+		}
+		
+	}
 	
-	m_pSamples = (spx*) pBuffer;
 }
 
 //____ destructor ____________________________________________________________
 
 SoftEdgemap::~SoftEdgemap()
 {
-	// Decrease reference count of tintmaps.
-
-	if( m_pTintmaps )
-	{
-		for( int i = 0 ; i < m_nbSegments ; i++ )
-			m_pTintmaps[i]->release();
-	}
-
-	// Delete our buffer
-	
 	delete [] m_pBuffer;
 }
 
@@ -155,10 +186,27 @@ const TypeInfo& SoftEdgemap::typeInfo(void) const
 
 bool SoftEdgemap::setColors( int begin, int end, const HiColor * pColors )
 {
-	if( !Edgemap::setColors(begin,end,pColors))
-		return false;
+	int pitch = m_size.w + m_size.h;
 	
-	_updateRenderColors();
+	auto pOutput = m_pColors + begin * pitch;
+	
+	for( int seg = begin ; seg < end ; seg++ )
+	{
+		for( int i = 0 ; i < m_size.w ; i++ )
+			* pOutput++ = * pColors;
+		
+		for( int i = 0 ; i < m_size.h ; i++ )
+			* pOutput++ = HiColor::White;
+
+		m_transparentSegments[seg] = (pColors->a == 0 );
+		m_opaqueSegments[seg] = (pColors->a == 4096 );
+
+		m_horrTintmaps.reset(seg);
+		m_vertTintmaps.reset(seg);
+
+		pColors++;
+	}
+	
 	return true;
 }
 
@@ -166,12 +214,88 @@ bool SoftEdgemap::setColors( int begin, int end, const HiColor * pColors )
 
 bool SoftEdgemap::setGradients( int begin, int end, const Gradient * pGradients )
 {
-	if( !Edgemap::setGradients(begin,end,pGradients))
-		return false;
+	int pitch = m_size.w + m_size.h;
 	
-	_updateRenderColors();
+	auto pOutput = m_pColors + begin * pitch;
+	
+	for( int seg = begin ; seg < end ; seg++ )
+	{
+		auto& gradient = * pGradients++;
+		
+		if( gradient.topLeft.a > 0 || gradient.topRight.a > 0 || gradient.bottomLeft.a > 0 || gradient.bottomRight.a > 0 )
+		{
+			auto pTintmap = Gradyent::create( gradient );
+			
+			pTintmap->exportHorizontalColors(m_size.w*64, pOutput);
+			pOutput += m_size.w;
+			pTintmap->exportVerticalColors(m_size.h*64, pOutput);
+			pOutput += m_size.h;
+
+			m_horrTintmaps[seg] = pTintmap->isHorizontal();
+			m_vertTintmaps[seg] = pTintmap->isVertical();
+
+			m_transparentSegments[seg] = false;
+			m_opaqueSegments[seg] = pTintmap->isOpaque();
+
+			m_pGradients[seg] = pTintmap->exportGradient();
+		}
+		else
+		{
+			for( int i = 0 ; i < m_size.w + m_size.h ; i++ )
+				* pOutput++ = HiColor::Transparent;
+
+			m_transparentSegments.set(seg);
+			m_opaqueSegments.reset(seg);
+
+			m_pGradients[seg] = Gradient(HiColor::Transparent, HiColor::Transparent, HiColor::Transparent, HiColor::Transparent);
+		}
+	}
+	
 	return true;
 }
+
+//____ setTintmaps() __________________________________________________________
+
+bool SoftEdgemap::setTintmaps( int begin, int end, const Tintmap_p * pTintmaps )
+{
+	int pitch = m_size.w + m_size.h;
+	
+	auto pOutput = m_pColors + begin * pitch;
+	
+	for( int seg = begin ; seg < end ; seg++ )
+	{
+		auto pTintmap = * pTintmaps++;
+		
+		if( pTintmap )
+		{
+			pTintmap->exportHorizontalColors(m_size.w*64, pOutput);
+			pOutput += m_size.w;
+			pTintmap->exportVerticalColors(m_size.h*64, pOutput);
+			pOutput += m_size.h;
+
+			m_horrTintmaps[seg] = pTintmap->isHorizontal();
+			m_vertTintmaps[seg] = pTintmap->isVertical();
+
+			m_transparentSegments[seg] = false;
+			m_opaqueSegments[seg] = pTintmap->isOpaque();
+			
+			m_pGradients[seg] = pTintmap->exportGradient();
+		}
+		else
+		{
+			for( int i = 0 ; i < m_size.w + m_size.h ; i++ )
+				* pOutput++ = HiColor::Transparent;
+
+			m_transparentSegments.set(seg);
+			m_opaqueSegments.reset(seg);
+
+			m_pGradients[seg] = Gradient(HiColor::Transparent, HiColor::Transparent, HiColor::Transparent, HiColor::Transparent);
+		}
+	}
+	
+	return true;
+}
+
 
 //____ importSamples() _________________________________________________________
 
@@ -294,115 +418,7 @@ void SoftEdgemap::_importSamples( SampleOrigo origo, const float * pSource, int 
 }
 
 
-//____ _updateRenderColors() __________________________________________________
 
-void SoftEdgemap::_updateRenderColors()
-{
-	// Analyze gradients to figure out our tint mode and update our render colors.
-		
-	if( m_pGradients )
-	{
-		// Figure out and set optimal TintMode.
-		
-		bool bHorizontal = false;
-		bool bVertical = false;
-		bool bFlat = true;
-		
-		for( int i = 0 ; i < m_nbSegments ; i++ )
-		{
-			const Gradient& grad = m_pGradients[i];
-			
-			if(grad.topLeft != grad.topRight)
-				bHorizontal = true;
-
-			if(grad.topLeft != grad.bottomLeft)
-				bVertical = true;
-			
-			if(grad.topLeft != grad.topRight || grad.topLeft != grad.bottomRight || grad.topLeft != grad.bottomLeft )
-				bFlat = false;
-		}
-		
-		if( bFlat )
-			m_tintMode = TintMode::Flat;
-		else if( bHorizontal && bVertical )
-			m_tintMode = TintMode::GradientXY;
-		else if( bVertical )
-			m_tintMode = TintMode::GradientY;
-		else
-			m_tintMode = TintMode::GradientX;
-
-		// Copy gradient colors to render colors.
-		
-		switch( m_tintMode )
-		{
-			case TintMode::None:
-			case TintMode::Flat:
-			{
-				for( int i = 0 ; i < m_nbSegments ; i++ )
-					m_pRenderColors[i] = m_pGradients[i].topLeft;
-
-				break;
-			}
-
-			case TintMode::GradientX:
-			{
-				for( int i = 0 ; i < m_nbSegments ; i++ )
-				{
-					const Gradient& grad = m_pGradients[i];
-
-					m_pRenderColors[i*2] = grad.topLeft;
-					m_pRenderColors[i*2+1] = grad.topRight;
-				}
-				break;
-			}
-			case TintMode::GradientY:
-			{
-				for( int i = 0 ; i < m_nbSegments ; i++ )
-				{
-					const Gradient& grad = m_pGradients[i];
-
-					m_pRenderColors[i*2] = grad.topLeft;
-					m_pRenderColors[i*2+1] = grad.bottomLeft;
-				}
-				break;
-			}
-			case TintMode::GradientXY:
-			{
-				for( int i = 0 ; i < m_nbSegments ; i++ )
-				{
-					const Gradient& grad = m_pGradients[i];
-
-					m_pRenderColors[i*4]   = grad.topLeft;
-					m_pRenderColors[i*4+1] = grad.topRight;
-					m_pRenderColors[i*4+2] = grad.bottomRight;
-					m_pRenderColors[i*4+3] = grad.bottomLeft;
-				}
-				break;
-			}
-		}
-	}
-	else
-	{
-		m_tintMode = TintMode::Flat;
-	}
-	
-	// Generate render colors from Tintmaps as well as we can to support legacy implementations.
-	
-	if( m_pTintmaps )
-	{
-		m_tintMode = TintMode::GradientXY;
-		
-		for( int i = 0 ; i < m_nbSegments ; i++ )
-		{
-			Gradient grad = m_pTintmaps[i]->exportGradient();
-			
-			m_pRenderColors[i*4]   = grad.topLeft;
-			m_pRenderColors[i*4+1] = grad.topRight;
-			m_pRenderColors[i*4+2] = grad.bottomRight;
-			m_pRenderColors[i*4+3] = grad.bottomLeft;
-		}
-	}
-}
 
 } // namespace wg
 

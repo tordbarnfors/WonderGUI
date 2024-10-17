@@ -32,9 +32,7 @@
 #include <wg_pointers.h>
 #include <wg_gfxtypes.h>
 #include <wg_color.h>
-#include <wg_gradient.h>
 #include <wg_edgemap.h>
-#include <wg_tintmap.h>
 
 
 #include <wg_geo.h>

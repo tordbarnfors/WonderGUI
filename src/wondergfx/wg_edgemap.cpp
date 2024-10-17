@@ -46,7 +46,7 @@ namespace wg
 		m_nbRenderSegments = segments;
 		return true;
 	}
-
+/*
 	//____ setColors() ____________________________________________________________
 
 	bool Edgemap::setColors( int begin, int end, const HiColor * pColors )
@@ -170,6 +170,7 @@ namespace wg
 
 		return m_pTintmaps[segment];
 	}
+*/
 
 	//____ _validateBlueprint() __________________________________________________
 

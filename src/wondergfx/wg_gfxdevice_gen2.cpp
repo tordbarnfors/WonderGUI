@@ -385,44 +385,7 @@ HiColor GfxDeviceGen2::tintColor() const
 
 void GfxDeviceGen2::setTintGradient(const RectSPX& rect, const Gradient& gradient)
 {
-	HiColor bottom( (gradient.bottomLeft.r + gradient.bottomRight.r) / 2,
-						(gradient.bottomLeft.g + gradient.bottomRight.g) / 2,
-						(gradient.bottomLeft.b + gradient.bottomRight.b) / 2,
-						(gradient.bottomLeft.a + gradient.bottomRight.a) / 2 );
-
-	HiColor top( (gradient.topLeft.r + gradient.topRight.r) / 2,
-		(gradient.topLeft.g + gradient.topRight.g) / 2,
-		(gradient.topLeft.b + gradient.topRight.b) / 2,
-		(gradient.topLeft.a + gradient.topRight.a) / 2);
-
-	HiColor left( (gradient.topLeft.r + gradient.bottomLeft.r) / 2,
-		(gradient.topLeft.g + gradient.bottomLeft.g) / 2,
-		(gradient.topLeft.b + gradient.bottomLeft.b) / 2,
-		(gradient.topLeft.a + gradient.bottomLeft.a) / 2);
-
-	HiColor right( (gradient.topRight.r + gradient.bottomRight.r) / 2,
-		(gradient.topRight.g + gradient.bottomRight.g) / 2,
-		(gradient.topRight.b + gradient.bottomRight.b) / 2,
-		(gradient.topRight.a + gradient.bottomRight.a) / 2);
-
-	float yDiff = (bottom.r - top.r) * (bottom.r - top.r) +
-					(bottom.g - top.g) * (bottom.g - top.g) +
-					(bottom.b - top.b) * (bottom.b - top.b) +
-					(bottom.a - top.a) * (bottom.a - top.a);
-
-	float xDiff = (left.r - right.r) * (left.r - right.r) +
-		(left.g - right.g) * (left.g - right.g) +
-		(left.b - right.b) * (left.b - right.b) +
-		(left.a - right.a) * (left.a - right.a);
-
-	Gradyent_p pGradyent;
-
-	if (xDiff > yDiff)
-		pGradyent = Gradyent::create(HiColor::White, HiColor::White, left, right);
-	else
-		pGradyent = Gradyent::create(top, bottom, HiColor::White, HiColor::White);
-
-	setTint(rect, pGradyent);
+	setTint(rect, Gradyent::create( gradient ));
 }
 
 //____ clearTintGradient() ________________________________________________

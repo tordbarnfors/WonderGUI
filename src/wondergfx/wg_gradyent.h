@@ -43,6 +43,7 @@ namespace wg
 		//.____ Creation __________________________________________
 
 		static Gradyent_p	create(HiColor top, HiColor bottom, HiColor left, HiColor right);
+		static Gradyent_p	create( const Gradient& gradient );									//NOTE! Only here for legacy reasons. Conversion from corner to side colors performed and only one direction supported.
 
 		//.____ Identification __________________________________________
 
