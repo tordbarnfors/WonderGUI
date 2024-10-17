@@ -490,7 +490,7 @@ void GlBackend::processCommands(int32_t* pBeg, int32_t* pEnd)
 						bStraightFill = false;
 					}
 
-					extrasOfs = (pExtrasGL - m_pExtrasBuffer)/4;
+					extrasOfs = int(pExtrasGL - m_pExtrasBuffer)/4;
 
 					// Provide rectangle center and radius as extras
 
@@ -549,44 +549,46 @@ void GlBackend::processCommands(int32_t* pBeg, int32_t* pEnd)
 					tintmapEndY = 0.5f;
 				}
 
+				int colOfs = int(pColorGL - m_pColorBuffer);
+				
 				pVertexGL->coord.x = dx1;
 				pVertexGL->coord.y = dy1;
-				pVertexGL->colorsOfs = pColorGL - m_pColorBuffer;
+				pVertexGL->colorsOfs = colOfs;
 				pVertexGL->extrasOfs = extrasOfs;
 				pVertexGL->tintmapOfs = { tintmapBeginX,tintmapBeginY };
 				pVertexGL++;
 
 				pVertexGL->coord.x = dx2;
 				pVertexGL->coord.y = dy1;
-				pVertexGL->colorsOfs = pColorGL - m_pColorBuffer;
+				pVertexGL->colorsOfs = colOfs;
 				pVertexGL->extrasOfs = extrasOfs;
 				pVertexGL->tintmapOfs = { tintmapEndX,tintmapBeginY };
 				pVertexGL++;
 
 				pVertexGL->coord.x = dx2;
 				pVertexGL->coord.y = dy2;
-				pVertexGL->colorsOfs = pColorGL - m_pColorBuffer;
+				pVertexGL->colorsOfs = colOfs;
 				pVertexGL->extrasOfs = extrasOfs;
 				pVertexGL->tintmapOfs = { tintmapEndX,tintmapEndY };
 				pVertexGL++;
 
 				pVertexGL->coord.x = dx1;
 				pVertexGL->coord.y = dy1;
-				pVertexGL->colorsOfs = pColorGL - m_pColorBuffer;
+				pVertexGL->colorsOfs = colOfs;
 				pVertexGL->extrasOfs = extrasOfs;
 				pVertexGL->tintmapOfs = { tintmapBeginX,tintmapBeginY };
 				pVertexGL++;
 
 				pVertexGL->coord.x = dx2;
 				pVertexGL->coord.y = dy2;
-				pVertexGL->colorsOfs = pColorGL - m_pColorBuffer;
+				pVertexGL->colorsOfs = colOfs;
 				pVertexGL->extrasOfs = extrasOfs;
 				pVertexGL->tintmapOfs = { tintmapEndX,tintmapEndY };
 				pVertexGL++;
 
 				pVertexGL->coord.x = dx1;
 				pVertexGL->coord.y = dy2;
-				pVertexGL->colorsOfs = pColorGL - m_pColorBuffer;
+				pVertexGL->colorsOfs = colOfs;
 				pVertexGL->extrasOfs = extrasOfs;
 				pVertexGL->tintmapOfs = { tintmapBeginX,tintmapEndY };
 				pVertexGL++;
@@ -632,7 +634,7 @@ void GlBackend::processCommands(int32_t* pBeg, int32_t* pEnd)
 			{
 				pVertexGL->coord.x = * pCoords++ / 64;
 				pVertexGL->coord.y = * pCoords++ / 64;
-				pVertexGL->colorsOfs = pColorGL - m_pColorBuffer;
+				pVertexGL->colorsOfs = int(pColorGL - m_pColorBuffer);
 				pVertexGL++;
 
 				HiColor col = * pColors++;
@@ -751,8 +753,8 @@ void GlBackend::processCommands(int32_t* pBeg, int32_t* pEnd)
 					c4.y = end.y;
 				}
 
-				int extrasOfs = (pExtrasGL - m_pExtrasBuffer) / 4;
-				int colorsOfs = (pColorGL - m_pColorBuffer);
+				int extrasOfs = int(pExtrasGL - m_pExtrasBuffer) / 4;
+				int colorsOfs = int(pColorGL - m_pColorBuffer);
 
 				pVertexGL->coord = c1;
 				pVertexGL->colorsOfs = colorsOfs;
@@ -909,8 +911,8 @@ void GlBackend::processCommands(int32_t* pBeg, int32_t* pEnd)
 
 			//
 
-			int extrasOfs = (pExtrasGL - m_pExtrasBuffer) / 4;
-			int colorsOfs = (pColorGL - m_pColorBuffer);
+			int extrasOfs = int(pExtrasGL - m_pExtrasBuffer) / 4;
+			int colorsOfs = int(pColorGL - m_pColorBuffer);
 
 
 			float tintmapBeginX, tintmapBeginY, tintmapEndX, tintmapEndY;
@@ -1316,7 +1318,7 @@ void GlBackend::processCommands(int32_t* pBeg, int32_t* pEnd)
 
 			// Setup extras data
 
-			int edgeStripOfs = (pExtrasGL - m_pExtrasBuffer + 4);	// Offset for edgestrips in buffer.
+			int edgeStripOfs = int(pExtrasGL - m_pExtrasBuffer + 4);	// Offset for edgestrips in buffer.
 
 			*pExtrasGL++ = (GLfloat)nSegments;
 			*pExtrasGL++ = (GLfloat)edgeStripOfs / 4;
@@ -1414,7 +1416,7 @@ void GlBackend::processCommands(int32_t* pBeg, int32_t* pEnd)
 			//
 
 			int tintColorOfs = m_tintColorOfs >= 0 ? m_tintColorOfs : 0;
-			int extrasOfs = (pExtrasGL - m_pExtrasBuffer) / 4;
+			int extrasOfs = int(pExtrasGL - m_pExtrasBuffer) / 4;
 
 			for (int i = 0; i < nRects; i++)
 			{
@@ -1551,10 +1553,10 @@ void GlBackend::processCommands(int32_t* pBeg, int32_t* pEnd)
 	m_pCoordsPtr = pCoords;
 	m_pColorsPtr = pColors;
 
-	m_nVertices			= pVertexGL - m_pVertexBuffer;
-	m_nColors			= pColorGL	- m_pColorBuffer;
-	m_extrasBufferSize	= pExtrasGL - m_pExtrasBuffer;
-	m_commandQueueSize	= pCommandGL- m_pCommandQueue;
+	m_nVertices			= int(pVertexGL - m_pVertexBuffer);
+	m_nColors			= int(pColorGL	- m_pColorBuffer);
+	m_extrasBufferSize	= int(pExtrasGL - m_pExtrasBuffer);
+	m_commandQueueSize	= int(pCommandGL- m_pCommandQueue);
 }
 
 

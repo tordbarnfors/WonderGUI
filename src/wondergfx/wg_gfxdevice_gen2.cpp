@@ -944,7 +944,7 @@ void GfxDeviceGen2::_doFlattenLayers()
 
 			// Store length of commands before changing canvas
 
-			layer.finalCommandsOfs = layer.commands.size();
+			layer.finalCommandsOfs = (int) layer.commands.size();
 
 			// Encode preBlendCanvasFunc if any.
 
@@ -988,7 +988,7 @@ void GfxDeviceGen2::_doFlattenLayers()
 
 	if (canvasData.pLayerInfo && canvasData.pLayerInfo->m_finalizeCanvasFunc)
 	{
-		setRenderLayer(canvasData.layers.size()-1);					// Write to buffer to be processed
+		setRenderLayer(int(canvasData.layers.size())-1);					// Write to buffer to be processed
 		setBlendMode(BlendMode::Blend);
 		clearTint();
 
@@ -997,9 +997,9 @@ void GfxDeviceGen2::_doFlattenLayers()
 
 	// Start backend session
 
-	canvasData.sessionInfo.nObjects = canvasData.objects.size();
-	canvasData.sessionInfo.nTransforms = canvasData.transforms.size();
-	canvasData.sessionInfo.nCanvases = canvasData.layers.size();
+	canvasData.sessionInfo.nObjects = (int) canvasData.objects.size();
+	canvasData.sessionInfo.nTransforms = (int) canvasData.transforms.size();
+	canvasData.sessionInfo.nCanvases = (int) canvasData.layers.size();
 
 	m_pBackend->beginSession(&canvasData.sessionInfo);
 
