@@ -254,10 +254,8 @@ namespace wg
 
 		// Tintmap buffer
 
-		HiColor *			m_pTintmapXBuffer = nullptr;
-		HiColor *			m_pTintmapYBuffer = nullptr;
-		int					m_tintmapXBufferSize = 0;
-		int					m_tintmapYBufferSize = 0;
+		int					m_tintmapXofs = -1;
+		int					m_tintmapYofs = -1;
 
 
 //		PixelBuffer		m_canvasPixelBuffer;

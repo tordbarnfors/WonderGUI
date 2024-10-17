@@ -334,7 +334,7 @@ void GlBackend::processCommands(int32_t* pBeg, int32_t* pEnd)
 				}
 				else
 				{
-					m_tintColorOfs = pColorGL - m_pColorBuffer;
+					m_tintColorOfs = int(pColorGL - m_pColorBuffer);
 
 					pColorGL->r = tintColor.r / 4096.f;
 					pColorGL->g = tintColor.g / 4096.f;
@@ -347,45 +347,32 @@ void GlBackend::processCommands(int32_t* pBeg, int32_t* pEnd)
 
 			if (statesChanged & uint8_t(StateChange::TintMap))
 			{
-				int32_t objectOfs = *p++;
 				int32_t	x = *p++;
 				int32_t	y = *p++;
 				int32_t	w = *p++;
 				int32_t	h = *p++;
 
-
-//				m_colTrans.tintRect = RectI(x, y, w, h);
-
-				auto pTintmap = static_cast<Tintmap*>(m_pObjectsBeg[objectOfs]);
-
-				bool bHorizontal = false, bVertical = false;
+				int32_t	nHorrColors = *p++;
+				int32_t	nVertColors = *p++;
 
 				m_bTintmap = true;
 				m_tintmapRect = RectI(x, y, w, h) / 64;
 
-				if (pTintmap->isHorizontal())
+				if (nHorrColors > 0)
 				{
-					int nColors = w / 64;
 
-					m_tintmapBeginX = pColorGL - m_pColorBuffer;
-					m_tintmapEndX = pColorGL - m_pColorBuffer + nColors;
+					m_tintmapBeginX = int(pColorGL - m_pColorBuffer);
+					m_tintmapEndX = int(pColorGL - m_pColorBuffer + nHorrColors);
 
-
-					HiColor * pTmp = (HiColor*) GfxBase::memStackAlloc(sizeof(HiColor) * nColors);
-
-					pTintmap->exportHorizontalColors(w, pTmp);
-					for (int i = 0; i < nColors; i++)
+					for (int i = 0; i < nHorrColors; i++)
 					{
-						pColorGL->r = pTmp->r / 4096.f;
-						pColorGL->g = pTmp->g / 4096.f;
-						pColorGL->b = pTmp->b / 4096.f;
-						pColorGL->a = pTmp->a / 4096.f;
+						pColorGL->r = pColors->r / 4096.f;
+						pColorGL->g = pColors->g / 4096.f;
+						pColorGL->b = pColors->b / 4096.f;
+						pColorGL->a = pColors->a / 4096.f;
 						pColorGL++;
-						pTmp++;
+						pColors++;
 					}
-
-					GfxBase::memStackFree(sizeof(HiColor) * nColors);
-					bHorizontal = true;
 				}
 				else
 				{
@@ -395,35 +382,27 @@ void GlBackend::processCommands(int32_t* pBeg, int32_t* pEnd)
 					m_tintmapEndX = 0;
 				}
 
-
-				if (pTintmap->isVertical())
+				if (nVertColors > 0)
 				{
-					int nColors = h / 64;
 
-					m_tintmapBeginY = pColorGL - m_pColorBuffer;
-					m_tintmapEndY = pColorGL - m_pColorBuffer + nColors;
+					m_tintmapBeginY = int(pColorGL - m_pColorBuffer);
+					m_tintmapEndY = int(pColorGL - m_pColorBuffer + nVertColors);
 
-					HiColor* pTmp = (HiColor*)GfxBase::memStackAlloc(sizeof(HiColor) * nColors);
-
-					pTintmap->exportVerticalColors(h, pTmp);
-					for (int i = 0; i < nColors; i++)
+					for (int i = 0; i < nVertColors; i++)
 					{
-						pColorGL->r = pTmp->r / 4096.f;
-						pColorGL->g = pTmp->g / 4096.f;
-						pColorGL->b = pTmp->b / 4096.f;
-						pColorGL->a = pTmp->a / 4096.f;
+						pColorGL->r = pColors->r / 4096.f;
+						pColorGL->g = pColors->g / 4096.f;
+						pColorGL->b = pColors->b / 4096.f;
+						pColorGL->a = pColors->a / 4096.f;
 						pColorGL++;
-						pTmp++;
+						pColors++;
 					}
-
-					GfxBase::memStackFree(sizeof(HiColor) * nColors);
-					bVertical = true;
 				}
 				else
 				{
 					// Default to use white
 
-					m_tintmapBeginY= 0;
+					m_tintmapBeginY = 0;
 					m_tintmapEndY = 0;
 				}
 
@@ -2089,8 +2068,7 @@ void GlBackend::beginSession(const SessionInfo* pSession)
 
 	m_pColorBuffer = new ColorGL[
 		pSession->nColors+1
-	    + pSession->nTintmapColors
-		+ 100000						//TEMP CODE!!! To allow for Edgemap colors. 
+		+ 100000						//TEMP CODE!!! To allow for Edgemap colors.
 	];
 
 	// Always present white color used as default tint for blits.

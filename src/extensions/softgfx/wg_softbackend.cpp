@@ -374,49 +374,45 @@ namespace wg
 
 				if (statesChanged & uint8_t(StateChange::TintMap))
 				{
-					int32_t objectOfs = *p++;
 					int32_t	x = *p++ / 64;
 					int32_t	y = *p++ / 64;
 					int32_t	w = *p++ / 64;
 					int32_t	h = *p++ / 64;
 
 					m_colTrans.tintRect = RectI(x, y, w, h);
+					
+					int32_t nHorrColors = *p++;
+					int32_t nVertColors = *p++;
 
-					auto pTintmap = static_cast<Tintmap*>(m_pObjectsBeg[objectOfs]);
-
-
-					if( pTintmap->isHorizontal() )
+					auto pOurColors = pColors;
+					
+					if( nHorrColors > 0 )
 					{
-						if( m_tintmapXBufferSize < w )
-						{
-							delete m_pTintmapXBuffer;
-							m_pTintmapXBuffer = new HiColor[w];
-							m_tintmapXBufferSize = w;
-						}
-						
-						m_colTrans.pTintAxisX = m_pTintmapXBuffer;
-						pTintmap->exportHorizontalColors(w*64, m_pTintmapXBuffer);
-
+						m_colTrans.pTintAxisX = pColors;
+						pColors += nHorrColors;
 					}
 					else
 						m_colTrans.pTintAxisX = nullptr;
 
-					if( pTintmap->isVertical() )
+					if( nVertColors > 0 )
 					{
-						if( m_tintmapYBufferSize < h )
-						{
-							delete m_pTintmapYBuffer;
-							m_pTintmapYBuffer = new HiColor[h];
-							m_tintmapYBufferSize = h;
-						}
-
-						m_colTrans.pTintAxisY = m_pTintmapYBuffer;
-						pTintmap->exportVerticalColors(h*64, m_pTintmapYBuffer);
+						m_colTrans.pTintAxisY = pColors;
+						pColors += nVertColors;
 					}
 					else
 						m_colTrans.pTintAxisY = nullptr;
+
+					// Check if whole tint is opaque.
 					
-					m_colTrans.bTintOpaque = pTintmap->isOpaque();
+					int totalAlpha = 0;
+					while( pOurColors < pColors )
+					{
+						totalAlpha += pOurColors->a;
+						pOurColors++;
+					}
+					
+					m_colTrans.bTintOpaque = (totalAlpha == 4096 * (nHorrColors + nVertColors));
+
 					_updateTintMode();
 				}
 

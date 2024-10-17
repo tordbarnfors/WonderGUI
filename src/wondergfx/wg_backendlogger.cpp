@@ -262,13 +262,15 @@ namespace wg
 
 				if (statesChanged & uint8_t(StateChange::TintMap))
 				{
-					int32_t objectOfs = *p++;
 					int32_t	x = *p++;
 					int32_t	y = *p++;
 					int32_t	w = *p++;
 					int32_t	h = *p++;
 
-					*m_pStream << "        TintMap: " << objectOfs << " rect: " << x << ", " << y << ", " << w << ", " << h << std::endl;
+					int32_t	nHorrColors = *p++;
+					int32_t	nVertColors = *p++;
+					
+					*m_pStream << "        TintMap: rect: " << x << ", " << y << ", " << w << ", " << h << " horr colors: " << nHorrColors << " vert colors: , " << nVertColors << std::endl;
 				}
 
 				if (statesChanged & uint8_t(StateChange::MorphFactor))

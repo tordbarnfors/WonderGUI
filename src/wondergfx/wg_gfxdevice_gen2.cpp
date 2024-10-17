@@ -3215,27 +3215,39 @@ void GfxDeviceGen2::_encodeStateChanges()
 
 				assert(pTintmap);
 
-				cmdBuffer.push_back((int)m_pActiveCanvas->objects.size());
-				m_pActiveCanvas->objects.push_back(pTintmap);
+				int nHorrColors = 0;
+				int nVertColors = 0;
+				
+				if (pTintmap->isHorizontal())
+				{
+					nHorrColors = newState.tintmapRect.w/64;
+					int ofs = (int) colorBuffer.size();
+					
+					colorBuffer.resize(ofs + nHorrColors );
+					pTintmap->exportHorizontalColors(newState.tintmapRect.w, &colorBuffer[ofs]);
+				}
 
-				if (pTintmap)
-					pTintmap->retain();
+				if (pTintmap->isVertical())
+				{
+					nVertColors = newState.tintmapRect.h/64;
+					int ofs = (int) colorBuffer.size();
+					
+					colorBuffer.resize(ofs + nVertColors );
+					pTintmap->exportVerticalColors(newState.tintmapRect.h, &colorBuffer[ofs]);
+				}
 
 				cmdBuffer.push_back(newState.tintmapRect.x);
 				cmdBuffer.push_back(newState.tintmapRect.y);
 				cmdBuffer.push_back(newState.tintmapRect.w);
 				cmdBuffer.push_back(newState.tintmapRect.h);
+				cmdBuffer.push_back(nHorrColors);
+				cmdBuffer.push_back(nVertColors);
 
 				encodedState.pTintmap = newState.pTintmap;
 				encodedState.tintmapRect = newState.tintmapRect;
 
 				statesChanged |= int(StateChange::TintMap);
 
-				if (pTintmap->isHorizontal())
-					m_pActiveCanvas->sessionInfo.nTintmapColors += newState.tintmapRect.w / 64;
-
-				if (pTintmap->isVertical())
-					m_pActiveCanvas->sessionInfo.nTintmapColors += newState.tintmapRect.h / 64;
 			}
 			else
 			{
