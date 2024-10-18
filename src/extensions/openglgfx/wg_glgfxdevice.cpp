@@ -1468,11 +1468,11 @@ namespace wg
 			return;
 		}
 
-		auto pWave = static_cast<GlEdgemap*>(pEdgemap);
+		auto pEdgemap = static_cast<GlEdgemap*>(pEdgemap);
 
 
-		_transformDrawSegments({ dest, pWave->m_size * 64 }, pWave->m_nbRenderSegments, pWave->m_pRenderColors,
-			pWave->m_size.w + 1, pWave->m_pSamples, pWave->m_nbSegments - 1, pWave->m_tintMode,
+		_transformDrawSegments({ dest, pEdgemap->m_size * 64 }, pEdgemap->m_nbRenderSegments, pEdgemap->m_pRenderColors,
+			pEdgemap->m_size.w + 1, pEdgemap->m_pSamples, pEdgemap->m_nbSegments - 1, pEdgemap->m_tintMode,
 			s_blitFlipTransforms[(int)GfxFlip::None]);
 	}
 
@@ -1486,18 +1486,18 @@ namespace wg
 			return;
 		}
 
-		auto pWave = static_cast<GlEdgemap*>(pEdgemap);
+		auto pEdgemap = static_cast<GlEdgemap*>(pEdgemap);
 
 		const int(&transform)[2][2] = s_blitFlipTransforms[(int)flip];
 
 		RectSPX dest;
 		dest.x = destPos.x;
 		dest.y = destPos.y;
-		dest.w = pWave->m_size.w * 64 * abs(transform[0][0]) + pWave->m_size.h * 64 * abs(transform[1][0]);
-		dest.h = pWave->m_size.w * 64 * abs(transform[0][1]) + pWave->m_size.h * 64 * abs(transform[1][1]);
+		dest.w = pEdgemap->m_size.w * 64 * abs(transform[0][0]) + pEdgemap->m_size.h * 64 * abs(transform[1][0]);
+		dest.h = pEdgemap->m_size.w * 64 * abs(transform[0][1]) + pEdgemap->m_size.h * 64 * abs(transform[1][1]);
 
-		_transformDrawSegments(dest, pWave->m_nbRenderSegments, pWave->m_pRenderColors,
-			pWave->m_size.w + 1, pWave->m_pSamples, pWave->m_nbSegments - 1, pWave->m_tintMode,
+		_transformDrawSegments(dest, pEdgemap->m_nbRenderSegments, pEdgemap->m_pRenderColors,
+			pEdgemap->m_size.w + 1, pEdgemap->m_pSamples, pEdgemap->m_nbSegments - 1, pEdgemap->m_tintMode,
 			transform);
 	}
 

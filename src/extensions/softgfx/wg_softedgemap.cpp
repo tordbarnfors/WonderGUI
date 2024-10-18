@@ -21,6 +21,7 @@
 =========================================================================*/
 
 #include <wg_softedgemap.h>
+#include <wg_gradyent.h>
 
 #include <cstring>
 
@@ -92,7 +93,7 @@ SoftEdgemap::SoftEdgemap(const Blueprint& bp) : Edgemap(bp)
 	
 	int colorPitch = bp.size.w + bp.size.h;
 	
-	for( int seg = 0 ; seg < segments ; seg++ )
+	for( int seg = 0 ; seg < bp.segments ; seg++ )
 	{
 		auto pOutput = m_pColors + (seg * colorPitch);
 				
@@ -148,7 +149,7 @@ SoftEdgemap::SoftEdgemap(const Blueprint& bp) : Edgemap(bp)
 
 			if( bp.colors[seg].a == 0 )
 				m_transparentSegments.set(seg);
-			else if( bp.colors[seg].a = 4096 )
+			else if( bp.colors[seg].a == 4096 )
 				m_opaqueSegments.set(seg);
 			
 			m_pGradients[seg] = Gradient(bp.colors[seg], bp.colors[seg], bp.colors[seg], bp.colors[seg]);

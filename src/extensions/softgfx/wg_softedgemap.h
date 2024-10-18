@@ -83,7 +83,7 @@ protected:
 	void 	_importSamples( SampleOrigo origo, const float * pSource, int edgeBegin, int edgeEnd,
 						   int sampleBegin, int sampleEnd, int edgePitch, int samplePitch );
 	
-	int		_colorSegmentPitch() const { return m_size.w + m_size.h; }
+	int		_colorSegmentPitch() const { return m_size.w + m_size.h; }
 	
 	
 	char *	m_pBuffer;

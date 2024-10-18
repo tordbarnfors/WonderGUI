@@ -2265,43 +2265,43 @@ const uint8_t SoftGfxDevice::s_fast8_channel_6[64] = {		0x00, 0x04, 0x08, 0x0c, 
 
 	//____ drawEdgemap() __________________________________________________________
 
-	void SoftGfxDevice::drawEdgemap(CoordSPX dest, Edgemap * pEdgemap )
+	void SoftGfxDevice::drawEdgemap(CoordSPX dest, Edgemap * _pEdgemap )
 	{
-		if( pEdgemap->typeInfo() != SoftEdgemap::TYPEINFO )
+		if( _pEdgemap->typeInfo() != SoftEdgemap::TYPEINFO )
 		{
 			//TODO: Throw an error.
 			return;
 		}
 		
-		auto pWave = static_cast<SoftEdgemap*>(pEdgemap);
+		auto pEdgemap = static_cast<SoftEdgemap*>(_pEdgemap);
 	
-		_transformDrawSegments( {dest, pWave->m_size*64}, pWave->m_nbRenderSegments, pWave->m_pRenderColors,
-							   pWave->m_size.w+1, pWave->m_pSamples, pWave->m_nbSegments-1, pWave->m_tintMode,
+		_transformDrawSegments( {dest, pEdgemap->m_size*64}, pEdgemap->m_nbRenderSegments, pEdgemap->m_pRenderColors,
+							   pEdgemap->m_size.w+1, pEdgemap->m_pSamples, pEdgemap->m_nbSegments-1, pEdgemap->m_tintMode,
 							   s_blitFlipTransforms[(int)GfxFlip::None] );
 	}
 
 	//____ flipDrawEdgemap() __________________________________________________________
 
-	void SoftGfxDevice::flipDrawEdgemap(CoordSPX destPos, Edgemap * pEdgemap, GfxFlip flip)
+	void SoftGfxDevice::flipDrawEdgemap(CoordSPX destPos, Edgemap * _pEdgemap, GfxFlip flip)
 	{
-		if( pEdgemap->typeInfo() != SoftEdgemap::TYPEINFO )
+		if( _pEdgemap->typeInfo() != SoftEdgemap::TYPEINFO )
 		{
 			//TODO: Throw an error.
 			return;
 		}
 		
-		auto pWave = static_cast<SoftEdgemap*>(pEdgemap);
+		auto pEdgemap = static_cast<SoftEdgemap*>(_pEdgemap);
 		
 		const int (&transform)[2][2] = s_blitFlipTransforms[(int)flip];
 
 		RectSPX dest;
 		dest.x = destPos.x;
 		dest.y = destPos.y;
-		dest.w = pWave->m_size.w*64 * abs(transform[0][0]) + pWave->m_size.h*64 * abs(transform[1][0]);
-		dest.h = pWave->m_size.w*64 * abs(transform[0][1]) + pWave->m_size.h*64 * abs(transform[1][1]);
+		dest.w = pEdgemap->m_size.w*64 * abs(transform[0][0]) + pEdgemap->m_size.h*64 * abs(transform[1][0]);
+		dest.h = pEdgemap->m_size.w*64 * abs(transform[0][1]) + pEdgemap->m_size.h*64 * abs(transform[1][1]);
 
-		_transformDrawSegments( dest, pWave->m_nbRenderSegments, pWave->m_pRenderColors,
-							   pWave->m_size.w+1, pWave->m_pSamples, pWave->m_nbSegments-1, pWave->m_tintMode,
+		_transformDrawSegments( dest, pEdgemap->m_nbRenderSegments, pEdgemap->m_pRenderColors,
+							   pEdgemap->m_size.w+1, pEdgemap->m_pSamples, pEdgemap->m_nbSegments-1, pEdgemap->m_tintMode,
 							   transform );
 	}
 

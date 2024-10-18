@@ -839,7 +839,7 @@ namespace wg
 				pCoords += nRects * 4;
 
 				int32_t nSegments = pEdgemap->segments();
-				const HiColor * pSegmentColors = pEdgemap->colors();
+				const HiColor * pSegmentColors = pEdgemap->m_pColors;
 
 				int	colorPitch = pEdgemap->_colorSegmentPitch();
 				
