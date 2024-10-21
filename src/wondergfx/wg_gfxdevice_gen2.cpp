@@ -2235,7 +2235,7 @@ void GfxDeviceGen2::flipDrawEdgemap(CoordSPX dest, Edgemap* pEdgemap, GfxFlip fl
 
 		m_pActiveCanvas->sessionInfo.nEdgemapDraws++;
 		m_pActiveCanvas->sessionInfo.nObjects++;
-		m_pActiveCanvas->sessionInfo.nRects++;
+		m_pActiveCanvas->sessionInfo.nRects += nRects;
 	}
 }
 

@@ -164,7 +164,6 @@ namespace wg
 
 					beginAdder = increment * (edgeIn & 0x3F) / 64.f + firstPixelCoverage;
 					endAdder = lastPixelCoverage - (1.f - (edgeOut & 0x3F) * increment / 64.f);
-					// 					endAdder = lastPixelCoverage - ((edgeOut & 0xFFFFFF00)-edgeIn)*increment / 256.f;
 				}
 
 				*pOut++ = edgeIn / 64.f;				// Segment begin pixel
@@ -179,7 +178,7 @@ namespace wg
 
 		// Upload buffer
 
-		int ofs = edgeBegin * edgeStripPitch * 4 * sizeof(GLfloat);
+		int ofs = sampleBegin * edgeStripPitch * 4 * sizeof(GLfloat);
 
 		glBindBuffer(GL_TEXTURE_BUFFER, m_bufferId);
 		glBufferSubData(GL_TEXTURE_BUFFER, ofs, outBytes, pBuffer);

@@ -520,33 +520,33 @@ void GlBackend::processCommands(int32_t* pBeg, int32_t* pEnd)
 				{
 					if (m_tintmapBeginX == 0)
 					{
-						tintmapBeginX = 0.5f;
-						tintmapEndX = 0.5f;
+						tintmapBeginX = 0.f;
+						tintmapEndX = 0.f;
 					}
 					else
 					{
-						tintmapBeginX = m_tintmapBeginX + (dx1 - m_tintmapRect.x) + 0.5f;
-						tintmapEndX = tintmapBeginX + (dx2 - dx1) + 0.5f;
+						tintmapBeginX = m_tintmapBeginX + (dx1 - m_tintmapRect.x) + 0.f;
+						tintmapEndX = tintmapBeginX + (dx2 - dx1) + 0.f;
 					}
 
 					if (m_tintmapBeginY == 0)
 					{
-						tintmapBeginY = 0.5f;
-						tintmapEndY = 0.5f;
+						tintmapBeginY = 0.f;
+						tintmapEndY = 0.f;
 					}
 					else
 					{
-						tintmapBeginY = m_tintmapBeginY + (dy1 - m_tintmapRect.y) + 0.5f;
-						tintmapEndY = tintmapBeginY + (dy2 - dy1) + 0.5f;
+						tintmapBeginY = m_tintmapBeginY + (dy1 - m_tintmapRect.y) + 0.f;
+						tintmapEndY = tintmapBeginY + (dy2 - dy1) + 0.f;
 					}
 
 				}
 				else
 				{
-					tintmapBeginX = 0.5f;
-					tintmapBeginY = 0.5f; 
-					tintmapEndX = 0.5f;
-					tintmapEndY = 0.5f;
+					tintmapBeginX = 0.f;
+					tintmapBeginY = 0.f; 
+					tintmapEndX = 0.f;
+					tintmapEndY = 0.f;
 				}
 
 				int colOfs = int(pColorGL - m_pColorBuffer);
@@ -919,32 +919,32 @@ void GlBackend::processCommands(int32_t* pBeg, int32_t* pEnd)
 				{
 					if (m_tintmapBeginX == 0)
 					{
-						tintmapBeginX = 0.5f;
-						tintmapEndX = 0.5f;
+						tintmapBeginX = 0.f;
+						tintmapEndX = 0.f;
 					}
 					else
 					{
-						tintmapBeginX = m_tintmapBeginX + (dx1 - m_tintmapRect.x) + 0.5f;
-						tintmapEndX = tintmapBeginX + (dx2 - dx1) + 0.5f;
+						tintmapBeginX = m_tintmapBeginX + (dx1 - m_tintmapRect.x) + 0.f;
+						tintmapEndX = tintmapBeginX + (dx2 - dx1) + 0.f;
 					}
 
 					if (m_tintmapBeginY == 0)
 					{
-						tintmapBeginY = 0.5f;
-						tintmapEndY = 0.5f;
+						tintmapBeginY = 0.f;
+						tintmapEndY = 0.f;
 					}
 					else
 					{
-						tintmapBeginY = m_tintmapBeginY + (dy1 - m_tintmapRect.y) + 0.5f;
-						tintmapEndY = tintmapBeginY + (dy2 - dy1) + 0.5f;
+						tintmapBeginY = m_tintmapBeginY + (dy1 - m_tintmapRect.y) + 0.f;
+						tintmapEndY = tintmapBeginY + (dy2 - dy1) + 0.f;
 					}
 				}
 				else
 				{
-					tintmapBeginX = 0.5f;
-					tintmapBeginY = 0.5f;
-					tintmapEndX = 0.5f;
-					tintmapEndY = 0.5f;
+					tintmapBeginX = 0.f;
+					tintmapBeginY = 0.f;
+					tintmapEndX = 0.f;
+					tintmapEndY = 0.f;
 				}
 
 				//
@@ -954,10 +954,10 @@ void GlBackend::processCommands(int32_t* pBeg, int32_t* pEnd)
 
 				int stripsBegin = pEdgemap->m_colorsOfs / 16;
 
-				float colorstripBeginX = stripsBegin + ofsX + 0.5f;
+				float colorstripBeginX = stripsBegin + ofsX;
 				float colorstripEndX = colorstripBeginX + patch.w;
 
-				float colorstripBeginY = stripsBegin + pEdgemap->m_size.w + ofsY + 0.5f;
+				float colorstripBeginY = stripsBegin + pEdgemap->m_size.w + ofsY;
 				float colorstripEndY = colorstripBeginY + patch.h;
 
 
@@ -1044,7 +1044,7 @@ void GlBackend::processCommands(int32_t* pBeg, int32_t* pEnd)
 
 			*pCommandGL++ = CommandGL::Edgemap;
 			*pCommandGL++ = nSegments-1;
-			*pCommandGL++ = 6;
+			*pCommandGL++ = nRects*6;
 
 			break;
 		}
@@ -1097,32 +1097,32 @@ void GlBackend::processCommands(int32_t* pBeg, int32_t* pEnd)
 				{
 					if (m_tintmapBeginX == 0)
 					{
-						tintmapBeginX = 0.5f;
-						tintmapEndX = 0.5f;
+						tintmapBeginX = 0.f;
+						tintmapEndX = 0.f;
 					}
 					else
 					{
-						tintmapBeginX = m_tintmapBeginX + (dx1 - m_tintmapRect.x) + 0.5f;
-						tintmapEndX = tintmapBeginX + (dx2 - dx1) + 0.5f;
+						tintmapBeginX = m_tintmapBeginX + (dx1 - m_tintmapRect.x) + 0.f;
+						tintmapEndX = tintmapBeginX + (dx2 - dx1) + 0.f;
 					}
 
 					if (m_tintmapBeginY == 0)
 					{
-						tintmapBeginY = 0.5f;
-						tintmapEndY = 0.5f;
+						tintmapBeginY = 0.f;
+						tintmapEndY = 0.f;
 					}
 					else
 					{
-						tintmapBeginY = m_tintmapBeginY + (dy1 - m_tintmapRect.y) + 0.5f;
-						tintmapEndY = tintmapBeginY + (dy2 - dy1) + 0.5f;
+						tintmapBeginY = m_tintmapBeginY + (dy1 - m_tintmapRect.y) + 0.f;
+						tintmapEndY = tintmapBeginY + (dy2 - dy1) + 0.f;
 					}
 				}
 				else
 				{
-					tintmapBeginX = 0.5f;
-					tintmapBeginY = 0.5f;
-					tintmapEndX = 0.5f;
-					tintmapEndY = 0.5f;
+					tintmapBeginX = 0.f;
+					tintmapBeginY = 0.f;
+					tintmapEndX = 0.f;
+					tintmapEndY = 0.f;
 				}
 
 
