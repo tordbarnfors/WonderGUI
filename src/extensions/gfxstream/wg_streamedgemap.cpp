@@ -22,6 +22,9 @@
 
 #include <wg_streamedgemap.h>
 #include <wg_gfxbase.h>
+#include <wg_gradyent.h>
+
+#include <cstring>
 
 namespace wg
 {
@@ -31,94 +34,66 @@ const TypeInfo StreamEdgemap::TYPEINFO = { "StreamEdgemap", &Edgemap::TYPEINFO }
 
 //____ create() ______________________________________________________________
 
-StreamEdgemap_p	StreamEdgemap::create( StreamEncoder * pEncoder, const Blueprint& blueprint )
+StreamEdgemap_p	StreamEdgemap::create(StreamEncoder* pEncoder, const Blueprint& blueprint)
 {
-	if( !pEncoder )
+	if (!pEncoder)
 		return nullptr;
-	
-	if( !_validateBlueprint(blueprint) )
+
+	if (!_validateBlueprint(blueprint))
 		return nullptr;
-	
-	auto p = StreamEdgemap_p( new StreamEdgemap(pEncoder, blueprint) );
+
+	auto p = StreamEdgemap_p(new StreamEdgemap(pEncoder, blueprint));
 	pEncoder->flush();
 	return p;
 }
 
-StreamEdgemap_p StreamEdgemap::create( StreamEncoder * pEncoder, const Edgemap::Blueprint& blueprint, SampleOrigo origo, 
-												const float * pSamples, int edges, int edgePitch, int samplePitch)
+StreamEdgemap_p StreamEdgemap::create(StreamEncoder* pEncoder, const Edgemap::Blueprint& blueprint, SampleOrigo origo,
+	const float* pSamples, int edges, int edgePitch, int samplePitch)
 {
-	if( !pEncoder )
+	if (!pEncoder)
 		return nullptr;
 
-	if( !_validateBlueprint(blueprint) )
+	if (!_validateBlueprint(blueprint))
 		return nullptr;
 
-	if(edges >= blueprint.segments )
+	if (edges >= blueprint.segments)
 		return nullptr;
 
-	auto p = StreamEdgemap_p( new StreamEdgemap(pEncoder, blueprint) );
+	auto p = StreamEdgemap_p(new StreamEdgemap(pEncoder, blueprint));
 
-	p->_importSamples(origo, pSamples, 0, edges, 0, p->m_size.w+1, edgePitch, samplePitch);
-	p->m_nbRenderSegments = edges+1;
+	p->_importSamples(origo, pSamples, 0, edges, 0, p->m_size.w + 1, edgePitch, samplePitch);
+	p->m_nbRenderSegments = edges + 1;
 	pEncoder->flush();
 	return p;
 }
 
-StreamEdgemap_p StreamEdgemap::create( StreamEncoder * pEncoder, const Edgemap::Blueprint& blueprint, SampleOrigo origo, 
-												const spx * pSamples, int edges, int edgePitch, int samplePitch)
+StreamEdgemap_p StreamEdgemap::create(StreamEncoder* pEncoder, const Edgemap::Blueprint& blueprint, SampleOrigo origo,
+	const spx* pSamples, int edges, int edgePitch, int samplePitch)
 {
-	if( !pEncoder )
+	if (!pEncoder)
 		return nullptr;
 
-	if( !_validateBlueprint(blueprint) )
+	if (!_validateBlueprint(blueprint))
 		return nullptr;
 
-	if(edges >= blueprint.segments )
+	if (edges >= blueprint.segments)
 		return nullptr;
-	
-	auto p = StreamEdgemap_p( new StreamEdgemap(pEncoder, blueprint) );
 
-	p->_importSamples(origo, pSamples, 0, edges, 0, p->m_size.w+1, edgePitch, samplePitch);
-	p->m_nbRenderSegments = edges+1;
+	auto p = StreamEdgemap_p(new StreamEdgemap(pEncoder, blueprint));
+
+	p->_importSamples(origo, pSamples, 0, edges, 0, p->m_size.w + 1, edgePitch, samplePitch);
+	p->m_nbRenderSegments = edges + 1;
 	pEncoder->flush();
 	return p;
 }
 
 //____ constructor ___________________________________________________________
 
-StreamEdgemap::StreamEdgemap( StreamEncoder * pEncoder, const Blueprint& bp) : Edgemap(bp)
+StreamEdgemap::StreamEdgemap(StreamEncoder* pEncoder, const Blueprint& bp) : Edgemap(bp)
 {
 	m_pEncoder = pEncoder;
 	m_inStreamId = pEncoder->allocObjectId();
 
-	// Setup buffers
-	
-	int sampleArraySize = (bp.size.w+1) * bp.segments * sizeof(spx);
-	int colorArraySize = bp.colors ? bp.segments*sizeof(HiColor) : 0;
-	int gradientArraySize = bp.gradients ? bp.segments*sizeof(Gradient) : 0;
-
-	int bytes = sampleArraySize + colorArraySize + gradientArraySize;
-	
-	m_pBuffer = new char[bytes];
-			
-	auto pBuffer = m_pBuffer;
-	
-	if( gradientArraySize > 0 )
-	{
-		m_pGradients = (Gradient*) pBuffer;
-		memcpy(m_pGradients, bp.gradients, gradientArraySize);
-		pBuffer += gradientArraySize;
-	}
-
-	if( colorArraySize > 0 )
-	{
-		m_pColors = (HiColor*) pBuffer;
-		memcpy(m_pColors, bp.colors, colorArraySize);
-		pBuffer += colorArraySize;
-	}
-	
-	m_pSamples = (spx*) pBuffer;
-	
 	_sendCreateEdgemap(m_pEncoder);
 }
 
@@ -126,10 +101,6 @@ StreamEdgemap::StreamEdgemap( StreamEncoder * pEncoder, const Blueprint& bp) : E
 
 StreamEdgemap::~StreamEdgemap()
 {
-	delete [] m_pBuffer;
-
-	* m_pEncoder << GfxStream::Header{ GfxChunkId::DeleteEdgemap, GfxStream::SpxFormat::Int32_dec, 2 };
-	* m_pEncoder << m_inStreamId;
 }
 
 //____ typeInfo() ____________________________________________________________
@@ -139,327 +110,190 @@ const TypeInfo& StreamEdgemap::typeInfo(void) const
 	return TYPEINFO;
 }
 
-//____ setRenderSegments() ____________________________________________________
+//____ setRenderSegments() _____________________________________________________
 
 bool StreamEdgemap::setRenderSegments(int nSegments)
 {
-	if (!Edgemap::setRenderSegments(nSegments))
-		return false;
+	Edgemap::setRenderSegments(nSegments);
 
-	*m_pEncoder << GfxStream::Header{ GfxChunkId::SetEdgemapRenderSegments, GfxStream::SpxFormat::Int32_dec, 4 };
-	*m_pEncoder << m_inStreamId;
-	*m_pEncoder << (int16_t) nSegments;
-	return true;
-}
+	//TODO: Stream change!!!
 
-//____ setColors() ____________________________________________________________
-
-bool StreamEdgemap::setColors( int begin, int end, const HiColor * pColors )
-{
-	if (!Edgemap::setColors(begin,end,pColors))
-		return false;
-
-		*m_pEncoder << GfxStream::Header{ GfxChunkId::SetEdgemapColors, GfxStream::SpxFormat::Int32_dec, 6 + (begin-end)*8 };
-		*m_pEncoder << m_inStreamId;
-		*m_pEncoder << (int16_t) begin;
-		*m_pEncoder << (int16_t) end;
-	
-	for( int i = begin ; i < end ; i++ )
-		*m_pEncoder << m_pColors[i];
 
 	return true;
 }
 
-//____ setGradients() _________________________________________________________
 
-bool StreamEdgemap::setGradients( int begin, int end, const Gradient * pGradients )
+//____ _samplesUpdated() _______________________________________________________
+
+void StreamEdgemap::_samplesUpdated(int edgeBegin, int edgeEnd, int sampleBegin, int sampleEnd)
 {
-	if (!Edgemap::setGradients(begin,end,pGradients))
-		return false;
-
-		*m_pEncoder << GfxStream::Header{ GfxChunkId::SetEdgemapGradients, GfxStream::SpxFormat::Int32_dec, 6 + (begin-end)*GfxStream::GradientSize };
-		*m_pEncoder << m_inStreamId;
-		*m_pEncoder << (int16_t) begin;
-		*m_pEncoder << (int16_t) end;
-
-	for( int i = begin ; i < end ; i++ )
-		*m_pEncoder << m_pGradients[i];
-
-	return true;
-}
-
-//____ importSamples() _________________________________________________________
-
-bool StreamEdgemap::importSamples( SampleOrigo origo, const spx * pSource, int edgeBegin, int edgeEnd,
-							  int sampleBegin, int sampleEnd, int edgePitch, int samplePitch )
-{
-	if( pSource == nullptr || edgeBegin < 0 || edgeBegin > edgeEnd || edgeEnd > (m_nbSegments-1) || sampleBegin < 0 || sampleBegin > sampleEnd || sampleEnd > (m_size.w+1) )
-		return false;
-
-	_importSamples( origo, pSource, edgeBegin, edgeEnd, sampleBegin, sampleEnd, edgePitch, samplePitch);
-	m_pEncoder->flush();
-	return true;
-}
-
-bool StreamEdgemap::importSamples( SampleOrigo origo, const float * pSource, int edgeBegin, int edgeEnd,
-							  int sampleBegin, int sampleEnd, int edgePitch, int samplePitch )
-{
-	if( pSource == nullptr || edgeBegin < 0 || edgeBegin > edgeEnd || edgeEnd > (m_nbSegments-1) || sampleBegin < 0 || sampleBegin > sampleEnd || sampleEnd > (m_size.w+1) )
-		return false;
-
-	_importSamples( origo, pSource, edgeBegin, edgeEnd, sampleBegin, sampleEnd, edgePitch, samplePitch);
-	m_pEncoder->flush();
-	return true;
-}
-
-
-//____ exportSamples() _________________________________________________________
-
-bool StreamEdgemap::exportSamples( SampleOrigo origo, spx * pDestination, int edgeBegin, int edgeEnd,
-							  int sampleBegin, int sampleEnd, int edgePitch, int samplePitch )
-{
-	//TODO: Implement!!!
-	
-	return false;
-}
-
-bool  StreamEdgemap::exportSamples( SampleOrigo origo, float * pDestination, int edgeBegin, int edgeEnd,
-							  int sampleBegin, int sampleEnd, int edgePitch, int samplePitch )
-{
-	//TODO: Implement!!!
-	
-	return false;
-}
-
-//____ _importSamples() ________________________________________________________
-
-void StreamEdgemap::_importSamples( SampleOrigo origo, const spx * pSource, int edgeBegin, int edgeEnd,
-							  int sampleBegin, int sampleEnd, int edgePitch, int samplePitch )
-{
-	if( samplePitch == 0 )
-		samplePitch = 1;
-	
-	
-	if( edgePitch == 0 )
-		edgePitch = samplePitch * (sampleEnd - sampleBegin);
-	
-	spx mul = (origo == SampleOrigo::Top || origo == SampleOrigo::MiddleDown) ? 1 : -1;
-	spx offset = 0;
-	
-	if( origo == SampleOrigo::Bottom )
-		offset = m_size.h*64;
-	else if( origo == SampleOrigo::MiddleDown || origo == SampleOrigo::MiddleUp )
-		offset = m_size.h*32;
-
-	for( int edge = edgeBegin ; edge < edgeEnd ; edge++ )
 	{
-		const spx * pSrc = pSource + edgePitch * (edge-edgeBegin);
-		spx * pDst = m_pSamples + edge*(m_size.w+1) + sampleBegin;
+		// Send header
 
-		for( int sample = sampleBegin ; sample < sampleEnd ; sample++ )
+		int beginBlockSize = 2 + 1 + 1 + 2 + 2;
+
+		auto& encoder = * m_pEncoder;
+
+		encoder << GfxStream::Header{ GfxChunkId::BeginEdgemapUpdate, GfxStream::SpxFormat::Int32_dec, beginBlockSize };
+		encoder << m_inStreamId;
+		encoder << (uint8_t)edgeBegin;
+		encoder << (uint8_t)edgeEnd;
+		encoder << (uint16_t)sampleBegin;
+		encoder << (uint16_t)sampleEnd;
+
+
+		// Check sample max/min and max/min diff against old samples
+		// and find best spxFormat for transfer.
+
+		const int add = (1 << 21);
+		int spxMask = 0;
+
+		for (int edge = edgeBegin; edge < edgeEnd; edge++)
 		{
-			* pDst++ = (* pSrc * mul) + offset;
-			pSrc += samplePitch;
+			spx* pNewSample = m_pSamples + edge * (m_nbSegments - 1) + sampleBegin;
+
+			for (int sample = sampleBegin; sample < sampleEnd; sample++)
+			{
+				int value = *pNewSample++;
+				spxMask |= value + add;
+			}
 		}
-	}
 
-	_sendSamples(m_pEncoder, edgeBegin, edgeEnd, sampleBegin, sampleEnd );
-}
+		GfxStream::SpxFormat spxFormat = _findBestPackFormat(spxMask);
 
-void StreamEdgemap::_importSamples( SampleOrigo origo, const float * pSource, int edgeBegin, int edgeEnd,
-							  int sampleBegin, int sampleEnd, int edgePitch, int samplePitch )
-{
-	if( samplePitch == 0 )
-		samplePitch = 1;
-	
-	
-	if( edgePitch == 0 )
-		edgePitch = samplePitch * (sampleEnd - sampleBegin);
 
-	spx mul = (origo == SampleOrigo::Top || origo == SampleOrigo::MiddleDown) ? 1 : -1;
-	spx offset = 0;
 
-	if( origo == SampleOrigo::Bottom )
-		offset = m_size.h*64;
-	else if( origo == SampleOrigo::MiddleDown || origo == SampleOrigo::MiddleUp )
-		offset = m_size.h*32;
+		// Compress bytes for transfer
 
-	if( origo == SampleOrigo::MiddleDown || origo == SampleOrigo::MiddleUp )
-		mul *= m_size.h*32;
-	else
-		mul *= m_size.h*64;
-	
-	for( int edge = edgeBegin ; edge < edgeEnd ; edge++ )
-	{
-		const float * pSrc = pSource + edgePitch * (edge-edgeBegin);
-		spx * pDst = m_pSamples + edge*(m_size.w+1) + sampleBegin;
+		int bufferBytes = GfxStream::spxSize(spxFormat) * (edgeEnd - edgeBegin) * (sampleEnd - sampleBegin);
 
-		for( int sample = sampleBegin ; sample < sampleEnd ; sample++ )
+		int8_t* pBuffer = (int8_t*)GfxBase::memStackAlloc(bufferBytes);
+
+
+		switch (spxFormat)
 		{
-			* pDst++ = (* pSrc * mul) + offset;
-			pSrc += samplePitch;
-		}
-	}
-
-	_sendSamples(m_pEncoder, edgeBegin, edgeEnd, sampleBegin, sampleEnd );
-}
-
-//____ _sendCreateEdgemap() ___________________________________________________
-
-void StreamEdgemap::_sendCreateEdgemap( StreamEncoder* pEncoder )
-{
-	int nbColors = ( m_pColors != nullptr ) ? m_nbSegments : 0;
-	int nbGradients = ( m_pGradients != nullptr ) ? m_nbSegments : 0;
-
-
-	int blockSize = 14 + nbColors * 8 + nbGradients * GfxStream::GradientSize;
-	
-	*pEncoder << GfxStream::Header{ GfxChunkId::CreateEdgemap, GfxStream::SpxFormat::Int32_dec, blockSize };
-	*pEncoder << m_inStreamId;
-	*pEncoder << m_size;
-	*pEncoder << (uint16_t) m_nbSegments;
-	*pEncoder << (bool) nbColors;
-	*pEncoder << (bool) nbGradients;
-
-	for( int i = 0 ; i < nbColors ; i++ )
-		* pEncoder << m_pColors[i];
-	
-	for( int i = 0 ; i < nbGradients ; i++ )
-		* pEncoder << m_pGradients[i];
-}
-
-//____ _sendSamples() ___________________________________________________
-
-void StreamEdgemap::_sendSamples( StreamEncoder* pEncoder, int edgeBegin, int edgeEnd,
-											int sampleBegin, int sampleEnd )
-{
-	// Send header
-	
-	int beginBlockSize = 2 + 1 + 1 + 2 + 2;
-	
-	*pEncoder << GfxStream::Header{ GfxChunkId::BeginEdgemapUpdate, GfxStream::SpxFormat::Int32_dec, beginBlockSize };
-	*pEncoder << m_inStreamId;
-	*pEncoder << (uint8_t) edgeBegin;
-	*pEncoder << (uint8_t) edgeEnd;
-	*pEncoder << (uint16_t) sampleBegin;
-	*pEncoder << (uint16_t) sampleEnd;
-	
-	
-	// Check sample max/min and max/min diff against old samples
-	// and find best spxFormat for transfer.
-	
-	const int add = (1 << 21);
-	int spxMask = 0;
-
-	for( int edge = edgeBegin ; edge < edgeEnd ; edge++ )
-	{
-		spx * pNewSample = m_pSamples + edge*(m_nbSegments-1) + sampleBegin;
-
-		for( int sample = sampleBegin ; sample < sampleEnd ; sample++ )
-		{
-			int value = * pNewSample++;
-			spxMask |= value + add;
-		}
-	}
-
-	GfxStream::SpxFormat spxFormat = _findBestPackFormat(spxMask);
-	
-	
-	
-	// Compress bytes for transfer
-
-	int bufferBytes = GfxStream::spxSize(spxFormat)*(edgeEnd-edgeBegin)*(sampleEnd-sampleBegin);
-	
-	int8_t * pBuffer = (int8_t*) GfxBase::memStackAlloc(bufferBytes);
-	
-	
-	switch( spxFormat )
-	{
 		case GfxStream::SpxFormat::Int32_dec:
 		{
 			// No compression needed, just replace old
-			
-			spx * pPacked = (spx *) pBuffer;
-			for( int edge = edgeBegin ; edge < edgeEnd ; edge++ )
-			{
-				spx * pNew = m_pSamples + edge*(m_size.w+1) + sampleBegin;
 
-				for( int sample = sampleBegin ; sample < sampleEnd ; sample++ )
-					* pPacked++ = * pNew++;
+			spx* pPacked = (spx*)pBuffer;
+			for (int edge = edgeBegin; edge < edgeEnd; edge++)
+			{
+				spx* pNew = m_pSamples + edge * (m_size.w + 1) + sampleBegin;
+
+				for (int sample = sampleBegin; sample < sampleEnd; sample++)
+					*pPacked++ = *pNew++;
 			}
 			break;
 		}
-			
+
 		case GfxStream::SpxFormat::Uint16_dec:
 		{
-			uint16_t * pPacked = reinterpret_cast<uint16_t*>(pBuffer);
+			uint16_t* pPacked = reinterpret_cast<uint16_t*>(pBuffer);
 
-			for( int edge = edgeBegin ; edge < edgeEnd ; edge++ )
+			for (int edge = edgeBegin; edge < edgeEnd; edge++)
 			{
-				spx * pNew = m_pSamples + edge*(m_size.w+1) + sampleBegin;
+				spx* pNew = m_pSamples + edge * (m_size.w + 1) + sampleBegin;
 
-				for( int sample = sampleBegin ; sample < sampleEnd ; sample++ )
-					* pPacked++ = (uint16_t) * pNew++;
+				for (int sample = sampleBegin; sample < sampleEnd; sample++)
+					*pPacked++ = (uint16_t)*pNew++;
 			}
 			break;
 		}
 
 		case GfxStream::SpxFormat::Int16_int:
 		{
-			int16_t * pPacked = reinterpret_cast<int16_t*>(pBuffer);
-			for( int edge = edgeBegin ; edge < edgeEnd ; edge++ )
+			int16_t* pPacked = reinterpret_cast<int16_t*>(pBuffer);
+			for (int edge = edgeBegin; edge < edgeEnd; edge++)
 			{
-				spx * pNew = m_pSamples + edge*(m_size.w+1) + sampleBegin;
+				spx* pNew = m_pSamples + edge * (m_size.w + 1) + sampleBegin;
 
-				for( int sample = sampleBegin ; sample < sampleEnd ; sample++ )
-					* pPacked++ = (int16_t) ((* pNew++) >> 6);
+				for (int sample = sampleBegin; sample < sampleEnd; sample++)
+					*pPacked++ = (int16_t)((*pNew++) >> 6);
 			}
 			break;
 		}
 
 		case GfxStream::SpxFormat::Uint8_int:
 		{
-			uint8_t * pPacked = reinterpret_cast<uint8_t*>(pBuffer);
-			for( int edge = edgeBegin ; edge < edgeEnd ; edge++ )
+			uint8_t* pPacked = reinterpret_cast<uint8_t*>(pBuffer);
+			for (int edge = edgeBegin; edge < edgeEnd; edge++)
 			{
-				spx * pNew = m_pSamples + edge*(m_size.w+1) + sampleBegin;
+				spx* pNew = m_pSamples + edge * (m_size.w + 1) + sampleBegin;
 
-				for( int sample = sampleBegin ; sample < sampleEnd ; sample++ )
-					* pPacked++ = (uint8_t) ((* pNew++) >> 6);
+				for (int sample = sampleBegin; sample < sampleEnd; sample++)
+					*pPacked++ = (uint8_t)((*pNew++) >> 6);
 			}
 			break;
 		}
+		}
+
+		// Stream data
+
+		const int8_t* pSrc = pBuffer;
+
+		int dataSize = bufferBytes;
+
+		int maxDataSize = ((int)(GfxStream::c_maxBlockSize - sizeof(GfxStream::Header))) & 0xFFFC;		// We can not have fractional spx in buffer.
+
+		while (dataSize > 0)
+		{
+			uint16_t chunkSize = std::min(dataSize, maxDataSize);
+			dataSize -= chunkSize;
+
+			encoder << GfxStream::Header{ GfxChunkId::EdgemapSamples, spxFormat, uint16_t((chunkSize + 1) & 0xFFFE) };
+
+			encoder << GfxStream::WriteBytes{ chunkSize, (void*)pSrc };
+			pSrc += chunkSize;
+		}
+
+		encoder.align();
+
+		// Stream footer
+
+		encoder << GfxStream::Header{ GfxChunkId::EndEdgemapUpdate, GfxStream::SpxFormat::Int32_dec, 0 };
+
+		// Release temp buffer
+
+		GfxBase::memStackFree(bufferBytes);
 	}
-	
-	// Stream data
-	
-	const int8_t * pSrc = pBuffer;
-		
-	int dataSize = bufferBytes;
-
-	int maxDataSize = ((int)(GfxStream::c_maxBlockSize - sizeof(GfxStream::Header))) & 0xFFFC;		// We can not have fractional spx in buffer.
-	
-	while( dataSize > 0 )
-	{
-		uint16_t chunkSize = std::min(dataSize, maxDataSize);
-		dataSize -= chunkSize;
-
-		*pEncoder << GfxStream::Header{ GfxChunkId::EdgemapSamples, spxFormat, uint16_t((chunkSize+1)&0xFFFE) };
-
-		*pEncoder << GfxStream::WriteBytes{ chunkSize, (void *) pSrc };
-		pSrc += chunkSize;
-	}
-		
-	pEncoder->align();
-	
-	// Stream footer
-	
-	*pEncoder << GfxStream::Header{ GfxChunkId::EndEdgemapUpdate, GfxStream::SpxFormat::Int32_dec, 0 };
-
-	// Release temp buffer
-
-	GfxBase::memStackFree(bufferBytes);
 }
+
+//____ _colorsUpdated() ________________________________________________________
+
+void StreamEdgemap::_colorsUpdated(int beginSegment, int endSegment)
+{
+	//TODO: Implement!!!
+}
+
+//____ _sendCreateEdgemap() ___________________________________________________
+
+void StreamEdgemap::_sendCreateEdgemap( StreamEncoder* pEncoder )
+{
+	//TODO: Ändra och skicka colorstrips genom _colorsUpdated() istf colors/gradients. 
+
+	int nbColors = ( m_pColors != nullptr ) ? m_nbSegments : 0;
+	int nbGradients = ( m_pGradients != nullptr ) ? m_nbSegments : 0;
+
+	int blockSize = 14 + nbColors * 8 + nbGradients * GfxStream::GradientSize;
+	
+	auto& encoder = * m_pEncoder;
+
+	encoder << GfxStream::Header{ GfxChunkId::CreateEdgemap, GfxStream::SpxFormat::Int32_dec, blockSize };
+	encoder << m_inStreamId;
+	encoder << m_size;
+	encoder << (uint16_t) m_nbSegments;
+	encoder << (bool) nbColors;
+	encoder << (bool) nbGradients;
+
+	for( int i = 0 ; i < nbColors ; i++ )
+		encoder << m_pColors[i];
+	
+	for( int i = 0 ; i < nbGradients ; i++ )
+		encoder << m_pGradients[i];
+}
+
+//____ _findBestPackFormat() _________________________________________________
 
 GfxStream::SpxFormat StreamEdgemap::_findBestPackFormat( int spxMask )
 {
@@ -469,7 +303,7 @@ GfxStream::SpxFormat StreamEdgemap::_findBestPackFormat( int spxMask )
 	if( (spxMask & 0xFFDF0000) == 0 )
 		return GfxStream::SpxFormat::Uint16_dec;					// Fits in uint16_t with binals.
 
-	if( (spxMask & 0xFFC0003F) == 0 )
+	if( (spxMask & 0xFFE0003F) == 0 )
 		return GfxStream::SpxFormat::Int16_int;						// Fits in int16_t without binals.
 
 	return GfxStream::SpxFormat::Int32_dec;							// We need 32 bits.

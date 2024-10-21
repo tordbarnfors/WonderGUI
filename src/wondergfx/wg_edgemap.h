@@ -48,12 +48,15 @@ namespace wg
 		
 		struct Blueprint
 		{
-			const HiColor*		colors 		= nullptr;			// Edgemap has either colors, gradients, or tintmaps never more than one of them. Setting one is mandatory.
+			const HiColor*		colors 		= nullptr;			// Edgemap has either colors, gradients, tintmaps or colorstrips, never more than one of them. Setting one is mandatory.
 			Finalizer_p			finalizer	= nullptr;
-			const Gradient *	gradients 	= nullptr;			// Edgemap has either colors, gradients, or tintmaps never more than one of them. Setting one is mandatory.
+			const Gradient *	gradients 	= nullptr;			// Edgemap has either colors, gradients, tintmaps or colorstrips, never more than one of them. Setting one is mandatory.
 			const Tintmap_p * 	tintmaps	= nullptr;			// Needs to have one tintmap per segement if any. So size() must be 0 or equal to segments.
 			int					segments	= 0;				// Mandatory.
 			SizeI				size;							// Mandatory.
+
+			const HiColor*		colorstripsX = nullptr;			// One color for each pixel along width for each segment.
+			const HiColor*		colorstripsY = nullptr;			// One color for each pixel along height for each segment.
 		};
 	   	 
 		
@@ -71,17 +74,13 @@ namespace wg
 		virtual bool	setRenderSegments(int nSegments);
 		inline int		renderSegments() const { return m_nbRenderSegments; }
 
-		virtual bool	setColors( int begin, int end, const HiColor * pColors ) = 0;
-//		virtual const HiColor * colors() const;
-//		virtual HiColor	color(int segment) const;
+		bool	setColors( int begin, int end, const HiColor * pColors );
 
-		virtual bool	setGradients( int begin, int end, const Gradient * pGradients ) = 0;
-//		virtual const Gradient * gradients() const;
-//		virtual Gradient gradient(int segment) const;
+		bool	setGradients( int begin, int end, const Gradient * pGradients );
 
-		virtual bool	setTintmaps( int begin, int end, const Tintmap_p * pTintmaps ) = 0;
-//		virtual Tintmap * const * tintmaps() const;
-//		virtual Tintmap_p tintmap(int segment) const;
+		bool	setTintmaps( int begin, int end, const Tintmap_p * pTintmaps );
+
+		bool	setColorstrips(int begin, int end, const HiColor * pStripsX, const HiColor * pStripsY);
 
 		
 		//.____ Content _______________________________________________________
@@ -93,30 +92,36 @@ namespace wg
 		bool			hasHorizontalTint() const { return m_horrTintmaps.any(); }
 		bool			hasVerticalTint() const { return m_vertTintmaps.any(); }
 
-		virtual bool 	importSamples( SampleOrigo origo, const spx * pSource, int edgeBegin, int edgeEnd,
-									  int sampleBegin, int sampleEnd, int edgePitch = 0, int samplePitch = 0 ) = 0;
+		bool 			importSamples( SampleOrigo origo, const spx * pSource, int edgeBegin, int edgeEnd,
+									  int sampleBegin, int sampleEnd, int edgePitch = 0, int samplePitch = 0 );
 
-		virtual bool 	importSamples( SampleOrigo origo, const float * pSource, int edgeBegin, int edgeEnd,
-									  int sampleBegin, int sampleEnd, int edgePitch = 0, int samplePitch = 0 ) = 0;
+		bool 			importSamples( SampleOrigo origo, const float * pSource, int edgeBegin, int edgeEnd,
+									  int sampleBegin, int sampleEnd, int edgePitch = 0, int samplePitch = 0 );
 
-		virtual bool 	exportSamples( SampleOrigo origo, spx * pDestination, int edgeBegin, int edgeEnd,
-									  int sampleBegin, int sampleEnd, int edgePitch = 0, int samplePitch = 0 ) = 0;
+		bool 			exportSamples( SampleOrigo origo, spx * pDestination, int edgeBegin, int edgeEnd,
+									  int sampleBegin, int sampleEnd, int edgePitch = 0, int samplePitch = 0 );
 
-		virtual bool 	exportSamples( SampleOrigo origo, float * pDestination, int edgeBegin, int edgeEnd,
-									  int sampleBegin, int sampleEnd, int edgePitch = 0, int samplePitch = 0 ) = 0;
+		bool 			exportSamples( SampleOrigo origo, float * pDestination, int edgeBegin, int edgeEnd,
+									  int sampleBegin, int sampleEnd, int edgePitch = 0, int samplePitch = 0 );
 
 
 	protected:
 
-		Edgemap( const Blueprint& bp ) : m_size(bp.size), m_nbSegments(bp.segments), m_nbRenderSegments(bp.segments) 
-		{
-			if (bp.finalizer)
-				setFinalizer(bp.finalizer);
-		}
-		virtual ~Edgemap() {}
+		Edgemap(const Blueprint& bp);
+		virtual ~Edgemap();
 		
 		static bool	_validateBlueprint(const Blueprint& bp);
-		
+	
+		void 	_importSamples(SampleOrigo origo, const spx* pSource, int edgeBegin, int edgeEnd,
+								int sampleBegin, int sampleEnd, int edgePitch, int samplePitch);
+
+		void 	_importSamples(SampleOrigo origo, const float* pSource, int edgeBegin, int edgeEnd,
+								int sampleBegin, int sampleEnd, int edgePitch, int samplePitch);
+
+
+		virtual void	_samplesUpdated(int edgeBegin, int edgeEnd, int sampleBegin, int sampleEnd) = 0;
+		virtual void	_colorsUpdated(int beginSegment, int endSegment) = 0;
+
 		SizeI       m_size;
 		int			m_nbSegments;
 		int			m_nbRenderSegments;
@@ -125,10 +130,13 @@ namespace wg
 		
 		std::bitset<maxSegments>	m_horrTintmaps;		// One bit for each segment. Set if color varies horizontally for that segment.
 		std::bitset<maxSegments>	m_vertTintmaps;		// One bit for each segment. Set if color varies vertically for that segment.
-		
-//		HiColor*	m_pColors = nullptr;		// Initialized by subclass.
-//		Gradient*	m_pGradients = nullptr;		// Initialized by subclass.
-//		Tintmap**	m_pTintmaps = nullptr;		// Initialized by subclass.
+	
+
+		char* m_pBuffer;
+		spx* m_pSamples;					// Stored vertically, e.g. samples for first column for all edges before samples for second column etc
+
+		HiColor* m_pColors;				// Stored as horizontal + vertical tintmap colors for segment 1, then segment 2 etc.
+		Gradient* m_pGradients;
    };
 
 

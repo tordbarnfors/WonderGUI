@@ -1462,43 +1462,47 @@ namespace wg
 
 	void GlGfxDevice::drawEdgemap(CoordSPX dest, Edgemap* pEdgemap)
 	{
+/*
 		if (pEdgemap->typeInfo() != GlEdgemap::TYPEINFO)
 		{
 			//TODO: Throw an error.
 			return;
 		}
 
-		auto pEdgemap = static_cast<GlEdgemap*>(pEdgemap);
+		auto pWave = static_cast<GlEdgemap*>(pEdgemap);
 
 
-		_transformDrawSegments({ dest, pEdgemap->m_size * 64 }, pEdgemap->m_nbRenderSegments, pEdgemap->m_pRenderColors,
-			pEdgemap->m_size.w + 1, pEdgemap->m_pSamples, pEdgemap->m_nbSegments - 1, pEdgemap->m_tintMode,
+		_transformDrawSegments({ dest, pWave->m_size * 64 }, pWave->m_nbRenderSegments, pWave->m_pRenderColors,
+			pWave->m_size.w + 1, pWave->m_pSamples, pWave->m_nbSegments - 1, pWave->m_tintMode,
 			s_blitFlipTransforms[(int)GfxFlip::None]);
+*/
 	}
 
 	//____ flipDrawEdgemap() __________________________________________________________
 
 	void GlGfxDevice::flipDrawEdgemap(CoordSPX destPos, Edgemap* pEdgemap, GfxFlip flip)
 	{
+/*
 		if (pEdgemap->typeInfo() != GlEdgemap::TYPEINFO)
 		{
 			//TODO: Throw an error.
 			return;
 		}
 
-		auto pEdgemap = static_cast<GlEdgemap*>(pEdgemap);
+		auto pWave = static_cast<GlEdgemap*>(pEdgemap);
 
 		const int(&transform)[2][2] = s_blitFlipTransforms[(int)flip];
 
 		RectSPX dest;
 		dest.x = destPos.x;
 		dest.y = destPos.y;
-		dest.w = pEdgemap->m_size.w * 64 * abs(transform[0][0]) + pEdgemap->m_size.h * 64 * abs(transform[1][0]);
-		dest.h = pEdgemap->m_size.w * 64 * abs(transform[0][1]) + pEdgemap->m_size.h * 64 * abs(transform[1][1]);
+		dest.w = pWave->m_size.w * 64 * abs(transform[0][0]) + pWave->m_size.h * 64 * abs(transform[1][0]);
+		dest.h = pWave->m_size.w * 64 * abs(transform[0][1]) + pWave->m_size.h * 64 * abs(transform[1][1]);
 
-		_transformDrawSegments(dest, pEdgemap->m_nbRenderSegments, pEdgemap->m_pRenderColors,
-			pEdgemap->m_size.w + 1, pEdgemap->m_pSamples, pEdgemap->m_nbSegments - 1, pEdgemap->m_tintMode,
+		_transformDrawSegments(dest, pWave->m_nbRenderSegments, pWave->m_pRenderColors,
+			pWave->m_size.w + 1, pWave->m_pSamples, pWave->m_nbSegments - 1, pWave->m_tintMode,
 			transform);
+*/
 	}
 
 	//____ _transformBlitSimple() ______________________________________________________
@@ -1745,7 +1749,7 @@ namespace wg
 
 	//____ _transformDrawSegments() ______________________________________________________
 
-	void GlGfxDevice::_transformDrawSegments( const RectSPX& _destIn, int nSegments, const HiColor * pSegmentColors, int nEdgeStrips, const int * pEdgeStrips, int edgeStripPitch, TintMode tintMode, const int simpleTransform[2][2] )
+	void GlGfxDevice::_transformDrawSegments( const RectSPX& _destIn, int nSegments, const HiColor * pSegmentColors, int segmentColorPitch, int nEdgeStrips, const int * pEdgeStrips, int edgeStripPitch, TintMode tintMode, const int simpleTransform[2][2] )
 	{
 		if (!_destIn.isOverlapping(m_clipBounds))
 			return;
@@ -1962,7 +1966,7 @@ namespace wg
 					pMapRow[mapPitch + i * 8 + 5] = g;
 					pMapRow[mapPitch + i * 8 + 6] = r;
 					pMapRow[mapPitch + i * 8 + 7] = a;
-					pSegCol++;
+					pSegCol += segmentColorPitch;
 				}
 				break;
 			}
@@ -1975,13 +1979,13 @@ namespace wg
 					uint16_t g1 = uint16_t(int(pSegCol->g) * 65535 / 4096);
 					uint16_t b1 = uint16_t(int(pSegCol->b) * 65535 / 4096);
 					uint16_t a1 = uint16_t(int(pSegCol->a) * 65535 / 4096);
-					pSegCol++;
+					pSegCol += segmentColorPitch;
 
 					uint16_t r2 = uint16_t(int(pSegCol->r) * 65535 / 4096);
 					uint16_t g2 = uint16_t(int(pSegCol->g) * 65535 / 4096);
 					uint16_t b2 = uint16_t(int(pSegCol->b) * 65535 / 4096);
 					uint16_t a2 = uint16_t(int(pSegCol->a) * 65535 / 4096);
-					pSegCol++;
+					pSegCol += segmentColorPitch;
 
 					pMapRow[i * 8 + 0] = b1;
 					pMapRow[i * 8 + 1] = g1;
@@ -2012,13 +2016,13 @@ namespace wg
 					uint16_t g1 = uint16_t(int(pSegCol->g) * 65535 / 4096);
 					uint16_t b1 = uint16_t(int(pSegCol->b) * 65535 / 4096);
 					uint16_t a1 = uint16_t(int(pSegCol->a) * 65535 / 4096);
-					pSegCol++;
+					pSegCol += segmentColorPitch;
 
 					uint16_t r2 = uint16_t(int(pSegCol->r) * 65535 / 4096);
 					uint16_t g2 = uint16_t(int(pSegCol->g) * 65535 / 4096);
 					uint16_t b2 = uint16_t(int(pSegCol->b) * 65535 / 4096);
 					uint16_t a2 = uint16_t(int(pSegCol->a) * 65535 / 4096);
-					pSegCol++;
+					pSegCol += segmentColorPitch;
 
 					pMapRow[i * 8 + 0] = b1;
 					pMapRow[i * 8 + 1] = g1;
@@ -2049,25 +2053,25 @@ namespace wg
 					pMapRow[i * 8 + 1] = uint16_t(int(pSegCol->g) * 65535 / 4096);
 					pMapRow[i * 8 + 2] = uint16_t(int(pSegCol->r) * 65535 / 4096);
 					pMapRow[i * 8 + 3] = uint16_t(int(pSegCol->a) * 65535 / 4096);
-					pSegCol++;
+					pSegCol += segmentColorPitch;
 
 					pMapRow[i * 8 + 4] = uint16_t(int(pSegCol->b) * 65535 / 4096);
 					pMapRow[i * 8 + 5] = uint16_t(int(pSegCol->g) * 65535 / 4096);
 					pMapRow[i * 8 + 6] = uint16_t(int(pSegCol->r) * 65535 / 4096);
 					pMapRow[i * 8 + 7] = uint16_t(int(pSegCol->a) * 65535 / 4096);
-					pSegCol++;
+					pSegCol += segmentColorPitch;
 
 					pMapRow[mapPitch + i * 8 + 4] = uint16_t(int(pSegCol->b) * 65535 / 4096);
 					pMapRow[mapPitch + i * 8 + 5] = uint16_t(int(pSegCol->g) * 65535 / 4096);
 					pMapRow[mapPitch + i * 8 + 6] = uint16_t(int(pSegCol->r) * 65535 / 4096);
 					pMapRow[mapPitch + i * 8 + 7] = uint16_t(int(pSegCol->a) * 65535 / 4096);
-					pSegCol++;
+					pSegCol += segmentColorPitch;
 
 					pMapRow[mapPitch + i * 8 + 0] = uint16_t(int(pSegCol->b) * 65535 / 4096);
 					pMapRow[mapPitch + i * 8 + 1] = uint16_t(int(pSegCol->g) * 65535 / 4096);
 					pMapRow[mapPitch + i * 8 + 2] = uint16_t(int(pSegCol->r) * 65535 / 4096);
 					pMapRow[mapPitch + i * 8 + 3] = uint16_t(int(pSegCol->a) * 65535 / 4096);
-					pSegCol++;
+					pSegCol += segmentColorPitch;
 				}
 				break;
 			}

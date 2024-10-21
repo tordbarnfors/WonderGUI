@@ -1028,17 +1028,18 @@ const char GlBackend::segmentsVertexShader[] =
 "	float  canvasYMul;"
 "};"
 
-"uniform samplerBuffer extrasBufferId;						"
-"layout(location = 0) in ivec2 pos;                        "
-"layout(location = 1) in vec2 uv;					   "
-"layout(location = 3) in int extrasOfs;                     "
-"layout(location = 4) in vec2 tintmapOfs;                   "
+"uniform samplerBuffer extrasBufferId;					"
+"layout(location = 0) in ivec2 pos;                     "
+"layout(location = 1) in vec2 uv;					    "
+"layout(location = 3) in int extrasOfs;                 "
+"layout(location = 4) in vec2 tintmapOfs;               "
+"layout(location = 5) in vec2 colorstripOfs;            "
 "out vec2 texUV;										"
 "flat out int segments;									"
-"flat out int stripesOfs;								"
-"flat out int tintmapPitchX;							"
-"flat out int tintmapPitchY;							"
+"flat out int colorstripPitchX;							"
+"flat out int colorstripPitchY;							"
 "out vec2 tintmapUU;"
+"out vec2 colorstripUU;"
 
 "void main()											"
 "{                                                      "
@@ -1049,25 +1050,25 @@ const char GlBackend::segmentsVertexShader[] =
 
 "   vec4 extras = texelFetch(extrasBufferId, extrasOfs);		"
 "   segments = int(extras.x);							"
-"   stripesOfs = int(extras.y);							"
-"   tintmapPitchX = int(extras.z);						"
-"   tintmapPitchY = int(extras.w);						"
+"   colorstripPitchX = int(extras.z);						"
+"   colorstripPitchY = int(extras.w);						"
 "   texUV = uv;											"
 "   tintmapUU = tintmapOfs;"
+"   colorstripUU = colorstripOfs;"
 "}                                                      ";
 
 
 const char GlBackend::segmentsFragmentShader[] =
 
 "#version 330 core\n"
-"uniform samplerBuffer tintmapBufferId;	"
-"uniform samplerBuffer stripesId;				"
+"uniform samplerBuffer tintmapBufferId;			"
+"uniform samplerBuffer edgemapId;				"
 "in vec2 texUV;									"
 "flat in int segments;							"
-"flat in int stripesOfs;						"
-"flat in int tintmapPitchX;						"
-"flat in int tintmapPitchY;						"
+"flat in int colorstripPitchX;					"
+"flat in int colorstripPitchY;					"
 "in vec2 tintmapUU;"
+"in vec2 colorstripUU;"
 
 "out vec4 color;								"
 "void main()									"
@@ -1077,19 +1078,19 @@ const char GlBackend::segmentsFragmentShader[] =
 
 "	float factor = 1.f;"
 
-"   int tintmapX = int(tintmapUU.x);"
-"   int tintmapY = int(tintmapUU.y);"
+"   int colorstripX = int(colorstripUU.x);"
+"   int colorstripY = int(colorstripUU.y);"
 
 "	for( int i = 0 ; i < $EDGES ; i++ )"
 "	{"
 
-"		vec4 col = texelFetch(tintmapBufferId, tintmapX )"
-"			        * texelFetch(tintmapBufferId, tintmapY );"
+"		vec4 col = texelFetch(edgemapId, colorstripX )"
+"			        * texelFetch(edgemapId, colorstripY );"
 
-"		tintmapX += tintmapPitchX; "
-"		tintmapY += tintmapPitchY; "
+"		colorstripX += colorstripPitchX; "
+"		colorstripY += colorstripPitchY; "
 
-"		vec4 edge = texelFetch(stripesId, stripesOfs + int(texUV.x)*(segments-1)+i );"
+"		vec4 edge = texelFetch(edgemapId, int(texUV.x)*(segments-1)+i );"
 
 "		float x = (texUV.y - edge.r) * edge.g;"
 "		float adder = edge.g / 2.f;"
@@ -1106,8 +1107,8 @@ const char GlBackend::segmentsFragmentShader[] =
 "		factor = factor2;"
 "	}"
 
-"		vec4 col = texelFetch(tintmapBufferId, tintmapX )"
-"			        * texelFetch(tintmapBufferId, tintmapY );"
+"		vec4 col = texelFetch(edgemapId, colorstripX )"
+"			        * texelFetch(edgemapId, colorstripY );"
 
 "	float useFactor = factor*col.a;"
 "	totalAlpha += useFactor;"
@@ -1115,6 +1116,7 @@ const char GlBackend::segmentsFragmentShader[] =
 
 "   color.a = totalAlpha; "
 "   color.rgb = (rgbAcc/totalAlpha);"
+
 "}";
 
 
@@ -1122,13 +1124,13 @@ const char GlBackend::segmentsFragmentShader_A8[] =
 
 "#version 330 core\n"
 "uniform samplerBuffer tintmapBufferId;	"
-"uniform samplerBuffer stripesId;				"
+"uniform samplerBuffer edgemapId;				"
 "in vec2 texUV;									"
 "flat in int segments;							"
-"flat in int stripesOfs;						"
-"flat in int tintmapPitchX;						"
-"flat in int tintmapPitchY;						"
+"flat in int colorstripPitchX;					"
+"flat in int colorstripPitchY;					"
 "in vec2 tintmapUU;"
+"in vec2 colorstripUU;"
 
 "out vec4 color;								"
 "void main()									"
@@ -1137,19 +1139,19 @@ const char GlBackend::segmentsFragmentShader_A8[] =
 
 "	float factor = 1.f;"
 
-"   int tintmapX = int(tintmapUU.x);"
-"   int tintmapY = int(tintmapUU.y);"
+"   int colorstripX = int(colorstripUU.x);"
+"   int colorstripY = int(colorstripUU.y);"
 
 "	for( int i = 0 ; i < $EDGES ; i++ )"
 "	{"
 
-"		vec4 col = texelFetch(tintmapBufferId, tintmapX )"
-"			        * texelFetch(tintmapBufferId, tintmapY );"
+"		vec4 col = texelFetch(edgemapId, colorstripX )"
+"			        * texelFetch(edgemapId, colorstripY );"
 
-"		tintmapX += tintmapPitchX; "
-"		tintmapY += tintmapPitchY; "
+"		colorstripX += colorstripPitchX; "
+"		colorstripY += colorstripPitchY; "
 
-"		vec4 edge = texelFetch(stripesId, stripesOfs + int(texUV.x)*(segments-1)+i );"
+"		vec4 edge = texelFetch(edgemapId, int(texUV.x)*(segments-1)+i );"
 
 "		float x = (texUV.y - edge.r) * edge.g;"
 "		float adder = edge.g / 2.f;"
@@ -1165,8 +1167,8 @@ const char GlBackend::segmentsFragmentShader_A8[] =
 "		factor = factor2;"
 "	}"
 
-"		vec4 col = texelFetch(tintmapBufferId, tintmapX )"
-"			        * texelFetch(tintmapBufferId, tintmapY );"
+"		vec4 col = texelFetch(edgemapId, colorstripX )"
+"			        * texelFetch(edgemapId, colorstripY );"
 "	float useFactor = factor*col.a;"
 "	totalAlpha += useFactor;"
 

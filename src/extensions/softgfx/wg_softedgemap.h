@@ -52,49 +52,20 @@ public:
 	const TypeInfo&     typeInfo(void) const override;
 	const static TypeInfo   TYPEINFO;
 	
-	//.____ Appearance ____________________________________________________
-	
-	bool	setColors( int begin, int end, const HiColor * pColors ) override;
-	bool	setGradients( int begin, int end, const Gradient * pGradients ) override;
-	bool	setTintmaps( int begin, int end, const Tintmap_p * pTintmaps ) override;
-	
-	//.____ Content _______________________________________________________
-	
-	bool 	importSamples( SampleOrigo origo, const spx * pSource, int edgeBegin, int edgeEnd,
-						  int sampleBegin, int sampleEnd, int edgePitch = 0, int samplePitch = 0 ) override;
-	
-	bool 	importSamples( SampleOrigo origo, const float * pSource, int edgeBegin, int edgeEnd,
-						  int sampleBegin, int sampleEnd, int edgePitch = 0, int samplePitch = 0 ) override;
-	
-	bool 	exportSamples( SampleOrigo origo, spx * pDestination, int edgeBegin, int edgeEnd,
-						  int sampleBegin, int sampleEnd, int edgePitch = 0, int samplePitch = 0 ) override;
-	
-	bool 	exportSamples( SampleOrigo origo, float * pDestination, int edgeBegin, int edgeEnd,
-						  int sampleBegin, int sampleEnd, int edgePitch = 0, int samplePitch = 0 ) override;
 	
 protected:
 	
 	SoftEdgemap(const Blueprint& bp);
 	~SoftEdgemap();
 	
-	void 	_importSamples( SampleOrigo origo, const spx * pSource, int edgeBegin, int edgeEnd,
-						   int sampleBegin, int sampleEnd, int edgePitch, int samplePitch );
-	
-	void 	_importSamples( SampleOrigo origo, const float * pSource, int edgeBegin, int edgeEnd,
-						   int sampleBegin, int sampleEnd, int edgePitch, int samplePitch );
+	void	_samplesUpdated(int edgeBegin, int edgeEnd, int sampleBegin, int sampleEnd) override;
+	void	_colorsUpdated(int beginSegment, int endSegment) override;
 	
 	int		_colorSegmentPitch() const { return m_size.w + m_size.h; }
 	
-	
-	char *	m_pBuffer;
-	spx *	m_pSamples;					// Stored vertically, e.g. samples for first column for all edges before samples for second column etc
-	
-	HiColor * m_pColors;				// Stored as horizontal + vertical tintmap colors for segment 1, then segment 2 etc.
-	Gradient * m_pGradients;
-	
+		
 	std::bitset<maxSegments>	m_opaqueSegments;
 	std::bitset<maxSegments>	m_transparentSegments;
-
 };
 
 

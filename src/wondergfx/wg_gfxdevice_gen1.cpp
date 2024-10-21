@@ -1553,7 +1553,7 @@ namespace wg
 			col[3] = pBottomBorder->color;
 			col[4] = HiColor::Transparent;
 
-			_transformDrawSegments(dest*64, 5, col, length + 1, pEdgeBuffer, 4, TintMode::Flat, simpleTransform );
+			_transformDrawSegments(dest*64, 5, col, 1, length + 1, pEdgeBuffer, 4, TintMode::Flat, simpleTransform );
 
 		}
 		else
@@ -1601,7 +1601,7 @@ namespace wg
 			col[4] = pBottomBorder->color;
 			col[5] = HiColor::Transparent;
 
-			_transformDrawSegments(dest*64, 6, col, length + 1, pEdgeBuffer, 5, TintMode::Flat, simpleTransform);
+			_transformDrawSegments(dest*64, 6, col, 1, length + 1, pEdgeBuffer, 5, TintMode::Flat, simpleTransform);
 		}
 
 
@@ -2182,7 +2182,7 @@ namespace wg
 			if (nSegments == 1)
 				fill(quadCanvas[quad], pColors[0]);
 			else
-				_transformDrawSegments(quadCanvas[quad]*64, nSegments, pColors, quadW+1, pEdges, edgePitch, TintMode::Flat, s_blitFlipTransforms[(int)quadFlip[quad]]);
+				_transformDrawSegments(quadCanvas[quad]*64, nSegments, pColors, 1, quadW+1, pEdges, edgePitch, TintMode::Flat, s_blitFlipTransforms[(int)quadFlip[quad]]);
 		}
 
 		if( hubBufferSize != 0 )
@@ -2195,14 +2195,14 @@ namespace wg
 
 	void GfxDeviceGen1::drawSegments(const RectSPX& dest, int nSegments, const HiColor * pSegmentColors, int nEdgeStrips, const int * pEdgeStrips, int edgeStripPitch, TintMode tintMode )
 	{
-		_transformDrawSegments( dest, nSegments, pSegmentColors, nEdgeStrips, pEdgeStrips, edgeStripPitch, tintMode, s_blitFlipTransforms[(int)GfxFlip::None] );
+		_transformDrawSegments( dest, nSegments, pSegmentColors, 1, nEdgeStrips, pEdgeStrips, edgeStripPitch, tintMode, s_blitFlipTransforms[(int)GfxFlip::None] );
 	}
 
 	//____ flipDrawSegments() ______________________________________________________
 
 	void GfxDeviceGen1::flipDrawSegments(const RectSPX& dest, int nSegments, const HiColor * pSegmentColors, int nEdgeStrips, const int * pEdgeStrips, int edgeStripPitch, GfxFlip flip, TintMode tintMode)
 	{
-		_transformDrawSegments(dest, nSegments, pSegmentColors, nEdgeStrips, pEdgeStrips, edgeStripPitch, tintMode, s_blitFlipTransforms[(int)flip] );
+		_transformDrawSegments(dest, nSegments, pSegmentColors, 1, nEdgeStrips, pEdgeStrips, edgeStripPitch, tintMode, s_blitFlipTransforms[(int)flip] );
 	}
 
 	//____ drawEdgemap() __________________________________________________________

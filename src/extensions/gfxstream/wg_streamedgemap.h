@@ -55,49 +55,24 @@ namespace wg
 
 		bool	setRenderSegments(int nSegments) override;
 
-		bool	setColors( int begin, int end, const HiColor * pColors ) override;
-		bool	setGradients( int begin, int end, const Gradient * pGradients ) override;
-		
-		//.____ Content _______________________________________________________
-
-		bool 	importSamples( SampleOrigo origo, const spx * pSource, int edgeBegin, int edgeEnd,
-									  int sampleBegin, int sampleEnd, int edgePitch = 0, int samplePitch = 0 ) override;
-
-		bool 	importSamples( SampleOrigo origo, const float * pSource, int edgeBegin, int edgeEnd,
-									  int sampleBegin, int sampleEnd, int edgePitch = 0, int samplePitch = 0 ) override;
-
-		bool 	exportSamples( SampleOrigo origo, spx * pDestination, int edgeBegin, int edgeEnd,
-									  int sampleBegin, int sampleEnd, int edgePitch = 0, int samplePitch = 0 ) override;
-
-		bool 	exportSamples( SampleOrigo origo, float * pDestination, int edgeBegin, int edgeEnd,
-									  int sampleBegin, int sampleEnd, int edgePitch = 0, int samplePitch = 0 ) override;
-
 	protected:
 
 		StreamEdgemap( StreamEncoder * pEncoder, const Blueprint& bp );
 		~StreamEdgemap();
 
-		void 	_importSamples( SampleOrigo origo, const spx * pSource, int edgeBegin, int edgeEnd,
-								int sampleBegin, int sampleEnd, int edgePitch, int samplePitch );
+		void	_samplesUpdated(int edgeBegin, int edgeEnd, int sampleBegin, int sampleEnd) override;
+		void	_colorsUpdated(int beginSegment, int endSegment) override;
 
-		void 	_importSamples( SampleOrigo origo, const float * pSource, int edgeBegin, int edgeEnd,
-								int sampleBegin, int sampleEnd, int edgePitch, int samplePitch );
+
 
 		void	_sendCreateEdgemap(StreamEncoder * pEncoder);
-		void 	_sendSamples( StreamEncoder* pEncoder, int edgeBegin, int edgeEnd,
-								int sampleBegin, int sampleEnd );
 
 		GfxStream::SpxFormat _findBestPackFormat( int spxMask );
 
 		
-		StreamEncoder_p	m_pEncoder;
+		StreamEncoder_p		m_pEncoder;
 		uint16_t			m_inStreamId;		// Id of this edgemap in the stream.
-
-		bool				m_bEmpty = true;
-		
-		char *				m_pBuffer;
-		spx *				m_pSamples;					// Stored vertically, e.g. samples for first column for all edges before samples for second column etc
-		
+				
    };
 
 

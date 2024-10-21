@@ -1292,7 +1292,7 @@ const uint8_t SoftGfxDevice::s_fast8_channel_6[64] = {		0x00, 0x04, 0x08, 0x0c, 
 
 	//____ _transformDrawSegments() _________________________________________
 
-	void SoftGfxDevice::_transformDrawSegments(const RectSPX& _destIn, int nSegments, const HiColor * pSegmentColors, int nEdgeStrips, const int * _pEdgeStrips, int edgeStripPitch, TintMode tintMode, const int _simpleTransform[2][2])
+	void SoftGfxDevice::_transformDrawSegments(const RectSPX& _destIn, int nSegments, const HiColor * pSegmentColors, int segmentColorPitch, int nEdgeStrips, const int * _pEdgeStrips, int edgeStripPitch, TintMode tintMode, const int _simpleTransform[2][2])
 	{
 		//TODO: Proper 26:6 support
 		RectI _dest = roundToPixels(_destIn);
@@ -1406,10 +1406,10 @@ const uint8_t SoftGfxDevice::s_fast8_channel_6[64] = {		0x00, 0x04, 0x08, 0x0c, 
 
 			for (int i = 0; i < nSegments; i++)
 			{
-				colors[i][0] = (pSegmentColors[i].r * m_colTrans.flatTintColor.r) >> 12;
-				colors[i][1] = (pSegmentColors[i].g * m_colTrans.flatTintColor.g) >> 12;
-				colors[i][2] = (pSegmentColors[i].b * m_colTrans.flatTintColor.b) >> 12;
-				colors[i][3] = (pSegmentColors[i].a * m_colTrans.flatTintColor.a) >> 12;
+				colors[i][0] = (pSegmentColors[i*segmentColorPitch].r * m_colTrans.flatTintColor.r) >> 12;
+				colors[i][1] = (pSegmentColors[i * segmentColorPitch].g * m_colTrans.flatTintColor.g) >> 12;
+				colors[i][2] = (pSegmentColors[i * segmentColorPitch].b * m_colTrans.flatTintColor.b) >> 12;
+				colors[i][3] = (pSegmentColors[i * segmentColorPitch].a * m_colTrans.flatTintColor.a) >> 12;
 
 				transparentSegments[i] = (colors[i][3] == 0);
 				opaqueSegments[i] = (colors[i][3] == 4096);
@@ -1421,10 +1421,10 @@ const uint8_t SoftGfxDevice::s_fast8_channel_6[64] = {		0x00, 0x04, 0x08, 0x0c, 
 
 			for (int i = 0; i < nSegments*colorsPerSegment; i++)
 			{
-				colors[i][0] = pSegmentColors[i].r;
-				colors[i][1] = pSegmentColors[i].g;
-				colors[i][2] = pSegmentColors[i].b;
-				colors[i][3] = pSegmentColors[i].a;
+				colors[i][0] = pSegmentColors[i * segmentColorPitch].r;
+				colors[i][1] = pSegmentColors[i * segmentColorPitch].g;
+				colors[i][2] = pSegmentColors[i * segmentColorPitch].b;
+				colors[i][3] = pSegmentColors[i * segmentColorPitch].a;
 			}
 		}
 
@@ -2275,8 +2275,17 @@ const uint8_t SoftGfxDevice::s_fast8_channel_6[64] = {		0x00, 0x04, 0x08, 0x0c, 
 		
 		auto pEdgemap = static_cast<SoftEdgemap*>(_pEdgemap);
 	
-		_transformDrawSegments( {dest, pEdgemap->m_size*64}, pEdgemap->m_nbRenderSegments, pEdgemap->m_pRenderColors,
-							   pEdgemap->m_size.w+1, pEdgemap->m_pSamples, pEdgemap->m_nbSegments-1, pEdgemap->m_tintMode,
+		TintMode mode = TintMode::Flat;
+
+		if (pEdgemap->hasHorizontalTint() && pEdgemap->hasVerticalTint())
+			mode = TintMode::GradientXY;
+		else if (pEdgemap->hasHorizontalTint())
+			mode = TintMode::GradientX;
+		else if (pEdgemap->hasVerticalTint())
+			mode = TintMode::GradientY;
+
+		_transformDrawSegments( {dest, pEdgemap->m_size*64}, pEdgemap->m_nbRenderSegments, pEdgemap->m_pColors, pEdgemap->_colorSegmentPitch(),
+							   pEdgemap->m_size.w+1, pEdgemap->m_pSamples, pEdgemap->m_nbSegments-1, mode,
 							   s_blitFlipTransforms[(int)GfxFlip::None] );
 	}
 
@@ -2300,8 +2309,17 @@ const uint8_t SoftGfxDevice::s_fast8_channel_6[64] = {		0x00, 0x04, 0x08, 0x0c, 
 		dest.w = pEdgemap->m_size.w*64 * abs(transform[0][0]) + pEdgemap->m_size.h*64 * abs(transform[1][0]);
 		dest.h = pEdgemap->m_size.w*64 * abs(transform[0][1]) + pEdgemap->m_size.h*64 * abs(transform[1][1]);
 
-		_transformDrawSegments( dest, pEdgemap->m_nbRenderSegments, pEdgemap->m_pRenderColors,
-							   pEdgemap->m_size.w+1, pEdgemap->m_pSamples, pEdgemap->m_nbSegments-1, pEdgemap->m_tintMode,
+		TintMode mode = TintMode::Flat;
+
+		if (pEdgemap->hasHorizontalTint() && pEdgemap->hasVerticalTint())
+			mode = TintMode::GradientXY;
+		else if (pEdgemap->hasHorizontalTint())
+			mode = TintMode::GradientX;
+		else if (pEdgemap->hasVerticalTint())
+			mode = TintMode::GradientY;
+
+		_transformDrawSegments( dest, pEdgemap->m_nbRenderSegments, pEdgemap->m_pColors, pEdgemap->_colorSegmentPitch(),
+							   pEdgemap->m_size.w+1, pEdgemap->m_pSamples, pEdgemap->m_nbSegments-1, mode,
 							   transform );
 	}
 

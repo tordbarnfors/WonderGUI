@@ -26,6 +26,17 @@
 
 #include <wg_edgemap.h>
 
+#ifdef WIN32
+#	include <GL/glew.h>
+#else
+#	ifdef __APPLE__
+#		define GL_SILENCE_DEPRECATION
+#		include <OpenGL/gl3.h>
+#	else
+#		include <GL/glew.h>
+#	endif
+#endif
+
 namespace wg
 {
 
@@ -51,44 +62,18 @@ namespace wg
 		const TypeInfo&     typeInfo(void) const override;
 		const static TypeInfo   TYPEINFO;
 
-		//.____ Appearance ____________________________________________________
-
-		bool	setColors( int begin, int end, const HiColor * pColors ) override;
-		bool	setGradients( int begin, int end, const Gradient * pGradients ) override;
-		
-		//.____ Content _______________________________________________________
-
-		bool 	importSamples( SampleOrigo origo, const spx * pSource, int edgeBegin, int edgeEnd,
-									  int sampleBegin, int sampleEnd, int edgePitch = 0, int samplePitch = 0 ) override;
-
-		bool 	importSamples( SampleOrigo origo, const float * pSource, int edgeBegin, int edgeEnd,
-									  int sampleBegin, int sampleEnd, int edgePitch = 0, int samplePitch = 0 ) override;
-
-		bool 	exportSamples( SampleOrigo origo, spx * pDestination, int edgeBegin, int edgeEnd,
-									  int sampleBegin, int sampleEnd, int edgePitch = 0, int samplePitch = 0 ) override;
-
-		bool 	exportSamples( SampleOrigo origo, float * pDestination, int edgeBegin, int edgeEnd,
-									  int sampleBegin, int sampleEnd, int edgePitch = 0, int samplePitch = 0 ) override;
-
 	protected:
 
 		GlEdgemap(const Blueprint& bp);
 		~GlEdgemap();
 
-		void 	_importSamples( SampleOrigo origo, const spx * pSource, int edgeBegin, int edgeEnd,
-									  int sampleBegin, int sampleEnd, int edgePitch, int samplePitch );
+		void	_samplesUpdated(int edgeBegin, int edgeEnd, int sampleBegin, int sampleEnd) override;
+		void	_colorsUpdated(int beginSegment, int endSegment) override;
 
-		void 	_importSamples( SampleOrigo origo, const float * pSource, int edgeBegin, int edgeEnd,
-									  int sampleBegin, int sampleEnd, int edgePitch, int samplePitch );
+		GLuint		m_bufferId;
+		GLuint		m_textureId;
 
-		void	_updateRenderColors();
-				
-		char *	m_pBuffer;
-		spx *	m_pSamples;					// Stored vertically, e.g. samples for first column for all edges before samples for second column etc
-
-		HiColor *	m_pRenderColors;		// Palette to be used in render call, converted as needed.
-		TintMode	m_tintMode;
-		
+		int			m_colorsOfs;			// Offset to colorStrips in buffer, measured in bytes.
    };
 
 

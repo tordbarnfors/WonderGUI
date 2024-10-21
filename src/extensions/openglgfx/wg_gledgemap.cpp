@@ -21,388 +21,205 @@
 =========================================================================*/
 
 #include <wg_gledgemap.h>
+#include <wg_gradyent.h>
+#include <wg_gfxbase.h>
 
 #include <cstring>
 
 namespace wg
 {
 
-const TypeInfo GlEdgemap::TYPEINFO = { "GlEdgemap", &Edgemap::TYPEINFO };
+	const TypeInfo GlEdgemap::TYPEINFO = { "GlEdgemap", &Edgemap::TYPEINFO };
 
 
-//____ create() ______________________________________________________________
+	//____ create() ______________________________________________________________
 
-GlEdgemap_p	GlEdgemap::create( const Blueprint& blueprint )
-{
-	if( !_validateBlueprint(blueprint) )
-		return nullptr;
-	
-	return GlEdgemap_p( new GlEdgemap(blueprint) );
-}
-
-GlEdgemap_p GlEdgemap::create( const Blueprint& blueprint, SampleOrigo origo, const float * pSamples, int edges, int edgePitch, int samplePitch)
-{
-	if( !_validateBlueprint(blueprint) )
-		return nullptr;
-
-	if(edges >= blueprint.segments )
-		return nullptr;
-
-	auto p = GlEdgemap_p( new GlEdgemap(blueprint) );
-
-	p->_importSamples(origo, pSamples, 0, edges, 0, p->m_size.w+1, edgePitch, samplePitch);
-	p->m_nbRenderSegments = edges+1;
-	
-	return p;
-}
-
-GlEdgemap_p GlEdgemap::create( const Blueprint& blueprint, SampleOrigo origo, const spx * pSamples, int edges, int edgePitch, int samplePitch)
-{
-	if( !_validateBlueprint(blueprint) )
-		return nullptr;
-
-	if(edges >= blueprint.segments )
-		return nullptr;
-	
-	auto p = GlEdgemap_p( new GlEdgemap(blueprint) );
-
-	p->_importSamples(origo, pSamples, 0, edges, 0, p->m_size.w+1, edgePitch, samplePitch);
-	p->m_nbRenderSegments = edges+1;
-	
-	return p;
-}
-
-//____ constructor ___________________________________________________________
-
-GlEdgemap::GlEdgemap(const Blueprint& bp) : Edgemap(bp)
-{
-	// Setup buffers
-	
-	int sampleArraySize = (bp.size.w+1) * bp.segments * sizeof(spx);
-	int colorArraySize = bp.colors ? bp.segments*sizeof(HiColor) : 0;
-	int gradientArraySize = bp.gradients ? bp.segments*sizeof(Gradient) : 0;
-	int tintmapArraySize = bp.tintmaps ? bp.segments*sizeof(Tintmap*) : 0;
-	int renderColorsBytes = (bp.gradients || bp.tintmaps) ? bp.segments * sizeof(HiColor) * 4 : 0;		// Reserve space for XY-gradient colors.
-
-	int bytes = sampleArraySize + colorArraySize + gradientArraySize + tintmapArraySize + renderColorsBytes;
-	
-	m_pBuffer = new char[bytes];
-	
-	auto pBuffer = m_pBuffer;
-	
-	if( gradientArraySize > 0 )
+	GlEdgemap_p	GlEdgemap::create(const Blueprint& blueprint)
 	{
-		m_pGradients = (Gradient*) pBuffer;
-		memcpy(m_pGradients, bp.gradients, gradientArraySize);
-		pBuffer += gradientArraySize;
+		if (!_validateBlueprint(blueprint))
+			return nullptr;
 
-		m_pRenderColors = (HiColor*) pBuffer;
-		pBuffer += renderColorsBytes;
+		return GlEdgemap_p(new GlEdgemap(blueprint));
 	}
-	else if( tintmapArraySize > 0 )
+
+	GlEdgemap_p GlEdgemap::create(const Blueprint& blueprint, SampleOrigo origo, const float* pSamples, int edges, int edgePitch, int samplePitch)
 	{
-		m_pTintmaps = (Tintmap**) pBuffer;
-		
-		for( int i = 0 ; i < bp.segments ; i++ )
+		if (!_validateBlueprint(blueprint))
+			return nullptr;
+
+		if (edges >= blueprint.segments)
+			return nullptr;
+
+		auto p = GlEdgemap_p(new GlEdgemap(blueprint));
+
+		p->_importSamples(origo, pSamples, 0, edges, 0, p->m_size.w + 1, edgePitch, samplePitch);
+		p->m_nbRenderSegments = edges + 1;
+
+		return p;
+	}
+
+	GlEdgemap_p GlEdgemap::create(const Blueprint& blueprint, SampleOrigo origo, const spx* pSamples, int edges, int edgePitch, int samplePitch)
+	{
+		if (!_validateBlueprint(blueprint))
+			return nullptr;
+
+		if (edges >= blueprint.segments)
+			return nullptr;
+
+		auto p = GlEdgemap_p(new GlEdgemap(blueprint));
+
+		p->_importSamples(origo, pSamples, 0, edges, 0, p->m_size.w + 1, edgePitch, samplePitch);
+		p->m_nbRenderSegments = edges + 1;
+
+		return p;
+	}
+
+	//____ constructor ___________________________________________________________
+
+	GlEdgemap::GlEdgemap(const Blueprint& bp) : Edgemap(bp)
+	{
+		// Create OpenGL buffer
+
+		int samplesSize = bp.size.w * (bp.segments - 1) * 4 * sizeof(GLfloat);
+		int colorstripsSize = (bp.size.w + bp.size.h) * bp.segments * 4 * sizeof(GLfloat);
+
+		m_colorsOfs = samplesSize;
+
+		int bufferSize = samplesSize + colorstripsSize;
+
+		glGenBuffers(1, &m_bufferId);
+		glBindBuffer(GL_TEXTURE_BUFFER, m_bufferId);
+
+		glGenTextures(1, &m_textureId);
+//		glActiveTexture(GL_TEXTURE2);
+		glBindTexture(GL_TEXTURE_BUFFER, m_textureId);
+		glTexBuffer(GL_TEXTURE_BUFFER, GL_RGBA32F, m_bufferId);
+//		glActiveTexture(GL_TEXTURE0);
+
+//		glBindBuffer(GL_TEXTURE_BUFFER, m_extrasBufferId);
+		glBufferData(GL_TEXTURE_BUFFER, bufferSize, nullptr, GL_DYNAMIC_DRAW);
+//		glBindBuffer(GL_TEXTURE_BUFFER, 0);
+
+		// Convert and upload colorstrips
+
+		_colorsUpdated(0, m_nbSegments);
+	}
+
+	//____ destructor ____________________________________________________________
+
+	GlEdgemap::~GlEdgemap()
+	{
+	}
+
+	//____ typeInfo() ____________________________________________________________
+
+	const TypeInfo& GlEdgemap::typeInfo(void) const
+	{
+		return TYPEINFO;
+	}
+
+	//____ _samplesUpdated() ___________________________________________________
+
+	void GlEdgemap::_samplesUpdated(int edgeBegin, int edgeEnd, int sampleBegin, int sampleEnd)
+	{
+		int nEdgeStrips = sampleEnd - sampleBegin;
+		const int* pEdgeStrips = m_pSamples;
+		int edgeStripPitch = m_nbSegments - 1;
+
+		const spx* pEdges = m_pSamples + edgeStripPitch * edgeBegin;
+
+		int outBytes = (nEdgeStrips - 1) * (m_nbSegments - 1) * 4 * sizeof(GLfloat);
+
+		auto pBuffer = (GLfloat*)GfxBase::memStackAlloc(outBytes);
+
+		auto pOut = pBuffer;
+
+		for (int i = 0; i < nEdgeStrips - 1; i++)
 		{
-			m_pTintmaps[i] = bp.tintmaps[i];
-			m_pTintmaps[i]->retain();
-		}
-			
-		pBuffer += tintmapArraySize;
-		m_pRenderColors = (HiColor*) pBuffer;
-		pBuffer += renderColorsBytes;
-	}
-	else if( colorArraySize > 0 )
-	{
-		m_pColors = (HiColor*) pBuffer;
-		memcpy(m_pColors, bp.colors, colorArraySize);
-		pBuffer += colorArraySize;
-
-		m_pRenderColors = m_pColors;
-	}
-
-	_updateRenderColors();
-	
-	m_pSamples = (spx*) pBuffer;
-}
-
-//____ destructor ____________________________________________________________
-
-GlEdgemap::~GlEdgemap()
-{
-	// Decrease reference count of tintmaps.
-
-	if( m_pTintmaps )
-	{
-		for( int i = 0 ; i < m_nbSegments ; i++ )
-			m_pTintmaps[i]->release();
-	}
-
-	// Delete our buffer
-	
-	delete [] m_pBuffer;
-}
-
-//____ typeInfo() ____________________________________________________________
-
-const TypeInfo& GlEdgemap::typeInfo(void) const
-{
-	return TYPEINFO;
-}
-
-//____ setColors() ____________________________________________________________
-
-bool GlEdgemap::setColors( int begin, int end, const HiColor * pColors )
-{
-	if( !Edgemap::setColors(begin,end,pColors))
-		return false;
-	
-	_updateRenderColors();
-	return true;
-}
-
-//____ setGradients() _________________________________________________________
-
-bool GlEdgemap::setGradients( int begin, int end, const Gradient * pGradients )
-{
-	if( !Edgemap::setGradients(begin,end,pGradients))
-		return false;
-	
-	_updateRenderColors();
-	return true;
-}
-
-//____ importSamples() _________________________________________________________
-
-bool GlEdgemap::importSamples( SampleOrigo origo, const spx * pSource, int edgeBegin, int edgeEnd,
-							  int sampleBegin, int sampleEnd, int edgePitch, int samplePitch )
-{
-	if( pSource == nullptr || edgeBegin < 0 || edgeBegin > edgeEnd || edgeEnd > (m_nbSegments-1) || sampleBegin < 0 || sampleBegin > sampleEnd || sampleEnd > (m_size.w+1) )
-		return false;
-
-	_importSamples( origo, pSource, edgeBegin, edgeEnd, sampleBegin, sampleEnd, edgePitch, samplePitch);
-	return true;
-}
-
-bool GlEdgemap::importSamples( SampleOrigo origo, const float * pSource, int edgeBegin, int edgeEnd,
-							  int sampleBegin, int sampleEnd, int edgePitch, int samplePitch )
-{
-	if( pSource == nullptr || edgeBegin < 0 || edgeBegin > edgeEnd || edgeEnd > (m_nbSegments-1) || sampleBegin < 0 || sampleBegin > sampleEnd || sampleEnd > (m_size.w+1) )
-		return false;
-
-	_importSamples( origo, pSource, edgeBegin, edgeEnd, sampleBegin, sampleEnd, edgePitch, samplePitch);
-	return true;
-}
-
-
-//____ exportSamples() _________________________________________________________
-
-bool GlEdgemap::exportSamples( SampleOrigo origo, spx * pDestination, int edgeBegin, int edgeEnd,
-							  int sampleBegin, int sampleEnd, int edgePitch, int samplePitch )
-{
-	//TODO: Implement!!!
-	
-	return false;
-}
-
-bool  GlEdgemap::exportSamples( SampleOrigo origo, float * pDestination, int edgeBegin, int edgeEnd,
-							  int sampleBegin, int sampleEnd, int edgePitch, int samplePitch )
-{
-	//TODO: Implement!!!
-	
-	return false;
-}
-
-//____ _importSamples() ________________________________________________________
-
-void GlEdgemap::_importSamples( SampleOrigo origo, const spx * pSource, int edgeBegin, int edgeEnd,
-							  int sampleBegin, int sampleEnd, int edgePitch, int samplePitch )
-{
-	if( samplePitch == 0 )
-		samplePitch = 1;
-	
-	
-	if( edgePitch == 0 )
-		edgePitch = samplePitch * (sampleEnd - sampleBegin);
-	
-	int destSamplePitch = m_nbSegments-1;
-	int destEdgePitch = 1;
-
-
-	spx mul = (origo == SampleOrigo::Top || origo == SampleOrigo::MiddleDown) ? 1 : -1;
-	spx offset = 0;
-	
-	if( origo == SampleOrigo::Bottom )
-		offset = m_size.h*64;
-	else if( origo == SampleOrigo::MiddleDown || origo == SampleOrigo::MiddleUp )
-		offset = m_size.h*32;
-
-	for( int edge = edgeBegin ; edge < edgeEnd ; edge++ )
-	{
-		const spx * pSrc = pSource + edgePitch * (edge-edgeBegin);
-		spx * pDst = m_pSamples + edge + sampleBegin*(m_nbSegments-1);
-
-		for( int sample = sampleBegin ; sample < sampleEnd ; sample++ )
-		{
-			* pDst = (* pSrc * mul) + offset;
-			pDst += destSamplePitch;
-			pSrc += samplePitch;
-		}
-	}
-}
-
-void GlEdgemap::_importSamples( SampleOrigo origo, const float * pSource, int edgeBegin, int edgeEnd,
-							  int sampleBegin, int sampleEnd, int edgePitch, int samplePitch )
-{
-	if( samplePitch == 0 )
-		samplePitch = 1;
-	
-	
-	if( edgePitch == 0 )
-		edgePitch = samplePitch * (sampleEnd - sampleBegin);
-	
-	int destSamplePitch = m_nbSegments-1;
-	int destEdgePitch = 1;
-
-
-	spx mul = (origo == SampleOrigo::Top || origo == SampleOrigo::MiddleDown) ? 1 : -1;
-	spx offset = 0;
-
-	if( origo == SampleOrigo::Bottom )
-		offset = m_size.h*64;
-	else if( origo == SampleOrigo::MiddleDown || origo == SampleOrigo::MiddleUp )
-		offset = m_size.h*32;
-
-	if( origo == SampleOrigo::MiddleDown || origo == SampleOrigo::MiddleUp )
-		mul *= m_size.h*32;
-	else
-		mul *= m_size.h*64;
-	
-	for( int edge = edgeBegin ; edge < edgeEnd ; edge++ )
-	{
-		const float * pSrc = pSource + edgePitch * edge + samplePitch * sampleBegin;
-		spx * pDst = m_pSamples + edge + sampleBegin*(m_nbSegments-1);
-
-		for( int sample = sampleBegin ; sample < sampleEnd ; sample++ )
-		{
-			* pDst = (* pSrc * mul) + offset;
-			pDst += destSamplePitch;
-			pSrc += samplePitch;
-		}
-	}
-}
-
-
-//____ _updateRenderColors() __________________________________________________
-
-void GlEdgemap::_updateRenderColors()
-{
-	// Analyze gradients to figure out our tint mode and update our render colors.
-		
-	if( m_pGradients )
-	{
-		// Figure out and set optimal TintMode.
-		
-		bool bHorizontal = false;
-		bool bVertical = false;
-		bool bFlat = true;
-		
-		for( int i = 0 ; i < m_nbSegments ; i++ )
-		{
-			const Gradient& grad = m_pGradients[i];
-			
-			if(grad.topLeft != grad.topRight)
-				bHorizontal = true;
-
-			if(grad.topLeft != grad.bottomLeft)
-				bVertical = true;
-			
-			if(grad.topLeft != grad.topRight || grad.topLeft != grad.bottomRight || grad.topLeft != grad.bottomLeft )
-				bFlat = false;
-		}
-		
-		if( bFlat )
-			m_tintMode = TintMode::Flat;
-		else if( bHorizontal && bVertical )
-			m_tintMode = TintMode::GradientXY;
-		else if( bVertical )
-			m_tintMode = TintMode::GradientY;
-		else
-			m_tintMode = TintMode::GradientX;
-
-		// Copy gradient colors to render colors.
-		
-		switch( m_tintMode )
-		{
-			case TintMode::None:
-			case TintMode::Flat:
+			for (int j = 0; j < m_nbSegments - 1; j++)
 			{
-				for( int i = 0 ; i < m_nbSegments ; i++ )
-					m_pRenderColors[i] = m_pGradients[i].topLeft;
+				int edgeIn = pEdges[j];
+				int edgeOut = pEdges[edgeStripPitch + j];
 
-				break;
-			}
+				if (edgeIn > edgeOut)
+					std::swap(edgeIn, edgeOut);
 
-			case TintMode::GradientX:
-			{
-				for( int i = 0 ; i < m_nbSegments ; i++ )
+				float increment = edgeOut == edgeIn ? 100.f : 64.f / (edgeOut - edgeIn);
+				float beginAdder;
+				float endAdder;
+
+				if ((edgeOut & 0xFFFFFFC0) <= (unsigned int)edgeIn)
 				{
-					const Gradient& grad = m_pGradients[i];
+					float firstPixelCoverage = ((64 - (edgeOut & 0x3F)) + (edgeOut - edgeIn) / 2) / 64.f;
 
-					m_pRenderColors[i*2] = grad.topLeft;
-					m_pRenderColors[i*2+1] = grad.topRight;
+					beginAdder = increment * (edgeIn & 0x3F) / 64.f + firstPixelCoverage;
+					endAdder = beginAdder;
 				}
-				break;
-			}
-			case TintMode::GradientY:
-			{
-				for( int i = 0 ; i < m_nbSegments ; i++ )
+				else
 				{
-					const Gradient& grad = m_pGradients[i];
+					int height = 64 - (edgeIn & 0x3F);
+					int width = (int)(increment * height);
+					float firstPixelCoverage = (height * width) / (2 * 4096.f);
+					float lastPixelCoverage = 1.f - (edgeOut & 0x3F) * increment * (edgeOut & 0x3F) / (2 * 4096.f);
 
-					m_pRenderColors[i*2] = grad.topLeft;
-					m_pRenderColors[i*2+1] = grad.bottomLeft;
+					beginAdder = increment * (edgeIn & 0x3F) / 64.f + firstPixelCoverage;
+					endAdder = lastPixelCoverage - (1.f - (edgeOut & 0x3F) * increment / 64.f);
+					// 					endAdder = lastPixelCoverage - ((edgeOut & 0xFFFFFF00)-edgeIn)*increment / 256.f;
 				}
-				break;
-			}
-			case TintMode::GradientXY:
-			{
-				for( int i = 0 ; i < m_nbSegments ; i++ )
-				{
-					const Gradient& grad = m_pGradients[i];
 
-					m_pRenderColors[i*4]   = grad.topLeft;
-					m_pRenderColors[i*4+1] = grad.topRight;
-					m_pRenderColors[i*4+2] = grad.bottomRight;
-					m_pRenderColors[i*4+3] = grad.bottomLeft;
-				}
-				break;
+				*pOut++ = edgeIn / 64.f;				// Segment begin pixel
+				*pOut++ = increment;					// Segment increment
+				*pOut++ = beginAdder;					// Segment begin adder
+				*pOut++ = endAdder;						// Segment end adder
 			}
+
+			pEdges += edgeStripPitch;
+
 		}
+
+		// Upload buffer
+
+		int ofs = edgeBegin * edgeStripPitch * 4 * sizeof(GLfloat);
+
+		glBindBuffer(GL_TEXTURE_BUFFER, m_bufferId);
+		glBufferSubData(GL_TEXTURE_BUFFER, ofs, outBytes, pBuffer);
+		glBindBuffer(GL_TEXTURE_BUFFER, 0);
+
+		// Release temp buffer
+
+		GfxBase::memStackFree(outBytes);
 	}
-	else
+
+	//____ _colorsUpdated() ____________________________________________________
+
+	void GlEdgemap::_colorsUpdated(int beginSegment, int endSegment)
 	{
-		m_tintMode = TintMode::Flat;
-	}
-	
-	// Generate render colors from Tintmaps as well as we can to support legacy implementations.
-	
-	if( m_pTintmaps )
-	{
-		m_tintMode = TintMode::GradientXY;
-		
-		for( int i = 0 ; i < m_nbSegments ; i++ )
+		int segColors = m_size.w + m_size.h;
+
+		int nColors = segColors * (endSegment - beginSegment);
+		int tempBuffSize = nColors * sizeof(GLfloat) * 4;
+
+		auto pTempBuffer = (GLfloat*)GfxBase::memStackAlloc(tempBuffSize);
+
+		auto pIn = m_pColors + beginSegment * segColors;
+		auto pOut = pTempBuffer;
+		for (int i = 0; i < nColors; i++)
 		{
-			Gradient grad = m_pTintmaps[i]->exportGradient();
-			
-			m_pRenderColors[i*4]   = grad.topLeft;
-			m_pRenderColors[i*4+1] = grad.topRight;
-			m_pRenderColors[i*4+2] = grad.bottomRight;
-			m_pRenderColors[i*4+3] = grad.bottomLeft;
+			*pOut++ = pIn->r / 4096.f;
+			*pOut++ = pIn->g / 4096.f;
+			*pOut++ = pIn->b / 4096.f;
+			*pOut++ = pIn->a / 4096.f;
+			pIn++;
 		}
+
+		int bufferOffset = m_colorsOfs + beginSegment * segColors * 4 * sizeof(GLfloat);
+
+		glBindBuffer(GL_TEXTURE_BUFFER, m_bufferId);
+		glBufferSubData(GL_TEXTURE_BUFFER, bufferOffset, tempBuffSize, pTempBuffer);
+		glBindBuffer(GL_TEXTURE_BUFFER, 0);
+
+		GfxBase::memStackFree(tempBuffSize);
 	}
-}
 
 } // namespace wg
 

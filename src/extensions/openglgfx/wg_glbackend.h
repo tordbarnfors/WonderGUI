@@ -246,6 +246,7 @@ namespace wg
 			int		colorsOfs;						// Offset into colorBuffer for color incl flat tint.
 			int		extrasOfs;						// Offset into extrasBuffer for extra data needed by shader.
 			CoordF	tintmapOfs;
+			CoordF	colorstripOfs;					// For Edgemaps only.
 		};
 
 		struct ColorGL

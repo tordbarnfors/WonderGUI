@@ -608,7 +608,7 @@ namespace wg
 			Gradient	gradients[5];
 			int nSegments = _generateGradientPalette(gradients);
 
-			if( m_pEdgemap == nullptr || m_pEdgemap->gradients() == nullptr )
+			if( m_pEdgemap == nullptr )
 				m_pEdgemap = pFactory->createEdgemap( WGBP(Edgemap, _.gradients = gradients, _.size = m_size, _.segments = nSegments ) );
 			else
 				m_pEdgemap->setGradients( 0, nSegments, gradients );
@@ -618,10 +618,10 @@ namespace wg
 			HiColor	colors[5];
 			int nSegments = _generateColorPalette(colors);
 
-			if( m_pEdgemap && m_pEdgemap->gradients() == nullptr )
-				m_pEdgemap->setColors( 0, nSegments, colors );
+			if( m_pEdgemap == nullptr )
+				m_pEdgemap = pFactory->createEdgemap( WGBP(Edgemap, _.colors = colors, _.size = m_size, _.segments = nSegments ) );
 			else
-			m_pEdgemap = pFactory->createEdgemap( WGBP(Edgemap, _.colors = colors, _.size = m_size, _.segments = nSegments ) );
+				m_pEdgemap->setColors( 0, nSegments, colors );
 		}
 	}
 
