@@ -62,18 +62,29 @@ namespace wg
 		const TypeInfo&     typeInfo(void) const override;
 		const static TypeInfo   TYPEINFO;
 
+
 	protected:
 
 		GlEdgemap(const Blueprint& bp);
 		~GlEdgemap();
 
 		void	_samplesUpdated(int edgeBegin, int edgeEnd, int sampleBegin, int sampleEnd) override;
-		void	_colorsUpdated(int beginSegment, int endSegment) override;
+		void	_colorsUpdated(int beginColor, int endColor) override;
+
+		// 
+
+		int		_whiteColorOfs() const { return m_whiteColorOfs/16; }
+		int		_flatColorsOfs() const { return m_paletteOfs/16;  }
+		int		_colorstripXOfs() const { return m_paletteOfs / 16 + (m_pColorstripsX - m_pPalette); }
+		int		_colorstripYOfs() const { return m_paletteOfs / 16 + (m_pColorstripsY - m_pPalette); }
+
+
 
 		GLuint		m_bufferId;
 		GLuint		m_textureId;
 
-		int			m_colorsOfs;			// Offset to colorStrips in buffer, measured in bytes.
+		int			m_paletteOfs;			// Offset to palette in buffer, measured in bytes.
+		int			m_whiteColorOfs;		// Offset to a white, default color, measured in bytes.
    };
 
 

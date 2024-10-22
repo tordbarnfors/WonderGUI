@@ -75,12 +75,10 @@ namespace wg
 		inline int		renderSegments() const { return m_nbRenderSegments; }
 
 		bool	setColors( int begin, int end, const HiColor * pColors );
-
-		bool	setGradients( int begin, int end, const Gradient * pGradients );
-
+		bool	setGradients(int begin, int end, const Gradient* pGradients);
 		bool	setTintmaps( int begin, int end, const Tintmap_p * pTintmaps );
 
-		bool	setColorstrips(int begin, int end, const HiColor * pStripsX, const HiColor * pStripsY);
+
 
 		
 		//.____ Content _______________________________________________________
@@ -89,8 +87,8 @@ namespace wg
 
 		inline int		samples() const { return m_size.w + 1; }
 
-		bool			hasHorizontalTint() const { return m_horrTintmaps.any(); }
-		bool			hasVerticalTint() const { return m_vertTintmaps.any(); }
+		bool			hasHorizontalTint() const { return m_pColorstripsX; }
+		bool			hasVerticalTint() const { return m_pColorstripsY; }
 
 		bool 			importSamples( SampleOrigo origo, const spx * pSource, int edgeBegin, int edgeEnd,
 									  int sampleBegin, int sampleEnd, int edgePitch = 0, int samplePitch = 0 );
@@ -120,7 +118,7 @@ namespace wg
 
 
 		virtual void	_samplesUpdated(int edgeBegin, int edgeEnd, int sampleBegin, int sampleEnd) = 0;
-		virtual void	_colorsUpdated(int beginSegment, int endSegment) = 0;
+		virtual void	_colorsUpdated(int beginColor, int endColor) = 0;
 
 		SizeI       m_size;
 		int			m_nbSegments;
@@ -128,15 +126,18 @@ namespace wg
 
 		//
 		
-		std::bitset<maxSegments>	m_horrTintmaps;		// One bit for each segment. Set if color varies horizontally for that segment.
-		std::bitset<maxSegments>	m_vertTintmaps;		// One bit for each segment. Set if color varies vertically for that segment.
-	
 
 		char* m_pBuffer;
-		spx* m_pSamples;					// Stored vertically, e.g. samples for first column for all edges before samples for second column etc
+		spx* m_pSamples;						// Stored vertically, e.g. samples for first column for all edges before samples for second column etc
 
-		HiColor* m_pColors;				// Stored as horizontal + vertical tintmap colors for segment 1, then segment 2 etc.
-		Gradient* m_pGradients;
+		HiColor*	m_pColorstripsX = nullptr;	// Horizontal colorstrips for segment 1, then segment 2 etc. or null if none.
+		HiColor*	m_pColorstripsY = nullptr;	// Vertical colorstrips for segment 1, then segment 2 etc. or null if none.
+		HiColor*	m_pFlatColors = nullptr;	// Flat colors for when we have no colorstrips.
+
+		HiColor*	m_pPalette = nullptr;		// Pointer at our colors, no matter if they are colorstrips or flat.
+		int			m_paletteSize = 0;			// Total number of colors.
+
+		Gradient*	m_pGradients = nullptr;		// Pointer at gradients for our segments, for legacy purposes.
    };
 
 

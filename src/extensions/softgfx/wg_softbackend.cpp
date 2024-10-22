@@ -839,9 +839,7 @@ namespace wg
 				pCoords += nRects * 4;
 
 				int32_t nSegments = pEdgemap->segments();
-				const HiColor * pSegmentColors = pEdgemap->m_pColors;
-
-				int	colorPitch = pEdgemap->_colorSegmentPitch();
+				const HiColor * pSegmentColors = pEdgemap->m_pFlatColors;
 				
 				int nEdgeStrips = pEdgemap->m_size.w + 1;
 
@@ -982,15 +980,13 @@ namespace wg
 					
 					for (int i = 0; i < nSegments; i++)
 					{
-						colors[i][0] = (pColor->r * m_colTrans.flatTintColor.r) >> 12;
-						colors[i][1] = (pColor->g * m_colTrans.flatTintColor.g) >> 12;
-						colors[i][2] = (pColor->b * m_colTrans.flatTintColor.b) >> 12;
-						colors[i][3] = (pColor->a * m_colTrans.flatTintColor.a) >> 12;
-						pColor += colorPitch;
+						colors[i][0] = (pSegmentColors[i].r * m_colTrans.flatTintColor.r) >> 12;
+						colors[i][1] = (pSegmentColors[i].g * m_colTrans.flatTintColor.g) >> 12;
+						colors[i][2] = (pSegmentColors[i].b * m_colTrans.flatTintColor.b) >> 12;
+						colors[i][3] = (pSegmentColors[i].a * m_colTrans.flatTintColor.a) >> 12;
 						
 						transparentSegments[i] = (colors[i][3] == 0);
-						opaqueSegments[i] = (colors[i][3] == 4096);
-						
+						opaqueSegments[i] = (colors[i][3] == 4096);						
 					}
 				}
 
@@ -1020,16 +1016,22 @@ namespace wg
 						tintBufferSizeX = sizeof(HiColor) * nSegments * length;
 						pTintColorsX = (HiColor*)GfxBase::memStackAlloc(tintBufferSizeX);
 						
-						// export segment tintmaps into our buffer
+						// export segment colorstrip or flat colors into our buffer
 						
-						HiColor * pOutput = pTintColorsX;
-						HiColor * pInput = pEdgemap->m_pColors;
-												
-						for( int i = 0 ; i < nSegments ; i++ )
+						if (pEdgemap->m_pColorstripsX)
+							memcpy(pTintColorsX, pEdgemap->m_pColorstripsX, tintBufferSizeX);
+						else if (pEdgemap->m_pFlatColors)
 						{
-							memcpy( pOutput, pInput, sizeof(HiColor) * length);
-							pOutput += length;
-							pInput += pEdgemap->_colorSegmentPitch();
+							HiColor* pOutput = pTintColorsX;
+							HiColor* pInput = pEdgemap->m_pFlatColors;
+
+							for (int seg = 0; seg < nSegments; seg++)
+							{
+								for (int i = 0; i < length; i++)
+									*pOutput++ = *pInput;
+
+								pInput++;
+							}
 						}
 					}
 					
@@ -1044,16 +1046,29 @@ namespace wg
 						tintBufferSizeY = sizeof(HiColor) * nSegments * length;
 						pTintColorsY = (HiColor*)GfxBase::memStackAlloc(tintBufferSizeY);
 						
-						// export segment tintmaps into our buffer
-						
-						HiColor * pOutput = pTintColorsY;
-						HiColor * pInput = pEdgemap->m_pColors + pEdgemap->m_size.w;
-												
-						for( int i = 0 ; i < nSegments ; i++ )
+						// Export segment colorstrip into our buffer if we have them.
+						// Otherwise, if we haven't already exported our flat colors we do it now.
+						// If flat colors already have been exported, we just fill with white.
+
+						if (pEdgemap->m_pColorstripsY)
+							memcpy(pTintColorsY, pEdgemap->m_pColorstripsY, tintBufferSizeY);
+						else if (pEdgemap->m_pFlatColors && !bTintX)
 						{
-							memcpy( pOutput, pInput, sizeof(HiColor) * length);
-							pOutput += length;
-							pInput += pEdgemap->_colorSegmentPitch();
+							HiColor* pOutput = pTintColorsX;
+							HiColor* pInput = pEdgemap->m_pFlatColors;
+
+							for (int seg = 0; seg < nSegments; seg++)
+							{
+								for (int i = 0; i < length; i++)
+									*pOutput++ = *pInput;
+
+								pInput++;
+							}
+						}
+						else
+						{
+							for (int i = 0; i < tintBufferSizeY; i++)
+								pTintColorsY[i] = HiColor::White;
 						}
 					}
 
@@ -1132,7 +1147,6 @@ namespace wg
 								}
 							}
 						}
-
 					}
 
 

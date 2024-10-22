@@ -59,7 +59,7 @@ protected:
 	~SoftEdgemap();
 	
 	void	_samplesUpdated(int edgeBegin, int edgeEnd, int sampleBegin, int sampleEnd) override;
-	void	_colorsUpdated(int beginSegment, int endSegment) override;
+	void	_colorsUpdated(int beginColor, int endColor) override;
 	
 	int		_colorSegmentPitch() const { return m_size.w + m_size.h; }
 	

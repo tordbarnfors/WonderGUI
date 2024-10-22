@@ -102,47 +102,49 @@ void SoftEdgemap::_samplesUpdated(int edgeBegin, int edgeEnd, int sampleBegin, i
 
 //____ _colorsUpdated() ________________________________________________________
 
-void SoftEdgemap::_colorsUpdated(int beginSegment, int endSegment)
+void SoftEdgemap::_colorsUpdated(int beginColor, int endColor)
 {
-	// Update m_opaqueSegments and m_transparentSegments
+	// Update m_transparentSegments and m_opaqueSegments
 
-
-	for (int seg = beginSegment; seg < endSegment; seg++)
+	if (m_pFlatColors)
 	{
-		auto pColors = m_pColors + seg*(m_size.w+m_size.h);
-
-		int totalAlpha = 0;
-
-		if (m_horrTintmaps.test(seg))
+		for (int seg = beginColor; seg < endColor; seg++)
 		{
-			for (int i = 0; i < m_size.w; i++)
+			int alpha = m_pPalette[seg].a;
+			m_transparentSegments[seg] = (alpha == 0);
+			m_opaqueSegments[seg] = (alpha == 4096);
+		}
+	}
+	else
+	{
+		// To keep it simple we go through the whole palette on each update.
+
+		for (int seg = 0; seg < m_nbSegments; seg++)
+		{
+			int totalAlpha = 0;
+			int totalColors = 0;
+
+			if (m_pColorstripsX)
 			{
-				totalAlpha += pColors->a;
-				pColors++;
-			}
-		}
-		else
-		{
-			totalAlpha += pColors->a * m_size.w;
-			pColors += m_size.w;
-		}
+				HiColor* pColor = m_pColorstripsX + m_size.w * seg;
+				for (int i = 0; i < m_size.w; i++)
+					totalAlpha += pColor[i].a;
 
-		if (m_vertTintmaps.test(seg))
-		{
-			for (int i = 0; i < m_size.h; i++)
+				totalColors += m_size.w;
+			}
+
+			if (m_pColorstripsY)
 			{
-				totalAlpha += pColors->a;
-				pColors++;
-			}
-		}
-		else
-		{
-			totalAlpha += pColors->a * m_size.h;
-			pColors += m_size.w;
-		}
+				HiColor* pColor = m_pColorstripsY + m_size.h * seg;
+				for (int i = 0; i < m_size.h; i++)
+					totalAlpha += pColor[i].a;
 
-		m_transparentSegments[seg] = (totalAlpha == 0);
-		m_opaqueSegments[seg] = (totalAlpha == 4096 * (m_size.w + m_size.h));
+				totalColors += m_size.h;
+			}
+
+			m_transparentSegments[seg] = (totalAlpha == 0);
+			m_opaqueSegments[seg] = (totalAlpha == 4096 * totalColors);
+		}
 	}
 }
 

@@ -81,11 +81,12 @@ namespace wg
 		// Create OpenGL buffer
 
 		int samplesSize = bp.size.w * (bp.segments - 1) * 4 * sizeof(GLfloat);
-		int colorstripsSize = (bp.size.w + bp.size.h) * bp.segments * 4 * sizeof(GLfloat);
+		int paletteSize = m_paletteSize * 4 * sizeof(GLfloat);
 
-		m_colorsOfs = samplesSize;
+		m_paletteOfs = samplesSize;
+		m_whiteColorOfs = samplesSize + paletteSize;
 
-		int bufferSize = samplesSize + colorstripsSize;
+		int bufferSize = samplesSize + paletteSize + 16;		// +16 for white color
 
 		glGenBuffers(1, &m_bufferId);
 		glBindBuffer(GL_TEXTURE_BUFFER, m_bufferId);
@@ -102,7 +103,16 @@ namespace wg
 
 		// Convert and upload colorstrips
 
-		_colorsUpdated(0, m_nbSegments);
+		_colorsUpdated(0, m_paletteSize);
+
+		// Add and upload default white color
+
+		GLfloat white[4] = { 1.f, 1.f, 1.f, 1.f };
+
+		glBindBuffer(GL_TEXTURE_BUFFER, m_bufferId);
+		glBufferSubData(GL_TEXTURE_BUFFER, m_whiteColorOfs, 16, white);
+		glBindBuffer(GL_TEXTURE_BUFFER, 0);
+
 	}
 
 	//____ destructor ____________________________________________________________
@@ -191,16 +201,15 @@ namespace wg
 
 	//____ _colorsUpdated() ____________________________________________________
 
-	void GlEdgemap::_colorsUpdated(int beginSegment, int endSegment)
+	void GlEdgemap::_colorsUpdated(int beginColor, int endColor)
 	{
-		int segColors = m_size.w + m_size.h;
 
-		int nColors = segColors * (endSegment - beginSegment);
+		int nColors = endColor - beginColor;
 		int tempBuffSize = nColors * sizeof(GLfloat) * 4;
 
 		auto pTempBuffer = (GLfloat*)GfxBase::memStackAlloc(tempBuffSize);
 
-		auto pIn = m_pColors + beginSegment * segColors;
+		auto pIn = m_pPalette + beginColor;
 		auto pOut = pTempBuffer;
 		for (int i = 0; i < nColors; i++)
 		{
@@ -211,7 +220,7 @@ namespace wg
 			pIn++;
 		}
 
-		int bufferOffset = m_colorsOfs + beginSegment * segColors * 4 * sizeof(GLfloat);
+		int bufferOffset = m_paletteOfs + (beginColor * 4 * sizeof(GLfloat));
 
 		glBindBuffer(GL_TEXTURE_BUFFER, m_bufferId);
 		glBufferSubData(GL_TEXTURE_BUFFER, bufferOffset, tempBuffSize, pTempBuffer);

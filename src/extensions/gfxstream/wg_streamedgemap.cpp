@@ -271,7 +271,7 @@ void StreamEdgemap::_colorsUpdated(int beginSegment, int endSegment)
 void StreamEdgemap::_sendCreateEdgemap( StreamEncoder* pEncoder )
 {
 	//TODO: Ändra och skicka colorstrips genom _colorsUpdated() istf colors/gradients. 
-
+/*
 	int nbColors = ( m_pColors != nullptr ) ? m_nbSegments : 0;
 	int nbGradients = ( m_pGradients != nullptr ) ? m_nbSegments : 0;
 
@@ -291,6 +291,7 @@ void StreamEdgemap::_sendCreateEdgemap( StreamEncoder* pEncoder )
 	
 	for( int i = 0 ; i < nbGradients ; i++ )
 		encoder << m_pGradients[i];
+*/
 }
 
 //____ _findBestPackFormat() _________________________________________________

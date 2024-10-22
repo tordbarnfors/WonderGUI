@@ -899,6 +899,9 @@ void GlBackend::processCommands(int32_t* pBeg, int32_t* pEnd)
 
 			int extrasOfs = int(pExtrasGL - m_pExtrasBuffer) / 4;
 
+			float colorstripPitchX;
+			float colorstripPitchY;
+
 
 			// Setup vertices
 
@@ -914,6 +917,7 @@ void GlBackend::processCommands(int32_t* pBeg, int32_t* pEnd)
 				//
 
 				float tintmapBeginX, tintmapBeginY, tintmapEndX, tintmapEndY;
+
 
 				if (m_bTintmap)
 				{
@@ -952,13 +956,56 @@ void GlBackend::processCommands(int32_t* pBeg, int32_t* pEnd)
 				int ofsX = patch.x - dest.x;
 				int ofsY = patch.y - dest.y;
 
-				int stripsBegin = pEdgemap->m_colorsOfs / 16;
+				float colorstripBeginX;
+				float colorstripEndX;
 
-				float colorstripBeginX = stripsBegin + ofsX;
-				float colorstripEndX = colorstripBeginX + patch.w;
+				float colorstripBeginY;
+				float colorstripEndY;
 
-				float colorstripBeginY = stripsBegin + pEdgemap->m_size.w + ofsY;
-				float colorstripEndY = colorstripBeginY + patch.h;
+				if (pEdgemap->m_pFlatColors)
+				{
+					colorstripBeginX = pEdgemap->_flatColorsOfs();
+					colorstripEndX = colorstripBeginX;
+
+					colorstripBeginY = pEdgemap->_whiteColorOfs();
+					colorstripEndY = colorstripBeginY;
+
+					colorstripPitchX = 1;
+					colorstripPitchY = 0;
+
+				}
+				else
+				{
+					if (pEdgemap->m_pColorstripsX)
+					{
+						colorstripBeginX = pEdgemap->_colorstripXOfs() + ofsX;
+						colorstripEndX = colorstripBeginX + patch.w;
+
+						colorstripPitchX = pEdgemap->m_size.w;
+					}
+					else
+					{
+						colorstripBeginX = pEdgemap->_whiteColorOfs();
+						colorstripEndX = colorstripBeginX;
+
+						colorstripPitchX = 0;
+					}
+
+					if (pEdgemap->m_pColorstripsY)
+					{
+						colorstripBeginY = pEdgemap->_colorstripYOfs() + ofsY;
+						colorstripEndY = colorstripBeginY + patch.h;
+
+						colorstripPitchY = pEdgemap->m_size.h;
+					}
+					else
+					{
+						colorstripBeginY = pEdgemap->_whiteColorOfs();
+						colorstripEndY = colorstripBeginY;
+
+						colorstripPitchY = 0;
+					}
+				}
 
 
 				// Calc UV-coordinates. U is edge offset, V is pixel offset from begin in column.
@@ -1035,8 +1082,8 @@ void GlBackend::processCommands(int32_t* pBeg, int32_t* pEnd)
 
 			*pExtrasGL++ = (GLfloat)nSegments;
 			*pExtrasGL++ = 0;			// Dummy;
-			*pExtrasGL++ = pEdgemap->m_size.w + pEdgemap->m_size.h; // colorstripPitchX
-			*pExtrasGL++ = pEdgemap->m_size.w + pEdgemap->m_size.h; // colorstripPitchY
+			*pExtrasGL++ = colorstripPitchX;
+			*pExtrasGL++ = colorstripPitchY;
 
 			//
 
