@@ -49,14 +49,15 @@ namespace wg
 		struct Blueprint
 		{
 			const HiColor*		colors 		= nullptr;			// Edgemap has either colors, gradients, tintmaps or colorstrips, never more than one of them. Setting one is mandatory.
+			const HiColor*		colorstripsX = nullptr;			// One color for each pixel along width for each segment.
+			const HiColor*		colorstripsY = nullptr;			// One color for each pixel along height for each segment.
+
 			Finalizer_p			finalizer	= nullptr;
 			const Gradient *	gradients 	= nullptr;			// Edgemap has either colors, gradients, tintmaps or colorstrips, never more than one of them. Setting one is mandatory.
 			const Tintmap_p * 	tintmaps	= nullptr;			// Needs to have one tintmap per segement if any. So size() must be 0 or equal to segments.
 			int					segments	= 0;				// Mandatory.
 			SizeI				size;							// Mandatory.
 
-			const HiColor*		colorstripsX = nullptr;			// One color for each pixel along width for each segment.
-			const HiColor*		colorstripsY = nullptr;			// One color for each pixel along height for each segment.
 		};
 	   	 
 		
@@ -74,10 +75,14 @@ namespace wg
 		virtual bool	setRenderSegments(int nSegments);
 		inline int		renderSegments() const { return m_nbRenderSegments; }
 
-		bool	setColors( int begin, int end, const HiColor * pColors );
-		bool	setGradients(int begin, int end, const Gradient* pGradients);
-		bool	setTintmaps( int begin, int end, const Tintmap_p * pTintmaps );
+		bool	setColors( int begin, int end, const HiColor * colors );
+		bool	setColors( int begin, int end, const Gradient * pGradients);
+		bool	setColors( int begin, int end, const Tintmap_p * pTintmaps );
+		bool	setColors( int begin, int end, const HiColor * pColorstripsX, const HiColor * pColorstripsY);
 
+		const HiColor* flatColors() const { return m_pFlatColors; }
+		const HiColor* colorstripsX() const { return m_pColorstripsX; }
+		const HiColor* colorstripsY() const { return m_pColorstripsY; }
 
 
 		

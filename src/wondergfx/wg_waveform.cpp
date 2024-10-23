@@ -611,7 +611,7 @@ namespace wg
 			if( m_pEdgemap == nullptr )
 				m_pEdgemap = pFactory->createEdgemap( WGBP(Edgemap, _.gradients = gradients, _.size = m_size, _.segments = nSegments ) );
 			else
-				m_pEdgemap->setGradients( 0, nSegments, gradients );
+				m_pEdgemap->setColors( 0, nSegments, gradients );
 		}
 		else
 		{

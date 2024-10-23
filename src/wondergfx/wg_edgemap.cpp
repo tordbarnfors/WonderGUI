@@ -282,144 +282,164 @@ namespace wg
 
 	bool Edgemap::setColors(int begin, int end, const HiColor* pColors)
 	{
-/*
-		int pitch = m_size.w + m_size.h;
-
-		auto pOutput = m_pColors + begin * pitch;
-
-		for (int seg = begin; seg < end; seg++)
+		if (m_pFlatColors)
 		{
-			for (int i = 0; i < m_size.w; i++)
-				*pOutput++ = *pColors;
+			for (int i = begin; i < end; i++)
+				m_pFlatColors[i] = *pColors++;
 
-			for (int i = 0; i < m_size.h; i++) 
-				*pOutput++ = HiColor::White;
-
-			pColors++;
+			_colorsUpdated(begin, end);
 		}
-
-		_colorsUpdated(begin, end);
-*/
-		return true;
-	}
-
-	//____ setGradients() ______________________________________________________
-
-	bool Edgemap::setGradients(int begin, int end, const Gradient* pGradients)
-	{
-		return true;
-	}
-
-
-	//____ setTintmaps() __________________________________________________________
-
-	bool Edgemap::setTintmaps(int begin, int end, const Tintmap_p* pTintmaps)
-	{
-/*
-		int pitch = m_size.w + m_size.h;
-
-		auto pOutput = m_pColors + begin * pitch;
-
-		for (int seg = begin; seg < end; seg++)
+		else if (m_pColorstripsX)
 		{
-			auto pTintmap = *pTintmaps++;
+			// Set whole horizontal colorstrips to our color.
 
-			if (pTintmap)
-			{
-				pTintmap->exportHorizontalColors(m_size.w * 64, pOutput);
-				pOutput += m_size.w;
-				pTintmap->exportVerticalColors(m_size.h * 64, pOutput);
-				pOutput += m_size.h;
-
-				m_horrTintmaps[seg] = pTintmap->isHorizontal();
-				m_vertTintmaps[seg] = pTintmap->isVertical();
-
-				m_pGradients[seg] = pTintmap->exportGradient();
-			}
-			else
-			{
-				for (int i = 0; i < m_size.w + m_size.h; i++)
-					*pOutput++ = HiColor::Transparent;
-
-				m_pGradients[seg] = Gradient(HiColor::Transparent, HiColor::Transparent, HiColor::Transparent, HiColor::Transparent);
-			}
-		}
-
-		_colorsUpdated(begin, end);
-*/
-		return true;
-	}
-
-	//____ setColorstrips() ____________________________________________________
-
-/*
-	bool Edgemap::setColorstrips(int begin, int end, const HiColor* pStripsX, const HiColor* pStripsY)
-	{
-		int colorPitch = m_size.w + m_size.h;
-
-		if (pStripsX)
-		{
-			auto pInput = pStripsX;
-			auto pOutput = m_pColors + begin * colorPitch;
-
-			for (int seg = begin; seg < end; seg++)
-			{
-				memcpy(pOutput, pInput, m_size.w * sizeof(HiColor));
-				pInput += m_size.w;
-				pOutput += colorPitch;
-
-				m_horrTintmaps[seg] = true;
-			}
-		}
-		else
-		{
-			auto pOutput = m_pColors + begin * colorPitch;
-
+			HiColor* pDest = m_pColorstripsX + begin * m_size.w;
 			for (int seg = begin; seg < end; seg++)
 			{
 				for (int i = 0; i < m_size.w; i++)
-					pOutput[i] = HiColor::White;
-
-				pOutput += colorPitch;
-
-				m_horrTintmaps[seg] = false;
+					*pDest++ = *pColors;
+				pColors++;
 			}
-		}
 
-		if (pStripsY)
-		{
-			auto pInput = pStripsY;
-			auto pOutput = m_pColors + begin * colorPitch + m_size.w;
+			_colorsUpdated((m_pColorstripsX - m_pPalette) + begin * m_size.w, (m_pColorstripsX - m_pPalette) + end * m_size.w);
 
-			for (int seg = begin; seg < end; seg++)
+
+			// If we also have vertical colorstrip, we need to set its colors to White.
+
+			if (m_pColorstripsY)
 			{
-				memcpy(pOutput, pInput, m_size.h * sizeof(HiColor));
-				pInput += m_size.h;
-				pOutput += colorPitch;
+				HiColor* pDest = m_pColorstripsY + begin * m_size.h;
 
-				m_vertTintmaps[seg] = true;
+				for (int seg = begin; seg < end; seg++)
+				{
+					for (int i = 0; i < m_size.h; i++)
+						*pDest++ = HiColor::White;
+				}
+
+				_colorsUpdated((m_pColorstripsY - m_pPalette) + begin * m_size.h, (m_pColorstripsY - m_pPalette) + end * m_size.h);
 			}
 		}
 		else
 		{
-			auto pOutput = m_pColors + begin * colorPitch + m_size.w;
+			// We only have vertical colorstrips, so we set our new colors in them.
 
+			HiColor* pDest = m_pColorstripsY + begin * m_size.h;
 			for (int seg = begin; seg < end; seg++)
 			{
 				for (int i = 0; i < m_size.h; i++)
-					pOutput[i] = HiColor::White;
-
-				pOutput += colorPitch;
-
-				m_vertTintmaps[seg] = false;
+					*pDest++ = *pColors;
+				pColors++;
 			}
-		}
 
-		_colorsUpdated(begin, end);
+			_colorsUpdated((m_pColorstripsY - m_pPalette) + begin * m_size.h, (m_pColorstripsY - m_pPalette) + end * m_size.h);
+		}
 
 		return true;
 	}
-*/
+
+
+
+	bool Edgemap::setColors(int begin, int end, const Gradient* pGradients)
+	{
+		if (m_pFlatColors)
+			return false;
+
+		for (int seg = begin; seg < end; seg++)
+		{
+			auto pGradyent = Gradyent::create(*pGradients++);
+
+			if (m_pColorstripsX)
+				pGradyent->exportHorizontalColors(m_size.w, m_pColorstripsX + seg * m_size.w);
+
+			if (m_pColorstripsY)
+				pGradyent->exportVerticalColors(m_size.w, m_pColorstripsY + seg * m_size.h);
+		}
+
+		if( m_pColorstripsX )
+			_colorsUpdated((m_pColorstripsX - m_pPalette) + begin * m_size.w, (m_pColorstripsX - m_pPalette) + end * m_size.w);
+
+		if (m_pColorstripsY)
+			_colorsUpdated((m_pColorstripsY - m_pPalette) + begin * m_size.h, (m_pColorstripsY - m_pPalette) + end * m_size.h);
+
+		return true;
+	}
+
+	bool Edgemap::setColors(int begin, int end, const Tintmap_p* pTintmaps)
+	{
+		if (m_pFlatColors)
+			return false;
+
+		//TODO: Also check so that the tintmaps don't tint a direction we don't have colorstrips for.
+
+
+		if (m_pColorstripsX)
+		{
+			auto pMaps = pTintmaps;
+			HiColor* pDest = m_pColorstripsX + begin * m_size.w;
+
+			for (int seg = begin; seg < end; seg++)
+			{
+				Tintmap* pMap = *pMaps++;
+
+				pMap->exportHorizontalColors(m_size.w, pDest);
+				pDest += m_size.w;
+			}
+
+			_colorsUpdated((m_pColorstripsX-m_pPalette) + begin * m_size.w, (m_pColorstripsX - m_pPalette) + end * m_size.w);
+		}
+
+		if (m_pColorstripsY)
+		{
+			auto pMaps = pTintmaps;
+			HiColor* pDest = m_pColorstripsY + begin * m_size.h;
+
+			for (int seg = begin; seg < end; seg++)
+			{
+				Tintmap* pMap = *pMaps++;
+
+				pMap->exportVerticalColors(m_size.h, pDest);
+				pDest += m_size.h;
+			}
+
+			_colorsUpdated((m_pColorstripsY - m_pPalette) + begin * m_size.h, (m_pColorstripsY - m_pPalette) + end * m_size.h);
+		}
+
+		return true;
+	}
+
+	bool Edgemap::setColors(int begin, int end, const HiColor* pColorstripsX, const HiColor* pColorstripsY)
+	{
+		if ((pColorstripsX && !m_pColorstripsX) || (pColorstripsY && !m_pColorstripsY))
+			return false;
+
+		if (pColorstripsX)
+		{
+			int nColors = (end - begin) * m_size.w;
+
+			HiColor* pDest = m_pColorstripsX + begin * m_size.w;
+			for (int i = 0; i < nColors; i++)
+					*pDest++ = *pColorstripsX++;
+
+			_colorsUpdated(m_pColorstripsX - m_pPalette, nColors);
+		}
+
+		if (pColorstripsY)
+		{
+			int nColors = (end - begin) * m_size.h;
+
+			HiColor* pDest = m_pColorstripsY + begin * m_size.h;
+			for (int i = 0; i < nColors; i++)
+				*pDest++ = *pColorstripsY++;
+
+			_colorsUpdated(m_pColorstripsY - m_pPalette, nColors);
+		}
+
+		return true;
+	}
+
+
+
+	
 
 	//____ importSamples() _________________________________________________________
 

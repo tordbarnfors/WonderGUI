@@ -1201,7 +1201,7 @@ namespace wg
 				for( int i = 0 ; i < nGradients ; i++ )
 					*m_pDecoder >> pGradients[i];
 
-				m_vEdgemaps[edgemapId]->setGradients(begin, end, pGradients);
+				m_vEdgemaps[edgemapId]->setColors(begin, end, pGradients);
 				GfxBase::memStackFree(memAllocated);
 				break;
 			}
