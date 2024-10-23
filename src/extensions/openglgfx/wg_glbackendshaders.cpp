@@ -1114,8 +1114,12 @@ const char GlBackend::segmentsFragmentShader[] =
 "	totalAlpha += useFactor;"
 "	rgbAcc += col.rgb * useFactor;"
 
-"   color.a = totalAlpha; "
-"   color.rgb = (rgbAcc/totalAlpha);"
+"   col.a = totalAlpha; "
+"   col.rgb = (rgbAcc/totalAlpha);"
+
+"    color = texelFetch(tintmapBufferId, int(tintmapUU.x) )"
+"              * texelFetch(tintmapBufferId, int(tintmapUU.y) )"
+"	           * col;           "
 
 "}";
 
@@ -1172,7 +1176,11 @@ const char GlBackend::segmentsFragmentShader_A8[] =
 "	float useFactor = factor*col.a;"
 "	totalAlpha += useFactor;"
 
-"   color.r = totalAlpha; "
+"    color.r = texelFetch(tintmapBufferId, int(tintmapUU.x) ).a"
+"              * texelFetch(tintmapBufferId, int(tintmapUU.y) ).a"
+"	           * totalAlpha;           "
+
+
 "}";
 
 

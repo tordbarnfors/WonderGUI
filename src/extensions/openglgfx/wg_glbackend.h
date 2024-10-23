@@ -102,6 +102,7 @@ namespace wg
 		const static int	c_maxSegments = 16;
 		static const int	c_segmentsTintTexMapSize = 64 * 10;				// Number of segments tint palettes that fit into segmentsTintTexMap.
 
+		static const int 	s_flipCornerOrder[GfxFlip_size][4];
 
 		void	_loadPrograms(int uboBindingPoint);
 		Blob_p	_generateProgramBlob();

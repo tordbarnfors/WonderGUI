@@ -48,6 +48,22 @@ Blob_p			GlBackend::s_pShaderPrograms = nullptr;
 #define LOG_INIT_GLERROR(check) { GLenum err = check; if(err != 0) { onGlError(err, this, &TYPEINFO, __func__, __FILE__, __LINE__ ); m_bFullyInitialized = false; } }
 
 
+const int GlBackend::s_flipCornerOrder[GfxFlip_size][4] = {
+	{ 0,1,2,3 },			// Normal
+	{ 1,0,3,2 },			// FlipX
+	{ 3,2,1,0 },			// FlipY
+	{ 3,0,1,2 },			// Rot90
+	{ 0,3,2,1 },			// Rot90FlipX
+	{ 2,1,0,3 },			// Rot90FlipY
+	{ 2,3,0,1 },			// Rot180
+	{ 3,2,1,0 },			// Rot180FlipX
+	{ 1,0,3,2 },			// Rot180FlipY
+	{ 1,2,3,0 },			// Rot270
+	{ 2,1,0,3 },			// Rot270FlipX
+	{ 0,3,2,1 }				// Rot270FlipY
+};
+
+
 //____ onGlError() _______________________________________________________________
 
 void GlBackend::onGlError(GLenum errorCode, const Object * pObject, const TypeInfo* pClassType, const char * func, const char * file, int line)
@@ -217,6 +233,7 @@ void GlBackend::_setCanvas(Surface* pSurface)
 	m_activeBlendMode = BlendMode::Blend;
 	_setBlendMode(m_activeBlendMode);
 
+	m_bTintmap = false;
 
 	m_activeMorphFactor = 0.5f;
 	m_bTintmapIsActive = false;
@@ -1029,12 +1046,23 @@ void GlBackend::processCommands(int32_t* pBeg, int32_t* pEnd)
 
 				//
 
+				CoordF	colorstripUV[4];
+
+				CoordF	colorstripUVin[4] = { { colorstripBeginX, colorstripBeginY }, { colorstripEndX, colorstripBeginY }, { colorstripEndX, colorstripEndY }, { colorstripBeginX, colorstripEndY } };
+				
+				colorstripUV[0] = colorstripUVin[s_flipCornerOrder[flip][0]];
+				colorstripUV[1] = colorstripUVin[s_flipCornerOrder[flip][1]];
+				colorstripUV[2] = colorstripUVin[s_flipCornerOrder[flip][2]];
+				colorstripUV[3] = colorstripUVin[s_flipCornerOrder[flip][3]];
+
+				//
+
 				pVertexGL->coord.x = dx1;
 				pVertexGL->coord.y = dy1;
 				pVertexGL->extrasOfs = extrasOfs;
 				pVertexGL->uv = uv1;
 				pVertexGL->tintmapOfs = { tintmapBeginX, tintmapBeginY };
-				pVertexGL->colorstripOfs = { colorstripBeginX, colorstripBeginY };
+				pVertexGL->colorstripOfs = colorstripUV[0];
 				pVertexGL++;
 
 				pVertexGL->coord.x = dx2;
@@ -1042,7 +1070,7 @@ void GlBackend::processCommands(int32_t* pBeg, int32_t* pEnd)
 				pVertexGL->extrasOfs = extrasOfs;
 				pVertexGL->uv = uv2;
 				pVertexGL->tintmapOfs = { tintmapEndX, tintmapBeginY };
-				pVertexGL->colorstripOfs = { colorstripEndX, colorstripBeginY };
+				pVertexGL->colorstripOfs = colorstripUV[1];
 				pVertexGL++;
 
 				pVertexGL->coord.x = dx2;
@@ -1050,7 +1078,7 @@ void GlBackend::processCommands(int32_t* pBeg, int32_t* pEnd)
 				pVertexGL->extrasOfs = extrasOfs;
 				pVertexGL->uv = uv3;
 				pVertexGL->tintmapOfs = { tintmapEndX, tintmapEndY };
-				pVertexGL->colorstripOfs = { colorstripEndX, colorstripEndY };
+				pVertexGL->colorstripOfs = colorstripUV[2];
 				pVertexGL++;
 
 				pVertexGL->coord.x = dx1;
@@ -1058,7 +1086,7 @@ void GlBackend::processCommands(int32_t* pBeg, int32_t* pEnd)
 				pVertexGL->extrasOfs = extrasOfs;
 				pVertexGL->uv = uv1;
 				pVertexGL->tintmapOfs = { tintmapBeginX, tintmapBeginY };
-				pVertexGL->colorstripOfs = { colorstripBeginX, colorstripBeginY };
+				pVertexGL->colorstripOfs = colorstripUV[0];
 				pVertexGL++;
 
 				pVertexGL->coord.x = dx2;
@@ -1066,7 +1094,7 @@ void GlBackend::processCommands(int32_t* pBeg, int32_t* pEnd)
 				pVertexGL->extrasOfs = extrasOfs;
 				pVertexGL->uv = uv3;
 				pVertexGL->tintmapOfs = { tintmapEndX, tintmapEndY };
-				pVertexGL->colorstripOfs = { colorstripEndX, colorstripEndY };
+				pVertexGL->colorstripOfs = colorstripUV[2];
 				pVertexGL++;
 
 				pVertexGL->coord.x = dx1;
@@ -1074,7 +1102,7 @@ void GlBackend::processCommands(int32_t* pBeg, int32_t* pEnd)
 				pVertexGL->extrasOfs = extrasOfs;
 				pVertexGL->uv = uv4;
 				pVertexGL->tintmapOfs = { tintmapBeginX, tintmapEndY };
-				pVertexGL->colorstripOfs = { colorstripBeginX, colorstripEndY };
+				pVertexGL->colorstripOfs = colorstripUV[3];
 				pVertexGL++;
 			}
 
