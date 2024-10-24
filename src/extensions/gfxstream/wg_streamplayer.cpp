@@ -1088,47 +1088,15 @@ namespace wg
 
 		case GfxChunkId::CreateEdgemap:
 		{
-
 			uint16_t	edgemapId;
 			SizeI		size;
 			uint16_t	nbSegments;
-			bool		bHasColors;
-			bool		bHasGradients;
+			uint16_t	paletteType;
 
 			*m_pDecoder >> edgemapId;
 			*m_pDecoder >> size;
 			*m_pDecoder >> nbSegments;
-			*m_pDecoder >> bHasColors;
-			*m_pDecoder >> bHasGradients;
-
-			int nbColors = bHasColors ? nbSegments : 0;
-			int nbGradients = bHasGradients ? nbSegments : 0;
-
-			int memSize = nbColors * sizeof(HiColor) + nbGradients * sizeof(Gradient);
-			
-			HiColor * pColors = nullptr;
-			Gradient * pGradients = nullptr;
-			
-			if( memSize > 0 )
-			{
-				char * pMem = (char *) GfxBase::memStackAlloc(memSize);
-				
-				if( bHasColors )
-				{
-					pColors = (HiColor*) pMem;
-					for( int i = 0 ; i < nbSegments ; i++ )
-						*m_pDecoder >> pColors[i];
-
-					pMem += nbColors * sizeof(HiColor);
-				}
-				
-				if( bHasGradients )
-				{
-					pGradients = (Gradient*) pMem;
-					for( int i = 0 ; i < nbSegments ; i++ )
-						*m_pDecoder >> pGradients[i];
-				}
-			}
+			*m_pDecoder >> paletteType;
 
 			if (m_vEdgemaps.size() <= edgemapId)
 				m_vEdgemaps.resize(edgemapId + 16, nullptr);
@@ -1136,14 +1104,10 @@ namespace wg
 			Edgemap::Blueprint		bp;
 			
 			bp.size = size;
-			bp.colors = pColors;
-			bp.gradients = pGradients;
 			bp.segments = nbSegments;
+			bp.paletteType = (EdgemapPalette) paletteType;
 			
 			m_vEdgemaps[edgemapId] = m_pEdgemapFactory->createEdgemap(bp);
-
-			GfxBase::memStackFree(memSize);
-						
 			break;
 		}
 
@@ -1160,52 +1124,28 @@ namespace wg
 			break;
 		}
 
-			case GfxChunkId::SetEdgemapColors:
-			{
-				uint16_t	edgemapId;
-				uint16_t	begin;
-				uint16_t	end;
-				
-				*m_pDecoder >> edgemapId;
-				*m_pDecoder >> begin;
-				*m_pDecoder >> end;
+		case GfxChunkId::SetEdgemapColors:
+		{
+			uint16_t	edgemapId;
+			uint16_t	begin;
+			uint16_t	end;
+			
+			*m_pDecoder >> edgemapId;
+			*m_pDecoder >> begin;
+			*m_pDecoder >> end;
 
-				int nColors = end - begin;
+			int nColors = end - begin;
 
-				int memAllocated = sizeof(HiColor)*nColors;
-				auto * pColors = (HiColor*) GfxBase::memStackAlloc(memAllocated);
-				
-				for( int i = 0 ; i < nColors ; i++ )
-					*m_pDecoder >> pColors[i];
+			int memAllocated = sizeof(HiColor)*nColors;
+			auto * pColors = (HiColor*) GfxBase::memStackAlloc(memAllocated);
+			
+			for( int i = 0 ; i < nColors ; i++ )
+				*m_pDecoder >> pColors[i];
 
-				m_vEdgemaps[edgemapId]->setColors(begin, end, pColors);
-				GfxBase::memStackFree(memAllocated);
-				break;
-			}
-				
-			case GfxChunkId::SetEdgemapGradients:
-			{
-				uint16_t	edgemapId;
-				uint16_t	begin;
-				uint16_t	end;
-				
-				*m_pDecoder >> edgemapId;
-				*m_pDecoder >> begin;
-				*m_pDecoder >> end;
-
-				int nGradients = end - begin;
-
-				int memAllocated = sizeof(Gradient)*nGradients;
-				auto * pGradients = (Gradient*) GfxBase::memStackAlloc(memAllocated);
-				
-				for( int i = 0 ; i < nGradients ; i++ )
-					*m_pDecoder >> pGradients[i];
-
-				m_vEdgemaps[edgemapId]->setColors(begin, end, pGradients);
-				GfxBase::memStackFree(memAllocated);
-				break;
-			}
-				
+			m_vEdgemaps[edgemapId]->importPaletteEntries(begin, end, pColors);
+			GfxBase::memStackFree(memAllocated);
+			break;
+		}
 				
 		case GfxChunkId::BeginEdgemapUpdate:
 		{

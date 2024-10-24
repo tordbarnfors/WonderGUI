@@ -114,11 +114,15 @@ const TypeInfo& StreamEdgemap::typeInfo(void) const
 
 bool StreamEdgemap::setRenderSegments(int nSegments)
 {
-	Edgemap::setRenderSegments(nSegments);
+	if( !Edgemap::setRenderSegments(nSegments) )
+		return false;
 
-	//TODO: Stream change!!!
-
-
+	auto& encoder = * m_pEncoder;
+		
+	encoder << GfxStream::Header{ GfxChunkId::SetEdgemapRenderSegments, GfxStream::SpxFormat::Int32_dec, 4 };
+	encoder << m_inStreamId;
+	encoder << (uint16_t) nSegments;
+		
 	return true;
 }
 
@@ -261,37 +265,44 @@ void StreamEdgemap::_samplesUpdated(int edgeBegin, int edgeEnd, int sampleBegin,
 
 //____ _colorsUpdated() ________________________________________________________
 
-void StreamEdgemap::_colorsUpdated(int beginSegment, int endSegment)
+void StreamEdgemap::_colorsUpdated(int beginColor, int endColor)
 {
-	//TODO: Implement!!!
+	auto& encoder = * m_pEncoder;
+	
+	int maxColorsPerBlock = (GfxStream::c_maxBlockSize - 8) / sizeof(HiColor);
+	
+	while( beginColor < endColor )
+	{
+		int nColorsInBlock = std::min(maxColorsPerBlock, endColor - beginColor );
+
+		int blockSize = 10 + nColorsInBlock * sizeof(HiColor);
+		
+		encoder << GfxStream::Header{ GfxChunkId::SetEdgemapColors, GfxStream::SpxFormat::Int32_dec, blockSize };
+		encoder << m_inStreamId;
+		encoder << beginColor;
+		encoder << beginColor + nColorsInBlock;
+
+		encoder << GfxStream::WriteBytes{ int(nColorsInBlock*sizeof(HiColor)), m_pPalette + beginColor };
+		
+		beginColor += nColorsInBlock;
+	}
 }
 
 //____ _sendCreateEdgemap() ___________________________________________________
 
 void StreamEdgemap::_sendCreateEdgemap( StreamEncoder* pEncoder )
 {
-	//TODO: Ändra och skicka colorstrips genom _colorsUpdated() istf colors/gradients. 
-/*
-	int nbColors = ( m_pColors != nullptr ) ? m_nbSegments : 0;
-	int nbGradients = ( m_pGradients != nullptr ) ? m_nbSegments : 0;
-
-	int blockSize = 14 + nbColors * 8 + nbGradients * GfxStream::GradientSize;
+	int blockSize = 14;
 	
 	auto& encoder = * m_pEncoder;
-
+	
 	encoder << GfxStream::Header{ GfxChunkId::CreateEdgemap, GfxStream::SpxFormat::Int32_dec, blockSize };
 	encoder << m_inStreamId;
 	encoder << m_size;
 	encoder << (uint16_t) m_nbSegments;
-	encoder << (bool) nbColors;
-	encoder << (bool) nbGradients;
-
-	for( int i = 0 ; i < nbColors ; i++ )
-		encoder << m_pColors[i];
+	encoder << (uint16_t) m_paletteType;
 	
-	for( int i = 0 ; i < nbGradients ; i++ )
-		encoder << m_pGradients[i];
-*/
+	_colorsUpdated(0, m_paletteSize);
 }
 
 //____ _findBestPackFormat() _________________________________________________

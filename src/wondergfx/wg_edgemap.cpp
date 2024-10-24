@@ -42,7 +42,29 @@ namespace wg
 		bool bStripX = false; 
 		bool bStripY = false;
 
-		if (bp.colorstripsX || bp.colorstripsY)
+		if( bp.paletteType != EdgemapPalette::Undefined )
+		{
+			switch(bp.paletteType)
+			{
+				default:
+				case EdgemapPalette::Flat:
+					break;
+					
+				case EdgemapPalette::ColorstripX:
+					bStripX = true;
+					break;
+					
+				case EdgemapPalette::ColorstripY:
+					bStripY = true;
+					break;
+					
+				case EdgemapPalette::ColorstripXY:
+					bStripX = true;
+					bStripY = true;
+					break;
+			}
+		}
+		else if (bp.colorstripsX || bp.colorstripsY)
 		{
 			bStripX = bp.colorstripsX;
 			bStripY = bp.colorstripsY;
@@ -59,7 +81,21 @@ namespace wg
 			}
 		}
 
-
+		if( bp.paletteType == EdgemapPalette::Undefined )
+		{
+			if( bStripX && bStripY )
+				m_paletteType = EdgemapPalette::ColorstripXY;
+			else if( bStripX )
+				m_paletteType = EdgemapPalette::ColorstripX;
+			else if( bStripY )
+				m_paletteType = EdgemapPalette::ColorstripY;
+			else
+				m_paletteType = EdgemapPalette::Flat;
+		}
+		else
+			m_paletteType = bp.paletteType;
+		
+				
 		// Setup buffers
 
 		int sampleArraySize = (bp.size.w + 1) * bp.segments * sizeof(spx);
@@ -67,9 +103,8 @@ namespace wg
 		int stripSizeX = bStripX ? (bp.size.w) * bp.segments * sizeof(HiColor) : 0;
 		int stripSizeY = bStripY ? (bp.size.h) * bp.segments * sizeof(HiColor) : 0;
 		int flatColorsSize = (bStripX == false && bStripY == false) ? bp.segments * sizeof(HiColor) : 0;
-		int gradientArraySize = bp.segments * sizeof(Gradient);							// We keep a set of gradients for backward compatiblity
 
-		int bytes = sampleArraySize + stripSizeX + stripSizeY + flatColorsSize + gradientArraySize;
+		int bytes = sampleArraySize + stripSizeX + stripSizeY + flatColorsSize;
 
 		m_pBuffer = new char[bytes];
 		char* pDest = m_pBuffer;
@@ -99,9 +134,6 @@ namespace wg
 			pDest += flatColorsSize;
 		}
 
-		m_pGradients = (Gradient*) pDest;
-
-
 		// Fill in colorstrips
 
 		if( m_pColorstripsX || m_pColorstripsY)
@@ -111,7 +143,6 @@ namespace wg
 			if (bp.colorstripsX || bp.colorstripsY)
 			{
 				// We have colorstrips defined. This overrides everything else, so we ignore tintmaps, gradients and colors.
-				// Gradients are used for saved gradients.
 
 				if (bp.colorstripsX)
 				{
@@ -136,20 +167,10 @@ namespace wg
 					{
 						memcpy(pOutput, pInput, bp.size.h * sizeof(HiColor));
 
-						if( !bp.colorstripsX)
-							m_pGradients[seg] = Gradient(pInput[0], pInput[bp.size.h - 1], pInput[bp.size.h - 1], pInput[0]);
-
 						pInput += bp.size.h;
 						pOutput += bp.size.h;
 					}
 				}
-
-				if (bp.gradients)
-				{
-					for (int seg = 0; seg < bp.segments; seg++)
-						m_pGradients[seg] = bp.gradients[seg];
-				}
-
 			}
 			else if( bp.tintmaps )
 			{
@@ -166,8 +187,6 @@ namespace wg
 
 						if (m_pColorstripsY)
 							pTintmap->exportVerticalColors(bp.size.w * 64, m_pColorstripsY + seg * m_size.h);
-
-						m_pGradients[seg] = pTintmap->exportGradient();
 					}
 					else if (bp.colors)
 					{
@@ -193,8 +212,6 @@ namespace wg
 								*pOutput++ = bp.colors[seg];
 
 						}
-
-						m_pGradients[seg] = Gradient(bp.colors[seg], bp.colors[seg], bp.colors[seg], bp.colors[seg]);
 					}
 					else
 					{
@@ -211,46 +228,25 @@ namespace wg
 							for (int i = 0; i < bp.size.h; i++)
 								*pOutput++ = HiColor::Transparent;
 						}
-
-						m_pGradients[seg] = Gradient(HiColor::Transparent, HiColor::Transparent, HiColor::Transparent, HiColor::Transparent);
 					}
 				}
 
 			}
-			else
+			else if( bp.gradients )
 			{
 				// We have gradients so we fill in our colorstrips from them.
 
-				for (int seg = 0; seg < bp.segments; seg++)
-				{
-					auto& gradient = bp.gradients[seg];
-
-					auto pTintmap = Gradyent::create(gradient);
-
-					if (m_pColorstripsX)
-						pTintmap->exportHorizontalColors(bp.size.w * 64, m_pColorstripsX + seg * m_size.w);
-
-					if (m_pColorstripsY)
-						pTintmap->exportVerticalColors(bp.size.w * 64, m_pColorstripsY + seg * m_size.h);
-
-					m_pGradients[seg] = pTintmap->exportGradient();
-				}
+				setColors(0, bp.segments, bp.gradients);
 			}
 		}
-		else
+		else if( bp.colors )
 		{
-			// We just have flat colors so we simply copy them
-
-			memcpy(m_pFlatColors, bp.colors, bp.segments * sizeof(HiColor));
-
-			for (int i = 0; i < bp.segments; i++)
-			{
-				m_pFlatColors[i] = bp.colors[i];
-				m_pGradients[i] = Gradient(bp.colors[i]);
-			}
-
+			// Flat colors
+			
+			setColors(0, bp.segments, bp.colors);
 		}
 
+		m_bConstructed = true;
 	}
 	
 	//____ destructor ________________________________________________________
@@ -287,7 +283,8 @@ namespace wg
 			for (int i = begin; i < end; i++)
 				m_pFlatColors[i] = *pColors++;
 
-			_colorsUpdated(begin, end);
+			if( m_bConstructed )
+				_colorsUpdated(begin, end);
 		}
 		else if (m_pColorstripsX)
 		{
@@ -301,8 +298,8 @@ namespace wg
 				pColors++;
 			}
 
-			_colorsUpdated((m_pColorstripsX - m_pPalette) + begin * m_size.w, (m_pColorstripsX - m_pPalette) + end * m_size.w);
-
+			if( m_bConstructed )
+				_colorsUpdated((m_pColorstripsX - m_pPalette) + begin * m_size.w, (m_pColorstripsX - m_pPalette) + end * m_size.w);
 
 			// If we also have vertical colorstrip, we need to set its colors to White.
 
@@ -316,7 +313,8 @@ namespace wg
 						*pDest++ = HiColor::White;
 				}
 
-				_colorsUpdated((m_pColorstripsY - m_pPalette) + begin * m_size.h, (m_pColorstripsY - m_pPalette) + end * m_size.h);
+				if( m_bConstructed )
+					_colorsUpdated((m_pColorstripsY - m_pPalette) + begin * m_size.h, (m_pColorstripsY - m_pPalette) + end * m_size.h);
 			}
 		}
 		else
@@ -331,12 +329,12 @@ namespace wg
 				pColors++;
 			}
 
-			_colorsUpdated((m_pColorstripsY - m_pPalette) + begin * m_size.h, (m_pColorstripsY - m_pPalette) + end * m_size.h);
+			if( m_bConstructed )
+				_colorsUpdated((m_pColorstripsY - m_pPalette) + begin * m_size.h, (m_pColorstripsY - m_pPalette) + end * m_size.h);
 		}
 
 		return true;
 	}
-
 
 
 	bool Edgemap::setColors(int begin, int end, const Gradient* pGradients)
@@ -355,10 +353,10 @@ namespace wg
 				pGradyent->exportVerticalColors(m_size.w, m_pColorstripsY + seg * m_size.h);
 		}
 
-		if( m_pColorstripsX )
+		if( m_pColorstripsX && m_bConstructed )
 			_colorsUpdated((m_pColorstripsX - m_pPalette) + begin * m_size.w, (m_pColorstripsX - m_pPalette) + end * m_size.w);
 
-		if (m_pColorstripsY)
+		if (m_pColorstripsY && m_bConstructed )
 			_colorsUpdated((m_pColorstripsY - m_pPalette) + begin * m_size.h, (m_pColorstripsY - m_pPalette) + end * m_size.h);
 
 		return true;
@@ -420,7 +418,7 @@ namespace wg
 			for (int i = 0; i < nColors; i++)
 					*pDest++ = *pColorstripsX++;
 
-			_colorsUpdated(m_pColorstripsX - m_pPalette, nColors);
+			_colorsUpdated((m_pColorstripsX-m_pPalette) + begin * m_size.w, (m_pColorstripsX - m_pPalette) + end * m_size.w);
 		}
 
 		if (pColorstripsY)
@@ -431,13 +429,19 @@ namespace wg
 			for (int i = 0; i < nColors; i++)
 				*pDest++ = *pColorstripsY++;
 
-			_colorsUpdated(m_pColorstripsY - m_pPalette, nColors);
+			_colorsUpdated((m_pColorstripsY - m_pPalette) + begin * m_size.h, (m_pColorstripsY - m_pPalette) + end * m_size.h);
 		}
 
 		return true;
 	}
 
+	//____ importPaletteEntries() ________________________________________________
 
+	void Edgemap::importPaletteEntries( int begin, int end, const HiColor * pColors )
+	{
+		memcpy( m_pPalette + begin, pColors, end - begin );
+		_colorsUpdated(begin, end);
+	}
 
 	
 

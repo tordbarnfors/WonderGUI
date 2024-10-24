@@ -928,45 +928,19 @@ namespace wg
 				uint16_t	edgemapId;
 				SizeI		size;
 				uint16_t	nbSegments;
-				bool		bHasColors;
-				bool		bHasGradients;
+				uint16_t	paletteType;
 
 				*m_pDecoder >> edgemapId;
 				*m_pDecoder >> size;
 				*m_pDecoder >> nbSegments;
-				*m_pDecoder >> bHasColors;
-				*m_pDecoder >> bHasGradients;
+				*m_pDecoder >> paletteType;
 
+				
 
-				m_charStream << "    edgemapId  = " << edgemapId << std::endl;
+				m_charStream << "    edgemapId   = " << edgemapId << std::endl;
 				m_charStream << "    size        = " << size.w << ", " << size.h << std::endl;
 				m_charStream << "    segments    = " << nbSegments << std::endl;
-
-				if( bHasColors )
-				{
-					HiColor	col;
-					*m_pDecoder >> col;
-					_printColor("    colors = ", col);
-
-					for (int i = 1; i < nbSegments; i++)
-					{
-						*m_pDecoder >> col;
-						_printColor("             ", col);
-					}
-				}
-
-				if (bHasGradients)
-				{
-					m_charStream << "    gradients:" << std::endl;
-
-					for (int i = 0; i < nbSegments; i++)
-					{
-						Gradient gradient;
-						*m_pDecoder >> gradient;
-
-						_printGradient( gradient );
-					}
-				}
+				m_charStream << "    paletteType = " << toString((EdgemapPalette) paletteType) << std::endl;
 				break;
 			}
 
@@ -986,8 +960,8 @@ namespace wg
 			case GfxChunkId::SetEdgemapColors:
 			{
 				uint16_t	edgemapId;
-				uint16_t	begin;
-				uint16_t	end;
+				int			begin;
+				int			end;
 				
 				*m_pDecoder >> edgemapId;
 				*m_pDecoder >> begin;
@@ -996,36 +970,6 @@ namespace wg
 				m_charStream << "    edgemapId  = " << edgemapId << std::endl;
 				m_charStream << "    begin       = " << begin << std::endl;
 				m_charStream << "    end         = " << end << std::endl;
-
-				for( int i = begin ; i < end ; i++ )
-				{
-					HiColor	col;
-					*m_pDecoder >> col;
-					_printColor("             ", col);
-				}
-				break;
-			}
-				
-			case GfxChunkId::SetEdgemapGradients:
-			{
-				uint16_t	edgemapId;
-				uint16_t	begin;
-				uint16_t	end;
-				
-				*m_pDecoder >> edgemapId;
-				*m_pDecoder >> begin;
-				*m_pDecoder >> end;
-
-				m_charStream << "    edgemapId  = " << edgemapId << std::endl;
-				m_charStream << "    begin       = " << begin << std::endl;
-				m_charStream << "    end         = " << end << std::endl;
-
-				for( int i = begin ; i < end ; i++ )
-				{
-					Gradient	gradient;
-					*m_pDecoder >> gradient;
-					_printGradient(gradient);
-				}
 				break;
 			}
 

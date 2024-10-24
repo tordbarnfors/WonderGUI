@@ -46,16 +46,34 @@ namespace wg
 
 		const static int maxSegments = 16;			// We keep this global for now. Might never need to restrict it more.
 		
+		// Edgemap has either flat colors, a horizontal colorstrip, a vertical colorstrip or both vertical and horizontal colorstrips.
+		// This needs to be decided when Edgemap is created and can be defined either by:
+		// 1. Setting the 'paletteType' variable directly to the format wanted.
+		// 2. Setting the 'colors' pointer will give you a palette of flat colors.
+		// 3. Setting tintmaps for each segment through the 'tintmaps' pointer. This will generate a palette of horizontal and/or vertical colorstrips as needed by the pointed to tintmaps.
+		// 4. Setting the 'colorstripsX' and/or 'colorstripsY' pointers directly.
+		
+		// Setting colors and colorstrips pointers in same blueprint is not allowed. You can however set tintmaps and colors at the same time. Entries in the
+		// tintmap list that are nullptr will then receive their colors from the color list instead. If color list is not specified nullptr entries will be
+		// transparent.
+		
+		// Setting paletteType and appropriate pointers in same blueprint is allowed and can be a way of for example forcing tintmaps even
+		// if all segments have flat colors to start with.
+
 		struct Blueprint
 		{
-			const HiColor*		colors 		= nullptr;			// Edgemap has either colors, gradients, tintmaps or colorstrips, never more than one of them. Setting one is mandatory.
+			const HiColor*		colors 		= nullptr;			// Flat colors, one color for each segment.
 			const HiColor*		colorstripsX = nullptr;			// One color for each pixel along width for each segment.
 			const HiColor*		colorstripsY = nullptr;			// One color for each pixel along height for each segment.
 
 			Finalizer_p			finalizer	= nullptr;
 			const Gradient *	gradients 	= nullptr;			// Edgemap has either colors, gradients, tintmaps or colorstrips, never more than one of them. Setting one is mandatory.
+			EdgemapPalette		paletteType = EdgemapPalette::Undefined;
+
 			const Tintmap_p * 	tintmaps	= nullptr;			// Needs to have one tintmap per segement if any. So size() must be 0 or equal to segments.
 			int					segments	= 0;				// Mandatory.
+		
+
 			SizeI				size;							// Mandatory.
 
 		};
@@ -75,11 +93,13 @@ namespace wg
 		virtual bool	setRenderSegments(int nSegments);
 		inline int		renderSegments() const { return m_nbRenderSegments; }
 
-		bool	setColors( int begin, int end, const HiColor * colors );
+		bool	setColors( int begin, int end, const HiColor * pColors );
 		bool	setColors( int begin, int end, const Gradient * pGradients);
 		bool	setColors( int begin, int end, const Tintmap_p * pTintmaps );
 		bool	setColors( int begin, int end, const HiColor * pColorstripsX, const HiColor * pColorstripsY);
 
+		void	importPaletteEntries( int begin, int end, const HiColor * pColors );
+		
 		const HiColor* flatColors() const { return m_pFlatColors; }
 		const HiColor* colorstripsX() const { return m_pColorstripsX; }
 		const HiColor* colorstripsY() const { return m_pColorstripsY; }
@@ -142,8 +162,9 @@ namespace wg
 		HiColor*	m_pPalette = nullptr;		// Pointer at our colors, no matter if they are colorstrips or flat.
 		int			m_paletteSize = 0;			// Total number of colors.
 
-		Gradient*	m_pGradients = nullptr;		// Pointer at gradients for our segments, for legacy purposes.
-   };
+		EdgemapPalette m_paletteType;
+		bool		m_bConstructed = false;		
+};
 
 
 } // namespace wg

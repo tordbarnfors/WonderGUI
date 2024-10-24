@@ -46,6 +46,18 @@ namespace wg
 		return names[(int)i];
 	}
 
+	const char * toString(EdgemapPalette i)
+	{
+		static const char * names[] = {
+			"Undefined",
+			"Flat",
+			"ColorstripX",
+			"ColorstripY",
+			"ColorstripXY" };
+
+		return names[(int)i];
+	}
+
 	const char * toString(BlendMode i)
 	{
 		static const char * names[] = { 

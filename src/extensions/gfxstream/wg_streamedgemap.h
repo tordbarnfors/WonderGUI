@@ -72,7 +72,6 @@ namespace wg
 		
 		StreamEncoder_p		m_pEncoder;
 		uint16_t			m_inStreamId;		// Id of this edgemap in the stream.
-				
    };
 
 

@@ -90,6 +90,7 @@ namespace wg
 	const static int             GfxChunkId_size     = (int)GfxChunkId::FlipDrawEdgemap + 1;
 
 	const char * toString(TintMode);
+	const char * toString(EdgemapPalette);
 	const char * toString(BlendMode);
 	const char * toString(Alignment);
 	const char * toString(Placement);

@@ -66,6 +66,8 @@ namespace wg
 
 	//____ TintMode ___________________________________________________________
 
+	// DEPRECATED!!!
+
 	enum class TintMode : uint8_t //.autoExtras
 	{
 		None = 0,
@@ -74,6 +76,18 @@ namespace wg
 		GradientY,
 		GradientXY
 	};
+
+	//____ EdgemapPalette ___________________________________________________________
+
+	enum class EdgemapPalette : uint8_t //.autoExtras
+	{
+		Undefined = 0,
+		Flat,
+		ColorstripX,
+		ColorstripY,
+		ColorstripXY
+	};
+
 
 	//____ BlendMode ____________________________________________________________
 
@@ -501,7 +515,7 @@ namespace wg
 		CreateEdgemap = 58,
 		SetEdgemapRenderSegments = 59,
 		SetEdgemapColors = 60,
-		SetEdgemapGradients = 61,
+//		SetEdgemapGradients = 61,
 		BeginEdgemapUpdate = 62,
 		EdgemapSamples = 63,
 		EndEdgemapUpdate = 64,
