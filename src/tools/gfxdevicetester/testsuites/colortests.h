@@ -17,7 +17,7 @@ public:
 	{
 		for (int i = 0; i < 7; i++)
 		{
-			RectSPX c = { i * 64, 0, 64, canvas.h };
+			RectSPX c = { i * 64, 0, 64, canvas.h/64 };
 			pDevice->fill(c*64, m_rainbowColors[i] );
 		}
 

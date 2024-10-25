@@ -439,7 +439,7 @@ namespace wg
 
 	void Edgemap::importPaletteEntries( int begin, int end, const HiColor * pColors )
 	{
-		memcpy( m_pPalette + begin, pColors, end - begin );
+		memcpy( m_pPalette + begin, pColors, (end - begin)*sizeof(HiColor) );
 		_colorsUpdated(begin, end);
 	}
 
@@ -581,8 +581,23 @@ namespace wg
 		if( bp.segments <= 0 || bp.segments > maxSegments )
 			return false;
 
-		if( int(bp.colors != nullptr) + int(bp.gradients != nullptr) + int(bp.tintmaps != nullptr) != 1 )
+		if (bp.paletteType == EdgemapPalette::Flat && (bp.gradients || bp.tintmaps || bp.colorstripsX || bp.colorstripsY))
 			return false;
+
+		if (bp.paletteType == EdgemapPalette::ColorstripX && bp.colorstripsY)
+			return false;
+
+		if (bp.paletteType == EdgemapPalette::ColorstripY && bp.colorstripsX)
+			return false;
+
+		if (bp.paletteType == EdgemapPalette::Undefined)
+		{
+			if (bp.tintmaps && (bp.colorstripsX || bp.colorstripsY || bp.gradients))
+				return false;
+
+			if (bp.colors && (bp.gradients || bp.colorstripsX || bp.colorstripsY))
+				return false;
+		}
 
 		return true;
 	}

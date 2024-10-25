@@ -192,7 +192,7 @@ void GfxDeviceTester::setup_testdevices()
 		auto pGen2CanvasSurface = SoftSurface::create(canvasBP);
 		auto pGen2SoftDevice = Device::create("Gen2 Software (SoftBackend)", pGen2GfxDevice, CanvasRef::None, pGen2CanvasSurface, this);
 
-		g_testdevices.push_back(pGen2SoftDevice);
+//		g_testdevices.push_back(pGen2SoftDevice);
 	}
 
 	// Gen2 with GlBackend
@@ -200,10 +200,10 @@ void GfxDeviceTester::setup_testdevices()
 	{
 		auto pBackend = GlBackend::create();
 
-		auto pBackendLogger = BackendLogger::create(std::cout, pBackend);
+//		auto pBackendLogger = BackendLogger::create(std::cout, pBackend);
+//		auto pGen2GfxDevice = GfxDeviceGen2::create(pBackendLogger);
 
-
-		auto pGen2GfxDevice = GfxDeviceGen2::create(pBackendLogger);
+		auto pGen2GfxDevice = GfxDeviceGen2::create(pBackend);
 
 		auto pCanvasSurface = GlSurface::create(canvasBP);
 		auto pGen2GlDevice = Device::create("Gen2 OpenGL (GlBackend)", pGen2GfxDevice, CanvasRef::None, pCanvasSurface, this);
@@ -275,10 +275,6 @@ void GfxDeviceTester::setup_testdevices()
 		auto pSoftGfxDevice = SoftGfxDevice::create();
 		addDefaultSoftKernels( pSoftGfxDevice );
 
-		Surface::Blueprint canvasBP = WGBP(Surface,
-										   _.size = {512,512},
-										   _.canvas = true );
-
 		auto pCanvasSurface = SoftSurface::create(canvasBP);		
 		pSoftGfxDevice->defineCanvas(CanvasRef::Default, pCanvasSurface);
 		
@@ -310,8 +306,34 @@ void GfxDeviceTester::setup_testdevices()
 
 		auto pReferenceDevice = Device::create( "Software BGR565sRGB (SoftGfxDevice)", pSoftGfxDevice, CanvasRef::None, pCanvasSurface, this );
 
-		g_testdevices.push_back(pReferenceDevice);
+//		g_testdevices.push_back(pReferenceDevice);
 	}
+
+	// Stream to Gen2 Software
+
+	{
+		auto pBackend = SoftBackend::create();
+		addDefaultSoftKernels(pBackend);
+
+		auto pBackendLogger = BackendLogger::create(std::cout, pBackend);
+		auto pGen2GfxDevice = GfxDeviceGen2::create(pBackendLogger);
+
+		auto pGen2CanvasSurface = SoftSurface::create(canvasBP);
+		auto pGen2SoftDevice = Device::create("Gen2 Software (SoftBackend)", pGen2GfxDevice, CanvasRef::None, pGen2CanvasSurface, this);
+
+		pBackend->defineCanvas(CanvasRef::Default, pGen2CanvasSurface);
+
+		auto pStreamPlayer = StreamPlayer::create(pGen2GfxDevice, SoftSurfaceFactory::create(), SoftEdgemapFactory::create());
+
+		auto pStreamEncoder = StreamFastEncoder::create({ pStreamPlayer, pStreamPlayer->input });
+		auto pStreamGfxDevice = StreamDevice::create(pStreamEncoder);
+		pStreamGfxDevice->defineCanvas(CanvasRef::Default, { 512,512 }, PixelFormat::BGRA_8_sRGB);
+
+		auto pStreamDevice = Device::create("Stream to Gen 2 Software", pStreamGfxDevice, CanvasRef::Default, pGen2CanvasSurface, this);
+
+		g_testdevices.push_back(pStreamDevice);
+	}
+
 
 }
 

@@ -321,11 +321,17 @@ namespace wg
 					if ((i % 16) == 0)
 						*m_pStream << std::endl << "        ";
 
-					*m_pStream << pCoords[i];
+					spx x = *pCoords++;
+					spx y = *pCoords++;
+
+					*m_pStream << "(" << x << "," << y << ") ";
 				}
 
+				if ((nPlots % 16) != 0)
+					*m_pStream << std::endl;
+
+
 				pColors += nPlots;
-				pCoords += nPlots;
 				break;
 			}
 

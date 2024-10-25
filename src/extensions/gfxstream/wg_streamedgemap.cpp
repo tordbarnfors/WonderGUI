@@ -145,27 +145,31 @@ void StreamEdgemap::_samplesUpdated(int edgeBegin, int edgeEnd, int sampleBegin,
 		encoder << (uint16_t)sampleBegin;
 		encoder << (uint16_t)sampleEnd;
 
+		int nbEdges = m_nbSegments - 1;
+		int copyEdges = edgeEnd - edgeBegin;
+		int skipEdges = nbEdges - copyEdges;
 
 		// Check sample max/min and max/min diff against old samples
 		// and find best spxFormat for transfer.
 
-		const int add = (1 << 21);
 		int spxMask = 0;
 
-		for (int edge = edgeBegin; edge < edgeEnd; edge++)
 		{
-			spx* pNewSample = m_pSamples + edge * (m_nbSegments - 1) + sampleBegin;
+			const int add = (1 << 21);
+			spx* pNew = m_pSamples + sampleBegin * nbEdges + edgeBegin;
 
 			for (int sample = sampleBegin; sample < sampleEnd; sample++)
 			{
-				int value = *pNewSample++;
-				spxMask |= value + add;
+				for (int i = 0; i < copyEdges; i++)
+				{
+					int value = *pNew++;
+					spxMask |= value + add;
+				}
+				pNew += skipEdges;
 			}
 		}
 
 		GfxStream::SpxFormat spxFormat = _findBestPackFormat(spxMask);
-
-
 
 		// Compress bytes for transfer
 
@@ -180,27 +184,31 @@ void StreamEdgemap::_samplesUpdated(int edgeBegin, int edgeEnd, int sampleBegin,
 		{
 			// No compression needed, just replace old
 
-			spx* pPacked = (spx*)pBuffer;
-			for (int edge = edgeBegin; edge < edgeEnd; edge++)
-			{
-				spx* pNew = m_pSamples + edge * (m_size.w + 1) + sampleBegin;
+			spx* pPacked = reinterpret_cast<spx*>(pBuffer);	
+			spx* pNew = m_pSamples + sampleBegin * nbEdges + edgeBegin;
 
-				for (int sample = sampleBegin; sample < sampleEnd; sample++)
+			for (int sample = sampleBegin; sample < sampleEnd; sample++)
+			{
+				for (int i = 0; i < copyEdges; i++)
 					*pPacked++ = *pNew++;
+
+				pNew += skipEdges;
 			}
+
 			break;
 		}
 
 		case GfxStream::SpxFormat::Uint16_dec:
 		{
 			uint16_t* pPacked = reinterpret_cast<uint16_t*>(pBuffer);
+			spx* pNew = m_pSamples + sampleBegin * nbEdges + edgeBegin;
 
-			for (int edge = edgeBegin; edge < edgeEnd; edge++)
+			for (int sample = sampleBegin; sample < sampleEnd; sample++)
 			{
-				spx* pNew = m_pSamples + edge * (m_size.w + 1) + sampleBegin;
-
-				for (int sample = sampleBegin; sample < sampleEnd; sample++)
+				for (int i = 0; i < copyEdges; i++)
 					*pPacked++ = (uint16_t)*pNew++;
+
+				pNew += skipEdges;
 			}
 			break;
 		}
@@ -208,12 +216,14 @@ void StreamEdgemap::_samplesUpdated(int edgeBegin, int edgeEnd, int sampleBegin,
 		case GfxStream::SpxFormat::Int16_int:
 		{
 			int16_t* pPacked = reinterpret_cast<int16_t*>(pBuffer);
-			for (int edge = edgeBegin; edge < edgeEnd; edge++)
-			{
-				spx* pNew = m_pSamples + edge * (m_size.w + 1) + sampleBegin;
+			spx* pNew = m_pSamples + sampleBegin * nbEdges + edgeBegin;
 
-				for (int sample = sampleBegin; sample < sampleEnd; sample++)
+			for (int sample = sampleBegin; sample < sampleEnd; sample++)
+			{
+				for (int i = 0; i < copyEdges; i++)
 					*pPacked++ = (int16_t)((*pNew++) >> 6);
+
+				pNew += skipEdges;
 			}
 			break;
 		}
@@ -221,12 +231,14 @@ void StreamEdgemap::_samplesUpdated(int edgeBegin, int edgeEnd, int sampleBegin,
 		case GfxStream::SpxFormat::Uint8_int:
 		{
 			uint8_t* pPacked = reinterpret_cast<uint8_t*>(pBuffer);
-			for (int edge = edgeBegin; edge < edgeEnd; edge++)
-			{
-				spx* pNew = m_pSamples + edge * (m_size.w + 1) + sampleBegin;
+			spx* pNew = m_pSamples + sampleBegin * nbEdges + edgeBegin;
 
-				for (int sample = sampleBegin; sample < sampleEnd; sample++)
+			for (int sample = sampleBegin; sample < sampleEnd; sample++)
+			{
+				for (int i = 0; i < copyEdges; i++)
 					*pPacked++ = (uint8_t)((*pNew++) >> 6);
+
+				pNew += skipEdges;
 			}
 			break;
 		}
@@ -269,7 +281,7 @@ void StreamEdgemap::_colorsUpdated(int beginColor, int endColor)
 {
 	auto& encoder = * m_pEncoder;
 	
-	int maxColorsPerBlock = (GfxStream::c_maxBlockSize - 8) / sizeof(HiColor);
+	int maxColorsPerBlock = (GfxStream::c_maxBlockSize - 10) / sizeof(HiColor);
 	
 	while( beginColor < endColor )
 	{

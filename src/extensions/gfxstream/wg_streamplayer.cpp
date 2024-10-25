@@ -1127,8 +1127,8 @@ namespace wg
 		case GfxChunkId::SetEdgemapColors:
 		{
 			uint16_t	edgemapId;
-			uint16_t	begin;
-			uint16_t	end;
+			int			begin;
+			int			end;
 			
 			*m_pDecoder >> edgemapId;
 			*m_pDecoder >> begin;
@@ -1199,7 +1199,7 @@ namespace wg
 
 		case GfxChunkId::EndEdgemapUpdate:
 		{
-			m_pUpdatingEdgemap->importSamples(SampleOrigo::Top, m_pWaveSampleBuffer, m_waveUpdateEdgeBegin, m_waveUpdateEdgeEnd, m_waveUpdateSampleBegin, m_waveUpdateSampleEnd);
+			m_pUpdatingEdgemap->importSamples(SampleOrigo::Top, m_pWaveSampleBuffer, m_waveUpdateEdgeBegin, m_waveUpdateEdgeEnd, m_waveUpdateSampleBegin, m_waveUpdateSampleEnd, 1, (m_waveUpdateEdgeEnd-m_waveUpdateEdgeBegin));
 						
 			m_pUpdatingEdgemap = nullptr;
 			
