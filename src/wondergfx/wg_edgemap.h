@@ -104,7 +104,7 @@ namespace wg
 		const HiColor* colorstripsX() const { return m_pColorstripsX; }
 		const HiColor* colorstripsY() const { return m_pColorstripsY; }
 
-
+		void exportLegacyPalette( HiColor * pDest ) const;
 		
 		//.____ Content _______________________________________________________
 

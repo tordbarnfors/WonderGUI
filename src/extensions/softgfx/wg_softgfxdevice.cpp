@@ -2284,7 +2284,11 @@ const uint8_t SoftGfxDevice::s_fast8_channel_6[64] = {		0x00, 0x04, 0x08, 0x0c, 
 		else if (pEdgemap->hasVerticalTint())
 			mode = TintMode::GradientY;
 
-		_transformDrawSegments( {dest, pEdgemap->m_size*64}, pEdgemap->m_nbRenderSegments, pEdgemap->m_pFlatColors, pEdgemap->_colorSegmentPitch(),
+		HiColor		palette[Edgemap::maxSegments * 4];
+
+		pEdgemap->exportLegacyPalette(palette);
+
+		_transformDrawSegments( {dest, pEdgemap->m_size*64}, pEdgemap->m_nbRenderSegments, palette, 1,
 							   pEdgemap->m_size.w+1, pEdgemap->m_pSamples, pEdgemap->m_nbSegments-1, mode,
 							   s_blitFlipTransforms[(int)GfxFlip::None] );
 	}
@@ -2318,7 +2322,11 @@ const uint8_t SoftGfxDevice::s_fast8_channel_6[64] = {		0x00, 0x04, 0x08, 0x0c, 
 		else if (pEdgemap->hasVerticalTint())
 			mode = TintMode::GradientY;
 
-		_transformDrawSegments( dest, pEdgemap->m_nbRenderSegments, pEdgemap->m_pFlatColors, pEdgemap->_colorSegmentPitch(),
+		HiColor		palette[Edgemap::maxSegments * 4];
+
+		pEdgemap->exportLegacyPalette(palette);
+
+		_transformDrawSegments( dest, pEdgemap->m_nbRenderSegments, palette, 1,
 							   pEdgemap->m_size.w+1, pEdgemap->m_pSamples, pEdgemap->m_nbSegments-1, mode,
 							   transform );
 	}

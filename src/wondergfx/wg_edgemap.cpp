@@ -443,7 +443,65 @@ namespace wg
 		_colorsUpdated(begin, end);
 	}
 
-	
+	//____ exportLegacyPalette() ______________________________________________
+
+	void Edgemap::exportLegacyPalette(HiColor* pDest) const
+	{
+		switch (m_paletteType)
+		{
+		case EdgemapPalette::Flat:
+			memcpy(pDest, m_pFlatColors, m_paletteSize * sizeof(HiColor));
+			break;
+		case EdgemapPalette::ColorstripX:
+		{
+			HiColor* pSrc = m_pColorstripsX;
+
+			for (int i = 0; i < m_nbSegments; i++)
+			{
+				*pDest++ = pSrc[0];
+				*pDest++ = pSrc[m_size.w - 1];
+				pSrc += m_size.w;
+			}
+			break;
+		}
+
+		case EdgemapPalette::ColorstripY:
+		{
+			HiColor* pSrc = m_pColorstripsY;
+
+			for (int i = 0; i < m_nbSegments; i++)
+			{
+				*pDest++ = pSrc[0];
+				*pDest++ = pSrc[m_size.h - 1];
+				pSrc += m_size.h;
+			}
+			break;
+		}
+
+		case EdgemapPalette::ColorstripXY:
+		{
+			HiColor* pSrcX = m_pColorstripsX;
+			HiColor* pSrcY = m_pColorstripsY;
+
+			for (int i = 0; i < m_nbSegments; i++)
+			{
+				HiColor& startX = pSrcX[0];
+				HiColor& endX = pSrcX[m_size.w - 1];
+				HiColor& startY = pSrcY[0];
+				HiColor& endY = pSrcY[m_size.h - 1];
+
+				*pDest++ = startX * startY;			// topLeft 
+				*pDest++ = endX * startY;			// topRight
+				*pDest++ = endX * endY;				// bottomRight
+				*pDest++ = startX * endY;			// bottomLeft
+
+				pSrcX += m_size.w;
+				pSrcY += m_size.h;
+			}
+			break;
+		}
+		}
+	}
 
 	//____ importSamples() _________________________________________________________
 

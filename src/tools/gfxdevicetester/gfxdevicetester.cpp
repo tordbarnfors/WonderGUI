@@ -177,7 +177,7 @@ void GfxDeviceTester::setup_testdevices()
 	
 	auto pReferenceDevice = Device::create( "Reference (SoftGfxDevice)", pSoftGfxDevice, CanvasRef::None, pCanvasSurface, this );
 
-//	g_testdevices.push_back(pReferenceDevice);
+	g_testdevices.push_back(pReferenceDevice);
 
 	// Gen2 with SoftBackend
 
@@ -192,7 +192,7 @@ void GfxDeviceTester::setup_testdevices()
 		auto pGen2CanvasSurface = SoftSurface::create(canvasBP);
 		auto pGen2SoftDevice = Device::create("Gen2 Software (SoftBackend)", pGen2GfxDevice, CanvasRef::None, pGen2CanvasSurface, this);
 
-//		g_testdevices.push_back(pGen2SoftDevice);
+		g_testdevices.push_back(pGen2SoftDevice);
 	}
 
 	// Gen2 with GlBackend
@@ -208,7 +208,7 @@ void GfxDeviceTester::setup_testdevices()
 		auto pCanvasSurface = GlSurface::create(canvasBP);
 		auto pGen2GlDevice = Device::create("Gen2 OpenGL (GlBackend)", pGen2GfxDevice, CanvasRef::None, pCanvasSurface, this);
 
-		g_testdevices.push_back(pGen2GlDevice);
+//		g_testdevices.push_back(pGen2GlDevice);
 	}
 
 
@@ -331,7 +331,7 @@ void GfxDeviceTester::setup_testdevices()
 
 		auto pStreamDevice = Device::create("Stream to Gen 2 Software", pStreamGfxDevice, CanvasRef::Default, pGen2CanvasSurface, this);
 
-		g_testdevices.push_back(pStreamDevice);
+//		g_testdevices.push_back(pStreamDevice);
 	}
 
 
