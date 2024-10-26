@@ -219,7 +219,7 @@ void GfxDeviceTester::setup_testdevices()
 	
 	auto pNativeDevice = Device::create(nativeDeviceName, pNativeGfxDevice, CanvasRef::None, Base::defaultSurfaceFactory()->createSurface(canvasBP), this );
 	
-//	g_testdevices.push_back(pNativeDevice);
+	g_testdevices.push_back(pNativeDevice);
 	
 	// Linear
 	
@@ -267,7 +267,7 @@ void GfxDeviceTester::setup_testdevices()
 	
 	m_pLinearDeviceSurface = pLinearDevice->displaySurface();
 	
-	g_testdevices.push_back(pLinearDevice);
+//	g_testdevices.push_back(pLinearDevice);
 
 	// Stream to Software
 
