@@ -176,7 +176,7 @@ namespace wg
         void    _transformBlitSimple(const RectI& dest, CoordI src, const int simpleTransform[2][2], OpType type) override;
         void    _transformBlitComplex(const RectI& dest, BinalCoord src, const binalInt complexTransform[2][2], OpType type) override;
 
-		void	_transformDrawSegments(const RectI& dest, int nSegments, const HiColor * pSegmentColors, int segmentColorPitch, int nEdges, const int * pEdges, int edgeStripPitch, TintMode tintMode, const int simpleTransform[2][2]) override;
+		void	_transformDrawSegments(const RectI& dest, int nSegments, const HiColor * pSegmentColors, int nEdges, const int * pEdges, int edgeStripPitch, TintMode tintMode, const int simpleTransform[2][2]) override;
 
 		inline void	_streamStatesIfUpdated()
 		{

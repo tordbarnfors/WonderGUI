@@ -1228,7 +1228,7 @@ namespace wg
 
 	//____ _transformDrawSegments() ______________________________________
 
-	void StreamDevice::_transformDrawSegments(const RectI& dest, int nSegments, const HiColor * pSegmentColors, int segmentColorPitch, int nEdgeStrips, const int * pEdgeStrips, int edgeStripPitch, TintMode tintMode, const int simpleTransform[2][2])
+	void StreamDevice::_transformDrawSegments(const RectI& dest, int nSegments, const HiColor * pSegmentColors, int nEdgeStrips, const int * pEdgeStrips, int edgeStripPitch, TintMode tintMode, const int simpleTransform[2][2])
 	{
         //This method should never be called, but is pure virtual in super class.
 

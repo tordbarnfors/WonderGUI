@@ -1749,7 +1749,7 @@ namespace wg
 
 	//____ _transformDrawSegments() ______________________________________________________
 
-	void GlGfxDevice::_transformDrawSegments( const RectSPX& _destIn, int nSegments, const HiColor * pSegmentColors, int segmentColorPitch, int nEdgeStrips, const int * pEdgeStrips, int edgeStripPitch, TintMode tintMode, const int simpleTransform[2][2] )
+	void GlGfxDevice::_transformDrawSegments( const RectSPX& _destIn, int nSegments, const HiColor * pSegmentColors, int nEdgeStrips, const int * pEdgeStrips, int edgeStripPitch, TintMode tintMode, const int simpleTransform[2][2] )
 	{
 		if (!_destIn.isOverlapping(m_clipBounds))
 			return;
@@ -1966,7 +1966,7 @@ namespace wg
 					pMapRow[mapPitch + i * 8 + 5] = g;
 					pMapRow[mapPitch + i * 8 + 6] = r;
 					pMapRow[mapPitch + i * 8 + 7] = a;
-					pSegCol += segmentColorPitch;
+					pSegCol += 1;
 				}
 				break;
 			}
@@ -1979,13 +1979,13 @@ namespace wg
 					uint16_t g1 = uint16_t(int(pSegCol->g) * 65535 / 4096);
 					uint16_t b1 = uint16_t(int(pSegCol->b) * 65535 / 4096);
 					uint16_t a1 = uint16_t(int(pSegCol->a) * 65535 / 4096);
-					pSegCol += segmentColorPitch;
+					pSegCol += 1;
 
 					uint16_t r2 = uint16_t(int(pSegCol->r) * 65535 / 4096);
 					uint16_t g2 = uint16_t(int(pSegCol->g) * 65535 / 4096);
 					uint16_t b2 = uint16_t(int(pSegCol->b) * 65535 / 4096);
 					uint16_t a2 = uint16_t(int(pSegCol->a) * 65535 / 4096);
-					pSegCol += segmentColorPitch;
+					pSegCol += 1;
 
 					pMapRow[i * 8 + 0] = b1;
 					pMapRow[i * 8 + 1] = g1;
@@ -2016,13 +2016,13 @@ namespace wg
 					uint16_t g1 = uint16_t(int(pSegCol->g) * 65535 / 4096);
 					uint16_t b1 = uint16_t(int(pSegCol->b) * 65535 / 4096);
 					uint16_t a1 = uint16_t(int(pSegCol->a) * 65535 / 4096);
-					pSegCol += segmentColorPitch;
+					pSegCol += 1;
 
 					uint16_t r2 = uint16_t(int(pSegCol->r) * 65535 / 4096);
 					uint16_t g2 = uint16_t(int(pSegCol->g) * 65535 / 4096);
 					uint16_t b2 = uint16_t(int(pSegCol->b) * 65535 / 4096);
 					uint16_t a2 = uint16_t(int(pSegCol->a) * 65535 / 4096);
-					pSegCol += segmentColorPitch;
+					pSegCol += 1;
 
 					pMapRow[i * 8 + 0] = b1;
 					pMapRow[i * 8 + 1] = g1;
@@ -2053,25 +2053,25 @@ namespace wg
 					pMapRow[i * 8 + 1] = uint16_t(int(pSegCol->g) * 65535 / 4096);
 					pMapRow[i * 8 + 2] = uint16_t(int(pSegCol->r) * 65535 / 4096);
 					pMapRow[i * 8 + 3] = uint16_t(int(pSegCol->a) * 65535 / 4096);
-					pSegCol += segmentColorPitch;
+					pSegCol += 1;
 
 					pMapRow[i * 8 + 4] = uint16_t(int(pSegCol->b) * 65535 / 4096);
 					pMapRow[i * 8 + 5] = uint16_t(int(pSegCol->g) * 65535 / 4096);
 					pMapRow[i * 8 + 6] = uint16_t(int(pSegCol->r) * 65535 / 4096);
 					pMapRow[i * 8 + 7] = uint16_t(int(pSegCol->a) * 65535 / 4096);
-					pSegCol += segmentColorPitch;
+					pSegCol += 1;
 
 					pMapRow[mapPitch + i * 8 + 4] = uint16_t(int(pSegCol->b) * 65535 / 4096);
 					pMapRow[mapPitch + i * 8 + 5] = uint16_t(int(pSegCol->g) * 65535 / 4096);
 					pMapRow[mapPitch + i * 8 + 6] = uint16_t(int(pSegCol->r) * 65535 / 4096);
 					pMapRow[mapPitch + i * 8 + 7] = uint16_t(int(pSegCol->a) * 65535 / 4096);
-					pSegCol += segmentColorPitch;
+					pSegCol += 1;
 
 					pMapRow[mapPitch + i * 8 + 0] = uint16_t(int(pSegCol->b) * 65535 / 4096);
 					pMapRow[mapPitch + i * 8 + 1] = uint16_t(int(pSegCol->g) * 65535 / 4096);
 					pMapRow[mapPitch + i * 8 + 2] = uint16_t(int(pSegCol->r) * 65535 / 4096);
 					pMapRow[mapPitch + i * 8 + 3] = uint16_t(int(pSegCol->a) * 65535 / 4096);
-					pSegCol += segmentColorPitch;
+					pSegCol += 1;
 				}
 				break;
 			}

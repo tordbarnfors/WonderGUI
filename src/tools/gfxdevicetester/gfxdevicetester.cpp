@@ -192,7 +192,7 @@ void GfxDeviceTester::setup_testdevices()
 		auto pGen2CanvasSurface = SoftSurface::create(canvasBP);
 		auto pGen2SoftDevice = Device::create("Gen2 Software (SoftBackend)", pGen2GfxDevice, CanvasRef::None, pGen2CanvasSurface, this);
 
-		g_testdevices.push_back(pGen2SoftDevice);
+//		g_testdevices.push_back(pGen2SoftDevice);
 	}
 
 	// Gen2 with GlBackend
@@ -267,7 +267,7 @@ void GfxDeviceTester::setup_testdevices()
 	
 	m_pLinearDeviceSurface = pLinearDevice->displaySurface();
 	
-//	g_testdevices.push_back(pLinearDevice);
+	g_testdevices.push_back(pLinearDevice);
 
 	// Stream to Software
 

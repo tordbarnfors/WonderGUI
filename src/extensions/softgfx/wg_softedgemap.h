@@ -61,8 +61,6 @@ protected:
 	void	_samplesUpdated(int edgeBegin, int edgeEnd, int sampleBegin, int sampleEnd) override;
 	void	_colorsUpdated(int beginColor, int endColor) override;
 	
-	int		_colorSegmentPitch() const { return m_size.w + m_size.h; }
-	
 		
 	std::bitset<maxSegments>	m_opaqueSegments;
 	std::bitset<maxSegments>	m_transparentSegments;

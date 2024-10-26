@@ -1292,7 +1292,7 @@ const uint8_t SoftGfxDevice::s_fast8_channel_6[64] = {		0x00, 0x04, 0x08, 0x0c, 
 
 	//____ _transformDrawSegments() _________________________________________
 
-	void SoftGfxDevice::_transformDrawSegments(const RectSPX& _destIn, int nSegments, const HiColor * pSegmentColors, int segmentColorPitch, int nEdgeStrips, const int * _pEdgeStrips, int edgeStripPitch, TintMode tintMode, const int _simpleTransform[2][2])
+	void SoftGfxDevice::_transformDrawSegments(const RectSPX& _destIn, int nSegments, const HiColor * pSegmentColors, int nEdgeStrips, const int * _pEdgeStrips, int edgeStripPitch, TintMode tintMode, const int _simpleTransform[2][2])
 	{
 		//TODO: Proper 26:6 support
 		RectI _dest = roundToPixels(_destIn);
@@ -2288,7 +2288,7 @@ const uint8_t SoftGfxDevice::s_fast8_channel_6[64] = {		0x00, 0x04, 0x08, 0x0c, 
 
 		pEdgemap->exportLegacyPalette(palette);
 
-		_transformDrawSegments( {dest, pEdgemap->m_size*64}, pEdgemap->m_nbRenderSegments, palette, 1,
+		_transformDrawSegments( {dest, pEdgemap->m_size*64}, pEdgemap->m_nbRenderSegments, palette,
 							   pEdgemap->m_size.w+1, pEdgemap->m_pSamples, pEdgemap->m_nbSegments-1, mode,
 							   s_blitFlipTransforms[(int)GfxFlip::None] );
 	}
@@ -2326,7 +2326,7 @@ const uint8_t SoftGfxDevice::s_fast8_channel_6[64] = {		0x00, 0x04, 0x08, 0x0c, 
 
 		pEdgemap->exportLegacyPalette(palette);
 
-		_transformDrawSegments( dest, pEdgemap->m_nbRenderSegments, palette, 1,
+		_transformDrawSegments( dest, pEdgemap->m_nbRenderSegments, palette,
 							   pEdgemap->m_size.w+1, pEdgemap->m_pSamples, pEdgemap->m_nbSegments-1, mode,
 							   transform );
 	}

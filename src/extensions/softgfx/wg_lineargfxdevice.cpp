@@ -1131,11 +1131,11 @@ void LinearGfxDevice::_dummyLinearTransformBlit(uint8_t * pDst, int destPitch, i
 
 //____ _transformDrawSegments() _________________________________________
 
-void LinearGfxDevice::_transformDrawSegments(const RectSPX& _destIn, int nSegments, const HiColor * pSegmentColors, int segmentColorPitch, int nEdgeStrips, const int * _pEdgeStrips, int edgeStripPitch, TintMode tintMode, const int _simpleTransform[2][2])
+void LinearGfxDevice::_transformDrawSegments(const RectSPX& _destIn, int nSegments, const HiColor * pSegmentColors, int nEdgeStrips, const int * _pEdgeStrips, int edgeStripPitch, TintMode tintMode, const int _simpleTransform[2][2])
 {
 	if( m_canvas.pSurface )
 	{
-		SoftGfxDevice::_transformDrawSegments(_destIn, nSegments, pSegmentColors, segmentColorPitch, nEdgeStrips, _pEdgeStrips, edgeStripPitch, tintMode, _simpleTransform);
+		SoftGfxDevice::_transformDrawSegments(_destIn, nSegments, pSegmentColors, nEdgeStrips, _pEdgeStrips, edgeStripPitch, tintMode, _simpleTransform);
 		return;
 	}
 	
@@ -1244,10 +1244,10 @@ void LinearGfxDevice::_transformDrawSegments(const RectSPX& _destIn, int nSegmen
 
 		for (int i = 0; i < nSegments; i++)
 		{
-			colors[i][0] = (pSegmentColors[i * segmentColorPitch].r * m_colTrans.flatTintColor.r) >> 12;
-			colors[i][1] = (pSegmentColors[i * segmentColorPitch].g * m_colTrans.flatTintColor.g) >> 12;
-			colors[i][2] = (pSegmentColors[i * segmentColorPitch].b * m_colTrans.flatTintColor.b) >> 12;
-			colors[i][3] = (pSegmentColors[i * segmentColorPitch].a * m_colTrans.flatTintColor.a) >> 12;
+			colors[i][0] = (pSegmentColors[i].r * m_colTrans.flatTintColor.r) >> 12;
+			colors[i][1] = (pSegmentColors[i].g * m_colTrans.flatTintColor.g) >> 12;
+			colors[i][2] = (pSegmentColors[i].b * m_colTrans.flatTintColor.b) >> 12;
+			colors[i][3] = (pSegmentColors[i].a * m_colTrans.flatTintColor.a) >> 12;
 
 			transparentSegments[i] = (colors[i][3] == 0);
 			opaqueSegments[i] = (colors[i][3] == 4096);
@@ -1259,10 +1259,10 @@ void LinearGfxDevice::_transformDrawSegments(const RectSPX& _destIn, int nSegmen
 
 		for (int i = 0; i < nSegments*colorsPerSegment; i++)
 		{
-			colors[i][0] = pSegmentColors[i * segmentColorPitch].r;
-			colors[i][1] = pSegmentColors[i * segmentColorPitch].g;
-			colors[i][2] = pSegmentColors[i * segmentColorPitch].b;
-			colors[i][3] = pSegmentColors[i * segmentColorPitch].a;
+			colors[i][0] = pSegmentColors[i].r;
+			colors[i][1] = pSegmentColors[i].g;
+			colors[i][2] = pSegmentColors[i].b;
+			colors[i][3] = pSegmentColors[i].a;
 		}
 	}
 
