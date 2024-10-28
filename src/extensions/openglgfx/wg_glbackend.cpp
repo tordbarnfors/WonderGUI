@@ -1822,7 +1822,6 @@ void GlBackend::beginSession(const SessionInfo* pSession)
 
 	m_pColorBuffer = new ColorGL[
 		pSession->nColors+1
-		+ 100000						//TEMP CODE!!! To allow for Edgemap colors.
 	];
 
 	// Always present white color used as default tint for blits.
@@ -1841,8 +1840,6 @@ void GlBackend::beginSession(const SessionInfo* pSession)
 		+ pSession->nBlur * 8
 		+ pSession->nLineCoords/2 * 4
 		+ pSession->nRects * 4;			// This is for possible subpixel fills. We have no way of knowing exactly how much is needed.
-
-	nExtrasFloats += 100000;			// TEMP CODE!!! To allow for Edgemap data.
 
 	m_pExtrasBuffer = new GLfloat[nExtrasFloats];
 	m_extrasBufferSize = 0;

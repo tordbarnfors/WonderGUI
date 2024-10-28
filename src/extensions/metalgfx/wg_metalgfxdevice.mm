@@ -827,7 +827,10 @@ MetalGfxDevice::MetalGfxDevice()
             return false;
         }
 
-        if (!pSource || pSource->typeInfo() != MetalSurface::TYPEINFO)
+		if( !pSource )
+			return false;
+		
+        if (pSource->typeInfo() != MetalSurface::TYPEINFO)
         {
             GfxBase::throwError(ErrorLevel::SilentError, ErrorCode::InvalidParam, "Provided surface is NOT a MetalSurface", this, &TYPEINFO, __func__, __FILE__, __LINE__);
             return false;

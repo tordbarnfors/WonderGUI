@@ -657,7 +657,7 @@ namespace wg
 
 				pOp(nCoords, (CoordSPX*) pCoords, pColors, m_pCanvasPixels, pixelBytes, pitch, m_colTrans);
 
-				pCoords += nCoords;
+				pCoords += nCoords*2;
 				pColors += nCoords;
 				break;
 			}
