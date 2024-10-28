@@ -50,43 +50,14 @@ namespace wg
 		const TypeInfo&     typeInfo(void) const override;
 		const static TypeInfo   TYPEINFO;
 
-		//.____ Appearance ____________________________________________________
-
-		bool	setColors( int begin, int end, const HiColor * pColors ) override;
-		bool	setGradients( int begin, int end, const Gradient * pGradients ) override;
-		
-		//.____ Content _______________________________________________________
-
-		bool 	importSamples( SampleOrigo origo, const spx * pSource, int edgeBegin, int edgeEnd,
-									  int sampleBegin, int sampleEnd, int edgePitch = 0, int samplePitch = 0 ) override;
-
-		bool 	importSamples( SampleOrigo origo, const float * pSource, int edgeBegin, int edgeEnd,
-									  int sampleBegin, int sampleEnd, int edgePitch = 0, int samplePitch = 0 ) override;
-
-		bool 	exportSamples( SampleOrigo origo, spx * pDestination, int edgeBegin, int edgeEnd,
-									  int sampleBegin, int sampleEnd, int edgePitch = 0, int samplePitch = 0 ) override;
-
-		bool 	exportSamples( SampleOrigo origo, float * pDestination, int edgeBegin, int edgeEnd,
-									  int sampleBegin, int sampleEnd, int edgePitch = 0, int samplePitch = 0 ) override;
 
 	protected:
 
 		MetalEdgemap(const Blueprint& bp);
 		~MetalEdgemap();
 
-		void 	_importSamples( SampleOrigo origo, const spx * pSource, int edgeBegin, int edgeEnd,
-									  int sampleBegin, int sampleEnd, int edgePitch, int samplePitch );
-
-		void 	_importSamples( SampleOrigo origo, const float * pSource, int edgeBegin, int edgeEnd,
-									  int sampleBegin, int sampleEnd, int edgePitch, int samplePitch );
-
-		void	_updateRenderColors();
-				
-		char *	m_pBuffer;
-		spx *	m_pSamples;					// Stored vertically, e.g. samples for first column for all edges before samples for second column etc
-
-		HiColor *	m_pRenderColors;		// Palette to be used in render call, converted as needed.
-		TintMode	m_tintMode;
+		void	_samplesUpdated(int edgeBegin, int edgeEnd, int sampleBegin, int sampleEnd) override;
+		void	_colorsUpdated(int beginColor, int endColor) override;
 		
    };
 

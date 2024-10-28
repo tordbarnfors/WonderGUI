@@ -75,8 +75,8 @@ namespace wg
 
 		int		_whiteColorOfs() const { return m_whiteColorOfs/16; }
 		int		_flatColorsOfs() const { return m_paletteOfs/16;  }
-		int		_colorstripXOfs() const { return m_paletteOfs / 16 + (m_pColorstripsX - m_pPalette); }
-		int		_colorstripYOfs() const { return m_paletteOfs / 16 + (m_pColorstripsY - m_pPalette); }
+		int		_colorstripXOfs() const { return m_paletteOfs / 16 + int(m_pColorstripsX - m_pPalette); }
+		int		_colorstripYOfs() const { return m_paletteOfs / 16 + int(m_pColorstripsY - m_pPalette); }
 
 
 

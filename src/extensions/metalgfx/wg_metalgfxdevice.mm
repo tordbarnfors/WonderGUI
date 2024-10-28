@@ -740,7 +740,7 @@ MetalGfxDevice::MetalGfxDevice()
             return;
         }
 
-        GfxDevice::setTintColor(color);
+        GfxDeviceGen1::setTintColor(color);
 
         _endCommand();
         _beginStateCommandWithAlignedData(Command::SetTintColor, 2);
@@ -761,7 +761,7 @@ MetalGfxDevice::MetalGfxDevice()
             return;
         }
 
-        GfxDevice::setTintGradient(rect, gradient);
+        GfxDeviceGen1::setTintGradient(rect, gradient);
 
         _endCommand();
         _beginStateCommandWithAlignedData(Command::SetTintGradient, 4 + sizeof(Gradient)/4);
@@ -786,7 +786,7 @@ MetalGfxDevice::MetalGfxDevice()
             return;
         }
 
-        GfxDevice::clearTintGradient();
+        GfxDeviceGen1::clearTintGradient();
 
         _endCommand();
         _beginStateCommand(Command::ClearTintGradient, 0);
@@ -805,7 +805,7 @@ MetalGfxDevice::MetalGfxDevice()
             return false;
         }
         
-        GfxDevice::setBlendMode(blendMode);
+        GfxDeviceGen1::setBlendMode(blendMode);
 
         _endCommand();
         _beginStateCommand(Command::SetBlendMode, 1);
@@ -890,23 +890,24 @@ MetalGfxDevice::MetalGfxDevice()
 		m_commandOfs += 2;
 	}
 
-	//____ setBlurMatrices() _____________________________________________________
+	//____ setBlurbrush() ________________________________________________________
 
-	void MetalGfxDevice::setBlurMatrices( spx radius, const float red[9], const float green[9], const float blue[9] )
+	void MetalGfxDevice::setBlurbrush(Blurbrush* pBrush)
 	{
-		GfxDevice::setBlurMatrices(radius, red, green, blue);
+		GfxDeviceGen1::setBlurbrush(pBrush);
+		
 		_endCommand();
 		_beginStateCommand(Command::SetBlurMatrices, 28);
 
-		m_pCommandBuffer[m_commandOfs++] = radius;
+		m_pCommandBuffer[m_commandOfs++] = pBrush->size();
 
 		// Copy floats as they are
 		
-		memcpy( m_pCommandBuffer + m_commandOfs, red, sizeof(float)*9 );
+		memcpy( m_pCommandBuffer + m_commandOfs, pBrush->red(), sizeof(float)*9 );
 		m_commandOfs += 9;
-		memcpy( m_pCommandBuffer + m_commandOfs, green, sizeof(float)*9 );
+		memcpy( m_pCommandBuffer + m_commandOfs, pBrush->green(), sizeof(float)*9 );
 		m_commandOfs += 9;
-		memcpy( m_pCommandBuffer + m_commandOfs, blue, sizeof(float)*9 );
+		memcpy( m_pCommandBuffer + m_commandOfs, pBrush->blue(), sizeof(float)*9 );
 		m_commandOfs += 9;
 	}
 
@@ -961,12 +962,12 @@ MetalGfxDevice::MetalGfxDevice()
         
         // Set intial states in super
         
-        GfxDevice::setBlitSource(nullptr);
-        GfxDevice::setBlendMode(BlendMode::Blend);
-        GfxDevice::setMorphFactor(0.5f);
-		GfxDevice::setFixedBlendColor(HiColor::Black);
-        GfxDevice::setTintColor(HiColor::White);
-        GfxDevice::clearTintGradient();
+        GfxDeviceGen1::setBlitSource(nullptr);
+        GfxDeviceGen1::setBlendMode(BlendMode::Blend);
+        GfxDeviceGen1::setMorphFactor(0.5f);
+		GfxDeviceGen1::setFixedBlendColor(HiColor::Black);
+        GfxDeviceGen1::setTintColor(HiColor::White);
+        GfxDeviceGen1::clearTintGradient();
         
         // Set initial active states
         
@@ -1569,9 +1570,21 @@ MetalGfxDevice::MetalGfxDevice()
 		
 		auto pWave = static_cast<MetalEdgemap*>(pEdgemap);
 
+		TintMode mode = TintMode::Flat;
 
-		_transformDrawSegments( {destPos,pWave->m_size*64}, pWave->m_nbRenderSegments, pWave->m_pRenderColors,
-							   pWave->m_size.w+1, pWave->m_pSamples, pWave->m_nbSegments-1, pWave->m_tintMode,
+		if (pEdgemap->hasHorizontalTint() && pEdgemap->hasVerticalTint())
+			mode = TintMode::GradientXY;
+		else if (pEdgemap->hasHorizontalTint())
+			mode = TintMode::GradientX;
+		else if (pEdgemap->hasVerticalTint())
+			mode = TintMode::GradientY;
+
+		HiColor		palette[Edgemap::maxSegments * 4];
+
+		pEdgemap->exportLegacyPalette(palette);
+
+		_transformDrawSegments( {destPos,pWave->m_size*64}, pWave->m_nbRenderSegments, palette,
+							   pWave->m_size.w+1, pWave->m_pSamples, pWave->m_nbSegments-1, mode,
 							   s_blitFlipTransforms[(int)GfxFlip::None] );
 	}
 
@@ -1595,8 +1608,21 @@ MetalGfxDevice::MetalGfxDevice()
 		dest.w = pWave->m_size.w*64 * abs(transform[0][0]) + pWave->m_size.h*64 * abs(transform[1][0]);
 		dest.h = pWave->m_size.w*64 * abs(transform[0][1]) + pWave->m_size.h*64 * abs(transform[1][1]);
 
-		_transformDrawSegments( dest, pWave->m_nbRenderSegments, pWave->m_pRenderColors,
-							   pWave->m_size.w+1, pWave->m_pSamples, pWave->m_nbSegments-1, pWave->m_tintMode,
+		TintMode mode = TintMode::Flat;
+
+		if (pEdgemap->hasHorizontalTint() && pEdgemap->hasVerticalTint())
+			mode = TintMode::GradientXY;
+		else if (pEdgemap->hasHorizontalTint())
+			mode = TintMode::GradientX;
+		else if (pEdgemap->hasVerticalTint())
+			mode = TintMode::GradientY;
+
+		HiColor		palette[Edgemap::maxSegments * 4];
+
+		pEdgemap->exportLegacyPalette(palette);
+		
+		_transformDrawSegments( dest, pWave->m_nbRenderSegments, palette,
+							   pWave->m_size.w+1, pWave->m_pSamples, pWave->m_nbSegments-1, mode,
 							   transform );
 	}
 

@@ -30,7 +30,7 @@
 
 
 #include <wg_gfxtypes.h>
-#include <wg_gfxdevice.h>
+#include <wg_gfxdevice_gen1.h>
 #include <wg_metalsurface.h>
 
 namespace wg
@@ -41,7 +41,7 @@ namespace wg
 	typedef	StrongPtr<MetalGfxDevice>	MetalGfxDevice_p;
 	typedef	WeakPtr<MetalGfxDevice>	MetalGfxDevice_wp;
 
-	class MetalGfxDevice : public GfxDevice
+	class MetalGfxDevice : public GfxDeviceGen1
 	{
         friend class MetalSurface;
 	public:
@@ -79,8 +79,8 @@ namespace wg
         bool    setBlitSource(Surface * pSource) override;
         void    setMorphFactor(float factor) override;
 		void	setFixedBlendColor( HiColor color ) override;
-		void	setBlurMatrices( spx radius, const float red[9], const float green[9], const float blue[9] ) override;
-
+		void	setBlurbrush(Blurbrush* pBrush) override;
+		
         bool    isCanvasReady() const;
             
         //.____ Rendering ________________________________________________
