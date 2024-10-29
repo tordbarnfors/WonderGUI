@@ -63,6 +63,7 @@ struct wg_c_calls_body
 	wg_edgemapfactory_calls		edgemapFactory;
 	wg_hostbridge_calls			hostBridge;
 	wg_plugincapsule_calls		pluginCapsule;
+	wg_blurbrush_calls			blurbrush;
 };
 
 static wg_c_calls_body	body;
@@ -123,7 +124,7 @@ void wg_populatePluginInterface(wg_plugin_interface * pHeader)
 	pBody->gfxDevice.getCanvasRef			= &wg_getCanvasRef;
 	pBody->gfxDevice.canvasLayers			= &wg_canvasLayers;
 	pBody->gfxDevice.surfaceFactory			= &wg_surfaceFactory;
-	pBody->gfxDevice.edgemapFactory		= &wg_edgemapFactory;
+	pBody->gfxDevice.edgemapFactory			= &wg_edgemapFactory;
 	pBody->gfxDevice.maxSegments			= &wg_maxSegments;
 	pBody->gfxDevice.canvasSize				= &wg_canvasSize;
 	pBody->gfxDevice.setClipList			= &wg_setClipList;
@@ -303,6 +304,7 @@ void wg_populatePluginInterface(wg_plugin_interface * pHeader)
 	pBody->edgemap.importFloatSamples		= &wg_importFloatSamples;
 	pBody->edgemap.exportSpxSamples			= &wg_exportSpxSamples;
 	pBody->edgemap.exportFloatSamples		= &wg_exportFloatSamples;
+	pBody->edgemap.importPaletteEntries		= &wg_importEdgemapPaletteEntries;
 
 	pBody->edgemap.edgemapColors			= &wg_edgemapColors;
 	pBody->edgemap.edgemapGradients			= &wg_edgemapGradients;
@@ -310,7 +312,7 @@ void wg_populatePluginInterface(wg_plugin_interface * pHeader)
 	pBody->edgemap.setEdgemapGradients		= &wg_setEdgemapGradients;
 
 	pBody->edgemapFactory.structSize		= sizeof(wg_edgemapfactory_calls);
-	pBody->edgemapFactory.createEdgemap	= &wg_createEdgemap;
+	pBody->edgemapFactory.createEdgemap		= &wg_createEdgemap;
 	pBody->edgemapFactory.createEdgemapFromFloats = &wg_createEdgemapFromFloats;
 	pBody->edgemapFactory.createEdgemapFromSpx = &wg_createEdgemapFromSpx;
 
@@ -337,6 +339,14 @@ void wg_populatePluginInterface(wg_plugin_interface * pHeader)
 	pBody->pluginCapsule.connect			= &wg_connectPlugin;
 	pBody->pluginCapsule.disconnect			= &wg_disconnectPlugin;
 
+	pBody->blurbrush.structSize				= sizeof(wg_blurbrush_calls);
+	pBody->blurbrush.create					= &wg_createBlurbrush;
+	pBody->blurbrush.size					= &wg_blurbrushSize;
+	pBody->blurbrush.blue					= &wg_blurbrushBlue;
+	pBody->blurbrush.green					= &wg_blurbrushGreen;
+	pBody->blurbrush.red					= &wg_blurbrushRed;
+
+
 	pHeader->structSize			= sizeof(wg_plugin_interface);
 	pHeader->pBitmapCache		= &pBody->bitmapCache;
 	pHeader->pBitmapFont		= &pBody->bitmapFont;
@@ -356,6 +366,7 @@ void wg_populatePluginInterface(wg_plugin_interface * pHeader)
 	pHeader->pEdgemapFactory	= &pBody->edgemapFactory;
 	pHeader->pHostBridge		= &pBody->hostBridge;
 	pHeader->pPluginCapsule		= &pBody->pluginCapsule;
+	pHeader->pBlurbrush			= &pBody->blurbrush;
 }
 
 

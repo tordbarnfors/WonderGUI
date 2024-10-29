@@ -287,7 +287,7 @@ bool canvasCapsuleGlowTest(ComponentPtr<DynamicSlot> pEntry)
 
 	auto pSimpleButtonSkin = ColorSkin::create( Color::Blue );
 	
-	
+
 	auto pGlowCapsule = CanvasCapsule::create();
 
 	auto pBlurbrush = Blurbrush::create({
@@ -313,11 +313,13 @@ bool canvasCapsuleGlowTest(ComponentPtr<DynamicSlot> pEntry)
 
 	pBack->slots.pushBack(pGlowCapsule, { .pos = {  50, 50}, .size = {300,0} });
 
+
 	auto pWrapTextLayout = BasicTextLayout::create({ .wrap = true });
 
 
 	auto pContent = TextEditor::create({ .editor = {.layout = pWrapTextLayout, .style = pMyStyle, .text = "HEJ" } });
 	pGlowCapsule->slot = pContent;
+//	pBack->slots.pushBack( pContent );
 
 	auto pTintWhite = Button::create({ .label = {.text = "WHITE" }, .skin = pSimpleButtonSkin });
 	auto pTintBlack = Button::create({ .label = {.text = "BLACK" }, .skin = pSimpleButtonSkin });

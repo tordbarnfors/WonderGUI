@@ -50,6 +50,8 @@ typedef enum
 
 //____ wg_tintMode ___________________________________________________________
 
+// DEPRECATED!!
+
 typedef enum
 {
 	WG_TINT_NONE = 0,
@@ -58,6 +60,17 @@ typedef enum
 	WG_TINT_GRADIENT_Y,
 	WG_TINT_GRADIENT_XY
 } wg_tintMode;
+
+//____ wg_edgemapPalette ___________________________________________________________
+
+typedef enum
+{
+	WG_EDGEMAP_PALETTE_UNDEFINED = 0,
+	WG_EDGEMAP_PALETTE_FLAT,
+	WG_EDGEMAP_PALETTE_COLORSTRIP_X,
+	WG_EDGEMAP_PALETTE_COLORSTRIP_Y,
+	WG_EDGEMAP_PALETTE_COLORSTRIP_XY
+} wg_edgemapPalette;
 
 
 //____ wg_blendMode ____________________________________________________________

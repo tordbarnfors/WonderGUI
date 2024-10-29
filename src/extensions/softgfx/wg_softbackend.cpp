@@ -965,11 +965,11 @@ namespace wg
 				}
 
 				// ... add in tintmaps for segments
-				
-				if( pEdgemap->hasHorizontalTint() )
+								
+				if( pEdgemap->colorstripsX() )
 					bTintX = true;
 				
-				if( pEdgemap->hasVerticalTint() )
+				if( pEdgemap->colorstripsY() )
 					bTintY = true;				
 
 				// Unpack input colors and fill in transparentSegments

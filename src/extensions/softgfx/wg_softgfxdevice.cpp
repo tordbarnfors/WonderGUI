@@ -2277,11 +2277,11 @@ const uint8_t SoftGfxDevice::s_fast8_channel_6[64] = {		0x00, 0x04, 0x08, 0x0c, 
 	
 		TintMode mode = TintMode::Flat;
 
-		if (pEdgemap->hasHorizontalTint() && pEdgemap->hasVerticalTint())
+		if (pEdgemap->paletteType() == EdgemapPalette::ColorstripXY)
 			mode = TintMode::GradientXY;
-		else if (pEdgemap->hasHorizontalTint())
+		else if (pEdgemap->paletteType() == EdgemapPalette::ColorstripX)
 			mode = TintMode::GradientX;
-		else if (pEdgemap->hasVerticalTint())
+		else if (pEdgemap->paletteType() == EdgemapPalette::ColorstripY)
 			mode = TintMode::GradientY;
 
 		HiColor		palette[Edgemap::maxSegments * 4];
@@ -2315,11 +2315,11 @@ const uint8_t SoftGfxDevice::s_fast8_channel_6[64] = {		0x00, 0x04, 0x08, 0x0c, 
 
 		TintMode mode = TintMode::Flat;
 
-		if (pEdgemap->hasHorizontalTint() && pEdgemap->hasVerticalTint())
+		if (pEdgemap->paletteType() == EdgemapPalette::ColorstripXY)
 			mode = TintMode::GradientXY;
-		else if (pEdgemap->hasHorizontalTint())
+		else if (pEdgemap->paletteType() == EdgemapPalette::ColorstripX)
 			mode = TintMode::GradientX;
-		else if (pEdgemap->hasVerticalTint())
+		else if (pEdgemap->paletteType() == EdgemapPalette::ColorstripY)
 			mode = TintMode::GradientY;
 
 		HiColor		palette[Edgemap::maxSegments * 4];

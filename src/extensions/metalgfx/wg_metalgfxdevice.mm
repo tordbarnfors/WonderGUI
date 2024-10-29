@@ -1575,11 +1575,11 @@ MetalGfxDevice::MetalGfxDevice()
 
 		TintMode mode = TintMode::Flat;
 
-		if (pEdgemap->hasHorizontalTint() && pEdgemap->hasVerticalTint())
+		if (pEdgemap->paletteType() == EdgemapPalette::ColorstripXY)
 			mode = TintMode::GradientXY;
-		else if (pEdgemap->hasHorizontalTint())
+		else if (pEdgemap->paletteType() == EdgemapPalette::ColorstripX)
 			mode = TintMode::GradientX;
-		else if (pEdgemap->hasVerticalTint())
+		else if (pEdgemap->paletteType() == EdgemapPalette::ColorstripY)
 			mode = TintMode::GradientY;
 
 		HiColor		palette[Edgemap::maxSegments * 4];
@@ -1613,12 +1613,13 @@ MetalGfxDevice::MetalGfxDevice()
 
 		TintMode mode = TintMode::Flat;
 
-		if (pEdgemap->hasHorizontalTint() && pEdgemap->hasVerticalTint())
+		if (pEdgemap->paletteType() == EdgemapPalette::ColorstripXY)
 			mode = TintMode::GradientXY;
-		else if (pEdgemap->hasHorizontalTint())
+		else if (pEdgemap->paletteType() == EdgemapPalette::ColorstripX)
 			mode = TintMode::GradientX;
-		else if (pEdgemap->hasVerticalTint())
+		else if (pEdgemap->paletteType() == EdgemapPalette::ColorstripY)
 			mode = TintMode::GradientY;
+
 
 		HiColor		palette[Edgemap::maxSegments * 4];
 

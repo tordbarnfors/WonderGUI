@@ -284,9 +284,36 @@ namespace wg
 
 	void PluginGfxDevice::setBlurbrush( Blurbrush * pBrush )
 	{
+		if( pBrush == m_pBlurbrush )
+			return;
+		
 		GfxDeviceGen1::setBlurbrush(pBrush);
 
-		return PluginCalls::gfxDevice->setBlurbrush(m_cDevice, static_cast<PluginBlurbrush*>(pBrush)->cObject());
+		if( m_hostBlurbrush )
+		{
+			PluginCalls::object->release(m_hostBlurbrush);
+			m_hostBlurbrush = nullptr;
+		}
+			
+		if( pBrush )
+		{
+			wg_blurbrushBP bp;
+			bp.size = pBrush->size();
+			const float * pRed = pBrush->red();
+			const float * pGreen = pBrush->green();
+			const float * pBlue = pBrush->blue();
+
+			for( int i = 0 ; i < 9 ; i++ )
+			{
+				bp.red[i] = * pRed++;
+				bp.green[i] = * pGreen++;
+				bp.blue[i] = * pBlue++;
+			}
+			
+			m_hostBlurbrush = PluginCalls::blurbrush->create(bp);
+		}
+
+		return PluginCalls::gfxDevice->setBlurbrush(m_cDevice, m_hostBlurbrush);
 	}
 
 	//____ setFixedBlendColor() __________________________________________________

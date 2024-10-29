@@ -19,32 +19,56 @@
   should contact Tord Jansson [tord.jansson@gmail.com] for details.
 
 =========================================================================*/
-#ifndef WONDERGFX_C_DOT_H
-#define WONDERGFX_C_DOT_H
-#pragma once
 
-#include <wondergear_c.h>
-
-#include <wg_c_bitmapcache.h>
-#include <wg_c_bitmapfont.h>
 #include <wg_c_blurbrush.h>
-#include <wg_c_canvaslayers.h>
-#include <wg_c_color.h>
-#include <wg_c_edgemap.h>
-#include <wg_c_edgemapfactory.h>
-#include <wg_c_font.h>
-#include <wg_c_geo.h>
-#include <wg_c_gfxbase.h>
-#include <wg_c_gfxdevice.h>
-#include <wg_c_gfxtypes.h>
-#include <wg_c_gfxutil.h>
-#include <wg_c_gradient.h>
-#include <wg_c_patches.h>
-#include <wg_c_printer.h>
-#include <wg_c_surface.h>
-#include <wg_c_surfacefactory.h>
-#include <wg_c_surfacereader.h>
-#include <wg_c_surfacewriter.h>
+#include <wg_blurbrush.h>
+
+#include <type_traits>
 
 
-#endif //WONDERGFX_C_DOT_H
+using namespace wg;
+
+
+inline Blurbrush* getPtr(wg_obj obj) {
+	return static_cast<Blurbrush*>(reinterpret_cast<Object*>(obj));
+}
+
+wg_obj wg_createBlurbrush( wg_blurbrushBP _bp )
+{
+	Blurbrush::Blueprint bp;
+	bp.size = _bp.size;
+	
+	for (int i = 0; i < 9; i++)
+	{
+		bp.blue[i] = _bp.blue[i];
+		bp.green[i] = _bp.green[i];
+		bp.red[i] = _bp.red[i];
+	}
+	
+	auto pBlurbrush = Blurbrush::create(bp);
+	pBlurbrush->retain();
+	return static_cast<Object*>(pBlurbrush);
+}
+
+wg_spx wg_blurbrushSize( wg_obj blurbrush )
+{
+	return getPtr(blurbrush)->size();
+}
+
+const float* wg_blurbrushBlue( wg_obj blurbrush )
+{
+	return getPtr(blurbrush)->blue();
+}
+
+const float* wg_blurbrushGreen( wg_obj blurbrush )
+{
+	return getPtr(blurbrush)->green();
+}
+
+const float* wg_blurbrushRed( wg_obj blurbrush )
+{
+	return getPtr(blurbrush)->red();
+}
+
+
+

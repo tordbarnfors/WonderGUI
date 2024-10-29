@@ -36,6 +36,7 @@
 #include <wg_c_font.h>
 #include <wg_c_gfxdevice.h>
 #include <wg_c_edgemap.h>
+#include <wg_c_blurbrush.h>
 
 
 #ifdef __cplusplus
@@ -422,6 +423,8 @@ typedef struct wg_edgemap_calls_struct
 	int 				(*importFloatSamples)(wg_obj edgemap, wg_sampleOrigo origo, const float* pSource, int edgeBegin, int edgeEnd, int sampleBegin, int sampleEnd, int edgePitch, int samplePitch);
 	int 				(*exportSpxSamples)(wg_obj edgemap, wg_sampleOrigo origo, wg_spx* pDestination, int edgeBegin, int edgeEnd, int sampleBegin, int sampleEnd, int edgePitch, int samplePitch);
 	int 				(*exportFloatSamples)(wg_obj edgemap, wg_sampleOrigo origo, float* pDestination, int edgeBegin, int edgeEnd, int sampleBegin, int sampleEnd, int edgePitch, int samplePitch);
+	int					(*importPaletteEntries)(wg_obj edgemap, int begin, int end, const wg_color * pColors );
+	
 
 	const wg_color *	(*edgemapColors)(wg_obj edgemap);
 	const wg_gradient *	(*edgemapGradients)(wg_obj edgemap);
@@ -467,7 +470,21 @@ typedef	struct wg_plugincapsule_calls_struct
 
 } wg_plugincapsule_calls;
 
+//____ wg_blurbrush_calls ________________________________________________
 
+typedef struct wg_blurbrush_calls_struct
+{
+	int				structSize;
+
+	wg_obj			(*create)( wg_blurbrushBP bp );
+
+	wg_spx			(*size)( wg_obj blurbrush );
+
+	const float*	(*blue)( wg_obj blurbrush );
+	const float*	(*green)( wg_obj blurbrush );
+	const float*	(*red)( wg_obj blurbrush );
+
+} wg_blurbrush_calls;
 
 //____ wg_plugin_interface ____________________________________________________
 
@@ -491,6 +508,7 @@ typedef struct wg_plugin_interface_struct
 	wg_edgemapfactory_calls*	pEdgemapFactory;
 	wg_hostbridge_calls *		pHostBridge;
 	wg_plugincapsule_calls *	pPluginCapsule;
+	wg_blurbrush_calls *		pBlurbrush;
 
 } wg_plugin_interface;
 

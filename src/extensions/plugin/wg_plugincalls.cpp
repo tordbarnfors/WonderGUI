@@ -43,6 +43,7 @@ namespace wg
 	wg_edgemapfactory_calls*	PluginCalls::edgemapFactory = nullptr;
 	wg_hostbridge_calls*		PluginCalls::hostBridge		= nullptr;
 	wg_plugincapsule_calls*		PluginCalls::pluginCapsule	= nullptr;
+	wg_blurbrush_calls*			PluginCalls::blurbrush		= nullptr;
 
 
 	//___ _init() ______________________________________________________________
@@ -103,6 +104,9 @@ namespace wg
 		if (pCallsCollection->pPluginCapsule->structSize < sizeof(wg_plugincapsule_calls))
 			goto	error_too_old_abi;
 
+		if (pCallsCollection->pBlurbrush->structSize < sizeof(wg_blurbrush_calls))
+			goto	error_too_old_abi;
+
 
 		bitmapCache		= pCallsCollection->pBitmapCache;
 		bitmapFont		= pCallsCollection->pBitmapFont;
@@ -119,6 +123,7 @@ namespace wg
 		edgemapFactory = pCallsCollection->pEdgemapFactory;
 		hostBridge		= pCallsCollection->pHostBridge;
 		pluginCapsule	= pCallsCollection->pPluginCapsule;
+		blurbrush		= pCallsCollection->pBlurbrush;
 
 		return true;
 

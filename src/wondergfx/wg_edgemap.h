@@ -93,13 +93,16 @@ namespace wg
 		virtual bool	setRenderSegments(int nSegments);
 		inline int		renderSegments() const { return m_nbRenderSegments; }
 
+		EdgemapPalette	paletteType() const { return m_paletteType; }
+
 		bool	setColors( int begin, int end, const HiColor * pColors );
 		bool	setColors( int begin, int end, const Gradient * pGradients);
 		bool	setColors( int begin, int end, const Tintmap_p * pTintmaps );
 		bool	setColors( int begin, int end, const HiColor * pColorstripsX, const HiColor * pColorstripsY);
 
-		void	importPaletteEntries( int begin, int end, const HiColor * pColors );
-		
+		bool	importPaletteEntries( int begin, int end, const HiColor * pColors );
+
+
 		const HiColor* flatColors() const { return m_pFlatColors; }
 		const HiColor* colorstripsX() const { return m_pColorstripsX; }
 		const HiColor* colorstripsY() const { return m_pColorstripsY; }
@@ -111,9 +114,6 @@ namespace wg
 		inline int		segments() const { return m_nbSegments; }
 
 		inline int		samples() const { return m_size.w + 1; }
-
-		bool			hasHorizontalTint() const { return m_pColorstripsX; }
-		bool			hasVerticalTint() const { return m_pColorstripsY; }
 
 		bool 			importSamples( SampleOrigo origo, const spx * pSource, int edgeBegin, int edgeEnd,
 									  int sampleBegin, int sampleEnd, int edgePitch = 0, int samplePitch = 0 );

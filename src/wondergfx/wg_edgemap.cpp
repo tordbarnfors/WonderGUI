@@ -299,7 +299,7 @@ namespace wg
 			}
 
 			if( m_bConstructed )
-				_colorsUpdated((m_pColorstripsX - m_pPalette) + begin * m_size.w, (m_pColorstripsX - m_pPalette) + end * m_size.w);
+				_colorsUpdated(int(m_pColorstripsX - m_pPalette) + begin * m_size.w, int(m_pColorstripsX - m_pPalette) + end * m_size.w);
 
 			// If we also have vertical colorstrip, we need to set its colors to White.
 
@@ -314,7 +314,7 @@ namespace wg
 				}
 
 				if( m_bConstructed )
-					_colorsUpdated((m_pColorstripsY - m_pPalette) + begin * m_size.h, (m_pColorstripsY - m_pPalette) + end * m_size.h);
+					_colorsUpdated(int(m_pColorstripsY - m_pPalette) + begin * m_size.h, int(m_pColorstripsY - m_pPalette) + end * m_size.h);
 			}
 		}
 		else
@@ -330,7 +330,7 @@ namespace wg
 			}
 
 			if( m_bConstructed )
-				_colorsUpdated((m_pColorstripsY - m_pPalette) + begin * m_size.h, (m_pColorstripsY - m_pPalette) + end * m_size.h);
+				_colorsUpdated(int(m_pColorstripsY - m_pPalette) + begin * m_size.h, int(m_pColorstripsY - m_pPalette) + end * m_size.h);
 		}
 
 		return true;
@@ -354,10 +354,10 @@ namespace wg
 		}
 
 		if( m_pColorstripsX && m_bConstructed )
-			_colorsUpdated((m_pColorstripsX - m_pPalette) + begin * m_size.w, (m_pColorstripsX - m_pPalette) + end * m_size.w);
+			_colorsUpdated(int(m_pColorstripsX - m_pPalette) + begin * m_size.w, int(m_pColorstripsX - m_pPalette) + end * m_size.w);
 
 		if (m_pColorstripsY && m_bConstructed )
-			_colorsUpdated((m_pColorstripsY - m_pPalette) + begin * m_size.h, (m_pColorstripsY - m_pPalette) + end * m_size.h);
+			_colorsUpdated(int(m_pColorstripsY - m_pPalette) + begin * m_size.h, int(m_pColorstripsY - m_pPalette) + end * m_size.h);
 
 		return true;
 	}
@@ -383,7 +383,7 @@ namespace wg
 				pDest += m_size.w;
 			}
 
-			_colorsUpdated((m_pColorstripsX-m_pPalette) + begin * m_size.w, (m_pColorstripsX - m_pPalette) + end * m_size.w);
+			_colorsUpdated(int(m_pColorstripsX-m_pPalette) + begin * m_size.w, int(m_pColorstripsX - m_pPalette) + end * m_size.w);
 		}
 
 		if (m_pColorstripsY)
@@ -399,7 +399,7 @@ namespace wg
 				pDest += m_size.h;
 			}
 
-			_colorsUpdated((m_pColorstripsY - m_pPalette) + begin * m_size.h, (m_pColorstripsY - m_pPalette) + end * m_size.h);
+			_colorsUpdated(int(m_pColorstripsY - m_pPalette) + begin * m_size.h, int(m_pColorstripsY - m_pPalette) + end * m_size.h);
 		}
 
 		return true;
@@ -418,7 +418,7 @@ namespace wg
 			for (int i = 0; i < nColors; i++)
 					*pDest++ = *pColorstripsX++;
 
-			_colorsUpdated((m_pColorstripsX-m_pPalette) + begin * m_size.w, (m_pColorstripsX - m_pPalette) + end * m_size.w);
+			_colorsUpdated(int(m_pColorstripsX-m_pPalette) + begin * m_size.w, int(m_pColorstripsX - m_pPalette) + end * m_size.w);
 		}
 
 		if (pColorstripsY)
@@ -429,7 +429,7 @@ namespace wg
 			for (int i = 0; i < nColors; i++)
 				*pDest++ = *pColorstripsY++;
 
-			_colorsUpdated((m_pColorstripsY - m_pPalette) + begin * m_size.h, (m_pColorstripsY - m_pPalette) + end * m_size.h);
+			_colorsUpdated(int(m_pColorstripsY - m_pPalette) + begin * m_size.h, int(m_pColorstripsY - m_pPalette) + end * m_size.h);
 		}
 
 		return true;
@@ -437,10 +437,12 @@ namespace wg
 
 	//____ importPaletteEntries() ________________________________________________
 
-	void Edgemap::importPaletteEntries( int begin, int end, const HiColor * pColors )
+	bool Edgemap::importPaletteEntries( int begin, int end, const HiColor * pColors )
 	{
 		memcpy( m_pPalette + begin, pColors, (end - begin)*sizeof(HiColor) );
 		_colorsUpdated(begin, end);
+		
+		return true;
 	}
 
 	//____ exportLegacyPalette() ______________________________________________

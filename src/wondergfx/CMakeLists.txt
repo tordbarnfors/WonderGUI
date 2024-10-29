@@ -80,6 +80,8 @@ set( SOURCES
 	c-api/wg_c_bitmapcache.h
 	c-api/wg_c_bitmapfont.cpp
 	c-api/wg_c_bitmapfont.h	
+	c-api/wg_c_blurbrush.cpp
+	c-api/wg_c_blurbrush.h	
 	c-api/wg_c_canvaslayers.cpp
 	c-api/wg_c_canvaslayers.h
 	c-api/wg_c_color.cpp

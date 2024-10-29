@@ -19,32 +19,43 @@
   should contact Tord Jansson [tord.jansson@gmail.com] for details.
 
 =========================================================================*/
-#ifndef WONDERGFX_C_DOT_H
-#define WONDERGFX_C_DOT_H
+
+#ifndef WG_C_BLURBRUSH_DOT_H
+#define WG_C_BLURBRUSH_DOT_H
 #pragma once
 
-#include <wondergear_c.h>
-
-#include <wg_c_bitmapcache.h>
-#include <wg_c_bitmapfont.h>
-#include <wg_c_blurbrush.h>
-#include <wg_c_canvaslayers.h>
-#include <wg_c_color.h>
-#include <wg_c_edgemap.h>
-#include <wg_c_edgemapfactory.h>
-#include <wg_c_font.h>
-#include <wg_c_geo.h>
-#include <wg_c_gfxbase.h>
-#include <wg_c_gfxdevice.h>
 #include <wg_c_gfxtypes.h>
-#include <wg_c_gfxutil.h>
-#include <wg_c_gradient.h>
-#include <wg_c_patches.h>
-#include <wg_c_printer.h>
-#include <wg_c_surface.h>
-#include <wg_c_surfacefactory.h>
-#include <wg_c_surfacereader.h>
-#include <wg_c_surfacewriter.h>
+#include <wg_c_geo.h>
+#include <wg_c_color.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 
-#endif //WONDERGFX_C_DOT_H
+//____ wg_edgemapBP __________________________________________________________
+
+typedef struct wg_blurbrushBP_struct			// NOT BINARY EQUIVALENT!
+{
+	float	blue[9] = { 0.1f, 0.1f, 0.1f, 0.1f, 0.2f, 0.1f, 0.1f, 0.1f, 0.1f };
+	float	green[9] = { 0.1f, 0.1f, 0.1f, 0.1f, 0.2f, 0.1f, 0.1f, 0.1f, 0.1f };
+	float	red[9] = { 0.1f, 0.1f, 0.1f, 0.1f, 0.2f, 0.1f, 0.1f, 0.1f, 0.1f };
+
+	wg_spx		size = 64 * 4;;
+} wg_blurbrushBP;
+
+
+wg_obj	wg_createBlurbrush( wg_blurbrushBP bp );
+
+wg_spx		wg_blurbrushSize( wg_obj blurbrush );
+
+const float* wg_blurbrushBlue( wg_obj blurbrush );
+const float* wg_blurbrushGreen( wg_obj blurbrush );
+const float* wg_blurbrushRed( wg_obj blurbrush );
+
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif

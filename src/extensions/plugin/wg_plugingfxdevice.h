@@ -186,6 +186,8 @@ namespace wg
 		void	_transformDrawSegments(const RectI& dest, int nSegments, const HiColor * pSegmentColors, int nEdges, const int * pEdges, int edgeStripPitch, TintMode tintMode, const int simpleTransform[2][2]) override;
 
         wg_obj  m_cDevice;
+		
+		wg_obj	m_hostBlurbrush = nullptr;
 
 		PluginSurfaceFactory_p	m_pSurfaceFactory;
         PluginEdgemapFactory_p	m_pEdgemapFactory;

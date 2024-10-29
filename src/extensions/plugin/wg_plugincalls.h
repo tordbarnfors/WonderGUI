@@ -51,6 +51,7 @@ namespace wg
 		static wg_edgemapfactory_calls*edgemapFactory;
 		static wg_hostbridge_calls*		hostBridge;
 		static wg_plugincapsule_calls*	pluginCapsule;
+		static wg_blurbrush_calls*		blurbrush;
 
 		static bool _init(wg_plugin_interface* pCallsCollection);
 	};

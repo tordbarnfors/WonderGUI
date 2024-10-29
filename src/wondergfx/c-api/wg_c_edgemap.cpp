@@ -46,7 +46,6 @@ int wg_setRenderSegments(wg_obj edgemap, int nSegments)
 	return getPtr(edgemap)->setRenderSegments(nSegments);
 }
 
-
 int wg_getRenderSegments(wg_obj edgemap)
 {
 	return getPtr(edgemap)->renderSegments();
@@ -85,6 +84,54 @@ int wg_setEdgemapColors( wg_obj edgemap, int begin, int end, const wg_color * pC
 int wg_setEdgemapGradients( wg_obj edgemap, int begin, int end, const wg_gradient * pGradients )
 {
 	return getPtr(edgemap)->setGradients( begin, end, (const Gradient*) pGradients );
+wg_edgemapPalette wg_edgemapPaletteType(wg_obj edgemap)
+{
+	return (wg_edgemapPalette) getPtr(edgemap)->paletteType();
+}
+
+int wg_setEdgemapColors(wg_obj edgemap, int begin, int end, const wg_color * pColors)
+{
+	return getPtr(edgemap)->setColors(begin, end, reinterpret_cast<const HiColor *>(pColors) );
+}
+
+int wg_setEdgemapColorsFromGradients(wg_obj edgemap, int begin, int end, const wg_gradient * pGradients )
+{
+	return getPtr(edgemap)->setColors(begin, end, reinterpret_cast<const Gradient*>(pGradients) );
+}
+
+int wg_setEdgemapColorsFromTintmaps(wg_obj edgemap, int begin, int end, wg_obj * pTintmaps )
+{
+	Tintmap_p	pointers[Edgemap::maxSegments];
+	
+	for( int i = 0 ; i < end - begin ; i++ )
+		pointers[i] = static_cast<Tintmap*>(reinterpret_cast<Object*>(pTintmaps[i]));
+	
+	return getPtr(edgemap)->setColors(begin, end, pointers);
+}
+
+int wg_setEdgemapColorsFromStrips(wg_obj edgemap, int begin, int end, const wg_color * pColorstripX, const wg_color * pColorstripY )
+{
+	return getPtr(edgemap)->setColors(begin, end, (const HiColor*) pColorstripX, (const HiColor*) pColorstripY);
+}
+
+int wg_importEdgemapPaletteEntries(wg_obj edgemap, int begin, int end, const wg_color * pColors )
+{
+	return getPtr(edgemap)->importPaletteEntries(begin, end, (const HiColor*) pColors);
+}
+
+const wg_color * wg_edgemapFlatColors(wg_obj edgemap)
+{
+	return (const wg_color *) getPtr(edgemap)->flatColors();
+}
+
+const wg_color * wg_edgemapColorstripsX(wg_obj edgemap)
+{
+	return (const wg_color *) getPtr(edgemap)->colorstripsX();
+}
+
+const wg_color * wg_edgemapColorstripsY(wg_obj edgemap)
+{
+	return (const wg_color *) getPtr(edgemap)->colorstripsY();
 }
 
 int wg_edgemapSegments(wg_obj edgemap)
