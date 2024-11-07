@@ -61,6 +61,10 @@ namespace wg
 	{
 		*m_pStream << "BEGIN SESSION" << std::endl;
 
+		*m_pStream << "    Canvases:      " << pSession->nCanvases << std::endl;
+		*m_pStream << "    CanvasSize:    " << pSession->canvasSize.w << ", " << pSession->canvasSize.h << std::endl;
+		*m_pStream << "    UpdateRects:   " << pSession->nUpdateRects << std::endl;
+
 		*m_pStream << "    StateChanges:  " << pSession->nStateChanges << std::endl;
 		*m_pStream << "    Plots:         " << pSession->nPlots << std::endl;
 		*m_pStream << "    Fills:         " << pSession->nFill << std::endl;

@@ -60,9 +60,13 @@ namespace wg
 
 		struct SessionInfo
 		{
-			int		nCanvases;			// Number of setCanvas calls in session (may be less than this value).
+			int				nCanvases;			// Number of setCanvas calls in session (may be less than this value).
 
-			// Commands 
+			SizeSPX			canvasSize;			// All canvases in the session have this size.
+			int				nUpdateRects;		// Number of rectangles in pUpdateRects.
+			const RectSPX*	pUpdateRects;		// Rectangular areas of canvases that will be updated.
+
+			// Commands
 
 			int		nStateChanges;		// Number of times state will change through session.
 			int		nPlots;				// Number of plot commands.
@@ -84,7 +88,6 @@ namespace wg
 			int		nColors;			// Total number of colors to be used through all commands.
 			int		nTransforms;		// Total number of transforms for session.
 			int		nObjects;			// Total number of object references for session.
-
 		};
 
 		enum class Command

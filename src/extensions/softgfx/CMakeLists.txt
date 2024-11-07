@@ -16,6 +16,8 @@ set(SOURCES
 	c-api/wg_c_softkernels_bgr565linear_base.h
 	c-api/wg_c_softkernels_bgr565linear_extras.h
 
+	wg_linearbackend.cpp
+	wg_linearbackend.h
 	wg_softbackend.cpp
 	wg_softbackend.h
 	wg_softbackend_kernels.cpp

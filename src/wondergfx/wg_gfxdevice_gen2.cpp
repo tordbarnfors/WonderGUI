@@ -963,6 +963,9 @@ void GfxDeviceGen2::_doFlattenLayers()
 	canvasData.sessionInfo.nObjects = (int) canvasData.objects.size();
 	canvasData.sessionInfo.nTransforms = (int) canvasData.transforms.size();
 	canvasData.sessionInfo.nCanvases = (int) canvasData.layers.size();
+	canvasData.sessionInfo.canvasSize = canvasData.info.size;
+	canvasData.sessionInfo.nUpdateRects = canvasData.updateRects.nRects;
+	canvasData.sessionInfo.pUpdateRects = canvasData.updateRects.pRects;
 
 	m_pBackend->beginSession(&canvasData.sessionInfo);
 
