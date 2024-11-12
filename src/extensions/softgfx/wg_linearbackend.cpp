@@ -34,15 +34,19 @@ namespace wg
 
 	//____ create() _____________________________________________
 
-	SoftBackend_p LinearBackend::create()
+	LinearBackend_p LinearBackend::create(std::function<void*(CanvasRef ref, int nBytes)> beginCanvasRender,
+										std::function<void(CanvasRef ref, int nSegments, const Segment * pSegments)> endCanvasRender)
 	{
-		return LinearBackend_p(new LinearBackend());
+		return LinearBackend_p(new LinearBackend(beginCanvasRender, endCanvasRender));
 	}
 
 	//____ constructor _____________________________________________
 
-	LinearBackend::LinearBackend()
+	LinearBackend::LinearBackend(std::function<void*(CanvasRef ref, int nBytes)> beginCanvasRender,
+								 std::function<void(CanvasRef ref, int nSegments, const Segment * pSegments)> endCanvasRender)
 	{
+		m_beginCanvasRenderCallback = beginCanvasRender;
+		m_endCanvasRenderCallback 	= endCanvasRender;
 	}
 
 	//____ destructor _____________________________________________
@@ -58,19 +62,126 @@ namespace wg
 		return TYPEINFO;
 	}
 
+	//____ defineCanvas() _________________________________________________________
 
-	//____ _beginSession() _______________________________________________________
+	bool LinearBackend::defineCanvas( CanvasRef ref, const SizeSPX size, PixelFormat pixelFormat, int scale )
+	{
+		auto& def = m_canvasDefinitions[int(ref)];
+		def.size = size;
+		def.scale = scale;
+		def.ref = ref;
+		def.pSurface = nullptr;
+		def.format = pixelFormat;
+		return true;
+	}
+
+	//____ canvas() _____________________________________________________
+
+	const CanvasInfo * LinearBackend::canvasInfo(CanvasRef ref) const
+	{
+		if( m_canvasDefinitions[int(ref)].ref == ref )
+			return &m_canvasDefinitions[int(ref)];
+
+		return nullptr;
+	}
+
+	//____ setSegmentPadding() ____________________________________________________
+
+	void LinearBackend::setSegmentPadding( int bytes )
+	{
+		m_segmentPadding = bytes;
+	}
+
+	//____ beginSession() _______________________________________________________
 
 	void LinearBackend::beginSession(const SessionInfo* pSession)
 	{
 		SoftBackend::beginSession(pSession);
+
+		auto pUpdateRects = pSession->pUpdateRects;
+
+		// We prepare our canvas segments as much as we can, i.e. we resize the vector
+		// and fill in the rect. Pitch and pBuffer depends on canvas.
+
+		m_canvasSegments.resize(pSession->nUpdateRects);
+
+		int	nUpdatePixels = 0;
+
+		for( int i = 0 ; i < pSession->nUpdateRects ; i++ )
+		{
+			RectI updateRect = pUpdateRects[i]/64;
+			m_canvasSegments[i].rect = updateRect;
+
+			nUpdatePixels += updateRect.w * updateRect.h;
+		}
+
+		m_nUpdatePixels = nUpdatePixels;
 	}
 
-	//____ _endSession() _______________________________________________________
+	//____ endSession() _______________________________________________________
 
 	void LinearBackend::endSession()
 	{
+		if( m_activeCanvas != CanvasRef::None )
+		{
+			m_endCanvasRenderCallback( m_activeCanvas, (int) m_canvasSegments.size(), m_canvasSegments.data() );
+			m_activeCanvas = CanvasRef::None;
+		}
+
 		SoftBackend::endSession();
+	}
+
+	//____ setCanvas() ___________________________________________________________
+
+	void LinearBackend::setCanvas( Surface * pSurface )
+	{
+		SoftBackend::setCanvas(pSurface);
+
+		if( m_activeCanvas != CanvasRef::None )
+		{
+			m_endCanvasRenderCallback( m_activeCanvas, (int) m_canvasSegments.size(), m_canvasSegments.data() );
+			m_activeCanvas = CanvasRef::None;
+		}
+	}
+
+	void LinearBackend::setCanvas( CanvasRef ref )
+	{
+		auto pInfo = canvasInfo(ref);
+
+		if (!pInfo)
+		{
+			//TODO: Error handling!
+
+			return;
+		}
+
+		m_pCanvas = nullptr;
+
+		m_pCanvasPixels		= nullptr;
+		m_canvasPixelFormat = pInfo->format;
+		m_canvasPitch		= 0;
+		m_canvasPixelBytes	= Util::pixelFormatToDescription(pInfo->format).bits/8;
+
+		_resetStates();
+
+		if( m_activeCanvas != CanvasRef::None )
+			m_endCanvasRenderCallback( m_activeCanvas, (int) m_canvasSegments.size(), m_canvasSegments.data() );
+
+		m_activeCanvas = ref;
+
+		int bytesNeeded = m_nUpdatePixels * m_canvasPixelBytes;
+		bytesNeeded += int(m_canvasSegments.size())*m_segmentPadding;
+
+		uint8_t * pCanvasBuffer = (uint8_t*) m_beginCanvasRenderCallback( ref, bytesNeeded );
+
+		int ofs = 0;
+		for( int i = 0 ; i < m_canvasSegments.size() ; i++ )
+		{
+			auto& updateRect = m_canvasSegments[i].rect;
+			m_canvasSegments[i].pitch = updateRect.w * m_canvasPixelBytes;
+			m_canvasSegments[i].pBuffer = pCanvasBuffer + ofs;
+			ofs += updateRect.w * updateRect.h * m_canvasPixelBytes + m_segmentPadding;
+		}
 	}
 
 	//____ processCommands() _____________________________________________
@@ -80,6 +191,9 @@ namespace wg
 		spx *		pCoords = m_pCoordsPtr;
 		HiColor*	pColors = m_pColorsPtr;
 
+		Segment *	pSegBeg = m_canvasSegments.data();
+		Segment *	pSegEnd = m_canvasSegments.data() + m_canvasSegments.size();
+		Segment *	pSegment = pSegBeg;
 
 		auto p = pBeg;
 		while (p < pEnd)
@@ -206,7 +320,7 @@ namespace wg
 					blendMode = BlendMode::Replace;
 				}
 
-				auto pKernels = m_pKernels[(int)m_pCanvas->pixelFormat()];
+				auto pKernels = m_pKernels[(int)m_canvasPixelFormat];
 				if (pKernels)
 					pFunc = pKernels->pFillKernels[(int)m_colTrans.mode][(int)blendMode];
 
@@ -222,7 +336,7 @@ namespace wg
 					snprintf(errorMsg, 1024, "Failed fill operation. SoftGfxDevice is missing fill kernel for TintMode::%s, BlendMode::%s onto surface of PixelFormat:%s.",
 						toString(m_colTrans.mode),
 						toString(blendMode),
-						toString(m_pCanvas->pixelFormat()));
+						toString(m_canvasPixelFormat));
 
 					GfxBase::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, errorMsg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 					break;
@@ -230,17 +344,29 @@ namespace wg
 
 				for (int i = 0; i < nRects; i++)
 				{
-					RectI patch = (* reinterpret_cast<RectSPX*>(pCoords));
+					RectI spxPatch = (* reinterpret_cast<RectSPX*>(pCoords));
 					pCoords += 4;
 
-					if (((patch.x | patch.y | patch.w | patch.h) & 63) == 0)
+					RectI pixelPatch = spxPatch / 64;
+
+					while( pixelPatch.x < pSegment->rect.x || pixelPatch.x >= pSegment->rect.x + pSegment->rect.w ||
+						  pixelPatch.y < pSegment->rect.y || pixelPatch.y >= pSegment->rect.y + pSegment->rect.h )
+					{
+						pSegment++;
+						if( pSegment == pSegEnd )
+							pSegment = pSegBeg;
+					}
+
+					Segment& seg = * pSegment;
+
+
+					if (((spxPatch.x | spxPatch.y | spxPatch.w | spxPatch.h) & 63) == 0)
 					{
 						// Pixel aligned fill
 
-						patch /= 64;
+						uint8_t * pDst = seg.pBuffer + (pixelPatch.y - seg.rect.y)*seg.pitch + (pixelPatch.x - seg.rect.x)*m_canvasPixelBytes;
 
-						uint8_t* pDst = m_pCanvasPixels + patch.y * m_canvasPitch + patch.x * m_canvasPixelBytes;
-						pFunc(pDst, m_canvasPixelBytes, m_canvasPitch - patch.w * m_canvasPixelBytes, patch.h, patch.w, col, m_colTrans, patch.pos());
+						pFunc(pDst, m_canvasPixelBytes, seg.pitch - pixelPatch.w*m_canvasPixelBytes, pixelPatch.h, pixelPatch.w, col, m_colTrans, pixelPatch.pos());
 					}
 					else
 					{
@@ -249,13 +375,14 @@ namespace wg
 
 						// Fill all but anti-aliased edges
 
-						int x1 = ((patch.x + 63) >> 6);
-						int y1 = ((patch.y + 63) >> 6);
-						int x2 = ((patch.x + patch.w) >> 6);
-						int y2 = ((patch.y + patch.h) >> 6);
+						int x1 = ((spxPatch.x + 63) >> 6);
+						int y1 = ((spxPatch.y + 63) >> 6);
+						int x2 = ((spxPatch.x + spxPatch.w) >> 6);
+						int y2 = ((spxPatch.y + spxPatch.h) >> 6);
 
-						uint8_t* pDst = m_pCanvasPixels + y1 * m_canvasPitch + x1 * m_canvasPixelBytes;
-						pFunc(pDst, m_canvasPixelBytes, m_canvasPitch - (x2 - x1) * m_canvasPixelBytes, y2 - y1, x2 - x1, col, m_colTrans, { x1,y1 });
+						uint8_t * pDst = seg.pBuffer + (pixelPatch.y - seg.rect.y)*seg.pitch + (pixelPatch.x - seg.rect.x)*m_canvasPixelBytes;
+
+						pFunc(pDst, m_canvasPixelBytes, seg.pitch - (x2 - x1) * m_canvasPixelBytes, y2 - y1, x2 - x1, col, m_colTrans, {x1, y1} );
 
 						//
 
@@ -275,7 +402,7 @@ namespace wg
 							snprintf(errorMsg, 1024, "Failed fill operation. SoftGfxDevice is missing fill kernel for TintMode::%s, BlendMode::%s onto surface of PixelFormat:%s.",
 								toString(m_colTrans.mode),
 								toString(blendMode),
-								toString(m_pCanvas->pixelFormat()));
+								toString(m_canvasPixelFormat));
 
 							GfxBase::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, errorMsg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 							break;
@@ -283,10 +410,10 @@ namespace wg
 
 						// Draw the sides
 
-						int aaLeft = (4096 - (patch.x & 0x3F) * 64) & 4095;
-						int aaTop = (4096 - (patch.y & 0x3F) * 64) & 4095;
-						int aaRight = ((patch.x + patch.w) & 0x3F) * 64;
-						int aaBottom = ((patch.y + patch.h) & 0x3F) * 64;
+						int aaLeft = (4096 - (spxPatch.x & 0x3F) * 64) & 4095;
+						int aaTop = (4096 - (spxPatch.y & 0x3F) * 64) & 4095;
+						int aaRight = ((spxPatch.x + spxPatch.w) & 0x3F) * 64;
+						int aaBottom = ((spxPatch.y + spxPatch.h) & 0x3F) * 64;
 
 						int aaTopLeft = aaTop * aaLeft / 4096;
 						int aaTopRight = aaTop * aaRight / 4096;
@@ -309,12 +436,11 @@ namespace wg
 							aaBottomRight = aaBottomRight * alpha >> 12;
 						}
 
-						RectI pixelPatch = patch / 64;
 						HiColor color = col;
 
 						if (aaTop != 0)
 						{
-							uint8_t* pDst = m_pCanvasPixels + pixelPatch.y * m_canvasPitch + x1 * m_canvasPixelBytes;
+							uint8_t * pDst = seg.pBuffer + (pixelPatch.y - seg.rect.y)*seg.pitch + (x1 - seg.rect.x)*m_canvasPixelBytes;
 							int length = x2 - x1;
 							color.a = aaTop;
 							pEdgeFunc(pDst, m_canvasPixelBytes, 0, 1, length, color, m_colTrans, { x1,pixelPatch.y });
@@ -322,7 +448,7 @@ namespace wg
 
 						if (aaBottom != 0)
 						{
-							uint8_t* pDst = m_pCanvasPixels + y2 * m_canvasPitch + x1 * m_canvasPixelBytes;
+							uint8_t * pDst = seg.pBuffer + (y2 - seg.rect.y)*seg.pitch + (x1 - seg.rect.x)*m_canvasPixelBytes;
 							int length = x2 - x1;
 							color.a = aaBottom;
 							pEdgeFunc(pDst, m_canvasPixelBytes, 0, 1, length, color, m_colTrans, { x1,y2 });
@@ -330,7 +456,7 @@ namespace wg
 
 						if (aaLeft != 0)
 						{
-							uint8_t* pDst = m_pCanvasPixels + y1 * m_canvasPitch + pixelPatch.x * m_canvasPixelBytes;
+							uint8_t * pDst = seg.pBuffer + (y1 - seg.rect.y)*seg.pitch + (pixelPatch.x - seg.rect.x)*m_canvasPixelBytes;
 							int length = y2 - y1;
 							color.a = aaLeft;
 							pEdgeFunc(pDst, m_canvasPitch, 0, 1, length, color, m_colTrans, { pixelPatch.x, y1 });
@@ -338,7 +464,7 @@ namespace wg
 
 						if (aaRight != 0)
 						{
-							uint8_t* pDst = m_pCanvasPixels + y1 * m_canvasPitch + x2 * m_canvasPixelBytes;
+							uint8_t * pDst = seg.pBuffer + (y1 - seg.rect.y)*seg.pitch + (x2 - seg.rect.x)*m_canvasPixelBytes;
 							int length = y2 - y1;
 							color.a = aaRight;
 							pEdgeFunc(pDst, m_canvasPitch, 0, 1, length, color, m_colTrans, { x2, y1 });
@@ -349,28 +475,28 @@ namespace wg
 
 						if (aaTopLeft != 0)
 						{
-							uint8_t* pDst = m_pCanvasPixels + pixelPatch.y * m_canvasPitch + pixelPatch.x * m_canvasPixelBytes;
+							uint8_t * pDst = seg.pBuffer + (pixelPatch.y - seg.rect.y)*seg.pitch + (pixelPatch.x - seg.rect.x)*m_canvasPixelBytes;
 							color.a = aaTopLeft;
 							pEdgeFunc(pDst, 0, 0, 1, 1, color, m_colTrans, { pixelPatch.x, pixelPatch.y });
 						}
 
 						if (aaTopRight != 0)
 						{
-							uint8_t* pDst = m_pCanvasPixels + pixelPatch.y * m_canvasPitch + x2 * m_canvasPixelBytes;
+							uint8_t * pDst = seg.pBuffer + (pixelPatch.y - seg.rect.y)*seg.pitch + (x2 - seg.rect.x)*m_canvasPixelBytes;
 							color.a = aaTopRight;
 							pEdgeFunc(pDst, 0, 0, 1, 1, color, m_colTrans, { x2, pixelPatch.y });
 						}
 
 						if (aaBottomLeft != 0)
 						{
-							uint8_t* pDst = m_pCanvasPixels + y2 * m_canvasPitch + pixelPatch.x * m_canvasPixelBytes;
+							uint8_t * pDst = seg.pBuffer + (y2 - seg.rect.y)*seg.pitch + (pixelPatch.x - seg.rect.x)*m_canvasPixelBytes;
 							color.a = aaBottomLeft;
 							pEdgeFunc(pDst, 0, 0, 1, 1, color, m_colTrans, { pixelPatch.x, y2 });
 						}
 
 						if (aaBottomRight != 0)
 						{
-							uint8_t* pDst = m_pCanvasPixels + y2 * m_canvasPitch + x2 * m_canvasPixelBytes;
+							uint8_t * pDst = seg.pBuffer + (y2 - seg.rect.y)*seg.pitch + (x2 - seg.rect.x)*m_canvasPixelBytes;
 							color.a = aaBottomRight;
 							pEdgeFunc(pDst, 0, 0, 1, 1, color, m_colTrans, { x2, y2 });
 						}
@@ -388,7 +514,7 @@ namespace wg
 				const int pixelBytes = m_canvasPixelBytes;
 
 				PlotListOp_p pOp = nullptr;
-				auto pKernels = m_pKernels[(int)m_pCanvas->pixelFormat()];
+				auto pKernels = m_pKernels[(int)m_canvasPixelFormat];
 				if (pKernels)
 					pOp = pKernels->pPlotListKernels[(int)m_blendMode];
 
@@ -401,13 +527,13 @@ namespace wg
 
 					snprintf(errorMsg, 1024, "Failed plotPixels operation. SoftGfxDevice is missing plotList kernel for BlendMode::%s onto surface of PixelFormat:%s.",
 						toString(m_blendMode),
-						toString(m_pCanvas->pixelFormat()));
+						toString(m_canvasPixelFormat));
 
 					GfxBase::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, errorMsg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 					break;
 				}
 
-				pOp(nCoords, (CoordSPX*) pCoords, pColors, m_pCanvasPixels, pixelBytes, pitch, m_colTrans);
+//				pOp(nCoords, (CoordSPX*) pCoords, pColors, m_pCanvasPixels, pixelBytes, pitch, m_colTrans);
 
 				pCoords += nCoords*2;
 				pColors += nCoords;
@@ -434,7 +560,7 @@ namespace wg
 
 				ClipLineOp_p pOp = nullptr;
 
-				auto pKernels = m_pKernels[(int)m_pCanvas->pixelFormat()];
+				auto pKernels = m_pKernels[(int)m_canvasPixelFormat];
 				if (pKernels)
 					pOp = pKernels->pClipLineKernels[(int)m_blendMode];
 
@@ -447,7 +573,7 @@ namespace wg
 
 					snprintf(errorMsg, 1024, "Failed drawLine operation. SoftGfxDevice is missing clipLine kernel for BlendMode::%s onto surface of PixelFormat:%s.",
 						toString(m_blendMode),
-						toString(m_pCanvas->pixelFormat()));
+						toString(m_canvasPixelFormat));
 
 					GfxBase::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, errorMsg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 					return;
@@ -516,7 +642,7 @@ namespace wg
 
 							//  Draw
 
-							pOp(clipStart, clipEnd, _pRow, rowInc, pixelInc, _length, width, _pos, slope, fillColor, m_colTrans, { 0,0 });
+//							pOp(clipStart, clipEnd, _pRow, rowInc, pixelInc, _length, width, _pos, slope, fillColor, m_colTrans, { 0,0 });
 						}
 					}
 					else
@@ -568,7 +694,7 @@ namespace wg
 
 							//  Draw
 
-							pOp(clipStart, clipEnd, _pRow, rowInc, pixelInc, _length, width, _pos, slope, fillColor, m_colTrans, { 0,0 });
+//							pOp(clipStart, clipEnd, _pRow, rowInc, pixelInc, _length, width, _pos, slope, fillColor, m_colTrans, { 0,0 });
 						}
 					}
 				}
@@ -959,7 +1085,7 @@ namespace wg
 				}
 				
 				SegmentOp_p	pOp = nullptr;
-				auto pKernels = m_pKernels[(int)m_pCanvas->pixelFormat()];
+				auto pKernels = m_pKernels[(int)m_canvasPixelFormat];
 				if (pKernels)
 					pOp = pKernels->pSegmentKernels[(int)stripSource][(int)m_blendMode];
 
@@ -973,7 +1099,7 @@ namespace wg
 					snprintf(errorMsg, 1024, "Failed draw segments operation. SoftGfxDevice is missing segments kernel %s Y-tint for BlendMode::%s onto surface of PixelFormat:%s.",
 						bTintY ? "with" : "without",
 						toString(m_blendMode),
-						toString(m_pCanvas->pixelFormat()));
+						toString(m_canvasPixelFormat));
 
 					GfxBase::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, errorMsg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 					return;
@@ -1086,7 +1212,7 @@ namespace wg
 
 						//
 
- 						pOp(clipBeg, clipEnd, pStripStart, rowPitch, nEdges, edges, pColors, pTintColorsY + skippedSegments * segmentPitchTintmapY, segmentPitchTintmapY , transparentSegments + skippedSegments, opaqueSegments + skippedSegments, m_colTrans);
+// 						pOp(clipBeg, clipEnd, pStripStart, rowPitch, nEdges, edges, pColors, pTintColorsY + skippedSegments * segmentPitchTintmapY, segmentPitchTintmapY , transparentSegments + skippedSegments, opaqueSegments + skippedSegments, m_colTrans);
 						pEdgeStrips += edgeStripPitch;
 						pStripStart += colPitch;
 						columnOfs++;
@@ -1154,13 +1280,14 @@ namespace wg
 
 						src.x += patchOfs.x * mtx.xx + patchOfs.y * mtx.yx;
 						src.y += patchOfs.x * mtx.xy + patchOfs.y * mtx.yy;
-
+/*
 						if (cmd == Command::Blit)
 							(this->*m_pStraightBlitOp)(patch, src, mtx, patch.pos(), m_pStraightBlitFirstPassOp);
 						else if (cmd == Command::Tile)
 							(this->*m_pStraightTileOp)(patch, src, mtx, patch.pos(), m_pStraightTileFirstPassOp);
 						else
 							(this->*m_pStraightBlurOp)(patch, src, mtx, patch.pos(), m_pStraightBlurFirstPassOp);
+ */
 					}
 				}
 				else
@@ -1197,7 +1324,7 @@ namespace wg
 						src.y += patchOfs.x * mtx[0][1] + patchOfs.y * mtx[1][1];
 
 						//
-
+/*
 						if( cmd == Command::Blit)
 							(this->*m_pTransformBlitOp)(patch, src, mtx, patch.pos(), m_pTransformBlitFirstPassOp);
 						else if (cmd == Command::ClipBlit)
@@ -1206,6 +1333,7 @@ namespace wg
 							(this->*m_pTransformTileOp)(patch, src, mtx, patch.pos(), m_pTransformTileFirstPassOp);
 						else
 							(this->*m_pTransformBlurOp)(patch, src, mtx, patch.pos(), m_pTransformBlurFirstPassOp);
+*/
 					}
 				}
 

@@ -8,6 +8,7 @@
 #include <wondergfxstream.h>
 #include <wg_softbackend.h>
 #include <wg_softbackend_kernels.h>
+#include <wg_linearbackend.h>
 
 #include <wg_glbackend.h>
 
@@ -214,6 +215,58 @@ void GfxDeviceTester::setup_testdevices()
 
  }
 
+	// Gen2 with LinearBackend
+
+	{
+		auto pLinearOutputBlob = Blob::create(512*512*4);
+		m_pSavedBlob = pLinearOutputBlob;
+
+		auto pLinearBackend = LinearBackend::create(
+
+			[this](CanvasRef ref, int bytes)
+			{
+				assert( bytes <= 512*512*4 );
+
+				return m_pSavedBlob->data();
+			},
+			[this](CanvasRef ref, int nSegments, const LinearBackend::Segment * pSegments )
+			{
+				auto buffer = m_pLinearBackendSurface->allocPixelBuffer();
+
+				int pixelBytes = Util::pixelFormatToDescription(buffer.format).bits/8;
+
+				for( int i = 0 ; i < nSegments ; i++ )
+				{
+					auto& seg = pSegments[i];
+
+					uint8_t * pDest = ((uint8_t*)buffer.pixels) + seg.rect.y * buffer.pitch + seg.rect.x * pixelBytes;
+					uint8_t * pSrc = seg.pBuffer;
+
+					for( int y = 0 ; y < seg.rect.h ; y++ )
+					{
+						memcpy( pDest, pSrc, seg.rect.w*pixelBytes );
+						pDest += buffer.pitch;
+						pSrc += seg.pitch;
+					}
+				}
+
+				m_pLinearBackendSurface->pullPixels(buffer);
+				m_pLinearBackendSurface->freePixelBuffer(buffer);
+			}
+			);
+
+		addDefaultSoftKernels( pLinearBackend );
+		pLinearBackend->defineCanvas(CanvasRef::Default, g_canvasSize*64, PixelFormat::BGRA_8_sRGB);
+
+		auto pGfxDevice = GfxDeviceGen2::create(pLinearBackend);
+
+		auto pLinearDevice = Device::create("Gen2 Linear (LinearBackend)", pGfxDevice, CanvasRef::Default, nullptr, this );
+
+		m_pLinearBackendSurface = pLinearDevice->displaySurface();
+
+		g_testdevices.push_back(pLinearDevice);
+	}
+
 
 	// Native
 
@@ -222,8 +275,8 @@ void GfxDeviceTester::setup_testdevices()
 	
 	auto pNativeDevice = Device::create(nativeDeviceName, pNativeGfxDevice, CanvasRef::None, Base::defaultSurfaceFactory()->createSurface(canvasBP), this );
 	
-	g_testdevices.push_back(pNativeDevice);
-	
+//	g_testdevices.push_back(pNativeDevice);
+
 	// Linear
 	
 	auto pLinearOutputBlob = Blob::create(512*512*4);

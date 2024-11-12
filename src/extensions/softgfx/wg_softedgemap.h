@@ -37,7 +37,8 @@ namespace wg
 {
 	friend class SoftGfxDevice;
 	friend class SoftBackend;
-	
+	friend class LinearBackend;
+
 public:
 	
 	//.____ Creation __________________________________________

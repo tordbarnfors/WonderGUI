@@ -41,25 +41,50 @@ namespace wg
 
 	public:
 
+		struct Segment
+		{
+			RectI		rect;			// In pixels, not spx!
+			uint8_t *	pBuffer;
+			int 		pitch;
+		};
+
 		//.____ Creation __________________________________________
 
-		static LinearBackend_p	create();
+		static LinearBackend_p	create(std::function<void*(CanvasRef ref, int nBytes)> beginCanvasRender,
+									   std::function<void(CanvasRef ref, int nSegments, const Segment * pSegments)> endCanvasRender);
 
 		//.____ Identification __________________________________________
 
 		const TypeInfo& typeInfo(void) const override;
 		const static TypeInfo	TYPEINFO;
 
+		//.____ Misc _____________________________________________________
+
+		bool		defineCanvas( CanvasRef ref, const SizeSPX size, PixelFormat pixelFormat, int scale = 64 );
+
+		const CanvasInfo *	canvasInfo(CanvasRef ref) const override;
+
+		void		setSegmentPadding( int bytes );
+		inline int	segmentPadding() const { return m_segmentPadding; }
+
+
+
 		//.____ Rendering ________________________________________________
 	
 		void	beginSession(const SessionInfo* pSession) override;
 		void	endSession() override;
 
+		void	setCanvas( Surface * pSurface ) override;
+		void	setCanvas( CanvasRef ref ) override;
+
+
 		void	processCommands( int32_t* pBeg, int32_t * pEnd) override;
 
 
 	protected:
-		LinearBackend();
+		LinearBackend(std::function<void*(CanvasRef ref, int nBytes)> beginCanvasRender,
+					  std::function<void(CanvasRef ref, int nSegments, const Segment * pSegments)> endCanvasRender);
+		
 		virtual ~LinearBackend();
 
 		void	_updateBlitFunctions();
@@ -70,6 +95,17 @@ namespace wg
 		void	_onePassTransformBlit(const RectI& dest, BinalCoord pos, const binalInt transformMatrix[2][2], CoordI patchPos, TransformBlitOp_p pPassOneOp);
 		void	_twoPassTransformBlit(const RectI& dest, BinalCoord pos, const binalInt transformMatrix[2][2], CoordI patchPos, TransformBlitOp_p pPassOneOp);
 
+		std::function<void*(CanvasRef ref, int nBytes)> m_beginCanvasRenderCallback;
+		std::function<void(CanvasRef ref, int nSegments, const Segment * pSegments)> m_endCanvasRenderCallback;
+
+		CanvasInfo				m_canvasDefinitions[CanvasRef_size];
+
+		CanvasRef				m_activeCanvas = CanvasRef::None;
+		int						m_nUpdatePixels = 0;
+
+		std::vector<Segment>	m_canvasSegments;
+
+		int						m_segmentPadding = 0;
 	};
 
 } // namespace wg

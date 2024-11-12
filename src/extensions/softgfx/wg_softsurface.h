@@ -39,6 +39,7 @@ namespace wg
 	class SoftSurface : public Surface
 	{
 		friend class SoftBackend;
+		friend class LinearBackend;
 		friend class SoftGfxDevice;
 		friend class LinearGfxDevice;
 		friend class SoftSurfaceFactory;

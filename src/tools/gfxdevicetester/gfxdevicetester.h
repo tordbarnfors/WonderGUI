@@ -165,6 +165,7 @@ protected:
 
 
 	Surface_p			m_pLinearDeviceSurface;
-	
+	Surface_p			m_pLinearBackendSurface;
+
 	Blob_p				m_pSavedBlob;
 };

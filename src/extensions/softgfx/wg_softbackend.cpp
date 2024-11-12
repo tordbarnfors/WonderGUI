@@ -266,8 +266,14 @@ namespace wg
 		m_canvasPitch		= m_buffer.pitch;
 		m_canvasPixelBytes	= m_pCanvas->pixelDescription()->bits/8;
 
-		// Reset states
+		_resetStates();
+	}
 
+
+	//____ _resetStates() ________________________________________________________
+
+	void SoftBackend::_resetStates()
+	{
 		m_blendMode = BlendMode::Blend;
 
 		m_pBlitSource = nullptr;
@@ -284,7 +290,6 @@ namespace wg
 
 		_updateBlur(nullptr);
 	}
-
 
 
 	//____ setObjects() _____________________________________________

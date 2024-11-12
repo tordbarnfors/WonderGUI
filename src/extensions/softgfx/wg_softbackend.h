@@ -40,7 +40,7 @@ namespace wg
 
 	class SoftBackend : public GfxBackend
 	{
-
+		friend class LinearBackend;
 	public:
 
 		//.____ Creation __________________________________________
@@ -204,6 +204,7 @@ namespace wg
 		void _initTables();
 		bool _setupDestFormatKernels(PixelFormat format);
 
+		void	_resetStates();
 		void	_updateBlitFunctions();
 		void	_updateTintMode();
 		void	_updateBlur(Blurbrush * pBrush);
