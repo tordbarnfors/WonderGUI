@@ -380,7 +380,7 @@ namespace wg
 						int x2 = ((spxPatch.x + spxPatch.w) >> 6);
 						int y2 = ((spxPatch.y + spxPatch.h) >> 6);
 
-						uint8_t * pDst = seg.pBuffer + (pixelPatch.y - seg.rect.y)*seg.pitch + (pixelPatch.x - seg.rect.x)*m_canvasPixelBytes;
+						uint8_t * pDst = seg.pBuffer + (y1 - seg.rect.y)*seg.pitch + (x1 - seg.rect.x)*m_canvasPixelBytes;
 
 						pFunc(pDst, m_canvasPixelBytes, seg.pitch - (x2 - x1) * m_canvasPixelBytes, y2 - y1, x2 - x1, col, m_colTrans, {x1, y1} );
 
@@ -459,7 +459,7 @@ namespace wg
 							uint8_t * pDst = seg.pBuffer + (y1 - seg.rect.y)*seg.pitch + (pixelPatch.x - seg.rect.x)*m_canvasPixelBytes;
 							int length = y2 - y1;
 							color.a = aaLeft;
-							pEdgeFunc(pDst, m_canvasPitch, 0, 1, length, color, m_colTrans, { pixelPatch.x, y1 });
+							pEdgeFunc(pDst, seg.pitch, 0, 1, length, color, m_colTrans, { pixelPatch.x, y1 });
 						}
 
 						if (aaRight != 0)
@@ -467,7 +467,7 @@ namespace wg
 							uint8_t * pDst = seg.pBuffer + (y1 - seg.rect.y)*seg.pitch + (x2 - seg.rect.x)*m_canvasPixelBytes;
 							int length = y2 - y1;
 							color.a = aaRight;
-							pEdgeFunc(pDst, m_canvasPitch, 0, 1, length, color, m_colTrans, { x2, y1 });
+							pEdgeFunc(pDst, seg.pitch, 0, 1, length, color, m_colTrans, { x2, y1 });
 						}
 
 						// Draw corner pieces
