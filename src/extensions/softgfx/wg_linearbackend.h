@@ -89,11 +89,24 @@ namespace wg
 
 		void	_updateBlitFunctions();
 
-		void	_onePassStraightBlit(const RectI& dest, CoordI pos, const Transform& matrix, CoordI patchPos, StraightBlitOp_p pPassOneOp);
-		void	_twoPassStraightBlit(const RectI& dest, CoordI pos, const Transform& matrix, CoordI patchPos, StraightBlitOp_p pPassOneOp);
+		typedef void(LinearBackend::*LinearStraightBlitProxy_Op)(uint8_t * pDst, int destPitch, int width, int height, CoordI src, const Transform& matrix, CoordI patchPos, StraightBlitOp_p pPassOneOp);
+		typedef void(LinearBackend::*LinearTransformBlitProxy_Op)(uint8_t * pDst, int destPitch, int width, int height, BinalCoord pos, const binalInt transformMatrix[2][2], CoordI patchPos, TransformBlitOp_p pPassOneOp);
 
-		void	_onePassTransformBlit(const RectI& dest, BinalCoord pos, const binalInt transformMatrix[2][2], CoordI patchPos, TransformBlitOp_p pPassOneOp);
-		void	_twoPassTransformBlit(const RectI& dest, BinalCoord pos, const binalInt transformMatrix[2][2], CoordI patchPos, TransformBlitOp_p pPassOneOp);
+		LinearStraightBlitProxy_Op	m_pLinearStraightBlitOp 	= nullptr;		// Function called to perform a straight blit.
+		LinearStraightBlitProxy_Op	m_pLinearStraightTileOp 	= nullptr;		// Function called to perform a straight tile.
+
+		LinearTransformBlitProxy_Op m_pLinearTransformBlitOp 	= nullptr;		// Function called to perform a transform blit.
+		LinearTransformBlitProxy_Op m_pLinearTransformClipBlitOp= nullptr;	// Function called to perform a transform clip blit.
+		LinearTransformBlitProxy_Op m_pLinearTransformTileOp 	= nullptr;		// Function called to perform a transform tile.
+
+		void	_onePassLinearStraightBlit(uint8_t * pDst, int destPitch, int width, int height, CoordI pos, const Transform& matrix, CoordI patchPos, StraightBlitOp_p pPassOneOp);
+		void	_twoPassLinearStraightBlit(uint8_t * pDst, int destPitch, int width, int height, CoordI pos, const Transform& matrix, CoordI patchPos, StraightBlitOp_p pPassOneOp);
+		void	_dummyLinearStraightBlit(uint8_t * pDst, int destPitch, int width, int height, CoordI pos, const Transform& matrix, CoordI patchPos, StraightBlitOp_p pPassOneOp);
+
+		void	_onePassLinearTransformBlit(uint8_t * pDst, int destPitch, int width, int height, BinalCoord pos, const binalInt transformMatrix[2][2], CoordI patchPos, TransformBlitOp_p pPassOneOp);
+		void	_twoPassLinearTransformBlit(uint8_t * pDst, int destPitch, int width, int height, BinalCoord pos, const binalInt transformMatrix[2][2], CoordI patchPos, TransformBlitOp_p pPassOneOp);
+		void	_dummyLinearTransformBlit(uint8_t * pDst, int destPitch, int width, int height, BinalCoord pos, const binalInt transformMatrix[2][2], CoordI patchPos, TransformBlitOp_p pPassOneOp);
+
 
 		std::function<void*(CanvasRef ref, int nBytes)> m_beginCanvasRenderCallback;
 		std::function<void(CanvasRef ref, int nSegments, const Segment * pSegments)> m_endCanvasRenderCallback;

@@ -45,6 +45,7 @@
 #include <wg_canvaslayers.h>
 
 #include <vector>
+#include <deque>
 
 namespace wg
 {
@@ -317,7 +318,7 @@ namespace wg
 		RenderCanvas*				m_pActiveCanvas = nullptr;
 
 
-		std::vector<RenderCanvas>	m_canvasStack;
+		std::deque<RenderCanvas>	m_canvasStack;		// We use deque since we have pointers directly into content.
 
 		static const int			s_blitFlipOffsets[GfxFlip_size][2];
 		static const int			s_blitFlipTransforms[GfxFlip_size][2][2];

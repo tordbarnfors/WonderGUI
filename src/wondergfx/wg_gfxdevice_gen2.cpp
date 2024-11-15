@@ -166,7 +166,6 @@ EdgemapFactory_p GfxDeviceGen2::edgemapFactory()
 	return m_pBackend ? m_pBackend->edgemapFactory() : nullptr;
 }
 
-
 //____ canvasSize() _______________________________________________________
 
 SizeSPX GfxDeviceGen2::canvasSize() const

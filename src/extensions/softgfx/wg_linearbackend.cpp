@@ -188,6 +188,12 @@ namespace wg
 
 	void LinearBackend::processCommands(int32_t* pBeg, int32_t* pEnd)
 	{
+		if( m_pCanvas )
+		{
+			SoftBackend::processCommands(pBeg,pEnd);
+			return;
+		}
+
 		spx *		pCoords = m_pCoordsPtr;
 		HiColor*	pColors = m_pColorsPtr;
 
@@ -741,8 +747,19 @@ namespace wg
 
 				SegmentEdge edges[c_maxSegments - 1];
 
+
+				while( dest.x < pSegment->rect.x || dest.x >= pSegment->rect.x + pSegment->rect.w ||
+					  dest.y < pSegment->rect.y || dest.y >= pSegment->rect.y + pSegment->rect.h )
+				{
+					pSegment++;
+					if( pSegment == pSegEnd )
+						pSegment = pSegBeg;
+				}
+
+				auto& seg = * pSegment;
+
 				int xPitch = m_canvasPixelBytes;
-				int yPitch = m_canvasPitch;
+				int yPitch = seg.pitch;
 
 				// We need to modify our transform since we are moving the destination pointer, not the source pointer, according to the transform.
 
@@ -1072,7 +1089,8 @@ namespace wg
 
 				// Set start position and clip dest
 
-				uint8_t* pOrigo = m_pCanvasPixels + start.y * yPitch + start.x * xPitch;
+				uint8_t* pOrigo = seg.pBuffer - seg.rect.y * yPitch - seg.rect.x * xPitch + start.y * yPitch + start.x * xPitch;
+//				uint8_t* pOrigo = m_pCanvasPixels + start.y * yPitch + start.x * xPitch;
 
 				
 				StripSource stripSource = StripSource::Colors;
@@ -1212,14 +1230,14 @@ namespace wg
 
 						//
 
-// 						pOp(clipBeg, clipEnd, pStripStart, rowPitch, nEdges, edges, pColors, pTintColorsY + skippedSegments * segmentPitchTintmapY, segmentPitchTintmapY , transparentSegments + skippedSegments, opaqueSegments + skippedSegments, m_colTrans);
+ 						pOp(clipBeg, clipEnd, pStripStart, rowPitch, nEdges, edges, pColors, pTintColorsY + skippedSegments * segmentPitchTintmapY, segmentPitchTintmapY , transparentSegments + skippedSegments, opaqueSegments + skippedSegments, m_colTrans);
 						pEdgeStrips += edgeStripPitch;
 						pStripStart += colPitch;
 						columnOfs++;
 					}
 				}
 
-				// Free what we have reservhed on the memStack.
+				// Free what we have reserved on the memStack.
 
 				if (tintBufferSizeY > 0)
 					GfxBase::memStackFree(tintBufferSizeY);
@@ -1280,14 +1298,28 @@ namespace wg
 
 						src.x += patchOfs.x * mtx.xx + patchOfs.y * mtx.yx;
 						src.y += patchOfs.x * mtx.xy + patchOfs.y * mtx.yy;
-/*
+
+
+						while( patch.x < pSegment->rect.x || patch.x >= pSegment->rect.x + pSegment->rect.w ||
+							  patch.y < pSegment->rect.y || patch.y >= pSegment->rect.y + pSegment->rect.h )
+						{
+							pSegment++;
+							if( pSegment == pSegEnd )
+								pSegment = pSegBeg;
+						}
+
+						Segment& seg = * pSegment;
+
+
+						uint8_t * pDst = seg.pBuffer + (patch.y-seg.rect.y) * seg.pitch + (patch.x - seg.rect.x) * m_canvasPixelBytes;
+
+
 						if (cmd == Command::Blit)
-							(this->*m_pStraightBlitOp)(patch, src, mtx, patch.pos(), m_pStraightBlitFirstPassOp);
+							(this->*m_pLinearStraightBlitOp)(pDst, seg.pitch, patch.w, patch.h, src, mtx, patch.pos(), m_pStraightBlitFirstPassOp);
 						else if (cmd == Command::Tile)
-							(this->*m_pStraightTileOp)(patch, src, mtx, patch.pos(), m_pStraightTileFirstPassOp);
-						else
-							(this->*m_pStraightBlurOp)(patch, src, mtx, patch.pos(), m_pStraightBlurFirstPassOp);
- */
+							(this->*m_pLinearStraightTileOp)(pDst, seg.pitch, patch.w, patch.h, src, mtx, patch.pos(), m_pStraightTileFirstPassOp);
+//						else
+//							(this->*m_pLinearStraightBlurOp)(pDst, seg.pitch, patch.w, patch.h, src, mtx, patch.pos(), m_pStraightBlurFirstPassOp);
 					}
 				}
 				else
@@ -1324,16 +1356,21 @@ namespace wg
 						src.y += patchOfs.x * mtx[0][1] + patchOfs.y * mtx[1][1];
 
 						//
-/*
+
+						Segment& seg = * pSegment;
+
+						uint8_t * pDst = seg.pBuffer + (patch.y-seg.rect.y) * seg.pitch + (patch.x - seg.rect.x) * m_canvasPixelBytes;
+
+
 						if( cmd == Command::Blit)
-							(this->*m_pTransformBlitOp)(patch, src, mtx, patch.pos(), m_pTransformBlitFirstPassOp);
+							(this->*m_pLinearTransformBlitOp)(pDst, seg.pitch, patch.w, patch.h, src, mtx,patch.pos(), m_pTransformBlitFirstPassOp);
 						else if (cmd == Command::ClipBlit)
-							(this->*m_pTransformClipBlitOp)(patch, src, mtx, patch.pos(), m_pTransformClipBlitFirstPassOp);
+							(this->*m_pLinearTransformClipBlitOp)(pDst, seg.pitch, patch.w, patch.h, src, mtx, patch.pos(), m_pTransformClipBlitFirstPassOp);
 						else if (cmd == Command::Tile)
-							(this->*m_pTransformTileOp)(patch, src, mtx, patch.pos(), m_pTransformTileFirstPassOp);
-						else
-							(this->*m_pTransformBlurOp)(patch, src, mtx, patch.pos(), m_pTransformBlurFirstPassOp);
-*/
+							(this->*m_pLinearTransformTileOp)(pDst, seg.pitch, patch.w, patch.h, src, mtx, patch.pos(), m_pTransformTileFirstPassOp);
+//						else
+//							(this->*m_pLinearTransformBlurOp)(patch, src, mtx, patch.pos(), m_pTransformBlurFirstPassOp);
+
 					}
 				}
 
@@ -1352,103 +1389,136 @@ namespace wg
 
 	}
 
+	//____ _updateBlitFunctions() _____________________________________________
 
-	//____ _onePassStraightBlit() _____________________________________________
-
-	void LinearBackend::_onePassStraightBlit(const RectI& dest, CoordI src, const Transform& mtx, CoordI patchPos, StraightBlitOp_p pPassOneOp)
+	void LinearBackend::_updateBlitFunctions()
 	{
-		const SoftSurface* pSource = m_pBlitSource;
+		SoftBackend::_updateBlitFunctions();
+
+		if( m_pStraightBlitOp == &SoftBackend::_onePassStraightBlit )
+			m_pLinearStraightBlitOp = &LinearBackend::_onePassLinearStraightBlit;
+		else if( m_pStraightBlitOp == &SoftBackend::_twoPassStraightBlit )
+			m_pLinearStraightBlitOp = &LinearBackend::_twoPassLinearStraightBlit;
+		else
+			m_pLinearStraightBlitOp = &LinearBackend::_dummyLinearStraightBlit;
+
+		if( m_pStraightTileOp == &SoftBackend::_onePassStraightBlit )
+			m_pLinearStraightTileOp = &LinearBackend::_onePassLinearStraightBlit;
+		else if( m_pStraightTileOp == &SoftBackend::_twoPassStraightBlit )
+			m_pLinearStraightTileOp = &LinearBackend::_twoPassLinearStraightBlit;
+		else
+			m_pLinearStraightTileOp = &LinearBackend::_dummyLinearStraightBlit;
+
+		if( m_pTransformBlitOp == &SoftBackend::_onePassTransformBlit )
+			m_pLinearTransformBlitOp = &LinearBackend::_onePassLinearTransformBlit;
+		else if( m_pTransformBlitOp == &SoftBackend::_twoPassTransformBlit )
+			m_pLinearTransformBlitOp = &LinearBackend::_twoPassLinearTransformBlit;
+		else
+			m_pLinearTransformBlitOp = &LinearBackend::_dummyLinearTransformBlit;
+
+		if( m_pTransformTileOp == &SoftBackend::_onePassTransformBlit )
+			m_pLinearTransformTileOp = &LinearBackend::_onePassLinearTransformBlit;
+		else if( m_pTransformTileOp == &SoftBackend::_twoPassTransformBlit )
+			m_pLinearTransformTileOp = &LinearBackend::_twoPassLinearTransformBlit;
+		else
+			m_pLinearTransformTileOp = &LinearBackend::_dummyLinearTransformBlit;
+	}
+
+	//____ _onePassLinearStraightBlit() _____________________________________________
+
+	void LinearBackend::_onePassLinearStraightBlit(uint8_t * pDst, int destPitch, int width, int height, CoordI src, const Transform& matrix, CoordI patchPos, StraightBlitOp_p pPassOneOp)
+	{
+		const SoftSurface * pSource = m_pBlitSource;
 
 		int srcPixelBytes = pSource->m_pPixelDescription->bits / 8;
 		int dstPixelBytes = m_canvasPixelBytes;
 
 		Pitches pitches;
 
-		pitches.srcX = srcPixelBytes * mtx.xx + pSource->m_pitch * mtx.xy;
+		pitches.srcX = srcPixelBytes * matrix.xx + pSource->m_pitch * matrix.xy;
 		pitches.dstX = dstPixelBytes;
-		pitches.srcY = srcPixelBytes * mtx.yx + pSource->m_pitch * mtx.yy - pitches.srcX * dest.w;
-		pitches.dstY = m_canvasPitch - dstPixelBytes * dest.w;
+		pitches.srcY = srcPixelBytes * matrix.yx + pSource->m_pitch * matrix.yy - pitches.srcX*width;
+		pitches.dstY = destPitch - width * dstPixelBytes;
 
-		uint8_t* pDst = m_pCanvasPixels + dest.y * m_canvasPitch + dest.x * dstPixelBytes;
-		uint8_t* pSrc = pSource->m_pData + src.y * pSource->m_pitch + src.x * srcPixelBytes;
+		uint8_t * pSrc = pSource->m_pData + src.y * pSource->m_pitch + src.x * srcPixelBytes;
 
-		pPassOneOp(pSrc, pDst, pSource, pitches, dest.h, dest.w, m_colTrans, patchPos, &mtx);
+		pPassOneOp(pSrc, pDst, pSource, pitches, height, width, m_colTrans, patchPos, &matrix);
 	}
 
-	//____ _twoPassStraightBlit() _____________________________________________
+	//____ _twoPassLinearStraightBlit() _____________________________________________
 
-	void LinearBackend::_twoPassStraightBlit(const RectI& dest, CoordI src, const Transform& mtx, CoordI patchPos, StraightBlitOp_p pPassOneOp)
+	void LinearBackend::_twoPassLinearStraightBlit(uint8_t * pDst, int destPitch, int width, int height, CoordI src, const Transform& matrix, CoordI patchPos, StraightBlitOp_p pPassOneOp)
 	{
-		SoftSurface* pSource = m_pBlitSource;
+		SoftSurface * pSource = m_pBlitSource;
 
 		int srcPixelBytes = pSource->m_pPixelDescription->bits / 8;
 		int dstPixelBytes = m_canvasPixelBytes;
 
 		Pitches pitchesPass1, pitchesPass2;
 
-		pitchesPass1.srcX = srcPixelBytes * mtx.xx + pSource->m_pitch * mtx.xy;
+		pitchesPass1.srcX = srcPixelBytes * matrix.xx + pSource->m_pitch * matrix.xy;
 		pitchesPass1.dstX = 8;
-		pitchesPass1.srcY = srcPixelBytes * mtx.yx + pSource->m_pitch * mtx.yy - pitchesPass1.srcX * dest.w;
+		pitchesPass1.srcY = srcPixelBytes * matrix.yx + pSource->m_pitch * matrix.yy - pitchesPass1.srcX*width;
 		pitchesPass1.dstY = 0;
 
 		pitchesPass2.srcX = 8;
 		pitchesPass2.dstX = dstPixelBytes;
 		pitchesPass2.srcY = 0;
-		pitchesPass2.dstY = m_canvasPitch - dstPixelBytes * dest.w;
+		pitchesPass2.dstY = destPitch - width * dstPixelBytes;
 
 		int chunkLines;
 
-		if (dest.w >= 2048)
+		if (width>= 2048)
 			chunkLines = 1;
-		else if (dest.w * dest.h <= 2048)
-			chunkLines = dest.h;
+		else if (width*height <= 2048)
+			chunkLines = height;
 		else
-			chunkLines = 2048 / dest.w;
+			chunkLines = 2048 / width;
 
-		int memBufferSize = chunkLines * dest.w * 8;
+		int memBufferSize = chunkLines * width*8;
 
-		uint8_t* pChunkBuffer = (uint8_t*)GfxBase::memStackAlloc(memBufferSize);
+		uint8_t * pChunkBuffer = (uint8_t*) GfxBase::memStackAlloc(memBufferSize);
 
 		int line = 0;
 
-		while (line < dest.h)
+		while (line < height)
 		{
-			int thisChunkLines = std::min(dest.h - line, chunkLines);
+			int thisChunkLines = min(height - line, chunkLines);
 
-			uint8_t* pDst = m_pCanvasPixels + (dest.y + line) * m_canvasPitch + dest.x * dstPixelBytes;
-			uint8_t* pSrc = pSource->m_pData + src.y * pSource->m_pitch + line * int(srcPixelBytes * mtx.yx + pSource->m_pitch * mtx.yy) + src.x * srcPixelBytes;
-			//			uint8_t * pSrc = pSource->m_pData + (src.y+line) * pSource->m_pitch + src.x * srcPixelBytes;
+			uint8_t * pSrc = pSource->m_pData + src.y * pSource->m_pitch + line*int(srcPixelBytes * matrix.yx + pSource->m_pitch * matrix.yy) + src.x * srcPixelBytes;
+	//			uint8_t * pSrc = pSource->m_pData + (src.y+line) * pSource->m_pitch + src.x * srcPixelBytes;
 
-			pPassOneOp(pSrc, pChunkBuffer, pSource, pitchesPass1, thisChunkLines, dest.w, m_colTrans, { 0,0 }, &mtx);
-			m_pBlitSecondPassOp(pChunkBuffer, pDst, pSource, pitchesPass2, thisChunkLines, dest.w, m_colTrans, patchPos, nullptr);
+			pPassOneOp(pSrc, pChunkBuffer, pSource, pitchesPass1, thisChunkLines, width, m_colTrans, { 0,0 }, &matrix);
+			m_pBlitSecondPassOp(pChunkBuffer, pDst, pSource, pitchesPass2, thisChunkLines, width, m_colTrans, patchPos, nullptr);
 
 			patchPos.y += thisChunkLines;
 			line += thisChunkLines;
+
+			pDst += destPitch*thisChunkLines;
 		}
 
 		GfxBase::memStackFree(memBufferSize);
 	}
 
-	//____ _onePassTransformBlit() ____________________________________________
+	//____ _dummyLinearStraightBlit() _____________________________________________
 
-	void LinearBackend::_onePassTransformBlit(const RectI& dest, BinalCoord pos, const binalInt transformMatrix[2][2], CoordI patchPos, TransformBlitOp_p pPassOneOp)
+	void LinearBackend::_dummyLinearStraightBlit(uint8_t * pDst, int destPitch, int width, int height, CoordI pos, const Transform& matrix, CoordI patchPos, StraightBlitOp_p pPassOneOp)
 	{
-		const SoftSurface* pSource = m_pBlitSource;
-
-		int dstPixelBytes = m_canvasPixelBytes;
-
-		uint8_t* pDst = m_pCanvasPixels + dest.y * m_canvasPitch + dest.x * dstPixelBytes;
-
-		pPassOneOp(pSource, pos, transformMatrix, pDst, dstPixelBytes, m_canvasPitch - dstPixelBytes * dest.w, dest.h, dest.w, m_colTrans, patchPos);
 	}
 
 
-	//____ _twoPassTransformBlit() ____________________________________________
+	//____ _onePassLinearTransformBlit() ____________________________________________
 
-	void LinearBackend::_twoPassTransformBlit(const RectI& dest, BinalCoord pos, const binalInt transformMatrix[2][2],
-		CoordI patchPos, TransformBlitOp_p pPassOneOp)
+	void LinearBackend::_onePassLinearTransformBlit(uint8_t * pDst, int destPitch, int destWidth, int destHeight, BinalCoord pos, const binalInt transformMatrix[2][2], CoordI patchPos, TransformBlitOp_p pPassOneOp)
 	{
-		const SoftSurface* pSource = m_pBlitSource;
+		pPassOneOp(m_pBlitSource, pos, transformMatrix, pDst, m_canvasPixelBytes, destPitch - m_canvasPixelBytes * destWidth, destHeight, destWidth, m_colTrans, patchPos);
+	}
+
+	//____ _twoPassLinearTransformBlit() ____________________________________________
+
+	void LinearBackend::_twoPassLinearTransformBlit(	uint8_t * pDst, int destPitch, int destWidth, int destHeight, BinalCoord pos, const binalInt transformMatrix[2][2],	CoordI patchPos, TransformBlitOp_p pPassOneOp)
+	{
+		const SoftSurface * pSource = m_pBlitSource;
 
 		int dstPixelBytes = m_canvasPixelBytes;
 
@@ -1457,225 +1527,51 @@ namespace wg
 		pitchesPass2.srcX = 8;
 		pitchesPass2.dstX = dstPixelBytes;
 		pitchesPass2.srcY = 0;
-		pitchesPass2.dstY = m_canvasPitch - dstPixelBytes * dest.w;
+		pitchesPass2.dstY = destPitch - dstPixelBytes * destWidth;
 
 		int chunkLines;
 
-		if (dest.w >= 2048)
+		if (destWidth >= 2048)
 			chunkLines = 1;
-		else if (dest.w * dest.h <= 2048)
-			chunkLines = dest.h;
+		else if (destWidth*destHeight <= 2048)
+			chunkLines = destHeight;
 		else
-			chunkLines = 2048 / dest.w;
+			chunkLines = 2048 / destHeight;
 
-		int memBufferSize = chunkLines * dest.w * 8;
+		int memBufferSize = chunkLines * destWidth * 8;
 
-		uint8_t* pChunkBuffer = (uint8_t*)GfxBase::memStackAlloc(memBufferSize);
+		uint8_t * pChunkBuffer = (uint8_t*)GfxBase::memStackAlloc(memBufferSize);
 
 		int line = 0;
 
-		while (line < dest.h)
+		while (line < destHeight)
 		{
-			int thisChunkLines = std::min(dest.h - line, chunkLines);
+			int thisChunkLines = min(destHeight - line, chunkLines);
 
-			uint8_t* pDst = m_pCanvasPixels + (dest.y + line) * m_canvasPitch + dest.x * dstPixelBytes;
+	//		uint8_t * pDst = m_pCanvasPixels + (dest.y + line) * m_canvasPitch + dest.x * dstPixelBytes;
 
-			pPassOneOp(pSource, pos, transformMatrix, pChunkBuffer, 8, 0, thisChunkLines, dest.w, m_colTrans, { 0,0 });
-			m_pBlitSecondPassOp(pChunkBuffer, pDst, pSource, pitchesPass2, thisChunkLines, dest.w, m_colTrans, patchPos, nullptr);
+			pPassOneOp(pSource, pos, transformMatrix, pChunkBuffer, 8, 0, thisChunkLines, destWidth, m_colTrans, { 0,0 });
+			m_pBlitSecondPassOp(pChunkBuffer, pDst, pSource, pitchesPass2, thisChunkLines, destWidth, m_colTrans, patchPos, nullptr);
 
 			pos.x += transformMatrix[1][0] * thisChunkLines;
 			pos.y += transformMatrix[1][1] * thisChunkLines;
 
 			patchPos.y += thisChunkLines;
 			line += thisChunkLines;
+
+			pDst += destPitch*thisChunkLines;
 		}
 
 		GfxBase::memStackFree(memBufferSize);
 	}
 
-	//____ _updateBlitFunctions() _____________________________________________
 
-	void LinearBackend::_updateBlitFunctions()
+	//____ _dummyLinearTransformBlit() _____________________________________________
+
+	void LinearBackend::_dummyLinearTransformBlit(uint8_t * pDst, int destPitch, int width, int height, BinalCoord pos, const binalInt transformMatrix[2][2], CoordI patchPos, TransformBlitOp_p pPassOneOp)
 	{
-		// Start with dummy kernels.
-
-		m_pStraightBlitOp = &SoftBackend::_dummyStraightBlit;
-		m_pStraightTileOp = &SoftBackend::_dummyStraightBlit;
-		m_pStraightBlurOp = &SoftBackend::_dummyStraightBlit;
-
-		m_pTransformBlitOp = &SoftBackend::_dummyTransformBlit;
-		m_pTransformClipBlitOp = &SoftBackend::_dummyTransformBlit;
-		m_pTransformTileOp = &SoftBackend::_dummyTransformBlit;
-		m_pTransformBlurOp = &SoftBackend::_dummyTransformBlit;
-
-		// Sanity checking...
-
-		if (/*!m_pRenderLayerSurface ||*/ !m_pBlitSource /*|| !m_pCanvasPixels*/ || !m_pBlitSource->m_pData || m_blendMode == BlendMode::Ignore)
-			return;
-
-		//
-
-		SampleMethod	sampleMethod = m_pBlitSource->sampleMethod();
-		PixelFormat		srcFormat = m_pBlitSource->m_pixelFormat;
-		PixelFormat		dstFormat = m_canvasPixelFormat;
-
-		BlendMode		blendMode = m_blendMode;
-
-		if (m_pKernels[(int)dstFormat] == nullptr)
-			return;
-
-		// Optimize BlendMode
-
-		// TODO: Optimize by having flag for alpha in m_colTrans, which also is calculated on gradient tints.
-
-		if (m_colTrans.mode == TintMode::None || (m_colTrans.mode == TintMode::Flat && m_colTrans.flatTintColor.a == 4096))
-		{
-			// TODO: Optimize by using a lookup table.
-
-			if (blendMode == BlendMode::Blend && (srcFormat == PixelFormat::RGB_565_bigendian ||
-				srcFormat == PixelFormat::RGB_555_bigendian || srcFormat == PixelFormat::BGR_8_sRGB ||
-				srcFormat == PixelFormat::BGR_8_linear || srcFormat == PixelFormat::BGR_565_linear ||
-				srcFormat == PixelFormat::BGRX_8_sRGB || srcFormat == PixelFormat::BGRX_8_linear))
-			{
-				blendMode = BlendMode::Replace;
-			}
-		}
-
-		// Add two-pass rendering fallback.
-
-		auto pixelDescSource = Util::pixelFormatToDescription(srcFormat);
-		auto pixelDescDest = Util::pixelFormatToDescription(dstFormat);
-
-		if ((pixelDescDest.colorSpace == ColorSpace::Linear || dstFormat == PixelFormat::Alpha_8) && (pixelDescSource.colorSpace == ColorSpace::Linear || srcFormat == PixelFormat::Alpha_8))
-		{
-			m_pStraightBlitFirstPassOp = m_pStraightMoveToBGRA8Kernels[(int)srcFormat][int(ReadOp::Normal)];
-			m_pStraightTileFirstPassOp = m_pStraightMoveToBGRA8Kernels[(int)srcFormat][int(ReadOp::Tile)];
-			m_pStraightBlurFirstPassOp = m_pStraightMoveToBGRA8Kernels[(int)srcFormat][int(ReadOp::Blur)];
-			m_pTransformBlitFirstPassOp = m_pTransformMoveToBGRA8Kernels[(int)srcFormat][(int)sampleMethod][int(ReadOp::Normal)];
-			m_pTransformTileFirstPassOp = m_pTransformMoveToBGRA8Kernels[(int)srcFormat][(int)sampleMethod][int(ReadOp::Tile)];
-			m_pTransformClipBlitFirstPassOp = m_pTransformMoveToBGRA8Kernels[(int)srcFormat][(int)sampleMethod][int(ReadOp::Clip)];
-			m_pTransformBlurFirstPassOp = m_pTransformMoveToBGRA8Kernels[(int)srcFormat][(int)sampleMethod][int(ReadOp::Blur)];
-
-			m_pBlitSecondPassOp = m_pKernels[(int)dstFormat]->pStraightBlitFromBGRA8Kernels[(int)m_colTrans.mode][(int)blendMode];
-		}
-		else
-		{
-			m_pStraightBlitFirstPassOp = m_pStraightMoveToHiColorKernels[(int)srcFormat][int(ReadOp::Normal)];
-			m_pStraightTileFirstPassOp = m_pStraightMoveToHiColorKernels[(int)srcFormat][int(ReadOp::Tile)];
-			m_pStraightBlurFirstPassOp = m_pStraightMoveToHiColorKernels[(int)srcFormat][int(ReadOp::Blur)];
-			m_pTransformBlitFirstPassOp = m_pTransformMoveToHiColorKernels[(int)srcFormat][(int)sampleMethod][int(ReadOp::Normal)];
-			m_pTransformTileFirstPassOp = m_pTransformMoveToHiColorKernels[(int)srcFormat][(int)sampleMethod][int(ReadOp::Tile)];
-			m_pTransformClipBlitFirstPassOp = m_pTransformMoveToHiColorKernels[(int)srcFormat][(int)sampleMethod][int(ReadOp::Clip)];
-			m_pTransformBlurFirstPassOp = m_pTransformMoveToHiColorKernels[(int)srcFormat][(int)sampleMethod][int(ReadOp::Blur)];
-
-			m_pBlitSecondPassOp = m_pKernels[(int)dstFormat]->pStraightBlitFromHiColorKernels[(int)m_colTrans.mode][(int)blendMode];
-		}
-
-
-		// Try to find suitable one-pass kernels.
-
-		StraightBlitOp_p	pStraightBlitSinglePassKernel = nullptr;
-		StraightBlitOp_p	pStraightTileSinglePassKernel = nullptr;
-		StraightBlitOp_p	pStraightBlurSinglePassKernel = nullptr;
-		TransformBlitOp_p	pTransformBlitSinglePassKernel = nullptr;
-		TransformBlitOp_p	pTransformTileSinglePassKernel = nullptr;
-		TransformBlitOp_p	pTransformClipBlitSinglePassKernel = nullptr;
-		TransformBlitOp_p	pTransformBlurSinglePassKernel = nullptr;
-
-
-		int singleBlitKernelsIdx = m_pKernels[(int)dstFormat]->singlePassBlitKernels[(int)srcFormat];
-		if (singleBlitKernelsIdx > 0)
-		{
-			auto pSingleBlitKernels = &m_singlePassBlitKernels[singleBlitKernelsIdx - 1];
-
-			int straightBlitKernelsIdx = pSingleBlitKernels->straightBlitKernels[(int)blendMode];
-			int transformBlitKernelsIdx = pSingleBlitKernels->transformBlitKernels[(int)blendMode];
-
-			if (straightBlitKernelsIdx > 0)
-			{
-				auto pStraightBlitKernels = m_singlePassStraightBlitKernels[straightBlitKernelsIdx - 1].pKernels;
-
-				pStraightBlitSinglePassKernel = pStraightBlitKernels[int(ReadOp::Normal)][int(m_colTrans.mode)];
-				pStraightTileSinglePassKernel = pStraightBlitKernels[int(ReadOp::Tile)][int(m_colTrans.mode)];
-				pStraightBlurSinglePassKernel = pStraightBlitKernels[int(ReadOp::Blur)][int(m_colTrans.mode)];
-			}
-
-			if (transformBlitKernelsIdx > 0)
-			{
-				auto pTransformBlitKernels = m_singlePassTransformBlitKernels[transformBlitKernelsIdx - 1].pKernels;
-
-				pTransformBlitSinglePassKernel = pTransformBlitKernels[(int)sampleMethod][int(ReadOp::Normal)][int(m_colTrans.mode)];
-				pTransformTileSinglePassKernel = pTransformBlitKernels[(int)sampleMethod][int(ReadOp::Tile)][int(m_colTrans.mode)];
-				pTransformClipBlitSinglePassKernel = pTransformBlitKernels[(int)sampleMethod][int(ReadOp::Clip)][int(m_colTrans.mode)];
-				pTransformBlurSinglePassKernel = pTransformBlitKernels[(int)sampleMethod][int(ReadOp::Blur)][int(m_colTrans.mode)];
-			}
-		}
-
-		// Set kernels to use
-
-		if (pStraightBlitSinglePassKernel)
-		{
-			m_pStraightBlitOp = &SoftBackend::_onePassStraightBlit;
-			m_pStraightBlitFirstPassOp = pStraightBlitSinglePassKernel;
-		}
-		else if (m_pStraightBlitFirstPassOp && m_pBlitSecondPassOp)
-			m_pStraightBlitOp = &SoftBackend::_twoPassStraightBlit;
-
-
-		if (pStraightTileSinglePassKernel)
-		{
-			m_pStraightTileOp = &SoftBackend::_onePassStraightBlit;
-			m_pStraightTileFirstPassOp = pStraightTileSinglePassKernel;
-		}
-		else if (m_pStraightTileFirstPassOp && m_pBlitSecondPassOp)
-			m_pStraightTileOp = &SoftBackend::_twoPassStraightBlit;
-
-		if (pStraightBlurSinglePassKernel)
-		{
-			m_pStraightBlurOp = &SoftBackend::_onePassStraightBlit;
-			m_pStraightBlurFirstPassOp = pStraightBlurSinglePassKernel;
-		}
-		else if (m_pStraightBlurFirstPassOp && m_pBlitSecondPassOp)
-			m_pStraightBlurOp = &SoftBackend::_twoPassStraightBlit;
-
-
-
-		if (pTransformBlitSinglePassKernel)
-		{
-			m_pTransformBlitOp = &SoftBackend::_onePassTransformBlit;
-			m_pTransformBlitFirstPassOp = pTransformBlitSinglePassKernel;
-		}
-		else if (m_pTransformBlitFirstPassOp && m_pBlitSecondPassOp)
-			m_pTransformBlitOp = &SoftBackend::_twoPassTransformBlit;
-
-
-		if (pTransformClipBlitSinglePassKernel)
-		{
-			m_pTransformClipBlitOp = &SoftBackend::_onePassTransformBlit;
-			m_pTransformClipBlitFirstPassOp = pTransformClipBlitSinglePassKernel;
-		}
-		else if (m_pTransformClipBlitFirstPassOp && m_pBlitSecondPassOp)
-			m_pTransformClipBlitOp = &SoftBackend::_twoPassTransformBlit;
-
-
-		if (pTransformTileSinglePassKernel)
-		{
-			m_pTransformTileOp = &SoftBackend::_onePassTransformBlit;
-			m_pTransformTileFirstPassOp = pTransformTileSinglePassKernel;
-		}
-		else if (m_pTransformTileFirstPassOp && m_pBlitSecondPassOp)
-			m_pTransformTileOp = &SoftBackend::_twoPassTransformBlit;
-
-		if (pTransformBlurSinglePassKernel)
-		{
-			m_pTransformBlurOp = &SoftBackend::_onePassTransformBlit;
-			m_pTransformBlurFirstPassOp = pTransformBlurSinglePassKernel;
-		}
-		else if (m_pTransformBlurFirstPassOp && m_pBlitSecondPassOp)
-			m_pTransformBlurOp = &SoftBackend::_twoPassTransformBlit;
-
-
-		return;
 	}
+
+
 
 } // namespace wg
