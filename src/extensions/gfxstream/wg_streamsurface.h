@@ -41,6 +41,7 @@ namespace wg
 	{
 		friend class StreamSurfaceFactory;
 		friend class StreamDevice;
+		friend class StreamBackend;
 
 	public:
 

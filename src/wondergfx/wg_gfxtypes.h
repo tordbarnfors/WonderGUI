@@ -522,7 +522,19 @@ namespace wg
 		DeleteEdgemap = 65,
 
 		DrawEdgemap = 66,
-		FlipDrawEdgemap = 67
+		FlipDrawEdgemap = 67,
+
+		BE_BeginRender = 100,
+		BE_EndRender = 101,
+		BE_BeginSession = 102,
+		BE_EndSession = 103,
+		BE_SetCanvas = 104,
+		BE_Objects = 105,
+		BE_Coords = 106,
+		BE_Colors = 107,
+		BE_Transforms = 108,
+		BE_Commands = 109,
+		BE_UpdateRects = 110
 	};
 
 	typedef uint8_t GfxChunkFlags;

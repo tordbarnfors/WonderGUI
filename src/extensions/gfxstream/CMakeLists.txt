@@ -2,6 +2,8 @@
 set( SOURCES
 
 	wg_gfxstream.h
+	wg_streambackend.cpp
+	wg_streambackend.h
 	wg_streambuffer.cpp
 	wg_streambuffer.h
 	wg_streamdecoder.cpp
