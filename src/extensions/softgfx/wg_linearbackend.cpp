@@ -613,43 +613,54 @@ namespace wg
 						slope = ((end.y - beg.y) * 65536) / length;
 
 						width = _scaleLineThickness(thickness / 64.f, slope);
-						pos = (beg.y << 16) - width / 2 + 32768;
-
-						rowInc = m_canvasPixelBytes;
-						pixelInc = m_canvasPitch;
-
-						pRow = m_pCanvasPixels + beg.x * rowInc;
 
 						// Loop through patches
 
-						for (int i = 0; i < nClipRects; i++)
+						for( int i = 0 ; i < nClipRects ; i++ )
 						{
+							RectI clip = pClipRects[i] / 64;
+
+							while( clip.x < pSegment->rect.x || clip.x >= pSegment->rect.x + pSegment->rect.w ||
+								  clip.y < pSegment->rect.y || clip.y >= pSegment->rect.y + pSegment->rect.h )
+							{
+								pSegment++;
+								if( pSegment == pSegEnd )
+									pSegment = pSegBeg;
+							}
+
+							Segment& seg = * pSegment;
+
+
+							int pos = ((beg.y-clip.y) << 16) - width / 2 + 32768;
+
+							int rowInc = m_canvasPixelBytes;
+							int pixelInc = seg.pitch;
+
 							// Do clipping
 
-							const RectI clip = pClipRects[i] / 64;
-
 							int _length = length;
-							int _pos = pos;
-							uint8_t* _pRow = pRow;
+							uint8_t * pRow = seg.pBuffer + (beg.x - seg.rect.x) * rowInc + (clip.y - seg.rect.y) * seg.pitch;
 
 							if (beg.x < clip.x)
 							{
 								int cut = clip.x - beg.x;
 								_length -= cut;
-								_pRow += rowInc * cut;
-								_pos += slope * cut;
+								pRow = seg.pBuffer + (clip.x - seg.rect.x) * rowInc + (clip.y - seg.rect.y) * seg.pitch;
+								pos += slope * cut;
 							}
 
 							if (end.x > clip.x + clip.w)
 								_length -= end.x - (clip.x + clip.w);
 
-							clipStart = clip.y << 16;
-							clipEnd = (clip.y + clip.h) << 16;
+							int clipStart = 0;
+							int clipEnd = (clip.h) << 16;
+
 
 							//  Draw
 
-//							pOp(clipStart, clipEnd, _pRow, rowInc, pixelInc, _length, width, _pos, slope, fillColor, m_colTrans, { 0,0 });
+							pOp(clipStart, clipEnd, pRow, rowInc, pixelInc, _length, width, pos, slope, fillColor, m_colTrans, { 0,0 });
 						}
+
 					}
 					else
 					{
@@ -665,42 +676,51 @@ namespace wg
 						// Need multiplication instead of shift as operand might be negative
 						slope = ((end.x - beg.x) * 65536) / length;
 						width = _scaleLineThickness(thickness / 64.f, slope);
-						pos = (beg.x << 16) - width / 2 + 32768;
-
-						rowInc = m_canvasPitch;
-						pixelInc = m_canvasPixelBytes;
-
-						pRow = m_pCanvasPixels + beg.y * rowInc;
 
 						// Loop through patches
 
 						for (int i = 0; i < nClipRects; i++)
 						{
+
+							RectI clip = pClipRects[i] / 64;
+
+							while( clip.x < pSegment->rect.x || clip.x >= pSegment->rect.x + pSegment->rect.w ||
+								  clip.y < pSegment->rect.y || clip.y >= pSegment->rect.y + pSegment->rect.h )
+							{
+								pSegment++;
+								if( pSegment == pSegEnd )
+									pSegment = pSegBeg;
+							}
+
+							Segment& seg = * pSegment;
+
+							int pos = ((beg.x-clip.x) << 16) - width / 2 + 32768;
+
+							int rowInc = seg.pitch;
+							int pixelInc = m_canvasPixelBytes;
+
 							// Do clipping
 
-							const RectI clip = pClipRects[i] / 64;
-
 							int _length = length;
-							int _pos = pos;
-							uint8_t* _pRow = pRow;
+							uint8_t * pRow = seg.pBuffer + (beg.y - seg.rect.y) * rowInc + (clip.x - seg.rect.x) * m_canvasPixelBytes;
 
 							if (beg.y < clip.y)
 							{
 								int cut = clip.y - beg.y;
 								_length -= cut;
-								_pRow += rowInc * cut;
-								_pos += slope * cut;
+								pRow += rowInc * cut;
+								pos += slope * cut;
 							}
 
 							if (end.y > clip.y + clip.h)
 								_length -= end.y - (clip.y + clip.h);
 
-							clipStart = clip.x << 16;
-							clipEnd = (clip.x + clip.w) << 16;
+							clipStart = 0;
+							clipEnd = clip.w << 16;
 
 							//  Draw
 
-//							pOp(clipStart, clipEnd, _pRow, rowInc, pixelInc, _length, width, _pos, slope, fillColor, m_colTrans, { 0,0 });
+							pOp(clipStart, clipEnd, pRow, rowInc, pixelInc, _length, width, pos, slope, fillColor, m_colTrans, { 0,0 });
 						}
 					}
 				}
