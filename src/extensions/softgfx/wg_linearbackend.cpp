@@ -1338,8 +1338,8 @@ namespace wg
 							(this->*m_pLinearStraightBlitOp)(pDst, seg.pitch, patch.w, patch.h, src, mtx, patch.pos(), m_pStraightBlitFirstPassOp);
 						else if (cmd == Command::Tile)
 							(this->*m_pLinearStraightTileOp)(pDst, seg.pitch, patch.w, patch.h, src, mtx, patch.pos(), m_pStraightTileFirstPassOp);
-//						else
-//							(this->*m_pLinearStraightBlurOp)(pDst, seg.pitch, patch.w, patch.h, src, mtx, patch.pos(), m_pStraightBlurFirstPassOp);
+						else
+							(this->*m_pLinearStraightBlurOp)(pDst, seg.pitch, patch.w, patch.h, src, mtx, patch.pos(), m_pStraightBlurFirstPassOp);
 					}
 				}
 				else
@@ -1388,8 +1388,8 @@ namespace wg
 							(this->*m_pLinearTransformClipBlitOp)(pDst, seg.pitch, patch.w, patch.h, src, mtx, patch.pos(), m_pTransformClipBlitFirstPassOp);
 						else if (cmd == Command::Tile)
 							(this->*m_pLinearTransformTileOp)(pDst, seg.pitch, patch.w, patch.h, src, mtx, patch.pos(), m_pTransformTileFirstPassOp);
-//						else
-//							(this->*m_pLinearTransformBlurOp)(patch, src, mtx, patch.pos(), m_pTransformBlurFirstPassOp);
+						else
+							(this->*m_pLinearTransformBlurOp)(pDst, seg.pitch, patch.w, patch.h, src, mtx, patch.pos(), m_pTransformBlurFirstPassOp);
 
 					}
 				}
@@ -1429,6 +1429,13 @@ namespace wg
 		else
 			m_pLinearStraightTileOp = &LinearBackend::_dummyLinearStraightBlit;
 
+		if( m_pStraightBlurOp == &SoftBackend::_onePassStraightBlit )
+			m_pLinearStraightBlurOp = &LinearBackend::_onePassLinearStraightBlit;
+		else if( m_pStraightBlurOp == &SoftBackend::_twoPassStraightBlit )
+			m_pLinearStraightBlurOp = &LinearBackend::_twoPassLinearStraightBlit;
+		else
+			m_pLinearStraightBlurOp = &LinearBackend::_dummyLinearStraightBlit;
+
 		if( m_pTransformBlitOp == &SoftBackend::_onePassTransformBlit )
 			m_pLinearTransformBlitOp = &LinearBackend::_onePassLinearTransformBlit;
 		else if( m_pTransformBlitOp == &SoftBackend::_twoPassTransformBlit )
@@ -1442,6 +1449,14 @@ namespace wg
 			m_pLinearTransformTileOp = &LinearBackend::_twoPassLinearTransformBlit;
 		else
 			m_pLinearTransformTileOp = &LinearBackend::_dummyLinearTransformBlit;
+
+		if( m_pTransformBlurOp == &SoftBackend::_onePassTransformBlit )
+			m_pLinearTransformBlurOp = &LinearBackend::_onePassLinearTransformBlit;
+		else if( m_pTransformBlurOp == &SoftBackend::_twoPassTransformBlit )
+			m_pLinearTransformBlurOp = &LinearBackend::_twoPassLinearTransformBlit;
+		else
+			m_pLinearTransformBlurOp = &LinearBackend::_dummyLinearTransformBlit;
+
 	}
 
 	//____ _onePassLinearStraightBlit() _____________________________________________

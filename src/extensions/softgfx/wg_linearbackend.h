@@ -94,10 +94,13 @@ namespace wg
 
 		LinearStraightBlitProxy_Op	m_pLinearStraightBlitOp 	= nullptr;		// Function called to perform a straight blit.
 		LinearStraightBlitProxy_Op	m_pLinearStraightTileOp 	= nullptr;		// Function called to perform a straight tile.
+		LinearStraightBlitProxy_Op	m_pLinearStraightBlurOp 	= nullptr;		// Function called to perform a straight tile.
 
 		LinearTransformBlitProxy_Op m_pLinearTransformBlitOp 	= nullptr;		// Function called to perform a transform blit.
 		LinearTransformBlitProxy_Op m_pLinearTransformClipBlitOp= nullptr;	// Function called to perform a transform clip blit.
 		LinearTransformBlitProxy_Op m_pLinearTransformTileOp 	= nullptr;		// Function called to perform a transform tile.
+		LinearTransformBlitProxy_Op m_pLinearTransformBlurOp 	= nullptr;		// Function called to perform a transform tile.
+
 
 		void	_onePassLinearStraightBlit(uint8_t * pDst, int destPitch, int width, int height, CoordI pos, const Transform& matrix, CoordI patchPos, StraightBlitOp_p pPassOneOp);
 		void	_twoPassLinearStraightBlit(uint8_t * pDst, int destPitch, int width, int height, CoordI pos, const Transform& matrix, CoordI patchPos, StraightBlitOp_p pPassOneOp);
