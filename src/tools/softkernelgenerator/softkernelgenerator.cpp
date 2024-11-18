@@ -798,11 +798,9 @@ wg::Widget_p MyApp::_buildListSummarySection()
 		_.display.text = "Kernels to be generated:",
 		_.display.style = m_pLabelStyle));
 
-	pSection->slots << _buildLabeledList(4, { {"Plot: ", kernelCount.plot},
-												{"Fill: ", kernelCount.fill},
+	pSection->slots << _buildLabeledList(4, { 	{"Fill: ", kernelCount.fill},
 												{"Line: ", kernelCount.line},
 												{"ClipLine: ", kernelCount.clipLine},
-												{"PlotList: ", kernelCount.plotList},
 												{"Segments: ", kernelCount.segment},
 												{"Pass 1 blits - strght:", kernelCount.pass1blits_straight},
 												{"Pass 1 blits - strght 8: ", kernelCount.pass1blits_straight_fast8},
@@ -814,8 +812,8 @@ wg::Widget_p MyApp::_buildListSummarySection()
 										});
 
 
-	int total = kernelCount.plot + kernelCount.fill + kernelCount.line + kernelCount.clipLine +
-		kernelCount.plotList + kernelCount.segment + kernelCount.pass1blits_straight + kernelCount.pass1blits_straight_fast8 +
+	int total = kernelCount.fill + kernelCount.line + kernelCount.clipLine +
+		kernelCount.segment + kernelCount.pass1blits_straight + kernelCount.pass1blits_straight_fast8 +
 		kernelCount.pass1blits_transform + kernelCount.pass1blits_transform_fast8 +
 		kernelCount.pass2blits + kernelCount.pass2blits_fast8 + kernelCount.customBlits;
 

@@ -43,11 +43,9 @@ public:
 
 	struct KernelCount
 	{
-		int	plot = 0;
 		int fill = 0;
 		int line = 0;
 		int clipLine = 0;
-		int plotList = 0;
 		int segment = 0;
 
 		int	pass1blits_straight = 0;

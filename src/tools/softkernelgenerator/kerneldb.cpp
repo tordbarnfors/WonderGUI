@@ -116,11 +116,9 @@ KernelDB::KernelCount KernelDB::countKernels()
 
 	KernelCount count;
 
-	count.plot = nBlendModes * nDestFormats;
 	count.fill = nTintModes * nBlendModes * nDestFormats;
 	count.line = nBlendModes * nDestFormats;
 	count.clipLine = nBlendModes * nDestFormats;
-	count.plotList = nBlendModes * nDestFormats;
 	count.segment = nBlendModes * nDestFormats * ((m_tintModes[int(TintMode::GradientY)] || m_tintModes[int(TintMode::GradientXY)]) ? 2 : 1);
 
 	count.pass1blits_straight		= nSourceFormats * 4;
@@ -471,30 +469,6 @@ bool KernelDB::generateSource(std::ostream& out, const std::string& kernelLabel 
 	out << "bool wg::" << kernelLabel << "( SoftGfxDevice * pDevice )" << endl;
 	out << "{" << endl;
 
-
-	// Print out the plot kernels.
-
-	for (int blendMode = 0; blendMode < BlendMode_size; blendMode++)
-	{
-		if (m_blendModes[blendMode]) 
-		{
-			for (int destFormat = 0; destFormat < PixelFormat_size; destFormat++)
-			{
-				if (m_destFormats[destFormat])				
-				{
-					auto pBlend = toString((BlendMode)blendMode);
-					auto pFormat = toString((PixelFormat)destFormat);
-
-					snprintf(temp, 4096, "pDevice->setPlotKernel( BlendMode::%s, PixelFormat::%s, _plot<BlendMode::%s, TintMode::None, PixelFormat::%s> );\n",
-							pBlend, pFormat, pBlend, pFormat);
-
-					out << temp;
-				}
-			}
-			out << endl;
-		}
-	}
-
 	// Print out the fill kernels.
 
 	for (int tintMode = 0; tintMode < TintMode_size; tintMode++)
@@ -562,29 +536,6 @@ bool KernelDB::generateSource(std::ostream& out, const std::string& kernelLabel 
 					auto pFormat = toString((PixelFormat)destFormat);
 
 					snprintf(temp, 4096, "pDevice->setClipLineKernel( BlendMode::%s, PixelFormat::%s, _clip_draw_line<BlendMode::%s, TintMode::None, PixelFormat::%s> );\n",
-						pBlend, pFormat, pBlend, pFormat);
-
-					out << temp;
-				}
-			}
-			out << endl;
-		}
-	}
-
-	// Print out the plot list kernels.
-
-	for (int blendMode = 0; blendMode < BlendMode_size; blendMode++)
-	{
-		if (m_blendModes[blendMode])
-		{
-			for (int destFormat = 0; destFormat < PixelFormat_size; destFormat++)
-			{
-				if (m_destFormats[destFormat])
-				{
-					auto pBlend = toString((BlendMode)blendMode);
-					auto pFormat = toString((PixelFormat)destFormat);
-
-					snprintf(temp, 4096, "pDevice->setPlotListKernel( BlendMode::%s, PixelFormat::%s, _plot_list<BlendMode::%s, TintMode::None, PixelFormat::%s> );\n",
 						pBlend, pFormat, pBlend, pFormat);
 
 					out << temp;
