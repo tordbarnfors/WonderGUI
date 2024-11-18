@@ -105,7 +105,8 @@ namespace wg
 		(*m_pEncoder) << (uint16_t) pSession->nTransforms;
 		(*m_pEncoder) << (uint16_t) pSession->nObjects;
 
-		_splitAndEncode( GfxChunkId::BE_UpdateRects, pSession->pUpdateRects, pSession->pUpdateRects + pSession->nUpdateRects, sizeof(RectI) );
+		if( pSession->nUpdateRects > 0 )
+			_splitAndEncode( GfxChunkId::BE_UpdateRects, pSession->pUpdateRects, pSession->pUpdateRects + pSession->nUpdateRects, sizeof(RectI) );
 	}
 
 	//____ endSession() __________________________________________________________
@@ -148,7 +149,7 @@ namespace wg
 
 	void StreamBackend::setRects(RectSPX* pBeg, RectSPX* pEnd)
 	{
-		_splitAndEncode( GfxChunkId::BE_Coords, pBeg, pEnd, sizeof(RectSPX) );
+		_splitAndEncode( GfxChunkId::BE_Rects, pBeg, pEnd, sizeof(RectSPX) );
 	}
 
 	//____ setColors() ___________________________________________________________
@@ -296,6 +297,8 @@ namespace wg
 		// Content
 		// int32_t		totalSize in bytes
 		// int32_t		chunkOffset in bytes
+		// bool			bFirstChunk
+		// bool			bLastChunk
 		//
 		// All measures in bytes
 
@@ -303,16 +306,18 @@ namespace wg
 		char * pEnd = (char *) _pEnd;
 		char * p = pBeg;
 
-		int maxBytesInChunk = ((GfxStream::c_maxBlockSize - 4 - 4 -4) / entrySize) * entrySize;
+		int maxBytesInChunk = ((GfxStream::c_maxBlockSize - 4 - 10) / entrySize) * entrySize;
 
 		while( p < pEnd )
 		{
 			int bytesOfData = std::min(int(pEnd-pBeg),maxBytesInChunk);
 
-			(*m_pEncoder) << GfxStream::Header{ chunkType, GfxStream::SpxFormat::Int32_dec, (uint16_t) bytesOfData + 8 };
+			(*m_pEncoder) << GfxStream::Header{ chunkType, GfxStream::SpxFormat::Int32_dec, (uint16_t) bytesOfData + 10 };
 
 			(*m_pEncoder) << (int32_t) (p - pBeg);
 			(*m_pEncoder) << (int32_t) bytesOfData;
+			(*m_pEncoder) << (bool) (p == pBeg);
+			(*m_pEncoder) << (bool) (p + bytesOfData == pEnd);
 
 			(*m_pEncoder) << GfxStream::WriteBytes{ bytesOfData, (void *) p };
 

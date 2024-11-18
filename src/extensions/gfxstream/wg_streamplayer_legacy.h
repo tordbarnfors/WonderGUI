@@ -28,7 +28,7 @@ should contact Tord Jansson [tord.jansson@gmail.com] for details.
 #include <wg_gfxstream.h>
 #include <wg_streamsink.h>
 #include <wg_streamdecoder.h>
-#include <wg_gfxbackend.h>
+#include <wg_gfxdevice.h>
 #include <wg_patches.h>
 
 #include <vector>
@@ -47,7 +47,7 @@ namespace wg
 
 		//.____ Creation __________________________________________
 
-		static StreamPlayer_p	create(GfxBackend * pBackend, SurfaceFactory * pSurfaceFactory, EdgemapFactory * pEdgemapFactory);
+		static StreamPlayer_p	create(GfxDevice * pDevice, SurfaceFactory * pSurfaceFactory, EdgemapFactory * pEdgemapFactory);
 
 		//.____ Components _______________________________________
 
@@ -73,24 +73,26 @@ namespace wg
 		const std::vector<Surface_p>& surfaces() const { return m_vSurfaces; }
 		
 	protected:
-		StreamPlayer(GfxBackend * pDevice, SurfaceFactory * pSurfaceFactory, EdgemapFactory * pEdgemapFactory);
+		StreamPlayer(GfxDevice * pDevice, SurfaceFactory * pSurfaceFactory, EdgemapFactory * pEdgemapFactory);
 		~StreamPlayer();
 
 		void	_processStreamChunks(const uint8_t* pBegin, const uint8_t* pEnd) override;
+
 		bool	_playChunk();
 
-		StreamDecoder_p		m_pDecoder;
-		GfxBackend_p		m_pBackend;
+		RectI *	_pushClipListCanvas(int nRects);
+		RectI *	_pushClipList(int nRects);
+		RectI *	_setClipList(int nRects, bool bCanvas = false);
+		void	_popClipList();
+		void	_popClipListCanvas();
+
+		StreamDecoder_p	m_pDecoder;
+		GfxDevice_p			m_pDevice;
 		SurfaceFactory_p	m_pSurfaceFactory;
 		EdgemapFactory_p	m_pEdgemapFactory;
 
 		std::vector<Surface_p>	m_vSurfaces;
 		std::vector<Edgemap_p>	m_vEdgemaps;
-
-		std::vector<RectSPX>	m_vRects;
-		std::vector<HiColor>	m_vColors;
-		std::vector<Transform>	m_vTransforms;
-		std::vector<int32_t>	m_vCommands;
 
 		Surface_p			m_pUpdatingSurface;
 		PixelBuffer			m_pixelBuffer;
@@ -107,14 +109,41 @@ namespace wg
 		int					m_waveUpdateSampleBegin;
 		int					m_waveUpdateSampleEnd;
 		
-		GfxBackend::SessionInfo	m_sessionInfo;			// Temporary for BeginSession/UpdateRects
-		std::vector<RectSPX>	m_vUpdateRects;
-
 		
 		// For multi-chunk drawing operations (DrawSegments, FlipDrawSegments, DrawWave and FlipDrawWave), telling which one we are receiving edge samples for.
 		
 		GfxChunkId			m_drawTypeInProgress = GfxChunkId::OutOfData;
 		
+		// Temporary storage for DrawSegments and FlipDrawSegments.
+
+		struct SegmentInfo
+		{
+			RectI		dest;
+			int			nSegments;
+			HiColor *	pSegmentColors;
+			int			nEdgeStrips;
+			int *		pEdgeStrips;
+			int			edgeStripPitch;
+			GfxFlip		flip;				// Only used when m_drawTypeInProgress == flipDrawSegments
+			TintMode	tintMode;
+			
+		};
+
+		// Temporary storage for DrawWave and FlipDrawWave.
+		
+		struct WaveInfo
+		{
+			RectI		dest;
+			WaveLine	topBorder;
+			WaveLine	bottomBorder;
+			HiColor		frontFill;
+			HiColor		backFill;
+			GfxFlip		flip;			// Onlu used when m_drawTypeInProgress == flipDrawWave.
+		};
+		
+		SegmentInfo		m_seg;
+		WaveInfo		m_wave;
+
 		char *	m_pTempBuffer = nullptr;
 		int		m_bytesLoaded;
 		int		m_bufferSize;
@@ -132,7 +161,7 @@ namespace wg
 			bool bCanvas;
 		};
 		
-		constexpr static int c_clipListBufferSize = 1024;		// Ridiculously high for most cases, but needed by StreamAnalyzer when rewinding a stream.
+		constexpr static int c_clipListBufferSize = 512;
 
 		std::vector<ClipListInfo>	m_clipListInfoStack;		// Number of rects for each clipList pushed.
 

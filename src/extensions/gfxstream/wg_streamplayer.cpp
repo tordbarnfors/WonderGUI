@@ -32,16 +32,16 @@ namespace wg
 
 	//____ create() ___________________________________________________________
 
-	StreamPlayer_p StreamPlayer::create(GfxDevice * pDevice, SurfaceFactory * pSurfaceFactory, EdgemapFactory * pEdgemapFactory )
+	StreamPlayer_p StreamPlayer::create(GfxBackend * pBackend, SurfaceFactory * pSurfaceFactory, EdgemapFactory * pEdgemapFactory )
 	{
-		return new StreamPlayer(pDevice, pSurfaceFactory, pEdgemapFactory);
+		return new StreamPlayer(pBackend, pSurfaceFactory, pEdgemapFactory);
 	}
 
 	//____ constructor _____________________________________________________________
 
-	StreamPlayer::StreamPlayer(GfxDevice * pDevice, SurfaceFactory * pSurfaceFactory, EdgemapFactory * pEdgemapFactory) : input(this)
+	StreamPlayer::StreamPlayer(GfxBackend * pBackend, SurfaceFactory * pSurfaceFactory, EdgemapFactory * pEdgemapFactory) : input(this)
 	{
-		m_pDevice = pDevice;
+		m_pBackend = pBackend;
 		m_pSurfaceFactory = pSurfaceFactory;
 		m_pEdgemapFactory = pEdgemapFactory;
 
@@ -175,746 +175,220 @@ namespace wg
 				m_canvasInfoCallback(canvas, canvas+nbCanvases);
 		}
 
-        case GfxChunkId::BeginRender:
-            m_pDevice->beginRender();
+        case GfxChunkId::BE_BeginRender:
+            m_pBackend->beginRender();
             break;
 
-        case GfxChunkId::EndRender:
-			assert(m_clipListBufferStack.empty() && m_clipListInfoStack.empty() && m_clipListBuffer.nRects == 0);
-            m_pDevice->endRender();
+        case GfxChunkId::BE_EndRender:
+            m_pBackend->endRender();
             break;
 
-        case GfxChunkId::Flush:
-            m_pDevice->flush();
-            break;
+		case GfxChunkId::BE_BeginSession:
+		{
 
-		case GfxChunkId::BeginCanvasUpdate:
+			// Temporary storage for variables that is stored in smaller uints than in SessionInfo
+
+			uint16_t	nCanvases;
+			uint16_t	nUpdateRects;
+
+			uint16_t	nStateChanges;
+			uint16_t	nLines;
+			uint16_t	nFill;
+			uint16_t	nBlit;
+			uint16_t	nBlur;
+			uint16_t	nEdgemapDraws;
+
+			*m_pDecoder >> nCanvases;
+			*m_pDecoder >> m_sessionInfo.canvasSize;
+			*m_pDecoder >> nUpdateRects;
+			*m_pDecoder >> nStateChanges;
+			*m_pDecoder >> nLines;
+			*m_pDecoder >> nFill;
+			*m_pDecoder >> nBlit;
+			*m_pDecoder >> nBlur;
+			*m_pDecoder >> nEdgemapDraws;
+
+			*m_pDecoder >> m_sessionInfo.nLineCoords;
+			*m_pDecoder >> m_sessionInfo.nLineClipRects;
+			*m_pDecoder >> m_sessionInfo.nRects;
+			*m_pDecoder >> m_sessionInfo.nColors;
+			*m_pDecoder >> m_sessionInfo.nTransforms;
+			*m_pDecoder >> m_sessionInfo.nObjects;
+
+			m_sessionInfo.nCanvases = nCanvases;
+			m_sessionInfo.nUpdateRects = nUpdateRects;
+			m_sessionInfo.nStateChanges = nStateChanges;
+			m_sessionInfo.nLines = nLines;
+			m_sessionInfo.nFill = nFill;
+			m_sessionInfo.nBlit = nBlit;
+			m_sessionInfo.nBlur = nBlur;
+			m_sessionInfo.nEdgemapDraws = nEdgemapDraws;
+
+			if (nUpdateRects == 0)
+			{
+				m_sessionInfo.pUpdateRects = nullptr;
+				m_pBackend->beginSession(&m_sessionInfo);
+			}
+		}
+
+		case GfxChunkId::BE_EndSession:
+		{
+			m_pBackend->endSession();
+		}
+
+		case GfxChunkId::BE_SetCanvas:
 		{
 			uint16_t	surfaceId;
 			CanvasRef	canvasRef;
 			uint8_t		dummy;
 
 			*m_pDecoder >> surfaceId;
- 			*m_pDecoder >> canvasRef;
+			*m_pDecoder >> canvasRef;
 			*m_pDecoder >> dummy;
 
-			int nUpdateRects = (header.size - 4) / 16;
-
-			auto pRects = _pushClipListCanvas(nUpdateRects);
-			
-			if( surfaceId > 0 )
-			{
-				if( surfaceId > m_vSurfaces.size() || m_vSurfaces[surfaceId] == nullptr )
-				{
-					GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "BeginCanvasUpdate with invalid surfaceId", this, &TYPEINFO, __func__, __FILE__, __LINE__);
-					break;
-				}
-				
-				m_pDevice->beginCanvasUpdate(m_vSurfaces[surfaceId], nUpdateRects, pRects );
-			}
+			if (canvasRef != CanvasRef::None)
+				m_pBackend->setCanvas(canvasRef);
 			else
-				m_pDevice->beginCanvasUpdate(canvasRef, nUpdateRects, pRects );
+				m_pBackend->setCanvas(m_vSurfaces[surfaceId]);
+		}
+
+		case GfxChunkId::BE_Objects:
+			break;
+
+		case GfxChunkId::BE_Rects:
+		{
+			int32_t		totalSize;
+			int32_t		offset;
+			bool		bFirstChunk;
+			bool		bLastChunk;
+
+			*m_pDecoder >> totalSize;
+			*m_pDecoder >> offset;
+			*m_pDecoder >> bFirstChunk;
+			*m_pDecoder >> bLastChunk;
+
+			if (bFirstChunk)
+				m_vRects.resize(totalSize / sizeof(RectSPX));
+
+			int bytes = (header.size - 10);
+			char* pDest = ((char*)m_vRects.data()) + offset;
+
+			*m_pDecoder >> GfxStream::ReadBytes{ bytes, pDest };
+
+			if (bLastChunk)
+				m_pBackend->setRects(&(*m_vRects.begin()), &(*m_vRects.end()));
 
 			break;
 		}
 
-		case GfxChunkId::EndCanvasUpdate:
+		case GfxChunkId::BE_Colors:
 		{
+			int32_t		totalSize;
+			int32_t		offset;
+			bool		bFirstChunk;
+			bool		bLastChunk;
 
-			const CanvasInfo& canvasInfo = m_pDevice->canvas();
+			*m_pDecoder >> totalSize;
+			*m_pDecoder >> offset;
+			*m_pDecoder >> bFirstChunk;
+			*m_pDecoder >> bLastChunk;
 
-			if (m_bStoreDirtyRects && canvasInfo.ref != CanvasRef::None )
+			if (bFirstChunk)
+				m_vColors.resize(totalSize / sizeof(HiColor));
+
+			int bytes = (header.size - 10);
+			char* pDest = ((char*)m_vColors.data()) + offset;
+
+			*m_pDecoder >> GfxStream::ReadBytes{ bytes, pDest };
+
+			if (bLastChunk)
+				m_pBackend->setColors(&(*m_vColors.begin()), &(*m_vColors.end()));
+
+			break;
+		}
+
+		case GfxChunkId::BE_Transforms:
+		{
+			int32_t		totalSize;
+			int32_t		offset;
+			bool		bFirstChunk;
+			bool		bLastChunk;
+
+			*m_pDecoder >> totalSize;
+			*m_pDecoder >> offset;
+			*m_pDecoder >> bFirstChunk;
+			*m_pDecoder >> bLastChunk;
+
+			if (bFirstChunk)
+				m_vTransforms.resize(totalSize / sizeof(Transform));
+
+			int bytes = (header.size - 10);
+			char* pDest = ((char*)m_vTransforms.data()) + offset;
+
+			*m_pDecoder >> GfxStream::ReadBytes{ bytes, pDest };
+
+			if (bLastChunk)
+				m_pBackend->setTransforms(&(*m_vTransforms.begin()), &(*m_vTransforms.end()));
+
+			break;
+		}
+
+
+		case GfxChunkId::BE_Commands:
+		{
+			int32_t		totalSize;
+			int32_t		offset;
+			bool		bFirstChunk;
+			bool		bLastChunk;
+
+			*m_pDecoder >> totalSize;
+			*m_pDecoder >> offset;
+			*m_pDecoder >> bFirstChunk;
+			*m_pDecoder >> bLastChunk;
+
+			if (bFirstChunk)
+				m_vCommands.resize(totalSize / sizeof(int32_t));
+
+			int bytes = (header.size - 10);
+			char* pDest = ((char*)m_vCommands.data()) + offset;
+
+			*m_pDecoder >> GfxStream::ReadBytes{ bytes, pDest };
+
+			if (bLastChunk)
+				m_pBackend->processCommands(&(*m_vCommands.begin()), &(*m_vCommands.end()));
+
+			break;
+		}
+		
+		case GfxChunkId::BE_UpdateRects:
+		{
+			int32_t		totalSize;
+			int32_t		offset;
+			bool		bFirstChunk;
+			bool		bLastChunk;
+
+			*m_pDecoder >> totalSize;
+			*m_pDecoder >> offset;
+			*m_pDecoder >> bFirstChunk;
+			*m_pDecoder >> bLastChunk;
+
+			if (bFirstChunk)
+				m_vUpdateRects.resize(totalSize / sizeof(RectSPX));
+
+			int bytes = (header.size - 10);
+			char* pDest = ((char*)m_sessionInfo.pUpdateRects) + offset;
+
+			*m_pDecoder >> GfxStream::ReadBytes{ bytes, pDest };
+
+			if (bLastChunk)
 			{
-				m_pDevice->resetClipList();								// Returns cliplist to that of canvas.
-
-				int nDirtyRects = m_pDevice->clipListSize();
-				const RectSPX* pDirtyRects = m_pDevice->clipList();
-
-				PatchesSPX& patches = m_dirtyRects[(int)canvasInfo.ref];
-				if (patches.isEmpty())
-				{
-					if (nDirtyRects > m_maxDirtyRects)
-					{
-						patches.clear();
-						patches.push(m_pDevice->clipBounds());
-					}
-					else
-					{
-						for (int i = 0; i < nDirtyRects; i++)
-							patches.push(pDirtyRects[i]);
-					}
-				}
-				else
-				{
-					for (int i = 0; i < nDirtyRects; i++)
-						patches.add(pDirtyRects[i]);
-
-					if (patches.size() > m_maxDirtyRects)
-					{
-						RectSPX u = patches.bounds();
-						patches.clear();
-						patches.push(u);
-					}
-				}
+				m_sessionInfo.pUpdateRects = m_vUpdateRects.data();
+				m_pBackend->beginSession(&m_sessionInfo);
 			}
 
-			m_pDevice->endCanvasUpdate();
-			_popClipListCanvas();
 			break;
 		}
 
-		case GfxChunkId::SetClipList:
-		{
-			int nRects = header.size / 16;
-
-			auto pRects = _setClipList(nRects);
-
-			m_pDevice->setClipList(nRects, pRects);
-			break;
-		}
-
-		case GfxChunkId::ResetClipList:
-			m_pDevice->resetClipList();
-			break;
-
-		case GfxChunkId::PushClipList:
-		{
-			int nRects = header.size / 16;
-
-			auto pRects = _pushClipList(nRects);
-			m_pDevice->pushClipList(nRects, pRects);
-			break;
-		}
-
-		case GfxChunkId::PopClipList:
-			_popClipList();
-			m_pDevice->popClipList();
-			break;
-
-		case GfxChunkId::SetTintColor:
-		{
-			HiColor	col;
-			*m_pDecoder >> col;
-			m_pDevice->setTintColor(col);
-			break;
-		}
-
-		case GfxChunkId::SetTintGradient:
-		{
-			RectI rect;
-			Gradient gradient;
-
-			*m_pDecoder >> rect;
-			*m_pDecoder >> gradient;
-
-			m_pDevice->setTintGradient(rect, gradient );
-		   break;
-		}
-
-		case GfxChunkId::ClearTintGradient:
-			m_pDevice->clearTintGradient();
-			break;
-
-		case GfxChunkId::SetBlendMode:
-		{
-			BlendMode	blendMode;
-			*m_pDecoder >> blendMode;
-			m_pDevice->setBlendMode(blendMode);
-			break;
-		}
-
-		case GfxChunkId::SetBlitSource:
-		{
-			uint16_t	surfaceId;
-			*m_pDecoder >> surfaceId;
-
-			if( surfaceId > m_vSurfaces.size() || m_vSurfaces[surfaceId] == nullptr )
-			{
-				GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "SetBlitSource wiht invalid surfaceId", this, &TYPEINFO, __func__, __FILE__, __LINE__);
-				break;
-			}
-
-			m_pDevice->setBlitSource(m_vSurfaces[surfaceId]);
-			break;
-		}
-
-		case GfxChunkId::SetMorphFactor:
-		{
-			float	factor;
-
-			*m_pDecoder >> factor;
-
-			m_pDevice->setRenderLayer(factor);
-			break;
-		}
-
-		case GfxChunkId::SetFixedBlendColor:
-		{
-			HiColor	col;
-
-			*m_pDecoder >> col;
-
-			m_pDevice->setFixedBlendColor(col);
-			break;
-		}
-
-		case GfxChunkId::SetRenderLayer:
-		{
-			uint16_t	layer;
-
-			*m_pDecoder >> layer;
-
-			m_pDevice->setRenderLayer(layer);
-			break;
-		}
-
-		case GfxChunkId::Fill:
-		{
-			HiColor	col;
-
-			*m_pDecoder >> col;
-
-			m_pDevice->fill(col);
-			break;
-		}
-
-		case GfxChunkId::FillRect:
-		{
-			RectSPX	rect;
-			HiColor	col;
-
-			*m_pDecoder >> rect;
-			*m_pDecoder >> col;
-
-			m_pDevice->fill(rect, col);
-			break;
-		}
-
-		case GfxChunkId::PlotPixels:
-		{
-			int nPixels = header.size / 16;
-
-			int bufferSize = header.size;
-			char * pBuffer = reinterpret_cast<char*>(GfxBase::memStackAlloc(bufferSize));
-
-			// Load all data to buffer
-
-			*m_pDecoder >> GfxStream::ReadBytes{ header.size, pBuffer };
-
-			//
-
-//			m_pDevice->plotPixels(nPixels, (CoordI*)pBuffer, (HiColor*)(pBuffer + header.size / 2));
-
-			GfxBase::memStackFree(bufferSize);
-			break;
-		}
-
-		case GfxChunkId::DrawLineFromTo:
-		{
-			CoordSPX	begin;
-			CoordSPX	end;
-			HiColor		color;
-			GfxStream::SPX	thickness;
-
-			*m_pDecoder >> begin;
-			*m_pDecoder >> end;
-			*m_pDecoder >> color;
-			*m_pDecoder >> thickness;
-			m_pDecoder->align();
-
-			m_pDevice->drawLine(begin, end, color, thickness.value);
-			break;
-		}
-
-		case GfxChunkId::DrawLineStraight:
-		{
-			CoordSPX	begin;
-			Direction	dir;
-			GfxStream::SPX	length;
-			GfxStream::SPX	thickness;
-			HiColor		color;
-
-			*m_pDecoder >> begin;
-			*m_pDecoder >> dir;
-			*m_pDecoder >> length;
-			*m_pDecoder >> thickness;
-			*m_pDecoder >> color;
-
-			m_pDevice->drawLine(begin, dir, length, color, thickness);
-			break;
-		}
-
-			case GfxChunkId::DrawLineStraightDeprecated:
-			{
-				CoordSPX	begin;
-				Direction	dir;
-				spx			length;
-				HiColor		color;
-				spx			thickness;
-
-				*m_pDecoder >> begin;
-				*m_pDecoder >> dir;
-				*m_pDecoder >> length;
-				*m_pDecoder >> color;
-				*m_pDecoder >> thickness;
-
-				m_pDevice->drawLine(begin, dir, length, color, thickness);
-				break;
-			}
-
-
-		case GfxChunkId::Blit:
-		{
-			CoordSPX	dest;
-
-			*m_pDecoder >> dest;
-
-			m_pDevice->blit(dest);
-			break;
-		}
-
-		case GfxChunkId::BlitRect:
-		{
-			CoordSPX	dest;
-			RectSPX		source;
-
-			*m_pDecoder >> dest;
-			*m_pDecoder >> source;
-
-			m_pDevice->blit(dest,source);
-			break;
-		}
-
-		case GfxChunkId::FlipBlit:
-		{
-			CoordSPX	dest;
-			GfxFlip		flip;
-
-			*m_pDecoder >> dest;
-			*m_pDecoder >> flip;
-
-			m_pDevice->flipBlit(dest,flip);
-			break;
-		}
-
-		case GfxChunkId::FlipBlitRect:
-		{
-			CoordSPX	dest;
-			RectSPX		source;
-			GfxFlip		flip;
-
-			*m_pDecoder >> dest;
-			*m_pDecoder >> source;
-			*m_pDecoder >> flip;
-
-			m_pDevice->flipBlit(dest,source,flip);
-			break;
-		}
-
-		case GfxChunkId::StretchBlit:
-		{
-			RectSPX		dest;
-
-			*m_pDecoder >> dest;
-
-			m_pDevice->stretchBlit(dest);
-			break;
-		}
-
-		case GfxChunkId::StretchBlitRect:
-		{
-			RectSPX		dest;
-			RectSPX		source;
-
-			*m_pDecoder >> dest;
-			*m_pDecoder >> source;
-
-			m_pDevice->stretchBlit(dest, source);
-			break;
-		}
-
-		case GfxChunkId::StretchFlipBlit:
-		{
-			RectSPX		dest;
-			GfxFlip		flip;
-
-			*m_pDecoder >> dest;
-			*m_pDecoder >> flip;
-
-			m_pDevice->stretchFlipBlit(dest, flip);
-			break;
-		}
-
-		case GfxChunkId::StretchFlipBlitRect:
-		{
-			RectSPX		dest;
-			RectSPX		source;
-			GfxFlip		flip;
-
-			*m_pDecoder >> dest;
-			*m_pDecoder >> source;
-			*m_pDecoder >> flip;
-
-			m_pDevice->stretchFlipBlit(dest, source, flip);
-			break;
-		}
-
-		case GfxChunkId::PrecisionBlit:
-		{
-			RectSPX		dest;
-			RectF		source;
-
-			*m_pDecoder >> dest;
-			*m_pDecoder >> source;
-
-			m_pDevice->precisionBlit(dest, source);
-			break;
-		}
-
-		case GfxChunkId::TransformBlit:
-		{
-			RectSPX		dest;
-			CoordF		source;
-			Transform	transform;
-
-			*m_pDecoder >> dest;
-			*m_pDecoder >> source;
-			*m_pDecoder >> transform.xx;
-			*m_pDecoder >> transform.xy;
-			*m_pDecoder >> transform.yx;
-			*m_pDecoder >> transform.yy;
-
-			m_pDevice->transformBlit(dest, source, transform);
-			break;
-		}
-
-		case GfxChunkId::RotScaleBlit:
-		{
-			RectSPX		dest;
-			float		rotationDegrees;
-			float		scale;
-			CoordF		srcCenter;
-			CoordF		destCenter;
-
-			*m_pDecoder >> dest;
-			*m_pDecoder >> rotationDegrees;
-			*m_pDecoder >> scale;
-			*m_pDecoder >> srcCenter;
-			*m_pDecoder >> destCenter;
-
-			m_pDevice->rotScaleBlit(dest, rotationDegrees, scale, srcCenter, destCenter );
-			break;
-		}
-
-		case GfxChunkId::Tile:
-		{
-			RectSPX		dest;
-			CoordSPX	shift;
-
-			*m_pDecoder >> dest;
-			*m_pDecoder >> shift;
-
-			m_pDevice->tile(dest, shift);
-			break;
-		}
-
-		case GfxChunkId::FlipTile:
-		{
-			RectSPX		dest;
-			GfxFlip		flip;
-			CoordSPX	shift;
-
-			*m_pDecoder >> dest;
-			*m_pDecoder >> flip;
-			*m_pDecoder >> shift;
-
-			m_pDevice->flipTile(dest, flip, shift);
-			break;
-		}
-
-		case GfxChunkId::ScaleTile:
-		{
-			RectSPX		dest;
-			float		scale;
-			CoordSPX	shift;
-
-			*m_pDecoder >> dest;
-			*m_pDecoder >> scale;
-			*m_pDecoder >> shift;
-
-			m_pDevice->scaleTile(dest, scale, shift);
-			break;
-		}
-
-		case GfxChunkId::ScaleFlipTile:
-		{
-			RectSPX		dest;
-			float		scale;
-			GfxFlip		flip;
-			CoordSPX	shift;
-
-			*m_pDecoder >> dest;
-			*m_pDecoder >> scale;
-			*m_pDecoder >> flip;
-			*m_pDecoder >> shift;
-
-			m_pDevice->scaleFlipTile(dest, scale, flip, shift);
-			break;
-		}
-
-		case GfxChunkId::DrawWave:
-		case GfxChunkId::FlipDrawWave:
-		{
-			m_drawTypeInProgress = header.type;
-
-			*m_pDecoder >> m_wave.dest;
-			*m_pDecoder >> m_wave.topBorder.length;
-			*m_pDecoder >> m_wave.topBorder.thickness;
-			*m_pDecoder >> m_wave.topBorder.color;
-			*m_pDecoder >> m_wave.topBorder.hold;
-
-			*m_pDecoder >> m_wave.bottomBorder.length;
-			*m_pDecoder >> m_wave.bottomBorder.thickness;
-			*m_pDecoder >> m_wave.bottomBorder.color;
-			*m_pDecoder >> m_wave.bottomBorder.hold;
-
-			*m_pDecoder >> m_wave.frontFill;
-			*m_pDecoder >> m_wave.backFill;
-
-			if (header.type == GfxChunkId::FlipDrawWave)
-				*m_pDecoder >> m_wave.flip;
-
-			int nTotalSamples = m_wave.topBorder.length + m_wave.bottomBorder.length;
-
-			int bufferSize = sizeof(int) * nTotalSamples;
-
-			m_pTempBuffer = new char[bufferSize];
-			m_bytesLoaded = 0;
-			m_bufferSize = bufferSize;
-
-			m_wave.topBorder.pWave = (int*) m_pTempBuffer;
-			m_wave.bottomBorder.pWave = reinterpret_cast<int*>(m_pTempBuffer) + m_wave.topBorder.length;
-			break;
-		}
-
-		case GfxChunkId::DrawElipse:
-		{
-			RectSPX	canvas;
-			spx 	thickness;
-			HiColor	color;
-			spx		outlineThickness;
-			HiColor	outlineColor;
-
-			*m_pDecoder >> canvas;
-			*m_pDecoder >> thickness;
-			*m_pDecoder >> color;
-			*m_pDecoder >> outlineThickness;
-			*m_pDecoder >> outlineColor;
-
-
-			m_pDevice->drawElipse(canvas, thickness, color, outlineThickness, outlineColor);
-			break;
-		}
-
-		case GfxChunkId::DrawPieChart:
-		{
-			float sliceSizes[32];
-			HiColor sliceColors[32];
-
-			RectSPX	canvas;
-			float 	start;
-			int 	nSlices;
-			float 	hubSize;
-			HiColor hubColor;
-			HiColor backColor;
-			bool	bRectangular;
-
-			*m_pDecoder >> canvas;
-			*m_pDecoder >> start;
-			*m_pDecoder >> nSlices;
-			*m_pDecoder >> hubSize;
-			*m_pDecoder >> hubColor;
-			*m_pDecoder >> backColor;
-			*m_pDecoder >> bRectangular;
-
-			assert(nSlices <= 32);
-
-			*m_pDecoder >> GfxStream::ReadBytes{ nSlices*4, sliceSizes };
-			*m_pDecoder >> GfxStream::ReadBytes{ nSlices*8, sliceColors };
-
-			m_pDevice->drawPieChart(canvas, start, nSlices, sliceSizes, sliceColors, hubSize, hubColor, backColor, bRectangular );
-			break;
-		}
-
-		case GfxChunkId::DrawSegments:
-		case GfxChunkId::FlipDrawSegments:
-		{
-			m_drawTypeInProgress = header.type;
-
-			RectI		dest;
-			uint16_t	nSegments;
-			uint16_t	nEdgeStrips;
-			GfxFlip		flip = GfxFlip::None;
-			TintMode	tintMode;
-
-			*m_pDecoder >> dest;
-			*m_pDecoder >> nSegments;
-			*m_pDecoder >> nEdgeStrips;
-			if (header.type == GfxChunkId::FlipDrawSegments)
-				*m_pDecoder >> flip;
-			*m_pDecoder >> tintMode;
-
-			int nTotalSamples = (nSegments - 1)*nEdgeStrips;
-
-			int nColors;
-			switch( tintMode )
-			{
-				case TintMode::None:
-				case TintMode::Flat:
-					nColors = nSegments;
-					break;
-				case TintMode::GradientX:
-				case TintMode::GradientY:
-					nColors = nSegments*2;
-					break;
-				case TintMode::GradientXY:
-					nColors = nSegments*4;
-					break;
-			}
-
-			int bufferSize = sizeof(HiColor)*nColors+sizeof(int)*nTotalSamples;
-
-			m_pTempBuffer = new char[bufferSize];
-			m_bytesLoaded = sizeof(HiColor)*nColors;
-			m_bufferSize = bufferSize;
-
-			m_seg.dest = dest;
-			m_seg.nSegments = nSegments;
-			m_seg.pSegmentColors = (HiColor*) m_pTempBuffer;
-			m_seg.nEdgeStrips = nEdgeStrips;
-			m_seg.pEdgeStrips = (int*) &m_pTempBuffer[sizeof(HiColor)*nColors];
-			m_seg.edgeStripPitch = nSegments-1;
-			m_seg.flip = flip;
-			m_seg.tintMode = tintMode;
-
-			for (int i = 0; i < nColors; i++)
-				*m_pDecoder >> m_seg.pSegmentColors[i];
-
-			break;
-		}
-
-
-		case GfxChunkId::EdgeSamples:
-		{
-			int nSPX = header.size / GfxStream::spxSize(header.spxFormat);
-
-			assert(m_pTempBuffer != nullptr && nSPX*4-4 <= m_bufferSize - m_bytesLoaded);
-
-			// Stream the compressed samples to end of destination and unpack them.
-
-			
-			
-			if( m_bytesLoaded + nSPX*4 > m_bufferSize )
-				nSPX--;											// Last chunk was padded with one byte for alignment.
-						
-			*m_pDecoder >> GfxStream::ReadSpxField{ nSPX, header.spxFormat, (spx*) &m_pTempBuffer[m_bytesLoaded] };
-			m_pDecoder->align();
-
-			// Increase counter and possibly render the segment
-
-			m_bytesLoaded += nSPX*4;
-			if (m_bytesLoaded == m_bufferSize)
-			{
-				switch (m_drawTypeInProgress)
-				{
-				case GfxChunkId::DrawSegments:
-					m_pDevice->drawSegments(m_seg.dest, m_seg.nSegments, m_seg.pSegmentColors, m_seg.nEdgeStrips, m_seg.pEdgeStrips, m_seg.edgeStripPitch, m_seg.tintMode);
-					break;
-				case GfxChunkId::FlipDrawSegments:
-					m_pDevice->flipDrawSegments(m_seg.dest, m_seg.nSegments, m_seg.pSegmentColors, m_seg.nEdgeStrips, m_seg.pEdgeStrips, m_seg.edgeStripPitch, m_seg.flip, m_seg.tintMode);
-					break;
-				case GfxChunkId::DrawWave:
-					m_pDevice->drawWave(m_wave.dest, &m_wave.topBorder, &m_wave.bottomBorder, m_wave.frontFill, m_wave.backFill);
-					break;
-				case GfxChunkId::FlipDrawWave:
-					m_pDevice->flipDrawWave(m_wave.dest, &m_wave.topBorder, &m_wave.bottomBorder, m_wave.frontFill, m_wave.backFill, m_wave.flip);
-					break;
-				default:
-					assert(false);
-				}
-
-				delete[] m_pTempBuffer;
-				m_pTempBuffer = nullptr;
-				m_drawTypeInProgress = GfxChunkId::OutOfData;
-			}
-			break;
-		}
-
-
-		case GfxChunkId::BlitNinePatch:
-		{
-			RectSPX		dstRect;
-			BorderSPX 	dstFrame;
-			NinePatch 	patch;
-			int			scale;
-
-			*m_pDecoder >> dstRect;
-			*m_pDecoder >> dstFrame;
-
-			*m_pDecoder >> patch.block;
-			*m_pDecoder >> patch.frame;
-
-			*m_pDecoder >> patch.rigidPartXOfs;
-			*m_pDecoder >> patch.rigidPartXLength;
-			*m_pDecoder >> patch.rigidPartXSections;
-
-			*m_pDecoder >> patch.rigidPartYOfs;
-			*m_pDecoder >> patch.rigidPartYLength;
-			*m_pDecoder >> patch.rigidPartYSections;
-
-			*m_pDecoder >> scale;
-
-			m_pDevice->blitNinePatch(dstRect, dstFrame, patch, scale);
-			break;
-		}
-
-
-		case GfxChunkId::CreateSurfaceDeprecated:
-		{
-			uint16_t	surfaceId;
-			Surface::Blueprint	bp;
-
-			*m_pDecoder >> surfaceId;
-			*m_pDecoder >> bp.canvas;
-			*m_pDecoder >> bp.dynamic;
-			*m_pDecoder >> bp.format;
-			*m_pDecoder >> bp.identity;
-			*m_pDecoder >> bp.mipmap;
-			*m_pDecoder >> bp.sampleMethod;
-			*m_pDecoder >> bp.scale;
-			*m_pDecoder >> bp.size;
-			*m_pDecoder >> bp.tiling;
-
-			bp.buffered = false;
-			bp.palette = nullptr;
-
-			if (header.size > 1024)
-			{
-				auto pPalette = (Color8*) GfxBase::memStackAlloc(1024);
-				*m_pDecoder >> GfxStream::ReadBytes{ 1024, pPalette };
-				bp.palette = pPalette;
-			}
-
-			if (m_vSurfaces.size() <= surfaceId)
-				m_vSurfaces.resize(surfaceId + 16, nullptr);
-
-			m_vSurfaces[surfaceId] = m_pSurfaceFactory->createSurface(bp);
-
-			if (bp.palette)
-				GfxBase::memStackFree(1024);
-
-			break;
-		}
 
 		case GfxChunkId::CreateSurface:
 		{
@@ -1219,33 +693,9 @@ namespace wg
 			break;
 		}
 
-		case GfxChunkId::DrawEdgemap:
-		{
-			CoordSPX	dest;
-			uint16_t	edgemapId;
 
-			*m_pDecoder >> dest;
-			*m_pDecoder >> edgemapId;
 
-			m_pDevice->drawEdgemap(dest, m_vEdgemaps[edgemapId]);
-			break;
-		}
 
-		case GfxChunkId::FlipDrawEdgemap:
-		{
-			CoordSPX	dest;
-			uint16_t	edgemapId;
-			GfxFlip		flip;
-
-			*m_pDecoder >> dest;
-			*m_pDecoder >> edgemapId;
-			*m_pDecoder >> flip;
-
-			m_pDevice->flipDrawEdgemap(dest, m_vEdgemaps[edgemapId], flip);
-			break;
-		}
-				
-				
 		default:
 			// We don't know how to handle this, so let's just skip it
 
@@ -1261,96 +711,7 @@ namespace wg
 	void StreamPlayer::reset()
 	{
 		m_vSurfaces.clear();
-	}
-
-
-	//____ _pushClipListCanvas() ____________________________________________________
-
-	RectI * StreamPlayer::_pushClipListCanvas(int nRects)
-	{
-		m_clipListInfoStack.push_back(m_clipList);
-		m_clipList.bCanvas = false;
-		RectI * pRects = _setClipList(nRects, true);
-		m_clipList.bCanvas = true;
-		return pRects;
-	}
-
-	//____ _popClipListCanvas() _____________________________________________________
-
-	void StreamPlayer::_popClipListCanvas()
-	{
-		while( !m_clipList.bCanvas )
-			_popClipList();
-
-		_popClipList();
-	}
-
-	//____ _pushClipList() ____________________________________________________
-
-	RectI * StreamPlayer::_pushClipList(int nRects)
-	{
-		m_clipListInfoStack.push_back(m_clipList);
-		m_clipList.bCanvas = false;
-		return _setClipList(nRects, true);
-	}
-
-	//____ _setClipList() _____________________________________________________
-
-	RectI * StreamPlayer::_setClipList(int nRects, bool bPush)
-	{
-		assert(nRects <= c_clipListBufferSize);
-
-		// We overwrite previous clipList unless we start a new canvas or it is the
-		// cliplist of the canvas.
-
-		if( m_clipList.bCanvas )
-			m_clipListInfoStack.push_back(m_clipList);		// Force an extra push so ClipListInfo for our canvas is preserved.
-
-		if( !bPush && !m_clipList.bCanvas )
-			m_clipListBuffer.nRects -= m_clipList.nRects;
-
-		// Reserve a new buffer if needed
-
-		if (m_clipListBuffer.capacity < m_clipListBuffer.nRects + nRects)
-		{
-			m_clipListBufferStack.push_back(m_clipListBuffer);
-
-			m_clipListBuffer.pRects = new RectI[c_clipListBufferSize];
-			m_clipListBuffer.nRects = 0;
-			m_clipListBuffer.capacity = c_clipListBufferSize;
-		}
-
-		// Puts values in clipList-buffer
-
-		auto pRects = m_clipListBuffer.pRects + m_clipListBuffer.nRects;
-
-		*m_pDecoder >> GfxStream::ReadBytes{ nRects * 16, pRects };
-
-		m_clipListBuffer.nRects += nRects;
-		m_clipList.nRects = nRects;
-		m_clipList.bCanvas = false;
-		return pRects;
-	}
-
-	//____ _popClipList() _____________________________________________________
-
-	void StreamPlayer::_popClipList()
-	{
-		assert(m_clipListBuffer.nRects >= m_clipList.nRects);
-
-		if (m_clipListBuffer.nRects == m_clipList.nRects && !m_clipListBufferStack.empty() )
-		{
-			delete[] m_clipListBuffer.pRects;
-			m_clipListBuffer = m_clipListBufferStack.back();
-			m_clipListBufferStack.pop_back();
-		}
-		else
-		{
-			m_clipListBuffer.nRects -= m_clipList.nRects;
-		}
-
-		m_clipList = m_clipListInfoStack.back();
-		m_clipListInfoStack.pop_back();
+		m_vEdgemaps.clear();
 	}
 
 

@@ -530,7 +530,7 @@ namespace wg
 		BE_EndSession = 103,
 		BE_SetCanvas = 104,
 		BE_Objects = 105,
-		BE_Coords = 106,
+		BE_Rects = 106,
 		BE_Colors = 107,
 		BE_Transforms = 108,
 		BE_Commands = 109,
