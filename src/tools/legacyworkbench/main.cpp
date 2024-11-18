@@ -122,7 +122,6 @@ void cbResize( const WgEvent::Event* _pEvent, void * _pFlexHook );
 
 
 WgFlexPanel * createPresetSelector();
-void updateOscilloscope( WgOscilloscope * pOsc, int ofs, float width, float amplitude );
 
 
 bool		g_bLeftPressed = false;
@@ -134,7 +133,6 @@ WgWidget * pWidgetToMove = 0;
 
 WgVolumeMeter * m_pVolMeter = 0;
 WgSimpleVolumeMeter * m_pSimpleVolMeter1 = 0;
-WgOscilloscope * g_pOsc = 0;
 
 float	leftPeak = 1.f, rightPeak = 0.5f, leftHold = 0.5f, rightHold = 0.5f;
 
@@ -492,19 +490,6 @@ int main ( int argc, char** argv )
 	return 0;
 }
 
-//____ updateOscilloscope()_____________________________________________________
-
-void updateOscilloscope( WgOscilloscope * pOsc, int ofs, float freq, float amplitude )
-{
-		float points[256];
-
-		for( int i = 0 ; i < 256 ; i++ )
-		{
-			points[i] = (float) sin((i + ofs)*freq)*amplitude;
-		}
-
-		pOsc->SetLinePoints(256,points);
-}
 
 
 //____ chartTest() __________________________________________________

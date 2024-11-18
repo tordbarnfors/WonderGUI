@@ -377,39 +377,6 @@ void LinearGfxDevice::fill(const RectSPX& rect, HiColor col)
 
 
 
-//____ plotPixels() _________________________________________________
-
-void LinearGfxDevice::plotPixels(int nCoords, const CoordSPX * pCoords, const HiColor * pColors)
-{
-	PlotListOp_p pOp = nullptr;
-	auto pKernels = m_pKernels[(int)m_canvasPixelFormat];
-	if (pKernels)
-		pOp = pKernels->pPlotListKernels[(int)m_blendMode];
-
-	if (pOp == nullptr )
-	{
-		if( m_blendMode == BlendMode::Ignore )
-			return;
-		
-		char errorMsg[1024];
-		
-		snprintf(errorMsg, 1024, "Failed plotPixels operation. SoftGfxDevice is missing plotList kernel for BlendMode::%s onto surface of PixelFormat:%s.",
-			toString(m_blendMode),
-			toString(m_canvasPixelFormat) );
-		
-		GfxBase::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, errorMsg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
-		return;
-	}
-
-	for (int i = 0; i < m_nClipSegments; i++)
-	{
-		auto& seg = m_pClipSegments[i];
-
-		uint8_t * pCanvas = seg.pBuffer - seg.rect.y * seg.pitch - seg.rect.x * m_canvasPixelBytes;
-		
-		pOp(seg.rect*64, nCoords, pCoords, pColors, pCanvas, m_canvasPixelBytes, seg.pitch, m_colTrans);
-	}
-}
 //____ drawLine() ____ [from/to] __________________________________________
 
 void LinearGfxDevice::drawLine(CoordSPX beg, CoordSPX end, HiColor color, spx thickness)

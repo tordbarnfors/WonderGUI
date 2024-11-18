@@ -63,7 +63,7 @@ namespace wg
 
 		void	setObjects(Object** pBeg, Object** pEnd) override;
 
-		void	setCoords(spx* pBeg, spx* pEnd) override;
+		void	setRects(RectSPX* pBeg, RectSPX* pEnd) override;
 		void	setColors(HiColor* pBeg, HiColor* pEnd) override;
 		void	setTransforms(Transform * pBeg, Transform * pEnd) override;
 

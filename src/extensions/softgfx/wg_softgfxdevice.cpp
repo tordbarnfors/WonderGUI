@@ -2202,37 +2202,6 @@ const uint8_t SoftGfxDevice::s_fast8_channel_6[64] = {		0x00, 0x04, 0x08, 0x0c, 
 		}
 	}
 
-	//____ plotPixels() _________________________________________________
-
-	void SoftGfxDevice::plotPixels(int nCoords, const CoordSPX * pCoords, const HiColor * pColors)
-	{
-		const int pitch = m_canvasPitch;
-		const int pixelBytes = m_canvasPixelBits / 8;
-
-		PlotListOp_p pOp = nullptr;
-		auto pKernels = m_pKernels[(int)m_pRenderLayerSurface->pixelFormat()];
-		if (pKernels)
-			pOp = pKernels->pPlotListKernels[(int)m_blendMode];
-
-		if (pOp == nullptr )
-		{
-			if( m_blendMode == BlendMode::Ignore )
-				return;
-			
-			char errorMsg[1024];
-			
-			snprintf(errorMsg, 1024, "Failed plotPixels operation. SoftGfxDevice is missing plotList kernel for BlendMode::%s onto surface of PixelFormat:%s.",
-				toString(m_blendMode),
-				toString(m_pRenderLayerSurface->pixelFormat()) );
-			
-			GfxBase::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, errorMsg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
-			return;
-		}
-
-		for (int i = 0; i < m_nClipRects; i++)
-			pOp(m_pClipRects[i], nCoords, pCoords, pColors, m_pCanvasPixels, pixelBytes, pitch, m_colTrans);
-	}
-
 	//____ setBlitSource() ____________________________________________________
 
 	bool SoftGfxDevice::setBlitSource(Surface * pSource)

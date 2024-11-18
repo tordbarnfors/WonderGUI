@@ -75,7 +75,7 @@ namespace wg
 
 		void	setObjects(Object** pBeg, Object** pEnd) override;
 
-		void	setCoords(spx* pBeg, spx* pEnd) override;
+		void	setRects(RectSPX* pBeg, RectSPX* pEnd) override;
 		void	setColors(HiColor* pBeg, HiColor* pEnd) override;
 		void	setTransforms(Transform* pBeg, Transform* pEnd) override;
 
@@ -123,7 +123,6 @@ namespace wg
 		{
 			SetCanvas,
 			StateChange,
-			Plot,
 			Lines,
 			StraightFill,
 			SubpixelFill,
@@ -140,9 +139,9 @@ namespace wg
 		Object** m_pObjectsBeg = nullptr;
 		Object** m_pObjectsEnd = nullptr;
 
-		spx* m_pCoordsBeg = nullptr;
-		spx* m_pCoordsEnd = nullptr;
-		spx* m_pCoordsPtr = nullptr;
+		RectSPX* m_pRectsBeg = nullptr;
+		RectSPX* m_pRectsEnd = nullptr;
+		RectSPX* m_pRectsPtr = nullptr;
 
 		HiColor* m_pColorsBeg = nullptr;
 		HiColor* m_pColorsEnd = nullptr;
@@ -211,7 +210,6 @@ namespace wg
 		GLuint  m_paletteBlitInterpolateProg[2];					// [RGB/A_8 dest]
 		GLuint  m_paletteBlitInterpolateTintmapProg[2];			// [RGB/A_8 dest]
 
-		GLuint  m_plotProg[2];									// [RGB/A_8 dest]
 		GLuint  m_lineFromToProg[2];							// [RGB/A_8 dest]
 
 		GLuint	m_segmentsProg[c_maxSegments][2];			// [nb segments][RGB/A_8 dest]
@@ -221,7 +219,7 @@ namespace wg
 		//
 
 		const static int c_nbPrograms = 30 + (c_maxSegments-1) * 4;
-		const static int c_versionNb = 101;					//
+		const static int c_versionNb = 102;					//
 
 		struct ProgramBlobEntry
 		{
@@ -338,9 +336,6 @@ namespace wg
 		static const char blitFragmentShaderTintmap_A8[];
 		static const char blurFragmentShader[];
 		static const char blurFragmentShaderTintmap[];
-		static const char plotVertexShader[];
-		static const char plotFragmentShader[];
-		static const char plotFragmentShader_A8[];
 		static const char lineFromToVertexShader[];
 		static const char lineFromToFragmentShader[];
 		static const char lineFromToFragmentShader_A8[];

@@ -69,17 +69,15 @@ namespace wg
 			// Commands
 
 			int		nStateChanges;		// Number of times state will change through session.
-			int		nPlots;				// Number of plot commands.
 			int		nLines;				// Number of line commands.
 			int		nFill;
 			int		nBlit;				// Includes Blit, ClipBlit och Tile.
 			int		nBlur;
 			int		nEdgemapDraws;
+			int		nLineCoords;		// Total number of coordinates for line commands (=total lines in line commands *2)
 
 			// Total content of coord buffers
 
-			int		nPoints;			// Total number of points to be plotted
-			int		nLineCoords;		// Total number of coordinates for line commands (=total lines in line commands *2)
 			int		nLineClipRects;		// Total number of clip rectangles for line commands.
 			int		nRects;				// Total number of rects for fill, blit, blur and edgemapDraw commands.
 
@@ -95,7 +93,6 @@ namespace wg
 			None,
 			StateChange,
 			Fill,
-			Plot,
 			Line,
 			Blit,
 			ClipBlit,					// Might be blitting from outside source surface.
@@ -136,7 +133,7 @@ namespace wg
 
 		virtual void	setObjects(Object** pBeg, Object** pEnd) = 0;
 
-		virtual void	setCoords(spx* pBeg, spx* pEnd) = 0;
+		virtual void	setRects(RectSPX* pBeg, RectSPX* pEnd) = 0;
 		virtual void	setColors(HiColor* pBeg, HiColor* pEnd) = 0;
 		virtual void	setTransforms(Transform * pBeg, Transform * pEnd) = 0;
 

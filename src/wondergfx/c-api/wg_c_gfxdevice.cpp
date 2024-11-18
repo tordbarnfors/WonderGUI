@@ -295,12 +295,6 @@ void wg_fillRect(wg_obj device, const wg_rectSPX* rect, wg_color col)
 }
 
 
-void wg_plotPixels(wg_obj device, int nCoords, const wg_coordSPX* pCoords, const wg_color* pColors)
-{
-	getPtr(device)->plotPixels( nCoords, (const CoordSPX*) pCoords, (const HiColor*) pColors);
-}
-
-
 void wg_drawLine(wg_obj device, wg_coordSPX begin, wg_coordSPX end, wg_color color, wg_spx thickness)
 {
 	getPtr(device)->drawLine({ begin.x, begin.y }, { end.x, end.y }, * (HiColor*) &color, (spx) thickness);

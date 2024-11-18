@@ -157,8 +157,6 @@ namespace wg
 		void	fill(HiColor color) override;
 		void	fill(const RectSPX& rect, HiColor color) override;
 		
-		void    plotPixels(int nCoords, const CoordSPX* pCoords, const HiColor* pColors) override;
-
 		void	drawLine(CoordSPX begin, CoordSPX end, HiColor color, spx thickness = 64) override;
 		void	drawLine(CoordSPX begin, Direction dir, spx length, HiColor color, spx thickness = 64) override;
 
@@ -256,7 +254,7 @@ namespace wg
 
 			std::vector<int>		commands;
 
-			std::vector<spx>		coords;
+			std::vector<RectSPX>	rects;
 			std::vector<HiColor>	colors;
 
 			int						finalCommandsOfs = -1;

@@ -130,8 +130,6 @@ extern "C" {
 	void					wg_fill(wg_obj device, wg_color col);
 	void					wg_fillRect(wg_obj device, const wg_rectSPX* rect, wg_color col);
 
-	void					wg_plotPixels(wg_obj device, int nCoords, const wg_coordSPX* pCoords, const wg_color* pColors);
-
 	void					wg_drawLine(wg_obj device, wg_coordSPX begin, wg_coordSPX end, wg_color color, wg_spx thickness);
 	void					wg_drawStraightLine(wg_obj device, wg_coordSPX begin, wg_direction dir, wg_spx length, wg_color color, wg_spx thickness);
 

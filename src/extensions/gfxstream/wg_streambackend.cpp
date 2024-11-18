@@ -85,22 +85,20 @@ namespace wg
 
 	void StreamBackend::beginSession( const SessionInfo * pSession )
 	{
-		(*m_pEncoder) << GfxStream::Header{ GfxChunkId::BE_BeginSession, GfxStream::SpxFormat::Int32_dec, 50 };
+		(*m_pEncoder) << GfxStream::Header{ GfxChunkId::BE_BeginSession, GfxStream::SpxFormat::Int32_dec, 44 };
 
 		(*m_pEncoder) << (uint16_t) pSession->nCanvases;
 		(*m_pEncoder) << 			pSession->canvasSize;
 		(*m_pEncoder) << (uint16_t) pSession->nUpdateRects;
 
 		(*m_pEncoder) << (uint16_t) pSession->nStateChanges;
-		(*m_pEncoder) << (uint16_t) pSession->nPlots;
 		(*m_pEncoder) << (uint16_t) pSession->nLines;
 		(*m_pEncoder) << (uint16_t) pSession->nFill;
 		(*m_pEncoder) << (uint16_t) pSession->nBlit;
 		(*m_pEncoder) << (uint16_t) pSession->nBlur;
 		(*m_pEncoder) << (uint16_t) pSession->nEdgemapDraws;
-
-		(*m_pEncoder) << (int32_t) pSession->nPoints;
 		(*m_pEncoder) << (int32_t) pSession->nLineCoords;
+
 		(*m_pEncoder) << (int32_t) pSession->nLineClipRects;
 		(*m_pEncoder) << (int32_t) pSession->nRects;
 		(*m_pEncoder) << (int32_t) pSession->nColors;
@@ -146,11 +144,11 @@ namespace wg
 		_splitAndEncode( GfxChunkId::BE_Objects, pBeg, pEnd, sizeof(Object*) );
 	}
 
-	//____ setCoords() ___________________________________________________________
+	//____ setRects() ___________________________________________________________
 
-	void StreamBackend::setCoords(spx* pBeg, spx* pEnd)
+	void StreamBackend::setRects(RectSPX* pBeg, RectSPX* pEnd)
 	{
-		_splitAndEncode( GfxChunkId::BE_Coords, pBeg, pEnd, sizeof(spx) );
+		_splitAndEncode( GfxChunkId::BE_Coords, pBeg, pEnd, sizeof(RectSPX) );
 	}
 
 	//____ setColors() ___________________________________________________________
@@ -288,7 +286,7 @@ namespace wg
 
 	const TypeInfo& StreamBackend::surfaceType(void) const
 	{
-
+		return StreamSurface::TYPEINFO;
 	}
 
 	//____ _splitAndEncode() _____________________________________________________

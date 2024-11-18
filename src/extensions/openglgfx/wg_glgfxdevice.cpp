@@ -1114,57 +1114,6 @@ namespace wg
 		}
 	}
 
-	//____ plotPixels() ______________________________________________________
-
-	void GlGfxDevice::plotPixels(int nPixels, const CoordSPX * pCoords, const HiColor * pColors)
-	{
-		if (nPixels == 0)
-			return;
-
-		if (m_vertexOfs > c_vertexBufferSize - 1 || m_extrasOfs > c_extrasBufferSize - 4)
-		{
-			_endCommand();
-			_executeBuffer();
-			_beginDrawCommand(Command::Plot);
-		}
-		if (m_cmd != Command::Plot)
-		{
-			_endCommand();
-			_beginDrawCommand(Command::Plot);
-		}
-
-		float* pConv = GfxBase::defaultToSRGB() ? m_sRGBtoLinearTable : m_linearToLinearTable;
-
-		for (int i = 0; i < m_nClipRects; i++)
-		{
-			const RectI& clip = m_pClipRects[i];
-			for (int pixel = 0; pixel < nPixels; pixel++)
-			{
-				if (clip.contains(pCoords[pixel]))
-				{
-					m_vertexBufferData[m_vertexOfs].coord = pCoords[pixel] / 64;
-					m_vertexBufferData[m_vertexOfs].extrasOfs = m_extrasOfs / 4;
-					m_vertexBufferData[m_vertexOfs].canvasInfoOfs = m_canvasInfoOfs / 4;
-					m_vertexBufferData[m_vertexOfs].tintInfoOfs = m_tintInfoOfs / 4;
-					m_vertexOfs++;
-
-					HiColor color = pColors[pixel];
-
-					m_extrasBufferData[m_extrasOfs++] = color.r / 4096.f;
-					m_extrasBufferData[m_extrasOfs++] = color.g / 4096.f;
-					m_extrasBufferData[m_extrasOfs++] = color.b / 4096.f;
-					m_extrasBufferData[m_extrasOfs++] = color.a / 4096.f;
-
-					if (m_vertexOfs == c_vertexBufferSize || m_extrasOfs == c_extrasBufferSize)
-					{
-						_endCommand();
-						_executeBuffer();
-						_beginDrawCommand(Command::Plot);
-					}
-				}
-			}
-		}
-	}
 
 	//____ drawLine() ____ [from/to] __________________________________________________
 

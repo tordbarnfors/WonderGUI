@@ -261,13 +261,13 @@ void GlBackend::setObjects(Object** pBeg, Object** pEnd)
 	m_pObjectsEnd = pEnd;
 }
 
-//____ setCoords() _________________________________________________________
+//____ setRects() _________________________________________________________
 
-void GlBackend::setCoords(spx* pBeg, spx* pEnd)
+void GlBackend::setRects(RectSPX* pBeg, RectSPX* pEnd)
 {
-	m_pCoordsBeg = pBeg;
-	m_pCoordsEnd = pEnd;
-	m_pCoordsPtr = pBeg;
+	m_pRectsBeg = pBeg;
+	m_pRectsEnd = pEnd;
+	m_pRectsPtr = pBeg;
 }
 
 //____ setColors() _________________________________________________________
@@ -292,7 +292,7 @@ void GlBackend::setTransforms(Transform* pBeg, Transform* pEnd)
 
 void GlBackend::processCommands(int32_t* pBeg, int32_t* pEnd)
 {
-	spx* pCoords = m_pCoordsPtr;
+	RectSPX* pRects = m_pRectsPtr;
 	HiColor* pColors = m_pColorsPtr;
 
 	VertexGL *	pVertexGL	= m_pVertexBuffer + m_nVertices;
@@ -470,10 +470,11 @@ void GlBackend::processCommands(int32_t* pBeg, int32_t* pEnd)
 			for (int i = 0; i < nRects; i++)
 			{
 	
-				int	dx1 = * pCoords++;
-				int	dy1 = * pCoords++;
-				int dx2 = dx1 + *pCoords++;
-				int dy2 = dy1 + *pCoords++;
+				int	dx1 = pRects->x;
+				int	dy1 = pRects->y;
+				int dx2 = dx1 + pRects->w;
+				int dy2 = dy1 + pRects->h;
+				pRects++;
 
 
 				if (((dx1 | dy1 | dx2 | dy2) & 63) == 0)
@@ -643,35 +644,6 @@ void GlBackend::processCommands(int32_t* pBeg, int32_t* pEnd)
 			break;
 		}
 
-		case Command::Plot:
-		{
-			int nCoords = *p++;
-
-			for (int pixel = 0; pixel < nCoords; pixel++)
-			{
-				pVertexGL->coord.x = * pCoords++ / 64;
-				pVertexGL->coord.y = * pCoords++ / 64;
-				pVertexGL->colorsOfs = int(pColorGL - m_pColorBuffer);
-				pVertexGL++;
-
-				HiColor col = * pColors++;
-
-				pColorGL->r = col.r / 4096.f;
-				pColorGL->g = col.g / 4096.f;
-				pColorGL->b = col.b / 4096.f;
-				pColorGL->a = col.a / 4096.f;
-
-				pColorGL++;
-
-			}
-
-			// Store command
-
-			*pCommandGL++ = CommandGL::Plot;
-			*pCommandGL++ = nCoords;
-			break;
-		}
-
 		case Command::Line:
 		{
 			float thickness = *p++ / 64.f;
@@ -680,18 +652,14 @@ void GlBackend::processCommands(int32_t* pBeg, int32_t* pEnd)
 
 			HiColor col = *pColors++;
 
-			const RectSPX* pClipRects = reinterpret_cast<const RectSPX*>(pCoords);
-
-			pCoords += nClipRects * 4;
-
 			// Calculate and store vertices
 
 			int nLinesWritten = 0;
 
 			for (int i = 0; i < nLines; i++)
 			{
-				CoordSPX begin = { *pCoords++, *pCoords++ };
-				CoordSPX end = { *pCoords++, *pCoords++ };
+				CoordSPX begin = { *p++, *p++ };
+				CoordSPX end = { *p++, *p++ };
 
 				begin = roundToPixels(begin);
 				end = roundToPixels(end);
@@ -821,7 +789,7 @@ void GlBackend::processCommands(int32_t* pBeg, int32_t* pEnd)
 
 				for (int i = 0; i < nClipRects; i++)
 				{
-					RectSPX r = *pClipRects++;
+					RectSPX r = *pRects++;
 					*pCommandGL++ = r.x >> 6;
 					*pCommandGL++ = r.y >> 6;
 					*pCommandGL++ = r.w >> 6;
@@ -834,6 +802,8 @@ void GlBackend::processCommands(int32_t* pBeg, int32_t* pEnd)
 				pColorGL->a = col.a / 4096.f;
 				pColorGL++;
 			}
+			else
+				pRects += nClipRects;
 
 			break;
 		}
@@ -849,9 +819,6 @@ void GlBackend::processCommands(int32_t* pBeg, int32_t* pEnd)
 			int32_t	flip = *p++;
 
 			int32_t nRects = *p++;
-			RectSPX* pRects = reinterpret_cast<RectSPX*>(pCoords);
-
-			pCoords += nRects * 4;
 
 			//
 
@@ -1124,23 +1091,6 @@ void GlBackend::processCommands(int32_t* pBeg, int32_t* pEnd)
 			break;
 		}
 
-/*
-		case Command::Blur:
-		{
-			int32_t nRects = *p++;
-			int32_t transform = *p++;
-
-			int srcX = *p++;
-			int srcY = *p++;
-			spx dstX = *p++;
-			spx dstY = *p++;
-
-			pCoords += nRects * 4;
-
-			break;
-		}
-*/
-
 		case Command::Blit:
 		case Command::ClipBlit:
 		case Command::Tile:
@@ -1161,10 +1111,11 @@ void GlBackend::processCommands(int32_t* pBeg, int32_t* pEnd)
 
 			for (int i = 0; i < nRects; i++)
 			{
-				int	dx1 = (*pCoords++) >> 6;
-				int	dy1 = (*pCoords++) >> 6;
-				int dx2 = dx1 + ((*pCoords++) >> 6);
-				int dy2 = dy1 + ((*pCoords++) >> 6);
+				int	dx1 = (pRects->x) >> 6;
+				int	dy1 = (pRects->y) >> 6;
+				int dx2 = dx1 + ((pRects->w) >> 6);
+				int dy2 = dy1 + ((pRects->h) >> 6);
+				pRects++;
 
 				float tintmapBeginX, tintmapBeginY, tintmapEndX, tintmapEndY;
 
@@ -1292,7 +1243,7 @@ void GlBackend::processCommands(int32_t* pBeg, int32_t* pEnd)
 
 	// Save progress.
 
-	m_pCoordsPtr = pCoords;
+	m_pRectsPtr = pRects;
 	m_pColorsPtr = pColors;
 
 	m_nVertices			= int(pVertexGL - m_pVertexBuffer);
@@ -1594,8 +1545,6 @@ GlBackend::~GlBackend()
 	glDeleteProgram(m_paletteBlitInterpolateTintmapProg[0]);
 	glDeleteProgram(m_paletteBlitInterpolateTintmapProg[1]);
 
-	glDeleteProgram(m_plotProg[0]);
-	glDeleteProgram(m_plotProg[1]);
 	glDeleteProgram(m_lineFromToProg[0]);
 	glDeleteProgram(m_lineFromToProg[1]);
 
@@ -1813,7 +1762,7 @@ void GlBackend::beginSession(const SessionInfo* pSession)
 {
 	// Reserve buffer for coordinates
 
-	int nCoords = pSession->nPoints + pSession->nRects * 6 + pSession->nLineCoords/2 * 6;
+	int nCoords = pSession->nRects * 6 + pSession->nLineCoords/2 * 6;
 
 	m_pVertexBuffer = new VertexGL[nCoords];
 	m_nVertices = 0;
@@ -1851,7 +1800,6 @@ void GlBackend::beginSession(const SessionInfo* pSession)
 		+ pSession->nFill * 2 
 		+ pSession->nBlit * 2
 		+ pSession->nBlur * 2
-		+ pSession->nPlots * 2
 		+ pSession->nLines * 3 + pSession->nLineClipRects * 4
 		+ pSession->nEdgemapDraws * 3
 		+ pSession->nCanvases];	
@@ -1970,16 +1918,6 @@ void GlBackend::endSession()
 
 				break;
 
-			}
-
-			case CommandGL::Plot:
-			{
-				int nVertices = *pCmd++;
-				glUseProgram(m_plotProg[m_bActiveCanvasIsA8]);
-
-				glDrawArrays(GL_POINTS, vertexOfs, nVertices);
-				vertexOfs += nVertices;
-				break;
 			}
 
 			case CommandGL::StraightFill:
@@ -2440,16 +2378,6 @@ void GlBackend::_loadPrograms(int uboBindingPoint)
 		LOG_INIT_GLERROR(glGetError());
 	}
 
-	// Create and init Plot shader
-
-	for (int i = 0; i < 2; i++)
-	{
-		GLuint progId = _loadOrCompileProgram(programNb++, plotVertexShader, i == 0 ? plotFragmentShader : plotFragmentShader_A8);
-		_setUniforms(progId, uboBindingPoint);
-		m_plotProg[i] = progId;
-		LOG_INIT_GLERROR(glGetError());
-	}
-
 	// Create and init Line shader
 
 	for (int i = 0; i < 2; i++)
@@ -2610,9 +2538,6 @@ Blob_p GlBackend::_generateProgramBlob()
 
 	programs[prg++] = m_paletteBlitInterpolateTintmapProg[0];
 	programs[prg++] = m_paletteBlitInterpolateTintmapProg[1];
-
-	programs[prg++] = m_plotProg[0];
-	programs[prg++] = m_plotProg[1];
 
 	programs[prg++] = m_lineFromToProg[0];
 	programs[prg++] = m_lineFromToProg[1];

@@ -63,7 +63,7 @@ namespace wg
 		void	setCanvas( Surface * pSurface ) override;
 		void	setCanvas( CanvasRef ref ) override;
 		void	setObjects(Object** pBeg, Object** pEnd) override;
-		void	setCoords(spx* pBeg, spx* pEnd) override;
+		void	setRects(RectSPX* pBeg, RectSPX* pEnd) override;
 		void	setColors(HiColor* pBeg, HiColor* pEnd) override;
 		void	setTransforms(Transform * pBeg, Transform * pEnd) override;
 		void	processCommands(int32_t* pBeg, int32_t* pEnd) override;
@@ -85,15 +85,15 @@ namespace wg
 
 		virtual ~BackendLogger() {};
 
-		void	_printRects(std::ostream& stream, int nRects, RectSPX* pRects);
+		void	_printRects(std::ostream& stream, int nRects, const RectSPX* pRects);
 
 		HiColor*		m_pColorsBeg = nullptr;
 		HiColor*		m_pColorsEnd = nullptr;
 		HiColor*		m_pColorsPtr = nullptr;
 
-		spx*			m_pCoordsBeg = nullptr;
-		spx*			m_pCoordsEnd = nullptr;
-		spx*			m_pCoordsPtr = nullptr;
+		RectSPX*		m_pRectsBeg = nullptr;
+		RectSPX*		m_pRectsEnd = nullptr;
+		RectSPX*		m_pRectsPtr = nullptr;
 
 
 

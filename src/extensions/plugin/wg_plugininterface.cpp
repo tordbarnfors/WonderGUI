@@ -156,7 +156,7 @@ void wg_populatePluginInterface(wg_plugin_interface * pHeader)
 	pBody->gfxDevice.endCanvasUpdate		= &wg_endCanvasUpdate;
 	pBody->gfxDevice.fill					= &wg_fill;
 	pBody->gfxDevice.fillRect				= &wg_fillRect;
-	pBody->gfxDevice.plotPixels				= &wg_plotPixels;
+	pBody->gfxDevice.plotPixels				= nullptr;				// Plot pixels has been deprecated.
 	pBody->gfxDevice.drawLine				= &wg_drawLine;
 	pBody->gfxDevice.drawStraightLine		= &wg_drawStraightLine;
 	pBody->gfxDevice.blit					= &wg_blit;

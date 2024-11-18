@@ -65,7 +65,7 @@ namespace wg
 
 		void	setObjects(Object** pBeg, Object** pEnd) override;
 
-		void	setCoords(spx * pBeg, spx * pEnd) override;
+		void	setRects(RectSPX * pBeg, RectSPX * pEnd) override;
 		void	setColors(HiColor * pBeg, HiColor * pEnd) override;
 		void	setTransforms(Transform * pBeg, Transform * pEnd) override;
 
@@ -151,7 +151,6 @@ namespace wg
 			ColorsAndTintmaps,
 		};
 		
-		typedef	void(*PlotListOp_p)(int nCoords, const CoordSPX* pCoords, const HiColor* pColors, uint8_t* pCanvas, int pitchX, int pitchY, const ColTrans& tint);
 		typedef	void(*LineOp_p)(uint8_t* pRow, int rowInc, int pixelInc, int length, int width, int pos, int slope, HiColor color, const ColTrans& tint, CoordI patchPos);
 		typedef	void(*ClipLineOp_p)(int clipStart, int clipEnd, uint8_t* pRow, int rowInc, int pixelInc, int length, int width, int pos, int slope, HiColor color, const ColTrans& tint, CoordI patchPos);
 		typedef	void(*FillOp_p)(uint8_t* pDst, int pitchX, int pitchY, int nLines, int lineLength, HiColor col, const ColTrans& tint, CoordI patchPos);
@@ -182,15 +181,10 @@ namespace wg
 		bool	setStraightBlitKernel(	PixelFormat sourceFormat, ReadOp readOp, TintMode tintMode,
 										BlendMode blendMode, PixelFormat destFormat, StraightBlitOp_p pKernel);
 
-		
-
-		bool	setPlotListKernel(BlendMode blendMode, PixelFormat destFormat, PlotListOp_p pKernel);
-
 		bool	setLineKernel(BlendMode blendMode, PixelFormat destFormat, LineOp_p pKernel);
 		bool	setClipLineKernel(BlendMode blendMode, PixelFormat destFormat, ClipLineOp_p pKernel);
 
 		bool	setSegmentStripKernel(SoftBackend::StripSource, BlendMode blendMode, PixelFormat destFormat, SegmentOp_p pKernel);
-
 
 		bool	setTransformBlitKernel(PixelFormat sourceFormat, SampleMethod sampleMethod, ReadOp readOp,
 			TintMode tintMode, BlendMode blendMode, PixelFormat destFormat, TransformBlitOp_p pKernel);
@@ -222,9 +216,9 @@ namespace wg
 		Object **			m_pObjectsBeg = nullptr;
 		Object **			m_pObjectsEnd = nullptr;
 
-		spx *				m_pCoordsBeg = nullptr;
-		spx *				m_pCoordsEnd = nullptr;
-		spx *				m_pCoordsPtr = nullptr;
+		RectSPX *			m_pRectsBeg = nullptr;
+		RectSPX *			m_pRectsEnd = nullptr;
+		RectSPX *			m_pRectsPtr = nullptr;
 
 		HiColor*			m_pColorsBeg = nullptr;
 		HiColor*			m_pColorsEnd = nullptr;
@@ -312,7 +306,6 @@ namespace wg
 			LineOp_p 				pLineKernels[BlendMode_size];
 			ClipLineOp_p			pClipLineKernels[BlendMode_size];
 			FillOp_p				pFillKernels[TintMode_size][BlendMode_size];
-			PlotListOp_p			pPlotListKernels[BlendMode_size];
 			SegmentOp_p				pSegmentKernels[3][BlendMode_size];
 
 			StraightBlitOp_p		pStraightBlitFromHiColorKernels[TintMode_size][BlendMode_size];

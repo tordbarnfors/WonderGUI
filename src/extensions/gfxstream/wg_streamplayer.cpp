@@ -403,7 +403,7 @@ namespace wg
 
 			//
 
-			m_pDevice->plotPixels(nPixels, (CoordI*)pBuffer, (HiColor*)(pBuffer + header.size / 2));
+//			m_pDevice->plotPixels(nPixels, (CoordI*)pBuffer, (HiColor*)(pBuffer + header.size / 2));
 
 			GfxBase::memStackFree(bufferSize);
 			break;

@@ -66,14 +66,12 @@ namespace wg
 		*m_pStream << "    UpdateRects:   " << pSession->nUpdateRects << std::endl;
 
 		*m_pStream << "    StateChanges:  " << pSession->nStateChanges << std::endl;
-		*m_pStream << "    Plots:         " << pSession->nPlots << std::endl;
 		*m_pStream << "    Fills:         " << pSession->nFill << std::endl;
 		*m_pStream << "    Lines:         " << pSession->nLines << std::endl;
 		*m_pStream << "    Blits:         " << pSession->nBlit << std::endl;
 		*m_pStream << "    Blurs:         " << pSession->nBlur << std::endl;
 		*m_pStream << "    EdgemapDraws:  " << pSession->nEdgemapDraws << std::endl;
 
-		*m_pStream << "    Points:        " << pSession->nPoints << std::endl;
 		*m_pStream << "    LineCoords:    " << pSession->nLineCoords << std::endl;
 		*m_pStream << "    LineClipRects: " << pSession->nLineClipRects << std::endl;
 		*m_pStream << "    Rects:         " << pSession->nRects << std::endl;
@@ -139,30 +137,33 @@ namespace wg
 			m_pBackend->setObjects(pBeg,pEnd);
 	}
 
-	//____ setCoords() _______________________________________________
+	//____ setRects() _______________________________________________
 
-	void BackendLogger::setCoords(spx* pBeg, spx* pEnd)
+	void BackendLogger::setRects(RectSPX* pBeg, RectSPX* pEnd)
 	{
-		*m_pStream << "SET COORDS: Amount = " << int(pEnd - pBeg);
+		*m_pStream << "SET RECTS: Amount = " << int(pEnd - pBeg);
 
-		m_pCoordsBeg = pBeg;
-		m_pCoordsEnd = pEnd;
-		m_pCoordsPtr = pBeg;
+		m_pRectsBeg = pBeg;
+		m_pRectsEnd = pEnd;
+		m_pRectsPtr = pBeg;
 
-		spx * p = pBeg;
+		RectSPX * p = pBeg;
 
 		int rows = 0;
 
 		while (p < pEnd)
 		{
-			rows %= 8;
+			rows %= 4;
 
 			if (rows == 0)
 				*m_pStream << std::endl << "   ";
+
 			else
 				*m_pStream << ", ";
 
-			*m_pStream << *p++;
+			RectSPX rect = *p++;
+
+			*m_pStream << "(" << rect.x << ", " << rect.y << ", " << rect.w << ", " << rect.h << ")";
 
 			rows++;
 		}
@@ -170,7 +171,7 @@ namespace wg
 		*m_pStream << std::endl;
 
 		if (m_pBackend)
-			m_pBackend->setCoords(pBeg, pEnd);
+			m_pBackend->setRects(pBeg, pEnd);
 	}
 
 	//____ setColors() ___________________________________________________
@@ -225,7 +226,7 @@ namespace wg
 		*m_pStream << "PROCESS COMMANDS:" << std::endl;
 
 		HiColor* pColors = m_pColorsPtr;
-		spx* pCoords = m_pCoordsPtr;
+		RectSPX* pRects = m_pRectsPtr;
 
 		auto p = pBeg;
 		while (p < pEnd)
@@ -309,33 +310,8 @@ namespace wg
 
 				*m_pStream << "    Fill: " << nRects << " rects with color: " << col.r << ", " << col.g << ", " << col.b << ", " << col.a << std::endl;
 
-				_printRects(*m_pStream, nRects, reinterpret_cast<RectSPX*>(pCoords) );
-				pCoords += nRects * 4;
-				break;
-			}
-
-			case Command::Plot:
-			{
-				int32_t nPlots = *p++;
-
-				*m_pStream << "    Plot: " << nPlots << " points.";	
-
-				for (int i = 0; i < nPlots; i++)
-				{
-					if ((i % 16) == 0)
-						*m_pStream << std::endl << "        ";
-
-					spx x = *pCoords++;
-					spx y = *pCoords++;
-
-					*m_pStream << "(" << x << "," << y << ") ";
-				}
-
-				if ((nPlots % 16) != 0)
-					*m_pStream << std::endl;
-
-
-				pColors += nPlots;
+				_printRects(*m_pStream, nRects, pRects);
+				pRects += nRects;
 				break;
 			}
 
@@ -351,13 +327,13 @@ namespace wg
 					<< " and thickness: " << thickness
 					<< ". Clipped by " << nRects << " rectangles:" << std::endl;
 
-				_printRects(*m_pStream, nRects, reinterpret_cast<RectSPX*>(pCoords));
-				pCoords += nRects * 4;
+				_printRects(*m_pStream, nRects, pRects);
+				pRects += nRects;
 
 				for (int i = 0; i < nLines; i++)
 				{
-					CoordSPX beg = { *pCoords++, *pCoords++ };
-					CoordSPX end = { *pCoords++, *pCoords++ };
+					CoordSPX beg = { *p++, *p++ };
+					CoordSPX end = { *p++, *p++ };
 
 					*m_pStream << "        from (" << beg.x << ", " << beg.y << ") to(" << end.x << ", " << end.y << ")" << std::endl;
 				}
@@ -376,8 +352,8 @@ namespace wg
 				*m_pStream << "    DrawEdgemap: " << objectOfs << " at: " << destX << ", " << destY << ", with transform: " << transform 
 					<< " split into " << nRects << " rectangles." << std::endl;
 
-				_printRects(*m_pStream, nRects, reinterpret_cast<RectSPX*>(pCoords));
-				pCoords += nRects * 4;
+				_printRects(*m_pStream, nRects, pRects);
+				pRects += nRects;
 				break;
 			}
 
@@ -405,8 +381,8 @@ namespace wg
 
 				*m_pStream << nRects << " rects with transform: " << transform << ", src: " << srcX << ", " << srcY << " dest: " << dstX << ", " << dstY << std::endl;
 
-				_printRects(*m_pStream, nRects, reinterpret_cast<RectSPX*>(pCoords));
-				pCoords += nRects * 4;
+				_printRects(*m_pStream, nRects, pRects);
+				pRects += nRects;
 				break;
 			}
 
@@ -416,7 +392,7 @@ namespace wg
 			}
 		}
 
-		m_pCoordsPtr = pCoords;
+		m_pRectsPtr = pRects;
 		m_pColorsPtr = pColors;
 
 		if (m_pBackend)
@@ -505,7 +481,7 @@ namespace wg
 
 	//____ _printRects() _______________________________________________________
 
-	void BackendLogger::_printRects(std::ostream& stream, int nRects, RectSPX* pRects)
+	void BackendLogger::_printRects(std::ostream& stream, int nRects, const RectSPX* pRects)
 	{
 		for (int i = 0; i < nRects; i++)
 		{

@@ -62,8 +62,6 @@ namespace wg
 
 		void	fill(const RectSPX& rect, HiColor col) override;
 
-		void    plotPixels(int nCoords, const CoordSPX * pCoords, const HiColor * pColors) override;
-
 		void	drawLine(CoordSPX begin, CoordSPX end, HiColor color, spx thickness) override;
 
 		void	flipDrawEdgemap(CoordSPX dest, Edgemap * pEdgemap, GfxFlip flip) override;

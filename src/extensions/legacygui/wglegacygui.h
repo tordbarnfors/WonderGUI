@@ -141,10 +141,6 @@
 #	include <wg2_multislider.h>
 #endif
 
-#ifndef WG2_OSCILLOSCOPE_DOT_H
-#	include <wg2_oscilloscope.h>
-#endif
-
 #ifndef	WG2_PACKPANEL_DOT_H
 #	include	<wg2_packpanel.h>
 #endif

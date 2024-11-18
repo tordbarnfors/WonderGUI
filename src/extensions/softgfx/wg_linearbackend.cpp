@@ -194,7 +194,7 @@ namespace wg
 			return;
 		}
 
-		spx *		pCoords = m_pCoordsPtr;
+		RectSPX *	pRects = m_pRectsPtr;
 		HiColor*	pColors = m_pColorsPtr;
 
 		Segment *	pSegBeg = m_canvasSegments.data();
@@ -332,7 +332,7 @@ namespace wg
 
 				if (!pFunc)
 				{
-					pCoords += 4 * nRects;
+					pRects += nRects;
 
 					if (blendMode == BlendMode::Ignore)
 						break;
@@ -350,8 +350,7 @@ namespace wg
 
 				for (int i = 0; i < nRects; i++)
 				{
-					RectI spxPatch = (* reinterpret_cast<RectSPX*>(pCoords));
-					pCoords += 4;
+					RectI spxPatch = *pRects++;
 
 					RectI pixelPatch = spxPatch / 64;
 
@@ -398,7 +397,7 @@ namespace wg
 
 						if (pEdgeFunc == nullptr)
 						{
-							pCoords += (nRects - i - 1) * 4;
+							pRects += (nRects - i - 1);
 
 							if (blendMode == BlendMode::Ignore)
 								break;
@@ -512,40 +511,6 @@ namespace wg
 				break;
 			}
 
-			case Command::Plot:
-			{
-				int nCoords = *p++;
-
-				const int pitch = m_canvasPitch;
-				const int pixelBytes = m_canvasPixelBytes;
-
-				PlotListOp_p pOp = nullptr;
-				auto pKernels = m_pKernels[(int)m_canvasPixelFormat];
-				if (pKernels)
-					pOp = pKernels->pPlotListKernels[(int)m_blendMode];
-
-				if (pOp == nullptr)
-				{
-					if (m_blendMode == BlendMode::Ignore)
-						break;
-
-					char errorMsg[1024];
-
-					snprintf(errorMsg, 1024, "Failed plotPixels operation. SoftGfxDevice is missing plotList kernel for BlendMode::%s onto surface of PixelFormat:%s.",
-						toString(m_blendMode),
-						toString(m_canvasPixelFormat));
-
-					GfxBase::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, errorMsg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
-					break;
-				}
-
-//				pOp(nCoords, (CoordSPX*) pCoords, pColors, m_pCanvasPixels, pixelBytes, pitch, m_colTrans);
-
-				pCoords += nCoords*2;
-				pColors += nCoords;
-				break;
-			}
-
 			case Command::Line:
 			{
 				spx thickness = * p++;
@@ -554,8 +519,8 @@ namespace wg
 
 				HiColor color = *pColors++;
 
-				const RectSPX * pClipRects = reinterpret_cast<const RectSPX*>(pCoords);
-				pCoords += 4 * nClipRects;
+				const RectSPX * pClipRects = pRects;
+				pRects += nClipRects;
 
 				HiColor fillColor = color;
 				
@@ -594,8 +559,8 @@ namespace wg
 
 				for (int line = 0; line < nLines; line++)
 				{
-					CoordSPX beg = { *pCoords++, *pCoords++ };
-					CoordSPX end = { *pCoords++, *pCoords++ };
+					CoordSPX beg = { *p++, *p++ };
+					CoordSPX end = { *p++, *p++ };
 
 					//TODO: Proper 26:6 support
 					beg = Util::roundToPixels(beg);
@@ -740,9 +705,9 @@ namespace wg
 				int32_t	flip = *p++;
 
 				int32_t nRects = *p++;
-				RectSPX * pRects = reinterpret_cast<RectSPX*>(pCoords);
+				RectSPX * pMyRects = pRects;
 
-				pCoords += nRects * 4;
+				pRects += nRects;
 
 				int32_t nSegments = pEdgemap->segments();
 				const HiColor * pSegmentColors = pEdgemap->m_pFlatColors;
@@ -1149,7 +1114,7 @@ namespace wg
 				{
 					// Clip patch
 
-					RectI patch = RectI::overlap(dest, pRects[patchIdx] / 64);
+					RectI patch = RectI::overlap(dest, pMyRects[patchIdx] / 64);
 					if (patch.w == 0 || patch.h == 0)
 						continue;
 
@@ -1301,12 +1266,7 @@ namespace wg
 
 					for (int i = 0; i < nRects; i++)
 					{
-						RectI	patch;
-
-						patch.x = *pCoords++ / 64;
-						patch.y = *pCoords++ / 64;
-						patch.w = *pCoords++ / 64;
-						patch.h = *pCoords++ / 64;
+						RectI	patch = (*pRects++) / 64;
 
 						CoordI src = { srcX / 1024, srcY / 1024 };
 						CoordI dest = { dstX / 64, dstY / 64 };
@@ -1358,12 +1318,8 @@ namespace wg
 
 					for (int i = 0; i < nRects; i++)
 					{
-						RectI	patch;
+						RectI	patch = (*pRects++) / 64;
 
-						patch.x = *pCoords++ / 64;
-						patch.y = *pCoords++ / 64;
-						patch.w = *pCoords++ / 64;
-						patch.h = *pCoords++ / 64;
 
 						BinalCoord src = { srcX * (BINAL_MUL / 1024), srcY * (BINAL_MUL / 1024) };
 						CoordI dest = { dstX / 64, dstY / 64 };
@@ -1404,9 +1360,8 @@ namespace wg
 
 		// Save progress.
 
-		m_pCoordsPtr = pCoords;
+		m_pRectsPtr = pRects;
 		m_pColorsPtr = pColors;
-
 	}
 
 	//____ _updateBlitFunctions() _____________________________________________

@@ -868,7 +868,7 @@ void GfxDeviceGen2::_resetCanvas()
 		auto& layer = canvasEntry.layers[i];
 
 		layer.colors.clear();
-		layer.coords.clear();
+		layer.rects.clear();
 		layer.commands.clear();
 
 		_resetState(layer.encodedState);
@@ -985,9 +985,9 @@ void GfxDeviceGen2::_doFlattenLayers()
 
 	auto& baseLayer = canvasData.layers[0];
 
-	spx* pCoordsBeg = baseLayer.coords.data();
-	spx* pCoordsEnd = pCoordsBeg + baseLayer.coords.size();
-	m_pBackend->setCoords(pCoordsBeg, pCoordsEnd);
+	RectSPX* pRectsBeg = baseLayer.rects.data();
+	RectSPX* pRectsEnd = pRectsBeg + baseLayer.rects.size();
+	m_pBackend->setRects(pRectsBeg, pRectsEnd);
 
 	HiColor* pColorsBeg = baseLayer.colors.data();
 	HiColor* pColorsEnd = pColorsBeg + baseLayer.colors.size();
@@ -1017,9 +1017,9 @@ void GfxDeviceGen2::_doFlattenLayers()
 
 			// Send buffers and layer-specific commands to backend
 
-			spx* pCoordsBeg = layer.coords.data();
-			spx* pCoordsEnd = pCoordsBeg + layer.coords.size();
-			m_pBackend->setCoords(pCoordsBeg, pCoordsEnd);
+			RectSPX* pRectsBeg = layer.rects.data();
+			RectSPX* pRectsEnd = pRectsBeg + layer.rects.size();
+			m_pBackend->setRects(pRectsBeg, pRectsEnd);
 
 			HiColor* pColorsBeg = layer.colors.data();
 			HiColor* pColorsEnd = pColorsBeg + layer.colors.size();
@@ -1056,9 +1056,9 @@ void GfxDeviceGen2::_doFlattenLayers()
 
 			// Send buffers and commands to backend
 
-			spx* pCoordsBeg = layer.coords.data();
-			spx* pCoordsEnd = pCoordsBeg + layer.coords.size();
-			m_pBackend->setCoords(pCoordsBeg, pCoordsEnd);
+			RectSPX* pRectsBeg = layer.rects.data();
+			RectSPX* pRectsEnd = pRectsBeg + layer.rects.size();
+			m_pBackend->setRects(pRectsBeg, pRectsEnd);
 
 			HiColor* pColorsBeg = layer.colors.data();
 			HiColor* pColorsEnd = pColorsBeg + layer.colors.size();
@@ -1109,16 +1109,10 @@ void GfxDeviceGen2::fill(HiColor color)
 
 	m_pActiveLayer->colors.push_back(color);
 
-	const RectSPX* pRect = m_pActiveClipList->pRects;
-	auto& coords = m_pActiveLayer->coords;
+	auto& rects = m_pActiveLayer->rects;
 
 	for (int i = 0; i < m_pActiveClipList->nRects; i++)
-	{
-		coords.emplace_back(pRect->x);
-		coords.emplace_back(pRect->y);
-		coords.emplace_back(pRect->w);
-		coords.emplace_back(pRect->h);
-	}
+		rects.emplace_back(m_pActiveClipList->pRects[i]);
 
 	m_pActiveCanvas->sessionInfo.nFill++;
 	m_pActiveCanvas->sessionInfo.nColors++;
@@ -1148,7 +1142,7 @@ void GfxDeviceGen2::fill(const RectSPX& rect, HiColor color)
 	// That way we can skip fill with possible state change if no rects get through.
 
 	int nRects = 0;
-	auto& coords = m_pActiveLayer->coords;
+	auto& rects = m_pActiveLayer->rects;
 
 	for (int i = 0; i < m_pActiveClipList->nRects; i++)
 	{
@@ -1156,11 +1150,7 @@ void GfxDeviceGen2::fill(const RectSPX& rect, HiColor color)
 
 		if (!clipped.isEmpty())
 		{
-			coords.emplace_back(clipped.x);
-			coords.emplace_back(clipped.y);
-			coords.emplace_back(clipped.w);
-			coords.emplace_back(clipped.h);
-
+			rects.emplace_back(clipped);
 			nRects++;
 		}
 	}
@@ -1178,54 +1168,6 @@ void GfxDeviceGen2::fill(const RectSPX& rect, HiColor color)
 		m_pActiveCanvas->sessionInfo.nFill++;
 		m_pActiveCanvas->sessionInfo.nColors++;
 		m_pActiveCanvas->sessionInfo.nRects += nRects;
-	}
-}
-
-//____ plotPixels() ____________________________________________________________
-
-void GfxDeviceGen2::plotPixels(int nCoords, const CoordSPX* pCoords, const HiColor* pColors)
-{
-	if (!m_pActiveCanvas)
-	{
-		//TODO: Error handling!
-
-		return;
-	}
-
-	int nCoordsPassed = 0;
-
-	auto& coords = m_pActiveLayer->coords;
-	auto& commands = m_pActiveLayer->commands;
-	auto& colors = m_pActiveLayer->colors;
-
-	for (int i = 0; i < nCoords; i++)
-	{
-		for (int r = 0; r < m_pActiveClipList->nRects; r++)
-		{
-			if (m_pActiveClipList->pRects[r].contains(pCoords[i]) )
-			{
-				coords.emplace_back( align(pCoords[i].x));
-				coords.emplace_back( align(pCoords[i].y));
-
-				colors.push_back(pColors[i]);
-
-				nCoordsPassed++;
-				break;
-			}
-		}
-	}
-
-	if (nCoordsPassed > 0)
-	{
-		if (m_stateChanges != 0)
-			_encodeStateChanges();
-
-		commands.push_back(int(Command::Plot));
-		commands.push_back(nCoordsPassed);						// Space for ammount
-
-		m_pActiveCanvas->sessionInfo.nPlots++;
-		m_pActiveCanvas->sessionInfo.nPoints += nCoordsPassed;
-		m_pActiveCanvas->sessionInfo.nColors += nCoordsPassed;
 	}
 }
 
@@ -1289,7 +1231,7 @@ void GfxDeviceGen2::drawLine(CoordSPX beg, CoordSPX end, HiColor color, spx thic
 	int nRects = 0;
 
 	auto& commands = m_pActiveLayer->commands;
-	auto& coords = m_pActiveLayer->coords;
+	auto& rects = m_pActiveLayer->rects;
 
 	int commandsOfs = (int) commands.size();
 
@@ -1312,21 +1254,17 @@ void GfxDeviceGen2::drawLine(CoordSPX beg, CoordSPX end, HiColor color, spx thic
 
 		if ( rect.intersectsWithOrContains(beg,end, 8) );
 		{
-			coords.push_back(pClipRects[i].x);
-			coords.push_back(pClipRects[i].y);
-			coords.push_back(pClipRects[i].w);
-			coords.push_back(pClipRects[i].h);
-
+			rects.push_back(pClipRects[i]);
 			nRects++;
 		}
 	}
 
 	if (nRects > 0)
 	{
-		coords.push_back(beg.x);
-		coords.push_back(beg.y);
-		coords.push_back(end.x);
-		coords.push_back(end.y);
+		commands.push_back(beg.x);
+		commands.push_back(beg.y);
+		commands.push_back(end.x);
+		commands.push_back(end.y);
 
 		commands[commandsOfs + 2] = nRects;
 		m_pActiveLayer->colors.push_back(color);
@@ -2203,7 +2141,7 @@ void GfxDeviceGen2::flipDrawEdgemap(CoordSPX dest, Edgemap* pEdgemap, GfxFlip fl
 
 
 	int nRects = 0;
-	auto& coords = m_pActiveLayer->coords;
+	auto& rects = m_pActiveLayer->rects;
 
 	for (int i = 0; i < m_pActiveClipList->nRects; i++)
 	{
@@ -2211,11 +2149,7 @@ void GfxDeviceGen2::flipDrawEdgemap(CoordSPX dest, Edgemap* pEdgemap, GfxFlip fl
 
 		if (!clipped.isEmpty())
 		{
-			coords.emplace_back(clipped.x);
-			coords.emplace_back(clipped.y);
-			coords.emplace_back(clipped.w);
-			coords.emplace_back(clipped.h);
-
+			rects.emplace_back(clipped);
 			nRects++;
 		}
 	}
@@ -3000,7 +2934,7 @@ void GfxDeviceGen2::_transformBlitSimple(const RectSPX& _dest, CoordSPX src, int
 	// That way we can skip blit with possible state change if no rects get through.
 
 	int nRects = 0;
-	auto& coords = m_pActiveLayer->coords;
+	auto& rects = m_pActiveLayer->rects;
 
 	//TODO: Proper 26:6 support
 	RectSPX dest = align(_dest);
@@ -3011,11 +2945,7 @@ void GfxDeviceGen2::_transformBlitSimple(const RectSPX& _dest, CoordSPX src, int
 
 		if( !rect.isEmpty() )
 		{
-			coords.emplace_back(rect.x);
-			coords.emplace_back(rect.y);
-			coords.emplace_back(rect.w);
-			coords.emplace_back(rect.h);
-
+			rects.emplace_back(rect);
 			nRects++;
 		}
 	}
@@ -3058,7 +2988,7 @@ void GfxDeviceGen2::_transformBlitComplex(const RectSPX& _dest, CoordI src, cons
 	const RectI& clip = dest;
 
 	int nRects = 0;
-	auto& coords = m_pActiveLayer->coords;
+	auto& rects = m_pActiveLayer->rects;
 
 	for (int i = 0; i < m_pActiveClipList->nRects; i++)
 	{
@@ -3066,11 +2996,7 @@ void GfxDeviceGen2::_transformBlitComplex(const RectSPX& _dest, CoordI src, cons
 
 		if (!rect.isEmpty())
 		{
-			coords.emplace_back(rect.x);
-			coords.emplace_back(rect.y);
-			coords.emplace_back(rect.w);
-			coords.emplace_back(rect.h);
-
+			rects.emplace_back(rect);
 			nRects++;
 		}
 	}

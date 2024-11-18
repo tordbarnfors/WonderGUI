@@ -78,8 +78,6 @@ set( SOURCES
 	wg2_mouseblocker.h
 	wg2_multislider.cpp
 	wg2_multislider.h
-	wg2_oscilloscope.cpp
-	wg2_oscilloscope.h
 	wg2_packpanel.cpp
 	wg2_packpanel.h
 	wg2_panel.cpp
@@ -115,8 +113,6 @@ set( SOURCES
 	wg2_shadercapsule.h
 	wg2_shadowlayer.cpp
 	wg2_shadowlayer.h
-	wg2_simpleknob.cpp
-	wg2_simpleknob.h
 	wg2_simplevolumemeter.cpp
 	wg2_simplevolumemeter.h
 	wg2_sizebroker.cpp

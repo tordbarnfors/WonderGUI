@@ -29,7 +29,6 @@
 #include "testsuites/mipmaptests.h"
 #include "testsuites/paletteblittests.h"
 #include "testsuites/piecharttests.h"
-#include "testsuites/plottests.h"
 #include "testsuites/rgb565bigendiantests.h"
 #include "testsuites/segmenttests.h"
 #include "testsuites/tiletests.h"
@@ -653,7 +652,6 @@ void GfxDeviceTester::setup_tests()
 	add_testsuite([](){ return new BlitConsistencyTests();});
 	add_testsuite([](){ return new FillTests();});
 	add_testsuite([](){ return new BlendTests();});
-	add_testsuite([](){ return new PlotTests();});
 	add_testsuite([](){ return new LineTests();});
 	add_testsuite([](){ return new CanvasFormatTests();});
 	add_testsuite([](){ return new PatchBlitTests();});

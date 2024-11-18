@@ -93,10 +93,6 @@ namespace wg
 	{
 	}
 
-	void NullGfxDevice::plotPixels(int nCoords, const CoordSPX * pCoords, const HiColor * pColors)
-	{
-	}
-
 	void NullGfxDevice::drawLine(CoordSPX begin, CoordSPX end, HiColor color, spx thickness)
 	{
 	}

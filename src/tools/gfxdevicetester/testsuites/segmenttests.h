@@ -196,7 +196,7 @@ public:
 
 	bool precisionTest(GfxDevice * pDevice, const RectSPX& canvas)
 	{
-		pDevice->plotPixels(4, m_precisionPlotCoords, m_precisionPlotColors);
+//		pDevice->plotPixels(4, m_precisionPlotCoords, m_precisionPlotColors);
 
 //		pDevice->drawSegments({ 2,1,1,4 }, 5, m_precisionColors, 2, &m_precisionEdges[0][0], 4);
 //		pDevice->drawSegments({ canvas.w-1,1,1,4 }, 5, m_precisionColors, 2, &m_precisionEdges[0][0], 4);
@@ -214,9 +214,6 @@ private:
 
 	int		m_nRainbowEdges = 512 + 1;
 	int		m_rainbowEdges[512 + 1][7];
-
-	CoordI	m_precisionPlotCoords[4] = { {1 * 64,1 * 64}, {1 * 64,2 * 64}, {1 * 64,3 * 64}, {1 * 64,4 * 64} };
-	HiColor	m_precisionPlotColors[4] = { Color8(42,42,42,255), Color8(128,128,128,255), Color8(213,213,213,255), Color8(255,255,255,255) };
 
 	int		m_precisionEdges[2][4] = { {0 * 64+32, 6 * 64, 6 * 64, 6 * 64}, {3 * 64+32, 6 * 64, 6 * 64, 6 * 64} };
 	HiColor	m_precisionColors[5] = { Color(0,0,0,0), Color(255,255,255,255), Color(255,0,0,255), Color(255,0,0,255), Color(255,0,0,255) };

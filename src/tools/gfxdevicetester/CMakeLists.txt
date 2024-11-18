@@ -27,7 +27,6 @@ set( SOURCES
 	testsuites/mipmaptests.h
 	testsuites/paletteblittests.h
 	testsuites/piecharttests.h
-	testsuites/plottests.h
 	testsuites/rgb565bigendiantests.h	
 	testsuites/segmenttests.h
 	testsuites/testsuite.h

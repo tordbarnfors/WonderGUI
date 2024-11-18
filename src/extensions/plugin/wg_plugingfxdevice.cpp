@@ -400,13 +400,6 @@ namespace wg
         PluginCalls::gfxDevice->fillRect(m_cDevice, (wg_rectSPX*) &_rect, *(wg_color*)&_col);
     }
 
-    //____ plotPixels() ________________________________________________________
-
-    void PluginGfxDevice::plotPixels(int nCoords, const CoordSPX * pCoords, const HiColor * pColors)
-    {
-        PluginCalls::gfxDevice->plotPixels(m_cDevice, nCoords, (wg_coordSPX*)pCoords, (wg_color*)pColors);
-    }
-
     //____ drawLine() __________________________________________________________
 
     void PluginGfxDevice::drawLine(CoordSPX begin, CoordSPX end, HiColor color, spx thickness)

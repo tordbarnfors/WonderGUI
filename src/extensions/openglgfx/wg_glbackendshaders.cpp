@@ -756,55 +756,6 @@ const char GlBackend::paletteBlitInterpolateFragmentShaderTintmap_A8[] =
 "}												";
 
 
-const char GlBackend::plotVertexShader[] =
-
-"#version 330 core\n"
-
-"layout(std140) uniform Canvas"
-"{"
-"	float  canvasWidth;"
-"	float  canvasHeight;"
-"	float  canvasYOfs;"
-"	float  canvasYMul;"
-"};"
-
-
-"uniform samplerBuffer colorBufferId;					"
-"layout(location = 0) in ivec2 pos;                     "
-"layout(location = 2) in int colorOfs;                  "
-"out vec4 fragColor;									"
-"void main()                                            "
-"{                                                      "
-"   gl_Position.x = (pos.x+0.5)*2.0/canvasWidth - 1.0;  "
-"   gl_Position.y = ((canvasYOfs + canvasYMul*pos.y)+0.5)*2.0/canvasHeight - 1,0;	"
-"   gl_Position.z = 0.0;                                "
-"   gl_Position.w = 1.0;                                "
-"   fragColor = texelFetch(colorBufferId, colorOfs);    "
-"}                                                      ";
-
-
-const char GlBackend::plotFragmentShader[] =
-
-"#version 330 core\n"
-"in vec4 fragColor;                     "
-"out vec4 outColor;                     "
-"void main()                            "
-"{                                      "
-"   outColor = fragColor;				"
-"}                                      ";
-
-const char GlBackend::plotFragmentShader_A8[] =
-
-"#version 330 core\n"
-"in vec4 fragColor;                     "
-"out vec4 outColor;                     "
-"void main()                            "
-"{                                      "
-"   outColor.r = fragColor.a;				"
-"}                                      ";
-
-
-
 const char GlBackend::lineFromToVertexShader[] =
 
 "#version 330 core\n"

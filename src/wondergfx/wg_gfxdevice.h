@@ -178,8 +178,6 @@ namespace wg
 		virtual void	fill(HiColor color) = 0;
 		virtual void	fill( const RectSPX& rect, HiColor color ) = 0;
 
-		virtual void    plotPixels( int nCoords, const CoordSPX * pCoords, const HiColor * pColors) = 0;
-
 	 	virtual void	drawLine( CoordSPX begin, CoordSPX end, HiColor color, spx thickness = 64 ) = 0;
 		virtual void	drawLine( CoordSPX begin, Direction dir, spx length, HiColor color, spx thickness = 64 ) = 0;
 

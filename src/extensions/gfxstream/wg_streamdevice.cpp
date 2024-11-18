@@ -493,38 +493,6 @@ namespace wg
         return;
     }
 
-    //____ plotPixels() ________________________________________________________
-
-    void StreamDevice::plotPixels(int nCoords, const CoordSPX * pCoords, const HiColor * pColors)
-    {
-        // Each pixel is 8 + 8 bytes: int32_t x, int32_t y, HiColor
-        // All coordinates comes first, then all colors.
-
-        //TODO: Optimize. Clip coordinates before we send them.
-        //TODO: Optimize. Remove binals from pixels, store as 16-bit values.
-
-        if (nCoords == 0)
-            return;
-
-		_streamStatesIfUpdated();
-
-        int maxChunkCoords = (int)(GfxStream::c_maxBlockSize - sizeof(GfxStream::Header)) / 16;
-
-        int chunkCoords = min(nCoords, maxChunkCoords);
-
-        while (nCoords > 0)
-        {
-            (*m_pEncoder) << GfxStream::Header{ GfxChunkId::PlotPixels, GfxStream::SpxFormat::Int32_dec, (uint16_t)(chunkCoords * 16) };
-            (*m_pEncoder) << GfxStream::WriteBytes{ chunkCoords * 8, pCoords };
-            (*m_pEncoder) << GfxStream::WriteBytes{ chunkCoords * 8, pColors };
-
-            nCoords -= chunkCoords;
-            pCoords += chunkCoords;
-            pColors += chunkCoords;
-            chunkCoords = min(nCoords, maxChunkCoords);
-        }
-    }
-
     //____ drawLine() __________________________________________________________
 
     void StreamDevice::drawLine(CoordSPX begin, CoordSPX end, HiColor color, spx thickness)
