@@ -70,7 +70,7 @@ namespace wg
 		
 		void	reset();
 		
-		const std::vector<Surface_p>& surfaces() const { return m_vSurfaces; }
+		const std::vector<Object_p>& objects() const { return m_vObjects; }
 		
 	protected:
 		StreamPlayer(GfxBackend * pDevice, SurfaceFactory * pSurfaceFactory, EdgemapFactory * pEdgemapFactory);
@@ -84,12 +84,12 @@ namespace wg
 		SurfaceFactory_p	m_pSurfaceFactory;
 		EdgemapFactory_p	m_pEdgemapFactory;
 
-		std::vector<Surface_p>	m_vSurfaces;
-		std::vector<Edgemap_p>	m_vEdgemaps;
+		std::vector<Object_p>	m_vObjects;		// Surfaces and Edgemaps.
 
 		std::vector<RectSPX>	m_vRects;
 		std::vector<HiColor>	m_vColors;
 		std::vector<Transform>	m_vTransforms;
+		std::vector<Object*>	m_vActionObjects;
 		std::vector<int32_t>	m_vCommands;
 
 		Surface_p			m_pUpdatingSurface;

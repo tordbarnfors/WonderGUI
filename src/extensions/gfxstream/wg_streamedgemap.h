@@ -51,6 +51,8 @@ namespace wg
 		const TypeInfo&     typeInfo(void) const override;
 		const static TypeInfo   TYPEINFO;
 
+		uint16_t		inStreamId() const { return m_inStreamId; }
+
 		//.____ Appearance ____________________________________________________
 
 		bool	setRenderSegments(int nSegments) override;

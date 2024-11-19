@@ -197,6 +197,8 @@ namespace wg
 			uint16_t	nBlit;
 			uint16_t	nBlur;
 			uint16_t	nEdgemapDraws;
+			uint16_t	nTransforms;
+			uint16_t	nObjects;
 
 			*m_pDecoder >> nCanvases;
 			*m_pDecoder >> m_sessionInfo.canvasSize;
@@ -212,8 +214,8 @@ namespace wg
 			*m_pDecoder >> m_sessionInfo.nLineClipRects;
 			*m_pDecoder >> m_sessionInfo.nRects;
 			*m_pDecoder >> m_sessionInfo.nColors;
-			*m_pDecoder >> m_sessionInfo.nTransforms;
-			*m_pDecoder >> m_sessionInfo.nObjects;
+			*m_pDecoder >> nTransforms;
+			*m_pDecoder >> nObjects;
 
 			m_sessionInfo.nCanvases = nCanvases;
 			m_sessionInfo.nUpdateRects = nUpdateRects;
@@ -223,37 +225,79 @@ namespace wg
 			m_sessionInfo.nBlit = nBlit;
 			m_sessionInfo.nBlur = nBlur;
 			m_sessionInfo.nEdgemapDraws = nEdgemapDraws;
+			m_sessionInfo.nTransforms = nTransforms;
+			m_sessionInfo.nObjects = nObjects;
+
 
 			if (nUpdateRects == 0)
 			{
 				m_sessionInfo.pUpdateRects = nullptr;
 				m_pBackend->beginSession(&m_sessionInfo);
 			}
+
+			break;
 		}
 
 		case GfxChunkId::BE_EndSession:
 		{
 			m_pBackend->endSession();
+			break;
 		}
 
 		case GfxChunkId::BE_SetCanvas:
 		{
-			uint16_t	surfaceId;
+			uint16_t	objectId;
 			CanvasRef	canvasRef;
 			uint8_t		dummy;
 
-			*m_pDecoder >> surfaceId;
+			*m_pDecoder >> objectId;
 			*m_pDecoder >> canvasRef;
 			*m_pDecoder >> dummy;
 
 			if (canvasRef != CanvasRef::None)
 				m_pBackend->setCanvas(canvasRef);
 			else
-				m_pBackend->setCanvas(m_vSurfaces[surfaceId]);
+				m_pBackend->setCanvas( static_cast<Surface*>(m_vObjects[objectId].rawPtr()) );
+
+			break;
 		}
 
 		case GfxChunkId::BE_Objects:
+		{
+			int32_t		totalSize;
+			int32_t		offset;
+			bool		bFirstChunk;
+			bool		bLastChunk;
+
+			*m_pDecoder >> totalSize;
+			*m_pDecoder >> offset;
+			*m_pDecoder >> bFirstChunk;
+			*m_pDecoder >> bLastChunk;
+
+			if (bFirstChunk)
+				m_vActionObjects.resize(totalSize / sizeof(uint16_t));
+
+			int bytes = (header.size - 10);
+			int nEntries = bytes / sizeof(uint16_t);
+
+			uint16_t * pBuffer = (uint16_t*) GfxBase::memStackAlloc(bytes);
+			*m_pDecoder >> GfxStream::ReadBytes{ bytes, pBuffer };
+
+			auto it = m_vActionObjects.begin() + (offset / sizeof(uint16_t));
+
+			for(int i = 0 ; i < nEntries ; i++)
+			{
+				uint16_t id = pBuffer[i];
+				* it++ = m_vObjects[id].rawPtr();
+			}
+
+			GfxBase::memStackFree(bytes);
+
+			if (bLastChunk)
+				m_pBackend->setObjects(&(*m_vActionObjects.begin()), &(*m_vActionObjects.end()));
+
 			break;
+		}
 
 		case GfxChunkId::BE_Rects:
 		{
@@ -376,7 +420,7 @@ namespace wg
 				m_vUpdateRects.resize(totalSize / sizeof(RectSPX));
 
 			int bytes = (header.size - 10);
-			char* pDest = ((char*)m_sessionInfo.pUpdateRects) + offset;
+			char* pDest = ((char*)m_vUpdateRects.data()) + offset;
 
 			*m_pDecoder >> GfxStream::ReadBytes{ bytes, pDest };
 
@@ -392,10 +436,10 @@ namespace wg
 
 		case GfxChunkId::CreateSurface:
 		{
-			uint16_t	surfaceId;
+			uint16_t	objectId;
 			Surface::Blueprint	bp;
 
-			*m_pDecoder >> surfaceId;
+			*m_pDecoder >> objectId;
 			*m_pDecoder >> bp.canvas;
 			*m_pDecoder >> bp.dynamic;
 			*m_pDecoder >> bp.format;
@@ -418,14 +462,14 @@ namespace wg
 				bp.palette = pPalette;
 			}
 
-			if (m_vSurfaces.size() <= surfaceId)
-				m_vSurfaces.resize(surfaceId + 16, nullptr);
-			else if( m_vSurfaces[surfaceId] != nullptr )
+			if (m_vObjects.size() <= objectId)
+				m_vObjects.resize(objectId + 16, nullptr);
+			else if( m_vObjects[objectId] != nullptr )
 			{
-				GfxBase::throwError(ErrorLevel::Warning, ErrorCode::InvalidParam, "CreateSurface with surfaceId that already is in use. The old surface will be replaced.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				GfxBase::throwError(ErrorLevel::Warning, ErrorCode::InvalidParam, "CreateSurface with objectId that already is in use. The old object will be replaced.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			}
 			
-			m_vSurfaces[surfaceId] = m_pSurfaceFactory->createSurface(bp);
+			m_vObjects[objectId] = m_pSurfaceFactory->createSurface(bp);
 
 			if (bp.palette)
 				GfxBase::memStackFree(bp.paletteSize*4);
@@ -435,20 +479,19 @@ namespace wg
 
 		case GfxChunkId::BeginSurfaceUpdate:
 		{
-			uint16_t	surfaceId;
+			uint16_t	objectId;
 			RectI		rect;
 
-			*m_pDecoder >> surfaceId;
+			*m_pDecoder >> objectId;
 			*m_pDecoder >> rect;
 
-			if( surfaceId > m_vSurfaces.size() || m_vSurfaces[surfaceId] == nullptr )
+			if( objectId > m_vObjects.size() || m_vObjects[objectId] == nullptr )
 			{
-				GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "BeginSurfaceUpdate with invalid SurfaceId", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "BeginSurfaceUpdate with invalid objectId", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 				break;
 			}
 
-			
-			m_pUpdatingSurface = m_vSurfaces[surfaceId];
+			m_pUpdatingSurface = wg_static_cast<Surface_p>(m_vObjects[objectId]);
 			m_pixelBuffer = m_pUpdatingSurface->allocPixelBuffer(rect);
 
 			m_pWritePixels = m_pixelBuffer.pixels;
@@ -506,21 +549,21 @@ namespace wg
 
 		case GfxChunkId::FillSurface:
 		{
-			uint16_t	surfaceId;
+			uint16_t	objectId;
 			RectI		region;
 			HiColor		col;
 
-			*m_pDecoder >> surfaceId;
+			*m_pDecoder >> objectId;
 			*m_pDecoder >> region;
 			*m_pDecoder >> col;
 
-			if( surfaceId > m_vSurfaces.size() || m_vSurfaces[surfaceId] == nullptr )
+			if( objectId > m_vObjects.size() || m_vObjects[objectId] == nullptr )
 			{
-				GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "FillSurface with invalid surfaceId", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "FillSurface with invalid objectId", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 				break;
 			}
 
-			m_vSurfaces[surfaceId]->fill(region, col);
+			static_cast<Surface*>(m_vObjects[objectId].rawPtr())->fill(region, col);
 			break;
 		}
 /*
@@ -545,35 +588,35 @@ namespace wg
 */
 		case GfxChunkId::DeleteSurface:
 		{
-			uint16_t	surfaceId;
+			uint16_t	objectId;
 
-			*m_pDecoder >> surfaceId;
+			*m_pDecoder >> objectId;
 
-			if( surfaceId > m_vSurfaces.size() || m_vSurfaces[surfaceId] == nullptr )
+			if( objectId > m_vObjects.size() || m_vObjects[objectId] == nullptr || !m_vObjects[objectId]->isInstanceOf(Surface::TYPEINFO) )
 			{
-				GfxBase::throwError(ErrorLevel::Warning, ErrorCode::InvalidParam, "DeleteSurface with invalid surfaceId", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				GfxBase::throwError(ErrorLevel::Warning, ErrorCode::InvalidParam, "DeleteSurface with invalid objectId", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 				break;
 			}
 
-			m_vSurfaces[surfaceId] = nullptr;
+			m_vObjects[objectId] = nullptr;
 			break;
 		}
 
 
 		case GfxChunkId::CreateEdgemap:
 		{
-			uint16_t	edgemapId;
+			uint16_t	objectId;
 			SizeI		size;
 			uint16_t	nbSegments;
 			uint16_t	paletteType;
 
-			*m_pDecoder >> edgemapId;
+			*m_pDecoder >> objectId;
 			*m_pDecoder >> size;
 			*m_pDecoder >> nbSegments;
 			*m_pDecoder >> paletteType;
 
-			if (m_vEdgemaps.size() <= edgemapId)
-				m_vEdgemaps.resize(edgemapId + 16, nullptr);
+			if (m_vObjects.size() <= objectId)
+				m_vObjects.resize(objectId + 16, nullptr);
 
 			Edgemap::Blueprint		bp;
 			
@@ -581,30 +624,30 @@ namespace wg
 			bp.segments = nbSegments;
 			bp.paletteType = (EdgemapPalette) paletteType;
 			
-			m_vEdgemaps[edgemapId] = m_pEdgemapFactory->createEdgemap(bp);
+			m_vObjects[objectId] = m_pEdgemapFactory->createEdgemap(bp);
 			break;
 		}
 
 		case GfxChunkId::SetEdgemapRenderSegments:
 		{
-			uint16_t	edgemapId;
+			uint16_t	objectId;
 			uint16_t	nbSegments;
 
-			*m_pDecoder >> edgemapId;
+			*m_pDecoder >> objectId;
 			*m_pDecoder >> nbSegments;
 
-			m_vEdgemaps[edgemapId]->setRenderSegments(nbSegments);
-			
+			static_cast<Edgemap*>(m_vObjects[objectId].rawPtr())->setRenderSegments(nbSegments);
+
 			break;
 		}
 
 		case GfxChunkId::SetEdgemapColors:
 		{
-			uint16_t	edgemapId;
+			uint16_t	objectId;
 			int			begin;
 			int			end;
 			
-			*m_pDecoder >> edgemapId;
+			*m_pDecoder >> objectId;
 			*m_pDecoder >> begin;
 			*m_pDecoder >> end;
 
@@ -616,20 +659,21 @@ namespace wg
 			for( int i = 0 ; i < nColors ; i++ )
 				*m_pDecoder >> pColors[i];
 
-			m_vEdgemaps[edgemapId]->importPaletteEntries(begin, end, pColors);
+			static_cast<Edgemap*>(m_vObjects[objectId].rawPtr())->importPaletteEntries(begin, end, pColors);
+
 			GfxBase::memStackFree(memAllocated);
 			break;
 		}
 				
 		case GfxChunkId::BeginEdgemapUpdate:
 		{
-			uint16_t	edgemapId;
+			uint16_t	objectId;
 			uint8_t		edgeBegin;
 			uint8_t		edgeEnd;
 			uint16_t	sampleBegin;
 			uint16_t	sampleEnd;
 
-			*m_pDecoder >> edgemapId;
+			*m_pDecoder >> objectId;
 			*m_pDecoder >> edgeBegin;
 			*m_pDecoder >> edgeEnd;
 			*m_pDecoder >> sampleBegin;
@@ -638,7 +682,7 @@ namespace wg
 			int nEdges = edgeEnd - edgeBegin;
 			int nSamples = sampleEnd - sampleBegin;
 			
-			m_pUpdatingEdgemap = m_vEdgemaps[edgemapId];
+			m_pUpdatingEdgemap = wg_static_cast<Edgemap_p>(m_vObjects[objectId]);
 			m_pWaveSampleBuffer = new spx[nEdges*nSamples+1];
 
 			m_pWaveWriteSamples = m_pWaveSampleBuffer;
@@ -685,15 +729,13 @@ namespace wg
 
 		case GfxChunkId::DeleteEdgemap:
 		{
-			uint16_t	edgemapId;
+			uint16_t	objectId;
 
-			*m_pDecoder >> edgemapId;
+			*m_pDecoder >> objectId;
 
-			m_vEdgemaps[edgemapId] = nullptr;
+			m_vObjects[objectId] = nullptr;
 			break;
 		}
-
-
 
 
 		default:
@@ -710,8 +752,7 @@ namespace wg
 
 	void StreamPlayer::reset()
 	{
-		m_vSurfaces.clear();
-		m_vEdgemaps.clear();
+		m_vObjects.clear();
 	}
 
 

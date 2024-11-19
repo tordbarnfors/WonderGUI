@@ -101,6 +101,9 @@ namespace wg
 
 		SurfaceFactory_p		m_pSurfaceFactory;
 		EdgemapFactory_p		m_pEdgemapFactory;
+
+		std::vector<uint16_t>	m_objects;
+
 	};
 
 

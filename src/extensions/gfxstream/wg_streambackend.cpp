@@ -24,8 +24,10 @@
 
 #include <wg_streambackend.h>
 #include <wg_streamsurface.h>
+#include <wg_streamedgemap.h>
 #include <wg_streamsurfacefactory.h>
 #include <wg_streamedgemapfactory.h>
+#include <wg_gfxbase.h>
 
 #include <assert.h>
 
@@ -79,6 +81,8 @@ namespace wg
 	void StreamBackend::endRender()
 	{
 		(*m_pEncoder) << GfxStream::Header{ GfxChunkId::BE_EndRender, GfxStream::SpxFormat::Int32_dec, 0 };
+
+		m_pEncoder->flush();
 	}
 
 	//____ beginSession() ________________________________________________________
@@ -123,7 +127,7 @@ namespace wg
 		uint16_t size = 2 + 2;
 
 		(*m_pEncoder) << GfxStream::Header{ GfxChunkId::BE_SetCanvas, {}, size };
-		(*m_pEncoder) << (pSurface ? static_cast<StreamSurface*>(pSurface)->m_inStreamId : (uint16_t) 0);
+		(*m_pEncoder) << (pSurface ? static_cast<StreamSurface*>(pSurface)->inStreamId() : (uint16_t) 0);
 		(*m_pEncoder) << CanvasRef::None;
 		(*m_pEncoder) << (uint8_t) 0;				// Filler to align.
 	}
@@ -142,7 +146,26 @@ namespace wg
 
 	void StreamBackend::setObjects(Object** pBeg, Object** pEnd)
 	{
-		_splitAndEncode( GfxChunkId::BE_Objects, pBeg, pEnd, sizeof(Object*) );
+		m_objects.resize(pEnd-pBeg);
+
+		auto it = m_objects.begin();
+
+		for( Object ** p = pBeg ; p < pEnd ; p++ )
+		{
+			Object * pObj = * p;
+
+			if( pObj->typeInfo() == StreamSurface::TYPEINFO )
+				* it++ = static_cast<StreamSurface*>(pObj)->inStreamId();
+			else if( pObj->typeInfo() == StreamEdgemap::TYPEINFO )
+				* it++ = static_cast<StreamEdgemap*>(pObj)->inStreamId();
+			else
+			{
+				GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Unknown object type in object list.", this, &StreamBackend::TYPEINFO, __func__, __FILE__, __LINE__);				
+				return;
+			}
+		}
+
+		_splitAndEncode( GfxChunkId::BE_Objects, m_objects.data(), m_objects.data() + m_objects.size(), sizeof(uint16_t) );
 	}
 
 	//____ setRects() ___________________________________________________________
@@ -170,7 +193,7 @@ namespace wg
 
 	void StreamBackend::processCommands( int32_t* pBeg, int32_t * pEnd)
 	{
-		_splitAndEncode( GfxChunkId::BE_Transforms, pBeg, pEnd, sizeof(int32_t) );
+		_splitAndEncode( GfxChunkId::BE_Commands, pBeg, pEnd, sizeof(int32_t) );
 	}
 
 	//____ defineCanvas() ________________________________________________________
@@ -310,12 +333,13 @@ namespace wg
 
 		while( p < pEnd )
 		{
-			int bytesOfData = std::min(int(pEnd-pBeg),maxBytesInChunk);
+			int bytesOfData = std::min(int(pEnd-p),maxBytesInChunk);
 
 			(*m_pEncoder) << GfxStream::Header{ chunkType, GfxStream::SpxFormat::Int32_dec, (uint16_t) bytesOfData + 10 };
 
+			(*m_pEncoder) << (int32_t) (pEnd - pBeg);
 			(*m_pEncoder) << (int32_t) (p - pBeg);
-			(*m_pEncoder) << (int32_t) bytesOfData;
+//			(*m_pEncoder) << (int32_t) bytesOfData;
 			(*m_pEncoder) << (bool) (p == pBeg);
 			(*m_pEncoder) << (bool) (p + bytesOfData == pEnd);
 

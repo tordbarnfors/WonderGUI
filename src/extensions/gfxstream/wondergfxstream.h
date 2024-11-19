@@ -23,8 +23,8 @@
 #define WONDERSTREAM_DOT_H
 #pragma once
 
-
 #include <wg_gfxstream.h>
+#include <wg_streambackend.h>
 #include <wg_streambuffer.h>
 #include <wg_streamdecoder.h>
 #include <wg_streamdevice.h>

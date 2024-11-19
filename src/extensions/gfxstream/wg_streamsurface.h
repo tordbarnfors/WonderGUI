@@ -41,7 +41,6 @@ namespace wg
 	{
 		friend class StreamSurfaceFactory;
 		friend class StreamDevice;
-		friend class StreamBackend;
 
 	public:
 
@@ -58,6 +57,8 @@ namespace wg
 
 		const TypeInfo&		typeInfo(void) const override;
 		const static TypeInfo	TYPEINFO;
+
+		uint16_t		inStreamId() const { return m_inStreamId; }
 
 		//.____ Geometry _________________________________________________
 

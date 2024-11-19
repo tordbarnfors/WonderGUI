@@ -32,13 +32,13 @@ inline StreamPlayer* getPtr(wg_obj obj) {
 	return static_cast<StreamPlayer*>(reinterpret_cast<Object*>(obj));
 }
 
-wg_obj wg_createStreamPlayer(wg_obj device, wg_obj surfaceFactory, wg_obj edgemapFactory)
+wg_obj wg_createStreamPlayer(wg_obj backend, wg_obj surfaceFactory, wg_obj edgemapFactory)
 {
-	GfxDevice* pDevice = static_cast<GfxDevice*>(reinterpret_cast<Object*>(device));
+	GfxBackend* pBackend = static_cast<GfxBackend*>(reinterpret_cast<Object*>(backend));
 	SurfaceFactory* pSurfaceFactory = static_cast<SurfaceFactory*>(reinterpret_cast<Object*>(surfaceFactory));
 	EdgemapFactory* pEdgemapFactory = static_cast<EdgemapFactory*>(reinterpret_cast<Object*>(edgemapFactory));
 
-	auto p = StreamPlayer::create(pDevice, pSurfaceFactory, pEdgemapFactory);
+	auto p = StreamPlayer::create(pBackend, pSurfaceFactory, pEdgemapFactory);
 	p->retain();
 	return p.rawPtr();
 }
