@@ -443,10 +443,8 @@ void GlBackend::processCommands(int32_t* pBeg, int32_t* pEnd)
 
 			if (statesChanged & uint8_t(StateChange::Blur))
 			{
-				int32_t objectOfs = *p++;
-
-				auto pBlurbrush = static_cast<Blurbrush*>(m_pObjectsBeg[objectOfs]);
-				m_objects.push_back(pBlurbrush);
+				for( int i = 0 ; i < 28 ; i++ )
+					*pCommandGL++ = *p++;
 			}
 
 			break;
@@ -1796,7 +1794,7 @@ void GlBackend::beginSession(const SessionInfo* pSession)
 	// Reserve buffer for commands
 
 	m_pCommandQueue = new int[
-		pSession->nStateChanges * 16	//TODO: Check exactly size needed
+		pSession->nStateChanges * (15+28)	//TODO: Check exactly size needed
 		+ pSession->nFill * 2 
 		+ pSession->nBlit * 2
 		+ pSession->nBlur * 2
@@ -1903,9 +1901,54 @@ void GlBackend::endSession()
 
 				if (statesChanged & uint8_t(StateChange::Blur))
 				{
-					auto pBlurbrush = static_cast<Blurbrush*>(m_objects[objectOfs++]);
+					spx radius = *pCmd++;
 
-					m_pActiveBlurbrush = pBlurbrush;
+					const spx* pRed = pCmd;
+					const spx* pGreen = pCmd+9;
+					const spx* pBlue = pCmd+18;
+					pCmd+=27;
+
+					for (int i = 0; i < 9; i++)
+					{
+						m_activeBlurInfo.colorMtx[i][0] = pRed[i];
+						m_activeBlurInfo.colorMtx[i][1] = pGreen[i];
+						m_activeBlurInfo.colorMtx[i][2] = pBlue[i];
+						m_activeBlurInfo.colorMtx[i][3] = 0.f;
+					}
+
+					m_activeBlurInfo.colorMtx[4][3] = 1.f;
+
+					auto size = m_pActiveBlitSource->pixelSize();
+
+					float radiusX = radius / float(size.w * 64);
+					float radiusY = radius / float(size.h * 64);
+
+					m_activeBlurInfo.offset[0][0] = -radiusX * 0.7f;
+					m_activeBlurInfo.offset[0][1] = -radiusY * 0.7f;
+
+					m_activeBlurInfo.offset[1][0] = 0;
+					m_activeBlurInfo.offset[1][1] = -radiusY;
+
+					m_activeBlurInfo.offset[2][0] = radiusX * 0.7f;
+					m_activeBlurInfo.offset[2][1] = -radiusY * 0.7f;
+
+					m_activeBlurInfo.offset[3][0] = -radiusX;
+					m_activeBlurInfo.offset[3][1] = 0;
+
+					m_activeBlurInfo.offset[4][0] = 0;
+					m_activeBlurInfo.offset[4][1] = 0;
+
+					m_activeBlurInfo.offset[5][0] = radiusX;
+					m_activeBlurInfo.offset[5][1] = 0;
+
+					m_activeBlurInfo.offset[6][0] = -radiusX * 0.7f;
+					m_activeBlurInfo.offset[6][1] = radiusY * 0.7f;
+
+					m_activeBlurInfo.offset[7][0] = 0;
+					m_activeBlurInfo.offset[7][1] = radiusY;
+
+					m_activeBlurInfo.offset[8][0] = radiusX * 0.7f;
+					m_activeBlurInfo.offset[8][1] = radiusY * 0.7f;
 				}
 
 				// We postpone setting blend mode after having retrieved active morphFactor and fixedBlendColor
@@ -1988,59 +2031,12 @@ void GlBackend::endSession()
 			{
 				int nVertices = *pCmd++;
 
-				if( m_pActiveBlurbrush)
-				{
-					spx radius = m_pActiveBlurbrush->size();
+				glUseProgram(m_blurProg[m_bTintmapIsActive]);
 
-					for (int i = 0; i < 9; i++)
-					{
-						m_activeBlurInfo.colorMtx[i][0] = m_pActiveBlurbrush->red()[i];
-						m_activeBlurInfo.colorMtx[i][1] = m_pActiveBlurbrush->green()[i];
-						m_activeBlurInfo.colorMtx[i][2] = m_pActiveBlurbrush->blue()[i];
-						m_activeBlurInfo.colorMtx[i][3] = 0.f;
-					}
+				glUniform2fv(m_blurUniformLocation[m_bTintmapIsActive][1], 9, (GLfloat*)m_activeBlurInfo.offset);
+				glUniform4fv(m_blurUniformLocation[m_bTintmapIsActive][0], 9, (GLfloat*)m_activeBlurInfo.colorMtx);
 
-					m_activeBlurInfo.colorMtx[4][3] = 1.f;
-
-					auto size = m_pActiveBlitSource->pixelSize();
-
-					float radiusX = radius / float(size.w * 64);
-					float radiusY = radius / float(size.h * 64);
-
-					m_activeBlurInfo.offset[0][0] = -radiusX * 0.7f;
-					m_activeBlurInfo.offset[0][1] = -radiusY * 0.7f;
-
-					m_activeBlurInfo.offset[1][0] = 0;
-					m_activeBlurInfo.offset[1][1] = -radiusY;
-
-					m_activeBlurInfo.offset[2][0] = radiusX * 0.7f;
-					m_activeBlurInfo.offset[2][1] = -radiusY * 0.7f;
-
-					m_activeBlurInfo.offset[3][0] = -radiusX;
-					m_activeBlurInfo.offset[3][1] = 0;
-
-					m_activeBlurInfo.offset[4][0] = 0;
-					m_activeBlurInfo.offset[4][1] = 0;
-
-					m_activeBlurInfo.offset[5][0] = radiusX;
-					m_activeBlurInfo.offset[5][1] = 0;
-
-					m_activeBlurInfo.offset[6][0] = -radiusX * 0.7f;
-					m_activeBlurInfo.offset[6][1] = radiusY * 0.7f;
-
-					m_activeBlurInfo.offset[7][0] = 0;
-					m_activeBlurInfo.offset[7][1] = radiusY;
-
-					m_activeBlurInfo.offset[8][0] = radiusX * 0.7f;
-					m_activeBlurInfo.offset[8][1] = radiusY * 0.7f;
-
-					glUseProgram(m_blurProg[m_bTintmapIsActive]);
-
-					glUniform2fv(m_blurUniformLocation[m_bTintmapIsActive][1], 9, (GLfloat*)m_activeBlurInfo.offset);
-					glUniform4fv(m_blurUniformLocation[m_bTintmapIsActive][0], 9, (GLfloat*)m_activeBlurInfo.colorMtx);
-
-					glDrawArrays(GL_TRIANGLES, vertexOfs, nVertices);
-				}
+				glDrawArrays(GL_TRIANGLES, vertexOfs, nVertices);
 
 				vertexOfs += nVertices;
 				break;

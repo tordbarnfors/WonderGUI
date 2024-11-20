@@ -201,7 +201,7 @@ namespace wg
 		void	_resetStates();
 		void	_updateBlitFunctions();
 		void	_updateTintMode();
-		void	_updateBlur(Blurbrush * pBrush);
+		void	_updateBlurRadius(spx radius);
 
 		int		_scaleLineThickness(float thickness, int slope);
 

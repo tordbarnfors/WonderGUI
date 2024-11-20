@@ -294,9 +294,29 @@ namespace wg
 
 				if (statesChanged & uint8_t(StateChange::Blur))
 				{
-					int32_t objectOfs = *p++;
+					spx size = *p++;
 
-					*m_pStream << "        BlurBrush: " << objectOfs << std::endl;					
+					auto pRed = p;
+					auto pGreen = p+9;
+					auto pBlue = p + 18;
+					p += 27;
+
+					*m_pStream << "        Blur: size: " << size << std::endl;					
+
+					*m_pStream << "            Red matrix: ";
+					for (int i = 0; i < 8; i++)
+						*m_pStream << pRed[i] / float(65536) << ", ";
+					*m_pStream << pRed[8] / float(65536) << std::endl;
+
+					*m_pStream << "            Green matrix: ";
+					for (int i = 0; i < 8; i++)
+						*m_pStream << pGreen[i] / float(65536) << ", ";
+					*m_pStream << pGreen[8] / float(65536) << std::endl;
+
+					*m_pStream << "            Blue matrix: ";
+					for (int i = 0; i < 9; i++)
+						*m_pStream << pBlue[i] / float(65536) << ", ";
+					*m_pStream << pBlue[8] / float(65536) << std::endl;
 				}
 
 				break;

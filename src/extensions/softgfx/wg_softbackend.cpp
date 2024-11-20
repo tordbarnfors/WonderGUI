@@ -288,7 +288,15 @@ namespace wg
 		m_colTrans.morphFactor = 2048;
 		m_colTrans.fixedBlendColor = HiColor::White;
 
-		_updateBlur(nullptr);
+		_updateBlurRadius(s_defaultBlurRadius);
+
+		for (int i = 0; i < 9; i++)
+		{
+			m_colTrans.blurMtxR[i] = s_defaultBlur[i];
+			m_colTrans.blurMtxG[i] = s_defaultBlur[i];
+			m_colTrans.blurMtxB[i] = s_defaultBlur[i];
+		}
+
 	}
 
 
@@ -433,11 +441,21 @@ namespace wg
 
 				if (statesChanged & uint8_t(StateChange::Blur))
 				{
-					int32_t objectOfs = *p++;
+					spx		radius = *p++;
 
-					auto pBlurbrush = static_cast<Blurbrush*>(m_pObjectsBeg[objectOfs]);
-					
-					_updateBlur(pBlurbrush);
+					const spx* pRed = p;
+					const spx* pGreen = p + 9;
+					const spx* pBlue = p + 18;
+					p += 27;
+
+					_updateBlurRadius(radius);
+
+					for (int i = 0; i < 9; i++)
+					{
+						m_colTrans.blurMtxR[i] = pRed[i] * 65536;
+						m_colTrans.blurMtxG[i] = pGreen[i] * 65536;
+						m_colTrans.blurMtxB[i] = pBlue[i] * 65536;
+					}
 				}
 
 				break;
@@ -2043,11 +2061,10 @@ namespace wg
 		}
 	}
 
-	//____ _updateBlur() _____________________________________________________
+	//____ _updateBlurRadius() _____________________________________________________
 
-	void SoftBackend::_updateBlur(Blurbrush * pBrush)
+	void SoftBackend::_updateBlurRadius(spx radius)
 	{
-		spx radius = pBrush ? pBrush->size() : s_defaultBlurRadius;
 		spx cornerRadius = radius * 724 / 1024;
 
 		m_colTrans.blurOfsSPX[0] = { -cornerRadius, -cornerRadius };
@@ -2060,34 +2077,11 @@ namespace wg
 		m_colTrans.blurOfsSPX[7] = { 0, radius };
 		m_colTrans.blurOfsSPX[8] = { cornerRadius, cornerRadius };
 
-		if (pBrush)
+		for (int i = 0; i < 9; i++)
 		{
-			for (int i = 0; i < 9; i++)
-			{
-				m_colTrans.blurOfsPixel[i].x = (m_colTrans.blurOfsSPX[i].x) / 64;
-				m_colTrans.blurOfsPixel[i].y = (m_colTrans.blurOfsSPX[i].y) / 64;
-
-				m_colTrans.blurMtxR[i] = pBrush->red()[i]*65536;
-				m_colTrans.blurMtxG[i] = pBrush->green()[i]*65536;
-				m_colTrans.blurMtxB[i] = pBrush->blue()[i]*65536;
-			}
-
+			m_colTrans.blurOfsPixel[i].x = (m_colTrans.blurOfsSPX[i].x) / 64;
+			m_colTrans.blurOfsPixel[i].y = (m_colTrans.blurOfsSPX[i].y) / 64;
 		}
-		else
-		{
-			for (int i = 0; i < 9; i++)
-			{
-				m_colTrans.blurOfsPixel[i].x = (m_colTrans.blurOfsSPX[i].x) / 64;
-				m_colTrans.blurOfsPixel[i].y = (m_colTrans.blurOfsSPX[i].y) / 64;
-
-				m_colTrans.blurMtxR[i] = s_defaultBlur[i];
-				m_colTrans.blurMtxG[i] = s_defaultBlur[i];
-				m_colTrans.blurMtxB[i] = s_defaultBlur[i];
-			}
-
-		}
-
-
 	}
 
 

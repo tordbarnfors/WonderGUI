@@ -965,6 +965,15 @@ void GfxDeviceGen2::_doFlattenLayers()
 	canvasData.sessionInfo.canvasSize = canvasData.info.size;
 	canvasData.sessionInfo.nUpdateRects = canvasData.updateRects.nRects;
 	canvasData.sessionInfo.pUpdateRects = canvasData.updateRects.pRects;
+	canvasData.sessionInfo.nColors = 0;
+	canvasData.sessionInfo.nRects = 0;
+
+	for (auto& layer : canvasData.layers)
+	{
+		canvasData.sessionInfo.nColors += layer.colors.size();
+		canvasData.sessionInfo.nRects += layer.rects.size();
+	}
+
 
 	m_pBackend->beginSession(&canvasData.sessionInfo);
 
@@ -1115,8 +1124,6 @@ void GfxDeviceGen2::fill(HiColor color)
 		rects.emplace_back(m_pActiveClipList->pRects[i]);
 
 	m_pActiveCanvas->sessionInfo.nFill++;
-	m_pActiveCanvas->sessionInfo.nColors++;
-	m_pActiveCanvas->sessionInfo.nRects += m_pActiveClipList->nRects;
 }
 
 //____ fill() _____________________________________________________________
@@ -1166,8 +1173,6 @@ void GfxDeviceGen2::fill(const RectSPX& rect, HiColor color)
 		m_pActiveLayer->colors.push_back(color);
 
 		m_pActiveCanvas->sessionInfo.nFill++;
-		m_pActiveCanvas->sessionInfo.nColors++;
-		m_pActiveCanvas->sessionInfo.nRects += nRects;
 	}
 }
 
@@ -1272,7 +1277,6 @@ void GfxDeviceGen2::drawLine(CoordSPX beg, CoordSPX end, HiColor color, spx thic
 		m_pActiveCanvas->sessionInfo.nLines++;
 		m_pActiveCanvas->sessionInfo.nLineCoords+=2;
 		m_pActiveCanvas->sessionInfo.nLineClipRects += nRects;
-		m_pActiveCanvas->sessionInfo.nColors++;
 	}
 	else
 	{
@@ -2171,7 +2175,6 @@ void GfxDeviceGen2::flipDrawEdgemap(CoordSPX dest, Edgemap* pEdgemap, GfxFlip fl
 
 		m_pActiveCanvas->sessionInfo.nEdgemapDraws++;
 		m_pActiveCanvas->sessionInfo.nObjects++;
-		m_pActiveCanvas->sessionInfo.nRects += nRects;
 	}
 }
 
@@ -2968,8 +2971,6 @@ void GfxDeviceGen2::_transformBlitSimple(const RectSPX& _dest, CoordSPX src, int
 			m_pActiveCanvas->sessionInfo.nBlur++;
 		else
 			m_pActiveCanvas->sessionInfo.nBlit++;
-
-		m_pActiveCanvas->sessionInfo.nRects += nRects;
 	}
 }
 
@@ -3022,8 +3023,6 @@ void GfxDeviceGen2::_transformBlitComplex(const RectSPX& _dest, CoordI src, cons
 			m_pActiveCanvas->sessionInfo.nBlur++;
 		else
 			m_pActiveCanvas->sessionInfo.nBlit++;
-
-		m_pActiveCanvas->sessionInfo.nRects += nRects;
 	}
 }
 
@@ -3150,7 +3149,6 @@ void GfxDeviceGen2::_encodeStateChanges()
 
 				statesChanged |= int(StateChange::TintColor);
 
-				m_pActiveCanvas->sessionInfo.nColors++;
 			}
 		}
 	}
@@ -3173,7 +3171,6 @@ void GfxDeviceGen2::_encodeStateChanges()
 			encodedState.fixedBlendColor = newState.fixedBlendColor;
 			statesChanged |= int(StateChange::FixedBlendColor);
 
-			m_pActiveCanvas->sessionInfo.nColors++;
 		}
 
 	}
@@ -3182,16 +3179,25 @@ void GfxDeviceGen2::_encodeStateChanges()
 	{
 		if (newState.pBlurbrush != encodedState.pBlurbrush)
 		{
-			Object* pBlurbrush = newState.pBlurbrush.rawPtr();
+			auto pBlurbrush = newState.pBlurbrush.rawPtr();
 
-			cmdBuffer.push_back((int)m_pActiveCanvas->objects.size());
-			m_pActiveCanvas->objects.push_back(pBlurbrush);
-			if( pBlurbrush )
-				pBlurbrush->retain();
+			cmdBuffer.push_back(pBlurbrush->size());
+
+			const float* pRed		= pBlurbrush->red();
+			const float* pGreen		= pBlurbrush->green();
+			const float* pBlue		= pBlurbrush->blue();
+
+			for (int i = 0; i < 9; i++)
+				cmdBuffer.push_back(pRed[i]*65536);
+
+			for (int i = 0; i < 9; i++)
+				cmdBuffer.push_back(pGreen[i]*65536);
+
+			for (int i = 0; i < 9; i++)
+				cmdBuffer.push_back(pBlue[i]*65536);
 
 			encodedState.pBlurbrush = newState.pBlurbrush;
 			statesChanged |= int(StateChange::Blur);
-
 		}
 	}
 

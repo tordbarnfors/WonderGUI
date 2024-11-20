@@ -300,11 +300,21 @@ namespace wg
 
 				if (statesChanged & uint8_t(StateChange::Blur))
 				{
-					int32_t objectOfs = *p++;
+					spx		radius = *p++;
 
-					auto pBlurbrush = static_cast<Blurbrush*>(m_pObjectsBeg[objectOfs]);
-					
-					_updateBlur(pBlurbrush);
+					const spx* pRed = p;
+					const spx* pGreen = p + 9;
+					const spx* pBlue = p + 18;
+					p += 27;
+
+					_updateBlurRadius(radius);
+
+					for (int i = 0; i < 9; i++)
+					{
+						m_colTrans.blurMtxR[i] = pRed[i] * 65536;
+						m_colTrans.blurMtxG[i] = pGreen[i] * 65536;
+						m_colTrans.blurMtxB[i] = pBlue[i] * 65536;
+					}
 				}
 
 				break;

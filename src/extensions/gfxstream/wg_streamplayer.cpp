@@ -294,7 +294,7 @@ namespace wg
 			GfxBase::memStackFree(bytes);
 
 			if (bLastChunk)
-				m_pBackend->setObjects(&(*m_vActionObjects.begin()), &(*m_vActionObjects.end()));
+				m_pBackend->setObjects(m_vActionObjects.data(), m_vActionObjects.data() + m_vActionObjects.size() );
 
 			break;
 		}
@@ -320,7 +320,7 @@ namespace wg
 			*m_pDecoder >> GfxStream::ReadBytes{ bytes, pDest };
 
 			if (bLastChunk)
-				m_pBackend->setRects(&(*m_vRects.begin()), &(*m_vRects.end()));
+				m_pBackend->setRects(m_vRects.data(), m_vRects.data() + m_vRects.size());
 
 			break;
 		}
@@ -346,7 +346,7 @@ namespace wg
 			*m_pDecoder >> GfxStream::ReadBytes{ bytes, pDest };
 
 			if (bLastChunk)
-				m_pBackend->setColors(&(*m_vColors.begin()), &(*m_vColors.end()));
+				m_pBackend->setColors(m_vColors.data(), m_vColors.data() + m_vColors.size());
 
 			break;
 		}
@@ -372,7 +372,7 @@ namespace wg
 			*m_pDecoder >> GfxStream::ReadBytes{ bytes, pDest };
 
 			if (bLastChunk)
-				m_pBackend->setTransforms(&(*m_vTransforms.begin()), &(*m_vTransforms.end()));
+				m_pBackend->setTransforms(m_vTransforms.data(), m_vTransforms.data() + m_vTransforms.size() );
 
 			break;
 		}
@@ -399,7 +399,7 @@ namespace wg
 			*m_pDecoder >> GfxStream::ReadBytes{ bytes, pDest };
 
 			if (bLastChunk)
-				m_pBackend->processCommands(&(*m_vCommands.begin()), &(*m_vCommands.end()));
+				m_pBackend->processCommands(m_vCommands.data(), m_vCommands.data() + m_vCommands.size());
 
 			break;
 		}
