@@ -79,9 +79,9 @@ endif()
 #
 #------------------------------------------------------------------------------
 
-#set(WAPPLIB wappsdl2sw)				# WonderApp framework based on SDL2, using software rendering.
+set(WAPPLIB wappsdl2sw)				# WonderApp framework based on SDL2, using software rendering.
 									# Works on Windows, Mac and Linux.
-set(WAPPLIB wappsdl2gl)			# WonderApp framework based on SDL2, using OpenGL rendering.
+#set(WAPPLIB wappsdl2gl)			# WonderApp framework based on SDL2, using OpenGL rendering.
 									# Works on Windows, Mac and Linux, although deprecated on both Windows and Mac.
 #set(WAPPLIB wappsdl2metal)			# WonderApp framework based on SDL2, using Metal rendering. 
 									# Works on Mac.

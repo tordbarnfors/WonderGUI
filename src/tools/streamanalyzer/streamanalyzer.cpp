@@ -1,8 +1,8 @@
 
 #include "streamanalyzer.h"
 
-#include <wg_softgfxdevice.h>
-#include <wg_softkernels_rgb555be_base.h>
+#include <wg_softbackend.h>
+#include <wg_softbackend_kernels.h>
 #include <wg_softkernels_rgb555be_extras.h>
 
 #include <wg_softkernels_rgb565be_base.h>
@@ -14,8 +14,9 @@
 
 #include <wg_softkernels_default.h>
 
+#include <wg_gfxdevice_gen2.h>
 
-#include <wg_lineargfxdevice.h>
+#include <wg_linearbackend.h>
 
 #include <themes/simplistic/wg_simplistic.h>
 
@@ -851,7 +852,7 @@ bool MyApp::loadStream(std::string path)
 
 	for (auto pChunk = GfxStream::iterator(pStream->begin()); pChunk != GfxStream::iterator(pStream->end()); pChunk++ )
 	{
-		if (pChunk->type() == GfxChunkId::BeginRender)
+		if (pChunk->type() == GfxChunkId::BE_BeginRender)
 			m_frames.push_back(pChunk);
 	}
 
@@ -916,17 +917,19 @@ bool MyApp::loadStream(std::string path)
 			}
 		} );
 */
-	auto pStreamGfxDevice = SoftGfxDevice::create();
-	
+	auto pStreamGfxBackend = SoftBackend::create();
+	auto pStreamGfxDevice = GfxDeviceGen2::create(pStreamGfxBackend);
+
 //	auto pStreamGfxDevice = wg_dynamic_cast<SoftGfxDevice_p>(Base::defaultGfxDevice());
 
-	addDefaultSoftKernels(pStreamGfxDevice);
+	addDefaultSoftKernels(pStreamGfxBackend);
+/*
+	addBaseSoftKernelsForRGB555BECanvas(pStreamGfxBackend);
+	addExtraSoftKernelsForRGB555BECanvas(pStreamGfxBackend);
 
-	addBaseSoftKernelsForRGB555BECanvas(pStreamGfxDevice);
-	addExtraSoftKernelsForRGB555BECanvas(pStreamGfxDevice);
-
-	addBaseSoftKernelsForRGB565BECanvas(pStreamGfxDevice);
-	addExtraSoftKernelsForRGB565BECanvas(pStreamGfxDevice);
+	addBaseSoftKernelsForRGB565BECanvas(pStreamGfxBackend);
+	addExtraSoftKernelsForRGB565BECanvas(pStreamGfxBackend);
+*/
 
 	addBaseSoftKernelsForBGR565sRGBCanvas(pStreamGfxDevice);
 	addExtraSoftKernelsForBGR565sRGBCanvas(pStreamGfxDevice);
@@ -935,7 +938,7 @@ bool MyApp::loadStream(std::string path)
 	m_pStreamSurfaceFactory = pStreamGfxDevice->surfaceFactory();
 	m_pStreamGfxDevice = pStreamGfxDevice;
 	
-	m_pStreamPlayer	= StreamPlayer::create( m_pStreamGfxDevice, m_pStreamSurfaceFactory, pStreamGfxDevice->edgemapFactory() );
+	m_pStreamPlayer	= StreamPlayer::create( pStreamGfxBackend, m_pStreamSurfaceFactory, pStreamGfxDevice->edgemapFactory() );
 	m_pStreamPlayer->setStoreDirtyRects(true);
 	m_pStreamPlayer->setMaxDirtyRects(10000);
 	m_pStreamPlayer->setCanvasInfoCallback([this](const CanvasInfo * pBegin, const CanvasInfo * pEnd) { setupScreens(pBegin,pEnd); } );
@@ -987,8 +990,10 @@ void MyApp::setupScreens(const CanvasInfo* pBeg, const CanvasInfo* pEnd)
 
 	// Ugly typecast! Will only work with SoftGfxDevice!
 
-	LinearGfxDevice_p		pLinearGfxDevice = wg_dynamic_cast<LinearGfxDevice_p>(m_pStreamGfxDevice);
-	SoftGfxDevice_p			pSoftGfxDevice = wg_dynamic_cast<SoftGfxDevice_p>(m_pStreamGfxDevice);
+	auto pBackend = wg_dynamic_cast<GfxDeviceGen2_p>(m_pStreamGfxDevice)->backend();
+
+	LinearBackend_p		pLinearBackend = wg_dynamic_cast<LinearBackend_p>(pBackend);
+	SoftBackend_p		pSoftBackend = wg_dynamic_cast<SoftBackend_p>(pBackend);
 
 	for( auto pCanvas = pBeg ; pCanvas < pEnd ; pCanvas++ )
 	{
@@ -997,10 +1002,10 @@ void MyApp::setupScreens(const CanvasInfo* pBeg, const CanvasInfo* pEnd)
 
 		m_screens.push_back(pSurf);
 
-		if( pLinearGfxDevice )
-			pLinearGfxDevice->defineCanvas(pCanvas->ref, pCanvas->size, pCanvas->format, pCanvas->scale );
+		if( pLinearBackend )
+			pLinearBackend->defineCanvas(pCanvas->ref, pCanvas->size, pCanvas->format, pCanvas->scale );
 		else
-			pSoftGfxDevice->defineCanvas(pCanvas->ref, wg_dynamic_cast<SoftSurface_p>(pSurf));
+			pSoftBackend->defineCanvas(pCanvas->ref, wg_dynamic_cast<SoftSurface_p>(pSurf));
 	}
 }
 
@@ -1011,20 +1016,22 @@ void MyApp::setupScreens()
 
 	// Ugly typecast! Will only work with SoftGfxDevice!
 	
-	LinearGfxDevice_p		pLinearGfxDevice = wg_dynamic_cast<LinearGfxDevice_p>(m_pStreamGfxDevice);
-	SoftGfxDevice_p			pSoftGfxDevice = wg_dynamic_cast<SoftGfxDevice_p>(m_pStreamGfxDevice);
-	
-	for (int i = 0; i < 2; i++)
+	auto pBackend = wg_dynamic_cast<GfxDeviceGen2_p>(m_pStreamGfxDevice)->backend();
+
+	LinearBackend_p		pLinearBackend = wg_dynamic_cast<LinearBackend_p>(pBackend);
+	SoftBackend_p		pSoftBackend = wg_dynamic_cast<SoftBackend_p>(pBackend);
+
+	for (int i = 0; i < 11; i++)
 	{
 		auto pSurf = pFactory->createSurface({ .format = PixelFormat::RGB_555_bigendian, .identity = int(CanvasRef::Default) + i, .size = {800,480}});
 		pSurf->fill(HiColor::Black);
 
 		m_screens.push_back(pSurf);
 
-		if( pLinearGfxDevice )
-			pLinearGfxDevice->defineCanvas(CanvasRef(int(CanvasRef::Default) + i), {800*64,480*64}, PixelFormat::RGB_555_bigendian, 64 );
+		if(pLinearBackend)
+			pLinearBackend->defineCanvas(CanvasRef(int(CanvasRef::Default) + i), {240*64,240*64}, PixelFormat::RGB_555_bigendian, 64 );
 		else
-			pSoftGfxDevice->defineCanvas(CanvasRef(int(CanvasRef::Default) + i), wg_dynamic_cast<SoftSurface_p>(pSurf));
+			pSoftBackend->defineCanvas(CanvasRef(int(CanvasRef::Default) + i), wg_dynamic_cast<SoftSurface_p>(pSurf));
 	}
 }
 
@@ -1406,13 +1413,15 @@ void MyApp::_updateResourcesView()
 {
 	m_pResourcePanel->slots.clear();
 	
-	auto surfaces = m_pStreamPlayer->surfaces();
+	auto objects = m_pStreamPlayer->objects();
 	
 	int index = 0;
-	for( auto pSurf : surfaces )
+	for( auto pObj : objects )
 	{
-		if( pSurf != nullptr )
+		if( pObj != nullptr && pObj->isInstanceOf(Surface::TYPEINFO) )
 		{
+			auto pSurf = wg_static_cast<Surface_p>(pObj);
+
 			auto pWidget = _buildSurfaceDisplayWithIndexTag( pSurf, index );
 			m_pResourcePanel->slots.pushBack( pWidget, { .weight = 0 } );
 		}
@@ -1528,7 +1537,7 @@ void MyApp::_generateFrameStatistics()
 	{
 		switch( header.type )
 		{
-			case GfxChunkId::BeginRender:
+			case GfxChunkId::BE_BeginRender:
 			{
 				m_frameStatistics.push_back(FrameStats());
 				pDecoder->skip(header.size);

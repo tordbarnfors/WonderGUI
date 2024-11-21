@@ -178,7 +178,7 @@ int main ( int argc, char** argv )
 		type = PixelFormat::BGR_8;
 		
 	Blob_p pCanvasBlob = Blob::create( pWinSurf->pixels, 0);	
-	SoftSurface_p pCanvas = SoftSurface::create({ .format = type, .size = SizeI(pWinSurf->w,pWinSurf->h) }, pCanvasBlob, pWinSurf->pitch);
+	SoftSurface_p pCanvas = SoftSurface::create({ .canvas = true, .format = type, .size = SizeI(pWinSurf->w,pWinSurf->h) }, pCanvasBlob, pWinSurf->pitch);
     
 	SoftBackend_p pGfxBackend = SoftBackend::create();
 	addDefaultSoftKernels(pGfxBackend);
