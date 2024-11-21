@@ -144,7 +144,7 @@ namespace wg
 		bool				m_bStoreDirtyRects = false;
 		int					m_maxDirtyRects = 64;
 		PatchesSPX			m_dirtyRects[CanvasRef_size];
-		
+
 		std::function<void(const CanvasInfo * pBegin, const CanvasInfo * pEnd)>	m_canvasInfoCallback;
 	};
 

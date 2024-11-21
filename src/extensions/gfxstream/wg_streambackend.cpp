@@ -329,13 +329,13 @@ namespace wg
 		char * pEnd = (char *) _pEnd;
 		char * p = pBeg;
 
-		int maxBytesInChunk = ((GfxStream::c_maxBlockSize - 4 - 10) / entrySize) * entrySize;
+		int maxBytesInChunk = ((GfxStream::c_maxBlockSize - 4 - 12) / entrySize) * entrySize;
 
 		while( p < pEnd )
 		{
 			int bytesOfData = std::min(int(pEnd-p),maxBytesInChunk);
 
-			(*m_pEncoder) << GfxStream::Header{ chunkType, GfxStream::SpxFormat::Int32_dec, (uint16_t) bytesOfData + 10 };
+			(*m_pEncoder) << GfxStream::Header{ chunkType, GfxStream::SpxFormat::Int32_dec, (uint16_t) bytesOfData + 12 };
 
 			(*m_pEncoder) << (int32_t) (pEnd - pBeg);
 			(*m_pEncoder) << (int32_t) (p - pBeg);

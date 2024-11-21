@@ -255,7 +255,23 @@ namespace wg
 			*m_pDecoder >> dummy;
 
 			if (canvasRef != CanvasRef::None)
+			{
 				m_pBackend->setCanvas(canvasRef);
+
+				if (m_bStoreDirtyRects)
+				{
+					if (m_dirtyRects[(int)canvasRef].isEmpty())
+					{
+						for (auto& rect : m_vUpdateRects)
+							m_dirtyRects[(int)canvasRef].push(rect);
+					}
+					else
+					{
+						for (auto& rect : m_vUpdateRects)
+							m_dirtyRects[(int)canvasRef].add(rect);
+					}
+				}
+			}
 			else
 				m_pBackend->setCanvas( static_cast<Surface*>(m_vObjects[objectId].rawPtr()) );
 
@@ -277,7 +293,7 @@ namespace wg
 			if (bFirstChunk)
 				m_vActionObjects.resize(totalSize / sizeof(uint16_t));
 
-			int bytes = (header.size - 10);
+			int bytes = (header.size - 12);
 			int nEntries = bytes / sizeof(uint16_t);
 
 			uint16_t * pBuffer = (uint16_t*) GfxBase::memStackAlloc(bytes);
@@ -314,7 +330,7 @@ namespace wg
 			if (bFirstChunk)
 				m_vRects.resize(totalSize / sizeof(RectSPX));
 
-			int bytes = (header.size - 10);
+			int bytes = (header.size - 12);
 			char* pDest = ((char*)m_vRects.data()) + offset;
 
 			*m_pDecoder >> GfxStream::ReadBytes{ bytes, pDest };
@@ -340,7 +356,7 @@ namespace wg
 			if (bFirstChunk)
 				m_vColors.resize(totalSize / sizeof(HiColor));
 
-			int bytes = (header.size - 10);
+			int bytes = (header.size - 12);
 			char* pDest = ((char*)m_vColors.data()) + offset;
 
 			*m_pDecoder >> GfxStream::ReadBytes{ bytes, pDest };
@@ -366,7 +382,7 @@ namespace wg
 			if (bFirstChunk)
 				m_vTransforms.resize(totalSize / sizeof(Transform));
 
-			int bytes = (header.size - 10);
+			int bytes = (header.size - 12);
 			char* pDest = ((char*)m_vTransforms.data()) + offset;
 
 			*m_pDecoder >> GfxStream::ReadBytes{ bytes, pDest };
@@ -393,7 +409,7 @@ namespace wg
 			if (bFirstChunk)
 				m_vCommands.resize(totalSize / sizeof(int32_t));
 
-			int bytes = (header.size - 10);
+			int bytes = (header.size - 12);
 			char* pDest = ((char*)m_vCommands.data()) + offset;
 
 			*m_pDecoder >> GfxStream::ReadBytes{ bytes, pDest };
@@ -419,7 +435,7 @@ namespace wg
 			if (bFirstChunk)
 				m_vUpdateRects.resize(totalSize / sizeof(RectSPX));
 
-			int bytes = (header.size - 10);
+			int bytes = (header.size - 12);
 			char* pDest = ((char*)m_vUpdateRects.data()) + offset;
 
 			*m_pDecoder >> GfxStream::ReadBytes{ bytes, pDest };

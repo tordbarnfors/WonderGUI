@@ -131,7 +131,7 @@ namespace wg
 		if (!m_pInput || !m_pOutput)
 			return false;
 
-		return _pumpUntilChunk(GfxChunkId::BeginRender, false);
+		return _pumpUntilChunk(GfxChunkId::BE_BeginRender, false);
 	}
 
 	//____ pumpFrame() ________________________________________________________
@@ -141,8 +141,8 @@ namespace wg
 		if (!m_pInput || !m_pOutput)
 			return false;
 
-		if ( _fetchUntilChunk(GfxChunkId::EndRender) )
-			return _pumpUntilChunk(GfxChunkId::EndRender, true);
+		if ( _fetchUntilChunk(GfxChunkId::BE_EndRender) )
+			return _pumpUntilChunk(GfxChunkId::BE_EndRender, true);
 
 		return false;
 	}

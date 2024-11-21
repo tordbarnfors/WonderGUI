@@ -26,9 +26,9 @@
 #include <wg_softedgemap.h>
 #include <wg_softedgemapfactory.h>
 #include <wg_softsurfacefactory.h>
-#include <wg_softgfxdevice.h>
-#include <wg_softkernels_default.h>
-
+#include <wg_softbackend.h>
+#include <wg_softbackend_kernels.h>
+#include <wg_gfxdevice_gen2.h>
 
 using namespace wg;
 using namespace std;
@@ -180,8 +180,10 @@ int main ( int argc, char** argv )
 	Blob_p pCanvasBlob = Blob::create( pWinSurf->pixels, 0);	
 	SoftSurface_p pCanvas = SoftSurface::create({ .format = type, .size = SizeI(pWinSurf->w,pWinSurf->h) }, pCanvasBlob, pWinSurf->pitch);
     
-	SoftGfxDevice_p pGfxDevice = SoftGfxDevice::create();
-	addDefaultSoftKernels(pGfxDevice);
+	SoftBackend_p pGfxBackend = SoftBackend::create();
+	addDefaultSoftKernels(pGfxBackend);
+
+	GfxDevice_p pGfxDevice = GfxDeviceGen2::create(pGfxBackend);
 
 	RootPanel_p pRoot = RootPanel::create( pCanvas, pGfxDevice );
 //    pRoot->setGeo( pCanvas->size() );
@@ -261,7 +263,7 @@ int main ( int argc, char** argv )
 														  _.canvas = true) );
  */
 
-	pGfxDevice->defineCanvas(CanvasRef::Canvas_1, pStreamOutputCanvas1);
+	pGfxBackend->defineCanvas(CanvasRef::Canvas_1, pStreamOutputCanvas1);
 //	pGfxDevice->defineCanvas(CanvasRef::Canvas_2, pStreamOutputCanvas2);
 
 
@@ -293,8 +295,8 @@ int main ( int argc, char** argv )
 
 	auto pFirstSplitter = StreamSplitter::create( { StreamSink_p( pStreamBuffer, pStreamBuffer->input), StreamSink_p( pStreamWriter, pStreamWriter->input) });
 
-//	auto pEncoder = StreamFastEncoder::create(StreamSink_p( pFirstSplitter, pFirstSplitter->input) );
-	auto pEncoder = StreamTrimEncoder::create(StreamSink_p( pFirstSplitter, pFirstSplitter->input) );
+	auto pEncoder = StreamFastEncoder::create(StreamSink_p( pFirstSplitter, pFirstSplitter->input) );
+//	auto pEncoder = StreamTrimEncoder::create(StreamSink_p( pFirstSplitter, pFirstSplitter->input) );
 
 	// Logger
 
@@ -302,8 +304,8 @@ int main ( int argc, char** argv )
 
 	// Player
 
-	auto pStreamPlayer = StreamPlayer::create(pGfxDevice, SoftSurfaceFactory::create(), SoftEdgemapFactory::create() );
-
+	auto pStreamPlayer = StreamPlayer::create(pGfxBackend, SoftSurfaceFactory::create(), SoftEdgemapFactory::create() );
+	 
 
 	// Streampump taking from buffer and feeding logger and/or player
 
@@ -313,8 +315,11 @@ int main ( int argc, char** argv )
 
 	// StreamGfxDevice and StreamSurfaceFactory feeding encoder
 
-	auto pStreamDevice = StreamDevice::create(pEncoder);
-    pStreamDevice->defineCanvas(CanvasRef::Canvas_1, {800,480}, PixelFormat::Undefined );
+	auto pStreamBackend = StreamBackend::create(pEncoder);
+    pStreamBackend->defineCanvas(CanvasRef::Canvas_1, {800,480}, PixelFormat::Undefined );
+
+
+	auto pStreamDevice = GfxDeviceGen2::create(pStreamBackend);
 //	pStreamDevice->defineCanvas(CanvasRef::Canvas_2, {240,240}, PixelFormat::Undefined );
 
 	auto pSurfaceFactory = StreamSurfaceFactory::create(pEncoder);
@@ -330,7 +335,7 @@ int main ( int argc, char** argv )
     // Setup stream saving
     //------------------------------------------------------
 
-	pStreamDevice->encodeCanvasList();
+	pStreamBackend->encodeCanvasList();
 
 /*
     char * pBigBuffer = new char[10000000];
@@ -432,7 +437,7 @@ int main ( int argc, char** argv )
 		int				nRects1,nRects2;
 		const RectI	* pRects1, *pRects2;
 		
-		std::tie(nRects1,pRects1) = pStreamPlayer->dirtyRects(wg::CanvasRef::Canvas_1);
+//		std::tie(nRects1,pRects1) = pStreamPlayer->dirtyRects(wg::CanvasRef::Canvas_1);
 //		std::tie(nRects2,pRects2) = pStreamPlayer->dirtyRects(wg::CanvasRef::Canvas_2);
 
 		
@@ -444,6 +449,8 @@ int main ( int argc, char** argv )
 		r.w = width;
 		r.h = height;
 		SDL_UpdateWindowSurfaceRects(pWin, &r, 1);
+
+		pStreamPlayer->clearDirtyRects();
 
 
 //		updateWindowRects( pRoot, pWin );
