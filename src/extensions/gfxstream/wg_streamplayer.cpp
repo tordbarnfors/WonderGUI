@@ -132,10 +132,10 @@ namespace wg
 		switch (header.type)
 		{
 
-		case GfxChunkId::OutOfData:
+		case GfxStream::ChunkId::OutOfData:
 			return false;
 
-		case GfxChunkId::ProtocolVersion:
+		case GfxStream::ChunkId::ProtocolVersion:
 		{
 			uint16_t	version;
 			*m_pDecoder >> version;
@@ -145,7 +145,7 @@ namespace wg
 			break;
 		}
 
-		case GfxChunkId::CanvasList:
+		case GfxStream::ChunkId::CanvasList:
 		{
 			uint16_t nbCanvases;
 
@@ -175,15 +175,15 @@ namespace wg
 				m_canvasInfoCallback(canvas, canvas+nbCanvases);
 		}
 
-        case GfxChunkId::BE_BeginRender:
+        case GfxStream::ChunkId::BeginRender:
             m_pBackend->beginRender();
             break;
 
-        case GfxChunkId::BE_EndRender:
+        case GfxStream::ChunkId::EndRender:
             m_pBackend->endRender();
             break;
 
-		case GfxChunkId::BE_BeginSession:
+		case GfxStream::ChunkId::BeginSession:
 		{
 
 			// Temporary storage for variables that is stored in smaller uints than in SessionInfo
@@ -238,13 +238,13 @@ namespace wg
 			break;
 		}
 
-		case GfxChunkId::BE_EndSession:
+		case GfxStream::ChunkId::EndSession:
 		{
 			m_pBackend->endSession();
 			break;
 		}
 
-		case GfxChunkId::BE_SetCanvas:
+		case GfxStream::ChunkId::SetCanvas:
 		{
 			uint16_t	objectId;
 			CanvasRef	canvasRef;
@@ -278,7 +278,7 @@ namespace wg
 			break;
 		}
 
-		case GfxChunkId::BE_Objects:
+		case GfxStream::ChunkId::Objects:
 		{
 			int32_t		totalSize;
 			int32_t		offset;
@@ -315,7 +315,7 @@ namespace wg
 			break;
 		}
 
-		case GfxChunkId::BE_Rects:
+		case GfxStream::ChunkId::Rects:
 		{
 			int32_t		totalSize;
 			int32_t		offset;
@@ -341,7 +341,7 @@ namespace wg
 			break;
 		}
 
-		case GfxChunkId::BE_Colors:
+		case GfxStream::ChunkId::Colors:
 		{
 			int32_t		totalSize;
 			int32_t		offset;
@@ -367,7 +367,7 @@ namespace wg
 			break;
 		}
 
-		case GfxChunkId::BE_Transforms:
+		case GfxStream::ChunkId::Transforms:
 		{
 			int32_t		totalSize;
 			int32_t		offset;
@@ -394,7 +394,7 @@ namespace wg
 		}
 
 
-		case GfxChunkId::BE_Commands:
+		case GfxStream::ChunkId::Commands:
 		{
 			int32_t		totalSize;
 			int32_t		offset;
@@ -420,7 +420,7 @@ namespace wg
 			break;
 		}
 		
-		case GfxChunkId::BE_UpdateRects:
+		case GfxStream::ChunkId::UpdateRects:
 		{
 			int32_t		totalSize;
 			int32_t		offset;
@@ -450,7 +450,7 @@ namespace wg
 		}
 
 
-		case GfxChunkId::CreateSurface:
+		case GfxStream::ChunkId::CreateSurface:
 		{
 			uint16_t	objectId;
 			Surface::Blueprint	bp;
@@ -493,7 +493,7 @@ namespace wg
 			break;
 		}
 
-		case GfxChunkId::BeginSurfaceUpdate:
+		case GfxStream::ChunkId::BeginSurfaceUpdate:
 		{
 			uint16_t	objectId;
 			RectI		rect;
@@ -516,7 +516,7 @@ namespace wg
 			break;
 		}
 
-		case GfxChunkId::SurfacePixels:
+		case GfxStream::ChunkId::SurfacePixels:
 		{
             int line = int(m_pWritePixels - m_pixelBuffer.pixels) / m_pixelBuffer.pitch;
             int ofs = int(m_pWritePixels - m_pixelBuffer.pixels) % m_pixelBuffer.pitch;
@@ -553,7 +553,7 @@ namespace wg
 			break;
 		}
 
-		case GfxChunkId::EndSurfaceUpdate:
+		case GfxStream::ChunkId::EndSurfaceUpdate:
 		{
 			assert(m_surfaceBytesLeft == 0);
 
@@ -563,7 +563,7 @@ namespace wg
 			break;
 		}
 
-		case GfxChunkId::FillSurface:
+		case GfxStream::ChunkId::FillSurface:
 		{
 			uint16_t	objectId;
 			RectI		region;
@@ -583,7 +583,7 @@ namespace wg
 			break;
 		}
 /*
-		case GfxChunkId::CopySurface:
+		case GfxStream::ChunkId::CopySurface:
 		{
 			uint16_t	destSurfaceId;
 			uint16_t	sourceSurfaceId;
@@ -602,7 +602,7 @@ namespace wg
 			break;
 		}
 */
-		case GfxChunkId::DeleteSurface:
+		case GfxStream::ChunkId::DeleteSurface:
 		{
 			uint16_t	objectId;
 
@@ -619,7 +619,7 @@ namespace wg
 		}
 
 
-		case GfxChunkId::CreateEdgemap:
+		case GfxStream::ChunkId::CreateEdgemap:
 		{
 			uint16_t	objectId;
 			SizeI		size;
@@ -644,7 +644,7 @@ namespace wg
 			break;
 		}
 
-		case GfxChunkId::SetEdgemapRenderSegments:
+		case GfxStream::ChunkId::SetEdgemapRenderSegments:
 		{
 			uint16_t	objectId;
 			uint16_t	nbSegments;
@@ -657,7 +657,7 @@ namespace wg
 			break;
 		}
 
-		case GfxChunkId::SetEdgemapColors:
+		case GfxStream::ChunkId::SetEdgemapColors:
 		{
 			uint16_t	objectId;
 			int			begin;
@@ -681,7 +681,7 @@ namespace wg
 			break;
 		}
 				
-		case GfxChunkId::BeginEdgemapUpdate:
+		case GfxStream::ChunkId::BeginEdgemapUpdate:
 		{
 			uint16_t	objectId;
 			uint8_t		edgeBegin;
@@ -713,7 +713,7 @@ namespace wg
 			break;
 		}
 				
-		case GfxChunkId::EdgemapSamples:
+		case GfxStream::ChunkId::EdgemapSamples:
 		{
 			int bytes = header.size;
 
@@ -731,7 +731,7 @@ namespace wg
 			break;
 		}
 
-		case GfxChunkId::EndEdgemapUpdate:
+		case GfxStream::ChunkId::EndEdgemapUpdate:
 		{
 			m_pUpdatingEdgemap->importSamples(SampleOrigo::Top, m_pWaveSampleBuffer, m_waveUpdateEdgeBegin, m_waveUpdateEdgeEnd, m_waveUpdateSampleBegin, m_waveUpdateSampleEnd, 1, (m_waveUpdateEdgeEnd-m_waveUpdateEdgeBegin));
 						
@@ -743,7 +743,7 @@ namespace wg
 		}
 				
 
-		case GfxChunkId::DeleteEdgemap:
+		case GfxStream::ChunkId::DeleteEdgemap:
 		{
 			uint16_t	objectId;
 

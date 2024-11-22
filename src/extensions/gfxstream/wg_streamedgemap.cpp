@@ -119,7 +119,7 @@ bool StreamEdgemap::setRenderSegments(int nSegments)
 
 	auto& encoder = * m_pEncoder;
 		
-	encoder << GfxStream::Header{ GfxChunkId::SetEdgemapRenderSegments, GfxStream::SpxFormat::Int32_dec, 4 };
+	encoder << GfxStream::Header{ GfxStream::ChunkId::SetEdgemapRenderSegments, GfxStream::SpxFormat::Int32_dec, 4 };
 	encoder << m_inStreamId;
 	encoder << (uint16_t) nSegments;
 		
@@ -138,7 +138,7 @@ void StreamEdgemap::_samplesUpdated(int edgeBegin, int edgeEnd, int sampleBegin,
 
 		auto& encoder = * m_pEncoder;
 
-		encoder << GfxStream::Header{ GfxChunkId::BeginEdgemapUpdate, GfxStream::SpxFormat::Int32_dec, beginBlockSize };
+		encoder << GfxStream::Header{ GfxStream::ChunkId::BeginEdgemapUpdate, GfxStream::SpxFormat::Int32_dec, beginBlockSize };
 		encoder << m_inStreamId;
 		encoder << (uint8_t)edgeBegin;
 		encoder << (uint8_t)edgeEnd;
@@ -257,7 +257,7 @@ void StreamEdgemap::_samplesUpdated(int edgeBegin, int edgeEnd, int sampleBegin,
 			uint16_t chunkSize = std::min(dataSize, maxDataSize);
 			dataSize -= chunkSize;
 
-			encoder << GfxStream::Header{ GfxChunkId::EdgemapSamples, spxFormat, uint16_t((chunkSize + 1) & 0xFFFE) };
+			encoder << GfxStream::Header{ GfxStream::ChunkId::EdgemapSamples, spxFormat, uint16_t((chunkSize + 1) & 0xFFFE) };
 
 			encoder << GfxStream::WriteBytes{ chunkSize, (void*)pSrc };
 			pSrc += chunkSize;
@@ -267,7 +267,7 @@ void StreamEdgemap::_samplesUpdated(int edgeBegin, int edgeEnd, int sampleBegin,
 
 		// Stream footer
 
-		encoder << GfxStream::Header{ GfxChunkId::EndEdgemapUpdate, GfxStream::SpxFormat::Int32_dec, 0 };
+		encoder << GfxStream::Header{ GfxStream::ChunkId::EndEdgemapUpdate, GfxStream::SpxFormat::Int32_dec, 0 };
 
 		// Release temp buffer
 
@@ -289,7 +289,7 @@ void StreamEdgemap::_colorsUpdated(int beginColor, int endColor)
 
 		int blockSize = 10 + nColorsInBlock * sizeof(HiColor);
 		
-		encoder << GfxStream::Header{ GfxChunkId::SetEdgemapColors, GfxStream::SpxFormat::Int32_dec, blockSize };
+		encoder << GfxStream::Header{ GfxStream::ChunkId::SetEdgemapColors, GfxStream::SpxFormat::Int32_dec, blockSize };
 		encoder << m_inStreamId;
 		encoder << beginColor;
 		encoder << beginColor + nColorsInBlock;
@@ -308,7 +308,7 @@ void StreamEdgemap::_sendCreateEdgemap( StreamEncoder* pEncoder )
 	
 	auto& encoder = * m_pEncoder;
 	
-	encoder << GfxStream::Header{ GfxChunkId::CreateEdgemap, GfxStream::SpxFormat::Int32_dec, blockSize };
+	encoder << GfxStream::Header{ GfxStream::ChunkId::CreateEdgemap, GfxStream::SpxFormat::Int32_dec, blockSize };
 	encoder << m_inStreamId;
 	encoder << m_size;
 	encoder << (uint16_t) m_nbSegments;

@@ -41,7 +41,7 @@ int wg_showStreamChunks( wg_component streamSource, wg_dataSegment ** pSegments 
     auto p = getPtr(streamSource);
 
     int nbSegments;
-	const DataSegment * pSeg;
+	const GfxStream::Data * pSeg;
 
     std::tie(nbSegments, pSeg) = p->showChunks();
 	* pSegments = (wg_dataSegment*) pSeg;

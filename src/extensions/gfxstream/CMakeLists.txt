@@ -1,6 +1,7 @@
 
 set( SOURCES
 
+	wg_gfxstream.cpp
 	wg_gfxstream.h
 	wg_streambackend.cpp
 	wg_streambackend.h
@@ -8,8 +9,6 @@ set( SOURCES
 	wg_streambuffer.h
 	wg_streamdecoder.cpp
 	wg_streamdecoder.h
-	wg_streamdevice.cpp
-	wg_streamdevice.h
 	wg_streamencoder.cpp
 	wg_streamencoder.h
 	wg_streamfastencoder.cpp
@@ -32,8 +31,6 @@ set( SOURCES
 	wg_streamsurface.h
 	wg_streamsurfacefactory.cpp
 	wg_streamsurfacefactory.h
-	wg_streamtrimencoder.cpp
-	wg_streamtrimencoder.h	
 	wg_streamedgemap.cpp
 	wg_streamedgemap.h
 	wg_streamedgemapfactory.cpp

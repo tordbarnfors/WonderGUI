@@ -142,7 +142,7 @@ namespace wg
 	{
 		if (_hasChunk())
 		{
-			header.type = (GfxChunkId)_pullChar();
+			header.type = (GfxStream::ChunkId)_pullChar();
 			uint8_t sizeEtc = _pullChar();
 			m_spxFormat = (GfxStream::SpxFormat) (sizeEtc >> 5);
 			header.spxFormat = m_spxFormat;
@@ -155,7 +155,7 @@ namespace wg
 		}
 		else
 		{
-			header.type = GfxChunkId::OutOfData;
+			header.type = GfxStream::ChunkId::OutOfData;
 			header.spxFormat = GfxStream::SpxFormat::Int32_dec;
 			header.size = 0;
 		}
@@ -440,7 +440,7 @@ namespace wg
 	{
 		GfxStream::Header header;
 
-		header.type = (GfxChunkId) m_pDataRead[0];
+		header.type = (GfxStream::ChunkId) m_pDataRead[0];
 		uint8_t sizeEtc = m_pDataRead[1];
 		header.spxFormat = (GfxStream::SpxFormat) (sizeEtc >> 5);
 		

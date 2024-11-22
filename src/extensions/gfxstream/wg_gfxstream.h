@@ -28,14 +28,64 @@
 
 namespace wg
 {
-
-
 	class GfxStream
 	{
 	public:
 		static constexpr int	c_maxBlockSize = 1024+256;		// Includes the block headers!	Must be at least 4096+14+block_header_size due to palette possibly included in CreateSurface-chunks.
 
 		static constexpr int	c_maxClipRects = 256;		// Largest number of patches allowed for a drawing primitive.
+
+
+		//____ Data ________________________________________________________
+
+		struct Data
+		{
+			uint8_t*	pBegin;
+			uint8_t*	pEnd;
+		};
+
+		//____ ChunkId ____________________________________________________
+
+		enum class ChunkId : uint8_t    //. autoExtras
+		{
+			OutOfData = 0,
+
+			ProtocolVersion = 1,
+			CanvasList = 2,
+			TimeStampMS = 3,
+
+			BeginRender = 4,
+			EndRender = 5,
+			BeginSession = 6,
+			EndSession = 7,
+			SetCanvas = 8,
+			Objects = 9,
+			Rects = 10,
+			Colors = 11,
+			Transforms = 12,
+			Commands = 13,
+			UpdateRects = 14,
+
+			CreateSurface = 15,
+			BeginSurfaceUpdate = 16,
+			SurfacePixels = 17,
+			EndSurfaceUpdate = 18,
+			FillSurface = 19,
+			CopySurface = 20,
+			DeleteSurface = 21,
+
+			CreateEdgemap = 22,
+			SetEdgemapRenderSegments = 23,
+			SetEdgemapColors = 24,
+			BeginEdgemapUpdate = 25,
+			EdgemapSamples = 26,
+			EndEdgemapUpdate = 27,
+			DeleteEdgemap = 28,
+		};
+
+		const static ChunkId      ChunkId_min      = ChunkId::OutOfData;
+		const static ChunkId      ChunkId_max      = ChunkId::DeleteEdgemap;
+		const static int          ChunkId_size     = (int)ChunkId::DeleteEdgemap + 1;
 
 		struct SPX
 		{
@@ -61,7 +111,7 @@ namespace wg
 		
 		struct Header
 		{
-			GfxChunkId      type;
+			ChunkId			type;
             SpxFormat		spxFormat;
     		int				size;
 		};
@@ -99,7 +149,7 @@ namespace wg
 		{
 		public:
 
-			GfxChunkId	type() const { return m_type; }
+			GfxStream::ChunkId	type() const { return m_type; }
 
 			int			chunkSize() const
 			{
@@ -139,7 +189,7 @@ namespace wg
 
 
 		protected:
-			GfxChunkId	m_type;
+			GfxStream::ChunkId	m_type;
 			uint8_t		m_flags_and_size;
 		};
 
@@ -206,9 +256,9 @@ namespace wg
 		static const int GradientSize = 8 * 4;
 		static const int NinePatchSize = 16 + 8 + 10 + 10;
 
-		inline static GfxChunkId chunkType(const uint8_t* pChunk)
+		inline static GfxStream::ChunkId chunkType(const uint8_t* pChunk)
 		{
-			return (GfxChunkId) pChunk[0];
+			return (GfxStream::ChunkId) pChunk[0];
 		}
 
 		inline static int chunkSize(const uint8_t* pChunk)
@@ -244,8 +294,10 @@ namespace wg
 		
 			return size[int(spxFormat)];
 		}
+
 	};
 
+	const char * toString(GfxStream::ChunkId);
 };
 
 

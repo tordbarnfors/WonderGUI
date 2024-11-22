@@ -39,6 +39,7 @@ namespace wg
 =========================================================================*/
 
 	const static TintMode        TintMode_min        = TintMode::None;
+	const static EdgemapPalette  EdgemapPalette_min  = EdgemapPalette::Undefined;
 	const static BlendMode       BlendMode_min       = BlendMode::Undefined;
 	const static Alignment       Alignment_min       = Alignment::Begin;
 	const static Placement       Placement_min       = Placement::Undefined;
@@ -53,9 +54,9 @@ namespace wg
 	const static TransitionCurve TransitionCurve_min = TransitionCurve::Linear;
 	const static CanvasRef       CanvasRef_min       = CanvasRef::None;
 	const static SampleOrigo     SampleOrigo_min     = SampleOrigo::Top;
-	const static GfxChunkId      GfxChunkId_min      = GfxChunkId::OutOfData;
 
 	const static TintMode        TintMode_max        = TintMode::GradientXY;
+	const static EdgemapPalette  EdgemapPalette_max  = EdgemapPalette::ColorstripXY;
 	const static BlendMode       BlendMode_max       = BlendMode::BlendFixedColor;
 	const static Alignment       Alignment_max       = Alignment::Justify;
 	const static Placement       Placement_max       = Placement::Center;
@@ -70,9 +71,9 @@ namespace wg
 	const static TransitionCurve TransitionCurve_max = TransitionCurve::Parametric;
 	const static CanvasRef       CanvasRef_max       = CanvasRef::Canvas_32;
 	const static SampleOrigo     SampleOrigo_max     = SampleOrigo::Bottom;
-	const static GfxChunkId      GfxChunkId_max      = GfxChunkId::FlipDrawEdgemap;
 
 	const static int             TintMode_size       = (int)TintMode::GradientXY + 1;
+	const static int             EdgemapPalette_size = (int)EdgemapPalette::ColorstripXY + 1;
 	const static int             BlendMode_size      = (int)BlendMode::BlendFixedColor + 1;
 	const static int             Alignment_size      = (int)Alignment::Justify + 1;
 	const static int             Placement_size      = (int)Placement::Center + 1;
@@ -87,7 +88,6 @@ namespace wg
 	const static int             TransitionCurve_size= (int)TransitionCurve::Parametric + 1;
 	const static int             CanvasRef_size      = (int)CanvasRef::Canvas_32 + 1;
 	const static int             SampleOrigo_size    = (int)SampleOrigo::Bottom + 1;
-	const static int             GfxChunkId_size     = (int)GfxChunkId::FlipDrawEdgemap + 1;
 
 	const char * toString(TintMode);
 	const char * toString(EdgemapPalette);
@@ -105,7 +105,6 @@ namespace wg
 	const char * toString(TransitionCurve);
 	const char * toString(CanvasRef);
 	const char * toString(SampleOrigo);
-	const char * toString(GfxChunkId);
 
 //=========================================================================
 //. endAutoSection

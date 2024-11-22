@@ -48,7 +48,7 @@ namespace wg
 
 	const char * toString(EdgemapPalette i)
 	{
-		static const char * names[] = {
+		static const char * names[] = { 
 			"Undefined",
 			"Flat",
 			"ColorstripX",
@@ -292,82 +292,6 @@ namespace wg
 
 		return names[(int)i];
 	}
-
-	const char * toString(GfxChunkId i)
-	{
-		static const char * names[] = { 
-			"OutOfData",
-			"BeginRender",
-			"EndRender",
-			"Flush",
-			"BeginCanvasUpdate",
-			"EndCanvasUpdate",
-			"SetClipList",
-			"ResetClipList",
-			"PushClipList",
-			"PopClipList",
-			"SetTintColor",
-			"SetTintGradient",
-			"ClearTintGradient",
-			"SetBlendMode",
-			"SetBlitSource",
-			"SetMorphFactor",
-			"SetRenderLayer",
-			"Fill",
-			"FillRect",
-			"DrawLineStraight",
-			"PlotPixels",
-			"DrawLineFromTo",
-			"DrawLineStraightDeprecated",
-			"Blit",
-			"BlitRect",
-			"FlipBlit",
-			"FlipBlitRect",
-			"StretchBlit",
-			"StretchBlitRect",
-			"StretchFlipBlit",
-			"StretchFlipBlitRect",
-			"PrecisionBlit",
-			"TransformBlit",
-			"RotScaleBlit",
-			"Tile",
-			"FlipTile",
-			"ScaleTile",
-			"ScaleFlipTile",
-			"DrawWave",
-			"FlipDrawWave",
-			"DrawElipse",
-			"DrawPieChart",
-			"DrawSegments",
-			"FlipDrawSegments",
-			"BlitNinePatch",
-			"EdgeSamples",
-			"CreateSurfaceDeprecated",
-			"BeginSurfaceUpdate",
-			"SurfacePixels",
-			"EndSurfaceUpdate",
-			"FillSurface",
-			"CopySurface",
-			"DeleteSurface",
-			"ProtocolVersion",
-			"TimeStampMS",
-			"CanvasList",
-			"SetFixedBlendColor",
-			"CreateSurface",
-			"CreateEdgemap",
-			"SetEdgemapRenderSegments",
-			"SetEdgemapColors",
-			"SetEdgemapGradients",
-			"BeginEdgemapUpdate",
-			"EdgemapSamples",
-			"EndEdgemapUpdate",
-			"DeleteEdgemap",
-			"DrawEdgemap",
-			"FlipDrawEdgemap" };
-
-		return names[(int)i];
-	}
-
 
 //=========================================================================
 //. endAutoSection

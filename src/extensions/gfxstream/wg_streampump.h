@@ -58,11 +58,10 @@ namespace wg
 		void		setInput(const StreamSource_p& pInput);
 		void		setOutput(const StreamSink_p& pOutput);
 
-		GfxChunkId	peekChunk();
+		GfxStream::ChunkId	peekChunk();
 		bool		pumpChunk();
 		bool		pumpUntilFrame();
 		bool		pumpFrame();
-		bool		pumpAllFramesOptimizeClipping( int optimizationDepth = 1024 );
 		bool		pumpAll();
 		int			pumpBytes( int maxBytes );		// Will pump full chunks up until maxBytes has been reached. Will likely return fewer bytes than requested.
 													// Will return 0 if no more data or first chunk is larger than maxBytes.
@@ -90,16 +89,11 @@ namespace wg
 		};
 		
 		
-		void			_optimizeCanvasUpdate( const uint8_t *& pBegin, const uint8_t *& pEnd, 
-											   std::vector<CanvasData>& canvases, std::vector<RectSPX> clipRects,
-											   std::function<void(const uint8_t*& pBegin, const uint8_t*& pEnd)> fetch );
-		
-		const uint8_t*	_findChunk(GfxChunkId id, const uint8_t* pBegin, const uint8_t* pEnd);
-		void			_maskAddRect(std::vector<RectI>& vRects, int startOffset, int endOffset, const RectI& rect);
+		const uint8_t*	_findChunk(GfxStream::ChunkId id, const uint8_t* pBegin, const uint8_t* pEnd);
 
 
-		bool			_pumpUntilChunk(GfxChunkId id, bool bInclusive );
-		bool			_fetchUntilChunk(GfxChunkId id);
+		bool			_pumpUntilChunk(GfxStream::ChunkId id, bool bInclusive );
+		bool			_fetchUntilChunk(GfxStream::ChunkId id);
 
 
 		StreamSource_p	m_pInput;

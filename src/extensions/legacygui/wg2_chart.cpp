@@ -1075,8 +1075,7 @@ void WgChart::_renderWave( Wave& wave, wg::GfxDevice * pDevice, const WgRect& wa
     // Check if gradient is set by SetWaveGradient
     bool useGradient = wave.m_waveGradient.isValid();
     // Don't use gradient on "slow" devices
-    useGradient &= !((pDevice->typeInfo() == wg::SoftGfxDevice::TYPEINFO) ||
-                    (pDevice->typeInfo() == wg::StreamDevice::TYPEINFO));
+    useGradient &= !((pDevice->typeInfo() == wg::SoftGfxDevice::TYPEINFO);
 
 	if(length >= 1)
 	{

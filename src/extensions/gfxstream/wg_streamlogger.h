@@ -30,6 +30,7 @@
 #include <wg_streamsink.h>
 #include <wg_gfxstream.h>
 #include <wg_streamdecoder.h>
+#include <wg_backendlogger.h>
 
 namespace wg
 {
@@ -90,6 +91,8 @@ namespace wg
 
 		StreamDecoder_p m_pDecoder;
 		
+		BackendLogger_p	m_pBackend;
+
 		bool			m_bDisplayStreamOffset = true;
 		bool			m_bDisplayChunkNb = true;
 		

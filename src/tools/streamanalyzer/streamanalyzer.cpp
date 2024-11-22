@@ -852,7 +852,7 @@ bool MyApp::loadStream(std::string path)
 
 	for (auto pChunk = GfxStream::iterator(pStream->begin()); pChunk != GfxStream::iterator(pStream->end()); pChunk++ )
 	{
-		if (pChunk->type() == GfxChunkId::BE_BeginRender)
+		if (pChunk->type() == GfxStream::ChunkId::BeginRender)
 			m_frames.push_back(pChunk);
 	}
 
@@ -960,8 +960,8 @@ bool MyApp::loadStream(std::string path)
 		auto chunkId = m_pStreamPump->peekChunk();
 		switch( chunkId )
 		{
-			case GfxChunkId::ProtocolVersion:
-			case GfxChunkId::CanvasList:
+			case GfxStream::ChunkId::ProtocolVersion:
+			case GfxStream::ChunkId::CanvasList:
 				m_pStreamPump->pumpChunk();
 				break;
 
@@ -1341,13 +1341,14 @@ void MyApp::_playFrames( int begin, int end, bool bOptimize )
 	m_pStreamPump->setInput({pWrapper, pWrapper->output});
 
 	m_pStreamPlayer->clearDirtyRects();
-
+/*
 	if( bOptimize )
 	{
 		m_pStreamPump->pumpAllFramesOptimizeClipping();
 		m_pStreamPump->pumpAll();						// To make sure any data outside frame following it is included.
 	}
 	else
+*/
 		m_pStreamPump->pumpAll();
 }
 
@@ -1366,11 +1367,11 @@ void MyApp::_logFrames( int begin, int end, bool bOptimize, TextEditor * pDispla
 	
 	auto pPump = StreamPump::create( {pWrapper, pWrapper->output}, {pLogger, pLogger->input} );
 
-	
+/*
 	if( bOptimize )
 		pPump->pumpAllFramesOptimizeClipping();
 	else
-		pPump->pumpAll();
+*/		pPump->pumpAll();
 
 	pDisplay->editor.setText( logStream.str() );
 }
@@ -1404,7 +1405,6 @@ void MyApp::_logFullStream()
 	pPump->pumpAll();
 
 	m_pFullLogDisplay->editor.setText( logStream.str() );
-
 }
 
 //____ _updateResourcesView() _________________________________________________
@@ -1533,17 +1533,25 @@ void MyApp::_generateFrameStatistics()
 	GfxStream::Header header;
 	
 	* pDecoder >> header;
-	while( header.type != GfxChunkId::OutOfData )
+	while( header.type != GfxStream::ChunkId::OutOfData )
 	{
 		switch( header.type )
 		{
-			case GfxChunkId::BE_BeginRender:
+			case GfxStream::ChunkId::BeginRender:
 			{
 				m_frameStatistics.push_back(FrameStats());
 				pDecoder->skip(header.size);
 				break;
 			}
-			case GfxChunkId::BeginCanvasUpdate:
+			case GfxStream::ChunkId::UpdateRects:
+			{
+				//TODO: Implement!!!
+
+				break;
+			}
+
+/*
+			case GfxStream::ChunkId::BeginCanvasUpdate:
 			{
 				uint16_t	surfaceId;
 				CanvasRef	canvasRef;
@@ -1569,6 +1577,7 @@ void MyApp::_generateFrameStatistics()
 				Base::memStackFree(allocBytes);
 				break;
 			}
+ */
 			default:
 				pDecoder->skip(header.size);
 				break;

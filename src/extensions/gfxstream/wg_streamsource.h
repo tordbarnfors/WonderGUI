@@ -50,10 +50,10 @@ namespace wg
 		public:
 
 			virtual bool _hasStreamChunks() = 0;
-			virtual std::tuple<int, const DataSegment *> _showStreamChunks() = 0;
+			virtual std::tuple<int, const GfxStream::Data *> _showStreamChunks() = 0;
 			virtual	void _discardStreamChunks(int bytes) = 0;
 			virtual bool _fetchStreamChunks() = 0;
-			virtual GfxChunkId _peekStreamChunk() = 0;
+			virtual GfxStream::ChunkId _peekStreamChunk() = 0;
 		};
 
 
@@ -62,10 +62,10 @@ namespace wg
 		//.____ Control _______________________________________________________
 
 		inline bool hasChunks() { return m_pHolder->_hasStreamChunks(); }
-		inline std::tuple<int, const DataSegment*> showChunks() { return m_pHolder->_showStreamChunks(); }
+		inline std::tuple<int, const GfxStream::Data*> showChunks() { return m_pHolder->_showStreamChunks(); }
 		inline void discardChunks(int bytes) { return m_pHolder->_discardStreamChunks(bytes); }
 		inline bool fetchChunks() { return m_pHolder->_fetchStreamChunks(); }
-		inline GfxChunkId peekChunk() { return m_pHolder->_peekStreamChunk(); }
+		inline GfxStream::ChunkId peekChunk() { return m_pHolder->_peekStreamChunk(); }
 
 	protected:
 

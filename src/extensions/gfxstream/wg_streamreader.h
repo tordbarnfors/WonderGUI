@@ -70,8 +70,8 @@ namespace wg
 		~StreamReader();
 
 		bool 			_hasStreamChunks() override;
-		std::tuple<int, const DataSegment*> _showStreamChunks() override;
-		GfxChunkId 		_peekStreamChunk() override;
+		std::tuple<int, const GfxStream::Data*> _showStreamChunks() override;
+		GfxStream::ChunkId 		_peekStreamChunk() override;
 		void 			_discardStreamChunks(int bytes) override;
 		bool 			_fetchStreamChunks() override;
 
@@ -91,7 +91,7 @@ namespace wg
 		int			m_bufferOverflow;		// How much processed data overflows the buffer with in order to hold a
 											// complete chunk. Overflowing data is a copy of data from beginning of buffer.
 
-		DataSegment	m_dataSegments[2];
+		GfxStream::Data	m_dataSegments[2];
 	};
 
 

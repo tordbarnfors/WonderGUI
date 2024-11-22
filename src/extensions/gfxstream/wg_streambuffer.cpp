@@ -205,7 +205,7 @@ namespace wg
 
 	//____ _showStreamChunks() ________________________________________________
 
-	std::tuple<int, const DataSegment*> StreamBuffer::_showStreamChunks()
+	std::tuple<int, const GfxStream::Data*> StreamBuffer::_showStreamChunks()
 	{
 		if(m_processedOfs == m_readOfs )
 			return std::make_tuple(int(0), nullptr);
@@ -235,12 +235,12 @@ namespace wg
 
 	//____ _peekStreamChunk() __________________________________________________________
 
-	GfxChunkId StreamBuffer:: _peekStreamChunk()
+	GfxStream::ChunkId StreamBuffer:: _peekStreamChunk()
 	{
 		if(m_processedOfs == m_readOfs )
-			return GfxChunkId::OutOfData;
+			return GfxStream::ChunkId::OutOfData;
 
-		return (GfxChunkId)  m_pBuffer[m_readOfs];
+		return (GfxStream::ChunkId)  m_pBuffer[m_readOfs];
 	}
 
 	//____ _discardStreamChunks() _____________________________________________

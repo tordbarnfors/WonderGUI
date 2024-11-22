@@ -43,7 +43,6 @@ extern "C" {
 	int				wg_pumpChunk(wg_obj streamPump);
 	int				wg_pumpUntilFrame(wg_obj streamPump);
 	int				wg_pumpFrame(wg_obj streamPump);
-	int				wg_pumpAllFramesOptimizeClipping(wg_obj streamPump, int optimationzDepth );
 	int				wg_pumpAll(wg_obj streamPump);
 
 #ifdef __cplusplus

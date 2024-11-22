@@ -70,8 +70,8 @@ namespace wg
 		~StreamWrapper();
 
 		bool 			_hasStreamChunks() override;
-		std::tuple<int, const DataSegment*> _showStreamChunks() override;
-		GfxChunkId 		_peekStreamChunk() override;
+		std::tuple<int, const GfxStream::Data*> _showStreamChunks() override;
+		GfxStream::ChunkId 		_peekStreamChunk() override;
 		void 			_discardStreamChunks(int bytes) override;
 		bool 			_fetchStreamChunks() override;
 
@@ -79,7 +79,7 @@ namespace wg
 		uint8_t *	m_pBegin;
 		uint8_t *	m_pEnd;
 
-		DataSegment	m_dataSegment;
+		GfxStream::Data	m_dataSegment;
 	};
 
 

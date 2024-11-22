@@ -89,7 +89,7 @@ namespace wg
 
 	//____ _showStreamChunks() ________________________________________________
 
-	std::tuple<int, const DataSegment*> StreamWrapper::_showStreamChunks()
+	std::tuple<int, const GfxStream::Data*> StreamWrapper::_showStreamChunks()
 	{
 		uint64_t beg = (uint64_t) m_dataSegment.pBegin;
 		uint64_t end = (uint64_t) m_dataSegment.pEnd;
@@ -103,10 +103,10 @@ namespace wg
 
 	//____ _peekStreamChunk() __________________________________________________________
 
-	GfxChunkId StreamWrapper:: _peekStreamChunk()
+	GfxStream::ChunkId StreamWrapper:: _peekStreamChunk()
 	{
 		if (m_dataSegment.pBegin == m_dataSegment.pEnd)
-			return GfxChunkId::OutOfData;
+			return GfxStream::ChunkId::OutOfData;
 
 		return GfxStream::chunkType((uint8_t*)(m_dataSegment.pBegin));
 	}

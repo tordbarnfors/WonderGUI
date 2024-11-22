@@ -32,7 +32,6 @@
 /*
 #include <wg_streamsurface.h>
 #include <wg_streamsurfacefactory.h>
-#include <wg_streamdevice.h>
 #include <wg_streamplayer.h>
 */
 

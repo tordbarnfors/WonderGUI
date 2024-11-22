@@ -113,7 +113,7 @@ namespace wg
 		
 		// For multi-chunk drawing operations (DrawSegments, FlipDrawSegments, DrawWave and FlipDrawWave), telling which one we are receiving edge samples for.
 		
-		GfxChunkId			m_drawTypeInProgress = GfxChunkId::OutOfData;
+		GfxStream::ChunkId			m_drawTypeInProgress = GfxStream::ChunkId::OutOfData;
 		
 		char *	m_pTempBuffer = nullptr;
 		int		m_bytesLoaded;

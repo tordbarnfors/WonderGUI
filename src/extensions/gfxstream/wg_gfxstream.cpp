@@ -19,32 +19,44 @@
   should contact Tord Jansson [tord.jansson@gmail.com] for details.
 
 =========================================================================*/
-#ifndef WONDERSTREAM_DOT_H
-#define WONDERSTREAM_DOT_H
-#pragma once
 
 #include <wg_gfxstream.h>
-#include <wg_streambackend.h>
-#include <wg_streambuffer.h>
-#include <wg_streamdecoder.h>
-#include <wg_streamencoder.h>
-#include <wg_streamfastencoder.h>
-#include <wg_streamlogger.h>
-#include <wg_streamloopwrapper.h>
-#include <wg_streamplayer.h>
-#include <wg_streampump.h>
-#include <wg_streamreader.h>
-#include <wg_streamsink.h>
-#include <wg_streamsource.h>
-#include <wg_streamsplitter.h>
-#include <wg_streamsurface.h>
-#include <wg_streamsurfacefactory.h>
-#include <wg_streamwrapper.h>
-#include <wg_streamwriter.h>
-#include <wg_streamedgemap.h>
-#include <wg_streamedgemapfactory.h>
 
+namespace wg
+{
+	const char * toString(GfxStream::ChunkId i)
+	{
+		static const char * names[] = {
+			"OutOfData",
+			"ProtocolVersion",
+			"CanvasList",
+			"TimeStampMS",
+			"BeginRender",
+			"EndRender",
+			"BeginSession",
+			"EndSession",
+			"SetCanvas",
+			"Objects",
+			"Rects",
+			"Colors",
+			"Transforms",
+			"Commands",
+			"UpdateRects",
+			"CreateSurface",
+			"BeginSurfaceUpdate",
+			"SurfacePixels",
+			"EndSurfaceUpdate",
+			"FillSurface",
+			"CopySurface",
+			"DeleteSurface",
+			"CreateEdgemap",
+			"SetEdgemapRenderSegments",
+			"SetEdgemapColors",
+			"BeginEdgemapUpdate",
+			"EdgemapSamples",
+			"EndEdgemapUpdate",
+			"DeleteEdgemap" };
 
-
-
-#endif //WONDERSTREAM_DOT_H
+		return names[(int)i];
+	}
+}

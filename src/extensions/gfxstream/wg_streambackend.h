@@ -93,7 +93,7 @@ namespace wg
 		StreamBackend(StreamEncoder * pEncoder, int maxEdges );
 		~StreamBackend();
 
-		void _splitAndEncode( GfxChunkId chunkType, const void * pBeg, const void * pEnd, int entrySize );
+		void _splitAndEncode( GfxStream::ChunkId chunkType, const void * pBeg, const void * pEnd, int entrySize );
 
 		std::vector<CanvasInfo>	m_definedCanvases;
 		StreamEncoder_p			m_pEncoder;
