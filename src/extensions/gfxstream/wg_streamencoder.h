@@ -490,24 +490,6 @@ namespace wg
 		return *this;
 	}
 
-	StreamEncoder& StreamEncoder::operator<< (const int mtx[2][2])
-	{
-		_pushChar((char)(mtx[0][0]));
-		_pushChar((char)(mtx[0][1]));
-		_pushChar((char)(mtx[1][0]));
-		_pushChar((char)(mtx[1][1]));
-		return *this;
-	}
-
-	StreamEncoder& StreamEncoder::operator<< (const float mtx[2][2])
-	{
-		_pushFloat(mtx[0][0]);
-		_pushFloat(mtx[0][1]);
-		_pushFloat(mtx[1][0]);
-		_pushFloat(mtx[1][1]);
-		return *this;
-	}
-
 
 }
 
