@@ -36,6 +36,7 @@
 #include <wg_edgemapfactory.h>
 #include <wg_edgemaptools.h>
 #include <wg_font.h>
+#include <wg_frametrimmer.h>
 #include <wg_geo.h>
 #include <wg_gfxbackend.h>
 #include <wg_gfxbase.h>

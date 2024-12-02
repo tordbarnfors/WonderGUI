@@ -59,10 +59,12 @@ namespace wg
 		void		setOutput(const StreamSink_p& pOutput);
 
 		GfxStream::ChunkId	peekChunk();
+
+		bool		peekCanvasUpdates( CanvasRef canvas, std::vector<std::vector<RectSPX>>& output );
+
 		bool		pumpChunk();
 		bool		pumpUntilFrame();
 		bool		pumpFrame();
-		bool		pumpAllFramesOptimizeClipping( int optimizationDepth = 1024 );
 		bool		pumpAll();
 		int			pumpBytes( int maxBytes );		// Will pump full chunks up until maxBytes has been reached. Will likely return fewer bytes than requested.
 													// Will return 0 if no more data or first chunk is larger than maxBytes.

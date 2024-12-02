@@ -217,10 +217,10 @@ namespace wg
 		return false;
 	}
 
-	//____ pumpAllFramesOptimizeClipping() ____________________________________________________
+	//____ peekCanvasUpdates() ________________________________________________
 
-	bool StreamPump::pumpAllFramesOptimizeClipping( int optimizationDepth )
-{
+	bool StreamPump::peekCanvasUpdates(CanvasRef canvas, std::vector<std::vector<RectSPX>>& output)
+	{
 		// Fetch all data
 
 		while (m_pInput->fetchChunks());
@@ -228,7 +228,7 @@ namespace wg
 		// Show all chunks
 
 		int	nSegments;
-		const DataSegment* pSegments;
+		const GfxStream::Data* pSegments;
 		std::tie(nSegments, pSegments) = m_pInput->showChunks();
 
 		// Find end of last complete frame, that will be the scope of our work.
@@ -239,32 +239,33 @@ namespace wg
 
 		for (int i = 0; i < nSegments; i++)
 		{
-			auto p = _findChunk(GfxChunkId::EndRender, pSegments[i].pBegin, pSegments[i].pEnd );
+			auto p = _findChunk(GfxStream::ChunkId::EndRender, pSegments[i].pBegin, pSegments[i].pEnd);
 			while (p != pSegments[i].pEnd)
 			{
 				nFullSegments = i;
 				nFrames++;
 				pLastFoundEndRender = p;
-				p = _findChunk(GfxChunkId::EndRender, p + GfxStream::chunkSize(p), pSegments[i].pEnd);
+				p = _findChunk(GfxStream::ChunkId::EndRender, p + GfxStream::chunkSize(p), pSegments[i].pEnd);
 			}
 		}
 
-		// Early out if we have one frame or less.
 
-		if (nFrames == 0)
-			return false;
+		return false;
 
-		if (nFrames == 1)
-			return _pumpUntilChunk(GfxChunkId::EndRender, true);
-
-		// Collect our sessions and update rectangles
+		/*
 
 
+				// Early out if we have one frame or less.
 
+				if (nFrames == 0)
+					return false;
 
+				if (nFrames == 1)
+					return _pumpUntilChunk(GfxChunkId::EndRender, true);
 
+				// Collect our sessions and update rectangles
 
-
+		*/
 	}
 
 

@@ -25,7 +25,8 @@
 #pragma once
 
 #include <wg_gfxbackend.h>
-
+#include <vector>
+#include <deque>
 
 namespace wg
 {
@@ -67,7 +68,12 @@ namespace wg
 		void	setTransforms(Transform * pBeg, Transform * pEnd) override;
 		void	processCommands(int32_t* pBeg, int32_t* pEnd) override;
 
-		void	flush();
+		//.____ Behavior ______________________________________________________
+
+		void	pushMask(RectSPX* pBeg, RectSPX* pEnd);
+		void	popMask();
+		void	clearMasks();
+		void	setTrimLevel(int level);
 
 		//.____ Misc _________________________________________________________
 
@@ -80,7 +86,6 @@ namespace wg
 
 		const TypeInfo& surfaceType(void) const override;
 
-		void	setTrimLevel( int level );
 
 	protected:
 		FrameTrimmer(GfxBackend* pBackend) : m_pBackend(pBackend) {}
@@ -90,73 +95,28 @@ namespace wg
 		void		_trimFrames();
 		void		_renderFrames();
 
-		void		_trim( RectSPX * pToTrim, RectSPX * pMaskBeg, RectSPX * pMaskEnd, RectSPX * pDrawBeg, RectSPX * pDrawEnd );
+		void		_trim( RectSPX * pToTrim, RectSPX * pMaskBeg, RectSPX * pMaskEnd );
 
 
 		GfxBackend_p	m_pBackend;
 
-		struct CommandSet
-		{
-			Surface * pCanvas;
-			CanvasRef canvasRef;
+		// Update rects as presented to us before trimming.
 
-			size_t 		commandsBeg;
-			size_t		commandsEnd;
+		const RectSPX*						m_pUpdateRectsBeg;
+		const RectSPX*						m_pUpdateRectsEnd;
 
-			size_t		objectsBeg;
-			size_t		objectsEnd;
+		// Update rects trimmed down by the masks, but none removed even if empty.
 
-			size_t		rectsBeg;
-			size_t		rectsEnd;
+		std::vector<RectSPX>				m_trimmedUpdateRects;
 
-			size_t		colorsBeg;
-			size_t		colorsEnd;
+		// Rendering rects trimmed down by m_trimmedUpdateRects.
 
-			size_t		transformsBeg;
-			size_t		transformsEnd;
-		};
+		std::vector<RectSPX>				m_renderingRects;
 
-		struct SessionData
-		{
-			SessionInfo		info;
 
-			std::vector<CommandSet>	commandSets;
+		std::deque <std::vector<RectSPX>>	m_masks;
+		int									m_trimLevel = 0;
 
-			size_t			updateRectsBeg;
-			size_t			updateRectsEnd;
-
-			size_t			commandRectsBeg;
-			size_t			commandRectsEnd;
-		};
-
-		std::vector<SessionData>	m_sessions;
-
-		int							m_trimLevel = 2;
-
-		// Local copies of all our buffers
-
-		std::vector<RectSPX>		m_rects;
-		std::vector<HiColor>		m_colors;
-		std::vector<Object*>		m_objects;
-		std::vector<Transform>		m_transforms;
-		std::vector<int32_t>		m_commands;
-
-		// Current state
-
-		Surface *		m_pCanvas = nullptr;
-		CanvasRef		m_canvasRef = CanvasRef::None;
-
-		size_t			m_objectsBeg;
-		size_t			m_objectsEnd;
-
-		size_t			m_rectsBeg;
-		size_t			m_rectsEnd;
-
-		size_t			m_colorsBeg;
-		size_t			m_colorsEnd;
-
-		size_t			m_transformsBeg;
-		size_t			m_transformsEnd;
 	};
 
 } // namespace wg

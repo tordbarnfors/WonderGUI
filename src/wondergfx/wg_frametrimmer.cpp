@@ -32,8 +32,6 @@ namespace wg
 
 	FrameTrimmer::~FrameTrimmer()
 	{
-		for( auto pObject : m_objects )
-			pObject->release();
 	}
 
 	//____ typeInfo() _________________________________________________________
@@ -47,7 +45,7 @@ namespace wg
 
 	void FrameTrimmer::beginRender()
 	{
-		if( m_trimLevel == 0 && m_pBackend )
+		if( m_pBackend )
 			m_pBackend->beginRender();
 	}
 
@@ -55,7 +53,7 @@ namespace wg
 
 	void FrameTrimmer::endRender()
 	{
-		if( m_trimLevel == 0 && m_pBackend )
+		if( m_pBackend )
 			m_pBackend->endRender();
 	}
 
@@ -63,33 +61,48 @@ namespace wg
 
 	void FrameTrimmer::beginSession(const SessionInfo* pSession)
 	{
-		if( m_trimLevel == 0 )
+		if (!m_pBackend)
+			return;
+
+		if (m_trimLevel == 0 || m_masks.empty())
 		{
-			if( m_pBackend )
-				m_pBackend->beginSession(pSession);
+			m_pBackend->beginSession(pSession);
 		}
 		else
 		{
-			m_sessions.emplace_back();
+			m_pUpdateRectsBeg = pSession->pUpdateRects;
+			m_pUpdateRectsEnd = pSession->pUpdateRects + pSession->nUpdateRects;
 
-			auto& session = m_sessions.back();
+			m_trimmedUpdateRects.clear();
 
-			session.info = * pSession;
+			int trimLevel = std::min(m_trimLevel, int(m_masks.size()));
 
-			session.updateRectsBeg = m_rects.size();
-			m_rects.insert( m_rects.end(), pSession->pUpdateRects, pSession->pUpdateRects + pSession->nUpdateRects );
-			session.updateRectsEnd = m_rects.size();
+			auto itMaskEnd = m_masks.begin() + trimLevel;
 
-			session.commandRectsBeg = m_rects.size();
-			session.commandRectsEnd = m_rects.size();
+			for (auto p = m_pUpdateRectsBeg; p < m_pUpdateRectsEnd; p++)
+			{
+				m_trimmedUpdateRects.push_back(*p);
+				auto pToTrim = &m_trimmedUpdateRects.back();
 
-			m_pCanvas		= nullptr;
-			m_canvasRef 	= CanvasRef::None;
+				if (pToTrim->isEmpty())
+					break;
 
-			m_objectsBeg 	= m_objectsEnd		= m_objects.size();
-			m_rectsBeg 		= m_rectsEnd		= m_rects.size();
-			m_colorsBeg 	= m_colorsEnd		= m_colors.size();
-			m_transformsBeg = m_transformsEnd	= m_transforms.size();
+				for (auto pMask = m_masks.begin(); pMask < itMaskEnd; pMask++)
+				{
+					_trim(pToTrim, pMask->data(), pMask->data() + pMask->size());
+
+					if (pToTrim->isEmpty())
+						break;
+				}
+			}
+
+			// We create a new session struct so we can supply our trimmed update rects
+
+			SessionInfo newSessionInfo = *pSession;
+			newSessionInfo.pUpdateRects = m_trimmedUpdateRects.data();
+			newSessionInfo.nUpdateRects = m_trimmedUpdateRects.size();
+
+			m_pBackend->beginSession(&newSessionInfo);
 		}
 	}
 
@@ -97,116 +110,91 @@ namespace wg
 
 	void FrameTrimmer::endSession()
 	{
-		if( m_trimLevel == 0 )
-		{
-			if( m_pBackend )
-				m_pBackend->beginSession(pSession);
-		}
-		else
-		{
-			auto& session = m_sessions.back();
-
-			session.updateRectsEnd = m_rects.size();
-			session.commandRectsEnd = m_rects.size();
-		}
+		if( m_pBackend )
+			m_pBackend->endSession();
 	}
 
 	//____ setCanvas() _______________________________________________
 
 	void FrameTrimmer::setCanvas(Surface* pSurface)
 	{
-		m_pCanvas = pSurface;
-		m_canvasRef = CanvasRef::None;
+		if (m_pBackend)
+			m_pBackend->setCanvas(pSurface);
 	}
 
 	void FrameTrimmer::setCanvas(CanvasRef ref)
 	{
-		m_pCanvas = nullptr;
-		m_canvasRef = ref;
+		if (m_pBackend)
+			m_pBackend->setCanvas(ref);
 	}
 
 	//____ setObjects() _______________________________________________
 
 	void FrameTrimmer::setObjects(Object** pBeg, Object** pEnd)
 	{
-		m_objectsBeg = m_objects.size();
-
-		auto it = m_objects.insert( m_objects.end(), pBeg, pEnd );
-		while( it < m_objects.end() )
-			(*it++)->retain();
-
-		m_objectsEnd = m_objects.size();
+		if (m_pBackend)
+			m_pBackend->setObjects(pBeg, pEnd);
 	}
 
 	//____ setRects() _______________________________________________
 
 	void FrameTrimmer::setRects(RectSPX* pBeg, RectSPX* pEnd)
 	{
-		m_rectsBeg = m_rects.size();
-		m_rects.insert( m_rects.end(), pBeg, pEnd );
-		m_rectsEnd = m_rects.size();
+		if (!m_pBackend)
+			return;
+
+		int nRects = pEnd - pBeg;
+
+		if (m_trimLevel == 0 || m_masks.empty())
+		{
+			m_pBackend->setRects(pBeg, pEnd);
+		}
+		else
+		{
+			m_renderingRects.clear();
+
+			for (auto p = pBeg; p < pEnd; p++)
+			{
+				for (auto p2 = m_pUpdateRectsBeg; p2 < m_pUpdateRectsEnd; p2++)
+				{
+					if (p2->contains(*p) )
+					{
+						// Found updateRect containg our renderingRect
+						// Now clip renderingRect against corresponding 
+						// clippedUpdateRect.
+
+						m_renderingRects.push_back(RectSPX::overlap(*p, m_trimmedUpdateRects[p2 - m_pUpdateRectsBeg]));
+						break;
+					}
+				}
+			}
+
+			m_pBackend->setRects(m_renderingRects.data(), m_renderingRects.data() + m_renderingRects.size());
+		}
 	}
 
 	//____ setColors() ___________________________________________________
 
 	void FrameTrimmer::setColors(HiColor* pBeg, HiColor* pEnd)
 	{
-		m_colorsBeg = m_colors.size();
-		m_colors.insert( m_colors.end(), pBeg, pEnd );
-		m_colorsEnd = m_colors.size();
+		if (m_pBackend)
+			m_pBackend->setColors(pBeg, pEnd);
 	}
 
 	//____ setTransforms() _______________________________________________
 
 	void FrameTrimmer::setTransforms(Transform* pBeg, Transform* pEnd)
 	{
-		m_transformsBeg = m_transforms.size();
-		m_transforms.insert( m_transforms.end(), pBeg, pEnd );
-		m_transformsEnd = m_transforms.size();
+		if (m_pBackend)
+			m_pBackend->setTransforms(pBeg, pEnd);
 	}
 
 	//____ processCommands() _______________________________________________
 
 	void FrameTrimmer::processCommands(int32_t* pBeg, int32_t* pEnd)
 	{
-		m_sessions.back().commandSets.emplace_back();
-		auto& set = m_sessions.back().commandSets.back();
-
-		set.pCanvas = m_pCanvas;
-		set.canvasRef = m_canvasRef;
-
-		set.commandsBeg = m_commands.size();
-		m_commands.insert( m_commands.end(), pBeg, pEnd );
-		set.commandsEnd = m_commands.size();
-
-		set.objectsBeg		= m_objectsBeg;
-		set.objectsEnd		= m_objectsEnd;
-		set.rectsBeg		= m_rectsBeg;
-		set.rectsEnd		= m_rectsEnd;
-		set.colorsBeg		= m_colorsBeg;
-		set.colorsEnd		= m_colorsEnd;
-		set.transformsBeg	= m_transformsBeg;
-		set.transformsEnd	= m_transformsEnd;
-	}
-
-	//____ flush() _______________________________________________________________
-
-	void FrameTrimmer::flush()
-	{
-		_trimFrames();
-		_renderFrames();
-
-		// Cleanup
-
-		for( auto pObject : m_objects )
-			pObject->release();
-
-		m_sessions.clear();
-		m_commands.clear();
-		m_rects.clear();
-		m_colors.clear();
-		m_objects.clear();
-		m_transforms.clear();
+		if (m_pBackend)
+			m_pBackend->processCommands(pBeg, pEnd);
 	}
 
 	//____ canvasInfo() __________________________________________________
@@ -259,45 +247,43 @@ namespace wg
 		return m_pBackend->surfaceType();
 	}
 
+	//____ pushMask() _______________________________________________
+
+	void FrameTrimmer::pushMask(RectSPX* pBeg, RectSPX* pEnd)
+	{
+		m_masks.emplace_back();
+
+		auto& vec = m_masks.back();
+
+		vec.insert(vec.end(), pBeg, pEnd);
+	}
+
+	//____ popMaskRects() ________________________________________________
+
+	void FrameTrimmer::popMask()
+	{
+		m_masks.pop_front();
+	}
+
+	//____ clearMasks() ______________________________________________
+
+	void FrameTrimmer::clearMasks()
+	{
+		m_masks.clear();
+	}
+
 	//____ setTrimLevel() ________________________________________________________
 
-	void FrameTrimmer::setTrimLevel( int level )
+	void FrameTrimmer::setTrimLevel(int level)
 	{
 		m_trimLevel = level;
 	}
 
-	//____ _trimFrames() _________________________________________________________
-
-	void FrameTrimmer::_trimFrames()
-	{
-		for( auto itTrimFrame = m_sessions.begin() ; itTrimFrame != m_sessions.end() ; itTrimFrame++ )
-		{
-
-			for( auto itMaskFrame = itTrimFrame+1 ; itMaskFrame != m_sessions.end() ; itMaskFrame++ )
-			{
-				if( itTrimFrame->commandSets.front().canvasRef == itMaskFrame->commandSets.front().canvasRef &&
-					itTrimFrame->commandSets.front().pCanvas == itMaskFrame->commandSets.front().pCanvas )
-				{
-					auto itTrimEnd = m_rects.begin() + itTrimFrame->updateRectsEnd;
-					for( auto itTrim = m_rects.begin() + itTrimFrame->updateRectsBeg ; itTrim < itTrimEnd ; itTrim++ )
-					{
-						if( !itTrim->isEmpty() )
-						{
-							_trim(&(*itTrim), m_rects.data() + itMaskFrame->updateRectsBeg, m_rects.data() + itMaskFrame->updateRectsEnd,
-								  m_rects.data() + itMaskFrame->commandRectsBeg, m_rects.data() + itMaskFrame->commandRectsEnd );
-						}
-					}
-				}
-			}
-		}
-	}
-
-
 	//____ _trim() ____________________________________________________________
 
-	void FrameTrimmer::	_trim( RectSPX * pTrim, RectSPX * pMaskBeg, RectSPX * pMaskEnd, RectSPX * pDrawBeg, RectSPX * pDrawEnd )
+	void FrameTrimmer::	_trim( RectSPX * pTrim, RectSPX * pMaskBeg, RectSPX * pMaskEnd )
 	{
-		RectSPX trim = * pTrim;
+		RectSPX& trim = * pTrim;
 
 		for( RectSPX * pMask = pMaskBeg ; pMask < pMaskEnd ; pMask++ )
 		{
@@ -320,7 +306,7 @@ namespace wg
 					trim.y += cut;
 					trim.h -= cut;
 				}
-				else if( maskY2 >= (trim.y + trim.h) )
+				else if( maskY2 >= (trim.y + trim.h) )/////////////////////////////////////////////
 				{
 					trim.h = maskY2 - trim.y;
 				}
@@ -350,86 +336,7 @@ namespace wg
 				}
 			}
 		}
-
-		// Clip the draw rects as well.
-
-		if( trim.x != pTrim->x || trim.y != pTrim->y || trim.w != pTrim->w || trim.h != pTrim->h )
-		{
-			for( RectSPX * p = pDrawBeg ; p < pDrawEnd ; p++ )
-			{
-				if( pTrim->contains(p->pos()) )
-					* p = RectSPX::overlap( * p, trim );
-			}
-
-			* pTrim = trim;
-		}
 	}
 
-
-	//____ _renderFrames() _______________________________________________________
-
-	void FrameTrimmer::_renderFrames()
-	{
-		if( !m_pBackend )
-			return;
-
-		Surface * pCanvas	= nullptr;
-		CanvasRef canvasRef	= CanvasRef::None;
-
-		size_t		objectsEnd = 0;
-		size_t		rectsEnd = 0;
-		size_t		colorsEnd = 0;
-		size_t		transformsEnd = 0;
-
-		m_pBackend->beginRender();
-
-		for( auto& session : m_sessions )
-		{
-			session.info.pUpdateRects = m_rects.data() + session.updateRectsBeg;
-			m_pBackend->beginSession(&session.info);
-
-			for( auto& set : session.commandSets )
-			{
-				if( canvasRef != set.canvasRef || pCanvas != set.pCanvas )
-				{
-					canvasRef = set.canvasRef;
-					pCanvas = set.pCanvas;
-
-					if( canvasRef != CanvasRef::None )
-						m_pBackend->setCanvas(canvasRef);
-					else
-						m_pBackend->setCanvas(pCanvas);
-				}
-
-				if( objectsEnd != set.objectsEnd )
-				{
-					objectsEnd = set.objectsEnd;
-					m_pBackend->setObjects(m_objects.data() + set.objectsBeg, m_objects.data() + set.objectsEnd);
-				}
-
-				if( rectsEnd != set.rectsEnd )
-				{
-					rectsEnd = set.rectsEnd;
-					m_pBackend->setRects(m_rects.data() + set.rectsBeg, m_rects.data() + set.rectsEnd);
-				}
-
-				if( colorsEnd != set.colorsEnd )
-				{
-					colorsEnd = set.colorsEnd;
-					m_pBackend->setColors(m_colors.data() + set.colorsBeg, m_colors.data() + set.colorsEnd);
-				}
-
-				if( transformsEnd != set.transformsEnd )
-				{
-					transformsEnd = set.transformsEnd;
-					m_pBackend->setTransforms(m_transforms.data() + set.transformsBeg, m_transforms.data() + set.transformsEnd);
-				}
-
-				m_pBackend->processCommands(m_commands.data() + set.commandsBeg, m_commands.data() + set.commandsEnd);
-			}
-		}
-
-		m_pBackend->endRender();
-	}
 
 } // namespace wg

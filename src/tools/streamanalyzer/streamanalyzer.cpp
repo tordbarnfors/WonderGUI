@@ -18,6 +18,7 @@
 
 #include <wg_linearbackend.h>
 
+#include <wg_frametrimmer.h>
 #include <themes/simplistic/wg_simplistic.h>
 
 #include <string>
@@ -918,7 +919,17 @@ bool MyApp::loadStream(std::string path)
 		} );
 */
 	auto pStreamGfxBackend = SoftBackend::create();
-	auto pStreamGfxDevice = GfxDeviceGen2::create(pStreamGfxBackend);
+
+	auto pTrimGfxBackend = FrameTrimmer::create(pStreamGfxBackend);
+
+/*
+	RectSPX mask = { 256*64,100*64,256 * 64, 200 * 64 };
+	pTrimGfxBackend->pushMask(&mask, &mask + 1);
+*/
+
+	pTrimGfxBackend->setTrimLevel(4);
+
+	auto pStreamGfxDevice = GfxDeviceGen2::create(pTrimGfxBackend);
 
 //	auto pStreamGfxDevice = wg_dynamic_cast<SoftGfxDevice_p>(Base::defaultGfxDevice());
 
@@ -937,8 +948,10 @@ bool MyApp::loadStream(std::string path)
 
 	m_pStreamSurfaceFactory = pStreamGfxDevice->surfaceFactory();
 	m_pStreamGfxDevice = pStreamGfxDevice;
+	m_pStreamGfxBackend = pStreamGfxBackend;
+	m_pStreamTrimGfxBackend = pTrimGfxBackend;
 	
-	m_pStreamPlayer	= StreamPlayer::create( pStreamGfxBackend, m_pStreamSurfaceFactory, pStreamGfxDevice->edgemapFactory() );
+	m_pStreamPlayer	= StreamPlayer::create( pTrimGfxBackend, m_pStreamSurfaceFactory, pTrimGfxBackend->edgemapFactory() );
 	m_pStreamPlayer->setStoreDirtyRects(true);
 	m_pStreamPlayer->setMaxDirtyRects(10000);
 	m_pStreamPlayer->setCanvasInfoCallback([this](const CanvasInfo * pBegin, const CanvasInfo * pEnd) { setupScreens(pBegin,pEnd); } );
@@ -990,10 +1003,8 @@ void MyApp::setupScreens(const CanvasInfo* pBeg, const CanvasInfo* pEnd)
 
 	// Ugly typecast! Will only work with SoftGfxDevice!
 
-	auto pBackend = wg_dynamic_cast<GfxDeviceGen2_p>(m_pStreamGfxDevice)->backend();
-
-	LinearBackend_p		pLinearBackend = wg_dynamic_cast<LinearBackend_p>(pBackend);
-	SoftBackend_p		pSoftBackend = wg_dynamic_cast<SoftBackend_p>(pBackend);
+	LinearBackend_p		pLinearBackend = wg_dynamic_cast<LinearBackend_p>(m_pStreamGfxBackend);
+	SoftBackend_p		pSoftBackend = wg_dynamic_cast<SoftBackend_p>(m_pStreamGfxBackend);
 
 	for( auto pCanvas = pBeg ; pCanvas < pEnd ; pCanvas++ )
 	{

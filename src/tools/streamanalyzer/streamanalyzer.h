@@ -79,12 +79,15 @@ private:
 	Window_p			m_pRecordedStepsWindow;
 
 	GfxDevice_p			m_pStreamGfxDevice;
+	GfxBackend_p		m_pStreamGfxBackend;
+	GfxBackend_p		m_pStreamTrimGfxBackend;
+
 	SurfaceFactory_p	m_pStreamSurfaceFactory;
 	char *				m_pLinearCanvasBuffer = nullptr;
 	
 	Blob_p				m_pStreamBlob;
-	StreamPlayer_p	m_pStreamPlayer;
-	StreamLogger_p	m_pStreamLogger;
+	StreamPlayer_p		m_pStreamPlayer;
+	StreamLogger_p		m_pStreamLogger;
 	StreamPump_p		m_pStreamPump;
 
 	
