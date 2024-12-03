@@ -80,7 +80,7 @@ private:
 
 	GfxDevice_p			m_pStreamGfxDevice;
 	GfxBackend_p		m_pStreamGfxBackend;
-	GfxBackend_p		m_pStreamTrimGfxBackend;
+	FrameTrimmer_p		m_pStreamTrimGfxBackend;
 
 	SurfaceFactory_p	m_pStreamSurfaceFactory;
 	char *				m_pLinearCanvasBuffer = nullptr;

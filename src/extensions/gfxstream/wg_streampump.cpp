@@ -249,25 +249,61 @@ namespace wg
 			}
 		}
 
+		// Early out if we have no frames.
 
-		return false;
+		if (nFrames == 0)
+			return false;
 
-		/*
+		//
 
 
-				// Early out if we have one frame or less.
+		std::vector<RectSPX>	updateRects;
 
-				if (nFrames == 0)
-					return false;
+		for (int seg = 0; seg <= nFullSegments; seg++)
+		{
+			const uint8_t* pEnd = (seg == nFullSegments) ? pLastFoundEndRender : pSegments[seg].pEnd;
+			auto p = pSegments[seg].pBegin;
 
-				if (nFrames == 1)
-					return _pumpUntilChunk(GfxChunkId::EndRender, true);
+			while (p != pEnd)
+			{	
 
-				// Collect our sessions and update rectangles
+				GfxStream::ChunkId chunkId = GfxStream::chunkType(p);
 
-		*/
+				if (chunkId == GfxStream::ChunkId::UpdateRects)
+				{
+					const uint16_t* pChunkData = (uint16_t*) (p + GfxStream::headerSize(p));
+
+					int32_t		totalSize	= pChunkData[0] + int(pChunkData[1]) * 65536;
+					int32_t		offset		= pChunkData[2] + int(pChunkData[3]) * 65536;
+					bool		bFirstChunk = pChunkData[4];
+					bool		bLastChunk	= pChunkData[5];
+						
+					if (bFirstChunk)
+						updateRects.resize(totalSize / sizeof(RectSPX));
+
+					uint8_t* pSrc = p + 16;
+					uint8_t* pDest = ((uint8_t*)updateRects.data()) + offset;
+					int chunkRectsSize = (GfxStream::chunkSize(p) - 16);
+
+					memcpy(pDest, pSrc, chunkRectsSize);
+				}
+
+				if (chunkId == GfxStream::ChunkId::SetCanvas)
+				{
+					const uint8_t* pChunkData = p + GfxStream::headerSize(p);
+					CanvasRef	canvasRef = (CanvasRef)pChunkData[2];
+
+					if (canvasRef == canvas && !updateRects.empty() )
+						output.emplace_back(std::move(updateRects));
+				}
+
+				p = p + GfxStream::chunkSize(p);
+
+			}
+		}
+
+		return true;
 	}
-
 
 	//____ pumpAll() __________________________________________________________
 
