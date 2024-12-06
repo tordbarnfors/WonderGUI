@@ -18,7 +18,7 @@
 
 #include <wg_linearbackend.h>
 
-#include <wg_frametrimmer.h>
+#include <wg_streamtrimbackend.h>
 #include <themes/simplistic/wg_simplistic.h>
 
 #include <string>
@@ -920,14 +920,14 @@ bool MyApp::loadStream(std::string path)
 */
 	auto pStreamGfxBackend = SoftBackend::create();
 
-	auto pTrimGfxBackend = FrameTrimmer::create(pStreamGfxBackend);
+	auto pTrimGfxBackend = StreamTrimBackend::create(pStreamGfxBackend);
 
 /*
 	RectSPX mask = { 256*64,100*64,256 * 64, 200 * 64 };
 	pTrimGfxBackend->pushMask(&mask, &mask + 1);
 */
 
-	pTrimGfxBackend->setTrimLevel(4);
+	pTrimGfxBackend->setTrimLevel(1000);
 
 	auto pStreamGfxDevice = GfxDeviceGen2::create(pTrimGfxBackend);
 
@@ -1204,8 +1204,8 @@ void MyApp::skipFrames(int frames)
 
 	_logFrames( m_currentFrame, m_currentFrame+1, false, m_pFrameLogDisplay );
 
-	_logFrames( m_currentFrame+1, destFrame+1, false, m_pOptimizerInLogDisplay);
-	_logFrames( m_currentFrame+1, destFrame+1, true, m_pOptimizerOutLogDisplay);
+	_logBackend( m_currentFrame+1, destFrame+1, false, m_pOptimizerInLogDisplay);
+	_logBackend( m_currentFrame+1, destFrame+1, true, m_pOptimizerOutLogDisplay);
 
 	//
 
@@ -1355,11 +1355,7 @@ void MyApp::_playFrames( int begin, int end, bool bOptimize )
 
 	if( bOptimize )
 	{
-		std::vector<std::vector<RectSPX>>	masks;
-		m_pStreamPump->peekCanvasUpdates(CanvasRef::Canvas_1, masks);
-
-
-//		m_pStreamPump->pumpAllFramesOptimizeClipping();
+		m_pStreamPump->setSessionMasks(m_pStreamTrimGfxBackend);
 		m_pStreamPump->pumpAll();						// To make sure any data outside frame following it is included.
 	}
 	else
@@ -1387,6 +1383,34 @@ void MyApp::_logFrames( int begin, int end, bool bOptimize, TextEditor * pDispla
 	else
 */		pPump->pumpAll();
 
+	pDisplay->editor.setText( logStream.str() );
+}
+
+//____ _logBackend() ___________________________________________________________
+
+void MyApp::_logBackend( int begin, int end, bool bOptimize, TextEditor * pDisplay )
+{
+	uint8_t * pBegin = m_frames[begin];
+	uint8_t * pEnd = end == m_frames.size() ? (uint8_t*) m_pStreamBlob->end() : (uint8_t*) m_frames[end];
+
+	auto pWrapper = StreamWrapper::create( pBegin, pEnd );
+
+
+	std::ostringstream	logStream;
+
+	auto pLogger = BackendLogger::create( logStream, nullptr);
+	auto pTrimmer = StreamTrimBackend::create(pLogger);
+	auto pPlayer = StreamPlayer::create(pTrimmer, nullptr, nullptr);
+	auto pPump = StreamPump::create( {pWrapper, pWrapper->output}, {pPlayer, pPlayer->input} );
+
+
+	if( bOptimize )
+	{
+		pTrimmer->setTrimLevel(100000);
+		pPump->setSessionMasks(pTrimmer);
+	}
+
+	pPump->pumpAll();
 	pDisplay->editor.setText( logStream.str() );
 }
 

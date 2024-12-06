@@ -221,9 +221,12 @@ namespace wg
 
 	//____ _beginSession() _______________________________________________________
 
-	void SoftBackend::beginSession(const SessionInfo* pSession)
+	void SoftBackend::beginSession( CanvasRef canvasRef, Surface * pCanvas, int nUpdateRects, const RectSPX * pUpdateRects, const SessionInfo * pInfo )
 	{
-
+		if( canvasRef != CanvasRef::None )
+			setCanvas(canvasRef);
+		else
+			setCanvas(pCanvas);
 	}
 
 	//____ _endSession() _______________________________________________________

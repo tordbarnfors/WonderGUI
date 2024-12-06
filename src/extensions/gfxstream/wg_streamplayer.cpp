@@ -188,9 +188,12 @@ namespace wg
 
 			// Temporary storage for variables that is stored in smaller uints than in SessionInfo
 
-			uint16_t	nCanvases;
+			uint16_t	objectId;
+			CanvasRef	canvasRef;
+			uint8_t		dummy;
 			uint16_t	nUpdateRects;
 
+			uint16_t	nSetCanvas;
 			uint16_t	nStateChanges;
 			uint16_t	nLines;
 			uint16_t	nFill;
@@ -200,9 +203,14 @@ namespace wg
 			uint16_t	nTransforms;
 			uint16_t	nObjects;
 
-			*m_pDecoder >> nCanvases;
-			*m_pDecoder >> m_sessionInfo.canvasSize;
+
+			*m_pDecoder >> objectId;
+			*m_pDecoder >> canvasRef;
+			*m_pDecoder >> dummy;
+
 			*m_pDecoder >> nUpdateRects;
+
+			*m_pDecoder >> nSetCanvas;
 			*m_pDecoder >> nStateChanges;
 			*m_pDecoder >> nLines;
 			*m_pDecoder >> nFill;
@@ -217,8 +225,7 @@ namespace wg
 			*m_pDecoder >> nTransforms;
 			*m_pDecoder >> nObjects;
 
-			m_sessionInfo.nCanvases = nCanvases;
-			m_sessionInfo.nUpdateRects = nUpdateRects;
+			m_sessionInfo.nSetCanvas = nSetCanvas;
 			m_sessionInfo.nStateChanges = nStateChanges;
 			m_sessionInfo.nLines = nLines;
 			m_sessionInfo.nFill = nFill;
@@ -229,10 +236,12 @@ namespace wg
 			m_sessionInfo.nObjects = nObjects;
 
 
+			m_baseCanvasRef = canvasRef;
+			m_baseCanvasSurface = objectId > 0 ? static_cast<Surface*>(m_vObjects[objectId].rawPtr()) : nullptr;
+
 			if (nUpdateRects == 0)
 			{
-				m_sessionInfo.pUpdateRects = nullptr;
-				m_pBackend->beginSession(&m_sessionInfo);
+				m_pBackend->beginSession(m_baseCanvasRef, m_baseCanvasSurface, 0, nullptr, &m_sessionInfo);
 			}
 
 			break;
@@ -241,6 +250,9 @@ namespace wg
 		case GfxStream::ChunkId::EndSession:
 		{
 			m_pBackend->endSession();
+
+			m_baseCanvasRef = CanvasRef::None;
+			m_baseCanvasSurface = nullptr;
 			break;
 		}
 
@@ -441,10 +453,7 @@ namespace wg
 			*m_pDecoder >> GfxStream::ReadBytes{ bytes, pDest };
 
 			if (bLastChunk)
-			{
-				m_sessionInfo.pUpdateRects = m_vUpdateRects.data();
-				m_pBackend->beginSession(&m_sessionInfo);
-			}
+				m_pBackend->beginSession(m_baseCanvasRef, m_baseCanvasSurface, m_vUpdateRects.size(), m_vUpdateRects.data(), &m_sessionInfo);
 
 			break;
 		}

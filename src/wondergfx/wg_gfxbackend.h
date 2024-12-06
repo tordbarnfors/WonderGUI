@@ -60,14 +60,9 @@ namespace wg
 
 		struct SessionInfo
 		{
-			int				nCanvases;			// Number of setCanvas calls in session (may be less than this value).
-
-			SizeSPX			canvasSize;			// All canvases in the session have this size.
-			int				nUpdateRects;		// Number of rectangles in pUpdateRects.
-			const RectSPX*	pUpdateRects;		// Rectangular areas of canvases that will be updated.
-
 			// Commands
 
+			int		nSetCanvas;			// Number of setCanvas calls in session.
 			int		nStateChanges;		// Number of times state will change through session.
 			int		nLines;				// Number of line commands.
 			int		nFill;
@@ -125,7 +120,7 @@ namespace wg
 		virtual void	beginRender() = 0;
 		virtual void	endRender() = 0;
 		
-		virtual void	beginSession( const SessionInfo * pSession ) = 0;
+		virtual void	beginSession( CanvasRef canvasRef, Surface * pCanvas, int nUpdateRects, const RectSPX * pUpdateRects, const SessionInfo * pInfo = nullptr ) = 0;
 		virtual void	endSession() = 0;
 
 		virtual void	setCanvas( Surface * pSurface ) = 0;

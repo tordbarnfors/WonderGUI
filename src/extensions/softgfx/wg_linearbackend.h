@@ -71,7 +71,7 @@ namespace wg
 
 		//.____ Rendering ________________________________________________
 	
-		void	beginSession(const SessionInfo* pSession) override;
+		void	beginSession( CanvasRef canvasRef, Surface * pCanvas, int nUpdateRects, const RectSPX * pUpdateRects, const SessionInfo * pInfo = nullptr ) override;
 		void	endSession() override;
 
 		void	setCanvas( Surface * pSurface ) override;

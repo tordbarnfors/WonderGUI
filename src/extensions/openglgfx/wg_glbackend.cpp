@@ -1756,8 +1756,11 @@ void GlBackend::endRender()
 
 //____ _beginSession() _______________________________________________________
 
-void GlBackend::beginSession(const SessionInfo* pSession)
+void GlBackend::beginSession( CanvasRef canvasRef, Surface * pCanvas, int nUpdateRects, const RectSPX * pUpdateRects, const SessionInfo * pInfo )
 {
+	if( !pCanvas && canvasRef != CanvasRef::Default )
+		return;
+
 	// Reserve buffer for coordinates
 
 	int nCoords = pSession->nRects * 6 + pSession->nLineCoords/2 * 6;
@@ -1803,6 +1806,8 @@ void GlBackend::beginSession(const SessionInfo* pSession)
 		+ pSession->nCanvases];	
 
 	m_commandQueueSize = 0;
+
+	_setCanvas(pCanvasSurface);
 }
 
 //____ _endSession() _______________________________________________________

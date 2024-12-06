@@ -110,6 +110,9 @@ namespace wg
 		GfxBackend::SessionInfo	m_sessionInfo;			// Temporary for BeginSession/UpdateRects
 		std::vector<RectSPX>	m_vUpdateRects;
 
+		CanvasRef			m_baseCanvasRef;
+		Surface_p			m_baseCanvasSurface;
+
 		
 		// For multi-chunk drawing operations (DrawSegments, FlipDrawSegments, DrawWave and FlipDrawWave), telling which one we are receiving edge samples for.
 		

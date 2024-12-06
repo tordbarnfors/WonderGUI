@@ -94,20 +94,18 @@ namespace wg
 
 	//____ beginSession() _______________________________________________________
 
-	void LinearBackend::beginSession(const SessionInfo* pSession)
+	void LinearBackend::beginSession( CanvasRef canvasRef, Surface * pCanvas, int nUpdateRects, const RectSPX * pUpdateRects, const SessionInfo * pInfo )
 	{
-		SoftBackend::beginSession(pSession);
-
-		auto pUpdateRects = pSession->pUpdateRects;
+		SoftBackend::beginSession(canvasRef, pCanvas, nUpdateRects, pUpdateRects, pInfo);
 
 		// We prepare our canvas segments as much as we can, i.e. we resize the vector
 		// and fill in the rect. Pitch and pBuffer depends on canvas.
 
-		m_canvasSegments.resize(pSession->nUpdateRects);
+		m_canvasSegments.resize(nUpdateRects);
 
 		int	nUpdatePixels = 0;
 
-		for( int i = 0 ; i < pSession->nUpdateRects ; i++ )
+		for( int i = 0 ; i < nUpdateRects ; i++ )
 		{
 			RectI updateRect = pUpdateRects[i]/64;
 			m_canvasSegments[i].rect = updateRect;

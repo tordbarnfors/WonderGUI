@@ -20,30 +20,30 @@
 
 =========================================================================*/
 
-#include <wg_frametrimmer.h>
+#include <wg_streamtrimbackend.h>
 
 namespace wg
 {
-	const TypeInfo FrameTrimmer::TYPEINFO = { "FrameTrimmer", &GfxBackend::TYPEINFO };
+	const TypeInfo StreamTrimBackend::TYPEINFO = { "StreamTrimBackend", &GfxBackend::TYPEINFO };
 
 	const TypeInfo s_unspecifiedSurfaceType = { "SurfaceType Unspecified, real backend missing", &Surface::TYPEINFO };
 
 	//____ destructor __________________________________________________
 
-	FrameTrimmer::~FrameTrimmer()
+	StreamTrimBackend::~StreamTrimBackend()
 	{
 	}
 
 	//____ typeInfo() _________________________________________________________
 
-	const TypeInfo& FrameTrimmer::typeInfo(void) const
+	const TypeInfo& StreamTrimBackend::typeInfo(void) const
 	{
 		return TYPEINFO;
 	}
 
 	//____ beginRender() _______________________________________________
 
-	void FrameTrimmer::beginRender()
+	void StreamTrimBackend::beginRender()
 	{
 		if( m_pBackend )
 			m_pBackend->beginRender();
@@ -51,7 +51,7 @@ namespace wg
 
 	//____ endRender() _______________________________________________
 
-	void FrameTrimmer::endRender()
+	void StreamTrimBackend::endRender()
 	{
 		if( m_pBackend )
 			m_pBackend->endRender();
@@ -59,19 +59,19 @@ namespace wg
 
 	//____ beginSession() ______________________________________________________
 
-	void FrameTrimmer::beginSession(const SessionInfo* pSession)
+	void StreamTrimBackend::beginSession( CanvasRef canvasRef, Surface * pCanvas, int nUpdateRects, const RectSPX * pUpdateRects, const SessionInfo * pInfo )
 	{
 		if (!m_pBackend)
 			return;
 
 		if (m_trimLevel == 0 || m_masks.empty())
 		{
-			m_pBackend->beginSession(pSession);
+			m_pBackend->beginSession(canvasRef, pCanvas, nUpdateRects, pUpdateRects, pInfo);
 		}
 		else
 		{
-			m_pUpdateRectsBeg = pSession->pUpdateRects;
-			m_pUpdateRectsEnd = pSession->pUpdateRects + pSession->nUpdateRects;
+			m_pUpdateRectsBeg = pUpdateRects;
+			m_pUpdateRectsEnd = pUpdateRects + nUpdateRects;
 
 			m_trimmedUpdateRects.clear();
 
@@ -81,48 +81,49 @@ namespace wg
 
 			for (auto p = m_pUpdateRectsBeg; p < m_pUpdateRectsEnd; p++)
 			{
+
 				m_trimmedUpdateRects.push_back(*p);
 				auto pToTrim = &m_trimmedUpdateRects.back();
 
-				if (pToTrim->isEmpty())
-					break;
+				if( pToTrim->isEmpty() )
+					continue;
 
 				for (auto pMask = m_masks.begin(); pMask < itMaskEnd; pMask++)
 				{
-					_trim(pToTrim, pMask->data(), pMask->data() + pMask->size());
+					if( pMask->canvasRef == canvasRef && pMask->pCanvas == pCanvas )
+					{
+						_trim(pToTrim, pMask->rects.data(), pMask->rects.data() + pMask->rects.size());
+					}
 
 					if (pToTrim->isEmpty())
 						break;
 				}
 			}
 
-			// We create a new session struct so we can supply our trimmed update rects
-
-			SessionInfo newSessionInfo = *pSession;
-			newSessionInfo.pUpdateRects = m_trimmedUpdateRects.data();
-			newSessionInfo.nUpdateRects = m_trimmedUpdateRects.size();
-
-			m_pBackend->beginSession(&newSessionInfo);
+			m_pBackend->beginSession(canvasRef, pCanvas, m_trimmedUpdateRects.size(), m_trimmedUpdateRects.data(), pInfo);
 		}
 	}
 
 	//____ endSession() ________________________________________________________
 
-	void FrameTrimmer::endSession()
+	void StreamTrimBackend::endSession()
 	{
 		if( m_pBackend )
 			m_pBackend->endSession();
+
+		if( !m_masks.empty() )
+			m_masks.pop_front();
 	}
 
 	//____ setCanvas() _______________________________________________
 
-	void FrameTrimmer::setCanvas(Surface* pSurface)
+	void StreamTrimBackend::setCanvas(Surface* pSurface)
 	{
 		if (m_pBackend)
 			m_pBackend->setCanvas(pSurface);
 	}
 
-	void FrameTrimmer::setCanvas(CanvasRef ref)
+	void StreamTrimBackend::setCanvas(CanvasRef ref)
 	{
 		if (m_pBackend)
 			m_pBackend->setCanvas(ref);
@@ -130,7 +131,7 @@ namespace wg
 
 	//____ setObjects() _______________________________________________
 
-	void FrameTrimmer::setObjects(Object** pBeg, Object** pEnd)
+	void StreamTrimBackend::setObjects(Object** pBeg, Object** pEnd)
 	{
 		if (m_pBackend)
 			m_pBackend->setObjects(pBeg, pEnd);
@@ -138,7 +139,7 @@ namespace wg
 
 	//____ setRects() _______________________________________________
 
-	void FrameTrimmer::setRects(RectSPX* pBeg, RectSPX* pEnd)
+	void StreamTrimBackend::setRects(RectSPX* pBeg, RectSPX* pEnd)
 	{
 		if (!m_pBackend)
 			return;
@@ -175,7 +176,7 @@ namespace wg
 
 	//____ setColors() ___________________________________________________
 
-	void FrameTrimmer::setColors(HiColor* pBeg, HiColor* pEnd)
+	void StreamTrimBackend::setColors(HiColor* pBeg, HiColor* pEnd)
 	{
 		if (m_pBackend)
 			m_pBackend->setColors(pBeg, pEnd);
@@ -183,7 +184,7 @@ namespace wg
 
 	//____ setTransforms() _______________________________________________
 
-	void FrameTrimmer::setTransforms(Transform* pBeg, Transform* pEnd)
+	void StreamTrimBackend::setTransforms(Transform* pBeg, Transform* pEnd)
 	{
 		if (m_pBackend)
 			m_pBackend->setTransforms(pBeg, pEnd);
@@ -191,7 +192,7 @@ namespace wg
 
 	//____ processCommands() _______________________________________________
 
-	void FrameTrimmer::processCommands(int32_t* pBeg, int32_t* pEnd)
+	void StreamTrimBackend::processCommands(int32_t* pBeg, int32_t* pEnd)
 	{
 		if (m_pBackend)
 			m_pBackend->processCommands(pBeg, pEnd);
@@ -199,7 +200,7 @@ namespace wg
 
 	//____ canvasInfo() __________________________________________________
 
-	const CanvasInfo* FrameTrimmer::canvasInfo(CanvasRef ref) const
+	const CanvasInfo* StreamTrimBackend::canvasInfo(CanvasRef ref) const
 	{
 		if( !m_pBackend)
 			return nullptr;
@@ -209,7 +210,7 @@ namespace wg
 
 	//____ surfaceFactory() ___________________________________________________
 
-	SurfaceFactory_p FrameTrimmer::surfaceFactory()
+	SurfaceFactory_p StreamTrimBackend::surfaceFactory()
 	{
 		if( !m_pBackend)
 			return nullptr;
@@ -219,7 +220,7 @@ namespace wg
 
 	//____ edgemapFactory() ______________________________________________________
 
-	EdgemapFactory_p FrameTrimmer::edgemapFactory()
+	EdgemapFactory_p StreamTrimBackend::edgemapFactory()
 	{
 		if( !m_pBackend)
 			return nullptr;
@@ -229,7 +230,7 @@ namespace wg
 
 	//____ maxEdges() ____________________________________________________________
 
-	int FrameTrimmer::maxEdges() const
+	int StreamTrimBackend::maxEdges() const
 	{
 		if( !m_pBackend)
 			return 0;
@@ -239,7 +240,7 @@ namespace wg
 
 	//____ surfaceType() ______________________________________________________
 
-	const TypeInfo& FrameTrimmer::surfaceType(void) const
+	const TypeInfo& StreamTrimBackend::surfaceType(void) const
 	{
 		if( !m_pBackend)
 			return s_unspecifiedSurfaceType;
@@ -247,41 +248,57 @@ namespace wg
 		return m_pBackend->surfaceType();
 	}
 
-	//____ pushMask() _______________________________________________
+	//____ addNonMaskingSession() ________________________________________________
 
-	void FrameTrimmer::pushMask(RectSPX* pBeg, RectSPX* pEnd)
+	void StreamTrimBackend::addNonMaskingSession()
 	{
 		m_masks.emplace_back();
+		auto& mask = m_masks.back();
 
-		auto& vec = m_masks.back();
-
-		vec.insert(vec.end(), pBeg, pEnd);
+		mask.canvasRef = CanvasRef::None;
+		mask.pCanvas = nullptr;
 	}
 
-	//____ popMaskRects() ________________________________________________
+	//____ addFullyMaskingSession() ______________________________________________
 
-	void FrameTrimmer::popMask()
+	void StreamTrimBackend::addFullyMaskingSession( CanvasRef canvasRef, Surface * pCanvas )
 	{
-		m_masks.pop_front();
+		m_masks.emplace_back();
+		auto& mask = m_masks.back();
+
+		mask.canvasRef = canvasRef;
+		mask.pCanvas = pCanvas;
 	}
 
-	//____ clearMasks() ______________________________________________
+	//____ addMaskingSession() _______________________________________________
 
-	void FrameTrimmer::clearMasks()
+	void StreamTrimBackend::addMaskingSession( CanvasRef canvasRef, Surface * pCanvas, int nMaskingRects, const RectSPX * pMaskingRects )
+	{
+		m_masks.emplace_back();
+		auto& mask = m_masks.back();
+
+		mask.canvasRef = canvasRef;
+		mask.pCanvas = pCanvas;
+		mask.rects.insert(mask.rects.end(), pMaskingRects, pMaskingRects + nMaskingRects);
+	}
+
+	//____ clearSessionMasks() ______________________________________________
+
+	void StreamTrimBackend::clearSessionMasks()
 	{
 		m_masks.clear();
 	}
 
 	//____ setTrimLevel() ________________________________________________________
 
-	void FrameTrimmer::setTrimLevel(int level)
+	void StreamTrimBackend::setTrimLevel(int level)
 	{
 		m_trimLevel = level;
 	}
 
 	//____ _trim() ____________________________________________________________
 
-	void FrameTrimmer::	_trim( RectSPX * pTrim, RectSPX * pMaskBeg, RectSPX * pMaskEnd )
+	void StreamTrimBackend::_trim( RectSPX * pTrim, RectSPX * pMaskBeg, RectSPX * pMaskEnd )
 	{
 		RectSPX& trim = * pTrim;
 

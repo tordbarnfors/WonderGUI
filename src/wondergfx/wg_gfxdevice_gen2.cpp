@@ -961,10 +961,7 @@ void GfxDeviceGen2::_doFlattenLayers()
 
 	canvasData.sessionInfo.nObjects = (int) canvasData.objects.size();
 	canvasData.sessionInfo.nTransforms = (int) canvasData.transforms.size();
-	canvasData.sessionInfo.nCanvases = (int) canvasData.layers.size();
-	canvasData.sessionInfo.canvasSize = canvasData.info.size;
-	canvasData.sessionInfo.nUpdateRects = canvasData.updateRects.nRects;
-	canvasData.sessionInfo.pUpdateRects = canvasData.updateRects.pRects;
+	canvasData.sessionInfo.nSetCanvas = (int) (canvasData.layers.size()-1)*2;
 	canvasData.sessionInfo.nColors = 0;
 	canvasData.sessionInfo.nRects = 0;
 
@@ -975,7 +972,7 @@ void GfxDeviceGen2::_doFlattenLayers()
 	}
 
 
-	m_pBackend->beginSession(&canvasData.sessionInfo);
+	m_pBackend->beginSession(canvasData.info.ref, canvasData.info.pSurface, canvasData.updateRects.nRects, canvasData.updateRects.pRects, &canvasData.sessionInfo);
 
 	// Send transforms and objects to backend
 		
@@ -986,11 +983,6 @@ void GfxDeviceGen2::_doFlattenLayers()
 		m_pBackend->setObjects( canvasData.objects.data(), canvasData.objects.data() + canvasData.objects.size() );
 	
 	// Render base layer
-
-	if (canvasData.info.ref != CanvasRef::None)
-		m_pBackend->setCanvas(canvasData.info.ref);
-	else
-		m_pBackend->setCanvas(canvasData.info.pSurface);
 
 	auto& baseLayer = canvasData.layers[0];
 
@@ -1055,14 +1047,6 @@ void GfxDeviceGen2::_doFlattenLayers()
 		}
 		else
 		{
-
-			// Set backend canvas in case it has been changed
-
-			if (canvasData.info.ref != CanvasRef::None)
-				m_pBackend->setCanvas(canvasData.info.ref);
-			else
-				m_pBackend->setCanvas(canvasData.info.pSurface);
-
 			// Send buffers and commands to backend
 
 			RectSPX* pRectsBeg = layer.rects.data();

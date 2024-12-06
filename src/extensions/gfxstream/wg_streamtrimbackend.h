@@ -20,8 +20,8 @@
 
 =========================================================================*/
 
-#ifndef	WG_FRAMETRIMMER_DOT_H
-#define WG_FRAMETRIMMER_DOT_H
+#ifndef	WG_STREAMTRIMBACKEND_DOT_H
+#define WG_STREAMTRIMBACKEND_DOT_H
 #pragma once
 
 #include <wg_gfxbackend.h>
@@ -31,20 +31,20 @@
 namespace wg
 {
 
-	class FrameTrimmer;
-	typedef	StrongPtr<FrameTrimmer>	FrameTrimmer_p;
-	typedef	WeakPtr<FrameTrimmer>	FrameTrimmer_wp;
+	class StreamTrimBackend;
+	typedef	StrongPtr<StreamTrimBackend>	StreamTrimBackend_p;
+	typedef	WeakPtr<StreamTrimBackend>	StreamTrimBackend_wp;
 
 
-	//____ BackendLogger __________________________________________________________
+	//____ StreamTrimBackend __________________________________________________________
 
-	class FrameTrimmer : public GfxBackend
+	class StreamTrimBackend : public GfxBackend
 	{
 	public:
 		
 		//.____ Creation __________________________________________
 
-		static FrameTrimmer_p		create(GfxBackend * pBackend) { return FrameTrimmer_p(new FrameTrimmer(pBackend)); }
+		static StreamTrimBackend_p		create(GfxBackend * pBackend) { return StreamTrimBackend_p(new StreamTrimBackend(pBackend)); }
 
 
 		//.____ Identification __________________________________________
@@ -57,7 +57,7 @@ namespace wg
 		void	beginRender() override;
 		void	endRender() override;
 		
-		void	beginSession(const SessionInfo* pSession) override;
+		void	beginSession( CanvasRef canvasRef, Surface * pCanvas, int nUpdateRects, const RectSPX * pUpdateRects, const SessionInfo * pInfo = nullptr ) override;
 		void	endSession() override;
 
 		void	setCanvas( Surface * pSurface ) override;
@@ -70,9 +70,10 @@ namespace wg
 
 		//.____ Behavior ______________________________________________________
 
-		void	pushMask(RectSPX* pBeg, RectSPX* pEnd);
-		void	popMask();
-		void	clearMasks();
+		void	addNonMaskingSession();
+		void	addFullyMaskingSession( CanvasRef canvas, Surface * pCanvas );
+		void	addMaskingSession( CanvasRef canvas, Surface * pCanvas, int nMaskingRects, const RectSPX * pMaskingRects );
+		void	clearSessionMasks();
 		void	setTrimLevel(int level);
 
 		//.____ Misc _________________________________________________________
@@ -88,9 +89,9 @@ namespace wg
 
 
 	protected:
-		FrameTrimmer(GfxBackend* pBackend) : m_pBackend(pBackend) {}
+		StreamTrimBackend(GfxBackend* pBackend) : m_pBackend(pBackend) {}
 
-		virtual ~FrameTrimmer();
+		virtual ~StreamTrimBackend();
 
 		void		_trimFrames();
 		void		_renderFrames();
@@ -102,23 +103,30 @@ namespace wg
 
 		// Update rects as presented to us before trimming.
 
-		const RectSPX*						m_pUpdateRectsBeg;
-		const RectSPX*						m_pUpdateRectsEnd;
+		const RectSPX*				m_pUpdateRectsBeg;
+		const RectSPX*				m_pUpdateRectsEnd;
 
 		// Update rects trimmed down by the masks, but none removed even if empty.
 
-		std::vector<RectSPX>				m_trimmedUpdateRects;
+		std::vector<RectSPX>		m_trimmedUpdateRects;
 
 		// Rendering rects trimmed down by m_trimmedUpdateRects.
 
-		std::vector<RectSPX>				m_renderingRects;
+		std::vector<RectSPX>		m_renderingRects;
 
+		struct SessionMask
+		{
+			CanvasRef	canvasRef;
+			Surface *	pCanvas;
 
-		std::deque <std::vector<RectSPX>>	m_masks;
-		int									m_trimLevel = 0;
+			std::vector<RectSPX>	rects;
+		};
+
+		std::deque <SessionMask>	m_masks;
+		int							m_trimLevel = 0;
 
 	};
 
 } // namespace wg
-#endif	// WG_FRAMETRIMMER_DOT_H
+#endif	// WG_STREAMTRIMBACKEND_DOT_H
 

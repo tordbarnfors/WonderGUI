@@ -29,6 +29,8 @@
 
 #include <wg_streamsource.h>
 #include <wg_streamsink.h>
+#include <wg_streamtrimbackend.h>
+
 
 #include <vector>
 #include <functional>
@@ -60,7 +62,7 @@ namespace wg
 
 		GfxStream::ChunkId	peekChunk();
 
-		bool		peekCanvasUpdates( CanvasRef canvas, std::vector<std::vector<RectSPX>>& output );
+		bool		setSessionMasks(StreamTrimBackend * pTrimBackend);
 
 		bool		pumpChunk();
 		bool		pumpUntilFrame();

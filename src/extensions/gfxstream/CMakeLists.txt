@@ -31,6 +31,8 @@ set( SOURCES
 	wg_streamsurface.h
 	wg_streamsurfacefactory.cpp
 	wg_streamsurfacefactory.h
+	wg_streamtrimbackend.cpp
+	wg_streamtrimbackend.h
 	wg_streamedgemap.cpp
 	wg_streamedgemap.h
 	wg_streamedgemapfactory.cpp

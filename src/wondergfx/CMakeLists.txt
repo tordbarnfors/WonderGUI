@@ -21,8 +21,6 @@ set( SOURCES
 	wg_edgemaptools.h
 	wg_font.cpp
 	wg_font.h
-	wg_frametrimmer.cpp
-	wg_frametrimmer.h
 	wg_geo.cpp
 	wg_geo.h
 	wg_gfxbase.cpp

@@ -39,6 +39,7 @@
 #include <wg_streamsplitter.h>
 #include <wg_streamsurface.h>
 #include <wg_streamsurfacefactory.h>
+#include <wg_streamtrimbackend.h>
 #include <wg_streamwrapper.h>
 #include <wg_streamwriter.h>
 #include <wg_streamedgemap.h>

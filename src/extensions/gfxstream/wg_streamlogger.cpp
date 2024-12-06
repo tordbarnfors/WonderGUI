@@ -181,10 +181,12 @@ namespace wg
 
 				// Temporary storage for variables that is stored in smaller uints than in SessionInfo
 
-				uint16_t	nCanvases;
-				SizeSPX		canvasSize;
+				uint16_t	objectId;
+				CanvasRef	canvasRef;
+				uint8_t		dummy;
 				uint16_t	nUpdateRects;
 
+				uint16_t	nSetCanvas;
 				uint16_t	nStateChanges;
 				uint16_t	nLines;
 				uint16_t	nFill;
@@ -199,9 +201,13 @@ namespace wg
 				uint16_t	nTransforms;
 				uint16_t	nObjects;
 
-				*m_pDecoder >> nCanvases;
-				*m_pDecoder >> canvasSize;
+				*m_pDecoder >> objectId;
+				*m_pDecoder >> canvasRef;
+				*m_pDecoder >> dummy;
+
 				*m_pDecoder >> nUpdateRects;
+
+				*m_pDecoder >> nSetCanvas;
 				*m_pDecoder >> nStateChanges;
 				*m_pDecoder >> nLines;
 				*m_pDecoder >> nFill;
@@ -216,10 +222,11 @@ namespace wg
 				*m_pDecoder >> nTransforms;
 				*m_pDecoder >> nObjects;
 
+				m_charStream << "    canvasObject = " << objectId << std::endl;
+				m_charStream << "    canvasRef = " << toString(canvasRef) << std::endl;
+				m_charStream << "    nUpdateRects " << nUpdateRects << std::endl;
 
-				m_charStream << "    nCanvases = " << nCanvases << std::endl;
-				m_charStream << "    canvasSize = " << canvasSize.w << ", " << canvasSize.h << std::endl;
-				m_charStream << "    nUpdateRects = " << nUpdateRects << std::endl;
+				m_charStream << "    nSetCanvas = " << nSetCanvas << std::endl;
 				m_charStream << "    nStateChanges = " << nStateChanges << std::endl;
 				m_charStream << "    nLines = " << nLines << std::endl;
 				m_charStream << "    nFill = " << nFill << std::endl;

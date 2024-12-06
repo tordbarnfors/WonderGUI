@@ -87,30 +87,33 @@ namespace wg
 
 	//____ beginSession() ________________________________________________________
 
-	void StreamBackend::beginSession( const SessionInfo * pSession )
+	void StreamBackend::beginSession( CanvasRef canvasRef, Surface * pCanvas, int nUpdateRects, const RectSPX * pUpdateRects, const SessionInfo * pInfo )
 	{
-		(*m_pEncoder) << GfxStream::Header{ GfxStream::ChunkId::BeginSession, GfxStream::SpxFormat::Int32_dec, 44 };
+		(*m_pEncoder) << GfxStream::Header{ GfxStream::ChunkId::BeginSession, GfxStream::SpxFormat::Int32_dec, 40 };
 
-		(*m_pEncoder) << (uint16_t) pSession->nCanvases;
-		(*m_pEncoder) << 			pSession->canvasSize;
-		(*m_pEncoder) << (uint16_t) pSession->nUpdateRects;
+		(*m_pEncoder) << (pCanvas ? static_cast<StreamSurface*>(pCanvas)->inStreamId() : (uint16_t) 0);
+		(*m_pEncoder) << canvasRef;
+		(*m_pEncoder) << (uint8_t) 0;				// Filler to align.
 
-		(*m_pEncoder) << (uint16_t) pSession->nStateChanges;
-		(*m_pEncoder) << (uint16_t) pSession->nLines;
-		(*m_pEncoder) << (uint16_t) pSession->nFill;
-		(*m_pEncoder) << (uint16_t) pSession->nBlit;
-		(*m_pEncoder) << (uint16_t) pSession->nBlur;
-		(*m_pEncoder) << (uint16_t) pSession->nEdgemapDraws;
-		(*m_pEncoder) << (int32_t) pSession->nLineCoords;
+		(*m_pEncoder) << (uint16_t) nUpdateRects;
 
-		(*m_pEncoder) << (int32_t) pSession->nLineClipRects;
-		(*m_pEncoder) << (int32_t) pSession->nRects;
-		(*m_pEncoder) << (int32_t) pSession->nColors;
-		(*m_pEncoder) << (uint16_t) pSession->nTransforms;
-		(*m_pEncoder) << (uint16_t) pSession->nObjects;
+		(*m_pEncoder) << (uint16_t) pInfo->nSetCanvas;
+		(*m_pEncoder) << (uint16_t) pInfo->nStateChanges;
+		(*m_pEncoder) << (uint16_t) pInfo->nLines;
+		(*m_pEncoder) << (uint16_t) pInfo->nFill;
+		(*m_pEncoder) << (uint16_t) pInfo->nBlit;
+		(*m_pEncoder) << (uint16_t) pInfo->nBlur;
+		(*m_pEncoder) << (uint16_t) pInfo->nEdgemapDraws;
+		(*m_pEncoder) << (int32_t) pInfo->nLineCoords;
 
-		if( pSession->nUpdateRects > 0 )
-			_splitAndEncode( GfxStream::ChunkId::UpdateRects, pSession->pUpdateRects, pSession->pUpdateRects + pSession->nUpdateRects, sizeof(RectI) );
+		(*m_pEncoder) << (int32_t) pInfo->nLineClipRects;
+		(*m_pEncoder) << (int32_t) pInfo->nRects;
+		(*m_pEncoder) << (int32_t) pInfo->nColors;
+		(*m_pEncoder) << (uint16_t) pInfo->nTransforms;
+		(*m_pEncoder) << (uint16_t) pInfo->nObjects;
+
+		if( nUpdateRects > 0 )
+			_splitAndEncode( GfxStream::ChunkId::UpdateRects, pUpdateRects, pUpdateRects +nUpdateRects, sizeof(RectI) );
 	}
 
 	//____ endSession() __________________________________________________________

@@ -57,31 +57,35 @@ namespace wg
 
 	//____ beginSession() ______________________________________________________
 
-	void BackendLogger::beginSession(const SessionInfo* pSession)
+	void BackendLogger::beginSession( CanvasRef canvasRef, Surface * pCanvas, int nUpdateRects, const RectSPX * pUpdateRects, const SessionInfo * pInfo )
 	{
 		*m_pStream << "BEGIN SESSION" << std::endl;
 
-		*m_pStream << "    Canvases:      " << pSession->nCanvases << std::endl;
-		*m_pStream << "    CanvasSize:    " << pSession->canvasSize.w << ", " << pSession->canvasSize.h << std::endl;
-		*m_pStream << "    UpdateRects:   " << pSession->nUpdateRects << std::endl;
+		*m_pStream << "    CanvasRef:   " << toString(canvasRef) << std::endl;
+		*m_pStream << "    CanvasPtr:   " << pCanvas << std::endl;
+		*m_pStream << "    UpdateRects:   " << nUpdateRects << std::endl;
 
-		*m_pStream << "    StateChanges:  " << pSession->nStateChanges << std::endl;
-		*m_pStream << "    Fills:         " << pSession->nFill << std::endl;
-		*m_pStream << "    Lines:         " << pSession->nLines << std::endl;
-		*m_pStream << "    Blits:         " << pSession->nBlit << std::endl;
-		*m_pStream << "    Blurs:         " << pSession->nBlur << std::endl;
-		*m_pStream << "    EdgemapDraws:  " << pSession->nEdgemapDraws << std::endl;
+		if( pInfo )
+		{
+			*m_pStream << "    CanvasChanges: " << pInfo->nSetCanvas << std::endl;
+			*m_pStream << "    StateChanges:  " << pInfo->nStateChanges << std::endl;
+			*m_pStream << "    Fills:         " << pInfo->nFill << std::endl;
+			*m_pStream << "    Lines:         " << pInfo->nLines << std::endl;
+			*m_pStream << "    Blits:         " << pInfo->nBlit << std::endl;
+			*m_pStream << "    Blurs:         " << pInfo->nBlur << std::endl;
+			*m_pStream << "    EdgemapDraws:  " << pInfo->nEdgemapDraws << std::endl;
 
-		*m_pStream << "    LineCoords:    " << pSession->nLineCoords << std::endl;
-		*m_pStream << "    LineClipRects: " << pSession->nLineClipRects << std::endl;
-		*m_pStream << "    Rects:         " << pSession->nRects << std::endl;
-		*m_pStream << "    Colors:        " << pSession->nColors << std::endl;
-		*m_pStream << "    Transforms:    " << pSession->nTransforms << std::endl;
-		*m_pStream << "    Objects:       " << pSession->nObjects << std::endl;
+			*m_pStream << "    LineCoords:    " << pInfo->nLineCoords << std::endl;
+			*m_pStream << "    LineClipRects: " << pInfo->nLineClipRects << std::endl;
+			*m_pStream << "    Rects:         " << pInfo->nRects << std::endl;
+			*m_pStream << "    Colors:        " << pInfo->nColors << std::endl;
+			*m_pStream << "    Transforms:    " << pInfo->nTransforms << std::endl;
+			*m_pStream << "    Objects:       " << pInfo->nObjects << std::endl;
+		}
 
 
 		if (m_pBackend)
-			m_pBackend->beginSession(pSession);
+			m_pBackend->beginSession(canvasRef, pCanvas, nUpdateRects, pUpdateRects, pInfo);
 	}
 
 	//____ endSession() ________________________________________________________
