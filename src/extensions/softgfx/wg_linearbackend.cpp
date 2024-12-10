@@ -194,6 +194,7 @@ namespace wg
 
 		RectSPX *	pRects = m_pRectsPtr;
 		HiColor*	pColors = m_pColorsPtr;
+		Object**	pObjects = m_pObjectsPtr;
 
 		Segment *	pSegBeg = m_canvasSegments.data();
 		Segment *	pSegEnd = m_canvasSegments.data() + m_canvasSegments.size();
@@ -214,9 +215,7 @@ namespace wg
 
 				if (statesChanged & uint8_t(StateChange::BlitSource))
 				{
-					int32_t objectOfs = *p++;
-
-					auto pBlitSource = static_cast<SoftSurface*>(m_pObjectsBeg[objectOfs]);
+					auto pBlitSource = static_cast<SoftSurface*>(* pObjects++);
 
 					if (!pBlitSource || !m_pBlitSource || pBlitSource->pixelFormat() != m_pBlitSource->pixelFormat() ||
 						pBlitSource->sampleMethod() != m_pBlitSource->sampleMethod())
@@ -704,8 +703,7 @@ namespace wg
 
 			case Command::DrawEdgemap:
 			{
-				int32_t objectOfs = *p++;
-				auto pEdgemap = static_cast<SoftEdgemap*>(m_pObjectsBeg[objectOfs]);
+				auto pEdgemap = static_cast<SoftEdgemap*>(*pObjects++);
 
 				int32_t	destX = *p++;
 				int32_t	destY = *p++;

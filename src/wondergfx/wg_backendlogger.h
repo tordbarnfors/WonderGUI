@@ -96,7 +96,9 @@ namespace wg
 		RectSPX*		m_pRectsEnd = nullptr;
 		RectSPX*		m_pRectsPtr = nullptr;
 
-
+		Object**		m_pObjectsBeg = nullptr;
+		Object**		m_pObjectsEnd = nullptr;
+		Object**		m_pObjectsPtr = nullptr;
 
 		GfxBackend_p	m_pBackend;
 

@@ -125,6 +125,10 @@ namespace wg
 	{
 		*m_pStream << "SET OBJECTS: Amount = " << int(pEnd -pBeg) << std::endl;
 
+		m_pObjectsBeg = pBeg;
+		m_pObjectsEnd = pEnd;
+		m_pObjectsPtr = pBeg;
+
 		Object** p = pBeg;
 
 		while (p < pEnd)
@@ -134,7 +138,6 @@ namespace wg
 				*m_pStream << "    " << pObj << " (" << pObj->typeInfo().className << ")" << std::endl;
 			else
 				*m_pStream << "    nullptr" << std::endl;
-
 		}
 
 		if (m_pBackend)
@@ -231,6 +234,7 @@ namespace wg
 
 		HiColor* pColors = m_pColorsPtr;
 		RectSPX* pRects = m_pRectsPtr;
+		Object** pObjects = m_pObjectsPtr;
 
 		auto p = pBeg;
 		while (p < pEnd)
@@ -250,9 +254,8 @@ namespace wg
 
 				if (statesChanged & uint8_t(StateChange::BlitSource))
 				{
-					int32_t objectOfs = *p++;
-
-					*m_pStream << "        BlitSource: " << objectOfs << std::endl;
+					Object* pObj = *pObjects++;
+					*m_pStream << "        BlitSource: " << pObj << std::endl;
 				}
 
 				if (statesChanged & uint8_t(StateChange::BlendMode))
@@ -367,13 +370,14 @@ namespace wg
 
 			case Command::DrawEdgemap:
 			{
-				int32_t objectOfs = *p++;
 				spx destX = *p++;
 				spx destY = *p++;
 				int32_t transform = *p++;
 				int32_t	nRects = *p++;
 
-				*m_pStream << "    DrawEdgemap: " << objectOfs << " at: " << destX << ", " << destY << ", with transform: " << transform 
+				Object * pObj = *pObjects++;
+
+				*m_pStream << "    DrawEdgemap: " << pObj << " at: " << destX << ", " << destY << ", with transform: " << transform
 					<< " split into " << nRects << " rectangles." << std::endl;
 
 				_printRects(*m_pStream, nRects, pRects);
@@ -418,6 +422,7 @@ namespace wg
 
 		m_pRectsPtr = pRects;
 		m_pColorsPtr = pColors;
+		m_pObjectsPtr = pObjects;
 
 		if (m_pBackend)
 			m_pBackend->processCommands(pBeg, pEnd);

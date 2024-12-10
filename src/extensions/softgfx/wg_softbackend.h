@@ -215,6 +215,7 @@ namespace wg
 
 		Object **			m_pObjectsBeg = nullptr;
 		Object **			m_pObjectsEnd = nullptr;
+		Object **			m_pObjectsPtr = nullptr;
 
 		RectSPX *			m_pRectsBeg = nullptr;
 		RectSPX *			m_pRectsEnd = nullptr;

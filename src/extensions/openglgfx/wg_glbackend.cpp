@@ -255,6 +255,7 @@ void GlBackend::setObjects(Object** pBeg, Object** pEnd)
 {
 	m_pObjectsBeg = pBeg;
 	m_pObjectsEnd = pEnd;
+	m_pObjectsPtr = pBeg;
 }
 
 //____ setRects() _________________________________________________________
@@ -288,8 +289,10 @@ void GlBackend::setTransforms(Transform* pBeg, Transform* pEnd)
 
 void GlBackend::processCommands(int32_t* pBeg, int32_t* pEnd)
 {
-	RectSPX* pRects = m_pRectsPtr;
-	HiColor* pColors = m_pColorsPtr;
+	RectSPX* 	pRects = m_pRectsPtr;
+	HiColor* 	pColors = m_pColorsPtr;
+	Object**	pObjects = m_pObjectsPtr;
+
 
 	VertexGL *	pVertexGL	= m_pVertexBuffer + m_nVertices;
 	ColorGL*	pColorGL	= m_pColorBuffer + m_nColors;
@@ -314,9 +317,7 @@ void GlBackend::processCommands(int32_t* pBeg, int32_t* pEnd)
 
 			if (statesChanged & uint8_t(StateChange::BlitSource))
 			{
-				int32_t objectOfs = *p++;
-
-				auto pSource = static_cast<GlSurface*>(m_pObjectsBeg[objectOfs]);
+				auto pSource = static_cast<GlSurface*>(* pObjects++);
 
 				// Save size and sampleMethod for blit-command processing
 
@@ -804,8 +805,7 @@ void GlBackend::processCommands(int32_t* pBeg, int32_t* pEnd)
 
 		case Command::DrawEdgemap:
 		{
-			int32_t objectOfs = *p++;
-			auto pEdgemap = static_cast<GlEdgemap*>(m_pObjectsBeg[objectOfs]);
+			auto pEdgemap = static_cast<GlEdgemap*>(*pObjects++);
 
 			int32_t	destX = *p++;
 			int32_t	destY = *p++;
@@ -1239,6 +1239,7 @@ void GlBackend::processCommands(int32_t* pBeg, int32_t* pEnd)
 
 	m_pRectsPtr = pRects;
 	m_pColorsPtr = pColors;
+	m_pObjectsPtr = pObjects;
 
 	m_nVertices			= int(pVertexGL - m_pVertexBuffer);
 	m_nColors			= int(pColorGL	- m_pColorBuffer);

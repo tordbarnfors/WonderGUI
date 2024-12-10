@@ -2148,7 +2148,6 @@ void GfxDeviceGen2::flipDrawEdgemap(CoordSPX dest, Edgemap* pEdgemap, GfxFlip fl
 			_encodeStateChanges();
 
 		m_pActiveLayer->commands.push_back(int(Command::DrawEdgemap));
-		m_pActiveLayer->commands.push_back(int(m_pActiveCanvas->objects.size()));
 		m_pActiveLayer->commands.push_back(dest.x);
 		m_pActiveLayer->commands.push_back(dest.y);
 		m_pActiveLayer->commands.push_back(int(flip));
@@ -3057,7 +3056,6 @@ void GfxDeviceGen2::_encodeStateChanges()
 
 		if (pSource != pOldSource)
 		{
-			cmdBuffer.push_back((int)m_pActiveCanvas->objects.size());
 			m_pActiveCanvas->objects.push_back(pSource);
 			if( pSource )
 				pSource->retain();
