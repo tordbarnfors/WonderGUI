@@ -63,11 +63,11 @@ namespace wg
 
 		void	setCanvas( Surface * pSurface ) override;
 		void	setCanvas( CanvasRef ref ) override;
-		void	setObjects(Object** pBeg, Object** pEnd) override;
-		void	setRects(RectSPX* pBeg, RectSPX* pEnd) override;
-		void	setColors(HiColor* pBeg, HiColor* pEnd) override;
-		void	setTransforms(Transform * pBeg, Transform * pEnd) override;
-		void	processCommands(int32_t* pBeg, int32_t* pEnd) override;
+		void	setObjects(Object* const * pBeg, Object* const * pEnd) override;
+		void	setRects(const RectSPX* pBeg, const RectSPX* pEnd) override;
+		void	setColors(const HiColor* pBeg, const HiColor* pEnd) override;
+		void	setTransforms(const Transform * pBeg, const Transform * pEnd) override;
+		void	processCommands(const int32_t* pBeg, const int32_t* pEnd) override;
 
 		//.____ Misc _________________________________________________________
 
@@ -88,17 +88,17 @@ namespace wg
 
 		void	_printRects(std::ostream& stream, int nRects, const RectSPX* pRects);
 
-		HiColor*		m_pColorsBeg = nullptr;
-		HiColor*		m_pColorsEnd = nullptr;
-		HiColor*		m_pColorsPtr = nullptr;
+		const HiColor*	m_pColorsBeg = nullptr;
+		const HiColor*	m_pColorsEnd = nullptr;
+		const HiColor*	m_pColorsPtr = nullptr;
 
-		RectSPX*		m_pRectsBeg = nullptr;
-		RectSPX*		m_pRectsEnd = nullptr;
-		RectSPX*		m_pRectsPtr = nullptr;
+		const RectSPX*	m_pRectsBeg = nullptr;
+		const RectSPX*	m_pRectsEnd = nullptr;
+		const RectSPX*	m_pRectsPtr = nullptr;
 
-		Object**		m_pObjectsBeg = nullptr;
-		Object**		m_pObjectsEnd = nullptr;
-		Object**		m_pObjectsPtr = nullptr;
+		Object* const *	m_pObjectsBeg = nullptr;
+		Object* const *	m_pObjectsEnd = nullptr;
+		Object* const *	m_pObjectsPtr = nullptr;
 
 		GfxBackend_p	m_pBackend;
 

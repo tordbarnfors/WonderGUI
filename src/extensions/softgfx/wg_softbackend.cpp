@@ -307,7 +307,7 @@ namespace wg
 
 	//____ setObjects() _____________________________________________
 
-	void SoftBackend::setObjects(Object** pBeg, Object** pEnd)
+	void SoftBackend::setObjects(Object* const * pBeg, Object* const * pEnd)
 	{
 		m_pObjectsBeg = pBeg;
 		m_pObjectsEnd = pEnd;
@@ -316,7 +316,7 @@ namespace wg
 
 	//____ setRects() _____________________________________________
 
-	void SoftBackend::setRects(RectSPX* pBeg, RectSPX* pEnd)
+	void SoftBackend::setRects(const RectSPX* pBeg, const RectSPX* pEnd)
 	{
 		m_pRectsBeg = pBeg;
 		m_pRectsEnd = pEnd;
@@ -325,7 +325,7 @@ namespace wg
 
 	//____ setColors() _____________________________________________
 
-	void SoftBackend::setColors(HiColor* pBeg, HiColor* pEnd)
+	void SoftBackend::setColors(const HiColor* pBeg, const HiColor* pEnd)
 	{
 		m_pColorsBeg = pBeg;
 		m_pColorsEnd = pEnd;
@@ -334,7 +334,7 @@ namespace wg
 
 	//____ setTransforms() _____________________________________________
 
-	void SoftBackend::setTransforms(Transform* pBeg, Transform* pEnd)
+	void SoftBackend::setTransforms(const Transform* pBeg, const Transform* pEnd)
 	{
 		m_pTransformsBeg = pBeg;
 		m_pTransformsEnd = pEnd;
@@ -342,11 +342,11 @@ namespace wg
 
 	//____ processCommands() _____________________________________________
 
-	void SoftBackend::processCommands(int32_t* pBeg, int32_t* pEnd)
+	void SoftBackend::processCommands(const int32_t* pBeg, const int32_t* pEnd)
 	{
-		RectSPX *	pRects = m_pRectsPtr;
-		HiColor*	pColors = m_pColorsPtr;
-		Object**	pObjects = m_pObjectsPtr;
+		const RectSPX *	pRects = m_pRectsPtr;
+		const HiColor*	pColors = m_pColorsPtr;
+		Object* const *	pObjects = m_pObjectsPtr;
 
 
 		auto p = pBeg;
@@ -470,7 +470,7 @@ namespace wg
 			{
 				int32_t nRects = *p++;
 
-				HiColor&  col = * pColors++;
+				const HiColor&  col = * pColors++;
 
 				FillOp_p pFunc = nullptr;
 
@@ -828,7 +828,7 @@ namespace wg
 				int32_t	flip = *p++;
 
 				int32_t nRects = *p++;
-				RectSPX * pMyRects = pRects;
+				const RectSPX * pMyRects = pRects;
 				pRects += nRects;
 
 				int32_t nSegments = pEdgemap->segments();
@@ -1087,8 +1087,8 @@ namespace wg
 					}
 					else if (m_colTrans.mode == TintMode::GradientX || m_colTrans.mode == TintMode::GradientY || m_colTrans.mode == TintMode::GradientXY)
 					{
-						HiColor* pGlobalsX = m_colTrans.pTintAxisX ? m_colTrans.pTintAxisX + _dest.x - m_colTrans.tintRect.x : nullptr;
-						HiColor* pGlobalsY = m_colTrans.pTintAxisY ? m_colTrans.pTintAxisY + _dest.y - m_colTrans.tintRect.y : nullptr;
+						const HiColor* pGlobalsX = m_colTrans.pTintAxisX ? m_colTrans.pTintAxisX + _dest.x - m_colTrans.tintRect.x : nullptr;
+						const HiColor* pGlobalsY = m_colTrans.pTintAxisY ? m_colTrans.pTintAxisY + _dest.y - m_colTrans.tintRect.y : nullptr;
 
 						int width = _dest.w;
 						int height = _dest.h;
@@ -1116,7 +1116,7 @@ namespace wg
 							HiColor* pDest = pTintColorsX;
 							for (int seg = 0; seg < nSegments; seg++)
 							{
-								HiColor* pSrc = pGlobalsX;
+								const HiColor* pSrc = pGlobalsX;
 
 								for (int i = 0; i < width; i++)
 								{
@@ -1131,7 +1131,7 @@ namespace wg
 							HiColor* pDest = pTintColorsY;
 							for (int seg = 0; seg < nSegments; seg++)
 							{
-								HiColor* pSrc = pGlobalsY;
+								const HiColor* pSrc = pGlobalsY;
 
 								for (int i = 0; i < height; i++)
 								{
@@ -1401,7 +1401,7 @@ namespace wg
 				{
 					binalInt mtx[2][2];
 
-					Transform* pTransform = &m_pTransformsBeg[transform - GfxFlip_size];
+					const Transform* pTransform = &m_pTransformsBeg[transform - GfxFlip_size];
 
 					mtx[0][0] = binalInt(pTransform->xx * BINAL_MUL);
 					mtx[0][1] = binalInt(pTransform->xy * BINAL_MUL);

@@ -674,7 +674,7 @@ inline void	_blend_pixels(BlendMode mode, int morphFactor, PixelFormat destForma
 //____ _color_tint_init() _________________________________________________
 
 inline void _color_tint_init(TintMode tintMode, const SoftBackend::ColTrans& tint, int bits, int16_t inB, int16_t inG, int16_t inR, int16_t inA,
-	int16_t& outB, int16_t& outG, int16_t& outR, int16_t& outA, HiColor*& pTintmapX, HiColor*&  pTintmapY, CoordI patchPos)
+	int16_t& outB, int16_t& outG, int16_t& outR, int16_t& outA, const HiColor*& pTintmapX, const HiColor*&  pTintmapY, CoordI patchPos)
 {
 	if (tintMode == TintMode::None)
 	{
@@ -708,7 +708,7 @@ inline void _color_tint_init(TintMode tintMode, const SoftBackend::ColTrans& tin
 inline void _color_tint_line(TintMode tintMode, const SoftBackend::ColTrans& tint, int bits, int16_t inB, int16_t inG, int16_t inR, int16_t inA,
 							 int16_t& lineB, int16_t& lineG, int16_t& lineR, int16_t& lineA,
 							 int16_t& outB, int16_t& outG, int16_t& outR, int16_t& outA,
-							 HiColor*& pTintmapX, HiColor*&  pTintmapY, CoordI patchPos)
+							 const HiColor*& pTintmapX, const HiColor*&  pTintmapY, CoordI patchPos)
 {
 	if (tintMode == TintMode::GradientX || tintMode == TintMode::GradientXY )
 	{
@@ -741,7 +741,7 @@ inline void _color_tint_line(TintMode tintMode, const SoftBackend::ColTrans& tin
 
 inline void _color_tint_pixel(TintMode tintMode, int16_t inB, int16_t inG, int16_t inR, int16_t inA,
 							  int16_t& lineB, int16_t& lineG, int16_t& lineR, int16_t& lineA,
-							  int16_t& outB, int16_t& outG, int16_t& outR, int16_t& outA, HiColor*& pTintmapX)
+							  int16_t& outB, int16_t& outG, int16_t& outR, int16_t& outA, const HiColor*& pTintmapX)
 {
 	if (tintMode == TintMode::GradientX)
 	{
@@ -768,7 +768,7 @@ inline void _color_tint_pixel(TintMode tintMode, int16_t inB, int16_t inG, int16
 
 inline void _texel_tint_init(TintMode tintMode, const SoftBackend::ColTrans& tint, int bits,
 							 int16_t& outB, int16_t& outG, int16_t& outR, int16_t& outA,
-							 HiColor*& pTintmapX, HiColor*&  pTintmapY, CoordI patchPos)
+							 const HiColor*& pTintmapX, const HiColor*&  pTintmapY, CoordI patchPos)
 {
 	if (tintMode == TintMode::Flat)
 	{
@@ -794,7 +794,7 @@ inline void _texel_tint_init(TintMode tintMode, const SoftBackend::ColTrans& tin
 inline void _texel_tint_line(TintMode tintMode, const SoftBackend::ColTrans& tint, int bits,
 							 int16_t& lineB, int16_t& lineG, int16_t& lineR, int16_t& lineA,
 							 int16_t& outB, int16_t& outG, int16_t& outR, int16_t& outA,
-							 HiColor*& pTintmapX, HiColor*&  pTintmapY, CoordI patchPos)
+							 const HiColor*& pTintmapX, const HiColor*&  pTintmapY, CoordI patchPos)
 {
 	if (tintMode == TintMode::GradientX || tintMode == TintMode::GradientXY )
 	{
@@ -826,7 +826,7 @@ inline void _texel_tint_line(TintMode tintMode, const SoftBackend::ColTrans& tin
 
 inline void _texel_tint_pixel(TintMode tintMode, int bits, int16_t& pixelB, int16_t& pixelG, int16_t& pixelR, int16_t& pixelA,
 							  int16_t& lineB, int16_t& lineG, int16_t& lineR, int16_t& lineA,
-							  int16_t& tintB, int16_t& tintG, int16_t& tintR, int16_t& tintA, HiColor*& pTintmapX)
+							  int16_t& tintB, int16_t& tintG, int16_t& tintR, int16_t& tintA, const HiColor*& pTintmapX)
 {
 	if (tintMode == TintMode::None)
 	{
@@ -1317,9 +1317,9 @@ void _fill(uint8_t* pDst, int pitchX, int pitchY, int nLines, int lineLength, Hi
 	
 	int16_t tintedB, tintedG, tintedR, tintedA;
 
-	HiColor * pTintmapX;
-	HiColor * pTintmapY;
-	
+	const HiColor * pTintmapX;
+	const HiColor * pTintmapY;
+
 	_color_tint_init(TINT, tint, bits, srcB, srcG, srcR, srcA, tintedB, tintedG, tintedR, tintedA,
 		pTintmapX, pTintmapY, patchPos);
 
@@ -1462,8 +1462,8 @@ void _straight_blit(const uint8_t* pSrc, uint8_t* pDst, const SoftSurface* pSrcS
 
 	int16_t	tintB, tintG, tintR, tintA;
 
-	HiColor * pTintmapX;
-	HiColor * pTintmapY;
+	const HiColor * pTintmapX;
+	const HiColor * pTintmapY;
 
 	_texel_tint_init(TINT, tint, bits, tintB, tintG, tintR, tintA, pTintmapX, pTintmapY, patchPos);
 

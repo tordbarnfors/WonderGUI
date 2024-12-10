@@ -184,7 +184,7 @@ namespace wg
 
 	//____ processCommands() _____________________________________________
 
-	void LinearBackend::processCommands(int32_t* pBeg, int32_t* pEnd)
+	void LinearBackend::processCommands(const int32_t* pBeg, const int32_t* pEnd)
 	{
 		if( m_pCanvas )
 		{
@@ -192,9 +192,9 @@ namespace wg
 			return;
 		}
 
-		RectSPX *	pRects = m_pRectsPtr;
-		HiColor*	pColors = m_pColorsPtr;
-		Object**	pObjects = m_pObjectsPtr;
+		const RectSPX *	pRects = m_pRectsPtr;
+		const HiColor*	pColors = m_pColorsPtr;
+		Object* const *	pObjects = m_pObjectsPtr;
 
 		Segment *	pSegBeg = m_canvasSegments.data();
 		Segment *	pSegEnd = m_canvasSegments.data() + m_canvasSegments.size();
@@ -321,7 +321,7 @@ namespace wg
 			{
 				int32_t nRects = *p++;
 
-				HiColor&  col = * pColors++;
+				const HiColor&  col = * pColors++;
 
 				FillOp_p pFunc = nullptr;
 
@@ -711,7 +711,7 @@ namespace wg
 				int32_t	flip = *p++;
 
 				int32_t nRects = *p++;
-				RectSPX * pMyRects = pRects;
+				const RectSPX * pMyRects = pRects;
 
 				pRects += nRects;
 
@@ -982,8 +982,8 @@ namespace wg
 					}
 					else if (m_colTrans.mode == TintMode::GradientX || m_colTrans.mode == TintMode::GradientY || m_colTrans.mode == TintMode::GradientXY)
 					{
-						HiColor* pGlobalsX = m_colTrans.pTintAxisX ? m_colTrans.pTintAxisX + _dest.x - m_colTrans.tintRect.x : nullptr;
-						HiColor* pGlobalsY = m_colTrans.pTintAxisY ? m_colTrans.pTintAxisY + _dest.y - m_colTrans.tintRect.y : nullptr;
+						const HiColor* pGlobalsX = m_colTrans.pTintAxisX ? m_colTrans.pTintAxisX + _dest.x - m_colTrans.tintRect.x : nullptr;
+						const HiColor* pGlobalsY = m_colTrans.pTintAxisY ? m_colTrans.pTintAxisY + _dest.y - m_colTrans.tintRect.y : nullptr;
 
 						int width = _dest.w;
 						int height = _dest.h;
@@ -1011,7 +1011,7 @@ namespace wg
 							HiColor* pDest = pTintColorsX;
 							for (int seg = 0; seg < nSegments; seg++)
 							{
-								HiColor* pSrc = pGlobalsX;
+								const HiColor* pSrc = pGlobalsX;
 
 								for (int i = 0; i < width; i++)
 								{
@@ -1026,7 +1026,7 @@ namespace wg
 							HiColor* pDest = pTintColorsY;
 							for (int seg = 0; seg < nSegments; seg++)
 							{
-								HiColor* pSrc = pGlobalsY;
+								const HiColor* pSrc = pGlobalsY;
 
 								for (int i = 0; i < height; i++)
 								{
@@ -1312,7 +1312,7 @@ namespace wg
 				{
 					binalInt mtx[2][2];
 
-					Transform* pTransform = &m_pTransformsBeg[transform - GfxFlip_size];
+					const Transform* pTransform = &m_pTransformsBeg[transform - GfxFlip_size];
 
 					mtx[0][0] = binalInt(pTransform->xx * BINAL_MUL);
 					mtx[0][1] = binalInt(pTransform->xy * BINAL_MUL);

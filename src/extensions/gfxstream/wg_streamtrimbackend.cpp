@@ -131,7 +131,7 @@ namespace wg
 
 	//____ setObjects() _______________________________________________
 
-	void StreamTrimBackend::setObjects(Object** pBeg, Object** pEnd)
+	void StreamTrimBackend::setObjects(Object* const * pBeg, Object* const * pEnd)
 	{
 		if (m_pBackend)
 			m_pBackend->setObjects(pBeg, pEnd);
@@ -139,7 +139,7 @@ namespace wg
 
 	//____ setRects() _______________________________________________
 
-	void StreamTrimBackend::setRects(RectSPX* pBeg, RectSPX* pEnd)
+	void StreamTrimBackend::setRects(const RectSPX* pBeg, const RectSPX* pEnd)
 	{
 		if (!m_pBackend)
 			return;
@@ -176,7 +176,7 @@ namespace wg
 
 	//____ setColors() ___________________________________________________
 
-	void StreamTrimBackend::setColors(HiColor* pBeg, HiColor* pEnd)
+	void StreamTrimBackend::setColors(const HiColor* pBeg, const HiColor* pEnd)
 	{
 		if (m_pBackend)
 			m_pBackend->setColors(pBeg, pEnd);
@@ -184,7 +184,7 @@ namespace wg
 
 	//____ setTransforms() _______________________________________________
 
-	void StreamTrimBackend::setTransforms(Transform* pBeg, Transform* pEnd)
+	void StreamTrimBackend::setTransforms(const Transform* pBeg, const Transform* pEnd)
 	{
 		if (m_pBackend)
 			m_pBackend->setTransforms(pBeg, pEnd);
@@ -192,7 +192,7 @@ namespace wg
 
 	//____ processCommands() _______________________________________________
 
-	void StreamTrimBackend::processCommands(int32_t* pBeg, int32_t* pEnd)
+	void StreamTrimBackend::processCommands(const int32_t* pBeg, const int32_t* pEnd)
 	{
 		if (m_pBackend)
 			m_pBackend->processCommands(pBeg, pEnd);

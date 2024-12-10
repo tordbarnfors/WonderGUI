@@ -147,13 +147,13 @@ namespace wg
 
 	//____ setObjects() __________________________________________________________
 
-	void StreamBackend::setObjects(Object** pBeg, Object** pEnd)
+	void StreamBackend::setObjects(Object* const * pBeg, Object* const * pEnd)
 	{
 		m_objects.resize(pEnd-pBeg);
 
 		auto it = m_objects.begin();
 
-		for( Object ** p = pBeg ; p < pEnd ; p++ )
+		for( auto p = pBeg ; p < pEnd ; p++ )
 		{
 			Object * pObj = * p;
 
@@ -173,28 +173,28 @@ namespace wg
 
 	//____ setRects() ___________________________________________________________
 
-	void StreamBackend::setRects(RectSPX* pBeg, RectSPX* pEnd)
+	void StreamBackend::setRects(const RectSPX* pBeg, const RectSPX* pEnd)
 	{
 		_splitAndEncode( GfxStream::ChunkId::Rects, pBeg, pEnd, sizeof(RectSPX) );
 	}
 
 	//____ setColors() ___________________________________________________________
 
-	void StreamBackend::setColors(HiColor* pBeg, HiColor* pEnd)
+	void StreamBackend::setColors(const HiColor* pBeg, const HiColor* pEnd)
 	{
 		_splitAndEncode( GfxStream::ChunkId::Colors, pBeg, pEnd, sizeof(HiColor) );
 	}
 
 	//____ setTransforms() _______________________________________________________
 
-	void StreamBackend::setTransforms(Transform * pBeg, Transform * pEnd)
+	void StreamBackend::setTransforms(const Transform * pBeg, const Transform * pEnd)
 	{
 		_splitAndEncode( GfxStream::ChunkId::Transforms, pBeg, pEnd, sizeof(Transform) );
 	}
 
 	//____ processCommands() _____________________________________________________
 
-	void StreamBackend::processCommands( int32_t* pBeg, int32_t * pEnd)
+	void StreamBackend::processCommands( const int32_t* pBeg, const int32_t * pEnd)
 	{
 		_splitAndEncode( GfxStream::ChunkId::Commands, pBeg, pEnd, sizeof(int32_t) );
 	}

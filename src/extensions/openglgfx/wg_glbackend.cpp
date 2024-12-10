@@ -251,7 +251,7 @@ void GlBackend::_setCanvas(Surface* pSurface)
 
 //____ setObjects() ________________________________________________________
 
-void GlBackend::setObjects(Object** pBeg, Object** pEnd)
+void GlBackend::setObjects(Object* const * pBeg, Object* const * pEnd)
 {
 	m_pObjectsBeg = pBeg;
 	m_pObjectsEnd = pEnd;
@@ -260,7 +260,7 @@ void GlBackend::setObjects(Object** pBeg, Object** pEnd)
 
 //____ setRects() _________________________________________________________
 
-void GlBackend::setRects(RectSPX* pBeg, RectSPX* pEnd)
+void GlBackend::setRects(const RectSPX* pBeg, const RectSPX* pEnd)
 {
 	m_pRectsBeg = pBeg;
 	m_pRectsEnd = pEnd;
@@ -269,7 +269,7 @@ void GlBackend::setRects(RectSPX* pBeg, RectSPX* pEnd)
 
 //____ setColors() _________________________________________________________
 
-void GlBackend::setColors(HiColor* pBeg, HiColor* pEnd)
+void GlBackend::setColors(const HiColor* pBeg, const HiColor* pEnd)
 {
 	m_pColorsBeg = pBeg;
 	m_pColorsEnd = pEnd;
@@ -278,7 +278,7 @@ void GlBackend::setColors(HiColor* pBeg, HiColor* pEnd)
 
 //____ setTransforms() _____________________________________________________
 
-void GlBackend::setTransforms(Transform* pBeg, Transform* pEnd)
+void GlBackend::setTransforms(const Transform* pBeg, const Transform* pEnd)
 {
 	m_pTransformsBeg = pBeg;
 	m_pTransformsEnd = pEnd;
@@ -287,11 +287,11 @@ void GlBackend::setTransforms(Transform* pBeg, Transform* pEnd)
 
 //____ processCommands() _________________________________________________
 
-void GlBackend::processCommands(int32_t* pBeg, int32_t* pEnd)
+void GlBackend::processCommands(const int32_t* pBeg, const int32_t* pEnd)
 {
-	RectSPX* 	pRects = m_pRectsPtr;
-	HiColor* 	pColors = m_pColorsPtr;
-	Object**	pObjects = m_pObjectsPtr;
+	const RectSPX* 	pRects = m_pRectsPtr;
+	const HiColor* 	pColors = m_pColorsPtr;
+	Object* const *	pObjects = m_pObjectsPtr;
 
 
 	VertexGL *	pVertexGL	= m_pVertexBuffer + m_nVertices;
@@ -450,7 +450,7 @@ void GlBackend::processCommands(int32_t* pBeg, int32_t* pEnd)
 		{
 			int32_t nRects = *p++;
 
-			HiColor& col = *pColors++;
+			const HiColor& col = *pColors++;
 
 			bool	bStraightFill = true;
 			int		nRectsWritten = 0;

@@ -121,7 +121,7 @@ namespace wg
 
 	//____ setObjects() _______________________________________________
 
-	void BackendLogger::setObjects(Object** pBeg, Object** pEnd)
+	void BackendLogger::setObjects(Object* const * pBeg, Object* const * pEnd)
 	{
 		*m_pStream << "SET OBJECTS: Amount = " << int(pEnd -pBeg) << std::endl;
 
@@ -129,7 +129,7 @@ namespace wg
 		m_pObjectsEnd = pEnd;
 		m_pObjectsPtr = pBeg;
 
-		Object** p = pBeg;
+		Object* const * p = pBeg;
 
 		while (p < pEnd)
 		{
@@ -146,7 +146,7 @@ namespace wg
 
 	//____ setRects() _______________________________________________
 
-	void BackendLogger::setRects(RectSPX* pBeg, RectSPX* pEnd)
+	void BackendLogger::setRects(const RectSPX* pBeg, const RectSPX* pEnd)
 	{
 		*m_pStream << "SET RECTS: Amount = " << int(pEnd - pBeg);
 
@@ -154,7 +154,7 @@ namespace wg
 		m_pRectsEnd = pEnd;
 		m_pRectsPtr = pBeg;
 
-		RectSPX * p = pBeg;
+		const RectSPX * p = pBeg;
 
 		int rows = 0;
 
@@ -183,7 +183,7 @@ namespace wg
 
 	//____ setColors() ___________________________________________________
 
-	void BackendLogger::setColors(HiColor* pBeg, HiColor* pEnd)
+	void BackendLogger::setColors(const HiColor* pBeg, const HiColor* pEnd)
 	{
 		*m_pStream << "SET COLORS: Amount = " << int(pEnd - pBeg) << std::endl;
 
@@ -191,7 +191,7 @@ namespace wg
 		m_pColorsEnd = pEnd;
 		m_pColorsPtr = pBeg;
 
-		HiColor* p = pBeg;
+		const HiColor* p = pBeg;
 
 		while (p < pEnd)
 		{
@@ -207,11 +207,11 @@ namespace wg
 
 	//____ setTransforms() _______________________________________________
 
-	void BackendLogger::setTransforms(Transform* pBeg, Transform* pEnd)
+	void BackendLogger::setTransforms(const Transform* pBeg, const Transform* pEnd)
 	{
 		*m_pStream << "SET TRANSFORMS: Amount = " << int(pEnd - pBeg) << std::endl;
 
-		Transform * p = pBeg;
+		const Transform * p = pBeg;
 
 		while (p < pEnd)
 		{
@@ -228,13 +228,13 @@ namespace wg
 
 	//____ processCommands() _______________________________________________
 
-	void BackendLogger::processCommands(int32_t* pBeg, int32_t* pEnd)
+	void BackendLogger::processCommands(const int32_t* pBeg, const int32_t* pEnd)
 	{
 		*m_pStream << "PROCESS COMMANDS:" << std::endl;
 
-		HiColor* pColors = m_pColorsPtr;
-		RectSPX* pRects = m_pRectsPtr;
-		Object** pObjects = m_pObjectsPtr;
+		const HiColor* pColors	= m_pColorsPtr;
+		const RectSPX* pRects	= m_pRectsPtr;
+		Object* const * pObjects = m_pObjectsPtr;
 
 		auto p = pBeg;
 		while (p < pEnd)
@@ -267,7 +267,7 @@ namespace wg
 
 				if (statesChanged & uint8_t(StateChange::TintColor))
 				{
-					HiColor& col = *pColors++;
+					const HiColor& col = *pColors++;
 
 					*m_pStream << "        TintColor: " << col.r << ", " << col.g << ", " << col.b << ", " << col.a << std::endl;
 				}
@@ -294,7 +294,7 @@ namespace wg
 
 				if (statesChanged & uint8_t(StateChange::FixedBlendColor))
 				{
-					HiColor& col = *pColors++;
+					const HiColor& col = *pColors++;
 
 					*m_pStream << "        FixedBlendColor: " << col.r << ", " << col.g << ", " << col.b << ", " << col.a << std::endl;
 				}
@@ -333,7 +333,7 @@ namespace wg
 			{
 				int32_t nRects = *p++;
 
-				HiColor& col = *pColors++;
+				const HiColor& col = *pColors++;
 
 				*m_pStream << "    Fill: " << nRects << " rects with color: " << col.r << ", " << col.g << ", " << col.b << ", " << col.a << std::endl;
 

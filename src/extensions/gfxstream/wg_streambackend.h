@@ -61,13 +61,13 @@ namespace wg
 		void	setCanvas( Surface * pSurface ) override;
 		void	setCanvas( CanvasRef ref ) override;
 
-		void	setObjects(Object** pBeg, Object** pEnd) override;
+		void	setObjects(Object* const * pBeg, Object* const * pEnd) override;
 
-		void	setRects(RectSPX* pBeg, RectSPX* pEnd) override;
-		void	setColors(HiColor* pBeg, HiColor* pEnd) override;
-		void	setTransforms(Transform * pBeg, Transform * pEnd) override;
+		void	setRects(const RectSPX* pBeg, const RectSPX* pEnd) override;
+		void	setColors(const HiColor* pBeg, const HiColor* pEnd) override;
+		void	setTransforms(const Transform * pBeg, const Transform * pEnd) override;
 
-		void	processCommands( int32_t* pBeg, int32_t * pEnd) override;
+		void	processCommands( const int32_t* pBeg, const int32_t * pEnd) override;
 
 
 		//.____ Misc _________________________________________________________

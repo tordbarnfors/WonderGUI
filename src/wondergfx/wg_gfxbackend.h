@@ -126,13 +126,13 @@ namespace wg
 		virtual void	setCanvas( Surface * pSurface ) = 0;
 		virtual void	setCanvas( CanvasRef ref ) = 0;
 
-		virtual void	setObjects(Object** pBeg, Object** pEnd) = 0;
+		virtual void	setObjects(Object* const * pBeg, Object* const * pEnd) = 0;
 
-		virtual void	setRects(RectSPX* pBeg, RectSPX* pEnd) = 0;
-		virtual void	setColors(HiColor* pBeg, HiColor* pEnd) = 0;
-		virtual void	setTransforms(Transform * pBeg, Transform * pEnd) = 0;
+		virtual void	setRects(const RectSPX* pBeg, const RectSPX* pEnd) = 0;
+		virtual void	setColors(const HiColor* pBeg, const HiColor* pEnd) = 0;
+		virtual void	setTransforms(const Transform * pBeg, const Transform * pEnd) = 0;
 
-		virtual void	processCommands( int32_t* pBeg, int32_t * pEnd) = 0;
+		virtual void	processCommands( const int32_t* pBeg, const int32_t * pEnd) = 0;
 
 
 		//.____ Misc _________________________________________________________
