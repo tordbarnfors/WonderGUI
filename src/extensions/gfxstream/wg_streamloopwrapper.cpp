@@ -161,23 +161,12 @@ namespace wg
 			
 			// Advance pChunk over chunks to the last, incomplete chunk in the buffer
 			
-			while( endBufferBytes > 2 )
+			while( endBufferBytes > 4 )
 			{
 				// Get chunk size
 				
-				int chunkSize;
-				
-				uint8_t sizeEtc = pChunk[1] & 0x1F;
-				if (sizeEtc <= 30)
-					chunkSize = sizeEtc + 2;
-				else
-				{
-					if( endBufferBytes < 4 )
-						break;
-					
-					chunkSize = ((uint16_t*) pChunk)[1] + 4;
-				}
-				
+				int chunkSize = ((uint16_t*) pChunk)[1] + 4;
+
 				//
 				
 				if( chunkSize < endBufferBytes )
@@ -191,24 +180,18 @@ namespace wg
 			
 			if( pChunk < m_pBufferEnd )
 			{
-				// We have an broken chunk at the end
-				
+				// We have a broken chunk at the end
+
 				int dataSize = int(m_pBufferEnd - pChunk) + int(pDataEnd - m_pBufferBegin);
 
 				int chunkSize;
-				
-				uint8_t sizeEtc = pChunk[1] & 0x1F;
-				if (sizeEtc <= 30)
-					chunkSize = sizeEtc + 2;
+
+				if( endBufferBytes >= 4 )
+					chunkSize = ((uint16_t*) pChunk)[1] + 4;
+				else if( dataSize >= 4 )
+					chunkSize = ((uint16_t*) m_pBufferBegin)[0] + 4;
 				else
-				{
-					if( endBufferBytes >= 4 )
-						chunkSize = ((uint16_t*) pChunk)[1] + 4;
-					else if( dataSize >= 4 )
-						chunkSize = ((uint16_t*) m_pBufferBegin)[0] + 4;
-					else
-						goto out;
-				}
+					goto out;
 
 				// Leave if chunk is not complete
 				
@@ -236,21 +219,10 @@ namespace wg
 		
 		//
 		
-		while( pChunk + 2 <= pDataEnd )
+		while( pChunk + 4 <= pDataEnd )
 		{
-			int chunkSize;
-			
-			uint8_t sizeEtc = pChunk[1] & 0x1F;
-			if (sizeEtc <= 30)
-				chunkSize = sizeEtc + 2;
-			else
-			{
-				if( pChunk + 4 <= pDataEnd )
-					chunkSize = ((uint16_t*) pChunk)[1] + 4;
-				else
-					break;
-			}
-			
+			int chunkSize = ((uint16_t*) pChunk)[1] + 4;
+
 			if( pChunk + chunkSize <= pDataEnd )
 				pChunk += chunkSize;
 			else

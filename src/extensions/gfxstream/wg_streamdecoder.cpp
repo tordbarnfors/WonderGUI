@@ -218,7 +218,7 @@ namespace wg
 		if (_hasChunk())
 			return _peekChunk();
 
-		return { GfxStream::ChunkId::OutOfData, {}, 0 };
+		return { GfxStream::ChunkId::OutOfData, 0 };
 	}
 
 	//____ skip() _____________________________________________________________

@@ -66,22 +66,11 @@ namespace wg
 
 	void StreamFastEncoder::_beginChunk(GfxStream::Header header)
 	{
-		if (header.size <= 30)
-		{
-			if (m_pWriteData + (header.size + 2 ) - m_pBuffer > m_capacity )
-				flush();
+		if (m_pWriteData + (header.size + 4 ) - m_pBuffer > m_capacity )
+			flush();
 
 			_pushChar((char)header.type);
-			_pushChar(header.size + (int(header.spxFormat) << 5));
-		}
-		else
-		{
-			if (m_pWriteData + (header.size + 4 ) - m_pBuffer > m_capacity )
-				flush();
-
-			_pushChar((char)header.type);
-			_pushChar(31  + (int(header.spxFormat) << 5));
-			_pushShort((short)header.size);
-		}
+			_pushChar((char)header.format);
+			_pushShort(header.size);
 	}
 }

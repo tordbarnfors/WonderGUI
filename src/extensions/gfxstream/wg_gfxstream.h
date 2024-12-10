@@ -109,10 +109,20 @@ namespace wg
 //			Delta8_int = 7			// 8 bit delta pixel values.
 		};
 		
+		enum class ChunkCompression
+		{
+			None,
+			Uint16AsUint8,
+			Spx_uint16,
+			Spx_int16,
+			Spx_udec16,
+			Spx_uint8
+		};
+
 		struct Header
 		{
 			ChunkId			type;
-            SpxFormat		spxFormat;
+			uint8_t			format;		// Type specific information about the format of the content. Used by some types.
     		int				size;
 		};
 
@@ -153,44 +163,34 @@ namespace wg
 
 			int			chunkSize() const
 			{
-				uint8_t sizeEtc = m_flags_and_size & 0x1F;
-				if (sizeEtc <= 30)
-					return sizeEtc + 2;
-				else
-					return ((uint16_t*)this)[1] + 4;
+				return m_size + 4;
+			}
+
+			uint8_t		format() const
+			{
+				return m_format;
 			}
 
 			int			dataSize() const
 			{
-				uint8_t sizeEtc = m_flags_and_size & 0x1F;
-				if (sizeEtc <= 30)
-					return sizeEtc;
-				else
-					return ((uint16_t*)this)[1] + 4;
+				return m_size;
 			}
 
 			void*		data()
 			{
-				if ( (m_flags_and_size & 0x1F) <= 30)
-					return ((uint8_t*)this) + 2;
-				else
-					return ((uint8_t*)this) + 2;
-
+					return ((uint8_t*)this) + 4;
 			}
 
 			Chunk *		next() const
 			{
-				uint8_t sizeEtc = m_flags_and_size & 0x1F;
-				if (sizeEtc <= 30)
-					return (Chunk*) (((uint8_t*)this) + sizeEtc + 2);
-				else
-					return (Chunk*) (((uint8_t*)this) + ((uint16_t*)this)[1] + 4);
+				return (Chunk*) (((uint8_t*)this) + (m_size + 4));
 			}
 
 
 		protected:
 			GfxStream::ChunkId	m_type;
-			uint8_t		m_flags_and_size;
+			uint8_t				m_format;
+			uint16_t			m_size;
 		};
 
 
@@ -263,29 +263,17 @@ namespace wg
 
 		inline static int chunkSize(const uint8_t* pChunk)
 		{
-			uint8_t sizeEtc = pChunk[1] & 0x1F;
-			if (sizeEtc <= 30)
-				return sizeEtc + 2;
-			else
-				return *(uint16_t*)&pChunk[2] + 4;
+			return (*(uint16_t*)&pChunk[2]) + 4;
 		}
 
 		inline static int headerSize(const uint8_t* pChunk)
 		{
-			uint8_t sizeEtc = pChunk[1] & 0x1F;
-			if (sizeEtc <= 30)
-				return 2;
-			else
-				return 4;
+			return 4;
 		}
 
 		inline static int dataSize(const uint8_t* pChunk)
 		{
-			uint8_t sizeEtc = pChunk[1] & 0x1F;
-			if (sizeEtc <= 30)
-				return sizeEtc;
-			else
-				return *(uint16_t*)&pChunk[2];
+			return *(uint16_t*)&pChunk[2];
 		}
 		
 		inline static int spxSize(SpxFormat spxFormat)

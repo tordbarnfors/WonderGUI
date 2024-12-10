@@ -114,21 +114,8 @@ namespace wg
 				m_charStream << " [" << m_beginRenderNb << "]";
 			}
 
-
-			switch( header.spxFormat )
-			{
-				case GfxStream::SpxFormat::Int32_dec:
-					break;
-				case GfxStream::SpxFormat::Uint16_dec:
-					m_charStream << " (spx16_dec)";
-					break;
-				case GfxStream::SpxFormat::Int16_int:
-					m_charStream << " (spx16_int)";
-					break;
-				case GfxStream::SpxFormat::Uint8_int:
-					m_charStream << " (spx8_int)";
-					break;
-			}
+			if( header.format != 0 )
+				m_charStream << "(format=" << header.format << ")";
 
 			m_charStream << std::endl;
 		}

@@ -217,7 +217,6 @@ namespace wg
 
 	StreamEncoder& StreamEncoder::operator<< (GfxStream::Header header)
 	{
-		m_spxFormat = header.spxFormat;
 		_beginChunk(header);
 		return *this;
 	}

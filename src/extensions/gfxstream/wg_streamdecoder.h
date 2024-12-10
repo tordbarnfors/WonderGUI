@@ -143,20 +143,13 @@ namespace wg
 		if (_hasChunk())
 		{
 			header.type = (GfxStream::ChunkId)_pullChar();
-			uint8_t sizeEtc = _pullChar();
-			m_spxFormat = (GfxStream::SpxFormat) (sizeEtc >> 5);
-			header.spxFormat = m_spxFormat;
-
-			sizeEtc &= 0x1F;
-			if (sizeEtc <= 30)
-				header.size = sizeEtc;
-			else
-				header.size = (uint16_t)_pullShort();
+			header.format = _pullChar();
+			header.size = _pullShort();
 		}
 		else
 		{
 			header.type = GfxStream::ChunkId::OutOfData;
-			header.spxFormat = GfxStream::SpxFormat::Int32_dec;
+			header.format = 0;
 			header.size = 0;
 		}
 
@@ -416,12 +409,7 @@ namespace wg
 
 	int StreamDecoder::chunkSize()
 	{
-		uint8_t sizeEtc = m_pDataRead[1] & 0x1F;
-		
-		if (sizeEtc <= 30)
-			return sizeEtc + 2;
-		else
-			return (* (uint16_t*) &m_pDataRead[2]) + 4;
+		return (* (uint16_t*) &m_pDataRead[2]) + 4;
 	}
 
 	//____ _hasChunk() ______________________________________________________
@@ -441,15 +429,8 @@ namespace wg
 		GfxStream::Header header;
 
 		header.type = (GfxStream::ChunkId) m_pDataRead[0];
-		uint8_t sizeEtc = m_pDataRead[1];
-		header.spxFormat = (GfxStream::SpxFormat) (sizeEtc >> 5);
-		
-		sizeEtc &= 0x1F;
-		if (sizeEtc <= 30)
-			header.size = sizeEtc;
-		else
-			header.size = * (uint16_t*) &m_pDataRead[2];
-
+		header.format = m_pDataRead[1];
+		header.size = * (uint16_t*)(&m_pDataRead[2]);
 		return header;
 	}
 

@@ -726,14 +726,16 @@ namespace wg
 		{
 			int bytes = header.size;
 
-			int nbSamples = bytes / GfxStream::spxSize(header.spxFormat);
-			
+			GfxStream::SpxFormat format = (GfxStream::SpxFormat) header.format;
+
+			int nbSamples = bytes / GfxStream::spxSize( format);
+
 			if( nbSamples > m_waveSamplesLeft )
 				nbSamples = m_waveSamplesLeft;
 			
 			m_waveSamplesLeft -= nbSamples;
 			
-			*m_pDecoder >> GfxStream::ReadSpxField{ nbSamples, header.spxFormat, m_pWaveWriteSamples };
+			*m_pDecoder >> GfxStream::ReadSpxField{ nbSamples, format, m_pWaveWriteSamples };
 			m_pWaveWriteSamples += nbSamples;
 			
 			m_pDecoder->align();

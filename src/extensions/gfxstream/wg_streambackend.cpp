@@ -51,7 +51,7 @@ namespace wg
 		m_pEncoder = pEncoder;
 		m_maxEdges = maxEdges;
 
-		(*m_pEncoder) << GfxStream::Header{ GfxStream::ChunkId::ProtocolVersion, GfxStream::SpxFormat::Int32_dec, 2 };
+		(*m_pEncoder) << GfxStream::Header{ GfxStream::ChunkId::ProtocolVersion, 0, 2 };
 		(*m_pEncoder) << (uint16_t) 0x0200;
 
 	}
@@ -73,14 +73,14 @@ namespace wg
 
 	void StreamBackend::beginRender()
 	{
-		(*m_pEncoder) << GfxStream::Header{ GfxStream::ChunkId::BeginRender, GfxStream::SpxFormat::Int32_dec, 0 };
+		(*m_pEncoder) << GfxStream::Header{ GfxStream::ChunkId::BeginRender, 0, 0 };
 	}
 
 	//____ endRender() ___________________________________________________________
 
 	void StreamBackend::endRender()
 	{
-		(*m_pEncoder) << GfxStream::Header{ GfxStream::ChunkId::EndRender, GfxStream::SpxFormat::Int32_dec, 0 };
+		(*m_pEncoder) << GfxStream::Header{ GfxStream::ChunkId::EndRender, 0, 0 };
 
 		m_pEncoder->flush();
 	}
@@ -89,7 +89,7 @@ namespace wg
 
 	void StreamBackend::beginSession( CanvasRef canvasRef, Surface * pCanvas, int nUpdateRects, const RectSPX * pUpdateRects, const SessionInfo * pInfo )
 	{
-		(*m_pEncoder) << GfxStream::Header{ GfxStream::ChunkId::BeginSession, GfxStream::SpxFormat::Int32_dec, 40 };
+		(*m_pEncoder) << GfxStream::Header{ GfxStream::ChunkId::BeginSession, 0, 40 };
 
 		(*m_pEncoder) << (pCanvas ? static_cast<StreamSurface*>(pCanvas)->inStreamId() : (uint16_t) 0);
 		(*m_pEncoder) << canvasRef;
@@ -120,7 +120,7 @@ namespace wg
 
 	void StreamBackend::endSession()
 	{
-		(*m_pEncoder) << GfxStream::Header{ GfxStream::ChunkId::EndSession, GfxStream::SpxFormat::Int32_dec, 0 };
+		(*m_pEncoder) << GfxStream::Header{ GfxStream::ChunkId::EndSession, 0, 0 };
 	}
 
 	//____ setCanvas() ___________________________________________________________
@@ -129,7 +129,7 @@ namespace wg
 	{
 		uint16_t size = 2 + 2;
 
-		(*m_pEncoder) << GfxStream::Header{ GfxStream::ChunkId::SetCanvas, {}, size };
+		(*m_pEncoder) << GfxStream::Header{ GfxStream::ChunkId::SetCanvas, 0, size };
 		(*m_pEncoder) << (pSurface ? static_cast<StreamSurface*>(pSurface)->inStreamId() : (uint16_t) 0);
 		(*m_pEncoder) << CanvasRef::None;
 		(*m_pEncoder) << (uint8_t) 0;				// Filler to align.
@@ -269,7 +269,7 @@ namespace wg
 
 	void StreamBackend::encodeCanvasList()
 	{
-		(*m_pEncoder) << GfxStream::Header{ GfxStream::ChunkId::CanvasList, GfxStream::SpxFormat::Int32_dec, (uint16_t)(m_definedCanvases.size()*14)+2 };
+		(*m_pEncoder) << GfxStream::Header{ GfxStream::ChunkId::CanvasList, 0, (uint16_t)(m_definedCanvases.size()*14)+2 };
 
 		(*m_pEncoder) << (uint16_t) m_definedCanvases.size();
 
@@ -328,6 +328,9 @@ namespace wg
 		//
 		// All measures in bytes
 
+
+
+
 		char * pBeg = (char *) _pBeg;
 		char * pEnd = (char *) _pEnd;
 		char * p = pBeg;
@@ -338,7 +341,7 @@ namespace wg
 		{
 			int bytesOfData = std::min(int(pEnd-p),maxBytesInChunk);
 
-			(*m_pEncoder) << GfxStream::Header{ chunkType, GfxStream::SpxFormat::Int32_dec, (uint16_t) bytesOfData + 12 };
+			(*m_pEncoder) << GfxStream::Header{ chunkType, 0, (uint16_t) bytesOfData + 12 };
 
 			(*m_pEncoder) << (int32_t) (pEnd - pBeg);
 			(*m_pEncoder) << (int32_t) (p - pBeg);
