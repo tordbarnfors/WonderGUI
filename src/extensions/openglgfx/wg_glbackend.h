@@ -174,8 +174,6 @@ namespace wg
 		CoordF			m_blitSourceSize;
 		SampleMethod	m_blitSourceSampleMethod;
 
-		Surface_p		m_pCanvas = nullptr;
-
 		// "Active" members are updated and used in the rendering loop in endSession.
 
 		bool			m_bActiveCanvasIsA8 = false;

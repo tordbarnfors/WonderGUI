@@ -137,8 +137,6 @@ void GlBackend::setCanvas(CanvasRef ref)
 	{
 		m_pCommandQueue[m_commandQueueSize++] = (int)CommandGL::SetCanvas;
 		m_objects.push_back(nullptr);
-
-		m_pCanvas = nullptr;
 	}
 	else
 	{
@@ -150,8 +148,6 @@ void GlBackend::setCanvas(Surface* pSurface)
 {
 	m_pCommandQueue[m_commandQueueSize++] = (int) CommandGL::SetCanvas;
 	m_objects.push_back(pSurface);
-
-	m_pCanvas = pSurface;
 }
 
 
@@ -686,7 +682,7 @@ void GlBackend::processCommands(int32_t* pBeg, int32_t* pEnd)
 					width = _scaleThickness(thickness, slope);
 					bSteep = false;
 
-					if( m_pCanvas )
+					if( m_pActiveCanvas )
 						s = ((begin.y + 0.5f) - (begin.x + 0.5f) * slope);
 					else
 						s = m_defaultCanvas.size.h / 64 - ((begin.y + 0.5f) - (begin.x + 0.5f) * slope);
@@ -1756,14 +1752,14 @@ void GlBackend::endRender()
 
 //____ _beginSession() _______________________________________________________
 
-void GlBackend::beginSession( CanvasRef canvasRef, Surface * pCanvas, int nUpdateRects, const RectSPX * pUpdateRects, const SessionInfo * pInfo )
+void GlBackend::beginSession( CanvasRef canvasRef, Surface * pCanvasSurface, int nUpdateRects, const RectSPX * pUpdateRects, const SessionInfo * pInfo )
 {
-	if( !pCanvas && canvasRef != CanvasRef::Default )
+	if( !pCanvasSurface && canvasRef != CanvasRef::Default )
 		return;
 
 	// Reserve buffer for coordinates
 
-	int nCoords = pSession->nRects * 6 + pSession->nLineCoords/2 * 6;
+	int nCoords = pInfo->nRects * 6 + pInfo->nLineCoords/2 * 6;
 
 	m_pVertexBuffer = new VertexGL[nCoords];
 	m_nVertices = 0;
@@ -1771,7 +1767,7 @@ void GlBackend::beginSession( CanvasRef canvasRef, Surface * pCanvas, int nUpdat
 	// Reserve buffer for colors
 
 	m_pColorBuffer = new ColorGL[
-		pSession->nColors+1
+		pInfo->nColors+1
 	];
 
 	// Always present white color used as default tint for blits.
@@ -1786,10 +1782,10 @@ void GlBackend::beginSession( CanvasRef canvasRef, Surface * pCanvas, int nUpdat
 	// Reserve buffer for extras
 
 	int nExtrasFloats = 
-		pSession->nBlit * 8
-		+ pSession->nBlur * 8
-		+ pSession->nLineCoords/2 * 4
-		+ pSession->nRects * 4;			// This is for possible subpixel fills. We have no way of knowing exactly how much is needed.
+	pInfo->nBlit * 8
+		+ pInfo->nBlur * 8
+		+ pInfo->nLineCoords/2 * 4
+		+ pInfo->nRects * 4;			// This is for possible subpixel fills. We have no way of knowing exactly how much is needed.
 
 	m_pExtrasBuffer = new GLfloat[nExtrasFloats];
 	m_extrasBufferSize = 0;
@@ -1797,13 +1793,13 @@ void GlBackend::beginSession( CanvasRef canvasRef, Surface * pCanvas, int nUpdat
 	// Reserve buffer for commands
 
 	m_pCommandQueue = new int[
-		pSession->nStateChanges * (15+28)	//TODO: Check exactly size needed
-		+ pSession->nFill * 2 
-		+ pSession->nBlit * 2
-		+ pSession->nBlur * 2
-		+ pSession->nLines * 3 + pSession->nLineClipRects * 4
-		+ pSession->nEdgemapDraws * 3
-		+ pSession->nCanvases];	
+		pInfo->nStateChanges * (15+28)	//TODO: Check exactly size needed
+		+ pInfo->nFill * 2 
+		+ pInfo->nBlit * 2
+		+ pInfo->nBlur * 2
+		+ pInfo->nLines * 3 + pInfo->nLineClipRects * 4
+		+ pInfo->nEdgemapDraws * 3
+		+ pInfo->nSetCanvas];
 
 	m_commandQueueSize = 0;
 
@@ -2093,7 +2089,6 @@ void GlBackend::endSession()
 	m_pCommandQueue = nullptr;
 
 	m_objects.clear();
-	m_pCanvas = nullptr;
 }
 
 
