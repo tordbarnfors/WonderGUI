@@ -287,7 +287,7 @@ void GlBackend::setTransforms(const Transform* pBeg, const Transform* pEnd)
 
 //____ processCommands() _________________________________________________
 
-void GlBackend::processCommands(const int32_t* pBeg, const int32_t* pEnd)
+void GlBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd)
 {
 	const RectSPX* 	pRects = m_pRectsPtr;
 	const HiColor* 	pColors = m_pColorsPtr;
@@ -329,13 +329,6 @@ void GlBackend::processCommands(const int32_t* pBeg, const int32_t* pEnd)
 				m_objects.push_back(pSource);
 			}
 
-			if (statesChanged & uint8_t(StateChange::BlendMode))
-			{
-				// Save for later processing, needs to be applied between draw calls.
-
-				* pCommandGL++ = *p++;
-			}
-
 			if (statesChanged & uint8_t(StateChange::TintColor))
 			{
 				// Process right away, tint color ofs is stored in vertex data
@@ -361,13 +354,18 @@ void GlBackend::processCommands(const int32_t* pBeg, const int32_t* pEnd)
 
 			if (statesChanged & uint8_t(StateChange::TintMap))
 			{
-				int32_t	x = *p++;
-				int32_t	y = *p++;
-				int32_t	w = *p++;
-				int32_t	h = *p++;
+				
+				auto p32 = (const spx *) p;
 
-				int32_t	nHorrColors = *p++;
-				int32_t	nVertColors = *p++;
+				int32_t	x = *p32++;
+				int32_t	y = *p32++;
+				int32_t	w = *p32++;
+				int32_t	h = *p32++;
+
+				int32_t	nHorrColors = *p32++;
+				int32_t	nVertColors = *p32++;
+
+				p = (const uint16_t*) p32;
 
 				m_bTintmap = true;
 				m_tintmapRect = RectI(x, y, w, h) / 64;
@@ -423,6 +421,13 @@ void GlBackend::processCommands(const int32_t* pBeg, const int32_t* pEnd)
 				m_tintColorOfs = -1;
 			}
 
+			if (statesChanged & uint8_t(StateChange::BlendMode))
+			{
+				// Save for later processing, needs to be applied between draw calls.
+
+				* pCommandGL++ = *p++;
+			}
+
 			if (statesChanged & uint8_t(StateChange::MorphFactor))
 			{
 				// Save for later processing, needs to be applied between draw calls.
@@ -441,8 +446,13 @@ void GlBackend::processCommands(const int32_t* pBeg, const int32_t* pEnd)
 			if (statesChanged & uint8_t(StateChange::Blur))
 			{
 				for( int i = 0 ; i < 28 ; i++ )
-					*pCommandGL++ = *p++;
+					*pCommandGL++ = int(*p++)*2;
 			}
+
+			// Take care of alignment
+
+			if( (uintptr_t(p) & 0x2) == 2 )
+				p++;
 
 			break;
 		}
@@ -641,8 +651,8 @@ void GlBackend::processCommands(const int32_t* pBeg, const int32_t* pEnd)
 
 		case Command::Line:
 		{
-			float thickness = *p++ / 64.f;
 			int32_t nClipRects = *p++;
+			float thickness = *p++ / 64.f;
 			int32_t nLines = *p++;
 
 			HiColor col = *pColors++;
@@ -653,8 +663,10 @@ void GlBackend::processCommands(const int32_t* pBeg, const int32_t* pEnd)
 
 			for (int i = 0; i < nLines; i++)
 			{
-				CoordSPX begin = { *p++, *p++ };
-				CoordSPX end = { *p++, *p++ };
+				auto p32 = (const spx *) p;
+				CoordSPX begin = { *p32++, *p32++ };
+				CoordSPX end = { *p32++, *p32++ };
+				p = (const uint16_t*) p32;
 
 				begin = roundToPixels(begin);
 				end = roundToPixels(end);
@@ -807,12 +819,16 @@ void GlBackend::processCommands(const int32_t* pBeg, const int32_t* pEnd)
 		{
 			auto pEdgemap = static_cast<GlEdgemap*>(*pObjects++);
 
-			int32_t	destX = *p++;
-			int32_t	destY = *p++;
-
-			int32_t	flip = *p++;
-
 			int32_t nRects = *p++;
+			int32_t	flip = *p++;
+			
+			p++;					// padding
+
+			auto p32 = (const spx *) p;
+			int32_t	destX = *p32++;
+			int32_t	destY = *p32++;
+			p = (const uint16_t*) p32;
+
 
 			//
 
@@ -1093,10 +1109,14 @@ void GlBackend::processCommands(const int32_t* pBeg, const int32_t* pEnd)
 			int32_t nRects = *p++;
 			int32_t transform = *p++;
 
-			int srcX = *p++;
-			int srcY = *p++;
-			spx dstX = *p++;
-			spx dstY = *p++;
+			p++;						// padding
+
+			auto p32 = (const spx *) p;
+			int srcX = *p32++;
+			int srcY = *p32++;
+			spx dstX = *p32++;
+			spx dstY = *p32++;
+			p = (const uint16_t*) p32;
 
 			//
 

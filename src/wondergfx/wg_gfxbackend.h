@@ -83,7 +83,7 @@ namespace wg
 			int		nObjects;			// Total number of object references for session.
 		};
 
-		enum class Command
+		enum class Command : uint16_t
 		{
 			None,
 			StateChange,
@@ -99,9 +99,9 @@ namespace wg
 		enum class StateChange : uint8_t
 		{
 			BlitSource		= 1,
-			BlendMode		= 1 << 1,
-			TintColor		= 1 << 2,		// In GfxDevice this is used to mark any change in tint
-			TintMap			= 1 << 3,		// Not used in GfxDevice.
+			TintColor		= 1 << 1,		// In GfxDevice this is used to mark any change in tint
+			TintMap			= 1 << 2,		// Not used in GfxDevice.
+			BlendMode		= 1 << 3,
 			MorphFactor		= 1 << 4,
 			FixedBlendColor	= 1 << 5,
 			Blur			= 1 << 6,
@@ -132,7 +132,7 @@ namespace wg
 		virtual void	setColors(const HiColor* pBeg, const HiColor* pEnd) = 0;
 		virtual void	setTransforms(const Transform * pBeg, const Transform * pEnd) = 0;
 
-		virtual void	processCommands( const int32_t* pBeg, const int32_t * pEnd) = 0;
+		virtual void	processCommands( const uint16_t* pBeg, const uint16_t * pEnd) = 0;
 
 
 		//.____ Misc _________________________________________________________

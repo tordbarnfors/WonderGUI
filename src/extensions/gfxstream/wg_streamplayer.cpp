@@ -419,7 +419,7 @@ namespace wg
 			*m_pDecoder >> bLastChunk;
 
 			if (bFirstChunk)
-				m_vCommands.resize(totalSize / sizeof(int32_t));
+				m_vCommands.resize(totalSize / sizeof(uint16_t));
 
 			int bytes = (header.size - 12);
 			char* pDest = ((char*)m_vCommands.data()) + offset;

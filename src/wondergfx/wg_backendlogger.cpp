@@ -228,7 +228,7 @@ namespace wg
 
 	//____ processCommands() _______________________________________________
 
-	void BackendLogger::processCommands(const int32_t* pBeg, const int32_t* pEnd)
+	void BackendLogger::processCommands(const uint16_t* pBeg, const uint16_t* pEnd)
 	{
 		*m_pStream << "PROCESS COMMANDS:" << std::endl;
 
@@ -258,13 +258,6 @@ namespace wg
 					*m_pStream << "        BlitSource: " << pObj << std::endl;
 				}
 
-				if (statesChanged & uint8_t(StateChange::BlendMode))
-				{
-					BlendMode mode = (BlendMode)*p++;
-
-					*m_pStream << "        BlendMode: " << toString(mode) << std::endl;
-				}
-
 				if (statesChanged & uint8_t(StateChange::TintColor))
 				{
 					const HiColor& col = *pColors++;
@@ -274,15 +267,24 @@ namespace wg
 
 				if (statesChanged & uint8_t(StateChange::TintMap))
 				{
-					int32_t	x = *p++;
-					int32_t	y = *p++;
-					int32_t	w = *p++;
-					int32_t	h = *p++;
+					auto p32 = (const spx *) p;
+					int32_t	x = *p32++;
+					int32_t	y = *p32++;
+					int32_t	w = *p32++;
+					int32_t	h = *p32++;
 
-					int32_t	nHorrColors = *p++;
-					int32_t	nVertColors = *p++;
-					
+					int32_t	nHorrColors = *p32++;
+					int32_t	nVertColors = *p32++;
+					p = (const uint16_t*) p32;
+
 					*m_pStream << "        TintMap: rect: " << x << ", " << y << ", " << w << ", " << h << " horr colors: " << nHorrColors << " vert colors: , " << nVertColors << std::endl;
+				}
+
+				if (statesChanged & uint8_t(StateChange::BlendMode))
+				{
+					BlendMode mode = (BlendMode)*p++;
+
+					*m_pStream << "        BlendMode: " << toString(mode) << std::endl;
 				}
 
 				if (statesChanged & uint8_t(StateChange::MorphFactor))
@@ -312,19 +314,24 @@ namespace wg
 
 					*m_pStream << "            Red matrix: ";
 					for (int i = 0; i < 8; i++)
-						*m_pStream << pRed[i] / float(65536) << ", ";
-					*m_pStream << pRed[8] / float(65536) << std::endl;
+						*m_pStream << pRed[i] / float(32768) << ", ";
+					*m_pStream << pRed[8] / float(32768) << std::endl;
 
 					*m_pStream << "            Green matrix: ";
 					for (int i = 0; i < 8; i++)
-						*m_pStream << pGreen[i] / float(65536) << ", ";
-					*m_pStream << pGreen[8] / float(65536) << std::endl;
+						*m_pStream << pGreen[i] / float(32768) << ", ";
+					*m_pStream << pGreen[8] / float(32768) << std::endl;
 
 					*m_pStream << "            Blue matrix: ";
-					for (int i = 0; i < 9; i++)
-						*m_pStream << pBlue[i] / float(65536) << ", ";
-					*m_pStream << pBlue[8] / float(65536) << std::endl;
+					for (int i = 0; i < 8; i++)
+						*m_pStream << pBlue[i] / float(32768) << ", ";
+					*m_pStream << pBlue[8] / float(32768) << std::endl;
 				}
+
+				// Take care of alignment
+
+				if( (uintptr_t(p) & 0x2) == 2 )
+					p++;
 
 				break;
 			}
@@ -344,8 +351,8 @@ namespace wg
 
 			case Command::Line:
 			{
-				spx thickness = *p++;
 				int32_t nRects = *p++;
+				spx thickness = *p++;
 				int32_t nLines = *p++;
 
 				HiColor col = * pColors++;
@@ -357,23 +364,31 @@ namespace wg
 				_printRects(*m_pStream, nRects, pRects);
 				pRects += nRects;
 
+				auto p32 = (const spx *) p;
+
 				for (int i = 0; i < nLines; i++)
 				{
-					CoordSPX beg = { *p++, *p++ };
-					CoordSPX end = { *p++, *p++ };
+					CoordSPX beg = { *p32++, *p32++ };
+					CoordSPX end = { *p32++, *p32++ };
 
 					*m_pStream << "        from (" << beg.x << ", " << beg.y << ") to(" << end.x << ", " << end.y << ")" << std::endl;
 				}
 
+				p = (const uint16_t*) p32;
 				break;
 			}
 
 			case Command::DrawEdgemap:
 			{
-				spx destX = *p++;
-				spx destY = *p++;
-				int32_t transform = *p++;
 				int32_t	nRects = *p++;
+				int32_t transform = *p++;
+
+				p++;		// padding
+
+				auto p32 = (const spx *) p;
+				spx destX = *p32++;
+				spx destY = *p32++;
+				p = (const uint16_t*) p32;
 
 				Object * pObj = *pObjects++;
 
@@ -401,11 +416,14 @@ namespace wg
 
 				int32_t nRects = *p++;
 				int32_t transform = *p++;
+				p++;						// padding
 
-				int32_t srcX = *p++;
-				int32_t srcY = *p++;
-				int32_t dstX = *p++;
-				int32_t dstY = *p++;
+				auto p32 = (const spx *) p;
+				int32_t srcX = *p32++;
+				int32_t srcY = *p32++;
+				int32_t dstX = *p32++;
+				int32_t dstY = *p32++;
+				p = (const uint16_t*) p32;
 
 				*m_pStream << nRects << " rects with transform: " << transform << ", src: " << srcX << ", " << srcY << " dest: " << dstX << ", " << dstY << std::endl;
 

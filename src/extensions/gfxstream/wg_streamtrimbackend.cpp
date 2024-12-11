@@ -192,7 +192,7 @@ namespace wg
 
 	//____ processCommands() _______________________________________________
 
-	void StreamTrimBackend::processCommands(const int32_t* pBeg, const int32_t* pEnd)
+	void StreamTrimBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd)
 	{
 		if (m_pBackend)
 			m_pBackend->processCommands(pBeg, pEnd);

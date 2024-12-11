@@ -79,7 +79,7 @@ namespace wg
 		void	setColors(const HiColor* pBeg, const HiColor* pEnd) override;
 		void	setTransforms(const Transform* pBeg, const Transform* pEnd) override;
 
-		void	processCommands(const int32_t* pBeg, const int32_t* pEnd) override;
+		void	processCommands(const uint16_t* pBeg, const uint16_t* pEnd) override;
 
 
 		//.____ Misc _________________________________________________________

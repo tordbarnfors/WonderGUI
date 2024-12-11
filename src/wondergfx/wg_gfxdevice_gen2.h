@@ -252,7 +252,7 @@ namespace wg
 		{
 			RenderState				encodedState;				// State encoded in commands
 
-			std::vector<int>		commands;
+			std::vector<uint16_t>	commands;
 
 			std::vector<RectSPX>	rects;
 			std::vector<HiColor>	colors;

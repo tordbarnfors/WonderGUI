@@ -90,7 +90,7 @@ namespace wg
 		std::vector<HiColor>	m_vColors;
 		std::vector<Transform>	m_vTransforms;
 		std::vector<Object*>	m_vActionObjects;
-		std::vector<int32_t>	m_vCommands;
+		std::vector<uint16_t>	m_vCommands;
 
 		Surface_p			m_pUpdatingSurface;
 		PixelBuffer			m_pixelBuffer;

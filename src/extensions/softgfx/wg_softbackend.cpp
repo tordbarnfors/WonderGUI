@@ -342,7 +342,7 @@ namespace wg
 
 	//____ processCommands() _____________________________________________
 
-	void SoftBackend::processCommands(const int32_t* pBeg, const int32_t* pEnd)
+	void SoftBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd)
 	{
 		const RectSPX *	pRects = m_pRectsPtr;
 		const HiColor*	pColors = m_pColorsPtr;
@@ -364,20 +364,13 @@ namespace wg
 
 				if (statesChanged & uint8_t(StateChange::BlitSource))
 				{
-					auto pBlitSource = static_cast<SoftSurface*>(*m_pObjectsPtr++);
+					auto pBlitSource = static_cast<SoftSurface*>(*pObjects++);
 
 					if (!pBlitSource || !m_pBlitSource || pBlitSource->pixelFormat() != m_pBlitSource->pixelFormat() ||
 						pBlitSource->sampleMethod() != m_pBlitSource->sampleMethod())
 						m_bBlitFunctionNeedsUpdate = true;
 
 					m_pBlitSource = pBlitSource;
-				}
-
-				if (statesChanged & uint8_t(StateChange::BlendMode))
-				{
-					m_blendMode = (BlendMode)*p++;
-
-					m_bBlitFunctionNeedsUpdate = true;
 				}
 
 				if (statesChanged & uint8_t(StateChange::TintColor))
@@ -392,15 +385,17 @@ namespace wg
 
 				if (statesChanged & uint8_t(StateChange::TintMap))
 				{
-					int32_t	x = *p++ / 64;
-					int32_t	y = *p++ / 64;
-					int32_t	w = *p++ / 64;
-					int32_t	h = *p++ / 64;
+					auto p32 = (const spx *) p;
+					int32_t	x = *p32++ / 64;
+					int32_t	y = *p32++ / 64;
+					int32_t	w = *p32++ / 64;
+					int32_t	h = *p32++ / 64;
 
 					m_colTrans.tintRect = RectI(x, y, w, h);
 					
-					int32_t nHorrColors = *p++;
-					int32_t nVertColors = *p++;
+					int32_t nHorrColors = *p32++;
+					int32_t nVertColors = *p32++;
+					p = (const uint16_t*) p32;
 
 					auto pOurColors = pColors;
 					
@@ -434,6 +429,13 @@ namespace wg
 					_updateTintMode();
 				}
 
+				if (statesChanged & uint8_t(StateChange::BlendMode))
+				{
+					m_blendMode = (BlendMode)*p++;
+
+					m_bBlitFunctionNeedsUpdate = true;
+				}
+
 				if (statesChanged & uint8_t(StateChange::MorphFactor))
 				{
 					m_colTrans.morphFactor = *p++;
@@ -448,20 +450,25 @@ namespace wg
 				{
 					spx		radius = *p++;
 
-					const spx* pRed = p;
-					const spx* pGreen = p + 9;
-					const spx* pBlue = p + 18;
+					const uint16_t* pRed = p;
+					const uint16_t* pGreen = p + 9;
+					const uint16_t* pBlue = p + 18;
 					p += 27;
 
 					_updateBlurRadius(radius);
 
 					for (int i = 0; i < 9; i++)
 					{
-						m_colTrans.blurMtxR[i] = pRed[i] * 65536;
-						m_colTrans.blurMtxG[i] = pGreen[i] * 65536;
-						m_colTrans.blurMtxB[i] = pBlue[i] * 65536;
+						m_colTrans.blurMtxR[i] = int(pRed[i]) * 2;
+						m_colTrans.blurMtxG[i] = int(pGreen[i]) * 2;
+						m_colTrans.blurMtxB[i] = int(pBlue[i]) * 2;
 					}
 				}
+
+				// Take care of alignment
+
+				if( (uintptr_t(p) & 0x2) == 2 )
+					p++;
 
 				break;
 			}
@@ -657,8 +664,8 @@ namespace wg
 
 			case Command::Line:
 			{
-				spx thickness = * p++;
 				int32_t nClipRects = * p++;
+				spx thickness = * p++;
 				int32_t nLines = *p++;
 
 				HiColor color = *pColors++;
@@ -703,8 +710,10 @@ namespace wg
 
 				for (int line = 0; line < nLines; line++)
 				{
-					CoordSPX beg = { *p++, *p++ };
-					CoordSPX end = { *p++, *p++ };
+					auto p32 = (const spx *) p;
+					CoordSPX beg = { *p32++, *p32++ };
+					CoordSPX end = { *p32++, *p32++ };
+					p = (const uint16_t*) p32;
 
 					//TODO: Proper 26:6 support
 					beg = Util::roundToPixels(beg);
@@ -820,14 +829,18 @@ namespace wg
 
 			case Command::DrawEdgemap:
 			{
-				auto pEdgemap = static_cast<SoftEdgemap*>(*m_pObjectsPtr++);
-
-				int32_t	destX = *p++;
-				int32_t	destY = *p++;
-
-				int32_t	flip = *p++;
+				auto pEdgemap = static_cast<SoftEdgemap*>(*pObjects++);
 
 				int32_t nRects = *p++;
+				int32_t	flip = *p++;
+				p++;						// padding
+
+				auto p32 = (const spx *) p;
+				int32_t	destX = *p32++;
+				int32_t	destY = *p32++;
+				p = (const uint16_t*) p32;
+
+
 				const RectSPX * pMyRects = pRects;
 				pRects += nRects;
 
@@ -1356,12 +1369,14 @@ namespace wg
 
 				int32_t nRects = *p++;
 				int32_t transform = *p++;
+				p++;							// padding
 
-				int srcX = *p++;
-				int srcY = *p++;
-				spx dstX = *p++;
-				spx dstY = *p++;
-
+				auto p32 = (const spx *) p;
+				int srcX = *p32++;
+				int srcY = *p32++;
+				spx dstX = *p32++;
+				spx dstY = *p32++;
+				p = (const uint16_t*) p32;
 
 				if (transform <= int(GfxFlip_max) )
 				{
