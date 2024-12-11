@@ -854,7 +854,6 @@ void GfxDeviceGen2::_resetCanvas()
 {
 	auto& canvasEntry = m_canvasStack.back();
 
-	canvasEntry.objects.clear();
 	canvasEntry.transforms.clear();
 
 	// Clear session info
@@ -867,6 +866,7 @@ void GfxDeviceGen2::_resetCanvas()
 		auto& info = canvasEntry.pLayerInfo->m_layers[i - 1];
 		auto& layer = canvasEntry.layers[i];
 
+		layer.objects.clear();
 		layer.colors.clear();
 		layer.rects.clear();
 		layer.commands.clear();
@@ -959,7 +959,7 @@ void GfxDeviceGen2::_doFlattenLayers()
 
 	// Start backend session
 
-	canvasData.sessionInfo.nObjects = (int) canvasData.objects.size();
+	canvasData.sessionInfo.nObjects = 0;
 	canvasData.sessionInfo.nTransforms = (int) canvasData.transforms.size();
 	canvasData.sessionInfo.nSetCanvas = (int) (canvasData.layers.size()-1)*2;
 	canvasData.sessionInfo.nColors = 0;
@@ -969,34 +969,38 @@ void GfxDeviceGen2::_doFlattenLayers()
 	{
 		canvasData.sessionInfo.nColors += layer.colors.size();
 		canvasData.sessionInfo.nRects += layer.rects.size();
+		canvasData.sessionInfo.nObjects += layer.objects.size();
 	}
 
 
 	m_pBackend->beginSession(canvasData.info.ref, canvasData.info.pSurface, canvasData.updateRects.nRects, canvasData.updateRects.pRects, &canvasData.sessionInfo);
 
-	// Send transforms and objects to backend
+	// Send transforms
 		
 	if( !canvasData.transforms.empty() )
 		m_pBackend->setTransforms( canvasData.transforms.data(), canvasData.transforms.data() + canvasData.transforms.size() );
-	
-	if( !canvasData.objects.empty() )
-		m_pBackend->setObjects( canvasData.objects.data(), canvasData.objects.data() + canvasData.objects.size() );
-	
+		
 	// Render base layer
 
 	auto& baseLayer = canvasData.layers[0];
 
-	RectSPX* pRectsBeg = baseLayer.rects.data();
-	RectSPX* pRectsEnd = pRectsBeg + baseLayer.rects.size();
-	m_pBackend->setRects(pRectsBeg, pRectsEnd);
+	if( !baseLayer.commands.empty() )
+	{
+		if( !baseLayer.objects.empty() )
+			m_pBackend->setObjects( baseLayer.objects.data(), baseLayer.objects.data() + baseLayer.objects.size() );
 
-	HiColor* pColorsBeg = baseLayer.colors.data();
-	HiColor* pColorsEnd = pColorsBeg + baseLayer.colors.size();
-	m_pBackend->setColors(pColorsBeg, pColorsEnd);
+		RectSPX* pRectsBeg = baseLayer.rects.data();
+		RectSPX* pRectsEnd = pRectsBeg + baseLayer.rects.size();
+		m_pBackend->setRects(pRectsBeg, pRectsEnd);
 
-	uint16_t* pCommandsBeg = baseLayer.commands.data();
-	uint16_t* pCommandsEnd = pCommandsBeg + baseLayer.commands.size();
-	m_pBackend->processCommands(pCommandsBeg, pCommandsEnd);
+		HiColor* pColorsBeg = baseLayer.colors.data();
+		HiColor* pColorsEnd = pColorsBeg + baseLayer.colors.size();
+		m_pBackend->setColors(pColorsBeg, pColorsEnd);
+
+		uint16_t* pCommandsBeg = baseLayer.commands.data();
+		uint16_t* pCommandsEnd = pCommandsBeg + baseLayer.commands.size();
+		m_pBackend->processCommands(pCommandsBeg, pCommandsEnd);
+	}
 
 
 	// Render additional layers
@@ -1017,6 +1021,9 @@ void GfxDeviceGen2::_doFlattenLayers()
 			m_pBackend->setCanvas(layer.pLayerCanvas);
 
 			// Send buffers and layer-specific commands to backend
+
+			if( !layer.objects.empty() )
+				m_pBackend->setObjects( layer.objects.data(), layer.objects.data() + layer.objects.size() );
 
 			RectSPX* pRectsBeg = layer.rects.data();
 			RectSPX* pRectsEnd = pRectsBeg + layer.rects.size();
@@ -1068,11 +1075,14 @@ void GfxDeviceGen2::_doFlattenLayers()
 	m_pBackend->endSession();
 
 	// Release objects
-	
-	for (auto pObj : canvasData.objects)
+
+	for (auto& layer : canvasData.layers )
 	{
-		if( pObj )
-			pObj->release();
+		for (auto pObj : layer.objects)
+		{
+			if( pObj )
+				pObj->release();
+		}
 	}
 }
 
@@ -2165,8 +2175,7 @@ void GfxDeviceGen2::flipDrawEdgemap(CoordSPX dest, Edgemap* pEdgemap, GfxFlip fl
 		m_pActiveLayer->commands.push_back(uint16_t(dest.y%65536));
 		m_pActiveLayer->commands.push_back(uint16_t(dest.y/65536));
 
-
-		m_pActiveCanvas->objects.push_back(pEdgemap);
+		m_pActiveLayer->objects.push_back(pEdgemap);
 		pEdgemap->retain();
 
 		m_pActiveCanvas->sessionInfo.nEdgemapDraws++;
@@ -3085,7 +3094,7 @@ void GfxDeviceGen2::_encodeStateChanges()
 
 		if (pSource != pOldSource)
 		{
-			m_pActiveCanvas->objects.push_back(pSource);
+			m_pActiveLayer->objects.push_back(pSource);
 			if( pSource )
 				pSource->retain();
 
