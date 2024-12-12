@@ -256,6 +256,7 @@ namespace wg
 
 			std::vector<RectSPX>	rects;
 			std::vector<HiColor>	colors;
+			std::vector<Object*>	objects;
 
 			int						finalCommandsOfs = -1;
 			Surface_p				pLayerCanvas;				// Null for layer 0 or any layer rendering directly to layer 0.
@@ -272,7 +273,6 @@ namespace wg
 			std::vector<ClipList>		clipListStack;
 
 			std::vector<Transform>		transforms;			// Excluding the first 12 standardard ones for flip.
-			std::vector<Object*>		objects;
 
 			CanvasLayers_p				pLayerInfo;
 
