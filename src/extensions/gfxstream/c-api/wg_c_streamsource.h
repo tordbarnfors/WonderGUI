@@ -25,16 +25,17 @@
 #pragma once
 
 #include <wg_c_gfxtypes.h>
+#include <wg_c_gfxstream.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
     int             wg_hasStreamChunks( wg_component streamSource );
-    int             wg_showStreamChunks( wg_component streamSource, wg_dataSegment ** pSegments );
+    int             wg_showStreamChunks( wg_component streamSource, wg_streamData ** pSegments );
     void            wg_discardStreamChunks( wg_component streamSource, int bytes );
     int             wg_fetchStreamChunks( wg_component streamSource );
-    wg_gfxChunkId   wg_peekStreamChunk( wg_component streamSource );
+    wg_streamChunkId   wg_peekStreamChunk( wg_component streamSource );
 
 #ifdef __cplusplus
 }

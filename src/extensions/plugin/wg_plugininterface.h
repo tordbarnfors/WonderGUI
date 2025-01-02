@@ -302,7 +302,7 @@ typedef struct wg_streampump_calls_struct
 	wg_obj				(*createStreamPumpWithInputOutput)(wg_component input, wg_component output);
 	void				(*setStreamPumpInput)(wg_obj streamPump, wg_component input);
 	void				(*setStreamPumpOutput)(wg_obj streamPump, wg_component output);
-	wg_gfxChunkId		(*peekChunk)(wg_obj streamPump);
+	wg_streamChunkId		(*peekChunk)(wg_obj streamPump);
 	int					(*pumpChunk)(wg_obj streamPump);
 	int					(*pumpUntilFrame)(wg_obj streamPump);
 	int					(*pumpFrame)(wg_obj streamPump);

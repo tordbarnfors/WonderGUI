@@ -36,7 +36,7 @@ int wg_hasStreamChunks( wg_component streamSource )
     return p->hasChunks();
 }
 
-int wg_showStreamChunks( wg_component streamSource, wg_dataSegment ** pSegments )
+int wg_showStreamChunks( wg_component streamSource, wg_streamData ** pSegments )
 {
     auto p = getPtr(streamSource);
 
@@ -44,7 +44,7 @@ int wg_showStreamChunks( wg_component streamSource, wg_dataSegment ** pSegments 
 	const GfxStream::Data * pSeg;
 
     std::tie(nbSegments, pSeg) = p->showChunks();
-	* pSegments = (wg_dataSegment*) pSeg;
+	* pSegments = (wg_streamData*) pSeg;
     return nbSegments;
 }
 
@@ -60,9 +60,9 @@ int wg_fetchStreamChunks( wg_component streamSource )
     return p->fetchChunks();
 }
 
-wg_gfxChunkId wg_peekStreamChunk( wg_component streamSource )
+wg_streamChunkId wg_peekStreamChunk( wg_component streamSource )
 {
     auto p = getPtr(streamSource);
-    return (wg_gfxChunkId) p->peekChunk();
+    return (wg_streamChunkId) p->peekChunk();
 }
 

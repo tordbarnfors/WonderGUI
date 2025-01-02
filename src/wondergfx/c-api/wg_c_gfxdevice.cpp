@@ -21,7 +21,7 @@
 =========================================================================*/
 
 #include <wg_c_gfxdevice.h>
-#include <wg_gfxdevice.h>
+#include <wg_gfxdevice_gen2.h>
 
 #include <type_traits>
 
@@ -34,8 +34,8 @@ static_assert( std::is_trivially_copyable<wg::WaveLine>::value, "wg::WaveLine is
 
 
 
-inline GfxDevice* getPtr(wg_obj obj) {
-	return static_cast<GfxDevice*>(reinterpret_cast<Object*>(obj));
+inline GfxDeviceGen2* getPtr(wg_obj obj) {
+	return static_cast<GfxDeviceGen2*>(reinterpret_cast<Object*>(obj));
 }
 
 inline Edgemap* getEdgemapPtr(wg_obj obj) {
@@ -43,10 +43,28 @@ inline Edgemap* getEdgemapPtr(wg_obj obj) {
 }
 
 
+wg_obj wg_createGfxDevice( wg_obj backend )
+{
+	auto p = GfxDeviceGen2::create( static_cast<GfxBackend*>(reinterpret_cast<Object*>(backend)) );
+	p->retain();
+	return static_cast<Object*>(p);
+}
+
+
 const wg_typeInfo* wg_deviceSurfaceType(wg_obj device)
 {
 	auto& typeInfo = getPtr(device)->surfaceType();
 	return reinterpret_cast<const wg_typeInfo*>(&typeInfo);
+}
+
+int wg_setBackend( wg_obj device, wg_obj backend )
+{
+	return getPtr(device)->setBackend(static_cast<GfxBackend*>(reinterpret_cast<Object*>(backend)));
+}
+
+wg_obj wg_getBackend( wg_obj device )
+{
+	return static_cast<Object*>(getPtr(device)->backend().rawPtr());
 }
 
 
@@ -139,7 +157,7 @@ const wg_rectSPX* wg_clipBounds(wg_obj device)
 
 void wg_setTintColor(wg_obj device, wg_color color)
 {
-	getPtr(device)->setTintColor( HiColor( color.r, color.g, color.b, color.a) );
+	getPtr(device)->setTint( HiColor( color.r, color.g, color.b, color.a) );
 }
 
 
@@ -150,17 +168,31 @@ wg_color wg_getTintColor(wg_obj device)
 }
 
 
-void wg_setTintGradient(wg_obj device, const wg_rectSPX* rect, const wg_gradient* gradient)
+void wg_setTintmap(wg_obj device, const wg_rectSPX* rect, const wg_obj tintmap)
 {
-	getPtr(device)->setTintGradient( *(const RectSPX*)rect, *(const Gradient*)gradient );
+	getPtr(device)->setTint( *(const RectSPX*)rect, static_cast<Tintmap*>(reinterpret_cast<Object*>(tintmap)) );
 }
 
-
-void wg_clearTintGradient(wg_obj device)
+wg_obj wg_getTintmap(wg_obj device)
 {
-	getPtr(device)->clearTintGradient();
+	return static_cast<Object*>(getPtr(device)->tintmap().rawPtr());
 }
 
+wg_rectSPX wg_getTintmapRect(wg_obj device)
+{
+	RectSPX rect = getPtr(device)->tintmapRect();
+	return { rect.x, rect.y, rect.w, rect.h };
+}
+
+int wg_isTinting(wg_obj device)
+{
+	return getPtr(device)->isTinting();
+}
+
+void wg_clearTint(wg_obj device)
+{
+	getPtr(device)->clearTint();
+}
 
 int wg_setBlendMode(wg_obj device, wg_blendMode blendMode)
 {
@@ -202,6 +234,11 @@ void wg_setBlurbrush(wg_obj device, wg_obj brush )
 	Blurbrush* pBrush = brush == 0 ? nullptr : static_cast<Blurbrush*>(reinterpret_cast<Object*>(brush));
 
 	getPtr(device)->setBlurbrush( pBrush );
+}
+
+wg_obj wg_getBlurbrush(wg_obj device)
+{
+	return static_cast<Object*>(getPtr(device)->blurbrush().rawPtr());
 }
 
 
@@ -283,6 +320,15 @@ void wg_endCanvasUpdate(wg_obj device)
 	getPtr(device)->endCanvasUpdate();
 }
 
+void wg_flattenLayers(wg_obj device)
+{
+	getPtr(device)->flattenLayers();
+}
+
+void wg_clearLayers(wg_obj device)
+{
+	getPtr(device)->clearLayers();
+}
 
 void wg_fill(wg_obj device, wg_color col)
 {

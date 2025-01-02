@@ -81,7 +81,6 @@ namespace wg
 		void	_printRect( const char * header, const RectI& rect );
 		void	_printRect( const char * header, const RectF& rect );
 		void	_printColor( const char * header, HiColor color );
-		void	_printGradient( const Gradient& gradient );
 		void	_printBorder( const char * header, const BorderI& border );
 		void	_printBorder(const char* header, const Border& border);
 

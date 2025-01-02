@@ -20,35 +20,24 @@
 
 =========================================================================*/
 
-#ifndef WG_C_STREAMPUMP_DOT_H
-#define WG_C_STREAMPUMP_DOT_H
+#ifndef WG_C_STREAMTRIMBACKEND_DOT_H
+#define WG_C_STREAMTRIMBACKEND_DOT_H
 #pragma once
 
 #include <wg_c_gfxtypes.h>
 #include <wg_c_geo.h>
-#include <wg_c_gfxstream.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-	wg_obj			wg_createStreamPump(void);
-	wg_obj			wg_createStreamPumpWithInputOutput( wg_component input, wg_component output);
+wg_obj	wg_createStreamTrimBackend(wg_obj backend);
 
-	void			wg_setStreamPumpInput(wg_obj streamPump, wg_component input);
-	void			wg_setStreamPumpOutput(wg_obj streamPump, wg_component output);
-
-
-	wg_streamChunkId	wg_peekChunk(wg_obj streamPump);
-
-	int				wg_setSessionMasks(wg_obj streamPump, wg_obj streamTrimBackend);
-
-	int				wg_pumpChunk(wg_obj streamPump);
-	int				wg_pumpUntilFrame(wg_obj streamPump);
-	int				wg_pumpFrame(wg_obj streamPump);
-	int				wg_pumpAll(wg_obj streamPump);
-
-	int				wg_pumpBytes( wg_obj streamPump, int maxBytes );
+void	wg_addNonMaskingSession(wg_obj streamTrimBackend);
+void	wg_addFullyMaskingSession(wg_obj streamTrimBackend,  wg_canvasRef canvasRef, wg_obj canvasSurface );
+void	wg_addMaskingSession(wg_obj streamTrimBackend,  wg_canvasRef canvasRef, wg_obj canvasSurface, int nMaskingRects, const wg_rectSPX * pMaskingRects );
+void	wg_clearSessionMasks(wg_obj streamTrimBackend);
+void	wg_setTrimLevel(wg_obj streamTrimBackend, int level);
 
 #ifdef __cplusplus
 }
@@ -56,3 +45,7 @@ extern "C" {
 
 
 #endif
+
+
+
+

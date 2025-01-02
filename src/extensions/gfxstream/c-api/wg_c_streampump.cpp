@@ -60,10 +60,14 @@ void wg_setStreamPumpOutput(wg_obj streamPump, wg_component output)
 	getPtr(streamPump)->setOutput(pOutput);
 }
 
-
-wg_gfxChunkId wg_peekChunk(wg_obj streamPump)
+wg_streamChunkId wg_peekChunk(wg_obj streamPump)
 {
-	return (wg_gfxChunkId) getPtr(streamPump)->peekChunk();
+	return (wg_streamChunkId) getPtr(streamPump)->peekChunk();
+}
+
+int wg_setSessionMasks(wg_obj streamPump, wg_obj streamTrimBackend)
+{
+	return getPtr(streamPump)->setSessionMasks(static_cast<StreamTrimBackend*>(reinterpret_cast<Object*>(streamTrimBackend)));
 }
 
 int wg_pumpChunk(wg_obj streamPump)
@@ -86,3 +90,7 @@ int wg_pumpAll(wg_obj streamPump)
 	return getPtr(streamPump)->pumpAll();
 }
 
+int wg_pumpBytes( wg_obj streamPump, int maxBytes )
+{
+	return getPtr(streamPump)->pumpBytes(maxBytes);
+}

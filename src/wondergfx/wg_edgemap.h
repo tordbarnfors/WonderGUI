@@ -70,7 +70,7 @@ namespace wg
 			const Gradient *	gradients 	= nullptr;			// Edgemap has either colors, gradients, tintmaps or colorstrips, never more than one of them. Setting one is mandatory.
 			EdgemapPalette		paletteType = EdgemapPalette::Undefined;
 
-			const Tintmap_p * 	tintmaps	= nullptr;			// Needs to have one tintmap per segement if any. So size() must be 0 or equal to segments.
+			const Tintmap_p * 	tintmaps	= nullptr;			// Needs to have one tintmap per segement if any.
 			int					segments	= 0;				// Mandatory.
 		
 

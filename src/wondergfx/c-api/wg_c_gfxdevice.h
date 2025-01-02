@@ -29,6 +29,7 @@
 #include <wg_c_color.h>
 #include <wg_c_gradient.h>
 #include <wg_c_surface.h>
+#include <wg_c_gfxbackend.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -45,22 +46,16 @@ extern "C" {
 		wg_spx		hold;      // Value for extending the line if it is too short (or completely missing).
 	} wg_waveLine;
 
-	//____ wg_canvasInfo __________________________________________________________
+	//____ Creation ___________________________________________________
 
-	typedef struct wg_canvasInfo_struct		// NOT BINARY EQUIVALENT!
-	{
-		wg_canvasRef	ref;
-		wg_obj			surface;
-		wg_sizeSPX		size;
-		int				scale;
-	} wg_canvasInfo;
-
-
+	wg_obj		wg_createGfxDevice( wg_obj backend );
 
 	//____ Misc _______________________________________________________
 
 	const wg_typeInfo*		wg_deviceSurfaceType(wg_obj device);
 
+	int						wg_setBackend( wg_obj device, wg_obj backend );
+	wg_obj					wg_getBackend( wg_obj device );
 
 	wg_canvasInfo			wg_getCanvas(wg_obj device);
 	wg_canvasInfo			wg_getCanvasRef(wg_obj device, wg_canvasRef ref);
@@ -90,9 +85,11 @@ extern "C" {
 
 	void					wg_setTintColor(wg_obj device, wg_color color);
 	wg_color				wg_getTintColor(wg_obj device);
-
-	void					wg_setTintGradient(wg_obj device, const wg_rectSPX* rect, const wg_gradient* gradient);
-	void					wg_clearTintGradient(wg_obj device);
+	void					wg_setTintmap(wg_obj device, const wg_rectSPX* rect, const wg_obj tintmap);
+	wg_obj					wg_getTintmap(wg_obj device);
+	wg_rectSPX				wg_getTintmapRect(wg_obj device);
+int							wg_isTinting(wg_obj device);
+	void					wg_clearTint(wg_obj device);
 
 	int						wg_setBlendMode(wg_obj device, wg_blendMode blendMode);
 	wg_blendMode 			wg_getBlendMode(wg_obj device);
@@ -104,6 +101,7 @@ extern "C" {
 	float					wg_getMorphFactor(wg_obj device);
 
 	void					wg_setBlurbrush(wg_obj device, wg_obj brush );
+	wg_obj					wg_getBlurbrush(wg_obj device);
 
 	void					wg_setFixedBlendColor(wg_obj device, wg_color color );
 	wg_color				wg_getFixedBlendColor(wg_obj device);
@@ -124,6 +122,8 @@ extern "C" {
 	int						wg_beginCanvasUpdateWithSurface(wg_obj device, wg_obj surface, int nUpdateRects, const wg_rectSPX* pUpdateRects, wg_obj canvasLayers, int startLayer);
 	void					wg_endCanvasUpdate(wg_obj device);
 
+	void					wg_flattenLayers(wg_obj device);
+	void					wg_clearLayers(wg_obj device);
 
 	// Draw methods.
 
@@ -168,9 +168,16 @@ extern "C" {
 	void					wg_transformBlur(wg_obj device, const wg_rectSPX* dest, wg_coordF srcSPX, const wg_transform* pTransform);
 	void					wg_rotScaleBlur(wg_obj device, const wg_rectSPX* dest, float rotationDegrees, float scale, wg_coordF srcCenter, wg_coordF destCenter);
 
+	// Draw edgemap methods
 
+	void					wg_drawEdgemap(wg_obj device, wg_coordSPX dest, wg_obj edgemap);
+	void					wg_flipDrawEdgemap(wg_obj device, wg_coordSPX dest, wg_obj edgemap, wg_gfxFlip flip);
 
-	// Draw segments methods
+// Special draw/blit methods
+
+	void					wg_blitNinePatch(wg_obj device, const wg_rectSPX* dstRect, const wg_borderSPX* dstFrame, const wg_ninePatch* patch, int scale);
+
+	// Deprecated
 
 	void					wg_drawWave(wg_obj device, const wg_rectSPX* dest, const wg_waveLine* pTopBorder, const wg_waveLine* pBottomBorder, wg_color frontFill, wg_color backFill);
 	void					wg_flipDrawWave(wg_obj device, const wg_rectSPX* dest, const wg_waveLine* pTopBorder, const wg_waveLine* pBottomBorder, wg_color frontFill, wg_color backFill, wg_gfxFlip flip);
@@ -182,12 +189,6 @@ extern "C" {
 	void					wg_drawSegments(wg_obj device, const wg_rectSPX* dest, int nSegments, const wg_color* pSegmentColors, int nEdgeStrips, const int* pEdgeStrips, int edgeStripPitch, wg_tintMode tintMode);
 	void					wg_flipDrawSegments(wg_obj device, const wg_rectSPX* dest, int nSegments, const wg_color* pSegmentColors, int nEdgeStrips, const int* pEdgeStrips, int edgeStripPitch, wg_gfxFlip flip, wg_tintMode tintMode);
 
-	void					wg_drawEdgemap(wg_obj device, wg_coordSPX dest, wg_obj edgemap);
-	void					wg_flipDrawEdgemap(wg_obj device, wg_coordSPX dest, wg_obj edgemap, wg_gfxFlip flip);
-
-	// Special draw/blit methods
-
-	void					wg_blitNinePatch(wg_obj device, const wg_rectSPX* dstRect, const wg_borderSPX* dstFrame, const wg_ninePatch* patch, int scale);
 
 #ifdef __cplusplus
 }

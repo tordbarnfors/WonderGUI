@@ -39,8 +39,13 @@ extern "C" {
 
 	typedef struct wg_edgemapBP_struct			// NOT BINARY EQUIVALENT!
 	{
-		const wg_color*		colors;
-		const wg_gradient*	gradients;
+		const wg_color*		colors;					// Flat colors, one color for each segment.
+		const wg_color*		colorstripsX;			// One color for each pixel along width for each segment.
+		const wg_color*		colorstripsY;			// One color for each pixel along height for each segment.
+
+		wg_edgemapPalette	paletteType;
+
+		const wg_obj * 		tintmaps;				// Needs to have one tintmap per segement if any.
 		int					segments;
 		wg_sizeI			size;
 
@@ -63,7 +68,7 @@ wg_edgemapPalette	wg_edgemapPaletteType(wg_obj edgemap);
 	int		wg_setEdgemapColorsFromTintmaps(wg_obj edgemap, int begin, int end, wg_obj * pTintmaps );
 	int		wg_setEdgemapColorsFromStrips(wg_obj edgemap, int begin, int end, const wg_color * pColorstripX, const wg_color * pColorstripY );
 
-	int	wg_importEdgemapPaletteEntries(wg_obj edgemap, int begin, int end, const wg_color * pColors );
+	int		wg_importEdgemapPaletteEntries(wg_obj edgemap, int begin, int end, const wg_color * pColors );
 
 	const wg_color *  wg_edgemapFlatColors(wg_obj edgemap);
 	const wg_color *  wg_edgemapColorstripsX(wg_obj edgemap);

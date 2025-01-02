@@ -86,10 +86,16 @@ set( SOURCES
 	c-api/wg_c_canvaslayers.h
 	c-api/wg_c_color.cpp
 	c-api/wg_c_color.h
+	c-api/wg_c_edgemap.cpp
+	c-api/wg_c_edgemap.h
+	c-api/wg_c_edgemapfactory.cpp
+	c-api/wg_c_edgemapfactory.h
 	c-api/wg_c_font.cpp
 	c-api/wg_c_font.h	
 	c-api/wg_c_geo.cpp
 	c-api/wg_c_geo.h
+	c-api/wg_c_gfxbackend.cpp
+	c-api/wg_c_gfxbackend.h
 	c-api/wg_c_gfxbase.cpp
 	c-api/wg_c_gfxbase.h
 	c-api/wg_c_gfxdevice.cpp
@@ -113,10 +119,8 @@ set( SOURCES
 	c-api/wg_c_surfacereader.h
 	c-api/wg_c_surfacewriter.cpp
 	c-api/wg_c_surfacewriter.h
-	c-api/wg_c_edgemap.cpp
-	c-api/wg_c_edgemap.h
-	c-api/wg_c_edgemapfactory.cpp
-	c-api/wg_c_edgemapfactory.h
+	c-api/wg_c_tintmap.h
+	c-api/wg_c_tintmap.cpp
 	c-api/wondergfx_c.h
 )
 

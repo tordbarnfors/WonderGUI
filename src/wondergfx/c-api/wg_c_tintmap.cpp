@@ -20,39 +20,39 @@
 
 =========================================================================*/
 
-#ifndef WG_C_STREAMPUMP_DOT_H
-#define WG_C_STREAMPUMP_DOT_H
-#pragma once
+#include <wg_c_tintmap.h>
+#include <wg_tintmap.h>
 
-#include <wg_c_gfxtypes.h>
-#include <wg_c_geo.h>
-#include <wg_c_gfxstream.h>
+using namespace wg;
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-	wg_obj			wg_createStreamPump(void);
-	wg_obj			wg_createStreamPumpWithInputOutput( wg_component input, wg_component output);
-
-	void			wg_setStreamPumpInput(wg_obj streamPump, wg_component input);
-	void			wg_setStreamPumpOutput(wg_obj streamPump, wg_component output);
-
-
-	wg_streamChunkId	wg_peekChunk(wg_obj streamPump);
-
-	int				wg_setSessionMasks(wg_obj streamPump, wg_obj streamTrimBackend);
-
-	int				wg_pumpChunk(wg_obj streamPump);
-	int				wg_pumpUntilFrame(wg_obj streamPump);
-	int				wg_pumpFrame(wg_obj streamPump);
-	int				wg_pumpAll(wg_obj streamPump);
-
-	int				wg_pumpBytes( wg_obj streamPump, int maxBytes );
-
-#ifdef __cplusplus
+inline Tintmap* getPtr(wg_obj obj) {
+	return static_cast<Tintmap*>(reinterpret_cast<Object*>(obj));
 }
-#endif
+
+int wg_isTintmapOpaque( wg_obj tintmap )
+{
+	return getPtr(tintmap)->isOpaque();
+}
+
+int wg_isTintmapVertical( wg_obj tintmap )
+{
+	return getPtr(tintmap)->isVertical();
+}
+
+int wg_isTintmapHorizontal( wg_obj tintmap )
+{
+	return getPtr(tintmap)->isHorizontal();
+}
+
+void wg_exportHorizontalColors( wg_obj tintmap, wg_spx length, wg_color* pOutput)
+{
+	getPtr(tintmap)->exportHorizontalColors(length, (HiColor*) pOutput);
+}
+
+void wg_exportVerticalColors( wg_obj tintmap, wg_spx length, wg_color* pOutput)
+{
+	getPtr(tintmap)->exportVerticalColors(length, (HiColor*) pOutput);
+}
 
 
-#endif
+

@@ -61,6 +61,8 @@ set( SOURCES
 	c-api/wg_c_streamsource.h
 	c-api/wg_c_streamsplitter.cpp
 	c-api/wg_c_streamsplitter.h
+	c-api/wg_c_streamtrimbackend.cpp
+	c-api/wg_c_streamtrimbackend.h
 	c-api/wg_c_streamwrapper.cpp
 	c-api/wg_c_streamwrapper.h
 	c-api/wg_c_streamwriter.cpp

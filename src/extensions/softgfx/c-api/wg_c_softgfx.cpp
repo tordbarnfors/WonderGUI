@@ -23,6 +23,7 @@
 #include <wg_c_softgfx.h>
 #include <wg_c_internal.h>
 #include <wg_softsurface.h>
+#include <wg_softbackend.h>
 #include <wg_softgfxdevice.h>
 #include <wg_softsurfacefactory.h>
 
@@ -30,7 +31,6 @@ using namespace wg;
 
 wg_obj wg_createSoftGfxDevice()
 {
-	
 	auto p = SoftGfxDevice::create();
 	p->retain();
 	return (wg_obj) static_cast<Object*>(p.rawPtr());
@@ -45,6 +45,20 @@ int wg_defineSoftGfxDeviceCanvas( wg_obj device, wg_canvasRef ref, wg_obj softSu
 	return pDevice->defineCanvas((CanvasRef) ref, pSurface);
 }
 
+wg_obj wg_createSoftBackend(void)
+{
+	auto p = SoftBackend::create();
+	p->retain();
+	return (wg_obj) static_cast<Object*>(p.rawPtr());
+}
+
+int wg_defineSoftBackendCanvas( wg_obj backend, wg_canvasRef ref, wg_obj softSurface )
+{
+	auto pBackend = static_cast<SoftBackend*>(reinterpret_cast<Object*>(backend));
+	auto pSurface = static_cast<SoftSurface*>(reinterpret_cast<Object*>(softSurface));
+
+	return pBackend->defineCanvas((CanvasRef) ref, pSurface);
+}
 
 wg_obj wg_createSoftSurface(const wg_surfaceBP* blueprint)
 {

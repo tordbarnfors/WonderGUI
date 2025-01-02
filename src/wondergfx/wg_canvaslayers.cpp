@@ -152,8 +152,8 @@ namespace wg
 	 * - RenderTarget is set to the surface for the layer.
 	 * - ClipList is set to only update patches that might be used.
 	 * - BlendMode is unspecified, you need to set it!
-	 * - TintColor and TintGradients are cleared.
-	 * 
+	 * - Tint is cleared.
+	 *
 	 * BlendMode, TintColor and ClipList are automatically saved and restored. Any other settings you change
 	 * (like BlitSource) will have to be saved and restored within the lambda.
 	 * 
@@ -176,8 +176,8 @@ namespace wg
 	 * - RenderTarget is set to the surface for the layer.
 	 * - ClipList is set to only update patches that might be used.
 	 * - BlendMode is set to Blend.
-	 * - TintColor and TintGradients are cleared.
-	 * 
+	 * - Tint is cleared.
+	 *
 	 * No GfxDevice settings are saved or restored. Any settings you change will have to be saved and restored within the lambda.
 	 * 
 	 */
@@ -202,8 +202,8 @@ namespace wg
 	 * - Blit source is set to the layer to be blended.
 	 * - ClipList is set to that provided to beginCanvasUpdate().
 	 * - BlendMode is set to Blend.
-	 * - TintColor and TintGradients are cleared.
-	 * 
+	 * - Tint is cleared.
+	 *
 	 * No GfxDevice settings are saved or restored. Any settings you change will have to be saved and restored within the lambda.
 	 * 
 	 */
@@ -223,8 +223,8 @@ namespace wg
 	 * - Render target is set to the canvas surface (base layer).
 	 * - ClipList is set to that provided to beginCanvasUpdate().
 	 * - BlendMode is set to Blend.
-	 * - TintColor and TintGradients are cleared.
-	 * 
+	 * - Tint is cleared.
+	 *
 	 * No GfxDevice settings are saved or restored. Any settings you change will have to be saved and restored within the lambda.
 	 * 
 	 */
@@ -244,8 +244,8 @@ namespace wg
 	 * - Render target is set to the canvas surface (base layer).
 	 * - ClipList is set to that provided to beginCanvasUpdate().
 	 * - BlendMode is set to Blend.
-	 * - TintColor and TintGradients are cleared.
-	 * 
+	 * - Tint is cleared.
+	 *
 	 * No GfxDevice settings are saved or restored. Any settings you change will have to be saved and restored within the lambda.
 	 * 
 	 */
@@ -267,7 +267,7 @@ namespace wg
 	 * - Render target is set to the canvas surface (base layer).
 	 * - ClipList is set to that provided to GfxDevice::beginCanvasUpdate().
 	 * - BlendMode is set to Blend.
-	 * - TintColor and TintGradients are cleared.
+	 * - Tint is cleared.
 	 * 
 	 * No GfxDevice settings are saved or restored. Any settings you change will have to be saved and restored within the lambda.
 	 * 

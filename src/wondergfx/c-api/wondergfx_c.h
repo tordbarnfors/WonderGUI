@@ -34,6 +34,7 @@
 #include <wg_c_edgemapfactory.h>
 #include <wg_c_font.h>
 #include <wg_c_geo.h>
+#include <wg_c_gfxbackend.h>
 #include <wg_c_gfxbase.h>
 #include <wg_c_gfxdevice.h>
 #include <wg_c_gfxtypes.h>

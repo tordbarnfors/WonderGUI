@@ -657,17 +657,6 @@ namespace wg
 		m_charStream << header << " = " << (int)color.r << ", " << (int)color.g << ", " << (int)color.b << ", " << (int)color.a << std::endl;
 	}
 
-	//____ _printGradient() _________________________________________________
-
-	void StreamLogger::_printGradient( const Gradient& gradient )
-	{
-		_printColor("        topLeft      ", gradient.topLeft);
-		_printColor("        topRight     ", gradient.topRight);
-		_printColor("        bottomRight  ", gradient.bottomRight);
-		_printColor("        bottomLeft   ", gradient.bottomLeft);
-	}
-
-
 	//____ _printBorder() _________________________________________________
 
 	void StreamLogger::_printBorder( const char * header, const BorderI& border )

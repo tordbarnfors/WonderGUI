@@ -160,7 +160,7 @@ namespace wg
 				{
 					if (p2->contains(*p) )
 					{
-						// Found updateRect containg our renderingRect
+						// Found updateRect containing our renderingRect
 						// Now clip renderingRect against corresponding 
 						// clippedUpdateRect.
 

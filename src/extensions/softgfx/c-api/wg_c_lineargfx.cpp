@@ -23,6 +23,7 @@
 #include <wg_c_lineargfx.h>
 #include <wg_c_internal.h>
 #include <wg_lineargfxdevice.h>
+#include <wg_linearbackend.h>
 
 using namespace wg;
 
@@ -67,3 +68,45 @@ int wg_linearGfxDeviceSegmentPadding( wg_obj device)
 
 	return pDevice->segmentPadding();
 }
+
+wg_obj wg_createLinearBackend(void*(*beginCanvasRenderFunc)(wg_canvasRef ref, int nBytes),
+								 void(*endCanvasRenderFunc)(wg_canvasRef ref, int nSegments, const wg_linearGfxSegment * pSegments) )
+{
+	auto pBackend = LinearBackend::create([beginCanvasRenderFunc](CanvasRef ref, int nBytes)
+							{
+								return beginCanvasRenderFunc((wg_canvasRef)ref, nBytes);
+							},
+
+							[endCanvasRenderFunc](CanvasRef ref, int nSegments, const LinearBackend::Segment * pSegments)
+							{
+								return endCanvasRenderFunc((wg_canvasRef)ref, nSegments, (wg_linearGfxSegment*) pSegments);
+							} );
+
+	pBackend->retain();
+	return (wg_obj) static_cast<Object*>(pBackend.rawPtr());
+}
+
+
+int wg_defineLinearGfxBackend( wg_obj backend, wg_canvasRef ref, wg_sizeSPX size, wg_pixelFormat format, int scale )
+{
+	auto pBackend = static_cast<LinearBackend*>(reinterpret_cast<Object*>(backend));
+
+	return pBackend->defineCanvas((CanvasRef) ref, {size.w,size.h}, (PixelFormat) format, scale);
+}
+
+
+void wg_setLinearBackendSegmentPadding( wg_obj backend, int bytes )
+{
+	auto pBackend = static_cast<LinearBackend*>(reinterpret_cast<Object*>(backend));
+
+	pBackend->setSegmentPadding(bytes);
+}
+
+
+int wg_linearBackendSegmentPadding( wg_obj backend)
+{
+	auto pBackend = static_cast<LinearBackend*>(reinterpret_cast<Object*>(backend));
+
+	return pBackend->segmentPadding();
+}
+
