@@ -1,6 +1,8 @@
 
 set(SOURCES
 
+	wg_metalbackend.h
+	wg_metalbackend.mm
 	wg_metalgfxdevice.h
 	wg_metalgfxdevice.mm
 	wg_metalshaders.mm

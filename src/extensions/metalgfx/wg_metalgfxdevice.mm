@@ -1256,42 +1256,6 @@ MetalGfxDevice::MetalGfxDevice()
         }
     }
 
-    //____ plotPixels() _________________________________________________________________
-
-	void MetalGfxDevice::plotPixels(int nPixels, const CoordSPX * pCoords, const HiColor * pColors)
-	{
-        if (nPixels == 0)
-            return;
-
-        if (m_vertexOfs > m_vertexBufferSize - nPixels || m_extrasOfs > m_extrasBufferSize - 4 * nPixels)
-            _resizeBuffers(2, nPixels, 0, 4*nPixels, 0);
-
-        if (m_cmd != Command::Plot)
-        {
-            _endCommand();
-            _beginDrawCommand(Command::Plot);
-        }
-
-        for (int i = 0; i < m_nClipRects; i++)
-        {
-            const RectI& clip = m_pClipRects[i];
-            for (int pixel = 0; pixel < nPixels; pixel++)
-            {
-                if (clip.contains(pCoords[pixel]))
-                {
-                    m_pVertexBuffer[m_vertexOfs].coord = pCoords[pixel] / 64;
-                    m_pVertexBuffer[m_vertexOfs].extrasOfs = m_extrasOfs / 4;
-                    m_vertexOfs++;
-
-                    m_pExtrasBuffer[m_extrasOfs++] = pColors[pixel].r / 4096.f;
-                    m_pExtrasBuffer[m_extrasOfs++] = pColors[pixel].g / 4096.f;
-                    m_pExtrasBuffer[m_extrasOfs++] = pColors[pixel].b / 4096.f;
-                    m_pExtrasBuffer[m_extrasOfs++] = pColors[pixel].a / 4096.f;
-                }
-            }
-        }
-    }
-
     //____ drawLine() ____ [from/to] __________________________________________________
 
 	void MetalGfxDevice::drawLine(CoordSPX begin, CoordSPX end, HiColor color, spx _thickness)

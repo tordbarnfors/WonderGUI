@@ -2,7 +2,6 @@
 #include <cmath>
 #include <wg_freetypefont.h>
 
-#include "gfxdevicetester.h"
 
 #include <wondergfx.h>
 #include <wondergfxstream.h>
@@ -10,7 +9,11 @@
 #include <wg_softbackend_kernels.h>
 #include <wg_linearbackend.h>
 
-#include <wg_glbackend.h>
+//#include <wg_glbackend.h>
+
+
+#include "gfxdevicetester.h"
+
 
 #include "testsuites/testsuite.h"
 
@@ -182,7 +185,7 @@ void GfxDeviceTester::setup_testdevices()
 	// Gen2 with SoftBackend
 
 	{
-/*
+
 		auto pSoftBackend = SoftBackend::create();
 		addDefaultSoftKernels(pSoftBackend);
 
@@ -194,11 +197,11 @@ void GfxDeviceTester::setup_testdevices()
 		auto pGen2SoftDevice = Device::create("Gen2 Software (SoftBackend)", pGen2GfxDevice, CanvasRef::None, pGen2CanvasSurface, this);
 
 		g_testdevices.push_back(pGen2SoftDevice);
- */
+
 	}
 
 	// Gen2 with GlBackend
-
+/*
 	{
 
 		auto pBackend = GlBackend::create();
@@ -214,7 +217,7 @@ void GfxDeviceTester::setup_testdevices()
 		g_testdevices.push_back(pGen2GlDevice);
 
  }
-
+*/
 	// Gen2 with LinearBackend
 
 	{
@@ -392,6 +395,24 @@ void GfxDeviceTester::setup_testdevices()
 
 //		g_testdevices.push_back(pStreamDevice);
 	}
+
+	// Gen2 Metal
+/*
+	{
+		auto pBackend = MetalBackend::create();
+
+//		auto pBackendLogger = BackendLogger::create(std::cout, pBackend);
+//		auto pGen2GfxDevice = GfxDeviceGen2::create(pBackendLogger);
+
+		auto pGen2GfxDevice = GfxDeviceGen2::create(pBackend);
+
+		auto pCanvasSurface = MetalSurface::create(canvasBP);
+		auto pGen2GlDevice = Device::create("Gen2 Metal (MetalBackend)", pGen2GfxDevice, CanvasRef::None, pCanvasSurface, this);
+
+		g_testdevices.push_back(pGen2GlDevice);
+
+	}
+*/
 
 
 }
