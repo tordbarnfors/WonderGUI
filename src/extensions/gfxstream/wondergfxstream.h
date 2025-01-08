@@ -28,7 +28,6 @@
 #include <wg_streambuffer.h>
 #include <wg_streamdecoder.h>
 #include <wg_streamencoder.h>
-#include <wg_streamfastencoder.h>
 #include <wg_streamlogger.h>
 #include <wg_streamloopwrapper.h>
 #include <wg_streamplayer.h>

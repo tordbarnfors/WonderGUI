@@ -526,3 +526,13 @@ void wg_rotScaleBlur(wg_obj device, const wg_rectSPX* dest, float rotationDegree
 {
 	getPtr(device)->rotScaleBlur(*(const RectSPX*)dest, rotationDegrees, scale, {srcCenter.x, srcCenter.y}, {destCenter.x, destCenter.y} );
 }
+
+void wg_setTintGradient(wg_obj device, const wg_rectSPX* rect, const wg_gradient* pGradient)
+{
+	getPtr(device)->setTintGradient(*(const RectSPX*)rect, *(const Gradient*)pGradient);
+}
+
+void wg_clearTintGradient(wg_obj device)
+{
+	getPtr(device)->clearTintGradient();
+}

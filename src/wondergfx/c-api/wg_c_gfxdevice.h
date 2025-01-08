@@ -189,6 +189,9 @@ int							wg_isTinting(wg_obj device);
 	void					wg_drawSegments(wg_obj device, const wg_rectSPX* dest, int nSegments, const wg_color* pSegmentColors, int nEdgeStrips, const int* pEdgeStrips, int edgeStripPitch, wg_tintMode tintMode);
 	void					wg_flipDrawSegments(wg_obj device, const wg_rectSPX* dest, int nSegments, const wg_color* pSegmentColors, int nEdgeStrips, const int* pEdgeStrips, int edgeStripPitch, wg_gfxFlip flip, wg_tintMode tintMode);
 
+	void					wg_setTintGradient(wg_obj device, const wg_rectSPX* rect, const wg_gradient * pGradient);
+	void					wg_clearTintGradient(wg_obj device);
+
 
 #ifdef __cplusplus
 }

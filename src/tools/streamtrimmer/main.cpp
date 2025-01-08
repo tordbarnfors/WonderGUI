@@ -60,15 +60,15 @@ int main ( int argc, char** argv )
 
 	auto pTrimmedSplitter = StreamSplitter::create( {{pTrimmedLogger, pTrimmedLogger->input}, {pTrimmedWriter, pTrimmedWriter->input}});
 	
-	auto pTrimEncoder = StreamTrimEncoder::create( {pTrimmedSplitter, pTrimmedSplitter->input} );
+	auto pTrimEncoder = StreamEncoder::create( {pTrimmedSplitter, pTrimmedSplitter->input} );
 	
 	auto pSurfaceFactory = StreamSurfaceFactory::create(pTrimEncoder);
 	auto pEdgemapFactory = StreamEdgemapFactory::create(pTrimEncoder);
 
-	auto pDevice = StreamDevice::create(pTrimEncoder);
+	auto pBackend = StreamBackend::create(pTrimEncoder);
 	
 	
-	auto pPlayer = StreamPlayer::create(pDevice, pSurfaceFactory, pEdgemapFactory);
+	auto pPlayer = StreamPlayer::create(pBackend, pSurfaceFactory, pEdgemapFactory);
 	
 	auto pStraightLogger = StreamLogger::create( log );
 
@@ -78,8 +78,8 @@ int main ( int argc, char** argv )
 	auto pStreamPump = StreamPump::create( {pStreamReader, pStreamReader->output}, {pInputSplitter, pInputSplitter->input} );
 	
 	
-	pDevice->defineCanvas(CanvasRef::Canvas_1, {240,240}, PixelFormat::Undefined, 64);
-	pDevice->defineCanvas(CanvasRef::Canvas_2, {240,240}, PixelFormat::Undefined, 64);
+	pBackend->defineCanvas(CanvasRef::Canvas_1, {240,240}, PixelFormat::Undefined, 64);
+	pBackend->defineCanvas(CanvasRef::Canvas_2, {240,240}, PixelFormat::Undefined, 64);
 
 	pStraightLogger->setDisplayOffset(false);
 	pStraightLogger->setDisplayChunkNb(false);

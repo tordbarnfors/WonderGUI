@@ -30,9 +30,19 @@ namespace wg
 
 	//____ constructor ________________________________________________________
 
-	StreamEncoder::StreamEncoder(const StreamSink_p& pStream)
+	StreamEncoder::StreamEncoder(const StreamSink_p& pStream, int bufferBytes)
 	{
+		m_pBuffer = new uint8_t[bufferBytes];
+		m_capacity = bufferBytes;
+		m_pWriteData = m_pBuffer;
 		m_pStream = pStream;
+	}
+
+	//____ destructor ________________________________________________________
+
+	StreamEncoder::~StreamEncoder()
+	{
+		delete[] m_pBuffer;
 	}
 
 	//____ typeInfo() _________________________________________________________
@@ -61,6 +71,16 @@ namespace wg
 	void StreamEncoder::setDefaultSampleMethod(SampleMethod sampleMethod)
 	{
 		m_defaultSampleMethod = sampleMethod;
+	}
+
+	//____ flush() ____________________________________________________________
+
+	void StreamEncoder::flush()
+	{
+		if (m_pStream)
+			m_pStream->processChunks(m_pBuffer, m_pWriteData);
+
+		m_pWriteData = m_pBuffer;
 	}
 
 	//____ allocObjectId() ____________________________________________________
@@ -94,40 +114,15 @@ namespace wg
 		m_pFreeIdStack[m_freeIdStackSize++] = id;
 	}
 
-	StreamEncoder& StreamEncoder::operator<< (const GfxStream::WriteSpxArray& array)
+	//____ _beginChunk() _________________________________________________________
+
+	void StreamEncoder::_beginChunk(GfxStream::Header header)
 	{
-		switch( array.spxFormat )
-		{
-			case GfxStream::SpxFormat::Int32_dec:
-				_pushBytes(array.size*4, array.pData);
-				break;
-			
-			case GfxStream::SpxFormat::Int16_int:
-			{
-				auto p = array.pData;
-				for( int i = 0 ; i < array.size ; i++ )
-					_pushShort(* p++ >> 6);
-				break;
-			}
+		if (m_pWriteData + (header.size + 4) - m_pBuffer > m_capacity)
+			flush();
 
-			case GfxStream::SpxFormat::Uint16_dec:
-			{
-				auto p = array.pData;
-				for( int i = 0 ; i < array.size ; i++ )
-					_pushShort(* p++);
-				break;
-			}
-				
-			case GfxStream::SpxFormat::Uint8_int:
-			{
-				auto p = array.pData;
-				for( int i = 0 ; i < array.size ; i++ )
-					_pushChar(* p++ >> 6);
-				break;
-			}
-		}
-		return *this;
+		_pushChar((char)header.type);
+		_pushChar((char)header.format);
+		_pushShort(header.size);
 	}
-
-
 }

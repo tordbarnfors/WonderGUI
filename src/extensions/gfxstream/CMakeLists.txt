@@ -11,8 +11,6 @@ set( SOURCES
 	wg_streamdecoder.h
 	wg_streamencoder.cpp
 	wg_streamencoder.h
-	wg_streamfastencoder.cpp
-	wg_streamfastencoder.h
 	wg_streamlogger.cpp
 	wg_streamlogger.h
 	wg_streamloopwrapper.cpp

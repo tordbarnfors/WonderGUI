@@ -137,14 +137,6 @@ namespace wg
 			int				bytes;
 			void *			pBuffer;
 		};
-
-		struct WriteSpxArray
-		{
-			int				size;
-			SpxFormat		spxFormat;
-			const spx *		pData;
-			const spx *		pCompareData;		// For creating delta values.
-		};
 		
 		struct ReadSpxField
 		{

@@ -339,7 +339,7 @@ void GfxDeviceTester::setup_testdevices()
 		
 		auto pStreamPlayer = StreamPlayer::create(pSoftGfxDevice, SoftSurfaceFactory::create(), SoftEdgemapFactory::create());
 		
-		auto pStreamEncoder = StreamFastEncoder::create( {pStreamPlayer, pStreamPlayer->input} );
+		auto pStreamEncoder = StreamEncoder::create( {pStreamPlayer, pStreamPlayer->input} );
 		auto pStreamGfxDevice = StreamDevice::create(pStreamEncoder);
 		pStreamGfxDevice->defineCanvas(CanvasRef::Default, {512,512}, PixelFormat::BGRA_8_sRGB);
 		
@@ -384,7 +384,7 @@ void GfxDeviceTester::setup_testdevices()
 
 		auto pStreamPlayer = StreamPlayer::create(pBackendLogger, SoftSurfaceFactory::create(), SoftEdgemapFactory::create());
 
-		auto pStreamEncoder = StreamFastEncoder::create({ pStreamPlayer, pStreamPlayer->input });
+		auto pStreamEncoder = StreamEncoder::create({ pStreamPlayer, pStreamPlayer->input });
 
 		auto pStreamBackend = StreamBackend::create(pStreamEncoder);
 		pStreamBackend->defineCanvas(CanvasRef::Default, { 512,512 }, PixelFormat::BGRA_8_sRGB);

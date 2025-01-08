@@ -295,8 +295,7 @@ int main ( int argc, char** argv )
 
 	auto pFirstSplitter = StreamSplitter::create( { StreamSink_p( pStreamBuffer, pStreamBuffer->input), StreamSink_p( pStreamWriter, pStreamWriter->input) });
 
-	auto pEncoder = StreamFastEncoder::create(StreamSink_p( pFirstSplitter, pFirstSplitter->input) );
-//	auto pEncoder = StreamTrimEncoder::create(StreamSink_p( pFirstSplitter, pFirstSplitter->input) );
+	auto pEncoder = StreamEncoder::create(StreamSink_p( pFirstSplitter, pFirstSplitter->input) );
 
 	// Logger
 

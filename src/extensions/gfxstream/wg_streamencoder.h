@@ -46,17 +46,23 @@ namespace wg
 	public:
 
 		//.____ Blueprint __________________________________________________
-/*
+
 		struct Blueprint
 		{
-			Finalizer_p		finalizer,
+			int				bufferBytes		= GfxStream::c_maxBlockSize * 2;
+			Finalizer_p		finalizer;
 			uint16_t		objectIdStart	= 0;
 			PixelFormat		pixelFormat		= PixelFormat::BGRA_8;
 			SampleMethod	sampleMethod	= SampleMethod::Nearest;
-			StreamSink_p	sink,
-			
+			StreamSink_p	sink;			
 		};
-*/
+
+		//.____ Creation __________________________________________
+
+		static StreamEncoder_p	create(const StreamSink_p& pStream, int bufferBytes = GfxStream::c_maxBlockSize * 2) { return StreamEncoder_p(new StreamEncoder(pStream, bufferBytes)); }
+		static StreamEncoder_p	create(const Blueprint& blueprint) { return StreamEncoder_p(new StreamEncoder(blueprint)); }
+
+
 		//.____ Identification __________________________________________
 
 		const TypeInfo& typeInfo(void) const override;
@@ -72,7 +78,7 @@ namespace wg
 		void			setDefaultSampleMethod(SampleMethod sampleMethod);
 		inline SampleMethod defaultSampleMethod() const { return m_defaultSampleMethod; }
 
-		virtual void	flush() = 0;
+		void			flush();
 		inline void		align();
 
 		uint16_t		allocObjectId();
@@ -89,40 +95,29 @@ namespace wg
 		inline StreamEncoder& operator<< (float);
 		inline StreamEncoder& operator<< (bool);
 
-		inline StreamEncoder& operator<< (const GfxStream::SPX& v);
-		inline StreamEncoder& operator<< (const CoordI&);
-		inline StreamEncoder& operator<< (const CoordF&);
 		inline StreamEncoder& operator<< (const SizeI&);
 		inline StreamEncoder& operator<< (const SizeF&);
 		inline StreamEncoder& operator<< (const RectI&);
 		inline StreamEncoder& operator<< (const RectF&);
 		inline StreamEncoder& operator<< (const BorderI&);
 		inline StreamEncoder& operator<< (const Border&);
-		inline StreamEncoder& operator<< (const Gradient&);
 
 		inline StreamEncoder& operator<< (HiColor);
-		inline StreamEncoder& operator<< (Direction);
-		inline StreamEncoder& operator<< (BlendMode);
-		inline StreamEncoder& operator<< (TintMode);
-		inline StreamEncoder& operator<< (Axis);
 		inline StreamEncoder& operator<< (PixelFormat);
 		inline StreamEncoder& operator<< (SampleMethod);
-		inline StreamEncoder& operator<< (GfxFlip);
-		inline StreamEncoder& operator<< (XSections);
-		inline StreamEncoder& operator<< (YSections);
 		inline StreamEncoder& operator<< (CanvasRef);
 
 		inline StreamEncoder& operator<< (const GfxStream::WriteBytes&);
-		StreamEncoder& operator<< (const GfxStream::WriteSpxArray&);
-
-		inline StreamEncoder& operator<< (const int[2][2]);
-		inline StreamEncoder& operator<< (const float[2][2]);
 
 
 	protected:
-		StreamEncoder( const StreamSink_p& pStream );
+		StreamEncoder(const StreamSink_p& pStream, int bufferBytes);
 		template<class BP> StreamEncoder( const BP& bp )
 		{
+			m_pBuffer = new uint8_t[bp.bufferBytes];
+			m_capacity = bp.bufferBytes;
+			m_pWriteData = m_pBuffer;
+
 			m_pStream = bp.sink;
 			
 			if( bp.finalizer )
@@ -133,9 +128,9 @@ namespace wg
 			m_idCounter = bp.objectIdStart;
 		}
 		
-		~StreamEncoder() {};
+		~StreamEncoder();
 
-		virtual void _beginChunk(GfxStream::Header header) = 0;
+		void _beginChunk(GfxStream::Header header);
 		
 		inline void	_pushChar(char c);
 		inline void	_pushShort(short s);
@@ -152,10 +147,10 @@ namespace wg
 		int			m_freeIdStackCapacity = 0;
 		int			m_freeIdStackSize = 0;
 		
-		GfxStream::SpxFormat	m_spxFormat = GfxStream::SpxFormat::Int32_dec;
-
 		ComponentPtr<StreamSink>	m_pStream;
 		
+		uint8_t*	m_pBuffer = nullptr;
+		int			m_capacity = 0;
 		uint8_t*	m_pWriteData = nullptr;
 
 	};
@@ -258,81 +253,12 @@ namespace wg
 		return *this;
 	}
 
-	StreamEncoder& StreamEncoder::operator<< (const GfxStream::SPX& v)
-	{
-		if( m_spxFormat == GfxStream::SpxFormat::Int32_dec )
-		{
-			_pushInt(v.value);
-		}
-		else if( m_spxFormat == GfxStream::SpxFormat::Uint16_dec )
-		{
-			_pushShort(v.value);
-		}
-		else if( m_spxFormat == GfxStream::SpxFormat::Int16_int )
-		{
-			_pushShort(v.value >> 6);
-		}
-		else
-		{
-			_pushChar(v.value >> 6);
-		}
-		return *this;
-	}
 
-	StreamEncoder& StreamEncoder::operator<< (const CoordI& c)
-	{
-		if( m_spxFormat == GfxStream::SpxFormat::Int32_dec )
-		{
-			_pushInt(c.x);
-			_pushInt(c.y);
-		}
-		else if( m_spxFormat == GfxStream::SpxFormat::Uint16_dec )
-		{
-			_pushShort(c.x);
-			_pushShort(c.y);
-		}
-		else if( m_spxFormat == GfxStream::SpxFormat::Int16_int )
-		{
-			_pushShort(c.x >> 6);
-			_pushShort(c.y >> 6);
-		}
-		else
-		{
-			_pushChar(c.x >> 6);
-			_pushChar(c.y >> 6);
-		}
-		return *this;
-	}
-
-	StreamEncoder& StreamEncoder::operator<< (const CoordF& c)
-	{
-		_pushFloat(c.x);
-		_pushFloat(c.y);
-		return *this;
-	}
 
 	StreamEncoder& StreamEncoder::operator<< (const SizeI& sz)
 	{
-		if( m_spxFormat == GfxStream::SpxFormat::Int32_dec  )
-		{
-			_pushInt(sz.w);
-			_pushInt(sz.h);
-		}
-		else if( m_spxFormat == GfxStream::SpxFormat::Uint16_dec )
-		{
-			_pushShort(sz.w);
-			_pushShort(sz.h);
-		}
-		else if( m_spxFormat == GfxStream::SpxFormat::Int16_int )
-		{
-			_pushShort(sz.w >> 6);
-			_pushShort(sz.h >> 6);
-		}
-		else
-		{
-			_pushChar(sz.w >> 6);
-			_pushChar(sz.h >> 6);
-		}
+		_pushInt(sz.w);
+		_pushInt(sz.h);
 		return *this;
 	}
 
@@ -345,34 +271,10 @@ namespace wg
 
 	StreamEncoder& StreamEncoder::operator<< (const RectI& rect)
 	{
-		if( m_spxFormat == GfxStream::SpxFormat::Int32_dec )
-		{
-			_pushInt(rect.x);
-			_pushInt(rect.y);
-			_pushInt(rect.w);
-			_pushInt(rect.h);
-		}
-		else if( m_spxFormat == GfxStream::SpxFormat::Uint16_dec )
-		{
-			_pushShort(rect.x);
-			_pushShort(rect.y);
-			_pushShort(rect.w);
-			_pushShort(rect.h);
-		}
-		else if( m_spxFormat == GfxStream::SpxFormat::Int16_int )
-		{
-			_pushShort(rect.x >> 6);
-			_pushShort(rect.y >> 6);
-			_pushShort(rect.w >> 6);
-			_pushShort(rect.h >> 6);
-		}
-		else
-		{
-			_pushChar(rect.x >> 6);
-			_pushChar(rect.y >> 6);
-			_pushChar(rect.w >> 6);
-			_pushChar(rect.h >> 6);
-		}
+		_pushInt(rect.x);
+		_pushInt(rect.y);
+		_pushInt(rect.w);
+		_pushInt(rect.h);
 		return *this;
 	}
 
@@ -403,41 +305,6 @@ namespace wg
 		return *this;
 	}
 
-	StreamEncoder& StreamEncoder::operator<< (const Gradient& gradient)
-	{
-		* this << gradient.topLeft;
-		* this << gradient.topRight;
-		* this << gradient.bottomRight;
-		* this << gradient.bottomLeft;
-		return *this;
-	}
-
-
-	StreamEncoder& StreamEncoder::operator<< (Direction d)
-	{
-		_pushShort((short)d);
-		return *this;
-	}
-
-	StreamEncoder& StreamEncoder::operator<< (BlendMode b)
-	{
-		_pushShort((short)b);
-		return *this;
-	}
-
-	StreamEncoder& StreamEncoder::operator<< (TintMode t)
-	{
-		_pushShort((short)t);
-		return *this;
-	}
-
-
-	StreamEncoder& StreamEncoder::operator<< (Axis o)
-	{
-		_pushShort((short)o);
-		return *this;
-	}
-
 	StreamEncoder& StreamEncoder::operator<< (PixelFormat t)
 	{
 		_pushShort((short)t);
@@ -447,24 +314,6 @@ namespace wg
 	StreamEncoder& StreamEncoder::operator<< (SampleMethod m)
 	{
 		_pushShort((short)m);
-		return *this;
-	}
-
-	StreamEncoder& StreamEncoder::operator<< (GfxFlip f)
-	{
-		_pushShort((short)f);
-		return *this;
-	}
-
-	StreamEncoder& StreamEncoder::operator<< (XSections x)
-	{
-		_pushShort((short)x);
-		return *this;
-	}
-
-	StreamEncoder& StreamEncoder::operator<< (YSections y)
-	{
-		_pushShort((short)y);
 		return *this;
 	}
 

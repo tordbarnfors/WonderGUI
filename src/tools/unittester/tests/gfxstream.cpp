@@ -161,7 +161,7 @@ bool GfxStreamTest::streamReaderPumpWithOptimizationTest(std::ostream& output)
 	while (pBlobRead < pBlobEnd)
 	{
 
-		pStreamPump->pumpAllFramesOptimizeClipping();
+		pStreamPump->pumpAll();
 
 		pBlobReadMax += std::min(1024, int(pBlobEnd - pBlobReadMax));
 
