@@ -307,7 +307,7 @@ const RectSPX& GfxDeviceGen2::clipBounds() const
 
 void GfxDeviceGen2::setTint(HiColor color)
 {
-	assert(color.isValid());
+	assert(color == HiColor::Undefined || color.isValid());
 
 	if (color != m_renderState.tintColor || m_renderState.pTintmap)
 	{
@@ -1251,7 +1251,7 @@ void GfxDeviceGen2::drawLine(CoordSPX beg, CoordSPX end, HiColor color, spx thic
 		rect.w += thickness+1;
 		rect.h += thickness+1;
 
-		if ( rect.intersectsWithOrContains(beg,end, 8) );
+		if ( rect.intersectsWithOrContains(beg,end, 8) )
 		{
 			rects.push_back(pClipRects[i]);
 			nRects++;
