@@ -21,14 +21,14 @@
 =========================================================================*/
 
 #include <wg2_chart.h>
-#include <wg2_gfxdevice.h>
 #include <wg2_pen.h>
 #include <wg2_base.h>
 #include <wg_texttool.h>
 #include <wg2_util.h>
 #include <wg_surfacefactory.h>
 
-#include <wg_softgfxdevice.h>
+#include <wg_gfxdevice_gen2.h>
+#include <wg_softbackend.h>
 
 #include <algorithm>
 #include <cmath>
@@ -1073,8 +1073,14 @@ void WgChart::_renderWave( Wave& wave, wg::GfxDevice * pDevice, const WgRect& wa
 
     // Check if gradient is set by SetWaveGradient
     bool useGradient = wave.m_waveGradient.isValid();
-    // Don't use gradient on "slow" devices
-    useGradient &= !((pDevice->typeInfo() == wg::SoftGfxDevice::TYPEINFO));
+
+	// Don't use gradient on "slow" devices
+	if( pDevice->typeInfo() == wg::GfxDeviceGen2::TYPEINFO )
+	{
+		auto pBackend = static_cast<wg::GfxDeviceGen2*>(pDevice)->backend();
+		if( pBackend->typeInfo()  == wg::SoftBackend::TYPEINFO )
+			useGradient = false;
+	}
 
 	if(length >= 1)
 	{
