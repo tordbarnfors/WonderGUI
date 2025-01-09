@@ -446,7 +446,7 @@ void GlBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd)
 			if (statesChanged & uint8_t(StateChange::Blur))
 			{
 				for( int i = 0 ; i < 28 ; i++ )
-					*pCommandGL++ = int(*p++)*2;
+					*pCommandGL++ = int(*p++);
 			}
 
 			// Take care of alignment
@@ -1925,16 +1925,16 @@ void GlBackend::endSession()
 				{
 					spx radius = *pCmd++;
 
-					const spx* pRed = pCmd;
-					const spx* pGreen = pCmd+9;
-					const spx* pBlue = pCmd+18;
+					const int* pRed = pCmd;
+					const int* pGreen = pCmd+9;
+					const int* pBlue = pCmd+18;
 					pCmd+=27;
 
 					for (int i = 0; i < 9; i++)
 					{
-						m_activeBlurInfo.colorMtx[i][0] = pRed[i];
-						m_activeBlurInfo.colorMtx[i][1] = pGreen[i];
-						m_activeBlurInfo.colorMtx[i][2] = pBlue[i];
+						m_activeBlurInfo.colorMtx[i][0] = pRed[i]/32768.f;
+						m_activeBlurInfo.colorMtx[i][1] = pGreen[i] / 32768.f;
+						m_activeBlurInfo.colorMtx[i][2] = pBlue[i] / 32768.f;
 						m_activeBlurInfo.colorMtx[i][3] = 0.f;
 					}
 

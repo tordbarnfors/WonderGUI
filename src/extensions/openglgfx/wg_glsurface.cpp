@@ -23,7 +23,7 @@
 #include <memory.h>
 
 #include <wg_glsurface.h>
-#include <wg_glgfxdevice.h>
+#include <wg_glbackend.h>
 #include <wg_gfxutil.h>
 #include <wg_pixeltools.h>
 #include <wg_blob.h>
@@ -40,7 +40,7 @@ namespace wg
 
 	SizeI	GlSurface::s_maxSize;
 
-#define HANDLE_GLERROR(check) { GLenum err = check; if(err != 0) GlGfxDevice::onGlError(err, this, &TYPEINFO, __func__, __FILE__, __LINE__ ); }
+#define HANDLE_GLERROR(check) { GLenum err = check; if(err != 0) GlBackend::onGlError(err, this, &TYPEINFO, __func__, __FILE__, __LINE__ ); }
 
     unsigned int    GlSurface::g_texturePixels = 0;
     unsigned int    GlSurface::g_backingPixels = 0;
@@ -598,9 +598,6 @@ namespace wg
 
 		//
 
-		if (m_bPendingReads)
-			GlGfxDevice::s_pActiveDevice->flush();
-
 		GLint oldBinding;
 		glGetIntegerv(GL_TEXTURE_BINDING_2D, &oldBinding);
 		glBindTexture(GL_TEXTURE_2D, m_texture);
@@ -771,13 +768,6 @@ namespace wg
 
 	void GlSurface::_readBackTexture(void * pDest)
 	{
-		// Flush any active device to make sure our texture is up-to-date
-
-		if (GlGfxDevice::s_pActiveDevice)
-			GlGfxDevice::s_pActiveDevice->flush();
-
-		//
-
 		HANDLE_GLERROR(glGetError());
 
 		GLenum	type;

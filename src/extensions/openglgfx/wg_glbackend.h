@@ -95,6 +95,9 @@ namespace wg
 
 		const TypeInfo& surfaceType(void) const override;
 
+		static void		setShaderBlob(Blob* pBlob) { s_pShaderPrograms = pBlob; }
+		static Blob_p	shaderBlob() { return s_pShaderPrograms; }
+
 	protected:
 		GlBackend(int uboBindingPoint);
 		~GlBackend();
@@ -217,7 +220,7 @@ namespace wg
 
 		//
 
-		const static int c_nbPrograms = 30 + (c_maxSegments-1) * 4;
+		const static int c_nbPrograms = 28 + (c_maxSegments-1) * 2;
 		const static int c_versionNb = 102;					//
 
 		struct ProgramBlobEntry
