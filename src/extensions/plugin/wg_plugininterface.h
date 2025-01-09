@@ -245,7 +245,7 @@ typedef struct wg_gfxdevice_calls_struct
 	void				(*flipDrawEdgemap)(wg_obj device, wg_coordSPX dest, wg_obj edgemap, wg_gfxFlip flip);
 	void				(*blitNinePatch)(wg_obj device, const wg_rectSPX* dstRect, const wg_borderSPX* dstFrame, const wg_ninePatch* patch, int scale);
 
-	void				(*setBlurbrush)(wg_obj device, wg_obj brush );
+	void				(*setBlurMatrices)(wg_obj device, wg_spx radius, const float red[9], const float green[9], const float blue[9] );
 	void				(*setFixedBlendColor)(wg_obj device, wg_color color );
 	wg_color			(*getFixedBlendColor)(wg_obj device);
 	
@@ -255,6 +255,10 @@ typedef struct wg_gfxdevice_calls_struct
 	void				(*stretchBlurRect)(wg_obj device, const wg_rectSPX* dest, const wg_rectSPX* src);
 	void				(*transformBlur)(wg_obj device, const wg_rectSPX* dest, wg_coordF srcSPX, const wg_transform * pTransform);
 	void				(*rotScaleBlur)(wg_obj device, const wg_rectSPX* dest, float rotationDegrees, float scale, wg_coordF srcCenter, wg_coordF destCenter);
+
+	// New since first revision to interface
+
+	void				(*setBlurbrush)(wg_obj device, wg_obj brush );
 
 	
 } wg_gfxdevice_calls;

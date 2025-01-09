@@ -192,6 +192,8 @@ int							wg_isTinting(wg_obj device);
 	void					wg_setTintGradient(wg_obj device, const wg_rectSPX* rect, const wg_gradient * pGradient);
 	void					wg_clearTintGradient(wg_obj device);
 
+	void					wg_setBlurMatrices(wg_obj device, wg_spx radius, const float red[9], const float green[9], const float blue[9] );
+
 
 #ifdef __cplusplus
 }

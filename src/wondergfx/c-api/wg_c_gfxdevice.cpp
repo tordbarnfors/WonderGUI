@@ -23,6 +23,8 @@
 #include <wg_c_gfxdevice.h>
 #include <wg_gfxdevice_gen2.h>
 
+#include <wg_c_blurbrush.h>
+
 #include <type_traits>
 
 
@@ -227,6 +229,25 @@ void wg_setMorphFactor(wg_obj device, float factor)
 float wg_getMorphFactor(wg_obj device)
 {
 	return getPtr(device)->morphFactor();
+}
+
+void wg_setBlurMatrices(wg_obj device, wg_spx radius, const float red[9], const float green[9], const float blue[9] )
+{
+	// We need to create a Blurbrush on the fly
+
+	Blurbrush::Blueprint bp;
+
+	bp.size = radius;
+	for( int i = 0 ; i < 9 ; i++ )
+	{
+		bp.red[i] = red[i];
+		bp.green[i] = green[i];
+		bp.blue[i] = blue[i];
+	}
+
+	auto pBlurbrush = Blurbrush::create(bp);
+
+	getPtr(device)->setBlurbrush( pBlurbrush );
 }
 
 void wg_setBlurbrush(wg_obj device, wg_obj brush )
