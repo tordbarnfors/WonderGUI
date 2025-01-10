@@ -186,7 +186,7 @@ namespace wg
 							pTintmap->exportHorizontalColors(bp.size.w * 64, m_pColorstripsX + seg * m_size.w);
 
 						if (m_pColorstripsY)
-							pTintmap->exportVerticalColors(bp.size.w * 64, m_pColorstripsY + seg * m_size.h);
+							pTintmap->exportVerticalColors(bp.size.h * 64, m_pColorstripsY + seg * m_size.h);
 					}
 					else if (bp.colors)
 					{
