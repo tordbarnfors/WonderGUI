@@ -377,7 +377,7 @@ RectSPX GfxDeviceGen2::tintmapRect() const
 
 HiColor GfxDeviceGen2::tintColor() const
 {
-	return m_renderState.tintColor;
+	return m_renderState.tintColor == HiColor::Undefined ? HiColor::White : m_renderState.tintColor;
 }
 
 //____ setTintGradient() __________________________________________________
