@@ -106,48 +106,46 @@ namespace wg
 
 	void Gradyent::exportHorizontalColors(spx length, HiColor* pOutput)
 	{
-		if( !m_bHorizontal )
+		if( m_bHorizontal )
 		{
-			_exportDummyColors(length, pOutput);
-			return;
-		}
-		
-		int len = length / 64;
-		for (int i = 0; i < len; i++)
-		{
-			HiColor col;
+			int len = length / 64;
+			for (int i = 0; i < len; i++)
+			{
+				HiColor col;
 
-			col.r = m_left.r + ((int(m_right.r) - int(m_left.r)) * i / len);
-			col.g = m_left.g + ((int(m_right.g) - int(m_left.g)) * i / len);
-			col.b = m_left.b + ((int(m_right.b) - int(m_left.b)) * i / len);
-			col.a = m_left.a + ((int(m_right.a) - int(m_left.a)) * i / len);
+				col.r = m_left.r + ((int(m_right.r) - int(m_left.r)) * i / len);
+				col.g = m_left.g + ((int(m_right.g) - int(m_left.g)) * i / len);
+				col.b = m_left.b + ((int(m_right.b) - int(m_left.b)) * i / len);
+				col.a = m_left.a + ((int(m_right.a) - int(m_left.a)) * i / len);
 
-			pOutput[i] = col;
+				pOutput[i] = col;
+			}
 		}
+		else
+			_fill(length, pOutput, m_left);
 	}
 
 	//____ exportVerticalColors() ________________________________________________
 
 	void Gradyent::exportVerticalColors(spx length, HiColor* pOutput)
 	{
-		if( !m_bVertical )
+		if( m_bVertical )
 		{
-			_exportDummyColors(length, pOutput);
-			return;
+			int len = length / 64;
+			for (int i = 0; i < len; i++)
+			{
+				HiColor col;
+
+				col.r = m_top.r + ((int(m_bottom.r) - int(m_top.r)) * i / len);
+				col.g = m_top.g + ((int(m_bottom.g) - int(m_top.g)) * i / len);
+				col.b = m_top.b + ((int(m_bottom.b) - int(m_top.b)) * i / len);
+				col.a = m_top.a + ((int(m_bottom.a) - int(m_top.a)) * i / len);
+
+				pOutput[i] = col;
+			}
 		}
-
-		int len = length / 64;
-		for (int i = 0; i < len; i++)
-		{
-			HiColor col;
-
-			col.r = m_top.r + ((int(m_bottom.r) - int(m_top.r)) * i / len);
-			col.g = m_top.g + ((int(m_bottom.g) - int(m_top.g)) * i / len);
-			col.b = m_top.b + ((int(m_bottom.b) - int(m_top.b)) * i / len);
-			col.a = m_top.a + ((int(m_bottom.a) - int(m_top.a)) * i / len);
-
-			pOutput[i] = col;
-		}
+		else
+			_fill(length, pOutput, m_top);
 	}
 
 	//____ exportGradient() ______________________________________________________

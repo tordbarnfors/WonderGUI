@@ -62,7 +62,7 @@ namespace wg
 		
 	protected:
 
-		void _exportDummyColors(spx length, HiColor * pOutput);
+		void _fill(spx length, HiColor * pOutput, const HiColor& color);
 
 		
 		bool	m_bOpaque;

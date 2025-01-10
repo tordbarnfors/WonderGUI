@@ -22,6 +22,7 @@
 
 #include <wg_waveform.h>
 #include <wg_gfxbase.h>
+#include <wg_gradyent.h>
 
 #include <algorithm>
 #include <cstring>
@@ -638,7 +639,12 @@ namespace wg
 			Gradient	gradients[5];
 			int nSegments = _generateGradientPalette( gradients );
 
-			m_pEdgemap = pFactory->createEdgemap( WGBP(Edgemap, _.gradients = gradients, _.size = m_size, _.segments = nSegments ) );
+			 Tintmap_p	tintmaps[5];
+
+			 for( int i = 0 ; i < nSegments ; i++ )
+				 tintmaps[i] = Gradyent::create(gradients[i]);
+
+			m_pEdgemap = pFactory->createEdgemap( WGBP(Edgemap, _.tintmaps = tintmaps, _.size = m_size, _.segments = nSegments ) );
 		}
 		else
 		{

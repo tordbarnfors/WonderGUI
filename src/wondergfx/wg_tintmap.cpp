@@ -36,14 +36,14 @@ namespace wg
 	}
 
 
-	//____ _exportDummyColors() __________________________________________________
+	//____ _fill() __________________________________________________
 
-	void Tintmap::_exportDummyColors(spx length, HiColor * pOutput)
+	void Tintmap::_fill(spx length, HiColor * pOutput, const HiColor& color )
 	{
 		int len = length / 64;
 
 		for( int i = 0 ; i < len ; i++ )
-			* pOutput ++ = HiColor::White;
+			* pOutput ++ = color;
 	}
 }
 
