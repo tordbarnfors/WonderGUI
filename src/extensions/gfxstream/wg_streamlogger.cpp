@@ -408,7 +408,7 @@ namespace wg
 				break;
 			}
 				
-			case GfxStream::ChunkId::BeginSurfaceUpdate:
+			case GfxStream::ChunkId::SurfaceUpdate:
 			{
 				uint16_t	surfaceId;
 				RectI		region;
@@ -426,11 +426,6 @@ namespace wg
 				m_pDecoder->skip(header.size);
 
 				m_charStream << "    size: " << header.size << " bytes." << std::endl;
-				break;
-			}
-
-			case GfxStream::ChunkId::EndSurfaceUpdate:
-			{
 				break;
 			}
 

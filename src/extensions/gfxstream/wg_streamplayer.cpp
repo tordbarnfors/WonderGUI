@@ -502,7 +502,7 @@ namespace wg
 			break;
 		}
 
-		case GfxStream::ChunkId::BeginSurfaceUpdate:
+		case GfxStream::ChunkId::SurfaceUpdate:
 		{
 			uint16_t	objectId;
 			RectI		rect;
@@ -512,63 +512,58 @@ namespace wg
 
 			if( objectId > m_vObjects.size() || m_vObjects[objectId] == nullptr )
 			{
-				GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "BeginSurfaceUpdate with invalid objectId", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "SurfaceUpdate with invalid objectId", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 				break;
 			}
 
 			m_pUpdatingSurface = wg_static_cast<Surface_p>(m_vObjects[objectId]);
-			m_pixelBuffer = m_pUpdatingSurface->allocPixelBuffer(rect);
-
-			m_pWritePixels = m_pixelBuffer.pixels;
-
-			m_surfaceBytesLeft = rect.w * rect.h * m_pUpdatingSurface->pixelBits()/8;
+			m_updatingRect = rect;
 			break;
 		}
 
 		case GfxStream::ChunkId::SurfacePixels:
 		{
-            int line = int(m_pWritePixels - m_pixelBuffer.pixels) / m_pixelBuffer.pitch;
-            int ofs = int(m_pWritePixels - m_pixelBuffer.pixels) % m_pixelBuffer.pitch;
+			int32_t		totalSize;
+			int32_t		offset;
+			bool		bFirstChunk;
+			bool		bLastChunk;
 
-            int bytesPerLine = m_pixelBuffer.rect.w * m_pUpdatingSurface->pixelBits()/8;
+			*m_pDecoder >> totalSize;
+			*m_pDecoder >> offset;
+			*m_pDecoder >> bFirstChunk;
+			*m_pDecoder >> bLastChunk;
 
-            int chunkBytesLeft = header.size;
+			if (bFirstChunk)
+				m_pSurfaceDataBuffer = new uint8_t[totalSize];
 
-			if( chunkBytesLeft > m_surfaceBytesLeft )
-				chunkBytesLeft = m_surfaceBytesLeft;		// Last chunk was padded with an extra byte.
+			int bytes = (header.size - 12);
+			uint8_t* pDest = m_pSurfaceDataBuffer + offset;
 
-			m_surfaceBytesLeft -= chunkBytesLeft;
+			*m_pDecoder >> GfxStream::ReadBytes{ bytes, pDest };
 
+			if (bLastChunk)
+			{
+				auto pixelBuffer = m_pUpdatingSurface->allocPixelBuffer(m_updatingRect);
 
-            while( chunkBytesLeft > 0 )
-            {
-                int toRead = std::min(chunkBytesLeft, bytesPerLine - ofs);
-                *m_pDecoder >> GfxStream::ReadBytes{ toRead, m_pWritePixels };
-                chunkBytesLeft -= toRead;
+				int lineLength = pixelBuffer.rect.w * (m_pUpdatingSurface->pixelBits()/8);
 
-                if(toRead + ofs == bytesPerLine)
-                {
-                    m_pWritePixels += m_pixelBuffer.pitch - ofs;
-                    ofs = 0;
-                }
-                else
-                {
-                    m_pWritePixels += toRead;
-                    ofs += toRead;
-                }
+				uint8_t * pSource = m_pSurfaceDataBuffer;
+				uint8_t * pDest = pixelBuffer.pixels;
 
-            }
-			m_pDecoder->align();
-			break;
-		}
+				for( int y = 0 ; y < m_updatingRect.h ; y++ )
+				{
+					memcpy(pDest, pSource, lineLength );
+					pSource += lineLength;
+					pDest += pixelBuffer.pitch;
+				}
 
-		case GfxStream::ChunkId::EndSurfaceUpdate:
-		{
-			assert(m_surfaceBytesLeft == 0);
+				m_pUpdatingSurface->pushPixels(pixelBuffer);
+				m_pUpdatingSurface->freePixelBuffer(pixelBuffer);
 
-			m_pUpdatingSurface->pullPixels(m_pixelBuffer);
-			m_pUpdatingSurface->freePixelBuffer(m_pixelBuffer);
-			m_pUpdatingSurface = nullptr;
+				delete [] m_pSurfaceDataBuffer;
+				m_pSurfaceDataBuffer = nullptr;
+			}
+
 			break;
 		}
 

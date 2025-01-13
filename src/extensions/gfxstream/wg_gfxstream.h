@@ -67,9 +67,8 @@ namespace wg
 			UpdateRects = 14,
 
 			CreateSurface = 15,
-			BeginSurfaceUpdate = 16,
+			SurfaceUpdate = 16,
 			SurfacePixels = 17,
-			EndSurfaceUpdate = 18,
 			FillSurface = 19,
 			CopySurface = 20,
 			DeleteSurface = 21,

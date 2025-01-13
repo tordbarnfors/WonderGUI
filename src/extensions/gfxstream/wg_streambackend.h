@@ -39,6 +39,9 @@ namespace wg
 
 	class StreamBackend : public GfxBackend
 	{
+		friend class StreamSurface;
+		friend class StreamEdgemap;
+
 	public:
 
 		//.____ Creation __________________________________________
@@ -93,7 +96,9 @@ namespace wg
 		StreamBackend(StreamEncoder * pEncoder, int maxEdges );
 		~StreamBackend();
 
-		void _splitAndEncode( GfxStream::ChunkId chunkType, const void * pBeg, const void * pEnd, int entrySize );
+		// Static so it can be used by StreamSurface and StreamEdgemap as well.
+
+		static void _splitAndEncode( StreamEncoder * pEncoder, GfxStream::ChunkId chunkType, const void * pBeg, const void * pEnd, int entrySize );
 
 		std::vector<CanvasInfo>	m_definedCanvases;
 		StreamEncoder_p			m_pEncoder;

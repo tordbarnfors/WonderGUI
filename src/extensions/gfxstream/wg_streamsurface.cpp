@@ -26,6 +26,8 @@
 #include <wg_gfxutil.h>
 #include <wg_blob.h>
 #include <wg_pixeltools.h>
+#include <wg_gfxbase.h>
+#include <wg_streambackend.h>
 
 #include <assert.h>
 #include <cstring>
@@ -421,45 +423,31 @@ namespace wg
 
 	void StreamSurface::_sendPixels(StreamEncoder* pEncoder, RectI rect, const uint8_t * pSource, int pitch)
 	{
-		*pEncoder << GfxStream::Header{ GfxStream::ChunkId::BeginSurfaceUpdate, 0, 18 };
-		*pEncoder << m_inStreamId;
-		*pEncoder << rect;
-
 		int	pixelSize = m_pPixelDescription->bits / 8;
 		int dataSize = rect.w * rect.h * pixelSize;
 
-		const uint8_t * pLine = pSource;
-		int ofs = 0;				// Offset in bytes within the current line.
+		int allocSize = dataSize;		// Increase if needed by future compression
 
-		while( dataSize > 0 )
+		auto pBuffer = (uint8_t *) GfxBase::memStackAlloc(allocSize);
+
+		auto pLine = pSource;
+		auto pDest = pBuffer;
+		int lineLength = rect.w * pixelSize;
+
+		for( int y = 0 ; y < rect.h ; y++ )
 		{
-			uint16_t chunkSize = std::min(dataSize, (int)(GfxStream::c_maxBlockSize - sizeof(GfxStream::Header)));
-			dataSize -= chunkSize;
-
-			*pEncoder << GfxStream::Header{ GfxStream::ChunkId::SurfacePixels, 0, uint16_t((chunkSize+1)&0xFFFE) };
-
-			while (chunkSize > 0)
-			{
-				int len = rect.w * pixelSize - ofs;
-				if (chunkSize < len)
-				{
-					*pEncoder << GfxStream::WriteBytes{ chunkSize, (void *) (pLine + ofs) };
-					ofs += chunkSize;
-					chunkSize = 0;
-				}
-				else
-				{
-					*pEncoder << GfxStream::WriteBytes{ len, (void *)(pLine + ofs) };
-					ofs = 0;
-					chunkSize -= len;
-					pLine += pitch;
-				}
-			}
-			
-			pEncoder->align();
+			memcpy( pDest, pLine, lineLength );
+			pLine += pitch;
+			pDest += lineLength;
 		}
 
-		*pEncoder << GfxStream::Header{ GfxStream::ChunkId::EndSurfaceUpdate, 0, 0 };
+		*pEncoder << GfxStream::Header{ GfxStream::ChunkId::SurfaceUpdate, 0, 18 };
+		*pEncoder << m_inStreamId;
+		*pEncoder << rect;
+
+		StreamBackend::_splitAndEncode(pEncoder, GfxStream::ChunkId::SurfacePixels, pBuffer, pBuffer + dataSize, pixelSize);
+
+		GfxBase::memStackFree(allocSize);
 	}
 
 	//____ _sendDeleteSurface() _______________________________________________
