@@ -28,6 +28,7 @@
 #include <wg_streamsurfacefactory.h>
 #include <wg_streamedgemapfactory.h>
 #include <wg_gfxbase.h>
+#include <wg_compress.h>
 
 #include <assert.h>
 
@@ -113,7 +114,7 @@ namespace wg
 		(*m_pEncoder) << (uint16_t) pInfo->nObjects;
 
 		if( nUpdateRects > 0 )
-			_splitAndEncode( m_pEncoder, GfxStream::ChunkId::UpdateRects, Compression::None, pUpdateRects, pUpdateRects +nUpdateRects, sizeof(RectI) );
+			_compressSplitAndEncodeSpx( m_pEncoder, GfxStream::ChunkId::UpdateRects, Compression::None, pUpdateRects, pUpdateRects + nUpdateRects );
 	}
 
 	//____ endSession() __________________________________________________________
@@ -175,7 +176,7 @@ namespace wg
 
 	void StreamBackend::setRects(const RectSPX* pBeg, const RectSPX* pEnd)
 	{
-		_splitAndEncode( m_pEncoder, GfxStream::ChunkId::Rects, Compression::None, pBeg, pEnd, sizeof(RectSPX) );
+		_compressSplitAndEncodeSpx( m_pEncoder, GfxStream::ChunkId::Rects, pBeg, pEnd );
 	}
 
 	//____ setColors() ___________________________________________________________
@@ -316,6 +317,30 @@ namespace wg
 		return StreamSurface::TYPEINFO;
 	}
 
+	//____ _compressSplitAndEncodeSpx() _____________________________________________________
+
+	void StreamBackend::_compressSplitAndEncodeSpx( StreamEncoder * pEncoder, GfxStream::ChunkId chunkType, const spx * pBeg, const spx * pEnd )
+	{
+		int allocSize = (pEnd - pBeg) * sizeof(spx);
+
+		GfxBase::memStackAlloc(allocSize);
+
+		Compression compression;
+		int			size;
+
+		std::tie(compression,size) = compressSpx(pBeg, pEnd, pBuffer);
+
+		// Stream data
+
+		if(compression == Compression::None)
+			_splitAndEncode( pEncoder, chunkType, Compression::None, pBeg, pEnd, sizeof(spx) );
+		else
+			_splitAndEncode( pEncoder, chunkType, compression, pBuffer, pBuffer+size, sizeof(spx) );
+
+		GfxBase::memStackFree(allocSize);
+	}
+
+
 	//____ _splitAndEncode() _____________________________________________________
 
 	void StreamBackend::_splitAndEncode( StreamEncoder * pEncoder, GfxStream::ChunkId chunkType, Compression compression, const void * _pBeg, const void * _pEnd, int entrySize )
@@ -329,7 +354,6 @@ namespace wg
 		// 16 bit bool	bLastChunk
 		//
 		// All measures in bytes
-
 
 		char * pBeg = (char *) _pBeg;
 		char * pEnd = (char *) _pEnd;
@@ -358,8 +382,6 @@ namespace wg
 
 			p += bytesOfData;
 		}
-
 	}
-
 
 } // namespace wg

@@ -477,7 +477,14 @@ namespace wg
 			*m_pDecoder >> GfxStream::ReadBytes{ bytes, pDest };
 
 			if (bLastChunk)
+			{
+
+
+
+				GfxBase::memStackAlloc(<#int bytes#>)
 				m_pBackend->beginSession(m_baseCanvasRef, m_baseCanvasSurface, m_vUpdateRects.size(), m_vUpdateRects.data(), &m_sessionInfo);
+			}
+
 
 			m_pDecoder->align();
 			break;
