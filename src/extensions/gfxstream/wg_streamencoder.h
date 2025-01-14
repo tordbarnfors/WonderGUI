@@ -88,6 +88,7 @@ namespace wg
 		//.____ Operators _____________________________________________________
 
 		inline StreamEncoder& operator<< (GfxStream::Header);
+		inline StreamEncoder& operator<< (const GfxStream::DataInfo&);
 		inline StreamEncoder& operator<< (uint8_t);
 		inline StreamEncoder& operator<< (int16_t);
 		inline StreamEncoder& operator<< (uint16_t);
@@ -106,7 +107,6 @@ namespace wg
 		inline StreamEncoder& operator<< (PixelFormat);
 		inline StreamEncoder& operator<< (SampleMethod);
 		inline StreamEncoder& operator<< (CanvasRef);
-		inline StreamEncoder& operator<< (Compression);
 
 		inline StreamEncoder& operator<< (const GfxStream::WriteBytes&);
 
@@ -217,6 +217,16 @@ namespace wg
 		return *this;
 	}
 
+	StreamEncoder& StreamEncoder::operator<< (const GfxStream::DataInfo& info)
+	{
+		_pushInt(info.unpackedTotalSize);
+		_pushInt(info.packedTotalSize);
+		_pushInt(info.chunkOffset);
+		_pushShort(info.chunkSize);
+		_pushShort((int(info.bFirstChunk) << 8) | (int(info.bLastChunk) << 9) | int(info.compression));
+		return *this;
+	}
+
 	StreamEncoder& StreamEncoder::operator<< (uint8_t uint8)
 	{
 		_pushChar(uint8);
@@ -321,12 +331,6 @@ namespace wg
 	StreamEncoder& StreamEncoder::operator<< (CanvasRef r)
 	{
 		_pushChar((char)r);
-		return *this;
-	}
-
-	StreamEncoder& StreamEncoder::operator<< (Compression c)
-	{
-		_pushShort((char)c);
 		return *this;
 	}
 

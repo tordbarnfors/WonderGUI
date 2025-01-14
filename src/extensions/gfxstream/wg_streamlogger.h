@@ -76,7 +76,10 @@ namespace wg
 		bool	_logChunk();
 
 		int		_readPrintPatches();
-		
+		void	_readPrintDataInfo();
+
+
+
 		void	_readPrintRects( const char * header, int amount );
 		void	_printRect( const char * header, const RectI& rect );
 		void	_printRect( const char * header, const RectF& rect );

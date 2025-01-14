@@ -106,22 +106,23 @@ namespace wg
 //			Delta8_dec = 6,			// 8 bit delta subpixel values.
 //			Delta8_int = 7			// 8 bit delta pixel values.
 		};
-		
-		enum class ChunkCompression
-		{
-			None,
-			Uint16AsUint8,
-			Spx_uint16,
-			Spx_int16,
-			Spx_udec16,
-			Spx_uint8
-		};
 
 		struct Header
 		{
 			ChunkId			type;
 			uint8_t			format;		// Type specific information about the format of the content. Used by some types.
     		int				size;
+		};
+
+		struct DataInfo
+		{
+			int32_t		unpackedTotalSize;
+			int32_t		packedTotalSize;
+			int32_t		chunkOffset;
+			uint16_t	chunkSize;
+			Compression	compression;
+			bool		bFirstChunk;
+			bool		bLastChunk;
 		};
 
 		struct WriteBytes
@@ -245,6 +246,7 @@ namespace wg
 		static const int ColorSize = 8;
 		static const int GradientSize = 8 * 4;
 		static const int NinePatchSize = 16 + 8 + 10 + 10;
+		static const int DataInfoSize = 16;
 
 		inline static GfxStream::ChunkId chunkType(const uint8_t* pChunk)
 		{

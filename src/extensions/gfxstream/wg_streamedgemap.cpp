@@ -185,7 +185,7 @@ void StreamEdgemap::_samplesUpdated(int edgeBegin, int edgeEnd, int sampleBegin,
 		if(compression == Compression::None)
 			StreamBackend::_splitAndEncode(m_pEncoder, GfxStream::ChunkId::EdgemapSamples, compression, pBuffer, ((uint8_t*)pBuffer) + bufferBytes, 4);
 		else
-			StreamBackend::_splitAndEncode(m_pEncoder, GfxStream::ChunkId::EdgemapSamples, compression, pCompressed, pCompressed + size, 1);
+			StreamBackend::_splitAndEncode(m_pEncoder, GfxStream::ChunkId::EdgemapSamples, compression, pCompressed, pCompressed + size, 1, bufferBytes);
 
 		// Release temp buffers
 

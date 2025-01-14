@@ -107,6 +107,8 @@ namespace wg
 		GfxBackend::SessionInfo	m_sessionInfo;			// Temporary for BeginSession/UpdateRects
 		std::vector<RectSPX>	m_vUpdateRects;
 
+		uint8_t*			m_pCompressedData = nullptr;
+
 		CanvasRef			m_baseCanvasRef;
 		Surface_p			m_baseCanvasSurface;
 

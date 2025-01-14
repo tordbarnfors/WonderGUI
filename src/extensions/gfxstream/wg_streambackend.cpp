@@ -114,7 +114,7 @@ namespace wg
 		(*m_pEncoder) << (uint16_t) pInfo->nObjects;
 
 		if( nUpdateRects > 0 )
-			_compressSplitAndEncodeSpx( m_pEncoder, GfxStream::ChunkId::UpdateRects, Compression::None, pUpdateRects, pUpdateRects + nUpdateRects );
+			_compressSplitAndEncodeSpx( m_pEncoder, GfxStream::ChunkId::UpdateRects, (const spx*) pUpdateRects, (const spx*) (pUpdateRects + nUpdateRects) );
 	}
 
 	//____ endSession() __________________________________________________________
@@ -176,7 +176,7 @@ namespace wg
 
 	void StreamBackend::setRects(const RectSPX* pBeg, const RectSPX* pEnd)
 	{
-		_compressSplitAndEncodeSpx( m_pEncoder, GfxStream::ChunkId::Rects, pBeg, pEnd );
+		_compressSplitAndEncodeSpx( m_pEncoder, GfxStream::ChunkId::Rects, (const spx *) pBeg, (const spx *) pEnd );
 	}
 
 	//____ setColors() ___________________________________________________________
@@ -323,19 +323,19 @@ namespace wg
 	{
 		int allocSize = (pEnd - pBeg) * sizeof(spx);
 
-		GfxBase::memStackAlloc(allocSize);
+		auto pBuffer = (uint8_t*) GfxBase::memStackAlloc(allocSize);
 
 		Compression compression;
 		int			size;
 
-		std::tie(compression,size) = compressSpx(pBeg, pEnd, pBuffer);
+		std::tie(compression,size) = compressSpx(pBeg, pEnd - pBeg, pBuffer);
 
 		// Stream data
 
 		if(compression == Compression::None)
 			_splitAndEncode( pEncoder, chunkType, Compression::None, pBeg, pEnd, sizeof(spx) );
 		else
-			_splitAndEncode( pEncoder, chunkType, compression, pBuffer, pBuffer+size, sizeof(spx) );
+			_splitAndEncode( pEncoder, chunkType, compression, pBuffer, pBuffer+size, sizeof(spx), (pEnd - pBeg) * sizeof(spx) );
 
 		GfxBase::memStackFree(allocSize);
 	}
@@ -343,18 +343,8 @@ namespace wg
 
 	//____ _splitAndEncode() _____________________________________________________
 
-	void StreamBackend::_splitAndEncode( StreamEncoder * pEncoder, GfxStream::ChunkId chunkType, Compression compression, const void * _pBeg, const void * _pEnd, int entrySize )
+	void StreamBackend::_splitAndEncode( StreamEncoder * pEncoder, GfxStream::ChunkId chunkType, Compression compression, const void * _pBeg, const void * _pEnd, int entrySize, int unpackedSize)
 	{
-		// Content
-		// int32_t		totalSize in bytes
-		// int32_t		chunkOffset in bytes
-		// uint16_t		chunkSize
-		// 16 bit		compression
-		// 16 bit bool	bFirstChunk
-		// 16 bit bool	bLastChunk
-		//
-		// All measures in bytes
-
 		char * pBeg = (char *) _pBeg;
 		char * pEnd = (char *) _pEnd;
 		char * p = pBeg;
@@ -368,13 +358,21 @@ namespace wg
 
 			(*pEncoder) << GfxStream::Header{ chunkType, 0, (uint16_t) bytesOfData + 16 + padding };
 
-			(*pEncoder) << (int32_t) (pEnd - pBeg);
-			(*pEncoder) << (int32_t) (p - pBeg);
-			(*pEncoder) << (uint16_t) bytesOfData;
-			(*pEncoder) << compression;
-			(*pEncoder) << (bool) (p == pBeg);
-			(*pEncoder) << (bool) (p + bytesOfData == pEnd);
+			GfxStream::DataInfo info;
+			info.unpackedTotalSize = unpackedSize > 0 ? unpackedSize : pEnd - pBeg;
+			info.packedTotalSize = pEnd - pBeg;
+			info.chunkOffset = p - pBeg;
+			info.chunkSize = bytesOfData;
+			info.compression = compression;
+			info.bFirstChunk = (bool)(p == pBeg);
+			info.bLastChunk = (bool)(p + bytesOfData == pEnd);
 
+			if (info.unpackedTotalSize == info.packedTotalSize && compression != Compression::None)
+			{
+				int dymmy = 0;
+			}
+
+			(*pEncoder) << info;
 			(*pEncoder) << GfxStream::WriteBytes{ bytesOfData, (void *) p };
 
 			if( padding > 0 )

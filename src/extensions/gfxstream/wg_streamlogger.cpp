@@ -249,127 +249,61 @@ namespace wg
 
 			case GfxStream::ChunkId::Objects:
 			{
-				int32_t		totalSize;
-				int32_t		offset;
-				bool		bFirstChunk;
-				bool		bLastChunk;
+				GfxStream::DataInfo dataInfo;
+				*m_pDecoder >> dataInfo;
 
-				*m_pDecoder >> totalSize;
-				*m_pDecoder >> offset;
-				*m_pDecoder >> bFirstChunk;
-				*m_pDecoder >> bLastChunk;
-
-				int nbEntries = (header.size - 12) / sizeof(uint16_t);
-
-				m_charStream << "    totalSize = " << totalSize << " bytes, offset = " << offset << ", bFirstChunk = " << bFirstChunk << ", bLastChunk = " << bLastChunk << std::endl;
-				m_charStream << "    number of entries: " << nbEntries << std::endl;
-
-				m_pDecoder->skip(header.size-12);
+				_readPrintDataInfo();
+				m_pDecoder->skip(header.size-16);
 				break;
 			}
 
 			case GfxStream::ChunkId::Rects:
 			{
-				int32_t		totalSize;
-				int32_t		offset;
-				bool		bFirstChunk;
-				bool		bLastChunk;
+				GfxStream::DataInfo dataInfo;
+				*m_pDecoder >> dataInfo;
 
-				*m_pDecoder >> totalSize;
-				*m_pDecoder >> offset;
-				*m_pDecoder >> bFirstChunk;
-				*m_pDecoder >> bLastChunk;
-
-				int nbEntries = (header.size - 12) / sizeof(RectSPX);
-
-				m_charStream << "    totalSize = " << totalSize << " bytes, offset = " << offset << ", bFirstChunk = " << bFirstChunk << ", bLastChunk = " << bLastChunk << std::endl;
-				m_charStream << "    number of entries: " << nbEntries << std::endl;
-
-				m_pDecoder->skip(header.size-12);
+				_readPrintDataInfo();
+				m_pDecoder->skip(header.size-16);
 				break;
 			}
 
 			case GfxStream::ChunkId::Colors:
 			{
-				int32_t		totalSize;
-				int32_t		offset;
-				bool		bFirstChunk;
-				bool		bLastChunk;
+				GfxStream::DataInfo dataInfo;
+				*m_pDecoder >> dataInfo;
 
-				*m_pDecoder >> totalSize;
-				*m_pDecoder >> offset;
-				*m_pDecoder >> bFirstChunk;
-				*m_pDecoder >> bLastChunk;
-
-				int nbEntries = (header.size - 12) / sizeof(HiColor);
-
-				m_charStream << "    totalSize = " << totalSize << " bytes, offset = " << offset << ", bFirstChunk = " << bFirstChunk << ", bLastChunk = " << bLastChunk << std::endl;
-				m_charStream << "    number of entries: " << nbEntries << std::endl;
-
-				m_pDecoder->skip(header.size-12);
+				_readPrintDataInfo();
+				m_pDecoder->skip(header.size-16);
 				break;
 			}
 
 			case GfxStream::ChunkId::Transforms:
 			{
-				int32_t		totalSize;
-				int32_t		offset;
-				bool		bFirstChunk;
-				bool		bLastChunk;
+				GfxStream::DataInfo dataInfo;
+				*m_pDecoder >> dataInfo;
 
-				*m_pDecoder >> totalSize;
-				*m_pDecoder >> offset;
-				*m_pDecoder >> bFirstChunk;
-				*m_pDecoder >> bLastChunk;
-
-				int nbEntries = (header.size - 12) / sizeof(Transform);
-
-				m_charStream << "    totalSize = " << totalSize << " bytes, offset = " << offset << ", bFirstChunk = " << bFirstChunk << ", bLastChunk = " << bLastChunk << std::endl;
-				m_charStream << "    number of entries: " << nbEntries << std::endl;
-
-				m_pDecoder->skip(header.size-12);
+				_readPrintDataInfo();
+				m_pDecoder->skip(header.size-16);
 				break;
 			}
 
 			case GfxStream::ChunkId::Commands:
 			{
-				int32_t		totalSize;
-				int32_t		offset;
-				bool		bFirstChunk;
-				bool		bLastChunk;
+				GfxStream::DataInfo dataInfo;
+				*m_pDecoder >> dataInfo;
 
-				*m_pDecoder >> totalSize;
-				*m_pDecoder >> offset;
-				*m_pDecoder >> bFirstChunk;
-				*m_pDecoder >> bLastChunk;
-
-				int nbEntries = (header.size - 12) / sizeof(int);
-
-				m_charStream << "    totalSize = " << totalSize << " bytes, offset = " << offset << ", bFirstChunk = " << bFirstChunk << ", bLastChunk = " << bLastChunk << std::endl;
-				m_charStream << "    number of integers: " << nbEntries << std::endl;
-
-				m_pDecoder->skip(header.size-12);
+				_readPrintDataInfo();
+				m_pDecoder->skip(header.size-16);
 				break;
 			}
 
 			case GfxStream::ChunkId::UpdateRects:
 			{
-				int32_t		totalSize;
-				int32_t		offset;
-				bool		bFirstChunk;
-				bool		bLastChunk;
+				GfxStream::DataInfo dataInfo;
+				*m_pDecoder >> dataInfo;
 
-				*m_pDecoder >> totalSize;
-				*m_pDecoder >> offset;
-				*m_pDecoder >> bFirstChunk;
-				*m_pDecoder >> bLastChunk;
-
-				int nbEntries = (header.size - 12) / sizeof(RectSPX);
-
-				m_charStream << "    totalSize = " << totalSize << " bytes, offset = " << offset << ", bFirstChunk = " << bFirstChunk << ", bLastChunk = " << bLastChunk << std::endl;
-				m_charStream << "    number of entries: " << nbEntries << std::endl;
-
-				m_pDecoder->skip(header.size-12);
+				_readPrintDataInfo();
+				m_pDecoder->skip(header.size-16);
 				break;
 			}
 
@@ -423,9 +357,11 @@ namespace wg
 
 			case GfxStream::ChunkId::SurfacePixels:
 			{
-				m_pDecoder->skip(header.size);
+				GfxStream::DataInfo dataInfo;
+				*m_pDecoder >> dataInfo;
 
-				m_charStream << "    size: " << header.size << " bytes." << std::endl;
+				_readPrintDataInfo();
+				m_pDecoder->skip(header.size - 16);
 				break;
 			}
 
@@ -550,9 +486,11 @@ namespace wg
 
 			case GfxStream::ChunkId::EdgemapSamples:
 			{
-				m_pDecoder->skip(header.size);
+				GfxStream::DataInfo dataInfo;
+				*m_pDecoder >> dataInfo;
 
-				m_charStream << "    size: " << header.size << " bytes." << std::endl;
+				_readPrintDataInfo();
+				m_pDecoder->skip(header.size - 16);
 				break;
 			}
 
@@ -607,6 +545,19 @@ namespace wg
 
 		return nPatches;
 	}
+
+	//____ _readPrintDataInfo() _______________________________________________
+
+	void StreamLogger::_readPrintDataInfo()
+	{
+		GfxStream::DataInfo dataInfo;
+		*m_pDecoder >> dataInfo;
+
+		m_charStream << "    TotalSize:  packed = " << dataInfo.unpackedTotalSize << " bytes, unpacked = " << dataInfo.packedTotalSize << std::endl;
+		m_charStream << "    Chunk: offset = " << dataInfo.chunkOffset << ", size = " << dataInfo.chunkSize << std::endl;
+		m_charStream << "    compression = " << int(dataInfo.compression) << ", bFirstChunk = " << dataInfo.bFirstChunk << ", bLastChunk = " << dataInfo.bLastChunk << std::endl;
+	}
+
 
 	//____ readPrintRects() _________________________________________________
 
