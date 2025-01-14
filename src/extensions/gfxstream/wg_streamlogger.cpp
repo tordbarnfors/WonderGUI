@@ -525,7 +525,7 @@ namespace wg
 			}
 
 				
-			case GfxStream::ChunkId::BeginEdgemapUpdate:
+			case GfxStream::ChunkId::EdgemapUpdate:
 			{
 				uint16_t	edgemapId;
 				uint8_t		edgeBegin;
@@ -555,9 +555,6 @@ namespace wg
 				m_charStream << "    size: " << header.size << " bytes." << std::endl;
 				break;
 			}
-
-			case GfxStream::ChunkId::EndEdgemapUpdate:
-				break;
 
 			case GfxStream::ChunkId::DeleteEdgemap:
 			{

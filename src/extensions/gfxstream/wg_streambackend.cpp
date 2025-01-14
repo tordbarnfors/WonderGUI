@@ -113,7 +113,7 @@ namespace wg
 		(*m_pEncoder) << (uint16_t) pInfo->nObjects;
 
 		if( nUpdateRects > 0 )
-			_splitAndEncode( m_pEncoder, GfxStream::ChunkId::UpdateRects, pUpdateRects, pUpdateRects +nUpdateRects, sizeof(RectI) );
+			_splitAndEncode( m_pEncoder, GfxStream::ChunkId::UpdateRects, Compression::None, pUpdateRects, pUpdateRects +nUpdateRects, sizeof(RectI) );
 	}
 
 	//____ endSession() __________________________________________________________
@@ -168,35 +168,35 @@ namespace wg
 			}
 		}
 
-		_splitAndEncode( m_pEncoder, GfxStream::ChunkId::Objects, m_objects.data(), m_objects.data() + m_objects.size(), sizeof(uint16_t) );
+		_splitAndEncode( m_pEncoder, GfxStream::ChunkId::Objects, Compression::None, m_objects.data(), m_objects.data() + m_objects.size(), sizeof(uint16_t) );
 	}
 
 	//____ setRects() ___________________________________________________________
 
 	void StreamBackend::setRects(const RectSPX* pBeg, const RectSPX* pEnd)
 	{
-		_splitAndEncode( m_pEncoder, GfxStream::ChunkId::Rects, pBeg, pEnd, sizeof(RectSPX) );
+		_splitAndEncode( m_pEncoder, GfxStream::ChunkId::Rects, Compression::None, pBeg, pEnd, sizeof(RectSPX) );
 	}
 
 	//____ setColors() ___________________________________________________________
 
 	void StreamBackend::setColors(const HiColor* pBeg, const HiColor* pEnd)
 	{
-		_splitAndEncode( m_pEncoder, GfxStream::ChunkId::Colors, pBeg, pEnd, sizeof(HiColor) );
+		_splitAndEncode( m_pEncoder, GfxStream::ChunkId::Colors, Compression::None, pBeg, pEnd, sizeof(HiColor) );
 	}
 
 	//____ setTransforms() _______________________________________________________
 
 	void StreamBackend::setTransforms(const Transform * pBeg, const Transform * pEnd)
 	{
-		_splitAndEncode( m_pEncoder, GfxStream::ChunkId::Transforms, pBeg, pEnd, sizeof(Transform) );
+		_splitAndEncode( m_pEncoder, GfxStream::ChunkId::Transforms, Compression::None, pBeg, pEnd, sizeof(Transform) );
 	}
 
 	//____ processCommands() _____________________________________________________
 
 	void StreamBackend::processCommands( const uint16_t* pBeg, const uint16_t * pEnd)
 	{
-		_splitAndEncode( m_pEncoder, GfxStream::ChunkId::Commands, pBeg, pEnd, sizeof(int32_t) );
+		_splitAndEncode( m_pEncoder, GfxStream::ChunkId::Commands, Compression::None, pBeg, pEnd, sizeof(int32_t) );
 	}
 
 	//____ defineCanvas() ________________________________________________________
@@ -318,11 +318,13 @@ namespace wg
 
 	//____ _splitAndEncode() _____________________________________________________
 
-	void StreamBackend::_splitAndEncode( StreamEncoder * pEncoder, GfxStream::ChunkId chunkType, const void * _pBeg, const void * _pEnd, int entrySize )
+	void StreamBackend::_splitAndEncode( StreamEncoder * pEncoder, GfxStream::ChunkId chunkType, Compression compression, const void * _pBeg, const void * _pEnd, int entrySize )
 	{
 		// Content
 		// int32_t		totalSize in bytes
 		// int32_t		chunkOffset in bytes
+		// uint16_t		chunkSize
+		// 16 bit		compression
 		// 16 bit bool	bFirstChunk
 		// 16 bit bool	bLastChunk
 		//
@@ -333,23 +335,30 @@ namespace wg
 		char * pEnd = (char *) _pEnd;
 		char * p = pBeg;
 
-		int maxBytesInChunk = ((GfxStream::c_maxBlockSize - 4 - 12) / entrySize) * entrySize;
+		int maxBytesInChunk = ((GfxStream::c_maxBlockSize - 4 - 16) / entrySize) * entrySize;
 
 		while( p < pEnd )
 		{
 			int bytesOfData = std::min(int(pEnd-p),maxBytesInChunk);
+			int padding = (bytesOfData & 0x1);
 
-			(*pEncoder) << GfxStream::Header{ chunkType, 0, (uint16_t) bytesOfData + 12 };
+			(*pEncoder) << GfxStream::Header{ chunkType, 0, (uint16_t) bytesOfData + 16 + padding };
 
 			(*pEncoder) << (int32_t) (pEnd - pBeg);
 			(*pEncoder) << (int32_t) (p - pBeg);
+			(*pEncoder) << (uint16_t) bytesOfData;
+			(*pEncoder) << compression;
 			(*pEncoder) << (bool) (p == pBeg);
 			(*pEncoder) << (bool) (p + bytesOfData == pEnd);
 
 			(*pEncoder) << GfxStream::WriteBytes{ bytesOfData, (void *) p };
 
+			if( padding > 0 )
+				(*pEncoder) << (uint8_t) 0;
+
 			p += bytesOfData;
 		}
+
 	}
 
 

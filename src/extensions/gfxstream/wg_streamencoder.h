@@ -106,6 +106,7 @@ namespace wg
 		inline StreamEncoder& operator<< (PixelFormat);
 		inline StreamEncoder& operator<< (SampleMethod);
 		inline StreamEncoder& operator<< (CanvasRef);
+		inline StreamEncoder& operator<< (Compression);
 
 		inline StreamEncoder& operator<< (const GfxStream::WriteBytes&);
 
@@ -322,6 +323,13 @@ namespace wg
 		_pushChar((char)r);
 		return *this;
 	}
+
+	StreamEncoder& StreamEncoder::operator<< (Compression c)
+	{
+		_pushShort((char)c);
+		return *this;
+	}
+
 
 	StreamEncoder& StreamEncoder::operator<< (HiColor color)
 	{

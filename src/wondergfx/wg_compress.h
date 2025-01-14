@@ -20,41 +20,24 @@
 
 =========================================================================*/
 
-#include <wg_gfxstream.h>
+#ifndef	WG_COMPRESS_DOT_H
+#define	WG_COMPRESS_DOT_H
+#pragma once
+
+#include <ctype.h>
+#include <tuple>
+
+#include <wg_gfxtypes.h>
 
 namespace wg
-{
-	const char * toString(GfxStream::ChunkId i)
-	{
-		static const char * names[] = {
-			"OutOfData",
-			"ProtocolVersion",
-			"CanvasList",
-			"TimeStampMS",
-			"BeginRender",
-			"EndRender",
-			"BeginSession",
-			"EndSession",
-			"SetCanvas",
-			"Objects",
-			"Rects",
-			"Colors",
-			"Transforms",
-			"Commands",
-			"UpdateRects",
-			"CreateSurface",
-			"SurfaceUpdate",
-			"SurfacePixels",
-			"FillSurface",
-			"CopySurface",
-			"DeleteSurface",
-			"CreateEdgemap",
-			"SetEdgemapRenderSegments",
-			"SetEdgemapColors",
-			"EdgemapUpdate",
-			"EdgemapSamples",
-			"DeleteEdgemap" };
+{	
+	std::tuple<Compression,int> compressSpx( const spx * pSource, int nbSpx, uint8_t * pDest );
 
-		return names[(int)i];
-	}
+	int 						compressSpxU8I( const spx * pSource, int nbSpx, uint8_t * pDest );
+	int 						compressSpx16B( const spx * pSource, int nbSpx, uint8_t * pDest );
+	int 						compressSpx16I( const spx * pSource, int nbSpx, uint8_t * pDest );
+
+	void						decompress( Compression type, const void * pSource, int nbBytes, void * pDest );
 }
+
+#endif // WG_COMPRESS_DOT_H

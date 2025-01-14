@@ -99,7 +99,8 @@ namespace wg
 		inline StreamDecoder& operator>> (XSections&);
 		inline StreamDecoder& operator>> (YSections&);
 		inline StreamDecoder& operator>> (CanvasRef&);
-		
+		inline StreamDecoder& operator>> (Compression&);
+
 		inline StreamDecoder& operator>> (const GfxStream::ReadBytes&);
 		inline StreamDecoder& operator>> (const GfxStream::ReadSpxField&);
 
@@ -343,6 +344,13 @@ namespace wg
 		r = (CanvasRef)_pullChar();
 		return *this;
 	}
+
+	StreamDecoder& StreamDecoder::operator>> (Compression& c)
+	{
+		c = (Compression)_pullShort();
+		return *this;
+	}
+
 
 	StreamDecoder& StreamDecoder::operator>> (const GfxStream::ReadBytes& data)
 	{

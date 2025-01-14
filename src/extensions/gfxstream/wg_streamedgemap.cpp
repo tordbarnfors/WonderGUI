@@ -21,8 +21,10 @@
 =========================================================================*/
 
 #include <wg_streamedgemap.h>
+#include <wg_streambackend.h>
 #include <wg_gfxbase.h>
 #include <wg_gradyent.h>
+#include <wg_compress.h>
 
 #include <cstring>
 
@@ -132,146 +134,63 @@ bool StreamEdgemap::setRenderSegments(int nSegments)
 void StreamEdgemap::_samplesUpdated(int edgeBegin, int edgeEnd, int sampleBegin, int sampleEnd)
 {
 	{
-		// Send header
+		// Stream header
 
 		int beginBlockSize = 2 + 1 + 1 + 2 + 2;
 
 		auto& encoder = * m_pEncoder;
 
-		encoder << GfxStream::Header{ GfxStream::ChunkId::BeginEdgemapUpdate, 0, beginBlockSize };
+		encoder << GfxStream::Header{ GfxStream::ChunkId::EdgemapUpdate, 0, beginBlockSize };
 		encoder << m_inStreamId;
 		encoder << (uint8_t)edgeBegin;
 		encoder << (uint8_t)edgeEnd;
 		encoder << (uint16_t)sampleBegin;
 		encoder << (uint16_t)sampleEnd;
 
+
 		int nbEdges = m_nbSegments - 1;
 		int copyEdges = edgeEnd - edgeBegin;
 		int skipEdges = nbEdges - copyEdges;
 
-		// Check sample max/min and max/min diff against old samples
-		// and find best spxFormat for transfer.
 
-		int spxMask = 0;
+		// Copy all samples to one linear buffer
 
+		int samples = (edgeEnd - edgeBegin) * (sampleEnd - sampleBegin);
+		int bufferBytes = sizeof(spx) * samples;
+
+		spx * pBuffer = (spx*) GfxBase::memStackAlloc(bufferBytes);
+
+		spx* pDest = pBuffer;
+		spx* pSource = m_pSamples + sampleBegin * nbEdges + edgeBegin;
+
+		for (int sample = sampleBegin; sample < sampleEnd; sample++)
 		{
-			const int add = (1 << 21);
-			spx* pNew = m_pSamples + sampleBegin * nbEdges + edgeBegin;
+			for (int i = 0; i < copyEdges; i++)
+				*pDest++ = *pSource++;
 
-			for (int sample = sampleBegin; sample < sampleEnd; sample++)
-			{
-				for (int i = 0; i < copyEdges; i++)
-				{
-					int value = *pNew++;
-					spxMask |= value + add;
-				}
-				pNew += skipEdges;
-			}
+			pSource += skipEdges;
 		}
 
-		GfxStream::SpxFormat spxFormat = _findBestPackFormat(spxMask);
+		// Compress samples
 
-		// Compress bytes for transfer
+		uint8_t * pCompressed = (uint8_t*) GfxBase::memStackAlloc(bufferBytes);
 
-		int bufferBytes = GfxStream::spxSize(spxFormat) * (edgeEnd - edgeBegin) * (sampleEnd - sampleBegin);
+		Compression compression;
+		int			size;
 
-		int8_t* pBuffer = (int8_t*)GfxBase::memStackAlloc(bufferBytes);
-
-
-		switch (spxFormat)
-		{
-		case GfxStream::SpxFormat::Int32_dec:
-		{
-			// No compression needed, just replace old
-
-			spx* pPacked = reinterpret_cast<spx*>(pBuffer);	
-			spx* pNew = m_pSamples + sampleBegin * nbEdges + edgeBegin;
-
-			for (int sample = sampleBegin; sample < sampleEnd; sample++)
-			{
-				for (int i = 0; i < copyEdges; i++)
-					*pPacked++ = *pNew++;
-
-				pNew += skipEdges;
-			}
-
-			break;
-		}
-
-		case GfxStream::SpxFormat::Uint16_dec:
-		{
-			uint16_t* pPacked = reinterpret_cast<uint16_t*>(pBuffer);
-			spx* pNew = m_pSamples + sampleBegin * nbEdges + edgeBegin;
-
-			for (int sample = sampleBegin; sample < sampleEnd; sample++)
-			{
-				for (int i = 0; i < copyEdges; i++)
-					*pPacked++ = (uint16_t)*pNew++;
-
-				pNew += skipEdges;
-			}
-			break;
-		}
-
-		case GfxStream::SpxFormat::Int16_int:
-		{
-			int16_t* pPacked = reinterpret_cast<int16_t*>(pBuffer);
-			spx* pNew = m_pSamples + sampleBegin * nbEdges + edgeBegin;
-
-			for (int sample = sampleBegin; sample < sampleEnd; sample++)
-			{
-				for (int i = 0; i < copyEdges; i++)
-					*pPacked++ = (int16_t)((*pNew++) >> 6);
-
-				pNew += skipEdges;
-			}
-			break;
-		}
-
-		case GfxStream::SpxFormat::Uint8_int:
-		{
-			uint8_t* pPacked = reinterpret_cast<uint8_t*>(pBuffer);
-			spx* pNew = m_pSamples + sampleBegin * nbEdges + edgeBegin;
-
-			for (int sample = sampleBegin; sample < sampleEnd; sample++)
-			{
-				for (int i = 0; i < copyEdges; i++)
-					*pPacked++ = (uint8_t)((*pNew++) >> 6);
-
-				pNew += skipEdges;
-			}
-			break;
-		}
-		}
+		std::tie(compression,size) = compressSpx( pBuffer, samples, pCompressed);
 
 		// Stream data
 
-		const int8_t* pSrc = pBuffer;
+		if(compression == Compression::None)
+			StreamBackend::_splitAndEncode(m_pEncoder, GfxStream::ChunkId::EdgemapSamples, compression, pBuffer, ((uint8_t*)pBuffer) + bufferBytes, 4);
+		else
+			StreamBackend::_splitAndEncode(m_pEncoder, GfxStream::ChunkId::EdgemapSamples, compression, pCompressed, pCompressed + size, 1);
 
-		int dataSize = bufferBytes;
+		// Release temp buffers
 
-		int maxDataSize = ((int)(GfxStream::c_maxBlockSize - sizeof(GfxStream::Header))) & 0xFFFC;		// We can not have fractional spx in buffer.
-
-		while (dataSize > 0)
-		{
-			uint16_t chunkSize = std::min(dataSize, maxDataSize);
-			dataSize -= chunkSize;
-
-			encoder << GfxStream::Header{ GfxStream::ChunkId::EdgemapSamples, (uint8_t) spxFormat, uint16_t((chunkSize + 1) & 0xFFFE) };
-
-			encoder << GfxStream::WriteBytes{ chunkSize, (void*)pSrc };
-			pSrc += chunkSize;
-		}
-
-		encoder.align();
-
-		// Stream footer
-
-		encoder << GfxStream::Header{ GfxStream::ChunkId::EndEdgemapUpdate, 0, 0 };
-
-		// Release temp buffer
-
-		GfxBase::memStackFree(bufferBytes);
+		GfxBase::memStackFree(bufferBytes);	// pCompressed
+		GfxBase::memStackFree(bufferBytes);	// pBuffer
 	}
 }
 

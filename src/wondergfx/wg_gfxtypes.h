@@ -423,6 +423,16 @@ namespace wg
 		Bottom				// Origo at bottom, increasing values goes up.
 	};
 
+	//____ Compression ___________________________________________________________
+
+	enum class Compression			//.autoExtras
+	{
+		None,
+		SpxU8I,
+		Spx16B,
+		Spx16I
+	};
+
 
 
 } // namespace wg

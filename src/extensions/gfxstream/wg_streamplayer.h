@@ -97,14 +97,12 @@ namespace wg
 		uint8_t *			m_pSurfaceDataBuffer = nullptr;
 
 		Edgemap_p			m_pUpdatingEdgemap;
-		spx *				m_pWaveSampleBuffer;
-		spx *				m_pWaveWriteSamples;
-		int					m_waveSamplesLeft;
+		uint8_t *			m_pEdgemapDataBuffer = nullptr;
 
-		int					m_waveUpdateEdgeBegin;
-		int					m_waveUpdateEdgeEnd;
-		int					m_waveUpdateSampleBegin;
-		int					m_waveUpdateSampleEnd;
+		int					m_edgemapUpdateEdgeBegin;
+		int					m_edgemapUpdateEdgeEnd;
+		int					m_edgemapUpdateSampleBegin;
+		int					m_edgemapUpdateSampleEnd;
 		
 		GfxBackend::SessionInfo	m_sessionInfo;			// Temporary for BeginSession/UpdateRects
 		std::vector<RectSPX>	m_vUpdateRects;

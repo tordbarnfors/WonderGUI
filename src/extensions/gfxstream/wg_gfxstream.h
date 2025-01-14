@@ -69,17 +69,16 @@ namespace wg
 			CreateSurface = 15,
 			SurfaceUpdate = 16,
 			SurfacePixels = 17,
-			FillSurface = 19,
-			CopySurface = 20,
-			DeleteSurface = 21,
+			FillSurface = 18,
+			CopySurface = 19,
+			DeleteSurface = 20,
 
-			CreateEdgemap = 22,
-			SetEdgemapRenderSegments = 23,
-			SetEdgemapColors = 24,
-			BeginEdgemapUpdate = 25,
-			EdgemapSamples = 26,
-			EndEdgemapUpdate = 27,
-			DeleteEdgemap = 28,
+			CreateEdgemap = 21,
+			SetEdgemapRenderSegments = 22,
+			SetEdgemapColors = 23,
+			EdgemapUpdate = 24,
+			EdgemapSamples = 25,
+			DeleteEdgemap = 26,
 		};
 
 		const static ChunkId      ChunkId_min      = ChunkId::OutOfData;
