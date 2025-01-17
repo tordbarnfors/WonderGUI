@@ -23,13 +23,14 @@
 #include <wg_compress.h>
 
 #include <cstring>
+#include <algorithm>
 
 namespace wg
 {
 
 //____ compressSpx() __________________________________________________________
 
-std::tuple<Compression,int> compressSpx( const spx * pSource, int nbSpx, uint8_t * pDest )
+std::tuple<Compression,int, const spx * > compressSpx( const spx * pBeg, const spx * pEnd, uint8_t * pDest, int maxChunkBytes )
 {
 	// Check sample max/min
 	// and find best compression.
@@ -37,65 +38,68 @@ std::tuple<Compression,int> compressSpx( const spx * pSource, int nbSpx, uint8_t
 	int spxMask = 0;
 
 	const int add = (1 << 21);
-	const spx * p = pSource;
 
-	for (int i = 0; i < nbSpx; i++ )
-	{
-		int value = *p++;
-		spxMask |= value + add;
-	}
+	for( auto p = pBeg ; p != pEnd ; p++ )
+		spxMask |= *p + add;
 
 	if( (spxMask & 0xFFDFC03F) == 0 )					// Check if all spx fits in uint8_t without binals.
 	{
-		int size = compressSpxU8I(pSource, nbSpx, pDest);
-		return std::make_tuple(Compression::SpxU8I, size);
+		auto pEnd2 = maxChunkBytes == 0 ? pEnd : std::min( pEnd, pBeg + (maxChunkBytes ));
+		int size = compressSpxU8I(pBeg, pEnd2, pDest);
+		return std::make_tuple(Compression::SpxU8I, size, pEnd2);
 	}
 	else if( (spxMask & 0xFFDF0000) == 0 )				// Check if all spx fits in int16_t with binals.
 	{
-		int size = compressSpx16B(pSource, nbSpx, pDest);
-		return std::make_tuple(Compression::Spx16B, size);
+		auto pEnd2 = maxChunkBytes == 0 ? pEnd : std::min( pEnd, pBeg + (maxChunkBytes/2 ));
+		int size = compressSpx16B(pBeg, pEnd2, pDest);
+		return std::make_tuple(Compression::Spx16B, size, pEnd2);
 	}
 	else if( (spxMask & 0xFFC0003F) == 0 )				// Check if all spx fits in int16_t with binals.
 	{
-		int size = compressSpx16I(pSource, nbSpx, pDest);
-		return std::make_tuple(Compression::Spx16I, size);
+		auto pEnd2 = maxChunkBytes == 0 ? pEnd : std::min( pEnd, pBeg + (maxChunkBytes/2 ));
+		int size = compressSpx16I(pBeg, pEnd2, pDest);
+		return std::make_tuple(Compression::Spx16I, size, pEnd2);
 	}
 	else
-		return std::make_tuple(Compression::None, 0);
+	{
+		return std::make_tuple(Compression::None, 0, pEnd);
+	}
 }
 
 //____ compressSpxU8I() _______________________________________________________
 
-int compressSpxU8I( const spx * pSource, int nb, uint8_t * pDest )
+int compressSpxU8I( const spx * pBeg, const spx * pEnd, uint8_t * pDest )
 {
-	for( int i = 0 ; i < nb ; i++ )
-		* pDest++ = (uint8_t) ((* pSource++) >> 6);
+	auto wp = pDest;
 
-	return nb;
+	while( pBeg < pEnd )
+		* wp++ = (uint8_t) ((* pBeg++) >> 6);
+
+	return int(wp - pDest);
 }
 
 //____ compressSpx16B() _______________________________________________________
 
-int compressSpx16B( const spx * pSource, int nb, uint8_t * _pDest )
+int compressSpx16B( const spx * pBeg, const spx * pEnd, uint8_t * pDest )
 {
-	auto pDest = (int16_t *) _pDest;
+	auto wp = (int16_t *) pDest;
 
-	for( int i = 0 ; i < nb ; i++ )
-		* pDest++ = (int16_t) (* pSource++);
+	while( pBeg < pEnd )
+		* wp++ = (int16_t) (* pBeg++);
 
-	return nb*2;
+	return int(((uint8_t*)wp) - pDest);
 }
 
 //____ compressSpx16I() _______________________________________________________
 
-int compressSpx16I( const spx * pSource, int nb, uint8_t * _pDest )
+int compressSpx16I( const spx * pBeg, const spx * pEnd, uint8_t * pDest )
 {
-	auto pDest = (int16_t *) _pDest;
+	auto wp = (int16_t *) pDest;
 
-	for( int i = 0 ; i < nb ; i++ )
-		* pDest++ = (int16_t) ((* pSource++) >> 6);
+	while( pBeg < pEnd )
+		* wp++ = (int16_t) ((* pBeg++) >> 6);
 
-	return nb*2;
+	return int(((uint8_t*)wp) - pDest);
 }
 
 //____ decompress() ___________________________________________________________

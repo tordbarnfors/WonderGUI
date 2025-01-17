@@ -160,15 +160,14 @@ namespace wg
 
 	StreamDecoder& StreamDecoder::operator>> (GfxStream::DataInfo& info)
 	{
-		info.unpackedTotalSize = _pullInt();
-		info.packedTotalSize = _pullInt();
+		info.totalSize = _pullInt();
 		info.chunkOffset = _pullInt();
-		info.chunkSize = _pullShort();
 
 		uint16_t flagsAndCompression = _pullShort();
 
 		info.bFirstChunk = (flagsAndCompression >> 8) & 0x1;
 		info.bLastChunk = (flagsAndCompression >> 9) & 0x1;
+		info.bPadded = (flagsAndCompression >> 10) & 0x1;
 		info.compression = (Compression) (flagsAndCompression & 0xFF);
 		return *this;
 	}

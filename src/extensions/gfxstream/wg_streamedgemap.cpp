@@ -171,25 +171,12 @@ void StreamEdgemap::_samplesUpdated(int edgeBegin, int edgeEnd, int sampleBegin,
 			pSource += skipEdges;
 		}
 
-		// Compress samples
+		// Compress and stream samples
 
-		uint8_t * pCompressed = (uint8_t*) GfxBase::memStackAlloc(bufferBytes);
+		StreamBackend::_compressSplitAndEncodeSpx( m_pEncoder, GfxStream::ChunkId::EdgemapSamples, pBuffer, pBuffer + samples );
 
-		Compression compression;
-		int			size;
+		// Release temporary buffer
 
-		std::tie(compression,size) = compressSpx( pBuffer, samples, pCompressed);
-
-		// Stream data
-
-		if(compression == Compression::None)
-			StreamBackend::_splitAndEncode(m_pEncoder, GfxStream::ChunkId::EdgemapSamples, compression, pBuffer, ((uint8_t*)pBuffer) + bufferBytes, 4);
-		else
-			StreamBackend::_splitAndEncode(m_pEncoder, GfxStream::ChunkId::EdgemapSamples, compression, pCompressed, pCompressed + size, 1, bufferBytes);
-
-		// Release temp buffers
-
-		GfxBase::memStackFree(bufferBytes);	// pCompressed
 		GfxBase::memStackFree(bufferBytes);	// pBuffer
 	}
 }

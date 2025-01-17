@@ -26,16 +26,17 @@
 
 #include <ctype.h>
 #include <tuple>
+#include <limits>
 
 #include <wg_gfxtypes.h>
 
 namespace wg
 {	
-	std::tuple<Compression,int> compressSpx( const spx * pSource, int nbSpx, uint8_t * pDest );
+	std::tuple<Compression,int, const spx *> compressSpx( const spx * pBegin, const spx * pEnd, uint8_t * pDest, int maxChunkBytes = 0 );
 
-	int 						compressSpxU8I( const spx * pSource, int nbSpx, uint8_t * pDest );
-	int 						compressSpx16B( const spx * pSource, int nbSpx, uint8_t * pDest );
-	int 						compressSpx16I( const spx * pSource, int nbSpx, uint8_t * pDest );
+	int 						compressSpxU8I( const spx * pSource, const spx * pEnd, uint8_t * pDest );
+	int 						compressSpx16B( const spx * pSource, const spx * pEnd, uint8_t * pDest );
+	int 						compressSpx16I( const spx * pSource, const spx * pEnd, uint8_t * pDest );
 
 	void						decompress( Compression type, const void * pSource, int nbBytes, void * pDest );
 }

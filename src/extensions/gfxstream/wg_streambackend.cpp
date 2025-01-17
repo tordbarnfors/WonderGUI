@@ -21,6 +21,7 @@
 =========================================================================*/
 
 #include <cstring>
+#include <algorithm>
 
 #include <wg_streambackend.h>
 #include <wg_streamsurface.h>
@@ -321,21 +322,49 @@ namespace wg
 
 	void StreamBackend::_compressSplitAndEncodeSpx( StreamEncoder * pEncoder, GfxStream::ChunkId chunkType, const spx * pBeg, const spx * pEnd )
 	{
-		int allocSize = (pEnd - pBeg) * sizeof(spx);
-
+		int allocSize = (GfxStream::c_maxBlockSize - 4 - GfxStream::DataInfoSize);
 		auto pBuffer = (uint8_t*) GfxBase::memStackAlloc(allocSize);
 
 		Compression compression;
-		int			size;
+		int			bytesOfData;
+		const spx * pRead = pBeg;
+		const spx * pReadEnd;
 
-		std::tie(compression,size) = compressSpx(pBeg, pEnd - pBeg, pBuffer);
+		while( pRead != pEnd )
+		{
+			std::tie(compression,bytesOfData, pReadEnd) = compressSpx(pRead, pEnd, pBuffer, allocSize);
 
-		// Stream data
+			if( compression == Compression::None )
+			{
+				int nEntries = std::min(int(allocSize/sizeof(spx)), int(pEnd - pRead) );
 
-		if(compression == Compression::None)
-			_splitAndEncode( pEncoder, chunkType, Compression::None, pBeg, pEnd, sizeof(spx) );
-		else
-			_splitAndEncode( pEncoder, chunkType, compression, pBuffer, pBuffer+size, sizeof(spx), (pEnd - pBeg) * sizeof(spx) );
+				bytesOfData = nEntries*4;
+				pReadEnd = pRead + nEntries;
+			}
+
+			int padding = (bytesOfData & 0x1);
+
+			(*pEncoder) << GfxStream::Header{ chunkType, 0, (uint16_t) bytesOfData + GfxStream::DataInfoSize + padding };
+
+			GfxStream::DataInfo info;
+			info.totalSize = int(pEnd - pBeg) * sizeof(spx);
+			info.chunkOffset = int(pRead - pBeg) * sizeof(spx);
+			info.compression = compression;
+			info.bFirstChunk = (bool)(pRead == pBeg);
+			info.bLastChunk = (bool)(pReadEnd == pEnd);
+			info.bPadded = (padding > 0);
+
+			(*pEncoder) << info;
+
+			const void * pStreamFrom = (compression == Compression::None) ? (const void*) pRead : (const void*) pBuffer;
+			(*pEncoder) << GfxStream::WriteBytes{ bytesOfData, pStreamFrom };
+
+
+			if( padding > 0 )
+				(*pEncoder) << (uint8_t) 0;
+
+			pRead = pReadEnd;
+		}
 
 		GfxBase::memStackFree(allocSize);
 	}
@@ -349,28 +378,22 @@ namespace wg
 		char * pEnd = (char *) _pEnd;
 		char * p = pBeg;
 
-		int maxBytesInChunk = ((GfxStream::c_maxBlockSize - 4 - 16) / entrySize) * entrySize;
+		int maxBytesInChunk = ((GfxStream::c_maxBlockSize - 4 - GfxStream::DataInfoSize) / entrySize) * entrySize;
 
 		while( p < pEnd )
 		{
 			int bytesOfData = std::min(int(pEnd-p),maxBytesInChunk);
 			int padding = (bytesOfData & 0x1);
 
-			(*pEncoder) << GfxStream::Header{ chunkType, 0, (uint16_t) bytesOfData + 16 + padding };
+			(*pEncoder) << GfxStream::Header{ chunkType, 0, (uint16_t) bytesOfData + GfxStream::DataInfoSize + padding };
 
 			GfxStream::DataInfo info;
-			info.unpackedTotalSize = unpackedSize > 0 ? unpackedSize : pEnd - pBeg;
-			info.packedTotalSize = pEnd - pBeg;
+			info.totalSize = unpackedSize > 0 ? unpackedSize : pEnd - pBeg;
 			info.chunkOffset = p - pBeg;
-			info.chunkSize = bytesOfData;
 			info.compression = compression;
 			info.bFirstChunk = (bool)(p == pBeg);
 			info.bLastChunk = (bool)(p + bytesOfData == pEnd);
-
-			if (info.unpackedTotalSize == info.packedTotalSize && compression != Compression::None)
-			{
-				int dymmy = 0;
-			}
+			info.bPadded = (padding > 0);
 
 			(*pEncoder) << info;
 			(*pEncoder) << GfxStream::WriteBytes{ bytesOfData, (void *) p };

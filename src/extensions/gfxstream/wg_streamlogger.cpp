@@ -553,9 +553,9 @@ namespace wg
 		GfxStream::DataInfo dataInfo;
 		*m_pDecoder >> dataInfo;
 
-		m_charStream << "    TotalSize:  packed = " << dataInfo.unpackedTotalSize << " bytes, unpacked = " << dataInfo.packedTotalSize << std::endl;
-		m_charStream << "    Chunk: offset = " << dataInfo.chunkOffset << ", size = " << dataInfo.chunkSize << std::endl;
-		m_charStream << "    compression = " << int(dataInfo.compression) << ", bFirstChunk = " << dataInfo.bFirstChunk << ", bLastChunk = " << dataInfo.bLastChunk << std::endl;
+		m_charStream << "    totalSize = " << dataInfo.totalSize << "bytes" << std::endl;
+		m_charStream << "    chunkOffset = " << dataInfo.chunkOffset << std::endl;
+		m_charStream << "    compression = " << int(dataInfo.compression) << ", bFirstChunk = " << dataInfo.bFirstChunk << ", bLastChunk = " << dataInfo.bLastChunk << ", bPadded = " << dataInfo.bPadded << std::endl;
 	}
 
 

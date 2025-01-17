@@ -219,11 +219,9 @@ namespace wg
 
 	StreamEncoder& StreamEncoder::operator<< (const GfxStream::DataInfo& info)
 	{
-		_pushInt(info.unpackedTotalSize);
-		_pushInt(info.packedTotalSize);
+		_pushInt(info.totalSize);
 		_pushInt(info.chunkOffset);
-		_pushShort(info.chunkSize);
-		_pushShort((int(info.bFirstChunk) << 8) | (int(info.bLastChunk) << 9) | int(info.compression));
+		_pushShort((int(info.bFirstChunk) << 8) | (int(info.bLastChunk) << 9) | (int(info.bPadded) << 10)| int(info.compression));
 		return *this;
 	}
 

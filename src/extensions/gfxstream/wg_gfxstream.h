@@ -116,13 +116,12 @@ namespace wg
 
 		struct DataInfo
 		{
-			int32_t		unpackedTotalSize;
-			int32_t		packedTotalSize;
+			int32_t		totalSize;
 			int32_t		chunkOffset;
-			uint16_t	chunkSize;
 			Compression	compression;
 			bool		bFirstChunk;
 			bool		bLastChunk;
+			bool		bPadded;
 		};
 
 		struct WriteBytes
@@ -246,7 +245,7 @@ namespace wg
 		static const int ColorSize = 8;
 		static const int GradientSize = 8 * 4;
 		static const int NinePatchSize = 16 + 8 + 10 + 10;
-		static const int DataInfoSize = 16;
+		static const int DataInfoSize = 12;
 
 		inline static GfxStream::ChunkId chunkType(const uint8_t* pChunk)
 		{

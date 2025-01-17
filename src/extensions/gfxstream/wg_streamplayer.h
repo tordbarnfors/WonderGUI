@@ -94,10 +94,11 @@ namespace wg
 
 		Surface_p			m_pUpdatingSurface;
 		RectI				m_updatingRect;
-		uint8_t *			m_pSurfaceDataBuffer = nullptr;
+		PixelBuffer			m_pixelBuffer;
+		CoordI				m_updateOffset;
 
 		Edgemap_p			m_pUpdatingEdgemap;
-		uint8_t *			m_pEdgemapDataBuffer = nullptr;
+		spx *				m_pEdgemapSampleBuffer = nullptr;
 
 		int					m_edgemapUpdateEdgeBegin;
 		int					m_edgemapUpdateEdgeEnd;
@@ -106,8 +107,6 @@ namespace wg
 		
 		GfxBackend::SessionInfo	m_sessionInfo;			// Temporary for BeginSession/UpdateRects
 		std::vector<RectSPX>	m_vUpdateRects;
-
-		uint8_t*			m_pCompressedData = nullptr;
 
 		CanvasRef			m_baseCanvasRef;
 		Surface_p			m_baseCanvasSurface;

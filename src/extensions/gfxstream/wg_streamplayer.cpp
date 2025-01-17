@@ -242,11 +242,7 @@ namespace wg
 
 
 			if (nUpdateRects == 0)
-			{
 				m_pBackend->beginSession(m_baseCanvasRef, m_baseCanvasSurface, 0, nullptr, &m_sessionInfo);
-			}
-			else
-				m_vUpdateRects.resize(nUpdateRects);
 
 			break;
 		}
@@ -299,14 +295,17 @@ namespace wg
 			GfxStream::DataInfo dataInfo;
 			*m_pDecoder >> dataInfo;
 
-			int nEntries = dataInfo.unpackedTotalSize / sizeof(uint16_t);
+			int nEntries = dataInfo.totalSize / sizeof(uint16_t);
 
 			if (dataInfo.bFirstChunk)
 				m_vActionObjects.resize(nEntries);
 
 
-			uint16_t * pBuffer = (uint16_t*) GfxBase::memStackAlloc(dataInfo.chunkSize);
-			*m_pDecoder >> GfxStream::ReadBytes{ dataInfo.chunkSize, pBuffer };
+			int dataSize = header.size - GfxStream::DataInfoSize - dataInfo.bPadded;
+
+			uint16_t * pBuffer = (uint16_t*) GfxBase::memStackAlloc(dataSize);
+
+			*m_pDecoder >> GfxStream::ReadBytes{ dataSize, pBuffer };
 
 			auto it = m_vActionObjects.begin() + (dataInfo.chunkOffset / sizeof(uint16_t));
 
@@ -316,7 +315,7 @@ namespace wg
 				* it++ = m_vObjects[id].rawPtr();
 			}
 
-			GfxBase::memStackFree(dataInfo.chunkSize);
+			GfxBase::memStackFree(dataSize);
 
 			if (dataInfo.bLastChunk)
 				m_pBackend->setObjects(m_vActionObjects.data(), m_vActionObjects.data() + m_vActionObjects.size() );
@@ -331,33 +330,27 @@ namespace wg
 			*m_pDecoder >> dataInfo;
 
 			if (dataInfo.bFirstChunk)
-				m_vRects.resize(dataInfo.unpackedTotalSize / sizeof(RectSPX));
+				m_vRects.resize(dataInfo.totalSize / sizeof(RectSPX));
+
+			int dataSize = header.size - GfxStream::DataInfoSize - dataInfo.bPadded;
+			char* pDest = ((char*)m_vRects.data()) + dataInfo.chunkOffset;
 
 			if (dataInfo.compression == Compression::None)
 			{
-				char* pDest = ((char*)m_vRects.data()) + dataInfo.chunkOffset;
-				*m_pDecoder >> GfxStream::ReadBytes{ dataInfo.chunkSize, pDest };
-
-				if (dataInfo.bLastChunk)
-					m_pBackend->setRects(m_vRects.data(), m_vRects.data() + m_vRects.size());
+				*m_pDecoder >> GfxStream::ReadBytes{ dataSize, pDest };
 			}
 			else
 			{
-				if (dataInfo.bFirstChunk)
-					m_pCompressedData = new uint8_t[dataInfo.packedTotalSize];
+				uint8_t* pBuffer = (uint8_t*) GfxBase::memStackAlloc(dataSize);
 
-				uint8_t* pDest = m_pCompressedData + dataInfo.chunkOffset;
-				*m_pDecoder >> GfxStream::ReadBytes{ dataInfo.chunkSize, pDest };
+				*m_pDecoder >> GfxStream::ReadBytes{ dataSize, pBuffer };
+				decompress(dataInfo.compression, pBuffer, dataSize, pDest);
 
-				if (dataInfo.bLastChunk)
-				{
-					decompress(dataInfo.compression, m_pCompressedData, dataInfo.packedTotalSize, m_vRects.data());
-					m_pBackend->setRects(m_vRects.data(), m_vRects.data() + m_vRects.size());
-
-					delete[] m_pCompressedData;
-					m_pCompressedData = nullptr;
-				}
+				GfxBase::memStackFree(dataSize);
 			}
+
+			if (dataInfo.bLastChunk)
+				m_pBackend->setRects(m_vRects.data(), m_vRects.data() + m_vRects.size());
 
 			m_pDecoder->align();
 			break;
@@ -369,11 +362,12 @@ namespace wg
 			*m_pDecoder >> dataInfo;
 
 			if (dataInfo.bFirstChunk)
-				m_vColors.resize(dataInfo.unpackedTotalSize / sizeof(HiColor));
+				m_vColors.resize(dataInfo.totalSize / sizeof(HiColor));
 
 			char* pDest = ((char*)m_vColors.data()) + dataInfo.chunkOffset;
+			int dataSize = header.size - GfxStream::DataInfoSize - dataInfo.bPadded;
 
-			*m_pDecoder >> GfxStream::ReadBytes{ dataInfo.chunkSize, pDest };
+			*m_pDecoder >> GfxStream::ReadBytes{ dataSize, pDest };
 
 			if (dataInfo.bLastChunk)
 				m_pBackend->setColors(m_vColors.data(), m_vColors.data() + m_vColors.size());
@@ -388,11 +382,12 @@ namespace wg
 			*m_pDecoder >> dataInfo;
 
 			if (dataInfo.bFirstChunk)
-				m_vTransforms.resize(dataInfo.unpackedTotalSize / sizeof(Transform));
+				m_vTransforms.resize(dataInfo.totalSize / sizeof(Transform));
 
 			char* pDest = ((char*)m_vTransforms.data()) + dataInfo.chunkOffset;
+			int dataSize = header.size - GfxStream::DataInfoSize - dataInfo.bPadded;
 
-			*m_pDecoder >> GfxStream::ReadBytes{ dataInfo.chunkSize, pDest };
+			*m_pDecoder >> GfxStream::ReadBytes{ dataSize, pDest };
 
 			if (dataInfo.bLastChunk)
 				m_pBackend->setTransforms(m_vTransforms.data(), m_vTransforms.data() + m_vTransforms.size() );
@@ -408,11 +403,12 @@ namespace wg
 			*m_pDecoder >> dataInfo;
 
 			if (dataInfo.bFirstChunk)
-				m_vCommands.resize(dataInfo.unpackedTotalSize / sizeof(uint16_t));
+				m_vCommands.resize(dataInfo.totalSize / sizeof(uint16_t));
 
 			char* pDest = ((char*)m_vCommands.data()) + dataInfo.chunkOffset;
+			int dataSize = header.size - GfxStream::DataInfoSize - dataInfo.bPadded;
 
-			*m_pDecoder >> GfxStream::ReadBytes{ dataInfo.chunkSize, pDest };
+			*m_pDecoder >> GfxStream::ReadBytes{ dataSize, pDest };
 
 			if (dataInfo.bLastChunk)
 				m_pBackend->processCommands(m_vCommands.data(), m_vCommands.data() + m_vCommands.size());
@@ -426,31 +422,28 @@ namespace wg
 			GfxStream::DataInfo dataInfo;
 			*m_pDecoder >> dataInfo;
 
+			if (dataInfo.bFirstChunk)
+				m_vUpdateRects.resize(dataInfo.totalSize / sizeof(RectSPX));
+
+			int dataSize = header.size - GfxStream::DataInfoSize - dataInfo.bPadded;
+			char* pDest = ((char*)m_vUpdateRects.data()) + dataInfo.chunkOffset;
+
 			if (dataInfo.compression == Compression::None)
 			{
-				char* pDest = ((char*)m_vUpdateRects.data()) + dataInfo.chunkOffset;
-				*m_pDecoder >> GfxStream::ReadBytes{ dataInfo.chunkSize, pDest };
-
-				if (dataInfo.bLastChunk)
-					m_pBackend->beginSession(m_baseCanvasRef, m_baseCanvasSurface, m_vUpdateRects.size(), m_vUpdateRects.data(), &m_sessionInfo);
+				*m_pDecoder >> GfxStream::ReadBytes{ dataSize, pDest };
 			}
 			else
 			{
-				if (dataInfo.bFirstChunk)
-					m_pCompressedData = new uint8_t[dataInfo.packedTotalSize];
+				uint8_t* pBuffer = (uint8_t*) GfxBase::memStackAlloc(dataSize);
 
-				uint8_t* pDest = m_pCompressedData + dataInfo.chunkOffset;
-				*m_pDecoder >> GfxStream::ReadBytes{ dataInfo.chunkSize, pDest };
+				*m_pDecoder >> GfxStream::ReadBytes{ dataSize, pBuffer };
+				decompress(dataInfo.compression, pBuffer, dataSize, pDest);
 
-				if (dataInfo.bLastChunk)
-				{
-					decompress(dataInfo.compression, m_pCompressedData, dataInfo.packedTotalSize, m_vUpdateRects.data());
-					m_pBackend->beginSession(m_baseCanvasRef, m_baseCanvasSurface, m_vUpdateRects.size(), m_vUpdateRects.data(), &m_sessionInfo);
-
-					delete[] m_pCompressedData;
-					m_pCompressedData = nullptr;
-				}
+				GfxBase::memStackFree(dataSize);
 			}
+
+			if (dataInfo.bLastChunk)
+				m_pBackend->beginSession(m_baseCanvasRef, m_baseCanvasSurface, m_vUpdateRects.size(), m_vUpdateRects.data(), &m_sessionInfo);
 
 			m_pDecoder->align();
 			break;
@@ -525,33 +518,51 @@ namespace wg
 			*m_pDecoder >> dataInfo;
 
 			if (dataInfo.bFirstChunk)
-				m_pSurfaceDataBuffer = new uint8_t[dataInfo.unpackedTotalSize];
+			{
+				m_pixelBuffer = m_pUpdatingSurface->allocPixelBuffer(m_updatingRect);
+				m_updateOffset.clear();
+			}
 
-			uint8_t* pDest = m_pSurfaceDataBuffer + dataInfo.chunkOffset;
+			int chunkSize = header.size - GfxStream::DataInfoSize;
+			auto pTempBuffer = (uint8_t*) GfxBase::memStackAlloc(chunkSize);
 
-			*m_pDecoder >> GfxStream::ReadBytes{ dataInfo.chunkSize, pDest };
+			*m_pDecoder >> GfxStream::ReadBytes{ chunkSize, pTempBuffer };
+
+			int pixelBits = m_pUpdatingSurface->pixelBits();
+			int bytesLeft = chunkSize - int(dataInfo.bPadded);
+			uint8_t* pSource = pTempBuffer;
+
+			while( bytesLeft > 0 )
+			{
+				int bytesForLine = (m_pixelBuffer.rect.w - m_updateOffset.x) * pixelBits/8;
+
+				int bytesToCopy = std::min(bytesLeft,bytesForLine);
+				uint8_t * pDest = m_pixelBuffer.pixels + m_updateOffset.y * m_pixelBuffer.pitch + m_updateOffset.x * pixelBits/8;
+
+				memcpy(pDest, pSource, bytesToCopy );
+
+				bytesLeft -= bytesToCopy;
+				pSource += bytesToCopy;
+
+				if( bytesToCopy == bytesForLine )
+				{
+					m_updateOffset.x = 0;
+					m_updateOffset.y++;
+				}
+				else
+				{
+					m_updateOffset.x += bytesToCopy*8/pixelBits;
+				}
+			}
+
+			GfxBase::memStackFree(chunkSize);
+
 
 			if (dataInfo.bLastChunk)
 			{
-				auto pixelBuffer = m_pUpdatingSurface->allocPixelBuffer(m_updatingRect);
-
-				int lineLength = pixelBuffer.rect.w * (m_pUpdatingSurface->pixelBits()/8);
-
-				uint8_t * pSource = m_pSurfaceDataBuffer;
-				uint8_t * pDest = pixelBuffer.pixels;
-
-				for( int y = 0 ; y < m_updatingRect.h ; y++ )
-				{
-					memcpy(pDest, pSource, lineLength );
-					pSource += lineLength;
-					pDest += pixelBuffer.pitch;
-				}
-
-				m_pUpdatingSurface->pushPixels(pixelBuffer);
-				m_pUpdatingSurface->freePixelBuffer(pixelBuffer);
-
-				delete [] m_pSurfaceDataBuffer;
-				m_pSurfaceDataBuffer = nullptr;
+				m_pUpdatingSurface->pushPixels(m_pixelBuffer);
+				m_pUpdatingSurface->freePixelBuffer(m_pixelBuffer);
+				m_updateOffset.clear();
 			}
 
 			m_pDecoder->align();
@@ -709,35 +720,31 @@ namespace wg
 			*m_pDecoder >> dataInfo;
 
 			if (dataInfo.bFirstChunk)
-				m_pEdgemapDataBuffer = new uint8_t[dataInfo.packedTotalSize];
+				m_pEdgemapSampleBuffer = new spx[dataInfo.totalSize / sizeof(spx)];
 
-			uint8_t* pDest = m_pEdgemapDataBuffer + dataInfo.chunkOffset;
+			int dataSize = header.size - GfxStream::DataInfoSize;		// includes possible padding.
+			spx* pDest = m_pEdgemapSampleBuffer + dataInfo.chunkOffset/ sizeof(spx);
 
-			*m_pDecoder >> GfxStream::ReadBytes{ dataInfo.chunkSize, pDest };
+			if( dataInfo.compression == Compression::None )
+			{
+				*m_pDecoder >> GfxStream::ReadBytes{ dataSize, pDest };
+			}
+			else
+			{
+				auto pBuffer = (spx *) GfxBase::memStackAlloc(dataSize);
+
+				*m_pDecoder >> GfxStream::ReadBytes{ dataSize, pBuffer };
+				decompress(dataInfo.compression, pBuffer, dataSize - dataInfo.bPadded, pDest);
+
+				GfxBase::memStackFree(dataSize);
+			}
 
 			if (dataInfo.bLastChunk)
 			{
-				if( dataInfo.compression == Compression::None )
-				{
-					m_pUpdatingEdgemap->importSamples(SampleOrigo::Top, (spx *) m_pEdgemapDataBuffer, m_edgemapUpdateEdgeBegin, m_edgemapUpdateEdgeEnd, m_edgemapUpdateSampleBegin, m_edgemapUpdateSampleEnd, 1, (m_edgemapUpdateEdgeEnd-m_edgemapUpdateEdgeBegin));
-				}
-				else
-				{
-					int nEdges = m_edgemapUpdateEdgeEnd - m_edgemapUpdateEdgeBegin;
-					int nSamples = m_edgemapUpdateSampleEnd - m_edgemapUpdateSampleBegin;
+				m_pUpdatingEdgemap->importSamples(SampleOrigo::Top, m_pEdgemapSampleBuffer, m_edgemapUpdateEdgeBegin, m_edgemapUpdateEdgeEnd, m_edgemapUpdateSampleBegin, m_edgemapUpdateSampleEnd, 1, (m_edgemapUpdateEdgeEnd-m_edgemapUpdateEdgeBegin));
 
-
-					auto pBuffer = (spx *) GfxBase::memStackAlloc(dataInfo.unpackedTotalSize);
-
-					decompress(dataInfo.compression, m_pEdgemapDataBuffer, dataInfo.packedTotalSize, pBuffer);
-
-					m_pUpdatingEdgemap->importSamples(SampleOrigo::Top, pBuffer, m_edgemapUpdateEdgeBegin, m_edgemapUpdateEdgeEnd, m_edgemapUpdateSampleBegin, m_edgemapUpdateSampleEnd, 1, (m_edgemapUpdateEdgeEnd-m_edgemapUpdateEdgeBegin));
-
-					GfxBase::memStackFree(dataInfo.unpackedTotalSize);
-				}
-
-				delete [] m_pEdgemapDataBuffer;
-				m_pEdgemapDataBuffer = nullptr;
+				delete [] m_pEdgemapSampleBuffer;
+				m_pEdgemapSampleBuffer = nullptr;
 				m_pUpdatingEdgemap = nullptr;
 			}
 
