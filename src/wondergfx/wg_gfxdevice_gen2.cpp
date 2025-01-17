@@ -337,7 +337,7 @@ void GfxDeviceGen2::setTint(const RectSPX& rect, Tintmap* pTintmap)
 
 void GfxDeviceGen2::clearTint()
 {
-	if (m_renderState.pTintmap || m_renderState.tintColor.isUndefined() )
+	if (m_renderState.pTintmap || !m_renderState.tintColor.isUndefined() )
 		m_stateChanges |= int(StateChange::TintColor);
 
 	m_renderState.pTintmap = nullptr;
