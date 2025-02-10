@@ -3,8 +3,11 @@ set(SOURCES
 
 	wg_metalbackend.h
 	wg_metalbackend.mm
+	wg_metalbackendshaders.mm
 	wg_metalgfxdevice.h
 	wg_metalgfxdevice.mm
+	wg_metalgfxdevicefactory.h
+	wg_metalgfxdevicefactory.mm
 	wg_metalshaders.mm
 	wg_metalsurface.h
 	wg_metalsurface.mm

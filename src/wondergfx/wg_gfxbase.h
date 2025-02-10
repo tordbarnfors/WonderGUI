@@ -28,6 +28,7 @@
 
 #include <wg_gearbase.h>
 #include <wg_gfxdevice.h>
+#include <wg_gfxdevicefactory.h>
 
 namespace wg
 {
@@ -36,6 +37,9 @@ namespace wg
 
 	class SurfaceFactory;
 	typedef	StrongPtr<SurfaceFactory>	SurfaceFactory_p;
+
+	class GfxDeviceFactory;
+	typedef	StrongPtr<GfxDeviceFactory>	GfxDeviceFactory_p;
 
 
 	class GfxContext : public Object
@@ -46,6 +50,7 @@ namespace wg
 		
 		SurfaceFactory_p	pDefaultSurfaceFactory;
 		EdgemapFactory_p	pDefaultEdgemapFactory;
+		GfxDeviceFactory_p	pDefaultGfxDeviceFactory;
 		GfxDevice_p			pDefaultGfxDevice;
 		BitmapCache_p		pDefaultBitmapCache;
 
@@ -82,6 +87,9 @@ namespace wg
 
 		static void					setDefaultEdgemapFactory(EdgemapFactory* pFactory);
 		static inline EdgemapFactory_p	defaultEdgemapFactory() { return s_pGfxContext->pDefaultEdgemapFactory; };
+
+		static void					setDefaultGfxDeviceFactory(GfxDeviceFactory* pFactory);
+		static inline GfxDeviceFactory_p	defaultGfxDeviceFactory() { return s_pGfxContext->pDefaultGfxDeviceFactory; };
 
 		static void					setDefaultGfxDevice( GfxDevice * pDevice );
 		static inline GfxDevice_p	defaultGfxDevice() { return s_pGfxContext->pDefaultGfxDevice; };

@@ -98,8 +98,9 @@ namespace wg
 		enum class VertexInputIndex
 		{
 			VertexBuffer = 0,
-			ExtrasBuffer = 1,
-			Uniform = 2
+			ColorBuffer = 1,
+			ExtrasBuffer = 2,
+			Uniform = 3
 		};
 
 		enum class FragmentInputIndex
@@ -133,30 +134,8 @@ namespace wg
 			BGRA8_sRGB,
 			Alpha_8
 		};
-/*
-		enum Command
-		{
-			None,
-			SetCanvas,
-//            SetClip,
-			SetBlendMode,
-			SetMorphFactor,
-			SetTintColor,
-			SetTintGradient,
-			ClearTintGradient,
-			SetFixedBlendColor,
-			SetBlurMatrices,
-			SetBlitSource,
-			Fill,
-			FillSubPixel,                // Includes start/direction lines.
-			Plot,
-			LineFromTo,
-			Blit,
-			Blur,
-			Segments,
 
-		};
-*/
+
 		id<MTLRenderCommandEncoder> _setCanvas( MetalSurface * pCanvas, int width, int height, CanvasInit initOperation, Color clearColor );
 		void            _setBlendMode( id<MTLRenderCommandEncoder>, BlendMode mode);
 		void            _setMorphFactor( id<MTLRenderCommandEncoder>, float morphFactor);
@@ -236,54 +215,67 @@ namespace wg
 			simd_float2		offset[9];
 		};
 
-		struct Vertex
+		struct VertexMTL
 		{
-			CoordI          coord;
-			int             extrasOfs;                        // Offset into extras buffer.
-			simd_float2   uv;
+			CoordI	coord;
+			simd_float2   uv;						// Actually contains blitSourceSize in most cases.
+			int		colorsOfs;						// Offset into colorBuffer for color incl flat tint.
+			int		extrasOfs;						// Offset into extrasBuffer for extra data needed by shader.
+			CoordF	tintmapOfs;
+			CoordF	colorstripOfs;					// For Edgemaps only.
+
+
 		};
+
+		struct ColorMTL
+		{
+			float	r, g, b, a;
+		};
+
+		enum CommandMTL
+		{
+			SetCanvas,
+			StateChange,
+			Lines,
+			StraightFill,
+			SubpixelFill,
+			Blit,
+			Blur,
+			Edgemap
+
+		};
+
 
 		// Buffers
 
 		Uniform         m_uniform;
 		BlurUniform		m_blurUniform;
 
-		int             m_commandBufferSize = 4096;
-		int *           m_pCommandBuffer = nullptr;         // Queue of commands to execute when flushing buffer
-		int             m_commandOfs = 0;                   // Write offset in m_commandBuffer
+		int *           m_pCommandQueue = nullptr;         // Queue of commands to execute when flushing buffer
+		int             m_commandQueueSize = 0;            // Write offset in m_commandBuffer
 
 		id<MTLBuffer>   m_vertexBufferId = nil;
-		int             m_vertexBufferSize = 4096;
-		Vertex *        m_pVertexBuffer = nullptr;          // Pointer to content of vertex buffer
-		int             m_vertexFlushPoint = 0;
-		int             m_vertexOfs = 0;                    // Write offset in m_pVertexData
+		VertexMTL *     m_pVertexBuffer = nullptr;          // Pointer to content of vertex buffer
+		int             m_nVertices = 0;                    // Write offset in m_pVertexData
+
+		id<MTLBuffer>   m_colorBufferId = nil;
+		ColorMTL *      m_pColorBuffer = nullptr;          // Pointer to content of vertex buffer
+		int             m_nColors = 0;                    // Write offset in m_pVertexData
 
 		id<MTLBuffer>   m_extrasBufferId = nil;
-		int             m_extrasBufferSize = 4096;
 		float *         m_pExtrasBuffer = nullptr;          // Pointer to content of extras buffer
-		int             m_extrasOfs = 0;                    // Write offset in m_pExtrasData
-		int             m_neededExtras = 0;                 // Set to non-zero to potentially force a bigger jump in extrasBufferSize.
+		int             m_extrasBufferSize = 0;                    // Write offset in m_pExtrasData
 
-		id<MTLBuffer>   m_clipListBufferId = nil;
-		int             m_clipListBufferSize = 256;
-		RectI *         m_pClipListBuffer = nullptr;
-		int             m_clipWriteOfs = 0;                 // Write offset in m_clipListBuffer
-		int             m_clipCurrOfs = -1;                 // Offset to where current clipList is written to in clipListBuffer, or -1 if not written.
 
-		id<MTLBuffer>   m_segEdgeBufferId = nil;
-		int             m_segEdgeBufferSize = 16384;
-		float *         m_pSegEdgeBuffer = nullptr;
-		int             m_segEdgeFlushPoint = 0;
-		int             m_segEdgeOfs = 0;
-		int             m_neededSegEdge = 0;
+		int			m_tintColorOfs = -1;		// Offset in m_pColorBuffer for tintColor if flat tint active.
 
-		const int       c_segPalEntrySize = 2*4*4*c_maxSegments;  // Bytes per palette (4 pixels of 4 uint16_t per segment).
+		bool		m_bTintmap = false;
+		RectI		m_tintmapRect;				// Measured in pixels.
+		int			m_tintmapBeginX	= -1;		// Offset in m_pColorBuffer
+		int			m_tintmapEndX	= -1;		// " -
+		int			m_tintmapBeginY = -1;
+		int			m_tintmapEndY	= -1;
 
-		id<MTLTexture>  m_segPalTextureId = nil;
-		id<MTLBuffer>   m_segPalBufferId = nil;
-		int             m_segPalBufferSize = 64;            // Number of complete palettes, not number of uint16_t.
-		uint16_t *      m_pSegPalBuffer = nullptr;
-		int             m_segPalOfs = 0;
 
 
 		// Active state data

@@ -309,37 +309,6 @@ namespace wg
 
 		[desc release];
 
-		// Initialize our buffers
-
-		m_pCommandBuffer = new int[m_commandBufferSize];
-
-		m_vertexBufferId = [s_metalDevice newBufferWithLength:m_vertexBufferSize*sizeof(Vertex) options:MTLResourceStorageModeShared];
-		m_pVertexBuffer = (Vertex *)[m_vertexBufferId contents];
-
-		m_extrasBufferId = [s_metalDevice newBufferWithLength:m_extrasBufferSize*sizeof(float) options:MTLResourceStorageModeShared];
-		m_pExtrasBuffer = (float *)[m_extrasBufferId contents];
-
-		m_clipListBufferId = [s_metalDevice newBufferWithLength:m_clipListBufferSize*sizeof(RectI) options:MTLResourceStorageModeShared];
-		m_pClipListBuffer = (RectI *)[m_clipListBufferId contents];
-
-		m_segEdgeBufferId = [s_metalDevice newBufferWithLength:m_segEdgeBufferSize*sizeof(float) options:MTLResourceStorageModeManaged];
-		m_pSegEdgeBuffer = (float *)[m_segEdgeBufferId contents];
-
-		m_segPalBufferId = [s_metalDevice newBufferWithLength:m_segPalBufferSize*c_segPalEntrySize options:MTLResourceStorageModeShared];
-		m_pSegPalBuffer = (uint16_t *)[m_segPalBufferId contents];
-
-		// Create the private segPal texture
-
-		MTLTextureDescriptor *textureDescriptor = [[MTLTextureDescriptor alloc] init];
-
-		textureDescriptor.pixelFormat   = MTLPixelFormatRGBA16Unorm;
-		textureDescriptor.width         = c_maxSegments*2;
-		textureDescriptor.height        = m_segPalBufferSize*2;   // Two pixels height for each palette entry.
-		textureDescriptor.storageMode   = MTLStorageModePrivate;
-
-		m_segPalTextureId = [MetalBackend::s_metalDevice newTextureWithDescriptor:textureDescriptor];
-		[textureDescriptor release];
-
 		// Initialize our shader environment
 
 		m_uniform.flatTint = { 1.f, 1.f, 1.f, 1.f };
@@ -361,20 +330,6 @@ namespace wg
 		[m_extrasBufferId release];
 		m_extrasBufferId = nil;
 
-		[m_clipListBufferId release];
-		m_clipListBufferId = nil;
-
-		[m_segEdgeBufferId release];
-		m_segEdgeBufferId = nil;
-
-		[m_segPalTextureId release];
-		m_segPalTextureId = nil;
-
-		[m_segPalBufferId release];
-		m_segPalBufferId = nil;
-
-
-		delete [] m_pCommandBuffer;
 
 		for( int mipmapped = 0 ; mipmapped < 2 ; mipmapped++ )
 		{
@@ -543,6 +498,13 @@ namespace wg
 		return TYPEINFO;
 	}
 
+	//____ maxEdges() _____________________________________________
+
+	int MetalBackend::maxEdges() const
+	{
+		return c_maxSegments - 1;
+	}
+
 	//____ surfaceType() _______________________________________________________
 
 	const TypeInfo& MetalBackend::surfaceType( void ) const
@@ -619,24 +581,106 @@ namespace wg
 
 	}
 
-	void MetalBackend::beginSession( CanvasRef canvasRef, Surface * pCanvas, int nUpdateRects, const RectSPX * pUpdateRects, const SessionInfo * pInfo )
-	{
+	//____ beginSession() ________________________________________________________
 
+	void MetalBackend::beginSession( CanvasRef canvasRef, Surface * pCanvasSurface, int nUpdateRects, const RectSPX * pUpdateRects, const SessionInfo * pInfo )
+	{
+		if( !pCanvasSurface && canvasRef != CanvasRef::Default )
+			return;
+
+		// Reserve buffer for coordinates
+
+		int nVertices = pInfo->nRects * 6 + pInfo->nLineCoords/2 * 6;
+
+		m_vertexBufferId = [s_metalDevice newBufferWithLength:nVertices*sizeof(VertexMTL) options:MTLResourceStorageModeShared];
+		m_pVertexBuffer = (VertexMTL *)[m_vertexBufferId contents];
+		m_nVertices = 0;
+
+		// Reserve buffer for colors
+
+		int nColors = pInfo->nColors+1;
+
+		m_colorBufferId = [s_metalDevice newBufferWithLength:nColors*sizeof(ColorMTL) options:MTLResourceStorageModeShared];
+		m_pColorBuffer = (ColorMTL *)[m_colorBufferId contents];
+
+		// Always present white color used as default tint for blits.
+
+		m_pColorBuffer[0].r = 1.f;
+		m_pColorBuffer[0].g = 1.f;
+		m_pColorBuffer[0].b = 1.f;
+		m_pColorBuffer[0].a = 1.f;
+
+		m_nColors = 1;
+
+		// Reserve buffer for extras
+
+		int nExtrasFloats =
+		pInfo->nBlit * 8
+			+ pInfo->nBlur * 8
+			+ pInfo->nLineCoords/2 * 4
+			+ pInfo->nRects * 4;			// This is for possible subpixel fills. We have no way of knowing exactly how much is needed.
+
+		m_extrasBufferId = [s_metalDevice newBufferWithLength:nExtrasFloats*sizeof(float) options:MTLResourceStorageModeShared];
+		m_pExtrasBuffer = (float *)[m_extrasBufferId contents];
+		m_extrasBufferSize = 0;
+
+		// Reserve buffer for commands
+
+		m_pCommandQueue = new int[
+			pInfo->nStateChanges * (15+28)	//TODO: Check exactly size needed
+			+ pInfo->nFill * 2
+			+ pInfo->nBlit * 2
+			+ pInfo->nBlur * 2
+			+ pInfo->nLines * 3 + pInfo->nLineClipRects * 4
+			+ pInfo->nEdgemapDraws * 3
+			+ pInfo->nSetCanvas];
+
+		m_commandQueueSize = 0;
+
+		if( pCanvasSurface )
+			setCanvas(pCanvasSurface);
+		else
+			setCanvas( canvasRef );
 	}
+
+	//____ endSession() __________________________________________________________
 
 	void MetalBackend::endSession()
 	{
+		[m_vertexBufferId release];
+		m_vertexBufferId = nil;
 
+		[m_colorBufferId release];
+		m_colorBufferId = nil;
+
+		[m_extrasBufferId release];
+		m_extrasBufferId = nil;
+
+		delete [] m_pCommandQueue;
+		m_pCommandQueue = nullptr;
 	}
 
-	void MetalBackend::setCanvas(Surface* pSurface)
-	{
+	//____ setCanvas() ___________________________________________________________
 
+	void MetalBackend::setCanvas(Surface* _pSurface)
+	{
+		MetalSurface * pSurface = dynamic_cast<MetalSurface*>(_pSurface);
+		if( !pSurface )
+		{
+			//TODO: Error handling.
+
+			return;
+		}
+
+		_setCanvas(pSurface, pSurface->pixelWidth(), pSurface->pixelHeight(), CanvasInit::Keep, Color::Black );
 	}
 
 	void MetalBackend::setCanvas(CanvasRef ref)
 	{
+		if( ref != CanvasRef::Default )
+			return;								// ERROR: Only CanvasRef::Default supported yet.
 
+		_setCanvas(nullptr, m_defaultCanvas.size.w/64, m_defaultCanvas.size.h/64, CanvasInit::Keep, Color::Black );
 	}
 
 	//____ setObjects() ________________________________________________________
@@ -682,6 +726,11 @@ namespace wg
 		const RectSPX* 	pRects = m_pRectsPtr;
 		const HiColor* 	pColors = m_pColorsPtr;
 		Object* const *	pObjects = m_pObjectsPtr;
+
+		VertexMTL *	pVertexMTL	= m_pVertexBuffer + m_nVertices;
+		ColorMTL*	pColorMTL	= m_pColorBuffer + m_nColors;
+		float*		pExtrasMTL	= m_pExtrasBuffer + m_extrasBufferSize;
+		int*		pCommandMTL	= m_pCommandQueue + m_commandQueueSize;
 
 
 		auto p = pBeg;
@@ -768,7 +817,189 @@ namespace wg
 
 				const HiColor& col = *pColors++;
 
-				pRects += nRects;
+				bool	bStraightFill = true;
+				int		nRectsWritten = 0;
+				int		extrasOfs = 0;
+
+				// Setup Tintmap
+
+
+
+				// Add rects to vertex buffer
+
+				for (int i = 0; i < nRects; i++)
+				{
+
+					int	dx1 = pRects->x;
+					int	dy1 = pRects->y;
+					int dx2 = dx1 + pRects->w;
+					int dy2 = dy1 + pRects->h;
+					pRects++;
+
+
+					if (((dx1 | dy1 | dx2 | dy2) & 63) == 0)
+					{
+						// Straight fill
+
+						if (!bStraightFill)
+						{
+							if( nRectsWritten > 0 )
+							{
+								*pCommandMTL++ = (int)CommandMTL::SubpixelFill;
+								*pCommandMTL++ = nRectsWritten * 6;
+								nRectsWritten = 0;
+								extrasOfs = 0;
+							}
+							bStraightFill = true;
+						}
+					}
+					else
+					{
+						// Subpixel fill
+
+						if(bStraightFill)
+						{
+							if (nRectsWritten > 0)
+							{
+								*pCommandMTL++ = (int)CommandMTL::StraightFill;
+								*pCommandMTL++ = nRectsWritten * 6;
+								nRectsWritten = 0;
+							}
+							bStraightFill = false;
+						}
+
+						extrasOfs = int(pExtrasMTL - m_pExtrasBuffer)/4;
+
+						// Provide rectangle center and radius as extras
+
+						RectSPX rect(dx1, dy1, dx2 - dx1, dy2 - dy1);
+
+						SizeF    radius(rect.w / (2.f * 64), rect.h / (2.f * 64));
+						CoordF    center((rect.x / 64.f) + radius.w, (rect.y / 64.f) + radius.h);
+
+						* pExtrasMTL++ = center.x;
+						* pExtrasMTL++ = center.y;
+						* pExtrasMTL++ = radius.w;
+						* pExtrasMTL++ = radius.h;
+
+						dx2 += 63;
+						dy2 += 63;
+					}
+
+					dx1 >>= 6;
+					dy1 >>= 6;
+					dx2 >>= 6;
+					dy2 >>= 6;
+
+
+					float tintmapBeginX, tintmapBeginY, tintmapEndX, tintmapEndY;
+
+					if (m_bTintmap)
+					{
+						if (m_tintmapBeginX == 0)
+						{
+							tintmapBeginX = 0.f;
+							tintmapEndX = 0.f;
+						}
+						else
+						{
+							tintmapBeginX = m_tintmapBeginX + (dx1 - m_tintmapRect.x) + 0.f;
+							tintmapEndX = tintmapBeginX + (dx2 - dx1) + 0.f;
+						}
+
+						if (m_tintmapBeginY == 0)
+						{
+							tintmapBeginY = 0.f;
+							tintmapEndY = 0.f;
+						}
+						else
+						{
+							tintmapBeginY = m_tintmapBeginY + (dy1 - m_tintmapRect.y) + 0.f;
+							tintmapEndY = tintmapBeginY + (dy2 - dy1) + 0.f;
+						}
+
+					}
+					else
+					{
+						tintmapBeginX = 0.f;
+						tintmapBeginY = 0.f;
+						tintmapEndX = 0.f;
+						tintmapEndY = 0.f;
+					}
+
+					int colOfs = int(pColorMTL - m_pColorBuffer);
+
+					pVertexMTL->coord.x = dx1;
+					pVertexMTL->coord.y = dy1;
+					pVertexMTL->colorsOfs = colOfs;
+					pVertexMTL->extrasOfs = extrasOfs;
+					pVertexMTL->tintmapOfs = { tintmapBeginX,tintmapBeginY };
+					pVertexMTL++;
+
+					pVertexMTL->coord.x = dx2;
+					pVertexMTL->coord.y = dy1;
+					pVertexMTL->colorsOfs = colOfs;
+					pVertexMTL->extrasOfs = extrasOfs;
+					pVertexMTL->tintmapOfs = { tintmapEndX,tintmapBeginY };
+					pVertexMTL++;
+
+					pVertexMTL->coord.x = dx2;
+					pVertexMTL->coord.y = dy2;
+					pVertexMTL->colorsOfs = colOfs;
+					pVertexMTL->extrasOfs = extrasOfs;
+					pVertexMTL->tintmapOfs = { tintmapEndX,tintmapEndY };
+					pVertexMTL++;
+
+					pVertexMTL->coord.x = dx1;
+					pVertexMTL->coord.y = dy1;
+					pVertexMTL->colorsOfs = colOfs;
+					pVertexMTL->extrasOfs = extrasOfs;
+					pVertexMTL->tintmapOfs = { tintmapBeginX,tintmapBeginY };
+					pVertexMTL++;
+
+					pVertexMTL->coord.x = dx2;
+					pVertexMTL->coord.y = dy2;
+					pVertexMTL->colorsOfs = colOfs;
+					pVertexMTL->extrasOfs = extrasOfs;
+					pVertexMTL->tintmapOfs = { tintmapEndX,tintmapEndY };
+					pVertexMTL++;
+
+					pVertexMTL->coord.x = dx1;
+					pVertexMTL->coord.y = dy2;
+					pVertexMTL->colorsOfs = colOfs;
+					pVertexMTL->extrasOfs = extrasOfs;
+					pVertexMTL->tintmapOfs = { tintmapBeginX,tintmapEndY };
+					pVertexMTL++;
+
+					nRectsWritten++;
+				}
+
+				// Add colors to buffer
+
+				if (m_tintColorOfs >= 0)
+				{
+					ColorMTL& tint = m_pColorBuffer[m_tintColorOfs];
+
+					pColorMTL->r = (col.r / 4096.f) * tint.r;
+					pColorMTL->g = (col.g / 4096.f) * tint.g;
+					pColorMTL->b = (col.b / 4096.f) * tint.b;
+					pColorMTL->a = (col.a / 4096.f) * tint.a;
+
+				}
+				else
+				{
+					pColorMTL->r = col.r / 4096.f;
+					pColorMTL->g = col.g / 4096.f;
+					pColorMTL->b = col.b / 4096.f;
+					pColorMTL->a = col.a / 4096.f;
+				}
+
+				pColorMTL++;
+
+				// Store command
+
+				* pCommandMTL++ = (int) bStraightFill ? CommandMTL::StraightFill : CommandMTL::SubpixelFill;
+				* pCommandMTL++ = nRectsWritten * 6;
 
 				break;
 			}
@@ -838,7 +1069,391 @@ namespace wg
 		m_pRectsPtr = pRects;
 		m_pColorsPtr = pColors;
 		m_pObjectsPtr = pObjects;
+
+		m_nVertices			= int(pVertexMTL - m_pVertexBuffer);
+		m_nColors			= int(pColorMTL	- m_pColorBuffer);
+		m_extrasBufferSize	= int(pExtrasMTL - m_pExtrasBuffer);
+		m_commandQueueSize	= int(pCommandMTL- m_pCommandQueue);
+
+		
 	}
+
+id<MTLRenderCommandEncoder> MetalBackend::_setCanvas( MetalSurface * pCanvas, int width, int height, CanvasInit initOperation, Color clearColor )
+{
+	id<MTLRenderCommandEncoder> renderEncoder;
+
+	PixelFormat pixelFormat;
+
+	if (pCanvas)
+	{
+		MTLRenderPassDescriptor* pDescriptor = [MTLRenderPassDescriptor new];
+
+		pDescriptor.colorAttachments[0].texture = pCanvas->getTexture();
+		pDescriptor.colorAttachments[0].storeAction = MTLStoreActionStore;
+
+		switch(initOperation)
+		{
+			case CanvasInit::Keep:
+				pDescriptor.colorAttachments[0].loadAction = MTLLoadActionLoad;
+				break;
+
+			case CanvasInit::Clear:
+			{
+				pDescriptor.colorAttachments[0].loadAction = MTLLoadActionClear;
+				float* pConv = GfxBase::defaultToSRGB() ? m_sRGBtoLinearTable : m_linearToLinearTable;
+				pDescriptor.colorAttachments[0].clearColor = MTLClearColorMake(pConv[clearColor.r]/4096.f, pConv[clearColor.g]/4096.f, pConv[clearColor.b]/4096.f, clearColor.a/255.f);
+				break;
+			}
+			case CanvasInit::Discard:
+				pDescriptor.colorAttachments[0].loadAction = MTLLoadActionDontCare;
+				break;
+		}
+
+		renderEncoder = [m_metalCommandBuffer renderCommandEncoderWithDescriptor:pDescriptor];
+		renderEncoder.label = @"GfxDeviceMetal Render to Surface Pass";
+		[pDescriptor release];
+
+		pixelFormat = pCanvas->pixelFormat();
+	}
+	else
+	{
+
+		renderEncoder = [m_metalCommandBuffer renderCommandEncoderWithDescriptor:m_defaultCanvasRenderPassDesc];
+		renderEncoder.label = @"GfxDeviceMetal Render Pass";
+
+		pixelFormat = m_defaultCanvasPixelFormat;
+	}
+
+	[renderEncoder setViewport:(MTLViewport){0.0, 0.0, (double) width, (double) height, 0.0, 1.0 }];
+	[renderEncoder setBlendColorRed:1.f green:1.f blue:1.f alpha:m_activeMorphFactor];
+
+
+	// Updating canvas info for our shaders
+
+	m_uniform.canvasDimX = (GLfloat) width;
+	m_uniform.canvasDimY = (GLfloat) height;
+	m_uniform.canvasYOfs = height;
+	m_uniform.canvasYMul = -1;
+
+	[renderEncoder setVertexBytes:&m_uniform length:sizeof(Uniform) atIndex: (unsigned) VertexInputIndex::Uniform];
+
+	// Set vertex and extras buffer
+
+	[renderEncoder setVertexBuffer:m_vertexBufferId offset:0 atIndex:(unsigned) VertexInputIndex::VertexBuffer];
+	[renderEncoder setVertexBuffer:m_colorBufferId offset:0 atIndex:(unsigned) VertexInputIndex::ColorBuffer];
+	[renderEncoder setVertexBuffer:m_extrasBufferId offset:0 atIndex:(unsigned) VertexInputIndex::ExtrasBuffer];
+
+	// Set buffers/textures for segments fragment shader
+
+//	[renderEncoder setFragmentTexture:m_segPalTextureId atIndex: (unsigned) TextureIndex::SegPal];
+//	[renderEncoder setFragmentBuffer:m_segEdgeBufferId offset:0 atIndex:(unsigned) FragmentInputIndex::ExtrasBuffer];
+
+//	[renderEncoder setFragmentBytes:&m_blurUniform length:sizeof(BlurUniform) atIndex: (unsigned) FragmentInputIndex::BlurUniform];
+
+
+	//
+
+	m_pActiveCanvas = pCanvas;
+	m_activeCanvasSize = {width,height};
+
+	switch(pixelFormat)
+	{
+		case PixelFormat::BGRX_8_linear:
+			m_activeCanvasFormat = DestFormat::BGRX8_linear;
+			break;
+
+		case PixelFormat::BGRA_8_linear:
+			m_activeCanvasFormat = DestFormat::BGRA8_linear;
+			break;
+
+		case PixelFormat::BGRA_8_sRGB:
+			m_activeCanvasFormat = DestFormat::BGRA8_sRGB;
+			break;
+
+		case PixelFormat::BGRX_8_sRGB:
+			m_activeCanvasFormat = DestFormat::BGRX8_sRGB;
+			break;
+
+		case PixelFormat::Alpha_8:
+			m_activeCanvasFormat = DestFormat::Alpha_8;
+			break;
+
+		default:
+			GfxBase::throwError(ErrorLevel::Error, ErrorCode::Internal, "Canvas format is neither BGRA_8_linear, BGRA_8_sRGB or A_8", this, &TYPEINFO, __func__, __FILE__, __LINE__ );
+			break;
+	}
+
+
+	return renderEncoder;
+}
+
+
+//____ _initTables() ___________________________________________________________
+
+void MetalBackend::_initTables()
+{
+	// Init lineThicknessTable
+
+	for (int i = 0; i < 17; i++)
+	{
+		double b = i / 16.0;
+		m_lineThicknessTable[i] = (float)Util::squareRoot(1.0 + b * b);
+	}
+
+	// Init sRGBtoLinearTable
+
+	float max = powf(255, 2.2f);
+
+	for (int i = 0; i < 256; i++)
+	{
+		m_sRGBtoLinearTable[i] = powf(float(i), 2.2f)/max;
+		m_linearToLinearTable[i] = i / 255.f;
+	}
+}
+
+//____ _scaleThickness() ___________________________________________________
+
+float MetalBackend::_scaleThickness(float thickness, float slope)
+{
+	slope = std::abs(slope);
+
+	float scale = m_lineThicknessTable[(int)(slope * 16)];
+
+	if (slope < 1.f)
+	{
+		float scale2 = m_lineThicknessTable[(int)(slope * 16) + 1];
+		scale += (scale2 - scale)*((slope * 16) - ((int)(slope * 16)));
+	}
+
+	return thickness * scale;
+}
+
+//____ _compileRenderPipeline() _______________________________________________
+
+id<MTLRenderPipelineState> MetalBackend::_compileRenderPipeline( NSString* label, NSString* vertexShader,
+							 NSString* fragmentShader, BlendMode blendMode, PixelFormat destFormat )
+{
+	NSError *error = nil;
+	MTLRenderPipelineDescriptor *descriptor = [[MTLRenderPipelineDescriptor alloc] init];
+
+	descriptor.label = label;
+	descriptor.vertexFunction = [m_library newFunctionWithName:vertexShader];
+	descriptor.fragmentFunction = [m_library newFunctionWithName:fragmentShader];
+
+	// Set pixelFormat
+
+	switch(destFormat)
+	{
+		case PixelFormat::BGRA_8_linear:
+		case PixelFormat::BGRX_8_linear:
+			descriptor.colorAttachments[0].pixelFormat = MTLPixelFormatBGRA8Unorm;
+			break;
+
+		case PixelFormat::BGRA_8_sRGB:
+		case PixelFormat::BGRX_8_sRGB:
+			descriptor.colorAttachments[0].pixelFormat = MTLPixelFormatBGRA8Unorm_sRGB;
+			break;
+
+		case PixelFormat::Alpha_8:
+			descriptor.colorAttachments[0].pixelFormat = MTLPixelFormatR8Unorm;
+			break;
+
+		default:
+			assert(false);
+	}
+
+	bool bNoAlpha = ( destFormat == PixelFormat::BGRX_8_linear || destFormat == PixelFormat::BGRX_8_sRGB );
+
+
+	bool bAlphaOnly = (destFormat == PixelFormat::Alpha_8);
+
+	switch( blendMode )
+	{
+		case BlendMode::Replace:
+
+			if( bNoAlpha )
+			{
+				descriptor.colorAttachments[0].blendingEnabled = YES;
+				descriptor.colorAttachments[0].rgbBlendOperation = MTLBlendOperationAdd;
+				descriptor.colorAttachments[0].sourceRGBBlendFactor = MTLBlendFactorOne;
+				descriptor.colorAttachments[0].destinationRGBBlendFactor = MTLBlendFactorZero;
+			}
+			else
+				descriptor.colorAttachments[0].blendingEnabled = NO;
+			break;
+
+		case BlendMode::Undefined:
+		case BlendMode::Blend:
+			descriptor.colorAttachments[0].blendingEnabled = YES;
+			descriptor.colorAttachments[0].rgbBlendOperation = MTLBlendOperationAdd;
+			descriptor.colorAttachments[0].alphaBlendOperation = MTLBlendOperationAdd;
+			descriptor.colorAttachments[0].sourceAlphaBlendFactor = MTLBlendFactorOne;
+			descriptor.colorAttachments[0].destinationAlphaBlendFactor = MTLBlendFactorOneMinusSourceAlpha;
+
+			if(bAlphaOnly)
+			{
+				descriptor.colorAttachments[0].sourceRGBBlendFactor = MTLBlendFactorOne;
+				descriptor.colorAttachments[0].destinationRGBBlendFactor = MTLBlendFactorOneMinusSourceColor;
+			}
+			else
+			{
+				descriptor.colorAttachments[0].sourceRGBBlendFactor = MTLBlendFactorSourceAlpha;
+				descriptor.colorAttachments[0].destinationRGBBlendFactor = MTLBlendFactorOneMinusSourceAlpha;
+			}
+
+			break;
+
+		case BlendMode::Morph:
+			descriptor.colorAttachments[0].blendingEnabled = YES;
+			descriptor.colorAttachments[0].rgbBlendOperation = MTLBlendOperationAdd;
+			descriptor.colorAttachments[0].alphaBlendOperation = MTLBlendOperationAdd;
+			descriptor.colorAttachments[0].sourceRGBBlendFactor = MTLBlendFactorBlendAlpha;
+			descriptor.colorAttachments[0].destinationRGBBlendFactor = MTLBlendFactorOneMinusBlendAlpha;
+			descriptor.colorAttachments[0].sourceAlphaBlendFactor = MTLBlendFactorBlendAlpha;
+			descriptor.colorAttachments[0].destinationAlphaBlendFactor = MTLBlendFactorOneMinusBlendAlpha;
+			break;
+
+		case BlendMode::Add:
+
+			descriptor.colorAttachments[0].blendingEnabled = YES;
+			descriptor.colorAttachments[0].rgbBlendOperation = MTLBlendOperationAdd;
+			descriptor.colorAttachments[0].alphaBlendOperation = MTLBlendOperationAdd;
+			descriptor.colorAttachments[0].sourceAlphaBlendFactor = MTLBlendFactorZero;
+			descriptor.colorAttachments[0].destinationAlphaBlendFactor = MTLBlendFactorOne;
+
+			if( bAlphaOnly )
+			{
+				descriptor.colorAttachments[0].sourceRGBBlendFactor = MTLBlendFactorOne;
+				descriptor.colorAttachments[0].destinationRGBBlendFactor = MTLBlendFactorOne;
+			}
+			else
+			{
+				descriptor.colorAttachments[0].sourceRGBBlendFactor = MTLBlendFactorSourceAlpha;
+				descriptor.colorAttachments[0].destinationRGBBlendFactor = MTLBlendFactorOne;
+			}
+			break;
+
+		case BlendMode::Subtract:
+
+			descriptor.colorAttachments[0].blendingEnabled = YES;
+			descriptor.colorAttachments[0].rgbBlendOperation = MTLBlendOperationReverseSubtract;
+			descriptor.colorAttachments[0].alphaBlendOperation = MTLBlendOperationReverseSubtract;
+			descriptor.colorAttachments[0].sourceAlphaBlendFactor = MTLBlendFactorZero;
+			descriptor.colorAttachments[0].destinationAlphaBlendFactor = MTLBlendFactorOne;
+
+			if( bAlphaOnly )
+			{
+				descriptor.colorAttachments[0].sourceRGBBlendFactor = MTLBlendFactorOne;
+				descriptor.colorAttachments[0].destinationRGBBlendFactor = MTLBlendFactorOne;
+			}
+			else
+			{
+				descriptor.colorAttachments[0].sourceRGBBlendFactor = MTLBlendFactorSourceAlpha;
+				descriptor.colorAttachments[0].destinationRGBBlendFactor = MTLBlendFactorOne;
+			}
+			break;
+
+		case BlendMode::Multiply:
+
+			descriptor.colorAttachments[0].blendingEnabled = YES;
+			descriptor.colorAttachments[0].rgbBlendOperation = MTLBlendOperationAdd;
+			descriptor.colorAttachments[0].alphaBlendOperation = MTLBlendOperationAdd;
+			descriptor.colorAttachments[0].sourceRGBBlendFactor = MTLBlendFactorDestinationColor;
+			descriptor.colorAttachments[0].destinationRGBBlendFactor = MTLBlendFactorZero;
+			descriptor.colorAttachments[0].sourceAlphaBlendFactor = MTLBlendFactorZero;
+			descriptor.colorAttachments[0].destinationAlphaBlendFactor = MTLBlendFactorOne;
+
+			break;
+
+		case BlendMode::Invert:
+
+			descriptor.colorAttachments[0].blendingEnabled = YES;
+			descriptor.colorAttachments[0].rgbBlendOperation = MTLBlendOperationAdd;
+			descriptor.colorAttachments[0].alphaBlendOperation = MTLBlendOperationAdd;
+			descriptor.colorAttachments[0].sourceRGBBlendFactor = MTLBlendFactorOneMinusDestinationColor;
+			descriptor.colorAttachments[0].destinationRGBBlendFactor = MTLBlendFactorOneMinusSourceColor;
+			descriptor.colorAttachments[0].sourceAlphaBlendFactor = MTLBlendFactorZero;
+			descriptor.colorAttachments[0].destinationAlphaBlendFactor = MTLBlendFactorOne;
+
+			break;
+
+		case BlendMode::Min:
+
+			descriptor.colorAttachments[0].blendingEnabled = YES;
+			descriptor.colorAttachments[0].rgbBlendOperation = MTLBlendOperationMin;
+			descriptor.colorAttachments[0].alphaBlendOperation = MTLBlendOperationAdd;
+			descriptor.colorAttachments[0].sourceRGBBlendFactor = MTLBlendFactorOne;
+			descriptor.colorAttachments[0].destinationRGBBlendFactor = MTLBlendFactorOne;
+			descriptor.colorAttachments[0].sourceAlphaBlendFactor = MTLBlendFactorZero;
+			descriptor.colorAttachments[0].destinationAlphaBlendFactor = MTLBlendFactorOne;
+			break;
+
+		case BlendMode::Max:
+
+			descriptor.colorAttachments[0].blendingEnabled = YES;
+			descriptor.colorAttachments[0].rgbBlendOperation = MTLBlendOperationMax;
+			descriptor.colorAttachments[0].alphaBlendOperation = MTLBlendOperationAdd;
+			descriptor.colorAttachments[0].sourceRGBBlendFactor = MTLBlendFactorOne;
+			descriptor.colorAttachments[0].destinationRGBBlendFactor = MTLBlendFactorOne;
+			descriptor.colorAttachments[0].sourceAlphaBlendFactor = MTLBlendFactorZero;
+			descriptor.colorAttachments[0].destinationAlphaBlendFactor = MTLBlendFactorOne;
+			break;
+
+		case BlendMode::Ignore:
+
+			descriptor.colorAttachments[0].blendingEnabled = YES;
+			descriptor.colorAttachments[0].rgbBlendOperation = MTLBlendOperationAdd;
+			descriptor.colorAttachments[0].alphaBlendOperation = MTLBlendOperationAdd;
+			descriptor.colorAttachments[0].sourceRGBBlendFactor = MTLBlendFactorZero;
+			descriptor.colorAttachments[0].destinationRGBBlendFactor = MTLBlendFactorOne;
+			descriptor.colorAttachments[0].sourceAlphaBlendFactor = MTLBlendFactorZero;
+			descriptor.colorAttachments[0].destinationAlphaBlendFactor = MTLBlendFactorOne;
+			break;
+
+		case BlendMode::BlendFixedColor:
+
+			descriptor.colorAttachments[0].blendingEnabled = YES;
+			descriptor.colorAttachments[0].rgbBlendOperation = MTLBlendOperationAdd;
+			descriptor.colorAttachments[0].alphaBlendOperation = MTLBlendOperationAdd;
+			descriptor.colorAttachments[0].sourceAlphaBlendFactor = MTLBlendFactorOne;
+			descriptor.colorAttachments[0].destinationAlphaBlendFactor = MTLBlendFactorOneMinusBlendAlpha;
+
+			if(bAlphaOnly)
+			{
+				descriptor.colorAttachments[0].sourceRGBBlendFactor = MTLBlendFactorOne;
+				descriptor.colorAttachments[0].destinationRGBBlendFactor = MTLBlendFactorOneMinusBlendColor;
+			}
+			else
+			{
+				descriptor.colorAttachments[0].sourceRGBBlendFactor = MTLBlendFactorBlendAlpha;
+				descriptor.colorAttachments[0].destinationRGBBlendFactor = MTLBlendFactorOneMinusBlendAlpha;
+			}
+
+			break;
+
+		default:
+			assert(false);
+			break;
+	}
+
+	if(bNoAlpha)
+	{
+		descriptor.colorAttachments[0].alphaBlendOperation = MTLBlendOperationAdd;
+		descriptor.colorAttachments[0].sourceAlphaBlendFactor = MTLBlendFactorZero;
+		descriptor.colorAttachments[0].destinationAlphaBlendFactor = MTLBlendFactorOne;
+	}
+
+	id<MTLRenderPipelineState> pipelineState = [s_metalDevice newRenderPipelineStateWithDescriptor:descriptor error:&error];
+	[error release];
+
+	[descriptor.vertexFunction release];
+	[descriptor.fragmentFunction release];
+	[descriptor release];
+
+	return pipelineState;
+}
+
+
 
 /*
 	//____ setTintColor() _______________________________________________________
@@ -2985,271 +3600,7 @@ namespace wg
 		m_bGradientActive = false;
 	}
 
-	//____ _initTables() ___________________________________________________________
 
-	void MetalGfxDevice::_initTables()
-	{
-		// Init lineThicknessTable
-
-		for (int i = 0; i < 17; i++)
-		{
-			double b = i / 16.0;
-			m_lineThicknessTable[i] = (float)Util::squareRoot(1.0 + b * b);
-		}
-
-		// Init sRGBtoLinearTable
-
-		float max = powf(255, 2.2f);
-
-		for (int i = 0; i < 256; i++)
-		{
-			m_sRGBtoLinearTable[i] = powf(float(i), 2.2f)/max;
-			m_linearToLinearTable[i] = i / 255.f;
-		}
-	}
-
-
-	//____ _scaleThickness() ___________________________________________________
-
-	float MetalGfxDevice::_scaleThickness(float thickness, float slope)
-	{
-		slope = std::abs(slope);
-
-		float scale = m_lineThicknessTable[(int)(slope * 16)];
-
-		if (slope < 1.f)
-		{
-			float scale2 = m_lineThicknessTable[(int)(slope * 16) + 1];
-			scale += (scale2 - scale)*((slope * 16) - ((int)(slope * 16)));
-		}
-
-		return thickness * scale;
-	}
-
-	//____ _compileRenderPipeline() _______________________________________________
-
-	id<MTLRenderPipelineState> MetalGfxDevice::_compileRenderPipeline( NSString* label, NSString* vertexShader,
-								 NSString* fragmentShader, BlendMode blendMode, PixelFormat destFormat )
-	{
-		NSError *error = nil;
-		MTLRenderPipelineDescriptor *descriptor = [[MTLRenderPipelineDescriptor alloc] init];
-
-		descriptor.label = label;
-		descriptor.vertexFunction = [m_library newFunctionWithName:vertexShader];
-		descriptor.fragmentFunction = [m_library newFunctionWithName:fragmentShader];
-
-		// Set pixelFormat
-
-		switch(destFormat)
-		{
-			case PixelFormat::BGRA_8_linear:
-			case PixelFormat::BGRX_8_linear:
-				descriptor.colorAttachments[0].pixelFormat = MTLPixelFormatBGRA8Unorm;
-				break;
-
-			case PixelFormat::BGRA_8_sRGB:
-			case PixelFormat::BGRX_8_sRGB:
-				descriptor.colorAttachments[0].pixelFormat = MTLPixelFormatBGRA8Unorm_sRGB;
-				break;
-
-			case PixelFormat::Alpha_8:
-				descriptor.colorAttachments[0].pixelFormat = MTLPixelFormatR8Unorm;
-				break;
-
-			default:
-				assert(false);
-		}
-
-		bool bNoAlpha = ( destFormat == PixelFormat::BGRX_8_linear || destFormat == PixelFormat::BGRX_8_sRGB );
-
-
-		bool bAlphaOnly = (destFormat == PixelFormat::Alpha_8);
-
-		switch( blendMode )
-		{
-			case BlendMode::Replace:
-
-				if( bNoAlpha )
-				{
-					descriptor.colorAttachments[0].blendingEnabled = YES;
-					descriptor.colorAttachments[0].rgbBlendOperation = MTLBlendOperationAdd;
-					descriptor.colorAttachments[0].sourceRGBBlendFactor = MTLBlendFactorOne;
-					descriptor.colorAttachments[0].destinationRGBBlendFactor = MTLBlendFactorZero;
-				}
-				else
-					descriptor.colorAttachments[0].blendingEnabled = NO;
-				break;
-
-			case BlendMode::Undefined:
-			case BlendMode::Blend:
-				descriptor.colorAttachments[0].blendingEnabled = YES;
-				descriptor.colorAttachments[0].rgbBlendOperation = MTLBlendOperationAdd;
-				descriptor.colorAttachments[0].alphaBlendOperation = MTLBlendOperationAdd;
-				descriptor.colorAttachments[0].sourceAlphaBlendFactor = MTLBlendFactorOne;
-				descriptor.colorAttachments[0].destinationAlphaBlendFactor = MTLBlendFactorOneMinusSourceAlpha;
-
-				if(bAlphaOnly)
-				{
-					descriptor.colorAttachments[0].sourceRGBBlendFactor = MTLBlendFactorOne;
-					descriptor.colorAttachments[0].destinationRGBBlendFactor = MTLBlendFactorOneMinusSourceColor;
-				}
-				else
-				{
-					descriptor.colorAttachments[0].sourceRGBBlendFactor = MTLBlendFactorSourceAlpha;
-					descriptor.colorAttachments[0].destinationRGBBlendFactor = MTLBlendFactorOneMinusSourceAlpha;
-				}
-
-				break;
-
-			case BlendMode::Morph:
-				descriptor.colorAttachments[0].blendingEnabled = YES;
-				descriptor.colorAttachments[0].rgbBlendOperation = MTLBlendOperationAdd;
-				descriptor.colorAttachments[0].alphaBlendOperation = MTLBlendOperationAdd;
-				descriptor.colorAttachments[0].sourceRGBBlendFactor = MTLBlendFactorBlendAlpha;
-				descriptor.colorAttachments[0].destinationRGBBlendFactor = MTLBlendFactorOneMinusBlendAlpha;
-				descriptor.colorAttachments[0].sourceAlphaBlendFactor = MTLBlendFactorBlendAlpha;
-				descriptor.colorAttachments[0].destinationAlphaBlendFactor = MTLBlendFactorOneMinusBlendAlpha;
-				break;
-
-			case BlendMode::Add:
-
-				descriptor.colorAttachments[0].blendingEnabled = YES;
-				descriptor.colorAttachments[0].rgbBlendOperation = MTLBlendOperationAdd;
-				descriptor.colorAttachments[0].alphaBlendOperation = MTLBlendOperationAdd;
-				descriptor.colorAttachments[0].sourceAlphaBlendFactor = MTLBlendFactorZero;
-				descriptor.colorAttachments[0].destinationAlphaBlendFactor = MTLBlendFactorOne;
-
-				if( bAlphaOnly )
-				{
-					descriptor.colorAttachments[0].sourceRGBBlendFactor = MTLBlendFactorOne;
-					descriptor.colorAttachments[0].destinationRGBBlendFactor = MTLBlendFactorOne;
-				}
-				else
-				{
-					descriptor.colorAttachments[0].sourceRGBBlendFactor = MTLBlendFactorSourceAlpha;
-					descriptor.colorAttachments[0].destinationRGBBlendFactor = MTLBlendFactorOne;
-				}
-				break;
-
-			case BlendMode::Subtract:
-
-				descriptor.colorAttachments[0].blendingEnabled = YES;
-				descriptor.colorAttachments[0].rgbBlendOperation = MTLBlendOperationReverseSubtract;
-				descriptor.colorAttachments[0].alphaBlendOperation = MTLBlendOperationReverseSubtract;
-				descriptor.colorAttachments[0].sourceAlphaBlendFactor = MTLBlendFactorZero;
-				descriptor.colorAttachments[0].destinationAlphaBlendFactor = MTLBlendFactorOne;
-
-				if( bAlphaOnly )
-				{
-					descriptor.colorAttachments[0].sourceRGBBlendFactor = MTLBlendFactorOne;
-					descriptor.colorAttachments[0].destinationRGBBlendFactor = MTLBlendFactorOne;
-				}
-				else
-				{
-					descriptor.colorAttachments[0].sourceRGBBlendFactor = MTLBlendFactorSourceAlpha;
-					descriptor.colorAttachments[0].destinationRGBBlendFactor = MTLBlendFactorOne;
-				}
-				break;
-
-			case BlendMode::Multiply:
-
-				descriptor.colorAttachments[0].blendingEnabled = YES;
-				descriptor.colorAttachments[0].rgbBlendOperation = MTLBlendOperationAdd;
-				descriptor.colorAttachments[0].alphaBlendOperation = MTLBlendOperationAdd;
-				descriptor.colorAttachments[0].sourceRGBBlendFactor = MTLBlendFactorDestinationColor;
-				descriptor.colorAttachments[0].destinationRGBBlendFactor = MTLBlendFactorZero;
-				descriptor.colorAttachments[0].sourceAlphaBlendFactor = MTLBlendFactorZero;
-				descriptor.colorAttachments[0].destinationAlphaBlendFactor = MTLBlendFactorOne;
-
-				break;
-
-			case BlendMode::Invert:
-
-				descriptor.colorAttachments[0].blendingEnabled = YES;
-				descriptor.colorAttachments[0].rgbBlendOperation = MTLBlendOperationAdd;
-				descriptor.colorAttachments[0].alphaBlendOperation = MTLBlendOperationAdd;
-				descriptor.colorAttachments[0].sourceRGBBlendFactor = MTLBlendFactorOneMinusDestinationColor;
-				descriptor.colorAttachments[0].destinationRGBBlendFactor = MTLBlendFactorOneMinusSourceColor;
-				descriptor.colorAttachments[0].sourceAlphaBlendFactor = MTLBlendFactorZero;
-				descriptor.colorAttachments[0].destinationAlphaBlendFactor = MTLBlendFactorOne;
-
-				break;
-
-			case BlendMode::Min:
-
-				descriptor.colorAttachments[0].blendingEnabled = YES;
-				descriptor.colorAttachments[0].rgbBlendOperation = MTLBlendOperationMin;
-				descriptor.colorAttachments[0].alphaBlendOperation = MTLBlendOperationAdd;
-				descriptor.colorAttachments[0].sourceRGBBlendFactor = MTLBlendFactorOne;
-				descriptor.colorAttachments[0].destinationRGBBlendFactor = MTLBlendFactorOne;
-				descriptor.colorAttachments[0].sourceAlphaBlendFactor = MTLBlendFactorZero;
-				descriptor.colorAttachments[0].destinationAlphaBlendFactor = MTLBlendFactorOne;
-				break;
-
-			case BlendMode::Max:
-
-				descriptor.colorAttachments[0].blendingEnabled = YES;
-				descriptor.colorAttachments[0].rgbBlendOperation = MTLBlendOperationMax;
-				descriptor.colorAttachments[0].alphaBlendOperation = MTLBlendOperationAdd;
-				descriptor.colorAttachments[0].sourceRGBBlendFactor = MTLBlendFactorOne;
-				descriptor.colorAttachments[0].destinationRGBBlendFactor = MTLBlendFactorOne;
-				descriptor.colorAttachments[0].sourceAlphaBlendFactor = MTLBlendFactorZero;
-				descriptor.colorAttachments[0].destinationAlphaBlendFactor = MTLBlendFactorOne;
-				break;
-
-			case BlendMode::Ignore:
-
-				descriptor.colorAttachments[0].blendingEnabled = YES;
-				descriptor.colorAttachments[0].rgbBlendOperation = MTLBlendOperationAdd;
-				descriptor.colorAttachments[0].alphaBlendOperation = MTLBlendOperationAdd;
-				descriptor.colorAttachments[0].sourceRGBBlendFactor = MTLBlendFactorZero;
-				descriptor.colorAttachments[0].destinationRGBBlendFactor = MTLBlendFactorOne;
-				descriptor.colorAttachments[0].sourceAlphaBlendFactor = MTLBlendFactorZero;
-				descriptor.colorAttachments[0].destinationAlphaBlendFactor = MTLBlendFactorOne;
-				break;
-
-			case BlendMode::BlendFixedColor:
-
-				descriptor.colorAttachments[0].blendingEnabled = YES;
-				descriptor.colorAttachments[0].rgbBlendOperation = MTLBlendOperationAdd;
-				descriptor.colorAttachments[0].alphaBlendOperation = MTLBlendOperationAdd;
-				descriptor.colorAttachments[0].sourceAlphaBlendFactor = MTLBlendFactorOne;
-				descriptor.colorAttachments[0].destinationAlphaBlendFactor = MTLBlendFactorOneMinusBlendAlpha;
-
-				if(bAlphaOnly)
-				{
-					descriptor.colorAttachments[0].sourceRGBBlendFactor = MTLBlendFactorOne;
-					descriptor.colorAttachments[0].destinationRGBBlendFactor = MTLBlendFactorOneMinusBlendColor;
-				}
-				else
-				{
-					descriptor.colorAttachments[0].sourceRGBBlendFactor = MTLBlendFactorBlendAlpha;
-					descriptor.colorAttachments[0].destinationRGBBlendFactor = MTLBlendFactorOneMinusBlendAlpha;
-				}
-
-				break;
-
-			default:
-				assert(false);
-				break;
-		}
-
-		if(bNoAlpha)
-		{
-			descriptor.colorAttachments[0].alphaBlendOperation = MTLBlendOperationAdd;
-			descriptor.colorAttachments[0].sourceAlphaBlendFactor = MTLBlendFactorZero;
-			descriptor.colorAttachments[0].destinationAlphaBlendFactor = MTLBlendFactorOne;
-		}
-
-		id<MTLRenderPipelineState> pipelineState = [s_metalDevice newRenderPipelineStateWithDescriptor:descriptor error:&error];
-		[error release];
-
-		[descriptor.vertexFunction release];
-		[descriptor.fragmentFunction release];
-		[descriptor release];
-
-		return pipelineState;
-	}
 
 */
 

@@ -34,6 +34,7 @@
 #include <wg_metalsurfacefactory.h>
 #include <wg_metaledgemapfactory.h>
 #include <wg_metalgfxdevice.h>
+#include <wg_metalgfxdevicefactory.h>
 
 
 
@@ -86,6 +87,13 @@ SDLWindow_p SDLWindow::create(const Blueprint& blueprint)
 
 		auto pEdgemapFactory = MetalEdgemapFactory::create();
 		Base::setDefaultEdgemapFactory(pEdgemapFactory);
+
+
+		auto pGfxDeviceFactory = MetalGfxDeviceFactory::create( WGBP(MetalGfxDeviceFactory,
+																	 _.device = gpu,
+																	 _.defaultCanvasSize = {int(geo.w),int(geo.h)},
+																	 _.defaultCanvasPixelFormat = PixelFormat::BGRA_8_sRGB ));
+		Base::setDefaultGfxDeviceFactory(pGfxDeviceFactory);
 	}
 	
     

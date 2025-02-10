@@ -92,7 +92,7 @@ namespace wg
 		s_pGfxContext->pDefaultEdgemapFactory = nullptr;
 		s_pGfxContext->pDefaultGfxDevice = nullptr;
 		s_pGfxContext->pDefaultBitmapCache = nullptr;
-		
+		s_pGfxContext->pDefaultGfxDeviceFactory = nullptr;
 		
 		s_pGfxContext = nullptr;
 		
@@ -141,6 +141,13 @@ namespace wg
 	void GfxBase::setDefaultEdgemapFactory(EdgemapFactory* pFactory)
 	{
 		s_pGfxContext->pDefaultEdgemapFactory = pFactory;
+	}
+
+	//____ setDefaultGfxDeviceFactory() ____________________________________________
+
+	void GfxBase::setDefaultGfxDeviceFactory(GfxDeviceFactory* pFactory)
+	{
+		s_pGfxContext->pDefaultGfxDeviceFactory = pFactory;
 	}
 
 	//____ setDefaultGfxDevice() _________________________________________________

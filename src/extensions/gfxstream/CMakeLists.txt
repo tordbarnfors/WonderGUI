@@ -11,6 +11,8 @@ set( SOURCES
 	wg_streamdecoder.h
 	wg_streamencoder.cpp
 	wg_streamencoder.h
+	wg_streamgfxdevicefactory.cpp
+	wg_streamgfxdevicefactory.h	
 	wg_streamlogger.cpp
 	wg_streamlogger.h
 	wg_streamloopwrapper.cpp
