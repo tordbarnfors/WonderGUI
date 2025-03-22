@@ -298,8 +298,8 @@ void wg_populatePluginInterface(wg_plugin_interface * pHeader)
 	pBody->edgemap.edgemapPixelSize			= &wg_edgemapPixelSize;
 	pBody->edgemap.setRenderSegments		= &wg_setRenderSegments;
 	pBody->edgemap.getRenderSegments		= &wg_getRenderSegments;
-	pBody->edgemap.edgemapColor				= &wg_edgemapColor;
-	pBody->edgemap.edgemapGradient			= &wg_edgemapGradient;
+	pBody->edgemap.edgemapColor				= nullptr;
+	pBody->edgemap.edgemapGradient			= nullptr;
 	pBody->edgemap.edgemapSegments			= &wg_edgemapSegments;
 	pBody->edgemap.edgemapSamples			= &wg_edgemapSamples;
 	pBody->edgemap.importSpxSamples			= &wg_importSpxSamples;

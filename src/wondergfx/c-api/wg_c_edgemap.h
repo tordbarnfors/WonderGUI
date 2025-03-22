@@ -75,19 +75,6 @@ wg_edgemapPalette	wg_edgemapPaletteType(wg_obj edgemap);
 	const wg_color *  wg_edgemapColorstripsY(wg_obj edgemap);
 
 
-
-	wg_color		wg_edgemapColor(wg_obj edgemap, int segment);
-	wg_gradient		wg_edgemapGradient(wg_obj edgemap, int segment);
-
-	const wg_color *	wg_edgemapColors(wg_obj edgemap);
-	const wg_gradient *	wg_edgemapGradients(wg_obj edgemap);
-
-	int				wg_setEdgemapColors( wg_obj edgemap, int begin, int end, const wg_color * pColors );
-	int				wg_setEdgemapGradients( wg_obj edgemap, int begin, int end, const wg_gradient * pGradients );
-
-
-
-
 	//.____ Content _______________________________________________________
 
 	int		wg_edgemapSegments(wg_obj edgemap);
