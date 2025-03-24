@@ -150,24 +150,24 @@ if(APPLE)
 	add_subdirectory(extensions/metalgfx)
 endif()
 
-add_subdirectory(extensions/openglgfx)
+#add_subdirectory(extensions/openglgfx)
 add_subdirectory(extensions/gfxstream)
 add_subdirectory(extensions/softgfx)
 
-add_subdirectory(extensions/freetypefont)
+#add_subdirectory(extensions/freetypefont)
 
-add_subdirectory(extensions/legacygui)
+#add_subdirectory(extensions/legacygui)
 
-add_subdirectory(extensions/plugin)
+#add_subdirectory(extensions/plugin)
 
-add_subdirectory(wonderapp/wappsdl2)
+#add_subdirectory(wonderapp/wappsdl2)
 #add_subdirectory(wonderapp/win32)
 
 add_subdirectory(tools)
-add_subdirectory(examples)
-add_subdirectory(themes)
+#add_subdirectory(examples)
+#add_subdirectory(themes)
 
 
 #install(TARGETS example01 DESTINATION ${WG_ROOT}/distribution/examples)
 
-install(TARGETS streamanalyzer DESTINATION ${WG_ROOT}/distribution/tools)
+#install(TARGETS streamanalyzer DESTINATION ${WG_ROOT}/distribution/tools)
