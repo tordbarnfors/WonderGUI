@@ -51,6 +51,12 @@ int wg_getRenderSegments(wg_obj edgemap)
 	return getPtr(edgemap)->renderSegments();
 }
 
+wg_edgemapPalette wg_edgemapPaletteType(wg_obj edgemap)
+{
+	return (wg_edgemapPalette) getPtr(edgemap)->paletteType();
+}
+
+
 int wg_setEdgemapColors(wg_obj edgemap, int begin, int end, const wg_color * pColors)
 {
 	return getPtr(edgemap)->setColors(begin, end, reinterpret_cast<const HiColor *>(pColors) );

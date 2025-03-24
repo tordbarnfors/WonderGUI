@@ -30,8 +30,6 @@ namespace wg
 
 	const TypeInfo Edgemap::TYPEINFO = { "Edgemap", &Object::TYPEINFO };
 
-	//____ constructor _________________________________________________________
-
 	Edgemap::Edgemap(const Blueprint& bp) : m_size(bp.size), m_nbSegments(bp.segments), m_nbRenderSegments(bp.segments)
 	{
 		if (bp.finalizer)
@@ -628,6 +626,24 @@ namespace wg
 
 		_samplesUpdated(edgeBegin, edgeEnd, sampleBegin, sampleEnd);
 	}
+
+	//____ blueprint() ___________________________________________________________
+/*
+	Blueprint Edgemap::blueprint() const
+	{
+		Blueprint bp;
+
+		bp.colors = m_pFlatColors;
+		bp.colorstripsX = m_pColorstripsX;
+		bp.colorstripsY = m_pColorstripsY;
+		bp.finalizer = finalizer();
+		bp.size = m_size;
+		bp.segments = m_nbSegments;
+		bp.paletteType = m_paletteType;
+
+		return bp;
+	}
+*/
 
 	//____ _validateBlueprint() __________________________________________________
 

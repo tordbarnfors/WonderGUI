@@ -262,10 +262,10 @@ typedef enum
 
 typedef enum
 {
-	WG_WAVEORIGO_TOP = 0,				// Origo at top, increasing values goes down.
-	WG_WAVEORIGO_MIDDLE_UP = 1,			// Origo at middle, increasing values goes up.
-	WG_WAVEORIGO_MIDDLE_DOWN = 2,		// Origo at middle, increasing values goes down.
-	WG_WAVEORIGO_BOTTOM = 3				// Origo at bottom, increasing values goes up.
+	WG_SAMPLEORIGO_TOP = 0,				// Origo at top, increasing values goes down.
+	WG_SAMPLEORIGO_MIDDLE_UP = 1,		// Origo at middle, increasing values goes up.
+	WG_SAMPLEORIGO_MIDDLE_DOWN = 2,		// Origo at middle, increasing values goes down.
+	WG_SAMPLEORIGO_BOTTOM = 3			// Origo at bottom, increasing values goes up.
 } wg_sampleOrigo;
 
 

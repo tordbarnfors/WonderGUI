@@ -298,8 +298,19 @@ void wg_populatePluginInterface(wg_plugin_interface * pHeader)
 	pBody->edgemap.edgemapPixelSize			= &wg_edgemapPixelSize;
 	pBody->edgemap.setRenderSegments		= &wg_setRenderSegments;
 	pBody->edgemap.getRenderSegments		= &wg_getRenderSegments;
-	pBody->edgemap.edgemapColor				= nullptr;
-	pBody->edgemap.edgemapGradient			= nullptr;
+
+	pBody->edgemap.edgemapPaletteType		= &wg_edgemapPaletteType;
+	pBody->edgemap.setEdgemapColors			= &wg_setEdgemapColors;
+	pBody->edgemap.setEdgemapColorsFromGradients = &wg_setEdgemapColorsFromGradients;
+	pBody->edgemap.setEdgemapColorsFromTintmaps = &wg_setEdgemapColorsFromTintmaps;
+	pBody->edgemap.setEdgemapColorsFromStrips = &wg_setEdgemapColorsFromStrips;
+
+	pBody->edgemap.importEdgemapPaletteEntries = &wg_importEdgemapPaletteEntries;
+
+	pBody->edgemap.edgemapFlatColors		= &wg_edgemapFlatColors;
+	pBody->edgemap.edgemapColorstripsX		= &wg_edgemapColorstripsX;
+	pBody->edgemap.edgemapColorstripsY		= &wg_edgemapColorstripsY;
+
 	pBody->edgemap.edgemapSegments			= &wg_edgemapSegments;
 	pBody->edgemap.edgemapSamples			= &wg_edgemapSamples;
 	pBody->edgemap.importSpxSamples			= &wg_importSpxSamples;
@@ -308,10 +319,22 @@ void wg_populatePluginInterface(wg_plugin_interface * pHeader)
 	pBody->edgemap.exportFloatSamples		= &wg_exportFloatSamples;
 	pBody->edgemap.importPaletteEntries		= &wg_importEdgemapPaletteEntries;
 
-	pBody->edgemap.edgemapColors			= &wg_edgemapColors;
-	pBody->edgemap.edgemapGradients			= &wg_edgemapGradients;
-	pBody->edgemap.setEdgemapColors			= &wg_setEdgemapColors;
-	pBody->edgemap.setEdgemapGradients		= &wg_setEdgemapGradients;
+
+
+
+	wg_edgemapPalette	(*edgemapPaletteType)(wg_obj edgemap);
+	int					(*setEdgemapColors)(wg_obj edgemap, int begin, int end, const wg_color * pColors);
+	int					(*setEdgemapColorsFromGradients)(wg_obj edgemap, int begin, int end, const wg_gradient * pGradients );
+	int					(*setEdgemapColorsFromTintmaps)(wg_obj edgemap, int begin, int end, wg_obj * pTintmaps );
+	int					(*setEdgemapColorsFromStrips)(wg_obj edgemap, int begin, int end, const wg_color * pColorstripX, const wg_color * pColorstripY );
+
+	int					(*importEdgemapPaletteEntries)(wg_obj edgemap, int begin, int end, const wg_color * pColors );
+
+	const wg_color *  	(*edgemapFlatColors)(wg_obj edgemap);
+	const wg_color *  	(*edgemapColorstripsX)(wg_obj edgemap);
+	const wg_color *  	(*edgemapColorstripsY)(wg_obj edgemap);
+
+
 
 	pBody->edgemapFactory.structSize		= sizeof(wg_edgemapfactory_calls);
 	pBody->edgemapFactory.createEdgemap		= &wg_createEdgemap;

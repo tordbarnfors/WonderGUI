@@ -61,7 +61,7 @@ extern "C" {
 	int		wg_setRenderSegments(wg_obj edgemap, int nSegments);
 	int		wg_getRenderSegments(wg_obj edgemap);
 
-wg_edgemapPalette	wg_edgemapPaletteType(wg_obj edgemap);
+	wg_edgemapPalette	wg_edgemapPaletteType(wg_obj edgemap);
 
 	int		wg_setEdgemapColors(wg_obj edgemap, int begin, int end, const wg_color * pColors);
 	int		wg_setEdgemapColorsFromGradients(wg_obj edgemap, int begin, int end, const wg_gradient * pGradients );

@@ -51,36 +51,25 @@ namespace wg
 
 		//.____ Identification __________________________________________
 
-		const TypeInfo&		typeInfo(void) const override;
+		const TypeInfo&	typeInfo(void) const override;
 		const static TypeInfo	TYPEINFO;
 
 		//.____ Appearance ____________________________________________________
 
-		virtual bool	setRenderSegments(int nSegments);
+		bool			setRenderSegments(int nSegments) override;
 
-		bool	setColors( int begin, int end, const HiColor * pColors ) override;
-		bool	setGradients( int begin, int end, const Gradient * pGradients ) override;
+		bool			setColors( int begin, int end, const HiColor * pColors ) override;
+		bool			setColors( int begin, int end, const Gradient * pGradients) override;
+		bool			setColors( int begin, int end, const Tintmap_p * pTintmaps ) override;
+		bool			setColors( int begin, int end, const HiColor * pColorstripsX, const HiColor * pColorstripsY) override;
 
-		const HiColor * colors() const override;
-		const Gradient * gradients() const override;
+		bool			importPaletteEntries( int begin, int end, const HiColor * pColors ) override;
 
-		HiColor		color(int segment) const override;
-		Gradient	gradient(int segment) const override;
+		const HiColor*	flatColors() const override;
+		const HiColor*	colorstripsX() const override;
+		const HiColor*	colorstripsY() const override;
 
-
-		//.____ Content _______________________________________________________
-
-		bool 		importSamples(	SampleOrigo origo, const spx* pSource, int edgeBegin, int edgeEnd,
-									int sampleBegin, int sampleEnd, int edgePitch = 0, int samplePitch = 0) override;
-
-		bool 		importSamples(	SampleOrigo origo, const float* pSource, int edgeBegin, int edgeEnd,
-									int sampleBegin, int sampleEnd, int edgePitch = 0, int samplePitch = 0) override;
-
-		bool 		exportSamples(	SampleOrigo origo, spx* pDestination, int edgeBegin, int edgeEnd,
-									int sampleBegin, int sampleEnd, int edgePitch = 0, int samplePitch = 0) override;
-
-		bool 		exportSamples(	SampleOrigo origo, float* pDestination, int edgeBegin, int edgeEnd,
-									int sampleBegin, int sampleEnd, int edgePitch = 0, int samplePitch = 0) override;
+		void			exportLegacyPalette( HiColor * pDest ) const override;
 
 		
 		//.____ Misc _________________________________________________________
@@ -91,10 +80,16 @@ namespace wg
 		PluginEdgemap( wg_obj object );
 		~PluginEdgemap();
 
+		void 	_importSamples(SampleOrigo origo, const spx* pSource, int edgeBegin, int edgeEnd,
+							   int sampleBegin, int sampleEnd, int edgePitch, int samplePitch) override;
+
+		void 	_importSamples(SampleOrigo origo, const float* pSource, int edgeBegin, int edgeEnd,
+							   int sampleBegin, int sampleEnd, int edgePitch, int samplePitch) override;
+
 		void	_samplesUpdated(int edgeBegin, int edgeEnd, int sampleBegin, int sampleEnd) override;
 		void	_colorsUpdated(int beginColor, int endColor) override;
 
-		wg_obj		m_cEdgemap;
+		wg_obj	m_cEdgemap;
 	};
 } // namespace wg
 #endif //WG_PLUGINEDGEMAP_DOT_H

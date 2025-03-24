@@ -419,8 +419,19 @@ typedef struct wg_edgemap_calls_struct
 	wg_sizeI			(*edgemapPixelSize)(wg_obj edgemap);
 	int					(*setRenderSegments)(wg_obj edgemap, int nSegments);
 	int					(*getRenderSegments)(wg_obj edgemap);
-	wg_color			(*edgemapColor)(wg_obj edgemap, int segment);
-	wg_gradient			(*edgemapGradient)(wg_obj edgemap, int segment);
+
+	wg_edgemapPalette	(*edgemapPaletteType)(wg_obj edgemap);
+	int					(*setEdgemapColors)(wg_obj edgemap, int begin, int end, const wg_color * pColors);
+	int					(*setEdgemapColorsFromGradients)(wg_obj edgemap, int begin, int end, const wg_gradient * pGradients );
+	int					(*setEdgemapColorsFromTintmaps)(wg_obj edgemap, int begin, int end, wg_obj * pTintmaps );
+	int					(*setEdgemapColorsFromStrips)(wg_obj edgemap, int begin, int end, const wg_color * pColorstripX, const wg_color * pColorstripY );
+
+	int					(*importEdgemapPaletteEntries)(wg_obj edgemap, int begin, int end, const wg_color * pColors );
+
+	const wg_color *  	(*edgemapFlatColors)(wg_obj edgemap);
+	const wg_color *  	(*edgemapColorstripsX)(wg_obj edgemap);
+	const wg_color *  	(*edgemapColorstripsY)(wg_obj edgemap);
+
 	int					(*edgemapSegments)(wg_obj edgemap);
 	int					(*edgemapSamples)(wg_obj edgemap);
 	int 				(*importSpxSamples)(wg_obj edgemap, wg_sampleOrigo origo, const wg_spx* pSource, int edgeBegin, int edgeEnd, int sampleBegin, int sampleEnd, int edgePitch, int samplePitch);
@@ -428,15 +439,17 @@ typedef struct wg_edgemap_calls_struct
 	int 				(*exportSpxSamples)(wg_obj edgemap, wg_sampleOrigo origo, wg_spx* pDestination, int edgeBegin, int edgeEnd, int sampleBegin, int sampleEnd, int edgePitch, int samplePitch);
 	int 				(*exportFloatSamples)(wg_obj edgemap, wg_sampleOrigo origo, float* pDestination, int edgeBegin, int edgeEnd, int sampleBegin, int sampleEnd, int edgePitch, int samplePitch);
 	int					(*importPaletteEntries)(wg_obj edgemap, int begin, int end, const wg_color * pColors );
-	
-
-	const wg_color *	(*edgemapColors)(wg_obj edgemap);
-	const wg_gradient *	(*edgemapGradients)(wg_obj edgemap);
-
-	int					(*setEdgemapColors)( wg_obj edgemap, int begin, int end, const wg_color * pColors );
-	int					(*setEdgemapGradients)( wg_obj edgemap, int begin, int end, const wg_gradient * pGradients );
 
 } wg_edgemap_calls;
+
+
+
+
+
+
+//.____ Content _______________________________________________________
+
+
 
 
 //____ wg_edgemapfactory_calls ________________________________________________

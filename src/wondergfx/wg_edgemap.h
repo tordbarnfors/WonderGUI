@@ -46,19 +46,24 @@ namespace wg
 
 		const static int maxSegments = 16;			// We keep this global for now. Might never need to restrict it more.
 		
-		// Edgemap has either flat colors, a horizontal colorstrip, a vertical colorstrip or both vertical and horizontal colorstrips.
-		// This needs to be decided when Edgemap is created and can be defined either by:
+		// Edgemap has either flat colors, a horizontal colorstrip, a vertical colorstrip or both vertical
+		// and horizontal colorstrips. This needs to be decided when Edgemap is created and can be defined 
+		// either by:
+		//
 		// 1. Setting the 'paletteType' variable directly to the format wanted.
 		// 2. Setting the 'colors' pointer will give you a palette of flat colors.
-		// 3. Setting tintmaps for each segment through the 'tintmaps' pointer. This will generate a palette of horizontal and/or vertical colorstrips as needed by the pointed to tintmaps.
+		// 3. Setting tintmaps for each segment through the 'tintmaps' pointer. 
+		//	  This will generate a palette of horizontal and/or vertical colorstrips 
+		//	  as needed by the pointed to tintmaps.
 		// 4. Setting the 'colorstripsX' and/or 'colorstripsY' pointers directly.
 		
-		// Setting colors and colorstrips pointers in same blueprint is not allowed. You can however set tintmaps and colors at the same time. Entries in the
-		// tintmap list that are nullptr will then receive their colors from the color list instead. If color list is not specified nullptr entries will be
-		// transparent.
-		
-		// Setting paletteType and appropriate pointers in same blueprint is allowed and can be a way of for example forcing tintmaps even
-		// if all segments have flat colors to start with.
+		// Setting colors and colorstrips pointers in same blueprint is not allowed. 
+		// You can however set tintmaps and colors at the same time. Entries in the
+		// tintmap list that are nullptr will then receive their colors from the color
+		// list instead. If color list is not specified nullptr entries will be transparent.
+
+		// Setting paletteType and appropriate pointers in same blueprint is allowed and can be a way of 
+		// for example forcing tintmaps even if all segments have flat colors to start with.
 
 		struct Blueprint
 		{
@@ -95,20 +100,20 @@ namespace wg
 
 		EdgemapPalette	paletteType() const { return m_paletteType; }
 
-		bool	setColors( int begin, int end, const HiColor * pColors );
-		bool	setColors( int begin, int end, const Gradient * pGradients);
-		bool	setColors( int begin, int end, const Tintmap_p * pTintmaps );
-		bool	setColors( int begin, int end, const HiColor * pColorstripsX, const HiColor * pColorstripsY);
+		virtual bool	setColors( int begin, int end, const HiColor * pColors );
+		virtual bool	setColors( int begin, int end, const Gradient * pGradients);
+		virtual bool	setColors( int begin, int end, const Tintmap_p * pTintmaps );
+		virtual bool	setColors( int begin, int end, const HiColor * pColorstripsX, const HiColor * pColorstripsY);
 
-		bool	importPaletteEntries( int begin, int end, const HiColor * pColors );
+		virtual bool	importPaletteEntries( int begin, int end, const HiColor * pColors );
 
 
-		const HiColor* flatColors() const { return m_pFlatColors; }
-		const HiColor* colorstripsX() const { return m_pColorstripsX; }
-		const HiColor* colorstripsY() const { return m_pColorstripsY; }
+		virtual const HiColor* flatColors() const { return m_pFlatColors; }
+		virtual const HiColor* colorstripsX() const { return m_pColorstripsX; }
+		virtual const HiColor* colorstripsY() const { return m_pColorstripsY; }
 
-		void exportLegacyPalette( HiColor * pDest ) const;
-		
+		virtual void exportLegacyPalette( HiColor * pDest ) const;
+
 		//.____ Content _______________________________________________________
 
 		inline int		segments() const { return m_nbSegments; }
@@ -130,17 +135,19 @@ namespace wg
 
 	protected:
 
+		Edgemap() {};
 		Edgemap(const Blueprint& bp);
 		virtual ~Edgemap();
 		
 		static bool	_validateBlueprint(const Blueprint& bp);
 	
-		void 	_importSamples(SampleOrigo origo, const spx* pSource, int edgeBegin, int edgeEnd,
-								int sampleBegin, int sampleEnd, int edgePitch, int samplePitch);
+		virtual void 	_importSamples(SampleOrigo origo, const spx* pSource, int edgeBegin, int edgeEnd,
+									   int sampleBegin, int sampleEnd, int edgePitch, int samplePitch);
 
-		void 	_importSamples(SampleOrigo origo, const float* pSource, int edgeBegin, int edgeEnd,
-								int sampleBegin, int sampleEnd, int edgePitch, int samplePitch);
+		virtual void 	_importSamples(SampleOrigo origo, const float* pSource, int edgeBegin, int edgeEnd,
+									   int sampleBegin, int sampleEnd, int edgePitch, int samplePitch);
 
+		// Typically these two methods is all that you need to override when subclassing.
 
 		virtual void	_samplesUpdated(int edgeBegin, int edgeEnd, int sampleBegin, int sampleEnd) = 0;
 		virtual void	_colorsUpdated(int beginColor, int endColor) = 0;
@@ -162,8 +169,8 @@ namespace wg
 		HiColor*	m_pPalette = nullptr;		// Pointer at our colors, no matter if they are colorstrips or flat.
 		int			m_paletteSize = 0;			// Total number of colors.
 
-		EdgemapPalette m_paletteType;
-		bool		m_bConstructed = false;		
+		EdgemapPalette m_paletteType = EdgemapPalette::Undefined;
+		bool		m_bConstructed = false;
 };
 
 

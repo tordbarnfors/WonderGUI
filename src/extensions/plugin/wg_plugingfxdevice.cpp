@@ -202,7 +202,7 @@ namespace wg
 
     void PluginGfxDevice::setTintGradient(const RectSPX& rect, const Gradient& gradient)
     {
-        GfxDeviceGen1:setTintGradient(rect, gradient);
+        GfxDeviceGen1::setTintGradient(rect, gradient);
         
         PluginCalls::gfxDevice->setTintGradient(m_cDevice, (const wg_rectSPX*)&rect, (const wg_gradient*)&gradient);
     }
