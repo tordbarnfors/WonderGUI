@@ -151,9 +151,6 @@ namespace wg
 		id<MTLRenderPipelineState> _compileRenderPipeline( NSString* label, NSString* vertexShader,
 									NSString* fragmentShader, BlendMode blendMode, PixelFormat destFormat );
 
-		void    _resizeBuffers();
-		void    _executeBuffer();
-		void    _resetBuffers();
 
 		SurfaceFactory_p    m_pSurfaceFactory = nullptr;
 		EdgemapFactory_p   m_pEdgemapFactory = nullptr;
@@ -249,9 +246,6 @@ namespace wg
 
 		Uniform         m_uniform;
 		BlurUniform		m_blurUniform;
-
-		int *           m_pCommandQueue = nullptr;         // Queue of commands to execute when flushing buffer
-		int             m_commandQueueSize = 0;            // Write offset in m_commandBuffer
 
 		id<MTLBuffer>   m_vertexBufferId = nil;
 		VertexMTL *     m_pVertexBuffer = nullptr;          // Pointer to content of vertex buffer

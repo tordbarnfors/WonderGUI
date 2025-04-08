@@ -624,19 +624,6 @@ namespace wg
 		m_pExtrasBuffer = (float *)[m_extrasBufferId contents];
 		m_extrasBufferSize = 0;
 
-		// Reserve buffer for commands
-
-		m_pCommandQueue = new int[
-			pInfo->nStateChanges * (15+28)	//TODO: Check exactly size needed
-			+ pInfo->nFill * 2
-			+ pInfo->nBlit * 2
-			+ pInfo->nBlur * 2
-			+ pInfo->nLines * 3 + pInfo->nLineClipRects * 4
-			+ pInfo->nEdgemapDraws * 3
-			+ pInfo->nSetCanvas];
-
-		m_commandQueueSize = 0;
-
 		// Setup a metal command queue for this session
 
 		m_metalCommandBuffer = [s_metalCommandQueue commandBuffer];
@@ -699,9 +686,6 @@ namespace wg
 
 		[m_extrasBufferId release];
 		m_extrasBufferId = nil;
-
-		delete [] m_pCommandQueue;
-		m_pCommandQueue = nullptr;
 
 		if( m_pActiveCanvas )
 			m_pActiveCanvas->m_bBufferNeedsSync = true;
@@ -784,7 +768,6 @@ namespace wg
 		VertexMTL *	pVertexMTL	= m_pVertexBuffer + m_nVertices;
 		ColorMTL*	pColorMTL	= m_pColorBuffer + m_nColors;
 		float*		pExtrasMTL	= m_pExtrasBuffer + m_extrasBufferSize;
-		int*		pCommandMTL	= m_pCommandQueue + m_commandQueueSize;
 
 
 		auto p = pBeg;
@@ -878,6 +861,9 @@ namespace wg
 				// Setup Tintmap
 
 
+				//
+
+				int vertexOfs = int(pVertexMTL - m_pVertexBuffer);
 
 				// Add rects to vertex buffer
 
@@ -899,8 +885,10 @@ namespace wg
 						{
 							if( nRectsWritten > 0 )
 							{
-								*pCommandMTL++ = (int)CommandMTL::SubpixelFill;
-								*pCommandMTL++ = nRectsWritten * 6;
+								[m_renderEncoder setRenderPipelineState:m_fillPipelines[m_bGradientActive][(int)m_activeBlendMode][(int)m_activeCanvasFormat] ];
+								[m_renderEncoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:vertexOfs vertexCount:nRectsWritten*6];
+
+								vertexOfs = int(pVertexMTL - m_pVertexBuffer);
 								nRectsWritten = 0;
 								extrasOfs = 0;
 							}
@@ -915,8 +903,10 @@ namespace wg
 						{
 							if (nRectsWritten > 0)
 							{
-								*pCommandMTL++ = (int)CommandMTL::StraightFill;
-								*pCommandMTL++ = nRectsWritten * 6;
+								[m_renderEncoder setRenderPipelineState:m_fillPipelines[m_bGradientActive][(int)m_activeBlendMode][(int)m_activeCanvasFormat] ];
+								[m_renderEncoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:vertexOfs vertexCount:nRectsWritten*6];
+
+								vertexOfs = int(pVertexMTL - m_pVertexBuffer);
 								nRectsWritten = 0;
 							}
 							bStraightFill = false;
@@ -1050,11 +1040,10 @@ namespace wg
 
 				pColorMTL++;
 
-				// Store command
+				// Draw
 
-				* pCommandMTL++ = (int) bStraightFill ? CommandMTL::StraightFill : CommandMTL::SubpixelFill;
-				* pCommandMTL++ = nRectsWritten * 6;
-
+				[m_renderEncoder setRenderPipelineState:m_fillPipelines[m_bGradientActive][(int)m_activeBlendMode][(int)m_activeCanvasFormat] ];
+				[m_renderEncoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:vertexOfs vertexCount:nRectsWritten*6];
 				break;
 			}
 
@@ -1127,42 +1116,11 @@ namespace wg
 		m_nVertices			= int(pVertexMTL - m_pVertexBuffer);
 		m_nColors			= int(pColorMTL	- m_pColorBuffer);
 		m_extrasBufferSize	= int(pExtrasMTL - m_pExtrasBuffer);
-		m_commandQueueSize	= int(pCommandMTL- m_pCommandQueue);
 
-		_executeBuffer();
+//		_executeBuffer();
 
 	}
 
-//____ _executeBuffer() _______________________________________________________
-
-void MetalBackend::_executeBuffer()
-{
-	int * pCmd = m_pCommandQueue;
-	int * pCmdEnd = &m_pCommandQueue[m_commandQueueSize];
-
-	int		vertexOfs = 0;
-
-	while (pCmd < pCmdEnd)
-	{
-		CommandMTL cmd = (CommandMTL) * pCmd++;
-
-		switch (cmd)
-		{
-			case CommandMTL::StraightFill:
-			{
-				int nVertices = *pCmd++;
-				if( nVertices > 0 )
-				{
-					[m_renderEncoder setRenderPipelineState:m_fillPipelines[m_bGradientActive][(int)m_activeBlendMode][(int)m_activeCanvasFormat] ];
-					[m_renderEncoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:vertexOfs vertexCount:nVertices];
-					vertexOfs += nVertices;
-				}
-				break;
-			}
-		}
-	}
-
-}
 
 //____ _setCanvas() ___________________________________________________________
 
