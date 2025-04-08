@@ -261,8 +261,7 @@ namespace wg
 		srcRect.setSize( destRect.size() );
 		
 		// Allocate our buffers, push source pixels
-		
-		
+			
 		auto srcbuf = pSrcSurface->allocPixelBuffer(srcRect);
 		bool bPushed = pSrcSurface->pushPixels(srcbuf);
 		if (!bPushed)
@@ -276,10 +275,11 @@ namespace wg
 		
 		auto& srcDesc = Util::pixelFormatToDescription(srcbuf.format);
 		auto& dstDesc = Util::pixelFormatToDescription(m_pixelFormat);
-				
+
 		bool retVal = PixelTools::copyPixels(srcbuf.rect.w, srcbuf.rect.h, srcbuf.pixels, srcbuf.format, srcbuf.pitch - srcbuf.rect.w*srcDesc.bits/8,
 								dstbuf.pixels, dstbuf.format, dstbuf.pitch - dstbuf.rect.w*dstDesc.bits/8, pSrcSurface->palette(),
 								m_pPalette, pSrcSurface->paletteSize(), m_paletteSize, m_paletteCapacity);
+
 
 		pullPixels(dstbuf);
 		freePixelBuffer(dstbuf);

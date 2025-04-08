@@ -637,16 +637,60 @@ namespace wg
 
 		m_commandQueueSize = 0;
 
+		// Setup a metal command queue for this session
+
+		m_metalCommandBuffer = [s_metalCommandQueue commandBuffer];
+		m_metalCommandBuffer.label = @"MetalBackend";
+
+		//
+
 		if( pCanvasSurface )
 			setCanvas(pCanvasSurface);
 		else
 			setCanvas( canvasRef );
+
+
+
+
+
 	}
 
 	//____ endSession() __________________________________________________________
 
 	void MetalBackend::endSession()
 	{
+		//
+
+		[m_renderEncoder endEncoding];
+		m_renderEncoder = nil;
+
+		// Finalize and execute our command buffer
+
+		// Schedule a present once the framebuffer is complete using the current drawable.
+
+		m_flushesInProgress++;
+
+		if( m_drawableToAutoPresent != nil )
+		{
+			[m_metalCommandBuffer presentDrawable:m_drawableToAutoPresent];
+			m_drawableToAutoPresent = nil;
+		}
+
+		// Add a completion handler.
+		[m_metalCommandBuffer addCompletedHandler:^(id<MTLCommandBuffer> cb) {
+			// Shared buffer is populated.
+			m_flushesInProgress--;
+		}];
+
+		// Finalize rendering here & push the command buffer to the GPU.
+		[m_metalCommandBuffer commit];
+
+		[m_metalCommandBuffer waitUntilScheduled];
+
+		m_metalCommandBuffer = nil;
+
+		//
+
 		[m_vertexBufferId release];
 		m_vertexBufferId = nil;
 
@@ -658,6 +702,10 @@ namespace wg
 
 		delete [] m_pCommandQueue;
 		m_pCommandQueue = nullptr;
+
+		if( m_pActiveCanvas )
+			m_pActiveCanvas->m_bBufferNeedsSync = true;
+
 	}
 
 	//____ setCanvas() ___________________________________________________________
@@ -672,7 +720,10 @@ namespace wg
 			return;
 		}
 
-		_setCanvas(pSurface, pSurface->pixelWidth(), pSurface->pixelHeight(), CanvasInit::Keep, Color::Black );
+		if( m_renderEncoder != nil )
+			[m_renderEncoder endEncoding];
+
+		m_renderEncoder = _setCanvas(pSurface, pSurface->pixelWidth(), pSurface->pixelHeight(), CanvasInit::Keep, Color::Black );
 	}
 
 	void MetalBackend::setCanvas(CanvasRef ref)
@@ -680,7 +731,10 @@ namespace wg
 		if( ref != CanvasRef::Default )
 			return;								// ERROR: Only CanvasRef::Default supported yet.
 
-		_setCanvas(nullptr, m_defaultCanvas.size.w/64, m_defaultCanvas.size.h/64, CanvasInit::Keep, Color::Black );
+		if( m_renderEncoder != nil )
+			[m_renderEncoder endEncoding];
+
+		m_renderEncoder = _setCanvas(nullptr, m_defaultCanvas.size.w/64, m_defaultCanvas.size.h/64, CanvasInit::Keep, Color::Black );
 	}
 
 	//____ setObjects() ________________________________________________________
@@ -1075,8 +1129,42 @@ namespace wg
 		m_extrasBufferSize	= int(pExtrasMTL - m_pExtrasBuffer);
 		m_commandQueueSize	= int(pCommandMTL- m_pCommandQueue);
 
-		
+		_executeBuffer();
+
 	}
+
+//____ _executeBuffer() _______________________________________________________
+
+void MetalBackend::_executeBuffer()
+{
+	int * pCmd = m_pCommandQueue;
+	int * pCmdEnd = &m_pCommandQueue[m_commandQueueSize];
+
+	int		vertexOfs = 0;
+
+	while (pCmd < pCmdEnd)
+	{
+		CommandMTL cmd = (CommandMTL) * pCmd++;
+
+		switch (cmd)
+		{
+			case CommandMTL::StraightFill:
+			{
+				int nVertices = *pCmd++;
+				if( nVertices > 0 )
+				{
+					[m_renderEncoder setRenderPipelineState:m_fillPipelines[m_bGradientActive][(int)m_activeBlendMode][(int)m_activeCanvasFormat] ];
+					[m_renderEncoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:vertexOfs vertexCount:nVertices];
+					vertexOfs += nVertices;
+				}
+				break;
+			}
+		}
+	}
+
+}
+
+//____ _setCanvas() ___________________________________________________________
 
 id<MTLRenderCommandEncoder> MetalBackend::_setCanvas( MetalSurface * pCanvas, int width, int height, CanvasInit initOperation, Color clearColor )
 {
@@ -1110,7 +1198,7 @@ id<MTLRenderCommandEncoder> MetalBackend::_setCanvas( MetalSurface * pCanvas, in
 		}
 
 		renderEncoder = [m_metalCommandBuffer renderCommandEncoderWithDescriptor:pDescriptor];
-		renderEncoder.label = @"GfxDeviceMetal Render to Surface Pass";
+		renderEncoder.label = @"MetalBackend Render to Surface Pass";
 		[pDescriptor release];
 
 		pixelFormat = pCanvas->pixelFormat();
@@ -1119,7 +1207,7 @@ id<MTLRenderCommandEncoder> MetalBackend::_setCanvas( MetalSurface * pCanvas, in
 	{
 
 		renderEncoder = [m_metalCommandBuffer renderCommandEncoderWithDescriptor:m_defaultCanvasRenderPassDesc];
-		renderEncoder.label = @"GfxDeviceMetal Render Pass";
+		renderEncoder.label = @"MetalBackend Render Pass";
 
 		pixelFormat = m_defaultCanvasPixelFormat;
 	}
@@ -1130,8 +1218,8 @@ id<MTLRenderCommandEncoder> MetalBackend::_setCanvas( MetalSurface * pCanvas, in
 
 	// Updating canvas info for our shaders
 
-	m_uniform.canvasDimX = (GLfloat) width;
-	m_uniform.canvasDimY = (GLfloat) height;
+	m_uniform.canvasDimX = (float) width;
+	m_uniform.canvasDimY = (float) height;
 	m_uniform.canvasYOfs = height;
 	m_uniform.canvasYMul = -1;
 
@@ -1789,7 +1877,7 @@ id<MTLRenderPipelineState> MetalBackend::_compileRenderPipeline( NSString* label
 
 		// Create a new command buffer.
 		m_metalCommandBuffer = [s_metalCommandQueue commandBuffer];
-		m_metalCommandBuffer.label = @"MetalGfxDevice";
+		m_metalCommandBuffer.label = @"MetalBackend";
 	}
 
 	//____ flushAndWait() _______________________________________________________________
@@ -1813,7 +1901,7 @@ id<MTLRenderPipelineState> MetalBackend::_compileRenderPipeline( NSString* label
 
 		// Create a new command buffer.
 		m_metalCommandBuffer = [s_metalCommandQueue commandBuffer];
-		m_metalCommandBuffer.label = @"MetalGfxDevice";
+		m_metalCommandBuffer.label = @"MetalBackend";
 
 	}
 

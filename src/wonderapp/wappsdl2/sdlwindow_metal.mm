@@ -35,6 +35,7 @@
 #include <wg_metaledgemapfactory.h>
 #include <wg_metalgfxdevice.h>
 #include <wg_metalgfxdevicefactory.h>
+#include <wg_metalbackend.h>
 
 
 
@@ -78,12 +79,14 @@ SDLWindow_p SDLWindow::create(const Blueprint& blueprint)
 	auto pDevice = Base::defaultGfxDevice();
 	if( !pDevice )
 	{
-	   MetalGfxDevice::setMetalDevice(gpu);
-	   auto pDevice = MetalGfxDevice::create();
-	   Base::setDefaultGfxDevice(pDevice);
+		MetalGfxDevice::setMetalDevice(gpu);
+		MetalBackend::setMetalDevice(gpu);
+		
+		auto pDevice = MetalGfxDevice::create();
+		Base::setDefaultGfxDevice(pDevice);
 
-	   auto pSurfaceFactory = MetalSurfaceFactory::create();
-	   Base::setDefaultSurfaceFactory(pSurfaceFactory);
+		auto pSurfaceFactory = MetalSurfaceFactory::create();
+		Base::setDefaultSurfaceFactory(pSurfaceFactory);
 
 		auto pEdgemapFactory = MetalEdgemapFactory::create();
 		Base::setDefaultEdgemapFactory(pEdgemapFactory);
@@ -157,7 +160,7 @@ void SDLWindowMetal::render()
 		id<CAMetalDrawable> surface = [swapchain nextDrawable];
 
         MTLRenderPassDescriptor *pass = [MTLRenderPassDescriptor renderPassDescriptor];
-        pass.colorAttachments[0].loadAction  = MTLLoadActionDontCare;
+        pass.colorAttachments[0].loadAction  = MTLLoadActionLoad;
         pass.colorAttachments[0].storeAction = MTLStoreActionStore;
         pass.colorAttachments[0].texture = surface.texture;
 

@@ -196,7 +196,7 @@ void GfxDeviceTester::setup_testdevices()
 		auto pGen2CanvasSurface = SoftSurface::create(canvasBP);
 		auto pGen2SoftDevice = Device::create("Gen2 Software (SoftBackend)", pGen2GfxDevice, CanvasRef::None, pGen2CanvasSurface, this);
 
-		g_testdevices.push_back(pGen2SoftDevice);
+//		g_testdevices.push_back(pGen2SoftDevice);
 
 	}
 
@@ -820,6 +820,8 @@ bool GfxDeviceTester::setup_chrome()
 	auto pLayerStack = StackPanel::create();
 	pLayerStack->setSkin( ColorSkin::create(Color::AntiqueWhite) );
 	m_pWindow->rootPanel()->slot = pLayerStack;
+
+//	m_pWindow->rootPanel()->setDebugMode(true);
 
 	auto pUniformLayout = PackLayout::create({ .wantedSize = PackLayout::WantedSize::Default,
 		.expandFactor = PackLayout::Factor::Weight, .shrinkFactor = PackLayout::Factor::Weight });

@@ -181,8 +181,6 @@ namespace wg
 
 		//
 
-		Command         m_cmd;
-
 		int             m_nSegments;                                // Number of segments for current segment command.
 
 		int             m_canvasYstart;
@@ -218,9 +216,9 @@ namespace wg
 		struct VertexMTL
 		{
 			CoordI	coord;
-			simd_float2   uv;						// Actually contains blitSourceSize in most cases.
 			int		colorsOfs;						// Offset into colorBuffer for color incl flat tint.
 			int		extrasOfs;						// Offset into extrasBuffer for extra data needed by shader.
+			simd_float2   uv;						// Actually contains blitSourceSize in most cases.
 			CoordF	tintmapOfs;
 			CoordF	colorstripOfs;					// For Edgemaps only.
 
@@ -234,7 +232,6 @@ namespace wg
 
 		enum CommandMTL
 		{
-			SetCanvas,
 			StateChange,
 			Lines,
 			StraightFill,
@@ -245,6 +242,8 @@ namespace wg
 
 		};
 
+
+		id<MTLRenderCommandEncoder>		m_renderEncoder = nil;
 
 		// Buffers
 
