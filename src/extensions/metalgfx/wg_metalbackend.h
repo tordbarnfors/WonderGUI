@@ -297,8 +297,6 @@ namespace wg
 
 		id<MTLCommandBuffer>        m_metalCommandBuffer = nil;
 
-		bool                        m_bRendering = false;               // Set to true while between beginRender() and endRender() calls.
-
 		std::atomic<int>            m_flushesInProgress;                // Number of buffer flushes to complete before metal is idle.
 
 		id<MTLRenderPipelineState>  m_plotPipelines[BlendMode_size][5];          // [BlendMode][DestFormat]

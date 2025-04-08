@@ -637,8 +637,28 @@ namespace wg
 			setCanvas( canvasRef );
 
 
+		// Reset states to start values
 
+		m_tintColorOfs 			= -1;
+		m_bTintmap 				= false;
 
+		m_pActiveBlitSource		= nullptr;
+		m_activeBlendMode		= BlendMode::Blend;
+		m_activeMorphFactor		= 0.5f;
+		m_activeFixedBlendColor = HiColor::White;
+		m_activeBlurRadius		= 64;
+
+		m_morphFactorInUse		= -1;
+		m_fixedBlendColorInUse	= HiColor::Undefined;
+
+		// Reset uniform to start state
+
+		m_uniform.flatTint[0] = 1.f;
+		m_uniform.flatTint[1] = 1.f;
+		m_uniform.flatTint[2] = 1.f;
+		m_uniform.flatTint[3] = 1.f;
+
+		[m_renderEncoder setVertexBytes:&m_uniform length:sizeof(Uniform) atIndex:(unsigned) VertexInputIndex::Uniform];
 
 	}
 
@@ -783,21 +803,50 @@ namespace wg
 			{
 				int32_t statesChanged = *p++;
 
-//				* pCommandGL++ = (int) CommandGL::StateChange;
-//				* pCommandGL++ = statesChanged;
-
 				if (statesChanged & uint8_t(StateChange::BlitSource))
 				{
-					auto pSource = static_cast<MetalSurface*>(* pObjects++);
+					auto pSurf = static_cast<MetalSurface*>(* pObjects++);
+
+					if( pSurf )
+					{
+						[m_renderEncoder setFragmentTexture:pSurf->getTexture() atIndex: (unsigned) TextureIndex::Texture];
+
+						if(pSurf->pixelDescription()->type == PixelType::Index)
+							[m_renderEncoder setFragmentSamplerState: m_samplers[0][0][pSurf->isTiling()] atIndex:0];
+						else
+							[m_renderEncoder setFragmentSamplerState: m_samplers[pSurf->isMipmapped()][pSurf->sampleMethod() == SampleMethod::Bilinear][pSurf->isTiling()] atIndex:0];
+
+						m_pActiveBlitSource = pSurf;
+						pSurf->m_bPendingReads = false;            // Clear this as we pass it by. All pending reads will have encoded before _executeBuffer() ends.
+
+						m_uniform.textureSize = pSurf->pixelSize();
+						[m_renderEncoder setVertexBytes:&m_uniform length:sizeof(Uniform) atIndex:(unsigned) VertexInputIndex::Uniform];
+
+						if (pSurf->m_pPalette)
+						{
+							[m_renderEncoder setFragmentTexture:pSurf->getPaletteTexture() atIndex:(unsigned) TextureIndex::Palette];
+						}
+					}
+					else
+					{
+						[m_renderEncoder setFragmentTexture:nil atIndex:(unsigned) TextureIndex::Texture];
+						[m_renderEncoder setFragmentSamplerState: m_samplers[0][0][0] atIndex:0];
+
+						m_pActiveBlitSource = nullptr;
+					}
 
 				}
 
 				if (statesChanged & uint8_t(StateChange::TintColor))
 				{
-					// Process right away, tint color ofs is stored in vertex data
+					HiColor color = *pColors++;
 
-					HiColor tintColor = *pColors++;
+					m_uniform.flatTint[0] = color.r / 4096.f;
+					m_uniform.flatTint[1] = color.g / 4096.f;
+					m_uniform.flatTint[2] = color.b / 4096.f;
+					m_uniform.flatTint[3] = color.a / 4096.f;
 
+					[m_renderEncoder setVertexBytes:&m_uniform length:sizeof(Uniform) atIndex:(unsigned) VertexInputIndex::Uniform];
 				}
 
 				if (statesChanged & uint8_t(StateChange::TintMap))
@@ -820,12 +869,49 @@ namespace wg
 
 				if (statesChanged & uint8_t(StateChange::BlendMode))
 				{
-					p++;
+					BlendMode mode = (BlendMode) * p++;
+
+					m_activeBlendMode = mode;
+
+					// If BlendMode is Morph or BlendFixedColor we must make sure Metal's blendColor is set accordingly
+
+					if( mode == BlendMode::Morph )
+					{
+						if( m_morphFactorInUse != m_activeMorphFactor )
+						{
+							[m_renderEncoder setBlendColorRed:1.f green:1.f blue:1.f alpha:m_activeMorphFactor];
+
+							m_morphFactorInUse = m_activeMorphFactor;
+							m_fixedBlendColorInUse = HiColor::Undefined;
+						}
+					}
+					else if( mode == BlendMode::BlendFixedColor )
+					{
+						if( m_fixedBlendColorInUse != m_activeFixedBlendColor )
+						{
+							[m_renderEncoder setBlendColorRed:(m_activeFixedBlendColor.r/4096.f)
+													  green:(m_activeFixedBlendColor.g/4096.f)
+													   blue:(m_activeFixedBlendColor.b/4096.f)
+													  alpha:(m_activeFixedBlendColor.a/4096.f)];
+
+							m_morphFactorInUse = -1;
+							m_fixedBlendColorInUse = m_activeFixedBlendColor;
+						}
+					}
 				}
 
 				if (statesChanged & uint8_t(StateChange::MorphFactor))
 				{
-					p++;
+					float morphFactor = (* p++) / 4096.f;
+
+					m_activeMorphFactor = morphFactor;
+
+					if( m_activeBlendMode == BlendMode::Morph && m_morphFactorInUse != morphFactor )
+					{
+							[m_renderEncoder setBlendColorRed:1.f green:1.f blue:1.f alpha:morphFactor];
+
+							m_morphFactorInUse = morphFactor;
+					}
 				}
 
 				if (statesChanged & uint8_t(StateChange::FixedBlendColor))
@@ -833,7 +919,19 @@ namespace wg
 					// Just retrieve the value but do nothing. We use BlendMode::Blend
 					// in place of BlendMode::BlendFixedColor.
 
-					HiColor fixedBlendColor = *pColors++;
+					HiColor color = *pColors++;
+
+					m_activeFixedBlendColor = color;
+
+					if( m_activeBlendMode == BlendMode::BlendFixedColor && m_fixedBlendColorInUse != color )
+					{
+						[m_renderEncoder setBlendColorRed:(color.r/4096.f)
+												  green:(color.g/4096.f)
+												   blue:(color.b/4096.f)
+												  alpha:(color.a/4096.f)];
+
+						m_fixedBlendColorInUse = color;
+					}
 				}
 
 				if (statesChanged & uint8_t(StateChange::Blur))
@@ -1019,7 +1117,7 @@ namespace wg
 				}
 
 				// Add colors to buffer
-
+/*
 				if (m_tintColorOfs >= 0)
 				{
 					ColorMTL& tint = m_pColorBuffer[m_tintColorOfs];
@@ -1031,7 +1129,7 @@ namespace wg
 
 				}
 				else
-				{
+*/				{
 					pColorMTL->r = col.r / 4096.f;
 					pColorMTL->g = col.g / 4096.f;
 					pColorMTL->b = col.b / 4096.f;
@@ -1097,10 +1195,152 @@ namespace wg
 				spx dstY = *p32++;
 				p = (const uint16_t*) p32;
 
-				pRects += nRects;
+				//
+
+				int tintColorOfs = m_tintColorOfs >= 0 ? m_tintColorOfs : 0;
+				int extrasOfs = int(pExtrasMTL - m_pExtrasBuffer) / 4;
+				int vertexOfs = int(pVertexMTL - m_pVertexBuffer);
+
+				for (int i = 0; i < nRects; i++)
+				{
+					int	dx1 = (pRects->x) >> 6;
+					int	dy1 = (pRects->y) >> 6;
+					int dx2 = dx1 + ((pRects->w) >> 6);
+					int dy2 = dy1 + ((pRects->h) >> 6);
+					pRects++;
+
+					float tintmapBeginX, tintmapBeginY, tintmapEndX, tintmapEndY;
+
+					if (m_bTintmap)
+					{
+						if (m_tintmapBeginX == 0)
+						{
+							tintmapBeginX = 0.f;
+							tintmapEndX = 0.f;
+						}
+						else
+						{
+							tintmapBeginX = m_tintmapBeginX + (dx1 - m_tintmapRect.x) + 0.f;
+							tintmapEndX = tintmapBeginX + (dx2 - dx1) + 0.f;
+						}
+
+						if (m_tintmapBeginY == 0)
+						{
+							tintmapBeginY = 0.f;
+							tintmapEndY = 0.f;
+						}
+						else
+						{
+							tintmapBeginY = m_tintmapBeginY + (dy1 - m_tintmapRect.y) + 0.f;
+							tintmapEndY = tintmapBeginY + (dy2 - dy1) + 0.f;
+						}
+					}
+					else
+					{
+						tintmapBeginX = 0.f;
+						tintmapBeginY = 0.f;
+						tintmapEndX = 0.f;
+						tintmapEndY = 0.f;
+					}
+
+					pVertexMTL->coord.x = dx1;
+					pVertexMTL->coord.y = dy1;
+					pVertexMTL->colorsOfs = tintColorOfs;
+					pVertexMTL->extrasOfs = extrasOfs;
+					pVertexMTL->tintmapOfs = { tintmapBeginX,tintmapBeginY };
+					pVertexMTL++;
+
+					pVertexMTL->coord.x = dx2;
+					pVertexMTL->coord.y = dy1;
+					pVertexMTL->colorsOfs = tintColorOfs;
+					pVertexMTL->extrasOfs = extrasOfs;
+					pVertexMTL->tintmapOfs = { tintmapEndX,tintmapBeginY };
+					pVertexMTL++;
+
+					pVertexMTL->coord.x = dx2;
+					pVertexMTL->coord.y = dy2;
+					pVertexMTL->colorsOfs = tintColorOfs;
+					pVertexMTL->extrasOfs = extrasOfs;
+					pVertexMTL->tintmapOfs = { tintmapEndX,tintmapEndY };
+					pVertexMTL++;
+
+					pVertexMTL->coord.x = dx1;
+					pVertexMTL->coord.y = dy1;
+					pVertexMTL->colorsOfs = tintColorOfs;
+					pVertexMTL->extrasOfs = extrasOfs;
+					pVertexMTL->tintmapOfs = { tintmapBeginX,tintmapBeginY };
+					pVertexMTL++;
+
+					pVertexMTL->coord.x = dx2;
+					pVertexMTL->coord.y = dy2;
+					pVertexMTL->colorsOfs = tintColorOfs;
+					pVertexMTL->extrasOfs = extrasOfs;
+					pVertexMTL->tintmapOfs = { tintmapEndX,tintmapEndY };
+					pVertexMTL++;
+
+					pVertexMTL->coord.x = dx1;
+					pVertexMTL->coord.y = dy2;
+					pVertexMTL->colorsOfs = tintColorOfs;
+					pVertexMTL->extrasOfs = extrasOfs;
+					pVertexMTL->tintmapOfs = { tintmapBeginX,tintmapEndY };
+					pVertexMTL++;
+
+				}
+
+				if (m_pActiveBlitSource->sampleMethod() == SampleMethod::Bilinear)
+				{
+					* pExtrasMTL++ = srcX / 1024.f + 0.5f;
+					* pExtrasMTL++ = srcY / 1024.f + 0.5f;
+					* pExtrasMTL++ = float(dstX >> 6) + 0.5f;
+					* pExtrasMTL++ = float(dstY >> 6) + 0.5f;
+				}
+				else
+				{
+					*pExtrasMTL++ = srcX / 1024.f;
+					*pExtrasMTL++ = srcY / 1024.f;
+					*pExtrasMTL++ = float(dstX >> 6) + 0.5f;
+					*pExtrasMTL++ = float(dstY >> 6) + 0.5f;
+				}
+
+				auto& mtx = transform < GfxFlip_size ? s_blitFlipTransforms[transform] : m_pTransformsBeg[transform - GfxFlip_size];
+
+
+				*pExtrasMTL++ = mtx.xx;
+				*pExtrasMTL++ = mtx.xy;
+				*pExtrasMTL++ = mtx.yx;
+				*pExtrasMTL++ = mtx.yy;
+
+				// Draw
+
+				{
+					MetalSurface* pSurf = m_pActiveBlitSource;
+
+					BlitFragShader shader = BlitFragShader::Normal;
+
+					if(pSurf->m_pPixelDescription->type == PixelType::Index)
+					{
+						if( pSurf->sampleMethod() == SampleMethod::Bilinear )
+							shader = BlitFragShader::PaletteInterpolated;
+						else
+							shader = BlitFragShader::PaletteNearest;
+					}
+					else if(pSurf->m_pixelFormat == PixelFormat::Alpha_8)
+						shader = BlitFragShader::A8Source;
+					else if(pSurf->m_pPixelDescription->A_mask == 0)
+						shader = BlitFragShader::RGBXSource;
+
+					[m_renderEncoder setRenderPipelineState:m_blitPipelines[(int)shader][m_bGradientActive][(int)m_activeBlendMode][(int)m_activeCanvasFormat] ];
+					[m_renderEncoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:vertexOfs vertexCount:nRects*6];
+					vertexOfs += nRects*6;
+
+					if( m_pActiveCanvas )
+						m_pActiveCanvas->m_bMipmapStale = m_pActiveCanvas->m_bMipmapped;
+				}
+
 
 				break;
 			}
+
 
 			default:
 				break;
