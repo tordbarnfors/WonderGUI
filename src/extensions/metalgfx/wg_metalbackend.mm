@@ -1155,8 +1155,162 @@ namespace wg
 
 				HiColor col = *pColors++;
 
-				p += nLines * 8;
-				pRects += nClipRects;
+				// Calculate and store vertices
+
+				int nLinesWritten = 0;
+				int vertexOfs = int(pVertexMTL - m_pVertexBuffer);
+
+				for (int i = 0; i < nLines; i++)
+				{
+					auto p32 = (const spx *) p;
+					CoordSPX begin = { *p32++, *p32++ };
+					CoordSPX end = { *p32++, *p32++ };
+					p = (const uint16_t*) p32;
+
+					begin = roundToPixels(begin);
+					end = roundToPixels(end);
+
+					int 	length;
+					float   width;
+
+					float	slope;
+					float	s, w;
+					bool	bSteep;
+
+					CoordI	c1, c2, c3, c4;
+
+					if (std::abs(begin.x - end.x) > std::abs(begin.y - end.y))
+					{
+						// Prepare mainly horizontal line segment
+
+						if (begin.x > end.x)
+							std::swap(begin, end);
+
+						length = end.x - begin.x;
+						if (length == 0)
+							continue;											// TODO: Should stil draw the caps!
+
+						slope = ((float)(end.y - begin.y)) / length;
+						width = _scaleThickness(thickness, slope);
+						bSteep = false;
+
+						if( m_pActiveCanvas )
+							s = ((begin.y + 0.5f) - (begin.x + 0.5f) * slope);
+						else
+							s = m_defaultCanvas.size.h / 64 - ((begin.y + 0.5f) - (begin.x + 0.5f) * slope);
+
+						w = width / 2 + 0.5f;
+
+						float   y1 = begin.y - width / 2;
+						float   y2 = end.y - width / 2;
+
+						c1.x = begin.x;
+						c1.y = int(y1) - 1;
+						c2.x = end.x;
+						c2.y = int(y2) - 1;
+						c3.x = end.x;
+						c3.y = int(y2 + width) + 2;
+						c4.x = begin.x;
+						c4.y = int(y1 + width) + 2;
+					}
+					else
+					{
+						// Prepare mainly vertical line segment
+
+						if (begin.y > end.y)
+							std::swap(begin, end);
+
+						length = end.y - begin.y;
+						if (length == 0)
+							continue;											// TODO: Should stil draw the caps!
+
+						slope = ((float)(end.x - begin.x)) / length;
+						width = _scaleThickness(thickness, slope);
+						bSteep = true;
+
+						s = (begin.x + 0.5f) - (begin.y + 0.5f) * slope;
+						w = width / 2 + 0.5f;
+
+						float   x1 = begin.x - width / 2;
+						float   x2 = end.x - width / 2;
+
+						c1.x = int(x1) - 1;
+						c1.y = begin.y;
+						c2.x = int(x1 + width) + 2;
+						c2.y = begin.y;
+						c3.x = int(x2 + width) + 2;
+						c3.y = end.y;
+						c4.x = int(x2) - 1;
+						c4.y = end.y;
+					}
+
+					int extrasOfs = int(pExtrasMTL - m_pExtrasBuffer) / 4;
+					int colorsOfs = int(pColorMTL - m_pColorBuffer);
+
+					pVertexMTL->coord = c1;
+					pVertexMTL->colorsOfs = colorsOfs;
+					pVertexMTL->extrasOfs = extrasOfs;
+					pVertexMTL++;
+
+					pVertexMTL->coord = c2;
+					pVertexMTL->colorsOfs = colorsOfs;
+					pVertexMTL->extrasOfs = extrasOfs;
+					pVertexMTL++;
+
+					pVertexMTL->coord = c3;
+					pVertexMTL->colorsOfs = colorsOfs;
+					pVertexMTL->extrasOfs = extrasOfs;
+					pVertexMTL++;
+
+					pVertexMTL->coord = c1;
+					pVertexMTL->colorsOfs = colorsOfs;
+					pVertexMTL->extrasOfs = extrasOfs;
+					pVertexMTL++;
+
+					pVertexMTL->coord = c3;
+					pVertexMTL->colorsOfs = colorsOfs;
+					pVertexMTL->extrasOfs = extrasOfs;
+					pVertexMTL++;
+
+					pVertexMTL->coord = c4;
+					pVertexMTL->colorsOfs = colorsOfs;
+					pVertexMTL->extrasOfs = extrasOfs;
+					pVertexMTL++;
+
+					*pExtrasMTL++ = s;
+					*pExtrasMTL++ = w;
+					*pExtrasMTL++ = slope;
+					*pExtrasMTL++ = bSteep;
+
+					nLinesWritten++;
+				}
+
+				// Store command, with clip rects
+
+				if (nLinesWritten > 0)
+				{
+					pColorMTL->r = col.r / 4096.f;
+					pColorMTL->g = col.g / 4096.f;
+					pColorMTL->b = col.b / 4096.f;
+					pColorMTL->a = col.a / 4096.f;
+					pColorMTL++;
+
+					[m_renderEncoder setRenderPipelineState:m_lineFromToPipelines[(int)m_activeBlendMode][(int)m_activeCanvasFormat] ];
+
+					for (int i = 0; i < nClipRects; i++)
+					{
+						RectI clip = (*pRects++)/64;
+						MTLScissorRect metalClip = {(unsigned) clip.x, (unsigned) clip.y, (unsigned) clip.w, (unsigned) clip.h};
+						[m_renderEncoder setScissorRect:metalClip];
+						[m_renderEncoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:vertexOfs vertexCount:nLinesWritten*6];
+					}
+
+					MTLScissorRect orgClip = {0, 0, (unsigned) m_activeCanvasSize.w, (unsigned) m_activeCanvasSize.h};
+					[m_renderEncoder setScissorRect:orgClip];
+
+				}
+				else
+					pRects += nClipRects;
 
 				break;
 			}
