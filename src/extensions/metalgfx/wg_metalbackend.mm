@@ -549,12 +549,16 @@ namespace wg
 	{
 		if( pixelFormat != PixelFormat::BGRA_8 && pixelFormat != PixelFormat::BGRA_8_linear && pixelFormat != PixelFormat::BGRA_8_sRGB && pixelFormat != PixelFormat::Alpha_8 )
 		{
-			GfxBase::throwError(ErrorLevel::SilentError, ErrorCode::InvalidParam, "pixelFormat must be BGRA_8, BGRA_8_linear, BGRA_8_sRGB or A_8", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			GfxBase::throwError(ErrorLevel::SilentError, ErrorCode::InvalidParam, "pixelFormat must be BGRA_8, BGRA_8_linear, BGRA_8_sRGB, BGRX_8, BGRX_8_linear, BGRX_8_sRGB or A_8", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return false;
 		}
 
 		if( pixelFormat == PixelFormat::BGRA_8 )
 			pixelFormat = GfxBase::defaultToSRGB() ? PixelFormat::BGRA_8_sRGB : PixelFormat::BGRA_8_linear;
+
+		if( pixelFormat == PixelFormat::BGRX_8 )
+			pixelFormat = GfxBase::defaultToSRGB() ? PixelFormat::BGRX_8_sRGB : PixelFormat::BGRX_8_linear;
+
 
 		if( m_defaultCanvasRenderPassDesc )
 			[m_defaultCanvasRenderPassDesc release];
@@ -587,6 +591,8 @@ namespace wg
 	{
 		if( !pCanvasSurface && canvasRef != CanvasRef::Default )
 			return;
+
+		m_bFullCanvasSession = (nUpdateRects == 1 && pUpdateRects[0] == RectSPX(0,0,pCanvasSurface->pixelSize()*64) );
 
 		// Reserve buffer for coordinates
 
@@ -727,7 +733,7 @@ namespace wg
 		if( m_renderEncoder != nil )
 			[m_renderEncoder endEncoding];
 
-		m_renderEncoder = _setCanvas(pSurface, pSurface->pixelWidth(), pSurface->pixelHeight(), CanvasInit::Keep, Color::Black );
+		m_renderEncoder = _setCanvas(pSurface, pSurface->pixelWidth(), pSurface->pixelHeight() );
 	}
 
 	void MetalBackend::setCanvas(CanvasRef ref)
@@ -738,7 +744,7 @@ namespace wg
 		if( m_renderEncoder != nil )
 			[m_renderEncoder endEncoding];
 
-		m_renderEncoder = _setCanvas(nullptr, m_defaultCanvas.size.w/64, m_defaultCanvas.size.h/64, CanvasInit::Keep, Color::Black );
+		m_renderEncoder = _setCanvas(nullptr, m_defaultCanvas.size.w/64, m_defaultCanvas.size.h/64 );
 	}
 
 	//____ setObjects() ________________________________________________________
@@ -801,6 +807,8 @@ namespace wg
 
 			case Command::StateChange:
 			{
+				bool	bUniformChanged = false;
+
 				int32_t statesChanged = *p++;
 
 				if (statesChanged & uint8_t(StateChange::BlitSource))
@@ -820,7 +828,7 @@ namespace wg
 						pSurf->m_bPendingReads = false;            // Clear this as we pass it by. All pending reads will have encoded before _executeBuffer() ends.
 
 						m_uniform.textureSize = pSurf->pixelSize();
-						[m_renderEncoder setVertexBytes:&m_uniform length:sizeof(Uniform) atIndex:(unsigned) VertexInputIndex::Uniform];
+						bUniformChanged = true;
 
 						if (pSurf->m_pPalette)
 						{
@@ -846,7 +854,7 @@ namespace wg
 					m_uniform.flatTint[2] = color.b / 4096.f;
 					m_uniform.flatTint[3] = color.a / 4096.f;
 
-					[m_renderEncoder setVertexBytes:&m_uniform length:sizeof(Uniform) atIndex:(unsigned) VertexInputIndex::Uniform];
+					bUniformChanged = true;
 				}
 
 				if (statesChanged & uint8_t(StateChange::TintMap))
@@ -939,6 +947,11 @@ namespace wg
 					p += 28;
 				}
 
+				// Update uniform if changed
+
+				if( bUniformChanged )
+					[m_renderEncoder setVertexBytes:&m_uniform length:sizeof(Uniform) atIndex:(unsigned) VertexInputIndex::Uniform];
+
 				// Take care of alignment
 
 				if( (uintptr_t(p) & 0x2) == 2 )
@@ -972,8 +985,6 @@ namespace wg
 					int	dy1 = pRects->y;
 					int dx2 = dx1 + pRects->w;
 					int dy2 = dy1 + pRects->h;
-					pRects++;
-
 
 					if (((dx1 | dy1 | dx2 | dy2) & 63) == 0)
 					{
@@ -1001,7 +1012,7 @@ namespace wg
 						{
 							if (nRectsWritten > 0)
 							{
-								[m_renderEncoder setRenderPipelineState:m_fillPipelines[m_bGradientActive][(int)m_activeBlendMode][(int)m_activeCanvasFormat] ];
+								[m_renderEncoder setRenderPipelineState:m_fillAAPipelines[m_bGradientActive][(int)m_activeBlendMode][(int)m_activeCanvasFormat] ];
 								[m_renderEncoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:vertexOfs vertexCount:nRectsWritten*6];
 
 								vertexOfs = int(pVertexMTL - m_pVertexBuffer);
@@ -1014,7 +1025,7 @@ namespace wg
 
 						// Provide rectangle center and radius as extras
 
-						RectSPX rect(dx1, dy1, dx2 - dx1, dy2 - dy1);
+						RectSPX rect = * pRects;
 
 						SizeF    radius(rect.w / (2.f * 64), rect.h / (2.f * 64));
 						CoordF    center((rect.x / 64.f) + radius.w, (rect.y / 64.f) + radius.h);
@@ -1113,34 +1124,25 @@ namespace wg
 					pVertexMTL->tintmapOfs = { tintmapBeginX,tintmapEndY };
 					pVertexMTL++;
 
+					pRects++;
 					nRectsWritten++;
 				}
 
 				// Add colors to buffer
-/*
-				if (m_tintColorOfs >= 0)
-				{
-					ColorMTL& tint = m_pColorBuffer[m_tintColorOfs];
 
-					pColorMTL->r = (col.r / 4096.f) * tint.r;
-					pColorMTL->g = (col.g / 4096.f) * tint.g;
-					pColorMTL->b = (col.b / 4096.f) * tint.b;
-					pColorMTL->a = (col.a / 4096.f) * tint.a;
-
-				}
-				else
-*/				{
-					pColorMTL->r = col.r / 4096.f;
-					pColorMTL->g = col.g / 4096.f;
-					pColorMTL->b = col.b / 4096.f;
-					pColorMTL->a = col.a / 4096.f;
-				}
-
+				pColorMTL->r = col.r / 4096.f;
+				pColorMTL->g = col.g / 4096.f;
+				pColorMTL->b = col.b / 4096.f;
+				pColorMTL->a = col.a / 4096.f;
 				pColorMTL++;
 
 				// Draw
 
-				[m_renderEncoder setRenderPipelineState:m_fillPipelines[m_bGradientActive][(int)m_activeBlendMode][(int)m_activeCanvasFormat] ];
+				if( bStraightFill )
+					[m_renderEncoder setRenderPipelineState:m_fillPipelines[m_bGradientActive][(int)m_activeBlendMode][(int)m_activeCanvasFormat] ];
+				else
+					[m_renderEncoder setRenderPipelineState:m_fillAAPipelines[m_bGradientActive][(int)m_activeBlendMode][(int)m_activeCanvasFormat] ];
+
 				[m_renderEncoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:vertexOfs vertexCount:nRectsWritten*6];
 				break;
 			}
@@ -1337,7 +1339,6 @@ namespace wg
 						m_pActiveCanvas->m_bMipmapStale = m_pActiveCanvas->m_bMipmapped;
 				}
 
-
 				break;
 			}
 
@@ -1364,7 +1365,7 @@ namespace wg
 
 //____ _setCanvas() ___________________________________________________________
 
-id<MTLRenderCommandEncoder> MetalBackend::_setCanvas( MetalSurface * pCanvas, int width, int height, CanvasInit initOperation, Color clearColor )
+id<MTLRenderCommandEncoder> MetalBackend::_setCanvas( MetalSurface * pCanvas, int width, int height )
 {
 	id<MTLRenderCommandEncoder> renderEncoder;
 
@@ -1376,24 +1377,7 @@ id<MTLRenderCommandEncoder> MetalBackend::_setCanvas( MetalSurface * pCanvas, in
 
 		pDescriptor.colorAttachments[0].texture = pCanvas->getTexture();
 		pDescriptor.colorAttachments[0].storeAction = MTLStoreActionStore;
-
-		switch(initOperation)
-		{
-			case CanvasInit::Keep:
-				pDescriptor.colorAttachments[0].loadAction = MTLLoadActionLoad;
-				break;
-
-			case CanvasInit::Clear:
-			{
-				pDescriptor.colorAttachments[0].loadAction = MTLLoadActionClear;
-				float* pConv = GfxBase::defaultToSRGB() ? m_sRGBtoLinearTable : m_linearToLinearTable;
-				pDescriptor.colorAttachments[0].clearColor = MTLClearColorMake(pConv[clearColor.r]/4096.f, pConv[clearColor.g]/4096.f, pConv[clearColor.b]/4096.f, clearColor.a/255.f);
-				break;
-			}
-			case CanvasInit::Discard:
-				pDescriptor.colorAttachments[0].loadAction = MTLLoadActionDontCare;
-				break;
-		}
+		pDescriptor.colorAttachments[0].loadAction = m_bFullCanvasSession ? MTLLoadActionDontCare : MTLLoadActionDontCare;
 
 		renderEncoder = [m_metalCommandBuffer renderCommandEncoderWithDescriptor:pDescriptor];
 		renderEncoder.label = @"MetalBackend Render to Surface Pass";

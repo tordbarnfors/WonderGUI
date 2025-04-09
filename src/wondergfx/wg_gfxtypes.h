@@ -226,6 +226,8 @@ namespace wg
 
 	//____ CanvasInit ______________________________________________________________
 
+	//TODO: This is deprecated. Remove once last Gen1 GfxDevice is gone!
+
 	enum class CanvasInit 		//. autoExtras
 	{
 		Keep,

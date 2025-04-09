@@ -172,8 +172,6 @@ namespace wg
 		GLsync          m_idleSync = 0;
 
 		bool			m_bFullyInitialized = false;
-		
-		CanvasInit		m_beginRenderOp = CanvasInit::Keep;
 
 		CoordF			m_blitSourceSize;
 		SampleMethod	m_blitSourceSampleMethod;

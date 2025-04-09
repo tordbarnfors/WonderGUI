@@ -231,7 +231,6 @@ namespace wg
         int             m_canvasYstart;
 
         bool            m_bFullyInitialized = false;
-        CanvasInit      m_beginRenderOp = CanvasInit::Keep;
         
         struct Uniform
         {

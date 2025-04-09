@@ -120,7 +120,7 @@ public:
 
 			for (int j = 0; j < 5; j++)
 			{
-				pDevice->fill(RectSPX(rect*64), Color::White);
+				pDevice->fill(RectSPX(rect*64), Color::Yellow);
 				rect.y += 12.f;
 				rect.x += 0.25f;
 			}

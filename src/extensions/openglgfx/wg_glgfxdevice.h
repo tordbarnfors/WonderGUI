@@ -216,8 +216,6 @@ namespace wg
 
 		bool			m_bFullyInitialized = false;
 		
-		CanvasInit		m_beginRenderOp = CanvasInit::Keep;
-
 		CoordF			m_blitSourceSize;
 
 		SizeI			m_defaultCanvasSize;

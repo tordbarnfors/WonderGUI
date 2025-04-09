@@ -136,7 +136,7 @@ namespace wg
 		};
 
 
-		id<MTLRenderCommandEncoder> _setCanvas( MetalSurface * pCanvas, int width, int height, CanvasInit initOperation, Color clearColor );
+		id<MTLRenderCommandEncoder> _setCanvas( MetalSurface * pCanvas, int width, int height );
 		void            _setBlendMode( id<MTLRenderCommandEncoder>, BlendMode mode);
 		void            _setMorphFactor( id<MTLRenderCommandEncoder>, float morphFactor);
 		void            _setFixedBlendColor( id<MTLRenderCommandEncoder>, HiColor color);
@@ -183,7 +183,6 @@ namespace wg
 		int             m_canvasYstart;
 
 		bool            m_bFullyInitialized = false;
-		CanvasInit      m_beginRenderOp = CanvasInit::Keep;
 
 		struct Uniform
 		{
@@ -241,6 +240,8 @@ namespace wg
 
 
 		id<MTLRenderCommandEncoder>		m_renderEncoder = nil;
+
+		bool			m_bFullCanvasSession = false;
 
 		// Buffers
 
