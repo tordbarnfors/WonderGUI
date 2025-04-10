@@ -300,8 +300,7 @@ namespace wg
 
 		std::atomic<int>            m_flushesInProgress;                // Number of buffer flushes to complete before metal is idle.
 
-		id<MTLRenderPipelineState>  m_plotPipelines[BlendMode_size][5];          // [BlendMode][DestFormat]
-		id<MTLRenderPipelineState>  m_lineFromToPipelines[BlendMode_size][5];    // [BlendMode][DestFormat]
+		id<MTLRenderPipelineState>  m_linePipelines[BlendMode_size][5];    // [BlendMode][DestFormat]
 		id<MTLRenderPipelineState>  m_fillPipelines[2][BlendMode_size][5];       // [bGradient][BlendMode][DestFormat]
 		id<MTLRenderPipelineState>  m_fillAAPipelines[2][BlendMode_size][5];     // [bGradient][BlendMode][DestFormat]
 

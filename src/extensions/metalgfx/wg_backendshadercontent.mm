@@ -46,16 +46,7 @@ typedef struct             // Uniform buffer object for fragment shader blur inf
 } BlurUniform;
 
 
-//____ PlotFragInput ______________________________________________
-
-typedef struct 
-{
-    float4 position [[position]];
-    float pointSize [[point_size]];
-    float4 color;
-} PlotFragInput;
-
-//____ LineFromToFragInput ______________________________________________
+//____ LineFragInput ______________________________________________
 
 typedef struct 
 {
@@ -67,7 +58,7 @@ typedef struct
     float ifSteep;
     float ifMild;
 
-} LineFromToFragInput;
+} LineFragInput;
 
 //____ FillFragInput ______________________________________________
 
@@ -94,6 +85,16 @@ typedef struct
     float4 color;
     float4 rect;
 } FillAAFragInput;
+
+//____ FillAATintmapFragInput ______________________________________________
+
+typedef struct 
+{
+    float4 position [[position]];
+    float4 color;
+    float4 rect;
+    float2 tintmapUV;
+} FillAATintmapFragInput;
 
 
 //____ BlitFragInput ______________________________________________
@@ -129,59 +130,16 @@ typedef struct
 } SegmentsFragInput;
 
 
+//____ lineVertexShader() ____________________________________________
 
-//____ plotVertexShader() ____________________________________________
-
-vertex PlotFragInput
-plotVertexShader(uint vertexID [[vertex_id]],
-             constant Vertex *pVertices [[buffer(0)]],
-             constant vector_float4  *pExtras [[buffer(1)]],
-             constant Uniform * pUniform[[buffer(2)]])
-{
-    PlotFragInput out;
-
-    float2 pos = (vector_float2) pVertices[vertexID].coord.xy;
-
-    vector_float2 canvasSize = pUniform->canvasDim;
-    
-    out.position = vector_float4(0.0, 0.0, 0.0, 1.0);
-    out.position.x = pos.x*2 / canvasSize.x - 1.0;
-    out.position.y = (pUniform->canvasYOfs + pUniform->canvasYMul*pos.y)*2 / canvasSize.y - 1.0;
-
-
-    int     eOfs = pVertices[vertexID].extrasOfs;
-    out.color = pUniform->flatTint * pExtras[eOfs];
-
-    out.pointSize = 1.f;
-
-    return out;
-}
-
-//____ plotFragmentShader() ____________________________________________
-
-fragment float4 plotFragmentShader(PlotFragInput in [[stage_in]])
-{
-    return in.color;
-};
-
-//____ plotFragmentShader_A8() ____________________________________________
-
-fragment float4 plotFragmentShader_A8(PlotFragInput in [[stage_in]])
-{
-    return { in.color.a, 0.0, 0.0, 0.0 };
-};
-
-
-//____ lineFromToVertexShader() ____________________________________________
-
-vertex LineFromToFragInput
-lineFromToVertexShader(uint vertexID [[vertex_id]],
+vertex LineFragInput
+lineVertexShader(uint vertexID [[vertex_id]],
              constant Vertex *pVertices [[buffer(0)]],
              constant vector_float4  *pColor [[buffer(1)]],
              constant vector_float4  *pExtras [[buffer(2)]],
              constant Uniform * pUniform[[buffer(3)]])
 {
-    LineFromToFragInput out;
+    LineFragInput out;
 
     float2 pos = (vector_float2) pVertices[vertexID].coord.xy;
 
@@ -206,9 +164,9 @@ lineFromToVertexShader(uint vertexID [[vertex_id]],
     return out;
 }
 
-//____ lineFromToFragmentShader() ____________________________________________
+//____ lineFragmentShader() ____________________________________________
 
-fragment float4 lineFromToFragmentShader(LineFromToFragInput in [[stage_in]])
+fragment float4 lineFragmentShader(LineFragInput in [[stage_in]])
 {
    float4 outColor;
 
@@ -218,9 +176,9 @@ fragment float4 lineFromToFragmentShader(LineFromToFragInput in [[stage_in]])
    return outColor;
 };
 
-//____ lineFromToFragmentShader_A8() ____________________________________________
+//____ lineFragmentShader_A8() ____________________________________________
 
-fragment float4 lineFromToFragmentShader_A8(LineFromToFragInput in [[stage_in]])
+fragment float4 lineFragmentShader_A8(LineFragInput in [[stage_in]])
 {
    float4 outColor;
    outColor.r = in.color.a * clamp(in.w - abs(in.position.x*in.ifSteep + in.position.y*in.ifMild - in.s - (in.position.x*in.ifMild + in.position.y*in.ifSteep) * in.slope), 0.0, 1.0);
@@ -245,8 +203,8 @@ fillVertexShader(uint vertexID [[vertex_id]],
     vector_float2 canvasSize = pUniform->canvasDim;
     
     out.position = vector_float4(0.0, 0.0, 0.0, 1.0);
-    out.position.x = pos.x*2 / 512.0 - 1.0;
-    out.position.y = (pUniform->canvasYOfs + pUniform->canvasYMul*pos.y)*2 / 512.0 - 1.0;
+    out.position.x = pos.x*2 / canvasSize.x - 1.0;
+    out.position.y = (pUniform->canvasYOfs + pUniform->canvasYMul*pos.y)*2 / canvasSize.y - 1.0;
 
 
     int     colOfs = pVertices[vertexID].colorOfs;
@@ -351,41 +309,6 @@ fillAAVertexShader(uint vertexID [[vertex_id]],
     return out;
 }
 
-
-//____ fillGradientAAVertexShader() ____________________________________________
-
-vertex FillAAFragInput
-fillGradientAAVertexShader(uint vertexID [[vertex_id]],
-             constant Vertex *pVertices [[buffer(0)]],
-             constant vector_float4  *pColor [[buffer(1)]],
-             constant vector_float4  *pExtras [[buffer(2)]],
-             constant Uniform * pUniform[[buffer(3)]])
-{
-    FillAAFragInput out;
-
-    float2 pos = (vector_float2) pVertices[vertexID].coord.xy;
-
-    vector_float2 canvasSize = pUniform->canvasDim;
-    
-    out.position = vector_float4(0.0, 0.0, 0.0, 1.0);
-    out.position.x = pos.x*2 / canvasSize.x - 1.0;
-    out.position.y = (pUniform->canvasYOfs + pUniform->canvasYMul*pos.y)*2 / canvasSize.y - 1.0;
-
-    float2   tintOfs = (pos - float2(pUniform->tintRectPos)) / float2(pUniform->tintRectSize);
-    float4   lineStartTint = pUniform->topLeftTint + (pUniform->bottomLeftTint - pUniform->topLeftTint) * tintOfs.y;
-    float4   lineEndTint = pUniform->topRightTint + (pUniform->bottomRightTint - pUniform->topRightTint) * tintOfs.y;
-    float4   gradientTint = lineStartTint + (lineEndTint - lineStartTint) * tintOfs.x;
-
-    int     eOfs = pVertices[vertexID].extrasOfs;
-    out.color = pUniform->flatTint * gradientTint * pExtras[eOfs];
-
-    out.rect = pExtras[eOfs+1];
-//    out.rect.y = pUniform->canvasYOfs + pUniform->canvasYMul*out.rect.y;
-    out.rect.zw += float2(0.5f,0.5f);
-
-    return out;
-}
-
 //____ fillAAFragmentShader() ____________________________________________
 
 fragment float4 fillAAFragmentShader(FillAAFragInput in [[stage_in]])
@@ -407,6 +330,72 @@ fragment float4 fillAAFragmentShader_A8(FillAAFragInput in [[stage_in]])
     
     return { in.color.a * alphas.x * alphas.y, 0.0, 0.0, 0.0 };
 };
+
+
+//____ fillAATintmapVertexShader() ____________________________________________
+
+vertex FillAATintmapFragInput
+fillAATintmapVertexShader(uint vertexID [[vertex_id]],
+             constant Vertex *pVertices [[buffer(0)]],
+             constant vector_float4  *pColor [[buffer(1)]],
+             constant vector_float4  *pExtras [[buffer(2)]],
+             constant Uniform * pUniform[[buffer(3)]])
+{
+    FillAATintmapFragInput out;
+
+    float2 pos = (vector_float2) pVertices[vertexID].coord.xy;
+
+    vector_float2 canvasSize = pUniform->canvasDim;
+    
+    out.position = vector_float4(0.0, 0.0, 0.0, 1.0);
+    out.position.x = pos.x*2 / canvasSize.x - 1.0;
+    out.position.y = (pUniform->canvasYOfs + pUniform->canvasYMul*pos.y)*2 / canvasSize.y - 1.0;
+
+    int     colOfs = pVertices[vertexID].colorOfs;
+    out.color = pColor[colOfs];
+    out.tintmapUV = pVertices[vertexID].tintmapOfs;
+
+    int     eOfs = pVertices[vertexID].extrasOfs;
+    out.rect = pExtras[eOfs];
+    out.rect.zw += float2(0.5f,0.5f);
+
+    return out;
+}
+
+//____ fillAATintmapFragmentShader() ____________________________________________
+
+fragment float4 fillAATintmapFragmentShader(FillAATintmapFragInput in [[stage_in]],
+                                    constant float4  *pColor [[buffer(0)]])
+{
+    float4 colorFromColorstripX = pColor[(int)in.tintmapUV.x];
+    float4 colorFromColorstripY = pColor[(int)in.tintmapUV.y];
+
+    float4 color = colorFromColorstripX * colorFromColorstripY * in.color;
+
+    float2 middleofs = abs(in.position.xy - in.rect.xy);
+    float2 alphas = clamp(in.rect.zw  - middleofs, 0.f, 1.f);
+    color.a = color.a * alphas.x * alphas.y;
+
+    return color;
+};
+
+//____ fillAATintmapFragmentShader_A8() ____________________________________________
+
+fragment float4 fillAATintmapFragmentShader_A8(FillAATintmapFragInput in [[stage_in]],
+                                        constant float4  *pColor [[buffer(0)]])
+{
+    float alphaFromColorstripX = pColor[(int)in.tintmapUV.x].a;
+    float alphaFromColorstripY = pColor[(int)in.tintmapUV.y].a;
+
+    float alpha = alphaFromColorstripX * alphaFromColorstripY * in.color.a;
+
+    float2 middleofs = abs(in.position.xy - in.rect.xy);
+    float2 alphas = clamp(in.rect.zw  - middleofs, 0.f, 1.f);
+    
+    return { alpha * alphas.x * alphas.y, 0.0, 0.0, 0.0 };
+};
+
+
 
 //____ blitVertexShader() _______________________________________________
 
