@@ -105,8 +105,9 @@ namespace wg
 
 		enum class FragmentInputIndex
 		{
-			ExtrasBuffer = 0,
-			BlurUniform = 1
+			ColorBuffer = 0,
+			ExtrasBuffer = 1,
+			BlurUniform = 2
 		};
 
 
@@ -278,7 +279,6 @@ namespace wg
 		MetalSurface_p  m_pActiveCanvas     = nullptr;                  // Currently active canvas during buffer execution, not to confuse with m_pCanvas which might not be active yet.
 		SizeI           m_activeCanvasSize;
 		DestFormat      m_activeCanvasFormat;
-		bool            m_bGradientActive   = false;
 		BlendMode       m_activeBlendMode   = BlendMode::Blend;
 		float           m_activeMorphFactor = 0.5f;
 		HiColor         m_activeFixedBlendColor = HiColor::White;

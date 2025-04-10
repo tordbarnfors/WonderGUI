@@ -126,11 +126,11 @@ namespace wg
 				m_fillPipelines[0][blendMode][(int)DestFormat::BGRX8_sRGB] = _compileRenderPipeline( @"Fill BGRX_8_sRGB Pipeline", @"fillVertexShader", @"fillFragmentShader", (BlendMode) blendMode, PixelFormat::BGRX_8_sRGB );
 				m_fillPipelines[0][blendMode][(int)DestFormat::Alpha_8] = _compileRenderPipeline( @"Fill A_8 Pipeline", @"fillVertexShader", @"fillFragmentShader_A8", (BlendMode) blendMode, PixelFormat::Alpha_8 );
 
-				m_fillPipelines[1][blendMode][(int)DestFormat::BGRA8_linear] = _compileRenderPipeline( @"GradientFill BGRA_8_linear Pipeline", @"fillGradientVertexShader", @"fillFragmentShader", (BlendMode) blendMode, PixelFormat::BGRA_8_linear );
-				m_fillPipelines[1][blendMode][(int)DestFormat::BGRX8_linear] = _compileRenderPipeline( @"GradientFill BGRX_8_linear Pipeline", @"fillGradientVertexShader", @"fillFragmentShader", (BlendMode) blendMode, PixelFormat::BGRX_8_linear );
-				m_fillPipelines[1][blendMode][(int)DestFormat::BGRA8_sRGB] = _compileRenderPipeline( @"GradientFill BGRA_8_sRGB Pipeline", @"fillGradientVertexShader", @"fillFragmentShader", (BlendMode) blendMode, PixelFormat::BGRA_8_sRGB );
-				m_fillPipelines[1][blendMode][(int)DestFormat::BGRX8_sRGB] = _compileRenderPipeline( @"GradientFill BGRX_8_sRGB Pipeline", @"fillGradientVertexShader", @"fillFragmentShader", (BlendMode) blendMode, PixelFormat::BGRX_8_sRGB );
-				m_fillPipelines[1][blendMode][(int)DestFormat::Alpha_8] = _compileRenderPipeline( @"GradientFill A_8 Pipeline", @"fillGradientVertexShader", @"fillFragmentShader_A8", (BlendMode) blendMode, PixelFormat::Alpha_8 );
+				m_fillPipelines[1][blendMode][(int)DestFormat::BGRA8_linear] = _compileRenderPipeline( @"GradientFill BGRA_8_linear Pipeline", @"fillTintmapVertexShader", @"fillTintmapFragmentShader", (BlendMode) blendMode, PixelFormat::BGRA_8_linear );
+				m_fillPipelines[1][blendMode][(int)DestFormat::BGRX8_linear] = _compileRenderPipeline( @"GradientFill BGRX_8_linear Pipeline", @"fillTintmapVertexShader", @"fillTintmapFragmentShader", (BlendMode) blendMode, PixelFormat::BGRX_8_linear );
+				m_fillPipelines[1][blendMode][(int)DestFormat::BGRA8_sRGB] = _compileRenderPipeline( @"GradientFill BGRA_8_sRGB Pipeline", @"fillTintmapVertexShader", @"fillTintmapFragmentShader", (BlendMode) blendMode, PixelFormat::BGRA_8_sRGB );
+				m_fillPipelines[1][blendMode][(int)DestFormat::BGRX8_sRGB] = _compileRenderPipeline( @"GradientFill BGRX_8_sRGB Pipeline", @"fillTintmapVertexShader", @"fillTintmapFragmentShader", (BlendMode) blendMode, PixelFormat::BGRX_8_sRGB );
+				m_fillPipelines[1][blendMode][(int)DestFormat::Alpha_8] = _compileRenderPipeline( @"GradientFill A_8 Pipeline", @"fillTintmapVertexShader", @"fillTintmapFragmentShader_A8", (BlendMode) blendMode, PixelFormat::Alpha_8 );
 
 				m_fillAAPipelines[0][blendMode][(int)DestFormat::BGRA8_linear] = _compileRenderPipeline( @"AAFill BGRA_8_linear Pipeline", @"fillAAVertexShader", @"fillAAFragmentShader", (BlendMode) blendMode, PixelFormat::BGRA_8_linear );
 				m_fillAAPipelines[0][blendMode][(int)DestFormat::BGRX8_linear] = _compileRenderPipeline( @"AAFill BGRX_8_linear Pipeline", @"fillAAVertexShader", @"fillAAFragmentShader", (BlendMode) blendMode, PixelFormat::BGRX_8_linear );
@@ -872,7 +872,59 @@ namespace wg
 
 					p = (const uint16_t*) p32;
 
-					pColors += nHorrColors + nVertColors;
+//					pColors += nHorrColors + nVertColors;
+
+					m_bTintmap = true;
+					m_tintmapRect = RectI(x, y, w, h) / 64;
+
+					if (nHorrColors > 0)
+					{
+						m_tintmapBeginX = int(pColorMTL - m_pColorBuffer);
+						m_tintmapEndX = int(pColorMTL - m_pColorBuffer + nHorrColors);
+
+						for (int i = 0; i < nHorrColors; i++)
+						{
+							pColorMTL->r = pColors->r / 4096.f;
+							pColorMTL->g = pColors->g / 4096.f;
+							pColorMTL->b = pColors->b / 4096.f;
+							pColorMTL->a = pColors->a / 4096.f;
+							pColorMTL++;
+							pColors++;
+						}
+					}
+					else
+					{
+						// Default to use white
+
+						m_tintmapBeginX = 0;
+						m_tintmapEndX = 0;
+					}
+
+					if (nVertColors > 0)
+					{
+
+						m_tintmapBeginY = int(pColorMTL - m_pColorBuffer);
+						m_tintmapEndY = int(pColorMTL - m_pColorBuffer + nVertColors);
+
+						for (int i = 0; i < nVertColors; i++)
+						{
+							pColorMTL->r = pColors->r / 4096.f;
+							pColorMTL->g = pColors->g / 4096.f;
+							pColorMTL->b = pColors->b / 4096.f;
+							pColorMTL->a = pColors->a / 4096.f;
+							pColorMTL++;
+							pColors++;
+						}
+					}
+					else
+					{
+						// Default to use white
+
+						m_tintmapBeginY = 0;
+						m_tintmapEndY = 0;
+					}
+
+					m_tintColorOfs = -1;
 				}
 
 				if (statesChanged & uint8_t(StateChange::BlendMode))
@@ -994,7 +1046,7 @@ namespace wg
 						{
 							if( nRectsWritten > 0 )
 							{
-								[m_renderEncoder setRenderPipelineState:m_fillPipelines[m_bGradientActive][(int)m_activeBlendMode][(int)m_activeCanvasFormat] ];
+								[m_renderEncoder setRenderPipelineState:m_fillPipelines[m_bTintmap][(int)m_activeBlendMode][(int)m_activeCanvasFormat] ];
 								[m_renderEncoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:vertexOfs vertexCount:nRectsWritten*6];
 
 								vertexOfs = int(pVertexMTL - m_pVertexBuffer);
@@ -1012,7 +1064,7 @@ namespace wg
 						{
 							if (nRectsWritten > 0)
 							{
-								[m_renderEncoder setRenderPipelineState:m_fillAAPipelines[m_bGradientActive][(int)m_activeBlendMode][(int)m_activeCanvasFormat] ];
+								[m_renderEncoder setRenderPipelineState:m_fillAAPipelines[m_bTintmap][(int)m_activeBlendMode][(int)m_activeCanvasFormat] ];
 								[m_renderEncoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:vertexOfs vertexCount:nRectsWritten*6];
 
 								vertexOfs = int(pVertexMTL - m_pVertexBuffer);
@@ -1139,9 +1191,9 @@ namespace wg
 				// Draw
 
 				if( bStraightFill )
-					[m_renderEncoder setRenderPipelineState:m_fillPipelines[m_bGradientActive][(int)m_activeBlendMode][(int)m_activeCanvasFormat] ];
+					[m_renderEncoder setRenderPipelineState:m_fillPipelines[m_bTintmap][(int)m_activeBlendMode][(int)m_activeCanvasFormat] ];
 				else
-					[m_renderEncoder setRenderPipelineState:m_fillAAPipelines[m_bGradientActive][(int)m_activeBlendMode][(int)m_activeCanvasFormat] ];
+					[m_renderEncoder setRenderPipelineState:m_fillAAPipelines[m_bTintmap][(int)m_activeBlendMode][(int)m_activeCanvasFormat] ];
 
 				[m_renderEncoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:vertexOfs vertexCount:nRectsWritten*6];
 				break;
@@ -1485,7 +1537,7 @@ namespace wg
 					else if(pSurf->m_pPixelDescription->A_mask == 0)
 						shader = BlitFragShader::RGBXSource;
 
-					[m_renderEncoder setRenderPipelineState:m_blitPipelines[(int)shader][m_bGradientActive][(int)m_activeBlendMode][(int)m_activeCanvasFormat] ];
+					[m_renderEncoder setRenderPipelineState:m_blitPipelines[(int)shader][m_bTintmap][(int)m_activeBlendMode][(int)m_activeCanvasFormat] ];
 					[m_renderEncoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:vertexOfs vertexCount:nRects*6];
 					vertexOfs += nRects*6;
 
@@ -1566,6 +1618,11 @@ id<MTLRenderCommandEncoder> MetalBackend::_setCanvas( MetalSurface * pCanvas, in
 	[renderEncoder setVertexBuffer:m_vertexBufferId offset:0 atIndex:(unsigned) VertexInputIndex::VertexBuffer];
 	[renderEncoder setVertexBuffer:m_colorBufferId offset:0 atIndex:(unsigned) VertexInputIndex::ColorBuffer];
 	[renderEncoder setVertexBuffer:m_extrasBufferId offset:0 atIndex:(unsigned) VertexInputIndex::ExtrasBuffer];
+
+	//
+
+	[renderEncoder setFragmentBuffer:m_colorBufferId offset:0 atIndex:(unsigned) FragmentInputIndex::ColorBuffer];
+
 
 	// Set buffers/textures for segments fragment shader
 
