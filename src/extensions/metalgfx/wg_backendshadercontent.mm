@@ -106,6 +106,16 @@ typedef struct
     float2 texUV;
 } BlitFragInput;
 
+//____ BlitTintmapFragInput ______________________________________________
+
+typedef struct 
+{
+    float4 position [[position]];
+    float4 color;
+    float2 texUV;
+    float2 tintmapUV;
+} BlitTintmapFragInput;
+
 //____ PaletteBlitInterpolateFragInput ______________________________________________
 
 typedef struct 
@@ -116,6 +126,19 @@ typedef struct
     float2 texUV11;
     float2 uvFrac;
  } PaletteBlitInterpolateFragInput;
+
+//____ PaletteBlitInterpolateTintmapFragInput ______________________________________________
+
+typedef struct 
+{
+    float4 position [[position]];
+    float4 color;
+    float2 texUV00;
+    float2 texUV11;
+    float2 uvFrac;
+    float2 tintmapUV;
+ } PaletteBlitInterpolateTintmapFragInput;
+
 
 //____ SegmentsFragInput ______________________________________________
 
@@ -432,46 +455,6 @@ blitVertexShader(uint vertexID [[vertex_id]],
     return out;
 }
 
-//____ blitGradientVertexShader() _______________________________________________
-
-
-vertex BlitFragInput
-blitGradientVertexShader(uint vertexID [[vertex_id]],
-             constant Vertex *pVertices [[buffer(0)]],
-             constant vector_float4  *pExtras [[buffer(1)]],
-             constant Uniform * pUniform[[buffer(2)]])
-{
-    BlitFragInput out;
-
-    float2 pos = (vector_float2) pVertices[vertexID].coord.xy;
-
-    vector_float2 canvasSize = pUniform->canvasDim;
-    
-    out.position = vector_float4(0.0, 0.0, 0.0, 1.0);
-    out.position.x = pos.x*2 / canvasSize.x - 1.0;
-    out.position.y = (pUniform->canvasYOfs + pUniform->canvasYMul*pos.y)*2 / canvasSize.y - 1.0;
-
-
-    int     eOfs = pVertices[vertexID].extrasOfs;
-
-    vector_float4 srcDst = pExtras[eOfs];
-    vector_float4 transform = pExtras[eOfs+1];
-    vector_float2 src = srcDst.xy;
-    vector_float2 dst = srcDst.zw;
-
-    out.texUV.x = (src.x + 0.0001f + (pos.x - dst.x) * transform.x + (pos.y - dst.y) * transform.z) / pUniform->texSize.x;      //TODO: Replace this ugly +0.02f fix with whatever is correct.
-    out.texUV.y = (src.y + 0.0001f + (pos.x - dst.x) * transform.y + (pos.y - dst.y) * transform.w) / pUniform->texSize.y;      //TODO: Replace this ugly +0.02f fix with whatever is correct.
-
-    float2   tintOfs = (pos - float2(pUniform->tintRectPos)) / float2(pUniform->tintRectSize);
-    float4   lineStartTint = pUniform->topLeftTint + (pUniform->bottomLeftTint - pUniform->topLeftTint) * tintOfs.y;
-    float4   lineEndTint = pUniform->topRightTint + (pUniform->bottomRightTint - pUniform->topRightTint) * tintOfs.y;
-    float4   gradientTint = lineStartTint + (lineEndTint - lineStartTint) * tintOfs.x;
-
-    out.color = pUniform->flatTint * gradientTint;
-
-    return out;
-}
-
 //____ blitFragmentShader() ____________________________________________
 
 fragment float4 blitFragmentShader(BlitFragInput in [[stage_in]],
@@ -539,6 +522,137 @@ fragment float4 alphaBlitFragmentShader_A8(BlitFragInput in [[stage_in]],
     return { colorSample * in.color.a, 0.0, 0.0, 0.0 };
 };
 
+//____ blitTintmapVertexShader() _______________________________________________
+
+
+vertex BlitTintmapFragInput
+blitTintmapVertexShader(uint vertexID [[vertex_id]],
+             constant Vertex *pVertices [[buffer(0)]],
+             constant vector_float4  *pColor [[buffer(1)]],
+             constant vector_float4  *pExtras [[buffer(2)]],
+             constant Uniform * pUniform[[buffer(3)]])
+{
+    BlitTintmapFragInput out;
+
+    float2 pos = (vector_float2) pVertices[vertexID].coord.xy;
+
+    vector_float2 canvasSize = pUniform->canvasDim;
+    
+    out.position = vector_float4(0.0, 0.0, 0.0, 1.0);
+    out.position.x = pos.x*2 / canvasSize.x - 1.0;
+    out.position.y = (pUniform->canvasYOfs + pUniform->canvasYMul*pos.y)*2 / canvasSize.y - 1.0;
+
+
+    int     eOfs = pVertices[vertexID].extrasOfs;
+
+    vector_float4 srcDst = pExtras[eOfs];
+    vector_float4 transform = pExtras[eOfs+1];
+    vector_float2 src = srcDst.xy;
+    vector_float2 dst = srcDst.zw;
+
+    out.texUV.x = (src.x + 0.0001f + (pos.x - dst.x) * transform.x + (pos.y - dst.y) * transform.z) / pUniform->texSize.x;      //TODO: Replace this ugly +0.02f fix with whatever is correct.
+    out.texUV.y = (src.y + 0.0001f + (pos.x - dst.x) * transform.y + (pos.y - dst.y) * transform.w) / pUniform->texSize.y;      //TODO: Replace this ugly +0.02f fix with whatever is correct.
+
+    out.tintmapUV = pVertices[vertexID].tintmapOfs;
+//    out.color = pUniform->flatTint;
+
+    return out;
+}
+
+//____ blitTintmapFragmentShader() ____________________________________________
+
+fragment float4 blitTintmapFragmentShader(BlitTintmapFragInput in [[stage_in]],
+                                    texture2d<half> colorTexture [[ texture(0) ]],
+                                    sampler textureSampler [[ sampler(0) ]],
+                                    constant float4  *pColor [[buffer(0)]])
+
+{
+    const half4 colorSample = colorTexture.sample(textureSampler, in.texUV);
+
+    float4 colorFromColorstripX = pColor[(int)in.tintmapUV.x];
+    float4 colorFromColorstripY = pColor[(int)in.tintmapUV.y];
+
+    return float4(colorSample) * colorFromColorstripX * colorFromColorstripY;
+};
+
+//____ blitTintmapFragmentShader_A8() ____________________________________________
+
+fragment float4 blitTintmapFragmentShader_A8(BlitTintmapFragInput in [[stage_in]],
+                                    texture2d<half> colorTexture [[ texture(0) ]],
+                                    sampler textureSampler [[ sampler(0) ]],
+                                    constant float4  *pColor [[buffer(0)]])
+{
+    const float colorSample = float(colorTexture.sample(textureSampler, in.texUV).a);
+
+    float alphaFromColorstripX = pColor[(int)in.tintmapUV.x].a;
+    float alphaFromColorstripY = pColor[(int)in.tintmapUV.y].a;
+
+    return { colorSample * alphaFromColorstripX * alphaFromColorstripY, 0.0, 0.0, 0.0 };
+};
+
+//____ rgbxBlitTintmapFragmentShader() ____________________________________________
+
+fragment float4 rgbxBlitTintmapFragmentShader(BlitTintmapFragInput in [[stage_in]],
+                                    texture2d<half> colorTexture [[ texture(0) ]],
+                                    sampler textureSampler [[ sampler(0) ]],
+                                    constant float4  *pColor [[buffer(0)]])
+{
+    half4 colorSample = colorTexture.sample(textureSampler, in.texUV);
+    colorSample.a = (half) 1.0;
+
+    float4 colorFromColorstripX = pColor[(int)in.tintmapUV.x];
+    float4 colorFromColorstripY = pColor[(int)in.tintmapUV.y];
+
+    return float4(colorSample) * colorFromColorstripX * colorFromColorstripY;
+};
+
+//____ rgbxBlitTintmapFragmentShader_A8() ____________________________________________
+
+fragment float4 rgbxBlitTintmapFragmentShader_A8(BlitTintmapFragInput in [[stage_in]],
+                                    texture2d<half> colorTexture [[ texture(0) ]],
+                                    sampler textureSampler [[ sampler(0) ]],
+                                    constant float4  *pColor [[buffer(0)]])
+{
+    float alphaFromColorstripX = pColor[(int)in.tintmapUV.x].a;
+    float alphaFromColorstripY = pColor[(int)in.tintmapUV.y].a;
+
+    return { alphaFromColorstripX * alphaFromColorstripY, 0.0, 0.0, 0.0 };
+};
+
+
+//____ alphaBlitTintmapFragmentShader() ____________________________________________
+
+fragment float4 alphaBlitTintmapFragmentShader(BlitTintmapFragInput in [[stage_in]],
+                                    texture2d<half> colorTexture [[ texture(0) ]],
+                                    sampler textureSampler [[ sampler(0) ]],
+                                    constant float4  *pColor [[buffer(0)]])
+{
+    float4 colorFromColorstripX = pColor[(int)in.tintmapUV.x];
+    float4 colorFromColorstripY = pColor[(int)in.tintmapUV.y];
+
+    float4 color = colorFromColorstripX * colorFromColorstripY;
+
+    color.a *= colorTexture.sample(textureSampler, in.texUV).r;
+
+    return color;
+};
+
+//____ alphaBlitTintmapFragmentShader_A8() ____________________________________________
+
+fragment float4 alphaBlitTintmapFragmentShader_A8(BlitTintmapFragInput in [[stage_in]],
+                                    texture2d<half> colorTexture [[ texture(0) ]],
+                                    sampler textureSampler [[ sampler(0) ]],
+                                    constant float4  *pColor [[buffer(0)]])
+{
+    const float colorSample = float(colorTexture.sample(textureSampler, in.texUV).r);
+
+    float alphaFromColorstripX = pColor[(int)in.tintmapUV.x].a;
+    float alphaFromColorstripY = pColor[(int)in.tintmapUV.y].a;
+
+    return { colorSample * alphaFromColorstripX * alphaFromColorstripY, 0.0, 0.0, 0.0 };
+};
+
+
 
 
 //____ paletteBlitNearestFragmentShader() ____________________________________________
@@ -575,6 +689,48 @@ fragment float4 paletteBlitNearestFragmentShader_A8(BlitFragInput in [[stage_in]
 };
 
 
+//____ paletteBlitNearestTintmapFragmentShader() ____________________________________________
+
+fragment float4 paletteBlitNearestTintmapFragmentShader(BlitTintmapFragInput in [[stage_in]],
+                                    texture2d<float> colorTexture [[ texture(0) ]],
+                                    texture2d<half> paletteTexture [[ texture(1) ]],
+                                    sampler textureSampler [[ sampler(0) ]],
+                                    constant float4  *pColor [[buffer(0)]])
+{
+    constexpr sampler paletteSampler (mag_filter::nearest,
+                                      min_filter::nearest);
+
+    const float colorIndex = colorTexture.sample(textureSampler, in.texUV).r;
+    const half4 colorSample = paletteTexture.sample(paletteSampler, {colorIndex,0.5f} );
+
+    float4 colorFromColorstripX = pColor[(int)in.tintmapUV.x];
+    float4 colorFromColorstripY = pColor[(int)in.tintmapUV.y];
+
+    return float4(colorSample) * colorFromColorstripX * colorFromColorstripY;
+};
+
+//____ paletteBlitNearestTintmapFragmentShader_A8() ____________________________________________
+
+fragment float4 paletteBlitNearestTintmapFragmentShader_A8(BlitTintmapFragInput in [[stage_in]],
+                                    texture2d<float> colorTexture [[ texture(0) ]],
+                                    texture2d<half> paletteTexture [[ texture(1) ]],
+                                    sampler textureSampler [[ sampler(0) ]],
+                                    constant float4  *pColor [[buffer(0)]])
+{
+    constexpr sampler paletteSampler (mag_filter::nearest,
+                                      min_filter::nearest);
+
+    const float colorIndex = colorTexture.sample(textureSampler, in.texUV).r;
+    const float colorSample = paletteTexture.sample(paletteSampler, {colorIndex,0.5f} ).a;
+
+    float alphaFromColorstripX = pColor[(int)in.tintmapUV.x].a;
+    float alphaFromColorstripY = pColor[(int)in.tintmapUV.y].a;
+
+    return { colorSample * alphaFromColorstripX * alphaFromColorstripY, 0.0, 0.0, 0.0 };
+};
+
+
+
 //____ paletteBlitInterpolateVertexShader() _______________________________________________
 
 vertex PaletteBlitInterpolateFragInput
@@ -609,49 +765,6 @@ paletteBlitInterpolateVertexShader(uint vertexID [[vertex_id]],
     out.texUV11 = (texUV+1)/ (float2) pUniform->texSize;
 
     out.color = pUniform->flatTint;
-
-    return out;
-}
-
-//____ paletteBlitInterpolateGradientVertexShader() _______________________________________________
-
-vertex PaletteBlitInterpolateFragInput
-paletteBlitInterpolateGradientVertexShader(uint vertexID [[vertex_id]],
-             constant Vertex *pVertices [[buffer(0)]],
-             constant vector_float4  *pExtras [[buffer(1)]],
-             constant Uniform * pUniform[[buffer(2)]])
-{
-    PaletteBlitInterpolateFragInput out;
-
-    float2 pos = (vector_float2) pVertices[vertexID].coord.xy;
-
-    vector_float2 canvasSize = pUniform->canvasDim;
-    
-    out.position = vector_float4(0.0, 0.0, 0.0, 1.0);
-    out.position.x = pos.x*2 / canvasSize.x - 1.0;
-    out.position.y = (pUniform->canvasYOfs + pUniform->canvasYMul*pos.y)*2 / canvasSize.y - 1.0;
-
-
-    int     eOfs = pVertices[vertexID].extrasOfs;
-
-    vector_float4 srcDst = pExtras[eOfs];
-    vector_float4 transform = pExtras[eOfs+1];
-    vector_float2 src = srcDst.xy;
-    vector_float2 dst = srcDst.zw;
-
-    float2 texUV = src + (pos-dst) * transform.xw + (pos.yx - dst.yx) * transform.zy;
-    texUV -= 0.5f;
-
-    out.uvFrac = texUV;
-    out.texUV00 = texUV/ (float2) pUniform->texSize;
-    out.texUV11 = (texUV+1)/ (float2) pUniform->texSize;
-
-    float2   tintOfs = (pos - float2(pUniform->tintRectPos)) / float2(pUniform->tintRectSize);
-    float4   lineStartTint = pUniform->topLeftTint + (pUniform->bottomLeftTint - pUniform->topLeftTint) * tintOfs.y;
-    float4   lineEndTint = pUniform->topRightTint + (pUniform->bottomRightTint - pUniform->topRightTint) * tintOfs.y;
-    float4   gradientTint = lineStartTint + (lineEndTint - lineStartTint) * tintOfs.x;
-
-    out.color = pUniform->flatTint * gradientTint;
 
     return out;
 }
@@ -708,12 +821,113 @@ fragment float4 paletteBlitInterpolateFragmentShader_A8(PaletteBlitInterpolateFr
    return { colorSample * in.color.a, 0.0, 0.0, 0.0 };
 };
 
+//____ paletteBlitInterpolateTintmapVertexShader() _______________________________________________
+
+vertex PaletteBlitInterpolateTintmapFragInput
+paletteBlitInterpolateTintmapVertexShader(uint vertexID [[vertex_id]],
+             constant Vertex *pVertices [[buffer(0)]],
+             constant vector_float4  *pExtras [[buffer(1)]],
+             constant Uniform * pUniform[[buffer(2)]])
+{
+    PaletteBlitInterpolateTintmapFragInput out;
+
+    float2 pos = (vector_float2) pVertices[vertexID].coord.xy;
+
+    vector_float2 canvasSize = pUniform->canvasDim;
+    
+    out.position = vector_float4(0.0, 0.0, 0.0, 1.0);
+    out.position.x = pos.x*2 / canvasSize.x - 1.0;
+    out.position.y = (pUniform->canvasYOfs + pUniform->canvasYMul*pos.y)*2 / canvasSize.y - 1.0;
+
+
+    int     eOfs = pVertices[vertexID].extrasOfs;
+
+    vector_float4 srcDst = pExtras[eOfs];
+    vector_float4 transform = pExtras[eOfs+1];
+    vector_float2 src = srcDst.xy;
+    vector_float2 dst = srcDst.zw;
+
+    float2 texUV = src + (pos-dst) * transform.xw + (pos.yx - dst.yx) * transform.zy;
+    texUV -= 0.5f;
+
+    out.uvFrac = texUV;
+    out.texUV00 = texUV/ (float2) pUniform->texSize;
+    out.texUV11 = (texUV+1)/ (float2) pUniform->texSize;
+
+    out.tintmapUV = pVertices[vertexID].tintmapOfs;
+//    out.color = pUniform->flatTint * gradientTint;
+
+    return out;
+}
+
+//____ paletteBlitInterpolateTintmapFragmentShader() ____________________________________________
+
+fragment float4 paletteBlitInterpolateTintmapFragmentShader(PaletteBlitInterpolateTintmapFragInput in [[stage_in]],
+                                    texture2d<float> colorTexture [[ texture(0) ]],
+                                    texture2d<half> paletteTexture [[ texture(1) ]],
+                                    sampler textureSampler [[ sampler(0) ]],
+                                    constant float4  *pColor [[buffer(0)]])
+{
+    constexpr sampler paletteSampler (mag_filter::nearest,
+                                      min_filter::nearest);
+
+   float index00 = colorTexture.sample(textureSampler, in.texUV00).r;
+   float index01 = colorTexture.sample(textureSampler, float2(in.texUV11.x,in.texUV00.y) ).r;
+   float index10 = colorTexture.sample(textureSampler, float2(in.texUV00.x,in.texUV11.y) ).r;
+   float index11 = colorTexture.sample(textureSampler, in.texUV11).r;
+   half4 color00 = paletteTexture.sample(paletteSampler, float2(index00,0.5f));
+   half4 color01 = paletteTexture.sample(paletteSampler, float2(index01,0.5f));
+   half4 color10 = paletteTexture.sample(paletteSampler, float2(index10,0.5f));
+   half4 color11 = paletteTexture.sample(paletteSampler, float2(index11,0.5f));
+
+   half4 out0 = color00 * (1-fract(in.uvFrac.x)) + color01 * fract(in.uvFrac.x);
+   half4 out1 = color10 * (1-fract(in.uvFrac.x)) + color11 * fract(in.uvFrac.x);
+   half4 colorSample = (out0 * (1-fract(in.uvFrac.y)) + out1 * fract(in.uvFrac.y));
+
+   float4 colorFromColorstripX = pColor[(int)in.tintmapUV.x];
+   float4 colorFromColorstripY = pColor[(int)in.tintmapUV.y];
+
+   return float4(colorSample) * colorFromColorstripX * colorFromColorstripY;
+};
+
+//____ paletteBlitInterpolateTintmapFragmentShader_A8() ____________________________________________
+
+fragment float4 paletteBlitInterpolateTintmapFragmentShader_A8(PaletteBlitInterpolateTintmapFragInput in [[stage_in]],
+                                    texture2d<float> colorTexture [[ texture(0) ]],
+                                    texture2d<half> paletteTexture [[ texture(1) ]],
+                                    sampler textureSampler [[ sampler(0) ]],
+                                    constant float4  *pColor [[buffer(0)]])
+{
+    constexpr sampler paletteSampler (mag_filter::nearest,
+                                      min_filter::nearest);
+
+   float index00 = colorTexture.sample(textureSampler, in.texUV00).r;
+   float index01 = colorTexture.sample(textureSampler, float2(in.texUV11.x,in.texUV00.y) ).r;
+   float index10 = colorTexture.sample(textureSampler, float2(in.texUV00.x,in.texUV11.y) ).r;
+   float index11 = colorTexture.sample(textureSampler, in.texUV11).r;
+   float color00 = paletteTexture.sample(paletteSampler, float2(index00,0.5f)).a;
+   float color01 = paletteTexture.sample(paletteSampler, float2(index01,0.5f)).a;
+   float color10 = paletteTexture.sample(paletteSampler, float2(index10,0.5f)).a;
+   float color11 = paletteTexture.sample(paletteSampler, float2(index11,0.5f)).a;
+
+   float out0 = color00 * (1-fract(in.uvFrac.x)) + color01 * fract(in.uvFrac.x);
+   float out1 = color10 * (1-fract(in.uvFrac.x)) + color11 * fract(in.uvFrac.x);
+   float colorSample = (out0 * (1-fract(in.uvFrac.y)) + out1 * fract(in.uvFrac.y));
+
+   float alphaFromColorstripX = pColor[(int)in.tintmapUV.x].a;
+   float alphaFromColorstripY = pColor[(int)in.tintmapUV.y].a;
+
+   return { colorSample * alphaFromColorstripX * alphaFromColorstripY, 0.0, 0.0, 0.0 };
+};
+
+
+
 //____ blurFragmentShader() ____________________________________________
 
 fragment float4 blurFragmentShader(BlitFragInput in [[stage_in]],
                                     texture2d<float> colorTexture [[ texture(0) ]],
                                     sampler textureSampler [[ sampler(0) ]],
-                                    constant BlurUniform  *pBlurInfo [[buffer(1)]])
+                                    constant BlurUniform  *pBlurInfo [[buffer(2)]])
 {
 
    float4 color = colorTexture.sample(textureSampler, in.texUV + pBlurInfo->offset[0] ) * pBlurInfo->colorMtx[0];
@@ -731,6 +945,38 @@ fragment float4 blurFragmentShader(BlitFragInput in [[stage_in]],
    color.a = 1.f;
     return color * in.color;
 };
+
+
+//____ blurTintmapFragmentShader() ____________________________________________
+
+fragment float4 blurTintmapFragmentShader(BlitTintmapFragInput in [[stage_in]],
+                                    texture2d<float> colorTexture [[ texture(0) ]],
+                                    sampler textureSampler [[ sampler(0) ]],
+                                    constant float4  *pColor [[buffer(0)]],
+                                    constant BlurUniform  *pBlurInfo [[buffer(2)]])
+{
+
+   float4 color = colorTexture.sample(textureSampler, in.texUV + pBlurInfo->offset[0] ) * pBlurInfo->colorMtx[0];
+   color += colorTexture.sample(textureSampler, in.texUV + pBlurInfo->offset[1] ) * pBlurInfo->colorMtx[1];
+   color += colorTexture.sample(textureSampler, in.texUV + pBlurInfo->offset[2] ) * pBlurInfo->colorMtx[2];
+
+   color += colorTexture.sample(textureSampler, in.texUV + pBlurInfo->offset[3] ) * pBlurInfo->colorMtx[3];
+   color += colorTexture.sample(textureSampler, in.texUV + pBlurInfo->offset[4] ) * pBlurInfo->colorMtx[4];
+   color += colorTexture.sample(textureSampler, in.texUV + pBlurInfo->offset[5] ) * pBlurInfo->colorMtx[5];
+
+   color += colorTexture.sample(textureSampler, in.texUV + pBlurInfo->offset[6] ) * pBlurInfo->colorMtx[6];
+   color += colorTexture.sample(textureSampler, in.texUV + pBlurInfo->offset[7] ) * pBlurInfo->colorMtx[7];
+   color += colorTexture.sample(textureSampler, in.texUV + pBlurInfo->offset[8] ) * pBlurInfo->colorMtx[8];
+
+   color.a = 1.f;
+
+   float4 colorFromColorstripX = pColor[(int)in.tintmapUV.x];
+   float4 colorFromColorstripY = pColor[(int)in.tintmapUV.y];
+
+    return color * colorFromColorstripX * colorFromColorstripY;
+};
+
+
 
 //____ segmentsVertexShader() _______________________________________________
 
