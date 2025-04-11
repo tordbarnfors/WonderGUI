@@ -65,18 +65,12 @@ public:
 		m_pBlurSurface[0]->fill(HiColor::Transparent);
 		m_pBlurSurface[1]->fill(HiColor::Transparent);
 
-		float redMtx[9] = { 0.14f,0.1f,0.14f,
-							0.1f, 0.0f, 0.1f,
-							0.14f, 0.1f, 0.14f };
-
-		float blueMtx[9] = { 0.15f, 0.15f, 0.15f, 0, 0.4f, 0, 0,0,0 };
-		float greenMtx[9] = { 0,0,0, 0,0.7f,0, 0,0,0 };
 
 		m_pBrush = Blurbrush::create({
 			.blue = { 0.15f, 0.15f, 0.15f, 0, 0.4f, 0, 0,0,0 },
 			.green = {0,0,0, 0,0.7f,0, 0,0,0},
 			.red = { 0.14f,0.1f,0.14f, 0.1f, 0.0f, 0.1f, 0.14f, 0.1f, 0.14f },
-			.size = 64 * 4
+			.size = 64 * 8
 		});
 
 		pDevice->beginCanvasUpdate(m_pCanvasSurface);

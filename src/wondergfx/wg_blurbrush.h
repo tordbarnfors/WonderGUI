@@ -68,9 +68,9 @@ namespace wg
 
 		spx		size() const { return m_radius; }
 
-		const float* blue() const { return m_greenMtx; }
+		const float* blue() const { return m_blueMtx; }
 		const float* green() const { return m_greenMtx; }
-		const float* red() const { return m_greenMtx; }
+		const float* red() const { return m_redMtx; }
 
 	protected:
 
