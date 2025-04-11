@@ -55,7 +55,7 @@ public:
 
 	bool setGradientAndBlurbrush(GfxDevice* pDevice, const RectI& canvas)
 	{
-		pDevice->setTintGradient(RectSPX(100, 100, 100, 100) * 64, Gradient(Placement::West, Color::Red, Color::Blue));
+		pDevice->setTintGradient(RectSPX(0, 0, 512, 512) * 64, Gradient(Placement::West, Color::Red, Color::Blue));
 		setBlurbrush(pDevice, canvas);
 		return true;
 	}
@@ -96,7 +96,7 @@ public:
 		for( int i = 0 ; i < 10 ; i++ )
 		{
 			pDevice->beginCanvasUpdate(m_pBlurSurface[0]);
-			pDevice->fill({100*64,100*64,100*64,100*64}, HiColor::White);
+			pDevice->fill({100*64,100*64,200*64,200*64}, HiColor::White);
 			pDevice->endCanvasUpdate();
 
 			pDevice->beginCanvasUpdate(m_pBlurSurface[1]);

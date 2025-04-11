@@ -983,7 +983,38 @@ namespace wg
 
 				if (statesChanged & uint8_t(StateChange::Blur))
 				{
-					p += 28;
+					uint16_t	radius = * p++;
+
+					auto size = m_activeCanvasSize;
+
+					float radiusX = radius / float(size.w*64);
+					float radiusY = radius / float(size.h*64);
+
+					m_blurUniform.offset[0] = { -radiusX * 0.7f, -radiusY * 0.7f };
+					m_blurUniform.offset[1] = { 0, -radiusY };
+					m_blurUniform.offset[2] = { radiusX * 0.7f, -radiusY * 0.7f };
+
+					m_blurUniform.offset[3] = { -radiusX, 0 };
+					m_blurUniform.offset[4] = { 0, 0 };
+					m_blurUniform.offset[5] = { radiusX, 0 };
+
+					m_blurUniform.offset[6] = { -radiusX * 0.7f, radiusY * 0.7f };
+					m_blurUniform.offset[7] = { 0, radiusY };
+					m_blurUniform.offset[8] = { radiusX * 0.7f, radiusY * 0.7f };
+
+					for( int i = 0 ; i < 9 ; i++ )
+					{
+						m_blurUniform.colorMtx[i][0] = p[i]/32768.f;
+						m_blurUniform.colorMtx[i][1] = p[9+i]/32768.f;
+						m_blurUniform.colorMtx[i][2] = p[18+i]/32768.f;
+						m_blurUniform.colorMtx[i][3] = 0;
+					}
+
+					m_blurUniform.colorMtx[4][3] = 1.f;
+
+					p += 27;
+
+					[m_renderEncoder setFragmentBytes:&m_blurUniform length:sizeof(BlurUniform) atIndex: (unsigned) FragmentInputIndex::BlurUniform];
 				}
 
 				// Update uniform if changed
@@ -1524,7 +1555,11 @@ namespace wg
 					else if(pSurf->m_pPixelDescription->A_mask == 0)
 						shader = BlitFragShader::RGBXSource;
 
-					[m_renderEncoder setRenderPipelineState:m_blitPipelines[(int)shader][m_bTintmap][(int)m_activeBlendMode][(int)m_activeCanvasFormat] ];
+					if( cmd == Command::Blur )
+						[m_renderEncoder setRenderPipelineState:m_blurPipelines[m_bTintmap][(int)m_activeBlendMode][(int)m_activeCanvasFormat] ];
+					else
+						[m_renderEncoder setRenderPipelineState:m_blitPipelines[(int)shader][m_bTintmap][(int)m_activeBlendMode][(int)m_activeCanvasFormat] ];
+
 					[m_renderEncoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:vertexOfs vertexCount:nRects*6];
 					vertexOfs += nRects*6;
 
@@ -1570,7 +1605,8 @@ id<MTLRenderCommandEncoder> MetalBackend::_setCanvas( MetalSurface * pCanvas, in
 
 		pDescriptor.colorAttachments[0].texture = pCanvas->getTexture();
 		pDescriptor.colorAttachments[0].storeAction = MTLStoreActionStore;
-		pDescriptor.colorAttachments[0].loadAction = m_bFullCanvasSession ? MTLLoadActionDontCare : MTLLoadActionDontCare;
+//		pDescriptor.colorAttachments[0].loadAction = m_bFullCanvasSession ? MTLLoadActionDontCare : MTLLoadActionLoade;
+		pDescriptor.colorAttachments[0].loadAction = MTLLoadActionLoad;
 
 		renderEncoder = [m_metalCommandBuffer renderCommandEncoderWithDescriptor:pDescriptor];
 		renderEncoder.label = @"MetalBackend Render to Surface Pass";
@@ -1610,13 +1646,11 @@ id<MTLRenderCommandEncoder> MetalBackend::_setCanvas( MetalSurface * pCanvas, in
 
 	[renderEncoder setFragmentBuffer:m_colorBufferId offset:0 atIndex:(unsigned) FragmentInputIndex::ColorBuffer];
 
-
 	// Set buffers/textures for segments fragment shader
 
 //	[renderEncoder setFragmentTexture:m_segPalTextureId atIndex: (unsigned) TextureIndex::SegPal];
 //	[renderEncoder setFragmentBuffer:m_segEdgeBufferId offset:0 atIndex:(unsigned) FragmentInputIndex::ExtrasBuffer];
 
-//	[renderEncoder setFragmentBytes:&m_blurUniform length:sizeof(BlurUniform) atIndex: (unsigned) FragmentInputIndex::BlurUniform];
 
 
 	//

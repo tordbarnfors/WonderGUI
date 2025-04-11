@@ -388,8 +388,8 @@ namespace wg
 			(*pEncoder) << GfxStream::Header{ chunkType, 0, (uint16_t) bytesOfData + GfxStream::DataInfoSize + padding };
 
 			GfxStream::DataInfo info;
-			info.totalSize = unpackedSize > 0 ? unpackedSize : pEnd - pBeg;
-			info.chunkOffset = p - pBeg;
+			info.totalSize = unpackedSize > 0 ? unpackedSize : int(pEnd - pBeg);
+			info.chunkOffset = int(p - pBeg);
 			info.compression = compression;
 			info.bFirstChunk = (bool)(p == pBeg);
 			info.bLastChunk = (bool)(p + bytesOfData == pEnd);

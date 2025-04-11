@@ -278,7 +278,7 @@ void GfxDeviceTester::setup_testdevices()
 	
 	auto pNativeDevice = Device::create(nativeDeviceName, pNativeGfxDevice, CanvasRef::None, Base::defaultSurfaceFactory()->createSurface(canvasBP), this );
 	
-	g_testdevices.push_back(pNativeDevice);
+//	g_testdevices.push_back(pNativeDevice);
 
 	// Linear
 	
@@ -393,7 +393,7 @@ void GfxDeviceTester::setup_testdevices()
 
 		auto pStreamDevice = Device::create("Stream to Gen 2 Software", pStreamGfxDevice, CanvasRef::Default, pGen2CanvasSurface, this);
 
-//		g_testdevices.push_back(pStreamDevice);
+		g_testdevices.push_back(pStreamDevice);
 	}
 
 	// Gen2 Metal

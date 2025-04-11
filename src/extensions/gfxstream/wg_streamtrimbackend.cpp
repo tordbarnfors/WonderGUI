@@ -100,7 +100,7 @@ namespace wg
 				}
 			}
 
-			m_pBackend->beginSession(canvasRef, pCanvas, m_trimmedUpdateRects.size(), m_trimmedUpdateRects.data(), pInfo);
+			m_pBackend->beginSession(canvasRef, pCanvas, (int) m_trimmedUpdateRects.size(), m_trimmedUpdateRects.data(), pInfo);
 		}
 	}
 
@@ -144,7 +144,7 @@ namespace wg
 		if (!m_pBackend)
 			return;
 
-		int nRects = pEnd - pBeg;
+		int nRects = int(pEnd - pBeg);
 
 		if (m_trimLevel == 0 || m_masks.empty())
 		{

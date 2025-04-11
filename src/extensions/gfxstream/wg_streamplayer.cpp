@@ -443,7 +443,7 @@ namespace wg
 			}
 
 			if (dataInfo.bLastChunk)
-				m_pBackend->beginSession(m_baseCanvasRef, m_baseCanvasSurface, m_vUpdateRects.size(), m_vUpdateRects.data(), &m_sessionInfo);
+				m_pBackend->beginSession(m_baseCanvasRef, m_baseCanvasSurface, (int) m_vUpdateRects.size(), m_vUpdateRects.data(), &m_sessionInfo);
 
 			m_pDecoder->align();
 			break;
