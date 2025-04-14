@@ -24,7 +24,10 @@
 #define WG_METALEDGEMAP_DOT_H
 #pragma once
 
+#import "MetalKit/MetalKit.h"
+
 #include <wg_edgemap.h>
+
 
 namespace wg
 {
@@ -36,6 +39,7 @@ namespace wg
 	class MetalEdgemap : public Edgemap
 	{
 		friend class MetalGfxDevice;
+		friend class MetalBackend;
 	public:
 
 		//.____ Creation __________________________________________
@@ -58,8 +62,22 @@ namespace wg
 
 		void	_samplesUpdated(int edgeBegin, int edgeEnd, int sampleBegin, int sampleEnd) override;
 		void	_colorsUpdated(int beginColor, int endColor) override;
-		
-   };
+
+		int		_whiteColorOfs() const { return m_whiteColorOfs/4; }
+		int		_flatColorsOfs() const { return m_paletteOfs/4;  }
+		int		_colorstripXOfs() const { return m_paletteOfs / 4 + int(m_pColorstripsX - m_pPalette); }
+		int		_colorstripYOfs() const { return m_paletteOfs / 4 + int(m_pColorstripsY - m_pPalette); }
+
+
+	protected:
+
+		id<MTLBuffer>   m_bufferId = nil;
+		float *      	m_pBuffer = nullptr;
+
+		int			m_paletteOfs;			// Offset to palette in buffer, measured in floats.
+		int			m_whiteColorOfs;		// Offset to a white, default color, measured in floats.
+
+	};
 
 
 

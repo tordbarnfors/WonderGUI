@@ -21,6 +21,7 @@
 =========================================================================*/
 
 #include <wg_metaledgemap.h>
+#include <wg_metalbackend.h>
 
 #include <cstring>
 
@@ -76,6 +77,31 @@ MetalEdgemap_p MetalEdgemap::create( const Edgemap::Blueprint& blueprint, Sample
 
 MetalEdgemap::MetalEdgemap(const Blueprint& bp) : Edgemap(bp)
 {
+	// Create Metal buffer
+
+	int samplesSize = bp.size.w * (bp.segments - 1) * 4;
+	int paletteSize = m_paletteSize * 4;
+
+	m_paletteOfs = samplesSize;
+	m_whiteColorOfs = samplesSize + paletteSize;
+
+	int bufferSize = samplesSize + paletteSize + 4;		// +4 for white color
+
+	m_bufferId = [MetalBackend::s_metalDevice newBufferWithLength:bufferSize*sizeof(float) options:MTLResourceStorageModeShared];
+	m_pBuffer = (float *)[m_bufferId contents];
+
+	// Convert and upload colorstrips
+
+	_colorsUpdated(0, m_paletteSize);
+
+	// Add and upload default white color
+
+	auto pOut = &m_pBuffer[m_whiteColorOfs];
+
+	* pOut++ = 1.f;
+	* pOut++ = 1.f;
+	* pOut++ = 1.f;
+	* pOut++ = 1.f;
 }
 
 //____ destructor ____________________________________________________________
@@ -95,14 +121,73 @@ const TypeInfo& MetalEdgemap::typeInfo(void) const
 
 void MetalEdgemap::_samplesUpdated(int edgeBegin, int edgeEnd, int sampleBegin, int sampleEnd)
 {
-	
+	int nEdgeStrips = sampleEnd - sampleBegin;
+	const int* pEdgeStrips = m_pSamples;
+	int edgeStripPitch = m_nbSegments - 1;
+
+	const spx* pEdges = m_pSamples + edgeStripPitch * edgeBegin;
+
+	auto pOut = m_pBuffer + sampleBegin * edgeStripPitch * 4;
+
+	for (int i = 0; i < nEdgeStrips - 1; i++)
+	{
+		for (int j = 0; j < m_nbSegments - 1; j++)
+		{
+			int edgeIn = pEdges[j];
+			int edgeOut = pEdges[edgeStripPitch + j];
+
+			if (edgeIn > edgeOut)
+				std::swap(edgeIn, edgeOut);
+
+			float increment = edgeOut == edgeIn ? 100.f : 64.f / (edgeOut - edgeIn);
+			float beginAdder;
+			float endAdder;
+
+			if ((edgeOut & 0xFFFFFFC0) <= (unsigned int)edgeIn)
+			{
+				float firstPixelCoverage = ((64 - (edgeOut & 0x3F)) + (edgeOut - edgeIn) / 2) / 64.f;
+
+				beginAdder = increment * (edgeIn & 0x3F) / 64.f + firstPixelCoverage;
+				endAdder = beginAdder;
+			}
+			else
+			{
+				int height = 64 - (edgeIn & 0x3F);
+				int width = (int)(increment * height);
+				float firstPixelCoverage = (height * width) / (2 * 4096.f);
+				float lastPixelCoverage = 1.f - (edgeOut & 0x3F) * increment * (edgeOut & 0x3F) / (2 * 4096.f);
+
+				beginAdder = increment * (edgeIn & 0x3F) / 64.f + firstPixelCoverage;
+				endAdder = lastPixelCoverage - (1.f - (edgeOut & 0x3F) * increment / 64.f);
+			}
+
+			*pOut++ = edgeIn / 64.f;				// Segment begin pixel
+			*pOut++ = increment;					// Segment increment
+			*pOut++ = beginAdder;					// Segment begin adder
+			*pOut++ = endAdder;						// Segment end adder
+		}
+
+		pEdges += edgeStripPitch;
+	}
 }
 
-//____ _colorsUpdated() _______________________________________________________
+
+//____ _colorsUpdated() ____________________________________________________
 
 void MetalEdgemap::_colorsUpdated(int beginColor, int endColor)
 {
-	
+	int nColors = endColor - beginColor;
+
+	auto pIn = m_pPalette + beginColor;
+	auto pOut = m_pBuffer + m_paletteOfs + beginColor * 4;
+	for (int i = 0; i < nColors; i++)
+	{
+		*pOut++ = pIn->r / 4096.f;
+		*pOut++ = pIn->g / 4096.f;
+		*pOut++ = pIn->b / 4096.f;
+		*pOut++ = pIn->a / 4096.f;
+		pIn++;
+	}
 }
 
 

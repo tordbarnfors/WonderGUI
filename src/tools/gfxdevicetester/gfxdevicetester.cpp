@@ -196,7 +196,7 @@ void GfxDeviceTester::setup_testdevices()
 		auto pGen2CanvasSurface = SoftSurface::create(canvasBP);
 		auto pGen2SoftDevice = Device::create("Gen2 Software (SoftBackend)", pGen2GfxDevice, CanvasRef::None, pGen2CanvasSurface, this);
 
-//		g_testdevices.push_back(pGen2SoftDevice);
+		g_testdevices.push_back(pGen2SoftDevice);
 
 	}
 
@@ -393,7 +393,7 @@ void GfxDeviceTester::setup_testdevices()
 
 		auto pStreamDevice = Device::create("Stream to Gen 2 Software", pStreamGfxDevice, CanvasRef::Default, pGen2CanvasSurface, this);
 
-		g_testdevices.push_back(pStreamDevice);
+//		g_testdevices.push_back(pStreamDevice);
 	}
 
 	// Gen2 Metal

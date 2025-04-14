@@ -43,6 +43,7 @@ namespace wg
 	class MetalBackend : public GfxBackend
 	{
 		friend class MetalSurface;
+		friend class MetalEdgemap;
 	public:
 		//.____ Creation ________________________________________________
 
@@ -94,6 +95,8 @@ namespace wg
 		~MetalBackend();
 
 		const static int	c_maxSegments = 16;
+		static const int 	s_flipCornerOrder[GfxFlip_size][4];
+
 
 		enum class VertexInputIndex
 		{
@@ -107,7 +110,8 @@ namespace wg
 		{
 			ColorBuffer = 0,
 			ExtrasBuffer = 1,
-			BlurUniform = 2
+			BlurUniform = 2,
+			Edgemap = 3,
 		};
 
 
@@ -115,7 +119,6 @@ namespace wg
 		{
 			Texture = 0,
 			Palette = 1,
-			SegPal = 2
 		};
 
 		enum class BlitFragShader

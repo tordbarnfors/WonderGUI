@@ -145,11 +145,10 @@ typedef struct
 typedef struct 
 {
     float4 position [[position]];
-    float4 color;
     float2 texUV;
-    int segments;
-    int stripesOfs;
-    float2 paletteOfs;
+	int2 	colorstripPitch;
+	float2	tintmapUV;
+	float2	colorstripUV;
 } SegmentsFragInput;
 
 
@@ -982,9 +981,10 @@ fragment float4 blurTintmapFragmentShader(BlitTintmapFragInput in [[stage_in]],
 
 vertex SegmentsFragInput
 segmentsVertexShader(uint vertexID [[vertex_id]],
-             constant Vertex *pVertices [[buffer(0)]],
-             constant vector_float4  *pExtras [[buffer(1)]],
-             constant Uniform * pUniform[[buffer(2)]])
+					 constant Vertex *pVertices [[buffer(0)]],
+					 constant vector_float4  *pColor [[buffer(1)]],
+					 constant vector_float4  *pExtras [[buffer(2)]],
+					 constant Uniform * pUniform[[buffer(3)]])
 {
     SegmentsFragInput out;
 
@@ -996,371 +996,280 @@ segmentsVertexShader(uint vertexID [[vertex_id]],
     out.position.x = pos.x*2 / canvasSize.x - 1.0;
     out.position.y = (pUniform->canvasYOfs + pUniform->canvasYMul*pos.y)*2 / canvasSize.y - 1.0;
 
-
-    int     eOfs = pVertices[vertexID].extrasOfs;
-
-    vector_float4 extras = pExtras[eOfs];
-    vector_float4 extras2 = pExtras[eOfs+1];
-
-    out.segments = int(extras.x);
-    out.stripesOfs = int(extras.y);
- 
-    float2 uv = pVertices[vertexID].uv;
-    out.texUV = uv;
-
-    float xTintOfs = uv.x/extras.z*1/extras2.z;
-    float yTintOfs = uv.y/extras.w*1/extras2.w;
-
-    out.paletteOfs = { extras2.x+xTintOfs, extras2.y+yTintOfs };
-    out.color = pUniform->flatTint;
-
-    return out;
-}
-
-//____ segmentsGradientVertexShader() _______________________________________________
-
-vertex SegmentsFragInput
-segmentsGradientVertexShader(uint vertexID [[vertex_id]],
-             constant Vertex *pVertices [[buffer(0)]],
-             constant vector_float4  *pExtras [[buffer(1)]],
-             constant Uniform * pUniform[[buffer(2)]])
-{
-    SegmentsFragInput out;
-
-    float2 pos = (vector_float2) pVertices[vertexID].coord.xy;
-
-    vector_float2 canvasSize = pUniform->canvasDim;
-    
-    out.position = vector_float4(0.0, 0.0, 0.0, 1.0);
-    out.position.x = pos.x*2 / canvasSize.x - 1.0;
-    out.position.y = (pUniform->canvasYOfs + pUniform->canvasYMul*pos.y)*2 / canvasSize.y - 1.0;
-
-
-    int     eOfs = pVertices[vertexID].extrasOfs;
+    int	eOfs = pVertices[vertexID].extrasOfs;
 
     vector_float4 extras = pExtras[eOfs];
-    vector_float4 extras2 = pExtras[eOfs+1];
 
-    out.segments = int(extras.x);
-    out.stripesOfs = int(extras.y);
- 
-    float2 uv = pVertices[vertexID].uv;
-    out.texUV = uv;
-
-    float xTintOfs = uv.x/extras.z*1/extras2.z;
-    float yTintOfs = uv.y/extras.w*1/extras2.w;
-
-    out.paletteOfs = { extras2.x+xTintOfs, extras2.y+yTintOfs };
- 
-    float2   tintOfs = (pos - float2(pUniform->tintRectPos)) / float2(pUniform->tintRectSize);
-    float4   lineStartTint = pUniform->topLeftTint + (pUniform->bottomLeftTint - pUniform->topLeftTint) * tintOfs.y;
-    float4   lineEndTint = pUniform->topRightTint + (pUniform->bottomRightTint - pUniform->topRightTint) * tintOfs.y;
-    float4   gradientTint = lineStartTint + (lineEndTint - lineStartTint) * tintOfs.x;
-
-    out.color = pUniform->flatTint * gradientTint;
-
+    out.colorstripPitch.x = int(extras.x);
+	out.colorstripPitch.y = int(extras.y);
+    out.texUV = pVertices[vertexID].uv;
+	out.tintmapUV = pVertices[vertexID].tintmapOfs;
+	out.colorstripUV = pVertices[vertexID].colorstripOfs;
     return out;
 }
-
 
 //____ segmentsFragmentShader() ____________________________________________
 
 template <int EDGES>
 inline float4 segFragShaderCore(SegmentsFragInput in,
-                                    constant float4  *pEdgeStripes,
-                                    texture2d<half> paletteTexture)
+                                    constant float4  *pEdgemap)
 {
-
-    constexpr sampler textureSampler (mag_filter::linear,
-                                      min_filter::linear);
-
     float totalAlpha = 0.f;
     float3    rgbAcc = float3(0,0,0);
 
+
     float factor = 1.f;
-    float2 palOfs = in.paletteOfs;
+    int2 colorOfs = (int2) in.colorstripUV;
     for( int i = 0 ; i < EDGES ; i++ )
     {
-        float4 col = (float4) paletteTexture.sample(textureSampler, palOfs);
-        palOfs.x += 1/(float) $MAXSEG;
+		float4 col = pEdgemap[colorOfs.x] * pEdgemap[colorOfs.y];
 
-        float4 edge = pEdgeStripes[in.stripesOfs + int(in.texUV.x)*(in.segments-1)+i];
+        colorOfs += in.colorstripPitch;
+
+        float4 edge = pEdgemap[int(in.texUV.x)*EDGES+i];
 
         float x = (in.texUV.y - edge.r) * edge.g;
         float adder = edge.g / 2.f;
         if (x < 0.f)
             adder = edge.b;
         else if (x + edge.g > 1.f)
-            adder = edge.a;
+			adder = edge.a;
         float factor2 = clamp(x + adder, 0.f, 1.f);
 
         float useFactor = (factor - factor2)*col.a;
         totalAlpha += useFactor;
         rgbAcc += col.rgb * useFactor;
-
         factor = factor2;
     }
 
-    float4 col = (float4) paletteTexture.sample(textureSampler, palOfs);
-    float useFactor = factor*col.a;
+	float4 col = pEdgemap[colorOfs.x] * pEdgemap[colorOfs.y];
+
+	float useFactor = factor*col.a;
     totalAlpha += useFactor;
-    rgbAcc += col.rgb * useFactor;
+	rgbAcc += col.rgb * useFactor;
 
     float4 out;
-    out.a = totalAlpha * in.color.a;
-    out.rgb = (rgbAcc/totalAlpha) * in.color.rgb;
-    return out;
+	out.a = totalAlpha; // * in.color.a;
+	out.rgb = (rgbAcc/totalAlpha); // * in.color.rgb;
+	return out;
 };
 
 
 fragment float4 segmentsFragmentShader1(SegmentsFragInput in [[stage_in]],
-                                    constant float4  *pEdgeStripes [[buffer(0)]],
-                                    texture2d<half> paletteTexture [[ texture(2) ]])
+                                    constant float4  *pEdgemap [[buffer(3)]])
 {
-    return segFragShaderCore<1>(in,pEdgeStripes,paletteTexture);
+    return segFragShaderCore<1>(in,pEdgemap);
 };
 
 fragment float4 segmentsFragmentShader2(SegmentsFragInput in [[stage_in]],
-                                    constant float4  *pEdgeStripes [[buffer(0)]],
-                                    texture2d<half> paletteTexture [[ texture(2) ]])
+                                    constant float4  *pEdgemap [[buffer(3)]])
 {
-    return segFragShaderCore<2>(in,pEdgeStripes,paletteTexture);
+    return segFragShaderCore<2>(in,pEdgemap);
 };
 
 fragment float4 segmentsFragmentShader3(SegmentsFragInput in [[stage_in]],
-                                    constant float4  *pEdgeStripes [[buffer(0)]],
-                                    texture2d<half> paletteTexture [[ texture(2) ]])
+									constant float4  *pEdgemap [[buffer(3)]])
 {
-    return segFragShaderCore<3>(in,pEdgeStripes,paletteTexture);
+    return segFragShaderCore<3>(in,pEdgemap);
 };
 
 fragment float4 segmentsFragmentShader4(SegmentsFragInput in [[stage_in]],
-                                    constant float4  *pEdgeStripes [[buffer(0)]],
-                                    texture2d<half> paletteTexture [[ texture(2) ]])
+									constant float4  *pEdgemap [[buffer(3)]])
 {
-    return segFragShaderCore<4>(in,pEdgeStripes,paletteTexture);
+    return segFragShaderCore<4>(in,pEdgemap);
 };
 
 fragment float4 segmentsFragmentShader5(SegmentsFragInput in [[stage_in]],
-                                    constant float4  *pEdgeStripes [[buffer(0)]],
-                                    texture2d<half> paletteTexture [[ texture(2) ]])
+									constant float4  *pEdgemap [[buffer(3)]])
 {
-    return segFragShaderCore<5>(in,pEdgeStripes,paletteTexture);
+    return segFragShaderCore<5>(in,pEdgemap);
 };
 
 fragment float4 segmentsFragmentShader6(SegmentsFragInput in [[stage_in]],
-                                    constant float4  *pEdgeStripes [[buffer(0)]],
-                                    texture2d<half> paletteTexture [[ texture(2) ]])
+									constant float4  *pEdgemap [[buffer(3)]])
 {
-    return segFragShaderCore<6>(in,pEdgeStripes,paletteTexture);
+    return segFragShaderCore<6>(in,pEdgemap);
 };
 
 fragment float4 segmentsFragmentShader7(SegmentsFragInput in [[stage_in]],
-                                    constant float4  *pEdgeStripes [[buffer(0)]],
-                                    texture2d<half> paletteTexture [[ texture(2) ]])
+									constant float4  *pEdgemap [[buffer(3)]])
 {
-    return segFragShaderCore<7>(in,pEdgeStripes,paletteTexture);
+    return segFragShaderCore<7>(in,pEdgemap);
 };
 
 fragment float4 segmentsFragmentShader8(SegmentsFragInput in [[stage_in]],
-                                    constant float4  *pEdgeStripes [[buffer(0)]],
-                                    texture2d<half> paletteTexture [[ texture(2) ]])
+									constant float4  *pEdgemap [[buffer(3)]])
 {
-    return segFragShaderCore<8>(in,pEdgeStripes,paletteTexture);
+    return segFragShaderCore<8>(in,pEdgemap);
 };
 
 fragment float4 segmentsFragmentShader9(SegmentsFragInput in [[stage_in]],
-                                    constant float4  *pEdgeStripes [[buffer(0)]],
-                                    texture2d<half> paletteTexture [[ texture(2) ]])
+									constant float4  *pEdgemap [[buffer(3)]])
 {
-    return segFragShaderCore<9>(in,pEdgeStripes,paletteTexture);
+    return segFragShaderCore<9>(in,pEdgemap);
 };
 
 fragment float4 segmentsFragmentShader10(SegmentsFragInput in [[stage_in]],
-                                    constant float4  *pEdgeStripes [[buffer(0)]],
-                                    texture2d<half> paletteTexture [[ texture(2) ]])
+									constant float4  *pEdgemap [[buffer(3)]])
 {
-    return segFragShaderCore<10>(in,pEdgeStripes,paletteTexture);
+    return segFragShaderCore<10>(in,pEdgemap);
 };
 
 fragment float4 segmentsFragmentShader11(SegmentsFragInput in [[stage_in]],
-                                    constant float4  *pEdgeStripes [[buffer(0)]],
-                                    texture2d<half> paletteTexture [[ texture(2) ]])
+									constant float4  *pEdgemap [[buffer(3)]])
 {
-    return segFragShaderCore<11>(in,pEdgeStripes,paletteTexture);
+    return segFragShaderCore<11>(in,pEdgemap);
 };
 
 fragment float4 segmentsFragmentShader12(SegmentsFragInput in [[stage_in]],
-                                    constant float4  *pEdgeStripes [[buffer(0)]],
-                                    texture2d<half> paletteTexture [[ texture(2) ]])
+									constant float4  *pEdgemap [[buffer(3)]])
 {
-    return segFragShaderCore<12>(in,pEdgeStripes,paletteTexture);
+    return segFragShaderCore<12>(in,pEdgemap);
 };
 
 fragment float4 segmentsFragmentShader13(SegmentsFragInput in [[stage_in]],
-                                    constant float4  *pEdgeStripes [[buffer(0)]],
-                                    texture2d<half> paletteTexture [[ texture(2) ]])
+									constant float4  *pEdgemap [[buffer(3)]])
 {
-    return segFragShaderCore<13>(in,pEdgeStripes,paletteTexture);
+    return segFragShaderCore<13>(in,pEdgemap);
 };
 
 fragment float4 segmentsFragmentShader14(SegmentsFragInput in [[stage_in]],
-                                    constant float4  *pEdgeStripes [[buffer(0)]],
-                                    texture2d<half> paletteTexture [[ texture(2) ]])
+									constant float4  *pEdgemap [[buffer(3)]])
 {
-    return segFragShaderCore<14>(in,pEdgeStripes,paletteTexture);
+    return segFragShaderCore<14>(in,pEdgemap);
 };
 
 fragment float4 segmentsFragmentShader15(SegmentsFragInput in [[stage_in]],
-                                    constant float4  *pEdgeStripes [[buffer(0)]],
-                                    texture2d<half> paletteTexture [[ texture(2) ]])
+									constant float4  *pEdgemap [[buffer(3)]])
 {
-    return segFragShaderCore<15>(in,pEdgeStripes,paletteTexture);
+    return segFragShaderCore<15>(in,pEdgemap);
 };
 
 //____ segmentsFragmentShader_A8() ____________________________________________
 
 template <int EDGES>
 inline float4 segFragShaderCore_A8(SegmentsFragInput in,
-                                    constant float4  *pEdgeStripes,
-                                    texture2d<half> paletteTexture)
+                                    constant float4  *pEdgemap)
 {
+	float totalAlpha = 0.f;
 
-    constexpr sampler textureSampler (mag_filter::linear,
-                                      min_filter::linear);
+	float factor = 1.f;
+	int2 colorOfs = (int2) in.colorstripUV;
+	for( int i = 0 ; i < EDGES ; i++ )
+	{
+		float alpha = pEdgemap[colorOfs.x].a * pEdgemap[colorOfs.y].a;
 
-    float totalAlpha = 0.f;
+		colorOfs += in.colorstripPitch;
 
-    float factor = 1.f;
-    float2 palOfs = in.paletteOfs;
-    for( int i = 0 ; i < EDGES ; i++ )
-    {
-        float alpha = (float) paletteTexture.sample(textureSampler, palOfs).a;
-        palOfs.x += 1/$MAXSEG.f;
+		float4 edge = pEdgemap[int(in.texUV.x)*EDGES+i];
 
-        float4 edge = pEdgeStripes[in.stripesOfs + int(in.texUV.x)*(in.segments-1)+i];
+		float x = (in.texUV.y - edge.r) * edge.g;
+		float adder = edge.g / 2.f;
+		if (x < 0.f)
+			adder = edge.b;
+		else if (x + edge.g > 1.f)
+			adder = edge.a;
+		float factor2 = clamp(x + adder, 0.f, 1.f);
 
-        float x = (in.texUV.y - edge.r) * edge.g;
-        float adder = edge.g / 2.f;
-        if (x < 0.f)
-            adder = edge.b;
-        else if (x + edge.g > 1.f)
-            adder = edge.a;
-        float factor2 = clamp(x + adder, 0.f, 1.f);
+		totalAlpha += (factor - factor2)*alpha;
 
-        totalAlpha += (factor - factor2)*alpha;
+		factor = factor2;
+	}
 
-        factor = factor2;
-    }
+	float alpha = pEdgemap[colorOfs.x].a * pEdgemap[colorOfs.y].a;
+	totalAlpha += factor*alpha;
 
-    float alpha = (float) paletteTexture.sample(textureSampler, palOfs).a;
-    totalAlpha += factor*alpha;
-
-    return { totalAlpha * in.color.a, 0.f, 0.f, 0.f };
+	return { totalAlpha, 0.f, 0.f, 0.f };
 };
+
 
 
 fragment float4 segmentsFragmentShader1_A8(SegmentsFragInput in [[stage_in]],
-                                    constant float4  *pEdgeStripes [[buffer(0)]],
-                                    texture2d<half> paletteTexture [[ texture(2) ]])
+                                    constant float4  *pEdgemap [[buffer(3)]])
 {
-    return segFragShaderCore_A8<1>(in,pEdgeStripes,paletteTexture);
+    return segFragShaderCore_A8<1>(in,pEdgemap);
 };
 
 fragment float4 segmentsFragmentShader2_A8(SegmentsFragInput in [[stage_in]],
-                                    constant float4  *pEdgeStripes [[buffer(0)]],
-                                    texture2d<half> paletteTexture [[ texture(2) ]])
+                                    constant float4  *pEdgemap [[buffer(3)]])
 {
-    return segFragShaderCore_A8<2>(in,pEdgeStripes,paletteTexture);
+    return segFragShaderCore_A8<2>(in,pEdgemap);
 };
 
 fragment float4 segmentsFragmentShader3_A8(SegmentsFragInput in [[stage_in]],
-                                    constant float4  *pEdgeStripes [[buffer(0)]],
-                                    texture2d<half> paletteTexture [[ texture(2) ]])
+								   constant float4  *pEdgemap [[buffer(3)]])
 {
-    return segFragShaderCore_A8<3>(in,pEdgeStripes,paletteTexture);
+    return segFragShaderCore_A8<3>(in,pEdgemap);
 };
 
 fragment float4 segmentsFragmentShader4_A8(SegmentsFragInput in [[stage_in]],
-                                    constant float4  *pEdgeStripes [[buffer(0)]],
-                                    texture2d<half> paletteTexture [[ texture(2) ]])
+								   constant float4  *pEdgemap [[buffer(3)]])
 {
-    return segFragShaderCore_A8<4>(in,pEdgeStripes,paletteTexture);
+    return segFragShaderCore_A8<4>(in,pEdgemap);
 };
 
 fragment float4 segmentsFragmentShader5_A8(SegmentsFragInput in [[stage_in]],
-                                    constant float4  *pEdgeStripes [[buffer(0)]],
-                                    texture2d<half> paletteTexture [[ texture(2) ]])
+								   constant float4  *pEdgemap [[buffer(3)]])
 {
-    return segFragShaderCore_A8<5>(in,pEdgeStripes,paletteTexture);
+    return segFragShaderCore_A8<5>(in,pEdgemap);
 };
 
 fragment float4 segmentsFragmentShader6_A8(SegmentsFragInput in [[stage_in]],
-                                    constant float4  *pEdgeStripes [[buffer(0)]],
-                                    texture2d<half> paletteTexture [[ texture(2) ]])
+								   constant float4  *pEdgemap [[buffer(3)]])
 {
-    return segFragShaderCore_A8<6>(in,pEdgeStripes,paletteTexture);
+    return segFragShaderCore_A8<6>(in,pEdgemap);
 };
 
 fragment float4 segmentsFragmentShader7_A8(SegmentsFragInput in [[stage_in]],
-                                    constant float4  *pEdgeStripes [[buffer(0)]],
-                                    texture2d<half> paletteTexture [[ texture(2) ]])
+								   constant float4  *pEdgemap [[buffer(3)]])
 {
-    return segFragShaderCore_A8<7>(in,pEdgeStripes,paletteTexture);
+    return segFragShaderCore_A8<7>(in,pEdgemap);
 };
 
 fragment float4 segmentsFragmentShader8_A8(SegmentsFragInput in [[stage_in]],
-                                    constant float4  *pEdgeStripes [[buffer(0)]],
-                                    texture2d<half> paletteTexture [[ texture(2) ]])
+								   constant float4  *pEdgemap [[buffer(3)]])
 {
-    return segFragShaderCore_A8<8>(in,pEdgeStripes,paletteTexture);
+    return segFragShaderCore_A8<8>(in,pEdgemap);
 };
 
 fragment float4 segmentsFragmentShader9_A8(SegmentsFragInput in [[stage_in]],
-                                    constant float4  *pEdgeStripes [[buffer(0)]],
-                                    texture2d<half> paletteTexture [[ texture(2) ]])
+								   constant float4  *pEdgemap [[buffer(3)]])
 {
-    return segFragShaderCore_A8<9>(in,pEdgeStripes,paletteTexture);
+    return segFragShaderCore_A8<9>(in,pEdgemap);
 };
 
 fragment float4 segmentsFragmentShader10_A8(SegmentsFragInput in [[stage_in]],
-                                    constant float4  *pEdgeStripes [[buffer(0)]],
-                                    texture2d<half> paletteTexture [[ texture(2) ]])
+									constant float4  *pEdgemap [[buffer(3)]])
 {
-    return segFragShaderCore_A8<10>(in,pEdgeStripes,paletteTexture);
+    return segFragShaderCore_A8<10>(in,pEdgemap);
 };
 
 fragment float4 segmentsFragmentShader11_A8(SegmentsFragInput in [[stage_in]],
-                                    constant float4  *pEdgeStripes [[buffer(0)]],
-                                    texture2d<half> paletteTexture [[ texture(2) ]])
+									constant float4  *pEdgemap [[buffer(3)]])
 {
-    return segFragShaderCore_A8<11>(in,pEdgeStripes,paletteTexture);
+    return segFragShaderCore_A8<11>(in,pEdgemap);
 };
 
 fragment float4 segmentsFragmentShader12_A8(SegmentsFragInput in [[stage_in]],
-                                    constant float4  *pEdgeStripes [[buffer(0)]],
-                                    texture2d<half> paletteTexture [[ texture(2) ]])
+									constant float4  *pEdgemap [[buffer(3)]])
 {
-    return segFragShaderCore_A8<12>(in,pEdgeStripes,paletteTexture);
+    return segFragShaderCore_A8<12>(in,pEdgemap);
 };
 
 fragment float4 segmentsFragmentShader13_A8(SegmentsFragInput in [[stage_in]],
-                                    constant float4  *pEdgeStripes [[buffer(0)]],
-                                    texture2d<half> paletteTexture [[ texture(2) ]])
+									constant float4  *pEdgemap [[buffer(3)]])
 {
-    return segFragShaderCore_A8<13>(in,pEdgeStripes,paletteTexture);
+    return segFragShaderCore_A8<13>(in,pEdgemap);
 };
 
 fragment float4 segmentsFragmentShader14_A8(SegmentsFragInput in [[stage_in]],
-                                    constant float4  *pEdgeStripes [[buffer(0)]],
-                                    texture2d<half> paletteTexture [[ texture(2) ]])
+									constant float4  *pEdgemap [[buffer(3)]])
 {
-    return segFragShaderCore_A8<14>(in,pEdgeStripes,paletteTexture);
+    return segFragShaderCore_A8<14>(in,pEdgemap);
 };
 
 fragment float4 segmentsFragmentShader15_A8(SegmentsFragInput in [[stage_in]],
-                                    constant float4  *pEdgeStripes [[buffer(0)]],
-                                    texture2d<half> paletteTexture [[ texture(2) ]])
+									constant float4  *pEdgemap [[buffer(3)]])
 {
-    return segFragShaderCore_A8<15>(in,pEdgeStripes,paletteTexture);
+    return segFragShaderCore_A8<15>(in,pEdgemap);
 };

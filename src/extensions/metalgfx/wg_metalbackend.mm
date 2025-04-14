@@ -39,6 +39,22 @@ namespace wg
 	id<MTLDevice>       MetalBackend::s_metalDevice = nil;
 	id<MTLCommandQueue> MetalBackend::s_metalCommandQueue = nil;
 
+	const int MetalBackend::s_flipCornerOrder[GfxFlip_size][4] = {
+		{ 0,1,2,3 },			// Normal
+		{ 1,0,3,2 },			// FlipX
+		{ 3,2,1,0 },			// FlipY
+		{ 3,0,1,2 },			// Rot90
+		{ 0,3,2,1 },			// Rot90FlipX
+		{ 2,1,0,3 },			// Rot90FlipY
+		{ 2,3,0,1 },			// Rot180
+		{ 3,2,1,0 },			// Rot180FlipX
+		{ 1,0,3,2 },			// Rot180FlipY
+		{ 1,2,3,0 },			// Rot270
+		{ 2,1,0,3 },			// Rot270FlipX
+		{ 0,3,2,1 }				// Rot270FlipY
+	};
+
+
 	//____ setMetalDevice() ______________________________________________________
 
 	void MetalBackend::setMetalDevice( id<MTLDevice> device )
@@ -264,13 +280,13 @@ namespace wg
 
 				m_segmentsPipelines[shader][0][blendMode][(int)DestFormat::Alpha_8] = _compileRenderPipeline( @"Segments A_8 pipeline", @"segmentsVertexShader", segFragShaders_A8[shader], (BlendMode) blendMode, PixelFormat::Alpha_8 );
 
-				m_segmentsPipelines[shader][1][blendMode][(int)DestFormat::BGRA8_linear] = _compileRenderPipeline( @"Segments BGRA_8_linear gradient pipeline", @"segmentsGradientVertexShader", segFragShaders[shader], (BlendMode) blendMode, PixelFormat::BGRA_8_linear );
-				m_segmentsPipelines[shader][1][blendMode][(int)DestFormat::BGRX8_linear] = _compileRenderPipeline( @"Segments BGRX_8_linear gradient pipeline", @"segmentsGradientVertexShader", segFragShaders[shader], (BlendMode) blendMode, PixelFormat::BGRX_8_linear );
+				m_segmentsPipelines[shader][1][blendMode][(int)DestFormat::BGRA8_linear] = _compileRenderPipeline( @"Segments BGRA_8_linear gradient pipeline", @"segmentsVertexShader", segFragShaders[shader], (BlendMode) blendMode, PixelFormat::BGRA_8_linear );
+				m_segmentsPipelines[shader][1][blendMode][(int)DestFormat::BGRX8_linear] = _compileRenderPipeline( @"Segments BGRX_8_linear gradient pipeline", @"segmentsVertexShader", segFragShaders[shader], (BlendMode) blendMode, PixelFormat::BGRX_8_linear );
 
-				m_segmentsPipelines[shader][1][blendMode][(int)DestFormat::BGRA8_sRGB] = _compileRenderPipeline( @"Segments BGRA_8_sRGB gradient pipeline", @"segmentsGradientVertexShader", segFragShaders[shader], (BlendMode) blendMode, PixelFormat::BGRA_8_sRGB );
-				m_segmentsPipelines[shader][1][blendMode][(int)DestFormat::BGRX8_sRGB] = _compileRenderPipeline( @"Segments BGRX_8_sRGB gradient pipeline", @"segmentsGradientVertexShader", segFragShaders[shader], (BlendMode) blendMode, PixelFormat::BGRX_8_sRGB );
+				m_segmentsPipelines[shader][1][blendMode][(int)DestFormat::BGRA8_sRGB] = _compileRenderPipeline( @"Segments BGRA_8_sRGB gradient pipeline", @"segmentsVertexShader", segFragShaders[shader], (BlendMode) blendMode, PixelFormat::BGRA_8_sRGB );
+				m_segmentsPipelines[shader][1][blendMode][(int)DestFormat::BGRX8_sRGB] = _compileRenderPipeline( @"Segments BGRX_8_sRGB gradient pipeline", @"segmentsVertexShader", segFragShaders[shader], (BlendMode) blendMode, PixelFormat::BGRX_8_sRGB );
 
-				m_segmentsPipelines[shader][1][blendMode][(int)DestFormat::Alpha_8] = _compileRenderPipeline( @"Segments A_8 gradient pipeline", @"segmentsGradientVertexShader", segFragShaders_A8[shader], (BlendMode) blendMode, PixelFormat::Alpha_8 );
+				m_segmentsPipelines[shader][1][blendMode][(int)DestFormat::Alpha_8] = _compileRenderPipeline( @"Segments A_8 gradient pipeline", @"segmentsVertexShader", segFragShaders_A8[shader], (BlendMode) blendMode, PixelFormat::Alpha_8 );
 			}
 		}
 
@@ -1399,7 +1415,276 @@ namespace wg
 				int32_t	destY = *p32++;
 				p = (const uint16_t*) p32;
 
-				pRects += nRects;
+//				pRects += nRects;
+//				break;
+
+
+				//
+
+				auto& mtx = s_blitFlipTransforms[flip];
+
+				RectSPX _destIn = {
+					destX,
+					destY,
+					pEdgemap->m_size.w * 64 * int(abs(mtx.xx)) + pEdgemap->m_size.h * 64 * int(abs(mtx.yx)),
+					pEdgemap->m_size.w * 64 * int(abs(mtx.xy)) + pEdgemap->m_size.h * 64 * int(abs(mtx.yy)),
+				};
+
+
+				int nSegments = pEdgemap->m_nbRenderSegments;
+
+				// Do transformations
+
+				RectI dest = roundToPixels(_destIn);
+
+				int uIncX = mtx.xx;
+				int vIncX = mtx.xy;
+				int uIncY = mtx.yx;
+				int vIncY = mtx.yy;
+
+				// Possibly clip the destination rectangle if we have space for more columns than we have
+
+				int maxCol = pEdgemap->m_size.w;
+				if (uIncX != 0)								// Columns are aligned horizontally
+				{
+					if (dest.w > maxCol)
+					{
+						if (uIncX < 0)
+							dest.x += dest.w - maxCol;
+						dest.w = maxCol;
+					}
+				}
+				else										// Columns are aligned vertically
+				{
+					if (dest.h > maxCol)
+					{
+						if (uIncY < 0)
+							dest.y += dest.h - maxCol;
+						dest.h = maxCol;
+					}
+				}
+
+				// Calc topLeft UV values
+
+				int uTopLeft = 0;
+				int vTopLeft = 0;
+
+				if (uIncX + uIncY < 0)
+					uTopLeft = maxCol;
+
+				if (vIncX < 0)
+					vTopLeft = dest.w;
+				else if (vIncY < 0)
+					vTopLeft = dest.h;
+
+				//
+
+				int extrasOfs = int(pExtrasMTL - m_pExtrasBuffer) / 4;
+
+				float colorstripPitchX;
+				float colorstripPitchY;
+
+				int vertexOfs = int(pVertexMTL - m_pVertexBuffer);
+
+				// Setup vertices
+
+				for (int i = 0; i < nRects; i++)
+				{
+					RectI patch = (*pRects++) / 64;
+
+					int		dx1 = patch.x;
+					int		dx2 = patch.x + patch.w;
+					int		dy1 = patch.y;
+					int		dy2 = patch.y + patch.h;
+
+					//
+
+					float tintmapBeginX, tintmapBeginY, tintmapEndX, tintmapEndY;
+
+
+					if (m_bTintmap)
+					{
+						if (m_tintmapBeginX == 0)
+						{
+							tintmapBeginX = 0.f;
+							tintmapEndX = 0.f;
+						}
+						else
+						{
+							tintmapBeginX = m_tintmapBeginX + (dx1 - m_tintmapRect.x) + 0.f;
+							tintmapEndX = tintmapBeginX + (dx2 - dx1) + 0.f;
+						}
+
+						if (m_tintmapBeginY == 0)
+						{
+							tintmapBeginY = 0.f;
+							tintmapEndY = 0.f;
+						}
+						else
+						{
+							tintmapBeginY = m_tintmapBeginY + (dy1 - m_tintmapRect.y) + 0.f;
+							tintmapEndY = tintmapBeginY + (dy2 - dy1) + 0.f;
+						}
+					}
+					else
+					{
+						tintmapBeginX = 0.f;
+						tintmapBeginY = 0.f;
+						tintmapEndX = 0.f;
+						tintmapEndY = 0.f;
+					}
+
+					//
+
+					int ofsX = patch.x - dest.x;
+					int ofsY = patch.y - dest.y;
+
+					float colorstripBeginX;
+					float colorstripEndX;
+
+					float colorstripBeginY;
+					float colorstripEndY;
+
+					if (pEdgemap->m_pFlatColors)
+					{
+						colorstripBeginX = pEdgemap->_flatColorsOfs();
+						colorstripEndX = colorstripBeginX;
+
+						colorstripBeginY = pEdgemap->_whiteColorOfs();
+						colorstripEndY = colorstripBeginY;
+
+						colorstripPitchX = 1;
+						colorstripPitchY = 0;
+
+					}
+					else
+					{
+						if (pEdgemap->m_pColorstripsX)
+						{
+							colorstripBeginX = pEdgemap->_colorstripXOfs() + ofsX;
+							colorstripEndX = colorstripBeginX + patch.w;
+
+							colorstripPitchX = pEdgemap->m_size.w;
+						}
+						else
+						{
+							colorstripBeginX = pEdgemap->_whiteColorOfs();
+							colorstripEndX = colorstripBeginX;
+
+							colorstripPitchX = 0;
+						}
+
+						if (pEdgemap->m_pColorstripsY)
+						{
+							colorstripBeginY = pEdgemap->_colorstripYOfs() + ofsY;
+							colorstripEndY = colorstripBeginY + patch.h;
+
+							colorstripPitchY = pEdgemap->m_size.h;
+						}
+						else
+						{
+							colorstripBeginY = pEdgemap->_whiteColorOfs();
+							colorstripEndY = colorstripBeginY;
+
+							colorstripPitchY = 0;
+						}
+					}
+
+
+					// Calc UV-coordinates. U is edge offset, V is pixel offset from begin in column.
+
+					float	u1 = (float)(uTopLeft + (patch.x - dest.x) * mtx.xx + (patch.y - dest.y) * mtx.yx);
+					float	v1 = (float)(vTopLeft + (patch.x - dest.x) * mtx.xy + (patch.y - dest.y) * mtx.yy);
+
+					float	u2 = (float)(uTopLeft + (patch.x + patch.w - dest.x) * mtx.xx + (patch.y - dest.y) * mtx.yx);
+					float	v2 = (float)(vTopLeft + (patch.x + patch.w - dest.x) * mtx.xy + (patch.y - dest.y) * mtx.yy);
+
+					float	u3 = (float)(uTopLeft + (patch.x + patch.w - dest.x) * mtx.xx + (patch.y + patch.h - dest.y) * mtx.yx);
+					float	v3 = (float)(vTopLeft + (patch.x + patch.w - dest.x) * mtx.xy + (patch.y + patch.h - dest.y) * mtx.yy);
+
+					float	u4 = (float)(uTopLeft + (patch.x - dest.x) * mtx.xx + (patch.y + patch.h - dest.y) * mtx.yx);
+					float	v4 = (float)(vTopLeft + (patch.x - dest.x) * mtx.xy + (patch.y + patch.h - dest.y) * mtx.yy);
+
+					simd_float2	uv1 = { u1, v1 - 0.5f };
+					simd_float2	uv2 = { u2, v2 - 0.5f };
+					simd_float2	uv3 = { u3, v3 - 0.5f };
+					simd_float2	uv4 = { u4, v4 - 0.5f };
+
+					//
+
+					CoordF	colorstripUV[4];
+
+					CoordF	colorstripUVin[4] = { { colorstripBeginX, colorstripBeginY }, { colorstripEndX, colorstripBeginY }, { colorstripEndX, colorstripEndY }, { colorstripBeginX, colorstripEndY } };
+
+					colorstripUV[0] = colorstripUVin[s_flipCornerOrder[flip][0]];
+					colorstripUV[1] = colorstripUVin[s_flipCornerOrder[flip][1]];
+					colorstripUV[2] = colorstripUVin[s_flipCornerOrder[flip][2]];
+					colorstripUV[3] = colorstripUVin[s_flipCornerOrder[flip][3]];
+
+					//
+
+					pVertexMTL->coord.x = dx1;
+					pVertexMTL->coord.y = dy1;
+					pVertexMTL->extrasOfs = extrasOfs;
+					pVertexMTL->uv = uv1;
+					pVertexMTL->tintmapOfs = { tintmapBeginX, tintmapBeginY };
+					pVertexMTL->colorstripOfs = colorstripUV[0];
+					pVertexMTL++;
+
+					pVertexMTL->coord.x = dx2;
+					pVertexMTL->coord.y = dy1;
+					pVertexMTL->extrasOfs = extrasOfs;
+					pVertexMTL->uv = uv2;
+					pVertexMTL->tintmapOfs = { tintmapEndX, tintmapBeginY };
+					pVertexMTL->colorstripOfs = colorstripUV[1];
+					pVertexMTL++;
+
+					pVertexMTL->coord.x = dx2;
+					pVertexMTL->coord.y = dy2;
+					pVertexMTL->extrasOfs = extrasOfs;
+					pVertexMTL->uv = uv3;
+					pVertexMTL->tintmapOfs = { tintmapEndX, tintmapEndY };
+					pVertexMTL->colorstripOfs = colorstripUV[2];
+					pVertexMTL++;
+
+					pVertexMTL->coord.x = dx1;
+					pVertexMTL->coord.y = dy1;
+					pVertexMTL->extrasOfs = extrasOfs;
+					pVertexMTL->uv = uv1;
+					pVertexMTL->tintmapOfs = { tintmapBeginX, tintmapBeginY };
+					pVertexMTL->colorstripOfs = colorstripUV[0];
+					pVertexMTL++;
+
+					pVertexMTL->coord.x = dx2;
+					pVertexMTL->coord.y = dy2;
+					pVertexMTL->extrasOfs = extrasOfs;
+					pVertexMTL->uv = uv3;
+					pVertexMTL->tintmapOfs = { tintmapEndX, tintmapEndY };
+					pVertexMTL->colorstripOfs = colorstripUV[2];
+					pVertexMTL++;
+
+					pVertexMTL->coord.x = dx1;
+					pVertexMTL->coord.y = dy2;
+					pVertexMTL->extrasOfs = extrasOfs;
+					pVertexMTL->uv = uv4;
+					pVertexMTL->tintmapOfs = { tintmapBeginX, tintmapEndY };
+					pVertexMTL->colorstripOfs = colorstripUV[3];
+					pVertexMTL++;
+				}
+
+				// Setup extras data
+
+				*pExtrasMTL++ = colorstripPitchX;
+				*pExtrasMTL++ = colorstripPitchY;
+				*pExtrasMTL++ = 0;			// Dummy
+				*pExtrasMTL++ = 0;			// Dummy
+
+				//
+
+				[m_renderEncoder setFragmentBuffer:pEdgemap->m_bufferId offset:0 atIndex:(unsigned) FragmentInputIndex::Edgemap];
+
+				[m_renderEncoder setRenderPipelineState:m_segmentsPipelines[nSegments-1][m_bTintmap][(int)m_activeBlendMode][(int)m_activeCanvasFormat] ];
+				[m_renderEncoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:vertexOfs vertexCount:nRects*6];
 
 				break;
 			}
@@ -1645,6 +1930,7 @@ id<MTLRenderCommandEncoder> MetalBackend::_setCanvas( MetalSurface * pCanvas, in
 	//
 
 	[renderEncoder setFragmentBuffer:m_colorBufferId offset:0 atIndex:(unsigned) FragmentInputIndex::ColorBuffer];
+	[renderEncoder setFragmentBuffer:m_extrasBufferId offset:0 atIndex:(unsigned) FragmentInputIndex::ExtrasBuffer];
 
 	// Set buffers/textures for segments fragment shader
 
