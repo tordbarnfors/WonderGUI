@@ -196,7 +196,7 @@ void GfxDeviceTester::setup_testdevices()
 		auto pGen2CanvasSurface = SoftSurface::create(canvasBP);
 		auto pGen2SoftDevice = Device::create("Gen2 Software (SoftBackend)", pGen2GfxDevice, CanvasRef::None, pGen2CanvasSurface, this);
 
-		g_testdevices.push_back(pGen2SoftDevice);
+//		g_testdevices.push_back(pGen2SoftDevice);
 
 	}
 
@@ -278,7 +278,7 @@ void GfxDeviceTester::setup_testdevices()
 	
 	auto pNativeDevice = Device::create(nativeDeviceName, pNativeGfxDevice, CanvasRef::None, Base::defaultSurfaceFactory()->createSurface(canvasBP), this );
 	
-//	g_testdevices.push_back(pNativeDevice);
+	g_testdevices.push_back(pNativeDevice);
 
 	// Linear
 	
@@ -458,61 +458,48 @@ void GfxDeviceTester::update_displaymode()
 
 void GfxDeviceTester::refresh_performance_display()
 {
-	g_pPerformanceList->slots.clear();
+//	g_pPerformanceTable->slots.clear();
+
+	g_pPerformanceTable->resize( 1, 3 );
+
+	g_pPerformanceTable->slots[0][0] = TextDisplay::create( { .display = { .layout = g_pPerformanceValueMapper, .text = "TEST" }});
+	g_pPerformanceTable->slots[0][1] = TextDisplay::create( { .display = { .layout = g_pPerformanceValueMapper, .text = "REFERENCE" }});
+	g_pPerformanceTable->slots[0][2] = TextDisplay::create( { .display = { .layout = g_pPerformanceValueMapper, .text = "TESTEE" }});
+
 
 	for (TestEntry t : g_tests)
 	{
 		if (t.bActive)
 		{
-			auto pEntry = PackPanel::create();
-			pEntry->setAxis(Axis::X);
-			pEntry->setLayout(g_pPerformanceEntryLayout);
 
 			auto pLabel = TextDisplay::create();
 			pLabel->display.setText(t.name);
-
-			//			auto pValue = NumberDisplay::create();
-			//			pValue->value.set(t.devices[TESTEE].render_time*1000);
-
-			auto pValuePacker = PackPanel::create();
-			pValuePacker->setAxis(Axis::Y);
 
 			char value[128];
 
 			auto pValueTestee = TextDisplay::create();
 
-			snprintf(value, 128, " %.1f ms (+ %1.f stalling)", t.devices[TESTEE].render_time * 1000, t.devices[TESTEE].stalling_time * 1000);
+			snprintf(value, 128, " %.1f + %.1f = %.1f ms", t.devices[TESTEE].render_time * 1000, t.devices[TESTEE].stalling_time * 1000, (t.devices[TESTEE].render_time + t.devices[TESTEE].stalling_time) * 1000 );
 
 			pValueTestee->display.setText(value);
 			pValueTestee->display.setLayout(g_pPerformanceValueMapper);
 
 			auto pValueRef = TextDisplay::create();
 
-			snprintf(value, 128, " %.1f ms (+ %1.f stalling)", t.devices[REFERENCE].render_time * 1000, t.devices[REFERENCE].stalling_time * 1000);
+			snprintf(value, 128, " %.1f + %.1f = %.1f ms", t.devices[REFERENCE].render_time * 1000, t.devices[REFERENCE].stalling_time * 1000, (t.devices[REFERENCE].render_time + t.devices[REFERENCE].stalling_time) * 1000 );
 			pValueRef->display.setText(value);
 			pValueRef->display.setLayout(g_pPerformanceValueMapper);
 
-			pValuePacker->slots << pValueTestee;
-			pValuePacker->slots << pValueRef;
+			auto it = g_pPerformanceTable->rows.pushBack();
 
-			pEntry->slots << pLabel;
-			pEntry->slots << pValuePacker;
+			int rowIdx = g_pPerformanceTable->rows.size()-1;
 
-			//			std::map<int,Widget_p> v;
-			//			v[1] = Button::create();
-
-			std::vector<Widget_p> v;
-			v.push_back(Button::create());
-
-			//			pEntry->slots.add(1, 2);
-			pEntry->slots.pushBack(v.begin(), v.end());
-
-			pEntry->setSlotWeight(0, 2, { 0.f,1.f });
-			//			pEntry->setSlotPadding(1, { 0,0,0,10 });
-
-			g_pPerformanceList->slots << pEntry;
+			g_pPerformanceTable->slots[rowIdx][0] = pLabel;
+			g_pPerformanceTable->slots[rowIdx][1] = pValueRef;
+			g_pPerformanceTable->slots[rowIdx][2] = pValueTestee;
 		}
-	}
+ 	}
+
 }
 
 
@@ -1120,13 +1107,12 @@ bool GfxDeviceTester::setup_chrome()
 		auto pBase = PackPanel::create();
 		pBase->setAxis(Axis::Y);
 
-		auto pList = PackList::create();
-		pList->setSkin( ColorSkin::create(Color::White) );
+		auto pTable = TablePanel::create( { .rowSpacing = 4, .columnSpacing = 10, .skin = ColorSkin::create( { .color = Color::White, .padding = 4 }) });
 
 		auto pOddEntrySkin = BoxSkin::create(0, Color::White, Color::White);
-		auto pEvenEntrySkin = BoxSkin::create(0, Color::PaleGreen, Color::PaleGreen);
+		auto pEvenEntrySkin = BoxSkin::create(0, Color::PapayaWhip, Color::PapayaWhip);
 
-		pList->setEntrySkin(pOddEntrySkin, pEvenEntrySkin);
+		pTable->setRowSkins(pOddEntrySkin, pEvenEntrySkin);
 
 
 		// Create the bottom section
@@ -1153,12 +1139,12 @@ bool GfxDeviceTester::setup_chrome()
 		pBottom->slots << pRefresh;
 
 		//
-
-		pBase->slots << pList;
+  
+		pBase->slots << pTable;
 		pBase->slots << pBottom;
 
 		g_pPerformanceDisplay = pBase;
-		g_pPerformanceList = pList;
+		g_pPerformanceTable = pTable;
 	}
 
 	return true;

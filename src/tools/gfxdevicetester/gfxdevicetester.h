@@ -145,7 +145,7 @@ protected:
 	Device_p            g_pReferenceDevice = nullptr;
 
 	Widget_p			g_pPerformanceDisplay = nullptr;
-	PackList_p			g_pPerformanceList = nullptr;
+	TablePanel_p		g_pPerformanceTable = nullptr;
 	TextLayout_p		g_pPerformanceValueMapper = nullptr;
 	PackLayout_p		g_pPerformanceEntryLayout = nullptr;
 
