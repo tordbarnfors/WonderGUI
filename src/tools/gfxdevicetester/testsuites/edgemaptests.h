@@ -24,7 +24,8 @@ public:
 		addTest("Edgemap grad XY rot90 flipX", &EdgemapTests::spxTopDownGradientsXYRot90FlipX );
 		addTest("Edgemap grad XY rot90 flipY", &EdgemapTests::spxTopDownGradientsXYRot90FlipY );
 
-		addTest("Edgemap SPX topdown global tint", &EdgemapTests::globalTint);
+		addTest("Edgemap global tint", &EdgemapTests::globalTint);
+		addTest("Edgemap global flat tint", &EdgemapTests::globalFlatTint);
 
 	}
 
@@ -84,6 +85,8 @@ public:
 		m_pSmallEdgemap = pFactory->createEdgemap(WGBP(Edgemap, _.colors = m_rainbowColors, _.size = {100, 50}, _.segments = 4),
 			SampleOrigo::Top, sampleBuffer[0], 3, 513 );
 
+		m_pGlobalTintmap = Gradyent::create(HiColor::TransparentWhite, HiColor::White, HiColor::White, HiColor::White);
+
 		return true;
 	}
 
@@ -98,17 +101,20 @@ public:
 
 	bool globalTint(GfxDevice* pDevice, const RectI& canvas)
 	{
-		pDevice->setTintGradient(RectSPX(100, 50, 250, 100)*64, Gradient(HiColor::TransparentWhite, HiColor::TransparentWhite, HiColor::White, HiColor::White));
-
-//		pDevice->fill(RectSPX(100, 50, 250, 100) * 64, Color::Green);
-
-//		pDevice->drawEdgemap(CoordSPX(210, 50) * 64, m_pSmallEdgemap);
+		pDevice->setTint(RectSPX(100, 50, 250, 100)*64, m_pGlobalTintmap );
 		pDevice->flipDrawEdgemap(CoordSPX(100, 50) * 64, m_pSmallEdgemap, GfxFlip::Rot270);
 
-		pDevice->clearTintGradient();
+		pDevice->clearTint();
 		return true;
 	}
 
+	bool globalFlatTint(GfxDevice* pDevice, const RectI& canvas)
+	{
+		pDevice->setTint( HiColor{4096,4096,4096,1024} );
+		pDevice->drawEdgemap(CoordSPX(100, 50) * 64, m_pSmallEdgemap);
+		pDevice->clearTint();
+		return true;
+	}
 
 	bool spxTopDownGradientsX(GfxDevice * pDevice, const RectI& canvas)
 	{
@@ -188,6 +194,8 @@ public:
 	
 
 private:
+
+	Tintmap_p	m_pGlobalTintmap;
 
 	Edgemap_p	m_pEdgemapSPX1;
 	Edgemap_p	m_pEdgemapSPXGradientX;

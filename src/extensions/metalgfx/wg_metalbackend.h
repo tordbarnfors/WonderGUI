@@ -304,14 +304,14 @@ namespace wg
 		std::atomic<int>            m_flushesInProgress;                // Number of buffer flushes to complete before metal is idle.
 
 		id<MTLRenderPipelineState>  m_linePipelines[BlendMode_size][5];    // [BlendMode][DestFormat]
-		id<MTLRenderPipelineState>  m_fillPipelines[2][BlendMode_size][5];       // [bGradient][BlendMode][DestFormat]
-		id<MTLRenderPipelineState>  m_fillAAPipelines[2][BlendMode_size][5];     // [bGradient][BlendMode][DestFormat]
+		id<MTLRenderPipelineState>  m_fillPipelines[2][BlendMode_size][5];       // [bTintmap][BlendMode][DestFormat]
+		id<MTLRenderPipelineState>  m_fillAAPipelines[2][BlendMode_size][5];     // [bTintmap][BlendMode][DestFormat]
 
-		id<MTLRenderPipelineState>  m_blitPipelines[5][2][BlendMode_size][5];   // [BlitFragShader][bGradient][BlendMode][DestFormat]
+		id<MTLRenderPipelineState>  m_blitPipelines[5][2][BlendMode_size][5];   // [BlitFragShader][bTintmap][BlendMode][DestFormat]
 
 		id<MTLRenderPipelineState>  m_blurPipelines[2][BlendMode_size][5];   	// [bGradient][BlendMode][DestFormat]
 
-		id<MTLRenderPipelineState>  m_segmentsPipelines[c_maxSegments][2][BlendMode_size][5];   // [nbEdges][bGradient][BlendMode][DestFormat]
+		id<MTLRenderPipelineState>  m_segmentsPipelines[c_maxSegments][2][BlendMode_size][5];   // [nbEdges][bTintmap][BlendMode][DestFormat]
 
 		id<MTLSamplerState>         m_samplers[2][2][2];                        // [bMipMap][bInterpolate][bTile]
 

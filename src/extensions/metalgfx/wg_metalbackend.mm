@@ -260,10 +260,22 @@ MetalBackend::MetalBackend()
 		@"segmentsFragmentShader8", @"segmentsFragmentShader9", @"segmentsFragmentShader10", @"segmentsFragmentShader11",
 		@"segmentsFragmentShader12", @"segmentsFragmentShader13", @"segmentsFragmentShader14", @"segmentsFragmentShader15" };
 
+	NSString * segTintmapFragShaders[16] = { nil, @"segmentsTintmapFragmentShader1", @"segmentsTintmapFragmentShader2", @"segmentsTintmapFragmentShader3",
+		@"segmentsTintmapFragmentShader4", @"segmentsTintmapFragmentShader5", @"segmentsTintmapFragmentShader6", @"segmentsTintmapFragmentShader7",
+		@"segmentsFragmentShader8", @"segmentsFragmentShader9", @"segmentsFragmentShader10", @"segmentsFragmentShader11",
+		@"segmentsTintmapFragmentShader12", @"segmentsTintmapFragmentShader13", @"segmentsTintmapFragmentShader14", @"segmentsTintmapFragmentShader15" };
+
+
 	NSString * segFragShaders_A8[16] = { nil, @"segmentsFragmentShader1_A8", @"segmentsFragmentShader2_A8", @"segmentsFragmentShader3_A8",
 		@"segmentsFragmentShader4_A8", @"segmentsFragmentShader5_A8", @"segmentsFragmentShader6_A8", @"segmentsFragmentShader7_A8",
 		@"segmentsFragmentShader8_A8", @"segmentsFragmentShader9_A8", @"segmentsFragmentShader10_A8", @"segmentsFragmentShader11_A8",
 		@"segmentsFragmentShader12_A8", @"segmentsFragmentShader13_A8", @"segmentsFragmentShader14_A8", @"segmentsFragmentShader15_A8" };
+
+	NSString * segTintmapFragShaders_A8[16] = { nil, @"segmentsTintmapFragmentShader1_A8", @"segmentsTintmapFragmentShader2_A8", @"segmentsTintmapFragmentShader3_A8",
+		@"segmentsTintmapFragmentShader4_A8", @"segmentsTintmapFragmentShader5_A8", @"segmentsTintmapFragmentShader6_A8", @"segmentsTintmapFragmentShader7_A8",
+		@"segmentsTintmapFragmentShader8_A8", @"segmentsTintmapFragmentShader9_A8", @"segmentsTintmapFragmentShader10_A8", @"segmentsTintmapFragmentShader11_A8",
+		@"segmentsTintmapFragmentShader12_A8", @"segmentsTintmapFragmentShader13_A8", @"segmentsTintmapFragmentShader14_A8", @"segmentsTintmapFragmentShader15_A8" };
+
 
 	int maxSegments = c_maxSegments;				// std::min can't operate on static const only present in header. Does some introspection that fails then.
 	int nbShaders = std::min(maxSegments, 16);
@@ -280,13 +292,13 @@ MetalBackend::MetalBackend()
 
 			m_segmentsPipelines[shader][0][blendMode][(int)DestFormat::Alpha_8] = _compileRenderPipeline( @"Segments A_8 pipeline", @"segmentsVertexShader", segFragShaders_A8[shader], (BlendMode) blendMode, PixelFormat::Alpha_8 );
 
-			m_segmentsPipelines[shader][1][blendMode][(int)DestFormat::BGRA8_linear] = _compileRenderPipeline( @"Segments BGRA_8_linear gradient pipeline", @"segmentsVertexShader", segFragShaders[shader], (BlendMode) blendMode, PixelFormat::BGRA_8_linear );
-			m_segmentsPipelines[shader][1][blendMode][(int)DestFormat::BGRX8_linear] = _compileRenderPipeline( @"Segments BGRX_8_linear gradient pipeline", @"segmentsVertexShader", segFragShaders[shader], (BlendMode) blendMode, PixelFormat::BGRX_8_linear );
+			m_segmentsPipelines[shader][1][blendMode][(int)DestFormat::BGRA8_linear] = _compileRenderPipeline( @"Segments BGRA_8_linear gradient pipeline", @"segmentsVertexShader", segTintmapFragShaders[shader], (BlendMode) blendMode, PixelFormat::BGRA_8_linear );
+			m_segmentsPipelines[shader][1][blendMode][(int)DestFormat::BGRX8_linear] = _compileRenderPipeline( @"Segments BGRX_8_linear gradient pipeline", @"segmentsVertexShader", segTintmapFragShaders[shader], (BlendMode) blendMode, PixelFormat::BGRX_8_linear );
 
-			m_segmentsPipelines[shader][1][blendMode][(int)DestFormat::BGRA8_sRGB] = _compileRenderPipeline( @"Segments BGRA_8_sRGB gradient pipeline", @"segmentsVertexShader", segFragShaders[shader], (BlendMode) blendMode, PixelFormat::BGRA_8_sRGB );
-			m_segmentsPipelines[shader][1][blendMode][(int)DestFormat::BGRX8_sRGB] = _compileRenderPipeline( @"Segments BGRX_8_sRGB gradient pipeline", @"segmentsVertexShader", segFragShaders[shader], (BlendMode) blendMode, PixelFormat::BGRX_8_sRGB );
+			m_segmentsPipelines[shader][1][blendMode][(int)DestFormat::BGRA8_sRGB] = _compileRenderPipeline( @"Segments BGRA_8_sRGB gradient pipeline", @"segmentsVertexShader", segTintmapFragShaders[shader], (BlendMode) blendMode, PixelFormat::BGRA_8_sRGB );
+			m_segmentsPipelines[shader][1][blendMode][(int)DestFormat::BGRX8_sRGB] = _compileRenderPipeline( @"Segments BGRX_8_sRGB gradient pipeline", @"segmentsVertexShader", segTintmapFragShaders[shader], (BlendMode) blendMode, PixelFormat::BGRX_8_sRGB );
 
-			m_segmentsPipelines[shader][1][blendMode][(int)DestFormat::Alpha_8] = _compileRenderPipeline( @"Segments A_8 gradient pipeline", @"segmentsVertexShader", segFragShaders_A8[shader], (BlendMode) blendMode, PixelFormat::Alpha_8 );
+			m_segmentsPipelines[shader][1][blendMode][(int)DestFormat::Alpha_8] = _compileRenderPipeline( @"Segments A_8 gradient pipeline", @"segmentsVertexShader", segTintmapFragShaders_A8[shader], (BlendMode) blendMode, PixelFormat::Alpha_8 );
 		}
 	}
 
@@ -1676,6 +1688,8 @@ void MetalBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd)
 				*pExtrasMTL++ = colorstripPitchY;
 				*pExtrasMTL++ = 0;			// Dummy
 				*pExtrasMTL++ = 0;			// Dummy
+
+
 
 				//
 
