@@ -10,6 +10,7 @@ set(SOURCES
 	wg_componentptr.h
 	wg_dataset.cpp
 	wg_dataset.h
+	wg_dynamicbuffer.h
 	wg_memheap.cpp
 	wg_memheap.h
 	wg_mempool.cpp

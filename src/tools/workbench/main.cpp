@@ -38,7 +38,7 @@
 
 #include <wg_freetypefont.h>
 
-
+#include <wg_dynamicbuffer.h>
 
 //#define USE_OPEN_GL
 
@@ -185,6 +185,23 @@ int main(int argc, char** argv)
 	Base::exit();
 */
 	
+
+	DynamicBuffer buff;
+
+	buff.push( RectI(1,2,3,4) );
+
+	auto it = buff.reserveSpace( sizeof(double) * 4 );
+
+	auto it2 = it;
+
+	it.push( (double) 3.0 );
+	it.push( (double) 4.0 );
+	it.push( (double) 5.0 );
+	it.push( (double) 6.0 );
+
+	RectI x = buff.begin().as<RectI>();
+
+	double y = it2.as<double>();
 
 
 
