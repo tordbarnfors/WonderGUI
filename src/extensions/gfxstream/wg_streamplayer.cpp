@@ -701,7 +701,6 @@ namespace wg
 			*m_pDecoder >> sampleBegin;
 			*m_pDecoder >> sampleEnd;
 
-			int nEdges = edgeEnd - edgeBegin;
 			int nSamples = sampleEnd - sampleBegin;
 			
 			m_pUpdatingEdgemap = wg_static_cast<Edgemap_p>(m_vObjects[objectId]);

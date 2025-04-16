@@ -743,7 +743,8 @@ namespace wg
 			oldRenderArea += pSlot->_widget()->_overflow();
 		
 		pSlot->_setWidget(pNewWidget);
-		pNewWidget->_resize(pSlot->m_geo, m_scale);
+		if( pNewWidget )
+			pNewWidget->_resize(pSlot->m_geo, m_scale);
 		bool bGeoChanged = _updateGeo();
 		if (!bGeoChanged)
 		{

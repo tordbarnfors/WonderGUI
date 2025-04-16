@@ -429,8 +429,9 @@ namespace wg
 			rect = _slotTwoRect(_contentRect());
 
 		//TODO: This is in most cases an unnecessary resize call, should be avoided when we can.
-		pNewWidget->_resize(rect.size(), m_scale);
-		
+		if( pNewWidget )
+			pNewWidget->_resize(rect.size(), m_scale);
+
 		m_defaultSize = _calcDefaultSize(m_scale);
 
 		_updateGeo(false);

@@ -140,7 +140,7 @@ namespace wg
 		auto wantedSize = _surfaceDisplayRect(scale);
 
 		spx height;
-		if (m_bZoomToFit)
+		if (m_bZoomToFit && wantedSize.w != 0)
 		{
 			width -= padding.w;
 			height = align(wantedSize.h * width / wantedSize.w);
@@ -161,7 +161,7 @@ namespace wg
 		auto wantedSize = _surfaceDisplayRect(scale);
 
 		spx width;
-		if (m_bZoomToFit)
+		if (m_bZoomToFit && wantedSize.h != 0)
 		{
 			height -= padding.h;
 			width = align(wantedSize.w * height / wantedSize.h);

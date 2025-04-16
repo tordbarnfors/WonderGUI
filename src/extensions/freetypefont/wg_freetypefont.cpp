@@ -610,8 +610,6 @@ namespace wg
 
 	void FreeTypeFont::_cacheCleared()
 	{
-		auto pSizes = m_pCachedFontSizes;
-
 		for (int size = 0; size < m_nCachedFontSizes; size++)
 		{
 			if (m_pCachedFontSizes[size] != nullptr)
