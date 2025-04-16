@@ -108,6 +108,8 @@ MetalEdgemap::MetalEdgemap(const Blueprint& bp) : Edgemap(bp)
 
 MetalEdgemap::~MetalEdgemap()
 {
+	[m_bufferId release];
+	m_bufferId = nil;
 }
 
 //____ typeInfo() ____________________________________________________________
@@ -122,7 +124,6 @@ const TypeInfo& MetalEdgemap::typeInfo(void) const
 void MetalEdgemap::_samplesUpdated(int edgeBegin, int edgeEnd, int sampleBegin, int sampleEnd)
 {
 	int nEdgeStrips = sampleEnd - sampleBegin;
-	const int* pEdgeStrips = m_pSamples;
 	int edgeStripPitch = m_nbSegments - 1;
 
 	const spx* pEdges = m_pSamples + edgeStripPitch * edgeBegin;

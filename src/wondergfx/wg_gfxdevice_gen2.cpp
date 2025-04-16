@@ -871,6 +871,9 @@ void GfxDeviceGen2::_resetCanvas()
 		layer.rects.clear();
 		layer.commands.clear();
 
+		layer.latestCommand = Command::None;
+		layer.latestCommandOfs = -1;
+
 		_resetState(layer.encodedState);
 
 		layer.finalCommandsOfs = -1;
@@ -904,9 +907,14 @@ void GfxDeviceGen2::_doFlattenLayers()
 				info.preBlendFunc(this);
 			}
 
-			// Store length of commands before changing canvas
+			// Store length of commands before changing canvas.
 
 			layer.finalCommandsOfs = (int) layer.commands.size();
+
+			// Reset latestCommand since we need to keep these separated.
+
+			layer.latestCommand = Command::None;
+			layer.latestCommandOfs = -1;
 
 			// Encode preBlendCanvasFunc if any.
 
@@ -1107,17 +1115,30 @@ void GfxDeviceGen2::fill(HiColor color)
 	if (m_stateChanges != 0)
 		_encodeStateChanges();
 
-	m_pActiveLayer->commands.push_back(uint16_t(Command::Fill));
-	m_pActiveLayer->commands.push_back(uint16_t(m_pActiveClipList->nRects));
+	int nRects = m_pActiveClipList->nRects;
 
-	m_pActiveLayer->colors.push_back(color);
+	if( m_pActiveLayer->latestCommand == Command::Fill && m_pActiveLayer->colors.back() == color && m_pActiveLayer->commands[m_pActiveLayer->latestCommandOfs+1] + nRects < 65536 )
+	{
+		m_pActiveLayer->commands[m_pActiveLayer->latestCommandOfs+1] += nRects;
+	}
+	else
+	{
+		m_pActiveLayer->latestCommand = Command::Fill;
+		m_pActiveLayer->latestCommandOfs = (int) m_pActiveLayer->commands.size();
+
+		m_pActiveLayer->commands.push_back(uint16_t(Command::Fill));
+		m_pActiveLayer->commands.push_back(uint16_t(nRects));
+	}
+
 
 	auto& rects = m_pActiveLayer->rects;
 
-	for (int i = 0; i < m_pActiveClipList->nRects; i++)
+	for (int i = 0; i < nRects; i++)
 		rects.emplace_back(m_pActiveClipList->pRects[i]);
 
-	m_pActiveCanvas->sessionInfo.nFill++;
+	m_pActiveLayer->colors.push_back(color);
+
+	m_pActiveCanvas->sessionInfo.nFill+= nRects;
 }
 
 //____ fill() _____________________________________________________________
@@ -1161,12 +1182,22 @@ void GfxDeviceGen2::fill(const RectSPX& rect, HiColor color)
 		if (m_stateChanges != 0)
 			_encodeStateChanges();
 
-		m_pActiveLayer->commands.push_back(uint16_t(Command::Fill));
-		m_pActiveLayer->commands.push_back(uint16_t(nRects));
+		if( m_pActiveLayer->latestCommand == Command::Fill && m_pActiveLayer->colors.back() == color && m_pActiveLayer->commands[m_pActiveLayer->latestCommandOfs+1] + nRects < 65536 )
+		{
+			m_pActiveLayer->commands[m_pActiveLayer->latestCommandOfs+1] += nRects;
+		}
+		else
+		{
+			m_pActiveLayer->latestCommand = Command::Fill;
+			m_pActiveLayer->latestCommandOfs = (int) m_pActiveLayer->commands.size();
+
+			m_pActiveLayer->commands.push_back(uint16_t(Command::Fill));
+			m_pActiveLayer->commands.push_back(uint16_t(nRects));
+		}
 
 		m_pActiveLayer->colors.push_back(color);
 
-		m_pActiveCanvas->sessionInfo.nFill++;
+		m_pActiveCanvas->sessionInfo.nFill += nRects;
 	}
 }
 
@@ -1236,12 +1267,14 @@ void GfxDeviceGen2::drawLine(CoordSPX beg, CoordSPX end, HiColor color, spx thic
 
 	const RectSPX* pClipRects = m_pActiveClipList->pRects;
 
+
+
 	commands.push_back(uint16_t(Command::Line));
 	commands.push_back(uint16_t(nRects));
 	commands.push_back(uint16_t(thickness));
 	commands.push_back(1);					// nLines.  TODO: Take usage of and combine several calls!
 
-
+	m_pActiveLayer->latestCommand = Command::Line;
 
 	for (int i = 0; i < m_pActiveClipList->nRects; i++)
 	{
@@ -2164,6 +2197,8 @@ void GfxDeviceGen2::flipDrawEdgemap(CoordSPX dest, Edgemap* pEdgemap, GfxFlip fl
 		if (m_stateChanges != 0)
 			_encodeStateChanges();
 
+		m_pActiveLayer->latestCommand = Command::DrawEdgemap;
+
 		m_pActiveLayer->commands.push_back(uint16_t(Command::DrawEdgemap));
 		m_pActiveLayer->commands.push_back(uint16_t(nRects));
 		m_pActiveLayer->commands.push_back(uint16_t(flip));
@@ -2963,29 +2998,41 @@ void GfxDeviceGen2::_transformBlitSimple(const RectSPX& _dest, CoordSPX src, int
 		if (m_stateChanges != 0)
 			_encodeStateChanges();
 
-		m_pActiveLayer->commands.push_back(uint16_t(cmd));
-		m_pActiveLayer->commands.push_back(uint16_t(nRects));
+		if( cmd == m_pActiveLayer->latestCommand && m_pActiveLayer->commands[m_pActiveLayer->latestCommandOfs+1] + nRects < 65536 )
+		{
+			m_pActiveLayer->commands[m_pActiveLayer->latestCommandOfs+1] += nRects;
+		}
+		else
+		{
+			m_pActiveLayer->latestCommand = cmd;
+			m_pActiveLayer->latestCommandOfs = (int) m_pActiveLayer->commands.size();
+
+			m_pActiveLayer->commands.push_back(uint16_t(cmd));
+			m_pActiveLayer->commands.push_back(uint16_t(nRects));
+		}
 
 		int srcX = align(src.x)*16;		// Higher resolution on source than SPX: 22:10.
 		int srcY = align(src.y)*16;		// Higher resolution on source than SPX: 22:10.
 
+		for( int i = 0 ; i < nRects ; i++ )
+		{
+			m_pActiveLayer->commands.push_back( uint16_t(srcX % 65536) );		// Higher resolution on source than SPX: 22:10.
+			m_pActiveLayer->commands.push_back( uint16_t(srcX / 65536) );
+			m_pActiveLayer->commands.push_back( uint16_t(srcY % 65536) );		// Higher resolution on source than SPX: 22:10.
+			m_pActiveLayer->commands.push_back( uint16_t(srcY / 65536) );
+			m_pActiveLayer->commands.push_back( uint16_t(dest.x % 65536) );
+			m_pActiveLayer->commands.push_back( uint16_t(dest.x / 65536) );
+			m_pActiveLayer->commands.push_back( uint16_t(dest.y % 65536) );
+			m_pActiveLayer->commands.push_back( uint16_t(dest.y / 65536) );
 
-		m_pActiveLayer->commands.push_back(transformOfs);
-		m_pActiveLayer->commands.push_back(0);								// Padding
-
-		m_pActiveLayer->commands.push_back( uint16_t(srcX % 65536) );		// Higher resolution on source than SPX: 22:10.
-		m_pActiveLayer->commands.push_back( uint16_t(srcX / 65536) );
-		m_pActiveLayer->commands.push_back( uint16_t(srcY % 65536) );		// Higher resolution on source than SPX: 22:10.
-		m_pActiveLayer->commands.push_back( uint16_t(srcY / 65536) );
-		m_pActiveLayer->commands.push_back( uint16_t(dest.x % 65536) );
-		m_pActiveLayer->commands.push_back( uint16_t(dest.x / 65536) );
-		m_pActiveLayer->commands.push_back( uint16_t(dest.y % 65536) );
-		m_pActiveLayer->commands.push_back( uint16_t(dest.y / 65536) );
+			m_pActiveLayer->commands.push_back(transformOfs);
+			m_pActiveLayer->commands.push_back(0);								// Padding
+		}
 
 		if (cmd == Command::Blur)
-			m_pActiveCanvas->sessionInfo.nBlur++;
+			m_pActiveCanvas->sessionInfo.nBlur += nRects;
 		else
-			m_pActiveCanvas->sessionInfo.nBlit++;
+			m_pActiveCanvas->sessionInfo.nBlit += nRects;
 	}
 }
 
@@ -3022,28 +3069,42 @@ void GfxDeviceGen2::_transformBlitComplex(const RectSPX& _dest, CoordI src, cons
 		if (m_stateChanges != 0)
 			_encodeStateChanges();
 
+		if( cmd == m_pActiveLayer->latestCommand && m_pActiveLayer->commands[m_pActiveLayer->latestCommandOfs+1] + nRects < 65536 )
+		{
+			m_pActiveLayer->commands[m_pActiveLayer->latestCommandOfs+1] += nRects;
+		}
+		else
+		{
+			m_pActiveLayer->latestCommand = cmd;
+			m_pActiveLayer->latestCommandOfs = (int) m_pActiveLayer->commands.size();
+
+			m_pActiveLayer->commands.push_back(uint16_t(cmd));
+			m_pActiveLayer->commands.push_back(uint16_t(nRects));
+		}
+
+
 		int transformOfs = int(m_pActiveCanvas->transforms.size()) + GfxFlip_size;
 		m_pActiveCanvas->transforms.emplace_back(matrix);
 
-		m_pActiveLayer->commands.push_back(uint16_t(cmd));
-		m_pActiveLayer->commands.push_back(uint16_t(nRects));
+		for( int i = 0 ; i < nRects ; i++ )
+		{
+			m_pActiveLayer->commands.push_back( uint16_t(src.x % 65536) );		// Higher resolution on source than SPX: 22:10.
+			m_pActiveLayer->commands.push_back( uint16_t(src.x / 65536) );
+			m_pActiveLayer->commands.push_back( uint16_t(src.y % 65536) );		// Higher resolution on source than SPX: 22:10.
+			m_pActiveLayer->commands.push_back( uint16_t(src.y / 65536) );
+			m_pActiveLayer->commands.push_back( uint16_t(dest.x % 65536) );
+			m_pActiveLayer->commands.push_back( uint16_t(dest.x / 65536) );
+			m_pActiveLayer->commands.push_back( uint16_t(dest.y % 65536) );
+			m_pActiveLayer->commands.push_back( uint16_t(dest.y / 65536) );
 
-		m_pActiveLayer->commands.push_back(transformOfs);
-		m_pActiveLayer->commands.push_back(0);								// Padding
-
-		m_pActiveLayer->commands.push_back( uint16_t(src.x % 65536) );		// Higher resolution on source than SPX: 22:10.
-		m_pActiveLayer->commands.push_back( uint16_t(src.x / 65536) );
-		m_pActiveLayer->commands.push_back( uint16_t(src.y % 65536) );		// Higher resolution on source than SPX: 22:10.
-		m_pActiveLayer->commands.push_back( uint16_t(src.y / 65536) );
-		m_pActiveLayer->commands.push_back( uint16_t(dest.x % 65536) );
-		m_pActiveLayer->commands.push_back( uint16_t(dest.x / 65536) );
-		m_pActiveLayer->commands.push_back( uint16_t(dest.y % 65536) );
-		m_pActiveLayer->commands.push_back( uint16_t(dest.y / 65536) );
+			m_pActiveLayer->commands.push_back(transformOfs);
+			m_pActiveLayer->commands.push_back(0);								// Padding
+		}
 
 		if (cmd == Command::Blur)
-			m_pActiveCanvas->sessionInfo.nBlur++;
+			m_pActiveCanvas->sessionInfo.nBlur += nRects;
 		else
-			m_pActiveCanvas->sessionInfo.nBlit++;
+			m_pActiveCanvas->sessionInfo.nBlit += nRects;
 	}
 }
 
@@ -3246,6 +3307,7 @@ void GfxDeviceGen2::_encodeStateChanges()
 
 	m_stateChanges = 0;
 
+	m_pActiveLayer->latestCommand = Command::StateChange;
 }
 
 

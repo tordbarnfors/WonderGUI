@@ -604,7 +604,7 @@ void MetalBackend::beginSession( CanvasRef canvasRef, Surface * pCanvasSurface, 
 	if( !pCanvasSurface && canvasRef != CanvasRef::Default )
 		return;
 
-	m_bFullCanvasSession = (nUpdateRects == 1 && pUpdateRects[0] == RectSPX(0,0,pCanvasSurface->pixelSize()*64) );
+//	m_bFullCanvasSession = (nUpdateRects == 1 && pUpdateRects[0] == RectSPX(0,0,pCanvasSurface->pixelSize()*64) );
 
 	// Reserve buffer for coordinates
 
@@ -1707,22 +1707,16 @@ void MetalBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd)
 			case Command::Blur:
 			{
 				int32_t nRects = *p++;
-				int32_t transform = *p++;
-
-				p++;						// padding
-
-				auto p32 = (const spx *) p;
-				int srcX = *p32++;
-				int srcY = *p32++;
-				spx dstX = *p32++;
-				spx dstY = *p32++;
-				p = (const uint16_t*) p32;
 
 				//
 
 				int tintColorOfs = m_tintColorOfs >= 0 ? m_tintColorOfs : 0;
-				int extrasOfs = int(pExtrasMTL - m_pExtrasBuffer) / 4;
 				int vertexOfs = int(pVertexMTL - m_pVertexBuffer);
+
+				float tintmapBeginX = 0.f;
+				float tintmapBeginY = 0.f;
+				float tintmapEndX = 0.f;
+				float tintmapEndY = 0.f;
 
 				for (int i = 0; i < nRects; i++)
 				{
@@ -1731,8 +1725,6 @@ void MetalBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd)
 					int dx2 = dx1 + ((pRects->w) >> 6);
 					int dy2 = dy1 + ((pRects->h) >> 6);
 					pRects++;
-
-					float tintmapBeginX, tintmapBeginY, tintmapEndX, tintmapEndY;
 
 					if (m_bTintmap)
 					{
@@ -1758,13 +1750,8 @@ void MetalBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd)
 							tintmapEndY = tintmapBeginY + (dy2 - dy1) + 0.f;
 						}
 					}
-					else
-					{
-						tintmapBeginX = 0.f;
-						tintmapBeginY = 0.f;
-						tintmapEndX = 0.f;
-						tintmapEndY = 0.f;
-					}
+
+					int extrasOfs = int(pExtrasMTL - m_pExtrasBuffer) / 4;
 
 					pVertexMTL->coord.x = dx1;
 					pVertexMTL->coord.y = dy1;
@@ -1808,30 +1795,43 @@ void MetalBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd)
 					pVertexMTL->tintmapOfs = { tintmapBeginX,tintmapEndY };
 					pVertexMTL++;
 
+					//
+
+					auto p32 = (const spx *) p;
+					int srcX = *p32++;
+					int srcY = *p32++;
+					spx dstX = *p32++;
+					spx dstY = *p32++;
+					p = (const uint16_t*) p32;
+
+
+					if (m_pActiveBlitSource->sampleMethod() == SampleMethod::Bilinear)
+					{
+						* pExtrasMTL++ = srcX / 1024.f + 0.5f;
+						* pExtrasMTL++ = srcY / 1024.f + 0.5f;
+						* pExtrasMTL++ = float(dstX >> 6) + 0.5f;
+						* pExtrasMTL++ = float(dstY >> 6) + 0.5f;
+					}
+					else
+					{
+						*pExtrasMTL++ = srcX / 1024.f;
+						*pExtrasMTL++ = srcY / 1024.f;
+						*pExtrasMTL++ = float(dstX >> 6) + 0.5f;
+						*pExtrasMTL++ = float(dstY >> 6) + 0.5f;
+					}
+
+					int32_t transform = *p++;
+					p++;						// padding
+
+					auto& mtx = transform < GfxFlip_size ? s_blitFlipTransforms[transform] : m_pTransformsBeg[transform - GfxFlip_size];
+
+					*pExtrasMTL++ = mtx.xx;
+					*pExtrasMTL++ = mtx.xy;
+					*pExtrasMTL++ = mtx.yx;
+					*pExtrasMTL++ = mtx.yy;
 				}
 
-				if (m_pActiveBlitSource->sampleMethod() == SampleMethod::Bilinear)
-				{
-					* pExtrasMTL++ = srcX / 1024.f + 0.5f;
-					* pExtrasMTL++ = srcY / 1024.f + 0.5f;
-					* pExtrasMTL++ = float(dstX >> 6) + 0.5f;
-					* pExtrasMTL++ = float(dstY >> 6) + 0.5f;
-				}
-				else
-				{
-					*pExtrasMTL++ = srcX / 1024.f;
-					*pExtrasMTL++ = srcY / 1024.f;
-					*pExtrasMTL++ = float(dstX >> 6) + 0.5f;
-					*pExtrasMTL++ = float(dstY >> 6) + 0.5f;
-				}
 
-				auto& mtx = transform < GfxFlip_size ? s_blitFlipTransforms[transform] : m_pTransformsBeg[transform - GfxFlip_size];
-
-
-				*pExtrasMTL++ = mtx.xx;
-				*pExtrasMTL++ = mtx.xy;
-				*pExtrasMTL++ = mtx.yx;
-				*pExtrasMTL++ = mtx.yy;
 
 				// Draw
 

@@ -260,6 +260,9 @@ namespace wg
 
 			int						finalCommandsOfs = -1;
 			Surface_p				pLayerCanvas;				// Null for layer 0 or any layer rendering directly to layer 0.
+
+			Command					latestCommand = Command::None;
+			int						latestCommandOfs = -1;
 		};
 
 
