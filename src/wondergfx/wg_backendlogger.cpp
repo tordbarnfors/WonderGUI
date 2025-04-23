@@ -352,29 +352,32 @@ namespace wg
 			case Command::Line:
 			{
 				int32_t nRects = *p++;
-				spx thickness = *p++;
 				int32_t nLines = *p++;
+				p++;
 
-				HiColor col = * pColors++;
 
-				*m_pStream << "    Draw " << nLines << " lines with color : " << col.r << ", " << col.g << ", " << col.b << ", " << col.a
-					<< " and thickness: " << thickness
-					<< ". Clipped by " << nRects << " rectangles:" << std::endl;
+				*m_pStream << "    Draw " << nLines << " clipped by " << nRects << " rectangles:" << std::endl;
 
 				_printRects(*m_pStream, nRects, pRects);
 				pRects += nRects;
 
-				auto p32 = (const spx *) p;
 
 				for (int i = 0; i < nLines; i++)
 				{
+					auto p32 = (const spx *) p;
 					CoordSPX beg = { *p32++, *p32++ };
 					CoordSPX end = { *p32++, *p32++ };
+					p = (const uint16_t*) p32;
 
-					*m_pStream << "        from (" << beg.x << ", " << beg.y << ") to(" << end.x << ", " << end.y << ")" << std::endl;
+					spx thickness = *p++;
+					p++;
+
+					HiColor col = * pColors++;
+
+					*m_pStream << "        from (" << beg.x << ", " << beg.y << ") to (" << end.x << ", " << end.y << ") with thickness " << thickness
+								<< " and color " << col.r << ", " << col.g << ", " << col.b << ", " << col.a << std::endl;
 				}
 
-				p = (const uint16_t*) p32;
 				break;
 			}
 
@@ -415,20 +418,33 @@ namespace wg
 					*m_pStream << "    ClipBlit: ";
 
 				int32_t nRects = *p++;
-				int32_t transform = *p++;
-				p++;						// padding
 
-				auto p32 = (const spx *) p;
-				int32_t srcX = *p32++;
-				int32_t srcY = *p32++;
-				int32_t dstX = *p32++;
-				int32_t dstY = *p32++;
-				p = (const uint16_t*) p32;
 
-				*m_pStream << nRects << " rects with transform: " << transform << ", src: " << srcX << ", " << srcY << " dest: " << dstX << ", " << dstY << std::endl;
+				*m_pStream << nRects << " rects." << std::endl;
 
-				_printRects(*m_pStream, nRects, pRects);
-				pRects += nRects;
+				for( int i = 0 ; i < nRects ; i++ )
+				{
+					const RectSPX& rect = * pRects++;
+
+
+					auto p32 = (const spx *) p;
+					int32_t srcX = *p32++;
+					int32_t srcY = *p32++;
+					int32_t dstX = *p32++;
+					int32_t dstY = *p32++;
+					p = (const uint16_t*) p32;
+
+					int32_t transform = *p++;
+					p++;						// padding
+
+					* m_pStream 	<< "        rect = (" << rect.x << ", " << rect.y << ", " << rect.w << ", " << rect.h
+							<< "), source = (" << srcX << ", " << srcY
+							<< "), dest = (" << dstX << ", " << dstY
+							<< "), transform = " << transform
+							<< std::endl;
+
+
+				}
 				break;
 			}
 
