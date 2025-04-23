@@ -311,9 +311,9 @@ namespace wg
 
 					for (int i = 0; i < 9; i++)
 					{
-						m_colTrans.blurMtxR[i] = int(pRed[i]) * 32768;
-						m_colTrans.blurMtxG[i] = int(pGreen[i]) * 32768;
-						m_colTrans.blurMtxB[i] = int(pBlue[i]) * 32768;
+						m_colTrans.blurMtxR[i] = int(pRed[i]) * 2;
+						m_colTrans.blurMtxG[i] = int(pGreen[i]) * 2;
+						m_colTrans.blurMtxB[i] = int(pBlue[i]) * 2;
 					}
 				}
 
@@ -1279,6 +1279,18 @@ namespace wg
 					int32_t transform = *p++;
 					p++;							// padding
 
+					RectI	patch = (*pRects++) / 64;
+
+					while (patch.x < pSegment->rect.x || patch.x >= pSegment->rect.x + pSegment->rect.w ||
+						patch.y < pSegment->rect.y || patch.y >= pSegment->rect.y + pSegment->rect.h)
+					{
+						pSegment++;
+						if (pSegment == pSegEnd)
+							pSegment = pSegBeg;
+					}
+
+					Segment& seg = *pSegment;
+
 					if (transform <= int(GfxFlip_max) )
 					{
 						const Transform& mtx = s_blitFlipTransforms[transform];
@@ -1290,7 +1302,6 @@ namespace wg
 
 						//
 
-						RectI	patch = (*pRects++) / 64;
 
 						CoordI src = { srcX / 1024, srcY / 1024 };
 						CoordI dest = { dstX / 64, dstY / 64 };
@@ -1302,17 +1313,6 @@ namespace wg
 
 						src.x += patchOfs.x * mtx.xx + patchOfs.y * mtx.yx;
 						src.y += patchOfs.x * mtx.xy + patchOfs.y * mtx.yy;
-
-
-						while( patch.x < pSegment->rect.x || patch.x >= pSegment->rect.x + pSegment->rect.w ||
-							  patch.y < pSegment->rect.y || patch.y >= pSegment->rect.y + pSegment->rect.h )
-						{
-							pSegment++;
-							if( pSegment == pSegEnd )
-								pSegment = pSegBeg;
-						}
-
-						Segment& seg = * pSegment;
 
 
 						uint8_t * pDst = seg.pBuffer + (patch.y-seg.rect.y) * seg.pitch + (patch.x - seg.rect.x) * m_canvasPixelBytes;
@@ -1338,8 +1338,6 @@ namespace wg
 
 						//
 
-						RectI	patch = (*pRects++) / 64;
-
 						BinalCoord src = { srcX * (BINAL_MUL / 1024), srcY * (BINAL_MUL / 1024) };
 						CoordI dest = { dstX / 64, dstY / 64 };
 
@@ -1351,8 +1349,6 @@ namespace wg
 						src.y += patchOfs.x * mtx[0][1] + patchOfs.y * mtx[1][1];
 
 						//
-
-						Segment& seg = * pSegment;
 
 						uint8_t * pDst = seg.pBuffer + (patch.y-seg.rect.y) * seg.pitch + (patch.x - seg.rect.x) * m_canvasPixelBytes;
 
@@ -1380,6 +1376,7 @@ namespace wg
 
 		m_pRectsPtr = pRects;
 		m_pColorsPtr = pColors;
+		m_pObjectsPtr = pObjects;
 	}
 
 	//____ _updateBlitFunctions() _____________________________________________

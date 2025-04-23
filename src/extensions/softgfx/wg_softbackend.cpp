@@ -1386,6 +1386,8 @@ namespace wg
 					int32_t transform = *p++;
 					p++;							// padding
 
+					RectI	patch = (*pRects++) / 64;
+
 					if (transform <= int(GfxFlip_max) )
 					{
 						const Transform& mtx = s_blitFlipTransforms[transform];
@@ -1396,8 +1398,6 @@ namespace wg
 						srcY += (mtx.xy + mtx.yy) * 512;
 
 						//
-
-						RectI	patch = (*pRects++) / 64;
 
 						CoordI src = { srcX / 1024, srcY / 1024 };
 						CoordI dest = { dstX / 64, dstY / 64 };
@@ -1429,8 +1429,6 @@ namespace wg
 						mtx[1][1] = binalInt(pTransform->yy * BINAL_MUL);
 
 						//
-
-						RectI	patch = (*pRects++) / 64;
 
 						BinalCoord src = { srcX * (BINAL_MUL / 1024), srcY * (BINAL_MUL / 1024) };
 						CoordI dest = { dstX / 64, dstY / 64 };

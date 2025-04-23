@@ -78,12 +78,10 @@ public:
 			delete [] m_pBuffer;
 	}
 
-	iterator secureSpace( int bytes )
+	void secureSpace( int bytes )
 	{
 		if( m_size + bytes > m_capacity )
 			_reallocMin(m_size + bytes);
-
-		return iterator( m_pBuffer + m_size);
 	}
 
 	iterator at( size_t ofs )
@@ -92,7 +90,7 @@ public:
 	}
 
 	template<typename T>
-	void * push( const T& source )
+	void push( const T& source )
 	{
 		if( m_size + sizeof(T) > m_capacity )
 			_reallocMin(m_size + sizeof(T) );
@@ -102,7 +100,7 @@ public:
 	}
 
 	template<typename T>
-	void * pushUnchecked( const T& source )
+	void pushUnchecked( const T& source )
 	{
 		* (T*) &m_pBuffer[m_size] = source;
 		m_size += sizeof(T);

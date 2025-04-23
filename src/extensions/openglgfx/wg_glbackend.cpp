@@ -652,10 +652,8 @@ void GlBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd)
 		case Command::Line:
 		{
 			int32_t nClipRects = *p++;
-			float thickness = *p++ / 64.f;
 			int32_t nLines = *p++;
-
-			HiColor col = *pColors++;
+			p++;
 
 			// Calculate and store vertices
 
@@ -663,10 +661,15 @@ void GlBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd)
 
 			for (int i = 0; i < nLines; i++)
 			{
+				HiColor col = *pColors++;
+
 				auto p32 = (const spx *) p;
 				CoordSPX begin = { *p32++, *p32++ };
 				CoordSPX end = { *p32++, *p32++ };
 				p = (const uint16_t*) p32;
+
+				float thickness = *p++ / 64.f;
+				p++;
 
 				begin = roundToPixels(begin);
 				end = roundToPixels(end);
@@ -783,6 +786,12 @@ void GlBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd)
 				*pExtrasGL++ = slope;
 				*pExtrasGL++ = bSteep;
 
+				pColorGL->r = col.r / 4096.f;
+				pColorGL->g = col.g / 4096.f;
+				pColorGL->b = col.b / 4096.f;
+				pColorGL->a = col.a / 4096.f;
+				pColorGL++;
+
 				nLinesWritten++;
 			}
 
@@ -803,11 +812,6 @@ void GlBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd)
 					*pCommandGL++ = r.h >> 6;
 				}
 
-				pColorGL->r = col.r / 4096.f;
-				pColorGL->g = col.g / 4096.f;
-				pColorGL->b = col.b / 4096.f;
-				pColorGL->a = col.a / 4096.f;
-				pColorGL++;
 			}
 			else
 				pRects += nClipRects;
@@ -1107,24 +1111,27 @@ void GlBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd)
 		case Command::Blur:
 		{
 			int32_t nRects = *p++;
-			int32_t transform = *p++;
-
-			p++;						// padding
-
-			auto p32 = (const spx *) p;
-			int srcX = *p32++;
-			int srcY = *p32++;
-			spx dstX = *p32++;
-			spx dstY = *p32++;
-			p = (const uint16_t*) p32;
 
 			//
 
 			int tintColorOfs = m_tintColorOfs >= 0 ? m_tintColorOfs : 0;
-			int extrasOfs = int(pExtrasGL - m_pExtrasBuffer) / 4;
 
 			for (int i = 0; i < nRects; i++)
 			{
+				int extrasOfs = int(pExtrasGL - m_pExtrasBuffer) / 4;
+
+				auto p32 = (const spx*)p;
+				int srcX = *p32++;
+				int srcY = *p32++;
+				spx dstX = *p32++;
+				spx dstY = *p32++;
+				p = (const uint16_t*)p32;
+
+				int32_t transform = *p++;
+				p++;						// padding
+
+
+
 				int	dx1 = (pRects->x) >> 6;
 				int	dy1 = (pRects->y) >> 6;
 				int dx2 = dx1 + ((pRects->w) >> 6);
@@ -1214,30 +1221,30 @@ void GlBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd)
 				pVertexGL->tintmapOfs = { tintmapBeginX,tintmapEndY };
 				pVertexGL++;
 
+				if (m_blitSourceSampleMethod == SampleMethod::Bilinear)
+				{
+					*pExtrasGL++ = srcX / 1024.f + 0.5f;
+					*pExtrasGL++ = srcY / 1024.f + 0.5f;
+					*pExtrasGL++ = GLfloat(dstX >> 6) + 0.5f;
+					*pExtrasGL++ = GLfloat(dstY >> 6) + 0.5f;
+				}
+				else
+				{
+					*pExtrasGL++ = srcX / 1024.f;
+					*pExtrasGL++ = srcY / 1024.f;
+					*pExtrasGL++ = GLfloat(dstX >> 6) + 0.5f;
+					*pExtrasGL++ = GLfloat(dstY >> 6) + 0.5f;
+				}
+
+				auto& mtx = transform < GfxFlip_size ? s_blitFlipTransforms[transform] : m_pTransformsBeg[transform - GfxFlip_size];
+
+
+				*pExtrasGL++ = mtx.xx;
+				*pExtrasGL++ = mtx.xy;
+				*pExtrasGL++ = mtx.yx;
+				*pExtrasGL++ = mtx.yy;
 			}
 
-			if (m_blitSourceSampleMethod == SampleMethod::Bilinear)
-			{
-				* pExtrasGL++ = srcX / 1024.f + 0.5f;
-				* pExtrasGL++ = srcY / 1024.f + 0.5f;
-				* pExtrasGL++ = GLfloat(dstX >> 6) + 0.5f;
-				* pExtrasGL++ = GLfloat(dstY >> 6) + 0.5f;
-			}
-			else
-			{
-				*pExtrasGL++ = srcX / 1024.f;
-				*pExtrasGL++ = srcY / 1024.f;
-				*pExtrasGL++ = GLfloat(dstX >> 6) + 0.5f;
-				*pExtrasGL++ = GLfloat(dstY >> 6) + 0.5f;
-			}
-
-			auto& mtx = transform < GfxFlip_size ? s_blitFlipTransforms[transform] : m_pTransformsBeg[transform - GfxFlip_size];
-
-
-			*pExtrasGL++ = mtx.xx;
-			*pExtrasGL++ = mtx.xy;
-			*pExtrasGL++ = mtx.yx;
-			*pExtrasGL++ = mtx.yy;
 
 			// Store command
 
@@ -1803,10 +1810,9 @@ void GlBackend::beginSession( CanvasRef canvasRef, Surface * pCanvasSurface, int
 	// Reserve buffer for extras
 
 	int nExtrasFloats = 
-	pInfo->nBlit * 8
 		+ pInfo->nBlur * 8
 		+ pInfo->nLineCoords/2 * 4
-		+ pInfo->nRects * 4;			// This is for possible subpixel fills. We have no way of knowing exactly how much is needed.
+		+ pInfo->nRects * 8;			// This is margin for blits (+8) and  subpixel fills (+4).
 
 	m_pExtrasBuffer = new GLfloat[nExtrasFloats];
 	m_extrasBufferSize = 0;
