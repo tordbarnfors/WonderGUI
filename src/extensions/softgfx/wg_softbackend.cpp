@@ -665,18 +665,11 @@ namespace wg
 			case Command::Line:
 			{
 				int32_t nClipRects = * p++;
-				spx thickness = * p++;
 				int32_t nLines = *p++;
-
-				HiColor color = *pColors++;
+				p++;
 
 				const RectSPX * pClipRects = pRects;
 				pRects += nClipRects;
-
-				HiColor fillColor = color;
-				
-				if( m_colTrans.mode == TintMode::Flat )
-				fillColor = fillColor * m_colTrans.flatTintColor;
 
 				//
 
@@ -710,10 +703,21 @@ namespace wg
 
 				for (int line = 0; line < nLines; line++)
 				{
+					HiColor color = *pColors++;
+
+					HiColor fillColor = color;
+
+					if( m_colTrans.mode == TintMode::Flat )
+					fillColor = fillColor * m_colTrans.flatTintColor;
+
+
 					auto p32 = (const spx *) p;
 					CoordSPX beg = { *p32++, *p32++ };
 					CoordSPX end = { *p32++, *p32++ };
 					p = (const uint16_t*) p32;
+
+					spx thickness = * p++;
+					p++;
 
 					//TODO: Proper 26:6 support
 					beg = Util::roundToPixels(beg);
@@ -1368,29 +1372,31 @@ namespace wg
 				}
 
 				int32_t nRects = *p++;
-				int32_t transform = *p++;
-				p++;							// padding
 
-				auto p32 = (const spx *) p;
-				int srcX = *p32++;
-				int srcY = *p32++;
-				spx dstX = *p32++;
-				spx dstY = *p32++;
-				p = (const uint16_t*) p32;
 
-				if (transform <= int(GfxFlip_max) )
+				for (int i = 0; i < nRects; i++)
 				{
-					const Transform& mtx = s_blitFlipTransforms[transform];
+					auto p32 = (const spx *) p;
+					int srcX = *p32++;
+					int srcY = *p32++;
+					spx dstX = *p32++;
+					spx dstY = *p32++;
+					p = (const uint16_t*) p32;
 
-					// Step forward _src by half a pixel, so we start from correct pixel.
+					int32_t transform = *p++;
+					p++;							// padding
 
-					srcX += (mtx.xx + mtx.yx) * 512;
-					srcY += (mtx.xy + mtx.yy) * 512;
-
-					//
-
-					for (int i = 0; i < nRects; i++)
+					if (transform <= int(GfxFlip_max) )
 					{
+						const Transform& mtx = s_blitFlipTransforms[transform];
+
+						// Step forward _src by half a pixel, so we start from correct pixel.
+
+						srcX += (mtx.xx + mtx.yx) * 512;
+						srcY += (mtx.xy + mtx.yy) * 512;
+
+						//
+
 						RectI	patch = (*pRects++) / 64;
 
 						CoordI src = { srcX / 1024, srcY / 1024 };
@@ -1411,23 +1417,19 @@ namespace wg
 						else
 							(this->*m_pStraightBlurOp)(patch, src, mtx, patch.pos(), m_pStraightBlurFirstPassOp);
 					}
-				}
-				else
-				{
-					binalInt mtx[2][2];
-
-					const Transform* pTransform = &m_pTransformsBeg[transform - GfxFlip_size];
-
-					mtx[0][0] = binalInt(pTransform->xx * BINAL_MUL);
-					mtx[0][1] = binalInt(pTransform->xy * BINAL_MUL);
-					mtx[1][0] = binalInt(pTransform->yx * BINAL_MUL);
-					mtx[1][1] = binalInt(pTransform->yy * BINAL_MUL);
-
-
-					//
-
-					for (int i = 0; i < nRects; i++)
+					else
 					{
+						binalInt mtx[2][2];
+
+						const Transform* pTransform = &m_pTransformsBeg[transform - GfxFlip_size];
+
+						mtx[0][0] = binalInt(pTransform->xx * BINAL_MUL);
+						mtx[0][1] = binalInt(pTransform->xy * BINAL_MUL);
+						mtx[1][0] = binalInt(pTransform->yx * BINAL_MUL);
+						mtx[1][1] = binalInt(pTransform->yy * BINAL_MUL);
+
+						//
+
 						RectI	patch = (*pRects++) / 64;
 
 						BinalCoord src = { srcX * (BINAL_MUL / 1024), srcY * (BINAL_MUL / 1024) };
@@ -1452,7 +1454,6 @@ namespace wg
 							(this->*m_pTransformBlurOp)(patch, src, mtx, patch.pos(), m_pTransformBlurFirstPassOp);
 					}
 				}
-
 				break;
 			}
 

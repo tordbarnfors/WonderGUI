@@ -159,7 +159,9 @@ namespace wg
 		{
 			Object * pObj = * p;
 
-			if( pObj->typeInfo() == StreamSurface::TYPEINFO )
+			if( pObj == nullptr )
+				* it++ = 0;
+			else if( pObj->typeInfo() == StreamSurface::TYPEINFO )
 				* it++ = static_cast<StreamSurface*>(pObj)->inStreamId();
 			else if( pObj->typeInfo() == StreamEdgemap::TYPEINFO )
 				* it++ = static_cast<StreamEdgemap*>(pObj)->inStreamId();
