@@ -59,9 +59,9 @@ const int MetalBackend::s_flipCornerOrder[GfxFlip_size][4] = {
 
 void MetalBackend::setMetalDevice( id<MTLDevice> device )
 {
-	s_metalDevice = device;
-
 	[s_metalCommandQueue release];
+
+	s_metalDevice = device;
 
 	if( device == nil )
 		s_metalCommandQueue = nil;
@@ -339,7 +339,15 @@ MetalBackend::MetalBackend()
 
 MetalBackend::~MetalBackend()
 {
+	while( m_flushesInProgress > 0 )
+	{
+		usleep(100);
+	}
+
+	m_metalCommandBuffer = nil;
+
 	[m_defaultCanvasRenderPassDesc release];
+	m_defaultCanvasRenderPassDesc = nil;
 	m_drawableToAutoPresent = nil;
 
 	[m_vertexBufferId release];
@@ -559,7 +567,9 @@ const CanvasInfo * MetalBackend::canvasInfo(CanvasRef ref) const
 
 bool MetalBackend::setDefaultCanvas( MTLRenderPassDescriptor* renderPassDesc, SizeI pixelSize, PixelFormat pixelFormat, int scale )
 {
-	if( pixelFormat != PixelFormat::BGRA_8 && pixelFormat != PixelFormat::BGRA_8_linear && pixelFormat != PixelFormat::BGRA_8_sRGB && pixelFormat != PixelFormat::Alpha_8 )
+	if( pixelFormat != PixelFormat::BGRA_8 && pixelFormat != PixelFormat::BGRA_8_linear && pixelFormat != PixelFormat::BGRA_8_sRGB && 
+	    pixelFormat != PixelFormat::BGRX_8 && pixelFormat != PixelFormat::BGRX_8_linear && pixelFormat != PixelFormat::BGRX_8_sRGB &&
+	    pixelFormat != PixelFormat::Alpha_8 )
 	{
 		GfxBase::throwError(ErrorLevel::SilentError, ErrorCode::InvalidParam, "pixelFormat must be BGRA_8, BGRA_8_linear, BGRA_8_sRGB, BGRX_8, BGRX_8_linear, BGRX_8_sRGB or A_8", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 		return false;
