@@ -520,32 +520,32 @@ namespace wg
     //____ _syncTexture() _______________________________________________
 
     void MetalSurface::_syncTexture(RectI region)
-    {
-//        if (m_bPendingReads)
-//            MetalGfxDevice::s_pActiveDevice->flush();
-//        if (MetalGfxDevice::s_pActiveDevice)
-//            MetalGfxDevice::s_pActiveDevice->flush();
+{
+		//        if (m_bPendingReads)
+		//            MetalGfxDevice::s_pActiveDevice->flush();
+		//        if (MetalGfxDevice::s_pActiveDevice)
+		//            MetalGfxDevice::s_pActiveDevice->flush();
 
-        //
+		//
 
-        MTLSize textureSize = { (unsigned) region.w, (unsigned) region.h,1};
-        MTLOrigin textureOrigin = { (unsigned) region.x, (unsigned) region.y,0};
+		MTLSize textureSize = { (unsigned) region.w, (unsigned) region.h,1};
+		MTLOrigin textureOrigin = { (unsigned) region.x, (unsigned) region.y,0};
 
-        int     sourceOffset = region.y * m_size.w * m_pixelSize + region.x * m_pixelSize;
-        
-        id<MTLCommandBuffer> commandBuffer = [MetalGfxDevice::s_metalCommandQueue commandBuffer];
+		int     sourceOffset = region.y * m_size.w * m_pixelSize + region.x * m_pixelSize;
+
+		id<MTLCommandBuffer> commandBuffer = [MetalGfxDevice::s_metalCommandQueue commandBuffer];
 		commandBuffer.label = @"_syncTexture Command Buffer";
 
-        id<MTLBlitCommandEncoder> blitCommandEncoder = [commandBuffer blitCommandEncoder];
-        [blitCommandEncoder copyFromBuffer:     m_textureBuffer
-                            sourceOffset:       sourceOffset
-                            sourceBytesPerRow:  m_size.w * m_pixelSize
-                            sourceBytesPerImage:0
-                            sourceSize:         textureSize
-                            toTexture:          m_texture
-                            destinationSlice:   0
-                            destinationLevel:   0
-                            destinationOrigin:  textureOrigin];
+		id<MTLBlitCommandEncoder> blitCommandEncoder = [commandBuffer blitCommandEncoder];
+		[blitCommandEncoder copyFromBuffer:     m_textureBuffer
+							  sourceOffset:       sourceOffset
+						 sourceBytesPerRow:  m_size.w * m_pixelSize
+					   sourceBytesPerImage:0
+								sourceSize:         textureSize
+								 toTexture:          m_texture
+						  destinationSlice:   0
+						  destinationLevel:   0
+						 destinationOrigin:  textureOrigin];
 
         if(m_bMipmapped)
             m_bMipmapStale = true;

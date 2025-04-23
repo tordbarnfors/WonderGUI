@@ -729,8 +729,12 @@ void MetalBackend::endSession()
 	m_extrasBufferId = nil;
 
 	if( m_pActiveCanvas )
+	{
 		m_pActiveCanvas->m_bBufferNeedsSync = true;
+		m_pActiveCanvas->m_bMipmapStale = m_pActiveCanvas->m_bMipmapped;
+	}
 
+	m_pActiveCanvas = nullptr;
 }
 
 //____ setCanvas() ___________________________________________________________
@@ -832,6 +836,21 @@ void MetalBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd)
 
 					if( pSurf )
 					{
+						if( pSurf->m_bMipmapStale )
+						{
+							[m_renderEncoder endEncoding];
+
+							id<MTLBlitCommandEncoder> blitCommandEncoder = [m_metalCommandBuffer blitCommandEncoder];
+
+							[blitCommandEncoder generateMipmapsForTexture:pSurf->m_texture];
+							[blitCommandEncoder endEncoding];
+							blitCommandEncoder = nil;
+
+							m_renderEncoder = _setCanvas( m_pActiveCanvas, m_activeCanvasSize.w, m_activeCanvasSize.h );
+
+							pSurf->m_bMipmapStale = false;
+						}
+
 						[m_renderEncoder setFragmentTexture:pSurf->getTexture() atIndex: (unsigned) TextureIndex::Texture];
 
 						if(pSurf->pixelDescription()->type == PixelType::Index)
@@ -1094,7 +1113,7 @@ void MetalBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd)
 						{
 							if( nRectsWritten > 0 )
 							{
-								[m_renderEncoder setRenderPipelineState:m_fillPipelines[m_bTintmap][(int)m_activeBlendMode][(int)m_activeCanvasFormat] ];
+								[m_renderEncoder setRenderPipelineState:m_fillAAPipelines[m_bTintmap][(int)m_activeBlendMode][(int)m_activeCanvasFormat] ];
 								[m_renderEncoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:vertexOfs vertexCount:nRectsWritten*6];
 
 								vertexOfs = int(pVertexMTL - m_pVertexBuffer);
@@ -1112,7 +1131,7 @@ void MetalBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd)
 						{
 							if (nRectsWritten > 0)
 							{
-								[m_renderEncoder setRenderPipelineState:m_fillAAPipelines[m_bTintmap][(int)m_activeBlendMode][(int)m_activeCanvasFormat] ];
+								[m_renderEncoder setRenderPipelineState:m_fillPipelines[m_bTintmap][(int)m_activeBlendMode][(int)m_activeCanvasFormat] ];
 								[m_renderEncoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:vertexOfs vertexCount:nRectsWritten*6];
 
 								vertexOfs = int(pVertexMTL - m_pVertexBuffer);
@@ -1250,10 +1269,8 @@ void MetalBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd)
 			case Command::Line:
 			{
 				int32_t nClipRects = *p++;
-				float thickness = *p++ / 64.f;
 				int32_t nLines = *p++;
-
-				HiColor col = *pColors++;
+				p++;							// padding
 
 				// Calculate and store vertices
 
@@ -1262,10 +1279,15 @@ void MetalBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd)
 
 				for (int i = 0; i < nLines; i++)
 				{
+					HiColor col = *pColors++;
+
 					auto p32 = (const spx *) p;
 					CoordSPX begin = { *p32++, *p32++ };
 					CoordSPX end = { *p32++, *p32++ };
 					p = (const uint16_t*) p32;
+
+					float thickness = *p++ / 64.f;
+					p++;							// padding
 
 					begin = roundToPixels(begin);
 					end = roundToPixels(end);
@@ -1382,6 +1404,12 @@ void MetalBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd)
 					*pExtrasMTL++ = slope;
 					*pExtrasMTL++ = bSteep;
 
+					pColorMTL->r = col.r / 4096.f;
+					pColorMTL->g = col.g / 4096.f;
+					pColorMTL->b = col.b / 4096.f;
+					pColorMTL->a = col.a / 4096.f;
+					pColorMTL++;
+
 					nLinesWritten++;
 				}
 
@@ -1389,11 +1417,6 @@ void MetalBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd)
 
 				if (nLinesWritten > 0)
 				{
-					pColorMTL->r = col.r / 4096.f;
-					pColorMTL->g = col.g / 4096.f;
-					pColorMTL->b = col.b / 4096.f;
-					pColorMTL->a = col.a / 4096.f;
-					pColorMTL++;
 
 					[m_renderEncoder setRenderPipelineState:m_linePipelines[(int)m_activeBlendMode][(int)m_activeCanvasFormat] ];
 
@@ -1859,9 +1882,6 @@ void MetalBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd)
 
 					[m_renderEncoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:vertexOfs vertexCount:nRects*6];
 					vertexOfs += nRects*6;
-
-					if( m_pActiveCanvas )
-						m_pActiveCanvas->m_bMipmapStale = m_pActiveCanvas->m_bMipmapped;
 				}
 
 				break;

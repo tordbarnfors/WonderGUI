@@ -43,6 +43,7 @@
 #include <wg_surfacefactory.h>
 #include <wg_edgemapfactory.h>
 #include <wg_canvaslayers.h>
+#include <wg_dynamicbuffer.h>
 
 #include <vector>
 #include <deque>
@@ -252,7 +253,7 @@ namespace wg
 		{
 			RenderState				encodedState;				// State encoded in commands
 
-			std::vector<uint16_t>	commands;
+			DynamicBuffer			commands;
 
 			std::vector<RectSPX>	rects;
 			std::vector<HiColor>	colors;

@@ -38,10 +38,17 @@ public:
 		iterator( uint8_t * _p ) : p(_p) {};
 
 		template<class T>
-		void push( const T& source ) {
+		void pushForward( const T& source ) {
 			* (T*) p = source;
 			p += sizeof(T);
 		};
+
+		template<class T>
+		void pushBackward( const T& source ) {
+			p -= sizeof(T);
+			* (T*) p = source;
+		};
+
 
 	//		operator +=
 	//		operator -=
@@ -65,15 +72,18 @@ public:
 	 	m_size = 0;
 	 };
 
+	~DynamicBuffer()
+	{
+		if( m_pBuffer )
+			delete [] m_pBuffer;
+	}
 
-	iterator reserveSpace( int bytes )
+	iterator secureSpace( int bytes )
 	{
 		if( m_size + bytes > m_capacity )
 			_reallocMin(m_size + bytes);
 
-		uint8_t * p = m_pBuffer + m_size;
-		m_size += bytes;
-		return p;
+		return iterator( m_pBuffer + m_size);
 	}
 
 	iterator at( size_t ofs )
@@ -91,16 +101,53 @@ public:
 		m_size += sizeof(T);
 	}
 
+	template<typename T>
+	void * pushUnchecked( const T& source )
+	{
+		* (T*) &m_pBuffer[m_size] = source;
+		m_size += sizeof(T);
+	}
+
+	void align( int bytes )
+	{
+		int mod = m_size % bytes;
+		if( mod != 0 )
+		{
+			int newSize = m_size + bytes-mod;
+			if( newSize > m_capacity )
+				_reallocMin(newSize);
+
+			m_size = newSize;
+		}
+	}
+
+	void alignUnchecked( int bytes )
+	{
+		int mod = m_size % bytes;
+		if( mod != 0 )
+			m_size += bytes-mod;
+	}
 
 //	void * pushRange( ANYTHING );
 
+	uint8_t *	data() { return m_pBuffer; }
 
 	iterator 	begin() { return iterator( m_pBuffer ); }
 	iterator 	end() { return iterator( m_pBuffer + m_size); }
 
+	bool		empty() { return m_size == 0; }
+
 	size_t size()
 	{
 		return m_size;
+	}
+
+	void resize( size_t size )
+	{
+		if( size > m_capacity )
+			_reallocMin( size + m_capacity );
+
+		m_size = size;
 	}
 
 	void clear()

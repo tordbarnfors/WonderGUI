@@ -2238,6 +2238,12 @@ void GlBackend::_setBlitSource(GlSurface* pSurf)
 	{
 		glBindTexture(GL_TEXTURE_2D, pSurf->getTexture());
 
+		if( pSurf->m_bMipmapStale )
+		{
+			glGenerateMipmap(GL_TEXTURE_2D);
+			pSurf->m_bMipmapStale = false;
+		}
+
 		m_pActiveBlitSource = pSurf;
 
 		if (pSurf->m_pPalette)
