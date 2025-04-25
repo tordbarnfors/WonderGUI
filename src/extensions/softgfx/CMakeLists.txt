@@ -47,8 +47,6 @@ set(SOURCES
 	wg_softkernels_rgb565be_extras.cpp
 	wg_softkernels_rgb565be_extras.h
 	wg_softkernelstanza.impl.h
-	wg_softgfxdevice.cpp
-	wg_softgfxdevice.h
 	wg_softgfxdevicefactory.cpp
 	wg_softgfxdevicefactory.h	
 	wg_softsurface.cpp
@@ -59,10 +57,6 @@ set(SOURCES
 	wg_softedgemap.h
 	wg_softedgemapfactory.cpp
 	wg_softedgemapfactory.h
-
-	wg_lineargfxdevice.cpp
-	wg_lineargfxdevice.h
-
 )
 
 set(INCDIRS

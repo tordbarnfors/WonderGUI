@@ -38,7 +38,6 @@ namespace wg
 
 	class MetalEdgemap : public Edgemap
 	{
-		friend class MetalGfxDevice;
 		friend class MetalBackend;
 	public:
 

@@ -41,7 +41,6 @@ namespace wg
 	{
         
         friend class MetalSurfaceFactory;
-		friend class MetalGfxDevice;
 		friend class MetalBackend;
 
 	public:

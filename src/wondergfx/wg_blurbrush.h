@@ -45,12 +45,12 @@ namespace wg
 
 		struct Blueprint
 		{
-			float	blue[9] = { 0.1f, 0.1f, 0.1f, 0.1f, 0.2f, 0.1f, 0.1f, 0.1f, 0.1f };
+			float const * blue = s_defaultBlue;
 			Finalizer_p		finalizer = nullptr;
-			float	green[9] = { 0.1f, 0.1f, 0.1f, 0.1f, 0.2f, 0.1f, 0.1f, 0.1f, 0.1f };
-			float	red[9] = { 0.1f, 0.1f, 0.1f, 0.1f, 0.2f, 0.1f, 0.1f, 0.1f, 0.1f };
+			float const * green = s_defaultGreen;
+			float const * red = s_defaultRed;
 
-			spx		size = 64 * 4;;
+			spx		size = 64 * 4;
 		};
 
 		//.____ Creation __________________________________________________________
@@ -82,6 +82,10 @@ namespace wg
 		float	m_redMtx[9];
 		float	m_greenMtx[9];
 		float	m_blueMtx[9];
+
+		const static float s_defaultBlue[9];
+		const static float s_defaultGreen[9];
+		const static float s_defaultRed[9];
 	};
 }
 

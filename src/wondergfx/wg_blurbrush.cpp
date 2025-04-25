@@ -28,6 +28,9 @@ namespace wg
 
 	const TypeInfo Blurbrush::TYPEINFO = { "Blurbrush", &Object::TYPEINFO };
 
+	const float Blurbrush::s_defaultBlue[9] = { 0.1f, 0.1f, 0.1f, 0.1f, 0.2f, 0.1f, 0.1f, 0.1f, 0.1f };
+	const float Blurbrush::s_defaultGreen[9] = { 0.1f, 0.1f, 0.1f, 0.1f, 0.2f, 0.1f, 0.1f, 0.1f, 0.1f };
+	const float Blurbrush::s_defaultRed[9] = { 0.1f, 0.1f, 0.1f, 0.1f, 0.2f, 0.1f, 0.1f, 0.1f, 0.1f };
 
 	//____ create() ____________________________________________________________
 

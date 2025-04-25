@@ -23,7 +23,7 @@
 #include <memory.h>
 
 #include <wg_metalsurface.h>
-#include <wg_metalgfxdevice.h>
+#include <wg_metalbackend.h>
 #include <wg_gfxutil.h>
 #include <wg_blob.h>
 #include <wg_gfxbase.h>
@@ -160,7 +160,7 @@ namespace wg
 		
 		int     bufferLength = m_size.w * m_size.h * m_pixelSize;
 
-		m_textureBuffer = [MetalGfxDevice::s_metalDevice newBufferWithLength:bufferLength options:MTLResourceStorageModeShared];
+		m_textureBuffer = [MetalBackend::s_metalDevice newBufferWithLength:bufferLength options:MTLResourceStorageModeShared];
 
 		// Setup the palette if present
 		
@@ -168,7 +168,7 @@ namespace wg
 		{
 			// Create the palette buffer and copy data
 
-			m_paletteBuffer = [MetalGfxDevice::s_metalDevice newBufferWithBytes:pDstPalette length:m_paletteCapacity*4 options:MTLResourceStorageModeShared];
+			m_paletteBuffer = [MetalBackend::s_metalDevice newBufferWithBytes:pDstPalette length:m_paletteCapacity*4 options:MTLResourceStorageModeShared];
 			m_pPalette = (Color*) [m_paletteBuffer contents];
 		}
 		
@@ -228,7 +228,7 @@ namespace wg
             textureDescriptor.mipmapLevelCount = mipCount;
         }
 
-        m_texture = [MetalGfxDevice::s_metalDevice newTextureWithDescriptor:textureDescriptor];
+        m_texture = [MetalBackend::s_metalDevice newTextureWithDescriptor:textureDescriptor];
         [textureDescriptor release];
         
         // Create the palette texture
@@ -242,8 +242,8 @@ namespace wg
             paletteDescriptor.height        = 1;
             paletteDescriptor.storageMode   = MTLStorageModePrivate;
 
-            m_paletteTexture = [MetalGfxDevice::s_metalDevice newTextureWithDescriptor:paletteDescriptor];
-            
+            m_paletteTexture = [MetalBackend::s_metalDevice newTextureWithDescriptor:paletteDescriptor];
+
             [paletteDescriptor release];
         }
 
@@ -251,7 +251,7 @@ namespace wg
         
 		if( bHasTextureData || m_pPalette )
 		{
-			id<MTLCommandBuffer> commandBuffer = [MetalGfxDevice::s_metalCommandQueue commandBuffer];
+			id<MTLCommandBuffer> commandBuffer = [MetalBackend::s_metalCommandQueue commandBuffer];
 			id<MTLBlitCommandEncoder> blitCommandEncoder = [commandBuffer blitCommandEncoder];
 			commandBuffer.label = @"_createAndSyncTextures Command Buffer";
 			
@@ -483,16 +483,10 @@ namespace wg
 
 	void MetalSurface::_syncBufferAndWait()
 	{
-		// Flush any active device to make sure our texture is up-to-date
-
-		if (MetalGfxDevice::s_pActiveDevice)
-			MetalGfxDevice::s_pActiveDevice->flush();
-
-		//
         MTLSize textureSize = { (unsigned) m_size.w, (unsigned) m_size.h,1};
         MTLOrigin textureOrigin = { 0, 0, 0};
         
-        id<MTLCommandBuffer> commandBuffer = [MetalGfxDevice::s_metalCommandQueue commandBuffer];
+        id<MTLCommandBuffer> commandBuffer = [MetalBackend::s_metalCommandQueue commandBuffer];
 		commandBuffer.label = @"_syncBufferAndWait Command Buffer";
 
 		
@@ -521,19 +515,12 @@ namespace wg
 
     void MetalSurface::_syncTexture(RectI region)
 {
-		//        if (m_bPendingReads)
-		//            MetalGfxDevice::s_pActiveDevice->flush();
-		//        if (MetalGfxDevice::s_pActiveDevice)
-		//            MetalGfxDevice::s_pActiveDevice->flush();
-
-		//
-
 		MTLSize textureSize = { (unsigned) region.w, (unsigned) region.h,1};
 		MTLOrigin textureOrigin = { (unsigned) region.x, (unsigned) region.y,0};
 
 		int     sourceOffset = region.y * m_size.w * m_pixelSize + region.x * m_pixelSize;
 
-		id<MTLCommandBuffer> commandBuffer = [MetalGfxDevice::s_metalCommandQueue commandBuffer];
+		id<MTLCommandBuffer> commandBuffer = [MetalBackend::s_metalCommandQueue commandBuffer];
 		commandBuffer.label = @"_syncTexture Command Buffer";
 
 		id<MTLBlitCommandEncoder> blitCommandEncoder = [commandBuffer blitCommandEncoder];

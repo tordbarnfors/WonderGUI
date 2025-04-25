@@ -235,17 +235,7 @@ void wg_setBlurMatrices(wg_obj device, wg_spx radius, const float red[9], const 
 {
 	// We need to create a Blurbrush on the fly
 
-	Blurbrush::Blueprint bp;
-
-	bp.size = radius;
-	for( int i = 0 ; i < 9 ; i++ )
-	{
-		bp.red[i] = red[i];
-		bp.green[i] = green[i];
-		bp.blue[i] = blue[i];
-	}
-
-	auto pBlurbrush = Blurbrush::create(bp);
+	auto pBlurbrush = Blurbrush::create( WGBP(Blurbrush, _.size = radius, _.red = red, _.green = green, _.blue = blue) );
 
 	getPtr(device)->setBlurbrush( pBlurbrush );
 }

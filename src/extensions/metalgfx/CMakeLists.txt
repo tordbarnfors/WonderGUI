@@ -6,8 +6,6 @@ set(SOURCES
 	wg_metalbackend.mm
 	wg_metalbackendshaders.mm
 	wg_metalbackendshaders.mm.template
-	wg_metalgfxdevice.h
-	wg_metalgfxdevice.mm
 	wg_metalgfxdevicefactory.h
 	wg_metalgfxdevicefactory.mm
 	wg_metalshaders.mm

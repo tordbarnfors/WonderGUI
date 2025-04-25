@@ -1917,6 +1917,13 @@ void MetalBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd)
 
 }
 
+//____ autopresent() ________________________________________________
+
+void MetalBackend::autopresent( id<MTLDrawable> drawable )
+{
+	m_drawableToAutoPresent = drawable;
+}
+
 
 //____ _setCanvas() ___________________________________________________________
 
