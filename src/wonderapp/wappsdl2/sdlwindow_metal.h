@@ -58,6 +58,8 @@ protected:
 
     SDL_Renderer *      m_pSDLRenderer = 0;
 
+	wg::GfxBackend_p	m_pBackend;
+
 //    static int          s_windowCounter;
 //    static bool         s_bInitialized;
 

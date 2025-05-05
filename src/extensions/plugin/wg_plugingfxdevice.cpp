@@ -299,16 +299,9 @@ namespace wg
 		{
 			wg_blurbrushBP bp;
 			bp.size = pBrush->size();
-			const float * pRed = pBrush->red();
-			const float * pGreen = pBrush->green();
-			const float * pBlue = pBrush->blue();
-
-			for( int i = 0 ; i < 9 ; i++ )
-			{
-				bp.red[i] = * pRed++;
-				bp.green[i] = * pGreen++;
-				bp.blue[i] = * pBlue++;
-			}
+			bp.red = pBrush->red();
+			bp.green = pBrush->green();
+			bp.blue = pBrush->blue();
 			
 			m_hostBlurbrush = PluginCalls::blurbrush->create(bp);
 		}

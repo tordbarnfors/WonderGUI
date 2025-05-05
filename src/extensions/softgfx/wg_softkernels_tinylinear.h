@@ -1,7 +1,7 @@
 #pragma once
-#include <wg_softgfxdevice.h>
+#include <wg_softbackend.h>
 
 namespace wg
 {
-	bool addLinearTinySoftKernels( SoftGfxDevice * pDevice );
+	bool addLinearTinySoftKernels( SoftBackend * pBackend );
 };

@@ -1,14 +1,12 @@
 
 set(SOURCES
 
-	wg_backendshadercontent.mm
 	wg_metalbackend.h
 	wg_metalbackend.mm
-	wg_metalbackendshaders.mm
-	wg_metalbackendshaders.mm.template
 	wg_metalgfxdevicefactory.h
 	wg_metalgfxdevicefactory.mm
 	wg_metalshaders.mm
+	wg_metalshaders.mm.template
 	wg_metalsurface.h
 	wg_metalsurface.mm
 	wg_metalsurfacefactory.h
@@ -17,10 +15,10 @@ set(SOURCES
 	wg_metaledgemap.mm
 	wg_metaledgemapfactory.h
 	wg_metaledgemapfactory.mm
-
+	wg_shadercontent.mm
 )
 
-set_source_files_properties(wg3_metalbackendshaders.mm.template wg_backendshadercontent.mm PROPERTIES HEADER_FILE_ONLY YES)
+set_source_files_properties(wg_metalshaders.mm.template wg_shadercontent.mm PROPERTIES HEADER_FILE_ONLY YES)
 
 
 set(INCDIRS

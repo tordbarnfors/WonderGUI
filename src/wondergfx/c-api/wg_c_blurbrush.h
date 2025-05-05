@@ -37,10 +37,10 @@ extern "C" {
 
 typedef struct wg_blurbrushBP_struct			// NOT BINARY EQUIVALENT!
 {
-	float	blue[9] = { 0.1f, 0.1f, 0.1f, 0.1f, 0.2f, 0.1f, 0.1f, 0.1f, 0.1f };
-	float	green[9] = { 0.1f, 0.1f, 0.1f, 0.1f, 0.2f, 0.1f, 0.1f, 0.1f, 0.1f };
-	float	red[9] = { 0.1f, 0.1f, 0.1f, 0.1f, 0.2f, 0.1f, 0.1f, 0.1f, 0.1f };
-
+	const float *	blue;
+	const float *	green;
+	const float *	red;
+	
 	wg_spx		size = 64 * 4;;
 } wg_blurbrushBP;
 

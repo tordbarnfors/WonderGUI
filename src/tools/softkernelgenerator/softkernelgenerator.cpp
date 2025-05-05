@@ -240,10 +240,10 @@ bool MyApp::exportSource()
 	myStream.open(path + ".h");
 
 	myStream << "#pragma once" << endl;
-	myStream << "#include <wg_softgfxdevice.h>" << endl << endl;
+	myStream << "#include <wg_softbackend.h>" << endl << endl;
 	myStream << "namespace wg" << endl;
 	myStream << "{" << endl;
-	myStream << "	bool " << labelString << "( SoftGfxDevice * pDevice );" << endl;
+	myStream << "	bool " << labelString << "( SoftBackend * pBackend );" << endl;
 	myStream << "};" << endl;
 	
 	myStream.close();
@@ -255,7 +255,7 @@ bool MyApp::exportSource()
 	myStream << "#ifdef __cplusplus" << endl;
 	myStream << "extern \"C\" {" << endl;
 	myStream << "#endif" << endl;
-	myStream << "	int	wg_" << labelString << "( wg_obj device );" << endl;
+	myStream << "	int	wg_" << labelString << "( wg_obj backend );" << endl;
 	myStream << "#ifdef __cplusplus" << endl;
 	myStream << "}" << endl;
 	myStream << "#endif" << endl;

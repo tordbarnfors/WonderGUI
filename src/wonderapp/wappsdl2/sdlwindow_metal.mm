@@ -30,10 +30,11 @@
 
 #include <wg_base.h>
 
+#include <wg_gfxdevice_gen2.h>
 #include <wg_metalsurface.h>
 #include <wg_metalsurfacefactory.h>
 #include <wg_metaledgemapfactory.h>
-#include <wg_metalgfxdevice.h>
+#include <wg_metalbackend.h>
 #include <wg_metalgfxdevicefactory.h>
 #include <wg_metalbackend.h>
 
@@ -79,10 +80,10 @@ SDLWindow_p SDLWindow::create(const Blueprint& blueprint)
 	auto pDevice = Base::defaultGfxDevice();
 	if( !pDevice )
 	{
-		MetalGfxDevice::setMetalDevice(gpu);
 		MetalBackend::setMetalDevice(gpu);
-		
-		auto pDevice = MetalGfxDevice::create();
+
+		auto pBackend = MetalBackend::create();
+		pDevice = GfxDeviceGen2::create(pBackend);
 		Base::setDefaultGfxDevice(pDevice);
 
 		auto pSurfaceFactory = MetalSurfaceFactory::create();
@@ -98,9 +99,9 @@ SDLWindow_p SDLWindow::create(const Blueprint& blueprint)
 																	 _.defaultCanvasPixelFormat = PixelFormat::BGRA_8_sRGB ));
 		Base::setDefaultGfxDeviceFactory(pGfxDeviceFactory);
 	}
-	
-    
-    wg_static_cast<MetalGfxDevice_p>(Base::defaultGfxDevice())->setDefaultCanvas(nullptr, {int(geo.w),int(geo.h)}, PixelFormat::BGRA_8_sRGB);
+
+	auto pBackend = static_cast<GfxDeviceGen2*>(Base::defaultGfxDevice().rawPtr())->backend();
+	wg_static_cast<MetalBackend_p>(pBackend)->setDefaultCanvas(nullptr, {int(geo.w),int(geo.h)}, PixelFormat::BGRA_8_sRGB);
     auto pRootPanel = RootPanel::create(CanvasRef::Default, nullptr);
 
     SDLWindowMetal_p pWindow = new SDLWindowMetal(blueprint.title, pRootPanel, geo, pSDLWindow, renderer);
@@ -122,6 +123,8 @@ SDLWindowMetal::SDLWindowMetal(const std::string& title, wg::RootPanel* pRootPan
     : SDLWindow(title, pRootPanel, geo, pSDLWindow),
     m_pSDLRenderer(pRenderer)
 {
+	m_pBackend = static_cast<GfxDeviceGen2*>(Base::defaultGfxDevice().rawPtr())->backend();
+
 //    s_windowCounter++;
 }
 
@@ -139,7 +142,7 @@ void SDLWindowMetal::onWindowSizeUpdated( int width, int height )
     m_geo.w = width;
     m_geo.h = height;
     
-    wg_static_cast<MetalGfxDevice_p>(Base::defaultGfxDevice())->setDefaultCanvas(nullptr, SizeSPX(width, height), wg::PixelFormat::BGRA_8_sRGB, 64);
+    wg_static_cast<MetalBackend_p>(m_pBackend)->setDefaultCanvas(nullptr, SizeSPX(width, height), wg::PixelFormat::BGRA_8_sRGB, 64);
 
     m_pRootPanel->setCanvas(CanvasRef::Default);
 }
@@ -164,10 +167,10 @@ void SDLWindowMetal::render()
         pass.colorAttachments[0].storeAction = MTLStoreActionStore;
         pass.colorAttachments[0].texture = surface.texture;
 
-		wg_static_cast<MetalGfxDevice_p>(Base::defaultGfxDevice())->setDefaultCanvas(pass, {int(m_geo.w),int(m_geo.h)}, wg::PixelFormat::BGRA_8_sRGB);
+		wg_static_cast<MetalBackend_p>(m_pBackend)->setDefaultCanvas(pass, {int(m_geo.w),int(m_geo.h)}, wg::PixelFormat::BGRA_8_sRGB);
 
-        wg_static_cast<MetalGfxDevice_p>(Base::defaultGfxDevice())->autopresent(surface);
-        
+        wg_static_cast<MetalBackend_p>(m_pBackend)->autopresent(surface);
+
 		m_pRootPanel->addDirtyPatch({0,0,int(m_geo.w)*64,int(m_geo.h)*64});
 		
         m_pRootPanel->render();

@@ -20,32 +20,32 @@ set(SOURCES
 	wg_linearbackend.h
 	wg_softbackend.cpp
 	wg_softbackend.h
-	wg_softbackend_kernels.cpp
-	wg_softbackend_kernels.h
-	wg_softbackendstanza.impl.h
 	wg_softkernels_default.cpp
 	wg_softkernels_default.h
+
+
 	wg_softkernels_tinylinear.cpp
 	wg_softkernels_tinylinear.h
 
-	wg_softkernels_bgr565srgb_base.cpp
-	wg_softkernels_bgr565srgb_base.h
-	wg_softkernels_bgr565srgb_extras.cpp
-	wg_softkernels_bgr565srgb_extras.h
+#	wg_softkernels_bgr565srgb_base.cpp
+#	wg_softkernels_bgr565srgb_base.h
+#	wg_softkernels_bgr565srgb_extras.cpp
+#	wg_softkernels_bgr565srgb_extras.h
 
-	wg_softkernels_bgr565linear_base.cpp
-	wg_softkernels_bgr565linear_base.h
-	wg_softkernels_bgr565linear_extras.cpp
-	wg_softkernels_bgr565linear_extras.h
+#	wg_softkernels_bgr565linear_base.cpp
+#	wg_softkernels_bgr565linear_base.h
+#	wg_softkernels_bgr565linear_extras.cpp
+#	wg_softkernels_bgr565linear_extras.h
 
-	wg_softkernels_rgb555be_base.cpp
-	wg_softkernels_rgb555be_base.h
-	wg_softkernels_rgb555be_extras.cpp
-	wg_softkernels_rgb555be_extras.h
-	wg_softkernels_rgb565be_base.cpp
-	wg_softkernels_rgb565be_base.h
-	wg_softkernels_rgb565be_extras.cpp
-	wg_softkernels_rgb565be_extras.h
+#	wg_softkernels_rgb555be_base.cpp
+#	wg_softkernels_rgb555be_base.h
+#	wg_softkernels_rgb555be_extras.cpp
+#	wg_softkernels_rgb555be_extras.h
+#	wg_softkernels_rgb565be_base.cpp
+#	wg_softkernels_rgb565be_base.h
+#	wg_softkernels_rgb565be_extras.cpp
+#	wg_softkernels_rgb565be_extras.h
+
 	wg_softkernelstanza.impl.h
 	wg_softgfxdevicefactory.cpp
 	wg_softgfxdevicefactory.h	

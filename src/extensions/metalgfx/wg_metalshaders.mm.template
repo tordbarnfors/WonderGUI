@@ -20,12 +20,12 @@
 
 =========================================================================*/
 
-#include <wg_metalgfxdevice.h>
+#include <wg_metalbackend.h>
 
 namespace wg {
 
 
-const char MetalGfxDevice::shaders[] =
+const char MetalBackend::shaders[] =
 
-@INSERTLINEQUOTED <wg_shadercontent.mm>
+@INSERTLINEQUOTED <wg_backendshadercontent.mm>
 ;}

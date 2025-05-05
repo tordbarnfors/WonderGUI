@@ -80,8 +80,10 @@ SDLWindow_p SDLWindow::create(const Blueprint& blueprint)
     auto pDevice = Base::defaultGfxDevice();
     if( !pDevice )
     {
-        auto pSoftDevice = SoftGfxDevice::create();
-        addDefaultSoftKernels( pSoftDevice );
+		auto pBackend = SoftBackend::create();
+		addDefaultSoftKernels( pBackend );
+
+		auto pSoftDevice = GfxDeviceGen2::create(pBackend);
 
         Base::setDefaultGfxDevice(pSoftDevice);
         pDevice = pSoftDevice;
@@ -167,7 +169,7 @@ Surface_p SDLWindowSW::_generateWindowSurface(SDL_Window* pWindow, int width, in
     }
 
     Blob_p pCanvasBlob = Blob::create(pWinSurf->pixels, 0);
-    auto pWindowSurface = SoftSurface::create( WGBP(Surface, _.size = {width, height}, _.format = format), pCanvasBlob, pWinSurf->pitch);
+    auto pWindowSurface = SoftSurface::create( WGBP(Surface, _.size = {width, height}, _.format = format, _.canvas = true ), pCanvasBlob, pWinSurf->pitch);
 
     return pWindowSurface;
 }

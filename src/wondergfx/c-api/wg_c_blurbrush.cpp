@@ -34,18 +34,8 @@ inline Blurbrush* getPtr(wg_obj obj) {
 }
 
 wg_obj wg_createBlurbrush( wg_blurbrushBP _bp )
-{
-	Blurbrush::Blueprint bp;
-	bp.size = _bp.size;
-	
-	for (int i = 0; i < 9; i++)
-	{
-		bp.blue[i] = _bp.blue[i];
-		bp.green[i] = _bp.green[i];
-		bp.red[i] = _bp.red[i];
-	}
-	
-	auto pBlurbrush = Blurbrush::create(bp);
+{	
+	auto pBlurbrush = Blurbrush::create( WGBP(Blurbrush, _.size = _bp.size, _.blue = _bp.blue, _.green = _bp.green, _.red = _bp.red) );
 	pBlurbrush->retain();
 	return static_cast<Object*>(pBlurbrush);
 }
