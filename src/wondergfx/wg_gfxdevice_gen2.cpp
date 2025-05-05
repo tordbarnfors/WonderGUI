@@ -2980,14 +2980,14 @@ void GfxDeviceGen2::_transformBlitSimple(const RectSPX& _dest, CoordSPX src, int
 		if( cmd == m_pActiveLayer->latestCommand && commands.at(m_pActiveLayer->latestCommandOfs+2).as<uint16_t>() + nRects < 65536 )
 		{
 			commands.at(m_pActiveLayer->latestCommandOfs+2).as<uint16_t>() += nRects;
-			commands.secureSpace(20);
+			commands.secureSpace(20*nRects);
 		}
 		else
 		{
 			m_pActiveLayer->latestCommand = cmd;
 			m_pActiveLayer->latestCommandOfs = (int) m_pActiveLayer->commands.size();
 
-			commands.secureSpace(24);
+			commands.secureSpace(4+20*nRects);
 
 			commands.pushUnchecked(uint16_t(cmd));
 			commands.pushUnchecked(uint16_t(nRects));
@@ -3052,14 +3052,14 @@ void GfxDeviceGen2::_transformBlitComplex(const RectSPX& _dest, CoordI src, cons
 		{
 			commands.at(m_pActiveLayer->latestCommandOfs+2).as<uint16_t>() += nRects;
 
-			commands.secureSpace(20);
+			commands.secureSpace(20*nRects);
 		}
 		else
 		{
 			m_pActiveLayer->latestCommand = cmd;
 			m_pActiveLayer->latestCommandOfs = (int) m_pActiveLayer->commands.size();
 
-			commands.secureSpace(24);
+			commands.secureSpace(4+20*nRects);
 
 			commands.pushUnchecked(uint16_t(cmd));
 			commands.pushUnchecked(uint16_t(nRects));

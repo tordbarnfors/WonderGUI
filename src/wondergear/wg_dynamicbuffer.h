@@ -104,6 +104,7 @@ public:
 	{
 		* (T*) &m_pBuffer[m_size] = source;
 		m_size += sizeof(T);
+		assert(m_size <= m_capacity);
 	}
 
 	void align( int bytes )
