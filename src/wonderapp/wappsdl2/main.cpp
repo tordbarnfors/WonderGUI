@@ -263,16 +263,7 @@ bool init_wondergui()
 		std::cerr << "ERROR:" << e.message << std::endl;  
 	});
 
-/*
-	auto pGfxDevice = SoftGfxDevice::create();
-	addDefaultSoftKernels( pGfxDevice );
-
-	auto pSurfaceFactory = SoftSurfaceFactory::create();
-	
-    Base::setDefaultSurfaceFactory(pSurfaceFactory);
-	Base::setDefaultGfxDevice(pGfxDevice);
-*/
- Base::setDefaultToSRGB(true);
+	Base::setDefaultToSRGB(true);
 
 	InputHandler_p pInput = Base::inputHandler();
 	

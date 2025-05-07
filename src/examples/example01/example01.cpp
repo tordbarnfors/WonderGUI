@@ -37,7 +37,8 @@
 #include <wondergui.h>
 
 #include <wg_softsurface.h>
-#include <wg_softgfxdevice.h>
+#include <wg_gfxdevice_gen2.h>
+#include <wg_softbackend.h>
 #include <wg_softkernels_default.h>
 
 using namespace wg;
@@ -87,21 +88,23 @@ int main ( int argc, char** argv )
 	Blob_p pCanvasBlob = Blob::create( pWinSurf->pixels, 0);
 	SoftSurface_p pCanvas = SoftSurface::create( WGBP(Surface,
 													  _.size = SizeI(pWinSurf->w,pWinSurf->h),
-													  _.format = format ),
+													  _.format = format,
+													  _.canvas = true),
 												 pCanvasBlob,
 												 pWinSurf->pitch );
 
 
-	// Wg create the GfxDevice that will be used for all rendering, providing
-	// it our canvas to draw up.
+	// Wg create the GfxDevice that will be used for all rendering.
 
-	SoftGfxDevice_p pGfxDevice = SoftGfxDevice::create();
-	addDefaultSoftKernels(pGfxDevice);
+	SoftBackend_p pGfxBackend = SoftBackend::create();
+	addDefaultSoftKernels(pGfxBackend);
 
+	GfxDevice_p	pGfxDevice = GfxDeviceGen2::create(pGfxBackend);
 
 	// We create a RootPanel. This is responsible for rendering the
 	// tree of child widgets connected to it and handle their events.
-	// We provide it the GfxDevice to use for rendering.
+	// We provide it the GfxDevice to use for rendering and the canvas
+	// to render on.
 
 	RootPanel_p pRoot = RootPanel::create( pCanvas, pGfxDevice );
 
@@ -133,14 +136,10 @@ int main ( int argc, char** argv )
 		FlexPanel_p pFlexPanel = FlexPanel::create();
 		pRoot->slot = pFlexPanel;
 
-		// Now we create the background using the simplest widget
-		// type, the Filler and add it to the FlexPanel, making
-		// it stretch from the north-west to the south-east corners
-		// of the FlexPanel.
+		// Now we create the background by creating and setting a skin
+		// for the FlexPanel.
 
-		Filler_p pBackground = Filler::create();
-		pBackground->setSkin( ColorSkin::create(Color::Bisque) );
-		pFlexPanel->slots.pushBack(pBackground, { .pin1 = Placement::NorthWest, .pin2 = Placement::SouthEast } );
+		pFlexPanel->setSkin( ColorSkin::create(Color::Bisque) );
 
 		// Now we create the button, using a clickable skin built from the BMP
 		// with the button graphics. First we specify the Surface and a rectangle
@@ -150,13 +149,9 @@ int main ( int argc, char** argv )
 		// When adding it to the FlexPanel we specify its geometry in
 		// pixels and that it should be centered.
 
-		// Note: since WonderGUI orders widgets from front to back, we actually
-		// need to insert the button before the background, otherwise it is hidden behind.
-		// For best performance you should add widgets from front to back and avoid insert.
-
 		Button_p pButton = Button::create();
 		pButton->setSkin(BlockSkin::create( { .axis = Axis::X, .frame = Border(3,3,3,3), .states = { State::Hovered, {}, State::Pressed, {}, State::Disabled, {} }, .surface = pButtonSurface }));
-		pFlexPanel->slots.insert(0, pButton, { .origo = Placement::Center, .size = {80,33} });
+		pFlexPanel->slots.pushFront(pButton, { .origo = Placement::Center, .size = {80,33} });
 
 		// Finally we add a callback to the click-event of the button.
 

@@ -40,7 +40,6 @@ namespace wg
 	{
 		friend class SoftBackend;
 		friend class LinearBackend;
-		friend class SoftGfxDevice;
 		friend class LinearGfxDevice;
 		friend class SoftSurfaceFactory;
 

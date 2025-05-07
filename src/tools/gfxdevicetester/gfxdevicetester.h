@@ -4,7 +4,6 @@
 
 #include <wonderapp.h>
 
-#include <wg_softgfxdevice.h>
 #include <wg_softkernels_default.h>
 #include <wg_softedgemapfactory.h>
 #include <wg_softsurfacefactory.h>

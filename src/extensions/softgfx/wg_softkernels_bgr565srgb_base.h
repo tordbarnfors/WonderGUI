@@ -1,7 +1,7 @@
 #pragma once
-#include <wg_softgfxdevice.h>
+#include <wg_softbackend.h>
 
 namespace wg
 {
-	bool addBaseSoftKernelsForBGR565sRGBCanvas( SoftGfxDevice * pDevice );
+	bool addBaseSoftKernelsForBGR565sRGBCanvas( SoftBackend * pBackend );
 };

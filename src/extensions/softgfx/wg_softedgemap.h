@@ -35,7 +35,6 @@ namespace wg
 
 	class SoftEdgemap : public Edgemap
 {
-	friend class SoftGfxDevice;
 	friend class SoftBackend;
 	friend class LinearBackend;
 

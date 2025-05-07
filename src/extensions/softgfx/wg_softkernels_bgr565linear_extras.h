@@ -30,11 +30,11 @@
 #define WG_SOFTKERNELS_BGR565LINEAR_EXTRAS_DOT_H
 #pragma once
 
-#include <wg_softgfxdevice.h>
+#include <wg_softbackend.h>
 
 namespace wg
 {
-	bool addExtraSoftKernelsForBGR565LinearCanvas( SoftGfxDevice * pDevice );
+	bool addExtraSoftKernelsForBGR565LinearCanvas( SoftBackend * pDevice );
 };
 
 #endif //WG_SOFTKERNELS_BGR565LINEAR_EXTRAS_DOT_H

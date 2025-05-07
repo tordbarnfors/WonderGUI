@@ -3,7 +3,7 @@
 
 #include <wondergui.h>
 #include <wg_freetypefont.h>
-#include <wg_softgfxdevice.h>
+#include <wg_softbackend.h>
 #include <extensions/gfxstream/c-api/wondergfxstream_c.h>
 #include <wg_c_softgfx.h>
 #include <string>

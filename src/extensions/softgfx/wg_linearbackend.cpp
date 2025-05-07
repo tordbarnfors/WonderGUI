@@ -354,7 +354,7 @@ namespace wg
 
 					char errorMsg[1024];
 
-					snprintf(errorMsg, 1024, "Failed fill operation. SoftGfxDevice is missing fill kernel for TintMode::%s, BlendMode::%s onto surface of PixelFormat:%s.",
+					snprintf(errorMsg, 1024, "Failed fill operation. LinearBackend is missing fill kernel for TintMode::%s, BlendMode::%s onto surface of PixelFormat:%s.",
 						toString(m_colTrans.mode),
 						toString(blendMode),
 						toString(m_canvasPixelFormat));
@@ -419,7 +419,7 @@ namespace wg
 
 							char errorMsg[1024];
 
-							snprintf(errorMsg, 1024, "Failed fill operation. SoftGfxDevice is missing fill kernel for TintMode::%s, BlendMode::%s onto surface of PixelFormat:%s.",
+							snprintf(errorMsg, 1024, "Failed fill operation. LinearBackend is missing fill kernel for TintMode::%s, BlendMode::%s onto surface of PixelFormat:%s.",
 								toString(m_colTrans.mode),
 								toString(blendMode),
 								toString(m_canvasPixelFormat));
@@ -551,7 +551,7 @@ namespace wg
 
 					char errorMsg[1024];
 
-					snprintf(errorMsg, 1024, "Failed drawLine operation. SoftGfxDevice is missing clipLine kernel for BlendMode::%s onto surface of PixelFormat:%s.",
+					snprintf(errorMsg, 1024, "Failed drawLine operation. LinearBackend is missing clipLine kernel for BlendMode::%s onto surface of PixelFormat:%s.",
 						toString(m_blendMode),
 						toString(m_canvasPixelFormat));
 
@@ -1120,7 +1120,7 @@ namespace wg
 
 					char errorMsg[1024];
 
-					snprintf(errorMsg, 1024, "Failed draw segments operation. SoftGfxDevice is missing segments kernel %s Y-tint for BlendMode::%s onto surface of PixelFormat:%s.",
+					snprintf(errorMsg, 1024, "Failed draw segments operation. LinearBackend is missing segments kernel %s Y-tint for BlendMode::%s onto surface of PixelFormat:%s.",
 						bTintY ? "with" : "without",
 						toString(m_blendMode),
 						toString(m_canvasPixelFormat));

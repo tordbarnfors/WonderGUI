@@ -30,11 +30,11 @@
 #define WG_SOFTKERNELS_RGB555BE_EXTRAS_DOT_H
 #pragma once
 
-#include <wg_softgfxdevice.h>
+#include <wg_softbackend.h>
 
 namespace wg
 {
-	bool addExtraSoftKernelsForRGB555BECanvas( SoftGfxDevice * pDevice );
+	bool addExtraSoftKernelsForRGB555BECanvas( SoftBackend * pDevice );
 };
 
 #endif //WG_SOFTKERNELS_RGB555BE_EXTRAS_DOT_H

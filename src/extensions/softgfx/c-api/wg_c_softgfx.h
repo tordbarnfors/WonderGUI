@@ -30,9 +30,6 @@
 extern "C" {
 #endif
 
-	wg_obj	wg_createSoftGfxDevice(void);
-	int		wg_defineSoftGfxDeviceCanvas( wg_obj device, wg_canvasRef ref, wg_obj softSurface );
-
 	wg_obj	wg_createSoftBackend(void);
 	int		wg_defineSoftBackendCanvas( wg_obj backend, wg_canvasRef ref, wg_obj softSurface );
 

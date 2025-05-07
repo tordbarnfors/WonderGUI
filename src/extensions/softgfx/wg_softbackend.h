@@ -268,17 +268,17 @@ namespace wg
 		//
 
 		typedef void(SoftBackend::* StraightBlitProxy_Op)(const RectI& dest, CoordI src, const Transform& matrix, CoordI patchPos, StraightBlitOp_p pPassOneOp);
-		typedef void(SoftBackend::* TransformBlitProxy_Op)(const RectI& dest, BinalCoord pos, const binalInt transformMatrix[2][2], CoordI patchPos, TransformBlitOp_p pPassOneOp);
+		typedef void(SoftBackend::* TransformBlitProxy_Op)(const RectI& dest, BinalCoord pos, const binalInt transformMatrix[2][2], CoordI patchPos, TransformBlitOp_p pPassOneOp, Command cmd);
 
 
 		void	_onePassStraightBlit(const RectI& dest, CoordI pos, const Transform& matrix, CoordI patchPos, StraightBlitOp_p pPassOneOp);
 		void	_twoPassStraightBlit(const RectI& dest, CoordI pos, const Transform& matrix, CoordI patchPos, StraightBlitOp_p pPassOneOp);
 
-		void	_onePassTransformBlit(const RectI& dest, BinalCoord pos, const binalInt transformMatrix[2][2], CoordI patchPos, TransformBlitOp_p pPassOneOp);
-		void	_twoPassTransformBlit(const RectI& dest, BinalCoord pos, const binalInt transformMatrix[2][2], CoordI patchPos, TransformBlitOp_p pPassOneOp);
+		void	_onePassTransformBlit(const RectI& dest, BinalCoord pos, const binalInt transformMatrix[2][2], CoordI patchPos, TransformBlitOp_p pPassOneOp, Command cmd);
+		void	_twoPassTransformBlit(const RectI& dest, BinalCoord pos, const binalInt transformMatrix[2][2], CoordI patchPos, TransformBlitOp_p pPassOneOp, Command cmd);
 
 		void	_dummyStraightBlit(const RectI& dest, CoordI pos, const Transform& matrix, CoordI patchPos, StraightBlitOp_p pPassOneOp);
-		void	_dummyTransformBlit(const RectI& dest, BinalCoord pos, const binalInt transformMatrix[2][2], CoordI patchPos, TransformBlitOp_p pPassOneOp);
+		void	_dummyTransformBlit(const RectI& dest, BinalCoord pos, const binalInt transformMatrix[2][2], CoordI patchPos, TransformBlitOp_p pPassOneOp, Command cmd);
 
 		//
 

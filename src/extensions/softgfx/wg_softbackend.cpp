@@ -502,7 +502,7 @@ namespace wg
 
 					char errorMsg[1024];
 
-					snprintf(errorMsg, 1024, "Failed fill operation. SoftGfxDevice is missing fill kernel for TintMode::%s, BlendMode::%s onto surface of PixelFormat:%s.",
+					snprintf(errorMsg, 1024, "Failed fill operation. SoftBackend is missing fill kernel for TintMode::%s, BlendMode::%s onto surface of PixelFormat:%s.",
 						toString(m_colTrans.mode),
 						toString(blendMode),
 						toString(m_pCanvas->pixelFormat()));
@@ -554,7 +554,7 @@ namespace wg
 
 							char errorMsg[1024];
 
-							snprintf(errorMsg, 1024, "Failed fill operation. SoftGfxDevice is missing fill kernel for TintMode::%s, BlendMode::%s onto surface of PixelFormat:%s.",
+							snprintf(errorMsg, 1024, "Failed fill operation. SoftBackend is missing fill kernel for TintMode::%s, BlendMode::%s onto surface of PixelFormat:%s.",
 								toString(m_colTrans.mode),
 								toString(blendMode),
 								toString(m_pCanvas->pixelFormat()));
@@ -686,7 +686,7 @@ namespace wg
 
 					char errorMsg[1024];
 
-					snprintf(errorMsg, 1024, "Failed drawLine operation. SoftGfxDevice is missing clipLine kernel for BlendMode::%s onto surface of PixelFormat:%s.",
+					snprintf(errorMsg, 1024, "Failed drawLine operation. SoftBackend is missing clipLine kernel for BlendMode::%s onto surface of PixelFormat:%s.",
 						toString(m_blendMode),
 						toString(m_pCanvas->pixelFormat()));
 
@@ -1226,7 +1226,7 @@ namespace wg
 
 					char errorMsg[1024];
 
-					snprintf(errorMsg, 1024, "Failed draw segments operation. SoftGfxDevice is missing segments kernel %s Y-tint for BlendMode::%s onto surface of PixelFormat:%s.",
+					snprintf(errorMsg, 1024, "Failed draw segments operation. SoftBackend is missing segments kernel %s Y-tint for BlendMode::%s onto surface of PixelFormat:%s.",
 						bTintY ? "with" : "without",
 						toString(m_blendMode),
 						toString(m_pCanvas->pixelFormat()));
@@ -1442,14 +1442,15 @@ namespace wg
 
 						//
 
+
 						if( cmd == Command::Blit)
-							(this->*m_pTransformBlitOp)(patch, src, mtx, patch.pos(), m_pTransformBlitFirstPassOp);
+							(this->*m_pTransformBlitOp)(patch, src, mtx, patch.pos(), m_pTransformBlitFirstPassOp, cmd);
 						else if (cmd == Command::ClipBlit)
-							(this->*m_pTransformClipBlitOp)(patch, src, mtx, patch.pos(), m_pTransformClipBlitFirstPassOp);
+							(this->*m_pTransformClipBlitOp)(patch, src, mtx, patch.pos(), m_pTransformClipBlitFirstPassOp, cmd);
 						else if (cmd == Command::Tile)
-							(this->*m_pTransformTileOp)(patch, src, mtx, patch.pos(), m_pTransformTileFirstPassOp);
+							(this->*m_pTransformTileOp)(patch, src, mtx, patch.pos(), m_pTransformTileFirstPassOp, cmd);
 						else
-							(this->*m_pTransformBlurOp)(patch, src, mtx, patch.pos(), m_pTransformBlurFirstPassOp);
+							(this->*m_pTransformBlurOp)(patch, src, mtx, patch.pos(), m_pTransformBlurFirstPassOp, cmd);
 					}
 				}
 				break;
@@ -1765,7 +1766,7 @@ namespace wg
 
 	//____ _onePassTransformBlit() ____________________________________________
 
-	void SoftBackend::_onePassTransformBlit(const RectI& dest, BinalCoord pos, const binalInt transformMatrix[2][2], CoordI patchPos, TransformBlitOp_p pPassOneOp)
+	void SoftBackend::_onePassTransformBlit(const RectI& dest, BinalCoord pos, const binalInt transformMatrix[2][2], CoordI patchPos, TransformBlitOp_p pPassOneOp, Command cmd)
 	{
 		const SoftSurface* pSource = m_pBlitSource;
 
@@ -1780,7 +1781,7 @@ namespace wg
 	//____ _twoPassTransformBlit() ____________________________________________
 
 	void SoftBackend::_twoPassTransformBlit(const RectI& dest, BinalCoord pos, const binalInt transformMatrix[2][2],
-		CoordI patchPos, TransformBlitOp_p pPassOneOp)
+		CoordI patchPos, TransformBlitOp_p pPassOneOp, Command cmd)
 	{
 		const SoftSurface* pSource = m_pBlitSource;
 
@@ -1842,7 +1843,7 @@ namespace wg
 		}
 		else
 		{
-			snprintf(errorMsg, 1024, "Failed blit operation. SoftGfxDevice is missing straight blit kernel for:\n source format = %s\n tile = %s\n tint mode = %s\n blend mode = %s\n, dest format = %s\n", toString(m_pBlitSource->pixelFormat()),
+			snprintf(errorMsg, 1024, "Failed blit operation. SoftBackend is missing straight blit kernel for:\n source format = %s\n tile = %s\n tint mode = %s\n blend mode = %s\n, dest format = %s\n", toString(m_pBlitSource->pixelFormat()),
 				m_pBlitSource->isTiling() ? "true" : "false",
 				toString(m_colTrans.mode),
 				toString(m_blendMode),
@@ -1854,23 +1855,45 @@ namespace wg
 
 	//____ _dummyTransformBlit() ________________________________________________
 
-	void SoftBackend::_dummyTransformBlit(const RectI& dest, BinalCoord pos, const binalInt transformMatrix[2][2], CoordI patchPos, TransformBlitOp_p pPassOneOp)
+	void SoftBackend::_dummyTransformBlit(const RectI& dest, BinalCoord pos, const binalInt transformMatrix[2][2], CoordI patchPos, TransformBlitOp_p pPassOneOp, Command cmd)
 	{
-/*
 		if (m_blendMode == BlendMode::Ignore)
 			return;
 
+		const static char * commandText[4] = { "Blit", "ClipBlit", "Tile", "Blur" };
+
+		const char * pCmd = nullptr;
+
+		switch( cmd )
+		{
+			case Command::Blit:
+				pCmd = commandText[0];
+				break;
+			case Command::ClipBlit:
+				pCmd = commandText[1];
+				break;
+			case Command::Tile:
+				pCmd = commandText[2];
+				break;
+			case Command::Blur:
+				pCmd = commandText[3];
+				break;
+			default:
+				assert(false);						// Should never get here.
+				break;
+		}
+
 		char errorMsg[1024];
-		snprintf(errorMsg, 1024, "Failed blit operation. SoftGfxDevice is missing transform blit kernel for:\n source format = %s\n sample method = %s\n tile = %s\n clip = %s\n tint mode = %s\n blend mode = %s\n, dest format = %s\n", toString(m_pBlitSource->pixelFormat()),
+		snprintf(errorMsg, 1024, "Failed %s operation. SoftBackend is missing transform blit kernel for:\n source format = %s\n sample method = %s\n tint mode = %s\n blend mode = %s\n, dest format = %s\n",
+		    pCmd,
+			toString(m_pBlitSource->pixelFormat()),
 			toString(m_pBlitSource->sampleMethod()),
-			m_pBlitSource->isTiling() ? "true" : "false",
-			m_bClipSource ? "true" : "false",
 			toString(m_colTrans.mode),
 			toString(m_blendMode),
 			toString(m_canvasPixelFormat));
 
 		GfxBase::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, errorMsg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
-*/
+
 	}
 
 	//____ _updateBlitFunctions() _____________________________________________

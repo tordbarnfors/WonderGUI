@@ -27,7 +27,7 @@ using namespace wg;
 
 //____ _fill_bgr565srgb_noblend_notint() ____________________________________________________________
 
-static void _fill_bgr565srgb_noblend_notint(uint8_t* pDst, int pitchX, int pitchY, int nLines, int lineLength, HiColor col, const SoftGfxDevice::ColTrans& tint, CoordI patchPos)
+static void _fill_bgr565srgb_noblend_notint(uint8_t* pDst, int pitchX, int pitchY, int nLines, int lineLength, HiColor col, const SoftBackend::ColTrans& tint, CoordI patchPos)
 {
 	// Generate our 32-bit double-pixel.
 
@@ -85,7 +85,7 @@ static void _fill_bgr565srgb_noblend_notint(uint8_t* pDst, int pitchX, int pitch
 
 //____ _straight_blit_bgr565srgb_to_same_notint_noblend() ____________________________________________________________
 
-static void _straight_blit_bgr565srgb_to_same_notint_noblend(const uint8_t* pSrc, uint8_t* pDst, const SoftSurface* pSrcSurf, const SoftGfxDevice::Pitches& pitches, int nLines, int lineLength, const SoftGfxDevice::ColTrans& tint, CoordI patchPos, const int simpleTransform[2][2])
+static void _straight_blit_bgr565srgb_to_same_notint_noblend(const uint8_t* pSrc, uint8_t* pDst, const SoftSurface* pSrcSurf, const SoftBackend::Pitches& pitches, int nLines, int lineLength, const SoftBackend::ColTrans& tint, CoordI patchPos, const Transform * pMatrix)
 {
 	if( pitches.srcX == 2 && pitches.dstX == 2 )
 	{
@@ -169,7 +169,7 @@ static void _straight_blit_bgr565srgb_to_same_notint_noblend(const uint8_t* pSrc
 
 //____ _straight_blit_index8srgb_to_bgr565srgb_notint_noblend() ____________________________________________________________
 
-static void _straight_blit_index8srgb_to_bgr565srgb_notint_noblend(const uint8_t* pSrc, uint8_t* pDst, const SoftSurface* pSrcSurf, const SoftGfxDevice::Pitches& pitches, int nLines, int lineLength, const SoftGfxDevice::ColTrans& tint, CoordI patchPos, const int simpleTransform[2][2])
+static void _straight_blit_index8srgb_to_bgr565srgb_notint_noblend(const uint8_t* pSrc, uint8_t* pDst, const SoftSurface* pSrcSurf, const SoftBackend::Pitches& pitches, int nLines, int lineLength, const SoftBackend::ColTrans& tint, CoordI patchPos, const Transform * pMatrix)
 {
 	auto pPalette = pSrcSurf->palette();
 
@@ -194,7 +194,7 @@ static void _straight_blit_index8srgb_to_bgr565srgb_notint_noblend(const uint8_t
 
 //____ _straight_blit_index8srgb_to_bgr565srgb_notint_blend() ____________________________________________________________
 /*
-static void _straight_blit_index8srgb_to_bgr565srgb_notint_blend(const uint8_t* pSrc, uint8_t* pDst, const SoftSurface* pSrcSurf, const SoftGfxDevice::Pitches& pitches, int nLines, int lineLength, const SoftGfxDevice::ColTrans& tint, CoordI patchPos, const int simpleTransform[2][2])
+static void _straight_blit_index8srgb_to_bgr565srgb_notint_blend(const uint8_t* pSrc, uint8_t* pDst, const SoftSurface* pSrcSurf, const SoftBackend::Pitches& pitches, int nLines, int lineLength, const SoftBackend::ColTrans& tint, CoordI patchPos, const Transform * pMatrix)
 {
 	auto pPalette = pSrcSurf->palette();
 
@@ -206,7 +206,7 @@ static void _straight_blit_index8srgb_to_bgr565srgb_notint_blend(const uint8_t* 
 		{
 			Color8 col = pPalette[*pSrc];
 
-			int alpha = SoftGfxDevice::s_mulTab[col.a];
+			int alpha = SoftBackend::s_mulTab[col.a];
 			int invAlpha = 65536 - alpha;
 
 			uint16_t back = * ((uint16_t*)pDst);
@@ -235,7 +235,7 @@ static void _straight_blit_index8srgb_to_bgr565srgb_notint_blend(const uint8_t* 
 
 //____ _straight_blit_alpha8_to_bgr565srgb_notint_blend() ____________________________________________________________
 /*
-static void _straight_blit_alpha8_to_bgr565srgb_notint_blend(const uint8_t* pSrc, uint8_t* pDst, const SoftSurface* pSrcSurf, const SoftGfxDevice::Pitches& pitches, int nLines, int lineLength, const SoftGfxDevice::ColTrans& tint, CoordI patchPos, const int simpleTransform[2][2])
+static void _straight_blit_alpha8_to_bgr565srgb_notint_blend(const uint8_t* pSrc, uint8_t* pDst, const SoftSurface* pSrcSurf, const SoftBackend::Pitches& pitches, int nLines, int lineLength, const SoftBackend::ColTrans& tint, CoordI patchPos, const Transform * pMatrix)
 {
 	// Copy loop
 
@@ -243,7 +243,7 @@ static void _straight_blit_alpha8_to_bgr565srgb_notint_blend(const uint8_t* pSrc
 	{
 		for (int x = 0; x < lineLength; x++)
 		{
-			int alpha = SoftGfxDevice::s_mulTab[* pSrc];
+			int alpha = SoftBackend::s_mulTab[* pSrc];
 			int invAlpha = 65536 - alpha;
 
 			uint16_t back = * ((uint16_t*)pDst);
@@ -273,7 +273,7 @@ static void _straight_blit_alpha8_to_bgr565srgb_notint_blend(const uint8_t* pSrc
 
 //____ _straight_blit_alpha8_to_bgr565srgb_flattint_blend() ____________________________________________________________
 /*
-static void _straight_blit_alpha8_to_bgr565srgb_flattint_blend(const uint8_t* pSrc, uint8_t* pDst, const SoftSurface* pSrcSurf, const SoftGfxDevice::Pitches& pitches, int nLines, int lineLength, const SoftGfxDevice::ColTrans& tint, CoordI patchPos, const int simpleTransform[2][2])
+static void _straight_blit_alpha8_to_bgr565srgb_flattint_blend(const uint8_t* pSrc, uint8_t* pDst, const SoftSurface* pSrcSurf, const SoftBackend::Pitches& pitches, int nLines, int lineLength, const SoftBackend::ColTrans& tint, CoordI patchPos, const Transform * pMatrix)
 {
 
 	uint8_t srcR = HiColor::packLinearTab[tint.flatTintColor.r] >> 3;
@@ -286,7 +286,7 @@ static void _straight_blit_alpha8_to_bgr565srgb_flattint_blend(const uint8_t* pS
 	{
 		for (int x = 0; x < lineLength; x++)
 		{
-			int alpha = (SoftGfxDevice::s_mulTab[* pSrc] * tint.flatTintColor.a) >> 12;
+			int alpha = (SoftBackend::s_mulTab[* pSrc] * tint.flatTintColor.a) >> 12;
 			int invAlpha = 65536 - alpha;
 
 			uint16_t back = * ((uint16_t*)pDst);
@@ -314,7 +314,7 @@ static void _straight_blit_alpha8_to_bgr565srgb_flattint_blend(const uint8_t* pS
 
 //____ _straight_blit_bgrxa8srgb_to_bgr565srgb_notint_noblend() ____________________________________________________________
 
-static void _straight_blit_bgrxa8srgb_to_bgr565srgb_notint_noblend(const uint8_t* pSrc, uint8_t* pDst, const SoftSurface* pSrcSurf, const SoftGfxDevice::Pitches& pitches, int nLines, int lineLength, const SoftGfxDevice::ColTrans& tint, CoordI patchPos, const int simpleTransform[2][2])
+static void _straight_blit_bgrxa8srgb_to_bgr565srgb_notint_noblend(const uint8_t* pSrc, uint8_t* pDst, const SoftSurface* pSrcSurf, const SoftBackend::Pitches& pitches, int nLines, int lineLength, const SoftBackend::ColTrans& tint, CoordI patchPos, const Transform * pMatrix)
 {
 
 	// Copy loop
@@ -339,7 +339,7 @@ static void _straight_blit_bgrxa8srgb_to_bgr565srgb_notint_noblend(const uint8_t
 
 //____ _straight_blit_bgra8srgb_to_bgr565srgb_notint_blend() ____________________________________________________________
 /*
-static void _straight_blit_bgra8srgb_to_bgr565srgb_notint_blend(const uint8_t* pSrc, uint8_t* pDst, const SoftSurface* pSrcSurf, const SoftGfxDevice::Pitches& pitches, int nLines, int lineLength, const SoftGfxDevice::ColTrans& tint, CoordI patchPos, const int simpleTransform[2][2])
+static void _straight_blit_bgra8srgb_to_bgr565srgb_notint_blend(const uint8_t* pSrc, uint8_t* pDst, const SoftSurface* pSrcSurf, const SoftBackend::Pitches& pitches, int nLines, int lineLength, const SoftBackend::ColTrans& tint, CoordI patchPos, const Transform * pMatrix)
 {
 
 	// Copy loop
@@ -350,7 +350,7 @@ static void _straight_blit_bgra8srgb_to_bgr565srgb_notint_blend(const uint8_t* p
 		{
 			Color8 col = * (Color8*) pSrc;
 
-			int alpha = SoftGfxDevice::s_mulTab[col.a];
+			int alpha = SoftBackend::s_mulTab[col.a];
 			int invAlpha = 65536 - alpha;
 
 			uint16_t back = * ((uint16_t*)pDst);
@@ -413,7 +413,7 @@ static void updateFixedBlendCache( HiColor bgCol, HiColor fgCol )
 
 //____ _straight_blit_alpha8_to_bgr565srgb_no_or_flat_tint_fixedblend() ____________________________________________________________
 
-static void _straight_blit_alpha8_to_bgr565srgb_no_or_flat_tint_fixedblend(const uint8_t* pSrc, uint8_t* pDst, const SoftSurface* pSrcSurf, const SoftGfxDevice::Pitches& pitches, int nLines, int lineLength, const SoftGfxDevice::ColTrans& tint, CoordI patchPos, const int simpleTransform[2][2])
+static void _straight_blit_alpha8_to_bgr565srgb_no_or_flat_tint_fixedblend(const uint8_t* pSrc, uint8_t* pDst, const SoftSurface* pSrcSurf, const SoftBackend::Pitches& pitches, int nLines, int lineLength, const SoftBackend::ColTrans& tint, CoordI patchPos, const Transform * pMatrix)
 {
 	// Setup conversion table
 
@@ -626,11 +626,11 @@ void _draw_segment_strip_blend_to_bgr565srgb(int colBeg, int colEnd, uint8_t* pS
 #ifdef __cplusplus
 extern "C" {
 #endif
-int	wg_addExtraSoftKernelsForBGR565sRGBCanvas( wg_obj device )
+int	wg_addExtraSoftKernelsForBGR565sRGBCanvas( wg_obj backend )
 {
-	auto pDevice = static_cast<SoftGfxDevice*>(reinterpret_cast<Object*>(device));
+	auto pBackend = static_cast<SoftBackend*>(reinterpret_cast<Object*>(backend));
 
-	return addExtraSoftKernelsForBGR565sRGBCanvas(pDevice);
+	return addExtraSoftKernelsForBGR565sRGBCanvas(pBackend);
 }
 #ifdef __cplusplus
 }
@@ -638,34 +638,33 @@ int	wg_addExtraSoftKernelsForBGR565sRGBCanvas( wg_obj device )
 
 //____ addExtraSoftKernelsForBGR565sRGBCanvas() __________________________________
 
-bool wg::addExtraSoftKernelsForBGR565sRGBCanvas( SoftGfxDevice * pDevice )
+bool wg::addExtraSoftKernelsForBGR565sRGBCanvas( SoftBackend * pBackend )
 {
-	pDevice->setFillKernel( TintMode::None, BlendMode::Replace, PixelFormat::BGR_565_sRGB, &_fill_bgr565srgb_noblend_notint );
+	pBackend->setFillKernel( TintMode::None, BlendMode::Replace, PixelFormat::BGR_565_sRGB, &_fill_bgr565srgb_noblend_notint );
+
+	pBackend->setStraightBlitKernel( PixelFormat::BGR_565_sRGB, SoftBackend::ReadOp::Normal, TintMode::None, BlendMode::Replace, PixelFormat::BGR_565_sRGB, _straight_blit_bgr565srgb_to_same_notint_noblend );
 
 
-	pDevice->setStraightBlitKernel( PixelFormat::BGR_565_sRGB, SoftGfxDevice::ReadOp::Normal, TintMode::None, BlendMode::Replace, PixelFormat::BGR_565_sRGB, _straight_blit_bgr565srgb_to_same_notint_noblend );
-
-
-	pDevice->setStraightBlitKernel( PixelFormat::Index_8_sRGB, SoftGfxDevice::ReadOp::Normal, TintMode::None, BlendMode::Replace, PixelFormat::BGR_565_sRGB, _straight_blit_index8srgb_to_bgr565srgb_notint_noblend );
+	pBackend->setStraightBlitKernel( PixelFormat::Index_8_sRGB, SoftBackend::ReadOp::Normal, TintMode::None, BlendMode::Replace, PixelFormat::BGR_565_sRGB, _straight_blit_index8srgb_to_bgr565srgb_notint_noblend );
 /*
-	pDevice->setStraightBlitKernel( PixelFormat::Index_8_sRGB, SoftGfxDevice::ReadOp::Normal, TintMode::None, BlendMode::Blend, PixelFormat::BGR_565_sRGB, _straight_blit_index8sRGB_to_bgr565srgb_notint_blend );
+	pBackend->setStraightBlitKernel( PixelFormat::Index_8_sRGB, SoftBackend::ReadOp::Normal, TintMode::None, BlendMode::Blend, PixelFormat::BGR_565_sRGB, _straight_blit_index8sRGB_to_bgr565srgb_notint_blend );
 
 
-	pDevice->setStraightBlitKernel( PixelFormat::Alpha_8, SoftGfxDevice::ReadOp::Normal, TintMode::None, BlendMode::Blend, PixelFormat::BGR_565_sRGB, _straight_blit_alpha8_to_bgr565srgb_notint_blend );
+	pBackend->setStraightBlitKernel( PixelFormat::Alpha_8, SoftBackend::ReadOp::Normal, TintMode::None, BlendMode::Blend, PixelFormat::BGR_565_sRGB, _straight_blit_alpha8_to_bgr565srgb_notint_blend );
 
-	pDevice->setStraightBlitKernel( PixelFormat::Alpha_8, SoftGfxDevice::ReadOp::Normal, TintMode::Flat, BlendMode::Blend, PixelFormat::BGR_565_sRGB, _straight_blit_alpha8_to_bgr565srgb_flattint_blend );
+	pBackend->setStraightBlitKernel( PixelFormat::Alpha_8, SoftBackend::ReadOp::Normal, TintMode::Flat, BlendMode::Blend, PixelFormat::BGR_565_sRGB, _straight_blit_alpha8_to_bgr565srgb_flattint_blend );
  */
 
-	pDevice->setStraightBlitKernel( PixelFormat::Alpha_8, SoftGfxDevice::ReadOp::Normal, TintMode::None, BlendMode::BlendFixedColor, PixelFormat::BGR_565_sRGB, _straight_blit_alpha8_to_bgr565srgb_no_or_flat_tint_fixedblend );
+	pBackend->setStraightBlitKernel( PixelFormat::Alpha_8, SoftBackend::ReadOp::Normal, TintMode::None, BlendMode::BlendFixedColor, PixelFormat::BGR_565_sRGB, _straight_blit_alpha8_to_bgr565srgb_no_or_flat_tint_fixedblend );
 
-	pDevice->setStraightBlitKernel( PixelFormat::Alpha_8, SoftGfxDevice::ReadOp::Normal, TintMode::Flat, BlendMode::BlendFixedColor, PixelFormat::BGR_565_sRGB, _straight_blit_alpha8_to_bgr565srgb_no_or_flat_tint_fixedblend );
+	pBackend->setStraightBlitKernel( PixelFormat::Alpha_8, SoftBackend::ReadOp::Normal, TintMode::Flat, BlendMode::BlendFixedColor, PixelFormat::BGR_565_sRGB, _straight_blit_alpha8_to_bgr565srgb_no_or_flat_tint_fixedblend );
 
 
-	pDevice->setStraightBlitKernel( PixelFormat::BGRA_8_sRGB, SoftGfxDevice::ReadOp::Normal, TintMode::None, BlendMode::Replace, PixelFormat::BGR_565_sRGB, _straight_blit_bgrxa8srgb_to_bgr565srgb_notint_noblend );
+	pBackend->setStraightBlitKernel( PixelFormat::BGRA_8_sRGB, SoftBackend::ReadOp::Normal, TintMode::None, BlendMode::Replace, PixelFormat::BGR_565_sRGB, _straight_blit_bgrxa8srgb_to_bgr565srgb_notint_noblend );
 /*
-	pDevice->setStraightBlitKernel( PixelFormat::BGRX_8_sRGB, SoftGfxDevice::ReadOp::Normal, TintMode::None, BlendMode::Replace, PixelFormat::BGR_565_sRGB, _straight_blit_bgrxa8srgb_to_bgr565srgb_notint_noblend );
+	pBackend->setStraightBlitKernel( PixelFormat::BGRX_8_sRGB, SoftBackend::ReadOp::Normal, TintMode::None, BlendMode::Replace, PixelFormat::BGR_565_sRGB, _straight_blit_bgrxa8srgb_to_bgr565srgb_notint_noblend );
 
-	pDevice->setStraightBlitKernel( PixelFormat::BGRA_8_sRGB, SoftGfxDevice::ReadOp::Normal, TintMode::None, BlendMode::Blend, PixelFormat::BGR_565_sRGB, _straight_blit_bgra8srgb_to_bgr565srgb_notint_blend );
+	pBackend->setStraightBlitKernel( PixelFormat::BGRA_8_sRGB, SoftBackend::ReadOp::Normal, TintMode::None, BlendMode::Blend, PixelFormat::BGR_565_sRGB, _straight_blit_bgra8srgb_to_bgr565srgb_notint_blend );
 */
 
 	pDevice->setSegmentStripKernel(false, BlendMode::Blend, PixelFormat::BGR_565_sRGB, _draw_segment_strip_blend_to_bgr565srgb);

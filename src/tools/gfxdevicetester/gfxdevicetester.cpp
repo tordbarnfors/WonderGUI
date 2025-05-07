@@ -6,7 +6,7 @@
 #include <wondergfx.h>
 #include <wondergfxstream.h>
 #include <wg_softbackend.h>
-#include <wg_softbackend_kernels.h>
+#include <wg_softkernels_default.h>
 #include <wg_linearbackend.h>
 
 //#include <wg_glbackend.h>
@@ -171,16 +171,6 @@ void GfxDeviceTester::setup_testdevices()
 	Surface::Blueprint canvasBP = WGBP(Surface,
 									   _.size = {512,512},
 									   _.canvas = true );
-	
-	// Reference
-	
-	auto pSoftGfxDevice = SoftGfxDevice::create();
-	addDefaultSoftKernels( pSoftGfxDevice );
-	auto pCanvasSurface = SoftSurface::create( canvasBP );
-	
-	auto pReferenceDevice = Device::create( "Reference (SoftGfxDevice)", pSoftGfxDevice, CanvasRef::None, pCanvasSurface, this );
-
-//	g_testdevices.push_back(pReferenceDevice);
 
 	// Gen2 with SoftBackend
 
@@ -280,76 +270,8 @@ void GfxDeviceTester::setup_testdevices()
 	
 //	g_testdevices.push_back(pNativeDevice);
 
-	// Linear
-	
-	auto pLinearOutputBlob = Blob::create(512*512*4);
-	m_pSavedBlob = pLinearOutputBlob;
-		
-	auto pLinearGfxDevice = LinearGfxDevice::create(
 
-		[this](CanvasRef ref, int bytes)
-		{
-			assert( bytes <= 512*512*4 );
-			
-			return m_pSavedBlob->data();
-		},
-		[this](CanvasRef ref, int nSegments, const LinearGfxDevice::Segment * pSegments )
-		{
-			auto buffer = m_pLinearDeviceSurface->allocPixelBuffer();
-			
-			int pixelBytes = Util::pixelFormatToDescription(buffer.format).bits/8;
-
-			for( int i = 0 ; i < nSegments ; i++ )
-			{
-				auto& seg = pSegments[i];
-				
-				uint8_t * pDest = ((uint8_t*)buffer.pixels) + seg.rect.y * buffer.pitch + seg.rect.x * pixelBytes;
-				uint8_t * pSrc = seg.pBuffer;
-				
-				for( int y = 0 ; y < seg.rect.h ; y++ )
-				{
-					memcpy( pDest, pSrc, seg.rect.w*pixelBytes );
-					pDest += buffer.pitch;
-					pSrc += seg.pitch;
-				}
-			}
-
-			m_pLinearDeviceSurface->pullPixels(buffer);
-			m_pLinearDeviceSurface->freePixelBuffer(buffer);
-		}
-	);
-	
-	addDefaultSoftKernels( pLinearGfxDevice );
-	pLinearGfxDevice->defineCanvas(CanvasRef::Default, g_canvasSize*64, PixelFormat::BGRA_8_sRGB);
-	
-	auto pLinearDevice = Device::create( pLinearGfxDevice->typeInfo().className, pLinearGfxDevice, CanvasRef::Default, nullptr, this );
-	
-	m_pLinearDeviceSurface = pLinearDevice->displaySurface();
-	
-//	g_testdevices.push_back(pLinearDevice);
-
-	// Stream to Software
-/*
-	{
-		auto pSoftGfxDevice = SoftGfxDevice::create();
-		addDefaultSoftKernels( pSoftGfxDevice );
-
-		auto pCanvasSurface = SoftSurface::create(canvasBP);		
-		pSoftGfxDevice->defineCanvas(CanvasRef::Default, pCanvasSurface);
-		
-		auto pStreamPlayer = StreamPlayer::create(pSoftGfxDevice, SoftSurfaceFactory::create(), SoftEdgemapFactory::create());
-		
-		auto pStreamEncoder = StreamEncoder::create( {pStreamPlayer, pStreamPlayer->input} );
-		auto pStreamGfxDevice = StreamDevice::create(pStreamEncoder);
-		pStreamGfxDevice->defineCanvas(CanvasRef::Default, {512,512}, PixelFormat::BGRA_8_sRGB);
-		
-		auto pStreamDevice = Device::create( "Stream to Software", pStreamGfxDevice, CanvasRef::Default, pCanvasSurface, this );
-
-//		g_testdevices.push_back(pStreamDevice);
-	}
-*/
-
-	// Software BGR_565_sRGB
+	// Gen2 Software BGR_565_sRGB
 
 	{
 		Surface::Blueprint canvasBP565srgbBP = WGBP(Surface,
@@ -357,14 +279,16 @@ void GfxDeviceTester::setup_testdevices()
 												  _.format = PixelFormat::BGR_565_sRGB,
 												  _.canvas = true );
 
-		auto pSoftGfxDevice = SoftGfxDevice::create();
-		addDefaultSoftKernels( pSoftGfxDevice );
-		addExtraSoftKernelsForBGR565sRGBCanvas( pSoftGfxDevice );
+		auto pBackend = SoftBackend::create();
+		addDefaultSoftKernels( pBackend );
+		addExtraSoftKernelsForBGR565sRGBCanvas( pBackend );
+
+		auto pSoftGfxDevice = GfxDeviceGen2::create(pBackend);
 		auto pCanvasSurface = SoftSurface::create( canvasBP565srgbBP );
 
 		pCanvasSurface->fill( Color::Green );
 
-		auto pReferenceDevice = Device::create( "Software BGR565sRGB (SoftGfxDevice)", pSoftGfxDevice, CanvasRef::None, pCanvasSurface, this );
+		auto pReferenceDevice = Device::create( "Gen2 Software BGR565sRGB (SoftBackend)", pSoftGfxDevice, CanvasRef::None, pCanvasSurface, this );
 
 //		g_testdevices.push_back(pReferenceDevice);
 	}
@@ -397,7 +321,7 @@ void GfxDeviceTester::setup_testdevices()
 	}
 
 	// Gen2 Metal
-
+/*
 	{
 		auto pDevice = Base::defaultGfxDeviceFactory()->createGfxDevice();
 
@@ -407,7 +331,7 @@ void GfxDeviceTester::setup_testdevices()
 //		g_testdevices.push_back(pGen2GlDevice);
 
 	}
-
+*/
 
 
 }
@@ -716,7 +640,8 @@ bool GfxDeviceTester::add_testsuite( const std::function<TestSuite*()>& testSuit
 	se.pTesteeSuite		= testSuiteFactory();
 	se.nbTests 			= (int)se.pReferenceSuite->tests.size();
 
-	auto pTempDevice = SoftGfxDevice::create();
+	auto pBackend = SoftBackend::create();
+	auto pTempDevice = GfxDeviceGen2::create(pBackend);
 	bool bWorking = se.pReferenceSuite->init(pTempDevice, g_canvasSize*64, m_pVisitor);
 	se.pReferenceSuite->exit(pTempDevice, g_canvasSize*64);
 	
