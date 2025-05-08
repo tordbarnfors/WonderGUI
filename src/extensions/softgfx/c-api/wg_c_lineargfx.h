@@ -37,14 +37,6 @@ extern "C" {
 		int 		pitch;
 	} wg_linearGfxSegment;
 
-	wg_obj 	wg_createLinearGfxDevice(void*(*beginCanvasRenderFunc)(wg_canvasRef ref, int nBytes),
-									 void(*endCanvasRenderFunc)(wg_canvasRef ref, int nSegments, const wg_linearGfxSegment * pSegments) );
-
-	int		wg_defineLinearGfxDeviceCanvas( wg_obj device, wg_canvasRef ref, wg_sizeSPX size, wg_pixelFormat format, int scale );
-
-	void	wg_setLinearGfxDeviceSegmentPadding( wg_obj device, int bytes );
-	int		wg_linearGfxDeviceSegmentPadding( wg_obj device);
-
 	wg_obj 	wg_createLinearBackend(void*(*beginCanvasRenderFunc)(wg_canvasRef ref, int nBytes),
 									 void(*endCanvasRenderFunc)(wg_canvasRef ref, int nSegments, const wg_linearGfxSegment * pSegments) );
 
@@ -52,8 +44,6 @@ extern "C" {
 
 	void	wg_setLinearBackendSegmentPadding( wg_obj backend, int bytes );
 	int		wg_linearBackendSegmentPadding( wg_obj backend);
-
-
 
 #ifdef __cplusplus
 }

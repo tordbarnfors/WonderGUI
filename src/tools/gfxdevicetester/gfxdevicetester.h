@@ -8,8 +8,6 @@
 #include <wg_softedgemapfactory.h>
 #include <wg_softsurfacefactory.h>
 
-#include <wg_lineargfxdevice.h>
-
 
 
 #include "device.h"

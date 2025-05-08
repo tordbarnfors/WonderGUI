@@ -19,7 +19,6 @@
 
 #include <wg_softsurface.h>
 #include <wg_softsurfacefactory.h>
-#include <wg_lineargfxdevice.h>
 #include <wg_softkernels_default.h>
 #include <wg_softkernels_rgb565be_base.h>
 #include <wg_softkernels_rgb555be_base.h>
