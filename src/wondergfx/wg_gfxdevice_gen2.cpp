@@ -1787,6 +1787,13 @@ void GfxDeviceGen2::blur(CoordSPX dest)
 		return;
 	}
 
+	if( m_renderState.pBlurbrush == nullptr )
+	{
+		//TODO: Error handling!
+
+		return;
+	}
+
 	if (m_renderState.blitSource == nullptr)
 		return;
 
@@ -1796,6 +1803,13 @@ void GfxDeviceGen2::blur(CoordSPX dest)
 void GfxDeviceGen2::blur(CoordSPX dest, const RectSPX& src)
 {
 	if (!m_pActiveCanvas)
+	{
+		//TODO: Error handling!
+
+		return;
+	}
+
+	if( m_renderState.pBlurbrush == nullptr )
 	{
 		//TODO: Error handling!
 
@@ -1819,6 +1833,13 @@ void GfxDeviceGen2::stretchBlur(const RectSPX& dest)
 		return;
 	}
 
+	if( m_renderState.pBlurbrush == nullptr )
+	{
+		//TODO: Error handling!
+
+		return;
+	}
+
 	if (m_renderState.blitSource == nullptr)
 		return;
 
@@ -1828,6 +1849,13 @@ void GfxDeviceGen2::stretchBlur(const RectSPX& dest)
 void GfxDeviceGen2::stretchBlur(const RectSPX& dest, const RectSPX& src)
 {
 	if (!m_pActiveCanvas)
+	{
+		//TODO: Error handling!
+
+		return;
+	}
+
+	if( m_renderState.pBlurbrush == nullptr )
 	{
 		//TODO: Error handling!
 
@@ -1888,6 +1916,13 @@ void GfxDeviceGen2::transformBlur(const RectSPX& dest, CoordF src, const Transfo
 		return;
 	}
 
+	if( m_renderState.pBlurbrush == nullptr )
+	{
+		//TODO: Error handling!
+
+		return;
+	}
+
 	if (m_renderState.blitSource == nullptr)
 		return;
 
@@ -1899,6 +1934,13 @@ void GfxDeviceGen2::transformBlur(const RectSPX& dest, CoordF src, const Transfo
 void GfxDeviceGen2::rotScaleBlur(const RectSPX& dest, float rotationDegrees, float scale, CoordF srcCenter, CoordF destCenter)
 {
 	if (!m_pActiveCanvas)
+	{
+		//TODO: Error handling!
+
+		return;
+	}
+
+	if( m_renderState.pBlurbrush == nullptr )
 	{
 		//TODO: Error handling!
 
@@ -3174,11 +3216,11 @@ void GfxDeviceGen2::_encodeStateChanges()
 					pTintmap->exportVerticalColors(newState.tintmapRect.h, &colorBuffer[ofs]);
 				}
 
-				cmdBuffer.secureSpace(sizeof(newState.tintmapRect) + 2*2);
+				cmdBuffer.secureSpace(sizeof(newState.tintmapRect) + 2*4);
 
 				cmdBuffer.pushUnchecked(newState.tintmapRect);
 				cmdBuffer.pushUnchecked(nHorrColors);
-				cmdBuffer.pushUnchecked(nVertColors);
+				cmdBuffer .pushUnchecked(nVertColors);
 
 				encodedState.pTintmap = newState.pTintmap;
 				encodedState.tintmapRect = newState.tintmapRect;

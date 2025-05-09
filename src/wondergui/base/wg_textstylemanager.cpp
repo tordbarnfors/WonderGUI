@@ -148,7 +148,6 @@ namespace wg
 		s_pLookupTable[idx] = p;
 		s_size++;
 
-
 		return static_cast<TextStyle_h>(idx+1);
 	}
 
@@ -162,13 +161,13 @@ namespace wg
             return;
         }
 
-		if (handle == 0 || handle >= s_capacity)
+		int idx = handle - 1;
+
+		if (idx < 0 || idx >= s_capacity)
 		{
 			Base::throwError(ErrorLevel::Warning, ErrorCode::SystemIntegrity, "Attempt to release invalid TextStyle-handle. Something has gone wrong.", nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return;
 		}
-
-		int idx = handle - 1;
 
 		* (int*)(&s_pLookupTable[idx]) = s_nextAvailable;
 		s_nextAvailable = idx;
