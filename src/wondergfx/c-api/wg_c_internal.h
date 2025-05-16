@@ -19,10 +19,11 @@
   should contact Tord Jansson [tord.jansson@gmail.com] for details.
 
 =========================================================================*/
-
 #ifndef WG_C_INTERNAL_DOT_H
 #define WG_C_INTERNAL_DOT_H
 #pragma once
+
+/* Functions used internally by the C-API */
 
 
 #ifdef __cplusplus
@@ -30,8 +31,14 @@
 #include <wg_surface.h>
 #include <wg_c_surface.h>
 
+#include <wg_edgemap.h>
+#include <wg_c_edgemap.h>
+
+#include <wg_tintmap.h>
+
 
 	void convertSurfaceBlueprint(wg::Surface::Blueprint* pDest, const wg_surfaceBP* pSource);
+	void convertEdgemapBlueprint(wg::Edgemap::Blueprint* pDest, const wg_edgemapBP* pSource, wg::Tintmap_p * pTintmapArea );
 
 
 #endif	//__cplusplus

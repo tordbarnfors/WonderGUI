@@ -45,6 +45,10 @@ set( SOURCES
 
 	c-api/wg_c_streambuffer.h
 	c-api/wg_c_streambuffer.cpp
+	c-api/wg_c_streamencoder.h
+	c-api/wg_c_streamencoder.cpp
+	c-api/wg_c_streamgfx.h
+	c-api/wg_c_streamgfx.cpp
 	c-api/wg_c_streamlogger.cpp
 	c-api/wg_c_streamlogger.h
 	c-api/wg_c_streamloopwrapper.cpp

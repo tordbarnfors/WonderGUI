@@ -500,6 +500,9 @@ namespace wg
 			}
 			break;
 		}
+
+			default:
+				assert(false);			// Should never get here!
 		}
 	}
 

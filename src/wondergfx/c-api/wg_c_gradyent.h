@@ -20,39 +20,18 @@
 
 =========================================================================*/
 
-#ifndef WG_C_BLURBRUSH_DOT_H
-#define WG_C_BLURBRUSH_DOT_H
+#ifndef WG_C_GRADYENT_DOT_H
+#define WG_C_GRADYENT_DOT_H
 #pragma once
 
-#include <wg_c_gfxtypes.h>
-#include <wg_c_geo.h>
+#include <wg_c_geartypes.h>
 #include <wg_c_color.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-
-//____ wg_blurbrushBP __________________________________________________________
-
-typedef struct wg_blurbrushBP_struct			// NOT BINARY EQUIVALENT!
-{
-	const float *	blue;
-	const float *	green;
-	const float *	red;
-	
-	wg_spx		size = 64 * 4;;
-} wg_blurbrushBP;
-
-
-wg_obj	wg_createBlurbrush( wg_blurbrushBP bp );
-
-wg_spx		wg_blurbrushSize( wg_obj blurbrush );
-
-const float* wg_blurbrushBlue( wg_obj blurbrush );
-const float* wg_blurbrushGreen( wg_obj blurbrush );
-const float* wg_blurbrushRed( wg_obj blurbrush );
-
+wg_obj		wg_createGradyent(wg_color top, wg_color bottom, wg_color left, wg_color right);
 
 #ifdef __cplusplus
 }

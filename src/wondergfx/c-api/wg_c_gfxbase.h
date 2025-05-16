@@ -42,6 +42,9 @@ extern "C" {
 	void	wg_setDefaultSurfaceFactory( wg_obj factory );
 	wg_obj	wg_defaultSurfaceFactory();
 
+	void	wg_setDefaultEdgemapFactory( wg_obj factory );
+	wg_obj	wg_defaultEdgemapFactory();
+
 	void	wg_setDefaultGfxDevice( wg_obj device );
 	wg_obj	wg_defaultGfxDevice();
 

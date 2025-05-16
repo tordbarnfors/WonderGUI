@@ -23,6 +23,7 @@
 
 
 #include <wg_c_internal.h>
+#include <wg_gfxbase.h>
 
 using namespace wg;
 
@@ -43,4 +44,25 @@ void convertSurfaceBlueprint(Surface::Blueprint* pDest, const wg_surfaceBP* pSou
 	pDest->size.w = pSource->size.w;
 	pDest->size.h = pSource->size.h;
 	pDest->tiling = pSource->tiling;
+}
+
+void convertEdgemapBlueprint(Edgemap::Blueprint* pDest, const wg_edgemapBP* pSource, Tintmap_p * pSpaceForTintmaps )
+{
+	pDest->colors = (HiColor*) pSource->colors;
+	pDest->colorstripsX = (HiColor*) pSource->colorstripsX;
+	pDest->colorstripsY = (HiColor*) pSource->colorstripsY;
+	pDest->paletteType	= (EdgemapPalette) pSource->paletteType;
+
+	pDest->segments		= pSource->segments;
+	pDest->size			= { pSource->size.w, pSource->size.h };
+
+	if( pSource->tintmaps != nullptr )
+	{
+		for( int i = 0 ; i < pSource->segments ; i++ )
+			pSpaceForTintmaps[i] = static_cast<Tintmap*>(reinterpret_cast<Object*>(pSource->tintmaps[i]));
+
+		pDest->tintmaps = pSpaceForTintmaps;
+	}
+	else
+		pDest->tintmaps		= nullptr;
 }

@@ -22,9 +22,12 @@
 
 #include <wg_c_softgfx.h>
 #include <wg_c_internal.h>
-#include <wg_softsurface.h>
+
 #include <wg_softbackend.h>
+#include <wg_softsurface.h>
 #include <wg_softsurfacefactory.h>
+#include <wg_softedgemap.h>
+#include <wg_softedgemapfactory.h>
 
 using namespace wg;
 
@@ -91,3 +94,54 @@ wg_obj wg_createSoftSurfaceFactory()
 	p->retain();
 	return (wg_obj) static_cast<Object*>(p.rawPtr());
 }
+
+
+wg_obj wg_createSoftEdgemap( const wg_edgemapBP* blueprint )
+{
+	Edgemap::Blueprint	bp;
+
+	assert(blueprint->segments <= 32);
+	Tintmap_p	tintmapArea[32];
+
+	convertEdgemapBlueprint(&bp, blueprint, tintmapArea);
+
+	auto p = SoftEdgemap::create(bp);
+	p->retain();
+	return (wg_obj) static_cast<Object*>(p.rawPtr());
+}
+
+wg_obj wg_createSoftEdgemapFromFloats( const wg_edgemapBP* blueprint, wg_sampleOrigo origo, const float * pSamples, int edges, int edgePitch, int samplePitch)
+{
+	Edgemap::Blueprint	bp;
+
+	assert(blueprint->segments <= 32);
+	Tintmap_p	tintmapArea[32];
+
+	convertEdgemapBlueprint(&bp, blueprint, tintmapArea);
+
+	auto p = SoftEdgemap::create(bp, (SampleOrigo) origo, pSamples, edges, edgePitch, samplePitch);
+	p->retain();
+	return (wg_obj) static_cast<Object*>(p.rawPtr());
+}
+
+wg_obj wg_createSoftEdgemapFromSpx( const wg_edgemapBP* blueprint, wg_sampleOrigo origo, const wg_spx * pSamples, int edges, int edgePitch, int samplePitch)
+{
+	Edgemap::Blueprint	bp;
+
+	assert(blueprint->segments <= 32);
+	Tintmap_p	tintmapArea[32];
+
+	convertEdgemapBlueprint(&bp, blueprint, tintmapArea);
+
+	auto p = SoftEdgemap::create(bp, (SampleOrigo) origo, pSamples, edges, edgePitch, samplePitch);
+	p->retain();
+	return (wg_obj) static_cast<Object*>(p.rawPtr());
+}
+
+wg_obj wg_createSoftEdgemapFactory(void)
+{
+	auto p = SoftEdgemapFactory::create();
+	p->retain();
+	return (wg_obj) static_cast<Object*>(p.rawPtr());
+}
+

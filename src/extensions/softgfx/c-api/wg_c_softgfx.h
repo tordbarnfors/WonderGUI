@@ -25,6 +25,7 @@
 
 #include <wg_c_gfxtypes.h>
 #include <wg_c_surface.h>
+#include <wg_c_edgemap.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -42,6 +43,14 @@ extern "C" {
 											const wg_pixelDescription * pPixelDescription, int pitch, const wg_color8 * pPalette );
 
 	wg_obj	wg_createSoftSurfaceFactory(void);
+
+
+	wg_obj	wg_createSoftEdgemap( const wg_edgemapBP* blueprint );
+	wg_obj	wg_createSoftEdgemapFromFloats( const wg_edgemapBP* blueprint, wg_sampleOrigo origo, const float * pSamples, int edges, int edgePitch, int samplePitch);
+	wg_obj	wg_createSoftEdgemapFromSpx( const wg_edgemapBP* blueprint, wg_sampleOrigo origo, const wg_spx * pSamples, int edges, int edgePitch, int samplePitch);
+
+	wg_obj	wg_createSoftEdgemapFactory(void);
+
 
 
 #ifdef __cplusplus

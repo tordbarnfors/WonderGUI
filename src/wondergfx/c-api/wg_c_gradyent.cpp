@@ -20,42 +20,21 @@
 
 =========================================================================*/
 
-#ifndef WG_C_BLURBRUSH_DOT_H
-#define WG_C_BLURBRUSH_DOT_H
-#pragma once
+#include <wg_c_gradyent.h>
+#include <wg_gradyent.h>
 
-#include <wg_c_gfxtypes.h>
-#include <wg_c_geo.h>
-#include <wg_c_color.h>
-
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include <type_traits>
 
 
-//____ wg_blurbrushBP __________________________________________________________
+using namespace wg;
 
-typedef struct wg_blurbrushBP_struct			// NOT BINARY EQUIVALENT!
+
+wg_obj wg_createGradyent( wg_color top, wg_color bottom, wg_color left, wg_color right )
 {
-	const float *	blue;
-	const float *	green;
-	const float *	red;
-	
-	wg_spx		size = 64 * 4;;
-} wg_blurbrushBP;
-
-
-wg_obj	wg_createBlurbrush( wg_blurbrushBP bp );
-
-wg_spx		wg_blurbrushSize( wg_obj blurbrush );
-
-const float* wg_blurbrushBlue( wg_obj blurbrush );
-const float* wg_blurbrushGreen( wg_obj blurbrush );
-const float* wg_blurbrushRed( wg_obj blurbrush );
-
-
-#ifdef __cplusplus
+	auto pGradyent = Gradyent::create( HiColor( top.r, top.g, top.b, top.a),
+									  HiColor( bottom.r, bottom.g, bottom.b, bottom.a),
+									  HiColor( left.r, left.g, left.b, left.a),
+									  HiColor( right.r, right.g, right.b, right.a) );
+	pGradyent->retain();
+	return static_cast<Object*>(pGradyent);
 }
-#endif
-
-#endif

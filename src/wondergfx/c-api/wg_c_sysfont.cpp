@@ -20,42 +20,20 @@
 
 =========================================================================*/
 
-#ifndef WG_C_BLURBRUSH_DOT_H
-#define WG_C_BLURBRUSH_DOT_H
-#pragma once
+#include <wg_c_sysfont.h>
+#include <wg_sysfont.h>
 
-#include <wg_c_gfxtypes.h>
-#include <wg_c_geo.h>
-#include <wg_c_color.h>
-
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include <type_traits>
 
 
-//____ wg_blurbrushBP __________________________________________________________
+using namespace wg;
 
-typedef struct wg_blurbrushBP_struct			// NOT BINARY EQUIVALENT!
+wg_obj wg_createSysFont(wg_obj surfaceFactory, wg_obj backupFont)
 {
-	const float *	blue;
-	const float *	green;
-	const float *	red;
-	
-	wg_spx		size = 64 * 4;;
-} wg_blurbrushBP;
+	SurfaceFactory * pFactory = surfaceFactory == nullptr ? nullptr : static_cast<SurfaceFactory*>(reinterpret_cast<Object*>(surfaceFactory) );
+	Font * pBackupFont = backupFont == nullptr ? nullptr : static_cast<Font*>(reinterpret_cast<Object*>(backupFont) );
 
-
-wg_obj	wg_createBlurbrush( wg_blurbrushBP bp );
-
-wg_spx		wg_blurbrushSize( wg_obj blurbrush );
-
-const float* wg_blurbrushBlue( wg_obj blurbrush );
-const float* wg_blurbrushGreen( wg_obj blurbrush );
-const float* wg_blurbrushRed( wg_obj blurbrush );
-
-
-#ifdef __cplusplus
+	auto pSysFont = SysFont::create( pFactory, pBackupFont );
+	pSysFont->retain();
+	return static_cast<Object*>(pSysFont);
 }
-#endif
-
-#endif

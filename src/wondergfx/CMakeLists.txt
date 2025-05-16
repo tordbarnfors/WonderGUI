@@ -107,6 +107,8 @@ set( SOURCES
 	c-api/wg_c_gfxutil.h
 	c-api/wg_c_gradient.cpp
 	c-api/wg_c_gradient.h
+	c-api/wg_c_gradyent.cpp
+	c-api/wg_c_gradyent.h
 	c-api/wg_c_internal.cpp
 	c-api/wg_c_internal.h
 	c-api/wg_c_patches.cpp
@@ -121,6 +123,8 @@ set( SOURCES
 	c-api/wg_c_surfacereader.h
 	c-api/wg_c_surfacewriter.cpp
 	c-api/wg_c_surfacewriter.h
+	c-api/wg_c_sysfont.cpp
+	c-api/wg_c_sysfont.h
 	c-api/wg_c_tintmap.h
 	c-api/wg_c_tintmap.cpp
 	c-api/wondergfx_c.h
