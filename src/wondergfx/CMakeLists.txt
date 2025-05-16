@@ -50,8 +50,6 @@ set( SOURCES
 	wg_gridwalker.h
 	wg_backendlogger.cpp
 	wg_backendlogger.h
-	wg_nullgfxdevice.cpp
-	wg_nullgfxdevice.h
 	wg_patches.impl.h
 	wg_patches.cpp
 	wg_patches.h

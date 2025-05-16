@@ -35,6 +35,8 @@
 #include <wg_streamplayer.h>
 */
 
+#include <wg_gfxdevice_gen2.h>
+
 #include <wg_softsurface.h>
 #include <wg_softsurfacefactory.h>
 #include <wg_softedgemapfactory.h>
@@ -255,12 +257,15 @@ int main ( int argc, char** argv )
 												 _.canvas = true ),
 											wg::Blob::create(pScreen->pixels, nullptr),
 											pScreen->pitch);
-	auto pGfxDevice = wg::SoftGfxDevice::create();
-	pGfxDevice->defineCanvas( wg::CanvasRef::Default, pCanvas );
+
+	auto pBackend = wg::SoftBackend::create();
+	addDefaultSoftKernels(pBackend);
+	pBackend->defineCanvas( wg::CanvasRef::Default, pCanvas );
+
+	auto pGfxDevice = wg::GfxDeviceGen2::create(pBackend);
+
 	
-	
-	addDefaultSoftKernels(pGfxDevice);
-	
+
 	g_pGfxDevice = pGfxDevice;
 	g_pCanvas = pCanvas;
 	

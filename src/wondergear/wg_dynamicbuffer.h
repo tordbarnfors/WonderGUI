@@ -112,7 +112,7 @@ public:
 		int mod = m_size % bytes;
 		if( mod != 0 )
 		{
-			int newSize = m_size + bytes-mod;
+			int newSize = int(m_size + bytes-mod);
 			if( newSize > m_capacity )
 				_reallocMin(newSize);
 

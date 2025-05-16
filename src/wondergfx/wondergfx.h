@@ -42,14 +42,13 @@
 #include <wg_gfxdevice.h>
 #include <wg_gfxdevice_gen1.h>
 #include <wg_gfxdevice_gen2.h>
-#include <wg_gfxdevice.h>
+#include <wg_gfxdevicefactory.h>
 #include <wg_gfxenumextras.h>
 #include <wg_gfxtypes.h>
 #include <wg_gfxutil.h>
 #include <wg_gradient.h>
 #include <wg_gradyent.h>
 #include <wg_gridwalker.h>
-#include <wg_nullgfxdevice.h>
 #include <wg_patches.h>
 #include <wg_pixeltools.h>
 #include <wg_printer.h>
