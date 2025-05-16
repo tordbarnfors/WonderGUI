@@ -980,6 +980,8 @@ void GfxDeviceGen2::_doFlattenLayers()
 		canvasData.sessionInfo.nObjects += layer.objects.size();
 	}
 
+	if( canvasData.sessionInfo.nRects == 0 )
+		return;			// No rendering to be done.
 
 	m_pBackend->beginSession(canvasData.info.ref, canvasData.info.pSurface, canvasData.updateRects.nRects, canvasData.updateRects.pRects, &canvasData.sessionInfo);
 
@@ -1015,12 +1017,15 @@ void GfxDeviceGen2::_doFlattenLayers()
 
 	for (int i = 1; i < canvasData.layers.size(); i++)
 	{
-		// Check if we can do direct rendering
-
 		auto& info = canvasData.pLayerInfo->m_layers[i - 1];
 		auto& layer = canvasData.layers[i];
 
-		if (layer.pLayerCanvas)
+		if( layer.commands.size() == 0 )
+			continue;
+
+		// Check if we can do direct rendering
+
+		if (layer.pLayerCanvas )
 		{
 			setRenderLayer(i);
 
