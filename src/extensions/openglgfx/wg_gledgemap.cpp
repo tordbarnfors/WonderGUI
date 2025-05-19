@@ -132,19 +132,22 @@ namespace wg
 
 	void GlEdgemap::_samplesUpdated(int edgeBegin, int edgeEnd, int sampleBegin, int sampleEnd)
 	{
-		int nEdgeStrips = sampleEnd - sampleBegin;
-		const int* pEdgeStrips = m_pSamples;
+		int columnBegin = sampleBegin == 0 ? 0 : sampleBegin - 1;
+		int columnEnd = sampleEnd > m_size.w ? m_size.w : sampleEnd;
+
+		int nPixelColumns = columnEnd - columnBegin;
+
 		int edgeStripPitch = m_nbSegments - 1;
 
-		const spx* pEdges = m_pSamples + edgeStripPitch * edgeBegin;
+		const spx* pEdges = m_pSamples + edgeStripPitch * columnBegin;
 
-		int outBytes = (nEdgeStrips - 1) * (m_nbSegments - 1) * 4 * sizeof(GLfloat);
+		int outBytes = nPixelColumns * (m_nbSegments - 1) * 4 * sizeof(GLfloat);
 
 		auto pBuffer = (GLfloat*)GfxBase::memStackAlloc(outBytes);
 
 		auto pOut = pBuffer;
 
-		for (int i = 0; i < nEdgeStrips - 1; i++)
+		for (int i = 0; i < nPixelColumns; i++)
 		{
 			for (int j = 0; j < m_nbSegments - 1; j++)
 			{
@@ -188,7 +191,7 @@ namespace wg
 
 		// Upload buffer
 
-		int ofs = sampleBegin * edgeStripPitch * 4 * sizeof(GLfloat);
+		int ofs = columnBegin * edgeStripPitch * 4 * sizeof(GLfloat);
 
 		glBindBuffer(GL_TEXTURE_BUFFER, m_bufferId);
 		glBufferSubData(GL_TEXTURE_BUFFER, ofs, outBytes, pBuffer);
