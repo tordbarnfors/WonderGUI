@@ -123,14 +123,20 @@ const TypeInfo& MetalEdgemap::typeInfo(void) const
 
 void MetalEdgemap::_samplesUpdated(int edgeBegin, int edgeEnd, int sampleBegin, int sampleEnd)
 {
-	int nEdgeStrips = sampleEnd - sampleBegin;
+	// We need to update columns left and right of first/last sample.
+
+	int columnBegin = sampleBegin == 0 ? 0 : sampleBegin - 1;
+	int columnEnd = sampleEnd > m_size.w ? m_size.w : sampleEnd;
+
+	int nPixelColumns = columnEnd - columnBegin;
+
 	int edgeStripPitch = m_nbSegments - 1;
 
-	const spx* pEdges = m_pSamples + edgeStripPitch * edgeBegin;
+	const spx* pEdges = m_pSamples + edgeStripPitch * columnBegin;
 
 	auto pOut = m_pBuffer + sampleBegin * edgeStripPitch * 4;
 
-	for (int i = 0; i < nEdgeStrips - 1; i++)
+	for (int i = 0; i < nPixelColumns; i++)
 	{
 		for (int j = 0; j < m_nbSegments - 1; j++)
 		{
