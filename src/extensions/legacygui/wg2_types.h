@@ -34,7 +34,7 @@ namespace wg
 	typedef State           	StateEnum;
 }
 
-static const int    WG_NB_STATES = wg::State::IndexAmount;
+static const int    WG_NB_STATES = wg::State::NbStates;
 static const int    WG_MAX_STATE_VALUE = wg::State::MaxValue;
 
 typedef wg::State       WgState;

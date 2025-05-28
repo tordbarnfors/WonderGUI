@@ -113,7 +113,7 @@ namespace wg
 
 		Bitmask<uint32_t>	m_stateColorMask = 1;
 
-		HiColor		m_color[State::IndexAmount];
+		HiColor		m_color[State::NbStates];
 
 		pts			m_thickness;
 		Size		m_size;
