@@ -194,29 +194,29 @@ namespace wg
 		State	slideStateMask;
 		switch (m_slideState)
 		{
-		case StateBits::Focused:
+		case BaseState::Focused:
 			slideStateMask = State::Focused;
 			break;
-		case StateBits::Hovered:
+		case BaseState::Hovered:
 			slideStateMask = State::Hovered;
 			break;
-		case StateBits::Pressed:
+		case BaseState::Pressed:
 			slideStateMask = State::Pressed;
 			break;
-		case StateBits::Selected:
+		case BaseState::Selected:
 			slideStateMask = State::Selected;
 			break;
-		case StateBits::Targeted:
+		case BaseState::Targeted:
 			slideStateMask = State::Targeted;
 			break;
-		case StateBits::Disabled:
+		case BaseState::Disabled:
 			slideStateMask = State::Disabled;
 			break;
 		default:
 			assert(false);
 		}
 
-		bool bMaximized = ((slideStateMask.bitmask() & state.bitmask()) != 0);
+		bool bMaximized = ((slideStateMask.index() & state.index()) != 0);
 
 		float offset = 0.f;
 		if (pStateFractions != nullptr)
@@ -339,12 +339,12 @@ namespace wg
 
 		if (bTintDecides)
 		{
-			for (int i = 0; i < State::IndexAmount; i++)
+			for (int i = 0; i < State::NbStates; i++)
 				m_bStateOpaque[i] = m_stateColors[i].a == 4096;
 		}
 		else
 		{
-			for (int i = 0; i < State::IndexAmount; i++)
+			for (int i = 0; i < State::NbStates; i++)
 				m_bStateOpaque[i] = bOpaque;
 		}
 	}
@@ -353,7 +353,7 @@ namespace wg
 
 	void BlockSlideSkin::_updateUnsetStateBlocks()
 	{
-		for (int i = 0; i < State::IndexAmount; i++)
+		for (int i = 0; i < State::NbStates; i++)
 		{
 			if (!m_stateBlockMask.bit(i))
 			{
@@ -367,7 +367,7 @@ namespace wg
 
 	void BlockSlideSkin::_updateUnsetStateColors()
 	{
-		for (int i = 0; i < State::IndexAmount; i++)
+		for (int i = 0; i < State::NbStates; i++)
 		{
 			if (!m_stateColorMask.bit(i))
 			{

@@ -120,12 +120,12 @@ namespace wg
 		mutable int			m_cachedScale = 0;
 		mutable SizeSPX		m_cachedMinSize;						// Calculated minSize for scale represented by m_cachedScale;
 		mutable SizeSPX		m_cachedDefaultSize;					// Calculated defaultSize for scale represented by m_cachedScale;
-		mutable BorderSPX	m_cachedContentPadding[State::IndexAmount];
+		mutable BorderSPX	m_cachedContentPadding[State::NbStates];
 
 		Bitmask<uint8_t>	m_transitioningStates;
-		int					m_transitionTimes[StateBits_Nb];
+		int					m_transitionTimes[BaseState_Nb];
 
-		int					m_animationLengths[State::IndexAmount];
+		int					m_animationLengths[State::NbStates];
 	};
 
 } // namespace wg

@@ -116,7 +116,7 @@ namespace wg
 		bool		m_bSkinInSkin = true;
 		bool		m_bContentPaddingSet = false;
 
-		int			m_transitionTimes[StateBits_Nb];
+		int			m_transitionTimes[BaseState_Nb];
 	};
 
 

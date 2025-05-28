@@ -2493,7 +2493,7 @@ bool scrollSkinTest(ComponentPtr<DynamicSlot> pSlot)
 											.blockSpacing = 0,
 											.slideDirection = Direction::Left,
 											.slideDuration = 100,
-											.slideState = StateBits::Selected,
+											.slideState = BaseState::Selected,
 											.states = { State::Default, {}, State::Hovered, {}, State::Disabled, {} },
 											.surface = pSliderSurf });
 
