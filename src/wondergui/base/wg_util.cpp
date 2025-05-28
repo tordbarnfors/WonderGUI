@@ -293,7 +293,7 @@ namespace wg
 
 	int Util::bestStateIndexMatch(int wantedStateIndex, Bitmask<uint32_t> availableStateIndices)
 	{
-		static uint32_t mask[State::IndexAmount] = {	1,
+		static uint32_t mask[State::NbStates] = {	1,
 											2+1,
 											4+1,
 											8 + 4 + 2 + 1,

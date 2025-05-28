@@ -138,7 +138,7 @@ namespace wg
 			m_stateOfsY[i] = ofs++;
 		}
 
-		for (int i = 0; i < State::IndexAmount; i++)
+		for (int i = 0; i < State::NbStates; i++)
 		{
 			if (!stateMask.bit(i))
 			{

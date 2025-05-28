@@ -44,7 +44,7 @@ namespace wg
 	{
 		m_contentShiftStateMask = 1;			// Mode normal is set by default
 
-		for( int i = 0 ; i < State::IndexAmount ; i++ )
+		for( int i = 0 ; i < State::NbStates ; i++ )
 			m_contentShift[i] = { 0,0 };
 
 		m_bContentShifting = false;
@@ -150,7 +150,7 @@ namespace wg
 
 	void StateSkin::_updateContentShift()
 	{
-		for (int i = 0; i < State::IndexAmount; i++)
+		for (int i = 0; i < State::NbStates; i++)
 		{
 			if ( !m_contentShiftStateMask.bit(i) )
 			{

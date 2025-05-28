@@ -142,7 +142,7 @@ namespace wg
 		};
 
 
-		StateInfo		m_stateInfo[State::IndexAmount];
+		StateInfo		m_stateInfo[State::NbStates];
 	};
 
 
