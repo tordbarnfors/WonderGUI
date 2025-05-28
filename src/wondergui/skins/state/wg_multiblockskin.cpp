@@ -48,7 +48,7 @@ namespace wg
 		m_blockSizePoints	= blockSize;
 		m_frame				= frame;
 
-		for( int i = 0 ; i < State::IndexAmount ; i++ )
+		for( int i = 0 ; i < State::NbStates ; i++ )
 		m_bStateOpaque[i] = false;
 	}
 
@@ -73,7 +73,7 @@ namespace wg
 		layer.stateBlockMask = 1;               // Only normal state is set.
 
 
-		for (int i = 0; i < State::IndexAmount; i++)
+		for (int i = 0; i < State::NbStates; i++)
 		{
 			layer.blockOfs[i] = ofs;
 			layer.tintColor[i] = HiColor::White;
@@ -98,7 +98,7 @@ namespace wg
 
 		//
 
-		for (int i = 0; i < State::IndexAmount; i++)
+		for (int i = 0; i < State::NbStates; i++)
 			layer.tintColor[i] = HiColor::White;
 
 		//
@@ -119,7 +119,7 @@ namespace wg
 
 		// Fill in fallback states and update opacity flag
 
-		for (int i = 0; i < State::IndexAmount; i++)
+		for (int i = 0; i < State::NbStates; i++)
 		{
 			if (!layer.stateBlockMask.bit(i))
 			{
@@ -155,7 +155,7 @@ namespace wg
 	{
 		auto& layer = m_layers.at(layerIdx-1);
 
-		for (int i = 0; i < State::IndexAmount; i++)
+		for (int i = 0; i < State::NbStates; i++)
 		{
 			int16_t		oldAlpha = layer.tintColor[i].a;
 
@@ -194,7 +194,7 @@ namespace wg
 
 		// Fill in fallback states and update opacity flag
 
-		for (int i = 0; i < State::IndexAmount; i++)
+		for (int i = 0; i < State::NbStates; i++)
 		{
 			if (!layer.stateColorMask.bit(i))
 			{
@@ -223,7 +223,7 @@ namespace wg
 		{
 			layer.blendMode = blendMode;
 
-			for (int i = 0; i < State::IndexAmount; i++)
+			for (int i = 0; i < State::NbStates; i++)
 				_updateStateOpacity(i);
 		}
 

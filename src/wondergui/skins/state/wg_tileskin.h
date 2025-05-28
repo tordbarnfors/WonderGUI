@@ -125,9 +125,9 @@ namespace wg
 		Bitmask<uint32_t>	m_stateSurfaceMask = 1;
 		Bitmask<uint32_t>	m_stateColorMask = 1;
 
-		Surface_p	m_stateSurfaces[State::IndexAmount];
-		HiColor		m_stateColors[State::IndexAmount];
-		bool		m_bStateOpaque[State::IndexAmount];
+		Surface_p	m_stateSurfaces[State::NbStates];
+		HiColor		m_stateColors[State::NbStates];
+		bool		m_bStateOpaque[State::NbStates];
 		Gradient	m_gradient;
 	};
 

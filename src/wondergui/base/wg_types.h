@@ -30,26 +30,104 @@
 
 namespace wg
 {
-
-	//___ StateBits ____________________________________________________
-
-	enum class StateBits
-	{
-		Focused = 0,
-		Pressed = 1,
-		Hovered = 2,
-		Selected = 3,
-		Targeted = 4,
-		Disabled = 5
-	};
-
-	static const int	StateBits_Nb = 6;
-	static const int	StateBits_MaxValue = 5;
-
+	static const int	BaseState_Nb = 8;
+	static const int	BaseState_MaxValue = 7;
 
 	typedef unsigned int	RouteId;
 
 	typedef uint16_t		TextStyle_h;
+
+	//___ BaseState ____________________________________________________
+
+	enum class BaseState
+	{
+		Flagged = 0,
+		Selected = 1,
+		Checked = 2,
+		Focused = 3,
+		Hovered = 4,
+		Pressed = 5,
+		Disabled = 6,
+		Targeted = 7
+	};
+
+	//___ StateEnum ____________________________________________________
+
+	enum class StateEnum : uint8_t
+	{
+		Default = 0,
+		Flagged,
+		Selected,
+		SelectedFlagged,
+		Checked,
+		CheckedFlagged,
+		CheckedSelected,
+		CheckedSelectedFlagged,
+		Focused,
+		FocusedFlagged,
+		FocusedSelected,
+		FocusedSelectedFlagged,
+		FocusedChecked,
+		FocusedCheckedFlagged,
+		FocusedCheckedSelected,
+		FocusedCheckedSelectedFlagged,
+		Hovered,
+		HoveredFlagged,
+		HoveredSelected,
+		HoveredSelectedFlagged,
+		HoveredChecked,
+		HoveredCheckedFlagged,
+		HoveredCheckedSelected,
+		HoveredCheckedSelectedFlagged,
+		HoveredFocused,
+		HoveredFocusedFlagged,
+		HoveredFocusedSelected,
+		HoveredFocusedSelectedFlagged,
+		HoveredFocusedChecked,
+		HoveredFocusedCheckedFlagged,
+		HoveredFocusedCheckedSelected,
+		HoveredFocusedCheckedSelectedFlagged,
+		Pressed,
+		PressedFlagged,
+		PressedSelected,
+		PressedSelectedFlagged,
+		PressedChecked,
+		PressedCheckedFlagged,
+		PressedCheckedSelected,
+		PressedCheckedSelectedFlagged,
+		PressedFocused,
+		PressedFocusedFlagged,
+		PressedFocusedSelected,
+		PressedFocusedSelectedFlagged,
+		PressedFocusedChecked,
+		PressedFocusedCheckedFlagged,
+		PressedFocusedCheckedSelected,
+		PressedFocusedCheckedSelectedFlagged,
+		Targeted,
+		TargetedFlagged,
+		TargetedSelected,
+		TargetedSelectedFlagged,
+		TargetedChecked,
+		TargetedCheckedFlagged,
+		TargetedCheckedSelected,
+		TargetedCheckedSelectedFlagged,
+		TargetedFocused,
+		TargetedFocusedFlagged,
+		TargetedFocusedSelected,
+		TargetedFocusedSelectedFlagged,
+		TargetedFocusedChecked,
+		TargetedFocusedCheckedFlagged,
+		TargetedFocusedCheckedSelected,
+		TargetedFocusedCheckedSelectedFlagged,
+		Disabled,
+		DisabledFlagged,
+		DisabledSelected,
+		DisabledSelectedFlagged,
+		DisabledChecked,
+		DisabledCheckedFlagged,
+		DisabledCheckedSelected,
+		DisabledCheckedSelectedFlagged
+	};
 
 
 //____ ExtChar __________________________________________________________

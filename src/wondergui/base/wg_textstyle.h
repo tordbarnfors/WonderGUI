@@ -174,10 +174,10 @@ namespace wg
 		BlendMode			m_blendMode = BlendMode::Blend;
 		BlendMode			m_backBlendMode = BlendMode::Blend;
 
-		pts					m_size[State::IndexAmount];
-		HiColor				m_color[State::IndexAmount];
-		HiColor				m_backColor[State::IndexAmount];
-		TextDecoration		m_decoration[State::IndexAmount];
+		pts					m_size[State::NbStates];
+		HiColor				m_color[State::NbStates];
+		HiColor				m_backColor[State::NbStates];
+		TextDecoration		m_decoration[State::NbStates];
 
 		Bitmask<uint32_t>	m_sizeSetMask = 0;
 		Bitmask<uint32_t>	m_colorSetMask = 0;
