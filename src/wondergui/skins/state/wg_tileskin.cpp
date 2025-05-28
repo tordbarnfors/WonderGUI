@@ -201,17 +201,17 @@ namespace wg
 	{
 		if (m_blendMode == BlendMode::Replace)
 		{
-			for (int i = 0; i < State::IndexAmount; i++)
+			for (int i = 0; i < State::NbStates; i++)
 				m_bStateOpaque[i] = true;
 		}
 		else if ((!m_gradient.isUndefined() && !m_gradient.isOpaque()) || m_blendMode != BlendMode::Blend )
 		{
-			for (int i = 0; i < State::IndexAmount; i++)
+			for (int i = 0; i < State::NbStates; i++)
 				m_bStateOpaque[i] = false;
 		}
 		else
 		{
-			for (int i = 0; i < State::IndexAmount; i++)
+			for (int i = 0; i < State::NbStates; i++)
 				m_bStateOpaque[i] = (m_stateSurfaces[i]->isOpaque() && m_stateColors[i].a == 4096);
 		}
 	}
@@ -220,7 +220,7 @@ namespace wg
 
 	void TileSkin::_updateUnsetStateSurfaces()
 	{
-		for (int i = 0; i < State::IndexAmount; i++)
+		for (int i = 0; i < State::NbStates; i++)
 		{
 			if (!m_stateSurfaceMask.bit(i))
 			{
@@ -234,7 +234,7 @@ namespace wg
 
 	void TileSkin::_updateUnsetStateColors()
 	{
-		for (int i = 0; i < State::IndexAmount; i++)
+		for (int i = 0; i < State::NbStates; i++)
 		{
 			if (!m_stateColorMask.bit(i))
 			{

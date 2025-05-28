@@ -204,9 +204,9 @@ namespace wg
 		Bitmask<uint32_t>	m_stateBlockMask = 1;
 		Bitmask<uint32_t>	m_stateColorMask = 1;
 
-		Coord		m_stateBlocks[State::IndexAmount];
-		HiColor		m_stateColors[State::IndexAmount];
-		bool		m_bStateOpaque[State::IndexAmount];
+		Coord		m_stateBlocks[State::NbStates];
+		HiColor		m_stateColors[State::NbStates];
+		bool		m_bStateOpaque[State::NbStates];
 	};
 
 

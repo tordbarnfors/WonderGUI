@@ -172,7 +172,7 @@ namespace wg
 	{
 		m_pSurface = nullptr;
 
-		for (int i = 0; i < State::IndexAmount; i++)
+		for (int i = 0; i < State::NbStates; i++)
 		{
 			m_bStateOpaque[i] = false;
 			m_stateColors[i] = HiColor::Undefined;
@@ -186,7 +186,7 @@ namespace wg
 		m_ninePatch.frame	= frame;
 		bool bOpaque		= pSurface->isOpaque();
 
-		for( int i = 0 ; i < State::IndexAmount ; i++ )
+		for( int i = 0 ; i < State::NbStates ; i++ )
 		{
 			m_bStateOpaque[i] = bOpaque;
 			m_stateBlocks[i] = block.pos();
@@ -646,12 +646,12 @@ namespace wg
 
 		if (bTintDecides)
 		{
-			for (int i = 0; i < State::IndexAmount; i++)
+			for (int i = 0; i < State::NbStates; i++)
 				m_bStateOpaque[i] = m_stateColors[i].a == 4096;
 		}
 		else
 		{
-			for (int i = 0; i < State::IndexAmount; i++)
+			for (int i = 0; i < State::NbStates; i++)
 				m_bStateOpaque[i] = bOpaque;
 		}
 	}
@@ -660,7 +660,7 @@ namespace wg
 
 	void BlockSkin::_updateUnsetStateBlocks()
 	{
-		for (int i = 0; i < State::IndexAmount; i++)
+		for (int i = 0; i < State::NbStates; i++)
 		{
 			if (!m_stateBlockMask.bit(i))
 			{
@@ -674,7 +674,7 @@ namespace wg
 
 	void BlockSkin::_updateUnsetStateColors()
 	{
-		for (int i = 0; i < State::IndexAmount; i++)
+		for (int i = 0; i < State::NbStates; i++)
 		{
 			if (!m_stateColorMask.bit(i))
 			{

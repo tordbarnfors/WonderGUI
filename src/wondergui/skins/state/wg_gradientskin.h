@@ -108,7 +108,7 @@ namespace wg
 
 		void	_updateUnsetGradients(Bitmask<uint32_t> stateMask);
 
-		Gradient	m_gradient[State::IndexAmount];
+		Gradient	m_gradient[State::NbStates];
 		BlendMode	m_blendMode;
 		bool		m_bOpaque;
 

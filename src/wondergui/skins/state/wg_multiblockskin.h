@@ -94,8 +94,8 @@ namespace wg
 			Bitmask<uint32_t>   stateBlockMask = 0;
 			Bitmask<uint32_t>   stateColorMask = 1;         // Normal state always exist for colors and is by default white.
 
-			Coord				blockOfs[State::IndexAmount];		// Block for each state
-			HiColor				tintColor[State::IndexAmount];
+			Coord				blockOfs[State::NbStates];		// Block for each state
+			HiColor				tintColor[State::NbStates];
 	//		Placement			placementOrigo;
 	//		CoordI			placementOfs;
 	//		SizeI			dimensions;                   // Stored in pixels
@@ -113,7 +113,7 @@ namespace wg
 
 		std::vector<LayerData>	m_layers;
 
-		bool			m_bStateOpaque[State::IndexAmount];
+		bool			m_bStateOpaque[State::NbStates];
 
 	};
 

@@ -24,30 +24,13 @@
 
 namespace wg
 {
-	const int State::s_bitmaskToIndex[MaxValue + 1] = {	0, 1, 0, 0, 2, 3, 4, 5, 6, 7, 0, 0, 8, 9, 10, 11,
-															12, 13, 0, 0, 0, 0, 0, 0, 14, 15, 0, 0, 0, 0, 0, 0,
-															16, 0, 0, 0, 0, 0, 0, 0, 17 };
-
-	const uint8_t State::s_indexToBitmask[IndexAmount] = { 0, 1, 4, 4 + 1, 4 + 2, 4 + 2 + 1, 8, 8 + 1, 8 + 4, 8 + 4 + 1, 8 + 4 + 2,
-															  8 + 4 + 2 + 1, 16, 16 + 1, 16 + 8, 16 + 8 + 1, 32, 32 + 8 };
-
-
-	const State State::Default					= State(0);
-	const State State::Focused					= State(1);
-	const State State::Hovered					= State(2);
-	const State State::HoveredFocused			= State(3);
-	const State State::Pressed					= State(4);
-	const State State::PressedFocused			= State(5);
-	const State State::Selected					= State(6);
-	const State State::SelectedFocused			= State(7);
-	const State State::SelectedHovered			= State(8);
-	const State State::SelectedHoveredFocused	= State(9);
-	const State State::SelectedPressed			= State(10);
-	const State State::SelectedPressedFocused	= State(11);
-	const State State::Targeted					= State(12);
-	const State State::TargetedFocused			= State(13);
-	const State State::TargetedSelected			= State(14);
-	const State State::TargetedSelectedFocused	= State(15);
-	const State State::Disabled					= State(16);
-	const State State::DisabledSelected			= State(17);
+	const State State::Default = State(StateEnum::Default);
+	const State State::Focused = State(StateEnum::Focused);
+	const State State::Hovered = State(StateEnum::Hovered);
+	const State State::Pressed = State(StateEnum::Pressed);
+	const State State::Targeted = State(StateEnum::Targeted);
+	const State State::Selected = State(StateEnum::Selected);
+	const State State::Checked = State(StateEnum::Checked);
+	const State State::Flagged = State(StateEnum::Flagged);
+	const State State::Disabled = State(StateEnum::Disabled);
 }

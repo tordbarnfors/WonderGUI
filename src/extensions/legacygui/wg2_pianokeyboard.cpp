@@ -168,7 +168,7 @@ void WgPianoKeyboard::setSurfaces(const wg::Surface_p& pOddWhiteKeys, const wg::
 		m_stateOfsY[i] = ofs++;
 	}
 
-	for (int i = 0; i < wg::State::IndexAmount; i++)
+	for (int i = 0; i < wg::State::NbStates; i++)
 	{
 		if (!stateMask.bit(i))
 		{

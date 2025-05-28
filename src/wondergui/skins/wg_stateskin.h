@@ -75,7 +75,7 @@ namespace wg
 
 		void			_updateContentShift();
 
-        Coord				m_contentShift[State::IndexAmount];
+        Coord				m_contentShift[State::NbStates];
 		Bitmask<uint32_t>	m_contentShiftStateMask = 1;		// Bitfield with one bit set for each stateIndex that has been explicitly set.
 	};
 

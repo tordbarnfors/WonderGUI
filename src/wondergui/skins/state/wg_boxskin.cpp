@@ -242,7 +242,7 @@ namespace wg
 
 	void BoxSkin::_updateUnsetColors()
 	{
-		for (int i = 0; i < State::IndexAmount; i++)
+		for (int i = 0; i < State::NbStates; i++)
 		{
 			if (!m_stateColorMask.bit(i))
 			{

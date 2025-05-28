@@ -182,7 +182,7 @@ namespace wg
 
 	const int* Skin::_transitionTimes() const
 	{
-		const static int	transitionTimes[StateBits_Nb] = { 0,0,0,0,0,0 };
+		const static int	transitionTimes[BaseState_Nb] = { 0,0,0,0,0,0,0,0 };
 
 		return transitionTimes;
 	}

@@ -123,8 +123,8 @@ namespace wg
 		Bitmask<uint32_t>	m_stateColorMask = 1;
 		Bitmask<uint32_t>	m_stateOutlineColorMask = 1;
 
-		HiColor		m_fillColor[State::IndexAmount];
-		HiColor		m_outlineColor[State::IndexAmount];
+		HiColor		m_fillColor[State::NbStates];
+		HiColor		m_outlineColor[State::NbStates];
 	};
 
 

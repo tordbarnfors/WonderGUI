@@ -86,7 +86,7 @@ namespace wg
 			// Check if this state change starts any new transition
 
 			bool bStartTransition = false;
-			for (int stateIndex = 0; stateIndex < StateBits_Nb; stateIndex++)
+			for (int stateIndex = 0; stateIndex < BaseState_Nb; stateIndex++)
 			{
 				if (changedStatesMask.bit(stateIndex) && pTransitionTimes[stateIndex] != 0)
 				{
@@ -108,7 +108,7 @@ namespace wg
 
 				// Step through statebits and update transition progress
 
-				for (int i = 0; i < StateBits_Nb; i++)
+				for (int i = 0; i < BaseState_Nb; i++)
 				{
 					if (changedStatesMask.bit(i))
 					{
@@ -200,7 +200,7 @@ namespace wg
 		float* pOldStateFractions = nullptr;
 		float* pNewStateFractions = nullptr;
 
-		float oldFractionalState[StateBits_Nb];
+		float oldFractionalState[BaseState_Nb];
 
 		// Update possible state transition
 
@@ -208,7 +208,7 @@ namespace wg
 		{
 			auto pTransitionTimes = m_pSkin->_transitionTimes();
 
-			for (int i = 0; i < StateBits_Nb; i++)
+			for (int i = 0; i < BaseState_Nb; i++)
 			{
 				oldFractionalState[i] = pPocket->fractionalState[i];
 
@@ -290,7 +290,7 @@ namespace wg
 		pPocket->transitionFrom = statemask;
 		pPocket->transitionTo = statemask;
 
-		for (int i = 0; i < StateBits_Nb; i++)
+		for (int i = 0; i < BaseState_Nb; i++)
 			pPocket->fractionalState[i] = statemask.bit(i) ? 1.f : 0.f;
 
 		pPocket->bAnimated = false;

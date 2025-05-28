@@ -177,7 +177,7 @@ namespace wg
 
 	void GradientSkin::_updateUnsetGradients(Bitmask<uint32_t> stateMask)
 	{
-		for (int i = 0; i < State::IndexAmount; i++)
+		for (int i = 0; i < State::NbStates; i++)
 		{
 			if (!stateMask.bit(i))
 			{

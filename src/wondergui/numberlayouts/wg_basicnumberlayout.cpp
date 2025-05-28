@@ -103,9 +103,9 @@ namespace wg
 		if (!blueprint.suffixNegative.isEmpty())
 			_addStylesFromString(styles, blueprint.suffixNegative);
 
-		for (int state1 = 0; state1 < State::IndexAmount; state1++)
+		for (int state1 = 0; state1 < State::NbStates; state1++)
 		{
-			for (int state2 = 0; state2 < State::IndexAmount; state2++)
+			for (int state2 = 0; state2 < State::NbStates; state2++)
 			{
 				State one = state1;
 				State two = state2;

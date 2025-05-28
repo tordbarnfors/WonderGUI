@@ -98,7 +98,7 @@ namespace wg
 
 		Blueprint	m_blueprint;
 
-		bool		m_bStatesIdentical[State::IndexAmount][State::IndexAmount];
+		bool		m_bStatesIdentical[State::NbStates][State::NbStates];
 		bool		m_bHadNegativePrefix = false;
 	};
 

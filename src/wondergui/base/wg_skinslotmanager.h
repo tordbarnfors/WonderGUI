@@ -49,7 +49,7 @@ namespace wg
 
 		Bitmask<uint8_t>	transitionFrom;	// Bitmask representation of state we transition from.
 		Bitmask<uint8_t>	transitionTo;	// Bitmask representation of state we transition to.
-		float				fractionalState[StateBits_Nb];
+		float				fractionalState[BaseState_Nb];
 		void* instance = 0;
 	};
 

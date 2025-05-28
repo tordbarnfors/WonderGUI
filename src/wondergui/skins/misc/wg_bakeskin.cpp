@@ -367,7 +367,7 @@ namespace wg
 
 			BorderSPX padding = align(ptsToSpx(m_padding,scale));
 
-			for (int index = 0; index < State::IndexAmount; index++)
+			for (int index = 0; index < State::NbStates; index++)
 				m_cachedContentPadding[index] = padding;
 		}
 		else
@@ -378,14 +378,14 @@ namespace wg
 
 				if (m_bContentShifting)
 				{
-					for (int index = 0; index < State::IndexAmount; index++)
+					for (int index = 0; index < State::NbStates; index++)
 						m_cachedContentPadding[index] = _stateContentBorder(scale,State(index));
 				}
 				else
 				{
 					BorderSPX padding = _stateContentBorder(scale,State::Default);
 
-					for (int index = 0; index < State::IndexAmount; index++)
+					for (int index = 0; index < State::NbStates; index++)
 						m_cachedContentPadding[index] = padding;
 				}
 			}
@@ -397,7 +397,7 @@ namespace wg
 
 				for (auto& pSkin : m_skins)
 				{
-					for (int index = 0; index < State::IndexAmount; index++)
+					for (int index = 0; index < State::NbStates; index++)
 						m_cachedContentPadding[index] = pSkin->_contentBorder(scale,State(index));
 				}
 			}
@@ -440,7 +440,7 @@ namespace wg
 
 		// Update transition data
 
-		for (int i = 0; i < StateBits_Nb; i++)
+		for (int i = 0; i < BaseState_Nb; i++)
 			m_transitionTimes[i] = 0;
 
 		m_transitioningStates = 0;
@@ -450,7 +450,7 @@ namespace wg
 			m_transitioningStates |= pSkin->_transitioningStates();
 			auto p = pSkin->_transitionTimes();
 
-			for (int i = 0; i < StateBits_Nb; i++)
+			for (int i = 0; i < BaseState_Nb; i++)
 			{
 				if( p[i] > m_transitionTimes[i] )
 					m_transitionTimes[i] = p[i];
@@ -459,7 +459,7 @@ namespace wg
 
 		// Update animation lengths
 
-		for (int index = 0; index < State::IndexAmount; index++)
+		for (int index = 0; index < State::NbStates; index++)
 		{
 			State state = State(index);
 
