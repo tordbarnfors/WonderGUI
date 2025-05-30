@@ -308,7 +308,7 @@ namespace wg
 			if (stateSetMask.bit(i))
 			{
 				StateBP bps;
-				bps.state = State(i);
+				bps.state = State((StateEnum) i);
 				if (m_sizeSetMask.bit(i))
 					bps.data.size = m_size[i];
 				if (m_colorSetMask.bit(i))

@@ -85,7 +85,7 @@ namespace wg
 
 			Direction		slideDirection = Direction::Right;
 			int				slideDuration = 250;
-			BaseState		slideState = BaseState::Selected;
+			PrimState		slideState = PrimState::Selected;
 
 			Border			spacing;
 			std::vector<StateBP> states;
@@ -139,7 +139,7 @@ namespace wg
 		Size		m_blockSize;
 		pts			m_slideDistance = 0;
 		int			m_slideDuration = 250;						// Millisec
-		BaseState	m_slideState = BaseState::Selected;
+		PrimState	m_slideState = PrimState::Selected;
 
 		Gradient	m_gradient;
 
@@ -152,7 +152,7 @@ namespace wg
 		HiColor		m_stateColors[State::NbStates];
 		bool		m_bStateOpaque[State::NbStates];
 
-		int			m_transitionTimes[BaseState_Nb] = { 0,0,0,0,0,0,0,0 };
+		int			m_transitionTimes[PrimState_Nb] = { 0,0,0,0,0,0,0,0 };
 	};
 
 
