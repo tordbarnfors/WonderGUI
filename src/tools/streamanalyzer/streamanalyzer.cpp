@@ -794,7 +794,7 @@ bool MyApp::_loadSkins(Visitor * pVisitor)
 		_.axis = Axis::X,
 		_.frame = 4,
 		_.padding = 4,
-		_.states = { State::Default, State::Hovered, State::Selected, State::SelectedHovered, State::Disabled }
+		_.states = { State::Default, State::Hovered, State::Selected, State::Selected + State::Hovered, State::Disabled }
 	));
 
 	m_pCheckBoxSkin = BlockSkin::create(WGBP(BlockSkin,

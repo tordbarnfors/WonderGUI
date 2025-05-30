@@ -72,21 +72,21 @@ namespace wg
 
 	void SkinSlotMI::_stateChanged(SkinSlotPocket*& pPocket, void* instance, State newState, State oldState)
 	{
-		if (!m_pSkin || newState == oldState || m_pSkin->_ignoresState() )
+		if (!m_pSkin || newState == oldState || m_pSkin->_ignoresState())
 			return;
 
 		// Update transitions based on state change.
 
-		Bitmask<uint8_t> changedStatesMask = newState.bitmask() ^ oldState.bitmask();
+		Bitmask<uint8_t> changedStatesMask = newState.primStates() ^ oldState.primStates();
 
-		if (m_pSkin->_transitioningStates() & changedStatesMask )
+		if (m_pSkin->_transitioningStates() & changedStatesMask)
 		{
 			auto pTransitionTimes = m_pSkin->_transitionTimes();
 
 			// Check if this state change starts any new transition
 
 			bool bStartTransition = false;
-			for (int stateIndex = 0; stateIndex < BaseState_Nb; stateIndex++)
+			for (int stateIndex = 0; stateIndex < PrimState_Nb; stateIndex++)
 			{
 				if (changedStatesMask.bit(stateIndex) && pTransitionTimes[stateIndex] != 0)
 				{
@@ -104,11 +104,11 @@ namespace wg
 				if (!pPocket)
 					_initPocket(pPocket, instance, oldState);
 
-				pPocket->transitionTo = newState.bitmask();
+				pPocket->transitionTo = newState.primStates();
 
 				// Step through statebits and update transition progress
 
-				for (int i = 0; i < BaseState_Nb; i++)
+				for (int i = 0; i < PrimState_Nb; i++)
 				{
 					if (changedStatesMask.bit(i))
 					{
@@ -133,7 +133,7 @@ namespace wg
 			// Release pocket if there is no transition nor animation.
 
 			if (pPocket && pPocket->transitionFrom == pPocket->transitionTo)
-			{	
+			{
 				_releasePocket(pPocket);
 				pPocket = nullptr;
 			}
@@ -142,10 +142,10 @@ namespace wg
 
 		// Check if we need to update skin right away due to state change.
 
-		RectSPX	canvas		= m_pHolder->_skinInstanceSize(pPocket->instance);
-		float	value1		= m_pHolder->_skinInstanceValue(pPocket->instance);
-		float	value2		= m_pHolder->_skinInstanceValue2(pPocket->instance);
-		int		scale		= m_pHolder->_scale();
+		RectSPX	canvas = m_pHolder->_skinInstanceSize(pPocket->instance);
+		float	value1 = m_pHolder->_skinInstanceValue(pPocket->instance);
+		float	value2 = m_pHolder->_skinInstanceValue2(pPocket->instance);
+		int		scale = m_pHolder->_scale();
 
 		int		animPos = pPocket ? pPocket->animationCounter : 0;
 		float* pStateFractions = pPocket ? pPocket->fractionalState : nullptr;
@@ -168,7 +168,7 @@ namespace wg
 		int		scale = m_pHolder->_scale();
 
 		int		animPos = pPocket ? pPocket->animationCounter : 0;
-		float*	pStateFractions = pPocket ? pPocket->fractionalState : nullptr;
+		float* pStateFractions = pPocket ? pPocket->fractionalState : nullptr;
 
 		RectSPX dirtyRect = m_pSkin->_dirtyRect(canvas, scale, state, state, newValue, oldValue, newValue2, oldValue2, animPos, animPos, pStateFractions, pStateFractions);
 		if (!dirtyRect.isEmpty())
@@ -200,7 +200,7 @@ namespace wg
 		float* pOldStateFractions = nullptr;
 		float* pNewStateFractions = nullptr;
 
-		float oldFractionalState[BaseState_Nb];
+		float oldFractionalState[PrimState_Nb];
 
 		// Update possible state transition
 
@@ -208,11 +208,11 @@ namespace wg
 		{
 			auto pTransitionTimes = m_pSkin->_transitionTimes();
 
-			for (int i = 0; i < BaseState_Nb; i++)
+			for (int i = 0; i < PrimState_Nb; i++)
 			{
 				oldFractionalState[i] = pPocket->fractionalState[i];
 
-				if (pPocket->transitionFrom.bit(i) != pPocket->transitionTo.bit(i) )
+				if (pPocket->transitionFrom.bit(i) != pPocket->transitionTo.bit(i))
 				{
 					if (pPocket->transitionTo.bit(i))
 					{
@@ -277,7 +277,7 @@ namespace wg
 
 	//____ _initPocket() ______________________________________________________
 
-	void SkinSlotMI::_initPocket(SkinSlotPocket*& pPocket, void * instance, State state)
+	void SkinSlotMI::_initPocket(SkinSlotPocket*& pPocket, void* instance, State state)
 	{
 		if (!pPocket)
 		{
@@ -285,12 +285,12 @@ namespace wg
 			pPocket->pHolder = this;
 		}
 
-		Bitmask<uint8_t> statemask = state.bitmask();
+		Bitmask<uint8_t> statemask = state.primStates();
 
 		pPocket->transitionFrom = statemask;
 		pPocket->transitionTo = statemask;
 
-		for (int i = 0; i < BaseState_Nb; i++)
+		for (int i = 0; i < PrimState_Nb; i++)
 			pPocket->fractionalState[i] = statemask.bit(i) ? 1.f : 0.f;
 
 		pPocket->bAnimated = false;

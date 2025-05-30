@@ -379,7 +379,7 @@ namespace wg
 				if (m_bContentShifting)
 				{
 					for (int index = 0; index < State::NbStates; index++)
-						m_cachedContentPadding[index] = _stateContentBorder(scale,State(index));
+						m_cachedContentPadding[index] = _stateContentBorder(scale,State(StateEnum(index)));
 				}
 				else
 				{
@@ -398,7 +398,7 @@ namespace wg
 				for (auto& pSkin : m_skins)
 				{
 					for (int index = 0; index < State::NbStates; index++)
-						m_cachedContentPadding[index] = pSkin->_contentBorder(scale,State(index));
+						m_cachedContentPadding[index] = pSkin->_contentBorder(scale,State((StateEnum)index));
 				}
 			}
 		}
@@ -440,7 +440,7 @@ namespace wg
 
 		// Update transition data
 
-		for (int i = 0; i < BaseState_Nb; i++)
+		for (int i = 0; i < PrimState_Nb; i++)
 			m_transitionTimes[i] = 0;
 
 		m_transitioningStates = 0;
@@ -450,7 +450,7 @@ namespace wg
 			m_transitioningStates |= pSkin->_transitioningStates();
 			auto p = pSkin->_transitionTimes();
 
-			for (int i = 0; i < BaseState_Nb; i++)
+			for (int i = 0; i < PrimState_Nb; i++)
 			{
 				if( p[i] > m_transitionTimes[i] )
 					m_transitionTimes[i] = p[i];
@@ -461,7 +461,7 @@ namespace wg
 
 		for (int index = 0; index < State::NbStates; index++)
 		{
-			State state = State(index);
+			State state = State( (StateEnum) index);
 
 			int		combinedLength = 0;
 

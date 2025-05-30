@@ -30,25 +30,36 @@
 
 namespace wg
 {
-	static const int	BaseState_Nb = 8;
-	static const int	BaseState_MaxValue = 7;
+	static const int	PrimState_Nb = 8;
+	static const int	PrimState_MaxValue = 7;
 
 	typedef unsigned int	RouteId;
 
 	typedef uint16_t		TextStyle_h;
 
-	//___ BaseState ____________________________________________________
+	//___ PrimState ____________________________________________________
 
-	enum class BaseState
-	{
-		Flagged = 0,
-		Selected = 1,
-		Checked = 2,
-		Focused = 3,
-		Hovered = 4,
-		Pressed = 5,
-		Disabled = 6,
-		Targeted = 7
+	// These are the primitive or primary states that are the building 
+	// blocks of the 72 allowed States. 
+	// 
+	// These are used in the API where a specific (non-default) PrimState 
+	// needs to be specified. They are also used internally when a State
+	// needs to be broken up into its components for certain calculations.
+	//
+	// They are numbered in order of priority, where a higher PrimState
+	// trumps a lower one where only one can be chosen.
+
+
+	enum class PrimState
+	{					
+		Focused = 0,
+		Hovered = 1,
+		Pressed = 2,
+		Selected = 3,
+		Checked = 4,
+		Flagged = 5,
+		Targeted = 6,
+		Disabled = 7
 	};
 
 	//___ StateEnum ____________________________________________________

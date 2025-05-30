@@ -107,8 +107,8 @@ namespace wg
 		{
 			for (int state2 = 0; state2 < State::NbStates; state2++)
 			{
-				State one = state1;
-				State two = state2;
+				State one = (StateEnum) state1;
+				State two = (StateEnum) state2;
 
 				m_bStatesIdentical[state1][state2] = true;
 

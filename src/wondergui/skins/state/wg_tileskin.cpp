@@ -25,13 +25,17 @@
 #include <wg_geo.h>
 #include <wg_util.h>
 #include <wg_skin.impl.h>
+#include <wg_stateskin.impl.h>
 
 namespace wg
 {
 
 	using namespace Util;
 
-	const TypeInfo TileSkin::TYPEINFO = { "TileSkin", &StateSkin::TYPEINFO };
+	template class StateSkin<_TileSkinStateData>;
+
+
+	const TypeInfo TileSkin::TYPEINFO = { "TileSkin", &StateSkin<_TileSkinStateData>::TYPEINFO };
 
 	//____ create() _______________________________________________________________
 
@@ -117,14 +121,16 @@ namespace wg
 	{
 		int idx = state;
 
-		Surface * pSurf = m_stateSurfaces[idx];
+		const _TileSkinStateData* pStateData = &m_stateData[m_stateToIndexTab[state]];
+
+		Surface * pSurf = pStateData->surface;
 
 		if( !pSurf )
 			return;
 
 		RectSPX canvas = _canvas - align(ptsToSpx(m_spacing, scale)) + align(ptsToSpx(m_overflow, scale));
 
-		RenderSettingsWithGradient settings(pDevice, m_layer, m_blendMode, m_stateColors[idx], canvas, m_gradient);
+		RenderSettingsWithGradient settings(pDevice, m_layer, m_blendMode, pStateData->color, canvas, m_gradient);
 
 		pDevice->setBlitSource(pSurf);
 		pDevice->scaleTile(canvas,scale/64.f);
@@ -137,7 +143,7 @@ namespace wg
 		SizeSPX content = align(ptsToSpx(m_padding,scale));
 		SizeSPX surface;
 
-		Surface * pSurface = m_stateSurfaces[0];
+		Surface * pSurface = m_stateData[0].surface;
 		if (pSurface)
 			surface = align(ptsToSpx(pSurface->pointSize(),scale));
 
@@ -150,7 +156,7 @@ namespace wg
 	{
 		//TODO: Take gradient and tintColor into account.
 
-		Surface * pSurf = m_stateSurfaces[state];
+		Surface * pSurf = m_stateData[0].surface;
 
 		int alpha = alphaOverride == -1 ? m_markAlpha : alphaOverride;
 
@@ -178,7 +184,7 @@ namespace wg
 
 		RectSPX canvas = _canvas - align(ptsToSpx(m_spacing, scale)) + align(ptsToSpx(m_overflow, scale));
 
-		if(m_stateSurfaces[i1] != m_stateSurfaces[i2])
+		if(m_stateData[m_stateToIndexTab[i1]].surface != m_stateData[m_stateToIndexTab[i2]].surface)
 			return canvas;
 		
 		return StateSkin::_dirtyRect(canvas, scale, newState, oldState, newValue, oldValue, newValue2, oldValue2, 
@@ -189,7 +195,7 @@ namespace wg
 
 	RectSPX TileSkin::_coverage(const RectSPX& geo, int scale, State state) const
 	{
-		if( m_bStateOpaque[state] )
+		if (m_stateData[m_stateToIndexTab[state]].m_bOpaque)
 			return geo - align(ptsToSpx(m_spacing,scale)) + align(ptsToSpx(m_overflow,scale));
 		else
 			return RectSPX();
@@ -201,18 +207,18 @@ namespace wg
 	{
 		if (m_blendMode == BlendMode::Replace)
 		{
-			for (int i = 0; i < State::NbStates; i++)
-				m_bStateOpaque[i] = true;
+			for ( auto& stateData : m_stateData)
+				stateData.m_bOpaque = true;
 		}
 		else if ((!m_gradient.isUndefined() && !m_gradient.isOpaque()) || m_blendMode != BlendMode::Blend )
 		{
-			for (int i = 0; i < State::NbStates; i++)
-				m_bStateOpaque[i] = false;
+			for (auto& stateData : m_stateData)
+				stateData.m_bOpaque = false;
 		}
 		else
 		{
-			for (int i = 0; i < State::NbStates; i++)
-				m_bStateOpaque[i] = (m_stateSurfaces[i]->isOpaque() && m_stateColors[i].a == 4096);
+			for (auto& stateData : m_stateData)
+				stateData.m_bOpaque = (stateData.surface->isOpaque() && stateData.color.a == 4096);
 		}
 	}
 

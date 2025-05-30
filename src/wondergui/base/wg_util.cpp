@@ -289,35 +289,6 @@ namespace wg
 		return defaultSize;
 	}
 
-	//____ bestStateIndexMatch() ___________________________________________________
-
-	int Util::bestStateIndexMatch(int wantedStateIndex, Bitmask<uint32_t> availableStateIndices)
-	{
-		static uint32_t mask[State::NbStates] = {	1,
-											2+1,
-											4+1,
-											8 + 4 + 2 + 1,
-											16 + 4 + 1,
-											32 + 16 + 8 + 4 + 2 + 1,
-											64 + 1,
-											128 + 64 + 2 + 1,
-											256 + 64 + 4 + 1,
-											512 + 256 + 128 + 64 + 8 + 4 + 2 + 1,
-											1024 + 256 + 64 + 16 + 4 + 1,
-											2048 + 1024 + 512 + 256 + 128 + 64 + 32 + 16 + 8 + 4 + 2 + 1,
-											4096 + 4 + 1,
-											8192 + 4096 + 8 + 4 + 2 + 1,
-											16384 + 4096 + 256 + 64 + 4 + 1,
-											32768 + 16384 + 8192 + 4096 + 512 + 256 + 128 + 64 + 8 + 4 + 2 + 1,
-											65536 + 1,
-											65536*2 + 65536 + 64 + 1
-										};
-
-		int candidates = uint32_t(availableStateIndices) & mask[wantedStateIndex];
-
-		return mostSignificantBit(candidates);
-	}
-
 	//____ Checksum8::add() ________________________________________________________
 
 	void Util::Checksum8::add( const void * pData, uint32_t nBytes )
@@ -329,7 +300,6 @@ namespace wg
 
 		remainder = x;
 	}
-
 
 	//____ placementToOfs() ________________________________________________________
 

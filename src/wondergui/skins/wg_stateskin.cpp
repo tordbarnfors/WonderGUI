@@ -21,7 +21,6 @@
 =========================================================================*/
 
 #include <wg_stateskin.h>
-#include <wg_util.h>
 
 namespace wg
 {
@@ -38,78 +37,19 @@ namespace wg
 		return TYPEINFO;
 	}
 
-	//____ clearContentShift() ________________________________________________
-
-	void StateSkin::clearContentShift()
-	{
-		m_contentShiftStateMask = 1;			// Mode normal is set by default
-
-		for( int i = 0 ; i < State::NbStates ; i++ )
-			m_contentShift[i] = { 0,0 };
-
-		m_bContentShifting = false;
-	}
-
-	//____ setContentShift() ______________________________________________________
-
-	void StateSkin::setContentShift(State state, Coord shift)
-	{
-		int index = state;
-		m_contentShift[index] = shift;
-		m_contentShiftStateMask.setBit(index);
-
-		m_bContentShifting = true;				// Making it easy for us, just assume something will be shifting when this method is called.
-
-		_updateContentShift();
-	}
-
-	//____ setContentShift() _____________________________________________________
-
-	void StateSkin::setContentShift(std::initializer_list< std::pair<State, Coord> > stateShifts)
-	{
-		for (auto& shift : stateShifts)
-		{
-			int index = shift.first;
-			m_contentShift[index] = shift.second;
-			m_contentShiftStateMask.setBit(index);
-		}
-
-		m_bContentShifting = true;				// Making it easy for us, just assume something will be shifting when this method is called.
-
-		_updateContentShift();
-	}
-
 	//____ contentShift() ________________________________________________
 
 	Coord StateSkin::contentShift(State state) const
 	{
-		int index = state;
-		if (m_contentShiftStateMask.bit(index))
-			return m_contentShift[index];
-
-		return Coord();
+		return m_stateData[m_stateToIndexTab[state]].contentShift;
 	}
-
-	//____ _padding() _______________________________________________________
-/*
-	BorderSPX StateSkin::_padding(int scale, State state) const
-	{
-		BorderSPX b = align(ptsToSpx(m_padding,scale));
-		CoordSPX ofs = align(ptsToSpx(m_contentShift[state], scale));
-
-		b.left += ofs.x;
-		b.top += ofs.y;
-
-		return b;
-	}
-*/
 
 	//____ _contentBorder() _______________________________________________________
 
 	BorderSPX StateSkin::_contentBorder(int scale, State state) const
 	{
 		BorderSPX b = align(ptsToSpx(m_spacing, scale)) + align(ptsToSpx(m_padding, scale));
-		CoordSPX ofs = align(ptsToSpx(m_contentShift[state], scale));
+		CoordSPX ofs = align(ptsToSpx(m_stateData[m_stateToIndexTab[state]].contentShift, scale));
 
 		b.left += ofs.x;
 		b.top += ofs.y;
@@ -122,7 +62,7 @@ namespace wg
 
 	RectSPX StateSkin::_contentRect( const RectSPX& canvas, int scale, State state ) const
 	{
-		return canvas - align(ptsToSpx(m_spacing, scale)) - align(ptsToSpx(m_padding,scale)) + align(ptsToSpx(m_contentShift[state],scale));
+		return canvas - align(ptsToSpx(m_spacing, scale)) - align(ptsToSpx(m_padding,scale)) + align(ptsToSpx(m_stateData[m_stateToIndexTab[state]].contentShift,scale));
 	}
 
 	//____ _contentofs() __________________________________________________________
@@ -131,7 +71,7 @@ namespace wg
 	{
 		return align(ptsToSpx(Coord(m_spacing.left, m_spacing.top), scale)) +
 			   align(ptsToSpx(Coord(m_padding.left, m_padding.top), scale)) + 
-			   align(ptsToSpx(m_contentShift[state], scale));
+			   align(ptsToSpx(m_stateData[m_stateToIndexTab[state]].contentShift, scale));
 	}
 
 	//____ _dirtyRect() ______________________________________________________
@@ -140,24 +80,120 @@ namespace wg
 		float newValue2, float oldValue2, int newAnimPos, int oldAnimPos,
 		float* pNewStateFractions, float* pOldStateFractions) const
 	{
-		if (m_contentShift[newState] == m_contentShift[oldState])
+		if (m_stateData[m_stateToIndexTab[newState]].contentShift == m_stateData[m_stateToIndexTab[oldState]].contentShift)
 			return RectSPX();
 		else
 			return canvas - align(ptsToSpx(m_spacing, scale)) + align(ptsToSpx(m_overflow, scale));
 	}
 
-	//____ _updateContentShift() _________________________________________________
+	//____ _bytesNeededForContentShiftData() __________________________________
 
-	void StateSkin::_updateContentShift()
+	int StateSkin::_bytesNeededForContentShiftData(int nbStates, State* pStates)
+	{
+
+	}
+
+	//____ _generateContentShiftData() ________________________________________
+
+	void StateSkin::_generateContentShiftData(void* pDest, int nbStates, State* pStates)
+	{
+
+		uint8_t	usedBits = 0;
+		for (int i = 0; i < nbStates; i++)
+			usedBits |= pStates->index();
+
+		int indexTableSize = 72;
+
+		int indexMask = 0x7F;
+		int indexShift = 0;
+
+		if (usedBits == 0)
+		{
+			indexMask = 0;
+			indexTableSize = 1;			// We always lookup default.
+		}
+		else
+		{
+			if ((usedBits & int(StateEnum::Disabled)) == 0)
+			{
+				indexMask = 0x3F;
+				indexTableSize = 64;
+				if ((usedBits & (int(StateEnum::Hovered) | int(StateEnum::Pressed))) == 0)
+				{ 
+					indexMask = 0xF;
+					indexTableSize = 16; 
+					if ((usedBits & int(StateEnum::Focused) == 0))
+					{
+						indexMask = 0x7;
+						indexTableSize = 8;
+						if ((usedBits & int(StateEnum::Checked) == 0))
+						{
+							indexMask = 0x3;
+							indexTableSize = 4;
+							if ((usedBits & int(StateEnum::Selected) == 0))
+							{
+								indexMask = 0x1;
+								indexTableSize = 2;
+							}
+						}
+					}
+				}
+			}
+
+			if ((usedBits & int(StateEnum::Flagged)) == 0)
+			{
+				indexShift++;
+				indexTableSize /= 2;
+
+				if ((usedBits & int(StateEnum::Selected)) == 0)
+				{
+					indexShift++;
+					indexTableSize /= 2;
+
+					if ((usedBits & int(StateEnum::Checked)) == 0)
+					{
+						indexShift++;
+						indexTableSize /= 2;
+
+						if ((usedBits & int(StateEnum::Focused)) == 0)
+						{
+							indexShift++;
+							indexTableSize /= 2;
+
+							if ((usedBits & (int(StateEnum::Hovered) | int(StateEnum::Pressed))) == 0)
+							{
+								indexShift += 2;
+								indexTableSize /= 4;
+							}
+						}
+					}
+				}
+			}
+
+
+
+		}
+
+
+
+
+	}
+
+
+
+
+	//____ _generateStateToIndexTab() _________________________________________
+
+	void StateSkin::_generateStateToIndexTab(int nbStates, State* pStates)
 	{
 		for (int i = 0; i < State::NbStates; i++)
 		{
-			if ( !m_contentShiftStateMask.bit(i) )
-			{
-				int bestAlternative = bestStateIndexMatch(i, m_contentShiftStateMask);
-				m_contentShift[i] = m_contentShift[bestAlternative];
-			}
+			State wanted = (StateEnum) i;
+			int index = wanted.bestMatch(nbStates, pStates);
+			assert(index >= 0 && index < nbStates);
+			m_stateToIndexTab[i] = index;
 		}
 	}
+
 
 } // namespace wg
