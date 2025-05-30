@@ -38,7 +38,19 @@ namespace wg
 	typedef	WeakPtr<TileSkin>		TileSkin_wp;
 
 
-	class TileSkin : public StateSkin
+	struct _TileSkinStateData
+	{
+
+		Coord		contentShift;
+		Surface_p	surface;
+		HiColor		color;
+		bool		m_bOpaque;
+	};
+
+
+
+
+	class TileSkin : public StateSkin<_TileSkinStateData>
 	{
 		//TODO: Add sanity-checking to all Set-methods.
 		//TODO: Optimize rendering based on invisibleSections and opaqueSections!
@@ -121,13 +133,6 @@ namespace wg
 		void		_updateUnsetStateColors();
 
 		BlendMode	m_blendMode;
-
-		Bitmask<uint32_t>	m_stateSurfaceMask = 1;
-		Bitmask<uint32_t>	m_stateColorMask = 1;
-
-		Surface_p	m_stateSurfaces[State::NbStates];
-		HiColor		m_stateColors[State::NbStates];
-		bool		m_bStateOpaque[State::NbStates];
 		Gradient	m_gradient;
 	};
 

@@ -194,22 +194,22 @@ namespace wg
 		State	slideStateMask;
 		switch (m_slideState)
 		{
-		case BaseState::Focused:
+		case PrimState::Focused:
 			slideStateMask = State::Focused;
 			break;
-		case BaseState::Hovered:
+		case PrimState::Hovered:
 			slideStateMask = State::Hovered;
 			break;
-		case BaseState::Pressed:
+		case PrimState::Pressed:
 			slideStateMask = State::Pressed;
 			break;
-		case BaseState::Selected:
+		case PrimState::Selected:
 			slideStateMask = State::Selected;
 			break;
-		case BaseState::Targeted:
+		case PrimState::Targeted:
 			slideStateMask = State::Targeted;
 			break;
-		case BaseState::Disabled:
+		case PrimState::Disabled:
 			slideStateMask = State::Disabled;
 			break;
 		default:

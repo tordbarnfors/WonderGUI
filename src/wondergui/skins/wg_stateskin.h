@@ -27,13 +27,10 @@
 
 #include <initializer_list>
 #include <utility>
+#include <vector>
 
 namespace wg
 {
-
-	class StateSkin;
-	typedef	StrongPtr<StateSkin>	StateSkin_p;
-	typedef	WeakPtr<StateSkin>		StateSkin_wp;
 
 	class StateSkin : public Skin
 	{
@@ -45,9 +42,6 @@ namespace wg
 
 		//.____ Behavior _______________________________________________________
 
-		void			clearContentShift();
-		void			setContentShift(State state, Coord shift);
-		void			setContentShift(std::initializer_list< std::pair<State, Coord> > StateShifts);
 		Coord			contentShift(State state) const;
 
 		//.____ Internal ________________________________________________________
@@ -73,10 +67,28 @@ namespace wg
 
 		~StateSkin() {}
 
-		void			_updateContentShift();
 
-        Coord				m_contentShift[State::NbStates];
-		Bitmask<uint32_t>	m_contentShiftStateMask = 1;		// Bitfield with one bit set for each stateIndex that has been explicitly set.
+
+		int				_bytesNeededForContentShiftData(int nbStates, State* pStates);
+		void			_generateContentShiftData(void * pDest, int nbStates, State * pStates);
+
+		Coord 			_getContentShift(State state)
+		{
+						int idxTabEntry = (state.index() & m_contentShiftIndexMask) >> m_contentShiftIndexShift;
+						int entry = m_pContentShiftIndexTab[idxTabEntry];
+						return m_pContentShiftTable[entry];
+		}
+
+		// Mask and shift values to apply to stateIndex in order to make m_pContentShiftIndexTab
+		// shorter when bits least or most significant bits of index can be ignored.
+
+		uint8_t			m_contentShiftIndexMask;		
+		uint8_t			m_contentShiftIndexShift;
+
+		// 
+
+		uint8_t*		m_pContentShiftIndexTab;		// Table with index values into m_pContentShiftTable for each mode (72) or less.
+		Coord*			m_pContentShiftTable;			// Contains content shift values used.
 	};
 
 
