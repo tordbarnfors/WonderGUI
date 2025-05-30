@@ -123,7 +123,7 @@ namespace wg
 		mutable BorderSPX	m_cachedContentPadding[State::NbStates];
 
 		Bitmask<uint8_t>	m_transitioningStates;
-		int					m_transitionTimes[BaseState_Nb];
+		int					m_transitionTimes[PrimState_Nb];
 
 		int					m_animationLengths[State::NbStates];
 	};

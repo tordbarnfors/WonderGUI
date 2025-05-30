@@ -60,10 +60,6 @@ namespace wg
 
 		inline Axis dirToAxis( Direction dir ) { return (dir == Direction::Up || dir == Direction::Down) ? Axis::Y : Axis::X; }
 
-		int			bestStateIndexMatch(int wantedStateIndex, Bitmask<uint32_t> availableStateIndices);
-
-
-
 
 		struct ClipPopData				/** @private */
 		{
