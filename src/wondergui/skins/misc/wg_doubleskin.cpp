@@ -356,12 +356,12 @@ namespace wg
 				m_bContentShifting = m_pBackSkin->_isContentShifting();
 
 			const int* p = m_pBackSkin->_transitionTimes();
-			for (int i = 0; i < BaseState_Nb ; i++)
+			for (int i = 0; i < PrimState_Nb ; i++)
 				m_transitionTimes[i] = p[i];
 		}
 		else
 		{
-			for (int i = 0; i < BaseState_Nb; i++)
+			for (int i = 0; i < PrimState_Nb; i++)
 				m_transitionTimes[i] = 0;
 		}
 
@@ -381,7 +381,7 @@ namespace wg
 			}
 
 			const int* p = m_pFrontSkin->_transitionTimes();
-			for (int i = 0; i < BaseState_Nb; i++)
+			for (int i = 0; i < PrimState_Nb; i++)
 			{
 				if( p[i] != 0)
 					m_transitionTimes[i] = std::max(m_transitionTimes[i],p[i]);
