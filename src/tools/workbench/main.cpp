@@ -627,7 +627,7 @@ int main(int argc, char** argv)
 				.frame = 3,
 				.padding = 5,
 				.states = { State::Default, {}, State::Hovered, {},
-								State::Selected, {}, State::SelectedHovered, {},
+								State::Selected, {}, State::Selected + State::Hovered, {},
 								State::Disabled, {}
 			},
 				.surface = pStateButtonSurface
@@ -653,7 +653,7 @@ int main(int argc, char** argv)
 		convertSDLFormat(&pixelDesc, pSDLSurf->format);
 		Surface_p pListEntrySurface = pSurfaceFactory->createSurface({ .format = PixelFormat::BGRA_8, .size = SizeI(pSDLSurf->w, pSDLSurf->h) }, (unsigned char*)pSDLSurf->pixels, pixelDesc, pSDLSurf->pitch);
 		SDL_FreeSurface(pSDLSurf);
-		Skin_p pListEntrySkin = BlockSkin::create(pListEntrySurface, { State::Default, State::Hovered, State::Selected, State::SelectedHovered, State::Disabled }, Border(2), Axis::X);
+		Skin_p pListEntrySkin = BlockSkin::create(pListEntrySurface, { State::Default, State::Hovered, State::Selected, State::Selected + State::Hovered, State::Disabled }, Border(2), Axis::X);
 
 		pSDLSurf = IMG_Load("resources/splash.png");
 		convertSDLFormat(&pixelDesc, pSDLSurf->format);
@@ -2573,7 +2573,7 @@ bool kerningTest(ComponentPtr<DynamicSlot> pSlot)
 
 	auto pDisplay1 = TextDisplay::create();
 
-	auto bp = Base::defaultStyle()->blueprint();
+	TextStyle::Blueprint bp; // = Base::defaultStyle()->blueprint();
 	bp.size = 32;
 
 	auto pBigStyle = TextStyle::create(bp);
@@ -3750,7 +3750,7 @@ bool canvasCapsuleGlowTest(ComponentPtr<DynamicSlot> pEntry)
 	auto pBack = FlexPanel::create({ .skin = ColorSkin::create(Color::Black) });
 	*pEntry = pBack;
 
-	auto pMyStyle = TextStyle::create( WGOVR(Base::defaultStyle()->blueprint(), _.size = 30, _.color = Color::White ));
+	auto pMyStyle = TextStyle::create( { .color = Color::White, .size = 30 } );
 
 
 	auto pGlowCapsule = CanvasCapsule::create();

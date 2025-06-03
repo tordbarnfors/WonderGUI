@@ -75,70 +75,147 @@ namespace wg
 	{
 		m_handle = TextStyleManager::_reserveHandle(this);
 
-		for (int i = 0; i < State::NbStates; i++)
-		{
-			m_size[i]			= -1;
-			m_color[i]			= HiColor::Black;
-			m_backColor[i]		= HiColor::Transparent;
-			m_decoration[i]		= TextDecoration::Undefined;
-		}
-
-		// Setting everyting for State::Default
-
 		m_pFont = bp.font;
 		m_pLink = bp.link;
 		m_blendMode = bp.blendMode;
 		m_backBlendMode = bp.backBlendMode;
 
-		int idx = State::Default;
 
-		m_size[idx] = bp.size;
-		m_color[idx] = bp.color;
-		m_backColor[idx] = bp.backColor;
-		m_decoration[idx] = bp.decoration;
+		// Generate lists of states that affects size, color backColor and decoration.
 
-		m_sizeSetMask.setBit(idx, bp.size >= 0);
-		m_colorSetMask.setBit(idx, bp.color != HiColor::Undefined);
-		m_backColorSetMask.setBit(idx, bp.backColor != HiColor::Undefined);
-		m_decorationSetMask.setBit(idx, bp.decoration != TextDecoration::Undefined);
+		State	sizeStates[State::NbStates];
+		pts		stateSizes[State::NbStates];
 
-		// Setting state specific parameters
+		State	colorStates[State::NbStates];
+		HiColor stateColors[State::NbStates];
 
-		for ( auto& entry : bp.states )
+		State	backColorStates[State::NbStates];
+		HiColor stateBackColors[State::NbStates];
+
+		State	decorationStates[State::NbStates];
+		TextDecoration stateDecorations[State::NbStates];
+
+		int 	nbSizeStates = 1;
+		int		nbColorStates = 1;
+		int		nbBackColorStates = 1;
+		int		nbDecorationStates = 1;
+
+		sizeStates[0] = State::Default;
+		colorStates[0] = State::Default;
+		backColorStates[0] = State::Default;
+		decorationStates[0] = State::Default;
+
+		stateSizes[0] = bp.size;
+		stateColors[0] = bp.color;
+		stateBackColors[0] = bp.backColor;
+		stateDecorations[0] = bp.decoration;
+
+		for (auto& stateInfo : bp.states)
 		{
-			idx = entry.state;
+			int index = stateInfo.state;
 
-			if( entry.data.size >= 0 )
+			if (stateInfo.data.size >= 0 )
 			{
-				m_size[idx] = entry.data.size;
-				m_sizeSetMask.setBit(idx, true);
+				int index = stateInfo.state == State::Default ? 0 : nbSizeStates++;
+				sizeStates[index] = stateInfo.state;
+				stateSizes[index] = stateInfo.data.size;
 			}
 
-			if( entry.data.color != HiColor::Undefined )
+			if(stateInfo.data.color != HiColor::Undefined )
 			{
-				m_color[idx] = entry.data.color;
-				m_colorSetMask.setBit(idx, true );
+				int index = stateInfo.state == State::Default ? 0 : nbColorStates++;
+				colorStates[index] = stateInfo.state;
+				stateColors[index] = stateInfo.data.color;
 			}
-			
-			if( entry.data.backColor != HiColor::Undefined )
+
+			if(stateInfo.data.backColor != HiColor::Undefined )
 			{
-				m_backColor[idx] = entry.data.backColor;
-				m_backColorSetMask.setBit(idx, true);
+				int index = stateInfo.state == State::Default ? 0 : nbBackColorStates++;
+				backColorStates[index] = stateInfo.state;
+				stateBackColors[index] = stateInfo.data.backColor;
 			}
-			
-			if( entry.data.decoration != TextDecoration::Undefined )
+
+			if(stateInfo.data.decoration != TextDecoration::Undefined )
 			{
-				m_decoration[idx] = entry.data.decoration;
-				m_decorationSetMask.setBit(idx, true);
+				int index = stateInfo.state == State::Default ? 0 : nbDecorationStates++;
+				decorationStates[index] = stateInfo.state;
+				stateDecorations[index] = stateInfo.data.decoration;
 			}
 		}
 
-		//
+		// Calc size of index table for surface and color, get their index masks & shifts.
 
-		_refreshSize();
-		_refreshColor();
-		_refreshBgColor();
-		_refreshDecoration();
+		int	sizeIndexEntries;
+		int	colorIndexEntries;
+		int	backColorIndexEntries;
+		int	decorationIndexEntries;
+
+
+		std::tie(sizeIndexEntries,m_sizeIndexMask,m_sizeIndexShift) = calcStateToIndexParam(nbSizeStates, sizeStates);
+		std::tie(colorIndexEntries,m_colorIndexMask,m_colorIndexShift) = calcStateToIndexParam(nbColorStates, colorStates);
+		std::tie(backColorIndexEntries,m_backColorIndexMask,m_backColorIndexShift) = calcStateToIndexParam(nbBackColorStates, backColorStates);
+		std::tie(decorationIndexEntries,m_decorationIndexMask,m_decorationIndexShift) = calcStateToIndexParam(nbDecorationStates, decorationStates);
+
+
+		// Calculate memory needed for all state data
+
+		int colorBytes		= sizeof(HiColor) * nbColorStates;
+		int backColorBytes	= sizeof(HiColor) * nbBackColorStates;
+		int sizeBytes		= sizeof(pts) * nbSizeStates;
+		int decorationBytes	= sizeof(TextDecoration) * nbDecorationStates;
+
+		int indexBytes		= sizeIndexEntries+colorIndexEntries+backColorIndexEntries+decorationIndexEntries;
+
+		// Allocate and pupulate memory for state data
+
+		m_pStateData = malloc(sizeBytes + colorBytes + backColorBytes + decorationBytes + indexBytes);
+
+		auto pDest = (uint8_t*) m_pStateData;
+
+		auto pColors = (HiColor*) pDest;
+		for( int i = 0 ; i < nbColorStates ; i++ )
+			pColors[i] = stateColors[i];
+
+		m_pColors = pColors;
+		pDest += colorBytes;
+
+		auto pBackColors = (HiColor*) pDest;
+		for( int i = 0 ; i < nbBackColorStates ; i++ )
+			pBackColors[i] = stateBackColors[i];
+
+		m_pBackColors = pBackColors;
+		pDest += backColorBytes;
+
+		auto pSizes = (pts*) pDest;
+		for( int i = 0 ; i < nbSizeStates ; i++ )
+			pSizes[i] = stateSizes[i];
+
+		m_pSizes = pSizes;
+		pDest += sizeBytes;
+
+		auto pDecorations = (TextDecoration*) pDest;
+		for( int i = 0 ; i < nbDecorationStates ; i++ )
+			pDecorations[i] = stateDecorations[i];
+
+		m_pDecorations = pDecorations;
+		pDest += decorationBytes;
+
+
+		m_pColorIndexTab = pDest;
+		pDest += colorIndexEntries;
+
+		m_pBackColorIndexTab = pDest;
+		pDest += backColorIndexEntries;
+
+		m_pSizeIndexTab = pDest;
+		pDest += sizeIndexEntries;
+
+		m_pDecorationIndexTab = pDest;
+
+		generateStateToIndexTab(m_pSizeIndexTab, nbSizeStates, sizeStates);
+		generateStateToIndexTab(m_pColorIndexTab, nbColorStates, colorStates);
+		generateStateToIndexTab(m_pBackColorIndexTab, nbBackColorStates, backColorStates);
+		generateStateToIndexTab(m_pDecorationIndexTab, nbDecorationStates, decorationStates);
 
 		if (bp.finalizer)
 			setFinalizer(bp.finalizer);
@@ -150,6 +227,8 @@ namespace wg
 	TextStyle::~TextStyle()
 	{
 		TextStyleManager::_releaseHandle(m_handle);
+
+		free(m_pStateData);
 	}
 
 	//____ typeInfo() _________________________________________________________
@@ -166,41 +245,47 @@ namespace wg
 
 	void TextStyle::exportAttr( State state, TextAttr * pDest, int scale ) const
 	{
-		int idx = state;
-
-		
-		auto pDef = s_pDefaultStyle;
 
 		pDest->pFont 		= m_pFont;
 		pDest->pLink 		= m_pLink;
 		pDest->blendMode	= m_blendMode;
 		pDest->backBlendMode = m_backBlendMode;
 
-		pDest->size 		= ptsToSpx(m_size[idx], scale);
-		pDest->color		= m_color[idx];
-		pDest->backColor	= m_backColor[idx];
-		pDest->decoration	= m_decoration[idx];
+		pDest->size 		= ptsToSpx(_getSize(state), scale);
+		pDest->color		= _getColor(state);
+		pDest->backColor	= _getBackColor(state);
+		pDest->decoration	= _getDecoration(state);
+
 
 		if (!pDest->pFont)
-			pDest->pFont = pDef->m_pFont;
+			pDest->pFont = s_pDefaultStyle->m_pFont;
 
 		if( pDest->size < 0 )
-			pDest->size = ptsToSpx((pDef->m_size[idx] >= 0 ? pDef->m_size[idx] : 12),scale);				// Default to size 12.
+		{
+			pts defSize = s_pDefaultStyle->_getSize(state);
+			pDest->size = ptsToSpx((defSize >= 0 ? defSize : 12),scale);				// Default to size 12.
+		}
 
 		if( pDest->color == HiColor::Undefined )
-			pDest->color = pDef->m_color[idx] == HiColor::Undefined ? HiColor::Black : pDef->m_color[idx];
-		
-		if( pDest->decoration == TextDecoration::Undefined )
-			pDest->decoration = pDef->m_decoration[idx] == TextDecoration::Undefined ? TextDecoration::None : pDef->m_decoration[idx];
+		{
+			const HiColor& defColor = s_pDefaultStyle->_getColor(state);
+			pDest->color = defColor == HiColor::Undefined ? HiColor::Black : defColor;
+		}
 
-		if (pDest->blendMode == BlendMode::Undefined)
-			pDest->blendMode = pDef->m_blendMode == BlendMode::Undefined ? BlendMode::Blend : pDef->m_blendMode;			// Default to Blend.
+		if( pDest->decoration == TextDecoration::Undefined )
+		{
+			TextDecoration defDecoration = s_pDefaultStyle->_getDecoration(state);
+			pDest->decoration = defDecoration == TextDecoration::Undefined ? TextDecoration::None : defDecoration;
+		}
 
 		if (pDest->backColor == HiColor::Undefined)
-			pDest->color = pDef->m_color[idx];
+			pDest->color = s_pDefaultStyle->_getBackColor(state);
+
+		if (pDest->blendMode == BlendMode::Undefined)
+			pDest->blendMode = s_pDefaultStyle->m_blendMode == BlendMode::Undefined ? BlendMode::Blend : s_pDefaultStyle->m_blendMode;			// Default to Blend.
 
 		if (pDest->backBlendMode == BlendMode::Undefined)
-			pDest->backBlendMode = pDef->m_backBlendMode;
+			pDest->backBlendMode = s_pDefaultStyle->m_backBlendMode;
 
 	}
 
@@ -208,8 +293,6 @@ namespace wg
 
 	void TextStyle::addToAttr( State state, TextAttr * pDest, int scale ) const
 	{
-		int idx = state;
-
 		if( m_pFont )
 			pDest->pFont = m_pFont;
 		if( m_pLink )
@@ -219,29 +302,31 @@ namespace wg
 		if (m_backBlendMode != BlendMode::Undefined)
 			pDest->backBlendMode = m_backBlendMode;
 
-		if( m_size[idx] >= 0 )
-			pDest->size	= ptsToSpx(m_size[idx],scale);
-		if( m_decoration[idx] != TextDecoration::Undefined )
-			pDest->decoration = m_decoration[idx];
+		pts size = _getSize(state);
+		if( size >= 0 )
+			pDest->size	= ptsToSpx(size,scale);
 
-		if( m_color[idx] != HiColor::Undefined )
-			pDest->color = m_color[idx];
+		TextDecoration decoration = _getDecoration(state);
+		if( decoration != TextDecoration::Undefined )
+			pDest->decoration = decoration;
 
-		if (m_backColor[idx] != HiColor::Undefined)
-			pDest->backColor = m_backColor[idx];
+		HiColor color = _getColor(state);
+		if( color != HiColor::Undefined )
+			pDest->color = color;
+
+		HiColor backColor = _getBackColor(state);
+		if (backColor != HiColor::Undefined)
+			pDest->backColor = backColor;
 	}
 
     //____ isStateIdentical() ________________________________________________
 
     bool TextStyle::isStateIdentical( State state1, State state2 ) const
     {
-        int idx1 = state1;
-        int idx2 = state2;
-
-        return ((m_size[idx1] == m_size[idx2]) &&
-                (m_color[idx1] == m_color[idx2]) &&
-                (m_backColor[idx1] == m_backColor[idx2]) &&
-                (m_decoration[idx1] == m_decoration[idx2]));
+        return ((_getSize(state1) == _getSize(state2)) &&
+                (_getColor(state1) == _getColor(state2)) &&
+                (_getBackColor(state1) == _getBackColor(state2)) &&
+				(_getDecoration(state1) == _getDecoration(state2)));
     }
 
 	//____ isIdentical() _____________________________________________________
@@ -254,10 +339,12 @@ namespace wg
 
 		for (int i = 0; i < State::NbStates; i++)
 		{
-			if (m_size[i] != pOther->m_size[i] ||
-				m_decoration[i] != pOther->m_decoration[i] ||
-				m_color[i] != pOther->m_color[i] ||
-				m_backColor[i] != pOther->m_backColor[i])
+			State state((StateEnum)i);
+
+			if ((_getSize(state) != pOther->_getSize(state)) ||
+				(_getDecoration(state) != pOther->_getDecoration(state)) ||
+				(_getColor(state) != pOther->_getColor(state)) ||
+				(_getBackColor(state) != pOther->_getBackColor(state)) )
 				return false;
 		}
 
@@ -272,17 +359,17 @@ namespace wg
 			m_blendMode != pOther->m_blendMode || m_backBlendMode != pOther->m_backBlendMode)
 			return false;
 
-		int i = state;
+		State i = state;
 
-		if (m_size[i] != pOther->m_size[i] ||
-			m_decoration[i] != pOther->m_decoration[i] ||
-			m_color[i] != pOther->m_color[i] ||
-			m_backColor[i] != pOther->m_backColor[i])
+		if ((_getSize(i) != pOther->_getSize(i)) ||
+			(_getDecoration(i) != pOther->_getDecoration(i)) ||
+			(_getColor(i) != pOther->_getColor(i)) ||
+			(_getBackColor(i) != pOther->_getBackColor(i)) )
 			return false;
 
 		return true;
 	}
-
+/*
 	//____ blueprint() ____________________________________________________________
 
 	TextStyle::Blueprint TextStyle::blueprint() const
@@ -300,6 +387,8 @@ namespace wg
 		bp.backColor = m_backColor[idx];
 		bp.color = m_color[idx];
 		bp.decoration = m_decoration[idx];
+
+
 
 		Bitmask<uint32_t> stateSetMask = m_sizeSetMask | m_colorSetMask | m_backColorSetMask | m_decorationSetMask;
 
@@ -324,119 +413,6 @@ namespace wg
 
 		return bp;
 	}
-
-	//____ _refreshSize() _____________________________________________________
-
-	void TextStyle::_refreshSize()
-	{
-		Bitmask<uint32_t> mask = m_sizeSetMask;
-		mask.setBit(0);
-		for (int i = 1; i < State::NbStates; i++)
-		{
-			if (!mask.bit(i))
-				m_size[i] = m_size[bestStateIndexMatch(i, mask)];
-		}
-
-		//
-
-		auto x = m_size[0];
-		for (int i = 1; i < State::NbStates; i++)
-			if (m_size[i] != x)
-			{
-				m_bStaticSize = false;
-				return;
-			}
-
-		m_bStaticSize = true;
-		return;
-	}
-
-	//____ _refreshColor() _____________________________________________________
-
-	void TextStyle::_refreshColor()
-	{
-		Bitmask<uint32_t> mask = m_colorSetMask;
-		mask.setBit(0);
-
-		for (int i = 1; i < State::NbStates; i++)
-		{
-			if (!mask.bit(i))
-			{
-				int idx = bestStateIndexMatch(i, mask);
-				m_color[i] = m_color[idx];
-			}
-		}
-
-
-		//
-
-		auto x = m_color[0];
-		for (int i = 1; i < State::NbStates; i++)
-			if (m_color[i] != x)
-			{
-				m_bStaticColor = false;
-				return;
-			}
-
-		m_bStaticColor = true;
-		return;
-	}
-
-	//____ _refreshBgColor() _____________________________________________________
-
-	void TextStyle::_refreshBgColor()
-	{
-		Bitmask<uint32_t> mask = m_backColorSetMask;
-		mask.setBit(0);
-
-		for (int i = 1; i < State::NbStates; i++)
-		{
-			if (!mask.bit(i))
-			{
-				int idx = bestStateIndexMatch(i, mask);
-				m_backColor[i] = m_backColor[idx];
-			}
-		}
-
-		//
-
-		auto x = m_backColor[0];
-		for (int i = 1; i < State::NbStates; i++)
-			if (m_backColor[i] != x)
-			{
-				m_bStaticBgColor = false;
-				return;
-			}
-
-		m_bStaticBgColor = true;
-		return;
-
-	}
-
-	//____ _refreshDecoration() _____________________________________________________
-
-	void TextStyle::_refreshDecoration()
-	{
-		Bitmask<uint32_t> mask = m_decorationSetMask;
-		mask.setBit(0);
-		for (int i = 1; i < State::NbStates; i++)
-		{
-			if (!mask.bit(i))
-				m_decoration[i] = m_decoration[bestStateIndexMatch(i, mask)];
-		}
-
-		//
-
-		auto x = m_decoration[0];
-		for (int i = 1; i < State::NbStates; i++)
-			if (m_decoration[i] != x)
-			{
-				m_bStaticDecoration = false;
-				return;
-			}
-
-		m_bStaticDecoration = true;
-		return;
-	}
+*/
 
 } // namespace wg

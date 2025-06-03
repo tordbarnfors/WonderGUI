@@ -54,8 +54,23 @@ namespace wg
 	ColorSkin::ColorSkin(const Blueprint& bp) : StateSkin(bp)
 	{
 		m_blendMode		= bp.blendMode;
-	
-		m_color[0] = bp.color;
+
+		// Generate lists of states that affects shift and color.
+
+		State	shiftingStates[State::NbStates];
+		Coord	stateShifts[State::NbStates];
+
+		State	colorStates[State::NbStates];
+		HiColor stateColors[State::NbStates];
+
+		int 	nbShiftingStates = 1;
+		int		nbColorStates = 1;
+
+		shiftingStates[0] = State::Default;
+		colorStates[0] = State::Default;
+
+		stateShifts[0] = {0,0};
+		stateColors[0] = bp.color;
 
 		for (auto& stateInfo : bp.states)
 		{
@@ -63,21 +78,64 @@ namespace wg
 
 			if (stateInfo.data.contentShift.x != 0 || stateInfo.data.contentShift.y != 0)
 			{
-				m_contentShiftStateMask.setBit(index);
-				m_contentShift[index] = stateInfo.data.contentShift;
+				int index = stateInfo.state == State::Default ? 0 : nbShiftingStates++;
+				shiftingStates[index] = stateInfo.state;
+				stateShifts[index] = stateInfo.data.contentShift;
 				m_bContentShifting = true;
 			}
 
-			if( stateInfo.data.color != HiColor::Undefined )
+			if(stateInfo.data.color != HiColor::Undefined )
 			{
-				m_stateColorMask.setBit(index);
-				m_color[index] = stateInfo.data.color;
+				int index = stateInfo.state == State::Default ? 0 : nbColorStates++;
+				colorStates[index] = stateInfo.state;
+				stateColors[index] = stateInfo.data.color;
 			}
 		}
 
-		_updateContentShift();
-		_updateUnsetColors();
+		// Calc size of index table for color, get its index masks & shifts.
+
+		int	colorIndexEntries;
+
+		std::tie(colorIndexEntries,m_stateColorIndexMask,m_stateColorIndexShift) = calcStateToIndexParam(nbColorStates, colorStates);
+
+		// Calculate memory needed for all state data
+
+		int shiftBytes 		= _bytesNeededForContentShiftData(nbShiftingStates, shiftingStates);
+		int colorBytes		= sizeof(HiColor) * nbColorStates;
+		int indexBytes		= colorIndexEntries;
+
+		// Allocate and populate memory for state data
+
+		m_pStateData = malloc(shiftBytes + colorBytes + indexBytes);
+
+		auto pDest = (uint8_t*) m_pStateData;
+
+		auto pCoords = _prepareForContentShiftData(pDest, nbShiftingStates, shiftingStates);
+		for( int i = 0 ; i < nbShiftingStates ; i++ )
+			pCoords[i] = stateShifts[i];
+
+		pDest += shiftBytes;
+
+		auto pColors = (HiColor*) pDest;
+		for( int i = 0 ; i < nbColorStates ; i++ )
+			pColors[i] = stateColors[i];
+
+		m_pStateColors = pColors;
+
+		pDest += colorBytes;
+
+		m_pStateColorIndexTab = pDest;
+
+		generateStateToIndexTab(m_pStateColorIndexTab, nbColorStates, colorStates);
 	}
+
+	//____ destructor ____________________________________________________________
+
+	ColorSkin::~ColorSkin()
+	{
+		free( m_pStateData );
+	}
+
 
 	//____ typeInfo() _________________________________________________________
 
@@ -90,7 +148,7 @@ namespace wg
 
 	RectSPX ColorSkin::_coverage(const RectSPX& geo, int scale, State state) const
 	{
-		if( (m_color[state].a == 4096 && m_blendMode == BlendMode::Blend) || m_blendMode == BlendMode::Replace )
+		if( (_getColor(state).a == 4096 && m_blendMode == BlendMode::Blend) || m_blendMode == BlendMode::Replace )
 			return geo - align(ptsToSpx(m_spacing,scale)) + align(ptsToSpx(m_overflow,scale));
 		else
 			return RectSPX();
@@ -103,7 +161,7 @@ namespace wg
 		RenderSettings settings(pDevice, m_layer, m_blendMode);
 
 		int i = state;
-		pDevice->fill( canvas - align(ptsToSpx(m_spacing, scale)) + align(ptsToSpx(m_overflow, scale)), m_color[i] );
+		pDevice->fill( canvas - align(ptsToSpx(m_spacing, scale)) + align(ptsToSpx(m_overflow, scale)), _getColor(state) );
 	}
 
 	//____ _markTest() _____________________________________________________________
@@ -119,7 +177,7 @@ namespace wg
 		
 		int alpha = alphaOverride == -1 ? m_markAlpha : alphaOverride;
 
-		return ( m_color[state].a >= alpha);
+		return ( _getColor(state).a >= alpha);
 	}
 
 	//____ _dirtyRect() ______________________________________________________
@@ -136,26 +194,14 @@ namespace wg
 
 		RectSPX canvas = _canvas - align(ptsToSpx(m_spacing, scale)) + align(ptsToSpx(m_overflow, scale));
 		
-		if (m_color[i1] != m_color[i2])
+		if (_getColor(newState) != _getColor(oldState))
 			return canvas;
 
 		return StateSkin::_dirtyRect(canvas, scale, newState, oldState, newValue, oldValue, newValue2, oldValue2,
 			newAnimPos, oldAnimPos, pNewStateFractions, pOldStateFractions);
 	}
 
-	//____ _updateUnsetColors() _______________________________________________
 
-	void ColorSkin::_updateUnsetColors()
-	{
-		for (int i = 0; i < State::NbStates; i++)
-		{
-			if (!m_stateColorMask.bit(i))
-			{
-				int bestAlternative = bestStateIndexMatch(i, m_stateColorMask);
-				m_color[i] = m_color[bestAlternative];
-			}
-		}
-	}
 
 
 } // namespace wg

@@ -68,11 +68,10 @@ namespace wg
 		~StateSkin() {}
 
 
-
 		int				_bytesNeededForContentShiftData(int nbStates, State* pStates);
-		void			_generateContentShiftData(void * pDest, int nbStates, State * pStates);
+		Coord * 		_prepareForContentShiftData(void * pDest, int nbStates, State * pStates);
 
-		Coord 			_getContentShift(State state)
+		Coord 			_getContentShift(State state) const
 		{
 						int idxTabEntry = (state.index() & m_contentShiftIndexMask) >> m_contentShiftIndexShift;
 						int entry = m_pContentShiftIndexTab[idxTabEntry];

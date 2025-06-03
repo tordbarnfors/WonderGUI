@@ -50,7 +50,7 @@ namespace wg
 
 
 
-	class TileSkin : public StateSkin<_TileSkinStateData>
+	class TileSkin : public StateSkin
 	{
 		//TODO: Add sanity-checking to all Set-methods.
 		//TODO: Optimize rendering based on invisibleSections and opaqueSections!
@@ -126,14 +126,46 @@ namespace wg
 	protected:
 
 		TileSkin(const Blueprint& blueprint);
-		~TileSkin() {};
+		~TileSkin();
 
-		void		_updateOpaqueFlags();
-		void		_updateUnsetStateSurfaces();
-		void		_updateUnsetStateColors();
+		Surface *		_getSurface(State state) const
+		{
+						int idxTabEntry = (state.index() & m_stateSurfaceIndexMask) >> m_stateSurfaceIndexShift;
+						int entry = m_pStateSurfaceIndexTab[idxTabEntry];
+						return m_pStateSurfaces[entry];
+		}
 
-		BlendMode	m_blendMode;
-		Gradient	m_gradient;
+		const HiColor&	_getColor(State state) const
+		{
+						int idxTabEntry = (state.index() & m_stateColorIndexMask) >> m_stateColorIndexShift;
+						int entry = m_pStateColorIndexTab[idxTabEntry];
+						return m_pStateColors[entry];
+		}
+
+
+		BlendMode		m_blendMode;
+		Gradient		m_gradient;
+
+		void *			m_pStateData;				// Pointer at memory block with state data.
+
+		uint8_t			m_stateColorIndexMask;
+		uint8_t			m_stateColorIndexShift;
+		uint8_t*		m_pStateColorIndexTab;		// Table with index values into m_pStateColors for each mode (72) or less.
+		HiColor*		m_pStateColors;				// Contains colors for states.
+
+		uint8_t			m_stateSurfaceIndexMask;
+		uint8_t			m_stateSurfaceIndexShift;
+		uint8_t*		m_pStateSurfaceIndexTab;
+		Surface **		m_pStateSurfaces;
+		int				m_nbStateSurfaces;			// So we know how many to decrease refCount of in destructor.
+
+
+
+		//
+
+
+
+
 	};
 
 

@@ -243,8 +243,8 @@ set( SOURCES
 	widgets/lists/wg_list.h
 	widgets/lists/wg_packlist.cpp
 	widgets/lists/wg_packlist.h
-	widgets/lists/wg_treelist.cpp
-	widgets/lists/wg_treelist.h
+#	widgets/lists/wg_treelist.cpp
+#	widgets/lists/wg_treelist.h
 
 	widgets/panels/wg_flexpanel.cpp
 	widgets/panels/wg_flexpanel.h

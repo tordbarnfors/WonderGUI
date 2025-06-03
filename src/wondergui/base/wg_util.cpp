@@ -482,6 +482,105 @@ namespace wg
 		return object / useScale;
 	}
 
+	//____ generateStateToIndexTab() ___________________________________
+
+	void Util::generateStateToIndexTab(uint8_t * pDest, int nbStates, State* pStates)
+	{
+		int indexTableSize;
+		int indexMask;
+		int indexShift;
+
+		std::tie(indexTableSize,indexMask,indexShift) = calcStateToIndexParam(nbStates,pStates);
+
+		for( int i = 0 ; i < indexTableSize ; i++ )
+		{
+			int wanted = i << indexShift;
+			pDest[i] = State( (StateEnum) wanted).bestMatch(nbStates, pStates);
+		}
+	}
+
+
+	//____ calcStateToIndexParam() ________________________________________
+
+	std::tuple<int,int,int> Util::calcStateToIndexParam(int nbStates, State* pStates)
+	{
+
+		uint8_t	usedBits = 0;
+		for (int i = 0; i < nbStates; i++)
+			usedBits |= pStates->index();
+
+		int indexTableSize = 72;
+
+		int indexMask = 0x7F;
+		int indexShift = 0;
+
+		if (usedBits == 0)
+		{
+			indexMask = 0;
+			indexTableSize = 1;			// We always lookup default.
+		}
+		else
+		{
+			if ((usedBits & int(StateEnum::Disabled)) == 0)
+			{
+				indexMask = 0x3F;
+				indexTableSize = 64;
+				if ((usedBits & (int(StateEnum::Hovered) | int(StateEnum::Pressed))) == 0)
+				{
+					indexMask = 0xF;
+					indexTableSize = 16;
+					if ((usedBits & int(StateEnum::Focused)) == 0)
+					{
+						indexMask = 0x7;
+						indexTableSize = 8;
+						if ((usedBits & int(StateEnum::Checked)) == 0)
+						{
+							indexMask = 0x3;
+							indexTableSize = 4;
+							if ((usedBits & int(StateEnum::Selected)) == 0)
+							{
+								indexMask = 0x1;
+								indexTableSize = 2;
+							}
+						}
+					}
+				}
+			}
+
+			if ((usedBits & int(StateEnum::Flagged)) == 0)
+			{
+				indexShift++;
+				indexTableSize /= 2;
+
+				if ((usedBits & int(StateEnum::Selected)) == 0)
+				{
+					indexShift++;
+					indexTableSize /= 2;
+
+					if ((usedBits & int(StateEnum::Checked)) == 0)
+					{
+						indexShift++;
+						indexTableSize /= 2;
+
+						if ((usedBits & int(StateEnum::Focused)) == 0)
+						{
+							indexShift++;
+							indexTableSize /= 2;
+
+							if ((usedBits & (int(StateEnum::Hovered) | int(StateEnum::Pressed))) == 0)
+							{
+								indexShift += 2;
+								indexTableSize /= 4;
+							}
+						}
+					}
+				}
+			}
+
+		}
+		return std::make_tuple(indexTableSize,indexMask,indexShift);
+	}
+
 	//____ patchesToClipList() ____________________________________________________________________
 
 	Util::ClipPopData Util::patchesToClipList( GfxDevice * pDevice, const RectSPX& clip, const PatchesSPX& patches )

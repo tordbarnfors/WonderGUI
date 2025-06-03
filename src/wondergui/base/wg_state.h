@@ -43,7 +43,7 @@ namespace wg
 
 		//.____ State __________________________________________________________
 
-		constexpr bool	setDisabled(bool bDisabled)
+		bool	setDisabled(bool bDisabled)
 		{
 			if (!bDisabled)
 				m_index &= ~DISABLED_MASK;
@@ -57,7 +57,7 @@ namespace wg
 			return true;
 		}
 
-		constexpr bool	setSelected(bool bSelected)
+		bool	setSelected(bool bSelected)
 		{
 			if (bSelected)
 				m_index |= SELECTED_MASK;
@@ -66,7 +66,7 @@ namespace wg
 			return true;
 		}
 
-		constexpr bool	setChecked(bool bChecked)
+		bool	setChecked(bool bChecked)
 		{
 			if (bChecked)
 				m_index |= CHECKED_MASK;
@@ -75,7 +75,7 @@ namespace wg
 			return true;
 		}
 
-		constexpr bool	setFlagged(bool bFlagged)
+		bool	setFlagged(bool bFlagged)
 		{
 			if (bFlagged)
 				m_index |= FLAGGED_MASK;
@@ -84,7 +84,7 @@ namespace wg
 			return true;
 		}
 
-		constexpr bool	setFocused(bool bFocused)
+		bool	setFocused(bool bFocused)
 		{
 			if (m_index & DISABLED_MASK)
 				return false;
@@ -96,7 +96,7 @@ namespace wg
 			return true;
 		}
 
-		constexpr bool	setHovered(bool bHovered)
+		bool	setHovered(bool bHovered)
 		{
 			if (m_index & DISABLED_MASK)
 				return false;
@@ -109,7 +109,7 @@ namespace wg
 			return true;
 		}
 
-		constexpr bool	setPressed(bool bPressed)
+		bool	setPressed(bool bPressed)
 		{
 			if (m_index & DISABLED_MASK)
 				return false;
@@ -122,7 +122,7 @@ namespace wg
 			return true;
 		}
 
-		constexpr bool	setTargeted(bool bTargeted)
+		bool	setTargeted(bool bTargeted)
 		{
 			if (m_index & DISABLED_MASK)
 				return false;
@@ -151,7 +151,7 @@ namespace wg
 
 		constexpr operator int() const { return m_index; }
 
-		constexpr State operator+(State state) const
+		State operator+(State state) const
 		{
 			State s;
 			s.m_index = m_index | state.m_index;
@@ -171,7 +171,7 @@ namespace wg
 			return s;
 		}
 
-		constexpr State operator-(State state) const
+		State operator-(State state) const
 		{
 			State s;
 
@@ -195,7 +195,7 @@ namespace wg
 			return s;
 		}
 
-		constexpr State& operator+=(State state)
+		State& operator+=(State state)
 		{
 			MouseInteraction oldMouseInteraction = getMouseInteraction();
 
@@ -214,7 +214,7 @@ namespace wg
 			return *this;
 		}
 
-		constexpr State& operator-=(State state)
+		State& operator-=(State state)
 		{
 			MouseInteraction oldMouseInteraction = getMouseInteraction();
 
@@ -298,7 +298,7 @@ namespace wg
 			return static_cast<MouseInteraction>((m_index & MOUSE_INTERACTION_MASK) >> MOUSE_INTERACTION_BIT);
 		}
 
-		constexpr void setMouseInteraction(MouseInteraction value) {
+		void setMouseInteraction(MouseInteraction value) {
 			m_index = (m_index & ~MOUSE_INTERACTION_MASK) |
 				(static_cast<uint8_t>(value) << MOUSE_INTERACTION_BIT);
 		}

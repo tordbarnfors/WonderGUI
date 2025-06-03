@@ -158,36 +158,71 @@ namespace wg
 		bool			isIdentical( TextStyle * pOther );
 		bool			isIdenticalForState( TextStyle * pOther, State state );
 
-		Blueprint		blueprint() const;
+//		Blueprint		blueprint() const;
 
 	protected:
 		TextStyle( const Blueprint& blueprint );
 		virtual ~TextStyle();
 
-		void		_refreshSize();
-		void		_refreshColor();
-		void		_refreshBgColor();
-		void		_refreshDecoration();
+		const pts		_getSize(State state) const
+		{
+						int idxTabEntry = (state.index() & m_sizeIndexMask) >> m_sizeIndexShift;
+						int entry = m_pSizeIndexTab[idxTabEntry];
+						return m_pSizes[entry];
+		}
+
+		const HiColor&	_getColor(State state) const
+		{
+						int idxTabEntry = (state.index() & m_colorIndexMask) >> m_colorIndexShift;
+						int entry = m_pColorIndexTab[idxTabEntry];
+						return m_pColors[entry];
+		}
+
+		const HiColor&	_getBackColor(State state) const
+		{
+						int idxTabEntry = (state.index() & m_backColorIndexMask) >> m_backColorIndexShift;
+						int entry = m_pBackColorIndexTab[idxTabEntry];
+						return m_pBackColors[entry];
+		}
+
+		const TextDecoration _getDecoration(State state) const
+		{
+						int idxTabEntry = (state.index() & m_decorationIndexMask) >> m_decorationIndexShift;
+						int entry = m_pDecorationIndexTab[idxTabEntry];
+						return m_pDecorations[entry];
+		}
+
+		void *				m_pStateData;
 
 		Font_p				m_pFont;
 		TextLink_p			m_pLink;
 		BlendMode			m_blendMode = BlendMode::Blend;
 		BlendMode			m_backBlendMode = BlendMode::Blend;
 
-		pts					m_size[State::NbStates];
-		HiColor				m_color[State::NbStates];
-		HiColor				m_backColor[State::NbStates];
-		TextDecoration		m_decoration[State::NbStates];
+		uint8_t				m_sizeIndexMask;
+		uint8_t				m_sizeIndexShift;
+		uint8_t*			m_pSizeIndexTab;			// Table with index values into m_pSizes for each mode (72) or less.
+		pts*				m_pSizes;					// Contains sizes for states.
 
-		Bitmask<uint32_t>	m_sizeSetMask = 0;
-		Bitmask<uint32_t>	m_colorSetMask = 0;
-		Bitmask<uint32_t>	m_backColorSetMask = 0;
-		Bitmask<uint32_t>	m_decorationSetMask = 0;
+		uint8_t				m_colorIndexMask;
+		uint8_t				m_colorIndexShift;
+		uint8_t*			m_pColorIndexTab;			// Table with index values into m_pColors for each mode (72) or less.
+		HiColor*			m_pColors;					// Contains colors for states.
 
-		bool				m_bStaticColor = true;         // Combined color is identical in all states.
-		bool				m_bStaticBgColor = true;       // Combined background color is identical in all states.
-		bool				m_bStaticSize = true;          // Combined size is identical for in states.
-		bool				m_bStaticDecoration = true;    // Combined decoration is identical in all states.
+		uint8_t				m_backColorIndexMask;
+		uint8_t				m_backColorIndexShift;
+		uint8_t*			m_pBackColorIndexTab;		// Table with index values into m_pBackColors for each mode (72) or less.
+		HiColor*			m_pBackColors;				// Contains back colors for states.
+
+		uint8_t				m_decorationIndexMask;
+		uint8_t				m_decorationIndexShift;
+		uint8_t*			m_pDecorationIndexTab;		// Table with index values into m_pDecorations for each mode (72) or less.
+		TextDecoration*		m_pDecorations;				// Contains decorations for states.
+
+		bool				m_bStaticColor = true;      // Combined color is identical in all states.
+		bool				m_bStaticBgColor = true;    // Combined background color is identical in all states.
+		bool				m_bStaticSize = true;       // Combined size is identical in all states.
+		bool				m_bStaticDecoration = true; // Combined decoration is identical in all states.
 
 		TextStyle_h			m_handle;
 
@@ -211,25 +246,25 @@ namespace wg
 	//______________________________________________________________________________
 	inline HiColor TextStyle::color( State state ) const
 	{
-		return m_color[state];
+		return _getColor(state);
 	}
 
 	//______________________________________________________________________________
 	inline 	HiColor TextStyle::backColor( State state ) const
 	{
-		return m_backColor[state];
+		return _getBackColor(state);
 	}
 
 	//______________________________________________________________________________
 	inline pts TextStyle::size( State state ) const
 	{
-		return m_size[state];
+		return _getSize(state);
 	}
 
 	//______________________________________________________________________________
 	inline TextDecoration TextStyle::decoration( State state ) const
 	{
-		return m_decoration[state];
+		return _getDecoration(state);
 	}
 
 	//______________________________________________________________________________

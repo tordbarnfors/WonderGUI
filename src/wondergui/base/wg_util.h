@@ -28,6 +28,7 @@
 #include <wg_types.h>
 #include <wg_geo.h>
 #include <wg_patches.h>
+#include <wg_state.h>
 
 namespace wg
 {
@@ -59,6 +60,9 @@ namespace wg
 		spx 		sizeFromConstraint( spx defaultSize, spx specifiedSize, SizeConstraint policy );
 
 		inline Axis dirToAxis( Direction dir ) { return (dir == Direction::Up || dir == Direction::Down) ? Axis::Y : Axis::X; }
+
+		std::tuple<int,int,int> calcStateToIndexParam(int nbStates, State* pStates);					// returns: indexTabEntries, mask, shift
+		void 		generateStateToIndexTab(uint8_t * pDest, int nbStates, State* pStates);
 
 
 		struct ClipPopData				/** @private */
