@@ -25,17 +25,13 @@
 #include <wg_geo.h>
 #include <wg_util.h>
 #include <wg_skin.impl.h>
-#include <wg_stateskin.impl.h>
 
 namespace wg
 {
 
 	using namespace Util;
 
-	template class StateSkin<_TileSkinStateData>;
-
-
-	const TypeInfo TileSkin::TYPEINFO = { "TileSkin", &StateSkin<_TileSkinStateData>::TYPEINFO };
+	const TypeInfo TileSkin::TYPEINFO = { "TileSkin", &StateSkin::TYPEINFO };
 
 	//____ create() _______________________________________________________________
 
@@ -67,43 +63,122 @@ namespace wg
 
 	TileSkin::TileSkin(const Blueprint& bp) : StateSkin(bp)
 	{
-		int index = State::Default;
-
 		m_blendMode		= bp.blendMode;
 		m_gradient		= bp.gradient;
 
-		m_stateSurfaces[index] = bp.surface;
-		m_stateColors[index] = bp.color;
+		// Generate lists of states that affects shift, color and surface.
 
+		State	shiftingStates[State::NbStates];
+		Coord	stateShifts[State::NbStates];
+
+		State	colorStates[State::NbStates];
+		HiColor stateColors[State::NbStates];
+
+		State	surfaceStates[State::NbStates];
+		Surface * stateSurfaces[State::NbStates];
+
+		int 	nbShiftingStates = 1;
+		int		nbColorStates = 1;
+		int		nbSurfaceStates = 1;
+
+		shiftingStates[0] = State::Default;
+		colorStates[0] = State::Default;
+		surfaceStates[0] = State::Default;
+
+		stateShifts[0] = {0,0};
+		stateColors[0] = bp.color;
+		stateSurfaces[0] = bp.surface;
 
 		for (auto& stateInfo : bp.states)
 		{
-			index = stateInfo.state;
+			int index = stateInfo.state;
 
 			if (stateInfo.data.contentShift.x != 0 || stateInfo.data.contentShift.y != 0)
 			{
-				m_contentShiftStateMask.setBit(index);
-				m_contentShift[index] = stateInfo.data.contentShift;
+				int index = stateInfo.state == State::Default ? 0 : nbShiftingStates++;
+				shiftingStates[index] = stateInfo.state;
+				stateShifts[index] = stateInfo.data.contentShift;
 				m_bContentShifting = true;
 			}
 
 			if (stateInfo.data.surface)
 			{
-				m_stateSurfaces[index] = stateInfo.data.surface;
-				m_stateSurfaceMask.setBit(index);
+				int index = stateInfo.state == State::Default ? 0 : nbSurfaceStates++;
+				surfaceStates[index] = stateInfo.state;
+				stateSurfaces[index] = stateInfo.data.surface;
 			}
 
 			if(stateInfo.data.color != HiColor::Undefined )
 			{
-				m_stateColors[index] = stateInfo.data.color;
-				m_stateColorMask.setBit(index);
+				int index = stateInfo.state == State::Default ? 0 : nbColorStates++;
+				colorStates[index] = stateInfo.state;
+				stateColors[index] = stateInfo.data.color;
 			}
 		}
 
-		_updateContentShift();
-		_updateUnsetStateSurfaces();
-		_updateUnsetStateColors();
-		_updateOpaqueFlags();
+		// Calc size of index table for surface and color, get their index masks & shifts.
+
+		int	surfaceIndexEntries;
+		int	colorIndexEntries;
+
+		std::tie(surfaceIndexEntries,m_stateSurfaceIndexMask,m_stateSurfaceIndexShift) = calcStateToIndexParam(nbSurfaceStates, surfaceStates);
+		std::tie(colorIndexEntries,m_stateColorIndexMask,m_stateColorIndexShift) = calcStateToIndexParam(nbColorStates, colorStates);
+
+
+		// Calculate memory needed for all state data
+
+		int shiftBytes 		= _bytesNeededForContentShiftData(nbShiftingStates, shiftingStates);
+		int surfaceBytes	= sizeof(Surface*) * nbSurfaceStates;
+		int colorBytes		= sizeof(HiColor) * nbColorStates;
+		int indexBytes		= surfaceIndexEntries+colorIndexEntries;
+
+		// Allocate and pupulate memory for state data
+
+		m_pStateData = malloc(shiftBytes + surfaceBytes + colorBytes + indexBytes);
+
+		auto pDest = (uint8_t*) m_pStateData;
+
+		auto pCoords = _prepareForContentShiftData(pDest, nbShiftingStates, shiftingStates);
+		for( int i = 0 ; i < nbShiftingStates ; i++ )
+			pCoords[i] = stateShifts[i];
+
+		pDest += shiftBytes;
+
+		auto pSurfaces = (Surface**) pDest;
+		for( int i = 0 ; i < nbSurfaceStates ; i++ )
+		{
+			pSurfaces[i] = stateSurfaces[i];
+			pSurfaces[i]->retain();
+		}
+
+		m_pStateSurfaces = pSurfaces;
+		m_nbStateSurfaces = nbSurfaceStates;
+
+		pDest += surfaceBytes;
+
+		auto pColors = (HiColor*) pDest;
+		for( int i = 0 ; i < nbColorStates ; i++ )
+			pColors[i] = stateColors[i];
+
+		m_pStateColors = pColors;
+
+		pDest += colorBytes;
+
+		m_pStateSurfaceIndexTab = pDest;
+		m_pStateColorIndexTab = pDest + surfaceIndexEntries;
+
+		generateStateToIndexTab(m_pStateSurfaceIndexTab, nbSurfaceStates, surfaceStates);
+		generateStateToIndexTab(m_pStateColorIndexTab, nbColorStates, colorStates);
+	}
+
+	//____ destructor ____________________________________________________________
+
+	TileSkin::~TileSkin()
+	{
+		for( int i = 0 ; i < m_nbStateSurfaces ; i++ )
+			m_pStateSurfaces[i]->release();
+
+		free(m_pStateData);
 	}
 
 
@@ -121,16 +196,14 @@ namespace wg
 	{
 		int idx = state;
 
-		const _TileSkinStateData* pStateData = &m_stateData[m_stateToIndexTab[state]];
-
-		Surface * pSurf = pStateData->surface;
+		Surface * pSurf = _getSurface(state);
 
 		if( !pSurf )
 			return;
 
 		RectSPX canvas = _canvas - align(ptsToSpx(m_spacing, scale)) + align(ptsToSpx(m_overflow, scale));
 
-		RenderSettingsWithGradient settings(pDevice, m_layer, m_blendMode, pStateData->color, canvas, m_gradient);
+		RenderSettingsWithGradient settings(pDevice, m_layer, m_blendMode, _getColor(state), canvas, m_gradient);
 
 		pDevice->setBlitSource(pSurf);
 		pDevice->scaleTile(canvas,scale/64.f);
@@ -143,7 +216,7 @@ namespace wg
 		SizeSPX content = align(ptsToSpx(m_padding,scale));
 		SizeSPX surface;
 
-		Surface * pSurface = m_stateData[0].surface;
+		Surface * pSurface = m_pStateSurfaces[0];
 		if (pSurface)
 			surface = align(ptsToSpx(pSurface->pointSize(),scale));
 
@@ -156,7 +229,7 @@ namespace wg
 	{
 		//TODO: Take gradient and tintColor into account.
 
-		Surface * pSurf = m_stateData[0].surface;
+		Surface * pSurf = _getSurface(state);
 
 		int alpha = alphaOverride == -1 ? m_markAlpha : alphaOverride;
 
@@ -179,12 +252,9 @@ namespace wg
 		if (oldState == newState)
 			return RectSPX();
 
-		int i1 = newState;
-		int i2 = oldState;
-
 		RectSPX canvas = _canvas - align(ptsToSpx(m_spacing, scale)) + align(ptsToSpx(m_overflow, scale));
 
-		if(m_stateData[m_stateToIndexTab[i1]].surface != m_stateData[m_stateToIndexTab[i2]].surface)
+		if(_getSurface(oldState) != _getSurface(newState))
 			return canvas;
 		
 		return StateSkin::_dirtyRect(canvas, scale, newState, oldState, newValue, oldValue, newValue2, oldValue2, 
@@ -195,60 +265,13 @@ namespace wg
 
 	RectSPX TileSkin::_coverage(const RectSPX& geo, int scale, State state) const
 	{
-		if (m_stateData[m_stateToIndexTab[state]].m_bOpaque)
+		Surface * pSurface = _getSurface(state);
+		const HiColor& color = _getColor(state);
+
+		if (color.a == 4096 && pSurface->isOpaque())
 			return geo - align(ptsToSpx(m_spacing,scale)) + align(ptsToSpx(m_overflow,scale));
 		else
 			return RectSPX();
 	}
-
-	//____ _updateOpaqueFlags() ________________________________________________
-
-	void TileSkin::_updateOpaqueFlags()
-	{
-		if (m_blendMode == BlendMode::Replace)
-		{
-			for ( auto& stateData : m_stateData)
-				stateData.m_bOpaque = true;
-		}
-		else if ((!m_gradient.isUndefined() && !m_gradient.isOpaque()) || m_blendMode != BlendMode::Blend )
-		{
-			for (auto& stateData : m_stateData)
-				stateData.m_bOpaque = false;
-		}
-		else
-		{
-			for (auto& stateData : m_stateData)
-				stateData.m_bOpaque = (stateData.surface->isOpaque() && stateData.color.a == 4096);
-		}
-	}
-
-	//____ _updateUnsetStateSurfaces() _______________________________________________
-
-	void TileSkin::_updateUnsetStateSurfaces()
-	{
-		for (int i = 0; i < State::NbStates; i++)
-		{
-			if (!m_stateSurfaceMask.bit(i))
-			{
-				int bestAlternative = bestStateIndexMatch(i, m_stateSurfaceMask);
-				m_stateSurfaces[i] = m_stateSurfaces[bestAlternative];
-			}
-		}
-	}
-
-	//____ _updateUnsetStateColors() _______________________________________________
-
-	void TileSkin::_updateUnsetStateColors()
-	{
-		for (int i = 0; i < State::NbStates; i++)
-		{
-			if (!m_stateColorMask.bit(i))
-			{
-				int bestAlternative = bestStateIndexMatch(i, m_stateColorMask);
-				m_stateColors[i] = m_stateColors[bestAlternative];
-			}
-		}
-	}
-
 
 } // namespace wg

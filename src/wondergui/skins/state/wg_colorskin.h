@@ -102,15 +102,23 @@ namespace wg
 
 	protected:
 		ColorSkin(const Blueprint& blueprint );
-		~ColorSkin() {};
+		~ColorSkin();
 
-		void	_updateUnsetColors();
+		const HiColor&	_getColor(State state) const
+		{
+						int idxTabEntry = (state.index() & m_stateColorIndexMask) >> m_stateColorIndexShift;
+						int entry = m_pStateColorIndexTab[idxTabEntry];
+						return m_pStateColors[entry];
+		}
 
-		BlendMode	m_blendMode = BlendMode::Blend;
+		void *			m_pStateData;
 
-		Bitmask<uint32_t>	m_stateColorMask = 1;
+		BlendMode		m_blendMode = BlendMode::Blend;
 
-		HiColor		m_color[State::NbStates];
+		uint8_t			m_stateColorIndexMask;
+		uint8_t			m_stateColorIndexShift;
+		uint8_t*		m_pStateColorIndexTab;		// Table with index values into m_pStateColors for each mode (72) or less.
+		HiColor*		m_pStateColors;				// Contains colors for states.
 	};
 
 
