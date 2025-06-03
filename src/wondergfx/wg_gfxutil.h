@@ -353,6 +353,8 @@ namespace wg
 		}
 
 
+		uint32_t alignUp8(uint32_t value);
+
 	}
 
 	RectI Util::roundToPixels(const RectSPX& r)
@@ -390,6 +392,11 @@ namespace wg
 	int Util::roundToPixels(spx r)
 	{
 		return (r + 32) >> 6;
+	}
+
+	uint32_t Util::alignUp8(uint32_t value)
+	{
+		return (value + 7) & 0xFFFFFFFF;
 	}
 
 } // namespace wg

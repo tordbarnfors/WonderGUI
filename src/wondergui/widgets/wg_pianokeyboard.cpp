@@ -124,27 +124,18 @@ namespace wg
 		m_blackKeyHeight		= m_pBlackKeys ? (m_pBlackKeys->pointSize().h / states.size()) / pointSize.h : 0;
 		m_blackKeySourceHeight	= m_pBlackKeys ? (m_pBlackKeys->pixelSize().h / states.size())*64 : 0;
 
-		// Fill in state offsets
+		//
 
-		for (auto& ofs : m_stateOfsY)
-			ofs = -1;
+		State usedStates[State::NbStates];
 
-		Bitmask<uint32_t>	stateMask;
-		int ofs = 0;
+		int nbStates = 0;
 		for (auto state : states)
-		{
-			int i = state;
-			stateMask.setBit(i);
-			m_stateOfsY[i] = ofs++;
-		}
+			usedStates[nbStates++] = state;
 
 		for (int i = 0; i < State::NbStates; i++)
 		{
-			if (!stateMask.bit(i))
-			{
-				int bestAlternative = bestStateIndexMatch(i, stateMask);
-				m_stateOfsY[i] = m_stateOfsY[bestAlternative];
-			}
+			int bestAlternative = State((StateEnum)i).bestMatch(nbStates, usedStates);
+			m_stateOfsY[i] = m_stateOfsY[bestAlternative];
 		}
 	}
 
