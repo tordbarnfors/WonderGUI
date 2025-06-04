@@ -59,9 +59,28 @@ namespace wg
 		m_outline		= bp.outlineThickness;
 		m_blendMode		= bp.blendMode;
 
-		m_fillColor[0] = bp.color;
-		m_outlineColor[0] = bp.outlineColor;
+		// Generate lists of states that affects shift, color and surface.
 
+		State	shiftingStates[State::NbStates];
+		Coord	stateShifts[State::NbStates];
+
+		State	fillColorStates[State::NbStates];
+		HiColor stateFillColors[State::NbStates];
+
+		State	outlineColorStates[State::NbStates];
+		HiColor stateOutlineColors[State::NbStates];
+
+		int		nbShiftingStates = 1;
+		int		nbFillColorStates = 1;
+		int		nbOutlineColorStates = 1;
+
+		shiftingStates[0] = State::Default;
+		fillColorStates[0] = State::Default;
+		outlineColorStates[0] = State::Default;
+
+		stateShifts[0] = {0,0};
+		stateFillColors[0] = bp.color;
+		stateOutlineColors[0] = bp.outlineColor;
 
 		for (auto& stateInfo : bp.states)
 		{
@@ -69,26 +88,80 @@ namespace wg
 
 			if (stateInfo.data.contentShift.x != 0 || stateInfo.data.contentShift.y != 0)
 			{
-				m_contentShiftStateMask.setBit(index);
-				m_contentShift[index] = stateInfo.data.contentShift;
+				int index = stateInfo.state == State::Default ? 0 : nbShiftingStates++;
+				shiftingStates[index] = stateInfo.state;
+				stateShifts[index] = stateInfo.data.contentShift;
 				m_bContentShifting = true;
 			}
 
-			if (stateInfo.data.color != HiColor::Undefined)
+			if(stateInfo.data.color != HiColor::Undefined )
 			{
-				m_stateColorMask.setBit(index);
-				m_fillColor[index] = stateInfo.data.color;
+				int index = stateInfo.state == State::Default ? 0 : nbFillColorStates++;
+				fillColorStates[index] = stateInfo.state;
+				stateFillColors[index] = stateInfo.data.color;
 			}
 
-			if (stateInfo.data.outlineColor != HiColor::Undefined)
+			if(stateInfo.data.outlineColor != HiColor::Undefined )
 			{
-				m_stateOutlineColorMask.setBit(index);
-				m_outlineColor[index] = stateInfo.data.outlineColor;
+				int index = stateInfo.state == State::Default ? 0 : nbOutlineColorStates++;
+				outlineColorStates[index] = stateInfo.state;
+				stateOutlineColors[index] = stateInfo.data.outlineColor;
 			}
 		}
 
-		_updateContentShift();
-		_updateUnsetColors();
+		// Calc size of index table for surface and color, get their index masks & shifts.
+
+		int	fillColorIndexEntries;
+		int	outlineColorIndexEntries;
+
+		std::tie(fillColorIndexEntries,m_fillColorIndexMask,m_fillColorIndexShift) = calcStateToIndexParam(nbFillColorStates, fillColorStates);
+		std::tie(outlineColorIndexEntries,m_outlineColorIndexMask,m_outlineColorIndexShift) = calcStateToIndexParam(nbOutlineColorStates, outlineColorStates);
+
+		// Calculate memory needed for all state data
+
+		int shiftBytes 			= _bytesNeededForContentShiftData(nbShiftingStates, shiftingStates);
+		int fillColorBytes		= sizeof(HiColor) * nbFillColorStates;
+		int outlineColorBytes	= sizeof(HiColor) * nbOutlineColorStates;
+		int indexBytes			= fillColorIndexEntries+outlineColorIndexEntries;
+
+		// Allocate and pupulate memory for state data
+
+		m_pStateData = malloc(shiftBytes + fillColorBytes + outlineColorBytes + indexBytes);
+
+		auto pDest = (uint8_t*) m_pStateData;
+
+		auto pCoords = _prepareForContentShiftData(pDest, nbShiftingStates, shiftingStates);
+		for( int i = 0 ; i < nbShiftingStates ; i++ )
+			pCoords[i] = stateShifts[i];
+
+		pDest += shiftBytes;
+
+		auto pFillColors = (HiColor*) pDest;
+		for( int i = 0 ; i < nbFillColorStates ; i++ )
+			pFillColors[i] = stateFillColors[i];
+
+		m_pFillColors = pFillColors;
+		pDest += fillColorBytes;
+
+		auto pOutlineColors = (HiColor*) pDest;
+		for( int i = 0 ; i < nbOutlineColorStates ; i++ )
+			pOutlineColors[i] = stateOutlineColors[i];
+
+		m_pOutlineColors = pOutlineColors;
+		pDest += outlineColorBytes;
+
+		m_pFillColorIndexTab = pDest;
+		m_pOutlineColorIndexTab = pDest + fillColorIndexEntries;
+
+		generateStateToIndexTab(m_pFillColorIndexTab, nbFillColorStates, fillColorStates);
+		generateStateToIndexTab(m_pOutlineColorIndexTab, nbOutlineColorStates, outlineColorStates);
+	}
+
+	//____ destructor ____________________________________________________________
+
+	BoxSkin::~BoxSkin()
+	{
+		free(m_pStateData);
 	}
 
 	//____ typeInfo() _________________________________________________________
@@ -108,19 +181,20 @@ namespace wg
 		
 		RenderSettings settings(pDevice, m_layer, m_blendMode);
 
-		int i = state;
-
 		BorderSPX outline = align(ptsToSpx(m_outline, scale));
 
-		if( outline.width() + outline.height() == 0 || m_outlineColor[i] == m_fillColor[i] )
+		const Color& fillColor = _getFillColor(state);
+		const Color& outlineColor = _getOutlineColor(state);
+
+		if( outline.width() + outline.height() == 0 || fillColor == outlineColor )
 		{
-			pDevice->fill( canvas, m_fillColor[i] );
+			pDevice->fill( canvas, fillColor );
 		}
 		else
 		{
 			if (outline.width() >= canvas.w || outline.height() >= canvas.h)
 			{
-				pDevice->fill(canvas, m_outlineColor[i]);
+				pDevice->fill(canvas, outlineColor);
 			}
 			else
 			{
@@ -130,13 +204,13 @@ namespace wg
 				RectSPX bottom( canvas.x, canvas.y + canvas.h - outline.bottom, canvas.w, outline.bottom );
 				RectSPX center( canvas - outline );
 
-				pDevice->fill( top, m_outlineColor[i] );
-				pDevice->fill( left, m_outlineColor[i] );
-				pDevice->fill( right, m_outlineColor[i] );
-				pDevice->fill( bottom, m_outlineColor[i] );
+				pDevice->fill( top, outlineColor );
+				pDevice->fill( left, outlineColor );
+				pDevice->fill( right, outlineColor );
+				pDevice->fill( bottom, outlineColor );
 
 				if( center.w > 0 || center.h > 0 )
-					pDevice->fill( center, m_fillColor[i] );
+					pDevice->fill( center, fillColor );
 			}
 		}
 
@@ -187,9 +261,9 @@ namespace wg
 
 		RectSPX center = canvas - align(ptsToSpx(m_outline,scale));
 		if( center.contains(ofs) )
-			opacity = m_fillColor[state].a;
+			opacity = _getFillColor(state).a;
 		else
-			opacity = m_outlineColor[state].a;
+			opacity = _getOutlineColor(state).a;
 
 		int alpha = alphaOverride == -1 ? m_markAlpha : alphaOverride;
 
@@ -205,12 +279,9 @@ namespace wg
 		if (oldState == newState)
 			return RectSPX();
 
-		int i1 = newState;
-		int i2 = oldState;
-
 		RectSPX canvas = _canvas - align(ptsToSpx(m_spacing, scale)) + align(ptsToSpx(m_overflow, scale));
 
-		if (m_fillColor[i1] != m_fillColor[i2] || (!m_outline.isEmpty() && m_outlineColor[i1] != m_outlineColor[i2]))
+		if (_getFillColor(newState) != _getFillColor(oldState) || (!m_outline.isEmpty() && _getOutlineColor(newState) != _getOutlineColor(oldState)))
 			return canvas;
 
 		return StateSkin::_dirtyRect(canvas, scale, newState, oldState, newValue, oldValue, newValue2, oldValue2,
@@ -223,10 +294,10 @@ namespace wg
 	{
 		if( m_blendMode == BlendMode::Blend )
 		{
-			if( m_fillColor[state].a == 4096 )
+			if( _getFillColor(state).a == 4096 )
 			{
 				RectSPX coverage = geo - align(ptsToSpx(m_spacing,scale)) + align(ptsToSpx(m_overflow,scale));
-				if( m_outlineColor[state].a != 4096 )
+				if( _getOutlineColor(state).a != 4096 )
 					coverage -= align(ptsToSpx(m_outline,scale));
 				
 				return coverage;
@@ -237,26 +308,5 @@ namespace wg
 
 		return RectSPX();
 	}
-
-	//____ _updateUnsetColors() _______________________________________________
-
-	void BoxSkin::_updateUnsetColors()
-	{
-		for (int i = 0; i < State::NbStates; i++)
-		{
-			if (!m_stateColorMask.bit(i))
-			{
-				int bestAlternative = bestStateIndexMatch(i, m_stateColorMask);
-				m_fillColor[i] = m_fillColor[bestAlternative];
-			}
-
-			if (!m_stateOutlineColorMask.bit(i))
-			{
-				int bestAlternative = bestStateIndexMatch(i, m_stateOutlineColorMask);
-				m_outlineColor[i] = m_outlineColor[bestAlternative];
-			}
-		}
-	}
-
 
 } // namespace wg

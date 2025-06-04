@@ -67,7 +67,7 @@ namespace wg
 		return BlockSkin_p(new BlockSkin(pSurface, block, frame));
 	}
 
-	BlockSkin_p	BlockSkin::create(Surface * pSurface, Rect _firstBlock, std::initializer_list<State> stateBlocks, Border _frame, Axis axis, int _spacing)
+	BlockSkin_p	BlockSkin::create(Surface * pSurface, Rect _firstBlock, std::initializer_list<State> stateBlocks, Border _frame, Axis axis, pts _spacing)
 	{
 		if (pSurface == nullptr || stateBlocks.size() < 1 )
 			return nullptr;
@@ -96,13 +96,21 @@ namespace wg
 
 		// Create the skin
 
-		BlockSkin * p = new BlockSkin(pSurface, _firstBlock, _frame);
+		Blueprint bp;
+		bp.surface 	= pSurface;
+		bp.frame	= _frame;
+		bp.axis		= axis,
+		bp.blockSpacing	= _spacing;
+		bp.firstBlock = _firstBlock;
 
-		p->setBlocks(stateBlocks, axis, _spacing, _firstBlock.pos());
+		for( auto state : stateBlocks )
+			bp.states.push_back(state);
+
+		BlockSkin * p = new BlockSkin(bp);
 		return BlockSkin_p(p);
 	}
 
-	BlockSkin_p BlockSkin::create(Surface * pSurface, std::initializer_list<State> stateBlocks, Border _frame, Axis axis, int _spacing)
+	BlockSkin_p BlockSkin::create(Surface * pSurface, std::initializer_list<State> stateBlocks, Border _frame, Axis axis, pts _spacing)
 	{
 		if (pSurface == nullptr || stateBlocks.size() < 1)
 			return nullptr;
@@ -127,8 +135,17 @@ namespace wg
 
 		SizeI blockSize = axis == Axis::X ? SizeI(blockLen, surfSize.h) : SizeI(surfSize.w, blockLen);
 
-		BlockSkin * p = new BlockSkin(pSurface, spxToPts(blockSize*64, scale), _frame);
-		p->setBlocks(stateBlocks, axis, spacing, Coord(0, 0));
+		Blueprint bp;
+		bp.surface 	= pSurface;
+		bp.frame	= _frame;
+		bp.axis		= axis,
+		bp.blockSpacing	= _spacing;
+		bp.firstBlock = spxToPts(blockSize*64, scale);
+
+		for( auto state : stateBlocks )
+			bp.states.push_back(state);
+
+		BlockSkin * p = new BlockSkin(bp);
 		return BlockSkin_p(p);
 	}
 
@@ -140,26 +157,22 @@ namespace wg
 
 	BlockSkin_p BlockSkin::createClickable( Surface * pSurface, Size blockGeo, Coord blockStartOfs, Size blockPitch, Border blockFrame )
 	{
-		auto p = create(pSurface, blockGeo, blockFrame);
-		if (p)
+		Axis axis;
+		int spacing;
+		if (blockPitch.w > 0)
 		{
-			Axis o;
-			int spacing;
-			if (blockPitch.w > 0)
-			{
-				o = Axis::X;
-				spacing = blockPitch.w - blockGeo.w;
-			}
-			else
-			{
-				o = Axis::Y;
-				spacing = blockPitch.h - blockGeo.h;
-			}
-
-			p->setBlocks({ State::Default, State::Hovered, State::Pressed, State::Disabled }, o, spacing, blockStartOfs);
+			axis = Axis::X;
+			spacing = blockPitch.w - blockGeo.w;
 		}
-		return BlockSkin_p(p);
+		else
+		{
+			axis = Axis::Y;
+			spacing = blockPitch.h - blockGeo.h;
+		}
+
+		return BlockSkin::create(pSurface, Rect(blockStartOfs,blockGeo), { State::Default, State::Hovered, State::Pressed, State::Disabled }, blockFrame, axis, spacing);
 	}
+
 
 	BlockSkin_p BlockSkin::createStaticFromSurface( Surface * pSurface, Border frame )
 	{
@@ -168,30 +181,58 @@ namespace wg
 
 	//____ constructor ____________________________________________________________
 
-	BlockSkin::BlockSkin()
-	{
-		m_pSurface = nullptr;
-
-		for (int i = 0; i < State::NbStates; i++)
-		{
-			m_bStateOpaque[i] = false;
-			m_stateColors[i] = HiColor::Undefined;
-		}
-	}
 
 	BlockSkin::BlockSkin(Surface * pSurface, Rect block, Border frame)
 	{
+
 		m_pSurface			= pSurface;
 		m_ninePatch.block.setSize( block.size() );
 		m_ninePatch.frame	= frame;
 		bool bOpaque		= pSurface->isOpaque();
 
+		// Calc size of index table for block and color, get their index masks & shifts.
+
+		int	blockIndexEntries = 1;
+		int	colorIndexEntries = 1;
+
+		m_blockIndexMask = 0;
+		m_blockIndexShift = 0;
+
+		m_colorIndexMask = 0;
+		m_colorIndexShift = 0;
+
+		// Calculate memory needed for all state data
+
+		int blockBytes		= sizeof(Coord);
+		int colorBytes		= sizeof(HiColor);
+		int indexBytes		= 1;
+
+		// Allocate and pupulate memory for state data
+
+		m_pStateData = malloc(blockBytes + colorBytes + indexBytes);
+
+		auto pDest = (uint8_t*) m_pStateData;
+
+		auto pBlocks = (Coord*) pDest;
+		pBlocks[0] = block.pos();
+
+		m_pBlocks = pBlocks;
+		pDest += blockBytes;
+
+		auto pColors = (HiColor*) pDest;
+		pColors[0] = HiColor::White;
+
+		m_pColors = pColors;
+
+		pDest += colorBytes;
+
+		m_pBlockIndexTab = pDest;
+		m_pColorIndexTab = pDest;
+
+		m_pBlockIndexTab[0] = 0;
+
 		for( int i = 0 ; i < State::NbStates ; i++ )
-		{
 			m_bStateOpaque[i] = bOpaque;
-			m_stateBlocks[i] = block.pos();
-			m_stateColors[i] = HiColor::Undefined;
-		}
 	}
 
 	BlockSkin::BlockSkin(const Blueprint& bp) : StateSkin(bp)
@@ -228,12 +269,6 @@ namespace wg
 		}
 
 		m_ninePatch.block.setSize(block.size());
-
-
-		// Default state
-
-		m_stateBlocks[0] = block;
-		m_stateColors[0] = bp.color;
 
 		// RigidPartX
 
@@ -281,43 +316,108 @@ namespace wg
 			m_ninePatch.rigidPartYSections = bp.rigidPartY.sections;
 		}
 
-		// States
+		// Generate lists of states that affects shift, color and surface.
+
+		State	shiftingStates[State::NbStates];
+		Coord	stateShifts[State::NbStates];
+
+		State	colorStates[State::NbStates];
+		HiColor stateColors[State::NbStates];
+
+		State	blockStates[State::NbStates];
+		Coord	stateBlocks[State::NbStates];
+
+		int 	nbShiftingStates = 1;
+		int		nbColorStates = 1;
+		int		nbBlockStates = 1;
+
+		shiftingStates[0] = State::Default;
+		colorStates[0] = State::Default;
+		blockStates[0] = State::Default;
+
+		stateShifts[0] = {0,0};
+		stateColors[0] = bp.color;
+		stateBlocks[0] = bp.firstBlock;
 
 		Coord blockOfs = block.pos();
-
 		Coord pitch = bp.axis == Axis::X ? Coord(block.w + bp.blockSpacing, 0) : Coord(0, block.h + bp.blockSpacing);
 
-		int ofs = 0;
 		for (auto& stateInfo : bp.states)
 		{
 			int index = stateInfo.state;
 
 			if (stateInfo.data.contentShift.x != 0 || stateInfo.data.contentShift.y != 0)
 			{
-				m_contentShiftStateMask.setBit(index);
-				m_contentShift[index] = stateInfo.data.contentShift;
+				int index = stateInfo.state == State::Default ? 0 : nbShiftingStates++;
+				shiftingStates[index] = stateInfo.state;
+				stateShifts[index] = stateInfo.data.contentShift;
 				m_bContentShifting = true;
 			}
 
 			if ( stateInfo.state != State::Default && !stateInfo.data.blockless )
 			{
-				ofs++;
-				m_stateBlockMask.setBit(index);
-				m_stateBlocks[index] = blockOfs + pitch * ofs;
+				int index = stateInfo.state == State::Default ? 0 : nbBlockStates++;
+				stateBlocks[index] = blockOfs + pitch * nbBlockStates;
+				blockStates[index] = stateInfo.state;
 			}
 
-			if (stateInfo.data.color != HiColor::Undefined)
+			if(stateInfo.data.color != HiColor::Undefined )
 			{
-				m_stateColorMask.setBit(index);
-				m_stateColors[index] = stateInfo.data.color;
+				int index = stateInfo.state == State::Default ? 0 : nbColorStates++;
+				colorStates[index] = stateInfo.state;
+				stateColors[index] = stateInfo.data.color;
 			}
 		}
 
-		//
+		// Calc size of index table for block and color, get their index masks & shifts.
 
-		_updateContentShift();
-		_updateUnsetStateBlocks();
-		_updateUnsetStateColors();
+		int	blockIndexEntries;
+		int	colorIndexEntries;
+
+		std::tie(blockIndexEntries,m_blockIndexMask,m_blockIndexShift) = calcStateToIndexParam(nbBlockStates, blockStates);
+		std::tie(colorIndexEntries,m_colorIndexMask,m_colorIndexShift) = calcStateToIndexParam(nbColorStates, colorStates);
+
+
+		// Calculate memory needed for all state data
+
+		int shiftBytes 		= _bytesNeededForContentShiftData(nbShiftingStates, shiftingStates);
+		int blockBytes		= sizeof(Coord) * nbBlockStates;
+		int colorBytes		= sizeof(HiColor) * nbColorStates;
+		int indexBytes		= blockIndexEntries+colorIndexEntries;
+
+		// Allocate and pupulate memory for state data
+
+		m_pStateData = malloc(shiftBytes + blockBytes + colorBytes + indexBytes);
+
+		auto pDest = (uint8_t*) m_pStateData;
+
+		auto pCoords = _prepareForContentShiftData(pDest, nbShiftingStates, shiftingStates);
+		for( int i = 0 ; i < nbShiftingStates ; i++ )
+			pCoords[i] = stateShifts[i];
+
+		pDest += shiftBytes;
+
+		auto pBlocks = (Coord*) pDest;
+		for( int i = 0 ; i < nbBlockStates ; i++ )
+			pBlocks[i] = stateBlocks[i];
+
+		m_pBlocks = pBlocks;
+		pDest += blockBytes;
+
+		auto pColors = (HiColor*) pDest;
+		for( int i = 0 ; i < nbColorStates ; i++ )
+			pColors[i] = stateColors[i];
+
+		m_pColors = pColors;
+
+		pDest += colorBytes;
+
+		m_pBlockIndexTab = pDest;
+		m_pColorIndexTab = pDest + blockIndexEntries;
+
+		generateStateToIndexTab(m_pBlockIndexTab, nbBlockStates, blockStates);
+		generateStateToIndexTab(m_pColorIndexTab, nbColorStates, colorStates);
+
 		_updateOpaqueFlags();
 	}
 
@@ -328,200 +428,6 @@ namespace wg
 		return TYPEINFO;
 	}
 
-	//____ setBlock() _____________________________________________________________
-
-	void BlockSkin::setBlock(Coord ofs)
-	{
-		m_stateBlocks[0] = ofs;
-		m_stateBlockMask = 1;
-
-		_updateUnsetStateBlocks();
-	}
-
-	void BlockSkin::setBlock(State state, Coord ofs)
-	{
-		int i = state;
-
-		m_stateBlocks[i] = ofs;
-		m_stateBlockMask.setBit(i);
-		_updateUnsetStateBlocks();
-	}
-
-	//____ setBlocks() ________________________________________________________
-
-	void BlockSkin::setBlocks(std::initializer_list<State> stateBlocks, Axis axis, int spacing, Coord blockStartOfs )
-	{
-		Coord pitch = axis == Axis::X ? Coord(m_ninePatch.block.w + spacing, 0 ) : Coord(0, m_ninePatch.block.h + spacing);
-
-		int ofs = 0;
-		for (State state : stateBlocks)
-		{
-			int index = state;
-			m_stateBlockMask.setBit(index);
-			m_stateBlocks[index] = blockStartOfs + pitch * ofs;
-			ofs++;
-		}
-		_updateUnsetStateBlocks();
-	}
-
-	//____ block() ____________________________________________________________
-
-	Rect BlockSkin::block(State state) const
-	{
-		return { m_stateBlocks[state], m_ninePatch.block.size() };
-	}
-
-	//____ setColor() __________________________________________________________
-
-	void BlockSkin::setColor(HiColor tint)
-	{
-		m_stateColors[0] = tint;
-		m_stateColorMask = 1;
-
-		_updateUnsetStateColors();
-		_updateOpaqueFlags();
-	}
-
-	void BlockSkin::setColor(State state, HiColor tint)
-	{
-		int i = state;
-
-		m_stateColors[i] = tint;
-		m_stateColorMask.setBit(i);
-		_updateUnsetStateColors();
-		_updateOpaqueFlags();
-	}
-
-	void BlockSkin::setColor(std::initializer_list< std::tuple<State, HiColor> > stateTints)
-	{
-		for (auto& state : stateTints)
-		{
-			int i = std::get<0>(state);
-			m_stateColorMask.setBit(i);
-			m_stateColors[i] = std::get<1>(state);
-		}
-
-		_updateUnsetStateColors();
-		_updateOpaqueFlags();
-	}
-
-	//____ color() _____________________________________________________________
-
-	HiColor BlockSkin::color(State state) const
-	{
-		return m_stateColors[state];
-	}
-
-	//____ setGradient() ______________________________________________________
-
-	void BlockSkin::setGradient(const Gradient& gradient)
-	{
-		m_gradient = gradient;
-		_updateOpaqueFlags();
-	}
-
-
-	//____ setBlendMode() _____________________________________________________
-
-	void BlockSkin::setBlendMode(BlendMode mode)
-	{
-		m_blendMode = mode;
-		_updateOpaqueFlags();
-	}
-
-	//____ setSurface() _______________________________________________________
-
-	void BlockSkin::setSurface(Surface * pSurf)
-	{
-		m_pSurface = pSurf;
-		_updateOpaqueFlags();
-	}
-
-	//____ setBlockSize() _____________________________________________________
-
-	void BlockSkin::setBlockSize(Size size)
-	{
-		m_ninePatch.block.setSize( size );
-	}
-
-	//____ setFrame() ____________________________________________________________
-
-	void BlockSkin::setFrame(Border frame)
-	{
-		m_ninePatch.frame = frame;
-	}
-
-	//____ setRigidPartX() _____________________________________________
-
-	bool BlockSkin::setRigidPartX(pts ofs, pts length, YSections sections)
-	{
-		pts	midSecLen = m_ninePatch.block.w - m_ninePatch.frame.width();
-		ofs -= m_ninePatch.frame.left;
-
-		// Sanity check
-
-		if (length <= 0 || ofs > midSecLen || ofs + length < 0)
-		{
-			m_ninePatch.rigidPartXOfs = 0;
-			m_ninePatch.rigidPartXLength = 0;
-			m_ninePatch.rigidPartXSections = YSections::None;
-			return false;
-		}
-
-		//
-
-		if (ofs < 0)
-		{
-			length += ofs;
-			ofs = 0;
-		}
-
-		if (ofs + length > midSecLen)
-			length = midSecLen - ofs;
-
-		m_ninePatch.rigidPartXOfs = ofs;
-		m_ninePatch.rigidPartXLength = length;
-		m_ninePatch.rigidPartXSections = sections;
-
-		return true;
-	}
-
-	//____ setRigidPartY() _____________________________________________
-
-	bool BlockSkin::setRigidPartY(pts ofs, pts length, XSections sections)
-	{
-		pts	midSecLen = m_ninePatch.block.h - m_ninePatch.frame.height();
-		ofs -= m_ninePatch.frame.top;
-
-		// Sanity check
-
-		if (length <= 0 || ofs > midSecLen || ofs + length < 0)
-		{
-			m_ninePatch.rigidPartYOfs = 0;
-			m_ninePatch.rigidPartYLength = 0;
-			m_ninePatch.rigidPartYSections = XSections::None;
-			return false;
-		}
-
-		//
-
-		if (ofs < 0)
-		{
-			length += ofs;
-			ofs = 0;
-		}
-
-		if (ofs + length > midSecLen)
-			length = midSecLen - ofs;
-
-		m_ninePatch.rigidPartYOfs = ofs;
-		m_ninePatch.rigidPartYLength = length;
-		m_ninePatch.rigidPartYSections = sections;
-
-		return true;
-	}
-
-
 	//____ render() _______________________________________________________________
 
 	void BlockSkin::_render( GfxDevice * pDevice, const RectSPX& _canvas, int scale, State state, float value, float value2, int animPos, float* pStateFractions) const
@@ -531,13 +437,12 @@ namespace wg
 
 		RectSPX canvas = _canvas - align(ptsToSpx(m_spacing, scale)) + align(ptsToSpx(m_overflow, scale));
 		
-		int idx = state;
-		RenderSettingsWithGradient settings(pDevice, m_layer, m_blendMode, m_stateColors[idx], canvas, m_gradient);
+		RenderSettingsWithGradient settings(pDevice, m_layer, m_blendMode, _getColor(state), canvas, m_gradient);
 
 		pDevice->setBlitSource(m_pSurface);
 
 		NinePatch	patch = m_ninePatch;
-		patch.block.setPos(m_stateBlocks[idx]);
+		patch.block.setPos(_getBlock(state));
 
 		pDevice->blitNinePatch(canvas, align(ptsToSpx(patch.frame,scale)), patch, scale);
 	}
@@ -585,7 +490,7 @@ namespace wg
 		canvas += align(ptsToSpx(m_overflow, scale));
 		
 		NinePatch	patch = m_ninePatch;
-		patch.block.setPos(m_stateBlocks[state]);
+		patch.block.setPos(_getBlock(state));
 
 		int alpha = alphaOverride == -1 ? m_markAlpha : alphaOverride;
 
@@ -601,12 +506,9 @@ namespace wg
 		if (oldState == newState)
 			return RectSPX();
 
-		int i1 = newState;
-		int i2 = oldState;
-
 		RectSPX canvas = _canvas - align(ptsToSpx(m_spacing, scale)) + align(ptsToSpx(m_overflow, scale));
 		
-		if (m_stateBlocks[i1] != m_stateBlocks[i2])
+		if (_getBlock(newState) != _getBlock(oldState))
 			return canvas;
 
 		return StateSkin::_dirtyRect(canvas, scale, newState, oldState, newValue, oldValue, newValue2, oldValue2,
@@ -647,7 +549,7 @@ namespace wg
 		if (bTintDecides)
 		{
 			for (int i = 0; i < State::NbStates; i++)
-				m_bStateOpaque[i] = m_stateColors[i].a == 4096;
+				m_bStateOpaque[i] = _getColor((StateEnum)i).a == 4096;
 		}
 		else
 		{
@@ -655,34 +557,5 @@ namespace wg
 				m_bStateOpaque[i] = bOpaque;
 		}
 	}
-
-	//____ _updateUnsetStateBlocks() _______________________________________________
-
-	void BlockSkin::_updateUnsetStateBlocks()
-	{
-		for (int i = 0; i < State::NbStates; i++)
-		{
-			if (!m_stateBlockMask.bit(i))
-			{
-				int bestAlternative = bestStateIndexMatch(i, m_stateBlockMask);
-				m_stateBlocks[i] = m_stateBlocks[bestAlternative];
-			}
-		}
-	}
-
-	//____ _updateUnsetStateColors() _______________________________________________
-
-	void BlockSkin::_updateUnsetStateColors()
-	{
-		for (int i = 0; i < State::NbStates; i++)
-		{
-			if (!m_stateColorMask.bit(i))
-			{
-				int bestAlternative = bestStateIndexMatch(i, m_stateColorMask);
-				m_stateColors[i] = m_stateColors[bestAlternative];
-			}
-		}
-	}
-
 
 } // namespace wg
