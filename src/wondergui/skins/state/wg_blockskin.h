@@ -115,8 +115,8 @@ namespace wg
 		static BlockSkin_p  create(Surface * pSurface, Border frame = { 0 } );
 		static BlockSkin_p	create(Surface * pSurface, Rect block, Border frame = { 0 } );
 	//protected:
-		static BlockSkin_p	create(Surface * pSurface, Rect firstBlock, std::initializer_list<State> stateBlocks, Border frame = { 0 }, Axis axis = Axis::Y, int spacing = 0);
-		static BlockSkin_p	create(Surface * pSurface, std::initializer_list<State> stateBlocks, Border frame = { 0 }, Axis axis = Axis::Y, int spacing = 0);
+		static BlockSkin_p	create(Surface * pSurface, Rect firstBlock, std::initializer_list<State> stateBlocks, Border frame = { 0 }, Axis axis = Axis::Y, pts spacing = 0);
+		static BlockSkin_p	create(Surface * pSurface, std::initializer_list<State> stateBlocks, Border frame = { 0 }, Axis axis = Axis::Y, pts spacing = 0);
 	//public:
 
 
@@ -125,38 +125,6 @@ namespace wg
 		const TypeInfo&		typeInfo(void) const override;
 		const static TypeInfo	TYPEINFO;
 
-
-		//.____ Appearance _________________________________________________
-
-	protected:
-		void		setBlock(Coord ofs);
-		void		setBlock(State state, Coord ofs);
-		void		setBlocks(std::initializer_list<State> stateBlocks, Axis axis = Axis::Y, int spacing = 0, Coord blockStartOfs = { 0,0 });
-		Rect		block(State state) const;
-
-		void		setColor(HiColor tint);
-		void		setColor(State state, HiColor tint);
-		void		setColor(std::initializer_list< std::tuple<State, HiColor> > stateTints);
-		HiColor		color(State state) const;
-
-		void		setGradient(const Gradient& gradient);
-		Gradient	gradient() const { return m_gradient; }
-
-		void		setBlendMode(BlendMode mode);
-		BlendMode	blendMode() const { return m_blendMode; }
-
-		void		setSurface( Surface * pSurf );
-		Surface_p	surface() const { return m_pSurface; }
-
-		void		setBlockSize(Size size);
-		Size		blockSize() const { return m_ninePatch.block.size(); }
-
-		void		setFrame(Border frame);
-		Border		frame() const { return m_ninePatch.frame; }
-
-		bool		setRigidPartX(pts ofs, pts length, YSections sections);
-		bool		setRigidPartY(pts ofs, pts length, XSections sections);
-	public:
 
 		//.____ Deprecated ____________________________________________________
 
@@ -191,22 +159,42 @@ namespace wg
 		BlockSkin(const Blueprint& blueprint);
 		~BlockSkin() {};
 
-		void		_updateOpaqueFlags();
-		void		_updateUnsetStateBlocks();
-		void		_updateUnsetStateColors();
+		void			_updateOpaqueFlags();
 
-		NinePatch	m_ninePatch;		// Block offset is undefined.
-		Surface_p	m_pSurface;
-		Gradient	m_gradient;
+		const HiColor&	_getColor(State state) const
+		{
+						int idxTabEntry = (state.index() & m_colorIndexMask) >> m_colorIndexShift;
+						int entry = m_pColorIndexTab[idxTabEntry];
+						return m_pColors[entry];
+		}
 
-		BlendMode	m_blendMode = BlendMode::Blend;
+		const Coord&	_getBlock(State state) const
+		{
+						int idxTabEntry = (state.index() & m_blockIndexMask) >> m_blockIndexShift;
+						int entry = m_pBlockIndexTab[idxTabEntry];
+						return m_pBlocks[entry];
+		}
 
-		Bitmask<uint32_t>	m_stateBlockMask = 1;
-		Bitmask<uint32_t>	m_stateColorMask = 1;
 
-		Coord		m_stateBlocks[State::NbStates];
-		HiColor		m_stateColors[State::NbStates];
-		bool		m_bStateOpaque[State::NbStates];
+		NinePatch		m_ninePatch;		// Block offset is undefined.
+		Surface_p		m_pSurface;
+		Gradient		m_gradient;
+
+		BlendMode		m_blendMode = BlendMode::Blend;
+
+		void *			m_pStateData;				// Pointer at memory block with state data.
+
+		uint8_t			m_colorIndexMask;
+		uint8_t			m_colorIndexShift;
+		uint8_t*		m_pColorIndexTab;		// Table with index values into m_pStateColors for each mode (72) or less.
+		HiColor*		m_pColors;				// Contains colors for states.
+
+		uint8_t			m_blockIndexMask;
+		uint8_t			m_blockIndexShift;
+		uint8_t*		m_pBlockIndexTab;
+		Coord*			m_pBlocks;
+
+		bool			m_bStateOpaque[State::NbStates];
 	};
 
 

@@ -113,18 +113,39 @@ namespace wg
 
 	protected:
 		BoxSkin( const Blueprint& blueprint );
-		~BoxSkin() {};
+		~BoxSkin();
 
 		void	_updateUnsetColors();
 
-		Border		m_outline;
-		BlendMode	m_blendMode = BlendMode::Blend;
+		Border			m_outline;
+		BlendMode		m_blendMode = BlendMode::Blend;
 
-		Bitmask<uint32_t>	m_stateColorMask = 1;
-		Bitmask<uint32_t>	m_stateOutlineColorMask = 1;
+		const HiColor&	_getFillColor(State state) const
+		{
+						int idxTabEntry = (state.index() & m_fillColorIndexMask) >> m_fillColorIndexShift;
+						int entry = m_pFillColorIndexTab[idxTabEntry];
+						return m_pFillColors[entry];
+		}
 
-		HiColor		m_fillColor[State::NbStates];
-		HiColor		m_outlineColor[State::NbStates];
+		const HiColor&	_getOutlineColor(State state) const
+		{
+						int idxTabEntry = (state.index() & m_outlineColorIndexMask) >> m_outlineColorIndexShift;
+						int entry = m_pOutlineColorIndexTab[idxTabEntry];
+						return m_pOutlineColors[entry];
+		}
+
+
+		void *			m_pStateData;				// Pointer at memory block with state data.
+
+		uint8_t			m_fillColorIndexMask;
+		uint8_t			m_fillColorIndexShift;
+		uint8_t*		m_pFillColorIndexTab;		// Table with index values into m_pFillColors for each mode (72) or less.
+		HiColor*		m_pFillColors;				// Contains colors for states.
+
+		uint8_t			m_outlineColorIndexMask;
+		uint8_t			m_outlineColorIndexShift;
+		uint8_t*		m_pOutlineColorIndexTab;		// Table with index values into m_pFillColors for each mode (72) or less.
+		HiColor*		m_pOutlineColors;				// Contains colors for states.
 	};
 
 
