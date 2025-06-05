@@ -130,7 +130,7 @@ namespace wg
 		if (order != m_sortOrder)
 		{
 			m_sortOrder = order;
-			m_state.setSelected(order != SortOrder::None);
+			m_state.setChecked(order != SortOrder::None);
 			_requestRender();
 		}
 	}
@@ -141,7 +141,7 @@ namespace wg
 	{
 		State oldState = m_state;
 		m_state = state;
-		m_state.setSelected(m_sortOrder != SortOrder::None);
+		m_state.setChecked(m_sortOrder != SortOrder::None);
 		_layout()->onStateChanged(this, state, oldState);
 
 
@@ -287,7 +287,7 @@ namespace wg
 						else
 							m_sortOrder = SortOrder::Ascending;
 
-						m_state.setSelected(true);
+						m_state.setChecked(true);
 						_notify( ComponentNotif::SortOrderChanged, 0, nullptr );
 					}
 					pMsg->swallow();

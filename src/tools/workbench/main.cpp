@@ -620,14 +620,14 @@ int main(int argc, char** argv)
 		convertSDLFormat(&pixelDesc, pSDLSurf->format);
 		Surface_p pStateButtonSurface = pSurfaceFactory->createSurface({ .format = PixelFormat::BGR_8, .size = SizeI(pSDLSurf->w, pSDLSurf->h) }, (unsigned char*)pSDLSurf->pixels, pixelDesc, pSDLSurf->pitch);
 		SDL_FreeSurface(pSDLSurf);
-		//	BlockSkin_p pStateButtonSkin = BlockSkin::create(pStateButtonSurface, { State::Default, State::Hovered, State::Selected, State::SelectedHovered, State::Disabled }, Border(3), Axis::X);
+		//	BlockSkin_p pStateButtonSkin = BlockSkin::create(pStateButtonSurface, { State::Default, State::Hovered, State::Checked, State::Checked + State::Hovered, State::Disabled }, Border(3), Axis::X);
 		auto pStateButtonSkin = BlockSkin::create(BlockSkin::Blueprint
 		{
 			.axis = Axis::X,
 				.frame = 3,
 				.padding = 5,
 				.states = { State::Default, {}, State::Hovered, {},
-								State::Selected, {}, State::Selected + State::Hovered, {},
+								State::Checked, {}, State::Checked + State::Hovered, {},
 								State::Disabled, {}
 			},
 				.surface = pStateButtonSurface
@@ -666,7 +666,7 @@ int main(int argc, char** argv)
 		convertSDLFormat(&pixelDesc, pSDLSurf->format);
 		Surface_p pUpDownArrowSurface = pSurfaceFactory->createSurface({ .format = PixelFormat::BGRA_8, .size = SizeI(pSDLSurf->w, pSDLSurf->h) }, (unsigned char*)pSDLSurf->pixels, pixelDesc, pSDLSurf->pitch);
 		SDL_FreeSurface(pSDLSurf);
-		Skin_p pUpDownArrowSkin = BlockSkin::create(pUpDownArrowSurface, { State::Default, State::Selected }, Border(0));
+		Skin_p pUpDownArrowSkin = BlockSkin::create(pUpDownArrowSurface, { State::Default, State::Checked }, Border(0));
 
 		pSDLSurf = IMG_Load("resources/simple_icon.png");
 		convertSDLFormat(&pixelDesc, pSDLSurf->format);
@@ -2493,7 +2493,7 @@ bool scrollSkinTest(ComponentPtr<DynamicSlot> pSlot)
 											.blockSpacing = 0,
 											.slideDirection = Direction::Left,
 											.slideDuration = 100,
-											.slideState = PrimState::Selected,
+											.slideState = PrimState::Checked,
 											.states = { State::Default, {}, State::Hovered, {}, State::Disabled, {} },
 											.surface = pSliderSurf });
 

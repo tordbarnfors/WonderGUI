@@ -337,7 +337,7 @@ namespace wg
 
 		stateShifts[0] = {0,0};
 		stateColors[0] = bp.color;
-		stateBlocks[0] = bp.firstBlock;
+		stateBlocks[0] = block;
 
 		Coord blockOfs = block.pos();
 		Coord pitch = bp.axis == Axis::X ? Coord(block.w + bp.blockSpacing, 0) : Coord(0, block.h + bp.blockSpacing);
@@ -357,7 +357,7 @@ namespace wg
 			if ( stateInfo.state != State::Default && !stateInfo.data.blockless )
 			{
 				int index = stateInfo.state == State::Default ? 0 : nbBlockStates++;
-				stateBlocks[index] = blockOfs + pitch * nbBlockStates;
+				stateBlocks[index] = blockOfs + pitch * index;
 				blockStates[index] = stateInfo.state;
 			}
 

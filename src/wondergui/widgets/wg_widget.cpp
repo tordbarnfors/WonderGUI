@@ -273,18 +273,32 @@ namespace wg
 		m_bSelectable = bSelectable;
 	}
 
-	//____ setSelected() __________________________________________________________
+	//____ setChecked() __________________________________________________________
 
-	bool Widget::setSelected( bool bSelected )
+	bool Widget::setChecked( bool bChecked )
 	{
-		if( m_state.isSelected() != bSelected )
+		if( m_state.isChecked() != bChecked )
 		{
 			State state = m_state;
-			state.setSelected(bSelected);
+			state.setChecked(bChecked);
 			_setState(state);
 		}
 		return true;
 	}
+
+	//____ setFlagged() __________________________________________________________
+
+	bool Widget::setFlagged( bool bFlagged )
+	{
+		if( m_state.isFlagged() != bFlagged )
+		{
+			State state = m_state;
+			state.setFlagged(bFlagged);
+			_setState(state);
+		}
+		return true;
+	}
+
 
 	//____ grabFocus() ____________________________________________________________
 	/**
