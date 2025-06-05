@@ -975,25 +975,6 @@ namespace wg
 		SelectMsg( Object * pSource );
 	};
 
-	//____ UnselectMsg ___________________________________________________________
-
-	class UnselectMsg : public Msg
-	{
-	public:
-		//.____ Creation __________________________________________
-
-		inline static UnselectMsg_p	create(Object* pSource) { return new UnselectMsg(pSource); }
-
-		//.____ Identification __________________________________________
-
-		const TypeInfo& typeInfo(void) const override;
-		const static TypeInfo	TYPEINFO;
-
-	protected:
-		UnselectMsg(Object* pSource);
-	};
-
-
 	//____ ToggleMsg ___________________________________________________________
 
 	class ToggleMsg : public Msg

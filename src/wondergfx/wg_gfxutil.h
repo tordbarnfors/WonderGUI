@@ -353,7 +353,7 @@ namespace wg
 		}
 
 
-		uint32_t alignUp8(uint32_t value);
+		inline uint32_t alignUp8(uint32_t value);
 
 	}
 

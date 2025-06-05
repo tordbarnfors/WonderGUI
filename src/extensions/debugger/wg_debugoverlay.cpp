@@ -790,7 +790,7 @@ namespace wg
 													 _.outlineColor = Color::Black,
 													 _.outlineThickness = 1,
 													 _.padding = 6,
-													 _.states = { {State::Default, Color::Red}, {State::Selected, Color::Green}} ));
+													 _.states = { {State::Default, Color::Red}, {State::Checked, Color::Green}} ));
 
 
 		auto pPickButton = ToggleButton::create( WGBP(ToggleButton, _.skin = pPickButtonSkin, _.label.text = "+" ));
@@ -801,7 +801,7 @@ namespace wg
 
 			auto pButton = wg_static_cast<ToggleButton_p>(pMsg->source());
 
-			this->m_bSelectMode = pButton->isSelected();
+			this->m_bSelectMode = pButton->isChecked();
 
 		});
 

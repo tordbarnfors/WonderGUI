@@ -301,10 +301,6 @@ namespace wg
 			case MsgType::Select:
 				break;
 
-			case MsgType::Unselect:
-				break;
-
-
 			case MsgType::Toggle:
 				snprintf( params, c_paramLen, " set=%d", (int) (static_cast<ToggleMsg*>(_pMsg)->isSet()) );
 				break;

@@ -155,9 +155,14 @@ namespace wg
 		void				setSelectable(bool bSelectable);
 		inline bool			isSelectable() const;
 
-		virtual bool		setSelected( bool bSelected );
-		inline bool			isSelected();
+//		virtual bool		setSelected( bool bSelected );
+//		inline bool			isSelected();
 
+		virtual bool		setChecked( bool bChecked );
+		inline bool			isChecked();
+
+		virtual bool		setFlagged( bool bFlagged );
+		inline bool			isFlagged();
 
 		bool				grabFocus(bool bRaiseWindow = false);
 		bool				releaseFocus();
@@ -788,11 +793,18 @@ namespace wg
 		return m_bSelectable;
 	}
 
-	//____ isSelected() __________________________________________________________
+	//____ isChecked() __________________________________________________________
 
-	inline bool Widget::isSelected()
+	inline bool Widget::isChecked()
 	{
-		return m_state.isSelected();
+		return m_state.isChecked();
+	};
+
+	//____ isFlagged() __________________________________________________________
+
+	inline bool Widget::isFlagged()
+	{
+		return m_state.isFlagged();
 	};
 
 	//____ nextSibling() ____________________________________________________________

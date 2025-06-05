@@ -42,8 +42,8 @@ namespace wg
 	/**
 	 * @brief Combined ToggleButton, Checkbox and RadioButton widget.
 	 *
-	 * ToggleButton is a button widget that toggles its selected-state each time it is pressed.
-	 * Press once to select, press again to deselect. ToggleButton is also used for Checkboxes
+	 * ToggleButton is a button widget that toggles its checked-state each time it is pressed.
+	 * Press once to check, press again to uncheck. ToggleButton is also used for Checkboxes
 	 * and RadioButtons since these are technically just ToggleButtons with different skinning
 	 * and possibly (depending on exact behavior desired) a different ClickArea.
 	 *
@@ -72,6 +72,7 @@ namespace wg
 		struct Blueprint
 		{
 			Object_p		baggage;
+			bool			checked = false;
 			ClickArea		clickArea = ClickArea::Default;
 			bool			disabled = false;
 			bool			dropTarget = false;
@@ -85,7 +86,6 @@ namespace wg
 			uint8_t			pickCategory = 0;
 			bool			pickHandle = false;
 			PointerStyle	pointer = PointerStyle::Undefined;
-			bool			selected = false;
 			bool			selectable = true;
 			Skin_p			skin;
 			bool			stickyFocus = false;
@@ -135,8 +135,8 @@ namespace wg
 			m_clickArea		= bp.clickArea;
 			m_bFlipOnRelease = bp.flipOnRelease;
 
-			if (bp.selected)
-				setSelected(true);
+			if (bp.checked)
+				setChecked(true);
 		}
 		
 		virtual ~ToggleButton();

@@ -51,31 +51,31 @@ namespace wg
 		return TYPEINFO;
 	}
 
-	//____ setRequireSelected() _______________________________________________________
+	//____ setRequireChecked() _______________________________________________________
 	/**
-	 * Sets the requireSelected flag of this group, which means that there will always
-	 * be a selected widget in the group as long as the group is not empty. The default state
+	 * Sets the requireChecked flag of this group, which means that there will always
+	 * be a checked widget in the group as long as the group is not empty. The default state
 	 * of this flag is TRUE.
 	 *
-	 * @param bRequire 	Set to TRUE to require a member to always be selected. Set to
-	 * 					false to allow all members to be deselected.
+	 * @param bRequire 	Set to TRUE to require a member to always be checked. Set to
+	 * 					false to allow all members to be unchecked.
 	 *
 	 * Setting this flag in an empty ToggleGroup will result in the first widget that is added
-	 * to automatically be selected. If the ToggleGroup is not empty but has no selected
-	 * member, the first member of the group will be selected.
+	 * to automatically be checked. If the ToggleGroup is not empty but has no checked
+	 * member, the first member of the group will be checked.
 	 *
-	 * It will not be possible to deselect a widget when requireSelected is TRUE, the only way
-	 * to deselect a member is to select another one. If the selected member of
-	 * the group is removed, the first member will be selected.
+	 * It will not be possible to uncheck a widget when requireChecked is TRUE, the only way
+	 * to uncheck a member is to check another one. If the checked member of
+	 * the group is removed, the first member will be checked.
 	 *
 	 **/
 
-	void ToggleGroup::setRequireSelected(bool bRequire)
+	void ToggleGroup::setRequireChecked(bool bRequire)
 	{
-		m_bRequireSelected = bRequire;
+		m_bRequireChecked = bRequire;
 
-		if( bRequire && !m_pSelected && !m_entries.empty() )
-			m_entries[0]->setSelected(true);
+		if( bRequire && !m_pChecked && !m_entries.empty() )
+			m_entries[0]->setChecked(true);
 	}
 
 	//____ add() ___________________________________________________________________
@@ -101,12 +101,12 @@ namespace wg
 		ToggleButton * p = pToggleButton;
 		if( p )
 		{
-			if( p->isSelected() )
+			if( p->isChecked() )
 			{
-				if( m_pSelected )
-					p->setSelected(false);
+				if( m_pChecked )
+					p->setChecked(false);
 				else
-					m_pSelected = p;
+					m_pChecked = p;
 			}
 
 			p->_setToggleGroup(this);
@@ -115,8 +115,8 @@ namespace wg
 
 		// Select first entry if none selected and we require one to be
 
-		if( m_bRequireSelected && !m_pSelected  )
-			pToggleButton->setSelected(true);
+		if( m_bRequireChecked && !m_pChecked  )
+			pToggleButton->setChecked(true);
 	}
 
 	//____ remove() ________________________________________________________________
@@ -155,7 +155,7 @@ namespace wg
 		for( unsigned int i = 0 ; i < m_entries.size() ; i++ )
 			m_entries[i]->_setToggleGroup(0);
 
-		m_pSelected = 0;
+		m_pChecked = 0;
 		m_entries.clear();
 	}
 
@@ -199,7 +199,7 @@ namespace wg
 
 	ToggleButton_p ToggleGroup::selected() const
 	{
-		return ToggleButton_p(m_pSelected);
+		return ToggleButton_p(m_pChecked);
 	}
 
 	//____ _remove() _______________________________________________________________
@@ -215,41 +215,41 @@ namespace wg
 			}
 		}
 
-		if( pButton == m_pSelected )
+		if( pButton == m_pChecked )
 		{
-			m_pSelected = 0;
-			if( m_bRequireSelected && !m_entries.empty() )
-				m_entries[0]->setSelected(true);
+			m_pChecked = 0;
+			if( m_bRequireChecked && !m_entries.empty() )
+				m_entries[0]->setChecked(true);
 		}
 	}
 
-	//____ _select() _______________________________________________________________
+	//____ _check() _______________________________________________________________
 
-	void ToggleGroup::_select( ToggleButton * pButton )
+	void ToggleGroup::_check( ToggleButton * pButton )
 	{
-		ToggleButton * pOldSelected = m_pSelected;
+		ToggleButton * pOldChecked = m_pChecked;
 
-		m_pSelected = pButton;
+		m_pChecked = pButton;
 
-		if( pOldSelected && pOldSelected != pButton )
-			pOldSelected->setSelected(false);
+		if( pOldChecked && pOldChecked != pButton )
+			pOldChecked->setChecked(false);
 
-		Base::msgRouter()->post(SelectMsg::create(pButton));
-		Base::msgRouter()->post(SelectMsg::create(this));
+//		Base::msgRouter()->post(SelectMsg::create(pButton));
+//		Base::msgRouter()->post(SelectMsg::create(this));
 	}
 
-	//____ _unselect() _____________________________________________________________
+	//____ _uncheck() _____________________________________________________________
 
-	bool ToggleGroup::_unselect( ToggleButton * pButton )
+	bool ToggleGroup::_uncheck( ToggleButton * pButton )
 	{
-		if( pButton ==  m_pSelected )
+		if( pButton ==  m_pChecked )
 		{
-			if( m_bRequireSelected )
+			if( m_bRequireChecked )
 				return false;
 
-			m_pSelected = 0;
-			Base::msgRouter()->post(UnselectMsg::create(pButton));
-			Base::msgRouter()->post(UnselectMsg::create(this));
+			m_pChecked = 0;
+//			Base::msgRouter()->post(UnselectMsg::create(pButton));
+//			Base::msgRouter()->post(UnselectMsg::create(this));
 		}
 		return true;
 	}
