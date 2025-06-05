@@ -350,7 +350,6 @@ namespace wg
  
  */
 		Select,						// Non-value widget triggered, like a button being pressed.
-		Unselect,					// Used by ToggleGroup when ToggleButton is unselected (but no other selected).
 		Toggle,						// Boolean value widget toggled, like for checkboxes, radiobuttons etc.
 		ScrollbarMove,
 		ValueUpdate,					// Value of widget changed, like for editvalue, animations, sliders etc

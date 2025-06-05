@@ -614,7 +614,7 @@ Widget_p MyApp::createNavigationPanel()
 		Base::msgRouter()->addRoute(pButton, MsgType::Select, [this,skip](Msg* pMsg)
 			{
 				m_recordedSteps.clear();
-				this->m_bRecordSteps = this->m_pRecordStepsToggle->isSelected();
+				this->m_bRecordSteps = this->m_pRecordStepsToggle->isChecked();
 				this->skipFrames( skip );
 				this->m_bRecordSteps = false;
 			});
@@ -683,7 +683,7 @@ Widget_p MyApp::createNavigationPanel()
 	{
 
 		m_recordedSteps.clear();
-		this->m_bRecordSteps = this->m_pRecordStepsToggle->isSelected();
+		this->m_bRecordSteps = this->m_pRecordStepsToggle->isChecked();
 
 		int frame = 235;
 		
@@ -794,7 +794,7 @@ bool MyApp::_loadSkins(Visitor * pVisitor)
 		_.axis = Axis::X,
 		_.frame = 4,
 		_.padding = 4,
-		_.states = { State::Default, State::Hovered, State::Selected, State::Selected + State::Hovered, State::Disabled }
+		_.states = { State::Default, State::Hovered, State::Checked, State::Checked + State::Hovered, State::Disabled }
 	));
 
 	m_pCheckBoxSkin = BlockSkin::create(WGBP(BlockSkin,
@@ -802,7 +802,7 @@ bool MyApp::_loadSkins(Visitor * pVisitor)
 		_.axis = Axis::Y,
 		_.frame = 3,
 //		_.defaultSize = { 12,12 },
-		_.states = { State::Default, State::Selected }
+		_.states = { State::Default, State::Checked }
 	));
 
 	m_pSectionSkin = BoxSkin::create(WGBP(BoxSkin,
