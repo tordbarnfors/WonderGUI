@@ -178,12 +178,12 @@ namespace wg
 		else
 			state.setPressed(false);
 
-		// Possibly flip selected
+		// Possibly flip checked
 
 		if( state.isPressed() != m_state.isPressed() )
 		{
 			if( state.isPressed() != m_bFlipOnRelease )
-				state.setSelected( !state.isSelected() );
+				state.setChecked( !state.isChecked() );
 		}
 
 		//
@@ -196,10 +196,10 @@ namespace wg
 
 	void ToggleButton::_setState( State state, bool bPostMsg )
 	{
-		// If state has changed from selected to unselected we need to check with Togglegroup
+		// If state has changed from checked to unchecked we need to check with Togglegroup
 
-		if( !state.isSelected() && m_state.isSelected() && m_pToggleGroup && !m_pToggleGroup->_unselect(this) )
-			state.setSelected(true);
+		if( !state.isChecked() && m_state.isChecked() && m_pToggleGroup && !m_pToggleGroup->_uncheck(this) )
+			state.setChecked(true);
 
 		//
 
@@ -213,13 +213,13 @@ namespace wg
 			//TODO: Remove once icon uses CSkinSlot.
 			_requestRender();
 		}
-		if( state.isSelected() != oldState.isSelected() )
+		if( state.isChecked() != oldState.isChecked() )
 		{
 			if( bPostMsg )
-				Base::msgRouter()->post( ToggleMsg::create(this, state.isSelected() ) );
+				Base::msgRouter()->post( ToggleMsg::create(this, state.isChecked() ) );
 
-			if( m_pToggleGroup && state.isSelected() )
-				m_pToggleGroup->_select(this);
+			if( m_pToggleGroup && state.isChecked() )
+				m_pToggleGroup->_check(this);
 		}
 	}
 
