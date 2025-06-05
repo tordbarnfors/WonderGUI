@@ -318,10 +318,10 @@ namespace sdl_wglib
 				wg::StateEnum::Hovered, {},
 				wg::StateEnum::Pressed, {},
 				wg::StateEnum::Disabled, {},
-				wg::StateEnum::Selected, {},
-				wg::StateEnum::SelectedHovered, {},
-				wg::StateEnum::SelectedPressed, {},
-				wg::StateEnum::DisabledSelected, {},
+				wg::StateEnum::Checked, {},
+				wg::StateEnum::HoveredChecked, {},
+				wg::StateEnum::PressedChecked, {},
+				wg::StateEnum::DisabledChecked, {},
 			},
 			.surface = pSurface
 		} );
@@ -336,10 +336,10 @@ namespace sdl_wglib
 				wg::StateEnum::Hovered, {},
 				wg::StateEnum::Pressed, {},
 				wg::StateEnum::Disabled, {},
-				wg::StateEnum::Selected, {},
-				wg::StateEnum::SelectedHovered, {},
-				wg::StateEnum::SelectedPressed, {},
-				wg::StateEnum::DisabledSelected, {}
+				wg::StateEnum::Checked, {},
+				wg::StateEnum::HoveredChecked, {},
+				wg::StateEnum::PressedChecked, {},
+				wg::StateEnum::DisabledChecked, {}
 			},
 			.surface = pSurface
 		});

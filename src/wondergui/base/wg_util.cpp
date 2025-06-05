@@ -507,11 +507,12 @@ namespace wg
 
 		uint8_t	usedBits = 0;
 		for (int i = 0; i < nbStates; i++)
-			usedBits |= pStates->index();
+			usedBits |= pStates[i].index();
 
-		int indexTableSize = 72;
+		// We start with values excluding Disabled, which is a special case.
 
-		int indexMask = 0x7F;
+		int indexTableSize = 64;
+		int indexMask = 0x3F;
 		int indexShift = 0;
 
 		if (usedBits == 0)
@@ -521,27 +522,22 @@ namespace wg
 		}
 		else
 		{
-			if ((usedBits & int(StateEnum::Disabled)) == 0)
+			if ((usedBits & (int(StateEnum::Hovered) | int(StateEnum::Pressed))) == 0)
 			{
-				indexMask = 0x3F;
-				indexTableSize = 64;
-				if ((usedBits & (int(StateEnum::Hovered) | int(StateEnum::Pressed))) == 0)
+				indexMask = 0xF;
+				indexTableSize = 16;
+				if ((usedBits & int(StateEnum::Focused)) == 0)
 				{
-					indexMask = 0xF;
-					indexTableSize = 16;
-					if ((usedBits & int(StateEnum::Focused)) == 0)
+					indexMask = 0x7;
+					indexTableSize = 8;
+					if ((usedBits & int(StateEnum::Checked)) == 0)
 					{
-						indexMask = 0x7;
-						indexTableSize = 8;
-						if ((usedBits & int(StateEnum::Checked)) == 0)
+						indexMask = 0x3;
+						indexTableSize = 4;
+						if ((usedBits & int(StateEnum::Selected)) == 0)
 						{
-							indexMask = 0x3;
-							indexTableSize = 4;
-							if ((usedBits & int(StateEnum::Selected)) == 0)
-							{
-								indexMask = 0x1;
-								indexTableSize = 2;
-							}
+							indexMask = 0x1;
+							indexTableSize = 2;
 						}
 					}
 				}
@@ -577,7 +573,15 @@ namespace wg
 				}
 			}
 
+			// Handle disabled, a maximum of 8 entries are added
+
+			if ((usedBits & int(StateEnum::Disabled)) != 0)
+			{
+				indexTableSize += 8 >> std::min(indexShift,3);
+				indexMask |= int(StateEnum::Disabled);
+			}
 		}
+
 		return std::make_tuple(indexTableSize,indexMask,indexShift);
 	}
 

@@ -447,21 +447,23 @@ namespace wg
 
 	void Scroller::_setState(State state)
 	{
-		// We just copy Enabled/Focused/Selected to all our skins.
+		// We just copy Enabled/Focused/Checked/Flagged to all our skins.
 		// We ignore Targeted since that won't work without hover anyway.
 
 		bool bDisabled = state.isDisabled();
 		bool bFocused = state.isFocused();
-		bool bSelected = state.isSelected();
+		bool bChecked = state.isChecked();
+		bool bFlagged = state.isFlagged();
 
 		if (bDisabled != m_states[Part::Back].isDisabled() || bFocused != m_states[Part::Back].isFocused() ||
-			bSelected != m_states[Part::Back].isSelected() )
+			bChecked != m_states[Part::Back].isChecked() || bFlagged != m_states[Part::Back].isFlagged() )
 		{
 			for (int i = 0; i < Part_size; i++)
 			{
 				m_states[i].setDisabled(bDisabled);
 				m_states[i].setFocused(bFocused);
-				m_states[i].setSelected(bSelected);
+				m_states[i].setChecked(bChecked);
+				m_states[i].setFlagged(bChecked);
 			}
 
 			_requestRender();
