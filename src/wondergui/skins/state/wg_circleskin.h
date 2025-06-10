@@ -119,30 +119,71 @@ namespace wg
 
 	protected:
 		CircleSkin( const Blueprint& blueprint );
-		~CircleSkin() {};
+		~CircleSkin();
 
-		void	_updateUnsetStates();
+		const HiColor& _getColor(State state) const
+		{
+			int idxTabEntry = (state.index() & m_colorIndexMask) >> m_colorIndexShift;
+			int entry = m_pColorIndexTab[idxTabEntry];
+			return m_pColors[entry];
+		}
+
+		const float _getSize(State state) const
+		{
+			int idxTabEntry = (state.index() & m_sizeIndexMask) >> m_sizeIndexShift;
+			int entry = m_pSizeIndexTab[idxTabEntry];
+			return m_pSizes[entry];
+		}
+
+		const pts _getThickness(State state) const
+		{
+			int idxTabEntry = (state.index() & m_thicknessIndexMask) >> m_thicknessIndexShift;
+			int entry = m_pThicknessIndexTab[idxTabEntry];
+			return m_pThickness[entry];
+		}
+
+		const HiColor& _getOutlineColor(State state) const
+		{
+			int idxTabEntry = (state.index() & m_outlineColorIndexMask) >> m_outlineColorIndexShift;
+			int entry = m_pOutlineColorIndexTab[idxTabEntry];
+			return m_pOutlineColors[entry];
+		}
+
+		const pts _getOutlineThickness(State state) const
+		{
+			int idxTabEntry = (state.index() & m_outlineThicknessIndexMask) >> m_outlineThicknessIndexShift;
+			int entry = m_pOutlineThicknessIndexTab[idxTabEntry];
+			return m_pOutlineThickness[entry];
+		}
 
 		BlendMode	m_blendMode = BlendMode::Blend;
 
-		Bitmask<uint32_t>	m_stateColorMask = 1;
-		Bitmask<uint32_t>	m_stateSizeMask = 1;
-		Bitmask<uint32_t>	m_stateThicknessMask = 1;
-		Bitmask<uint32_t>	m_stateOutlineThicknessMask = 1;
-		Bitmask<uint32_t>	m_stateOutlineColorMask = 1;
+		void*		m_pStateData;				// Pointer at memory block with state data.
 
+		uint8_t		m_colorIndexMask;
+		uint8_t		m_colorIndexShift;
+		uint8_t*	m_pColorIndexTab;
+		HiColor*	m_pColors;
 
-		struct StateInfo
-		{
-			HiColor		color;
-			float		size;
-			pts			thickness;
-			pts			outlineThickness;
-			HiColor		outlineColor;
-		};
+		uint8_t		m_sizeIndexMask;
+		uint8_t		m_sizeIndexShift;
+		uint8_t*	m_pSizeIndexTab;
+		pts*		m_pSizes;
 
+		uint8_t		m_thicknessIndexMask;
+		uint8_t		m_thicknessIndexShift;
+		uint8_t*	m_pThicknessIndexTab;
+		pts*		m_pThickness;
 
-		StateInfo		m_stateInfo[State::NbStates];
+		uint8_t		m_outlineThicknessIndexMask;
+		uint8_t		m_outlineThicknessIndexShift;
+		uint8_t*	m_pOutlineThicknessIndexTab;
+		pts*		m_pOutlineThickness;
+
+		uint8_t		m_outlineColorIndexMask;
+		uint8_t		m_outlineColorIndexShift;
+		uint8_t*	m_pOutlineColorIndexTab;
+		HiColor*	m_pOutlineColors;
 	};
 
 
