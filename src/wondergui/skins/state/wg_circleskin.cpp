@@ -49,56 +49,195 @@ namespace wg
 	{
 		m_blendMode		= bp.blendMode;
 
-		m_stateInfo[0].color = bp.color;
-		m_stateInfo[0].outlineColor = bp.outlineColor;
-		m_stateInfo[0].outlineThickness = bp.outlineThickness;
-		m_stateInfo[0].size = bp.size;
-		m_stateInfo[0].thickness = bp.thickness;
+		// Generate lists of states that affects shift, color and surface.
+
+		State	shiftingStates[State::NbStates];
+		Coord	stateShifts[State::NbStates];
+
+		State	colorStates[State::NbStates];
+		HiColor stateColors[State::NbStates];
+
+		State	sizeStates[State::NbStates];
+		float	stateSizes[State::NbStates];
+
+		State	thicknessStates[State::NbStates];
+		pts		stateThickness[State::NbStates];
+
+		State	outlineColorStates[State::NbStates];
+		HiColor stateOutlineColors[State::NbStates];
+
+		State	outlineThicknessStates[State::NbStates];
+		pts		stateOutlineThickness[State::NbStates];
+
+		int		nbShiftingStates = 1;
+		int		nbColorStates = 1;
+		int		nbSizeStates = 1;
+		int		nbThicknessStates = 1;
+		int		nbOutlineColorStates = 1;
+		int		nbOutlineThicknessStates = 1;
+
+		shiftingStates[0] = State::Default;
+		colorStates[0] = State::Default;
+		sizeStates[0] = State::Default;
+		thicknessStates[0] = State::Default;
+		outlineColorStates[0] = State::Default;
+		outlineThicknessStates[0] = State::Default;
+
+		stateShifts[0] = { 0,0 };
+		stateColors[0] = bp.color;
+		stateSizes[0] = bp.size;
+		stateThickness[0] = bp.thickness;
+		stateOutlineColors[0] = bp.outlineColor;
+		stateOutlineThickness[0] = bp.outlineThickness;
 
 		for (auto& stateInfo : bp.states)
 		{
 			int index = stateInfo.state;
 
+			if (stateInfo.data.contentShift.x != 0 || stateInfo.data.contentShift.y != 0)
+			{
+				int index = stateInfo.state == State::Default ? 0 : nbShiftingStates++;
+				shiftingStates[index] = stateInfo.state;
+				stateShifts[index] = stateInfo.data.contentShift;
+				m_bContentShifting = true;
+			}
+
 			if (stateInfo.data.color != HiColor::Undefined)
 			{
-				m_stateColorMask.setBit(index);
-				m_stateInfo[index].color = stateInfo.data.color;
+				int index = stateInfo.state == State::Default ? 0 : nbColorStates++;
+				colorStates[index] = stateInfo.state;
+				stateColors[index] = stateInfo.data.color;
 			}
 
-			if (stateInfo.data.size >= 0)
+			if (stateInfo.data.size != -1)
 			{
-				m_stateSizeMask.setBit(index);
-				m_stateInfo[index].size = stateInfo.data.size;
+				int index = stateInfo.state == State::Default ? 0 : nbSizeStates++;
+				sizeStates[index] = stateInfo.state;
+				stateSizes[index] = stateInfo.data.size;
 			}
 
-			if (stateInfo.data.thickness >= 0)
+			if (stateInfo.data.thickness != -1)
 			{
-				m_stateThicknessMask.setBit(index);
-				m_stateInfo[index].thickness = stateInfo.data.thickness;
-			}
-
-			if (stateInfo.data.outlineThickness >= 0)
-			{
-				m_stateOutlineThicknessMask.setBit(index);
-				m_stateInfo[index].outlineThickness = stateInfo.data.outlineThickness;
+				int index = stateInfo.state == State::Default ? 0 : nbThicknessStates++;
+				thicknessStates[index] = stateInfo.state;
+				stateThickness[index] = stateInfo.data.thickness;
 			}
 
 			if (stateInfo.data.outlineColor != HiColor::Undefined)
 			{
-				m_stateOutlineColorMask.setBit(index);
-				m_stateInfo[index].outlineColor = stateInfo.data.outlineColor;
+				int index = stateInfo.state == State::Default ? 0 : nbOutlineColorStates++;
+				outlineColorStates[index] = stateInfo.state;
+				stateOutlineColors[index] = stateInfo.data.outlineColor;
 			}
 
-			if (stateInfo.data.contentShift.x != 0 || stateInfo.data.contentShift.y != 0)
+			if (stateInfo.data.outlineThickness != -1)
 			{
-				m_contentShiftStateMask.setBit(index);
-				m_contentShift[index] = stateInfo.data.contentShift;
-				m_bContentShifting = true;
+				int index = stateInfo.state == State::Default ? 0 : nbOutlineThicknessStates++;
+				outlineThicknessStates[index] = stateInfo.state;
+				stateOutlineThickness[index] = stateInfo.data.outlineThickness;
 			}
+
 		}
 
-		_updateContentShift();
-		_updateUnsetStates();
+		// Calc size of index table for surface and color, get their index masks & shifts.
+
+		int	colorIndexEntries;
+		int	sizeIndexEntries;
+		int	thicknessIndexEntries;
+		int	outlineColorIndexEntries;
+		int	outlineThicknessIndexEntries;
+
+		std::tie(colorIndexEntries, m_colorIndexMask, m_colorIndexShift) = calcStateToIndexParam(nbColorStates, colorStates);
+		std::tie(sizeIndexEntries, m_sizeIndexMask, m_sizeIndexShift) = calcStateToIndexParam(nbSizeStates, sizeStates);
+		std::tie(thicknessIndexEntries, m_thicknessIndexMask, m_thicknessIndexShift) = calcStateToIndexParam(nbThicknessStates, thicknessStates);
+
+		std::tie(outlineColorIndexEntries, m_outlineColorIndexMask, m_outlineColorIndexShift) = calcStateToIndexParam(nbOutlineColorStates, outlineColorStates);
+		std::tie(outlineThicknessIndexEntries, m_outlineThicknessIndexMask, m_outlineThicknessIndexShift) = calcStateToIndexParam(nbOutlineThicknessStates, outlineThicknessStates);
+
+		// Calculate memory needed for all state data
+
+		int shiftBytes = _bytesNeededForContentShiftData(nbShiftingStates, shiftingStates);
+		int colorBytes = sizeof(HiColor) * nbColorStates;
+		int sizeBytes = sizeof(float) * nbSizeStates;
+		int thicknessBytes = sizeof(pts) * nbThicknessStates;
+		int outlineColorBytes = sizeof(HiColor) * nbOutlineColorStates;
+		int outlineThicknessBytes = sizeof(pts) * nbOutlineThicknessStates;
+		int indexBytes = colorIndexEntries + sizeIndexEntries + thicknessIndexEntries + outlineColorIndexEntries + outlineThicknessIndexEntries;
+
+		// Allocate and pupulate memory for state data
+
+		m_pStateData = malloc(shiftBytes + colorBytes + sizeBytes + thicknessBytes + outlineColorBytes + outlineThicknessBytes + indexBytes);
+
+		auto pDest = (uint8_t*)m_pStateData;
+
+		auto pCoords = _prepareForContentShiftData(pDest, nbShiftingStates, shiftingStates);
+		for (int i = 0; i < nbShiftingStates; i++)
+			pCoords[i] = stateShifts[i];
+
+		pDest += shiftBytes;
+
+		auto pColors = (HiColor*)pDest;
+		for (int i = 0; i < nbColorStates; i++)
+			pColors[i] = stateColors[i];
+
+		m_pColors = pColors;
+		pDest += colorBytes;
+
+		auto pOutlineColors = (HiColor*)pDest;
+		for (int i = 0; i < nbOutlineColorStates; i++)
+			pOutlineColors[i] = stateOutlineColors[i];
+
+		m_pOutlineColors = pOutlineColors;
+		pDest += outlineColorBytes;
+
+		auto pSizes = (float*)pDest;
+		for (int i = 0; i < nbSizeStates; i++)
+			pSizes[i] = stateSizes[i];
+
+		m_pSizes = pSizes;
+		pDest += sizeBytes;
+
+		auto pThickness = (pts*)pDest;
+		for (int i = 0; i < nbThicknessStates; i++)
+			pThickness[i] = stateThickness[i];
+
+		m_pThickness = pThickness;
+		pDest += thicknessBytes;
+
+		auto pOutlineThickness = (pts*)pDest;
+		for (int i = 0; i < nbOutlineThicknessStates; i++)
+			pOutlineThickness[i] = stateOutlineThickness[i];
+
+		m_pOutlineThickness = pOutlineThickness;
+		pDest += outlineThicknessBytes;
+
+		m_pColorIndexTab = pDest;
+		pDest += colorIndexEntries;
+
+		m_pOutlineColorIndexTab = pDest;
+		pDest += outlineColorIndexEntries;
+
+		m_pSizeIndexTab = pDest;
+		pDest += sizeIndexEntries;
+
+		m_pThicknessIndexTab = pDest;
+		pDest += thicknessIndexEntries;
+
+		m_pOutlineThicknessIndexTab = pDest;
+		pDest += outlineThicknessIndexEntries;
+
+		generateStateToIndexTab(m_pColorIndexTab, nbColorStates, colorStates);
+		generateStateToIndexTab(m_pOutlineColorIndexTab, nbOutlineColorStates, outlineColorStates);
+		generateStateToIndexTab(m_pSizeIndexTab, nbSizeStates, sizeStates);
+		generateStateToIndexTab(m_pThicknessIndexTab, nbThicknessStates, thicknessStates);
+		generateStateToIndexTab(m_pOutlineThicknessIndexTab, nbOutlineThicknessStates, outlineThicknessStates);
+	}
+
+	//____ destructor _________________________________________________________
+
+	CircleSkin::~CircleSkin()
+	{
+		free(m_pStateData);
 	}
 
 	//____ typeInfo() _________________________________________________________
@@ -116,11 +255,11 @@ namespace wg
 
 		RenderSettings settings(pDevice, m_layer, m_blendMode);
 
-		int i = state;
+		float size = _getSize(state);
 
-		if (canvas.w != canvas.h || m_stateInfo[i].size != 1.f )
+		if (canvas.w != canvas.h || size != 1.f )
 		{
-			spx sideLength = std::min(canvas.w, canvas.h) * m_stateInfo[i].size;
+			spx sideLength = std::min(canvas.w, canvas.h) * size;
 			canvas.x += (canvas.w - sideLength) / 2;
 			canvas.y += (canvas.h - sideLength) / 2;
 			canvas.w = sideLength;
@@ -128,19 +267,17 @@ namespace wg
 		}
 
 
-		spx thickness = m_stateInfo[i].thickness * scale;
-		spx outlineThickness = m_stateInfo[i].outlineThickness * scale;
+		spx thickness = _getThickness(state) * scale;
+		spx outlineThickness = _getOutlineThickness(state) * scale;
 
 
-		pDevice->drawElipse(canvas, thickness, m_stateInfo[i].color, outlineThickness, m_stateInfo[i].outlineColor);
+		pDevice->drawElipse(canvas, thickness, _getColor(state), outlineThickness, _getOutlineColor(state));
 	}
 
 	//____ _markTest() _____________________________________________________________
 
 	bool CircleSkin::_markTest(const CoordSPX& _ofs, const RectSPX& _canvas, int scale, State state, float value, float value2, int alphaOverride) const
 	{
-		int i = state;
-
 		RectSPX canvas = _canvas - align(ptsToSpx(m_spacing, scale));
 		
 		if( !canvas.contains(_ofs) )
@@ -150,9 +287,11 @@ namespace wg
 		
 		CoordSPX ofs = _ofs;
 
-		spx sideLength = std::min(canvas.w, canvas.h) * m_stateInfo[i].size;
+		float size = _getSize(state);
 
-		if (canvas.w != canvas.h || m_stateInfo[i].size != 1.f)
+		spx sideLength = std::min(canvas.w, canvas.h) * size;
+
+		if (canvas.w != canvas.h || size != 1.f)
 		{
 			canvas.x += (canvas.w - sideLength) / 2;
 			canvas.y += (canvas.h - sideLength) / 2;
@@ -166,8 +305,8 @@ namespace wg
 
 		float radius = sideLength / 2;
 
-		float thickness = m_stateInfo[i].thickness*scale;
-		float outlineThickness = m_stateInfo[i].outlineThickness*scale;
+		float thickness = _getThickness(state)*scale;
+		float outlineThickness = _getOutlineThickness(state)*scale;
 
 
 		if (distanceSquared > radius * radius)
@@ -179,17 +318,17 @@ namespace wg
 		float fillRadius = radius - outlineThickness;
 
 		if( distanceSquared > fillRadius * fillRadius )
-			return (m_stateInfo[i].outlineColor.a >= alpha);
+			return (_getOutlineColor(state).a >= alpha);
 
 		float innerOutlineRadius = fillRadius - thickness;
 
 		if( innerOutlineRadius < 0 || distanceSquared > innerOutlineRadius * innerOutlineRadius )
-			return (m_stateInfo[i].color.a >= alpha);
+			return (_getColor(state).a >= alpha);
 
 		float holeRadius = innerOutlineRadius - outlineThickness;
 
 		if( holeRadius < 0 || distanceSquared > holeRadius*holeRadius )
-			return (m_stateInfo[i].outlineColor.a >= alpha);
+			return (_getOutlineColor(state).a >= alpha);
 
 		return false;
 	}
@@ -218,53 +357,15 @@ namespace wg
 		RectSPX canvas = _canvas - align(ptsToSpx(m_spacing, scale)) + align(ptsToSpx(m_overflow, scale));
 
 		
-		if ( m_stateInfo[i1].color != m_stateInfo[i2].color || m_stateInfo[i1].size != m_stateInfo[i2].size ||
-			m_stateInfo[i1].thickness != m_stateInfo[i2].thickness || m_stateInfo[i1].outlineThickness != m_stateInfo[i2].outlineThickness ||
-			m_stateInfo[i1].outlineColor != m_stateInfo[i2].outlineColor)
+		if ( _getColor(newState) != _getColor(oldState) || _getSize(newState) != _getSize(oldState) ||
+			_getThickness(newState) != _getThickness(oldState) || _getOutlineThickness(newState) != _getOutlineThickness(oldState) ||
+			_getOutlineColor(newState) != _getOutlineColor(oldState))
 			return canvas;
 
 		return StateSkin::_dirtyRect(	canvas, scale, newState, oldState, newValue, oldValue, newValue2, oldValue2,
 										newAnimPos, oldAnimPos, pNewStateFractions, pOldStateFractions);
 	}
 
-
-	//____ _updateUnsetStates() _______________________________________________
-
-	void CircleSkin::_updateUnsetStates()
-	{
-		for (int i = 0; i < State::NbStates; i++)
-		{
-			if (!m_stateColorMask.bit(i))
-			{
-				int bestAlternative = bestStateIndexMatch(i, m_stateColorMask);
-				m_stateInfo[i].color = m_stateInfo[bestAlternative].color;
-			}
-
-			if (!m_stateSizeMask.bit(i))
-			{
-				int bestAlternative = bestStateIndexMatch(i, m_stateSizeMask);
-				m_stateInfo[i].size = m_stateInfo[bestAlternative].size;
-			}
-
-			if (!m_stateThicknessMask.bit(i))
-			{
-				int bestAlternative = bestStateIndexMatch(i, m_stateThicknessMask);
-				m_stateInfo[i].thickness = m_stateInfo[bestAlternative].thickness;
-			}
-
-			if (!m_stateOutlineThicknessMask.bit(i))
-			{
-				int bestAlternative = bestStateIndexMatch(i, m_stateOutlineThicknessMask);
-				m_stateInfo[i].outlineThickness = m_stateInfo[bestAlternative].outlineThickness;
-			}
-
-			if (!m_stateOutlineColorMask.bit(i))
-			{
-				int bestAlternative = bestStateIndexMatch(i, m_stateOutlineColorMask);
-				m_stateInfo[i].outlineColor = m_stateInfo[bestAlternative].outlineColor;
-			}
-		}
-	}
 
 
 } // namespace wg
