@@ -105,22 +105,30 @@ namespace wg
 
 	protected:
 		BracketSkin( const Blueprint& blueprint );
-		~BracketSkin() {};
+		~BracketSkin();
 
-		void	_updateUnsetColors();
+		const HiColor& _getColor(State state) const
+		{
+			int idxTabEntry = (state.index() & m_colorIndexMask) >> m_colorIndexShift;
+			int entry = m_pColorIndexTab[idxTabEntry];
+			return m_pColors[entry];
+		}
+
+		void*		m_pStateData;				// Pointer at memory block with state data.
 
 		BlendMode	m_blendMode = BlendMode::Blend;
 
-		Bitmask<uint32_t>	m_stateColorMask = 1;
-
-		HiColor		m_color[State::NbStates];
-
 		pts			m_thickness;
 		Size		m_size;
+
+		uint8_t		m_colorIndexMask;
+		uint8_t		m_colorIndexShift;
+		uint8_t*	m_pColorIndexTab;		// Table with index values into m_pFillColors for each mode (72) or less.
+		HiColor*	m_pColors;				// Contains colors for states.
 	};
 
 
 } // namespace wg
-#endif //WG_BOXSKIN_DOT_H
+#endif //WG_BRACKETSKIN_DOT_H
 
 

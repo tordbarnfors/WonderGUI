@@ -115,8 +115,6 @@ namespace wg
 		BoxSkin( const Blueprint& blueprint );
 		~BoxSkin();
 
-		void	_updateUnsetColors();
-
 		Border			m_outline;
 		BlendMode		m_blendMode = BlendMode::Blend;
 
