@@ -157,7 +157,7 @@ namespace wg
 		BlockSkin();
 		BlockSkin(Surface * pSurface, Rect block, Border frame);
 		BlockSkin(const Blueprint& blueprint);
-		~BlockSkin() {};
+		~BlockSkin();
 
 		void			_updateOpaqueFlags();
 
