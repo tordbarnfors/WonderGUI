@@ -421,6 +421,13 @@ namespace wg
 		_updateOpaqueFlags();
 	}
 
+	//____ destructor _________________________________________________________
+
+	BlockSkin::~BlockSkin()
+	{
+		free(m_pBlocks);
+	}
+
 	//____ typeInfo() _________________________________________________________
 
 	const TypeInfo& BlockSkin::typeInfo(void) const
