@@ -246,7 +246,7 @@ namespace wg
 		constexpr uint8_t	weight() const { return s_weights[m_index]; }
 		Bitmask<uint8_t>	primStates() const { return s_weights[m_index]; }
 
-		int					bestMatch(int nAlternatives, State* pAlternatives);
+		int					bestMatch(int nAlternatives, const State* pAlternatives);
 
 
 		//.____ Definitions _________________________________________

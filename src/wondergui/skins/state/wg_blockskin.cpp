@@ -203,15 +203,19 @@ namespace wg
 
 		// Calculate memory needed for all state data
 
+		int shiftBytes 		= _bytesNeededForContentShiftData(1, &State::Default);
 		int blockBytes		= sizeof(Coord);
 		int colorBytes		= sizeof(HiColor);
 		int indexBytes		= 1;
 
 		// Allocate and pupulate memory for state data
 
-		m_pStateData = malloc(blockBytes + colorBytes + indexBytes);
-
+		m_pStateData = malloc(shiftBytes + blockBytes + colorBytes + indexBytes);
 		auto pDest = (uint8_t*) m_pStateData;
+
+		auto pCoords = _prepareForContentShiftData(pDest, 1, &State::Default);
+		pCoords[0] = {0,0};
+		pDest += shiftBytes;
 
 		auto pBlocks = (Coord*) pDest;
 		pBlocks[0] = block.pos();
@@ -316,7 +320,7 @@ namespace wg
 			m_ninePatch.rigidPartYSections = bp.rigidPartY.sections;
 		}
 
-		// Generate lists of states that affects shift, color and surface.
+		// Generate lists of states that affects shift, color and block.
 
 		State	shiftingStates[State::NbStates];
 		Coord	stateShifts[State::NbStates];
@@ -425,7 +429,7 @@ namespace wg
 
 	BlockSkin::~BlockSkin()
 	{
-		free(m_pBlocks);
+		free(m_pStateData);
 	}
 
 	//____ typeInfo() _________________________________________________________
