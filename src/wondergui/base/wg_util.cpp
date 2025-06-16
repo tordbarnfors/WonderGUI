@@ -484,7 +484,7 @@ namespace wg
 
 	//____ generateStateToIndexTab() ___________________________________
 
-	void Util::generateStateToIndexTab(uint8_t * pDest, int nbStates, State* pStates)
+	void Util::generateStateToIndexTab(uint8_t * pDest, int nbStates, const State* pStates)
 	{
 		int indexTableSize;
 		int indexMask;
@@ -502,7 +502,7 @@ namespace wg
 
 	//____ calcStateToIndexParam() ________________________________________
 
-	std::tuple<int,int,int> Util::calcStateToIndexParam(int nbStates, State* pStates)
+	std::tuple<int,int,int> Util::calcStateToIndexParam(int nbStates, const State* pStates)
 	{
 
 		uint8_t	usedBits = 0;
