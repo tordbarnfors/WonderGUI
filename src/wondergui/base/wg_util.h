@@ -61,8 +61,8 @@ namespace wg
 
 		inline Axis dirToAxis( Direction dir ) { return (dir == Direction::Up || dir == Direction::Down) ? Axis::Y : Axis::X; }
 
-		std::tuple<int,int,int> calcStateToIndexParam(int nbStates, State* pStates);					// returns: indexTabEntries, mask, shift
-		void 		generateStateToIndexTab(uint8_t * pDest, int nbStates, State* pStates);
+		std::tuple<int,int,int> calcStateToIndexParam(int nbStates, const State* pStates);					// returns: indexTabEntries, mask, shift
+		void 		generateStateToIndexTab(uint8_t * pDest, int nbStates, const State* pStates);
 
 
 		struct ClipPopData				/** @private */

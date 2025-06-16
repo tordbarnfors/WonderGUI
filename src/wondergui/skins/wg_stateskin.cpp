@@ -88,7 +88,7 @@ namespace wg
 
 	//____ _bytesNeededForContentShiftData() __________________________________
 
-	int StateSkin::_bytesNeededForContentShiftData(int nbStates, State* pStates)
+	int StateSkin::_bytesNeededForContentShiftData(int nbStates, const State* pStates)
 	{
 		int indexTableSize;
 		int indexMask;
@@ -101,7 +101,7 @@ namespace wg
 
 	//____ _prepareForContentShiftData() ___________________________________
 
-	Coord * StateSkin::_prepareForContentShiftData(void * pDest, int nbStates, State * pStates)
+	Coord * StateSkin::_prepareForContentShiftData(void * pDest, int nbStates, const State * pStates)
 	{
 		int indexTableSize;
 		int indexMask;
