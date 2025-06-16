@@ -699,23 +699,6 @@ int main(int argc, char** argv)
 		//		auto pTestSkin = BoxSkin::create( Border(5), {{State::Default, Color::Red, Color::Black}, {State::Pressed, Color::Red, Color::Pink} , {State::Hovered, Color::Green, Color::LightGreen} });
 		//		pTestSkin->setBlendMode(BlendMode::Add);
 
-		auto pTestSkin = MultiBlockSkin::create({ 10,10 }, Border(4));
-
-		int layer1 = pTestSkin->addLayer(pPressablePlateSurface, { State::Default, State::Hovered, State::Pressed, State::Disabled }, Axis::X);
-		pTestSkin->setLayerBlendMode(layer1, BlendMode::Blend);
-
-		int layer2 = pTestSkin->addLayer(pBackgroundSurface, { 0,0 });
-		pTestSkin->setLayerColor(layer2, { {State::Default, Color::Transparent}, {State::Hovered, HiColor(255,255,255,64) } });
-
-		Button_p pImage0 = Button::create();
-		pImage0->setSkin(pTestSkin);
-		pImage0->setPointerStyle(PointerStyle::Crosshair);
-
-		pBasePanel->slots.pushBack(pImage0, { .func = [](Widget* pWidget, Size size) {return Rect(size.w - 80 * 2, (size.h - 33 * 2) / 2, 80 * 2, 33 * 2); } });
-
-		Base::msgRouter()->addRoute(pImage0, MsgType::Select, [&](const Msg_p& pMsg) { bQuit = true; });
-
-
 		//	Image_p pImage = Image::create();
 		//	pImage->setSkin( pSimpleButtonSkin );
 		//	pFlexPanel->slots.addMovable( pImage, RectI(0,0,80*2,33*2), Placement::Center, Placement::Center );
@@ -747,7 +730,7 @@ int main(int argc, char** argv)
 		//	spinKnobTest(pSlot);
 		//  animKnobTest(pSlot);
 		//	canvasStackTest(pSlot);
-			doubleSkinTest(pSlot);
+		//	doubleSkinTest(pSlot);
 		//	timerTest(pSlot);
 		//	animPlayerTest(pSlot);
 		//	selectBoxTest(pSlot);
@@ -757,7 +740,7 @@ int main(int argc, char** argv)
 		//	animSkinTest(pSlot);
 		//	renderLayerTest(pSlot);
 		//	rigidPartNinePatchTest(pSlot);
-		//	scrollSkinTest(pSlot);
+			scrollSkinTest(pSlot);
 		//	tooltipLayerTest(pSlot);
 		//	kerningTest(pSlot);
 		//	circleSkinTest(pSlot);
@@ -792,7 +775,7 @@ int main(int argc, char** argv)
 		//	labelCapsuleTest(pSlot);
 		//	elipsisTest(pSlot);
 		//	packPanelSpacingBugTest(pSlot);
-		bracketSkinTest(pSlot);
+		//  bracketSkinTest(pSlot);
 
 		//------------------------------------------------------
 		// Program Main Loop
