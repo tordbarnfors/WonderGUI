@@ -130,10 +130,10 @@ set( SOURCES
 	skins/state/wg_circleskin.h
 	skins/state/wg_colorskin.cpp
 	skins/state/wg_colorskin.h
-	skins/state/wg_gradientskin.cpp
-	skins/state/wg_gradientskin.h	
-	skins/state/wg_multiblockskin.cpp
-	skins/state/wg_multiblockskin.h
+#	skins/state/wg_gradientskin.cpp
+#	skins/state/wg_gradientskin.h	
+#	skins/state/wg_multiblockskin.cpp
+#	skins/state/wg_multiblockskin.h
 	skins/state/wg_tileskin.cpp
 	skins/state/wg_tileskin.h
 
