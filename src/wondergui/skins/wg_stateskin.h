@@ -68,8 +68,8 @@ namespace wg
 		~StateSkin() {}
 
 
-		int				_bytesNeededForContentShiftData(int nbStates, State* pStates);
-		Coord * 		_prepareForContentShiftData(void * pDest, int nbStates, State * pStates);
+		int				_bytesNeededForContentShiftData(int nbStates, const State* pStates);
+		Coord * 		_prepareForContentShiftData(void * pDest, int nbStates, const State * pStates);
 
 		Coord 			_getContentShift(State state) const
 		{

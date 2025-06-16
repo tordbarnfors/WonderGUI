@@ -129,10 +129,24 @@ namespace wg
 		~BlockSlideSkin() {};
 
 		void		_updateOpaqueFlags();
-		void		_updateUnsetStateBlocks();
-		void		_updateUnsetStateColors();
 
 		RectSPX		_partInCanvas(int scale, State state, float* pStateFractions) const;
+
+		const HiColor&	_getColor(State state) const
+		{
+			int idxTabEntry = (state.index() & m_colorIndexMask) >> m_colorIndexShift;
+			int entry = m_pColorIndexTab[idxTabEntry];
+			return m_pColors[entry];
+		}
+
+
+		const Coord&	_getBlock(State state) const
+		{
+			int idxTabEntry = (state.index() & m_blockIndexMask) >> m_blockIndexShift;
+			int entry = m_pBlockIndexTab[idxTabEntry];
+			return m_pBlocks[entry];
+		}
+
 
 		Surface_p	m_pSurface;
 		Direction	m_slideDirection = Direction::Right;
@@ -145,11 +159,18 @@ namespace wg
 
 		BlendMode	m_blendMode;
 
-		Bitmask<uint32_t>	m_stateBlockMask = 1;
-		Bitmask<uint32_t>	m_stateColorMask = 1;
+		void *		m_pStateData;				// Pointer at memory block with state data.
 
-		Coord		m_stateBlocks[State::NbStates];
-		HiColor		m_stateColors[State::NbStates];
+		uint8_t		m_colorIndexMask;
+		uint8_t		m_colorIndexShift;
+		uint8_t*	m_pColorIndexTab;		// Table with index values into m_pStateColors for each mode (72) or less.
+		HiColor*	m_pColors;				// Contains colors for states.
+
+		uint8_t		m_blockIndexMask;
+		uint8_t		m_blockIndexShift;
+		uint8_t*	m_pBlockIndexTab;
+		Coord*		m_pBlocks;
+
 		bool		m_bStateOpaque[State::NbStates];
 
 		int			m_transitionTimes[PrimState_Nb] = { 0,0,0,0,0,0,0,0 };

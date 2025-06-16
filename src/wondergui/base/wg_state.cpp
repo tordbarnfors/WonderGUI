@@ -44,7 +44,7 @@ namespace wg
 
 	//____ bestMatch() ________________________________________________________
 
-	int State::bestMatch(int nAlternatives, State* pAlternatives)
+	int State::bestMatch(int nAlternatives, const State* pAlternatives)
 	{
 		int		bestWeight = -1;
 		int		bestIndex = -1;
