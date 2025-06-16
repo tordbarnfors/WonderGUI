@@ -184,26 +184,6 @@ int main(int argc, char** argv)
 	unitTestMemHeap();
 	Base::exit();
 */
-	
-
-	DynamicBuffer buff;
-
-	buff.push( RectI(1,2,3,4) );
-
-	auto it = buff.reserveSpace( sizeof(double) * 4 );
-
-	auto it2 = it;
-
-	it.push( (double) 3.0 );
-	it.push( (double) 4.0 );
-	it.push( (double) 5.0 );
-	it.push( (double) 6.0 );
-
-	RectI x = buff.begin().as<RectI>();
-
-	double y = it2.as<double>();
-
-
 
 	SoftSurface_p		pCanvas;
 	GfxDevice_p			pDevice;
@@ -438,10 +418,10 @@ int main(int argc, char** argv)
 				pBlob,
 				pScreen->pitch);
 
-			auto pSoftDevice = SoftGfxDevice::create();
-			addDefaultSoftKernels(pSoftDevice);
-			pSoftDevice->defineCanvas(CanvasRef::Default, pCanvas);
-			pDevice = pSoftDevice;
+			auto pSoftBackend = SoftBackend::create();
+			addDefaultSoftKernels(pSoftBackend);
+			pSoftBackend->defineCanvas(CanvasRef::Default, pCanvas);
+			pDevice = GfxDeviceGen2::create(pSoftBackend);
 
 			pSurfaceFactory = SoftSurfaceFactory::create();
 			pEdgemapFactory = SoftEdgemapFactory::create();
@@ -3775,17 +3755,16 @@ bool canvasCapsuleGlowTest(ComponentPtr<DynamicSlot> pEntry)
 
 	auto pGlowCapsule = CanvasCapsule::create();
 
-	auto pBlurbrush = Blurbrush::create({
-			.blue = { 0.1f, 0.1f, 0.1f,
-					 0.1f, 0.1f, 0.1f,
-					 0.1f, 0.1f, 0.1f },
-			.green = { 0.1f, 0.1f, 0.1f,
-					 0.1f, 0.1f, 0.1f,
-					 0.1f, 0.1f, 0.1f },
-			.red = { 0.1f, 0.1f, 0.1f,
-					 0.1f, 0.15f, 0.1f,
-					 0.1f, 0.1f, 0.1f },
-		});
+	float blueMtx[9] = { 0.1f, 0.1f, 0.1f,  0.1f, 0.1f, 0.1f,  0.1f, 0.1f, 0.1f };
+	float greenMtx[9] = { 0.1f, 0.1f, 0.1f,  0.1f, 0.1f, 0.1f,  0.1f, 0.1f, 0.1f };
+	float redMtx[9] = { 0.1f, 0.1f, 0.1f,  0.1f, 0.1f, 0.1f,  0.1f, 0.1f, 0.1f };
+
+
+	auto pBlurbrush = Blurbrush::create( WGBP(Blurbrush,
+			_.blue = blueMtx,
+			_.green = greenMtx,
+			_.red = redMtx
+		));
 
 
 
