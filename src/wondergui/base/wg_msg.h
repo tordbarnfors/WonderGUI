@@ -982,7 +982,7 @@ namespace wg
 	public:
 		//.____ Creation __________________________________________
 
-		inline static ToggleMsg_p	create( Object * pSource, bool bSet ) { return new ToggleMsg(pSource,bSet); }
+		inline static ToggleMsg_p	create( Object * pSource, bool bChecked ) { return new ToggleMsg(pSource,bChecked); }
 
 		//.____ Identification __________________________________________
 
@@ -991,12 +991,12 @@ namespace wg
 
 		//.____ Content _________________________________________________
 
-		bool		isSet() const;
+		bool		isChecked() const;
 
 	protected:
-		ToggleMsg( Object * pSource, bool bSet );
+		ToggleMsg( Object * pSource, bool bChecked );
 
-		bool	m_bSet;
+		bool	m_bChecked;
 	};
 
 	//____ ScrollbarMoveMsg ______________________________________________________

@@ -93,7 +93,7 @@ namespace wg
 
 		while( pCover <  pEnd )
 		{
-			if( (pCover->m_geo + pCover->_widget()->_overflow()).isOverlapping( rect ) )
+			if( pCover->m_bVisible && (pCover->m_geo + pCover->_widget()->_overflow()).isOverlapping( rect ) )
 				pCover->_widget()->_maskPatches( patches, pCover->m_geo, RectSPX(0,0, m_size ) );
 
 			pCover = _incOverlaySlot(pCover,incNext);
@@ -141,6 +141,10 @@ namespace wg
 	void Overlay::_firstSlotWithGeo( SlotWithGeo& package ) const
 	{
 		const Slot * p = _beginOverlaySlots();
+
+		while( p < _endOverlaySlots() && !p->m_bVisible )
+			p = _incOverlaySlot(p,_sizeOfOverlaySlot());
+
 		if( p < _endOverlaySlots() )
 		{
 			package.geo = p->m_geo;
@@ -167,7 +171,13 @@ namespace wg
 			return;
 		}
 
-		p = _incOverlaySlot(p,_sizeOfOverlaySlot());
+		int slotSize = _sizeOfOverlaySlot();
+		p = _incOverlaySlot(p,slotSize);
+
+		while( p < _endOverlaySlots() && !p->m_bVisible )
+			p = _incOverlaySlot(p,slotSize);
+
+
 		if( p < _endOverlaySlots() )
 		{
 			package.geo = ((Slot*)p)->m_geo;

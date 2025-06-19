@@ -9,6 +9,10 @@
 #include <wg_softkernels_bgr565srgb_extras.h>
 
 
+#include <wg_softkernels_bgr565srgb_base.h>
+#include <wg_softkernels_bgr565srgb_extras.h>
+
+
 #include <wg_softkernels_default.h>
 
 #include <wg_gfxdevice_gen2.h>
@@ -62,8 +66,9 @@ bool MyApp::init(Visitor* pVisitor)
 	if( pSoftBackend )
 	{
 		addExtraSoftKernelsForRGB555BECanvas(pSoftBackend);
+		addExtraSoftKernelsForBGR565sRGBCanvas(pSoftBackend);
 	}
-	
+
 	return true;
 }
 
@@ -293,7 +298,7 @@ Widget_p MyApp::createLogPanel()
 
 	auto pFrameLogButton = ToggleButton::create( WGBP(ToggleButton,
 											_.skin = m_pToggleButtonSkin,
-											_.selected = true,
+											_.checked = true,
 											_.label = WGBP(Text, _.layout = m_pTextLayoutCentered, _.style = m_pTextStyle, _.text = "Frame data" )
 											));
 
@@ -338,39 +343,46 @@ Widget_p MyApp::createLogPanel()
 	pToggleGroup->add(pStatisticsButton);
 	pToggleGroup->add(pErrorLogButton);
 
-	Base::msgRouter()->addRoute(pFrameLogButton, MsgType::Select, [this](Msg* pMsg)
+	Base::msgRouter()->addRoute(pFrameLogButton, MsgType::Toggle, [this](Msg* pMsg)
 		{
-			this->showFrameLog();
+			if( static_cast<ToggleMsg*>(pMsg)->isChecked() )
+				this->showFrameLog();
 		});
 	
-	Base::msgRouter()->addRoute(pFullLogButton, MsgType::Select, [this](Msg* pMsg)
+	Base::msgRouter()->addRoute(pFullLogButton, MsgType::Toggle, [this](Msg* pMsg)
 		{
-			this->showFullLog();
+			if( static_cast<ToggleMsg*>(pMsg)->isChecked() )
+				this->showFullLog();
 		});
 
-	Base::msgRouter()->addRoute(pOptimizerInLogButton, MsgType::Select, [this](Msg* pMsg)
+	Base::msgRouter()->addRoute(pOptimizerInLogButton, MsgType::Toggle, [this](Msg* pMsg)
 		{
-			this->showOptimizerInLog();
+			if( static_cast<ToggleMsg*>(pMsg)->isChecked() )
+				this->showOptimizerInLog();
 		});
 	
-	Base::msgRouter()->addRoute(pOptimizerOutLogButton, MsgType::Select, [this](Msg* pMsg)
+	Base::msgRouter()->addRoute(pOptimizerOutLogButton, MsgType::Toggle, [this](Msg* pMsg)
 		{
-			this->showOptimizerOutLog();
+			if( static_cast<ToggleMsg*>(pMsg)->isChecked() )
+				this->showOptimizerOutLog();
 		});
 	
-	Base::msgRouter()->addRoute(pResourcesButton, MsgType::Select, [this](Msg* pMsg)
+	Base::msgRouter()->addRoute(pResourcesButton, MsgType::Toggle, [this](Msg* pMsg)
 		{
-			this->showResources();
+			if( static_cast<ToggleMsg*>(pMsg)->isChecked() )
+				this->showResources();
 		});
 
-	Base::msgRouter()->addRoute(pStatisticsButton, MsgType::Select, [this](Msg* pMsg)
+	Base::msgRouter()->addRoute(pStatisticsButton, MsgType::Toggle, [this](Msg* pMsg)
 		{
-			this->showStatistics();
+			if( static_cast<ToggleMsg*>(pMsg)->isChecked() )
+				this->showStatistics();
 		});
 
-	Base::msgRouter()->addRoute(pErrorLogButton, MsgType::Select, [this](Msg* pMsg)
+	Base::msgRouter()->addRoute(pErrorLogButton, MsgType::Toggle, [this](Msg* pMsg)
 		{
-			this->showErrors();
+			if( static_cast<ToggleMsg*>(pMsg)->isChecked() )
+				this->showErrors();
 		});
 	
 	pLogButtonRow->slots << pFrameLogButton;
@@ -639,7 +651,7 @@ Widget_p MyApp::createNavigationPanel()
 
 	Base::msgRouter()->addRoute(pRectToggle, MsgType::Toggle, [this](Msg* pMsg)
 		{
-			this->toggleDebugRects(static_cast<ToggleMsg*>(pMsg)->isSet());
+			this->toggleDebugRects(static_cast<ToggleMsg*>(pMsg)->isChecked());
 		});
 
 
@@ -1030,13 +1042,13 @@ void MyApp::setupScreens()
 
 	for (int i = 0; i < 11; i++)
 	{
-		auto pSurf = pFactory->createSurface({ .format = PixelFormat::RGB_555_bigendian, .identity = int(CanvasRef::Default) + i, .size = {800,480}});
+		auto pSurf = pFactory->createSurface({ .format = PixelFormat::BGR_565_sRGB, .identity = int(CanvasRef::Default) + i, .size = {800,480}});
 		pSurf->fill(HiColor::Black);
 
 		m_screens.push_back(pSurf);
 
-		if(pLinearBackend)
-			pLinearBackend->defineCanvas(CanvasRef(int(CanvasRef::Default) + i), {240*64,240*64}, PixelFormat::RGB_555_bigendian, 64 );
+		if( pLinearBackend )
+			pLinearBackend->defineCanvas(CanvasRef(int(CanvasRef::Default) + i), {800*64,480*64}, PixelFormat::BGR_565_sRGB, 64 );
 		else
 			pSoftBackend->defineCanvas(CanvasRef(int(CanvasRef::Default) + i), wg_dynamic_cast<SoftSurface_p>(pSurf));
 	}
@@ -1103,14 +1115,14 @@ void MyApp::updateGUIAfterReload()
 		auto pToggle = ToggleButton::create( WGBP(ToggleButton,
 												_.skin = m_pToggleButtonSkin,
 												_.label.text = label,
-												_.selected = true
+												_.checked = true
 											) );
 
 		auto pScreenLineup = m_pScreenLineup;
 		Base::msgRouter()->addRoute(pToggle, MsgType::Toggle, [toggleNb, pScreenLineup](Msg* pMsg)
 			{
 				auto pMessage = static_cast<ToggleMsg*>(pMsg);
-				pScreenLineup->slots[toggleNb].setVisible(pMessage->isSet());
+				pScreenLineup->slots[toggleNb].setVisible(pMessage->isChecked());
 			});
 
 		m_pDisplayToggles->slots << pToggle;
