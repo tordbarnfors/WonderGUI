@@ -801,16 +801,16 @@ namespace wg
 
 	const TypeInfo ToggleMsg::TYPEINFO = { "ToggleMsg", &Msg::TYPEINFO };
 
-	ToggleMsg::ToggleMsg( Object * pSource, bool bSet )
+	ToggleMsg::ToggleMsg( Object * pSource, bool bChecked )
 	{
 		m_type = MsgType::Toggle;
 		m_pSource = pSource;
-		m_bSet = bSet;
+		m_bChecked = bChecked;
 	}
 
-	bool ToggleMsg::isSet() const
+	bool ToggleMsg::isChecked() const
 	{
-		return m_bSet;
+		return m_bChecked;
 	}
 
 	const TypeInfo& ToggleMsg::typeInfo(void) const

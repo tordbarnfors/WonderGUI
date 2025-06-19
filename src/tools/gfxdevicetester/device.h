@@ -2,6 +2,7 @@
 
 
 #include <wg_gfxdevice.h>
+#include <wg_theme.h>
 
 #include <wondergui.h>
 #include <wondergfxstream.h>
@@ -10,8 +11,6 @@
 class Device;
 typedef wg::StrongPtr<Device>   Device_p;
 typedef wg::WeakPtr<Device>     Device_wp;
-
-class Theme;
 
 
 class Device : public wg::PackPanel

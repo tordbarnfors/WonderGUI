@@ -88,6 +88,7 @@ namespace wg
 			inline void _setGeo(RectSPX geo, int scale) { m_geo = geo; StaticSlot::_setSize(geo.size(), scale); }
 
 			RectSPX		m_geo;
+			bool		m_bVisible = true;
 		};
 
 

@@ -114,7 +114,7 @@ void MyApp::tintModeToggled(Msg* _pMsg)
 	auto pMsg = static_cast<ToggleMsg*>(_pMsg);
 	auto pWidget = static_cast<Widget*>(pMsg->sourceRawPtr());
 
-	m_pDB->setTintMode((TintMode)pWidget->id(), pMsg->isSet());
+	m_pDB->setTintMode((TintMode)pWidget->id(), pMsg->isChecked());
 	_refreshSummary();
 }
 
@@ -125,7 +125,7 @@ void MyApp::blendModeToggled(Msg* _pMsg)
 	auto pMsg = static_cast<ToggleMsg*>(_pMsg);
 	auto pWidget = static_cast<Widget*>(pMsg->sourceRawPtr());
 
-	m_pDB->setBlendMode((BlendMode)pWidget->id(), pMsg->isSet());
+	m_pDB->setBlendMode((BlendMode)pWidget->id(), pMsg->isChecked());
 	_refreshSummary();
 }
 
@@ -136,7 +136,7 @@ void MyApp::sourceFormatToggled(Msg* _pMsg)
 	auto pMsg = static_cast<ToggleMsg*>(_pMsg);
 	auto pWidget = static_cast<Widget*>(pMsg->sourceRawPtr());
 
-	m_pDB->setSrcFormat((PixelFormat)pWidget->id(), pMsg->isSet());
+	m_pDB->setSrcFormat((PixelFormat)pWidget->id(), pMsg->isChecked());
 	_refreshSummary();
 }
 
@@ -147,7 +147,7 @@ void MyApp::destFormatToggled(Msg* _pMsg)
 	auto pMsg = static_cast<ToggleMsg*>(_pMsg);
 	auto pWidget = static_cast<Widget*>(pMsg->sourceRawPtr());
 
-	m_pDB->setDestFormat((PixelFormat)pWidget->id(), pMsg->isSet());
+	m_pDB->setDestFormat((PixelFormat)pWidget->id(), pMsg->isChecked());
 	_refreshSummary();
 }
 
@@ -158,7 +158,7 @@ void MyApp::customBlitTypeToggled(int index, wg::Msg* _pMsg)
 	auto pMsg = static_cast<ToggleMsg*>(_pMsg);
 	auto pWidget = static_cast<Widget*>(pMsg->sourceRawPtr());
 
-	m_pDB->customBlitEntry(index)->blitTypes[pWidget->id()] = pMsg->isSet();
+	m_pDB->customBlitEntry(index)->blitTypes[pWidget->id()] = pMsg->isChecked();
 	_refreshList();
 }
 
@@ -169,7 +169,7 @@ void MyApp::customBlitTintModeToggled(int index, wg::Msg* _pMsg)
 	auto pMsg = static_cast<ToggleMsg*>(_pMsg);
 	auto pWidget = static_cast<Widget*>(pMsg->sourceRawPtr());
 
-	m_pDB->customBlitEntry(index)->tintModes[pWidget->id()] = pMsg->isSet();
+	m_pDB->customBlitEntry(index)->tintModes[pWidget->id()] = pMsg->isChecked();
 	_refreshList();
 }
 
@@ -180,7 +180,7 @@ void MyApp::customBlitBlendModeToggled(int index, wg::Msg* _pMsg)
 	auto pMsg = static_cast<ToggleMsg*>(_pMsg);
 	auto pWidget = static_cast<Widget*>(pMsg->sourceRawPtr());
 
-	m_pDB->customBlitEntry(index)->blendModes[pWidget->id()] = pMsg->isSet();
+	m_pDB->customBlitEntry(index)->blendModes[pWidget->id()] = pMsg->isChecked();
 	_refreshList();
 }
 
@@ -191,7 +191,7 @@ void MyApp::customBlitSourceFormatToggled(int index, wg::Msg* _pMsg)
 	auto pMsg = static_cast<ToggleMsg*>(_pMsg);
 	auto pWidget = static_cast<Widget*>(pMsg->sourceRawPtr());
 
-	m_pDB->customBlitEntry(index)->sourceFormats[pWidget->id()] = pMsg->isSet();
+	m_pDB->customBlitEntry(index)->sourceFormats[pWidget->id()] = pMsg->isChecked();
 	_refreshList();
 }
 
@@ -202,7 +202,7 @@ void MyApp::customBlitDestFormatToggled(int index, wg::Msg* _pMsg)
 	auto pMsg = static_cast<ToggleMsg*>(_pMsg);
 	auto pWidget = static_cast<Widget*>(pMsg->sourceRawPtr());
 
-	m_pDB->customBlitEntry(index)->destFormats[pWidget->id()] = pMsg->isSet();
+	m_pDB->customBlitEntry(index)->destFormats[pWidget->id()] = pMsg->isChecked();
 	_refreshList();
 }
 

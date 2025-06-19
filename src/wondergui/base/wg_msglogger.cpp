@@ -302,7 +302,7 @@ namespace wg
 				break;
 
 			case MsgType::Toggle:
-				snprintf( params, c_paramLen, " set=%d", (int) (static_cast<ToggleMsg*>(_pMsg)->isSet()) );
+				snprintf( params, c_paramLen, " checked=%d", (int) (static_cast<ToggleMsg*>(_pMsg)->isChecked()) );
 				break;
 
 			case MsgType::ValueUpdate:

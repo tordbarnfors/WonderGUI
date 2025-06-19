@@ -158,7 +158,7 @@ namespace wg
 		if (m_bActivated)
 		{
 			for (auto& slot : toolboxes)
-				if (slot.m_geo.contains(ofs) )
+				if (slot.m_bVisible && slot.m_geo.contains(ofs) )
 				{
 					return static_cast<Container*>(slot._widget())->_findWidget(ofs - slot.m_geo.pos(), mode);
 				}
@@ -361,7 +361,10 @@ namespace wg
 
 	const Overlay::Slot *  DebugOverlay::_endOverlaySlots() const
 	{
-		return toolboxes._end();
+		if( m_bActivated )
+			return toolboxes._end();
+		else
+			return toolboxes._begin();
 	}
 
 	//____ _sizeOfOverlaySlot() __________________________________________________
@@ -646,7 +649,7 @@ namespace wg
 						if( m_bSelectMode )
 						{
 							m_bSelectMode = false;
-							m_pPickWidgetButton->setSelected(false);
+							m_pPickWidgetButton->setChecked(false);
 							if( m_generatedPointerStyle == PointerStyle::Crosshair )
 								m_generatedPointerStyle = PointerStyle::Undefined;
 						}
