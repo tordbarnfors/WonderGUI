@@ -13,24 +13,9 @@
 #include "device.h"
 #include "testsuites/testsuite.h"
 
-class Theme
-{
-public:
-	Skin_p		backPlateSkin() const { return m_pBackPlateSkin; }
-	Skin_p		buttonSkin() const { return m_pButtonSkin; }
-	TextStyle_p	smallTextStyle() const { return m_pSmallTextStyle; }
-	
-protected:
-	Skin_p		m_pBackPlateSkin;
-	Skin_p		m_pButtonSkin;
-
-	TextStyle_p	m_pSmallTextStyle;
-};
 
 
-
-
-class GfxDeviceTester : public WonderApp, public Theme
+class GfxDeviceTester : public WonderApp
 {
 	friend class WonderApp;
 public:

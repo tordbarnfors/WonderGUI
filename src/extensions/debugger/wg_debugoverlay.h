@@ -71,7 +71,6 @@ namespace wg
 
 			const static bool safe_to_relocate = false;
 
-			bool		m_bVisible = true;
 			Placement	m_placement = Placement::NorthWest;
 			CoordSPX	m_placementPos;			// Widgets pos relative placement.
 			SizeSPX		m_chosenSize;
