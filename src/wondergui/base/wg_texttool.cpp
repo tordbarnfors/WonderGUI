@@ -426,7 +426,7 @@ namespace wg
 			else
 			{
 				if( hStyle )
-					TextStyleManager::_getPointer(hStyle)->_decRefCount( nStyle );
+					TextStyleManager::_getPointer(hStyle)->_incRefCount( nStyle );
 
 				hStyle = h;
 				nStyle = 1;
@@ -434,7 +434,7 @@ namespace wg
 		}
 
 		if( hStyle )
-			TextStyleManager::_getPointer(hStyle)->_decRefCount( nStyle );
+			TextStyleManager::_getPointer(hStyle)->_incRefCount( nStyle );
 	}
 
 
