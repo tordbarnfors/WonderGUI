@@ -1422,21 +1422,21 @@ namespace wg
 
 	//____ drawWave() ______________________________________________________
 
-	void GfxDeviceGen1::drawWave(const RectSPX& dest, const WaveLine * pTopBorder, const WaveLine * pBottomBorder, HiColor frontFill, HiColor backFill )
+	void GfxDeviceGen1::drawWave(const RectSPX& dest, const WaveLine * pTopBorder, const WaveLine * pBottomBorder, HiColor fill )
 	{
-		_transformDrawWave(dest, pTopBorder, pBottomBorder, frontFill, backFill, s_blitFlipTransforms[(int)GfxFlip::None] );
+		_transformDrawWave(dest, pTopBorder, pBottomBorder, fill, s_blitFlipTransforms[(int)GfxFlip::None] );
 	}
 
 	//____ flipDrawWave() ______________________________________________________
 
-	void GfxDeviceGen1::flipDrawWave(const RectSPX& dest, const WaveLine * pTopBorder, const WaveLine * pBottomBorder, HiColor frontFill, HiColor backFill, GfxFlip flip )
+	void GfxDeviceGen1::flipDrawWave(const RectSPX& dest, const WaveLine * pTopBorder, const WaveLine * pBottomBorder, HiColor fill, GfxFlip flip )
 	{
-		_transformDrawWave(dest, pTopBorder, pBottomBorder, frontFill, backFill, s_blitFlipTransforms[(int)flip] );
+		_transformDrawWave(dest, pTopBorder, pBottomBorder, fill, s_blitFlipTransforms[(int)flip] );
 	}
 
 	//____ _transformDrawWave() ______________________________________________________
 
-	void GfxDeviceGen1::_transformDrawWave(const RectSPX& _destIn, const WaveLine * pTopBorder, const WaveLine * pBottomBorder, HiColor frontFill, HiColor backFill, const int simpleTransform[2][2] )
+	void GfxDeviceGen1::_transformDrawWave(const RectSPX& _destIn, const WaveLine * pTopBorder, const WaveLine * pBottomBorder, HiColor fill, const int simpleTransform[2][2] )
 	{
 		//TODO: If borders have different colors and cross, colors are not swapped.
 
@@ -1514,96 +1514,44 @@ namespace wg
 
 		int edgeBufferSize;
 
-		if (frontFill == backFill)
+		// Generate edges
+
+		edgeBufferSize = (length + 1) * 4 * sizeof(int);
+		int *	pEdgeBuffer = (int*)GfxBase::memStackAlloc(edgeBufferSize);
+		int *	pEdges = pEdgeBuffer;
+
+		for (int i = startColumn; i <= length + startColumn; i++)
 		{
-			// Generate edges
+			if (pTopBorderTrace[i * 2] > pBottomBorderTrace[i * 2])
+				swap(pTopBorderTrace, pBottomBorderTrace);
 
-			edgeBufferSize = (length + 1) * 4 * sizeof(int);
-			int *	pEdgeBuffer = (int*)GfxBase::memStackAlloc(edgeBufferSize);
-			int *	pEdges = pEdgeBuffer;
+			pEdges[0] = pTopBorderTrace[i * 2];
+			pEdges[1] = pTopBorderTrace[i * 2 + 1];
 
-			for (int i = startColumn; i <= length + startColumn; i++)
+			pEdges[2] = pBottomBorderTrace[i * 2];
+			pEdges[3] = pBottomBorderTrace[i * 2 + 1];
+
+			if (pEdges[2] < pEdges[1])
 			{
-				if (pTopBorderTrace[i * 2] > pBottomBorderTrace[i * 2])
-					swap(pTopBorderTrace, pBottomBorderTrace);
-
-				pEdges[0] = pTopBorderTrace[i * 2];
-				pEdges[1] = pTopBorderTrace[i * 2 + 1];
-
-				pEdges[2] = pBottomBorderTrace[i * 2];
-				pEdges[3] = pBottomBorderTrace[i * 2 + 1];
-
-				if (pEdges[2] < pEdges[1])
-				{
-					pEdges[2] = pEdges[1];
-					if (pEdges[3] < pEdges[2])
-						pEdges[3] = pEdges[2];
-				}
-
-				pEdges += 4;
+				pEdges[2] = pEdges[1];
+				if (pEdges[3] < pEdges[2])
+					pEdges[3] = pEdges[2];
 			}
 
-			// Render the segments
-
-			HiColor	col[5];
-
-			col[0] = HiColor::Transparent;
-			col[1] = pTopBorder->color;
-			col[2] = frontFill;
-			col[3] = pBottomBorder->color;
-			col[4] = HiColor::Transparent;
-
-			_transformDrawSegments(dest*64, 5, col, length + 1, pEdgeBuffer, 4, TintMode::Flat, simpleTransform );
-
-		}
-		else
-		{
-			edgeBufferSize = (length + 1) * 5 * sizeof(int);
-			int *	pEdgeBuffer = (int*)GfxBase::memStackAlloc(edgeBufferSize);
-			int *	pEdges = pEdgeBuffer;
-			int		midEdgeFollows = 3;
-
-			for (int i = startColumn; i <= length + startColumn; i++)
-			{
-				if (pTopBorderTrace[i * 2] > pBottomBorderTrace[i * 2])
-				{
-					swap(pTopBorderTrace, pBottomBorderTrace);
-					midEdgeFollows ^= 0x2;												// Swap between 1 and 3.
-				}
-
-				pEdges[0] = pTopBorderTrace[i * 2];
-				pEdges[1] = pTopBorderTrace[i * 2 + 1];
-
-				pEdges[3] = pBottomBorderTrace[i * 2];
-				pEdges[4] = pBottomBorderTrace[i * 2 + 1];
-
-
-
-				if (pEdges[3] < pEdges[1])
-				{
-					pEdges[3] = pEdges[1];
-					if (pEdges[4] < pEdges[3])
-						pEdges[4] = pEdges[3];
-				}
-
-				pEdges[2] = pEdges[midEdgeFollows];
-				pEdges += 5;
-			}
-
-			// Render the segments
-
-			HiColor	col[6];
-
-			col[0] = HiColor::Transparent;
-			col[1] = pTopBorder->color;
-			col[2] = frontFill;
-			col[3] = backFill;
-			col[4] = pBottomBorder->color;
-			col[5] = HiColor::Transparent;
-
-			_transformDrawSegments(dest*64, 6, col, length + 1, pEdgeBuffer, 5, TintMode::Flat, simpleTransform);
+			pEdges += 4;
 		}
 
+		// Render the segments
+
+		HiColor	col[5];
+
+		col[0] = HiColor::Transparent;
+		col[1] = pTopBorder->color;
+		col[2] = fill;
+		col[3] = pBottomBorder->color;
+		col[4] = HiColor::Transparent;
+
+		_transformDrawSegments(dest*64, 5, col, length + 1, pEdgeBuffer, 4, TintMode::Flat, simpleTransform );
 
 		// Free temporary work memory
 

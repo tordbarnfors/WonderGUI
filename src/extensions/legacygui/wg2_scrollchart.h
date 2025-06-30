@@ -104,15 +104,15 @@ public:
 	int		StartLineWave( float startSample, float thickness = 1.f, WgColor color = WgColor::Black, std::function<float(uint64_t timeCode)> sampleFeeder = nullptr );
 
 	int		StartSimpleWave( float startSample, float floor, float topLineThickness, WgColor topLineColor,
-							float floorLineThickness, WgColor floorLineColor, WgColor aboveFloorFill, WgColor belowFloorFill, std::function<float(uint64_t timeCode)> sampleFeeder = nullptr );
+							float floorLineThickness, WgColor floorLineColor, WgColor fillColor, std::function<float(uint64_t timeCode)> sampleFeeder = nullptr );
 
 	int		StartComplexWave( SamplePair startSample, float topLineThickness, WgColor topLineColor,
-							float bottomLineThickness, WgColor bottomLineColor, WgColor frontFill, WgColor backFill, std::function<SamplePair(uint64_t timeCode)> sampleFeeder = nullptr );
+							float bottomLineThickness, WgColor bottomLineColor, WgColor frontFill, std::function<SamplePair(uint64_t timeCode)> sampleFeeder = nullptr );
 
 	bool	StopWave(int waveId );
 	void	StopAllWaves();
 
-	bool	SetWaveColors( int waveId, WgColor topLineColor, WgColor bottomLineColor, WgColor fillColor, WgColor backColor );
+	bool	SetWaveColors( int waveId, WgColor topLineColor, WgColor bottomLineColor, WgColor fillColor );
 
 	bool	IsWaveDisplayed(int waveId) const;
 	bool	HideWave(int waveId);
@@ -167,8 +167,7 @@ protected:
 	{
 		Wave() {}
 
-		WgColor	frontFill = WgColor::DarkGrey;
-		WgColor	backFill = WgColor::DarkGrey;
+		WgColor	fillColor = WgColor::DarkGrey;
 		float	topLineThickness = 1.f;
 		WgColor topLineColor = WgColor::Black;
 		float	bottomLineThickness = 0.f;

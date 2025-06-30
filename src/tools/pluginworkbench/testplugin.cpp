@@ -290,18 +290,17 @@ bool canvasCapsuleGlowTest(ComponentPtr<DynamicSlot> pEntry)
 
 	auto pGlowCapsule = CanvasCapsule::create();
 
-	auto pBlurbrush = Blurbrush::create({
-			.blue = { 0.1f, 0.1f, 0.1f,
-					 0.1f, 0.1f, 0.1f,
-					 0.1f, 0.1f, 0.1f },
-			.green = { 0.1f, 0.1f, 0.1f,
-					 0.1f, 0.1f, 0.1f,
-					 0.1f, 0.1f, 0.1f },
-			.red = { 0.1f, 0.1f, 0.1f,
-					 0.1f, 0.15f, 0.1f,
-					 0.1f, 0.1f, 0.1f },
-		});
+	float blueMtx[9] = { 0.1f, 0.1f, 0.1f,  0.1f, 0.1f, 0.1f,  0.1f, 0.1f, 0.1f };
+	float greenMtx[9] = { 0.1f, 0.1f, 0.1f,  0.1f, 0.1f, 0.1f,  0.1f, 0.1f, 0.1f };
+	float redMtx[9] = { 0.1f, 0.1f, 0.1f,  0.1f, 0.1f, 0.1f,  0.1f, 0.1f, 0.1f };
 
+
+	auto pBlurbrush = Blurbrush::create( WGBP(Blurbrush,
+			_.blue = blueMtx,
+			_.green = greenMtx,
+			_.red = redMtx
+		));
+	
 	//	pGlowCapsule->setResolution( {64,64} );
 
 	pGlowCapsule->glow.setBlurbrush(pBlurbrush);

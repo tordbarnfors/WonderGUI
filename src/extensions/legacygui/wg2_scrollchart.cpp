@@ -458,7 +458,7 @@ int	WgScrollChart::StartLineWave(float startSample, float thickness, WgColor col
 //____ StartSimpleWave() ______________________________________________________
 
 int WgScrollChart::StartSimpleWave(float startSample, float floor, float topLineThickness, WgColor topLineColor,
-	float floorLineThickness, WgColor floorLineColor, WgColor aboveFloorFill, WgColor belowFloorFill, std::function<float(uint64_t timeCode)> sampleFeeder)
+	float floorLineThickness, WgColor floorLineColor, WgColor fillColor, std::function<float(uint64_t timeCode)> sampleFeeder)
 {
 	m_waves.emplace_back();
 	Wave&	w = m_waves.back();
@@ -474,8 +474,7 @@ int WgScrollChart::StartSimpleWave(float startSample, float floor, float topLine
 	w.topLineColor = topLineColor;
 	w.bottomLineThickness = floorLineThickness;
 	w.bottomLineColor = floorLineColor;
-	w.frontFill = aboveFloorFill;
-	w.backFill = belowFloorFill;
+	w.fillColor = fillColor;
 	w.simpleSampleFeeder = sampleFeeder;
 	w.samples.push_back({ (int)(m_sampleEndTimestamp - m_sampleBeginTimestamp),startSample,0 });
 
@@ -488,7 +487,7 @@ int WgScrollChart::StartSimpleWave(float startSample, float floor, float topLine
 //____ StartComplexWave() _____________________________________________________
 
 int WgScrollChart::StartComplexWave(SamplePair startSample, float topLineThickness, WgColor topLineColor,
-	float bottomLineThickness, WgColor bottomLineColor, WgColor frontFill, WgColor backFill, std::function<SamplePair(uint64_t timeCode)> sampleFeeder)
+	float bottomLineThickness, WgColor bottomLineColor, WgColor fillColor, std::function<SamplePair(uint64_t timeCode)> sampleFeeder)
 {
 	m_waves.emplace_back();
 	Wave&	w = m_waves.back();
@@ -504,8 +503,7 @@ int WgScrollChart::StartComplexWave(SamplePair startSample, float topLineThickne
 	w.topLineColor = topLineColor;
 	w.bottomLineThickness = bottomLineThickness;
 	w.bottomLineColor = bottomLineColor;
-	w.frontFill = frontFill;
-	w.backFill = backFill;
+	w.fillColor = fillColor;
 	w.complexSampleFeeder = sampleFeeder;
 	w.samples.push_back({(int)(m_sampleEndTimestamp - m_sampleBeginTimestamp),startSample.top,startSample.bottom });
 
@@ -561,7 +559,7 @@ void WgScrollChart::StopAllWaves()
 
 //____ SetWaveColors() ________________________________________________________
 
-bool WgScrollChart::SetWaveColors( int waveId, WgColor topLineColor, WgColor bottomLineColor, WgColor fillColor, WgColor backColor )
+bool WgScrollChart::SetWaveColors( int waveId, WgColor topLineColor, WgColor bottomLineColor, WgColor fillColor )
 {
 	Wave * p = _getWave(waveId);
 	if (!p)
@@ -569,8 +567,7 @@ bool WgScrollChart::SetWaveColors( int waveId, WgColor topLineColor, WgColor bot
 
 	p->topLineColor = topLineColor;
 	p->bottomLineColor = bottomLineColor;
-	p->frontFill = fillColor;
-	p->backFill = backColor;
+	p->fillColor = fillColor;
 
 	m_bRefreshCanvas = true;
 	return true;
@@ -1039,10 +1036,10 @@ void WgScrollChart::_renderWaveSegment(wg::GfxDevice * pDevice, const WgRect& _c
 			case WaveType::Simple:
 				bottomLine.length = 0;
 				bottomLine.pWave = nullptr;
-				pDevice->drawWave( WgRect( _canvas.x - margin + waveSamplesOffset,_canvas.y, waveSamples-1,_canvas.h )*64, &topLine, &bottomLine, wave.frontFill, wave.backFill);
+				pDevice->drawWave( WgRect( _canvas.x - margin + waveSamplesOffset,_canvas.y, waveSamples-1,_canvas.h )*64, &topLine, &bottomLine, wave.fillColor);
 				break;
 			case WaveType::Complex:
-				pDevice->drawWave( WgRect( _canvas.x - margin + waveSamplesOffset,_canvas.y, waveSamples-1,_canvas.h )*64, &topLine, &bottomLine, wave.frontFill, wave.backFill);
+				pDevice->drawWave( WgRect( _canvas.x - margin + waveSamplesOffset,_canvas.y, waveSamples-1,_canvas.h )*64, &topLine, &bottomLine, wave.fillColor);
 				break;
 			}
 		}

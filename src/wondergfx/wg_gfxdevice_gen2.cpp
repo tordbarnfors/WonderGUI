@@ -2244,14 +2244,14 @@ void GfxDeviceGen2::flipDrawEdgemap(CoordSPX dest, Edgemap* pEdgemap, GfxFlip fl
 
 //____ drawWave() ____________________________________________________________
 
-void GfxDeviceGen2::drawWave(const RectSPX& dest, const WaveLine* pTopBorder, const WaveLine* pBottomBorder, HiColor frontFill, HiColor backFill)
+void GfxDeviceGen2::drawWave(const RectSPX& dest, const WaveLine* pTopBorder, const WaveLine* pBottomBorder, HiColor fill)
 {
-	flipDrawWave(dest, pTopBorder, pBottomBorder, frontFill, backFill, GfxFlip::None);
+	flipDrawWave(dest, pTopBorder, pBottomBorder, fill, GfxFlip::None);
 }
 
 //____ flipDrawWave() __________________________________________________________
 
-void GfxDeviceGen2::flipDrawWave(const RectSPX& dest, const WaveLine* pTopBorder, const WaveLine* pBottomBorder, HiColor frontFill, HiColor backFill, GfxFlip flip)
+void GfxDeviceGen2::flipDrawWave(const RectSPX& dest, const WaveLine* pTopBorder, const WaveLine* pBottomBorder, HiColor fill, GfxFlip flip)
 {
 	if (!m_pActiveCanvas || !m_pBackend )
 	{
@@ -2266,7 +2266,7 @@ void GfxDeviceGen2::flipDrawWave(const RectSPX& dest, const WaveLine* pTopBorder
 
 	auto pWave = Waveform::create( WGBP(Waveform, 
 		_.size = dest.size()/64, 
-		_.color = frontFill, 
+		_.color = fill,
 		_.topOutlineThickness = pTopBorder->thickness, 
 		_.bottomOutlineThickness = pBottomBorder->thickness,
 		_.outlineColor = pTopBorder->color ),

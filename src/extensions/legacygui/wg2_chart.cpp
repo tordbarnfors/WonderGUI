@@ -244,7 +244,7 @@ void WgChart::UnhideAllWaves()
 
 //____ SetWaveStyle() _________________________________________________________
 
-bool WgChart::SetWaveStyle(int waveId, WgColor frontFill, WgColor backFill, float topLineThickness, WgColor topLineColor, float bottomLineThickness, WgColor bottomLineColor, int transitionMs)
+bool WgChart::SetWaveStyle(int waveId, WgColor fillColor, float topLineThickness, WgColor topLineColor, float bottomLineThickness, WgColor bottomLineColor, int transitionMs)
 {
 	Wave * p = _getWave(waveId);
 	if (!p)
@@ -257,17 +257,10 @@ bool WgChart::SetWaveStyle(int waveId, WgColor frontFill, WgColor backFill, floa
 		bottomLineColor = topLineColor;
 
 	bool startTransition = false;
-	if(frontFill != p->frontFill)
+	if(fillColor != p->fillColor)
 	{
-		p->frontFillEnd = frontFill;
-		p->frontFillStart = p->frontFill;
-		startTransition = true;
-	}
-
-	if(backFill != p->backFill)
-	{
-		p->backFillEnd = backFill;
-		p->backFillStart = p->backFill;
+		p->fillEnd = fillColor;
+		p->fillStart = p->fillColor;
 		startTransition = true;
 	}
 
@@ -287,8 +280,7 @@ bool WgChart::SetWaveStyle(int waveId, WgColor frontFill, WgColor backFill, floa
 
 	if(transitionMs == 0)
 	{
-	   p->frontFill = frontFill;
-	   p->backFill = backFill;
+	   p->fillColor = fillColor;
 	   p->topLineColor = topLineColor;
 	   p->bottomLineColor = bottomLineColor;
 	}
@@ -761,15 +753,10 @@ void WgChart::_onEvent(const WgEvent::Event * pEvent, WgEventHandler * pHandler)
 				{
 					float progress = p->fadeTimeCounter / (float) p->fadeTime;
 
-					p->frontFill.r = p->frontFillStart.r + (int)((((int)p->frontFillEnd.r) - p->frontFillStart.r) * progress);
-					p->frontFill.g = p->frontFillStart.g + (int)((((int)p->frontFillEnd.g) - p->frontFillStart.g) * progress);
-					p->frontFill.b = p->frontFillStart.b + (int)((((int)p->frontFillEnd.b) - p->frontFillStart.b) * progress);
-					p->frontFill.a = p->frontFillStart.a + (int)((((int)p->frontFillEnd.a) - p->frontFillStart.a) * progress);
-
-					p->backFill.r = p->backFillStart.r + (int)((((int)p->backFillEnd.r) - p->backFillStart.r) * progress);
-					p->backFill.g = p->backFillStart.g + (int)((((int)p->backFillEnd.g) - p->backFillStart.g) * progress);
-					p->backFill.b = p->backFillStart.b + (int)((((int)p->backFillEnd.b) - p->backFillStart.b) * progress);
-					p->backFill.a = p->backFillStart.a + (int)((((int)p->backFillEnd.a) - p->backFillStart.a) * progress);
+					p->fillColor.r = p->fillStart.r + (int)((((int)p->fillEnd.r) - p->fillStart.r) * progress);
+					p->fillColor.g = p->fillStart.g + (int)((((int)p->fillEnd.g) - p->fillStart.g) * progress);
+					p->fillColor.b = p->fillStart.b + (int)((((int)p->fillEnd.b) - p->fillStart.b) * progress);
+					p->fillColor.a = p->fillStart.a + (int)((((int)p->fillEnd.a) - p->fillStart.a) * progress);
 
 					p->topLineColor.r = p->topLineColorStart.r + (int)((((int)p->topLineColorEnd.r) - p->topLineColorStart.r) * progress);
 					p->topLineColor.g = p->topLineColorStart.g + (int)((((int)p->topLineColorEnd.g) - p->topLineColorStart.g) * progress);
@@ -785,8 +772,7 @@ void WgChart::_onEvent(const WgEvent::Event * pEvent, WgEventHandler * pHandler)
 				}
 				else
 				{
-					p->frontFill = p->frontFillEnd;
-					p->backFill = p->backFillEnd;
+					p->fillColor = p->fillEnd;
 					p->topLineColor = p->topLineColorEnd;
 					p->bottomLineColor = p->bottomLineColorEnd;
 				}
@@ -1089,13 +1075,13 @@ void WgChart::_renderWave( Wave& wave, wg::GfxDevice * pDevice, const WgRect& wa
             pDevice->setTintGradient(WgRect(waveCanvas.x + xOfs, waveCanvas.y, length, waveCanvas.h)*64, wave.m_waveGradient);
         }
 
-		pDevice->drawWave(WgRect(waveCanvas.x + xOfs, waveCanvas.y, length, waveCanvas.h)*64, &top, &bottom, wave.frontFill, wave.backFill);
+		pDevice->drawWave(WgRect(waveCanvas.x + xOfs, waveCanvas.y, length, waveCanvas.h)*64, &top, &bottom, wave.fillColor);
 
         if(useGradient)
         {
             pDevice->clearTintGradient();
         }
-//        pDevice->ClipDrawHorrWave(waveClip, WgCoord(waveCanvas.x + xOfs, waveCanvas.y), length, top, bottom, wave.frontFill, wave.backFill);
+//        pDevice->ClipDrawHorrWave(waveClip, WgCoord(waveCanvas.x + xOfs, waveCanvas.y), length, top, bottom, wave.fillColor, wave.fillColor);
 	}
 }
 

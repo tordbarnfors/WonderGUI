@@ -541,16 +541,16 @@ namespace wg
 
     //____ drawWave() _________________________________________________________
 
-    void PluginGfxDevice::drawWave(const RectSPX& dest, const WaveLine * pTopBorder, const WaveLine * pBottomBorder, HiColor frontFill, HiColor backFill)
+    void PluginGfxDevice::drawWave(const RectSPX& dest, const WaveLine * pTopBorder, const WaveLine * pBottomBorder, HiColor fill)
     {
-        PluginCalls::gfxDevice->drawWave(m_cDevice, (wg_rectSPX*)&dest, (wg_waveLine*)pTopBorder, (wg_waveLine*)pBottomBorder, *(wg_color*)&frontFill, *(wg_color*)&backFill);
+        PluginCalls::gfxDevice->drawWave(m_cDevice, (wg_rectSPX*)&dest, (wg_waveLine*)pTopBorder, (wg_waveLine*)pBottomBorder, *(wg_color*)&fill);
     }
 
     //____ flipDrawWave() _____________________________________________________
 
-    void PluginGfxDevice::flipDrawWave(const RectSPX& dest, const WaveLine * pTopBorder, const WaveLine * pBottomBorder, HiColor frontFill, HiColor backFill, GfxFlip flip)
+    void PluginGfxDevice::flipDrawWave(const RectSPX& dest, const WaveLine * pTopBorder, const WaveLine * pBottomBorder, HiColor fill, GfxFlip flip)
     {
-        PluginCalls::gfxDevice->flipDrawWave(m_cDevice, (wg_rectSPX*)&dest, (wg_waveLine*)pTopBorder, (wg_waveLine*)pBottomBorder, *(wg_color*)&frontFill, *(wg_color*)&backFill, (wg_gfxFlip) flip );
+        PluginCalls::gfxDevice->flipDrawWave(m_cDevice, (wg_rectSPX*)&dest, (wg_waveLine*)pTopBorder, (wg_waveLine*)pBottomBorder, *(wg_color*)&fill, (wg_gfxFlip) flip );
     }
 
     //____ _drawElipse() ______________________________________________________

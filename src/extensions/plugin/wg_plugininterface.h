@@ -235,8 +235,8 @@ typedef struct wg_gfxdevice_calls_struct
 	void				(*flipTile)(wg_obj device, const wg_rectSPX* dest, wg_gfxFlip flip, wg_coordSPX shift);
 	void				(*scaleTile)(wg_obj device, const wg_rectSPX* dest, float scale, wg_coordSPX shift);
 	void				(*scaleFlipTile)(wg_obj device, const wg_rectSPX* dest, float scale, wg_gfxFlip flip, wg_coordSPX shift);
-	void				(*drawWave)(wg_obj device, const wg_rectSPX* dest, const wg_waveLine* pTopBorder, const wg_waveLine* pBottomBorder, wg_color frontFill, wg_color backFill);
-	void				(*flipDrawWave)(wg_obj device, const wg_rectSPX* dest, const wg_waveLine* pTopBorder, const wg_waveLine* pBottomBorder, wg_color frontFill, wg_color backFill, wg_gfxFlip flip);
+	void				(*drawWave)(wg_obj device, const wg_rectSPX* dest, const wg_waveLine* pTopBorder, const wg_waveLine* pBottomBorder, wg_color fill);
+	void				(*flipDrawWave)(wg_obj device, const wg_rectSPX* dest, const wg_waveLine* pTopBorder, const wg_waveLine* pBottomBorder, wg_color fill, wg_gfxFlip flip);
 	void				(*drawElipse)(wg_obj device, const wg_rectSPX* canvas, wg_spx thickness, wg_color color, wg_spx outlineThickness, wg_color outlineColor);
 	void				(*drawPieChart)(wg_obj device, const wg_rectSPX* canvas, float start, int nSlices, const float* pSliceSizes, const wg_color* pSliceColors, float hubSize, wg_color hubColor, wg_color backColor, int bRectangular);
 	void				(*drawSegments)(wg_obj device, const wg_rectSPX* dest, int nSegments, const wg_color* pSegmentColors, int nEdgeStrips, const int* pEdgeStrips, int edgeStripPitch, wg_tintMode tintMode);

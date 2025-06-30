@@ -74,7 +74,7 @@ public:
 	void	ClearWaves();
 	int		AddWave();
 
-    bool	SetWaveStyle(int waveId, WgColor frontFill, WgColor backFill, float topLineThickness = 0.f, WgColor topLineColor = WgColor::Black, float bottomLineThickness = 0.f, WgColor bottomLineColor = WgColor::Black, int transitionMs = 0);
+    bool	SetWaveStyle(int waveId, WgColor fillColor, float topLineThickness = 0.f, WgColor topLineColor = WgColor::Black, float bottomLineThickness = 0.f, WgColor bottomLineColor = WgColor::Black, int transitionMs = 0);
 
     bool    SetWaveGradient(int waveId, wg::Gradient gradient);
 
@@ -148,18 +148,15 @@ protected:
 
 		int		id;
 
-		WgColor	frontFill = WgColor::DarkGrey;
-		WgColor	backFill = WgColor::DarkGrey;
+		WgColor	fillColor = WgColor::DarkGrey;
 		float	topLineThickness = 1.f;
 		WgColor topLineColor = WgColor::Black;
 		float	bottomLineThickness = 0.f;
 		WgColor	bottomLineColor = WgColor::Black;
 
         // Transitions
-        WgColor frontFillStart = WgColor::DarkGrey;
-        WgColor frontFillEnd = WgColor::DarkGrey;
-        WgColor backFillStart = WgColor::DarkGrey;
-        WgColor backFillEnd = WgColor::DarkGrey;
+        WgColor fillStart = WgColor::DarkGrey;
+        WgColor fillEnd = WgColor::DarkGrey;
         WgColor topLineColorStart = WgColor::Black;
         WgColor topLineColorEnd = WgColor::Black;
         WgColor bottomLineColorStart = WgColor::Black;

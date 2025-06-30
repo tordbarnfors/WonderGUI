@@ -558,7 +558,7 @@ bool scrollChartTest(WgRootPanel* pRoot)
 	 */
 	pChart->SetGridToForeground(true);
 
-	auto hWave = pChart->StartSimpleWave( 50, 0, 1, WgColor::Red, 1, WgColor::Red, WgColor::Green, WgColor::Green );
+	auto hWave = pChart->StartSimpleWave( 50, 0, 1, WgColor::Red, 1, WgColor::Red, WgColor::Green );
 
 
 	WgScrollChart::GridLine	grid[3];
