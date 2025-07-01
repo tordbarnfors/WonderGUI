@@ -786,11 +786,28 @@ void GlBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd)
 				*pExtrasGL++ = slope;
 				*pExtrasGL++ = bSteep;
 
-				pColorGL->r = col.r / 4096.f;
-				pColorGL->g = col.g / 4096.f;
-				pColorGL->b = col.b / 4096.f;
-				pColorGL->a = col.a / 4096.f;
+				// Add colors to buffer
+
+				if (m_tintColorOfs >= 0)
+				{
+					ColorGL& tint = m_pColorBuffer[m_tintColorOfs];
+
+					pColorGL->r = (col.r / 4096.f) * tint.r;
+					pColorGL->g = (col.g / 4096.f) * tint.g;
+					pColorGL->b = (col.b / 4096.f) * tint.b;
+					pColorGL->a = (col.a / 4096.f) * tint.a;
+				}
+				else
+				{
+					pColorGL->r = col.r / 4096.f;
+					pColorGL->g = col.g / 4096.f;
+					pColorGL->b = col.b / 4096.f;
+					pColorGL->a = col.a / 4096.f;
+				}
+
 				pColorGL++;
+
+				//
 
 				nLinesWritten++;
 			}
