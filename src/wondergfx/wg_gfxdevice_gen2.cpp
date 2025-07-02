@@ -521,7 +521,6 @@ void GfxDeviceGen2::setRenderLayer(int layer)
 	// Set all state-change flags to force a full check on next command.
 
 	m_stateChanges = 0xFF;
-
 }
 
 //____ renderLayer() ______________________________________________________
@@ -743,8 +742,12 @@ bool GfxDeviceGen2::_beginCanvasUpdate(CanvasRef ref, Surface* pCanvas, int nUpd
 		if (pLayers->m_clearCanvasFunc)
 		{
 			entry.activeLayer = 0;
+			m_pActiveLayer = &entry.layers[0];
+
 			pLayers->m_clearCanvasFunc(this);
+
 			entry.activeLayer = activeLayer;
+			m_pActiveLayer = &entry.layers[activeLayer];
 		}
 	}
 
@@ -3155,6 +3158,19 @@ void GfxDeviceGen2::_resetState(RenderState& state)
 
 void GfxDeviceGen2::_encodeStateChanges()
 {
+	// If this is the first state-change in a layer above baseLayer we need to
+	// force set some states to their default values. They might have been set
+	// in previous layer.
+
+	bool bForceSetStates = false;
+
+//	if(m_pActiveCanvas->activeLayer > 0 && m_pActiveLayer->commands.size() == 0 )
+//	{
+//		bForceSetStates = true;
+//		m_stateChanges |= ( uint8_t(StateChange::TintColor) /*| uint8_t(StateChange::BlendMode) | uint8_t(StateChange::MorphFactor) | uint8_t(StateChange::FixedBlendColor)*/ );
+//	}
+
+	//
 
 	RenderState& newState = m_renderState;
 	RenderState& encodedState = m_pActiveLayer->encodedState;
@@ -3190,12 +3206,15 @@ void GfxDeviceGen2::_encodeStateChanges()
 
 	if (m_stateChanges & uint8_t(StateChange::TintColor))
 	{
-		if (newState.tintColor != encodedState.tintColor ||
-			newState.pTintmap != encodedState.pTintmap ||
-			newState.tintmapRect != encodedState.tintmapRect)
+		if (bForceSetStates ||
+			(newState.tintColor != encodedState.tintColor) ||
+			(newState.pTintmap != encodedState.pTintmap) ||
+			(newState.tintmapRect != encodedState.tintmapRect) )
 		{
 			if( newState.pTintmap )
 			{
+				assert(!bForceSetStates);
+
 				Tintmap* pTintmap = newState.pTintmap.rawPtr();
 
 				assert(pTintmap);
@@ -3234,20 +3253,18 @@ void GfxDeviceGen2::_encodeStateChanges()
 			}
 			else
 			{
-				if( newState.tintColor.isUndefined() )
-					colorBuffer.push_back(HiColor::White);
-				else
-					colorBuffer.push_back(newState.tintColor);
-				encodedState.tintColor = newState.tintColor;
+				auto tintColor = newState.tintColor.isUndefined() ? HiColor::White : newState.tintColor;
+				colorBuffer.push_back(tintColor);
+				encodedState.tintColor = tintColor;
 
 				statesChanged |= int(StateChange::TintColor);
-
 			}
 		}
 	}
 
 	if (m_stateChanges & uint8_t(StateChange::BlendMode))
 	{
+//		if (bForceSetStates || newState.blendMode != encodedState.blendMode)
 		if (newState.blendMode != encodedState.blendMode)
 		{
 			cmdBuffer.push(uint16_t(newState.blendMode));
@@ -3258,6 +3275,7 @@ void GfxDeviceGen2::_encodeStateChanges()
 
 	if (m_stateChanges & uint8_t(StateChange::MorphFactor))
 	{
+//		if (bForceSetStates || newState.morphFactor != encodedState.morphFactor)
 		if (newState.morphFactor != encodedState.morphFactor)
 		{
 			cmdBuffer.push((uint16_t)newState.morphFactor * 4096);
@@ -3268,6 +3286,7 @@ void GfxDeviceGen2::_encodeStateChanges()
 
 	if (m_stateChanges & uint8_t(StateChange::FixedBlendColor))
 	{
+//		if (bForceSetStates || newState.fixedBlendColor != encodedState.fixedBlendColor)
 		if (newState.fixedBlendColor != encodedState.fixedBlendColor)
 		{
 			colorBuffer.push_back(newState.fixedBlendColor);
@@ -3275,7 +3294,6 @@ void GfxDeviceGen2::_encodeStateChanges()
 			statesChanged |= int(StateChange::FixedBlendColor);
 
 		}
-
 	}
 
 	if (m_stateChanges & uint8_t(StateChange::Blur))
@@ -3324,6 +3342,5 @@ void GfxDeviceGen2::_encodeStateChanges()
 	m_stateChanges = 0;
 
 }
-
 
 } // namspace wg

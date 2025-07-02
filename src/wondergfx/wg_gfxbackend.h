@@ -105,8 +105,6 @@ namespace wg
 			MorphFactor		= 1 << 4,
 			FixedBlendColor	= 1 << 5,
 			Blur			= 1 << 6,
-
-			IncludeFromLayer= 1 << 7		// Used only by GfxDevice, always zero when we get the commands.
 		};
 		
 		
