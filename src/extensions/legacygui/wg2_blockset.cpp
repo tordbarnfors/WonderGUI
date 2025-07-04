@@ -60,8 +60,8 @@ wg::BlockSkin_p WgBlockset::CreateFromRow( wg::Surface * pSurf, const WgRect& re
 	}
 	if( nBlocks > 4 )
 	{
-		bp.states[4].state = wg::StateEnum::SelectedHovered;
-		bp.states[5].state = wg::StateEnum::SelectedPressed;
+		bp.states[4].state = wg::State::SelectedHovered;
+		bp.states[5].state = wg::State::SelectedPressed;
 //		p->setBlock(wg::StateEnum::SelectedHovered, rect + ofs*4);
 //		p->setBlock(wg::StateEnum::SelectedPressed, rect + ofs*4);
 	}
@@ -87,25 +87,25 @@ wg::BlockSkin_p WgBlockset::CreateFromColumn( wg::Surface * pSurf, const WgRect&
 	
 	if( nBlocks > 1 )
 	{
-		bp.states.push_back(wg::StateEnum::Hovered);
+		bp.states.push_back(wg::State(wg::StateEnum::Hovered) );
 	}
 	if( nBlocks > 2 )
 	{
-		bp.states.push_back(wg::StateEnum::Pressed);
-		bp.states.push_back(wg::StateEnum::Selected);
+		bp.states.push_back(wg::State(wg::StateEnum::Pressed));
+		bp.states.push_back(wg::State(wg::StateEnum::Selected));
 //		p->setBlock(wg::StateEnum::Pressed, rect + ofs*2);
 //		p->setBlock(wg::StateEnum::Selected, rect + ofs*2);
 	}
 
 	if( nBlocks > 3 )
 	{
-		bp.states.push_back(wg::StateEnum::Disabled);
+		bp.states.push_back(wg::State(wg::StateEnum::Disabled));
 //			p->setBlock(wg::StateEnum::Disabled, rect + ofs*3);
 	}
 	if( nBlocks > 4 )
 	{
-		bp.states.push_back(wg::StateEnum::SelectedHovered);
-		bp.states.push_back(wg::StateEnum::SelectedPressed);
+		bp.states.push_back(wg::State(wg::State::SelectedHovered));
+		bp.states.push_back(wg::State(wg::State::SelectedPressed));
 //		p->setBlock(wg::StateEnum::SelectedHovered, rect + ofs*4);
 //		p->setBlock(wg::StateEnum::SelectedPressed, rect + ofs*4);
 	}
