@@ -100,7 +100,7 @@ Uint32 WgButton::GetTextAreaWidth()
 	WgRect	contentRect(0,0, PixelSize());
 
 	if( m_pSkin )
-		contentRect = _skinContentRect(m_pSkin, {0,0,PixelSize()}, wg::StateEnum::Default, m_scale);
+		contentRect = _skinContentRect(m_pSkin, {0,0,PixelSize()}, wg::State::Default, m_scale);
 
 	WgRect textRect = _getTextRect( contentRect, _getIconRect( contentRect, m_pIconSkin, m_scale ) );
 
@@ -186,7 +186,7 @@ void WgButton::_onNewSize( const WgSize& size )
 	WgRect	contentRect(0,0, PixelSize());
 
 	if (m_pSkin)
-		contentRect = _skinContentRect( m_pSkin, contentRect, WgStateEnum::Default, m_scale);
+		contentRect = _skinContentRect( m_pSkin, contentRect, wg::State::Default, m_scale);
 
 	WgRect textRect = _getTextRect( contentRect, _getIconRect( contentRect, m_pIconSkin, m_scale ) );
 

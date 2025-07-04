@@ -409,7 +409,7 @@ void WgAnimPlayer::_onRender( wg::GfxDevice * pDevice, const WgRect& _canvas, co
     }
     else if( m_pSkin )
 	{
-		_renderSkin( m_pSkin, pDevice, WgStateEnum::Default, _canvas, m_scale );
+		_renderSkin( m_pSkin, pDevice, WgState::Default, _canvas, m_scale );
 	}
 	else if( m_pSkin )
 	{
@@ -470,7 +470,7 @@ bool WgAnimPlayer::_onAlphaTestWithGeo( const WgCoord& ofs, const WgRect& geo )
 //		if( !m_bEnabled )
 //			mode = WG_MODE_DISABLED;
 
-		return _markTestSkin(m_pSkin, ofs, geo, WgStateEnum::Default, m_markOpacity, m_scale);
+		return _markTestSkin(m_pSkin, ofs, geo, WgState::Default, m_markOpacity, m_scale);
 	}
 	return false;
 }
