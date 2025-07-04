@@ -482,7 +482,7 @@ PackPanel_p MyApp::_buildToggleButtonRow(std::string title, std::vector<KernelDB
 		_.icon.skin = m_pCheckBoxSkin,
 			_.icon.padding = { 0,4,0,0 },
 			_.label.text = labels[int(blitType)],
-			_.selected = selected[int(blitType)]));
+			_.checked = selected[int(blitType)]));
 
 		auto pObj = this;
 		Base::msgRouter()->addRoute(pWidget, MsgType::Toggle, pressCallback);
@@ -508,7 +508,7 @@ PackPanel_p MyApp::_buildToggleButtonRow(string title, std::vector<BlendMode> bl
 			_.icon.skin = m_pCheckBoxSkin,
 			_.icon.padding = { 0,4,0,0 },
 			_.label.text = toString(blendMode),
-			_.selected = selected[int(blendMode)] ));
+			_.checked = selected[int(blendMode)] ));
 
 		auto pObj = this;
 		Base::msgRouter()->addRoute(pWidget, MsgType::Toggle, pressCallback );
@@ -534,7 +534,7 @@ PackPanel_p MyApp::_buildToggleButtonRow(string title, std::vector<TintMode> tin
 			_.icon.skin = m_pCheckBoxSkin,
 			_.icon.padding = { 0,4,0,0 },
 			_.label.text = toString(tintMode),
-			_.selected = selected[int(tintMode)] ));
+			_.checked = selected[int(tintMode)] ));
 
 		auto pObj = this;
 		Base::msgRouter()->addRoute(pWidget, MsgType::Toggle, pressCallback );
@@ -559,7 +559,7 @@ PackPanel_p MyApp::_buildToggleButtonRow(string title, std::vector<PixelFormat> 
 			_.icon.skin = m_pCheckBoxSkin,
 			_.icon.padding = { 0,4,0,0 },
 			_.label.text = toString(format),
-			_.selected = selected[int(format)]));
+			_.checked = selected[int(format)]));
 
 		auto pObj = this;
 		Base::msgRouter()->addRoute(pWidget, MsgType::Toggle, pressCallback );

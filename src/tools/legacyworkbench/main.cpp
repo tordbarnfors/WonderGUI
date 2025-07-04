@@ -369,7 +369,7 @@ int main ( int argc, char** argv )
 /*
 	// Setup debug overlays
 	auto pOverlaySkin = wg::BoxSkin::create( { .color = WgColor(255,0,0,128), .outline = 1, .outlineColor = WgColor::Red,
-		.states = { {wg::StateEnum::Default, {.color = WgColor::Transparent } }
+		.states = { {wg::State::Default, {.color = WgColor::Transparent } }
 		}
 	});
 	pRoot->SetUpdatedRectOverlay( pOverlaySkin,0);
@@ -1196,7 +1196,7 @@ bool pianoKeyboardTest(WgRootPanel * pRoot)
 
 		pSimplePiano->SetSkin(pSkin);
 		pSimplePiano->setLayout(7, std::bitset<7>("1101110"));
-		pSimplePiano->setSurfaces(pOddWhiteKeys, pEvenWhiteKeys, pBlackKeys, { wg::StateEnum::Default, wg::StateEnum::Hovered, wg::StateEnum::Pressed });
+		pSimplePiano->setSurfaces(pOddWhiteKeys, pEvenWhiteKeys, pBlackKeys, { wg::State::Default, wg::State::Hovered, wg::State::Pressed });
 
 		pBaseLayer->AddChild(pSimplePiano, { 20,20 });
 	}
@@ -1209,7 +1209,7 @@ bool pianoKeyboardTest(WgRootPanel * pRoot)
 		auto pNisPiano = new WgPianoKeyboard();
 		pNisPiano->SetSkin(pSkin);
 		pNisPiano->setLayout(26, std::bitset<7>("1110110"));
-		pNisPiano->setSurfaces(pOddWhiteKeys, pEvenWhiteKeys, pBlackKeys, { wg::StateEnum::Default, wg::StateEnum::Pressed });
+		pNisPiano->setSurfaces(pOddWhiteKeys, pEvenWhiteKeys, pBlackKeys, { wg::State::Default, wg::State::Pressed });
 
 		pNisPiano->setGeoTweak(3, {16,0,0,0});
 		pNisPiano->setGeoTweak(5, {16,0,0,0});
@@ -1242,8 +1242,8 @@ bool rangeSliderTest(WgRootPanel* pRoot)
 		.color = wg::Color8(0x7F808080),
 		.padding = 10,
 		.states = {
-			{ wg::StateEnum::Hovered, { .color = wg::Color8(0x7FA0A0A0)}},
-			{ wg::StateEnum::Pressed, { .color = wg::Color8(0xFFF0F0F0)}}
+			{ wg::State::Hovered, { .color = wg::Color8(0x7FA0A0A0)}},
+			{ wg::State::Pressed, { .color = wg::Color8(0xFFF0F0F0)}}
 		}
 	});
 		
@@ -1444,16 +1444,16 @@ bool fullStateSupportTest(WgRootPanel* pRoot)
 	auto pTextSkin = wg::ColorSkin::create( {
 	   .padding = {10,10,10,30},
 	   .states = {
-		   {WgStateEnum::Default, { .color = wg::HiColor(0,4096,0) }},
-		   {WgStateEnum::Hovered, { .color = wg::HiColor(4096,4096,0) }},
-		   {WgStateEnum::Focused, { .color = wg::HiColor(4096,0,0) }},
-		   {WgStateEnum::HoveredFocused, { .color = wg::HiColor(4096,0,0) }}
+		   {WgState::Default, { .color = wg::HiColor(0,4096,0) }},
+		   {WgState::Hovered, { .color = wg::HiColor(4096,4096,0) }},
+		   {WgState::Focused, { .color = wg::HiColor(4096,0,0) }},
+		   {WgState::HoveredFocused, { .color = wg::HiColor(4096,0,0) }}
 	   }
 	});
 	
 	
 	auto bp = WgBase::defaultStyle()->blueprint();
-	bp.modifyState(wg::StateEnum::Focused, { .color = WgColor::Black } );
+	bp.modifyState(wg::State::Focused, { .color = WgColor::Black } );
 	auto pTextStyle = wg::TextStyle::create(bp);
 	
 	auto pText = new WgTextDisplay();
@@ -1558,9 +1558,9 @@ WgRootPanel * setupGUI(wg::GfxDevice * pDevice)
 		.axis = wg::Axis::X,
 		.firstBlock = wg::Rect(0,0,pPlateImg->pointSize().w/3,pPlateImg->pointSize().h),
 		.frame = 3,
-		.states = { wg::StateEnum::Default, {},
-				wg::StateEnum::Hovered, {},
-				wg::StateEnum::Pressed, {}
+		.states = { wg::State::Default, {},
+				wg::State::Hovered, {},
+				wg::State::Pressed, {}
 				
 		},
 		.surface = pPlateImg
