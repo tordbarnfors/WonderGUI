@@ -46,25 +46,6 @@ namespace WgUtil
 	WgState     ModeToState(WgMode mode);
 
 
-	inline int _stateToIndex(WgStateEnum state)
-	{
-		static int	s_stateToIndexTable[WG_MAX_STATE_VALUE + 1] = { 0, 1, 0, 0, 2, 3, 4, 5, 6, 7, 0, 0, 8, 9, 10, 11,
-			0, 0, 0, 0, 12, 13, 0, 0, 0, 0, 0, 0, 14, 15, 0, 0,
-			16, 0, 0, 0, 0, 0, 0, 0, 17 };
-		return s_stateToIndexTable[(uint8_t)state];
-	}
-
-	inline WgStateEnum _indexToState(int index)
-	{
-		static WgStateEnum	s_indexToStateTable[WG_NB_STATES] = { WgStateEnum::Default, WgStateEnum::Focused, WgStateEnum::Hovered, WgStateEnum::HoveredFocused, WgStateEnum::Pressed,
-			WgStateEnum::PressedFocused, WgStateEnum::Selected, WgStateEnum::SelectedFocused, WgStateEnum::SelectedHovered, WgStateEnum::SelectedHoveredFocused,
-			WgStateEnum::SelectedPressed, WgStateEnum::SelectedPressedFocused, WgStateEnum::Targeted,
-			WgStateEnum::TargetedFocused, WgStateEnum::TargetedSelected, WgStateEnum::TargetedSelectedFocused,
-			WgStateEnum::Disabled, WgStateEnum::DisabledSelected };
-
-		return s_indexToStateTable[index];
-	}
-
 	uint32_t lineWidth( void * pNode, const wg::TextAttr& attr, wg::State mode, const wg::Char * pString, int scale );
 
 	template<typename T>

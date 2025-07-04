@@ -27,12 +27,8 @@
 #include <wg_state.h>
 
 
-typedef wg::State          		WgStateEnum;
+typedef wg::StateEnum          		WgStateEnum;
 
-namespace wg
-{
-	typedef State           	StateEnum;
-}
 
 static const int    WG_NB_STATES = wg::State::NbStates;
 static const int    WG_MAX_STATE_VALUE = wg::State::MaxValue;
