@@ -57,7 +57,7 @@ namespace wg
 	const static MaskOp          MaskOp_min          = MaskOp::Recurse;
 
 	const static PrimState       PrimState_max       = PrimState::Disabled;
-	const static StateEnum       StateEnum_max       = StateEnum::DisabledCheckedSelectedFlagged;
+	const static StateEnum       StateEnum_max       = StateEnum::DisabledFlaggedCheckedSelected;
 	const static CodePage        CodePage_max        = CodePage::_874;
 	const static PointerStyle    PointerStyle_max    = PointerStyle::ResizeBeamWE;
 	const static MouseButton     MouseButton_max     = MouseButton::X2;
@@ -74,7 +74,7 @@ namespace wg
 	const static MaskOp          MaskOp_max          = MaskOp::Mask;
 
 	const static int             PrimState_size      = (int)PrimState::Disabled + 1;
-	const static int             StateEnum_size      = (int)StateEnum::DisabledCheckedSelectedFlagged + 1;
+	const static int             StateEnum_size      = (int)StateEnum::DisabledFlaggedCheckedSelected + 1;
 	const static int             CodePage_size       = (int)CodePage::_874 + 1;
 	const static int             PointerStyle_size   = (int)PointerStyle::ResizeBeamWE + 1;
 	const static int             MouseButton_size    = (int)MouseButton::X2 + 1;
