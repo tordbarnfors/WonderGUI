@@ -35,13 +35,18 @@ namespace wg
 
 	ObjectInfoPanel::ObjectInfoPanel(const Blueprint& blueprint, Object * pObject) : DebugPanel( blueprint )
 	{
-		auto pTable = TablePanel::create( WGOVR(blueprint.table, _.columns = 2, _.rows = 2 ));
+		auto pTable = TablePanel::create( WGOVR(blueprint.table, _.columns = 2, _.rows = 3 ));
 
 		pTable->slots[0][0] = TextDisplay::create( WGOVR( blueprint.listEntryLabel, _.display.text = "Refcount: " ));
 		pTable->slots[0][1] = NumberDisplay::create( WGOVR( blueprint.listEntryInteger, _.display.value = pObject->refcount() ));
 
-		pTable->slots[1][0] = TextDisplay::create(WGOVR(blueprint.listEntryLabel, _.display.text = "Finalizer: "));
-		pTable->slots[1][1] = NumberDisplay::create( WGOVR( blueprint.listEntryPointer, _.display.value = pObject->finalizer()));
+		// Weak pointers is -1 since our DebugOverlay has one weak pointer to object that doesn't count.
+
+		pTable->slots[1][0] = TextDisplay::create(WGOVR(blueprint.listEntryLabel, _.display.text = "Weak pointers: "));
+		pTable->slots[1][1] = NumberDisplay::create(WGOVR(blueprint.listEntryInteger, _.display.value = pObject->weakPointers() -1));
+
+		pTable->slots[2][0] = TextDisplay::create(WGOVR(blueprint.listEntryLabel, _.display.text = "Finalizer: "));
+		pTable->slots[2][1] = NumberDisplay::create( WGOVR( blueprint.listEntryPointer, _.display.value = pObject->finalizer()));
 
 		this->slot = pTable;
 	}
