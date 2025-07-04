@@ -150,7 +150,6 @@ namespace wg
 		int	backColorIndexEntries;
 		int	decorationIndexEntries;
 
-
 		std::tie(sizeIndexEntries,m_sizeIndexMask,m_sizeIndexShift) = calcStateToIndexParam(nbSizeStates, sizeStates);
 		std::tie(colorIndexEntries,m_colorIndexMask,m_colorIndexShift) = calcStateToIndexParam(nbColorStates, colorStates);
 		std::tie(backColorIndexEntries,m_backColorIndexMask,m_backColorIndexShift) = calcStateToIndexParam(nbBackColorStates, backColorStates);
@@ -164,11 +163,13 @@ namespace wg
 		int sizeBytes		= sizeof(pts) * nbSizeStates;
 		int decorationBytes	= sizeof(TextDecoration) * nbDecorationStates;
 
+		int	uniqueStateBytes = sizeof(State) * bp.states.size();
+
 		int indexBytes		= sizeIndexEntries+colorIndexEntries+backColorIndexEntries+decorationIndexEntries;
 
 		// Allocate and pupulate memory for state data
 
-		m_pStateData = malloc(sizeBytes + colorBytes + backColorBytes + decorationBytes + indexBytes);
+		m_pStateData = malloc(sizeBytes + colorBytes + backColorBytes + decorationBytes + indexBytes + uniqueStateBytes);
 
 		auto pDest = (uint8_t*) m_pStateData;
 
@@ -211,11 +212,22 @@ namespace wg
 		pDest += sizeIndexEntries;
 
 		m_pDecorationIndexTab = pDest;
+		pDest += decorationIndexEntries;
 
 		generateStateToIndexTab(m_pSizeIndexTab, nbSizeStates, sizeStates);
 		generateStateToIndexTab(m_pColorIndexTab, nbColorStates, colorStates);
 		generateStateToIndexTab(m_pBackColorIndexTab, nbBackColorStates, backColorStates);
 		generateStateToIndexTab(m_pDecorationIndexTab, nbDecorationStates, decorationStates);
+
+		// Add list of unique states
+
+		m_nUniqueStates = bp.states.size();
+		m_pUniqueStates = (State*) pDest;
+
+		for( int i = 0; i < bp.states.size() ; i++ )
+			m_pUniqueStates[i] = bp.states[i].state;
+
+		//
 
 		if (bp.finalizer)
 			setFinalizer(bp.finalizer);
@@ -369,7 +381,7 @@ namespace wg
 
 		return true;
 	}
-/*
+
 	//____ blueprint() ____________________________________________________________
 
 	TextStyle::Blueprint TextStyle::blueprint() const
@@ -383,36 +395,28 @@ namespace wg
 		
 		int idx = State::Default;
 
-		bp.size = m_size[idx];
-		bp.backColor = m_backColor[idx];
-		bp.color = m_color[idx];
-		bp.decoration = m_decoration[idx];
+		bp.size = m_pSizes[idx];
+		bp.backColor = m_pBackColors[idx];
+		bp.color = m_pColors[idx];
+		bp.decoration = m_pDecorations[idx];
 
-
-
-		Bitmask<uint32_t> stateSetMask = m_sizeSetMask | m_colorSetMask | m_backColorSetMask | m_decorationSetMask;
-
-		for (int i = 1; i < State::NbStates; i++)
+		for( int i = 0 ; i < m_nUniqueStates ; i++ )
 		{
-			if (stateSetMask.bit(i))
-			{
-				StateBP bps;
-				bps.state = State((StateEnum) i);
-				if (m_sizeSetMask.bit(i))
-					bps.data.size = m_size[i];
-				if (m_colorSetMask.bit(i))
-					bps.data.color = m_color[i];
-				if (m_backColorSetMask.bit(i))
-					bps.data.backColor = m_backColor[i];
-				if (m_decorationSetMask.bit(i))
-					bps.data.decoration = m_decoration[i];
+			State state = m_pUniqueStates[i];
 
-				bp.states.push_back(bps);
-			}
+			StateBP stateBP;
+
+			stateBP.state = state;
+			stateBP.data.backColor = _getBackColor(state);
+			stateBP.data.color = _getColor(state);
+			stateBP.data.decoration = _getDecoration(state);
+			stateBP.data.size = _getSize(state);
+
+			bp.states.push_back( stateBP );
 		}
 
 		return bp;
 	}
-*/
+
 
 } // namespace wg
