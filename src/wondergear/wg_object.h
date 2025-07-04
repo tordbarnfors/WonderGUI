@@ -80,6 +80,7 @@ namespace wg
 		inline void		release();
 		
 		inline int		refcount() const;
+		int				weakPointers() const;
 
 	protected:
 		Object();

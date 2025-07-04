@@ -37,7 +37,7 @@ namespace wg
 	template class Panel<FlexPanelSlot>;
 
 	const TypeInfo FlexPanel::TYPEINFO = { "FlexPanel", &Panel::TYPEINFO };
-	const TypeInfo FlexPanelSlot::TYPEINFO = { "FlexPanelSlot", &DynamicSlot::TYPEINFO };
+	const TypeInfo FlexPanelSlot::TYPEINFO = { "FlexPanelSlot", &PanelSlot::TYPEINFO };
 
 	float	FlexPos::s_origoTab[Placement_size][2] = {	-1.f, -1.f,			// Signals undefined.
 														0.f, 0.f,

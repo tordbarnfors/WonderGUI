@@ -88,6 +88,19 @@ namespace wg
 
 		{
 			auto pLabel = TextDisplay::create(blueprint.listEntryLabel);
+			pLabel->display.setText("State: ");
+
+			auto pValue = TextDisplay::create(blueprint.listEntryText);
+			pValue->display.setText( toString(pWidget->state().value() ));
+
+			pTable->slots[row][0] = pLabel;
+			pTable->slots[row][1] = pValue;
+			row++;
+		}
+
+
+		{
+			auto pLabel = TextDisplay::create(blueprint.listEntryLabel);
 			pLabel->display.setText("Baggage: ");
 
 			auto pValue = NumberDisplay::create(blueprint.listEntryPointer);
