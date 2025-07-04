@@ -251,16 +251,79 @@ namespace wg
 
 		//.____ Definitions _________________________________________
 
-		static const State Default;
-		static const State Focused;
-		static const State Hovered;
-		static const State Pressed;
-		static const State Targeted;
-
-		static const State Selected;
-		static const State Checked;
-		static const State Flagged;
+		static const State DisabledFlaggedCheckedSelected;
+		static const State DisabledFlaggedChecked;
+		static const State DisabledFlaggedSelected;
+		static const State DisabledFlagged;
+		static const State DisabledCheckedSelected;
+		static const State DisabledChecked;
+		static const State DisabledSelected;
 		static const State Disabled;
+		static const State TargetedFlaggedCheckedSelectedFocused;
+		static const State TargetedFlaggedCheckedSelected;
+		static const State TargetedFlaggedCheckedFocused;
+		static const State TargetedFlaggedChecked;
+		static const State TargetedFlaggedSelectedFocused;
+		static const State TargetedFlaggedSelected;
+		static const State TargetedFlaggedFocused;
+		static const State TargetedFlagged;
+		static const State TargetedCheckedSelectedFocused;
+		static const State TargetedCheckedSelected;
+		static const State TargetedCheckedFocused;
+		static const State TargetedChecked;
+		static const State TargetedSelectedFocused;
+		static const State TargetedSelected;
+		static const State TargetedFocused;
+		static const State Targeted;
+		static const State FlaggedCheckedSelectedPressedFocused;
+		static const State FlaggedCheckedSelectedPressed;
+		static const State FlaggedCheckedSelectedHoveredFocused;
+		static const State FlaggedCheckedSelectedHovered;
+		static const State FlaggedCheckedSelectedFocused;
+		static const State FlaggedCheckedSelected;
+		static const State FlaggedCheckedPressedFocused;
+		static const State FlaggedCheckedPressed;
+		static const State FlaggedCheckedHoveredFocused;
+		static const State FlaggedCheckedHovered;
+		static const State FlaggedCheckedFocused;
+		static const State FlaggedChecked;
+		static const State FlaggedSelectedPressedFocused;
+		static const State FlaggedSelectedPressed;
+		static const State FlaggedSelectedHoveredFocused;
+		static const State FlaggedSelectedHovered;
+		static const State FlaggedSelectedFocused;
+		static const State FlaggedSelected;
+		static const State FlaggedPressedFocused;
+		static const State FlaggedPressed;
+		static const State FlaggedHoveredFocused;
+		static const State FlaggedHovered;
+		static const State FlaggedFocused;
+		static const State Flagged;
+		static const State CheckedSelectedPressedFocused;
+		static const State CheckedSelectedPressed;
+		static const State CheckedSelectedHoveredFocused;
+		static const State CheckedSelectedHovered;
+		static const State CheckedSelectedFocused;
+		static const State CheckedSelected;
+		static const State CheckedPressedFocused;
+		static const State CheckedPressed;
+		static const State CheckedHoveredFocused;
+		static const State CheckedHovered;
+		static const State CheckedFocused;
+		static const State Checked;
+		static const State SelectedPressedFocused;
+		static const State SelectedPressed;
+		static const State SelectedHoveredFocused;
+		static const State SelectedHovered;
+		static const State SelectedFocused;
+		static const State Selected;
+		static const State PressedFocused;
+		static const State Pressed;
+		static const State HoveredFocused;
+		static const State Hovered;
+		static const State Focused;
+		static const State Default;
+
 
 		static const int	NbStates = 72;			// Number of state combinations
 		static const int	MaxValue = 71;				// Highest value for m_index
