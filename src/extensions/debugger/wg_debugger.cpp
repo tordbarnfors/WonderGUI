@@ -27,6 +27,13 @@
 #include <objectinfopanels/wg_widgetinfopanel.h>
 
 #include <slotinfopanels/wg_staticslotinfopanel.h>
+#include <slotinfopanels/wg_panelslotinfopanel.h>
+#include <slotinfopanels/wg_packpanelslotinfopanel.h>
+#include <slotinfopanels/wg_flexpanelslotinfopanel.h>
+
+#include <wg_panel.h>
+#include <wg_packpanel.h>
+#include <wg_flexpanel.h>
 
 
 namespace wg
@@ -45,10 +52,12 @@ namespace wg
 	Debugger::Debugger()
 	{
 		m_objectInfoFactories[&Object::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, Object* pObject) { return (Widget_p) ObjectInfoPanel::create(panelBP, pObject); };
-
 		m_objectInfoFactories[&Widget::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, Object* pObject) { return (Widget_p) WidgetInfoPanel::create(panelBP, (Widget*) pObject); };
 
 		m_slotInfoFactories[&StaticSlot::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, StaticSlot* pSlot) { return (Widget_p) StaticSlotInfoPanel::create(panelBP, pSlot); };
+		m_slotInfoFactories[&PanelSlot::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, StaticSlot* pSlot) { return (Widget_p)PanelSlotInfoPanel::create(panelBP, pSlot); };
+		m_slotInfoFactories[&PackPanelSlot::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, StaticSlot* pSlot) { return (Widget_p)PackPanelSlotInfoPanel::create(panelBP, pSlot); };
+		m_slotInfoFactories[&FlexPanelSlot::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, StaticSlot* pSlot) { return (Widget_p)FlexPanelSlotInfoPanel::create(panelBP, pSlot); };
 
 
 	}

@@ -37,7 +37,7 @@ namespace wg
 	template class Panel<StackPanelSlot>;
 
 	const TypeInfo StackPanel::TYPEINFO = { "StackPanel", &Panel::TYPEINFO };
-	const TypeInfo StackPanelSlot::TYPEINFO = { "StackPanel::Slot", &DynamicSlot::TYPEINFO };
+	const TypeInfo StackPanelSlot::TYPEINFO = { "StackPanel::Slot", &PanelSlot::TYPEINFO };
 
 
 	//____ Slot::setMargin() _____________________________________________________
