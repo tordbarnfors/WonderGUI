@@ -158,7 +158,7 @@ namespace wg
 		bool			isIdentical( TextStyle * pOther );
 		bool			isIdenticalForState( TextStyle * pOther, State state );
 
-//		Blueprint		blueprint() const;
+		Blueprint		blueprint() const;
 
 	protected:
 		TextStyle( const Blueprint& blueprint );
@@ -218,6 +218,9 @@ namespace wg
 		uint8_t				m_decorationIndexShift;
 		uint8_t*			m_pDecorationIndexTab;		// Table with index values into m_pDecorations for each mode (72) or less.
 		TextDecoration*		m_pDecorations;				// Contains decorations for states.
+
+		int 				m_nUniqueStates;			// States specified in blueprint. Saved so we easier can recreate blueprint.
+		State *				m_pUniqueStates;
 
 		bool				m_bStaticColor = true;      // Combined color is identical in all states.
 		bool				m_bStaticBgColor = true;    // Combined background color is identical in all states.

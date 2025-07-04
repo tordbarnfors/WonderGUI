@@ -154,27 +154,18 @@ void WgPianoKeyboard::setSurfaces(const wg::Surface_p& pOddWhiteKeys, const wg::
 
 	m_blackKeySourceHeight	= m_pBlackKeys ? m_pBlackKeys->pixelSize().h  / states.size() : 0;
 
-	// Fill in state offsets
+	//
 
-	for (auto& ofs : m_stateOfsY)
-		ofs = -1;
+	wg::State usedStates[wg::State::NbStates];
 
-	wg::Bitmask<uint32_t>	stateMask;
-	int ofs = 0;
+	int nbStates = 0;
 	for (auto state : states)
-	{
-		int i = state;
-		stateMask.setBit(i);
-		m_stateOfsY[i] = ofs++;
-	}
+		usedStates[nbStates++] = state;
 
 	for (int i = 0; i < wg::State::NbStates; i++)
 	{
-		if (!stateMask.bit(i))
-		{
-			int bestAlternative = bestStateIndexMatch(i, stateMask);
-			m_stateOfsY[i] = m_stateOfsY[bestAlternative];
-		}
+		int bestAlternative = wg::State((wg::StateEnum)i).bestMatch(nbStates, usedStates);
+		m_stateOfsY[i] = bestAlternative;
 	}
 }
 

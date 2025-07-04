@@ -135,7 +135,7 @@ namespace wg
 		for (int i = 0; i < State::NbStates; i++)
 		{
 			int bestAlternative = State((StateEnum)i).bestMatch(nbStates, usedStates);
-			m_stateOfsY[i] = m_stateOfsY[bestAlternative];
+			m_stateOfsY[i] = bestAlternative;
 		}
 	}
 
