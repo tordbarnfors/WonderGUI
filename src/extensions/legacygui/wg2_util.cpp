@@ -295,19 +295,19 @@ WgState WgUtil::ModeToState(WgMode mode)
 	switch( mode )
 	{
 		case WG_MODE_NORMAL:
-			state = WgStateEnum::Default;
+			state = WgState::Default;
 			break;
 		case WG_MODE_MARKED:
-			state = WgStateEnum::Hovered;
+			state = WgState::Hovered;
 			break;
 		case WG_MODE_SELECTED:
-			state = WgStateEnum::SelectedPressed;
+			state = WgState::SelectedPressed;
 			break;
 		case WG_MODE_SPECIAL:
-			state = WgStateEnum::SelectedHovered;
+			state = WgState::SelectedHovered;
 			break;
 		case WG_MODE_DISABLED:
-			state = WgStateEnum::Disabled;
+			state = WgState::Disabled;
 			break;
 
         case WG_MODE_ALL:
