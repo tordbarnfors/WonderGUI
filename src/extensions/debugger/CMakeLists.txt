@@ -16,6 +16,13 @@ set(SOURCES
 
     slotinfopanels/wg_staticslotinfopanel.h
     slotinfopanels/wg_staticslotinfopanel.cpp
+    slotinfopanels/wg_panelslotinfopanel.h
+    slotinfopanels/wg_panelslotinfopanel.cpp
+    slotinfopanels/wg_packpanelslotinfopanel.h
+    slotinfopanels/wg_packpanelslotinfopanel.cpp
+    slotinfopanels/wg_flexpanelslotinfopanel.h
+    slotinfopanels/wg_flexpanelslotinfopanel.cpp
+
 
 
 )

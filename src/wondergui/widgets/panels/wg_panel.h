@@ -69,8 +69,9 @@ namespace wg
 			bool	visible = true;
 		};
 
+		//.____ Identification ________________________________________________
 
-		PanelSlot(SlotHolder* pHolder) : DynamicSlot(pHolder) {}
+		const static TypeInfo	TYPEINFO;
 
 		//.____ Appearance ________________________________________________
 
@@ -92,6 +93,11 @@ namespace wg
 		inline Coord	pos() const { return Util::spxToPts(m_geo.pos(),_holder()->_scale()); }
 		inline Size		size() const { return Util::spxToPts(m_geo.size(), _holder()->_scale()); }
 		inline Rect		geo() const { return Util::spxToPts(m_geo, _holder()->_scale()); }
+
+		//.____ Internal ____________________________________________________
+
+		PanelSlot(SlotHolder* pHolder) : DynamicSlot(pHolder) {}
+
 
 	protected:
 				

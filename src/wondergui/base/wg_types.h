@@ -47,10 +47,10 @@ namespace wg
 	// needs to be broken up into its components for certain calculations.
 	//
 	// They are numbered in order of priority, where a higher PrimState
-	// trumps a lower one where only one can be chosen.
+	// trumps a lower one when only one can be chosen.
 
 
-	enum class PrimState
+	enum class PrimState		//. autoExtras
 	{					
 		Focused = 0,
 		Hovered = 1,
@@ -64,7 +64,7 @@ namespace wg
 
 	//___ StateEnum ____________________________________________________
 
-	enum class StateEnum : uint8_t
+	enum class StateEnum : uint8_t		//. autoExtras
 	{
 		Default,
 		Flagged,

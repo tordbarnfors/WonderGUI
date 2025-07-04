@@ -38,7 +38,7 @@ namespace wg
 
 
 	const TypeInfo LambdaPanel::TYPEINFO = { "LambdaPanel", &Panel::TYPEINFO };
-	const TypeInfo LambdaPanelSlot::TYPEINFO = { "LambdaPanelSlot", &DynamicSlot::TYPEINFO };
+	const TypeInfo LambdaPanelSlot::TYPEINFO = { "LambdaPanelSlot", &PanelSlot::TYPEINFO };
 
 //____ LambdaPanelSlot::setFunction() ____________________________________________________
 

@@ -37,7 +37,7 @@ namespace wg
 	template class Panel<PackPanelSlot>;
 
 	const TypeInfo PackPanel::TYPEINFO = { "PackPanel", &Panel::TYPEINFO };
-	const TypeInfo PackPanelSlot::TYPEINFO = { "PackPanelSlot", &DynamicSlot::TYPEINFO };
+	const TypeInfo PackPanelSlot::TYPEINFO = { "PackPanelSlot", &PanelSlot::TYPEINFO };
 
 
 	bool PackPanelSlot::_setBlueprint( const Blueprint& bp )

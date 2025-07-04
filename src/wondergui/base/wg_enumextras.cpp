@@ -35,6 +35,100 @@ namespace wg
 
 =========================================================================*/
 
+	const char * toString(PrimState i)
+	{
+		static const char * names[] = { 
+			"Focused",
+			"Hovered",
+			"Pressed",
+			"Selected",
+			"Checked",
+			"Flagged",
+			"Targeted",
+			"Disabled" };
+
+		return names[(int)i];
+	}
+
+	const char * toString(StateEnum i)
+	{
+		static const char * names[] = { 
+			"Default",
+			"Flagged",
+			"Selected",
+			"SelectedFlagged",
+			"Checked",
+			"CheckedFlagged",
+			"CheckedSelected",
+			"CheckedSelectedFlagged",
+			"Focused",
+			"FocusedFlagged",
+			"FocusedSelected",
+			"FocusedSelectedFlagged",
+			"FocusedChecked",
+			"FocusedCheckedFlagged",
+			"FocusedCheckedSelected",
+			"FocusedCheckedSelectedFlagged",
+			"Hovered",
+			"HoveredFlagged",
+			"HoveredSelected",
+			"HoveredSelectedFlagged",
+			"HoveredChecked",
+			"HoveredCheckedFlagged",
+			"HoveredCheckedSelected",
+			"HoveredCheckedSelectedFlagged",
+			"HoveredFocused",
+			"HoveredFocusedFlagged",
+			"HoveredFocusedSelected",
+			"HoveredFocusedSelectedFlagged",
+			"HoveredFocusedChecked",
+			"HoveredFocusedCheckedFlagged",
+			"HoveredFocusedCheckedSelected",
+			"HoveredFocusedCheckedSelectedFlagged",
+			"Pressed",
+			"PressedFlagged",
+			"PressedSelected",
+			"PressedSelectedFlagged",
+			"PressedChecked",
+			"PressedCheckedFlagged",
+			"PressedCheckedSelected",
+			"PressedCheckedSelectedFlagged",
+			"PressedFocused",
+			"PressedFocusedFlagged",
+			"PressedFocusedSelected",
+			"PressedFocusedSelectedFlagged",
+			"PressedFocusedChecked",
+			"PressedFocusedCheckedFlagged",
+			"PressedFocusedCheckedSelected",
+			"PressedFocusedCheckedSelectedFlagged",
+			"Targeted",
+			"TargetedFlagged",
+			"TargetedSelected",
+			"TargetedSelectedFlagged",
+			"TargetedChecked",
+			"TargetedCheckedFlagged",
+			"TargetedCheckedSelected",
+			"TargetedCheckedSelectedFlagged",
+			"TargetedFocused",
+			"TargetedFocusedFlagged",
+			"TargetedFocusedSelected",
+			"TargetedFocusedSelectedFlagged",
+			"TargetedFocusedChecked",
+			"TargetedFocusedCheckedFlagged",
+			"TargetedFocusedCheckedSelected",
+			"TargetedFocusedCheckedSelectedFlagged",
+			"Disabled",
+			"DisabledFlagged",
+			"DisabledSelected",
+			"DisabledSelectedFlagged",
+			"DisabledChecked",
+			"DisabledCheckedFlagged",
+			"DisabledCheckedSelected",
+			"DisabledCheckedSelectedFlagged" };
+
+		return names[(int)i];
+	}
+
 	const char * toString(CodePage i)
 	{
 		static const char * names[] = { 
@@ -201,7 +295,6 @@ namespace wg
 			"DropLeave",
 			"DropDeliver",
 			"*/Select",
-			"Unselect",
 			"Toggle",
 			"ScrollbarMove",
 			"ValueUpdate",
@@ -211,6 +304,7 @@ namespace wg
 			"ItemMousePress",
 			"ItemsSelect",
 			"ItemsUnselect",
+			"PopupOpened",
 			"PopupSelect",
 			"PopupClosed",
 			"ModalMoveOutside",

@@ -39,6 +39,8 @@ namespace wg
 
 =========================================================================*/
 
+	const static PrimState       PrimState_min       = PrimState::Focused;
+	const static StateEnum       StateEnum_min       = StateEnum::Default;
 	const static CodePage        CodePage_min        = CodePage::Latin1;
 	const static PointerStyle    PointerStyle_min    = PointerStyle::Undefined;
 	const static MouseButton     MouseButton_min     = MouseButton::None;
@@ -54,6 +56,8 @@ namespace wg
 	const static TextEditMode    TextEditMode_min    = TextEditMode::Static;
 	const static MaskOp          MaskOp_min          = MaskOp::Recurse;
 
+	const static PrimState       PrimState_max       = PrimState::Disabled;
+	const static StateEnum       StateEnum_max       = StateEnum::DisabledCheckedSelectedFlagged;
 	const static CodePage        CodePage_max        = CodePage::_874;
 	const static PointerStyle    PointerStyle_max    = PointerStyle::ResizeBeamWE;
 	const static MouseButton     MouseButton_max     = MouseButton::X2;
@@ -69,6 +73,8 @@ namespace wg
 	const static TextEditMode    TextEditMode_max    = TextEditMode::Editable;
 	const static MaskOp          MaskOp_max          = MaskOp::Mask;
 
+	const static int             PrimState_size      = (int)PrimState::Disabled + 1;
+	const static int             StateEnum_size      = (int)StateEnum::DisabledCheckedSelectedFlagged + 1;
 	const static int             CodePage_size       = (int)CodePage::_874 + 1;
 	const static int             PointerStyle_size   = (int)PointerStyle::ResizeBeamWE + 1;
 	const static int             MouseButton_size    = (int)MouseButton::X2 + 1;
@@ -84,6 +90,8 @@ namespace wg
 	const static int             TextEditMode_size   = (int)TextEditMode::Editable + 1;
 	const static int             MaskOp_size         = (int)MaskOp::Mask + 1;
 
+	const char * toString(PrimState);
+	const char * toString(StateEnum);
 	const char * toString(CodePage);
 	const char * toString(PointerStyle);
 	const char * toString(MouseButton);
