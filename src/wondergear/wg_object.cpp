@@ -214,4 +214,22 @@ namespace wg
 		return nullptr;
 	}
 
+	//____ weakPointers() ________________________________________________________
+/**
+* @brief Get number of weak pointers pointing to this Object.
+*
+* Get number of weak pointers pointing to this Object.
+*
+* @return Number of weak pointers pointing to this Object.
+*/
+
+	int Object::weakPointers() const
+	{
+		if (m_pWeakPtrHub)
+			return m_pWeakPtrHub->refCnt;
+
+		return 0;
+	}
+
+
 } // namespace wg

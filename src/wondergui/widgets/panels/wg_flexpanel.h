@@ -188,7 +188,7 @@ namespace wg
 
 		FlexPos			m_origo = Placement::NorthWest;
 		FlexPos			m_hotspot = Placement::NorthWest;
-		Rect			m_placementGeo;		// Widgets geo relative anchor and hotspot, not pixel aligned.
+		Rect			m_placementGeo;		// Widgets geo relative origo and hotspot, not pixel aligned.
 
 		//	Stretched children
 
