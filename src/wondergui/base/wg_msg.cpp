@@ -943,6 +943,39 @@ namespace wg
 		return TYPEINFO;
 	}
 
+	//____ SelectedMsg ________________________________________________________
+
+	const TypeInfo SelectedMsg::TYPEINFO = { "SelectedMsg", &Msg::TYPEINFO };
+
+	SelectedMsg::SelectedMsg(Object * pSource, std::vector<Widget_p>& selectedList)
+	{
+		m_type = MsgType::Selected;
+		m_pSource = pSource;
+		m_list = std::move(selectedList);
+	}
+
+	const TypeInfo& SelectedMsg::typeInfo(void) const
+	{
+		return TYPEINFO;
+	}
+
+	//____ UnselectedMsg ________________________________________________________
+
+	const TypeInfo UnselectedMsg::TYPEINFO = { "UnselectedMsg", &Msg::TYPEINFO };
+
+	UnselectedMsg::UnselectedMsg(Object * pSource, std::vector<Widget_p>& unselectedList)
+	{
+		m_type = MsgType::Unselected;
+		m_pSource = pSource;
+		m_list = std::move(unselectedList);
+	}
+
+	const TypeInfo& UnselectedMsg::typeInfo(void) const
+	{
+		return TYPEINFO;
+	}
+
+
 	//____ ItemMsg ________________________________________________________
 
 	const TypeInfo ItemMsg::TYPEINFO = { "ItemMsg", &Msg::TYPEINFO };
