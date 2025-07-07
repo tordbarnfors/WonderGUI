@@ -94,7 +94,7 @@ namespace wg
 			uint8_t			pickCategory = 0;
 			bool			pickHandle = false;
 			PointerStyle	pointer = PointerStyle::Undefined;
-			bool			selectable = true;
+			bool			selectable = false;
 			Skin_p			skin;
 			bool			stickyFocus = false;
 			bool			tabLock = false;
@@ -395,7 +395,7 @@ namespace wg
 		bool            m_bDropTarget = false;			// Set if this widget accepts to be the target of drag-n-drop operations.
 
 		bool			m_bTabLock = false;				// If set, the widget prevents focus shifting away from it with tab.
-		bool			m_bSelectable = true;			// Set if widget is allowed to be selected.
+		bool			m_bSelectable = false;			// Set if widget is allowed to be selected.
 		uint8_t			m_receivingUpdateCounter = 0;	//
 		bool			m_bPressed = false;				// Keeps track of pressed button when mouse leaves/re-enters widget.
 		bool			m_bStickyFocus = false;			// Set if widget should keep keyboard focus when mouse button pressed outside it.
