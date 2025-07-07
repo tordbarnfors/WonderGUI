@@ -219,7 +219,7 @@ namespace wg
 			Placement		rightLabelPlacement = Placement::East;
 			pts				rightLabelSpacing = 4;
 
-			bool			selectable = true;
+			bool			selectable = false;
 			Skin_p			skin;
 			bool			stickyFocus = false;
 			bool			tabLock = false;

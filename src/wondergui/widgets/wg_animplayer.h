@@ -61,7 +61,7 @@ namespace wg
 			bool			playing = false;
 			PlayMode		playMode = PlayMode::Looping;
 			PointerStyle	pointer = PointerStyle::Undefined;
-			bool			selectable = true;
+			bool			selectable = false;
 			Skin_p			skin;
 			float			speed = 1.f;
 			bool			stickyFocus = false;

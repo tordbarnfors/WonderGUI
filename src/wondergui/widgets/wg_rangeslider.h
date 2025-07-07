@@ -67,7 +67,7 @@ namespace wg
 			float			rangeBegin = 0.f;
 			float			rangeEnd = 1.f;
             float		    minRange = 0.0f;
-			bool			selectable = true;
+			bool			selectable = false;
 			Skin_p			skin;
 			int				steps = 0;
 			bool			stickyFocus = false;

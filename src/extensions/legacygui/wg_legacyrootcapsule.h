@@ -63,7 +63,7 @@ namespace wg
 			bool 			pickHandle = false;
 			PointerStyle	pointer = PointerStyle::Arrow;
 			int				scale = 64;
-			bool			selectable = true;
+			bool			selectable = false;
 			Skin_p			skin;
 			bool			stickyFocus = false;
 			bool			tabLock = false;

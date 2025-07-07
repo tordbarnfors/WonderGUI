@@ -119,7 +119,7 @@ namespace wg
 			uint8_t			pickCategory	= 0;
 			bool			pickHandle		= false;
 			PointerStyle	pointer 		= PointerStyle::Undefined;
-			bool			selectable 		= true;
+			bool			selectable 		= false;
 			Skin_p			skin;
 			Alignment		slotAlignment	= Alignment::Justify;
 			pts				spacing			= 0;

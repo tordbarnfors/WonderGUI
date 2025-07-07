@@ -65,7 +65,7 @@ namespace wg
 			bool			pickHandle = false;
 			Placement		placement = Placement::Center;
 			PointerStyle	pointer = PointerStyle::Undefined;
-			bool			selectable = true;
+			bool			selectable = false;
 			SizePolicy2D	sizePolicy = SizePolicy2D::Stretch;
 			Skin_p			skin;
 			bool			stickyFocus = false;
