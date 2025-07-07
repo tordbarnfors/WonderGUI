@@ -218,6 +218,14 @@ namespace wg
 	typedef	StrongPtr<TextEditMsg>		TextEditMsg_p;
 	typedef	WeakPtr<TextEditMsg>	TextEditMsg_wp;
 
+	class SelectedMsg;
+	typedef	StrongPtr<SelectedMsg>		SelectedMsg_p;
+	typedef	WeakPtr<SelectedMsg>	SelectedMsg_wp;
+
+	class UnselectedMsg;
+	typedef	StrongPtr<UnselectedMsg>	UnselectedMsg_p;
+	typedef	WeakPtr<UnselectedMsg>		UnselectedMsg_wp;
+
 	class ItemMsg;
 	typedef	StrongPtr<ItemMsg>		ItemMsg_p;
 	typedef	WeakPtr<ItemMsg>	ItemMsg_wp;
@@ -365,7 +373,7 @@ namespace wg
 		InputMsg(char inputId, ModKeys modKeys, Coord pointerPos, CoordSPX pointerPosSPX, int64_t timestamp) : m_inputId(inputId), m_modKeys(modKeys), m_pointerPos(pointerPos), m_pointerPosSPX(pointerPosSPX), m_timestamp(timestamp) {}
 
 		char				m_inputId;			// Id of InputHandler posting this message, so we can separate multiple input sources from each other.
-		ModKeys		m_modKeys;			// Modifier keys pressed when message posted.
+		ModKeys				m_modKeys;			// Modifier keys pressed when message posted.
 		Coord				m_pointerPos;		// Screen position of pointer in points.
 		CoordSPX			m_pointerPosSPX;	// Screen position of pointer in subpixels.
 		int64_t				m_timestamp;		// Timestamp of input event.
@@ -1115,6 +1123,59 @@ public:
 		int					m_nbInserted;
 	};
 
+	//____ SelectedMsg ________________________________________________________
+
+	class SelectedMsg : public Msg
+	{
+	public:
+		//.____ Creation ______________________________________________
+
+		inline static SelectedMsg_p	create(Object * pSource, std::vector<Widget_p>& selectedList) { return new SelectedMsg(pSource, selectedList); }
+
+		//.____ Identification __________________________________________
+
+		const TypeInfo& typeInfo(void) const override;
+		const static TypeInfo	TYPEINFO;
+
+		//.____ Content __________________________________________________
+
+		int				nbSelected() const { return m_list.size(); }
+		const Widget_p* selected() const { return m_list.data(); }
+
+
+
+	protected:
+		SelectedMsg(Object * pSource, std::vector<Widget_p>& selectedList);
+
+		std::vector<Widget_p> m_list;
+	};
+
+	//____ UnselectedMsg ________________________________________________________
+
+	class UnselectedMsg : public Msg
+	{
+	public:
+		//.____ Creation ______________________________________________
+
+		inline static UnselectedMsg_p	create(Object * pSource, std::vector<Widget_p>& unselectedList) { return new UnselectedMsg(pSource, unselectedList); }
+
+		//.____ Identification __________________________________________
+
+		const TypeInfo& typeInfo(void) const override;
+		const static TypeInfo	TYPEINFO;
+
+		//.____ Content __________________________________________________
+
+		int				nbUnselected() const { return m_list.size(); }
+		const Widget_p* unselected() const { return m_list.data(); }
+
+	protected:
+		UnselectedMsg(Object * pSource, std::vector<Widget_p>& selectedList);
+
+		std::vector<Widget_p> m_list;
+	};
+
+
 	//____ ItemInfo _______________________________
 
 	class ItemInfo
@@ -1213,7 +1274,7 @@ public:
 		ItemListMsg( Object * pSource, int nbItems, ItemInfo * pItems );
 		virtual ~ItemListMsg();
 		int				m_nbItems;
-		ItemInfo *	m_pItems;
+		ItemInfo *		m_pItems;
 	};
 
 

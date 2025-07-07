@@ -225,7 +225,7 @@ namespace wg
 				break;
 			case MsgType::MouseDrag:
 			{
-				MouseDragMsg_p pMsg = static_cast<MouseDragMsg*>(_pMsg);
+				auto pMsg = static_cast<MouseDragMsg*>(_pMsg);
 
 				CoordF	now		= pMsg->currPos();
 				CoordF 	prev	= pMsg->prevPos();
@@ -240,7 +240,7 @@ namespace wg
 			}
 			case MsgType::MouseRelease:
 			{
-				MouseReleaseMsg_p pMsg = static_cast<MouseReleaseMsg*>(_pMsg);
+				auto pMsg = static_cast<MouseReleaseMsg*>(_pMsg);
 
 				const static char outside[] = "outside";
 				const static char inside[] = "inside";
@@ -255,7 +255,7 @@ namespace wg
 			}
 			case MsgType::MouseClick:
 			{
-				MouseClickMsg_p pMsg = static_cast<MouseClickMsg*>(_pMsg);
+				auto pMsg = static_cast<MouseClickMsg*>(_pMsg);
 
 				snprintf( params, c_paramLen, " button=%s duration=%d ordinal=%d", _formatMouseButton(pMsg->button()).c_str(), pMsg->duration(), pMsg->ordinal() );
 				break;
@@ -266,19 +266,19 @@ namespace wg
 
 			case MsgType::KeyPress:
 			{
-				KeyPressMsg_p pMsg = static_cast<KeyPressMsg*>(_pMsg);
+				auto pMsg = static_cast<KeyPressMsg*>(_pMsg);
 				snprintf( params, c_paramLen, " wg_keycode=%d native_keycode=%d", (int) pMsg->translatedKeyCode(), pMsg->nativeKeyCode() );
 				break;
 			}
 			case MsgType::KeyRepeat:
 			{
-				KeyRepeatMsg_p pMsg = static_cast<KeyRepeatMsg*>(_pMsg);
+				auto pMsg = static_cast<KeyRepeatMsg*>(_pMsg);
 				snprintf( params, c_paramLen, " wg_keycode=%d native_keycode=%d", (int) pMsg->translatedKeyCode(), pMsg->nativeKeyCode() );
 				break;
 			}
 			case MsgType::KeyRelease:
 			{
-				KeyReleaseMsg_p pMsg = static_cast<KeyReleaseMsg*>(_pMsg);
+				auto pMsg = static_cast<KeyReleaseMsg*>(_pMsg);
 				snprintf( params, c_paramLen, " wg_keycode=%d native_keycode=%d", (int) pMsg->translatedKeyCode(), pMsg->nativeKeyCode() );
 				break;
 			}
@@ -293,7 +293,7 @@ namespace wg
 
 			case MsgType::WheelRoll:
 			{
-				WheelRollMsg_p pMsg = static_cast<WheelRollMsg*>(_pMsg);
+				auto pMsg = static_cast<WheelRollMsg*>(_pMsg);
 				snprintf(params, c_paramLen, "wheel=%d distance=%.2f invertScroll=%s", pMsg->wheel(), (float) pMsg->distance(), pMsg->invertScroll()?"true":"false");
 				break;
 			}
@@ -307,23 +307,69 @@ namespace wg
 
 			case MsgType::ValueUpdate:
 			{
-				ValueUpdateMsg_p pMsg = static_cast<ValueUpdateMsg*>(_pMsg);
+				auto pMsg = static_cast<ValueUpdateMsg*>(_pMsg);
 				snprintf( params, c_paramLen, " value=%f", pMsg->value() );
 				break;
 			}
 
 			case MsgType::RangeUpdate:
 			{
-				RangeUpdateMsg_p pMsg = static_cast<RangeUpdateMsg*>(_pMsg);
+				auto pMsg = static_cast<RangeUpdateMsg*>(_pMsg);
 				snprintf( params, c_paramLen, " offset=%f length=%f fracOfs=%f fracLen=%f final=%s", float(pMsg->offset()), float(pMsg->length()), pMsg->fracOffset(), pMsg->fracLength(), pMsg->isFinal()?"true":"false" );
 				break;
 			}
 
 			case MsgType::TextEdit:
 			{
-				TextEditMsg_p pMsg = static_cast<TextEditMsg*>(_pMsg);
+				auto pMsg = static_cast<TextEditMsg*>(_pMsg);
 				snprintf( params, c_paramLen, " offset=%d deleted=%d inserted=%d", pMsg->offset(), pMsg->deleted(), pMsg->inserted() );
 				break;
+			}
+
+			case MsgType::Selected:
+			{
+				auto pMsg = static_cast<SelectedMsg*>(_pMsg);
+
+				snprintf(params, c_paramLen, " nbSelected=%d selected=", pMsg->nbSelected());
+
+				int nbToPrint = std::min(pMsg->nbSelected(), 3);
+
+				const Widget_p* pWidgets = pMsg->selected();
+				for (int i = 0; i < nbToPrint; i++)
+				{
+					int ofs = strlen(params);
+					snprintf(params + ofs, c_paramLen - ofs, " %p", pWidgets[i].rawPtr() );
+				}
+
+				if( nbToPrint < pMsg->nbSelected() )
+				{
+					int ofs = strlen(params);
+					snprintf(params + ofs, c_paramLen - ofs, " ..." );
+				}
+
+				break;
+			}
+
+			case MsgType::Unselected:
+			{
+				auto pMsg = static_cast<UnselectedMsg*>(_pMsg);
+
+				snprintf(params, c_paramLen, " nbUnselected=%d unselected=", pMsg->nbUnselected());
+
+				int nbToPrint = std::min(pMsg->nbUnselected(), 3);
+
+				const Widget_p* pWidgets = pMsg->unselected();
+				for (int i = 0; i < nbToPrint; i++)
+				{
+					int ofs = strlen(params);
+					snprintf(params + ofs, c_paramLen - ofs, " %p", pWidgets[i].rawPtr());
+				}
+
+				if (nbToPrint < pMsg->nbUnselected())
+				{
+					int ofs = strlen(params);
+					snprintf(params + ofs, c_paramLen - ofs, " ...");
+				}				break;
 			}
 
 			case MsgType::ItemToggle:

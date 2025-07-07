@@ -357,6 +357,9 @@ namespace wg
 
 		TextEdit,						// Text widget edited, like texteditor, editline, etc.
 
+		Selected,					// List of widgets selected, like entries in a list.
+		Unselected,					// List of widgets unselected, like entries in a list.
+
 
 		ItemToggle,
 	//	ItemMouseEnter,
@@ -369,6 +372,8 @@ namespace wg
 	//	ItemMouseDoubleClick,
 		ItemsSelect,
 		ItemsUnselect,
+
+
 
 		PopupOpened,
 		PopupSelect,
