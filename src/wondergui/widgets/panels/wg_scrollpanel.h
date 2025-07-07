@@ -70,7 +70,7 @@ namespace wg
 			PointerStyle		pointer 			= PointerStyle::Undefined;
 			Scroller::Blueprint	scrollbarX;
 			Scroller::Blueprint	scrollbarY;
-			bool				selectable 			= true;
+			bool				selectable 			= false;
 			Skin_p				skin;
 			bool				stealWheelFromScrollbars = true;
 			pts					stepSize 			= 8;

@@ -69,7 +69,7 @@ namespace wg
 			bool			pickHandle = false;
 			PointerStyle	pointer = PointerStyle::Undefined;
 			Scroller::Blueprint	scrollbar;
-			bool			selectable = true;
+			bool			selectable = false;
 			pts				singleStepMovement = 8;
 			Skin_p			skin;
 			bool			stickyFocus = false;

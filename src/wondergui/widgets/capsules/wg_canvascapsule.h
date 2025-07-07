@@ -79,7 +79,7 @@ namespace wg
 			PointerStyle	pointer			= PointerStyle::Undefined;
 			int				renderLayer		= -1;
 			bool			scaleCanvas		= false;
-			bool			selectable		= true;
+			bool			selectable		= false;
 			Skin_p			skin;
 			bool			skinAroundCanvas = false;
 			bool			stickyFocus		= false;

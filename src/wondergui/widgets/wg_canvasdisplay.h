@@ -72,7 +72,7 @@ namespace wg
 			bool			pickHandle = false;
 			Placement		placement = Placement::Center;
 			PointerStyle	pointer = PointerStyle::Undefined;
-			bool			selectable = true;
+			bool			selectable = false;
 			Skin_p			skin;
 			bool			skinAroundCanvas = false;
 			bool			stickyFocus = false;

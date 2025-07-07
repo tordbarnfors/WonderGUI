@@ -138,7 +138,7 @@ namespace wg
 			int				openingFade = 100;
 			uint8_t			pickCategory = 0;
 			PointerStyle	pointer = PointerStyle::Undefined;
-			bool			selectable = true;
+			bool			selectable = false;
 			Skin_p			skin;
 			bool			stickyFocus = false;
 			bool			tabLock = false;
