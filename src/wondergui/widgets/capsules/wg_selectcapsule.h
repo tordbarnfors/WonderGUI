@@ -76,8 +76,21 @@ namespace wg
 
 		//.____ State _________________________________________________________
 
-		void	selectAll();
-		void	unselectAll();
+		bool		select(Widget* pWidget);
+		bool		unselect(Widget* pWidget);
+
+		void		selectAll();
+		void		unselectAll();
+
+		Widget_p				findOneSelected() const;
+		std::vector<Widget_p>	findAllSelected() const;
+
+		void		setSelectMode(SelectMode mode);
+		SelectMode	selectMode() const { return m_selectMode; }
+
+		void		setRecursive(bool bRecursive);
+		bool		isRecursive() const { return m_bRecursive; }
+
 
 		//.____ Internal _________________________________________________
 
@@ -99,10 +112,14 @@ namespace wg
 
 		virtual void	_receive(Msg* pMsg);
 
+		const Container* _topContainer() const;
 		Container*		_topContainer();
-		void			_setSelModeRecursively(Container* pContainer, bool bSelected);
 
+		void			_setSelModeRecursively(Container* pContainer, bool bSelected, std::vector<Widget_p> * pList, Widget * pException = nullptr);
+		bool			_isWidgetUnderOurControl(Widget* pWidget);
 
+		Widget*			_findOneSelectedRecursively(const Container* pContainer) const;
+		void			_findAllSelectedRecursively(const Container* pContainer, std::vector<Widget_p>* pList) const;
 
 		SelectMode		m_selectMode = SelectMode::SingleEntry;
 		bool			m_bRecursive = false;
