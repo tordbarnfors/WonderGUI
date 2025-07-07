@@ -168,6 +168,7 @@ bool labelCapsuleTest(ComponentPtr<DynamicSlot> pEntry);
 bool elipsisTest(ComponentPtr<DynamicSlot> pEntry);
 bool packPanelSpacingBugTest(ComponentPtr<DynamicSlot> pEntry);
 bool bracketSkinTest(ComponentPtr<DynamicSlot> pEntry);
+bool selectCapsuleTest(ComponentPtr<DynamicSlot> pEntry);
 
 
 void nisBlendTest();
@@ -775,7 +776,8 @@ int main(int argc, char** argv)
 		//	labelCapsuleTest(pSlot);
 		//	elipsisTest(pSlot);
 		//	packPanelSpacingBugTest(pSlot);
-		//  bracketSkinTest(pSlot);
+		//	bracketSkinTest(pSlot);
+			selectCapsuleTest(pSlot);
 
 		//------------------------------------------------------
 		// Program Main Loop
@@ -4711,6 +4713,40 @@ bool bracketSkinTest(ComponentPtr<DynamicSlot> pEntry)
 	pBaseLayer->slots.pushBack(pFiller2, { .pos = {120,10} });
 	pBaseLayer->slots.pushBack(pFiller3, { .pos = {10,120} });
 
+
+	*pEntry = pBaseLayer;
+	return true;
+
+}
+
+
+bool selectCapsuleTest(ComponentPtr<DynamicSlot> pEntry)
+{
+	auto pBaseLayer = FlexPanel::create();
+	pBaseLayer->setSkin(ColorSkin::create(Color::PapayaWhip));
+
+	auto pPackPanel = PackPanel::create();
+
+	auto pSkin = ColorSkin::create({
+
+			.states = { {State::Default,Color::Yellow}, {State::Selected,Color::Green}}
+
+		});
+
+
+
+	auto pFiller1 = Filler::create({ .defaultSize = {100,100}, .skin = pSkin });
+	auto pFiller2 = Filler::create({ .defaultSize = {100,100}, .skin = pSkin });
+	auto pFiller3 = Filler::create({ .defaultSize = {100,100}, .skin = pSkin });
+
+
+	pPackPanel->slots.pushBack({ pFiller1, pFiller2, pFiller3} );
+	
+	auto pSelectCapsule = SelectCapsule::create( { .selectMode = SelectMode::MultiEntries });
+
+	pSelectCapsule->slot = pPackPanel;
+
+	pBaseLayer->slots.pushBack(pSelectCapsule, { .pos = {20,20} });
 
 	*pEntry = pBaseLayer;
 	return true;
