@@ -84,7 +84,7 @@ namespace wg
 			bool					pickable 	= false;
 			uint8_t					pickCategory= 0;
 			PointerStyle			pointer 	= PointerStyle::Undefined;
-			bool					selectable 	= true;
+			bool					selectable 	= false;
 			SelectMode				selectMode 	= SelectMode::SingleEntry;
 			Skin_p					skin;
 			bool					tabLock 	= false;

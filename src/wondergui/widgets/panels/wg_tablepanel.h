@@ -213,7 +213,7 @@ namespace wg
 			pts				rowSpacingAfter		= 0;
 			pts				rowSpacingBefore	= 0;
 
-			bool			selectable = true;
+			bool			selectable = false;
 			Skin_p			skin;
 			bool			stickyFocus = false;
 			bool			tabLock = false;

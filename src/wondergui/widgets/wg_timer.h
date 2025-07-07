@@ -62,7 +62,7 @@ namespace wg
 			uint8_t			pickCategory = 0;
 			PlayMode		playMode = PlayMode::Forward;
 			PointerStyle	pointer = PointerStyle::Undefined;
-			bool			selectable = true;
+			bool			selectable = false;
 			Skin_p			skin;
 			int				stepSize = 1;
 			bool			stickyFocus = false;

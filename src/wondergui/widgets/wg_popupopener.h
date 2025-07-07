@@ -61,7 +61,7 @@ namespace wg
 			PointerStyle	pointer			= PointerStyle::Undefined;
 			Widget_p		popup;
 			Border			popupOverflow;
-			bool			selectable		= true;
+			bool			selectable		= false;
 			Skin_p			skin;
 			bool			stickyFocus		= false;
 			bool			tabLock			= false;

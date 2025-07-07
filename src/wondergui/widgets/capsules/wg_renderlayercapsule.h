@@ -53,7 +53,7 @@ namespace wg
 			bool			pickHandle		= false;
 			PointerStyle	pointer			= PointerStyle::Undefined;
 			int				renderLayer		= -1;
-			bool			selectable		= true;
+			bool			selectable		= false;
 			Skin_p			skin;
 			bool			stickyFocus		= false;
 			bool			tabLock			= false;

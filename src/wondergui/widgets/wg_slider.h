@@ -63,7 +63,7 @@ namespace wg
 			uint8_t			pickCategory = 0;
 			PointerStyle	pointer = PointerStyle::Undefined;
 			pts				defaultSlideLength = 64;
-			bool			selectable = true;
+			bool			selectable = false;
 			Skin_p			skin;
 			int				steps = 0;
 			bool			stickyFocus = false;

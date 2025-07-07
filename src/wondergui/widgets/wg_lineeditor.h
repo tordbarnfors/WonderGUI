@@ -56,7 +56,7 @@ namespace wg
 			bool			pickHandle = false;
 			PointerStyle	pointer = PointerStyle::Ibeam;
 			KeyAction		returnKeyAction = KeyAction::ReleaseFocus;
-			bool			selectable = true;
+			bool			selectable = false;
 			Skin_p			skin;
 			bool			stickyFocus = false;
 			bool			tabLock = false;
