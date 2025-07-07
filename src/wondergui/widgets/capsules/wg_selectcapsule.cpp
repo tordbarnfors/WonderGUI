@@ -216,8 +216,7 @@ namespace wg
 		while (pContainer && pContainer != pTopContainer)
 			pContainer = pContainer->parent();
 
-		if (!pContainer)
-			return false;
+		return (pContainer != nullptr);
 	}
 
 
