@@ -108,6 +108,7 @@
 #include <wg_scrollbar.h>
 #include <wg_scroller.h>
 #include <wg_scrollpanel.h>
+#include <wg_selectcapsule.h>
 #include <wg_blockslideskin.h>
 #include <wg_scalecapsule.h>
 #include <wg_selectbox.h>
