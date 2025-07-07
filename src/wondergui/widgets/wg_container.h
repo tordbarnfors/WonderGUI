@@ -48,6 +48,7 @@ namespace wg
 	{
 		friend class SlotHolder;
 		friend class CanvasCapsule;
+		friend class SelectCapsule;
 
 		public:
 
