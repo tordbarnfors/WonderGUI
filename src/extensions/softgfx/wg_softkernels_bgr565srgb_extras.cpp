@@ -439,9 +439,10 @@ static void _straight_blit_alpha8_to_bgr565srgb_no_or_flat_tint_fixedblend(const
 
 //____ _draw_segment_strip() _______________________________________________
 
-void _draw_segment_strip_blend_to_bgr565srgb(int colBeg, int colEnd, uint8_t* pStripStart, int pixelPitch, int nEdges, SegmentEdge* pEdges, const int16_t* pSegmentColors, const SoftGfxDevice::SegmentGradient* pSegmentGradients, const bool* pTransparentSegments, const bool* pOpaqueSegments, const SoftGfxDevice::ColTrans& tint)
+void _draw_segment_strip_blend_to_bgr565srgb(int colBeg, int colEnd, uint8_t* pStripStart, int pixelPitch, int nEdges, 
+	SoftBackend::SegmentEdge* pEdges, const int16_t* pSegmentColors, const HiColor* pSegmentTintmap, 
+	int segmentTintMapPitch, const bool* pTransparentSegments, const bool* pOpaqueSegments, const SoftBackend::ColTrans& tint)
 {
-
 	// Render the column
 
 	int offset = colBeg;				// 24.8 format, but binals cleared (always pointing at beginning of full pixel).
@@ -667,7 +668,7 @@ bool wg::addExtraSoftKernelsForBGR565sRGBCanvas( SoftBackend * pBackend )
 	pBackend->setStraightBlitKernel( PixelFormat::BGRA_8_sRGB, SoftBackend::ReadOp::Normal, TintMode::None, BlendMode::Blend, PixelFormat::BGR_565_sRGB, _straight_blit_bgra8srgb_to_bgr565srgb_notint_blend );
 */
 
-	pDevice->setSegmentStripKernel(false, BlendMode::Blend, PixelFormat::BGR_565_sRGB, _draw_segment_strip_blend_to_bgr565srgb);
+	pBackend->setSegmentStripKernel(SoftBackend::StripSource::Colors, BlendMode::Blend, PixelFormat::BGR_565_sRGB, _draw_segment_strip_blend_to_bgr565srgb);
 
 	return true;
 };
