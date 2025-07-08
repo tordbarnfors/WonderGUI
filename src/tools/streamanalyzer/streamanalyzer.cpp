@@ -5,9 +5,6 @@
 #include <wg_softkernels_rgb555be_base.h>
 #include <wg_softkernels_rgb555be_extras.h>
 
-#include <wg_softkernels_rgb565be_base.h>
-#include <wg_softkernels_rgb565be_extras.h>
-
 #include <wg_softkernels_bgr565srgb_base.h>
 #include <wg_softkernels_bgr565srgb_extras.h>
 
@@ -941,8 +938,8 @@ bool MyApp::loadStream(std::string path)
 	addExtraSoftKernelsForRGB565BECanvas(pStreamGfxBackend);
 */
 
-	addBaseSoftKernelsForBGR565sRGBCanvas(pStreamGfxDevice);
-	addExtraSoftKernelsForBGR565sRGBCanvas(pStreamGfxDevice);
+	addBaseSoftKernelsForBGR565sRGBCanvas(pStreamGfxBackend);
+	addExtraSoftKernelsForBGR565sRGBCanvas(pStreamGfxBackend);
 
 
 	m_pStreamSurfaceFactory = pStreamGfxDevice->surfaceFactory();

@@ -507,9 +507,9 @@ void _draw_segment_strip_blend_to_bgr565srgb(int colBeg, int colEnd, uint8_t* pS
 #if WG_IS_BIG_ENDIAN
 							pixel = Util::endianSwap(pixel);
 #endif
-							backB = SoftGfxDevice::s_channel_5_sRGB[pixel & 0x1F];
-							backG = SoftGfxDevice::s_channel_6_sRGB[(pixel >> 5) & 0x3F];
-							backR = SoftGfxDevice::s_channel_5_sRGB[pixel >> 11];
+							backB = SoftBackend::s_channel_5_sRGB[pixel & 0x1F];
+							backG = SoftBackend::s_channel_6_sRGB[(pixel >> 5) & 0x3F];
+							backR = SoftBackend::s_channel_5_sRGB[pixel >> 11];
 
 							outB = (backB * invAlpha + modB) >> 12;
 							outG = (backG * invAlpha + modG) >> 12;
@@ -531,7 +531,7 @@ void _draw_segment_strip_blend_to_bgr565srgb(int colBeg, int colEnd, uint8_t* pS
 			{
 				int edge = 0;
 
-				int	segmentFractions[SoftGfxDevice::maxSegments()];
+				int	segmentFractions[SoftBackend::c_maxSegments];
 				int remainingFractions = 65536;
 
 				while (edge < nEdges && offset + 255 >= pEdges[edge].begin)
@@ -572,9 +572,9 @@ void _draw_segment_strip_blend_to_bgr565srgb(int colBeg, int colEnd, uint8_t* pS
 #if WG_IS_BIG_ENDIAN
 				pixel = Util::endianSwap(pixel);
 #endif
-				backB = SoftGfxDevice::s_channel_5_sRGB[pixel & 0x1F];
-				backG = SoftGfxDevice::s_channel_6_sRGB[(pixel >> 5) & 0x3F];
-				backR = SoftGfxDevice::s_channel_5_sRGB[pixel >> 11];
+				backB = SoftBackend::s_channel_5_sRGB[pixel & 0x1F];
+				backG = SoftBackend::s_channel_6_sRGB[(pixel >> 5) & 0x3F];
+				backR = SoftBackend::s_channel_5_sRGB[pixel >> 11];
 
 				int16_t outB = 0, outG = 0, outR = 0;
 

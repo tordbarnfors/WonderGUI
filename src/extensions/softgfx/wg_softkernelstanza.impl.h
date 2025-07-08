@@ -38,7 +38,7 @@ inline void _read_pixel_fast8(const uint8_t* pPixel, PixelFormat format, const C
 		outA = 255;
 	}
 
-	if (format == PixelFormat::BGR_565_linear)
+	if (format == PixelFormat::BGR_565_linear || format == PixelFormat::BGR_565_sRGB)
 	{
 		uint16_t pixel = *(uint16_t*)pPixel;
 #if WG_IS_BIG_ENDIAN
@@ -147,15 +147,27 @@ inline void _read_pixel(const uint8_t* pPixel, PixelFormat format, const Color8*
 		outA = 4096;
 	}
 
+	if (format == PixelFormat::BGR_565_sRGB)
+	{
+		uint16_t pixel = *(uint16_t*)pPixel;
+#if WG_IS_BIG_ENDIAN
+		pixel = Util::endianSwap(pixel);
+#endif
+		outB = SoftBackend::s_channel_5_sRGB[pixel & 0x1F];
+		outG = SoftBackend::s_channel_6_sRGB[(pixel >> 5) & 0x3F];
+		outR = SoftBackend::s_channel_5_sRGB[pixel >> 11];
+		outA = 4096;
+	}
+
 	if (format == PixelFormat::BGR_565_linear)
 	{
 		uint16_t pixel = *(uint16_t*)pPixel;
 #if WG_IS_BIG_ENDIAN
 		pixel = Util::endianSwap(pixel);
 #endif
-		outB = SoftBackend::s_channel_5[pixel & 0x1F];
-		outG = SoftBackend::s_channel_6[(pixel >> 5) & 0x3F];
-		outR = SoftBackend::s_channel_5[pixel >> 11];
+		outB = SoftBackend::s_channel_5_linear[pixel & 0x1F];
+		outG = SoftBackend::s_channel_6_linear[(pixel >> 5) & 0x3F];
+		outR = SoftBackend::s_channel_5_linear[pixel >> 11];
 		outA = 4096;
 	}
 
@@ -165,9 +177,9 @@ inline void _read_pixel(const uint8_t* pPixel, PixelFormat format, const Color8*
 #if WG_IS_LITTLE_ENDIAN
 		pixel = Util::endianSwap(pixel);
 #endif
-		outR = SoftBackend::s_channel_5[pixel & 0x1F];
-		outG = SoftBackend::s_channel_6[(pixel >> 5) & 0x3F];
-		outB = SoftBackend::s_channel_5[pixel >> 11];
+		outR = SoftBackend::s_channel_5_linear[pixel & 0x1F];
+		outG = SoftBackend::s_channel_6_linear[(pixel >> 5) & 0x3F];
+		outB = SoftBackend::s_channel_5_linear[pixel >> 11];
 		outA = 4096;
 	}
 
@@ -177,9 +189,9 @@ inline void _read_pixel(const uint8_t* pPixel, PixelFormat format, const Color8*
 #if WG_IS_LITTLE_ENDIAN
 		pixel = Util::endianSwap(pixel);
 #endif
-		outR = SoftBackend::s_channel_5[pixel & 0x1F];
-		outG = SoftBackend::s_channel_5[(pixel >> 6) & 0x1F];
-		outB = SoftBackend::s_channel_5[pixel >> 11];
+		outR = SoftBackend::s_channel_5_linear[pixel & 0x1F];
+		outG = SoftBackend::s_channel_5_linear[(pixel >> 6) & 0x1F];
+		outB = SoftBackend::s_channel_5_linear[pixel >> 11];
 		outA = 4096;
 	}
 	
@@ -240,7 +252,7 @@ inline void _write_pixel_fast8(uint8_t* pPixel, PixelFormat format, int16_t b, i
 		pPixel[2] = (uint8_t)r;
 	}
 
-	if (format == PixelFormat::BGR_565_linear)
+	if (format == PixelFormat::BGR_565_linear || format == PixelFormat::BGR_565_sRGB)
 	{
 		pPixel[0] = (b >> 3) | ((g & 0xFC) << 3);
 		pPixel[1] = (g >> 5) | (r & 0xF8);
@@ -317,6 +329,12 @@ inline void _write_pixel(uint8_t* pPixel, PixelFormat format, int16_t b, int16_t
 		pPixel[0] = HiColor::packSRGBTab[b];
 		pPixel[1] = HiColor::packSRGBTab[g];
 		pPixel[2] = HiColor::packSRGBTab[r];
+	}
+
+	if (format == PixelFormat::BGR_565_sRGB)
+	{
+		pPixel[0] = (HiColor::packSRGBTab[b] >> 3) | ((HiColor::packSRGBTab[g] & 0xFC) << 3);
+		pPixel[1] = (HiColor::packSRGBTab[g] >> 5) | (HiColor::packSRGBTab[r] & 0xF8);
 	}
 
 	if (format == PixelFormat::BGR_565_linear)
