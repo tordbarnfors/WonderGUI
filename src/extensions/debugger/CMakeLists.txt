@@ -9,6 +9,9 @@ set(SOURCES
     wg_dummyinfopanel.h
     wg_dummyinfopanel.cpp
 
+    wg_widgettreepanel.h
+    wg_widgettreepanel.cpp
+
     objectinfopanels/wg_objectinfopanel.h
     objectinfopanels/wg_objectinfopanel.cpp
     objectinfopanels/wg_widgetinfopanel.h

@@ -219,6 +219,8 @@ set( SOURCES
 	widgets/capsules/wg_capsule.h
 	widgets/capsules/wg_labelcapsule.cpp
 	widgets/capsules/wg_labelcapsule.h
+	widgets/capsules/wg_paddingcapsule.cpp
+	widgets/capsules/wg_paddingcapsule.h
 	widgets/capsules/wg_renderlayercapsule.cpp
 	widgets/capsules/wg_renderlayercapsule.h
 	widgets/capsules/wg_reordercapsule.cpp
@@ -248,6 +250,8 @@ set( SOURCES
 #	widgets/lists/wg_treelist.cpp
 #	widgets/lists/wg_treelist.h
 
+	widgets/panels/wg_drawerpanel.cpp
+	widgets/panels/wg_drawerpanel.h
 	widgets/panels/wg_flexpanel.cpp
 	widgets/panels/wg_flexpanel.h
 	widgets/panels/wg_lambdapanel.cpp
