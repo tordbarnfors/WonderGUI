@@ -1,4 +1,4 @@
-/*=========================================================================
+﻿/*=========================================================================
 
 						 >>> WonderGUI <<<
 
@@ -41,6 +41,8 @@
 
 #include <wg_staticslotvector.impl.h>
 
+#include <wg_widgettreepanel.h>
+
 #include <string>
 
 namespace wg
@@ -67,7 +69,9 @@ namespace wg
 		m_pSelectionSkin = BoxSkin::create(1, Color::Transparent, Color::Red, 1);
 
 		_createSlotWidgetToolbox();
+		_createWidgetTreeToolbox();
 
+		m_pDebugger->setWidgetSelectedCallback([this](Widget* pWidget) {_selectWidget(pWidget); });
 	}
 
 	//____ Destructor _____________________________________________________________
@@ -190,8 +194,9 @@ namespace wg
 			if (m_pSelectedWidget)
 				m_pSelectionSkin->_render(pDevice, _selectionGeo(), m_scale, State::Default);
 
-			for (auto& palette : toolboxes)
+			for ( int i = toolboxes.size()-1 ; i >= 0 ; i-- )
 			{
+				auto& palette = toolboxes[i];
 				if (palette.m_bVisible)
 				{
 					RectSPX geo = palette.m_geo + _canvas.pos();
@@ -282,10 +287,10 @@ namespace wg
 		if (m_pSelectedWidget)
 		{
 			m_pSlotTools->slots.clear();
-			m_pSlotTools->slots << _createGenericSlotTool(m_pSelectedWidget->_slot());
+			m_pSlotTools->slots << _createSlotInfoPanel(m_pSelectedWidget->_slot());
 
 			m_pWidgetTools->slots.clear();
-			m_pWidgetTools->slots << _createGenericWidgetTool(m_pSelectedWidget);
+			m_pWidgetTools->slots << _createWidgetInfoPanel(m_pSelectedWidget);
 /*
 			for (auto& palette : toolboxes)
 			{
@@ -442,7 +447,7 @@ namespace wg
 					break;
 				}
 
-				int	boxIndex = (id - 10000) / 1000;
+				int	boxIndex = _boxIndex(pWidget);
 				int meaning = id % 1000;
 
 				if( meaning == 1 )
@@ -520,8 +525,12 @@ namespace wg
 						if( id < 10000 )
 							break;								// Not any press to bother about.
 
-						int	boxIndex = (id - 10000) / 1000;
+						//int	boxIndex = (id - 10000) / 1000;
+
+						int boxIndex = _boxIndex(pWidget);
 						int meaning = id % 1000;
+
+
 
 						switch( meaning )
 						{
@@ -532,9 +541,13 @@ namespace wg
 								m_resizingToolboxStartGeo = toolboxes[boxIndex].m_geo;
 								break;
 							}
-							case 2:					// Move
-								m_movingToolbox = boxIndex;
-								m_movingToolboxStartOfs = toolboxes[boxIndex].m_placementPos;
+							case 2:					// Raise and move
+
+								toolboxes._move(boxIndex, 0);
+								m_movingToolbox = 0; // boxIndex;
+								m_movingToolboxStartOfs = toolboxes[0].m_placementPos;
+
+								_childRequestRender(toolboxes.begin(), toolboxes[0].m_geo.size());
 								break;
 
 						}
@@ -690,6 +703,18 @@ namespace wg
 		Overlay::_receive(_pMsg);
 	}
 
+	//____ _boxIndex() ___________________________________________________________
+
+	int DebugOverlay::_boxIndex(Widget* pWidget)
+	{
+		auto pChild = pWidget;
+		while (pChild->parent() != this)
+			pChild = pChild->parent();
+
+		auto it = toolboxes._find(pChild);
+		return toolboxes._index(it);
+	}
+
 	//____ _boxSection() _________________________________________________________
 
 	Placement DebugOverlay::_boxSection( CoordSPX pos, int boxIndex )
@@ -774,6 +799,81 @@ namespace wg
 		return std::make_tuple(pMain,pContent);
 	}
 
+	//____ _createWidgetTreeToolbox() ____________________________________________
+
+	void DebugOverlay::_createWidgetTreeToolbox()
+	{
+		// Add our toolboxes
+
+		Widget_p	pToolbox;
+		PackPanel_p	pContent;
+
+		std::tie(pToolbox, pContent) = _createToolbox("Widget Tree View");
+
+		// Create our button palette
+
+		auto pButtonPalette = PackPanel::create(WGBP(PackPanel, _.axis = Axis::X));
+
+		auto pRefreshButtonSkin = BoxSkin::create(WGBP(BoxSkin,
+			_.outlineColor = Color::Black,
+			_.outlineThickness = 1,
+			_.padding = 6,
+			_.states = { {State::Default, Color::DarkGrey}, {State::Hovered, Color::LightGrey}, {State::Pressed, Color::Grey } }));
+
+
+		auto pRefreshButton = Button::create(WGBP(Button, _.skin = pRefreshButtonSkin, _.label.text = "⟳"));
+
+		Base::msgRouter()->addRoute(pRefreshButton, MsgType::Select, [this](Msg* pMsg) {
+
+			if (mainSlot.widget())
+				this->m_pWidgetTreeContainer->slot = m_pDebugger->createWidgetTreePanel(m_debugPanelBP, mainSlot.widget());
+			else
+				this->m_pWidgetTreeContainer->slot = nullptr;
+		});
+
+		auto pCollapseAllButton = Button::create(WGBP(Button, _.skin = pRefreshButtonSkin, _.label.text = "-"));
+
+		Base::msgRouter()->addRoute(pCollapseAllButton, MsgType::Select, [this](Msg* pMsg) {
+
+			if (!m_pWidgetTreeContainer->slot.isEmpty())
+				static_cast<WidgetTreePanel*>(m_pWidgetTreeContainer->slot._widget())->collapseAll();
+		});
+
+		auto pExpandAllButton = Button::create(WGBP(Button, _.skin = pRefreshButtonSkin, _.label.text = "+"));
+
+		Base::msgRouter()->addRoute(pExpandAllButton, MsgType::Select, [this](Msg* pMsg) {
+
+			if (!m_pWidgetTreeContainer->slot.isEmpty())
+				static_cast<WidgetTreePanel*>(m_pWidgetTreeContainer->slot._widget())->expandAll();
+			});
+
+
+		pButtonPalette->slots.pushBack({ pRefreshButton, pCollapseAllButton, pExpandAllButton });
+
+		pContent->slots.pushBack(pButtonPalette, WGBP(PackPanelSlot, _.weight = 0.f));
+		pContent->setLayout(nullptr);
+
+		// Create scrollable content
+
+		auto pContentSkin = BoxSkin::create(WGBP(BoxSkin,
+			_.color = Color::White,
+			_.outlineColor = Color::Black,
+			_.outlineThickness = 1,
+			_.padding = 2));
+
+		auto pContentWindow = ScrollPanel::create(m_pTheme->scrollPanelY());
+
+		m_pWidgetTreeContainer = pContentWindow;
+
+		if( mainSlot.widget() )
+			pContentWindow->slot = m_pDebugger->createWidgetTreePanel(m_debugPanelBP, mainSlot.widget());
+			
+		pContent->slots << pContentWindow;
+
+		_refreshRealGeo(toolboxes._first() + toolboxes.size() - 1);
+	}
+
+
 	//____ _createSlotWidgetToolbox() ____________________________________________
 
 	void DebugOverlay::_createSlotWidgetToolbox()
@@ -783,7 +883,7 @@ namespace wg
 		Widget_p	pToolbox;
 		PackPanel_p	pContent;
 
-		std::tie(pToolbox, pContent) = _createToolbox("Slot/Widget Tools");
+		std::tie(pToolbox, pContent) = _createToolbox("Slot/Widget View");
 
 		// Create our button palette
 
@@ -805,7 +905,6 @@ namespace wg
 			auto pButton = wg_static_cast<ToggleButton_p>(pMsg->source());
 
 			this->m_bSelectMode = pButton->isChecked();
-
 		});
 
 
@@ -823,7 +922,12 @@ namespace wg
 
 		auto pContentWindow = ScrollPanel::create( m_pTheme->scrollPanelY() );
 
-		auto pScrollableContent = PackPanel::create( WGBP(PackPanel, _.skin = pContentSkin, _.axis = Axis::Y ) );
+		auto pScrollableContent = PackPanel::create( WGBP(PackPanel, 
+			_.skin = pContentSkin, 
+			_.axis = Axis::Y,
+			_.layout = nullptr
+
+		));
 
 
 		m_pSlotTools = PackPanel::create();
@@ -841,10 +945,9 @@ namespace wg
 		_refreshRealGeo( toolboxes._first() + toolboxes.size() -1 );
 	}
 
+	//____ _createSlotInfoPanel() ________________________________________
 
-	//____ _createGenericSlotTool() ________________________________________
-
-	Widget_p DebugOverlay::_createGenericSlotTool(StaticSlot * pSlot)
+	Widget_p DebugOverlay::_createSlotInfoPanel(StaticSlot * pSlot)
 	{
 		auto pPanel = PackPanel::create( WGBP(PackPanel,
 											  _.axis = Axis::Y ));
@@ -869,9 +972,9 @@ namespace wg
 		return pPanel;
 	}
 
-	//____ _createGenericWidgetTool() ______________________________________
+	//____ _createWidgetInfoPanel() ______________________________________
 
-	Widget_p DebugOverlay::_createGenericWidgetTool( Widget * pWidget )
+	Widget_p DebugOverlay::_createWidgetInfoPanel( Widget * pWidget )
 	{
 
 		auto pPanel = PackPanel::create( WGBP(PackPanel,

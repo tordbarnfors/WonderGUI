@@ -37,6 +37,7 @@ namespace wg
 		friend class RootPanel;
 		friend class SlotIterator;
 		friend class SlotHolder;
+		template<class S, int X> friend class SlotArray;
 
 	public:
 
@@ -200,6 +201,8 @@ namespace wg
 	public:
 		
 		//.____ Creation ______________________________________________________
+
+		DynamicSlot() : StaticSlot(nullptr) {}
 
 		DynamicSlot(SlotHolder* pHolder) : StaticSlot(pHolder) {}
 

@@ -40,6 +40,8 @@
 
 #include <wg_dynamicbuffer.h>
 
+#include <wg_drawerpanel.h>
+
 //#define USE_OPEN_GL
 
 
@@ -169,6 +171,7 @@ bool elipsisTest(ComponentPtr<DynamicSlot> pEntry);
 bool packPanelSpacingBugTest(ComponentPtr<DynamicSlot> pEntry);
 bool bracketSkinTest(ComponentPtr<DynamicSlot> pEntry);
 bool selectCapsuleTest(ComponentPtr<DynamicSlot> pEntry);
+bool drawerPanelTest(ComponentPtr<DynamicSlot> pEntry);
 
 
 void nisBlendTest();
@@ -777,8 +780,9 @@ int main(int argc, char** argv)
 		//	elipsisTest(pSlot);
 		//	packPanelSpacingBugTest(pSlot);
 		//	bracketSkinTest(pSlot);
-			selectCapsuleTest(pSlot);
-
+		//	selectCapsuleTest(pSlot);
+			drawerPanelTest(pSlot);
+		
 		//------------------------------------------------------
 		// Program Main Loop
 		//------------------------------------------------------
@@ -4749,6 +4753,35 @@ bool selectCapsuleTest(ComponentPtr<DynamicSlot> pEntry)
 	pBaseLayer->slots.pushBack(pSelectCapsule, { .pos = {20,20} });
 
 	*pEntry = pBaseLayer;
+	return true;
+
+}
+
+bool drawerPanelTest(ComponentPtr<DynamicSlot> pEntry)
+{
+	auto pBaseLayer = FlexPanel::create();
+	pBaseLayer->setSkin(ColorSkin::create(Color::PapayaWhip));
+
+	auto pPanelSkin = BoxSkin::create(BoxSkin::Blueprint{ .color = Color::PapayaWhip, .outlineColor = Color::Black, .outlineThickness = 1 });
+
+	auto pHeaderSkin = BoxSkin::create(BoxSkin::Blueprint{ .color = Color::PapayaWhip, .outlineColor = Color::Black, .outlineThickness = 1,
+		.states = { {State::Checked, HiColor::White }} });
+
+	auto pDrawerPanel = DrawerPanel::create( { .skin = pPanelSkin } );
+
+	auto pHeader = TextDisplay::create(TextDisplay::Blueprint{ .display = {.text = "EXPAND ME" } });
+	auto pContent = Filler::create({ .defaultSize = {50,100}, .skin = pPanelSkin });
+
+	pDrawerPanel->slots[0] = pHeader;
+	pDrawerPanel->slots[1] = pContent;
+
+	pBaseLayer->slots.pushBack( pDrawerPanel, {.pos = {10,10} });
+
+	*pEntry = pBaseLayer;
+
+	pDrawerPanel->setTransition(ValueTransition::create(500000));
+	pDrawerPanel->setOpen(true);
+
 	return true;
 
 }
