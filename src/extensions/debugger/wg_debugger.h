@@ -25,6 +25,7 @@
 #pragma once
 
 #include <map>
+#include <functional>
 
 #include <wg_object.h>
 #include <wg_pointers.h>
@@ -56,6 +57,9 @@ namespace wg
 
 		Widget_p		createDebugPanel( const DebugPanel::Blueprint& blueprint, const TypeInfo * pType, Object * pObject );
 		Widget_p		createDebugPanel( const DebugPanel::Blueprint& blueprint, const TypeInfo * pType, StaticSlot * pObject );
+		Widget_p		createWidgetTreePanel(const DebugPanel::Blueprint& blueprint, Widget * pWidget);
+
+		void			setWidgetSelectedCallback(std::function<void(Widget*)> pCallback);
 
 	protected:
 		Debugger();
@@ -64,7 +68,7 @@ namespace wg
 		std::map<const TypeInfo*,Widget_p(*)(const DebugPanel::Blueprint&, Object *)>		m_objectInfoFactories;
 		std::map<const TypeInfo*,Widget_p(*)(const DebugPanel::Blueprint&, StaticSlot *)>	m_slotInfoFactories;
 
-
+		std::function<void(Widget*)> m_widgetSelectedCallback;
 	};
 
 
