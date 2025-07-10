@@ -68,6 +68,7 @@
 #include <wg_filler.h>
 #include <wg_fillmeterskin.h>
 #include <wg_flexpanel.h>
+#include <wg_drawerpanel.h>
 #include <wg_fpsdisplay.h>
 #include <wg_framemeterskin.h>
 #include <wg_glow.h>
@@ -90,6 +91,7 @@
 #include <wg_numberdisplay.h>
 #include <wg_numberlayout.h>
 #include <wg_overlay.h>
+#include <wg_paddingcapsule.h>
 #include <wg_packlayout.h>
 #include <wg_packlist.h>
 #include <wg_packpanel.h>
@@ -109,7 +111,6 @@
 #include <wg_scroller.h>
 #include <wg_scrollpanel.h>
 #include <wg_selectcapsule.h>
-#include <wg_blockslideskin.h>
 #include <wg_scalecapsule.h>
 #include <wg_selectbox.h>
 #include <wg_sidecanvas.h>

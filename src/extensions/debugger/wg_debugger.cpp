@@ -22,6 +22,7 @@
 #include <wg_debugger.h>
 
 #include <wg_dummyinfopanel.h>
+#include <wg_widgettreepanel.h>
 
 #include <objectinfopanels/wg_objectinfopanel.h>
 #include <objectinfopanels/wg_widgetinfopanel.h>
@@ -34,6 +35,7 @@
 #include <wg_panel.h>
 #include <wg_packpanel.h>
 #include <wg_flexpanel.h>
+#include <wg_msg.h>
 
 
 namespace wg
@@ -96,6 +98,21 @@ namespace wg
 
 		return it->second(bp,pSlot);
 	}
+
+	//____ createWidgetTreePanel() ____________________________________________
+
+	Widget_p Debugger::createWidgetTreePanel(const DebugPanel::Blueprint& blueprint, Widget* pRoot)
+	{
+		return WidgetTreePanel::create(blueprint, pRoot, m_widgetSelectedCallback);
+	}
+
+	//____ setWidgetSelectedCallback() ________________________________________
+
+	void Debugger::setWidgetSelectedCallback(std::function<void(Widget*)> pCallback)
+	{
+		m_widgetSelectedCallback = pCallback;
+	}
+
 
 
 } // namespace wg
