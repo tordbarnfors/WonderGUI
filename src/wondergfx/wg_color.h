@@ -295,6 +295,7 @@ namespace wg
 		inline bool		isValid() const { return (argb & 0xE000E000E000E000) == 0 && a <= 4096 && r <= 4096 && g <= 4096 && b <= 4096; }
 
 		inline void		clamp();
+		inline HiColor	withAlpha(int alpha);
 
 		//.____ Operators ___________________________________________
 
@@ -402,6 +403,12 @@ namespace wg
 		limit(g, 0, 4096);
 		limit(b, 0, 4096);
 		limit(a, 0, 4096);
+	}
+
+	//-------------------------------------------------------------------
+	inline HiColor HiColor::withAlpha(int alpha)
+	{
+		return HiColor{ r,g,b,alpha };
 	}
 
 	//-------------------------------------------------------------------

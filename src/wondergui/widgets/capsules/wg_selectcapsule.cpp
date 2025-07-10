@@ -298,6 +298,8 @@ namespace wg
 	
 	void SelectCapsule::_receive(Msg* _pMsg)
 	{
+		// TODO: Forward messages to superclass.
+
 		switch (_pMsg->type())
 		{
 			case MsgType::MousePress:
@@ -418,6 +420,9 @@ namespace wg
 				break;
 
 		}
+
+
+
 	}
 
 	//____ _topContainer() ____________________________________________________

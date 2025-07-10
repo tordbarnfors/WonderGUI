@@ -183,16 +183,20 @@ namespace wg
 		std::tuple<Widget_p, PackPanel_p> _createToolbox( const char * pTitle );
 
 		void			_createSlotWidgetToolbox();
+		void			_createWidgetTreeToolbox();
 
 
-		Widget_p		_createGenericSlotTool(StaticSlot * pSlot);
-		Widget_p		_createGenericWidgetTool(Widget * pWidget);
+
+
+		Widget_p		_createSlotInfoPanel(StaticSlot * pSlot);
+		Widget_p		_createWidgetInfoPanel(Widget * pWidget);
 
 		//
 
 		void			_createResources();
 
 		Placement		_boxSection( CoordSPX pos, int boxIndex );
+		int				_boxIndex(Widget* pWidget);						// Lookup which box the widget is part of.
 
 
 		RectSPX			_selectionGeo() const;
@@ -215,6 +219,8 @@ namespace wg
 
 		PackPanel_p		m_pSlotTools;
 		PackPanel_p		m_pWidgetTools;
+
+		ScrollPanel_p	m_pWidgetTreeContainer;
 
 		// Variables for toolbox drag
 
