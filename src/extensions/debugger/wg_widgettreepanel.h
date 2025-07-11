@@ -26,6 +26,7 @@
 
 #include <wg_tablepanel.h>
 #include <wg_debugpanel.h>
+#include <wg_selectcapsule.h>
 #include <wg_transitions.h>
 
 namespace wg
@@ -54,20 +55,27 @@ namespace wg
 		void	collapseAll();
 		void	expandAll();
 
-
+		void	select(Widget* pWidget);
 
 
 	protected:
 		WidgetTreePanel(const Blueprint& blueprint, Widget * pRoot, const std::function<void(Widget* pSelected)>& selectCallback );
-		~WidgetTreePanel() {}
+		~WidgetTreePanel();
 
 		Widget_p	_generateInfoTree( const Blueprint& blueprintWidget, Widget * pWidget, int indentation = 0);
 		void		_expandOrCollapseRecursively(Widget* pWidget, bool bExpand);
+		Widget_p	_findWidgetRecursively(int idToFind, Widget* pPos);
 
 		Skin_p				m_pPaddingSkin;
+		Skin_p				m_pDrawerButtonSkin;
 		PackLayout_p		m_pPackLayout;
 		ValueTransition_p	m_pTransition;
 
+		SelectCapsule_p		m_pSelectCapsule;
+
+		Widget_p			m_pSelectedWidget;
+
+		RouteId				m_routeIdForSelect;
 		std::function<void(Widget* pSelected)> m_selectCallback;
 		std::vector<Widget_wp>	m_realWidgets;
 
