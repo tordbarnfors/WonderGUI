@@ -51,6 +51,10 @@ namespace wg
 		struct Blueprint
 		{
 			Object_p			baggage;
+			Coord				buttonOfs;
+			Placement			buttonPlacement = Placement::West;
+			Size				buttonSize;
+			Skin_p				buttonSkin;
 			bool				disabled		= false;
 			Direction			direction		= Direction::Down;
 			bool				dropTarget		= false;
@@ -85,6 +89,10 @@ namespace wg
 		const TypeInfo&		typeInfo(void) const override;
 		const static TypeInfo	TYPEINFO;
 
+		//.____ Appearance ____________________________________________________
+
+		void				setButton(Skin* pSkin, Placement origo = Placement::West, Coord ofs = Coord(), Size size = Size() );
+
 		//.____ Behaviour ____________________________________________
 
 		void				setDirection(Direction direction);
@@ -98,6 +106,12 @@ namespace wg
 		void				setOpen(bool bOpen);
 		bool				isOpen() const { return (m_foldState == FoldState::OPEN || m_foldState == FoldState::OPENING); }
 
+		void				open() { setOpen(true); }
+		void				close() { setOpen(false); }
+
+		void				openImmediately();			// Open without transition
+		void				closeImmediately();			// Close without transition
+
 
 		//.____ Internal _______________________________________________________
 
@@ -110,18 +124,36 @@ namespace wg
 
 	protected:
 		DrawerPanel();
-		template<class BP> DrawerPanel(const BP& bp) : slots(this), Container(bp)
+		template<class BP> DrawerPanel(const BP& bp) : slots(this), m_buttonSkin(this), Container(bp)
 		{
 			m_direction		= bp.direction;
 			m_pTransition	= bp.transition;
+
+			m_buttonGeo = { bp.buttonOfs, bp.buttonSize };
+			m_buttonPlacement = bp.buttonPlacement;
+
+			if( bp.buttonSkin )
+				m_buttonSkin.set(bp.buttonSkin);
 
 			m_bSiblingsOverlap = false;
 		}
 		
 		virtual ~DrawerPanel();
 
+		enum FoldState
+		{
+			CLOSED,
+			OPEN,
+			CLOSING,
+			OPENING
+		};
+
 		std::tuple<SizeSPX,SizeSPX>	_calcDefaultSize(int scale) const;
-		void		_updateGeo();
+		void				_updateGeo();
+
+		inline bool			_isVertical() const { return (m_direction == Direction::Up || m_direction == Direction::Down); }
+		RectSPX				_buttonGeo(const RectSPX& canvas) const;
+
 
 		// Overloaded from Widget
 
@@ -151,6 +183,10 @@ namespace wg
 		void		_childRequestRender(StaticSlot * pSlot, const RectSPX& rect) override;
 		void		_childRequestResize(StaticSlot * pSlot) override;
 
+		void		_childRequestInView(StaticSlot* pSlot) override;
+		void		_childRequestInView(StaticSlot* pSlot, const RectSPX& mustHaveArea, const RectSPX& niceToHaveArea) override;
+
+
 		Widget *	_prevChild(const StaticSlot * pSlot) const override;
 		Widget *	_nextChild(const StaticSlot * pSlot) const override;
 
@@ -159,15 +195,6 @@ namespace wg
 
 		//
 
-		enum FoldState
-		{
-			CLOSED,
-			OPEN,
-			CLOSING,
-			OPENING
-		};
-
-		inline bool			_isVertical() const { return (m_direction == Direction::Up || m_direction == Direction::Down); }
 
 		Direction			m_direction = Direction::Down;
 		SizeSPX				m_defaultSizeOpen;
@@ -181,6 +208,12 @@ namespace wg
 
 		ValueTransition_p	m_pTransition;
 		int					m_transitionProgress = -1;
+
+		SkinSlot			m_buttonSkin;
+		Placement			m_buttonPlacement = Placement::Undefined;
+		Rect				m_buttonGeo;
+		bool				m_bButtonHovered = false;
+
 	};
 
 }

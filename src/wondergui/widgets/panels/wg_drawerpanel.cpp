@@ -34,7 +34,7 @@ namespace wg
 
 	//____ constructor ____________________________________________________________
 
-	DrawerPanel::DrawerPanel() : slots(this)
+	DrawerPanel::DrawerPanel() : slots(this), m_buttonSkin(this)
 	{
 		m_bSiblingsOverlap = false;
 	}
@@ -50,6 +50,15 @@ namespace wg
 	const TypeInfo& DrawerPanel::typeInfo(void) const
 	{
 		return TYPEINFO;
+	}
+
+	//____ setButton() ________________________________________________________
+
+	void DrawerPanel::setButton(Skin* pSkin, Placement origo, Coord ofs, Size size)
+	{
+		m_buttonPlacement = origo;
+		m_buttonGeo = { ofs, size };
+		m_buttonSkin.set(pSkin);
 	}
 
 	//____ setDirection() _______________________________________________________
@@ -102,6 +111,42 @@ namespace wg
 		}
 	}
 
+	//____ openImmediately() ____________________________________________________
+
+	void DrawerPanel::openImmediately()
+	{
+		if( m_foldState != FoldState::OPEN )
+		{
+			if( m_transitionProgress >= 0 )
+			{
+				_stopReceiveUpdates();
+				m_transitionProgress = -1;
+			}
+
+			m_foldState = FoldState::OPEN;
+			_updateGeo();
+			_requestResize();
+		}
+	}
+
+	//____ closeImmediately() ____________________________________________________
+
+	void DrawerPanel::closeImmediately()
+	{
+		if (m_foldState != FoldState::CLOSED)
+		{
+			if (m_transitionProgress >= 0)
+			{
+				_stopReceiveUpdates();
+				m_transitionProgress = -1;
+			}
+
+			m_foldState = FoldState::CLOSED;
+			_updateGeo();
+			_requestResize();
+		}
+	}
+
 	//____ _matchingHeight() _____________________________________________________
 
 	spx DrawerPanel::_matchingHeight(spx width, int scale) const
@@ -133,14 +178,14 @@ namespace wg
 			case FoldState::OPENING:
 			{
 				if (_isVertical())
-					return m_pTransition->snapshot(m_transitionProgress, heightClosed, heightOpen);
+					return align(m_pTransition->snapshot(m_transitionProgress, heightClosed, heightOpen));
 				else
 					return heightOpen;
 			}
 			case FoldState::CLOSING:
 			{
 				if( _isVertical() )
-					return m_pTransition->snapshot(m_transitionProgress, heightOpen, heightClosed);
+					return align(m_pTransition->snapshot(m_transitionProgress, heightOpen, heightClosed));
 				else
 					return heightOpen;
 			}
@@ -180,14 +225,14 @@ namespace wg
 				if (_isVertical())
 					return widthOpen;
 				else
-					return m_pTransition->snapshot(m_transitionProgress, widthClosed, widthOpen);
+					return align(m_pTransition->snapshot(m_transitionProgress, widthClosed, widthOpen));
 			}
 			case FoldState::CLOSING:
 			{
 				if( _isVertical() )
 					return widthOpen;
 				else
-					return m_pTransition->snapshot(m_transitionProgress, widthOpen, widthClosed);
+					return align(m_pTransition->snapshot(m_transitionProgress, widthOpen, widthClosed));
 			}
 		}
 	}
@@ -235,18 +280,18 @@ namespace wg
 			case FoldState::OPENING:
 			{
 				if (_isVertical())
-					defaultOpen.h = m_pTransition->snapshot(m_transitionProgress, defaultClosed.h, defaultOpen.h);
+					defaultOpen.h = align(m_pTransition->snapshot(m_transitionProgress, defaultClosed.h, defaultOpen.h));
 				else
-					defaultOpen.w = m_pTransition->snapshot(m_transitionProgress, defaultClosed.w, defaultOpen.w);
+					defaultOpen.w = align(m_pTransition->snapshot(m_transitionProgress, defaultClosed.w, defaultOpen.w));
 
 				return defaultOpen;
 			}
 			case FoldState::CLOSING:
 			{
 				if( _isVertical() )
-					defaultOpen.h = m_pTransition->snapshot(m_transitionProgress, defaultOpen.h, defaultClosed.h);
+					defaultOpen.h = align(m_pTransition->snapshot(m_transitionProgress, defaultOpen.h, defaultClosed.h));
 				else
-					defaultOpen.w = m_pTransition->snapshot(m_transitionProgress, defaultOpen.w, defaultClosed.w);
+					defaultOpen.w = align(m_pTransition->snapshot(m_transitionProgress, defaultOpen.w, defaultClosed.w));
 
 				return defaultOpen;
 			}
@@ -259,11 +304,37 @@ namespace wg
 	{
 		switch (_pMsg->type())
 		{
+			case MsgType::MouseEnter:
+			case MsgType::MouseMove:
+			{
+				auto pMsg = static_cast<InputMsg*>(_pMsg);
+				auto pos = _toLocal(pMsg->pointerSpxPos());
+
+				auto buttonGeo = _buttonGeo(m_frontGeo);
+
+				if (buttonGeo.contains(pos) != m_bButtonHovered)
+				{
+					m_bButtonHovered = !m_bButtonHovered;
+					_requestRender(buttonGeo);
+				}
+				break;
+			}
+
+			case MsgType::MouseLeave:
+			{
+				if (m_bButtonHovered)
+				{
+					m_bButtonHovered = false;
+					_requestRender(_buttonGeo(m_size));
+				}
+				break;
+			}
+
 			case MsgType::MousePress:
 			{
 				auto pMsg = static_cast<MousePressMsg*>(_pMsg);
 
-				if (pMsg->button() == MouseButton::Left)
+				if (pMsg->button() == MouseButton::Left && (m_bButtonHovered || m_buttonSkin.isEmpty() || m_buttonPlacement == Placement::Undefined) )
 				{
 					CoordSPX pos = _toLocal(pMsg->pointerSpxPos());
 
@@ -274,8 +345,7 @@ namespace wg
 						else
 							setOpen(true);
 
-						//TODO: Swallow!
-
+						pMsg->swallow();
 					}
 				}
 
@@ -306,15 +376,31 @@ namespace wg
 		_requestResize();
 	}
 
-
 	//____ _render() _____________________________________________________________
 
 	void DrawerPanel::_render(GfxDevice * pDevice, const RectSPX& canvas, const RectSPX& window)
 	{
 		m_skin.render(pDevice, canvas, m_scale, m_state);
 
+		// Render header widget
+
 		if( !slots[0].isEmpty() )
 			slots[0]._widget()->_render(pDevice, m_frontGeo + canvas.pos(), m_frontGeo + canvas.pos() );
+
+		// Render button after header widget, so it ends up ontop.
+
+		if (!m_buttonSkin.isEmpty() && m_buttonPlacement != Placement::Undefined && !m_buttonGeo.isEmpty())
+		{
+			RectSPX geo = _buttonGeo(m_frontGeo + canvas.pos());
+
+			State buttonState = m_state;
+			buttonState.setHovered(m_bButtonHovered);		// Only hovered/pressed if mouse is over button.
+			buttonState.setChecked(m_foldState == FoldState::OPEN || m_foldState == FoldState::OPENING);
+				
+			m_buttonSkin.render(pDevice, geo, m_scale, buttonState);
+		}
+
+		// Render content widget
 
 		if( !slots[1].isEmpty() )
 		{
@@ -369,6 +455,15 @@ namespace wg
 
 		return std::make_tuple(defaultClosed,defaultOpen);
 	}
+
+	//____ _buttonGeo() __________________________________________________________
+
+	RectSPX DrawerPanel::_buttonGeo(const RectSPX& canvas) const
+	{
+		RectSPX buttonGeo = align(ptsToSpx(m_buttonGeo, m_scale));
+		return Util::placementToRect(m_buttonPlacement, canvas, buttonGeo.size()) + buttonGeo.pos();
+	}
+
 
 	//____ _updateGeo() _________________________________________________________
 
@@ -591,6 +686,24 @@ namespace wg
 	void DrawerPanel::_childRequestResize(StaticSlot * pSlot)
 	{
 		_requestResize();
+	}
+
+	//____ _childRequestInView() _______________________________________________
+
+	void DrawerPanel::_childRequestInView(StaticSlot* pSlot)
+	{
+		if (m_foldState != FoldState::OPEN)
+			openImmediately();
+
+		Container::_childRequestInView(pSlot);
+	}
+
+	void DrawerPanel::_childRequestInView(StaticSlot* pSlot, const RectSPX& mustHaveArea, const RectSPX& niceToHaveArea)
+	{
+		if (m_foldState != FoldState::OPEN)
+			openImmediately();
+
+		Container::_childRequestInView(pSlot, mustHaveArea, niceToHaveArea);
 	}
 
 	//____ _prevChild() _______________________________________________________

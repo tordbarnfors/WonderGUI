@@ -50,15 +50,24 @@ namespace wg
 			}
 		));
 
+		m_pDrawerButtonSkin = BoxSkin::create(WGBP(BoxSkin,
+			_.markAlpha = 0,
+			_.states = { {State::Default, Color::Yellow,Color::Black},
+						 {State::Hovered, Color::Red, Color::Black},
+						 {State::Checked, HiColor::mix(Color::Yellow, Color::Black, 2048), Color::Black},
+						 { State::CheckedHovered, Color::Red, Color::Black }
+			}
+		));
+
 		m_pPackLayout = PackLayout::create(WGBP(PackLayout, ));
 
 		m_pTransition = ValueTransition::create(250000);
 
-		auto pSelectCapsule = SelectCapsule::create(WGBP(SelectCapsule, _.recursive = true ));
+		m_pSelectCapsule = SelectCapsule::create(WGBP(SelectCapsule, _.recursive = true ));
 
-		pSelectCapsule->slot = _generateInfoTree(blueprint, pRoot );
+		m_pSelectCapsule->slot = _generateInfoTree(blueprint, pRoot );
 
-		Base::msgRouter()->addRoute(MsgType::Selected, [this](Msg* pMsg) {
+		m_routeIdForSelect = Base::msgRouter()->addRoute(m_pSelectCapsule, MsgType::Selected, [this](Msg* pMsg) {
 		
 			Widget* pWidget = static_cast<SelectedMsg*>(pMsg)->selected()[0];
 
@@ -67,11 +76,20 @@ namespace wg
 			if (pSelected)
 			{
 				m_selectCallback(pSelected);
+				m_pSelectedWidget = pSelected;
 			}
 		});
 
-		this->slot = pSelectCapsule;
+		this->slot = m_pSelectCapsule;
 	}
+
+	//____ Destructor ______________________________________________________________
+
+	WidgetTreePanel::~WidgetTreePanel()
+	{
+		Base::msgRouter()->deleteRoute(m_routeIdForSelect);
+	}
+
 
 	//____ typeInfo() _________________________________________________________
 
@@ -92,6 +110,62 @@ namespace wg
 	void WidgetTreePanel::expandAll()
 	{
 		_expandOrCollapseRecursively(slot.widget(), true);
+	}
+
+	//____ select() __________________________________________________________
+
+	void WidgetTreePanel::select(Widget* pWidget)
+	{
+		if( pWidget == m_pSelectedWidget )
+			return;
+
+		if (pWidget != nullptr)
+		{
+			auto it = std::find(m_realWidgets.begin(), m_realWidgets.end(), pWidget);
+			if (it != m_realWidgets.end())
+			{
+				int id = std::distance(m_realWidgets.begin(), it);
+
+				auto pFound = _findWidgetRecursively(id, slot.widget());
+
+				m_pSelectCapsule->select(pFound);
+				m_pSelectedWidget = pWidget;
+
+				pFound->bringIntoView();
+				return;
+			}
+
+		}
+
+		m_pSelectedWidget = nullptr;
+		m_pSelectCapsule->unselectAll();
+		return;
+
+	}
+
+	//____ _findWidgetRecursively() ___________________________________________
+
+	Widget_p WidgetTreePanel::_findWidgetRecursively(int idToFind, Widget * pPos)
+	{
+		if( pPos == nullptr )
+			return nullptr;
+
+		if (pPos->id() == idToFind)
+			return pPos;
+		else if (pPos->isContainer())
+		{
+			auto pContainer = static_cast<Container*>(pPos);
+			auto pChild = pContainer->firstChild();
+			while (pChild)
+			{
+				auto pFound = _findWidgetRecursively(idToFind, pChild);
+				if (pFound)
+					return pFound;
+				pChild = pChild->nextSibling();
+			}
+		}
+
+		return nullptr;
 	}
 
 	//____ _expandOrCollapseRecursively() _________________________________________________
@@ -130,7 +204,13 @@ namespace wg
 	{
 		if (pWidget->isContainer())
 		{
-			auto pDrawer = DrawerPanel::create( WGBP(DrawerPanel, _.transition = m_pTransition ));
+			auto pDrawer = DrawerPanel::create( WGBP(DrawerPanel, 
+				_.transition = m_pTransition,
+				_.buttonSkin = m_pDrawerButtonSkin,
+				_.buttonPlacement = Placement::West,
+				_.buttonOfs = Coord{ pts(indentation * 16 - 12), 0 },
+				_.buttonSize = Size{ 10, 10 }
+			));
 
 			auto pNameDisplay = TextDisplay::create(WGOVR(blueprint.listEntryLabel, _.display.text = pWidget->typeInfo().className));
 
