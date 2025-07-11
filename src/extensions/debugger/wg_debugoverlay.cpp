@@ -272,15 +272,16 @@ namespace wg
 				_requestRender(geo);
 			}
 
-			m_pSelectedWidget = pWidget;
 
-			if (m_pSelectedWidget)
+			if (pWidget)
 			{
-				RectSPX geo = _toLocal(m_pSelectedWidget->_globalGeo());
+				RectSPX geo = _toLocal(pWidget->_globalGeo());
 				geo += m_pSelectionSkin->_contentBorder(m_scale, State::Default);
 				_requestRender(geo);
 			}
 		}
+
+		m_pSelectedWidget = pWidget;
 
 		// Update toolboxes
 
@@ -291,6 +292,9 @@ namespace wg
 
 			m_pWidgetTools->slots.clear();
 			m_pWidgetTools->slots << _createWidgetInfoPanel(m_pSelectedWidget);
+
+			if (!m_pWidgetTreeContainer->slot.isEmpty())
+				static_cast<WidgetTreePanel*>(m_pWidgetTreeContainer->slot._widget())->select(m_pSelectedWidget);
 /*
 			for (auto& palette : toolboxes)
 			{
@@ -674,17 +678,22 @@ namespace wg
 					case Key::F4:
 					case Key::F5:
 					{
-						int paletteIdx = int(key) - int(Key::F1);
+						int toolboxIdx = int(key) - int(Key::F1);
 
-						if( toolboxes.size() > paletteIdx )
+						for( auto& toolbox : toolboxes )
 						{
-							toolboxes[paletteIdx].m_bVisible = !toolboxes[paletteIdx].m_bVisible;
-							_requestRender();
 
-							// Make sure we don't keep dragging around an invisible box.
+							if( (toolbox.widget()->id() - 10000) / 1000 == toolboxIdx )
+							{
+								toolbox.m_bVisible = !toolbox.m_bVisible;
+								_requestRender(toolbox.m_geo);
 
-							m_movingToolbox = -1;
-							m_resizingToolbox = -1;
+								// Make sure we don't keep dragging around an invisible box.
+
+								m_movingToolbox = -1;
+								m_resizingToolbox = -1;
+								break;
+							}
 						}
 					}
 
@@ -808,7 +817,7 @@ namespace wg
 		Widget_p	pToolbox;
 		PackPanel_p	pContent;
 
-		std::tie(pToolbox, pContent) = _createToolbox("Widget Tree View");
+		std::tie(pToolbox, pContent) = _createToolbox("F2 - Widget Tree View");
 
 		// Create our button palette
 
@@ -883,7 +892,7 @@ namespace wg
 		Widget_p	pToolbox;
 		PackPanel_p	pContent;
 
-		std::tie(pToolbox, pContent) = _createToolbox("Slot/Widget View");
+		std::tie(pToolbox, pContent) = _createToolbox("F1 - Slot/Widget View");
 
 		// Create our button palette
 
