@@ -639,21 +639,28 @@ namespace wg
 		if( clip.contains(pDevice->clipBounds()))
 			return ClipPopData();
 
-		int nRects 				= pDevice->clipListSize();
-		const RectSPX * pRects 	= pDevice->clipList();
-		int allocSize = nRects * sizeof(RectSPX);
+		int nOldRects = pDevice->clipListSize();
+		const RectSPX* pOldRects = pDevice->clipList();
+		int allocSize = 0;
 
-		RectSPX * pNewRects = (RectSPX*) Base::memStackAlloc(allocSize);
-		int nNewRects = 0;
-
-		for( int i = 0 ; i < nRects ; i++ )
+		if (clip.isEmpty())
+			pDevice->setClipList(0, nullptr);
+		else
 		{
-			if (clip.isOverlapping(pRects[i]))
-				pNewRects[nNewRects++] = RectSPX::overlap(pRects[i], clip);
-		}
+			allocSize = nOldRects * sizeof(RectSPX);
 
-		pDevice->setClipList(nNewRects, pNewRects);
-		return { nRects, pRects, allocSize };
+			RectSPX* pNewRects = (RectSPX*)Base::memStackAlloc(allocSize);
+			int nNewRects = 0;
+
+			for (int i = 0; i < nOldRects; i++)
+			{
+				if (clip.isOverlapping(pOldRects[i]))
+					pNewRects[nNewRects++] = RectSPX::overlap(pOldRects[i], clip);
+			}
+
+			pDevice->setClipList(nNewRects, pNewRects);
+		}
+		return { nOldRects, pOldRects, allocSize };
 	}
 
 	//____ pushClipList() __________________________________________________________________
