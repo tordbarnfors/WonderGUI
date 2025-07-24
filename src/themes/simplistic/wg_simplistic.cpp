@@ -29,6 +29,7 @@
 
 #include <wg_colorskin.h>
 #include <wg_boxskin.h>
+#include <wg_blockskin.h>
 
 #include <wg_basictextlayout.h>
 
@@ -40,9 +41,9 @@ const TypeInfo Simplistic::TYPEINFO = { "Simplistic", &Theme::TYPEINFO };
 
 //____ create() _______________________________________________________________
 
-Simplistic_p Simplistic::create(Font * pNormal, Font * pBold, Font * pItalic, Font * pMonospace )
+Simplistic_p Simplistic::create(Font * pNormal, Font * pBold, Font * pItalic, Font * pMonospace, Surface * pWidgets )
 {
-	return Simplistic_p(new Simplistic(pNormal, pBold, pItalic, pMonospace));
+	return Simplistic_p(new Simplistic(pNormal, pBold, pItalic, pMonospace, pWidgets));
 }
 
 //____ typeInfo() _____________________________________________________________
@@ -54,7 +55,7 @@ const TypeInfo& Simplistic::typeInfo(void) const
 
 //____ constructor ____________________________________________________________
 
-Simplistic::Simplistic( Font * pNormal, Font * pBold, Font * pItalic, Font * pMonospace )
+Simplistic::Simplistic( Font * pNormal, Font * pBold, Font * pItalic, Font * pMonospace, Surface * pWidgets )
 {
 	m_pFontNormal = pNormal;
 	m_pFontBold = pBold;
@@ -88,6 +89,9 @@ Simplistic::Simplistic( Font * pNormal, Font * pBold, Font * pItalic, Font * pMo
 															   _.autoEllipsis = true,
 															   _.placement = Placement::Center,
 															   _.wrap = false ));
+
+	m_pOpenCloseTransition = ValueTransition::create(250000);
+
 
 	auto pPlateSkin = BoxSkin::create( WGBP(BoxSkin,
 											_.color = plateColor,
@@ -123,6 +127,21 @@ Simplistic::Simplistic( Font * pNormal, Font * pBold, Font * pItalic, Font * pMo
 										  _.color = HiColor::Transparent,
 										  _.spacing = { 6,2,2,2},
 										  _.padding = { 16, 4, 4, 4} ));
+
+	auto pPlusMinusToggleSkin = BlockSkin::create( WGBP(BlockSkin,
+		_.surface = pWidgets,
+		_.firstBlock = { 0,0,14,14 },
+		_.axis = Axis::X,
+		_.blockSpacing = 2,
+		_.states = { State::Default, State::Hovered, State::Pressed, State::Checked, State::CheckedHovered, State::CheckedPressed } ));
+
+	auto pSelectableEntrySkin = BoxSkin::create(WGBP(BoxSkin,
+		_.markAlpha = 0,
+		_.states = { {State::Default, Color::Transparent,Color::Transparent},
+					 {State::Hovered, HiColor(Color::LightCyan).withAlpha(1024), HiColor(Color::DarkCyan).withAlpha(1024)},
+					 {State::Selected, Color::LightCyan,Color::DarkCyan }
+		}
+	));
 
 
 	m_labeledBoxBP = WGBP(LabelCapsule,
@@ -170,6 +189,17 @@ Simplistic::Simplistic( Font * pNormal, Font * pBold, Font * pItalic, Font * pMo
 						   _.scrollbarX.background = pScrollbarBgSkin,
 						   _.scrollbarX.bar = pScrollbarSkin
 						   );
+
+	m_treeListDrawer = WGBP(DrawerPanel,
+							_.buttonSkin = pPlusMinusToggleSkin,
+							_.buttonPlacement = Placement::West,
+							_.buttonSize = Size{ 14, 14 },
+							_.transition = m_pOpenCloseTransition
+	);
+
+	m_treeListEntry = WGBP(PaddingCapsule,
+		_.skin = pSelectableEntrySkin
+	);
 
 	m_windowTitleBar = WGBP(TextDisplay,
 							_.skin = pTitleBarSkin,
@@ -388,6 +418,16 @@ const ScrollPanel::Blueprint& Simplistic::scrollPanelY() const
 const ScrollPanel::Blueprint& Simplistic::scrollPanelXY() const
 {
 	return m_scrollPanelXYBP;
+}
+
+const DrawerPanel::Blueprint& Simplistic::treeListDrawer() const
+{
+	return m_treeListDrawer;
+}
+
+const PaddingCapsule::Blueprint& Simplistic::treeListEntry() const
+{
+	return m_treeListEntry;
 }
 
 const TextDisplay::Blueprint& Simplistic::windowTitleBar() const
