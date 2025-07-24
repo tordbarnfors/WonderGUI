@@ -42,26 +42,7 @@ namespace wg
 	{
 		m_selectCallback = selectCallback;
 
-		m_pPaddingSkin = BoxSkin::create(WGBP(BoxSkin,
-			_.markAlpha = 0,
-			_.states = { {State::Default, Color::Transparent,Color::Transparent},
-						 {State::Hovered, HiColor(Color::LightCyan).withAlpha(1024), HiColor(Color::DarkCyan).withAlpha(1024)},
-						 {State::Selected, Color::LightCyan,Color::DarkCyan }
-			}
-		));
-
-		m_pDrawerButtonSkin = BoxSkin::create(WGBP(BoxSkin,
-			_.markAlpha = 0,
-			_.states = { {State::Default, Color::Yellow,Color::Black},
-						 {State::Hovered, Color::Red, Color::Black},
-						 {State::Checked, HiColor::mix(Color::Yellow, Color::Black, 2048), Color::Black},
-						 { State::CheckedHovered, Color::Red, Color::Black }
-			}
-		));
-
 		m_pPackLayout = PackLayout::create(WGBP(PackLayout, ));
-
-		m_pTransition = ValueTransition::create(250000);
 
 		m_pSelectCapsule = SelectCapsule::create(WGBP(SelectCapsule, _.recursive = true ));
 
@@ -204,21 +185,14 @@ namespace wg
 	{
 		if (pWidget->isContainer())
 		{
-			auto pDrawer = DrawerPanel::create( WGBP(DrawerPanel, 
-				_.transition = m_pTransition,
-				_.buttonSkin = m_pDrawerButtonSkin,
-				_.buttonPlacement = Placement::West,
-				_.buttonOfs = Coord{ pts(indentation * 16 - 12), 0 },
-				_.buttonSize = Size{ 10, 10 }
+			auto pDrawer = DrawerPanel::create( WGOVR(blueprint.listEntryDrawer, 
+				_.buttonOfs.x += pts(indentation * 16)
 			));
 
 			auto pNameDisplay = TextDisplay::create(WGOVR(blueprint.listEntryLabel, _.display.text = pWidget->typeInfo().className));
 
-
-			auto pPadder = PaddingCapsule::create(WGBP(PaddingCapsule,
-				_.selectable = true,
-				_.padding = Border{ 0.f,0.f,0.f,indentation * 16.f },
-				_.skin = m_pPaddingSkin,
+			auto pEntry = PaddingCapsule::create(WGOVR(blueprint.selectableListEntryCapsule,
+				_.padding.left += pts((indentation+1) *16),
 				_.child = pNameDisplay
 			));
 
@@ -228,10 +202,10 @@ namespace wg
 			));
 
 
-			pDrawer->slots[0] = pPadder;
+			pDrawer->slots[0] = pEntry;
 			pDrawer->slots[1] = pContent;
 
-			pPadder->setId(m_realWidgets.size());
+			pEntry->setId(m_realWidgets.size());
 			m_realWidgets.push_back(pWidget);
 
 			auto pChild = static_cast<Container*>(pWidget)->firstChild();
@@ -249,11 +223,8 @@ namespace wg
 		{
 			auto pNameDisplay = TextDisplay::create(WGOVR(blueprint.listEntryLabel, _.display.text = pWidget->typeInfo().className));
 
-
-			auto pEntry = PaddingCapsule::create(WGBP(PaddingCapsule,
-				_.selectable = true,
-				_.padding = { 0.f,0.f,0.f,indentation * 16.f },
-				_.skin = m_pPaddingSkin,
+			auto pEntry = PaddingCapsule::create(WGOVR(blueprint.selectableListEntryCapsule,
+				_.padding.left += pts((indentation + 1) * 16),
 				_.child = pNameDisplay
 			));
 
