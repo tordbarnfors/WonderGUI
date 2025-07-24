@@ -152,7 +152,9 @@ bool MyApp::_setupGUI(Visitor* pVisitor)
 	auto pDbgFont3 = FreeTypeFont::create(pDbgFont3Blob);
 	auto pDbgFont4 = FreeTypeFont::create(pDbgFont4Blob);
 
-	auto pTheme = Simplistic::create(pDbgFont1, pDbgFont2, pDbgFont3, pDbgFont4);
+	auto pSkinSurface = pVisitor->loadSurface("resources/skin_widgets.png");
+
+	auto pTheme = Simplistic::create(pDbgFont1, pDbgFont2, pDbgFont3, pDbgFont4, pSkinSurface);
 
 	m_pDebugOverlay = DebugOverlay::create( { .debugger = m_pDebugger, .theme = pTheme } );
 

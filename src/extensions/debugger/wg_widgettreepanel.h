@@ -69,7 +69,6 @@ namespace wg
 		Skin_p				m_pPaddingSkin;
 		Skin_p				m_pDrawerButtonSkin;
 		PackLayout_p		m_pPackLayout;
-		ValueTransition_p	m_pTransition;
 
 		SelectCapsule_p		m_pSelectCapsule;
 

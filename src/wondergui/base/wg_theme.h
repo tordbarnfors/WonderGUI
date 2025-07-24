@@ -32,6 +32,9 @@
 #include <wg_button.h>
 #include <wg_scrollpanel.h>
 #include <wg_textdisplay.h>
+#include <wg_drawerpanel.h>
+#include <wg_paddingcapsule.h>
+
 
 namespace wg
 {
@@ -113,6 +116,9 @@ namespace wg
 		virtual const ScrollPanel::Blueprint& 		scrollPanelX() const = 0;
 		virtual const ScrollPanel::Blueprint& 		scrollPanelY() const = 0;
 		virtual const ScrollPanel::Blueprint& 		scrollPanelXY() const = 0;
+
+		virtual const DrawerPanel::Blueprint&		treeListDrawer() const = 0;
+		virtual const PaddingCapsule::Blueprint&	treeListEntry() const = 0;
 
 		//
 

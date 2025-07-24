@@ -44,7 +44,7 @@ namespace wg
 
 		//.____ Creation __________________________________________
 
-		static Simplistic_p	create(Font * pNormal, Font * pBold, Font * pItalic, Font * pMonospace);
+		static Simplistic_p	create(Font * pNormal, Font * pBold, Font * pItalic, Font * pMonospace, Surface * pWidgets );
 
 		//.____ Identification __________________________________________
 
@@ -117,12 +117,15 @@ namespace wg
 		const ScrollPanel::Blueprint& 		scrollPanelY() const override;
 		const ScrollPanel::Blueprint& 		scrollPanelXY() const override;
 
+		const DrawerPanel::Blueprint&		treeListDrawer() const override;
+		const PaddingCapsule::Blueprint&	treeListEntry() const override;
+
 		const TextDisplay::Blueprint& 		windowTitleBar() const override;
 
 
 
 	protected:
-		Simplistic( Font * pNormal, Font * pBold, Font * pItalic, Font * pMonospace );
+		Simplistic( Font * pNormal, Font * pBold, Font * pItalic, Font * pMonospace, Surface * pWidgets );
 		~Simplistic() {}
 
 		const static int	c_textSizeSmallest = 8;
@@ -154,6 +157,8 @@ namespace wg
 		TextStyle_p	m_pBlackStyle;
 		TextStyle_p	m_pWhiteStyle;
 
+		ValueTransition_p		m_pOpenCloseTransition;
+
 		LabelCapsule::Blueprint m_labeledBoxBP;
 		LabelCapsule::Blueprint m_labeledSectionBP;
 
@@ -166,6 +171,10 @@ namespace wg
 		ScrollPanel::Blueprint	m_scrollPanelXBP;
 		ScrollPanel::Blueprint	m_scrollPanelYBP;
 		ScrollPanel::Blueprint	m_scrollPanelXYBP;
+
+		DrawerPanel::Blueprint	m_treeListDrawer;
+		PaddingCapsule::Blueprint m_treeListEntry;
+
 
 		TextDisplay::Blueprint	m_windowTitleBar;
 	};
