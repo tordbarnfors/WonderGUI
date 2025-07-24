@@ -29,6 +29,8 @@
 #include <wg_textdisplay.h>
 #include <wg_numberdisplay.h>
 #include <wg_tablepanel.h>
+#include <wg_drawerpanel.h>
+#include <wg_paddingcapsule.h>
 
 namespace wg
 {
@@ -56,6 +58,9 @@ namespace wg
 			NumberDisplay::Blueprint	listEntryPointer;
 			TextDisplay::Blueprint		infoDisplay;
 			TablePanel::Blueprint		table;
+			DrawerPanel::Blueprint		listEntryDrawer;
+			PaddingCapsule::Blueprint	selectableListEntryCapsule;
+
 		};
 
 		//.____ Identification __________________________________________

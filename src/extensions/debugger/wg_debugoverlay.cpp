@@ -1069,6 +1069,9 @@ namespace wg
 		m_debugPanelBP.listEntryPointer = WGBP(NumberDisplay,
 											 _.display.layout = pPointerLayout );
 
+		m_debugPanelBP.listEntryDrawer = m_pTheme->treeListDrawer();
+		m_debugPanelBP.selectableListEntryCapsule = WGOVR( m_pTheme->treeListEntry(), _.selectable = true );
+
 		m_debugPanelBP.infoDisplay = WGBP(TextDisplay,
 											 _.display.style = m_pTheme->emphasisStyle(),
 											 _.display.layout = pInfoLayout );
