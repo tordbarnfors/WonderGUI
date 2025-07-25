@@ -34,6 +34,7 @@
 #include <wg_textdisplay.h>
 #include <wg_drawerpanel.h>
 #include <wg_paddingcapsule.h>
+#include <wg_texteditor.h>
 
 
 namespace wg
@@ -102,6 +103,13 @@ namespace wg
 		virtual TextStyle_p defaultStyle() const = 0;		// Default style for UI elements
 		virtual TextStyle_p pressableStyle() const = 0;		// Default text style for buttons etc.
 
+		// Useful skins
+
+		virtual Skin_p		plateSkin() const = 0;			// Main backgroud element, with frame or bevel or such.
+		virtual Skin_p		canvasSkin() const = 0;			// Background for texteditors and other work-fields.
+		virtual Skin_p		windowSkin() const = 0;			// Background for window.
+
+
 		// Standard widgets
 
 		virtual const LabelCapsule::Blueprint&		labeledBox() const = 0;		// Section with label and a box around it
@@ -119,6 +127,8 @@ namespace wg
 
 		virtual const DrawerPanel::Blueprint&		treeListDrawer() const = 0;
 		virtual const PaddingCapsule::Blueprint&	treeListEntry() const = 0;
+
+		virtual const TextEditor::Blueprint&		textEditor() const = 0;
 
 		//
 
