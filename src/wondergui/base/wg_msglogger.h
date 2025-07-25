@@ -51,26 +51,19 @@ namespace wg
 
 		//.____ Control _______________________________________________________
 
-		void ignoreMsg( MsgType msg );
-		void logMsg( MsgType msg );
+		void logMsg( MsgType msg, bool bLog );
 
-		void logPointerMsgs();
-		void ignorePointerMsgs();
+		void logPointerMsgs(bool bLog);
 
-		void logMouseButtonMsgs();
-		void ignoreMouseButtonMsgs();
+		void logMouseButtonMsgs(bool bLog);
 
-		void logKeyboardMsgs();
-		void ignoreKeyboardMsgs();
+		void logKeyboardMsgs(bool bLog);
 
-		void logMouseMsgs();
-		void ignoreMouseMsgs();
+		void logMouseMsgs(bool bLog);
 
-		void logInputMsgs();
-		void ignoreInputMsgs();
+		void logInputMsgs(bool bLog);
 
-		void logAllMsgs();
-		void ignoreAllMsgs();
+		void logAllMsgs(bool bLog);
 
 		//.____ Misc _______________________________________________________
 
