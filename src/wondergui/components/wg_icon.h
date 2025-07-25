@@ -35,7 +35,7 @@ namespace wg
 
 	//____ Icon _____________________________________________________________
 
-	class Icon : public Component
+	class Icon : public Component, private SkinSlot::Holder
 	{
 	public:
 		Icon( Widget * pWidget );
@@ -48,28 +48,25 @@ namespace wg
 		{
 			Skin_p			skin;
 			Placement		placement = Placement::West;
-			Border			padding;
-			bool			overlap = false;
+			pts				spacing;
 		};
 
 		//.____ Content _____________________________________________
 
-		bool			set(Skin * pIconGfx, Placement placement = Placement::West, Border padding = Border(0),
+		bool			set(Skin * pIconGfx, Placement placement = Placement::West, pts spacing = 0,
 							bool _bOverlap = false);
 		void			clear();
 
-		inline bool		isEmpty() const { return !m_pSkin; }
+		inline bool		isEmpty() const { return m_skin.isEmpty(); }
 
 		//.____ Appearance _____________________________________________
 
-		inline void			setPlacement(Placement placement) { _setPlacement(placement); }
-		inline void			setPadding(Border padding) { _setPadding(padding); }
-		inline void			setOverlap(bool bOverlap) { _setOverlap(bOverlap); }
-		inline void			setSkin(Skin * pSkin) { _setSkin(pSkin); }
-		inline Placement	placement() const { return _placement(); }
-		inline Border		padding() const { return m_padding; }
-		inline bool			overlap() const { return _overlap(); }
-		inline Skin_p		skin() const { return _skin(); }
+		inline void			setPlacement(Placement placement);
+		inline void			setSpacing(pts spacing);
+		inline void			setSkin(Skin* pSkin);
+		inline Placement	placement() const { return m_placement; }
+		inline pts			spacing() const { return m_spacing; }
+		inline Skin_p		skin() const { return m_skin.get(); }
 
 		//.____ Internal ______________________________________________________
 
@@ -77,16 +74,7 @@ namespace wg
 
 	protected:
 
-		void			_setPlacement( Placement placement );
-		void			_setPadding( Border borders );
-		void			_setOverlap( bool bOverlap );
-		void			_setSkin( Skin * pSkin );
-
-		Placement		_placement() const { return m_placement; }
-		BorderSPX		_padding(int scale) const { return Util::align(Util::ptsToSpx(m_padding,scale)); }
-		bool			_overlap() const { return m_bOverlap; }
-		Skin_p			_skin() const { return  m_pSkin; }
-
+//		spx				_spacing(int scale) const { return Util::align(Util::ptsToSpx(m_spacing,scale)); }
 
 		RectSPX			_getIconRect( const RectSPX& contentRect, int scale ) const;
 		RectSPX			_getIconRect( const RectSPX& contentRect, const SizeSPX& iconSize, int scale ) const;
@@ -94,11 +82,23 @@ namespace wg
 		SizeSPX			_defaultSize(int scale) const;
 		SizeSPX			_defaultSize(int scale, SizeSPX& textSize) const;
 
+		SizeSPX			_textPaddingSize(int scale) const;
+
+		float	_skinValue(const SkinSlot* pSlot) const override;
+		float	_skinValue2(const SkinSlot* pSlot) const override;
+		State	_skinState(const SkinSlot* pSlot) const override;
+
+		SizeSPX	_skinSize(const SkinSlot* pSlot) const override;
+
+		void	_skinRequestRender(const SkinSlot* pSlot, const RectSPX& rect) override;
+
+		int		_scale() const { return Component::_scale(); }
+
+
 	private:
 		Placement		m_placement;
-		bool			m_bOverlap;
-		Border			m_padding;
-		Skin_p			m_pSkin;
+		pts				m_spacing;
+		SkinSlot		m_skin;
 	};
 
 
