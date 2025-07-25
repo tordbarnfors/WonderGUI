@@ -93,11 +93,24 @@ Simplistic::Simplistic( Font * pNormal, Font * pBold, Font * pItalic, Font * pMo
 	m_pOpenCloseTransition = ValueTransition::create(250000);
 
 
-	auto pPlateSkin = BoxSkin::create( WGBP(BoxSkin,
-											_.color = plateColor,
-											_.outlineColor = borderColor,
-											_.outlineThickness = 1,
-											_.padding = 3 ));
+	m_pPlateSkin = BlockSkin::create( WGBP(BlockSkin,
+										_.surface = pWidgets,
+										_.firstBlock = { 34,37,10,10 },
+										_.padding = 3,
+										_.frame = 3 ));
+
+	m_pCanvasSkin = BlockSkin::create(WGBP(BlockSkin,
+		_.surface = pWidgets,
+		_.firstBlock = { 58,37,10,10 },
+		_.padding = 3,
+		_.frame = 3));
+
+	m_pWindowSkin = BlockSkin::create(WGBP(BlockSkin,
+		_.surface = pWidgets,
+		_.firstBlock = { 70,37,10,10 },
+		_.padding = 5,
+		_.frame = 3));
+
 
 	auto pTitleBarSkin = BoxSkin::create( WGBP(BoxSkin,
 											_.color = titlebarColor,
@@ -143,6 +156,41 @@ Simplistic::Simplistic( Font * pNormal, Font * pBold, Font * pItalic, Font * pMo
 		}
 	));
 
+	auto pButtonSkin = BlockSkin::create(WGBP(BlockSkin,
+		_.surface = pWidgets,
+		_.firstBlock = { 0,15,10,10 },
+		_.axis = Axis::X,
+		_.blockSpacing = 1,
+		_.frame = 4,
+		_.padding = 4,
+		_.states = { State::Default, State::Hovered, State::Pressed, State::Disabled };
+	));
+
+	auto pToggleButtonSkin = BlockSkin::create(WGBP(BlockSkin,
+		_.surface = pWidgets,
+		_.firstBlock = { 0,26,10,10 },
+		_.axis = Axis::X,
+		_.blockSpacing = 1,
+		_.frame = 4,
+		_.padding = 4,
+		_.states = { State::Default, State::Hovered, State::Checked, State::CheckedHovered, State::Disabled };
+	));
+
+	auto pCheckboxSkin = BlockSkin::create(WGBP(BlockSkin,
+		_.surface = pWidgets,
+		_.firstBlock = { 0,37,10,10 },
+		_.axis = Axis::X,
+		_.blockSpacing = 1,
+		_.states = { State::Default, State::Checked, State::Disabled };
+	));
+
+	auto pRadioButtonSkin = BlockSkin::create(WGBP(BlockSkin,
+		_.surface = pWidgets,
+		_.firstBlock = { 0,48,10,10 },
+		_.axis = Axis::X,
+		_.blockSpacing = 1,
+		_.states = { State::Default, State::Checked, State::Disabled };
+	));
 
 	m_labeledBoxBP = WGBP(LabelCapsule,
 						  _.label.style = m_pBlackStyle,
@@ -184,11 +232,13 @@ Simplistic::Simplistic( Font * pNormal, Font * pBold, Font * pItalic, Font * pMo
 						   );
 
 	m_scrollPanelXYBP = WGBP(ScrollPanel,
-						   _.childConstraintX = SizeConstraint::GreaterOrEqual,
-						   _.childConstraintY = SizeConstraint::GreaterOrEqual,
-						   _.scrollbarX.background = pScrollbarBgSkin,
-						   _.scrollbarX.bar = pScrollbarSkin
-						   );
+							_.childConstraintX = SizeConstraint::GreaterOrEqual,
+							_.childConstraintY = SizeConstraint::GreaterOrEqual,
+							_.scrollbarX.background = pScrollbarBgSkin,
+							_.scrollbarX.bar = pScrollbarSkin,
+							_.scrollbarY.background = pScrollbarBgSkin,
+							_.scrollbarY.bar = pScrollbarSkin
+							);
 
 	m_treeListDrawer = WGBP(DrawerPanel,
 							_.buttonSkin = pPlusMinusToggleSkin,
@@ -201,17 +251,25 @@ Simplistic::Simplistic( Font * pNormal, Font * pBold, Font * pItalic, Font * pMo
 		_.skin = pSelectableEntrySkin
 	);
 
+	m_textEditor = WGBP(TextEditor,
+		_.skin = m_pCanvasSkin);
+
 	m_windowTitleBar = WGBP(TextDisplay,
 							_.skin = pTitleBarSkin,
 							_.display.layout = pLayoutCenteredNoWrap );
 
-	/*
-	m_pushButtonBP;
+	
+	m_pushButtonBP = WGBP(Button,
+							_.skin = pButtonSkin);
 
-	m_toggleButtonBP;
-	m_radioButtonBP;
-	m_checkboxBP;
-*/
+	m_toggleButtonBP = WGBP(ToggleButton,
+							_.skin = pToggleButtonSkin);
+
+	m_checkboxBP = WGBP(ToggleButton,
+		_.skin = pCheckboxSkin);
+
+	m_radioButtonBP = WGBP(ToggleButton,
+		_.skin = pRadioButtonSkin);
 }
 
 
@@ -375,6 +433,22 @@ TextStyle_p Simplistic::pressableStyle() const
 	return m_pBlackStyle;
 }
 
+Skin_p Simplistic::plateSkin() const
+{
+	return m_pPlateSkin;
+}
+
+Skin_p Simplistic::canvasSkin() const
+{
+	return m_pCanvasSkin;
+}
+
+Skin_p Simplistic::windowSkin() const
+{
+	return m_pWindowSkin;
+}
+
+
 const LabelCapsule::Blueprint& Simplistic::labeledBox() const
 {
 	return m_labeledBoxBP;
@@ -428,6 +502,11 @@ const DrawerPanel::Blueprint& Simplistic::treeListDrawer() const
 const PaddingCapsule::Blueprint& Simplistic::treeListEntry() const
 {
 	return m_treeListEntry;
+}
+
+const TextEditor::Blueprint& Simplistic::textEditor() const
+{
+	return m_textEditor;
 }
 
 const TextDisplay::Blueprint& Simplistic::windowTitleBar() const
