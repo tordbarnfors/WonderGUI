@@ -64,20 +64,25 @@ namespace wg
 
 	spx Button::_matchingHeight( spx width, int scale ) const
 	{
-		spx height = m_skin.defaultSize(scale).h;
+		spx defaultHeight = m_skin.defaultSize(scale).h;
+
+		if (label.isEmpty() && icon.isEmpty())
+			return defaultHeight;
+
+		spx iconHeight = _icon()._defaultSize(scale).h;
+		spx textHeight = 0;									// includes padding/spacing 
+
+		SizeSPX skinPadding = m_skin.contentBorderSize(scale);
 
 		if( !label.isEmpty() )
 		{
-			SizeSPX padding = m_skin.contentBorderSize(scale);
-
-			spx heightForText = label._matchingHeight(width-padding.w,scale) + padding.h;
-			if( heightForText > height )
-				height = heightForText;
+			SizeSPX iconPadding = _icon()._textPaddingSize(scale);
+			textHeight = label._matchingHeight(width-skinPadding.w-iconPadding.w,scale) + iconPadding.h;
 		}
 
-		//TODO: Take icon into account.
+		spx heightForContent = std::max(textHeight, iconHeight) + skinPadding.h;
 
-		return height;
+		return std::max(heightForContent, defaultHeight);
 	}
 
 
