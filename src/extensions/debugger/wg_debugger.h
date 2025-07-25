@@ -58,6 +58,7 @@ namespace wg
 		Widget_p		createDebugPanel( const DebugPanel::Blueprint& blueprint, const TypeInfo * pType, Object * pObject );
 		Widget_p		createDebugPanel( const DebugPanel::Blueprint& blueprint, const TypeInfo * pType, StaticSlot * pObject );
 		Widget_p		createWidgetTreePanel(const DebugPanel::Blueprint& blueprint, Widget * pWidget);
+		Widget_p		createMsgLogPanel(const DebugPanel::Blueprint& blueprint);
 
 		void			setWidgetSelectedCallback(std::function<void(Widget*)> pCallback);
 

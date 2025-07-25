@@ -78,7 +78,7 @@ namespace wg
 		//.____ Creation __________________________________________
 
 		static ColorSkin_p	create( const Blueprint& blueprint );
-		static ColorSkin_p create(HiColor color,  Border contentBorder = Border() );
+		static ColorSkin_p create( HiColor color, Border padding = Border() );
 
 		//.____ Identification __________________________________________
 

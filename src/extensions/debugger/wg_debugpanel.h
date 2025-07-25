@@ -31,6 +31,7 @@
 #include <wg_tablepanel.h>
 #include <wg_drawerpanel.h>
 #include <wg_paddingcapsule.h>
+#include <wg_theme.h>
 
 namespace wg
 {
@@ -48,6 +49,9 @@ namespace wg
 
 		struct Blueprint
 		{
+			Theme_p						theme;
+			Surface_p					icons;
+
 			LabelCapsule::Blueprint		mainCapsule;
 			TextDisplay::Blueprint		listEntryLabel;
 			TextDisplay::Blueprint		listEntryText;

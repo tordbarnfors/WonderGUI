@@ -23,6 +23,7 @@
 
 #include <wg_dummyinfopanel.h>
 #include <wg_widgettreepanel.h>
+#include <wg_msglogpanel.h>
 
 #include <objectinfopanels/wg_objectinfopanel.h>
 #include <objectinfopanels/wg_widgetinfopanel.h>
@@ -104,6 +105,13 @@ namespace wg
 	Widget_p Debugger::createWidgetTreePanel(const DebugPanel::Blueprint& blueprint, Widget* pRoot)
 	{
 		return WidgetTreePanel::create(blueprint, pRoot, m_widgetSelectedCallback);
+	}
+
+	//____ createMsgLogPanel() ________________________________________________
+
+	Widget_p Debugger::createMsgLogPanel(const DebugPanel::Blueprint& blueprint)
+	{
+		return MsgLogPanel::create(blueprint);
 	}
 
 	//____ setWidgetSelectedCallback() ________________________________________

@@ -27,6 +27,7 @@
 #include <wg_selectcapsule.h>
 
 #include <wg_boxskin.h>
+#include <wg_colorskin.h>
 
 #include <wg_msgrouter.h>
 
@@ -62,6 +63,8 @@ namespace wg
 		});
 
 		this->slot = m_pSelectCapsule;
+
+		this->setSkin(nullptr);
 	}
 
 	//____ Destructor ______________________________________________________________

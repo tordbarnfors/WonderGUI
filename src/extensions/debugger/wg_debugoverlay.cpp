@@ -2,8 +2,8 @@
 
 						 >>> WonderGUI <<<
 
-  This file is part of Tord Jansson's WonderGUI Graphics Toolkit
-  and copyright (c) Tord Jansson, Sweden [tord.jansson@gmail.com].
+  This file is part of Tord Bärnfors's WonderGUI Graphics Toolkit
+  and copyright (c) Bärnfors Technology AB, Sweden [info@barnfors.com].
 
 							-----------
 
@@ -16,7 +16,7 @@
 
   The WonderGUI Graphics Toolkit is also available for use in commercial
   closed-source projects under a separate license. Interested parties
-  should contact Tord Jansson [tord.jansson@gmail.com] for details.
+  should contact us [info@barnfors.com] for details.
 
 =========================================================================*/
 
@@ -28,6 +28,7 @@
 #include <wg_inputhandler.h>
 #include <wg_colorskin.h>
 #include <wg_boxskin.h>
+#include <wg_blockskin.h>
 #include <wg_packpanel.h>
 #include <wg_tablepanel.h>
 #include <wg_numberdisplay.h>
@@ -61,6 +62,7 @@ namespace wg
 	{
 		m_pDebugger = bp.debugger;
 		m_pTheme 	= bp.theme;
+		m_pIcons	= bp.icons;
 
 		_createResources();
 
@@ -70,6 +72,7 @@ namespace wg
 
 		_createSlotWidgetToolbox();
 		_createWidgetTreeToolbox();
+		_createMsgLogToolbox();
 
 		m_pDebugger->setWidgetSelectedCallback([this](Widget* pWidget) {_selectWidget(pWidget); });
 	}
@@ -79,7 +82,6 @@ namespace wg
 	DebugOverlay::~DebugOverlay()
 	{
 	}
-
 
 	//____ typeInfo() _________________________________________________________
 
@@ -238,9 +240,18 @@ namespace wg
 	{
 		SizeSPX paletteSize = pSlot->m_chosenSize.isEmpty() ? pSlot->_widget()->_defaultSize(pSlot->_widget()->_scale()) : pSlot->m_chosenSize;
 
+		paletteSize.limit({ 100*64,50*64 }, _size());
+
 		RectSPX childGeo = Util::placementToRect(pSlot->m_placement, _size(), paletteSize);
 
 		childGeo += pSlot->m_placementPos;
+
+		if (childGeo.x + childGeo.w > m_size.w)
+			childGeo.x = m_size.w - childGeo.w;
+
+		if (childGeo.y + childGeo.h > m_size.h)
+			childGeo.y = m_size.h - childGeo.h;
+
 
 		if (childGeo != pSlot->m_geo)
 		{
@@ -688,6 +699,8 @@ namespace wg
 								toolbox.m_bVisible = !toolbox.m_bVisible;
 								_requestRender(toolbox.m_geo);
 
+								toolboxes._move(&toolbox, toolboxes.begin());
+
 								// Make sure we don't keep dragging around an invisible box.
 
 								m_movingToolbox = -1;
@@ -771,11 +784,7 @@ namespace wg
 
 	std::tuple<Widget_p, PackPanel_p> DebugOverlay::_createToolbox( const char * pTitle )
 	{
-		auto pPanelSkin = BoxSkin::create( WGBP(BoxSkin,
-												_.color = Color::Grey,
-												_.outlineColor = Color::Black,
-												_.outlineThickness = 1,
-												_.padding = 5 ));
+		auto pPanelSkin = m_pTheme->windowSkin();
 
 
 		int idOfs = 10000 + 1000 * toolboxes.size();
@@ -823,14 +832,7 @@ namespace wg
 
 		auto pButtonPalette = PackPanel::create(WGBP(PackPanel, _.axis = Axis::X));
 
-		auto pRefreshButtonSkin = BoxSkin::create(WGBP(BoxSkin,
-			_.outlineColor = Color::Black,
-			_.outlineThickness = 1,
-			_.padding = 6,
-			_.states = { {State::Default, Color::DarkGrey}, {State::Hovered, Color::LightGrey}, {State::Pressed, Color::Grey } }));
-
-
-		auto pRefreshButton = Button::create(WGBP(Button, _.skin = pRefreshButtonSkin, _.label.text = "⟳"));
+		auto pRefreshButton = Button::create(WGOVR(m_pTheme->pushButton(), _.icon.skin = m_pRefreshIcon, _.icon.placement = Placement::Center ));
 
 		Base::msgRouter()->addRoute(pRefreshButton, MsgType::Select, [this](Msg* pMsg) {
 
@@ -840,7 +842,7 @@ namespace wg
 				this->m_pWidgetTreeContainer->slot = nullptr;
 		});
 
-		auto pCollapseAllButton = Button::create(WGBP(Button, _.skin = pRefreshButtonSkin, _.label.text = "-"));
+		auto pCollapseAllButton = Button::create(WGOVR(m_pTheme->pushButton(), _.icon.skin = m_pCondenseIcon, _.icon.placement = Placement::Center));
 
 		Base::msgRouter()->addRoute(pCollapseAllButton, MsgType::Select, [this](Msg* pMsg) {
 
@@ -848,7 +850,7 @@ namespace wg
 				static_cast<WidgetTreePanel*>(m_pWidgetTreeContainer->slot._widget())->collapseAll();
 		});
 
-		auto pExpandAllButton = Button::create(WGBP(Button, _.skin = pRefreshButtonSkin, _.label.text = "+"));
+		auto pExpandAllButton = Button::create(WGOVR(m_pTheme->pushButton(), _.icon.skin = m_pExpandIcon, _.icon.placement = Placement::Center));
 
 		Base::msgRouter()->addRoute(pExpandAllButton, MsgType::Select, [this](Msg* pMsg) {
 
@@ -882,6 +884,25 @@ namespace wg
 		_refreshRealGeo(toolboxes._first() + toolboxes.size() - 1);
 	}
 
+	//____ _createMsgLogToolbox() _____________________________________________
+
+	void DebugOverlay::_createMsgLogToolbox()
+	{
+		// Add our toolboxes
+
+		Widget_p	pToolbox;
+		PackPanel_p	pContent;
+
+		std::tie(pToolbox, pContent) = _createToolbox("F3 - Message Log");
+
+		pContent->setLayout(nullptr);
+
+
+		pContent->slots << m_pDebugger->createMsgLogPanel(m_debugPanelBP);
+
+		_refreshRealGeo(toolboxes._first() + toolboxes.size() - 1);
+	}
+
 
 	//____ _createSlotWidgetToolbox() ____________________________________________
 
@@ -898,14 +919,7 @@ namespace wg
 
 		auto pButtonPalette = PackPanel::create( WGBP(PackPanel, _.axis = Axis::X) );
 
-		auto pPickButtonSkin = BoxSkin::create( WGBP(BoxSkin,
-													 _.outlineColor = Color::Black,
-													 _.outlineThickness = 1,
-													 _.padding = 6,
-													 _.states = { {State::Default, Color::Red}, {State::Checked, Color::Green}} ));
-
-
-		auto pPickButton = ToggleButton::create( WGBP(ToggleButton, _.skin = pPickButtonSkin, _.label.text = "+" ));
+		auto pPickButton = ToggleButton::create( WGOVR(m_pTheme->toggleButton(), _.icon.skin = m_pSelectIcon, _.icon.placement = Placement::Center ));
 
 		m_pPickWidgetButton = pPickButton;
 
@@ -1014,6 +1028,26 @@ namespace wg
 
 	void DebugOverlay::_createResources()
 	{
+		m_pRefreshIcon = BlockSkin::create(WGBP(BlockSkin,
+			_.surface = m_pIcons,
+			_.firstBlock = Rect(0, 0, 16, 16);
+			));
+
+		m_pSelectIcon = BlockSkin::create(WGBP(BlockSkin,
+			_.surface = m_pIcons,
+			_.firstBlock = Rect(16, 0, 16, 16);
+		));
+
+		m_pExpandIcon = BlockSkin::create(WGBP(BlockSkin,
+			_.surface = m_pIcons,
+			_.firstBlock = Rect(32, 0, 16, 16);
+		));
+
+		m_pCondenseIcon = BlockSkin::create(WGBP(BlockSkin,
+			_.surface = m_pIcons,
+			_.firstBlock = Rect(48, 0, 16, 16);
+		));
+
 		auto& bp = m_pTheme->labeledSection();
 
 		auto pListTextLayout = BasicTextLayout::create( WGBP(BasicTextLayout,
@@ -1043,7 +1077,8 @@ namespace wg
 			_.decimalMin = 2
 		));
 
-
+		m_debugPanelBP.theme = m_pTheme;
+		m_debugPanelBP.icons = m_pIcons;
 
 		m_debugPanelBP.mainCapsule = m_pTheme->labeledSection();
 
