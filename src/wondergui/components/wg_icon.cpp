@@ -31,21 +31,19 @@ namespace wg
 
 	//____ constructor ____________________________________________________________
 
-	Icon::Icon( Widget * pWidget ) : Component(pWidget)
+	Icon::Icon( Widget * pWidget ) : Component(pWidget), m_skin(this)
 	{
 		m_placement		= Placement::West;
-		m_bOverlap		= false;
 	}
 
 
 	//____ set() ___________________________________________________________________
 
-	bool Icon::set( Skin * pSkin, Placement placement, Border padding, bool bOverlap )
+	bool Icon::set( Skin * pSkin, Placement placement, pts spacing, bool bOverlap )
 	{
-		m_pSkin 	= pSkin;
+		m_skin.set(pSkin);
 		m_placement	= placement;
-		m_padding 	= padding;
-		m_bOverlap 	= bOverlap;
+		m_spacing 	= spacing;
 
 		_requestResize();
 		return true;
@@ -55,10 +53,9 @@ namespace wg
 
 	void Icon::clear()
 	{
-		m_pSkin 	= 0;
+		m_skin.set(nullptr);
 		m_placement	= Placement::West;
-		m_padding 	= Border();
-		m_bOverlap 	= false;
+		m_spacing 	= 0;
 
 		_requestResize();
 	}
@@ -67,15 +64,14 @@ namespace wg
 
 	void Icon::_initFromBlueprint(const Blueprint& bp)
 	{
-		m_pSkin = bp.skin;
+		m_skin.set(bp.skin);
 		m_placement = bp.placement;
-		m_padding = bp.padding;
-		m_bOverlap = bp.overlap;
+		m_spacing = bp.spacing;
 	}
 
-	//____ _setPlacement() ___________________________________________________
+	//____ setPlacement() ___________________________________________________
 
-	void Icon::_setPlacement( Placement placement )
+	void Icon::setPlacement( Placement placement )
 	{
 		if( placement != m_placement )
 		{
@@ -84,35 +80,24 @@ namespace wg
 		}
 	}
 
-	//____ _setPadding() _______________________________________________________
+	//____ setSpacing() _______________________________________________________
 
-	void Icon::_setPadding( Border borders )
+	void Icon::setSpacing( pts spacing )
 	{
-		if( borders != m_padding )
+		if( spacing != m_spacing )
 		{
-			m_padding = borders;
-			_requestResize();
-		}
-	}
-
-	//____ _setOverlap() _________________________________________________________
-
-	void Icon::_setOverlap( bool bOverlap )
-	{
-		if( bOverlap != m_bOverlap )
-		{
-			m_bOverlap = bOverlap;
+			m_spacing = spacing;
 			_requestResize();
 		}
 	}
 
 	//____ _setSkin() ______________________________________________________________
 
-	void Icon::_setSkin( Skin * pSkin )
+	void Icon::setSkin( Skin * pSkin )
 	{
-		if( pSkin != m_pSkin )
+		if( pSkin != m_skin.get() )
 		{
-			m_pSkin = pSkin;
+			m_skin.set(pSkin);
 			_requestResize();
 		}
 	}
@@ -126,38 +111,19 @@ namespace wg
 
 	RectSPX Icon::_getIconRect( const RectSPX& contentRect, int scale ) const
 	{
-		if( m_pSkin )
-			return _getIconRect(contentRect, m_pSkin->_defaultSize(scale), scale);
-		else
+		if( m_skin.isEmpty() )
 			return RectSPX();
+		else
+			return _getIconRect(contentRect, m_skin.defaultSize(scale), scale);
 	}
 
 	RectSPX Icon::_getIconRect( const RectSPX& contentRect, const SizeSPX& iconSize, int scale ) const
 	{
-		RectSPX rect;
-
-		spx w = iconSize.w;
-		spx h = iconSize.h;
-
-		BorderSPX padding = align(ptsToSpx(m_padding, scale));
-
-		if( w > 0 && h > 0 )
-		{
-			spx bgW = contentRect.w - padding.width();
-			spx bgH = contentRect.h - padding.height();
-
-			//
-
-			w += padding.width();
-			h += padding.height();
-
-			rect = Util::placementToRect( m_placement, contentRect, SizeSPX(w,h) );
-			rect -= padding;
-		}
-
-		return rect;
+		if (iconSize.w <= 0 && iconSize.h <= 0)
+			return RectSPX();
+		else
+			return placementToRect( m_placement, contentRect, iconSize );
 	}
-
 
 
 	//____ _getTextRect() _____________________________________________________
@@ -166,18 +132,17 @@ namespace wg
 	{
 		RectSPX textRect = contentRect;
 
-		if( !m_bOverlap && iconRect.w > 0 && iconRect.h > 0 )
+		if( iconRect.w > 0 && iconRect.h > 0 )
 		{
-			BorderSPX padding = align(ptsToSpx(m_padding, scale));
+			spx spacing = align(ptsToSpx(m_spacing, scale));
 
 			switch( m_placement )
 			{
-				default:
 				case Placement::NorthWest:
 				case Placement::SouthWest:
 				case Placement::West:
 				{
-					spx diff = iconRect.x - contentRect.x + iconRect.w + padding.right;
+					spx diff = iconRect.x - contentRect.x + iconRect.w + spacing;
 					textRect.x += diff;
 					textRect.w -= diff;
 					if( textRect.w < 0 )
@@ -188,16 +153,15 @@ namespace wg
 				case Placement::East:
 				case Placement::SouthEast:
 				{
-					textRect.w = iconRect.x - contentRect.x - padding.left;
+					textRect.w = iconRect.x - contentRect.x - spacing;
 					if( textRect.w < 0 )
 						textRect.w = 0;
 					break;
 				}
 
 				case Placement::North:
-				case Placement::Center:
 				{
-					int diff = iconRect.y - contentRect.y + iconRect.h + padding.bottom;
+					int diff = iconRect.y - contentRect.y + iconRect.h + spacing;
 					textRect.y += diff;
 					textRect.h -= diff;
 					if( textRect.h < 0 )
@@ -206,11 +170,14 @@ namespace wg
 				}
 				case Placement::South:
 				{
-					textRect.h = iconRect.y - contentRect.y - padding.top;
+					textRect.h = iconRect.y - contentRect.y - spacing;
 					if( textRect.h < 0 )
 						textRect.h = 0;
 					break;
 				}
+
+				default:				// Undefined and center results in icon centered behind text.
+					break;
 			}
 		}
 
@@ -221,40 +188,104 @@ namespace wg
 
 	SizeSPX Icon::_defaultSize(int scale) const
 	{
-		if( m_pSkin )
-			return m_pSkin->_defaultSize(scale) + align(ptsToSpx(m_padding,scale));
+		return m_skin.defaultSize(scale);
 
-		return SizeSPX();
 	}
 
 	SizeSPX Icon::_defaultSize(int scale, SizeSPX& textSize) const
 	{
-		SizeSPX defaultSize = m_pSkin->_defaultSize(scale) + align(ptsToSpx(m_padding.size(), scale));
+		if (m_skin.isEmpty())
+			return SizeSPX();
 
-		if( m_bOverlap )
-			defaultSize = SizeSPX::max(defaultSize, textSize);
-		else
+		SizeSPX defaultSize = m_skin.defaultSize(scale);
+		spx		spacing = align(ptsToSpx(m_spacing, scale));
+
+		switch( m_placement)
 		{
-			switch( m_placement)
+			case Placement::Undefined:
+			case Placement::Center:
 			{
-				case Placement::North:
-				case Placement::Center:
-				case Placement::South:
-				{
-					defaultSize.h += textSize.h;
-					defaultSize.w = std::max(defaultSize.w, textSize.w);
-					break;
-				}
-				default:
-				{
-					defaultSize.w += textSize.w;
-					defaultSize.h = std::max(defaultSize.h, textSize.h);
-					break;
-				}
-
+				defaultSize = SizeSPX::max(defaultSize, textSize);
+				break;
 			}
+
+			case Placement::North:
+			case Placement::South:
+			{
+				defaultSize.h += textSize.h + spacing;
+				defaultSize.w = std::max(defaultSize.w, textSize.w);
+				break;
+			}
+			default:
+			{
+				defaultSize.w += textSize.w + spacing;
+				defaultSize.h = std::max(defaultSize.h, textSize.h);
+				break;
+			}
+
 		}
+
 		return defaultSize;
+	}
+
+	//____ _textPaddingSize() _________________________________________________
+
+	SizeSPX Icon::_textPaddingSize(int scale) const
+	{
+		if (m_skin.isEmpty())
+			return SizeSPX();
+
+		SizeSPX iconSize = m_skin.defaultSize(scale);
+		spx		spacing = align(ptsToSpx(m_spacing, scale));
+
+		switch (m_placement)
+		{
+			case Placement::Undefined:
+			case Placement::Center:
+				return BorderSPX();
+
+			case Placement::North:
+			case Placement::South:
+				return { 0, iconSize.h + spacing };
+
+			default:
+				return { iconSize.w + spacing, 0 };
+		}
+	}
+
+	//____ _skinValue() _______________________________________________________
+
+	float Icon::_skinValue(const SkinSlot* pSlot) const
+	{
+		return 0.f;		// Not supported
+	}
+
+	//____ _skinValue2() _______________________________________________________
+
+	float Icon::_skinValue2(const SkinSlot* pSlot) const
+	{
+		return 0.f;		// Not supported
+	}
+
+	//____ _skinState() _______________________________________________________
+
+	State Icon::_skinState(const SkinSlot* pSlot) const
+	{
+		return _widget()->state();
+	}
+
+	//____ _skinSize() _______________________________________________________
+
+	SizeSPX Icon::_skinSize(const SkinSlot* pSlot) const
+	{
+		return _size();
+	}
+
+	//____ _skinRequestRender() _______________________________________________________
+
+	void Icon::_skinRequestRender(const SkinSlot* pSlot, const RectSPX& rect)
+	{
+		_requestRender(rect);
 	}
 
 
