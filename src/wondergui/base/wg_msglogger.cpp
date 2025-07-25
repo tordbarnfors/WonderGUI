@@ -37,12 +37,12 @@ namespace wg
 
 	MsgLogger::MsgLogger( std::ostream& stream ) : m_pStream(&stream)
 	{
-		logAllMsgs();
+		logAllMsgs(true);
 	}
 
 	MsgLogger::MsgLogger( const std::function<void(const char*)>& func ) : m_func(func)
 	{
-		logAllMsgs();
+		logAllMsgs(true);
 	}
 
 	//____ Destructor _____________________________________________________________
@@ -58,134 +58,68 @@ namespace wg
 		return TYPEINFO;
 	}
 
-	//____ IgnoreMsg ____________________________________________________________
-
-	void MsgLogger::ignoreMsg( MsgType type )
-	{
-		m_msgFilter[(int)type] = false;
-	}
-
 	//____ LogMsg _______________________________________________________________
 
-	void MsgLogger::logMsg( MsgType type )
+	void MsgLogger::logMsg( MsgType type, bool bLog )
 	{
-		m_msgFilter[(int)type] = true;
-	}
-
-	//____ IgnorePointerMsgs ____________________________________________________________
-
-	void MsgLogger::ignorePointerMsgs()
-	{
-		m_msgFilter[(int)MsgType::MouseEnter] = false;
-		m_msgFilter[(int)MsgType::MouseMove] = false;
-		m_msgFilter[(int)MsgType::MouseLeave] = false;
+		m_msgFilter[(int)type] = bLog;
 	}
 
 	//____ LogPointerMsgs _______________________________________________________________
 
-	void MsgLogger::logPointerMsgs()
+	void MsgLogger::logPointerMsgs(bool bLog)
 	{
-		m_msgFilter[(int)MsgType::MouseEnter] = true;
-		m_msgFilter[(int)MsgType::MouseMove] = true;
-		m_msgFilter[(int)MsgType::MouseLeave] = true;
-	}
-
-
-	//____ IgnoreMouseButtonMsgs ____________________________________________________________
-
-	void MsgLogger::ignoreMouseButtonMsgs()
-	{
-		m_msgFilter[(int)MsgType::MousePress] = false;
-		m_msgFilter[(int)MsgType::MouseRepeat] = false;
-		m_msgFilter[(int)MsgType::MouseDrag] = false;
-		m_msgFilter[(int)MsgType::MouseRelease] = false;
-		m_msgFilter[(int)MsgType::MouseClick] = false;
-		m_msgFilter[(int)MsgType::MouseDoubleClick] = false;
+		m_msgFilter[(int)MsgType::MouseEnter] = bLog;
+		m_msgFilter[(int)MsgType::MouseMove] = bLog;
+		m_msgFilter[(int)MsgType::MouseLeave] = bLog;
 	}
 
 	//____ LogMouseButtonMsgs _______________________________________________________________
 
-	void MsgLogger::logMouseButtonMsgs()
+	void MsgLogger::logMouseButtonMsgs(bool bLog)
 	{
-		m_msgFilter[(int)MsgType::MousePress] = true;
-		m_msgFilter[(int)MsgType::MouseRepeat] = true;
-		m_msgFilter[(int)MsgType::MouseDrag] = true;
-		m_msgFilter[(int)MsgType::MouseRelease] = true;
-		m_msgFilter[(int)MsgType::MouseClick] = true;
-		m_msgFilter[(int)MsgType::MouseDoubleClick] = true;
+		m_msgFilter[(int)MsgType::MousePress] = bLog;
+		m_msgFilter[(int)MsgType::MouseRepeat] = bLog;
+		m_msgFilter[(int)MsgType::MouseDrag] = bLog;
+		m_msgFilter[(int)MsgType::MouseRelease] = bLog;
+		m_msgFilter[(int)MsgType::MouseClick] = bLog;
+		m_msgFilter[(int)MsgType::MouseDoubleClick] = bLog;
 	}
 
-	//____ IgnoreKeyboardMsgs ____________________________________________________________
-
-	void MsgLogger::ignoreKeyboardMsgs()
-	{
-		m_msgFilter[(int)MsgType::KeyPress] = false;
-		m_msgFilter[(int)MsgType::KeyRepeat] = false;
-		m_msgFilter[(int)MsgType::KeyRelease] = false;
-		m_msgFilter[(int)MsgType::TextInput] = false;
-	}
 
 	//____ LogKeyboardMsgs _______________________________________________________________
 
-	void MsgLogger::logKeyboardMsgs()
+	void MsgLogger::logKeyboardMsgs(bool bLog)
 	{
-		m_msgFilter[(int)MsgType::KeyPress] = true;
-		m_msgFilter[(int)MsgType::KeyRepeat] = true;
-		m_msgFilter[(int)MsgType::KeyRelease] = true;
-		m_msgFilter[(int)MsgType::TextInput] = true;
+		m_msgFilter[(int)MsgType::KeyPress] = bLog;
+		m_msgFilter[(int)MsgType::KeyRepeat] = bLog;
+		m_msgFilter[(int)MsgType::KeyRelease] = bLog;
+		m_msgFilter[(int)MsgType::TextInput] = bLog;
 	}
 
 	//____ logMouseMsgs() _______________________________________________________
 
-	void MsgLogger::logMouseMsgs()
+	void MsgLogger::logMouseMsgs(bool bLog)
 	{
-		logPointerMsgs();
-		logMouseButtonMsgs();
-		logMsg( MsgType::WheelRoll );
+		logPointerMsgs(bLog);
+		logMouseButtonMsgs(bLog);
+		logMsg( MsgType::WheelRoll, bLog );
 	}
-
-	//____ ignoreMouseMsgs() ____________________________________________________
-
-	void MsgLogger::ignoreMouseMsgs()
-	{
-		ignorePointerMsgs();
-		ignoreMouseButtonMsgs();
-		ignoreMsg( MsgType::WheelRoll );
-	}
-
 
 	//____ logInputMsgs() _______________________________________________________
 
-	void MsgLogger::logInputMsgs()
+	void MsgLogger::logInputMsgs(bool bLog)
 	{
-		logMouseMsgs();
-		logKeyboardMsgs();
+		logMouseMsgs(bLog);
+		logKeyboardMsgs(bLog);
 	}
 
-	//____ ignoreInputMsgs() ____________________________________________________
-
-	void MsgLogger::ignoreInputMsgs()
-	{
-		ignoreMouseMsgs();
-		ignoreKeyboardMsgs();
-	}
-
-
-
-
-	//____ IgnoreAllMsgs ________________________________________________________
-
-	void MsgLogger::ignoreAllMsgs()
-	{
-		for( int i = 0 ; i < (int) MsgType_size ; i++ )
-			m_msgFilter[i] = false;
-	}
 
 	//____ LogAllMsgs ___________________________________________________________
-	void MsgLogger::logAllMsgs()
+	void MsgLogger::logAllMsgs(bool bLog)
 	{
 		for( int i = 0 ; i < (int) MsgType_size ; i++ )
-			m_msgFilter[i] = true;
+			m_msgFilter[i] = bLog;
 	}
 
 
@@ -432,7 +366,7 @@ namespace wg
 			const int 	c_len = c_paramLen + 1024;
 			char		output[c_len];
 			
-			snprintf( output, c_len, " - %s - %s%s%s%s%s\n", _pMsg->typeInfo().className, source.c_str(), copyTo.c_str(), pointerPos.c_str(), modkeys.c_str(), params );
+			snprintf( output, c_len, " - %s - %s%s%s%s%s", _pMsg->typeInfo().className, source.c_str(), copyTo.c_str(), pointerPos.c_str(), modkeys.c_str(), params );
 			m_func(output);
 		}
 		else
