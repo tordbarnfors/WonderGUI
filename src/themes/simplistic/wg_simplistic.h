@@ -101,6 +101,11 @@ namespace wg
 		TextStyle_p pressableStyle() const override;	// Default text style for buttons etc.
 
 
+		//
+
+		Skin_p		plateSkin() const override;
+		Skin_p		canvasSkin() const override;
+		Skin_p		windowSkin() const override;
 
 		//
 
@@ -119,6 +124,9 @@ namespace wg
 
 		const DrawerPanel::Blueprint&		treeListDrawer() const override;
 		const PaddingCapsule::Blueprint&	treeListEntry() const override;
+
+		const TextEditor::Blueprint&		textEditor() const override;
+
 
 		const TextDisplay::Blueprint& 		windowTitleBar() const override;
 
@@ -157,6 +165,10 @@ namespace wg
 		TextStyle_p	m_pBlackStyle;
 		TextStyle_p	m_pWhiteStyle;
 
+		Skin_p		m_pPlateSkin;
+		Skin_p		m_pCanvasSkin;
+		Skin_p		m_pWindowSkin;
+
 		ValueTransition_p		m_pOpenCloseTransition;
 
 		LabelCapsule::Blueprint m_labeledBoxBP;
@@ -175,6 +187,7 @@ namespace wg
 		DrawerPanel::Blueprint	m_treeListDrawer;
 		PaddingCapsule::Blueprint m_treeListEntry;
 
+		TextEditor::Blueprint	m_textEditor;
 
 		TextDisplay::Blueprint	m_windowTitleBar;
 	};
