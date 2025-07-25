@@ -695,7 +695,13 @@ namespace wg
 		if (m_foldState != FoldState::OPEN)
 			openImmediately();
 
-		Container::_childRequestInView(pSlot);
+		// We use backWindow instead of backCanvas to get pos of fully opened drawer.
+
+		if (m_pHolder)
+		{
+			RectSPX futureGeo = { m_backWindow.pos(), m_backCanvas.size() };
+			m_pHolder->_childRequestInView(m_pSlot, futureGeo, futureGeo);
+		}
 	}
 
 	void DrawerPanel::_childRequestInView(StaticSlot* pSlot, const RectSPX& mustHaveArea, const RectSPX& niceToHaveArea)
@@ -703,7 +709,10 @@ namespace wg
 		if (m_foldState != FoldState::OPEN)
 			openImmediately();
 
-		Container::_childRequestInView(pSlot, mustHaveArea, niceToHaveArea);
+		// We use backWindow instead of backCanvas to get pos of fully opened drawer.
+
+		if (m_pHolder)
+			m_pHolder->_childRequestInView(m_pSlot, mustHaveArea + m_backWindow.pos(), niceToHaveArea + m_backWindow.pos() );
 	}
 
 	//____ _prevChild() _______________________________________________________
