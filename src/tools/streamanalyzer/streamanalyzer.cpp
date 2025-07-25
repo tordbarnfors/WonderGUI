@@ -153,10 +153,11 @@ bool MyApp::_setupGUI(Visitor* pVisitor)
 	auto pDbgFont4 = FreeTypeFont::create(pDbgFont4Blob);
 
 	auto pSkinSurface = pVisitor->loadSurface("resources/skin_widgets.png");
+	auto pIconSurface = pVisitor->loadSurface("resources/debugger_gfx.png");
 
 	auto pTheme = Simplistic::create(pDbgFont1, pDbgFont2, pDbgFont3, pDbgFont4, pSkinSurface);
 
-	m_pDebugOverlay = DebugOverlay::create( { .debugger = m_pDebugger, .theme = pTheme } );
+	m_pDebugOverlay = DebugOverlay::create( { .debugger = m_pDebugger, .theme = pTheme, .icons = pIconSurface } );
 
 	m_pDebugOverlay->setActivated(true);
 
@@ -648,7 +649,7 @@ Widget_p MyApp::createNavigationPanel()
 	
 	auto pRectToggle = ToggleButton::create(WGBP(ToggleButton,
 		_.label = WGBP(Text, _.style = m_pTextStyle, _.text = "Show debug rectangles"),
-		_.icon = WGBP(Icon, _.skin = m_pToggleButtonSkin, _.padding = { 0,8,0,0 })
+		_.icon = WGBP(Icon, _.skin = m_pToggleButtonSkin, _.spacing = 8 )
 	));
 
 	Base::msgRouter()->addRoute(pRectToggle, MsgType::Toggle, [this](Msg* pMsg)
@@ -664,7 +665,7 @@ Widget_p MyApp::createNavigationPanel()
 	
 	auto pRecordStepsToggle = ToggleButton::create(WGBP(ToggleButton,
 		_.label = WGBP(Text, _.style = m_pTextStyle, _.text = "Record optimize steps"),
-		_.icon = WGBP(Icon, _.skin = m_pToggleButtonSkin, _.padding = { 0,8,0,0 })
+		_.icon = WGBP(Icon, _.skin = m_pToggleButtonSkin, _.spacing = 8 )
 	));
 
 	m_pRecordStepsToggle = pRecordStepsToggle;
