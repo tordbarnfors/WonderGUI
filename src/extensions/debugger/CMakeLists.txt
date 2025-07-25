@@ -8,7 +8,8 @@ set(SOURCES
 
     wg_dummyinfopanel.h
     wg_dummyinfopanel.cpp
-
+    wg_msglogpanel.h
+    wg_msglogPanel.cpp
     wg_widgettreepanel.h
     wg_widgettreepanel.cpp
 

@@ -108,6 +108,7 @@ namespace wg
 			Theme_p			theme;										// Mandatory!!!
 			String			tooltip;
 			bool			usePickHandles = false;
+			Surface_p		icons;										// Mandatory!!!
 		};
 
 		//.____ Creation __________________________________________
@@ -184,6 +185,7 @@ namespace wg
 
 		void			_createSlotWidgetToolbox();
 		void			_createWidgetTreeToolbox();
+		void			_createMsgLogToolbox();
 
 
 
@@ -236,6 +238,15 @@ namespace wg
 		// Resources
 
 		Theme_p			m_pTheme;
+		Surface_p		m_pIcons;
+
+		Skin_p			m_pSelectIcon;
+
+		Skin_p			m_pRefreshIcon;
+		Skin_p			m_pExpandIcon;
+		Skin_p			m_pCondenseIcon;
+
+
 
 		DebugPanel::Blueprint	m_debugPanelBP;
 
