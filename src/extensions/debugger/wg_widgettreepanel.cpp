@@ -113,9 +113,21 @@ namespace wg
 				auto pFound = _findWidgetRecursively(id, slot.widget());
 
 				m_pSelectCapsule->select(pFound);
-				m_pSelectedWidget = pWidget;
+				if (pFound)
+				{
+					// The widget we want to bring into view is inside a PaddingCapsule and
+					// has the full width given. We only want to bring the visible text into view,
+					// so we need to calculate the area of that.
 
-				pFound->bringIntoView();
+					auto pContent = static_cast<Container*>(pFound.rawPtr())->firstChild();
+					Size contentSize = pContent->size();
+
+					contentSize.w = pContent->matchingWidth(contentSize.h);
+					pContent->bringIntoView({ 0,0,contentSize }, Border(0,0,0,16) );			// With left margin for any drawer expander button.
+
+				}
+
+				m_pSelectedWidget = pWidget;
 				return;
 			}
 
