@@ -872,7 +872,7 @@ namespace wg
 			_.outlineThickness = 1,
 			_.padding = 2));
 
-		auto pContentWindow = ScrollPanel::create(m_pTheme->scrollPanelY());
+		auto pContentWindow = ScrollPanel::create(m_pTheme->scrollPanelXY());
 
 		m_pWidgetTreeContainer = pContentWindow;
 

@@ -692,27 +692,37 @@ namespace wg
 
 	void DrawerPanel::_childRequestInView(StaticSlot* pSlot)
 	{
-		if (m_foldState != FoldState::OPEN)
-			openImmediately();
-
-		// We use backWindow instead of backCanvas to get pos of fully opened drawer.
-
-		if (m_pHolder)
+		if (pSlot == &slots[0])
+			m_pHolder->_childRequestInView(m_pSlot, m_frontGeo, m_frontGeo);
+		else
 		{
-			RectSPX futureGeo = { m_backWindow.pos(), m_backCanvas.size() };
-			m_pHolder->_childRequestInView(m_pSlot, futureGeo, futureGeo);
+			if (m_foldState != FoldState::OPEN)
+				openImmediately();
+
+			// We use backWindow instead of backCanvas to get pos of fully opened drawer.
+
+			if (m_pHolder)
+			{
+				RectSPX futureGeo = { m_backWindow.pos(), m_backCanvas.size() };
+				m_pHolder->_childRequestInView(m_pSlot, futureGeo, futureGeo);
+			}
 		}
 	}
 
 	void DrawerPanel::_childRequestInView(StaticSlot* pSlot, const RectSPX& mustHaveArea, const RectSPX& niceToHaveArea)
 	{
-		if (m_foldState != FoldState::OPEN)
-			openImmediately();
+		if (pSlot == &slots[0])
+			m_pHolder->_childRequestInView(m_pSlot, mustHaveArea + m_frontGeo.pos(), niceToHaveArea + m_frontGeo.pos());
+		else
+		{
+			if (m_foldState != FoldState::OPEN)
+				openImmediately();
 
-		// We use backWindow instead of backCanvas to get pos of fully opened drawer.
+			// We use backWindow instead of backCanvas to get pos of fully opened drawer.
 
-		if (m_pHolder)
-			m_pHolder->_childRequestInView(m_pSlot, mustHaveArea + m_backWindow.pos(), niceToHaveArea + m_backWindow.pos() );
+			if (m_pHolder)
+				m_pHolder->_childRequestInView(m_pSlot, mustHaveArea + m_backWindow.pos(), niceToHaveArea + m_backWindow.pos());
+		}
 	}
 
 	//____ _prevChild() _______________________________________________________
