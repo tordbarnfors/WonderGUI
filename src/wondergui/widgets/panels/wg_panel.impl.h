@@ -33,46 +33,24 @@
 
 namespace wg
 {
-	template < class SlotType>
-	const TypeInfo Panel<SlotType>::TYPEINFO = { "Panel<SlotType>", &Container::TYPEINFO };
 
 	//____ constructor _____________________________________________________________
 
 	template < class SlotType>
-	Panel<SlotType>::Panel() : m_maskOp(MaskOp::Recurse), slots(this)
+	PanelTemplate<SlotType>::PanelTemplate() : slots(this)
 	{
-	}
-
-	//____ typeInfo() _________________________________________________________
-
-	template < class SlotType>
-	const TypeInfo&  Panel<SlotType>::typeInfo(void) const
-	{
-		return TYPEINFO;
-	}
-
-	//____ setMaskOp() _____________________________________________________________
-
-	template < class SlotType>
-	void Panel<SlotType>::setMaskOp( MaskOp operation )
-	{
-		if( operation != m_maskOp )
-		{
-			m_maskOp = operation;
-			_requestRender();
-		}
 	}
 
 	//____ hideSlots() ___________________________________________________________
 
 	template < class SlotType>
-	void Panel<SlotType>::hideSlots(int index, int amount)
+	void PanelTemplate<SlotType>::hideSlots(int index, int amount)
 	{
 		_hideSlots( &slots[index], amount);
 	}
 
 	template < class SlotType>
-	void Panel<SlotType>::hideSlots(iterator beg, iterator end)
+	void PanelTemplate<SlotType>::hideSlots(iterator beg, iterator end)
 	{
 		_hideSlots( beg, int(end - beg));
 	}
@@ -80,67 +58,21 @@ namespace wg
 	//____ unhideSlots() ___________________________________________________________
 
 	template < class SlotType>
-	void Panel<SlotType>::unhideSlots(int index, int amount)
+	void PanelTemplate<SlotType>::unhideSlots(int index, int amount)
 	{
 		_unhideSlots( &slots[index], amount);
 	}
 
 	template < class SlotType>
-	void Panel<SlotType>::unhideSlots(iterator beg, iterator end)
+	void PanelTemplate<SlotType>::unhideSlots(iterator beg, iterator end)
 	{
 		_unhideSlots( beg, int(end - beg));
 	}
 
-
-	//____ _maskPatches() __________________________________________________________
-
-	template < class SlotType>
-	void Panel<SlotType>::_maskPatches( PatchesSPX& patches, const RectSPX& geo, const RectSPX& clip )
-	{
-		RectSPX coverage = m_skin.coverage(geo, m_scale, m_state);
-		
-		patches.sub( RectSPX::overlap(coverage,clip) );
-
-		if( coverage.contains(_contentRect(geo)) )
-			return;										// No need to loop through children, skins coverage contains them all.
-
-
-		switch( m_maskOp )
-		{
-			case MaskOp::Recurse:
-			{
-				RectSPX	myClip = RectSPX::overlap(geo, clip);				// Need to limit clip to our geo. Otherwise children outside might mask what they shouldn't (for panels where children can go outside parent).
-				SlotWithGeo child;
-				_firstSlotWithGeo( child );
-
-				while(child.pSlot)
-				{
-					child.pSlot->_widget()->_maskPatches( patches, child.geo + geo.pos(), myClip );
-					_nextSlotWithGeo( child );
-				}
-				break;
-			}
-			case MaskOp::Skip:
-				break;
-			case MaskOp::Mask:
-				patches.sub( RectSPX::overlap(geo,clip) );
-				break;
-		}
-	}
-
-//____ _slotGeo() _______________________________________________________
-
-	template < class SlotType>
-	RectSPX Panel<SlotType>::_slotGeo(const StaticSlot * pSlot) const
-	{
-		return ((PanelSlot*)pSlot)->m_geo;
-	}
-
-
 	//____ _firstChild() __________________________________________________________
 
 	template < class SlotType>
-	Widget * Panel<SlotType>::_firstChild() const
+	Widget * PanelTemplate<SlotType>::_firstChild() const
 	{
 		if (slots.isEmpty())
 			return nullptr;
@@ -151,7 +83,7 @@ namespace wg
 	//____ _lastChild() __________________________________________________________
 
 	template < class SlotType>
-	Widget * Panel<SlotType>::_lastChild() const
+	Widget * PanelTemplate<SlotType>::_lastChild() const
 	{
 		if (slots.isEmpty())
 			return nullptr;
@@ -163,7 +95,7 @@ namespace wg
 	//____ _firstSlotWithGeo() _____________________________________________________
 
 	template < class SlotType>
-	void Panel<SlotType>::_firstSlotWithGeo( SlotWithGeo& package ) const
+	void PanelTemplate<SlotType>::_firstSlotWithGeo( SlotWithGeo& package ) const
 	{
 		if( slots.isEmpty() )
 			package.pSlot = nullptr;
@@ -189,7 +121,7 @@ namespace wg
 	//____ _nextSlotWithGeo() _____________________________________________________
 
 	template < class SlotType>
-	void Panel<SlotType>::_nextSlotWithGeo( SlotWithGeo& package ) const
+	void PanelTemplate<SlotType>::_nextSlotWithGeo( SlotWithGeo& package ) const
 	{
 		auto pSlot = (SlotType*) package.pSlot;
 
@@ -217,7 +149,7 @@ namespace wg
 	//____ _prevChild() _______________________________________________________
 
 	template < class SlotType>
-	Widget * Panel<SlotType>::_prevChild(const StaticSlot * _pSlot) const
+	Widget * PanelTemplate<SlotType>::_prevChild(const StaticSlot * _pSlot) const
 	{
 		auto pSlot = static_cast<const SlotType*>(_pSlot);
 
@@ -230,7 +162,7 @@ namespace wg
 	//____ _nextChild() _______________________________________________________
 
 	template < class SlotType>
-	Widget * Panel<SlotType>::_nextChild(const StaticSlot * _pSlot) const
+	Widget * PanelTemplate<SlotType>::_nextChild(const StaticSlot * _pSlot) const
 	{
 		auto pSlot = static_cast<const SlotType*>(_pSlot);
 
@@ -238,14 +170,6 @@ namespace wg
 			return pSlot[1]._widget();
 
 		return nullptr;
-	}
-
-	//____ _childRequestRender() ______________________________________________
-
-	template < class SlotType>
-	void Panel<SlotType>::_childRequestRender(StaticSlot * pSlot, const RectSPX& rect)
-	{
-		_requestRender(rect + ((PanelSlot*)pSlot)->m_geo.pos());
 	}
 
 } // namespace wg

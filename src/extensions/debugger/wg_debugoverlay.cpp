@@ -972,17 +972,25 @@ namespace wg
 
 	Widget_p DebugOverlay::_createSlotInfoPanel(StaticSlot * pSlot)
 	{
-		auto pPanel = PackPanel::create( WGBP(PackPanel,
-											  _.axis = Axis::Y ));
-
 		auto pTypeInfo = &pSlot->typeInfo();
+
+		auto pPanel = PackPanel::create( WGBP(PackPanel,
+			_.axis = Axis::Y,
+			_.spacingBefore = 4,
+			_.spacingAfter = 4
+		));
+
+		pPanel->slots << TextDisplay::create(WGBP(TextDisplay,
+			_.display.text = pTypeInfo->className,
+			_.display.style = m_pTheme->heading5Style(),
+			_.display.layout = m_pHeaderLayout));
+
 
 		DebugPanel::Blueprint bp = m_debugPanelBP;
 
 		while( pTypeInfo != nullptr )
 		{
-			bp.mainCapsule.label.text = pTypeInfo->className;
-			bp.mainCapsule.label.style = m_pTheme->strongStyle();
+			bp.classCapsule.label.text = pTypeInfo->className;
 
 			auto pInfoPanel = m_pDebugger->createDebugPanel(bp, pTypeInfo, pSlot);
 
@@ -999,18 +1007,26 @@ namespace wg
 
 	Widget_p DebugOverlay::_createWidgetInfoPanel( Widget * pWidget )
 	{
-
-		auto pPanel = PackPanel::create( WGBP(PackPanel,
-											  _.axis = Axis::Y ));
-
 		auto pTypeInfo = &pWidget->typeInfo();
+
+		auto pPanel = PackPanel::create(WGBP(PackPanel,
+			_.axis = Axis::Y,
+			_.spacingBefore = 4,
+			_.spacingAfter = 4
+		));
+
+
+
+		pPanel->slots << TextDisplay::create(WGBP(TextDisplay,
+			_.display.text = pTypeInfo->className,
+			_.display.style = m_pTheme->heading5Style(),
+			_.display.layout = m_pHeaderLayout ));
 
 		DebugPanel::Blueprint bp = m_debugPanelBP;
 
 		while( pTypeInfo != nullptr )
 		{
-			bp.mainCapsule.label.text = pTypeInfo->className;
-			bp.mainCapsule.label.style = m_pTheme->strongStyle();
+			bp.classCapsule.label.text = pTypeInfo->className;
 
 			auto pInfoPanel = m_pDebugger->createDebugPanel(bp, pTypeInfo, pWidget);
 
@@ -1020,6 +1036,7 @@ namespace wg
 			pTypeInfo = pTypeInfo->pSuperClass;
 		}
 
+		
 		return pPanel;
 
 	}
@@ -1057,8 +1074,13 @@ namespace wg
 														  _.wrap = true,
 														  _.placement = Placement::Center ));
 
+		m_pHeaderLayout = BasicTextLayout::create(WGBP(BasicTextLayout,
+			_.placement = Placement::Center));
+
 		auto pValueLayout = BasicNumberLayout::create( WGBP(BasicNumberLayout,
-			_.style = m_pTheme->defaultStyle() ));
+			_.style = m_pTheme->defaultStyle(),
+			_.decimalMin = 2
+		));
 
 
 		CharBuffer chrBuff;
@@ -1082,6 +1104,12 @@ namespace wg
 
 		m_debugPanelBP.mainCapsule = m_pTheme->labeledSection();
 
+		m_debugPanelBP.classCapsule = WGBP(LabelCapsule,
+			_.skin = ColorSkin::create(HiColor::Transparent, { 10,0,0,8 }),
+			_.label.style = m_pTheme->finePrintStyle()
+		);
+
+
 		m_debugPanelBP.listEntryLabel = WGBP(TextDisplay,
 											 _.display.style = m_pTheme->strongStyle() );
 
@@ -1091,6 +1119,9 @@ namespace wg
 
 		m_debugPanelBP.listEntryInteger = WGBP(NumberDisplay,
 											 _.display.layout = pValueLayout );
+
+		m_debugPanelBP.listEntryBool = WGBP(NumberDisplay,
+											_.display.layout = pValueLayout);
 
 		m_debugPanelBP.listEntrySPX = WGBP(NumberDisplay,
 											 _.display.layout = pValueLayout );

@@ -103,7 +103,7 @@ namespace wg
 	/**
 	*/
 
-	class StackPanel : public Panel<StackPanelSlot>
+	class StackPanel : public PanelTemplate<StackPanelSlot>
 	{ 
 
 	public:
@@ -161,7 +161,7 @@ namespace wg
 
 	protected:
 		StackPanel();
-		template<class BP> StackPanel(const BP& bp) : Panel(bp)
+		template<class BP> StackPanel(const BP& bp) : PanelTemplate(bp)
 		{
 			m_bSiblingsOverlap = true;
 		}

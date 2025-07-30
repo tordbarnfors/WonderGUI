@@ -1204,7 +1204,7 @@ namespace wg
 				else if (diffTop < 0 && diffBottom < 0)
 					window.y += std::max(diffTop, diffBottom);
 			}
-
+			 
 			if (window.pos() != startPos)
 			{
 				if( m_pDefaultTransition )

@@ -84,7 +84,7 @@ namespace wg
 
 	//____ LambdaPanel _________________________________________________________
 
-	class LambdaPanel : public Panel<LambdaPanelSlot>
+	class LambdaPanel : public PanelTemplate<LambdaPanelSlot>
 	{
 
 	public:
@@ -141,7 +141,7 @@ namespace wg
 		
 	protected:
 		LambdaPanel();
-		template<class BP> LambdaPanel(const BP& bp) : Panel(bp)
+		template<class BP> LambdaPanel(const BP& bp) : PanelTemplate(bp)
 		{
 			m_bSiblingsOverlap	= true;
 			m_edgePolicy		= bp.edgePolicy;

@@ -17,10 +17,11 @@
 
 #include <wondergui.h>
 
+#include <wg_linearbackend.h>
 #include <wg_softsurface.h>
 #include <wg_softsurfacefactory.h>
 #include <wg_softkernels_default.h>
-#include <wg_softkernels_rgb565be_base.h>
+//#include <wg_softkernels_rgb565be_base.h>
 #include <wg_softkernels_rgb555be_base.h>
 #include <wg_softkernels_rgb555be_extras.h>
 
@@ -39,7 +40,7 @@ uint8_t			canvasBuffer[640*480*4];
 SDL_Window * g_pWin = nullptr;
 SDL_Surface * g_pWinSurf = nullptr;
 
-void updateScreen(CanvasRef ref, int nSegments, const LinearGfxDevice::Segment * pSegments)
+void updateScreen(CanvasRef ref, int nSegments, const LinearBackend::Segment * pSegments)
 {
 	
 	SDL_LockSurface(g_pWinSurf);
@@ -90,17 +91,20 @@ int main ( int argc, char** argv )
 	PixelFormat format = PixelFormat::Undefined;
 
 
-	LinearGfxDevice_p pGfxDevice = LinearGfxDevice::create(
+
+	LinearBackend_p pBackend = LinearBackend::create(
 		   [](CanvasRef ref, int nBytes) { return canvasBuffer; },
 		   updateScreen
     );
-	
-	addDefaultSoftKernels(pGfxDevice);
-//	addBaseSoftKernelsForRGB565BECanvas(pGfxDevice);
-	addBaseSoftKernelsForRGB555BECanvas(pGfxDevice);
 
-	pGfxDevice->defineCanvas(CanvasRef::Default, {640*64,480*64}, PixelFormat::BGRX_8_linear );
+	addDefaultSoftKernels(pBackend);
+	//	addBaseSoftKernelsForRGB565BECanvas(pBackend);
+	addBaseSoftKernelsForRGB555BECanvas(pBackend);
 
+	pBackend->defineCanvas(CanvasRef::Default, { 640 * 64,480 * 64 }, PixelFormat::BGRX_8_linear);
+
+
+	auto pGfxDevice = GfxDeviceGen2::create(pBackend);
 	
 	//
 	

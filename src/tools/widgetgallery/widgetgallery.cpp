@@ -85,9 +85,9 @@ bool MyApp::_setupGUI(Visitor* pVisitor )
 
 	//
 
-//	auto pSteelNRedSurf = pVisitor->loadSurface("resources/newskin/radiobutton-32.png");
+	auto pThemeSurf = pVisitor->loadSurface("resources/newskin/skin_widgets.png");
 
-	auto pTheme = Simplistic::create(pFont, pFont, pFont, pFont);
+	auto pTheme = Simplistic::create(pFont, pFont, pFont, pFont, pThemeSurf);
 
 
 

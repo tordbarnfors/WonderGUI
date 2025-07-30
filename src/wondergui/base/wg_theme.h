@@ -99,6 +99,8 @@ namespace wg
 		virtual TextStyle_p quoteStyle() const = 0;			// Usually italic
 		virtual TextStyle_p captionStyle() const = 0;		// Text under image or figure.
 		virtual TextStyle_p calloutStyle() const = 0;		// Separate text section in magazine or such which highligt key passages.
+		virtual TextStyle_p finePrintStyle() const = 0;		// Style for fine print text. As small as possible while remaining readable
+
 
 		virtual TextStyle_p defaultStyle() const = 0;		// Default style for UI elements
 		virtual TextStyle_p pressableStyle() const = 0;		// Default text style for buttons etc.

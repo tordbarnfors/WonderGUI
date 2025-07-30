@@ -96,9 +96,11 @@ namespace wg
 		TextStyle_p quoteStyle() const override;		// Usually italic
 		TextStyle_p captionStyle() const override;		// Text under image or figure.
 		TextStyle_p calloutStyle() const override;		// Separate text section in magazine or such which highligt key passages.
+		TextStyle_p finePrintStyle() const override;	// Style for fine print text. As small as possible while remaining readable
 
 		TextStyle_p defaultStyle() const override;		// Default style for UI elements
 		TextStyle_p pressableStyle() const override;	// Default text style for buttons etc.
+
 
 
 		//
@@ -160,10 +162,12 @@ namespace wg
 		TextStyle_p m_pEmphasisStyle;
 		TextStyle_p m_pCodeStyle;
 		TextStyle_p m_pMonospaceStyle;
+		TextStyle_p m_pFinePrintStyle;
 
 
 		TextStyle_p	m_pBlackStyle;
 		TextStyle_p	m_pWhiteStyle;
+
 
 		Skin_p		m_pPlateSkin;
 		Skin_p		m_pCanvasSkin;

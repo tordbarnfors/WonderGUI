@@ -27,6 +27,8 @@
 
 #include <objectinfopanels/wg_objectinfopanel.h>
 #include <objectinfopanels/wg_widgetinfopanel.h>
+#include <objectinfopanels/wg_containerinfopanel.h>
+#include <objectinfopanels/wg_panelinfopanel.h>
 
 #include <slotinfopanels/wg_staticslotinfopanel.h>
 #include <slotinfopanels/wg_panelslotinfopanel.h>
@@ -56,13 +58,16 @@ namespace wg
 	{
 		m_objectInfoFactories[&Object::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, Object* pObject) { return (Widget_p) ObjectInfoPanel::create(panelBP, pObject); };
 		m_objectInfoFactories[&Widget::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, Object* pObject) { return (Widget_p) WidgetInfoPanel::create(panelBP, (Widget*) pObject); };
+		m_objectInfoFactories[&Container::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, Object* pObject) { return (Widget_p)ContainerInfoPanel::create(panelBP, (Container*)pObject); };
+		m_objectInfoFactories[&Panel::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, Object* pObject) { return (Widget_p)PanelInfoPanel::create(panelBP, (Panel*)pObject); };
 
 		m_slotInfoFactories[&StaticSlot::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, StaticSlot* pSlot) { return (Widget_p) StaticSlotInfoPanel::create(panelBP, pSlot); };
 		m_slotInfoFactories[&PanelSlot::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, StaticSlot* pSlot) { return (Widget_p)PanelSlotInfoPanel::create(panelBP, pSlot); };
 		m_slotInfoFactories[&PackPanelSlot::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, StaticSlot* pSlot) { return (Widget_p)PackPanelSlotInfoPanel::create(panelBP, pSlot); };
 		m_slotInfoFactories[&FlexPanelSlot::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, StaticSlot* pSlot) { return (Widget_p)FlexPanelSlotInfoPanel::create(panelBP, pSlot); };
 
-
+		m_ignoreClasses.push_back(&DynamicSlot::TYPEINFO);
+		m_ignoreClasses.push_back(&Receiver::TYPEINFO);
 	}
 
 	//____ typeInfo() _________________________________________________________
@@ -80,6 +85,13 @@ namespace wg
 		auto it = m_objectInfoFactories.find( pType );
 		if( it == m_objectInfoFactories.end() )
 		{
+			// Check known classes we should ignore.
+
+			if (std::find(m_ignoreClasses.begin(), m_ignoreClasses.end(), pType) != m_ignoreClasses.end())
+				return nullptr;
+
+			// Unknown class
+
 			return DummyInfoPanel::create(bp,pObject);
 		}
 
@@ -94,6 +106,13 @@ namespace wg
 		auto it = m_slotInfoFactories.find( pType );
 		if( it == m_slotInfoFactories.end() )
 		{
+			// Check known classes we should ignore.
+
+			if (std::find(m_ignoreClasses.begin(), m_ignoreClasses.end(), pType) != m_ignoreClasses.end())
+				return nullptr;
+
+			// Unknown class
+
 			return DummyInfoPanel::create(bp,pSlot);
 		}
 

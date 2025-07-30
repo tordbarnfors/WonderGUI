@@ -199,7 +199,7 @@ int main ( int argc, char** argv )
 	// 
 	
 	MsgLogger_p pLogger = MsgLogger::create( std::cout );
-	pLogger->logAllMsgs();
+	pLogger->logAllMsgs(true);
 	
 //	Base::msgRouter()->broadcastTo( pLogger );
 

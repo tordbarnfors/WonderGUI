@@ -79,28 +79,12 @@ bool GfxDeviceTester::init( WonderApp::Visitor * pVisitor )
 	m_pWindow = pVisitor->createWindow({ .size = {1332,700}, .title = "GfxDevice Tester" });
 
 	//
-    
-	// Init textmappers
 
-	auto pMapper = BasicTextLayout::create({ .placement = Placement::Center });
-	g_pButtonLabelMapper = pMapper;
-
-	// Init fonts
-
-	Blob_p pFontFile = pVisitor->loadBlob("resources/DroidSans.ttf");
-	FreeTypeFont_p pFont = FreeTypeFont::create(pFontFile);
-
-	TextStyle_p pStyle = TextStyle::create({ .color = HiColor::Black, .font = pFont, .size = 16 });
-	Base::setDefaultStyle(pStyle);
-
-	g_pButtonLabelStyle = TextStyle::create({ .color = HiColor::Black, .font = pFont, .size = 16 });
-
-	m_pSmallTextStyle = TextStyle::create({ .color = HiColor::Black, .font = pFont, .size = 10 });
-
-	
+	auto pTheme = pVisitor->initDefaultTheme();
+	if( !pTheme)
+		return false;
+    	
 	//
-
-	setup_theme();
 	
 	setup_testdevices();
 
@@ -110,7 +94,7 @@ bool GfxDeviceTester::init( WonderApp::Visitor * pVisitor )
 
 	set_devices(g_testdevices[0], g_testdevices[1]);
 	
-	if (!setup_chrome())
+	if (!setup_chrome(pTheme))
 		return false;
 
 	update_displaymode();
@@ -160,7 +144,6 @@ void GfxDeviceTester::exit()
 
 	destroy_tests();
 
-	g_pButtonLabelStyle = nullptr;
 	g_pViewPanel = nullptr;
 }
 
@@ -184,7 +167,7 @@ void GfxDeviceTester::setup_testdevices()
 		auto pGen2GfxDevice = GfxDeviceGen2::create( pBackendLogger );
 
 		auto pGen2CanvasSurface = SoftSurface::create(canvasBP);
-		auto pGen2SoftDevice = Device::create("Gen2 Software (SoftBackend)", pGen2GfxDevice, CanvasRef::None, pGen2CanvasSurface, this);
+		auto pGen2SoftDevice = Device::create("Gen2 Software (SoftBackend)", pGen2GfxDevice, CanvasRef::None, pGen2CanvasSurface, Base::defaultTheme() );
 
 //		g_testdevices.push_back(pGen2SoftDevice);
 
@@ -253,7 +236,7 @@ void GfxDeviceTester::setup_testdevices()
 
 		auto pGfxDevice = GfxDeviceGen2::create(pLinearBackend);
 
-		auto pLinearDevice = Device::create("Gen2 Linear (LinearBackend)", pGfxDevice, CanvasRef::Default, nullptr, this );
+		auto pLinearDevice = Device::create("Gen2 Linear (LinearBackend)", pGfxDevice, CanvasRef::Default, nullptr, Base::defaultTheme() );
 
 		m_pLinearBackendSurface = pLinearDevice->displaySurface();
 
@@ -266,7 +249,7 @@ void GfxDeviceTester::setup_testdevices()
 	auto pNativeGfxDevice = Base::defaultGfxDevice();
 	string nativeDeviceName = string("Native (" + string(pNativeGfxDevice->typeInfo().className) + ")" );
 	
-	auto pNativeDevice = Device::create(nativeDeviceName, pNativeGfxDevice, CanvasRef::None, Base::defaultSurfaceFactory()->createSurface(canvasBP), this );
+	auto pNativeDevice = Device::create(nativeDeviceName, pNativeGfxDevice, CanvasRef::None, Base::defaultSurfaceFactory()->createSurface(canvasBP), Base::defaultTheme());
 	
 //	g_testdevices.push_back(pNativeDevice);
 
@@ -288,7 +271,7 @@ void GfxDeviceTester::setup_testdevices()
 
 		pCanvasSurface->fill( Color::Green );
 
-		auto pReferenceDevice = Device::create( "Gen2 Software BGR565sRGB (SoftBackend)", pSoftGfxDevice, CanvasRef::None, pCanvasSurface, this );
+		auto pReferenceDevice = Device::create( "Gen2 Software BGR565sRGB (SoftBackend)", pSoftGfxDevice, CanvasRef::None, pCanvasSurface, Base::defaultTheme());
 
 //		g_testdevices.push_back(pReferenceDevice);
 	}
@@ -315,7 +298,7 @@ void GfxDeviceTester::setup_testdevices()
 
 		auto pStreamGfxDevice = GfxDeviceGen2::create(pStreamBackend);
 
-		auto pStreamDevice = Device::create("Stream to Gen 2 Software", pStreamGfxDevice, CanvasRef::Default, pGen2CanvasSurface, this);
+		auto pStreamDevice = Device::create("Stream to Gen 2 Software", pStreamGfxDevice, CanvasRef::Default, pGen2CanvasSurface, Base::defaultTheme());
 
 		g_testdevices.push_back(pStreamDevice);
 	}
@@ -695,33 +678,11 @@ void GfxDeviceTester::destroy_tests()
 	g_testsuites.clear();
 }
 
-//____ setup_theme() __________________________________________________________
-
-bool GfxDeviceTester::setup_theme()
-{
-	// Load resources
-
-	auto pPlateSurface = m_pVisitor->loadSurface("resources/grey_plate.bmp");
-	assert(pPlateSurface);
-	BlockSkin_p pPlateSkin = BlockSkin::create({ .frame = 3, .padding = 5, .surface = pPlateSurface } );
-	m_pBackPlateSkin = pPlateSkin;
-	
-	
-	auto pButtonSurface = m_pVisitor->loadSurface("resources/simple_button.bmp");
-	assert(pButtonSurface);
-	BlockSkin_p pSimpleButtonSkin = BlockSkin::create({ .axis = Axis::X, .frame = Border(3), .padding = Border(5), .states = { State::Hovered, {}, State::Pressed, {}, State::Disabled, {} }, .surface = pButtonSurface });
-	m_pButtonSkin = pSimpleButtonSkin;
-
-	return true;
-}
-
 
 //____ setup_chrome() _________________________________________________________
 
-bool GfxDeviceTester::setup_chrome()
+bool GfxDeviceTester::setup_chrome(Theme * pTheme)
 {
-
-
 
 	//    BoxStateSkin_p pPlateSkin = BoxSkin::create( Border(2), Color::Red, Color::Blue );
 	//    BoxStateSkin_p pPressablePlateSkin = pPlateSkin;
@@ -750,7 +711,7 @@ bool GfxDeviceTester::setup_chrome()
 
 	auto pSidebar = PackPanel::create();
 	pSidebar->setAxis(Axis::Y);
-	pSidebar->setSkin( m_pBackPlateSkin );
+	pSidebar->setSkin( pTheme->plateSkin() );
 	pSidebar->setLayout(pUniformLayout);
 
 	auto pCanvasPanel = PackPanel::create();
@@ -760,7 +721,7 @@ bool GfxDeviceTester::setup_chrome()
 	auto pViewNav = PackPanel::create();
 	pViewNav->setAxis(Axis::X);
 	pViewNav->setLayout(pUniformLayout);
-	pViewNav->setSkin( m_pBackPlateSkin );
+	pViewNav->setSkin(pTheme->plateSkin() );
 
 	auto pViewPanel = ScrollPanel::create();
 	pViewPanel->setSkin( ColorSkin::create(Color8::SlateGrey) );
@@ -807,26 +768,12 @@ bool GfxDeviceTester::setup_chrome()
 
 	auto pClipLabel = TextDisplay::create();
 	pClipLabel->display.setText("ClipRects: ");
-	pClipLabel->display.setStyle(g_pButtonLabelStyle);
+	pClipLabel->display.setStyle(pTheme->strongStyle());
 
 
-	auto pNoClipButton = Button::create();
-	pNoClipButton->setSkin( m_pButtonSkin );
-	pNoClipButton->label.setText("One");
-	pNoClipButton->label.setStyle(g_pButtonLabelStyle);
-	pNoClipButton->label.setLayout(g_pButtonLabelMapper);
-
-	auto pFewButton = Button::create();
-	pFewButton->setSkin( m_pButtonSkin );
-	pFewButton->label.setText("Few");
-	pFewButton->label.setStyle(g_pButtonLabelStyle);
-	pFewButton->label.setLayout(g_pButtonLabelMapper);
-
-	auto pManyButton = Button::create();
-	pManyButton->setSkin( m_pButtonSkin );
-	pManyButton->label.setText("Many");
-	pManyButton->label.setStyle(g_pButtonLabelStyle);
-	pManyButton->label.setLayout(g_pButtonLabelMapper);
+	auto pNoClipButton = Button::create( WGOVR(pTheme->pushButton(), _.label.text = "One") );
+	auto pFewButton = Button::create(WGOVR(pTheme->pushButton(), _.label.text = "Few"));
+	auto pManyButton = Button::create(WGOVR(pTheme->pushButton(), _.label.text = "Many"));
 
 	pClipSection->slots << pClipLabel;
 	pClipSection->slots << pNoClipButton;
@@ -843,36 +790,11 @@ bool GfxDeviceTester::setup_chrome()
 	pDispModeSection->setLayout(pUniformLayout);
 
 
-	auto pTesteeButton = Button::create();
-	pTesteeButton->setSkin( m_pButtonSkin );
-	pTesteeButton->label.setText("Testee");
-	pTesteeButton->label.setStyle(g_pButtonLabelStyle);
-	pTesteeButton->label.setLayout(g_pButtonLabelMapper);
-
-	auto pRefButton = Button::create();
-	pRefButton->setSkin( m_pButtonSkin );
-	pRefButton->label.setText("Reference");
-	pRefButton->label.setStyle(g_pButtonLabelStyle);
-	pRefButton->label.setLayout(g_pButtonLabelMapper);
-
-	auto pBothButton = Button::create();
-	pBothButton->setSkin( m_pButtonSkin );
-//	pBothButton->text = { "Both", g_pButtonLabelStyle, g_pButtonLabelMapper }
-	pBothButton->label.setText("Both");
-	pBothButton->label.setStyle(g_pButtonLabelStyle);
-	pBothButton->label.setLayout(g_pButtonLabelMapper);
-
-	auto pDiffButton = Button::create();
-	pDiffButton->setSkin( m_pButtonSkin );
-	pDiffButton->label.setText("Diff");
-	pDiffButton->label.setStyle(g_pButtonLabelStyle);
-	pDiffButton->label.setLayout(g_pButtonLabelMapper);
-
-	auto pTimeButton = Button::create();
-	pTimeButton->setSkin( m_pButtonSkin );
-	pTimeButton->label.setText("Time");
-	pTimeButton->label.setStyle(g_pButtonLabelStyle);
-	pTimeButton->label.setLayout(g_pButtonLabelMapper);
+	auto pTesteeButton = Button::create(WGOVR(pTheme->pushButton(), _.label.text = "Testee"));
+	auto pRefButton = Button::create(WGOVR(pTheme->pushButton(), _.label.text = "Reference"));
+	auto pBothButton = Button::create(WGOVR(pTheme->pushButton(), _.label.text = "Both"));
+	auto pDiffButton = Button::create(WGOVR(pTheme->pushButton(), _.label.text = "Diff"));
+	auto pTimeButton = Button::create(WGOVR(pTheme->pushButton(), _.label.text = "Time"));
 
 	pDispModeSection->slots << pTesteeButton;
 	pDispModeSection->slots << pRefButton;
@@ -910,29 +832,10 @@ bool GfxDeviceTester::setup_chrome()
 	pDispModeSection->setAxis(Axis::X);
 	pDispModeSection->setLayout(pUniformLayout);
 
-	auto pX1Button = Button::create();
-	pX1Button->setSkin( m_pButtonSkin );
-	pX1Button->label.setText(" X1 ");
-	pX1Button->label.setStyle(g_pButtonLabelStyle);
-	pX1Button->label.setLayout(g_pButtonLabelMapper);
-
-	auto pX2Button = Button::create();
-	pX2Button->setSkin( m_pButtonSkin );
-	pX2Button->label.setText(" X2 ");
-	pX2Button->label.setStyle(g_pButtonLabelStyle);
-	pX2Button->label.setLayout(g_pButtonLabelMapper);
-
-	auto pX4Button = Button::create();
-	pX4Button->setSkin( m_pButtonSkin );
-	pX4Button->label.setText(" X4 ");
-	pX4Button->label.setStyle(g_pButtonLabelStyle);
-	pX4Button->label.setLayout(g_pButtonLabelMapper);
-
-	auto pX8Button = Button::create();
-	pX8Button->setSkin( m_pButtonSkin );
-	pX8Button->label.setText(" X8 ");
-	pX8Button->label.setStyle(g_pButtonLabelStyle);
-	pX8Button->label.setLayout(g_pButtonLabelMapper);
+	auto pX1Button = Button::create(WGOVR(pTheme->pushButton(), _.label.text = "X1"));
+	auto pX2Button = Button::create(WGOVR(pTheme->pushButton(), _.label.text = "X2"));
+	auto pX4Button = Button::create(WGOVR(pTheme->pushButton(), _.label.text = "X4"));
+	auto pX8Button = Button::create(WGOVR(pTheme->pushButton(), _.label.text = "X8"));
 
 	pDispZoomSection->slots << pX1Button;
 	pDispZoomSection->slots << pX2Button;
@@ -961,31 +864,35 @@ bool GfxDeviceTester::setup_chrome()
 
 	// Setup sidebar
 
-	auto pTestList = PackList::create();
-	pTestList->setSelectMode(SelectMode::FlipOnSelect);
+	auto pTestList = PackPanel::create({ .axis = Axis::Y });
 
-	Base::msgRouter()->addRoute(pTestList, MsgType::ItemsSelect, [&](Msg* _pMsg) {
-
-		auto pMsg = static_cast<ItemsSelectMsg*>(_pMsg);
-		auto p = pMsg->items();
-		for (int x = 0; x < pMsg->nbItems(); x++)
-			g_tests[p[x].id].bActive = true;
+	auto pSelectCapsule = SelectCapsule::create({ .child = pTestList, .selectMode = SelectMode::MultiEntries });
 
 
-		g_pReferenceDevice->setNeedsRedraw();
-		g_pTesteeDevice->setNeedsRedraw();
-	});
 
-	Base::msgRouter()->addRoute(pTestList, MsgType::ItemsUnselect, [&](Msg* _pMsg) {
+	Base::msgRouter()->addRoute(pSelectCapsule, MsgType::Selected, [&](Msg* _pMsg) {
 
-		auto pMsg = static_cast<ItemsUnselectMsg*>(_pMsg);
-		auto p = pMsg->items();
-		for (int x = 0; x < pMsg->nbItems(); x++)
-			g_tests[p[x].id].bActive = false;
+		auto pMsg = static_cast<SelectedMsg*>(_pMsg);
+		
+		auto p = pMsg->selected();
+		for (int x = 0; x < pMsg->nbSelected(); x++)
+			g_tests[p[x]->id()].bActive = true;
 
 		g_pReferenceDevice->setNeedsRedraw();
 		g_pTesteeDevice->setNeedsRedraw();
 	});
+
+	Base::msgRouter()->addRoute(pSelectCapsule, MsgType::Unselected, [&](Msg* _pMsg) {
+
+		auto pMsg = static_cast<UnselectedMsg*>(_pMsg);
+
+		auto p = pMsg->unselected();
+		for (int x = 0; x < pMsg->nbUnselected(); x++)
+			g_tests[p[x]->id()].bActive = false;
+
+		g_pReferenceDevice->setNeedsRedraw();
+		g_pTesteeDevice->setNeedsRedraw();
+		});
 
 
 	auto pSkin = BoxSkin::create(1, Color::White, Color::Black, 8);
@@ -999,23 +906,20 @@ bool GfxDeviceTester::setup_chrome()
 	});
 
 	pTestList->setSkin( pSkin );
-	pTestList->setEntrySkin(pEntrySkin);
 
 	int id = 0;
 	for (TestEntry& test : g_tests)
 	{
-		auto pEntry = TextDisplay::create();
-		pEntry->setId(id++);
-		pEntry->display.setText(test.name);
+		auto pEntry = TextDisplay::create(
+			{ .display = {.text = test.name }, 
+			.id = id++, 
+			.selectable = true,
+			.skin = pEntrySkin });
 		pTestList->slots.pushBack(pEntry);
 	}
 
-	auto pTestScrollPanel = ScrollPanel::create();
-	pTestScrollPanel->setSizeConstraints( SizeConstraint::Equal, SizeConstraint::None );
-	pTestScrollPanel->slot = pTestList;
-
-	pTestScrollPanel->scrollbarY.setBackground(ColorSkin::create(Color::Green));
-	pTestScrollPanel->scrollbarY.setBar(m_pButtonSkin);
+	auto pTestScrollPanel = ScrollPanel::create(pTheme->scrollPanelY());
+	pTestScrollPanel->slot = pSelectCapsule;
 
 	pSidebar->slots << pTestScrollPanel;
 
@@ -1032,7 +936,7 @@ bool GfxDeviceTester::setup_chrome()
 		auto pBase = PackPanel::create();
 		pBase->setAxis(Axis::Y);
 
-		auto pTable = TablePanel::create( { .rowSpacing = 4, .columnSpacing = 10, .skin = ColorSkin::create( { .color = Color::White, .padding = 4 }) });
+		auto pTable = TablePanel::create( { .columnSpacing = 10, .rowSpacing = 4, .skin = ColorSkin::create( { .color = Color::White, .padding = 4 }) });
 
 		auto pOddEntrySkin = BoxSkin::create(0, Color::White, Color::White);
 		auto pEvenEntrySkin = BoxSkin::create(0, Color::PapayaWhip, Color::PapayaWhip);
@@ -1043,15 +947,11 @@ bool GfxDeviceTester::setup_chrome()
 		// Create the bottom section
 
 		auto pBottom = PackPanel::create();
-		pBottom->setSkin( m_pBackPlateSkin );
+		pBottom->setSkin( pTheme->plateSkin() );
 		pBottom->setAxis(Axis::X);
 		pBottom->setLayout(pUniformLayout);
 
-		auto pRefresh = Button::create();
-		pRefresh->setSkin( m_pButtonSkin );
-		pRefresh->label.setText("REFRESH");
-		pRefresh->label.setStyle(g_pButtonLabelStyle);
-		pRefresh->label.setLayout(g_pButtonLabelMapper);
+		auto pRefresh = Button::create(WGOVR(pTheme->pushButton(), _.label.text = "REFRESH"));
 
 		Base::msgRouter()->addRoute(pRefresh, MsgType::Select, [this](Msg* pMsg) {
 			g_bRefreshPerformance = true;

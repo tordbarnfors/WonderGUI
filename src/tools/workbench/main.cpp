@@ -544,10 +544,10 @@ int main(int argc, char** argv)
 		//
 
 		MsgLogger_p pLogger = MsgLogger::create(std::cout);
-		pLogger->logAllMsgs();
-		pLogger->ignoreMsg(MsgType::MouseMove);
-		pLogger->ignoreMsg(MsgType::MouseDrag);
-		pLogger->ignoreMsg(MsgType::MouseRepeat);
+		pLogger->logAllMsgs(true);
+		pLogger->logMsg(MsgType::MouseMove, false);
+		pLogger->logMsg(MsgType::MouseDrag, false);
+		pLogger->logMsg(MsgType::MouseRepeat, false);
 
 		Base::msgRouter()->broadcastTo(pLogger);
 

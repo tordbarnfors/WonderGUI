@@ -96,7 +96,7 @@ namespace wg
 	 * A widget for arranging children horizontally or vertically.
 	 */
 
-	class PackPanel : public Panel<PackPanelSlot>
+	class PackPanel : public PanelTemplate<PackPanelSlot>
 	{
 		friend class PackPanelSlot;
 	public:
@@ -176,7 +176,7 @@ namespace wg
 
 	protected:
 		PackPanel();
-		template< class BP> PackPanel(const BP& bp) : Panel(bp)
+		template< class BP> PackPanel(const BP& bp) : PanelTemplate(bp)
 		{
 			m_bSiblingsOverlap	= false;
 			m_axis				= bp.axis;

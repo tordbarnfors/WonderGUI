@@ -34,7 +34,7 @@ namespace wg
 	using namespace Util;
 
 	template class DynamicSlotVector<StackPanelSlot>;
-	template class Panel<StackPanelSlot>;
+	template class PanelTemplate<StackPanelSlot>;
 
 	const TypeInfo StackPanel::TYPEINFO = { "StackPanel", &Panel::TYPEINFO };
 	const TypeInfo StackPanelSlot::TYPEINFO = { "StackPanel::Slot", &PanelSlot::TYPEINFO };
@@ -84,7 +84,7 @@ namespace wg
 
 	//____ constructor ____________________________________________________________
 
-	StackPanel::StackPanel() : Panel()
+	StackPanel::StackPanel() : PanelTemplate()
 	{
 		m_bSiblingsOverlap = true;
 	}
@@ -296,7 +296,7 @@ namespace wg
 		if( scale != m_scale )
 			m_defaultSize = _calcDefaultSize(scale);
 
-		Panel::_resize(size,scale);
+		PanelTemplate::_resize(size,scale);
 		_updateChildGeo(slots.begin(),slots.end(), false);
 	}
 

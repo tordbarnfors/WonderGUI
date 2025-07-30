@@ -91,8 +91,7 @@ protected:
 	};
 
 
-	bool		setup_theme();
-	bool		setup_chrome();
+	bool		setup_chrome(Theme * pTheme);
 	void		teardown_chrome();
 
 	void		setup_testdevices();
@@ -136,9 +135,6 @@ protected:
 	vector<TestEntry>	g_tests;
 
 	vector<RectSPX>		g_clipList;
-
-	TextStyle_p			g_pButtonLabelStyle = nullptr;
-	TextLayout_p		g_pButtonLabelMapper = nullptr;
 
 	DisplayMode			g_displayMode = DisplayMode::Testee;
 	float				g_zoomFactor = 1.f;

@@ -73,6 +73,7 @@ Simplistic::Simplistic( Font * pNormal, Font * pBold, Font * pItalic, Font * pMo
 	m_pEmphasisStyle = TextStyle::create(WGBP(TextStyle, _.font = m_pFontItalic, _.color = HiColor::Black, _.size = c_textSizeNormal));
 	m_pCodeStyle = TextStyle::create(WGBP(TextStyle, _.font = m_pFontMonospace, _.color = HiColor::Black, _.size = c_textSizeNormal));
 	m_pMonospaceStyle = TextStyle::create(WGBP(TextStyle, _.font = m_pFontMonospace, _.color = HiColor::Black, _.size = c_textSizeNormal));
+	m_pFinePrintStyle = TextStyle::create(WGBP(TextStyle, _.font = m_pFontNormal, _.color = HiColor::Black, _.size = 9));
 
 
 	m_pBlackStyle = TextStyle::create( WGBP(TextStyle, _.font = m_pFontNormal, _.color = HiColor::Black, _.size = 12 ));
@@ -84,6 +85,8 @@ Simplistic::Simplistic( Font * pNormal, Font * pBold, Font * pItalic, Font * pMo
 	m_heading4Style = TextStyle::create( WGBP(TextStyle, _.font = m_pFontBold, _.color = HiColor::Black, _.size = 16));
 	m_heading5Style = TextStyle::create( WGBP(TextStyle, _.font = m_pFontBold, _.color = HiColor::Black, _.size = 14));
 	m_heading6Style = TextStyle::create( WGBP(TextStyle, _.font = m_pFontNormal, _.color = HiColor::Black, _.size = 14));
+
+
 
 	auto pLayoutCenteredNoWrap = BasicTextLayout::create( WGBP(BasicTextLayout,
 															   _.autoEllipsis = true,
@@ -119,11 +122,11 @@ Simplistic::Simplistic( Font * pNormal, Font * pBold, Font * pItalic, Font * pMo
 											_.padding = 4 ));
 
 	auto pLabelCapsuleSkin = BoxSkin::create( WGBP(BoxSkin,
-										  _.color = plateColor,
+										  _.color = HiColor::Transparent,
 										  _.outlineColor = borderColor,
 										  _.outlineThickness = 1,
-										  _.spacing = { 6,2,2,2},
-										  _.padding = { 8, 4, 4, 4} ));
+										  _.spacing = { 8,2,2,2},
+										  _.padding = { 10, 4, 4, 4} ));
 
 	auto pCapsuleLabelSkin = ColorSkin::create( WGBP(ColorSkin,
 													 _.color = plateColor,
@@ -252,7 +255,9 @@ Simplistic::Simplistic( Font * pNormal, Font * pBold, Font * pItalic, Font * pMo
 	);
 
 	m_textEditor = WGBP(TextEditor,
-		_.skin = m_pCanvasSkin);
+		_.skin = m_pCanvasSkin,
+		_.editor.style = m_pBlackStyle
+	);
 
 	m_windowTitleBar = WGBP(TextDisplay,
 							_.skin = pTitleBarSkin,
@@ -260,16 +265,24 @@ Simplistic::Simplistic( Font * pNormal, Font * pBold, Font * pItalic, Font * pMo
 
 	
 	m_pushButtonBP = WGBP(Button,
-							_.skin = pButtonSkin);
+							_.skin = pButtonSkin,
+							_.label.style = m_pBlackStyle
+	);
 
 	m_toggleButtonBP = WGBP(ToggleButton,
-							_.skin = pToggleButtonSkin);
+							_.skin = pToggleButtonSkin,
+							_.label.style = m_pBlackStyle
+	);
 
 	m_checkboxBP = WGBP(ToggleButton,
-		_.skin = pCheckboxSkin);
+		_.skin = pCheckboxSkin,
+		_.label.style = m_pBlackStyle
+	);
 
 	m_radioButtonBP = WGBP(ToggleButton,
-		_.skin = pRadioButtonSkin);
+		_.skin = pRadioButtonSkin,
+		_.label.style = m_pBlackStyle
+	);
 }
 
 
@@ -422,6 +435,12 @@ TextStyle_p Simplistic::calloutStyle() const
 {
 	return m_pBlackStyle;
 }
+
+TextStyle_p Simplistic::finePrintStyle() const
+{
+	return m_pFinePrintStyle;
+}
+
 
 TextStyle_p Simplistic::defaultStyle() const
 {

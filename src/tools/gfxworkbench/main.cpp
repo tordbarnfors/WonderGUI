@@ -89,10 +89,14 @@ int main ( int argc, char** argv )
 	Blob_p pCanvasBlob = Blob::create( pWinSurf->pixels, 0);
 	SoftSurface_p pCanvas = SoftSurface::create({ .format = format, .size = SizeI(pWinSurf->w,pWinSurf->h) }, pCanvasBlob, pWinSurf->pitch);
 
-	SoftGfxDevice_p pGfxDevice = SoftGfxDevice::create();
-	addDefaultSoftKernels(pGfxDevice);
-//	addBaseSoftKernelsForRGB565BECanvas(pGfxDevice);
-	addBaseSoftKernelsForRGB555BECanvas(pGfxDevice);
+	auto pBackend = SoftBackend::create();
+	addDefaultSoftKernels(pBackend);
+	//	addBaseSoftKernelsForRGB565BECanvas(pBackend);
+	addBaseSoftKernelsForRGB555BECanvas(pBackend);
+
+
+	GfxDeviceGen2_p pGfxDevice = GfxDeviceGen2::create(pBackend);
+
 
 	
 	// First we load the 24-bit bmp containing the button graphics.

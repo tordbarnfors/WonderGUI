@@ -38,19 +38,19 @@ namespace wg
 
 		RectF geo = pStaticSlot->geo();
 
-		pTable->slots[row][0] = TextDisplay::create( WGOVR( blueprint.listEntryLabel, _.display.text = "Relative X: " ));
+		pTable->slots[row][0] = TextDisplay::create( WGOVR( blueprint.listEntryLabel, _.display.text = "X offset (pts): " ));
 		pTable->slots[row][1] = NumberDisplay::create( WGOVR(blueprint.listEntryPts, _.display.value = geo.x));
 		row++;
 
-		pTable->slots[row][0] = TextDisplay::create(WGOVR(blueprint.listEntryLabel, _.display.text = "Relative Y: "));
+		pTable->slots[row][0] = TextDisplay::create(WGOVR(blueprint.listEntryLabel, _.display.text = "Y offset (pts): "));
 		pTable->slots[row][1] = NumberDisplay::create(WGOVR(blueprint.listEntryPts, _.display.value = geo.y));
 		row++;
 
-		pTable->slots[row][0] = TextDisplay::create(WGOVR(blueprint.listEntryLabel, _.display.text = "Relative W: "));
+		pTable->slots[row][0] = TextDisplay::create(WGOVR(blueprint.listEntryLabel, _.display.text = "Width (pts): "));
 		pTable->slots[row][1] = NumberDisplay::create(WGOVR(blueprint.listEntryPts, _.display.value = geo.w));
 		row++;
 
-		pTable->slots[row][0] = TextDisplay::create(WGOVR(blueprint.listEntryLabel, _.display.text = "Relative H: "));
+		pTable->slots[row][0] = TextDisplay::create(WGOVR(blueprint.listEntryLabel, _.display.text = "Height (pts): "));
 		pTable->slots[row][1] = NumberDisplay::create(WGOVR(blueprint.listEntryPts, _.display.value = geo.h));
 		row++;
 

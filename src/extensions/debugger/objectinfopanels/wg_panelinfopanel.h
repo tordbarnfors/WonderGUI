@@ -19,29 +19,42 @@
   should contact Tord Jansson [tord.jansson@gmail.com] for details.
 
 =========================================================================*/
-#include "wg_debugpanel.h"
+
+#ifndef	WG_PANELINFOPANEL_DOT_H
+#define WG_PANELINFOPANEL_DOT_H
+#pragma once
+
+#include <wg_tablepanel.h>
+#include <wg_debugpanel.h>
+#include <wg_panel.h>
 
 namespace wg
 {
+	class PanelInfoPanel;
+	typedef	StrongPtr<PanelInfoPanel>	PanelInfoPanel_p;
+	typedef	WeakPtr<PanelInfoPanel>	PanelInfoPanel_wp;
 
-	const TypeInfo DebugPanel::TYPEINFO = { "DebugPanel", &LabelCapsule::TYPEINFO };
 
 
-	//____ constructor _____________________________________________________________
-
-	DebugPanel::DebugPanel(const Blueprint& blueprint) : LabelCapsule( blueprint.classCapsule )
+	class PanelInfoPanel : public DebugPanel
 	{
-	}
+	public:
 
-	//____ typeInfo() _________________________________________________________
+		//.____ Creation __________________________________________
 
-	const TypeInfo& DebugPanel::typeInfo(void) const
-	{
-		return TYPEINFO;
-	}
+		static PanelInfoPanel_p		create( const Blueprint& blueprint, Panel * pPanel) { return PanelInfoPanel_p(new PanelInfoPanel(blueprint, pPanel) ); }
 
+		//.____ Identification __________________________________________
+
+		const TypeInfo&			typeInfo(void) const override;
+		const static TypeInfo	TYPEINFO;
+
+
+	protected:
+		PanelInfoPanel(const Blueprint& blueprint, Panel * pPanel );
+		~PanelInfoPanel() {}
+	};
 
 } // namespace wg
-
-
+#endif //WG_PANELINFOPANEL_DOT_H
 
