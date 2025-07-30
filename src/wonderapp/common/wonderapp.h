@@ -25,6 +25,7 @@
 #include <wg_blob.h>
 #include <wg_surface.h>
 #include <wg_rootpanel.h>
+#include <wg_theme.h>
 
 #include <window.h>
 
@@ -79,6 +80,8 @@ public:
 		virtual wg::Surface_p	loadSurface(const std::string& path, wg::SurfaceFactory* pFactory = nullptr,
 											const wg::Surface::Blueprint& blueprint = wg::Surface::Blueprint() ) = 0;
 		
+		virtual wg::Theme_p		initDefaultTheme() = 0;
+
 		virtual bool			notifyPopup(const std::string& title, const std::string& message, IconType iconType) = 0;
 		
 		virtual DialogButton	messageBox(const std::string& title, const std::string& message, DialogType dialogType,

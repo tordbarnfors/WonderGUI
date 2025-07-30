@@ -3,7 +3,8 @@
 #include "softgfxdevice.h"
 
 #include <wondergui.h>
-#include <wg_softgfxdevice.h>
+#include <wg_gfxdevice_gen2.h>
+#include <wg_softbackend.h>
 
 #include <wg_string.h>
 
@@ -32,7 +33,8 @@ bool SoftGfxDeviceTest::drawElipseTest(std::ostream& output)
 
 	SoftSurface_p pCanvas =	SoftSurface::create( { .canvas = true, .size = {4096,4096} } );
 
-	SoftGfxDevice_p pDevice = SoftGfxDevice::create();
+	auto pBackend = SoftBackend::create();
+	GfxDevice_p pDevice = GfxDeviceGen2::create(pBackend);
 	
 	pDevice->beginRender();
 	

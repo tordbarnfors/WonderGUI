@@ -34,7 +34,7 @@ namespace wg
 	using namespace Util;
 
 	template class DynamicSlotVector<LambdaPanelSlot>;
-	template class Panel<LambdaPanelSlot>;
+	template class PanelTemplate<LambdaPanelSlot>;
 
 
 	const TypeInfo LambdaPanel::TYPEINFO = { "LambdaPanel", &Panel::TYPEINFO };
@@ -355,7 +355,7 @@ namespace wg
 
 	void LambdaPanel::_resize( const SizeSPX& size, int scale )
 	{
-		Panel::_resize( size, scale );
+		PanelTemplate::_resize( size, scale );
 
 		for (auto& slot : slots)
 			_updateGeo(&slot, false, false);

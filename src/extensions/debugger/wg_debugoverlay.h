@@ -246,7 +246,7 @@ namespace wg
 		Skin_p			m_pExpandIcon;
 		Skin_p			m_pCondenseIcon;
 
-
+		TextLayout_p	m_pHeaderLayout;
 
 		DebugPanel::Blueprint	m_debugPanelBP;
 

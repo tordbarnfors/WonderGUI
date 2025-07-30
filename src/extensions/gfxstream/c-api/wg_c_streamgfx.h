@@ -46,12 +46,6 @@ extern "C" {
 
 	wg_obj			wg_createStreamSurfaceFactory(wg_obj streamEncoder);
 
-	wg_obj			wg_createSoftEdgemap( wg_obj streamEncoder, const wg_edgemapBP* blueprint );
-	wg_obj			wg_createSoftEdgemapFromFloats( wg_obj streamEncoder, const wg_edgemapBP* blueprint, wg_sampleOrigo origo, const float * pSamples, int edges, int edgePitch, int samplePitch);
-	wg_obj			wg_createSoftEdgemapFromSpx( wg_obj streamEncoder, const wg_edgemapBP* blueprint, wg_sampleOrigo origo, const wg_spx * pSamples, int edges, int edgePitch, int samplePitch);
-
-	wg_obj			wg_createSoftEdgemapFactory(wg_obj streamEncoder);
-
 
 #ifdef __cplusplus
 }

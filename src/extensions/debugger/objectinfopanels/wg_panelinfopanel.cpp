@@ -19,40 +19,38 @@
   should contact Tord Jansson [tord.jansson@gmail.com] for details.
 
 =========================================================================*/
-#include "wg_panelslotinfopanel.h"
+#include "wg_panelinfopanel.h"
 #include <wg_textdisplay.h>
-#include <wg_panel.h>
+#include <wg_numberdisplay.h>
+#include <wg_basicnumberlayout.h>
+
 
 namespace wg
 {
 
-	const TypeInfo PanelSlotInfoPanel::TYPEINFO = { "PanelSlotInfoPanel", &DebugPanel::TYPEINFO };
+	const TypeInfo PanelInfoPanel::TYPEINFO = { "PanelInfoPanel", &DebugPanel::TYPEINFO };
 
 
 	//____ constructor _____________________________________________________________
 
-	PanelSlotInfoPanel::PanelSlotInfoPanel(const Blueprint& blueprint, StaticSlot * pStaticSlot) : DebugPanel( blueprint )
+	PanelInfoPanel::PanelInfoPanel(const Blueprint& blueprint, Panel * pPanel) : DebugPanel( blueprint )
 	{
-		auto pPanelSlot = static_cast<const PanelSlot*>(pStaticSlot);
-
-
 		auto pTable = TablePanel::create( WGOVR(blueprint.table, _.columns = 2, _.rows = 1 ));
 
-		pTable->slots[0][0] = TextDisplay::create( WGOVR( blueprint.listEntryLabel, _.display.text = "Visible: " ));
-		pTable->slots[0][1] = TextDisplay::create( WGOVR(blueprint.listEntryText, _.display.text = pPanelSlot->isVisible() ? "true" : "false" ));
+		pTable->slots[0][0] = TextDisplay::create( WGOVR( blueprint.listEntryLabel, _.display.text = "Mask op: " ));
+		pTable->slots[0][1] = TextDisplay::create( WGOVR( blueprint.listEntryText, _.display.text = toString(pPanel->maskOp())));
 
 		this->slot = pTable;
 	}
 
 	//____ typeInfo() _________________________________________________________
 
-	const TypeInfo& PanelSlotInfoPanel::typeInfo(void) const
+	const TypeInfo& PanelInfoPanel::typeInfo(void) const
 	{
 		return TYPEINFO;
 	}
 
 
 } // namespace wg
-
 
 
