@@ -208,7 +208,7 @@ namespace wg
 	 */
 
 
-	class FlexPanel : public Panel<FlexPanelSlot>
+	class FlexPanel : public PanelTemplate<FlexPanelSlot>
 	{
 		friend class FlexPanelSlot;
 
@@ -266,7 +266,7 @@ namespace wg
 
 	protected:
 		FlexPanel();
-		template<class BP> FlexPanel(const BP& bp) : Panel(bp)
+		template<class BP> FlexPanel(const BP& bp) : PanelTemplate(bp)
 		{
 			m_bSiblingsOverlap = true;
 			m_edgePolicy = bp.edgePolicy;

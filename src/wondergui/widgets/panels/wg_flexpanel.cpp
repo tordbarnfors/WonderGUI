@@ -34,7 +34,7 @@ namespace wg
 	using namespace Util;
 
 	template class DynamicSlotVector<FlexPanelSlot>;
-	template class Panel<FlexPanelSlot>;
+	template class PanelTemplate<FlexPanelSlot>;
 
 	const TypeInfo FlexPanel::TYPEINFO = { "FlexPanel", &Panel::TYPEINFO };
 	const TypeInfo FlexPanelSlot::TYPEINFO = { "FlexPanelSlot", &PanelSlot::TYPEINFO };
@@ -440,7 +440,7 @@ namespace wg
 
 	void FlexPanel::_resize( const SizeSPX& size, int scale )
 	{
-		Panel::_resize(size,scale);
+		PanelTemplate::_resize(size,scale);
 
 		auto p = slots.begin();
 		while( p < slots.end() )

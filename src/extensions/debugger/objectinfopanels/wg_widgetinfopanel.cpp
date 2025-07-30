@@ -164,7 +164,7 @@ namespace wg
 			pLabel->display.setText("Is pickable: ");
 
 			auto pValue = TextDisplay::create(blueprint.listEntryText);
-			pValue->display.setText(std::to_string(pWidget->isPickable()));
+			pValue->display.setText(pWidget->isPickable() ? "true" : "false" );
 
 			pTable->slots[row][0] = pLabel;
 			pTable->slots[row][1] = pValue;
@@ -176,7 +176,7 @@ namespace wg
 			pLabel->display.setText("Is pickhandle: ");
 
 			auto pValue = TextDisplay::create(blueprint.listEntryText);
-			pValue->display.setText(std::to_string(pWidget->isPickHandle()));
+			pValue->display.setText(pWidget->isPickHandle() ? "true" : "false");
 
 			pTable->slots[row][0] = pLabel;
 			pTable->slots[row][1] = pValue;
@@ -200,7 +200,7 @@ namespace wg
 			pLabel->display.setText("Is drop target: ");
 
 			auto pValue = TextDisplay::create(blueprint.listEntryText);
-			pValue->display.setText(std::to_string(pWidget->isDropTarget()));
+			pValue->display.setText(pWidget->isDropTarget() ? "true" : "false");
 
 			pTable->slots[row][0] = pLabel;
 			pTable->slots[row][1] = pValue;
@@ -212,7 +212,7 @@ namespace wg
 			pLabel->display.setText("Is tab locked: ");
 
 			auto pValue = TextDisplay::create(blueprint.listEntryText);
-			pValue->display.setText(std::to_string(pWidget->isTabLocked()));
+			pValue->display.setText(pWidget->isTabLocked() ? "true" : "false");
 
 			pTable->slots[row][0] = pLabel;
 			pTable->slots[row][1] = pValue;
@@ -224,7 +224,7 @@ namespace wg
 			pLabel->display.setText("Is selectable: ");
 
 			auto pValue = TextDisplay::create(blueprint.listEntryText);
-			pValue->display.setText(std::to_string(pWidget->isSelectable()));
+			pValue->display.setText(pWidget->isSelectable() ? "true" : "false");
 
 			pTable->slots[row][0] = pLabel;
 			pTable->slots[row][1] = pValue;
@@ -248,7 +248,7 @@ namespace wg
 			pLabel->display.setText("Has sticky focus: ");
 
 			auto pValue = TextDisplay::create(blueprint.listEntryText);
-			pValue->display.setText(std::to_string(pWidget->hasStickyFocus()));
+			pValue->display.setText(pWidget->hasStickyFocus() ? "true" : "false");
 
 			pTable->slots[row][0] = pLabel;
 			pTable->slots[row][1] = pValue;
@@ -260,7 +260,7 @@ namespace wg
 			pLabel->display.setText("Has overflow: ");
 
 			auto pValue = TextDisplay::create(blueprint.listEntryText);
-			pValue->display.setText(std::to_string(pWidget->m_bOverflow));
+			pValue->display.setText(pWidget->m_bOverflow ? "true" : "false");
 
 			pTable->slots[row][0] = pLabel;
 			pTable->slots[row][1] = pValue;

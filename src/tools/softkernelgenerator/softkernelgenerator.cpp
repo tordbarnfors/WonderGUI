@@ -480,7 +480,7 @@ PackPanel_p MyApp::_buildToggleButtonRow(std::string title, std::vector<KernelDB
 		auto pWidget = ToggleButton::create(WGBP(ToggleButton,
 			_.id = (int)blitType;
 		_.icon.skin = m_pCheckBoxSkin,
-			_.icon.padding = { 0,4,0,0 },
+			_.icon.spacing = 4,
 			_.label.text = labels[int(blitType)],
 			_.checked = selected[int(blitType)]));
 
@@ -506,7 +506,7 @@ PackPanel_p MyApp::_buildToggleButtonRow(string title, std::vector<BlendMode> bl
 		auto pWidget = ToggleButton::create(WGBP(ToggleButton,
 			_.id = (int)blendMode;
 			_.icon.skin = m_pCheckBoxSkin,
-			_.icon.padding = { 0,4,0,0 },
+			_.icon.spacing = 4,
 			_.label.text = toString(blendMode),
 			_.checked = selected[int(blendMode)] ));
 
@@ -532,7 +532,7 @@ PackPanel_p MyApp::_buildToggleButtonRow(string title, std::vector<TintMode> tin
 		auto pWidget = ToggleButton::create(WGBP(ToggleButton,
 			_.id = (int)tintMode;
 			_.icon.skin = m_pCheckBoxSkin,
-			_.icon.padding = { 0,4,0,0 },
+			_.icon.spacing = 4,
 			_.label.text = toString(tintMode),
 			_.checked = selected[int(tintMode)] ));
 
@@ -557,7 +557,7 @@ PackPanel_p MyApp::_buildToggleButtonRow(string title, std::vector<PixelFormat> 
 		auto pWidget = ToggleButton::create(WGBP(ToggleButton,
 			_.id = (int)format;
 			_.icon.skin = m_pCheckBoxSkin,
-			_.icon.padding = { 0,4,0,0 },
+			_.icon.spacing = 4,
 			_.label.text = toString(format),
 			_.checked = selected[int(format)]));
 
