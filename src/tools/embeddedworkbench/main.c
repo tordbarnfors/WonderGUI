@@ -74,8 +74,10 @@ int main ( int argc, char** argv )
 
 	SDL_UnlockSurface(pWinSurf);
 
-	wg_obj hGfxDevice = wg_createSoftGfxDevice();
-	wg_addDefaultSoftKernels(hGfxDevice);
+	wg_obj hBackend = wg_createSoftBackend();
+	wg_addDefaultSoftKernels(hBackend);
+
+	wg_obj hGfxDevice = wg_createGfxDevice(hBackend);
 
 	//------------------------------------------------------
 	

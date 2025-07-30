@@ -22,6 +22,8 @@
 
 #include <wonderapp.h>
 #include <wondergui.h>
+#include <wg_freetypefont.h>
+#include <themes/simplistic/wg_simplistic.h>
 
 #ifdef WIN32
 #	include <SDL.h>
@@ -62,8 +64,9 @@ public:
 	}
 
 	Blob_p 			loadBlob(const std::string& path) override;
-	Surface_p 		loadSurface(const std::string& path, SurfaceFactory* pFactory, const Surface::Blueprint& bp = Surface::Blueprint() ) override;
+	Surface_p 		loadSurface(const std::string& path, SurfaceFactory* pFactory = nullptr, const Surface::Blueprint& bp = Surface::Blueprint() ) override;
 
+	Theme_p			initDefaultTheme() override;
 
 	bool			notifyPopup(const std::string& title, const std::string& message, WonderApp::IconType iconType) override;
 
@@ -176,7 +179,7 @@ int main(int argc, char *argv[] )
 	if (!init_wondergui() )
 		return -1;
 	
-	// Create app and visitor, make any app-specif initialization
+	// Create app and visitor, make any app-specific initialization
 
 	auto pApp = WonderApp::create();
 	auto pVisitor = new MyAppVisitor();
@@ -329,8 +332,6 @@ bool init_wondergui()
 	pInput->mapCommand(SDLK_z, ModKeys::CommandShift, EditCmd::Redo);
 	
 	pInput->mapCommand(SDLK_ESCAPE, ModKeys::None, EditCmd::Escape);
-
-	
 	
 //	g_pRoot->setDebugMode(true);
 
@@ -785,6 +786,39 @@ Surface_p MyAppVisitor::loadSurface(const std::string& path, SurfaceFactory* pFa
 	
 }
 
+//____ initDefaultTheme() ____________________________________________________
+
+Theme_p MyAppVisitor::initDefaultTheme()
+{
+	// Create the default theme, which is a simplistic theme.
+	
+	auto pFont1Blob = loadBlob("resources/NotoSans-Regular.ttf");
+	auto pFont2Blob = loadBlob("resources/NotoSans-Bold.ttf");
+	auto pFont3Blob = loadBlob("resources/NotoSans-Italic.ttf");
+	auto pFont4Blob = loadBlob("resources/DroidSansMono.ttf");
+
+	auto pFont1 = FreeTypeFont::create(pFont1Blob);
+	auto pFont2 = FreeTypeFont::create(pFont2Blob);
+	auto pFont3 = FreeTypeFont::create(pFont3Blob);
+	auto pFont4 = FreeTypeFont::create(pFont4Blob);
+
+	auto pThemeSurface = loadSurface("resources/skin_widgets.png");
+
+	auto pTheme = Simplistic::create(pFont1,pFont2,pFont3,pFont4,pThemeSurface);
+	if (!pTheme)
+	{
+		Base::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "Failed to create default theme", nullptr, nullptr, __func__, __FILE__, __LINE__);
+		return nullptr;
+	}
+	Base::setDefaultTheme(pTheme);
+	Base::setDefaultStyle(pTheme->defaultStyle());
+
+
+	return pTheme;
+}
+
+
+
 //____ notifyPopup() __________________________________________________________
 
 bool MyAppVisitor::notifyPopup(const std::string& title, const std::string& message, WonderApp::IconType iconType)
@@ -1037,10 +1071,10 @@ bool MyAppVisitor::closeLibrary(WonderApp::LibId lib)
 
 std::string MyAppVisitor::resourceDirectory()
 {
-	char* pBasePath = SDL_GetBasePath();
-//	char* pBasePath = nullptr;
+//	char* pBasePath = SDL_GetBasePath();
+	char* pBasePath = nullptr;
 
-	if( pBasePath == NULL )
+	if( pBasePath == nullptr )
 		return "resources/";
 	else
 	{

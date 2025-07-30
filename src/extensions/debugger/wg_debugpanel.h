@@ -53,9 +53,11 @@ namespace wg
 			Surface_p					icons;
 
 			LabelCapsule::Blueprint		mainCapsule;
+			LabelCapsule::Blueprint		classCapsule;
 			TextDisplay::Blueprint		listEntryLabel;
 			TextDisplay::Blueprint		listEntryText;
 			NumberDisplay::Blueprint	listEntryInteger;
+			NumberDisplay::Blueprint	listEntryBool;
 			NumberDisplay::Blueprint	listEntrySPX;
 			NumberDisplay::Blueprint	listEntryPts;
 			NumberDisplay::Blueprint	listEntryDecimal;

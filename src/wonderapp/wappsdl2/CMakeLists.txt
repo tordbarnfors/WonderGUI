@@ -50,6 +50,7 @@ target_link_libraries(wappsdl2sw PRIVATE
     wgsoftgfx
     wgfreetypefont
     wondergui
+    wg_theme_simplistic
     ${FREETYPE2_LIB}
     ${SDL2_LIBS}
     ${SDL2IMAGE_LIBS}
@@ -85,6 +86,7 @@ target_link_libraries(wappsdl2gl PRIVATE
     wgopenglgfx
     wgfreetypefont
     wondergui
+    wg_theme_simplistic
     ${FREETYPE2_LIB}
     ${SDL2_LIBS}
     ${SDL2IMAGE_LIBS}
@@ -124,6 +126,7 @@ if(APPLE)
         wgmetalgfx
         wgfreetypefont
         wondergui
+        wg_theme_simplistic
         ${FREETYPE2_LIB}
         ${SDL2_LIBS}
         ${SDL2IMAGE_LIBS}

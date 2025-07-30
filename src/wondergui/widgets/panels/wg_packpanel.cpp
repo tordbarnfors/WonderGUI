@@ -34,7 +34,7 @@ namespace wg
 	using namespace Util;
 
 	template class DynamicSlotVector<PackPanelSlot>;
-	template class Panel<PackPanelSlot>;
+	template class PanelTemplate<PackPanelSlot>;
 
 	const TypeInfo PackPanel::TYPEINFO = { "PackPanel", &Panel::TYPEINFO };
 	const TypeInfo PackPanelSlot::TYPEINFO = { "PackPanelSlot", &PanelSlot::TYPEINFO };
@@ -713,7 +713,7 @@ namespace wg
 			m_defaultContentSize = _calcDefaultContentSize(scale, m_maxAscend, m_maxDescend);
 		}
 
-		Panel::_resize(size, scale);
+		PanelTemplate::_resize(size, scale);
 		_refreshChildGeo(true);
 
 		if (slots.isEmpty())
