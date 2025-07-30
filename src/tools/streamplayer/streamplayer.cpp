@@ -61,7 +61,7 @@ bool MyApp::init(Visitor* pVisitor)
 
 bool MyApp::update()
 {
-	wg_defineSoftGfxDeviceCanvas(m_streamGfxDevice, WG_CANVAS_1, m_streamBackCanvas);
+	wg_defineSoftBackendCanvas(m_streamGfxDevice, WG_CANVAS_1, m_streamBackCanvas);
 
 	if( wg_pumpUntilFrame(m_pump) )
 	{
@@ -236,7 +236,7 @@ bool MyApp::_setupStreamPlaying()
 
 	m_streamGfxDevice = static_cast<Object*>(Base::defaultGfxDevice());
 
-	wg_defineSoftGfxDeviceCanvas(m_streamGfxDevice, WG_CANVAS_1, m_streamFrontCanvas);
+	wg_defineSoftBackendCanvas(m_streamGfxDevice, WG_CANVAS_1, m_streamFrontCanvas);
 
 
 	wg_obj	gfxDevice = static_cast<Object*>(Base::defaultGfxDevice());

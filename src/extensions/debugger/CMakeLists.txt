@@ -13,8 +13,12 @@ set(SOURCES
     wg_widgettreepanel.h
     wg_widgettreepanel.cpp
 
+    objectinfopanels/wg_containerinfopanel.h
+    objectinfopanels/wg_containerinfopanel.cpp
     objectinfopanels/wg_objectinfopanel.h
     objectinfopanels/wg_objectinfopanel.cpp
+    objectinfopanels/wg_panelinfopanel.h
+    objectinfopanels/wg_panelinfopanel.cpp
     objectinfopanels/wg_widgetinfopanel.h
     objectinfopanels/wg_widgetinfopanel.cpp
 
