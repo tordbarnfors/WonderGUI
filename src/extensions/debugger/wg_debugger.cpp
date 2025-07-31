@@ -123,7 +123,7 @@ namespace wg
 
 	Widget_p Debugger::createWidgetTreePanel(const DebugPanel::Blueprint& blueprint, Widget* pRoot)
 	{
-		return WidgetTreePanel::create(blueprint, pRoot, m_widgetSelectedCallback);
+		return WidgetTreePanel::create(blueprint, pRoot, m_objectSelectedCallback);
 	}
 
 	//____ createMsgLogPanel() ________________________________________________
@@ -133,11 +133,11 @@ namespace wg
 		return MsgLogPanel::create(blueprint);
 	}
 
-	//____ setWidgetSelectedCallback() ________________________________________
+	//____ setObjectSelectedCallback() ________________________________________
 
-	void Debugger::setWidgetSelectedCallback(std::function<void(Widget*)> pCallback)
+	void Debugger::setObjectSelectedCallback(std::function<void(Object*,Object*)> pCallback)
 	{
-		m_widgetSelectedCallback = pCallback;
+		m_objectSelectedCallback = pCallback;
 	}
 
 

@@ -127,6 +127,7 @@ namespace wg
 		const DrawerPanel::Blueprint&		treeListDrawer() const override;
 		const PaddingCapsule::Blueprint&	treeListEntry() const override;
 
+		const TablePanel::Blueprint&		listTable() const override;
 		const TextEditor::Blueprint&		textEditor() const override;
 
 
@@ -190,6 +191,8 @@ namespace wg
 
 		DrawerPanel::Blueprint	m_treeListDrawer;
 		PaddingCapsule::Blueprint m_treeListEntry;
+
+		TablePanel::Blueprint	m_listTable;
 
 		TextEditor::Blueprint	m_textEditor;
 

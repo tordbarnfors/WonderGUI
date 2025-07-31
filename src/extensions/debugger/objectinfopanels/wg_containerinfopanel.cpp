@@ -35,25 +35,9 @@ namespace wg
 
 	ContainerInfoPanel::ContainerInfoPanel(const Blueprint& blueprint, Container * pContainer) : DebugPanel( blueprint )
 	{
-		auto pTable = TablePanel::create( WGOVR(blueprint.table, _.columns = 2, _.rows = 5 ));
+		auto pTable = _createTable(1,2);
 
-		pTable->slots[0][0] = TextDisplay::create( WGOVR( blueprint.listEntryLabel, _.display.text = "Use pick handles: " ));
-		pTable->slots[0][1] = TextDisplay::create( WGOVR( blueprint.listEntryText, _.display.text = pContainer->usePickHandles() ? "true" : "false"));
-
-		BorderSPX overflow = pContainer->_overflow();
-
-		pTable->slots[1][0] = TextDisplay::create(WGOVR(blueprint.listEntryLabel, _.display.text = "Overflow top (spx): "));
-		pTable->slots[1][1] = NumberDisplay::create(WGOVR(blueprint.listEntrySPX, _.display.value = overflow.top ));
-
-		pTable->slots[2][0] = TextDisplay::create(WGOVR(blueprint.listEntryLabel, _.display.text = "Overflow right (spx): "));
-		pTable->slots[2][1] = NumberDisplay::create(WGOVR(blueprint.listEntrySPX, _.display.value = overflow.right));
-
-		pTable->slots[3][0] = TextDisplay::create(WGOVR(blueprint.listEntryLabel, _.display.text = "Overflow bottom (spx): "));
-		pTable->slots[3][1] = NumberDisplay::create(WGOVR(blueprint.listEntrySPX, _.display.value = overflow.bottom));
-
-		pTable->slots[4][0] = TextDisplay::create(WGOVR(blueprint.listEntryLabel, _.display.text = "Overflow left (spx): "));
-		pTable->slots[4][1] = NumberDisplay::create(WGOVR(blueprint.listEntrySPX, _.display.value = overflow.left));
-
+		_setBoolEntry(pTable, 0, "Use pick handles: ", pContainer->usePickHandles());
 		this->slot = pTable;
 	}
 
