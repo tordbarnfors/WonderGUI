@@ -33,6 +33,7 @@
 #include <wg_paddingcapsule.h>
 #include <wg_theme.h>
 
+
 namespace wg
 {
 	class DebugPanel;
@@ -52,6 +53,8 @@ namespace wg
 			Theme_p						theme;
 			Surface_p					icons;
 
+			std::function<void(Object*)> objectSelectedCallback;
+
 			LabelCapsule::Blueprint		mainCapsule;
 			LabelCapsule::Blueprint		classCapsule;
 			TextDisplay::Blueprint		listEntryLabel;
@@ -66,7 +69,6 @@ namespace wg
 			TablePanel::Blueprint		table;
 			DrawerPanel::Blueprint		listEntryDrawer;
 			PaddingCapsule::Blueprint	selectableListEntryCapsule;
-
 		};
 
 		//.____ Identification __________________________________________
@@ -78,6 +80,21 @@ namespace wg
 	protected:
 		DebugPanel(const Blueprint& blueprint );
 		~DebugPanel() {}
+
+		TablePanel_p		_createTable(int rows, int columns);
+		DrawerPanel_p		_createDrawer(const CharSeq& label, Widget * pHeaderValue, Widget * pContent );
+
+		void _setTextEntry(TablePanel* pTable, int row, const char* pLabel, const CharSeq& string);
+		void _setIntegerEntry(TablePanel * pTable, int row, const char * pLabel, int value);
+		void _setDecimalEntry(TablePanel* pTable, int row, const char* pLabel, float value);
+		void _setPtsEntry(TablePanel* pTable, int row, const char* pLabel, pts value);
+		void _setSpxEntry(TablePanel* pTable, int row, const char* pLabel, spx value);
+		void _setBoolEntry(TablePanel* pTable, int row, const char* pLabel, bool value);
+		void _setPointerEntry(TablePanel* pTable, int row, const char* pLabel, void* pPointer);
+
+		Blueprint m_blueprint;
+
+		Skin_p		m_pIndentationSkin;
 	};
 
 } // namespace wg

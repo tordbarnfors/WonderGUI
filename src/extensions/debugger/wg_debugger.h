@@ -60,18 +60,18 @@ namespace wg
 		Widget_p		createWidgetTreePanel(const DebugPanel::Blueprint& blueprint, Widget * pWidget);
 		Widget_p		createMsgLogPanel(const DebugPanel::Blueprint& blueprint);
 
-		void			setWidgetSelectedCallback(std::function<void(Widget*)> pCallback);
+		void			setObjectSelectedCallback(std::function<void(Object*,Object*)> pCallback);
 
 	protected:
 		Debugger();
 		~Debugger() {}
 
-		std::map<const TypeInfo*,Widget_p(*)(const DebugPanel::Blueprint&, Object *)>		m_objectInfoFactories;
+		std::map<const TypeInfo*,Widget_p(*)(const DebugPanel::Blueprint&, Object *)>	m_objectInfoFactories;
 		std::map<const TypeInfo*,Widget_p(*)(const DebugPanel::Blueprint&, StaticSlot *)>	m_slotInfoFactories;
 
 		std::vector<const TypeInfo*>	m_ignoreClasses;
 
-		std::function<void(Widget*)> m_widgetSelectedCallback;
+		std::function<void(Object*, Object*)> m_objectSelectedCallback;
 	};
 
 

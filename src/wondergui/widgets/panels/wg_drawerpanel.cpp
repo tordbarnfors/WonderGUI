@@ -108,6 +108,7 @@ namespace wg
 			m_foldState = bOpen ? FoldState::OPEN : FoldState::CLOSED;
 			_updateGeo();
 			_requestResize();
+			_requestRender();
 		}
 	}
 
@@ -310,7 +311,7 @@ namespace wg
 				auto pMsg = static_cast<InputMsg*>(_pMsg);
 				auto pos = _toLocal(pMsg->pointerSpxPos());
 
-				auto buttonGeo = _buttonGeo(m_frontGeo);
+				auto buttonGeo = _buttonGeo();
 
 				if (buttonGeo.contains(pos) != m_bButtonHovered)
 				{
@@ -325,7 +326,7 @@ namespace wg
 				if (m_bButtonHovered)
 				{
 					m_bButtonHovered = false;
-					_requestRender(_buttonGeo(m_size));
+					_requestRender(_buttonGeo());
 				}
 				break;
 			}
@@ -338,7 +339,7 @@ namespace wg
 				{
 					CoordSPX pos = _toLocal(pMsg->pointerSpxPos());
 
-					if( m_frontGeo.contains(pos) )
+					if( _buttonGeo().contains(pos) || m_frontGeo.contains(pos) )
 					{
 						if (m_foldState == FoldState::OPEN || m_foldState == FoldState::OPENING)
 							setOpen(false);
@@ -391,7 +392,7 @@ namespace wg
 
 		if (!m_buttonSkin.isEmpty() && m_buttonPlacement != Placement::Undefined && !m_buttonGeo.isEmpty())
 		{
-			RectSPX geo = _buttonGeo(m_frontGeo + canvas.pos());
+			RectSPX geo = _buttonGeo() + canvas.pos();
 
 			State buttonState = m_state;
 			buttonState.setHovered(m_bButtonHovered);		// Only hovered/pressed if mouse is over button.
@@ -416,6 +417,30 @@ namespace wg
 				slots[1]._widget()->_render(pDevice, m_backCanvas + canvas.pos(), m_backWindow + canvas.pos() );
 		}
 	}
+
+	//____ _alphaTest() _______________________________________________________
+
+	bool DrawerPanel::_alphaTest(const CoordSPX& ofs)
+	{
+		if (Container::_alphaTest(ofs))
+			return true;
+
+		if (!m_buttonSkin.isEmpty())
+		{
+			RectSPX geo = _buttonGeo();
+			if (geo.contains(ofs))
+			{
+				State buttonState = m_state;
+				buttonState.setHovered(m_bButtonHovered);		// Only hovered/pressed if mouse is over button.
+				buttonState.setChecked(m_foldState == FoldState::OPEN || m_foldState == FoldState::OPENING);
+
+				return m_buttonSkin.markTest(ofs, geo, m_scale, buttonState);
+			}
+		}
+
+		return false;
+	}
+
 
 	//____ _resize() _________________________________________________________
 
@@ -458,10 +483,10 @@ namespace wg
 
 	//____ _buttonGeo() __________________________________________________________
 
-	RectSPX DrawerPanel::_buttonGeo(const RectSPX& canvas) const
+	RectSPX DrawerPanel::_buttonGeo() const
 	{
 		RectSPX buttonGeo = align(ptsToSpx(m_buttonGeo, m_scale));
-		return Util::placementToRect(m_buttonPlacement, canvas, buttonGeo.size()) + buttonGeo.pos();
+		return Util::placementToRect(m_buttonPlacement, m_frontGeo, buttonGeo.size()) + buttonGeo.pos();
 	}
 
 

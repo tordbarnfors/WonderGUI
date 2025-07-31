@@ -35,6 +35,7 @@
 #include <wg_drawerpanel.h>
 #include <wg_paddingcapsule.h>
 #include <wg_texteditor.h>
+#include <wg_tablepanel.h>
 
 
 namespace wg
@@ -129,6 +130,8 @@ namespace wg
 
 		virtual const DrawerPanel::Blueprint&		treeListDrawer() const = 0;
 		virtual const PaddingCapsule::Blueprint&	treeListEntry() const = 0;
+
+		virtual const TablePanel::Blueprint&		listTable() const = 0;		// Table for listing of items.
 
 		virtual const TextEditor::Blueprint&		textEditor() const = 0;
 

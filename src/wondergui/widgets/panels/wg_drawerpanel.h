@@ -152,7 +152,7 @@ namespace wg
 		void				_updateGeo();
 
 		inline bool			_isVertical() const { return (m_direction == Direction::Up || m_direction == Direction::Down); }
-		RectSPX				_buttonGeo(const RectSPX& canvas) const;
+		RectSPX				_buttonGeo() const;
 
 
 		// Overloaded from Widget
@@ -162,6 +162,8 @@ namespace wg
 
 		void		_update(int microPassed, int64_t microsecTimestamp) override;
 		void		_render(GfxDevice * pDevice, const RectSPX& _canvas, const RectSPX& _window) override;
+
+		bool		_alphaTest(const CoordSPX& ofs) override;
 
 //		void		_maskPatches(PatchesSPX& patches, const RectSPX& geo, const RectSPX& clip) override;
 

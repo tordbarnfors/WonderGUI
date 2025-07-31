@@ -254,6 +254,10 @@ Simplistic::Simplistic( Font * pNormal, Font * pBold, Font * pItalic, Font * pMo
 		_.skin = pSelectableEntrySkin
 	);
 
+	m_listTable = WGBP(TablePanel,
+		_.columnSpacing = 4,
+		_.rowSpacing = 1);
+
 	m_textEditor = WGBP(TextEditor,
 		_.skin = m_pCanvasSkin,
 		_.editor.style = m_pBlackStyle
@@ -522,6 +526,12 @@ const PaddingCapsule::Blueprint& Simplistic::treeListEntry() const
 {
 	return m_treeListEntry;
 }
+
+const TablePanel::Blueprint& Simplistic::listTable() const
+{
+	return m_listTable;
+}
+
 
 const TextEditor::Blueprint& Simplistic::textEditor() const
 {
