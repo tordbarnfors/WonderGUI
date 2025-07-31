@@ -41,7 +41,7 @@ namespace wg
 
 		//.____ Creation __________________________________________
 
-		static ContainerInfoPanel_p		create( const Blueprint& blueprint, Container * pContainer) { return ContainerInfoPanel_p(new ContainerInfoPanel(blueprint, pContainer) ); }
+		static ContainerInfoPanel_p		create( const Blueprint& blueprint, DebugPanel::Holder* pHolder, Container * pContainer) { return ContainerInfoPanel_p(new ContainerInfoPanel(blueprint, pHolder, pContainer) ); }
 
 		//.____ Identification __________________________________________
 
@@ -50,7 +50,7 @@ namespace wg
 
 
 	protected:
-		ContainerInfoPanel(const Blueprint& blueprint, Container * pContainer );
+		ContainerInfoPanel(const Blueprint& blueprint, DebugPanel::Holder* pHolder, Container * pContainer );
 		~ContainerInfoPanel() {}
 	};
 

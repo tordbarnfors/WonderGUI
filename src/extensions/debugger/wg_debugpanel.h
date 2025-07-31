@@ -53,8 +53,6 @@ namespace wg
 			Theme_p						theme;
 			Surface_p					icons;
 
-			std::function<void(Object*)> objectSelectedCallback;
-
 			LabelCapsule::Blueprint		mainCapsule;
 			LabelCapsule::Blueprint		classCapsule;
 			TextDisplay::Blueprint		listEntryLabel;
@@ -71,6 +69,18 @@ namespace wg
 			PaddingCapsule::Blueprint	selectableListEntryCapsule;
 		};
 
+
+		class Holder
+		{
+		public:
+			virtual void	objectSelected(Object * pSelected, Object * pCaller) = 0;
+
+			virtual Widget_p createObjectInfoPanel(const DebugPanel::Blueprint& blueprint, const TypeInfo* pType, Object* pObject) = 0;
+			virtual Widget_p createSlotInfoPanel(const DebugPanel::Blueprint& blueprint, const TypeInfo* pType, StaticSlot* pSlot) = 0;
+			virtual Widget_p createComponentInfoPanel(const DebugPanel::Blueprint& blueprint, const TypeInfo* pType, Component* pComponent) = 0;
+		};
+
+
 		//.____ Identification __________________________________________
 
 		const TypeInfo&			typeInfo(void) const override;
@@ -78,7 +88,7 @@ namespace wg
 
 
 	protected:
-		DebugPanel(const Blueprint& blueprint );
+		DebugPanel(const Blueprint& blueprint, DebugPanel::Holder * pHolder );
 		~DebugPanel() {}
 
 		TablePanel_p		_createTable(int rows, int columns);
@@ -92,7 +102,8 @@ namespace wg
 		void _setBoolEntry(TablePanel* pTable, int row, const char* pLabel, bool value);
 		void _setPointerEntry(TablePanel* pTable, int row, const char* pLabel, void* pPointer);
 
-		Blueprint m_blueprint;
+		Blueprint	m_blueprint;
+		Holder*		m_pHolder = nullptr;
 
 		Skin_p		m_pIndentationSkin;
 	};
