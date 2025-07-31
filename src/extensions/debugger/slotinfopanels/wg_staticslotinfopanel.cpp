@@ -30,7 +30,7 @@ namespace wg
 
 	//____ constructor _____________________________________________________________
 
-	StaticSlotInfoPanel::StaticSlotInfoPanel(const Blueprint& blueprint, StaticSlot * pStaticSlot) : DebugPanel( blueprint )
+	StaticSlotInfoPanel::StaticSlotInfoPanel(const Blueprint& blueprint, DebugPanel::Holder* pHolder, StaticSlot * pStaticSlot) : DebugPanel( blueprint, pHolder )
 	{
 		auto pTable = _createTable( 4, 2);
 

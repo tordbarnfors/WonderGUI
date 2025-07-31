@@ -44,7 +44,7 @@ namespace wg
 
 		//.____ Creation __________________________________________
 
-		static MsgLogPanel_p	create( const Blueprint& blueprint ) { return MsgLogPanel_p(new MsgLogPanel(blueprint) ); }
+		static MsgLogPanel_p	create( const Blueprint& blueprint, DebugPanel::Holder * pHolder ) { return MsgLogPanel_p(new MsgLogPanel(blueprint,pHolder) ); }
 
 		//.____ Identification __________________________________________
 
@@ -58,7 +58,7 @@ namespace wg
 
 
 	protected:
-		MsgLogPanel(const Blueprint& blueprint);
+		MsgLogPanel(const Blueprint& blueprint, DebugPanel::Holder* pHolder);
 		~MsgLogPanel();
 
 		RouteId				m_routeId;
