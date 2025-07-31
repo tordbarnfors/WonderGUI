@@ -35,19 +35,10 @@ namespace wg
 
 	ObjectInfoPanel::ObjectInfoPanel(const Blueprint& blueprint, Object * pObject) : DebugPanel( blueprint )
 	{
-		auto pTable = TablePanel::create( WGOVR(blueprint.table, _.columns = 2, _.rows = 3 ));
-
-		pTable->slots[0][0] = TextDisplay::create( WGOVR( blueprint.listEntryLabel, _.display.text = "Refcount: " ));
-		pTable->slots[0][1] = NumberDisplay::create( WGOVR( blueprint.listEntryInteger, _.display.value = pObject->refcount() ));
-
-		// Weak pointers is -1 since our DebugOverlay has one weak pointer to object that doesn't count.
-
-		pTable->slots[1][0] = TextDisplay::create(WGOVR(blueprint.listEntryLabel, _.display.text = "Weak pointers: "));
-		pTable->slots[1][1] = NumberDisplay::create(WGOVR(blueprint.listEntryInteger, _.display.value = pObject->weakPointers() -1));
-
-		pTable->slots[2][0] = TextDisplay::create(WGOVR(blueprint.listEntryLabel, _.display.text = "Finalizer: "));
-		pTable->slots[2][1] = NumberDisplay::create( WGOVR( blueprint.listEntryPointer, _.display.value = pObject->finalizer()));
-
+		auto pTable = _createTable(3,2);
+		_setIntegerEntry(pTable, 0, "Refcount: ", pObject->refcount());
+		_setIntegerEntry(pTable, 1, "Weak pointers: ", pObject->weakPointers() - 1); // -1 since our DebugOverlay has one weak pointer to object that doesn't count.
+		_setPointerEntry(pTable, 2, "Finalizer: ", pObject->finalizer().rawPtr() );
 		this->slot = pTable;
 	}
 

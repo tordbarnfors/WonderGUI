@@ -74,7 +74,11 @@ namespace wg
 		_createWidgetTreeToolbox();
 		_createMsgLogToolbox();
 
-		m_pDebugger->setWidgetSelectedCallback([this](Widget* pWidget) {_selectWidget(pWidget); });
+		m_pDebugger->setObjectSelectedCallback([this](Object* pSelected,Object* pCaller) {
+
+			auto pWidget = dynamic_cast<Widget*>(pSelected);
+			_selectWidget(pWidget); 
+		});
 	}
 
 	//____ Destructor _____________________________________________________________

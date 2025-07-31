@@ -35,15 +35,9 @@ namespace wg
 	{
 		auto pPanelSlot = static_cast<const PackPanelSlot*>(pStaticSlot);
 
-
-		auto pTable = TablePanel::create( WGOVR(blueprint.table, _.columns = 2, _.rows = 2 ));
-
-		pTable->slots[0][0] = TextDisplay::create( WGOVR( blueprint.listEntryLabel, _.display.text = "Weight: " ));
-		pTable->slots[0][1] = NumberDisplay::create( WGOVR(blueprint.listEntryDecimal, _.display.value = pPanelSlot->weight() ));
-
-		pTable->slots[1][0] = TextDisplay::create(WGOVR(blueprint.listEntryLabel, _.display.text = "Baseline: "));
-		pTable->slots[1][1] = NumberDisplay::create(WGOVR(blueprint.listEntryDecimal, _.display.value = pPanelSlot->baseline()));
-
+		auto pTable = _createTable(2,2);
+		_setDecimalEntry(pTable, 0, "Weight: ", pPanelSlot->weight());
+		_setDecimalEntry(pTable, 1, "Baseline: ", pPanelSlot->baseline());
 		this->slot = pTable;
 	}
 
