@@ -33,7 +33,7 @@ namespace wg
 
 	//____ constructor _____________________________________________________________
 
-	ObjectInfoPanel::ObjectInfoPanel(const Blueprint& blueprint, Object * pObject) : DebugPanel( blueprint )
+	ObjectInfoPanel::ObjectInfoPanel(const Blueprint& blueprint, DebugPanel::Holder* pHolder, Object * pObject) : DebugPanel( blueprint, pHolder )
 	{
 		auto pTable = _createTable(3,2);
 		_setIntegerEntry(pTable, 0, "Refcount: ", pObject->refcount());

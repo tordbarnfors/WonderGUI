@@ -33,7 +33,7 @@ namespace wg
 
 	//____ constructor _____________________________________________________________
 
-	PanelInfoPanel::PanelInfoPanel(const Blueprint& blueprint, Panel * pPanel) : DebugPanel( blueprint )
+	PanelInfoPanel::PanelInfoPanel(const Blueprint& blueprint, DebugPanel::Holder* pHolder, Panel * pPanel) : DebugPanel( blueprint, pHolder )
 	{
 		auto pTable = _createTable(1,2);
 		_setTextEntry(pTable, 0, "Mask op: ", toString(pPanel->maskOp()));

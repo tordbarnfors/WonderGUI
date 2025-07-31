@@ -41,7 +41,7 @@ namespace wg
 	typedef	WeakPtr<Debugger>		Debugger_wp;
 
 
-	class Debugger : public Object
+	class Debugger : public Object , protected DebugPanel::Holder
 	{
 	public:
 		//.____ Creation __________________________________________
@@ -55,19 +55,26 @@ namespace wg
 
 		//.____ Misc __________________________________________
 
-		Widget_p		createDebugPanel( const DebugPanel::Blueprint& blueprint, const TypeInfo * pType, Object * pObject );
-		Widget_p		createDebugPanel( const DebugPanel::Blueprint& blueprint, const TypeInfo * pType, StaticSlot * pObject );
+		Widget_p		createObjectInfoPanel( const DebugPanel::Blueprint& blueprint, const TypeInfo * pType, Object * pObject );
+		Widget_p		createSlotInfoPanel( const DebugPanel::Blueprint& blueprint, const TypeInfo * pType, StaticSlot * pSlot );
+		Widget_p		createComponentInfoPanel(const DebugPanel::Blueprint& blueprint, const TypeInfo* pType, Component* pComponent);
+
 		Widget_p		createWidgetTreePanel(const DebugPanel::Blueprint& blueprint, Widget * pWidget);
 		Widget_p		createMsgLogPanel(const DebugPanel::Blueprint& blueprint);
 
 		void			setObjectSelectedCallback(std::function<void(Object*,Object*)> pCallback);
 
+
+
 	protected:
 		Debugger();
 		~Debugger() {}
 
-		std::map<const TypeInfo*,Widget_p(*)(const DebugPanel::Blueprint&, Object *)>	m_objectInfoFactories;
-		std::map<const TypeInfo*,Widget_p(*)(const DebugPanel::Blueprint&, StaticSlot *)>	m_slotInfoFactories;
+		void			objectSelected(Object* pSelected, Object* pCaller);
+
+		std::map<const TypeInfo*,Widget_p(*)(const DebugPanel::Blueprint&, DebugPanel::Holder *, Object *)>	m_objectInfoFactories;
+		std::map<const TypeInfo*,Widget_p(*)(const DebugPanel::Blueprint&, DebugPanel::Holder *, StaticSlot *)>	m_slotInfoFactories;
+	 	std::map<const TypeInfo*, Widget_p(*)(const DebugPanel::Blueprint&, DebugPanel::Holder*, Component*)>	m_componentInfoFactories;
 
 		std::vector<const TypeInfo*>	m_ignoreClasses;
 

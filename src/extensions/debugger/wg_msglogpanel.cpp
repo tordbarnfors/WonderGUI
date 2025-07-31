@@ -42,7 +42,7 @@ namespace wg
 
 	//____ constructor _____________________________________________________________
 
-	MsgLogPanel::MsgLogPanel(const Blueprint& bp) : DebugPanel(bp)
+	MsgLogPanel::MsgLogPanel(const Blueprint& bp, DebugPanel::Holder* pHolder) : DebugPanel(bp,pHolder)
 	{
 		m_pMainPanel = PackPanel::create(WGBP(PackPanel,
 			_.axis = Axis::Y));
@@ -201,7 +201,24 @@ namespace wg
 		return TYPEINFO;
 	}
 
+	//____ clear() ___________________________________________________________
 
+	void MsgLogPanel::clear()
+	{
+		m_pLogList->slots.clear();
+	}
+	
+	//____ setRecording() _________________________________________________________
+	
+	void MsgLogPanel::setRecording(bool bRecording)
+	{
+		if (bRecording)
+			this->m_routeId = Base::msgRouter()->broadcastTo(m_pLogger);
+		else
+			Base::msgRouter()->endBroadcast(m_routeId);
+
+		m_pRecordButton->setChecked(bRecording);
+	}
 
 } // namespace wg
 

@@ -42,7 +42,7 @@ namespace wg
 
 		//.____ Creation __________________________________________
 
-		static FlexPanelSlotInfoPanel_p		create( const Blueprint& blueprint, StaticSlot * pStaticSlot) { return FlexPanelSlotInfoPanel_p(new FlexPanelSlotInfoPanel(blueprint, pStaticSlot) ); }
+		static FlexPanelSlotInfoPanel_p		create( const Blueprint& blueprint, DebugPanel::Holder* pHolder, StaticSlot * pStaticSlot) { return FlexPanelSlotInfoPanel_p(new FlexPanelSlotInfoPanel(blueprint, pHolder, pStaticSlot) ); }
 
 		//.____ Identification __________________________________________
 
@@ -51,7 +51,7 @@ namespace wg
 
 
 	protected:
-		FlexPanelSlotInfoPanel(const Blueprint& blueprint, StaticSlot * pStaticSlot );
+		FlexPanelSlotInfoPanel(const Blueprint& blueprint, DebugPanel::Holder* pHolder, StaticSlot * pStaticSlot );
 		~FlexPanelSlotInfoPanel() {}
 
 		void	flexPosToString(FlexPos pos, char * pString);

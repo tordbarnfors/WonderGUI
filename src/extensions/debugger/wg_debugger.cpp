@@ -56,15 +56,15 @@ namespace wg
 
 	Debugger::Debugger()
 	{
-		m_objectInfoFactories[&Object::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, Object* pObject) { return (Widget_p) ObjectInfoPanel::create(panelBP, pObject); };
-		m_objectInfoFactories[&Widget::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, Object* pObject) { return (Widget_p) WidgetInfoPanel::create(panelBP, (Widget*) pObject); };
-		m_objectInfoFactories[&Container::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, Object* pObject) { return (Widget_p)ContainerInfoPanel::create(panelBP, (Container*)pObject); };
-		m_objectInfoFactories[&Panel::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, Object* pObject) { return (Widget_p)PanelInfoPanel::create(panelBP, (Panel*)pObject); };
+		m_objectInfoFactories[&Object::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, DebugPanel::Holder* pHolder, Object* pObject) { return (Widget_p) ObjectInfoPanel::create(panelBP, pHolder, pObject); };
+		m_objectInfoFactories[&Widget::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, DebugPanel::Holder* pHolder, Object* pObject) { return (Widget_p) WidgetInfoPanel::create(panelBP, pHolder, (Widget*) pObject); };
+		m_objectInfoFactories[&Container::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, DebugPanel::Holder* pHolder, Object* pObject) { return (Widget_p)ContainerInfoPanel::create(panelBP, pHolder, (Container*)pObject); };
+		m_objectInfoFactories[&Panel::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, DebugPanel::Holder* pHolder, Object* pObject) { return (Widget_p)PanelInfoPanel::create(panelBP, pHolder, (Panel*)pObject); };
 
-		m_slotInfoFactories[&StaticSlot::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, StaticSlot* pSlot) { return (Widget_p) StaticSlotInfoPanel::create(panelBP, pSlot); };
-		m_slotInfoFactories[&PanelSlot::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, StaticSlot* pSlot) { return (Widget_p)PanelSlotInfoPanel::create(panelBP, pSlot); };
-		m_slotInfoFactories[&PackPanelSlot::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, StaticSlot* pSlot) { return (Widget_p)PackPanelSlotInfoPanel::create(panelBP, pSlot); };
-		m_slotInfoFactories[&FlexPanelSlot::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, StaticSlot* pSlot) { return (Widget_p)FlexPanelSlotInfoPanel::create(panelBP, pSlot); };
+		m_slotInfoFactories[&StaticSlot::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, DebugPanel::Holder* pHolder, StaticSlot* pSlot) { return (Widget_p) StaticSlotInfoPanel::create(panelBP, pHolder, pSlot); };
+		m_slotInfoFactories[&PanelSlot::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, DebugPanel::Holder* pHolder, StaticSlot* pSlot) { return (Widget_p)PanelSlotInfoPanel::create(panelBP, pHolder, pSlot); };
+		m_slotInfoFactories[&PackPanelSlot::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, DebugPanel::Holder* pHolder, StaticSlot* pSlot) { return (Widget_p)PackPanelSlotInfoPanel::create(panelBP, pHolder, pSlot); };
+		m_slotInfoFactories[&FlexPanelSlot::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, DebugPanel::Holder* pHolder, StaticSlot* pSlot) { return (Widget_p)FlexPanelSlotInfoPanel::create(panelBP, pHolder, pSlot); };
 
 		m_ignoreClasses.push_back(&DynamicSlot::TYPEINFO);
 		m_ignoreClasses.push_back(&Receiver::TYPEINFO);
@@ -77,9 +77,9 @@ namespace wg
 		return TYPEINFO;
 	}
 
-	//____ createDebugPanel() ____________________________________________________
+	//____ createObjectInfoPanel() ____________________________________________________
 
-	Widget_p Debugger::createDebugPanel( const DebugPanel::Blueprint& bp, const TypeInfo * pType, Object * pObject )
+	Widget_p Debugger::createObjectInfoPanel( const DebugPanel::Blueprint& bp, const TypeInfo * pType, Object * pObject )
 	{
 
 		auto it = m_objectInfoFactories.find( pType );
@@ -92,15 +92,15 @@ namespace wg
 
 			// Unknown class
 
-			return DummyInfoPanel::create(bp,pObject);
+			return DummyInfoPanel::create(bp,this,pObject);
 		}
 
-		return it->second(bp,pObject);
+		return it->second(bp,this,pObject);
 	}
 
-	//____ createDebugPanel() ____________________________________________________
+	//____ createSlotInfoPanel() ____________________________________________________
 
-	Widget_p Debugger::createDebugPanel( const DebugPanel::Blueprint& bp, const TypeInfo * pType, StaticSlot * pSlot )
+	Widget_p Debugger::createSlotInfoPanel( const DebugPanel::Blueprint& bp, const TypeInfo * pType, StaticSlot * pSlot )
 	{
 
 		auto it = m_slotInfoFactories.find( pType );
@@ -113,24 +113,46 @@ namespace wg
 
 			// Unknown class
 
-			return DummyInfoPanel::create(bp,pSlot);
+			return DummyInfoPanel::create(bp,this,pSlot);
 		}
 
-		return it->second(bp,pSlot);
+		return it->second(bp,this,pSlot);
 	}
+
+	//____ createComponentInfoPanel() ____________________________________________________
+
+	Widget_p Debugger::createComponentInfoPanel(const DebugPanel::Blueprint& bp, const TypeInfo* pType, Component* pComponent)
+	{
+
+		auto it = m_componentInfoFactories.find(pType);
+		if (it == m_componentInfoFactories.end())
+		{
+			// Check known classes we should ignore.
+
+			if (std::find(m_ignoreClasses.begin(), m_ignoreClasses.end(), pType) != m_ignoreClasses.end())
+				return nullptr;
+
+			// Unknown class
+
+			return DummyInfoPanel::create(bp,this,pComponent);
+		}
+
+		return it->second(bp, this, pComponent);
+	}
+
 
 	//____ createWidgetTreePanel() ____________________________________________
 
 	Widget_p Debugger::createWidgetTreePanel(const DebugPanel::Blueprint& blueprint, Widget* pRoot)
 	{
-		return WidgetTreePanel::create(blueprint, pRoot, m_objectSelectedCallback);
+		return WidgetTreePanel::create(blueprint, this, pRoot);
 	}
 
 	//____ createMsgLogPanel() ________________________________________________
 
 	Widget_p Debugger::createMsgLogPanel(const DebugPanel::Blueprint& blueprint)
 	{
-		return MsgLogPanel::create(blueprint);
+		return MsgLogPanel::create(blueprint, this);
 	}
 
 	//____ setObjectSelectedCallback() ________________________________________
@@ -138,6 +160,14 @@ namespace wg
 	void Debugger::setObjectSelectedCallback(std::function<void(Object*,Object*)> pCallback)
 	{
 		m_objectSelectedCallback = pCallback;
+	}
+
+	//____ objectSelected() ____________________________________________________
+
+	void Debugger::objectSelected(Object* pSelected, Object* pCaller)
+	{
+		if (m_objectSelectedCallback)
+			m_objectSelectedCallback(pSelected, pCaller);
 	}
 
 
