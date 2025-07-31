@@ -49,6 +49,7 @@ namespace wg
 		friend class SlotHolder;
 		friend class CanvasCapsule;
 		friend class SelectCapsule;
+		friend class ContainerInfoPanel;
 
 		public:
 

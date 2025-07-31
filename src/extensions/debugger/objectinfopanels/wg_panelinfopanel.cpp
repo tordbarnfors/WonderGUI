@@ -35,11 +35,8 @@ namespace wg
 
 	PanelInfoPanel::PanelInfoPanel(const Blueprint& blueprint, Panel * pPanel) : DebugPanel( blueprint )
 	{
-		auto pTable = TablePanel::create( WGOVR(blueprint.table, _.columns = 2, _.rows = 1 ));
-
-		pTable->slots[0][0] = TextDisplay::create( WGOVR( blueprint.listEntryLabel, _.display.text = "Mask op: " ));
-		pTable->slots[0][1] = TextDisplay::create( WGOVR( blueprint.listEntryText, _.display.text = toString(pPanel->maskOp())));
-
+		auto pTable = _createTable(1,2);
+		_setTextEntry(pTable, 0, "Mask op: ", toString(pPanel->maskOp()));
 		this->slot = pTable;
 	}
 

@@ -22,6 +22,9 @@
 =========================================================================*/
 #include "wg_widgetinfopanel.h"
 #include <wg_textdisplay.h>
+#include <wg_packpanel.h>
+#include <wg_twoslotpanel.h>
+#include <wg_enumextras.h>
 
 namespace wg
 {
@@ -33,266 +36,66 @@ namespace wg
 
 	WidgetInfoPanel::WidgetInfoPanel(const Blueprint& blueprint, Widget * pWidget) : DebugPanel( blueprint )
 	{
-		auto pTable = TablePanel::create( WGOVR(blueprint.table, _.columns = 2, _.rows = 22 ));
+		auto pPanel = WGCREATE(PackPanel, _.axis = Axis::Y);
 
+		auto pTable = _createTable(22, 2);
+		 
 		int row = 0;
 
-		{
-			auto pLabel = TextDisplay::create(blueprint.listEntryLabel);
-			pLabel->display.setText("Id: ");
+		_setIntegerEntry	(pTable, row++, "Id: ", pWidget->id());
+		_setIntegerEntry	(pTable, row++, "Width (pts): ", pWidget->size().w);
+		_setIntegerEntry	(pTable, row++, "Height (pts): ", pWidget->size().h);
+		_setIntegerEntry	(pTable, row++, "Scale: ", pWidget->scale());
+		_setTextEntry		(pTable, row++, "State: ", toString(pWidget->state().value()) );
+		_setPointerEntry	(pTable, row++, "Baggage: ", pWidget->baggage().rawPtr());
+		_setPointerEntry	(pTable, row++, "Parent: ", pWidget->parent().rawPtr());
+		_setPointerEntry	(pTable, row++, "Skin: ", pWidget->skin().rawPtr());
+		_setTextEntry		(pTable, row++, "Tooltip: ", pWidget->tooltip());
+		_setTextEntry		(pTable, row++, "Pointer style: ", toString(pWidget->pointerStyle()));
+		_setTextEntry		(pTable, row++, "Mark policy: ", toString(pWidget->markPolicy()));
+		_setBoolEntry		(pTable, row++, "Is pickable: ", pWidget->isPickable());
+		_setBoolEntry		(pTable, row++, "Is pickHandle: ", pWidget->isPickHandle());
+		_setIntegerEntry	(pTable, row++, "Pick category: ", pWidget->pickCategory());
+		_setBoolEntry		(pTable, row++, "Is drop target: ", pWidget->isDropTarget());
+		_setBoolEntry		(pTable, row++, "Is tab locked: ", pWidget->isTabLocked());
+		_setBoolEntry		(pTable, row++, "Is selectable: ", pWidget->isSelectable());
+		_setIntegerEntry	(pTable, row++, "Receiving updates: ", pWidget->m_receivingUpdateCounter);
+		_setBoolEntry		(pTable, row++, "Has sticky focus: ", pWidget->hasStickyFocus());
 
-			auto pValue = NumberDisplay::create(blueprint.listEntryInteger);
-			pValue->display.set(pWidget->id());
 
-			pTable->slots[row][0] = pLabel;
-			pTable->slots[row][1] = pValue;
-			row++;
-		}
-
-
-		{
-			auto pLabel = TextDisplay::create(blueprint.listEntryLabel);
-			pLabel->display.setText("Width (pts): ");
-
-			auto pValue = NumberDisplay::create(blueprint.listEntryPts);
-			pValue->display.set(pWidget->size().w);
-
-			pTable->slots[row][0] = pLabel;
-			pTable->slots[row][1] = pValue;
-			row++;
-		}
+		pPanel->slots << pTable;
 
 		{
-			auto pLabel = TextDisplay::create(blueprint.listEntryLabel);
-			pLabel->display.setText("Height (pts): ");
+			bool bOverflow = pWidget->m_bOverflow;
 
-			auto pValue = NumberDisplay::create(blueprint.listEntryPts);
-			pValue->display.set(pWidget->size().h);
+			auto pHeaderValue = WGCREATE(TextDisplay, _ = blueprint.listEntryText, _.display.text = bOverflow ? "true" : "false");
 
-			pTable->slots[row][0] = pLabel;
-			pTable->slots[row][1] = pValue;
-			row++;
-		}
+			TablePanel_p pOverflowTable;
 
-		{
-			auto pLabel = TextDisplay::create(blueprint.listEntryLabel);
-			pLabel->display.setText("Scale: ");
-
-			auto pValue = NumberDisplay::create(blueprint.listEntryInteger);
-			pValue->display.set(pWidget->scale());
-
-			pTable->slots[row][0] = pLabel;
-			pTable->slots[row][1] = pValue;
-			row++;
-		}
-
-		{
-			auto pLabel = TextDisplay::create(blueprint.listEntryLabel);
-			pLabel->display.setText("State: ");
-
-			auto pValue = TextDisplay::create(blueprint.listEntryText);
-			pValue->display.setText( toString(pWidget->state().value() ));
-
-			pTable->slots[row][0] = pLabel;
-			pTable->slots[row][1] = pValue;
-			row++;
-		}
-
-
-		{
-			auto pLabel = TextDisplay::create(blueprint.listEntryLabel);
-			pLabel->display.setText("Baggage: ");
-
-			auto pValue = NumberDisplay::create(blueprint.listEntryPointer);
-			pValue->display.set(pWidget->baggage());
-
-			pTable->slots[row][0] = pLabel;
-			pTable->slots[row][1] = pValue;
-			row++;
-		}
-
-		{
-			auto pLabel = TextDisplay::create(blueprint.listEntryLabel);
-			pLabel->display.setText("Skin: ");
-
-			auto pValue = NumberDisplay::create(blueprint.listEntryPointer);
-			pValue->display.set(int64_t(pWidget->skin().rawPtr()));
-
-			pTable->slots[row][0] = pLabel;
-			pTable->slots[row][1] = pValue;
-			row++;
-		}
-
-		{
-			auto pLabel = TextDisplay::create(blueprint.listEntryLabel);
-			pLabel->display.setText("Tooltip: ");
-
-			auto pValue = TextDisplay::create(blueprint.listEntryText);
-			pValue->display.setText(pWidget->tooltip());
-
-			pTable->slots[row][0] = pLabel;
-			pTable->slots[row][1] = pValue;
-			row++;
-		}
-
-		{
-			auto pLabel = TextDisplay::create(blueprint.listEntryLabel);
-			pLabel->display.setText("Pointer style: ");
-
-			auto pValue = TextDisplay::create(blueprint.listEntryText);
-			pValue->display.setText(toString(pWidget->pointerStyle()));
-
-			pTable->slots[row][0] = pLabel;
-			pTable->slots[row][1] = pValue;
-			row++;
-		}
-
-		{
-			auto pLabel = TextDisplay::create(blueprint.listEntryLabel);
-			pLabel->display.setText("Mark policy: ");
-
-			auto pValue = TextDisplay::create(blueprint.listEntryText);
-			pValue->display.setText(toString(pWidget->markPolicy()));
-
-			pTable->slots[row][0] = pLabel;
-			pTable->slots[row][1] = pValue;
-			row++;
-		}
-
-		{
-			auto pLabel = TextDisplay::create(blueprint.listEntryLabel);
-			pLabel->display.setText("Is pickable: ");
-
-			auto pValue = TextDisplay::create(blueprint.listEntryText);
-			pValue->display.setText(pWidget->isPickable() ? "true" : "false" );
-
-			pTable->slots[row][0] = pLabel;
-			pTable->slots[row][1] = pValue;
-			row++;
-		}
-
-		{
-			auto pLabel = TextDisplay::create(blueprint.listEntryLabel);
-			pLabel->display.setText("Is pickhandle: ");
-
-			auto pValue = TextDisplay::create(blueprint.listEntryText);
-			pValue->display.setText(pWidget->isPickHandle() ? "true" : "false");
-
-			pTable->slots[row][0] = pLabel;
-			pTable->slots[row][1] = pValue;
-			row++;
-		}
-
-		{
-			auto pLabel = TextDisplay::create(blueprint.listEntryLabel);
-			pLabel->display.setText("Pick category: ");
-
-			auto pValue = TextDisplay::create(blueprint.listEntryText);
-			pValue->display.setText(std::to_string(pWidget->pickCategory()));
-
-			pTable->slots[row][0] = pLabel;
-			pTable->slots[row][1] = pValue;
-			row++;
-		}
-
-		{
-			auto pLabel = TextDisplay::create(blueprint.listEntryLabel);
-			pLabel->display.setText("Is drop target: ");
-
-			auto pValue = TextDisplay::create(blueprint.listEntryText);
-			pValue->display.setText(pWidget->isDropTarget() ? "true" : "false");
-
-			pTable->slots[row][0] = pLabel;
-			pTable->slots[row][1] = pValue;
-			row++;
-		}
-
-		{
-			auto pLabel = TextDisplay::create(blueprint.listEntryLabel);
-			pLabel->display.setText("Is tab locked: ");
-
-			auto pValue = TextDisplay::create(blueprint.listEntryText);
-			pValue->display.setText(pWidget->isTabLocked() ? "true" : "false");
-
-			pTable->slots[row][0] = pLabel;
-			pTable->slots[row][1] = pValue;
-			row++;
-		}
-
-		{
-			auto pLabel = TextDisplay::create(blueprint.listEntryLabel);
-			pLabel->display.setText("Is selectable: ");
-
-			auto pValue = TextDisplay::create(blueprint.listEntryText);
-			pValue->display.setText(pWidget->isSelectable() ? "true" : "false");
-
-			pTable->slots[row][0] = pLabel;
-			pTable->slots[row][1] = pValue;
-			row++;
-		}
-
-		{
-			auto pLabel = TextDisplay::create(blueprint.listEntryLabel);
-			pLabel->display.setText("Receiving updates: ");
-
-			auto pValue = TextDisplay::create(blueprint.listEntryText);
-			pValue->display.setText(std::to_string(pWidget->m_receivingUpdateCounter));
-
-			pTable->slots[row][0] = pLabel;
-			pTable->slots[row][1] = pValue;
-			row++;
-		}
-
-		{
-			auto pLabel = TextDisplay::create(blueprint.listEntryLabel);
-			pLabel->display.setText("Has sticky focus: ");
-
-			auto pValue = TextDisplay::create(blueprint.listEntryText);
-			pValue->display.setText(pWidget->hasStickyFocus() ? "true" : "false");
-
-			pTable->slots[row][0] = pLabel;
-			pTable->slots[row][1] = pValue;
-			row++;
-		}
-
-		{
-			auto pLabel = TextDisplay::create(blueprint.listEntryLabel);
-			pLabel->display.setText("Has overflow: ");
-
-			auto pValue = TextDisplay::create(blueprint.listEntryText);
-			pValue->display.setText(pWidget->m_bOverflow ? "true" : "false");
-
-			pTable->slots[row][0] = pLabel;
-			pTable->slots[row][1] = pValue;
-			row++;
-
-			if( m_bOverflow )
+			if (true)
 			{
+				pOverflowTable = _createTable(4,2);
+
 				BorderSPX overflow = pWidget->_overflow();
 
-				pTable->slots[row][0] = TextDisplay::create( WGOVR( blueprint.listEntryLabel, _.display.text = "Overflow top (spx): " ));
-				pTable->slots[row][0] = NumberDisplay::create( WGOVR( blueprint.listEntrySPX, _.display.value = overflow.top ));
-				row++;
-
-				pTable->slots[row][0] = TextDisplay::create(WGOVR(blueprint.listEntryLabel, _.display.text = "Overflow right (spx): "));
-				pTable->slots[row][0] = NumberDisplay::create(WGOVR(blueprint.listEntrySPX, _.display.value = overflow.right));
-				row++;
-
-				pTable->slots[row][0] = TextDisplay::create(WGOVR(blueprint.listEntryLabel, _.display.text = "Overflow bottom (spx): "));
-				pTable->slots[row][0] = NumberDisplay::create(WGOVR(blueprint.listEntrySPX, _.display.value = overflow.bottom));
-				row++;
-
-				pTable->slots[row][0] = TextDisplay::create(WGOVR(blueprint.listEntryLabel, _.display.text = "Overflow bottom (spx): "));
-				pTable->slots[row][0] = NumberDisplay::create(WGOVR(blueprint.listEntrySPX, _.display.value = overflow.bottom));
-				row++;
+				_setSpxEntry(pOverflowTable, 0, "Top (spx): ", overflow.top);
+				_setSpxEntry(pOverflowTable, 1, "Right (spx): ", overflow.right);
+				_setSpxEntry(pOverflowTable, 2, "Bottom (spx): ", overflow.bottom);
+				_setSpxEntry(pOverflowTable, 3, "Left (spx): ", overflow.left);
 			}
+
+			auto pOverflowDrawer = _createDrawer("Has overflow", pHeaderValue, pOverflowTable);
+			pPanel->slots << pOverflowDrawer;
+		}
+
+		auto pSlot = pWidget->_slot();
+		if (pSlot)
+		{
+
 		}
 
 
-
-
-
-		this->slot = pTable;
+		this->slot = pPanel;
 	}
 
 	//____ typeInfo() _________________________________________________________

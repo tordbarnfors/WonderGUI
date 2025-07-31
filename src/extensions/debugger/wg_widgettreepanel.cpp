@@ -39,12 +39,12 @@ namespace wg
 
 	//____ constructor _____________________________________________________________
 
-	WidgetTreePanel::WidgetTreePanel(const Blueprint& blueprint, Widget * pRoot, const std::function<void(Widget* pSelected)>& selectCallback ) : DebugPanel( blueprint )
+	WidgetTreePanel::WidgetTreePanel(const Blueprint& blueprint, Widget * pRoot, const std::function<void(Object* pSelected,Object * pCaller)>& selectCallback ) : DebugPanel( blueprint )
 	{
 		m_selectCallback = selectCallback;
 
 		m_pPackLayout = PackLayout::create(WGBP(PackLayout, ));
-
+		 
 		m_pSelectCapsule = SelectCapsule::create(WGBP(SelectCapsule, _.recursive = true ));
 
 		m_pSelectCapsule->slot = _generateInfoTree(blueprint, pRoot );
@@ -57,7 +57,7 @@ namespace wg
 
 			if (pSelected)
 			{
-				m_selectCallback(pSelected);
+				m_selectCallback(pSelected,this);
 				m_pSelectedWidget = pSelected;
 			}
 		});

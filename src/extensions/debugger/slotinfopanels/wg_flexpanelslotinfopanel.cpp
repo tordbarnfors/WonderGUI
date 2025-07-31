@@ -37,48 +37,33 @@ namespace wg
 
 		bool bPinned = pPanelSlot->isPinned();
 
-		auto pTable = TablePanel::create( WGOVR(blueprint.table, _.columns = 2, _.rows = bPinned ? 3 : 5 ));
+		auto pTable = _createTable( bPinned ? 3 : 5, 2 );
 
 		char temp[256];
 		int row = 0;
 
-		pTable->slots[row][0] = TextDisplay::create( WGOVR( blueprint.listEntryLabel, _.display.text = "Mode: " ));
-		pTable->slots[row][1] = TextDisplay::create( WGOVR(blueprint.listEntryText, _.display.text = bPinned ? "Pinned" : "Movable"));
-		row++;
+		_setTextEntry(pTable, row++, "Mode: ", bPinned ? "Pinned" : "Movable");
 
 		if (bPinned)
 		{
 			flexPosToString(pPanelSlot->origo(), temp);
-			pTable->slots[row][0] = TextDisplay::create(WGOVR(blueprint.listEntryLabel, _.display.text = "Origo: "));
-			pTable->slots[row][1] = TextDisplay::create(WGOVR(blueprint.listEntryText, _.display.text = temp));
-			row++;
+			_setTextEntry(pTable, row++, "Origo: ", temp);
 
 			flexPosToString(pPanelSlot->hotspot(), temp);
-			pTable->slots[row][0] = TextDisplay::create(WGOVR(blueprint.listEntryLabel, _.display.text = "Hotspot: "));
-			pTable->slots[row][1] = TextDisplay::create(WGOVR(blueprint.listEntryText, _.display.text = temp));
-			row++;
+			_setTextEntry(pTable, row++, "Hotspot: ", temp);
 
 			Coord ofs = pPanelSlot->offset();
 
-			pTable->slots[row][0] = TextDisplay::create(WGOVR(blueprint.listEntryLabel, _.display.text = "Offset X: "));
-			pTable->slots[row][1] = NumberDisplay::create(WGOVR(blueprint.listEntryPts, _.display.value = ofs.x));
-			row++;
-
-			pTable->slots[row][0] = TextDisplay::create(WGOVR(blueprint.listEntryLabel, _.display.text = "Offset Y: "));
-			pTable->slots[row][1] = NumberDisplay::create(WGOVR(blueprint.listEntryPts, _.display.value = ofs.y));
-			row++;
+			_setPtsEntry(pTable, row++, "Offset X (pts): ", ofs.x);
+			_setPtsEntry(pTable, row++, "Offset Y (pts): ", ofs.y);
 		}
 		else
 		{
 			flexPosToString(pPanelSlot->topLeftPin(), temp);
-			pTable->slots[row][0] = TextDisplay::create(WGOVR(blueprint.listEntryLabel, _.display.text = "TopLeft pin: "));
-			pTable->slots[row][1] = TextDisplay::create(WGOVR(blueprint.listEntryText, _.display.text = temp));
-			row++;
+			_setTextEntry(pTable, row++, "TopLeft pin: ", temp);
 
 			flexPosToString(pPanelSlot->bottomRightPin(), temp);
-			pTable->slots[row][0] = TextDisplay::create(WGOVR(blueprint.listEntryLabel, _.display.text = "BottomRight pin: "));
-			pTable->slots[row][1] = TextDisplay::create(WGOVR(blueprint.listEntryText, _.display.text = temp));
-			row++;
+			_setTextEntry(pTable, row++, "BottomRight pin: ", temp);
 		}
 
 		this->slot = pTable;

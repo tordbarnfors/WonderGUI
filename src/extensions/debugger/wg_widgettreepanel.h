@@ -43,7 +43,7 @@ namespace wg
 
 		//.____ Creation __________________________________________
 
-		static WidgetTreePanel_p		create( const Blueprint& blueprint, Widget * pRoot, const std::function<void(Widget* pSelected)>& selectCallback ) { return WidgetTreePanel_p(new WidgetTreePanel(blueprint, pRoot, selectCallback) ); }
+		static WidgetTreePanel_p		create( const Blueprint& blueprint, Widget * pRoot, const std::function<void(Object* pSelected,Object* pCaller)>& selectCallback ) { return WidgetTreePanel_p(new WidgetTreePanel(blueprint, pRoot, selectCallback) ); }
 
 		//.____ Identification __________________________________________
 
@@ -59,7 +59,7 @@ namespace wg
 
 
 	protected:
-		WidgetTreePanel(const Blueprint& blueprint, Widget * pRoot, const std::function<void(Widget* pSelected)>& selectCallback );
+		WidgetTreePanel(const Blueprint& blueprint, Widget * pRoot, const std::function<void(Object* pSelected, Object* pCaller)>& selectCallback );
 		~WidgetTreePanel();
 
 		Widget_p	_generateInfoTree( const Blueprint& blueprintWidget, Widget * pWidget, int indentation = 0);
@@ -75,7 +75,7 @@ namespace wg
 		Widget_p			m_pSelectedWidget;
 
 		RouteId				m_routeIdForSelect;
-		std::function<void(Widget* pSelected)> m_selectCallback;
+		std::function<void(Object* pSelected,Object* pCaller)> m_selectCallback;
 		std::vector<Widget_wp>	m_realWidgets;
 
 	};
