@@ -996,7 +996,7 @@ namespace wg
 		{
 			bp.classCapsule.label.text = pTypeInfo->className;
 
-			auto pInfoPanel = m_pDebugger->createDebugPanel(bp, pTypeInfo, pSlot);
+			auto pInfoPanel = m_pDebugger->createSlotInfoPanel(bp, pTypeInfo, pSlot);
 
 			if( pInfoPanel )
 				pPanel->slots << pInfoPanel;
@@ -1032,7 +1032,7 @@ namespace wg
 		{
 			bp.classCapsule.label.text = pTypeInfo->className;
 
-			auto pInfoPanel = m_pDebugger->createDebugPanel(bp, pTypeInfo, pWidget);
+			auto pInfoPanel = m_pDebugger->createObjectInfoPanel(bp, pTypeInfo, pWidget);
 
 			if( pInfoPanel )
 				pPanel->slots << pInfoPanel;

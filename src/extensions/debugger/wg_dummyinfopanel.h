@@ -41,7 +41,7 @@ namespace wg
 
 		//.____ Creation __________________________________________
 
-		static DummyInfoPanel_p		create( const Blueprint& blueprint, void * pDummy) { return DummyInfoPanel_p(new DummyInfoPanel(blueprint, pDummy) ); }
+		static DummyInfoPanel_p		create( const Blueprint& blueprint, DebugPanel::Holder * pHolder, void * pDummy) { return DummyInfoPanel_p(new DummyInfoPanel(blueprint, pHolder, pDummy) ); }
 
 		//.____ Identification __________________________________________
 
@@ -50,7 +50,7 @@ namespace wg
 
 
 	protected:
-		DummyInfoPanel(const Blueprint& blueprint, void * pDummy );
+		DummyInfoPanel(const Blueprint& blueprint, DebugPanel::Holder * pHolder, void * pDummy );
 		~DummyInfoPanel() {}
 	};
 

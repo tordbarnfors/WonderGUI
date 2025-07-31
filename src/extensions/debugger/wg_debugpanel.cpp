@@ -34,7 +34,9 @@ namespace wg
 
 	//____ constructor _____________________________________________________________
 
-	DebugPanel::DebugPanel(const Blueprint& blueprint) : LabelCapsule( blueprint.classCapsule )
+	DebugPanel::DebugPanel(const Blueprint& blueprint, DebugPanel::Holder * pHolder ) 
+		: LabelCapsule( blueprint.classCapsule )
+		, m_pHolder(pHolder)
 	{
 		m_blueprint = blueprint;
 
