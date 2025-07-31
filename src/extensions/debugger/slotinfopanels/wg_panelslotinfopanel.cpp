@@ -35,12 +35,8 @@ namespace wg
 	{
 		auto pPanelSlot = static_cast<const PanelSlot*>(pStaticSlot);
 
-
-		auto pTable = TablePanel::create( WGOVR(blueprint.table, _.columns = 2, _.rows = 1 ));
-
-		pTable->slots[0][0] = TextDisplay::create( WGOVR( blueprint.listEntryLabel, _.display.text = "Visible: " ));
-		pTable->slots[0][1] = TextDisplay::create( WGOVR(blueprint.listEntryText, _.display.text = pPanelSlot->isVisible() ? "true" : "false" ));
-
+		auto pTable = _createTable(1,2);
+		_setBoolEntry(pTable, 0, "Is visible: ", pPanelSlot->isVisible());
 		this->slot = pTable;
 	}
 

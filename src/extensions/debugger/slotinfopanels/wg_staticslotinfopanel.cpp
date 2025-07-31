@@ -32,27 +32,16 @@ namespace wg
 
 	StaticSlotInfoPanel::StaticSlotInfoPanel(const Blueprint& blueprint, StaticSlot * pStaticSlot) : DebugPanel( blueprint )
 	{
-		auto pTable = TablePanel::create( WGOVR(blueprint.table, _.columns = 2, _.rows = 4 ));
+		auto pTable = _createTable( 4, 2);
 
 		int row = 0;
 
 		RectF geo = pStaticSlot->geo();
 
-		pTable->slots[row][0] = TextDisplay::create( WGOVR( blueprint.listEntryLabel, _.display.text = "X offset (pts): " ));
-		pTable->slots[row][1] = NumberDisplay::create( WGOVR(blueprint.listEntryPts, _.display.value = geo.x));
-		row++;
-
-		pTable->slots[row][0] = TextDisplay::create(WGOVR(blueprint.listEntryLabel, _.display.text = "Y offset (pts): "));
-		pTable->slots[row][1] = NumberDisplay::create(WGOVR(blueprint.listEntryPts, _.display.value = geo.y));
-		row++;
-
-		pTable->slots[row][0] = TextDisplay::create(WGOVR(blueprint.listEntryLabel, _.display.text = "Width (pts): "));
-		pTable->slots[row][1] = NumberDisplay::create(WGOVR(blueprint.listEntryPts, _.display.value = geo.w));
-		row++;
-
-		pTable->slots[row][0] = TextDisplay::create(WGOVR(blueprint.listEntryLabel, _.display.text = "Height (pts): "));
-		pTable->slots[row][1] = NumberDisplay::create(WGOVR(blueprint.listEntryPts, _.display.value = geo.h));
-		row++;
+		_setPtsEntry(pTable, row++, "X offset (pts): ", geo.x);
+		_setPtsEntry(pTable, row++, "Y offset (pts): ", geo.y);
+		_setPtsEntry(pTable, row++, "Width (pts): ", geo.w);
+		_setPtsEntry(pTable, row++, "Height (pts): ", geo.h);
 
 		this->slot = pTable;
 	}
