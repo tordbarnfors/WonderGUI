@@ -19,43 +19,48 @@
   should contact Tord Jansson [tord.jansson@gmail.com] for details.
 
 =========================================================================*/
-#include "wg_staticslotinfopanel.h"
+#include "wg_skininfopanel.h"
 #include <wg_textdisplay.h>
+#include <wg_numberdisplay.h>
+#include <wg_basicnumberlayout.h>
+#include <wg_packpanel.h>
+#include <wg_skindisplay.h>
+#include <wg_tileskin.h>
+#include <wg_boxskin.h>
+
 
 namespace wg
 {
 
-	const TypeInfo StaticSlotInfoPanel::TYPEINFO = { "StaticSlotInfoPanel", &DebugPanel::TYPEINFO };
+	const TypeInfo SkinInfoPanel::TYPEINFO = { "SkinInfoPanel", &DebugPanel::TYPEINFO };
 
 
 	//____ constructor _____________________________________________________________
 
-	StaticSlotInfoPanel::StaticSlotInfoPanel(const Blueprint& blueprint, DebugPanel::Holder* pHolder, StaticSlot * pStaticSlot) : DebugPanel( blueprint, pHolder )
+	SkinInfoPanel::SkinInfoPanel(const Blueprint& blueprint, DebugPanel::Holder* pHolder, Skin * pSkin) : DebugPanel( blueprint, pHolder )
 	{
-		auto pTable = _createTable( 5, 2);
+		auto pBasePanel = WGCREATE( PackPanel, _.axis = Axis::Y );
 
-		int row = 0;
 
-		RectF geo = pStaticSlot->geo();
+		auto pDisplayBackground = WGCREATE(BoxSkin, _.color = Color::Wheat, _.padding = 8, _.spacing = 8);
 
-		_setObjectPointerEntry(pTable, row++, "Widget: ", pStaticSlot->widget(), this);
-		_setPtsEntry(pTable, row++, "X offset (pts): ", geo.x);
-		_setPtsEntry(pTable, row++, "Y offset (pts): ", geo.y);
-		_setPtsEntry(pTable, row++, "Width (pts): ", geo.w);
-		_setPtsEntry(pTable, row++, "Height (pts): ", geo.h);
+		auto pDisplay = WGCREATE(SkinDisplay, _.skin = pDisplayBackground, _.displaySkin = pSkin);
+		pBasePanel->slots << pDisplay;
 
-		this->slot = pTable;
+		pBasePanel->slots << _createBorderDrawer("Margin", pSkin->margin());
+		pBasePanel->slots << _createBorderDrawer("Padding", pSkin->padding());
+		pBasePanel->slots << _createBorderDrawer("Overflow", pSkin->overflow());
+		this->slot = pBasePanel;
 	}
 
 	//____ typeInfo() _________________________________________________________
 
-	const TypeInfo& StaticSlotInfoPanel::typeInfo(void) const
+	const TypeInfo& SkinInfoPanel::typeInfo(void) const
 	{
 		return TYPEINFO;
 	}
 
 
 } // namespace wg
-
 
 

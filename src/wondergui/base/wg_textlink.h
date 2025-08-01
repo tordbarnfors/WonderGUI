@@ -25,7 +25,7 @@
 #pragma once
 
 #include <string>
-
+#include <functional>
 
 #include <wg_pointers.h>
 #include <wg_geo.h>
@@ -47,28 +47,46 @@ namespace wg
 	class TextLink : public Object
 	{
 	public:
+
+		//.____ Blueprint __________________________________________
+
+		struct Blueprint
+		{
+			Finalizer_p				finalizer = nullptr;
+			int						id = 0;
+			std::string				link;
+			std::string				tooltip;
+		};
+
+
 		//.____ Creation __________________________________________
 
-		static TextLink_p create( const std::string& link ) { return TextLink_p(new TextLink(link)); }
-		static TextLink_p create( const std::string& link, TextStyle * pStyle ) { return TextLink_p(new TextLink(link, pStyle)); }
+		static TextLink_p create() { return TextLink_p(new TextLink()); }
+		static TextLink_p create( const Blueprint& blueprint ) { return TextLink_p(new TextLink(blueprint)); }
 
 		//.____ Identification __________________________________________
 
 		const TypeInfo&			typeInfo(void) const override;
 		const static TypeInfo	TYPEINFO;
 
-		//.____ Misc ___________________________________________________________
+		inline int				id() const { return m_id; }
 
+		//.____ Content ___________________________________________________________
+
+		void					setLink(const std::string& link) { m_link = link; }
 		const std::string&		link() const { return m_link; }
-		TextStyle_p				style() const;
+
+		void					setTooltip(const std::string& tooltip) { m_tooltip = tooltip; }	
+		const std::string&		tooltip() const { return m_tooltip; }
 
 	private:
-		TextLink( const std::string& link );
-		TextLink( const std::string& link, TextStyle * style );
+		TextLink() {};
+		TextLink( const Blueprint& bp );
 		~TextLink();
 
 		std::string				m_link;
-		TextStyle_p				m_pStyle;
+		std::string				m_tooltip;
+		int						m_id = 0;
 
 	};
 
