@@ -194,6 +194,8 @@ set( SOURCES
 	widgets/wg_selectbox.h
 	widgets/wg_sidecanvas.cpp
 	widgets/wg_sidecanvas.h
+	widgets/wg_skindisplay.cpp
+	widgets/wg_skindisplay.h
 	widgets/wg_slider.cpp
 	widgets/wg_slider.h
 	widgets/wg_surfacedisplay.cpp

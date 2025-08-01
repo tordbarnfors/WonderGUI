@@ -117,13 +117,11 @@ namespace wg
 	void TextDisplay::_receive( Msg * pMsg )
 	{
 		Widget::_receive(pMsg);
-	/*
-		RectI canvas = geo();
-		if( m_pSkin )
-			canvas = m_pSkin->_contentRect(canvas, m_state);
 
-		OO(display).receive( pMsg, pHandler, canvas );
-	*/
+		RectI canvas = m_skin.contentRect(m_size,m_scale,m_state);
+
+		display._receive( pMsg );
+
 	}
 
 

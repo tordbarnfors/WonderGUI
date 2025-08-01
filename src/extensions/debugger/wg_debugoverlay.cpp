@@ -73,11 +73,17 @@ namespace wg
 		_createSlotWidgetToolbox();
 		_createWidgetTreeToolbox();
 		_createMsgLogToolbox();
+		_createObjectToolbox();
 
-		m_pDebugger->setObjectSelectedCallback([this](Object* pSelected,Object* pCaller) {
+		m_pDebugger->setObjectSelectedCallback([this](Object* pSelected,Object* pSelectedFrom) {
 
 			auto pWidget = dynamic_cast<Widget*>(pSelected);
-			_selectWidget(pWidget); 
+
+			if( pWidget )
+				_selectWidget(pWidget); 
+			else if( pSelected )
+				_selectObject(pSelected, pSelectedFrom);
+
 		});
 	}
 
@@ -302,11 +308,8 @@ namespace wg
 
 		if (m_pSelectedWidget)
 		{
-			m_pSlotTools->slots.clear();
-			m_pSlotTools->slots << _createSlotInfoPanel(m_pSelectedWidget->_slot());
-
 			m_pWidgetTools->slots.clear();
-			m_pWidgetTools->slots << _createWidgetInfoPanel(m_pSelectedWidget);
+			m_pWidgetTools->slots << _createObjectInfoPanel(m_pSelectedWidget);
 
 			if (!m_pWidgetTreeContainer->slot.isEmpty())
 				static_cast<WidgetTreePanel*>(m_pWidgetTreeContainer->slot._widget())->select(m_pSelectedWidget);
@@ -333,6 +336,15 @@ namespace wg
 		// 
 
 
+	}
+
+	//____ _selectObject() ____________________________________________________
+
+	void DebugOverlay::_selectObject(Object* pSelected, Object* pSelectedFrom)
+	{
+		m_pAnyObjectContainer->slots.clear();
+
+		m_pAnyObjectContainer->slots << _createObjectInfoPanel(pSelected);
 	}
 
 	//____ _slotTypeInfo() ________________________________________________________
@@ -907,6 +919,48 @@ namespace wg
 		_refreshRealGeo(toolboxes._first() + toolboxes.size() - 1);
 	}
 
+	//____ _createObjectToolbox() _____________________________________________
+
+	void DebugOverlay::_createObjectToolbox()
+	{
+		// Add our toolboxes
+
+		Widget_p	pToolbox;
+		PackPanel_p	pContent;
+
+		std::tie(pToolbox, pContent) = _createToolbox("F4 - Any Object View");
+
+		// Create scrollable content
+
+		auto pContentSkin = BoxSkin::create(WGBP(BoxSkin,
+			_.color = Color::White,
+			_.outlineColor = Color::Black,
+			_.outlineThickness = 1,
+			_.padding = 4));
+
+		auto pContentWindow = ScrollPanel::create(m_pTheme->scrollPanelY());
+
+
+		auto pScrollableContent = PackPanel::create(WGBP(PackPanel,
+			_.skin = pContentSkin,
+			_.axis = Axis::Y,
+			_.layout = m_pPackLayoutForScrollingContent
+
+		));
+
+		m_pAnyObjectContainer = PackPanel::create();
+		m_pAnyObjectContainer->setAxis(Axis::Y);
+
+		pScrollableContent->slots.pushBack(m_pAnyObjectContainer);
+
+		pContentWindow->slot = pScrollableContent;
+
+		pContent->slots << pContentWindow;
+
+		_refreshRealGeo(toolboxes._first() + toolboxes.size() - 1);
+	}
+
+
 
 	//____ _createSlotWidgetToolbox() ____________________________________________
 
@@ -917,7 +971,7 @@ namespace wg
 		Widget_p	pToolbox;
 		PackPanel_p	pContent;
 
-		std::tie(pToolbox, pContent) = _createToolbox("F1 - Slot/Widget View");
+		std::tie(pToolbox, pContent) = _createToolbox("F1 - Widget View");
 
 		// Create our button palette
 
@@ -945,25 +999,21 @@ namespace wg
 												  _.color = Color::White,
 												  _.outlineColor = Color::Black,
 												  _.outlineThickness = 1,
-												  _.padding = 2));
+												  _.padding = 4));
 
 		auto pContentWindow = ScrollPanel::create( m_pTheme->scrollPanelY() );
 
 		auto pScrollableContent = PackPanel::create( WGBP(PackPanel, 
 			_.skin = pContentSkin, 
 			_.axis = Axis::Y,
-			_.layout = nullptr
+			_.layout = m_pPackLayoutForScrollingContent
 
 		));
-
-
-		m_pSlotTools = PackPanel::create();
-		m_pSlotTools->setAxis(Axis::Y);
 
 		m_pWidgetTools = PackPanel::create();
 		m_pWidgetTools->setAxis(Axis::Y);
 
-		pScrollableContent->slots.pushBack( {m_pSlotTools, m_pWidgetTools} );
+		pScrollableContent->slots.pushBack( m_pWidgetTools );
 
 		pContentWindow->slot = pScrollableContent;
 
@@ -1007,11 +1057,11 @@ namespace wg
 		return pPanel;
 	}
 
-	//____ _createWidgetInfoPanel() ______________________________________
+	//____ _createObjectInfoPanel() ______________________________________
 
-	Widget_p DebugOverlay::_createWidgetInfoPanel( Widget * pWidget )
+	Widget_p DebugOverlay::_createObjectInfoPanel( Object * pObject )
 	{
-		auto pTypeInfo = &pWidget->typeInfo();
+		auto pTypeInfo = &pObject->typeInfo();
 
 		auto pPanel = PackPanel::create(WGBP(PackPanel,
 			_.axis = Axis::Y,
@@ -1032,7 +1082,7 @@ namespace wg
 		{
 			bp.classCapsule.label.text = pTypeInfo->className;
 
-			auto pInfoPanel = m_pDebugger->createObjectInfoPanel(bp, pTypeInfo, pWidget);
+			auto pInfoPanel = m_pDebugger->createObjectInfoPanel(bp, pTypeInfo, pObject);
 
 			if( pInfoPanel )
 				pPanel->slots << pInfoPanel;
@@ -1049,6 +1099,8 @@ namespace wg
 
 	void DebugOverlay::_createResources()
 	{
+		m_pPackLayoutForScrollingContent = PackLayout::create({});
+
 		m_pRefreshIcon = BlockSkin::create(WGBP(BlockSkin,
 			_.surface = m_pIcons,
 			_.firstBlock = Rect(0, 0, 16, 16);
@@ -1084,6 +1136,11 @@ namespace wg
 		auto pValueLayout = BasicNumberLayout::create( WGBP(BasicNumberLayout,
 			_.style = m_pTheme->defaultStyle(),
 			_.decimalMin = 2
+		));
+
+		auto pIntegerLayout = BasicNumberLayout::create(WGBP(BasicNumberLayout,
+			_.style = m_pTheme->defaultStyle(),
+			_.decimalMin = 0
 		));
 
 
@@ -1122,13 +1179,13 @@ namespace wg
 											 _.display.layout = pListTextLayout );
 
 		m_debugPanelBP.listEntryInteger = WGBP(NumberDisplay,
-											 _.display.layout = pValueLayout );
+											 _.display.layout = pIntegerLayout );
 
 		m_debugPanelBP.listEntryBool = WGBP(NumberDisplay,
 											_.display.layout = pValueLayout);
 
 		m_debugPanelBP.listEntrySPX = WGBP(NumberDisplay,
-											 _.display.layout = pValueLayout );
+											 _.display.layout = pIntegerLayout );
 
 		m_debugPanelBP.listEntryPts = WGBP(NumberDisplay,
 											 _.display.layout = pPtsLayout );
@@ -1136,8 +1193,8 @@ namespace wg
 		m_debugPanelBP.listEntryDecimal = WGBP(NumberDisplay,
 											 _.display.layout = pValueLayout );
 
-		m_debugPanelBP.listEntryPointer = WGBP(NumberDisplay,
-											 _.display.layout = pPointerLayout );
+//		m_debugPanelBP.listEntryPointer = WGBP(NumberDisplay,
+//											 _.display.layout = pPointerLayout );
 
 		m_debugPanelBP.listEntryDrawer = m_pTheme->treeListDrawer();
 		m_debugPanelBP.selectableListEntryCapsule = WGOVR( m_pTheme->treeListEntry(), _.selectable = true );

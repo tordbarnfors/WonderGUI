@@ -17,8 +17,12 @@ set(SOURCES
     objectinfopanels/wg_containerinfopanel.cpp
     objectinfopanels/wg_objectinfopanel.h
     objectinfopanels/wg_objectinfopanel.cpp
+    objectinfopanels/wg_packpanelinfopanel.h
+    objectinfopanels/wg_packpanelinfopanel.cpp
     objectinfopanels/wg_panelinfopanel.h
     objectinfopanels/wg_panelinfopanel.cpp
+    objectinfopanels/wg_skininfopanel.h
+    objectinfopanels/wg_skininfopanel.cpp
     objectinfopanels/wg_widgetinfopanel.h
     objectinfopanels/wg_widgetinfopanel.cpp
 
