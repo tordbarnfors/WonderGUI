@@ -42,25 +42,25 @@ namespace wg
 		 
 		int row = 0;
 
-		_setIntegerEntry	(pTable, row++, "Id: ", pWidget->id());
-		_setIntegerEntry	(pTable, row++, "Width (pts): ", pWidget->size().w);
-		_setIntegerEntry	(pTable, row++, "Height (pts): ", pWidget->size().h);
-		_setIntegerEntry	(pTable, row++, "Scale: ", pWidget->scale());
-		_setTextEntry		(pTable, row++, "State: ", toString(pWidget->state().value()) );
-		_setPointerEntry	(pTable, row++, "Baggage: ", pWidget->baggage().rawPtr());
-		_setPointerEntry	(pTable, row++, "Parent: ", pWidget->parent().rawPtr());
-		_setPointerEntry	(pTable, row++, "Skin: ", pWidget->skin().rawPtr());
-		_setTextEntry		(pTable, row++, "Tooltip: ", pWidget->tooltip());
-		_setTextEntry		(pTable, row++, "Pointer style: ", toString(pWidget->pointerStyle()));
-		_setTextEntry		(pTable, row++, "Mark policy: ", toString(pWidget->markPolicy()));
-		_setBoolEntry		(pTable, row++, "Is pickable: ", pWidget->isPickable());
-		_setBoolEntry		(pTable, row++, "Is pickHandle: ", pWidget->isPickHandle());
-		_setIntegerEntry	(pTable, row++, "Pick category: ", pWidget->pickCategory());
-		_setBoolEntry		(pTable, row++, "Is drop target: ", pWidget->isDropTarget());
-		_setBoolEntry		(pTable, row++, "Is tab locked: ", pWidget->isTabLocked());
-		_setBoolEntry		(pTable, row++, "Is selectable: ", pWidget->isSelectable());
-		_setIntegerEntry	(pTable, row++, "Receiving updates: ", pWidget->m_receivingUpdateCounter);
-		_setBoolEntry		(pTable, row++, "Has sticky focus: ", pWidget->hasStickyFocus());
+		_setIntegerEntry		(pTable, row++, "Id: ", pWidget->id());
+		_setPtsEntry			(pTable, row++, "Width (pts): ", pWidget->size().w);
+		_setPtsEntry			(pTable, row++, "Height (pts): ", pWidget->size().h);
+		_setIntegerEntry		(pTable, row++, "Scale: ", pWidget->scale());
+		_setTextEntry			(pTable, row++, "State: ", toString(pWidget->state().value()) );
+		_setObjectPointerEntry	(pTable, row++, "Baggage: ", pWidget->baggage().rawPtr(), pWidget);
+		_setObjectPointerEntry	(pTable, row++, "Parent: ", pWidget->parent().rawPtr(), pWidget);
+		_setObjectPointerEntry	(pTable, row++, "Skin: ", pWidget->skin().rawPtr(), pWidget);
+		_setTextEntry			(pTable, row++, "Tooltip: ", pWidget->tooltip());
+		_setTextEntry			(pTable, row++, "Pointer style: ", toString(pWidget->pointerStyle()));
+		_setTextEntry			(pTable, row++, "Mark policy: ", toString(pWidget->markPolicy()));
+		_setBoolEntry			(pTable, row++, "Pickable: ", pWidget->isPickable());
+		_setBoolEntry			(pTable, row++, "PickHandle: ", pWidget->isPickHandle());
+		_setIntegerEntry		(pTable, row++, "Pick category: ", pWidget->pickCategory());
+		_setBoolEntry			(pTable, row++, "DropTarget: ", pWidget->isDropTarget());
+		_setBoolEntry			(pTable, row++, "TabLocked: ", pWidget->isTabLocked());
+		_setBoolEntry			(pTable, row++, "Selectable: ", pWidget->isSelectable());
+		_setIntegerEntry		(pTable, row++, "Receiving updates: ", pWidget->m_receivingUpdateCounter);
+		_setBoolEntry			(pTable, row++, "Sticky focus: ", pWidget->hasStickyFocus());
 
 
 		pPanel->slots << pTable;
@@ -91,6 +91,28 @@ namespace wg
 		auto pSlot = pWidget->_slot();
 		if (pSlot)
 		{
+			Blueprint bp = m_blueprint;
+
+			auto pContentPanel = PackPanel::create(WGBP(PackPanel, _.axis = Axis::Y, _.spacingBefore = 4, _.spacingAfter = 4));
+
+			const TypeInfo* pTypeInfo = &pSlot->typeInfo();
+
+			while( pTypeInfo != nullptr )
+			{
+				bp.classCapsule.label.text = pTypeInfo->className;
+				auto pInfoPanel = m_pHolder->createSlotInfoPanel(bp, pTypeInfo, pSlot);
+				if( pInfoPanel )
+					pContentPanel->slots << pInfoPanel;
+
+				pTypeInfo = pTypeInfo->pSuperClass;
+			}
+
+			char temp[64];
+			sprintf(temp, "0x%p", pSlot);
+
+			auto pHeaderValue = WGCREATE(TextDisplay, _ = blueprint.listEntryText, _.display.text = temp);
+			auto pSlotDrawer = _createDrawer("Slot", pHeaderValue, pContentPanel);
+			pPanel->slots << pSlotDrawer;
 
 		}
 

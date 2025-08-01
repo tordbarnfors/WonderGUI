@@ -151,6 +151,9 @@ namespace wg
 
 		void			setSpacing(pts before, pts between, pts after);
 		void			setSpacing(pts between);
+		inline pts		spacingBefore() const { return m_spacingBefore; }
+		inline pts		spacingBetween() const { return m_spacingBetween; }
+		inline pts		spacingAfter() const { return m_spacingAfter; }
 
 		void			setSlotAlignment( Alignment alignment );
 		Alignment		slotAlignment() const { return m_slotAlignment; }
