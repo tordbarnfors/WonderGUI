@@ -23,6 +23,8 @@
 
 #include <wg_colorskin.h>
 #include <wg_twoslotpanel.h>
+#include <wg_msgrouter.h>
+#include <wg_msg.h>
 
 
 
@@ -72,6 +74,30 @@ namespace wg
 
 		return pDrawer;
 	}
+
+	//____ _createBorderDrawer() ________________________________________________________
+
+	DrawerPanel_p DebugPanel::_createBorderDrawer(const CharSeq& label, const Border& border)
+	{
+		bool bEmpty = border.isEmpty();
+
+		auto pHeaderValue = WGCREATE(TextDisplay, _ = m_blueprint.listEntryText, _.display.text = bEmpty ? "none" : "");
+
+		TablePanel_p pContentTable;
+
+		if (true)
+		{
+			pContentTable = _createTable(4, 2);
+
+			_setSpxEntry(pContentTable, 0, "Top (pts): ", border.top);
+			_setSpxEntry(pContentTable, 1, "Right (pts): ", border.right);
+			_setSpxEntry(pContentTable, 2, "Bottom (pts): ", border.bottom);
+			_setSpxEntry(pContentTable, 3, "Left (pts): ", border.left);
+		}
+
+		return _createDrawer(label, pHeaderValue, pContentTable);
+	}
+
 
 
 	//___ _setTextEntry() _________________________________________________
@@ -168,9 +194,64 @@ namespace wg
 		if (pTable->columns.size() < 2)
 			return;
 
+		char temp[64];
+		sprintf(temp, "0x%p", pPointer);
+
 		pTable->slots[row][0] = TextDisplay::create(WGOVR(m_blueprint.listEntryLabel, _.display.text = pLabel));
-		pTable->slots[row][1] = NumberDisplay::create(WGOVR(m_blueprint.listEntryPointer, _.display.value = reinterpret_cast<int64_t>(pPointer)));
+		pTable->slots[row][1] = TextDisplay::create(WGOVR(m_blueprint.listEntryText, _.display.text = temp));
 	}
+
+	//___ _setObjectPointerEntry() _________________________________________________
+
+	void DebugPanel::_setObjectPointerEntry(TablePanel* pTable, int row, const char* pLabel, Object* pPointer, Object * pSource)
+	{
+		if( row < 0 || row >= pTable->rows.size())
+			return;
+
+		if (pTable->columns.size() < 2)
+			return;
+
+
+		CharBuffer	buff(128);
+
+		if (pPointer)
+		{
+			buff.pushBack(pPointer->typeInfo().className);
+			buff.setStyle(m_blueprint.theme->finePrintStyle(), 0, 1000);
+
+			int ofs = buff.nbChars();
+
+			char temp[64];
+			sprintf(temp, " 0x%p", pPointer);
+			buff.pushBack(temp);
+
+			TextLink_p pLink = TextLink::create();
+
+			Object_p	safePointer = pPointer;
+			Object_p	safeSource = pSource;
+			Holder*		pHolder = m_pHolder;
+
+			Base::msgRouter()->addRoute(pLink, MsgType::MouseClick, [safePointer, safeSource, pHolder](Msg* pMsg) {
+				
+				pHolder->objectSelected(safePointer, safeSource);
+			});
+
+
+			TextStyle_p pStyle = WGCREATE(TextStyle, _.link = pLink, _.color = Color::DarkRed, _.decoration = TextDecoration::Underline);
+
+			buff.setStyle(pStyle, ofs, 1000);
+
+		}
+		else
+			buff.pushBack("null");
+
+
+
+
+		pTable->slots[row][0] = TextDisplay::create(WGOVR(m_blueprint.listEntryLabel, _.display.text = pLabel ));
+		pTable->slots[row][1] = TextDisplay::create(WGOVR(m_blueprint.listEntryText, _.display.text = &buff, _.markPolicy = MarkPolicy::Geometry));
+	}
+
 
 
 

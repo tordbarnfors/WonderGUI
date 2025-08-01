@@ -186,12 +186,13 @@ namespace wg
 		void			_createSlotWidgetToolbox();
 		void			_createWidgetTreeToolbox();
 		void			_createMsgLogToolbox();
+		void			_createObjectToolbox();
 
 
 
 
 		Widget_p		_createSlotInfoPanel(StaticSlot * pSlot);
-		Widget_p		_createWidgetInfoPanel(Widget * pWidget);
+		Widget_p		_createObjectInfoPanel(Object * pWidget);
 
 		//
 
@@ -204,9 +205,13 @@ namespace wg
 		RectSPX			_selectionGeo() const;
 		void			_refreshRealGeo(ToolboxSlot * pSlot, bool bForceResize = false);
 		void			_selectWidget(Widget * pWidget);
+		void			_selectObject(Object* pSelected, Object * pSelectedFrom);
+
 		//
 
 		Debugger_p		m_pDebugger;
+
+		PackLayout_p	m_pPackLayoutForScrollingContent;
 
 		PointerStyle	m_generatedPointerStyle = PointerStyle::Undefined;
 
@@ -219,10 +224,11 @@ namespace wg
 		Skin_p			m_pSelectionSkin;
 		Skin_p			m_pToolboxSkin;
 
-		PackPanel_p		m_pSlotTools;
 		PackPanel_p		m_pWidgetTools;
 
 		ScrollPanel_p	m_pWidgetTreeContainer;
+
+		PackPanel_p		m_pAnyObjectContainer;			// Contains the object info panel for the currently selected object.
 
 		// Variables for toolbox drag
 

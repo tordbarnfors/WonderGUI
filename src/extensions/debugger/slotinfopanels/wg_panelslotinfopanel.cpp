@@ -36,7 +36,7 @@ namespace wg
 		auto pPanelSlot = static_cast<const PanelSlot*>(pStaticSlot);
 
 		auto pTable = _createTable(1,2);
-		_setBoolEntry(pTable, 0, "Is visible: ", pPanelSlot->isVisible());
+		_setBoolEntry(pTable, 0, "Visible: ", pPanelSlot->isVisible());
 		this->slot = pTable;
 	}
 

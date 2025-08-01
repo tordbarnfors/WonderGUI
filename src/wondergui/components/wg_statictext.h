@@ -68,10 +68,10 @@ namespace wg
 
 		void				_initFromBlueprint(const Blueprint& blueprint);
 
+		virtual void		_receive( Msg * pMsg );
 
 	protected:
 
-		virtual void		_receive( Msg * pMsg );
 
 	protected:
 		TextLink_p			m_pMarkedLink;	// Character offset for beginning of marked or focused link

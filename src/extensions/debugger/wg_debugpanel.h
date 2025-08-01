@@ -62,7 +62,7 @@ namespace wg
 			NumberDisplay::Blueprint	listEntrySPX;
 			NumberDisplay::Blueprint	listEntryPts;
 			NumberDisplay::Blueprint	listEntryDecimal;
-			NumberDisplay::Blueprint	listEntryPointer;
+//			NumberDisplay::Blueprint	listEntryPointer;
 			TextDisplay::Blueprint		infoDisplay;
 			TablePanel::Blueprint		table;
 			DrawerPanel::Blueprint		listEntryDrawer;
@@ -94,6 +94,9 @@ namespace wg
 		TablePanel_p		_createTable(int rows, int columns);
 		DrawerPanel_p		_createDrawer(const CharSeq& label, Widget * pHeaderValue, Widget * pContent );
 
+		DrawerPanel_p		_createBorderDrawer(const CharSeq& label, const Border& border);
+
+
 		void _setTextEntry(TablePanel* pTable, int row, const char* pLabel, const CharSeq& string);
 		void _setIntegerEntry(TablePanel * pTable, int row, const char * pLabel, int value);
 		void _setDecimalEntry(TablePanel* pTable, int row, const char* pLabel, float value);
@@ -101,6 +104,7 @@ namespace wg
 		void _setSpxEntry(TablePanel* pTable, int row, const char* pLabel, spx value);
 		void _setBoolEntry(TablePanel* pTable, int row, const char* pLabel, bool value);
 		void _setPointerEntry(TablePanel* pTable, int row, const char* pLabel, void* pPointer);
+		void _setObjectPointerEntry(TablePanel* pTable, int row, const char* pLabel, Object * pPointer, Object * pSource);
 
 		Blueprint	m_blueprint;
 		Holder*		m_pHolder = nullptr;
