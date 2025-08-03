@@ -83,10 +83,8 @@ set( SOURCES
 	components/wg_staticnumber.h
 	components/wg_statictext.cpp
 	components/wg_statictext.h
-	components/wg_text.cpp
-	components/wg_text.h
-	components/wg_textbase.cpp
-	components/wg_textbase.h
+	components/wg_dynamictext.cpp
+	components/wg_dynamictext.h
 	components/wg_component.cpp
 	components/wg_component.h
 

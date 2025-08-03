@@ -24,7 +24,7 @@
 #pragma once
 
 #include <wg_widget.h>
-#include <wg_text.h>
+#include <wg_dynamictext.h>
 #include <wg_icon.h>
 
 namespace wg
@@ -55,7 +55,7 @@ namespace wg
 			Finalizer_p		finalizer = nullptr;
 			Icon::Blueprint	icon;
 			int				id = 0;
-			Text::Blueprint label;
+			DynamicText::Blueprint label;
 			MarkPolicy		markPolicy = MarkPolicy::AlphaTest;
 			bool			pickable = false;
 			uint8_t			pickCategory = 0;
@@ -76,7 +76,7 @@ namespace wg
 
 		//.____ Components _______________________________________
 
-		Text		label;
+		DynamicText	label;
 		Icon		icon;
 
 		//.____ Identification __________________________________________

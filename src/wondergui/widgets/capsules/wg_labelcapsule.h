@@ -24,7 +24,7 @@
 #pragma once
 
 #include <wg_capsule.h>
-#include <wg_text.h>
+#include <wg_dynamictext.h>
 
 namespace wg
 {
@@ -47,7 +47,7 @@ namespace wg
 			bool			dropTarget = true;
 			Finalizer_p		finalizer = nullptr;
 			int				id = 0;
-			Text::Blueprint	label;
+			DynamicText::Blueprint	label;
 			Placement		labelPlacement = Placement::NorthWest;
 			Skin_p			labelSkin;
 			MarkPolicy		markPolicy = MarkPolicy::AlphaTest;
@@ -72,7 +72,7 @@ namespace wg
 
 		//.____ Components ____________________________________
 
-		Text			label;
+		DynamicText			label;
 
 		//.____ Identification __________________________________________
 

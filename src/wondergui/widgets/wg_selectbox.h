@@ -27,7 +27,7 @@
 #include <wg_widget.h>
 #include <wg_sidecanvas.h>
 #include <wg_dynamicvector.h>
-#include <wg_text.h>
+#include <wg_dynamictext.h>
 
 namespace wg
 {
@@ -126,7 +126,7 @@ namespace wg
 
 		//.____ Components __________________________________________________________
 
-		Text			text;
+		DynamicText			text;
 		DynamicVector<SelectBoxEntry>	entries;
 		
 		//.____ Identification ______________________________________________________
