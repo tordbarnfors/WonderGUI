@@ -53,7 +53,12 @@ namespace wg
 		};
 
 		StaticText(Widget * pWidget );
+		virtual ~StaticText() {}
 
+		//.____ Identification _________________________________________________
+
+		const TypeInfo& typeInfo(void) const override;
+		const static TypeInfo	TYPEINFO;
 
 		//.____ Content _____________________________________________
 
@@ -74,7 +79,7 @@ namespace wg
 
 
 	protected:
-		TextLink_p			m_pMarkedLink;	// Character offset for beginning of marked or focused link
+		TextLink_p			m_pMarkedLink;
 	};
 
 

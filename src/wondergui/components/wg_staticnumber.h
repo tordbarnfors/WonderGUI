@@ -37,6 +37,7 @@ namespace wg
 	{
 	public:
 		StaticNumber(Widget * pHolder);
+		virtual ~StaticNumber() {}
 
 		//.____ Blueprint ______________________________________________________
 
@@ -44,6 +45,11 @@ namespace wg
 		{
 			NumberLayout_p	layout;
 		};
+
+		//.____ Identification _________________________________________________
+
+		const TypeInfo& typeInfo(void) const override;
+		const static TypeInfo	TYPEINFO;
 
 		//.____ Appearance _____________________________________________
 

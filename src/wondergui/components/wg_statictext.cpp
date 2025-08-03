@@ -29,10 +29,19 @@ namespace wg
 {
 	using namespace Util;
 
+	const TypeInfo	StaticText::TYPEINFO = { "StaticText", &TextBase::TYPEINFO };
+
 	//____ constructor _____________________________________________________________
 
 	StaticText::StaticText(Widget * pWidget ) : TextBase( pWidget )
 	{
+	}
+
+	//____ typeInfo() _________________________________________________________
+
+	const TypeInfo& StaticText::typeInfo(void) const
+	{
+		return TYPEINFO;
 	}
 
 	//____ markedLink() _____________________________________________________

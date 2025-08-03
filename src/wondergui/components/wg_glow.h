@@ -66,6 +66,11 @@ namespace wg
 			bool				clearOnResize	= false;
 		};
 
+		//.____ Identification _________________________________________________
+
+		const TypeInfo& typeInfo(void) const override;
+		const static TypeInfo	TYPEINFO;
+
 		//.____ Control _____________________________________________
 
 		void				setActive(bool bActive);

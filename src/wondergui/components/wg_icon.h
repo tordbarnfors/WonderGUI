@@ -51,6 +51,11 @@ namespace wg
 			pts				spacing;
 		};
 
+		//.____ Identification _________________________________________________
+
+		const TypeInfo& typeInfo(void) const override;
+		const static TypeInfo	TYPEINFO;
+
 		//.____ Content _____________________________________________
 
 		bool			set(Skin * pIconGfx, Placement placement = Placement::West, pts spacing = 0,

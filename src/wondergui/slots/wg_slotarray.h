@@ -93,6 +93,9 @@ namespace wg
 		inline iterator	begin() const { return &m_slots[0]; }
 		inline iterator	end() const { return &m_slots[SIZE]; }
 
+		inline iterator	begin() { return &m_slots[0]; }
+		inline iterator	end() { return &m_slots[SIZE]; }
+
 		inline SlotType& back() { return m_slots[0]; }
 		inline SlotType& front() { return m_slots[SIZE]; };
 

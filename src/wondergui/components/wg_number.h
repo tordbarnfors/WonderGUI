@@ -36,7 +36,7 @@ namespace wg
 	{
 	public:
 		Number(Widget * pHolder);
-		~Number() {}
+		virtual ~Number() {}
 
 		//.____ Blueprint ______________________________________________________
 
@@ -47,6 +47,11 @@ namespace wg
 			double			minValue = std::numeric_limits<double>::lowest();
 			double			value = 0.0;
 		};
+
+		//.____ Identification _________________________________________________
+
+		const TypeInfo& typeInfo(void) const override;
+		const static TypeInfo	TYPEINFO;
 
 		//.____ Content _____________________________________________
 

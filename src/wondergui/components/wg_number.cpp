@@ -26,6 +26,7 @@
 
 namespace wg
 {
+	const TypeInfo	Number::TYPEINFO = { "Number", &StaticNumber::TYPEINFO };
 
 	//____ constructor ________________________________________________________
 
@@ -33,7 +34,13 @@ namespace wg
 	{
 	}
 
-	
+	//____ typeInfo() _________________________________________________________
+
+	const TypeInfo& Number::typeInfo(void) const
+	{
+		return TYPEINFO;
+	}
+
 	//____ clear() _________________________________________________________________
 
 	void Number::clear()
