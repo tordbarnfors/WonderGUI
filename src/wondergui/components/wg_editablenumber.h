@@ -38,8 +38,12 @@ namespace wg
 	{
 	public:
 		EditableNumber(Widget * pWidget );
-		~EditableNumber();
+		virtual ~EditableNumber() {};
 
+		//.____ Identification _________________________________________________
+
+		const TypeInfo& typeInfo(void) const override;
+		const static TypeInfo	TYPEINFO;
 
 		//.____ State __________________________________________________
 

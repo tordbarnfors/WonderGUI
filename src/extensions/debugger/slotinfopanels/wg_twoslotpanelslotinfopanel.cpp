@@ -19,21 +19,36 @@
   should contact Tord Jansson [tord.jansson@gmail.com] for details.
 
 =========================================================================*/
-
-#include <wg_widget.h>
-#include <wg_editablenumber.h>
+#include "wg_twoslotpanelslotinfopanel.h"
+#include <wg_textdisplay.h>
+#include <wg_twoslotpanel.h>
 
 namespace wg
 {
-	const TypeInfo	EditableNumber::TYPEINFO = { "EditableNumber", &Number::TYPEINFO };
+
+	const TypeInfo TwoSlotPanelSlotInfoPanel::TYPEINFO = { "TwoSlotPanelSlotInfoPanel", &DebugPanel::TYPEINFO };
+
+
+	//____ constructor _____________________________________________________________
+
+	TwoSlotPanelSlotInfoPanel::TwoSlotPanelSlotInfoPanel(const Blueprint& blueprint, DebugPanel::Holder* pHolder, StaticSlot * pStaticSlot) : DebugPanel( blueprint, pHolder )
+	{
+		auto pPanelSlot = static_cast<const TwoSlotPanel::Slot*>(pStaticSlot);
+
+		auto pTable = _createTable(2,2);
+		_setDecimalEntry(pTable, 0, "Weight: ", pPanelSlot->weight());
+		this->slot = pTable;
+	}
 
 	//____ typeInfo() _________________________________________________________
 
-	const TypeInfo& EditableNumber::typeInfo(void) const
+	const TypeInfo& TwoSlotPanelSlotInfoPanel::typeInfo(void) const
 	{
 		return TYPEINFO;
 	}
 
 
-
 } // namespace wg
+
+
+

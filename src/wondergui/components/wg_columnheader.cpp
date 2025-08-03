@@ -26,6 +26,7 @@
 
 namespace wg
 {
+	const TypeInfo	ColumnHeader::TYPEINFO = { "ColumnHeader", &Component::TYPEINFO };
 
 	//____ constructor ___________________________________________________________
 
@@ -43,6 +44,14 @@ namespace wg
 	{
 		_layout()->removeText(this);
 	}
+
+	//____ typeInfo() _________________________________________________________
+
+	const TypeInfo& ColumnHeader::typeInfo(void) const
+	{
+		return TYPEINFO;
+	}
+
 
 	//____ _initFromBlueprint() ___________________________________________________
 

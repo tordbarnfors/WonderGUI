@@ -29,6 +29,8 @@ namespace wg
 
 	using namespace Util;
 
+	const TypeInfo	Icon::TYPEINFO = { "Icon", &Component::TYPEINFO };
+
 	//____ constructor ____________________________________________________________
 
 	Icon::Icon( Widget * pWidget ) : Component(pWidget), m_skin(this)
@@ -36,6 +38,12 @@ namespace wg
 		m_placement		= Placement::West;
 	}
 
+	//____ typeInfo() _________________________________________________________
+
+	const TypeInfo& Icon::typeInfo(void) const
+	{
+		return TYPEINFO;
+	}
 
 	//____ set() ___________________________________________________________________
 
