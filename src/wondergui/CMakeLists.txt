@@ -243,13 +243,6 @@ set( SOURCES
 	widgets/overlays/wg_tooltipoverlay.cpp
 	widgets/overlays/wg_tooltipoverlay.h
 
-	widgets/lists/wg_list.cpp
-	widgets/lists/wg_list.h
-	widgets/lists/wg_packlist.cpp
-	widgets/lists/wg_packlist.h
-#	widgets/lists/wg_treelist.cpp
-#	widgets/lists/wg_treelist.h
-
 	widgets/panels/wg_drawerpanel.cpp
 	widgets/panels/wg_drawerpanel.h
 	widgets/panels/wg_flexpanel.cpp

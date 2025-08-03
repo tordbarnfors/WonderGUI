@@ -241,7 +241,7 @@ bool MyApp::setupGUI(Visitor* pVisitor)
 		.skins = { pEntryMain2, pEntryOverflow }
 	});
 
-	
+/*
 	auto pList = PackList::create( { .entrySkin = pEntrySkin1, .entrySkin2 = pEntrySkin2, .skin = ColorSkin::create(Color::White) } );
 	
 	pList->slots << Filler::create({ .defaultSize = {100,40} });
@@ -250,6 +250,7 @@ bool MyApp::setupGUI(Visitor* pVisitor)
 	pList->slots << Filler::create({ .defaultSize = {100,40} });
 
 	pBaseFlex->slots << makeMovable(pList, pBaseFlex);
+*/
 
 	
 	return true;

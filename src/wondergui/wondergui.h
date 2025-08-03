@@ -81,7 +81,6 @@
 #include <wg_labelcapsule.h>
 #include <wg_lambdapanel.h>
 #include <wg_lineeditor.h>
-#include <wg_list.h>
 #include <wg_modaloverlay.h>
 #include <wg_msg.h>
 #include <wg_msglogger.h>
@@ -93,7 +92,6 @@
 #include <wg_overlay.h>
 #include <wg_paddingcapsule.h>
 #include <wg_packlayout.h>
-#include <wg_packlist.h>
 #include <wg_packpanel.h>
 #include <wg_panel.h>
 #include <wg_pianokeyboard.h>
