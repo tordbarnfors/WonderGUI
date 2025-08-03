@@ -25,7 +25,7 @@
 #pragma once
 
 #include <wg_widget.h>
-#include	<wg_text.h>
+#include	<wg_dynamictext.h>
 
 namespace wg
 {
@@ -48,7 +48,7 @@ namespace wg
 
 		//.____ Components _______________________________________
 
-		Text			labels;
+		DynamicText		labels;
 		StaticText		values;
 
 

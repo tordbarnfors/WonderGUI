@@ -136,8 +136,7 @@
 #include <wg_string.h>
 #include <wg_surfacedisplay.h>
 #include <wg_tablepanel.h>
-#include <wg_text.h>
-#include <wg_textbase.h>
+#include <wg_dynamictext.h>
 #include <wg_textdisplay.h>
 #include <wg_texteditor.h>
 #include <wg_textlayout.h>
