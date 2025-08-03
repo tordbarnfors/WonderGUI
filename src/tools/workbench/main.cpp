@@ -138,7 +138,6 @@ bool scrollSkinTest(ComponentPtr<DynamicSlot> pSlot);
 bool tooltipLayerTest(ComponentPtr<DynamicSlot> pSlot);
 bool kerningTest(ComponentPtr<DynamicSlot> pSlot);
 bool circleSkinTest(ComponentPtr<DynamicSlot> pSlot);
-bool packListTest(ComponentPtr<DynamicSlot> pSlot);
 bool packPanelTest(ComponentPtr<DynamicSlot> pSlot);
 bool glyphAsSurfaceTest(ComponentPtr<DynamicSlot> pSlot, Font_p pFont );
 bool memHeapFragmentationTest(ComponentPtr<DynamicSlot> pSlot);
@@ -212,7 +211,6 @@ int main(int argc, char** argv)
 
 
 //	printf("Slot is safe to relocate: %d\n", StaticSlot::safe_to_relocate);
-//	printf("PackListSlot is safe to relocate: %d\n", PackListSlot::safe_to_relocate);
 //	printf("LambdaSlot is safe to relocate: %d\n", LambdaSlot::safe_to_relocate);
 
 
@@ -748,7 +746,6 @@ int main(int argc, char** argv)
 		//	tooltipLayerTest(pSlot);
 		//	kerningTest(pSlot);
 		//	circleSkinTest(pSlot);
-		//	packListTest(pSlot);
 		//	packPanelTest(pSlot);
 		//	glyphAsSurfaceTest(pSlot, pFont);
 		//	memHeapFragmentationTest(pSlot);
@@ -2602,52 +2599,6 @@ bool circleSkinTest(ComponentPtr<DynamicSlot> pSlot)
 	return true;
 
 }
-
-//____ packListTest() ________________________________________________________
-
-bool packListTest(ComponentPtr<DynamicSlot> pSlot)
-{
-	auto pBaseLayer = FlexPanel::create();
-	pBaseLayer->setSkin(ColorSkin::create(Color::PapayaWhip));
-
-	auto pPackList = PackList::create();
-	pPackList->setSkin(ColorSkin::create(Color::Azure));
-
-	pPackList->header.setText("HEADER");
-//	pPackList->header.setSkin(ColorSkin::create(Color::Blue));
-	pPackList->header.setSkin(ColorSkin::create({	.color = Color::Yellow , 
-													.states = { { State::Hovered, Color::Brown },
-																{ State::Pressed, { .color = Color::Red }} } 
-												} ));
-
-	pPackList->setSortFunction( [](const Widget * pW1, const Widget * pW2) { return pW2->id() - pW1->id(); });
-
-
-	for (int i = 0; i < 10; i++)
-	{
-		char label[20];
-		snprintf(label, 20, "Value: %d", i);
-		auto pWidget = TextDisplay::create();
-		pWidget->display.setText(label);
-		pWidget->setId(i);
-
-
-		pPackList->slots << pWidget;
-
-	}
-
-
-
-
-
-	pBaseLayer->slots.pushBack(pPackList, { .pos = {10, 10}, .size = {200, 400} });
-
-
-	*pSlot = pBaseLayer;
-	return true;
-
-}
-
 
 //____ packPanelTest() ________________________________________________________
 
