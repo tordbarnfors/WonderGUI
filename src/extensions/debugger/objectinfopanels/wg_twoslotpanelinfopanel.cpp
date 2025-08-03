@@ -19,34 +19,31 @@
   should contact Tord Jansson [tord.jansson@gmail.com] for details.
 
 =========================================================================*/
-#include "wg_packpanelinfopanel.h"
+#include "wg_twoslotpanelinfopanel.h"
 #include <wg_textdisplay.h>
 #include <wg_numberdisplay.h>
 #include <wg_basicnumberlayout.h>
+#include <wg_twoslotpanel.h>
 #include <wg_packpanel.h>
 
 
 namespace wg
 {
 
-	const TypeInfo PackPanelInfoPanel::TYPEINFO = { "PackPanelInfoPanel", &DebugPanel::TYPEINFO };
+	const TypeInfo TwoSlotPanelInfoPanel::TYPEINFO = { "TwoSlotPanelPanelInfoPanel", &DebugPanel::TYPEINFO };
 
 
 	//____ constructor _____________________________________________________________
 
-	PackPanelInfoPanel::PackPanelInfoPanel(const Blueprint& blueprint, DebugPanel::Holder* pHolder, PackPanel * pPanel) : DebugPanel( blueprint, pHolder )
+	TwoSlotPanelInfoPanel::TwoSlotPanelInfoPanel(const Blueprint& blueprint, DebugPanel::Holder* pHolder, TwoSlotPanel * pPanel) : DebugPanel( blueprint, pHolder )
 	{
 		auto pBasePanel = WGCREATE(PackPanel, _.axis = Axis::Y);
 
-		auto pTable = _createTable(6,2);
+		auto pTable = _createTable(2,2);
 		int row = 0;
 
 		_setTextEntry(pTable, row++, "Axis: ", toString(pPanel->axis()));
 		_setObjectPointerEntry(pTable, row++, "Layout: ", pPanel->layout(),this);
-		_setPtsEntry(pTable, row++, "Spacing before (pts): ", pPanel->spacingBefore());
-		_setPtsEntry(pTable, row++, "Spacing between (pts): ", pPanel->spacingBetween());
-		_setPtsEntry(pTable, row++, "Spacing after (pts): ", pPanel->spacingAfter());
-		_setTextEntry(pTable, row++, "Slot alignment: ", toString(pPanel->slotAlignment()));
 
 		pBasePanel->slots << pTable;
 
@@ -57,7 +54,7 @@ namespace wg
 
 	//____ typeInfo() _________________________________________________________
 
-	const TypeInfo& PackPanelInfoPanel::typeInfo(void) const
+	const TypeInfo& TwoSlotPanelInfoPanel::typeInfo(void) const
 	{
 		return TYPEINFO;
 	}
