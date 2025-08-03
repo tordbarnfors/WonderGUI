@@ -24,6 +24,13 @@
 
 namespace wg
 {
+	const TypeInfo	Component::TYPEINFO = { "Component", nullptr };
 
+	//____ typeInfo() _________________________________________________________
+
+	const TypeInfo& Component::typeInfo(void) const
+	{
+		return TYPEINFO;
+	}
 
 } // namespace wg

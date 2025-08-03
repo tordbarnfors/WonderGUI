@@ -26,10 +26,19 @@
 namespace wg
 {
 
+	const TypeInfo	StaticNumber::TYPEINFO = { "StaticNumber", &Component::TYPEINFO };
+
 	//____ constructor ________________________________________________________
 
 	StaticNumber::StaticNumber(Widget * pWidget) : Component(pWidget)
 	{
+	}
+
+	//____ typeInfo() _________________________________________________________
+
+	const TypeInfo& StaticNumber::typeInfo(void) const
+	{
+		return TYPEINFO;
 	}
 
 	//____ setLayout() _____________________________________________________

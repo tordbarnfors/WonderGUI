@@ -26,6 +26,8 @@ namespace wg
 {
 	using namespace Util;
 
+	const TypeInfo	TextBase::TYPEINFO = { "TextBase", &Component::TYPEINFO };
+
 	//____ constructor _____________________________________________________________
 
 	TextBase::TextBase(Widget * pWidget ) : Component( pWidget )
@@ -38,6 +40,13 @@ namespace wg
 	TextBase::~TextBase()
 	{
 		_layout()->removeText(this);
+	}
+
+	//____ typeInfo() _________________________________________________________
+
+	const TypeInfo& TextBase::typeInfo(void) const
+	{
+		return TYPEINFO;
 	}
 
 	//____ setStyle() ______________________________________________________________

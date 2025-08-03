@@ -19,45 +19,42 @@
   should contact Tord Jansson [tord.jansson@gmail.com] for details.
 
 =========================================================================*/
-#include "wg_packpanelinfopanel.h"
+#include "wg_statictextinfopanel.h"
 #include <wg_textdisplay.h>
 #include <wg_numberdisplay.h>
 #include <wg_basicnumberlayout.h>
+#include <wg_enumextras.h>
 #include <wg_packpanel.h>
-
 
 namespace wg
 {
 
-	const TypeInfo PackPanelInfoPanel::TYPEINFO = { "PackPanelInfoPanel", &DebugPanel::TYPEINFO };
+	const TypeInfo StaticTextInfoPanel::TYPEINFO = { "StaticTextInfoPanel", &DebugPanel::TYPEINFO };
 
 
 	//____ constructor _____________________________________________________________
 
-	PackPanelInfoPanel::PackPanelInfoPanel(const Blueprint& blueprint, DebugPanel::Holder* pHolder, PackPanel * pPanel) : DebugPanel( blueprint, pHolder )
+	StaticTextInfoPanel::StaticTextInfoPanel(const Blueprint& blueprint, DebugPanel::Holder* pHolder, StaticText* pStaticText) : DebugPanel(blueprint, pHolder)
 	{
-		auto pBasePanel = WGCREATE(PackPanel, _.axis = Axis::Y);
+		auto pPanel = WGCREATE(PackPanel, _.axis = Axis::Y );
 
-		auto pTable = _createTable(6,2);
-		int row = 0;
+		auto pTable = _createTable(4, 2);
 
-		_setTextEntry(pTable, row++, "Axis: ", toString(pPanel->axis()));
-		_setObjectPointerEntry(pTable, row++, "Layout: ", pPanel->layout(),this);
-		_setPtsEntry(pTable, row++, "Spacing before (pts): ", pPanel->spacingBefore());
-		_setPtsEntry(pTable, row++, "Spacing between (pts): ", pPanel->spacingBetween());
-		_setPtsEntry(pTable, row++, "Spacing after (pts): ", pPanel->spacingAfter());
-		_setTextEntry(pTable, row++, "Slot alignment: ", toString(pPanel->slotAlignment()));
+		_setTextEntry(pTable, 0, "State: ", toString(pStaticText->state().value()) );
+		_setObjectPointerEntry(pTable, 1, "Style: ", pStaticText->style(), this );
+		_setObjectPointerEntry(pTable, 2, "Layout: ", pStaticText->layout(), this);
+		_setIntegerEntry(pTable, 3, "Length: ", pStaticText->length());
 
-		pBasePanel->slots << pTable;
+		pPanel->slots << pTable;
 
-		pBasePanel->slots << _createSlotsDrawer("Slots", pPanel->slots.begin(), pPanel->slots.end());
+		pPanel->slots << WGCREATE(TextDisplay, _ = m_blueprint.textField, _.display.text = pStaticText->text());
 
-		this->slot = pBasePanel;
+		this->slot = pPanel;
 	}
 
 	//____ typeInfo() _________________________________________________________
 
-	const TypeInfo& PackPanelInfoPanel::typeInfo(void) const
+	const TypeInfo& StaticTextInfoPanel::typeInfo(void) const
 	{
 		return TYPEINFO;
 	}

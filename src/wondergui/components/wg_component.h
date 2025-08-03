@@ -37,6 +37,11 @@ public:
 	
 	Component( Widget * pWidget ) : m_pWidget(pWidget) {}
 	
+	//.____ Identification ________________________________________________
+
+	virtual const TypeInfo& typeInfo(void) const;
+	const static TypeInfo	TYPEINFO;
+
 	//.____ Internal _______________________________________________________
 	
 	inline CoordSPX	_pos() const { return m_pWidget->_componentPos(this); }

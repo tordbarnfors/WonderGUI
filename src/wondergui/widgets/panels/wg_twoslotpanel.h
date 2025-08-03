@@ -129,7 +129,7 @@ namespace wg
 		//.____ Layout _______________________________________________________
 
 		void			setAxis(Axis orientaiton);
-		Axis			axis() const { return m_bHorizontal ? Axis::X : Axis::Y; }
+		Axis			axis() const { return m_axis; }
 
 		void			setLayout(PackLayout* pLayout);
 		PackLayout_p	layout() const { return m_pLayout; }
@@ -143,7 +143,7 @@ namespace wg
 		TwoSlotPanel();
 		template<class BP> TwoSlotPanel(const BP& bp) : slots(this), Container(bp)
 		{
-			m_bHorizontal = (bp.axis == Axis::X);
+			m_axis = bp.axis;
 			m_pLayout = bp.layout;
 
 			m_bSiblingsOverlap = false;
@@ -186,7 +186,7 @@ namespace wg
 
 		inline RectSPX	_slotOneRect(const RectSPX& contentRect) const
 		{
-			if (m_bHorizontal)
+			if (m_axis == Axis::X)
 				return { contentRect.x, contentRect.y, slots[0].m_length, contentRect.h };
 			else
 				return { contentRect.x, contentRect.y, contentRect.w, slots[0].m_length };
@@ -194,14 +194,14 @@ namespace wg
 
 		inline RectSPX	_slotTwoRect(const RectSPX& contentRect) const
 		{
-			if (m_bHorizontal)
+			if (m_axis == Axis::X)
 				return { contentRect.x + slots[0].m_length, contentRect.y, slots[1].m_length, contentRect.h };
 			else
 				return { contentRect.x, contentRect.y + slots[0].m_length, contentRect.w, slots[1].m_length };
 		}
 
 
-		bool			m_bHorizontal;
+		Axis			m_axis = Axis::X;
 		SizeSPX			m_defaultSize;
 		PackLayout_p	m_pLayout;
 	};

@@ -1130,6 +1130,10 @@ namespace wg
 														  _.wrap = true,
 														  _.placement = Placement::Center ));
 
+		auto pWrapTextLayout = BasicTextLayout::create(WGBP(BasicTextLayout,
+			_.wrap = true,
+			_.placement = Placement::NorthWest));
+
 		m_pHeaderLayout = BasicTextLayout::create(WGBP(BasicTextLayout,
 			_.placement = Placement::Center));
 
@@ -1198,6 +1202,11 @@ namespace wg
 
 		m_debugPanelBP.listEntryDrawer = m_pTheme->treeListDrawer();
 		m_debugPanelBP.selectableListEntryCapsule = WGOVR( m_pTheme->treeListEntry(), _.selectable = true );
+
+		m_debugPanelBP.textField = WGBP(TextDisplay,
+			_.display.style = m_pTheme->defaultStyle(),
+			_.display.layout = pWrapTextLayout,
+			_.skin = m_pTheme->canvasSkin() );
 
 		m_debugPanelBP.infoDisplay = WGBP(TextDisplay,
 											 _.display.style = m_pTheme->emphasisStyle(),

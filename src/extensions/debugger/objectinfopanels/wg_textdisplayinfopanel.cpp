@@ -19,21 +19,34 @@
   should contact Tord Jansson [tord.jansson@gmail.com] for details.
 
 =========================================================================*/
+#include "wg_textdisplayinfopanel.h"
+#include <wg_textdisplay.h>
+#include <wg_numberdisplay.h>
+#include <wg_basicnumberlayout.h>
 
-#include <wg_widget.h>
-#include <wg_editablenumber.h>
 
 namespace wg
 {
-	const TypeInfo	EditableNumber::TYPEINFO = { "EditableNumber", &Number::TYPEINFO };
+
+	const TypeInfo TextDisplayInfoPanel::TYPEINFO = { "TextDisplayInfoPanel", &DebugPanel::TYPEINFO };
+
+
+	//____ constructor _____________________________________________________________
+
+	TextDisplayInfoPanel::TextDisplayInfoPanel(const Blueprint& blueprint, DebugPanel::Holder* pHolder, TextDisplay * pTextDisplay) : DebugPanel( blueprint, pHolder )
+	{
+		auto pTable = _createTable(2,2);
+		this->slot = _createComponentDrawer("Display", &pTextDisplay->display);
+	}
 
 	//____ typeInfo() _________________________________________________________
 
-	const TypeInfo& EditableNumber::typeInfo(void) const
+	const TypeInfo& TextDisplayInfoPanel::typeInfo(void) const
 	{
 		return TYPEINFO;
 	}
 
 
-
 } // namespace wg
+
+

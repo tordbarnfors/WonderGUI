@@ -36,7 +36,7 @@ namespace wg
 	{
 	public:
 		ColumnHeader(Widget * pWidget);
-		~ColumnHeader();
+		virtual ~ColumnHeader();
 
 		//.____ Blueprint _____________________________________________
 		
@@ -48,6 +48,11 @@ namespace wg
 			String			text;
 		};
 		
+		//.____ Identification _________________________________________________
+
+		const TypeInfo& typeInfo(void) const override;
+		const static TypeInfo	TYPEINFO;
+
 		//.____ Appearance ____________________________________________
 
 		void			setSkin(Skin * pSkin);

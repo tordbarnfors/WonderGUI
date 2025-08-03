@@ -15,6 +15,10 @@ set(SOURCES
 
     objectinfopanels/wg_containerinfopanel.h
     objectinfopanels/wg_containerinfopanel.cpp
+    objectinfopanels/wg_fillerinfopanel.h
+    objectinfopanels/wg_fillerinfopanel.cpp
+    objectinfopanels/wg_flexpanelinfopanel.h
+    objectinfopanels/wg_flexpanelinfopanel.cpp
     objectinfopanels/wg_objectinfopanel.h
     objectinfopanels/wg_objectinfopanel.cpp
     objectinfopanels/wg_packpanelinfopanel.h
@@ -23,6 +27,10 @@ set(SOURCES
     objectinfopanels/wg_panelinfopanel.cpp
     objectinfopanels/wg_skininfopanel.h
     objectinfopanels/wg_skininfopanel.cpp
+    objectinfopanels/wg_textdisplayinfopanel.h
+    objectinfopanels/wg_textdisplayinfopanel.cpp
+    objectinfopanels/wg_twoslotpanelinfopanel.h
+    objectinfopanels/wg_twoslotpanelinfopanel.cpp
     objectinfopanels/wg_widgetinfopanel.h
     objectinfopanels/wg_widgetinfopanel.cpp
 
@@ -34,7 +42,11 @@ set(SOURCES
     slotinfopanels/wg_packpanelslotinfopanel.cpp
     slotinfopanels/wg_flexpanelslotinfopanel.h
     slotinfopanels/wg_flexpanelslotinfopanel.cpp
+    slotinfopanels/wg_twoslotpanelslotinfopanel.h
+    slotinfopanels/wg_twoslotpanelslotinfopanel.cpp
 
+    componentinfopanels/wg_statictextinfopanel.h
+    componentinfopanels/wg_statictextinfopanel.cpp
 
 
 )

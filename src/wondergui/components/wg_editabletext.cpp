@@ -43,10 +43,20 @@ namespace wg
 {
 	using namespace Util;
 
+	const TypeInfo	EditableText::TYPEINFO = { "EditableText", &Text::TYPEINFO };
+
+
 	//____ constructor _____________________________________________________________
 
 	EditableText::EditableText(Widget * pWidget ) : Text(pWidget)
 	{
+	}
+
+	//____ typeInfo() _________________________________________________________
+
+	const TypeInfo& EditableText::typeInfo(void) const
+	{
+		return TYPEINFO;
 	}
 
 	//____ setMaxLines() _________________________________________________________

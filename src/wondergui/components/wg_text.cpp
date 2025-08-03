@@ -25,6 +25,14 @@
 
 namespace wg
 {
+	const TypeInfo	Text::TYPEINFO = { "Text", &StaticText::TYPEINFO };
+
+	//____ typeInfo() _________________________________________________________
+
+	const TypeInfo& Text::typeInfo(void) const
+	{
+		return TYPEINFO;
+	}
 
 	//____ initFromBlueprint() ________________________________________________
 

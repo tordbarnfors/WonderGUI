@@ -26,11 +26,19 @@
 
 namespace wg
 {
+	const TypeInfo	Glow::TYPEINFO = { "Glow", &Component::TYPEINFO };
 
 	//____ constructor ________________________________________________________
 	
 	Glow::Glow(Widget* pWidget) : Component(pWidget)
 	{
+	}
+
+	//____ typeInfo() _________________________________________________________
+
+	const TypeInfo& Glow::typeInfo(void) const
+	{
+		return TYPEINFO;
 	}
 
 	//____ setActive() ____________________________________________________________

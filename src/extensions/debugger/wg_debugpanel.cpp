@@ -25,6 +25,7 @@
 #include <wg_twoslotpanel.h>
 #include <wg_msgrouter.h>
 #include <wg_msg.h>
+#include <wg_packpanel.h>
 
 
 
@@ -98,7 +99,26 @@ namespace wg
 		return _createDrawer(label, pHeaderValue, pContentTable);
 	}
 
+	//____ _createComponentDrawer() _________________________________________________
 
+	DrawerPanel_p DebugPanel::_createComponentDrawer(const CharSeq& label, Component* pComponent)
+	{
+		auto bp = m_blueprint;
+
+		auto pComponentParts = WGCREATE(PackPanel, _.axis = Axis::Y);
+
+		auto pTypeInfo = &pComponent->typeInfo();
+
+		while (pTypeInfo != nullptr)
+		{
+			bp.classCapsule.label.text = pTypeInfo->className;
+			pComponentParts->slots << m_pHolder->createComponentInfoPanel(bp, pTypeInfo, pComponent);
+			pTypeInfo = pTypeInfo->pSuperClass;
+		}
+
+		auto pDrawer = _createDrawer(label, nullptr, pComponentParts);
+		return pDrawer;
+	}
 
 	//___ _setTextEntry() _________________________________________________
 

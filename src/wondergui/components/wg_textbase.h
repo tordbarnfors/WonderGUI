@@ -40,10 +40,16 @@ namespace wg
 	{
 		friend class TextLayout;
 		friend class BasicTextLayout;
+
 	public:
 
 		TextBase(Widget * pWidget );
 		virtual ~TextBase();
+
+		//.____ Identification _________________________________________________
+
+		const TypeInfo& typeInfo(void) const override;
+		const static TypeInfo	TYPEINFO;
 
 		//.____ Appearance _____________________________________________
 
