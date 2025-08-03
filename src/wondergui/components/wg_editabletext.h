@@ -26,7 +26,7 @@
 
 #include <algorithm>
 
-#include <wg_text.h>
+#include <wg_dynamictext.h>
 
 namespace wg
 {
@@ -36,7 +36,7 @@ namespace wg
 
 	//____ EditableText __________________________________________________________________
 
-	class EditableText : public Text
+	class EditableText : public DynamicText
 	{
 	public:
 

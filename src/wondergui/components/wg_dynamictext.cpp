@@ -21,22 +21,22 @@
 =========================================================================*/
 
 
-#include <wg_text.h>
+#include <wg_dynamictext.h>
 
 namespace wg
 {
-	const TypeInfo	Text::TYPEINFO = { "Text", &StaticText::TYPEINFO };
+	const TypeInfo	DynamicText::TYPEINFO = { "DynamicText", &StaticText::TYPEINFO };
 
 	//____ typeInfo() _________________________________________________________
 
-	const TypeInfo& Text::typeInfo(void) const
+	const TypeInfo& DynamicText::typeInfo(void) const
 	{
 		return TYPEINFO;
 	}
 
 	//____ initFromBlueprint() ________________________________________________
 
-	void Text::_initFromBlueprint(const Blueprint& bp)
+	void DynamicText::_initFromBlueprint(const Blueprint& bp)
 	{
 		if (bp.style)
 			setStyle(bp.style);

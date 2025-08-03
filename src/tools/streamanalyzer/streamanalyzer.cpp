@@ -199,7 +199,7 @@ Widget_p MyApp::createTopBar()
 
 	auto pLoadButton = Button::create( WGBP(Button,
 											_.skin = m_pButtonSkin,
-											_.label = WGBP(Text, _.layout = m_pTextLayoutCentered, _.style = m_pTextStyle, _.text = "Load" )
+											_.label = WGBP(DynamicText, _.layout = m_pTextLayoutCentered, _.style = m_pTextStyle, _.text = "Load" )
 											));
 
 	auto pSpacer1 = Filler::create( WGBP(Filler, _.defaultSize = { 20,1 } ));
@@ -290,38 +290,38 @@ Widget_p MyApp::createLogPanel()
 	auto pFrameLogButton = ToggleButton::create( WGBP(ToggleButton,
 											_.skin = m_pToggleButtonSkin,
 											_.checked = true,
-											_.label = WGBP(Text, _.layout = m_pTextLayoutCentered, _.style = m_pTextStyle, _.text = "Frame data" )
+											_.label = WGBP(DynamicText, _.layout = m_pTextLayoutCentered, _.style = m_pTextStyle, _.text = "Frame data" )
 											));
 
 	auto pFullLogButton = ToggleButton::create( WGBP(ToggleButton,
 											_.skin = m_pToggleButtonSkin,
-											_.label = WGBP(Text, _.layout = m_pTextLayoutCentered, _.style = m_pTextStyle, _.text = "File data" )
+											_.label = WGBP(DynamicText, _.layout = m_pTextLayoutCentered, _.style = m_pTextStyle, _.text = "File data" )
 											));
 
 	auto pOptimizerInLogButton = ToggleButton::create( WGBP(ToggleButton,
 											_.skin = m_pToggleButtonSkin,
-											_.label = WGBP(Text, _.layout = m_pTextLayoutCentered, _.style = m_pTextStyle, _.text = "Optimizer input" )
+											_.label = WGBP(DynamicText, _.layout = m_pTextLayoutCentered, _.style = m_pTextStyle, _.text = "Optimizer input" )
 											));
 
 	auto pOptimizerOutLogButton = ToggleButton::create( WGBP(ToggleButton,
 											_.skin = m_pToggleButtonSkin,
-											_.label = WGBP(Text, _.layout = m_pTextLayoutCentered, _.style = m_pTextStyle, _.text = "Optimizer output" )
+											_.label = WGBP(DynamicText, _.layout = m_pTextLayoutCentered, _.style = m_pTextStyle, _.text = "Optimizer output" )
 											));
 
 	
 	auto pResourcesButton = ToggleButton::create( WGBP(ToggleButton,
 											_.skin = m_pToggleButtonSkin,
-											_.label = WGBP(Text, _.layout = m_pTextLayoutCentered, _.style = m_pTextStyle, _.text = "Resources" )
+											_.label = WGBP(DynamicText, _.layout = m_pTextLayoutCentered, _.style = m_pTextStyle, _.text = "Resources" )
 											));
 
 	auto pStatisticsButton = ToggleButton::create( WGBP(ToggleButton,
 											_.skin = m_pToggleButtonSkin,
-											_.label = WGBP(Text, _.layout = m_pTextLayoutCentered, _.style = m_pTextStyle, _.text = "Statistics" )
+											_.label = WGBP(DynamicText, _.layout = m_pTextLayoutCentered, _.style = m_pTextStyle, _.text = "Statistics" )
 											));
 
 	auto pErrorLogButton = ToggleButton::create( WGBP(ToggleButton,
 											_.skin = m_pToggleButtonSkin,
-											_.label = WGBP(Text, _.layout = m_pTextLayoutCentered, _.style = m_pTextStyle, _.text = "Errors" )
+											_.label = WGBP(DynamicText, _.layout = m_pTextLayoutCentered, _.style = m_pTextStyle, _.text = "Errors" )
 											));
 	
 	
@@ -512,7 +512,7 @@ Widget_p MyApp::createNavigationPanel()
 
 	
 	auto pProgressText = TextDisplay::create(WGBP(TextDisplay,
-		_.display = WGBP(Text, _.layout = m_pTextLayoutCentered, _.style = pProgressStyle, _.text = "-/-")
+		_.display = WGBP(DynamicText, _.layout = m_pTextLayoutCentered, _.style = pProgressStyle, _.text = "-/-")
 	));
 	m_pProgressText = pProgressText;
 
@@ -537,30 +537,30 @@ Widget_p MyApp::createNavigationPanel()
 	auto pLongLeftButton = Button::create(WGBP(Button,
 		_.skin = m_pButtonSkin,
 		_.selectOnPress = true,
-		_.label = WGBP(Text, _.layout = m_pTextLayoutCentered,_.style = m_pTextStyle, _.text = " << ")
+		_.label = WGBP(DynamicText, _.layout = m_pTextLayoutCentered,_.style = m_pTextStyle, _.text = " << ")
 	));
 
 	auto pLeftButton = Button::create(WGBP(Button,
 		_.skin = m_pButtonSkin,
 		_.selectOnPress = true,
-		_.label = WGBP(Text, _.layout = m_pTextLayoutCentered, _.style = m_pTextStyle, _.text = " < ")
+		_.label = WGBP(DynamicText, _.layout = m_pTextLayoutCentered, _.style = m_pTextStyle, _.text = " < ")
 	));
 
 	auto pPauseButton = Button::create(WGBP(Button,
 		_.skin = m_pButtonSkin,
-		_.label = WGBP(Text, _.layout = m_pTextLayoutCentered, _.style = m_pTextStyle, _.text = " || ")
+		_.label = WGBP(DynamicText, _.layout = m_pTextLayoutCentered, _.style = m_pTextStyle, _.text = " || ")
 	));
 
 	auto pRightButton = Button::create(WGBP(Button,
 		_.skin = m_pButtonSkin,
 		_.selectOnPress = true,
-		_.label = WGBP(Text, _.layout = m_pTextLayoutCentered, _.style = m_pTextStyle, _.text = " > ")
+		_.label = WGBP(DynamicText, _.layout = m_pTextLayoutCentered, _.style = m_pTextStyle, _.text = " > ")
 	));
 
 	auto pLongRightButton = Button::create(WGBP(Button,
 		_.skin = m_pButtonSkin,
 		_.selectOnPress = true,
-		_.label = WGBP(Text, _.layout = m_pTextLayoutCentered, _.style = m_pTextStyle, _.text = " >> ")
+		_.label = WGBP(DynamicText, _.layout = m_pTextLayoutCentered, _.style = m_pTextStyle, _.text = " >> ")
 	));
 
 	pPlayButtons->slots << Filler::create();
@@ -608,7 +608,7 @@ Widget_p MyApp::createNavigationPanel()
 	{
 		auto pButton = Button::create(WGBP(Button,
 			_.skin = m_pButtonSkin,
-			_.label = WGBP(Text, _.layout = m_pTextLayoutCentered, _.style = m_pTextStyle, _.text = skipButtonLabels[i] )
+			_.label = WGBP(DynamicText, _.layout = m_pTextLayoutCentered, _.style = m_pTextStyle, _.text = skipButtonLabels[i] )
 		));
 
 		pSkipButtons->slots << pButton;
@@ -636,7 +636,7 @@ Widget_p MyApp::createNavigationPanel()
 	//
 	
 	auto pRectToggle = ToggleButton::create(WGBP(ToggleButton,
-		_.label = WGBP(Text, _.style = m_pTextStyle, _.text = "Show debug rectangles"),
+		_.label = WGBP(DynamicText, _.style = m_pTextStyle, _.text = "Show debug rectangles"),
 		_.icon = WGBP(Icon, _.skin = m_pToggleButtonSkin, _.spacing = 8 )
 	));
 
@@ -652,7 +652,7 @@ Widget_p MyApp::createNavigationPanel()
 	//
 	
 	auto pRecordStepsToggle = ToggleButton::create(WGBP(ToggleButton,
-		_.label = WGBP(Text, _.style = m_pTextStyle, _.text = "Record optimize steps"),
+		_.label = WGBP(DynamicText, _.style = m_pTextStyle, _.text = "Record optimize steps"),
 		_.icon = WGBP(Icon, _.skin = m_pToggleButtonSkin, _.spacing = 8 )
 	));
 

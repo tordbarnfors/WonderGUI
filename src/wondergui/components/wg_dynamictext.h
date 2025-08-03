@@ -20,8 +20,8 @@
 
 =========================================================================*/
 
-#ifndef	WG_TEXT_DOT_H
-#define WG_TEXT_DOT_H
+#ifndef	WG_DYNAMICTEXT_DOT_H
+#define WG_DYNAMICTEXT_DOT_H
 #pragma once
 
 #include <wg_types.h>
@@ -38,9 +38,9 @@ namespace wg
 	class CharBuffer;
 
 
-	//____ Text __________________________________________________________________
+	//____ DynamicText __________________________________________________________________
 
-	class Text : public StaticText
+	class DynamicText : public StaticText
 	{
 	public:
 
@@ -53,8 +53,8 @@ namespace wg
 			String			text;
 		};
 
-		Text(Widget * pWidget) : StaticText(pWidget) {}
-		virtual ~Text() {}
+		DynamicText(Widget * pWidget) : StaticText(pWidget) {}
+		virtual ~DynamicText() {}
 
 		//.____ Identification _________________________________________________
 
@@ -92,4 +92,4 @@ namespace wg
 
 
 } // namespace wg
-#endif //WG_TEXT_DOT_H
+#endif //WG_DYNAMICTEXT_DOT_H

@@ -23,7 +23,7 @@
 #include <wg_list.h>
 #include <wg_msgrouter.h>
 #include <wg_icon.h>
-#include <wg_text.h>
+#include <wg_dynamictext.h>
 #include <wg_gfxdevice.h>
 
 namespace wg

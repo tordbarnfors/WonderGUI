@@ -310,7 +310,7 @@ namespace wg
 	{
 		if( notification == ComponentNotif::TextModified )
 		{
-			auto p = static_cast<TextBase::NotifData*>(pData);
+			auto p = static_cast<StaticText::NotifData*>(pData);
 
 			Base::msgRouter()->post(TextEditMsg::create(&editor, p->offset, p->deleted, p->inserted));
 		}

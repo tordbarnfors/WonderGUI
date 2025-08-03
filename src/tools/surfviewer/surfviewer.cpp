@@ -141,7 +141,7 @@ Widget_p MyApp::createTopBar()
 
 	auto pLoadButton = Button::create( WGBP(Button,
 											_.skin = m_pButtonSkin,
-											_.label = WGBP(Text, _.layout = m_pTextLayoutCentered, _.style = m_pTextStyle, _.text = "Load" )
+											_.label = WGBP(DynamicText, _.layout = m_pTextLayoutCentered, _.style = m_pTextStyle, _.text = "Load" )
 											));
 
 	auto pSpacer = Filler::create( WGBP(Filler, _.defaultSize = { 20,1 } ));
@@ -149,19 +149,19 @@ Widget_p MyApp::createTopBar()
 	
 	auto pLeftButton = Button::create( WGBP(Button,
 											_.skin = m_pButtonSkin,
-											_.label = WGBP(Text, _.layout = m_pTextLayoutCentered, _.style = m_pTextStyle, _.text = " < " )
+											_.label = WGBP(DynamicText, _.layout = m_pTextLayoutCentered, _.style = m_pTextStyle, _.text = " < " )
 											));
 
 	
 
 	auto pPath = TextDisplay::create( WGBP(TextDisplay,
 											 _.skin = m_pSectionSkin,
-											 _.display = WGBP(Text, _.style = m_pTextStyle, _.layout = m_pTextLayoutCentered)
+											 _.display = WGBP(DynamicText, _.style = m_pTextStyle, _.layout = m_pTextLayoutCentered)
 										   ) );
 	
 	auto pRightButton = Button::create( WGBP(Button,
 											_.skin = m_pButtonSkin,
-											_.label = WGBP(Text, _.layout = m_pTextLayoutCentered, _.style = m_pTextStyle, _.text = " > " )
+											_.label = WGBP(DynamicText, _.layout = m_pTextLayoutCentered, _.style = m_pTextStyle, _.text = " > " )
 											));
 
 	pBar->slots << pLoadButton;

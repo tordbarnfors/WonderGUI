@@ -23,7 +23,7 @@
 #define WG_STATICNUMBER_DOT_H
 #pragma once
 
-#include <wg_textbase.h>
+#include <wg_component.h>
 #include <wg_numberlayout.h>
 
 namespace wg
