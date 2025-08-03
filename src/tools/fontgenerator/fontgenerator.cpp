@@ -485,7 +485,7 @@ Widget_p MyApp::createInputPanel()
 	pTopRow->setId( 2 );
 	
 	auto pLabel = TextDisplay::create( WGBP(TextDisplay,
-											_.display = WGBP(Text,
+											_.display = WGBP(DynamicText,
 															 _.style = m_pTextStyle,
 															 _.text = "Source: ",
 															 _.layout = m_pTextLayoutCentered )
@@ -493,12 +493,12 @@ Widget_p MyApp::createInputPanel()
 
 	auto pPath = TextDisplay::create( WGBP(TextDisplay,
 											 _.skin = m_pSectionSkin,
-											 _.display = WGBP(Text, _.style = m_pTextStyle, _.layout = m_pTextLayoutCentered)
+											 _.display = WGBP(DynamicText, _.style = m_pTextStyle, _.layout = m_pTextLayoutCentered)
 										   ) );
 	
 	auto pLoadButton = Button::create( WGBP(Button,
 											_.skin = m_pButtonSkin,
-											_.label = WGBP(Text, _.layout = m_pTextLayoutCentered, _.style = m_pTextStyle, _.text = "Select" )
+											_.label = WGBP(DynamicText, _.layout = m_pTextLayoutCentered, _.style = m_pTextStyle, _.text = "Select" )
 											));
 	
 	pTopRow->slots << pLabel;
@@ -513,7 +513,7 @@ Widget_p MyApp::createInputPanel()
 //	pBottomRow->setSizeBroker(m_pSizeBroker);
 
 	auto pSizeLabel = TextDisplay::create( WGBP(TextDisplay,
-												_.display = WGBP(Text,
+												_.display = WGBP(DynamicText,
 																 _.style = m_pTextStyle,
 																 _.text = "Size:",
 																 _.layout = m_pTextLayoutCentered )
@@ -533,7 +533,7 @@ Widget_p MyApp::createInputPanel()
 	}
 	
 	auto pModeLabel = TextDisplay::create( WGBP(TextDisplay,
-												_.display = WGBP(Text,
+												_.display = WGBP(DynamicText,
 																 _.style = m_pTextStyle,
 																 _.text = "Render mode:",
 																 _.layout = m_pTextLayoutCentered )
@@ -547,7 +547,7 @@ Widget_p MyApp::createInputPanel()
 										{ int(FreeTypeFont::RenderMode::BestShapes), String("BestShapes")} });
 	
 	auto pSRGBLabel = TextDisplay::create( WGBP(TextDisplay,
-												_.display = WGBP(Text,
+												_.display = WGBP(DynamicText,
 																 _.style = m_pTextStyle,
 																 _.text = "Stemdarkening:",
 																 _.layout = m_pTextLayoutCentered )
