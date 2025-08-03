@@ -63,6 +63,7 @@ namespace wg
 			NumberDisplay::Blueprint	listEntryPts;
 			NumberDisplay::Blueprint	listEntryDecimal;
 //			NumberDisplay::Blueprint	listEntryPointer;
+			TextDisplay::Blueprint		textField;
 			TextDisplay::Blueprint		infoDisplay;
 			TablePanel::Blueprint		table;
 			DrawerPanel::Blueprint		listEntryDrawer;
@@ -96,6 +97,11 @@ namespace wg
 
 		DrawerPanel_p		_createBorderDrawer(const CharSeq& label, const Border& border);
 
+		template<typename Iterator>
+		DrawerPanel_p		_createSlotsDrawer(const CharSeq& label, Iterator slotsBegin, Iterator slotsEnd);
+
+		DrawerPanel_p		_createComponentDrawer(const CharSeq& label, Component* pComponent);
+
 
 		void _setTextEntry(TablePanel* pTable, int row, const char* pLabel, const CharSeq& string);
 		void _setIntegerEntry(TablePanel * pTable, int row, const char * pLabel, int value);
@@ -111,6 +117,50 @@ namespace wg
 
 		Skin_p		m_pIndentationSkin;
 	};
+
+
+
+	//____ createSlotsDrawer() ___________________________________________________
+
+	template<typename Iterator>
+	DrawerPanel_p DebugPanel::_createSlotsDrawer(const CharSeq& label, Iterator slotsBegin, Iterator slotsEnd)
+	{
+		auto pSlotList = WGCREATE(PackPanel, _.axis = Axis::Y);
+
+		auto bp = m_blueprint;
+
+		int nbSlots = 0;
+		for (Iterator it = slotsBegin ; it != slotsEnd ; it++ )
+		{
+			char buf[32];
+			sprintf(buf, "%d", nbSlots);
+
+			auto pSlot = it;
+
+			auto pSlotContent = WGCREATE(PackPanel, _.axis = Axis::Y);
+
+			auto pTypeInfo = &it->typeInfo();
+
+			while (pTypeInfo != nullptr)
+			{
+				bp.classCapsule.label.text = pTypeInfo->className;
+				pSlotContent->slots << m_pHolder->createSlotInfoPanel(bp, pTypeInfo, pSlot);
+				pTypeInfo = pTypeInfo->pSuperClass;
+			}
+
+			auto pSlotDrawer = _createDrawer(buf, nullptr, pSlotContent);
+
+			pSlotList->slots << pSlotDrawer;
+			nbSlots++;
+		}
+
+		auto pNumberSlots = WGCREATE(NumberDisplay, _ = m_blueprint.listEntryInteger);
+		pNumberSlots->display.set(nbSlots);
+
+		auto pDrawer = _createDrawer("Slots", pNumberSlots, pSlotList);
+		return pDrawer;
+	}
+
 
 } // namespace wg
 #endif //WG_OBJECTINFOPANEL_DOT_H

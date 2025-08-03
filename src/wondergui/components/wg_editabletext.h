@@ -54,6 +54,12 @@ namespace wg
 		};
 
 		EditableText(Widget * pWidget );
+		virtual ~EditableText() {};
+
+		//.____ Identification _________________________________________________
+
+		const TypeInfo& typeInfo(void) const override;
+		const static TypeInfo	TYPEINFO;
 
 		//.____ State __________________________________________________
 

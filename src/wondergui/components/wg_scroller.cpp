@@ -27,6 +27,8 @@ namespace wg
 {
 	using namespace Util;
 
+	const TypeInfo	Scroller::TYPEINFO = { "Scroller", &Component::TYPEINFO };
+
 	//____ constructor ____________________________________________________________
 
 	Scroller::Scroller(Widget* pWidget, Scroller::Holder * pHolderInterface, Axis axis) : 
@@ -40,6 +42,14 @@ namespace wg
 	{
 
 	}
+
+	//____ typeInfo() _________________________________________________________
+
+	const TypeInfo& Scroller::typeInfo(void) const
+	{
+		return TYPEINFO;
+	}
+
 
 	//____ setSkins() _________________________________________________________
 	/**

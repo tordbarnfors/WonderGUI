@@ -19,21 +19,36 @@
   should contact Tord Jansson [tord.jansson@gmail.com] for details.
 
 =========================================================================*/
+#include "wg_fillerinfopanel.h"
+#include <wg_textdisplay.h>
+#include <wg_numberdisplay.h>
+#include <wg_basicnumberlayout.h>
 
-#include <wg_widget.h>
-#include <wg_editablenumber.h>
 
 namespace wg
 {
-	const TypeInfo	EditableNumber::TYPEINFO = { "EditableNumber", &Number::TYPEINFO };
+
+	const TypeInfo FillerInfoPanel::TYPEINFO = { "FillerInfoPanel", &DebugPanel::TYPEINFO };
+
+
+	//____ constructor _____________________________________________________________
+
+	FillerInfoPanel::FillerInfoPanel(const Blueprint& blueprint, DebugPanel::Holder* pHolder, Filler * pFiller) : DebugPanel( blueprint, pHolder )
+	{
+		auto pTable = _createTable(2,2);
+		_setPtsEntry(pTable, 0, "Default width (pts): ", pFiller->defaultSize().w);
+		_setPtsEntry(pTable, 1, "Default height (pts): ", pFiller->defaultSize().h);
+		this->slot = pTable;
+	}
 
 	//____ typeInfo() _________________________________________________________
 
-	const TypeInfo& EditableNumber::typeInfo(void) const
+	const TypeInfo& FillerInfoPanel::typeInfo(void) const
 	{
 		return TYPEINFO;
 	}
 
 
-
 } // namespace wg
+
+

@@ -54,6 +54,13 @@ namespace wg
 		};
 
 		Text(Widget * pWidget) : StaticText(pWidget) {}
+		virtual ~Text() {}
+
+		//.____ Identification _________________________________________________
+
+		const TypeInfo& typeInfo(void) const override;
+		const static TypeInfo	TYPEINFO;
+
 
 		//.____ Content _____________________________________________
 

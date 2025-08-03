@@ -46,10 +46,8 @@ namespace wg
 
 	TwoSlotPanel::TwoSlotPanel() : slots(this), Container()
 	{
-		m_bHorizontal = false;
 		m_bSiblingsOverlap = false;
 	}
-
 
 	//____ Destructor _____________________________________________________________
 
@@ -68,11 +66,9 @@ namespace wg
 
 	void TwoSlotPanel::setAxis(Axis axis)
 	{
-		bool bHorizontal = (axis == Axis::X);
-
-		if (bHorizontal != m_bHorizontal)
+		if (axis != m_axis)
 		{
-			m_bHorizontal = bHorizontal;
+			m_axis = axis;
 			m_defaultSize = _calcDefaultSize(m_scale);
 
 			// Clear these so _updateGeo() doesn't skip resize despite
@@ -148,7 +144,7 @@ namespace wg
 		if (slots[1]._widget())
 			secondSz = slots[1]._widget()->_defaultSize(scale);
 
-		if (m_bHorizontal)
+		if (m_axis == Axis::X)
 		{
 			sz.w = firstSz.w + secondSz.w;
 			sz.h = std::max(firstSz.h, secondSz.h);
@@ -182,7 +178,7 @@ namespace wg
 
 		// Calculate new lengths using layout object
 
-		spx totalLength = (m_bHorizontal ? contentGeo.w : contentGeo.h);
+		spx totalLength = (m_axis == Axis::X ? contentGeo.w : contentGeo.h);
 		spx len1 = 0, len2 = 0;
 
 		auto pLayout = m_pLayout ? m_pLayout : Base::defaultPackLayout();
@@ -192,7 +188,7 @@ namespace wg
 
 		spx	results[2];
 
-		if (m_bHorizontal)
+		if (m_axis == Axis::X)
 		{
 			for (int i = 0; i < 2; i++)
 			{
@@ -223,7 +219,7 @@ namespace wg
 
 		if (pI > items)
 		{
-			spx combinedLength =  pLayout->getItemSizes(results, m_bHorizontal ? contentGeo.w : contentGeo.h, m_scale, int(pI - items), items );
+			spx combinedLength =  pLayout->getItemSizes(results, m_axis == Axis::X ? contentGeo.w : contentGeo.h, m_scale, int(pI - items), items );
 
 			if (slots[0].m_pWidget)
 			{
@@ -279,7 +275,7 @@ namespace wg
 
 	void TwoSlotPanel::_resize(const SizeSPX& size, int scale)
 	{
-		spx breadthDiff = m_bHorizontal ? m_size.h - size.h : m_size.w - size.w;
+		spx breadthDiff = m_axis == Axis::X ? m_size.h - size.h : m_size.w - size.w;
 
 		//TODO: Optimize. If scale and breadth remains same then we only need to force update those that have requested resize.
 		bool bForceUpdate = true; //(scale != m_scale || breadthDiff != 0);
@@ -369,7 +365,7 @@ namespace wg
 
 		if (pSlot == &slots[1])
 		{
-			if (m_bHorizontal)
+			if (m_axis == Axis::X)
 				contentPos.x += slots[0].m_length;
 			else
 				contentPos.y += slots[0].m_length;
