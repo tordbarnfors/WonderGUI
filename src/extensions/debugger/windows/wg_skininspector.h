@@ -19,33 +19,42 @@
   should contact Tord Jansson [tord.jansson@gmail.com] for details.
 
 =========================================================================*/
-#include "wg_textdisplayinfopanel.h"
-#include <wg_textdisplay.h>
-#include <wg_numberdisplay.h>
-#include <wg_basicnumberlayout.h>
 
+#ifndef	WG_SKINISPECTOR_DOT_H
+#define WG_SKINISPECTOR_DOT_H
+#pragma once
+
+#include <wg_tablepanel.h>
+#include <wg_debugpanel.h>
 
 namespace wg
 {
+	class SkinInspector;
+	typedef	StrongPtr<SkinInspector>	SkinInspector_p;
+	typedef	WeakPtr<SkinInspector>	SkinInspector_wp;
 
-	const TypeInfo TextDisplayInfoPanel::TYPEINFO = { "TextDisplayInfoPanel", &DebugPanel::TYPEINFO };
 
 
-	//____ constructor _____________________________________________________________
-
-	TextDisplayInfoPanel::TextDisplayInfoPanel(const Blueprint& blueprint, DebugPanel::Holder* pHolder, TextDisplay * pTextDisplay) : DebugPanel( blueprint, pHolder )
+	class SkinInspector : public DebugPanel
 	{
-		this->slot = _createComponentDrawer("Display", &pTextDisplay->display);
-	}
+	public:
 
-	//____ typeInfo() _________________________________________________________
+		//.____ Creation __________________________________________
 
-	const TypeInfo& TextDisplayInfoPanel::typeInfo(void) const
-	{
-		return TYPEINFO;
-	}
+		static SkinInspector_p		create( const Blueprint& blueprint, DebugPanel::Holder * pHolder, Skin * pSkin) { return SkinInspector_p(new SkinInspector(blueprint, pHolder, pSkin) ); }
 
+		//.____ Identification __________________________________________
+
+		const TypeInfo&			typeInfo(void) const override;
+		const static TypeInfo	TYPEINFO;
+
+
+	protected:
+		SkinInspector(const Blueprint& blueprint, DebugPanel::Holder * pHolder, Skin * pSkin );
+		~SkinInspector() {}
+	};
 
 } // namespace wg
+#endif //WG_SKINISPECTOR_DOT_H
 
 
