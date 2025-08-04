@@ -83,6 +83,9 @@ namespace wg
 		bool			isOpaque(State state = State::Default) const;		//DEPRECATED! Only kept for LegacyGUI usage!
 		bool			isContentShifting() const { return m_bContentShifting; }
 
+		int				layer() const { return m_layer; }
+		int				markAlpha() const { return m_markAlpha; }
+
 		//.____ Internal ________________________________________________________
 
 		virtual SizeSPX		_minSize(int scale) const;

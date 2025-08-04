@@ -48,12 +48,12 @@ namespace wg
 
 	public:
 
-		//____ ToolboxSlot ___________________________________________________________
+		//____ WindowSlot ___________________________________________________________
 
-		class ToolboxSlot : public Overlay::Slot
+		class WindowSlot : public Overlay::Slot
 		{
 			friend class DebugOverlay;
-			friend class CDesignToolboxSlotVector;
+			friend class CDesignWindowSlotVector;
 			template<class S> friend class StaticSlotVector;
 			template<class S> friend class SlotVector;
 
@@ -64,7 +64,7 @@ namespace wg
 			const static TypeInfo	TYPEINFO;
 
 		protected:
-			ToolboxSlot(SlotHolder * pHolder) : Overlay::Slot(pHolder) {}
+			WindowSlot(SlotHolder * pHolder) : Overlay::Slot(pHolder) {}
 
 			inline SlotHolder * _holder() { return static_cast<SlotHolder*>(Overlay::Slot::_holder()); }
 			inline const SlotHolder * _holder() const { return static_cast<const SlotHolder*>(Overlay::Slot::_holder()); }
@@ -77,13 +77,13 @@ namespace wg
 		};
 
 
-		//____ CToolboxVector _________________________________________________
+		//____ CWindowVector _________________________________________________
 
-		class CToolboxVector : public StaticSlotVector<ToolboxSlot>
+		class CWindowVector : public StaticSlotVector<WindowSlot>
 		{
 			friend class DebugOverlay;
 
-			CToolboxVector(SlotHolder * pHolder) : StaticSlotVector<ToolboxSlot>(pHolder) {}
+			CWindowVector(SlotHolder * pHolder) : StaticSlotVector<WindowSlot>(pHolder) {}
 		};
 
 		//.____ Blueprint __________________________________________
@@ -109,6 +109,7 @@ namespace wg
 			String			tooltip;
 			bool			usePickHandles = false;
 			Surface_p		icons;										// Mandatory!!!
+			Surface_p		transparencyGrid;							// Mandatory!!! Chessboard pattern or similar
 		};
 
 		//.____ Creation __________________________________________
@@ -117,7 +118,7 @@ namespace wg
 
 		//.____ Components _______________________________________
 
-		CToolboxVector	toolboxes;
+		CWindowVector	windows;
 
 		//.____ Identification __________________________________________
 
@@ -126,8 +127,8 @@ namespace wg
 
 		//.____ Appearance _________________________________________________
 
-		void				setToolboxSkin(Skin * pSkin);
-		inline Skin_p		paletteSkin() const;
+		void				setWindowSkin(Skin * pSkin);
+		inline Skin_p		windowSkin() const;
 
 		void				setSelectionSkin(Skin * pSkin);
 		inline Skin_p		selectionSkin() const;
@@ -179,32 +180,29 @@ namespace wg
 		void			_resize( const SizeSPX& size, int scale ) override;
 		void			_receive( Msg * pMsg ) override;
 
-		// Toolbox creators
+		// Window creators
 
-		std::tuple<Widget_p, PackPanel_p> _createToolbox( const char * pTitle );
+		std::tuple<Widget_p, PackPanel_p> _createWindow( const char * pTitle );
 
-		void			_createSlotWidgetToolbox();
-		void			_createWidgetTreeToolbox();
-		void			_createMsgLogToolbox();
-		void			_createObjectToolbox();
-
-
-
-
-		Widget_p		_createSlotInfoPanel(StaticSlot * pSlot);
-		Widget_p		_createObjectInfoPanel(Object * pWidget);
+		void			_createToolboxWindow();
+		void			_createWidgetInfoWindow();
+		void			_createWidgetTreeWindow();
+		void			_createMsgLogWindow();
+		void			_createObjectInfoWindow();
+		void			_createSkinInfoWindow();
 
 		//
 
 		void			_createResources();
 
-		Placement		_boxSection( CoordSPX pos, int boxIndex );
-		int				_boxIndex(Widget* pWidget);						// Lookup which box the widget is part of.
+		Placement		_windowFrameSection( CoordSPX pos, int windowIndex );
+		int				_windowIndex(Widget* pWidget);						// Lookup which window the widget is part of.
 
 
 		RectSPX			_selectionGeo() const;
-		void			_refreshRealGeo(ToolboxSlot * pSlot, bool bForceResize = false);
+		void			_refreshRealGeo(WindowSlot * pSlot, bool bForceResize = false);
 		void			_selectWidget(Widget * pWidget);
+		void			_selectSkin(Skin* pSkin);
 		void			_selectObject(Object* pSelected, Object * pSelectedFrom);
 
 		//
@@ -222,29 +220,30 @@ namespace wg
 
 		Widget_wp		m_pSelectedWidget;
 		Skin_p			m_pSelectionSkin;
-		Skin_p			m_pToolboxSkin;
+		Skin_p			m_pWindowSkin;
 
 		PackPanel_p		m_pWidgetTools;
 
 		ScrollPanel_p	m_pWidgetTreeContainer;
-
+		PackPanel_p		m_pSkinContainer;
 		PackPanel_p		m_pAnyObjectContainer;			// Contains the object info panel for the currently selected object.
 
-		// Variables for toolbox drag
+		// Variables for window drag
 
-		int				m_movingToolbox = -1;			// Index for toolbox that is being moved.
-		CoordSPX		m_movingToolboxStartOfs;
+		int				m_movingWindow = -1;			// Index for Window that is being moved.
+		CoordSPX		m_movingWindowStartOfs;
 
-		// Variables for toolbox resize
+		// Variables for window resize
 
-		int				m_resizingToolbox = -1;			// Index for toolbox that is being resized.
-		Placement		m_resizingToolboxDirection = Placement::Undefined;
-		RectSPX			m_resizingToolboxStartGeo;
+		int				m_resizingWindow = -1;			// Index for Window that is being resized.
+		Placement		m_resizingWindowDirection = Placement::Undefined;
+		RectSPX			m_resizingWindowStartGeo;
 
 		// Resources
 
 		Theme_p			m_pTheme;
 		Surface_p		m_pIcons;
+		Surface_p		m_pTransparencyGrid;
 
 		Skin_p			m_pSelectIcon;
 
@@ -258,11 +257,11 @@ namespace wg
 
 	};
 
-	//____ paletteSkin() ______________________________________________________
+	//____ windowSkin() ______________________________________________________
 
-	Skin_p DebugOverlay::paletteSkin() const
+	Skin_p DebugOverlay::windowSkin() const
 	{
-		return m_pToolboxSkin;
+		return m_pWindowSkin;
 	}
 
 	//____ selectionSkin() ____________________________________________________

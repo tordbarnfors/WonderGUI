@@ -19,7 +19,7 @@
   should contact Tord Jansson [tord.jansson@gmail.com] for details.
 
 =========================================================================*/
-#include "wg_widgettreepanel.h"
+#include "wg_widgettreeview.h"
 #include <wg_textdisplay.h>
 #include <wg_packpanel.h>
 #include <wg_paddingcapsule.h>
@@ -34,12 +34,12 @@
 namespace wg
 {
 
-	const TypeInfo WidgetTreePanel::TYPEINFO = { "WidgetTreePanel", &DebugPanel::TYPEINFO };
+	const TypeInfo WidgetTreeView::TYPEINFO = { "WidgetTreeView", &DebugPanel::TYPEINFO };
 
 
 	//____ constructor _____________________________________________________________
 
-	WidgetTreePanel::WidgetTreePanel(const Blueprint& blueprint, DebugPanel::Holder * pHolder, Widget * pRoot ) : DebugPanel( blueprint, pHolder )
+	WidgetTreeView::WidgetTreeView(const Blueprint& blueprint, DebugPanel::Holder * pHolder, Widget * pRoot ) : DebugPanel( blueprint, pHolder )
 	{
 		m_pPackLayout = PackLayout::create(WGBP(PackLayout, ));
 		 
@@ -67,7 +67,7 @@ namespace wg
 
 	//____ Destructor ______________________________________________________________
 
-	WidgetTreePanel::~WidgetTreePanel()
+	WidgetTreeView::~WidgetTreeView()
 	{
 		Base::msgRouter()->deleteRoute(m_routeIdForSelect);
 	}
@@ -75,28 +75,28 @@ namespace wg
 
 	//____ typeInfo() _________________________________________________________
 
-	const TypeInfo& WidgetTreePanel::typeInfo(void) const
+	const TypeInfo& WidgetTreeView::typeInfo(void) const
 	{
 		return TYPEINFO;
 	}
 
 	//____ collapseAll() _________________________________________________________
 
-	void WidgetTreePanel::collapseAll()
+	void WidgetTreeView::collapseAll()
 	{
 		_expandOrCollapseRecursively(slot.widget(), false);
 	}
 
 	//____ expandAll() __________________________________________________________
 
-	void WidgetTreePanel::expandAll()
+	void WidgetTreeView::expandAll()
 	{
 		_expandOrCollapseRecursively(slot.widget(), true);
 	}
 
 	//____ select() __________________________________________________________
 
-	void WidgetTreePanel::select(Widget* pWidget)
+	void WidgetTreeView::select(Widget* pWidget)
 	{
 		if( pWidget == m_pSelectedWidget )
 			return;
@@ -139,7 +139,7 @@ namespace wg
 
 	//____ _findWidgetRecursively() ___________________________________________
 
-	Widget_p WidgetTreePanel::_findWidgetRecursively(int idToFind, Widget * pPos)
+	Widget_p WidgetTreeView::_findWidgetRecursively(int idToFind, Widget * pPos)
 	{
 		if( pPos == nullptr )
 			return nullptr;
@@ -164,7 +164,7 @@ namespace wg
 
 	//____ _expandOrCollapseRecursively() _________________________________________________
 
-	void WidgetTreePanel::_expandOrCollapseRecursively( Widget * pWidget, bool bOpen )
+	void WidgetTreeView::_expandOrCollapseRecursively( Widget * pWidget, bool bOpen )
 	{
 		if (pWidget == nullptr)
 			return;
@@ -194,7 +194,7 @@ namespace wg
 
 	//____ generateInfoTree() _________________________________________________
 
-	Widget_p WidgetTreePanel::_generateInfoTree(const Blueprint& blueprint, Widget* pWidget, int indentation)
+	Widget_p WidgetTreeView::_generateInfoTree(const Blueprint& blueprint, Widget* pWidget, int indentation)
 	{
 		if (pWidget->isContainer())
 		{

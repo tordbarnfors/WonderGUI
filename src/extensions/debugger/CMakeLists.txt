@@ -8,10 +8,21 @@ set(SOURCES
 
     wg_dummyinfopanel.h
     wg_dummyinfopanel.cpp
-    wg_msglogpanel.h
-    wg_msglogPanel.cpp
-    wg_widgettreepanel.h
-    wg_widgettreepanel.cpp
+
+    windows/wg_msglogviewer.h
+    windows/wg_msglogviewer.cpp
+    windows/wg_objectinspector.h
+    windows/wg_objectinspector.cpp
+    windows/wg_objectinspector.h
+    windows/wg_objectinspector.cpp
+    windows/wg_objectlist.h
+    windows/wg_objectlist.cpp
+    windows/wg_skininspector.h
+    windows/wg_skininspector.cpp
+    windows/wg_textstyleinspector.h
+    windows/wg_textstyleinspector.cpp
+    windows/wg_widgettreeview.h
+    windows/wg_widgettreeview.cpp
 
     objectinfopanels/wg_containerinfopanel.h
     objectinfopanels/wg_containerinfopanel.cpp
