@@ -19,45 +19,45 @@
   should contact Tord Jansson [tord.jansson@gmail.com] for details.
 
 =========================================================================*/
-#include "wg_statictextinfopanel.h"
+#include "wg_textstyleinspector.h"
 #include <wg_textdisplay.h>
-#include <wg_numberdisplay.h>
-#include <wg_basicnumberlayout.h>
-#include <wg_enumextras.h>
+#include <wg_skindisplay.h>
+#include <wg_boxskin.h>
 #include <wg_packpanel.h>
+
+
 
 namespace wg
 {
 
-	const TypeInfo StaticTextInfoPanel::TYPEINFO = { "StaticTextInfoPanel", &DebugPanel::TYPEINFO };
+	const TypeInfo TextStyleInspector::TYPEINFO = { "TextStyleInspector", &DebugPanel::TYPEINFO };
 
 
 	//____ constructor _____________________________________________________________
 
-	StaticTextInfoPanel::StaticTextInfoPanel(const Blueprint& blueprint, DebugPanel::Holder* pHolder, StaticText* pStaticText) : DebugPanel(blueprint, pHolder)
+	TextStyleInspector::TextStyleInspector(const Blueprint& blueprint, DebugPanel::Holder* pHolder, TextStyle* pStyle) : DebugPanel(blueprint, pHolder)
 	{
-		auto pPanel = WGCREATE(PackPanel, _.axis = Axis::Y );
+		auto pBasePanel = WGCREATE(PackPanel, _.axis = Axis::Y);
 
-		auto pTable = _createTable(4, 2);
+		pBasePanel->slots << _createObjectHeader(pStyle);
 
-		_setTextEntry(pTable, 0, "State: ", toString(pStaticText->state().value()) );
-		_setObjectPointerEntry(pTable, 1, "Style: ", pStaticText->style(), this );
-		_setObjectPointerEntry(pTable, 2, "Layout: ", pStaticText->layout(), this);
-		_setIntegerEntry(pTable, 3, "Length: ", pStaticText->length());
+		auto bp = m_blueprint;
 
-		pPanel->slots << pTable;
+		auto pTypeInfo = &pStyle->typeInfo();
 
-		auto pText = WGCREATE(TextDisplay, _ = m_blueprint.textField, _.display.text = pStaticText->text());
-		auto pPadding = WGCREATE(PaddingCapsule, _.padding = { 0,0,0,16 }, _.child = pText );
+		while (pTypeInfo != nullptr)
+		{
+			bp.classCapsule.label.text = pTypeInfo->className;
+			pBasePanel->slots << m_pHolder->createObjectInfoPanel(bp, pTypeInfo, pStyle);
+			pTypeInfo = pTypeInfo->pSuperClass;
+		}
 
-		pPanel->slots << pPadding;
-
-		this->slot = pPanel;
+		this->slot = pBasePanel;
 	}
 
 	//____ typeInfo() _________________________________________________________
 
-	const TypeInfo& StaticTextInfoPanel::typeInfo(void) const
+	const TypeInfo& TextStyleInspector::typeInfo(void) const
 	{
 		return TYPEINFO;
 	}

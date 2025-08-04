@@ -19,7 +19,7 @@
   should contact Tord Jansson [tord.jansson@gmail.com] for details.
 
 =========================================================================*/
-#include "wg_msglogpanel.h"
+#include "wg_msglogviewer.h"
 #include <wg_textdisplay.h>
 #include <wg_packpanel.h>
 #include <wg_togglebutton.h>
@@ -37,12 +37,12 @@
 namespace wg
 {
 
-	const TypeInfo MsgLogPanel::TYPEINFO = { "MsgLogPanel", &DebugPanel::TYPEINFO };
+	const TypeInfo MsgLogViewer::TYPEINFO = { "MsgLogViewer", &DebugPanel::TYPEINFO };
 
 
 	//____ constructor _____________________________________________________________
 
-	MsgLogPanel::MsgLogPanel(const Blueprint& bp, DebugPanel::Holder* pHolder) : DebugPanel(bp,pHolder)
+	MsgLogViewer::MsgLogViewer(const Blueprint& bp, DebugPanel::Holder* pHolder) : DebugPanel(bp,pHolder)
 	{
 		m_pMainPanel = PackPanel::create(WGBP(PackPanel,
 			_.axis = Axis::Y));
@@ -189,28 +189,28 @@ namespace wg
 
 	//____ Destructor ______________________________________________________________
 
-	MsgLogPanel::~MsgLogPanel()
+	MsgLogViewer::~MsgLogViewer()
 	{
 	}
 
 
 	//____ typeInfo() _________________________________________________________
 
-	const TypeInfo& MsgLogPanel::typeInfo(void) const
+	const TypeInfo& MsgLogViewer::typeInfo(void) const
 	{
 		return TYPEINFO;
 	}
 
 	//____ clear() ___________________________________________________________
 
-	void MsgLogPanel::clear()
+	void MsgLogViewer::clear()
 	{
 		m_pLogList->slots.clear();
 	}
 	
 	//____ setRecording() _________________________________________________________
 	
-	void MsgLogPanel::setRecording(bool bRecording)
+	void MsgLogViewer::setRecording(bool bRecording)
 	{
 		if (bRecording)
 			this->m_routeId = Base::msgRouter()->broadcastTo(m_pLogger);

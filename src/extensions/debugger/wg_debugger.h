@@ -59,8 +59,10 @@ namespace wg
 		Widget_p		createSlotInfoPanel( const DebugPanel::Blueprint& blueprint, const TypeInfo * pType, StaticSlot * pSlot );
 		Widget_p		createComponentInfoPanel(const DebugPanel::Blueprint& blueprint, const TypeInfo* pType, Component* pComponent);
 
-		Widget_p		createWidgetTreePanel(const DebugPanel::Blueprint& blueprint, Widget * pWidget);
-		Widget_p		createMsgLogPanel(const DebugPanel::Blueprint& blueprint);
+		Widget_p		createObjectInspector(const DebugPanel::Blueprint& blueprint, Object* pObject);
+		Widget_p		createSkinInspector(const DebugPanel::Blueprint& blueprint, Skin* pSkin);
+		Widget_p		createWidgetTreeView(const DebugPanel::Blueprint& blueprint, Widget * pWidget);
+		Widget_p		createMsgLogViewer(const DebugPanel::Blueprint& blueprint);
 
 		void			setObjectSelectedCallback(std::function<void(Object*,Object*)> pCallback);
 

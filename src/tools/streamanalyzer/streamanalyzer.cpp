@@ -144,8 +144,9 @@ bool MyApp::_setupGUI(Visitor* pVisitor)
 
 	auto pTheme = pVisitor->initDefaultTheme();
 	auto pIconSurface = pVisitor->loadSurface("resources/debugger_gfx.png");
+	auto pTransparencyGrid = pVisitor->loadSurface("resources/checkboardtile.png", nullptr, { .tiling = true } );
 
-	m_pDebugOverlay = DebugOverlay::create( { .debugger = m_pDebugger, .theme = pTheme, .icons = pIconSurface } );
+	m_pDebugOverlay = DebugOverlay::create( { .debugger = m_pDebugger, .theme = pTheme, .icons = pIconSurface, .transparencyGrid = pTransparencyGrid } );
 
 	m_pDebugOverlay->setActivated(true);
 
