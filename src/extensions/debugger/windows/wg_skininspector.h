@@ -26,6 +26,9 @@
 
 #include <wg_tablepanel.h>
 #include <wg_debugpanel.h>
+#include <wg_skindisplay.h>
+#include <wg_selectbox.h>
+
 
 namespace wg
 {
@@ -52,6 +55,12 @@ namespace wg
 	protected:
 		SkinInspector(const Blueprint& blueprint, DebugPanel::Holder * pHolder, Skin * pSkin );
 		~SkinInspector() {}
+
+		void	_refreshState();
+
+		SkinDisplay_p	m_pSkinDisplay;
+		SelectBox_p		m_pStateSelector;
+
 	};
 
 } // namespace wg

@@ -124,11 +124,15 @@ namespace wg
 		const ScrollPanel::Blueprint& 		scrollPanelY() const override;
 		const ScrollPanel::Blueprint& 		scrollPanelXY() const override;
 
+		const SplitPanel::Blueprint&		splitPanelX() const override;
+		const SplitPanel::Blueprint&		splitPanelY() const override;
+
 		const DrawerPanel::Blueprint&		treeListDrawer() const override;
 		const PaddingCapsule::Blueprint&	treeListEntry() const override;
 
 		const TablePanel::Blueprint&		listTable() const override;
 		const TextEditor::Blueprint&		textEditor() const override;
+		const SelectBox::Blueprint&			selectBox() const override;
 
 
 		const TextDisplay::Blueprint& 		windowTitleBar() const override;
@@ -189,12 +193,16 @@ namespace wg
 		ScrollPanel::Blueprint	m_scrollPanelYBP;
 		ScrollPanel::Blueprint	m_scrollPanelXYBP;
 
+		SplitPanel::Blueprint	m_splitPanelXBP;
+		SplitPanel::Blueprint	m_splitPanelYBP;
+
 		DrawerPanel::Blueprint	m_treeListDrawer;
 		PaddingCapsule::Blueprint m_treeListEntry;
 
 		TablePanel::Blueprint	m_listTable;
 
 		TextEditor::Blueprint	m_textEditor;
+		SelectBox::Blueprint	m_selectBox;
 
 		TextDisplay::Blueprint	m_windowTitleBar;
 	};
