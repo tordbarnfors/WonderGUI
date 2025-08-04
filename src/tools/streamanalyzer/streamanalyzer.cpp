@@ -177,9 +177,13 @@ bool MyApp::_setupGUI(Visitor* pVisitor)
 
 	pPopupOverlay->mainSlot = pBasePanel;
 
+
+	auto pPopupOverlayForDebugger = PopupOverlay::create();
+	pPopupOverlayForDebugger->mainSlot = m_pDebugOverlay;
+
 	m_pDebugOverlay->mainSlot = pPopupOverlay;
 
-	pRoot->slot = m_pDebugOverlay;
+	pRoot->slot = pPopupOverlayForDebugger;
 
 	pSplitPanel->setSplit(0.5f);
 

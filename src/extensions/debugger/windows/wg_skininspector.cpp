@@ -25,6 +25,8 @@
 #include <wg_boxskin.h>
 #include <wg_packpanel.h>
 #include <wg_tileskin.h>
+#include <wg_sizecapsule.h>
+#include <wg_msgrouter.h>
 
 
 
@@ -38,14 +40,36 @@ namespace wg
 
 	SkinInspector::SkinInspector(const Blueprint& blueprint, DebugPanel::Holder * pHolder, Skin * pSkin) : DebugPanel( blueprint, pHolder )
 	{
-		auto pBasePanel = WGCREATE(PackPanel, _.axis = Axis::Y);
+		auto pBasePanel = WGCREATE(PackPanel, _.axis = Axis::Y );
+
+
+		//----
 
 		pBasePanel->slots << _createObjectHeader(pSkin);
 
 		auto pDisplayBackground = WGCREATE(TileSkin, _.surface = blueprint.transparencyGrid, _.spacing = 8, _.padding = 8 );
 
-		auto pDisplay = WGCREATE(SkinDisplay, _.skin = pDisplayBackground, _.displaySkin = pSkin);
-		pBasePanel->slots << pDisplay;
+		m_pSkinDisplay = WGCREATE(SkinDisplay, _.skin = pDisplayBackground, _.displaySkin = pSkin);
+
+		auto pSizeCapsule = WGCREATE(SizeCapsule, _.minSize = { 100, 100 }, _.child = m_pSkinDisplay );
+		pBasePanel->slots << pSizeCapsule;
+
+		//----
+
+		m_pStateSelector = WGCREATE(SelectBox, _ = blueprint.theme->selectBox());
+
+		for (int i = 0; i < StateEnum_size; i++)
+		{
+			m_pStateSelector->entries.pushBack(WGBP(SelectBoxEntry, _.id = i, _.text = toString((StateEnum(i) ))));
+		}
+
+		Base::msgRouter()->addRoute(m_pStateSelector, MsgType::Select, [this](Msg* pMsg) { this->_refreshState(); });;
+
+	
+		pBasePanel->slots << m_pStateSelector;
+
+
+		//---
 
 		auto bp = m_blueprint;
 
@@ -67,6 +91,15 @@ namespace wg
 	const TypeInfo& SkinInspector::typeInfo(void) const
 	{
 		return TYPEINFO;
+	}
+
+	//____ _refreshState() ____________________________________________________
+
+	void SkinInspector::_refreshState()
+	{
+		State selectedState = (StateEnum) m_pStateSelector->selectedEntryId();
+
+		m_pSkinDisplay->setDisplayState(selectedState);
 	}
 
 

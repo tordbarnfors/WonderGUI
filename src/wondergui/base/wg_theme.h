@@ -36,6 +36,8 @@
 #include <wg_paddingcapsule.h>
 #include <wg_texteditor.h>
 #include <wg_tablepanel.h>
+#include <wg_splitpanel.h>
+#include <wg_selectbox.h>
 
 
 namespace wg
@@ -128,12 +130,18 @@ namespace wg
 		virtual const ScrollPanel::Blueprint& 		scrollPanelY() const = 0;
 		virtual const ScrollPanel::Blueprint& 		scrollPanelXY() const = 0;
 
+		virtual const SplitPanel::Blueprint&		splitPanelX() const = 0;
+		virtual const SplitPanel::Blueprint&		splitPanelY() const = 0;
+
+
 		virtual const DrawerPanel::Blueprint&		treeListDrawer() const = 0;
 		virtual const PaddingCapsule::Blueprint&	treeListEntry() const = 0;
 
 		virtual const TablePanel::Blueprint&		listTable() const = 0;		// Table for listing of items.
 
 		virtual const TextEditor::Blueprint&		textEditor() const = 0;
+
+		virtual const SelectBox::Blueprint&			selectBox() const = 0;
 
 		//
 
