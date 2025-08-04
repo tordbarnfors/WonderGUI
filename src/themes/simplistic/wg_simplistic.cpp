@@ -166,7 +166,7 @@ Simplistic::Simplistic( Font * pNormal, Font * pBold, Font * pItalic, Font * pMo
 		_.blockSpacing = 1,
 		_.frame = 4,
 		_.padding = 4,
-		_.states = { State::Default, State::Hovered, State::Pressed, State::Disabled };
+		_.states = { State::Default, State::Hovered, State::Pressed, State::Disabled }
 	));
 
 	auto pToggleButtonSkin = BlockSkin::create(WGBP(BlockSkin,
@@ -176,7 +176,7 @@ Simplistic::Simplistic( Font * pNormal, Font * pBold, Font * pItalic, Font * pMo
 		_.blockSpacing = 1,
 		_.frame = 4,
 		_.padding = 4,
-		_.states = { State::Default, State::Hovered, State::Checked, State::CheckedHovered, State::Disabled };
+		_.states = { State::Default, State::Hovered, State::Checked, State::CheckedHovered, State::Disabled }
 	));
 
 	auto pCheckboxSkin = BlockSkin::create(WGBP(BlockSkin,
@@ -184,7 +184,7 @@ Simplistic::Simplistic( Font * pNormal, Font * pBold, Font * pItalic, Font * pMo
 		_.firstBlock = { 0,37,10,10 },
 		_.axis = Axis::X,
 		_.blockSpacing = 1,
-		_.states = { State::Default, State::Checked, State::Disabled };
+		_.states = { State::Default, State::Checked, State::Disabled }
 	));
 
 	auto pRadioButtonSkin = BlockSkin::create(WGBP(BlockSkin,
@@ -192,8 +192,26 @@ Simplistic::Simplistic( Font * pNormal, Font * pBold, Font * pItalic, Font * pMo
 		_.firstBlock = { 0,48,10,10 },
 		_.axis = Axis::X,
 		_.blockSpacing = 1,
-		_.states = { State::Default, State::Checked, State::Disabled };
+		_.states = { State::Default, State::Checked, State::Disabled }
 	));
+
+	auto pSelectBoxSkin = BlockSkin::create(WGBP(BlockSkin,
+		_.surface = pWidgets,
+		_.firstBlock = { 96,0,34,22},
+		_.frame = { 4,25,4,4 },
+		_.padding = { 3, 25, 3, 4,},
+		_.axis = Axis::Y,
+		_.blockSpacing = 1,
+		_.states = { State::Default, State::Hovered, State::Pressed, State::Disabled }
+	));
+
+	auto pSelectBoxEntrySkin = BoxSkin::create(WGBP(BoxSkin,
+		_.states = { {State::Default, Color::Transparent, Color::Transparent},
+					 {State::Hovered, HiColor(Color::LightCyan).withAlpha(2048), HiColor(Color::DarkCyan).withAlpha(2048)},
+					 {State::Selected, Color::LightCyan,Color::DarkCyan }
+		}
+	));
+
 
 	m_labeledBoxBP = WGBP(LabelCapsule,
 						  _.label.style = m_pBlackStyle,
@@ -243,6 +261,16 @@ Simplistic::Simplistic( Font * pNormal, Font * pBold, Font * pItalic, Font * pMo
 							_.scrollbarY.bar = pScrollbarSkin
 							);
 
+	m_splitPanelXBP = WGBP(SplitPanel,
+							_.axis = Axis::X,
+							_.handleSkin = pButtonSkin
+	);
+
+	m_splitPanelYBP = WGBP(SplitPanel,
+		_.axis = Axis::Y,
+		_.handleSkin = pButtonSkin
+	);
+
 	m_treeListDrawer = WGBP(DrawerPanel,
 							_.buttonSkin = pPlusMinusToggleSkin,
 							_.buttonPlacement = Placement::West,
@@ -263,6 +291,13 @@ Simplistic::Simplistic( Font * pNormal, Font * pBold, Font * pItalic, Font * pMo
 		_.editor.style = m_pBlackStyle
 	);
 
+	m_selectBox = WGBP(SelectBox,
+		_.skin = pSelectBoxSkin,
+		_.listSkin = m_pCanvasSkin,
+		_.entryTextStyle  = m_pBlackStyle,
+		_.entrySkin = pSelectBoxEntrySkin
+	);
+
 	m_windowTitleBar = WGBP(TextDisplay,
 							_.skin = pTitleBarSkin,
 							_.display.layout = pLayoutCenteredNoWrap );
@@ -279,7 +314,8 @@ Simplistic::Simplistic( Font * pNormal, Font * pBold, Font * pItalic, Font * pMo
 	);
 
 	m_checkboxBP = WGBP(ToggleButton,
-		_.skin = pCheckboxSkin,
+		_.icon.skin = pCheckboxSkin,
+		_.icon.spacing = 4,
 		_.label.style = m_pBlackStyle
 	);
 
@@ -517,6 +553,16 @@ const ScrollPanel::Blueprint& Simplistic::scrollPanelXY() const
 	return m_scrollPanelXYBP;
 }
 
+const SplitPanel::Blueprint& Simplistic::splitPanelX() const
+{
+	return m_splitPanelXBP;
+}
+
+const SplitPanel::Blueprint& Simplistic::splitPanelY() const
+{
+	return m_splitPanelYBP;
+}
+
 const DrawerPanel::Blueprint& Simplistic::treeListDrawer() const
 {
 	return m_treeListDrawer;
@@ -537,6 +583,12 @@ const TextEditor::Blueprint& Simplistic::textEditor() const
 {
 	return m_textEditor;
 }
+
+const SelectBox::Blueprint& Simplistic::selectBox() const
+{
+	return m_selectBox;
+}
+
 
 const TextDisplay::Blueprint& Simplistic::windowTitleBar() const
 {
