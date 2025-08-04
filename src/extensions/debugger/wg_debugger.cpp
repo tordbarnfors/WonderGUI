@@ -22,8 +22,13 @@
 #include <wg_debugger.h>
 
 #include <wg_dummyinfopanel.h>
-#include <wg_widgettreepanel.h>
-#include <wg_msglogpanel.h>
+#include <windows/wg_msglogviewer.h>
+#include <windows/wg_objectinspector.h>
+#include <windows/wg_objectlist.h>
+#include <windows/wg_skininspector.h>
+#include <windows/wg_surfaceinspector.h>
+#include <windows/wg_textstyleinspector.h>
+#include <windows/wg_widgettreeview.h>
 
 #include <objectinfopanels/wg_objectinfopanel.h>
 #include <objectinfopanels/wg_widgetinfopanel.h>
@@ -48,6 +53,7 @@
 #include <wg_panel.h>
 #include <wg_packpanel.h>
 #include <wg_flexpanel.h>
+#include <wg_stateskin.h>
 #include <wg_msg.h>
 
 
@@ -89,6 +95,9 @@ namespace wg
 
 		m_ignoreClasses.push_back(&DynamicSlot::TYPEINFO);
 		m_ignoreClasses.push_back(&Receiver::TYPEINFO);
+		m_ignoreClasses.push_back(&Component::TYPEINFO);
+		m_ignoreClasses.push_back(&DynamicText::TYPEINFO);
+		m_ignoreClasses.push_back(&StateSkin::TYPEINFO);
 	}
 
 	//____ typeInfo() _________________________________________________________
@@ -161,19 +170,33 @@ namespace wg
 		return it->second(bp, this, pComponent);
 	}
 
+	//____ createObjectInspector() ________________________________________________
 
-	//____ createWidgetTreePanel() ____________________________________________
-
-	Widget_p Debugger::createWidgetTreePanel(const DebugPanel::Blueprint& blueprint, Widget* pRoot)
+	Widget_p Debugger::createObjectInspector(const DebugPanel::Blueprint& blueprint, Object* pObject)
 	{
-		return WidgetTreePanel::create(blueprint, this, pRoot);
+		return ObjectInspector::create(blueprint, this, pObject);
 	}
 
-	//____ createMsgLogPanel() ________________________________________________
+	//____ createSkinInspector() ________________________________________________
 
-	Widget_p Debugger::createMsgLogPanel(const DebugPanel::Blueprint& blueprint)
+	Widget_p Debugger::createSkinInspector(const DebugPanel::Blueprint& blueprint, Skin* pSkin)
 	{
-		return MsgLogPanel::create(blueprint, this);
+		return SkinInspector::create(blueprint, this, pSkin);
+	}
+
+
+	//____ createWidgetTreeView() ____________________________________________
+
+	Widget_p Debugger::createWidgetTreeView(const DebugPanel::Blueprint& blueprint, Widget* pRoot)
+	{
+		return WidgetTreeView::create(blueprint, this, pRoot);
+	}
+
+	//____ createMsgLogViewer() ________________________________________________
+
+	Widget_p Debugger::createMsgLogViewer(const DebugPanel::Blueprint& blueprint)
+	{
+		return MsgLogViewer::create(blueprint, this);
 	}
 
 	//____ setObjectSelectedCallback() ________________________________________

@@ -26,6 +26,7 @@
 #include <wg_msgrouter.h>
 #include <wg_msg.h>
 #include <wg_packpanel.h>
+#include <wg_textdisplay.h>
 
 
 
@@ -119,6 +120,28 @@ namespace wg
 		auto pDrawer = _createDrawer(label, nullptr, pComponentParts);
 		return pDrawer;
 	}
+
+	//____ _createObjectHeader() ______________________________________________
+
+	Widget_p DebugPanel::_createObjectHeader(Object* pObject)
+	{
+
+		auto pDisplay = TextDisplay::create(WGBP(TextDisplay,
+			_.display.text = pObject->typeInfo().className,
+			_.display.style = m_blueprint.theme->heading5Style()
+		));
+
+		char temp[64];
+		sprintf(temp, " - 0x%p", pObject);
+
+		CharBuffer buf(64);
+		buf.pushBack(temp);
+		buf.setStyle(m_blueprint.theme->defaultStyle());
+		
+		pDisplay->display.append(&buf);
+		return pDisplay;
+	}
+
 
 	//___ _setTextEntry() _________________________________________________
 

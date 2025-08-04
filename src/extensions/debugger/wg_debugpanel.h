@@ -53,6 +53,8 @@ namespace wg
 			Theme_p						theme;
 			Surface_p					icons;
 
+			Surface_p					transparencyGrid;
+
 			LabelCapsule::Blueprint		mainCapsule;
 			LabelCapsule::Blueprint		classCapsule;
 			TextDisplay::Blueprint		listEntryLabel;
@@ -62,7 +64,6 @@ namespace wg
 			NumberDisplay::Blueprint	listEntrySPX;
 			NumberDisplay::Blueprint	listEntryPts;
 			NumberDisplay::Blueprint	listEntryDecimal;
-//			NumberDisplay::Blueprint	listEntryPointer;
 			TextDisplay::Blueprint		textField;
 			TextDisplay::Blueprint		infoDisplay;
 			TablePanel::Blueprint		table;
@@ -101,6 +102,8 @@ namespace wg
 		DrawerPanel_p		_createSlotsDrawer(const CharSeq& label, Iterator slotsBegin, Iterator slotsEnd);
 
 		DrawerPanel_p		_createComponentDrawer(const CharSeq& label, Component* pComponent);
+
+		Widget_p			_createObjectHeader(Object* pObject);
 
 
 		void _setTextEntry(TablePanel* pTable, int row, const char* pLabel, const CharSeq& string);

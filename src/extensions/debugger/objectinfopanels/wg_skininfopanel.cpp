@@ -41,11 +41,16 @@ namespace wg
 	{
 		auto pBasePanel = WGCREATE( PackPanel, _.axis = Axis::Y );
 
+		auto pTable = _createTable(7, 2);
 
-		auto pDisplayBackground = WGCREATE(BoxSkin, _.color = Color::Wheat, _.padding = 8, _.spacing = 8);
-
-		auto pDisplay = WGCREATE(SkinDisplay, _.skin = pDisplayBackground, _.displaySkin = pSkin);
-		pBasePanel->slots << pDisplay;
+		_setBoolEntry(pTable, 0, "Opaque:", pSkin->isOpaque());
+		_setBoolEntry(pTable, 1, "Content shifting:", pSkin->isContentShifting());
+		_setBoolEntry(pTable, 2, "Ignores value:", pSkin->_ignoresValue());
+		_setBoolEntry(pTable, 3, "Ignores state:", pSkin->_ignoresState());
+		_setBoolEntry(pTable, 4, "Overflows:", pSkin->_hasOverflow());
+		_setIntegerEntry(pTable, 5, "Layer:", pSkin->layer());
+		_setIntegerEntry(pTable, 6, "Mark alpha:", pSkin->markAlpha());
+		pBasePanel->slots << pTable;
 
 		pBasePanel->slots << _createBorderDrawer("Margin", pSkin->margin());
 		pBasePanel->slots << _createBorderDrawer("Padding", pSkin->padding());

@@ -20,30 +20,31 @@
 
 =========================================================================*/
 
-#ifndef	WG_WIDGETTREEPANEL_DOT_H
-#define WG_WIDGETTREEPANEL_DOT_H
+#ifndef	WG_MSGLOGVIEWER_DOT_H
+#define WG_MSGLOGVIEWER_DOT_H
 #pragma once
 
-#include <wg_tablepanel.h>
 #include <wg_debugpanel.h>
-#include <wg_selectcapsule.h>
-#include <wg_transitions.h>
+#include <wg_packpanel.h>
+#include <wg_texteditor.h>
+#include <wg_msglogger.h>
+#include <wg_scrollpanel.h>
 
 namespace wg
 {
-	class WidgetTreePanel;
-	typedef	StrongPtr<WidgetTreePanel>	WidgetTreePanel_p;
-	typedef	WeakPtr<WidgetTreePanel>	WidgetTreePanel_wp;
+	class MsgLogViewer;
+	typedef	StrongPtr<MsgLogViewer>	MsgLogViewer_p;
+	typedef	WeakPtr<MsgLogViewer>	MsgLogViewer_wp;
 
 
 
-	class WidgetTreePanel : public DebugPanel
+	class MsgLogViewer : public DebugPanel
 	{
 	public:
 
 		//.____ Creation __________________________________________
 
-		static WidgetTreePanel_p		create( const Blueprint& blueprint, DebugPanel::Holder * pHolder, Widget * pRoot ) { return WidgetTreePanel_p(new WidgetTreePanel(blueprint, pHolder, pRoot) ); }
+		static MsgLogViewer_p	create( const Blueprint& blueprint, DebugPanel::Holder * pHolder ) { return MsgLogViewer_p(new MsgLogViewer(blueprint,pHolder) ); }
 
 		//.____ Identification __________________________________________
 
@@ -52,35 +53,39 @@ namespace wg
 
 		//.____ Control _______________________________________________
 
-		void	collapseAll();
-		void	expandAll();
-
-		void	select(Widget* pWidget);
+		void		clear();
+		void		setRecording(bool bRecording);
 
 
 	protected:
-		WidgetTreePanel(const Blueprint& blueprint, DebugPanel::Holder* pHolder, Widget * pRoot );
-		~WidgetTreePanel();
+		MsgLogViewer(const Blueprint& blueprint, DebugPanel::Holder* pHolder);
+		~MsgLogViewer();
 
-		Widget_p	_generateInfoTree( const Blueprint& blueprintWidget, Widget * pWidget, int indentation = 0);
-		void		_expandOrCollapseRecursively(Widget* pWidget, bool bExpand);
-		Widget_p	_findWidgetRecursively(int idToFind, Widget* pPos);
+		RouteId				m_routeId;
 
-		Skin_p				m_pPaddingSkin;
-		Skin_p				m_pDrawerButtonSkin;
+		MsgLogger_p			m_pLogger;
+
 		PackLayout_p		m_pPackLayout;
 
-		SelectCapsule_p		m_pSelectCapsule;
+		PackPanel_p			m_pMainPanel;
 
-		Widget_p			m_pSelectedWidget;
+		ToggleButton_p		m_pRecordButton;
+		Button_p			m_pClearButton;
 
-		RouteId				m_routeIdForSelect;
+		ToggleButton_p		m_pLogMoveToggle;
+		ToggleButton_p		m_pLogDragToggle;
+		ToggleButton_p		m_pLogButtonToggle;
+		ToggleButton_p		m_pLogKeysToggle;
+		ToggleButton_p		m_pLogPointerStyleToggle;
 
-		std::vector<Widget_wp>	m_realWidgets;
+		PackPanel_p			m_pLogList;
+		ScrollPanel_p		m_pLogWindow;
+
+		Skin_p				m_entrySkin[2];
 
 	};
 
 } // namespace wg
-#endif //WG_WIDGETTREEPANEL_DOT_H
+#endif //WG_MSGLOGVIEWER_DOT_H
 
 
