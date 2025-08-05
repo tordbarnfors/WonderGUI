@@ -21,8 +21,8 @@
 
 =========================================================================*/
 
-#ifndef	WG_DEBUGPANEL_DOT_H
-#define WG_DEBUGPANEL_DOT_H
+#ifndef	WG_DEBUGWINDOW_DOT_H
+#define WG_DEBUGWINDOW_DOT_H
 #pragma once
 
 #include <wg_idebugger.h>
@@ -38,13 +38,13 @@
 
 namespace wg
 {
-	class DebugPanel;
-	typedef	StrongPtr<DebugPanel>	DebugPanel_p;
-	typedef	WeakPtr<DebugPanel>		DebugPanel_wp;
+	class DebugWindow;
+	typedef	StrongPtr<DebugWindow>	DebugWindow_p;
+	typedef	WeakPtr<DebugWindow>		DebugWindow_wp;
 
 
 
-	class DebugPanel : public LabelCapsule
+	class DebugWindow : public Capsule
 	{
 	public:
 
@@ -63,19 +63,18 @@ namespace wg
 
 
 	protected:
-		DebugPanel(const IDebugger::Blueprint& blueprint, IDebugger * pHolder, const char * pLabel );
-		~DebugPanel() {}
+		DebugWindow(const Blueprint& blueprint, IDebugger * pHolder );
+		~DebugWindow() {}
 
 		void				_update(int microPassed, int64_t microsecTimestamp) override;
+		void				_refreshRecursively( Widget * pWidget );
 
+		PackPanel_p			_createButtonRow( bool bAutoRefresh = false, bool bRefresh = false );
 
 		TablePanel_p		_createTable(int rows, int columns);
 		DrawerPanel_p		_createDrawer(const CharSeq& label, Widget * pHeaderValue, Widget * pContent );
 
 		DrawerPanel_p		_createBorderDrawer(const CharSeq& label, const Border& border);
-
-		template<typename Iterator>
-		DrawerPanel_p		_createSlotsDrawer(const CharSeq& label, Iterator slotsBegin, Iterator slotsEnd);
 
 		DrawerPanel_p		_createComponentDrawer(const CharSeq& label, Component* pComponent);
 
@@ -109,48 +108,6 @@ namespace wg
 
 
 
-	//____ createSlotsDrawer() ___________________________________________________
-
-	template<typename Iterator>
-	DrawerPanel_p DebugPanel::_createSlotsDrawer(const CharSeq& label, Iterator slotsBegin, Iterator slotsEnd)
-	{
-		auto pSlotList = WGCREATE(PackPanel, _.axis = Axis::Y);
-
-		auto bp = m_pHolder->blueprint();
-
-		int nbSlots = 0;
-		for (Iterator it = slotsBegin ; it != slotsEnd ; it++ )
-		{
-			char buf[32];
-			sprintf(buf, "%d", nbSlots);
-
-			auto pSlot = it;
-
-			auto pSlotContent = WGCREATE(PackPanel, _.axis = Axis::Y);
-
-			auto pTypeInfo = &it->typeInfo();
-
-			while (pTypeInfo != nullptr)
-			{
-				bp.classCapsule.label.text = pTypeInfo->className;
-				pSlotContent->slots << m_pHolder->createSlotInfoPanel(pTypeInfo, pSlot);
-				pTypeInfo = pTypeInfo->pSuperClass;
-			}
-
-			auto pSlotDrawer = _createDrawer(buf, nullptr, pSlotContent);
-
-			pSlotList->slots << pSlotDrawer;
-			nbSlots++;
-		}
-
-		auto pNumberSlots = WGCREATE(NumberDisplay, _ = m_pHolder->blueprint().listEntryInteger);
-		pNumberSlots->display.set(nbSlots);
-
-		auto pDrawer = _createDrawer("Slots", pNumberSlots, pSlotList);
-		return pDrawer;
-	}
-
-
 } // namespace wg
-#endif //WG_OBJECTINFOPANEL_DOT_H
+#endif //WG_DEBUGWINDOW_DOT_H
 

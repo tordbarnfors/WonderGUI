@@ -42,7 +42,7 @@ namespace wg
 
 		//.____ Creation __________________________________________
 
-		static FillerInfoPanel_p		create( const Blueprint& blueprint, DebugPanel::Holder* pHolder, Filler * pFiller) { return FillerInfoPanel_p(new FillerInfoPanel(blueprint, pHolder, pFiller) ); }
+		static FillerInfoPanel_p		create( const Blueprint& blueprint, IDebugger* pHolder, Filler * pFiller) { return FillerInfoPanel_p(new FillerInfoPanel(blueprint, pHolder, pFiller) ); }
 
 		//.____ Identification __________________________________________
 
@@ -51,7 +51,7 @@ namespace wg
 
 
 	protected:
-		FillerInfoPanel(const Blueprint& blueprint, DebugPanel::Holder* pHolder, Filler * pFiller );
+		FillerInfoPanel(const Blueprint& blueprint, IDebugger* pHolder, Filler * pFiller );
 		~FillerInfoPanel() {}
 	};
 

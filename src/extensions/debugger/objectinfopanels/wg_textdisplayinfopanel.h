@@ -42,7 +42,7 @@ namespace wg
 
 		//.____ Creation __________________________________________
 
-		static TextDisplayInfoPanel_p		create( const Blueprint& blueprint, DebugPanel::Holder* pHolder, TextDisplay * pTextDisplay) { return TextDisplayInfoPanel_p(new TextDisplayInfoPanel(blueprint, pHolder, pTextDisplay) ); }
+		static TextDisplayInfoPanel_p		create( const Blueprint& blueprint, IDebugger* pHolder, TextDisplay * pTextDisplay) { return TextDisplayInfoPanel_p(new TextDisplayInfoPanel(blueprint, pHolder, pTextDisplay) ); }
 
 		//.____ Identification __________________________________________
 
@@ -51,7 +51,7 @@ namespace wg
 
 
 	protected:
-		TextDisplayInfoPanel(const Blueprint& blueprint, DebugPanel::Holder* pHolder, TextDisplay * pTextDisplay );
+		TextDisplayInfoPanel(const Blueprint& blueprint, IDebugger* pHolder, TextDisplay * pTextDisplay );
 		~TextDisplayInfoPanel() {}
 	};
 

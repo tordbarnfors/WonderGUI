@@ -25,7 +25,7 @@
 #pragma once
 
 #include <wg_tablepanel.h>
-#include <wg_debugpanel.h>
+#include <wg_debugwindow.h>
 #include <wg_skindisplay.h>
 #include <wg_selectbox.h>
 
@@ -38,13 +38,13 @@ namespace wg
 
 
 
-	class SkinInspector : public DebugPanel
+	class SkinInspector : public DebugWindow
 	{
 	public:
 
 		//.____ Creation __________________________________________
 
-		static SkinInspector_p		create( const Blueprint& blueprint, DebugPanel::Holder * pHolder, Skin * pSkin) { return SkinInspector_p(new SkinInspector(blueprint, pHolder, pSkin) ); }
+		static SkinInspector_p		create( const Blueprint& blueprint, IDebugger * pHolder, Skin * pSkin) { return SkinInspector_p(new SkinInspector(blueprint, pHolder, pSkin) ); }
 
 		//.____ Identification __________________________________________
 
@@ -53,7 +53,7 @@ namespace wg
 
 
 	protected:
-		SkinInspector(const Blueprint& blueprint, DebugPanel::Holder * pHolder, Skin * pSkin );
+		SkinInspector(const Blueprint& blueprint, IDebugger * pHolder, Skin * pSkin );
 		~SkinInspector() {}
 
 		void	_refreshState();

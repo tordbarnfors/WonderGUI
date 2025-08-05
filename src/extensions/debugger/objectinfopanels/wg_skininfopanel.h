@@ -41,7 +41,7 @@ namespace wg
 
 		//.____ Creation __________________________________________
 
-		static SkinInfoPanel_p		create( const Blueprint& blueprint, DebugPanel::Holder* pHolder, Skin * pSkin) { return SkinInfoPanel_p(new SkinInfoPanel(blueprint, pHolder, pSkin) ); }
+		static SkinInfoPanel_p		create( const Blueprint& blueprint, IDebugger* pHolder, Skin * pSkin) { return SkinInfoPanel_p(new SkinInfoPanel(blueprint, pHolder, pSkin) ); }
 
 		//.____ Identification __________________________________________
 
@@ -50,7 +50,7 @@ namespace wg
 
 
 	protected:
-		SkinInfoPanel(const Blueprint& blueprint, DebugPanel::Holder* pHolder, Skin * pSkin );
+		SkinInfoPanel(const Blueprint& blueprint, IDebugger* pHolder, Skin * pSkin );
 		~SkinInfoPanel() {}
 	};
 
