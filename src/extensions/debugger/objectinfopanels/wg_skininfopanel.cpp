@@ -37,7 +37,7 @@ namespace wg
 
 	//____ constructor _____________________________________________________________
 
-	SkinInfoPanel::SkinInfoPanel(const Blueprint& blueprint, DebugPanel::Holder* pHolder, Skin * pSkin) : DebugPanel( blueprint, pHolder )
+	SkinInfoPanel::SkinInfoPanel(const Blueprint& blueprint, IDebugger* pHolder, Skin * pSkin) : DebugPanel( blueprint, pHolder, Skin::TYPEINFO.className )
 	{
 		auto pBasePanel = WGCREATE( PackPanel, _.axis = Axis::Y );
 

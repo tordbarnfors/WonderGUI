@@ -33,7 +33,7 @@ namespace wg
 
 	//____ constructor _____________________________________________________________
 
-	ContainerInfoPanel::ContainerInfoPanel(const Blueprint& blueprint, DebugPanel::Holder* pHolder, Container * pContainer) : DebugPanel( blueprint, pHolder )
+	ContainerInfoPanel::ContainerInfoPanel(const Blueprint& blueprint, IDebugger* pHolder, Container * pContainer) : DebugPanel( blueprint, pHolder, Container::TYPEINFO.className )
 	{
 		auto pTable = _createTable(1,2);
 

@@ -25,7 +25,7 @@
 #pragma once
 
 #include <wg_tablepanel.h>
-#include <wg_debugpanel.h>
+#include <wg_debugwindow.h>
 
 namespace wg
 {
@@ -35,23 +35,27 @@ namespace wg
 
 
 
-	class ObjectInspector : public DebugPanel
+	class ObjectInspector : public DebugWindow
 	{
 	public:
 
 		//.____ Creation __________________________________________
 
-		static ObjectInspector_p		create( const Blueprint& blueprint, DebugPanel::Holder * pHolder, Object * pObject) { return ObjectInspector_p(new ObjectInspector(blueprint, pHolder, pObject) ); }
+		static ObjectInspector_p		create( const Blueprint& blueprint, IDebugger * pHolder, Object * pObject) { return ObjectInspector_p(new ObjectInspector(blueprint, pHolder, pObject) ); }
 
 		//.____ Identification __________________________________________
 
 		const TypeInfo&			typeInfo(void) const override;
 		const static TypeInfo	TYPEINFO;
 
-
 	protected:
-		ObjectInspector(const Blueprint& blueprint, DebugPanel::Holder * pHolder, Object * pObject );
+		ObjectInspector(const Blueprint& blueprint, IDebugger * pHolder, Object * pObject );
 		~ObjectInspector() {}
+
+		Object_p	m_pObject;			// Keep our object alive as long as we are, so refresh won't fail.
+
+		ToggleButton_p	m_pAutoRefreshButton;
+
 	};
 
 } // namespace wg

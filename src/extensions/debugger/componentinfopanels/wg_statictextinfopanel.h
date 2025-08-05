@@ -42,7 +42,7 @@ namespace wg
 
 		//.____ Creation __________________________________________
 
-		static StaticTextInfoPanel_p		create(const Blueprint& blueprint, DebugPanel::Holder* pHolder, StaticText* pStaticText) { return StaticTextInfoPanel_p(new StaticTextInfoPanel(blueprint, pHolder, pStaticText)); }
+		static StaticTextInfoPanel_p		create(const Blueprint& blueprint, IDebugger* pHolder, StaticText* pStaticText) { return StaticTextInfoPanel_p(new StaticTextInfoPanel(blueprint, pHolder, pStaticText)); }
 
 		//.____ Identification __________________________________________
 
@@ -51,7 +51,7 @@ namespace wg
 
 
 	protected:
-		StaticTextInfoPanel(const Blueprint& blueprint, DebugPanel::Holder* pHolder, StaticText* pStaticText);
+		StaticTextInfoPanel(const Blueprint& blueprint, IDebugger* pHolder, StaticText* pStaticText);
 		~StaticTextInfoPanel() {}
 	};
 

@@ -25,7 +25,7 @@
 #pragma once
 
 #include <wg_tablepanel.h>
-#include <wg_debugpanel.h>
+#include <wg_debugwindow.h>
 
 namespace wg
 {
@@ -35,13 +35,13 @@ namespace wg
 
 
 
-	class TextStyleInspector : public DebugPanel
+	class TextStyleInspector : public DebugWindow
 	{
 	public:
 
 		//.____ Creation __________________________________________
 
-		static TextStyleInspector_p		create(const Blueprint& blueprint, DebugPanel::Holder* pHolder, TextStyle* pStyle) { return TextStyleInspector_p(new TextStyleInspector(blueprint, pHolder, pStyle)); }
+		static TextStyleInspector_p		create(const Blueprint& blueprint, IDebugger* pHolder, TextStyle* pStyle) { return TextStyleInspector_p(new TextStyleInspector(blueprint, pHolder, pStyle)); }
 
 		//.____ Identification __________________________________________
 
@@ -50,7 +50,7 @@ namespace wg
 
 
 	protected:
-		TextStyleInspector(const Blueprint& blueprint, DebugPanel::Holder* pHolder, TextStyle* pStyle);
+		TextStyleInspector(const Blueprint& blueprint, IDebugger* pHolder, TextStyle* pStyle);
 		~TextStyleInspector() {}
 	};
 

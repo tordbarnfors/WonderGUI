@@ -19,6 +19,7 @@
   should contact Tord Jansson [tord.jansson@gmail.com] for details.
 
 =========================================================================*/
+#include "wg_debugwindow.h"
 #include "wg_debugpanel.h"
 
 #include <wg_colorskin.h>
@@ -27,36 +28,37 @@
 #include <wg_msg.h>
 #include <wg_packpanel.h>
 #include <wg_textdisplay.h>
+#include <wg_blockskin.h>
 
 
 
 namespace wg
 {
 
-	const TypeInfo DebugPanel::TYPEINFO = { "DebugPanel", &LabelCapsule::TYPEINFO };
+	const TypeInfo DebugWindow::TYPEINFO = { "DebugWindow", &LabelCapsule::TYPEINFO };
 
 
 	//____ constructor _____________________________________________________________
 
-	DebugPanel::DebugPanel(const Blueprint& blueprint, IDebugger * pHolder, const char * pLabel )
-		: LabelCapsule( blueprint.classCapsule )
+	DebugWindow::DebugWindow(const Blueprint& blueprint, IDebugger * pHolder )
+		: Capsule( blueprint.mainCapsule )
 		, m_pHolder(pHolder)
 	{
 		m_pIndentationSkin = ColorSkin::create(Color::Transparent, { 0,0,0,16 });
 
-		label.setText(pLabel);
+		setSkin(nullptr);
 	}
 
 	//____ typeInfo() _________________________________________________________
 
-	const TypeInfo& DebugPanel::typeInfo(void) const
+	const TypeInfo& DebugWindow::typeInfo(void) const
 	{
 		return TYPEINFO;
 	}
 
 	//____ setAutoRefresh() ______________________________________________________
 
-	void DebugPanel::setAutoRefresh(bool bAutoRefresh)
+	void DebugWindow::setAutoRefresh(bool bAutoRefresh)
 	{
 		if( bAutoRefresh != m_bAutoRefresh )
 		{
@@ -71,27 +73,101 @@ namespace wg
 
 	//____ refresh() _____________________________________________________________
 
-	void DebugPanel::refresh()
+	void DebugWindow::refresh()
+{
+		auto pPanel = static_cast<PackPanel*>(slot._widget());
+
+		for( auto& slot : pPanel->slots )
+		{
+			auto pDebugPanel = dynamic_cast<DebugPanel*>(slot._widget());
+
+			if( pDebugPanel )
+				pDebugPanel->refresh();
+		}
+	}
+
+	//____ _refreshRecursively() _________________________________________________
+
+	void DebugWindow::_refreshRecursively( Widget * pWidget )
 	{
+		auto pDebugPanel = dynamic_cast<DebugPanel*>(pWidget);
+		if( pDebugPanel )
+		{
+			pDebugPanel->refresh();
+			return;
+		}
+
+		auto pContainer = dynamic_cast<Container*>(pWidget);
+		if( pContainer )
+		{
+			auto pChild = pContainer->firstChild();
+			while( pChild )
+			{
+				_refreshRecursively(pChild);
+				pChild = pChild->nextSibling();
+			}
+		}
 	}
 
 	//____ _update() _____________________________________________________________
 
-	void DebugPanel::_update(int microPassed, int64_t microsecTimestamp)
+	void DebugWindow::_update(int microPassed, int64_t microsecTimestamp)
 	{
 		refresh();
 	}
 
+	//____ _createButtonRow() ____________________________________________________
+
+	PackPanel_p DebugWindow::_createButtonRow( bool bAutoRefresh, bool bRefresh )
+	{
+		auto pPackLayout = PackLayout::create({});
+
+		auto& bp = m_pHolder->blueprint();
+
+		auto pButtonRow = PackPanel::create(WGBP(PackPanel,
+		  _.axis = Axis::X,
+		  _.layout = pPackLayout,
+		  _.skin = bp.theme->plateSkin()));
+
+		auto pAutoRefreshIcon = BlockSkin::create(WGBP(BlockSkin,
+			  _.surface = bp.icons,
+			  _.firstBlock = { 48,48,16,16 } ));
+
+		auto pRefreshIcon = BlockSkin::create(WGBP(BlockSkin,
+			  _.surface = bp.icons,
+			  _.firstBlock = { 0,0,16,16 } ));
+
+		auto pAutoRefreshButton = ToggleButton::create(WGOVR(bp.theme->toggleButton(), _.icon.skin = pAutoRefreshIcon));
+		auto pRefreshButton = Button::create(WGOVR(bp.theme->pushButton(), _.icon.skin = pRefreshIcon));
+
+		Base::msgRouter()->addRoute(pAutoRefreshButton, MsgType::Toggle, [this](Msg* _pMsg) {
+
+			auto pMsg = static_cast<ToggleMsg*>(_pMsg);
+			setAutoRefresh(pMsg->isChecked());
+		});
+
+		Base::msgRouter()->addRoute(pRefreshButton, MsgType::Select, [this](Msg* _pMsg) {
+			refresh();
+		});
+
+
+		pButtonRow->slots.pushBack( { pAutoRefreshButton, pRefreshButton } );
+
+		return pButtonRow;
+	}
+
+
+
 	//____ _createTable() ________________________________________________________
 
-	TablePanel_p DebugPanel::_createTable(int rows, int columns)
+	TablePanel_p DebugWindow::_createTable(int rows, int columns)
 	{
 		return WGCREATE(TablePanel, _ = m_pHolder->blueprint().table, _.columns = columns, _.rows = rows, _.skin = m_pIndentationSkin);
 	}
 
 	//____ _createDrawer() ________________________________________________________
 
-	DrawerPanel_p DebugPanel::_createDrawer(const CharSeq& label, Widget* pHeaderValue, Widget* pContent)
+	DrawerPanel_p DebugWindow::_createDrawer(const CharSeq& label, Widget* pHeaderValue, Widget* pContent)
 	{
 		auto pDrawer = WGCREATE(DrawerPanel, _ = m_pHolder->blueprint().theme->treeListDrawer(), _.skin = m_pIndentationSkin, _.buttonOfs.x -= 16);
 
@@ -107,7 +183,7 @@ namespace wg
 
 	//____ _createBorderDrawer() ________________________________________________________
 
-	DrawerPanel_p DebugPanel::_createBorderDrawer(const CharSeq& label, const Border& border)
+	DrawerPanel_p DebugWindow::_createBorderDrawer(const CharSeq& label, const Border& border)
 	{
 		bool bEmpty = border.isEmpty();
 
@@ -130,7 +206,7 @@ namespace wg
 
 	//____ _createComponentDrawer() _________________________________________________
 
-	DrawerPanel_p DebugPanel::_createComponentDrawer(const CharSeq& label, Component* pComponent)
+	DrawerPanel_p DebugWindow::_createComponentDrawer(const CharSeq& label, Component* pComponent)
 	{
 		auto bp = m_pHolder->blueprint();
 
@@ -151,7 +227,7 @@ namespace wg
 
 	//____ _createObjectHeader() ______________________________________________
 
-	Widget_p DebugPanel::_createObjectHeader(Object* pObject)
+	Widget_p DebugWindow::_createObjectHeader(Object* pObject)
 	{
 
 		auto pDisplay = TextDisplay::create(WGBP(TextDisplay,
@@ -173,7 +249,7 @@ namespace wg
 
 	//___ _setTextEntry() _________________________________________________
 
-	void DebugPanel::_setTextEntry(TablePanel* pTable, int row, const char* pLabel, const CharSeq& string)
+	void DebugWindow::_setTextEntry(TablePanel* pTable, int row, const char* pLabel, const CharSeq& string)
 	{
 		if (row < 0 || row >= pTable->rows.size())
 			return;
@@ -187,7 +263,7 @@ namespace wg
 
 	//___ _setIntegerEntry() _________________________________________________
 
-	void DebugPanel::_setIntegerEntry(TablePanel* pTable, int row, const char* pLabel, int value)
+	void DebugWindow::_setIntegerEntry(TablePanel* pTable, int row, const char* pLabel, int value)
 	{
 		if (row < 0 || row >= pTable->rows.size())
 			return;
@@ -201,7 +277,7 @@ namespace wg
 
 	//___ _setDecimalEntry() _________________________________________________
 
-	void DebugPanel::_setDecimalEntry(TablePanel* pTable, int row, const char* pLabel, float value)
+	void DebugWindow::_setDecimalEntry(TablePanel* pTable, int row, const char* pLabel, float value)
 	{
 		if (row < 0 || row >= pTable->rows.size())
 			return;
@@ -215,7 +291,7 @@ namespace wg
 
 	//___ _setPtsEntry() _________________________________________________
 
-	void DebugPanel::_setPtsEntry(TablePanel* pTable, int row, const char* pLabel, pts value)
+	void DebugWindow::_setPtsEntry(TablePanel* pTable, int row, const char* pLabel, pts value)
 	{
 		if (row < 0 || row >= pTable->rows.size())
 			return;
@@ -229,7 +305,7 @@ namespace wg
 
 	//___ _setSpxEntry() _________________________________________________
 
-	void DebugPanel::_setSpxEntry(TablePanel* pTable, int row, const char* pLabel, spx value)
+	void DebugWindow::_setSpxEntry(TablePanel* pTable, int row, const char* pLabel, spx value)
 	{
 		if (row < 0 || row >= pTable->rows.size())
 			return;
@@ -243,7 +319,7 @@ namespace wg
 
 	//___ _setBoolEntry() _________________________________________________
 
-	void DebugPanel::_setBoolEntry(TablePanel* pTable, int row, const char* pLabel, bool value)
+	void DebugWindow::_setBoolEntry(TablePanel* pTable, int row, const char* pLabel, bool value)
 	{
 		if (row < 0 || row >= pTable->rows.size())
 			return;
@@ -257,7 +333,7 @@ namespace wg
 
 	//___ _setPointerEntry() _________________________________________________
 
-	void DebugPanel::_setPointerEntry(TablePanel* pTable, int row, const char* pLabel, void* pPointer)
+	void DebugWindow::_setPointerEntry(TablePanel* pTable, int row, const char* pLabel, void* pPointer)
 	{
 		if (row < 0 || row >= pTable->rows.size())
 			return;
@@ -275,7 +351,7 @@ namespace wg
 
 	//___ _setObjectPointerEntry() _________________________________________________
 
-	void DebugPanel::_setObjectPointerEntry(TablePanel* pTable, int row, const char* pLabel, Object* pPointer, Object * pSource)
+	void DebugWindow::_setObjectPointerEntry(TablePanel* pTable, int row, const char* pLabel, Object* pPointer, Object * pSource)
 	{
 		if( row < 0 || row >= pTable->rows.size())
 			return;
@@ -299,7 +375,7 @@ namespace wg
 			buff.pushBack(temp);
 
 			TextLink_p 	pLink = TextLink::create();
-			IDebugger*		pHolder = m_pHolder;
+			IDebugger*	pHolder = m_pHolder;
 
 			Base::msgRouter()->addRoute(pLink, MsgType::MouseClick, [pPointer, pHolder](Msg* pMsg) {
 				pHolder->objectSelected(pPointer, nullptr);
@@ -318,49 +394,49 @@ namespace wg
 
 	//____ _refreshTextEntry() ___________________________________________________
 
-	void DebugPanel::_refreshTextEntry(TablePanel* pTable, int row, const CharSeq& string)
+	void DebugWindow::_refreshTextEntry(TablePanel* pTable, int row, const CharSeq& string)
 	{
 		static_cast<TextDisplay*>(pTable->slots[row][1]._widget())->display.setText(string);
 	}
 
 	//____ _refreshIntegerEntry() ________________________________________________
 
-	void DebugPanel::_refreshIntegerEntry(TablePanel * pTable, int row, int value)
+	void DebugWindow::_refreshIntegerEntry(TablePanel * pTable, int row, int value)
 	{
 		static_cast<NumberDisplay*>(pTable->slots[row][1]._widget())->display.set(value);
 	}
 
 	//____ _refreshDecimalEntry() ________________________________________________
 
-	void DebugPanel::_refreshDecimalEntry(TablePanel* pTable, int row, float value)
+	void DebugWindow::_refreshDecimalEntry(TablePanel* pTable, int row, float value)
 	{
 		static_cast<NumberDisplay*>(pTable->slots[row][1]._widget())->display.set(value);
 	}
 
 	//____ _refreshPtsEntry() ____________________________________________________
 
-	void DebugPanel::_refreshPtsEntry(TablePanel* pTable, int row, pts value)
+	void DebugWindow::_refreshPtsEntry(TablePanel* pTable, int row, pts value)
 	{
 		static_cast<NumberDisplay*>(pTable->slots[row][1]._widget())->display.set(value);
 	}
 
 	//____ _refreshSpxEntry() ____________________________________________________
 
-	void DebugPanel::_refreshSpxEntry(TablePanel* pTable, int row, spx value)
+	void DebugWindow::_refreshSpxEntry(TablePanel* pTable, int row, spx value)
 	{
 		static_cast<NumberDisplay*>(pTable->slots[row][1]._widget())->display.set(value);
 	}
 
 	//____ _refreshBoolEntry() ___________________________________________________
 
-	void DebugPanel::_refreshBoolEntry(TablePanel* pTable, int row, bool value)
+	void DebugWindow::_refreshBoolEntry(TablePanel* pTable, int row, bool value)
 	{
 		static_cast<TextDisplay*>(pTable->slots[row][1]._widget())->display.setText(value? "true" : "false" );
 	}
 
 	//____ _refreshPointerEntry() ________________________________________________
 
-	void DebugPanel::_refreshPointerEntry(TablePanel* pTable, int row, void* pPointer, void*& pSavedPointer)
+	void DebugWindow::_refreshPointerEntry(TablePanel* pTable, int row, void* pPointer, void*& pSavedPointer)
 	{
 		if( pPointer == pSavedPointer )
 			return;
@@ -376,7 +452,7 @@ namespace wg
 
 	//____ _refreshObjectPointerEntry() __________________________________________
 
-	void DebugPanel::_refreshObjectPointerEntry(TablePanel* pTable, int row, Object * pPointer, Object_p& pSavedPointer)
+	void DebugWindow::_refreshObjectPointerEntry(TablePanel* pTable, int row, Object * pPointer, Object_p& pSavedPointer)
 	{
 		if( pPointer == pSavedPointer )
 			return;

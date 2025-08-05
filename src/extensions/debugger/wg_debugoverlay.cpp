@@ -1,4 +1,4 @@
-﻿/*=========================================================================
+/*=========================================================================
 
 						 >>> WonderGUI <<<
 
@@ -66,6 +66,7 @@ namespace wg
 		m_pTransparencyGrid = bp.transparencyGrid;
 
 		_createResources();
+		m_pDebugger->setBlueprint(m_debugPanelBP);
 
 		// Create default skins
 
@@ -321,7 +322,7 @@ namespace wg
 		if (m_pSelectedWidget)
 		{
 			m_pWidgetTools->slots.clear();
-			m_pWidgetTools->slots << m_pDebugger->createObjectInspector(m_debugPanelBP,m_pSelectedWidget);
+			m_pWidgetTools->slots << m_pDebugger->createObjectInspector(m_pSelectedWidget);
 
 			if (!m_pWidgetTreeContainer->slot.isEmpty())
 				static_cast<WidgetTreeView*>(m_pWidgetTreeContainer->slot._widget())->select(m_pSelectedWidget);
@@ -356,7 +357,7 @@ namespace wg
 	{
 		m_pSkinContainer->slots.clear();
 
-		m_pSkinContainer->slots << m_pDebugger->createSkinInspector(m_debugPanelBP, pSkin);
+		m_pSkinContainer->slots << m_pDebugger->createSkinInspector(pSkin);
 	}
 
 	//____ _selectObject() ____________________________________________________
@@ -365,7 +366,7 @@ namespace wg
 	{
 		m_pAnyObjectContainer->slots.clear();
 
-		m_pAnyObjectContainer->slots << m_pDebugger->createObjectInspector(m_debugPanelBP, pSelected);
+		m_pAnyObjectContainer->slots << m_pDebugger->createObjectInspector(pSelected);
 	}
 
 	//____ _slotTypeInfo() ________________________________________________________
@@ -910,7 +911,7 @@ namespace wg
 		Base::msgRouter()->addRoute(pRefreshButton, MsgType::Select, [this](Msg* pMsg) {
 
 			if (mainSlot.widget())
-				this->m_pWidgetTreeContainer->slot = m_pDebugger->createWidgetTreeView(m_debugPanelBP, mainSlot.widget());
+				this->m_pWidgetTreeContainer->slot = m_pDebugger->createWidgetTreeView(mainSlot.widget());
 			else
 				this->m_pWidgetTreeContainer->slot = nullptr;
 		});
@@ -950,7 +951,7 @@ namespace wg
 		m_pWidgetTreeContainer = pContentWindow;
 
 		if( mainSlot.widget() )
-			pContentWindow->slot = m_pDebugger->createWidgetTreeView(m_debugPanelBP, mainSlot.widget());
+			pContentWindow->slot = m_pDebugger->createWidgetTreeView(mainSlot.widget());
 			
 		pContent->slots << pContentWindow;
 
@@ -1094,7 +1095,7 @@ namespace wg
 		pContent->setLayout(nullptr);
 
 
-		pContent->slots << m_pDebugger->createMsgLogViewer(m_debugPanelBP);
+		pContent->slots << m_pDebugger->createMsgLogViewer();
 
 		_refreshRealGeo(windows._first() + windows.size() - 1);
 	}
@@ -1177,7 +1178,7 @@ namespace wg
 
 		m_debugPanelBP.transparencyGrid = m_pTransparencyGrid;
 
-		m_debugPanelBP.mainCapsule = m_pTheme->labeledSection();
+//		m_debugPanelBP.mainCapsule.skin = ;
 
 		m_debugPanelBP.classCapsule = WGBP(LabelCapsule,
 			_.skin = ColorSkin::create(HiColor::Transparent, { 10,0,0,8 }),

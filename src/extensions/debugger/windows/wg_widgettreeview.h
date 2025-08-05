@@ -25,7 +25,7 @@
 #pragma once
 
 #include <wg_tablepanel.h>
-#include <wg_debugpanel.h>
+#include <wg_debugwindow.h>
 #include <wg_selectcapsule.h>
 #include <wg_transitions.h>
 
@@ -37,13 +37,13 @@ namespace wg
 
 
 
-	class WidgetTreeView : public DebugPanel
+	class WidgetTreeView : public DebugWindow
 	{
 	public:
 
 		//.____ Creation __________________________________________
 
-		static WidgetTreeView_p		create( const Blueprint& blueprint, DebugPanel::Holder * pHolder, Widget * pRoot ) { return WidgetTreeView_p(new WidgetTreeView(blueprint, pHolder, pRoot) ); }
+		static WidgetTreeView_p		create( const Blueprint& blueprint, IDebugger * pHolder, Widget * pRoot ) { return WidgetTreeView_p(new WidgetTreeView(blueprint, pHolder, pRoot) ); }
 
 		//.____ Identification __________________________________________
 
@@ -59,7 +59,7 @@ namespace wg
 
 
 	protected:
-		WidgetTreeView(const Blueprint& blueprint, DebugPanel::Holder* pHolder, Widget * pRoot );
+		WidgetTreeView(const Blueprint& blueprint, IDebugger* pHolder, Widget * pRoot );
 		~WidgetTreeView();
 
 		Widget_p	_generateInfoTree( const Blueprint& blueprintWidget, Widget * pWidget, int indentation = 0);

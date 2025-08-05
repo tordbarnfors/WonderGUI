@@ -24,7 +24,7 @@
 #define WG_MSGLOGVIEWER_DOT_H
 #pragma once
 
-#include <wg_debugpanel.h>
+#include <wg_debugwindow.h>
 #include <wg_packpanel.h>
 #include <wg_texteditor.h>
 #include <wg_msglogger.h>
@@ -38,13 +38,13 @@ namespace wg
 
 
 
-	class MsgLogViewer : public DebugPanel
+	class MsgLogViewer : public DebugWindow
 	{
 	public:
 
 		//.____ Creation __________________________________________
 
-		static MsgLogViewer_p	create( const Blueprint& blueprint, DebugPanel::Holder * pHolder ) { return MsgLogViewer_p(new MsgLogViewer(blueprint,pHolder) ); }
+		static MsgLogViewer_p	create( const Blueprint& blueprint, IDebugger * pHolder ) { return MsgLogViewer_p(new MsgLogViewer(blueprint,pHolder) ); }
 
 		//.____ Identification __________________________________________
 
@@ -58,7 +58,7 @@ namespace wg
 
 
 	protected:
-		MsgLogViewer(const Blueprint& blueprint, DebugPanel::Holder* pHolder);
+		MsgLogViewer(const Blueprint& blueprint, IDebugger* pHolder);
 		~MsgLogViewer();
 
 		RouteId				m_routeId;

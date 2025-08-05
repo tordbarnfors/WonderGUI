@@ -34,12 +34,18 @@ namespace wg
 
 	//____ constructor _____________________________________________________________
 
-	WidgetInfoPanel::WidgetInfoPanel(const Blueprint& blueprint, DebugPanel::Holder* pHolder, Widget * pWidget) : DebugPanel( blueprint, pHolder )
+	WidgetInfoPanel::WidgetInfoPanel(const Blueprint& blueprint, IDebugger* pHolder, Widget * pWidget) : DebugPanel( blueprint, pHolder, Widget::TYPEINFO.className )
 	{
+		m_pInspected = pWidget;
+
+		m_pInspectedsBaggage = pWidget->baggage().rawPtr();
+		m_pInspectedsParent = pWidget->parent().rawPtr();
+		m_pInspectedsSkin = pWidget->skin().rawPtr();
+
 		auto pPanel = WGCREATE(PackPanel, _.axis = Axis::Y);
 
-		auto pTable = _createTable(22, 2);
-		 
+		auto pTable = _createTable(19, 2);
+
 		int row = 0;
 
 		_setIntegerEntry		(pTable, row++, "Id: ", pWidget->id());
@@ -62,8 +68,8 @@ namespace wg
 		_setIntegerEntry		(pTable, row++, "Receiving updates: ", pWidget->m_receivingUpdateCounter);
 		_setBoolEntry			(pTable, row++, "Sticky focus: ", pWidget->hasStickyFocus());
 
-
 		pPanel->slots << pTable;
+		m_pTable = pTable;
 
 		{
 			bool bOverflow = pWidget->m_bOverflow;
@@ -72,17 +78,14 @@ namespace wg
 
 			TablePanel_p pOverflowTable;
 
-			if (true)
-			{
-				pOverflowTable = _createTable(4,2);
+			pOverflowTable = _createTable(4,2);
 
-				BorderSPX overflow = pWidget->_overflow();
+			BorderSPX overflow = pWidget->_overflow();
 
-				_setSpxEntry(pOverflowTable, 0, "Top (spx): ", overflow.top);
-				_setSpxEntry(pOverflowTable, 1, "Right (spx): ", overflow.right);
-				_setSpxEntry(pOverflowTable, 2, "Bottom (spx): ", overflow.bottom);
-				_setSpxEntry(pOverflowTable, 3, "Left (spx): ", overflow.left);
-			}
+			_setSpxEntry(pOverflowTable, 0, "Top (spx): ", overflow.top);
+			_setSpxEntry(pOverflowTable, 1, "Right (spx): ", overflow.right);
+			_setSpxEntry(pOverflowTable, 2, "Bottom (spx): ", overflow.bottom);
+			_setSpxEntry(pOverflowTable, 3, "Left (spx): ", overflow.left);
 
 			auto pOverflowDrawer = _createDrawer("Has overflow", pHeaderValue, pOverflowTable);
 			pPanel->slots << pOverflowDrawer;
@@ -91,7 +94,7 @@ namespace wg
 		auto pSlot = pWidget->_slot();
 		if (pSlot)
 		{
-			Blueprint bp = m_blueprint;
+			Blueprint bp = m_pHolder->blueprint();
 
 			auto pContentPanel = PackPanel::create(WGBP(PackPanel, _.axis = Axis::Y, _.spacingBefore = 4, _.spacingAfter = 4));
 
@@ -100,7 +103,7 @@ namespace wg
 			while( pTypeInfo != nullptr )
 			{
 				bp.classCapsule.label.text = pTypeInfo->className;
-				auto pInfoPanel = m_pHolder->createSlotInfoPanel(bp, pTypeInfo, pSlot);
+				auto pInfoPanel = m_pHolder->createSlotInfoPanel(pTypeInfo, pSlot);
 				if( pInfoPanel )
 					pContentPanel->slots << pInfoPanel;
 
@@ -125,6 +128,35 @@ namespace wg
 	const TypeInfo& WidgetInfoPanel::typeInfo(void) const
 	{
 		return TYPEINFO;
+	}
+
+	//____ refresh() _____________________________________________________________
+
+	void WidgetInfoPanel::refresh()
+	{
+
+		int row = 0;
+		auto pWidget = m_pInspected;
+
+		_refreshIntegerEntry		(m_pTable, row++, pWidget->id());
+		_refreshPtsEntry			(m_pTable, row++, pWidget->size().w);
+		_refreshPtsEntry			(m_pTable, row++, pWidget->size().h);
+		_refreshIntegerEntry		(m_pTable, row++, pWidget->scale());
+		_refreshTextEntry			(m_pTable, row++, toString(pWidget->state().value()) );
+		_refreshObjectPointerEntry	(m_pTable, row++, pWidget->baggage().rawPtr(), m_pInspectedsBaggage);
+		_refreshObjectPointerEntry	(m_pTable, row++, pWidget->parent().rawPtr(), m_pInspectedsParent);
+		_refreshObjectPointerEntry	(m_pTable, row++, pWidget->skin().rawPtr(), m_pInspectedsSkin);
+		_refreshTextEntry			(m_pTable, row++, pWidget->tooltip());
+		_refreshTextEntry			(m_pTable, row++, toString(pWidget->pointerStyle()));
+		_refreshTextEntry			(m_pTable, row++, toString(pWidget->markPolicy()));
+		_refreshBoolEntry			(m_pTable, row++, pWidget->isPickable());
+		_refreshBoolEntry			(m_pTable, row++, pWidget->isPickHandle());
+		_refreshIntegerEntry		(m_pTable, row++, pWidget->pickCategory());
+		_refreshBoolEntry			(m_pTable, row++, pWidget->isDropTarget());
+		_refreshBoolEntry			(m_pTable, row++, pWidget->isTabLocked());
+		_refreshBoolEntry			(m_pTable, row++, pWidget->isSelectable());
+		_refreshIntegerEntry		(m_pTable, row++, pWidget->m_receivingUpdateCounter);
+		_refreshBoolEntry			(m_pTable, row++, pWidget->hasStickyFocus());
 	}
 
 

@@ -41,7 +41,7 @@ namespace wg
 
 		//.____ Creation __________________________________________
 
-		static StaticSlotInfoPanel_p		create( const Blueprint& blueprint, DebugPanel::Holder * pHolder, StaticSlot * pStaticSlot) { return StaticSlotInfoPanel_p(new StaticSlotInfoPanel(blueprint, pHolder, pStaticSlot) ); }
+		static StaticSlotInfoPanel_p		create( const Blueprint& blueprint, IDebugger * pHolder, StaticSlot * pStaticSlot) { return StaticSlotInfoPanel_p(new StaticSlotInfoPanel(blueprint, pHolder, pStaticSlot) ); }
 
 		//.____ Identification __________________________________________
 
@@ -50,7 +50,7 @@ namespace wg
 
 
 	protected:
-		StaticSlotInfoPanel(const Blueprint& blueprint, DebugPanel::Holder * pHolder, StaticSlot * pStaticSlot );
+		StaticSlotInfoPanel(const Blueprint& blueprint, IDebugger * pHolder, StaticSlot * pStaticSlot );
 		~StaticSlotInfoPanel() {}
 	};
 

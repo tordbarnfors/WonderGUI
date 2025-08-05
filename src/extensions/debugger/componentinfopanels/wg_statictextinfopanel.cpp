@@ -34,7 +34,7 @@ namespace wg
 
 	//____ constructor _____________________________________________________________
 
-	StaticTextInfoPanel::StaticTextInfoPanel(const Blueprint& blueprint, DebugPanel::Holder* pHolder, StaticText* pStaticText) : DebugPanel(blueprint, pHolder)
+	StaticTextInfoPanel::StaticTextInfoPanel(const Blueprint& blueprint, IDebugger* pHolder, StaticText* pStaticText) : DebugPanel(blueprint, pHolder, StaticText::TYPEINFO.className)
 	{
 		auto pPanel = WGCREATE(PackPanel, _.axis = Axis::Y );
 
@@ -47,7 +47,7 @@ namespace wg
 
 		pPanel->slots << pTable;
 
-		auto pText = WGCREATE(TextDisplay, _ = m_blueprint.textField, _.display.text = pStaticText->text());
+		auto pText = WGCREATE(TextDisplay, _ = blueprint.textField, _.display.text = pStaticText->text());
 		auto pPadding = WGCREATE(PaddingCapsule, _.padding = { 0,0,0,16 }, _.child = pText );
 
 		pPanel->slots << pPadding;

@@ -42,7 +42,7 @@ namespace wg
 
 		//.____ Creation __________________________________________
 
-		static FlexPanelInfoPanel_p		create( const Blueprint& blueprint, DebugPanel::Holder* pHolder, FlexPanel * pPanel) { return FlexPanelInfoPanel_p(new FlexPanelInfoPanel(blueprint, pHolder, pPanel) ); }
+		static FlexPanelInfoPanel_p		create( const Blueprint& blueprint, IDebugger* pHolder, FlexPanel * pPanel) { return FlexPanelInfoPanel_p(new FlexPanelInfoPanel(blueprint, pHolder, pPanel) ); }
 
 		//.____ Identification __________________________________________
 
@@ -51,7 +51,7 @@ namespace wg
 
 
 	protected:
-		FlexPanelInfoPanel(const Blueprint& blueprint, DebugPanel::Holder* pHolder, FlexPanel * pPanel );
+		FlexPanelInfoPanel(const Blueprint& blueprint, IDebugger* pHolder, FlexPanel * pPanel );
 		~FlexPanelInfoPanel() {}
 	};
 

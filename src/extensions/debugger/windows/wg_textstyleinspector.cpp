@@ -30,25 +30,22 @@
 namespace wg
 {
 
-	const TypeInfo TextStyleInspector::TYPEINFO = { "TextStyleInspector", &DebugPanel::TYPEINFO };
+	const TypeInfo TextStyleInspector::TYPEINFO = { "TextStyleInspector", &DebugWindow::TYPEINFO };
 
 
 	//____ constructor _____________________________________________________________
 
-	TextStyleInspector::TextStyleInspector(const Blueprint& blueprint, DebugPanel::Holder* pHolder, TextStyle* pStyle) : DebugPanel(blueprint, pHolder)
+	TextStyleInspector::TextStyleInspector(const Blueprint& blueprint, IDebugger* pHolder, TextStyle* pStyle) : DebugWindow(blueprint, pHolder)
 	{
 		auto pBasePanel = WGCREATE(PackPanel, _.axis = Axis::Y);
 
 		pBasePanel->slots << _createObjectHeader(pStyle);
 
-		auto bp = m_blueprint;
-
 		auto pTypeInfo = &pStyle->typeInfo();
 
 		while (pTypeInfo != nullptr)
 		{
-			bp.classCapsule.label.text = pTypeInfo->className;
-			pBasePanel->slots << m_pHolder->createObjectInfoPanel(bp, pTypeInfo, pStyle);
+			pBasePanel->slots << m_pHolder->createObjectInfoPanel(pTypeInfo, pStyle);
 			pTypeInfo = pTypeInfo->pSuperClass;
 		}
 

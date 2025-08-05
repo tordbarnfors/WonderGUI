@@ -42,7 +42,7 @@ namespace wg
 
 		//.____ Creation __________________________________________
 
-		static TwoSlotPanelInfoPanel_p		create( const Blueprint& blueprint, DebugPanel::Holder* pHolder, TwoSlotPanel * pPanel) { return TwoSlotPanelInfoPanel_p(new TwoSlotPanelInfoPanel(blueprint, pHolder, pPanel) ); }
+		static TwoSlotPanelInfoPanel_p		create( const Blueprint& blueprint, IDebugger* pHolder, TwoSlotPanel * pPanel) { return TwoSlotPanelInfoPanel_p(new TwoSlotPanelInfoPanel(blueprint, pHolder, pPanel) ); }
 
 		//.____ Identification __________________________________________
 
@@ -51,7 +51,7 @@ namespace wg
 
 
 	protected:
-		TwoSlotPanelInfoPanel(const Blueprint& blueprint, DebugPanel::Holder* pHolder, TwoSlotPanel * pPanel );
+		TwoSlotPanelInfoPanel(const Blueprint& blueprint, IDebugger* pHolder, TwoSlotPanel * pPanel );
 		~TwoSlotPanelInfoPanel() {}
 	};
 

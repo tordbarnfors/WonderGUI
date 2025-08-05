@@ -148,7 +148,7 @@ bool MyApp::_setupGUI(Visitor* pVisitor)
 
 	m_pDebugOverlay = DebugOverlay::create( { .debugger = m_pDebugger, .theme = pTheme, .icons = pIconSurface, .transparencyGrid = pTransparencyGrid } );
 
-	m_pDebugOverlay->setActivated(true);
+//	m_pDebugOverlay->setActivated(true);
 
 	auto pPopupOverlay = PopupOverlay::create();
 
@@ -186,6 +186,8 @@ bool MyApp::_setupGUI(Visitor* pVisitor)
 	pRoot->slot = pPopupOverlayForDebugger;
 
 	pSplitPanel->setSplit(0.5f);
+
+	m_pDebugOverlay->grabFocus();
 
 	return true;
 }

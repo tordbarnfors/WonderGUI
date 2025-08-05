@@ -33,18 +33,19 @@
 namespace wg
 {
 
-	const TypeInfo SkinInspector::TYPEINFO = { "SkinInspector", &DebugPanel::TYPEINFO };
+	const TypeInfo SkinInspector::TYPEINFO = { "SkinInspector", &DebugWindow::TYPEINFO };
 
 
 	//____ constructor _____________________________________________________________
 
-	SkinInspector::SkinInspector(const Blueprint& blueprint, DebugPanel::Holder * pHolder, Skin * pSkin) : DebugPanel( blueprint, pHolder )
+	SkinInspector::SkinInspector(const Blueprint& blueprint, IDebugger * pHolder, Skin * pSkin) : DebugWindow( blueprint, pHolder )
 	{
 		auto pBasePanel = WGCREATE(PackPanel, _.axis = Axis::Y );
 
 
 		//----
 
+		pBasePanel->slots << _createButtonRow(true,true);
 		pBasePanel->slots << _createObjectHeader(pSkin);
 
 		auto pDisplayBackground = WGCREATE(TileSkin, _.surface = blueprint.transparencyGrid, _.spacing = 8, _.padding = 8 );
@@ -71,14 +72,11 @@ namespace wg
 
 		//---
 
-		auto bp = m_blueprint;
-
 		auto pTypeInfo = &pSkin->typeInfo();
 
 		while (pTypeInfo != nullptr)
 		{
-			bp.classCapsule.label.text = pTypeInfo->className;
-			pBasePanel->slots << m_pHolder->createObjectInfoPanel(bp, pTypeInfo, pSkin);
+			pBasePanel->slots << m_pHolder->createObjectInfoPanel(pTypeInfo, pSkin);
 			pTypeInfo = pTypeInfo->pSuperClass;
 		}
 

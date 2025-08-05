@@ -20,35 +20,38 @@
 
 =========================================================================*/
 #include "wg_objectinspector.h"
+#include <wg_debugpanel.h>
+
 #include <wg_textdisplay.h>
 #include <wg_skindisplay.h>
 #include <wg_boxskin.h>
+#include <wg_blockskin.h>
 #include <wg_packpanel.h>
+#include <wg_msgrouter.h>
 
 
 
 namespace wg
 {
 
-	const TypeInfo ObjectInspector::TYPEINFO = { "ObjectInspector", &DebugPanel::TYPEINFO };
+	const TypeInfo ObjectInspector::TYPEINFO = { "ObjectInspector", &DebugWindow::TYPEINFO };
 
 
 	//____ constructor _____________________________________________________________
 
-	ObjectInspector::ObjectInspector(const Blueprint& blueprint, DebugPanel::Holder * pHolder, Object * pObject) : DebugPanel( blueprint, pHolder )
+	ObjectInspector::ObjectInspector(const Blueprint& bp, IDebugger * pHolder, Object * pObject) : DebugWindow( bp, pHolder )
 	{
+		m_pObject = pObject;
+
 		auto pBasePanel = WGCREATE(PackPanel, _.axis = Axis::Y);
 
+		pBasePanel->slots << _createButtonRow(true,true);
 		pBasePanel->slots << _createObjectHeader(pObject);
 
-		auto bp = m_blueprint;
-
 		auto pTypeInfo = &pObject->typeInfo();
-
 		while (pTypeInfo != nullptr)
 		{
-			bp.classCapsule.label.text = pTypeInfo->className;
-			pBasePanel->slots << m_pHolder->createObjectInfoPanel(bp, pTypeInfo, pObject);
+			pBasePanel->slots << m_pHolder->createObjectInfoPanel(pTypeInfo, pObject);
 			pTypeInfo = pTypeInfo->pSuperClass;
 		}
 

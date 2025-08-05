@@ -33,7 +33,7 @@ namespace wg
 
 	//____ constructor _____________________________________________________________
 
-	TextDisplayInfoPanel::TextDisplayInfoPanel(const Blueprint& blueprint, DebugPanel::Holder* pHolder, TextDisplay * pTextDisplay) : DebugPanel( blueprint, pHolder )
+	TextDisplayInfoPanel::TextDisplayInfoPanel(const Blueprint& blueprint, IDebugger* pHolder, TextDisplay * pTextDisplay) : DebugPanel( blueprint, pHolder, TextDisplay::TYPEINFO.className )
 	{
 		this->slot = _createComponentDrawer("Display", &pTextDisplay->display);
 	}

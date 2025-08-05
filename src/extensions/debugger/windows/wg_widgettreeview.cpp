@@ -34,12 +34,12 @@
 namespace wg
 {
 
-	const TypeInfo WidgetTreeView::TYPEINFO = { "WidgetTreeView", &DebugPanel::TYPEINFO };
+	const TypeInfo WidgetTreeView::TYPEINFO = { "WidgetTreeView", &DebugWindow::TYPEINFO };
 
 
 	//____ constructor _____________________________________________________________
 
-	WidgetTreeView::WidgetTreeView(const Blueprint& blueprint, DebugPanel::Holder * pHolder, Widget * pRoot ) : DebugPanel( blueprint, pHolder )
+	WidgetTreeView::WidgetTreeView(const Blueprint& blueprint, IDebugger * pHolder, Widget * pRoot ) : DebugWindow( blueprint, pHolder )
 	{
 		m_pPackLayout = PackLayout::create(WGBP(PackLayout, ));
 		 

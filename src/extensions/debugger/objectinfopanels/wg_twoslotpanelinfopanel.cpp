@@ -35,7 +35,7 @@ namespace wg
 
 	//____ constructor _____________________________________________________________
 
-	TwoSlotPanelInfoPanel::TwoSlotPanelInfoPanel(const Blueprint& blueprint, DebugPanel::Holder* pHolder, TwoSlotPanel * pPanel) : DebugPanel( blueprint, pHolder )
+	TwoSlotPanelInfoPanel::TwoSlotPanelInfoPanel(const Blueprint& blueprint, IDebugger* pHolder, TwoSlotPanel * pPanel) : DebugPanel( blueprint, pHolder, TwoSlotPanel::TYPEINFO.className )
 	{
 		auto pBasePanel = WGCREATE(PackPanel, _.axis = Axis::Y);
 

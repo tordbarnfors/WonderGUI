@@ -30,7 +30,7 @@ namespace wg
 
 	//____ constructor _____________________________________________________________
 
-	DummyInfoPanel::DummyInfoPanel(const Blueprint& blueprint, DebugPanel::Holder * pHolder, void * pDummy) : DebugPanel( blueprint, pHolder )
+	DummyInfoPanel::DummyInfoPanel(const IDebugger::Blueprint& blueprint, IDebugger * pHolder, const char * pLabel, void * pDummy) : DebugPanel( blueprint, pHolder, pLabel )
 	{
 
 		auto pDisplay = TextDisplay::create( WGOVR( blueprint.infoDisplay, _.display.text = "No debug info for this class" ));
