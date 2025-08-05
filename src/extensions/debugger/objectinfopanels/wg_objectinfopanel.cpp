@@ -33,13 +33,16 @@ namespace wg
 
 	//____ constructor _____________________________________________________________
 
-	ObjectInfoPanel::ObjectInfoPanel(const Blueprint& blueprint, DebugPanel::Holder* pHolder, Object * pObject) : DebugPanel( blueprint, pHolder )
+	ObjectInfoPanel::ObjectInfoPanel(const Blueprint& blueprint, IDebugger* pHolder, Object * pObject) : DebugPanel( blueprint, pHolder, Object::TYPEINFO.className )
 	{
-		auto pTable = _createTable(3,2);
-		_setIntegerEntry(pTable, 0, "Refcount: ", pObject->refcount());
-		_setIntegerEntry(pTable, 1, "Weak pointers: ", pObject->weakPointers() - 1); // -1 since our DebugOverlay has one weak pointer to object that doesn't count.
-		_setPointerEntry(pTable, 2, "Finalizer: ", pObject->finalizer().rawPtr() );
-		this->slot = pTable;
+		m_pObject = pObject;
+		m_pFinalizer = (void*) pObject->finalizer().rawPtr();
+
+		m_pTable = _createTable(3,2);
+		_setIntegerEntry(m_pTable, 0, "Refcount: ", pObject->refcount());
+		_setIntegerEntry(m_pTable, 1, "Weak pointers: ", pObject->weakPointers());
+		_setPointerEntry(m_pTable, 2, "Finalizer: ", (void *) pObject->finalizer().rawPtr() );
+		this->slot = m_pTable;
 	}
 
 	//____ typeInfo() _________________________________________________________
@@ -47,6 +50,16 @@ namespace wg
 	const TypeInfo& ObjectInfoPanel::typeInfo(void) const
 	{
 		return TYPEINFO;
+	}
+
+	//____ refresh() _____________________________________________________________
+
+	void ObjectInfoPanel::refresh()
+	{
+		_refreshIntegerEntry(m_pTable, 0, m_pObject->refcount());
+		_refreshIntegerEntry(m_pTable, 1, m_pObject->weakPointers());
+		_refreshPointerEntry(m_pTable, 2, (void *) m_pObject->finalizer().rawPtr(), m_pFinalizer );
+
 	}
 
 

@@ -41,17 +41,30 @@ namespace wg
 
 		//.____ Creation __________________________________________
 
-		static WidgetInfoPanel_p		create( const Blueprint& blueprint, DebugPanel::Holder* pHolder, Widget * pWidget) { return WidgetInfoPanel_p(new WidgetInfoPanel(blueprint, pHolder, pWidget) ); }
+		static WidgetInfoPanel_p		create( const Blueprint& blueprint, IDebugger* pHolder, Widget * pWidget) { return WidgetInfoPanel_p(new WidgetInfoPanel(blueprint, pHolder, pWidget) ); }
 
 		//.____ Identification __________________________________________
 
 		const TypeInfo&			typeInfo(void) const override;
 		const static TypeInfo	TYPEINFO;
 
+		//.____ Control ____________________________________________________
+
+		void refresh() override;
+
 
 	protected:
-		WidgetInfoPanel(const Blueprint& blueprint, DebugPanel::Holder* pHolder, Widget * pWidget );
+		WidgetInfoPanel(const Blueprint& blueprint, IDebugger* pHolder, Widget * pWidget );
 		~WidgetInfoPanel() {}
+
+		TablePanel *	m_pTable;
+
+		Widget *		m_pInspected;
+
+		Object_p		m_pInspectedsBaggage;
+		Object_p		m_pInspectedsParent;
+		Object_p		m_pInspectedsSkin;
+
 	};
 
 } // namespace wg

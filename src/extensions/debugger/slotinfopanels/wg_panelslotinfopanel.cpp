@@ -31,7 +31,7 @@ namespace wg
 
 	//____ constructor _____________________________________________________________
 
-	PanelSlotInfoPanel::PanelSlotInfoPanel(const Blueprint& blueprint, DebugPanel::Holder* pHolder, StaticSlot * pStaticSlot) : DebugPanel( blueprint, pHolder )
+	PanelSlotInfoPanel::PanelSlotInfoPanel(const Blueprint& blueprint, IDebugger* pHolder, StaticSlot * pStaticSlot) : DebugPanel( blueprint, pHolder, PanelSlot::TYPEINFO.className )
 	{
 		auto pPanelSlot = static_cast<const PanelSlot*>(pStaticSlot);
 
