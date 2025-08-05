@@ -37,12 +37,12 @@
 namespace wg
 {
 
-	const TypeInfo MsgLogViewer::TYPEINFO = { "MsgLogViewer", &DebugPanel::TYPEINFO };
+	const TypeInfo MsgLogViewer::TYPEINFO = { "MsgLogViewer", &DebugWindow::TYPEINFO };
 
 
 	//____ constructor _____________________________________________________________
 
-	MsgLogViewer::MsgLogViewer(const Blueprint& bp, DebugPanel::Holder* pHolder) : DebugPanel(bp,pHolder)
+	MsgLogViewer::MsgLogViewer(const Blueprint& bp, IDebugger* pHolder) : DebugWindow(bp,pHolder)
 	{
 		m_pMainPanel = PackPanel::create(WGBP(PackPanel,
 			_.axis = Axis::Y));

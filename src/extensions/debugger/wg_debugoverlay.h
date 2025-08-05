@@ -253,7 +253,7 @@ namespace wg
 
 		TextLayout_p	m_pHeaderLayout;
 
-		DebugPanel::Blueprint	m_debugPanelBP;
+		IDebugger::Blueprint	m_debugPanelBP;
 
 	};
 

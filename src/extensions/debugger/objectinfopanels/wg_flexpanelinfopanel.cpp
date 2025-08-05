@@ -36,7 +36,7 @@ namespace wg
 
 	//____ constructor _____________________________________________________________
 
-	FlexPanelInfoPanel::FlexPanelInfoPanel(const Blueprint& blueprint, DebugPanel::Holder* pHolder, FlexPanel * pPanel) : DebugPanel( blueprint, pHolder )
+	FlexPanelInfoPanel::FlexPanelInfoPanel(const Blueprint& blueprint, IDebugger* pHolder, FlexPanel * pPanel) : DebugPanel( blueprint, pHolder, FlexPanel::TYPEINFO.className )
 	{
 		auto pBasePanel = WGCREATE(PackPanel, _.axis = Axis::Y);
 

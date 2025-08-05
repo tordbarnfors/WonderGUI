@@ -72,26 +72,27 @@ namespace wg
 
 	Debugger::Debugger()
 	{
-		m_objectInfoFactories[&Object::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, DebugPanel::Holder* pHolder, Object* pObject) { return (Widget_p) ObjectInfoPanel::create(panelBP, pHolder, pObject); };
-		m_objectInfoFactories[&Widget::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, DebugPanel::Holder* pHolder, Object* pObject) { return (Widget_p) WidgetInfoPanel::create(panelBP, pHolder, (Widget*) pObject); };
-		m_objectInfoFactories[&Filler::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, DebugPanel::Holder* pHolder, Object* pObject) { return (Widget_p) FillerInfoPanel::create(panelBP, pHolder, (Filler*)pObject); };
-		m_objectInfoFactories[&TextDisplay::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, DebugPanel::Holder* pHolder, Object* pObject) { return (Widget_p)TextDisplayInfoPanel::create(panelBP, pHolder, (TextDisplay*)pObject); };
 
-		m_objectInfoFactories[&Container::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, DebugPanel::Holder* pHolder, Object* pObject) { return (Widget_p)ContainerInfoPanel::create(panelBP, pHolder, (Container*)pObject); };
-		m_objectInfoFactories[&Panel::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, DebugPanel::Holder* pHolder, Object* pObject) { return (Widget_p)PanelInfoPanel::create(panelBP, pHolder, (Panel*)pObject); };
-		m_objectInfoFactories[&PackPanel::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, DebugPanel::Holder* pHolder, Object* pObject) { return (Widget_p)PackPanelInfoPanel::create(panelBP, pHolder, (PackPanel*)pObject); };
-		m_objectInfoFactories[&FlexPanel::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, DebugPanel::Holder* pHolder, Object* pObject) { return (Widget_p)FlexPanelInfoPanel::create(panelBP, pHolder, (FlexPanel*)pObject); };
-		m_objectInfoFactories[&TwoSlotPanel::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, DebugPanel::Holder* pHolder, Object* pObject) { return (Widget_p)TwoSlotPanelInfoPanel::create(panelBP, pHolder, (TwoSlotPanel*)pObject); };
+		m_objectInfoFactories[&Object::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, IDebugger* pHolder, Object* pObject) { return (Widget_p) ObjectInfoPanel::create(panelBP, pHolder, pObject); };
+		m_objectInfoFactories[&Widget::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, IDebugger* pHolder, Object* pObject) { return (Widget_p) WidgetInfoPanel::create(panelBP, pHolder, (Widget*) pObject); };
+		m_objectInfoFactories[&Filler::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, IDebugger* pHolder, Object* pObject) { return (Widget_p) FillerInfoPanel::create(panelBP, pHolder, (Filler*)pObject); };
+		m_objectInfoFactories[&TextDisplay::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, IDebugger* pHolder, Object* pObject) { return (Widget_p)TextDisplayInfoPanel::create(panelBP, pHolder, (TextDisplay*)pObject); };
 
-		m_objectInfoFactories[&Skin::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, DebugPanel::Holder* pHolder, Object* pObject) { return (Widget_p)SkinInfoPanel::create(panelBP, pHolder, (Skin*)pObject); };
+		m_objectInfoFactories[&Container::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, IDebugger* pHolder, Object* pObject) { return (Widget_p)ContainerInfoPanel::create(panelBP, pHolder, (Container*)pObject); };
+		m_objectInfoFactories[&Panel::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, IDebugger* pHolder, Object* pObject) { return (Widget_p)PanelInfoPanel::create(panelBP, pHolder, (Panel*)pObject); };
+		m_objectInfoFactories[&PackPanel::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, IDebugger* pHolder, Object* pObject) { return (Widget_p)PackPanelInfoPanel::create(panelBP, pHolder, (PackPanel*)pObject); };
+		m_objectInfoFactories[&FlexPanel::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, IDebugger* pHolder, Object* pObject) { return (Widget_p)FlexPanelInfoPanel::create(panelBP, pHolder, (FlexPanel*)pObject); };
+		m_objectInfoFactories[&TwoSlotPanel::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, IDebugger* pHolder, Object* pObject) { return (Widget_p)TwoSlotPanelInfoPanel::create(panelBP, pHolder, (TwoSlotPanel*)pObject); };
 
-		m_slotInfoFactories[&StaticSlot::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, DebugPanel::Holder* pHolder, StaticSlot* pSlot) { return (Widget_p) StaticSlotInfoPanel::create(panelBP, pHolder, pSlot); };
-		m_slotInfoFactories[&PanelSlot::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, DebugPanel::Holder* pHolder, StaticSlot* pSlot) { return (Widget_p)PanelSlotInfoPanel::create(panelBP, pHolder, pSlot); };
-		m_slotInfoFactories[&PackPanelSlot::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, DebugPanel::Holder* pHolder, StaticSlot* pSlot) { return (Widget_p)PackPanelSlotInfoPanel::create(panelBP, pHolder, pSlot); };
-		m_slotInfoFactories[&FlexPanelSlot::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, DebugPanel::Holder* pHolder, StaticSlot* pSlot) { return (Widget_p)FlexPanelSlotInfoPanel::create(panelBP, pHolder, pSlot); };
-		m_slotInfoFactories[&TwoSlotPanel::Slot::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, DebugPanel::Holder* pHolder, StaticSlot* pSlot) { return (Widget_p)TwoSlotPanelSlotInfoPanel::create(panelBP, pHolder, pSlot); };
+		m_objectInfoFactories[&Skin::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, IDebugger* pHolder, Object* pObject) { return (Widget_p)SkinInfoPanel::create(panelBP, pHolder, (Skin*)pObject); };
 
-		m_componentInfoFactories[&StaticText::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, DebugPanel::Holder* pHolder, Component* pComponent) { return (Widget_p)StaticTextInfoPanel::create(panelBP, pHolder, (StaticText*)pComponent); };
+		m_slotInfoFactories[&StaticSlot::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, IDebugger* pHolder, StaticSlot* pSlot) { return (Widget_p) StaticSlotInfoPanel::create(panelBP, pHolder, pSlot); };
+		m_slotInfoFactories[&PanelSlot::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, IDebugger* pHolder, StaticSlot* pSlot) { return (Widget_p)PanelSlotInfoPanel::create(panelBP, pHolder, pSlot); };
+		m_slotInfoFactories[&PackPanelSlot::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, IDebugger* pHolder, StaticSlot* pSlot) { return (Widget_p)PackPanelSlotInfoPanel::create(panelBP, pHolder, pSlot); };
+		m_slotInfoFactories[&FlexPanelSlot::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, IDebugger* pHolder, StaticSlot* pSlot) { return (Widget_p)FlexPanelSlotInfoPanel::create(panelBP, pHolder, pSlot); };
+		m_slotInfoFactories[&TwoSlotPanel::Slot::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, IDebugger* pHolder, StaticSlot* pSlot) { return (Widget_p)TwoSlotPanelSlotInfoPanel::create(panelBP, pHolder, pSlot); };
+
+		m_componentInfoFactories[&StaticText::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, IDebugger* pHolder, Component* pComponent) { return (Widget_p)StaticTextInfoPanel::create(panelBP, pHolder, (StaticText*)pComponent); };
 
 		m_ignoreClasses.push_back(&DynamicSlot::TYPEINFO);
 		m_ignoreClasses.push_back(&Receiver::TYPEINFO);
@@ -107,9 +108,24 @@ namespace wg
 		return TYPEINFO;
 	}
 
+	//____ setBlueprint() ________________________________________________________
+
+	void Debugger::setBlueprint(const IDebugger::Blueprint& blueprint)
+	{
+		m_blueprint = blueprint;
+	}
+
+
+	//____ blueprint() ___________________________________________________________
+
+	const IDebugger::Blueprint& Debugger::blueprint()
+	{
+		return m_blueprint;
+	}
+
 	//____ createObjectInfoPanel() ____________________________________________________
 
-	Widget_p Debugger::createObjectInfoPanel( const DebugPanel::Blueprint& bp, const TypeInfo * pType, Object * pObject )
+	Widget_p Debugger::createObjectInfoPanel(const TypeInfo * pType, Object * pObject )
 	{
 
 		auto it = m_objectInfoFactories.find( pType );
@@ -122,15 +138,15 @@ namespace wg
 
 			// Unknown class
 
-			return DummyInfoPanel::create(bp,this,pObject);
+			return DummyInfoPanel::create(m_blueprint,this, pType->className,pObject);
 		}
 
-		return it->second(bp,this,pObject);
+		return it->second(m_blueprint,this,pObject);
 	}
 
 	//____ createSlotInfoPanel() ____________________________________________________
 
-	Widget_p Debugger::createSlotInfoPanel( const DebugPanel::Blueprint& bp, const TypeInfo * pType, StaticSlot * pSlot )
+	Widget_p Debugger::createSlotInfoPanel(const TypeInfo * pType, StaticSlot * pSlot )
 	{
 
 		auto it = m_slotInfoFactories.find( pType );
@@ -143,15 +159,15 @@ namespace wg
 
 			// Unknown class
 
-			return DummyInfoPanel::create(bp,this,pSlot);
+			return DummyInfoPanel::create(m_blueprint,this, pType->className,pSlot);
 		}
 
-		return it->second(bp,this,pSlot);
+		return it->second(m_blueprint,this,pSlot);
 	}
 
 	//____ createComponentInfoPanel() ____________________________________________________
 
-	Widget_p Debugger::createComponentInfoPanel(const DebugPanel::Blueprint& bp, const TypeInfo* pType, Component* pComponent)
+	Widget_p Debugger::createComponentInfoPanel(const TypeInfo* pType, Component* pComponent)
 	{
 
 		auto it = m_componentInfoFactories.find(pType);
@@ -164,39 +180,39 @@ namespace wg
 
 			// Unknown class
 
-			return DummyInfoPanel::create(bp,this,pComponent);
+			return DummyInfoPanel::create(m_blueprint,this, pType->className,pComponent);
 		}
 
-		return it->second(bp, this, pComponent);
+		return it->second(m_blueprint, this, pComponent);
 	}
 
 	//____ createObjectInspector() ________________________________________________
 
-	Widget_p Debugger::createObjectInspector(const DebugPanel::Blueprint& blueprint, Object* pObject)
+	Widget_p Debugger::createObjectInspector(Object* pObject)
 	{
-		return ObjectInspector::create(blueprint, this, pObject);
+		return ObjectInspector::create(m_blueprint, this, pObject);
 	}
 
 	//____ createSkinInspector() ________________________________________________
 
-	Widget_p Debugger::createSkinInspector(const DebugPanel::Blueprint& blueprint, Skin* pSkin)
+	Widget_p Debugger::createSkinInspector(Skin* pSkin)
 	{
-		return SkinInspector::create(blueprint, this, pSkin);
+		return SkinInspector::create(m_blueprint, this, pSkin);
 	}
 
 
 	//____ createWidgetTreeView() ____________________________________________
 
-	Widget_p Debugger::createWidgetTreeView(const DebugPanel::Blueprint& blueprint, Widget* pRoot)
+	Widget_p Debugger::createWidgetTreeView(Widget* pRoot)
 	{
-		return WidgetTreeView::create(blueprint, this, pRoot);
+		return WidgetTreeView::create(m_blueprint, this, pRoot);
 	}
 
 	//____ createMsgLogViewer() ________________________________________________
 
-	Widget_p Debugger::createMsgLogViewer(const DebugPanel::Blueprint& blueprint)
+	Widget_p Debugger::createMsgLogViewer()
 	{
-		return MsgLogViewer::create(blueprint, this);
+		return MsgLogViewer::create(m_blueprint, this);
 	}
 
 	//____ setObjectSelectedCallback() ________________________________________
