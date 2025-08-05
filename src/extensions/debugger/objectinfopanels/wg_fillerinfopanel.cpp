@@ -33,7 +33,7 @@ namespace wg
 
 	//____ constructor _____________________________________________________________
 
-	FillerInfoPanel::FillerInfoPanel(const Blueprint& blueprint, DebugPanel::Holder* pHolder, Filler * pFiller) : DebugPanel( blueprint, pHolder )
+	FillerInfoPanel::FillerInfoPanel(const Blueprint& blueprint, IDebugger* pHolder, Filler * pFiller) : DebugPanel( blueprint, pHolder, Filler::TYPEINFO.className )
 	{
 		auto pTable = _createTable(2,2);
 		_setPtsEntry(pTable, 0, "Default width (pts): ", pFiller->defaultSize().w);

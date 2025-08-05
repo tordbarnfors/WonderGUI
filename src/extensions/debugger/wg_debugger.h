@@ -31,17 +31,16 @@
 #include <wg_pointers.h>
 #include <wg_widget.h>
 #include <wg_debugpanel.h>
+#include <wg_idebugger.h>
 
 namespace wg
 {
-
-
 	class Debugger;
 	typedef	StrongPtr<Debugger>		Debugger_p;
 	typedef	WeakPtr<Debugger>		Debugger_wp;
 
 
-	class Debugger : public Object , protected DebugPanel::Holder
+	class Debugger : public Object , protected IDebugger
 	{
 	public:
 		//.____ Creation __________________________________________
@@ -55,14 +54,18 @@ namespace wg
 
 		//.____ Misc __________________________________________
 
-		Widget_p		createObjectInfoPanel( const DebugPanel::Blueprint& blueprint, const TypeInfo * pType, Object * pObject );
-		Widget_p		createSlotInfoPanel( const DebugPanel::Blueprint& blueprint, const TypeInfo * pType, StaticSlot * pSlot );
-		Widget_p		createComponentInfoPanel(const DebugPanel::Blueprint& blueprint, const TypeInfo* pType, Component* pComponent);
 
-		Widget_p		createObjectInspector(const DebugPanel::Blueprint& blueprint, Object* pObject);
-		Widget_p		createSkinInspector(const DebugPanel::Blueprint& blueprint, Skin* pSkin);
-		Widget_p		createWidgetTreeView(const DebugPanel::Blueprint& blueprint, Widget * pWidget);
-		Widget_p		createMsgLogViewer(const DebugPanel::Blueprint& blueprint);
+		void			setBlueprint(const IDebugger::Blueprint& blueprint);
+		const IDebugger::Blueprint& blueprint() override;
+
+		Widget_p		createObjectInfoPanel( const TypeInfo * pType, Object * pObject ) override;
+		Widget_p		createSlotInfoPanel( const TypeInfo * pType, StaticSlot * pSlot ) override;
+		Widget_p		createComponentInfoPanel( const TypeInfo* pType, Component* pComponent ) override;
+
+		Widget_p		createObjectInspector(Object* pObject);
+		Widget_p		createSkinInspector(Skin* pSkin);
+		Widget_p		createWidgetTreeView(Widget * pWidget);
+		Widget_p		createMsgLogViewer();
 
 		void			setObjectSelectedCallback(std::function<void(Object*,Object*)> pCallback);
 
@@ -74,9 +77,12 @@ namespace wg
 
 		void			objectSelected(Object* pSelected, Object* pCaller);
 
-		std::map<const TypeInfo*,Widget_p(*)(const DebugPanel::Blueprint&, DebugPanel::Holder *, Object *)>	m_objectInfoFactories;
-		std::map<const TypeInfo*,Widget_p(*)(const DebugPanel::Blueprint&, DebugPanel::Holder *, StaticSlot *)>	m_slotInfoFactories;
-	 	std::map<const TypeInfo*, Widget_p(*)(const DebugPanel::Blueprint&, DebugPanel::Holder*, Component*)>	m_componentInfoFactories;
+		IDebugger::Blueprint	m_blueprint;
+
+
+		std::map<const TypeInfo*,Widget_p(*)(const DebugPanel::Blueprint&, IDebugger *, Object *)>	m_objectInfoFactories;
+		std::map<const TypeInfo*,Widget_p(*)(const DebugPanel::Blueprint&, IDebugger *, StaticSlot *)>	m_slotInfoFactories;
+	 	std::map<const TypeInfo*, Widget_p(*)(const DebugPanel::Blueprint&, IDebugger *, Component*)>	m_componentInfoFactories;
 
 		std::vector<const TypeInfo*>	m_ignoreClasses;
 

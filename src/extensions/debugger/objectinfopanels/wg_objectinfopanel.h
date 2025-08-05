@@ -41,17 +41,27 @@ namespace wg
 
 		//.____ Creation __________________________________________
 
-		static ObjectInfoPanel_p		create( const Blueprint& blueprint, DebugPanel::Holder* pHolder, Object * pObject) { return ObjectInfoPanel_p(new ObjectInfoPanel(blueprint, pHolder, pObject) ); }
+		static ObjectInfoPanel_p		create( const Blueprint& blueprint, IDebugger* pHolder, Object * pObject) { return ObjectInfoPanel_p(new ObjectInfoPanel(blueprint, pHolder, pObject) ); }
 
 		//.____ Identification __________________________________________
 
 		const TypeInfo&			typeInfo(void) const override;
 		const static TypeInfo	TYPEINFO;
 
+		//.____ Control ____________________________________________________
+
+		void refresh() override;
 
 	protected:
-		ObjectInfoPanel(const Blueprint& blueprint, DebugPanel::Holder* pHolder, Object * pObject );
+		ObjectInfoPanel(const Blueprint& blueprint, IDebugger* pHolder, Object * pObject );
 		~ObjectInfoPanel() {}
+
+		TablePanel_p	m_pTable;
+
+		Object *		m_pObject;
+
+		void *			m_pFinalizer;
+
 	};
 
 } // namespace wg
