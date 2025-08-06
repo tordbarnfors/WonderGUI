@@ -316,6 +316,121 @@ namespace wg
 		pTable->slots[row][1] = TextDisplay::create(WGOVR(m_pHolder->blueprint().listEntryText, _.display.text = &buff, _.markPolicy = MarkPolicy::Geometry));
 	}
 
+
+
+
+	//___ _initTextEntry() _________________________________________________
+
+	void DebugPanel::_initTextEntry(TablePanel* pTable, int row, const char* pLabel)
+	{
+		if (row < 0 || row >= pTable->rows.size())
+			return;
+
+		if (pTable->columns.size() < 2)
+			return;
+
+		pTable->slots[row][0] = TextDisplay::create(WGOVR(m_pHolder->blueprint().listEntryLabel, _.display.text = pLabel));
+		pTable->slots[row][1] = TextDisplay::create(m_pHolder->blueprint().listEntryText);
+	}
+
+	//___ _initIntegerEntry() _________________________________________________
+
+	void DebugPanel::_initIntegerEntry(TablePanel* pTable, int row, const char* pLabel)
+	{
+		if (row < 0 || row >= pTable->rows.size())
+			return;
+
+		if (pTable->columns.size() < 2)
+			return;
+
+		pTable->slots[row][0] = TextDisplay::create(WGOVR(m_pHolder->blueprint().listEntryLabel, _.display.text = pLabel));
+		pTable->slots[row][1] = NumberDisplay::create(m_pHolder->blueprint().listEntryInteger);
+	}
+
+	//___ _initDecimalEntry() _________________________________________________
+
+	void DebugPanel::_initDecimalEntry(TablePanel* pTable, int row, const char* pLabel)
+	{
+		if (row < 0 || row >= pTable->rows.size())
+			return;
+
+		if (pTable->columns.size() < 2)
+			return;
+
+		pTable->slots[row][0] = TextDisplay::create(WGOVR(m_pHolder->blueprint().listEntryLabel, _.display.text = pLabel));
+		pTable->slots[row][1] = NumberDisplay::create(m_pHolder->blueprint().listEntryDecimal);
+	}
+
+	//___ _initPtsEntry() _________________________________________________
+
+	void DebugPanel::_initPtsEntry(TablePanel* pTable, int row, const char* pLabel)
+	{
+		if (row < 0 || row >= pTable->rows.size())
+			return;
+
+		if (pTable->columns.size() < 2)
+			return;
+
+		pTable->slots[row][0] = TextDisplay::create(WGOVR(m_pHolder->blueprint().listEntryLabel, _.display.text = pLabel));
+		pTable->slots[row][1] = NumberDisplay::create(m_pHolder->blueprint().listEntryPts);
+	}
+
+	//___ _initSpxEntry() _________________________________________________
+
+	void DebugPanel::_initSpxEntry(TablePanel* pTable, int row, const char* pLabel)
+	{
+		if (row < 0 || row >= pTable->rows.size())
+			return;
+
+		if (pTable->columns.size() < 2)
+			return;
+
+		pTable->slots[row][0] = TextDisplay::create(WGOVR(m_pHolder->blueprint().listEntryLabel, _.display.text = pLabel));
+		pTable->slots[row][1] = NumberDisplay::create(m_pHolder->blueprint().listEntrySPX);
+	}
+
+	//___ _initBoolEntry() _________________________________________________
+
+	void DebugPanel::_initBoolEntry(TablePanel* pTable, int row, const char* pLabel)
+	{
+		if (row < 0 || row >= pTable->rows.size())
+			return;
+
+		if (pTable->columns.size() < 2)
+			return;
+
+		pTable->slots[row][0] = TextDisplay::create(WGOVR(m_pHolder->blueprint().listEntryLabel, _.display.text = pLabel));
+		pTable->slots[row][1] = TextDisplay::create(WGOVR(m_pHolder->blueprint().listEntryText, _.display.text = "false" ));
+	}
+
+	//___ _initPointerEntry() _________________________________________________
+
+	void DebugPanel::_initPointerEntry(TablePanel* pTable, int row, const char* pLabel)
+	{
+		if (row < 0 || row >= pTable->rows.size())
+			return;
+
+		if (pTable->columns.size() < 2)
+			return;
+
+		pTable->slots[row][0] = TextDisplay::create(WGOVR(m_pHolder->blueprint().listEntryLabel, _.display.text = pLabel));
+		pTable->slots[row][1] = TextDisplay::create(m_pHolder->blueprint().listEntryText);
+	}
+
+	//___ _initObjectPointerEntry() _________________________________________________
+
+	void DebugPanel::_initObjectPointerEntry(TablePanel* pTable, int row, const char* pLabel)
+	{
+		if( row < 0 || row >= pTable->rows.size())
+			return;
+
+		if (pTable->columns.size() < 2)
+			return;
+
+		pTable->slots[row][0] = TextDisplay::create(WGOVR(m_pHolder->blueprint().listEntryLabel, _.display.text = pLabel ));
+		pTable->slots[row][1] = TextDisplay::create(WGOVR(m_pHolder->blueprint().listEntryText, _.markPolicy = MarkPolicy::Geometry));
+	}
+
 	//____ _refreshTextEntry() ___________________________________________________
 
 	void DebugPanel::_refreshTextEntry(TablePanel* pTable, int row, const CharSeq& string)
