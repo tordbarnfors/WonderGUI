@@ -37,18 +37,20 @@ namespace wg
 
 	TwoSlotPanelInfoPanel::TwoSlotPanelInfoPanel(const Blueprint& blueprint, IDebugger* pHolder, TwoSlotPanel * pPanel) : DebugPanel( blueprint, pHolder, TwoSlotPanel::TYPEINFO.className )
 	{
+		m_pInspected = pPanel;
+
 		auto pBasePanel = WGCREATE(PackPanel, _.axis = Axis::Y);
 
-		auto pTable = _createTable(2,2);
-		int row = 0;
+		m_pTable = _createTable(2,2);
 
-		_setTextEntry(pTable, row++, "Axis: ", toString(pPanel->axis()));
-		_setObjectPointerEntry(pTable, row++, "Layout: ", pPanel->layout(),this);
+		_initTextEntry(m_pTable, 0, "Axis: ");
+		_initObjectPointerEntry(m_pTable, 1, "Layout: ");
 
-		pBasePanel->slots << pTable;
+		m_pSlotsDrawer = _createSlotsDrawer("Slots", pPanel->slots.begin(), pPanel->slots.end());
 
-		pBasePanel->slots << _createSlotsDrawer("Slots", pPanel->slots.begin(), pPanel->slots.end());
+		refresh();
 
+		pBasePanel->slots.pushBack({m_pTable, m_pSlotsDrawer});
 		this->slot = pBasePanel;
 	}
 
@@ -57,6 +59,16 @@ namespace wg
 	const TypeInfo& TwoSlotPanelInfoPanel::typeInfo(void) const
 	{
 		return TYPEINFO;
+	}
+
+	//____ refresh() _____________________________________________________________
+
+	void TwoSlotPanelInfoPanel::refresh()
+	{
+		_refreshTextEntry(m_pTable, 0, toString(m_pInspected->axis()));
+		_refreshObjectPointerEntry(m_pTable, 1, m_pInspected->layout(),m_displayedLayoutPointer);
+
+//		_refreshSlotsDrawer(m_pSlotsDrawer, m_pInspected->slots.begin(), m_pInspected->slots.end());
 	}
 
 

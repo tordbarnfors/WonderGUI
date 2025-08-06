@@ -48,10 +48,17 @@ namespace wg
 		const TypeInfo&			typeInfo(void) const override;
 		const static TypeInfo	TYPEINFO;
 
+		//.____ Control ____________________________________________________
+
+		void refresh() override;
+
 
 	protected:
 		PackPanelSlotInfoPanel(const Blueprint& blueprint, IDebugger* pHolder, StaticSlot * pStaticSlot );
 		~PackPanelSlotInfoPanel() {}
+
+		PackPanelSlot *	m_pInspected;
+		TablePanel_p	m_pTable;
 	};
 
 } // namespace wg
