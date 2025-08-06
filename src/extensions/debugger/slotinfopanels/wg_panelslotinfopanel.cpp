@@ -33,11 +33,12 @@ namespace wg
 
 	PanelSlotInfoPanel::PanelSlotInfoPanel(const Blueprint& blueprint, IDebugger* pHolder, StaticSlot * pStaticSlot) : DebugPanel( blueprint, pHolder, PanelSlot::TYPEINFO.className )
 	{
-		auto pPanelSlot = static_cast<const PanelSlot*>(pStaticSlot);
+		auto pPanelSlot = static_cast<PanelSlot*>(pStaticSlot);
+		m_pInspected = pPanelSlot;
 
-		auto pTable = _createTable(1,2);
-		_setBoolEntry(pTable, 0, "Visible: ", pPanelSlot->isVisible());
-		this->slot = pTable;
+		m_pTable = _createTable(1,2);
+		_setBoolEntry(m_pTable, 0, "Visible: ", pPanelSlot->isVisible());
+		this->slot = m_pTable;
 	}
 
 	//____ typeInfo() _________________________________________________________
@@ -45,6 +46,13 @@ namespace wg
 	const TypeInfo& PanelSlotInfoPanel::typeInfo(void) const
 	{
 		return TYPEINFO;
+	}
+
+	//____ refresh() _____________________________________________________________
+
+	void PanelSlotInfoPanel::refresh()
+	{
+		_refreshBoolEntry(m_pTable, 0, m_pInspected->isVisible());
 	}
 
 

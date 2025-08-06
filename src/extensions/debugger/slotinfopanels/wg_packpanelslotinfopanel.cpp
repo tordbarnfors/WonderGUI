@@ -33,12 +33,12 @@ namespace wg
 
 	PackPanelSlotInfoPanel::PackPanelSlotInfoPanel(const Blueprint& blueprint, IDebugger* pHolder, StaticSlot * pStaticSlot) : DebugPanel( blueprint, pHolder, PackPanelSlot::TYPEINFO.className )
 	{
-		auto pPanelSlot = static_cast<const PackPanelSlot*>(pStaticSlot);
+		m_pInspected = static_cast<PackPanelSlot*>(pStaticSlot);
 
-		auto pTable = _createTable(2,2);
-		_setDecimalEntry(pTable, 0, "Weight: ", pPanelSlot->weight());
-		_setDecimalEntry(pTable, 1, "Baseline: ", pPanelSlot->baseline());
-		this->slot = pTable;
+		m_pTable = _createTable(2,2);
+		_setDecimalEntry(m_pTable, 0, "Weight: ", m_pInspected->weight());
+		_setDecimalEntry(m_pTable, 1, "Baseline: ", m_pInspected->baseline());
+		this->slot = m_pTable;
 	}
 
 	//____ typeInfo() _________________________________________________________
@@ -46,6 +46,14 @@ namespace wg
 	const TypeInfo& PackPanelSlotInfoPanel::typeInfo(void) const
 	{
 		return TYPEINFO;
+	}
+
+	//____ refresh() _____________________________________________________________
+
+	void PackPanelSlotInfoPanel::refresh()
+	{
+		_refreshDecimalEntry(m_pTable, 0, m_pInspected->weight());
+		_refreshDecimalEntry(m_pTable, 1, m_pInspected->baseline());
 	}
 
 

@@ -89,6 +89,8 @@ namespace wg
 
 			auto pOverflowDrawer = _createDrawer("Has overflow", pHeaderValue, pOverflowTable);
 			pPanel->slots << pOverflowDrawer;
+
+			m_pOverflowTable = pOverflowTable;
 		}
 
 		auto pSlot = pWidget->_slot();
@@ -116,6 +118,8 @@ namespace wg
 			auto pHeaderValue = WGCREATE(TextDisplay, _ = blueprint.listEntryText, _.display.text = temp);
 			auto pSlotDrawer = _createDrawer("Slot", pHeaderValue, pContentPanel);
 			pPanel->slots << pSlotDrawer;
+
+			m_pSlotInfoPanelsContainer = pContentPanel;
 
 		}
 
@@ -157,6 +161,21 @@ namespace wg
 		_refreshBoolEntry			(m_pTable, row++, pWidget->isSelectable());
 		_refreshIntegerEntry		(m_pTable, row++, pWidget->m_receivingUpdateCounter);
 		_refreshBoolEntry			(m_pTable, row++, pWidget->hasStickyFocus());
+
+
+		BorderSPX overflow = pWidget->_overflow();
+
+		_refreshSpxEntry(m_pOverflowTable, 0, overflow.top);
+		_refreshSpxEntry(m_pOverflowTable, 1, overflow.right);
+		_refreshSpxEntry(m_pOverflowTable, 2, overflow.bottom);
+		_refreshSpxEntry(m_pOverflowTable, 3, overflow.left);
+
+		for( auto& slot : m_pSlotInfoPanelsContainer->slots )
+		{
+			auto pDebugPanel = dynamic_cast<DebugPanel*>(slot._widget());
+			if( pDebugPanel )
+				pDebugPanel->refresh();
+		}
 	}
 
 

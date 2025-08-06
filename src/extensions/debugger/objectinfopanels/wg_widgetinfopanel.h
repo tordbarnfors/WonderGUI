@@ -57,13 +57,19 @@ namespace wg
 		WidgetInfoPanel(const Blueprint& blueprint, IDebugger* pHolder, Widget * pWidget );
 		~WidgetInfoPanel() {}
 
+		// Things we need so we can do refresh.
+
 		TablePanel *	m_pTable;
+		TablePanel *	m_pOverflowTable;
+		PackPanel *		m_pSlotInfoPanelsContainer;
 
 		Widget *		m_pInspected;
 
 		Object_p		m_pInspectedsBaggage;
 		Object_p		m_pInspectedsParent;
 		Object_p		m_pInspectedsSkin;
+
+		//
 
 	};
 
