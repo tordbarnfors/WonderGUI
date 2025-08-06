@@ -59,7 +59,8 @@ namespace wg
 
 		void					setAutoRefresh(bool bAutoRefresh);
 
-		virtual void			refresh();
+		virtual void			refresh();					// For all InfoPanels except slots.
+		virtual void			refresh(StaticSlot* pSlot);	// Specifically for slot-InfoPanel.
 
 
 	protected:

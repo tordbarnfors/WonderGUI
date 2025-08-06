@@ -33,8 +33,6 @@ namespace wg
 
 	FlexPanelSlotInfoPanel::FlexPanelSlotInfoPanel(const Blueprint& blueprint, IDebugger* pHolder, StaticSlot * pStaticSlot) : DebugPanel( blueprint, pHolder, FlexPanelSlot::TYPEINFO.className )
 	{
-		m_pInspected = static_cast<FlexPanelSlot*>(pStaticSlot);
-
 		m_pTable = _createTable( 7, 2 );
 
 		int row = 0;
@@ -48,7 +46,7 @@ namespace wg
 		_initTextEntry(m_pTable, row++, "TopLeft pin: ");
 		_initTextEntry(m_pTable, row++, "BottomRight pin: ");
 
-		refresh();
+		refresh(pStaticSlot);
 
 		this->slot = m_pTable;
 	}
@@ -69,30 +67,32 @@ namespace wg
 
 	//____ refresh() _____________________________________________________________
 
-	void FlexPanelSlotInfoPanel::refresh()
+	void FlexPanelSlotInfoPanel::refresh(StaticSlot * pStaticSlot)
 	{
-		bool bPinned = m_pInspected->isPinned();
+		auto pInspected = static_cast<FlexPanelSlot*>(pStaticSlot);
+
+		bool bPinned = pInspected->isPinned();
 
 		char temp[256];
 		int row = 0;
 
 		_refreshTextEntry(m_pTable, row++, bPinned ? "Pinned" : "Movable");
 
-		flexPosToString(m_pInspected->origo(), temp);
+		flexPosToString(pInspected->origo(), temp);
 		_refreshTextEntry(m_pTable, row++, temp);
 
-		flexPosToString(m_pInspected->hotspot(), temp);
+		flexPosToString(pInspected->hotspot(), temp);
 		_refreshTextEntry(m_pTable, row++, temp);
 
-		Coord ofs = m_pInspected->offset();
+		Coord ofs = pInspected->offset();
 
 		_refreshPtsEntry(m_pTable, row++, ofs.x);
 		_refreshPtsEntry(m_pTable, row++, ofs.y);
 
-		flexPosToString(m_pInspected->topLeftPin(), temp);
+		flexPosToString(pInspected->topLeftPin(), temp);
 		_refreshTextEntry(m_pTable, row++, temp);
 
-		flexPosToString(m_pInspected->bottomRightPin(), temp);
+		flexPosToString(pInspected->bottomRightPin(), temp);
 		_refreshTextEntry(m_pTable, row++, temp);
 
 		m_pTable->rows[1].setVisible(bPinned);

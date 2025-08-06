@@ -33,10 +33,10 @@ namespace wg
 
 	TwoSlotPanelSlotInfoPanel::TwoSlotPanelSlotInfoPanel(const Blueprint& blueprint, IDebugger* pHolder, StaticSlot * pStaticSlot) : DebugPanel( blueprint, pHolder, TwoSlotPanel::Slot::TYPEINFO.className )
 	{
-		m_pInspected = static_cast<TwoSlotPanel::Slot*>(pStaticSlot);
+		auto pInspected = static_cast<TwoSlotPanel::Slot*>(pStaticSlot);
 
 		m_pTable = _createTable(2,2);
-		_setDecimalEntry(m_pTable, 0, "Weight: ", m_pInspected->weight());
+		_setDecimalEntry(m_pTable, 0, "Weight: ", pInspected->weight());
 		this->slot = m_pTable;
 	}
 
@@ -49,9 +49,11 @@ namespace wg
 
 	//____ refresh() _____________________________________________________________
 
-	void TwoSlotPanelSlotInfoPanel::refresh()
+	void TwoSlotPanelSlotInfoPanel::refresh(StaticSlot * pStaticSlot)
 	{
-		_refreshDecimalEntry(m_pTable, 0, m_pInspected->weight());
+		auto pInspected = static_cast<TwoSlotPanel::Slot*>(pStaticSlot);
+
+		_refreshDecimalEntry(m_pTable, 0, pInspected->weight());
 	}
 
 } // namespace wg
