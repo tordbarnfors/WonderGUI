@@ -26,6 +26,7 @@
 
 #include <wg_tablepanel.h>
 #include <wg_debugpanel.h>
+#include <wg_twoslotpanel.h>
 
 namespace wg
 {
@@ -48,10 +49,17 @@ namespace wg
 		const TypeInfo&			typeInfo(void) const override;
 		const static TypeInfo	TYPEINFO;
 
+		//.____ Control ____________________________________________________
+
+		void refresh() override;
+
 
 	protected:
 		TwoSlotPanelSlotInfoPanel(const Blueprint& blueprint, IDebugger* pHolder, StaticSlot * pStaticSlot );
 		~TwoSlotPanelSlotInfoPanel() {}
+
+		TwoSlotPanel::Slot *	m_pInspected;
+		TablePanel_p			m_pTable;
 	};
 
 } // namespace wg

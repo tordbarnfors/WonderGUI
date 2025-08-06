@@ -77,6 +77,9 @@ namespace wg
 		template<typename Iterator>
 		DrawerPanel_p		_createSlotsDrawer(const CharSeq& label, Iterator slotsBegin, Iterator slotsEnd);
 
+		template<typename Iterator>
+		DrawerPanel_p		_refreshSlotsDrawer(DrawerPanel * pDrawer, Iterator slotsBegin, Iterator slotsEnd);
+
 		DrawerPanel_p		_createComponentDrawer(const CharSeq& label, Component* pComponent);
 
 		Widget_p			_createObjectHeader(Object* pObject);
@@ -90,6 +93,15 @@ namespace wg
 		void _setBoolEntry(TablePanel* pTable, int row, const char* pLabel, bool value);
 		void _setPointerEntry(TablePanel* pTable, int row, const char* pLabel, void* pPointer);
 		void _setObjectPointerEntry(TablePanel* pTable, int row, const char* pLabel, Object * pPointer, Object * pSource);
+
+		void _initTextEntry(TablePanel* pTable, int row, const char* pLabel);
+		void _initIntegerEntry(TablePanel * pTable, int row, const char * pLabel);
+		void _initDecimalEntry(TablePanel* pTable, int row, const char* pLabel);
+		void _initPtsEntry(TablePanel* pTable, int row, const char* pLabel);
+		void _initSpxEntry(TablePanel* pTable, int row, const char* pLabel);
+		void _initBoolEntry(TablePanel* pTable, int row, const char* pLabel);
+		void _initPointerEntry(TablePanel* pTable, int row, const char* pLabel);
+		void _initObjectPointerEntry(TablePanel* pTable, int row, const char* pLabel);
 
 		void _refreshTextEntry(TablePanel* pTable, int row, const CharSeq& string);
 		void _refreshIntegerEntry(TablePanel * pTable, int row, int value);
@@ -149,6 +161,27 @@ namespace wg
 		auto pDrawer = _createDrawer("Slots", pNumberSlots, pSlotList);
 		return pDrawer;
 	}
+
+//____ refreshSlotsDrawer() ___________________________________________________
+
+template<typename Iterator>
+DrawerPanel_p DebugPanel::_refreshSlotsDrawer(DrawerPanel * pDrawer, Iterator slotsBegin, Iterator slotsEnd)
+{
+	auto pContainer = static_cast<PackPanel*>(pDrawer->slots[1]._widget());
+
+
+	int nSlotsNow 		= std::distance(slotsBegin,slotsEnd);
+	int nSlotsBefore 	= pContainer->slots.size();
+
+	int slotsToRefresh = std::min(nSlotsNow,nSlotsBefore);
+
+	Iterator it = slotsBegin;
+	for( int i = 0 ; i < slotsToRefresh ; i++ )
+	{
+		
+	}
+
+}
 
 
 } // namespace wg
