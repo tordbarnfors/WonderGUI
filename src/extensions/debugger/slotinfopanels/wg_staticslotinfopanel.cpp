@@ -32,19 +32,22 @@ namespace wg
 
 	StaticSlotInfoPanel::StaticSlotInfoPanel(const Blueprint& blueprint, IDebugger* pHolder, StaticSlot * pStaticSlot) : DebugPanel( blueprint, pHolder, StaticSlot::TYPEINFO.className )
 	{
-		auto pTable = _createTable( 5, 2);
+		m_pInspected = pStaticSlot;
+		m_pDisplayedChild = pStaticSlot->widget();
+
+		m_pTable = _createTable( 5, 2);
 
 		int row = 0;
 
 		RectF geo = pStaticSlot->geo();
 
-		_setObjectPointerEntry(pTable, row++, "Widget: ", pStaticSlot->widget(), this);
-		_setPtsEntry(pTable, row++, "X offset (pts): ", geo.x);
-		_setPtsEntry(pTable, row++, "Y offset (pts): ", geo.y);
-		_setPtsEntry(pTable, row++, "Width (pts): ", geo.w);
-		_setPtsEntry(pTable, row++, "Height (pts): ", geo.h);
+		_setObjectPointerEntry(m_pTable, row++, "Widget: ", pStaticSlot->widget(), this);
+		_setPtsEntry(m_pTable, row++, "X offset (pts): ", geo.x);
+		_setPtsEntry(m_pTable, row++, "Y offset (pts): ", geo.y);
+		_setPtsEntry(m_pTable, row++, "Width (pts): ", geo.w);
+		_setPtsEntry(m_pTable, row++, "Height (pts): ", geo.h);
 
-		this->slot = pTable;
+		this->slot = m_pTable;
 	}
 
 	//____ typeInfo() _________________________________________________________
@@ -52,6 +55,21 @@ namespace wg
 	const TypeInfo& StaticSlotInfoPanel::typeInfo(void) const
 	{
 		return TYPEINFO;
+	}
+
+	//____ refresh() _____________________________________________________________
+
+	void StaticSlotInfoPanel::refresh()
+	{
+		int row = 0;
+
+		RectF geo = m_pInspected->geo();
+
+		_refreshObjectPointerEntry(m_pTable, row++, m_pInspected->widget(), m_pDisplayedChild);
+		_refreshPtsEntry(m_pTable, row++, geo.x);
+		_refreshPtsEntry(m_pTable, row++, geo.y);
+		_refreshPtsEntry(m_pTable, row++, geo.w);
+		_refreshPtsEntry(m_pTable, row++, geo.h);
 	}
 
 

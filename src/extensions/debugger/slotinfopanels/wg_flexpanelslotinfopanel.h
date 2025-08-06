@@ -49,6 +49,10 @@ namespace wg
 		const TypeInfo&			typeInfo(void) const override;
 		const static TypeInfo	TYPEINFO;
 
+		//.____ Control ____________________________________________________
+
+		void refresh() override;
+
 
 	protected:
 		FlexPanelSlotInfoPanel(const Blueprint& blueprint, IDebugger* pHolder, StaticSlot * pStaticSlot );
@@ -56,6 +60,8 @@ namespace wg
 
 		void	flexPosToString(FlexPos pos, char * pString);
 
+		FlexPanelSlot *	m_pInspected;
+		TablePanel_p	m_pTable;
 	};
 
 } // namespace wg
