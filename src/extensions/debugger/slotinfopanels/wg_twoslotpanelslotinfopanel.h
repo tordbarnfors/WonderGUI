@@ -51,14 +51,13 @@ namespace wg
 
 		//.____ Control ____________________________________________________
 
-		void refresh() override;
+		void refresh(StaticSlot * pStaticSlot) override;
 
 
 	protected:
 		TwoSlotPanelSlotInfoPanel(const Blueprint& blueprint, IDebugger* pHolder, StaticSlot * pStaticSlot );
 		~TwoSlotPanelSlotInfoPanel() {}
 
-		TwoSlotPanel::Slot *	m_pInspected;
 		TablePanel_p			m_pTable;
 	};
 
