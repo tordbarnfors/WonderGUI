@@ -51,7 +51,7 @@ namespace wg
 
 		//.____ Control ____________________________________________________
 
-		void refresh() override;
+		void refresh(StaticSlot * pStaticSlot) override;
 
 
 	protected:
@@ -60,7 +60,6 @@ namespace wg
 
 		void	flexPosToString(FlexPos pos, char * pString);
 
-		FlexPanelSlot *	m_pInspected;
 		TablePanel_p	m_pTable;
 	};
 

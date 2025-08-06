@@ -32,20 +32,17 @@ namespace wg
 
 	StaticSlotInfoPanel::StaticSlotInfoPanel(const Blueprint& blueprint, IDebugger* pHolder, StaticSlot * pStaticSlot) : DebugPanel( blueprint, pHolder, StaticSlot::TYPEINFO.className )
 	{
-		m_pInspected = pStaticSlot;
-		m_pDisplayedChild = pStaticSlot->widget();
-
 		m_pTable = _createTable( 5, 2);
 
 		int row = 0;
 
-		RectF geo = pStaticSlot->geo();
+		_initObjectPointerEntry(m_pTable, row++, "Widget: ");
+		_initPtsEntry(m_pTable, row++, "X offset (pts): ");
+		_initPtsEntry(m_pTable, row++, "Y offset (pts): ");
+		_initPtsEntry(m_pTable, row++, "Width (pts): ");
+		_initPtsEntry(m_pTable, row++, "Height (pts): ");
 
-		_setObjectPointerEntry(m_pTable, row++, "Widget: ", pStaticSlot->widget(), this);
-		_setPtsEntry(m_pTable, row++, "X offset (pts): ", geo.x);
-		_setPtsEntry(m_pTable, row++, "Y offset (pts): ", geo.y);
-		_setPtsEntry(m_pTable, row++, "Width (pts): ", geo.w);
-		_setPtsEntry(m_pTable, row++, "Height (pts): ", geo.h);
+		refresh(pStaticSlot);
 
 		this->slot = m_pTable;
 	}
@@ -59,13 +56,13 @@ namespace wg
 
 	//____ refresh() _____________________________________________________________
 
-	void StaticSlotInfoPanel::refresh()
+	void StaticSlotInfoPanel::refresh(StaticSlot * pStaticSlot)
 	{
 		int row = 0;
 
-		RectF geo = m_pInspected->geo();
+		RectF geo = pStaticSlot->geo();
 
-		_refreshObjectPointerEntry(m_pTable, row++, m_pInspected->widget(), m_pDisplayedChild);
+		_refreshObjectPointerEntry(m_pTable, row++, pStaticSlot->widget(), m_pDisplayedChild);
 		_refreshPtsEntry(m_pTable, row++, geo.x);
 		_refreshPtsEntry(m_pTable, row++, geo.y);
 		_refreshPtsEntry(m_pTable, row++, geo.w);

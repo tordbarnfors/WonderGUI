@@ -75,6 +75,10 @@ namespace wg
 	{
 	}
 
+	void DebugPanel::refresh(StaticSlot * pSlot)
+	{
+	}
+
 	//____ _update() _____________________________________________________________
 
 	void DebugPanel::_update(int microPassed, int64_t microsecTimestamp)

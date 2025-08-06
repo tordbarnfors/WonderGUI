@@ -33,11 +33,11 @@ namespace wg
 
 	PackPanelSlotInfoPanel::PackPanelSlotInfoPanel(const Blueprint& blueprint, IDebugger* pHolder, StaticSlot * pStaticSlot) : DebugPanel( blueprint, pHolder, PackPanelSlot::TYPEINFO.className )
 	{
-		m_pInspected = static_cast<PackPanelSlot*>(pStaticSlot);
-
 		m_pTable = _createTable(2,2);
-		_setDecimalEntry(m_pTable, 0, "Weight: ", m_pInspected->weight());
-		_setDecimalEntry(m_pTable, 1, "Baseline: ", m_pInspected->baseline());
+		_initDecimalEntry(m_pTable, 0, "Weight: ");
+		_initDecimalEntry(m_pTable, 1, "Baseline: ");
+		refresh(pStaticSlot);
+
 		this->slot = m_pTable;
 	}
 
@@ -50,10 +50,12 @@ namespace wg
 
 	//____ refresh() _____________________________________________________________
 
-	void PackPanelSlotInfoPanel::refresh()
+	void PackPanelSlotInfoPanel::refresh(StaticSlot * pStaticSlot)
 	{
-		_refreshDecimalEntry(m_pTable, 0, m_pInspected->weight());
-		_refreshDecimalEntry(m_pTable, 1, m_pInspected->baseline());
+		auto pInspected = static_cast<PackPanelSlot*>(pStaticSlot);
+
+		_refreshDecimalEntry(m_pTable, 0, pInspected->weight());
+		_refreshDecimalEntry(m_pTable, 1, pInspected->baseline());
 	}
 
 

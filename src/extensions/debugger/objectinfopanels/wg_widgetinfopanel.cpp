@@ -174,7 +174,7 @@ namespace wg
 		{
 			auto pDebugPanel = dynamic_cast<DebugPanel*>(slot._widget());
 			if( pDebugPanel )
-				pDebugPanel->refresh();
+				pDebugPanel->refresh( pWidget->_slot());
 		}
 	}
 
