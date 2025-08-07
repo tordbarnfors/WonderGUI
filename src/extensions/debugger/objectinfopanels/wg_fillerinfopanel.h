@@ -49,10 +49,18 @@ namespace wg
 		const TypeInfo&			typeInfo(void) const override;
 		const static TypeInfo	TYPEINFO;
 
+		//.____ Control ____________________________________________________
+
+		void refresh() override;
+
 
 	protected:
 		FillerInfoPanel(const Blueprint& blueprint, IDebugger* pHolder, Filler * pFiller );
 		~FillerInfoPanel() {}
+
+		Filler *		m_pInspected;
+		TablePanel_p	m_pTable;
+
 	};
 
 } // namespace wg

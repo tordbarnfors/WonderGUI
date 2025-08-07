@@ -35,10 +35,12 @@ namespace wg
 
 	FillerInfoPanel::FillerInfoPanel(const Blueprint& blueprint, IDebugger* pHolder, Filler * pFiller) : DebugPanel( blueprint, pHolder, Filler::TYPEINFO.className )
 	{
-		auto pTable = _createTable(2,2);
-		_setPtsEntry(pTable, 0, "Default width (pts): ", pFiller->defaultSize().w);
-		_setPtsEntry(pTable, 1, "Default height (pts): ", pFiller->defaultSize().h);
-		this->slot = pTable;
+		m_pInspected = pFiller;
+
+		m_pTable = _createTable(2,2);
+		_setPtsEntry(m_pTable, 0, "Default width (pts): ", pFiller->defaultSize().w);
+		_setPtsEntry(m_pTable, 1, "Default height (pts): ", pFiller->defaultSize().h);
+		this->slot = m_pTable;
 	}
 
 	//____ typeInfo() _________________________________________________________
@@ -48,6 +50,13 @@ namespace wg
 		return TYPEINFO;
 	}
 
+	//____ refresh() _____________________________________________________________
+
+	void FillerInfoPanel::refresh()
+	{
+		_refreshPtsEntry(m_pTable, 0, m_pInspected->defaultSize().w);
+		_refreshPtsEntry(m_pTable, 1, m_pInspected->defaultSize().h);
+	}
 
 } // namespace wg
 
