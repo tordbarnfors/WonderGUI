@@ -75,15 +75,20 @@ namespace wg
 
 		DrawerPanel_p		_createBorderDrawer(const CharSeq& label, const Border& border);
 
+		DrawerPanel_p		_createComponentDrawer(const CharSeq& label, Component* pComponent);
+		void				_refreshComponentDrawer(DrawerPanel * pComponentDrawer );
+
+		Widget_p			_createObjectHeader(Object* pObject);
+
 		template<typename Iterator>
 		DrawerPanel_p		_createSlotsDrawer(const CharSeq& label, Iterator slotsBegin, Iterator slotsEnd);
 
 		template<typename Iterator>
-		DrawerPanel_p		_refreshSlotsDrawer(DrawerPanel * pDrawer, Iterator slotsBegin, Iterator slotsEnd);
+		void				_refreshSlotsDrawer(DrawerPanel * pDrawer, Iterator slotsBegin, Iterator slotsEnd);
 
-		DrawerPanel_p		_createComponentDrawer(const CharSeq& label, Component* pComponent);
+		template<typename Iterator>
+		void				_addSlotInfoPanels(PackPanel * pPanel, int numberingStart, Iterator slotsBegin, Iterator slotsEnd);
 
-		Widget_p			_createObjectHeader(Object* pObject);
 
 
 		void _setTextEntry(TablePanel* pTable, int row, const char* pLabel, const CharSeq& string);
@@ -129,35 +134,11 @@ namespace wg
 	{
 		auto pSlotList = WGCREATE(PackPanel, _.axis = Axis::Y);
 
-		auto bp = m_pHolder->blueprint();
+		_addSlotInfoPanels(pSlotList, 0, slotsBegin, slotsEnd);
 
-		int nbSlots = 0;
-		for (Iterator it = slotsBegin ; it != slotsEnd ; it++ )
-		{
-			char buf[32];
-			sprintf(buf, "%d", nbSlots);
-
-			auto pSlot = it;
-
-			auto pSlotContent = WGCREATE(PackPanel, _.axis = Axis::Y);
-
-			auto pTypeInfo = &it->typeInfo();
-
-			while (pTypeInfo != nullptr)
-			{
-				bp.classCapsule.label.text = pTypeInfo->className;
-				pSlotContent->slots << m_pHolder->createSlotInfoPanel(pTypeInfo, pSlot);
-				pTypeInfo = pTypeInfo->pSuperClass;
-			}
-
-			auto pSlotDrawer = _createDrawer(buf, nullptr, pSlotContent);
-
-			pSlotList->slots << pSlotDrawer;
-			nbSlots++;
-		}
-
-		auto pNumberSlots = WGCREATE(NumberDisplay, _ = m_pHolder->blueprint().listEntryInteger);
-		pNumberSlots->display.set(nbSlots);
+		auto pNumberSlots = WGCREATE(NumberDisplay,
+									 _ = m_pHolder->blueprint().listEntryInteger,
+									 _.display.value = std::distance(slotsBegin,slotsEnd ));
 
 		auto pDrawer = _createDrawer("Slots", pNumberSlots, pSlotList);
 		return pDrawer;
@@ -166,23 +147,72 @@ namespace wg
 //____ refreshSlotsDrawer() ___________________________________________________
 
 template<typename Iterator>
-DrawerPanel_p DebugPanel::_refreshSlotsDrawer(DrawerPanel * pDrawer, Iterator slotsBegin, Iterator slotsEnd)
+void DebugPanel::_refreshSlotsDrawer(DrawerPanel * pDrawer, Iterator slotsBegin, Iterator slotsEnd)
 {
 	auto pContainer = static_cast<PackPanel*>(pDrawer->slots[1]._widget());
 
-
-	int nSlotsNow 		= std::distance(slotsBegin,slotsEnd);
+	int nSlotsNow 		= (int) std::distance(slotsBegin,slotsEnd);
 	int nSlotsBefore 	= pContainer->slots.size();
 
 	int slotsToRefresh = std::min(nSlotsNow,nSlotsBefore);
 
+	// Refresh existing SlotInfo panels.
+
 	Iterator it = slotsBegin;
 	for( int i = 0 ; i < slotsToRefresh ; i++ )
 	{
-		
+		auto pSlotDrawer = dynamic_cast<DrawerPanel*>(pContainer->slots[i]._widget() );
+		if( pSlotDrawer )
+		{
+			auto pDebugPanelContainer = dynamic_cast<PackPanel*>(pSlotDrawer->slots[1]._widget());
+
+			for( auto& slot : pDebugPanelContainer->slots )
+				dynamic_cast<DebugPanel*>(slot._widget())->refresh(it);
+		}
+
+		it++;
 	}
 
+	// Add or remove panels if number of slots have changed
+
+	if( nSlotsNow < nSlotsBefore )
+		pContainer->slots.erase(nSlotsNow, nSlotsBefore - nSlotsNow );
+	else if( nSlotsNow > nSlotsBefore )
+		_addSlotInfoPanels(pContainer, nSlotsNow, it, slotsEnd);
+
 }
+
+//____ addSlotInfoPanels() ____________________________________________________
+
+template<typename Iterator>
+void DebugPanel::_addSlotInfoPanels(PackPanel * pPanel, int numberingStart, Iterator slotsBegin, Iterator slotsEnd)
+{
+
+	int slotNb = numberingStart;
+	for (Iterator it = slotsBegin ; it != slotsEnd ; it++ )
+	{
+		char buf[16];
+		snprintf(buf,16, "%d", slotNb++);
+
+		auto pSlot = it;
+
+		auto pSlotContent = WGCREATE(PackPanel, _.axis = Axis::Y);
+
+		auto pTypeInfo = &it->typeInfo();
+
+		while (pTypeInfo != nullptr)
+		{
+			pSlotContent->slots << m_pHolder->createSlotInfoPanel(pTypeInfo, pSlot);
+			pTypeInfo = pTypeInfo->pSuperClass;
+		}
+
+		auto pSlotDrawer = _createDrawer(buf, nullptr, pSlotContent);
+
+		pPanel->slots << pSlotDrawer;
+	}
+}
+
+
 
 
 } // namespace wg
