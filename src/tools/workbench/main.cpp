@@ -1,6 +1,7 @@
 
 #include <cstdlib>
 #include <stdio.h>
+#include <unistd.h>
 
 #ifdef WIN32
 #	include <SDL.h>
@@ -41,6 +42,11 @@
 #include <wg_dynamicbuffer.h>
 
 #include <wg_drawerpanel.h>
+
+#include <wg_debugger.h>
+#include <wg_debugoverlay.h>
+#include <themes/simplistic/wg_simplistic.h>
+
 
 //#define USE_OPEN_GL
 
@@ -181,7 +187,7 @@ void textStyleTest();
 
 int main(int argc, char** argv)
 {
-
+	sleep(1);
 
 /*	Base::init(nullptr);
 	unitTestMemHeap();
@@ -299,7 +305,7 @@ int main(int argc, char** argv)
 	SDL_Init(SDL_INIT_VIDEO);
 
 //	int posX = 100, posY = 100, width = 1300, height = 1620;
-	int posX = 100, posY = 100, width = 600, height = 600;
+	int posX = 100, posY = 100, width = 1400, height = 800;
 
 #ifdef USE_OPEN_GL
 
@@ -664,17 +670,60 @@ int main(int argc, char** argv)
 		BlockSkin_p pImgSkin = BlockSkin::createStaticFromSurface(pImgSurface);
 
 
-		pSDLSurf = IMG_Load("resources/up_down_arrow.png");
-		convertSDLFormat(&pixelDesc, pSDLSurf->format);
-		Surface_p pUpDownArrowSurface = pSurfaceFactory->createSurface({ .format = PixelFormat::BGRA_8, .size = SizeI(pSDLSurf->w, pSDLSurf->h) }, (unsigned char*)pSDLSurf->pixels, pixelDesc, pSDLSurf->pitch);
-		SDL_FreeSurface(pSDLSurf);
-		Skin_p pUpDownArrowSkin = BlockSkin::create(pUpDownArrowSurface, { State::Default, State::Checked }, Border(0));
+		//------------------------------------------------------
+		// Init theme
+		//------------------------------------------------------
 
-		pSDLSurf = IMG_Load("resources/simple_icon.png");
+
+		auto pFont1Blob = loadBlob("resources/NotoSans-Regular.ttf");
+		auto pFont2Blob = loadBlob("resources/NotoSans-Bold.ttf");
+		auto pFont3Blob = loadBlob("resources/NotoSans-Italic.ttf");
+		auto pFont4Blob = loadBlob("resources/DroidSansMono.ttf");
+
+		auto pFont1 = FreeTypeFont::create(pFont1Blob);
+		auto pFont2 = FreeTypeFont::create(pFont2Blob);
+		auto pFont3 = FreeTypeFont::create(pFont3Blob);
+		auto pFont4 = FreeTypeFont::create(pFont4Blob);
+
+
+		pSDLSurf = IMG_Load("resources/skin_widgets.png");
 		convertSDLFormat(&pixelDesc, pSDLSurf->format);
-		Surface_p pSimpleIconSurface = pSurfaceFactory->createSurface({ .format = PixelFormat::BGRA_8, .size = SizeI(pSDLSurf->w, pSDLSurf->h) }, (unsigned char*)pSDLSurf->pixels, pixelDesc, pSDLSurf->pitch);
+		Surface_p pThemeSurface = pSurfaceFactory->createSurface({ .format = PixelFormat::BGRA_8, .size = SizeI(pSDLSurf->w, pSDLSurf->h) }, (unsigned char*)pSDLSurf->pixels, pixelDesc, pSDLSurf->pitch);
 		SDL_FreeSurface(pSDLSurf);
-		Skin_p pSimpleIconSkin = BlockSkin::createStaticFromSurface(pSimpleIconSurface, Border(0));
+
+		auto pTheme = Simplistic::create(pFont1,pFont2,pFont3,pFont4,pThemeSurface);
+		if (!pTheme)
+		{
+			Base::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "Failed to create default theme", nullptr, nullptr, __func__, __FILE__, __LINE__);
+			return -1;
+		}
+		Base::setDefaultTheme(pTheme);
+		Base::setDefaultStyle(pTheme->defaultStyle());
+
+
+
+		//------------------------------------------------------
+		// Setup debugger
+		//------------------------------------------------------
+
+		auto pDebugger = Debugger::create();
+
+
+		pSDLSurf = IMG_Load("resources/debugger_gfx.png");
+		convertSDLFormat(&pixelDesc, pSDLSurf->format);
+		Surface_p pIconSurface = pSurfaceFactory->createSurface({ .format = PixelFormat::BGRA_8, .size = SizeI(pSDLSurf->w, pSDLSurf->h) }, (unsigned char*)pSDLSurf->pixels, pixelDesc, pSDLSurf->pitch);
+		SDL_FreeSurface(pSDLSurf);
+
+		pSDLSurf = IMG_Load("resources/checkboardtile.png");
+		convertSDLFormat(&pixelDesc, pSDLSurf->format);
+		Surface_p pTransparencyGrid = pSurfaceFactory->createSurface({ .format = PixelFormat::BGRA_8, .size = SizeI(pSDLSurf->w, pSDLSurf->h), .tiling = true }, (unsigned char*)pSDLSurf->pixels, pixelDesc, pSDLSurf->pitch);
+		SDL_FreeSurface(pSDLSurf);
+
+
+		auto pDebugOverlay = DebugOverlay::create( { .debugger = pDebugger, .theme = pTheme, .icons = pIconSurface, .transparencyGrid = pTransparencyGrid } );
+
+		pRoot->slot = pDebugOverlay;
+		pRoot->setSkin(ColorSkin::create(Color::Black));
 
 		//------------------------------------------------------
 		// Setup a simple GUI consisting of a filled background and
@@ -682,8 +731,7 @@ int main(int argc, char** argv)
 		//------------------------------------------------------
 
 		DragNDropOverlay_p pDnDLayer = DragNDropOverlay::create();
-		pRoot->setSkin(ColorSkin::create(Color::Black));
-		pRoot->slot = pDnDLayer;
+		pDebugOverlay->mainSlot = pDnDLayer;
 
 		PopupOverlay_p pPopupOverlay = PopupOverlay::create();
 		pDnDLayer->mainSlot = pPopupOverlay;
@@ -771,15 +819,15 @@ int main(int argc, char** argv)
 		//	tablePanelTest2(pSlot);
 		//	dragndropTest(pSlot);
 		//	fillerTransitionTest(pSlot);
-		//	reorderCapsuleTest(pSlot);
+			reorderCapsuleTest(pSlot);
 		//	widgetMoveTest(pSlot);
 		//	labelCapsuleTest(pSlot);
 		//	elipsisTest(pSlot);
 		//	packPanelSpacingBugTest(pSlot);
 		//	bracketSkinTest(pSlot);
 		//	selectCapsuleTest(pSlot);
-			drawerPanelTest(pSlot);
-		
+		//	drawerPanelTest(pSlot);
+
 		//------------------------------------------------------
 		// Program Main Loop
 		//------------------------------------------------------
