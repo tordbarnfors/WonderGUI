@@ -153,6 +153,20 @@ namespace wg
 		return pDrawer;
 	}
 
+	//____ _refreshComponentDrawer() _____________________________________________
+
+	void DebugPanel::_refreshComponentDrawer(DrawerPanel * pComponentDrawer)
+	{
+		auto pPanel = static_cast<PackPanel*>(pComponentDrawer->slots[1]._widget());
+
+		for( auto& slot : pPanel->slots )
+		{
+			auto pDebugPanel = dynamic_cast<DebugPanel*>(slot._widget());
+			if( pDebugPanel )
+				pDebugPanel->refresh();
+		}
+	}
+
 	//____ _createObjectHeader() ______________________________________________
 
 	Widget_p DebugPanel::_createObjectHeader(Object* pObject)

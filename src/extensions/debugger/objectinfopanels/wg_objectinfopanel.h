@@ -56,11 +56,9 @@ namespace wg
 		ObjectInfoPanel(const Blueprint& blueprint, IDebugger* pHolder, Object * pObject );
 		~ObjectInfoPanel() {}
 
+		Object *		m_pInspected;
 		TablePanel_p	m_pTable;
-
-		Object *		m_pObject;
-
-		void *			m_pFinalizer;
+		void *			m_pFinalizer = nullptr;
 
 	};
 

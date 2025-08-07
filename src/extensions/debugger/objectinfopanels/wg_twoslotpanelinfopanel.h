@@ -59,7 +59,7 @@ namespace wg
 		~TwoSlotPanelInfoPanel() {}
 
 		TwoSlotPanel *	m_pInspected;
-		TablePanel *	m_pTable;
+		TablePanel_p	m_pTable;
 
 		DrawerPanel_p	m_pSlotsDrawer;
 		Object_p		m_displayedLayoutPointer;

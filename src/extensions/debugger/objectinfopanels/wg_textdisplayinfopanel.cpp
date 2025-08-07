@@ -45,6 +45,13 @@ namespace wg
 		return TYPEINFO;
 	}
 
+	//____ refresh() _____________________________________________________________
+
+	void TextDisplayInfoPanel::refresh()
+	{
+		_refreshComponentDrawer( static_cast<DrawerPanel*>(slot._widget()) );
+	}
+
 
 } // namespace wg
 

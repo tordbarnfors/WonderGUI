@@ -49,10 +49,14 @@ namespace wg
 		const TypeInfo&			typeInfo(void) const override;
 		const static TypeInfo	TYPEINFO;
 
+		//.____ Control ____________________________________________________
+
+		void refresh() override;
 
 	protected:
 		TextDisplayInfoPanel(const Blueprint& blueprint, IDebugger* pHolder, TextDisplay * pTextDisplay );
 		~TextDisplayInfoPanel() {}
+
 	};
 
 } // namespace wg

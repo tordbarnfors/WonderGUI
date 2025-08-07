@@ -59,8 +59,8 @@ namespace wg
 
 		// Things we need so we can do refresh.
 
-		TablePanel *	m_pTable;
-		TablePanel *	m_pOverflowTable;
+		TablePanel_p	m_pTable;
+		TablePanel_p	m_pOverflowTable;
 		PackPanel *		m_pSlotInfoPanelsContainer;
 
 		Widget *		m_pInspected;

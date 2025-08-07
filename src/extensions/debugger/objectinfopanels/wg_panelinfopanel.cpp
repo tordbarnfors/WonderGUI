@@ -35,9 +35,10 @@ namespace wg
 
 	PanelInfoPanel::PanelInfoPanel(const Blueprint& blueprint, IDebugger* pHolder, Panel * pPanel) : DebugPanel( blueprint, pHolder, Panel::TYPEINFO.className )
 	{
-		auto pTable = _createTable(1,2);
-		_setTextEntry(pTable, 0, "Mask op: ", toString(pPanel->maskOp()));
-		this->slot = pTable;
+		m_pInspected = pPanel;
+		m_pTable = _createTable(1,2);
+		_setTextEntry(m_pTable, 0, "Mask op: ", toString(pPanel->maskOp()));
+		this->slot = m_pTable;
 	}
 
 	//____ typeInfo() _________________________________________________________
@@ -47,6 +48,12 @@ namespace wg
 		return TYPEINFO;
 	}
 
+	//____ refresh() _____________________________________________________________
+
+	void PanelInfoPanel::refresh()
+	{
+		_refreshTextEntry(m_pTable, 0, toString(m_pInspected->maskOp()));
+	}
 
 } // namespace wg
 

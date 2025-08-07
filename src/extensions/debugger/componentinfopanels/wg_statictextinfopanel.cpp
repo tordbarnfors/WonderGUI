@@ -36,22 +36,21 @@ namespace wg
 
 	StaticTextInfoPanel::StaticTextInfoPanel(const Blueprint& blueprint, IDebugger* pHolder, StaticText* pStaticText) : DebugPanel(blueprint, pHolder, StaticText::TYPEINFO.className)
 	{
+		m_pInspected = pStaticText;
+
 		auto pPanel = WGCREATE(PackPanel, _.axis = Axis::Y );
 
-		auto pTable = _createTable(4, 2);
+		m_pTable = _createTable(4, 2);
 
-		_setTextEntry(pTable, 0, "State: ", toString(pStaticText->state().value()) );
-		_setObjectPointerEntry(pTable, 1, "Style: ", pStaticText->style(), this );
-		_setObjectPointerEntry(pTable, 2, "Layout: ", pStaticText->layout(), this);
-		_setIntegerEntry(pTable, 3, "Length: ", pStaticText->length());
+		_setTextEntry(m_pTable, 0, "State: ", toString(pStaticText->state().value()) );
+		_setObjectPointerEntry(m_pTable, 1, "Style: ", pStaticText->style(), this );
+		_setObjectPointerEntry(m_pTable, 2, "Layout: ", pStaticText->layout(), this);
+		_setIntegerEntry(m_pTable, 3, "Length: ", pStaticText->length());
 
-		pPanel->slots << pTable;
+		m_pTextDisplay = WGCREATE(TextDisplay, _ = blueprint.textField, _.display.text = pStaticText->text());
+		auto pPadding = WGCREATE(PaddingCapsule, _.padding = { 0,0,0,16 }, _.child = m_pTextDisplay );
 
-		auto pText = WGCREATE(TextDisplay, _ = blueprint.textField, _.display.text = pStaticText->text());
-		auto pPadding = WGCREATE(PaddingCapsule, _.padding = { 0,0,0,16 }, _.child = pText );
-
-		pPanel->slots << pPadding;
-
+		pPanel->slots.pushBack({m_pTable, pPadding});
 		this->slot = pPanel;
 	}
 
@@ -61,6 +60,19 @@ namespace wg
 	{
 		return TYPEINFO;
 	}
+
+	//____ refresh() _____________________________________________________________
+
+	void StaticTextInfoPanel::refresh()
+	{
+		_refreshTextEntry(m_pTable, 0, toString(m_pInspected->state().value()) );
+		_refreshObjectPointerEntry(m_pTable, 1, m_pInspected->style(), m_displayedStylePtr );
+		_refreshObjectPointerEntry(m_pTable, 2, m_pInspected->layout(), m_displayedLayoutPtr );
+		_refreshIntegerEntry(m_pTable, 3, m_pInspected->length());
+
+		m_pTextDisplay->display.setText(m_pInspected->text());
+	}
+
 
 
 } // namespace wg

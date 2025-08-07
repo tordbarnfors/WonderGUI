@@ -36,21 +36,23 @@ namespace wg
 
 	PackPanelInfoPanel::PackPanelInfoPanel(const Blueprint& blueprint, IDebugger* pHolder, PackPanel * pPanel) : DebugPanel( blueprint, pHolder, PackPanel::TYPEINFO.className )
 	{
+		m_pInspected = pPanel;
+
 		auto pBasePanel = WGCREATE(PackPanel, _.axis = Axis::Y);
 
-		auto pTable = _createTable(6,2);
+		m_pTable = _createTable(6,2);
 		int row = 0;
 
-		_setTextEntry(pTable, row++, "Axis: ", toString(pPanel->axis()));
-		_setObjectPointerEntry(pTable, row++, "Layout: ", pPanel->layout(),this);
-		_setPtsEntry(pTable, row++, "Spacing before (pts): ", pPanel->spacingBefore());
-		_setPtsEntry(pTable, row++, "Spacing between (pts): ", pPanel->spacingBetween());
-		_setPtsEntry(pTable, row++, "Spacing after (pts): ", pPanel->spacingAfter());
-		_setTextEntry(pTable, row++, "Slot alignment: ", toString(pPanel->slotAlignment()));
+		_initTextEntry(m_pTable, row++, "Axis: ");
+		_initObjectPointerEntry(m_pTable, row++, "Layout: ");
+		_initPtsEntry(m_pTable, row++, "Spacing before (pts): ");
+		_initPtsEntry(m_pTable, row++, "Spacing between (pts): ");
+		_initPtsEntry(m_pTable, row++, "Spacing after (pts): ");
+		_initTextEntry(m_pTable, row++, "Slot alignment: ");
 
-		pBasePanel->slots << pTable;
+		m_pSlotsDrawer = _createSlotsDrawer("Slots", pPanel->slots.begin(), pPanel->slots.end());
 
-		pBasePanel->slots << _createSlotsDrawer("Slots", pPanel->slots.begin(), pPanel->slots.end());
+		pBasePanel->slots.pushBack({m_pTable, m_pSlotsDrawer});
 
 		this->slot = pBasePanel;
 	}
@@ -60,6 +62,21 @@ namespace wg
 	const TypeInfo& PackPanelInfoPanel::typeInfo(void) const
 	{
 		return TYPEINFO;
+	}
+
+	//____ refresh() _____________________________________________________________
+
+	void PackPanelInfoPanel::refresh()
+	{
+		int row = 0;
+		_refreshTextEntry(m_pTable, row++, toString(m_pInspected->axis()));
+		_refreshObjectPointerEntry(m_pTable, row++, m_pInspected->layout(),m_displayedLayoutPointer);
+		_refreshPtsEntry(m_pTable, row++, m_pInspected->spacingBefore());
+		_refreshPtsEntry(m_pTable, row++, m_pInspected->spacingBetween());
+		_refreshPtsEntry(m_pTable, row++, m_pInspected->spacingAfter());
+		_refreshTextEntry(m_pTable, row++, toString(m_pInspected->slotAlignment()));
+
+		_refreshSlotsDrawer(m_pSlotsDrawer, m_pInspected->slots.begin(), m_pInspected->slots.end());
 	}
 
 
