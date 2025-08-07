@@ -68,7 +68,7 @@ namespace wg
 		_refreshTextEntry(m_pTable, 0, toString(m_pInspected->axis()));
 		_refreshObjectPointerEntry(m_pTable, 1, m_pInspected->layout(),m_displayedLayoutPointer);
 
-//		_refreshSlotsDrawer(m_pSlotsDrawer, m_pInspected->slots.begin(), m_pInspected->slots.end());
+		_refreshSlotsDrawer(m_pSlotsDrawer, m_pInspected->slots.begin(), m_pInspected->slots.end());
 	}
 
 
