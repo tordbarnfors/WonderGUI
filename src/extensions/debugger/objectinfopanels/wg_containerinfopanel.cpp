@@ -35,10 +35,12 @@ namespace wg
 
 	ContainerInfoPanel::ContainerInfoPanel(const Blueprint& blueprint, IDebugger* pHolder, Container * pContainer) : DebugPanel( blueprint, pHolder, Container::TYPEINFO.className )
 	{
-		auto pTable = _createTable(1,2);
+		m_pInspected = pContainer;
 
-		_setBoolEntry(pTable, 0, "Use pick handles: ", pContainer->usePickHandles());
-		this->slot = pTable;
+		m_pTable = _createTable(1,2);
+
+		_setBoolEntry(m_pTable, 0, "Use pick handles: ", pContainer->usePickHandles());
+		this->slot = m_pTable;
 	}
 
 	//____ typeInfo() _________________________________________________________
@@ -48,6 +50,12 @@ namespace wg
 		return TYPEINFO;
 	}
 
+	//____ refresh() _____________________________________________________________
+
+	void ContainerInfoPanel::refresh()
+	{
+		_refreshBoolEntry(m_pTable, 0, m_pInspected->usePickHandles());
+	}
 
 } // namespace wg
 

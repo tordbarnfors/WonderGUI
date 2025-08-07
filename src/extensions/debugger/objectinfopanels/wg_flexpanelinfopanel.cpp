@@ -38,18 +38,19 @@ namespace wg
 
 	FlexPanelInfoPanel::FlexPanelInfoPanel(const Blueprint& blueprint, IDebugger* pHolder, FlexPanel * pPanel) : DebugPanel( blueprint, pHolder, FlexPanel::TYPEINFO.className )
 	{
+		m_pInspected = pPanel;
+
 		auto pBasePanel = WGCREATE(PackPanel, _.axis = Axis::Y);
 
-		auto pTable = _createTable(3,2);
-		int row = 0;
+		m_pTable = _createTable(3,2);
 
-		_setTextEntry(pTable, row++, "Edge policy: ", toString(pPanel->edgePolicy()));
-		_setPtsEntry(pTable, row++, "Default width (pts): ", pPanel->defaultSize().w);
-		_setPtsEntry(pTable, row++, "Default height (pts): ", pPanel->defaultSize().h);
+		_setTextEntry(m_pTable, 0, "Edge policy: ", toString(pPanel->edgePolicy()));
+		_setPtsEntry(m_pTable, 1, "Default width (pts): ", pPanel->defaultSize().w);
+		_setPtsEntry(m_pTable, 2, "Default height (pts): ", pPanel->defaultSize().h);
 
-		pBasePanel->slots << pTable;
+		m_pSlotsDrawer = _createSlotsDrawer("Slots", pPanel->slots.begin(), pPanel->slots.end());
 
-		pBasePanel->slots << _createSlotsDrawer("Slots", pPanel->slots.begin(), pPanel->slots.end());
+		pBasePanel->slots.pushBack({m_pTable,m_pSlotsDrawer});
 
 		this->slot = pBasePanel;
 	}
@@ -61,6 +62,16 @@ namespace wg
 		return TYPEINFO;
 	}
 
+	//____ refresh() _____________________________________________________________
+
+	void FlexPanelInfoPanel::refresh()
+	{
+		_refreshTextEntry(m_pTable, 0, toString(m_pInspected->edgePolicy()));
+		_refreshPtsEntry(m_pTable, 1, m_pInspected->defaultSize().w);
+		_refreshPtsEntry(m_pTable, 2, m_pInspected->defaultSize().h);
+
+		_refreshSlotsDrawer(m_pSlotsDrawer, m_pInspected->slots.begin(), m_pInspected->slots.end());
+	}
 
 } // namespace wg
 

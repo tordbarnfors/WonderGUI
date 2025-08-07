@@ -72,39 +72,31 @@ namespace wg
 		m_pTable = pTable;
 
 		{
-			bool bOverflow = pWidget->m_bOverflow;
+			bool bOverflow = pWidget->_hasOverflow();
 
 			auto pHeaderValue = WGCREATE(TextDisplay, _ = blueprint.listEntryText, _.display.text = bOverflow ? "true" : "false");
 
-			TablePanel_p pOverflowTable;
-
-			pOverflowTable = _createTable(4,2);
+			m_pOverflowTable = _createTable(4,2);
 
 			BorderSPX overflow = pWidget->_overflow();
 
-			_setSpxEntry(pOverflowTable, 0, "Top (spx): ", overflow.top);
-			_setSpxEntry(pOverflowTable, 1, "Right (spx): ", overflow.right);
-			_setSpxEntry(pOverflowTable, 2, "Bottom (spx): ", overflow.bottom);
-			_setSpxEntry(pOverflowTable, 3, "Left (spx): ", overflow.left);
+			_setSpxEntry(m_pOverflowTable, 0, "Top (spx): ", overflow.top);
+			_setSpxEntry(m_pOverflowTable, 1, "Right (spx): ", overflow.right);
+			_setSpxEntry(m_pOverflowTable, 2, "Bottom (spx): ", overflow.bottom);
+			_setSpxEntry(m_pOverflowTable, 3, "Left (spx): ", overflow.left);
 
-			auto pOverflowDrawer = _createDrawer("Has overflow", pHeaderValue, pOverflowTable);
-			pPanel->slots << pOverflowDrawer;
-
-			m_pOverflowTable = pOverflowTable;
+			pPanel->slots << _createDrawer("Has overflow", pHeaderValue, m_pOverflowTable);
 		}
 
 		auto pSlot = pWidget->_slot();
 		if (pSlot)
 		{
-			Blueprint bp = m_pHolder->blueprint();
-
 			auto pContentPanel = PackPanel::create(WGBP(PackPanel, _.axis = Axis::Y, _.spacingBefore = 4, _.spacingAfter = 4));
 
 			const TypeInfo* pTypeInfo = &pSlot->typeInfo();
 
 			while( pTypeInfo != nullptr )
 			{
-				bp.classCapsule.label.text = pTypeInfo->className;
 				auto pInfoPanel = m_pHolder->createSlotInfoPanel(pTypeInfo, pSlot);
 				if( pInfoPanel )
 					pContentPanel->slots << pInfoPanel;
@@ -113,7 +105,7 @@ namespace wg
 			}
 
 			char temp[64];
-			sprintf(temp, "0x%p", pSlot);
+			snprintf(temp, 64, "0x%p", pSlot);
 
 			auto pHeaderValue = WGCREATE(TextDisplay, _ = blueprint.listEntryText, _.display.text = temp);
 			auto pSlotDrawer = _createDrawer("Slot", pHeaderValue, pContentPanel);

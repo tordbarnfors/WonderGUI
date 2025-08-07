@@ -35,13 +35,14 @@ namespace wg
 
 	ObjectInfoPanel::ObjectInfoPanel(const Blueprint& blueprint, IDebugger* pHolder, Object * pObject) : DebugPanel( blueprint, pHolder, Object::TYPEINFO.className )
 	{
-		m_pObject = pObject;
-		m_pFinalizer = (void*) pObject->finalizer().rawPtr();
+		m_pInspected = pObject;
 
 		m_pTable = _createTable(3,2);
-		_setIntegerEntry(m_pTable, 0, "Refcount: ", pObject->refcount());
-		_setIntegerEntry(m_pTable, 1, "Weak pointers: ", pObject->weakPointers());
-		_setPointerEntry(m_pTable, 2, "Finalizer: ", (void *) pObject->finalizer().rawPtr() );
+		_initIntegerEntry(m_pTable, 0, "Refcount: ");
+		_initIntegerEntry(m_pTable, 1, "Weak pointers: ");
+		_initPointerEntry(m_pTable, 2, "Finalizer: ");
+
+		refresh();
 		this->slot = m_pTable;
 	}
 
@@ -56,9 +57,9 @@ namespace wg
 
 	void ObjectInfoPanel::refresh()
 	{
-		_refreshIntegerEntry(m_pTable, 0, m_pObject->refcount());
-		_refreshIntegerEntry(m_pTable, 1, m_pObject->weakPointers());
-		_refreshPointerEntry(m_pTable, 2, (void *) m_pObject->finalizer().rawPtr(), m_pFinalizer );
+		_refreshIntegerEntry(m_pTable, 0, m_pInspected->refcount());
+		_refreshIntegerEntry(m_pTable, 1, m_pInspected->weakPointers());
+		_refreshPointerEntry(m_pTable, 2, (void *) m_pInspected->finalizer().rawPtr(), m_pFinalizer );
 
 	}
 
