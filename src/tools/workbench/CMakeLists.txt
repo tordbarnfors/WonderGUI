@@ -19,8 +19,12 @@ target_include_directories(workbench PRIVATE
 	${WGSOFTGFX_INCDIRS}
 	${WGOPENGLGFX_INCDIRS}
 	${WGFREETYPEFONT_INCDIRS}
+	${WGDEBUGGER_INCDIRS}
 	${SDL2_INCDIR}
 	${SDL2IMAGE_INCDIR}
+	${PROJECT_SOURCE_DIR}
+
+
 )
 
 target_link_directories(workbench PRIVATE 
@@ -32,6 +36,8 @@ target_link_directories(workbench PRIVATE
 
 
 target_link_libraries(workbench PRIVATE
+	wgdebugger
+	wg_theme_simplistic
 	wgsoftgfx
 	wgopenglgfx
 	wgfreetypefont
