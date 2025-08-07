@@ -3278,7 +3278,7 @@ void GfxDeviceGen2::_encodeStateChanges()
 //		if (bForceSetStates || newState.morphFactor != encodedState.morphFactor)
 		if (newState.morphFactor != encodedState.morphFactor)
 		{
-			cmdBuffer.push((uint16_t)newState.morphFactor * 4096);
+			cmdBuffer.push(uint16_t(newState.morphFactor * 4096));
 			encodedState.morphFactor = newState.morphFactor;
 			statesChanged |= int(StateChange::MorphFactor);
 		}
@@ -3302,7 +3302,7 @@ void GfxDeviceGen2::_encodeStateChanges()
 		{
 			auto pBlurbrush = newState.pBlurbrush.rawPtr();
 
-			cmdBuffer.push((uint16_t)pBlurbrush->size());
+			cmdBuffer.push(uint16_t(pBlurbrush->size()));
 
 			const float* pRed		= pBlurbrush->red();
 			const float* pGreen		= pBlurbrush->green();
