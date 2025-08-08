@@ -508,14 +508,14 @@ namespace wg
 
 	spx SelectBox::_sideCanvasMatchingWidth(const SideCanvas * pCanvas, spx height, int scale) const
 	{
-		return std::max(m_listCanvasDefaultSize.w, m_defaultSize.w);
+		return std::max(m_listCanvasDefaultSize.w, m_size.w);
 	}
 
 	//____ _sideCanvasDefaultSize() _________________________________________
 
 	SizeSPX SelectBox::_sideCanvasDefaultSize(const SideCanvas * pCanvas, int scale) const
 	{
-		return { std::max(m_listCanvasDefaultSize.w, m_defaultSize.w), m_listCanvasDefaultSize.h };
+		return { std::max(m_listCanvasDefaultSize.w, m_size.w), m_listCanvasDefaultSize.h };
 	}
 
 	//____ _sideCanvasRender() ________________________________________________
