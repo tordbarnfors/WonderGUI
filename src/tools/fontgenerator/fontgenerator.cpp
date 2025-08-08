@@ -61,8 +61,6 @@ bool MyApp::_setupGUI(Visitor* pVisitor)
 {
 	m_pWindow = pVisitor->createWindow({ .size = {800,700}, .title = "Font Generator" });
 
-	auto pRoot = m_pWindow->rootPanel();
-
 	//
 
 	auto pFontBlob = pVisitor->loadBlob("resources/DroidSans.ttf");
@@ -95,8 +93,6 @@ bool MyApp::_setupGUI(Visitor* pVisitor)
 	m_pLayout = PackLayout::create({ .wantedSize = PackLayout::WantedSize::Default,
 	.expandFactor = PackLayout::Factor::Weight, .shrinkFactor = PackLayout::Factor::Zero });
 
-	auto pPopupOverlay = PopupOverlay::create();
-	
 	
 	auto pBasePanel = PackPanel::create( { .axis = Axis::Y, .layout = m_pLayout });
 	
@@ -110,9 +106,7 @@ bool MyApp::_setupGUI(Visitor* pVisitor)
 
 	pBasePanel->setSlotWeight(0, 2, {0.f,1.f});
 
-	pPopupOverlay->mainSlot = pBasePanel;
-	
-	pRoot->slot = pPopupOverlay;
+	m_pWindow->setContent(pBasePanel);
 
 	pSplitPanel->setSplit(0.3f);		// Needs to be done once it has the right size.
 	return true;

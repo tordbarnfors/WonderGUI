@@ -138,7 +138,7 @@ bool MyApp::setupGUI(Visitor* pVisitor)
 	// Setup layout
 	
 	auto pBaseFlex = FlexPanel::create();
-	pRoot->slot = pBaseFlex;
+	m_pWindow->setContent(pBaseFlex);
 
 	pBaseFlex->slots << createMovableBox(pBoxWithGlow, pBaseFlex);
 	pBaseFlex->slots << createMovableBox(pBoxWithShadow,pBaseFlex);

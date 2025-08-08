@@ -38,6 +38,8 @@
 #include <wg_metalgfxdevicefactory.h>
 #include <wg_metalbackend.h>
 
+#include <wg_dragndropoverlay.h>
+#include <wg_popupoverlay.h>
 
 
 using namespace wg;
@@ -107,6 +109,19 @@ SDLWindow_p SDLWindow::create(const Blueprint& blueprint)
     SDLWindowMetal_p pWindow = new SDLWindowMetal(blueprint.title, pRootPanel, geo, pSDLWindow, renderer);
 
 	pRootPanel->setWindowRef((uintptr_t) pWindow.rawPtr());
+
+    if (blueprint.finalizer)
+        pWindow->setFinalizer(blueprint.finalizer);
+    
+	// Setup basic widget hierarchy.
+
+	auto pDragNDropOverlay = DragNDropOverlay::create();
+	pRootPanel->slot = pDragNDropOverlay;
+
+	auto pPopupOverlay = PopupOverlay::create();
+	pDragNDropOverlay->mainSlot = pPopupOverlay;
+
+	pWindow->m_pLastOverlay = pPopupOverlay;
 
     //TODO: This is ugly. It should be handled when windows gets focused.
 

@@ -57,8 +57,6 @@ bool MyApp::_setupGUI(Visitor* pVisitor )
 {
 	m_pWindow = pVisitor->createWindow({ .size = {800,600}, .title = "WonderGUI Widget Gallery" });
 
-	auto pRoot = m_pWindow->rootPanel();
-
 	//
 
 	auto pFontBlob = pVisitor->loadBlob("resources/DroidSans.ttf");
@@ -108,10 +106,8 @@ bool MyApp::_setupGUI(Visitor* pVisitor )
 	pBasePanel->slots << createGallery(pTheme);
 
 	pBasePanel->setSlotWeight(0, 2, {0.f,1.f});
-
-	pPopupOverlay->mainSlot = pBasePanel;
 	
-	pRoot->slot = pPopupOverlay;
+	m_pWindow->setContent(pBasePanel);
 
 	return true;
 }
