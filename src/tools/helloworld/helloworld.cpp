@@ -53,8 +53,6 @@ bool MyApp::_setupGUI(Visitor* pVisitor)
 {
 	m_pWindow = pVisitor->createWindow({ .size = {800,600}, .title = "Hello World" });
 
-	auto pRoot = m_pWindow->rootPanel();
-
 	//
 
 	auto pFontBlob = pVisitor->loadBlob("resources/DroidSans.ttf");
@@ -85,6 +83,6 @@ bool MyApp::_setupGUI(Visitor* pVisitor)
 												  )
 											);
 
-	pRoot->slot = pTextDisplay;
+	m_pWindow->setContent(pTextDisplay);
 	return true;
 }

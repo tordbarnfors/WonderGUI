@@ -52,8 +52,6 @@ bool MyApp::_setupGUI(Visitor* pVisitor)
 {
 	m_pWindow = pVisitor->createWindow({ .size = {800,700}, .title = "SoftKernel Generator" });
 
-	auto pRoot = m_pWindow->rootPanel();
-
 	//
 
 	auto pFontBlob = pVisitor->loadBlob("resources/DroidSans.ttf");
@@ -99,7 +97,7 @@ bool MyApp::_setupGUI(Visitor* pVisitor)
 	pBasePanel->slots << pWindow;
 	pBasePanel->setSlotWeight(0, 1, 0.f);
 
-	pRoot->slot = pBasePanel;
+	m_pWindow->setContent(pBasePanel);
 
 	m_pScrollPanel = pWindow;
 
