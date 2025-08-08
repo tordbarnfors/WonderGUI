@@ -1176,10 +1176,6 @@ namespace wg
 		m_debugPanelBP.icons = m_pIcons;
 		m_debugPanelBP.transparencyGrid = m_pTransparencyGrid;
 
-		m_debugPanelBP.transparencyGrid = m_pTransparencyGrid;
-
-//		m_debugPanelBP.mainCapsule.skin = ;
-
 		m_debugPanelBP.classCapsule = WGBP(LabelCapsule,
 			_.skin = ColorSkin::create(HiColor::Transparent, { 10,0,0,8 }),
 			_.label.style = m_pTheme->finePrintStyle()
