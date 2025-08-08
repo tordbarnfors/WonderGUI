@@ -6,8 +6,14 @@ set(SOURCES
     wg_debugpanel.cpp
     wg_debugwindow.h
     wg_debugwindow.cpp
+    
     wg_debugoverlay.h
     wg_debugoverlay.cpp
+
+    wg_debugfrontend.h
+    wg_debugfrontend.cpp
+    wg_debugcapsule.h
+    wg_debugcapsule.cpp
 
     wg_dummyinfopanel.h
     wg_dummyinfopanel.cpp
