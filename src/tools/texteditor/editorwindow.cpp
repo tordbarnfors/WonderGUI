@@ -17,7 +17,6 @@ using namespace std;
 EditorWindow::EditorWindow(Window_p pWindow, MyApp* pApp, std::string title, std::string path )
 {
 	m_pWindow = pWindow;
-	m_pRootPanel = m_pWindow->rootPanel();
 
 	m_pApp = pApp;
 	m_title = title;
@@ -86,7 +85,7 @@ bool EditorWindow::_setupGUI()
 	} ));
 
 
-	m_pRootPanel->slot = pMainContainer;
+	m_pWindow->setContent( pMainContainer );
 	m_pEditor = pTextEditor;
 	return true;
 }
