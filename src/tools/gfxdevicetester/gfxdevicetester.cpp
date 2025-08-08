@@ -692,7 +692,7 @@ bool GfxDeviceTester::setup_chrome(Theme * pTheme)
 
 	auto pLayerStack = StackPanel::create();
 	pLayerStack->setSkin( ColorSkin::create(Color::AntiqueWhite) );
-	m_pWindow->rootPanel()->slot = pLayerStack;
+	m_pWindow->setContent(pLayerStack);
 
 //	m_pWindow->rootPanel()->setDebugMode(true);
 

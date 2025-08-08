@@ -56,7 +56,9 @@ public:
 
     //.___ Content __________________________________________________
 
-    wg::RootPanel_p    rootPanel() const { return m_pRootPanel; }
+    wg::RootPanel_p rootPanel() const { return m_pRootPanel; }
+
+	void			setContent(wg::Widget* pContent);
 
     //.____ Geometry ______________________________________________________
 
@@ -93,6 +95,8 @@ protected:
     virtual wg::Rect    _updateWindowGeo(const wg::Rect& geo) = 0;
 
     wg::RootPanel_p     m_pRootPanel;
+	wg::Overlay_p		m_pLastOverlay;		// Overlay which we attach content to.
+
     wg::Rect            m_geo;
     std::function<bool(void)>    m_closeRequestHandler;
 

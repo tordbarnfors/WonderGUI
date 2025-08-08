@@ -52,8 +52,6 @@ bool MyApp::_setupGUI(Visitor* pVisitor)
 {
 	m_pWindow = pVisitor->createWindow({ .size = {800,700}, .title = "PackLayout Tester" });
 
-	auto pRoot = m_pWindow->rootPanel();
-
 	//
 
 	auto pFontBlob = pVisitor->loadBlob("resources/DroidSans.ttf");
@@ -84,7 +82,6 @@ bool MyApp::_setupGUI(Visitor* pVisitor)
 
 
 
-	auto pPopupOverlay = PopupOverlay::create();
 		
 	
 	auto pBasePanel = FlexPanel::create();
@@ -97,8 +94,7 @@ bool MyApp::_setupGUI(Visitor* pVisitor)
 
 	m_pBasePanel = pBasePanel;
 
-	pPopupOverlay->mainSlot = pBasePanel;	
-	pRoot->slot = pPopupOverlay;
+	m_pWindow->setContent(pBasePanel);
 	return true;
 }
 

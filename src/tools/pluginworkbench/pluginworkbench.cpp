@@ -150,8 +150,6 @@ bool MyApp::_setupGUI(Visitor* pVisitor)
 {
 	m_pWindow = pVisitor->createWindow({ .size = {800,600}, .title = "CABI Workbench" });
 
-	auto pRoot = m_pWindow->rootPanel();
-
 	//
 
 	auto pFontBlob = pVisitor->loadBlob("resources/DroidSans.ttf");
@@ -214,7 +212,7 @@ bool MyApp::_setupGUI(Visitor* pVisitor)
 
 	pPopupOverlay->mainSlot = pBasePanel;
 	
-	pRoot->slot = pPopupOverlay;
+	m_pWindow->setContent(pPopupOverlay);
 
 	m_pPluginCapsule = pPluginCapsule;
 

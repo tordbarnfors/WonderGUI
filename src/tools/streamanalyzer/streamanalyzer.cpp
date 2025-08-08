@@ -96,9 +96,7 @@ bool MyApp::_setupGUI(Visitor* pVisitor)
 	m_pWindow->setCloseRequestHandler([](void) {
 		return true;
 	});
-	
-	auto pRoot = m_pWindow->rootPanel();
-	
+		
 	//
 
 	auto path = pVisitor->resourceDirectory();
@@ -183,7 +181,7 @@ bool MyApp::_setupGUI(Visitor* pVisitor)
 
 	m_pDebugOverlay->mainSlot = pPopupOverlay;
 
-	pRoot->slot = pPopupOverlayForDebugger;
+	m_pWindow->setContent(pPopupOverlayForDebugger);
 
 	pSplitPanel->setSplit(0.5f);
 
@@ -1311,10 +1309,7 @@ void MyApp::openRecordedStepsWindow()
 			return true;
 		});
 		
-		auto pRoot = m_pRecordedStepsWindow->rootPanel();
-
 		auto pScroll = ScrollPanel::create( { .skin = m_pPlateSkin } );
-		pRoot->slot = pScroll;
 		
 		auto pStepList = PackPanel::create( { .axis = Axis::Y } );
 		
@@ -1327,9 +1322,9 @@ void MyApp::openRecordedStepsWindow()
 		}
 		
 		pScroll->slot = pStepList;
-		
-	}
-	
+
+		m_pRecordedStepsWindow->setContent(pScroll);		
+	}	
 	
 }
 

@@ -57,8 +57,6 @@ bool MyApp::_setupGUI(Visitor* pVisitor)
 {
 	m_pWindow = pVisitor->createWindow({ .size = {800,700}, .title = "LegacyRunner" });
 
-	auto pRoot = m_pWindow->rootPanel();
-
 	//
 
 	auto pFontBlob = pVisitor->loadBlob("resources/DroidSans.ttf");
@@ -87,18 +85,13 @@ bool MyApp::_setupGUI(Visitor* pVisitor)
 	if (!_loadSkins(pVisitor))
 		return false;
 
-
-
-	auto pPopupOverlay = PopupOverlay::create();
-		
 	
 	auto pBasePanel = FlexPanel::create();
 	pBasePanel->setSkin(ColorSkin::create(Color::Beige));
 
 	m_pBasePanel = pBasePanel;
 
-	pPopupOverlay->mainSlot = pBasePanel;	
-	pRoot->slot = pPopupOverlay;
+	m_pWindow->setContent(pBasePanel);
 	
 	
 	auto pLegacyRoot = LegacyRootCapsule::create( { .skin = ColorSkin::create(Color::Black) });

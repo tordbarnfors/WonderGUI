@@ -268,8 +268,6 @@ bool MyApp::_setupGUI(Visitor* pVisitor)
 {
 	m_pWindow = pVisitor->createWindow({ .size = {800,480}, .title = "WonderGUI Stream Player" });
 
-	auto pRoot = m_pWindow->rootPanel();
-
 	//
 
 	auto pFontBlob = pVisitor->loadBlob("resources/DroidSans.ttf");
@@ -295,10 +293,6 @@ bool MyApp::_setupGUI(Visitor* pVisitor)
 	m_pDisplay = SurfaceDisplay::create( WGBP(SurfaceDisplay,
 											  _.skin = pBgSkin));
 
-
-	pRoot->slot = m_pDisplay;
-
-
-
+	m_pWindow->setContent(m_pDisplay);
 	return true;
 }
