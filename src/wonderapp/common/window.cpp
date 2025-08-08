@@ -42,6 +42,13 @@ const wg::TypeInfo& Window::typeInfo(void) const
 	return TYPEINFO;
 }
 
+//____ setContent() ___________________________________________________________
+
+void Window::setContent(wg::Widget* pContent)
+{
+	m_pLastOverlay->mainSlot = pContent;
+}
+
 //____ setGeo() _____________________________________________________________
 
 wg::Rect Window::setGeo(const wg::Rect& geo)
