@@ -441,7 +441,7 @@ namespace wg
 
 	//____ KeyAction _______________________________________________________
 
-	enum class KeyAction
+	enum class KeyAction //. autoExtras
 	{
 		None,					// Return is ignored
 		Insert,					// Return is inserted into the text
@@ -451,7 +451,7 @@ namespace wg
 
 	//___  TextDecoration ________________________________________________________
 
-	enum class TextDecoration
+	enum class TextDecoration //. AutoExtras
 	{
 		Undefined,
 		None,
