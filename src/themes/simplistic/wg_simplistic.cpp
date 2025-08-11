@@ -241,23 +241,23 @@ Simplistic::Simplistic( Font * pNormal, Font * pBold, Font * pItalic, Font * pMo
 	m_scrollPanelYBP = WGBP(ScrollPanel,
 						   _.childConstraintX = SizeConstraint::Equal,
 						   _.childConstraintY = SizeConstraint::GreaterOrEqual,
-						   _.scrollbarY.background = pScrollbarBgSkin,
+						   _.scrollbarY.back = pScrollbarBgSkin,
 						   _.scrollbarY.bar = pScrollbarSkin
 						   );
 
 	m_scrollPanelXBP = WGBP(ScrollPanel,
 						   _.childConstraintX = SizeConstraint::GreaterOrEqual,
 						   _.childConstraintY = SizeConstraint::Equal,
-						   _.scrollbarX.background = pScrollbarBgSkin,
+						   _.scrollbarX.back = pScrollbarBgSkin,
 						   _.scrollbarX.bar = pScrollbarSkin
 						   );
 
 	m_scrollPanelXYBP = WGBP(ScrollPanel,
 							_.childConstraintX = SizeConstraint::GreaterOrEqual,
 							_.childConstraintY = SizeConstraint::GreaterOrEqual,
-							_.scrollbarX.background = pScrollbarBgSkin,
+							_.scrollbarX.back = pScrollbarBgSkin,
 							_.scrollbarX.bar = pScrollbarSkin,
-							_.scrollbarY.background = pScrollbarBgSkin,
+							_.scrollbarY.back = pScrollbarBgSkin,
 							_.scrollbarY.bar = pScrollbarSkin
 							);
 

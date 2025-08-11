@@ -89,6 +89,10 @@ namespace wg
 		template<typename Iterator>
 		void				_addSlotInfoPanels(PackPanel * pPanel, int numberingStart, Iterator slotsBegin, Iterator slotsEnd);
 
+		DrawerPanel_p		_createSingleSlotDrawer(const CharSeq& label, StaticSlot * pSlot);
+		void				_refreshSingleSlotDrawer(DrawerPanel* pDrawer, StaticSlot * pSlot);
+
+
 
 
 		void _setTextEntry(TablePanel* pTable, int row, const char* pLabel, const CharSeq& string);
@@ -124,8 +128,6 @@ namespace wg
 
 		bool		m_bAutoRefresh = false;
 	};
-
-
 
 	//____ createSlotsDrawer() ___________________________________________________
 

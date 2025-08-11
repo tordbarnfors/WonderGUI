@@ -722,6 +722,8 @@ int main(int argc, char** argv)
 
 		auto pDebugOverlay = DebugOverlay::create( { .debugger = pDebugger, .theme = pTheme, .icons = pIconSurface, .transparencyGrid = pTransparencyGrid } );
 
+		pDebugOverlay->setActivated(true);
+
 		pRoot->slot = pDebugOverlay;
 		pRoot->setSkin(ColorSkin::create(Color::Black));
 

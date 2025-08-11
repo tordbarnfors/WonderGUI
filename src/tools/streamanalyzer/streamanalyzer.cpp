@@ -146,7 +146,7 @@ bool MyApp::_setupGUI(Visitor* pVisitor)
 
 	m_pDebugOverlay = DebugOverlay::create( { .debugger = m_pDebugger, .theme = pTheme, .icons = pIconSurface, .transparencyGrid = pTransparencyGrid } );
 
-//	m_pDebugOverlay->setActivated(true);
+	m_pDebugOverlay->setActivated(true);
 
 	auto pPopupOverlay = PopupOverlay::create();
 
@@ -240,7 +240,7 @@ Widget_p MyApp::createDisplayPanel()
 
 	pWindow->setSkin(ColorSkin::create({ .color = Color::DarkSlateBlue }));
 	pWindow->setSizeConstraints(SizeConstraint::None, SizeConstraint::GreaterOrEqual);
-	pWindow->setPlacement(Placement::Center);
+	pWindow->setChildPlacement(Placement::Center);
 
 	auto pLineup = PackPanel::create( { .axis = Axis::X,
 										.slotAlignment = Alignment::Center,
@@ -1507,17 +1507,17 @@ ScrollPanel_p MyApp::_standardScrollPanel()
 {
 	auto pWidget = ScrollPanel::create();
 
-	pWidget->scrollbarX.setBackground(BoxSkin::create(WGBP(BoxSkin,
+	pWidget->scrollbarX.setBackSkin(BoxSkin::create(WGBP(BoxSkin,
 		_.color = Color8::DarkOliveGreen,
 		_.outlineThickness = 1,
 		_.outlineColor = Color8::Black)));
-	pWidget->scrollbarX.setBar(m_pPlateSkin);
+	pWidget->scrollbarX.setBarSkin(m_pPlateSkin);
 
-	pWidget->scrollbarY.setBackground(BoxSkin::create(WGBP(BoxSkin,
+	pWidget->scrollbarY.setBackSkin(BoxSkin::create(WGBP(BoxSkin,
 		_.color = Color8::DarkOliveGreen,
 		_.outlineThickness = 1,
 		_.outlineColor = Color8::Black)));
-	pWidget->scrollbarY.setBar(m_pPlateSkin);
+	pWidget->scrollbarY.setBarSkin(m_pPlateSkin);
 
 	pWidget->setAutohideScrollbars(true, true);
 	pWidget->setSizeConstraints(SizeConstraint::GreaterOrEqual, SizeConstraint::GreaterOrEqual);

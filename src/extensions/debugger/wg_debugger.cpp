@@ -33,11 +33,14 @@
 #include <objectinfopanels/wg_objectinfopanel.h>
 #include <objectinfopanels/wg_widgetinfopanel.h>
 #include <objectinfopanels/wg_fillerinfopanel.h>
+#include <objectinfopanels/wg_buttoninfopanel.h>
 #include <objectinfopanels/wg_containerinfopanel.h>
-#include <objectinfopanels/wg_flexpanelinfopanel.h>
 #include <objectinfopanels/wg_panelinfopanel.h>
 #include <objectinfopanels/wg_packpanelinfopanel.h>
+#include <objectinfopanels/wg_flexpanelinfopanel.h>
+#include <objectinfopanels/wg_scrollpanelinfopanel.h>
 #include <objectinfopanels/wg_textdisplayinfopanel.h>
+#include <objectinfopanels/wg_texteditorinfopanel.h>
 #include <objectinfopanels/wg_twoslotpanelinfopanel.h>
 
 #include <objectinfopanels/wg_skininfopanel.h>
@@ -49,6 +52,9 @@
 #include <slotinfopanels/wg_twoslotpanelslotinfopanel.h>
 
 #include <componentinfopanels/wg_statictextinfopanel.h>
+#include <componentinfopanels/wg_editabletextinfopanel.h>
+#include <componentinfopanels/wg_iconinfopanel.h>
+#include <componentinfopanels/wg_scrollerinfopanel.h>
 
 #include <wg_panel.h>
 #include <wg_packpanel.h>
@@ -77,12 +83,16 @@ namespace wg
 		m_objectInfoFactories[&Widget::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, IDebugger* pHolder, Object* pObject) { return (Widget_p) WidgetInfoPanel::create(panelBP, pHolder, (Widget*) pObject); };
 		m_objectInfoFactories[&Filler::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, IDebugger* pHolder, Object* pObject) { return (Widget_p) FillerInfoPanel::create(panelBP, pHolder, (Filler*)pObject); };
 		m_objectInfoFactories[&TextDisplay::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, IDebugger* pHolder, Object* pObject) { return (Widget_p)TextDisplayInfoPanel::create(panelBP, pHolder, (TextDisplay*)pObject); };
+		m_objectInfoFactories[&TextEditor::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, IDebugger* pHolder, Object* pObject) { return (Widget_p)TextEditorInfoPanel::create(panelBP, pHolder, (TextEditor*)pObject); };
+		m_objectInfoFactories[&Button::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, IDebugger* pHolder, Object* pObject) { return (Widget_p)ButtonInfoPanel::create(panelBP, pHolder, (Button*)pObject); };
 
 		m_objectInfoFactories[&Container::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, IDebugger* pHolder, Object* pObject) { return (Widget_p)ContainerInfoPanel::create(panelBP, pHolder, (Container*)pObject); };
 		m_objectInfoFactories[&Panel::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, IDebugger* pHolder, Object* pObject) { return (Widget_p)PanelInfoPanel::create(panelBP, pHolder, (Panel*)pObject); };
 		m_objectInfoFactories[&PackPanel::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, IDebugger* pHolder, Object* pObject) { return (Widget_p)PackPanelInfoPanel::create(panelBP, pHolder, (PackPanel*)pObject); };
 		m_objectInfoFactories[&FlexPanel::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, IDebugger* pHolder, Object* pObject) { return (Widget_p)FlexPanelInfoPanel::create(panelBP, pHolder, (FlexPanel*)pObject); };
 		m_objectInfoFactories[&TwoSlotPanel::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, IDebugger* pHolder, Object* pObject) { return (Widget_p)TwoSlotPanelInfoPanel::create(panelBP, pHolder, (TwoSlotPanel*)pObject); };
+		m_objectInfoFactories[&ScrollPanel::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, IDebugger* pHolder, Object* pObject) { return (Widget_p)ScrollPanelInfoPanel::create(panelBP, pHolder, (ScrollPanel*)pObject); };
+
 
 		m_objectInfoFactories[&Skin::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, IDebugger* pHolder, Object* pObject) { return (Widget_p)SkinInfoPanel::create(panelBP, pHolder, (Skin*)pObject); };
 
@@ -93,6 +103,9 @@ namespace wg
 		m_slotInfoFactories[&TwoSlotPanel::Slot::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, IDebugger* pHolder, StaticSlot* pSlot) { return (Widget_p)TwoSlotPanelSlotInfoPanel::create(panelBP, pHolder, pSlot); };
 
 		m_componentInfoFactories[&StaticText::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, IDebugger* pHolder, Component* pComponent) { return (Widget_p)StaticTextInfoPanel::create(panelBP, pHolder, (StaticText*)pComponent); };
+		m_componentInfoFactories[&EditableText::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, IDebugger* pHolder, Component* pComponent) { return (Widget_p)EditableTextInfoPanel::create(panelBP, pHolder, (EditableText*)pComponent); };
+		m_componentInfoFactories[&Icon::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, IDebugger* pHolder, Component* pComponent) { return (Widget_p)IconInfoPanel::create(panelBP, pHolder, (Icon*)pComponent); };
+		m_componentInfoFactories[&Scroller::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, IDebugger* pHolder, Component* pComponent) { return (Widget_p)ScrollerInfoPanel::create(panelBP, pHolder, (Scroller*)pComponent); };
 
 		m_ignoreClasses.push_back(&DynamicSlot::TYPEINFO);
 		m_ignoreClasses.push_back(&Receiver::TYPEINFO);

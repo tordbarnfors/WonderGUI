@@ -65,16 +65,16 @@ namespace wg
 		return TYPEINFO;
 	}
 
-	//____ setPlacement() _____________________________________________________
+	//____ setChildPlacement() _____________________________________________________
 	/**
-		@brief Set placement of child smaller than view.
+		@brief Set placement of child when smaller than view.
 
-		Sets the placement of a child that is smaller than the view of the ScrollPanel.
+		Sets the placement of a child when it is smaller than the view of the ScrollPanel.
 
 		Default is NorthWest.
 	*/
 
-	void ScrollPanel::setPlacement(Placement placement)
+	void ScrollPanel::setChildPlacement(Placement placement)
 	{
 		if (placement == m_smallChildPlacement)
 			return;
@@ -303,7 +303,7 @@ namespace wg
 		m_pageOverlapY = y;
 	}
 
-	//____ setScrollWheelAxis() __________________________________________________
+	//____ setWheelAxis() __________________________________________________
 	/**
 	*	@brief Set scroll direction for each scroll wheel.
 	*
@@ -323,13 +323,13 @@ namespace wg
 	*	of the scrollbars orientation. To disable this behavior you can call setStealWheelFromScrollbars().
 	*
 	*/
-	void ScrollPanel::setScrollWheelAxis(Axis wheelOneAxis, Axis wheelTwoAxis)
+	void ScrollPanel::setWheelAxis(Axis wheelOneAxis, Axis wheelTwoAxis)
 	{
 		m_wheelOneAxis = wheelOneAxis;
 		m_wheelTwoAxis = wheelTwoAxis;
 	}
 
-	//____ setScrollWheelAxisShift() __________________________________________
+	//____ setWheelAxisShift() __________________________________________
 	/**
 	*	@brief Set modifier keys used to shift axis scrolled by mouse wheel.
 	*
@@ -341,7 +341,7 @@ namespace wg
 	*
 	*	Default axisShift modifier key is ALT. To disable this feature, set axisShift to ModKeys::None.
 	*/
-	void ScrollPanel::setScrollWheelAxisShift(ModKeys axisShift)
+	void ScrollPanel::setWheelAxisShift(ModKeys axisShift)
 	{
 		m_wheelAxisShiftCombo = axisShift;
 	}

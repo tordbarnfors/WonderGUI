@@ -71,7 +71,6 @@ namespace wg
 			OSKeyCtrlAlt = 22,
 			OSKeyCtrlAltShift = 23,
 		};
-
 	}
 
 	using ModKeys = ModifierKeysNS::ModKeys;

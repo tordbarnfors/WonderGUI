@@ -84,11 +84,11 @@ bool MyApp::_setupGUI(Visitor* pVisitor)
 
 	auto pWindow = ScrollPanel::create();
 	pWindow->setSkin(ColorSkin::create(Color8::AntiqueWhite));
-	pWindow->scrollbarY.setBackground(BoxSkin::create(WGBP(BoxSkin,
+	pWindow->scrollbarY.setBackSkin(BoxSkin::create(WGBP(BoxSkin,
 		_.color = Color8::DarkOliveGreen,
 		_.outlineThickness = 1,
 		_.outlineColor = Color8::Black)));
-	pWindow->scrollbarY.setBar(m_pPlateSkin);
+	pWindow->scrollbarY.setBarSkin(m_pPlateSkin);
 	pWindow->setAutohideScrollbars(true, true);
 	pWindow->setSizeConstraints(SizeConstraint::Equal, SizeConstraint::GreaterOrEqual);
 	pWindow->slot = _buildList();

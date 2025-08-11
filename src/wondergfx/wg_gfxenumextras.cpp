@@ -293,6 +293,18 @@ namespace wg
 		return names[(int)i];
 	}
 
+	const char * toString(Compression i)
+	{
+		static const char * names[] = { 
+			"None",
+			"SpxU8I",
+			"Spx16B",
+			"Spx16I" };
+
+		return names[(int)i];
+	}
+
+
 //=========================================================================
 //. endAutoSection
 
