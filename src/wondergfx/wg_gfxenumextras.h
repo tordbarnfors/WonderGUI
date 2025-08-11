@@ -54,6 +54,7 @@ namespace wg
 	const static TransitionCurve TransitionCurve_min = TransitionCurve::Linear;
 	const static CanvasRef       CanvasRef_min       = CanvasRef::None;
 	const static SampleOrigo     SampleOrigo_min     = SampleOrigo::Top;
+	const static Compression     Compression_min     = Compression::None;
 
 	const static TintMode        TintMode_max        = TintMode::GradientXY;
 	const static EdgemapPalette  EdgemapPalette_max  = EdgemapPalette::ColorstripXY;
@@ -71,6 +72,7 @@ namespace wg
 	const static TransitionCurve TransitionCurve_max = TransitionCurve::Parametric;
 	const static CanvasRef       CanvasRef_max       = CanvasRef::Canvas_32;
 	const static SampleOrigo     SampleOrigo_max     = SampleOrigo::Bottom;
+	const static Compression     Compression_max     = Compression::Spx16I;
 
 	const static int             TintMode_size       = (int)TintMode::GradientXY + 1;
 	const static int             EdgemapPalette_size = (int)EdgemapPalette::ColorstripXY + 1;
@@ -88,6 +90,7 @@ namespace wg
 	const static int             TransitionCurve_size= (int)TransitionCurve::Parametric + 1;
 	const static int             CanvasRef_size      = (int)CanvasRef::Canvas_32 + 1;
 	const static int             SampleOrigo_size    = (int)SampleOrigo::Bottom + 1;
+	const static int             Compression_size    = (int)Compression::Spx16I + 1;
 
 	const char * toString(TintMode);
 	const char * toString(EdgemapPalette);
@@ -105,6 +108,7 @@ namespace wg
 	const char * toString(TransitionCurve);
 	const char * toString(CanvasRef);
 	const char * toString(SampleOrigo);
+	const char * toString(Compression);
 
 //=========================================================================
 //. endAutoSection

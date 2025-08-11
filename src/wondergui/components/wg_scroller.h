@@ -56,7 +56,7 @@ namespace wg
 
 		struct Blueprint
 		{
-			Skin_p	background;
+			Skin_p	back;
 			Skin_p	backwardButton;
 			Skin_p	bar;
 			Skin_p	forwardButton;
@@ -71,11 +71,15 @@ namespace wg
 
 		//.____ Appearance _____________________________________________
 
-		void		setSkins(Skin* pBackground, Skin* pBar, Skin* pBackwardButton, Skin* pForwardButton);
-		void		setBackground(Skin * pSkin);
-		void		setBar(Skin * pSkin);
-		void		setForwardButton(Skin * pSkin);
-		void		setBackwardButton(Skin* pSkin);
+		void		setSkins(Skin* pBack, Skin* pBar, Skin* pBackwardButton, Skin* pForwardButton);
+		void		setBackSkin(Skin * pSkin);
+		Skin_p		backSkin() const { return m_skins[Back]; }
+		void		setBarSkin(Skin * pSkin);
+		Skin_p		barSkin() const { return m_skins[Bar]; }
+		void		setForwardButtonSkin(Skin * pSkin);
+		Skin_p		forwardButtonSkin() const { return m_skins[Next]; }
+		void		setBackwardButtonSkin(Skin* pSkin);
+		Skin_p		backwardButtonSkin() const { return m_skins[Prev]; }
 
 		void		setVisible(bool bVisible);
 		bool		isVisible() const { return m_bVisible; }
@@ -102,6 +106,10 @@ namespace wg
 		bool		_alphaTest(CoordSPX ofs, SizeSPX canvas);
 		void		_update(spx newViewPos, spx oldViewPos, spx newViewLen, spx oldViewLen, spx newContentLen, spx oldContentLen );
 
+		State		_backState() { return m_states[Back]; }
+		State		_barState() { return m_states[Bar]; }
+		State		_backwardButtonState() { return m_states[Prev]; }
+		State		_forwardButtonState() { return m_states[Next]; }
 
 	protected:
 

@@ -92,30 +92,30 @@ namespace wg
 			_requestResize();
 	}
 
-	//____ setBackground() ____________________________________________________
+	//____ setBackSkin() ____________________________________________________
 
-	void Scroller::setBackground(Skin* pSkin)
+	void Scroller::setBackSkin(Skin* pSkin)
 	{
 		_replaceSkin(pSkin, m_skins[Part::Back]);
 	}
 
-	//____ setBar() _______________________________________________________
+	//____ setBarSkin() _______________________________________________________
 
-	void Scroller::setBar(Skin* pSkin)
+	void Scroller::setBarSkin(Skin* pSkin)
 	{
 		_replaceSkin(pSkin, m_skins[Part::Bar]);
 	}
 
-	//____ setForwardButton() _________________________________________________
+	//____ setForwardButtonSkin() _________________________________________________
 
-	void Scroller::setForwardButton(Skin* pSkin)
+	void Scroller::setForwardButtonSkin(Skin* pSkin)
 	{
 		_replaceSkin(pSkin, m_skins[Part::Next]);
 	}
 
-	//____ setBackwardButton() ________________________________________________
+	//____ setBackwardButtonSkin() ________________________________________________
 
-	void Scroller::setBackwardButton(Skin* pSkin)
+	void Scroller::setBackwardButtonSkin(Skin* pSkin)
 	{
 		_replaceSkin(pSkin, m_skins[Part::Prev]);
 	}
@@ -144,8 +144,8 @@ namespace wg
 
 	void Scroller::_initFromBlueprint(const Blueprint& bp)
 	{
-		if( bp.background )
-			m_skins[Part::Back] = bp.background;
+		if( bp.back )
+			m_skins[Part::Back] = bp.back;
 
 		if (bp.backwardButton)
 			m_skins[Part::Prev] = bp.backwardButton;
