@@ -300,6 +300,8 @@ namespace wg
 			"ValueUpdate",
 			"RangeUpdate",
 			"TextEdit",
+			"Selected",
+			"Unselected",
 			"ItemToggle",
 			"ItemMousePress",
 			"ItemsSelect",
@@ -351,6 +353,18 @@ namespace wg
 		return names[(int)i];
 	}
 
+	const char * toString(KeyAction i)
+	{
+		static const char * names[] = { 
+			"None",
+			"Insert",
+			"ReleaseFocus",
+			"CycleFocus" };
+
+		return names[(int)i];
+	}
+
+
 	const char * toString(MaskOp i)
 	{
 		static const char * names[] = { 
@@ -364,6 +378,44 @@ namespace wg
 
 //=========================================================================
 //. endAutoSection
+
+	const char* toString(ModKeys i)
+	{
+		static const char* names[] = {
+			"None",
+			"Shift",
+			"Alt",
+			"AltShift",
+#ifdef __APPLE__
+			"Command",
+			"CommandShift",
+			"CommandAlt",
+			"CommandAltShift",
+#else
+			"StdCtrl",
+			"StdCtrlShift",
+			"StdCtrlAlt",
+			"StdCtrlAltShift",
+#endif
+			"MacCtrl",
+			"MacCtrlShift",
+			"MacCtrlAlt",
+			"MacCtrlAltShift",
+			"MacCtrlCmd",
+			"MacCtrlCmdShift",
+			"MacCtrlCmdAlt",
+			"MacCtrlCmdAltShift",
+			"OSKey",
+			"OSKeyShift",
+			"OSKeyAlt",
+			"OSKeyAltShift",
+			"OSKeyCtrl",
+			"OSKeyCtrlShift",
+			"OSKeyCtrlAlt",
+			"OSKeyCtrlAltShift" };
+
+		return names[(int)i];
+	}
 
 
 

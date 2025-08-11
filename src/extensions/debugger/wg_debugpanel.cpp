@@ -178,7 +178,7 @@ namespace wg
 		));
 
 		char temp[64];
-		sprintf(temp, " 0x%x", reinterpret_cast<std::uintptr_t>(pObject));
+		sprintf(temp, " 0x%llx", reinterpret_cast<std::uintptr_t>(pObject));
 
 		CharBuffer buf(64);
 		buf.pushBack(temp);
@@ -285,7 +285,7 @@ namespace wg
 
 		char temp[32] = "null";
 		if( pPointer )
-			sprintf(temp, " 0x%x", reinterpret_cast<std::uintptr_t>(pPointer));
+			sprintf(temp, " 0x%llx", reinterpret_cast<std::uintptr_t>(pPointer));
 
 		pTable->slots[row][0] = TextDisplay::create(WGOVR(m_pHolder->blueprint().listEntryLabel, _.display.text = pLabel));
 		pTable->slots[row][1] = TextDisplay::create(WGOVR(m_pHolder->blueprint().listEntryText, _.display.text = temp));
@@ -313,7 +313,7 @@ namespace wg
 
 			char temp[32];
 			if(pPointer)
-				sprintf(temp, " 0x%x", reinterpret_cast<std::uintptr_t>(pPointer));
+				sprintf(temp, " 0x%llx", reinterpret_cast<std::uintptr_t>(pPointer));
 			buff.pushBack(temp);
 
 			TextLink_p 	pLink = TextLink::create();
@@ -446,7 +446,7 @@ namespace wg
 			return;
 
 		pTable->slots[row][0] = TextDisplay::create(WGOVR(m_pHolder->blueprint().listEntryLabel, _.display.text = pLabel ));
-		pTable->slots[row][1] = TextDisplay::create(WGOVR(m_pHolder->blueprint().listEntryText, _.markPolicy = MarkPolicy::Geometry));
+		pTable->slots[row][1] = TextDisplay::create(WGOVR(m_pHolder->blueprint().listEntryText, _.display.text = "null", _.markPolicy = MarkPolicy::Geometry));
 	}
 
 	//____ _refreshTextEntry() ___________________________________________________
@@ -502,7 +502,7 @@ namespace wg
 
 		char temp[32] = "null";
 		if( pPointer )
-			sprintf(temp, " 0x%x", reinterpret_cast<std::uintptr_t>(pPointer));
+			sprintf(temp, " 0x%llx", reinterpret_cast<std::uintptr_t>(pPointer));
 
 		static_cast<TextDisplay*>(pTable->slots[row][1]._widget())->display.setText(temp);
 	}
@@ -532,7 +532,7 @@ namespace wg
 
 			char temp[32];
 			if(pPointer)
-				sprintf(temp, " 0x%x", reinterpret_cast<std::uintptr_t>(pPointer));
+				sprintf(temp, " 0x%llx", reinterpret_cast<std::uintptr_t>(pPointer));
 			buff.pushBack(temp);
 
 			TextLink_p 	pLink = TextLink::create();
@@ -552,6 +552,36 @@ namespace wg
 		static_cast<TextDisplay*>(pTable->slots[row][1]._widget())->display.setText(&buff);
 	}
 
+
+	//____ createSingleSlotDrawer() ___________________________________________________
+
+	DrawerPanel_p DebugPanel::_createSingleSlotDrawer(const CharSeq& label, StaticSlot* pSlot)
+	{
+		auto pSlotContent = WGCREATE(PackPanel, _.axis = Axis::Y);
+
+		auto pTypeInfo = &pSlot->typeInfo();
+
+		while (pTypeInfo != nullptr)
+		{
+			pSlotContent->slots << m_pHolder->createSlotInfoPanel(pTypeInfo, pSlot);
+			pTypeInfo = pTypeInfo->pSuperClass;
+		}
+
+		return _createDrawer("Slot", nullptr, pSlotContent);
+	}
+
+	//____ refreshSingleSlotDrawer() ___________________________________________________
+
+	void DebugPanel::_refreshSingleSlotDrawer(DrawerPanel* pDrawer, StaticSlot* pSlot)
+	{
+		auto pContainer = static_cast<PackPanel*>(pDrawer->slots[1]._widget());
+		for (auto& slot : pContainer->slots)
+		{
+			auto pDebugPanel = dynamic_cast<DebugPanel*>(slot._widget());
+			if (pDebugPanel)
+				pDebugPanel->refresh(pSlot);
+		}
+	}
 
 
 } // namespace wg

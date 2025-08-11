@@ -33,6 +33,8 @@ set(SOURCES
     windows/wg_widgettreeview.h
     windows/wg_widgettreeview.cpp
 
+    objectinfopanels/wg_buttoninfopanel.h
+    objectinfopanels/wg_buttoninfopanel.cpp
     objectinfopanels/wg_containerinfopanel.h
     objectinfopanels/wg_containerinfopanel.cpp
     objectinfopanels/wg_fillerinfopanel.h
@@ -45,10 +47,14 @@ set(SOURCES
     objectinfopanels/wg_packpanelinfopanel.cpp
     objectinfopanels/wg_panelinfopanel.h
     objectinfopanels/wg_panelinfopanel.cpp
+    objectinfopanels/wg_scrollpanelinfopanel.h
+    objectinfopanels/wg_scrollpanelinfopanel.cpp
     objectinfopanels/wg_skininfopanel.h
     objectinfopanels/wg_skininfopanel.cpp
     objectinfopanels/wg_textdisplayinfopanel.h
     objectinfopanels/wg_textdisplayinfopanel.cpp
+    objectinfopanels/wg_texteditorinfopanel.h
+    objectinfopanels/wg_texteditorinfopanel.cpp
     objectinfopanels/wg_twoslotpanelinfopanel.h
     objectinfopanels/wg_twoslotpanelinfopanel.cpp
     objectinfopanels/wg_widgetinfopanel.h
@@ -67,8 +73,12 @@ set(SOURCES
 
     componentinfopanels/wg_statictextinfopanel.h
     componentinfopanels/wg_statictextinfopanel.cpp
-
-
+    componentinfopanels/wg_editabletextinfopanel.h
+    componentinfopanels/wg_editabletextinfopanel.cpp
+    componentinfopanels/wg_iconinfopanel.h
+    componentinfopanels/wg_iconinfopanel.cpp
+    componentinfopanels/wg_scrollerinfopanel.h
+    componentinfopanels/wg_scrollerinfopanel.cpp
 )
 
 set(INCDIRS

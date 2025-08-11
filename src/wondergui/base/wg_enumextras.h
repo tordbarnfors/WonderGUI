@@ -25,6 +25,7 @@
 #pragma once
 
 #include <wg_types.h>
+#include <wg_key.h>
 #include <wg_gfxenumextras.h>
 
 namespace wg
@@ -54,6 +55,7 @@ namespace wg
 	const static SortOrder       SortOrder_min       = SortOrder::None;
 	const static SelectMode      SelectMode_min      = SelectMode::Unselectable;
 	const static TextEditMode    TextEditMode_min    = TextEditMode::Static;
+	const static KeyAction       KeyAction_min       = KeyAction::None;
 	const static MaskOp          MaskOp_min          = MaskOp::Recurse;
 
 	const static PrimState       PrimState_max       = PrimState::Disabled;
@@ -71,6 +73,7 @@ namespace wg
 	const static SortOrder       SortOrder_max       = SortOrder::Descending;
 	const static SelectMode      SelectMode_max      = SelectMode::FlipOnSelect;
 	const static TextEditMode    TextEditMode_max    = TextEditMode::Editable;
+	const static KeyAction       KeyAction_max       = KeyAction::CycleFocus;
 	const static MaskOp          MaskOp_max          = MaskOp::Mask;
 
 	const static int             PrimState_size      = (int)PrimState::Disabled + 1;
@@ -88,6 +91,7 @@ namespace wg
 	const static int             SortOrder_size      = (int)SortOrder::Descending + 1;
 	const static int             SelectMode_size     = (int)SelectMode::FlipOnSelect + 1;
 	const static int             TextEditMode_size   = (int)TextEditMode::Editable + 1;
+	const static int             KeyAction_size      = (int)KeyAction::CycleFocus + 1;
 	const static int             MaskOp_size         = (int)MaskOp::Mask + 1;
 
 	const char * toString(PrimState);
@@ -105,11 +109,19 @@ namespace wg
 	const char * toString(SortOrder);
 	const char * toString(SelectMode);
 	const char * toString(TextEditMode);
+	const char * toString(KeyAction);
 	const char * toString(MaskOp);
 
 //=========================================================================
 //. endAutoSection
 
+
+
+	const static ModKeys         ModKeys_min = ModKeys::None;
+	const static ModKeys         ModKeys_max = ModKeys::OSKeyCtrlAltShift;
+	const static int             ModKeys_size = (int)ModKeys::OSKeyCtrlAltShift + 1;
+
+	const char* toString(ModKeys);
 
 
 } // namespace wg
