@@ -215,17 +215,17 @@ ScrollPanel_p MyApp::createScrollPanel()
 {
 	auto pScrollPanel = ScrollPanel::create();
 
-	pScrollPanel->scrollbarX.setBackground(BoxSkin::create(WGBP(BoxSkin,
+	pScrollPanel->scrollbarX.setBackSkin(BoxSkin::create(WGBP(BoxSkin,
 		_.color = Color8::DarkOliveGreen,
 		_.outlineThickness = 1,
 		_.outlineColor = Color8::Black)));
-	pScrollPanel->scrollbarX.setBar(m_pButtonSkin);
+	pScrollPanel->scrollbarX.setBarSkin(m_pButtonSkin);
 
-	pScrollPanel->scrollbarY.setBackground(BoxSkin::create(WGBP(BoxSkin,
+	pScrollPanel->scrollbarY.setBackSkin(BoxSkin::create(WGBP(BoxSkin,
 		_.color = Color8::DarkOliveGreen,
 		_.outlineThickness = 1,
 		_.outlineColor = Color8::Black)));
-	pScrollPanel->scrollbarY.setBar(m_pButtonSkin);
+	pScrollPanel->scrollbarY.setBarSkin(m_pButtonSkin);
 
 	pScrollPanel->setAutohideScrollbars(true, true);
 	pScrollPanel->setSizeConstraints(SizeConstraint::GreaterOrEqual, SizeConstraint::GreaterOrEqual);
