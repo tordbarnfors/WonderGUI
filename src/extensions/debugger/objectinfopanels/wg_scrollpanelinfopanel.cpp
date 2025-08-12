@@ -34,7 +34,7 @@ namespace wg
 
 	//____ constructor _____________________________________________________________
 
-	ScrollPanelInfoPanel::ScrollPanelInfoPanel(const Blueprint& blueprint, IDebugger* pHolder, ScrollPanel * pPanel) : DebugPanel( blueprint, pHolder, Panel::TYPEINFO.className )
+	ScrollPanelInfoPanel::ScrollPanelInfoPanel(const Blueprint& blueprint, IDebugger* pHolder, ScrollPanel * pPanel) : DebugPanel( blueprint, pHolder, ScrollPanel::TYPEINFO.className )
 	{
 		m_pInspected = pPanel;
 		m_pTable = _createTable(25,2);
@@ -128,10 +128,10 @@ namespace wg
 		_refreshBoolEntry(m_pTable, 24, m_pInspected->autoscrollY());
 		_refreshObjectPointerEntry(m_pTable, 25, m_pInspected->transition(), m_displayedTransitionPtr );
 
-		m_pScrollbarXDrawer = _createComponentDrawer("Scrollbar X", &m_pInspected->scrollbarX);
-		m_pScrollbarYDrawer = _createComponentDrawer("Scrollbar Y", &m_pInspected->scrollbarY);
+		_refreshComponentDrawer(m_pScrollbarXDrawer);
+		_refreshComponentDrawer(m_pScrollbarYDrawer);
 
-		m_pSlotDrawer = _createSingleSlotDrawer("Slot", &slot);
+		_refreshSingleSlotDrawer(m_pSlotDrawer, &m_pInspected->slot);
 	}
 
 } // namespace wg

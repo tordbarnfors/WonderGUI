@@ -92,7 +92,12 @@ namespace wg
 
 		bool					isReordering() const;
 
-		//.____ Appearance ____________________________________________________
+		//.____ Appearance __________________________________________________________
+
+		void					setTransitionSkin(Skin* pSkin);
+		Skin_p					transitionSkin() const { return m_pTransitionSkin; }
+
+		//.____ Behavior ____________________________________________________
 
 		void					setTransition(ValueTransition* pTransition);
 		ValueTransition_p		transition() const { return m_pTransition; }
@@ -100,8 +105,8 @@ namespace wg
 		void					setTransitionDelay(int microsec);
 		int						transitionDelay() const { return m_transitionDelay; }
 
-		void					setTransitionSkin(Skin* pSkin);
-		Skin_p					transitionSkin() const { return m_pTransitionSkin; }
+		void					setDragOutside( bool bDragOutside );
+		bool					dragOutside() const { return m_bDragOutside; }
 
 	protected:
 		ReorderCapsule();
