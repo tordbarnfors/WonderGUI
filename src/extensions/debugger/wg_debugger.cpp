@@ -34,14 +34,21 @@
 #include <objectinfopanels/wg_widgetinfopanel.h>
 #include <objectinfopanels/wg_fillerinfopanel.h>
 #include <objectinfopanels/wg_buttoninfopanel.h>
+#include <objectinfopanels/wg_textdisplayinfopanel.h>
+#include <objectinfopanels/wg_texteditorinfopanel.h>
 #include <objectinfopanels/wg_containerinfopanel.h>
+
 #include <objectinfopanels/wg_panelinfopanel.h>
 #include <objectinfopanels/wg_packpanelinfopanel.h>
 #include <objectinfopanels/wg_flexpanelinfopanel.h>
 #include <objectinfopanels/wg_scrollpanelinfopanel.h>
-#include <objectinfopanels/wg_textdisplayinfopanel.h>
-#include <objectinfopanels/wg_texteditorinfopanel.h>
 #include <objectinfopanels/wg_twoslotpanelinfopanel.h>
+
+#include <objectinfopanels/wg_capsuleinfopanel.h>
+#include <objectinfopanels/wg_sizecapsuleinfopanel.h>
+#include <objectinfopanels/wg_reordercapsuleinfopanel.h>
+#include <objectinfopanels/wg_selectcapsuleinfopanel.h>
+
 
 #include <objectinfopanels/wg_skininfopanel.h>
 
@@ -92,6 +99,11 @@ namespace wg
 		m_objectInfoFactories[&FlexPanel::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, IDebugger* pHolder, Object* pObject) { return (Widget_p)FlexPanelInfoPanel::create(panelBP, pHolder, (FlexPanel*)pObject); };
 		m_objectInfoFactories[&TwoSlotPanel::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, IDebugger* pHolder, Object* pObject) { return (Widget_p)TwoSlotPanelInfoPanel::create(panelBP, pHolder, (TwoSlotPanel*)pObject); };
 		m_objectInfoFactories[&ScrollPanel::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, IDebugger* pHolder, Object* pObject) { return (Widget_p)ScrollPanelInfoPanel::create(panelBP, pHolder, (ScrollPanel*)pObject); };
+		m_objectInfoFactories[&Capsule::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, IDebugger* pHolder, Object* pObject) { return (Widget_p)CapsuleInfoPanel::create(panelBP, pHolder, (Capsule*)pObject); };
+		m_objectInfoFactories[&SizeCapsule::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, IDebugger* pHolder, Object* pObject) { return (Widget_p)SizeCapsuleInfoPanel::create(panelBP, pHolder, (SizeCapsule*)pObject); };
+		m_objectInfoFactories[&ReorderCapsule::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, IDebugger* pHolder, Object* pObject) { return (Widget_p)ReorderCapsuleInfoPanel::create(panelBP, pHolder, (ReorderCapsule*)pObject); };
+		m_objectInfoFactories[&SelectCapsule::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, IDebugger* pHolder, Object* pObject) { return (Widget_p)SelectCapsuleInfoPanel::create(panelBP, pHolder, (SelectCapsule*)pObject); };
+
 
 
 		m_objectInfoFactories[&Skin::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, IDebugger* pHolder, Object* pObject) { return (Widget_p)SkinInfoPanel::create(panelBP, pHolder, (Skin*)pObject); };

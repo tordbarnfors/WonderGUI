@@ -111,6 +111,13 @@ namespace wg
 		}
 	}
 
+	//____ setDragOutside() ______________________________________________________
+
+	void ReorderCapsule::setDragOutside( bool bDragOutside )
+	{
+		m_bDragOutside = bDragOutside;
+	}
+
 	//____ _receive() ____________________________________________________________
 
 	void ReorderCapsule::_receive(Msg* _pMsg)
