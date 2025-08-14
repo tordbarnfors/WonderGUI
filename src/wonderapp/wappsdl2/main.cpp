@@ -402,14 +402,13 @@ bool init_debugger(MyAppVisitor* pAPI)
 				pWindow->setCloseRequestHandler([](void) {
 
 					g_pDebugWindow = nullptr;
+					g_pDebugFrontend->deactivate();
 					return true;
 				});
 
 				pWindow->setContent(g_pDebugFrontend);
+				g_pDebugFrontend->activate();
 			}
-
-			
-
 		}
 
 	});

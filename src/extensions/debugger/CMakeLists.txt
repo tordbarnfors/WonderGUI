@@ -15,6 +15,8 @@ set(SOURCES
     wg_debugfrontend.cpp
     wg_debugcapsule.h
     wg_debugcapsule.cpp
+    wg_debugfrontendwindow.h
+    wg_debugfrontendwindow.cpp
 
     wg_dummyinfopanel.h
     wg_dummyinfopanel.cpp
