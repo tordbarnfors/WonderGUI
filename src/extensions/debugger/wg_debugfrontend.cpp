@@ -101,6 +101,8 @@ namespace wg
 	{
 		pCapsule->_setSelectMode(m_bSelectMode);
 		m_capsules.push_back(pCapsule);
+
+		_refreshTreeSelector();
 	}
 
 	//____ _removeDebugCapsule() __________________________________________________
@@ -108,6 +110,8 @@ namespace wg
 	void DebugFrontend::_removeDebugCapsule( DebugCapsule * pCapsule )
 	{
 		m_capsules.erase(std::remove(m_capsules.begin(), m_capsules.end(), pCapsule), m_capsules.end());
+
+		_refreshTreeSelector();
 	}
 
 	//____ selectObject() _______________________________________________________
@@ -115,7 +119,6 @@ namespace wg
 	void DebugFrontend::selectObject(Object* pSelected, Object * pSelectedFrom)
 	{
 		auto pWidget = dynamic_cast<Widget*>(pSelected);
-
 		if(pWidget)
 		{
 			for( auto pCapsule : m_capsules )
@@ -143,10 +146,16 @@ namespace wg
 	{
 		auto pWindow = WGCREATE(DebugFrontendWindow, _.theme = m_pTheme );
 
-		auto pContent = m_pBackend->createObjectInspector(pObject);
+		Widget_p pContent;
+
+		auto pSkin = dynamic_cast<Skin*>(pObject);
+
+		if( pSkin )
+			pContent = m_pBackend->createSkinInspector(pSkin);
+		else
+			pContent = m_pBackend->createObjectInspector(pObject);
 
 		pWindow->setContent(pContent);
-
 
 		m_pWorkspace->slots.pushBack(pWindow, WGBP(PackPanelSlot, _.weight = 0.f) );
 	}
@@ -186,6 +195,8 @@ namespace wg
 		auto pLogSplit = WGCREATE(SplitPanel, _ = m_pTheme->splitPanelY() );
 		auto pTreeSplit = WGCREATE(SplitPanel, _ = m_pTheme->splitPanelX() );
 
+		auto pTreePanel = WGCREATE(PackPanel, _.axis = Axis::Y );
+
 		pMainPanel->slots.pushBack({ {	pTopBar, WGBP(PackPanelSlot, _.weight = 0.f)},
 										pLogSplit});
 
@@ -198,7 +209,15 @@ namespace wg
 		auto pWorkspace = WGCREATE(PackPanel, _.axis = Axis::X, _.skin = ColorSkin::create( Color::Navy ));
 		pWorkspaceReorder->slot = pWorkspace;
 
-		pTreeSplit->slots[0] = m_pBackend->createWidgetTreeView(nullptr);
+		//
+
+		m_pTreeSelector = SelectBox::create( m_pTheme->selectBox() );
+		auto pTreeView = m_pBackend->createWidgetTreeView(nullptr);
+
+		pTreePanel->slots.pushBack(m_pTreeSelector, WGBP(PackPanelSlot, _.weight = 0.f ));
+		pTreePanel->slots.pushBack(pTreeView);
+
+		pTreeSplit->slots[0] = pTreePanel;
 		pTreeSplit->slots[1] = pWorkspaceScroller;
 
 		pLogSplit->slots[0] = pTreeSplit;
@@ -232,6 +251,26 @@ namespace wg
 		pToolbox->slots << pPickButton;
 
 		return pToolbox;
+	}
+
+	//____ _refreshTreeSelector() _________________________________________________
+
+	void DebugFrontend::_refreshTreeSelector()
+	{
+		m_pTreeSelector->entries.clear();
+
+		int nb = 0;
+		for( auto pCapsule : m_capsules )
+		{
+			char temp[64];
+
+			Size sz = pCapsule->size();
+
+			snprintf(temp,64, "%d: 0x%llx (%dx%d)", nb+1, reinterpret_cast<std::uintptr_t>(pCapsule), int(sz.w), int(sz.h) );
+
+			m_pTreeSelector->entries.pushBack(WGBP(SelectBoxEntry, _.id = nb, _.text = temp ) );
+			nb++;
+		}
 	}
 
 	//____ _createDebuggerBP() ___________________________________________________
