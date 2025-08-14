@@ -45,15 +45,22 @@ namespace wg
 
 		//----
 
-		pBasePanel->slots << _createButtonRow(true,true);
-		pBasePanel->slots << _createObjectHeader(pSkin);
+		pBasePanel->slots.pushBack( _createButtonRow(true,true), WGBP(PackPanelSlot, _.weight = 0.f) );
+
+		auto pScrollPanel = WGCREATE(ScrollPanel, _ = blueprint.theme->scrollPanelY() );
+		pBasePanel->slots.pushBack( pScrollPanel );
+
+		auto pInnerPanel = WGCREATE(PackPanel, _.axis = Axis::Y, _.layout = PackLayout::create({}));
+
+		pInnerPanel->slots << _createObjectHeader(pSkin);
+		pScrollPanel->slot = pInnerPanel;
 
 		auto pDisplayBackground = WGCREATE(TileSkin, _.surface = blueprint.transparencyGrid, _.spacing = 8, _.padding = 8 );
 
 		m_pSkinDisplay = WGCREATE(SkinDisplay, _.skin = pDisplayBackground, _.displaySkin = pSkin);
 
 		auto pSizeCapsule = WGCREATE(SizeCapsule, _.minSize = { 100, 100 }, _.child = m_pSkinDisplay );
-		pBasePanel->slots << pSizeCapsule;
+		pInnerPanel->slots << pSizeCapsule;
 
 		//----
 
@@ -66,9 +73,7 @@ namespace wg
 
 		Base::msgRouter()->addRoute(m_pStateSelector, MsgType::Select, [this](Msg* pMsg) { this->_refreshState(); });;
 
-	
-		pBasePanel->slots << m_pStateSelector;
-
+		pInnerPanel->slots << m_pStateSelector;
 
 		//---
 
@@ -76,7 +81,7 @@ namespace wg
 
 		while (pTypeInfo != nullptr)
 		{
-			pBasePanel->slots << m_pHolder->createObjectInfoPanel(pTypeInfo, pSkin);
+			pInnerPanel->slots << m_pHolder->createObjectInfoPanel(pTypeInfo, pSkin);
 			pTypeInfo = pTypeInfo->pSuperClass;
 		}
 

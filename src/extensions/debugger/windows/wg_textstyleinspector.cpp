@@ -37,7 +37,7 @@ namespace wg
 
 	TextStyleInspector::TextStyleInspector(const Blueprint& blueprint, IDebugger* pHolder, TextStyle* pStyle) : DebugWindow(blueprint, pHolder)
 	{
-		auto pBasePanel = WGCREATE(PackPanel, _.axis = Axis::Y);
+		auto pBasePanel = WGCREATE(PackPanel, _.axis = Axis::Y, _.layout = PackLayout::create({}));
 
 		pBasePanel->slots << _createObjectHeader(pStyle);
 
