@@ -19,7 +19,7 @@
   should contact Tord Jansson [tord.jansson@gmail.com] for details.
 
 =========================================================================*/
-#include <wg_debugger.h>
+#include <wg_debugbackend.h>
 
 #include <wg_dummyinfopanel.h>
 #include <windows/wg_msglogviewer.h>
@@ -73,7 +73,7 @@
 namespace wg
 {
 
-	const TypeInfo Debugger::TYPEINFO = { "Debugger", &Object::TYPEINFO };
+	const TypeInfo DebugBackend::TYPEINFO = { "DebugBackend", &Object::TYPEINFO };
 
 
 	Widget_p factory( Object *)
@@ -83,7 +83,7 @@ namespace wg
 
 	//____ constructor _____________________________________________________________
 
-	Debugger::Debugger()
+	DebugBackend::DebugBackend()
 	{
 
 		m_objectInfoFactories[&Object::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, IDebugger* pHolder, Object* pObject) { return (Widget_p) ObjectInfoPanel::create(panelBP, pHolder, pObject); };
@@ -128,14 +128,14 @@ namespace wg
 
 	//____ typeInfo() _________________________________________________________
 
-	const TypeInfo& Debugger::typeInfo(void) const
+	const TypeInfo& DebugBackend::typeInfo(void) const
 	{
 		return TYPEINFO;
 	}
 
 	//____ setBlueprint() ________________________________________________________
 
-	void Debugger::setBlueprint(const IDebugger::Blueprint& blueprint)
+	void DebugBackend::setBlueprint(const IDebugger::Blueprint& blueprint)
 	{
 		m_blueprint = blueprint;
 	}
@@ -143,14 +143,14 @@ namespace wg
 
 	//____ blueprint() ___________________________________________________________
 
-	const IDebugger::Blueprint& Debugger::blueprint()
+	const IDebugger::Blueprint& DebugBackend::blueprint()
 	{
 		return m_blueprint;
 	}
 
 	//____ createObjectInfoPanel() ____________________________________________________
 
-	Widget_p Debugger::createObjectInfoPanel(const TypeInfo * pType, Object * pObject )
+	Widget_p DebugBackend::createObjectInfoPanel(const TypeInfo * pType, Object * pObject )
 	{
 
 		auto it = m_objectInfoFactories.find( pType );
@@ -171,7 +171,7 @@ namespace wg
 
 	//____ createSlotInfoPanel() ____________________________________________________
 
-	Widget_p Debugger::createSlotInfoPanel(const TypeInfo * pType, StaticSlot * pSlot )
+	Widget_p DebugBackend::createSlotInfoPanel(const TypeInfo * pType, StaticSlot * pSlot )
 	{
 
 		auto it = m_slotInfoFactories.find( pType );
@@ -192,7 +192,7 @@ namespace wg
 
 	//____ createComponentInfoPanel() ____________________________________________________
 
-	Widget_p Debugger::createComponentInfoPanel(const TypeInfo* pType, Component* pComponent)
+	Widget_p DebugBackend::createComponentInfoPanel(const TypeInfo* pType, Component* pComponent)
 	{
 
 		auto it = m_componentInfoFactories.find(pType);
@@ -213,14 +213,14 @@ namespace wg
 
 	//____ createObjectInspector() ________________________________________________
 
-	Widget_p Debugger::createObjectInspector(Object* pObject)
+	Widget_p DebugBackend::createObjectInspector(Object* pObject)
 	{
 		return ObjectInspector::create(m_blueprint, this, pObject);
 	}
 
 	//____ createSkinInspector() ________________________________________________
 
-	Widget_p Debugger::createSkinInspector(Skin* pSkin)
+	Widget_p DebugBackend::createSkinInspector(Skin* pSkin)
 	{
 		return SkinInspector::create(m_blueprint, this, pSkin);
 	}
@@ -228,28 +228,28 @@ namespace wg
 
 	//____ createWidgetTreeView() ____________________________________________
 
-	Widget_p Debugger::createWidgetTreeView(Widget* pRoot)
+	Widget_p DebugBackend::createWidgetTreeView(Widget* pRoot)
 	{
 		return WidgetTreeView::create(m_blueprint, this, pRoot);
 	}
 
 	//____ createMsgLogViewer() ________________________________________________
 
-	Widget_p Debugger::createMsgLogViewer()
+	Widget_p DebugBackend::createMsgLogViewer()
 	{
 		return MsgLogViewer::create(m_blueprint, this);
 	}
 
 	//____ setObjectSelectedCallback() ________________________________________
 
-	void Debugger::setObjectSelectedCallback(std::function<void(Object*,Object*)> pCallback)
+	void DebugBackend::setObjectSelectedCallback(std::function<void(Object*,Object*)> pCallback)
 	{
 		m_objectSelectedCallback = pCallback;
 	}
 
 	//____ objectSelected() ____________________________________________________
 
-	void Debugger::objectSelected(Object* pSelected, Object* pCaller)
+	void DebugBackend::objectSelected(Object* pSelected, Object* pCaller)
 	{
 		if (m_objectSelectedCallback)
 			m_objectSelectedCallback(pSelected, pCaller);

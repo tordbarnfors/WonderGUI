@@ -1,7 +1,8 @@
 set(SOURCES
     wg_idebugger.h
     wg_debugger.h
-    wg_debugger.cpp
+    wg_debugbackend.h
+    wg_debugbackend.cpp
     wg_debugpanel.h
     wg_debugpanel.cpp
     wg_debugwindow.h

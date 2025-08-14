@@ -26,7 +26,7 @@
 #pragma once
 
 #include <wg_capsule.h>
-#include <wg_debugger.h>
+#include <wg_debugbackend.h>
 
 
 namespace wg
@@ -51,7 +51,7 @@ namespace wg
 
 		struct Blueprint
 		{
-			Debugger_p		backend;									// Mandatory!!!
+			DebugBackend_p	backend;									// Mandatory!!!
 			Object_p		baggage;
 			bool			disabled = false;
 			bool			dropTarget = false;
@@ -88,28 +88,42 @@ namespace wg
 		void		selectSkin(Skin* pSkin);
 		void		selectObject(Object* pSelected, Object * pSelectedFrom);
 
-		void		addDebugCapsule( DebugCapsule * pCapsule );
-		void		removeDebugCapsule( DebugCapsule * pCapsule );
+		void		setSelectMode(bool selectMode);
+		bool		selectMode() const { return m_bSelectMode; }
+
+		//.____ Internal ________________________________________________
+
+		void		_addDebugCapsule( DebugCapsule * pCapsule );
+		void		_removeDebugCapsule( DebugCapsule * pCapsule );
 
 	protected:
 		DebugFrontend(const Blueprint& blueprint);
 		virtual ~DebugFrontend();
 
-		void _createDebuggerBP();
+		Widget_p	_createToolbox();
+		void 		_createDebuggerBP();
 
-		Debugger_p		m_pBackend;
+		void		_createResources();
+		void		_setupGUI();
 
-		
-
-
-
+		DebugBackend_p		m_pBackend;
 		std::vector<DebugCapsule*>	m_capsules;
+
+		// Modes
+
+		bool			m_bSelectMode = false;
+
 
 		// Resources
 
 		Theme_p			m_pTheme;
 		Surface_p		m_pIcons;
 		Surface_p		m_pTransparencyGrid;
+
+		Skin_p			m_pRefreshIcon;
+		Skin_p			m_pSelectIcon;
+		Skin_p			m_pExpandIcon;
+		Skin_p			m_pCondenseIcon;
 
 		IDebugger::Blueprint	m_debugPanelBP;
 	};

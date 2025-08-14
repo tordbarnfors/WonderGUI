@@ -22,9 +22,11 @@
 
 #include <wg_debugfrontend.h>
 #include <wg_debugcapsule.h>
+#include <wg_msgrouter.h>
 
 #include <wg_basictextlayout.h>
 #include <wg_basicnumberlayout.h>
+#include <wg_blockskin.h>
 #include <wg_colorskin.h>
 
 namespace wg
@@ -65,6 +67,9 @@ namespace wg
 			if( pSelected )
 				selectObject(pSelected, pSelectedFrom);
 		});
+
+		_createResources();
+		_setupGUI();
 	}
 
 	//____ Destructor _____________________________________________________________
@@ -80,16 +85,16 @@ namespace wg
 		return TYPEINFO;
 	}
 
-	//____ addDebugCapsule() _____________________________________________________
+	//____ _addDebugCapsule() _____________________________________________________
 
-	void DebugFrontend::addDebugCapsule( DebugCapsule * pCapsule )
+	void DebugFrontend::_addDebugCapsule( DebugCapsule * pCapsule )
 	{
 		m_capsules.push_back(pCapsule);
 	}
 
-	//____ removeDebugCapsule() __________________________________________________
+	//____ _removeDebugCapsule() __________________________________________________
 
-	void DebugFrontend::removeDebugCapsule( DebugCapsule * pCapsule )
+	void DebugFrontend::_removeDebugCapsule( DebugCapsule * pCapsule )
 	{
 		m_capsules.erase(std::remove(m_capsules.begin(), m_capsules.end(), pCapsule), m_capsules.end());
 	}
@@ -115,6 +120,91 @@ namespace wg
 	void DebugFrontend::selectObject(Object* pSelected, Object * pSelectedFrom)
 	{
 
+	}
+
+	//____ setSelectMode() _______________________________________________________
+
+	void DebugFrontend::setSelectMode(bool selectMode)
+	{
+		if(selectMode != m_bSelectMode)
+		{
+			m_bSelectMode = selectMode;
+			for( auto capsule : m_capsules )
+				capsule->_setSelectMode(selectMode);
+		}
+	}
+
+
+	//____ _createResources() ____________________________________________________
+
+	void DebugFrontend::_createResources()
+	{
+		m_pRefreshIcon = BlockSkin::create(WGBP(BlockSkin,
+			_.surface = m_pIcons,
+			_.firstBlock = Rect(0, 0, 16, 16);
+			));
+
+		m_pSelectIcon = BlockSkin::create(WGBP(BlockSkin,
+			_.surface = m_pIcons,
+			_.firstBlock = Rect(16, 0, 16, 16);
+		));
+
+		m_pExpandIcon = BlockSkin::create(WGBP(BlockSkin,
+			_.surface = m_pIcons,
+			_.firstBlock = Rect(32, 0, 16, 16);
+		));
+
+		m_pCondenseIcon = BlockSkin::create(WGBP(BlockSkin,
+			_.surface = m_pIcons,
+			_.firstBlock = Rect(48, 0, 16, 16);
+		));
+
+	}
+
+	//____ _setupGUI() ___________________________________________________________
+
+	void DebugFrontend::_setupGUI()
+	{
+		auto pMainPanel = WGCREATE(PackPanel, _.axis = Axis::Y );
+		auto pTopBar 	= WGCREATE(PackPanel, _.axis = Axis::X, _.skin = m_pTheme->plateSkin() );
+		auto pLogSplit = WGCREATE(SplitPanel, _ = m_pTheme->splitPanelY() );
+		auto pTreeSplit = WGCREATE(SplitPanel, _ = m_pTheme->splitPanelX() );
+
+		pMainPanel->slots.pushBack({ {	pTopBar, WGBP(PackPanelSlot, _.weight = 0.f)},
+										pLogSplit});
+
+		auto pWorkspace = WGCREATE(PackPanel, _.axis = Axis::X, _.skin = ColorSkin::create( Color::Navy ));
+
+		pTreeSplit->slots[0] = m_pBackend->createWidgetTreeView(nullptr);
+		pTreeSplit->slots[1] = pWorkspace;
+
+		pLogSplit->slots[0] = pTreeSplit;
+		pLogSplit->slots[1] = m_pBackend->createMsgLogViewer();
+
+		pTopBar->slots.pushBack( _createToolbox(), WGBP(PackPanelSlot, _.weight = 0.f));
+
+		slot = pMainPanel;
+	}
+
+	//____ _createToolbox() ______________________________________________________
+
+	Widget_p DebugFrontend::_createToolbox()
+	{
+		auto pToolbox = PackPanel::create(WGBP(PackPanel, _.axis = Axis::X));
+
+		auto pPickButton = ToggleButton::create(WGOVR(m_pTheme->toggleButton(), _.icon.skin = m_pSelectIcon, _.icon.placement = Placement::Center));
+
+//		m_pPickWidgetButton = pPickButton;
+
+		Base::msgRouter()->addRoute(pPickButton, MsgType::Toggle, [this](Msg* pMsg) {
+
+			auto pButton = wg_static_cast<ToggleButton_p>(pMsg->source());
+			setSelectMode(pButton->isChecked());
+		});
+
+		pToolbox->slots << pPickButton;
+
+		return pToolbox;
 	}
 
 	//____ _createDebuggerBP() ___________________________________________________

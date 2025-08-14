@@ -60,13 +60,13 @@ namespace wg
 
 	DebugOverlay::DebugOverlay(const Blueprint& bp) : Overlay(bp), windows(this)
 	{
-		m_pDebugger = bp.debugger;
+		m_pBackend = bp.backend;
 		m_pTheme 	= bp.theme;
 		m_pIcons	= bp.icons;
 		m_pTransparencyGrid = bp.transparencyGrid;
 
 		_createResources();
-		m_pDebugger->setBlueprint(m_debugPanelBP);
+		m_pBackend->setBlueprint(m_debugPanelBP);
 
 		// Create default skins
 
@@ -79,7 +79,7 @@ namespace wg
 		_createObjectInfoWindow();
 		_createMsgLogWindow();
 
-		m_pDebugger->setObjectSelectedCallback([this](Object* pSelected,Object* pSelectedFrom) {
+		m_pBackend->setObjectSelectedCallback([this](Object* pSelected,Object* pSelectedFrom) {
 
 			auto pWidget = dynamic_cast<Widget*>(pSelected);
 			if (pWidget)
@@ -322,7 +322,7 @@ namespace wg
 		if (m_pSelectedWidget)
 		{
 			m_pWidgetTools->slots.clear();
-			m_pWidgetTools->slots << m_pDebugger->createObjectInspector(m_pSelectedWidget);
+			m_pWidgetTools->slots << m_pBackend->createObjectInspector(m_pSelectedWidget);
 
 			if (!m_pWidgetTreeContainer->slot.isEmpty())
 				static_cast<WidgetTreeView*>(m_pWidgetTreeContainer->slot._widget())->select(m_pSelectedWidget);
@@ -357,7 +357,7 @@ namespace wg
 	{
 		m_pSkinContainer->slots.clear();
 
-		m_pSkinContainer->slots << m_pDebugger->createSkinInspector(pSkin);
+		m_pSkinContainer->slots << m_pBackend->createSkinInspector(pSkin);
 	}
 
 	//____ _selectObject() ____________________________________________________
@@ -366,7 +366,7 @@ namespace wg
 	{
 		m_pAnyObjectContainer->slots.clear();
 
-		m_pAnyObjectContainer->slots << m_pDebugger->createObjectInspector(pSelected);
+		m_pAnyObjectContainer->slots << m_pBackend->createObjectInspector(pSelected);
 	}
 
 	//____ _slotTypeInfo() ________________________________________________________
@@ -911,7 +911,7 @@ namespace wg
 		Base::msgRouter()->addRoute(pRefreshButton, MsgType::Select, [this](Msg* pMsg) {
 
 			if (mainSlot.widget())
-				this->m_pWidgetTreeContainer->slot = m_pDebugger->createWidgetTreeView(mainSlot.widget());
+				this->m_pWidgetTreeContainer->slot = m_pBackend->createWidgetTreeView(mainSlot.widget());
 			else
 				this->m_pWidgetTreeContainer->slot = nullptr;
 		});
@@ -951,7 +951,7 @@ namespace wg
 		m_pWidgetTreeContainer = pContentWindow;
 
 		if( mainSlot.widget() )
-			pContentWindow->slot = m_pDebugger->createWidgetTreeView(mainSlot.widget());
+			pContentWindow->slot = m_pBackend->createWidgetTreeView(mainSlot.widget());
 			
 		pContent->slots << pContentWindow;
 
@@ -1095,7 +1095,7 @@ namespace wg
 		pContent->setLayout(nullptr);
 
 
-		pContent->slots << m_pDebugger->createMsgLogViewer();
+		pContent->slots << m_pBackend->createMsgLogViewer();
 
 		_refreshRealGeo(windows._first() + windows.size() - 1);
 	}

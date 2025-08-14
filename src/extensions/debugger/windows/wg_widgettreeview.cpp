@@ -45,7 +45,8 @@ namespace wg
 		 
 		m_pSelectCapsule = SelectCapsule::create(WGBP(SelectCapsule, _.recursive = true ));
 
-		m_pSelectCapsule->slot = _generateInfoTree(blueprint, pRoot );
+		if( pRoot )
+			m_pSelectCapsule->slot = _generateInfoTree(blueprint, pRoot );
 
 		m_routeIdForSelect = Base::msgRouter()->addRoute(m_pSelectCapsule, MsgType::Selected, [this](Msg* pMsg) {
 		

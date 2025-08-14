@@ -56,6 +56,35 @@ using namespace wg;
 const TypeInfo SDLWindowSW::TYPEINFO = { "SDLSoftwareWindow", &SDLWindow::TYPEINFO };
 
 
+
+//____ backend_specific_init() ________________________________________________
+
+bool backend_specific_init()
+{
+	auto pBackend = SoftBackend::create();
+	addDefaultSoftKernels( pBackend );
+
+	auto pSoftDevice = GfxDeviceGen2::create(pBackend);
+
+	Base::setDefaultGfxDevice(pSoftDevice);
+
+	auto pSurfaceFactory = SoftSurfaceFactory::create();
+	Base::setDefaultSurfaceFactory(pSurfaceFactory);
+
+	auto pEdgemapFactory = SoftEdgemapFactory::create();
+	Base::setDefaultEdgemapFactory(pEdgemapFactory);
+
+	return true;
+}
+
+//____ backend_specific_exit() ________________________________________________
+
+void backend_specific_exit()
+{
+
+}
+
+
 //____ create() _______________________________________________________________
 
 SDLWindow_p SDLWindow::create(const Blueprint& blueprint)
@@ -80,25 +109,6 @@ SDLWindow_p SDLWindow::create(const Blueprint& blueprint)
     if( !blueprint.maxSize.isEmpty() )
         SDL_SetWindowMaximumSize(pSDLWindow,blueprint.maxSize.w, blueprint.maxSize.h);
 
-    auto pDevice = Base::defaultGfxDevice();
-    if( !pDevice )
-    {
-		auto pBackend = SoftBackend::create();
-		addDefaultSoftKernels( pBackend );
-
-		auto pSoftDevice = GfxDeviceGen2::create(pBackend);
-
-        Base::setDefaultGfxDevice(pSoftDevice);
-        pDevice = pSoftDevice;
-        
-        auto pSurfaceFactory = SoftSurfaceFactory::create();
-        Base::setDefaultSurfaceFactory(pSurfaceFactory);
-
-		auto pEdgemapFactory = SoftEdgemapFactory::create();
-		Base::setDefaultEdgemapFactory(pEdgemapFactory);
-
-	}
-    
     auto pWindowSurface = SDLWindowSW::_generateWindowSurface(pSDLWindow, geo.w, geo.h);
     if (pWindowSurface == nullptr)
         return nullptr;
@@ -111,17 +121,6 @@ SDLWindow_p SDLWindow::create(const Blueprint& blueprint)
 	
     if (blueprint.finalizer)
         pWindow->setFinalizer(blueprint.finalizer);
-
-	// Setup basic widget hierarchy.
-
-	auto pDragNDropOverlay = DragNDropOverlay::create();
-	pRootPanel->slot = pDragNDropOverlay;
-
-	auto pPopupOverlay = PopupOverlay::create();
-	pDragNDropOverlay->mainSlot = pPopupOverlay;
-
-	pWindow->m_pLastOverlay = pPopupOverlay;
-
 
     //TODO: This is ugly. It should be handled when windows gets focused.
 

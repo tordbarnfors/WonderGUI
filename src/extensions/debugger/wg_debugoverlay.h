@@ -28,7 +28,7 @@
 #include <wg_staticslotvector.h>
 #include <wg_packpanel.h>
 #include <wg_togglebutton.h>
-#include <wg_debugger.h>
+#include <wg_debugbackend.h>
 #include <wg_theme.h>
 
 #include <wg_scrollpanel.h>
@@ -91,7 +91,7 @@ namespace wg
 		struct Blueprint
 		{
 			Object_p		baggage;
-			Debugger_p		debugger;									// Mandatory!!!
+			DebugBackend_p	backend;									// Mandatory!!!
 			bool			disabled = false;
 			bool			dropTarget = false;
 			Finalizer_p		finalizer = nullptr;
@@ -207,7 +207,7 @@ namespace wg
 
 		//
 
-		Debugger_p		m_pDebugger;
+		DebugBackend_p	m_pBackend;
 
 		PackLayout_p	m_pPackLayoutForScrollingContent;
 

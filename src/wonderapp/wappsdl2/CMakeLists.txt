@@ -34,6 +34,7 @@ add_library(wappsdl2sw STATIC
 target_include_directories(wappsdl2sw PRIVATE
     ${INCDIRS}
     ${WGSOFTGFX_INCDIRS}
+    ${WGDEBUGGER_INCDIRS}
     ${SDL2_INCDIR}
     ${SDL2IMAGE_INCDIR}
 )
@@ -50,6 +51,7 @@ target_link_libraries(wappsdl2sw PRIVATE
     wgsoftgfx
     wgfreetypefont
     wondergui
+    wgdebugger
     wg_theme_simplistic
     ${FREETYPE2_LIB}
     ${SDL2_LIBS}
@@ -69,6 +71,7 @@ add_library(wappsdl2gl STATIC
 target_include_directories(wappsdl2gl PRIVATE
     ${INCDIRS}
     ${WGOPENGLGFX_INCDIRS}
+    ${WGDEBUGGER_INCDIRS}
     ${SDL2_INCDIR}
     ${SDL2IMAGE_INCDIR}
 )
@@ -86,6 +89,7 @@ target_link_libraries(wappsdl2gl PRIVATE
     wgopenglgfx
     wgfreetypefont
     wondergui
+    wgdebugger
     wg_theme_simplistic
     ${FREETYPE2_LIB}
     ${SDL2_LIBS}
@@ -109,6 +113,7 @@ if(APPLE)
     target_include_directories(wappsdl2metal PRIVATE
         ${INCDIRS}
         ${WGMETALGFX_INCDIRS}
+        ${WGDEBUGGER_INCDIRS}
         ${SDL2_INCDIR}
         ${SDL2IMAGE_INCDIR}
     )
@@ -126,6 +131,7 @@ if(APPLE)
         wgmetalgfx
         wgfreetypefont
         wondergui
+        wgdebugger
         wg_theme_simplistic
         ${FREETYPE2_LIB}
         ${SDL2_LIBS}

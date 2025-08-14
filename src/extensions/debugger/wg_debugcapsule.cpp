@@ -32,27 +32,16 @@ namespace wg
 
 	//____ create() ______________________________________________________________
 
-	DebugCapsule_p DebugCapsule::create()
-	{
-		return DebugCapsule_p(new DebugCapsule());
-	}
-
 	DebugCapsule_p DebugCapsule::create(const Blueprint& blueprint)
 	{
 		return DebugCapsule_p(new DebugCapsule(blueprint));
-	}
-
-	//____ constructor ____________________________________________________________
-
-	DebugCapsule::DebugCapsule()
-	{
-		_startReceiveUpdates();
 	}
 
 	//____ destructor _____________________________________________________________
 
 	DebugCapsule::~DebugCapsule()
 	{
+		m_pFrontend->_removeDebugCapsule(this);
 		_stopReceiveUpdates();
 	}
 
@@ -61,6 +50,16 @@ namespace wg
 	const TypeInfo& DebugCapsule::typeInfo(void) const
 	{
 		return TYPEINFO;
+	}
+
+	//____ pointerStyle() ________________________________________________________
+
+	PointerStyle DebugCapsule::pointerStyle() const
+	{
+		if( m_bInSelectMode )
+			return PointerStyle::Crosshair;
+		else
+			return Capsule::pointerStyle();
 	}
 
 	//____ _receive() ____________________________________________________________
@@ -115,7 +114,8 @@ namespace wg
 
 		m_renderedSelectionArea = _selectionArea();
 
-		m_pSelectionSkin->_render(pDevice, m_renderedSelectionArea, m_scale, State::Default);
+		if( m_pSelectionSkin && !m_renderedSelectionArea.isEmpty() )
+			m_pSelectionSkin->_render(pDevice, m_renderedSelectionArea, m_scale, State::Default);
 	}
 
 
@@ -137,6 +137,13 @@ namespace wg
 			m_pSelectedWidget = pWidget;
 		else
 			m_pSelectedWidget = nullptr;
+	}
+
+	//____ _setSelectMode() ______________________________________________________
+
+	void DebugCapsule::_setSelectMode(bool bSelectMode)
+	{
+		m_bInSelectMode = bSelectMode;
 	}
 
 	//____ _selectionArea() __________________________________________________________
