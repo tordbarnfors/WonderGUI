@@ -80,7 +80,7 @@ namespace wg
 					{
 						Widget * pWidget = pContainer->_findWidget(mousePos, SearchMode::MarkPolicy);
 						if (pWidget && m_pFrontend )
-							m_pFrontend->selectWidget(pWidget);
+							m_pFrontend->selectObject(pWidget,this);
 					}
 					break;									// Press on us is ignored
 				}
