@@ -27,6 +27,12 @@
 
 #include <wg_capsule.h>
 #include <wg_debugbackend.h>
+#include <wg_debugfrontendwindow.h>
+
+#include <windows/wg_objectinspector.h>
+#include <windows/wg_skininspector.h>
+#include <windows/wg_widgettreeview.h>
+
 
 
 namespace wg
@@ -84,8 +90,9 @@ namespace wg
 
 		//.____ Control ________________________________________________
 
-		void		selectWidget(Widget * pWidget);
-		void		selectSkin(Skin* pSkin);
+		void		activate();		// Call when debugfrontend's window is recreated.
+		void		deactivate();	// Call when debugfrontend's window is deleted.
+
 		void		selectObject(Object* pSelected, Object * pSelectedFrom);
 
 		void		setSelectMode(bool selectMode);
@@ -95,6 +102,7 @@ namespace wg
 
 		void		_addDebugCapsule( DebugCapsule * pCapsule );
 		void		_removeDebugCapsule( DebugCapsule * pCapsule );
+
 
 	protected:
 		DebugFrontend(const Blueprint& blueprint);
@@ -106,8 +114,17 @@ namespace wg
 		void		_createResources();
 		void		_setupGUI();
 
+		void		_addWorkspaceWindow( Object * pObject, bool bReuse );
+
+
 		DebugBackend_p		m_pBackend;
 		std::vector<DebugCapsule*>	m_capsules;
+
+		std::vector<DebugFrontendWindow_p>	m_widgetWindows;
+		std::vector<DebugFrontendWindow_p>	m_skinWindows;
+		std::vector<DebugFrontendWindow_p>	m_objectWindows;
+
+		PackPanel_p			m_pWorkspace;
 
 		// Modes
 
