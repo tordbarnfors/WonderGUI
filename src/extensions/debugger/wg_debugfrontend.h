@@ -114,6 +114,9 @@ namespace wg
 		void		_createResources();
 		void		_setupGUI();
 
+		void		_refreshTreeSelector();
+
+
 		void		_addWorkspaceWindow( Object * pObject, bool bReuse );
 
 
@@ -125,6 +128,7 @@ namespace wg
 		std::vector<DebugFrontendWindow_p>	m_objectWindows;
 
 		PackPanel_p			m_pWorkspace;
+		SelectBox_p			m_pTreeSelector;
 
 		// Modes
 

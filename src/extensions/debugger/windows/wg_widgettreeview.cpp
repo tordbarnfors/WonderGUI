@@ -25,6 +25,7 @@
 #include <wg_paddingcapsule.h>
 #include <wg_drawerpanel.h>
 #include <wg_selectcapsule.h>
+#include <wg_filler.h>
 
 #include <wg_boxskin.h>
 #include <wg_colorskin.h>
@@ -47,6 +48,8 @@ namespace wg
 
 		if( pRoot )
 			m_pSelectCapsule->slot = _generateInfoTree(blueprint, pRoot );
+		else
+			m_pSelectCapsule->slot = Filler::create( WGBP(Filler, _.skin = blueprint.theme->canvasSkin() ));
 
 		m_routeIdForSelect = Base::msgRouter()->addRoute(m_pSelectCapsule, MsgType::Selected, [this](Msg* pMsg) {
 		

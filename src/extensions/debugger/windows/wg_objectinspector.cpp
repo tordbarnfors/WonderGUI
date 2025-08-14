@@ -22,6 +22,7 @@
 #include "wg_objectinspector.h"
 #include <wg_debugpanel.h>
 
+#include <wg_scrollpanel.h>
 #include <wg_textdisplay.h>
 #include <wg_skindisplay.h>
 #include <wg_boxskin.h>
@@ -45,15 +46,24 @@ namespace wg
 
 		auto pBasePanel = WGCREATE(PackPanel, _.axis = Axis::Y);
 
-		pBasePanel->slots << _createButtonRow(true,true);
-		pBasePanel->slots << _createObjectHeader(pObject);
+		pBasePanel->slots.pushBack( _createButtonRow(true,true), WGBP(PackPanelSlot, _.weight = 0.f) );
+
+		auto pScrollPanel = WGCREATE(ScrollPanel, _ = bp.theme->scrollPanelY() );
+		pBasePanel->slots.pushBack( pScrollPanel );
+
+		auto pInnerPanel = WGCREATE(PackPanel, _.axis = Axis::Y, _.layout = PackLayout::create({}) );
+
+		pInnerPanel->slots << _createObjectHeader(pObject);
 
 		auto pTypeInfo = &pObject->typeInfo();
 		while (pTypeInfo != nullptr)
 		{
-			pBasePanel->slots << m_pHolder->createObjectInfoPanel(pTypeInfo, pObject);
+			pInnerPanel->slots << m_pHolder->createObjectInfoPanel(pTypeInfo, pObject);
 			pTypeInfo = pTypeInfo->pSuperClass;
 		}
+
+		pScrollPanel->slot = pInnerPanel;
+
 
 		this->slot = pBasePanel;
 	}

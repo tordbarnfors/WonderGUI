@@ -22,7 +22,11 @@
 #pragma once
 
 #include <wondergui.h>
-#include <wg_debugfrontend.h>
+
+namespace wg
+{
+class DebugFrontend;
+}
 
 class Window;
 typedef    wg::StrongPtr<Window>    Window_p;
