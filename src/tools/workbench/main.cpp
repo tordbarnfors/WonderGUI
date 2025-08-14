@@ -705,7 +705,7 @@ int main(int argc, char** argv)
 		// Setup debugger
 		//------------------------------------------------------
 
-		auto pDebugger = Debugger::create();
+		auto pDebugger = DebugBackend::create();
 
 
 		pSDLSurf = IMG_Load("resources/debugger_gfx.png");
@@ -719,7 +719,8 @@ int main(int argc, char** argv)
 		SDL_FreeSurface(pSDLSurf);
 
 
-		auto pDebugOverlay = DebugOverlay::create( { .debugger = pDebugger, .theme = pTheme, .icons = pIconSurface, .transparencyGrid = pTransparencyGrid } );
+		auto pDebugOverlay = DebugOverlay::create( { .backend = pDebugger, .theme = pTheme, .icons = pIconSurface, .transparencyGrid = pTransparencyGrid } );
+
 
 		pDebugOverlay->setActivated(true);
 
@@ -791,7 +792,7 @@ int main(int argc, char** argv)
 		//	animSkinTest(pSlot);
 		//	renderLayerTest(pSlot);
 		//	rigidPartNinePatchTest(pSlot);
-			scrollSkinTest(pSlot);
+		//	scrollSkinTest(pSlot);
 		//	tooltipLayerTest(pSlot);
 		//	kerningTest(pSlot);
 		//	circleSkinTest(pSlot);

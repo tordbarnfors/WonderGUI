@@ -24,6 +24,8 @@
 #include <wg_debugcapsule.h>
 #include <wg_msgrouter.h>
 
+#include <wondergui.h>
+
 #include <wg_basictextlayout.h>
 #include <wg_basicnumberlayout.h>
 #include <wg_blockskin.h>
@@ -50,22 +52,7 @@ namespace wg
 
 		m_pBackend->setObjectSelectedCallback([this](Object* pSelected,Object* pSelectedFrom) {
 
-			auto pWidget = dynamic_cast<Widget*>(pSelected);
-			if (pWidget)
-			{
-				selectWidget(pWidget);
-				return;
-			}
-
-			auto pSkin = dynamic_cast<Skin*>(pSelected);
-			if( pSkin )
-			{
-				selectSkin(pSkin);
-				return;
-			}
-
-			if( pSelected )
-				selectObject(pSelected, pSelectedFrom);
+			selectObject(pSelected, pSelectedFrom);
 		});
 
 		_createResources();
@@ -85,10 +72,34 @@ namespace wg
 		return TYPEINFO;
 	}
 
+	//____ activate() ____________________________________________________________
+
+	void DebugFrontend::activate()
+	{
+		if( m_bSelectMode )
+		{
+			for( auto pCapsule : m_capsules )
+				pCapsule->_setSelectMode(true);
+		}
+	}
+
+	//____ deactivate() __________________________________________________________
+
+	void DebugFrontend::deactivate()
+	{
+		if( m_bSelectMode )
+		{
+			for( auto pCapsule : m_capsules )
+				pCapsule->_setSelectMode(false);
+		}
+	}
+
+
 	//____ _addDebugCapsule() _____________________________________________________
 
 	void DebugFrontend::_addDebugCapsule( DebugCapsule * pCapsule )
 	{
+		pCapsule->_setSelectMode(m_bSelectMode);
 		m_capsules.push_back(pCapsule);
 	}
 
@@ -99,27 +110,19 @@ namespace wg
 		m_capsules.erase(std::remove(m_capsules.begin(), m_capsules.end(), pCapsule), m_capsules.end());
 	}
 
-
-	//____ selectWidget() _________________________________________________________
-
-	void DebugFrontend::selectWidget(Widget * pWidget)
-	{
-		for( auto pCapsule : m_capsules )
-			pCapsule->_widgetSelected(pWidget);
-	}
-
-	//____ selectSkin() _________________________________________________________
-
-	void DebugFrontend::selectSkin(Skin* pSkin)
-	{
-
-	}
-
 	//____ selectObject() _______________________________________________________
 
 	void DebugFrontend::selectObject(Object* pSelected, Object * pSelectedFrom)
 	{
+		auto pWidget = dynamic_cast<Widget*>(pSelected);
 
+		if(pWidget)
+		{
+			for( auto pCapsule : m_capsules )
+				pCapsule->_widgetSelected(pWidget);
+		}
+
+		_addWorkspaceWindow(pSelected, true);
 	}
 
 	//____ setSelectMode() _______________________________________________________
@@ -134,6 +137,19 @@ namespace wg
 		}
 	}
 
+	//____ _addWorkspaceWindow() _________________________________________________
+
+	void DebugFrontend::_addWorkspaceWindow( Object * pObject, bool bReuse )
+	{
+		auto pWindow = WGCREATE(DebugFrontendWindow, _.theme = m_pTheme );
+
+		auto pContent = m_pBackend->createObjectInspector(pObject);
+
+		pWindow->setContent(pContent);
+
+
+		m_pWorkspace->slots.pushBack(pWindow, WGBP(PackPanelSlot, _.weight = 0.f) );
+	}
 
 	//____ _createResources() ____________________________________________________
 
@@ -173,16 +189,27 @@ namespace wg
 		pMainPanel->slots.pushBack({ {	pTopBar, WGBP(PackPanelSlot, _.weight = 0.f)},
 										pLogSplit});
 
+		auto pWorkspaceScroller = WGCREATE(ScrollPanel, _ = m_pTheme->scrollPanelX() );
+
+		auto pWorkspaceReorder = WGCREATE(ReorderCapsule, _.dragOutside = false, _.usePickHandles = true );
+		pWorkspaceScroller->slot = pWorkspaceReorder;
+
+
 		auto pWorkspace = WGCREATE(PackPanel, _.axis = Axis::X, _.skin = ColorSkin::create( Color::Navy ));
+		pWorkspaceReorder->slot = pWorkspace;
 
 		pTreeSplit->slots[0] = m_pBackend->createWidgetTreeView(nullptr);
-		pTreeSplit->slots[1] = pWorkspace;
+		pTreeSplit->slots[1] = pWorkspaceScroller;
 
 		pLogSplit->slots[0] = pTreeSplit;
 		pLogSplit->slots[1] = m_pBackend->createMsgLogViewer();
 
 		pTopBar->slots.pushBack( _createToolbox(), WGBP(PackPanelSlot, _.weight = 0.f));
 
+//		pMainPanel->slots.pushBack(pWorkspaceReorder);
+
+
+		m_pWorkspace = pWorkspace;
 		slot = pMainPanel;
 	}
 

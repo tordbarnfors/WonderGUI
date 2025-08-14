@@ -150,7 +150,7 @@ namespace wg
 
 					Coord offset = -(pMsg->pointerPos() - pWidget->globalGeo().pos());
 
-					auto pDataset = ReorderCapsule::DropData::create({pWidget,pFound->weight()});
+					auto pDataset = DropData::create({pWidget,pFound->weight()});
 					pMsg->setContent(DropType::Widget, m_pickCategory, pDataset);
 					pMsg->setDragWidget(pWidget, offset );
 					pMsg->setHotspot(Placement::Center);
