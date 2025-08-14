@@ -22,6 +22,7 @@
 #pragma once
 
 #include <wondergui.h>
+#include <wg_debugfrontend.h>
 
 class Window;
 typedef    wg::StrongPtr<Window>    Window_p;
@@ -85,6 +86,8 @@ public:
     //.____ Internal ____________________________________________________________
     
     bool    _onCloseRequest();
+
+	void	_setDebugger( wg::DebugFrontend * pDebugger );
 
     
     

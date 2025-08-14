@@ -21,6 +21,8 @@
 =========================================================================*/
 
 #include "window.h"
+#include <wg_debugcapsule.h>
+#include <wg_debugfrontend.h>
 
 using namespace wg;
 
@@ -33,6 +35,15 @@ Window::Window(wg::RootPanel * pRoot, const wg::Rect& geo ) :
 	m_pRootPanel(pRoot),
 	m_geo(geo)
 {
+	// Setup basic widget hierarchy.
+
+	auto pDragNDropOverlay = DragNDropOverlay::create();
+	pRoot->slot = pDragNDropOverlay;
+
+	auto pPopupOverlay = PopupOverlay::create();
+	pDragNDropOverlay->mainSlot = pPopupOverlay;
+
+	m_pLastOverlay = pPopupOverlay;
 }
 
 //____ typeInfo() _________________________________________________________
@@ -89,3 +100,15 @@ bool Window::_onCloseRequest()
 	else
 		return true;
 }
+
+//____ _setDebugger() ______________________________________________________
+
+void Window::_setDebugger( DebugFrontend * pDebugger )
+{
+	auto pNextWidget = m_pRootPanel->slot.widget();
+	auto pDebugCapsule = DebugCapsule::create( { .frontend = pDebugger });
+
+	m_pRootPanel->slot = pDebugCapsule;
+	pDebugCapsule->slot = pNextWidget;
+}
+

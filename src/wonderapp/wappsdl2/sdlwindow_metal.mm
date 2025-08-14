@@ -112,16 +112,6 @@ SDLWindow_p SDLWindow::create(const Blueprint& blueprint)
 
     if (blueprint.finalizer)
         pWindow->setFinalizer(blueprint.finalizer);
-    
-	// Setup basic widget hierarchy.
-
-	auto pDragNDropOverlay = DragNDropOverlay::create();
-	pRootPanel->slot = pDragNDropOverlay;
-
-	auto pPopupOverlay = PopupOverlay::create();
-	pDragNDropOverlay->mainSlot = pPopupOverlay;
-
-	pWindow->m_pLastOverlay = pPopupOverlay;
 
     //TODO: This is ugly. It should be handled when windows gets focused.
 
