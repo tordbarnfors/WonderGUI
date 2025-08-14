@@ -44,7 +44,6 @@
 #include <wg_drawerpanel.h>
 
 #include <wg_debugger.h>
-#include <wg_debugoverlay.h>
 #include <themes/simplistic/wg_simplistic.h>
 
 
