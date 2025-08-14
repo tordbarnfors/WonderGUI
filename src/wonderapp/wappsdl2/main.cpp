@@ -22,6 +22,7 @@
 
 #include <wonderapp.h>
 #include <wondergui.h>
+#include <wg_debugger.h>
 #include <wg_freetypefont.h>
 #include <themes/simplistic/wg_simplistic.h>
 
@@ -133,6 +134,13 @@ bool		process_system_events();
 bool		init_wondergui();
 void		exit_wondergui();
 
+bool		backend_specific_init();
+void		backend_specific_exit();
+
+
+bool		init_debugger(MyAppVisitor * pVisitor);
+void		exit_debugger();
+
 
 MouseButton translateSDLMouseButton(Uint8 button);
 
@@ -142,6 +150,11 @@ Surface_p generateWindowSurface(SDL_Window* pWindow, int widht, int height);
 float				g_scale;
 
 MyHostBridge *		g_pHostBridge = nullptr;
+
+wg::DebugFrontend_p	g_pDebugFrontend;
+wg::DebugBackend_p	g_pDebugBackend;
+
+Window_p			g_pDebugWindow;
 
 std::vector<SDLWindow_wp>	g_windows;
 
@@ -178,11 +191,19 @@ int main(int argc, char *argv[] )
 	
 	if (!init_wondergui() )
 		return -1;
-	
+
+	if( !backend_specific_init() )
+		return -1;
+
+
 	// Create app and visitor, make any app-specific initialization
 
 	auto pApp = WonderApp::create();
 	auto pVisitor = new MyAppVisitor();
+
+	// Setup debugger
+
+	init_debugger(pVisitor);
 
 	// Initialize the app
 
@@ -244,9 +265,11 @@ int main(int argc, char *argv[] )
 	Base::setErrorHandler(nullptr);		//TODO: WAPP-framework should have its own error-handler.
 
 	g_windows.clear();
-	
+
 	delete pVisitor;
 
+	exit_debugger();
+	backend_specific_exit();
 	exit_wondergui();
 	exit_system();
 	return 0;
@@ -345,6 +368,61 @@ void exit_wondergui()
 	Base::exit();
 	delete g_pHostBridge;
 	g_pHostBridge = nullptr;
+}
+
+//____ init_debugger() ________________________________________________________
+
+bool init_debugger(MyAppVisitor* pAPI)
+{
+	auto pTheme = pAPI->initDefaultTheme();
+	auto pIconSurface = pAPI->loadSurface("resources/debugger_gfx.png");
+	auto pTransparencyGrid = pAPI->loadSurface("resources/checkboardtile.png", nullptr, { .tiling = true } );
+
+	if( !pTheme || !pIconSurface || !pTransparencyGrid )
+		return false;
+
+	g_pDebugBackend = DebugBackend::create();
+
+	g_pDebugFrontend = WGCREATE(DebugFrontend, _.backend = g_pDebugBackend, _.theme = pTheme, _.icons = pIconSurface, _.transparencyGrid = pTransparencyGrid );
+
+	Base::msgRouter()->addRoute(MsgType::KeyPress, [pAPI](Msg * _pMsg) {
+
+		KeyPressMsg * pMsg = static_cast<KeyPressMsg*>(_pMsg);
+
+		if( pMsg->translatedKeyCode() == Key::F12 && pMsg->modKeys() == ModKeys::MacCtrlAlt )
+		{
+			if( !g_pDebugWindow )
+			{
+				auto pFocusedWindow = g_pFocusedWindow;
+
+				auto pWindow = SDLWindow::create({ .size = {600,400}, .title = "Debugger"  });
+				g_windows.push_back(pWindow.rawPtr());
+				g_pDebugWindow = pWindow;
+
+				pWindow->setCloseRequestHandler([](void) {
+
+					g_pDebugWindow = nullptr;
+					return true;
+				});
+
+				pWindow->setContent(g_pDebugFrontend);
+			}
+
+			
+
+		}
+
+	});
+
+}
+
+//____ exitDebugger() _________________________________________________________
+
+void exit_debugger()
+{
+	g_pDebugWindow = nullptr;
+	g_pDebugFrontend = nullptr;
+	g_pDebugBackend = nullptr;
 }
 
 //____ eventWatcher() _________________________________________________________
@@ -1028,6 +1106,9 @@ Window_p MyAppVisitor::createWindow(const Window::Blueprint& blueprint)
 {
 	auto pWindow =  SDLWindow::create(blueprint);
 
+	if( g_pDebugFrontend )
+		pWindow->_setDebugger(g_pDebugFrontend);
+
 	g_windows.push_back(pWindow.rawPtr());
 
 	return pWindow;
@@ -1071,8 +1152,8 @@ bool MyAppVisitor::closeLibrary(WonderApp::LibId lib)
 
 std::string MyAppVisitor::resourceDirectory()
 {
-//	char* pBasePath = SDL_GetBasePath();
-	char* pBasePath = nullptr;
+	char* pBasePath = SDL_GetBasePath();
+//	char* pBasePath = nullptr;
 
 	if( pBasePath == nullptr )
 		return "resources/";

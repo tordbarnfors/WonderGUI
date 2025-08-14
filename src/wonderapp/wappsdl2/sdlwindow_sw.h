@@ -25,7 +25,10 @@
 #include <wondergui.h>
 #include <sdlwindow.h>
 
+
+
 //____ SDLWindowSW _______________________________________________________________
+
 
 class SDLWindowSW;
 typedef	wg::StrongPtr<SDLWindowSW>		SDLWindowSW_p;
