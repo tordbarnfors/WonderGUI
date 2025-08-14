@@ -25,6 +25,7 @@
 
 #include <wg_capsule.h>
 #include <wg_boxskin.h>
+#include <wg_debugfrontend.h>
 
 
 namespace wg
@@ -53,6 +54,7 @@ namespace wg
 			bool			disabled		= false;
 			bool			dropTarget		= false;
 			Finalizer_p		finalizer		= nullptr;
+			DebugFrontend_p	frontend;									// Mandatory!!!
 			int				id				= 0;
 			MarkPolicy		markPolicy		= MarkPolicy::AlphaTest;
 			bool			pickable		= false;
@@ -71,7 +73,7 @@ namespace wg
 
 		//.____ Creation __________________________________________
 
-		static DebugCapsule_p	create();
+//		static DebugCapsule_p	create();
 		static DebugCapsule_p	create(const Blueprint& blueprint);
 
 		//.____ Identification __________________________________________
@@ -79,15 +81,23 @@ namespace wg
 		const TypeInfo& typeInfo(void) const override;
 		const static TypeInfo	TYPEINFO;
 
+		//.____ Appearance __________________________________________________________
+
+		PointerStyle 	pointerStyle() const override;
+
 		//.____ Internal ______________________________________________________
 
 		void			_widgetSelected(Widget * pWidget);		// Called by DebugFrontend.
+		void			_setSelectMode(bool bSelectMode);		// Called by DebugFrontend.
+
 
 	protected:
-		DebugCapsule();
+//		DebugCapsule();
 
 		template<class BP> DebugCapsule( const BP& bp ) : Capsule(bp)
 		{
+			m_pFrontend = bp.frontend;
+
 			 if (bp.child)
 				 slot.setWidget(bp.child);
 
@@ -95,10 +105,13 @@ namespace wg
 				m_pSelectionSkin = bp.selectionSkin;
 			else
 				m_pSelectionSkin = BoxSkin::create( WGBP(BoxSkin,
-														 _.color = HiColor( 4096,0,0,4096 );
+														 _.color = HiColor( 4096,0,0,1024 );
 														 _.outlineThickness = 1,
-														 _.outlineColor = HiColor( 4096,0,0,1024 )
+														 _.outlineColor = HiColor( 4096,0,0,4096 )
 													) );
+			_startReceiveUpdates();
+
+			m_pFrontend->_addDebugCapsule(this);
 		}
 
 		virtual ~DebugCapsule();
@@ -115,7 +128,7 @@ namespace wg
 
 		DebugFrontend_p		m_pFrontend;
 
-		bool	m_bInSelectMode = false;
+		bool		m_bInSelectMode = false;
 
 		Widget_p	m_pSelectedWidget;
 
