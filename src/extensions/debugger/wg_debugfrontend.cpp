@@ -76,10 +76,10 @@ namespace wg
 
 	void DebugFrontend::activate()
 	{
-		if( m_bSelectMode )
+		for (auto pCapsule : m_capsules)
 		{
-			for( auto pCapsule : m_capsules )
-				pCapsule->_setSelectMode(true);
+			pCapsule->_setSelectMode(m_bSelectMode);
+			pCapsule->_widgetSelected(m_pSelectedWidget);
 		}
 	}
 
@@ -87,10 +87,10 @@ namespace wg
 
 	void DebugFrontend::deactivate()
 	{
-		if( m_bSelectMode )
+		for (auto pCapsule : m_capsules)
 		{
-			for( auto pCapsule : m_capsules )
-				pCapsule->_setSelectMode(false);
+			pCapsule->_setSelectMode(m_bSelectMode);
+			pCapsule->_widgetSelected(nullptr);
 		}
 	}
 
@@ -119,15 +119,23 @@ namespace wg
 	void DebugFrontend::selectObject(Object* pSelected, Object * pSelectedFrom)
 	{
 		auto pWidget = dynamic_cast<Widget*>(pSelected);
-		if(pWidget)
+		if(pWidget || pSelected == nullptr)
 		{
 			for( auto pCapsule : m_capsules )
 				pCapsule->_widgetSelected(pWidget);
+
+			if (m_pTreeView)
+				m_pTreeView->select(pWidget);
+
+			m_pSelectedWidget = pWidget;
 		}
 
-		bool bReuseWindow = (Base::inputHandler()->modifierKeys() & ModKeys::Shift) == 0;
+		if (pSelected)
+		{
+			bool bReuseWindow = (Base::inputHandler()->modifierKeys() & ModKeys::Shift) == 0;
+			_addWorkspaceWindow(pSelected, bReuseWindow);
+		}
 
-		_addWorkspaceWindow(pSelected, bReuseWindow);
 	}
 
 	//____ setSelectMode() _______________________________________________________
@@ -209,6 +217,11 @@ namespace wg
 			_.firstBlock = Rect(0, 0, 16, 16);
 			));
 
+		m_pUnselectIcon = BlockSkin::create(WGBP(BlockSkin,
+			_.surface = m_pIcons,
+			_.firstBlock = Rect(0, 64, 16, 16);
+		));
+
 		m_pSelectIcon = BlockSkin::create(WGBP(BlockSkin,
 			_.surface = m_pIcons,
 			_.firstBlock = Rect(16, 0, 16, 16);
@@ -224,6 +237,7 @@ namespace wg
 			_.firstBlock = Rect(48, 0, 16, 16);
 		));
 
+
 	}
 
 	//____ _setupGUI() ___________________________________________________________
@@ -235,8 +249,6 @@ namespace wg
 		auto pLogSplit = WGCREATE(SplitPanel, _ = m_pTheme->splitPanelY() );
 		auto pTreeSplit = WGCREATE(SplitPanel, _ = m_pTheme->splitPanelX() );
 
-		auto pTreePanel = WGCREATE(PackPanel, _.axis = Axis::Y );
-
 		pMainPanel->slots.pushBack({ {	pTopBar, WGBP(PackPanelSlot, _.weight = 0.f)},
 										pLogSplit});
 
@@ -245,34 +257,12 @@ namespace wg
 		auto pWorkspaceReorder = WGCREATE(ReorderCapsule, _.dragOutside = false, _.usePickHandles = true );
 		pWorkspaceScroller->slot = pWorkspaceReorder;
 
-
 		auto pWorkspace = WGCREATE(PackPanel, _.axis = Axis::X, _.skin = ColorSkin::create( Color::Navy ));
 		pWorkspaceReorder->slot = pWorkspace;
 
 		//
 
-		auto pTreeSelector = SelectBox::create( m_pTheme->selectBox() );
-		m_pTreeSelector = pTreeSelector;
-		m_pTreeViewCapsule = WGCREATE(Capsule, _.skin = m_pTheme->canvasSkin());
-
-		Base::msgRouter()->addRoute(pTreeSelector, MsgType::Select, [this,pTreeSelector](Msg* pMsg) {
-
-			int id = pTreeSelector->selectedEntryId();
-			if( id >= 0 && id < m_capsules.size() )
-			{
-				auto pCapsule = m_capsules[id];
-				m_pTreeViewCapsule->slot = m_pBackend->createWidgetTreeView(pCapsule);
-			}
-		});
-
-
-
-		pTreePanel->slots.pushBack(pTreeSelector, WGBP(PackPanelSlot, _.weight = 0.f ));
-		pTreePanel->slots.pushBack(m_pTreeViewCapsule);
-
-		//
-
-		pTreeSplit->slots[0] = pTreePanel;
+		pTreeSplit->slots[0] = _createWidgetTreeView();
 		pTreeSplit->slots[1] = pWorkspaceScroller;
 
 		pLogSplit->slots[0] = pTreeSplit;
@@ -304,10 +294,91 @@ namespace wg
 			setSelectMode(pButton->isChecked());
 		});
 
-		pToolbox->slots << pPickButton;
+		auto pUnselectButton = Button::create(WGOVR(m_pTheme->pushButton(), _.icon.skin = m_pUnselectIcon, _.icon.placement = Placement::Center));
+
+		Base::msgRouter()->addRoute(pUnselectButton, MsgType::Select, [this](Msg* pMsg) {
+
+			selectObject(nullptr, nullptr);
+		});
+
+		pToolbox->slots.pushBack({ pPickButton, pUnselectButton });
 
 		return pToolbox;
 	}
+
+	//____ _createWidgetTreeView() ____________________________________________
+
+	Widget_p DebugFrontend::_createWidgetTreeView()
+	{
+		auto pTreePanel = WGCREATE(PackPanel, _.axis = Axis::Y);
+
+		m_pTreeViewCapsule = WGCREATE(Capsule, _.skin = m_pTheme->canvasSkin());
+
+		auto pTreeScrollPanel = WGCREATE(ScrollPanel, _ = m_pTheme->scrollPanelXY());
+		pTreeScrollPanel->slot = m_pTreeViewCapsule;
+
+		auto pTreeSelector = SelectBox::create(m_pTheme->selectBox());
+		m_pTreeSelector = pTreeSelector;
+
+		Base::msgRouter()->addRoute(pTreeSelector, MsgType::Select, [this, pTreeSelector](Msg* pMsg) {
+
+			int id = pTreeSelector->selectedEntryId();
+			if (id >= 0 && id < m_capsules.size())
+			{
+				auto pCapsule = m_capsules[id];
+				m_pTreeView = m_pBackend->createWidgetTreeView(pCapsule);
+				m_pCapsuleInTreeView = pCapsule;
+				m_pTreeViewCapsule->slot = m_pTreeView;
+			}
+			});
+
+		// Create button row with refresh, collapse and expand buttons
+
+		auto pButtonRow = PackPanel::create(WGBP(PackPanel, _.axis = Axis::X, _.skin = m_pTheme->plateSkin() ));
+
+		auto pRefreshButton = Button::create(WGOVR(m_pTheme->pushButton(), _.icon.skin = m_pRefreshIcon, _.icon.placement = Placement::Center));
+
+		Base::msgRouter()->addRoute(pRefreshButton, MsgType::Select, [this](Msg* pMsg) {
+
+			if (m_pTreeView)
+			{
+				m_pTreeView = m_pBackend->createWidgetTreeView(m_pCapsuleInTreeView);
+				this->m_pTreeViewCapsule->slot = m_pTreeView;
+				m_pTreeView->select(m_pSelectedWidget);
+			}
+		});
+
+		auto pCollapseAllButton = Button::create(WGOVR(m_pTheme->pushButton(), _.icon.skin = m_pCondenseIcon, _.icon.placement = Placement::Center));
+
+		Base::msgRouter()->addRoute(pCollapseAllButton, MsgType::Select, [this](Msg* pMsg) {
+
+			if (m_pTreeView)
+				m_pTreeView->collapseAll();
+		});
+
+		auto pExpandAllButton = Button::create(WGOVR(m_pTheme->pushButton(), _.icon.skin = m_pExpandIcon, _.icon.placement = Placement::Center));
+
+		Base::msgRouter()->addRoute(pExpandAllButton, MsgType::Select, [this](Msg* pMsg) {
+
+			if (!m_pTreeViewCapsule->slot.isEmpty())
+				static_cast<WidgetTreeView*>(m_pTreeViewCapsule->slot._widget())->expandAll();
+			});
+
+
+		pButtonRow->slots.pushBack({ pRefreshButton, pCollapseAllButton, pExpandAllButton });
+		pButtonRow->setSlotWeight(pButtonRow->slots.begin(), pButtonRow->slots.end(), 0.f); // Set all buttons to not expand
+
+
+		//
+
+
+		pTreePanel->slots.pushBack(pTreeSelector, WGBP(PackPanelSlot, _.weight = 0.f));
+		pTreePanel->slots.pushBack(pButtonRow, WGBP(PackPanelSlot, _.weight = 0.f));
+		pTreePanel->slots.pushBack(pTreeScrollPanel);
+
+		return pTreePanel;
+	}
+
 
 	//____ _refreshTreeSelector() _________________________________________________
 
