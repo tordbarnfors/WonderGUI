@@ -28,6 +28,7 @@
 #include <windows/wg_skininspector.h>
 #include <windows/wg_surfaceinspector.h>
 #include <windows/wg_textstyleinspector.h>
+#include <windows/wg_widgetinspector.h>
 #include <windows/wg_widgettreeview.h>
 
 #include <objectinfopanels/wg_objectinfopanel.h>
@@ -213,14 +214,21 @@ namespace wg
 
 	//____ createObjectInspector() ________________________________________________
 
-	Widget_p DebugBackend::createObjectInspector(Object* pObject)
+	DebugWindow_p DebugBackend::createObjectInspector(Object* pObject)
 	{
 		return ObjectInspector::create(m_blueprint, this, pObject);
 	}
 
+	//____ createWidgetInspector() ________________________________________________
+
+	DebugWindow_p DebugBackend::createWidgetInspector(Widget* pWidget)
+	{
+		return WidgetInspector::create(m_blueprint, this, pWidget);
+	}
+
 	//____ createSkinInspector() ________________________________________________
 
-	Widget_p DebugBackend::createSkinInspector(Skin* pSkin)
+	DebugWindow_p DebugBackend::createSkinInspector(Skin* pSkin)
 	{
 		return SkinInspector::create(m_blueprint, this, pSkin);
 	}
@@ -228,14 +236,14 @@ namespace wg
 
 	//____ createWidgetTreeView() ____________________________________________
 
-	Widget_p DebugBackend::createWidgetTreeView(Widget* pRoot)
+	DebugWindow_p DebugBackend::createWidgetTreeView(Widget* pRoot)
 	{
 		return WidgetTreeView::create(m_blueprint, this, pRoot);
 	}
 
 	//____ createMsgLogViewer() ________________________________________________
 
-	Widget_p DebugBackend::createMsgLogViewer()
+	DebugWindow_p DebugBackend::createMsgLogViewer()
 	{
 		return MsgLogViewer::create(m_blueprint, this);
 	}

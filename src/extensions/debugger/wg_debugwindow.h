@@ -61,6 +61,10 @@ namespace wg
 
 		virtual void			refresh();
 
+		//.____ Content _______________________________________________________
+
+		String					title() const { return m_title; };
+
 
 	protected:
 		DebugWindow(const Blueprint& blueprint, IDebugger * pHolder );
@@ -78,7 +82,10 @@ namespace wg
 
 		DrawerPanel_p		_createComponentDrawer(const CharSeq& label, Component* pComponent);
 
-		Widget_p			_createObjectHeader(Object* pObject);
+		Widget_p			_createObjectHeader(Object* pObject) const;
+		String				_createObjectTitle(Object* pObject) const;
+
+		Widget_p			_createClassInfoPanels(const Blueprint& bp, Object* pObject) const;
 
 
 		void _setTextEntry(TablePanel* pTable, int row, const char* pLabel, const CharSeq& string);
@@ -104,6 +111,8 @@ namespace wg
 		Skin_p		m_pIndentationSkin;
 
 		bool		m_bAutoRefresh = false;
+
+		String		m_title;
 	};
 
 

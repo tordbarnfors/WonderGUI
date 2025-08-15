@@ -103,9 +103,6 @@ namespace wg
 		{
 			m_selectMode = bp.selectMode;
 			m_bRecursive = bp.recursive;
-
-			if (bp.child)
-				slot.setWidget(bp.child);
 		}
 
 		virtual ~SelectCapsule();

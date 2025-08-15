@@ -31,6 +31,7 @@
 #include <wg_pointers.h>
 #include <wg_widget.h>
 #include <wg_debugpanel.h>
+#include <wg_debugwindow.h>
 #include <wg_idebugger.h>
 
 namespace wg
@@ -62,10 +63,11 @@ namespace wg
 		Widget_p		createSlotInfoPanel( const TypeInfo * pType, StaticSlot * pSlot ) override;
 		Widget_p		createComponentInfoPanel( const TypeInfo* pType, Component* pComponent ) override;
 
-		Widget_p		createObjectInspector(Object* pObject);
-		Widget_p		createSkinInspector(Skin* pSkin);
-		Widget_p		createWidgetTreeView(Widget * pWidget);
-		Widget_p		createMsgLogViewer();
+		DebugWindow_p	createObjectInspector(Object* pObject);
+		DebugWindow_p	createWidgetInspector(Widget* pWidget);
+		DebugWindow_p	createSkinInspector(Skin* pSkin);
+		DebugWindow_p	createWidgetTreeView(Widget * pWidget);
+		DebugWindow_p	createMsgLogViewer();
 
 		void			setObjectSelectedCallback(std::function<void(Object*,Object*)> pCallback);
 

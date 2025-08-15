@@ -58,6 +58,8 @@ namespace wg
 
 		void	_refreshState();
 
+		Skin_p	m_pSkin;			// Keep our skin alive as long as we are, so refresh won't fail.
+
 		SkinDisplay_p	m_pSkinDisplay;
 		SelectBox_p		m_pStateSelector;
 

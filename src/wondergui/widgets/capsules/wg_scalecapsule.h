@@ -113,9 +113,6 @@ namespace wg
 				m_scale = bp.scale;
 				m_bScaleSet = true;
 			}
-
-			if (bp.child)
-				slot.setWidget(bp.child);
 		}
 		
 		virtual ~ScaleCapsule();

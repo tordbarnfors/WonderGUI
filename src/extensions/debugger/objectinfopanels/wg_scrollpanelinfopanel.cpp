@@ -37,7 +37,7 @@ namespace wg
 	ScrollPanelInfoPanel::ScrollPanelInfoPanel(const Blueprint& blueprint, IDebugger* pHolder, ScrollPanel * pPanel) : DebugPanel( blueprint, pHolder, ScrollPanel::TYPEINFO.className )
 	{
 		m_pInspected = pPanel;
-		m_pTable = _createTable(25,2);
+		m_pTable = _createTable(26,2);
 
 		auto pContainer = WGCREATE(PackPanel, _.axis = Axis::Y);
 
