@@ -42,6 +42,8 @@ namespace wg
 
 	WidgetTreeView::WidgetTreeView(const Blueprint& blueprint, IDebugger * pHolder, Widget * pRoot ) : DebugWindow( blueprint, pHolder )
 	{
+		m_title = "Widget Hierarchy";
+
 		m_pPackLayout = PackLayout::create(WGBP(PackLayout, ));
 		 
 		m_pSelectCapsule = SelectCapsule::create(WGBP(SelectCapsule, _.recursive = true ));

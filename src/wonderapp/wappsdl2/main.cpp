@@ -389,13 +389,14 @@ bool init_debugger(MyAppVisitor* pAPI)
 
 		KeyPressMsg * pMsg = static_cast<KeyPressMsg*>(_pMsg);
 
-		if( pMsg->translatedKeyCode() == Key::F12 && pMsg->modKeys() == ModKeys::MacCtrlAlt )
+		if( pMsg->translatedKeyCode() == Key::F12 && (pMsg->modKeys() == ModKeys::MacCtrlAlt || pMsg->modKeys() == ModKeys::StdCtrlAlt) )
 		{
 			if( !g_pDebugWindow )
 			{
 				auto pFocusedWindow = g_pFocusedWindow;
+				SizeI size = g_pDebugFrontend->spxSize() / 64;
 
-				auto pWindow = SDLWindow::create({ .size = {600,400}, .title = "Debugger"  });
+				auto pWindow = SDLWindow::create({ .size = Size(size), .title = "Debugger"  });
 				g_windows.push_back(pWindow.rawPtr());
 				g_pDebugWindow = pWindow;
 
@@ -413,6 +414,7 @@ bool init_debugger(MyAppVisitor* pAPI)
 
 	});
 
+	return true;
 }
 
 //____ exitDebugger() _________________________________________________________
@@ -1151,8 +1153,8 @@ bool MyAppVisitor::closeLibrary(WonderApp::LibId lib)
 
 std::string MyAppVisitor::resourceDirectory()
 {
-	char* pBasePath = SDL_GetBasePath();
-//	char* pBasePath = nullptr;
+//	char* pBasePath = SDL_GetBasePath();
+	char* pBasePath = nullptr;
 
 	if( pBasePath == nullptr )
 		return "resources/";

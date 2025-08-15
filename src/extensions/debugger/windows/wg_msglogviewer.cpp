@@ -44,6 +44,8 @@ namespace wg
 
 	MsgLogViewer::MsgLogViewer(const Blueprint& bp, IDebugger* pHolder) : DebugWindow(bp,pHolder)
 	{
+		m_title = "Message Log";
+
 		m_pMainPanel = PackPanel::create(WGBP(PackPanel,
 			_.axis = Axis::Y));
 

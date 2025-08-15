@@ -53,6 +53,34 @@ namespace wg
 	{
 	public:
 
+		//.____ Blueprint ____________________________________________________________
+
+		struct Blueprint
+		{
+			Object_p		baggage;
+			Widget_p		child;
+			bool			disabled = false;
+			bool			dropTarget = false;
+			Finalizer_p		finalizer = nullptr;
+			int				id = 0;
+			MarkPolicy		markPolicy = MarkPolicy::AlphaTest;
+			bool			pickable = false;
+			uint8_t			pickCategory = 0;
+			bool			pickHandle = false;
+			PointerStyle	pointer = PointerStyle::Undefined;
+			bool			selectable = false;
+			Skin_p			skin;
+			bool			stickyFocus = false;
+			bool			tabLock = false;
+			String			tooltip;
+			bool			usePickHandles = false;
+		};
+
+		//.____ Creation __________________________________________
+
+		static Capsule_p	create();
+		static Capsule_p	create(const Blueprint& blueprint);
+
 		//.____ Components _______________________________________
 
 		DynamicSlot		slot;
@@ -73,7 +101,12 @@ namespace wg
 
 	protected:
 		Capsule();
-		template<class BP> Capsule(const BP& bp) : slot(this), Container(bp) {}
+		template<class BP> Capsule(const BP& bp) : slot(this), Container(bp) 
+		{
+			if (bp.child)
+				slot.setWidget(bp.child);
+		}
+
 		virtual ~Capsule();
 
 		// Overloaded from Widget

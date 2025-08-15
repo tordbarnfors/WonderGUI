@@ -172,12 +172,8 @@ namespace wg
 			m_clearColor	= bp.clearColor;
 			
 			m_bSkinAroundCanvas = bp.skinAroundCanvas;
-
-			if( bp.child )
-				slot.setWidget(bp.child);
 			
 			glow._initFromBlueprint(bp.glow);
-
 		}
 		
 		virtual ~CanvasCapsule();

@@ -125,7 +125,9 @@ namespace wg
 				pCapsule->_widgetSelected(pWidget);
 		}
 
-		_addWorkspaceWindow(pSelected, true);
+		bool bReuseWindow = (Base::inputHandler()->modifierKeys() & ModKeys::Shift) == 0;
+
+		_addWorkspaceWindow(pSelected, bReuseWindow);
 	}
 
 	//____ setSelectMode() _______________________________________________________
@@ -144,20 +146,58 @@ namespace wg
 
 	void DebugFrontend::_addWorkspaceWindow( Object * pObject, bool bReuse )
 	{
-		auto pWindow = WGCREATE(DebugFrontendWindow, _.theme = m_pTheme );
+		DebugFrontendWindow_p pWindow;
 
-		Widget_p pContent;
-
+		auto pWidget = dynamic_cast<Widget*>(pObject);
 		auto pSkin = dynamic_cast<Skin*>(pObject);
 
-		if( pSkin )
+
+		if( bReuse )
+		{
+			const TypeInfo* pWantedTypeInfo = &ObjectInspector::TYPEINFO;
+
+			if( pWidget)
+				pWantedTypeInfo = &WidgetInspector::TYPEINFO;
+			else if( pSkin )
+				pWantedTypeInfo = &SkinInspector::TYPEINFO;
+
+			// Try to find an existing window for this object.
+			for( auto& slot : m_pWorkspace->slots )
+			{
+				auto pDebugWin = wg_dynamic_cast<DebugFrontendWindow_p>(slot.widget());
+
+				if( pDebugWin && &pDebugWin->content()->typeInfo() == pWantedTypeInfo )
+				{
+					pWindow = pDebugWin;
+					break;
+				}
+			}
+		}
+
+		if( !pWindow )
+		{
+			pWindow = WGCREATE(DebugFrontendWindow, _.theme = m_pTheme);
+			m_pWorkspace->slots.pushBack(pWindow, WGBP(PackPanelSlot, _.weight = 0.f));
+		}
+
+		DebugWindow_p pContent;
+
+		if( pWidget )
+		{
+			pContent = m_pBackend->createWidgetInspector(pWidget);
+//			pWindow->setLabel("Widget");
+		}
+		else if (pSkin)
+		{
 			pContent = m_pBackend->createSkinInspector(pSkin);
+//			pWindow->setLabel("Skin");
+		}
 		else
 			pContent = m_pBackend->createObjectInspector(pObject);
 
 		pWindow->setContent(pContent);
+		pWindow->setLabel(pContent->title());
 
-		m_pWorkspace->slots.pushBack(pWindow, WGBP(PackPanelSlot, _.weight = 0.f) );
 	}
 
 	//____ _createResources() ____________________________________________________
@@ -211,17 +251,33 @@ namespace wg
 
 		//
 
-		m_pTreeSelector = SelectBox::create( m_pTheme->selectBox() );
-		auto pTreeView = m_pBackend->createWidgetTreeView(nullptr);
+		auto pTreeSelector = SelectBox::create( m_pTheme->selectBox() );
+		m_pTreeSelector = pTreeSelector;
+		m_pTreeViewCapsule = WGCREATE(Capsule, _.skin = m_pTheme->canvasSkin());
 
-		pTreePanel->slots.pushBack(m_pTreeSelector, WGBP(PackPanelSlot, _.weight = 0.f ));
-		pTreePanel->slots.pushBack(pTreeView);
+		Base::msgRouter()->addRoute(pTreeSelector, MsgType::Select, [this,pTreeSelector](Msg* pMsg) {
+
+			int id = pTreeSelector->selectedEntryId();
+			if( id >= 0 && id < m_capsules.size() )
+			{
+				auto pCapsule = m_capsules[id];
+				m_pTreeViewCapsule->slot = m_pBackend->createWidgetTreeView(pCapsule);
+			}
+		});
+
+
+
+		pTreePanel->slots.pushBack(pTreeSelector, WGBP(PackPanelSlot, _.weight = 0.f ));
+		pTreePanel->slots.pushBack(m_pTreeViewCapsule);
+
+		//
 
 		pTreeSplit->slots[0] = pTreePanel;
 		pTreeSplit->slots[1] = pWorkspaceScroller;
 
 		pLogSplit->slots[0] = pTreeSplit;
 		pLogSplit->slots[1] = m_pBackend->createMsgLogViewer();
+
 
 		pTopBar->slots.pushBack( _createToolbox(), WGBP(PackPanelSlot, _.weight = 0.f));
 

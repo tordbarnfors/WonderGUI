@@ -33,6 +33,8 @@ set(SOURCES
     windows/wg_skininspector.cpp
     windows/wg_textstyleinspector.h
     windows/wg_textstyleinspector.cpp
+    windows/wg_widgetinspector.h
+    windows/wg_widgetinspector.cpp
     windows/wg_widgettreeview.h
     windows/wg_widgettreeview.cpp
 

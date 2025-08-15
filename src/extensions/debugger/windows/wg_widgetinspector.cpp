@@ -19,7 +19,7 @@
   should contact Tord Jansson [tord.jansson@gmail.com] for details.
 
 =========================================================================*/
-#include "wg_objectinspector.h"
+#include "wg_widgetinspector.h"
 #include <wg_debugpanel.h>
 
 #include <wg_scrollpanel.h>
@@ -35,28 +35,27 @@
 namespace wg
 {
 
-	const TypeInfo ObjectInspector::TYPEINFO = { "ObjectInspector", &DebugWindow::TYPEINFO };
+	const TypeInfo WidgetInspector::TYPEINFO = { "WidgetInspector", &DebugWindow::TYPEINFO };
 
 
 	//____ constructor _____________________________________________________________
 
-	ObjectInspector::ObjectInspector(const Blueprint& bp, IDebugger * pHolder, Object * pObject) : DebugWindow( bp, pHolder )
+	WidgetInspector::WidgetInspector(const Blueprint& bp, IDebugger * pHolder, Widget * pWidget) : DebugWindow( bp, pHolder )
 	{
-		m_title = _createObjectTitle(pObject);
-
-		m_pObject = pObject;
+		m_title = _createObjectTitle(pWidget);
+		m_pWidget = pWidget;
 
 		auto pBasePanel = WGCREATE(PackPanel, _.axis = Axis::Y);
 
 		pBasePanel->slots.pushBack( _createButtonRow(true,true), WGBP(PackPanelSlot, _.weight = 0.f) );
-		pBasePanel->slots.pushBack(_createClassInfoPanels(bp, pObject));
+		pBasePanel->slots.pushBack( _createClassInfoPanels(bp,pWidget));
 
 		this->slot = pBasePanel;
 	}
 
 	//____ typeInfo() _________________________________________________________
 
-	const TypeInfo& ObjectInspector::typeInfo(void) const
+	const TypeInfo& WidgetInspector::typeInfo(void) const
 	{
 		return TYPEINFO;
 	}

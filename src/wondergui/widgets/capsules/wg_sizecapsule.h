@@ -116,9 +116,6 @@ namespace wg
 			m_minSize		= bp.minSize;
 			m_maxSize		= bp.maxSize;
 			m_defaultSize	= bp.defaultSize;
-
-			if (bp.child)
-				slot.setWidget(bp.child);
 		}
 
 		virtual ~SizeCapsule();

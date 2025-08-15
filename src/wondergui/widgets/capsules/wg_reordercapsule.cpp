@@ -26,6 +26,7 @@
 #include <wg_dataset.h>
 #include <wg_packpanel.h>
 #include <wg_msgrouter.h>
+#include <wg_sizecapsule.h>
 
 namespace wg
 {
@@ -152,6 +153,10 @@ namespace wg
 
 					auto pDataset = DropData::create({pWidget,pFound->weight()});
 					pMsg->setContent(DropType::Widget, m_pickCategory, pDataset);
+					
+					auto pSizeCapsule = SizeCapsule::create();
+					pSizeCapsule->setDefaultSize(pWidget->size());		// Should keep its size while reordering.
+					
 					pMsg->setDragWidget(pWidget, offset );
 					pMsg->setHotspot(Placement::Center);
 
