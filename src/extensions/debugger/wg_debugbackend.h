@@ -34,6 +34,12 @@
 #include <wg_debugwindow.h>
 #include <wg_idebugger.h>
 
+#include <windows/wg_objectinspector.h>
+#include <windows/wg_widgetinspector.h>
+#include <windows/wg_skininspector.h>
+#include <windows/wg_widgettreeview.h>
+#include <windows/wg_msglogviewer.h>
+
 namespace wg
 {
 	class DebugBackend;
@@ -63,11 +69,11 @@ namespace wg
 		Widget_p		createSlotInfoPanel( const TypeInfo * pType, StaticSlot * pSlot ) override;
 		Widget_p		createComponentInfoPanel( const TypeInfo* pType, Component* pComponent ) override;
 
-		DebugWindow_p	createObjectInspector(Object* pObject);
-		DebugWindow_p	createWidgetInspector(Widget* pWidget);
-		DebugWindow_p	createSkinInspector(Skin* pSkin);
-		DebugWindow_p	createWidgetTreeView(Widget * pWidget);
-		DebugWindow_p	createMsgLogViewer();
+		ObjectInspector_p	createObjectInspector(Object* pObject);
+		WidgetInspector_p	createWidgetInspector(Widget* pWidget);
+		SkinInspector_p		createSkinInspector(Skin* pSkin);
+		WidgetTreeView_p	createWidgetTreeView(Widget * pWidget);
+		MsgLogViewer_p		createMsgLogViewer();
 
 		void			setObjectSelectedCallback(std::function<void(Object*,Object*)> pCallback);
 

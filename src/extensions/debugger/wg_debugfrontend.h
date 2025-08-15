@@ -111,6 +111,8 @@ namespace wg
 		virtual ~DebugFrontend();
 
 		Widget_p	_createToolbox();
+		Widget_p	_createWidgetTreeView();
+
 		void 		_createDebuggerBP();
 
 		void		_createResources();
@@ -125,6 +127,8 @@ namespace wg
 		DebugBackend_p		m_pBackend;
 		std::vector<DebugCapsule*>	m_capsules;
 
+		Widget_p			m_pSelectedWidget;
+
 		std::vector<DebugFrontendWindow_p>	m_widgetWindows;
 		std::vector<DebugFrontendWindow_p>	m_skinWindows;
 		std::vector<DebugFrontendWindow_p>	m_objectWindows;
@@ -132,6 +136,8 @@ namespace wg
 		PackPanel_p			m_pWorkspace;
 		SelectBox_p			m_pTreeSelector;
 		Capsule_p			m_pTreeViewCapsule;
+		WidgetTreeView_p	m_pTreeView;
+		Capsule_p			m_pCapsuleInTreeView;
 
 
 		// Modes
@@ -146,6 +152,7 @@ namespace wg
 		Surface_p		m_pTransparencyGrid;
 
 		Skin_p			m_pRefreshIcon;
+		Skin_p			m_pUnselectIcon;
 		Skin_p			m_pSelectIcon;
 		Skin_p			m_pExpandIcon;
 		Skin_p			m_pCondenseIcon;

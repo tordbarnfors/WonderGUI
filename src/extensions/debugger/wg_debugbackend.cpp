@@ -214,36 +214,35 @@ namespace wg
 
 	//____ createObjectInspector() ________________________________________________
 
-	DebugWindow_p DebugBackend::createObjectInspector(Object* pObject)
+	ObjectInspector_p DebugBackend::createObjectInspector(Object* pObject)
 	{
 		return ObjectInspector::create(m_blueprint, this, pObject);
 	}
 
 	//____ createWidgetInspector() ________________________________________________
 
-	DebugWindow_p DebugBackend::createWidgetInspector(Widget* pWidget)
+	WidgetInspector_p DebugBackend::createWidgetInspector(Widget* pWidget)
 	{
 		return WidgetInspector::create(m_blueprint, this, pWidget);
 	}
 
 	//____ createSkinInspector() ________________________________________________
 
-	DebugWindow_p DebugBackend::createSkinInspector(Skin* pSkin)
+	SkinInspector_p DebugBackend::createSkinInspector(Skin* pSkin)
 	{
 		return SkinInspector::create(m_blueprint, this, pSkin);
 	}
 
-
 	//____ createWidgetTreeView() ____________________________________________
 
-	DebugWindow_p DebugBackend::createWidgetTreeView(Widget* pRoot)
+	WidgetTreeView_p DebugBackend::createWidgetTreeView(Widget* pRoot)
 	{
 		return WidgetTreeView::create(m_blueprint, this, pRoot);
 	}
 
 	//____ createMsgLogViewer() ________________________________________________
 
-	DebugWindow_p DebugBackend::createMsgLogViewer()
+	MsgLogViewer_p DebugBackend::createMsgLogViewer()
 	{
 		return MsgLogViewer::create(m_blueprint, this);
 	}
