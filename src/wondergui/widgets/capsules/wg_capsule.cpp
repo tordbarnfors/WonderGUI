@@ -28,6 +28,18 @@ namespace wg
 
 	const TypeInfo Capsule::TYPEINFO = { "Capsule", &Container::TYPEINFO };
 
+	//____ create() _______________________________________________________________
+
+	Capsule_p Capsule::create()
+	{
+		return Capsule_p(new Capsule());
+	}
+
+	Capsule_p Capsule::create(const Blueprint& blueprint)
+	{
+		return Capsule_p(new Capsule(blueprint));
+	}
+
 
 	//____ constructor ____________________________________________________________
 

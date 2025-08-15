@@ -30,6 +30,7 @@
 #include <wg_debugfrontendwindow.h>
 
 #include <windows/wg_objectinspector.h>
+#include <windows/wg_widgetinspector.h>
 #include <windows/wg_skininspector.h>
 #include <windows/wg_widgettreeview.h>
 
@@ -59,6 +60,7 @@ namespace wg
 		{
 			DebugBackend_p	backend;									// Mandatory!!!
 			Object_p		baggage;
+			Widget_p		child;
 			bool			disabled = false;
 			bool			dropTarget = false;
 			Finalizer_p		finalizer = nullptr;
@@ -129,6 +131,8 @@ namespace wg
 
 		PackPanel_p			m_pWorkspace;
 		SelectBox_p			m_pTreeSelector;
+		Capsule_p			m_pTreeViewCapsule;
+
 
 		// Modes
 
