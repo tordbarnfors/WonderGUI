@@ -53,6 +53,7 @@ namespace wg
 		struct Blueprint
 		{
 			Object_p		baggage;
+			Widget_p		child;
 			bool			disabled = false;
 			bool			dropTarget = false;
 			Finalizer_p		finalizer = nullptr;

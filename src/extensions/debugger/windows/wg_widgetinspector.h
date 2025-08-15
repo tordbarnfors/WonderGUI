@@ -20,8 +20,8 @@
 
 =========================================================================*/
 
-#ifndef	WG_TEXTSTYLEINSPECTOR_DOT_H
-#define WG_TEXTSTYLEINSPECTOR_DOT_H
+#ifndef	WG_WIDGETINSPECTOR_DOT_H
+#define WG_WIDGETINSPECTOR_DOT_H
 #pragma once
 
 #include <wg_tablepanel.h>
@@ -29,34 +29,35 @@
 
 namespace wg
 {
-	class TextStyleInspector;
-	typedef	StrongPtr<TextStyleInspector>	TextStyleInspector_p;
-	typedef	WeakPtr<TextStyleInspector>	TextStyleInspector_wp;
+	class WidgetInspector;
+	typedef	StrongPtr<WidgetInspector>	WidgetInspector_p;
+	typedef	WeakPtr<WidgetInspector>	WidgetInspector_wp;
 
 
 
-	class TextStyleInspector : public DebugWindow
+	class WidgetInspector : public DebugWindow
 	{
 	public:
 
 		//.____ Creation __________________________________________
 
-		static TextStyleInspector_p		create(const Blueprint& blueprint, IDebugger* pHolder, TextStyle* pStyle) { return TextStyleInspector_p(new TextStyleInspector(blueprint, pHolder, pStyle)); }
+		static WidgetInspector_p		create( const Blueprint& blueprint, IDebugger * pHolder, Widget * pWidget) { return WidgetInspector_p(new WidgetInspector(blueprint, pHolder, pWidget) ); }
 
 		//.____ Identification __________________________________________
 
-		const TypeInfo& typeInfo(void) const override;
+		const TypeInfo&			typeInfo(void) const override;
 		const static TypeInfo	TYPEINFO;
 
-
 	protected:
-		TextStyleInspector(const Blueprint& blueprint, IDebugger* pHolder, TextStyle* pStyle);
-		~TextStyleInspector() {}
+		WidgetInspector(const Blueprint& blueprint, IDebugger * pHolder, Widget * pWidget );
+		~WidgetInspector() {}
 
-		TextStyle_p	m_pStyle;			// Keep our style alive as long as we are, so refresh won't fail.
+		Widget_p	m_pWidget;			// Keep our widget alive as long as we are, so refresh won't fail.
+
+		ToggleButton_p	m_pAutoRefreshButton;
 	};
 
 } // namespace wg
-#endif //WG_TEXTSTYLEINSPECTOR_DOT_H
+#endif //WG_WIDGETINSPECTOR_DOT_H
 
 
