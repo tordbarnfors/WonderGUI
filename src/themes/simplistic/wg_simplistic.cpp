@@ -300,6 +300,7 @@ Simplistic::Simplistic( Font * pNormal, Font * pBold, Font * pItalic, Font * pMo
 
 	m_windowTitleBar = WGBP(TextDisplay,
 							_.skin = pTitleBarSkin,
+							_.display.style = m_heading5Style,
 							_.display.layout = pLayoutCenteredNoWrap );
 
 	

@@ -55,7 +55,6 @@ namespace wg
 		Object_p	m_pObject;			// Keep our object alive as long as we are, so refresh won't fail.
 
 		ToggleButton_p	m_pAutoRefreshButton;
-
 	};
 
 } // namespace wg

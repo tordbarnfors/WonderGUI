@@ -88,9 +88,6 @@ namespace wg
 		template<class BP> PaddingCapsule( const BP& bp ) : Capsule(bp)
 		{
 			 m_padding = bp.padding;
-
-			 if (bp.child)
-				 slot.setWidget(bp.child);
 		}
 
 		virtual ~PaddingCapsule();

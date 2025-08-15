@@ -29,6 +29,7 @@
 #include <wg_packpanel.h>
 #include <wg_textdisplay.h>
 #include <wg_blockskin.h>
+#include <wg_scrollpanel.h>
 
 
 
@@ -227,25 +228,53 @@ namespace wg
 
 	//____ _createObjectHeader() ______________________________________________
 
-	Widget_p DebugWindow::_createObjectHeader(Object* pObject)
+	Widget_p DebugWindow::_createObjectHeader(Object* pObject) const
 	{
-
 		auto pDisplay = TextDisplay::create(WGBP(TextDisplay,
-			_.display.text = pObject->typeInfo().className,
+			_.display.text = _createObjectTitle(pObject),
 			_.display.style = m_pHolder->blueprint().theme->heading5Style()
 		));
 
+		return pDisplay;
+	}
+
+	//____ _createObjectTitle() ______________________________________________
+
+	String DebugWindow::_createObjectTitle(Object* pObject) const
+	{
 		char temp[64];
 		sprintf(temp, " 0x%llx", reinterpret_cast<std::uintptr_t>(pObject));
 
 		CharBuffer buf(64);
+		buf.pushBack(pObject->typeInfo().className);
+		int ofs = buf.length();
 		buf.pushBack(temp);
-		buf.setStyle(m_pHolder->blueprint().theme->defaultStyle());
-		
-		pDisplay->display.append(&buf);
-		return pDisplay;
+		buf.setStyle(m_pHolder->blueprint().theme->defaultStyle(), ofs, 10000);
+
+		return &buf;
 	}
 
+	//___ _createClassInfoPanels() ______________________________________________
+
+	Widget_p DebugWindow::_createClassInfoPanels(const Blueprint& bp, Object* pObject) const
+	{
+		auto pScrollPanel = WGCREATE(ScrollPanel, _ = bp.theme->scrollPanelY());
+
+		auto pInnerPanel = WGCREATE(PackPanel, _.axis = Axis::Y, _.layout = PackLayout::create({}));
+
+		pInnerPanel->slots << _createObjectHeader(pObject);
+
+		auto pTypeInfo = &pObject->typeInfo();
+		while (pTypeInfo != nullptr)
+		{
+			pInnerPanel->slots << m_pHolder->createObjectInfoPanel(pTypeInfo, pObject);
+			pTypeInfo = pTypeInfo->pSuperClass;
+		}
+
+		pScrollPanel->slot = pInnerPanel;
+
+		return pScrollPanel;
+	}
 
 	//___ _setTextEntry() _________________________________________________
 
