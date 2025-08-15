@@ -432,7 +432,7 @@ namespace wg
 			return;
 
 		pTable->slots[row][0] = TextDisplay::create(WGOVR(m_pHolder->blueprint().listEntryLabel, _.display.text = pLabel));
-		pTable->slots[row][1] = TextDisplay::create(m_pHolder->blueprint().listEntryText);
+		pTable->slots[row][1] = TextDisplay::create(WGOVR(m_pHolder->blueprint().listEntryText, _.display.text = "null" ));
 	}
 
 	//___ _initObjectPointerEntry() _________________________________________________
