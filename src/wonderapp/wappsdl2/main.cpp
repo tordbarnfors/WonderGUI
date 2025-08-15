@@ -410,6 +410,11 @@ bool init_debugger(MyAppVisitor* pAPI)
 				pWindow->setContent(g_pDebugFrontend);
 				g_pDebugFrontend->activate();
 			}
+			else
+			{
+				g_pDebugWindow = nullptr;
+				g_pDebugFrontend->deactivate();
+			}
 		}
 
 	});
