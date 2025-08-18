@@ -145,7 +145,11 @@ namespace wg
 		while (pTypeInfo != nullptr)
 		{
 			bp.classCapsule.label.text = pTypeInfo->className;
-			pComponentParts->slots << m_pHolder->createComponentInfoPanel(pTypeInfo, pComponent);
+			auto pInfoPanel = m_pHolder->createComponentInfoPanel(pTypeInfo, pComponent);
+
+			if (pInfoPanel)
+				pComponentParts->slots << pInfoPanel;
+
 			pTypeInfo = pTypeInfo->pSuperClass;
 		}
 
@@ -563,7 +567,9 @@ namespace wg
 
 		while (pTypeInfo != nullptr)
 		{
-			pSlotContent->slots << m_pHolder->createSlotInfoPanel(pTypeInfo, pSlot);
+			auto pInfoPanel = m_pHolder->createSlotInfoPanel(pTypeInfo, pSlot);
+			if (pInfoPanel)
+				pSlotContent->slots << pInfoPanel;
 			pTypeInfo = pTypeInfo->pSuperClass;
 		}
 
