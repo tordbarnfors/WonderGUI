@@ -58,6 +58,7 @@ namespace wg
 			bool			dropTarget = false;
 			Finalizer_p		finalizer = nullptr;
 			int				id = 0;
+			Widget_p		inspected;
 			MarkPolicy		markPolicy = MarkPolicy::Undefined;
 			bool			pickable = false;
 			uint8_t			pickCategory = 0;
@@ -86,7 +87,16 @@ namespace wg
 		void		setContent( Widget_p pContent );
 		Widget_p	content() const { return m_pContentHolder->slot.widget(); }
 
+		void		setInspected(Object_p pInspected);
+		Object_p	inspected() const { return m_pInspected; }
+
 		void		setLabel( String label );
+
+		void	setFocused(bool focused)
+		{
+			if (m_pLabel)
+				m_pLabel->setFlagged(focused);
+		}
 
 	protected:
 		DebugFrontendWindow(const Blueprint& blueprint);
@@ -94,6 +104,7 @@ namespace wg
 
 		TextDisplay_p	m_pLabel;
 		Capsule_p		m_pContentHolder;
+		Object_p		m_pInspected;
 
 	};
 
