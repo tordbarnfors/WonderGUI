@@ -50,7 +50,7 @@ namespace wg
 
 		m_pLabel = WGCREATE(TextDisplay, _ = bp.theme->windowTitleBar(), _.pickHandle = true );
 
-		auto pCloseButton = WGCREATE(Button, _ = bp.theme->pushButton(), _.label.text = "X" );
+		auto pCloseButton = WGCREATE(Button, _ = bp.theme->pushButton(), _.label.text = " X " );
 
 		Base::msgRouter()->addRoute(pCloseButton, MsgType::Select, [this](Msg* pMsg){
 			this->releaseFromParent();
@@ -86,6 +86,13 @@ namespace wg
 	void DebugFrontendWindow::setContent( Widget_p pContent )
 	{
 		m_pContentHolder->slot = pContent;
+	}
+
+	//____ setInspected() _____________________________________________________
+
+	void DebugFrontendWindow::setInspected(Object_p pInspected)
+	{
+		m_pInspected = pInspected;
 	}
 
 	//____ setLabel() ____________________________________________________________
