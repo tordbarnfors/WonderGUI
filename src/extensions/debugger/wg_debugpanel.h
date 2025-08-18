@@ -204,7 +204,9 @@ void DebugPanel::_addSlotInfoPanels(PackPanel * pPanel, int numberingStart, Iter
 
 		while (pTypeInfo != nullptr)
 		{
-			pSlotContent->slots << m_pHolder->createSlotInfoPanel(pTypeInfo, pSlot);
+			auto pInfoPanel = m_pHolder->createSlotInfoPanel(pTypeInfo, pSlot);
+			if (pInfoPanel)
+				pSlotContent->slots << pInfoPanel;
 			pTypeInfo = pTypeInfo->pSuperClass;
 		}
 

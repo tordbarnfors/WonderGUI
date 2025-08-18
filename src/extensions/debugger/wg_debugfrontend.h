@@ -118,10 +118,12 @@ namespace wg
 		void		_createResources();
 		void		_setupGUI();
 
-		void		_refreshTreeSelector();
+		void		_refreshWidgetTree();
 
 
 		void		_addWorkspaceWindow( Object * pObject, bool bReuse );
+		bool		_focusWorkspaceWindow(DebugFrontendWindow * pWindow);
+		DebugFrontendWindow_p	_findWorkspaceWindow(Object* pObjectInspected);
 
 
 		DebugBackend_p		m_pBackend;
@@ -129,15 +131,10 @@ namespace wg
 
 		Widget_p			m_pSelectedWidget;
 
-		std::vector<DebugFrontendWindow_p>	m_widgetWindows;
-		std::vector<DebugFrontendWindow_p>	m_skinWindows;
-		std::vector<DebugFrontendWindow_p>	m_objectWindows;
-
 		PackPanel_p			m_pWorkspace;
-		SelectBox_p			m_pTreeSelector;
-		Capsule_p			m_pTreeViewCapsule;
-		WidgetTreeView_p	m_pTreeView;
-		Capsule_p			m_pCapsuleInTreeView;
+		PackPanel_p			m_pListOfTreeViews;
+
+		PackLayout_p		m_pDummyPackLayout;
 
 
 		// Modes

@@ -26,6 +26,7 @@
 #include <wg_drawerpanel.h>
 #include <wg_selectcapsule.h>
 #include <wg_filler.h>
+#include <wg_debugcapsule.h>
 
 #include <wg_boxskin.h>
 #include <wg_colorskin.h>
@@ -211,9 +212,20 @@ namespace wg
 			auto pNameDisplay = TextDisplay::create(WGOVR(blueprint.listEntryLabel, _.display.text = pWidget->typeInfo().className));
 
 			auto pEntry = PaddingCapsule::create(WGOVR(blueprint.selectableListEntryCapsule,
-				_.padding.left += pts((indentation+1) *16),
+				_.padding.left += pts((indentation + 1) * 16),
 				_.child = pNameDisplay
 			));
+
+			if( pWidget->typeInfo() == DebugCapsule::TYPEINFO )
+			{
+				pEntry->setSelectable(false);
+				pEntry->setSkin(nullptr);
+
+				auto pDebugCapsule = static_cast<DebugCapsule*>(pWidget);
+				if( !pDebugCapsule->name().empty() )
+					pNameDisplay->display.setText(pDebugCapsule->name().c_str());
+			}
+
 
 			auto pContent = PackPanel::create(WGBP(PackPanel,
 				_.axis = Axis::Y,

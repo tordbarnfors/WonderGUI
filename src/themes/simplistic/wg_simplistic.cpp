@@ -66,8 +66,12 @@ Simplistic::Simplistic( Font * pNormal, Font * pBold, Font * pItalic, Font * pMo
 	HiColor plateColor = Color::LightGrey;
 	HiColor borderColor = Color::DarkGrey;
 
-	HiColor titlebarColor = Color::LightGreen;
-	HiColor titlebarBorderColor = Color::DarkGreen;
+	HiColor titlebarColor = Color::LightGrey;
+	HiColor titlebarBorderColor = Color::DarkGrey;
+
+	HiColor titlebarColorSelected = Color::LightCyan;
+	HiColor titlebarBorderColorSelected = Color::DarkCyan;
+
 
 	m_pStrongStyle = TextStyle::create(WGBP(TextStyle, _.font = m_pFontBold, _.color = HiColor::Black, _.size = c_textSizeNormal));
 	m_pEmphasisStyle = TextStyle::create(WGBP(TextStyle, _.font = m_pFontItalic, _.color = HiColor::Black, _.size = c_textSizeNormal));
@@ -119,7 +123,8 @@ Simplistic::Simplistic( Font * pNormal, Font * pBold, Font * pItalic, Font * pMo
 											_.color = titlebarColor,
 											_.outlineColor = titlebarBorderColor,
 											_.outlineThickness = 1,
-											_.padding = 4 ));
+											_.padding = 4,
+		_.states = { {State::Flagged,titlebarColorSelected,titlebarBorderColorSelected} }));
 
 	auto pLabelCapsuleSkin = BoxSkin::create( WGBP(BoxSkin,
 										  _.color = HiColor::Transparent,

@@ -79,12 +79,7 @@ namespace wg
 		auto pPanel = static_cast<PackPanel*>(slot._widget());
 
 		for( auto& slot : pPanel->slots )
-		{
-			auto pDebugPanel = dynamic_cast<DebugPanel*>(slot._widget());
-
-			if( pDebugPanel )
-				pDebugPanel->refresh();
-		}
+			_refreshRecursively(slot._widget());
 	}
 
 	//____ _refreshRecursively() _________________________________________________
@@ -222,7 +217,7 @@ namespace wg
 			pTypeInfo = pTypeInfo->pSuperClass;
 		}
 
-		auto pDrawer = _createDrawer(label, nullptr, pComponentParts);
+		auto pDrawer = _createDrawer(label, nullptr, pComponentParts); 
 		return pDrawer;
 	}
 
@@ -267,7 +262,9 @@ namespace wg
 		auto pTypeInfo = &pObject->typeInfo();
 		while (pTypeInfo != nullptr)
 		{
-			pInnerPanel->slots << m_pHolder->createObjectInfoPanel(pTypeInfo, pObject);
+			auto pInfoPanel = m_pHolder->createObjectInfoPanel(pTypeInfo, pObject);
+			if( pInfoPanel )
+				pInnerPanel->slots << pInfoPanel;
 			pTypeInfo = pTypeInfo->pSuperClass;
 		}
 

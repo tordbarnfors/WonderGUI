@@ -57,6 +57,7 @@ namespace wg
 			DebugFrontend_p	frontend;									// Mandatory!!!
 			int				id				= 0;
 			MarkPolicy		markPolicy		= MarkPolicy::AlphaTest;
+			std::string		name;
 			bool			pickable		= false;
 			uint8_t			pickCategory	= 0;
 			bool			pickHandle		= false;
@@ -81,6 +82,8 @@ namespace wg
 		const TypeInfo& typeInfo(void) const override;
 		const static TypeInfo	TYPEINFO;
 
+		const std::string& name() const { return m_name; }
+
 		//.____ Appearance __________________________________________________________
 
 		PointerStyle 	pointerStyle() const override;
@@ -98,6 +101,8 @@ namespace wg
 		{
 			m_pFrontend = bp.frontend;
 
+			m_name = bp.name;
+
 			 if (bp.child)
 				 slot.setWidget(bp.child);
 
@@ -105,9 +110,9 @@ namespace wg
 				m_pSelectionSkin = bp.selectionSkin;
 			else
 				m_pSelectionSkin = BoxSkin::create( WGBP(BoxSkin,
-														 _.color = HiColor( 4096,0,0,1024 );
+														 _.color = HiColor(Color::LightCyan).withAlpha(2048);
 														 _.outlineThickness = 1,
-														 _.outlineColor = HiColor( 4096,0,0,4096 )
+														 _.outlineColor = Color::DarkCyan;
 													) );
 			_startReceiveUpdates();
 
@@ -135,6 +140,8 @@ namespace wg
 		RectSPX		m_renderedSelectionArea;
 
 		Skin_p		m_pSelectionSkin;
+
+		std::string	m_name;
 		
 	};
 

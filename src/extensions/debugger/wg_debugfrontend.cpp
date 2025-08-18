@@ -81,6 +81,9 @@ namespace wg
 			pCapsule->_setSelectMode(m_bSelectMode);
 			pCapsule->_widgetSelected(m_pSelectedWidget);
 		}
+
+		if (m_pListOfTreeViews->slots.isEmpty())
+			_refreshWidgetTree();
 	}
 
 	//____ deactivate() __________________________________________________________
@@ -102,7 +105,7 @@ namespace wg
 		pCapsule->_setSelectMode(m_bSelectMode);
 		m_capsules.push_back(pCapsule);
 
-		_refreshTreeSelector();
+//		_refreshTreeSelector();
 	}
 
 	//____ _removeDebugCapsule() __________________________________________________
@@ -111,7 +114,7 @@ namespace wg
 	{
 		m_capsules.erase(std::remove(m_capsules.begin(), m_capsules.end(), pCapsule), m_capsules.end());
 
-		_refreshTreeSelector();
+//		_refreshTreeSelector();
 	}
 
 	//____ selectObject() _______________________________________________________
@@ -124,8 +127,12 @@ namespace wg
 			for( auto pCapsule : m_capsules )
 				pCapsule->_widgetSelected(pWidget);
 
-			if (m_pTreeView)
-				m_pTreeView->select(pWidget);
+			for (auto& slot : m_pListOfTreeViews->slots)
+			{
+				auto pTreeView = wg_dynamic_cast<WidgetTreeView_p>(slot.widget());
+				if (pTreeView)
+					pTreeView->select(pWidget);
+			}
 
 			m_pSelectedWidget = pWidget;
 		}
@@ -135,6 +142,8 @@ namespace wg
 			bool bReuseWindow = (Base::inputHandler()->modifierKeys() & ModKeys::Shift) == 0;
 			_addWorkspaceWindow(pSelected, bReuseWindow);
 		}
+		else
+			_focusWorkspaceWindow(nullptr);
 
 	}
 
@@ -154,11 +163,17 @@ namespace wg
 
 	void DebugFrontend::_addWorkspaceWindow( Object * pObject, bool bReuse )
 	{
-		DebugFrontendWindow_p pWindow;
 
 		auto pWidget = dynamic_cast<Widget*>(pObject);
 		auto pSkin = dynamic_cast<Skin*>(pObject);
 
+		DebugFrontendWindow_p pWindow = _findWorkspaceWindow(pObject);
+
+		if (pWindow)
+		{
+			_focusWorkspaceWindow(pWindow);
+			return;
+		}
 
 		if( bReuse )
 		{
@@ -204,14 +219,57 @@ namespace wg
 			pContent = m_pBackend->createObjectInspector(pObject);
 
 		pWindow->setContent(pContent);
+		pWindow->setInspected(pObject);
 		pWindow->setLabel(pContent->title());
 
+		_focusWorkspaceWindow(pWindow);
 	}
+
+	//____ _findWorkspaceWindow() _____________________________________________
+
+	DebugFrontendWindow_p DebugFrontend::_findWorkspaceWindow(Object* pObjectInspected)
+	{
+		for (auto& slot : m_pWorkspace->slots)
+		{
+			auto pWindow = dynamic_cast<DebugFrontendWindow*>(slot._widget());
+			if (pWindow->inspected() == pObjectInspected)
+				return pWindow;
+		}
+
+		return nullptr;
+	}
+
+
+
+	//____ _focusWorkspaceWindow() _____________________________________________
+
+	bool DebugFrontend::_focusWorkspaceWindow(DebugFrontendWindow* pWindow)
+	{
+		bool bFound = false;
+
+		for (auto& slot : m_pWorkspace->slots)
+		{
+			auto p = dynamic_cast<DebugFrontendWindow*>(slot._widget());
+			if (p == pWindow)
+			{
+				p->setFocused(true);
+				p->bringIntoView();
+				bFound = true;
+			}
+			else
+				p->setFocused(false);
+		}
+
+		return bFound;
+	}
+
 
 	//____ _createResources() ____________________________________________________
 
 	void DebugFrontend::_createResources()
 	{
+		m_pDummyPackLayout = PackLayout::create({});
+
 		m_pRefreshIcon = BlockSkin::create(WGBP(BlockSkin,
 			_.surface = m_pIcons,
 			_.firstBlock = Rect(0, 0, 16, 16);
@@ -306,31 +364,34 @@ namespace wg
 		return pToolbox;
 	}
 
+	//____ _refreshWidgetTree() __________________________________________________
+
+	void DebugFrontend::_refreshWidgetTree()
+	{
+		m_pListOfTreeViews->slots.clear();
+
+		for (auto pCapsule : m_capsules)
+		{
+			if (pCapsule->slot.isEmpty())
+				continue;
+
+			auto pTreeView = m_pBackend->createWidgetTreeView(pCapsule);
+			this->m_pListOfTreeViews->slots << pTreeView;
+			pTreeView->select(m_pSelectedWidget);
+
+		}
+	}
+
 	//____ _createWidgetTreeView() ____________________________________________
 
 	Widget_p DebugFrontend::_createWidgetTreeView()
 	{
 		auto pTreePanel = WGCREATE(PackPanel, _.axis = Axis::Y);
 
-		m_pTreeViewCapsule = WGCREATE(Capsule, _.skin = m_pTheme->canvasSkin());
+		m_pListOfTreeViews = WGCREATE(PackPanel, _.axis = Axis::Y, _.skin = m_pTheme->canvasSkin(), _.layout = m_pDummyPackLayout );
 
 		auto pTreeScrollPanel = WGCREATE(ScrollPanel, _ = m_pTheme->scrollPanelXY());
-		pTreeScrollPanel->slot = m_pTreeViewCapsule;
-
-		auto pTreeSelector = SelectBox::create(m_pTheme->selectBox());
-		m_pTreeSelector = pTreeSelector;
-
-		Base::msgRouter()->addRoute(pTreeSelector, MsgType::Select, [this, pTreeSelector](Msg* pMsg) {
-
-			int id = pTreeSelector->selectedEntryId();
-			if (id >= 0 && id < m_capsules.size())
-			{
-				auto pCapsule = m_capsules[id];
-				m_pTreeView = m_pBackend->createWidgetTreeView(pCapsule);
-				m_pCapsuleInTreeView = pCapsule;
-				m_pTreeViewCapsule->slot = m_pTreeView;
-			}
-			});
+		pTreeScrollPanel->slot = m_pListOfTreeViews;
 
 		// Create button row with refresh, collapse and expand buttons
 
@@ -339,29 +400,31 @@ namespace wg
 		auto pRefreshButton = Button::create(WGOVR(m_pTheme->pushButton(), _.icon.skin = m_pRefreshIcon, _.icon.placement = Placement::Center));
 
 		Base::msgRouter()->addRoute(pRefreshButton, MsgType::Select, [this](Msg* pMsg) {
-
-			if (m_pTreeView)
-			{
-				m_pTreeView = m_pBackend->createWidgetTreeView(m_pCapsuleInTreeView);
-				this->m_pTreeViewCapsule->slot = m_pTreeView;
-				m_pTreeView->select(m_pSelectedWidget);
-			}
+			_refreshWidgetTree();
 		});
 
 		auto pCollapseAllButton = Button::create(WGOVR(m_pTheme->pushButton(), _.icon.skin = m_pCondenseIcon, _.icon.placement = Placement::Center));
 
 		Base::msgRouter()->addRoute(pCollapseAllButton, MsgType::Select, [this](Msg* pMsg) {
 
-			if (m_pTreeView)
-				m_pTreeView->collapseAll();
+			for( auto& slot : m_pListOfTreeViews->slots )
+			{
+				auto pTreeView = wg_dynamic_cast<WidgetTreeView_p>(slot.widget());
+				if (pTreeView)
+					pTreeView->collapseAll();
+			}
 		});
 
 		auto pExpandAllButton = Button::create(WGOVR(m_pTheme->pushButton(), _.icon.skin = m_pExpandIcon, _.icon.placement = Placement::Center));
 
 		Base::msgRouter()->addRoute(pExpandAllButton, MsgType::Select, [this](Msg* pMsg) {
 
-			if (!m_pTreeViewCapsule->slot.isEmpty())
-				static_cast<WidgetTreeView*>(m_pTreeViewCapsule->slot._widget())->expandAll();
+			for (auto& slot : m_pListOfTreeViews->slots)
+			{
+				auto pTreeView = wg_dynamic_cast<WidgetTreeView_p>(slot.widget());
+				if (pTreeView)
+					pTreeView->expandAll();
+			}
 			});
 
 
@@ -372,32 +435,10 @@ namespace wg
 		//
 
 
-		pTreePanel->slots.pushBack(pTreeSelector, WGBP(PackPanelSlot, _.weight = 0.f));
 		pTreePanel->slots.pushBack(pButtonRow, WGBP(PackPanelSlot, _.weight = 0.f));
 		pTreePanel->slots.pushBack(pTreeScrollPanel);
 
 		return pTreePanel;
-	}
-
-
-	//____ _refreshTreeSelector() _________________________________________________
-
-	void DebugFrontend::_refreshTreeSelector()
-	{
-		m_pTreeSelector->entries.clear();
-
-		int nb = 0;
-		for( auto pCapsule : m_capsules )
-		{
-			char temp[64];
-
-			Size sz = pCapsule->size();
-
-			snprintf(temp,64, "%d: 0x%llx (%dx%d)", nb+1, reinterpret_cast<std::uintptr_t>(pCapsule), int(sz.w), int(sz.h) );
-
-			m_pTreeSelector->entries.pushBack(WGBP(SelectBoxEntry, _.id = nb, _.text = temp ) );
-			nb++;
-		}
 	}
 
 	//____ _createDebuggerBP() ___________________________________________________
