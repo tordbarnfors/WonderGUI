@@ -315,6 +315,7 @@ namespace wg
 
 		RectSPX			m_childCanvas;								// Child canvas in our coordinate system
 		RectSPX			m_childWindow;								// Child view in our coordinate system.
+		SizeSPX			m_childDefaultSize;							// Default size from our child.
 
 		Placement		m_smallChildPlacement = Placement::NorthWest;	// Child placement within view if smaller than view.
 		SizeConstraint	m_widthConstraint = SizeConstraint::None;		// Constraint of child width.
