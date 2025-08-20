@@ -137,7 +137,7 @@ namespace wg
 
 				auto pickOfs = ptsToSpx( pMsg->pickOfs(), m_scale );
 
-				Widget * pWidget = _findWidget(pickOfs, SearchMode::ActionTarget);
+				Widget_p pWidget = _findWidget(pickOfs, SearchMode::ActionTarget);	// Widget_p since we need to secure refcount.
 
 				while( pWidget != nullptr && pWidget != this && pWidget->parent() != pContainer )
 					pWidget = pWidget->parent();
@@ -147,17 +147,21 @@ namespace wg
 				if( pWidget && pWidget != this )
 				{
 					auto pPackPanel = static_cast<PackPanel*>(pContainer);
-					auto pFound = pPackPanel->slots.find(pWidget);
+					auto pSlot = pPackPanel->slots.find(pWidget);
 
 					Coord offset = -(pMsg->pointerPos() - pWidget->globalGeo().pos());
 
-					auto pDataset = DropData::create({pWidget,pFound->weight()});
+					auto pDataset = DropData::create({pWidget,pSlot->weight()});
 					pMsg->setContent(DropType::Widget, m_pickCategory, pDataset);
-					
+
+					m_pHoveredPosFiller->setDefaultSize(pWidget->defaultSize() );
+					pSlot->setWidget(m_pHoveredPosFiller);
+
 					auto pSizeCapsule = SizeCapsule::create();
 					pSizeCapsule->setDefaultSize(pWidget->size());		// Should keep its size while reordering.
-					
-					pMsg->setDragWidget(pWidget, offset );
+					pSizeCapsule->slot = pWidget;
+
+					pMsg->setDragWidget(pSizeCapsule, offset );
 					pMsg->setHotspot(Placement::Center);
 
 					if( !m_bDragOutside )
@@ -183,15 +187,11 @@ namespace wg
 
 
 
-					m_pickedPos = int( pFound - pPackPanel->slots.begin());
-					m_pickedWeight = pFound->weight();
+					m_pickedPos = int( pSlot - pPackPanel->slots.begin());
+					m_pickedWeight = pSlot->weight();
 
 					m_markedPos = m_pickedPos;
 					m_hoveredPos = m_pickedPos;
-
-					m_pHoveredPosFiller->setDefaultSize(pWidget->defaultSize() );
-					static_cast<DynamicSlot*>(pWidget->_slot())->setWidget(m_pHoveredPosFiller);
-
 
 					m_transitionProgress = m_pTransition->duration();
 
