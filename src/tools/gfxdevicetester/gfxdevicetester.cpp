@@ -910,9 +910,9 @@ bool GfxDeviceTester::setup_chrome(Theme * pTheme)
 	int id = 0;
 	for (TestEntry& test : g_tests)
 	{
-		auto pEntry = TextDisplay::create(
-			{ .display = {.text = test.name }, 
-			.id = id++, 
+		auto pEntry = TextDisplay::create( {
+			.display = {.text = test.name.c_str() },
+			.id = id++,
 			.selectable = true,
 			.skin = pEntrySkin });
 		pTestList->slots.pushBack(pEntry);

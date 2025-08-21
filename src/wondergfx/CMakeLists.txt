@@ -57,6 +57,8 @@ set( SOURCES
 	wg_pixeltools.h
 	wg_printer.cpp
 	wg_printer.h
+	wg_snapshottintmap.cpp
+	wg_snapshottintmap.h
 	wg_surface.cpp
 	wg_surface.h
 	wg_surfacefactory.cpp
