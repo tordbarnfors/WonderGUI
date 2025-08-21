@@ -249,61 +249,43 @@ namespace wg
 
 			case GfxStream::ChunkId::Objects:
 			{
-				GfxStream::DataInfo dataInfo;
-				*m_pDecoder >> dataInfo;
-
 				_readPrintDataInfo();
-				m_pDecoder->skip(header.size-16);
+				m_pDecoder->skip(header.size - GfxStream::DataInfoSize);
 				break;
 			}
 
 			case GfxStream::ChunkId::Rects:
 			{
-				GfxStream::DataInfo dataInfo;
-				*m_pDecoder >> dataInfo;
-
 				_readPrintDataInfo();
-				m_pDecoder->skip(header.size-16);
+				m_pDecoder->skip(header.size - GfxStream::DataInfoSize);
 				break;
 			}
 
 			case GfxStream::ChunkId::Colors:
 			{
-				GfxStream::DataInfo dataInfo;
-				*m_pDecoder >> dataInfo;
-
 				_readPrintDataInfo();
-				m_pDecoder->skip(header.size-16);
+				m_pDecoder->skip(header.size - GfxStream::DataInfoSize);
 				break;
 			}
 
 			case GfxStream::ChunkId::Transforms:
 			{
-				GfxStream::DataInfo dataInfo;
-				*m_pDecoder >> dataInfo;
-
 				_readPrintDataInfo();
-				m_pDecoder->skip(header.size-16);
+				m_pDecoder->skip(header.size - GfxStream::DataInfoSize);
 				break;
 			}
 
 			case GfxStream::ChunkId::Commands:
 			{
-				GfxStream::DataInfo dataInfo;
-				*m_pDecoder >> dataInfo;
-
 				_readPrintDataInfo();
-				m_pDecoder->skip(header.size-16);
+				m_pDecoder->skip(header.size - GfxStream::DataInfoSize);
 				break;
 			}
 
 			case GfxStream::ChunkId::UpdateRects:
 			{
-				GfxStream::DataInfo dataInfo;
-				*m_pDecoder >> dataInfo;
-
 				_readPrintDataInfo();
-				m_pDecoder->skip(header.size-16);
+				m_pDecoder->skip(header.size - GfxStream::DataInfoSize);
 				break;
 			}
 
@@ -357,11 +339,8 @@ namespace wg
 
 			case GfxStream::ChunkId::SurfacePixels:
 			{
-				GfxStream::DataInfo dataInfo;
-				*m_pDecoder >> dataInfo;
-
 				_readPrintDataInfo();
-				m_pDecoder->skip(header.size - 16);
+				m_pDecoder->skip(header.size - GfxStream::DataInfoSize);
 				break;
 			}
 
@@ -486,11 +465,8 @@ namespace wg
 
 			case GfxStream::ChunkId::EdgemapSamples:
 			{
-				GfxStream::DataInfo dataInfo;
-				*m_pDecoder >> dataInfo;
-
 				_readPrintDataInfo();
-				m_pDecoder->skip(header.size - 16);
+				m_pDecoder->skip(header.size - GfxStream::DataInfoSize);
 				break;
 			}
 
@@ -553,7 +529,7 @@ namespace wg
 		GfxStream::DataInfo dataInfo;
 		*m_pDecoder >> dataInfo;
 
-		m_charStream << "    totalSize = " << dataInfo.totalSize << "bytes" << std::endl;
+		m_charStream << "    totalSize = " << dataInfo.totalSize << " bytes" << std::endl;
 		m_charStream << "    chunkOffset = " << dataInfo.chunkOffset << std::endl;
 		m_charStream << "    compression = " << int(dataInfo.compression) << ", bFirstChunk = " << dataInfo.bFirstChunk << ", bLastChunk = " << dataInfo.bLastChunk << ", bPadded = " << dataInfo.bPadded << std::endl;
 	}
