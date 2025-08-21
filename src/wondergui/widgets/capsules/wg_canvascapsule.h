@@ -28,7 +28,7 @@
 #include <wg_patches.h>
 #include <wg_canvaslayers.h>
 #include <wg_glow.h>
-#include <wg_gradient.h>
+#include <wg_tintmap.h>
 #include <wg_transitions.h>
 
 namespace wg
@@ -86,7 +86,7 @@ namespace wg
 			SurfaceFactory_p surfaceFactory;
 			bool			tabLock			= false;
 			HiColor			tintColor		= HiColor::Undefined;
-			Gradient		tintGradient;
+			Tintmap_p		tintmap;
 			String			tooltip;
 			bool			usePickHandles = false;
 		};
@@ -120,7 +120,7 @@ namespace wg
 		void				setSkin(Skin* pSkin) override;
 
 		void				setTintColor(HiColor color, ColorTransition* pTransition = nullptr);
-		void				setTintGradient(const Gradient& gradient, ColorTransition* pTransition = nullptr);
+		void				setTintmap(Tintmap* pTintmap, ColorTransition* pTransition = nullptr);
 		void				setBlendMode(BlendMode mode);
 
 		void				setSurfaceFactory(SurfaceFactory* pFactory);
@@ -140,7 +140,7 @@ namespace wg
 
 		
 		inline HiColor		tintColor() { return m_tintColor; }
-		inline Gradient		tintGradient() { return m_gradient; }
+		inline Tintmap_p	tintmap() { return m_pTintmap; }
 		inline BlendMode	blendMode() { return m_blendMode; }
 
 		//.____ Internal _________________________________________________
@@ -166,7 +166,7 @@ namespace wg
 			if( bp.tintColor != HiColor::Undefined )
 				m_tintColor	= bp.tintColor;
 
-			m_gradient		= bp.tintGradient;
+			m_pTintmap		= bp.tintmap;
 			m_bScaleCanvas  = bp.scaleCanvas;
 			m_placement		= bp.placement;
 			m_clearColor	= bp.clearColor;
@@ -230,7 +230,7 @@ namespace wg
 		int					m_renderLayer = -1;
 
 		HiColor				m_tintColor = HiColor::White;
-		Gradient			m_gradient;
+		Tintmap_p			m_pTintmap;
 		BlendMode			m_blendMode = BlendMode::Blend;
 
 		PatchesSPX			m_patches;
@@ -246,14 +246,14 @@ namespace wg
 		HiColor				m_startTintColor;
 		HiColor				m_endTintColor;
 
-		Gradient			m_startGradient;
-		Gradient			m_endGradient;
+		Tintmap_p			m_pStartTintmap;
+		Tintmap_p			m_pEndTintmap;
 
 		ColorTransition_p	m_pTintColorTransition;
-		ColorTransition_p	m_pGradientTransition;
+		ColorTransition_p	m_pTintmapTransition;
 
 		int					m_tintColorTransitionProgress = 0;
-		int					m_gradientTransitionProgress = 0;
+		int					m_tintmapTransitionProgress = 0;
 	};
 
 

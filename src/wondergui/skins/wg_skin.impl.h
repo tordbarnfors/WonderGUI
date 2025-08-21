@@ -79,6 +79,71 @@ namespace wg
 		bool		m_bTintChanged = false;
 	};
 
+	//____ RenderSettingsWithTintmap _____________________________________________________
+	/*
+	* Simple class for quickly and easily set layer, blend mode and tint color/map for
+	* rendering and then revert back automatically when deleted.
+	*/
+
+	class RenderSettingsWithTintmap
+	{
+	public:
+		RenderSettingsWithTintmap(GfxDevice* pDevice, int layer, BlendMode blendMode, HiColor tintColor, const RectSPX& rect, Tintmap * pTintmap )
+		{
+			m_pDevice = pDevice;
+
+			if (layer != -1 && pDevice->renderLayer() != layer)
+			{
+				m_prevLayer = pDevice->renderLayer();
+				pDevice->setRenderLayer(layer);
+			}
+
+			if (blendMode != BlendMode::Undefined)
+			{
+				m_prevBlendMode = pDevice->blendMode();
+				pDevice->setBlendMode(blendMode);
+			}
+
+			if (pTintmap)
+			{
+				pDevice->setTint(rect, pTintmap);
+				m_bTintmap = true;
+			}
+
+			if (tintColor != HiColor::Undefined)
+			{
+				m_prevTintColor = pDevice->tintColor();
+				if (tintColor != m_prevTintColor)
+				{
+					pDevice->setTintColor(tintColor);
+					m_bTintChanged = true;
+				}
+			}
+
+		}
+
+		~RenderSettingsWithTintmap()
+		{
+			if (m_prevLayer != -1)
+				m_pDevice->setRenderLayer(m_prevLayer);
+			if (m_prevBlendMode != BlendMode::Undefined)
+				m_pDevice->setBlendMode(m_prevBlendMode);
+			if (m_bTintChanged)
+				m_pDevice->setTintColor(m_prevTintColor);
+			if (m_bTintmap)
+				m_pDevice->clearTint();
+		}
+
+		GfxDevice* m_pDevice;
+		int			m_prevLayer = -1;
+		BlendMode	m_prevBlendMode = BlendMode::Undefined;
+		HiColor		m_prevTintColor;
+		bool		m_bTintChanged = false;
+		bool		m_bTintmap = false;
+	};
+
+
+
 	//____ RenderSettingsWithGradient _____________________________________________________
 	/*
 	* Simple class for quickly and easily set layer, blend mode and tint color/gradient for
