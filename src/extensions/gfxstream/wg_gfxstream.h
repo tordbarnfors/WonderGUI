@@ -52,7 +52,7 @@ namespace wg
 
 			ProtocolVersion = 1,
 			CanvasList = 2,
-			TimeStampMS = 3,
+			Tick = 3,
 
 			BeginRender = 4,
 			EndRender = 5,

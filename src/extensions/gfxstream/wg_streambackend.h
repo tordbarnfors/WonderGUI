@@ -79,6 +79,8 @@ namespace wg
 		bool	defineCanvas( CanvasRef ref, const SizeI& pixelSize, PixelFormat pixelFormat, int scale = 64 );
 
 		void	encodeCanvasList();
+		void	encodeTick(int32_t microsecPassed);		// Microsec since last tick (or beginning of stream if first tick)
+
 
 		const CanvasInfo *	canvasInfo(CanvasRef ref) const override;
 

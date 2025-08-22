@@ -286,6 +286,14 @@ namespace wg
 		}
 	}
 
+	//____ encodeTick() _____________________________________________________
+
+	void StreamBackend::encodeTick(int32_t microsecPassed)
+	{
+		(*m_pEncoder) << GfxStream::Header{ GfxStream::ChunkId::Tick, 0, 4 };
+		(*m_pEncoder) << microsecPassed;
+	}
+
 	//____ surfaceFactory() ______________________________________________________
 
 	SurfaceFactory_p StreamBackend::surfaceFactory()

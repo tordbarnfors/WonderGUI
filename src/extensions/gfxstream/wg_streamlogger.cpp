@@ -149,12 +149,16 @@ namespace wg
 
 					m_charStream << "    " << toString((CanvasRef) ref) << ": size = (" << size.w << "," << size.h << "), scale = " << scale << ", format = " << toString(format) << std::endl;
 				}
-
 				break;
 			}
 
-			case GfxStream::ChunkId::TimeStampMS:
+			case GfxStream::ChunkId::Tick:
+			{
+				int32_t	tick;
+				*m_pDecoder >> tick;
+				m_charStream << "    " << tick << " microsec passed." << std::endl;
 				break;
+			}
 
 			case GfxStream::ChunkId::BeginRender:
 				break;

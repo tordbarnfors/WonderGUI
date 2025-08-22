@@ -30,7 +30,7 @@ namespace wg
 			"OutOfData",
 			"ProtocolVersion",
 			"CanvasList",
-			"TimeStampMS",
+			"Tick",
 			"BeginRender",
 			"EndRender",
 			"BeginSession",
