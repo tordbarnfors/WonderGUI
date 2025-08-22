@@ -28,7 +28,7 @@ namespace wg
 
 	const TypeInfo PaddingCapsule::TYPEINFO = { "PaddingCapsule", &Capsule::TYPEINFO };
 
-	//____ create() ______________________________________________________________
+	//____ create() ___________________________________________________________
 
 	PaddingCapsule_p PaddingCapsule::create() 
 	{ 
@@ -40,13 +40,13 @@ namespace wg
 		return PaddingCapsule_p(new PaddingCapsule(blueprint)); 
 	}
 
-	//____ constructor ____________________________________________________________
+	//____ constructor ________________________________________________________
 
 	PaddingCapsule::PaddingCapsule()
 	{
 	}
 
-	//____ destructor _____________________________________________________________
+	//____ destructor _________________________________________________________
 
 	PaddingCapsule::~PaddingCapsule()
 	{
@@ -57,6 +57,21 @@ namespace wg
 	const TypeInfo& PaddingCapsule::typeInfo(void) const
 	{
 		return TYPEINFO;
+	}
+
+	//____ setPadding() _______________________________________________________
+
+	void PaddingCapsule::setPadding(const Border& padding)
+	{
+		if (m_padding != padding)
+		{
+			Border oldPadding = m_padding;
+			m_padding = padding;
+
+			_requestRender();
+			if( padding.size() != oldPadding.size() )
+				_requestResize();
+		}
 	}
 
 	//____ _matchingHeight() __________________________________________________

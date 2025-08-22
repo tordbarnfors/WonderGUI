@@ -123,14 +123,27 @@ namespace wg
 		{
 			pContentTable = _createTable(4, 2);
 
-			_setSpxEntry(pContentTable, 0, "Top (pts): ", border.top);
-			_setSpxEntry(pContentTable, 1, "Right (pts): ", border.right);
-			_setSpxEntry(pContentTable, 2, "Bottom (pts): ", border.bottom);
-			_setSpxEntry(pContentTable, 3, "Left (pts): ", border.left);
+			_setPtsEntry(pContentTable, 0, "Top (pts): ", border.top);
+			_setPtsEntry(pContentTable, 1, "Right (pts): ", border.right);
+			_setPtsEntry(pContentTable, 2, "Bottom (pts): ", border.bottom);
+			_setPtsEntry(pContentTable, 3, "Left (pts): ", border.left);
 		}
 
 		return _createDrawer(label, pHeaderValue, pContentTable);
 	}
+
+	//____ _refreshBorderDrawer() _____________________________________________
+
+	void DebugPanel::_refreshBorderDrawer(DrawerPanel* pBorderDrawer, const Border& border)
+	{
+		auto pTable = static_cast<TablePanel*>(pBorderDrawer->slots[1]._widget());
+
+		_refreshPtsEntry(pTable, 0, border.top);
+		_refreshPtsEntry(pTable, 1, border.right);
+		_refreshPtsEntry(pTable, 2, border.bottom);
+		_refreshPtsEntry(pTable, 3, border.left);
+	}
+
 
 	//____ _createComponentDrawer() _________________________________________________
 
