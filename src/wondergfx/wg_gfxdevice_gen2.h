@@ -108,12 +108,15 @@ namespace wg
 		int			clipListSize() const override;
 		const RectSPX& clipBounds() const override;
 
-		void		setTint(HiColor color) override;
-		void		setTint(const RectSPX& rect, Tintmap* pTintmap) override;
-		void		clearTint() override;
-
-		bool		isTinting() const override;
+		void		setTintColor(HiColor color) override;
+		void		clearTintColor() override;
+		bool		hasTintColor() const override;
 		HiColor		tintColor() const override;
+
+
+		void		setTintmap(const RectSPX& rect, Tintmap* pTintmap) override;
+		void		clearTintmap() override;
+		bool		hasTintmap() const override;
 		Tintmap_p	tintmap() const override;
 		RectSPX		tintmapRect() const override;
 
@@ -205,7 +208,6 @@ namespace wg
 
 		//.____ Deprecated _______________________________________________________________
 
-		void		setTintColor(HiColor color) override;
 		void		setTintGradient(const RectSPX& rect, const Gradient& gradient) override;
 		void		clearTintGradient() override;
 

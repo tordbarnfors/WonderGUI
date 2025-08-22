@@ -41,13 +41,14 @@ public:
 
 	bool clearTint(GfxDevice* pDevice, const RectI& canvas)
 	{
-		pDevice->clearTint();
+		pDevice->clearTintColor();
+		pDevice->clearTintmap();
 		return true;
 	}
 
 	bool setTintAndBlurbrush(GfxDevice* pDevice, const RectI& canvas)
 	{
-		pDevice->setTint(Color::Blue);
+		pDevice->setTintColor(Color::Blue);
 		setBlurbrush(pDevice, canvas);
 		return true;
 	}

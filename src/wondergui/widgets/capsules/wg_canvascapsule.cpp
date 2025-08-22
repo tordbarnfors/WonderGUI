@@ -457,7 +457,7 @@ namespace wg
 		pDevice->setTintColor(m_tintColor);
 
 		if (m_pTintmap)
-			pDevice->setTint(canvasArea, m_pTintmap);
+			pDevice->setTintmap(canvasArea, m_pTintmap);
 
 		pDevice->setBlitSource(m_pCanvas);
 		pDevice->stretchBlit(canvasArea);
@@ -473,7 +473,7 @@ namespace wg
 		pOutline2->_render(pDevice, seedArea, m_scale, m_state );
 */
 		if (m_pTintmap)
-			pDevice->clearTint();
+			pDevice->clearTintmap();
 
 		pDevice->setTintColor(c);
 		pDevice->setBlendMode(bm);
