@@ -29,6 +29,7 @@
 
 #include <wg_boxskin.h>
 #include <wg_snapshottintmap.h>
+#include <wg_gradyent.h>
 
 namespace wg
 {
@@ -116,7 +117,7 @@ namespace wg
 
 				m_pTintmapTransition = pTransition;
 				m_tintmapTransitionProgress = 0;
-				m_pStartTintmap = m_pTintmap;
+				m_pStartTintmap = m_pTintmap ? m_pTintmap : Gradyent::create(HiColor::White, HiColor::White, HiColor::White, HiColor::White);
 				m_pEndTintmap = pTintmap;
 			}
 			else
