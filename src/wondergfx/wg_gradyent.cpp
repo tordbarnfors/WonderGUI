@@ -108,21 +108,35 @@ namespace wg
 	{
 		if( m_bHorizontal )
 		{
+			HiColor left = m_left;
+			HiColor right = m_right;
+
+			if (!m_bVertical)
+			{
+				left *= m_top;
+				right *= m_top;
+			}
+
+			int diffR = int(right.r - int(left.r));
+			int diffG = int(right.g - int(left.g));
+			int diffB = int(right.b - int(left.b));
+			int diffA = int(right.a - int(left.a));
+
 			int len = length / 64;
 			for (int i = 0; i < len; i++)
 			{
 				HiColor col;
 
-				col.r = m_left.r + ((int(m_right.r) - int(m_left.r)) * i / len);
-				col.g = m_left.g + ((int(m_right.g) - int(m_left.g)) * i / len);
-				col.b = m_left.b + ((int(m_right.b) - int(m_left.b)) * i / len);
-				col.a = m_left.a + ((int(m_right.a) - int(m_left.a)) * i / len);
+				col.r = left.r + (diffR * i / len);
+				col.g = left.g + (diffG * i / len);
+				col.b = left.b + (diffB * i / len);
+				col.a = left.a + (diffA * i / len);
 
 				pOutput[i] = col;
 			}
 		}
 		else
-			_fill(length, pOutput, m_left);
+			_fill(length, pOutput, HiColor::White);
 	}
 
 	//____ exportVerticalColors() ________________________________________________
@@ -131,21 +145,36 @@ namespace wg
 	{
 		if( m_bVertical )
 		{
+			HiColor top = m_top;
+			HiColor bottom = m_bottom;
+
+			if (!m_bHorizontal)
+			{
+				top *= m_left;
+				bottom *= m_left;
+			}
+
+			int diffR = int(bottom.r - int(top.r));
+			int diffG = int(bottom.g - int(top.g));
+			int diffB = int(bottom.b - int(top.b));
+			int diffA = int(bottom.a - int(top.a));
+
+
 			int len = length / 64;
 			for (int i = 0; i < len; i++)
 			{
 				HiColor col;
 
-				col.r = m_top.r + ((int(m_bottom.r) - int(m_top.r)) * i / len);
-				col.g = m_top.g + ((int(m_bottom.g) - int(m_top.g)) * i / len);
-				col.b = m_top.b + ((int(m_bottom.b) - int(m_top.b)) * i / len);
-				col.a = m_top.a + ((int(m_bottom.a) - int(m_top.a)) * i / len);
+				col.r = top.r + (diffR * i / len);
+				col.g = top.g + (diffG * i / len);
+				col.b = top.b + (diffB * i / len);
+				col.a = top.a + (diffA * i / len);
 
 				pOutput[i] = col;
 			}
 		}
 		else
-			_fill(length, pOutput, m_top);
+			_fill(length, pOutput, HiColor::White);
 	}
 
 	//____ exportGradient() ______________________________________________________
