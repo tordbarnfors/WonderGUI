@@ -1413,6 +1413,14 @@ namespace wg
 		else
 			m_pLinearTransformBlitOp = &LinearBackend::_dummyLinearTransformBlit;
 
+		if( m_pTransformClipBlitOp == &SoftBackend::_onePassTransformBlit )
+			m_pLinearTransformClipBlitOp = &LinearBackend::_onePassLinearTransformBlit;
+		else if( m_pTransformClipBlitOp == &SoftBackend::_twoPassTransformBlit )
+			m_pLinearTransformClipBlitOp = &LinearBackend::_twoPassLinearTransformBlit;
+		else
+			m_pLinearTransformClipBlitOp = &LinearBackend::_dummyLinearTransformBlit;
+
+
 		if( m_pTransformTileOp == &SoftBackend::_onePassTransformBlit )
 			m_pLinearTransformTileOp = &LinearBackend::_onePassLinearTransformBlit;
 		else if( m_pTransformTileOp == &SoftBackend::_twoPassTransformBlit )
