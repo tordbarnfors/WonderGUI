@@ -101,18 +101,18 @@ public:
 
 	bool globalTint(GfxDevice* pDevice, const RectI& canvas)
 	{
-		pDevice->setTint(RectSPX(100, 50, 250, 100)*64, m_pGlobalTintmap );
+		pDevice->setTintmap(RectSPX(100, 50, 250, 100)*64, m_pGlobalTintmap );
 		pDevice->flipDrawEdgemap(CoordSPX(100, 50) * 64, m_pSmallEdgemap, GfxFlip::Rot270);
 
-		pDevice->clearTint();
+		pDevice->clearTintmap();
 		return true;
 	}
 
 	bool globalFlatTint(GfxDevice* pDevice, const RectI& canvas)
 	{
-		pDevice->setTint( HiColor{4096,4096,4096,1024} );
+		pDevice->setTintColor( HiColor{4096,4096,4096,1024} );
 		pDevice->drawEdgemap(CoordSPX(100, 50) * 64, m_pSmallEdgemap);
-		pDevice->clearTint();
+		pDevice->clearTintColor();
 		return true;
 	}
 

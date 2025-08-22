@@ -198,31 +198,18 @@ namespace wg
 		return true;
 	}
 
-	//____ setTint() ___________________________________________________________
+	//____ setTintmap() ___________________________________________________________
 
-	void GfxDeviceGen1::setTint(HiColor color)
-	{
-		setTintColor(color);
-	}
-
-	void GfxDeviceGen1::setTint(const RectSPX& rect, Tintmap* pTintmap)
+	void GfxDeviceGen1::setTintmap(const RectSPX& rect, Tintmap* pTintmap)
 	{
 		// Do nothing. Not supported in Gen1
 	}
 
-	//____ clearTint() _________________________________________________________
+	//____ clearTintmap() _________________________________________________________
 
-	void GfxDeviceGen1::clearTint()
+	void GfxDeviceGen1::clearTintmap()
 	{
-		clearTintGradient();
-		setTintColor(HiColor::White);
-	}
-
-	//____ isTinting() _________________________________________________________
-
-	bool GfxDeviceGen1::isTinting() const
-	{
-		return (m_tintColor != HiColor::White || m_bTintGradient);
+		// Do nothing. Not supported in Gen1
 	}
 
 	//____ tintmap() ___________________________________________________________

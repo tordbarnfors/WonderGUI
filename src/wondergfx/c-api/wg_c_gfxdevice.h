@@ -85,11 +85,14 @@ extern "C" {
 
 	void					wg_setTintColor(wg_obj device, wg_color color);
 	wg_color				wg_getTintColor(wg_obj device);
+	void					wg_clearTintColor(wg_obj device);
+	int						wg_hasTintColor(wg_obj device);
+
 	void					wg_setTintmap(wg_obj device, const wg_rectSPX* rect, const wg_obj tintmap);
 	wg_obj					wg_getTintmap(wg_obj device);
 	wg_rectSPX				wg_getTintmapRect(wg_obj device);
-int							wg_isTinting(wg_obj device);
-	void					wg_clearTint(wg_obj device);
+	void					wg_clearTintmap(wg_obj device);
+	int						wg_hasTintmap(wg_obj device);
 
 	int						wg_setBlendMode(wg_obj device, wg_blendMode blendMode);
 	wg_blendMode 			wg_getBlendMode(wg_obj device);

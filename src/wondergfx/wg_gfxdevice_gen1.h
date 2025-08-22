@@ -94,16 +94,17 @@ namespace wg
 		int			clipListSize() const override { return m_nClipRects; }
 		const RectSPX&	clipBounds() const override { return m_clipBounds; }
 
-		void		setTint(HiColor color) override;
-		void		setTint(const RectSPX& rect, Tintmap* pTintmap) override;
-		void		clearTint() override;
+		void		setTintColor(HiColor color) override;
+		void		clearTintColor() override;
+		bool		hasTintColor() const override { return m_tintColor != HiColor::White; }
+		HiColor		tintColor() const override { return m_tintColor; }
 
-		bool		isTinting() const override;
+
+		void		setTintmap(const RectSPX& rect, Tintmap* pTintmap) override;
+		void		clearTintmap() override;
+		bool		hasTintmap() const override { return false; }
 		Tintmap_p	tintmap() const override;
 		RectSPX		tintmapRect() const override;
-
-		void		setTintColor( HiColor color ) override;
-		HiColor		tintColor() const override { return m_tintColor; }
 
 		void		setTintGradient(const RectSPX& rect, const Gradient& gradient) override;
 		void		clearTintGradient() override;

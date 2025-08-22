@@ -129,12 +129,14 @@ namespace wg
 		virtual int			clipListSize() const = 0;
 		virtual const RectSPX& clipBounds() const = 0;
 
-		virtual void		setTint(HiColor color) = 0;
-		virtual void		setTint(const RectSPX& rect, Tintmap* pTintmap) = 0;
-		virtual void		clearTint() = 0;
-	
-		virtual bool		isTinting() const = 0;
+		virtual void		setTintColor(HiColor color) = 0;
+		virtual void		clearTintColor() = 0;
+		virtual bool		hasTintColor() const = 0;
 		virtual HiColor		tintColor() const = 0;
+
+		virtual void		setTintmap(const RectSPX& rect, Tintmap* pTintmap) = 0;
+		virtual void		clearTintmap() = 0;
+		virtual bool		hasTintmap() const = 0;
 		virtual Tintmap_p	tintmap() const = 0;
 		virtual RectSPX		tintmapRect() const = 0;
 
@@ -236,7 +238,6 @@ namespace wg
 
 		// Deprecated
 
-		virtual void		setTintColor(HiColor color) = 0;
 		virtual void		setTintGradient(const RectSPX& rect, const Gradient& gradient) = 0;
 		virtual void		clearTintGradient() = 0;
 

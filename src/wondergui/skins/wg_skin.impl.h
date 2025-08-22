@@ -106,7 +106,7 @@ namespace wg
 
 			if (pTintmap)
 			{
-				pDevice->setTint(rect, pTintmap);
+				pDevice->setTintmap(rect, pTintmap);
 				m_bTintmap = true;
 			}
 
@@ -131,7 +131,7 @@ namespace wg
 			if (m_bTintChanged)
 				m_pDevice->setTintColor(m_prevTintColor);
 			if (m_bTintmap)
-				m_pDevice->clearTint();
+				m_pDevice->clearTintmap();
 		}
 
 		GfxDevice* m_pDevice;
