@@ -45,7 +45,7 @@ public:
 
 	bool clearTint(GfxDevice* pDevice, const RectI& canvas)
 	{
-		pDevice->clearTint();
+		pDevice->clearTintmap();
 		return true;
 	}
 
