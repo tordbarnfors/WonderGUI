@@ -19,56 +19,44 @@
   should contact Tord Jansson [tord.jansson@gmail.com] for details.
 
 =========================================================================*/
-#include "wg_texteditorinfopanel.h"
-#include <wg_TextEditor.h>
+#include "wg_paddingcapsuleinfopanel.h"
+#include <wg_textdisplay.h>
 #include <wg_numberdisplay.h>
 #include <wg_basicnumberlayout.h>
+#include <wg_packpanel.h>
 
 
 namespace wg
 {
 
-	const TypeInfo TextEditorInfoPanel::TYPEINFO = { "TextEditorInfoPanel", &DebugPanel::TYPEINFO };
+	const TypeInfo PaddingCapsuleInfoPanel::TYPEINFO = { "PaddingCapsuleInfoPanel", &DebugPanel::TYPEINFO };
 
 
 	//____ constructor _____________________________________________________________
 
-	TextEditorInfoPanel::TextEditorInfoPanel(const Blueprint& blueprint, IDebugger* pHolder, TextEditor * pTextEditor) : DebugPanel( blueprint, pHolder, TextEditor::TYPEINFO.className )
+	PaddingCapsuleInfoPanel::PaddingCapsuleInfoPanel(const Blueprint& blueprint, IDebugger* pHolder, PaddingCapsule * pCapsule) : DebugPanel( blueprint, pHolder, PaddingCapsule::TYPEINFO.className )
 	{
-		m_pInspected = pTextEditor;
+		m_pInspected = pCapsule;
 
-		auto pPanel = WGCREATE(PackPanel, _.axis = Axis::Y);
-
-		m_pTable = _createTable(2, 2);
-		_initTextEntry(m_pTable, 0, "Return action: ");
-		_initTextEntry(m_pTable, 1, "Tab action: ");
+		m_pPaddingDrawer =_createBorderDrawer("Padding: ", pCapsule->padding());
 
 
-		m_pEditorDrawer = _createComponentDrawer("Editor", &pTextEditor->editor);
-
-		pPanel->slots.pushBack({ m_pTable, m_pEditorDrawer });
-		this->slot = pPanel;
-
-		refresh();
+		this->slot = m_pPaddingDrawer;
 	}
 
 	//____ typeInfo() _________________________________________________________
 
-	const TypeInfo& TextEditorInfoPanel::typeInfo(void) const
+	const TypeInfo& PaddingCapsuleInfoPanel::typeInfo(void) const
 	{
 		return TYPEINFO;
 	}
 
 	//____ refresh() _____________________________________________________________
 
-	void TextEditorInfoPanel::refresh()
+	void PaddingCapsuleInfoPanel::refresh()
 	{
-		_refreshTextEntry(m_pTable, 0, toString(m_pInspected->returnKeyAction()));
-		_refreshTextEntry(m_pTable, 1, toString(m_pInspected->tabKeyAction()));
-
-		_refreshComponentDrawer( m_pEditorDrawer );
+		_refreshBorderDrawer(m_pPaddingDrawer, m_pInspected->padding());
 	}
-
 
 } // namespace wg
 

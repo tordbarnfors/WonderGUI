@@ -19,56 +19,48 @@
   should contact Tord Jansson [tord.jansson@gmail.com] for details.
 
 =========================================================================*/
-#include "wg_texteditorinfopanel.h"
-#include <wg_TextEditor.h>
+#include "wg_scalecapsuleinfopanel.h"
+#include <wg_textdisplay.h>
 #include <wg_numberdisplay.h>
 #include <wg_basicnumberlayout.h>
+#include <wg_packpanel.h>
 
 
 namespace wg
 {
 
-	const TypeInfo TextEditorInfoPanel::TYPEINFO = { "TextEditorInfoPanel", &DebugPanel::TYPEINFO };
+	const TypeInfo ScaleCapsuleInfoPanel::TYPEINFO = { "ScaleCapsuleInfoPanel", &DebugPanel::TYPEINFO };
 
 
 	//____ constructor _____________________________________________________________
 
-	TextEditorInfoPanel::TextEditorInfoPanel(const Blueprint& blueprint, IDebugger* pHolder, TextEditor * pTextEditor) : DebugPanel( blueprint, pHolder, TextEditor::TYPEINFO.className )
+	ScaleCapsuleInfoPanel::ScaleCapsuleInfoPanel(const Blueprint& blueprint, IDebugger* pHolder, ScaleCapsule * pCapsule) : DebugPanel( blueprint, pHolder, ScaleCapsule::TYPEINFO.className )
 	{
-		m_pInspected = pTextEditor;
+		m_pInspected = pCapsule;
+		m_pTable = _createTable(1,2);
 
-		auto pPanel = WGCREATE(PackPanel, _.axis = Axis::Y);
-
-		m_pTable = _createTable(2, 2);
-		_initTextEntry(m_pTable, 0, "Return action: ");
-		_initTextEntry(m_pTable, 1, "Tab action: ");
-
-
-		m_pEditorDrawer = _createComponentDrawer("Editor", &pTextEditor->editor);
-
-		pPanel->slots.pushBack({ m_pTable, m_pEditorDrawer });
-		this->slot = pPanel;
+		_initIntegerEntry(m_pTable, 0, "Scale set: ");
 
 		refresh();
+
+		this->slot = m_pTable;
 	}
 
 	//____ typeInfo() _________________________________________________________
 
-	const TypeInfo& TextEditorInfoPanel::typeInfo(void) const
+	const TypeInfo& ScaleCapsuleInfoPanel::typeInfo(void) const
 	{
 		return TYPEINFO;
 	}
 
 	//____ refresh() _____________________________________________________________
 
-	void TextEditorInfoPanel::refresh()
+	void ScaleCapsuleInfoPanel::refresh()
 	{
-		_refreshTextEntry(m_pTable, 0, toString(m_pInspected->returnKeyAction()));
-		_refreshTextEntry(m_pTable, 1, toString(m_pInspected->tabKeyAction()));
+		int scale = m_pInspected->isScaleSet() ? m_pInspected->scale() : 0;
 
-		_refreshComponentDrawer( m_pEditorDrawer );
+		_refreshIntegerEntry(m_pTable, 0, scale);
 	}
-
 
 } // namespace wg
 
