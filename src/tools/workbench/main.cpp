@@ -1,7 +1,7 @@
 
 #include <cstdlib>
 #include <stdio.h>
-#include <unistd.h>
+//#include <unistd.h>
 
 #ifdef WIN32
 #	include <SDL.h>
@@ -186,7 +186,8 @@ void textStyleTest();
 
 int main(int argc, char** argv)
 {
-	sleep(1);
+
+//	sleep(1);
 
 /*	Base::init(nullptr);
 	unitTestMemHeap();
@@ -810,7 +811,7 @@ int main(int argc, char** argv)
 		//	wgcombTest(pSlot);
 		//  widgetRecording(pSlot);
 		//	canvasCapsuleTest(pSlot);
-		//	canvasCapsuleGlowTest(pSlot);
+			canvasCapsuleGlowTest(pSlot);
 		//	textDisplayTest(pSlot);
 		//  scrollChartTest(pSlot);
 		//  scrollPanelTest(pSlot);
@@ -821,7 +822,7 @@ int main(int argc, char** argv)
 		//	tablePanelTest2(pSlot);
 		//	dragndropTest(pSlot);
 		//	fillerTransitionTest(pSlot);
-			reorderCapsuleTest(pSlot);
+		//	reorderCapsuleTest(pSlot);
 		//	widgetMoveTest(pSlot);
 		//	labelCapsuleTest(pSlot);
 		//	elipsisTest(pSlot);
@@ -3787,8 +3788,8 @@ bool canvasCapsuleGlowTest(ComponentPtr<DynamicSlot> pEntry)
 	Base::msgRouter()->addRoute(pTintWhite, MsgType::Select, [pGlowCapsule,pTransition](Msg* pMsg) {pGlowCapsule->setTintColor(Color::White, pTransition); });
 	Base::msgRouter()->addRoute(pTintBlack, MsgType::Select, [pGlowCapsule, pTransition](Msg* pMsg) {pGlowCapsule->setTintColor(Color::Black, pTransition); });
 
-	Base::msgRouter()->addRoute(pGradientWhite, MsgType::Select, [pGlowCapsule, pTransition](Msg* pMsg) {pGlowCapsule->setTintGradient(Gradient( Placement::NorthWest, HiColor::White, HiColor::Black), pTransition); });
-	Base::msgRouter()->addRoute(pGradientBlack, MsgType::Select, [pGlowCapsule, pTransition](Msg* pMsg) {pGlowCapsule->setTintGradient(Gradient(Placement::SouthEast, HiColor::White, HiColor::Black), pTransition); });
+	Base::msgRouter()->addRoute(pGradientWhite, MsgType::Select, [pGlowCapsule, pTransition](Msg* pMsg) {pGlowCapsule->setTintmap( Gradyent::create(HiColor::White, HiColor::Black, Color::Green, Color::Green), pTransition); });
+	Base::msgRouter()->addRoute(pGradientBlack, MsgType::Select, [pGlowCapsule, pTransition](Msg* pMsg) {pGlowCapsule->setTintmap( Gradyent::create(HiColor::Black, HiColor::White, Color::Red, Color::Red), pTransition); });
 
 
 	auto pButtons = PackPanel::create({ .axis = Axis::X });
