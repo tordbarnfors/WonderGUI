@@ -19,56 +19,56 @@
   should contact Tord Jansson [tord.jansson@gmail.com] for details.
 
 =========================================================================*/
-#include "wg_texteditorinfopanel.h"
-#include <wg_TextEditor.h>
+#include "wg_labelcapsuleinfopanel.h"
+#include <wg_textdisplay.h>
 #include <wg_numberdisplay.h>
 #include <wg_basicnumberlayout.h>
+#include <wg_packpanel.h>
 
 
 namespace wg
 {
 
-	const TypeInfo TextEditorInfoPanel::TYPEINFO = { "TextEditorInfoPanel", &DebugPanel::TYPEINFO };
+	const TypeInfo LabelCapsuleInfoPanel::TYPEINFO = { "LabelCapsuleInfoPanel", &DebugPanel::TYPEINFO };
 
 
 	//____ constructor _____________________________________________________________
 
-	TextEditorInfoPanel::TextEditorInfoPanel(const Blueprint& blueprint, IDebugger* pHolder, TextEditor * pTextEditor) : DebugPanel( blueprint, pHolder, TextEditor::TYPEINFO.className )
+	LabelCapsuleInfoPanel::LabelCapsuleInfoPanel(const Blueprint& blueprint, IDebugger* pHolder, LabelCapsule * pCapsule) : DebugPanel( blueprint, pHolder, LabelCapsule::TYPEINFO.className )
 	{
-		m_pInspected = pTextEditor;
-
 		auto pPanel = WGCREATE(PackPanel, _.axis = Axis::Y);
 
-		m_pTable = _createTable(2, 2);
-		_initTextEntry(m_pTable, 0, "Return action: ");
-		_initTextEntry(m_pTable, 1, "Tab action: ");
+		m_pInspected = pCapsule;
+		m_pTable = _createTable(2,2);
 
+		_initTextEntry(m_pTable, 0, "Label placement: ");
+		_initObjectPointerEntry(m_pTable, 1, "Label skin: ");
 
-		m_pEditorDrawer = _createComponentDrawer("Editor", &pTextEditor->editor);
+		m_pLabelDrawer = _createComponentDrawer("Label", &pCapsule->label);
 
-		pPanel->slots.pushBack({ m_pTable, m_pEditorDrawer });
-		this->slot = pPanel;
+		pPanel->slots.pushBack({ m_pTable, m_pLabelDrawer });
 
 		refresh();
+
+		this->slot = pPanel;
 	}
 
 	//____ typeInfo() _________________________________________________________
 
-	const TypeInfo& TextEditorInfoPanel::typeInfo(void) const
+	const TypeInfo& LabelCapsuleInfoPanel::typeInfo(void) const
 	{
 		return TYPEINFO;
 	}
 
 	//____ refresh() _____________________________________________________________
 
-	void TextEditorInfoPanel::refresh()
+	void LabelCapsuleInfoPanel::refresh()
 	{
-		_refreshTextEntry(m_pTable, 0, toString(m_pInspected->returnKeyAction()));
-		_refreshTextEntry(m_pTable, 1, toString(m_pInspected->tabKeyAction()));
+		_refreshTextEntry(m_pTable, 0, toString(m_pInspected->labelPlacement()));
+		_refreshObjectPointerEntry(m_pTable, 1, m_pInspected->labelSkin(), m_pDisplayedLabelSkin );
 
-		_refreshComponentDrawer( m_pEditorDrawer );
+		_refreshComponentDrawer(m_pLabelDrawer);
 	}
-
 
 } // namespace wg
 

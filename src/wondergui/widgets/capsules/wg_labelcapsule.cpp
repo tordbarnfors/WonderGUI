@@ -48,6 +48,30 @@ namespace wg
 		return TYPEINFO;
 	}
 
+	//____ setLabelPlacement() ________________________________________________
+
+	void LabelCapsule::setLabelPlacement(Placement placement)
+	{
+		if (placement != m_labelPlacement)
+		{
+			m_labelPlacement = placement;
+			_requestRender();
+		}
+	}
+
+	//____ setLabelSkin() _____________________________________________________
+
+	void LabelCapsule::setLabelSkin(Skin* pSkin)
+	{
+		if( pSkin != m_labelSkin.get() )
+		{ 
+			m_labelSkin.set(pSkin);
+			_requestRender();
+			_requestResize();
+		}
+	}
+
+
 	//____ _matchingWidth() ___________________________________________________
 
 	spx LabelCapsule::_matchingWidth(spx height, int scale) const

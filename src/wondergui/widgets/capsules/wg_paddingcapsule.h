@@ -31,12 +31,12 @@ namespace wg
 	typedef	StrongPtr<PaddingCapsule>	PaddingCapsule_p;
 	typedef	WeakPtr<PaddingCapsule>		PaddingCapsule_wp;
 
-	//____ PaddingCapsule ______________________________________________________
+	//____ PaddingCapsule _____________________________________________________
 
 	class PaddingCapsule : public Capsule
 	{
 	public:
-		//____ Blueprint __________________________________________
+		//____ Blueprint ______________________________________________________
 
 		struct Blueprint
 		{
@@ -62,15 +62,20 @@ namespace wg
 		};
 
 
-		//.____ Creation __________________________________________
+		//.____ Creation ______________________________________________________
 
 		static PaddingCapsule_p	create();
 		static PaddingCapsule_p	create(const Blueprint& blueprint);
 
-		//.____ Identification __________________________________________
+		//.____ Identification ________________________________________________
 
 		const TypeInfo& typeInfo(void) const override;
 		const static TypeInfo	TYPEINFO;
+
+		//.____ Geometry ______________________________________________________
+
+		void			setPadding(const Border& padding);
+		const Border&	padding() const { return m_padding; }
 
 		//.____ Internal ______________________________________________________
 
