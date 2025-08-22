@@ -48,6 +48,14 @@ set(SOURCES
     objectinfopanels/wg_selectcapsuleinfopanel.cpp
     objectinfopanels/wg_reordercapsuleinfopanel.h
     objectinfopanels/wg_reordercapsuleinfopanel.cpp
+    objectinfopanels/wg_scalecapsuleinfopanel.h
+    objectinfopanels/wg_scalecapsuleinfopanel.cpp
+    objectinfopanels/wg_renderlayercapsuleinfopanel.h
+    objectinfopanels/wg_renderlayercapsuleinfopanel.cpp
+    objectinfopanels/wg_paddingcapsuleinfopanel.h
+    objectinfopanels/wg_paddingcapsuleinfopanel.cpp
+    objectinfopanels/wg_labelcapsuleinfopanel.h
+    objectinfopanels/wg_labelcapsuleinfopanel.cpp
     objectinfopanels/wg_containerinfopanel.h
     objectinfopanels/wg_containerinfopanel.cpp
     objectinfopanels/wg_fillerinfopanel.h

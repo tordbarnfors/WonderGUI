@@ -32,12 +32,12 @@ namespace wg
 	typedef	StrongPtr<LabelCapsule>	LabelCapsule_p;
 	typedef	WeakPtr<LabelCapsule>		LabelCapsule_wp;
 
-	//____ LabelCapsule ______________________________________________________
+	//____ LabelCapsule _______________________________________________________
 
 	class LabelCapsule : public Capsule
 	{
 	public:
-		//____ Blueprint __________________________________________
+		//____ Blueprint ______________________________________________________
 
 		struct Blueprint
 		{
@@ -64,26 +64,34 @@ namespace wg
 
 		};
 
-		//.____ Creation __________________________________________
+		//.____ Creation ______________________________________________________
 
 		static LabelCapsule_p	create();
 		static LabelCapsule_p	create(const Blueprint& blueprint);
 
-		//.____ Components ____________________________________
+		//.____ Components ____________________________________________________
 
 		DynamicText			label;
 
-		//.____ Identification __________________________________________
+		//.____ Identification ________________________________________________
 
 		const TypeInfo& typeInfo(void) const override;
 		const static TypeInfo	TYPEINFO;
 
-		//.____ Internal _________________________________________________
+		//.____ Appearance ____________________________________________________
+
+		void		setLabelPlacement(Placement placement);
+		Placement	labelPlacement() const { return m_labelPlacement; }
+
+		void		setLabelSkin(Skin * pSkin);
+		Skin_p		labelSkin() const { return m_labelSkin.get(); }
+
+
+		//.____ Internal ______________________________________________________
 
 		spx				_matchingWidth(spx height, int scale) const override;
 		spx				_matchingHeight(spx width, int scale) const override;
 		SizeSPX			_defaultSize(int scale) const override;
-
 
 
 	protected:

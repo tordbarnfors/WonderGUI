@@ -74,6 +74,7 @@ namespace wg
 		DrawerPanel_p		_createDrawer(const CharSeq& label, Widget * pHeaderValue, Widget * pContent );
 
 		DrawerPanel_p		_createBorderDrawer(const CharSeq& label, const Border& border);
+		void				_refreshBorderDrawer(DrawerPanel* pBorderDrawer, const Border& border);
 
 		DrawerPanel_p		_createComponentDrawer(const CharSeq& label, Component* pComponent);
 		void				_refreshComponentDrawer(DrawerPanel * pComponentDrawer );

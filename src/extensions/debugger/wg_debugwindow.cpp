@@ -75,11 +75,8 @@ namespace wg
 	//____ refresh() _____________________________________________________________
 
 	void DebugWindow::refresh()
-{
-		auto pPanel = static_cast<PackPanel*>(slot._widget());
-
-		for( auto& slot : pPanel->slots )
-			_refreshRecursively(slot._widget());
+	{
+		_refreshRecursively(slot._widget());
 	}
 
 	//____ _refreshRecursively() _________________________________________________
