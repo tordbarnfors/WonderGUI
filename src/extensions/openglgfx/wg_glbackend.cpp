@@ -2308,7 +2308,7 @@ void GlBackend::_loadPrograms(int uboBindingPoint)
 		LOG_INIT_GLERROR(glGetError());
 	}
 
-	// Create and init Fill Gradient shader
+	// Create and init Fill Tintmap shader
 
 	for (int i = 0; i < 2; i++)
 	{
@@ -2328,7 +2328,7 @@ void GlBackend::_loadPrograms(int uboBindingPoint)
 		LOG_INIT_GLERROR(glGetError());
 	}
 
-	// Create and init AA-Fill gradient shader
+	// Create and init AA-Fill Tintmap shader
 
 	for (int i = 0; i < 2; i++)
 	{

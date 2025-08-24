@@ -403,11 +403,10 @@ namespace wg
 				m_tintmapTransitionProgress = 0;
 				m_pTintmapTransition = nullptr;
 
-				if (m_pTintmap != m_pEndTintmap)
-				{
-					m_pTintmap = m_pEndTintmap;
-					_requestRender();
-				}
+				m_pTintmap = m_pEndTintmap;
+				m_pEndTintmap = nullptr;
+				m_pStartTintmap = nullptr;
+				_requestRender();
 
 				_stopReceiveUpdates();
 			}

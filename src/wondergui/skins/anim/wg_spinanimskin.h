@@ -25,7 +25,7 @@
 
 #include <wg_animskin.h>
 #include <wg_color.h>
-#include <wg_gradient.h>
+#include <wg_tintmap.h>
 #include <wg_surface.h>
 #include <wg_transitions.h>
 
@@ -53,7 +53,6 @@ namespace wg
 			Size				defaultSize;							// Mandatory
 			Finalizer_p			finalizer = nullptr;
 			Border				gfxPadding;
-			Gradient			gradient;
 			int					layer = -1;
 			int					markAlpha = 1;
 			Border				overflow;
@@ -64,6 +63,7 @@ namespace wg
 			Border				spacing;
 			Surface_p			surface;								// Mandatory
 			ValueTransition_p	transition;
+			Tintmap_p			tintmap;
 			float				zoom = 1.f;
 		};
 
@@ -112,7 +112,7 @@ namespace wg
 
 		BlendMode		m_blendMode = BlendMode::Blend;
 		HiColor			m_color = HiColor::White;
-		Gradient		m_gradient;
+		Tintmap_p		m_pTintmap;
 		
 		ValueTransition_p	m_pTransition;
 		ValueTransition_p	m_pReturnTransition;
