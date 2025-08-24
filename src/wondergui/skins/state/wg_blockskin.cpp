@@ -244,7 +244,7 @@ namespace wg
 		m_pSurface = bp.surface;
 		m_ninePatch.frame = bp.frame;
 		m_blendMode = bp.blendMode;
-		m_gradient = bp.gradient;
+		m_pTintmap = bp.tintmap;
 
 		// Make sure we have a correct block
 
@@ -448,7 +448,7 @@ namespace wg
 
 		RectSPX canvas = _canvas - align(ptsToSpx(m_spacing, scale)) + align(ptsToSpx(m_overflow, scale));
 		
-		RenderSettingsWithGradient settings(pDevice, m_layer, m_blendMode, _getColor(state), canvas, m_gradient);
+		RenderSettingsWithTintmap settings(pDevice, m_layer, m_blendMode, _getColor(state), canvas, m_pTintmap);
 
 		pDevice->setBlitSource(m_pSurface);
 
@@ -547,7 +547,7 @@ namespace wg
 			bOpaque = false;
 		else if (m_blendMode == BlendMode::Replace)
 			bOpaque = true;
-		else if (!m_gradient.isUndefined() && !m_gradient.isOpaque())
+		else if (m_pTintmap && !m_pTintmap->isOpaque())
 			bOpaque = false;
 		else if (m_blendMode == BlendMode::Blend)
 		{

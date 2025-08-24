@@ -31,7 +31,6 @@
 #include <wg_gfxtypes.h>
 #include <wg_geo.h>
 #include <wg_color.h>
-#include <wg_gradient.h>
 
 namespace wg
 {

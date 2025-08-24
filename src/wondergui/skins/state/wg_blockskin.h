@@ -25,7 +25,7 @@
 
 #include <wg_stateskin.h>
 #include <wg_surface.h>
-#include <wg_gradient.h>
+#include <wg_tintmap.h>
 
 #include <vector>
 
@@ -93,7 +93,6 @@ namespace wg
 			Finalizer_p	finalizer = nullptr;
 			Rect		firstBlock;						// Mandatory!
 			Border		frame;
-			Gradient	gradient;
 			int			layer = -1;
 			int			markAlpha = 1;
 			Border		overflow;
@@ -106,6 +105,7 @@ namespace wg
 			std::vector<StateBP>	states;
 			
 			Surface_p	surface;					// Mandatory!
+			Tintmap_p	tintmap;
 		};
 
 
@@ -154,7 +154,6 @@ namespace wg
 
 	protected:
 
-		BlockSkin();
 		BlockSkin(Surface * pSurface, Rect block, Border frame);
 		BlockSkin(const Blueprint& blueprint);
 		~BlockSkin();
@@ -178,7 +177,7 @@ namespace wg
 
 		NinePatch		m_ninePatch;		// Block offset is undefined.
 		Surface_p		m_pSurface;
-		Gradient		m_gradient;
+		Tintmap_p		m_pTintmap;
 
 		BlendMode		m_blendMode = BlendMode::Blend;
 
