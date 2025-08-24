@@ -28,7 +28,6 @@
 #include <wg_gfxtypes.h>
 #include <wg_geo.h>
 #include <wg_color.h>
-#include <wg_gradient.h>
 #include <wg_streamsource.h>
 
 #include <cstring>
@@ -87,7 +86,6 @@ namespace wg
 		inline StreamDecoder& operator>> (RectF&);
 		inline StreamDecoder& operator>> (BorderI&);
 		inline StreamDecoder& operator>> (Border&);
-		inline StreamDecoder& operator>> (Gradient&);
 
 		inline StreamDecoder& operator>> (HiColor&);
 		inline StreamDecoder& operator>> (Direction&);
@@ -280,15 +278,6 @@ namespace wg
 		border.right = _pullFloat();
 		border.bottom = _pullFloat();
 		border.left = _pullFloat();
-		return *this;
-	}
-
-	StreamDecoder& StreamDecoder::operator>> (Gradient& gradient)
-	{
-		*this >> gradient.topLeft;
-		*this >> gradient.topRight;
-		*this >> gradient.bottomRight;
-		*this >> gradient.bottomLeft;
 		return *this;
 	}
 

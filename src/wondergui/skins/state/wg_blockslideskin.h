@@ -25,7 +25,7 @@
 
 #include <wg_stateskin.h>
 #include <wg_surface.h>
-#include <wg_gradient.h>
+#include <wg_tintmap.h>
 
 #include <vector>
 
@@ -77,7 +77,6 @@ namespace wg
 
 			Finalizer_p		finalizer = nullptr;
 			Rect			firstLane;
-			Gradient		gradient;
 			int				layer = -1;
 			int				markAlpha = 1;
 			Border			overflow;
@@ -90,6 +89,7 @@ namespace wg
 			Border			spacing;
 			std::vector<StateBP> states;
 			Surface_p		surface;
+			Tintmap_p		tintmap;
 		};
 
 		//.____ Creation __________________________________________
@@ -124,7 +124,6 @@ namespace wg
 
 	protected:
 
-		BlockSlideSkin();
 		BlockSlideSkin( const Blueprint& blueprint);
 		~BlockSlideSkin() {};
 
@@ -155,7 +154,7 @@ namespace wg
 		int			m_slideDuration = 250;						// Millisec
 		PrimState	m_slideState = PrimState::Selected;
 
-		Gradient	m_gradient;
+		Tintmap_p	m_pTintmap;
 
 		BlendMode	m_blendMode;
 

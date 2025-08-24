@@ -46,7 +46,6 @@
 #include <wg_gfxenumextras.h>
 #include <wg_gfxtypes.h>
 #include <wg_gfxutil.h>
-#include <wg_gradient.h>
 #include <wg_gradyent.h>
 #include <wg_gridwalker.h>
 #include <wg_patches.h>
