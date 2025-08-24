@@ -21,7 +21,6 @@
 =========================================================================*/
 
 #include <wg_streamlogger.h>
-#include <wg_gradient.h>
 #include <wg_gfxbackend.h>
 
 #include <assert.h>
