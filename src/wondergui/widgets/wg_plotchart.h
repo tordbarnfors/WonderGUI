@@ -38,7 +38,7 @@ namespace wg
 		struct Blueprint
 		{
 			HiColor				color = HiColor::White;
-			Gradient			gradient;
+			Tintmap_p			tintmap;
 
 			HiColor				outlineColor = HiColor::Black;
 			pts					outlineThickness = 1;
@@ -51,7 +51,7 @@ namespace wg
 		PlotChartEntry() {}
 		PlotChartEntry(const Blueprint& bp);
 
-		bool	setTintGradient(Gradient tint, ColorTransition* pTransition = nullptr);
+		bool	setTintmap(Tintmap * pTintmap, ColorTransition* pTransition = nullptr);
 
 		bool	setColors(HiColor fill, HiColor outline, ColorTransition* pTransition = nullptr);
 
@@ -66,8 +66,8 @@ namespace wg
 
 		bool	isTransitioningColors() const { return m_pColorTransition; }
 		bool	isTransitioningSamples() const { return m_pSampleTransition; }
-		bool	isTransitioningSize() const { return m_pSampleTransition; }
-		bool	isTransitioningTint() const { return m_pSampleTransition; }
+		bool	isTransitioningSize() const { return m_pSizeTransition; }
+		bool	isTransitioningTintmap() const { return m_pSampleTransition; }
 
 		HiColor	color() const { return m_fillColor; }
 		HiColor	outlineColor() const { return m_outlineColor; }
@@ -79,7 +79,7 @@ namespace wg
 		void				_endSampleTransition();
 		void				_endColorTransition();
 		void				_endSizeTransition();
-		void				_endTintTransition();
+		void				_endTintmapTransition();
 
 
 		PlotChart*			m_pDisplay = nullptr;
@@ -91,7 +91,7 @@ namespace wg
 		HiColor				m_fillColor = Color::White;
 		HiColor				m_outlineColor = Color::Black;
 
-		Gradient			m_tintGradient;
+		Tintmap_p			m_pTintmap;
 
 		pts					m_outlineThickness = 1;
 		pts					m_radius = 1;
@@ -122,11 +122,11 @@ namespace wg
 
 		// Tint gradient transitions
 
-		ColorTransition_p	m_pTintTransition;
-		int					m_tintTransitionProgress = 0;
+		ColorTransition_p	m_pTintmapTransition;
+		int					m_tintmapTransitionProgress = 0;
 
-		Gradient			m_startTintGradient;
-		Gradient			m_endTintGradient;
+		Tintmap_p			m_pStartTintmap;
+		Tintmap_p			m_pEndTintmap;
 
 		// Sample transitions
 

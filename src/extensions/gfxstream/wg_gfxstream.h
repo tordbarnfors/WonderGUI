@@ -245,7 +245,6 @@ namespace wg
 		};
 
 		static const int ColorSize = 8;
-		static const int GradientSize = 8 * 4;
 		static const int NinePatchSize = 16 + 8 + 10 + 10;
 		static const int DataInfoSize = 10;
 		static const int HeaderSize = 4;

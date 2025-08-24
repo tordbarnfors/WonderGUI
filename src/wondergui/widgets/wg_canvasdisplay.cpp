@@ -23,6 +23,7 @@
 #include <wg_canvasdisplay.h>
 #include <wg_canvascapsule.h>
 #include <wg_gfxdevice.h>
+#include <wg_snapshottintmap.h>
 
 namespace wg
 {
@@ -82,6 +83,16 @@ namespace wg
 		}
 	}
 
+	//____ setPlacement() _____________________________________________________
+
+	void CanvasDisplay::setPlacement(Placement placement)
+	{
+		if (placement != m_placement)
+		{
+			m_placement = placement;
+			_requestRender();
+		}
+	}
 
 	//____ setDefaultSize() _______________________________________________________
 
@@ -122,29 +133,29 @@ namespace wg
 		}
 	}
 
-	//____ setTintGradient() __________________________________________________
+	//____ setTintmap() _______________________________________________
 
-	void CanvasDisplay::setTintGradient(const Gradient& gradient, ColorTransition* pTransition)
+	void CanvasDisplay::setTintmap(Tintmap * pTintmap, ColorTransition* pTransition)
 	{
-		if (gradient != m_gradient)
+		if (pTintmap != m_pTintmap)
 		{
 			if (pTransition)
 			{
-				if (!m_pGradientTransition)
+				if (!m_pTintmapTransition)
 					_startReceiveUpdates();
 
-				m_pGradientTransition = pTransition;
-				m_gradientTransitionProgress = 0;
-				m_startGradient = m_gradient;
-				m_endGradient = gradient;
+				m_pTintmapTransition = pTransition;
+				m_tintmapTransitionProgress = 0;
+				m_pStartTintmap = m_pTintmap;
+				m_pEndTintmap = pTintmap;
 			}
 			else
 			{
-				if (m_pGradientTransition)
+				if (m_pTintmapTransition)
 					_stopReceiveUpdates();
 
-				m_pGradientTransition = nullptr;
-				m_gradient = gradient;
+				m_pTintmapTransition = nullptr;
+				m_pTintmap = pTintmap;
 				_requestRender();
 			}
 			
@@ -269,39 +280,28 @@ namespace wg
 			}
 		}
 
-		if (m_pGradientTransition)
+		if (m_pTintmapTransition)
 		{
-			int timestamp = m_gradientTransitionProgress + microPassed;
+			int timestamp = m_tintmapTransitionProgress + microPassed;
 
-			if (timestamp >= m_pGradientTransition->duration())
+			if (timestamp >= m_pTintmapTransition->duration())
 			{
-				m_gradientTransitionProgress = 0;
-				m_pGradientTransition = nullptr;
+				m_tintmapTransitionProgress = 0;
+				m_pTintmapTransition = nullptr;
 
-				if (m_gradient != m_endGradient)
-				{
-					m_gradient = m_endGradient;
-					_requestRender();
-				}
+				m_pTintmap = m_pEndTintmap;
+				m_pEndTintmap = nullptr;
+				m_pStartTintmap = nullptr;
+				_requestRender();
 
 				_stopReceiveUpdates();
 			}
 			else
 			{
-				m_gradientTransitionProgress = timestamp;
+				m_tintmapTransitionProgress = timestamp;
 
-				Gradient gradient;
-
-				gradient.topLeft = m_pGradientTransition->snapshot(timestamp, m_startGradient.topLeft, m_endGradient.topLeft);
-				gradient.topRight = m_pGradientTransition->snapshot(timestamp, m_startGradient.topRight, m_endGradient.topRight);
-				gradient.bottomLeft = m_pGradientTransition->snapshot(timestamp, m_startGradient.bottomLeft, m_endGradient.bottomLeft);
-				gradient.bottomRight = m_pGradientTransition->snapshot(timestamp, m_startGradient.bottomRight, m_endGradient.bottomRight);
-
-				if (gradient != m_gradient)
-				{
-					m_gradient = gradient;
-					_requestRender();
-				}
+				m_pTintmap = SnapshotTintmap::create(m_pStartTintmap, m_pEndTintmap, m_pTintmapTransition, timestamp);
+				_requestRender();
 			}
 		}
 	}
@@ -339,14 +339,14 @@ namespace wg
 
 				pDevice->setTintColor(m_tintColor);
 
-				if (m_gradient.isValid() )
-					pDevice->setTintGradient(canvasArea, m_gradient);
+				if (m_pTintmap )
+					pDevice->setTintmap(canvasArea, m_pTintmap);
 
 				pDevice->setBlitSource(pSurface);
 				pDevice->stretchBlit(canvasArea);
 
-				if (m_gradient.isValid())
-					pDevice->clearTintGradient();
+				if (m_pTintmap)
+					pDevice->clearTintmap();
 
 				pDevice->setTintColor(c);
 				pDevice->setBlendMode(bm);

@@ -25,7 +25,7 @@
 
 #include <wg_skin.h>
 #include <wg_color.h>
-#include <wg_gradient.h>
+#include <wg_tintmap.h>
 
 namespace wg
 {
@@ -51,7 +51,6 @@ namespace wg
 			Direction	direction = Direction::Right;
 			Finalizer_p	finalizer = nullptr;
 			Border		gfxPadding;
-			Gradient	gradient;
 
 			int			layer = -1;
 			int			markAlpha = 1;
@@ -64,6 +63,8 @@ namespace wg
 			Border		spacing;
 			bool		startFromCenter = false;
 			pts			startLength = 0;
+
+			Tintmap_p	tintmap;
 		};
 
 		//.____ Creation __________________________________________
@@ -92,7 +93,6 @@ namespace wg
 		RectSPX	_coverage(const RectSPX& geo, int scale, State state) const override;
 
 	protected:
-		FillMeterSkin();
 		FillMeterSkin(	const Blueprint& blueprint );
 		~FillMeterSkin() {};
 
@@ -110,7 +110,7 @@ namespace wg
         bool        m_bCenteredBarOrigin = false;
 		Border		m_gfxPadding;
 		
-		Gradient	m_gradient;
+		Tintmap_p	m_pTintmap;
 		bool		m_bGradient = false;
 		bool		m_bOpaque;
 	};

@@ -119,7 +119,6 @@ namespace wg
 					m_bTintChanged = true;
 				}
 			}
-
 		}
 
 		~RenderSettingsWithTintmap()
@@ -141,72 +140,6 @@ namespace wg
 		bool		m_bTintChanged = false;
 		bool		m_bTintmap = false;
 	};
-
-
-
-	//____ RenderSettingsWithGradient _____________________________________________________
-	/*
-	* Simple class for quickly and easily set layer, blend mode and tint color/gradient for
-	* rendering and then revert back automatically when deleted.
-	*/
-
-	class RenderSettingsWithGradient
-	{
-	public:
-		RenderSettingsWithGradient(GfxDevice* pDevice, int layer, BlendMode blendMode, HiColor tintColor, const RectSPX& rect, const Gradient& tintGradient )
-		{
-			m_pDevice = pDevice;
-
-			if (layer != -1 && pDevice->renderLayer() != layer)
-			{
-				m_prevLayer = pDevice->renderLayer();
-				pDevice->setRenderLayer(layer);
-			}
-
-			if (blendMode != BlendMode::Undefined)
-			{
-				m_prevBlendMode = pDevice->blendMode();
-				pDevice->setBlendMode(blendMode);
-			}
-
-			if (!tintGradient.isUndefined())
-			{
-				pDevice->setTintGradient(rect, tintGradient);
-				m_bGradient = true;
-			}
-			
-			if (tintColor != HiColor::Undefined)
-			{
-				m_prevTintColor = pDevice->tintColor();
-				if (tintColor != m_prevTintColor)
-				{
-					pDevice->setTintColor(tintColor);
-					m_bTintChanged = true;
-				}
-			}
-
-		}
-
-		~RenderSettingsWithGradient()
-		{
-			if (m_prevLayer != -1)
-				m_pDevice->setRenderLayer(m_prevLayer);
-			if (m_prevBlendMode != BlendMode::Undefined)
-				m_pDevice->setBlendMode(m_prevBlendMode);
-			if (m_bTintChanged)
-				m_pDevice->setTintColor(m_prevTintColor);
-			if (m_bGradient)
-				m_pDevice->clearTintGradient();
-		}
-
-		GfxDevice* m_pDevice;
-		int			m_prevLayer = -1;
-		BlendMode	m_prevBlendMode = BlendMode::Undefined;
-		HiColor		m_prevTintColor;
-		bool		m_bTintChanged = false;
-		bool		m_bGradient = false;
-	};
-
 
 }
 #endif //WG_SKINIMPL_DOT_H

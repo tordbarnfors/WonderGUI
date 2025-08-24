@@ -24,7 +24,7 @@
 #pragma once
 
 #include <wg_skin.h>
-#include <wg_gradient.h>
+#include <wg_tintmap.h>
 #include <wg_surface.h>
 #include <vector>
 
@@ -56,7 +56,6 @@ namespace wg
 			Finalizer_p				finalizer = nullptr;
 			std::vector<FrameBP>	frames;			// Mandatory
 			Border					gfxPadding;
-			Gradient				gradient;
 			int						layer = -1;
 			int						markAlpha = 1;
 			Border					overflow;
@@ -64,7 +63,7 @@ namespace wg
 			Size					size;			// Mandatory
 			Border					spacing;
 			Surface_p				surface;		// Mandatory
-
+			Tintmap_p				tintmap;
 		};
 
 		//.____ Creation __________________________________________
@@ -122,7 +121,7 @@ namespace wg
 
 		BlendMode		m_blendMode;
 		HiColor			m_color;
-		Gradient		m_gradient;
+		Tintmap_p		m_pTintmap;
 
 		int					m_duration;		// Millisec
 		Size				m_size;

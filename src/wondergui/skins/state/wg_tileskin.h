@@ -25,7 +25,7 @@
 
 #include <wg_stateskin.h>
 #include <wg_surface.h>
-#include <wg_gradient.h>
+#include <wg_tintmap.h>
 
 #include <vector>
 
@@ -85,7 +85,6 @@ namespace wg
 			BlendMode		blendMode = BlendMode::Blend;
 			HiColor			color = HiColor::Undefined;
 			Finalizer_p		finalizer = nullptr;
-			Gradient		gradient;
 			int				layer = -1;
 			int				markAlpha = 1;
 			Border			overflow;
@@ -94,6 +93,7 @@ namespace wg
 
 			std::vector<StateBP>	states;
 			Surface_p		surface;
+			Tintmap_p		tintmap;
 		};
 
 		//.____ Creation __________________________________________
@@ -144,7 +144,7 @@ namespace wg
 
 
 		BlendMode		m_blendMode;
-		Gradient		m_gradient;
+		Tintmap_p		m_pTintmap;
 
 		void *			m_pStateData;				// Pointer at memory block with state data.
 

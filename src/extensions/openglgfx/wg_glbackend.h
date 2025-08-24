@@ -197,7 +197,7 @@ namespace wg
 		GLuint  m_aaFillProg[2];								// [RGB/A_8 dest]
 		GLuint  m_aaFillTintmapProg[2];							// [RGB/A_8 dest]
 
-		GLuint  m_blurProg[2];									// [tintgradient]
+		GLuint  m_blurProg[2];									// [tintmap]
 		GLuint  m_blitProg[2];									// [RGB/A_8 dest]
 		GLuint  m_blitTintmapProg[2];							// [RGB/A_8 dest]
 
