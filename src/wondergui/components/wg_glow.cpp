@@ -149,22 +149,33 @@ namespace wg
 		return m_resolution;
 	}
 
-	//____ setSeedStates() ________________________________________________
+	//____ setSeedTint() ________________________________________________
 
-	void Glow::setSeedStates(HiColor tint, BlendMode blendMode)
+	void Glow::setSeedTint(HiColor tint)
 	{
 		m_seedTint = tint;
+	}
+
+	//____ setSeedBlend() ________________________________________________
+
+	void Glow::setSeedBlend(BlendMode blendMode)
+	{
 		m_seedBlend = blendMode;
 	}
 
-	//____ setRenderStates() ______________________________________________
+	//____ setGlowTint() ______________________________________________
 
-	void Glow::setRenderStates(HiColor tint, BlendMode blendMode)
+	void Glow::setGlowTint(HiColor tint)
 	{
 		m_glowTint = tint;
-		m_glowBlend = blendMode;
 	}
 
+	//____ setGlowBlend() ______________________________________________
+
+	void Glow::setGlowBlend(BlendMode blendMode)
+	{
+		m_glowBlend = blendMode;
+	}
 
 	//____ _initFromBlueprint() ________________________________________________
 

@@ -59,6 +59,8 @@ namespace wg
 
 		PaddingCapsule *	m_pInspected;
 		DrawerPanel_p		m_pPaddingDrawer;
+
+		Border				m_displayedPadding;
 	};
 
 } // namespace wg
