@@ -72,9 +72,13 @@ namespace wg
 
 		TablePanel_p		_createTable(int rows, int columns);
 		DrawerPanel_p		_createDrawer(const CharSeq& label, Widget * pHeaderValue, Widget * pContent );
+		void				_setDrawerHeaderValue(DrawerPanel* pDrawer, Widget* pHeaderValue);
+
+		DrawerPanel_p		_createColorDrawer(const CharSeq& label, const HiColor& color);
+		void				_refreshColorDrawer(DrawerPanel* pColorDrawer, const HiColor& color, HiColor& displayedColor );
 
 		DrawerPanel_p		_createBorderDrawer(const CharSeq& label, const Border& border);
-		void				_refreshBorderDrawer(DrawerPanel* pBorderDrawer, const Border& border);
+		void				_refreshBorderDrawer(DrawerPanel* pBorderDrawer, const Border& border, Border& displayedBorder );
 
 		DrawerPanel_p		_createComponentDrawer(const CharSeq& label, Component* pComponent);
 		void				_refreshComponentDrawer(DrawerPanel * pComponentDrawer );

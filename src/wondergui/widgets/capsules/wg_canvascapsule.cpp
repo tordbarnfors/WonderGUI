@@ -75,6 +75,16 @@ namespace wg
 		Capsule::setSkin(pSkin);
 	}
 
+	//____ setSkinAroundCanvas() _________________________________________________
+
+	void CanvasCapsule::setSkinAroundCanvas(bool bSkin)
+	{
+		if( bSkin != m_bSkinAroundCanvas )
+		{
+			m_bSkinAroundCanvas = bSkin;
+			_requestRender();
+		}
+	}
 
 	//____ setTintColor() ______________________________________________________
 
