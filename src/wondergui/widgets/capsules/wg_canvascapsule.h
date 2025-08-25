@@ -119,9 +119,17 @@ namespace wg
 
 		void				setSkin(Skin* pSkin) override;
 
+		void				setSkinAroundCanvas(bool bSkin);
+		bool				isSkinAroundCanvas() const { return m_bSkinAroundCanvas; }
+
 		void				setTintColor(HiColor color, ColorTransition* pTransition = nullptr);
+		inline HiColor		tintColor() { return m_tintColor; }
+
 		void				setTintmap(Tintmap* pTintmap, ColorTransition* pTransition = nullptr);
+		inline Tintmap_p	tintmap() { return m_pTintmap; }
+
 		void				setBlendMode(BlendMode mode);
+		inline BlendMode	blendMode() { return m_blendMode; }
 
 		void				setSurfaceFactory(SurfaceFactory* pFactory);
 		SurfaceFactory_p	surfaceFactory() const { return m_pFactory; }
@@ -138,10 +146,12 @@ namespace wg
 		void				setRenderLayer(int layer);
 		int					renderLayer() const { return m_renderLayer; }
 
-		
-		inline HiColor		tintColor() { return m_tintColor; }
-		inline Tintmap_p	tintmap() { return m_pTintmap; }
-		inline BlendMode	blendMode() { return m_blendMode; }
+		//.____ Content _____________________________________________
+
+		Surface_p			canvas() const { return m_pCanvas; }
+		Surface_p			glowCanvas() const { return m_pGlowCanvas; }
+
+		int					nbSideDisplays() const { return (int)m_sideDisplays.size(); }
 
 		//.____ Internal _________________________________________________
 
