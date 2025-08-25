@@ -20,29 +20,29 @@
 
 =========================================================================*/
 
-#ifndef	WG_ICONINFOPANEL_DOT_H
-#define WG_ICONINFOPANEL_DOT_H
+#ifndef	WG_CANVASCAPSULEINFOPANEL_DOT_H
+#define WG_CANVASCAPSULEINFOPANEL_DOT_H
 #pragma once
 
 #include <wg_tablepanel.h>
 #include <wg_debugpanel.h>
-#include <wg_icon.h>
+#include <wg_CanvasCapsule.h>
 
 namespace wg
 {
-	class IconInfoPanel;
-	typedef	StrongPtr<IconInfoPanel>	IconInfoPanel_p;
-	typedef	WeakPtr<IconInfoPanel>	IconInfoPanel_wp;
+	class CanvasCapsuleInfoPanel;
+	typedef	StrongPtr<CanvasCapsuleInfoPanel>	CanvasCapsuleInfoPanel_p;
+	typedef	WeakPtr<CanvasCapsuleInfoPanel>	CanvasCapsuleInfoPanel_wp;
 
 
 
-	class IconInfoPanel : public DebugPanel
+	class CanvasCapsuleInfoPanel : public DebugPanel
 	{
 	public:
 
 		//.____ Creation __________________________________________
 
-		static IconInfoPanel_p		create(const Blueprint& blueprint, IDebugger* pHolder, Icon* pIcon) { return IconInfoPanel_p(new IconInfoPanel(blueprint, pHolder, pIcon)); }
+		static CanvasCapsuleInfoPanel_p		create(const Blueprint& blueprint, IDebugger* pHolder, CanvasCapsule* pPanel) { return CanvasCapsuleInfoPanel_p(new CanvasCapsuleInfoPanel(blueprint, pHolder, pPanel)); }
 
 		//.____ Identification __________________________________________
 
@@ -54,15 +54,29 @@ namespace wg
 		void refresh() override;
 
 	protected:
-		IconInfoPanel(const Blueprint& blueprint, IDebugger* pHolder, Icon* pIcon);
-		~IconInfoPanel() {}
+		CanvasCapsuleInfoPanel(const Blueprint& blueprint, IDebugger* pHolder, CanvasCapsule* pPanel);
+		~CanvasCapsuleInfoPanel() {}
 
+		CanvasCapsule*	m_pInspected;
 		TablePanel_p	m_pTable;
-		Icon *			m_pInspected;
 
-		Object_p		m_displayedSkinPtr;
+		DrawerPanel_p	m_pClearColorDrawer;
+		DrawerPanel_p	m_pTintColorDrawer;
+
+		DrawerPanel_p	m_pGlowDrawer;
+
+		Object_p		m_displayedCanvasPtr;
+		Object_p		m_displayedGlowCanvasPtr;
+		Object_p		m_displayedLayersPtr;
+		Object_p		m_displayedFactoryPtr;
+		Object_p		m_displayedTintmapPtr;
+
+
+		HiColor			m_displayedClearColor;
+		HiColor			m_displayedTintColor;
+
 	};
 
 } // namespace wg
-#endif //WG_ICONINFOPANEL_DOT_H
+#endif //WG_CANVASCAPSULEINFOPANEL_DOT_H
 

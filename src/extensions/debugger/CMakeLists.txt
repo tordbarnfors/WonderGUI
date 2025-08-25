@@ -40,6 +40,8 @@ set(SOURCES
 
     objectinfopanels/wg_buttoninfopanel.h
     objectinfopanels/wg_buttoninfopanel.cpp
+    objectinfopanels/wg_canvascapsuleinfopanel.h
+    objectinfopanels/wg_canvascapsuleinfopanel.cpp    
     objectinfopanels/wg_capsuleinfopanel.h
     objectinfopanels/wg_capsuleinfopanel.cpp
     objectinfopanels/wg_sizecapsuleinfopanel.h
@@ -92,6 +94,8 @@ set(SOURCES
     slotinfopanels/wg_twoslotpanelslotinfopanel.h
     slotinfopanels/wg_twoslotpanelslotinfopanel.cpp
 
+    componentinfopanels/wg_glowinfopanel.h
+    componentinfopanels/wg_glowinfopanel.cpp
     componentinfopanels/wg_statictextinfopanel.h
     componentinfopanels/wg_statictextinfopanel.cpp
     componentinfopanels/wg_editabletextinfopanel.h

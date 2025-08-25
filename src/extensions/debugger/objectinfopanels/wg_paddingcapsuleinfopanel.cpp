@@ -37,8 +37,9 @@ namespace wg
 	PaddingCapsuleInfoPanel::PaddingCapsuleInfoPanel(const Blueprint& blueprint, IDebugger* pHolder, PaddingCapsule * pCapsule) : DebugPanel( blueprint, pHolder, PaddingCapsule::TYPEINFO.className )
 	{
 		m_pInspected = pCapsule;
+		m_displayedPadding = pCapsule->padding();
 
-		m_pPaddingDrawer =_createBorderDrawer("Padding: ", pCapsule->padding());
+		m_pPaddingDrawer =_createBorderDrawer("Padding: ", m_displayedPadding);
 
 
 		this->slot = m_pPaddingDrawer;
@@ -55,7 +56,7 @@ namespace wg
 
 	void PaddingCapsuleInfoPanel::refresh()
 	{
-		_refreshBorderDrawer(m_pPaddingDrawer, m_pInspected->padding());
+		_refreshBorderDrawer(m_pPaddingDrawer, m_pInspected->padding(), m_displayedPadding);
 	}
 
 } // namespace wg

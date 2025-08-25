@@ -20,29 +20,29 @@
 
 =========================================================================*/
 
-#ifndef	WG_ICONINFOPANEL_DOT_H
-#define WG_ICONINFOPANEL_DOT_H
+#ifndef	WG_GLOWINFOPANEL_DOT_H
+#define WG_GLOWINFOPANEL_DOT_H
 #pragma once
 
 #include <wg_tablepanel.h>
 #include <wg_debugpanel.h>
-#include <wg_icon.h>
+#include <wg_glow.h>
 
 namespace wg
 {
-	class IconInfoPanel;
-	typedef	StrongPtr<IconInfoPanel>	IconInfoPanel_p;
-	typedef	WeakPtr<IconInfoPanel>	IconInfoPanel_wp;
+	class GlowInfoPanel;
+	typedef	StrongPtr<GlowInfoPanel>	GlowInfoPanel_p;
+	typedef	WeakPtr<GlowInfoPanel>	GlowInfoPanel_wp;
 
 
 
-	class IconInfoPanel : public DebugPanel
+	class GlowInfoPanel : public DebugPanel
 	{
 	public:
 
 		//.____ Creation __________________________________________
 
-		static IconInfoPanel_p		create(const Blueprint& blueprint, IDebugger* pHolder, Icon* pIcon) { return IconInfoPanel_p(new IconInfoPanel(blueprint, pHolder, pIcon)); }
+		static GlowInfoPanel_p		create(const Blueprint& blueprint, IDebugger* pHolder, Glow* pGlow) { return GlowInfoPanel_p(new GlowInfoPanel(blueprint, pHolder, pGlow)); }
 
 		//.____ Identification __________________________________________
 
@@ -54,15 +54,25 @@ namespace wg
 		void refresh() override;
 
 	protected:
-		IconInfoPanel(const Blueprint& blueprint, IDebugger* pHolder, Icon* pIcon);
-		~IconInfoPanel() {}
+		GlowInfoPanel(const Blueprint& blueprint, IDebugger* pHolder, Glow* pGlow);
+		~GlowInfoPanel() {}
 
 		TablePanel_p	m_pTable;
-		Icon *			m_pInspected;
+		Glow*			m_pInspected;
+
+		DrawerPanel_p	m_pSeedTintDrawer;
+		DrawerPanel_p	m_pGlowTintDrawer;
+
 
 		Object_p		m_displayedSkinPtr;
+		Object_p		m_displayedBrushPtr;
+		Object_p		m_displayedSurface1Ptr;
+		Object_p		m_displayedSurface2Ptr;
+
+		HiColor			m_displayedSeedTint;
+		HiColor			m_displayedGlowTint;
 	};
 
 } // namespace wg
-#endif //WG_ICONINFOPANEL_DOT_H
+#endif //WG_GLOWINFOPANEL_DOT_H
 

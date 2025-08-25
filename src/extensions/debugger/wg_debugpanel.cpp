@@ -109,13 +109,67 @@ namespace wg
 		return pDrawer;
 	}
 
+	//____ _setDrawerHeaderValue() __________________________________________
+
+	void DebugPanel::_setDrawerHeaderValue(DrawerPanel* pDrawer, Widget* pHeaderValue)
+	{
+		auto pHeaderPanel = static_cast<TwoSlotPanel*>(pDrawer->slots[0]._widget());
+		pHeaderPanel->slots[1] = pHeaderValue;
+	}
+
+	//____ _initTextEntry() _________________________________________________
+
+	DrawerPanel_p DebugPanel::_createColorDrawer(const CharSeq& label, const HiColor& color)
+	{
+		bool bValid = color.isValid();
+		bool bUndefined = color.isUndefined();
+
+		auto pHeaderValue = WGCREATE(TextDisplay, _ = m_pHolder->blueprint().listEntryText, _.display.text = bValid ? "" : (bUndefined ? "undefined" : "invalid"));
+
+		TablePanel_p pContentTable;
+
+		if (true)
+		{
+			pContentTable = _createTable(4, 2);
+
+			_setIntegerEntry(pContentTable, 0, "Red: ", color.r);
+			_setIntegerEntry(pContentTable, 1, "Green: ", color.g);
+			_setIntegerEntry(pContentTable, 2, "Blue: ",  color.b);
+			_setIntegerEntry(pContentTable, 3, "Alpha: ", color.a);
+		}
+
+		return _createDrawer(label, pHeaderValue, pContentTable);
+	}
+
+	//____ _refreshColorDrawer() _____________________________________________
+
+	void DebugPanel::_refreshColorDrawer(DrawerPanel* pColorDrawer, const HiColor& color, HiColor& displayedColor )
+	{
+		if( color == displayedColor )
+			return;
+
+		bool bValid = color.isValid();
+		bool bUndefined = color.isUndefined();
+
+		auto pHeaderValue = WGCREATE(TextDisplay, _ = m_pHolder->blueprint().listEntryText, _.display.text = bValid ? "" : (bUndefined ? "undefined" : "invalid"));
+
+		_setDrawerHeaderValue(pColorDrawer, pHeaderValue);
+
+		auto pTable = static_cast<TablePanel*>(pColorDrawer->slots[1]._widget());
+
+		_refreshIntegerEntry(pTable, 0, color.r);
+		_refreshIntegerEntry(pTable, 1, color.g);
+		_refreshIntegerEntry(pTable, 2, color.b);
+		_refreshIntegerEntry(pTable, 3, color.a);
+
+		displayedColor = color;
+	}
+
 	//____ _createBorderDrawer() ________________________________________________________
 
 	DrawerPanel_p DebugPanel::_createBorderDrawer(const CharSeq& label, const Border& border)
 	{
-		bool bEmpty = border.isEmpty();
-
-		auto pHeaderValue = WGCREATE(TextDisplay, _ = m_pHolder->blueprint().listEntryText, _.display.text = bEmpty ? "none" : "");
+		auto pHeaderValue = WGCREATE(TextDisplay, _ = m_pHolder->blueprint().listEntryText, _.display.text = border.isEmpty() ? "none" : "");
 
 		TablePanel_p pContentTable;
 
@@ -134,14 +188,22 @@ namespace wg
 
 	//____ _refreshBorderDrawer() _____________________________________________
 
-	void DebugPanel::_refreshBorderDrawer(DrawerPanel* pBorderDrawer, const Border& border)
+	void DebugPanel::_refreshBorderDrawer(DrawerPanel* pBorderDrawer, const Border& border, Border& displayedBorder)
 	{
+		if( border == displayedBorder )
+			return;
+
+		auto pHeaderValue = WGCREATE(TextDisplay, _ = m_pHolder->blueprint().listEntryText, _.display.text = border.isEmpty() ? "none" : "");
+		_setDrawerHeaderValue(pBorderDrawer, pHeaderValue);
+
 		auto pTable = static_cast<TablePanel*>(pBorderDrawer->slots[1]._widget());
 
 		_refreshPtsEntry(pTable, 0, border.top);
 		_refreshPtsEntry(pTable, 1, border.right);
 		_refreshPtsEntry(pTable, 2, border.bottom);
 		_refreshPtsEntry(pTable, 3, border.left);
+
+		displayedBorder = border;
 	}
 
 
