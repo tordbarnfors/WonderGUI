@@ -53,7 +53,7 @@
 #include <objectinfopanels/wg_paddingcapsuleinfopanel.h>
 #include <objectinfopanels/wg_renderlayercapsuleinfopanel.h>
 #include <objectinfopanels/wg_scalecapsuleinfopanel.h>
-
+#include <objectinfopanels/wg_canvascapsuleinfopanel.h>
 
 
 #include <objectinfopanels/wg_skininfopanel.h>
@@ -68,6 +68,7 @@
 #include <componentinfopanels/wg_editabletextinfopanel.h>
 #include <componentinfopanels/wg_iconinfopanel.h>
 #include <componentinfopanels/wg_scrollerinfopanel.h>
+#include <componentinfopanels/wg_glowinfopanel.h>
 
 #include <wg_panel.h>
 #include <wg_packpanel.h>
@@ -110,11 +111,11 @@ namespace wg
 		m_objectInfoFactories[&SizeCapsule::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, IDebugger* pHolder, Object* pObject) { return (Widget_p)SizeCapsuleInfoPanel::create(panelBP, pHolder, (SizeCapsule*)pObject); };
 		m_objectInfoFactories[&ReorderCapsule::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, IDebugger* pHolder, Object* pObject) { return (Widget_p)ReorderCapsuleInfoPanel::create(panelBP, pHolder, (ReorderCapsule*)pObject); };
 		m_objectInfoFactories[&SelectCapsule::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, IDebugger* pHolder, Object* pObject) { return (Widget_p)SelectCapsuleInfoPanel::create(panelBP, pHolder, (SelectCapsule*)pObject); };
-
 		m_objectInfoFactories[&LabelCapsule::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, IDebugger* pHolder, Object* pObject) { return (Widget_p)LabelCapsuleInfoPanel::create(panelBP, pHolder, (LabelCapsule*)pObject); };
 		m_objectInfoFactories[&PaddingCapsule::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, IDebugger* pHolder, Object* pObject) { return (Widget_p)PaddingCapsuleInfoPanel::create(panelBP, pHolder, (PaddingCapsule*)pObject); };
 		m_objectInfoFactories[&RenderLayerCapsule::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, IDebugger* pHolder, Object* pObject) { return (Widget_p)RenderLayerCapsuleInfoPanel::create(panelBP, pHolder, (RenderLayerCapsule*)pObject); };
 		m_objectInfoFactories[&ScaleCapsule::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, IDebugger* pHolder, Object* pObject) { return (Widget_p)ScaleCapsuleInfoPanel::create(panelBP, pHolder, (ScaleCapsule*)pObject); };
+		m_objectInfoFactories[&CanvasCapsule::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, IDebugger* pHolder, Object* pObject) { return (Widget_p)CanvasCapsuleInfoPanel::create(panelBP, pHolder, (CanvasCapsule*)pObject); };
 
 
 		m_objectInfoFactories[&Skin::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, IDebugger* pHolder, Object* pObject) { return (Widget_p)SkinInfoPanel::create(panelBP, pHolder, (Skin*)pObject); };
@@ -129,6 +130,7 @@ namespace wg
 		m_componentInfoFactories[&EditableText::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, IDebugger* pHolder, Component* pComponent) { return (Widget_p)EditableTextInfoPanel::create(panelBP, pHolder, (EditableText*)pComponent); };
 		m_componentInfoFactories[&Icon::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, IDebugger* pHolder, Component* pComponent) { return (Widget_p)IconInfoPanel::create(panelBP, pHolder, (Icon*)pComponent); };
 		m_componentInfoFactories[&Scroller::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, IDebugger* pHolder, Component* pComponent) { return (Widget_p)ScrollerInfoPanel::create(panelBP, pHolder, (Scroller*)pComponent); };
+		m_componentInfoFactories[&Glow::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, IDebugger* pHolder, Component* pComponent) { return (Widget_p)GlowInfoPanel::create(panelBP, pHolder, (Glow*)pComponent); };
 
 		m_ignoreClasses.push_back(&DynamicSlot::TYPEINFO);
 		m_ignoreClasses.push_back(&Receiver::TYPEINFO);

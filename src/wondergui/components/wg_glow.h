@@ -38,6 +38,8 @@ namespace wg
 
 	class Glow : public Component
 	{
+		friend class GlowInfoPanel;
+
 	public:
 		Glow(Widget* pWidget);
 		virtual ~Glow() {};
@@ -81,6 +83,9 @@ namespace wg
 		//.____ Behavior ______________________________________________________
 
 		void				setResizeAction(Placement moveGlow, bool bStretchGlow, bool bClearGlow);
+		Placement			resizePlacement() const { return m_resizePlacement; }
+		bool				stretchOnResize() const { return m_bStretchOnResize; }
+		bool				clearOnResize() const { return m_bClearOnResize; }
 
 		void				setRefreshRate(int updatesPerSecond);
 		int					refreshRate() const;
@@ -93,8 +98,17 @@ namespace wg
 		void				setPixelResolution(SizeI pixels);
 		SizeI				pixelResolution() const;
 
-		void				setSeedStates(HiColor seedTint, BlendMode seedBlend);
-		void				setRenderStates(HiColor glowTint, BlendMode glowBlend);
+		void				setSeedTint(HiColor seedTint);
+		HiColor				seedTint() const { return m_seedTint; }
+
+		void				setSeedBlend(BlendMode seedBlend);
+		BlendMode			seedBlend() const { return m_seedBlend; }
+
+		void				setGlowTint(HiColor glowTint);
+		HiColor				glowTint() const { return m_glowTint; }
+
+		void				setGlowBlend(BlendMode glowBlend);
+		BlendMode			glowBlend() const { return m_glowBlend; }
 
 		//.____ Internal ______________________________________________________
 
