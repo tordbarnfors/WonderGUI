@@ -66,8 +66,9 @@ namespace wg
 
 		bool		pumpChunk();
 		bool		pumpUntilFrame();
-		bool		pumpFrame();
-		bool		pumpAll();
+		bool		pumpFrame();					// Pump a single, complete frame if available in stream.
+		int			pumpAllFrames();				// Pump all available complete frames in the stream.
+		bool		pumpAll();						// Pump all complete data chunks in the stream.
 		int			pumpBytes( int maxBytes );		// Will pump full chunks up until maxBytes has been reached. Will likely return fewer bytes than requested.
 													// Will return 0 if no more data or first chunk is larger than maxBytes.
 		
