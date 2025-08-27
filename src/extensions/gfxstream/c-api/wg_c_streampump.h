@@ -46,6 +46,7 @@ extern "C" {
 	int				wg_pumpChunk(wg_obj streamPump);
 	int				wg_pumpUntilFrame(wg_obj streamPump);
 	int				wg_pumpFrame(wg_obj streamPump);
+	int				wg_pumpAllFrames(wg_obj streamPump);
 	int				wg_pumpAll(wg_obj streamPump);
 
 	int				wg_pumpBytes( wg_obj streamPump, int maxBytes );

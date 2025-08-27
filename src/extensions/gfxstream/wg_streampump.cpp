@@ -136,7 +136,9 @@ namespace wg
 	}
 
 	//____ pumpFrame() ________________________________________________________
+	// Simple and reliable version
 
+/*
 	bool StreamPump::pumpFrame()
 	{
 		if (!m_pInput || !m_pOutput)
@@ -146,6 +148,71 @@ namespace wg
 			return _pumpUntilChunk(GfxStream::ChunkId::EndRender, true);
 
 		return false;
+	}
+*/
+	//____ pumpFrame() ________________________________________________________
+
+	// New, faster version.
+
+	bool StreamPump::pumpFrame()
+	{
+		int	nSegments;
+		const GfxStream::Data* pSegments;
+
+		if (!m_pInput->hasChunks())
+			m_pInput->fetchChunks();
+
+		while (m_pInput->hasChunks())
+		{
+			std::tie(nSegments, pSegments) = m_pInput->showChunks();
+
+			int bytesProcessed = 0;
+			for (int i = 0; i < nSegments; i++)
+			{
+				auto p = _findChunk(GfxStream::ChunkId::EndRender, pSegments[i].pBegin, pSegments[i].pEnd);
+				if ( p != pSegments[i].pEnd)
+				{
+					// EndRender found. Process all chunks in previous segments
+
+					for( int j = 0 ; j < i ; j++ )
+					{
+						const uint8_t* pBegin = pSegments[j].pBegin;
+						const uint8_t* pEnd = pSegments[j].pEnd;
+
+						m_pOutput->processChunks(pBegin, pEnd);
+						bytesProcessed += pEnd - pBegin;
+					}
+
+					// Process the chunks of this segment up to and including our EndRender
+
+					const uint8_t* pBegin = pSegments[i].pBegin;
+					const uint8_t* pEnd = p + GfxStream::chunkSize(p);
+
+					m_pOutput->processChunks(pBegin, pEnd);
+					bytesProcessed += pEnd - pBegin;
+
+					m_pInput->discardChunks(bytesProcessed);
+					return true;
+				}
+			}
+
+			if( !m_pInput->fetchChunks() )
+				break;
+		}
+
+		return false;
+	}
+
+	//____ _pumpAllFrames() ____________________________________________________
+
+	int StreamPump::pumpAllFrames()
+	{
+		int nPumpedFrames = 0;
+
+		while( pumpFrame() )
+			nPumpedFrames++;
+
+		return nPumpedFrames;
 	}
 
 	//____ _pumpUntilChunk() ___________________________________________________

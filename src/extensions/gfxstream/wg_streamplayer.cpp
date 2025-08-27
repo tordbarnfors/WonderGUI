@@ -442,6 +442,21 @@ namespace wg
 				GfxBase::memStackFree(dataSize);
 			}
 
+			if (m_bStoreDirtyRects)
+			{
+				if (m_dirtyRects[(int)m_baseCanvasRef].isEmpty())
+				{
+					for (auto& rect : m_vUpdateRects)
+						m_dirtyRects[(int)m_baseCanvasRef].push(rect);
+				}
+				else
+				{
+					for (auto& rect : m_vUpdateRects)
+						m_dirtyRects[(int)m_baseCanvasRef].add(rect);
+				}
+			}
+
+
 			if (dataInfo.bLastChunk)
 				m_pBackend->beginSession(m_baseCanvasRef, m_baseCanvasSurface, (int) m_vUpdateRects.size(), m_vUpdateRects.data(), &m_sessionInfo);
 
