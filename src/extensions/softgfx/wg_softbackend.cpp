@@ -2142,9 +2142,9 @@ namespace wg
 		if (format != PixelFormat::BGR_8_sRGB && format != PixelFormat::BGR_8_linear &&
 			format != PixelFormat::BGRX_8_sRGB && format != PixelFormat::BGRX_8_linear &&
 			format != PixelFormat::BGRA_8_sRGB && format != PixelFormat::BGRA_8_linear &&
-			format != PixelFormat::BGRA_4_linear && format != PixelFormat::BGR_565_linear &&
-			format != PixelFormat::Alpha_8 && format != PixelFormat::RGB_565_bigendian &&
-			format != PixelFormat::RGB_555_bigendian)
+			format != PixelFormat::BGR_565_sRGB && format != PixelFormat::BGR_565_linear &&
+			format != PixelFormat::Alpha_8 && format != PixelFormat::BGRA_4_linear &&
+			format != PixelFormat::RGB_565_bigendian && format != PixelFormat::RGB_555_bigendian)
 		{
 			return false;
 		}
