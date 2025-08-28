@@ -1,6 +1,7 @@
 
 #include <cstdlib>
 #include <stdio.h>
+#include <unistd.h>
 
 #ifdef WIN32
 #	include <SDL.h>
@@ -81,7 +82,7 @@ int sortWidgets( const Widget * p1, const Widget * p2 )
 
 int main ( int argc, char** argv )
 { 
-
+	sleep(1);
 
 
 	//------------------------------------------------------
@@ -315,11 +316,13 @@ int main ( int argc, char** argv )
 	// StreamGfxDevice and StreamSurfaceFactory feeding encoder
 
 	auto pStreamBackend = StreamBackend::create(pEncoder);
-    pStreamBackend->defineCanvas(CanvasRef::Canvas_1, {240,240}, PixelFormat::Undefined );
+//    pStreamBackend->defineCanvas(CanvasRef::Canvas_1, {800,480}, PixelFormat::Undefined );
+
+	pStreamBackend->defineCanvas(CanvasRef::Canvas_1, {240,240}, PixelFormat::Undefined );
+	pStreamBackend->defineCanvas(CanvasRef::Canvas_2, {240,240}, PixelFormat::Undefined );
 
 
 	auto pStreamDevice = GfxDeviceGen2::create(pStreamBackend);
-	pStreamBackend->defineCanvas(CanvasRef::Canvas_2, {240,240}, PixelFormat::Undefined );
 
 	auto pSurfaceFactory = StreamSurfaceFactory::create(pEncoder);
 
@@ -924,13 +927,20 @@ void playBounceRects(GfxDevice_p pDevice, CanvasRef canvasRef)
 
 		for (int i = 0; i < nSprites; i++)
 		{
-			// Align to even pixels
-
 			RectSPX r = Util::alignUp(spriteRects[i]);
 
+			// Align x to even pixels
+/*
 			spx x2 = (r.x + r.w + 64) & 0xFFFFFF80;
 			r.x = r.x & 0xFFFFFF80;
 			r.w = x2 - r.x;
+*/
+			// Align x to 4 pixel boundaries.
+
+			spx x2 = (r.x + r.w + 64*3) & 0xFFFFFF00;
+			r.x = r.x & 0xFFFFFF00;
+			r.w = x2 - r.x;
+
 			clip.add(r);
 		}
 
@@ -1022,8 +1032,27 @@ void playDualScreenBounceRects(GfxDevice_p pDevice, CanvasRef canvasRef1, Canvas
 
 		for( int s = 0 ; s < 2 ; s++ )
 		{
+//			for (int i = 0; i < nSprites; i++)
+//				clip.add( Util::alignUp(spriteRects[s][i]));
+
 			for (int i = 0; i < nSprites; i++)
-				clip.add( Util::alignUp(spriteRects[s][i]));
+			{
+				RectSPX r = Util::alignUp(spriteRects[s][i]);
+
+				// Align x to even pixels
+	/*
+				spx x2 = (r.x + r.w + 64) & 0xFFFFFF80;
+				r.x = r.x & 0xFFFFFF80;
+				r.w = x2 - r.x;
+	*/
+				// Align x to 4 pixel boundaries.
+
+				spx x2 = (r.x + r.w + 64*3) & 0xFFFFFF00;
+				r.x = r.x & 0xFFFFFF00;
+				r.w = x2 - r.x;
+
+				clip.add(r);
+			}
 
 			for (int i = 0; i < nSprites; i++)
 			{
@@ -1057,7 +1086,26 @@ void playDualScreenBounceRects(GfxDevice_p pDevice, CanvasRef canvasRef1, Canvas
 			}
 
 			for (int i = 0; i < nSprites; i++)
-				clip.add(Util::alignUp(spriteRects[s][i]));
+			{
+				RectSPX r = Util::alignUp(spriteRects[s][i]);
+
+				// Align x to even pixels
+	/*
+				spx x2 = (r.x + r.w + 64) & 0xFFFFFF80;
+				r.x = r.x & 0xFFFFFF80;
+				r.w = x2 - r.x;
+	*/
+				// Align x to 4 pixel boundaries.
+
+				spx x2 = (r.x + r.w + 64*3) & 0xFFFFFF00;
+				r.x = r.x & 0xFFFFFF00;
+				r.w = x2 - r.x;
+
+				clip.add(r);
+			}
+
+//			for (int i = 0; i < nSprites; i++)
+//				clip.add(Util::alignUp(spriteRects[s][i]));
 
 			CanvasRef canvas = s == 0 ? canvasRef1 : canvasRef2;
 			pDevice->beginCanvasUpdate(canvas, clip.size(), clip.begin() );
