@@ -246,6 +246,7 @@ namespace wg
 		static const int GradientSize = 8 * 4;
 		static const int NinePatchSize = 16 + 8 + 10 + 10;
 		static const int DataInfoSize = 10;
+		static const int HeaderSize = 4;
 
 		inline static GfxStream::ChunkId chunkType(const uint8_t* pChunk)
 		{
@@ -273,6 +274,24 @@ namespace wg
 		
 			return size[int(spxFormat)];
 		}
+
+		inline static DataInfo decodeDataInfo(const uint8_t* pChunk)
+		{
+			DataInfo info;
+
+			const uint16_t* pChunkData = (uint16_t*) (pChunk + headerSize(pChunk));
+
+			info.totalSize		= pChunkData[0] + int(pChunkData[1]) * 65536;
+			info.chunkOffset	= pChunkData[2] + int(pChunkData[3]) * 65536;
+
+			uint16_t flagsAndCompression = pChunkData[4];
+
+			info.bFirstChunk = (flagsAndCompression >> 8) & 0x1;
+			info.bLastChunk = (flagsAndCompression >> 9) & 0x1;
+			info.bPadded = (flagsAndCompression >> 10) & 0x1;
+			info.compression = (Compression) (flagsAndCompression & 0xFF);
+			return info;
+		};
 
 	};
 

@@ -24,11 +24,12 @@
 #include <wg_surface.h>
 #include <wg_patches.h>
 #include <wg_gfxbase.h>
+#include <wg_compress.h>
 
 
 #include <vector>
 #include <cstdint>
-#include <cstring>
+//#include <cstring>
 
 using namespace std;
 
@@ -289,6 +290,8 @@ namespace wg
 
 	bool StreamPump::setSessionMasks(StreamTrimBackend * pTrimBackend)
 	{
+//		pTrimBackend->clearSessionMasks();
+
 		// Fetch all data
 
 		while (m_pInput->fetchChunks());
@@ -326,9 +329,7 @@ namespace wg
 
 		CanvasRef		canvasRef;
 		uint16_t		nUpdateRects;
-
 		int				nSessions = 0;
-		bool			bSkipUpdateRects = true;	// We skip update rects for the first session.
 
 		std::vector<RectSPX>	updateRects;
 
@@ -343,15 +344,15 @@ namespace wg
 
 				if (chunkId == GfxStream::ChunkId::BeginSession)
 				{
+					const uint16_t* pChunkData = (uint16_t*) (p + GfxStream::headerSize(p));
+
+					canvasRef 		= (CanvasRef) pChunkData[1];
+					nUpdateRects 	= pChunkData[2];
+
 					nSessions++;
 
 					if( nSessions > 1 )
 					{
-						const uint16_t* pChunkData = (uint16_t*) (p + GfxStream::headerSize(p));
-
-						canvasRef 		= (CanvasRef) pChunkData[1];
-						nUpdateRects 	= pChunkData[2];
-
 						if( canvasRef == CanvasRef::None )
 						{
 							pTrimBackend->addNonMaskingSession();
@@ -366,23 +367,17 @@ namespace wg
 					}
 				}
 
-				if (chunkId == GfxStream::ChunkId::UpdateRects && nSessions > 1)
+				if (chunkId == GfxStream::ChunkId::UpdateRects && canvasRef != CanvasRef::None && nSessions > 1)
 				{
+					GfxStream::DataInfo info = GfxStream::decodeDataInfo(p);
 
-					const uint16_t* pChunkData = (uint16_t*) (p + GfxStream::headerSize(p));
+					uint8_t* pSrc = p + GfxStream::HeaderSize + GfxStream::DataInfoSize;
+					uint8_t* pDest = ((uint8_t*)updateRects.data()) + info.chunkOffset;
+					int dataSize = (GfxStream::dataSize(p) - GfxStream::DataInfoSize);
 
-					int32_t		totalSize	= pChunkData[0] + int(pChunkData[1]) * 65536;
-					int32_t		offset		= pChunkData[2] + int(pChunkData[3]) * 65536;
-					bool		bFirstChunk = pChunkData[4];
-					bool		bLastChunk	= pChunkData[5];
+					decompress(info.compression, pSrc, dataSize, pDest);
 
-					uint8_t* pSrc = p + 16;
-					uint8_t* pDest = ((uint8_t*)updateRects.data()) + offset;
-					int chunkRectsSize = (GfxStream::chunkSize(p) - 16);
-
-					memcpy(pDest, pSrc, chunkRectsSize);
-
-					if( bLastChunk )
+					if(  info.bLastChunk )
 						pTrimBackend->addMaskingSession(canvasRef, nullptr, nUpdateRects, updateRects.data() );
 				}
 

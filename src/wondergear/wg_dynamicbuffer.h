@@ -24,6 +24,8 @@
 #define	WG_DYNAMICBUFFER_DOT_H
 #pragma once
 
+#include <cstring>
+
 namespace wg
 {
 

@@ -25,6 +25,7 @@
 #include <wg_softedgemapfactory.h>
 #include <wg_softedgemap.h>
 #include <wg_gfxbase.h>
+#include <cstring>
 
 
 using namespace std;

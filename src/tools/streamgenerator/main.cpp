@@ -315,11 +315,11 @@ int main ( int argc, char** argv )
 	// StreamGfxDevice and StreamSurfaceFactory feeding encoder
 
 	auto pStreamBackend = StreamBackend::create(pEncoder);
-    pStreamBackend->defineCanvas(CanvasRef::Canvas_1, {800,480}, PixelFormat::Undefined );
+    pStreamBackend->defineCanvas(CanvasRef::Canvas_1, {240,240}, PixelFormat::Undefined );
 
 
 	auto pStreamDevice = GfxDeviceGen2::create(pStreamBackend);
-//	pStreamDevice->defineCanvas(CanvasRef::Canvas_2, {240,240}, PixelFormat::Undefined );
+	pStreamBackend->defineCanvas(CanvasRef::Canvas_2, {240,240}, PixelFormat::Undefined );
 
 	auto pSurfaceFactory = StreamSurfaceFactory::create(pEncoder);
 
@@ -355,8 +355,8 @@ int main ( int argc, char** argv )
 //	  playRectangleDanceDualScreen( pStreamDevice, CanvasRef::Canvas_1, CanvasRef::Canvas_2 );
 //    playLogoFadeIn( pStreamDevice, CanvasRef::Canvas_1, pSurfaceFactory );
 //    playSurfaceStressTest( pStreamDevice, CanvasRef::Canvas_1, pSurfaceFactory );
-	playBounceRects( pStreamDevice, CanvasRef::Canvas_1 );
-//	playDualScreenBounceRects( pStreamDevice, CanvasRef::Canvas_1, CanvasRef::Canvas_2 );
+//	playBounceRects( pStreamDevice, CanvasRef::Canvas_1 );
+	playDualScreenBounceRects( pStreamDevice, CanvasRef::Canvas_1, CanvasRef::Canvas_2 );
 
 //	playImageStreamingTest( pStreamDevice, CanvasRef::Canvas_1, pSurfaceFactory );
 
@@ -923,7 +923,16 @@ void playBounceRects(GfxDevice_p pDevice, CanvasRef canvasRef)
 		}
 
 		for (int i = 0; i < nSprites; i++)
-			clip.add(Util::alignUp(spriteRects[i]));
+		{
+			// Align to even pixels
+
+			RectSPX r = Util::alignUp(spriteRects[i]);
+
+			spx x2 = (r.x + r.w + 64) & 0xFFFFFF80;
+			r.x = r.x & 0xFFFFFF80;
+			r.w = x2 - r.x;
+			clip.add(r);
+		}
 
 		pDevice->beginRender();
 		pDevice->beginCanvasUpdate(canvasRef, clip.size(), clip.begin() );

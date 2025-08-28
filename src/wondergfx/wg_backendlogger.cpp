@@ -83,6 +83,8 @@ namespace wg
 			*m_pStream << "    Objects:       " << pInfo->nObjects << std::endl;
 		}
 
+		*m_pStream << "UPDATE RECTS" << std::endl;
+		_printRects(* m_pStream, nUpdateRects, pUpdateRects);
 
 		if (m_pBackend)
 			m_pBackend->beginSession(canvasRef, pCanvas, nUpdateRects, pUpdateRects, pInfo);
