@@ -93,9 +93,6 @@ namespace wg
 
 		virtual ~StreamTrimBackend();
 
-		void		_trimFrames();
-		void		_renderFrames();
-
 		void		_trim( RectSPX * pToTrim, RectSPX * pMaskBeg, RectSPX * pMaskEnd );
 
 
@@ -103,8 +100,8 @@ namespace wg
 
 		// Update rects as presented to us before trimming.
 
-		const RectSPX*				m_pUpdateRectsBeg;
-		const RectSPX*				m_pUpdateRectsEnd;
+		const RectSPX*				m_pUpdateRectsBeg = nullptr;
+		const RectSPX*				m_pUpdateRectsEnd = nullptr;
 
 		// Update rects trimmed down by the masks, but none removed even if empty.
 
@@ -123,7 +120,7 @@ namespace wg
 		};
 
 		std::deque <SessionMask>	m_masks;
-		int							m_trimLevel = 0;
+		int							m_trimLevel = 4;
 
 	};
 

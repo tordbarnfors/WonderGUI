@@ -75,9 +75,7 @@ namespace wg
 
 			m_trimmedUpdateRects.clear();
 
-			int trimLevel = std::min(m_trimLevel, int(m_masks.size()));
-
-			auto itMaskEnd = m_masks.begin() + trimLevel;
+			auto itMaskEnd = m_masks.begin() + m_masks.size();
 
 			for (auto p = m_pUpdateRectsBeg; p < m_pUpdateRectsEnd; p++)
 			{
@@ -85,18 +83,21 @@ namespace wg
 				m_trimmedUpdateRects.push_back(*p);
 				auto pToTrim = &m_trimmedUpdateRects.back();
 
-				if( pToTrim->isEmpty() )
-					continue;
+				int level = 0;
+
+				if (pToTrim->isEmpty())
+					break;
 
 				for (auto pMask = m_masks.begin(); pMask < itMaskEnd; pMask++)
 				{
 					if( pMask->canvasRef == canvasRef && pMask->pCanvas == pCanvas )
 					{
 						_trim(pToTrim, pMask->rects.data(), pMask->rects.data() + pMask->rects.size());
-					}
+						level++;
 
-					if (pToTrim->isEmpty())
-						break;
+						if (level >= m_trimLevel || pToTrim->isEmpty())
+							break;
+					}
 				}
 			}
 
@@ -300,6 +301,8 @@ namespace wg
 
 	void StreamTrimBackend::_trim( RectSPX * pTrim, RectSPX * pMaskBeg, RectSPX * pMaskEnd )
 	{
+		RectSPX oldTrim = *pTrim;
+
 		RectSPX& trim = * pTrim;
 
 		for( RectSPX * pMask = pMaskBeg ; pMask < pMaskEnd ; pMask++ )
@@ -323,9 +326,9 @@ namespace wg
 					trim.y += cut;
 					trim.h -= cut;
 				}
-				else if( maskY2 >= (trim.y + trim.h) )/////////////////////////////////////////////
+				else if( maskY2 >= (trim.y + trim.h) )
 				{
-					trim.h = maskY2 - trim.y;
+					trim.h = maskY1 - trim.y;
 				}
 			}
 			else if( pMask->y <= pTrim->y && pMask->y + pMask->h >= pTrim->y + pTrim->h )
@@ -349,10 +352,13 @@ namespace wg
 				}
 				else if( maskX2 >= (trim.x + trim.w) )
 				{
-					trim.w = maskX2 - trim.x;
+					trim.w = maskX1 - trim.x;
 				}
 			}
 		}
+		if (trim.w > oldTrim.w || trim.h > oldTrim.h)
+			_trim(&oldTrim, pMaskBeg, pMaskEnd);
+
 	}
 
 

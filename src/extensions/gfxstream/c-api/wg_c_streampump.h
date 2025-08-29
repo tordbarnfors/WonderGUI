@@ -41,12 +41,12 @@ extern "C" {
 
 	wg_streamChunkId	wg_peekChunk(wg_obj streamPump);
 
-	int				wg_setSessionMasks(wg_obj streamPump, wg_obj streamTrimBackend);
 
 	int				wg_pumpChunk(wg_obj streamPump);
 	int				wg_pumpUntilFrame(wg_obj streamPump);
 	int				wg_pumpFrame(wg_obj streamPump);
 	int				wg_pumpAllFrames(wg_obj streamPump);
+	int				wg_pumpAllFramesWithTrimming(wg_obj streamPump, wg_obj trimBackend);
 	int				wg_pumpAll(wg_obj streamPump);
 
 	int				wg_pumpBytes( wg_obj streamPump, int maxBytes );

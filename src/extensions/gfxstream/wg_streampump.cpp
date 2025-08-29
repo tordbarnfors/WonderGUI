@@ -157,6 +157,9 @@ namespace wg
 
 	bool StreamPump::pumpFrame()
 	{
+		if (!m_pInput || !m_pOutput)
+			return false;
+
 		int	nSegments;
 		const GfxStream::Data* pSegments;
 
@@ -206,14 +209,70 @@ namespace wg
 
 	//____ _pumpAllFrames() ____________________________________________________
 
-	int StreamPump::pumpAllFrames()
+	int StreamPump::pumpAllFrames(StreamTrimBackend* pTrimmer)
 	{
-		int nPumpedFrames = 0;
+		if (!m_pInput || !m_pOutput)
+			return -1;
 
-		while( pumpFrame() )
-			nPumpedFrames++;
+		// Start by fetching all chunks available
 
-		return nPumpedFrames;
+		while(m_pInput->fetchChunks());
+
+		if (!m_pInput->hasChunks())
+			return 0;
+
+		// Show all chunks
+
+		int	nSegments;
+		const GfxStream::Data* pSegments;
+		std::tie(nSegments, pSegments) = m_pInput->showChunks();
+
+		// Find last complete frame
+
+		int nCompleteFrames = 0;
+		const uint8_t* pLastCompleteFrameEnd = nullptr;
+		for (int i = 0; i < nSegments; i++)
+		{
+			auto p = _findChunk(GfxStream::ChunkId::EndRender, pSegments[i].pBegin, pSegments[i].pEnd);
+			while (p != pSegments[i].pEnd)
+			{
+				nCompleteFrames++;
+				pLastCompleteFrameEnd = p + GfxStream::chunkSize(p);
+				p = _findChunk(GfxStream::ChunkId::EndRender, pLastCompleteFrameEnd, pSegments[i].pEnd);
+			}
+		}
+
+		// Early out if no complete frames found
+
+		if (nCompleteFrames == 0)
+			return 0;		// No complete frames found
+
+		// Trim frames if we have a trimmer
+
+		if (pTrimmer && nCompleteFrames > 1)
+			_trimFrames(pTrimmer, nSegments, pSegments, pLastCompleteFrameEnd);
+
+		// Pump all frames up to and including the last complete frame
+
+		int bytesProcessed = 0;
+		for (int i = 0; i < nSegments; i++)
+		{
+			auto pBegin = pSegments[i].pBegin;
+			auto pEnd = pSegments[i].pEnd;
+
+			if (pLastCompleteFrameEnd >= pBegin && pLastCompleteFrameEnd <= pEnd)
+			{
+				m_pOutput->processChunks(pBegin, pLastCompleteFrameEnd);
+				bytesProcessed += pLastCompleteFrameEnd - pBegin;
+				break;
+			}
+
+			m_pOutput->processChunks(pBegin, pEnd);
+			bytesProcessed += pEnd - pBegin;
+		}
+
+		m_pInput->discardChunks(bytesProcessed);
+		return nCompleteFrames;
 	}
 
 	//____ _pumpUntilChunk() ___________________________________________________
@@ -284,6 +343,79 @@ namespace wg
 		}
 
 		return false;
+	}
+
+	//____ _trimFrames() ________________________________________________
+
+	void StreamPump::_trimFrames(StreamTrimBackend* pTrimBackend, int nSegments, const GfxStream::Data * pSegments, const uint8_t* pEndPoint)
+	{
+		pTrimBackend->clearSessionMasks();
+
+		//
+
+		CanvasRef		canvasRef;
+		uint16_t		nUpdateRects;
+		int				nSessions = 0;
+
+		std::vector<RectSPX>	updateRects;
+
+		for (int seg = 0; seg <= nSegments; seg++)
+		{
+			const uint8_t* pEnd = (pEndPoint >= pSegments[seg].pBegin && pEndPoint <= pSegments[seg].pEnd) ? pEndPoint : pSegments[seg].pEnd;
+
+			auto p = pSegments[seg].pBegin;
+
+			while (p != pEnd)
+			{
+				GfxStream::ChunkId chunkId = GfxStream::chunkType(p);
+
+				if (chunkId == GfxStream::ChunkId::BeginSession)
+				{
+					const uint16_t* pChunkData = (uint16_t*)(p + GfxStream::headerSize(p));
+
+					canvasRef = (CanvasRef)pChunkData[1];
+					nUpdateRects = pChunkData[2];
+
+					nSessions++;
+
+					if (nSessions > 1)
+					{
+						if (canvasRef == CanvasRef::None)
+						{
+							// We can't mask writes to surfaces, they might be used as source for blits before last frame.
+
+							pTrimBackend->addNonMaskingSession();
+						}
+						else
+						{
+							if (nUpdateRects == 0)
+								pTrimBackend->addFullyMaskingSession(canvasRef, nullptr);
+							else
+								updateRects.resize(nUpdateRects);
+						}
+					}
+				}
+
+				if (chunkId == GfxStream::ChunkId::UpdateRects && canvasRef != CanvasRef::None && nSessions > 1)
+				{
+					GfxStream::DataInfo info = GfxStream::decodeDataInfo(p);
+
+					uint8_t* pSrc = p + GfxStream::HeaderSize + GfxStream::DataInfoSize;
+					uint8_t* pDest = ((uint8_t*)updateRects.data()) + info.chunkOffset;
+					int dataSize = (GfxStream::dataSize(p) - GfxStream::DataInfoSize);
+
+					decompress(info.compression, pSrc, dataSize, pDest);
+
+					if (info.bLastChunk)
+						pTrimBackend->addMaskingSession(canvasRef, nullptr, nUpdateRects, updateRects.data());
+				}
+
+				p = p + GfxStream::chunkSize(p);
+			}
+
+			if(pEnd == pEndPoint)
+				break;
+		}
 	}
 
 	//____ setSessionMasks() ________________________________________________

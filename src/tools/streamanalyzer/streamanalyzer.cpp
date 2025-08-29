@@ -923,7 +923,7 @@ bool MyApp::loadStream(std::string path)
 	pTrimGfxBackend->pushMask(&mask, &mask + 1);
 */
 
-	pTrimGfxBackend->setTrimLevel(1000);
+	pTrimGfxBackend->setTrimLevel(10);
 
 	auto pStreamGfxDevice = GfxDeviceGen2::create(pTrimGfxBackend);
 
@@ -1351,8 +1351,8 @@ void MyApp::_playFrames( int begin, int end, bool bOptimize )
 
 	if( bOptimize )
 	{
-		m_pStreamPump->setSessionMasks(m_pStreamTrimGfxBackend);
-		m_pStreamPump->pumpAll();						// To make sure any data outside frame following it is included.
+		m_pStreamPump->pumpAllFrames(m_pStreamTrimGfxBackend);
+		m_pStreamPump->pumpAll();	// To make sure all data following the last frame is processed.
 	}
 	else
 		m_pStreamPump->pumpAll();
@@ -1396,17 +1396,16 @@ void MyApp::_logBackend( int begin, int end, bool bOptimize, TextEditor * pDispl
 
 	auto pLogger = BackendLogger::create( logStream, nullptr);
 	auto pTrimmer = StreamTrimBackend::create(pLogger);
+	pTrimmer->setTrimLevel(10);
 	auto pPlayer = StreamPlayer::create(pTrimmer, nullptr, nullptr);
 	auto pPump = StreamPump::create( {pWrapper, pWrapper->output}, {pPlayer, pPlayer->input} );
 
 
 	if( bOptimize )
-	{
-		pTrimmer->setTrimLevel(100000);
-		pPump->setSessionMasks(pTrimmer);
-	}
+		pPump->pumpAllFrames(pTrimmer);
+	else
+		pPump->pumpAllFrames();
 
-	pPump->pumpAll();
 	pDisplay->editor.setText( logStream.str() );
 }
 
