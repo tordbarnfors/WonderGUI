@@ -117,7 +117,7 @@ namespace wg
 		pHeaderPanel->slots[1] = pHeaderValue;
 	}
 
-	//____ _initTextEntry() _________________________________________________
+	//____ _createColorDrawer() _________________________________________________
 
 	DrawerPanel_p DebugPanel::_createColorDrawer(const CharSeq& label, const HiColor& color)
 	{
@@ -164,6 +164,57 @@ namespace wg
 
 		displayedColor = color;
 	}
+
+	//____ _createRectDrawer() _________________________________________________
+
+	DrawerPanel_p DebugPanel::_createRectDrawer(const CharSeq& label, const Rect& rect)
+	{
+		bool bEmpty = rect.isEmpty();
+		bool bValid = rect.isValid();
+
+		auto pHeaderValue = WGCREATE(TextDisplay, _ = m_pHolder->blueprint().listEntryText, _.display.text = bValid ? (bEmpty ? "empty" : "") : "invalid" );
+
+		TablePanel_p pContentTable;
+
+		if (true)
+		{
+			pContentTable = _createTable(4, 2);
+
+			_setPtsEntry(pContentTable, 0, "X (pts): ", rect.x);
+			_setPtsEntry(pContentTable, 1, "Y (pts): ", rect.y);
+			_setPtsEntry(pContentTable, 2, "W (pts): ", rect.w);
+			_setPtsEntry(pContentTable, 3, "H (pts): ", rect.h);
+		}
+
+		return _createDrawer(label, pHeaderValue, pContentTable);
+	}
+
+	//____ _refreshRectDrawer() _____________________________________________
+
+	void DebugPanel::_refreshRectDrawer(DrawerPanel* pRectDrawer, const Rect& rect, Rect& displayedRect)
+	{
+		if (rect == displayedRect)
+			return;
+
+		bool bEmpty = rect.isEmpty();
+		bool bValid = rect.isValid();
+
+		if (bEmpty != displayedRect.isEmpty())
+		{
+			auto pHeaderValue = WGCREATE(TextDisplay, _ = m_pHolder->blueprint().listEntryText, _.display.text = bValid ? (bEmpty ? "empty" : "") : "invalid");
+			_setDrawerHeaderValue(pRectDrawer, pHeaderValue);
+		}
+
+		auto pTable = static_cast<TablePanel*>(pRectDrawer->slots[1]._widget());
+
+		_refreshPtsEntry(pTable, 0, rect.x);
+		_refreshPtsEntry(pTable, 1, rect.y);
+		_refreshPtsEntry(pTable, 2, rect.w);
+		_refreshPtsEntry(pTable, 3, rect.h);
+
+		displayedRect = rect;
+	}
+
 
 	//____ _createBorderDrawer() ________________________________________________________
 
