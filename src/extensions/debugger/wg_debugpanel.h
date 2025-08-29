@@ -74,6 +74,9 @@ namespace wg
 		DrawerPanel_p		_createDrawer(const CharSeq& label, Widget * pHeaderValue, Widget * pContent );
 		void				_setDrawerHeaderValue(DrawerPanel* pDrawer, Widget* pHeaderValue);
 
+		DrawerPanel_p		_createRectDrawer(const CharSeq& label, const Rect& rect);
+		void				_refreshRectDrawer(DrawerPanel* pRectDrawer, const Rect& rect, Rect& displayedRect);
+
 		DrawerPanel_p		_createColorDrawer(const CharSeq& label, const HiColor& color);
 		void				_refreshColorDrawer(DrawerPanel* pColorDrawer, const HiColor& color, HiColor& displayedColor );
 
@@ -87,10 +90,8 @@ namespace wg
 
 		template<typename Iterator>
 		DrawerPanel_p		_createSlotsDrawer(const CharSeq& label, Iterator slotsBegin, Iterator slotsEnd);
-
 		template<typename Iterator>
 		void				_refreshSlotsDrawer(DrawerPanel * pDrawer, Iterator slotsBegin, Iterator slotsEnd);
-
 		template<typename Iterator>
 		void				_addSlotInfoPanels(PackPanel * pPanel, int numberingStart, Iterator slotsBegin, Iterator slotsEnd);
 

@@ -341,6 +341,7 @@ namespace wg
 		inline void limit( const SizeT<Type>& min, const SizeT<Type>& max );
 		inline void clear()		{ w = 0; h = 0; }
 		inline bool	isEmpty() const { return (w == 0 && h == 0); }
+		inline bool	isValid() const { return (w >= 0 && h >= 0); }
 
 		//.____ Operators ___________________________________________
 
@@ -520,6 +521,7 @@ namespace wg
 		inline Type bottom() const;								///< @brief Get Y coordinate of bottom border.
 
 		inline bool	isEmpty() const;							///< @brief Check if rectangle has no area.
+		inline bool	isValid() const;							///< @brief Check that width and height are not negtive.
 		inline void clear();									///< @brief Sets all values to zero.
 
 		inline CoordT<Type> distance( CoordT<Type> coord ) const;   ////< @brief Get distance (signed) between coordinate and rectangle. 0 if inside.
@@ -1043,6 +1045,16 @@ namespace wg
 	{
 		return (w==0||h==0)?true:false;
 	}
+
+	 //_____________________________________________________________________________
+	 /**
+	  * 	Check that rect doesn't have negative width or height.
+	  **/
+	 template<typename Type>
+	 inline bool	RectT<Type>::isValid() const
+	 {
+		 return (w >= 0 && h >= 0) ? true : false;
+	 }
 
 	//_____________________________________________________________________________
 	/**
