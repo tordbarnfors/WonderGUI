@@ -62,8 +62,6 @@ namespace wg
 
 		GfxStream::ChunkId	peekChunk();
 
-		bool		setSessionMasks(StreamTrimBackend * pTrimBackend);
-
 		bool		pumpChunk();
 		bool		pumpUntilFrame();
 		bool		pumpFrame();					// Pump a single, complete frame if available in stream.
