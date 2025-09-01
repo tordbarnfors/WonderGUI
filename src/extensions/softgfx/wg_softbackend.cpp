@@ -263,7 +263,9 @@ namespace wg
 
 	void SoftBackend::setCanvas(Surface* _pSurface)
 	{
-		auto pSurface = dynamic_cast<SoftSurface*>(_pSurface);
+		// WonderGFX should be able to run without RTTI.
+
+		auto pSurface = _pSurface->isInstanceOf(SoftSurface::TYPEINFO) ? static_cast<SoftSurface*>(_pSurface) : nullptr;
 
 		if (m_pCanvas)
 		{
