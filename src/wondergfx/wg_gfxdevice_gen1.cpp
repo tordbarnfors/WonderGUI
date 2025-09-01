@@ -237,6 +237,13 @@ namespace wg
 		m_tintColor = color;
 	}
 
+	//____ clearTintColor() __________________________________________________________
+
+	void GfxDeviceGen1::clearTintColor()
+	{
+		m_tintColor = HiColor::White;
+	}
+
 	//____ setTintGradient() __________________________________________________
 
 	void GfxDeviceGen1::setTintGradient(const RectSPX& rect, const Gradient& gradient)
