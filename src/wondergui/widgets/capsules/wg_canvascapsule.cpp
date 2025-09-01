@@ -127,7 +127,7 @@ namespace wg
 
 				m_pTintmapTransition = pTransition;
 				m_tintmapTransitionProgress = 0;
-				m_pStartTintmap = m_pTintmap ? m_pTintmap : Gradyent::create(HiColor::White, HiColor::White, HiColor::White, HiColor::White);
+				m_pStartTintmap = m_pTintmap ? m_pTintmap : wg_static_cast<Tintmap_p>(Gradyent::create(HiColor::White, HiColor::White, HiColor::White, HiColor::White));
 				m_pEndTintmap = pTintmap;
 			}
 			else
