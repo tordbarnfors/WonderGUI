@@ -14,6 +14,7 @@ add_subdirectory(streamanalyzer)
 add_subdirectory(streamgenerator)
 add_subdirectory(streamplayer)
 add_subdirectory(streamtrimmer)
+add_subdirectory(streamgendll)
 add_subdirectory(texteditor)
 add_subdirectory(unittester)
 add_subdirectory(workbench)
@@ -44,6 +45,7 @@ set_target_properties(
 	streamgenerator
 	streamplayer
 	streamtrimmer
+	streamgendll
 	surfviewer
 	texteditor
 	unittester
