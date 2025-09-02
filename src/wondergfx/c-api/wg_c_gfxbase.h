@@ -33,23 +33,23 @@ extern "C" {
 #endif
 
 
-	int		wg_initGfxBase(void);
-	int		wg_exitGfxBase(void);
-	int		wg_isGfxBaseInitialized(void);
+WG_EXPORT int		wg_initGfxBase(void);
+WG_EXPORT int		wg_exitGfxBase(void);
+WG_EXPORT int		wg_isGfxBaseInitialized(void);
 
-	wg_obj	wg_defaultBitmapCache();
+WG_EXPORT wg_obj	wg_defaultBitmapCache();
 
-	void	wg_setDefaultSurfaceFactory( wg_obj factory );
-	wg_obj	wg_defaultSurfaceFactory();
+WG_EXPORT void	wg_setDefaultSurfaceFactory( wg_obj factory );
+WG_EXPORT wg_obj	wg_defaultSurfaceFactory();
 
-	void	wg_setDefaultEdgemapFactory( wg_obj factory );
-	wg_obj	wg_defaultEdgemapFactory();
+WG_EXPORT void	wg_setDefaultEdgemapFactory( wg_obj factory );
+WG_EXPORT wg_obj	wg_defaultEdgemapFactory();
 
-	void	wg_setDefaultGfxDevice( wg_obj device );
-	wg_obj	wg_defaultGfxDevice();
+WG_EXPORT void	wg_setDefaultGfxDevice( wg_obj device );
+WG_EXPORT wg_obj	wg_defaultGfxDevice();
 
-	void	wg_setDefaultToSRGB( int bSRGB );
-	int		wg_defaultToSRGB();
+WG_EXPORT void	wg_setDefaultToSRGB( int bSRGB );
+WG_EXPORT int		wg_defaultToSRGB();
 
 
 #ifdef __cplusplus

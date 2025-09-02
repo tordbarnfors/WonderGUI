@@ -33,7 +33,7 @@ extern "C" {
 
 // wg_obj		wg_createFreeTypeFont( wg_blob, int faceIndex, wg_freeTypeRenderMode renderMode, wg_obj backupFont, wg_obj bitmapCache );
 
-wg_obj			wg_getFreeTypeFontBitmapCache( wg_obj font );
+WG_EXPORT wg_obj	wg_getFreeTypeFontBitmapCache( wg_obj font );
 
 
 #ifdef __cplusplus
