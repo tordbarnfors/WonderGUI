@@ -20,8 +20,8 @@
 
 =========================================================================*/
 
-#ifndef WG_C_STREAMLOOPWRAPPER_DOT_H
-#define WG_C_STREAMLOOPWRAPPER_DOT_H
+#ifndef WG_C_STREAMSPLITTER_DOT_H
+#define WG_C_STREAMSPLITTER_DOT_H
 #pragma once
 
 #include <wg_c_gfxtypes.h>
@@ -31,14 +31,14 @@
 extern "C" {
 #endif
 
-	wg_obj			wg_createStreamSplitter();
-	wg_obj			wg_createStreamSplitterWithOutputs( wg_component output1, wg_component output2 );
+	WG_EXPORT wg_obj	wg_createStreamSplitter();
+	WG_EXPORT wg_obj	wg_createStreamSplitterWithOutputs( wg_component output1, wg_component output2 );
 
-	wg_component	wg_getStreamSplitterInput(wg_obj streamSplitter);
+	WG_EXPORT wg_component	wg_getStreamSplitterInput(wg_obj streamSplitter);
 
-	void			wg_clearStreamSplitterOutputs(wg_obj streamSplitter);
-	void			wg_addStreamSplitterOutput(wg_obj streamSplitter, wg_component output);
-	void			wg_removeStreamSplitterOutput(wg_obj streamSplitter, wg_component output);
+	WG_EXPORT void		wg_clearStreamSplitterOutputs(wg_obj streamSplitter);
+	WG_EXPORT void		wg_addStreamSplitterOutput(wg_obj streamSplitter, wg_component output);
+	WG_EXPORT void		wg_removeStreamSplitterOutput(wg_obj streamSplitter, wg_component output);
 
 
 #ifdef __cplusplus

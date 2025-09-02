@@ -44,17 +44,17 @@ extern "C" {
 	//
 
 //	wg_obj			wg_createStreamEncoder(wg_component sinkForStream, int bufferBytes );
-	wg_obj			wg_createStreamEncoder( const wg_streamEncoderBP* blueprint);
+	WG_EXPORT wg_obj			wg_createStreamEncoder( const wg_streamEncoderBP* blueprint);
 
-	void			wg_setEncoderStream(wg_obj encoder, wg_component sinkForStream);
+	WG_EXPORT void				wg_setEncoderStream(wg_obj encoder, wg_component sinkForStream);
 
-	void			wg_setEncoderDefaultPixelFormat(wg_obj encoder, wg_pixelFormat pixelFormat);
-	wg_pixelFormat 	wg_getEncoderDefaultPixelFormat(wg_obj encoder);
+	WG_EXPORT void				wg_setEncoderDefaultPixelFormat(wg_obj encoder, wg_pixelFormat pixelFormat);
+	WG_EXPORT wg_pixelFormat 	wg_getEncoderDefaultPixelFormat(wg_obj encoder);
 
-	void			wg_setEncoderDefaultSampleMethod(wg_obj encoder, wg_sampleMethod sampleMethod);
-	wg_sampleMethod wg_getEncoderDefaultSampleMethod(wg_obj encoder);
+	WG_EXPORT void				wg_setEncoderDefaultSampleMethod(wg_obj encoder, wg_sampleMethod sampleMethod);
+	WG_EXPORT wg_sampleMethod	wg_getEncoderDefaultSampleMethod(wg_obj encoder);
 
-	void			wg_flushEncoder(wg_obj encoder);
+	WG_EXPORT void				wg_flushEncoder(wg_obj encoder);
 
 #ifdef __cplusplus
 }

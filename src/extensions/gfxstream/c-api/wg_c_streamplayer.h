@@ -31,18 +31,18 @@
 extern "C" {
 #endif
 
-	wg_obj			wg_createStreamPlayer(wg_obj backend, wg_obj surfaceFactory, wg_obj edgemapFactory);
+	WG_EXPORT wg_obj		wg_createStreamPlayer(wg_obj backend, wg_obj surfaceFactory, wg_obj edgemapFactory);
 
-	wg_component	wg_getStreamPlayerInput(wg_obj streamPlayer);
+	WG_EXPORT wg_component	wg_getStreamPlayerInput(wg_obj streamPlayer);
 
-	void			wg_resetStreamPlayer(wg_obj streamPlayer);
+	WG_EXPORT void			wg_resetStreamPlayer(wg_obj streamPlayer);
 
-	void			wg_setStreamPlayerStoreDirtyRects(wg_obj streamPlayer, int bStore);
-	void			wg_setStreamPlayerMaxDirtyRects(wg_obj streamPlayer, int max);
+	WG_EXPORT void			wg_setStreamPlayerStoreDirtyRects(wg_obj streamPlayer, int bStore);
+	WG_EXPORT void			wg_setStreamPlayerMaxDirtyRects(wg_obj streamPlayer, int max);
 
-	int				wg_getStreamPlayerDirtyRects(wg_obj streamPlayer, wg_canvasRef canvas, const wg_rectI **pRects );
+	WG_EXPORT int			wg_getStreamPlayerDirtyRects(wg_obj streamPlayer, wg_canvasRef canvas, const wg_rectI **pRects );
 
-	void			wg_clearStreamPlayerDirtyRects(wg_obj streamPlayer);
+	WG_EXPORT void			wg_clearStreamPlayerDirtyRects(wg_obj streamPlayer);
 
 #ifdef __cplusplus
 }

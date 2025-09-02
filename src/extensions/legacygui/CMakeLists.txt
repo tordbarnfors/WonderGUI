@@ -167,7 +167,12 @@ set(INCDIRS
 
 
 add_library( wglegacygui STATIC ${SOURCES} )
-target_include_directories(wglegacygui PRIVATE ${INCDIRS} )
+generate_export_header(wglegacygui BASE_NAME wg)
+
+target_include_directories(wglegacygui PRIVATE ${INCDIRS} 
+	"${CMAKE_CURRENT_BINARY_DIR}"  # For generated header
+)
+
 target_link_libraries(wglegacygui PUBLIC wondergui )
 
 set_target_properties( wglegacygui PROPERTIES FOLDER "Extensions" )

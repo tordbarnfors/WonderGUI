@@ -37,8 +37,8 @@
 #include <wg_tintmap.h>
 
 
-	void convertSurfaceBlueprint(wg::Surface::Blueprint* pDest, const wg_surfaceBP* pSource);
-	void convertEdgemapBlueprint(wg::Edgemap::Blueprint* pDest, const wg_edgemapBP* pSource, wg::Tintmap_p * pTintmapArea );
+WG_NO_EXPORT void convertSurfaceBlueprint(wg::Surface::Blueprint* pDest, const wg_surfaceBP* pSource);
+WG_NO_EXPORT void convertEdgemapBlueprint(wg::Edgemap::Blueprint* pDest, const wg_edgemapBP* pSource, wg::Tintmap_p * pTintmapArea );
 
 
 #endif	//__cplusplus

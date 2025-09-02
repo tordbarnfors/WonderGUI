@@ -31,7 +31,6 @@
 extern "C" {
 #endif
 
-//____ wg_renderMode __________________________________________________________
 
 typedef enum
 {
@@ -59,8 +58,8 @@ struct wg_freeTypeFontBP_struct			// NOT BINARY EQUIVALENT!
 
 typedef struct wg_freeTypeFontBP_struct	wg_freeTypeFontBP;
 
-wg_obj			wg_createFreeTypeFont( wg_freeTypeFontBP blueprint );
-wg_obj			wg_getFreeTypeFontBitmapCache( wg_obj font );
+WG_EXPORT wg_obj	wg_createFreeTypeFont( wg_freeTypeFontBP blueprint );
+WG_EXPORT wg_obj	wg_getFreeTypeFontBitmapCache( wg_obj font );
 
 
 #ifdef __cplusplus

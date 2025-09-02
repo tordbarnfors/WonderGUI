@@ -10,9 +10,8 @@ set( SOURCES
 
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${SOURCES})
 
-add_executable(legacyworkbench
-	${SOURCES}
-)
+add_executable(legacyworkbench ${SOURCES} )
+generate_export_header(wondergfx BASE_NAME wg)
 
 
 target_include_directories(legacyworkbench PRIVATE
@@ -22,6 +21,7 @@ target_include_directories(legacyworkbench PRIVATE
 	${GFXSTREAM_INCDIRS}
 	${WGSOFTGFX_INCDIRS}
 	${WGOPENGLGFX_INCDIRS}
+	"${CMAKE_CURRENT_BINARY_DIR}"  # For generated header
 )
 
 target_link_directories(legacyworkbench PRIVATE 

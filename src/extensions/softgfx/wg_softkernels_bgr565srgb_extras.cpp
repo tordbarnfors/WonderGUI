@@ -21,6 +21,7 @@
 =========================================================================*/
 
 #include <wg_softkernels_bgr565srgb_extras.h>
+#include <wg_c_softkernels_bgr565srgb_extras.h>
 #include <wg_c_softgfx.h>
 
 using namespace wg;
@@ -627,7 +628,7 @@ void _draw_segment_strip_blend_to_bgr565srgb(int colBeg, int colEnd, uint8_t* pS
 #ifdef __cplusplus
 extern "C" {
 #endif
-int	wg_addExtraSoftKernelsForBGR565sRGBCanvas( wg_obj backend )
+WG_EXPORT int	wg_addExtraSoftKernelsForBGR565sRGBCanvas( wg_obj backend )
 {
 	auto pBackend = static_cast<SoftBackend*>(reinterpret_cast<Object*>(backend));
 

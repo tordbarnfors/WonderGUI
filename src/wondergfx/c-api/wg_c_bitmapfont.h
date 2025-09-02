@@ -31,8 +31,8 @@
 extern "C" {
 #endif
 
-wg_obj			wg_createBitmapFont( wg_obj surface, char * pGlyphSpec, wg_obj backupFont );
-wg_obj			wg_getBitmapFontSurface( wg_obj bitmapFont );
+WG_EXPORT wg_obj		wg_createBitmapFont( wg_obj surface, char * pGlyphSpec, wg_obj backupFont );
+WG_EXPORT wg_obj		wg_getBitmapFontSurface( wg_obj bitmapFont );
 
 
 #ifdef __cplusplus

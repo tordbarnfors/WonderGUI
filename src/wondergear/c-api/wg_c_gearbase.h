@@ -33,11 +33,11 @@ extern "C" {
 
 //TODO: Not a complete wrapper, just contains what is needed for wg-display project to work.
 
-	int		wg_initGearBase(void);
-	int		wg_exitGearBase(void);
-	int		wg_isGearBaseInitialized(void);
+	WG_EXPORT int		wg_initGearBase(void);
+	WG_EXPORT int		wg_exitGearBase(void);
+	WG_EXPORT int		wg_isGearBaseInitialized(void);
 
-	void	wg_setErrorHandler(void (*errorHandler)(const wg_errorInfo * pError) );
+	WG_EXPORT void		wg_setErrorHandler(void (*errorHandler)(const wg_errorInfo * pError) );
 
 
 #ifdef __cplusplus

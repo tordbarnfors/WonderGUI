@@ -166,7 +166,7 @@ namespace wg
 		  
 		  if( pHead->boundsGuard != 0xDEADBEEF )
 		  {
-			  GearBase::throwError(ErrorLevel::Critical, ErrorCode::Internal, "Header of block being freed is corrupt. Either provided pointer is wrong or we an out-of-bounds write somewhere.", nullptr, nullptr, __func__, __FILE__, __LINE__);
+			  GearBase::throwError(ErrorLevel::Critical, ErrorCode::Internal, "Header of block being freed is corrupt. Either provided pointer is wrong or we have an out-of-bounds write somewhere.", nullptr, nullptr, __func__, __FILE__, __LINE__);
 		  }
 
 		  if( pHead->pNextBlock->boundsGuard != 0xDEADBEEF )

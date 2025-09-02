@@ -45,13 +45,13 @@ typedef struct wg_blurbrushBP_struct			// NOT BINARY EQUIVALENT!
 } wg_blurbrushBP;
 
 
-wg_obj	wg_createBlurbrush( wg_blurbrushBP bp );
+WG_EXPORT wg_obj		wg_createBlurbrush( wg_blurbrushBP bp );
 
-wg_spx		wg_blurbrushSize( wg_obj blurbrush );
+WG_EXPORT wg_spx		wg_blurbrushSize( wg_obj blurbrush );
 
-const float* wg_blurbrushBlue( wg_obj blurbrush );
-const float* wg_blurbrushGreen( wg_obj blurbrush );
-const float* wg_blurbrushRed( wg_obj blurbrush );
+WG_EXPORT const float*	wg_blurbrushBlue( wg_obj blurbrush );
+WG_EXPORT const float*	wg_blurbrushGreen( wg_obj blurbrush );
+WG_EXPORT const float*	wg_blurbrushRed( wg_obj blurbrush );
 
 
 #ifdef __cplusplus
