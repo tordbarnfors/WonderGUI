@@ -30,7 +30,7 @@
 extern "C" {
 #endif
 
-	wg_obj		wg_createSysFont(wg_obj surfaceFactory, wg_obj backupFont);
+WG_EXPORT wg_obj		wg_createSysFont(wg_obj surfaceFactory, wg_obj backupFont);
 
 #ifdef __cplusplus
 }

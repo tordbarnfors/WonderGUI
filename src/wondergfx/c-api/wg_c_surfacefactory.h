@@ -30,18 +30,20 @@
 extern "C" {
 #endif
 
-	//.____ Geometry _________________________________________________
+//.____ Geometry _________________________________________________
 
-	wg_sizeI		wg_maxSurfaceSize(wg_obj surfaceFactory);
+WG_EXPORT wg_sizeI		wg_maxSurfaceSize(wg_obj surfaceFactory);
 
-	//.____ Misc _______________________________________________________
+//.____ Misc _______________________________________________________
 
-	wg_obj	wg_createSurface(wg_obj factory, const wg_surfaceBP* blueprint);
-	wg_obj	wg_createSurfaceFromBlob(wg_obj factory, const wg_surfaceBP* blueprint, wg_obj blob, int pitch);
-	wg_obj	wg_createSurfaceFromBitmap(wg_obj factory, const wg_surfaceBP* blueprint, const uint8_t* pPixels,
-									   wg_pixelFormat pixelFormat, int pitch, const wg_color8 * pPalette, int paletteSize );
-	wg_obj	wg_createSurfaceFromRawData(wg_obj factory, const wg_surfaceBP* blueprint, const uint8_t* pPixels,
-										const wg_pixelDescription * pPixelDescription, int pitch, const wg_color8 * pPalette, int paletteSize );
+WG_EXPORT wg_obj	wg_createSurface(wg_obj factory, const wg_surfaceBP* blueprint);
+WG_EXPORT wg_obj	wg_createSurfaceFromBlob(wg_obj factory, const wg_surfaceBP* blueprint, wg_obj blob, int pitch);
+WG_EXPORT wg_obj	wg_createSurfaceFromBitmap(	wg_obj factory, const wg_surfaceBP* blueprint, 
+												const uint8_t* pPixels, wg_pixelFormat pixelFormat, 
+												int pitch, const wg_color8 * pPalette, int paletteSize );
+WG_EXPORT wg_obj	wg_createSurfaceFromRawData(wg_obj factory, const wg_surfaceBP* blueprint, 
+												const uint8_t* pPixels,	const wg_pixelDescription * pPixelDescription, 
+												int pitch, const wg_color8 * pPalette, int paletteSize );
 
 #ifdef __cplusplus
 }

@@ -1,7 +1,7 @@
 
 #include <cstdlib>
 #include <stdio.h>
-#include <unistd.h>
+//#include <unistd.h>
 
 #ifdef WIN32
 #	include <SDL.h>
@@ -85,7 +85,7 @@ int sortWidgets( const Widget * p1, const Widget * p2 )
 
 int main ( int argc, char** argv )
 { 
-	sleep(1);
+//	sleep(1);
 
 
 	//------------------------------------------------------

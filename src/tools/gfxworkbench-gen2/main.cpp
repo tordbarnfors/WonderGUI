@@ -16,8 +16,8 @@
 #endif
 
 #include <wondergui.h>
-#include <wondergfx_c.h>
-#include <wondergfxstream_c.h>
+#include <wondergfx.h>
+#include <wondergfxstream.h>
 
 #include <wg_softsurface.h>
 #include <wg_softsurfacefactory.h>

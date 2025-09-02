@@ -31,14 +31,14 @@
 extern "C" {
 #endif
 
-	wg_obj	wg_createStreamWrapper( const void * pBegin, const void * pEnd );
+	WG_EXPORT wg_obj	wg_createStreamWrapper( const void * pBegin, const void * pEnd );
 
-	wg_component	wg_getStreamWrapperOutput(wg_obj streamWrapper);
+	WG_EXPORT wg_component	wg_getStreamWrapperOutput(wg_obj streamWrapper);
 
-	int		wg_chunkInStreamWrapper(wg_obj streamWrapper);
-	int		wg_bytesInStreamWrapper(wg_obj streamWrapper);
+	WG_EXPORT int	wg_chunkInStreamWrapper(wg_obj streamWrapper);
+	WG_EXPORT int	wg_bytesInStreamWrapper(wg_obj streamWrapper);
 
-	void	wg_restartStreamWrapper(wg_obj streamWrapper);
+	WG_EXPORT void	wg_restartStreamWrapper(wg_obj streamWrapper);
 
 #ifdef __cplusplus
 }

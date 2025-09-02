@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
 
+include(GenerateExportHeader)
+
 #set(CMAKE_XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY "Apple Development")
 #set(CMAKE_XCODE_ATTRIBUTE_CODE_DEVELOPMENT_TEAM 9B39M5G274)
 

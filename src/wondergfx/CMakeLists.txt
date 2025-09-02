@@ -141,7 +141,12 @@ set(INCDIRS
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${SOURCES})
 
 add_library( wondergfx STATIC ${SOURCES} )
-target_include_directories(wondergfx PRIVATE ${INCDIRS} )
+generate_export_header(wondergfx BASE_NAME wg)
+
+target_include_directories(wondergfx PRIVATE ${INCDIRS} 
+	"${CMAKE_CURRENT_BINARY_DIR}"  # For generated header
+)
+
 target_link_libraries(wondergfx PUBLIC wondergear )
 
 

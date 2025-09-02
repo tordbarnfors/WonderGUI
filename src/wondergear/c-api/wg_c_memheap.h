@@ -33,19 +33,19 @@ extern "C" {
 
 	typedef void * wg_memHeap;
 
-	wg_memHeap	wg_initMemHeap( void * pHeap, int bytes );
-	void		wg_exitMemHeap( wg_memHeap heap );
+	WG_EXPORT wg_memHeap	wg_initMemHeap( void * pHeap, int bytes );
+	WG_EXPORT void			wg_exitMemHeap( wg_memHeap heap );
 
-	void *		wg_malloc( wg_memHeap heap, int bytes );
-	void  		wg_free( wg_memHeap heap, void * pBuffer );
+	WG_EXPORT void *		wg_malloc( wg_memHeap heap, int bytes );
+	WG_EXPORT void  		wg_free( wg_memHeap heap, void * pBuffer );
 /*
 	void		wg_drawFragmentMap( wg_memHeap heap, int nSections, uint16_t * pSectionTable, wg_obj surface );
 */
-	void		wg_setMemHeapDebugLevel( wg_memHeap heap, int level );
+	WG_EXPORT void			wg_setMemHeapDebugLevel( wg_memHeap heap, int level );
 
-	int			wg_memHeapCapacity( wg_memHeap heap );
-	int			wg_memHeapReserved( wg_memHeap heap );
-	int			wg_largestAvailableBlock( wg_memHeap heap );
+	WG_EXPORT int			wg_memHeapCapacity( wg_memHeap heap );
+	WG_EXPORT int			wg_memHeapReserved( wg_memHeap heap );
+	WG_EXPORT int			wg_largestAvailableBlock( wg_memHeap heap );
 
 #ifdef __cplusplus
 }

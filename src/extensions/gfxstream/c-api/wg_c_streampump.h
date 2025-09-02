@@ -32,24 +32,24 @@
 extern "C" {
 #endif
 
-	wg_obj			wg_createStreamPump(void);
-	wg_obj			wg_createStreamPumpWithInputOutput( wg_component input, wg_component output);
+	WG_EXPORT wg_obj			wg_createStreamPump(void);
+	WG_EXPORT wg_obj			wg_createStreamPumpWithInputOutput( wg_component input, wg_component output);
 
-	void			wg_setStreamPumpInput(wg_obj streamPump, wg_component input);
-	void			wg_setStreamPumpOutput(wg_obj streamPump, wg_component output);
-
-
-	wg_streamChunkId	wg_peekChunk(wg_obj streamPump);
+	WG_EXPORT void				wg_setStreamPumpInput(wg_obj streamPump, wg_component input);
+	WG_EXPORT void				wg_setStreamPumpOutput(wg_obj streamPump, wg_component output);
 
 
-	int				wg_pumpChunk(wg_obj streamPump);
-	int				wg_pumpUntilFrame(wg_obj streamPump);
-	int				wg_pumpFrame(wg_obj streamPump);
-	int				wg_pumpAllFrames(wg_obj streamPump);
-	int				wg_pumpAllFramesWithTrimming(wg_obj streamPump, wg_obj trimBackend);
-	int				wg_pumpAll(wg_obj streamPump);
+	WG_EXPORT wg_streamChunkId	wg_peekChunk(wg_obj streamPump);
 
-	int				wg_pumpBytes( wg_obj streamPump, int maxBytes );
+
+	WG_EXPORT int				wg_pumpChunk(wg_obj streamPump);
+	WG_EXPORT int				wg_pumpUntilFrame(wg_obj streamPump);
+	WG_EXPORT int				wg_pumpFrame(wg_obj streamPump);
+	WG_EXPORT int				wg_pumpAllFrames(wg_obj streamPump);
+	WG_EXPORT int				wg_pumpAllFramesWithTrimming(wg_obj streamPump, wg_obj trimBackend);
+	WG_EXPORT int				wg_pumpAll(wg_obj streamPump);
+
+	WG_EXPORT int				wg_pumpBytes( wg_obj streamPump, int maxBytes );
 
 #ifdef __cplusplus
 }

@@ -62,19 +62,19 @@ typedef struct wg_cacheListenerBP_struct
 } wg_cacheListenerBP;
 
 
-wg_obj				wg_createBitmapCache( int maxSize, wg_obj surfaceFactory );
+WG_EXPORT wg_obj			wg_createBitmapCache( int maxSize, wg_obj surfaceFactory );
 
-void 				wg_setCacheLimit(wg_obj bitmapCache, int maxBytes);
-int					wg_cacheLimit(wg_obj bitmapCache);
-int					wg_cacheSize(wg_obj bitmapCache);
-void				wg_clearCache(wg_obj bitmapCache);
+WG_EXPORT void 				wg_setCacheLimit(wg_obj bitmapCache, int maxBytes);
+WG_EXPORT int				wg_cacheLimit(wg_obj bitmapCache);
+WG_EXPORT int				wg_cacheSize(wg_obj bitmapCache);
+WG_EXPORT void				wg_clearCache(wg_obj bitmapCache);
 
-wg_cacheListener	wg_addCacheListener(wg_obj bitmapCache, wg_cacheListenerBP blueprint );
-void				wg_removeCacheListener(wg_obj bitmapCache, wg_cacheListener listener );
+WG_EXPORT wg_cacheListener	wg_addCacheListener(wg_obj bitmapCache, wg_cacheListenerBP blueprint );
+WG_EXPORT void				wg_removeCacheListener(wg_obj bitmapCache, wg_cacheListener listener );
 
-wg_cacheSlot 		wg_getCacheSlot(wg_obj bitmapCache, wg_sizeI size);
-int					wg_getNbCacheSurfaces(wg_obj bitmapCache);
-int					wg_getCacheSurfaces(wg_obj bitmapCache, int maxSurfaces, wg_obj * pArray );
+WG_EXPORT wg_cacheSlot 		wg_getCacheSlot(wg_obj bitmapCache, wg_sizeI size);
+WG_EXPORT int				wg_getNbCacheSurfaces(wg_obj bitmapCache);
+WG_EXPORT int				wg_getCacheSurfaces(wg_obj bitmapCache, int maxSurfaces, wg_obj * pArray );
 
 
 #ifdef __cplusplus
