@@ -33,9 +33,9 @@ extern "C" {
 
 typedef	void(*wg_writeStream_func)(int nBytes, const void* pDest);
 
-wg_obj			wg_createStreamWriter(wg_writeStream_func dispatcher);
+WG_EXPORT wg_obj		wg_createStreamWriter(wg_writeStream_func dispatcher);
 
-wg_component	wg_getStreamWriterInput(wg_obj streamWriter);
+WG_EXPORT wg_component	wg_getStreamWriterInput(wg_obj streamWriter);
 
 #ifdef __cplusplus
 }

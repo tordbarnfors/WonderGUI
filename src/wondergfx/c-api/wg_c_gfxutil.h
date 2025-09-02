@@ -31,9 +31,9 @@
 extern "C" {
 #endif
 
-	const wg_pixelDescription* 	wg_pixelFormatToDescription( wg_pixelFormat format );
-	wg_pixelFormat 				wg_pixelDescriptionToFormat(const wg_pixelDescription * pDescription);
-	wg_pixelFormat 				wg_clarifyPixelFormat( wg_pixelFormat format);
+	WG_EXPORT const wg_pixelDescription* 	wg_pixelFormatToDescription( wg_pixelFormat format );
+	WG_EXPORT  wg_pixelFormat 				wg_pixelDescriptionToFormat(const wg_pixelDescription * pDescription);
+	WG_EXPORT  wg_pixelFormat 				wg_clarifyPixelFormat( wg_pixelFormat format);
 	
 #ifdef __cplusplus
 }

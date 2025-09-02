@@ -13,11 +13,13 @@ set(INCDIRS
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${SOURCES})
 
 add_library( wgfreetypefont STATIC ${SOURCES} )
+generate_export_header(wgfreetypefont BASE_NAME wg)
 
 target_include_directories(wgfreetypefont PRIVATE
     ${INCDIRS}
     ${WONDERGFX_INCDIRS}
     ${FREETYPE2_INCDIR}
+	"${CMAKE_CURRENT_BINARY_DIR}"  # For generated header
 )
 
 set_target_properties( wgfreetypefont PROPERTIES FOLDER "Extensions" )

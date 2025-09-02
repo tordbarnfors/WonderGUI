@@ -29,7 +29,7 @@ add_executable(streamanalyzer MACOSX_BUNDLE
 
 target_include_directories(streamanalyzer PRIVATE 
 	${WAPP_INCDIRS}
-	${GFXSTREAM_INCDIRS}
+	${WGGFXSTREAM_INCDIRS}
 	${WGSOFTGFX_INCDIRS}
 	${WGDEBUGGER_INCDIRS}
 )

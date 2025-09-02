@@ -32,12 +32,12 @@
 extern "C" {
 #endif
 
-int		wg_isTintmapOpaque( wg_obj tintmap );
-int		wg_isTintmapVertical( wg_obj tintmap );
-int		wg_isTintmapHorizontal( wg_obj tintmap );
+WG_EXPORT int	wg_isTintmapOpaque( wg_obj tintmap );
+WG_EXPORT int	wg_isTintmapVertical( wg_obj tintmap );
+WG_EXPORT int	wg_isTintmapHorizontal( wg_obj tintmap );
 
-void 	wg_exportHorizontalColors( wg_obj tintmap, wg_spx length, wg_color* pOutput);
-void 	wg_exportVerticalColors( wg_obj tintmap, wg_spx length, wg_color* pOutput);
+WG_EXPORT void 	wg_exportHorizontalColors( wg_obj tintmap, wg_spx length, wg_color* pOutput);
+WG_EXPORT void 	wg_exportVerticalColors( wg_obj tintmap, wg_spx length, wg_color* pOutput);
 
 #ifdef __cplusplus
 }

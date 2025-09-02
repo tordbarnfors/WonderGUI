@@ -21,6 +21,8 @@ target_include_directories(fontgenerator PRIVATE
 	${WAPP_INCDIRS}
 	${SDL2_INCDIR}
 	${SDL2IMAGE_INCDIR}
+	${FREETYPE2_INCDIR}
+
 )
 
 target_working_directory(fontgenerator ${WG_ROOT} )

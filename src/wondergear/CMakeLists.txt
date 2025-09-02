@@ -50,7 +50,11 @@ set(INCDIRS
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${SOURCES})
 
 add_library( wondergear STATIC ${SOURCES} )
-target_include_directories(wondergear PRIVATE ${INCDIRS})
+generate_export_header(wondergear BASE_NAME wg)
+
+target_include_directories(wondergear PRIVATE ${INCDIRS}
+	"${CMAKE_CURRENT_BINARY_DIR}"  # For generated header
+)
 
 
 list(TRANSFORM SOURCES PREPEND ${CMAKE_CURRENT_LIST_DIR}/ )
