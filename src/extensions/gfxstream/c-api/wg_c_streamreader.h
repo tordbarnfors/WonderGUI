@@ -33,15 +33,15 @@ extern "C" {
 	typedef	int(*wg_readStream_func)(int nBytes, void* pDest);
 
 
-	wg_obj			wg_createStreamReader(wg_readStream_func callback);
+	WG_EXPORT wg_obj		wg_createStreamReader(wg_readStream_func callback);
 
-	wg_component	wg_getStreamReaderOutput(wg_obj streamReader);
+	WG_EXPORT wg_component	wg_getStreamReaderOutput(wg_obj streamReader);
 
-	void			wg_resetStreamReader(wg_obj streamReader);
+	WG_EXPORT void			wg_resetStreamReader(wg_obj streamReader);
 
-	int				wg_streamReaderCapacity(wg_obj streamReader);
-	int				wg_streamReaderHasChunk(wg_obj streamReader);
-	int				wg_streamReaderBytes(wg_obj streamReader);
+	WG_EXPORT int			wg_streamReaderCapacity(wg_obj streamReader);
+	WG_EXPORT int			wg_streamReaderHasChunk(wg_obj streamReader);
+	WG_EXPORT int			wg_streamReaderBytes(wg_obj streamReader);
 
 #ifdef __cplusplus
 }

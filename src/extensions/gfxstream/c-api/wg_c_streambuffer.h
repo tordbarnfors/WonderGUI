@@ -30,17 +30,17 @@
 extern "C" {
 #endif
 
-	wg_obj			wg_createStreamBuffer(int initialCapacity);
+	WG_EXPORT wg_obj		wg_createStreamBuffer(int initialCapacity);
 
-	wg_component	wg_getStreamBufferOutput(wg_obj streamBuffer);
-	wg_component	wg_getStreamBufferInput(wg_obj streamBuffer);
+	WG_EXPORT wg_component	wg_getStreamBufferOutput(wg_obj streamBuffer);
+	WG_EXPORT wg_component	wg_getStreamBufferInput(wg_obj streamBuffer);
 
-	int				wg_streamBufferCapacity(wg_obj streamBuffer);
-	int				wg_streamBufferHasChunk(wg_obj streamBuffer);
-	int				wg_streamBufferSize(wg_obj streamBuffer);
+	WG_EXPORT int			wg_streamBufferCapacity(wg_obj streamBuffer);
+	WG_EXPORT int			wg_streamBufferHasChunk(wg_obj streamBuffer);
+	WG_EXPORT int			wg_streamBufferSize(wg_obj streamBuffer);
 
-	void			wg_resetStreamBuffer(wg_obj streamBuffer);
-	int				wg_setStreamBufferCapacity( wg_obj streamBuffer, int capacity );
+	WG_EXPORT void			wg_resetStreamBuffer(wg_obj streamBuffer);
+	WG_EXPORT int			wg_setStreamBufferCapacity( wg_obj streamBuffer, int capacity );
 
 
 

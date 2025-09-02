@@ -33,18 +33,18 @@
 extern "C" {
 #endif
 
-	wg_obj			wg_createStreamBackend(wg_obj streamEncoder, int maxEdges );
-	int				wg_defineStreamBackendCanvasWithSurface( wg_obj streamBackend, wg_canvasRef ref, wg_obj surface );
-	int				wg_defineStreamBackendCanvas( wg_obj streamBackend, wg_canvasRef ref, wg_sizeI pixelSize, wg_pixelFormat pixelFormat, int scale );
+	WG_EXPORT wg_obj	wg_createStreamBackend(wg_obj streamEncoder, int maxEdges );
+	WG_EXPORT int		wg_defineStreamBackendCanvasWithSurface( wg_obj streamBackend, wg_canvasRef ref, wg_obj surface );
+	WG_EXPORT int		wg_defineStreamBackendCanvas( wg_obj streamBackend, wg_canvasRef ref, wg_sizeI pixelSize, wg_pixelFormat pixelFormat, int scale );
 
-	wg_obj			wg_createStreamSurface(wg_obj streamEncoder, wg_surfaceBP* blueprint);
-	wg_obj			wg_createStreamSurfaceFromBlob(wg_obj streamEncoder, const wg_surfaceBP* blueprint, wg_obj blob, int pitch);
-	wg_obj			wg_createStreamSurfaceFromBitmap(wg_obj streamEncoder, wg_obj factory, const wg_surfaceBP* blueprint, const uint8_t* pPixels,
-												   wg_pixelFormat pixelFormat, int pitch, const wg_color8 * pPalette );
-	wg_obj			wg_createStreamSurfaceFromRawData(wg_obj streamEncoder, wg_obj factory, const wg_surfaceBP* blueprint, const uint8_t* pPixels,
+	WG_EXPORT wg_obj	wg_createStreamSurface(wg_obj streamEncoder, wg_surfaceBP* blueprint);
+	WG_EXPORT wg_obj	wg_createStreamSurfaceFromBlob(wg_obj streamEncoder, const wg_surfaceBP* blueprint, wg_obj blob, int pitch);
+	WG_EXPORT wg_obj	wg_createStreamSurfaceFromBitmap(wg_obj streamEncoder, wg_obj factory, const wg_surfaceBP* blueprint, const uint8_t* pPixels,
+													   wg_pixelFormat pixelFormat, int pitch, const wg_color8 * pPalette );
+	WG_EXPORT wg_obj	wg_createStreamSurfaceFromRawData(wg_obj streamEncoder, wg_obj factory, const wg_surfaceBP* blueprint, const uint8_t* pPixels,
 													const wg_pixelDescription * pPixelDescription, int pitch, const wg_color8 * pPalette );
 
-	wg_obj			wg_createStreamSurfaceFactory(wg_obj streamEncoder);
+	WG_EXPORT wg_obj	wg_createStreamSurfaceFactory(wg_obj streamEncoder);
 
 
 #ifdef __cplusplus

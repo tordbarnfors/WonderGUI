@@ -30,11 +30,11 @@
 extern "C" {
 #endif
 
-	wg_obj 	wg_createBlob( int size );
-	wg_obj 	wg_createBlobFromData( void * pData, int size, void(*destructor)() );
+	WG_EXPORT wg_obj 	wg_createBlob( int size );
+	WG_EXPORT wg_obj 	wg_createBlobFromData( void * pData, int size, void(*destructor)() );
 
-	int		wg_blobSize( wg_obj blob );
-	void *	wg_blobData( wg_obj blob );
+	WG_EXPORT int		wg_blobSize( wg_obj blob );
+	WG_EXPORT void *	wg_blobData( wg_obj blob );
 
 #ifdef __cplusplus
 }

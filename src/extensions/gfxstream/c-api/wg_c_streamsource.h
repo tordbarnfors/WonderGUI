@@ -31,11 +31,11 @@
 extern "C" {
 #endif
 
-    int             wg_hasStreamChunks( wg_component streamSource );
-    int             wg_showStreamChunks( wg_component streamSource, wg_streamData ** pSegments );
-    void            wg_discardStreamChunks( wg_component streamSource, int bytes );
-    int             wg_fetchStreamChunks( wg_component streamSource );
-    wg_streamChunkId   wg_peekStreamChunk( wg_component streamSource );
+	WG_EXPORT int				wg_hasStreamChunks( wg_component streamSource );
+	WG_EXPORT int				wg_showStreamChunks( wg_component streamSource, wg_streamData ** pSegments );
+    WG_EXPORT void				wg_discardStreamChunks( wg_component streamSource, int bytes );
+    WG_EXPORT int				wg_fetchStreamChunks( wg_component streamSource );
+    WG_EXPORT wg_streamChunkId	wg_peekStreamChunk( wg_component streamSource );
 
 #ifdef __cplusplus
 }

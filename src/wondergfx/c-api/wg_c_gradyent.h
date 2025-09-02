@@ -31,7 +31,7 @@
 extern "C" {
 #endif
 
-wg_obj		wg_createGradyent(wg_color top, wg_color bottom, wg_color left, wg_color right);
+WG_EXPORT wg_obj	wg_createGradyent(wg_color top, wg_color bottom, wg_color left, wg_color right);
 
 #ifdef __cplusplus
 }

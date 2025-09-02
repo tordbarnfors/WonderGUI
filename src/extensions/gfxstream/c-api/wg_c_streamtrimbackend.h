@@ -31,13 +31,13 @@
 extern "C" {
 #endif
 
-wg_obj	wg_createStreamTrimBackend(wg_obj backend);
+WG_EXPORT wg_obj	wg_createStreamTrimBackend(wg_obj backend);
 
-void	wg_addNonMaskingSession(wg_obj streamTrimBackend);
-void	wg_addFullyMaskingSession(wg_obj streamTrimBackend,  wg_canvasRef canvasRef, wg_obj canvasSurface );
-void	wg_addMaskingSession(wg_obj streamTrimBackend,  wg_canvasRef canvasRef, wg_obj canvasSurface, int nMaskingRects, const wg_rectSPX * pMaskingRects );
-void	wg_clearSessionMasks(wg_obj streamTrimBackend);
-void	wg_setTrimLevel(wg_obj streamTrimBackend, int level);
+WG_EXPORT void		wg_addNonMaskingSession(wg_obj streamTrimBackend);
+WG_EXPORT void		wg_addFullyMaskingSession(wg_obj streamTrimBackend,  wg_canvasRef canvasRef, wg_obj canvasSurface );
+WG_EXPORT void		wg_addMaskingSession(wg_obj streamTrimBackend,  wg_canvasRef canvasRef, wg_obj canvasSurface, int nMaskingRects, const wg_rectSPX * pMaskingRects );
+WG_EXPORT void		wg_clearSessionMasks(wg_obj streamTrimBackend);
+WG_EXPORT void		wg_setTrimLevel(wg_obj streamTrimBackend, int level);
 
 #ifdef __cplusplus
 }

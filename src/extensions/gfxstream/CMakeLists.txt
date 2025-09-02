@@ -86,13 +86,18 @@ set(INCDIRS
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${SOURCES})
 
 add_library( wggfxstream STATIC ${SOURCES} )
-target_include_directories(wggfxstream PRIVATE ${INCDIRS} )
+generate_export_header(wggfxstream BASE_NAME wg)
+
+target_include_directories(wggfxstream PRIVATE ${INCDIRS} 
+	"${CMAKE_CURRENT_BINARY_DIR}"  # For generated header
+)
 target_link_libraries(wggfxstream PUBLIC wondergear )
 
 set_target_properties( wggfxstream PROPERTIES FOLDER "Extensions" )
+set_target_properties( wggfxstream PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS TRUE)
 
 list(TRANSFORM SOURCES PREPEND ${CMAKE_CURRENT_LIST_DIR}/ )
-set(GFXSTREAM_SOURCES ${SOURCES} PARENT_SCOPE)
-set(GFXSTREAM_INCDIRS ${INCDIRS} PARENT_SCOPE)
+set(WGGFXSTREAM_SOURCES ${SOURCES} PARENT_SCOPE)
+set(WGGFXSTREAM_INCDIRS ${INCDIRS} PARENT_SCOPE)
 
 

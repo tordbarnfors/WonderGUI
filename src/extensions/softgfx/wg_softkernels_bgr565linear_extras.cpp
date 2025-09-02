@@ -437,7 +437,7 @@ static void _straight_blit_alpha8_to_bgr565linear_no_or_flat_tint_fixedblend(con
 #ifdef __cplusplus
 extern "C" {
 #endif
-int	wg_addExtraSoftKernelsForBGR565LinearCanvas( wg_obj backend )
+WG_EXPORT int	wg_addExtraSoftKernelsForBGR565LinearCanvas( wg_obj backend )
 {
 	auto pBackend = static_cast<SoftBackend*>(reinterpret_cast<Object*>(backend));
 

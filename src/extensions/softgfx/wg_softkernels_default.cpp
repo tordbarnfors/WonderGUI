@@ -130,7 +130,7 @@ extern "C" {
 #endif
 
 
-int	wg_addDefaultSoftKernels( wg_obj backend )
+WG_EXPORT int	wg_addDefaultSoftKernels( wg_obj backend )
 {
 	auto pBackend = static_cast<SoftBackend*>(reinterpret_cast<Object*>(backend));
 

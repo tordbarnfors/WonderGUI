@@ -30,7 +30,7 @@
 extern "C" {
 #endif
 
-	void	wg_processStreamChunks( wg_component streamSink, const void * pBegin, const void * pEnd );
+	WG_EXPORT void	wg_processStreamChunks( wg_component streamSink, const void * pBegin, const void * pEnd );
 
 #ifdef __cplusplus
 }

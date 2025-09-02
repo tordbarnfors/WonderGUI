@@ -24,6 +24,7 @@
 #define WG_C_PATCHES_DOT_H
 #pragma once
 
+#include <wg_export.h>
 #include <wg_c_geo.h>
 
 #ifdef __cplusplus
@@ -32,44 +33,44 @@ extern "C" {
 
 typedef void* wg_patches;
 
-wg_patches	wg_createPatches();
-void		wg_deletePatches(wg_patches obj);
+WG_EXPORT wg_patches	wg_createPatches();
+WG_EXPORT void			wg_deletePatches(wg_patches obj);
 
-int			wg_setPatchesCapacity( wg_patches obj, int capacity );
+WG_EXPORT int			wg_setPatchesCapacity( wg_patches obj, int capacity );
 
-void		wg_clearPatches(wg_patches obj);
+WG_EXPORT void			wg_clearPatches(wg_patches obj);
 
-void		wg_addPatch( wg_patches obj, wg_rectSPX rect );
-void		wg_addPatches( wg_patches dest, wg_patches from );
-void		wg_addPatchesSubset( wg_patches dest, wg_patches from, int ofs, int len );
+WG_EXPORT void			wg_addPatch( wg_patches obj, wg_rectSPX rect );
+WG_EXPORT void			wg_addPatches( wg_patches dest, wg_patches from );
+WG_EXPORT void			wg_addPatchesSubset( wg_patches dest, wg_patches from, int ofs, int len );
 
-void		wg_subPatch( wg_patches obj, wg_rectSPX rect );
-void		wg_subPatches( wg_patches dest, wg_patches from );
-void		wg_subPatchesSubset( wg_patches dest, wg_patches from, int ofs, int len );
+WG_EXPORT void			wg_subPatch(wg_patches obj, wg_rectSPX rect);
+WG_EXPORT void			wg_subPatches(wg_patches dest, wg_patches from);
+WG_EXPORT void			wg_subPatchesSubset( wg_patches dest, wg_patches from, int ofs, int len );
 
-void		wg_pushPatch( wg_patches obj, wg_rectSPX rect );
-void		wg_pushPatches( wg_patches dest, wg_patches from );
-void		wg_pushPatchesSubset( wg_patches dest, wg_patches from, int ofs, int len );
+WG_EXPORT void			wg_pushPatch(wg_patches obj, wg_rectSPX rect);
+WG_EXPORT void			wg_pushPatches(wg_patches dest, wg_patches from);
+WG_EXPORT void			wg_pushPatchesSubset( wg_patches dest, wg_patches from, int ofs, int len );
 
-void		wg_popPatch( wg_patches obj );
-void		wg_trimPushPatches( wg_patches dest, wg_patches from, wg_rectSPX trim );
+WG_EXPORT void			wg_popPatch( wg_patches obj );
+WG_EXPORT void			wg_trimPushPatches( wg_patches dest, wg_patches from, wg_rectSPX trim );
 
-int			wg_removePatches( wg_patches dest, int ofs, int len );
+WG_EXPORT int			wg_removePatches( wg_patches dest, int ofs, int len );
 
 //.____ Misc __________________________________________________________
 
-void		wg_clipPatches(	wg_patches obj, wg_rectSPX clip );
-wg_rectSPX	wg_patchesBounds( wg_patches obj );
+WG_EXPORT void			wg_clipPatches(	wg_patches obj, wg_rectSPX clip );
+WG_EXPORT wg_rectSPX	wg_patchesBounds( wg_patches obj );
 
 
 //.____ Content ________________________________________________________
 
-const wg_rectSPX * wg_patchesBegin( wg_patches obj );
-const wg_rectSPX * wg_patchesEnd( wg_patches obj );
+WG_EXPORT const wg_rectSPX * wg_patchesBegin( wg_patches obj );
+WG_EXPORT const wg_rectSPX * wg_patchesEnd( wg_patches obj );
 
-int			wg_patchesSize( wg_patches obj );
-int			wg_patchesCapacity( wg_patches obj );
-int			wg_patchesIsEmpty( wg_patches obj );
+WG_EXPORT int			wg_patchesSize( wg_patches obj );
+WG_EXPORT int			wg_patchesCapacity( wg_patches obj );
+WG_EXPORT int			wg_patchesIsEmpty( wg_patches obj );
 
 
 #ifdef __cplusplus

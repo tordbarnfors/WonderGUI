@@ -34,11 +34,11 @@ extern "C" {
 	typedef	const void *(*wg_getWritePtr_func)(void);
 	typedef	void(*wg_setReadPtr_func)(const void * pReadPos);
 
-	wg_obj			wg_createStreamLoopWrapper(const void * pBufferBegin, const void * pBufferEnd,
+	WG_EXPORT wg_obj		wg_createStreamLoopWrapper(const void * pBufferBegin, const void * pBufferEnd,
 											   wg_getWritePtr_func getWritePtrFunc,
 											   wg_setReadPtr_func setReadPtrFunc);
 
-	wg_component	wg_getStreamLoopWrapperOutput(wg_obj loopWrapper);
+	WG_EXPORT wg_component	wg_getStreamLoopWrapperOutput(wg_obj loopWrapper);
 
 
 #ifdef __cplusplus

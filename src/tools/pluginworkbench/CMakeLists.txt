@@ -13,6 +13,7 @@ add_library(testplugin SHARED
 	${WGFREETYPEFONT_SOURCES}
 	${WGPLUGIN_SOURCES}
 )
+generate_export_header(testplugin BASE_NAME wg)
 
 
 target_include_directories(testplugin PRIVATE 
@@ -20,6 +21,7 @@ target_include_directories(testplugin PRIVATE
 	${WONDERGUI_INCDIRS}
 	${WGFREETYPEFONT_INCDIRS}
 	${SDL2_INCDIR}
+	"${CMAKE_CURRENT_BINARY_DIR}"  # For generated header
 )
 
 set_target_properties(testplugin PROPERTIES
@@ -43,11 +45,13 @@ add_library(legacytestplugin SHARED
 	${WGFREETYPEFONT_SOURCES}
 	${WGLEGACYPLUGIN_SOURCES}
 )
+generate_export_header(legacytestplugin BASE_NAME wg)
 
 target_include_directories(legacytestplugin PRIVATE
 	${WGPLUGIN_INCDIRS}
 	${WGLEGACYGUI_INCDIRS}
 	${WGFREETYPEFONT_INCDIR}
+	"${CMAKE_CURRENT_BINARY_DIR}"  # For generated header
 )
 
 set_target_properties(legacytestplugin PROPERTIES
@@ -67,11 +71,13 @@ add_executable(pluginworkbench
 	pluginworkbench.cpp
 	pluginworkbench.h
 )
+generate_export_header(wondergfx BASE_NAME wg)
 
 target_include_directories(pluginworkbench PRIVATE 
 	${WAPP_INCDIRS}
 	${WGPLUGIN_INCDIRS}
 	${SDL2_INCDIR}
+	"${CMAKE_CURRENT_BINARY_DIR}"  # For generated header
 )
 
 add_dependencies(pluginworkbench testplugin legacytestplugin)

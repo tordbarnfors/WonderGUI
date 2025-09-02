@@ -296,7 +296,12 @@ set(INCDIRS
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${SOURCES})
 
 add_library( wondergui STATIC ${SOURCES} )
-target_include_directories(wondergui PRIVATE ${INCDIRS} )
+generate_export_header(wondergui BASE_NAME wg)
+
+target_include_directories(wondergui PRIVATE ${INCDIRS} 
+	"${CMAKE_CURRENT_BINARY_DIR}"  # For generated header
+)
+
 target_link_libraries(wondergui PUBLIC wondergfx )
 
 list(TRANSFORM SOURCES PREPEND ${CMAKE_CURRENT_LIST_DIR}/ )

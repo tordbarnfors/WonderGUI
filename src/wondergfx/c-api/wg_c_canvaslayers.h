@@ -72,11 +72,11 @@ extern "C" {
 	} wg_canvasLayersBP;
 
 
-	wg_obj			wg_createCanvasLayers(const wg_canvasLayersBP* pBlueprint);
+	WG_EXPORT wg_obj			wg_createCanvasLayers(const wg_canvasLayersBP* pBlueprint);
 
-	int				wg_canvasLayersSize(wg_obj canvasLayers);
-	wg_pixelFormat	wg_layerFormat(wg_obj canvasLayers, int layer);
-	int				wg_baseLayer(wg_obj canvasLayers);
+	WG_EXPORT int				wg_canvasLayersSize(wg_obj canvasLayers);
+	WG_EXPORT wg_pixelFormat	wg_layerFormat(wg_obj canvasLayers, int layer);
+	WG_EXPORT int				wg_baseLayer(wg_obj canvasLayers);
 
 
 #ifdef __cplusplus

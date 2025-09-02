@@ -30,16 +30,16 @@
 extern "C" {
 #endif
 
-	//____ wg_surfaceReaderBP __________________________________________________________
+//____ wg_surfaceReaderBP __________________________________________________________
 
-	typedef struct wg_surfaceReaderBP_struct			// NOT BINARY EQUIVALENT!
-	{
-		wg_obj				factory;
-	} wg_surfaceReaderBP;
+typedef struct wg_surfaceReaderBP_struct			// NOT BINARY EQUIVALENT!
+{
+	wg_obj				factory;
+} wg_surfaceReaderBP;
 
-	wg_obj 	wg_createSurfaceReader(const wg_surfaceReaderBP* blueprint);
-	wg_obj	wg_readSurfaceFromBlob( wg_obj surfaceReader, wg_obj blob );
-	wg_obj	wg_readSurfaceFromMemory( wg_obj surfaceReader, const char * pData );
+WG_EXPORT wg_obj 	wg_createSurfaceReader(const wg_surfaceReaderBP* blueprint);
+WG_EXPORT wg_obj	wg_readSurfaceFromBlob( wg_obj surfaceReader, wg_obj blob );
+WG_EXPORT wg_obj	wg_readSurfaceFromMemory( wg_obj surfaceReader, const char * pData );
 
 #ifdef __cplusplus
 }

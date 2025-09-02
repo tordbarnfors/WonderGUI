@@ -15,6 +15,8 @@ source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${SOURCES})
 add_executable(embeddedworkbench
 	${SOURCES}
 )
+generate_export_header(wondergfx BASE_NAME wg)
+
 
 target_compile_options(embeddedworkbench PRIVATE -lm -lstd=c99)
 
@@ -24,6 +26,7 @@ target_include_directories(embeddedworkbench PRIVATE
 	${WONDERGFX_INCDIRS}
 	${WGSOFTGFX_INCDIRS}
 	${SDL2_INCDIR}
+	"${CMAKE_CURRENT_BINARY_DIR}"  # For generated header
 )
 
 target_link_directories(embeddedworkbench PRIVATE 
