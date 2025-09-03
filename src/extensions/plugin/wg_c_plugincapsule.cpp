@@ -59,7 +59,7 @@ int wg_pluginRequestFocus(wg_obj pluginCapsule, int bRaiseWindow)
 
 int wg_pluginReleaseFocus(wg_obj pluginCapsule)
 {
-	return getCapsule(pluginCapsule)->_pluginRequestFocus();
+	return getCapsule(pluginCapsule)->_pluginReleaseFocus();
 }
 
 int wg_pluginRequestPreRenderCall(wg_obj pluginCapsule)
