@@ -1407,7 +1407,8 @@ void WgEventHandler::_processKeyPress( WgEvent::KeyPress * pEvent )
 	// Post KEY_PRESS events for widgets and remember which ones we have posted it for
 
 	WgWidget * pWidget = m_keyFocusWidget.GetRealPtr();
-	QueueEvent( new WgEvent::KeyPress( pEvent->NativeKeyCode(), pWidget ) );
+	if( pWidget )
+		QueueEvent( new WgEvent::KeyPress( pEvent->NativeKeyCode(), pWidget ) );
 	pInfo->pWidget = pWidget;
 
 	// Push the info-structure onto m_keysDown.
