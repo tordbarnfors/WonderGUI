@@ -461,7 +461,7 @@ bool KernelDB::generateSource(std::ostream& out, const std::string& kernelLabel 
 	out << "#ifdef __cplusplus" << endl;
 	out << "extern \"C\" {" << endl;
 	out << "#endif" << endl;
-	out << "int	wg_" << kernelLabel << "( wg_obj backend )" << endl;
+	out << "WG_EXPORT int	wg_" << kernelLabel << "( wg_obj backend )" << endl;
 	out << "{" << endl;
 	out << "	auto pBackend = static_cast<SoftBackend*>(reinterpret_cast<Object*>(backend));" << endl;
 	out << endl;
@@ -569,22 +569,26 @@ bool KernelDB::generateSource(std::ostream& out, const std::string& kernelLabel 
 					{
 						snprintf(temp, 4096, "pBackend->setSegmentStripKernel( SoftBackend::StripSource::Colors, BlendMode::%s, PixelFormat::%s,  _draw_segment_strip<SoftBackend::StripSource::Colors, BlendMode::%s, PixelFormat::%s> );\n",
 										pBlend, pFormat, pBlend, pFormat);
+						out << temp;
 					}
+
 
 					if (m_tintModes[(int)TintMode::GradientY])
 					{
 						snprintf(temp, 4096, "pBackend->setSegmentStripKernel( SoftBackend::StripSource::Tintmaps, BlendMode::%s, PixelFormat::%s, _draw_segment_strip<SoftBackend::StripSource::Tintmaps, BlendMode::%s, PixelFormat::%s> );\n",
 							pBlend, pFormat, pBlend, pFormat);
+
+						out << temp;
 					}
+
 
 					if (m_tintModes[(int)TintMode::GradientXY])
 					{
 						snprintf(temp, 4096, "pBackend->setSegmentStripKernel( SoftBackend::StripSource::ColorsAndTintmaps, BlendMode::%s, PixelFormat::%s, _draw_segment_strip<SoftBackend::StripSource::ColorsAndTintmaps, BlendMode::%s, PixelFormat::%s> );\n",
 							pBlend, pFormat, pBlend, pFormat);
+
+						out << temp;
 					}
-
-
-					out << temp;
 				}
 			}
 			out << endl;
