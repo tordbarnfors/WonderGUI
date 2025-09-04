@@ -250,10 +250,12 @@ bool MyApp::exportSource()
 	
 	myStream.open(path + "_c.h");
 
+	myStream << "#include <wg_c_geartypes.h>" << endl;
+	myStream << endl;
 	myStream << "#ifdef __cplusplus" << endl;
 	myStream << "extern \"C\" {" << endl;
 	myStream << "#endif" << endl;
-	myStream << "	int	wg_" << labelString << "( wg_obj backend );" << endl;
+	myStream << "	WG_EXPORT int	wg_" << labelString << "( wg_obj backend );" << endl;
 	myStream << "#ifdef __cplusplus" << endl;
 	myStream << "}" << endl;
 	myStream << "#endif" << endl;
