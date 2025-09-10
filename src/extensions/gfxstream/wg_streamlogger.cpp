@@ -440,6 +440,18 @@ namespace wg
 				m_charStream << "    edgemapId  = " << edgemapId << std::endl;
 				m_charStream << "    begin       = " << begin << std::endl;
 				m_charStream << "    end         = " << end << std::endl;
+
+				HiColor col;
+				int nColors = end - begin;
+				for( int i = 0 ; i < nColors ; i++ )
+				{
+					char tmp[16];
+					snprintf(tmp,16,"    %i", i);
+
+					*m_pDecoder >> col;
+					_printColor(tmp, col);
+				}
+
 				break;
 			}
 
@@ -459,8 +471,8 @@ namespace wg
 				*m_pDecoder >> sampleEnd;
 
 				m_charStream << "    edgemapId  = " << edgemapId << std::endl;
-				m_charStream << "    edgeBegin   = " << edgeBegin << std::endl;
-				m_charStream << "    edgeEnd     = " << edgeEnd << std::endl;
+				m_charStream << "    edgeBegin   = " << int(edgeBegin) << std::endl;
+				m_charStream << "    edgeEnd     = " << int(edgeEnd) << std::endl;
 				m_charStream << "    sampleBegin = " << sampleBegin << std::endl;
 				m_charStream << "    sampleEnd   = " << sampleEnd << std::endl;
 
@@ -482,7 +494,6 @@ namespace wg
 				m_charStream << "    edgemapId  = " << edgemapId << std::endl;
 				break;
 			}
-
 
 			default:
 			{

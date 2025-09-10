@@ -103,6 +103,10 @@ StreamEdgemap::StreamEdgemap(StreamEncoder* pEncoder, const Blueprint& bp) : Edg
 
 StreamEdgemap::~StreamEdgemap()
 {
+	auto& encoder = * m_pEncoder;
+
+	encoder << GfxStream::Header{ GfxStream::ChunkId::CreateEdgemap, 0, 2 };
+	encoder << m_inStreamId;
 }
 
 //____ typeInfo() ____________________________________________________________
