@@ -958,7 +958,7 @@ namespace wg
 							memcpy(pTintColorsY, pEdgemap->m_pColorstripsY, tintBufferSizeY);
 						else if (pEdgemap->m_pFlatColors && !bTintX)
 						{
-							HiColor* pOutput = pTintColorsX;
+							HiColor* pOutput = pTintColorsY;
 							HiColor* pInput = pEdgemap->m_pFlatColors;
 
 							for (int seg = 0; seg < nSegments; seg++)
