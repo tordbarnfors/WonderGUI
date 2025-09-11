@@ -1228,18 +1228,18 @@ void GfxDeviceGen2::drawLine(CoordSPX begin, Direction dir, spx length, HiColor 
 		break;
 	case Direction::Down:
 		rect.x = begin.x - thickness / 2;
-		rect.y = begin.y ;
+		rect.y = begin.y;
 		rect.w = thickness;
 		rect.h = length;
 		break;
 	case Direction::Left:
-		rect.x = begin.x;
+		rect.x = begin.x - length;
 		rect.y = begin.y - thickness / 2;
 		rect.w = length;
 		rect.h = thickness;
 		break;
 	case Direction::Right:
-		rect.x = begin.x - length;
+		rect.x = begin.x;
 		rect.y = begin.y - thickness / 2;
 		rect.w = length;
 		rect.h = thickness;
