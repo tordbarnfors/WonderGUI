@@ -105,7 +105,7 @@ StreamEdgemap::~StreamEdgemap()
 {
 	auto& encoder = * m_pEncoder;
 
-	encoder << GfxStream::Header{ GfxStream::ChunkId::CreateEdgemap, 0, 2 };
+	encoder << GfxStream::Header{ GfxStream::ChunkId::DeleteEdgemap, 0, 2 };
 	encoder << m_inStreamId;
 }
 
