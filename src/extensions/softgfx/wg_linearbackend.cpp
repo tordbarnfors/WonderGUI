@@ -368,6 +368,9 @@ namespace wg
 				{
 					RectI spxPatch = *pRects++;
 
+					if(spxPatch.isEmpty())
+						continue;
+
 					RectI pixelPatch = spxPatch / 64;
 
 					while( pixelPatch.x < pSegment->rect.x || pixelPatch.x >= pSegment->rect.x + pSegment->rect.w ||
@@ -605,6 +608,9 @@ namespace wg
 						{
 							RectI clip = pClipRects[i] / 64;
 
+							if(clip.isEmpty())
+								continue;
+
 							while( clip.x < pSegment->rect.x || clip.x >= pSegment->rect.x + pSegment->rect.w ||
 								  clip.y < pSegment->rect.y || clip.y >= pSegment->rect.y + pSegment->rect.h )
 							{
@@ -668,6 +674,9 @@ namespace wg
 						{
 
 							RectI clip = pClipRects[i] / 64;
+
+							if(clip.isEmpty())
+								continue;
 
 							while( clip.x < pSegment->rect.x || clip.x >= pSegment->rect.x + pSegment->rect.w ||
 								  clip.y < pSegment->rect.y || clip.y >= pSegment->rect.y + pSegment->rect.h )
@@ -754,20 +763,6 @@ namespace wg
 
 				SegmentEdge edges[c_maxSegments - 1];
 
-
-				while( dest.x < pSegment->rect.x || dest.x >= pSegment->rect.x + pSegment->rect.w ||
-					  dest.y < pSegment->rect.y || dest.y >= pSegment->rect.y + pSegment->rect.h )
-				{
-					pSegment++;
-					if( pSegment == pSegEnd )
-						pSegment = pSegBeg;
-				}
-
-				auto& seg = * pSegment;
-
-				int xPitch = m_canvasPixelBytes;
-				int yPitch = seg.pitch;
-
 				// We need to modify our transform since we are moving the destination pointer, not the source pointer, according to the transform.
 
 				int simpleTransform[2][2];
@@ -788,8 +783,7 @@ namespace wg
 
 				// Calculate pitches
 
-				int colPitch = simpleTransform[0][0] * xPitch + simpleTransform[0][1] * yPitch;
-				int rowPitch = simpleTransform[1][0] * xPitch + simpleTransform[1][1] * yPitch;
+				int colDirection = simpleTransform[0][0] + simpleTransform[0][1];
 
 				// Calculate start coordinate
 
@@ -803,7 +797,7 @@ namespace wg
 
 				// Detect if strip columns are lined horizontally or verically
 
-				bool bHorizontalColumns = (abs(colPitch) == xPitch);
+				bool bHorizontalColumns = (simpleTransform[0][0] != 0);
 
 				// Limit size of destination rect by number of edgestrips.
 
@@ -811,7 +805,7 @@ namespace wg
 				{
 					if (dest.w > nEdgeStrips - 1)
 					{
-						if (colPitch < 0)
+						if (colDirection < 0)
 							dest.x += dest.w - nEdgeStrips - 1;
 
 						dest.w = nEdgeStrips - 1;
@@ -821,7 +815,7 @@ namespace wg
 				{
 					if (dest.h > nEdgeStrips - 1)
 					{
-						if (colPitch < 0)
+						if (colDirection < 0)
 							dest.y += dest.h - nEdgeStrips - 1;
 
 						dest.h = nEdgeStrips - 1;
@@ -1094,11 +1088,7 @@ namespace wg
 						transparentSegments[seg] = false;
 				}
 
-				// Set start position and clip dest
-
-				uint8_t* pOrigo = seg.pBuffer - seg.rect.y * yPitch - seg.rect.x * xPitch + start.y * yPitch + start.x * xPitch;
-//				uint8_t* pOrigo = m_pCanvasPixels + start.y * yPitch + start.x * xPitch;
-
+				//
 				
 				StripSource stripSource = StripSource::Colors;
 				if( bTintY )
@@ -1139,6 +1129,29 @@ namespace wg
 					RectI patch = RectI::overlap(dest, pMyRects[patchIdx] / 64);
 					if (patch.w == 0 || patch.h == 0)
 						continue;
+
+					// Find segment this patch is within
+
+					while( patch.x < pSegment->rect.x || patch.x >= pSegment->rect.x + pSegment->rect.w ||
+						  patch.y < pSegment->rect.y || patch.y >= pSegment->rect.y + pSegment->rect.h )
+					{
+						pSegment++;
+						if( pSegment == pSegEnd )
+							pSegment = pSegBeg;
+					}
+
+					// Calculate pitches and origo
+
+					auto seg = * pSegment;
+
+					int xPitch = m_canvasPixelBytes;
+					int yPitch = seg.pitch;
+
+					int colPitch = simpleTransform[0][0] * xPitch + simpleTransform[0][1] * yPitch;
+					int rowPitch = simpleTransform[1][0] * xPitch + simpleTransform[1][1] * yPitch;
+
+					uint8_t* pOrigo = seg.pBuffer - seg.rect.y * yPitch - seg.rect.x * xPitch + start.y * yPitch + start.x * xPitch;
+
 
 					// Calculate stripstart, clipBeg/clipEnd and first edge for patch
 
@@ -1281,6 +1294,9 @@ namespace wg
 					p++;							// padding
 
 					RectI	patch = (*pRects++) / 64;
+
+					if(patch.isEmpty())
+						continue;
 
 					while (patch.x < pSegment->rect.x || patch.x >= pSegment->rect.x + pSegment->rect.w ||
 						patch.y < pSegment->rect.y || patch.y >= pSegment->rect.y + pSegment->rect.h)

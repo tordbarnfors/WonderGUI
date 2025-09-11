@@ -854,9 +854,8 @@ bool MyApp::loadStream(std::string path)
 	}
 
 	// Setup streamwrapper and pump
-	
-/*
-	auto pStreamGfxDevice = LinearGfxDevice::create(
+
+	auto pStreamGfxBackend = LinearBackend::create(
 		[this](CanvasRef ref, int bytes)
 		{
 			m_pLinearCanvasBuffer = new char[bytes];
@@ -864,7 +863,7 @@ bool MyApp::loadStream(std::string path)
 			
 			return m_pLinearCanvasBuffer;
 		},
-		[this](CanvasRef ref, int nSegments, const LinearGfxDevice::Segment * pSegments)
+		[this](CanvasRef ref, int nSegments, const LinearBackend::Segment * pSegments)
 		{
 			int ofs = 0;
 			while( m_screens[ofs]->identity() != (int) ref )
@@ -913,8 +912,8 @@ bool MyApp::loadStream(std::string path)
 				m_recordedSteps.push_back(rec);
 			}
 		} );
-*/
-	auto pStreamGfxBackend = SoftBackend::create();
+
+//	auto pStreamGfxBackend = SoftBackend::create();
 
 	auto pTrimGfxBackend = StreamTrimBackend::create(pStreamGfxBackend);
 
@@ -925,7 +924,8 @@ bool MyApp::loadStream(std::string path)
 
 	pTrimGfxBackend->setTrimLevel(10);
 
-	auto pStreamGfxDevice = GfxDeviceGen2::create(pTrimGfxBackend);
+	auto pStreamGfxDevice = GfxDeviceGen2::create(pStreamGfxBackend);
+//	auto pStreamGfxDevice = GfxDeviceGen2::create(pTrimGfxBackend);
 
 //	auto pStreamGfxDevice = wg_dynamic_cast<SoftGfxDevice_p>(Base::defaultGfxDevice());
 
