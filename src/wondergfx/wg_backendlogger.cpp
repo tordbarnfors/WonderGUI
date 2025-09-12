@@ -39,7 +39,8 @@ namespace wg
 
 	void BackendLogger::beginRender()
 	{
-		*m_pStream << "BEGIN RENDER" << std::endl;
+		if( m_bOn )
+			*m_pStream << "BEGIN RENDER" << std::endl;
 
 		if (m_pBackend)
 			m_pBackend->beginRender();
@@ -49,7 +50,8 @@ namespace wg
 
 	void BackendLogger::endRender()
 	{
-		*m_pStream << "END RENDER" << std::endl;
+		if( m_bOn )
+			*m_pStream << "END RENDER" << std::endl;
 
 		if( m_pBackend )
 			m_pBackend->endRender();
