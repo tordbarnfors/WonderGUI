@@ -39,70 +39,77 @@ namespace wg
 	//____ BackendLogger __________________________________________________________
 
 	class BackendLogger : public GfxBackend
-	{
-	public:
-		
-		//.____ Creation __________________________________________
+{
+public:
 
-		static BackendLogger_p		create(std::ostream& stream, GfxBackend * pBackend) { return BackendLogger_p(new BackendLogger(stream, pBackend)); }
+	//.____ Creation __________________________________________
 
-
-		//.____ Identification __________________________________________
-
-		const TypeInfo& typeInfo(void) const override;
-		const static TypeInfo	TYPEINFO;
-
-		//.____ Rendering ________________________________________________
-
-		void	beginRender() override;
-		void	endRender() override;
-		
-
-		void	beginSession( CanvasRef canvasRef, Surface * pCanvas, int nUpdateRects, const RectSPX * pUpdateRects, const SessionInfo * pInfo = nullptr ) override;
-		void	endSession() override;
-
-		void	setCanvas( Surface * pSurface ) override;
-		void	setCanvas( CanvasRef ref ) override;
-		void	setObjects(Object* const * pBeg, Object* const * pEnd) override;
-		void	setRects(const RectSPX* pBeg, const RectSPX* pEnd) override;
-		void	setColors(const HiColor* pBeg, const HiColor* pEnd) override;
-		void	setTransforms(const Transform * pBeg, const Transform * pEnd) override;
-		void	processCommands(const uint16_t* pBeg, const uint16_t* pEnd) override;
-
-		//.____ Misc _________________________________________________________
-
-		const CanvasInfo *	canvasInfo(CanvasRef ref) const override;
-
-		SurfaceFactory_p	surfaceFactory() override;
-		EdgemapFactory_p	edgemapFactory() override;
-
-		int		maxEdges() const override;
-
-		const TypeInfo& surfaceType(void) const override;
+	static BackendLogger_p		create(std::ostream& stream, GfxBackend * pBackend) { return BackendLogger_p(new BackendLogger(stream, pBackend)); }
 
 
-	protected:
-		BackendLogger(std::ostream& stream, GfxBackend* pBackend) : m_pBackend(pBackend), m_pStream(&stream) {}
+	//.____ Identification __________________________________________
 
-		virtual ~BackendLogger() {};
+	const TypeInfo& typeInfo(void) const override;
+	const static TypeInfo	TYPEINFO;
 
-		void	_printRects(std::ostream& stream, int nRects, const RectSPX* pRects);
+	//.____ Rendering ________________________________________________
 
-		const HiColor*	m_pColorsBeg = nullptr;
-		const HiColor*	m_pColorsEnd = nullptr;
-		const HiColor*	m_pColorsPtr = nullptr;
+	void	beginRender() override;
+	void	endRender() override;
 
-		const RectSPX*	m_pRectsBeg = nullptr;
-		const RectSPX*	m_pRectsEnd = nullptr;
-		const RectSPX*	m_pRectsPtr = nullptr;
 
-		Object* const *	m_pObjectsBeg = nullptr;
-		Object* const *	m_pObjectsEnd = nullptr;
-		Object* const *	m_pObjectsPtr = nullptr;
+	void	beginSession( CanvasRef canvasRef, Surface * pCanvas, int nUpdateRects, const RectSPX * pUpdateRects, const SessionInfo * pInfo = nullptr ) override;
+	void	endSession() override;
 
-		GfxBackend_p	m_pBackend;
+	void	setCanvas( Surface * pSurface ) override;
+	void	setCanvas( CanvasRef ref ) override;
+	void	setObjects(Object* const * pBeg, Object* const * pEnd) override;
+	void	setRects(const RectSPX* pBeg, const RectSPX* pEnd) override;
+	void	setColors(const HiColor* pBeg, const HiColor* pEnd) override;
+	void	setTransforms(const Transform * pBeg, const Transform * pEnd) override;
+	void	processCommands(const uint16_t* pBeg, const uint16_t* pEnd) override;
 
-		std::ostream*	m_pStream = nullptr;
+	//.____ Control _____________________________________________________________
+
+	void	setLogging(bool bOn);
+	bool	isLogging() const { return m_bOn; }
+
+	//.____ Misc _________________________________________________________
+
+	const CanvasInfo *	canvasInfo(CanvasRef ref) const override;
+
+	SurfaceFactory_p	surfaceFactory() override;
+	EdgemapFactory_p	edgemapFactory() override;
+
+	int		maxEdges() const override;
+
+	const TypeInfo& surfaceType(void) const override;
+
+
+protected:
+	BackendLogger(std::ostream& stream, GfxBackend* pBackend) : m_pBackend(pBackend), m_pStream(&stream) {}
+
+	virtual ~BackendLogger() {};
+
+	void	_printRects(std::ostream& stream, int nRects, const RectSPX* pRects);
+
+	const HiColor*	m_pColorsBeg = nullptr;
+	const HiColor*	m_pColorsEnd = nullptr;
+	const HiColor*	m_pColorsPtr = nullptr;
+
+	const RectSPX*	m_pRectsBeg = nullptr;
+	const RectSPX*	m_pRectsEnd = nullptr;
+	const RectSPX*	m_pRectsPtr = nullptr;
+
+	Object* const *	m_pObjectsBeg = nullptr;
+	Object* const *	m_pObjectsEnd = nullptr;
+	Object* const *	m_pObjectsPtr = nullptr;
+
+	GfxBackend_p	m_pBackend;
+
+	std::ostream*	m_pStream = nullptr;
+
+	bool 	m_bOn = true;
 
 	};
 
