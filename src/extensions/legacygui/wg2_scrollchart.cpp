@@ -199,7 +199,7 @@ bool WgScrollChart::Start(int sampleTTL)
 		return false;
 
 	sampleTTL *= 1000;		// Switch from millisec in input to microsec.
-	
+
     if(m_sampleTTL == sampleTTL)
         return true;
 
@@ -567,13 +567,17 @@ bool WgScrollChart::SetWaveColors( int waveId, WgColor topLineColor, WgColor bot
 	if (!p)
 		return false;
 
-	p->topLineColor = topLineColor;
-	p->bottomLineColor = bottomLineColor;
-	p->frontFill = fillColor;
-	p->backFill = backColor;
+    if(p->topLineColor != topLineColor || p->bottomLineColor != bottomLineColor ||
+       p->frontFill != fillColor || p->backFill != backColor)
+    {
+        p->topLineColor = topLineColor;
+        p->bottomLineColor = bottomLineColor;
+        p->frontFill = fillColor;
+        p->backFill = backColor;
+        m_bRefreshCanvas = true;
+    }
 
-	m_bRefreshCanvas = true;
-	return true;
+	return m_bRefreshCanvas;
 }
 
 //____ IsWaveDisplayed() ______________________________________________________
@@ -704,7 +708,7 @@ void WgScrollChart::_onEvent(const WgEvent::Event * pEvent, WgEventHandler * pHa
 	{
 		if( !m_pCanvas )
 			return;
-		
+
 		// Update timestamps
 
 		int ticks = static_cast<const WgEvent::Tick*>(pEvent)->Microsec();
@@ -830,7 +834,7 @@ void WgScrollChart::_onEvent(const WgEvent::Event * pEvent, WgEventHandler * pHa
 				auto canvas = _skinContentRect( m_pSkin, {0,0,PixelSize()}, WgStateEnum::Default, m_scale);
 
 				int dirtyLength = m_scrollAmount + (m_fadeTailLength*m_scale/WG_SCALE_BASE);
-				
+
 				if( m_canvasOfs + dirtyLength <= canvas.w )
 				{
 					_requestRender(  {canvas.x + m_canvasOfs, canvas.y, dirtyLength, canvas.h} );
@@ -844,8 +848,8 @@ void WgScrollChart::_onEvent(const WgEvent::Event * pEvent, WgEventHandler * pHa
 			else
 				_requestRender();
 
-			
-			
+
+
 			// Update window end and window start
 
 			m_windowEnd = m_sampleEndTimestamp - m_scrollFraction;
@@ -1175,69 +1179,69 @@ void WgScrollChart::_renderSampleGridLines(wg::GfxDevice* pDevice, const WgRect&
 void WgScrollChart::_onRender(wg::GfxDevice * pDevice, const WgRect& _canvas, const WgRect& _window)
 {
 	WgRect canvas;
-	
+
 	if (m_pSkin)
 	{
 		canvas = _skinContentRect( m_pSkin, _canvas, WgStateEnum::Default, m_scale);
 		if (m_chartColor.a == 255)
 		{
 			WgRect& coverage = canvas;
-			
+
 			if ( !coverage.contains( pDevice->clipBounds()/64 ) )
 			{
 				WgRect topSection(canvas.x, canvas.y, canvas.w, coverage.y - canvas.y);
 				WgRect leftSection(canvas.x, coverage.y, coverage.x - canvas.x, coverage.h);
 				WgRect rightSection(coverage.x + coverage.w, coverage.y, canvas.x + canvas.w - (coverage.x + coverage.w), coverage.h);
 				WgRect bottomSection(canvas.x, coverage.y + coverage.h, canvas.w, canvas.y + canvas.h - (coverage.y + coverage.h));
-				
+
 				topSection *= 64;
 				leftSection *= 64;
 				rightSection *= 64;
 				bottomSection *= 64;
-				
+
 				const WgRect * pOldClipList = pDevice->clipList();
 				int     oldClipListSize = pDevice->clipListSize();
-				
+
 				int allocSize = oldClipListSize*sizeof(WgRect)*4;
 				WgRect * pRects = (WgRect*) wg::GfxBase::memStackAlloc( allocSize );
 				int nRects = 0;
-				
+
 				for( int i = 0 ; i < oldClipListSize ; i++ )
 				{
 					if( pOldClipList[i].isOverlapping(topSection) )
 						pRects[nRects++] = WgRect::overlap(pOldClipList[i], topSection );
-					
+
 					if( pOldClipList[i].isOverlapping(leftSection) )
 						pRects[nRects++] = WgRect::overlap(pOldClipList[i], leftSection );
-					
+
 					if( pOldClipList[i].isOverlapping(bottomSection) )
 						pRects[nRects++] = WgRect::overlap(pOldClipList[i], bottomSection );
-					
+
 					if( pOldClipList[i].isOverlapping(rightSection) )
 						pRects[nRects++] = WgRect::overlap(pOldClipList[i], rightSection );
 				}
-				
+
 				pDevice->setClipList(nRects, pRects);
-				
+
 				_renderSkin( m_pSkin, pDevice, WgStateEnum::Default, _canvas, m_scale);
-				
+
 				pDevice->setClipList(oldClipListSize, pOldClipList);
 				wg::GfxBase::memStackFree(allocSize);
 			}
 		}
 		else
 			_renderSkin( m_pSkin, pDevice, WgStateEnum::Default, _canvas, m_scale);
-		
+
 	}
 	else
 		canvas = _canvas;
-	
+
 	// Preparations for both grid and wave drawing
-	
+
 	WgRect scrollCanvas = canvas - m_pixelPadding;
-	
+
 	// Draw background grid lines (note: opaque chart color will cover backround grid lines!)
-	
+
 	if (!m_bForegroundGrid)
 	{
 		_renderSampleGridLines(pDevice, scrollCanvas);
@@ -1249,17 +1253,17 @@ void WgScrollChart::_onRender(wg::GfxDevice * pDevice, const WgRect& _canvas, co
 	if (m_pCanvas)
 	{
 		assert(m_pCanvas->pixelSize() == scrollCanvas.size());
-		
+
 		auto oldTintColor = pDevice->tintColor();
 		auto oldBlendMode = pDevice->blendMode();
-		
+
 		if( m_combinedWavesTintGradient.isValid() )
 			pDevice->setTintGradient(scrollCanvas*64, m_combinedWavesTintGradient );
-		
+
 		pDevice->setBlitSource(m_pCanvas);
 		pDevice->setTintColor(m_combinedWavesTintColor);
 		pDevice->setBlendMode(m_combinedWavesBlendMode);
-		
+
 		if( m_bStaticMode)
 		{
 			int canvasLen = m_pCanvas->pixelSize().w;
@@ -1281,10 +1285,10 @@ void WgScrollChart::_onRender(wg::GfxDevice * pDevice, const WgRect& _canvas, co
 				else
 				{
 					pDevice->blit(WgCoord(scrollCanvas.x + tailEnd, scrollCanvas.y)*64, WgRect( tailEnd, 0, tailBegin - tailEnd, scrollCanvas.h )*64 );
-					
+
 					pDevice->setTintGradient( WgRect(scrollCanvas.x + tailBegin, scrollCanvas.y, tailLength, scrollCanvas.h)*64, m_fadeTailGradient );
 					pDevice->blit(WgCoord(scrollCanvas.x + tailBegin, scrollCanvas.y)*64, WgRect( tailBegin, 0, tailLength, scrollCanvas.h )*64 );
-					
+
 					pDevice->setTintGradient( WgRect(scrollCanvas.x - (tailLength - tailEnd), scrollCanvas.y, tailLength, scrollCanvas.h)*64, m_fadeTailGradient );
 					pDevice->blit(WgCoord(scrollCanvas.x, scrollCanvas.y)*64, WgRect( 0, 0, tailEnd, scrollCanvas.h )*64 );
 					pDevice->clearTintGradient();
@@ -1300,16 +1304,16 @@ void WgScrollChart::_onRender(wg::GfxDevice * pDevice, const WgRect& _canvas, co
 			else
 			{
 				int firstPartLen = m_pCanvas->pixelSize().w - m_canvasOfs;
-				
+
 				pDevice->blit(WgCoord(scrollCanvas.x, scrollCanvas.y)*64, WgRect( m_canvasOfs, 0, firstPartLen, scrollCanvas.h )*64 );
 				pDevice->blit(WgCoord(scrollCanvas.x + firstPartLen, scrollCanvas.y)*64, WgRect( 0, 0, scrollCanvas.w - firstPartLen, scrollCanvas.h )*64 );
 			}
 		}
 
-			
+
 		pDevice->setTintColor(oldTintColor);
 		pDevice->setBlendMode(oldBlendMode);
-		
+
 		if( m_combinedWavesTintGradient.isValid() )
 			pDevice->clearTintGradient();
 	}
@@ -1388,9 +1392,9 @@ void WgScrollChart::_onRender(wg::GfxDevice * pDevice, const WgRect& _canvas, co
 			}
 		}
 	}
-	
+
 	// Draw sample gridline labels
-	
+
 	if (!m_sampleGridLines.empty() )
 	{
 		int   yOfs2 = m_sampleLabelStyle.bLabelAtEnd ? canvas.y : canvas.y + canvas.h;
@@ -1433,7 +1437,7 @@ void WgScrollChart::_onRender(wg::GfxDevice * pDevice, const WgRect& _canvas, co
 		}
 	}
 
-	
+
 }
 
 //____ _onAlphaTest() _________________________________________________________
