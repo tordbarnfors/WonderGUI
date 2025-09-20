@@ -365,19 +365,22 @@ double Util::squareRoot(double a)
 	int i;
 	double j = 1.0;
 	for(i = max ; i > 0 ; i--){
+        
+        double pot = powerOfTen(i);
+        
 		// value must be bigger then 0
-		if(z - (( 2 * rst ) + ( j * powerOfTen(i)))*( j * powerOfTen(i)) >= 0)
+		if(z - (( 2 * rst ) + ( j * pot))*( j * pot) >= 0)
 		{
-			while( z - (( 2 * rst ) + ( j * powerOfTen(i)))*( j * powerOfTen(i)) >= 0)
+			while( z - (( 2 * rst ) + ( j * pot))*( j * pot) >= 0)
 			{
 				j++;
 				if(j >= 10) break;
 
 			}
 			j--; //correct the extra value by minus one to j
-			z -= (( 2 * rst ) + ( j * powerOfTen(i)))*( j * powerOfTen(i)); //find value of z
+			z -= (( 2 * rst ) + ( j * pot))*( j * pot); //find value of z
 
-			rst += j * powerOfTen(i);	// find sum of a
+			rst += j * pot;	// find sum of a
 
 			j = 1.0;
 
