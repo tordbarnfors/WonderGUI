@@ -56,9 +56,9 @@ inline void _read_pixel_fast8(const uint8_t* pPixel, PixelFormat format, const C
 #if WG_IS_LITTLE_ENDIAN
 		pixel = Util::endianSwap(pixel);
 #endif
-		outR = SoftBackend::s_fast8_channel_5[pixel & 0x1F];
+        outR = SoftBackend::s_fast8_channel_5[pixel >> 11];
 		outG = SoftBackend::s_fast8_channel_6[(pixel >> 5) & 0x3F];
-		outB = SoftBackend::s_fast8_channel_5[pixel >> 11];
+        outB = SoftBackend::s_fast8_channel_5[pixel & 0x1F];
 		outA = 255;
 	}
 
@@ -177,9 +177,9 @@ inline void _read_pixel(const uint8_t* pPixel, PixelFormat format, const Color8*
 #if WG_IS_LITTLE_ENDIAN
 		pixel = Util::endianSwap(pixel);
 #endif
-		outR = SoftBackend::s_channel_5_linear[pixel & 0x1F];
+        outR = SoftBackend::s_channel_5_linear[pixel >> 11];
 		outG = SoftBackend::s_channel_6_linear[(pixel >> 5) & 0x3F];
-		outB = SoftBackend::s_channel_5_linear[pixel >> 11];
+        outB = SoftBackend::s_channel_5_linear[pixel & 0x1F];
 		outA = 4096;
 	}
 
@@ -225,8 +225,6 @@ inline void _read_pixel(const uint8_t* pPixel, PixelFormat format, const Color8*
 
 inline void _write_pixel_fast8(uint8_t* pPixel, PixelFormat format, int16_t b, int16_t g, int16_t r, int16_t a)
 {
-	//TODO: support BigEndian systems!
-
 	if (format == PixelFormat::Undefined)
 	{
 		int16_t* p = (int16_t*)pPixel;
@@ -256,14 +254,13 @@ inline void _write_pixel_fast8(uint8_t* pPixel, PixelFormat format, int16_t b, i
 	{
 		pPixel[0] = (b >> 3) | ((g & 0xFC) << 3);
 		pPixel[1] = (g >> 5) | (r & 0xF8);
-
 	}
 
 	if (format == PixelFormat::RGB_565_bigendian)
-	{
-		pPixel[0] = (b & 0xF8) | (g >> 5);
-		pPixel[1] = ((g & 0x1C) << 3) | (r >> 3);
-	}
+    {
+        pPixel[0] = (r & 0xF8) | (g >> 5);
+        pPixel[1] = ((g & 0x1C) << 3) | (b >> 3);
+    }
 
 	if (format == PixelFormat::RGB_555_bigendian)
 	{
@@ -289,8 +286,6 @@ inline void _write_pixel_fast8(uint8_t* pPixel, PixelFormat format, int16_t b, i
 
 inline void _write_pixel(uint8_t* pPixel, PixelFormat format, int16_t b, int16_t g, int16_t r, int16_t a)
 {
-	//TODO: support BigEndian systems!
-
 	if (format == PixelFormat::Undefined)
 	{
 		int16_t* p = (int16_t*)pPixel;
@@ -345,8 +340,8 @@ inline void _write_pixel(uint8_t* pPixel, PixelFormat format, int16_t b, int16_t
 
 	if (format == PixelFormat::RGB_565_bigendian)
 	{
-		pPixel[0] = (HiColor::packLinearTab[b] & 0xF8) | (HiColor::packLinearTab[g] >> 5);
-		pPixel[1] = ((HiColor::packLinearTab[g] & 0x1C) << 3) | (HiColor::packLinearTab[r] >> 3);
+        pPixel[0] = (HiColor::packLinearTab[r] & 0xF8) | (HiColor::packLinearTab[g] >> 5);
+        pPixel[1] = ((HiColor::packLinearTab[g] & 0x1C) << 3) | (HiColor::packLinearTab[b] >> 3);
 	}
 
 	if (format == PixelFormat::RGB_555_bigendian)
