@@ -55,6 +55,7 @@ namespace wg
 
 	bool GearBase::init()
 	{
+
 		if( s_initCounter == 0 )
 		{
 			s_objectsCreated = 0;

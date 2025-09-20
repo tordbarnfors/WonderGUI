@@ -82,10 +82,17 @@ namespace wg
 		{
 			struct
 			{
-				uint8_t b;
+#ifdef WG_IS_BIG_ENDIAN
+                uint8_t a;
+                uint8_t r;
+                uint8_t g;
+                uint8_t b;
+#else
+                uint8_t b;
 				uint8_t g;
 				uint8_t r;
 				uint8_t a;
+#endif
 			};
 			uint32_t argb;
 		};
@@ -332,10 +339,17 @@ namespace wg
 		{
 			struct
 			{
-				int16_t b;
+#ifdef WG_IS_BIG_ENDIAN
+                int16_t a;
+                int16_t r;
+                int16_t g;
+                int16_t b;
+#else
+                int16_t b;
 				int16_t g;
 				int16_t r;
 				int16_t a;
+#endif
 			};
 			int64_t argb;
 		};
