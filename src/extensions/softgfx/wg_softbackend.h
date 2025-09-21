@@ -261,7 +261,7 @@ namespace wg
 //		PixelBuffer		m_canvasPixelBuffer;
 //		uint8_t* m_pCanvasPixels;	// Pixels of render layer surface
 
-		static int				s_lineThicknessTable[17];
+        const static int				s_lineThicknessTable[17];
 
 
 		static bool				s_bTablesInitialized;

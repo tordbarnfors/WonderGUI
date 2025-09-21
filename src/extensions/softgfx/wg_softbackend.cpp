@@ -34,7 +34,10 @@ namespace wg
 {
 	const TypeInfo SoftBackend::TYPEINFO = { "SoftBackend", &GfxBackend::TYPEINFO };
 
-	int		SoftBackend::s_lineThicknessTable[17];
+    const int SoftBackend::s_lineThicknessTable[17] = {
+    65536, 65664, 66046, 66678, 67553, 68661, 69992, 71534,
+    73271, 75193, 77283, 79530, 81920, 84441, 87082, 89832, 92682 };
+
 
 	int 	SoftBackend::s_mulTab[256];
 
@@ -2192,13 +2195,13 @@ namespace wg
 				s_mulTab[i] = 65536 * i / 255;
 
 			// Init line thickness table
-
+/*
 			for (int i = 0; i < 17; i++)
 			{
 				double b = i / 16.0;
 				s_lineThicknessTable[i] = (int)(Util::squareRoot(1.0 + b * b) * 65536);
 			}
-
+*/
 			s_bTablesInitialized = true;
 		}
 	}
