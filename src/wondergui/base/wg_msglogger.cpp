@@ -21,6 +21,7 @@
 =========================================================================*/
 
 #include <cstdio>
+#include <cstring>
 
 #include <wg_msglogger.h>
 #include <wg_widget.h>
