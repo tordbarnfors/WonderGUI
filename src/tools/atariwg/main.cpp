@@ -2,7 +2,7 @@
 
 #include <wondergui.h>
 
-#include <wg_softgfxdevice.h>
+#include <wg_softbackend.h>
 #include <wg_softsurface.h>
 #include <wg_softkernels_rgb565be_base.h>
 #include <wg_softkernels_rgb565be_extras.h>
@@ -23,10 +23,10 @@ int main( int argc, char * argv[] )
 
 	short * p = (short *) pScreen;
 
-	for( int x = 0 ; x < 320*240 ; x++ )
-		* p++ = 0xFF;
+//	for( int x = 0 ; x < 320*240 ; x++ )
+//		* p++ = 0xFF;
 
-    printf("Screen cleared.\n");
+//    printf("Screen cleared.\n");
 
 
 	Blob_p pCanvasBlob = Blob::create( (char *) pScreen, 0);
@@ -43,11 +43,18 @@ int main( int argc, char * argv[] )
 	// Wg create the GfxDevice that will be used for all rendering, providing
 	// it our canvas to draw up.
 
-    printf("Setting up GfxDevice.\n");
+    printf("Creating SoftBackend.\n");
 
-	SoftGfxDevice_p pGfxDevice = SoftGfxDevice::create();
-	addBaseSoftKernelsForRGB565BECanvas( pGfxDevice );
-//	addExtraSoftKernelsForRGB565BECanvas( pGfxDevice );
+	SoftBackend_p pBackend = SoftBackend::create();
+
+    printf("Creating GfxDevice.\n");
+
+    GfxDevice_p pGfxDevice = GfxDeviceGen2::create(pBackend);
+
+    printf("Adding softkernels.\n");
+
+    addBaseSoftKernelsForRGB565BECanvas( pBackend );
+	addExtraSoftKernelsForRGB565BECanvas( pBackend );
 
 	printf("Creating GUI.\n");
 
@@ -63,7 +70,7 @@ int main( int argc, char * argv[] )
 
 	Filler_p pFiller = Filler::create( WGBP(Filler, 
 											_.defaultSize = {100,100},
-											_.skin = ColorSkin::create( HiColor(4096,0,0,0) )
+											_.skin = ColorSkin::create( HiColor(4096,0,0,4096) )
 											));
 
 	pFlex->slots.pushBack( pFiller, { .pos = {10,10} } );
@@ -81,10 +88,6 @@ int main( int argc, char * argv[] )
 
     VsetScreen(-1,pScreen,-1,-1);
 
-    
-
-	for( int i = 0 ; i < 120 ; i++ )
-		Vsync();
 
     Bconin(2);
 

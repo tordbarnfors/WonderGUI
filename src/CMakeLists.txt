@@ -168,7 +168,7 @@ if(APPLE)
 endif()
 
 #add_subdirectory(extensions/openglgfx)
-add_subdirectory(extensions/gfxstream)
+#add_subdirectory(extensions/gfxstream)
 add_subdirectory(extensions/softgfx)
 
 #add_subdirectory(extensions/freetypefont)
