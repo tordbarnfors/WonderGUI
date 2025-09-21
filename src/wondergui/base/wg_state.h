@@ -243,7 +243,7 @@ namespace wg
 		constexpr uint8_t	index() const { return m_index; }
 		constexpr StateEnum value() const { return m_enum; }
 
-		constexpr uint8_t	weight() const { return s_weights[m_index]; }
+		uint8_t             weight() const { return s_weights[m_index]; }
 		Bitmask<uint8_t>	primStates() const { return s_weights[m_index]; }
 
 		int					bestMatch(int nAlternatives, const State* pAlternatives);
