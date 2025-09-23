@@ -338,10 +338,22 @@ namespace wg
 			return ((in & 0xff000000) >> 24) | ((in & 0x00ff0000) >> 8) | ((in & 0x0000ff00) << 8) | (in << 24);
 		}
 
+        inline int32_t endianSwap( int32_t _in )
+        {
+            int32_t in = _in;
+            return int32_t((in & 0xff000000) >> 24) | ((in & 0x00ff0000) >> 8) | ((in & 0x0000ff00) << 8) | (in << 24);
+        }
+
 		inline uint16_t endianSwap( uint16_t in )
 		{
 			return (in >> 8 | in << 8);
 		}
+
+        inline int16_t endianSwap( int16_t _in )
+        {
+            uint16_t in = _in;
+            return int16_t(in >> 8 | in << 8);
+        }
 
 		constexpr bool isSystemBigEndian()
 		{

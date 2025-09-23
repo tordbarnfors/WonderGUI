@@ -42,9 +42,18 @@ SurfaceFileInspector_p SurfaceFileInspector::create( const char * pSurfaceFileIn
 SurfaceFileInspector::SurfaceFileInspector( const char * pSurfaceFileInMemory )
 {
 	// Read the header
+    
+	int16_t headerSize = * (const int16_t*)&pSurfaceFileInMemory[6];
 
-	int headerSize = * (const int16_t*)&pSurfaceFileInMemory[6];
-	std::memcpy( &m_header, pSurfaceFileInMemory, headerSize);
+#ifdef WG_IS_BIG_ENDIAN
+    headerSize = Util::endianSwap(headerSize);
+#endif
+    
+    std::memcpy( &m_header, pSurfaceFileInMemory, headerSize);
+    
+#ifdef WG_IS_BIG_ENDIAN
+    m_header.endianSwap();
+#endif
 }
 
 //____ typeInfo() _________________________________________________________

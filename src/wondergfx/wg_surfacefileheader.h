@@ -27,6 +27,7 @@
 #include <cstdint>
 #include <wg_gfxtypes.h>
 #include <wg_geo.h>
+#include <wg_gfxutil.h>
 
 namespace wg
 {
@@ -95,6 +96,28 @@ struct SurfaceFileHeader
 
 	//	-- 88 bytes header ends here.
 
+
+    
+    void endianSwap()
+    {
+        versionNumber   = Util::endianSwap(versionNumber);
+        headerBytes     = Util::endianSwap(headerBytes);
+        paletteBytes    = Util::endianSwap(paletteBytes);
+        pixelBytes      = Util::endianSwap(pixelBytes);
+        extraDataBytes  = Util::endianSwap(extraDataBytes);
+        width           = Util::endianSwap(width);
+        height          = Util::endianSwap(height);
+        flags           = Util::endianSwap(height);
+        scale           = Util::endianSwap(height);
+        identity        = Util::endianSwap(height);
+        filterBlockWidth       = Util::endianSwap(height);
+        filterBlockHeight      = Util::endianSwap(height);
+        pixelDecompressMargin  = Util::endianSwap(height);
+        paletteSize            = Util::endianSwap(height);
+        paletteDecompressMargin     = Util::endianSwap(height);
+        extraDataDecompressMargin   = Util::endianSwap(height);
+    }
+    
 };
 
 } //namespace

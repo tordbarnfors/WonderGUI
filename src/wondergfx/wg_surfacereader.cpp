@@ -208,10 +208,19 @@ namespace wg
 
 		// Read the header
 
-		int headerSize = * (const int16_t*)&pData[6];
+#ifdef WG_IS_BIG_ENDIAN
+        int headerSize = (int) Util::endianSwap(* (const uint16_t*)&pData[6]);
+#else
+        int headerSize = * (const int16_t*)&pData[6];
+#endif
+        
 		std::memcpy( &header, pData, headerSize);
 		pData+= headerSize;
 
+#ifdef WG_IS_BIG_ENDIAN
+        header.endianSwap();
+#endif
+        
 		// Prepare surface blueprint
 
 		Surface::Blueprint bp = _blueprintFromHeader(&header);

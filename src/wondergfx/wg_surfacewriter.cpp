@@ -57,8 +57,15 @@ namespace wg
 
 		// Write header
 
-		stream.write((char*) &header, headerBytes);
-
+#ifdef WG_IS_BIG_ENDIAN
+        
+        SurfaceFileHeader bigEndianHeader = header;
+        bigEndianHeader.endianSwap();
+		stream.write((char*) &bigEndianHeader, headerBytes);
+#else
+        stream.write((char*) &header, headerBytes);
+#endif
+        
 		// Write palette
 
 		if( pSurface->palette() )
@@ -115,7 +122,16 @@ namespace wg
 		// Write header
 
 		std::memcpy(pWrite, &header, headerBytes);
-		pWrite += headerBytes;
+#ifdef WG_IS_BIG_ENDIAN
+        
+        SurfaceFileHeader bigEndianHeader = header;
+        bigEndianHeader.endianSwap();
+        std::memcpy(pWrite, &bigEndianHeader, headerBytes);
+#else
+        std::memcpy(pWrite, &header, headerBytes);
+#endif
+        
+        pWrite += headerBytes;
 
 		// Write palette
 

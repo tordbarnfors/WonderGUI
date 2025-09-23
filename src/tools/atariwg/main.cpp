@@ -4,17 +4,21 @@
 
 #include <wg_softbackend.h>
 #include <wg_softsurface.h>
+#include <wg_softsurfacefactory.h>
 #include <wg_softkernels_rgb565be_base.h>
 #include <wg_softkernels_rgb565be_extras.h>
 
 using namespace wg;
 
 int main( int argc, char * argv[] )
-{
+{    
     printf("Loaded.\n");
 
     Base::init(nullptr);
 
+    auto pSurfaceFactory = SoftSurfaceFactory::create();
+    Base::setDefaultSurfaceFactory(pSurfaceFactory);
+    
     printf("Base initialized.\n");
 
 	long pScreen = Malloc(2*320*240);
@@ -56,6 +60,36 @@ int main( int argc, char * argv[] )
     addBaseSoftKernelsForRGB565BECanvas( pBackend );
 	addExtraSoftKernelsForRGB565BECanvas( pBackend );
 
+    printf("Loading widget surface.\n");
+
+    FILE * fp = fopen("SKN565BE.SRF", "rb" );
+    
+    if( fp == nullptr )
+    {
+        printf( "ERROR: Couldn't load SKN565BE.SRF\n");
+        fclose(fp);
+        Bconin(2);
+        return -1;
+    }
+
+    fseek(fp,0,SEEK_END);
+    
+    int fileSize = (int) ftell(fp);
+        
+    char * pBuffer = (char*)malloc(fileSize);
+    
+    fseek(fp,0,SEEK_SET);
+    
+    int bytesRead = fread(pBuffer,1,fileSize,fp);
+    fclose(fp);
+
+    SurfaceReader_p pSurfaceReader = SurfaceReader::create({ .factory = pSurfaceFactory });
+
+    auto pWidgetSurface = pSurfaceReader->readSurfaceFromMemory(pBuffer);
+    
+    free(pBuffer);
+    
+    
 	printf("Creating GUI.\n");
 
 	// We create a RootPanel. This is responsible for rendering the
@@ -68,15 +102,21 @@ int main( int argc, char * argv[] )
 
 	FlexPanel_p pFlex = FlexPanel::create();
 
-	Filler_p pFiller = Filler::create( WGBP(Filler, 
-											_.defaultSize = {100,100},
-											_.skin = ColorSkin::create( HiColor(4096,0,0,4096) )
-											));
+    Filler_p pFiller = Filler::create( {
+        .defaultSize = {100,100},
+        .skin = ColorSkin::create( HiColor(4096,0,0,4096) )
+    });
 
 	pFlex->slots.pushBack( pFiller, { .pos = {10,10} } );
 
 	pRoot->slot = pFlex;
 
+    SurfaceDisplay_p pDisplay = SurfaceDisplay::create( { .surface = pWidgetSurface });
+    
+    pFlex->slots.pushFront( pDisplay, { .pos = { 20,20} } );
+    
+    
+    
     printf("Render.\n");
 
     

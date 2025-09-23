@@ -182,7 +182,7 @@ add_subdirectory(extensions/softgfx)
 
 add_subdirectory(tools)
 #add_subdirectory(examples)
-#add_subdirectory(themes)
+add_subdirectory(themes)
 
 
 #install(TARGETS example01 DESTINATION ${WG_ROOT}/distribution/examples)
