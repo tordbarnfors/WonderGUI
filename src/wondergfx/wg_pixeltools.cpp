@@ -1280,7 +1280,8 @@ static void copy_BGRA_8_to_RGB_565BE(const uint8_t* _pSrc, uint8_t* _pDst, int a
 	for (int i = 0; i < amount; i++)
 	{
 		uint32_t col = * pSrc++;
-		uint16_t out = ((col >> 19) & 0x1F) | ((col >> 5) & 0x7E0) | ((col & 0xF8) << 8);
+        uint16_t out = ((col >> 8) & 0xF800) | ((col >> 5) & 0x7E0) | ((col >> 3 ) & 0x1F);
+//        uint16_t out = ((col >> 19) & 0x1F) | ((col >> 5) & 0x7E0) | ((col & 0xF8) << 8);
 		out = (out >> 8 | out << 8);
 		* pDst++ = out;
 	}

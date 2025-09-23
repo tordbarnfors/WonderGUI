@@ -183,8 +183,8 @@ const PixelDescription	pixelDescTab[PixelFormat_size] = {
 	{16, PixelType::Chunky, ColorSpace::sRGB, 0xF800, 0x07E0, 0x001F, 0},					// BGR_565_sRGB
 	{16, PixelType::Chunky, ColorSpace::Linear, 0xF800, 0x07E0, 0x001F, 0},					// BGR_565_linear
 
-	{16, PixelType::Chunky_BE, ColorSpace::Linear, 0x001F, 0x07E0, 0xF800, 0},				// RGB_565_bigendian
-	{16, PixelType::Chunky_BE, ColorSpace::Linear, 0x001F, 0x07C0, 0xF800, 0},				// RGB_555_bigendian
+	{16, PixelType::Chunky_BE, ColorSpace::Linear, 0xF800, 0x07E0, 0x001F, 0},				// RGB_565_bigendian
+	{16, PixelType::Chunky_BE, ColorSpace::Linear, 0xF800, 0x07E0, 0x001F, 0},				// RGB_555_bigendian
 
 	{1, PixelType::Bitplanes, ColorSpace::Linear, 0, 0, 0, 0},								// Bitplanes_1
 	{2, PixelType::Bitplanes, ColorSpace::Linear, 0, 0, 0, 0},								// Bitplanes_2
