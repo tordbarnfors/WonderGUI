@@ -39,8 +39,8 @@ namespace wg
 
 	void BackendLogger::beginRender()
 	{
-		if( m_bOn )
-			*m_pStream << "BEGIN RENDER" << std::endl;
+		if( m_pOStream )
+			*m_pOStream << "BEGIN RENDER" << std::endl;
 
 		if (m_pBackend)
 			m_pBackend->beginRender();
@@ -50,8 +50,8 @@ namespace wg
 
 	void BackendLogger::endRender()
 	{
-		if( m_bOn )
-			*m_pStream << "END RENDER" << std::endl;
+		if( m_pOStream )
+			*m_pOStream << "END RENDER" << std::endl;
 
 		if( m_pBackend )
 			m_pBackend->endRender();
@@ -61,34 +61,34 @@ namespace wg
 
 	void BackendLogger::beginSession( CanvasRef canvasRef, Surface * pCanvas, int nUpdateRects, const RectSPX * pUpdateRects, const SessionInfo * pInfo )
 	{
-		if( m_bOn )
+		if( m_pOStream )
 		{
-			*m_pStream << "BEGIN SESSION" << std::endl;
+			*m_pOStream << "BEGIN SESSION" << std::endl;
 
-			*m_pStream << "    CanvasRef:   " << toString(canvasRef) << std::endl;
-			*m_pStream << "    CanvasPtr:   " << pCanvas << std::endl;
-			*m_pStream << "    UpdateRects:   " << nUpdateRects << std::endl;
+			*m_pOStream << "    CanvasRef:   " << toString(canvasRef) << std::endl;
+			*m_pOStream << "    CanvasPtr:   " << pCanvas << std::endl;
+			*m_pOStream << "    UpdateRects:   " << nUpdateRects << std::endl;
 
 			if( pInfo )
 			{
-				*m_pStream << "    CanvasChanges: " << pInfo->nSetCanvas << std::endl;
-				*m_pStream << "    StateChanges:  " << pInfo->nStateChanges << std::endl;
-				*m_pStream << "    Fills:         " << pInfo->nFill << std::endl;
-				*m_pStream << "    Lines:         " << pInfo->nLines << std::endl;
-				*m_pStream << "    Blits:         " << pInfo->nBlit << std::endl;
-				*m_pStream << "    Blurs:         " << pInfo->nBlur << std::endl;
-				*m_pStream << "    EdgemapDraws:  " << pInfo->nEdgemapDraws << std::endl;
+				*m_pOStream << "    CanvasChanges: " << pInfo->nSetCanvas << std::endl;
+				*m_pOStream << "    StateChanges:  " << pInfo->nStateChanges << std::endl;
+				*m_pOStream << "    Fills:         " << pInfo->nFill << std::endl;
+				*m_pOStream << "    Lines:         " << pInfo->nLines << std::endl;
+				*m_pOStream << "    Blits:         " << pInfo->nBlit << std::endl;
+				*m_pOStream << "    Blurs:         " << pInfo->nBlur << std::endl;
+				*m_pOStream << "    EdgemapDraws:  " << pInfo->nEdgemapDraws << std::endl;
 
-				*m_pStream << "    LineCoords:    " << pInfo->nLineCoords << std::endl;
-				*m_pStream << "    LineClipRects: " << pInfo->nLineClipRects << std::endl;
-				*m_pStream << "    Rects:         " << pInfo->nRects << std::endl;
-				*m_pStream << "    Colors:        " << pInfo->nColors << std::endl;
-				*m_pStream << "    Transforms:    " << pInfo->nTransforms << std::endl;
-				*m_pStream << "    Objects:       " << pInfo->nObjects << std::endl;
+				*m_pOStream << "    LineCoords:    " << pInfo->nLineCoords << std::endl;
+				*m_pOStream << "    LineClipRects: " << pInfo->nLineClipRects << std::endl;
+				*m_pOStream << "    Rects:         " << pInfo->nRects << std::endl;
+				*m_pOStream << "    Colors:        " << pInfo->nColors << std::endl;
+				*m_pOStream << "    Transforms:    " << pInfo->nTransforms << std::endl;
+				*m_pOStream << "    Objects:       " << pInfo->nObjects << std::endl;
 			}
 
-			*m_pStream << "UPDATE RECTS" << std::endl;
-			_printRects(* m_pStream, nUpdateRects, pUpdateRects);
+			*m_pOStream << "UPDATE RECTS" << std::endl;
+			_printRects(* m_pOStream, nUpdateRects, pUpdateRects);
 		}
 
 		if (m_pBackend)
@@ -99,8 +99,8 @@ namespace wg
 
 	void BackendLogger::endSession()
 	{
-		if( m_bOn )
-			*m_pStream << "END SESSION" << std::endl;
+		if( m_pOStream )
+			*m_pOStream << "END SESSION" << std::endl;
 
 		if (m_pBackend)
 			m_pBackend->endSession();
@@ -110,9 +110,9 @@ namespace wg
 
 	void BackendLogger::setCanvas(Surface* pSurface)
 	{
-		if( m_bOn )
+		if( m_pOStream )
 		{
-			*m_pStream	<< "SET CANVAS: ptr = " << pSurface << " id = " << pSurface->identity()
+			*m_pOStream	<< "SET CANVAS: ptr = " << pSurface << " id = " << pSurface->identity()
 			<< " pixelSize = " << pSurface->pixelSize().w  << ", " << pSurface->pixelSize().h
 			<< " format = " << toString(pSurface->pixelFormat()) << std::endl;
 		}
@@ -123,8 +123,8 @@ namespace wg
 
 	void BackendLogger::setCanvas(CanvasRef ref)
 	{
-		if( m_bOn )
-			*m_pStream << "SET CANVAS: Ref = " << toString(ref) << std::endl;
+		if( m_pOStream )
+			*m_pOStream << "SET CANVAS: Ref = " << toString(ref) << std::endl;
 
 		if (m_pBackend)
 			m_pBackend->setCanvas(ref);
@@ -134,9 +134,9 @@ namespace wg
 
 	void BackendLogger::setObjects(Object* const * pBeg, Object* const * pEnd)
 	{
-		if( m_bOn )
+		if( m_pOStream )
 		{
-			*m_pStream << "SET OBJECTS: Amount = " << int(pEnd -pBeg) << std::endl;
+			*m_pOStream << "SET OBJECTS: Amount = " << int(pEnd -pBeg) << std::endl;
 
 			m_pObjectsBeg = pBeg;
 			m_pObjectsEnd = pEnd;
@@ -148,9 +148,9 @@ namespace wg
 			{
 				auto pObj = *p++;
 				if( pObj )
-					*m_pStream << "    " << pObj << " (" << pObj->typeInfo().className << ")" << std::endl;
+					*m_pOStream << "    " << pObj << " (" << pObj->typeInfo().className << ")" << std::endl;
 				else
-					*m_pStream << "    nullptr" << std::endl;
+					*m_pOStream << "    nullptr" << std::endl;
 			}
 		}
 
@@ -162,9 +162,9 @@ namespace wg
 
 	void BackendLogger::setRects(const RectSPX* pBeg, const RectSPX* pEnd)
 	{
-		if( m_bOn )
+		if( m_pOStream )
 		{
-			*m_pStream << "SET RECTS: Amount = " << int(pEnd - pBeg);
+			*m_pOStream << "SET RECTS: Amount = " << int(pEnd - pBeg);
 
 			m_pRectsBeg = pBeg;
 			m_pRectsEnd = pEnd;
@@ -179,19 +179,19 @@ namespace wg
 				rows %= 4;
 
 				if (rows == 0)
-					*m_pStream << std::endl << "   ";
+					*m_pOStream << std::endl << "   ";
 
 				else
-					*m_pStream << ", ";
+					*m_pOStream << ", ";
 
 				RectSPX rect = *p++;
 
-				*m_pStream << "(" << rect.x << ", " << rect.y << ", " << rect.w << ", " << rect.h << ")";
+				*m_pOStream << "(" << rect.x << ", " << rect.y << ", " << rect.w << ", " << rect.h << ")";
 
 				rows++;
 			}
 
-			*m_pStream << std::endl;
+			*m_pOStream << std::endl;
 		}
 
 		if (m_pBackend)
@@ -202,9 +202,9 @@ namespace wg
 
 	void BackendLogger::setColors(const HiColor* pBeg, const HiColor* pEnd)
 	{
-		if( m_bOn )
+		if( m_pOStream )
 		{
-			*m_pStream << "SET COLORS: Amount = " << int(pEnd - pBeg) << std::endl;
+			*m_pOStream << "SET COLORS: Amount = " << int(pEnd - pBeg) << std::endl;
 
 			m_pColorsBeg = pBeg;
 			m_pColorsEnd = pEnd;
@@ -214,7 +214,7 @@ namespace wg
 
 			while (p < pEnd)
 			{
-				*m_pStream << "    " << p->r << ", " << p->g << ", " << p->b << ", " << p->a << std::endl;
+				*m_pOStream << "    " << p->r << ", " << p->g << ", " << p->b << ", " << p->a << std::endl;
 				p++;
 			}
 		}
@@ -229,17 +229,17 @@ namespace wg
 
 	void BackendLogger::setTransforms(const Transform* pBeg, const Transform* pEnd)
 	{
-		if( m_bOn )
+		if( m_pOStream )
 		{
-			*m_pStream << "SET TRANSFORMS: Amount = " << int(pEnd - pBeg) << std::endl;
+			*m_pOStream << "SET TRANSFORMS: Amount = " << int(pEnd - pBeg) << std::endl;
 
 			const Transform * p = pBeg;
 
 			while (p < pEnd)
 			{
-				*m_pStream << "    " << p->xx << ", " << p->xy << std::endl;
-				*m_pStream << "    " << p->yx << ", " << p->yy << std::endl;
-				*m_pStream << std::endl;
+				*m_pOStream << "    " << p->xx << ", " << p->xy << std::endl;
+				*m_pOStream << "    " << p->yx << ", " << p->yy << std::endl;
+				*m_pOStream << std::endl;
 
 				p++;
 			}
@@ -253,9 +253,9 @@ namespace wg
 
 	void BackendLogger::processCommands(const uint16_t* pBeg, const uint16_t* pEnd)
 	{
-		if( m_bOn )
+		if( m_pOStream )
 		{
-			*m_pStream << "PROCESS COMMANDS:" << std::endl;
+			*m_pOStream << "PROCESS COMMANDS:" << std::endl;
 
 			const HiColor* pColors	= m_pColorsPtr;
 			const RectSPX* pRects	= m_pRectsPtr;
@@ -268,26 +268,26 @@ namespace wg
 				switch (cmd)
 				{
 				case Command::None:
-					*m_pStream << "None (this should not be present, something is probably wrong!)" << std::endl;
+					*m_pOStream << "None (this should not be present, something is probably wrong!)" << std::endl;
 					break;
 
 				case Command::StateChange:
 				{
-					*m_pStream << "    StateChange" << std::endl;
+					*m_pOStream << "    StateChange" << std::endl;
 
 					int32_t statesChanged = *p++;
 
 					if (statesChanged & uint8_t(StateChange::BlitSource))
 					{
 						Object* pObj = *pObjects++;
-						*m_pStream << "        BlitSource: " << pObj << std::endl;
+						*m_pOStream << "        BlitSource: " << pObj << std::endl;
 					}
 
 					if (statesChanged & uint8_t(StateChange::TintColor))
 					{
 						const HiColor& col = *pColors++;
 
-						*m_pStream << "        TintColor: " << col.r << ", " << col.g << ", " << col.b << ", " << col.a << std::endl;
+						*m_pOStream << "        TintColor: " << col.r << ", " << col.g << ", " << col.b << ", " << col.a << std::endl;
 					}
 
 					if (statesChanged & uint8_t(StateChange::TintMap))
@@ -302,28 +302,28 @@ namespace wg
 						int32_t	nVertColors = *p32++;
 						p = (const uint16_t*) p32;
 
-						*m_pStream << "        TintMap: rect: " << x << ", " << y << ", " << w << ", " << h << " horr colors: " << nHorrColors << " vert colors: , " << nVertColors << std::endl;
+						*m_pOStream << "        TintMap: rect: " << x << ", " << y << ", " << w << ", " << h << " horr colors: " << nHorrColors << " vert colors: , " << nVertColors << std::endl;
 					}
 
 					if (statesChanged & uint8_t(StateChange::BlendMode))
 					{
 						BlendMode mode = (BlendMode)*p++;
 
-						*m_pStream << "        BlendMode: " << toString(mode) << std::endl;
+						*m_pOStream << "        BlendMode: " << toString(mode) << std::endl;
 					}
 
 					if (statesChanged & uint8_t(StateChange::MorphFactor))
 					{
 						float morphFactor = (*p++) / 4096.f;
 
-						*m_pStream << "        MorphFactor: " << morphFactor << std::endl;
+						*m_pOStream << "        MorphFactor: " << morphFactor << std::endl;
 					}
 
 					if (statesChanged & uint8_t(StateChange::FixedBlendColor))
 					{
 						const HiColor& col = *pColors++;
 
-						*m_pStream << "        FixedBlendColor: " << col.r << ", " << col.g << ", " << col.b << ", " << col.a << std::endl;
+						*m_pOStream << "        FixedBlendColor: " << col.r << ", " << col.g << ", " << col.b << ", " << col.a << std::endl;
 					}
 
 					if (statesChanged & uint8_t(StateChange::Blur))
@@ -335,22 +335,22 @@ namespace wg
 						auto pBlue = p + 18;
 						p += 27;
 
-						*m_pStream << "        Blur: size: " << size << std::endl;
+						*m_pOStream << "        Blur: size: " << size << std::endl;
 
-						*m_pStream << "            Red matrix: ";
+						*m_pOStream << "            Red matrix: ";
 						for (int i = 0; i < 8; i++)
-							*m_pStream << pRed[i] / float(32768) << ", ";
-						*m_pStream << pRed[8] / float(32768) << std::endl;
+							*m_pOStream << pRed[i] / float(32768) << ", ";
+						*m_pOStream << pRed[8] / float(32768) << std::endl;
 
-						*m_pStream << "            Green matrix: ";
+						*m_pOStream << "            Green matrix: ";
 						for (int i = 0; i < 8; i++)
-							*m_pStream << pGreen[i] / float(32768) << ", ";
-						*m_pStream << pGreen[8] / float(32768) << std::endl;
+							*m_pOStream << pGreen[i] / float(32768) << ", ";
+						*m_pOStream << pGreen[8] / float(32768) << std::endl;
 
-						*m_pStream << "            Blue matrix: ";
+						*m_pOStream << "            Blue matrix: ";
 						for (int i = 0; i < 8; i++)
-							*m_pStream << pBlue[i] / float(32768) << ", ";
-						*m_pStream << pBlue[8] / float(32768) << std::endl;
+							*m_pOStream << pBlue[i] / float(32768) << ", ";
+						*m_pOStream << pBlue[8] / float(32768) << std::endl;
 					}
 
 					// Take care of alignment
@@ -367,9 +367,9 @@ namespace wg
 
 					const HiColor& col = *pColors++;
 
-					*m_pStream << "    Fill: " << nRects << " rects with color: " << col.r << ", " << col.g << ", " << col.b << ", " << col.a << std::endl;
+					*m_pOStream << "    Fill: " << nRects << " rects with color: " << col.r << ", " << col.g << ", " << col.b << ", " << col.a << std::endl;
 
-					_printRects(*m_pStream, nRects, pRects);
+					_printRects(*m_pOStream, nRects, pRects);
 					pRects += nRects;
 					break;
 				}
@@ -381,9 +381,9 @@ namespace wg
 					p++;
 
 
-					*m_pStream << "    Draw " << nLines << " clipped by " << nRects << " rectangles:" << std::endl;
+					*m_pOStream << "    Draw " << nLines << " clipped by " << nRects << " rectangles:" << std::endl;
 
-					_printRects(*m_pStream, nRects, pRects);
+					_printRects(*m_pOStream, nRects, pRects);
 					pRects += nRects;
 
 
@@ -399,7 +399,7 @@ namespace wg
 
 						HiColor col = * pColors++;
 
-						*m_pStream << "        from (" << beg.x << ", " << beg.y << ") to (" << end.x << ", " << end.y << ") with thickness " << thickness
+						*m_pOStream << "        from (" << beg.x << ", " << beg.y << ") to (" << end.x << ", " << end.y << ") with thickness " << thickness
 									<< " and color " << col.r << ", " << col.g << ", " << col.b << ", " << col.a << std::endl;
 					}
 
@@ -420,10 +420,10 @@ namespace wg
 
 					Object * pObj = *pObjects++;
 
-					*m_pStream << "    DrawEdgemap: " << pObj << " at: " << destX << ", " << destY << ", with transform: " << transform
+					*m_pOStream << "    DrawEdgemap: " << pObj << " at: " << destX << ", " << destY << ", with transform: " << transform
 						<< " split into " << nRects << " rectangles." << std::endl;
 
-					_printRects(*m_pStream, nRects, pRects);
+					_printRects(*m_pOStream, nRects, pRects);
 					pRects += nRects;
 					break;
 				}
@@ -434,18 +434,18 @@ namespace wg
 				case Command::ClipBlit:
 				{
 					if (cmd == Command::Blur)
-						*m_pStream << "    Blur: ";
+						*m_pOStream << "    Blur: ";
 					else if (cmd == Command::Tile)
-						*m_pStream << "    Tile: ";
+						*m_pOStream << "    Tile: ";
 					else if (cmd == Command::Blit)
-						*m_pStream << "    Blit: ";
+						*m_pOStream << "    Blit: ";
 					else if (cmd == Command::ClipBlit)
-						*m_pStream << "    ClipBlit: ";
+						*m_pOStream << "    ClipBlit: ";
 
 					int32_t nRects = *p++;
 
 
-					*m_pStream << nRects << " rects." << std::endl;
+					*m_pOStream << nRects << " rects." << std::endl;
 
 					for( int i = 0 ; i < nRects ; i++ )
 					{
@@ -462,7 +462,7 @@ namespace wg
 						int32_t transform = *p++;
 						p++;						// padding
 
-						* m_pStream 	<< "        rect = (" << rect.x << ", " << rect.y << ", " << rect.w << ", " << rect.h
+						* m_pOStream 	<< "        rect = (" << rect.x << ", " << rect.y << ", " << rect.w << ", " << rect.h
 								<< "), source = (" << srcX << ", " << srcY
 								<< "), dest = (" << dstX << ", " << dstY
 								<< "), transform = " << transform
@@ -472,7 +472,7 @@ namespace wg
 				}
 
 				default:
-					*m_pStream << "ERROR: Unknown command (" << int(cmd) << ")" << std::endl;
+					*m_pOStream << "ERROR: Unknown command (" << int(cmd) << ")" << std::endl;
 					break;
 				}
 			}
@@ -495,20 +495,20 @@ namespace wg
 		if (m_pBackend)
 			pCanvasInfo = m_pBackend->canvasInfo(ref);
 
-		if( m_bOn )
+		if( m_pOStream )
 		{
-			*m_pStream << "Called canvasInfo() for CanvasRef: " << toString(ref);
+			*m_pOStream << "Called canvasInfo() for CanvasRef: " << toString(ref);
 
 			if (pCanvasInfo)
 			{
-				*m_pStream << " which succeeded.";
+				*m_pOStream << " which succeeded.";
 			}
 			else
 			{
-				*m_pStream << " which failed.";
+				*m_pOStream << " which failed.";
 			}
 
-			*m_pStream << std::endl;
+			*m_pOStream << std::endl;
 		}
 
 		return pCanvasInfo;
@@ -523,8 +523,8 @@ namespace wg
 		if (m_pBackend)
 			pFactory = m_pBackend->surfaceFactory();
 
-		if( m_bOn )
-			*m_pStream << "Called surfaceFactory(). Returned: " << pFactory.rawPtr() << std::endl;
+		if( m_pOStream )
+			*m_pOStream << "Called surfaceFactory(). Returned: " << pFactory.rawPtr() << std::endl;
 
 		return pFactory;
 	}
@@ -538,8 +538,8 @@ namespace wg
 		if (m_pBackend)
 			pFactory = m_pBackend->edgemapFactory();
 
-		if( m_bOn )
-			*m_pStream << "Called edgemapFactory(). Returned: " << pFactory.rawPtr() << std::endl;
+		if( m_pOStream )
+			*m_pOStream << "Called edgemapFactory(). Returned: " << pFactory.rawPtr() << std::endl;
 
 		return pFactory;
 	}
@@ -553,8 +553,8 @@ namespace wg
 		if (m_pBackend)
 			maxEdges = m_pBackend->maxEdges();
 
-		if( m_bOn )
-			*m_pStream << "Called maxEdges(). Returned: " << maxEdges << std::endl;
+		if( m_pOStream )
+			*m_pOStream << "Called maxEdges(). Returned: " << maxEdges << std::endl;
 
 		return maxEdges;
 
@@ -566,17 +566,17 @@ namespace wg
 	{
 		const TypeInfo& ref = m_pBackend ? m_pBackend->surfaceType() : s_unspecifiedSurfaceType;
 
-		if( m_bOn )
-			*m_pStream << "Called surfaceType(). Returned: " << ref.className << std::endl;
+		if( m_pOStream )
+			*m_pOStream << "Called surfaceType(). Returned: " << ref.className << std::endl;
 
 		return ref;
 	}
 
-	//____ setLogging() __________________________________________________________
+	//____ setOStream() __________________________________________________________
 
-	void BackendLogger::setLogging(bool bOn)
+	void BackendLogger::setOStream( std::ostream * pStream )
 	{
-		m_bOn = bOn;
+		m_pOStream = pStream;
 	}
 
 

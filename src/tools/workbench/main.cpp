@@ -804,7 +804,7 @@ int main(int argc, char** argv)
 		//	twoSlotPanelTest(pSlot);
 		//	customSkinTest(pSlot);
 		//	areaChartTest(pSlot);
-		//	areaChartTest2(pSlot);
+			areaChartTest2(pSlot);
 		//	plotChartTest(pSlot);
 		//	nortonCommanderTest(pSlot);
 		//	skinMarginTest(pSlot);
@@ -830,6 +830,8 @@ int main(int argc, char** argv)
 		//	bracketSkinTest(pSlot);
 		//	selectCapsuleTest(pSlot);
 		//	drawerPanelTest(pSlot);
+			areaChartTestWithGlobalGradient(pSlot);
+
 
 		//------------------------------------------------------
 		// Program Main Loop
@@ -3289,6 +3291,152 @@ bool areaChartTest2(ComponentPtr<DynamicSlot> pEntry)
 	pFlex->slots.pushBack(pButton3, { .pos = {105, 250 } });
 	return true;
 }
+
+//____ areaChartTestWithGlobalGradient() ______________________________________________________
+
+bool areaChartTestWithGlobalGradient(ComponentPtr<DynamicSlot> pEntry)
+{
+	auto pFlex = FlexPanel::create();
+
+	pFlex->setSkin(ColorSkin::create(Color::LightYellow));
+
+	auto pGraph = AreaChart::create(WGBP(AreaChart,
+		_.displayCeiling = 0.5f,
+		_.displayFloor = -0.5f,
+		_.displaySkin = BoxSkin::create(WGBP(BoxSkin,
+			_.color = Color::White,
+			_.outlineColor = Color::Green,
+			_.padding = 2,
+			_.outlineThickness = 2)),
+		_.skin = ColorSkin::create(Color::Pink)
+	));
+
+
+
+
+	pFlex->slots.pushBack(pGraph, { .pos = {10,10}, .size = {200,200} });
+
+	*pEntry = pFlex;
+
+
+	pGraph->entries.pushBack({
+		.bottomOutlineThickness = 0,
+		.color = Color::Transparent,
+		/*.flip = GfxFlip::Rot270,*/
+		.outlineColor = Color::Red,
+		.topOutlineThickness = 5,
+		});
+
+
+	static float topSamples[2][5] = { 0, -0.25f, 0.25f, 0.23f, 0.5f,
+									  0, 0.25f, -0.25f, -0.23f, -0.5f };
+
+	static float bottomSamples[1] = { 0.f };
+
+	static int transitionIndex = 0;
+
+	pGraph->entries.back().setTopSamples(5, topSamples[0]);
+
+
+
+
+
+	Color colors[6] = { Color::Red, Color::Green, Color::Blue, Color::Yellow, Color::Pink, Color::Brown };
+
+	// Setup grid
+
+	pGraph->xLines.pushBack({ .label = "-0.5", .labelAtEnd = true, .pos = -0.5f, .thickness = 0.5f });
+	pGraph->xLines.pushBack({ .label = "-0.25", .pos = -0.25f, .thickness = 0.5f });
+	pGraph->xLines.pushBack({ .label = "0.0", .pos = 0.0f, .thickness = 1.f });
+	pGraph->xLines.pushBack({ .label = "0.25", .pos = 0.25f, .thickness = 0.5f });
+
+	pGraph->yLines.pushBack({ .label = "0.0", .pos = 0.0f, .thickness = 0.5f });
+	pGraph->yLines.pushBack({ .label = "0.25", .pos = 0.25f, .thickness = 0.5f });
+	pGraph->yLines.pushBack({ .label = "0.5", .pos = 0.5f, .thickness = 0.5f });
+	pGraph->yLines.pushBack({ .label = "1.0", .labelAtEnd = true, .pos = 1.f, .thickness = 0.5f });
+
+	/*
+		pGraph->xLines.pushBack(WGBP(GridLine,
+								_.value = -0.25f
+								));
+	*/
+
+	//
+
+
+	pGraph->glow.setActive(true);
+
+
+	auto pTransition = ValueTransition::create(2000000, TransitionCurve::Bezier);
+	pGraph->entries.back().transitionSamples(pTransition, 5, topSamples[1], 1, bottomSamples);
+
+
+
+	auto pButtonSkin = BoxSkin::create({ .color = Color8::Grey,
+									  .outlineColor = Color8::Black,
+									  .outlineThickness = 1,
+									  .padding = 3
+		});
+
+
+	auto pButton = Button::create({ .label = {.text = "TRANSITION"}, .skin = pButtonSkin });
+
+	Base::msgRouter()->addRoute(pButton, MsgType::Select, [pGraph, pTransition](Msg* pMsg)
+	{
+		transitionIndex = (transitionIndex + 1) % 2;
+		pGraph->entries.back().transitionSamples(pTransition, 5, topSamples[transitionIndex], 1, bottomSamples);
+	});
+
+
+	pFlex->slots.pushBack(pButton, { .pos = {105, 220 } });
+
+	//---
+
+	auto pButton2 = Button::create({ .label = {.text = "RESIZE OUTLINE"}, .skin = pButtonSkin });
+
+	Base::msgRouter()->addRoute(pButton2, MsgType::Select, [pGraph](Msg* pMsg)
+	{
+		auto& entry = pGraph->entries.back();
+
+		pts top = entry.topOutlineThickness();
+
+		if( top == 1.f )
+			top = 5.f;
+		else
+			top = 1.f;
+
+		entry.setOutlineThickness(top, 0.f);
+	});
+
+	pFlex->slots.pushBack(pButton2, { .pos = {205, 220 } });
+
+	//---
+
+	auto pButton3 = Button::create({ .label = {.text = "RESIZE RANGE"}, .skin = pButtonSkin });
+
+	Base::msgRouter()->addRoute(pButton3, MsgType::Select, [pGraph](Msg* pMsg)
+	{
+		static bool bExpanded = false;
+
+		if( bExpanded )
+		{
+			pGraph->setDisplayRange(0.5f, -0.5f, ValueTransition::create( 400000 ) );
+			bExpanded = false;
+		}
+		else
+		{
+			pGraph->setDisplayRange(0.3f, -0.3f, ValueTransition::create( 400000 ) );
+			bExpanded = true;
+		}
+	});
+
+
+
+	pFlex->slots.pushBack(pButton3, { .pos = {105, 250 } });
+	return true;
+}
+
+
 
 //____ plotChartTest() ______________________________________________________
 
