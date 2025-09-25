@@ -43,6 +43,8 @@ public:
 	void		showFrameLog();
 	void		showFullLog();
 
+	void		showBackendLog();
+
 	void		showOptimizerInLog();
 	void		showOptimizerOutLog();
 
@@ -57,9 +59,8 @@ public:
 private:
 
 	void		_resetStream();							// Clear displays, delete surfaces.
-	void		_playFrames( int begin, int end, bool bOptimize );
+	void		_playFrames( int begin, int end, bool bOptimize, TextEditor * pBackendLogDisplay );
 	void		_logFrames( int begin, int end, bool bOptimize, TextEditor * pDisplay );
-	void		_logBackend( int begin, int end, bool bOptimize, TextEditor * pDisplay );
 	void		_updateFrameCounterAndSlider();
 	void		_logFullStream();
 	void		_updateResourcesView();
@@ -80,6 +81,7 @@ private:
 
 	GfxDevice_p			m_pStreamGfxDevice;
 	GfxBackend_p		m_pStreamGfxBackend;
+	BackendLogger_p		m_pBackendLogger;
 	StreamTrimBackend_p	m_pStreamTrimGfxBackend;
 
 	SurfaceFactory_p	m_pStreamSurfaceFactory;
@@ -139,6 +141,9 @@ private:
 	
 	Widget_p			m_pFrameLogContainer;
 	TextEditor_p		m_pFrameLogDisplay;
+
+	Widget_p			m_pBackendLogContainer;
+	TextEditor_p		m_pBackendLogDisplay;
 
 	Widget_p			m_pFullLogContainer;
 	TextEditor_p		m_pFullLogDisplay;
