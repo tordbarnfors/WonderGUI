@@ -537,6 +537,15 @@ int GfxDeviceGen2::renderLayer() const
 	return m_pActiveCanvas->activeLayer;
 }
 
+//____ setSubPixelFill() ______________________________________________________
+
+void GfxDeviceGen2::setSubPixelFill(bool bSubPixelFill)
+{
+	m_bSubPixelFill = bSubPixelFill;
+}
+
+
+
 //____ beginRender() ______________________________________________________
 
 bool GfxDeviceGen2::beginRender()
