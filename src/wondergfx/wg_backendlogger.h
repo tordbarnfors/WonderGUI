@@ -44,7 +44,7 @@ public:
 
 	//.____ Creation __________________________________________
 
-	static BackendLogger_p		create(std::ostream& stream, GfxBackend * pBackend) { return BackendLogger_p(new BackendLogger(stream, pBackend)); }
+	static BackendLogger_p		create(std::ostream * pStream, GfxBackend * pBackend) { return BackendLogger_p(new BackendLogger(pStream, pBackend)); }
 
 
 	//.____ Identification __________________________________________
@@ -71,8 +71,7 @@ public:
 
 	//.____ Control _____________________________________________________________
 
-	void	setLogging(bool bOn);
-	bool	isLogging() const { return m_bOn; }
+	void	setOStream( std::ostream * pStream );
 
 	//.____ Misc _________________________________________________________
 
@@ -85,9 +84,8 @@ public:
 
 	const TypeInfo& surfaceType(void) const override;
 
-
 protected:
-	BackendLogger(std::ostream& stream, GfxBackend* pBackend) : m_pBackend(pBackend), m_pStream(&stream) {}
+	BackendLogger(std::ostream * pStream, GfxBackend* pBackend) : m_pBackend(pBackend), m_pOStream(pStream) {}
 
 	virtual ~BackendLogger() {};
 
@@ -107,9 +105,7 @@ protected:
 
 	GfxBackend_p	m_pBackend;
 
-	std::ostream*	m_pStream = nullptr;
-
-	bool 	m_bOn = true;
+	std::ostream*	m_pOStream = nullptr;
 
 	};
 

@@ -298,6 +298,12 @@ Widget_p MyApp::createLogPanel()
 											_.label = WGBP(DynamicText, _.layout = m_pTextLayoutCentered, _.style = m_pTextStyle, _.text = "Frame data" )
 											));
 
+	auto pBackendLogButton = ToggleButton::create( WGBP(ToggleButton,
+											_.skin = m_pToggleButtonSkin,
+											_.label = WGBP(DynamicText, _.layout = m_pTextLayoutCentered, _.style = m_pTextStyle, _.text = "Backend data" )
+											));
+
+
 	auto pFullLogButton = ToggleButton::create( WGBP(ToggleButton,
 											_.skin = m_pToggleButtonSkin,
 											_.label = WGBP(DynamicText, _.layout = m_pTextLayoutCentered, _.style = m_pTextStyle, _.text = "File data" )
@@ -332,6 +338,7 @@ Widget_p MyApp::createLogPanel()
 	
 	auto pToggleGroup = ToggleGroup::create();
 	pToggleGroup->add(pFrameLogButton);
+	pToggleGroup->add(pBackendLogButton);
 	pToggleGroup->add(pFullLogButton);
 	pToggleGroup->add(pOptimizerInLogButton);
 	pToggleGroup->add(pOptimizerOutLogButton);
@@ -344,7 +351,13 @@ Widget_p MyApp::createLogPanel()
 			if( static_cast<ToggleMsg*>(pMsg)->isChecked() )
 				this->showFrameLog();
 		});
-	
+
+	Base::msgRouter()->addRoute(pBackendLogButton, MsgType::Toggle, [this](Msg* pMsg)
+		{
+			if( static_cast<ToggleMsg*>(pMsg)->isChecked() )
+				this->showBackendLog();
+		});
+
 	Base::msgRouter()->addRoute(pFullLogButton, MsgType::Toggle, [this](Msg* pMsg)
 		{
 			if( static_cast<ToggleMsg*>(pMsg)->isChecked() )
@@ -382,6 +395,7 @@ Widget_p MyApp::createLogPanel()
 		});
 	
 	pLogButtonRow->slots << pFrameLogButton;
+	pLogButtonRow->slots << pBackendLogButton;
 	pLogButtonRow->slots << pFullLogButton;
 	pLogButtonRow->slots << pOptimizerInLogButton;
 	pLogButtonRow->slots << pOptimizerOutLogButton;
@@ -405,6 +419,18 @@ Widget_p MyApp::createLogPanel()
 	m_pFrameLogDisplay = pFrameLogText;
 
 	m_pFrameLogContainer = pFrameLogWindow;
+
+	// Create backend frame log hierarchy
+
+	auto pBackendLogWindow = _standardScrollPanel();
+
+	auto pBackendLogText = TextEditor::create( displayBP );
+	pBackendLogWindow->slot = pBackendLogText;
+
+	m_pBackendLogDisplay = pBackendLogText;
+
+	m_pBackendLogContainer = pBackendLogWindow;
+
 
 	// Create full log hierarchy
 	
@@ -697,8 +723,8 @@ Widget_p MyApp::createNavigationPanel()
 		
 
 		_resetStream();
-		_playFrames( 0, frame, true );
-		_playFrames( frame, frame+1, false );
+		_playFrames( 0, frame, true, nullptr );
+		_playFrames( frame, frame+1, false, m_pBackendLogDisplay );
 
 		// Update the log
 		
@@ -954,8 +980,9 @@ bool MyApp::loadStream(std::string path)
 	m_pStreamGfxDevice = pStreamGfxDevice;
 	m_pStreamGfxBackend = pStreamGfxBackend;
 	m_pStreamTrimGfxBackend = pTrimGfxBackend;
-	
-	m_pStreamPlayer	= StreamPlayer::create( pTrimGfxBackend, m_pStreamSurfaceFactory, pTrimGfxBackend->edgemapFactory() );
+	m_pBackendLogger = BackendLogger::create(nullptr, pTrimGfxBackend);
+
+	m_pStreamPlayer	= StreamPlayer::create( m_pBackendLogger, m_pStreamSurfaceFactory, pTrimGfxBackend->edgemapFactory() );
 	m_pStreamPlayer->setStoreDirtyRects(true);
 	m_pStreamPlayer->setMaxDirtyRects(10000);
 	m_pStreamPlayer->setCanvasInfoCallback([this](const CanvasInfo * pBegin, const CanvasInfo * pEnd) { setupScreens(pBegin,pEnd); } );
@@ -1084,7 +1111,7 @@ void MyApp::updateGUIAfterReload()
 		auto pDisplay = SurfaceDisplay::create({ .surface = pScreen });
 
 
-		auto pOverlaySurface = pSurfFactory->createSurface( WGBP(Surface, _.size = pScreen->pixelSize()) );
+		auto pOverlaySurface = pSurfFactory->createSurface( WGBP(Surface, _.size = pScreen->pixelSize(), _.canvas = true) );
 		auto pOverlayDisplay = SurfaceDisplay::create({ .surface = pOverlaySurface });
 
 		m_debugOverlays.push_back(pOverlaySurface);
@@ -1160,15 +1187,15 @@ void MyApp::setFrame( int frame )
 	
 	if( frame > m_currentFrame )
 	{
-		_playFrames( m_currentFrame+1, frame, true );
-		_playFrames( frame, frame+1, false );
+		_playFrames( m_currentFrame+1, frame, true, nullptr );
 	}
 	else
 	{
 		_resetStream();
-		_playFrames( 0, frame, true );
-		_playFrames( frame, frame+1, false );
+		_playFrames( 0, frame, true, nullptr );
 	}
+
+	_playFrames( frame, frame+1, false, m_pBackendLogDisplay );
 
 	// Update the log
 	
@@ -1202,14 +1229,11 @@ void MyApp::skipFrames(int frames)
 	if( destFrame == m_currentFrame )
 		return;
 	
-	_playFrames( m_currentFrame+1, destFrame+1, true );
+	_playFrames( m_currentFrame+1, destFrame+1, true, nullptr );
 
-	// Update the logs
+	// Update the stream log
 
 	_logFrames( m_currentFrame, m_currentFrame+1, false, m_pFrameLogDisplay );
-
-	_logBackend( m_currentFrame+1, destFrame+1, false, m_pOptimizerInLogDisplay);
-	_logBackend( m_currentFrame+1, destFrame+1, true, m_pOptimizerOutLogDisplay);
 
 	//
 
@@ -1232,6 +1256,14 @@ void MyApp::showFrameLog()
 {
 	m_pLogCapsule->slot = m_pFrameLogContainer;
 }
+
+//____ showBackendLog() _________________________________________________________
+
+void MyApp::showBackendLog()
+{
+	m_pLogCapsule->slot = m_pBackendLogContainer;
+}
+
 
 //____ showFullLog() __________________________________________________________
 
@@ -1343,7 +1375,7 @@ void MyApp::_resetStream()
 
 //____ _playFrames() __________________________________________________________
 
-void MyApp::_playFrames( int begin, int end, bool bOptimize )
+void MyApp::_playFrames( int begin, int end, bool bOptimize, TextEditor * pBackendLogDisplay )
 {
 	uint8_t * pBegin = m_frames[begin];
 	uint8_t * pEnd = end == m_frames.size() ? (uint8_t*) m_pStreamBlob->end() : (uint8_t*) m_frames[end];
@@ -1354,6 +1386,11 @@ void MyApp::_playFrames( int begin, int end, bool bOptimize )
 
 	m_pStreamPlayer->clearDirtyRects();
 
+
+	std::ostringstream	logStream;
+	if( pBackendLogDisplay )
+		m_pBackendLogger->setOStream(&logStream);
+
 	if( bOptimize )
 	{
 		m_pStreamPump->pumpAllFrames(m_pStreamTrimGfxBackend);
@@ -1361,6 +1398,13 @@ void MyApp::_playFrames( int begin, int end, bool bOptimize )
 	}
 	else
 		m_pStreamPump->pumpAll();
+
+	if( pBackendLogDisplay )
+	{
+		pBackendLogDisplay->editor.setText(logStream.str());
+		m_pBackendLogger->setOStream(nullptr);
+	}
+
 }
 
 //____ _logFrames() ___________________________________________________________
@@ -1388,7 +1432,7 @@ void MyApp::_logFrames( int begin, int end, bool bOptimize, TextEditor * pDispla
 }
 
 //____ _logBackend() ___________________________________________________________
-
+/*
 void MyApp::_logBackend( int begin, int end, bool bOptimize, TextEditor * pDisplay )
 {
 	uint8_t * pBegin = m_frames[begin];
@@ -1413,6 +1457,7 @@ void MyApp::_logBackend( int begin, int end, bool bOptimize, TextEditor * pDispl
 
 	pDisplay->editor.setText( logStream.str() );
 }
+ */
 
 //____ _updateFrameCounterAndSlider() _________________________________________
 
@@ -1481,7 +1526,7 @@ void MyApp::_updateDebugOverlays()
 	
 	for( int i = 0 ; i < m_debugOverlays.size() ; i++ )
 	{
-		CanvasRef canvas = (CanvasRef) (i+1);
+		CanvasRef canvas = (CanvasRef) (i+2);
 		auto pOverlay = m_debugOverlays[i];
 		auto [nRects, pRects] = m_pStreamPlayer->dirtyRects(canvas);
 
