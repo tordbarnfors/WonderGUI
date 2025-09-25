@@ -1333,11 +1333,9 @@ namespace wg
 
 						// Update tinting if we have X-gradient
 
-						const int16_t* pColors = &colors[skippedSegments][0];
-
 						if (bTintX)
 						{
-							for( int i = 0 ; i < nSegments ; i++ )
+							for( int i = skippedSegments ; i < nSegments ; i++ )
 							{
 								HiColor& col = pTintColorsX[i*segmentPitchTintmapX+columnOfs];
 
@@ -1346,9 +1344,9 @@ namespace wg
 								colors[i][2] = col.b;
 								colors[i][3] = col.a;
 							}
-							
-							pColors = &colors[0][0];
 						}
+
+						const int16_t* pColors = &colors[skippedSegments][0];
 
 						//
 

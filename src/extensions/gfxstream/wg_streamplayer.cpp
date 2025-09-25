@@ -242,8 +242,23 @@ namespace wg
 
 
 			if (nUpdateRects == 0)
-				m_pBackend->beginSession(m_baseCanvasRef, m_baseCanvasSurface, 0, nullptr, &m_sessionInfo);
+			{
+				if (m_bStoreDirtyRects)
+				{
+					if (m_dirtyRects[(int)m_baseCanvasRef].isEmpty())
+					{
+						for (auto& rect : m_vUpdateRects)
+							m_dirtyRects[(int)m_baseCanvasRef].push(rect);
+					}
+					else
+					{
+						for (auto& rect : m_vUpdateRects)
+							m_dirtyRects[(int)m_baseCanvasRef].add(rect);
+					}
+				}
 
+				m_pBackend->beginSession(m_baseCanvasRef, m_baseCanvasSurface, 0, nullptr, &m_sessionInfo);
+			}
 			break;
 		}
 

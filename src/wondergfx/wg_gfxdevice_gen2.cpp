@@ -1175,9 +1175,20 @@ void GfxDeviceGen2::fill(const RectSPX& rect, HiColor color)
 	int nRects = 0;
 	auto& rects = m_pActiveLayer->rects;
 
+	RectSPX fillRect;
+	if( m_bSubPixelFill )
+		fillRect = rect;
+	else
+	{
+		fillRect.x = rect.x & 0xFFFFFFC0;
+		fillRect.y = rect.y & 0xFFFFFFC0;
+		fillRect.w = ((rect.x + rect.w) & 0xFFFFFFC0) - fillRect.x;
+		fillRect.h = ((rect.y + rect.h) & 0xFFFFFFC0) - fillRect.y;
+	}
+
 	for (int i = 0; i < m_pActiveClipList->nRects; i++)
 	{
-		RectSPX clipped = RectSPX::overlap(m_pActiveClipList->pRects[i], rect);
+		RectSPX clipped = RectSPX::overlap(m_pActiveClipList->pRects[i], fillRect);
 
 		if (!clipped.isEmpty())
 		{

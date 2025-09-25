@@ -93,8 +93,6 @@ namespace wg
 
 		StreamDecoder_p m_pDecoder;
 		
-		BackendLogger_p	m_pBackend;
-
 		bool			m_bDisplayStreamOffset = true;
 		bool			m_bDisplayChunkNb = true;
 		

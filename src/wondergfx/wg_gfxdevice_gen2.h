@@ -135,8 +135,10 @@ namespace wg
 		void		setRenderLayer(int layer) override;
 		int			renderLayer() const override;
 
+		//.____ Misc ________________________________________________________________
 
-
+		void		setSubPixelFill(bool bSubPixelFill);
+		bool		subPixelFill() const { return m_bSubPixelFill; }
 
 		//.____ Rendering ________________________________________________
 
@@ -314,6 +316,8 @@ namespace wg
 		uint8_t						m_stateChanges = 0;
 
 		bool						m_bRendering = false;
+		bool						m_bSubPixelFill = true;
+
 		RenderState					m_renderState;
 		ClipList *					m_pActiveClipList = nullptr;
 		RenderLayer*				m_pActiveLayer = nullptr;

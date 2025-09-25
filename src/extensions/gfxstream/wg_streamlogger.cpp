@@ -48,7 +48,6 @@ namespace wg
 		out << std::boolalpha;
 
 		m_pDecoder = StreamDecoder::create();
-		m_pBackend = BackendLogger::create(out, nullptr);
 	}
 
 	//____ Destructor _________________________________________________________
