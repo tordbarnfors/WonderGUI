@@ -566,14 +566,14 @@ bool WgScrollChart::SetWaveColors( int waveId, WgColor topLineColor, WgColor bot
 		return false;
 
     if(p->topLineColor != topLineColor || p->bottomLineColor != bottomLineColor ||
-       p->frontFill != fillColor)
+       p->fillColor != fillColor)
     {
         p->topLineColor = topLineColor;
         p->bottomLineColor = bottomLineColor;
         p->fillColor = fillColor;
         m_bRefreshCanvas = true;
     }
-
+	
 	return m_bRefreshCanvas;
 }
 
