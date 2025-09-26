@@ -1,7 +1,10 @@
+using System.Runtime.InteropServices;
+
 namespace WG;
 
 public class SoftSurface : Surface
 {
+	private const string NativeLib = "libstreamgendll";
 
 
 	public SoftSurface( ref Blueprint blueprint )
@@ -10,27 +13,28 @@ public class SoftSurface : Surface
 
 		wg_surfaceBP	bp;
 
-		bp.buffered = blueprint.buffered;
-		bp.canvas = blueprint.canvas;
-		bp.palette = null;											//TODO: Need to solve this...
+		bp.buffered = (byte) (blueprint.buffered ? 1 : 0);
+		bp.canvas = (byte) (blueprint.canvas ? 1: 0);
+		bp.palette = 0;											//TODO: Need to solve this...
+		bp.paletteSize = 0;
 		bp.paletteCapacity = blueprint.paletteCapacity;
-		bp.dynamic = blueprint.dynamic;
+		bp.dynamic = (byte) (blueprint.dynamic ? 1: 0);
 		bp.format = blueprint.format;
 		bp.identity = blueprint.identity;
-		bp.mipmap = blueprint.mipmap;
+		bp.mipmap = (byte) (blueprint.mipmap ? 1 : 0);
 		bp.sampleMethod = blueprint.sampleMethod;
 		bp.scale = blueprint.scale;
 		bp.size.w = blueprint.size.w;
 		bp.size.h = blueprint.size.h;
-		bp.tiling = blueprint.tiling;
+		bp.tiling = (byte) (blueprint.tiling ? 1 : 0);
 
-		_obj = wg_createSoftSurface(bp);
+		_obj = wg_createSoftSurface(ref bp);
 	}
 
 
 
-    [DllImport("libstreamgendll.so")]
-    private static extern IntPtr	wg_createSoftSurface(ref wg_surfaceBP blueprint);
+	[DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
+	private static extern IntPtr wg_createSoftSurface(ref wg_surfaceBP blueprint);
 
 
 }

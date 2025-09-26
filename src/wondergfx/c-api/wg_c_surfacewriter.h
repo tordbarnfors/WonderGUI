@@ -53,7 +53,7 @@ typedef struct wg_surfaceWriterBP_struct			// NOT BINARY EQUIVALENT!
 } wg_surfaceWriterBP;
 
 wg_obj 	wg_createSurfaceWriter(const wg_surfaceWriterBP* blueprint);
-wg_obj	wg_writeSurfaceToBlob( wg_obj surfaceWriter, wg_obj surface );
+wg_obj	wg_writeSurfaceToBlob( wg_obj surfaceWriter, wg_obj surface, int extraDataSize, char * pExtraData );
 
 #ifdef __cplusplus
 }

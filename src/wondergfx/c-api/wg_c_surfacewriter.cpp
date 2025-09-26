@@ -48,7 +48,7 @@ wg_obj wg_createSurfaceWriter(const wg_surfaceWriterBP* blueprint)
 	return static_cast<Object*>(pWriter);
 }
 
-wg_obj	wg_writeSurfaceToBlob( wg_obj surfaceWriter, wg_obj surface )
+wg_obj	wg_writeSurfaceToBlob( wg_obj surfaceWriter, wg_obj surface, int extraDataSize, char * pExtraData )
 {
 	auto pSurface = static_cast<Surface*>(reinterpret_cast<Object*>(surface));
 	auto pBlob = getPtr(surfaceWriter)->writeSurfaceToBlob(pSurface);

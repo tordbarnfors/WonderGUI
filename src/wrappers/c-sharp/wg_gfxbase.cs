@@ -1,13 +1,14 @@
-
-
+using System.Runtime.InteropServices;
 
 namespace WG;
 
 public static class GfxBase
 {
+    private const string NativeLib = "libstreamgendll";
+    
     //____ Init() _________________________________________________________
 
-    bool Init()
+    static public bool Init()
     {
         int ret = wg_initGfxBase();
 
@@ -16,7 +17,7 @@ public static class GfxBase
 
     //____ Exit() _________________________________________________________
 
-    bool Exit()
+    static public bool Exit()
     {
         int ret = wg_exitGfxBase();
 
@@ -25,7 +26,7 @@ public static class GfxBase
 
     //____ IsInitialized() ________________________________________________
 
-    bool IsInitialized()
+    static public bool IsInitialized()
     {
         int ret = wg_initGfxBase();
 
@@ -33,13 +34,13 @@ public static class GfxBase
     }
 
 
-    [DllImport("libstreamgendll.so")]
+    [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
     private static extern int        wg_initGfxBase();
 
-    [DllImport("libstreamgendll.so")]
+    [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
     private static extern int        wg_exitGfxBase();
 
-    [DllImport("libstreamgendll.so")]
+    [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
     private static extern int        wg_isGfxBaseInitialized();
 
 }

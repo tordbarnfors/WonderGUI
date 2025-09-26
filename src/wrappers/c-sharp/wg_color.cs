@@ -1,13 +1,15 @@
+using System.Runtime.InteropServices;
+
 namespace WG;
 
 
 [StructLayout(LayoutKind.Sequential)]
 public struct Color
 {
-	public short	b;
-	public short	g;
-	public short	r;
-	public short	a;
+	public short b;
+	public short g;
+	public short r;
+	public short a;
 
 	public Color()
 	{
@@ -18,25 +20,25 @@ public struct Color
 	}
 
 
-	public Color( int r, int g, int b, int a = 4096 )
+	public Color(int r, int g, int b, int a = 4096)
 	{
-		this.r = r;
-		this.g = g;
-		this.b = b;
-		this.a = a;
+		this.r = (short) r;
+		this.g = (short) g;
+		this.b = (short) b;
+		this.a = (short) a;
 	}
 
-	public void clamp()
+	public void Clamp()
 	{
-		Math.clamp(b,0,4096);
-		Math.clamp(g,0,4096);
-		Math.clamp(r,0,4096);
-		Math.clamp(a,0,4096);
+		r = Math.Clamp(r, (short) 0, (short) 4096);
+		g = Math.Clamp(g, (short) 0, (short) 4096);
+		b = Math.Clamp(b, (short) 0, (short) 4096);
+		a = Math.Clamp(a, (short) 0, (short) 4096);
 	}
 
-	public Color withAlpha(int alpha)
+	public Color WithAlpha(int alpha)
 	{
-		return Color(r,g,b,alpha);
+		return new Color(r, g, b, alpha);
 	}
 
 }
