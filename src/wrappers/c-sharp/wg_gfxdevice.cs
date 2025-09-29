@@ -71,9 +71,73 @@ public class GfxDevice : Objekt
     }
 
     //____ EndCanvasUpdate() __________________________________________________
+
     public void EndCanvasUpdate()
     {
         wg_endCanvasUpdate(_obj);
+    }
+
+    //____ SetTintColor() _____________________________________________________
+
+    public void SetTintColor(Color color)
+    {
+        wg_setTintColor(_obj, color);
+    }
+
+    //____ GetTintColor() _____________________________________________________
+
+    public Color GetTintColor()
+    {
+        return wg_getTintColor(_obj);
+    }
+
+    //____ ClearTintColor() ___________________________________________________
+
+    public void ClearTintColor()
+    {
+        wg_clearTintColor(_obj);
+    }
+
+    //____ HasTintColor() _____________________________________________________
+
+    public bool HasTintColor()
+    {
+        return (wg_hasTintColor(_obj) == 1);
+    }
+
+    //____ SetBlendMode() _____________________________________________________
+
+    public bool SetBlendMode(BlendMode blendMode)
+    {
+        return (wg_setBlendMode(_obj, blendMode) == 1);
+    }
+
+    //____ BlendMode() ________________________________________________________
+
+    public BlendMode GetBlendMode()
+    {
+        return wg_getBlendMode(_obj);
+    }
+
+    //____ SetBlitSource() ____________________________________________________
+
+    public bool SetBlitSource(Surface blitSource)
+    {
+        return (wg_setBlitSource(_obj, blitSource.CHandle()) == 1);
+    }
+
+    //____ SetMorphFactor() ___________________________________________________
+
+    public void SetMorphFactor(float factor)
+    {
+        wg_setMorphFactor(_obj, factor);
+    }
+
+    //____ GetMorphFactor() ___________________________________________________
+
+    public float GetMorphFactor()
+    {
+        return wg_getMorphFactor(_obj);
     }
 
     //____ Fill() _____________________________________________________________
@@ -100,6 +164,53 @@ public class GfxDevice : Objekt
         wg_drawStraightLine(_obj, begin, dir, length, color, thickness);
     }
 
+    //____ Blit() _____________________________________________________________
+
+    public void Blit(CoordSPX dest)
+    {
+        wg_blit(_obj, dest);
+    }
+
+    public void Blit(CoordSPX dest, ref RectSPX src)
+    {
+        wg_blitRect(_obj, dest, ref src);
+    }
+
+    //____ FlipBlit() _________________________________________________________
+
+    public void FlipBlit(CoordSPX dest, GfxFlip flip)
+    {
+        wg_flipBlit(_obj, dest, flip);
+    }
+
+    public void FlipBlit(CoordSPX dest, ref RectSPX src, GfxFlip flip)
+    {
+        wg_flipBlit(_obj, dest, flip);
+    }
+
+    //____ StretchBlit() ______________________________________________________
+
+    public void StretchBlit(ref RectSPX dest)
+    {
+        wg_stretchBlit(_obj, ref dest);
+    }
+
+    public void StretchBlit(ref RectSPX dest, ref RectSPX src)
+    {
+        wg_stretchBlitRect(_obj, ref dest, ref src);
+    }
+
+    //____ StretchFlipBlit() __________________________________________________
+
+    public void StretchFlipBlit(ref RectSPX dest, GfxFlip flip)
+    {
+        wg_stretchFlipBlit(_obj, ref dest, flip);
+    }
+
+    public void StretchFlipBlit(ref RectSPX dest, ref RectSPX src, GfxFlip flip)
+    {
+        wg_stretchFlipBlitRect(_obj, ref dest, ref src, flip);
+    }
 
     [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
     private static extern IntPtr wg_createGfxDevice(IntPtr backend);
@@ -153,10 +264,10 @@ public class GfxDevice : Objekt
     //[DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
     //private static extern const wg_rectSPX* wg_clipBounds(IntPtr device);
 
-    //[DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-    //private static extern void wg_setTintColor(IntPtr device, wg_color color);
-    //[DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-    //private static extern wg_color wg_getTintColor(IntPtr device);
+    [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
+    private static extern void wg_setTintColor(IntPtr device, Color color);
+    [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
+    private static extern Color wg_getTintColor(IntPtr device);
 
     [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
     private static extern void wg_clearTintColor(IntPtr device);
@@ -179,10 +290,11 @@ public class GfxDevice : Objekt
     [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
     private static extern int wg_hasTintmap(IntPtr device);
 
-    //[DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-    //private static extern int wg_setBlendMode(IntPtr device, wg_blendMode blendMode);
-    //[DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-    //private static extern wg_blendMode wg_getBlendMode(IntPtr device);
+    [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
+    private static extern int wg_setBlendMode(IntPtr device, BlendMode blendMode);
+
+    [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
+    private static extern BlendMode wg_getBlendMode(IntPtr device);
 
     [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
     private static extern int wg_setBlitSource(IntPtr device, IntPtr surface);
@@ -255,22 +367,30 @@ public class GfxDevice : Objekt
     [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
     private static extern void wg_drawStraightLine(IntPtr device, CoordSPX begin, Direction dir, int length, Color color, int thickness);
 
-    //[DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-    //private static extern void wg_blit(IntPtr device, wg_coordSPX dest);
-    //[DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-    //private static extern void wg_blitRect(IntPtr device, wg_coordSPX dest, const wg_rectSPX* src);
-    //[DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-    //private static extern void wg_flipBlit(IntPtr device, wg_coordSPX dest, wg_gfxFlip flip);
-    //[DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-    //private static extern void wg_flipBlitRect(IntPtr device, wg_coordSPX dest, const wg_rectSPX* src, wg_gfxFlip flip);
-    //[DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-    //private static extern void wg_stretchBlit(IntPtr device, const wg_rectSPX* dest);
-    //[DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-    //private static extern void wg_stretchBlitRect(IntPtr device, const wg_rectSPX* dest, const wg_rectSPX* src);
-    //[DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-    //private static extern void wg_stretchFlipBlit(IntPtr device, const wg_rectSPX* dest, wg_gfxFlip flip);
-    //[DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-    //private static extern void wg_stretchFlipBlitRect(IntPtr device, const wg_rectSPX* dest, const wg_rectSPX* src, wg_gfxFlip flip);
+    [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
+    private static extern void wg_blit(IntPtr device, CoordSPX dest);
+
+    [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
+    private static extern void wg_blitRect(IntPtr device, CoordSPX dest, ref RectSPX src);
+
+    [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
+    private static extern void wg_flipBlit(IntPtr device, CoordSPX dest, GfxFlip flip);
+
+    [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
+    private static extern void wg_flipBlitRect(IntPtr device, CoordSPX dest, ref RectSPX src, GfxFlip flip);
+ 
+    [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
+    private static extern void wg_stretchBlit(IntPtr device, ref RectSPX dest);
+
+    [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
+    private static extern void wg_stretchBlitRect(IntPtr device, ref RectSPX dest, ref RectSPX src);
+
+    [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
+    private static extern void wg_stretchFlipBlit(IntPtr device, ref RectSPX dest, GfxFlip flip);
+ 
+    [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
+    private static extern void wg_stretchFlipBlitRect(IntPtr device, ref RectSPX dest, ref RectSPX src, GfxFlip flip);
+ 
     //[DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
     //private static extern void wg_precisionBlit(IntPtr device, const wg_rectSPX* dest, const wg_rectF* srcSPX);
     //[DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
