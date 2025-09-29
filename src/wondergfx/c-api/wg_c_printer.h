@@ -45,6 +45,9 @@ extern "C" {
 	void		wg_setPrinterLineWidth( wg_obj printer, wg_spx width );		// Needed for printJustifiedLine()
 	wg_spx		wg_printerLineWidth( wg_obj printer );
 
+	void		wg_setPrinterTabSize( wg_obj printer, int nbWhiteSpace);
+	int			wg_printerTabSize(wg_obj printer);
+
 	void		wg_resetPrinterCursor( wg_obj printer );
 	void		wg_setPrinterCursor( wg_obj printer, wg_coordSPX pos );
 	wg_coordSPX	wg_printerCursor(wg_obj printer);

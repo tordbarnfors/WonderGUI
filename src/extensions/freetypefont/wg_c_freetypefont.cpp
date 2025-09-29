@@ -29,6 +29,25 @@ inline FreeTypeFont* getPtr(wg_obj obj) {
 	return static_cast<FreeTypeFont*>(reinterpret_cast<Object*>(obj));
 }
 
+wg_obj wg_createFreeTypeFont( wg_freeTypeFontBP blueprint )
+{
+	FreeTypeFont::Blueprint bp;
+
+	bp.backupFont 	= blueprint.backupFont ? static_cast<Font*>(reinterpret_cast<Object*>(blueprint.backupFont)) : nullptr;
+	bp.blob			= blueprint.blob ? static_cast<Blob*>(reinterpret_cast<Object*>(blueprint.blob)) : nullptr;
+	bp.cache		= blueprint.cache ? static_cast<BitmapCache*>(reinterpret_cast<Object*>(blueprint.cache)) : nullptr;
+	bp.faceIndex	= blueprint.faceIndex;
+	bp.renderMode	= (FreeTypeFont::RenderMode) blueprint.renderMode;
+	bp.stemDarkening = blueprint.stemDarkening;
+	bp.xDPI			= blueprint.xDPI;
+	bp.yDPI			= blueprint.yDPI;
+
+	auto pFont = FreeTypeFont::create(bp);
+	pFont->retain();
+	return static_cast<Object*>(pFont);
+}
+
+
 wg_obj wg_getFreeTypeFontBitmapCache( wg_obj font )
 {
 	auto pCache = getPtr(font)->bitmapCache();

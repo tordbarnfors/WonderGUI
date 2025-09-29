@@ -81,6 +81,15 @@ wg_spx wg_printerLineWidth(wg_obj printer)
 	return (wg_spx) getPtr(printer)->lineWidth();
 }
 
+void wg_setPrinterTabSize( wg_obj printer, int nbWhiteSpace)
+{
+	getPtr(printer)->setTabSize(nbWhiteSpace);
+}
+
+int wg_printerTabSize(wg_obj printer)
+{
+	return getPtr(printer)->tabSize();
+}
 
 void wg_resetPrinterCursor( wg_obj printer )
 {

@@ -31,8 +31,35 @@
 extern "C" {
 #endif
 
-// wg_obj		wg_createFreeTypeFont( wg_blob, int faceIndex, wg_freeTypeRenderMode renderMode, wg_obj backupFont, wg_obj bitmapCache );
+//____ wg_renderMode __________________________________________________________
 
+typedef enum
+{
+	WG_FT_MONOCHROME,
+	WG_FT_CRISPEDGES,
+	WG_FT_BESTSHAPES
+
+} wg_renderMode;
+
+
+//____ wg_freeTypeFontBP __________________________________________________________
+
+struct wg_freeTypeFontBP_struct			// NOT BINARY EQUIVALENT!
+{
+	wg_obj			backupFont;
+	wg_obj			blob;
+	wg_obj			cache;
+	int				faceIndex;
+	wg_renderMode	renderMode;
+	int				stemDarkening;
+	int				xDPI;
+	int				yDPI;
+} wg_freeTypeFontBP_default = { 0, 0, 0, 0, WG_FT_BESTSHAPES, false, 72, 72 };
+
+
+typedef struct wg_freeTypeFontBP_struct	wg_freeTypeFontBP;
+
+wg_obj			wg_createFreeTypeFont( wg_freeTypeFontBP blueprint );
 wg_obj			wg_getFreeTypeFontBitmapCache( wg_obj font );
 
 

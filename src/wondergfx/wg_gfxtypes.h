@@ -137,7 +137,7 @@ namespace wg
 	   Begin,
 	   Center,
 	   End,
-	   Justify,
+	   Justify
 	};
 
 
