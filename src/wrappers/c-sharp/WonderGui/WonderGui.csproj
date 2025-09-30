@@ -1,0 +1,59 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net9.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
+      <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    </PropertyGroup>
+
+    <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+      <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <Compile Include="..\wg_blob.cs">
+        <Link>wg_blob.cs</Link>
+      </Compile>
+      <Compile Include="..\wg_canvaslayers.cs">
+        <Link>wg_canvaslayers.cs</Link>
+      </Compile>
+      <Compile Include="..\wg_color.cs">
+        <Link>wg_color.cs</Link>
+      </Compile>
+      <Compile Include="..\wg_geo.cs">
+        <Link>wg_geo.cs</Link>
+      </Compile>
+      <Compile Include="..\wg_gfxbackend.cs">
+        <Link>wg_gfxbackend.cs</Link>
+      </Compile>
+      <Compile Include="..\wg_gfxbase.cs">
+        <Link>wg_gfxbase.cs</Link>
+      </Compile>
+      <Compile Include="..\wg_gfxdevice.cs">
+        <Link>wg_gfxdevice.cs</Link>
+      </Compile>
+      <Compile Include="..\wg_gfxtypes.cs">
+        <Link>wg_gfxtypes.cs</Link>
+      </Compile>
+      <Compile Include="..\wg_objekt.cs">
+        <Link>wg_objekt.cs</Link>
+      </Compile>
+      <Compile Include="..\wg_softbackend.cs">
+        <Link>wg_softbackend.cs</Link>
+      </Compile>
+      <Compile Include="..\wg_softsurface.cs">
+        <Link>wg_softsurface.cs</Link>
+      </Compile>
+      <Compile Include="..\wg_surface.cs">
+        <Link>wg_surface.cs</Link>
+      </Compile>
+      <Compile Include="..\wg_surfacewriter.cs">
+        <Link>wg_surfacewriter.cs</Link>
+      </Compile>
+    </ItemGroup>
+
+</Project>
