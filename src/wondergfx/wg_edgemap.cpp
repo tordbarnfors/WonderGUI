@@ -107,10 +107,6 @@ namespace wg
 		m_pBuffer = new char[bytes];
 		char* pDest = m_pBuffer;
 
-
-		m_pSamples = (spx*) pDest;
-		pDest += sampleArraySize;
-
 		m_pPalette = (HiColor*) pDest;
 		m_paletteSize = (stripSizeX + stripSizeY + flatColorsSize) / sizeof(HiColor);
 
@@ -131,6 +127,9 @@ namespace wg
 			m_pFlatColors = (HiColor*)pDest;
 			pDest += flatColorsSize;
 		}
+
+		m_pSamples = (spx*) pDest;
+		pDest += sampleArraySize;
 
 		// Fill in colorstrips
 
