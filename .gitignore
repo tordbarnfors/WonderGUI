@@ -9,6 +9,9 @@ deps/
 build/codelite-linux/
 distribution/
 
+bin
+obj
+
 doc/html/
 
 doc/temp/

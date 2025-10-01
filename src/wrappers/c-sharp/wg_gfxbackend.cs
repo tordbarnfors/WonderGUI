@@ -5,4 +5,5 @@ namespace WG;
 
 public class GfxBackend : Objekt
 {
+    protected GfxBackend() { }
 }

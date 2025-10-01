@@ -6,8 +6,11 @@ public class Objekt
 {
 	private const string NativeLib = "libstreamgendll";
 
+    protected Objekt()
+    {
+    }
 
-	~Objekt()
+    ~Objekt()
 	{
 		wg_release(_obj);
 	}
@@ -42,7 +45,7 @@ public class Objekt
 		return _obj;
 	}
 
-	protected IntPtr _obj;
+	protected IntPtr _obj = IntPtr.Zero;
 
 
 	//[DllImport("libstreamgendll.so")]
