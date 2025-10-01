@@ -5,7 +5,6 @@ namespace WG;
 
 public class SurfaceWriter : Objekt
 {
-	private const string NativeLib = "libstreamgendll";
 
 	//____ SaveInfo ___________________________________________________________
 	public struct SaveInfo
@@ -29,9 +28,10 @@ public class SurfaceWriter : Objekt
 	}
 
 	//____ Constructor ________________________________________________________
+
 	public SurfaceWriter(ref Blueprint blueprint)
 	{
-		wg_blueprint bp;
+		C_Blueprint bp;
 
 		int saveInfo = 0;
 		if (blueprint.saveInfo.identity)
@@ -57,6 +57,7 @@ public class SurfaceWriter : Objekt
 	}
 
 	//____ WriteSurfaceToBlob() _______________________________________________
+
 	Blob WriteSurfaceToBlob(ref Surface surface, byte[] extraData)
 	{
 		IntPtr p = wg_writeSurfaceToBlob(_obj, surface.CHandle(), extraData.Length, extraData);
@@ -64,19 +65,18 @@ public class SurfaceWriter : Objekt
 	}
 
 
-	protected struct wg_blueprint
+	protected struct C_Blueprint
 	{
 		public int saveInfo;
 	}
 
 
+    //____ DLL functions ______________________________________________________
 
 	[DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-	private static extern IntPtr wg_createSurfaceWriter(ref wg_blueprint blueprint);
+	private static extern IntPtr wg_createSurfaceWriter(ref C_Blueprint blueprint);
 
 	[DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
 	private static extern IntPtr wg_writeSurfaceToBlob(IntPtr surfaceWriter, IntPtr surface, int extraDataSize, byte[] pExtraData);
-
-
 
 }

@@ -7,63 +7,78 @@ namespace WG;
 [StructLayout(LayoutKind.Sequential)]
 public struct CoordI
 {
-    public int x;
-    public int y;
+    public CoordI() { }
+    public int x = 0;
+    public int y = 0;
 }
 
 [StructLayout(LayoutKind.Sequential)]
 public struct SizeI
 {
-    public int w;
-    public int h;
+    public SizeI() {}
+
+    public int w = 0;
+    public int h = 0;
 }
 
 [StructLayout(LayoutKind.Sequential)]
 public struct BorderI
 {
-    public int top;
-    public int right;
-    public int bottom;
-    public int left;
+    public BorderI() {}
+
+    public int top = 0;
+    public int right = 0;
+    public int bottom = 0;
+    public int left = 0;
 }
 
 [StructLayout(LayoutKind.Sequential)]
 public struct RectI
 {
-    public int x;
-    public int y;
-    public int w;
-    public int h;
+    public RectI() { }
+
+    public int x = 0;
+    public int y = 0;
+    public int w = 0;
+    public int h = 0;
 }
 
 [StructLayout(LayoutKind.Sequential)]
 public struct CoordSPX
 {
-    public int x;
-    public int y;
+    public CoordSPX() { }
+
+    public int x = 0;
+    public int y = 0;
 }
 
 [StructLayout(LayoutKind.Sequential)]
 public struct SizeSPX
 {
-    public int w;
-    public int h;
+    public SizeSPX() { }
+
+    public int w = 0;
+    public int h = 0;
 }
 
 [StructLayout(LayoutKind.Sequential)]
 public struct BorderSPX
 {
-    public int top;
-    public int right;
-    public int bottom;
-    public int left;
+    public BorderSPX() { }
+
+    public int top = 0;
+    public int right = 0;
+    public int bottom = 0;
+    public int left = 0;
 }
 
 [StructLayout(LayoutKind.Sequential)]
 public struct RectSPX
 {
-    public int x;
-    public int y;
-    public int w;
-    public int h;
+    public RectSPX() { }
+
+    public int x = 0;
+    public int y = 0;
+    public int w = 0;
+    public int h = 0;
 }

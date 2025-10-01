@@ -19,7 +19,6 @@ public class Glyph
 
 public class Font : Objekt
 {
-    private const string NativeLib = "libstreamgendll";
 
     public Font()
     {
@@ -41,6 +40,7 @@ public class Font : Objekt
 	}
 
 
+    //____ DLL functions ______________________________________________________
 
     [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
     private static extern int wg_setFontSize(IntPtr font, int size);

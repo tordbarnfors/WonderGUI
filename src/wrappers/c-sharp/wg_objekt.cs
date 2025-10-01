@@ -4,7 +4,7 @@ namespace WG;
 
 public class Objekt
 {
-	private const string NativeLib = "libstreamgendll";
+	internal protected const string NativeLib = "libstreamgendll";
 
     protected Objekt()
     {
@@ -47,6 +47,7 @@ public class Objekt
 
 	protected IntPtr _obj = IntPtr.Zero;
 
+    //____ DLL functions ______________________________________________________
 
 	//[DllImport("libstreamgendll.so")]
 	//public static extern const wg_typeInfo*	wg_getTypeInfo(IntPtr);

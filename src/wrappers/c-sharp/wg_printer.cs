@@ -5,7 +5,6 @@ namespace WG;
 
 public class Printer : Objekt
 {
-    private const string NativeLib = "libstreamgendll";
 
     //    GfxDevice_p	gfxDevice() const { return m_pGfxDevice;  }
     //    Font_p		font() const { return m_pFont;  }
@@ -172,6 +171,7 @@ public class Printer : Objekt
 
 
 
+    //____ DLL functions ______________________________________________________
 
     [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
     private static extern IntPtr wg_createPrinter();

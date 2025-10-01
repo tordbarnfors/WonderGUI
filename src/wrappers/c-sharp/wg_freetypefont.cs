@@ -5,7 +5,6 @@ namespace WG;
 
 public class FreeTypeFont : Font
 {
-    private const string NativeLib = "libstreamgendll";
 
 	//____ RenderMode _________________________________________________________
 	public enum RenderMode
@@ -61,6 +60,7 @@ public class FreeTypeFont : Font
 		public int yDPI;
 	} 
 
+    //____ DLL functions ______________________________________________________
 
 	[DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
 	private static extern IntPtr wg_createFreeTypeFont( wg_freeTypeFontBP blueprint );

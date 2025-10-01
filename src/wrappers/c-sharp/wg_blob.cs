@@ -5,7 +5,6 @@ namespace WG;
 
 public class Blob : Objekt
 {
-	private const string NativeLib = "libstreamgendll";
 
 	//____ Constructors _______________________________________________________
 
@@ -40,8 +39,8 @@ public class Blob : Objekt
 		return byteArray;
 	}
 
-
-
+    //____ DLL functions ______________________________________________________
+0
 	[DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
 	private static extern IntPtr wg_createBlob(int size);
 

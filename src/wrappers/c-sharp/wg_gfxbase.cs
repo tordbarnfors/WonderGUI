@@ -46,6 +46,7 @@ public static class GfxBase
         return (wg_defaultToSRGB() == 1);
     }
 
+    //____ DLL functions ______________________________________________________
 
     [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
     private static extern int wg_initGfxBase();

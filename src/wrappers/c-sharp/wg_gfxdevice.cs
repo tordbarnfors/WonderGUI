@@ -5,7 +5,6 @@ namespace WG;
 
 public class GfxDevice : Objekt
 {
-    private const string NativeLib = "libstreamgendll";
 
     //____ Constructor ________________________________________________________
     public GfxDevice(GfxBackend backend)
@@ -211,6 +210,9 @@ public class GfxDevice : Objekt
     {
         wg_stretchFlipBlitRect(_obj, ref dest, ref src, flip);
     }
+
+
+    //____ DLL functions ______________________________________________________
 
     [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
     private static extern IntPtr wg_createGfxDevice(IntPtr backend);

@@ -54,7 +54,7 @@ namespace wg
 			uint16_t		objectIdStart	= 0;
 			PixelFormat		pixelFormat		= PixelFormat::BGRA_8;
 			SampleMethod	sampleMethod	= SampleMethod::Nearest;
-			StreamSink_p	sink;			
+			StreamSink_p	sink;
 		};
 
 		//.____ Creation __________________________________________

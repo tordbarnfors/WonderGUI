@@ -5,7 +5,6 @@ namespace WG;
 
 public class SoftBackend : GfxBackend
 {
-	private const string NativeLib = "libstreamgendll";
 
     //____ Constructor() ______________________________________________________
     public SoftBackend()
@@ -18,6 +17,8 @@ public class SoftBackend : GfxBackend
     {
         return (wg_defineSoftBackendCanvas(_obj, reference, surface.CHandle()) == 1);
     }
+
+    //____ DLL functions ______________________________________________________
 
     [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
     private static extern IntPtr wg_createSoftBackend();

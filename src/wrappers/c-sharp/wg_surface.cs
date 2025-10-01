@@ -5,24 +5,24 @@ namespace WG;
 
 public class Surface : Objekt
 {
-	private const string NativeLib = "libstreamgendll";
-
 	//____ Blueprint __________________________________________________________
 	public struct Blueprint
 	{
-		public bool				buffered;
-		public bool				canvas;
+		public Blueprint() {}
+
+		public bool 			buffered = false;
+		public bool				canvas = false;
 //		public const wg_color8* palette;				HOW DO WE DO THIS?
-		public int				paletteSize;
-		public int				paletteCapacity;
-		public bool				dynamic;
-		public PixelFormat		format;
-		public int				identity;
-		public bool				mipmap;
-		public SampleMethod		sampleMethod;
-		public int				scale;
+		public int				paletteSize = 0;
+		public int				paletteCapacity = 0;
+		public bool				dynamic = false;
+		public PixelFormat		format = PixelFormat.Undefined;
+		public int				identity = 0;
+		public bool				mipmap = false;
+		public SampleMethod		sampleMethod = SampleMethod.Undefined;
+		public int				scale = 0;
 		public SizeI			size;					// Mandatory, except when creating from other surface.
-		public bool				tiling;
+		public bool				tiling = false;
 	}
 
 	//____ SetId() ____________________________________________________________
@@ -69,7 +69,7 @@ public class Surface : Objekt
 
 
 	[StructLayout(LayoutKind.Sequential)]
-	protected struct wg_surfaceBP
+	public struct C_Blueprint
 	{
 	    public byte					buffered;
 	    public byte					canvas;
@@ -86,7 +86,25 @@ public class Surface : Objekt
 	    public byte					tiling;
 	}
 
+	static internal void ConvertBlueprint(in Blueprint org, out C_Blueprint converted )
+	{
+		converted.buffered = (byte) (org.buffered ? 1 : 0);
+		converted.canvas = (byte) (org.canvas ? 1: 0);
+		converted.palette = 0;											//TODO: Need to solve this...
+		converted.paletteSize = 0;
+		converted.paletteCapacity = org.paletteCapacity;
+		converted.dynamic = (byte) (org.dynamic ? 1: 0);
+		converted.format = org.format;
+		converted.identity = org.identity;
+		converted.mipmap = (byte) (org.mipmap ? 1 : 0);
+		converted.sampleMethod = org.sampleMethod;
+		converted.scale = org.scale;
+		converted.size.w = org.size.w;
+		converted.size.h = org.size.h;
+		converted.tiling = (byte) (org.tiling ? 1 : 0);
+	}
 
+    //____ DLL functions ______________________________________________________
 
 	[DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
 	private static extern void wg_setSurfaceIdentity(IntPtr surface, int id);
@@ -99,10 +117,13 @@ public class Surface : Objekt
 
 	[DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
 	private static extern int wg_fillSurface(IntPtr surface, Color col);                                ///< @brief Fill surface with specified color.
+
 	[DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-	private static extern int wg_fillSurfaceRect(IntPtr surface, ref RectI region, Color col);			///< @brief Fill section of surface with specified color
+	private static extern int wg_fillSurfaceRect(IntPtr surface, ref RectI region, Color col);          ///< @brief Fill section of surface with specified color
+
 	[DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
 	private static extern int wg_copySurface(IntPtr destSurface, CoordI dst, IntPtr sourceSurface);     ///< @brief Copy other surface as a block
+
 	[DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
 	private static extern int wg_copySurfaceRect(IntPtr destSurface, CoordI dst, IntPtr sourceSurface, ref RectI srcRect);    ///< @brief Copy block of graphics from other surface
 

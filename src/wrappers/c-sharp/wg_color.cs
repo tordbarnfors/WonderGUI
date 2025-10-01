@@ -4,6 +4,24 @@ namespace WG;
 
 
 [StructLayout(LayoutKind.Sequential)]
+public struct Color8
+{
+	public Color8()
+	{
+		r = 0;
+		g = 0;
+		b = 0;
+		a = 0;
+	}
+
+	public Byte b;
+	public Byte g;
+	public Byte r;
+	public Byte a;
+}
+
+
+[StructLayout(LayoutKind.Sequential)]
 public struct Color
 {
 	public short b;
@@ -18,7 +36,6 @@ public struct Color
 		this.b = 0;
 		this.a = 0;
 	}
-
 
 	public Color(int r, int g, int b, int a = 4096)
 	{
