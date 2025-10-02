@@ -23,6 +23,8 @@
 #include <wg_textstylemanager.h>
 #include <wg_base.h>
 #include <wg_dummyfont.h>
+#include <mutex>
+static std::mutex g_accessMutex;
 
 
 namespace wg
@@ -57,7 +59,7 @@ namespace wg
 	{
 		// If s_pLookupTable is set, we assume we have bailed out on an earlier exit, thus
 		// still have a lookup table with entries that are still alive.
-        
+
 		if( s_capacity == 0 )			// This is correct, we DO want to check s_capacity instead of s_instanceCounter here.
 		{
 			int capacity = 16;
@@ -68,14 +70,14 @@ namespace wg
 
 			for( int i = 0 ; i < capacity ; i++ )
 				* (int*)(&s_pLookupTable[i]) = i+1;
-			
+
 
 			TextStyle::Blueprint textStyleBP;
 			textStyleBP.font = DummyFont::create();
 
 			TextStyle::s_pDefaultStyle = TextStyle::create( textStyleBP );
 		}
-		
+
 		s_instanceCounter++;
 	}
 
@@ -90,21 +92,21 @@ namespace wg
 		}
 
 		s_instanceCounter--;
-		
+
 		if( s_instanceCounter == 0 )
 		{
 			wg::TextStyle::s_pDefaultStyle = nullptr;
-			
+
 			if (s_size > 0)
 			{
 				Base::throwError(ErrorLevel::Warning, ErrorCode::SystemIntegrity, "Exiting TextStyleManager before all TextStyles have been deleted. This can cause crashes later on.", nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
 				return;
 			}
-			
+
 			//TODO: Something if s_size > 0 (there are still existing TextStyles)
-			
+
 			delete [] s_pLookupTable;
-			
+
 			s_pLookupTable = nullptr;
 			s_capacity = 0;
 			s_size = 0;
@@ -116,6 +118,8 @@ namespace wg
 
 	uint16_t TextStyleManager::_reserveHandle(TextStyle * p)
 	{
+        std::scoped_lock lock{g_accessMutex};
+
 		if( s_size == s_capacity )
 		{
 			if (s_capacity == c_maxCapacity)
@@ -155,6 +159,8 @@ namespace wg
 
 	void TextStyleManager::_releaseHandle( TextStyle_h handle )
 	{
+        std::scoped_lock lock{g_accessMutex};
+
         if( s_pLookupTable == nullptr )
         {
 			Base::throwError(ErrorLevel::Warning, ErrorCode::SystemIntegrity, "TextStyle destroyed after TextStyleManager has exited (or possibly before being initialized).", nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
