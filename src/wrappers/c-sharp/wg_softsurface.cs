@@ -4,10 +4,12 @@ namespace WG;
 
 public class SoftSurface : Surface
 {
+    //____ Constructor ________________________________________________________
+
 	internal SoftSurface(IntPtr c_obj)
-	{
-		_obj = c_obj;
-	}
+    {
+        _obj = c_obj;
+    }
 
 	public SoftSurface(ref Blueprint blueprint)
 	{
@@ -17,7 +19,9 @@ public class SoftSurface : Surface
 		_obj = wg_createSoftSurface(ref bp);
 	}
 
-	public SoftSurface(Surface.Blueprint blueprint, Blob blob, int pitch)
+    //____ SoftSurface() ______________________________________________________
+
+    public SoftSurface(Surface.Blueprint blueprint, Blob blob, int pitch)
     {
         Surface.C_Blueprint bp;
         Surface.ConvertBlueprint(in blueprint, out bp);

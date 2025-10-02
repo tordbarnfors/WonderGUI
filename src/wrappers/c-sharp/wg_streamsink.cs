@@ -4,12 +4,16 @@ using WG;
 
 public struct StreamSink
 {
+    //____ Constructor ________________________________________________________
     public StreamSink(IntPtr component, Objekt holder)
     {
         c_component.objekt = holder.CHandle();
         c_component.component = component;
+
+        this.holder = holder;
     }
 
+    //____ ProcessChunks() ____________________________________________________
     public unsafe void ProcessChunks(Span<byte> data)
     {
         fixed (byte* ptr = data)
@@ -18,8 +22,10 @@ public struct StreamSink
         }
     }
 
+    //____ Data _______________________________________________________________
 
     internal C_Component c_component;
+    private Objekt holder;      // Make sure to keep the object alive as long as we are.
 
     //____ DLL functions ______________________________________________________
 

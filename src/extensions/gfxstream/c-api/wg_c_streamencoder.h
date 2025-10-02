@@ -54,7 +54,7 @@ extern "C" {
 	void			wg_setEncoderDefaultSampleMethod(wg_obj encoder, wg_sampleMethod sampleMethod);
 	wg_sampleMethod wg_getEncoderDefaultSampleMethod(wg_obj encoder);
 
-	void			wg_flushEncoder();
+	void			wg_flushEncoder(wg_obj encoder);
 
 #ifdef __cplusplus
 }

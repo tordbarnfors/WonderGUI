@@ -70,3 +70,8 @@ wg_sampleMethod wg_getEncoderDefaultSampleMethod(wg_obj encoder)
 {
 	return (wg_sampleMethod) getPtr(encoder)->defaultSampleMethod();
 }
+
+void wg_flushEncoder(wg_obj encoder)
+{
+	getPtr(encoder)->flush();
+}
