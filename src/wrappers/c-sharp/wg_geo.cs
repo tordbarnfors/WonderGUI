@@ -5,80 +5,25 @@ namespace WG;
 
 
 [StructLayout(LayoutKind.Sequential)]
-public struct CoordI
-{
-    public CoordI() { }
-    public int x = 0;
-    public int y = 0;
-}
+public record struct CoordI(int X, int Y);
 
 [StructLayout(LayoutKind.Sequential)]
-public struct SizeI
-{
-    public SizeI() {}
-
-    public int w = 0;
-    public int h = 0;
-}
+public record struct SizeI(int W, int H);
 
 [StructLayout(LayoutKind.Sequential)]
-public struct BorderI
-{
-    public BorderI() {}
-
-    public int top = 0;
-    public int right = 0;
-    public int bottom = 0;
-    public int left = 0;
-}
+public record struct BorderI(int Top, int Right, int Bottom, int Left);
 
 [StructLayout(LayoutKind.Sequential)]
-public struct RectI
-{
-    public RectI() { }
-
-    public int x = 0;
-    public int y = 0;
-    public int w = 0;
-    public int h = 0;
-}
+public record struct RectI(int X, int Y, int W, int H);
 
 [StructLayout(LayoutKind.Sequential)]
-public struct CoordSPX
-{
-    public CoordSPX() { }
-
-    public int x = 0;
-    public int y = 0;
-}
+public record struct CoordSPX(int X, int Y);
 
 [StructLayout(LayoutKind.Sequential)]
-public struct SizeSPX
-{
-    public SizeSPX() { }
-
-    public int w = 0;
-    public int h = 0;
-}
+public record struct SizeSPX(int W, int H);
 
 [StructLayout(LayoutKind.Sequential)]
-public struct BorderSPX
-{
-    public BorderSPX() { }
-
-    public int top = 0;
-    public int right = 0;
-    public int bottom = 0;
-    public int left = 0;
-}
+public record struct BorderSPX( int Top, int Right, int Bottom, int Left);
 
 [StructLayout(LayoutKind.Sequential)]
-public struct RectSPX
-{
-    public RectSPX() { }
-
-    public int x = 0;
-    public int y = 0;
-    public int w = 0;
-    public int h = 0;
-}
+public record struct RectSPX(int X, int Y, int W, int H);

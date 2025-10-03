@@ -40,7 +40,7 @@ public class Blob : Objekt
 	}
 
     //____ DLL functions ______________________________________________________
-0
+
 	[DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
 	private static extern IntPtr wg_createBlob(int size);
 

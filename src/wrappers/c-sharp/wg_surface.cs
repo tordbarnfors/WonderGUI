@@ -1,3 +1,4 @@
+using System.Drawing;
 using System.Runtime.InteropServices;
 
 namespace WG;
@@ -10,19 +11,19 @@ public class Surface : Objekt
 	{
 		public Blueprint() {}
 
-		public bool 			buffered = false;
-		public bool				canvas = false;
+		public bool 			Buffered = false;
+		public bool				Canvas = false;
 //		public const wg_color8* palette;				HOW DO WE DO THIS?
-		public int				paletteSize = 0;
-		public int				paletteCapacity = 0;
-		public bool				dynamic = false;
+		public int				PaletteSize = 0;
+		public int				PaletteCapacity = 0;
+		public bool				Dynamic = false;
 		public PixelFormat		format = PixelFormat.Undefined;
-		public int				identity = 0;
-		public bool				mipmap = false;
-		public SampleMethod		sampleMethod = SampleMethod.Undefined;
-		public int				scale = 0;
-		public SizeI			size;					// Mandatory, except when creating from other surface.
-		public bool				tiling = false;
+		public int				Identity = 0;
+		public bool				Mipmap = false;
+		public SampleMethod		SampleMethod = SampleMethod.Undefined;
+		public int				Scale = 0;
+		public SizeI			Size;					// Mandatory, except when creating from other surface.
+		public bool				Tiling = false;
 	}
 
 	//____ SetId() ____________________________________________________________
@@ -88,20 +89,19 @@ public class Surface : Objekt
 
 	static internal void ConvertBlueprint(in Blueprint org, out C_Blueprint converted )
 	{
-		converted.buffered = (byte) (org.buffered ? 1 : 0);
-		converted.canvas = (byte) (org.canvas ? 1: 0);
+		converted.buffered = (byte) (org.Buffered ? 1 : 0);
+		converted.canvas = (byte) (org.Canvas ? 1: 0);
 		converted.palette = 0;											//TODO: Need to solve this...
 		converted.paletteSize = 0;
-		converted.paletteCapacity = org.paletteCapacity;
-		converted.dynamic = (byte) (org.dynamic ? 1: 0);
+		converted.paletteCapacity = org.PaletteCapacity;
+		converted.dynamic = (byte) (org.Dynamic ? 1: 0);
 		converted.format = org.format;
-		converted.identity = org.identity;
-		converted.mipmap = (byte) (org.mipmap ? 1 : 0);
-		converted.sampleMethod = org.sampleMethod;
-		converted.scale = org.scale;
-		converted.size.w = org.size.w;
-		converted.size.h = org.size.h;
-		converted.tiling = (byte) (org.tiling ? 1 : 0);
+		converted.identity = org.Identity;
+		converted.mipmap = (byte) (org.Mipmap ? 1 : 0);
+		converted.sampleMethod = org.SampleMethod;
+		converted.scale = org.Scale;
+		converted.size = new SizeI( org.Size.W, org.Size.H );
+		converted.tiling = (byte) (org.Tiling ? 1 : 0);
 	}
 
     //____ DLL functions ______________________________________________________

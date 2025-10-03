@@ -49,24 +49,20 @@ public class GfxDevice : Objekt
     }
 
     //____ BeginCanvasUpdate() ________________________________________________
-    public bool BeginCanvasUpdate(CanvasRef canvas, RectSPX[] updateRects)
+
+    public bool BeginCanvasUpdate(CanvasRef canvas, RectSPX[]? updateRects = null, CanvasLayers? layers = null, int startLayer = 0)
     {
-        return (wg_beginCanvasUpdateWithRef(_obj, canvas, updateRects.Length, updateRects, 0, 0) == 1);
+        int rectCount = updateRects?.Length ?? 0;
+        IntPtr layersHandle = layers?.CHandle() ?? 0;
+        return (wg_beginCanvasUpdateWithRef(_obj, canvas, rectCount, updateRects, layersHandle, startLayer) == 1);
     }
 
-    public bool BeginCanvasUpdate(CanvasRef canvas, RectSPX[] updateRects, CanvasLayers layers, int startLayer = 0)
+    public bool BeginCanvasUpdate(Surface canvas, RectSPX[]? updateRects = null, CanvasLayers? layers = null, int startLayer = 0)
     {
-        return (wg_beginCanvasUpdateWithRef(_obj, canvas, updateRects.Length, updateRects, layers.CHandle(), startLayer) == 1);
-    }
+        int rectCount = updateRects?.Length ?? 0;
+        IntPtr layersHandle = layers?.CHandle() ?? 0;
 
-    public bool BeginCanvasUpdate(Surface canvas, RectSPX[] updateRects)
-    {
-        return (wg_beginCanvasUpdateWithSurface(_obj, canvas.CHandle(), updateRects.Length, updateRects, 0, 0) == 1);
-    }
-
-    public bool BeginCanvasUpdate(Surface canvas, RectSPX[] updateRects, CanvasLayers layers, int startLayer = 0)
-    {
-        return (wg_beginCanvasUpdateWithSurface(_obj, canvas.CHandle(), updateRects.Length, updateRects, layers.CHandle(), startLayer) == 1);
+        return (wg_beginCanvasUpdateWithSurface(_obj, canvas.CHandle(), rectCount, updateRects, layersHandle, startLayer) == 1);
     }
 
     //____ EndCanvasUpdate() __________________________________________________
@@ -146,9 +142,9 @@ public class GfxDevice : Objekt
         wg_fill(_obj, color);
     }
 
-    public void Fill(RectSPX rect, Color color)
+    public void Fill(in RectSPX rect, in Color color)
     {
-        wg_fillRect(_obj, ref rect, color);
+        wg_fillRect(_obj, rect, color);
     }
 
     //____ DrawLine() _________________________________________________________
@@ -170,9 +166,9 @@ public class GfxDevice : Objekt
         wg_blit(_obj, dest);
     }
 
-    public void Blit(CoordSPX dest, ref RectSPX src)
+    public void Blit(CoordSPX dest, in RectSPX src)
     {
-        wg_blitRect(_obj, dest, ref src);
+        wg_blitRect(_obj, dest, src);
     }
 
     //____ FlipBlit() _________________________________________________________
@@ -182,33 +178,33 @@ public class GfxDevice : Objekt
         wg_flipBlit(_obj, dest, flip);
     }
 
-    public void FlipBlit(CoordSPX dest, ref RectSPX src, GfxFlip flip)
+    public void FlipBlit(CoordSPX dest, in RectSPX src, GfxFlip flip)
     {
-        wg_flipBlit(_obj, dest, flip);
+        wg_flipBlitRect(_obj, dest, src, flip);
     }
 
     //____ StretchBlit() ______________________________________________________
 
-    public void StretchBlit(ref RectSPX dest)
+    public void StretchBlit(in RectSPX dest)
     {
-        wg_stretchBlit(_obj, ref dest);
+        wg_stretchBlit(_obj, dest);
     }
 
-    public void StretchBlit(ref RectSPX dest, ref RectSPX src)
+    public void StretchBlit(in RectSPX dest, in RectSPX src)
     {
-        wg_stretchBlitRect(_obj, ref dest, ref src);
+        wg_stretchBlitRect(_obj, dest, src);
     }
 
     //____ StretchFlipBlit() __________________________________________________
 
-    public void StretchFlipBlit(ref RectSPX dest, GfxFlip flip)
+    public void StretchFlipBlit(in RectSPX dest, GfxFlip flip)
     {
-        wg_stretchFlipBlit(_obj, ref dest, flip);
+        wg_stretchFlipBlit(_obj, dest, flip);
     }
 
-    public void StretchFlipBlit(ref RectSPX dest, ref RectSPX src, GfxFlip flip)
+    public void StretchFlipBlit(in RectSPX dest, in RectSPX src, GfxFlip flip)
     {
-        wg_stretchFlipBlitRect(_obj, ref dest, ref src, flip);
+        wg_stretchFlipBlitRect(_obj, dest, src, flip);
     }
 
 
@@ -343,10 +339,10 @@ public class GfxDevice : Objekt
     private static extern void wg_flushDevice(IntPtr device);
 
     [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-    private static extern int wg_beginCanvasUpdateWithRef(IntPtr device, CanvasRef canvas, int nUpdateRects, RectSPX[] updateRects, IntPtr canvasLayers, int startLayer);
+    private static extern int wg_beginCanvasUpdateWithRef(IntPtr device, CanvasRef canvas, int nUpdateRects, RectSPX[]? updateRects, IntPtr canvasLayers, int startLayer);
 
     [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-    private static extern int wg_beginCanvasUpdateWithSurface(IntPtr device, IntPtr surface, int nUpdateRects, RectSPX[] updateRects, IntPtr canvasLayers, int startLayer);
+    private static extern int wg_beginCanvasUpdateWithSurface(IntPtr device, IntPtr surface, int nUpdateRects, RectSPX[]? updateRects, IntPtr canvasLayers, int startLayer);
 
     [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
     private static extern void wg_endCanvasUpdate(IntPtr device);
@@ -361,7 +357,7 @@ public class GfxDevice : Objekt
     private static extern void wg_fill(IntPtr device, Color col);
 
     [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-    private static extern void wg_fillRect(IntPtr device, ref RectSPX rect, Color col);
+    private static extern void wg_fillRect(IntPtr device, in RectSPX rect, Color col);
 
     [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
     private static extern void wg_drawLine(IntPtr device, CoordSPX begin, CoordSPX end, Color color, int thickness);
@@ -373,25 +369,25 @@ public class GfxDevice : Objekt
     private static extern void wg_blit(IntPtr device, CoordSPX dest);
 
     [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-    private static extern void wg_blitRect(IntPtr device, CoordSPX dest, ref RectSPX src);
+    private static extern void wg_blitRect(IntPtr device, CoordSPX dest, in RectSPX src);
 
     [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
     private static extern void wg_flipBlit(IntPtr device, CoordSPX dest, GfxFlip flip);
 
     [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-    private static extern void wg_flipBlitRect(IntPtr device, CoordSPX dest, ref RectSPX src, GfxFlip flip);
+    private static extern void wg_flipBlitRect(IntPtr device, CoordSPX dest, in RectSPX src, GfxFlip flip);
  
     [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-    private static extern void wg_stretchBlit(IntPtr device, ref RectSPX dest);
+    private static extern void wg_stretchBlit(IntPtr device, in RectSPX dest);
 
     [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-    private static extern void wg_stretchBlitRect(IntPtr device, ref RectSPX dest, ref RectSPX src);
+    private static extern void wg_stretchBlitRect(IntPtr device, in RectSPX dest, in RectSPX src);
 
     [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-    private static extern void wg_stretchFlipBlit(IntPtr device, ref RectSPX dest, GfxFlip flip);
+    private static extern void wg_stretchFlipBlit(IntPtr device, in RectSPX dest, GfxFlip flip);
  
     [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-    private static extern void wg_stretchFlipBlitRect(IntPtr device, ref RectSPX dest, ref RectSPX src, GfxFlip flip);
+    private static extern void wg_stretchFlipBlitRect(IntPtr device, in RectSPX dest, in RectSPX src, GfxFlip flip);
  
     //[DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
     //private static extern void wg_precisionBlit(IntPtr device, const wg_rectSPX* dest, const wg_rectF* srcSPX);

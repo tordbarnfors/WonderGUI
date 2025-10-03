@@ -19,30 +19,30 @@ public class FreeTypeFont : Font
 	{
 		public Blueprint() { }
 
-		public Font? backupFont;
-		public Blob? blob;
-		public BitmapCache? cache;
-		public int faceIndex = 0;
-		public RenderMode renderMode = RenderMode.BestShapes;
-		public bool stemDarkening = GfxBase.GetDefaultToSRGB();
-		public int xDPI = 72;
-		public int yDPI = 72;
+		public Font? BackupFont;
+		public Blob? Blob;
+		public BitmapCache? Cache;
+		public int FaceIndex = 0;
+		public RenderMode RenderMode = RenderMode.BestShapes;
+		public bool StemDarkening = GfxBase.GetDefaultToSRGB();
+		public int XDPI = 72;
+		public int YDPI = 72;
 	}
 
 	//____ Constructor ________________________________________________________
-	public FreeTypeFont(ref Blueprint bp)
+	public FreeTypeFont(in Blueprint bp)
 	{
 		wg_freeTypeFontBP cbp;
 
-		cbp.backupFont = bp.backupFont == null ? 0 : bp.backupFont.CHandle();
-		cbp.blob = bp.blob == null ? 0 : bp.blob.CHandle();
-		cbp.cache = bp.cache == null ? 0 : bp.cache.CHandle();
-		cbp.faceIndex = bp.faceIndex;
+		cbp.backupFont = bp.BackupFont == null ? 0 : bp.BackupFont.CHandle();
+		cbp.blob = bp.Blob == null ? 0 : bp.Blob.CHandle();
+		cbp.cache = bp.Cache == null ? 0 : bp.Cache.CHandle();
+		cbp.faceIndex = bp.FaceIndex;
 
-		cbp.renderMode = bp.renderMode;
-		cbp.stemDarkening = bp.stemDarkening ? 1 : 0;
-		cbp.xDPI = bp.xDPI;
-		cbp.yDPI = bp.yDPI;
+		cbp.renderMode = bp.RenderMode;
+		cbp.stemDarkening = bp.StemDarkening ? 1 : 0;
+		cbp.xDPI = bp.XDPI;
+		cbp.yDPI = bp.YDPI;
 
 		_obj = wg_createFreeTypeFont(cbp);
 	}

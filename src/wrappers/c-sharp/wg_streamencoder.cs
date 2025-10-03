@@ -8,11 +8,11 @@ public class StreamEncoder : Objekt
     public struct Blueprint
     {
         public Blueprint() { }
-        public int bufferBytes = 4096 * 2;
-        public UInt16 objectIdStart = 0;
-        public PixelFormat pixelFormat = PixelFormat.BGRA_8;
-        public SampleMethod sampleMethod = SampleMethod.Nearest;
-        public StreamSink sink;
+        public int BufferBytes = 4096 * 2;
+        public UInt16 ObjectIdStart = 0;
+        public PixelFormat PixelFormat = PixelFormat.BGRA_8;
+        public SampleMethod SampleMethod = SampleMethod.Nearest;
+        public StreamSink Sink;
     }
 
     //____ Constructor ________________________________________________________
@@ -20,11 +20,11 @@ public class StreamEncoder : Objekt
     {
         C_Blueprint c_bp;
 
-        c_bp.bufferBytes = blueprint.bufferBytes;
-        c_bp.objectIdStart = blueprint.objectIdStart;
-        c_bp.pixelFormat = blueprint.pixelFormat;
-        c_bp.sampleMethod = blueprint.sampleMethod;
-        c_bp.sink = blueprint.sink.c_component;
+        c_bp.bufferBytes = blueprint.BufferBytes;
+        c_bp.objectIdStart = blueprint.ObjectIdStart;
+        c_bp.pixelFormat = blueprint.PixelFormat;
+        c_bp.sampleMethod = blueprint.SampleMethod;
+        c_bp.sink = blueprint.Sink.c_component;
 
         _obj = wg_createStreamEncoder(ref c_bp);
     }

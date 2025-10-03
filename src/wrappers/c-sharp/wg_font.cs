@@ -4,16 +4,16 @@ namespace WG;
 
 public class Glyph
 {
-    public int      advance;
-    public uint     kerningIndex;
+    public int      Advance;
+    public uint     KerningIndex;
 
-    public IntPtr   fontRef;
+    public IntPtr   FontRef;
 
-    public Surface? surface;
+    public Surface? Surface;
 
-	public RectSPX	rect;
-	int     	    bearingX;
-	int		        bearingY;
+	public RectSPX	Rect;
+	int     	    BearingX;
+	int		        BearingY;
 }
 
 

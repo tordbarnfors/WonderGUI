@@ -11,14 +11,14 @@ public class SurfaceWriter : Objekt
 	{
 		public SaveInfo() { }
 
-		public bool identity = true;
-		public bool sampleMethod = false;
-		public bool scale = true;
-		public bool buffered = false;
-		public bool canvas = false;
-		public bool dynamic = false;
-		public bool tiling = true;
-		public bool mipmap = false;
+		public bool Identity = true;
+		public bool SampleMethod = false;
+		public bool Scale = true;
+		public bool Buffered = false;
+		public bool Canvas = false;
+		public bool Dynamic = false;
+		public bool Tiling = true;
+		public bool Mipmap = false;
 	}
 
 	//____ Blueprint __________________________________________________________
@@ -34,21 +34,21 @@ public class SurfaceWriter : Objekt
 		C_Blueprint bp;
 
 		int saveInfo = 0;
-		if (blueprint.saveInfo.identity)
+		if (blueprint.saveInfo.Identity)
 			saveInfo += 1;
-		if (blueprint.saveInfo.sampleMethod)
+		if (blueprint.saveInfo.SampleMethod)
 			saveInfo += 2;
-		if (blueprint.saveInfo.scale)
+		if (blueprint.saveInfo.Scale)
 			saveInfo += 4;
-		if (blueprint.saveInfo.buffered)
+		if (blueprint.saveInfo.Buffered)
 			saveInfo += 8;
-		if (blueprint.saveInfo.canvas)
+		if (blueprint.saveInfo.Canvas)
 			saveInfo += 16;
-		if (blueprint.saveInfo.dynamic)
+		if (blueprint.saveInfo.Dynamic)
 			saveInfo += 32;
-		if (blueprint.saveInfo.tiling)
+		if (blueprint.saveInfo.Tiling)
 			saveInfo += 64;
-		if (blueprint.saveInfo.mipmap)
+		if (blueprint.saveInfo.Mipmap)
 			saveInfo += 128;
 
 		bp.saveInfo = saveInfo;
@@ -58,9 +58,11 @@ public class SurfaceWriter : Objekt
 
 	//____ WriteSurfaceToBlob() _______________________________________________
 
-	Blob WriteSurfaceToBlob(ref Surface surface, byte[] extraData)
+	public Blob WriteSurfaceToBlob(ref Surface surface, byte[]? extraData = null)
 	{
-		IntPtr p = wg_writeSurfaceToBlob(_obj, surface.CHandle(), extraData.Length, extraData);
+		int extraLength = extraData?.Length ?? 0;
+
+		IntPtr p = wg_writeSurfaceToBlob(_obj, surface.CHandle(), extraLength, extraData);
 		return new Blob(p);
 	}
 
@@ -77,6 +79,6 @@ public class SurfaceWriter : Objekt
 	private static extern IntPtr wg_createSurfaceWriter(ref C_Blueprint blueprint);
 
 	[DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-	private static extern IntPtr wg_writeSurfaceToBlob(IntPtr surfaceWriter, IntPtr surface, int extraDataSize, byte[] pExtraData);
+	private static extern IntPtr wg_writeSurfaceToBlob(IntPtr surfaceWriter, IntPtr surface, int extraDataSize, byte[]? pExtraData);
 
 }
