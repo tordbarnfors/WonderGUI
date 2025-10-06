@@ -17,7 +17,7 @@ generate_export_header(streamgendll BASE_NAME wg)
 
 #set_target_properties(streamgendll PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS TRUE)
 
-target_include_directories(streamgendll 
+target_include_directories(streamgendll
 	PRIVATE ${WONDERGEAR_INCDIRS}
 	PRIVATE ${WONDERGFX_INCDIRS}
 	PRIVATE ${WGGFXSTREAM_INCDIRS}

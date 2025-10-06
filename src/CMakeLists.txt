@@ -62,8 +62,9 @@ elseif(APPLE)
 
 
 else()
-    	set(FREETYPE2_LIB freetype)
-	set(FREETYPE2_INCDIR /usr/include/freetype2)
+    set(FREETYPE2_LIB freetype)
+	set(FREETYPE2_INCDIR /usr/include/freetype2 CACHE STRING "Freetype include dirs (list)")
+	set(FREETYPE2_LIBDIR "" CACHE FILEPATH "Path to libfreetype.so or .a")
 
 	set(SDL2_LIBS SDL2)
 	set(SDL2IMAGE_LIBS SDL2_image)
