@@ -15,6 +15,9 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <Compile Include="..\wg_bitmapcache.cs">
+        <Link>wg_bitmapcache.cs</Link>
+      </Compile>
       <Compile Include="..\wg_blob.cs">
         <Link>wg_blob.cs</Link>
       </Compile>
@@ -23,6 +26,15 @@
       </Compile>
       <Compile Include="..\wg_color.cs">
         <Link>wg_color.cs</Link>
+      </Compile>
+      <Compile Include="..\wg_component.cs">
+        <Link>wg_component.cs</Link>
+      </Compile>
+      <Compile Include="..\wg_font.cs">
+        <Link>wg_font.cs</Link>
+      </Compile>
+      <Compile Include="..\wg_freetypefont.cs">
+        <Link>wg_freetypefont.cs</Link>
       </Compile>
       <Compile Include="..\wg_geo.cs">
         <Link>wg_geo.cs</Link>
@@ -42,14 +54,41 @@
       <Compile Include="..\wg_objekt.cs">
         <Link>wg_objekt.cs</Link>
       </Compile>
+      <Compile Include="..\wg_printer.cs">
+        <Link>wg_printer.cs</Link>
+      </Compile>
       <Compile Include="..\wg_softbackend.cs">
         <Link>wg_softbackend.cs</Link>
       </Compile>
       <Compile Include="..\wg_softsurface.cs">
         <Link>wg_softsurface.cs</Link>
       </Compile>
+      <Compile Include="..\wg_softsurfacefactory.cs">
+        <Link>wg_softsurfacefactory.cs</Link>
+      </Compile>
+      <Compile Include="..\wg_streambackend.cs">
+        <Link>wg_streambackend.cs</Link>
+      </Compile>
+      <Compile Include="..\wg_streamencoder.cs">
+        <Link>wg_streamencoder.cs</Link>
+      </Compile>
+      <Compile Include="..\wg_streamsink.cs">
+        <Link>wg_streamsink.cs</Link>
+      </Compile>
+      <Compile Include="..\wg_streamsurface.cs">
+        <Link>wg_streamsurface.cs</Link>
+      </Compile>
+      <Compile Include="..\wg_streamsurfacefactory.cs">
+        <Link>wg_streamsurfacefactory.cs</Link>
+      </Compile>
+      <Compile Include="..\wg_streamwriter.cs">
+        <Link>wg_streamwriter.cs</Link>
+      </Compile>
       <Compile Include="..\wg_surface.cs">
         <Link>wg_surface.cs</Link>
+      </Compile>
+      <Compile Include="..\wg_surfacefactory.cs">
+        <Link>wg_surfacefactory.cs</Link>
       </Compile>
       <Compile Include="..\wg_surfacewriter.cs">
         <Link>wg_surfacewriter.cs</Link>
