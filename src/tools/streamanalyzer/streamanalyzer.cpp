@@ -44,6 +44,7 @@ bool MyApp::init(Visitor* pVisitor)
 	if (!_setupGUI(pVisitor))
 	{
 		printf("ERROR: Failed to setup GUI!\n");
+		printf("ERROR: Failed to setup GUI!\n");
 		return false;
 	}
 		
@@ -65,6 +66,7 @@ bool MyApp::init(Visitor* pVisitor)
 	auto pSoftBackend = wg_dynamic_cast<SoftBackend_p>(pDeviceGen2->backend());
 	if( pSoftBackend )
 	{
+		addBaseSoftKernelsForBGR565sRGBCanvas(pSoftBackend);
 		addExtraSoftKernelsForRGB555BECanvas(pSoftBackend);
 		addExtraSoftKernelsForBGR565sRGBCanvas(pSoftBackend);
 	}
@@ -888,7 +890,7 @@ bool MyApp::loadStream(std::string path)
 	}
 
 	// Setup streamwrapper and pump
-
+/*
 	auto pStreamGfxBackend = LinearBackend::create(
 		[this](CanvasRef ref, int bytes)
 		{
@@ -946,8 +948,8 @@ bool MyApp::loadStream(std::string path)
 				m_recordedSteps.push_back(rec);
 			}
 		} );
-
-//	auto pStreamGfxBackend = SoftBackend::create();
+*/
+	auto pStreamGfxBackend = SoftBackend::create();
 
 	auto pTrimGfxBackend = StreamTrimBackend::create(pStreamGfxBackend);
 

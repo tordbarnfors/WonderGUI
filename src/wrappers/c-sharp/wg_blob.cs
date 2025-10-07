@@ -6,11 +6,23 @@ namespace WG;
 public class Blob : Objekt
 {
 
+   //____ Callback delegate __________________________________________________________
+
+    // Define a delegate that matches the C++ callback signature
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    public delegate void BlobDestroyedCallback();
+
 	//____ Constructors _______________________________________________________
 
 	public Blob(int size)
 	{
 		_obj = wg_createBlob(size);
+	}
+
+	public Blob(in Span<byte> bytes, BlobDestroyedCallback callback)
+	{
+		_obj = wg_createBlobFromData(bytes, bytes.Length, callback);
+		_destructor = callback;			// Save it so it doesn't get garbage collected.
 	}
 
 	internal Blob(IntPtr c_handle)
@@ -39,13 +51,15 @@ public class Blob : Objekt
 		return byteArray;
 	}
 
-    //____ DLL functions ______________________________________________________
+	BlobDestroyedCallback? _destructor = null;
+
+	//____ DLL functions ______________________________________________________
 
 	[DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
 	private static extern IntPtr wg_createBlob(int size);
 
-	//	[DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-	//	static public extern IntPtr	wg_createBlobFromData( Byte[] pData, int size, void(*destructor)() );
+	[DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
+	static public extern IntPtr	wg_createBlobFromData( Span<byte> pData, int size, BlobDestroyedCallback destructor );
 
 	[DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
 	private static extern int wg_blobSize(IntPtr blob);
