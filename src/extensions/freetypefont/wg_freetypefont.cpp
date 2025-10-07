@@ -64,9 +64,14 @@ namespace wg
 		return FreeTypeFont_p( new FreeTypeFont(WGBP(FreeTypeFont, _.blob = pTTFBlob )) );
 	}
 
-
 	FreeTypeFont_p FreeTypeFont::create( const Blueprint& blueprint )
 	{
+		if( !blueprint.blob )
+		{
+			GearBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Blueprint must contain a blob with the font", nullptr, &FreeTypeFont::TYPEINFO, __func__, __FILE__, __LINE__);
+			return nullptr;
+		}
+
 		return FreeTypeFont_p(new FreeTypeFont(blueprint));
 	}
 
@@ -74,12 +79,14 @@ namespace wg
 
 	FreeTypeFont::FreeTypeFont( const Blueprint& bp ) : Font(bp.backupFont)
 	{
-        if( s_nInstances == 0 )
+		GearBase::throwError(ErrorLevel::Warning, ErrorCode::Other, "FreeTypeFont() entered", this, &FreeTypeFont::TYPEINFO, __func__, __FILE__, __LINE__);
+
+		if( s_nInstances == 0 )
         {
             FT_Error err = FT_Init_FreeType(&s_freeTypeLibrary);
             if (err != 0)
             {
-                //TODO: Error handling!
+				GearBase::throwError(ErrorLevel::Critical, ErrorCode::Internal, "Failed to init FreeType", this, &FreeTypeFont::TYPEINFO, __func__, __FILE__, __LINE__);
             }
         }
         s_nInstances++;
@@ -99,7 +106,7 @@ namespace wg
 											&m_ftFace );
 		if( err )
 		{
-			//TODO: Error handling...
+			GearBase::throwError(ErrorLevel::Critical, ErrorCode::InvalidParam, "FreeType failed to initialize font in blob", this, &FreeTypeFont::TYPEINFO, __func__, __FILE__, __LINE__);
 		}
 
 		m_renderMode = bp.renderMode;
