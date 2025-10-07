@@ -53,6 +53,15 @@ int wg_defineStreamBackendCanvas( wg_obj streamBackend, wg_canvasRef ref, wg_siz
 	return getPtr(streamBackend)->defineCanvas( (CanvasRef) ref, {pixelSize.w, pixelSize.h}, (PixelFormat) pixelFormat, scale );
 }
 
+void wg_encodeCanvasList(wg_obj streamBackend)
+{
+	getPtr(streamBackend)->encodeCanvasList();
+}
+
+void wg_encodeTick(wg_obj streamBackend, int32_t microsecPassed)
+{
+	getPtr(streamBackend)->encodeTick(microsecPassed);
+}
 
 wg_obj wg_createStreamSurface(wg_obj streamEncoder, const wg_surfaceBP* blueprint)
 {

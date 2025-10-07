@@ -37,6 +37,9 @@ extern "C" {
 	WG_EXPORT int		wg_defineStreamBackendCanvasWithSurface( wg_obj streamBackend, wg_canvasRef ref, wg_obj surface );
 	WG_EXPORT int		wg_defineStreamBackendCanvas( wg_obj streamBackend, wg_canvasRef ref, wg_sizeI pixelSize, wg_pixelFormat pixelFormat, int scale );
 
+	WG_EXPORT void		wg_encodeCanvasList(wg_obj streamBackend);
+	WG_EXPORT void		wg_encodeTick(wg_obj streamBackend, int32_t microsecPassed);		// Microsec since last tick (or beginning of stream if first
+
 	WG_EXPORT wg_obj	wg_createStreamSurface(wg_obj streamEncoder, wg_surfaceBP* blueprint);
 	WG_EXPORT wg_obj	wg_createStreamSurfaceFromBlob(wg_obj streamEncoder, const wg_surfaceBP* blueprint, wg_obj blob, int pitch);
 	WG_EXPORT wg_obj	wg_createStreamSurfaceFromBitmap(wg_obj streamEncoder, wg_obj factory, const wg_surfaceBP* blueprint, const uint8_t* pPixels,

@@ -44,6 +44,7 @@ bool MyApp::init(Visitor* pVisitor)
 	if (!_setupGUI(pVisitor))
 	{
 		printf("ERROR: Failed to setup GUI!\n");
+		printf("ERROR: Failed to setup GUI!\n");
 		return false;
 	}
 		
@@ -65,6 +66,7 @@ bool MyApp::init(Visitor* pVisitor)
 	auto pSoftBackend = wg_dynamic_cast<SoftBackend_p>(pDeviceGen2->backend());
 	if( pSoftBackend )
 	{
+		addBaseSoftKernelsForBGR565sRGBCanvas(pSoftBackend);
 		addExtraSoftKernelsForRGB555BECanvas(pSoftBackend);
 		addExtraSoftKernelsForBGR565sRGBCanvas(pSoftBackend);
 	}
