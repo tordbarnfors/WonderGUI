@@ -139,6 +139,9 @@ namespace wg
 
 	FreeTypeFont::~FreeTypeFont()
 	{
+		GearBase::throwError(ErrorLevel::Warning, ErrorCode::Other, "I'm here!", this, &FreeTypeFont::TYPEINFO, __func__, __FILE__, __LINE__);
+
+
 		for( int size = 0 ; size < m_nCachedFontSizes ; size++ )
 		{
 			if (m_pCachedFontSizes[size] != nullptr)
@@ -168,6 +171,8 @@ namespace wg
 
 	bool FreeTypeFont::setSize( spx _size )
 	{
+		GearBase::throwError(ErrorLevel::Warning, ErrorCode::Other, "I'm here!", this, &FreeTypeFont::TYPEINFO, __func__, __FILE__, __LINE__);
+
 		spx size = align(_size);
 
 		if( size == m_size )
@@ -194,6 +199,11 @@ namespace wg
 			_growCachedFontSizes(pxSize + 1);
 
 		m_size = size;
+
+		GearBase::throwError(ErrorLevel::Warning, ErrorCode::Other, "setSize() left", this, &FreeTypeFont::TYPEINFO, __func__, __FILE__, __LINE__);
+
+		GearBase::throwError(ErrorLevel::Warning, ErrorCode::Other, "I'm here!", this, &FreeTypeFont::TYPEINFO, __func__, __FILE__, __LINE__);
+
 		return true;
 	}
 
@@ -224,6 +234,8 @@ namespace wg
 
 	spx FreeTypeFont::kerning( Glyph& leftGlyph, Glyph& rightGlyph )
 	{
+		GearBase::throwError(ErrorLevel::Warning, ErrorCode::Other, "I'm here!", this, &FreeTypeFont::TYPEINFO, __func__, __FILE__, __LINE__);
+
 		if( leftGlyph.advance == 0 || rightGlyph.advance == 0 || leftGlyph.advance == 0 || rightGlyph.advance == 0 )
 			return 0;
 
@@ -233,6 +245,8 @@ namespace wg
 		delta.x = 0;
 		FT_Get_Kerning( m_ftFace, leftGlyph.kerningIndex, rightGlyph.kerningIndex, FT_KERNING_DEFAULT, &delta );
 
+		GearBase::throwError(ErrorLevel::Warning, ErrorCode::Other, "I'm here!", this, &FreeTypeFont::TYPEINFO, __func__, __FILE__, __LINE__);
+
 		return int(delta.x);
 	}
 
@@ -240,8 +254,10 @@ namespace wg
 
 	spx FreeTypeFont::whitespaceAdvance()
 	{
-        int pxSize = m_size/64;
-        
+		GearBase::throwError(ErrorLevel::Warning, ErrorCode::Other, "I'm here!", this, &FreeTypeFont::TYPEINFO, __func__, __FILE__, __LINE__);
+
+		int pxSize = m_size/64;
+
 		if (m_pCachedFontSizes[pxSize] == nullptr)
 		{
 			m_pCachedFontSizes[pxSize] = new CachedFontSize();
@@ -262,6 +278,8 @@ namespace wg
 			m_pCachedFontSizes[pxSize]->whitespaceAdvance = align(int(m_ftFace->glyph->advance.x));
 		}
 
+		GearBase::throwError(ErrorLevel::Warning, ErrorCode::Other, "I'm here!", this, &FreeTypeFont::TYPEINFO, __func__, __FILE__, __LINE__);
+
         return m_pCachedFontSizes[pxSize]->whitespaceAdvance;
 	}
 
@@ -269,6 +287,8 @@ namespace wg
 
 	spx FreeTypeFont::lineGap()
 	{
+		GearBase::throwError(ErrorLevel::Warning, ErrorCode::Other, "I'm here!", this, &FreeTypeFont::TYPEINFO, __func__, __FILE__, __LINE__);
+
 		return align(int(m_ftFace->size->metrics.height - m_ftFace->size->metrics.ascender + m_ftFace->size->metrics.descender));
 	}
 
@@ -277,6 +297,8 @@ namespace wg
 
 	spx FreeTypeFont::maxAscend()
 	{
+		GearBase::throwError(ErrorLevel::Warning, ErrorCode::Other, "I'm here!", this, &FreeTypeFont::TYPEINFO, __func__, __FILE__, __LINE__);
+
 		return int(m_ftFace->size->metrics.ascender);
 	}
 
@@ -284,6 +306,8 @@ namespace wg
 
 	spx FreeTypeFont::maxDescend()
 	{
+		GearBase::throwError(ErrorLevel::Warning, ErrorCode::Other, "I'm here!", this, &FreeTypeFont::TYPEINFO, __func__, __FILE__, __LINE__);
+
 		return -int(m_ftFace->size->metrics.descender);
 	}
 
@@ -292,6 +316,8 @@ namespace wg
 
 	int FreeTypeFont::nbGlyphs()
 	{
+		GearBase::throwError(ErrorLevel::Warning, ErrorCode::Other, "I'm here!", this, &FreeTypeFont::TYPEINFO, __func__, __FILE__, __LINE__);
+
 		return int(m_ftFace->num_glyphs);
 	}
 
@@ -299,6 +325,8 @@ namespace wg
 
 	bool FreeTypeFont::hasGlyphs()
 	{
+		GearBase::throwError(ErrorLevel::Warning, ErrorCode::Other, "I'm here!", this, &FreeTypeFont::TYPEINFO, __func__, __FILE__, __LINE__);
+
 		return m_ftFace->num_glyphs?true:false;
 	}
 
@@ -306,6 +334,8 @@ namespace wg
 
 	bool FreeTypeFont::isMonospace()
 	{
+		GearBase::throwError(ErrorLevel::Warning, ErrorCode::Other, "I'm here!", this, &FreeTypeFont::TYPEINFO, __func__, __FILE__, __LINE__);
+
 		return FT_IS_FIXED_WIDTH( m_ftFace )>0?true:false;
 	}
 
@@ -313,6 +343,8 @@ namespace wg
 
 	spx FreeTypeFont::maxAdvance()
 	{
+		GearBase::throwError(ErrorLevel::Warning, ErrorCode::Other, "I'm here!", this, &FreeTypeFont::TYPEINFO, __func__, __FILE__, __LINE__);
+
 		return align(int(m_ftFace->size->metrics.max_advance));
 	}
 
@@ -321,9 +353,13 @@ namespace wg
 
 	bool FreeTypeFont::hasGlyph( uint16_t ch )
 	{
+		GearBase::throwError(ErrorLevel::Warning, ErrorCode::Other, "I'm here!", this, &FreeTypeFont::TYPEINFO, __func__, __FILE__, __LINE__);
+
 		int index = FT_Get_Char_Index( m_ftFace, ch );
 		if( index == 0 )
 			return false;
+
+		GearBase::throwError(ErrorLevel::Warning, ErrorCode::Other, "I'm here!", this, &FreeTypeFont::TYPEINFO, __func__, __FILE__, __LINE__);
 
 		return true;
 	}
@@ -332,6 +368,8 @@ namespace wg
 
 	void FreeTypeFont::getGlyphWithoutBitmap(uint16_t ch, Glyph& glyph)
 	{
+		GearBase::throwError(ErrorLevel::Warning, ErrorCode::Other, "I'm here!", this, &FreeTypeFont::TYPEINFO, __func__, __FILE__, __LINE__);
+
 		// Get cached glyph if we have one
 
 		MyGlyph * pGlyph = _findGlyph( ch, m_size );
@@ -358,7 +396,9 @@ namespace wg
 					m_pBackupFont->getGlyphWithoutBitmap(ch, glyph);
 					m_pBackupFont->setSize(sz);
 				}
-	            return;            	
+				GearBase::throwError(ErrorLevel::Warning, ErrorCode::Other, "I'm here!", this, &FreeTypeFont::TYPEINFO, __func__, __FILE__, __LINE__);
+
+				return;
 			}
 
 			err = FT_Load_Glyph( m_ftFace, char_index, m_renderFlags );
@@ -379,9 +419,15 @@ namespace wg
 		glyph.advance		= pGlyph->advance;
 		glyph.fontRef		= this;
 		glyph.kerningIndex	= pGlyph->kerningIndex;
+
+		GearBase::throwError(ErrorLevel::Warning, ErrorCode::Other, "I'm here!", this, &FreeTypeFont::TYPEINFO, __func__, __FILE__, __LINE__);
+
 		return;
 
 	no_glyph:
+		GearBase::throwError(ErrorLevel::Warning, ErrorCode::Other, "I'm here!", this, &FreeTypeFont::TYPEINFO, __func__, __FILE__, __LINE__);
+
+
 		glyph.bearingX		= 0;
 		glyph.bearingY		= 0;
 		glyph.advance = 0;
@@ -395,6 +441,8 @@ namespace wg
 
 	void FreeTypeFont::getGlyphWithBitmap(uint16_t ch, Glyph& glyph)
 	{
+		GearBase::throwError(ErrorLevel::Warning, ErrorCode::Other, "I'm here!", this, &FreeTypeFont::TYPEINFO, __func__, __FILE__, __LINE__);
+
 		// Get cached glyph if we have one
 
 		MyGlyph* pGlyph = _findGlyph(ch, m_size);
@@ -421,6 +469,8 @@ namespace wg
 					m_pBackupFont->getGlyphWithBitmap(ch, glyph);
 					m_pBackupFont->setSize(sz);
 				}
+				GearBase::throwError(ErrorLevel::Warning, ErrorCode::Other, "I'm here!", this, &FreeTypeFont::TYPEINFO, __func__, __FILE__, __LINE__);
+
 				return;
 			}
 
@@ -448,6 +498,9 @@ namespace wg
 		glyph.rect = pGlyph->rect;
 		glyph.bearingX = pGlyph->bearingX;
 		glyph.bearingY = pGlyph->bearingY;
+
+		GearBase::throwError(ErrorLevel::Warning, ErrorCode::Other, "I'm here!", this, &FreeTypeFont::TYPEINFO, __func__, __FILE__, __LINE__);
+
 		return;
 
 	no_glyph:
@@ -455,6 +508,9 @@ namespace wg
 		glyph.advance = 0;
 		glyph.kerningIndex = 0;
 		glyph.pSurface = nullptr;
+
+		GearBase::throwError(ErrorLevel::Warning, ErrorCode::Other, "I'm here!", this, &FreeTypeFont::TYPEINFO, __func__, __FILE__, __LINE__);
+
 		return;
 	}
 
@@ -464,6 +520,8 @@ namespace wg
 
 	void FreeTypeFont::_generateBitmap( MyGlyph * pGlyph )
 	{
+		GearBase::throwError(ErrorLevel::Warning, ErrorCode::Other, "I'm here!", this, &FreeTypeFont::TYPEINFO, __func__, __FILE__, __LINE__);
+
 		FT_Error err;
 
         //
@@ -482,7 +540,10 @@ namespace wg
 			
             if( bDifferentSize )
                 FT_Set_Char_Size( m_ftFace, m_size, 0, 0,0 );
-            return;
+
+			GearBase::throwError(ErrorLevel::Warning, ErrorCode::Other, "I'm here!", this, &FreeTypeFont::TYPEINFO, __func__, __FILE__, __LINE__);
+
+			return;
         }
 
 		// Get some details about the glyph
@@ -502,6 +563,9 @@ namespace wg
 
         if( bDifferentSize )
             FT_Set_Char_Size( m_ftFace, m_size, 0, 0,0 );
+
+		GearBase::throwError(ErrorLevel::Warning, ErrorCode::Other, "I'm here!", this, &FreeTypeFont::TYPEINFO, __func__, __FILE__, __LINE__);
+
 	}
 
 
@@ -509,6 +573,8 @@ namespace wg
 
 	void FreeTypeFont::_copyBitmap( FT_Bitmap * pFTBitmap, MyGlyph * pGlyph )
 	{
+		GearBase::throwError(ErrorLevel::Warning, ErrorCode::Other, "I'm here!", this, &FreeTypeFont::TYPEINFO, __func__, __FILE__, __LINE__);
+
 		Surface_p pSurf = pGlyph->pSurface;
 
 		auto pixbuf = pSurf->allocPixelBuffer(pGlyph->rect/64);
@@ -536,6 +602,8 @@ namespace wg
 
 		pSurf->pullPixels(pixbuf);
 		pSurf->freePixelBuffer(pixbuf);
+
+		GearBase::throwError(ErrorLevel::Warning, ErrorCode::Other, "I'm here!", this, &FreeTypeFont::TYPEINFO, __func__, __FILE__, __LINE__);
 	}
 
 
@@ -544,6 +612,8 @@ namespace wg
 	void FreeTypeFont::_copyA8ToA8( const uint8_t * pSrc, int src_width, int src_height, int src_pitch,
 										uint8_t * pDest, int dest_pitch )
 	{
+		GearBase::throwError(ErrorLevel::Warning, ErrorCode::Other, "I'm here!", this, &FreeTypeFont::TYPEINFO, __func__, __FILE__, __LINE__);
+
 		for( int y = 0 ; y < src_height ; y++ )
 		{
 			for( int x = 0 ; x < src_width ; x++ )
@@ -553,6 +623,7 @@ namespace wg
 			pDest += dest_pitch;
 		}
 
+		GearBase::throwError(ErrorLevel::Warning, ErrorCode::Other, "I'm here!", this, &FreeTypeFont::TYPEINFO, __func__, __FILE__, __LINE__);
 	}
 
 	//____ _copyA1ToA8() _____________________________________________________
@@ -560,6 +631,8 @@ namespace wg
 	void FreeTypeFont::_copyA1ToA8( const uint8_t * pSrc, int src_width, int src_height, int src_pitch,
 										uint8_t * pDest, int dest_pitch )
 	{
+		GearBase::throwError(ErrorLevel::Warning, ErrorCode::Other, "I'm here!", this, &FreeTypeFont::TYPEINFO, __func__, __FILE__, __LINE__);
+
 		uint8_t lookup[2] = { 0, 255 };
 
 		for( int y = 0 ; y < src_height ; y++ )
@@ -570,6 +643,8 @@ namespace wg
 			pSrc  += src_pitch;
 			pDest += dest_pitch;
 		}
+
+		GearBase::throwError(ErrorLevel::Warning, ErrorCode::Other, "I'm here!", this, &FreeTypeFont::TYPEINFO, __func__, __FILE__, __LINE__);
 	}
 
 	//____ _copyBGRA8ToBGRA8() _____________________________________________________
@@ -577,6 +652,8 @@ namespace wg
 	void FreeTypeFont::_copyBGRA8ToBGRA8(const uint8_t* pSrc, int src_width, int src_height, int src_pitch,
 		uint8_t* pDest, int dest_pitch)
 	{
+		GearBase::throwError(ErrorLevel::Warning, ErrorCode::Other, "I'm here!", this, &FreeTypeFont::TYPEINFO, __func__, __FILE__, __LINE__);
+
 		for (int y = 0; y < src_height; y++)
 		{
 			for (int x = 0; x < src_width*4; x++)
@@ -586,6 +663,7 @@ namespace wg
 			pDest += dest_pitch;
 		}
 
+		GearBase::throwError(ErrorLevel::Warning, ErrorCode::Other, "I'm here!", this, &FreeTypeFont::TYPEINFO, __func__, __FILE__, __LINE__);
 	}
 
 
@@ -593,6 +671,8 @@ namespace wg
 
 	FreeTypeFont::MyGlyph * FreeTypeFont::_addGlyph( uint16_t ch, spx size, spx advance, uint32_t kerningIndex )
 	{
+		GearBase::throwError(ErrorLevel::Warning, ErrorCode::Other, "I'm here!", this, &FreeTypeFont::TYPEINFO, __func__, __FILE__, __LINE__);
+
 		int szOfs = size/64;
 
 		if (m_pCachedFontSizes[szOfs] == nullptr)
@@ -609,7 +689,9 @@ namespace wg
 		pGlyph->size = size;
 		pGlyph->advance = advance;
 		pGlyph->kerningIndex = kerningIndex;
-		
+
+		GearBase::throwError(ErrorLevel::Warning, ErrorCode::Other, "I'm here!", this, &FreeTypeFont::TYPEINFO, __func__, __FILE__, __LINE__);
+
 		return &m_pCachedFontSizes[szOfs]->page[ch >> 7][ch & 0x7F];
 	}
 
@@ -617,6 +699,8 @@ namespace wg
 
 	void FreeTypeFont::_cacheCleared()
 	{
+		GearBase::throwError(ErrorLevel::Warning, ErrorCode::Other, "I'm here!", this, &FreeTypeFont::TYPEINFO, __func__, __FILE__, __LINE__);
+
 		for (int size = 0; size < m_nCachedFontSizes; size++)
 		{
 			if (m_pCachedFontSizes[size] != nullptr)
@@ -634,6 +718,8 @@ namespace wg
 				}
 			}
 		}
+
+		GearBase::throwError(ErrorLevel::Warning, ErrorCode::Other, "I'm here!", this, &FreeTypeFont::TYPEINFO, __func__, __FILE__, __LINE__);
 	}
 
 	//____ _cacheSurfaceAdded() __________________________________________________
@@ -647,6 +733,8 @@ namespace wg
 
 	void FreeTypeFont::_cacheSurfacesRemoved( int nRemovedSurfaces, Surface * pRemovedSurfaces[] )
 	{
+		GearBase::throwError(ErrorLevel::Warning, ErrorCode::Other, "I'm here!", this, &FreeTypeFont::TYPEINFO, __func__, __FILE__, __LINE__);
+
 		auto pSizes = m_pCachedFontSizes;
 
 		for (int size = 0; size < m_nCachedFontSizes; size++)
@@ -679,6 +767,8 @@ namespace wg
 				}
 			}
 		}
+
+		GearBase::throwError(ErrorLevel::Warning, ErrorCode::Other, "I'm here!", this, &FreeTypeFont::TYPEINFO, __func__, __FILE__, __LINE__);
 	}
 
 
@@ -686,6 +776,8 @@ namespace wg
 
 	void FreeTypeFont::_getCacheSlot( int width, int height, MyGlyph * pGlyph )
 	{
+		GearBase::throwError(ErrorLevel::Warning, ErrorCode::Other, "I'm here!", this, &FreeTypeFont::TYPEINFO, __func__, __FILE__, __LINE__);
+
 		Surface_p	pSurface;
 		CoordI		ofs;
 				
@@ -696,12 +788,16 @@ namespace wg
 		pGlyph->rect.y = ofs.y*64;
 		pGlyph->rect.w = width*64;
 		pGlyph->rect.h = height*64;
+
+		GearBase::throwError(ErrorLevel::Warning, ErrorCode::Other, "I'm here!", this, &FreeTypeFont::TYPEINFO, __func__, __FILE__, __LINE__);
 	}
 
 	//____ _growCachedFontSizes() ________________________________________________
 
 	void FreeTypeFont::_growCachedFontSizes(int newSize)
 	{
+		GearBase::throwError(ErrorLevel::Warning, ErrorCode::Other, "I'm here!", this, &FreeTypeFont::TYPEINFO, __func__, __FILE__, __LINE__);
+
 		auto pNew = new CachedFontSize*[newSize];
 
 		for (int i = 0; i < m_nCachedFontSizes; i++)
@@ -713,6 +809,9 @@ namespace wg
 		delete [] m_pCachedFontSizes;
 		m_pCachedFontSizes = pNew;
 		m_nCachedFontSizes = newSize;
+
+		GearBase::throwError(ErrorLevel::Warning, ErrorCode::Other, "I'm here!", this, &FreeTypeFont::TYPEINFO, __func__, __FILE__, __LINE__);
+
 	}
 
 /*
