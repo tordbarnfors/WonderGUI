@@ -346,6 +346,8 @@ namespace wg
 	*/
 	CoordSPX Printer::printAt( CoordSPX pos, const char * pText )
 	{
+		GearBase::throwError(ErrorLevel::Warning, ErrorCode::Other, "I'm here!", this, &FreeTypeFont::TYPEINFO, __func__, __FILE__, __LINE__);
+
 		return _print(pos, pText, nullptr, pos.x );
 	}
 
@@ -387,9 +389,13 @@ namespace wg
 
 	CoordSPX Printer::_print( CoordSPX pos, const char * pBegin, const char * pEnd, spx origoX, bool bWrap, spx wrappedLinesIndent )
 	{
+		GearBase::throwError(ErrorLevel::Warning, ErrorCode::Other, "I'm here!", this, &FreeTypeFont::TYPEINFO, __func__, __FILE__, __LINE__);
+
 		if( !m_pGfxDevice || !m_pFont )
 			return pos;
-				
+
+		GearBase::throwError(ErrorLevel::Warning, ErrorCode::Other, "I'm here!", this, &FreeTypeFont::TYPEINFO, __func__, __FILE__, __LINE__);
+
 		Glyph	glyphs[2];
 
 		Glyph * pPrevGlyph = &glyphs[0];
@@ -451,6 +457,9 @@ namespace wg
 			}
 			std::swap(pGlyph,pPrevGlyph);
 		}
+
+		GearBase::throwError(ErrorLevel::Warning, ErrorCode::Other, "I'm here!", this, &FreeTypeFont::TYPEINFO, __func__, __FILE__, __LINE__);
+
 		return pos;
 	}
 
