@@ -48,6 +48,7 @@ public class FreeTypeFont : Font
 	}
 
 
+	[StructLayout(LayoutKind.Sequential)]
 	struct wg_freeTypeFontBP
 	{
 		public IntPtr backupFont;

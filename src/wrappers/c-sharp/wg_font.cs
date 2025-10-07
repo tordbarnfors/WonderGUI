@@ -25,6 +25,7 @@ public class Font : Objekt
 
     }
 
+    [StructLayout(LayoutKind.Sequential)]
     protected struct wg_glyph
 	{
 		public int      advance;
