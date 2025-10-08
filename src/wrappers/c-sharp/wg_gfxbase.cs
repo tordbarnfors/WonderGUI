@@ -50,7 +50,8 @@ public static class GfxBase
 
     //____ ErrorInfo ________________________________________________________
 
-    public struct ErrorInfo {
+    public struct ErrorInfo
+    {
         public ErrorLevel severity;
         public ErrorCode code;
         public string message;
@@ -65,7 +66,8 @@ public static class GfxBase
     //____ C_ErrorInfo ________________________________________________________
 
     [StructLayout(LayoutKind.Sequential)]
-    private struct C_ErrorInfo {
+    private struct C_ErrorInfo
+    {
         public ErrorLevel severity;
         public ErrorCode code;
         public IntPtr message;
@@ -88,7 +90,25 @@ public static class GfxBase
         _handler = handler;
     }
 
+    //____ SetDefaultSurfaceFactory() _________________________________________
+    static public void SetDefaultSurfaceFactory(SurfaceFactory factory)
+    {
+        wg_setDefaultSurfaceFactory( factory.CHandle() );
+    }
 
+    /*
+        //____ SetDefaultEdgemapFactory() _________________________________________
+        static public void SetDefaultSurfaceFactory(EdgemapFactory factory)
+        {
+            wg_setDefaultEdgemapFactory(factory.CHandle());
+        }
+    */
+
+    //____ SetDefaultGfxDevice() _________________________________________
+    static public void SetDefaultGfxDevice(GfxDevice device)
+    {
+        wg_setDefaultGfxDevice(device.CHandle());
+    }
 
     private static void InternalErrorHandler(in C_ErrorInfo c_errInfo)
     {
@@ -119,13 +139,13 @@ public static class GfxBase
     }
 
 
-   static private ErrorHandler?    _handler = null;
+    static private ErrorHandler? _handler = null;
 
     //____ Callback delegate __________________________________________________________
 
     // Define a delegate that matches the C++ callback signature
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-    private delegate void C_ErrorHandler(in C_ErrorInfo errInfo );
+    private delegate void C_ErrorHandler(in C_ErrorInfo errInfo);
 
 
     //____ DLL functions ______________________________________________________
@@ -140,13 +160,34 @@ public static class GfxBase
     private static extern int wg_isGfxBaseInitialized();
 
     [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-    private static extern void wg_setDefaultToSRGB( int bSRGB );
+    private static extern void wg_setDefaultToSRGB(int bSRGB);
 
     [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
     private static extern int wg_defaultToSRGB();
 
     [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
     private static extern void wg_setErrorHandler(C_ErrorHandler errorHandler);
+
+    [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
+    private static extern void wg_setDefaultSurfaceFactory( IntPtr factory );
+
+    [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
+    private static extern IntPtr wg_defaultSurfaceFactory();
+
+    [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
+    private static extern void wg_setDefaultEdgemapFactory( IntPtr factory );
+
+    [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
+    private static extern IntPtr wg_defaultEdgemapFactory();
+
+    [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
+    private static extern void wg_setDefaultGfxDevice( IntPtr device );
+
+    [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
+    private static extern IntPtr wg_defaultGfxDevice();
+
+
+
 
 }
 
