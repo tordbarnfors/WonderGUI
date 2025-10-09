@@ -402,6 +402,13 @@ void WgPluginRoot::_update(int microPassed, int64_t microsecTimestamp)
 	m_pEventHandler->ProcessEvents();
 }
 
+void WgPluginRoot::_addPreRenderCall(WgWidget * pWidget)
+{
+	m_preRenderCalls.push_back(pWidget);
+	if (m_pluginCapsule)
+		PluginCalls::pluginCapsule->requestPreRenderCall(m_pluginCapsule);
+}
+
 //____ _focusRequested() ___________________________________________________
 
 bool WgPluginRoot::_focusRequested( WgHook * pBranch, WgWidget * pWidgetRequesting )
