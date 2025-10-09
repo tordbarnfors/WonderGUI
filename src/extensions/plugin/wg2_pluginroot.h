@@ -48,7 +48,7 @@ class WgPluginRoot : public WgWidgetHolder, public WgRoot
 public:
 	WgPluginRoot( wg_obj myPluginCapsule, WgPluginContext * pContext );
 	~WgPluginRoot();
-	
+
 	WgWidget *				FindWidget( const WgCoord& ofs, WgSearchMode mode ) override;
 
 	bool					DeleteChild( WgWidget * pWidget ) override;
@@ -72,9 +72,9 @@ public:
 	bool					SetChild( WgWidget * pWidget ) override;
 	inline void				DeleteChild() { SetChild(0); }
 	WgWidget * 				ReleaseChild();
-	
-	
-	
+
+
+
 	//.____ Internal ________________________________________________________
 
 	wg::spx			_matchingHeight(wg::spx width, int scale = -1) const;
@@ -93,7 +93,7 @@ public:
 	void			_setState(wg::State state);
 
 	wg::PointerStyle _pointerStyle() const;
-	
+
 	void			_setPointerPos( wg::CoordSPX pos, int64_t timestamp );
 	void 			_setButtonState( int button, bool bPressed, int64_t timestamp );
 	void 			_setKeyState( int nativeKeyCode, bool bPressed, int64_t timestamp );
@@ -102,9 +102,9 @@ public:
 
 	void			_update(int microPassed, int64_t microsecTimestamp);
 
-	
+
 protected:
-	
+
 	class Hook : public WgHook
 	{
 		friend class WgPluginRoot;
@@ -138,7 +138,7 @@ protected:
 		WgPluginContext_p	m_pContext;
 	};
 
-	inline void         _addPreRenderCall(WgWidget * pWidget) override { m_preRenderCalls.push_back(pWidget); }
+	void				_addPreRenderCall(WgWidget * pWidget) override;
 
 	WgHook*				_firstHook() const override { return m_hook.Widget()? const_cast<Hook*>(&m_hook):0; }
 	WgHook*				_lastHook() const override { return m_hook.Widget()? const_cast<Hook*>(&m_hook):0; }
@@ -150,7 +150,7 @@ protected:
 	void                _inViewRequested( WgHook * pChild, const WgRect& mustHaveArea, const WgRect& niceToHaveArea ) override;
 
 	void				_childRequestResize();
-	
+
 	void				_childRequestRender();
 	void				_childRequestRender( const WgRect& rect );
 
@@ -158,7 +158,7 @@ protected:
 protected:
 	Hook				m_hook;
 	WgEventHandler *	m_pEventHandler = nullptr;
-	
+
 	wg_obj					m_pluginCapsule;
 
 	std::vector<WgWidgetWeakPtr> m_preRenderCalls;
@@ -169,12 +169,12 @@ protected:
 	wg::SizeSPX				m_size;
 	int						m_scale = 64;
 	wg::State				m_state;
-	
+
 	wg_pluginroot_calls		m_interface;
-	
+
 	int						m_microsecStored = 0;
 	bool					m_bBlockRequestResize = false;
-	
+
 	WgPluginContext_p		m_pContext;
 
 };

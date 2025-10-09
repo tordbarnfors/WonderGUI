@@ -129,7 +129,7 @@ bool WgRootPanel::SetCanvas(wg::Surface* pSurface)
 
 	if( pSurface == m_canvas.pSurface )
         return true;
-    
+
 
 	m_canvas.ref = wg::CanvasRef::None;
     m_canvas.pSurface = pSurface;
@@ -164,7 +164,7 @@ bool WgRootPanel::SetPixelGeo( const WgRect& geo )
 		m_frozenGeo = geo;
 		return true;
 	}
-	
+
 	if( geo.x == 0 && geo.y == 0 && geo.w == 0 && geo.h == 0 )
 		m_bHasGeo = false;
 	else
@@ -198,7 +198,7 @@ void WgRootPanel::SetFreezeGeo(bool bFreeze)
 {
 	if( bFreeze == m_bGeoFrozen )
 		return;
-	
+
 	m_bGeoFrozen = bFreeze;
 	if( bFreeze )
 	{
@@ -209,7 +209,7 @@ void WgRootPanel::SetFreezeGeo(bool bFreeze)
 	{
 		if( m_geo != m_frozenGeo )
 			SetPixelGeo( m_frozenGeo );
-		
+
 		if( m_scale != m_frozenScale )
 			SetScale(m_frozenScale);
 	}
@@ -298,10 +298,10 @@ void WgRootPanel::AddDirtyPatch( const WgRect& rect )
 	if( m_dirtyRectAlignment > 1 )
 	{
 		WgRect aligned;
-		
+
 		int adder = m_dirtyRectAlignment-1;
 		int mask = ~adder;
-		
+
 		aligned.x = rect.x & mask;
 		aligned.y = rect.y;
 		aligned.w = ((rect.x + rect.w + adder) & mask) - aligned.x;
@@ -325,10 +325,11 @@ bool WgRootPanel::Render( const WgRect& clip )
 {
 	// This early out hopefully solves the problem with Console1 taking GPU - time on some machines when not visible.
 	// It should prevent us from doing anything with the GPU
-	if (!m_bVisible || m_dirtyPatches.isEmpty() )
+	if ( !m_bVisible || (m_dirtyPatches.isEmpty() && m_preRenderCalls.empty()) )
 	{
 		m_updatedPatches.clear(); // Probably not necessary, but wanna make sure they don't fill up...
 		m_dirtyPatches.clear();   // Probably not necessary, but wanna make sure they don't fill up...
+		m_preRenderCalls.clear();
 		return true;              // Not an error, just hidden.
 	}
 
@@ -362,20 +363,20 @@ bool WgRootPanel::BeginRender()
 	m_preRenderCalls.clear();
 
 	// Limit number of dirty rects
-	
+
 	if( m_maxDirtyRects > 0 && m_dirtyPatches.size() > m_maxDirtyRects )
 	{
 		WgRect u = m_dirtyPatches.bounds();
 		m_dirtyPatches.clear();
 		m_dirtyPatches.add(u);
 	}
-	
+
 	// GfxDevice barfs on cliplist with rectangles (partly) outside canvas
 
     m_dirtyPatches.clip(PixelGeo());
-    
+
 	// Apply any limits to pixel-size of dirty rects.
-	
+
 	if( m_maxDirtyRectPixels > 0 )
 	{
 		int orgSize = m_dirtyPatches.size();
@@ -383,16 +384,16 @@ bool WgRootPanel::BeginRender()
 		for( int i = 0 ; i < orgSize ; i++ )
 		{
 			auto p = m_dirtyPatches.begin() + i;
-			
+
 			if( p->w * p->h > m_maxDirtyRectPixels )
 			{
 				int maxLines = m_maxDirtyRectPixels / p->w;
 
 				int linesLeft = p->h - maxLines;
 				int yPos = p->y + maxLines;
-				
+
 				const_cast<WgRect*>(p)->h = maxLines;
-				
+
 				while( linesLeft > maxLines )
 				{
 					m_dirtyPatches.add( WgRect(p->x,yPos,p->w,maxLines) );
@@ -405,10 +406,10 @@ bool WgRootPanel::BeginRender()
 			}
 		}
 	}
-	
-	
+
+
     //
-    
+
 	if( m_pUpdatedRectOverlay )
 	{
 		// Remove from afterglow queue patches that are overlapped by our new dirty patches.
@@ -441,7 +442,7 @@ bool WgRootPanel::BeginRender()
 	// Initialize GfxDevice
 
 	bool m_bWasAlreadyRendering = m_pGfxDevice->isRendering();
-	
+
 	if( m_bWasAlreadyRendering )
 		return true;
 	else
@@ -487,21 +488,21 @@ bool WgRootPanel::RenderSection( const WgRect& _clip )
         const WgRect* pRects = dirtyPatches.begin();
 
 		wg::RectSPX * pClipRects = (wg::RectSPX*) wg::GfxBase::memStackAlloc(nRects*sizeof(wg::RectSPX));
-		
+
 		for(int i = 0 ; i < nRects ; i++)
 			pClipRects[i] = pRects[i]*64;
-				
+
         if (m_canvas.pSurface)
             m_pGfxDevice->beginCanvasUpdate(m_canvas.pSurface, nRects, pClipRects);
         else
             m_pGfxDevice->beginCanvasUpdate(m_canvas.ref, nRects, pClipRects);
 
         m_hook.Widget()->_renderPatches( m_pGfxDevice, canvas, canvas, &dirtyPatches );
-        
+
         m_pGfxDevice->endCanvasUpdate();
-		
+
 		wg::GfxBase::memStackFree(nRects*sizeof(wg::RectSPX));
-		
+
     }
 	// Handle updated rect overlays
 
@@ -532,7 +533,7 @@ bool WgRootPanel::RenderSection( const WgRect& _clip )
 				m_pUpdatedRectOverlay->_render( m_pGfxDevice, (*pRect)*64, m_scale >> 6, WgStateEnum::Default );
 			}
 		}
-        
+
         m_pGfxDevice->endCanvasUpdate();
 	}
 
@@ -585,7 +586,7 @@ void WgRootPanel::SetScale( int scale )
 			m_frozenScale = scale;
 			return;
 		}
-		
+
 		m_scale = scale;
 		if( m_hook.Widget() )
 			m_hook.Widget()->_setScale(m_scale);
