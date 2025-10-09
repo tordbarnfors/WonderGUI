@@ -669,6 +669,10 @@ namespace wg
 
 			if (m_vObjects.size() <= objectId)
 				m_vObjects.resize(objectId + 16, nullptr);
+			else if( m_vObjects[objectId] != nullptr )
+			{
+				GfxBase::throwError(ErrorLevel::Warning, ErrorCode::InvalidParam, "CreateEdgemap with objectId that already is in use. The old object will be replaced.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			}
 
 			Edgemap::Blueprint		bp;
 			
@@ -705,6 +709,14 @@ namespace wg
 
 			int nColors = end - begin;
 
+			if( objectId > m_vObjects.size() || m_vObjects[objectId] == nullptr )
+			{
+				GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "SetEdgemapColors with invalid objectId", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+
+				m_pDecoder->skip(sizeof(HiColor)*nColors);
+				break;
+			}
+
 			int memAllocated = sizeof(HiColor)*nColors;
 			auto * pColors = (HiColor*) GfxBase::memStackAlloc(memAllocated);
 			
@@ -732,7 +744,13 @@ namespace wg
 			*m_pDecoder >> sampleEnd;
 
 			int nSamples = sampleEnd - sampleBegin;
-			
+
+			if( objectId > m_vObjects.size() || m_vObjects[objectId] == nullptr )
+			{
+				GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "EdgemapUpdate with invalid objectId", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+//				break;
+			}
+
 			m_pUpdatingEdgemap = wg_static_cast<Edgemap_p>(m_vObjects[objectId]);
 
 			m_edgemapUpdateEdgeBegin 	= edgeBegin;
@@ -786,6 +804,12 @@ namespace wg
 			uint16_t	objectId;
 
 			*m_pDecoder >> objectId;
+
+			if( objectId > m_vObjects.size() || m_vObjects[objectId] == nullptr || !m_vObjects[objectId]->isInstanceOf(Edgemap::TYPEINFO) )
+			{
+				GfxBase::throwError(ErrorLevel::Warning, ErrorCode::InvalidParam, "DeleteEdgemap with invalid objectId", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				break;
+			}
 
 			m_vObjects[objectId] = nullptr;
 			break;

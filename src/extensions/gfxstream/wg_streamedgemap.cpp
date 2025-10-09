@@ -107,6 +107,9 @@ StreamEdgemap::~StreamEdgemap()
 
 	encoder << GfxStream::Header{ GfxStream::ChunkId::DeleteEdgemap, 0, 2 };
 	encoder << m_inStreamId;
+
+	m_pEncoder->freeObjectId(m_inStreamId);
+	m_pEncoder->flush();
 }
 
 //____ typeInfo() ____________________________________________________________
