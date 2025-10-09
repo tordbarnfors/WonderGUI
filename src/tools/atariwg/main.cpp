@@ -10,6 +10,9 @@
 
 using namespace wg;
 
+Surface_p   loadSurface( const char * pPath );
+Blob_p      loadBlob( const char * pPath );
+
 int main( int argc, char * argv[] )
 {    
     printf("Loaded.\n");
@@ -62,32 +65,34 @@ int main( int argc, char * argv[] )
 
     printf("Loading widget surface.\n");
 
-    FILE * fp = fopen("SKN565BE.SRF", "rb" );
-    
-    if( fp == nullptr )
+    auto pWidgetSurface = loadSurface("SKN565BE.SRF");
+
+    if( !pWidgetSurface )
     {
-        printf( "ERROR: Couldn't load SKN565BE.SRF\n");
-        fclose(fp);
         Bconin(2);
         return -1;
     }
 
-    fseek(fp,0,SEEK_END);
-    
-    int fileSize = (int) ftell(fp);
+    printf("Loading font.\n");
         
-    char * pBuffer = (char*)malloc(fileSize);
-    
-    fseek(fp,0,SEEK_SET);
-    
-    int bytesRead = fread(pBuffer,1,fileSize,fp);
-    fclose(fp);
+    auto pFontSurface = loadSurface("FNT_5X7.SRF");
+    auto pFontSpec = loadBlob("FNT_5X7.FNT");
 
-    SurfaceReader_p pSurfaceReader = SurfaceReader::create({ .factory = pSurfaceFactory });
+    printf("Passed 1.\n");
 
-    auto pWidgetSurface = pSurfaceReader->readSurfaceFromMemory(pBuffer);
     
-    free(pBuffer);
+    if( !pFontSurface || !pFontSpec )
+    {
+        Bconin(2);
+        return -1;
+    }
+
+    printf("Passed 2.\n");
+
+    auto pFont = BitmapFont::create( pFontSurface, (char *) pFontSpec->data() );
+    
+    auto pStyle = TextStyle::create( { .color = HiColor::White, .font = pFont, .size = 10 });
+    Base::setDefaultStyle(pStyle);
     
     
 	printf("Creating GUI.\n");
@@ -107,7 +112,7 @@ int main( int argc, char * argv[] )
         .skin = ColorSkin::create( HiColor(4096,0,0,4096) )
     });
 
-	pFlex->slots.pushBack( pFiller, { .pos = {10,10} } );
+//	pFlex->slots.pushBack( pFiller, { .pos = {10,10} } );
 
 	pRoot->slot = pFlex;
 
@@ -115,7 +120,10 @@ int main( int argc, char * argv[] )
     
     pFlex->slots.pushFront( pDisplay, { .pos = { 20,20} } );
     
-    
+    TextDisplay_p pLabel = TextDisplay::create( { .display = { .text = "TESTING" }, .skin = ColorSkin::create( Color::Green ) } );
+ 
+    pFlex->slots.pushFront( pLabel, { .pos = { 10,10}, .size = {60,20} } );
+
     
     printf("Render.\n");
 
@@ -128,7 +136,7 @@ int main( int argc, char * argv[] )
 
     VsetScreen(-1,pScreen,-1,-1);
 
-
+    
     Bconin(2);
 
     
@@ -139,9 +147,86 @@ int main( int argc, char * argv[] )
 
 	Mfree(pScreen);
 
+    pGfxDevice = nullptr;
+    pBackend = nullptr;
+    pFontSurface = nullptr;
+    pFontSpec = nullptr;
+    pFont = nullptr;
+    pRoot = nullptr;
+    pFlex = nullptr;
+    pFiller = nullptr;
+    pWidgetSurface = nullptr;
+    pDisplay = nullptr;
+    pLabel = nullptr;
+    pCanvasBlob = nullptr;
+    pSurfaceFactory = nullptr;
+    
 	Base::exit();
 	
 	Bconin(2);
 
 	return 0;
+}
+
+//____ loadSurface() __________________________________________________________
+
+Surface_p loadSurface( const char * pPath )
+{
+    FILE * fp = fopen( pPath, "rb" );
+    
+    if( fp == nullptr )
+    {
+        printf( "ERROR: Couldn't load %s\n", pPath);
+        fclose(fp);
+        return nullptr;
+    }
+
+    fseek(fp,0,SEEK_END);
+    
+    int fileSize = (int) ftell(fp);
+
+    char * pBuffer = (char*)malloc(fileSize);
+    
+    fseek(fp,0,SEEK_SET);
+    
+    int bytesRead = fread(pBuffer,1,fileSize,fp);
+    fclose(fp);
+    
+    auto pSurfaceFactory = SoftSurfaceFactory::create();
+    SurfaceReader_p pSurfaceReader = SurfaceReader::create({ .factory = pSurfaceFactory });
+
+    auto pSurface = pSurfaceReader->readSurfaceFromMemory(pBuffer);
+    
+    free(pBuffer);
+
+    return pSurface;
+}
+
+//____ loadBlob() __________________________________________________________
+
+Blob_p loadBlob( const char * pPath )
+{
+    FILE * fp = fopen( pPath, "rb" );
+    
+    if( fp == nullptr )
+    {
+        printf( "ERROR: Couldn't load %s\n", pPath);
+        fclose(fp);
+        return nullptr;
+    }
+
+    fseek(fp,0,SEEK_END);
+    
+    int fileSize = (int) ftell(fp);
+
+    auto pBlob = Blob::create(fileSize+1);
+        
+    fseek(fp,0,SEEK_SET);
+    
+    int bytesRead = fread(pBlob->data(),1,fileSize,fp);
+    fclose(fp);
+
+    ((char*)pBlob->data())[fileSize] = 0;           // Zero-terminating content.
+    
+    return pBlob;
 }

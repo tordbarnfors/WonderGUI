@@ -164,7 +164,7 @@ add_subdirectory(wondergui)
 add_subdirectory(extensions/debugger)
 
 if(APPLE)
-	add_subdirectory(extensions/metalgfx)
+#	add_subdirectory(extensions/metalgfx)
 endif()
 
 #add_subdirectory(extensions/openglgfx)

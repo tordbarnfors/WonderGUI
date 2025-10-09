@@ -37,10 +37,8 @@
 #include <wg_gfxbase.h>
 
 
-inline int readUTF8Char( const char *& _pStr )
+inline int readUTF8Char( const char *& pStr )
 {
-	const uint8_t *& pStr = (const uint8_t *&) _pStr;
-
 	int g = * pStr++;
 	if( g < 128 )
 		return g;											// 1 byte character (7 bits data).
@@ -383,6 +381,7 @@ namespace wg
 			}
 		}
 
+        
 		pSurf->freePixelBuffer(pixelBuffer);
 
 		// Fill in font data.

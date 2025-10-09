@@ -52,7 +52,7 @@ SurfaceFileInspector::SurfaceFileInspector( const char * pSurfaceFileInMemory )
     std::memcpy( &m_header, pSurfaceFileInMemory, headerSize);
     
 #ifdef WG_IS_BIG_ENDIAN
-    m_header.endianSwap();
+    m_header.endianSwap(headerSize);
 #endif
 }
 

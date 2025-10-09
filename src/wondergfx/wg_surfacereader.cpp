@@ -218,7 +218,7 @@ namespace wg
 		pData+= headerSize;
 
 #ifdef WG_IS_BIG_ENDIAN
-        header.endianSwap();
+        header.endianSwap(headerSize);
 #endif
         
 		// Prepare surface blueprint

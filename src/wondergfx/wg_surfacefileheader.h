@@ -98,7 +98,7 @@ struct SurfaceFileHeader
 
 
     
-    void endianSwap()
+    void endianSwap( int partToSwap )
     {
         versionNumber   = Util::endianSwap(versionNumber);
         headerBytes     = Util::endianSwap(headerBytes);
@@ -107,15 +107,31 @@ struct SurfaceFileHeader
         extraDataBytes  = Util::endianSwap(extraDataBytes);
         width           = Util::endianSwap(width);
         height          = Util::endianSwap(height);
-        flags           = Util::endianSwap(height);
-        scale           = Util::endianSwap(height);
-        identity        = Util::endianSwap(height);
-        filterBlockWidth       = Util::endianSwap(height);
-        filterBlockHeight      = Util::endianSwap(height);
-        pixelDecompressMargin  = Util::endianSwap(height);
-        paletteSize            = Util::endianSwap(height);
-        paletteDecompressMargin     = Util::endianSwap(height);
-        extraDataDecompressMargin   = Util::endianSwap(height);
+        flags           = Util::endianSwap(flags);
+        
+        if( partToSwap <= 32 )
+            return;
+
+        scale           = Util::endianSwap(scale);
+        identity        = Util::endianSwap(identity);
+        
+        if( partToSwap <= 40 )
+            return;
+            
+        filterBlockWidth       = Util::endianSwap(filterBlockWidth);
+        filterBlockHeight      = Util::endianSwap(filterBlockHeight);
+        pixelDecompressMargin  = Util::endianSwap(pixelDecompressMargin);
+        
+        if( partToSwap <= 56 )
+            return;
+            
+        paletteSize            = Util::endianSwap(paletteSize);
+        paletteDecompressMargin     = Util::endianSwap(paletteDecompressMargin);
+        
+        if( partToSwap <= 80 )
+            return;
+        
+        extraDataDecompressMargin   = Util::endianSwap(extraDataDecompressMargin);
     }
     
 };

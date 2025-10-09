@@ -60,7 +60,7 @@ namespace wg
 #ifdef WG_IS_BIG_ENDIAN
         
         SurfaceFileHeader bigEndianHeader = header;
-        bigEndianHeader.endianSwap();
+        bigEndianHeader.endianSwap(headerBytes);
 		stream.write((char*) &bigEndianHeader, headerBytes);
 #else
         stream.write((char*) &header, headerBytes);
@@ -125,7 +125,7 @@ namespace wg
 #ifdef WG_IS_BIG_ENDIAN
         
         SurfaceFileHeader bigEndianHeader = header;
-        bigEndianHeader.endianSwap();
+        bigEndianHeader.endianSwap(headerBytes);
         std::memcpy(pWrite, &bigEndianHeader, headerBytes);
 #else
         std::memcpy(pWrite, &header, headerBytes);
