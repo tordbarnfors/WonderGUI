@@ -43,6 +43,7 @@
 #include <wg_streamwriter.h>
 #include <wg_streamedgemap.h>
 #include <wg_streamedgemapfactory.h>
+#include <wg_surfacestreamer.h>
 
 
 

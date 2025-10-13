@@ -116,7 +116,7 @@ namespace wg
 	 * 
 	 * Additionally, one extra rectangular area can be specified to not be stretched, this is what is called
 	 * the 'rigid part' of the NinePatch. This is more seldom used, but is useful if you for example wants to
-	 * create speech bubble like the ones used in comics. You might want the speech bubble to be able to stretch
+	 * create a speech bubble like the ones used in comics. You might want the speech bubble to be able to stretch
 	 * to nicely fit the text, but it also has a tail or arrow pointing to the speaker, which should not be stretched.
 	 * 
 	 * @var block				The rectangular area of the block of pixels to copy.
