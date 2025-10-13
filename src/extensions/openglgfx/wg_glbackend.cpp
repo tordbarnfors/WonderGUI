@@ -1802,6 +1802,9 @@ void GlBackend::beginSession( CanvasRef canvasRef, Surface * pCanvasSurface, int
 	if( !pCanvasSurface && canvasRef != CanvasRef::Default )
 		return;
 
+	if( pCanvasSurface )
+		_setInfoForCanvasCompleted(pCanvasSurface, nUpdateRects, pUpdateRects );
+
 	// Reserve buffer for coordinates
 
 	int nCoords = pInfo->nRects * 6 + pInfo->nLineCoords/2 * 6;
@@ -1861,7 +1864,7 @@ void GlBackend::endSession()
 
 	glBindBuffer(GL_ARRAY_BUFFER, m_vertexBufferId);
 	glBufferData(GL_ARRAY_BUFFER, m_nVertices * sizeof(VertexGL), m_pVertexBuffer, GL_DYNAMIC_DRAW);		// Orphan current buffer if still in use and create new.
-//	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	//	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
 	LOG_GLERROR(glGetError());
 
@@ -1869,7 +1872,7 @@ void GlBackend::endSession()
 
 	glBindBuffer(GL_TEXTURE_BUFFER, m_colorBufferId);
 	glBufferData(GL_TEXTURE_BUFFER, m_nColors * sizeof(ColorGL), m_pColorBuffer, GL_DYNAMIC_DRAW);
-//	glBindBuffer(GL_TEXTURE_BUFFER, 0);
+	//	glBindBuffer(GL_TEXTURE_BUFFER, 0);
 
 	LOG_GLERROR(glGetError());
 
@@ -2012,10 +2015,10 @@ void GlBackend::endSession()
 			{
 				int nVertices = *pCmd++;
 
-					if (m_bTintmapIsActive)
-						glUseProgram(m_fillTintmapProg[m_bActiveCanvasIsA8]);
-					else
-						glUseProgram(m_fillProg[m_bActiveCanvasIsA8]);
+				if (m_bTintmapIsActive)
+					glUseProgram(m_fillTintmapProg[m_bActiveCanvasIsA8]);
+				else
+					glUseProgram(m_fillProg[m_bActiveCanvasIsA8]);
 
 				glDrawArrays(GL_TRIANGLES, vertexOfs, nVertices);
 				vertexOfs += nVertices;
@@ -2133,6 +2136,8 @@ void GlBackend::endSession()
 	m_pCommandQueue = nullptr;
 
 	m_objects.clear();
+
+	_canvasCompleted();
 }
 
 

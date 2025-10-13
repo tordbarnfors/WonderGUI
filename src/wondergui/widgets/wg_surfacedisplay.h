@@ -141,7 +141,7 @@ namespace wg
 		
 		virtual ~SurfaceDisplay();
 
-		void			_surfaceModified(int nRects, const RectSPX* pRects);
+		void			_surfaceModified(int nRects, const RectI* pRects);
 		RectSPX			_surfaceRectToCanvasRect(const RectSPX& surfaceRect);
 		RectSPX			_surfaceDisplayRect(int scale) const;
 		bool			_adjustZoom();

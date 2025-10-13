@@ -79,11 +79,13 @@ namespace wg
 			EdgemapUpdate = 24,
 			EdgemapSamples = 25,
 			DeleteEdgemap = 26,
+
+			SurfaceUpdate2 = 27
 		};
 
 		const static ChunkId      ChunkId_min      = ChunkId::OutOfData;
-		const static ChunkId      ChunkId_max      = ChunkId::DeleteEdgemap;
-		const static int          ChunkId_size     = (int)ChunkId::DeleteEdgemap + 1;
+		const static ChunkId      ChunkId_max      = ChunkId::SurfaceUpdate2;
+		const static int          ChunkId_size     = (int)ChunkId::SurfaceUpdate2 + 1;
 
 		struct SPX
 		{

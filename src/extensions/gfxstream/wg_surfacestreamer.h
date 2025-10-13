@@ -64,13 +64,16 @@ namespace wg
 		SurfaceStreamer(const Blueprint& blueprint);
 		~SurfaceStreamer();
 
-		void	_streamPixels(int nRects, const RectSPX* pRects);
+		void 	_sendCreateSurface();
+		void	_sendDeleteSurface();
+		void	_sendPixels(int nRects, const RectI* pRects);
 
 		StreamEncoder_p	m_pEncoder;
 
-		Surface_p		m_pSurface;
+		Surface_p		m_pSurface;							// Surface we stream from.
+		int				m_observerId;
 
-		CanvasRef		m_canvasRef = CanvasRef::None;
+		CanvasRef		m_canvasRef = CanvasRef::None;		// CanvasRef we stream to, if set.
 		uint16_t		m_surfaceId = 0;
 	};
 

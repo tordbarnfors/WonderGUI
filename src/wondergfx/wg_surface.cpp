@@ -112,6 +112,7 @@ namespace wg
 	 *
 	 * @param buffer		PixelBuffer to copy pixels from.
 	 * @param bufferRect	The source rectangle withing the PixelBuffer.
+	 * @param bAutoNotify	Notify any surface observers that pulled area has been updated.
 	 * @return 				True if operation could be performed.
 	 *
 	 * Only the specified rectangle within the PixelBuffer is copied to the Surface,
@@ -120,18 +121,23 @@ namespace wg
 	 * Please note that the rectangle specified is within the PixelBuffer, not the Surface. You should therefore not add
 	 * the offset of the PixelBuffer to bufferRect.
 	 *
+	 * If bAutoNotify is set to false, a manual call to NotifyObservers might be needed.
+	 *
 	 */
-	void Surface::pullPixels(const PixelBuffer& buffer, const RectI& bufferRect)
+	void Surface::pullPixels(const PixelBuffer& buffer, const RectI& bufferRect, bool bAutoNotify)
 	{
-		RectSPX rect = (bufferRect + buffer.rect.pos())*64;
+		if( bAutoNotify )
+		{
+			RectSPX rect = (bufferRect + buffer.rect.pos())*64;
 
-		_notifyObservers(1, &rect);
+			notifyObservers(1, &rect);
+		}
 	}
 
 
 	//____ addObserver() ______________________________________________________
 
-	int Surface::addObserver(const std::function<void(int nRects, const RectSPX* pRects)>& func)
+	int Surface::addObserver(const std::function<void(int nRects, const RectI* pRects)>& func)
 	{
 		int id = m_pObserver ? m_pObserver->id + 1 : 1;
 		auto p = new Observer();
@@ -166,9 +172,9 @@ namespace wg
 		return false;
 	}
 
-	//____ _notifyObservers() _________________________________________________
+	//____ notifyObservers() _________________________________________________
 
-	void Surface::_notifyObservers(int nRects, const RectSPX* pRects)
+	void Surface::notifyObservers(int nRects, const RectSPX* pRects)
 	{
 		Observer* p = m_pObserver;
 		while (p)

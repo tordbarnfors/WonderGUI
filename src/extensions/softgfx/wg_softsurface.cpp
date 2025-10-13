@@ -264,11 +264,11 @@ namespace wg
 
 	//____ pullPixels() _______________________________________________________
 
-	void SoftSurface::pullPixels(const PixelBuffer& buffer, const RectI& bufferRect)
+	void SoftSurface::pullPixels(const PixelBuffer& buffer, const RectI& bufferRect, bool bAutoNotify)
 	{
 		// Nothing to do here.
 
-		Surface::pullPixels(buffer, bufferRect);
+		Surface::pullPixels(buffer, bufferRect, bAutoNotify);
 	}
 
 	//____ freePixelBuffer() __________________________________________________

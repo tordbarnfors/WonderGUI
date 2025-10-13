@@ -167,6 +167,7 @@ namespace wg
 		friend class GfxDevice;
 		friend class GfxDeviceGen1;
 		friend class GfxDeviceGen2;
+		friend class GfxBackend;
 
 	public:
 
@@ -231,8 +232,9 @@ namespace wg
 		inline int			pixelBits() const;
 
 		inline bool			isOpaque() const;				///< @brief Check if surface is guaranteed to be entirely opaque.
+		inline bool			isDynamic() const;
 		inline bool			canBeCanvas() const;				///< @brief Check if surface can be used as canvas.
-		
+
 		//.____ Control _______________________________________________________
 
 		inline const PixelBuffer allocPixelBuffer();
@@ -242,8 +244,8 @@ namespace wg
         inline bool			pushPixels(const PixelBuffer& buffer);
 		virtual bool		pushPixels(const PixelBuffer& buffer, const RectI& bufferRect) = 0;
 
-        inline void			pullPixels(const PixelBuffer& buffer);
-		virtual void		pullPixels(const PixelBuffer& buffer, const RectI& bufferRect);			// Needs to be overridden!
+        inline void			pullPixels(const PixelBuffer& buffer, bool bAutoNotify = true );
+		virtual void		pullPixels(const PixelBuffer& buffer, const RectI& bufferRect, bool bAutoNotify = true);			// Needs to be overridden!
 
 		virtual void		freePixelBuffer(const PixelBuffer& buffer) = 0;
 
@@ -261,8 +263,10 @@ namespace wg
 		inline void			setBaggage(Object * pBaggage);
 		inline Object_p		baggage() const;
 
-		virtual int			addObserver(const std::function<void(int nRects, const RectSPX* pRects)>& func);
+		virtual int			addObserver(const std::function<void(int nRects, const RectI* pRects)>& func);
 		virtual bool		removeObserver( int observerId );
+
+		virtual void		notifyObservers(int nRects, const RectI* pRects);
 
 		Blueprint			blueprint() const;
 
@@ -310,13 +314,12 @@ namespace wg
 		struct Observer
 		{
 			int id = 0;
-			std::function<void(int nRects, const RectSPX* pRects)>	func;
+			std::function<void(int nRects, const RectI* pRects)>	func;
 			Observer* pNext = nullptr;
 		};
 
 		static const uint8_t *	s_pixelConvTabs[9];
 
-		void				_notifyObservers(int nRects, const RectSPX* pRects);
 		int					_alpha(CoordSPX coord, const PixelBuffer& buffer);
 
         static bool         _isBlueprintValid( const Blueprint& bp, SizeI maxSize);
@@ -475,6 +478,13 @@ namespace wg
 		m_pPixelDescription->type == PixelType::Chunky_BE );
 	}
 
+	//____ isDynamic() ___________________________________________________________
+
+	bool Surface::isDynamic() const
+	{
+		return m_bDynamic;
+	}
+
 	//____ canBeCanvas() ______________________________________________________
 
 	bool Surface::canBeCanvas() const
@@ -581,9 +591,9 @@ namespace wg
 	 * Updates the area of the Surface that the PixelBuffer maps to with the pixels from the buffer.
 	 */
 
-    void Surface::pullPixels(const PixelBuffer& buffer)
-	{ 
-		 pullPixels(buffer, buffer.rect.size()); 
+    void Surface::pullPixels(const PixelBuffer& buffer, bool bAutoNotify)
+	{
+		 pullPixels(buffer, buffer.rect.size(), bAutoNotify);
 	}
 
 	//____ setBaggage() _______________________________________________________

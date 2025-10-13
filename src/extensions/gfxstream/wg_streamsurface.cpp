@@ -280,10 +280,12 @@ namespace wg
 
 	//____ pullPixels() _______________________________________________________
 
-	void StreamSurface::pullPixels(const PixelBuffer& buffer, const RectI& bufferRect)
+	void StreamSurface::pullPixels(const PixelBuffer& buffer, const RectI& bufferRect, bool bAutoNotify)
 	{
 		_sendPixels(m_pEncoder, buffer.rect, buffer.pixels, buffer.pitch);
 		m_pEncoder->flush();
+
+		Surface::pullPixels(buffer, bufferRect, bAutoNotify);
 	}
 
 	//____ freePixelBuffer() __________________________________________________

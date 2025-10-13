@@ -427,10 +427,12 @@ namespace wg
 
     //____ pullPixels() _____________________________________________________________
 
-    void MetalSurface::pullPixels(const PixelBuffer& buffer, const RectI& bufferRect)
+    void MetalSurface::pullPixels(const PixelBuffer& buffer, const RectI& bufferRect, bool bAutoNotify)
     {
         if( m_texture && !bufferRect.isEmpty() )
             _syncTexture( bufferRect + buffer.rect.pos() );
+
+		Surface::pullPixels(buffer, bufferRect, bAutoNotify);
     }
 
     //____ freePixelBuffer() ________________________________________________________

@@ -144,10 +144,10 @@ namespace wg
 
 	//____ addObserver() ______________________________________________________
 
-	int PluginSurface::addObserver(const std::function<void(int nRects, const RectSPX* pRects)>& func)
+	int PluginSurface::addObserver(const std::function<void(int nRects, const RectI* pRects)>& func)
 	{
 		if( m_pObserver == nullptr )
-			m_cObserverId = PluginCalls::surface->addSurfaceObserver(m_cSurface, [](int nRects, const wg_rectSPX* pRects, void* pData, int data) { ((PluginSurface*)pData)->_notifyObservers(nRects, (RectSPX*)pRects); }, this, 0);
+			m_cObserverId = PluginCalls::surface->addSurfaceObserver(m_cSurface, [](int nRects, const wg_rectI* pRects, void* pData, int data) { ((PluginSurface*)pData)->notifyObservers(nRects, (RectI*)pRects); }, this, 0);
 
 		return Surface::addObserver(func);
 	}

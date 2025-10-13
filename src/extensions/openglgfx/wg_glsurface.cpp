@@ -588,7 +588,7 @@ namespace wg
 
 	//____ pullPixels() _______________________________________________________
 
-	void GlSurface::pullPixels(const PixelBuffer& buffer, const RectI& bufferRect)
+	void GlSurface::pullPixels(const PixelBuffer& buffer, const RectI& bufferRect, bool bAutoNotify)
 	{
 		// Handle special case where we use _copyFrom() in constructor
 		// before texture has been created.
@@ -617,7 +617,7 @@ namespace wg
 		if (m_pAlphaMap)
 			_updateAlphaMap(buffer, bufferRect);
 
-		Surface::pullPixels(buffer, bufferRect);
+		Surface::pullPixels(buffer, bufferRect, bAutoNotify);
 	}
 
 	//____ freePixelBuffer() ____________________________________________________

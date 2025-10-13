@@ -151,7 +151,11 @@ namespace wg
 		GfxBackend() {};
 		virtual ~GfxBackend() {};
 
+		void 	_setInfoForCanvasCompleted(Surface * pSurface, int nRects, const RectSPX * pUpdateRects );
+		void	_canvasCompleted();
 
+		Surface *						m_pCanvasCompleted;
+		std::vector<RectI>				m_canvasCompletedRects;		// NOTE! Not SPX format!
 
 		static const Transform			s_blitFlipTransforms[GfxFlip_size];
 		static const int				s_defaultBlur[9];

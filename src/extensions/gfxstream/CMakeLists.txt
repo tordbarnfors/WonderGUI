@@ -41,6 +41,8 @@ set( SOURCES
 	wg_streamwrapper.h
 	wg_streamwriter.cpp
 	wg_streamwriter.h
+	wg_surfacestreamer.cpp
+	wg_surfacestreamer.h
 	wondergfxstream.h
 
 	c-api/wg_c_streambuffer.h

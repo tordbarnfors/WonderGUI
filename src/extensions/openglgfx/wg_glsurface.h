@@ -88,10 +88,12 @@ namespace wg
 		//.____ Control _______________________________________________________
 
 		using Surface::allocPixelBuffer;
+		using Surface::pullPixels;
+		using Surface::pushPixels;
 
 		const PixelBuffer	allocPixelBuffer(const RectI& rect) override;
 		bool				pushPixels(const PixelBuffer& buffer, const RectI& bufferRect) override;
-		void				pullPixels(const PixelBuffer& buffer, const RectI& bufferRect) override;
+		void				pullPixels(const PixelBuffer& buffer, const RectI& bufferRect, bool bAutoNotify = true) override;
 		void				freePixelBuffer(const PixelBuffer& buffer) override;
 
 		bool		unload();

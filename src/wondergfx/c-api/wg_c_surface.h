@@ -33,7 +33,7 @@ extern "C" {
 #endif
 
 
-	typedef void(*wg_surfaceObserver_func)(int nRects, const wg_rectSPX* pRects, void* pData, int data);
+	typedef void(*wg_surfaceObserver_func)(int nRects, const wg_rectI* pRects, void* pData, int data);
 
 
 	//____ wg_pixelBuffer ________________________________________________________

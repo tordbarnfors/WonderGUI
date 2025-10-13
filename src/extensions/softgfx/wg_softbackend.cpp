@@ -235,15 +235,16 @@ namespace wg
 			setCanvas(canvasRef);
 		else
 			setCanvas(pCanvas);
+
+		_setInfoForCanvasCompleted(m_pCanvas,nUpdateRects, pUpdateRects );
 	}
 
 	//____ _endSession() _______________________________________________________
 
 	void SoftBackend::endSession()
 	{
-
+		_canvasCompleted();
 	}
-
 
 	//____ setCanvas() _____________________________________________
 

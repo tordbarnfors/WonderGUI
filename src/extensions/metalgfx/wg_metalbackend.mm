@@ -614,6 +614,10 @@ void MetalBackend::beginSession( CanvasRef canvasRef, Surface * pCanvasSurface, 
 	if( !pCanvasSurface && canvasRef != CanvasRef::Default )
 		return;
 
+	if( pCanvasSurface )
+		_setInfoForCanvasCompleted(pCanvasSurface, nUpdateRects, pUpdateRects );
+
+
 //	m_bFullCanvasSession = (nUpdateRects == 1 && pUpdateRects[0] == RectSPX(0,0,pCanvasSurface->pixelSize()*64) );
 
 	// Reserve buffer for coordinates
@@ -715,6 +719,8 @@ void MetalBackend::endSession()
 	[m_metalCommandBuffer addCompletedHandler:^(id<MTLCommandBuffer> cb) {
 		// Shared buffer is populated.
 		m_flushesInProgress--;
+
+		_canvasCompleted();
 	}];
 
 	// Finalize rendering here & push the command buffer to the GPU.

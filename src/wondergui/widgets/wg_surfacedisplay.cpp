@@ -62,7 +62,7 @@ namespace wg
 		_adjustOffset();
 
 		if (pSurface)
-			m_surfaceObserverId = pSurface->addObserver([this](int nRects, const RectSPX* pRects) 
+			m_surfaceObserverId = pSurface->addObserver([this](int nRects, const RectI* pRects) 
 				{
 					this->_surfaceModified(nRects, pRects);
 				});
@@ -242,13 +242,13 @@ namespace wg
 
 	//____ _surfaceModified() _________________________________________________
 
-	void SurfaceDisplay::_surfaceModified(int nRects, const RectSPX* pRects)
+	void SurfaceDisplay::_surfaceModified(int nRects, const RectI* pRects)
 	{
 		auto contentRect = _contentRect();
 
 		for (int i = 0; i < nRects; i++)
 		{
-			auto rectInCanvas = alignUp(_surfaceRectToCanvasRect(pRects[i]));
+			auto rectInCanvas = alignUp(_surfaceRectToCanvasRect(pRects[i]*64));
 			_requestRender(RectSPX::bounds(contentRect, rectInCanvas));
 		}
 	}

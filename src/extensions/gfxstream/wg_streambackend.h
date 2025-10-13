@@ -41,6 +41,7 @@ namespace wg
 	{
 		friend class StreamSurface;
 		friend class StreamEdgemap;
+		friend class SurfaceStreamer;
 
 	public:
 

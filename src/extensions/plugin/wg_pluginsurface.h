@@ -79,7 +79,7 @@ namespace wg
 
 		//.____ Misc _________________________________________________________
 		 
-		int					addObserver(const std::function<void(int nRects, const RectSPX* pRects)>& func) override;
+		int					addObserver(const std::function<void(int nRects, const RectI* pRects)>& func) override;
 		bool				removeObserver(int observerId) override;
 
 		inline wg_obj		cObject() { return m_cSurface; }

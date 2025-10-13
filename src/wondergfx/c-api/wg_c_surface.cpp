@@ -248,7 +248,7 @@ wg_obj wg_getSurfaceBaggage(wg_obj surface)
 
 int wg_addSurfaceObserver(wg_obj surface, wg_surfaceObserver_func func, void* pData, int data)
 {
-	return getPtr(surface)->addObserver([func,pData,data](int nRects, const RectSPX* pRects) { func(nRects, (const wg_rectSPX*)pRects, pData, data); } );
+	return getPtr(surface)->addObserver([func,pData,data](int nRects, const RectI* pRects) { func(nRects, (const wg_rectI*)pRects, pData, data); } );
 }
 
 

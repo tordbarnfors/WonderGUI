@@ -55,5 +55,28 @@ const TypeInfo& GfxBackend::typeInfo(void) const
 	return TYPEINFO;
 }
 
+//____ _setInfoForCanvasCompleted() __________________________________________
+
+void GfxBackend::_setInfoForCanvasCompleted(Surface * pSurface, int nRects, const RectSPX * pUpdateRects )
+{
+	m_pCanvasCompleted = pSurface;
+
+	for( int i = 0 ; i < nRects ; i++ )
+		m_canvasCompletedRects.push_back(pUpdateRects[i]/64);
+}
+
+//____ _canvasCompleted() ______________________________________________
+
+void GfxBackend::_canvasCompleted()
+{
+	if( m_pCanvasCompleted )
+	{
+		m_pCanvasCompleted->notifyObservers((int)m_canvasCompletedRects.size(), m_canvasCompletedRects.data());
+		m_canvasCompletedRects.clear();
+
+		m_pCanvasCompleted = nullptr;
+	}
+}
+
 
 } // namespace wg
