@@ -2,8 +2,8 @@
 
 static const char c_widgetType[] = {"WgRoot3Capsule"};
 
-WgRoot3Capsule::WgRoot3Capsule()
-: WgWidget(), wg::RootPanel()
+WgRoot3Capsule::WgRoot3Capsule(wg::HiColor clearColor)
+: WgWidget(), wg::RootPanel(), m_clearColor{clearColor}
 {}
 
 const char *WgRoot3Capsule::Type(void) const
@@ -70,7 +70,7 @@ void WgRoot3Capsule::_onRender( wg::GfxDevice * pDevice, const WgRect& _canvas, 
 			_.format = wg::PixelFormat::BGRA_8,
 			_.canvas = true
 		));
-		m_canvasSurface->fill(wg::Color{0, 0, 0, 0});
+		m_canvasSurface->fill(wg::HiColor::Transparent);
 		RootPanel::setCanvas(m_canvasSurface);
 	}
 	if(pDevice != m_pGfxDevice)
@@ -79,6 +79,20 @@ void WgRoot3Capsule::_onRender( wg::GfxDevice * pDevice, const WgRect& _canvas, 
 	}
 
 	RootPanel::beginRender(); // Does the pre-render calls and such, if any
+
+	// If clear color is set, clear canvas where it is going to be drawn on
+	// (otherwise this widget has to be completely opaque in order to render
+	// correctly)
+	if(m_dirtyPatches.size() > 0 && m_clearColor != wg::HiColor::Undefined)
+	{
+		pDevice->beginCanvasUpdate(m_canvasSurface, m_dirtyPatches.size(), m_dirtyPatches.begin());
+		pDevice->setBlendMode(wg::BlendMode::Replace);
+
+		pDevice->fill(m_clearColor);
+
+		pDevice->setBlendMode(wg::BlendMode::Blend);
+		pDevice->endCanvasUpdate();
+	}
 	RootPanel::renderSection(geo());
 
 	// These things are otherwise done in RootPanel::endRender()

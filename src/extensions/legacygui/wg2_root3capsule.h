@@ -16,35 +16,40 @@
 class WgRoot3Capsule : public WgWidget, public wg::RootPanel
 {
 public:
-    // Legacy WG methods (overrides WgWidget methods)
-	WgRoot3Capsule();
+	// Legacy WG methods (overrides WgWidget methods)
+
+	// Using clearColor HiColor::Undefined is preferred when the WG3
+	// widget is opaque; it has slightly better performance. Otherwise
+	// it's recommended to set it to HiColor::Transparent.
+	WgRoot3Capsule(wg::HiColor clearColor = wg::HiColor::Undefined);
 	const char *Type( void ) const override;
 	bool MarkTest( const WgCoord& ofs ) override;
-	WgWidget * NewOfMyType() const override { return new WgRoot3Capsule(); }
+	WgWidget* NewOfMyType() const override { return new WgRoot3Capsule(); }
 
 	int MatchingPixelHeight( int pixelWidth ) const override;
 	int MatchingPixelWidth( int pixelHeight ) const override;
 
 	WgSize PreferredPixelSize() const override;
 
-    // Modern WG methods (overrides wg::RootPanel methods)
+	// Modern WG methods (overrides wg::RootPanel methods)
 	bool addPreRenderCall(wg::Widget* pWidget) override;
 
 protected:
-    // Legacy WG methods (overrides WgWidget methods)
-    void _onCloneContent( const WgWidget * _pOrg ) override;
+	// Legacy WG methods (overrides WgWidget methods)
+	void _onCloneContent( const WgWidget * _pOrg ) override;
 	void _onRender( wg::GfxDevice * pDevice, const WgRect& _canvas, const WgRect& _window ) override;
 	void _onNewSize( const WgSize& size ) override;
 	void _setScale( int scale ) override;
 	void _onEvent( const WgEvent::Event * pEvent, WgEventHandler * pHandler );
 	void _setState( WgState state ) override;
 
-    // Modern WG methods (overrides wg::RootPanel methods)
+	// Modern WG methods (overrides wg::RootPanel methods)
 	void _childRequestResize( wg::StaticSlot * pSlot ) override;
 	void _childRequestRender( wg::StaticSlot* pSlot, const wg::RectSPX& rect ) override;
 	void _replaceChild( wg::StaticSlot * pSlot, wg::Widget * pNewChild ) override;
-    void _preRender() override;
+	void _preRender() override;
 
 
 	wg::Surface_p m_canvasSurface;
+	wg::HiColor m_clearColor = wg::HiColor::Undefined;
 };
