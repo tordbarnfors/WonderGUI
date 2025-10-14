@@ -118,6 +118,17 @@ wg_obj wg_createStreamSurfaceFactory(wg_obj streamEncoder)
 	return (wg_obj) static_cast<Object*>(p.rawPtr());
 }
 
+void wg_setRememberStreamSurfacesCreated(wg_obj streamSurfaceFactory, int bRemember)
+{
+	static_cast<StreamSurfaceFactory*>(reinterpret_cast<Object*>(streamSurfaceFactory))->setRememberSurfacesCreated(bRemember == 1);
+}
+
+void wg_streamAllSurfacesAsNew(wg_obj streamSurfaceFactory)
+{
+	static_cast<StreamSurfaceFactory*>(reinterpret_cast<Object*>(streamSurfaceFactory))->streamAllSurfacesAsNew();
+}
+
+
 wg_obj wg_createStreamEdgemap(wg_obj streamEncoder, const wg_edgemapBP* blueprint )
 {
 	Edgemap::Blueprint	bp;

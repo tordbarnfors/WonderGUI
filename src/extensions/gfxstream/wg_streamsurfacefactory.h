@@ -67,14 +67,16 @@ namespace wg
 
 		std::vector<Surface_p> surfacesCreated();
 
+		void		streamAllSurfacesAsNew();
+
 	protected:
 		StreamSurfaceFactory( StreamEncoder * pEncoder);
 		~StreamSurfaceFactory(){}
 
-		void	_addReference(Surface* pSurface);
+		void	_addReference(StreamSurface* pSurface);
 
-		bool					m_bKeepReferences = false;
-		std::vector<Surface_wp>	m_surfaceReferences;
+		bool							m_bKeepReferences = false;
+		std::vector<StreamSurface_wp>	m_surfaceReferences;
 
 		StreamEncoder_p	m_pEncoder;
 	};
