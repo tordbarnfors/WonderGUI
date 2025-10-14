@@ -63,7 +63,7 @@ namespace wg
 	public:
 
 		//.____ Blueprint _____________________________________________________
-		
+
 		struct Blueprint
 		{
 			CanvasLayers_p	canvasLayers;
@@ -79,8 +79,8 @@ namespace wg
 			Skin_p			skin;
 			uintptr_t		windowRef = 0;
 		};
-		
-		
+
+
 		//.____ Creation __________________________________________
 
 		static RootPanel_p	create();
@@ -118,7 +118,7 @@ namespace wg
 
 		virtual void		setSkin(Skin* pSkin);
 		inline Skin_p		skin() const;
-		
+
 		void				setPointerStyle( PointerStyle style );
 		inline PointerStyle pointerStyle() const override { return m_pointerStyle; }
 
@@ -150,7 +150,7 @@ namespace wg
 		void					setWindowRef( uintptr_t windowRef );
 		uintptr_t				windowRef() const { return m_windowRef; }
 
-		
+
 		bool					setCanvas(Surface* pCanvasSurface);
 		bool					setCanvas(CanvasRef canvasRef);
 		inline const CanvasInfo&canvasInfo() const;
@@ -161,7 +161,7 @@ namespace wg
 
 		void					setDirtyRectAlignment( int alignment );
 		int						dirtyRectAlignment() const { return m_dirtyRectAlignment; }
-		
+
 		Widget_p				findWidget(const Coord& ofs, SearchMode mode) override;
 
 		inline int				nbDirtyRects() const;
@@ -250,7 +250,7 @@ namespace wg
 		std::deque<PatchesSPX>	m_afterglowRects;	// Afterglow rects are placed in this queue.
 
 		int					m_dirtyRectAlignment = 1;
-		
+
 		GfxDevice_p			m_pGfxDevice;
 		CanvasInfo			m_canvas;			// Size of canvas in subpixels, when m_pCanvas is null.
 		CanvasLayers_p		m_pCanvasLayers;
@@ -258,7 +258,7 @@ namespace wg
 		RectSPX				m_geo;
 		bool				m_bHasGeo = false;
 
-		int					m_scale;
+		int					m_scale = 64;
 		bool				m_bScaleSet = false;// Set when scale is explicitly specified and not taken from canvas.
 
 		bool				m_bVisible = true;
@@ -268,7 +268,7 @@ namespace wg
 		uintptr_t			m_windowRef = 0;
 
 		Widget_wp			m_pFocusedChild;
-		
+
 		PointerStyle		m_pointerStyle = PointerStyle::Undefined;
 	};
 
@@ -288,92 +288,92 @@ namespace wg
 
 	//____ isDebugMode() ______________________________________________________
 
-	bool RootPanel::isDebugMode() const 
-	{ 
-		return m_bDebugMode; 
+	bool RootPanel::isDebugMode() const
+	{
+		return m_bDebugMode;
 	}
 
 	//____ debugOverlay() _____________________________________________________
 
-	inline Skin_p RootPanel::debugOverlay() const 
-	{ 
-		return m_pDebugOverlay; 
+	inline Skin_p RootPanel::debugOverlay() const
+	{
+		return m_pDebugOverlay;
 	}
 
 	//____ debugAfterglow() ___________________________________________________
 
-	int RootPanel::debugAfterglow() const 
-	{ 
-		return m_afterglowFrames; 
+	int RootPanel::debugAfterglow() const
+	{
+		return m_afterglowFrames;
 	}
 
 	//____ gfxDevice() ___________________________________________________
 
-	GfxDevice_p RootPanel::gfxDevice() const 
-	{ 
-		return m_pGfxDevice; 
+	GfxDevice_p RootPanel::gfxDevice() const
+	{
+		return m_pGfxDevice;
 	}
 
 	//____ canvasInfo() ___________________________________________________
 
-	const CanvasInfo& RootPanel::canvasInfo() const 
-	{ 
-		return m_canvas; 
+	const CanvasInfo& RootPanel::canvasInfo() const
+	{
+		return m_canvas;
 	}
 
 	//____ canvasSize() ___________________________________________________
 
-	SizeI RootPanel::canvasSize() const 
-	{ 
-		return m_canvas.size; 
+	SizeI RootPanel::canvasSize() const
+	{
+		return m_canvas.size;
 	}
 
 	//____ canvasLayers() ___________________________________________________
 
-	CanvasLayers_p RootPanel::canvasLayers() const 
-	{ 
+	CanvasLayers_p RootPanel::canvasLayers() const
+	{
 		return m_pCanvasLayers;
 	}
 
 	//____ nbDirtyRects() _____________________________________________________
 
-	int RootPanel::nbDirtyRects() const 
-	{ 
+	int RootPanel::nbDirtyRects() const
+	{
 		return m_dirtyPatches.size();
 	}
 
 	//____ firstDirtyRect() ___________________________________________________
 
-	const RectSPX* RootPanel::firstDirtyRect() const 
-	{ 
-		return m_dirtyPatches.isEmpty() ? nullptr : m_dirtyPatches.begin(); 
+	const RectSPX* RootPanel::firstDirtyRect() const
+	{
+		return m_dirtyPatches.isEmpty() ? nullptr : m_dirtyPatches.begin();
 	}
 
 	//____ nbUpdateRects() ____________________________________________________
 
-	int RootPanel::nbUpdatedRects() const 
-	{ 
-		return m_updatedPatches.size(); 
+	int RootPanel::nbUpdatedRects() const
+	{
+		return m_updatedPatches.size();
 	}
 
 	//____ firstUpdateRect() __________________________________________________
 
-	const RectSPX* RootPanel::firstUpdatedRect() const 
-	{ 
-		return m_updatedPatches.isEmpty() ? nullptr : m_updatedPatches.begin(); 
+	const RectSPX* RootPanel::firstUpdatedRect() const
+	{
+		return m_updatedPatches.isEmpty() ? nullptr : m_updatedPatches.begin();
 	}
 
 	//____ addDirtyPatch() ____________________________________________________
 
-	void RootPanel::addDirtyPatch(const RectSPX& rect) 
+	void RootPanel::addDirtyPatch(const RectSPX& rect)
 	{
 		if( m_dirtyRectAlignment > 1 )
 		{
 			RectSPX aligned;
-			
+
 			int adder = (m_dirtyRectAlignment*64)-1;
 			int mask = ~adder;
-			
+
 			aligned.x = rect.x & mask;
 			aligned.y = rect.y;
 			aligned.w = ((rect.x + rect.w + adder) & mask) - aligned.x;
@@ -388,9 +388,9 @@ namespace wg
 	//____ addPreRenderCall() _________________________________________________
 
 	bool RootPanel::addPreRenderCall(Widget* pWidget)
-	{ 
-		m_preRenderCalls.push_back(pWidget); 
-		return true; 
+	{
+		m_preRenderCalls.push_back(pWidget);
+		return true;
 	}
 
 
