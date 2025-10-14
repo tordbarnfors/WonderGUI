@@ -128,7 +128,9 @@ namespace wg
 	{
 		GfxStream::Header header;
 
-		*m_pDecoder >> header;
+		auto& decoder = * m_pDecoder;
+
+		decoder >> header;
 
 		switch (header.type)
 		{
@@ -139,7 +141,7 @@ namespace wg
 		case GfxStream::ChunkId::ProtocolVersion:
 		{
 			uint16_t	version;
-			*m_pDecoder >> version;
+			decoder >> version;
 
 			//TODO: Something if version isn't supported.
 
@@ -150,7 +152,7 @@ namespace wg
 		{
 			uint16_t nbCanvases;
 
-			*m_pDecoder >> nbCanvases;
+			decoder >> nbCanvases;
 
 			CanvasInfo	canvas[CanvasRef_size];
 
@@ -161,10 +163,10 @@ namespace wg
 				uint16_t	scale;
 				PixelFormat	format;
 
-				*m_pDecoder >> ref;
-				*m_pDecoder >> size;
-				*m_pDecoder >> scale;
-				*m_pDecoder >> format;
+				decoder >> ref;
+				decoder >> size;
+				decoder >> scale;
+				decoder >> format;
 
 				canvas[i].ref = (CanvasRef) ref;
 				canvas[i].size = size;
@@ -205,26 +207,26 @@ namespace wg
 			uint16_t	nObjects;
 
 
-			*m_pDecoder >> objectId;
-			*m_pDecoder >> canvasRef;
-			*m_pDecoder >> dummy;
+			decoder >> objectId;
+			decoder >> canvasRef;
+			decoder >> dummy;
 
-			*m_pDecoder >> nUpdateRects;
+			decoder >> nUpdateRects;
 
-			*m_pDecoder >> nSetCanvas;
-			*m_pDecoder >> nStateChanges;
-			*m_pDecoder >> nLines;
-			*m_pDecoder >> nFill;
-			*m_pDecoder >> nBlit;
-			*m_pDecoder >> nBlur;
-			*m_pDecoder >> nEdgemapDraws;
+			decoder >> nSetCanvas;
+			decoder >> nStateChanges;
+			decoder >> nLines;
+			decoder >> nFill;
+			decoder >> nBlit;
+			decoder >> nBlur;
+			decoder >> nEdgemapDraws;
 
-			*m_pDecoder >> m_sessionInfo.nLineCoords;
-			*m_pDecoder >> m_sessionInfo.nLineClipRects;
-			*m_pDecoder >> m_sessionInfo.nRects;
-			*m_pDecoder >> m_sessionInfo.nColors;
-			*m_pDecoder >> nTransforms;
-			*m_pDecoder >> nObjects;
+			decoder >> m_sessionInfo.nLineCoords;
+			decoder >> m_sessionInfo.nLineClipRects;
+			decoder >> m_sessionInfo.nRects;
+			decoder >> m_sessionInfo.nColors;
+			decoder >> nTransforms;
+			decoder >> nObjects;
 
 			m_sessionInfo.nSetCanvas = nSetCanvas;
 			m_sessionInfo.nStateChanges = nStateChanges;
@@ -277,9 +279,9 @@ namespace wg
 			CanvasRef	canvasRef;
 			uint8_t		dummy;
 
-			*m_pDecoder >> objectId;
-			*m_pDecoder >> canvasRef;
-			*m_pDecoder >> dummy;
+			decoder >> objectId;
+			decoder >> canvasRef;
+			decoder >> dummy;
 
 			if (canvasRef != CanvasRef::None)
 			{
@@ -308,7 +310,7 @@ namespace wg
 		case GfxStream::ChunkId::Objects:
 		{
 			GfxStream::DataInfo dataInfo;
-			*m_pDecoder >> dataInfo;
+			decoder >> dataInfo;
 
 			int nEntries = dataInfo.totalSize / sizeof(uint16_t);
 
@@ -320,7 +322,7 @@ namespace wg
 
 			uint16_t * pBuffer = (uint16_t*) GfxBase::memStackAlloc(dataSize);
 
-			*m_pDecoder >> GfxStream::ReadBytes{ dataSize, pBuffer };
+			decoder >> GfxStream::ReadBytes{ dataSize, pBuffer };
 
 			auto it = m_vActionObjects.begin() + (dataInfo.chunkOffset / sizeof(uint16_t));
 
@@ -342,7 +344,7 @@ namespace wg
 		case GfxStream::ChunkId::Rects:
 		{
 			GfxStream::DataInfo dataInfo;
-			*m_pDecoder >> dataInfo;
+			decoder >> dataInfo;
 
 			if (dataInfo.bFirstChunk)
 				m_vRects.resize(dataInfo.totalSize / sizeof(RectSPX));
@@ -352,13 +354,13 @@ namespace wg
 
 			if (dataInfo.compression == Compression::None)
 			{
-				*m_pDecoder >> GfxStream::ReadBytes{ dataSize, pDest };
+				decoder >> GfxStream::ReadBytes{ dataSize, pDest };
 			}
 			else
 			{
 				uint8_t* pBuffer = (uint8_t*) GfxBase::memStackAlloc(dataSize);
 
-				*m_pDecoder >> GfxStream::ReadBytes{ dataSize, pBuffer };
+				decoder >> GfxStream::ReadBytes{ dataSize, pBuffer };
 				decompress(dataInfo.compression, pBuffer, dataSize, pDest);
 
 				GfxBase::memStackFree(dataSize);
@@ -374,7 +376,7 @@ namespace wg
 		case GfxStream::ChunkId::Colors:
 		{
 			GfxStream::DataInfo dataInfo;
-			*m_pDecoder >> dataInfo;
+			decoder >> dataInfo;
 
 			if (dataInfo.bFirstChunk)
 				m_vColors.resize(dataInfo.totalSize / sizeof(HiColor));
@@ -382,7 +384,7 @@ namespace wg
 			char* pDest = ((char*)m_vColors.data()) + dataInfo.chunkOffset;
 			int dataSize = header.size - GfxStream::DataInfoSize - dataInfo.bPadded;
 
-			*m_pDecoder >> GfxStream::ReadBytes{ dataSize, pDest };
+			decoder >> GfxStream::ReadBytes{ dataSize, pDest };
 
 			if (dataInfo.bLastChunk)
 				m_pBackend->setColors(m_vColors.data(), m_vColors.data() + m_vColors.size());
@@ -394,7 +396,7 @@ namespace wg
 		case GfxStream::ChunkId::Transforms:
 		{
 			GfxStream::DataInfo dataInfo;
-			*m_pDecoder >> dataInfo;
+			decoder >> dataInfo;
 
 			if (dataInfo.bFirstChunk)
 				m_vTransforms.resize(dataInfo.totalSize / sizeof(Transform));
@@ -402,7 +404,7 @@ namespace wg
 			char* pDest = ((char*)m_vTransforms.data()) + dataInfo.chunkOffset;
 			int dataSize = header.size - GfxStream::DataInfoSize - dataInfo.bPadded;
 
-			*m_pDecoder >> GfxStream::ReadBytes{ dataSize, pDest };
+			decoder >> GfxStream::ReadBytes{ dataSize, pDest };
 
 			if (dataInfo.bLastChunk)
 				m_pBackend->setTransforms(m_vTransforms.data(), m_vTransforms.data() + m_vTransforms.size() );
@@ -415,7 +417,7 @@ namespace wg
 		case GfxStream::ChunkId::Commands:
 		{
 			GfxStream::DataInfo dataInfo;
-			*m_pDecoder >> dataInfo;
+			decoder >> dataInfo;
 
 			if (dataInfo.bFirstChunk)
 				m_vCommands.resize(dataInfo.totalSize / sizeof(uint16_t));
@@ -423,7 +425,7 @@ namespace wg
 			char* pDest = ((char*)m_vCommands.data()) + dataInfo.chunkOffset;
 			int dataSize = header.size - GfxStream::DataInfoSize - dataInfo.bPadded;
 
-			*m_pDecoder >> GfxStream::ReadBytes{ dataSize, pDest };
+			decoder >> GfxStream::ReadBytes{ dataSize, pDest };
 
 			if (dataInfo.bLastChunk)
 				m_pBackend->processCommands(m_vCommands.data(), m_vCommands.data() + m_vCommands.size());
@@ -435,7 +437,7 @@ namespace wg
 		case GfxStream::ChunkId::UpdateRects:
 		{
 			GfxStream::DataInfo dataInfo;
-			*m_pDecoder >> dataInfo;
+			decoder >> dataInfo;
 
 			if (dataInfo.bFirstChunk)
 				m_vUpdateRects.resize(dataInfo.totalSize / sizeof(RectSPX));
@@ -445,13 +447,13 @@ namespace wg
 
 			if (dataInfo.compression == Compression::None)
 			{
-				*m_pDecoder >> GfxStream::ReadBytes{ dataSize, pDest };
+				decoder >> GfxStream::ReadBytes{ dataSize, pDest };
 			}
 			else
 			{
 				uint8_t* pBuffer = (uint8_t*) GfxBase::memStackAlloc(dataSize);
 
-				*m_pDecoder >> GfxStream::ReadBytes{ dataSize, pBuffer };
+				decoder >> GfxStream::ReadBytes{ dataSize, pBuffer };
 				decompress(dataInfo.compression, pBuffer, dataSize, pDest);
 
 				GfxBase::memStackFree(dataSize);
@@ -485,18 +487,18 @@ namespace wg
 			uint16_t	objectId;
 			Surface::Blueprint	bp;
 
-			*m_pDecoder >> objectId;
-			*m_pDecoder >> bp.canvas;
-			*m_pDecoder >> bp.dynamic;
-			*m_pDecoder >> bp.format;
-			*m_pDecoder >> bp.identity;
-			*m_pDecoder >> bp.mipmap;
-			*m_pDecoder >> bp.sampleMethod;
-			*m_pDecoder >> bp.scale;
-			*m_pDecoder >> bp.size;
-			*m_pDecoder >> bp.tiling;
-			*m_pDecoder >> bp.paletteCapacity;
-			*m_pDecoder >> bp.paletteSize;
+			decoder >> objectId;
+			decoder >> bp.canvas;
+			decoder >> bp.dynamic;
+			decoder >> bp.format;
+			decoder >> bp.identity;
+			decoder >> bp.mipmap;
+			decoder >> bp.sampleMethod;
+			decoder >> bp.scale;
+			decoder >> bp.size;
+			decoder >> bp.tiling;
+			decoder >> bp.paletteCapacity;
+			decoder >> bp.paletteSize;
 
 			bp.buffered = false;
 			bp.palette = nullptr;
@@ -504,7 +506,7 @@ namespace wg
 			if (bp.paletteSize > 0)
 			{
 				auto pPalette = (Color8*) GfxBase::memStackAlloc(bp.paletteSize*4);
-				*m_pDecoder >> GfxStream::ReadBytes{ bp.paletteSize*4, pPalette };
+				decoder >> GfxStream::ReadBytes{ bp.paletteSize*4, pPalette };
 				bp.palette = pPalette;
 			}
 
@@ -528,8 +530,8 @@ namespace wg
 			uint16_t	objectId;
 			RectI		rect;
 
-			*m_pDecoder >> objectId;
-			*m_pDecoder >> rect;
+			decoder >> objectId;
+			decoder >> rect;
 
 			if( objectId > m_vObjects.size() || m_vObjects[objectId] == nullptr )
 			{
@@ -542,10 +544,24 @@ namespace wg
 			break;
 		}
 
+		case GfxStream::ChunkId::SurfaceUpdate2:
+		{
+			CanvasRef	canvasRef;
+			uint16_t	surfaceId;
+			uint16_t	nRects;
+
+			decoder >> canvasRef;
+			decoder >> surfaceId;
+			decoder >> nRects;
+
+			//TODO: Handle rectangles etc.
+		}
+
+
 		case GfxStream::ChunkId::SurfacePixels:
 		{
 			GfxStream::DataInfo dataInfo;
-			*m_pDecoder >> dataInfo;
+			decoder >> dataInfo;
 
 			if (dataInfo.bFirstChunk)
 			{
@@ -556,7 +572,7 @@ namespace wg
 			int chunkSize = header.size - GfxStream::DataInfoSize;
 			auto pTempBuffer = (uint8_t*) GfxBase::memStackAlloc(chunkSize);
 
-			*m_pDecoder >> GfxStream::ReadBytes{ chunkSize, pTempBuffer };
+			decoder >> GfxStream::ReadBytes{ chunkSize, pTempBuffer };
 
 			int pixelBits = m_pUpdatingSurface->pixelBits();
 			int bytesLeft = chunkSize - int(dataInfo.bPadded);
@@ -605,9 +621,9 @@ namespace wg
 			RectI		region;
 			HiColor		col;
 
-			*m_pDecoder >> objectId;
-			*m_pDecoder >> region;
-			*m_pDecoder >> col;
+			decoder >> objectId;
+			decoder >> region;
+			decoder >> col;
 
 			if( objectId > m_vObjects.size() || m_vObjects[objectId] == nullptr )
 			{
@@ -626,10 +642,10 @@ namespace wg
 			RectI		sourceRect;
 			CoordI		dest;
 
-			*m_pDecoder >> destSurfaceId;
-			*m_pDecoder >> sourceSurfaceId;
-			*m_pDecoder >> sourceRect;
-			*m_pDecoder >> dest;
+			decoder >> destSurfaceId;
+			decoder >> sourceSurfaceId;
+			decoder >> sourceRect;
+			decoder >> dest;
 
 			Surface * pDest	  = m_vSurfaces[destSurfaceId];
 			Surface * pSource = m_vSurfaces[sourceSurfaceId];
@@ -642,7 +658,7 @@ namespace wg
 		{
 			uint16_t	objectId;
 
-			*m_pDecoder >> objectId;
+			decoder >> objectId;
 
 			if( objectId > m_vObjects.size() || m_vObjects[objectId] == nullptr || !m_vObjects[objectId]->isInstanceOf(Surface::TYPEINFO) )
 			{
@@ -662,10 +678,10 @@ namespace wg
 			uint16_t	nbSegments;
 			uint16_t	paletteType;
 
-			*m_pDecoder >> objectId;
-			*m_pDecoder >> size;
-			*m_pDecoder >> nbSegments;
-			*m_pDecoder >> paletteType;
+			decoder >> objectId;
+			decoder >> size;
+			decoder >> nbSegments;
+			decoder >> paletteType;
 
 			if (m_vObjects.size() <= objectId)
 				m_vObjects.resize(objectId + 16, nullptr);
@@ -689,8 +705,8 @@ namespace wg
 			uint16_t	objectId;
 			uint16_t	nbSegments;
 
-			*m_pDecoder >> objectId;
-			*m_pDecoder >> nbSegments;
+			decoder >> objectId;
+			decoder >> nbSegments;
 
 			static_cast<Edgemap*>(m_vObjects[objectId].rawPtr())->setRenderSegments(nbSegments);
 
@@ -703,9 +719,9 @@ namespace wg
 			int			begin;
 			int			end;
 			
-			*m_pDecoder >> objectId;
-			*m_pDecoder >> begin;
-			*m_pDecoder >> end;
+			decoder >> objectId;
+			decoder >> begin;
+			decoder >> end;
 
 			int nColors = end - begin;
 
@@ -721,7 +737,7 @@ namespace wg
 			auto * pColors = (HiColor*) GfxBase::memStackAlloc(memAllocated);
 			
 			for( int i = 0 ; i < nColors ; i++ )
-				*m_pDecoder >> pColors[i];
+				decoder >> pColors[i];
 
 			static_cast<Edgemap*>(m_vObjects[objectId].rawPtr())->importPaletteEntries(begin, end, pColors);
 
@@ -737,11 +753,11 @@ namespace wg
 			uint16_t	sampleBegin;
 			uint16_t	sampleEnd;
 
-			*m_pDecoder >> objectId;
-			*m_pDecoder >> edgeBegin;
-			*m_pDecoder >> edgeEnd;
-			*m_pDecoder >> sampleBegin;
-			*m_pDecoder >> sampleEnd;
+			decoder >> objectId;
+			decoder >> edgeBegin;
+			decoder >> edgeEnd;
+			decoder >> sampleBegin;
+			decoder >> sampleEnd;
 
 			int nSamples = sampleEnd - sampleBegin;
 
@@ -764,7 +780,7 @@ namespace wg
 		case GfxStream::ChunkId::EdgemapSamples:
 		{
 			GfxStream::DataInfo dataInfo;
-			*m_pDecoder >> dataInfo;
+			decoder >> dataInfo;
 
 			if (dataInfo.bFirstChunk)
 				m_pEdgemapSampleBuffer = new spx[dataInfo.totalSize / sizeof(spx)];
@@ -774,13 +790,13 @@ namespace wg
 
 			if( dataInfo.compression == Compression::None )
 			{
-				*m_pDecoder >> GfxStream::ReadBytes{ dataSize, pDest };
+				decoder >> GfxStream::ReadBytes{ dataSize, pDest };
 			}
 			else
 			{
 				auto pBuffer = (spx *) GfxBase::memStackAlloc(dataSize);
 
-				*m_pDecoder >> GfxStream::ReadBytes{ dataSize, pBuffer };
+				decoder >> GfxStream::ReadBytes{ dataSize, pBuffer };
 				decompress(dataInfo.compression, pBuffer, dataSize - dataInfo.bPadded, pDest);
 
 				GfxBase::memStackFree(dataSize);
@@ -803,7 +819,7 @@ namespace wg
 		{
 			uint16_t	objectId;
 
-			*m_pDecoder >> objectId;
+			decoder >> objectId;
 
 			if( objectId > m_vObjects.size() || m_vObjects[objectId] == nullptr || !m_vObjects[objectId]->isInstanceOf(Edgemap::TYPEINFO) )
 			{

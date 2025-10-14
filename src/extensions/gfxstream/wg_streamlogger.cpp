@@ -90,8 +90,10 @@ namespace wg
 		GfxStream::Header header;
 
 		int chunkSize = m_pDecoder->chunkSize();
-		
-		*m_pDecoder >> header;
+
+		auto& decoder = * m_pDecoder;
+
+		decoder >> header;
 
 		if (header.type == GfxStream::ChunkId::OutOfData)
 			return false;
@@ -124,7 +126,7 @@ namespace wg
 			case GfxStream::ChunkId::ProtocolVersion:
 				uint16_t	version;
 
-				*m_pDecoder >> version;
+				decoder >> version;
 				m_charStream << "    version     = " << (version / 256) << "." << (version%256) << std::endl;
 				break;
 
@@ -132,7 +134,7 @@ namespace wg
 			{
 				uint16_t nbCanvases;
 
-				*m_pDecoder >> nbCanvases;
+				decoder >> nbCanvases;
 
 				for( int i = 0 ; i < nbCanvases ; i++ )
 				{
@@ -141,10 +143,10 @@ namespace wg
 					uint16_t	scale;
 					PixelFormat	format;
 
-					*m_pDecoder >> ref;
-					*m_pDecoder >> size;
-					*m_pDecoder >> scale;
-					*m_pDecoder >> format;
+					decoder >> ref;
+					decoder >> size;
+					decoder >> scale;
+					decoder >> format;
 
 					m_charStream << "    " << toString((CanvasRef) ref) << ": size = (" << size.w << "," << size.h << "), scale = " << scale << ", format = " << toString(format) << std::endl;
 				}
@@ -154,7 +156,7 @@ namespace wg
 			case GfxStream::ChunkId::Tick:
 			{
 				int32_t	tick;
-				*m_pDecoder >> tick;
+				decoder >> tick;
 				m_charStream << "    " << tick << " microsec passed." << std::endl;
 				break;
 			}
@@ -191,26 +193,26 @@ namespace wg
 				uint16_t	nTransforms;
 				uint16_t	nObjects;
 
-				*m_pDecoder >> objectId;
-				*m_pDecoder >> canvasRef;
-				*m_pDecoder >> dummy;
+				decoder >> objectId;
+				decoder >> canvasRef;
+				decoder >> dummy;
 
-				*m_pDecoder >> nUpdateRects;
+				decoder >> nUpdateRects;
 
-				*m_pDecoder >> nSetCanvas;
-				*m_pDecoder >> nStateChanges;
-				*m_pDecoder >> nLines;
-				*m_pDecoder >> nFill;
-				*m_pDecoder >> nBlit;
-				*m_pDecoder >> nBlur;
-				*m_pDecoder >> nEdgemapDraws;
-				*m_pDecoder >> nLineCoords;
+				decoder >> nSetCanvas;
+				decoder >> nStateChanges;
+				decoder >> nLines;
+				decoder >> nFill;
+				decoder >> nBlit;
+				decoder >> nBlur;
+				decoder >> nEdgemapDraws;
+				decoder >> nLineCoords;
 
-				*m_pDecoder >> nLineClipRects;
-				*m_pDecoder >> nRects;
-				*m_pDecoder >> nColors;
-				*m_pDecoder >> nTransforms;
-				*m_pDecoder >> nObjects;
+				decoder >> nLineClipRects;
+				decoder >> nRects;
+				decoder >> nColors;
+				decoder >> nTransforms;
+				decoder >> nObjects;
 
 				m_charStream << "    canvasObject = " << objectId << std::endl;
 				m_charStream << "    canvasRef = " << toString(canvasRef) << std::endl;
@@ -242,9 +244,9 @@ namespace wg
 				CanvasRef	canvasRef;
 				uint8_t		dummy;
 
-				*m_pDecoder >> objectId;
-				*m_pDecoder >> canvasRef;
-				*m_pDecoder >> dummy;
+				decoder >> objectId;
+				decoder >> canvasRef;
+				decoder >> dummy;
 
 				m_charStream << "    objectId = " << objectId << std::endl <<"    ref = " << toString((CanvasRef) canvasRef) << std::endl;
 				break;
@@ -298,18 +300,18 @@ namespace wg
 				uint16_t	surfaceId;
 				Surface::Blueprint	bp;
 
-				*m_pDecoder >> surfaceId;
-				*m_pDecoder >> bp.canvas;
-				*m_pDecoder >> bp.dynamic;
-				*m_pDecoder >> bp.format;
-				*m_pDecoder >> bp.identity;
-				*m_pDecoder >> bp.mipmap;
-				*m_pDecoder >> bp.sampleMethod;
-				*m_pDecoder >> bp.scale;
-				*m_pDecoder >> bp.size;
-				*m_pDecoder >> bp.tiling;
-				*m_pDecoder >> bp.paletteCapacity;
-				*m_pDecoder >> bp.paletteSize;
+				decoder >> surfaceId;
+				decoder >> bp.canvas;
+				decoder >> bp.dynamic;
+				decoder >> bp.format;
+				decoder >> bp.identity;
+				decoder >> bp.mipmap;
+				decoder >> bp.sampleMethod;
+				decoder >> bp.scale;
+				decoder >> bp.size;
+				decoder >> bp.tiling;
+				decoder >> bp.paletteCapacity;
+				decoder >> bp.paletteSize;
 
 
 				m_charStream << "    surfaceId   = " << surfaceId << std::endl;
@@ -332,11 +334,29 @@ namespace wg
 				uint16_t	surfaceId;
 				RectI		region;
 
-				*m_pDecoder >> surfaceId;
-				*m_pDecoder >> region;
+				decoder >> surfaceId;
+				decoder >> region;
 
 				m_charStream << "    surfaceId   = " << surfaceId << std::endl;
 				_printRect( "    region     ", region );
+				break;
+			}
+
+			case GfxStream::ChunkId::SurfaceUpdate2:
+			{
+				CanvasRef	canvasRef;
+				uint16_t	surfaceId;
+				uint16_t	nRects;
+
+				decoder >> canvasRef;
+				decoder >> surfaceId;
+				decoder >> nRects;
+
+				m_charStream << "    canvasRef = " << toString(canvasRef) << std::endl;
+				m_charStream << "    surfaceId = " << surfaceId << std::endl;
+				m_charStream << "	 nbRects   = " << nRects << std::endl;
+
+				_readPrintRects("rects", nRects);
 				break;
 			}
 
@@ -353,9 +373,9 @@ namespace wg
 				RectI		region;
 				HiColor		col;
 
-				*m_pDecoder >> surfaceId;
-				*m_pDecoder >> region;
-				*m_pDecoder >> col;
+				decoder >> surfaceId;
+				decoder >> region;
+				decoder >> col;
 
 				m_charStream << "    surfaceId   = " << surfaceId << std::endl;
 				_printRect( "    region     ", region );
@@ -370,10 +390,10 @@ namespace wg
 				RectI		sourceRect;
 				CoordI		dest;
 
-				*m_pDecoder >> destSurfaceId;
-				*m_pDecoder >> sourceSurfaceId;
-				*m_pDecoder >> sourceRect;
-				*m_pDecoder >> dest;
+				decoder >> destSurfaceId;
+				decoder >> sourceSurfaceId;
+				decoder >> sourceRect;
+				decoder >> dest;
 
 				m_charStream << "    destSurface = " << destSurfaceId << std::endl;
 				m_charStream << "    srcSurface  = " << sourceSurfaceId << std::endl;
@@ -385,7 +405,7 @@ namespace wg
 			case GfxStream::ChunkId::DeleteSurface:
 			{
 				uint16_t	surfaceId;
-				*m_pDecoder >> surfaceId;
+				decoder >> surfaceId;
 
 				m_charStream << "    surfaceId   = " << surfaceId << std::endl;
 				break;
@@ -399,10 +419,10 @@ namespace wg
 				uint16_t	nbSegments;
 				uint16_t	paletteType;
 
-				*m_pDecoder >> edgemapId;
-				*m_pDecoder >> size;
-				*m_pDecoder >> nbSegments;
-				*m_pDecoder >> paletteType;
+				decoder >> edgemapId;
+				decoder >> size;
+				decoder >> nbSegments;
+				decoder >> paletteType;
 
 				
 
@@ -418,8 +438,8 @@ namespace wg
 				uint16_t	edgemapId;
 				uint16_t	segments;
 
-				*m_pDecoder >> edgemapId;
-				*m_pDecoder >> segments;
+				decoder >> edgemapId;
+				decoder >> segments;
 
 				m_charStream << "    edgemapId  = " << edgemapId << std::endl;
 				m_charStream << "    segments    = " << segments << std::endl;
@@ -432,9 +452,9 @@ namespace wg
 				int			begin;
 				int			end;
 				
-				*m_pDecoder >> edgemapId;
-				*m_pDecoder >> begin;
-				*m_pDecoder >> end;
+				decoder >> edgemapId;
+				decoder >> begin;
+				decoder >> end;
 
 				m_charStream << "    edgemapId  = " << edgemapId << std::endl;
 				m_charStream << "    begin       = " << begin << std::endl;
@@ -447,7 +467,7 @@ namespace wg
 					char tmp[16];
 					snprintf(tmp,16,"    %i", i);
 
-					*m_pDecoder >> col;
+					decoder >> col;
 					_printColor(tmp, col);
 				}
 
@@ -463,11 +483,11 @@ namespace wg
 				uint16_t	sampleBegin;
 				uint16_t	sampleEnd;
 
-				*m_pDecoder >> edgemapId;
-				*m_pDecoder >> edgeBegin;
-				*m_pDecoder >> edgeEnd;
-				*m_pDecoder >> sampleBegin;
-				*m_pDecoder >> sampleEnd;
+				decoder >> edgemapId;
+				decoder >> edgeBegin;
+				decoder >> edgeEnd;
+				decoder >> sampleBegin;
+				decoder >> sampleEnd;
 
 				m_charStream << "    edgemapId  = " << edgemapId << std::endl;
 				m_charStream << "    edgeBegin   = " << int(edgeBegin) << std::endl;
@@ -489,7 +509,7 @@ namespace wg
 			{
 				uint16_t	edgemapId;
 
-				*m_pDecoder >> edgemapId;
+				decoder >> edgemapId;
 				m_charStream << "    edgemapId  = " << edgemapId << std::endl;
 				break;
 			}
