@@ -49,6 +49,9 @@ extern "C" {
 
 	WG_EXPORT wg_obj	wg_createStreamSurfaceFactory(wg_obj streamEncoder);
 
+	WG_EXPORT void		wg_setRememberStreamSurfacesCreated(wg_obj streamSurfaceFactory, int bRemember);
+	WG_EXPORT void		wg_streamAllSurfacesAsNew(wg_obj streamSurfaceFactory);
+
 
 #ifdef __cplusplus
 }

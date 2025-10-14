@@ -110,9 +110,21 @@ namespace wg
 		return vec;
 	}
 
+	//____ streamAllSurfacesAsNew() __________________________________________
+
+	void StreamSurfaceFactory::streamAllSurfacesAsNew()
+	{
+		for (auto& wp : m_surfaceReferences)
+		{
+			if (wp)
+				wp->streamAsNew(m_pEncoder);
+		}
+	}
+
+
 	//____ _addReference() ____________________________________________________
 
-	void StreamSurfaceFactory::_addReference(Surface* pSurface)
+	void StreamSurfaceFactory::_addReference(StreamSurface* pSurface)
 	{
 		if (m_bKeepReferences)
 		{

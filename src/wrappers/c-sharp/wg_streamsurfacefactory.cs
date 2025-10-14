@@ -31,7 +31,7 @@ public class StreamSurfaceFactory : SurfaceFactory
 
         IntPtr surf = wg_createSurfaceFromBlob(_obj, ref bp, blob.CHandle(), pitch);
 
-        return new StreamSurface(surf);        
+        return new StreamSurface(surf);
     }
 
     public Surface CreateSurface(Surface.Blueprint blueprint, Byte[] pixels, PixelFormat pixelFormat, int pitch, Color8[] palette)
@@ -54,9 +54,27 @@ public class StreamSurfaceFactory : SurfaceFactory
         return new StreamSurface(surf);
     }
 
+    //____ SetRememberSurfacesCreated() _______________________________________
+    public void SetRememberSurfacesCreated(bool bRemember)
+    {
+        wg_setRememberStreamSurfacesCreated(_obj, bRemember ? 1 : 0);
+    }
+
+    //____ StreamAllSurfacesAsNew() ___________________________________________
+    public void StreamAllSurfacesAsNew()
+    {
+        wg_streamAllSurfacesAsNew(_obj);
+    }
+
     //____ DLL functions ______________________________________________________
 
     [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-    protected static extern IntPtr	wg_createStreamSurfaceFactory(IntPtr streamEncoder);
+    protected static extern IntPtr wg_createStreamSurfaceFactory(IntPtr streamEncoder);
+    
+    [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
+    protected static extern void wg_setRememberStreamSurfacesCreated(IntPtr streamSurfaceFactory, int bRemember);
+
+    [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
+	protected static extern void wg_streamAllSurfacesAsNew(IntPtr streamSurfaceFactory);
 
 }
