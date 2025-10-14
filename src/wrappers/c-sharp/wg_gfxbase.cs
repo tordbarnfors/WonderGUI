@@ -47,6 +47,13 @@ public static class GfxBase
         return (wg_defaultToSRGB() == 1);
     }
 
+   //____ GetDefaultBitmapCache() ____________________________________________
+
+    static public BitmapCache GetDefaultBitmapCache()
+    {
+        return new BitmapCache(wg_defaultBitmapCache());
+    }
+
 
     //____ ErrorInfo ________________________________________________________
 
@@ -147,7 +154,6 @@ public static class GfxBase
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     private delegate void C_ErrorHandler(in C_ErrorInfo errInfo);
 
-
     //____ DLL functions ______________________________________________________
 
     [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
@@ -166,6 +172,7 @@ public static class GfxBase
     private static extern int wg_defaultToSRGB();
 
     [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
+    public static extern IntPtr	wg_defaultBitmapCache();
     private static extern void wg_setErrorHandler(C_ErrorHandler errorHandler);
 
     [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
