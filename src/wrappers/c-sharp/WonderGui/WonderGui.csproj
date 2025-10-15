@@ -18,6 +18,9 @@
       <Compile Include="..\wg_bitmapcache.cs">
         <Link>wg_bitmapcache.cs</Link>
       </Compile>
+      <Compile Include="..\wg_bitmapfont.cs">
+        <Link>wg_bitmapfont.cs</Link>
+      </Compile>
       <Compile Include="..\wg_blob.cs">
         <Link>wg_blob.cs</Link>
       </Compile>
@@ -27,14 +30,14 @@
       <Compile Include="..\wg_color.cs">
         <Link>wg_color.cs</Link>
       </Compile>
-      <Compile Include="..\wg_component.cs">
-        <Link>wg_component.cs</Link>
-      </Compile>
       <Compile Include="..\wg_font.cs">
         <Link>wg_font.cs</Link>
       </Compile>
       <Compile Include="..\wg_freetypefont.cs">
         <Link>wg_freetypefont.cs</Link>
+      </Compile>
+      <Compile Include="..\wg_gearbase.cs">
+        <Link>wg_gearbase.cs</Link>
       </Compile>
       <Compile Include="..\wg_geo.cs">
         <Link>wg_geo.cs</Link>
@@ -92,6 +95,9 @@
       </Compile>
       <Compile Include="..\wg_surfacewriter.cs">
         <Link>wg_surfacewriter.cs</Link>
+      </Compile>
+      <Compile Include="..\wg_sysfont.cs">
+        <Link>wg_sysfont.cs</Link>
       </Compile>
     </ItemGroup>
 

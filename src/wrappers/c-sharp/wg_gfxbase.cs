@@ -5,7 +5,7 @@ namespace WG;
 
 public static class GfxBase
 {
-    private const string NativeLib = "libstreamgendll";
+    private const string NativeLib = "streamgendll";
 
     //____ Init() _________________________________________________________
 
@@ -173,6 +173,8 @@ public static class GfxBase
 
     [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
     public static extern IntPtr	wg_defaultBitmapCache();
+    
+    [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
     private static extern void wg_setErrorHandler(C_ErrorHandler errorHandler);
 
     [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
