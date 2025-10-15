@@ -83,7 +83,7 @@ void WgRoot3Capsule::_onRender( wg::GfxDevice * pDevice, const WgRect& _canvas, 
 	// If clear color is set, clear canvas where it is going to be drawn on
 	// (otherwise this widget has to be completely opaque in order to render
 	// correctly)
-	if(m_dirtyPatches.size() > 0 && m_clearColor != wg::HiColor::Undefined)
+	if(m_dirtyPatches.size() > 0 && m_clearColor != wg::HiColor::Undefined && m_bVisible)
 	{
 		pDevice->beginCanvasUpdate(m_canvasSurface, m_dirtyPatches.size(), m_dirtyPatches.begin());
 		pDevice->setBlendMode(wg::BlendMode::Replace);
