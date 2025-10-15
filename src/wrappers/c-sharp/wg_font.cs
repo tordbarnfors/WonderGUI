@@ -25,6 +25,11 @@ public class Font : Objekt
 
     }
 
+    public void SetSize(int size)
+    {
+	    wg_setFontSize(_obj, size);
+    }
+
     [StructLayout(LayoutKind.Sequential)]
     protected struct wg_glyph
 	{

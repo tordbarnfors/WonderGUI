@@ -79,8 +79,6 @@ namespace wg
 
 	FreeTypeFont::FreeTypeFont( const Blueprint& bp ) : Font(bp.backupFont)
 	{
-		GearBase::throwError(ErrorLevel::Warning, ErrorCode::Other, "FreeTypeFont() entered", this, &FreeTypeFont::TYPEINFO, __func__, __FILE__, __LINE__);
-
 		if( s_nInstances == 0 )
         {
             FT_Error err = FT_Init_FreeType(&s_freeTypeLibrary);
