@@ -405,7 +405,7 @@ Widget_p MyApp::createLogPanel()
 	pLogButtonRow->slots << pStatisticsButton;
 	pLogButtonRow->slots << pErrorLogButton;
 	
-	pLogButtonRow->setSlotWeight(0, 7, 0.f );
+	pLogButtonRow->setSlotWeight(0, 8, 0.f );
 	
 	TextEditor::Blueprint displayBP;
 	displayBP.skin = ColorSkin::create(Color8::LightYellow);
