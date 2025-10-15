@@ -345,18 +345,20 @@ namespace wg
 			case GfxStream::ChunkId::SurfaceUpdate2:
 			{
 				CanvasRef	canvasRef;
+				uint8_t		dummy;
 				uint16_t	surfaceId;
 				uint16_t	nRects;
 
 				decoder >> canvasRef;
+				decoder >> dummy;
 				decoder >> surfaceId;
 				decoder >> nRects;
 
 				m_charStream << "    canvasRef = " << toString(canvasRef) << std::endl;
 				m_charStream << "    surfaceId = " << surfaceId << std::endl;
-				m_charStream << "	 nbRects   = " << nRects << std::endl;
+				m_charStream << "    nbRects   = " << nRects << std::endl;
 
-				_readPrintRects("rects", nRects);
+				_readPrintRects("    rects", nRects);
 				break;
 			}
 

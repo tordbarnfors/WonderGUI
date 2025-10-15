@@ -56,6 +56,7 @@ void playSurfaceStressTest(GfxDevice_p pDevice, CanvasRef canvasRef, SurfaceFact
 void playImageStreamingTest(GfxDevice_p pDevice, CanvasRef canvasRef, SurfaceFactory_p pFactory );
 void playBounceRects(GfxDevice_p pDevice, CanvasRef canvasRef);
 void playDualScreenBounceRects(GfxDevice_p pDevice, CanvasRef canvasRef1, CanvasRef canvasRef2);
+void playDirectUpdate(GfxDevice_p pDevice, CanvasRef canvasRef );
 
 
 CoordSPX positionSprite(SizeSPX dimensions, int tick, int length, int nb, int amount);
@@ -63,6 +64,8 @@ CoordSPX positionSprite(SizeSPX dimensions, int tick, int length, int nb, int am
 
 
 bool	bQuit = false;
+
+StreamEncoder_p	s_pEncoder;
 
 
 void freeSDLSurfCallback( void * pSDLSurf )
@@ -298,6 +301,8 @@ int main ( int argc, char** argv )
 
 	auto pEncoder = StreamEncoder::create(StreamSink_p( pFirstSplitter, pFirstSplitter->input) );
 
+	s_pEncoder = pEncoder;
+
 	// Logger
 
 	auto pStreamLogger = StreamLogger::create(std::cout);
@@ -354,12 +359,13 @@ int main ( int argc, char** argv )
 	// Record stream
 	//------------------------------------------------------
 
+   playDirectUpdate( pStreamDevice, CanvasRef::Canvas_1 );
 //   playRectangleDance( pStreamDevice, CanvasRef::Canvas_1 );
 //	  playRectangleDanceDualScreen( pStreamDevice, CanvasRef::Canvas_1, CanvasRef::Canvas_2 );
 //    playLogoFadeIn( pStreamDevice, CanvasRef::Canvas_1, pSurfaceFactory );
 //    playSurfaceStressTest( pStreamDevice, CanvasRef::Canvas_1, pSurfaceFactory );
 //	playBounceRects( pStreamDevice, CanvasRef::Canvas_1 );
-	playDualScreenBounceRects( pStreamDevice, CanvasRef::Canvas_1, CanvasRef::Canvas_2 );
+//	playDualScreenBounceRects( pStreamDevice, CanvasRef::Canvas_1, CanvasRef::Canvas_2 );
 
 //	playImageStreamingTest( pStreamDevice, CanvasRef::Canvas_1, pSurfaceFactory );
 
@@ -844,6 +850,61 @@ void playRectangleDance(GfxDevice_p pDevice, CanvasRef canvasRef )
 		ticker++;
 	}
 }
+
+//____ playDirectUpdate() _________________________________________________
+
+void playDirectUpdate(GfxDevice_p pDevice, CanvasRef canvasRef )
+{
+	SoftBackend_p pBackend = SoftBackend::create();
+	addDefaultSoftKernels( pBackend );
+
+	GfxDevice_p	pMyDevice = GfxDeviceGen2::create(pBackend);
+
+	auto& canvasInfo = pDevice->canvas(canvasRef);
+
+	SoftSurface_p	pMyCanvas = SoftSurface::create( { .size = canvasInfo.size/64,
+														.canvas = true,
+														.format = canvasInfo.format });
+
+	SurfaceStreamer_p	pMyStreamer = SurfaceStreamer::create({
+		.canvasRef = canvasRef,
+		.encoder = s_pEncoder,
+		.surface = pMyCanvas
+	});
+
+	
+
+
+	int ticker = 0;
+	const int length = 15;
+	SizeSPX spriteSize(30*64, 30*64);
+	SizeSPX canvasSize = pDevice->canvas(canvasRef).size;
+	SizeSPX moveDim(canvasSize.w - spriteSize.w, canvasSize.h - spriteSize.h);
+
+	while (ticker < length)
+	{
+		pDevice->beginRender();
+
+		pMyDevice->beginRender();
+		pMyDevice->beginCanvasUpdate(pMyCanvas);
+
+		pMyDevice->fill(Color::Black);
+		pMyDevice->fill({ positionSprite(moveDim, ticker*100, length*100, 0, 3),spriteSize }, Color::Red);
+		pMyDevice->fill({ positionSprite(moveDim, ticker*100, length*100, 1, 3),spriteSize }, Color::Green);
+		pMyDevice->fill({ positionSprite(moveDim, ticker*100, length*100, 2, 3),spriteSize }, Color::Blue);
+
+		pMyDevice->endCanvasUpdate();
+		pMyDevice->endRender();
+
+		pDevice->endRender();
+		
+		ticker++;
+
+
+	}
+}
+
+
 
 //____ playBounceRects() _________________________________________________
 

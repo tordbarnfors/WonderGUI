@@ -93,9 +93,12 @@ namespace wg
 		std::vector<uint16_t>	m_vCommands;
 
 		Surface_p			m_pUpdatingSurface;
-		RectI				m_updatingRect;
-		PixelBuffer			m_pixelBuffer;
-		CoordI				m_updateOffset;
+		std::vector<RectI>	m_updatingSurfaceRects;
+		uint8_t *			m_pUpdatingSurfaceDataBuffer = nullptr;
+
+//		RectI				m_updatingRect;
+//		PixelBuffer			m_pixelBuffer;
+//		CoordI				m_updateOffset;
 
 		Edgemap_p			m_pUpdatingEdgemap;
 		spx *				m_pEdgemapSampleBuffer = nullptr;

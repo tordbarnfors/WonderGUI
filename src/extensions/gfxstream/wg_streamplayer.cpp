@@ -176,6 +176,8 @@ namespace wg
 
 			if( m_canvasInfoCallback )
 				m_canvasInfoCallback(canvas, canvas+nbCanvases);
+
+			break;
 		}
 
         case GfxStream::ChunkId::BeginRender:
@@ -540,21 +542,38 @@ namespace wg
 			}
 
 			m_pUpdatingSurface = wg_static_cast<Surface_p>(m_vObjects[objectId]);
-			m_updatingRect = rect;
+			m_updatingSurfaceRects.resize(1);
+			m_updatingSurfaceRects[0] = rect;
 			break;
 		}
 
 		case GfxStream::ChunkId::SurfaceUpdate2:
 		{
 			CanvasRef	canvasRef;
+			uint8_t		dummy;
 			uint16_t	surfaceId;
 			uint16_t	nRects;
 
 			decoder >> canvasRef;
+			decoder >> dummy;
 			decoder >> surfaceId;
 			decoder >> nRects;
 
-			//TODO: Handle rectangles etc.
+			if( canvasRef != CanvasRef::None )
+			{
+				auto * pCanvasInfo = m_pBackend->canvasInfo(canvasRef);
+				m_pUpdatingSurface = pCanvasInfo->pSurface;
+			}
+			else
+			{
+				m_pUpdatingSurface = wg_static_cast<Surface_p>(m_vObjects[surfaceId]);
+			}
+
+			m_updatingSurfaceRects.resize(nRects);
+			for( int i = 0 ; i < nRects ; i++ )
+				decoder >> m_updatingSurfaceRects[i];
+
+			break;
 		}
 
 
@@ -565,50 +584,54 @@ namespace wg
 
 			if (dataInfo.bFirstChunk)
 			{
-				m_pixelBuffer = m_pUpdatingSurface->allocPixelBuffer(m_updatingRect);
-				m_updateOffset.clear();
+				if( dataInfo.bLastChunk )
+					m_pUpdatingSurfaceDataBuffer = (uint8_t *) GfxBase::memStackAlloc(dataInfo.totalSize);
+				else
+					m_pUpdatingSurfaceDataBuffer = (uint8_t *) malloc(dataInfo.totalSize);
 			}
 
 			int chunkSize = header.size - GfxStream::DataInfoSize;
-			auto pTempBuffer = (uint8_t*) GfxBase::memStackAlloc(chunkSize);
+			decoder >> GfxStream::ReadBytes{ chunkSize, m_pUpdatingSurfaceDataBuffer + dataInfo.chunkOffset };
 
-			decoder >> GfxStream::ReadBytes{ chunkSize, pTempBuffer };
-
-			int pixelBits = m_pUpdatingSurface->pixelBits();
-			int bytesLeft = chunkSize - int(dataInfo.bPadded);
-			uint8_t* pSource = pTempBuffer;
-
-			while( bytesLeft > 0 )
+			if(dataInfo.bLastChunk)
 			{
-				int bytesForLine = (m_pixelBuffer.rect.w - m_updateOffset.x) * pixelBits/8;
+				// Get bounds for rect and alloc pixelBuffer
 
-				int bytesToCopy = std::min(bytesLeft,bytesForLine);
-				uint8_t * pDest = m_pixelBuffer.pixels + m_updateOffset.y * m_pixelBuffer.pitch + m_updateOffset.x * pixelBits/8;
+				RectI bounds = m_updatingSurfaceRects[0];
+				for( int i = 1 ; i < m_updatingSurfaceRects.size() ; i++ )
+					bounds.growToContain(m_updatingSurfaceRects[i]);
 
-				memcpy(pDest, pSource, bytesToCopy );
+				auto pixelBuffer = m_pUpdatingSurface->allocPixelBuffer(bounds);
+				int pixelBits = m_pUpdatingSurface->pixelBits();
 
-				bytesLeft -= bytesToCopy;
-				pSource += bytesToCopy;
+				// Go through rects and copy pixels
 
-				if( bytesToCopy == bytesForLine )
+				uint8_t * pSource = m_pUpdatingSurfaceDataBuffer;
+				for( RectI& rect : m_updatingSurfaceRects )
 				{
-					m_updateOffset.x = 0;
-					m_updateOffset.y++;
+					uint8_t * pDest = pixelBuffer.pixels + (rect.y - pixelBuffer.rect.y) * pixelBuffer.pitch + (rect.x - pixelBuffer.rect.x) * pixelBits/8;
+					int span = rect.w * pixelBits/8;
+
+					for( int i = 0 ; i < rect.h ; i++ )
+					{
+						memcpy(pDest, pSource, span );
+						pSource += span;
+						pDest += pixelBuffer.pitch;
+					}
 				}
+
+				// Clean up
+
+				m_pUpdatingSurface->pushPixels(pixelBuffer);
+				m_pUpdatingSurface->freePixelBuffer(pixelBuffer);
+
+				if(dataInfo.bFirstChunk)
+					GfxBase::memStackFree(dataInfo.totalSize);
 				else
-				{
-					m_updateOffset.x += bytesToCopy*8/pixelBits;
-				}
-			}
+					free( m_pUpdatingSurfaceDataBuffer );
 
-			GfxBase::memStackFree(chunkSize);
-
-
-			if (dataInfo.bLastChunk)
-			{
-				m_pUpdatingSurface->pushPixels(m_pixelBuffer);
-				m_pUpdatingSurface->freePixelBuffer(m_pixelBuffer);
-				m_updateOffset.clear();
+				m_pUpdatingSurfaceDataBuffer = nullptr;
+				m_pUpdatingSurface = nullptr;
 			}
 
 			m_pDecoder->align();

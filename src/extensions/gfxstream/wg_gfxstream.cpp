@@ -53,7 +53,9 @@ namespace wg
 			"SetEdgemapColors",
 			"EdgemapUpdate",
 			"EdgemapSamples",
-			"DeleteEdgemap" };
+			"DeleteEdgemap",
+			"SurfaceUpdate2"
+		};
 
 		return names[(int)i];
 	}

@@ -128,7 +128,7 @@ namespace wg
 	{
 		if( bAutoNotify )
 		{
-			RectSPX rect = (bufferRect + buffer.rect.pos())*64;
+			RectSPX rect = (bufferRect + buffer.rect.pos());
 
 			notifyObservers(1, &rect);
 		}
@@ -174,7 +174,7 @@ namespace wg
 
 	//____ notifyObservers() _________________________________________________
 
-	void Surface::notifyObservers(int nRects, const RectSPX* pRects)
+	void Surface::notifyObservers(int nRects, const RectI* pRects)
 	{
 		Observer* p = m_pObserver;
 		while (p)

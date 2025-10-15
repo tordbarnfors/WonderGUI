@@ -221,7 +221,7 @@ namespace wg
 	{
 		if (m_pCanvas)
 		{
-			m_pCanvas->pullPixels(m_buffer);
+			m_pCanvas->pullPixels(m_buffer,false);
 			m_pCanvas->freePixelBuffer(m_buffer);
 			m_pCanvas = nullptr;
 		}
@@ -270,7 +270,7 @@ namespace wg
 
 		if (m_pCanvas)
 		{
-			m_pCanvas->pullPixels(m_buffer);
+			m_pCanvas->pullPixels(m_buffer,false);
 			m_pCanvas->freePixelBuffer(m_buffer);
 		}
 

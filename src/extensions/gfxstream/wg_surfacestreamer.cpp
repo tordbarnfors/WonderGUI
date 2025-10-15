@@ -164,7 +164,7 @@ namespace wg
 
 		auto pDest = pBuffer;
 
-		for( int i = 1 ; i < nRects ; i++ )
+		for( int i = 0 ; i < nRects ; i++ )
 		{
 			auto pLine = pixelBuffer.pixels + (pRects[i].y - pixelBuffer.rect.y) * pixelBuffer.pitch +
 							((pRects[i].x - pixelBuffer.rect.x) * pixelDescription.bits)/8;
@@ -185,6 +185,7 @@ namespace wg
 
 		encoder << GfxStream::Header{ GfxStream::ChunkId::SurfaceUpdate2, 0, 6 + nRects*16 };
 		encoder << m_canvasRef;
+		encoder << uint8_t(0);
 		encoder << m_surfaceId;
 		encoder << (uint16_t) nRects;
 
