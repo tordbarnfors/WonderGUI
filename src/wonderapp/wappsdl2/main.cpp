@@ -1158,8 +1158,8 @@ bool MyAppVisitor::closeLibrary(WonderApp::LibId lib)
 
 std::string MyAppVisitor::resourceDirectory()
 {
-//	char* pBasePath = SDL_GetBasePath();
-	char* pBasePath = nullptr;
+	char* pBasePath = SDL_GetBasePath();
+//	char* pBasePath = nullptr;
 
 	if( pBasePath == nullptr )
 		return "resources/";
