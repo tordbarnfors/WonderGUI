@@ -35,7 +35,6 @@
 #include <wg_glsurface.h>
 #include <wg_glsurfacefactory.h>
 #include <wg_gledgemapfactory.h>
-#include <wg_glgfxdevice.h>
 
 #include <wg_freetypefont.h>
 
@@ -811,7 +810,7 @@ int main(int argc, char** argv)
 		//	wgcombTest(pSlot);
 		//  widgetRecording(pSlot);
 		//	canvasCapsuleTest(pSlot);
-			canvasCapsuleGlowTest(pSlot);
+		//	canvasCapsuleGlowTest(pSlot);
 		//	textDisplayTest(pSlot);
 		//  scrollChartTest(pSlot);
 		//  scrollPanelTest(pSlot);
@@ -830,7 +829,7 @@ int main(int argc, char** argv)
 		//	bracketSkinTest(pSlot);
 		//	selectCapsuleTest(pSlot);
 		//	drawerPanelTest(pSlot);
-			areaChartTestWithGlobalGradient(pSlot);
+		//	areaChartTestWithGlobalGradient(pSlot);
 
 
 		//------------------------------------------------------

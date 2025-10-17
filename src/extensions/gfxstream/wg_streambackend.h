@@ -26,7 +26,7 @@
 
 #include <wg_gfxbackend.h>
 #include <wg_streamencoder.h>
-#include <wg_streamsurface.h>
+#include <wg_remotesurface.h>
 
 #include <functional>
 
@@ -39,9 +39,9 @@ namespace wg
 
 	class StreamBackend : public GfxBackend
 	{
-		friend class StreamSurface;
+		friend class RemoteSurface;
+		friend class MirrorSurface;
 		friend class StreamEdgemap;
-		friend class SurfaceStreamer;
 
 	public:
 
@@ -76,7 +76,7 @@ namespace wg
 
 		//.____ Misc _________________________________________________________
 
-		bool	defineCanvas( CanvasRef ref, StreamSurface * pSurface );
+		bool	defineCanvas( CanvasRef ref, RemoteSurface * pSurface );
 		bool	defineCanvas( CanvasRef ref, const SizeI& pixelSize, PixelFormat pixelFormat, int scale = 64 );
 
 		void	encodeCanvasList();
@@ -90,7 +90,8 @@ namespace wg
 
 		int		maxEdges() const override;
 
-		const TypeInfo& surfaceType(void) const override;
+		bool	canBeBlitSource(const TypeInfo& type) const override;
+		bool	canBeCanvas(const TypeInfo& type) const override;
 
 
 

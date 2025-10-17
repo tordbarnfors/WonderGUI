@@ -67,8 +67,6 @@ namespace wg
 		const TypeInfo&		typeInfo(void) const override;
 		const static TypeInfo	TYPEINFO;
 
-		const TypeInfo&	surfaceType( void ) const override = 0;
-
 		//.____ Misc _______________________________________________________
 
 		inline const CanvasInfo&	canvas() const override { return m_canvas; }

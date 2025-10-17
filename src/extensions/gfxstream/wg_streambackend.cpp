@@ -24,9 +24,10 @@
 #include <algorithm>
 
 #include <wg_streambackend.h>
-#include <wg_streamsurface.h>
+#include <wg_remotesurface.h>
+#include <wg_mirrorsurface.h>
 #include <wg_streamedgemap.h>
-#include <wg_streamsurfacefactory.h>
+#include <wg_remotesurfacefactory.h>
 #include <wg_streamedgemapfactory.h>
 #include <wg_gfxbase.h>
 #include <wg_compress.h>
@@ -93,7 +94,7 @@ namespace wg
 	{
 		(*m_pEncoder) << GfxStream::Header{ GfxStream::ChunkId::BeginSession, 0, 40 };
 
-		(*m_pEncoder) << (pCanvas ? static_cast<StreamSurface*>(pCanvas)->inStreamId() : (uint16_t) 0);
+		(*m_pEncoder) << (pCanvas ? static_cast<RemoteSurface*>(pCanvas)->inStreamId() : (uint16_t) 0);
 		(*m_pEncoder) << canvasRef;
 		(*m_pEncoder) << (uint8_t) 0;				// Filler to align.
 
@@ -132,7 +133,7 @@ namespace wg
 		uint16_t size = 2 + 2;
 
 		(*m_pEncoder) << GfxStream::Header{ GfxStream::ChunkId::SetCanvas, 0, size };
-		(*m_pEncoder) << (pSurface ? static_cast<StreamSurface*>(pSurface)->inStreamId() : (uint16_t) 0);
+		(*m_pEncoder) << (pSurface ? static_cast<RemoteSurface*>(pSurface)->inStreamId() : (uint16_t) 0);
 		(*m_pEncoder) << CanvasRef::None;
 		(*m_pEncoder) << (uint8_t) 0;				// Filler to align.
 	}
@@ -161,8 +162,10 @@ namespace wg
 
 			if( pObj == nullptr )
 				* it++ = 0;
-			else if( pObj->typeInfo() == StreamSurface::TYPEINFO )
-				* it++ = static_cast<StreamSurface*>(pObj)->inStreamId();
+			else if( pObj->typeInfo() == RemoteSurface::TYPEINFO )
+				* it++ = static_cast<RemoteSurface*>(pObj)->inStreamId();
+			else if (pObj->typeInfo() == MirrorSurface::TYPEINFO)
+				*it++ = static_cast<MirrorSurface*>(pObj)->inStreamId();
 			else if( pObj->typeInfo() == StreamEdgemap::TYPEINFO )
 				* it++ = static_cast<StreamEdgemap*>(pObj)->inStreamId();
 			else
@@ -205,7 +208,7 @@ namespace wg
 
 	//____ defineCanvas() ________________________________________________________
 
-	bool StreamBackend::defineCanvas( CanvasRef ref, StreamSurface * pSurface )
+	bool StreamBackend::defineCanvas( CanvasRef ref, RemoteSurface * pSurface )
 	{
 		auto it = std::find_if(m_definedCanvases.begin(), m_definedCanvases.end(), [ref](CanvasInfo& entry) { return (ref == entry.ref); });
 
@@ -299,7 +302,7 @@ namespace wg
 	SurfaceFactory_p StreamBackend::surfaceFactory()
 	{
 		if( !m_pSurfaceFactory )
-			m_pSurfaceFactory = StreamSurfaceFactory::create(m_pEncoder);
+			m_pSurfaceFactory = RemoteSurfaceFactory::create(m_pEncoder);
 
 		return m_pSurfaceFactory;
 	}
@@ -321,11 +324,18 @@ namespace wg
 		return m_maxEdges;
 	}
 
-	//____ surfaceType() _________________________________________________________
+	//____ canBeBlitSource() ___________________________________________
 
-	const TypeInfo& StreamBackend::surfaceType(void) const
+	bool StreamBackend::canBeBlitSource(const TypeInfo& type) const
 	{
-		return StreamSurface::TYPEINFO;
+		return (type == RemoteSurface::TYPEINFO || type == MirrorSurface::TYPEINFO );
+	}
+
+	//____ canBeCanvas() ______________________________________________
+
+	bool StreamBackend::canBeCanvas(const TypeInfo& type) const
+	{
+		return (type == RemoteSurface::TYPEINFO);
 	}
 
 	//____ _compressSplitAndEncodeSpx() _____________________________________________________

@@ -1550,11 +1550,18 @@ namespace wg
 		return c_maxSegments-1;
 	}
 
-	//____ surfaceType() ______________________________________________________
+	//____ canBeBlitSource() ___________________________________________
 
-	const TypeInfo& SoftBackend::surfaceType(void) const
+	bool SoftBackend::canBeBlitSource(const TypeInfo& type) const
 	{
-		return SoftSurface::TYPEINFO;
+		return (type == SoftSurface::TYPEINFO);
+	}
+
+	//____ canBeCanvas() ______________________________________________
+
+	bool SoftBackend::canBeCanvas(const TypeInfo& type) const
+	{
+		return true;
 	}
 
 	//____ setLineKernel() ____________________________________________________

@@ -93,7 +93,8 @@ namespace wg
 
 		int		maxEdges() const override;
 
-		const TypeInfo& surfaceType(void) const override;
+		bool	canBeBlitSource(const TypeInfo& type) const override;
+		bool	canBeCanvas(const TypeInfo& type) const override;
 
 		static void		setShaderBlob(Blob* pBlob) { s_pShaderPrograms = pBlob; }
 		static Blob_p	shaderBlob() { return s_pShaderPrograms; }

@@ -26,8 +26,6 @@ namespace wg
 {
 	const TypeInfo StreamTrimBackend::TYPEINFO = { "StreamTrimBackend", &GfxBackend::TYPEINFO };
 
-	const TypeInfo s_unspecifiedSurfaceType = { "SurfaceType Unspecified, real backend missing", &Surface::TYPEINFO };
-
 	//____ destructor __________________________________________________
 
 	StreamTrimBackend::~StreamTrimBackend()
@@ -239,14 +237,24 @@ namespace wg
 		return m_pBackend->maxEdges();
 	}
 
-	//____ surfaceType() ______________________________________________________
+	//____ canBeBlitSource() ___________________________________________
 
-	const TypeInfo& StreamTrimBackend::surfaceType(void) const
+	bool StreamTrimBackend::canBeBlitSource(const TypeInfo& type) const
 	{
-		if( !m_pBackend)
-			return s_unspecifiedSurfaceType;
+		if (!m_pBackend)
+			return false;
 
-		return m_pBackend->surfaceType();
+		return m_pBackend->canBeBlitSource(type);
+	}
+
+	//____ canBeCanvas() ______________________________________________
+
+	bool StreamTrimBackend::canBeCanvas(const TypeInfo& type) const
+	{
+		if (!m_pBackend)
+			return false;
+
+		return m_pBackend->canBeCanvas(type);
 	}
 
 	//____ addNonMaskingSession() ________________________________________________

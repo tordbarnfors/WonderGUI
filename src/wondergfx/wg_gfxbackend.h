@@ -143,9 +143,8 @@ namespace wg
 
 		virtual int		maxEdges() const = 0;
 
-		virtual const TypeInfo& surfaceType(void) const = 0;
-
-
+		virtual bool	canBeBlitSource(const TypeInfo& type) const = 0;
+		virtual bool	canBeCanvas(const TypeInfo& type) const = 0;
 
 	protected:
 		GfxBackend() {};

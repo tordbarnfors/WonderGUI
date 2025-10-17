@@ -35,7 +35,7 @@ namespace wg
 		return TYPEINFO;
 	}
 
-	//____ beginRender() _______________________________________________
+	//____ beginRender() ______________________________________________________
 
 	void BackendLogger::beginRender()
 	{
@@ -46,7 +46,7 @@ namespace wg
 			m_pBackend->beginRender();
 	}
 
-	//____ endRender() _______________________________________________
+	//____ endRender() ________________________________________________________
 
 	void BackendLogger::endRender()
 	{
@@ -57,7 +57,7 @@ namespace wg
 			m_pBackend->endRender();
 	}
 
-	//____ beginSession() ______________________________________________________
+	//____ beginSession() _____________________________________________________
 
 	void BackendLogger::beginSession( CanvasRef canvasRef, Surface * pCanvas, int nUpdateRects, const RectSPX * pUpdateRects, const SessionInfo * pInfo )
 	{
@@ -95,7 +95,7 @@ namespace wg
 			m_pBackend->beginSession(canvasRef, pCanvas, nUpdateRects, pUpdateRects, pInfo);
 	}
 
-	//____ endSession() ________________________________________________________
+	//____ endSession() _______________________________________________________
 
 	void BackendLogger::endSession()
 	{
@@ -106,7 +106,7 @@ namespace wg
 			m_pBackend->endSession();
 	}
 
-	//____ setCanvas() _______________________________________________
+	//____ setCanvas() ________________________________________________________
 
 	void BackendLogger::setCanvas(Surface* pSurface)
 	{
@@ -130,7 +130,7 @@ namespace wg
 			m_pBackend->setCanvas(ref);
 	}
 
-	//____ setObjects() _______________________________________________
+	//____ setObjects() _______________________________________________________
 
 	void BackendLogger::setObjects(Object* const * pBeg, Object* const * pEnd)
 	{
@@ -158,7 +158,7 @@ namespace wg
 			m_pBackend->setObjects(pBeg,pEnd);
 	}
 
-	//____ setRects() _______________________________________________
+	//____ setRects() _________________________________________________________
 
 	void BackendLogger::setRects(const RectSPX* pBeg, const RectSPX* pEnd)
 	{
@@ -198,7 +198,7 @@ namespace wg
 			m_pBackend->setRects(pBeg, pEnd);
 	}
 
-	//____ setColors() ___________________________________________________
+	//____ setColors() ________________________________________________________
 
 	void BackendLogger::setColors(const HiColor* pBeg, const HiColor* pEnd)
 	{
@@ -223,9 +223,7 @@ namespace wg
 			m_pBackend->setColors(pBeg, pEnd);
 	}
 
-
-
-	//____ setTransforms() _______________________________________________
+	//____ setTransforms() ____________________________________________________
 
 	void BackendLogger::setTransforms(const Transform* pBeg, const Transform* pEnd)
 	{
@@ -249,7 +247,7 @@ namespace wg
 			m_pBackend->setTransforms(pBeg, pEnd);
 	}
 
-	//____ processCommands() _______________________________________________
+	//____ processCommands() __________________________________________________
 
 	void BackendLogger::processCommands(const uint16_t* pBeg, const uint16_t* pEnd)
 	{
@@ -486,7 +484,7 @@ namespace wg
 			m_pBackend->processCommands(pBeg, pEnd);
 	}
 
-	//____ canvasInfo() __________________________________________________
+	//____ canvasInfo() _______________________________________________________
 
 	const CanvasInfo* BackendLogger::canvasInfo(CanvasRef ref) const
 	{
@@ -529,7 +527,7 @@ namespace wg
 		return pFactory;
 	}
 
-	//____ edgemapFactory() ______________________________________________________
+	//____ edgemapFactory() ___________________________________________________
 
 	EdgemapFactory_p BackendLogger::edgemapFactory()
 	{
@@ -544,7 +542,7 @@ namespace wg
 		return pFactory;
 	}
 
-	//____ maxEdges() ____________________________________________________________
+	//____ maxEdges() _________________________________________________________
 
 	int BackendLogger::maxEdges() const
 	{
@@ -560,27 +558,38 @@ namespace wg
 
 	}
 
-	//____ surfaceType() ______________________________________________________
+	//____ canBeBlitSource() __________________________________________________
 
-	const TypeInfo& BackendLogger::surfaceType(void) const
+	bool BackendLogger::canBeBlitSource(const TypeInfo& type) const
 	{
-		const TypeInfo& ref = m_pBackend ? m_pBackend->surfaceType() : s_unspecifiedSurfaceType;
-
+		bool can = false;
+		if (m_pBackend)
+			can = m_pBackend->canBeBlitSource(type);
 		if( m_pOStream )
-			*m_pOStream << "Called surfaceType(). Returned: " << ref.className << std::endl;
-
-		return ref;
+			*m_pOStream << "Called canBeBlitSource(" << type.className << "). Returned: " << (can ? "true" : "false") << std::endl;
+		return can;
 	}
 
-	//____ setOStream() __________________________________________________________
+	//____ canBeCanvas() ______________________________________________________
+
+	bool BackendLogger::canBeCanvas(const TypeInfo& type) const
+	{
+		bool can = false;
+		if (m_pBackend)
+			can = m_pBackend->canBeCanvas(type);
+		if( m_pOStream )
+			*m_pOStream << "Called canBeCanvas(" << type.className << "). Returned: " << (can ? "true" : "false") << std::endl;
+		return can;
+	}
+
+	//____ setOStream() _______________________________________________________
 
 	void BackendLogger::setOStream( std::ostream * pStream )
 	{
 		m_pOStream = pStream;
 	}
 
-
-	//____ _printRects() _______________________________________________________
+	//____ _printRects() ______________________________________________________
 
 	void BackendLogger::_printRects(std::ostream& stream, int nRects, const RectSPX* pRects)
 	{

@@ -36,14 +36,15 @@
 #include <wg_streamsink.h>
 #include <wg_streamsource.h>
 #include <wg_streamsplitter.h>
-#include <wg_streamsurface.h>
-#include <wg_streamsurfacefactory.h>
+#include <wg_remotesurface.h>
+#include <wg_remotesurfacefactory.h>
+#include <wg_mirrorsurface.h>
+#include <wg_mirrorsurfacefactory.h>
 #include <wg_streamtrimbackend.h>
 #include <wg_streamwrapper.h>
 #include <wg_streamwriter.h>
 #include <wg_streamedgemap.h>
 #include <wg_streamedgemapfactory.h>
-#include <wg_surfacestreamer.h>
 
 
 

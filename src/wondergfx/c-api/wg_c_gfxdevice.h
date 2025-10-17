@@ -52,8 +52,6 @@ extern "C" {
 
 	//____ Misc _______________________________________________________
 
-	WG_EXPORT const wg_typeInfo* wg_deviceSurfaceType(wg_obj device);
-
 	WG_EXPORT int			wg_setBackend( wg_obj device, wg_obj backend );
 	WG_EXPORT wg_obj		wg_getBackend( wg_obj device );
 

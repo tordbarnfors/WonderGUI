@@ -37,7 +37,7 @@
 #include <wg_glsurface.h>
 #include <wg_glsurfacefactory.h>
 #include <wg_gledgemapfactory.h>
-#include <wg_glgfxdevice.h>
+#include <wg_glbackend.h>
 
 #include <wg_dragndropoverlay.h>
 #include <wg_popupoverlay.h>
@@ -92,7 +92,6 @@ SDLWindow_p SDLWindow::create(const Blueprint& blueprint)
     SDL_GLContext glContext = SDL_GL_CreateContext(pSDLWindow);
     SDL_GL_MakeCurrent(pSDLWindow, glContext);
 
-
     if (SDLWindowGL::s_bInitialized == false)
     {
         s_globalContext = glContext;
@@ -108,7 +107,8 @@ SDLWindow_p SDLWindow::create(const Blueprint& blueprint)
 
 #endif
 
-        auto pDevice = GlGfxDevice::create();
+		auto pBackend = GlBackend::create();
+        auto pDevice = GfxDeviceGen2::create(pBackend);
         Base::setDefaultGfxDevice(pDevice);
 
         auto pSurfaceFactory = GlSurfaceFactory::create();
@@ -116,7 +116,6 @@ SDLWindow_p SDLWindow::create(const Blueprint& blueprint)
 
 		auto pEdgemapFactory = GlEdgemapFactory::create();
 		Base::setDefaultEdgemapFactory(pEdgemapFactory);
-
 
     }
 
@@ -127,8 +126,8 @@ SDLWindow_p SDLWindow::create(const Blueprint& blueprint)
     glClear(GL_COLOR_BUFFER_BIT);
     glFlush();
 */
-    
-    wg_static_cast<GlGfxDevice_p>(Base::defaultGfxDevice())->setDefaultCanvas({int(geo.w)*64,int(geo.h)*64});
+	auto pBackend = wg_static_cast<GfxDeviceGen2_p>(Base::defaultGfxDevice())->backend();
+    wg_static_cast<GlBackend_p>(pBackend)->setDefaultCanvas({int(geo.w)*64,int(geo.h)*64}, 64);		//TODO: Hardcoded scale!
     auto pRootPanel = RootPanel::create(CanvasRef::Default, nullptr);
 
     SDLWindowGL_p pWindow = new SDLWindowGL(blueprint.title, pRootPanel, geo, pSDLWindow, glContext);
@@ -181,7 +180,8 @@ void SDLWindowGL::onWindowSizeUpdated( int width, int height )
     m_geo.w = width;
     m_geo.h = height;
     
-    wg_static_cast<GlGfxDevice_p>(Base::defaultGfxDevice())->setDefaultCanvas(SizeSPX(width * 64, height * 64), 64);
+	auto pBackend = wg_static_cast<GfxDeviceGen2_p>(Base::defaultGfxDevice())->backend();
+    wg_static_cast<GlBackend_p>(pBackend)->setDefaultCanvas(SizeSPX(width * 64, height * 64), 64);
 
     m_pRootPanel->setCanvas(CanvasRef::Default);
 }
@@ -195,7 +195,8 @@ void SDLWindowGL::render()
 
     SDL_GL_MakeCurrent( m_pSDLWindow, s_globalContext );
 
-    wg_static_cast<GlGfxDevice_p>(Base::defaultGfxDevice())->setDefaultCanvas({int(m_geo.w)*64,int(m_geo.h)*64});
+	auto pBackend = wg_static_cast<GfxDeviceGen2_p>(Base::defaultGfxDevice())->backend();
+	wg_static_cast<GlBackend_p>(pBackend)->setDefaultCanvas({int(m_geo.w)*64,int(m_geo.h)*64},64);
     
     m_pRootPanel->render();
 

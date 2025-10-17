@@ -106,8 +106,3 @@ int wg_backendMaxEdges(wg_obj backend)
 	return getPtr(backend)->maxEdges();
 }
 
-const wg_typeInfo * wg_backendSurfaceType(wg_obj backend)
-{
-	auto& typeInfo = getPtr(backend)->surfaceType();
-	return reinterpret_cast<const wg_typeInfo*>(&typeInfo);
-}

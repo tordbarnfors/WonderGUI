@@ -20,19 +20,19 @@
 
 =========================================================================*/
 
-#include <wg_surfacestreamer.h>
+#include <wg_mirrorsurface.h>
 #include <wg_streambackend.h>
 #include <wg_gfxbase.h>
 
 namespace wg
 {
 
-	const TypeInfo SurfaceStreamer::TYPEINFO = { "SurfaceStreamer", &Object::TYPEINFO };
+	const TypeInfo MirrorSurface::TYPEINFO = { "MirrorSurface", &Surface::TYPEINFO };
 
 
 	//____ create() ___________________________________________________________
 
-	SurfaceStreamer_p SurfaceStreamer::create(const Blueprint& blueprint)
+	MirrorSurface_p MirrorSurface::create(const Blueprint& blueprint)
 	{
 		if (!blueprint.encoder)
 		{
@@ -46,12 +46,12 @@ namespace wg
 			return nullptr;
 		}
 
-		return new SurfaceStreamer(blueprint);
+		return new MirrorSurface(blueprint);
 	}
 
 	//____ constructor _____________________________________________________________
 
-	SurfaceStreamer::SurfaceStreamer(const Blueprint& blueprint)
+	MirrorSurface::MirrorSurface(const Blueprint& blueprint) : Surface( blueprint.surface->blueprint(), blueprint.surface->pixelFormat(), blueprint.surface->sampleMethod() )
 	{
 		m_pEncoder = blueprint.encoder;
 		m_pSurface = blueprint.surface;
@@ -80,7 +80,7 @@ namespace wg
 
 	//____ Destructor _________________________________________________________
 
-	SurfaceStreamer::~SurfaceStreamer()
+	MirrorSurface::~MirrorSurface()
 	{
 		m_pSurface->removeObserver(m_observerId);
 
@@ -95,14 +95,77 @@ namespace wg
 
 	//____ typeInfo() _________________________________________________________
 
-	const TypeInfo& SurfaceStreamer::typeInfo(void) const
+	const TypeInfo& MirrorSurface::typeInfo(void) const
 	{
 		return TYPEINFO;
 	}
 
+	//____ maxSize() _______________________________________________________________
+
+	SizeI MirrorSurface::maxSize()
+	{
+		return SizeI(4096, 4096);
+	}
+
+	//____ alpha() __________________________________________________________
+
+	int MirrorSurface::alpha(CoordSPX coord)
+	{
+		return m_pSurface->alpha(coord);
+	}
+
+	//____ allocPixelBuffer() _________________________________________________
+
+	const PixelBuffer MirrorSurface::allocPixelBuffer(const RectI& rect)
+	{
+		return m_pSurface->allocPixelBuffer(rect);
+	}
+
+	//____ pushPixels() ______________________________________________________
+
+	bool MirrorSurface::pushPixels(const PixelBuffer& buffer, const RectI& bufferRect)
+	{
+		return m_pSurface->pushPixels(buffer, bufferRect);
+	}
+
+	//____ pullPixels() ______________________________________________________
+
+	void MirrorSurface::pullPixels(const PixelBuffer& buffer, const RectI& bufferRect, bool bAutoNotify)
+	{
+		m_pSurface->pullPixels(buffer, bufferRect, bAutoNotify);
+	}
+	//____ freePixelBuffer() _________________________________________________
+
+	void MirrorSurface::freePixelBuffer(const PixelBuffer& buffer)
+	{
+		m_pSurface->freePixelBuffer(buffer);
+	}
+
+	//____ fill() ____________________________________________________________
+
+	bool MirrorSurface::fill(HiColor col)
+	{
+		return m_pSurface->fill(col);
+	}
+
+	bool MirrorSurface::fill(const RectI& region, HiColor col)
+	{
+		return m_pSurface->fill(region, col);
+	}
+
+	//____ streamAsNew() ______________________________________________________
+
+	bool MirrorSurface::streamAsNew(StreamEncoder* pEncoder)
+	{
+		_sendCreateSurface();
+		RectI	rect(0,0,m_pSurface->pixelSize());
+		_sendPixels(1, &rect);
+		return true;
+	}
+
 	//____ _sendCreateSurface() _______________________________________________
 
-	void SurfaceStreamer::_sendCreateSurface()
+	void MirrorSurface::_sendCreateSurface()
 	{
 		StreamEncoder& encoder = * m_pEncoder;
 
@@ -112,7 +175,7 @@ namespace wg
 
 		encoder << GfxStream::Header{ GfxStream::ChunkId::CreateSurface, 0, blockSize };
 		encoder << m_surfaceId;
-		encoder << m_pSurface->canBeCanvas();
+		encoder << false;						// CanBeCanvas-flag. We never want the remote end to use a MirrorSurface as canvas.
 		encoder << m_pSurface->isDynamic();
 		encoder << m_pSurface->pixelFormat();
 		encoder << m_pSurface->identity();
@@ -130,7 +193,7 @@ namespace wg
 
 	//____ _sendPixels() _________________________________________________________
 
-	void SurfaceStreamer::_sendPixels(int nRects, const RectI* pRects)
+	void MirrorSurface::_sendPixels(int nRects, const RectI* pRects)
 	{
 		// Calculate bounds, that is the area we will allocate a pixelBuffer for.
 
@@ -160,7 +223,7 @@ namespace wg
 
 		auto pBuffer = (uint8_t *) GfxBase::memStackAlloc(allocSize);
 
-		// Copy pixels from rectangels to continous buffer memory.
+		// Copy pixels from rectangles to continuous buffer memory.
 
 		auto pDest = pBuffer;
 

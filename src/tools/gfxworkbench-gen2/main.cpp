@@ -4,13 +4,13 @@
 #include <iostream>
 #include <sstream>
 
-#include <unistd.h>
 
 
 #ifdef WIN32
 #    include <SDL.h>
 #    include <SDL_image.h>
 #elif __APPLE__
+#include <unistd.h>
 #    include <SDL2/SDL.h>
 #    include <SDL2_image/SDL_image.h>
 #else
@@ -51,8 +51,9 @@ bool			bQuit = false;	// Set to false by myButtonClickCallback() or translateEve
 
 int main ( int argc, char** argv )
 {
+#ifdef __APPLE__
 	sleep(1);
-
+#endif
 
 
 	//------------------------------------------------------
@@ -190,7 +191,7 @@ int main ( int argc, char** argv )
 
 	auto pGradient = Gradyent::create(Color::Black, Color::White, Color::White, Color::Red );
 
-	auto p16bitCanvas = SoftSurface::create({ .size = {240,240}, .canvas = true, .format = PixelFormat::RGB_555_bigendian });
+	auto p16bitCanvas = SoftSurface::create({ .canvas = true, .format = PixelFormat::RGB_555_bigendian, .size = {240,240} });
 
 	while( !bQuit )
 	{

@@ -99,7 +99,6 @@ namespace wg
 		const TypeInfo&		typeInfo(void) const override;
 		const static TypeInfo	TYPEINFO;
 
-		virtual const TypeInfo&	surfaceType( void ) const = 0;
 
 		//.____ Misc _______________________________________________________
 

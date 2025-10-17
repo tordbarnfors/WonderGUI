@@ -52,13 +52,6 @@ wg_obj wg_createGfxDevice( wg_obj backend )
 	return static_cast<Object*>(p);
 }
 
-
-const wg_typeInfo* wg_deviceSurfaceType(wg_obj device)
-{
-	auto& typeInfo = getPtr(device)->surfaceType();
-	return reinterpret_cast<const wg_typeInfo*>(&typeInfo);
-}
-
 int wg_setBackend( wg_obj device, wg_obj backend )
 {
 	return getPtr(device)->setBackend(static_cast<GfxBackend*>(reinterpret_cast<Object*>(backend)));

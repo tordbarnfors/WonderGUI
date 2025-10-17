@@ -77,8 +77,6 @@ namespace wg
 		const TypeInfo& typeInfo(void) const override;
 		const static TypeInfo	TYPEINFO;
 
-		const TypeInfo& surfaceType(void) const override;
-
 		//.____ Misc _____________________________________________________
 
 		bool				setBackend( GfxBackend * pBackend );
