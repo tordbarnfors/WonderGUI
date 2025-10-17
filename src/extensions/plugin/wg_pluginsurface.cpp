@@ -107,8 +107,10 @@ namespace wg
 
 	//____ pullPixels() _______________________________________________________
 
-	void PluginSurface::pullPixels(const PixelBuffer& buffer, const RectI& bufferRect)
+	void PluginSurface::pullPixels(const PixelBuffer& buffer, const RectI& bufferRect, bool bAutoNotify)
 	{
+		//TODO: Support bAutoNotify when we are ready to change the C-API.
+
 		wg_pixelBuffer pixbuf = { (wg_pixelFormat)buffer.format, buffer.pixels, (wg_color8*)buffer.palette, *(wg_rectI*)&buffer.rect, buffer.pitch };
 
 		PluginCalls::surface->pullPixelsFromRect(m_cSurface, &pixbuf, (const wg_rectI*)&bufferRect);

@@ -95,13 +95,6 @@ namespace wg
         return info2;
     }
 
-	//____ surfaceType() _______________________________________________________
-
-	const TypeInfo& PluginGfxDevice::surfaceType( void ) const
-	{
-		return PluginSurface::TYPEINFO;
-	}
-
 	//____ surfaceFactory() ______________________________________________________
 
 	SurfaceFactory_p PluginGfxDevice::surfaceFactory()

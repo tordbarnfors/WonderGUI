@@ -20,8 +20,8 @@
 
 =========================================================================*/
 
-#ifndef	WG_SURFACESTREAMER_DOT_H
-#define	WG_SURFACESTREAMER_DOT_H
+#ifndef	WG_MIRRORSURFACE_DOT_H
+#define	WG_MIRRORSURFACE_DOT_H
 #pragma once
 
 #include <wg_surface.h>
@@ -31,11 +31,11 @@
 namespace wg
 {
 
-	class SurfaceStreamer;
-	typedef	StrongPtr<SurfaceStreamer>	SurfaceStreamer_p;
-	typedef	WeakPtr<SurfaceStreamer>	SurfaceStreamer_wp;
+	class MirrorSurface;
+	typedef	StrongPtr<MirrorSurface>	MirrorSurface_p;
+	typedef	WeakPtr<MirrorSurface>	MirrorSurface_wp;
 
-	class SurfaceStreamer : public Object
+	class MirrorSurface : public Surface
 	{
 	public:
 
@@ -47,22 +47,49 @@ namespace wg
 			StreamEncoder_p	encoder;						// Required
 			Finalizer_p		finalizer = nullptr;
 			Surface_p		surface;						// Required
-			bool			streamOnCreate = false;			// If true, surface will be streamed immediately after creation.	
+			bool			streamOnCreate = false;			// If true, surface content will be streamed immediately after creation.
 		};
 
 		//.____ Creation __________________________________________
 
-		static SurfaceStreamer_p	create(const Blueprint& blueprint);
+		static MirrorSurface_p	create(const Blueprint& blueprint);
 
 		//.____ Identification __________________________________________
 
 		const TypeInfo& typeInfo(void) const override;
 		const static TypeInfo	TYPEINFO;
 
+		uint16_t		inStreamId() const { return m_surfaceId; }
+		CanvasRef		inStreamRef() const { return m_canvasRef; }
+
+		//.____ Geometry _________________________________________________
+
+		static SizeI	maxSize();
+
+		//.____ Content _______________________________________________________
+
+		int			alpha(CoordSPX coord) override;
+
+		//.____ Control _______________________________________________________
+
+		const PixelBuffer	allocPixelBuffer(const RectI& rect) override;
+		bool				pushPixels(const PixelBuffer& buffer, const RectI& bufferRect) override;
+		void				pullPixels(const PixelBuffer& buffer, const RectI& bufferRect, bool bAutoNotify = true) override;
+		void				freePixelBuffer(const PixelBuffer& buffer) override;
+
+		//.____  Rendering ____________________________________________________
+
+		bool		fill(HiColor col) override;
+		bool		fill(const RectI& region, HiColor col) override;
+
+		//.____ Misc __________________________________________________________
+
+		bool		streamAsNew(StreamEncoder* pEncoder);
+
 	protected:
 
-		SurfaceStreamer(const Blueprint& blueprint);
-		~SurfaceStreamer();
+		MirrorSurface(const Blueprint& blueprint);
+		~MirrorSurface();
 
 		void 	_sendCreateSurface();
 		void	_sendDeleteSurface();
@@ -81,4 +108,4 @@ namespace wg
 }
 
 
-#endif WG_SURFACESTREAMER_DOT_H
+#endif WG_MirrorSurface_DOT_H

@@ -54,13 +54,10 @@ namespace wg
         using GfxDevice::canvas;
         const CanvasInfo canvas(CanvasRef ref) const override;
 
-		const TypeInfo&		surfaceType( void ) const override;
-
 		//.____ Misc _______________________________________________________
 
 		SurfaceFactory_p surfaceFactory() override;
         EdgemapFactory_p edgemapFactory() override;
-
 
 		//.____ State _________________________________________________
         

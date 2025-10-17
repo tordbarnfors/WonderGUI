@@ -162,7 +162,7 @@ void GfxDeviceTester::setup_testdevices()
 		auto pSoftBackend = SoftBackend::create();
 		addDefaultSoftKernels(pSoftBackend);
 
-		auto pBackendLogger = BackendLogger::create( std::cout, pSoftBackend );
+		auto pBackendLogger = BackendLogger::create( &std::cout, pSoftBackend );
 	
 		auto pGen2GfxDevice = GfxDeviceGen2::create( pBackendLogger );
 
@@ -282,7 +282,7 @@ void GfxDeviceTester::setup_testdevices()
 		auto pBackend = SoftBackend::create();
 		addDefaultSoftKernels(pBackend);
 
-		auto pBackendLogger = BackendLogger::create(std::cout, pBackend);
+		auto pBackendLogger = BackendLogger::create(&std::cout, pBackend);
 //		auto pGen2GfxDevice = GfxDeviceGen2::create(pBackendLogger);
 
 		auto pGen2CanvasSurface = SoftSurface::create(canvasBP);

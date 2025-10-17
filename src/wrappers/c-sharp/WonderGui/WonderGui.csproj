@@ -54,6 +54,8 @@
       <Compile Include="..\wg_gfxtypes.cs">
         <Link>wg_gfxtypes.cs</Link>
       </Compile>
+      <Compile Include="..\wg_mirrorsurface.cs" Link="wg_mirrorsurface.cs" />
+      <Compile Include="..\wg_mirrorsurfacefactory.cs" Link="wg_mirrorsurfacefactory.cs" />
       <Compile Include="..\wg_objekt.cs">
         <Link>wg_objekt.cs</Link>
       </Compile>
@@ -77,12 +79,6 @@
       </Compile>
       <Compile Include="..\wg_streamsink.cs">
         <Link>wg_streamsink.cs</Link>
-      </Compile>
-      <Compile Include="..\wg_streamsurface.cs">
-        <Link>wg_streamsurface.cs</Link>
-      </Compile>
-      <Compile Include="..\wg_streamsurfacefactory.cs">
-        <Link>wg_streamsurfacefactory.cs</Link>
       </Compile>
       <Compile Include="..\wg_streamwriter.cs">
         <Link>wg_streamwriter.cs</Link>

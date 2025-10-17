@@ -143,9 +143,8 @@ namespace wg
 
 		virtual int		maxEdges() const = 0;
 
-		virtual const TypeInfo& surfaceType(void) const = 0;
-
-
+		virtual bool	canBeBlitSource(const TypeInfo& type) const = 0;
+		virtual bool	canBeCanvas(const TypeInfo& type) const = 0;
 
 	protected:
 		GfxBackend() {};
@@ -154,7 +153,7 @@ namespace wg
 		void 	_setInfoForCanvasCompleted(Surface * pSurface, int nRects, const RectSPX * pUpdateRects );
 		void	_canvasCompleted();
 
-		Surface *						m_pCanvasCompleted;
+		Surface *						m_pCanvasCompleted = nullptr;
 		std::vector<RectI>				m_canvasCompletedRects;		// NOTE! Not SPX format!
 
 		static const Transform			s_blitFlipTransforms[GfxFlip_size];

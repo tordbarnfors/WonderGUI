@@ -1615,19 +1615,27 @@ const TypeInfo& GlBackend::typeInfo(void) const
 	return TYPEINFO;
 }
 
-//____ surfaceType() _______________________________________________________
-
-const TypeInfo& GlBackend::surfaceType( void ) const
-{
-	return GlSurface::TYPEINFO;
-}
-
 //____ maxEdges() _____________________________________________
 
 int GlBackend::maxEdges() const
 {
 	return c_maxSegments - 1;
 }
+
+//____ canBeBlitSource() _____________________________________________
+
+bool GlBackend::canBeBlitSource(const TypeInfo& type) const
+{
+	return (type == GlSurface::TYPEINFO);
+}
+
+//____ canBeCanvas() _____________________________________________
+
+bool GlBackend::canBeCanvas(const TypeInfo& type) const
+{
+	return (type == GlSurface::TYPEINFO);
+}
+
 
 //____ surfaceFactory() ______________________________________________________
 

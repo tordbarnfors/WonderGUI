@@ -3,6 +3,14 @@ set( SOURCES
 
 	wg_gfxstream.cpp
 	wg_gfxstream.h
+	wg_mirrorsurfacefactory.cpp
+	wg_mirrorsurfacefactory.h
+	wg_mirrorsurface.cpp
+	wg_mirrorsurface.h
+	wg_remotesurface.cpp
+	wg_remotesurface.h
+	wg_remotesurfacefactory.cpp
+	wg_remotesurfacefactory.h
 	wg_streambackend.cpp
 	wg_streambackend.h
 	wg_streambuffer.cpp
@@ -27,10 +35,6 @@ set( SOURCES
 	wg_streamsource.h
 	wg_streamsplitter.cpp
 	wg_streamsplitter.h
-	wg_streamsurface.cpp
-	wg_streamsurface.h
-	wg_streamsurfacefactory.cpp
-	wg_streamsurfacefactory.h
 	wg_streamtrimbackend.cpp
 	wg_streamtrimbackend.h
 	wg_streamedgemap.cpp
@@ -41,8 +45,6 @@ set( SOURCES
 	wg_streamwrapper.h
 	wg_streamwriter.cpp
 	wg_streamwriter.h
-	wg_surfacestreamer.cpp
-	wg_surfacestreamer.h
 	wondergfxstream.h
 
 	c-api/wg_c_streambuffer.h

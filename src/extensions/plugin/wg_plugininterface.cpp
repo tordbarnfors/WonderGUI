@@ -119,7 +119,7 @@ void wg_populatePluginInterface(wg_plugin_interface * pHeader)
 
 
 	pBody->gfxDevice.structSize				= sizeof(wg_gfxdevice_calls);
-	pBody->gfxDevice.deviceSurfaceType		= &wg_deviceSurfaceType;
+	pBody->gfxDevice.deviceSurfaceType		= nullptr;						// Hopefully this is not used anymore.
 	pBody->gfxDevice.getCanvas				= &wg_getCanvas;
 	pBody->gfxDevice.getCanvasRef			= &wg_getCanvasRef;
 	pBody->gfxDevice.canvasLayers			= &wg_canvasLayers;
