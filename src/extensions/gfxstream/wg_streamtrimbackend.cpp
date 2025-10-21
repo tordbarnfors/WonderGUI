@@ -77,6 +77,8 @@ namespace wg
 
 			for (auto p = m_pUpdateRectsBeg; p < m_pUpdateRectsEnd; p++)
 			{
+				// All rectangles must be included in m_trimmedUpdateRects,
+				// even if it gets empty, so we start by adding it and trim it in place.
 
 				m_trimmedUpdateRects.push_back(*p);
 				auto pToTrim = &m_trimmedUpdateRects.back();
