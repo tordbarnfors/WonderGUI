@@ -59,7 +59,11 @@ namespace wg
 		virtual void exportVerticalColors(spx length, HiColor* pOutput) = 0;
 
 		virtual Gradient exportGradient() = 0;			// To support legacy code.
-		
+
+		//.____ Misc ___________________________________________________
+
+		virtual int alpha( const CoordSPX& pos, const RectSPX& area ) = 0;
+
 	protected:
 
 		void _fill(spx length, HiColor * pOutput, const HiColor& color);

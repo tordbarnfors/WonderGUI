@@ -57,6 +57,11 @@ namespace wg
 
 		Gradient exportGradient() override;
 
+		//.____ Misc ___________________________________________________
+
+		int alpha( const CoordSPX& pos, const RectSPX& area ) override;
+
+
 	protected:
 
 		Gradyent(HiColor top, HiColor bottom, HiColor left, HiColor right);

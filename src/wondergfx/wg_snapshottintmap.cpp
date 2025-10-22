@@ -142,6 +142,18 @@ namespace wg
 		return out;
 	}
 
+	//____ alpha() _______________________________________________________________
+
+	int SnapshotTintmap::alpha( const CoordSPX& pos, const RectSPX& area )
+	{
+		HiColor from = HiColor::White;
+		HiColor to = HiColor::White;
+
+		from.a = m_pFrom->alpha(pos, area);
+		to.a = m_pTo->alpha(pos, area);
+
+		return m_pTransition->snapshot(m_timestamp, from, to ).a;
+	}
 
 	//____ _setFlags() ________________________________________________________
 

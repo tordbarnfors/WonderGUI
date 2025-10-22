@@ -91,8 +91,8 @@ namespace wg
 		{
 			Surface *			pSurface;
 			BlendMode			blendMode;
-			Bitmask<uint32_t>   stateBlockMask = 0;
-			Bitmask<uint32_t>   stateColorMask = 1;         // Normal state always exist for colors and is by default white.
+//			Bitmask<uint32_t>   stateBlockMask = 0;
+//			Bitmask<uint32_t>   stateColorMask = 1;         // Normal state always exist for colors and is by default white.
 
 			Coord				blockOfs[State::NbStates];		// Block for each state
 			HiColor				tintColor[State::NbStates];

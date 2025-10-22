@@ -191,6 +191,17 @@ namespace wg
 		return g;
 	}
 
+	//____ alpha() _______________________________________________________________
+
+	int Gradyent::alpha( const CoordSPX& pos, const RectSPX& area )
+	{
+		CoordSPX offset = pos - area.pos();
+
+		int verticalAlpha = m_top.a + (m_bottom.a - m_top.a) * (pos.y/area.h);
+		int horizontalAlpha = m_left.a + (m_right.a - m_left.a) * (pos.x/area.w);
+
+		return verticalAlpha * horizontalAlpha;
+	}
 
 	//____ _setFlags() ________________________________________________________
 

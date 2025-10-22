@@ -68,6 +68,10 @@ namespace wg
 
 		Gradient exportGradient() override;
 
+		//.____ Misc ___________________________________________________
+
+		int alpha( const CoordSPX& pos, const RectSPX& area ) override;
+
 	protected:
 
 		SnapshotTintmap(Tintmap * pFrom, Tintmap * pTo, ColorTransition * pTransition, int timestamp);
