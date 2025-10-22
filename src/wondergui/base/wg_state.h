@@ -57,7 +57,7 @@ namespace wg
 			return true;
 		}
 
-		bool	setSelected(bool bSelected)
+		bool	setSelekted(bool bSelected)
 		{
 			if (bSelected)
 				m_index |= SELECTED_MASK;
@@ -138,7 +138,7 @@ namespace wg
 		constexpr bool	isChecked() const { return m_index & CHECKED_MASK; }
 		constexpr bool	isFlagged() const { return m_index & FLAGGED_MASK; }
 		constexpr bool	isDisabled() const { return m_index & DISABLED_MASK; }
-		constexpr bool	isSelected() const { return m_index & SELECTED_MASK; }
+		constexpr bool	isSelekted() const { return m_index & SELECTED_MASK; }
 		constexpr bool	isFocused() const { return m_index & FOCUSED_MASK; }
 		constexpr bool	isHovered() const { return getMouseInteraction() != MouseInteraction::None; }
 		constexpr bool	isPressed() const { return getMouseInteraction() == MouseInteraction::Pressed; }
@@ -251,72 +251,72 @@ namespace wg
 
 		//.____ Definitions _________________________________________
 
-		static const State DisabledFlaggedCheckedSelected;
+		static const State DisabledFlaggedCheckedSelekted;
 		static const State DisabledFlaggedChecked;
-		static const State DisabledFlaggedSelected;
+		static const State DisabledFlaggedSelekted;
 		static const State DisabledFlagged;
-		static const State DisabledCheckedSelected;
+		static const State DisabledCheckedSelekted;
 		static const State DisabledChecked;
-		static const State DisabledSelected;
+		static const State DisabledSelekted;
 		static const State Disabled;
-		static const State TargetedFlaggedCheckedSelectedFocused;
-		static const State TargetedFlaggedCheckedSelected;
+		static const State TargetedFlaggedCheckedSelektedFocused;
+		static const State TargetedFlaggedCheckedSelekted;
 		static const State TargetedFlaggedCheckedFocused;
 		static const State TargetedFlaggedChecked;
-		static const State TargetedFlaggedSelectedFocused;
-		static const State TargetedFlaggedSelected;
+		static const State TargetedFlaggedSelektedFocused;
+		static const State TargetedFlaggedSelekted;
 		static const State TargetedFlaggedFocused;
 		static const State TargetedFlagged;
-		static const State TargetedCheckedSelectedFocused;
-		static const State TargetedCheckedSelected;
+		static const State TargetedCheckedSelektedFocused;
+		static const State TargetedCheckedSelekted;
 		static const State TargetedCheckedFocused;
 		static const State TargetedChecked;
-		static const State TargetedSelectedFocused;
-		static const State TargetedSelected;
+		static const State TargetedSelektedFocused;
+		static const State TargetedSelekted;
 		static const State TargetedFocused;
 		static const State Targeted;
-		static const State FlaggedCheckedSelectedPressedFocused;
-		static const State FlaggedCheckedSelectedPressed;
-		static const State FlaggedCheckedSelectedHoveredFocused;
-		static const State FlaggedCheckedSelectedHovered;
-		static const State FlaggedCheckedSelectedFocused;
-		static const State FlaggedCheckedSelected;
+		static const State FlaggedCheckedSelektedPressedFocused;
+		static const State FlaggedCheckedSelektedPressed;
+		static const State FlaggedCheckedSelektedHoveredFocused;
+		static const State FlaggedCheckedSelektedHovered;
+		static const State FlaggedCheckedSelektedFocused;
+		static const State FlaggedCheckedSelekted;
 		static const State FlaggedCheckedPressedFocused;
 		static const State FlaggedCheckedPressed;
 		static const State FlaggedCheckedHoveredFocused;
 		static const State FlaggedCheckedHovered;
 		static const State FlaggedCheckedFocused;
 		static const State FlaggedChecked;
-		static const State FlaggedSelectedPressedFocused;
-		static const State FlaggedSelectedPressed;
-		static const State FlaggedSelectedHoveredFocused;
-		static const State FlaggedSelectedHovered;
-		static const State FlaggedSelectedFocused;
-		static const State FlaggedSelected;
+		static const State FlaggedSelektedPressedFocused;
+		static const State FlaggedSelektedPressed;
+		static const State FlaggedSelektedHoveredFocused;
+		static const State FlaggedSelektedHovered;
+		static const State FlaggedSelektedFocused;
+		static const State FlaggedSelekted;
 		static const State FlaggedPressedFocused;
 		static const State FlaggedPressed;
 		static const State FlaggedHoveredFocused;
 		static const State FlaggedHovered;
 		static const State FlaggedFocused;
 		static const State Flagged;
-		static const State CheckedSelectedPressedFocused;
-		static const State CheckedSelectedPressed;
-		static const State CheckedSelectedHoveredFocused;
-		static const State CheckedSelectedHovered;
-		static const State CheckedSelectedFocused;
-		static const State CheckedSelected;
+		static const State CheckedSelektedPressedFocused;
+		static const State CheckedSelektedPressed;
+		static const State CheckedSelektedHoveredFocused;
+		static const State CheckedSelektedHovered;
+		static const State CheckedSelektedFocused;
+		static const State CheckedSelekted;
 		static const State CheckedPressedFocused;
 		static const State CheckedPressed;
 		static const State CheckedHoveredFocused;
 		static const State CheckedHovered;
 		static const State CheckedFocused;
 		static const State Checked;
-		static const State SelectedPressedFocused;
-		static const State SelectedPressed;
-		static const State SelectedHoveredFocused;
-		static const State SelectedHovered;
-		static const State SelectedFocused;
-		static const State Selected;
+		static const State SelektedPressedFocused;
+		static const State SelektedPressed;
+		static const State SelektedHoveredFocused;
+		static const State SelektedHovered;
+		static const State SelektedFocused;
+		static const State Selekted;
 		static const State PressedFocused;
 		static const State Pressed;
 		static const State HoveredFocused;

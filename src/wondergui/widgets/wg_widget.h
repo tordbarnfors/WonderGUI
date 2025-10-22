@@ -155,8 +155,8 @@ namespace wg
 		void				setSelectable(bool bSelectable);
 		inline bool			isSelectable() const;
 
-//		virtual bool		setSelected( bool bSelected );
-//		inline bool			isSelected();
+//		virtual bool		setSelekted( bool bSelected );
+//		inline bool			isSelekted();
 
 		virtual bool		setChecked( bool bChecked );
 		inline bool			isChecked();

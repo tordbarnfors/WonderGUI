@@ -209,8 +209,8 @@ bool MyApp::setupGUI(Visitor* pVisitor)
 		.overflow = 8,
 		.states = {
 			{State::Hovered, HiColor::Transparent, HiColor(0,4096,0,2048)},
-			{State::Selected, HiColor::Transparent, HiColor(0,0,4096,2048)},
-			{State::SelectedHovered, HiColor::Transparent, HiColor(0,4096,4096,2048)}
+			{State::Selekted, HiColor::Transparent, HiColor(0,0,4096,2048)},
+			{State::SelektedHovered, HiColor::Transparent, HiColor(0,4096,4096,2048)}
 		}
 	});
 	

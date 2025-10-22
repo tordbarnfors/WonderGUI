@@ -890,7 +890,7 @@ bool MyApp::loadStream(std::string path)
 	}
 
 	// Setup streamwrapper and pump
-/*
+
 	auto pStreamGfxBackend = LinearBackend::create(
 		[this](CanvasRef ref, int bytes)
 		{
@@ -948,8 +948,8 @@ bool MyApp::loadStream(std::string path)
 				m_recordedSteps.push_back(rec);
 			}
 		} );
-*/
-	auto pStreamGfxBackend = SoftBackend::create();
+
+//	auto pStreamGfxBackend = SoftBackend::create();
 
 	auto pTrimGfxBackend = StreamTrimBackend::create(pStreamGfxBackend);
 

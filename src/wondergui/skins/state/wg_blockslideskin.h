@@ -84,7 +84,7 @@ namespace wg
 
 			Direction		slideDirection = Direction::Right;
 			int				slideDuration = 250;
-			PrimState		slideState = PrimState::Selected;
+			PrimState		slideState = PrimState::Selekted;
 
 			Border			spacing;
 			std::vector<StateBP> states;
@@ -152,7 +152,7 @@ namespace wg
 		Size		m_blockSize;
 		pts			m_slideDistance = 0;
 		int			m_slideDuration = 250;						// Millisec
-		PrimState	m_slideState = PrimState::Selected;
+		PrimState	m_slideState = PrimState::Selekted;
 
 		Tintmap_p	m_pTintmap;
 

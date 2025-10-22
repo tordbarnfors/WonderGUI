@@ -286,7 +286,7 @@ void WgCheckBox::_onRender( wg::GfxDevice * pDevice, const WgRect& _canvas, cons
 	}
 
 	if( m_bChecked )
-		state.setSelected(true);
+		state.setSelekted(true);
 
 	// Blit background
 

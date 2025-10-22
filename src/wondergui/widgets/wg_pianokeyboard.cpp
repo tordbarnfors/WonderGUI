@@ -243,9 +243,9 @@ namespace wg
 			return;
 		}
 
-		if (!m_keyInfo[keyIdx].state.isSelected())
+		if (!m_keyInfo[keyIdx].state.isSelekted())
 		{
-			m_keyInfo[keyIdx].state.setSelected(true);
+			m_keyInfo[keyIdx].state.setSelekted(true);
 			_requestRenderKey(keyIdx);
 		}
 	}
@@ -260,9 +260,9 @@ namespace wg
 			return;
 		}
 
-		if (m_keyInfo[keyIdx].state.isSelected())
+		if (m_keyInfo[keyIdx].state.isSelekted())
 		{
-			m_keyInfo[keyIdx].state.setSelected(false);
+			m_keyInfo[keyIdx].state.setSelekted(false);
 			_requestRenderKey(keyIdx);
 		}
 	}
@@ -277,7 +277,7 @@ namespace wg
 			return false;
 		}
 
-		return m_keyInfo[keyIdx].state.isSelected();
+		return m_keyInfo[keyIdx].state.isSelekted();
 	}
 
 	//____ setSelectedKeys() __________________________________________________
@@ -297,7 +297,7 @@ namespace wg
 
 		for (int i = 0; i < m_nbKeys; i++)
 		{
-			if( m_keyInfo[i].state.isSelected() )
+			if( m_keyInfo[i].state.isSelekted() )
 			{
 				bool bRemainSelected = false;
 
@@ -310,7 +310,7 @@ namespace wg
 
 				if (!bRemainSelected)
 				{
-					m_keyInfo[i].state.setSelected(false);
+					m_keyInfo[i].state.setSelekted(false);
 					_requestRenderKey(i);
 				}
 			}
@@ -319,9 +319,9 @@ namespace wg
 		// Secondly, select all newly selected
 
 		for (auto idx : selectedKeys)
-			if( !m_keyInfo[idx].state.isSelected() )
+			if( !m_keyInfo[idx].state.isSelekted() )
 			{
-				m_keyInfo[idx].state.setSelected(false);
+				m_keyInfo[idx].state.setSelekted(false);
 				_requestRenderKey(idx);
 			}
 	}
@@ -332,9 +332,9 @@ namespace wg
 	{
 		for (int i = 0; i < m_nbKeys; i++)
 		{
-			if (m_keyInfo[i].state.isSelected())
+			if (m_keyInfo[i].state.isSelekted())
 			{
-				m_keyInfo[i].state.setSelected(false);
+				m_keyInfo[i].state.setSelekted(false);
 				_requestRenderKey(i);
 			}
 		}

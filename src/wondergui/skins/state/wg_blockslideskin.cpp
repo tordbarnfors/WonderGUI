@@ -266,8 +266,8 @@ namespace wg
 		case PrimState::Targeted:
 			slideStateMask = State::Targeted;
 			break;
-		case PrimState::Selected:
-			slideStateMask = State::Selected;
+		case PrimState::Selekted:
+			slideStateMask = State::Selekted;
 			break;
 		case PrimState::Checked:
 			slideStateMask = State::Checked;

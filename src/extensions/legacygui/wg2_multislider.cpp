@@ -1386,7 +1386,7 @@ void WgMultiSlider::_onRender( wg::GfxDevice * pDevice, const WgRect& _canvas, c
 			{
 				WgState	emptyPartState = slider.sliderState;
 				WgState filledPartState = slider.sliderState;
-				filledPartState.setSelected(true);
+				filledPartState.setSelekted(true);
 
                 if( _skinDirtyRect(pBgSkin, {0,0,100,100}, m_scale, emptyPartState, filledPartState).isEmpty() )
                     _renderSkin( pBgSkin, pDevice, emptyPartState, bgGeo, m_scale);
@@ -1652,7 +1652,7 @@ void WgMultiSlider::_updateHandlePos(Slider& slider)
 	wg::Skin_p pBgSkin = slider.pBgSkin ? slider.pBgSkin : m_pDefaultBgSkin;
 	if (pBgSkin)
 	{
-        wg::RectI dirty = _skinDirtyRect(pBgSkin, _sliderSkinGeo(slider, sliderGeo), m_scale, slider.handleState, slider.handleState + WgStateEnum::Selected);
+        wg::RectI dirty = _skinDirtyRect(pBgSkin, _sliderSkinGeo(slider, sliderGeo), m_scale, slider.handleState, slider.handleState + WgStateEnum::Selekted);
         if( !dirty.isEmpty() )
             _requestRender( dirty );
 	}

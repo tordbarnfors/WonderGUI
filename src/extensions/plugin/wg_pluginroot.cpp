@@ -290,12 +290,12 @@ namespace wg
 			if (oldState.isDisabled() != state.isDisabled())
 				slot._widget()->setDisabled(state.isDisabled());
 
-			if (oldState.isSelected() != state.isSelected())
+			if (oldState.isSelekted() != state.isSelekted())
 			{
-				bool bSelected = state.isSelected();
+				bool bSelected = state.isSelekted();
 
 				State s = slot._widget()->state();
-				s.setSelected(bSelected);
+				s.setSelekted(bSelected);
 				slot._widget()->_setState(s);
 			}
 		}

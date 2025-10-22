@@ -660,7 +660,7 @@ int main(int argc, char** argv)
 		convertSDLFormat(&pixelDesc, pSDLSurf->format);
 		Surface_p pListEntrySurface = pSurfaceFactory->createSurface({ .format = PixelFormat::BGRA_8, .size = SizeI(pSDLSurf->w, pSDLSurf->h) }, (unsigned char*)pSDLSurf->pixels, pixelDesc, pSDLSurf->pitch);
 		SDL_FreeSurface(pSDLSurf);
-		Skin_p pListEntrySkin = BlockSkin::create(pListEntrySurface, { State::Default, State::Hovered, State::Selected, State::Selected + State::Hovered, State::Disabled }, Border(2), Axis::X);
+		Skin_p pListEntrySkin = BlockSkin::create(pListEntrySurface, { State::Default, State::Hovered, State::Selekted, State::Selekted + State::Hovered, State::Disabled }, Border(2), Axis::X);
 
 		pSDLSurf = IMG_Load("resources/splash.png");
 		convertSDLFormat(&pixelDesc, pSDLSurf->format);
@@ -2290,7 +2290,7 @@ bool selectBoxTest(ComponentPtr<DynamicSlot> pSlot)
 
 	auto pListEntrySkin = BoxSkin::create({ .color = Color::Transparent, .outlineColor = Color::Transparent, .outlineThickness = 1, .padding = 3,
 											 .states = {{State::Hovered, {.color = Color::Yellow, .outlineColor = Color::Orange }},
-														{State::Selected, {.color = Color::LightBlue, .outlineColor = Color::White }} } });
+														{State::Selekted, {.color = Color::LightBlue, .outlineColor = Color::White }} } });
 
 
 	pSelectBox->setListSkin(pListSkin);
@@ -2860,15 +2860,15 @@ void textStyleTest()
 	auto pBase = TextStyle::create();
 	auto pAdded = TextStyle::create();
 
-	assert(pBase->bgColor(State::Selected) == Color::Transparent);
+	assert(pBase->bgColor(State::Selekted) == Color::Transparent);
 	assert(pBase->color(State::Hovered) == Color::Black);
 
 	pBase->setColor(Color::Red, State::Hovered);
 	assert(pBase->color(State::Default) == Color::Black);
 	assert(pBase->color(State::Hovered) == Color::Red);
 	assert(pBase->color(State::Pressed) == Color::Red);
-	assert(pBase->color(State::SelectedHoveredFocused) == Color::Red);
-	assert(pBase->color(State::SelectedFocused) == Color::Black);
+	assert(pBase->color(State::SelektedHoveredFocused) == Color::Red);
+	assert(pBase->color(State::SelektedFocused) == Color::Black);
 
 	pBase->setSize(16, State::Hovered);
 	pAdded->setSize(15);
@@ -4882,7 +4882,7 @@ bool selectCapsuleTest(ComponentPtr<DynamicSlot> pEntry)
 
 	auto pSkin = ColorSkin::create({
 
-			.states = { {State::Default,Color::Yellow}, {State::Selected,Color::Green}}
+			.states = { {State::Default,Color::Yellow}, {State::Selekted,Color::Green}}
 
 		});
 

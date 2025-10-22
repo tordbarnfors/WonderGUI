@@ -160,7 +160,7 @@ Simplistic::Simplistic( Font * pNormal, Font * pBold, Font * pItalic, Font * pMo
 		_.markAlpha = 0,
 		_.states = { {State::Default, Color::Transparent,Color::Transparent},
 					 {State::Hovered, HiColor(Color::LightCyan).withAlpha(1024), HiColor(Color::DarkCyan).withAlpha(1024)},
-					 {State::Selected, Color::LightCyan,Color::DarkCyan }
+					 {State::Selekted, Color::LightCyan,Color::DarkCyan }
 		}
 	));
 
@@ -213,7 +213,7 @@ Simplistic::Simplistic( Font * pNormal, Font * pBold, Font * pItalic, Font * pMo
 	auto pSelectBoxEntrySkin = BoxSkin::create(WGBP(BoxSkin,
 		_.states = { {State::Default, Color::Transparent, Color::Transparent},
 					 {State::Hovered, HiColor(Color::LightCyan).withAlpha(2048), HiColor(Color::DarkCyan).withAlpha(2048)},
-					 {State::Selected, Color::LightCyan,Color::DarkCyan }
+					 {State::Selekted, Color::LightCyan,Color::DarkCyan }
 		}
 	));
 

@@ -48,9 +48,9 @@ wg::BlockSkin_p WgBlockset::CreateFromRow( wg::Surface * pSurf, const WgRect& re
 	if( nBlocks > 2 )
 	{
 		bp.states[1].state = wg::State::Pressed;
-		bp.states[2].state = wg::State::Selected;
+		bp.states[2].state = wg::State::Selekted;
 //		p->setBlock(wg::State::Pressed, rect + ofs*2);
-//		p->setBlock(wg::State::Selected, rect + ofs*2);
+//		p->setBlock(wg::State::Selekted, rect + ofs*2);
 	}
 
 	if( nBlocks > 3 )
@@ -60,10 +60,10 @@ wg::BlockSkin_p WgBlockset::CreateFromRow( wg::Surface * pSurf, const WgRect& re
 	}
 	if( nBlocks > 4 )
 	{
-		bp.states[4].state = wg::State::SelectedHovered;
-		bp.states[5].state = wg::State::SelectedPressed;
-//		p->setBlock(wg::State::SelectedHovered, rect + ofs*4);
-//		p->setBlock(wg::State::SelectedPressed, rect + ofs*4);
+		bp.states[4].state = wg::State::SelektedHovered;
+		bp.states[5].state = wg::State::SelektedPressed;
+//		p->setBlock(wg::State::SelektedHovered, rect + ofs*4);
+//		p->setBlock(wg::State::SelektedPressed, rect + ofs*4);
 	}
 
 	auto p = wg::BlockSkin::create(bp);
@@ -92,9 +92,9 @@ wg::BlockSkin_p WgBlockset::CreateFromColumn( wg::Surface * pSurf, const WgRect&
 	if( nBlocks > 2 )
 	{
 		bp.states.push_back(wg::State(wg::State::Pressed));
-		bp.states.push_back(wg::State(wg::State::Selected));
+		bp.states.push_back(wg::State(wg::State::Selekted));
 //		p->setBlock(wg::State::Pressed, rect + ofs*2);
-//		p->setBlock(wg::State::Selected, rect + ofs*2);
+//		p->setBlock(wg::State::Selekted, rect + ofs*2);
 	}
 
 	if( nBlocks > 3 )
@@ -104,10 +104,10 @@ wg::BlockSkin_p WgBlockset::CreateFromColumn( wg::Surface * pSurf, const WgRect&
 	}
 	if( nBlocks > 4 )
 	{
-		bp.states.push_back(wg::State(wg::State::SelectedHovered));
-		bp.states.push_back(wg::State(wg::State::SelectedPressed));
-//		p->setBlock(wg::State::SelectedHovered, rect + ofs*4);
-//		p->setBlock(wg::State::SelectedPressed, rect + ofs*4);
+		bp.states.push_back(wg::State(wg::State::SelektedHovered));
+		bp.states.push_back(wg::State(wg::State::SelektedPressed));
+//		p->setBlock(wg::State::SelektedHovered, rect + ofs*4);
+//		p->setBlock(wg::State::SelektedPressed, rect + ofs*4);
 	}
 
 	auto p = wg::BlockSkin::create(bp);

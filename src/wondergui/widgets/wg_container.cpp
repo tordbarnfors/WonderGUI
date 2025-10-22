@@ -322,14 +322,14 @@ namespace wg
 			}
 		}
 
-		if( oldState.isSelected() != state.isSelected() )
+		if( oldState.isSelekted() != state.isSelekted() )
 		{
-			bool bSelected = state.isSelected();
+			bool bSelected = state.isSelekted();
 			Widget * p = _firstChild();
 			while( p )
 			{
 				State s = p->m_state;
-				s.setSelected(bSelected);
+				s.setSelekted(bSelected);
 				p->_setState( s );
 				p = p->_nextSibling();
 			}

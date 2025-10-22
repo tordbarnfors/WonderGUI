@@ -180,9 +180,9 @@ int main ( int argc, char** argv )
 	auto pFocusSkin = ColorSkin::create({ .states = { {State::Default, Color::Red}, {State::Focused, Color::Green} } });
 	auto pHoverSkin = ColorSkin::create({ .states = { {State::Default, Color::Red}, {State::Hovered, Color::Green} } });
 	auto pHoverAndFocusSkin = ColorSkin::create({ .states = { {State::Default, Color::Red}, {State::Hovered, Color::Yellow}, {State::Focused, Color::Blue} } });
-	auto pSelectedHoverAndFocusSkin = ColorSkin::create({ .states = { {State::Default, Color::Red}, {State::Selected, Color::Pink}, {State::Hovered, Color::Yellow}, {State::Focused, Color::Blue} } });
+	auto pSelectedHoverAndFocusSkin = ColorSkin::create({ .states = { {State::Default, Color::Red}, {State::Selekted, Color::Pink}, {State::Hovered, Color::Yellow}, {State::Focused, Color::Blue} } });
 
-	auto pHoverWithFocusSkin = ColorSkin::create({ .states = {  {State::Selected, Color::Purple}, {State::Default, Color::Red}, {State::HoveredFocused, Color::Red}, {State::Hovered, Color::Yellow}, {State::Focused, Color::Blue} } });
+	auto pHoverWithFocusSkin = ColorSkin::create({ .states = {  {State::Selekted, Color::Purple}, {State::Default, Color::Red}, {State::HoveredFocused, Color::Red}, {State::Hovered, Color::Yellow}, {State::Focused, Color::Blue} } });
 
 
 	//------------------------------------------------------

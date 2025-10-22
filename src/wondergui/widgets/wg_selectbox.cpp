@@ -358,13 +358,13 @@ namespace wg
 		if (m_selectedEntryIndex >= 0)
 		{
 			State oldState = entries[m_selectedEntryIndex].m_state;
-			entries[m_selectedEntryIndex].m_state.setSelected(false);
+			entries[m_selectedEntryIndex].m_state.setSelekted(false);
 			_entryTextLayout()->onStateChanged(&entries[m_selectedEntryIndex], entries[m_selectedEntryIndex].m_state, oldState);
 			_requestRenderEntry(&entries[m_selectedEntryIndex]);
 		}
 
 		State oldState = entries[index].m_state;
-		entries[index].m_state.setSelected(true);
+		entries[index].m_state.setSelekted(true);
 		_entryTextLayout()->onStateChanged(&entries[index], entries[index].m_state, oldState);
 		_requestRenderEntry(&entries[index]);
 		m_selectedEntryIndex = index;

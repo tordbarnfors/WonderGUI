@@ -273,9 +273,9 @@ void WgPianoKeyboard::selectKey(int keyIdx)
 		return;
 	}
 
-	if (!m_keyInfo[keyIdx].state.isSelected())
+	if (!m_keyInfo[keyIdx].state.isSelekted())
 	{
-		m_keyInfo[keyIdx].state.setSelected(true);
+		m_keyInfo[keyIdx].state.setSelekted(true);
 		_requestRenderKey(keyIdx);
 	}
 }
@@ -290,9 +290,9 @@ void WgPianoKeyboard::unselectKey(int keyIdx)
 		return;
 	}
 
-	if (m_keyInfo[keyIdx].state.isSelected())
+	if (m_keyInfo[keyIdx].state.isSelekted())
 	{
-		m_keyInfo[keyIdx].state.setSelected(false);
+		m_keyInfo[keyIdx].state.setSelekted(false);
 		_requestRenderKey(keyIdx);
 	}
 }
@@ -307,7 +307,7 @@ bool WgPianoKeyboard::isKeySelected(int keyIdx) const
 		return false;
 	}
 
-	return m_keyInfo[keyIdx].state.isSelected();
+	return m_keyInfo[keyIdx].state.isSelekted();
 }
 
 //____ setSelectedKeys() __________________________________________________
@@ -327,7 +327,7 @@ void WgPianoKeyboard::setSelectedKeys(std::initializer_list<int> selectedKeys)
 
 	for (int i = 0; i < m_nbKeys; i++)
 	{
-		if( m_keyInfo[i].state.isSelected() )
+		if( m_keyInfo[i].state.isSelekted() )
 		{
 			bool bRemainSelected = false;
 
@@ -340,7 +340,7 @@ void WgPianoKeyboard::setSelectedKeys(std::initializer_list<int> selectedKeys)
 
 			if (!bRemainSelected)
 			{
-				m_keyInfo[i].state.setSelected(false);
+				m_keyInfo[i].state.setSelekted(false);
 				_requestRenderKey(i);
 			}
 		}
@@ -349,9 +349,9 @@ void WgPianoKeyboard::setSelectedKeys(std::initializer_list<int> selectedKeys)
 	// Secondly, select all newly selected
 
 	for (auto idx : selectedKeys)
-		if( !m_keyInfo[idx].state.isSelected() )
+		if( !m_keyInfo[idx].state.isSelekted() )
 		{
-			m_keyInfo[idx].state.setSelected(false);
+			m_keyInfo[idx].state.setSelekted(false);
 			_requestRenderKey(idx);
 		}
 }
@@ -362,9 +362,9 @@ void WgPianoKeyboard::unselectAllKeys()
 {
 	for (int i = 0; i < m_nbKeys; i++)
 	{
-		if (m_keyInfo[i].state.isSelected())
+		if (m_keyInfo[i].state.isSelekted())
 		{
-			m_keyInfo[i].state.setSelected(false);
+			m_keyInfo[i].state.setSelekted(false);
 			_requestRenderKey(i);
 		}
 	}

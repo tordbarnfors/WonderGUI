@@ -86,8 +86,8 @@ namespace wg
 		}
 
 		State s = pWidget->state();
-		if (!s.isSelected())
-			pWidget->_setState(s + State::Selected);
+		if (!s.isSelekted())
+			pWidget->_setState(s + State::Selekted);
 		return true;
 	}
 
@@ -101,8 +101,8 @@ namespace wg
 		// 
 
 		State s = pWidget->state();
-		if (s.isSelected())
-			pWidget->_setState(s - State::Selected);
+		if (s.isSelekted())
+			pWidget->_setState(s - State::Selekted);
 		return true;
 	}
 
@@ -228,7 +228,7 @@ namespace wg
 
 		while (p)
 		{
-			if (p->state().isSelected())
+			if (p->state().isSelekted())
 				return p;
 
 			if (p->isContainer() && m_bRecursive)
@@ -252,7 +252,7 @@ namespace wg
 
 		while (p)
 		{
-			if (p->state().isSelected())
+			if (p->state().isSelekted())
 				pList->push_back(p);
 	
 			if (p->isContainer() && m_bRecursive)
@@ -276,9 +276,9 @@ namespace wg
 				if (p->isSelectable())
 				{
 					State s = p->state();
-					if (s.isSelected() != bSelected)
+					if (s.isSelekted() != bSelected)
 					{
-						s.setSelected(bSelected);
+						s.setSelekted(bSelected);
 						p->_setState(s);
 
 						if (pList)
@@ -336,7 +336,7 @@ namespace wg
 						{
 
 
-							if( !pWidget->state().isSelected() )
+							if( !pWidget->state().isSelekted() )
 							{
 
 								auto pContainer = _topContainer();
@@ -344,7 +344,7 @@ namespace wg
 
 								if (pWidget->isSelectable())
 								{
-									pWidget->_setState(pWidget->state() + State::Selected);
+									pWidget->_setState(pWidget->state() + State::Selekted);
 
 									selectedList.push_back(pWidget);
 								}
@@ -367,17 +367,17 @@ namespace wg
 
 								if ((pMsg->modKeys() & ModKeys::StdCtrl))
 								{
-									s.setSelected(!s.isSelected());
+									s.setSelekted(!s.isSelekted());
 									pWidget->_setState(s);
 
-									if (s.isSelected())
+									if (s.isSelekted())
 										selectedList.push_back(pWidget);
 									else
 										unselectedList.push_back(pWidget);
 								}
-								else if (!s.isSelected())
+								else if (!s.isSelekted())
 								{
-									s.setSelected(true);
+									s.setSelekted(true);
 									pWidget->_setState(s);
 									selectedList.push_back(pWidget);
 								}
@@ -390,10 +390,10 @@ namespace wg
 							if (pWidget->isSelectable())
 							{
 								State s = pWidget->state();
-								s.setSelected(!s.isSelected());
+								s.setSelekted(!s.isSelekted());
 								pWidget->_setState(s);
 
-								if (s.isSelected())
+								if (s.isSelekted())
 									selectedList.push_back(pWidget);
 								else
 									unselectedList.push_back(pWidget);

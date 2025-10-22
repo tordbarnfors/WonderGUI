@@ -534,7 +534,7 @@ namespace wg
 					{
 						indexMask = 0x3;
 						indexTableSize = 4;
-						if ((usedBits & int(StateEnum::Selected)) == 0)
+						if ((usedBits & int(StateEnum::Selekted)) == 0)
 						{
 							indexMask = 0x1;
 							indexTableSize = 2;
@@ -548,7 +548,7 @@ namespace wg
 				indexShift++;
 				indexTableSize /= 2;
 
-				if ((usedBits & int(StateEnum::Selected)) == 0)
+				if ((usedBits & int(StateEnum::Selekted)) == 0)
 				{
 					indexShift++;
 					indexTableSize /= 2;
