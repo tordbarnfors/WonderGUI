@@ -83,13 +83,13 @@ void WgText::Init()
 
 	m_scale = WG_SCALE_BASE;
 
-	m_markedLinkState = wg::StateEnum::Default;
+	m_markedLinkState = wg::State::Default;
 
 	m_alignment		= WgOrigo::NorthWest;
 	m_tintMode		= WG_TINTMODE_MULTIPLY;
 	m_lineSpaceAdj	= 1.f;
 
-	m_state			= wg::StateEnum::Default;
+	m_state			= wg::State::Default;
 
 	m_pHardLines	= new WgTextLine[1];
 	m_nHardLines	= 1;
@@ -541,7 +541,7 @@ void WgText::setStyle( wg::TextStyle * pStyle )
 
 bool WgText::setColor( const WgColor color )
 {
-	if( m_pBaseStyle && m_pBaseStyle->isColorStatic() && m_pBaseStyle->color(wg::StateEnum::Default) == wg::HiColor(color) )
+	if( m_pBaseStyle && m_pBaseStyle->isColorStatic() && m_pBaseStyle->color(wg::State::Default) == wg::HiColor(color) )
 		return false;
 
 	auto bp = m_pBaseStyle ? m_pBaseStyle->blueprint() : wg::TextStyle::Blueprint();

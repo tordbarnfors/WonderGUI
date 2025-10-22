@@ -643,7 +643,7 @@ void WgTextDisplay::_setState(WgState state)
 
 void WgTextDisplay::_onEnable( void )
 {
-	m_text.setState(wg::StateEnum::Default);
+	m_text.setState(wg::State::Default);
 	_requestRender();
 }
 
@@ -651,7 +651,7 @@ void WgTextDisplay::_onEnable( void )
 
 void WgTextDisplay::_onDisable( void )
 {
-	m_text.setState(wg::StateEnum::Disabled);
+	m_text.setState(wg::State::Disabled);
 	_requestRender();
 }
 

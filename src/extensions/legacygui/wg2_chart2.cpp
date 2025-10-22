@@ -879,7 +879,7 @@ void WgChart2::_onRender( wg::GfxDevice * pDevice, const WgRect& _canvas, const 
 				pen.SetAttributes(attr);
 
 				WgSize labelSize;
-				labelSize.w = WgUtil::lineWidth(nullptr, attr, wg::StateEnum::Default, line.label.chars(),m_scale);
+				labelSize.w = WgUtil::lineWidth(nullptr, attr, wg::State::Default, line.label.chars(),m_scale);
 				labelSize.h = pen.GetLineHeight();
 
 				WgCoord textOfs;
@@ -942,7 +942,7 @@ void WgChart2::_onRender( wg::GfxDevice * pDevice, const WgRect& _canvas, const 
 
 
 				WgSize labelSize;
-				labelSize.w = WgUtil::lineWidth(nullptr, attr, wg::StateEnum::Default, line.label.chars(),m_scale);
+				labelSize.w = WgUtil::lineWidth(nullptr, attr, wg::State::Default, line.label.chars(),m_scale);
 				labelSize.h = pen.GetLineHeight();
 
 				WgCoord textOfs;

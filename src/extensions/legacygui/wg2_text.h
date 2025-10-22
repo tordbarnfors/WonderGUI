@@ -158,7 +158,7 @@ public:
 //  --------------
 
 	inline wg::TextStyle_p      getStyle() const { return m_pBaseStyle; }
-	inline WgColor				getColor() const { return m_pBaseStyle->color(wg::StateEnum::Default); }
+	inline WgColor				getColor() const { return m_pBaseStyle->color(wg::State::Default); }
 	inline WgColor				getColor(WgState state) const { return m_pBaseStyle->color(state); }
 	inline wg::Font_p			getFont() const { return m_pBaseStyle->font(); }
 	inline wg::TextLink_p		getLink() const { return m_pBaseStyle->link(); }

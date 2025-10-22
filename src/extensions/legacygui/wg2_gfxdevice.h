@@ -66,7 +66,7 @@ public:
 
 	// Low-level print methods
 
-	static void		PrintLine( wg::GfxDevice * pDevice, WgPen& pen, const wg::TextAttr& baseAttr, const wg::Char * _pLine, int maxChars = INT_MAX, wg::State statem = wg::StateEnum::Default );
+	static void		PrintLine( wg::GfxDevice * pDevice, WgPen& pen, const wg::TextAttr& baseAttr, const wg::Char * _pLine, int maxChars = INT_MAX, wg::State statem = wg::State::Default );
 
 	static void     BlitBlock( wg::GfxDevice * pDevice, const WgBlock& block, const WgRect& dest, int scale, bool bTriLinear = false, float mipmapbias = 0.f );
 

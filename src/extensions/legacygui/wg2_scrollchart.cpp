@@ -1359,7 +1359,7 @@ void WgScrollChart::_onRender(wg::GfxDevice * pDevice, const WgRect& _canvas, co
         // Find the max width of the labels.
         for(const auto& line: m_valueGridLines)
         {
-            width = std::max(width, static_cast<int>(WgUtil::lineWidth(nullptr, attr, wg::StateEnum::Default, line.label.chars(), m_scale)));
+            width = std::max(width, static_cast<int>(WgUtil::lineWidth(nullptr, attr, wg::State::Default, line.label.chars(), m_scale)));
         }
 
 		for (auto& line : m_valueGridLines)
@@ -1413,7 +1413,7 @@ void WgScrollChart::_onRender(wg::GfxDevice * pDevice, const WgRect& _canvas, co
 				pen.SetAttributes(attr);
 
 				WgSize labelSize;
-				labelSize.w = WgUtil::lineWidth(nullptr, attr, wg::StateEnum::Default, line.label.chars(),m_scale);
+				labelSize.w = WgUtil::lineWidth(nullptr, attr, wg::State::Default, line.label.chars(),m_scale);
 				labelSize.h = pen.GetLineHeight();
 
 				WgCoord textOfs;

@@ -141,7 +141,7 @@ void WgFpsDisplay::_onRender( wg::GfxDevice * pDevice, const WgRect& _canvas, co
 	wg::TextAttr attr;
 
 	if( m_pStyle )
-		m_pStyle->exportAttr( wg::StateEnum::Default, &attr, m_scale  );
+		m_pStyle->exportAttr( wg::State::Default, &attr, m_scale  );
 
 	pen.SetAttributes( attr );
 	pen.SetPos( WgCoord(_canvas.x, _canvas.y + pen.GetBaseline()) );

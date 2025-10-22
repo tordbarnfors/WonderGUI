@@ -108,4 +108,4 @@ namespace wg
 }
 
 
-#endif WG_MirrorSurface_DOT_H
+#endif // WG_MIRRORSURFACE_DOT_H

@@ -579,7 +579,7 @@ void WgLineEditor::_onEnable()
     }
     else
     {
-        m_text.setState(wg::StateEnum::Default);
+        m_text.setState(wg::State::Default);
         _requestRender();
     }
 }
@@ -596,7 +596,7 @@ void WgLineEditor::_onDisable()
     }
     else
     {
-        m_text.setState(wg::StateEnum::Disabled);
+        m_text.setState(wg::State::Disabled);
         _requestRender();
     }
 }

@@ -164,19 +164,19 @@ void WgRangeSlider::_onEvent(const WgEvent::Event* _pEvent, WgEventHandler* pHan
 			WgCoord pos = _pEvent->PointerPixelPos();
 
 			if( _handleGeo(PixelSize(),true).contains(pos) != m_beginHandleState.isHovered() )
-				_setHandleState(m_beginHandleState + wg::StateEnum::Hovered, true);
+				_setHandleState(m_beginHandleState + wg::State::Hovered, true);
 
 			if (_handleGeo(PixelSize(), false).contains(pos) != m_endHandleState.isHovered())
-				_setHandleState(m_endHandleState + wg::StateEnum::Hovered, false);
+				_setHandleState(m_endHandleState + wg::State::Hovered, false);
 			break;
 		}
 
 		case WG_EVENT_MOUSE_LEAVE:
 			if (m_beginHandleState.isHovered() && !m_beginHandleState.isPressed() )
-				_setHandleState(m_beginHandleState - wg::StateEnum::Hovered, true);
+				_setHandleState(m_beginHandleState - wg::State::Hovered, true);
 
 			if (m_endHandleState.isHovered() && !m_endHandleState.isPressed())
-				_setHandleState(m_endHandleState - wg::StateEnum::Hovered, false);
+				_setHandleState(m_endHandleState - wg::State::Hovered, false);
 
 			break;
 
@@ -193,12 +193,12 @@ void WgRangeSlider::_onEvent(const WgEvent::Event* _pEvent, WgEventHandler* pHan
 			WgRect  endHandle = _handleGeo(geo, false);
 			if (beginHandle.contains(pos))
 			{
-				_setHandleState(m_beginHandleState + wg::StateEnum::Pressed,true);
+				_setHandleState(m_beginHandleState + wg::State::Pressed,true);
 				m_valueAtPress = m_rangeBegin;
 			}
 			else if (endHandle.contains(pos))
 			{
-				_setHandleState(m_endHandleState + wg::StateEnum::Pressed, false);
+				_setHandleState(m_endHandleState + wg::State::Pressed, false);
 				m_valueAtPress = m_rangeEnd;
 			}
 			else
@@ -219,11 +219,11 @@ void WgRangeSlider::_onEvent(const WgEvent::Event* _pEvent, WgEventHandler* pHan
 //				Rect  handle = _handleGeo(m_size);
 			if (m_beginHandleState.isPressed())
 			{
-				_setHandleState(m_beginHandleState - wg::StateEnum::Pressed, true);
+				_setHandleState(m_beginHandleState - wg::State::Pressed, true);
 			}
 			else if (m_endHandleState.isPressed())
 			{
-				_setHandleState(m_endHandleState - wg::StateEnum::Pressed, false);
+				_setHandleState(m_endHandleState - wg::State::Pressed, false);
 			}
 			else
 			{
