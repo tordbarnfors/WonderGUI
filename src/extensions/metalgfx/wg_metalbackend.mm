@@ -525,11 +525,18 @@ int MetalBackend::maxEdges() const
 	return c_maxSegments - 1;
 }
 
-//____ surfaceType() _______________________________________________________
+//____ canBeBlitSource() ______________________________________________________
 
-const TypeInfo& MetalBackend::surfaceType( void ) const
+bool MetalBackend::canBeBlitSource(const TypeInfo& type) const
 {
-	return MetalSurface::TYPEINFO;
+	return (type == MetalSurface::TYPEINFO);
+}
+
+//____ canBeCanvas() __________________________________________________________
+
+bool MetalBackend::canBeCanvas(const TypeInfo& type) const
+{
+	return (type == MetalSurface::TYPEINFO);
 }
 
 //____ surfaceFactory() _______________________________________________________
