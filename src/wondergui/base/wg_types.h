@@ -68,7 +68,7 @@ namespace wg
 	{
 		Default,
 		Flagged,
-		Selected,
+		Selekted,
 		FlaggedSelekted,
 		Checked,
 		FlaggedChecked,
