@@ -34,6 +34,7 @@
 #include <string.h>
 #include <wg_bitmapfont.h>
 #include <wg_gridwalker.h>
+#include <wg_gfxbase.h>
 
 
 inline int readUTF8Char( const char *& _pStr )
@@ -241,10 +242,31 @@ namespace wg
 		const char* pKerningBeg = strstr(pGlyphSpec, "[KERNING BEGIN]");
 		const char* pKerningEnd = strstr(pGlyphSpec, "[KERNING END]");
 
-		if (!pInfoBeg || !pInfoEnd || !pCharmapBeg || !pCharmapEnd)
+		if (!pInfoBeg)
 		{
-			//TODO: Error handling
+			GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Missing [INFO BEGIN] section.",
+				this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			return;
+		}
 
+		if (!pInfoEnd)
+		{
+			GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Missing [INFO END] section.",
+				this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			return;
+		}
+
+		if (!pCharmapBeg)
+		{
+			GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Missing [CHARMAP BEGIN] section.",
+				this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			return;
+		}
+
+		if (!pCharmapEnd)
+		{
+			GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Missing [CHARMAP END] section.",
+				this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return;
 		}
 

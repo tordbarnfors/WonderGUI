@@ -344,6 +344,7 @@ namespace wg
 		//.____ Definitions ___________________________________________________
 
 		const static HiColor	Undefined;			// -1
+		const static HiColor	ShowError;			//
 		const static HiColor	Transparent;		// 0x000000
 		const static HiColor	TransparentBlack;	// 0x000000
 		const static HiColor	TransparentWhite;	// 0x000000

@@ -272,6 +272,8 @@ namespace wg
 		bool bPushed = pSrcSurface->pushPixels(srcbuf);
 		if (!bPushed)
 		{
+			GfxBase::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "Failed to access pixels of source surface.",
+				this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			//TODO: Error handling.
 		}
 		
@@ -304,7 +306,8 @@ namespace wg
 
 		if (!pFactory)
 		{
-			//TODO: Error handling!
+			GfxBase::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No surface factory available for surface conversion.",
+				this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return Surface_p();
 		}
 

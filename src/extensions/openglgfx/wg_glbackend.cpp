@@ -140,7 +140,8 @@ void GlBackend::setCanvas(CanvasRef ref)
 	}
 	else
 	{
-		//TODO: Error handling!
+		GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "GlBackend::setCanvas(CanvasRef) only supports CanvasRef::Default.",
+			this, &TYPEINFO, __func__, __FILE__, __LINE__);
 	}
 }
 
@@ -1676,7 +1677,7 @@ const CanvasInfo * GlBackend::canvasInfo(CanvasRef ref) const
 		return &m_defaultCanvas;
 	else
 	{
-		//TODO: Error handling!
+		GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Only Default canvas is supported.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 		return &m_dummyCanvas;
 	}
 }
@@ -1692,7 +1693,7 @@ void GlBackend::beginRender()
 
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 	{
-		//TODO: Error handling!
+		GfxBase::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "Framebuffer is not complete.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 		return;
 	}
 

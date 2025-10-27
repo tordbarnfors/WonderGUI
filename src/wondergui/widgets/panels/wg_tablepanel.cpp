@@ -418,28 +418,28 @@ void TablePanel::setColumnSpacing( pts before, pts between, pts after )
 
 //____ setRowSkins() __________________________________________________________
 
-void TablePanel::setRowSkins( Skin * pSkin1, Skin * pSkin2 )
+bool TablePanel::setRowSkins( Skin * pSkin1, Skin * pSkin2 )
 {
 	if( pSkin1 == nullptr && pSkin2 != nullptr )
 	{
-		//TODO: Error handling
-		
-		return;
+		Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Setting two skins, but the first one is null.",
+			this, &TYPEINFO, __func__, __FILE__, __LINE__);
+		return false;
 	}
 
 	if( pSkin2 == nullptr )
 		pSkin2 = pSkin1;
 	
 	if( pSkin1 == m_pRowSkins[0] && pSkin2 == m_pRowSkins[1] )
-		return;
+		return true;
 
 	if(pSkin2 != pSkin1)
 	{
 		if( pSkin1->margin() + pSkin1->padding() != pSkin2->margin() + pSkin2->padding() )
 		{
-			//TODO: Error handling
-			
-			return;
+			Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "When setting different skins for odd and even rows, their combined margin+padding must be equal.",
+				this, &TYPEINFO, __func__, __FILE__, __LINE__);			
+			return false;
 		}
 	}
 		
@@ -467,6 +467,8 @@ void TablePanel::setRowSkins( Skin * pSkin1, Skin * pSkin2 )
 	}
 	else
 		_requestRender();
+
+	return true;
 }
 
  

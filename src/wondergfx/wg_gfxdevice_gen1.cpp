@@ -499,8 +499,8 @@ namespace wg
 
 			if (bounds.x < 0 || bounds.y < 0 || bounds.w > sz.w || bounds.h > sz.h)
 			{
-				//TODO: Error handling!
-
+				GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "UpdateRects contains rectangels outside canvas.",
+					this, &TYPEINFO, __func__, __FILE__, __LINE__);
 				return false;
 			}
 		}

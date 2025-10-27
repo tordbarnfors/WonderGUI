@@ -105,8 +105,8 @@ bool GfxDeviceGen2::setBackend( GfxBackend * pBackend )
 {
 	if( m_bRendering )
 	{
-		//TODO: Error handling!!!
-		
+		GfxBase::throwError(ErrorLevel::Error, ErrorCode::IllegalCall, "Cannot change backend while rendering.",
+			this, &TYPEINFO, __func__, __FILE__, __LINE__);
 		return  false;
 	}
 	
@@ -213,8 +213,8 @@ bool GfxDeviceGen2::pushClipList(int nRectangles, const RectSPX* pRectangles)
 {
 	if (!m_pActiveCanvas)
 	{
-		//TODO: Error handling.
-
+		GfxBase::throwError(ErrorLevel::Error, ErrorCode::IllegalCall, "No active canvas. Cannot push clip list.",
+			this, &TYPEINFO, __func__, __FILE__, __LINE__);
 		return false;
 	}
 
@@ -248,14 +248,16 @@ bool GfxDeviceGen2::popClipList()
 {
 	if (!m_pActiveCanvas)
 	{
-		//TODO: Error handling!
+		GfxBase::throwError(ErrorLevel::Error, ErrorCode::IllegalCall, "No active canvas. Cannot pop clip list.",
+			this, &TYPEINFO, __func__, __FILE__, __LINE__);
 
 		return false;
 	}
 
 	if (m_pActiveCanvas->clipListStack.size() == 1)
 	{
-		//TODO: Error handling!
+		GfxBase::throwError(ErrorLevel::Error, ErrorCode::IllegalCall, "Clip list stack underflow. Cannot pop clip list.",
+			this, &TYPEINFO, __func__, __FILE__, __LINE__);
 
 		return false;
 	}
@@ -299,13 +301,22 @@ const RectSPX& GfxDeviceGen2::clipBounds() const
 
 void GfxDeviceGen2::setTintColor(HiColor color)
 {
-	assert(color == HiColor::Undefined || color.isValid());
+	if (color == m_renderState.tintColor)
+		return;
 
-	if (color != m_renderState.tintColor)
+	if( !color.isValid() && color != HiColor::Undefined )
 	{
-		m_renderState.tintColor = color;
-		m_stateChanges |= int(StateChange::TintColor);
+		GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Invalid tint color.",
+			this, &TYPEINFO, __func__, __FILE__, __LINE__);
+#ifdef NDEBUG
+		return;
+#else
+		color = HiColor::ShowError;
+#endif
 	}
+
+	m_renderState.tintColor = color;
+	m_stateChanges |= int(StateChange::TintColor);
 }
 
 //____ clearTintColor() _____________________________________________________________
@@ -504,11 +515,10 @@ HiColor GfxDeviceGen2::fixedBlendColor() const
 
 void GfxDeviceGen2::setRenderLayer(int layer)
 {
-
 	if (!m_pActiveCanvas)
 	{
-		//TODO: Error handling!
-
+		GfxBase::throwError(ErrorLevel::Error, ErrorCode::IllegalCall, "No active canvas. Cannot set render layer.",
+			this, &TYPEINFO, __func__, __FILE__, __LINE__);
 		return;
 	}
 
@@ -531,8 +541,8 @@ int GfxDeviceGen2::renderLayer() const
 {
 	if (!m_pActiveCanvas)
 	{
-		//TODO: Error handling!
-
+		GfxBase::throwError(ErrorLevel::Error, ErrorCode::IllegalCall, "No active canvas. Cannot get render layer.",
+			this, &TYPEINFO, __func__, __FILE__, __LINE__);
 		return 0;
 	}
 
@@ -554,15 +564,15 @@ bool GfxDeviceGen2::beginRender()
 {
 	if (m_bRendering)
 	{
-		//TODO: Error handling!
-
+		GfxBase::throwError(ErrorLevel::Error, ErrorCode::IllegalCall, "Already in rendering state.",
+			this, &TYPEINFO, __func__, __FILE__, __LINE__);
 		return false;
 	}
 
 	if( !m_pBackend )
 	{
-		//TODO: Error handling!
-
+		GfxBase::throwError(ErrorLevel::Error, ErrorCode::IllegalCall, "No backend assigned.",
+			this, &TYPEINFO, __func__, __FILE__, __LINE__);
 		return false;
 	}
 	
@@ -577,8 +587,8 @@ bool GfxDeviceGen2::endRender()
 {
 	if (!m_bRendering)
 	{
-		//TODO: Error handling!
-
+		GfxBase::throwError(ErrorLevel::Error, ErrorCode::IllegalCall, "Not in rendering state.",
+			this, &TYPEINFO, __func__, __FILE__, __LINE__);
 		return false;
 	}
 
@@ -587,7 +597,9 @@ bool GfxDeviceGen2::endRender()
 
 	if (!m_canvasStack.empty())
 	{
-		//TODO: Error handling!
+		GfxBase::throwError(ErrorLevel::Error, ErrorCode::IllegalCall, "Rendering ended with active canvas updates.",
+			this, &TYPEINFO, __func__, __FILE__, __LINE__);
+		return false;
 	}
 
 	return true;
@@ -2496,13 +2508,12 @@ void GfxDeviceGen2::drawSegments(const RectSPX& dest, int nSegments, const HiCol
 
 void GfxDeviceGen2::flipDrawSegments(const RectSPX& dest, int nSegments, const HiColor* pSegmentColors, int nEdgeStrips, const int* pEdgeStrips, int edgeStripPitch, GfxFlip flip, TintMode tintMode)
 {
-	if (!m_pActiveCanvas || !m_pBackend)
+	if (!m_pActiveCanvas)
 	{
-		//TODO: Error handling!
-
+		GfxBase::throwError(ErrorLevel::Error, ErrorCode::IllegalCall, "No active canvas to draw segments to.",
+			this, &TYPEINFO, __func__, __FILE__, __LINE__);
 		return;
 	}
-
 
 	auto pFactory = m_pBackend->edgemapFactory();
 

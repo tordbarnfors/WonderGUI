@@ -476,7 +476,7 @@ namespace wg
 		err = FT_Load_Glyph( m_ftFace, pGlyph->kerningIndex, FT_LOAD_RENDER | FT_LOAD_COLOR | m_renderFlags );
 		if( err )
         {
-			//TODO: Error handling!
+			GfxBase::throwError(ErrorLevel::Error, ErrorCode::Internal, "FreeType failed to load glyph for bitmap generation", this, &FreeTypeFont::TYPEINFO, __func__, __FILE__, __LINE__);
 			
             if( bDifferentSize )
                 FT_Set_Char_Size( m_ftFace, m_size, 0, 0,0 );

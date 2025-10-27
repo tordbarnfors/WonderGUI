@@ -180,6 +180,7 @@ namespace wg
 	const Color8 Color8::YellowGreen 		( 0xFF9acd32 );
 
 	const HiColor HiColor::Undefined(-1, -1, -1, -1);
+	const HiColor HiColor::ShowError(4096, 0, 2048, 4096);
 	const HiColor HiColor::Transparent(0, 0, 0, 0);
 	const HiColor HiColor::TransparentBlack(0, 0, 0, 0);
 	const HiColor HiColor::TransparentWhite(4096, 4096, 4096, 0);

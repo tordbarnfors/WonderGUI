@@ -22,6 +22,7 @@
 
 
 #include <wg_gradyent.h>
+#include <wg_gfxbase.h>
 
 namespace wg
 {
@@ -34,8 +35,8 @@ namespace wg
 	{
 		if (!top.isValid() || !bottom.isValid() || !left.isValid() || !right.isValid() )
 		{
-			//TODO: Error handling!
-
+			GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Invalid color(s) specified.",
+				nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return nullptr;
 		}
 

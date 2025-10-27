@@ -323,7 +323,8 @@ namespace wg
 			SurfaceFactory* pFactory = m_pFactory ? m_pFactory : Base::defaultSurfaceFactory();
 			if (!pFactory)
 			{
-				//TODO: Error handling!
+				Base::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite,
+					"No surface factory available to create canvas surface.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 				return nullptr;
 			}
 

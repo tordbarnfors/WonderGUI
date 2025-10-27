@@ -245,6 +245,7 @@ namespace wg
 		std::vector<Widget_p>   m_preRenderCalls;
 
 		bool				m_bDebugMode = false;
+		bool				m_bRendering = false;
 		Skin_p				m_pDebugOverlay;
 		int					m_afterglowFrames;
 		std::deque<PatchesSPX>	m_afterglowRects;	// Afterglow rects are placed in this queue.

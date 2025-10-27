@@ -92,8 +92,8 @@ namespace wg
 
 		if (updatesPerSecond < 0)
 		{
-			//TODO: Error handling!
-
+			Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "UpdatesPerSecond must be >= 0.",
+				this->m_pWidget, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return;
 		}
 

@@ -240,7 +240,7 @@ namespace wg
 
 		//.____ Appearance _____________________________________________________
 		
-		void			setRowSkins(Skin* pSkin1, Skin* pSkin2 = nullptr);
+		bool			setRowSkins(Skin* pSkin1, Skin* pSkin2 = nullptr);
 
 		//.____ Layout ______________________________________________________________
 

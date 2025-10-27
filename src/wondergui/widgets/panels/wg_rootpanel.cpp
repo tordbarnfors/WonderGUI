@@ -56,7 +56,7 @@ namespace wg
 	{ 
 		if (!pCanvas)
 		{
-			//TODO: Error handling!
+			Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Provided canvas is null.", nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return nullptr;
 		}
 
@@ -67,14 +67,20 @@ namespace wg
 	{
 		if( ref < CanvasRef_min || ref > CanvasRef_max || ref == CanvasRef::None )
 		{
-			//TODO: Error handling!
+			Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Provided CanvasRef is invalid.", nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);	
 			return nullptr;
 		}
 
 		GfxDevice* pUseDevice = pDevice ? pDevice : Base::defaultGfxDevice().rawPtr();
-		if( pUseDevice == nullptr || pUseDevice->canvas(ref).size.isEmpty() )
+		if (pUseDevice == nullptr)
 		{
-			//TODO: Error handling!
+			Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "No GfxDevice provided and no default GfxDevice set.", nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
+			return nullptr;
+		}
+
+		if(pUseDevice->canvas(ref).size.isEmpty() )
+		{
+			Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Provided CanvasRef does not refer to a valid canvas.", nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return nullptr;
 		}
 
@@ -257,9 +263,15 @@ namespace wg
 	{
         GfxDevice* pGfxDevice = m_pGfxDevice ? m_pGfxDevice : Base::defaultGfxDevice();
 
-        if( !pGfxDevice || pGfxDevice->canvas(canvasRef).size.isEmpty() )
+        if( !pGfxDevice )
 		{
-			//TODO: Error handling!
+			Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "No GfxDevice provided and no default GfxDevice set.", nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
+			return false;
+		}
+			
+		if( pGfxDevice->canvas(canvasRef).size.isEmpty() )
+		{
+			Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Provided CanvasRef does not refer to a valid canvas.", nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return false;
 		}
 
@@ -453,7 +465,13 @@ namespace wg
 	{
 		GfxDevice* pGfxDevice = m_pGfxDevice ? m_pGfxDevice : Base::defaultGfxDevice();
 
-		if( !pGfxDevice || m_canvas.size.isEmpty() )
+		if( !pGfxDevice )
+		{
+			Base::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No GfxDevice provided and no default GfxDevice set.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			return false;						// No GFX-device or no widgets to render.
+		}
+
+		if( m_canvas.size.isEmpty() )
 		{
 			//TODO: Error handling!
 			return false;						// No GFX-device or no widgets to render.
@@ -498,7 +516,10 @@ namespace wg
 
 		// Initialize GFX-device.
 
-		return pGfxDevice->beginRender();
+		if (pGfxDevice->beginRender())
+			m_bRendering = true;
+
+		return m_bRendering;
 	}
 
 
@@ -508,7 +529,14 @@ namespace wg
 	{
 		GfxDevice* pGfxDevice = m_pGfxDevice ? m_pGfxDevice : Base::defaultGfxDevice();
 
-		if( !pGfxDevice || m_canvas.size.isEmpty() )
+		if (!m_bRendering)
+		{
+			Base::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "GfxDevice not in rendering state. Did you forget to call beginRender()?", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			return false;
+		}
+
+
+		if( m_canvas.size.isEmpty() )
 		{
 			//TODO: Error handling!
 			return false;						// Missing GfxDevice or Canvas or widgets to render.
@@ -590,11 +618,12 @@ namespace wg
 	{
 		GfxDevice* pGfxDevice = m_pGfxDevice ? m_pGfxDevice : Base::defaultGfxDevice();
 
-		if( !pGfxDevice || m_canvas.size.isEmpty() )
+		if (!m_bRendering)
 		{
-			//TODO: Error handling!
-			return false;						// No GFX-device or no widgets to render.
+			Base::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "GfxDevice not in rendering state. Did you forget to call beginRender()?", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			return false;
 		}
+
 		
 		// Turn dirty patches into update patches
 		//TODO: Optimize by just making a swap.
@@ -603,6 +632,7 @@ namespace wg
 		m_updatedPatches.add(&m_dirtyPatches);
 		m_dirtyPatches.clear();
 
+		m_bRendering = false;
 		return pGfxDevice->endRender();
 	}
 
