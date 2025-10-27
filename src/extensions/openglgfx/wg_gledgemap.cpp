@@ -119,6 +119,8 @@ namespace wg
 
 	GlEdgemap::~GlEdgemap()
 	{
+		glDeleteTextures( 1, &m_textureId );
+		glDeleteBuffers(1, &m_bufferId);
 	}
 
 	//____ typeInfo() ____________________________________________________________
