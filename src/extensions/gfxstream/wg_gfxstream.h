@@ -26,6 +26,9 @@
 
 #include <wg_gfxtypes.h>
 
+
+//#define WG_GFXSTREAM_USE_SURFACE_UPDATE2
+
 namespace wg
 {
 	class GfxStream

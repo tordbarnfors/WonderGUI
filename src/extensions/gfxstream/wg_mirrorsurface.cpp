@@ -223,20 +223,22 @@ namespace wg
 
 		auto pBuffer = (uint8_t *) GfxBase::memStackAlloc(allocSize);
 
+#ifdef WG_GFXSTREAM_USE_SURFACE_UPDATE2
+
 		// Copy pixels from rectangles to continuous buffer memory.
 
 		auto pDest = pBuffer;
 
-		for( int i = 0 ; i < nRects ; i++ )
+		for (int i = 0; i < nRects; i++)
 		{
 			auto pLine = pixelBuffer.pixels + (pRects[i].y - pixelBuffer.rect.y) * pixelBuffer.pitch +
-							((pRects[i].x - pixelBuffer.rect.x) * pixelDescription.bits)/8;
+				((pRects[i].x - pixelBuffer.rect.x) * pixelDescription.bits) / 8;
 
 			int lineLength = (pixelBuffer.rect.w * pixelDescription.bits) / 8;
 
-			for( int y = 0 ; y < pixelBuffer.rect.h ; y++ )
+			for (int y = 0; y < pixelBuffer.rect.h; y++)
 			{
-				memcpy( pDest, pLine, lineLength );
+				memcpy(pDest, pLine, lineLength);
 				pLine += pixelBuffer.pitch;
 				pDest += lineLength;
 			}
@@ -244,18 +246,48 @@ namespace wg
 
 		// Stream SurfaceUpdate2 message and pixels.
 
-		StreamEncoder& encoder = * m_pEncoder;
+		StreamEncoder& encoder = *m_pEncoder;
 
-		encoder << GfxStream::Header{ GfxStream::ChunkId::SurfaceUpdate2, 0, 6 + nRects*16 };
+		encoder << GfxStream::Header{ GfxStream::ChunkId::SurfaceUpdate2, 0, 6 + nRects * 16 };
 		encoder << m_canvasRef;
 		encoder << uint8_t(0);
 		encoder << m_surfaceId;
-		encoder << (uint16_t) nRects;
+		encoder << (uint16_t)nRects;
 
-		for( int i = 0 ; i < nRects ; i++ )
+		for (int i = 0; i < nRects; i++)
 			encoder << pRects[i];
 
 		StreamBackend::_splitAndEncode(m_pEncoder, GfxStream::ChunkId::SurfacePixels, Compression::None, pBuffer, pBuffer + allocSize, 1);
+
+#else
+		// Send pixels using old SurfaceUpdate method for compatibility with old firmware.
+		// NO SUPPORT FOR CANVASREF!
+
+		StreamEncoder& encoder = *m_pEncoder;
+
+		for (int i = 0; i < nRects; i++)
+		{
+			encoder << GfxStream::Header{ GfxStream::ChunkId::SurfaceUpdate, 0, 18 };
+			encoder << m_surfaceId;
+			encoder << pRects[i];
+
+			auto pDest = pBuffer;
+
+			auto pLine = pixelBuffer.pixels + (pRects[i].y - pixelBuffer.rect.y) * pixelBuffer.pitch +
+				((pRects[i].x - pixelBuffer.rect.x) * pixelDescription.bits) / 8;
+
+			int lineLength = (pixelBuffer.rect.w * pixelDescription.bits) / 8;
+
+			for (int y = 0; y < pixelBuffer.rect.h; y++)
+			{
+				memcpy(pDest, pLine, lineLength);
+				pLine += pixelBuffer.pitch;
+				pDest += lineLength;
+			}
+
+			StreamBackend::_splitAndEncode(m_pEncoder, GfxStream::ChunkId::SurfacePixels, Compression::None, pBuffer, pDest, 1);
+		}
+#endif
 
 		// Cleanup
 
