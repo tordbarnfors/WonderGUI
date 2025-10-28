@@ -35,6 +35,7 @@
 #include <wg_drawerpanel.h>
 #include <wg_paddingcapsule.h>
 #include <wg_texteditor.h>
+#include <wg_lineeditor.h>
 #include <wg_tablepanel.h>
 #include <wg_splitpanel.h>
 #include <wg_selectbox.h>
@@ -140,6 +141,7 @@ namespace wg
 		virtual const TablePanel::Blueprint&		listTable() const = 0;		// Table for listing of items.
 
 		virtual const TextEditor::Blueprint&		textEditor() const = 0;
+		virtual const LineEditor::Blueprint&		lineEditor() const = 0;
 
 		virtual const SelectBox::Blueprint&			selectBox() const = 0;
 

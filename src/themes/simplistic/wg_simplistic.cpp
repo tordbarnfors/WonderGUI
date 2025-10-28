@@ -80,8 +80,11 @@ Simplistic::Simplistic( Font * pNormal, Font * pBold, Font * pItalic, Font * pMo
 	m_pFinePrintStyle = TextStyle::create(WGBP(TextStyle, _.font = m_pFontNormal, _.color = HiColor::Black, _.size = 9));
 
 
-	m_pBlackStyle = TextStyle::create( WGBP(TextStyle, _.font = m_pFontNormal, _.color = HiColor::Black, _.size = 12 ));
-	m_pWhiteStyle = TextStyle::create( WGBP(TextStyle, _.font = m_pFontNormal, _.color = HiColor::White, _.size = 12 ));
+	m_pBlackStyle = TextStyle::create( WGBP(TextStyle, _.font = m_pFontNormal, _.color = HiColor::Black, _.size = 12,	
+											_.states = { {State::Disabled, Color8::DarkGrey} } ));
+
+	m_pWhiteStyle = TextStyle::create( WGBP(TextStyle, _.font = m_pFontNormal, _.color = HiColor::White, _.size = 12,
+											_.states = { {State::Disabled, Color8::LightGrey} } ));
 
 	m_heading1Style = TextStyle::create( WGBP(TextStyle, _.font = m_pFontNormal, _.color = HiColor::Black, _.size = 20));
 	m_heading2Style = TextStyle::create( WGBP(TextStyle, _.font = m_pFontBold, _.color = HiColor::Black, _.size = 20));
@@ -102,19 +105,19 @@ Simplistic::Simplistic( Font * pNormal, Font * pBold, Font * pItalic, Font * pMo
 
 	m_pPlateSkin = BlockSkin::create( WGBP(BlockSkin,
 										_.surface = pWidgets,
-										_.firstBlock = { 34,37,10,10 },
+										_.firstBlock = { 0,60,10,10 },
 										_.padding = 3,
 										_.frame = 3 ));
 
 	m_pCanvasSkin = BlockSkin::create(WGBP(BlockSkin,
 		_.surface = pWidgets,
-		_.firstBlock = { 58,37,10,10 },
+		_.firstBlock = { 24,60,10,10 },
 		_.padding = 3,
 		_.frame = 3));
 
 	m_pWindowSkin = BlockSkin::create(WGBP(BlockSkin,
 		_.surface = pWidgets,
-		_.firstBlock = { 70,37,10,10 },
+		_.firstBlock = { 36,60,10,10 },
 		_.padding = 5,
 		_.frame = 3));
 
@@ -189,7 +192,7 @@ Simplistic::Simplistic( Font * pNormal, Font * pBold, Font * pItalic, Font * pMo
 		_.firstBlock = { 0,37,10,10 },
 		_.axis = Axis::X,
 		_.blockSpacing = 1,
-		_.states = { State::Default, State::Checked, State::Disabled }
+		_.states = { State::Default, State::Checked, State::Disabled, State::DisabledChecked }
 	));
 
 	auto pRadioButtonSkin = BlockSkin::create(WGBP(BlockSkin,
@@ -292,6 +295,11 @@ Simplistic::Simplistic( Font * pNormal, Font * pBold, Font * pItalic, Font * pMo
 		_.rowSpacing = 1);
 
 	m_textEditor = WGBP(TextEditor,
+		_.skin = m_pCanvasSkin,
+		_.editor.style = m_pBlackStyle
+	);
+
+	m_lineEditor = WGBP(LineEditor,
 		_.skin = m_pCanvasSkin,
 		_.editor.style = m_pBlackStyle
 	);
@@ -588,6 +596,11 @@ const TablePanel::Blueprint& Simplistic::listTable() const
 const TextEditor::Blueprint& Simplistic::textEditor() const
 {
 	return m_textEditor;
+}
+
+const LineEditor::Blueprint& Simplistic::lineEditor() const
+{
+	return m_lineEditor;
 }
 
 const SelectBox::Blueprint& Simplistic::selectBox() const

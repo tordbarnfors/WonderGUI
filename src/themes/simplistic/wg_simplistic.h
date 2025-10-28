@@ -132,6 +132,7 @@ namespace wg
 
 		const TablePanel::Blueprint&		listTable() const override;
 		const TextEditor::Blueprint&		textEditor() const override;
+		const LineEditor::Blueprint&		lineEditor() const override;
 		const SelectBox::Blueprint&			selectBox() const override;
 
 
@@ -202,6 +203,7 @@ namespace wg
 		TablePanel::Blueprint	m_listTable;
 
 		TextEditor::Blueprint	m_textEditor;
+		LineEditor::Blueprint	m_lineEditor;
 		SelectBox::Blueprint	m_selectBox;
 
 		TextDisplay::Blueprint	m_windowTitleBar;
