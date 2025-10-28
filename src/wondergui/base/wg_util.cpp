@@ -577,7 +577,7 @@ namespace wg
 
 			if ((usedBits & int(StateEnum::Disabled)) != 0)
 			{
-				indexTableSize += 8 >> std::min(indexShift,3);
+				indexTableSize += 8*16 >> std::min(indexShift,6);
 				indexMask |= int(StateEnum::Disabled);
 			}
 		}
