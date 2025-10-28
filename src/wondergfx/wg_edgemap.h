@@ -45,24 +45,24 @@ namespace wg
 	public:
 
 		const static int maxSegments = 16;			// We keep this global for now. Might never need to restrict it more.
-		
+
 		// Edgemap has either flat colors, a horizontal colorstrip, a vertical colorstrip or both vertical
-		// and horizontal colorstrips. This needs to be decided when Edgemap is created and can be defined 
+		// and horizontal colorstrips. This needs to be decided when Edgemap is created and can be defined
 		// either by:
 		//
 		// 1. Setting the 'paletteType' variable directly to the format wanted.
 		// 2. Setting the 'colors' pointer will give you a palette of flat colors.
-		// 3. Setting tintmaps for each segment through the 'tintmaps' pointer. 
-		//	  This will generate a palette of horizontal and/or vertical colorstrips 
+		// 3. Setting tintmaps for each segment through the 'tintmaps' pointer.
+		//	  This will generate a palette of horizontal and/or vertical colorstrips
 		//	  as needed by the pointed to tintmaps.
 		// 4. Setting the 'colorstripsX' and/or 'colorstripsY' pointers directly.
-		
-		// Setting colors and colorstrips pointers in same blueprint is not allowed. 
+
+		// Setting colors and colorstrips pointers in same blueprint is not allowed.
 		// You can however set tintmaps and colors at the same time. Entries in the
 		// tintmap list that are nullptr will then receive their colors from the color
 		// list instead. If color list is not specified nullptr entries will be transparent.
 
-		// Setting paletteType and appropriate pointers in same blueprint is allowed and can be a way of 
+		// Setting paletteType and appropriate pointers in same blueprint is allowed and can be a way of
 		// for example forcing tintmaps even if all segments have flat colors to start with.
 
 		struct Blueprint
@@ -77,13 +77,13 @@ namespace wg
 
 			const Tintmap_p * 	tintmaps	= nullptr;			// Needs to have one tintmap per segement if any.
 			int					segments	= 0;				// Mandatory.
-		
+
 
 			SizeI				size;							// Mandatory.
 
 		};
-	   	 
-		
+
+
     	//.____ Identification __________________________________________
 
 		const TypeInfo&     typeInfo(void) const override;
@@ -138,9 +138,9 @@ namespace wg
 		Edgemap() {};
 		Edgemap(const Blueprint& bp);
 		virtual ~Edgemap();
-		
+
 		static bool	_validateBlueprint(const Blueprint& bp);
-	
+
 		virtual void 	_importSamples(SampleOrigo origo, const spx* pSource, int edgeBegin, int edgeEnd,
 									   int sampleBegin, int sampleEnd, int edgePitch, int samplePitch);
 
@@ -157,10 +157,10 @@ namespace wg
 		int			m_nbRenderSegments;
 
 		//
-		
 
-		char* m_pBuffer;
-		spx* m_pSamples;						// Stored vertically, e.g. samples for first column for all edges before samples for second column etc
+
+		char* m_pBuffer = nullptr;
+		spx* m_pSamples = nullptr;						// Stored vertically, e.g. samples for first column for all edges before samples for second column etc
 
 		HiColor*	m_pColorstripsX = nullptr;	// Horizontal colorstrips for segment 1, then segment 2 etc. or null if none.
 		HiColor*	m_pColorstripsY = nullptr;	// Vertical colorstrips for segment 1, then segment 2 etc. or null if none.
