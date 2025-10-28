@@ -43,7 +43,6 @@ public:
 private:
 
 	bool			_setupGUI(Visitor* pVisitor);
-	bool			_loadSkins(Visitor* pVisitor);
 	wg::Widget_p	_buildButtonRow();
 	wg::Widget_p	_buildList();
 
@@ -68,12 +67,7 @@ private:
 	
 	Window_p			m_pWindow;
 
-	wg::Skin_p			m_pPlateSkin;
-	wg::Skin_p			m_pButtonSkin;
-	wg::Skin_p			m_pToggleButtonSkin;
-	wg::Skin_p			m_pCheckBoxSkin;
-	wg::Skin_p			m_pSectionSkin;
-	wg::Skin_p			m_pInputBoxSkin;
+	wg::Theme_p			m_pTheme;
 
 	wg::TextStyle_p		m_pTextStyle;
 	wg::TextStyle_p		m_pLabelStyle;
