@@ -154,7 +154,7 @@ namespace wg
 		void 	_setInfoForCanvasCompleted(Surface * pSurface, int nRects, const RectSPX * pUpdateRects );
 		void	_canvasCompleted();
 
-		Surface *						m_pCanvasCompleted;
+		Surface_p						m_pCanvasCompleted;
 		std::vector<RectI>				m_canvasCompletedRects;		// NOTE! Not SPX format!
 
 		static const Transform			s_blitFlipTransforms[GfxFlip_size];
