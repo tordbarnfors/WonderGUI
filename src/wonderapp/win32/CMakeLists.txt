@@ -6,6 +6,10 @@ source_group(Files REGULAR_EXPRESSION ".*")
 set(SOURCES
 
 	main.cpp
+    win32visitor.h
+    win32visitor.cpp
+    win32window.h
+    win32window.cpp
     ../common/wonderapp.h
     ../common/window.h
     ../common/window.cpp

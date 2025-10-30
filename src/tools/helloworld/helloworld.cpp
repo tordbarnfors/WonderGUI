@@ -58,30 +58,31 @@ bool MyApp::_setupGUI(Visitor* pVisitor)
 	auto pFontBlob = pVisitor->loadBlob("resources/DroidSans.ttf");
 	auto pFont = FreeTypeFont::create(pFontBlob);
 
-	m_pTextStyle = TextStyle::create(WGBP(TextStyle,
-									_.font = pFont,
-									_.size = 14,
-									_.color = Color8::Black,
-									_.states = {{State::Disabled, Color8::DarkGrey}
-	} ));
+	m_pTextStyle = TextStyle::create({
+		.color = Color8::Black,
+		.font = pFont, 
+		.size = 14,
+		.states = { {State::Disabled, Color8::DarkGrey}}
+	});
 
 	Base::setDefaultStyle(m_pTextStyle);
 
-	m_pTextLayoutCentered = BasicTextLayout::create(WGBP(BasicTextLayout,
-		_.placement = Placement::Center));
-
+	m_pTextLayoutCentered = BasicTextLayout::create({ .placement = Placement::Center });
 
 	//
 
 	auto pBgSkin = ColorSkin::create( Color::PapayaWhip );
 
-	auto pTextDisplay = TextDisplay::create( WGBP(TextDisplay,
-												  _.display.style = m_pTextStyle,
-												  _.display.layout = m_pTextLayoutCentered,
-												  _.display.text = "Hello World!",
-												  _.skin = pBgSkin
-												  )
-											);
+	auto pTextDisplay = TextDisplay::create({
+
+		.display = {
+			.layout = m_pTextLayoutCentered, 
+			.style = m_pTextStyle, 
+			.text = "Hello World!" 
+		},
+
+		.skin = pBgSkin
+	});
 
 	m_pWindow->setContent(pTextDisplay);
 	return true;

@@ -90,7 +90,7 @@ public:
 
 	std::string		selectFolderDialog(const std::string& title, const std::string& defaultPath) override;
 	
-	Window_p	createWindow(const Window::Blueprint& blueprint) override;
+	Window_p		createWindow(const Window::Blueprint& blueprint) override;
 
 	WonderApp::LibId	openLibrary(const std::string& path) override;
 	void*			loadSymbol(WonderApp::LibId lib, const std::string& symbol) override;

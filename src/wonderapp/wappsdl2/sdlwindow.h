@@ -45,7 +45,8 @@ public:
     const wg::TypeInfo&     typeInfo(void) const override;
     const static wg::TypeInfo   TYPEINFO;
     
-    
+    //.____ Misc ____________________________________________________
+
 	bool			setTitle(std::string& title) override;
 	std::string		title() const override;
 
