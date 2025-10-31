@@ -50,7 +50,7 @@ namespace wg
 		m_scale				= PluginCalls::surface->surfaceScale(object);
 		m_pixelFormat		= (PixelFormat)PluginCalls::surface->surfacePixelFormat(object);
 		m_pPixelDescription	= (PixelDescription*)PluginCalls::surface->surfacePixelDescription(object);
-		
+
 		wg_sizeI pixSize 	= PluginCalls::surface->surfacePixelSize(object);
 		m_size				= * (SizeI*) &pixSize;
 		m_sampleMethod		= (SampleMethod)PluginCalls::surface->surfaceSampleMethod(object);
@@ -107,11 +107,16 @@ namespace wg
 
 	//____ pullPixels() _______________________________________________________
 
-	void PluginSurface::pullPixels(const PixelBuffer& buffer, const RectI& bufferRect)
+	void PluginSurface::pullPixels(const PixelBuffer& buffer, const RectI& bufferRect, bool bAutoNotify)
 	{
 		wg_pixelBuffer pixbuf = { (wg_pixelFormat)buffer.format, buffer.pixels, (wg_color8*)buffer.palette, *(wg_rectI*)&buffer.rect, buffer.pitch };
 
 		PluginCalls::surface->pullPixelsFromRect(m_cSurface, &pixbuf, (const wg_rectI*)&bufferRect);
+
+		if( bAutoNotify )
+		{
+			notifyObservers(1, &bufferRect);
+		}
 	}
 
 	//____ freePixelBuffer() __________________________________________________

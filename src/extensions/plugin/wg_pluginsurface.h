@@ -66,7 +66,7 @@ namespace wg
 
 		const PixelBuffer	allocPixelBuffer(const RectI& rect) override;
 		bool				pushPixels(const PixelBuffer& buffer, const RectI& bufferRect) override;
-		void				pullPixels(const PixelBuffer& buffer, const RectI& bufferRect) override;
+		void				pullPixels(const PixelBuffer& buffer, const RectI& bufferRect, bool bAutoNotify = true) override;
 		void				freePixelBuffer(const PixelBuffer& buffer) override;
 
 		//.____  Rendering ____________________________________________________
@@ -78,7 +78,7 @@ namespace wg
 //		bool				copy(CoordI dest, Surface* pSrcSurf) override;								//The default implementation should work through the CABI-wall ...
 
 		//.____ Misc _________________________________________________________
-		 
+
 		int					addObserver(const std::function<void(int nRects, const RectI* pRects)>& func) override;
 		bool				removeObserver(int observerId) override;
 

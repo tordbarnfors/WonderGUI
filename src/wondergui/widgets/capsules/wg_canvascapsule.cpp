@@ -247,6 +247,8 @@ namespace wg
 
 			spx givenWidth = width - border.w;
 			SizeSPX defSize = slot._widget()->_defaultSize(scale);
+			if(defSize.w <= 0)
+				return 0;
 
 			spx wantedHeight = align(spx(int64_t(defSize.h * givenWidth) / defSize.w));
 			return wantedHeight + border.h;
@@ -265,6 +267,8 @@ namespace wg
 
 			spx givenHeight = height - border.h;
 			SizeSPX defSize = slot._widget()->_defaultSize(scale);
+			if(defSize.h <= 0)
+				return 0;
 
 			spx wantedWidth = align( spx(int64_t(defSize.w * givenHeight) / defSize.h));
 			return wantedWidth + border.w;
