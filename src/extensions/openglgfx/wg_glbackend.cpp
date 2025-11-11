@@ -1637,6 +1637,12 @@ bool GlBackend::canBeCanvas(const TypeInfo& type) const
 	return (type == GlSurface::TYPEINFO);
 }
 
+//____ waitForCompletion() ____________________________________________________
+
+void GlBackend::waitForCompletion()
+{
+	glFinish();
+}
 
 //____ surfaceFactory() ______________________________________________________
 
@@ -1810,9 +1816,6 @@ void GlBackend::beginSession( CanvasRef canvasRef, Surface * pCanvasSurface, int
 {
 	if( !pCanvasSurface && canvasRef != CanvasRef::Default )
 		return;
-
-	if( pCanvasSurface )
-		_setInfoForCanvasCompleted(pCanvasSurface, nUpdateRects, pUpdateRects );
 
 	// Reserve buffer for coordinates
 
@@ -2145,8 +2148,6 @@ void GlBackend::endSession()
 	m_pCommandQueue = nullptr;
 
 	m_objects.clear();
-
-	_canvasCompleted();
 }
 
 

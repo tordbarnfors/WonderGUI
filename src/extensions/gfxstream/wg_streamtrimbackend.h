@@ -88,6 +88,7 @@ namespace wg
 		bool	canBeBlitSource(const TypeInfo& type) const override;
 		bool	canBeCanvas(const TypeInfo& type) const override;
 
+		void	waitForCompletion() override;
 
 	protected:
 		StreamTrimBackend(GfxBackend* pBackend) : m_pBackend(pBackend) {}

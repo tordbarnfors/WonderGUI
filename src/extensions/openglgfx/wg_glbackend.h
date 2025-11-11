@@ -96,6 +96,8 @@ namespace wg
 		bool	canBeBlitSource(const TypeInfo& type) const override;
 		bool	canBeCanvas(const TypeInfo& type) const override;
 
+		void	waitForCompletion() override;
+
 		static void		setShaderBlob(Blob* pBlob) { s_pShaderPrograms = pBlob; }
 		static Blob_p	shaderBlob() { return s_pShaderPrograms; }
 

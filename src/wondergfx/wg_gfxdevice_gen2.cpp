@@ -1122,6 +1122,30 @@ void GfxDeviceGen2::_doFlattenLayers()
 
 	m_pBackend->endSession();
 
+	// Notify updated surface
+
+	Surface * pUpdatedSurf = canvasData.info.pSurface;
+	if( !pUpdatedSurf )
+		pUpdatedSurf = m_pBackend->canvasInfo(canvasData.info.ref)->pSurface;
+
+	if( pUpdatedSurf && pUpdatedSurf->hasObservers() )
+	{
+		m_pBackend->waitForCompletion();
+
+		int nRects = canvasData.updateRects.nRects;
+		auto pSpxRects = canvasData.updateRects.pRects;
+
+		int bufferSize = nRects * sizeof(RectI);
+		auto pPixelRects = (RectI*) GfxBase::memStackAlloc( bufferSize );
+
+		for( int i = 0 ; i < nRects ; i++ )
+			pPixelRects[i] = pSpxRects[i]/64;
+
+		pUpdatedSurf->notifyObservers(nRects, pPixelRects);
+
+		GfxBase::memStackFree( bufferSize );
+	}
+
 	// Release objects
 
 	for (auto& layer : canvasData.layers )

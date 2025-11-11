@@ -582,6 +582,19 @@ namespace wg
 		return can;
 	}
 
+	//____ waitForCompletion() ___________________________________________________
+
+	void BackendLogger::waitForCompletion()
+	{
+		if (m_pBackend)
+			m_pBackend->waitForCompletion();
+
+		if( m_pOStream )
+			*m_pOStream << "Called waitForCompletion()" << std::endl;
+	}
+
+
+
 	//____ setOStream() _______________________________________________________
 
 	void BackendLogger::setOStream( std::ostream * pStream )

@@ -85,6 +85,8 @@ public:
 	bool	canBeBlitSource(const TypeInfo& type) const override;
 	bool	canBeCanvas(const TypeInfo& type) const override;
 
+	void	waitForCompletion() override;
+
 protected:
 	BackendLogger(std::ostream * pStream, GfxBackend* pBackend) : m_pBackend(pBackend), m_pOStream(pStream) {}
 

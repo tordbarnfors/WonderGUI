@@ -265,6 +265,7 @@ namespace wg
 
 		virtual int			addObserver(const std::function<void(int nRects, const RectI* pRects)>& func);
 		virtual bool		removeObserver( int observerId );
+		inline	bool		hasObservers() const { return (m_pObserver != nullptr); }
 
 		virtual void		notifyObservers(int nRects, const RectI* pRects);
 

@@ -235,15 +235,12 @@ namespace wg
 			setCanvas(canvasRef);
 		else
 			setCanvas(pCanvas);
-
-		_setInfoForCanvasCompleted(m_pCanvas,nUpdateRects, pUpdateRects );
 	}
 
 	//____ _endSession() _______________________________________________________
 
 	void SoftBackend::endSession()
 	{
-		_canvasCompleted();
 	}
 
 	//____ setCanvas() _____________________________________________
@@ -1561,7 +1558,16 @@ namespace wg
 
 	bool SoftBackend::canBeCanvas(const TypeInfo& type) const
 	{
+		// Any type of surface can be a backend for software rendering as long as pixelbuffer can be reserved.
+
 		return true;
+	}
+
+	//____ waitForCompletion() ___________________________________________________
+
+	void SoftBackend::waitForCompletion()
+	{
+		return;
 	}
 
 	//____ setLineKernel() ____________________________________________________

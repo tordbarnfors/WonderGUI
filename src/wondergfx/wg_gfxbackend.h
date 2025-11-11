@@ -140,21 +140,16 @@ namespace wg
 		virtual SurfaceFactory_p	surfaceFactory() = 0;
 		virtual EdgemapFactory_p	edgemapFactory() = 0;
 
-
 		virtual int		maxEdges() const = 0;
 
 		virtual bool	canBeBlitSource(const TypeInfo& type) const = 0;
 		virtual bool	canBeCanvas(const TypeInfo& type) const = 0;
 
+		virtual void	waitForCompletion() = 0;
+
 	protected:
 		GfxBackend() {};
 		virtual ~GfxBackend() {};
-
-		void 	_setInfoForCanvasCompleted(Surface * pSurface, int nRects, const RectSPX * pUpdateRects );
-		void	_canvasCompleted();
-
-		Surface_p						m_pCanvasCompleted;
-		std::vector<RectI>				m_canvasCompletedRects;		// NOTE! Not SPX format!
 
 		static const Transform			s_blitFlipTransforms[GfxFlip_size];
 		static const int				s_defaultBlur[9];

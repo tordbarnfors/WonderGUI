@@ -338,6 +338,13 @@ namespace wg
 		return (type == RemoteSurface::TYPEINFO);
 	}
 
+	//____ waitForCompletion() ___________________________________________________
+
+	void StreamBackend::waitForCompletion()
+	{
+		return;
+	}
+
 	//____ _compressSplitAndEncodeSpx() _____________________________________________________
 
 	void StreamBackend::_compressSplitAndEncodeSpx( StreamEncoder * pEncoder, GfxStream::ChunkId chunkType, const spx * pBeg, const spx * pEnd )

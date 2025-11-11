@@ -259,6 +259,14 @@ namespace wg
 		return m_pBackend->canBeCanvas(type);
 	}
 
+	//____ waitForCompletion() ___________________________________________________
+
+	void StreamTrimBackend::waitForCompletion()
+	{
+		return m_pBackend->waitForCompletion();
+	}
+
+
 	//____ addNonMaskingSession() ________________________________________________
 
 	void StreamTrimBackend::addNonMaskingSession()
