@@ -36,8 +36,7 @@ WG_EXPORT int	wg_isTintmapOpaque( wg_obj tintmap );
 WG_EXPORT int	wg_isTintmapVertical( wg_obj tintmap );
 WG_EXPORT int	wg_isTintmapHorizontal( wg_obj tintmap );
 
-WG_EXPORT void 	wg_exportHorizontalColors( wg_obj tintmap, wg_spx length, wg_color* pOutput);
-WG_EXPORT void 	wg_exportVerticalColors( wg_obj tintmap, wg_spx length, wg_color* pOutput);
+WG_EXPORT void 	wg_exportColors( wg_obj tintmap, wg_sizeI tintmapSize, wg_color* pOutputX, wg_color* pOutputY);
 
 #ifdef __cplusplus
 }

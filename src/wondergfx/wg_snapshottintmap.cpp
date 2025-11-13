@@ -75,54 +75,45 @@ namespace wg
 		return TYPEINFO;
 	}
 
-	//____ exportHorizontalColors() ______________________________________________
+	//____ exportColors() ________________________________________________
 
-	void SnapshotTintmap::exportHorizontalColors(spx length, HiColor* pOutput)
+	void SnapshotTintmap::exportColors(SizeI tintmapSize, HiColor* pOutputX, HiColor* pOutputY )
 	{
-		if( m_bHorizontal )
+		//TODO: Optimize! No need to blend colors in a direction that only source or destination (or neither) have.
+
+		HiColor * pFromX = nullptr, * pToX = nullptr;
+		HiColor * pFromY = nullptr, * pToY = nullptr;
+
+		int bufferSizeX = 0;
+		int bufferSizeY = 0;
+
+		if( pOutputX )
 		{
-			int nColors = length / 64;
-
-			int bufferSize = sizeof(HiColor) * nColors * 2;
-			auto pBuffer = (HiColor*) GfxBase::memStackAlloc(bufferSize);
-
-			auto pFromColors = pBuffer;
-			auto pToColors = pBuffer + nColors;
-
-			m_pFrom->exportHorizontalColors(length, pFromColors);
-			m_pTo->exportHorizontalColors(length, pToColors);
-
-			m_pTransition->snapshot(m_timestamp, nColors, pFromColors, pToColors, pOutput);
-
-			GfxBase::memStackFree(bufferSize);
+			bufferSizeX = sizeof(HiColor) * tintmapSize.w * 2;
+			pFromX = (HiColor*) GfxBase::memStackAlloc(bufferSizeX);
+			pToX = pFromX + tintmapSize.w;
 		}
-		else
-			_fill(length, pOutput, HiColor::White);
-	}
 
-	//____ exportVerticalColors() ________________________________________________
-
-	void SnapshotTintmap::exportVerticalColors(spx length, HiColor* pOutput)
-	{
-		if( m_bVertical )
+		if( pOutputY )
 		{
-			int nColors = length / 64;
-
-			int bufferSize = sizeof(HiColor) * nColors * 2;
-			auto pBuffer = (HiColor*) GfxBase::memStackAlloc(bufferSize);
-
-			auto pFromColors = pBuffer;
-			auto pToColors = pBuffer + nColors;
-
-			m_pFrom->exportVerticalColors(length, pFromColors);
-			m_pTo->exportVerticalColors(length, pToColors);
-
-			m_pTransition->snapshot(m_timestamp, nColors, pFromColors, pToColors, pOutput);
-
-			GfxBase::memStackFree(bufferSize);
+			bufferSizeY = sizeof(HiColor) * tintmapSize.h * 2;
+			pFromY = (HiColor*) GfxBase::memStackAlloc(bufferSizeY);
+			pToY = pFromY + tintmapSize.h;
 		}
-		else
-			_fill(length, pOutput, HiColor::White);
+
+		m_pFrom->exportColors(tintmapSize, pFromX, pFromY);
+		m_pTo->exportColors(tintmapSize, pToX, pToY);
+
+		if( pOutputX )
+			m_pTransition->snapshot(m_timestamp, tintmapSize.w, pFromX, pToX, pOutputX);
+
+		if( pOutputY )
+			m_pTransition->snapshot(m_timestamp, tintmapSize.h, pFromY, pToY, pOutputY);
+
+		// Note: rember to do this in inverse allocation order.
+
+		GfxBase::memStackFree(bufferSizeY);
+		GfxBase::memStackFree(bufferSizeX);
 	}
 
 	//____ exportGradient() ______________________________________________________

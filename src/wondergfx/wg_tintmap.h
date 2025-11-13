@@ -55,8 +55,7 @@ namespace wg
 
 		//.____ Render ________________________________________________
 
-		virtual void exportHorizontalColors(spx length, HiColor* pOutput) = 0;
-		virtual void exportVerticalColors(spx length, HiColor* pOutput) = 0;
+		virtual void exportColors(SizeI tintmapSize, HiColor* pOutputX, HiColor* pOutputY ) = 0;
 
 		virtual Gradient exportGradient() = 0;			// To support legacy code.
 

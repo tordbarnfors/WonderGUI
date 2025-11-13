@@ -63,8 +63,7 @@ namespace wg
 
 		//.____ Render ________________________________________________
 
-		void exportHorizontalColors(spx length, HiColor* pOutput) override;
-		void exportVerticalColors(spx length, HiColor* pOutput) override;
+		void exportColors(SizeI tintmapSize, HiColor* pOutputX, HiColor* pOutputY ) override;
 
 		Gradient exportGradient() override;
 

@@ -179,11 +179,10 @@ namespace wg
 					{
 						auto pTintmap = bp.tintmaps[seg];
 
-						if (m_pColorstripsX)
-							pTintmap->exportHorizontalColors(bp.size.w * 64, m_pColorstripsX + seg * m_size.w);
+						HiColor * pColorstripsX = m_pColorstripsX ? m_pColorstripsX + seg * m_size.w : nullptr;
+						HiColor * pColorstripsY = m_pColorstripsY ? m_pColorstripsY + seg * m_size.h : nullptr;
 
-						if (m_pColorstripsY)
-							pTintmap->exportVerticalColors(bp.size.h * 64, m_pColorstripsY + seg * m_size.h);
+						pTintmap->exportColors(bp.size, pColorstripsX, pColorstripsY);
 					}
 					else if (bp.colors)
 					{
@@ -343,11 +342,10 @@ namespace wg
 		{
 			auto pGradyent = Gradyent::create(*pGradients++);
 
-			if (m_pColorstripsX)
-				pGradyent->exportHorizontalColors(m_size.w, m_pColorstripsX + seg * m_size.w);
+			HiColor * pColorstripsX = m_pColorstripsX ? m_pColorstripsX + seg * m_size.w : nullptr;
+			HiColor * pColorstripsY = m_pColorstripsY ? m_pColorstripsY + seg * m_size.h : nullptr;
 
-			if (m_pColorstripsY)
-				pGradyent->exportVerticalColors(m_size.w, m_pColorstripsY + seg * m_size.h);
+			pGradyent->exportColors(m_size, pColorstripsX, pColorstripsY);
 		}
 
 		if( m_pColorstripsX && m_bConstructed )
@@ -366,38 +364,28 @@ namespace wg
 
 		//TODO: Also check so that the tintmaps don't tint a direction we don't have colorstrips for.
 
+		auto pMaps = pTintmaps;
 
-		if (m_pColorstripsX)
+		int incX = m_pColorstripsX ? m_size.w : 0;
+		int incY = m_pColorstripsY ? m_size.h : 0;
+
+		HiColor * pColorstripsX = m_pColorstripsX + begin * incX;	// Any nullptr remains nullptr...
+		HiColor * pColorstripsY = m_pColorstripsY + begin * incY;
+
+		for (int seg = begin; seg < end; seg++)
 		{
-			auto pMaps = pTintmaps;
-			HiColor* pDest = m_pColorstripsX + begin * m_size.w;
+			Tintmap* pMap = *pMaps++;
+			pMap->exportColors(m_size, pColorstripsX, pColorstripsY);
 
-			for (int seg = begin; seg < end; seg++)
-			{
-				Tintmap* pMap = *pMaps++;
-
-				pMap->exportHorizontalColors(m_size.w, pDest);
-				pDest += m_size.w;
-			}
-
-			_colorsUpdated(int(m_pColorstripsX-m_pPalette) + begin * m_size.w, int(m_pColorstripsX - m_pPalette) + end * m_size.w);
+			pColorstripsX += incX;
+			pColorstripsY += incY;
 		}
 
-		if (m_pColorstripsY)
-		{
-			auto pMaps = pTintmaps;
-			HiColor* pDest = m_pColorstripsY + begin * m_size.h;
+		if( m_pColorstripsX )
+			_colorsUpdated(int(m_pColorstripsX - m_pPalette) + begin * m_size.w, int(m_pColorstripsX - m_pPalette) + end * m_size.w);
 
-			for (int seg = begin; seg < end; seg++)
-			{
-				Tintmap* pMap = *pMaps++;
-
-				pMap->exportVerticalColors(m_size.h, pDest);
-				pDest += m_size.h;
-			}
-
+		if( m_pColorstripsY )
 			_colorsUpdated(int(m_pColorstripsY - m_pPalette) + begin * m_size.h, int(m_pColorstripsY - m_pPalette) + end * m_size.h);
-		}
 
 		return true;
 	}

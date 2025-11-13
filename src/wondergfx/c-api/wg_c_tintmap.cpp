@@ -44,14 +44,9 @@ int wg_isTintmapHorizontal( wg_obj tintmap )
 	return getPtr(tintmap)->isHorizontal();
 }
 
-void wg_exportHorizontalColors( wg_obj tintmap, wg_spx length, wg_color* pOutput)
+void wg_exportColors( wg_obj tintmap, wg_sizeI tintmapSize, wg_color* pOutputX, wg_color* pOutputY)
 {
-	getPtr(tintmap)->exportHorizontalColors(length, (HiColor*) pOutput);
-}
-
-void wg_exportVerticalColors( wg_obj tintmap, wg_spx length, wg_color* pOutput)
-{
-	getPtr(tintmap)->exportVerticalColors(length, (HiColor*) pOutput);
+	getPtr(tintmap)->exportColors({tintmapSize.w, tintmapSize.h}, (HiColor*) pOutputX, (HiColor*) pOutputY);
 }
 
 

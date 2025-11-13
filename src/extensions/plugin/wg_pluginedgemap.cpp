@@ -92,7 +92,7 @@ namespace wg
 	}
 
 	bool PluginEdgemap::setColors( int begin, int end, const Tintmap_p * pTintmaps )
-	{
+{
 		if (m_paletteType == EdgemapPalette::Flat)
 			return false;
 
@@ -103,41 +103,35 @@ namespace wg
 		int nVert = m_paletteType == EdgemapPalette::ColorstripY || m_paletteType == EdgemapPalette::ColorstripXY ? m_size.h * entries: 0;
 
 		int mem = (nHorr + nVert) * sizeof(HiColor);
+		auto pBuffer = (HiColor *) Base::memStackAlloc( mem );
 
-		auto pDest = (HiColor *) Base::memStackAlloc( mem );
+		int incX = 0, incY = 0;
 
-		const wg_color * pColorStripX = nullptr;
-		const wg_color * pColorStripY = nullptr;
+		HiColor * pColorstripsX = nullptr;
+		HiColor * pColorstripsY = nullptr;
 
-		if (nHorr > 0 )
+		if( nHorr > 0 )
 		{
-			pColorStripX = reinterpret_cast<const wg_color *>(pDest);
-			auto pMaps = pTintmaps;
-
-			for (int i = 0 ; i < entries ; i++)
-			{
-				Tintmap* pMap = *pMaps++;
-
-				pMap->exportHorizontalColors(m_size.w, pDest);
-				pDest += m_size.w;
-			}
+			pColorstripsX = pBuffer;
+			incX = m_size.w;
 		}
 
-		if (nVert > 0)
+		if( nVert > 0 )
 		{
-			pColorStripY = reinterpret_cast<const wg_color *>(pDest);
-			auto pMaps = pTintmaps;
-
-			for (int i = 0 ; i < entries ; i++)
-			{
-				Tintmap* pMap = *pMaps++;
-
-				pMap->exportVerticalColors(m_size.h, pDest);
-				pDest += m_size.h;
-			}
+			pColorstripsY = pBuffer + nHorr;
+			incY = m_size.h;
 		}
 
-		bool retVal = (bool) PluginCalls::edgemap->setEdgemapColorsFromStrips( m_cEdgemap, begin, end, pColorStripX, pColorStripY );
+		for (int seg = begin; seg < end; seg++)
+		{
+			Tintmap* pMap = *pTintmaps++;
+			pMap->exportColors(m_size, pColorstripsX, pColorstripsY);
+
+			pColorstripsX += incX;
+			pColorstripsY += incY;
+		}
+
+		bool retVal = (bool) PluginCalls::edgemap->setEdgemapColorsFromStrips( m_cEdgemap, begin, end, reinterpret_cast<const wg_color *>(pBuffer), reinterpret_cast<const wg_color *>(pBuffer+nHorr) );
 		Base::memStackFree( mem );
 		return retVal;
 	}

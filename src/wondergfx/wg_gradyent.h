@@ -52,8 +52,7 @@ namespace wg
 
 		//.____ Render ________________________________________________
 
-		void exportHorizontalColors(spx length, HiColor* pOutput) override;
-		void exportVerticalColors(spx length, HiColor* pOutput) override;
+		void exportColors(SizeI tintmapSize, HiColor* pOutputX, HiColor* pOutputY ) override;
 
 		Gradient exportGradient() override;
 
@@ -67,6 +66,7 @@ namespace wg
 		Gradyent(HiColor top, HiColor bottom, HiColor left, HiColor right);
 		virtual ~Gradyent() {};
 
+		void	_export(int entries, HiColor * pDest, const HiColor& from, const HiColor& to);
 		void	_setFlags();
 
 		HiColor		m_top;

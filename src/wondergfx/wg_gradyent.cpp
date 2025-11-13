@@ -103,79 +103,47 @@ namespace wg
 		return TYPEINFO;
 	}
 
-	//____ exportHorizontalColors() ______________________________________________
+	//____ exportColors() ______________________________________________
 
-	void Gradyent::exportHorizontalColors(spx length, HiColor* pOutput)
+	void Gradyent::exportColors(SizeI tintmapSize, HiColor* pOutputX, HiColor* pOutputY )
 	{
-		if( m_bHorizontal )
+		if( pOutputX )
 		{
-			HiColor left = m_left;
-			HiColor right = m_right;
-
-			if (!m_bVertical)
+			if( m_bHorizontal )
 			{
-				left *= m_top;
-				right *= m_top;
+				HiColor left = m_left;
+				HiColor right = m_right;
+
+				if (!pOutputY)
+				{
+					left *= m_top;
+					right *= m_top;
+				}
+
+				_export( tintmapSize.w, pOutputX, left, right );
 			}
-
-			int diffR = int(right.r - int(left.r));
-			int diffG = int(right.g - int(left.g));
-			int diffB = int(right.b - int(left.b));
-			int diffA = int(right.a - int(left.a));
-
-			int len = length / 64;
-			for (int i = 0; i < len; i++)
-			{
-				HiColor col;
-
-				col.r = left.r + (diffR * i / len);
-				col.g = left.g + (diffG * i / len);
-				col.b = left.b + (diffB * i / len);
-				col.a = left.a + (diffA * i / len);
-
-				pOutput[i] = col;
-			}
+			else
+				_fill( tintmapSize.w, pOutputX, HiColor::White);
 		}
-		else
-			_fill(length, pOutput, HiColor::White);
-	}
 
-	//____ exportVerticalColors() ________________________________________________
-
-	void Gradyent::exportVerticalColors(spx length, HiColor* pOutput)
-	{
-		if( m_bVertical )
+		if( pOutputY )
 		{
-			HiColor top = m_top;
-			HiColor bottom = m_bottom;
-
-			if (!m_bHorizontal)
+			if( m_bVertical )
 			{
-				top *= m_left;
-				bottom *= m_left;
+				HiColor top = m_top;
+				HiColor bottom = m_bottom;
+
+				if (!pOutputY)
+				{
+					top *= m_left;
+					bottom *= m_left;
+				}
+
+				_export( tintmapSize.h, pOutputY, top, bottom );
 			}
-
-			int diffR = int(bottom.r - int(top.r));
-			int diffG = int(bottom.g - int(top.g));
-			int diffB = int(bottom.b - int(top.b));
-			int diffA = int(bottom.a - int(top.a));
-
-
-			int len = length / 64;
-			for (int i = 0; i < len; i++)
-			{
-				HiColor col;
-
-				col.r = top.r + (diffR * i / len);
-				col.g = top.g + (diffG * i / len);
-				col.b = top.b + (diffB * i / len);
-				col.a = top.a + (diffA * i / len);
-
-				pOutput[i] = col;
-			}
+			else
+				_fill( tintmapSize.h, pOutputY, HiColor::White);
 		}
-		else
-			_fill(length, pOutput, HiColor::White);
 	}
 
 	//____ exportGradient() ______________________________________________________
@@ -204,6 +172,28 @@ namespace wg
 		return verticalAlpha * horizontalAlpha;
 	}
 
+	//____ _export() _____________________________________________________________
+
+	void Gradyent::_export(int entries, HiColor * pDest, const HiColor& from, const HiColor& to)
+	{
+		int diffR = int(to.r - int(from.r));
+		int diffG = int(to.g - int(from.g));
+		int diffB = int(to.b - int(from.b));
+		int diffA = int(to.a - int(from.a));
+
+		for (int i = 0; i < entries; i++)
+		{
+			HiColor col;
+
+			col.r = from.r + (diffR * i / entries);
+			col.g = from.g + (diffG * i / entries);
+			col.b = from.b + (diffB * i / entries);
+			col.a = from.a + (diffA * i / entries);
+
+			pDest[i] = col;
+		}
+	}
+
 	//____ _setFlags() ________________________________________________________
 
 	void Gradyent::_setFlags()
@@ -212,8 +202,6 @@ namespace wg
 		m_bHorizontal = (m_left != m_right);
 		m_bVertical = (m_top != m_bottom);
 	}
-
-
 }
 
 

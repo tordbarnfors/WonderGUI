@@ -3419,26 +3419,15 @@ void GfxDeviceGen2::_encodeStateChanges()
 				assert(pTintmap);
 
 				int tintmapStartOfs = (int) colorBuffer.size();
-				int nHorrColors = 0;
-				int nVertColors = 0;
+				int nHorrColors = pTintmap->isHorizontal() ? newState.tintmapRect.w/64 : 0;
+				int nVertColors = pTintmap->isVertical() ? newState.tintmapRect.h/64 : 0;
 
-				if (pTintmap->isHorizontal())
-				{
-					nHorrColors = newState.tintmapRect.w/64;
-					int ofs = tintmapStartOfs;
+				colorBuffer.resize(tintmapStartOfs + nHorrColors + nVertColors );
 
-					colorBuffer.resize(ofs + nHorrColors );
-					pTintmap->exportHorizontalColors(newState.tintmapRect.w, &colorBuffer[ofs]);
-				}
+				HiColor * pOutX = nHorrColors ? &colorBuffer[tintmapStartOfs] : nullptr;
+				HiColor * pOutY = nVertColors ? &colorBuffer[tintmapStartOfs + nHorrColors] : nullptr;
 
-				if (pTintmap->isVertical())
-				{
-					nVertColors = newState.tintmapRect.h/64;
-					int ofs = tintmapStartOfs + nHorrColors;
-
-					colorBuffer.resize(ofs + nVertColors );
-					pTintmap->exportVerticalColors(newState.tintmapRect.h, &colorBuffer[ofs]);
-				}
+				pTintmap->exportColors(newState.tintmapRect.size()/64, pOutX, pOutY);
 
 				if( newState.tintColor != HiColor::Undefined )
 				{
