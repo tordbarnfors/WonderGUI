@@ -107,6 +107,24 @@ namespace wg
 
 	void Gradyent::exportColors(SizeI tintmapSize, HiColor* pOutputX, HiColor* pOutputY )
 	{
+		// Special case if we have no gradient at all
+
+		if( !m_bHorizontal && !m_bVertical )
+		{
+			if( pOutputX && pOutputY )
+			{
+				_fill( tintmapSize.w, pOutputX, m_left);
+				_fill( tintmapSize.w, pOutputX, m_top);
+			}
+			else if( pOutputX )
+				_fill( tintmapSize.w, pOutputX, m_left * m_top);
+			else
+				_fill( tintmapSize.h, pOutputY, m_left * m_top);
+			return;
+		}
+
+		// Normal case
+
 		if( pOutputX )
 		{
 			if( m_bHorizontal )

@@ -65,7 +65,7 @@ namespace wg
 
 	protected:
 
-		void _fill(spx length, HiColor * pOutput, const HiColor& color);
+		void _fill(int length, HiColor * pOutput, const HiColor& color);
 
 		
 		bool	m_bOpaque;

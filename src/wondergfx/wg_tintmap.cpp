@@ -38,11 +38,9 @@ namespace wg
 
 	//____ _fill() __________________________________________________
 
-	void Tintmap::_fill(spx length, HiColor * pOutput, const HiColor& color )
+	void Tintmap::_fill(int length, HiColor * pOutput, const HiColor& color )
 	{
-		int len = length / 64;
-
-		for( int i = 0 ; i < len ; i++ )
+		for( int i = 0 ; i < length ; i++ )
 			* pOutput ++ = color;
 	}
 }
