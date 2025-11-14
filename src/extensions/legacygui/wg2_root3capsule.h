@@ -16,12 +16,9 @@
 class WgRoot3Capsule : public WgWidget, public wg::RootPanel
 {
 public:
-	// Legacy WG methods (overrides WgWidget methods)
+	WgRoot3Capsule();
 
-	// Using clearColor HiColor::Undefined is preferred when the WG3
-	// widget is opaque; it has slightly better performance. Otherwise
-	// it's recommended to set it to HiColor::Transparent.
-	WgRoot3Capsule(wg::HiColor clearColor = wg::HiColor::Undefined);
+	// Legacy WG methods (overrides WgWidget methods)
 	const char *Type( void ) const override;
 	bool MarkTest( const WgCoord& ofs ) override;
 	WgWidget* NewOfMyType() const override { return new WgRoot3Capsule(); }
@@ -36,7 +33,7 @@ public:
 
 protected:
 	// Legacy WG methods (overrides WgWidget methods)
-	void _onCloneContent( const WgWidget * _pOrg ) override;
+	void _onCloneContent( const WgWidget * _pOrg ) override {} // Deprecated
 	void _onRender( wg::GfxDevice * pDevice, const WgRect& _canvas, const WgRect& _window ) override;
 	void _onNewSize( const WgSize& size ) override;
 	void _setScale( int scale ) override;
@@ -48,8 +45,4 @@ protected:
 	void _childRequestRender( wg::StaticSlot* pSlot, const wg::RectSPX& rect ) override;
 	void _replaceChild( wg::StaticSlot * pSlot, wg::Widget * pNewChild ) override;
 	void _preRender() override;
-
-
-	wg::Surface_p m_canvasSurface;
-	wg::HiColor m_clearColor = wg::HiColor::Undefined;
 };

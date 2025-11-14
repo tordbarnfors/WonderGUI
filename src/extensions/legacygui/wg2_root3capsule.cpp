@@ -2,8 +2,8 @@
 
 static const char c_widgetType[] = {"WgRoot3Capsule"};
 
-WgRoot3Capsule::WgRoot3Capsule(wg::HiColor clearColor)
-: WgWidget(), wg::RootPanel(), m_clearColor{clearColor}
+WgRoot3Capsule::WgRoot3Capsule()
+: WgWidget(), wg::RootPanel()
 {}
 
 const char *WgRoot3Capsule::Type(void) const
@@ -49,60 +49,24 @@ WgSize WgRoot3Capsule::PreferredPixelSize() const
 
 bool WgRoot3Capsule::addPreRenderCall(wg::Widget* pWidget)
 {
-	RootPanel::addPreRenderCall(pWidget);
 	// Also notify WG2 holder
-	_requestPreRenderCall();
-	return true;
-}
-
-void WgRoot3Capsule::_onCloneContent( const WgWidget * _pOrg )
-{
-	// TODO: what?
+	if(_requestPreRenderCall())
+	{
+		RootPanel::addPreRenderCall(pWidget);
+		return true;
+	}
+	return false;
 }
 
 void WgRoot3Capsule::_onRender( wg::GfxDevice * pDevice, const WgRect& _canvas, const WgRect& _window )
 {
 	WgWidget::_onRender(pDevice, _canvas, _window);
-	if(m_canvasSurface == nullptr || m_canvasSurface->pixelSize() != _canvas.size())
-	{
-		m_canvasSurface = pDevice->surfaceFactory()->createSurface(WGBP(Surface,
-			_.size = _canvas.size(),
-			_.format = wg::PixelFormat::BGRA_8,
-			_.canvas = true
-		));
-		m_canvasSurface->fill(wg::HiColor::Transparent);
-		RootPanel::setCanvas(m_canvasSurface);
-	}
-	if(pDevice != m_pGfxDevice)
-	{
-		RootPanel::setGfxDevice(pDevice);
-	}
 
-	RootPanel::beginRender(); // Does the pre-render calls and such, if any
+	m_skin.render(pDevice, _canvas * 64, wg::RootPanel::m_scale, wg::State::Default);
 
-	// If clear color is set, clear canvas where it is going to be drawn on
-	// (otherwise this widget has to be completely opaque in order to render
-	// correctly)
-	if(m_dirtyPatches.size() > 0 && m_clearColor != wg::HiColor::Undefined && m_bVisible)
-	{
-		pDevice->beginCanvasUpdate(m_canvasSurface, m_dirtyPatches.size(), m_dirtyPatches.begin());
-		pDevice->setBlendMode(wg::BlendMode::Replace);
+	if( !slot.isEmpty() )
+		slot._widget()->_render( pDevice, _canvas * 64, _canvas * 64 );
 
-		pDevice->fill(m_clearColor);
-
-		pDevice->setBlendMode(wg::BlendMode::Blend);
-		pDevice->endCanvasUpdate();
-	}
-	RootPanel::renderSection(geo());
-
-	// These things are otherwise done in RootPanel::endRender()
-	m_updatedPatches.clear();
-	m_updatedPatches.add(&m_dirtyPatches);
-	m_dirtyPatches.clear();
-
-	// Blit the result
-	pDevice->setBlitSource(m_canvasSurface);
-	pDevice->stretchBlit(_canvas * 64);
 }
 
 void WgRoot3Capsule::_onNewSize( const WgSize& size )
@@ -140,7 +104,6 @@ void WgRoot3Capsule::_childRequestRender(wg::StaticSlot* pSlot, const wg::RectSP
 {
 	if (m_bVisible)
 	{
-		addDirtyPatch(rect + m_geo.pos());
 		// Pass it on to legacy parent
 		WgWidget::_requestRender(rect / 64);
 	}
