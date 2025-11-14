@@ -230,7 +230,7 @@ namespace wg
 
 	bool RemoteSurface::fill(const RectI& region, HiColor color )
 	{
-		*m_pEncoder << GfxStream::Header{ GfxStream::ChunkId::FillSurface, 2+16+8 };
+		*m_pEncoder << GfxStream::Header{ GfxStream::ChunkId::FillSurface, 0, 2+16+8 };
 		*m_pEncoder << m_inStreamId;
 		*m_pEncoder << region;
 		*m_pEncoder << color;
