@@ -69,7 +69,7 @@ namespace wg
         {
             m_bScrolling = true;
             m_latestTimestamp = _startReceiveUpdates();
-			
+
 			_removeOutdatedSamples();
         }
     }
@@ -128,12 +128,13 @@ namespace wg
 
 		// Make sure we have a canvas
 
-        if (m_pScrollSurface == nullptr)
-        {
-            m_pScrollSurface = pDevice->surfaceFactory()->createSurface(WGBP(Surface, _.size = surfaceSize / 64, _.format = m_scrollSurfaceFormat, _.canvas = true));
+		if (m_pScrollSurface == nullptr)
+		{
+			SurfaceFactory_p surfaceFactory = m_pSurfaceFactory ? m_pSurfaceFactory : pDevice->surfaceFactory();
+			m_pScrollSurface = surfaceFactory->createSurface(WGBP(Surface, _.size = surfaceSize / 64, _.format = m_scrollSurfaceFormat, _.canvas = true));
 			m_rightEdgeOfs = surfaceSize.w;
 			m_dirtLen = surfaceSize.w;
-        }
+		}
 
         // Render the charts
 
@@ -222,9 +223,9 @@ namespace wg
 			}
 			return;
 		}
-		
+
         m_latestTimestamp = microsecTimestamp;
-      
+
         if( !m_bPreRenderRequested )
             m_bPreRenderRequested = _requestPreRenderCall();
 
