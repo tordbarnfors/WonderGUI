@@ -26,10 +26,10 @@
 
 #include <wg_chart.h>
 #include <wg_waveform.h>
+#include <wg_surfacefactory.h>
 
 namespace wg
 {
- 
 	class ScrollChart;
 	typedef StrongPtr<ScrollChart> ScrollChart_p;
 	typedef WeakPtr<ScrollChart> ScrollChart_wp;
@@ -68,6 +68,7 @@ namespace wg
 			bool			pickable = false;
 			uint8_t			pickCategory = 0;
 			bool			pickHandle = false;
+			PixelFormat		pixelFormat = PixelFormat::BGRA_8;
 			PointerStyle	pointer = PointerStyle::Undefined;
 			bool			selectable = true;
 
@@ -76,6 +77,7 @@ namespace wg
 
 			Skin_p			skin;
 			bool			stickyFocus = false;
+			SurfaceFactory_p	surfaceFactory = nullptr;
 			bool			tabLock = false;
 
 			TextLayout_p	textLayout;
@@ -120,6 +122,8 @@ namespace wg
 			m_flip = bp.flip;
 			m_bAxisSwapped = ( bp.flip == GfxFlip::Rot90 || bp.flip == GfxFlip::Rot90FlipX || bp.flip == GfxFlip::Rot90FlipY ||
 							  bp.flip == GfxFlip::Rot270 || bp.flip == GfxFlip::Rot270FlipX || bp.flip == GfxFlip::Rot270FlipY );
+			m_scrollSurfaceFormat = bp.pixelFormat;
+			m_pSurfaceFactory = bp.surfaceFactory;
 		}
 
 		virtual ~ScrollChart();
@@ -149,6 +153,7 @@ namespace wg
 		int			m_latency = 10000;
 
 	private:
+		SurfaceFactory_p m_pSurfaceFactory;
 		Surface_p	m_pScrollSurface;
 
 		int64_t		m_rightEdgeTimestamp = 0;

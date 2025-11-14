@@ -191,6 +191,8 @@ namespace wg
 
 			bool			dropTarget = false;
 			bool			disabled = false;
+
+			EdgemapFactory_p	edgemapFactory = nullptr;
 			Finalizer_p		finalizer = nullptr;
 
 			GfxFlip			flip = GfxFlip::None;
@@ -214,6 +216,7 @@ namespace wg
 			bool			pickable = false;
 			uint8_t			pickCategory = 0;
 			bool			pickHandle = false;
+			PixelFormat		pixelFormat = PixelFormat::BGRA_8;
 			PointerStyle	pointer = PointerStyle::Undefined;
 
 			Placement		rightLabelPlacement = Placement::East;
@@ -222,6 +225,7 @@ namespace wg
 			bool			selectable = true;
 			Skin_p			skin;
 			bool			stickyFocus = false;
+			SurfaceFactory_p	surfaceFactory = nullptr;
 			bool			tabLock = false;
 
 			TextLayout_p	textLayout;
@@ -259,7 +263,8 @@ namespace wg
 		template<class BP>
 		AreaScrollChart(const BP& bp): ScrollChart(bp), entries(this)
 		{
-			m_bPadWithLastSample 	= bp.padWithLastSample;
+			m_bPadWithLastSample = bp.padWithLastSample;
+			m_pEdgemapFactory = bp.edgemapFactory;
 		}
 
 		virtual ~AreaScrollChart();
@@ -288,6 +293,8 @@ namespace wg
 
 		bool m_bTransitioning = false;
 		bool m_bPadWithLastSample = false;
+
+		EdgemapFactory_p m_pEdgemapFactory;
 	};
 
 } // namespace wg

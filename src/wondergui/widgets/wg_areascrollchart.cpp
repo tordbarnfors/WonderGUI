@@ -259,7 +259,7 @@ namespace wg
 				_.outlineColor = entry.m_outlineColor,
 				_.outlineGradient = entry.m_outlineGradient,
 				_.topOutlineThickness = entry.m_topOutlineThickness*m_scale
-			) );
+			), m_pEdgemapFactory);
 
 
 			// Find first sample to deal with
