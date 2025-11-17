@@ -88,6 +88,7 @@ bool scrollChartTest(WgRootPanel* pRoot);
 bool flipCanvasTest(WgRootPanel* pRoot);
 bool mouseOverMovingObjectsTest(WgRootPanel* pRoot);
 
+bool packPanelHierarchyTest(WgRootPanel* pRoot);
 
 
 
@@ -359,9 +360,10 @@ int main ( int argc, char** argv )
 //	blendFixedColorTest(pRoot);
 //	multiSliderClickThroughTest(pRoot);
 //	chartTest(pRoot);
-	scrollChartTest(pRoot);
+//	scrollChartTest(pRoot);
 //	flipCanvasTest(pRoot);
 //	mouseOverMovingObjectsTest(pRoot);
+	packPanelHierarchyTest(pRoot);
 
 	
 	WgBase::PrintWidgetTrees(std::cout);
@@ -1509,6 +1511,45 @@ bool gfxStreamingTest(WgRootPanel* pRoot)
 	return true;
 }
 
+
+//____ packPanelHierarchyTest() _________________________________________________________
+
+bool packPanelHierarchyTest(WgRootPanel* pRoot)
+{
+
+
+	WgPackPanel* pOuterPack = new WgPackPanel();
+	pOuterPack->SetOrientation(wg::Axis::Y);
+	pOuterPack->SetSkin(wg::ColorSkin::create(wg::Color::Red));
+
+	pRoot->SetChild(pOuterPack);
+
+	WgPackPanel* pInnerPack = new WgPackPanel();
+	pInnerPack->SetOrientation(wg::Axis::Y);
+	pInnerPack->SetSkin(wg::ColorSkin::create(wg::Color::Green));
+	pOuterPack->AddChild(pInnerPack)->SetWeight(0.f);
+
+	WgFiller* pOuterFiller = new WgFiller();
+	pOuterFiller->SetColors(WgColorset::Create(wg::Color::Blue));
+	pOuterPack->AddChild(pOuterFiller)->SetWeight(1.f);
+
+
+	WgFiller* pInnerFiller1 = new WgFiller();
+	pInnerFiller1->SetColors(WgColorset::Create(wg::Color::Yellow));
+	pInnerFiller1->SetPreferredPointSize({ 100,30 });
+	pInnerPack->AddChild(pInnerFiller1)->SetWeight(0.f);
+
+	WgTextDisplay* pInnerText = new WgTextDisplay();
+	pInnerText->SetText("Inner Text");
+	pInnerPack->AddChild(pInnerText)->SetWeight(1.f);
+
+	WgFiller* pInnerFiller2 = new WgFiller();
+	pInnerFiller2->SetColors(WgColorset::Create(wg::Color::Cyan));
+	pInnerFiller1->SetPreferredPointSize({ 100,30 });
+	pInnerPack->AddChild(pInnerFiller2)->SetWeight(0.f);
+
+	return true;
+}
 
 //____ setupGUI() ______________________________________________________________
 
