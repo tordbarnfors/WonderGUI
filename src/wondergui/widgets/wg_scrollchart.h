@@ -124,6 +124,9 @@ namespace wg
 							  bp.flip == GfxFlip::Rot270 || bp.flip == GfxFlip::Rot270FlipX || bp.flip == GfxFlip::Rot270FlipY );
 			m_scrollSurfaceFormat = bp.pixelFormat;
 			m_pSurfaceFactory = bp.surfaceFactory;
+
+			if (Util::pixelFormatToDescription(m_scrollSurfaceFormat).A_mask == 0)
+				m_bOpaqueChart = true;
 		}
 
 		virtual ~ScrollChart();

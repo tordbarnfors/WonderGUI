@@ -198,6 +198,8 @@ class Chart;
 			m_topLabelSpacing = bp.topLabelSpacing;
 			m_bottomLabelSpacing = bp.bottomLabelSpacing;
 
+			m_bGridLinesOnTop = bp.gridOnTop;
+
 			glow._initFromBlueprint(bp.glow);
 		}
 
@@ -205,6 +207,8 @@ class Chart;
 
 		virtual void	_fullRefreshOfChart() = 0;
 		virtual void	_renderCharts(GfxDevice* pDevice, const RectSPX& canvas) = 0;
+
+		void			_renderGridLines(GfxDevice* pDevice, const RectSPX& canvas, float rangeMin, float rangeMax);
 
 		void			_resize(const SizeSPX& size, int scale) override;
 		void			_update(int microPassed, int64_t microsecTimestamp) override;
@@ -222,6 +226,8 @@ class Chart;
 
 		float			m_displayCeiling = 0.f;
 		float			m_displayFloor = 1.f;
+
+		bool			m_bOpaqueChart = false;			// Set if the chart area is fully covered by chart graphics.
 
 	private:
 
@@ -258,6 +264,8 @@ class Chart;
 		float			m_endDisplayCeiling = 0.f;
 		float			m_startDisplayFloor = 1.f;
 		float			m_endDisplayFloor = 1.f;
+
+		bool			m_bGridLinesOnTop = false;
 	};
 
 

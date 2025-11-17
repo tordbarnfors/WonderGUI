@@ -56,6 +56,7 @@ namespace wg
 		void			sub( const PatchesT<T> * pSource, int ofs = 0, int len = INT_MAX );
 
 		inline void		push( const RectT<T>& rect );											// Adds the rect (no optimizations, overlap may occur).
+		inline void		push(int nRects, const RectT<T> * pRects );								// Adds the rect (no optimizations, overlap may occur).
 		int				push( const PatchesT<T> * pSource, int ofs = 0, int len = INT_MAX );
 		inline RectT<T>	pop();																// Pops last rect from the PatchesT.
 
@@ -97,6 +98,18 @@ namespace wg
 			_expandMem(1);
 		m_pFirst[m_size++]=rect;
 	}
+
+	template <class T>
+	void PatchesT<T>::push(int nRects, const RectT<T>* pRects)
+	{
+		if (m_size + nRects > m_capacity)
+			_expandMem(m_size + nRects - m_capacity);
+		for (int i = 0; i < nRects; i++)
+			m_pFirst[m_size++] = pRects[i];
+	}
+
+
+
 
 	template <class T>
 	RectT<T> PatchesT<T>::pop()

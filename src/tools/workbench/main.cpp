@@ -747,7 +747,7 @@ int main(int argc, char** argv)
 		//	spinKnobTest(pSlot);
 		//  animKnobTest(pSlot);
 		//	canvasStackTest(pSlot);
-			doubleSkinTest(pSlot);
+		//	doubleSkinTest(pSlot);
 		//	timerTest(pSlot);
 		//	animPlayerTest(pSlot);
 		//	selectBoxTest(pSlot);
@@ -769,7 +769,7 @@ int main(int argc, char** argv)
 		//	twoSlotPanelTest(pSlot);
 		//	customSkinTest(pSlot);
 		//	areaChartTest(pSlot);
-		//	areaChartTest2(pSlot);
+			areaChartTest2(pSlot);
 		//	plotChartTest(pSlot);
 		//	nortonCommanderTest(pSlot);
 		//	skinMarginTest(pSlot);
@@ -792,7 +792,7 @@ int main(int argc, char** argv)
 		//	labelCapsuleTest(pSlot);
 		//	elipsisTest(pSlot);
 		//	packPanelSpacingBugTest(pSlot);
-		bracketSkinTest(pSlot);
+		//	bracketSkinTest(pSlot);
 
 		//------------------------------------------------------
 		// Program Main Loop

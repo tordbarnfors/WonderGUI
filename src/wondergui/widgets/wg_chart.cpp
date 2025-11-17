@@ -154,49 +154,29 @@ namespace wg
 		RectSPX graphCanvas = m_chartCanvas + _canvas.pos();
 
 		if (!m_displaySkin.isEmpty())
-			m_displaySkin.render(pDevice, graphCanvas + m_displaySkin.contentBorder(m_scale, m_state), m_scale, m_state);
+		{
+			if (m_bOpaqueChart)
+			{
+				PatchesSPX patches;
+
+				patches.push(pDevice->clipListSize(), pDevice->clipList() );
+				patches.sub(graphCanvas);
+
+				pDevice->pushClipList(patches.size(), patches.begin());
+				m_displaySkin.render(pDevice, graphCanvas + m_displaySkin.contentBorder(m_scale, m_state), m_scale, m_state);
+				pDevice->popClipList();
+			}
+			else
+				m_displaySkin.render(pDevice, graphCanvas + m_displaySkin.contentBorder(m_scale, m_state), m_scale, m_state);
+		}
 
 		float	rangeMin = std::min(m_displayCeiling, m_displayFloor);
 		float	rangeMax = std::max(m_displayCeiling, m_displayFloor);
 
-		// Render grid xLines
+		// Render grid lines (if at bottom)
 
-		{
-			for (auto& line : xLines)
-			{
-				if (line.m_bVisible && line.m_value >= rangeMin && line.m_value <= rangeMax)
-				{
-					float valueFactor = m_chartCanvas.h / (m_displayFloor - m_displayCeiling);
-
-					CoordSPX pos = graphCanvas.pos();
-					pos.y += (line.m_value - m_displayCeiling) * valueFactor;
-
-					HiColor color = line.m_color == HiColor::Undefined ? m_gridColor : line.m_color;
-					pts thickness = line.m_thickness > 0 ? line.m_thickness : m_gridThickness;
-
-					pDevice->drawLine(pos, Direction::Right, graphCanvas.w, color, thickness * m_scale);
-				}
-			}
-		}
-
-		// Render grid yLines
-
-		{
-			for (auto& line : yLines)
-			{
-				if (line.m_bVisible)
-				{
-					CoordSPX pos = graphCanvas.pos();
-					pos.x += line.m_value * graphCanvas.w;
-
-					HiColor color = line.m_color == HiColor::Undefined ? m_gridColor : line.m_color;
-					pts thickness = line.m_thickness > 0 ? line.m_thickness : m_gridThickness;
-
-					pDevice->drawLine(pos, Direction::Down, graphCanvas.h, color, thickness * m_scale);
-				}
-			}
-		}
-
+		if( !m_bGridLinesOnTop )
+		_renderGridLines(pDevice, graphCanvas, rangeMin, rangeMax);
 
 		// Render graphs
 
@@ -226,6 +206,12 @@ namespace wg
 		}
 		else
 			_renderCharts(pDevice,graphCanvas);
+
+		// Render grid lines (if on top)
+
+		if (m_bGridLinesOnTop)
+			_renderGridLines(pDevice, graphCanvas, rangeMin, rangeMax);
+
 
 		// Render labels
 
@@ -272,6 +258,50 @@ namespace wg
 
 
 	}
+
+	//____ _renderGridLines() ________________________________________________________
+
+	void Chart::_renderGridLines(GfxDevice* pDevice, const RectSPX& canvas, float rangeMin, float rangeMax)
+	{
+		// Render grid xLines
+
+		{
+			for (auto& line : xLines)
+			{
+				if (line.m_bVisible && line.m_value >= rangeMin && line.m_value <= rangeMax)
+				{
+					float valueFactor = m_chartCanvas.h / (m_displayFloor - m_displayCeiling);
+
+					CoordSPX pos = canvas.pos();
+					pos.y += (line.m_value - m_displayCeiling) * valueFactor;
+
+					HiColor color = line.m_color == HiColor::Undefined ? m_gridColor : line.m_color;
+					pts thickness = line.m_thickness > 0 ? line.m_thickness : m_gridThickness;
+
+					pDevice->drawLine(pos, Direction::Right, canvas.w, color, thickness * m_scale);
+				}
+			}
+		}
+
+		// Render grid yLines
+
+		{
+			for (auto& line : yLines)
+			{
+				if (line.m_bVisible)
+				{
+					CoordSPX pos = canvas.pos();
+					pos.x += line.m_value * canvas.w;
+
+					HiColor color = line.m_color == HiColor::Undefined ? m_gridColor : line.m_color;
+					pts thickness = line.m_thickness > 0 ? line.m_thickness : m_gridThickness;
+
+					pDevice->drawLine(pos, Direction::Down, canvas.h, color, thickness * m_scale);
+				}
+			}
+		}
+	}
+
 
 	//____ _requestRenderChartArea() ____________________________________________
 

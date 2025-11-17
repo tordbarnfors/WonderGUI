@@ -187,6 +187,7 @@ namespace wg
 			Glow::Blueprint	glow;
 
 			HiColor			gridColor = Color::DarkGray;
+			bool			gridOnTop = false;
 			pts				gridThickness = 1;
 
 			int				id = 0;
