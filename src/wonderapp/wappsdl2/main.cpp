@@ -217,6 +217,11 @@ int main(int argc, char *argv[] )
 
 		bContinue = process_system_events();
 
+		if (!bContinue)
+		{
+			int x = 0;
+		}
+
 		if (bContinue)
 		{
 			// Don't collide with eventWatcher.

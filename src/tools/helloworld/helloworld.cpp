@@ -19,11 +19,11 @@ WonderApp_p WonderApp::create()
 
 //____ init() _________________________________________________________________
 
-bool MyApp::init(Visitor* pVisitor)
+bool MyApp::init(wapp::API * pAPI)
 {
-	m_pAppVisitor = pVisitor;
+	m_pAPI = pAPI;
 
-	if (!_setupGUI(pVisitor))
+	if (!_setupGUI(pAPI))
 	{
 		printf("ERROR: Failed to setup GUI!\n");
 		return false;
@@ -49,13 +49,13 @@ void MyApp::exit()
 
 //____ _setupGUI() ____________________________________________________________
 
-bool MyApp::_setupGUI(Visitor* pVisitor)
+bool MyApp::_setupGUI(wapp::API* pAPI)
 {
-	m_pWindow = pVisitor->createWindow({ .size = {800,600}, .title = "Hello World" });
+	m_pWindow = wapp::Window::create(pAPI, { .size = {800,600}, .title = "Hello World" });
 
 	//
 
-	auto pFontBlob = pVisitor->loadBlob("resources/DroidSans.ttf");
+	auto pFontBlob = pAPI->loadBlob("resources/DroidSans.ttf");
 	auto pFont = FreeTypeFont::create(pFontBlob);
 
 	m_pTextStyle = TextStyle::create({
@@ -84,6 +84,6 @@ bool MyApp::_setupGUI(Visitor* pVisitor)
 		.skin = pBgSkin
 	});
 
-	m_pWindow->setContent(pTextDisplay);
+	m_pWindow->mainCapsule()->slot = pTextDisplay;
 	return true;
 }

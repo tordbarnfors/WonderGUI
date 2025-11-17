@@ -15,17 +15,17 @@ class MyApp : public WonderApp
 {
 public:
 
-	bool		init(Visitor* pVisitor) override;
+	bool		init(wapp::API* pAPI) override;
 	bool		update() override;
 	void		exit() override;
 
 
 private:
 
-	bool			_setupGUI(Visitor* pVisitor);
+	bool			_setupGUI(wapp::API* pAPI);
 
-	WonderApp::Visitor * m_pAppVisitor = nullptr;
-	Window_p			m_pWindow = nullptr;
+	wapp::API *		m_pAPI = nullptr;
+	wapp::Window_p	m_pWindow = nullptr;
 	
 	TextStyle_p		m_pTextStyle;
 	TextStyle_p		m_pLabelStyle;

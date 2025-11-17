@@ -160,7 +160,7 @@ add_subdirectory(extensions/legacygui)
 
 add_subdirectory(extensions/plugin)
 
-add_subdirectory(wonderapp/wappsdl2)
+#add_subdirectory(wonderapp/wappsdl2)
 add_subdirectory(wonderapp/win32)
 
 add_subdirectory(tools)

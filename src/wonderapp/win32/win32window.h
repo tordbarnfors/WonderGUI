@@ -25,6 +25,7 @@
 #include <wonderapp.h>
 #include <wondergui.h>
 
+#include <wappwindowapi.h>
 #include <windows.h>
 
 
@@ -35,33 +36,40 @@ typedef	wg::StrongPtr<Win32Window>	Win32Window_p;
 typedef	wg::WeakPtr<Win32Window>	Win32Window_wp;
 
 
-class Win32Window : public Window
+class Win32Window : public wg::Object, public wapp::WindowAPI::SysCalls
 {
 public:
 
     //.____ Creation __________________________________________
 
-    static Win32Window_p        create(const Blueprint& blueprint);
+    static Win32Window_p	create(wapp::WindowAPI* pUserWindow, wg::Placement origin, wg::Coord pos, wg::Size size, const std::string& title, bool resizable, bool open);
 
     //.____ Identification __________________________________________
 
-    const wg::TypeInfo& typeInfo(void) const override;
+    const wg::TypeInfo&		typeInfo(void) const override;
     const static wg::TypeInfo   TYPEINFO;
 
     //.____ Misc ____________________________________________________
 
-    bool			setTitle(std::string& title) override;
-    std::string		title() const override;
+    void	render();
+	wapp::WindowAPI* userWindow() const { return m_pUserWindow; }
+	wg::RootPanel_p	 rootPanel() const { return m_pRootPanel; }
 
-    bool			setIcon(wg::Surface* pIcon) override;
-
-    virtual void	render();
 
 protected:
-    Win32Window(const std::string& title, wg::RootPanel* pRootPanel, const wg::Rect& geo);
+    Win32Window(wapp::WindowAPI* pUserWindow, wg::Placement origin, wg::Coord pos, wg::Size size, const std::string& title, bool resizable, bool open);
     virtual ~Win32Window();
 
-    wg::Rect        _updateWindowGeo(const wg::Rect& geo) override;
+	void			_destroy() override;
+	wg::Rect		_setGeo(const wg::Rect& geo) override;
+	bool			_requestFocus() override;
+	bool			_releaseFocus() override;
+	bool			_minimize() override;
+	bool			_restore() override;
 
-    HWND            m_windowHandle;
+    HWND				m_windowHandle;
+
+	wapp::WindowAPI *	m_pUserWindow;
+	wg::RootPanel_p		m_pRootPanel;
+
 };

@@ -25,9 +25,9 @@
 #include <wondergui.h>
 
 
-//____ Win32Visitor ________________________________________________________
+//____ Win32API ________________________________________________________
 
-class Win32Visitor : public WonderApp::Visitor
+class Win32API : public wapp::API
 {
 public:
 
@@ -41,10 +41,10 @@ public:
 
 	wg::Theme_p					initDefaultTheme() override;
 
-	bool						notifyPopup(const std::string& title, const std::string& message, WonderApp::IconType iconType) override;
+	bool						notifyPopup(const std::string& title, const std::string& message, wapp::IconType iconType) override;
 
-	WonderApp::DialogButton		messageBox(	const std::string& title, const std::string& message, WonderApp::DialogType dialogType,
-											WonderApp::IconType iconType, WonderApp::DialogButton defaultButton = WonderApp::DialogButton::Undefined) override;
+	wapp::DialogButton			messageBox(	const std::string& title, const std::string& message, wapp::DialogType dialogType,
+											wapp::IconType iconType, wapp::DialogButton defaultButton = wapp::DialogButton::Undefined) override;
 
 	std::string					inputBox(const std::string& title, const std::string& message, const std::string& defaultInput) override;
 
@@ -62,12 +62,16 @@ public:
 
 	std::string					selectFolderDialog(const std::string& title, const std::string& defaultPath) override;
 
-	Window_p					createWindow(const Window::Blueprint& blueprint) override;
 
-	WonderApp::LibId			openLibrary(const std::string& path) override;
-	void*						loadSymbol(WonderApp::LibId lib, const std::string& symbol) override;
-	bool						closeLibrary(WonderApp::LibId lib) override;
+	wapp::LibId					openLibrary(const std::string& path) override;
+	void*						loadSymbol(wapp::LibId lib, const std::string& symbol) override;
+	bool						closeLibrary(wapp::LibId lib) override;
 
 	std::string					resourceDirectory() override;
+
+	wapp::WindowAPI::Result		_createWindow(wapp::WindowAPI* pAPI, wg::Placement origin, wg::Coord pos, wg::Size size, const std::string& title, bool resizable, bool open) override;
+
+private:
+
 
 };

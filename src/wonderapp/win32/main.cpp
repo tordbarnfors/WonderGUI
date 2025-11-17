@@ -3,8 +3,11 @@
 #include <wondergui.h>
 #include <windows.h>
 
+#include <wg_softsurfacefactory.h>
+#include <wg_softbackend.h>
+
 #include <win32window.h>
-#include <win32visitor.h>
+#include <win32api.h>
 
 using namespace wg;
 
@@ -56,7 +59,7 @@ LRESULT CALLBACK windowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 		{
 			Win32Window* pointer = reinterpret_cast<Win32Window*>(GetWindowLongPtr(hwnd, GWLP_USERDATA));
 
-			bool bClose = pointer->_onCloseRequest();
+			bool bClose = pointer->userWindow()->onClose();
 
 			if (bClose)
 				DestroyWindow(hwnd);
@@ -110,14 +113,22 @@ int main(int arch, char * argv[] ) {
 	Base::init(&hostBridge);
 
 
-	// Create app and visitor, make any app-specific initialization
+	auto pFactory = wg::SoftSurfaceFactory::create();
+
+	auto pBackend = wg::SoftBackend::create();
+	auto pGfxDevice = wg::GfxDeviceGen2::create(pBackend);
+
+	Base::setDefaultSurfaceFactory(pFactory);
+
+
+	// Create app and API visitor, make any app-specific initialization
 
 	auto pApp = WonderApp::create();
-	auto pVisitor = new Win32Visitor();
+	auto pAPI = new Win32API();
 
 	// Initialize the app
 
-	bool bContinue = pApp->init(pVisitor);
+	bool bContinue = pApp->init(pAPI);
 
 
 //	auto pWin = Win32Window::create({ .size = {800,600}, .title = "WonderGUI TEST" } );

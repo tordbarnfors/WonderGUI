@@ -5,14 +5,17 @@ source_group(Files REGULAR_EXPRESSION ".*")
 
 set(SOURCES
 
+    ../common/wonderapp.h
+    ../common/wappapi.h
+    ../common/wappwindowapi.h
+    ../common/wappwindow.h
+    ../common/wappwindow.cpp
+
 	main.cpp
-    win32visitor.h
-    win32visitor.cpp
+    win32api.h
+    win32api.cpp
     win32window.h
     win32window.cpp
-    ../common/wonderapp.h
-    ../common/window.h
-    ../common/window.cpp
 )
 
 set(INCDIRS

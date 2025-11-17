@@ -25,24 +25,24 @@
 
 using namespace wg;
 
-const TypeInfo Win32Window::TYPEINFO = { "Win32Window", &Window::TYPEINFO };
+const TypeInfo Win32Window::TYPEINFO = { "Win32Window", &Object::TYPEINFO };
 
 
 //____ create() _______________________________________________________________
 
-Win32Window_p Win32Window::create(const Blueprint& blueprint)
+Win32Window_p Win32Window::create(wapp::WindowAPI* pUserWindow, wg::Placement origin, wg::Coord pos, wg::Size size, const std::string& title, bool resizable, bool open)
 {
-	auto pRootPanel = RootPanel::create();
-
-
-	return Win32Window_p(new Win32Window(blueprint.title, pRootPanel, blueprint.size ));
+	return Win32Window_p(new Win32Window(pUserWindow, origin, pos, size, title, resizable, open));
 }
 
 //____ constructor ___________________________________________________
 
-Win32Window::Win32Window(const std::string& title, wg::RootPanel* pRootPanel, const wg::Rect& geo)
-    : Window(pRootPanel, geo)
+Win32Window::Win32Window(wapp::WindowAPI* pUserWindow, wg::Placement origin, wg::Coord pos, wg::Size size, const std::string& title, bool resizable, bool open)
 {
+	m_pUserWindow = pUserWindow;
+
+	Rect geo = { pos, size };
+
 
 
 	m_windowHandle = CreateWindow("WappWindowClass", title.c_str(), WS_OVERLAPPEDWINDOW, geo.x, geo.h, geo.w, geo.h, 0, 0, 0, this);
@@ -52,10 +52,27 @@ Win32Window::Win32Window(const std::string& title, wg::RootPanel* pRootPanel, co
 		int x = 0;
 		// Error handling!
 	}
+	else
+	{
+		
 
-	ShowWindow(m_windowHandle, SW_SHOW);
-	UpdateWindow(m_windowHandle);
+		auto pCanvas = Base::defaultSurfaceFactory()->createSurface({
+			.canvas = true,
+			.format = PixelFormat::BGRA_8,
+			.size = { (int) size.w, (int) size.h}
+			});
 
+
+		m_pRootPanel = RootPanel::create(pCanvas, Base::defaultGfxDevice());
+
+		// Show window if open is true
+
+		if (open)
+		{
+			ShowWindow(m_windowHandle, SW_SHOW);
+			UpdateWindow(m_windowHandle);
+		}
+	}
 }
 
 //____ destructor _____________________________________________________
@@ -72,27 +89,6 @@ const wg::TypeInfo& Win32Window::typeInfo(void) const
 }
 
 
-//____ setTitle() _____________________________________________________________
-
-bool Win32Window::setTitle(std::string& title)
-{
-	return false;
-}
-
-//____ title() ________________________________________________________________
-
-std::string Win32Window::title() const
-{
-	return "";
-}
-
-//____ setIcon() ______________________________________________________________
-
-bool Win32Window::setIcon(wg::Surface* pIcon)
-{
-	return false;
-}
-
 //____ render() _______________________________________________________________
 
 void Win32Window::render()
@@ -100,9 +96,50 @@ void Win32Window::render()
 
 }
 
-//____ _updateWindowGeo() _____________________________________________________
+//____ _destroy() _____________________________________________________________
 
-wg::Rect Win32Window::_updateWindowGeo(const wg::Rect& geo)
+void Win32Window::_destroy()
 {
+	//TODO: Implement!!!
+}
+
+//____ _setGeo() ______________________________________________________________
+
+Rect Win32Window::_setGeo(const wg::Rect& geo)
+{
+	//TODO: Implement!!!
 	return geo;
 }
+
+//____ _requestFocus() ________________________________________________________
+
+bool Win32Window::_requestFocus()
+{
+	//TODO: Implement!!!
+	return false;
+}
+
+//____ _releaseFocus() ________________________________________________________
+
+bool Win32Window::_releaseFocus()
+{
+	//TODO: Implement!!!
+	return false;
+}
+
+//____ _minimize() ____________________________________________________________
+
+bool Win32Window::_minimize()
+{
+	//TODO: Implement!!!
+	return false;
+}
+
+//____ _restore() _____________________________________________________________
+
+bool Win32Window::_restore()
+{
+	//TODO: Implement!!!
+	return false;
+}
+

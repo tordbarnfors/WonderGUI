@@ -20,16 +20,17 @@
 
 =========================================================================*/
 
-#include <win32visitor.h>
+#include <win32api.h>
 #include <win32window.h>
 
 #include <windows.h>
 
 using namespace wg;
+using namespace wapp;
 
 //____ programArguments() _____________________________________________________
 
-std::vector<std::string> Win32Visitor::programArguments() const
+std::vector<std::string> Win32API::programArguments() const
 {
 	//TODO: Implement!!!
 	return std::vector<std::string>();
@@ -37,7 +38,7 @@ std::vector<std::string> Win32Visitor::programArguments() const
 
 //____ time() _________________________________________________________________
 
-int64_t Win32Visitor::time()
+int64_t Win32API::time()
 {
 	//TODO: Implement!!!
 	return 0;
@@ -45,7 +46,7 @@ int64_t Win32Visitor::time()
 
 //____ loadBlob() _____________________________________________________________
 
-wg::Blob_p Win32Visitor::loadBlob(const std::string& path)
+wg::Blob_p Win32API::loadBlob(const std::string& path)
 {
 	Blob_p	pBlob;
 	DWORD	bytesRead = 0;
@@ -88,7 +89,7 @@ cleanup:
 
 //____ loadSurface() __________________________________________________________
 
-wg::Surface_p Win32Visitor::loadSurface(const std::string& path, wg::SurfaceFactory* pFactory, const wg::Surface::Blueprint& bp)
+wg::Surface_p Win32API::loadSurface(const std::string& path, wg::SurfaceFactory* pFactory, const wg::Surface::Blueprint& bp)
 {
 	//TODO: Implement!!!
 	return nullptr;
@@ -96,7 +97,7 @@ wg::Surface_p Win32Visitor::loadSurface(const std::string& path, wg::SurfaceFact
 
 //____ initDefaultTheme() _____________________________________________________
 
-wg::Theme_p Win32Visitor::initDefaultTheme()
+wg::Theme_p Win32API::initDefaultTheme()
 {
 	//TODO: Implement!!!
 	return nullptr;
@@ -104,7 +105,7 @@ wg::Theme_p Win32Visitor::initDefaultTheme()
 
 //____ notifyPopup() __________________________________________________________
 
-bool Win32Visitor::notifyPopup(const std::string& title, const std::string& message, WonderApp::IconType iconType)
+bool Win32API::notifyPopup(const std::string& title, const std::string& message, IconType iconType)
 {
 	//TODO: Implement!!!
 	return false;
@@ -112,16 +113,16 @@ bool Win32Visitor::notifyPopup(const std::string& title, const std::string& mess
 
 //____ messageBox() ___________________________________________________________
 
-WonderApp::DialogButton Win32Visitor::messageBox(const std::string& title, const std::string& message, WonderApp::DialogType dialogType,
-	WonderApp::IconType iconType, WonderApp::DialogButton defaultButton)
+DialogButton Win32API::messageBox(const std::string& title, const std::string& message, DialogType dialogType,
+	IconType iconType, DialogButton defaultButton)
 {
 	//TODO: Implement!!!
-	return WonderApp::DialogButton::Undefined;
+	return DialogButton::Undefined;
 }
 
 //____ inputBox() _____________________________________________________________
 
-std::string Win32Visitor::inputBox(const std::string& title, const std::string& message, const std::string& defaultInput)
+std::string Win32API::inputBox(const std::string& title, const std::string& message, const std::string& defaultInput)
 {
 	//TODO: Implement!!!
 	return "";
@@ -129,7 +130,7 @@ std::string Win32Visitor::inputBox(const std::string& title, const std::string& 
 
 //____ saveFileDialog() _______________________________________________________
 
-std::string Win32Visitor::saveFileDialog(const std::string& title, const std::string& defaultPathAndFile,
+std::string Win32API::saveFileDialog(const std::string& title, const std::string& defaultPathAndFile,
 	const std::vector<std::string>& filterPatterns, const std::string& singleFilterDescription)
 {
 	//TODO: Implement!!!
@@ -138,7 +139,7 @@ std::string Win32Visitor::saveFileDialog(const std::string& title, const std::st
 
 //____ openFileDialog() _______________________________________________________
 
-std::string Win32Visitor::openFileDialog(const std::string& title, const std::string& defaultPathAndFile,
+std::string Win32API::openFileDialog(const std::string& title, const std::string& defaultPathAndFile,
 	const std::vector<std::string>& filterPatterns, const std::string& singleFilterDescription)
 {
 	//TODO: Implement!!!
@@ -147,7 +148,7 @@ std::string Win32Visitor::openFileDialog(const std::string& title, const std::st
 
 //____ openMultiFileDialog() __________________________________________________
 
-std::vector<std::string> Win32Visitor::openMultiFileDialog(const std::string& title, const std::string& defaultPathAndFile,
+std::vector<std::string> Win32API::openMultiFileDialog(const std::string& title, const std::string& defaultPathAndFile,
 	const std::vector<std::string>& filterPatterns, const std::string& singleFilterDescription)
 {
 	//TODO: Implement!!!
@@ -156,7 +157,7 @@ std::vector<std::string> Win32Visitor::openMultiFileDialog(const std::string& ti
 
 //____ selectFolderDialog() ___________________________________________________
 
-std::string Win32Visitor::selectFolderDialog(const std::string& title, const std::string& defaultPath)
+std::string Win32API::selectFolderDialog(const std::string& title, const std::string& defaultPath)
 {
 	//TODO: Implement!!!
 	return "";
@@ -164,14 +165,23 @@ std::string Win32Visitor::selectFolderDialog(const std::string& title, const std
 
 //____ createWindow() _________________________________________________________
 
-Window_p Win32Visitor::createWindow(const Window::Blueprint& blueprint)
+WindowAPI::Result Win32API::_createWindow(WindowAPI* pAPI, wg::Placement origin, wg::Coord pos, wg::Size size, const std::string& title, bool resizable, bool open)
 {
-	return Win32Window::create(blueprint);
+	WindowAPI::Result	result;
+
+	auto pWindow = Win32Window::create(pAPI, origin, pos, size, title, resizable, open);
+
+	result.pSysCalls = pWindow;
+	result.success = (pWindow != nullptr);
+	result.geo = { pos, size };
+	result.errorMsg = result.success ? "" : "Failed to create Win32 window.";
+	result.root = pWindow->rootPanel();
+	return result;
 }
 
 //____ openLibrary() __________________________________________________________
 
-WonderApp::LibId Win32Visitor::openLibrary(const std::string& path)
+LibId Win32API::openLibrary(const std::string& path)
 {
 	//TODO: Implement!!!
 	return nullptr;
@@ -179,7 +189,7 @@ WonderApp::LibId Win32Visitor::openLibrary(const std::string& path)
 
 //____ loadSymbol() ___________________________________________________________
 
-void* Win32Visitor::loadSymbol(WonderApp::LibId lib, const std::string& symbol)
+void* Win32API::loadSymbol(LibId lib, const std::string& symbol)
 {
 	//TODO: Implement!!!
 	return nullptr;
@@ -187,7 +197,7 @@ void* Win32Visitor::loadSymbol(WonderApp::LibId lib, const std::string& symbol)
 
 //____ closeLibrary() _________________________________________________________
 
-bool Win32Visitor::closeLibrary(WonderApp::LibId lib)
+bool Win32API::closeLibrary(LibId lib)
 {
 	//TODO: Implement!!!
 	return false;
@@ -195,7 +205,7 @@ bool Win32Visitor::closeLibrary(WonderApp::LibId lib)
 
 //____ resourceDirectory() ____________________________________________________
 
-std::string Win32Visitor::resourceDirectory()
+std::string Win32API::resourceDirectory()
 {
 	//TODO: Implement!!!
 	return "";
