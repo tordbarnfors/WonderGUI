@@ -86,7 +86,7 @@ namespace wg
 				int level = 0;
 
 				if (pToTrim->isEmpty())
-					break;
+					continue;
 
 				for (auto pMask = m_masks.begin(); pMask < itMaskEnd; pMask++)
 				{
