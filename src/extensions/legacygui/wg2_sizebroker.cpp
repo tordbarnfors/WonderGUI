@@ -20,7 +20,7 @@
 
 =========================================================================*/
 #include <wg2_sizebroker.h>
-
+#include <algorithm>
 
 
 
@@ -297,4 +297,47 @@ float WgScaleWeightSizeBroker::_findNeededLengthPerWeight(WgSizeBrokerItem * pIt
 		}
 	}
 	return largest;
+}
+
+int WgGrowInOrderSizeBroker::SetItemLengths( WgSizeBrokerItem * pItems, int nItems, int totalLength ) const
+{
+	// Set all to -1, so we know which ones we have not given a size yet.
+
+	for( int i = 0 ; i < nItems ; i++ )
+		pItems[i].output = -1;
+
+	// Set up to preferred size in priority (=weight) order. Highest first.
+
+	int total = 0;
+	while( total < totalLength )
+	{
+		int highestPrio = -1;
+		int highestPrioOfs = -1;
+
+		for( int i = 0 ; i < nItems ; i++ )
+		{
+			if( pItems[i].output == -1 && highestPrio < pItems[i].weight )
+			{
+				highestPrio = pItems[i].weight;
+				highestPrioOfs = i;
+			}
+		}
+
+		if( highestPrioOfs == -1 )
+			break;
+
+		int size = std::min( pItems[highestPrioOfs].preferred, totalLength - total );
+		pItems[highestPrioOfs].output = size;
+		total += size;
+	}
+
+	// Set any leftovers to 0 in size.
+
+	for( int i = 0 ; i < nItems ; i++ )
+	{
+		if( pItems[i].output == -1 )
+		pItems[i].output = 0;
+	}
+
+	return total;
 }

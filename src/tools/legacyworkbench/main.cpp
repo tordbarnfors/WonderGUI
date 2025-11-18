@@ -1,5 +1,6 @@
 #include <cstdlib>
 
+
 //#include <dwmapi.h>
 #undef min
 #undef max
@@ -16,6 +17,7 @@
 #		include <SDL2/SDL.h>
 #		include <SDL2_image/SDL_image.h>
 #       pragma clang diagnostic pop
+		#include <unistd.h>
 #	else
 #		include <SDL2/SDL.h>
 #		include <SDL2/SDL_image.h>
@@ -172,7 +174,10 @@ static int TestThread(void *ptr)
 
 int main ( int argc, char** argv )
 {
-	
+#ifdef __APPLE__
+	sleep(1);
+#endif
+
 	//------------------------------------------------------
 	// Init SDL
 	//------------------------------------------------------
@@ -1516,37 +1521,38 @@ bool gfxStreamingTest(WgRootPanel* pRoot)
 
 bool packPanelHierarchyTest(WgRootPanel* pRoot)
 {
-
+	auto pSizeBroker = new WgGrowInOrderSizeBroker();
 
 	WgPackPanel* pOuterPack = new WgPackPanel();
 	pOuterPack->SetOrientation(wg::Axis::Y);
+	pOuterPack->SetSizeBroker(pSizeBroker);
 	pOuterPack->SetSkin(wg::ColorSkin::create(wg::Color::Red));
 
 	pRoot->SetChild(pOuterPack);
 
-	WgPackPanel* pInnerPack = new WgPackPanel();
-	pInnerPack->SetOrientation(wg::Axis::Y);
-	pInnerPack->SetSkin(wg::ColorSkin::create(wg::Color::Green));
-	pOuterPack->AddChild(pInnerPack)->SetWeight(0.f);
+	WgFiller* pUpperBar = new WgFiller();
+	pUpperBar->SetColors(WgColorset::Create(wg::Color::Blue));
+	pUpperBar->SetPreferredPointSize({ 100,30 });
+	pOuterPack->AddChild(pUpperBar)->SetWeight(10.f);
 
-	WgFiller* pOuterFiller = new WgFiller();
-	pOuterFiller->SetColors(WgColorset::Create(wg::Color::Blue));
-	pOuterPack->AddChild(pOuterFiller)->SetWeight(1.f);
+	WgTextDisplay* pTextDisplay = new WgTextDisplay();
+	pTextDisplay->SetSkin( wg::ColorSkin::create( wg::Color::DarkGrey ));
+	pTextDisplay->SetText("Inner Text\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n9\n8\n7\n6\n5\n4\n3\n2\n1\nLast Line");
 
+	WgScrollPanel* pScroller = new WgScrollPanel();
+	pScroller->SetContent(pTextDisplay);
+	pScroller->SetMouseWheelAxis(1, wg::Axis::Y);
+	pOuterPack->AddChild(pScroller)->SetWeight(1.f);
 
-	WgFiller* pInnerFiller1 = new WgFiller();
-	pInnerFiller1->SetColors(WgColorset::Create(wg::Color::Yellow));
-	pInnerFiller1->SetPreferredPointSize({ 100,30 });
-	pInnerPack->AddChild(pInnerFiller1)->SetWeight(0.f);
+	WgFiller* pLowerBar = new WgFiller();
+	pLowerBar->SetColors(WgColorset::Create(wg::Color::Blue));
+	pLowerBar->SetPreferredPointSize({ 100,30 });
+	pOuterPack->AddChild(pLowerBar)->SetWeight(9.f);
 
-	WgTextDisplay* pInnerText = new WgTextDisplay();
-	pInnerText->SetText("Inner Text");
-	pInnerPack->AddChild(pInnerText)->SetWeight(1.f);
-
-	WgFiller* pInnerFiller2 = new WgFiller();
-	pInnerFiller2->SetColors(WgColorset::Create(wg::Color::Cyan));
-	pInnerFiller1->SetPreferredPointSize({ 100,30 });
-	pInnerPack->AddChild(pInnerFiller2)->SetWeight(0.f);
+	WgFiller* pExpander = new WgFiller();
+	pExpander->SetColors(WgColorset::Create(wg::Color::Black));
+	pExpander->SetPreferredPointSize({ 100,1000 });
+	pOuterPack->AddChild(pExpander)->SetWeight(0.f);
 
 	return true;
 }

@@ -108,6 +108,12 @@ namespace sdl_wglib
 				g_pHandler->QueueEvent(new WgEvent::Character((short)event.text.text[0]));
 				break;
 
+			case SDL_MOUSEWHEEL:
+			{
+				g_pHandler->QueueEvent(new WgEvent::MouseWheelRoll(1, event.wheel.y));
+				break;
+			}
+
 		}
 	}
 

@@ -106,5 +106,18 @@ protected:
 
 };
 
+class WgGrowInOrderSizeBroker : public WgSizeBroker
+{
+public:
+	WgGrowInOrderSizeBroker() {};
+	~WgGrowInOrderSizeBroker() {};
+
+	int SetItemLengths(WgSizeBrokerItem * pItems, int nItems, int totalLength) const;
+
+protected:
+
+
+};
+
 
 #endif //WG2_SIZEBROKER_DOT_H
