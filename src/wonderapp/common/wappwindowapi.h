@@ -37,12 +37,12 @@ namespace wapp
 		class SysCalls
 		{
 		public:
-			virtual void		_destroy() = 0;
-			virtual wg::Rect	_setGeo(const wg::Rect& geo) = 0;
-			virtual bool		_requestFocus() = 0;
-			virtual bool		_releaseFocus() = 0;
-			virtual bool		_minimize() = 0;
-			virtual bool		_restore() = 0;
+			virtual void		destroy() = 0;
+			virtual wg::Rect	setGeo(const wg::Rect& geo) = 0;
+			virtual bool		requestFocus() = 0;
+			virtual bool		releaseFocus() = 0;
+			virtual bool		minimize() = 0;
+			virtual bool		restore() = 0;
 		};
 
 

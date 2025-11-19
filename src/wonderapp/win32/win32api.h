@@ -69,7 +69,7 @@ public:
 
 	std::string					resourceDirectory() override;
 
-	wapp::WindowAPI::Result		_createWindow(wapp::WindowAPI* pAPI, wg::Placement origin, wg::Coord pos, wg::Size size, const std::string& title, bool resizable, bool open) override;
+	wapp::WindowAPI::Result		_createWindow(wapp::Window* pAPI, wg::Placement origin, wg::Coord pos, wg::Size size, const std::string& title, bool resizable, bool open) override;
 
 private:
 

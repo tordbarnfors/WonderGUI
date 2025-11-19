@@ -19,10 +19,14 @@ public:
 	bool		update() override;
 	void		exit() override;
 
+	void		closeWindow(wapp::Window* pWindow) override;
+
 
 private:
 
 	bool			_setupGUI(wapp::API* pAPI);
+
+	bool			m_bContinue = true;
 
 	wapp::API *		m_pAPI = nullptr;
 	wapp::Window_p	m_pWindow = nullptr;

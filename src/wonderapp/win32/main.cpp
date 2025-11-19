@@ -12,6 +12,7 @@
 using namespace wg;
 
 
+WonderApp_p g_pApp;
 
 
 //____ Win32HostBridge ___________________________________________________________
@@ -62,12 +63,14 @@ LRESULT CALLBACK windowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 			bool bClose = pointer->userWindow()->onClose();
 
 			if (bClose)
-				DestroyWindow(hwnd);
+				g_pApp->closeWindow(pointer->userWindow());
 			return 0;
 		}
 
 		case WM_DESTROY:
 		{
+			Win32Window* pointer = reinterpret_cast<Win32Window*>(GetWindowLongPtr(hwnd, GWLP_USERDATA));
+			delete pointer;
 			break;
 		}
 
@@ -123,12 +126,12 @@ int main(int arch, char * argv[] ) {
 
 	// Create app and API visitor, make any app-specific initialization
 
-	auto pApp = WonderApp::create();
+	g_pApp = WonderApp::create();
 	auto pAPI = new Win32API();
 
 	// Initialize the app
 
-	bool bContinue = pApp->init(pAPI);
+	bool bContinue = g_pApp->init(pAPI);
 
 
 //	auto pWin = Win32Window::create({ .size = {800,600}, .title = "WonderGUI TEST" } );
@@ -144,12 +147,13 @@ int main(int arch, char * argv[] ) {
 			DispatchMessage(&msg);
 		}
 
-		bContinue = pApp->update();
+		bContinue = g_pApp->update();
 
 		Sleep(1);
 	}
 
-	pApp->exit();
+	g_pApp->exit();
+	g_pApp = nullptr;
 
 	Base::exit();
 

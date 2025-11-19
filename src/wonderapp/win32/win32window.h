@@ -25,7 +25,7 @@
 #include <wonderapp.h>
 #include <wondergui.h>
 
-#include <wappwindowapi.h>
+#include <wappwindow.h>
 #include <windows.h>
 
 
@@ -36,40 +36,37 @@ typedef	wg::StrongPtr<Win32Window>	Win32Window_p;
 typedef	wg::WeakPtr<Win32Window>	Win32Window_wp;
 
 
-class Win32Window : public wg::Object, public wapp::WindowAPI::SysCalls
+class Win32Window : public wapp::WindowAPI::SysCalls
 {
 public:
 
-    //.____ Creation __________________________________________
+	Win32Window(wapp::Window* pUserWindow, wg::Placement origin, wg::Coord pos, wg::Size size, const std::string& title, bool resizable, bool open);
+	virtual ~Win32Window();
 
-    static Win32Window_p	create(wapp::WindowAPI* pUserWindow, wg::Placement origin, wg::Coord pos, wg::Size size, const std::string& title, bool resizable, bool open);
-
-    //.____ Identification __________________________________________
-
-    const wg::TypeInfo&		typeInfo(void) const override;
-    const static wg::TypeInfo   TYPEINFO;
 
     //.____ Misc ____________________________________________________
 
-    void	render();
-	wapp::WindowAPI* userWindow() const { return m_pUserWindow; }
-	wg::RootPanel_p	 rootPanel() const { return m_pRootPanel; }
+    void				render();
+	wapp::Window*		userWindow() const { return m_pUserWindow; }
+	wg::RootPanel_p		rootPanel() const { return m_pRootPanel; }
 
 
 protected:
-    Win32Window(wapp::WindowAPI* pUserWindow, wg::Placement origin, wg::Coord pos, wg::Size size, const std::string& title, bool resizable, bool open);
-    virtual ~Win32Window();
 
-	void			_destroy() override;
-	wg::Rect		_setGeo(const wg::Rect& geo) override;
-	bool			_requestFocus() override;
-	bool			_releaseFocus() override;
-	bool			_minimize() override;
-	bool			_restore() override;
+	// SysCalls interface
+
+	void			destroy() override;
+	wg::Rect		setGeo(const wg::Rect& geo) override;
+	bool			requestFocus() override;
+	bool			releaseFocus() override;
+	bool			minimize() override;
+	bool			restore() override;
+
+	//
 
     HWND				m_windowHandle;
 
-	wapp::WindowAPI *	m_pUserWindow;
+	wapp::Window *		m_pUserWindow;
 	wg::RootPanel_p		m_pRootPanel;
 
 };

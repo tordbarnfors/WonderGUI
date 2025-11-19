@@ -21,7 +21,7 @@
 =========================================================================*/
 #pragma once
 
-#include <wappwindowapi.h>
+#include <wappwindow.h>
 
 #include <vector>
 #include <string>
@@ -108,7 +108,7 @@ namespace wapp
 
 		virtual std::string		resourceDirectory() = 0;
 
-		virtual WindowAPI::Result _createWindow( WindowAPI * pAPI, wg::Placement origin, wg::Coord pos, wg::Size size, const std::string& title, bool resizable, bool open) = 0;
+		virtual WindowAPI::Result _createWindow( Window * pAPI, wg::Placement origin, wg::Coord pos, wg::Size size, const std::string& title, bool resizable, bool open) = 0;
 	};
 
 }

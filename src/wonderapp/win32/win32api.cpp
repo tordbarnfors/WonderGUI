@@ -165,11 +165,11 @@ std::string Win32API::selectFolderDialog(const std::string& title, const std::st
 
 //____ createWindow() _________________________________________________________
 
-WindowAPI::Result Win32API::_createWindow(WindowAPI* pAPI, wg::Placement origin, wg::Coord pos, wg::Size size, const std::string& title, bool resizable, bool open)
+WindowAPI::Result Win32API::_createWindow(Window* pAPI, wg::Placement origin, wg::Coord pos, wg::Size size, const std::string& title, bool resizable, bool open)
 {
 	WindowAPI::Result	result;
 
-	auto pWindow = Win32Window::create(pAPI, origin, pos, size, title, resizable, open);
+	auto pWindow = new Win32Window(pAPI, origin, pos, size, title, resizable, open);
 
 	result.pSysCalls = pWindow;
 	result.success = (pWindow != nullptr);

@@ -23,7 +23,7 @@
 
 #include <wondergui.h>
 #include <wappwindowapi.h>
-#include <wappapi.h>
+//#include <wappapi.h>
 
 namespace wg
 {
@@ -32,6 +32,8 @@ class DebugFrontend;
 
 namespace wapp
 {
+	class API;
+
 	class Window;
 	typedef    wg::StrongPtr<Window>    Window_p;
 	typedef    wg::WeakPtr<Window>        Window_wp;

@@ -21,6 +21,7 @@
 =========================================================================*/
 
 #include "wappwindow.h"
+#include "wappapi.h"
 #include <wg_debugcapsule.h>
 #include <wg_debugfrontend.h>
 
@@ -128,7 +129,7 @@ Window::Window(API* pAPI, const Blueprint& blueprint)
 
 Window::~Window()
 {
-	m_pSysCalls->_destroy();
+	m_pSysCalls->destroy();
 }
 
 

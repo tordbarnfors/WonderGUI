@@ -4,10 +4,11 @@
 #include <wondergui.h>
 #include <wg_freetypefont.h>
 #include <string>
-#include <fstream>
+
 
 
 using namespace wg;
+using namespace wapp;
 using namespace std;
 
 //____ create() _______________________________________________________________
@@ -19,7 +20,7 @@ WonderApp_p WonderApp::create()
 
 //____ init() _________________________________________________________________
 
-bool MyApp::init(wapp::API * pAPI)
+bool MyApp::init(API * pAPI)
 {
 	m_pAPI = pAPI;
 
@@ -36,7 +37,7 @@ bool MyApp::init(wapp::API * pAPI)
 
 bool MyApp::update()
 {
-	return true;
+	return m_bContinue;
 }
 
 //____ exit() _________________________________________________________________
@@ -46,26 +47,34 @@ void MyApp::exit()
 
 }
 
+//____ closeWindow() __________________________________________________________
+
+void MyApp::closeWindow(Window* pWindow)
+{
+	m_pWindow = nullptr;
+	m_bContinue = false;
+}
 
 //____ _setupGUI() ____________________________________________________________
 
-bool MyApp::_setupGUI(wapp::API* pAPI)
+bool MyApp::_setupGUI(API* pAPI)
 {
-	m_pWindow = wapp::Window::create(pAPI, { .size = {800,600}, .title = "Hello World" });
+	m_pWindow = Window::create(pAPI, { .size = {800,600}, .title = "Hello World" });
 
 	//
 
 	auto pFontBlob = pAPI->loadBlob("resources/DroidSans.ttf");
+
+	if (!pFontBlob)
+		return false;
+
 	auto pFont = FreeTypeFont::create(pFontBlob);
 
 	m_pTextStyle = TextStyle::create({
 		.color = Color8::Black,
 		.font = pFont, 
 		.size = 14,
-		.states = { {State::Disabled, Color8::DarkGrey}}
 	});
-
-	Base::setDefaultStyle(m_pTextStyle);
 
 	m_pTextLayoutCentered = BasicTextLayout::create({ .placement = Placement::Center });
 

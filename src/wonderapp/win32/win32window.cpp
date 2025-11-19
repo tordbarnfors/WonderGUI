@@ -25,19 +25,9 @@
 
 using namespace wg;
 
-const TypeInfo Win32Window::TYPEINFO = { "Win32Window", &Object::TYPEINFO };
-
-
-//____ create() _______________________________________________________________
-
-Win32Window_p Win32Window::create(wapp::WindowAPI* pUserWindow, wg::Placement origin, wg::Coord pos, wg::Size size, const std::string& title, bool resizable, bool open)
-{
-	return Win32Window_p(new Win32Window(pUserWindow, origin, pos, size, title, resizable, open));
-}
-
 //____ constructor ___________________________________________________
 
-Win32Window::Win32Window(wapp::WindowAPI* pUserWindow, wg::Placement origin, wg::Coord pos, wg::Size size, const std::string& title, bool resizable, bool open)
+Win32Window::Win32Window(wapp::Window* pUserWindow, wg::Placement origin, wg::Coord pos, wg::Size size, const std::string& title, bool resizable, bool open)
 {
 	m_pUserWindow = pUserWindow;
 
@@ -81,13 +71,6 @@ Win32Window::~Win32Window()
 {
 }
 
-//____ typeInfo() _________________________________________________________
-
-const wg::TypeInfo& Win32Window::typeInfo(void) const
-{
-    return TYPEINFO;
-}
-
 
 //____ render() _______________________________________________________________
 
@@ -96,48 +79,48 @@ void Win32Window::render()
 
 }
 
-//____ _destroy() _____________________________________________________________
+//____ destroy() _____________________________________________________________
 
-void Win32Window::_destroy()
+void Win32Window::destroy()
 {
-	//TODO: Implement!!!
+	DestroyWindow(m_windowHandle);
 }
 
-//____ _setGeo() ______________________________________________________________
+//____ setGeo() ______________________________________________________________
 
-Rect Win32Window::_setGeo(const wg::Rect& geo)
+Rect Win32Window::setGeo(const wg::Rect& geo)
 {
 	//TODO: Implement!!!
 	return geo;
 }
 
-//____ _requestFocus() ________________________________________________________
+//____ requestFocus() ________________________________________________________
 
-bool Win32Window::_requestFocus()
+bool Win32Window::requestFocus()
 {
 	//TODO: Implement!!!
 	return false;
 }
 
-//____ _releaseFocus() ________________________________________________________
+//____ releaseFocus() ________________________________________________________
 
-bool Win32Window::_releaseFocus()
+bool Win32Window::releaseFocus()
 {
 	//TODO: Implement!!!
 	return false;
 }
 
-//____ _minimize() ____________________________________________________________
+//____ minimize() ____________________________________________________________
 
-bool Win32Window::_minimize()
+bool Win32Window::minimize()
 {
 	//TODO: Implement!!!
 	return false;
 }
 
-//____ _restore() _____________________________________________________________
+//____ restore() _____________________________________________________________
 
-bool Win32Window::_restore()
+bool Win32Window::restore()
 {
 	//TODO: Implement!!!
 	return false;

@@ -46,6 +46,8 @@ public:
 	virtual bool	init(wapp::API* pAPI) = 0;
 	virtual bool	update() = 0;
 	virtual void	exit() = 0;
+
+	virtual void	closeWindow(wapp::Window* pWindow) = 0;
 		
 protected:
 
