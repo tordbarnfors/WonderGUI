@@ -77,7 +77,7 @@ namespace wg
 
 		void	setFlip( GfxFlip flip );
 		GfxFlip flip() const { return m_flip; }
-		
+
 		bool	isTransitioningColors() const { return m_pColorTransition; }
 		bool	isTransitioningSamples() const { return m_pSampleTransition; }
 
@@ -110,7 +110,7 @@ namespace wg
 
 		GfxFlip				m_flip = GfxFlip::None;
 		bool				m_bAxisSwapped = false;				// Set if flip results in X and Y being swapped.
-		
+
 		// Transitions
 
 		ColorTransition_p	m_pColorTransition;
@@ -177,11 +177,12 @@ namespace wg
 
 			float			displayCeiling = 0.f;
 			float			displayFloor = 1.f;
-			
+
 			Skin_p			displaySkin;
 
 			bool			dropTarget = false;
 			bool			disabled = false;
+			EdgemapFactory_p	edgemapFactory = nullptr;
 			Finalizer_p		finalizer = nullptr;
 
 			Glow::Blueprint	glow;
@@ -238,9 +239,10 @@ namespace wg
 
 	protected:
 		AreaChart();
-		
+
 		template<class BP> AreaChart( const BP& bp ) : Chart(bp), entries(this)
 		{
+			m_pEdgemapFactory = bp.edgemapFactory;
 		}
 
 		virtual ~AreaChart();
@@ -260,7 +262,7 @@ namespace wg
 
 		void		_update(int microPassed, int64_t microsecTimestamp) override;
 
-		void    	_preRender() override;
+		void		_preRender() override;
 
 		void		_updateAreaChartEntrys();
 
@@ -276,7 +278,7 @@ namespace wg
 
 		bool			m_bPreRenderRequested = false;
 		bool			m_bTransitioning = false;
-		
+		EdgemapFactory_p	m_pEdgemapFactory;
 	};
 
 

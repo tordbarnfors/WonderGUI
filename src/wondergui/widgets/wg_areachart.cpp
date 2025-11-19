@@ -255,8 +255,8 @@ namespace wg
 
 					graph.m_pSampleTransition->snapshot(timestamp, (int) graph.m_topSamples.size(),
 														graph.m_startTopSamples.data(),
-														graph.m_endTopSamples.data(), 
-														graph.m_topSamples.data());	
+														graph.m_endTopSamples.data(),
+														graph.m_topSamples.data());
 
 					graph.m_pSampleTransition->snapshot(timestamp, (int) graph.m_bottomSamples.size(),
 														graph.m_startBottomSamples.data(),
@@ -339,7 +339,7 @@ namespace wg
 					RectSPX rect = _entryRangeToRect(graph.m_begin, graph.m_end, graph.m_bAxisSwapped);
 
 					graph.m_waveformPos = rect.pos();
-					
+
 					graph.m_pWaveform = Waveform::create(WGBP(Waveform,
 						_.size = rect.size()/64,
 						_.bottomOutlineThickness = graph.m_bottomOutlineThickness*m_scale,
@@ -349,7 +349,7 @@ namespace wg
 						_.outlineColor = graph.m_outlineColor,
 						_.outlineGradient = graph.m_outlineGradient,
 						_.topOutlineThickness = graph.m_topOutlineThickness*m_scale
-					) );
+					), m_pEdgemapFactory);
 
 					// Interpolate and set samples
 
@@ -407,11 +407,11 @@ namespace wg
 		int wfSamples = pWaveform->nbSamples();
 
 		int height = bAxisSwapped ? m_chartCanvas.w : m_chartCanvas.h;
-		
+
 		if (nSamples <= 1)
 		{
 			float sample = nSamples == 0 ? 0.f : pSamples[0];
-			
+
 			spx spxSample = (sample - m_displayCeiling) / (m_displayFloor - m_displayCeiling) * height;
 
 			if (bTopEdge)
@@ -454,12 +454,12 @@ namespace wg
 	RectSPX AreaChart::_entryRangeToRect(float begin, float end, bool axisSwapped) const
 	{
 		RectSPX rect;
-		
+
 		if( axisSwapped )
 			rect = RectSPX( m_chartCanvas.h * begin, 0, m_chartCanvas.h * (end - begin), m_chartCanvas.w );
 		else
 			rect = RectSPX( m_chartCanvas.w * begin, 0, m_chartCanvas.w * (end - begin), m_chartCanvas.h );
-		
+
 		return Util::align(rect);
 	}
 
@@ -700,16 +700,16 @@ namespace wg
 
 	//____ topSamples() _______________________________________________________
 
-	std::tuple<int, const float*>  AreaChartEntry::topSamples() const 
-	{ 
-		return std::make_tuple((int)m_topSamples.size(), m_topSamples.data()); 
+	std::tuple<int, const float*>  AreaChartEntry::topSamples() const
+	{
+		return std::make_tuple((int)m_topSamples.size(), m_topSamples.data());
 	}
 
 	//____ bottomSamples() ____________________________________________________
 
-	std::tuple<int, const float*>  AreaChartEntry::bottomSamples() const 
-	{ 
-		return std::make_tuple((int)m_bottomSamples.size(), m_bottomSamples.data()); 
+	std::tuple<int, const float*>  AreaChartEntry::bottomSamples() const
+	{
+		return std::make_tuple((int)m_bottomSamples.size(), m_bottomSamples.data());
 	}
 
 	//____ _endSampleTransition() _____________________________________________
