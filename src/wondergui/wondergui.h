@@ -152,6 +152,7 @@
 #include <wg_twoslotpanel.h>
 #include <wg_types.h>
 #include <wg_util.h>
+#include <wg_wavechart.h>
 #include <wg_widget.h>
 
 #endif //WONDERGUI_DOT_H

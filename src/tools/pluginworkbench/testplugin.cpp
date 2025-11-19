@@ -27,7 +27,7 @@ extern "C" {
 
 }
 
-bool areaChartTest(ComponentPtr<DynamicSlot> pEntry);
+bool waveChartTest(ComponentPtr<DynamicSlot> pEntry);
 bool canvasCapsuleGlowTest(ComponentPtr<DynamicSlot> pEntry);
 
 
@@ -95,7 +95,7 @@ DLLEXPORTPREFIX int init( wg_plugin_interface * pInterface, void * pRealHostBrid
 
 	pPluginRoot->slot = pMainPanel;
 
-//	areaChartTest( {pFiller3, pFiller3->slot} );
+//	waveChartTest( {pFiller3, pFiller3->slot} );
 	canvasCapsuleGlowTest({pFiller3, pFiller3->slot});
 
 	
@@ -166,15 +166,15 @@ Blob_p loadBlob(const std::string& path)
 	return pBlob;
 }
 
-//____ areaChartTest() ______________________________________________________
+//____ waveChartTest() ______________________________________________________
 
-bool areaChartTest(ComponentPtr<DynamicSlot> pEntry)
+bool waveChartTest(ComponentPtr<DynamicSlot> pEntry)
 {
 	auto pFlex = FlexPanel::create();
 
 	pFlex->setSkin(ColorSkin::create(Color::LightYellow));
 
-	auto pGraph = AreaChart::create(WGBP(AreaChart,
+	auto pGraph = WaveChart::create(WGBP(WaveChart,
 		_.displayCeiling = 0.5f,
 		_.displayFloor = - 0.5f,
 		_.displaySkin = BoxSkin::create( WGBP(BoxSkin,

@@ -143,8 +143,8 @@ bool memHeapFragmentationTest(ComponentPtr<DynamicSlot> pSlot);
 bool blendRGB565BigendianTest(ComponentPtr<DynamicSlot> pSlot);
 bool twoSlotPanelTest(ComponentPtr<DynamicSlot> pSlot);
 bool customSkinTest(ComponentPtr<DynamicSlot> pSlot);
-bool areaChartTest(ComponentPtr<DynamicSlot> pSlot);
-bool areaChartTest2(ComponentPtr<DynamicSlot> pSlot);
+bool waveChartTest(ComponentPtr<DynamicSlot> pSlot);
+bool waveChartTest2(ComponentPtr<DynamicSlot> pSlot);
 bool plotChartTest(ComponentPtr<DynamicSlot> pSlot);
 bool nortonCommanderTest(ComponentPtr<DynamicSlot> pSlot);
 bool skinMarginTest(ComponentPtr<DynamicSlot> pSlot);
@@ -768,8 +768,8 @@ int main(int argc, char** argv)
 		//	blendRGB565BigendianTest( pSlot );
 		//	twoSlotPanelTest(pSlot);
 		//	customSkinTest(pSlot);
-		//	areaChartTest(pSlot);
-			areaChartTest2(pSlot);
+		//	waveChartTest(pSlot);
+			waveChartTest2(pSlot);
 		//	plotChartTest(pSlot);
 		//	nortonCommanderTest(pSlot);
 		//	skinMarginTest(pSlot);
@@ -3045,15 +3045,15 @@ bool customSkinTest(ComponentPtr<DynamicSlot> pEntry)
 	return true;
 }
 
-//____ areaChartTest() ______________________________________________________
+//____ waveChartTest() ______________________________________________________
 
-bool areaChartTest(ComponentPtr<DynamicSlot> pEntry)
+bool waveChartTest(ComponentPtr<DynamicSlot> pEntry)
 {
 	auto pFlex = FlexPanel::create();
 
 	pFlex->setSkin(ColorSkin::create(Color::LightYellow));
 
-	auto pGraph = AreaChart::create(WGBP(AreaChart,
+	auto pGraph = WaveChart::create(WGBP(WaveChart,
 		_.displayCeiling = 0.5f,
 		_.displayFloor = - 0.5f,
 		_.displaySkin = BoxSkin::create( WGBP(BoxSkin,
@@ -3155,15 +3155,15 @@ bool areaChartTest(ComponentPtr<DynamicSlot> pEntry)
 	return true;
 }
 
-//____ areaChartTest2() ______________________________________________________
+//____ waveChartTest2() ______________________________________________________
 
-bool areaChartTest2(ComponentPtr<DynamicSlot> pEntry)
+bool waveChartTest2(ComponentPtr<DynamicSlot> pEntry)
 {
 	auto pFlex = FlexPanel::create();
 
 	pFlex->setSkin(ColorSkin::create(Color::LightYellow));
 
-	auto pGraph = AreaChart::create(WGBP(AreaChart,
+	auto pGraph = WaveChart::create(WGBP(WaveChart,
 		_.displayCeiling = 0.5f,
 		_.displayFloor = -0.5f,
 		_.displaySkin = BoxSkin::create(WGBP(BoxSkin,

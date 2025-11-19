@@ -208,6 +208,8 @@ set( SOURCES
 	widgets/wg_togglebutton.h
 	widgets/wg_numberdisplay.cpp
 	widgets/wg_numberdisplay.h
+	widgets/wg_wavechart.cpp
+	widgets/wg_wavechart.h
 	widgets/wg_widget.cpp
 	widgets/wg_widget.h
 

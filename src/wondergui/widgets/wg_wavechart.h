@@ -2,26 +2,26 @@
 
 						 >>> WonderGUI <<<
 
-  This file is part of Tord Jansson's WonderGUI AreaChartEntryics Toolkit
+  This file is part of Tord Jansson's WonderGUI Graphics Toolkit
   and copyright (c) Tord Jansson, Sweden [tord.jansson@gmail.com].
 
 							-----------
 
-  The WonderGUI AreaChartEntryics Toolkit is free software; you can redistribute
+  The WonderGUI Graphics Toolkit is free software; you can redistribute
   this file and/or modify it under the terms of the GNU General Public
   License as published by the Free Software Foundation; either
   version 2 of the License, or (at your option) any later version.
 
 							-----------
 
-  The WonderGUI AreaChartEntryics Toolkit is also available for use in commercial
+  The WonderGUI Graphics Toolkit is also available for use in commercial
   closed-source projects under a separate license. Interested parties
   should contact Tord Jansson [tord.jansson@gmail.com] for details.
 
 =========================================================================*/
 
-#ifndef	WG_AREACHART_DOT_H
-#define WG_AREACHART_DOT_H
+#ifndef	WG_WAVECHART_DOT_H
+#define WG_WAVECHART_DOT_H
 #pragma once
 
 #include <wg_chart.h>
@@ -29,15 +29,16 @@
 
 namespace wg
 {
-	class AreaChart;
+	class WaveChart;
 
-	class AreaChartEntry
+	class WaveChartEntry
 	{
-		friend class AreaChart;
+		friend class WaveChart;
 	public:
 
 		struct Blueprint
 		{
+			pts					bottomOutlineThickness = 1;
 			HiColor				color = Color8::LightGrey;
 			GfxFlip				flip = GfxFlip::None;
 			Gradient			gradient;								// Overrides color when set.
@@ -46,12 +47,12 @@ namespace wg
 			Gradient			outlineGradient;						// Overrides outlineColor when set.
 			float				rangeBegin = 0.f;
 			float				rangeEnd = 1.f;
-			pts					outlineThickness = 1;
+			pts					topOutlineThickness = 1;
 			bool				visible = true;
 		};
 
-		AreaChartEntry() {}
-		AreaChartEntry(const Blueprint& bp);
+		WaveChartEntry() {}
+		WaveChartEntry(const Blueprint& bp);
 
 		void	setId(int id) { m_id = id; }
 		int		id() const { return m_id; }
@@ -59,12 +60,17 @@ namespace wg
 		bool	setColors(HiColor fill, HiColor outline, ColorTransition* pTransition = nullptr);
 		bool	setGradients(Gradient fill, Gradient outline, ColorTransition* pTransition = nullptr);
 
-		bool	setOutlineThickness( pts thickness );
-		pts		outlineThickness() const { return m_outlineThickness; }
+		bool	setOutlineThickness( pts topOutline, pts bottomOutline );
+		pts		topOutlineThickness() const { return m_topOutlineThickness; }
+		pts		bottomOutlineThickness() const { return m_bottomOutlineThickness; }
 
-		void	setSamples(int nSamples, const float* pSamples);
 
-		bool	transitionSamples(ValueTransition* pTransition, int nSamples, const float* pNewSamples);
+		void	setRange(float begin, float end);
+
+		void	setTopSamples(int nSamples, const float* pSamples);
+		void	setBottomSamples(int nSamples, const float* pSamples);
+
+		bool	transitionSamples(ValueTransition* pTransition, int nTopSamples, const float* pNewTopSamples, int nBottomSamples, const float* pNewBottomSamples);
 
 		void	setVisible(bool bVisible);
 		bool	isVisible() const { return m_bVisible; }
@@ -78,14 +84,15 @@ namespace wg
 		HiColor	color() const { return m_fillColor; }
 		HiColor	outlineColor() const { return m_outlineColor; }
 
-		std::tuple<int, const float*>	samples() const;
+		std::tuple<int, const float*>	topSamples() const;
+		std::tuple<int, const float*>	bottomSamples() const;
 
 	protected:
 
 		void				_endSampleTransition();
 		void				_endColorTransition();
 
-		AreaChart*			m_pDisplay = nullptr;
+		WaveChart*			m_pDisplay = nullptr;
 
 		// Appearance
 
@@ -98,7 +105,8 @@ namespace wg
 		Gradient			m_fillGradient;
 		Gradient			m_outlineGradient;
 
-		pts					m_outlineThickness = 1;
+		pts					m_topOutlineThickness = 1;
+		pts					m_bottomOutlineThickness = 1;
 
 		GfxFlip				m_flip = GfxFlip::None;
 		bool				m_bAxisSwapped = false;				// Set if flip results in X and Y being swapped.
@@ -123,12 +131,18 @@ namespace wg
 		ValueTransition_p	m_pSampleTransition;
 		int					m_sampleTransitionProgress = 0;	// In microseconds
 
-		std::vector<float>	m_startSamples;
-		std::vector<float>	m_endSamples;
+		std::vector<float>	m_startTopSamples;
+		std::vector<float>	m_endTopSamples;
 
-		// AreaChartEntry samples
+		std::vector<float>	m_startBottomSamples;
+		std::vector<float>	m_endBottomSamples;
 
-		std::vector<float>	m_samples;				// Samples for top of this entry.
+		// WaveChartEntry samples
+
+		float				m_begin = 0.f;			// Offset in WaveChart where this entry begins.
+		float				m_end = 1.f;			// Offset in WaveChart where this entry ends.
+		std::vector<float>	m_topSamples;			// Samples for top of this entry.
+		std::vector<float>	m_bottomSamples;		// Samples for bottom of this entry.
 
 		//		float				m_sampleMin = 0;
 		//		float				m_sampleMax = 0;
@@ -137,18 +151,21 @@ namespace wg
 
 		bool				m_bSamplesChanged = false;
 		bool				m_bColorsChanged = false;
+
+		Waveform_p			m_pWaveform;
+		CoordSPX			m_waveformPos;			// Only x has any impact for now, y should be fixed at 0.
 	};
 
 
 
 
-	class AreaChart;
-	typedef	StrongPtr<AreaChart>	AreaChart_p;
-	typedef	WeakPtr<AreaChart>		AreaChart_wp;
+	class WaveChart;
+	typedef	StrongPtr<WaveChart>	WaveChart_p;
+	typedef	WeakPtr<WaveChart>		WaveChart_wp;
 
-	class AreaChart : public Chart, private DynamicVector<AreaChartEntry>::Holder
+	class WaveChart : public Chart, private DynamicVector<WaveChartEntry>::Holder
 	{
-		friend class AreaChartEntry;
+		friend class WaveChartEntry;
 	public:
 
 		struct Blueprint
@@ -206,12 +223,12 @@ namespace wg
 
 		//.____ Creation __________________________________________
 
-		static AreaChart_p	create( const Blueprint& blueprint ) { return AreaChart_p(new AreaChart(blueprint)); }
+		static WaveChart_p	create( const Blueprint& blueprint ) { return WaveChart_p(new WaveChart(blueprint)); }
 
 
 		//.____ Components _______________________________________
 
-		DynamicVector<AreaChartEntry>	entries;
+		DynamicVector<WaveChartEntry>	entries;
 
 		//.____ Identification __________________________________________
 
@@ -220,24 +237,24 @@ namespace wg
 
 
 	protected:
-		AreaChart();
-		
-		template<class BP> AreaChart( const BP& bp ) : Chart(bp), entries(this)
+		WaveChart();
+
+		template<class BP> WaveChart( const BP& bp ) : Chart(bp), entries(this)
 		{
 		}
 
-		virtual ~AreaChart();
+		virtual ~WaveChart();
 
 		void		_fullRefreshOfChart() override;
 		void		_renderCharts(GfxDevice* pDevice, const RectSPX& canvas) override;
 
 		void		_startedOrEndedTransition();
-		void		_entryVisibilityChanged(AreaChartEntry* pAreaChartEntry);
-		void		_setAreaChartEntryRange(AreaChartEntry* pAreaChartEntry, float newBegin, float newEnd);
+		void		_entryVisibilityChanged(WaveChartEntry* pWaveChartEntry);
+		void		_setWaveChartEntryRange(WaveChartEntry* pWaveChartEntry, float newBegin, float newEnd);
 
-		void		_didAddEntries(AreaChartEntry* pEntry, int nb) override;
-		void		_didMoveEntries(AreaChartEntry* pFrom, AreaChartEntry* pTo, int nb) override;
-		void		_willEraseEntries(AreaChartEntry* pEntry, int nb) override;
+		void		_didAddEntries(WaveChartEntry* pEntry, int nb) override;
+		void		_didMoveEntries(WaveChartEntry* pFrom, WaveChartEntry* pTo, int nb) override;
+		void		_willEraseEntries(WaveChartEntry* pEntry, int nb) override;
 
 		void		_updateWaveformEdge(Waveform* pWaveform, bool bTopEdge, int nSamples, float* pSamples, bool bAxisSwapped);
 
@@ -245,19 +262,17 @@ namespace wg
 
 		void    	_preRender() override;
 
-		void		_updateAreaChartEntrys();
+		void		_updateWaveChartEntrys();
 
 		RectSPX		_entryRangeToRect( float begin, float end, bool bAxisSwapped) const;
 
-		void		_requestRenderAreaChartEntry(AreaChartEntry* pAreaChartEntry, float leftmost, float rightmost);
+		void		_requestRenderWaveChartEntry(WaveChartEntry* pWaveChartEntry, float leftmost, float rightmost);
 
-		void		_entryNeedsRefresh(AreaChartEntry* pAreaChartEntry, bool bGeo, bool bSamples, bool bColor);
+		void		_waveformNeedsRefresh(WaveChartEntry* pWaveChartEntry, bool bGeo, bool bSamples, bool bColor);
 
 		//
 
 	private:
-
-		Edgemap_p		m_pEdgemap;
 
 		bool			m_bPreRenderRequested = false;
 		bool			m_bTransitioning = false;
@@ -268,4 +283,4 @@ namespace wg
 
 
 } // namespace wg
-#endif //WG_AREACHART_DOT_H
+#endif //WG_WAVECHART_DOT_H
