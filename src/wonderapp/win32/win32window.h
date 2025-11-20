@@ -31,10 +31,6 @@
 
 //____ Win32Window _______________________________________________________________
 
-class Win32Window;
-typedef	wg::StrongPtr<Win32Window>	Win32Window_p;
-typedef	wg::WeakPtr<Win32Window>	Win32Window_wp;
-
 
 class Win32Window : public wapp::WindowAPI::SysCalls
 {
@@ -61,6 +57,10 @@ protected:
 	bool			releaseFocus() override;
 	bool			minimize() override;
 	bool			restore() override;
+
+	bool 			setTitle(std::string& title) override;
+	std::string 	title() override;
+
 
 	//
 

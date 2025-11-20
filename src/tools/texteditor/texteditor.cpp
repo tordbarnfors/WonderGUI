@@ -8,6 +8,7 @@
 
 
 using namespace wg;
+using namespace wapp;
 using namespace std;
 
 uint64_t	startTime;
@@ -21,9 +22,9 @@ WonderApp_p WonderApp::create()
 
 //____ init() _________________________________________________________________
 
-bool MyApp::init(Visitor* pVisitor)
+bool MyApp::init(API* pVisitor)
 {
-	m_pAppVisitor = pVisitor;
+	m_pAPI = pVisitor;
 
 	// Add any text-file from the argument list
 
@@ -40,7 +41,7 @@ bool MyApp::init(Visitor* pVisitor)
 		openFile(arg);
 	}
 
-	startTime = m_pAppVisitor->time();
+	startTime = m_pAPI->time();
 
 	return true;
 }
@@ -50,7 +51,7 @@ bool MyApp::init(Visitor* pVisitor)
 bool MyApp::update()
 {
 /*
-	auto time = m_pAppVisitor->time();
+	auto time = m_pAPI->time();
 	
 	if( time - startTime > 5000000 )
 	{
@@ -58,23 +59,33 @@ bool MyApp::update()
 		startTime = time;
 	}
 */
-	return true;
+	return !m_editorWindows.empty();
 }
 
 //____ exit() _________________________________________________________________
 
 void MyApp::exit()
 {
-
 }
 
+//____ closeWindow() __________________________________________________________
+
+void MyApp::closeWindow(wapp::Window* _pWindow)
+{
+	auto pClose = static_cast<EditorWindow*>(_pWindow);
+
+	m_editorWindows.erase(std::remove_if(m_editorWindows.begin(),
+	m_editorWindows.end(),
+	[pClose](const EditorWindow_p& pWindow ) {return pWindow.rawPtr() == pClose;}  ),
+	m_editorWindows.end());
+}
 
 //____ setupGUI() ____________________________________________________________
 
 bool MyApp::setupGUI()
 {
 
-	auto pFontBlob = m_pAppVisitor->loadBlob("resources/DroidSans.ttf");
+	auto pFontBlob = m_pAPI->loadBlob("resources/DroidSans.ttf");
 	auto pFont = FreeTypeFont::create(pFontBlob);
 
 	m_pTextStyle = TextStyle::create(WGBP(TextStyle,
@@ -100,7 +111,7 @@ bool MyApp::setupGUI()
 
 	//
 
-	if (!_loadSkins(m_pAppVisitor))
+	if (!_loadSkins(m_pAPI))
 		return false;
 
 	return true;
@@ -108,7 +119,7 @@ bool MyApp::setupGUI()
 
 //____ _loadSkins() ___________________________________________________________
 
-bool MyApp::_loadSkins(Visitor * pVisitor)
+bool MyApp::_loadSkins(API * pVisitor)
 {
 	string path = "resources/greyskin/";
 
@@ -172,30 +183,13 @@ bool MyApp::createEditorWindow( const std::string& windowTitle, const std::strin
 		title = _createWindowTitle(path);
 	else
 		title = windowTitle;
-	
-	auto pWindow = m_pAppVisitor->createWindow({ .size = {800,600}, .title = title });
 
 	if (m_editorWindows.empty())
 		setupGUI();
 
-
-	auto pEditorWindow = EditorWindow::create(pWindow, this, title, path );
+	auto pEditorWindow = EditorWindow::create(m_pAPI, this, title, path );
 
 	m_editorWindows.push_back(pEditorWindow);
-	
-		
-	auto pWindowRaw = pEditorWindow.rawPtr();
-	auto pThis = this;
-	pWindow->setCloseRequestHandler([pThis,pWindowRaw](void) {
-		
-		pThis->m_editorWindows.erase(std::remove_if(pThis->m_editorWindows.begin(),
-		pThis->m_editorWindows.end(),
-		[pWindowRaw](const EditorWindow_p& pWindow ) {return pWindow.rawPtr() == pWindowRaw;}  ),
-		pThis->m_editorWindows.end());
-
-		return true;
-	});
-	
 	return true;
 }
 

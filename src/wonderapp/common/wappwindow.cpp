@@ -77,52 +77,47 @@ Window::Window(API* pAPI, const Blueprint& blueprint)
 	m_pSysCalls = result.pSysCalls;
 	m_pRoot = result.root;
 
+	DynamicSlot* pSlot = &m_pRoot->slot;
+
 	Overlay_p lastOverlay = nullptr;
+
+	if(result.debugger && blueprint.debug)
+	{
+		auto pDebugCapsule = DebugCapsule::create( { .frontend = result.debugger });
+		m_pRoot->slot = pDebugCapsule;
+		pSlot = &pDebugCapsule->slot;
+	}
 
 	if (blueprint.tooltipOverlay)
 	{
-		auto pTooltipOverlay = TooltipOverlay::create();
-		m_pRoot->slot = pTooltipOverlay;
-		lastOverlay = pTooltipOverlay;
+		auto pOverlay = TooltipOverlay::create();
+		pSlot->setWidget(pOverlay);
+		pSlot = &pOverlay->mainSlot;
 	}
 
 	if( blueprint.dndOverlay )
 	{
-		auto pDragNDropOverlay = DragNDropOverlay::create();
-
-		if( lastOverlay )
-			lastOverlay->mainSlot = pDragNDropOverlay;
-		else
-			m_pRoot->slot = pDragNDropOverlay;
-
-		lastOverlay = pDragNDropOverlay;
+		auto pOverlay = DragNDropOverlay::create();
+		pSlot->setWidget(pOverlay);
+		pSlot = &pOverlay->mainSlot;
 	}
 
 	if( blueprint.popupOverlay )
 	{
-		auto pPopupOverlay = PopupOverlay::create();
-		if( lastOverlay )
-			lastOverlay->mainSlot = pPopupOverlay;
-		else
-			m_pRoot->slot = pPopupOverlay;
-		lastOverlay = pPopupOverlay;
+		auto pOverlay = PopupOverlay::create();
+		pSlot->setWidget(pOverlay);
+		pSlot = &pOverlay->mainSlot;
 	}
 
 	if( blueprint.modalOverlay )
 	{
-		auto pModalOverlay = ModalOverlay::create();
-		if( lastOverlay )
-			lastOverlay->mainSlot = pModalOverlay;
-		else
-			m_pRoot->slot = pModalOverlay;
-		lastOverlay = pModalOverlay;
+		auto pOverlay = ModalOverlay::create();
+		pSlot->setWidget(pOverlay);
+		pSlot = &pOverlay->mainSlot;
 	}
 
 	m_pMainCapsule = RenderLayerCapsule::create();
-	if( lastOverlay )
-		lastOverlay->mainSlot = m_pMainCapsule;
-	else
-		m_pRoot->slot = m_pMainCapsule;
+	pSlot->setWidget(m_pMainCapsule);
 }
 
 //____ destructor _____________________________________________________
@@ -169,7 +164,7 @@ wg::Size Window::setSize(wg::Size size)
 
 bool Window::setTitle(std::string& title)
 {
-	//TODO: Implement!
+	m_pSysCalls->setTitle(title);
 	return false;
 }
 
@@ -177,8 +172,7 @@ bool Window::setTitle(std::string& title)
 
 std::string Window::title() const
 {
-	//TODO: Implement!
-	return "";
+	return m_pSysCalls->title();
 }
 
 //____ setIcon() _____________________________________________________________
@@ -197,19 +191,6 @@ wg::Rect Window::_updateWindowGeo(const wg::Rect& geo)
 	return geo;
 }
 
-
-//____ _setDebugger() ______________________________________________________
-
-void Window::_setDebugger( DebugFrontend * pDebugger )
-{
-/*
-	auto pNextWidget = m_pRootPanel->slot.widget();
-	auto pDebugCapsule = DebugCapsule::create( { .frontend = pDebugger });
-
-	m_pRootPanel->slot = pDebugCapsule;
-	pDebugCapsule->slot = pNextWidget;
-*/
-}
 //____ onClose() ____________________________________________________________
 
 bool Window::onClose()

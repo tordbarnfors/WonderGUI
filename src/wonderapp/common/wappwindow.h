@@ -50,11 +50,12 @@ namespace wapp
 			// The origin-relative positioning of this blueprint will be recalculated
 			// to a position in a coordinate system with origin at NorthWest.
 
+			bool				debug = true;
 			wg::Finalizer_p		finalizer = nullptr;
 			wg::Placement       origin = wg::Placement::Center;
 			wg::Coord           pos;
-			bool                resizable = true;
 			bool                open = true;
+			bool                resizable = true;
 			wg::Size            size = { 640,480 };
 			std::string         title = "WonderGUI Application";
 
@@ -97,8 +98,6 @@ namespace wapp
 		bool            setIcon(wg::Surface* pIcon);
 
 		//.____ Internal ____________________________________________________________
-
-		void		_setDebugger(wg::DebugFrontend* pDebugger);
 
 		bool		onClose() override;
 		wg::Size	adjustSize(wg::Size size) override;

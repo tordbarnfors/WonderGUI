@@ -10,15 +10,18 @@ set(SOURCES
 	sdlwindow.cpp
 	tinyfiledialogs.h
 	tinyfiledialogs.c
-	../common/wonderapp.h
-	../common/window.h
-	../common/window.cpp
+	../common/wappapi.h
+	../common/wappwindow.h
+	../common/wappwindow.cpp
+    ../common/wappwindowapi.h
+    ../common/wonderapp.h
 )
 
 set(INCDIRS
 	${CMAKE_CURRENT_LIST_DIR}
 	${WONDERGUI_INCDIRS}
 	${WGFREETYPEFONT_INCDIRS}
+	${WGDEBUGGER_INCDIRS}
 	${PROJECT_SOURCE_DIR}/wonderapp/common
 	${PROJECT_SOURCE_DIR}
 )
@@ -27,8 +30,8 @@ set(INCDIRS
 
 add_library(wappsdl2sw STATIC
     ${SOURCES}
-    sdlwindow_sw.h
-    sdlwindow_sw.cpp
+#    sdlwindow_sw.h
+#    sdlwindow_sw.cpp
 )
 
 target_include_directories(wappsdl2sw PRIVATE

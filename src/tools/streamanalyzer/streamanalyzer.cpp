@@ -26,6 +26,7 @@
 #include <fstream>
 
 using namespace wg;
+using namespace wapp;
 using namespace std;
 
 //____ create() _______________________________________________________________
@@ -37,18 +38,18 @@ WonderApp_p WonderApp::create()
 
 //____ init() _________________________________________________________________
 
-bool MyApp::init(Visitor* pVisitor)
+bool MyApp::init(API* pAPI)
 {
-	m_pAppVisitor = pVisitor;
+	m_pAppAPI = pAPI;
 
-	if (!_setupGUI(pVisitor))
+	if (!_setupGUI(pAPI))
 	{
 		printf("ERROR: Failed to setup GUI!\n");
 		printf("ERROR: Failed to setup GUI!\n");
 		return false;
 	}
 		
-	auto arguments = pVisitor->programArguments();
+	auto arguments = pAPI->programArguments();
 /*
 	if ( !arguments.empty() )
 	{
@@ -88,22 +89,27 @@ void MyApp::exit()
 	Base::setErrorHandler( nullptr );
 }
 
+//____ closeWindow() __________________________________________________________
+
+void MyApp::closeWindow(wapp::Window* pWindow)
+{
+	if( pWindow == m_pRecordedStepsWindow)
+		m_pRecordedStepsWindow = nullptr;
+}
+
+
 
 //____ _setupGUI() ____________________________________________________________
 
-bool MyApp::_setupGUI(Visitor* pVisitor)
+bool MyApp::_setupGUI(API* pAPI)
 {
-	m_pWindow = pVisitor->createWindow({ .minSize = { 600, 200 }, .size = {1600,800}, .title = "Stream Analyzer" });
-
-	m_pWindow->setCloseRequestHandler([](void) {
-		return true;
-	});
+	m_pWindow = wapp::Window::create(pAPI,{ /*.minSize = { 600, 200 },*/ .size = {1600,800}, .title = "Stream Analyzer" });
 		
 	//
 
-	auto path = pVisitor->resourceDirectory();
+	auto path = pAPI->resourceDirectory();
 	
-	auto pFontBlob = pVisitor->loadBlob( path + "DroidSans.ttf");
+	auto pFontBlob = pAPI->loadBlob( path + "DroidSans.ttf");
 	auto pFont = FreeTypeFont::create(pFontBlob);
 	m_pFont = pFont;
 	
@@ -134,7 +140,7 @@ bool MyApp::_setupGUI(Visitor* pVisitor)
 
 	//
 
-	if (!_loadSkins(pVisitor))
+	if (!_loadSkins(pAPI))
 		return false;
 
 	m_pLayout = PackLayout::create({ .wantedSize = PackLayout::WantedSize::Default,
@@ -142,9 +148,9 @@ bool MyApp::_setupGUI(Visitor* pVisitor)
 
 	m_pDebugger = DebugBackend::create();
 
-	auto pTheme = pVisitor->initDefaultTheme();
-	auto pIconSurface = pVisitor->loadSurface("resources/debugger_gfx.png");
-	auto pTransparencyGrid = pVisitor->loadSurface("resources/checkboardtile.png", nullptr, { .tiling = true } );
+	auto pTheme = pAPI->initDefaultTheme();
+	auto pIconSurface = pAPI->loadSurface("resources/debugger_gfx.png");
+	auto pTransparencyGrid = pAPI->loadSurface("resources/checkboardtile.png", nullptr, { .tiling = true } );
 
 	m_pDebugOverlay = DebugOverlay::create( { .backend = m_pDebugger, .theme = pTheme, .icons = pIconSurface, .transparencyGrid = pTransparencyGrid } );
 
@@ -183,7 +189,7 @@ bool MyApp::_setupGUI(Visitor* pVisitor)
 
 	m_pDebugOverlay->mainSlot = pPopupOverlay;
 
-	m_pWindow->setContent(pPopupOverlayForDebugger);
+	m_pWindow->mainCapsule()->slot = pPopupOverlayForDebugger;
 
 	pSplitPanel->setSplit(0.5f);
 
@@ -792,20 +798,20 @@ Widget_p MyApp::createNavigationPanel()
 
 //____ _loadSkins() ___________________________________________________________
 
-bool MyApp::_loadSkins(Visitor * pVisitor)
+bool MyApp::_loadSkins(API * pAPI)
 {
 	
-	auto path = pVisitor->resourceDirectory();
+	auto path = pAPI->resourceDirectory();
 
 
 #ifndef __APPLE__
 	path.append("greyskin/");
 #endif
 
-	auto pPlateSurf = pVisitor->loadSurface(path + "plate.bmp");
-	auto pButtonSurf = pVisitor->loadSurface(path + "button.bmp");
-	auto pStateButtonSurf = pVisitor->loadSurface(path + "state_button.bmp");
-	auto pCheckBoxSurf = pVisitor->loadSurface(path + "checkbox.png");
+	auto pPlateSurf = pAPI->loadSurface(path + "plate.bmp");
+	auto pButtonSurf = pAPI->loadSurface(path + "button.bmp");
+	auto pStateButtonSurf = pAPI->loadSurface(path + "state_button.bmp");
+	auto pCheckBoxSurf = pAPI->loadSurface(path + "checkbox.png");
 
 	if (!pPlateSurf || !pButtonSurf || !pStateButtonSurf)
 		return false;
@@ -862,7 +868,7 @@ bool MyApp::_loadSkins(Visitor * pVisitor)
 
 void MyApp::selectAndLoadStream()
 {
-	auto selectedFile = m_pAppVisitor->openFileDialog("Select GfxStream", "", { "*.wax", "*.dat" }, "Stream files");
+	auto selectedFile = m_pAppAPI->openFileDialog("Select GfxStream", "", { "*.wax", "*.dat" }, "Stream files");
 	
 	if( selectedFile.empty()  )
 		return;
@@ -875,7 +881,7 @@ void MyApp::selectAndLoadStream()
 bool MyApp::loadStream(std::string path)
 {
 
-	auto pStream = m_pAppVisitor->loadBlob(path);
+	auto pStream = m_pAppAPI->loadBlob(path);
 
 	m_pStreamBlob = pStream;
 
@@ -1336,13 +1342,8 @@ void MyApp::openRecordedStepsWindow()
 {
 	if( !m_pRecordedStepsWindow )
 	{
-		m_pRecordedStepsWindow = m_pAppVisitor->createWindow( { .title = "Recorded Steps" } );
+		m_pRecordedStepsWindow = Window::create( m_pAppAPI, { .title = "Recorded Steps" } );
 
-		m_pRecordedStepsWindow->setCloseRequestHandler([this](void) {
-			this->m_pRecordedStepsWindow = nullptr;
-			return true;
-		});
-		
 		auto pScroll = ScrollPanel::create( { .skin = m_pPlateSkin } );
 		
 		auto pStepList = PackPanel::create( { .axis = Axis::Y } );
@@ -1357,7 +1358,7 @@ void MyApp::openRecordedStepsWindow()
 		
 		pScroll->slot = pStepList;
 
-		m_pRecordedStepsWindow->setContent(pScroll);		
+		m_pRecordedStepsWindow->mainCapsule()->slot = pScroll;		
 	}	
 	
 }

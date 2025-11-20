@@ -18,9 +18,11 @@ using namespace std;
 class MyApp : public WonderApp
 {
 public:
-	bool		init(Visitor* pVisitor) override;
+	bool		init(wapp::API* pVisitor) override;
 	bool		update() override;
 	void		exit() override;
+
+	void		closeWindow(wapp::Window* pWindow) override;
 
 	Widget_p 	createTopBar();
 	Widget_p	createDisplayPanel();
@@ -66,18 +68,18 @@ private:
 	void		_updateResourcesView();
 	void		_updateDebugOverlays();
 
-	bool		_setupGUI(Visitor* pVisitor);
-	bool		_loadSkins(Visitor* pVisitor);
-	
+	bool		_setupGUI(wapp::API* pAPI);
+	bool		_loadSkins(wapp::API* pAPI);
+
 	void		_generateFrameStatistics();
 	void		_displayFrameStatistics();
 
 	ScrollPanel_p	_standardScrollPanel();
 	Widget_p		_buildSurfaceDisplayWithIndexTag( Surface * pSurf, int index );
 	
-	Visitor * 			m_pAppVisitor = nullptr;
-	Window_p			m_pWindow;
-	Window_p			m_pRecordedStepsWindow;
+	wapp::API * 		m_pAppAPI = nullptr;
+	wapp::Window_p		m_pWindow;
+	wapp::Window_p		m_pRecordedStepsWindow;
 
 	GfxDevice_p			m_pStreamGfxDevice;
 	GfxBackend_p		m_pStreamGfxBackend;

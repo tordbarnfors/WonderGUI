@@ -22,6 +22,7 @@
 #pragma once
 
 #include <wondergui.h>
+#include <wg_debugger.h>
 
 #include <string>
 
@@ -43,6 +44,9 @@ namespace wapp
 			virtual bool		releaseFocus() = 0;
 			virtual bool		minimize() = 0;
 			virtual bool		restore() = 0;
+
+			virtual bool 		setTitle(std::string& title) = 0;
+			virtual std::string title() = 0;
 		};
 
 
@@ -54,6 +58,7 @@ namespace wapp
 			wg::Rect		geo;
 			wg::RootPanel_p	root;
 			SysCalls *		pSysCalls;
+			wg::DebugFrontend_p	debugger;
 		};
 
 

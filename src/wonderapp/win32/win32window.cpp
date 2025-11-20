@@ -126,3 +126,18 @@ bool Win32Window::restore()
 	return false;
 }
 
+//____ setTitle() _____________________________________________________________
+
+bool Win32Window::setTitle(std::string& title)
+{
+	return false;
+}
+
+//____ title() ________________________________________________________________
+
+std::string Win32Window::title()
+{
+	return "";
+}
+
+
