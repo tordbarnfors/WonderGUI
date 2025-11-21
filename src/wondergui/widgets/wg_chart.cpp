@@ -321,7 +321,7 @@ namespace wg
 		for (int i = 0; i < nb; i++)
 		{
 			pEntry[i].m_pDisplay = this;
-			
+
 			TextLayout* pLayout = pEntry[i].m_pTextLayout ? pEntry[i].m_pTextLayout.rawPtr() : pDefaultLayout;
 			pLayout->addText(&pEntry[i]);
 		}
@@ -347,7 +347,7 @@ namespace wg
 			pLayout->didMoveText(&pFrom[i], &pTo[i]);
 		}
 
-		// Re-render in case 
+		// Re-render in case
 
 		_requestRender();
 	}
@@ -440,7 +440,7 @@ namespace wg
 		}
 
 
-		
+
 		// Adjust top and bottom margins so no side labels sticks out above/below canvas.
 
 		float	rangeMin = std::min(m_displayCeiling, m_displayFloor);
@@ -558,6 +558,14 @@ namespace wg
 		// Finish up
 
 		RectSPX graphCanvas = Util::alignDown(contentGeo - margin);
+		if(graphCanvas.h < 0)
+		{
+			graphCanvas.h = 0;
+		}
+		if(graphCanvas.w < 0)
+		{
+			graphCanvas.w = 0;
+		}
 
 		if (graphCanvas == m_chartCanvas)
 			return false;
@@ -594,7 +602,7 @@ namespace wg
 				CoordSPX pos = line.m_bLabelAtEnd ? m_chartCanvas.topLeft() : m_chartCanvas.bottomLeft();
 				pos.x += line.m_value * m_chartCanvas.w;
 
-				pos += _topBottomLabelOffset(&line); 
+				pos += _topBottomLabelOffset(&line);
 				line.m_labelGeo.setPos(Util::align(pos));
 			}
 		}
@@ -780,7 +788,7 @@ namespace wg
 
 		SizeSPX newSize = pLayout->defaultSize(this, scale);
 		SizeSPX oldSize;
-		
+
 		if( !m_labelGeo.size().isEmpty() )
 			oldSize = m_labelGeo.size() - oldLabelPadding;
 
