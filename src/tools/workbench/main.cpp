@@ -725,6 +725,17 @@ int main(int argc, char** argv)
 
 //		Base::update(int64_t(SDL_GetTicks()) * 1000 + 5000000);
 
+/*
+		auto pFiller1 = Filler::create();
+		auto pFiller2 = Filler::create();
+		auto pFiller3 = Filler::create();
+
+		auto pPanel = PackPanel::create();
+
+		pPanel->slots.pushBack({ pFiller1, pFiller2, pFiller3 });
+
+		pPanel->slots.moveToBack(0);
+*/
 
 		auto pSlot = ComponentPtr(pDnDLayer, pDnDLayer->mainSlot);
 

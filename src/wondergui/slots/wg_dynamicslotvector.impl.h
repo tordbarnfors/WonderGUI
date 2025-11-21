@@ -381,10 +381,13 @@ namespace wg
 		//TODO: Assert
 
 		SlotType * pFrom = _slot(index);
-		SlotType * pTo = _end();
+		SlotType * pTo = _end()-1;
 
-		_move(pFrom, pTo);
-		m_pHolder->_didMoveSlots(pFrom, pTo, 1);
+		if (pFrom != pTo)
+		{
+			_move(pFrom, pTo);
+			m_pHolder->_didMoveSlots(pFrom, pTo, 1);
+		}
 	}
 
 	template < class SlotType>
@@ -393,10 +396,13 @@ namespace wg
 		//TODO: Assert
 
 		SlotType * pFrom = it;
-		SlotType * pTo = _end();
+		SlotType * pTo = _end()-1;
 
-		_move(pFrom, pTo);
-		m_pHolder->_didMoveSlots(pFrom, pTo, 1);
+		if (pFrom != pTo)
+		{
+			_move(pFrom, pTo);
+			m_pHolder->_didMoveSlots(pFrom, pTo, 1);
+		}
 		return iterator(_last());
 	}
 
@@ -410,8 +416,11 @@ namespace wg
 		SlotType * pFrom = _slot(index);
 		SlotType * pTo = _begin();
 
-		_move(pFrom, pTo);
-		m_pHolder->_didMoveSlots(pFrom, pTo, 1);
+		if (pFrom != pTo)
+		{
+			_move(pFrom, pTo);
+			m_pHolder->_didMoveSlots(pFrom, pTo, 1);
+		}
 	}
 
 	template < class SlotType>
@@ -422,8 +431,12 @@ namespace wg
 		SlotType * pFrom = it;
 		SlotType * pTo = _begin();
 
-		_move(pFrom, pTo);
-		m_pHolder->_didMoveSlots(pFrom, pTo, 1);
+		if (pFrom != pTo)
+		{
+			_move(pFrom, pTo);
+			m_pHolder->_didMoveSlots(pFrom, pTo, 1);
+		}
+
 		return iterator(_begin());
 	}
 
@@ -436,6 +449,7 @@ namespace wg
 
 		SlotType * pFrom = _slot(index);
 		SlotType * pTo = _slot(sibling);
+
 
 		if (pFrom < pTo)
 			pTo--;
@@ -517,25 +531,26 @@ namespace wg
 		int toIndex = int(pTo - m_pArray);
 
 		SlotType temp = std::move(*pFrom);
-		if (pFrom < pTo)
+		if (SlotType::safe_to_relocate)
 		{
-			if (SlotType::safe_to_relocate)
+			if (pFrom < pTo)
 			{
 				memmove((void*)pFrom, &pFrom[1], sizeof(SlotType) * (pTo - pFrom));
 				_reallocBlock(pFrom, pTo);
 			}
 			else
 			{
-				for (int i = 0; i < pTo - pFrom; i++)
-					pFrom[i] = std::move(pFrom[i + 1]);
+				memmove((void*)&pTo[1], pTo, sizeof(SlotType) * (pFrom - pTo));
+				_reallocBlock(pTo+1, pFrom+1);
 			}
+			pTo->m_pWidget = nullptr;
 		}
 		else
 		{
-			if (SlotType::safe_to_relocate)
+			if (pFrom < pTo)
 			{
-				memmove((void*)&pTo[1], pTo, sizeof(SlotType) * (pFrom - pTo));
-				_reallocBlock(pTo, pFrom);
+				for (int i = 0; i < pTo - pFrom; i++)
+					pFrom[i] = std::move(pFrom[i + 1]);
 			}
 			else
 			{
