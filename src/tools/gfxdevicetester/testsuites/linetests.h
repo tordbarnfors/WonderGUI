@@ -10,7 +10,7 @@ public:
 		addTest("SolarisLines", &LineTests::solarisLines );
 	}
 
-	bool init(GfxDevice * pDevice, const RectSPX& canvas, WonderApp::Visitor * pAppVisitor)
+	bool init(GfxDevice * pDevice, const RectSPX& canvas, wapp::API * pAppAPI)
 	{
 		const double PI = 3.1415;
 

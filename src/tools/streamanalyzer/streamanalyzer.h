@@ -18,7 +18,7 @@ using namespace std;
 class MyApp : public WonderApp
 {
 public:
-	bool		init(wapp::API* pVisitor) override;
+	bool		init(wapp::API* pAPI) override;
 	bool		update() override;
 	void		exit() override;
 

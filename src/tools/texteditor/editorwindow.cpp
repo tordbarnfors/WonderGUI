@@ -15,7 +15,7 @@ using namespace std;
 
 //____ constructor ____________________________________________________________
 
-EditorWindow::EditorWindow(API * pAPI, MyApp* pApp, std::string title, std::string path ) : Window(pAPI,{ .size = {800,600}, .title = title, .open = true, .resizable = true })
+EditorWindow::EditorWindow(API * pAPI, MyApp* pApp, std::string title, std::string path ) : Window(pAPI,{ .open = true, .resizable = true, .size = {800,600}, .title = title })
 {
 	m_pAPI = pAPI;
 	m_pAPI = pAPI;
@@ -161,7 +161,7 @@ bool EditorWindow::_selectAndLoadFile()
 bool EditorWindow::_selectAndSaveFile()
 {
 	/*
-	 auto selectedFiles = m_pAppVisitor->openMultiFileDialog("Select Images", "", { "*.surf", "*.qoi" }, "Image files");
+	 auto selectedFiles = m_pAppAPI->openMultiFileDialog("Select Images", "", { "*.surf", "*.qoi" }, "Image files");
 
 		if( selectedFiles.empty()  )
 			return;

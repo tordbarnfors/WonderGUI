@@ -78,6 +78,7 @@ namespace wapp
 		//.___ Content __________________________________________________
 
 		wg::Capsule_p	mainCapsule() const { return m_pMainCapsule; }
+		wg::RootPanel_p	root() const { return m_pRoot; }
 
 		//.____ Geometry ______________________________________________________
 

@@ -14,9 +14,11 @@ class MyApp : public WonderApp
 {
 public:
 
-	bool		init(Visitor* pVisitor) override;
+	bool		init(wapp::API* pAPI) override;
 	bool		update() override;
 	void		exit() override;
+
+	void		closeWindow(wapp::Window* pWindow) override;
 
 	void		tintModeToggled(wg::Msg* pMsg);
 	void		blendModeToggled(wg::Msg* pMsg);
@@ -42,7 +44,7 @@ public:
 
 private:
 
-	bool			_setupGUI(Visitor* pVisitor);
+	bool			_setupGUI(wapp::API* pAPI);
 	wg::Widget_p	_buildButtonRow();
 	wg::Widget_p	_buildList();
 
@@ -63,9 +65,9 @@ private:
 
 
 	KernelDB *			m_pDB = nullptr;
-	Visitor *			m_pVisitor = nullptr;
+	wapp::API *			m_pAPI = nullptr;
 	
-	Window_p			m_pWindow;
+	wapp::Window_p		m_pWindow;
 
 	wg::Theme_p			m_pTheme;
 

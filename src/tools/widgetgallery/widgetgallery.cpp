@@ -23,11 +23,11 @@ WonderApp_p WonderApp::create()
 
 //____ init() _________________________________________________________________
 
-bool MyApp::init(Visitor* pVisitor)
+bool MyApp::init(wapp::API* pAPI)
 {
-	m_pAppVisitor = pVisitor;
+	m_pAppAPI = pAPI;
 
-	if (!_setupGUI(pVisitor))
+	if (!_setupGUI(pAPI))
 	{
 		printf("ERROR: Failed to setup GUI!\n");
 		return false;
@@ -50,16 +50,25 @@ void MyApp::exit()
 
 }
 
+//____ closeWindow() __________________________________________________________
+
+void MyApp::closeWindow(wapp::Window* pWindow)
+{
+	if (pWindow == m_pWindow)
+		m_pWindow = nullptr;
+}
+
+
 
 //____ _setupGUI() ____________________________________________________________
 
-bool MyApp::_setupGUI(Visitor* pVisitor )
+bool MyApp::_setupGUI(wapp::API* pAPI )
 {
-	m_pWindow = pVisitor->createWindow({ .size = {800,600}, .title = "WonderGUI Widget Gallery" });
+	m_pWindow = wapp::Window::create(pAPI, { .size = {800,600}, .title = "WonderGUI Widget Gallery" });
 
 	//
 
-	auto pFontBlob = pVisitor->loadBlob("resources/DroidSans.ttf");
+	auto pFontBlob = pAPI->loadBlob("resources/DroidSans.ttf");
 	auto pFont = FreeTypeFont::create(pFontBlob);
 
 	m_pTextStyle = TextStyle::create(WGBP(TextStyle,
@@ -83,7 +92,7 @@ bool MyApp::_setupGUI(Visitor* pVisitor )
 
 	//
 
-	auto pThemeSurf = pVisitor->loadSurface("resources/newskin/skin_widgets.png");
+	auto pThemeSurf = pAPI->loadSurface("resources/newskin/skin_widgets.png");
 
 	auto pTheme = Simplistic::create(pFont, pFont, pFont, pFont, pThemeSurf);
 
@@ -107,7 +116,7 @@ bool MyApp::_setupGUI(Visitor* pVisitor )
 
 	pBasePanel->setSlotWeight(0, 2, {0.f,1.f});
 	
-	m_pWindow->setContent(pBasePanel);
+	m_pWindow->mainCapsule()->slot = pBasePanel;
 
 	return true;
 }

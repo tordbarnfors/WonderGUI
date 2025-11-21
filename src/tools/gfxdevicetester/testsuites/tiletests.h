@@ -37,9 +37,9 @@ public:
 		addTest("TileRotScale2", &TileTests::setup, &TileTests::tileRotScale2, &TileTests::dummy);
 	}
 
-	bool init(GfxDevice * pDevice, const RectI& canvas, WonderApp::Visitor * pAppVisitor)
+	bool init(GfxDevice * pDevice, const RectI& canvas, wapp::API * pAppAPI)
 	{
-		m_pImg = pAppVisitor->loadSurface("resources/small_tile.png", pDevice->surfaceFactory(), { .sampleMethod = SampleMethod::Bilinear, .tiling = true });
+		m_pImg = pAppAPI->loadSurface("resources/small_tile.png", pDevice->surfaceFactory(), { .sampleMethod = SampleMethod::Bilinear, .tiling = true });
 		if (!m_pImg)
 			return false;
 

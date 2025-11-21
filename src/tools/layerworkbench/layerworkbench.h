@@ -12,19 +12,21 @@ using namespace wg;
 class MyApp : public WonderApp
 {
 public:
-	bool		init(Visitor* pVisitor) override;
+	bool		init(wapp::API* pAPI) override;
 	bool		update() override;
 	void		exit() override;
 
+	void		closeWindow(wapp::Window* pWindow) override;
+
 private:
 	
-	bool		setupGUI(Visitor * pVisitor);
+	bool		setupGUI(wapp::API * pAPI);
 	
 	Widget_p	createMovableBox( Skin * pSkin, FlexPanel * pParent );
 	Widget_p	makeMovable(const Widget_p& pWidget, FlexPanel* pParent);
 
 
-	Window_p	m_pWindow;
+	wapp::Window_p	m_pWindow;
 	
 };
 

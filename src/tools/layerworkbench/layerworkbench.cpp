@@ -19,9 +19,9 @@ WonderApp_p WonderApp::create()
 
 //____ init() _________________________________________________________________
 
-bool MyApp::init(Visitor* pVisitor)
+bool MyApp::init(wapp::API* pAPI)
 {
-	if (!setupGUI(pVisitor))
+	if (!setupGUI(pAPI))
 	{
 		printf("ERROR: Failed to setup GUI!\n");
 		return false;
@@ -37,7 +37,7 @@ bool MyApp::init(Visitor* pVisitor)
 
 bool MyApp::update()
 {
-	return true;
+	return m_pWindow != nullptr;
 }
 
 //____ exit() _________________________________________________________________
@@ -46,19 +46,27 @@ void MyApp::exit()
 {
 }
 
+//____ closeWindow() __________________________________________________________
+
+void MyApp::closeWindow(wapp::Window* pWindow)
+{
+	if (pWindow == m_pWindow)
+		m_pWindow = nullptr;
+}
+
 //____ setupGUI() _____________________________________________________________
 
-bool MyApp::setupGUI(Visitor* pVisitor)
+bool MyApp::setupGUI(wapp::API* pAPI)
 {
 	// Setup window
 	
-	auto pWindow = pVisitor->createWindow( {
+	auto pWindow = wapp::Window::create( pAPI, {
 		.title = "Layer Workbench"
 	});
 	
 	m_pWindow = pWindow;
 
-	auto pRoot = m_pWindow->rootPanel();
+	auto pRoot = m_pWindow->root();
 	
 	auto pLayers = CanvasLayers::create({
 		.baseLayer = 2,
@@ -119,7 +127,7 @@ bool MyApp::setupGUI(Visitor* pVisitor)
 		});
 
 
-	auto pSplashSurface = pVisitor->loadSurface("resources/splash.png");
+	auto pSplashSurface = pAPI->loadSurface("resources/splash.png");
 
 
 
@@ -138,7 +146,7 @@ bool MyApp::setupGUI(Visitor* pVisitor)
 	// Setup layout
 	
 	auto pBaseFlex = FlexPanel::create();
-	m_pWindow->setContent(pBaseFlex);
+	m_pWindow->mainCapsule()->slot = pBaseFlex;
 
 	pBaseFlex->slots << createMovableBox(pBoxWithGlow, pBaseFlex);
 	pBaseFlex->slots << createMovableBox(pBoxWithShadow,pBaseFlex);

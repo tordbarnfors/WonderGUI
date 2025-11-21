@@ -14,9 +14,12 @@ class MyApp : public WonderApp
 {
 public:
 
-	bool		init(Visitor* pVisitor);
+	bool		init(wapp::API* pAPI);
 	bool		update();
 	void		exit();
+
+	void		closeWindow(wapp::Window* pWindow) override;
+
 
 	wg::Widget_p 	createInputPanel();
 	wg::Widget_p	createCharsPanel();
@@ -34,11 +37,11 @@ public:
 
 private:
 
-	bool			_setupGUI(Visitor* pVisitor);
-	bool			_loadSkins(Visitor* pVisitor);
+	bool			_setupGUI(wapp::API* pAPI);
+	bool			_loadSkins(wapp::API* pAPI);
 
-	Visitor *			m_pAppVisitor = nullptr;
-	Window_p			m_pWindow;
+	wapp::API*			m_pAppAPI = nullptr;
+	wapp::Window_p		m_pWindow;
 
 	wg::TextDisplay_p	m_pTTFPathDisplay;
 	wg::SelectBox_p		m_pSizeSelector;

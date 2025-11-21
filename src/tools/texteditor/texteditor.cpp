@@ -22,13 +22,13 @@ WonderApp_p WonderApp::create()
 
 //____ init() _________________________________________________________________
 
-bool MyApp::init(API* pVisitor)
+bool MyApp::init(API* pAPI)
 {
-	m_pAPI = pVisitor;
+	m_pAPI = pAPI;
 
 	// Add any text-file from the argument list
 
-	auto arguments = pVisitor->programArguments();
+	auto arguments = pAPI->programArguments();
 
 	if( arguments.empty() )
 	{
@@ -119,14 +119,14 @@ bool MyApp::setupGUI()
 
 //____ _loadSkins() ___________________________________________________________
 
-bool MyApp::_loadSkins(API * pVisitor)
+bool MyApp::_loadSkins(API * pAPI)
 {
 	string path = "resources/greyskin/";
 
-	auto pPlateSurf = pVisitor->loadSurface(path + "plate.bmp");
-	auto pButtonSurf = pVisitor->loadSurface(path + "button.bmp");
-	auto pStateButtonSurf = pVisitor->loadSurface(path + "state_button.bmp");
-	auto pCheckBoxSurf = pVisitor->loadSurface(path + "checkbox.png");
+	auto pPlateSurf = pAPI->loadSurface(path + "plate.bmp");
+	auto pButtonSurf = pAPI->loadSurface(path + "button.bmp");
+	auto pStateButtonSurf = pAPI->loadSurface(path + "state_button.bmp");
+	auto pCheckBoxSurf = pAPI->loadSurface(path + "checkbox.png");
 
 	if (!pPlateSurf || !pButtonSurf || !pStateButtonSurf)
 		return false;

@@ -90,11 +90,15 @@ SDLWindow::SDLWindow(wapp::Window* pUserWindow, wg::Placement origin, wg::Coord 
 
 	SDL_Window* pSDLWindow = SDL_CreateWindow(title.c_str(), geo.x, geo.y, geo.w, geo.h, flags);
 	if (pSDLWindow == NULL)
-		return nullptr;
+		return;
 
 	auto pWindowSurface = _generateWindowSurface(pSDLWindow, geo.w, geo.h);
-	 if (pWindowSurface == nullptr)
-		 return nullptr;
+	if (pWindowSurface == nullptr)
+	{
+		SDL_DestroyWindow(m_pSDLWindow);
+		pSDLWindow = nullptr;
+		return;
+	 }
 
 	m_pRootPanel = RootPanel::create( { .canvasSurface = pWindowSurface } );
 
