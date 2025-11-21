@@ -72,10 +72,11 @@ void WgRoot3Capsule::_onRender( wg::GfxDevice * pDevice, const WgRect& _canvas, 
 void WgRoot3Capsule::_onNewSize( const WgSize& size )
 {
 	WgWidget::_onNewSize(size);
-	if(slot.widget() != nullptr)
-	{
+	// _setScale uses m_geo to set size of the widget, so it's important it
+	// stays in sync!
+	m_geo.setSize(wg::SizeSPX(size * 64));
+	if(slot._widget())
 		slot->_resize(size * 64, RootPanel::m_scale);
-	}
 }
 
 void WgRoot3Capsule::_setScale( int scale )
