@@ -45,7 +45,9 @@ public:
     void				render();
 	wapp::Window*		userWindow() const { return m_pUserWindow; }
 	wg::RootPanel_p		rootPanel() const { return m_pRootPanel; }
+	HBITMAP				canvasBitmap() const { return m_hBitmap; }
 
+	void				onResize(int width, int height);
 
 protected:
 
@@ -65,6 +67,8 @@ protected:
 	//
 
     HWND				m_windowHandle;
+	HBITMAP				m_hBitmap;
+	DWORD*				m_pCanvasPixels;
 
 	wapp::Window *		m_pUserWindow;
 	wg::RootPanel_p		m_pRootPanel;

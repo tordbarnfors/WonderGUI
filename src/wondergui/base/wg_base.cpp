@@ -346,7 +346,7 @@ namespace wg
 
 		// Update wondergui systems
 
-		s_pGUIContext->pInputHandler->_update(timestamp/1000);
+		s_pGUIContext->pInputHandler->_update(timestamp);
 		s_pGUIContext->pSkinSlotManager->update(int(microPassed/1000));
 
 		// Update widgets.

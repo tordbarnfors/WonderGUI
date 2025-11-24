@@ -22,6 +22,7 @@
 
 #include <win32window.h>
 #include <windows.h>
+#include <wg_softsurface.h>
 
 using namespace wg;
 
@@ -44,13 +45,29 @@ Win32Window::Win32Window(wapp::Window* pUserWindow, wg::Placement origin, wg::Co
 	}
 	else
 	{
-		
+		BITMAPINFO bmi = { 0 };
+		bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+		bmi.bmiHeader.biWidth = geo.w;
+		bmi.bmiHeader.biHeight = -geo.h; // Negativt = top-down
+		bmi.bmiHeader.biPlanes = 1;
+		bmi.bmiHeader.biBitCount = 32;
+		bmi.bmiHeader.biCompression = BI_RGB;
 
-		auto pCanvas = Base::defaultSurfaceFactory()->createSurface({
+		HDC hdcScreen = GetDC(NULL);
+		m_hBitmap = CreateDIBSection(hdcScreen, &bmi, DIB_RGB_COLORS,
+			(void**)&m_pCanvasPixels, NULL, 0);
+		ReleaseDC(NULL, hdcScreen);
+
+		UINT dpi = GetDpiForWindow(m_windowHandle);
+		int scale = dpi * 64 / 96; // 96 DPI is 100% scaling
+
+
+		auto pCanvas = wg::SoftSurface::createInPlace({
 			.canvas = true,
 			.format = PixelFormat::BGRA_8,
+			.scale = scale,
 			.size = { (int) size.w, (int) size.h}
-			});
+			}, (uint8_t*) m_pCanvasPixels);
 
 
 		m_pRootPanel = RootPanel::create(pCanvas, Base::defaultGfxDevice());
@@ -69,6 +86,7 @@ Win32Window::Win32Window(wapp::Window* pUserWindow, wg::Placement origin, wg::Co
 
 Win32Window::~Win32Window()
 {
+	DeleteObject(m_hBitmap);
 }
 
 
@@ -76,7 +94,63 @@ Win32Window::~Win32Window()
 
 void Win32Window::render()
 {
+	m_pRootPanel->render();
 
+	int nRects = m_pRootPanel->nbUpdatedRects();
+	auto pRects = m_pRootPanel->firstUpdatedRect();
+	for (int i = 0; i < nRects; i++)
+	{
+		RectI rect = * pRects++ / 64;
+		RECT rc;
+		rc.left = rect.x;
+		rc.top = rect.y;
+		rc.right = rect.x + rect.w;
+		rc.bottom = rect.y + rect.h;
+		InvalidateRect(m_windowHandle, &rc, FALSE);
+	}
+}
+
+//____ onResize() ____________________________________________________________
+
+void Win32Window::onResize(int widthInPixels, int heightInPixels)
+{
+	// Resize bitmap
+
+	BITMAPINFO bmi = { 0 };
+	bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+	bmi.bmiHeader.biWidth = widthInPixels;
+	bmi.bmiHeader.biHeight = -heightInPixels; // Negativt = top-down
+	bmi.bmiHeader.biPlanes = 1;
+	bmi.bmiHeader.biBitCount = 32;
+	bmi.bmiHeader.biCompression = BI_RGB;
+
+	// Delete old bitmap
+
+	DeleteObject(m_hBitmap);
+
+	// Create new bitmap
+
+	HDC hdcScreen = GetDC(NULL);
+	m_hBitmap = CreateDIBSection(hdcScreen, &bmi, DIB_RGB_COLORS,
+		(void**)&m_pCanvasPixels, NULL, 0);
+	ReleaseDC(NULL, hdcScreen);
+
+
+
+	UINT dpi = GetDpiForWindow(m_windowHandle);
+	int scale = dpi * 64 / 96; // 96 DPI is 100% scaling
+
+	// Update root panel's surface
+
+	auto pCanvas = wg::SoftSurface::createInPlace({
+		.canvas = true,
+		.format = PixelFormat::BGRA_8,
+		.scale = scale,
+		.size = { widthInPixels, heightInPixels }
+		}, (uint8_t*)m_pCanvasPixels);
+
+	m_pRootPanel->setCanvas(pCanvas);
+	m_pUserWindow->onResize({ pts(widthInPixels*scale/64), pts(heightInPixels*scale/64) });
 }
 
 //____ destroy() _____________________________________________________________
