@@ -139,9 +139,10 @@ void		exit_wondergui();
 bool		backend_specific_init();
 void		backend_specific_exit();
 
-
 bool		init_debugger(MyAppAPI * pAPI);
 void		exit_debugger();
+
+SDLWindow * create_backend_specific_window(wapp::Window* pUserWindow, wg::Placement origin, wg::Coord pos, wg::Size size, const std::string& title, bool resizable, bool open);
 
 
 MouseButton translateSDLMouseButton(Uint8 button);
@@ -1125,7 +1126,7 @@ std::string MyAppAPI::selectFolderDialog(const std::string& title, const std::st
 
 WindowAPI::Result MyAppAPI::_createWindow( Window * pUserWindow, wg::Placement origin, wg::Coord pos, wg::Size size, const std::string& title, bool resizable, bool open)
 {
-	auto pSDLWindow = new SDLWindow(pUserWindow,origin,pos,size,title,resizable,open);
+	auto pSDLWindow = create_backend_specific_window(pUserWindow,origin,pos,size,title,resizable,open);
 
 	g_windows.push_back(pSDLWindow);
 

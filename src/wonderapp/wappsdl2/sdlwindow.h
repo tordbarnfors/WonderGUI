@@ -26,6 +26,19 @@
 
 #include <wappwindow.h>
 
+#ifdef WIN32
+#    include <SDL.h>
+#    include <Windows.h>
+#    include <libloaderapi.h>
+#elif __APPLE__
+#    include <SDL2/SDL.h>
+#    include <dlfcn.h>
+#else
+#    include <SDL2/SDL.h>
+#    include <dlfcn.h>
+#endif
+
+
 //____ SDLWindow _______________________________________________________________
 
 struct SDL_Window;
@@ -33,16 +46,17 @@ struct SDL_Window;
 class SDLWindow : public wapp::WindowAPI::SysCalls
 {
 public:
-	SDLWindow(wapp::Window* pUserWindow, wg::Placement origin, wg::Coord pos, wg::Size size, const std::string& title, bool resizable, bool open);
+	SDLWindow();
 	virtual ~SDLWindow();
 
     //.____ Misc ____________________________________________________
 
-	void				render();
+	virtual void		render() = 0;
+	virtual void    	onWindowSizeUpdated( int w, int h ) = 0;
+
 	wapp::Window*		userWindow() const { return m_pUserWindow; }
 	wg::RootPanel_p		rootPanel() const { return m_pRootPanel; }
 
-	void    			onWindowSizeUpdated( int w, int h );
 	uint32_t			SDLWindowId();
 	SDL_Window*			SDLWindowPtr() { return m_pSDLWindow; }
 
@@ -60,9 +74,6 @@ protected:
 	std::string 	title() override;
 
 	//
-
-
-	static wg::Surface_p   _generateWindowSurface(SDL_Window* pWindow, int width, int height );
 
 
 	SDL_Window*		m_pSDLWindow;

@@ -30,8 +30,7 @@ set(INCDIRS
 
 add_library(wappsdl2sw STATIC
     ${SOURCES}
-#    sdlwindow_sw.h
-#    sdlwindow_sw.cpp
+    backend_software.cpp
 )
 
 target_include_directories(wappsdl2sw PRIVATE
@@ -65,8 +64,7 @@ target_link_libraries(wappsdl2sw PRIVATE
 
 add_library(wappsdl2gl STATIC
     ${SOURCES}
-    sdlwindow_gl.h
-    sdlwindow_gl.cpp
+    backend_opengl.cpp
 )
 
 #target_compile_definitions(wappsdl2gl PRIVATE USE_OPENGL)
@@ -107,8 +105,7 @@ if(APPLE)
 
     add_library(wappsdl2metal STATIC
         ${SOURCES}
-        sdlwindow_metal.h
-        sdlwindow_metal.mm
+        backend_metal.mm
     )
 
     #target_compile_definitions(wappsdl2metal PRIVATE USE_OPENGL)

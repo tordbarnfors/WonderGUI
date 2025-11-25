@@ -79,7 +79,7 @@ bool MyApp::init(API* pAPI)
 
 bool MyApp::update()
 {
-	return true;
+	return (m_pWindow != nullptr);
 }
 
 //____ exit() _________________________________________________________________
@@ -95,6 +95,9 @@ void MyApp::closeWindow(wapp::Window* pWindow)
 {
 	if( pWindow == m_pRecordedStepsWindow)
 		m_pRecordedStepsWindow = nullptr;
+
+	if( pWindow == m_pWindow )
+		m_pWindow = nullptr;
 }
 
 
