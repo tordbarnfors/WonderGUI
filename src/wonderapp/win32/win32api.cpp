@@ -36,6 +36,8 @@
 using namespace wg;
 using namespace wapp;
 
+extern float		g_ticksToMicroseconds;
+
 
 
 //____ programArguments() _____________________________________________________
@@ -50,8 +52,9 @@ std::vector<std::string> Win32API::programArguments() const
 
 int64_t Win32API::time()
 {
-	//TODO: Implement!!!
-	return 0;
+	LARGE_INTEGER counter;
+	QueryPerformanceCounter(&counter);
+	return int64_t(counter.QuadPart * g_ticksToMicroseconds);
 }
 
 //____ loadBlob() _____________________________________________________________

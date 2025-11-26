@@ -364,8 +364,21 @@ int main(int arch, char * argv[] ) {
 	pIH->mapKey(VK_SHIFT, Key::Shift);
 	pIH->mapKey(VK_CONTROL, Key::StdControl);
 
-	//TODO: Handle Alt and others!!!!!!!
+	//TODO: Handle Alt and other modifier keys!!!!!!!
 
+
+	// Map key commands.
+
+	pIH->mapCommand('X', ModKeys::Command, EditCmd::Cut);
+	pIH->mapCommand('C', ModKeys::Command, EditCmd::Copy);
+	pIH->mapCommand('V', ModKeys::Command, EditCmd::Paste);
+
+	pIH->mapCommand('A', ModKeys::Command, EditCmd::SelectAll);
+
+	pIH->mapCommand('Z', ModKeys::Command, EditCmd::Undo);
+	pIH->mapCommand('Z', ModKeys::CommandShift, EditCmd::Redo);
+
+	pIH->mapCommand(VK_ESCAPE, ModKeys::None, EditCmd::Escape);
 
 	// Map key repeat to those of Windows
 
@@ -459,47 +472,96 @@ int main(int arch, char * argv[] ) {
 
 
 
+//____ hidePointer() __________________________________________________________
 
 bool Win32HostBridge::hidePointer()
 { 
 	return false; 
 }
 
+//____ showPointer() __________________________________________________________
 
 bool Win32HostBridge::showPointer()
 { 
 	return false; 
 }
 
+//____ setPointerStyle() _______________________________________________________
+
 bool Win32HostBridge::setPointerStyle(PointerStyle style)
 {
 	return false;
 }
+
+//____ lockHidePointer() _______________________________________________________
 
 bool Win32HostBridge::lockHidePointer()
 {
 	return false;
 }
 
+//____ unlockShowPointer() ______________________________________________________
+
 bool Win32HostBridge::unlockShowPointer()
 {
 	return false;
 }
 
+//____ getClipboardText() ______________________________________________________
+
 std::string	Win32HostBridge::getClipboardText()
 {
-	return "";
+	std::string clipboardText;
+
+	if (OpenClipboard(NULL)) {
+		HANDLE hData = GetClipboardData(CF_TEXT);
+		if (hData != NULL) {
+			char* pszText = static_cast<char*>(GlobalLock(hData));
+			if (pszText != NULL) {
+				clipboardText = pszText;
+				GlobalUnlock(hData);
+			}
+		}
+		CloseClipboard();
+	}
+
+	return clipboardText;
 }
+
+//____ setClipboardText() ______________________________________________________
 
 bool Win32HostBridge::setClipboardText(const std::string& text)
 {
-	return false;
+	bool success = false;
+
+	if (OpenClipboard(NULL)) {
+		EmptyClipboard();
+
+		size_t len = text.size();
+		if (len > 0)
+		{
+			HGLOBAL hMem = GlobalAlloc(GMEM_MOVEABLE, len);
+			if (hMem) {
+				memcpy(GlobalLock(hMem), text.c_str(), len);
+				GlobalUnlock(hMem);
+				SetClipboardData(CF_TEXT, hMem);
+				success = true;
+			}
+		}
+		CloseClipboard();
+	}
+
+	return success;
 }
+
+//____ requestFocus() __________________________________________________________
 
 bool Win32HostBridge::requestFocus(uintptr_t windowRef)
 {
 	return false;
 }
+
+//____ yieldFocus() ____________________________________________________________
 
 bool Win32HostBridge::yieldFocus(uintptr_t windowRef)
 {
