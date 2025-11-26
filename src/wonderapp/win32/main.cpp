@@ -17,12 +17,20 @@ using namespace wapp;
 using namespace std;
 
 WonderApp_p					g_pApp;
+Theme_p						g_pDefaultTheme;
+
 std::vector<Win32Window*>	g_win32Windows;
 float						g_ticksToMicroseconds;		
 
 wchar_t						g_highSurrogate = 0;
 
+POINT						g_mouseLockPos = { -1, -1 };
+
+PointerStyle				g_currentPointerStyle = PointerStyle::Undefined;
+
 static void _setMouseButton(MouseButton button, bool bPressed);
+static void _setPointer();
+
 
 
 
@@ -142,9 +150,23 @@ LRESULT CALLBACK windowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 		{
 			Win32Window* pointer = reinterpret_cast<Win32Window*>(GetWindowLongPtr(hwnd, GWLP_USERDATA));
 
-			int scale = pointer->rootPanel()->scale();
+			float scaleFactor = 64.f / pointer->rootPanel()->scale();
 
-			Coord pos = { LOWORD(lparam)*64.f/scale, HIWORD(lparam)*64.f/scale };
+			Coord	pos;
+
+			if (g_mouseLockPos.x != -1 && g_mouseLockPos.y != -1)
+			{
+				POINT currentPos;
+				GetCursorPos(&currentPos);
+
+				pos = Base::inputHandler()->pointerPos();
+				pos.x += (currentPos.x - g_mouseLockPos.x) * scaleFactor;
+				pos.y += (currentPos.y - g_mouseLockPos.y) * scaleFactor;
+
+				SetCursorPos(g_mouseLockPos.x, g_mouseLockPos.y);
+			}
+			else
+				pos = { LOWORD(lparam)*scaleFactor, HIWORD(lparam)*scaleFactor };
 
 			LARGE_INTEGER counter;
 			QueryPerformanceCounter(&counter);
@@ -215,6 +237,17 @@ LRESULT CALLBACK windowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 				Base::inputHandler()->setFocusedWindow(nullptr);
 			break;
 		}
+
+		case WM_SETCURSOR:
+		{
+			if (LOWORD(lparam) == HTCLIENT)
+			{
+				_setPointer();
+				return TRUE;
+			}
+			break;
+		}
+
 
 
 		case WM_KEYDOWN:
@@ -462,6 +495,7 @@ int main(int arch, char * argv[] ) {
 
 	g_pApp->exit();
 	g_pApp = nullptr;
+	g_pDefaultTheme = nullptr;
 
 	Base::exit();
 
@@ -475,36 +509,45 @@ int main(int arch, char * argv[] ) {
 //____ hidePointer() __________________________________________________________
 
 bool Win32HostBridge::hidePointer()
-{ 
-	return false; 
+{
+	return ShowCursor(FALSE) < 0;
 }
 
 //____ showPointer() __________________________________________________________
 
 bool Win32HostBridge::showPointer()
-{ 
-	return false; 
+{
+	return ShowCursor(TRUE) >= 0;
 }
 
 //____ setPointerStyle() _______________________________________________________
 
 bool Win32HostBridge::setPointerStyle(PointerStyle style)
 {
-	return false;
+	g_currentPointerStyle = style;
+	_setPointer();
+	return true;
 }
 
 //____ lockHidePointer() _______________________________________________________
 
 bool Win32HostBridge::lockHidePointer()
 {
-	return false;
+	GetCursorPos(&g_mouseLockPos);
+	ShowCursor(FALSE);
+	return true;
 }
 
 //____ unlockShowPointer() ______________________________________________________
 
 bool Win32HostBridge::unlockShowPointer()
 {
-	return false;
+	if (g_mouseLockPos.x != -1 && g_mouseLockPos.y != -1) {
+		SetCursorPos(g_mouseLockPos.x, g_mouseLockPos.y);
+		g_mouseLockPos.x = -1;
+		g_mouseLockPos.y = -1;
+	}
+	return true;
 }
 
 //____ getClipboardText() ______________________________________________________
@@ -558,6 +601,7 @@ bool Win32HostBridge::setClipboardText(const std::string& text)
 
 bool Win32HostBridge::requestFocus(uintptr_t windowRef)
 {
+	//TODO: Implement!!!
 	return false;
 }
 
@@ -565,6 +609,7 @@ bool Win32HostBridge::requestFocus(uintptr_t windowRef)
 
 bool Win32HostBridge::yieldFocus(uintptr_t windowRef)
 {
+	//TODO: Implement!!!
 	return false;
 }
 
@@ -576,4 +621,57 @@ static void _setMouseButton(MouseButton button, bool bPressed)
 	QueryPerformanceCounter(&counter);
 	int64_t timestamp = int64_t(counter.QuadPart * g_ticksToMicroseconds);
 	Base::inputHandler()->setButton(MouseButton::Left, bPressed, timestamp);
+}
+
+//____ _setPointer() ___________________________________________________________
+
+static void _setPointer()
+{
+	switch (g_currentPointerStyle)
+	{
+		case PointerStyle::Arrow:
+			SetCursor(LoadCursor(NULL, IDC_ARROW));
+			break;
+		case PointerStyle::Ibeam:
+			SetCursor(LoadCursor(NULL, IDC_IBEAM));
+			break;
+		case PointerStyle::Hourglass:
+			SetCursor(LoadCursor(NULL, IDC_WAIT));
+			break;
+		case PointerStyle::Crosshair:
+			SetCursor(LoadCursor(NULL, IDC_CROSS));
+			break;
+		case PointerStyle::UpArrow:
+			SetCursor(LoadCursor(NULL, IDC_UPARROW));
+			break;
+		case PointerStyle::ResizeNwSe:
+			SetCursor(LoadCursor(NULL, IDC_SIZENWSE));
+			break;
+		case PointerStyle::ResizeNeSw:
+			SetCursor(LoadCursor(NULL, IDC_SIZENESW));
+			break;
+		case PointerStyle::ResizeBeamWE:
+			SetCursor(LoadCursor(NULL, IDC_SIZEWE));
+			break;
+		case PointerStyle::ResizeBeamNS:
+			SetCursor(LoadCursor(NULL, IDC_SIZENS));
+			break;
+		case PointerStyle::ResizeAll:
+			SetCursor(LoadCursor(NULL, IDC_SIZEALL));
+			break;
+		case PointerStyle::Stop:
+			SetCursor(LoadCursor(NULL, IDC_NO));
+			break;
+		case PointerStyle::OpenHand:
+		case PointerStyle::ClosedHand:
+		case PointerStyle::Hand:
+			SetCursor(LoadCursor(NULL, IDC_HAND));
+			break;
+		case PointerStyle::Help:
+			SetCursor(LoadCursor(NULL, IDC_HELP));
+			break;
+		default:
+			SetCursor(LoadCursor(NULL, IDC_ARROW));
+			break;
+	}
 }
