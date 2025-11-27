@@ -17,12 +17,12 @@ WonderApp_p WonderApp::create()
 
 //____ init() _________________________________________________________________
 
-bool MyApp::init(Visitor* pVisitor)
+bool MyApp::init(wapp::API* pAPI)
 {
 	m_pDB = new KernelDB();
-	m_pVisitor = pVisitor;
+	m_pAPI = pAPI;
 
-	if (!_setupGUI(pVisitor))
+	if (!_setupGUI(pAPI))
 	{
 		printf("ERROR: Failed to setup GUI!\n");
 		return false;
@@ -35,7 +35,7 @@ bool MyApp::init(Visitor* pVisitor)
 
 bool MyApp::update()
 {
-	return true;
+	return m_pWindow != nullptr;
 }
 
 //____ exit() _________________________________________________________________
@@ -45,16 +45,24 @@ void MyApp::exit()
 	delete m_pDB;
 }
 
+//____ closeWindow() __________________________________________________________
+
+void MyApp::closeWindow(wapp::Window* pWindow)
+{
+	if (pWindow == m_pWindow)
+		m_pWindow = nullptr;
+}
+
 
 //____ _setupGUI() ____________________________________________________________
 
-bool MyApp::_setupGUI(Visitor* pVisitor)
+bool MyApp::_setupGUI(wapp::API* pAPI)
 {
-	m_pWindow = pVisitor->createWindow({ .size = {800,700}, .title = "SoftKernel Generator" });
+	m_pWindow = wapp::Window::create(pAPI,{ .size = {800,700}, .title = "SoftKernel Generator" });
 
 	//
 
-	m_pTheme = pVisitor->initDefaultTheme();
+	m_pTheme = pAPI->initDefaultTheme();
 	if (!m_pTheme)
 		return false;
 
@@ -79,7 +87,7 @@ bool MyApp::_setupGUI(Visitor* pVisitor)
 	pBasePanel->slots << pWindow;
 	pBasePanel->setSlotWeight(0, 1, 0.f);
 
-	m_pWindow->setContent(pBasePanel);
+	m_pWindow->mainCapsule()->slot = pBasePanel;
 
 	m_pScrollPanel = pWindow;
 
@@ -199,7 +207,7 @@ void MyApp::eraseCustomBlitEntry(int index)
 
 bool MyApp::exportSource()
 {
-	auto path = m_pVisitor->saveFileDialog("Export Kernels", "", {}, "" );
+	auto path = m_pAPI->saveFileDialog("Export Kernels", "", {}, "" );
 	
 	if( path.empty() )
 		return false;

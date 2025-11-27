@@ -21,11 +21,12 @@ class GfxDeviceTester : public WonderApp
 public:
 
 
-	bool	init(Visitor* pVisitor) override;
+	bool	init(wapp::API* pAPI) override;
 	bool	update() override;
 	void	exit() override;
 
-	
+	void	closeWindow(wapp::Window* pWindow) override;
+
 
 	// Pre-init configuration
 
@@ -117,8 +118,8 @@ protected:
 
 	const SizeI			g_canvasSize = { 512, 512 };
 
-	Visitor*			m_pVisitor = nullptr;
-	Window_p			m_pWindow;
+	wapp::API*			m_pAPI = nullptr;
+	wapp::Window_p		m_pWindow;
 
 	ScrollPanel_p		g_pViewPanel = nullptr;
 

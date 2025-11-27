@@ -24,47 +24,60 @@
 #include <wonderapp.h>
 #include <wondergui.h>
 
-//____ SDLWindow _______________________________________________________________
+#include <wappwindow.h>
 
-class SDLWindow;
-typedef	wg::StrongPtr<SDLWindow>	SDLWindow_p;
-typedef	wg::WeakPtr<SDLWindow>		SDLWindow_wp;
+#ifdef WIN32
+#    include <SDL.h>
+#    include <Windows.h>
+#    include <libloaderapi.h>
+#elif __APPLE__
+#    include <SDL2/SDL.h>
+#    include <dlfcn.h>
+#else
+#    include <SDL2/SDL.h>
+#    include <dlfcn.h>
+#endif
+
+
+//____ SDLWindow _______________________________________________________________
 
 struct SDL_Window;
 
-class SDLWindow : public Window
+class SDLWindow : public wapp::WindowAPI::SysCalls
 {
 public:
+	SDLWindow();
+	virtual ~SDLWindow();
 
-    //.____ Creation __________________________________________
-    
-    static SDLWindow_p        create(const Blueprint& blueprint);       // Implemented separately for Software, OpenGL and Metal.
-
-    //.____ Identification __________________________________________
-
-    const wg::TypeInfo&     typeInfo(void) const override;
-    const static wg::TypeInfo   TYPEINFO;
-    
     //.____ Misc ____________________________________________________
 
-	bool			setTitle(std::string& title) override;
-	std::string		title() const override;
+	virtual void		render() = 0;
+	virtual void    	onWindowSizeUpdated( int w, int h ) = 0;
 
-	bool			setIcon(wg::Surface * pIcon) override;
+	wapp::Window*		userWindow() const { return m_pUserWindow; }
+	wg::RootPanel_p		rootPanel() const { return m_pRootPanel; }
 
-	virtual void	render();
+	uint32_t			SDLWindowId();
+	SDL_Window*			SDLWindowPtr() { return m_pSDLWindow; }
 
-    uint32_t		SDLWindowId();
-    SDL_Window*		SDLWindowPtr() { return m_pSDLWindow; }
-    
-    virtual void    onWindowSizeUpdated( int w, int h ) = 0;
-
-    
 protected:
-	SDLWindow(const std::string& title, wg::RootPanel* pRootPanel, const wg::Rect& geo, SDL_Window* pSDLWindow);
-    virtual ~SDLWindow();
 
-    wg::Rect        _updateWindowGeo(const wg::Rect& geo) override;
+	// SysCalls interface
+
+	void			destroy() override;
+	wg::Rect		setGeo(const wg::Rect& geo) override;
+	bool			requestFocus() override;
+	bool			releaseFocus() override;
+	bool			minimize() override;
+	bool			restore() override;
+	bool 			setTitle(std::string& title) override;
+	std::string 	title() override;
+
+	//
+
 
 	SDL_Window*		m_pSDLWindow;
+
+	wapp::Window *	m_pUserWindow;
+	wg::RootPanel_p	m_pRootPanel;
 };

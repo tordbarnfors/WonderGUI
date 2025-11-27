@@ -9,15 +9,16 @@
 
 
 using namespace wg;
+using namespace wapp;
 using namespace std;
 
 
 //____ constructor ____________________________________________________________
 
-EditorWindow::EditorWindow(Window_p pWindow, MyApp* pApp, std::string title, std::string path )
+EditorWindow::EditorWindow(API * pAPI, MyApp* pApp, std::string title, std::string path ) : Window(pAPI,{ .open = true, .resizable = true, .size = {800,600}, .title = title })
 {
-	m_pWindow = pWindow;
-
+	m_pAPI = pAPI;
+	m_pAPI = pAPI;
 	m_pApp = pApp;
 	m_title = title;
 	m_path = path;
@@ -85,7 +86,7 @@ bool EditorWindow::_setupGUI()
 	} ));
 
 
-	m_pWindow->setContent( pMainContainer );
+	mainCapsule()->slot = pMainContainer;
 	m_pEditor = pTextEditor;
 	return true;
 }
@@ -143,8 +144,8 @@ void EditorWindow::_clear()
 
 bool EditorWindow::_selectAndLoadFile()
 {
-	auto path = m_pApp->m_pAppVisitor->openFileDialog("Load File", "", { "*.txt", "*.*" }, "Text Files");
-	
+	auto path = m_pAPI->openFileDialog("Load File", "", { "*.txt", "*.*" }, "Text Files");
+
 	if( path.empty() )
 		return false;
 	
@@ -160,7 +161,7 @@ bool EditorWindow::_selectAndLoadFile()
 bool EditorWindow::_selectAndSaveFile()
 {
 	/*
-	 auto selectedFiles = m_pAppVisitor->openMultiFileDialog("Select Images", "", { "*.surf", "*.qoi" }, "Image files");
+	 auto selectedFiles = m_pAppAPI->openMultiFileDialog("Select Images", "", { "*.surf", "*.qoi" }, "Image files");
 
 		if( selectedFiles.empty()  )
 			return;
@@ -176,7 +177,7 @@ bool EditorWindow::_selectAndSaveFile()
 
 bool EditorWindow::_loadFile( const std::string& path )
 {
-	auto pBlob = m_pApp->m_pAppVisitor->loadBlob(path);
+	auto pBlob = m_pAPI->loadBlob(path);
 	if( !pBlob )
 		return false;
 	

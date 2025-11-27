@@ -39,14 +39,14 @@ namespace wg
 		m_pointerStyle 	= PointerStyle::Arrow;
 		m_modKeys 		= ModKeys::None;
 
-		m_doubleClickTimeTreshold 		= 250;
+		m_doubleClickTimeTreshold 		= 250000;
 		m_doubleClickDistanceTreshold 	= 2;
 
-		m_buttonRepeatDelay 	= 300;
-		m_buttonRepeatRate 		= 200;
+		m_buttonRepeatDelay 	= 300000;
+		m_buttonRepeatRate 		= 200000;
 
-		m_keyRepeatDelay 		= 300;
-		m_keyRepeatRate 		= 150;
+		m_keyRepeatDelay 		= 300000;
+		m_keyRepeatRate 		= 150000;
 
 
 

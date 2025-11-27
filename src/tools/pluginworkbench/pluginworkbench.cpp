@@ -30,29 +30,29 @@ WonderApp_p WonderApp::create()
 
 //____ init() _________________________________________________________________
 
-bool MyApp::init(Visitor* pVisitor)
+bool MyApp::init(wapp::API* pAPI)
 {
-	m_pAppVisitor = pVisitor;
+	m_pAppAPI = pAPI;
 
-	if (!_setupGUI(pVisitor))
+	if (!_setupGUI(pAPI))
 	{
 		printf("ERROR: Failed to setup GUI!\n");
 		return false;
 	}
 
 	
-//	m_libId = pVisitor->openLibrary("legacytestplugin");
-	m_libId = pVisitor->openLibrary("testplugin");
+//	m_libId = pAPI->openLibrary("legacytestplugin");
+	m_libId = pAPI->openLibrary("testplugin");
 	if( m_libId == 0 )
 		return false;
 	
 	
 	 
-	m_pInitClient = (initClientFunc) pVisitor->loadSymbol(m_libId, "init" );
-	m_pUpdateClient = (updateClientFunc)pVisitor->loadSymbol(m_libId, "update" );
-	m_pExitClient = (exitClientFunc)pVisitor->loadSymbol(m_libId, "exitX" );
+	m_pInitClient = (initClientFunc) pAPI->loadSymbol(m_libId, "init" );
+	m_pUpdateClient = (updateClientFunc)pAPI->loadSymbol(m_libId, "update" );
+	m_pExitClient = (exitClientFunc)pAPI->loadSymbol(m_libId, "exitX" );
 
-	void * pCreateBitmapCache = pVisitor->loadSymbol(m_libId, "wg_getTypeInfo" );
+	void * pCreateBitmapCache = pAPI->loadSymbol(m_libId, "wg_getTypeInfo" );
 
 
 	wg_plugin_interface	c_calls;
@@ -63,8 +63,8 @@ bool MyApp::init(Visitor* pVisitor)
 	
 	// Map keys and commands
 	
-	mapInputKeyFunc 	pMapKeyFunc 	= (mapInputKeyFunc) pVisitor->loadSymbol(m_libId, "mapInputKey" );
-	mapInputCommandFunc pMapCommandFunc = (mapInputCommandFunc) pVisitor->loadSymbol(m_libId, "mapInputCommand" );
+	mapInputKeyFunc 	pMapKeyFunc 	= (mapInputKeyFunc) pAPI->loadSymbol(m_libId, "mapInputKey" );
+	mapInputCommandFunc pMapCommandFunc = (mapInputCommandFunc) pAPI->loadSymbol(m_libId, "mapInputCommand" );
 
 	
 	pMapKeyFunc(SDLK_LEFT, WG_KEY_LEFT);
@@ -129,7 +129,7 @@ bool MyApp::init(Visitor* pVisitor)
 bool MyApp::update()
 {
 	m_pUpdateClient();
-	return true;
+	return m_pWindow != nullptr;
 } 
 
 //____ exit() _________________________________________________________________
@@ -139,20 +139,29 @@ void MyApp::exit()
 	if (m_libId)
 	{
 		m_pExitClient();
-		m_pAppVisitor->closeLibrary(m_libId);
+		m_pAppAPI->closeLibrary(m_libId);
 	}
 }
+
+//____ closeWindow() __________________________________________________________
+
+void MyApp::closeWindow(wapp::Window* pWindow)
+{
+	if (pWindow == m_pWindow)
+		m_pWindow = nullptr;
+}
+
 
 
 //____ _setupGUI() ____________________________________________________________
 
-bool MyApp::_setupGUI(Visitor* pVisitor)
+bool MyApp::_setupGUI(wapp::API* pAPI)
 {
-	m_pWindow = pVisitor->createWindow({ .size = {800,600}, .title = "CABI Workbench" });
+	m_pWindow = wapp::Window::create(pAPI,{ .size = {800,600}, .title = "CABI Workbench" });
 
 	//
 
-	auto pFontBlob = pVisitor->loadBlob("resources/DroidSans.ttf");
+	auto pFontBlob = pAPI->loadBlob("resources/DroidSans.ttf");
 	auto pFont = FreeTypeFont::create(pFontBlob);
 
 	m_pTextStyle = TextStyle::create(WGBP(TextStyle,
@@ -176,7 +185,7 @@ bool MyApp::_setupGUI(Visitor* pVisitor)
 
 	//
 
-	if (!_loadSkins(pVisitor))
+	if (!_loadSkins(pAPI))
 		return false;
 
 	m_pLayout = PackLayout::create({ .wantedSize = PackLayout::WantedSize::Default,
@@ -212,7 +221,7 @@ bool MyApp::_setupGUI(Visitor* pVisitor)
 
 	pPopupOverlay->mainSlot = pBasePanel;
 	
-	m_pWindow->setContent(pPopupOverlay);
+	m_pWindow->mainCapsule()->slot = pPopupOverlay;
 
 	m_pPluginCapsule = pPluginCapsule;
 
@@ -222,14 +231,14 @@ bool MyApp::_setupGUI(Visitor* pVisitor)
 
 //____ _loadSkins() ___________________________________________________________
 
-bool MyApp::_loadSkins(Visitor * pVisitor)
+bool MyApp::_loadSkins(wapp::API * pAPI)
 {
 	string path = "resources/greyskin/";
 
-	auto pPlateSurf = pVisitor->loadSurface(path + "plate.bmp");
-	auto pButtonSurf = pVisitor->loadSurface(path + "button.bmp");
-	auto pStateButtonSurf = pVisitor->loadSurface(path + "state_button.bmp");
-	auto pCheckBoxSurf = pVisitor->loadSurface(path + "checkbox.png");
+	auto pPlateSurf = pAPI->loadSurface(path + "plate.bmp");
+	auto pButtonSurf = pAPI->loadSurface(path + "button.bmp");
+	auto pStateButtonSurf = pAPI->loadSurface(path + "state_button.bmp");
+	auto pCheckBoxSurf = pAPI->loadSurface(path + "checkbox.png");
 
 	if (!pPlateSurf || !pButtonSurf || !pStateButtonSurf)
 		return false;

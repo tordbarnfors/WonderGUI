@@ -4,10 +4,11 @@
 #include <wondergui.h>
 #include <wg_freetypefont.h>
 #include <string>
-#include <fstream>
+
 
 
 using namespace wg;
+using namespace wapp;
 using namespace std;
 
 //____ create() _______________________________________________________________
@@ -19,11 +20,11 @@ WonderApp_p WonderApp::create()
 
 //____ init() _________________________________________________________________
 
-bool MyApp::init(Visitor* pVisitor)
+bool MyApp::init(API * pAPI)
 {
-	m_pAppVisitor = pVisitor;
+	m_pAPI = pAPI;
 
-	if (!_setupGUI(pVisitor))
+	if (!_setupGUI(pAPI))
 	{
 		printf("ERROR: Failed to setup GUI!\n");
 		return false;
@@ -36,7 +37,7 @@ bool MyApp::init(Visitor* pVisitor)
 
 bool MyApp::update()
 {
-	return true;
+	return m_bContinue;
 }
 
 //____ exit() _________________________________________________________________
@@ -46,26 +47,34 @@ void MyApp::exit()
 
 }
 
+//____ closeWindow() __________________________________________________________
+
+void MyApp::closeWindow(Window* pWindow)
+{
+	m_pWindow = nullptr;
+	m_bContinue = false;
+}
 
 //____ _setupGUI() ____________________________________________________________
 
-bool MyApp::_setupGUI(Visitor* pVisitor)
+bool MyApp::_setupGUI(API* pAPI)
 {
-	m_pWindow = pVisitor->createWindow({ .size = {800,600}, .title = "Hello World" });
+	m_pWindow = Window::create(pAPI, { .size = {800,600}, .title = "Hello World" });
 
 	//
 
-	auto pFontBlob = pVisitor->loadBlob("resources/DroidSans.ttf");
+	auto pFontBlob = pAPI->loadBlob("resources/DroidSans.ttf");
+
+	if (!pFontBlob)
+		return false;
+
 	auto pFont = FreeTypeFont::create(pFontBlob);
 
 	m_pTextStyle = TextStyle::create({
 		.color = Color8::Black,
 		.font = pFont, 
 		.size = 14,
-		.states = { {State::Disabled, Color8::DarkGrey}}
 	});
-
-	Base::setDefaultStyle(m_pTextStyle);
 
 	m_pTextLayoutCentered = BasicTextLayout::create({ .placement = Placement::Center });
 
@@ -84,6 +93,6 @@ bool MyApp::_setupGUI(Visitor* pVisitor)
 		.skin = pBgSkin
 	});
 
-	m_pWindow->setContent(pTextDisplay);
+	m_pWindow->mainCapsule()->slot = pTextDisplay;
 	return true;
 }

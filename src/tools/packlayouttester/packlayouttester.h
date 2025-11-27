@@ -10,17 +10,16 @@
 class MyApp : public WonderApp
 {
 public:
-	bool		init(Visitor* pVisitor) override;
+	bool		init(wapp::API* pAPI) override;
 	bool		update() override;
 	void		exit() override;
 
-
-
+	void		closeWindow(wapp::Window* pWindow) override;
 
 private:
 
-	bool			_setupGUI(Visitor* pVisitor);
-	bool			_loadSkins(Visitor* pVisitor);
+	bool			_setupGUI(wapp::API* pAPI);
+	bool			_loadSkins(wapp::API* pAPI);
 
 	void			_updateLayout();
 
@@ -30,7 +29,7 @@ private:
 	wg::SelectBox_p	_createSelectBox();
 	wg::SelectBox_p	_createSizeSourceSelectBox();
 
-	Window_p			m_pWindow;
+	wapp::Window_p		m_pWindow;
 
 	wg::Size			m_dragStartSize;
 

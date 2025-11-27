@@ -25,6 +25,8 @@
 #define WG_DEBUGPANEL_DOT_H
 #pragma once
 
+#include <algorithm>
+
 #include <wg_idebugger.h>
 #include <wg_labelcapsule.h>
 #include <wg_textdisplay.h>
@@ -162,7 +164,8 @@ void DebugPanel::_refreshSlotsDrawer(DrawerPanel * pDrawer, Iterator slotsBegin,
 	int nSlotsNow 		= (int) std::distance(slotsBegin,slotsEnd);
 	int nSlotsBefore 	= pContainer->slots.size();
 
-	int slotsToRefresh = std::min(nSlotsNow,nSlotsBefore);
+	int slotsToRefresh = nSlotsNow < nSlotsBefore ? nSlotsNow : nSlotsBefore;
+
 
 	// Refresh existing SlotInfo panels.
 

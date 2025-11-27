@@ -23,47 +23,70 @@
 #include <wonderapp.h>
 #include <sdlwindow.h>
 
-#ifdef WIN32
-#    include <SDL.h>
-#    include <SDL_image.h>
-#    include <Windows.h>
-#    include <libloaderapi.h>
-#elif __APPLE__
-#    include <SDL2/SDL.h>
-#    include <SDL2_image/SDL_image.h>
-#    include <dlfcn.h>
-#else
-#    include <SDL2/SDL.h>
-#    include <SDL2/SDL_image.h>
-#    include <dlfcn.h>
-#endif
-
 
 using namespace wg;
 
 
-const TypeInfo SDLWindow::TYPEINFO = { "SDLWindow", &Window::TYPEINFO };
-
 //____ constructor ___________________________________________________
 
-SDLWindow::SDLWindow(const std::string& title, wg::RootPanel* pRootPanel, const wg::Rect& geo, SDL_Window* pSDLWindow)
-    : Window(pRootPanel, geo)
+SDLWindow::SDLWindow()
 {
-    m_pSDLWindow = pSDLWindow;
 }
 
-//____ destructor _____________________________________________________
+//____ destructor _____________________________________________________________
 
 SDLWindow::~SDLWindow()
 {
-    SDL_DestroyWindow(m_pSDLWindow);
 }
 
-//____ typeInfo() _________________________________________________________
+//____ destroy() ______________________________________________________________
 
-const wg::TypeInfo& SDLWindow::typeInfo(void) const
+void SDLWindow::destroy()
 {
-    return TYPEINFO;
+	SDL_DestroyWindow(m_pSDLWindow);
+	m_pSDLWindow = nullptr;					// Signal that window has been destroyed.
+}
+
+//____ setGeo() _______________________________________________________________
+
+wg::Rect SDLWindow::setGeo(const wg::Rect& geo)
+{
+	//TODO: Calculate and update position as well.
+
+	SDL_SetWindowSize(m_pSDLWindow, geo.w, geo.h);
+	return geo;
+}
+
+//____ requestFocus() _________________________________________________________
+
+bool SDLWindow::requestFocus()
+{
+	//TODO: Implement!!!
+	return false;
+}
+
+//____ releaseFocus() _________________________________________________________
+
+bool SDLWindow::releaseFocus()
+{
+	//TODO: Implement!!!
+	return false;
+}
+
+//____ minimize() _____________________________________________________________
+
+bool SDLWindow::minimize()
+{
+	//TODO: Implement!!!
+	return false;
+}
+
+//____ restore() ______________________________________________________________
+
+bool SDLWindow::restore()
+{
+	//TODO: Implement!!!
+	return false;
 }
 
 //___ setTitle() ______________________________________________________________
@@ -74,32 +97,11 @@ bool SDLWindow::setTitle(std::string& title)
     return true;
 }
 
-//____ setIcon() ______________________________________________________________
-
-bool SDLWindow::setIcon(Surface* pIcon)
-{
-    //TODO: IMPLEMENT!
-
-    return false;
-}
-
 //____ title() ________________________________________________________________
 
-std::string SDLWindow::title() const
+std::string SDLWindow::title()
 {
     return std::string(SDL_GetWindowTitle(m_pSDLWindow));
-}
-
-
-//____ render() _______________________________________________________________
-
-void SDLWindow::render()
-{
-    m_pRootPanel->render();
-
-    //TODO: Just update the dirty rectangles!
-
-    SDL_UpdateWindowSurface(m_pSDLWindow);
 }
 
 //____ SDLWindowId() __________________________________________________________
@@ -109,13 +111,10 @@ uint32_t SDLWindow::SDLWindowId()
     return SDL_GetWindowID(m_pSDLWindow);
 }
 
+//____ onWindowSizeUpdated() __________________________________________________
 
-//____ _updateWindowGeo() _____________________________________________________
-
-Rect SDLWindow::_updateWindowGeo(const Rect& geo)
+void SDLWindow::onWindowSizeUpdated( int w, int h )
 {
-    //TODO: Calculate and update position as well.
-
-    SDL_SetWindowSize(m_pSDLWindow, geo.w, geo.h);
-    return m_geo;
 }
+
+

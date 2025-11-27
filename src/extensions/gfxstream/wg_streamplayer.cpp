@@ -247,19 +247,13 @@ namespace wg
 
 			if (nUpdateRects == 0)
 			{
-				if (m_bStoreDirtyRects)
-				{
-					if (m_dirtyRects[(int)m_baseCanvasRef].isEmpty())
-					{
-						for (auto& rect : m_vUpdateRects)
-							m_dirtyRects[(int)m_baseCanvasRef].push(rect);
-					}
-					else
-					{
-						for (auto& rect : m_vUpdateRects)
-							m_dirtyRects[(int)m_baseCanvasRef].add(rect);
-					}
-				}
+				SizeSPX canvasSize = m_baseCanvasSurface ? m_baseCanvasSurface->pixelSize()*64 : m_pBackend->canvasInfo(canvasRef)->size;
+
+				m_vUpdateRects.clear();
+				m_vUpdateRects.push_back(RectSPX(0, 0, canvasSize.w, canvasSize.h));
+
+				if (m_bStoreDirtyRects && canvasRef != CanvasRef::None)
+					m_dirtyRects[(int)canvasRef].add(canvasSize);
 
 				m_pBackend->beginSession(m_baseCanvasRef, m_baseCanvasSurface, 0, nullptr, &m_sessionInfo);
 			}

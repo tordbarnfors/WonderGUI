@@ -25,43 +25,52 @@
 #include <wonderapp.h>
 #include <wondergui.h>
 
+#include <wappwindow.h>
 #include <windows.h>
 
 
 //____ Win32Window _______________________________________________________________
 
-class Win32Window;
-typedef	wg::StrongPtr<Win32Window>	Win32Window_p;
-typedef	wg::WeakPtr<Win32Window>	Win32Window_wp;
 
-
-class Win32Window : public Window
+class Win32Window : public wapp::WindowAPI::SysCalls
 {
 public:
 
-    //.____ Creation __________________________________________
+	Win32Window(wapp::Window* pUserWindow, wg::Placement origin, wg::Coord pos, wg::Size size, const std::string& title, bool resizable, bool open);
+	virtual ~Win32Window();
 
-    static Win32Window_p        create(const Blueprint& blueprint);
-
-    //.____ Identification __________________________________________
-
-    const wg::TypeInfo& typeInfo(void) const override;
-    const static wg::TypeInfo   TYPEINFO;
 
     //.____ Misc ____________________________________________________
 
-    bool			setTitle(std::string& title) override;
-    std::string		title() const override;
+    void				render();
+	wapp::Window*		userWindow() const { return m_pUserWindow; }
+	wg::RootPanel_p		rootPanel() const { return m_pRootPanel; }
+	HBITMAP				canvasBitmap() const { return m_hBitmap; }
 
-    bool			setIcon(wg::Surface* pIcon) override;
-
-    virtual void	render();
+	void				onResize(int width, int height);
 
 protected:
-    Win32Window(const std::string& title, wg::RootPanel* pRootPanel, const wg::Rect& geo);
-    virtual ~Win32Window();
 
-    wg::Rect        _updateWindowGeo(const wg::Rect& geo) override;
+	// SysCalls interface
 
-    HWND            m_windowHandle;
+	void			destroy() override;
+	wg::Rect		setGeo(const wg::Rect& geo) override;
+	bool			requestFocus() override;
+	bool			releaseFocus() override;
+	bool			minimize() override;
+	bool			restore() override;
+
+	bool 			setTitle(std::string& title) override;
+	std::string 	title() override;
+
+
+	//
+
+    HWND				m_windowHandle;
+	HBITMAP				m_hBitmap;
+	DWORD*				m_pCanvasPixels;
+
+	wapp::Window *		m_pUserWindow;
+	wg::RootPanel_p		m_pRootPanel;
+
 };

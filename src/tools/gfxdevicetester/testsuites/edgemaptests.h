@@ -30,7 +30,7 @@ public:
 	}
 
 
-	bool init(GfxDevice * pDevice, const RectI& canvas, WonderApp::Visitor * pAppVisitor)
+	bool init(GfxDevice * pDevice, const RectI& canvas, wapp::API * pAppAPI)
 	{
 		
 		spx sampleBuffer[7][512+1];

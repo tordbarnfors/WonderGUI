@@ -19,11 +19,11 @@ WonderApp_p WonderApp::create()
 
 //____ init() _________________________________________________________________
 
-bool MyApp::init(Visitor* pVisitor)
+bool MyApp::init(wapp::API* pAPI)
 {
-	m_pAppVisitor = pVisitor;
+	m_pAppAPI = pAPI;
 
-	if (!_setupGUI(pVisitor))
+	if (!_setupGUI(pAPI))
 	{
 		printf("ERROR: Failed to setup GUI!\n");
 		return false;
@@ -31,7 +31,7 @@ bool MyApp::init(Visitor* pVisitor)
 	
 	// Add any image file from the argument list
 
-	auto arguments = pVisitor->programArguments();
+	auto arguments = pAPI->programArguments();
 
 	for ( auto& arg : arguments )
 	{
@@ -48,26 +48,33 @@ bool MyApp::init(Visitor* pVisitor)
 
 bool MyApp::update()
 {
-	return true;
+	return m_pWindow != nullptr;
 }
 
 //____ exit() _________________________________________________________________
 
 void MyApp::exit()
 {
-
 }
+
+//____ closeWindow() __________________________________________________________
+
+void MyApp::closeWindow(wapp::Window* pWindow)
+{
+	m_pWindow = nullptr;
+}
+
 
 
 //____ _setupGUI() ____________________________________________________________
 
-bool MyApp::_setupGUI(Visitor* pVisitor)
+bool MyApp::_setupGUI(wapp::API* pAPI)
 {
-	m_pWindow = pVisitor->createWindow({ .size = {800,600}, .title = "WonderGUI Surface Viewer" });
+	m_pWindow = wapp::Window::create(pAPI, { .size = {800,600}, .title = "WonderGUI Surface Viewer" });
 
 	//
 
-	auto pFontBlob = pVisitor->loadBlob("resources/DroidSans.ttf");
+	auto pFontBlob = pAPI->loadBlob("resources/DroidSans.ttf");
 	auto pFont = FreeTypeFont::create(pFontBlob);
 
 	m_pTextStyle = TextStyle::create(WGBP(TextStyle,
@@ -91,7 +98,7 @@ bool MyApp::_setupGUI(Visitor* pVisitor)
 
 	//
 
-	if (!_loadSkins(pVisitor))
+	if (!_loadSkins(pAPI))
 		return false;
 
 	m_pLayout = PackLayout::create({ .wantedSize = PackLayout::WantedSize::Default,
@@ -116,7 +123,7 @@ bool MyApp::_setupGUI(Visitor* pVisitor)
 
 	pBasePanel->setSlotWeight(0, 2, {0.f,1.f});
 	
-	m_pWindow->setContent(pBasePanel);
+	m_pWindow->mainCapsule()->slot = pBasePanel;
 
 	return true;
 }
@@ -240,14 +247,14 @@ Widget_p MyApp::createInfoPanel()
 
 //____ _loadSkins() ___________________________________________________________
 
-bool MyApp::_loadSkins(Visitor * pVisitor)
+bool MyApp::_loadSkins(wapp::API * pAPI)
 {
 	string path = "resources/greyskin/";
 
-	auto pPlateSurf = pVisitor->loadSurface(path + "plate.bmp");
-	auto pButtonSurf = pVisitor->loadSurface(path + "button.bmp");
-	auto pStateButtonSurf = pVisitor->loadSurface(path + "state_button.bmp");
-	auto pCheckBoxSurf = pVisitor->loadSurface(path + "checkbox.png");
+	auto pPlateSurf = pAPI->loadSurface(path + "plate.bmp");
+	auto pButtonSurf = pAPI->loadSurface(path + "button.bmp");
+	auto pStateButtonSurf = pAPI->loadSurface(path + "state_button.bmp");
+	auto pCheckBoxSurf = pAPI->loadSurface(path + "checkbox.png");
 
 	if (!pPlateSurf || !pButtonSurf || !pStateButtonSurf)
 		return false;
@@ -298,7 +305,7 @@ bool MyApp::_loadSkins(Visitor * pVisitor)
 
 void MyApp::selectAndLoadImage()
 {
-	auto selectedFiles = m_pAppVisitor->openMultiFileDialog("Select Images", "", { "*.surf", "*.qoi" }, "Image files");
+	auto selectedFiles = m_pAppAPI->openMultiFileDialog("Select Images", "", { "*.surf", "*.qoi" }, "Image files");
 	
 	if( selectedFiles.empty()  )
 		return;
@@ -314,7 +321,7 @@ bool MyApp::loadImage(int idx)
 	if (idx < 0 || idx >= m_imagePaths.size())
 		return false;
 
-	auto pSurface = m_pAppVisitor->loadSurface(m_imagePaths[idx]);
+	auto pSurface = m_pAppAPI->loadSurface(m_imagePaths[idx]);
 
 	m_pImageDisplay->setSurface(pSurface);
 	m_pPathDisplay->display.setText(m_imagePaths[idx]);

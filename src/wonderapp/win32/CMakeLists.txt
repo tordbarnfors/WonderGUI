@@ -5,20 +5,25 @@ source_group(Files REGULAR_EXPRESSION ".*")
 
 set(SOURCES
 
+    ../common/wonderapp.h
+    ../common/wappapi.h
+    ../common/wappwindowapi.h
+    ../common/wappwindow.h
+    ../common/wappwindow.cpp
+
 	main.cpp
-    win32visitor.h
-    win32visitor.cpp
+    win32api.h
+    win32api.cpp
     win32window.h
     win32window.cpp
-    ../common/wonderapp.h
-    ../common/window.h
-    ../common/window.cpp
+    stb_image.h
 )
 
 set(INCDIRS
 	${CMAKE_CURRENT_LIST_DIR}
 	${WONDERGUI_INCDIRS}
 	${WGFREETYPEFONT_INCDIRS}
+	${WGDEBUGGER_INCDIRS}
 	${PROJECT_SOURCE_DIR}/wonderapp/common
 	${PROJECT_SOURCE_DIR}
 )
@@ -34,7 +39,6 @@ add_library(wappwin32 STATIC
 target_include_directories(wappwin32 PRIVATE
     ${INCDIRS}
     ${WGSOFTGFX_INCDIRS}
-    ${WGDEBUGGER_INCDIRS}
     ${SDL2_INCDIR}
     ${SDL2IMAGE_INCDIR}
 )

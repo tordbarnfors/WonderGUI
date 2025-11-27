@@ -72,15 +72,15 @@ GfxDeviceTester::~GfxDeviceTester()
 
 //____ init() _________________________________________________________________
 
-bool GfxDeviceTester::init( WonderApp::Visitor * pVisitor )
+bool GfxDeviceTester::init( wapp::API * pAPI )
 {
-	m_pVisitor = pVisitor;
+	m_pAPI = pAPI;
 
-	m_pWindow = pVisitor->createWindow({ .size = {1332,700}, .title = "GfxDevice Tester" });
+	m_pWindow = wapp::Window::create(pAPI,{ .size = {1332,700}, .title = "GfxDevice Tester"});
 
 	//
 
-	auto pTheme = pVisitor->initDefaultTheme();
+	auto pTheme = pAPI->initDefaultTheme();
 	if( !pTheme)
 		return false;
     	
@@ -133,7 +133,7 @@ bool GfxDeviceTester::update()
 */
 	}
 
-	return true;
+	return m_pWindow != nullptr;
 }
 
 //____ exit() _________________________________________________________________
@@ -146,6 +146,14 @@ void GfxDeviceTester::exit()
 
 	g_pViewPanel = nullptr;
 }
+
+//____ closeWindow() __________________________________________________________
+
+void GfxDeviceTester::closeWindow(wapp::Window* pWindow)
+{
+	m_pWindow = nullptr;
+}
+
 
 //____ setup_testdevices() ___________________________________________________________
 
@@ -520,7 +528,7 @@ void GfxDeviceTester::refresh_performance_measurements()
 
 void GfxDeviceTester::clock_test(DeviceTest* pDeviceTest, int rounds, Device* pDevice)
 {
-	uint64_t first = m_pVisitor->time();
+	uint64_t first = m_pAPI->time();
 
 	uint64_t start;
 	uint64_t end;
@@ -533,21 +541,21 @@ void GfxDeviceTester::clock_test(DeviceTest* pDeviceTest, int rounds, Device* pD
 	if (pDeviceTest->pTest->init != nullptr)
 		pDeviceTest->pTest->init(pDevice->gfxDevice(), g_canvasSize*64);
 
-	do { start = m_pVisitor->time(); } while (start == first);
+	do { start = m_pAPI->time(); } while (start == first);
 
 	for (int i = 0; i < rounds; i++)
 		pDeviceTest->pTest->run(pDevice->gfxDevice(), g_canvasSize*64);
 
-	end = m_pVisitor->time();
+	end = m_pAPI->time();
 
 	if (pDeviceTest->pTest->exit != nullptr)
 		pDeviceTest->pTest->exit(pDevice->gfxDevice(), g_canvasSize*64);
 
-	stallBegin = m_pVisitor->time();
+	stallBegin = m_pAPI->time();
 
 	pDevice->endRender();
 
-	stallEnd = m_pVisitor->time();
+	stallEnd = m_pAPI->time();
 
 
 	pDeviceTest->render_time = (end - start)/1000000.0;
@@ -600,8 +608,8 @@ bool GfxDeviceTester::set_devices( Device_p pReference, Device_p pTestee )
 			if( g_pTesteeDevice )
 				se.pTesteeSuite->exit( g_pTesteeDevice->gfxDevice(), g_canvasSize*64 );
 
-			se.pReferenceSuite->init(pReference->gfxDevice(), g_canvasSize*64, m_pVisitor);
-			se.pTesteeSuite->init(pTestee->gfxDevice(), g_canvasSize*64, m_pVisitor);
+			se.pReferenceSuite->init(pReference->gfxDevice(), g_canvasSize*64, m_pAPI);
+			se.pTesteeSuite->init(pTestee->gfxDevice(), g_canvasSize*64, m_pAPI);
 		}
 	}
 	
@@ -625,7 +633,7 @@ bool GfxDeviceTester::add_testsuite( const std::function<TestSuite*()>& testSuit
 
 	auto pBackend = SoftBackend::create();
 	auto pTempDevice = GfxDeviceGen2::create(pBackend);
-	bool bWorking = se.pReferenceSuite->init(pTempDevice, g_canvasSize*64, m_pVisitor);
+	bool bWorking = se.pReferenceSuite->init(pTempDevice, g_canvasSize*64, m_pAPI);
 	se.pReferenceSuite->exit(pTempDevice, g_canvasSize*64);
 	
 	se.bWorking = bWorking;
@@ -692,7 +700,7 @@ bool GfxDeviceTester::setup_chrome(Theme * pTheme)
 
 	auto pLayerStack = StackPanel::create();
 	pLayerStack->setSkin( ColorSkin::create(Color::AntiqueWhite) );
-	m_pWindow->setContent(pLayerStack);
+	m_pWindow->mainCapsule()->slot = pLayerStack;
 
 //	m_pWindow->rootPanel()->setDebugMode(true);
 

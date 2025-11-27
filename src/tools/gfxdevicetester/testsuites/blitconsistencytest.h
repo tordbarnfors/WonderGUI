@@ -24,17 +24,17 @@ public:
 
 	}
 
-	bool init(GfxDevice * pDevice, const RectSPX& canvas, WonderApp::Visitor * pAppVisitor)
+	bool init(GfxDevice * pDevice, const RectSPX& canvas, wapp::API * pAppAPI)
 	{
-		m_pPalette = pAppVisitor->loadSurface("resources/stretchblit_consistency.png", pDevice->surfaceFactory(), { .buffered = true, .sampleMethod = SampleMethod::Nearest });
+		m_pPalette = pAppAPI->loadSurface("resources/stretchblit_consistency.png", pDevice->surfaceFactory(), { .buffered = true, .sampleMethod = SampleMethod::Nearest });
 		if (!m_pPalette)
 			return false;
 
-		m_pFrame = pAppVisitor->loadSurface("resources/white_frame_256x256.png", pDevice->surfaceFactory(), { .buffered = true, .sampleMethod = SampleMethod::Nearest });
+		m_pFrame = pAppAPI->loadSurface("resources/white_frame_256x256.png", pDevice->surfaceFactory(), { .buffered = true, .sampleMethod = SampleMethod::Nearest });
 		if (!m_pFrame)
 			return false;
 
-		m_pGrid = pAppVisitor->loadSurface("resources/grid_31x31.png", pDevice->surfaceFactory(), { .buffered = true, .sampleMethod = SampleMethod::Nearest });
+		m_pGrid = pAppAPI->loadSurface("resources/grid_31x31.png", pDevice->surfaceFactory(), { .buffered = true, .sampleMethod = SampleMethod::Nearest });
         if (!m_pGrid)
             return false;
 
