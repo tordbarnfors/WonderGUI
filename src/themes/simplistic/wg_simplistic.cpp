@@ -319,7 +319,8 @@ Simplistic::Simplistic( Font * pNormal, Font * pBold, Font * pItalic, Font * pMo
 	
 	m_pushButtonBP = WGBP(Button,
 							_.skin = pButtonSkin,
-							_.label.style = m_pBlackStyle
+							_.label.style = m_pBlackStyle,
+                            _.label.layout = pLayoutCenteredNoWrap
 	);
 
 	m_toggleButtonBP = WGBP(ToggleButton,
