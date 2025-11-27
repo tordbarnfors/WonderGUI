@@ -124,17 +124,34 @@ void SDLWindowSoftware::render()
 {
 	m_pRootPanel->render();
 
-	//TODO: Just update the dirty rectangles!
+    int nRects = m_pRootPanel->nbUpdatedRects();
 
-	SDL_UpdateWindowSurface(m_pSDLWindow);
+    if( nRects > 0 )
+    {
+        const RectSPX* pUpdatedRects = m_pRootPanel->firstUpdatedRect();
+        SDL_Rect* pSDLRects = (SDL_Rect*)Base::memStackAlloc(sizeof(SDL_Rect) * nRects);
+
+        for (int i = 0; i < nRects; i++)
+        {
+            pSDLRects[i].x = pUpdatedRects[i].x / 64;
+            pSDLRects[i].y = pUpdatedRects[i].y / 64;
+            pSDLRects[i].w = pUpdatedRects[i].w / 64;
+            pSDLRects[i].h = pUpdatedRects[i].h / 64;
+        }
+
+        SDL_UpdateWindowSurfaceRects(m_pSDLWindow, pSDLRects, nRects);
+
+        Base::memStackFree(sizeof(SDL_Rect) * nRects);
+    }
 }
 
 //____ onWindowSizeUpdated() __________________________________________________
 
 void SDLWindowSoftware::onWindowSizeUpdated( int w, int h )
 {
-	auto pWindowSurface = _generateWindowSurface(m_pSDLWindow, w, h );
+    auto pWindowSurface = _generateWindowSurface(m_pSDLWindow, w, h );
 	m_pRootPanel->setCanvas(pWindowSurface);
+    render();
 }
 
 //____ _generateWindowSurface() _______________________________________________

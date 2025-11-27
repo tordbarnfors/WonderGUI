@@ -194,6 +194,7 @@ void SDLWindowGL::onWindowSizeUpdated( int w, int h )
 #endif
 
 	m_pRootPanel->setCanvas(CanvasRef::Default);
+    render();
 }
 
 //____ _refershScale() ____________________________________________________________
