@@ -8,9 +8,11 @@
 #include <wg_softkernels_rgb565be_base.h>
 #include <wg_softkernels_rgb565be_extras.h>
 
+#include <themes/simplistic/wg_simplistic.h>
+
 using namespace wg;
 
-Surface_p   loadSurface( const char * pPath );
+Surface_p   loadSurface( const char * pPath, const Surface::Blueprint& bp = {} );
 Blob_p      loadBlob( const char * pPath );
 
 int main( int argc, char * argv[] )
@@ -65,14 +67,17 @@ int main( int argc, char * argv[] )
 
     printf("Loading widget surface.\n");
 
-    auto pWidgetSurface = loadSurface("SKN565BE.SRF");
-
+    auto pWidgetSurface = loadSurface("SKN565BE.SRF" );
+    
     if( !pWidgetSurface )
     {
         Bconin(2);
         return -1;
     }
 
+    if( pWidgetSurface->isOpaque() )
+        printf( "IS OPAQUE\n");
+    
     printf("Loading font.\n");
         
     auto pFontSurface = loadSurface("FNT_5X7.SRF");
@@ -94,6 +99,11 @@ int main( int argc, char * argv[] )
     auto pStyle = TextStyle::create( { .color = HiColor::White, .font = pFont, .size = 10 });
     Base::setDefaultStyle(pStyle);
     
+    // Initialize theme
+    
+    auto pTheme = Simplistic::create(pFont,pFont,pFont,pFont,pWidgetSurface);
+    
+    
     
 	printf("Creating GUI.\n");
 
@@ -105,30 +115,47 @@ int main( int argc, char * argv[] )
 
 	pRoot->setSkin( ColorSkin::create( Color::Yellow ));
 
-	FlexPanel_p pFlex = FlexPanel::create();
-
-    Filler_p pFiller = Filler::create( {
-        .defaultSize = {100,100},
-        .skin = ColorSkin::create( HiColor(4096,0,0,4096) )
-    });
-
-//	pFlex->slots.pushBack( pFiller, { .pos = {10,10} } );
-
-	pRoot->slot = pFlex;
-
-    SurfaceDisplay_p pDisplay = SurfaceDisplay::create( { .surface = pWidgetSurface });
+    PackPanel_p pMainPanel = PackPanel::create( { .axis = Axis::Y });
     
-    pFlex->slots.pushFront( pDisplay, { .pos = { 20,20} } );
+    PackPanel_p pTopBar = PackPanel::create( { .axis = Axis::X } );
+
+    TextDisplay_p pTopLabel = TextDisplay::create( WGOVR(pTheme->windowTitleBar(), _.display.text = "WONDERGUI TEST APP" ));
     
-    TextDisplay_p pLabel = TextDisplay::create( { .display = { .text = "TESTING" }, .skin = ColorSkin::create( Color::Green ) } );
- 
-    pFlex->slots.pushFront( pLabel, { .pos = { 10,10}, .size = {60,20} } );
+    pTopBar->slots.pushBack(pTopLabel);
+    
+    SplitPanel_p pMidSection = SplitPanel::create( WGOVR(pTheme->splitPanelX()));
+
+    PackPanel_p pTreeSection = PackPanel::create( { .skin = pTheme->canvasSkin() });
+    pMidSection->slots[0] = pTreeSection;
+
+    ScrollPanel_p pTextSection = ScrollPanel::create( pTheme->scrollPanelXY() );
+    pMidSection->slots[1] = pTextSection;
+
+    TextEditor_p pTextEditor = TextEditor::create( WGOVR(pTheme->textEditor(), _.editor.text = "This is where you will edit the text of the entry." ));
+    
+    pTextSection->slot = pTextEditor;
+    
+    PackPanel_p pBottomBar = PackPanel::create( { .axis = Axis::X, .skin = pTheme->plateSkin() });
+
+    
+    Button_p pButtonSave = Button::create( WGOVR(pTheme->pushButton(), _.label.text = "Save" ));
+    Button_p pButtonQuit = Button::create( WGOVR(pTheme->pushButton(), _.label.text = "Quit" ));
+
+    pBottomBar->slots.pushBack( { Filler::create(), pButtonSave, pButtonQuit } );
+    pBottomBar->setSlotWeight( 0, 3, { 1.f, 0.f, 0.f });
+    
+
+    pMainPanel->slots.pushBack( { pTopBar, pMidSection, pBottomBar } );
+    pMainPanel->setSlotWeight( 0, 3, { 0.f, 1.f, 0.f });
+
+    
+
+	pRoot->slot = pMainPanel;
 
     
     printf("Render.\n");
 
     
-	pRoot->render();
 
     short oldMode = VsetMode(0x114);
 
@@ -136,7 +163,8 @@ int main( int argc, char * argv[] )
 
     VsetScreen(-1,pScreen,-1,-1);
 
-    
+    pRoot->render();
+
     Bconin(2);
 
     
@@ -153,11 +181,11 @@ int main( int argc, char * argv[] )
     pFontSpec = nullptr;
     pFont = nullptr;
     pRoot = nullptr;
-    pFlex = nullptr;
-    pFiller = nullptr;
+//    pFlex = nullptr;
+//    pFiller = nullptr;
     pWidgetSurface = nullptr;
-    pDisplay = nullptr;
-    pLabel = nullptr;
+//    pDisplay = nullptr;
+//    pLabel = nullptr;
     pCanvasBlob = nullptr;
     pSurfaceFactory = nullptr;
     
@@ -170,7 +198,7 @@ int main( int argc, char * argv[] )
 
 //____ loadSurface() __________________________________________________________
 
-Surface_p loadSurface( const char * pPath )
+Surface_p loadSurface( const char * pPath, const Surface::Blueprint& bp )
 {
     FILE * fp = fopen( pPath, "rb" );
     
@@ -195,7 +223,7 @@ Surface_p loadSurface( const char * pPath )
     auto pSurfaceFactory = SoftSurfaceFactory::create();
     SurfaceReader_p pSurfaceReader = SurfaceReader::create({ .factory = pSurfaceFactory });
 
-    auto pSurface = pSurfaceReader->readSurfaceFromMemory(pBuffer);
+    auto pSurface = pSurfaceReader->readSurfaceFromMemory(pBuffer, bp );
     
     free(pBuffer);
 

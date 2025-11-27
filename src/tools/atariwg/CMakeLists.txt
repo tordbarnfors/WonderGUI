@@ -17,9 +17,11 @@ target_working_directory(atariwg ${WG_ROOT} )
 target_include_directories(atariwg PRIVATE 
 	${WONDERGUI_INCDIRS}
 	${WGSOFTGFX_INCDIRS}
+    ${PROJECT_SOURCE_DIR}
 )
 
 target_link_libraries(atariwg PRIVATE
+    wg_theme_simplistic
 	wondergui
 	wgsoftgfx
 )
