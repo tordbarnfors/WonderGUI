@@ -189,7 +189,11 @@ int main(int argc, char *argv[] )
 #ifdef __APPLE__
 	sleep(1);
 #endif
-	
+
+#ifdef WIN32
+	SetProcessDPIAware();
+#endif
+
 	g_argc = argc;
 	g_argv = argv;
 

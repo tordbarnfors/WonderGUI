@@ -22,50 +22,79 @@
 
 #include <sdlwindow.h>
 
-#include <wg_softsurface.h>
-#include <wg_softsurfacefactory.h>
-#include <wg_softedgemapfactory.h>
-#include <wg_softbackend.h>
-#include <wg_softkernels_default.h>
+#include <wg_glsurface.h>
+#include <wg_glsurfacefactory.h>
+#include <wg_gledgemapfactory.h>
+#include <wg_glbackend.h>
+
+#ifndef __APPLE__
+#   include <GL/glew.h>
+#endif
 
 
 using namespace wg;
 
 
-class SDLWindowSoftware : public SDLWindow
+class SDLWindowGL : public SDLWindow
 {
 public:
-	SDLWindowSoftware(wapp::Window* pUserWindow, wg::Placement origin, wg::Coord pos, wg::Size size, const std::string& title, bool resizable, bool open);
-	virtual ~SDLWindowSoftware() {};
+	SDLWindowGL(wapp::Window* pUserWindow, wg::Placement origin, wg::Coord pos, wg::Size size, const std::string& title, bool resizable, bool open);
+	virtual ~SDLWindowGL() {};
 
 	void	render() override;
 	void 	onWindowSizeUpdated( int w, int h ) override;
 
 private:
 
-	static wg::Surface_p   _generateWindowSurface(SDL_Window* pWindow, int width, int height );
+	void	_refreshScale();
 
-
+	int		m_scale = 64;
 };
 
 
+static SDL_Window*		g_pDummyWindow = nullptr;
+static SDL_GLContext	g_glContext;
+
+GlBackend_p				g_pBackend;
 
 //____ backend_specific_init() ________________________________________________
 
 bool backend_specific_init()
 {
-	auto pBackend = SoftBackend::create();
-	addDefaultSoftKernels( pBackend );
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
+	SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
+	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 0);
 
-	auto pSoftDevice = GfxDeviceGen2::create(pBackend);
+	g_pDummyWindow = SDL_CreateWindow("", 0, 0, 1, 1, SDL_WINDOW_OPENGL | SDL_WINDOW_HIDDEN);
+	g_glContext = SDL_GL_CreateContext(g_pDummyWindow);
 
-	Base::setDefaultGfxDevice(pSoftDevice);
+#if defined(_WIN32) || defined(__linux__)
+	glewExperimental = GL_TRUE;
+	GLenum err = glewInit();
+	if (GLEW_OK != err)
+	{
+		auto* pError = glewGetErrorString(err);
+		return false;
+	}
 
-	auto pSurfaceFactory = SoftSurfaceFactory::create();
+#endif
+
+	g_pBackend = GlBackend::create();
+
+	auto pGlDevice = GfxDeviceGen2::create(g_pBackend);
+
+	Base::setDefaultGfxDevice(pGlDevice);
+
+	auto pSurfaceFactory = GlSurfaceFactory::create();
 	Base::setDefaultSurfaceFactory(pSurfaceFactory);
 
-	auto pEdgemapFactory = SoftEdgemapFactory::create();
+	auto pEdgemapFactory = GlEdgemapFactory::create();
 	Base::setDefaultEdgemapFactory(pEdgemapFactory);
+
+
+
 
 	return true;
 }
@@ -74,40 +103,44 @@ bool backend_specific_init()
 
 void backend_specific_exit()
 {
+	g_pBackend = nullptr;
 
+	SDL_GL_DeleteContext(g_glContext);
+	SDL_DestroyWindow(g_pDummyWindow);
 }
 
 //____ create_backend_specific_window() ________________________________________
 
 SDLWindow * create_backend_specific_window(wapp::Window* pUserWindow, wg::Placement origin, wg::Coord pos, wg::Size size, const std::string& title, bool resizable, bool open)
 {
-	return new SDLWindowSoftware(pUserWindow, origin, pos, size, title, resizable, open);
+	return new SDLWindowGL(pUserWindow, origin, pos, size, title, resizable, open);
 }
 
+//____ SDLWindowGL() ___________________________________________________________
 
-SDLWindowSoftware::SDLWindowSoftware(wapp::Window* pUserWindow, wg::Placement origin, wg::Coord pos, wg::Size size, const std::string& title, bool resizable, bool open)
+SDLWindowGL::SDLWindowGL(wapp::Window* pUserWindow, wg::Placement origin, wg::Coord pos, wg::Size size, const std::string& title, bool resizable, bool open)
 {
 	m_pUserWindow = pUserWindow;
 
-	uint32_t flags = 0;
+	uint32_t flags = SDL_WINDOW_OPENGL | SDL_WINDOW_ALLOW_HIGHDPI;
 	if (resizable)
 		flags |= SDL_WINDOW_RESIZABLE;
 
 	Rect geo = { pos, size };
 
-	SDL_Window* pSDLWindow = SDL_CreateWindow(title.c_str(), geo.x, geo.y, geo.w, geo.h, flags);
-	if (pSDLWindow == NULL)
+	m_pSDLWindow = SDL_CreateWindow(title.c_str(), geo.x, geo.y, geo.w, geo.h, flags);
+	if (m_pSDLWindow == NULL)
 		return;
 
-	auto pWindowSurface = _generateWindowSurface(pSDLWindow, geo.w, geo.h);
-	if (pWindowSurface == nullptr)
-	{
-		SDL_DestroyWindow(m_pSDLWindow);
-		pSDLWindow = nullptr;
-		return;
-	 }
+	_refreshScale();
 
-	m_pRootPanel = RootPanel::create( { .canvasSurface = pWindowSurface } );
+#ifdef _WIN32
+	g_pBackend->setDefaultCanvas({ spx(size.w * 64), spx(size.h * 64) }, m_scale);
+#else
+	g_pBackend->setDefaultCanvas({ spx(size.w * m_scale), spx(size.h * m_scale) }, m_scale);
+#endif
+
+	m_pRootPanel = RootPanel::create(CanvasRef::Default);
 
 //	pRootPanel->setWindowRef((uintptr_t) pWindow.rawPtr());
 
@@ -115,59 +148,75 @@ SDLWindowSoftware::SDLWindowSoftware(wapp::Window* pUserWindow, wg::Placement or
 
 	Base::inputHandler()->setFocusedWindow(m_pRootPanel);
 
-	m_pSDLWindow = pSDLWindow;
 }
 
 //____ render() _______________________________________________________________
 
-void SDLWindowSoftware::render()
+void SDLWindowGL::render()
 {
+	int nRects = m_pRootPanel->nbDirtyRects();
+	if (nRects == 0)
+		return;
+
+	SDL_GL_MakeCurrent(m_pSDLWindow, g_glContext);
+
+	g_pBackend->setDefaultCanvas( m_pRootPanel->canvasSize(), m_scale);
 	m_pRootPanel->render();
 
-	//TODO: Just update the dirty rectangles!
 
-	SDL_UpdateWindowSurface(m_pSDLWindow);
+	const RectSPX* pUpdatedRects = m_pRootPanel->firstUpdatedRect();
+	SDL_Rect* pSDLRects = (SDL_Rect*)Base::memStackAlloc(sizeof(SDL_Rect) * nRects);
+
+	for (int i = 0; i < nRects; i++)
+	{
+		pSDLRects[i].x = pUpdatedRects[i].x / 64;
+		pSDLRects[i].y = pUpdatedRects[i].y / 64;
+		pSDLRects[i].w = pUpdatedRects[i].w / 64;
+		pSDLRects[i].h = pUpdatedRects[i].h / 64;
+	}
+
+	SDL_UpdateWindowSurfaceRects(m_pSDLWindow, pSDLRects, nRects);
+
+	Base::memStackFree(sizeof(SDL_Rect) * nRects);
+
 }
 
 //____ onWindowSizeUpdated() __________________________________________________
 
-void SDLWindowSoftware::onWindowSizeUpdated( int w, int h )
+void SDLWindowGL::onWindowSizeUpdated( int w, int h )
 {
-	auto pWindowSurface = _generateWindowSurface(m_pSDLWindow, w, h );
-	m_pRootPanel->setCanvas(pWindowSurface);
+	_refreshScale();
+
+#ifdef _WIN32
+	g_pBackend->setDefaultCanvas({ spx(w * 64), spx(h * 64) }, m_scale);
+#else
+	g_pBackend->setDefaultCanvas({ spx(w * m_scale), spx(h * m_scale) }, m_scale);
+#endif
+
+	m_pRootPanel->setCanvas(CanvasRef::Default);
 }
 
-//____ _generateWindowSurface() _______________________________________________
+//____ _refershScale() ____________________________________________________________
 
-Surface_p SDLWindowSoftware::_generateWindowSurface(SDL_Window* pWindow, int width, int height )
+void SDLWindowGL::_refreshScale()
 {
-	SDL_Surface* pWinSurf = SDL_GetWindowSurface(pWindow);
-	if (pWinSurf == nullptr)
-	{
-		//        printf("Unable to get window SDL Surface: %s\n", SDL_GetError());
-		return nullptr;
-	}
+#ifdef _WIN32
 
-	PixelFormat format = PixelFormat::Undefined;
+	int displayIndex = SDL_GetWindowDisplayIndex(m_pSDLWindow);
+	float ddpi;
+	if (SDL_GetDisplayDPI(displayIndex, &ddpi, nullptr, nullptr) == 0) 
+		m_scale = 64 * ddpi / 96.0f;
+	else
+		m_scale = 64;
 
-	switch (pWinSurf->format->BitsPerPixel)
-	{
-		case 32:
-			format = PixelFormat::BGRX_8;
-			break;
-		case 24:
-			format = PixelFormat::BGR_8;
-			break;
-		default:
-		{
-			printf("Unsupported pixelformat of SDL Surface!\n");
-			return nullptr;
-		}
-	}
+#else
 
-	Blob_p pCanvasBlob = Blob::create(pWinSurf->pixels, 0);
-	auto pWindowSurface = SoftSurface::create( WGBP(Surface, _.size = {width, height}, _.format = format, _.canvas = true ), pCanvasBlob, pWinSurf->pitch);
+	int windowWidth, windowHeight;
+	int drawableWidth, drawableHeight;
 
-	return pWindowSurface;
+	SDL_GetWindowSize(pSDLWindow, &windowWidth, &windowHeight);
+	SDL_GL_GetDrawableSize(pSDLWindow, &drawableWidth, &drawableHeight);
+	m_scale = drawableWidth / (float)windowWidth;
+
+#endif
 }
-
