@@ -1659,10 +1659,14 @@ void _transform_blit(const SoftSurface* pSrcSurf, BinalCoord pos, const binalInt
 	bool	bFast8 = false;
 	int		bits = 12;
 
-	bool srcIsLinear = (SRCFORMAT == PixelFormat::Alpha_8 || SRCFORMAT == PixelFormat::BGRA_4_linear ||
-		SRCFORMAT == PixelFormat::BGRA_8_linear || SRCFORMAT == PixelFormat::BGRX_8_linear ||
-		SRCFORMAT == PixelFormat::BGR_565_linear || SRCFORMAT == PixelFormat::RGB_565_bigendian ||
-		SRCFORMAT == PixelFormat::RGB_555_bigendian || SRCFORMAT == PixelFormat::BGR_8_linear);
+	bool srcIsLinear = (SRCFORMAT == PixelFormat::Alpha_8 ||
+                        SRCFORMAT == PixelFormat::BGRA_4_linear ||
+                        SRCFORMAT == PixelFormat::BGRA_8_linear ||
+                        SRCFORMAT == PixelFormat::BGRX_8_linear ||
+                        SRCFORMAT == PixelFormat::BGR_565_linear ||
+                        SRCFORMAT == PixelFormat::RGB_565_bigendian ||
+                        SRCFORMAT == PixelFormat::RGB_555_bigendian ||
+                        SRCFORMAT == PixelFormat::BGR_8_linear);
 
 	bool dstIsLinear = (DSTFORMAT == PixelFormat::Alpha_8 || DSTFORMAT == PixelFormat::BGRA_4_linear ||
 		DSTFORMAT == PixelFormat::BGRA_8_linear || DSTFORMAT == PixelFormat::BGRX_8_linear ||

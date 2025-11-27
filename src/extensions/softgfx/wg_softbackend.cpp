@@ -1960,15 +1960,20 @@ namespace wg
 		{
 			// TODO: Optimize by using a lookup table.
 
-			if (blendMode == BlendMode::Blend && (srcFormat == PixelFormat::RGB_565_bigendian ||
-				srcFormat == PixelFormat::RGB_555_bigendian || srcFormat == PixelFormat::BGR_8_sRGB ||
-				srcFormat == PixelFormat::BGR_8_linear || srcFormat == PixelFormat::BGR_565_linear ||
-				srcFormat == PixelFormat::BGRX_8_sRGB || srcFormat == PixelFormat::BGRX_8_linear))
+			if (blendMode == BlendMode::Blend &&
+                (srcFormat == PixelFormat::RGB_565_bigendian ||
+				 srcFormat == PixelFormat::RGB_555_bigendian ||
+                 srcFormat == PixelFormat::BGR_8_sRGB ||
+				 srcFormat == PixelFormat::BGR_8_linear ||
+                 srcFormat == PixelFormat::BGR_565_linear ||
+                 srcFormat == PixelFormat::BGR_565_sRGB ||
+				 srcFormat == PixelFormat::BGRX_8_sRGB ||
+                 srcFormat == PixelFormat::BGRX_8_linear))
 			{
 				blendMode = BlendMode::Replace;
 			}
 		}
-
+        
 		// Add two-pass rendering fallback.
 
 		auto pixelDescSource = Util::pixelFormatToDescription(srcFormat);
