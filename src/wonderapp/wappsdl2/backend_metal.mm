@@ -118,6 +118,8 @@ SDLWindowMetal::SDLWindowMetal(wapp::Window* pUserWindow, wg::Placement origin, 
 		m_pSDLRenderer = SDL_CreateRenderer(pSDLWindow, -1, SDL_RENDERER_PRESENTVSYNC);
 		const CAMetalLayer* layer = (__bridge CAMetalLayer *)SDL_RenderGetMetalLayer(m_pSDLRenderer);
 		layer.device = g_metalDevice;
+        layer.pixelFormat = MTLPixelFormatBGRA8Unorm_sRGB;
+
 
 		CGFloat scaleFactor = layer.contentsScale;
 
@@ -154,23 +156,21 @@ void SDLWindowMetal::render()
 
 	m_pRootPanel->render();
 
-
 	@autoreleasepool {
 
 		const CAMetalLayer *swapchain = (__bridge CAMetalLayer *)SDL_RenderGetMetalLayer(m_pSDLRenderer);
 
-		swapchain.pixelFormat = MTLPixelFormatBGRA8Unorm_sRGB;
 		swapchain.presentsWithTransaction = NO;
 
 		id<CAMetalDrawable> surface = [swapchain nextDrawable];
 
 		MTLRenderPassDescriptor *pass = [MTLRenderPassDescriptor renderPassDescriptor];
-		pass.colorAttachments[0].loadAction  = MTLLoadActionLoad;
+		pass.colorAttachments[0].loadAction  = MTLLoadActionDontCare;
 		pass.colorAttachments[0].storeAction = MTLStoreActionStore;
 		pass.colorAttachments[0].texture = surface.texture;
 
-		wg::SizeI size = m_pRootPanel->canvasSize();
-		m_pBackend->setDefaultCanvas(pass, size, wg::PixelFormat::BGRA_8_sRGB);
+		wg::SizeSPX size = m_pRootPanel->canvasSize();
+		m_pBackend->setDefaultCanvas(pass, size/64, wg::PixelFormat::BGRA_8_sRGB);
 
 		m_pBackend->autopresent(surface);
 
@@ -201,14 +201,13 @@ void SDLWindowMetal::onWindowSizeUpdated( int w, int h )
 
 		// Update drawable size immediately to prevent stretching
 		swapchain.drawableSize = CGSizeMake(w, h);
-		swapchain.pixelFormat = MTLPixelFormatBGRA8Unorm_sRGB;
 		swapchain.presentsWithTransaction = YES;
 
 
 		id<CAMetalDrawable> surface = [swapchain nextDrawable];
 
 		MTLRenderPassDescriptor *pass = [MTLRenderPassDescriptor renderPassDescriptor];
-		pass.colorAttachments[0].loadAction  = MTLLoadActionLoad;
+		pass.colorAttachments[0].loadAction  = MTLLoadActionDontCare;
 		pass.colorAttachments[0].storeAction = MTLStoreActionStore;
 		pass.colorAttachments[0].texture = surface.texture;
 
@@ -216,8 +215,8 @@ void SDLWindowMetal::onWindowSizeUpdated( int w, int h )
 		m_pRootPanel->setCanvas(m_pCanvas);
 		m_pRootPanel->render();
 
-		wg::SizeI size = m_pRootPanel->canvasSize();
-		m_pBackend->setDefaultCanvas(pass, size, wg::PixelFormat::BGRA_8_sRGB);
+		wg::SizeSPX size = m_pRootPanel->canvasSize();
+		m_pBackend->setDefaultCanvas(pass, size/64, wg::PixelFormat::BGRA_8_sRGB);
 		m_pBackend->autopresent(surface);
 
 		auto pDevice = Base::defaultGfxDevice();

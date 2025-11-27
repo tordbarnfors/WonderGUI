@@ -214,9 +214,9 @@ void SDLWindowGL::_refreshScale()
 	int windowWidth, windowHeight;
 	int drawableWidth, drawableHeight;
 
-	SDL_GetWindowSize(pSDLWindow, &windowWidth, &windowHeight);
-	SDL_GL_GetDrawableSize(pSDLWindow, &drawableWidth, &drawableHeight);
-	m_scale = drawableWidth / (float)windowWidth;
+	SDL_GetWindowSize(m_pSDLWindow, &windowWidth, &windowHeight);
+	SDL_GL_GetDrawableSize(m_pSDLWindow, &drawableWidth, &drawableHeight);
+	m_scale = 64 * drawableWidth / (float)windowWidth;
 
 #endif
 }

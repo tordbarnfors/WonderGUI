@@ -326,6 +326,8 @@ namespace wg
 
 	SizeI RootPanel::canvasSize() const
 	{
+        //TODO: Canvas size is in SPX!!!!
+        
 		return m_canvas.size;
 	}
 
