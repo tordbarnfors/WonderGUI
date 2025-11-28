@@ -97,15 +97,7 @@ endif()
 #
 #------------------------------------------------------------------------------
 
-if(WIN32)
-	set(WAPPLIB wappwin32)				# WonderApp framework for Win32, using software rendering.
-elseif(APPLE)
-	set(WAPPLIB wappsdl2metal)			# WonderApp framework based on SDL2, using Metal rendering.
-else()
-	set(WAPPLIB wappsdl2sw)				# WonderApp framework based on SDL2, using software rendering.
-endif()
-
-#set(WAPPLIB wappwin32)				# WonderApp framework for Win32, using software rendering.
+set(WAPPLIB wappwin32)				# WonderApp framework for Win32, using software rendering.
 #set(WAPPLIB wappsdl2sw)			# WonderApp framework based on SDL2, using software rendering.
 									# Works on Windows, Mac and Linux.
 #set(WAPPLIB wappsdl2gl)			# WonderApp framework based on SDL2, using OpenGL rendering.
@@ -156,6 +148,10 @@ add_subdirectory(extensions/debugger)
 
 if(APPLE)
 	add_subdirectory(extensions/metalgfx)
+endif()
+
+if(WIN32)
+	add_subdirectory(extensions/dx12gfx)
 endif()
 
 add_subdirectory(extensions/openglgfx)
