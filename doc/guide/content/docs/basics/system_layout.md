@@ -38,5 +38,5 @@ Here is a short description of some of the extensions:
 - **GfxStream** - A WonderGfx extension that enables you to encode drawing commands into a binary stream that can be stored and transmitted to another device for rendering.
 - **SoftGfx** - A WonderGfx extension for CPU-based software rendering. Slow and can be quite memory hungry (depending on configuration) but highly portable and reliable and works almost anywhere.
 - **FreetypeFont** - A WonderGfx extension for using vector fonts through the FreeType library.
-- **LegacyGUI** - A WonderGUI extension that provides support for building legacy software written for an earlier, deprecated version of WonderGUI. Should only be used where necessary.
+- **LegacyGUI** - A WonderGUI extension that provides support for building legacy software written for an earlier, deprecated version of WonderGUI. Should not be used in any new projects.
 
