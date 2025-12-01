@@ -83,6 +83,9 @@ namespace wg
 		template<class BP> RenderLayerCapsule( const BP& bp ) : Capsule(bp)
 		{
 			 m_renderLayer = bp.renderLayer;
+
+			if (bp.child)
+				slot.setWidget(bp.child);
 		}
 
 		virtual ~RenderLayerCapsule();

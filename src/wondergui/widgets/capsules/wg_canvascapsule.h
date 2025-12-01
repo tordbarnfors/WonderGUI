@@ -184,6 +184,9 @@ namespace wg
 			m_bSkinAroundCanvas = bp.skinAroundCanvas;
 			
 			glow._initFromBlueprint(bp.glow);
+
+			if (bp.child)
+				slot.setWidget(bp.child);
 		}
 		
 		virtual ~CanvasCapsule();

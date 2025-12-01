@@ -103,11 +103,14 @@ namespace wg
 		{
 			m_selectMode = bp.selectMode;
 			m_bRecursive = bp.recursive;
+
+			if (bp.child)
+				slot.setWidget(bp.child);
 		}
 
 		virtual ~SelectCapsule();
 
-		virtual void	_receive(Msg* pMsg);
+		virtual void	_receive(Msg* pMsg) override;
 
 		const Container* _topContainer() const;
 		Container*		_topContainer();

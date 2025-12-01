@@ -111,8 +111,11 @@ namespace wg
 			m_bAutoDeactivate	= bp.autoDeactivate;
 			m_bInverted			= bp.inverted;
 			m_bActive			= bp.active;			
+
+			if (bp.child)
+				slot.setWidget(bp.child);
 		}
-		
+
 		virtual ~BlockingCapsule();
 		
 		void	_receive(Msg* pMsg) override;

@@ -102,8 +102,12 @@ namespace wg
 		Capsule();
 		template<class BP> Capsule(const BP& bp) : slot(this), Container(bp) 
 		{
-			if (bp.child)
-				slot.setWidget(bp.child);
+			// Do NOT attempt to do this!
+			// All should be initialized before child is set so this should
+			// happen last. Therefore individual capsules needs to do this themselves.
+
+	//		if (bp.child)
+	//			slot.setWidget(bp.child);
 		}
 
 		virtual ~Capsule();

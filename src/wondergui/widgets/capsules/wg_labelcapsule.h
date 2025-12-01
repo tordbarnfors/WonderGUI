@@ -111,6 +111,8 @@ namespace wg
 //				m_bOverflow = bp.skin->_overflowsGeo();
 			}
 
+			if (bp.child)
+				slot.setWidget(bp.child);
 		}
 
 		virtual ~LabelCapsule() {};

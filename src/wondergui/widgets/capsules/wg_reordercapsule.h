@@ -120,6 +120,9 @@ namespace wg
 			m_bDragOutside		= bp.dragOutside;
 
 			_init();
+
+			if (bp.child)
+				slot.setWidget(bp.child);
 		}
 
 		virtual ~ReorderCapsule();
