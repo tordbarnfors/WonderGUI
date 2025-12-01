@@ -97,7 +97,9 @@ endif()
 #
 #------------------------------------------------------------------------------
 
-set(WAPPLIB wappwin32)				# WonderApp framework for Win32, using software rendering.
+#set(WAPPLIB wappwin32sw)			# WonderApp framework for Win32, using software rendering.
+set(WAPPLIB wappwin32dx12)			# WonderApp framework for Win32, using software rendering.
+
 #set(WAPPLIB wappsdl2sw)			# WonderApp framework based on SDL2, using software rendering.
 									# Works on Windows, Mac and Linux.
 #set(WAPPLIB wappsdl2gl)			# WonderApp framework based on SDL2, using OpenGL rendering.
@@ -165,7 +167,8 @@ add_subdirectory(extensions/legacygui)
 add_subdirectory(extensions/plugin)
 
 #add_subdirectory(wonderapp/wappsdl2)
-add_subdirectory(wonderapp/win32)
+#add_subdirectory(wonderapp/win32-sw)
+add_subdirectory(wonderapp/win32-dx12)
 
 add_subdirectory(tools)
 add_subdirectory(examples)

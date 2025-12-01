@@ -30,28 +30,28 @@ set(INCDIRS
 
 ### Software rendering version
 
-add_library(wappwin32 STATIC
+add_library(wappwin32sw STATIC
     ${SOURCES}
 #    sdlwindow_sw.h
 #    sdlwindow_sw.cpp
 )
 
-target_include_directories(wappwin32 PRIVATE
+target_include_directories(wappwin32sw PRIVATE
     ${INCDIRS}
     ${WGSOFTGFX_INCDIRS}
     ${SDL2_INCDIR}
     ${SDL2IMAGE_INCDIR}
 )
 
-set_target_properties(wappwin32 PROPERTIES FOLDER "WonderApp" )
+set_target_properties(wappwin32sw PROPERTIES FOLDER "WonderApp" )
 
-target_link_directories(wappwin32 PUBLIC
+target_link_directories(wappwin32sw PUBLIC
     ${SDL2_LIBDIR}
     ${SDL2IMAGE_LIBDIR}
     ${FREETYPE2_LIBDIR}
 )
 
-target_link_libraries(wappwin32 PRIVATE
+target_link_libraries(wappwin32sw PRIVATE
     wgsoftgfx
     wgfreetypefont
     wondergui
