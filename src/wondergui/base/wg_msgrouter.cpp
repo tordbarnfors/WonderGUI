@@ -415,7 +415,7 @@ namespace wg
 		{
 			Msg_p pMsg = m_msgQueue.front();
 			m_insertPos = m_msgQueue.begin()+1;	// Insert position set to right after current event.
-			
+
 			do
 			{
 				if( pMsg->hasCopyTo()  )
@@ -424,7 +424,9 @@ namespace wg
 				if( pMsg->hasSource() )
 					_dispatchToSourceRoutes( pMsg );
 
-				_dispatchToTypeRoutes( pMsg );
+				if( !pMsg->reposted() )
+					_dispatchToTypeRoutes( pMsg );
+
 				_broadcast( pMsg );
 			}
 			while( pMsg->doRepost() );
