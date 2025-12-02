@@ -34,17 +34,16 @@ set(INCDIRS
 	${PROJECT_SOURCE_DIR}
 )
 
-### Software rendering version
+### DX12 rendering version
 
 add_library(wappwin32dx12 STATIC
     ${SOURCES}
-#    sdlwindow_sw.h
-#    sdlwindow_sw.cpp
+
 )
 
 target_include_directories(wappwin32dx12 PRIVATE
     ${INCDIRS}
-    ${WGSOFTGFX_INCDIRS}
+    ${DX12GFX_INCDIRS}
     ${SDL2_INCDIR}
     ${SDL2IMAGE_INCDIR}
 )
@@ -58,7 +57,7 @@ target_link_directories(wappwin32dx12 PUBLIC
 )
 
 target_link_libraries(wappwin32dx12 PRIVATE
-    wgsoftgfx
+    wgdx12gfx
     wgfreetypefont
     wondergui
     wgdebugger
