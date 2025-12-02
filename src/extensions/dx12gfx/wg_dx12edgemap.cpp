@@ -16,7 +16,9 @@
 
   The WonderGUI Graphics Toolkit is also available for use in commercial
   closed-source projects under a separate license. Interested parties
-  should contact Tord Jansson [tord.jansson@gmail.com] for details. 
+  should contact Tord Jansson [tord.jansson@gmail.com] for details.
+
+=========================================================================*/
 
 #include <wg_dx12edgemap.h>
 #include <wg_gradyent.h>

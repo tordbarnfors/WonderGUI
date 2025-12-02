@@ -22,9 +22,17 @@
 
 #include <win32window.h>
 #include <windows.h>
-#include <wg_softsurface.h>
+#include <wg_dx12backend.h>
+#include <dx12_wrapper.h>
+
+#include <wg_gfxdevice.h>
+#include <wg_dx12backend.h>
+
 
 using namespace wg;
+
+extern DX12Wrapper* g_pDX12Wrapper;
+
 
 //____ constructor ___________________________________________________
 
@@ -34,43 +42,24 @@ Win32Window::Win32Window(wapp::Window* pUserWindow, wg::Placement origin, wg::Co
 
 	Rect geo = { pos, size };
 
-
-
-	m_windowHandle = CreateWindow("WappWindowClass", title.c_str(), WS_OVERLAPPEDWINDOW, geo.x, geo.h, geo.w, geo.h, 0, 0, 0, this);
+	m_windowHandle = CreateWindow("WappWindowClass", title.c_str(), WS_OVERLAPPEDWINDOW, geo.x, geo.y, geo.w, geo.h, 0, 0, 0, this);
 
 	if (!m_windowHandle)
 	{
 		int x = 0;
-		// Error handling!
+		//TODO: Error handling!
 	}
 	else
 	{
-		BITMAPINFO bmi = { 0 };
-		bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
-		bmi.bmiHeader.biWidth = geo.w;
-		bmi.bmiHeader.biHeight = -geo.h; // Negativt = top-down
-		bmi.bmiHeader.biPlanes = 1;
-		bmi.bmiHeader.biBitCount = 32;
-		bmi.bmiHeader.biCompression = BI_RGB;
-
-		HDC hdcScreen = GetDC(NULL);
-		m_hBitmap = CreateDIBSection(hdcScreen, &bmi, DIB_RGB_COLORS,
-			(void**)&m_pCanvasPixels, NULL, 0);
-		ReleaseDC(NULL, hdcScreen);
-
 		UINT dpi = GetDpiForWindow(m_windowHandle);
 		int scale = dpi * 64 / 96; // 96 DPI is 100% scaling
-
-
-		auto pCanvas = wg::SoftSurface::createInPlace({
-			.canvas = true,
-			.format = PixelFormat::BGRA_8,
-			.scale = scale,
-			.size = { (int) size.w, (int) size.h}
-			}, (uint8_t*) m_pCanvasPixels);
-
-
-		m_pRootPanel = RootPanel::create(pCanvas, Base::defaultGfxDevice());
+	
+		auto pBackend = wg_static_cast<DX12Backend_p>(wg_static_cast<GfxDeviceGen2_p>(Base::defaultGfxDevice())->backend());
+		pBackend->setDefaultCanvas({ spx(geo.w * 64), spx(geo.h * 64) },scale);
+		m_pRootPanel = RootPanel::create(CanvasRef::Default, Base::defaultGfxDevice());
+		assert(m_pRootPanel);
+		
+		m_pDXGISwapChain = new DXGI_SwapChain(g_pDX12Wrapper, m_windowHandle, m_pRootPanel, (UINT)size.w, (UINT)size.h);
 
 		// Show window if open is true
 
@@ -86,7 +75,7 @@ Win32Window::Win32Window(wapp::Window* pUserWindow, wg::Placement origin, wg::Co
 
 Win32Window::~Win32Window()
 {
-	DeleteObject(m_hBitmap);
+	delete m_pDXGISwapChain;
 }
 
 
@@ -94,7 +83,10 @@ Win32Window::~Win32Window()
 
 void Win32Window::render()
 {
-	m_pRootPanel->render();
+	if (m_bHidden)
+		return;
+
+//	m_pRootPanel->render();
 
 	int nRects = m_pRootPanel->nbUpdatedRects();
 	auto pRects = m_pRootPanel->firstUpdatedRect();
@@ -110,47 +102,68 @@ void Win32Window::render()
 	}
 }
 
+//____ paint() ________________________________________________________________
+
+void Win32Window::paint()
+{
+	HRGN updateRegion = CreateRectRgn(0, 0, 0, 0);
+
+	if (GetUpdateRgn(m_windowHandle, updateRegion, FALSE) != NULLREGION)
+	{
+		// First call to get required buffer size
+		DWORD size = GetRegionData(updateRegion, 0, nullptr);
+
+		// Allocate buffer
+		std::vector<BYTE> buffer(size);
+		RGNDATA* regionData = reinterpret_cast<RGNDATA*>(buffer.data());
+
+		// Get the actual data
+		GetRegionData(updateRegion, size, regionData);
+
+		// Extract rectangles
+		RECT* rects = reinterpret_cast<RECT*>(regionData->Buffer);
+		DWORD rectCount = regionData->rdh.nCount;
+
+		std::vector<RECT> dirtyRects(rects, rects + rectCount);
+
+		DXGI_PRESENT_PARAMETERS presentParams = {};
+		presentParams.DirtyRectsCount = dirtyRects.size();
+		presentParams.pDirtyRects = dirtyRects.data();
+
+		m_pDXGISwapChain->swapChain()->Present1(0, 0, &presentParams);
+	}
+
+	DeleteObject(updateRegion);
+	ValidateRect(m_windowHandle, nullptr);
+}
+
+
 //____ onResize() ____________________________________________________________
 
 void Win32Window::onResize(int widthInPixels, int heightInPixels)
 {
-	// Resize bitmap
+	m_pDXGISwapChain->resizeBuffers(widthInPixels, heightInPixels);
 
-	BITMAPINFO bmi = { 0 };
-	bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
-	bmi.bmiHeader.biWidth = widthInPixels;
-	bmi.bmiHeader.biHeight = -heightInPixels; // Negativt = top-down
-	bmi.bmiHeader.biPlanes = 1;
-	bmi.bmiHeader.biBitCount = 32;
-	bmi.bmiHeader.biCompression = BI_RGB;
+	if (widthInPixels == 0 || heightInPixels == 0)
+	{
+		m_bHidden = true;
+		return;
+	}
 
-	// Delete old bitmap
-
-	DeleteObject(m_hBitmap);
-
-	// Create new bitmap
-
-	HDC hdcScreen = GetDC(NULL);
-	m_hBitmap = CreateDIBSection(hdcScreen, &bmi, DIB_RGB_COLORS,
-		(void**)&m_pCanvasPixels, NULL, 0);
-	ReleaseDC(NULL, hdcScreen);
-
-
+	m_bHidden = false;
 
 	UINT dpi = GetDpiForWindow(m_windowHandle);
 	int scale = dpi * 64 / 96; // 96 DPI is 100% scaling
 
-	// Update root panel's surface
+	// Update root panel
 
-	auto pCanvas = wg::SoftSurface::createInPlace({
-		.canvas = true,
-		.format = PixelFormat::BGRA_8,
-		.scale = scale,
-		.size = { widthInPixels, heightInPixels }
-		}, (uint8_t*)m_pCanvasPixels);
+	auto pBackend = wg_static_cast<DX12Backend_p>(wg_static_cast<GfxDeviceGen2_p>(Base::defaultGfxDevice())->backend());
+	pBackend->setDefaultCanvas({ widthInPixels * 64, heightInPixels * 64 }, scale);
+	m_pRootPanel = RootPanel::create(CanvasRef::Default, Base::defaultGfxDevice());
 
-	m_pRootPanel->setCanvas(pCanvas);
-	m_pUserWindow->onResize({ pts(widthInPixels*scale/64), pts(heightInPixels*scale/64) });
+	//
+
+	m_pUserWindow->onResize({ pts(widthInPixels * scale / 64), pts(heightInPixels * scale / 64) });
 }
 
 //____ destroy() _____________________________________________________________

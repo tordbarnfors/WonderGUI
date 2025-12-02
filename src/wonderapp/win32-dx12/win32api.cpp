@@ -27,7 +27,7 @@
 #include <fstream>
 #include <iostream>
 
-#include <wg_softsurface.h>
+#include <wg_dx12surface.h>
 #include <wg_freetypefont.h>
 #include <themes/simplistic/wg_simplistic.h>
 
@@ -192,7 +192,7 @@ wg::Surface_p Win32API::loadSurface(const std::string& path, wg::SurfaceFactory*
 				return nullptr;
 			}
 
-			Surface_p pSurface = wg::SoftSurface::create({
+			Surface_p pSurface = wg::DX12Surface::create({
 				.canvas = false,
 				.format = destFormat,
 				.size = { width, height }
