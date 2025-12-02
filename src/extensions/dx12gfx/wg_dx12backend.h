@@ -72,6 +72,8 @@ namespace wg
 
 		//.____ Misc _________________________________________________________
 
+		bool	setDefaultCanvas(SizeSPX size, int scale);
+
 		const CanvasInfo* canvasInfo(CanvasRef ref) const override;
 
 		SurfaceFactory_p	surfaceFactory() override;
@@ -90,6 +92,9 @@ namespace wg
 
 		SurfaceFactory_p	m_pSurfaceFactory;
 		EdgemapFactory_p	m_pEdgemapFactory;
+
+		CanvasInfo			m_defaultCanvas;
+		CanvasInfo			m_dummyCanvas;
 
 	};
 

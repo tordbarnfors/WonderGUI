@@ -23,9 +23,8 @@
 #include <wondergui.h>
 #include <windows.h>
 
-#include <wg_softkernels_default.h>
-#include <wg_softsurfacefactory.h>
-#include <wg_softbackend.h>
+#include <wg_dx12surfacefactory.h>
+#include <wg_dx12backend.h>
 
 #include <win32window.h>
 #include <win32api.h>
@@ -129,7 +128,9 @@ LRESULT CALLBACK windowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 		case WM_PAINT:
 		{
 			Win32Window* pointer = reinterpret_cast<Win32Window*>(GetWindowLongPtr(hwnd, GWLP_USERDATA));
+			pointer->paint();
 
+			/*
 			PAINTSTRUCT ps;
 			HDC hdc = BeginPaint(hwnd, &ps);
 			HDC hdcMem = CreateCompatibleDC(hdc);
@@ -143,6 +144,10 @@ LRESULT CALLBACK windowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 			SelectObject(hdcMem, oldBitmap);
 			DeleteDC(hdcMem);
 			EndPaint(hwnd, &ps);
+*/
+			
+
+
 			return 0;
 		}
 
@@ -366,20 +371,20 @@ void initWin32()
 	g_ticksToMicroseconds = 1000000.f / float(frequency.QuadPart);
 
 
-//	DX12Wrapper::initDebugger();
+	DX12Wrapper::initDebugger();
 
-//	g_pDX12Wrapper = new DX12Wrapper();
+	g_pDX12Wrapper = new DX12Wrapper();
 }	
 
 //____ exitWin32() ____________________________________________________________
 
 void exitWin32()
 {
-//	delete g_pDX12Wrapper;
-//	g_pDX12Wrapper = nullptr;
+	delete g_pDX12Wrapper;
+	g_pDX12Wrapper = nullptr;
 
-//	DX12Wrapper::reportLiveObjects();
-//	DX12Wrapper::exitDebugger();
+	DX12Wrapper::reportLiveObjects();
+	DX12Wrapper::exitDebugger();
 }
 
 //____ initInputDevices() ______________________________________________________
@@ -476,12 +481,10 @@ int main(int arch, char * argv[] ) {
 
 	// Setup WonderGUI default factories and devices
 
-	auto pFactory = wg::SoftSurfaceFactory::create();
+	auto pFactory = wg::DX12SurfaceFactory::create();
 	Base::setDefaultSurfaceFactory(pFactory);
 
-	auto pBackend = wg::SoftBackend::create();
-
-	addDefaultSoftKernels(pBackend);
+	auto pBackend = wg::DX12Backend::create();
 
 	auto pGfxDevice = wg::GfxDeviceGen2::create(pBackend);
 	Base::setDefaultGfxDevice(pGfxDevice);

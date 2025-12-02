@@ -28,6 +28,8 @@
 #include <wappwindow.h>
 #include <windows.h>
 
+#include <dxgi_swapchain.h>
+
 
 //____ Win32Window _______________________________________________________________
 
@@ -43,9 +45,9 @@ public:
     //.____ Misc ____________________________________________________
 
     void				render();
+	void				paint();
 	wapp::Window*		userWindow() const { return m_pUserWindow; }
 	wg::RootPanel_p		rootPanel() const { return m_pRootPanel; }
-	HBITMAP				canvasBitmap() const { return m_hBitmap; }
 
 	void				onResize(int width, int height);
 
@@ -67,10 +69,14 @@ protected:
 	//
 
     HWND				m_windowHandle;
-	HBITMAP				m_hBitmap;
-	DWORD*				m_pCanvasPixels;
+	DXGI_SwapChain *	m_pDXGISwapChain;
+
+//	HBITMAP				m_hBitmap;
+//	DWORD *				m_pCanvasPixels;
 
 	wapp::Window *		m_pUserWindow;
 	wg::RootPanel_p		m_pRootPanel;
+
+	bool				m_bHidden = false;
 
 };

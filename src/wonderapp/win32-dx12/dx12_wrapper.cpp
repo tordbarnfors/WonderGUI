@@ -64,17 +64,30 @@ void DX12Wrapper::exitDebugger()
 
 DX12Wrapper::DX12Wrapper()
 { 
+	// Create factory
+
 	if (S_OK != CreateDXGIFactory2(DXGI_CREATE_FACTORY_DEBUG, IID_PPV_ARGS(&m_pDXGIFactory)))
 	{
 		assert(false);
 	}
+
+	// Find adapter
 
 	if (!_findAdapter())
 	{
 		assert(false);
 	}
 
+	// Create device
+
 	if (S_OK != D3D12CreateDevice(m_pAdapter.Get(), D3D_FEATURE_LEVEL_12_1, IID_PPV_ARGS(m_pDX12Device.GetAddressOf())))
+	{
+		assert(false);
+	}
+
+	// Create render command queue
+
+	if (!_createRenderCommandQueue())
 	{
 		assert(false);
 	}
@@ -115,5 +128,28 @@ bool DX12Wrapper::_findAdapter()
 	}
 
 	m_pAdapter = adapter;
+	return true;
+}
+
+//____ _createRenderCommandQueue() ______________________________________________
+
+bool DX12Wrapper::_createRenderCommandQueue()
+{
+	D3D12_COMMAND_QUEUE_DESC description = {};
+	description.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
+	description.Priority = D3D12_COMMAND_QUEUE_PRIORITY_HIGH;
+	description.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
+	description.NodeMask = 0;
+
+	if(S_OK != m_pDX12Device->CreateCommandQueue(&description, IID_PPV_ARGS(&m_pRenderCommandQueue)))
+	{
+		return false;
+	}
+
+	if(S_OK != m_pDX12Device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(m_renderQueueFence.GetAddressOf())))
+	{
+		return false;
+	}
+
 	return true;
 }

@@ -45,17 +45,25 @@ public:
 	static void reportLiveObjects();
 	static void exitDebugger();
 
+	IDXGIFactory* dxgiFactory() const { return m_pDXGIFactory.Get(); }
+	IDXGIAdapter* dxgiAdapter() const { return m_pAdapter.Get(); }
+	ID3D12Device* dx12Device() const { return m_pDX12Device.Get(); }
+	ID3D12CommandQueue* renderCommandQueue() const { return m_pRenderCommandQueue.Get(); }
+
+
 protected:
 
 
 	bool _findAdapter();
-
+	bool _createRenderCommandQueue();
 
 
 	Microsoft::WRL::ComPtr<IDXGIFactory2>		m_pDXGIFactory;
 	Microsoft::WRL::ComPtr<IDXGIAdapter>		m_pAdapter;
 	Microsoft::WRL::ComPtr<ID3D12Device>		m_pDX12Device;
 
+	Microsoft::WRL::ComPtr<ID3D12CommandQueue>	m_pRenderCommandQueue;
+	Microsoft::WRL::ComPtr<ID3D12Fence>			m_renderQueueFence;
 
 	static Microsoft::WRL::ComPtr<IDXGIDebug>	g_pDebugger;
 

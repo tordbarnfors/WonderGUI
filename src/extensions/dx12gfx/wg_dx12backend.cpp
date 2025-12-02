@@ -24,6 +24,8 @@
 #include <wg_dx12surfacefactory.h>
 #include <wg_dx12edgemapfactory.h>
 
+#include <wg_gfxbase.h>
+
 namespace wg
 {
 
@@ -71,7 +73,7 @@ namespace wg
 
 	//____ beginSession() _____________________________________________________
 
-	void DX12Backend::beginSession(CanvasRef canvasRef, Surface* pCanvas, int nUpdateRects, const RectSPX* pUpdateRects, const SessionInfo* pInfo = nullptr)
+	void DX12Backend::beginSession(CanvasRef canvasRef, Surface* pCanvas, int nUpdateRects, const RectSPX* pUpdateRects, const SessionInfo* pInfo)
 	{
 	}
 
@@ -121,18 +123,34 @@ namespace wg
 	{
 	}
 
-	//
+	//____ setDefaultCanvas() ___________________________________________
+
+	bool DX12Backend::setDefaultCanvas(SizeSPX size, int scale)
+	{
+		m_defaultCanvas.ref = CanvasRef::Default;		// Starts as Undefined until this method is called.
+		m_defaultCanvas.size = size;
+		m_defaultCanvas.scale = scale;
+		return true;
+	}
+
+	//____ canvasInfo() ________________________________________________________
 
 	const CanvasInfo* DX12Backend::canvasInfo(CanvasRef ref) const
 	{
-		return nullptr;
+		if (ref == CanvasRef::Default)
+			return &m_defaultCanvas;
+		else
+		{
+			GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Only Default canvas is supported.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			return &m_dummyCanvas;
+		}
 	}
 
 	//____ surfaceFactory() ____________________________________________________
 
 	SurfaceFactory_p DX12Backend::surfaceFactory()
 	{
-			return m_pSurfaceFactory;
+		return m_pSurfaceFactory;
 	}
 
 	//____ edgemapFactory() ____________________________________________________
@@ -169,3 +187,4 @@ namespace wg
 	{
 	}
 
+}

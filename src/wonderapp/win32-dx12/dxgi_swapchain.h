@@ -21,23 +21,43 @@
 =========================================================================*/
 #pragma once
 
+#include <wg_rootpanel.h>
+#include <dx12_wrapper.h>
+
 #include <wrl.h>
 #include <dxgi1_6.h>
+#include <d3d12.h>
 
 
 class DXGI_SwapChain
 {
 	public:
-	DXGI_SwapChain();
+	DXGI_SwapChain( DX12Wrapper* pDX12Wrapper, HWND hwnd, wg::RootPanel * pRoot, UINT width, UINT heigh);
 	~DXGI_SwapChain();
 
-//	bool		createSwapChain(IDXGIFactory2* pFactory, IUnknown* pDevice, HWND hWnd, UINT width, UINT height, UINT bufferCount, DXGI_FORMAT format, bool bWindowed);
-	void		present();
+	void	resizeBuffers(UINT width, UINT height);
+	void	present();
+
 
 	IDXGISwapChain1* swapChain() const { return m_pSwapChain.Get(); }
 
 private:
 
-	Microsoft::WRL::ComPtr<IDXGISwapChain1>	m_pSwapChain;
+	void _createBuffers();
+	void _dropBuffers();
 
+	static const UINT								c_nbBuffers = 2;
+
+	Microsoft::WRL::ComPtr<ID3D12Device>			m_pDX12Device;
+	Microsoft::WRL::ComPtr<IDXGISwapChain1>			m_pSwapChain;
+	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>	m_RTVHeap;
+	Microsoft::WRL::ComPtr<ID3D12Resource>			m_renderBuffers[c_nbBuffers];
+
+	HWND m_hwnd = nullptr;
+	UINT m_currentBuffer = 0;
+
+	UINT m_width = 0, m_height = 0;
+	UINT m_heapIncrement = 0;
+
+	wg::RootPanel_p m_pRootPanel;
 };
