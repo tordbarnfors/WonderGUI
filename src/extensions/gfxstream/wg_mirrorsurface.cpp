@@ -272,12 +272,12 @@ namespace wg
 			encoder << m_surfaceId;
 			encoder << pRects[i];
 
-			auto pDest = pBuffer;
+			uint8_t * pDest = pBuffer;
 
-			auto pLine = pixelBuffer.pixels + (pRects[i].y - pixelBuffer.rect.y) * pixelBuffer.pitch +
+			uint8_t * pLine = pixelBuffer.pixels + (pRects[i].y - pixelBuffer.rect.y) * pixelBuffer.pitch +
 				((pRects[i].x - pixelBuffer.rect.x) * pixelDescription.bits) / 8;
 
-			int lineLength = (pixelBuffer.rect.w * pixelDescription.bits) / 8;
+			int lineLength = (pRects[i].w * pixelDescription.bits) / 8;
 
 			for (int y = 0; y < pixelBuffer.rect.h; y++)
 			{
@@ -286,7 +286,7 @@ namespace wg
 				pDest += lineLength;
 			}
 
-			StreamBackend::_splitAndEncode(m_pEncoder, GfxStream::ChunkId::SurfacePixels, Compression::None, pBuffer, pDest, 1);
+			StreamBackend::_splitAndEncode(m_pEncoder, GfxStream::ChunkId::SurfacePixels, Compression::None, pBuffer, pDest, 4);
 		}
 #endif
 
