@@ -81,7 +81,7 @@ bool MyApp::_setupGUI(API* pAPI)
 	//
 
 	auto pBgSkin = ColorSkin::create( Color::PapayaWhip );
-
+/*
 	auto pTextDisplay = TextDisplay::create({
 
 		.display = {
@@ -94,5 +94,12 @@ bool MyApp::_setupGUI(API* pAPI)
 	});
 
 	m_pWindow->mainCapsule()->slot = pTextDisplay;
+*/
+
+	auto pFiller = Filler::create({
+		.skin = pBgSkin
+		});
+
+	m_pWindow->mainCapsule()->slot = pFiller;
 	return true;
 }
