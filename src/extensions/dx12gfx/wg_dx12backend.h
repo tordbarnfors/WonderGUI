@@ -26,6 +26,10 @@
 
 #include <wg_gfxbackend.h>
 
+#include <wrl.h>
+
+#include <d3d12.h>
+
 namespace wg
 {
 
@@ -43,7 +47,7 @@ namespace wg
 
 		//.____ Creation __________________________________________
 
-		static DX12Backend_p	create();
+		static DX12Backend_p	create(ID3D12Device * pDX12Device, ID3D12CommandQueue * pDX12CommandQueue );
 
 		//.____ Identification __________________________________________
 
@@ -72,7 +76,7 @@ namespace wg
 
 		//.____ Misc _________________________________________________________
 
-		bool	setDefaultCanvas(SizeSPX size, int scale);
+		bool	setDefaultCanvas(D3D12_CPU_DESCRIPTOR_HANDLE renderTargetView, SizeSPX size, int scale);
 
 		const CanvasInfo* canvasInfo(CanvasRef ref) const override;
 
@@ -87,14 +91,53 @@ namespace wg
 		void	waitForCompletion() override;
 
 	protected:
-		DX12Backend();
+		DX12Backend(ID3D12Device* pDX12Device, ID3D12CommandQueue* pDX12CommandQueue);
 		~DX12Backend();
+
+		void _waitForFence(UINT64 fenceValue);
 
 		SurfaceFactory_p	m_pSurfaceFactory;
 		EdgemapFactory_p	m_pEdgemapFactory;
 
+		D3D12_CPU_DESCRIPTOR_HANDLE	m_defaultCanvasRTV;
 		CanvasInfo			m_defaultCanvas;
 		CanvasInfo			m_dummyCanvas;
+
+		Object* const* m_pObjectsBeg = nullptr;
+		Object* const* m_pObjectsEnd = nullptr;
+		Object* const* m_pObjectsPtr = nullptr;
+
+		const RectSPX* m_pRectsBeg = nullptr;
+		const RectSPX* m_pRectsEnd = nullptr;
+		const RectSPX* m_pRectsPtr = nullptr;
+
+		const HiColor* m_pColorsBeg = nullptr;
+		const HiColor* m_pColorsEnd = nullptr;
+		const HiColor* m_pColorsPtr = nullptr;
+
+		const Transform* m_pTransformsBeg = nullptr;
+		const Transform* m_pTransformsEnd = nullptr;
+
+
+
+		Microsoft::WRL::ComPtr<ID3D12Device>		m_pDX12Device;
+		Microsoft::WRL::ComPtr<ID3D12CommandQueue>	m_pDX12CommandQueue;
+
+		struct FrameResources
+		{
+			Microsoft::WRL::ComPtr<ID3D12CommandAllocator>	commandAllocator;
+			UINT64											fenceValue;
+		};
+
+		const static int									c_nbFrameResources = 2;
+
+		FrameResources										m_frameResources[c_nbFrameResources];
+		UINT												m_currentFrameIndex;
+
+		Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList>	m_commandList;
+		Microsoft::WRL::ComPtr<ID3D12Fence>					m_commandFence;
+		UINT64												m_fenceValues[c_nbFrameResources];
+		HANDLE 												m_fenceEvent;
 
 	};
 

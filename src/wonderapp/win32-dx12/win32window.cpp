@@ -86,7 +86,7 @@ void Win32Window::render()
 	if (m_bHidden)
 		return;
 
-//	m_pRootPanel->render();
+	m_pRootPanel->render();
 
 	int nRects = m_pRootPanel->nbUpdatedRects();
 	auto pRects = m_pRootPanel->firstUpdatedRect();

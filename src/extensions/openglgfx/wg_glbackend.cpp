@@ -283,7 +283,6 @@ void GlBackend::setTransforms(const Transform* pBeg, const Transform* pEnd)
 {
 	m_pTransformsBeg = pBeg;
 	m_pTransformsEnd = pEnd;
-
 }
 
 //____ processCommands() _________________________________________________
