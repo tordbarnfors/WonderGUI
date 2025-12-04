@@ -26,7 +26,7 @@
 
 #include <wg_gfxbase.h>
 
-#include <D3dx12.h>
+
 
 namespace wg
 {
@@ -85,6 +85,7 @@ namespace wg
 
 	void DX12Backend::beginRender()
 	{
+		m_currentFrameIndex = (m_currentFrameIndex + 1) % c_nbFrameResources;
 		int frame = m_currentFrameIndex;
 
 		_waitForFence(m_frameResources[frame].fenceValue);
@@ -97,7 +98,7 @@ namespace wg
 
 	void DX12Backend::endRender()
 	{
-		m_commandList->Close();
+		assert( S_OK == m_commandList->Close() );
 
 		// Execute the command list.
 		ID3D12CommandList* ppCommandLists[] = { m_commandList.Get() };
@@ -106,26 +107,45 @@ namespace wg
 	 
 		 // Signal and increment the fence value.
 
-		UINT64& fenceValue = ++m_fenceValues[m_currentFrameIndex];
+		m_fenceValue++;
 
-		m_pDX12CommandQueue->Signal(m_commandFence.Get(), fenceValue);
-		m_frameResources[m_currentFrameIndex].fenceValue = fenceValue;
+		m_pDX12CommandQueue->Signal(m_commandFence.Get(), m_fenceValue);
+		m_frameResources[m_currentFrameIndex].fenceValue = m_fenceValue;
 
-		// Update frame index.
-
-		m_currentFrameIndex = (m_currentFrameIndex + 1) % c_nbFrameResources;
 	}
 
 	//____ beginSession() _____________________________________________________
 
 	void DX12Backend::beginSession(CanvasRef canvasRef, Surface* pCanvas, int nUpdateRects, const RectSPX* pUpdateRects, const SessionInfo* pInfo)
 	{
-		CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(
-			backBuffers[currentBackBuffer].Get(),
-			D3D12_RESOURCE_STATE_PRESENT,
-			D3D12_RESOURCE_STATE_RENDER_TARGET
-		);
 
+
+
+		D3D12_RESOURCE_BARRIER barrier = {};
+		barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+		barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+		barrier.Transition.pResource = m_defaultCanvasBuffer;
+		barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_PRESENT;
+		barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
+		barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+
+		m_commandList->ResourceBarrier(1, &barrier);
+
+		D3D12_VIEWPORT viewport = {};
+		viewport.TopLeftX = 0;
+		viewport.TopLeftY = 0;
+		viewport.Width = (FLOAT)m_defaultCanvas.size.w;
+		viewport.Height = (FLOAT)m_defaultCanvas.size.h;
+		viewport.MinDepth = 0.0f;
+		viewport.MaxDepth = 1.0f;
+		m_commandList->RSSetViewports(1, &viewport);
+
+		D3D12_RECT scissorRect = {};
+		scissorRect.left = 0;
+		scissorRect.top = 0;
+		scissorRect.right = (FLOAT)m_defaultCanvas.size.w;
+		scissorRect.bottom = (FLOAT)m_defaultCanvas.size.h;
+		m_commandList->RSSetScissorRects(1, &scissorRect);
 
 		float clearColor[4] = { 0.2f, 0.3f, 0.4f, 1.0f };
 		m_commandList->ClearRenderTargetView(m_defaultCanvasRTV, clearColor, 0, nullptr);
@@ -136,6 +156,17 @@ namespace wg
 
 	void DX12Backend::endSession()
 	{
+
+		D3D12_RESOURCE_BARRIER barrier = {};
+		barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+		barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+		barrier.Transition.pResource = m_defaultCanvasBuffer;
+		barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
+		barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
+		barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+
+		m_commandList->ResourceBarrier(1, &barrier);
+
 	}
 
 	//____ setCanvas() ________________________________________________________
@@ -191,9 +222,10 @@ namespace wg
 
 	//____ setDefaultCanvas() ___________________________________________
 
-	bool DX12Backend::setDefaultCanvas(D3D12_CPU_DESCRIPTOR_HANDLE renderTargetView, SizeSPX size, int scale)
+	bool DX12Backend::setDefaultCanvas(D3D12_CPU_DESCRIPTOR_HANDLE renderTargetView, ID3D12Resource* renderTargetBuffer, SizeSPX size, int scale)
 	{
 		m_defaultCanvasRTV = renderTargetView;
+		m_defaultCanvasBuffer = renderTargetBuffer;
 		m_defaultCanvas.ref = CanvasRef::Default;		// Starts as Undefined until this method is called.
 		m_defaultCanvas.size = size;
 		m_defaultCanvas.scale = scale;
@@ -252,6 +284,7 @@ namespace wg
 
 	void DX12Backend::waitForCompletion()
 	{
+		_waitForFence(m_frameResources[m_currentFrameIndex].fenceValue);
 	}
 
 	//____ _waitForFence() _____________________________________________________

@@ -76,7 +76,9 @@ namespace wg
 
 		//.____ Misc _________________________________________________________
 
-		bool	setDefaultCanvas(D3D12_CPU_DESCRIPTOR_HANDLE renderTargetView, SizeSPX size, int scale);
+		// ID3D12Resource
+
+		bool	setDefaultCanvas(D3D12_CPU_DESCRIPTOR_HANDLE renderTargetView, ID3D12Resource * renderTargetBuffer, SizeSPX size, int scale);
 
 		const CanvasInfo* canvasInfo(CanvasRef ref) const override;
 
@@ -100,6 +102,7 @@ namespace wg
 		EdgemapFactory_p	m_pEdgemapFactory;
 
 		D3D12_CPU_DESCRIPTOR_HANDLE	m_defaultCanvasRTV;
+		ID3D12Resource*		m_defaultCanvasBuffer = nullptr;
 		CanvasInfo			m_defaultCanvas;
 		CanvasInfo			m_dummyCanvas;
 
@@ -132,11 +135,11 @@ namespace wg
 		const static int									c_nbFrameResources = 2;
 
 		FrameResources										m_frameResources[c_nbFrameResources];
-		UINT												m_currentFrameIndex;
+		UINT												m_currentFrameIndex = 0;
 
 		Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList>	m_commandList;
 		Microsoft::WRL::ComPtr<ID3D12Fence>					m_commandFence;
-		UINT64												m_fenceValues[c_nbFrameResources];
+		UINT64												m_fenceValue = 0;
 		HANDLE 												m_fenceEvent;
 
 	};
