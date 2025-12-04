@@ -32,7 +32,7 @@ DXGI_SwapChain::DXGI_SwapChain(DX12Wrapper* pDX12Wrapper, const HWND hwnd, wg::R
 	
 	ID3D12Device* pDevice = pDX12Wrapper->dx12Device();
 		
-	IDXGIFactory2* pFactory = static_cast<IDXGIFactory2*>(pDX12Wrapper->dxgiFactory());
+	IDXGIFactory2* pFactory = static_cast<IDXGIFactory3*>(pDX12Wrapper->dxgiFactory());
 		
 	ID3D12CommandQueue* pCommandQueue = pDX12Wrapper->renderCommandQueue();
 
@@ -93,6 +93,8 @@ void DXGI_SwapChain::_createBuffers()
 	D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = m_RTVHeap->GetCPUDescriptorHandleForHeapStart();
 	for (UINT i = 0; i < c_nbBuffers; i++)
 	{
+		m_rtvHandles[i] = rtvHandle;
+
 		m_renderBuffers[i].Reset();
 
 		if (S_OK != m_pSwapChain->GetBuffer(i, IID_PPV_ARGS(&m_renderBuffers[i])))
@@ -122,7 +124,7 @@ void DXGI_SwapChain::resizeBuffers(UINT width, UINT height)
 	// Present a frame to update the window with new buffer size.
 	//TODO: This should be rendered before presenting, otherwise we will probably get blinking black on resize.
 	m_pSwapChain->Present(0, 0);
-
+	m_currentBuffer = (m_currentBuffer+1) % 2;
 }
 
 //____ _dropBuffers() ____________________________________________________

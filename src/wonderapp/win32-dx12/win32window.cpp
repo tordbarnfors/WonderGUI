@@ -40,9 +40,13 @@ Win32Window::Win32Window(wapp::Window* pUserWindow, wg::Placement origin, wg::Co
 {
 	m_pUserWindow = pUserWindow;
 
-	Rect geo = { pos, size };
+	RectI pixelGeo = { int(pos.x), int(pos.y), int(size.w), int(size.h) };
 
-	m_windowHandle = CreateWindow("WappWindowClass", title.c_str(), WS_OVERLAPPEDWINDOW, geo.x, geo.y, geo.w, geo.h, 0, 0, 0, this);
+	m_width = pixelGeo.w;
+	m_height = pixelGeo.h;
+
+
+	m_windowHandle = CreateWindow("WappWindowClass", title.c_str(), WS_OVERLAPPEDWINDOW, pixelGeo.x, pixelGeo.y, pixelGeo.w, pixelGeo.h, 0, 0, 0, this);
 
 	if (!m_windowHandle)
 	{
@@ -51,15 +55,16 @@ Win32Window::Win32Window(wapp::Window* pUserWindow, wg::Placement origin, wg::Co
 	}
 	else
 	{
+		_createSwapChain(g_pDX12Wrapper, m_windowHandle, m_width, m_height);
+
 		UINT dpi = GetDpiForWindow(m_windowHandle);
 		int scale = dpi * 64 / 96; // 96 DPI is 100% scaling
 	
 		auto pBackend = wg_static_cast<DX12Backend_p>(wg_static_cast<GfxDeviceGen2_p>(Base::defaultGfxDevice())->backend());
-		pBackend->setDefaultCanvas({ spx(geo.w * 64), spx(geo.h * 64) },scale);
+		pBackend->setDefaultCanvas(m_rtvHandles[m_currentBuffer], m_renderBuffers[m_currentBuffer].Get(), { spx(pixelGeo.w * 64), spx(pixelGeo.h * 64) },scale);
 		m_pRootPanel = RootPanel::create(CanvasRef::Default, Base::defaultGfxDevice());
 		assert(m_pRootPanel);
 		
-		m_pDXGISwapChain = new DXGI_SwapChain(g_pDX12Wrapper, m_windowHandle, m_pRootPanel, (UINT)size.w, (UINT)size.h);
 
 		// Show window if open is true
 
@@ -75,7 +80,6 @@ Win32Window::Win32Window(wapp::Window* pUserWindow, wg::Placement origin, wg::Co
 
 Win32Window::~Win32Window()
 {
-	delete m_pDXGISwapChain;
 }
 
 
@@ -85,6 +89,15 @@ void Win32Window::render()
 {
 	if (m_bHidden)
 		return;
+
+	GfxDeviceGen2_p pGfxDevice = wg_static_cast<GfxDeviceGen2_p>(Base::defaultGfxDevice());
+
+	auto pBackend = wg_static_cast<DX12Backend_p>(pGfxDevice->backend());
+
+
+	pBackend->setDefaultCanvas(m_rtvHandles[m_currentBuffer], m_renderBuffers[m_currentBuffer].Get(), {spx(m_width * 64), spx(m_height * 64)}, m_pRootPanel->scale());
+
+//	m_pRootPanel->addDirtyPatch({ 0,0, spx(m_width * 64), spx(m_height * 64) });
 
 	m_pRootPanel->render();
 
@@ -130,7 +143,9 @@ void Win32Window::paint()
 		presentParams.DirtyRectsCount = dirtyRects.size();
 		presentParams.pDirtyRects = dirtyRects.data();
 
-		m_pDXGISwapChain->swapChain()->Present1(0, 0, &presentParams);
+//		m_pSwapChain->Present(0, 0);
+		m_pSwapChain->Present1(0, 0, &presentParams);
+		m_currentBuffer = (m_currentBuffer + 1) % c_nbBuffers;
 	}
 
 	DeleteObject(updateRegion);
@@ -142,7 +157,18 @@ void Win32Window::paint()
 
 void Win32Window::onResize(int widthInPixels, int heightInPixels)
 {
-	m_pDXGISwapChain->resizeBuffers(widthInPixels, heightInPixels);
+	m_width = widthInPixels;
+	m_height = heightInPixels;
+
+	auto pBackend = wg_static_cast<DX12Backend_p>(wg_static_cast<GfxDeviceGen2_p>(Base::defaultGfxDevice())->backend());
+	pBackend->waitForCompletion();
+
+	_dropSwapChainBuffers();
+	auto retVal = m_pSwapChain->ResizeBuffers(0, widthInPixels, heightInPixels, DXGI_FORMAT_UNKNOWN, DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING  /* | DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH*/);
+	assert(retVal == S_OK);
+	_createSwapChainBuffers();
+
+	m_currentBuffer = 0;
 
 	if (widthInPixels == 0 || heightInPixels == 0)
 	{
@@ -157,9 +183,8 @@ void Win32Window::onResize(int widthInPixels, int heightInPixels)
 
 	// Update root panel
 
-	auto pBackend = wg_static_cast<DX12Backend_p>(wg_static_cast<GfxDeviceGen2_p>(Base::defaultGfxDevice())->backend());
-	pBackend->setDefaultCanvas({ widthInPixels * 64, heightInPixels * 64 }, scale);
-	m_pRootPanel = RootPanel::create(CanvasRef::Default, Base::defaultGfxDevice());
+	pBackend->setDefaultCanvas(m_rtvHandles[m_currentBuffer], m_renderBuffers[m_currentBuffer].Get(), { widthInPixels * 64, heightInPixels * 64 }, scale);
+	m_pRootPanel->setCanvas(CanvasRef::Default);
 
 	//
 
@@ -227,4 +252,71 @@ std::string Win32Window::title()
 	return "";
 }
 
+//____ _createSwapChain() ______________________________________________________
 
+void Win32Window::_createSwapChain(DX12Wrapper* pDX12Wrapper, const HWND hwnd, UINT width, UINT height)
+{
+	ID3D12Device* pDevice = pDX12Wrapper->dx12Device();
+
+	IDXGIFactory2* pFactory = static_cast<IDXGIFactory3*>(pDX12Wrapper->dxgiFactory());
+
+	ID3D12CommandQueue* pCommandQueue = pDX12Wrapper->renderCommandQueue();
+
+	D3D12_DESCRIPTOR_HEAP_DESC rtvHeapDesc = {};
+	rtvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
+	rtvHeapDesc.NumDescriptors = c_nbBuffers;
+	rtvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
+	rtvHeapDesc.NodeMask = 0;
+
+	if (S_OK != pDevice->CreateDescriptorHeap(&rtvHeapDesc, IID_PPV_ARGS(m_RTVHeap.GetAddressOf())))
+		assert(false);
+
+	m_heapIncrement = pDevice->GetDescriptorHandleIncrementSize(rtvHeapDesc.Type);
+
+	DXGI_SWAP_CHAIN_DESC1 description = {};
+	description.Width = width;
+	description.Height = height;
+	description.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	description.Stereo = false;
+	description.SampleDesc = { 1,0 };
+	description.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+	description.BufferCount = c_nbBuffers;
+	description.Scaling = DXGI_SCALING_NONE;
+	description.SwapEffect = DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL;
+	description.AlphaMode = DXGI_ALPHA_MODE_IGNORE;
+	description.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING; /* | DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH; */
+
+	if (S_OK != pFactory->CreateSwapChainForHwnd(pCommandQueue, hwnd, &description, nullptr, nullptr, &m_pSwapChain))
+		assert(false);
+
+	m_pDX12Device = pDevice;
+
+	_createSwapChainBuffers();
+}
+
+//____ _createSwapChainBuffers() _________________________________________________
+
+void Win32Window::_createSwapChainBuffers()
+{
+	D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = m_RTVHeap->GetCPUDescriptorHandleForHeapStart();
+	for (UINT i = 0; i < c_nbBuffers; i++)
+	{
+		m_rtvHandles[i] = rtvHandle;
+
+		m_renderBuffers[i].Reset();
+
+		if (S_OK != m_pSwapChain->GetBuffer(i, IID_PPV_ARGS(&m_renderBuffers[i])))
+			assert(false);
+		m_pDX12Device->CreateRenderTargetView(m_renderBuffers[i].Get(), nullptr, rtvHandle);
+		rtvHandle.ptr += m_heapIncrement;
+	}
+}
+
+//____ _dropSwapChainBuffers() ____________________________________________________
+
+void Win32Window::_dropSwapChainBuffers()
+{
+	for (UINT i = 0; i < c_nbBuffers; i++)
+		m_renderBuffers[i].Reset();
+}
+ 
