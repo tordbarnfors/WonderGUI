@@ -68,8 +68,15 @@ protected:
 
 	//
 
+	void				_createSwapChain(DX12Wrapper* pDX12Wrapper, const HWND hwnd, UINT width, UINT height);
+
+	void				_createSwapChainBuffers();
+	void				_dropSwapChainBuffers();
+
+
+	//
+
     HWND				m_windowHandle;
-	DXGI_SwapChain *	m_pDXGISwapChain;
 
 //	HBITMAP				m_hBitmap;
 //	DWORD *				m_pCanvasPixels;
@@ -78,5 +85,20 @@ protected:
 	wg::RootPanel_p		m_pRootPanel;
 
 	bool				m_bHidden = false;
+
+	//
+
+	static const UINT								c_nbBuffers = 2;
+
+	Microsoft::WRL::ComPtr<ID3D12Device>			m_pDX12Device;
+	Microsoft::WRL::ComPtr<IDXGISwapChain1>			m_pSwapChain;
+	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>	m_RTVHeap;
+	Microsoft::WRL::ComPtr<ID3D12Resource>			m_renderBuffers[c_nbBuffers];
+	D3D12_CPU_DESCRIPTOR_HANDLE						m_rtvHandles[c_nbBuffers];
+
+	UINT m_currentBuffer = 0;
+
+	UINT m_width = 0, m_height = 0;
+	UINT m_heapIncrement = 0;
 
 };

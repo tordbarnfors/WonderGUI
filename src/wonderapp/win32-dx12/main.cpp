@@ -154,7 +154,13 @@ LRESULT CALLBACK windowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 		case WM_SIZE:
 		{
 			Win32Window* pointer = reinterpret_cast<Win32Window*>(GetWindowLongPtr(hwnd, GWLP_USERDATA));
-			pointer->onResize( LOWORD(lparam), HIWORD(lparam) );
+	
+			RECT rect;
+			GetClientRect(hwnd, &rect);
+			UINT width = rect.right - rect.left;
+			UINT height = rect.bottom - rect.top;
+			
+			pointer->onResize( width, height );
 			pointer->render();
 			break;
 		}
@@ -484,7 +490,7 @@ int main(int arch, char * argv[] ) {
 	auto pFactory = wg::DX12SurfaceFactory::create();
 	Base::setDefaultSurfaceFactory(pFactory);
 
-	auto pBackend = wg::DX12Backend::create();
+	auto pBackend = wg::DX12Backend::create(g_pDX12Wrapper->dx12Device(), g_pDX12Wrapper->renderCommandQueue() );
 
 	auto pGfxDevice = wg::GfxDeviceGen2::create(pBackend);
 	Base::setDefaultGfxDevice(pGfxDevice);
