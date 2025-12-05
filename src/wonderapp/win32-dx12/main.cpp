@@ -32,7 +32,7 @@
 #include <vector>
 
 #include <dx12_wrapper.h>
-#include <dxgi_swapchain.h>
+
 
 
 using namespace wg;
