@@ -98,6 +98,8 @@ namespace wg
 
 		void _waitForFence(UINT64 fenceValue);
 
+		void DX12Backend::_createBuffer(Microsoft::WRL::ComPtr<ID3D12Resource>& pointer, int nbBytes, D3D12_HEAP_TYPE heapType, D3D12_RESOURCE_STATES initialState, LPCWSTR name);
+
 		SurfaceFactory_p	m_pSurfaceFactory;
 		EdgemapFactory_p	m_pEdgemapFactory;
 
@@ -125,6 +127,9 @@ namespace wg
 
 		Microsoft::WRL::ComPtr<ID3D12Device>		m_pDX12Device;
 		Microsoft::WRL::ComPtr<ID3D12CommandQueue>	m_pDX12CommandQueue;
+
+		Microsoft::WRL::ComPtr<ID3D12Resource>		m_pVertexBuffer;
+
 
 		struct FrameResources
 		{

@@ -66,6 +66,22 @@ namespace wg
 		pDX12Device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_frameResources[0].commandAllocator.Get(), nullptr, IID_PPV_ARGS(&m_commandList));
 
 		m_commandList->Close();
+
+		// Create vertex buffer
+
+		_createBuffer(m_pVertexBuffer, 16384, D3D12_HEAP_TYPE_UPLOAD, D3D12_RESOURCE_STATE_GENERIC_READ, L"WonderGUI Vertex Buffer");
+
+//		m_pVertexBuffer->SetName(L"WonderGUI Vertex Buffer");
+
+		/*
+			void* destination = nullptr;
+			
+			m_pVertexBuffer->Map(0, 0, &destination);
+
+			memcpy(destination, &vertexData, sizeof(Vertex));
+
+			m_pVertexBuffer->Unmap(0, 0);
+		*/
 	}
 
 	//____ Destructor ____________________________________________________________
@@ -118,9 +134,6 @@ namespace wg
 
 	void DX12Backend::beginSession(CanvasRef canvasRef, Surface* pCanvas, int nUpdateRects, const RectSPX* pUpdateRects, const SessionInfo* pInfo)
 	{
-
-
-
 		D3D12_RESOURCE_BARRIER barrier = {};
 		barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
 		barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
@@ -146,10 +159,6 @@ namespace wg
 		scissorRect.right = (FLOAT)m_defaultCanvas.size.w;
 		scissorRect.bottom = (FLOAT)m_defaultCanvas.size.h;
 		m_commandList->RSSetScissorRects(1, &scissorRect);
-
-		float clearColor[4] = { 0.2f, 0.3f, 0.4f, 1.0f };
-		m_commandList->ClearRenderTargetView(m_defaultCanvasRTV, clearColor, 0, nullptr);
-
 	}
 
 	//____ endSession() _______________________________________________________
@@ -218,6 +227,12 @@ namespace wg
 
 	void DX12Backend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd)
 	{
+		float clearColor[4] = { 0.2f, 0.3f, 0.4f, 1.0f };
+		m_commandList->ClearRenderTargetView(m_defaultCanvasRTV, clearColor, 0, nullptr);
+
+
+
+
 	}
 
 	//____ setDefaultCanvas() ___________________________________________
@@ -296,6 +311,38 @@ namespace wg
 			m_commandFence->SetEventOnCompletion(fenceValue, m_fenceEvent);
 			WaitForSingleObject(m_fenceEvent, INFINITE);
 		}
+	}
+
+	//____ _createBuffer() _________________________________________________
+
+	void DX12Backend::_createBuffer(Microsoft::WRL::ComPtr<ID3D12Resource>& pointer, int nbBytes, D3D12_HEAP_TYPE heapType, D3D12_RESOURCE_STATES initialState, LPCWSTR name)
+	{
+		D3D12_HEAP_PROPERTIES heapProp = {};
+		heapProp.Type = heapType;
+		heapProp.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
+		heapProp.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
+		heapProp.CreationNodeMask = 0;
+		heapProp.VisibleNodeMask = 0;
+
+		D3D12_RESOURCE_DESC resourceDesc = {};
+		resourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+		resourceDesc.Alignment = 0;
+		resourceDesc.Width = nbBytes;
+		resourceDesc.Height = 1;
+		resourceDesc.DepthOrArraySize = 1;
+		resourceDesc.MipLevels = 1;
+		resourceDesc.Format = DXGI_FORMAT_UNKNOWN;
+		resourceDesc.SampleDesc = { 1,0 };
+		resourceDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+		resourceDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
+
+
+		if (S_OK != m_pDX12Device->CreateCommittedResource(&heapProp, D3D12_HEAP_FLAG_NONE, &resourceDesc, initialState, 0, IID_PPV_ARGS(pointer.GetAddressOf())))
+		{
+			assert(false);
+		}
+
+		pointer->SetName(name);
 	}
 
 }

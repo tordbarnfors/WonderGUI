@@ -18,9 +18,6 @@ set(SOURCES
     win32window.cpp
     stb_image.h
 
-    dxgi_swapchain.h
-    dxgi_swapchain.cpp
-
     dx12_wrapper.h
     dx12_wrapper.cpp
 )

@@ -28,7 +28,7 @@
 #include <wappwindow.h>
 #include <windows.h>
 
-#include <dxgi_swapchain.h>
+#include <dx12_wrapper.h>
 
 
 //____ Win32Window _______________________________________________________________
