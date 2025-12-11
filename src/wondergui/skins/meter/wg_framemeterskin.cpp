@@ -177,7 +177,7 @@ namespace wg
 			m_bOpaque = true;
 		else if (m_blendMode == BlendMode::Blend)
 		{
-			if ((!m_pTintmap && !m_pTintmap->isOpaque()) || m_color.a != 4096)
+			if ((m_pTintmap && !m_pTintmap->isOpaque()) || m_color.a != 4096)
 				m_bOpaque = false;
 			else
 				m_bOpaque = m_pSurface->isOpaque();
