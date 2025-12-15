@@ -23,6 +23,8 @@
 #include <wg_dx12backend.h>
 #include <wg_dx12surfacefactory.h>
 #include <wg_dx12edgemapfactory.h>
+#include <d3dcompiler.h>
+
 
 #include <wg_gfxbase.h>
 
@@ -82,6 +84,9 @@ namespace wg
 
 			m_pVertexBuffer->Unmap(0, 0);
 		*/
+
+		_createFillPipeline();
+
 	}
 
 	//____ Destructor ____________________________________________________________
@@ -344,5 +349,95 @@ namespace wg
 
 		pointer->SetName(name);
 	}
+
+
+	//____ _createFillPipeline() ______________________________________________
+
+	void DX12Backend::_createFillPipeline()
+	{
+		// First we create the root signature.
+
+		D3D12_ROOT_PARAMETER rootParameter[1];
+		rootParameter[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+		rootParameter[0].Descriptor.ShaderRegister = 0;
+		rootParameter[0].Descriptor.RegisterSpace = 0;
+		rootParameter[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
+
+		D3D12_VERSIONED_ROOT_SIGNATURE_DESC rsDesc = { };
+		rsDesc.Version = D3D_ROOT_SIGNATURE_VERSION_1_0;
+		rsDesc.Desc_1_0.pParameters = rootParameter;
+		rsDesc.Desc_1_0.NumParameters = 1;
+		rsDesc.Desc_1_0.NumStaticSamplers = 0;
+		rsDesc.Desc_1_0.pStaticSamplers = 0;
+		rsDesc.Desc_1_0.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
+
+		ID3DBlob* pSerializedRS = nullptr;
+		ID3DBlob* pErrorBlob = nullptr;
+
+		if( S_OK != D3D12SerializeVersionedRootSignature(&rsDesc, &pSerializedRS, &pErrorBlob))
+		{
+			const char* pErrorMsg = pErrorBlob->GetBufferPointer() ? (const char*)pErrorBlob->GetBufferPointer() : "Unknown error";
+			assert(false);
+		}
+
+		if( S_OK != m_pDX12Device->CreateRootSignature(0, pSerializedRS->GetBufferPointer(), pSerializedRS->GetBufferSize(), IID_PPV_ARGS(m_pFillRootSignature.GetAddressOf())))
+		{
+			assert(false);
+		}
+
+		// Next we compile the shaders.
+
+		if( false == _compileVertexShader(m_fillVertexShaderBlob, g_fillVS) )
+		{
+			assert(false);
+		}
+
+		if( false == _compilePixelShader(m_fillPixelShaderBlob, g_fillPS) )
+		{
+			assert(false);
+		}
+
+
+
+	}
+
+	//____ _compileVertexShader() _____________________________________________
+
+	bool DX12Backend::_compileVertexShader(Microsoft::WRL::ComPtr<ID3DBlob>& shaderBlob, LPCVOID pSrc)
+	{ 
+		UINT compileFlags = D3DCOMPILE_ENABLE_STRICTNESS | D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION | D3DCOMPILE_WARNINGS_ARE_ERRORS | D3DCOMPILE_ALL_RESOURCES_BOUND;
+
+		ID3DBlob* errorMsg = nullptr;
+
+		if (S_OK != D3DCompile(pSrc, strlen((const char*)pSrc), nullptr, nullptr, nullptr, "main", "vs_5_0", compileFlags, 0, shaderBlob.GetAddressOf(), &errorMsg) )
+		{
+			const char* pError = errorMsg ? (const char*)errorMsg->GetBufferPointer() : nullptr;
+			assert(false);
+			return false;
+		}
+
+		return true;
+	}
+
+	//____ _compilePixeShader() _______________________________________________
+
+	bool DX12Backend::_compilePixelShader(Microsoft::WRL::ComPtr<ID3DBlob>& shaderBlob, LPCVOID pSrc)
+	{
+		UINT compileFlags = D3DCOMPILE_ENABLE_STRICTNESS | D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION | D3DCOMPILE_WARNINGS_ARE_ERRORS | D3DCOMPILE_ALL_RESOURCES_BOUND;
+
+		ID3DBlob* errorMsg = nullptr;
+
+		if (S_OK != D3DCompile(pSrc, strlen((const char*)pSrc), nullptr, nullptr, nullptr, "main", "ps_5_0", compileFlags, 0, shaderBlob.GetAddressOf(), &errorMsg))
+		{
+			const char* pError = errorMsg ? (const char*)errorMsg->GetBufferPointer() : nullptr;
+			assert(false);
+			return false;
+		}
+
+		return true;
+
+	}
+
+
 
 }
