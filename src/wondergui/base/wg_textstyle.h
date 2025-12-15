@@ -164,6 +164,18 @@ namespace wg
 		TextStyle( const Blueprint& blueprint );
 		virtual ~TextStyle();
 
+		int _findOrAddState(State searchFor, State * pStates, int& nbStates)
+		{
+			int index = 0;
+			while( index < nbStates && pStates[index] != searchFor )
+				index++;
+
+			if( index == nbStates )
+				nbStates++;
+
+			return index;
+		}
+
 		const pts		_getSize(State state) const
 		{
 						int idxTabEntry = (state.index() & m_sizeIndexMask) >> m_sizeIndexShift;

@@ -67,11 +67,10 @@ namespace wg
         return TextStyle_p(new TextStyle(blueprint));
     }
 
-
 	//____ constructor _____________________________________________________________
 
 	TextStyle::TextStyle( const Blueprint& bp )
-	{
+{
 		m_handle = TextStyleManager::_reserveHandle(this);
 
 		m_pFont = bp.font;
@@ -111,32 +110,32 @@ namespace wg
 
 		for (auto& stateInfo : bp.states)
 		{
-			int index = stateInfo.state;
+			State searchFor = stateInfo.state;
 
 			if (stateInfo.data.size >= 0 )
 			{
-				int index = stateInfo.state == State::Default ? 0 : nbSizeStates++;
+				int index = _findOrAddState(searchFor,sizeStates,nbSizeStates);
 				sizeStates[index] = stateInfo.state;
 				stateSizes[index] = stateInfo.data.size;
 			}
 
 			if(stateInfo.data.color != HiColor::Undefined )
 			{
-				int index = stateInfo.state == State::Default ? 0 : nbColorStates++;
+				int index = _findOrAddState(searchFor,colorStates,nbColorStates);
 				colorStates[index] = stateInfo.state;
 				stateColors[index] = stateInfo.data.color;
 			}
 
 			if(stateInfo.data.backColor != HiColor::Undefined )
 			{
-				int index = stateInfo.state == State::Default ? 0 : nbBackColorStates++;
+				int index = _findOrAddState(searchFor,backColorStates,nbBackColorStates);
 				backColorStates[index] = stateInfo.state;
 				stateBackColors[index] = stateInfo.data.backColor;
 			}
 
 			if(stateInfo.data.decoration != TextDecoration::Undefined )
 			{
-				int index = stateInfo.state == State::Default ? 0 : nbDecorationStates++;
+				int index = _findOrAddState(searchFor,decorationStates,nbDecorationStates);
 				decorationStates[index] = stateInfo.state;
 				stateDecorations[index] = stateInfo.data.decoration;
 			}

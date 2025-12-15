@@ -115,6 +115,11 @@ namespace wg
 
 		bool			m_bStateOpaque[State::NbStates];
 
+		uint8_t			m_dummyIndex = 0;
+		Coord			m_dummyCoord;
+		
+
+
 	};
 
 }

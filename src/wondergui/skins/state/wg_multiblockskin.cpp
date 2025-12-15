@@ -47,6 +47,9 @@ namespace wg
 		m_blockSizePoints	= blockSize;
 		m_frame				= frame;
 
+		m_pContentShiftIndexTab = &m_dummyIndex;
+		m_pContentShiftTable 	= &m_dummyCoord;
+
 		for( int i = 0 ; i < State::NbStates ; i++ )
 		m_bStateOpaque[i] = false;
 	}
