@@ -129,7 +129,7 @@ namespace wg
 			{
 				int fallbackIndex = State( (StateEnum) i).bestMatch(int(stateBlocks.size()), stateBlocks.begin());
 
-				layer.blockOfs[i] = layer.blockOfs[fallbackIndex];
+				layer.blockOfs[i] = layer.blockOfs[ stateBlocks.begin()[fallbackIndex].index()];
 			}
 
 			_updateStateOpacity(i);
