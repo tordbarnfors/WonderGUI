@@ -100,7 +100,13 @@ namespace wg
 
 		void _createBuffer(Microsoft::WRL::ComPtr<ID3D12Resource>& pointer, int nbBytes, D3D12_HEAP_TYPE heapType, D3D12_RESOURCE_STATES initialState, LPCWSTR name);
 
-		SurfaceFactory_p	m_pSurfaceFactory;
+		void _createFillPipeline();
+
+		bool _compileVertexShader(Microsoft::WRL::ComPtr<ID3DBlob>& shaderBlob, LPCVOID pSrc );
+		bool _compilePixelShader(Microsoft::WRL::ComPtr<ID3DBlob>& shaderBlob, LPCVOID pSrc);
+
+
+		SurfaceFactory_p	m_pSurfaceFactory;	
 		EdgemapFactory_p	m_pEdgemapFactory;
 
 		D3D12_CPU_DESCRIPTOR_HANDLE	m_defaultCanvasRTV;
@@ -146,6 +152,23 @@ namespace wg
 		Microsoft::WRL::ComPtr<ID3D12Fence>					m_commandFence;
 		UINT64												m_fenceValue = 0;
 		HANDLE 												m_fenceEvent;
+
+
+		//
+
+		Microsoft::WRL::ComPtr < ID3D12PipelineState>		m_pFillPipeline;
+		Microsoft::WRL::ComPtr<ID3D12RootSignature>			m_pFillRootSignature;
+
+
+		//
+
+		Microsoft::WRL::ComPtr<ID3DBlob>					m_fillVertexShaderBlob;
+		Microsoft::WRL::ComPtr<ID3DBlob>					m_fillPixelShaderBlob;
+
+		// Source code for shaders:
+
+		static const char g_fillVS[];
+		static const char g_fillPS[];
 
 	};
 
