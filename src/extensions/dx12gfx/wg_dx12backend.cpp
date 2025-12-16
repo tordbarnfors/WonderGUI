@@ -71,7 +71,7 @@ namespace wg
 
 		// Create vertex buffer
 
-		_createBuffer(m_pVertexBuffer, 16384, D3D12_HEAP_TYPE_UPLOAD, D3D12_RESOURCE_STATE_GENERIC_READ, L"WonderGUI Vertex Buffer");
+		_createBuffer(m_pVertexBuffer, c_vertexBufferSize, D3D12_HEAP_TYPE_UPLOAD, D3D12_RESOURCE_STATE_GENERIC_READ, L"WonderGUI Vertex Buffer");
 
 //		m_pVertexBuffer->SetName(L"WonderGUI Vertex Buffer");
 
@@ -139,6 +139,8 @@ namespace wg
 
 	void DX12Backend::beginSession(CanvasRef canvasRef, Surface* pCanvas, int nUpdateRects, const RectSPX* pUpdateRects, const SessionInfo* pInfo)
 	{
+		// Barrier
+
 		D3D12_RESOURCE_BARRIER barrier = {};
 		barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
 		barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
@@ -148,6 +150,23 @@ namespace wg
 		barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
 
 		m_commandList->ResourceBarrier(1, &barrier);
+
+		// Prepare vertex buffer
+
+		m_pVertexBuffer->Map(0, 0, (void**)&m_pVertexBeg);
+		m_pVertexEnd = m_pVertexBeg + c_vertexBufferSize / sizeof(Vertex);
+		m_pVertexPtr = m_pVertexBeg;
+
+		// Clear render target
+
+		float clearColor[4] = { 0.2f, 0.3f, 0.4f, 1.0f };
+		m_commandList->ClearRenderTargetView(m_defaultCanvasRTV, clearColor, 0, nullptr);
+
+		// Set render target
+
+		m_commandList->OMSetRenderTargets(1, &m_defaultCanvasRTV, FALSE, nullptr);
+
+		// Set viewport and scissor
 
 		D3D12_VIEWPORT viewport = {};
 		viewport.TopLeftX = 0;
@@ -164,12 +183,33 @@ namespace wg
 		scissorRect.right = (FLOAT)m_defaultCanvas.size.w;
 		scissorRect.bottom = (FLOAT)m_defaultCanvas.size.h;
 		m_commandList->RSSetScissorRects(1, &scissorRect);
+
+		// Set pipeline
+
+		m_commandList->SetGraphicsRootSignature(m_pFillRootSignature.Get());
+		m_commandList->SetPipelineState(m_pFillPipeline.Get());
+		m_commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+
+		D3D12_VERTEX_BUFFER_VIEW vertexBufferView = {};
+		vertexBufferView.BufferLocation = m_pVertexBuffer->GetGPUVirtualAddress();
+		vertexBufferView.StrideInBytes = sizeof(Vertex);
+		vertexBufferView.SizeInBytes = c_vertexBufferSize;
+
+		m_commandList->IASetVertexBuffers(0, 1, &vertexBufferView );
 	}
 
 	//____ endSession() _______________________________________________________
 
 	void DX12Backend::endSession()
 	{
+		// Unmap vertex buffer
+
+		m_pVertexBuffer->Unmap(0, 0);
+
+
+
+		// Barrier
 
 		D3D12_RESOURCE_BARRIER barrier = {};
 		barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
@@ -180,7 +220,6 @@ namespace wg
 		barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
 
 		m_commandList->ResourceBarrier(1, &barrier);
-
 	}
 
 	//____ setCanvas() ________________________________________________________
@@ -232,12 +271,40 @@ namespace wg
 
 	void DX12Backend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd)
 	{
-		float clearColor[4] = { 0.2f, 0.3f, 0.4f, 1.0f };
-		m_commandList->ClearRenderTargetView(m_defaultCanvasRTV, clearColor, 0, nullptr);
+		m_pVertexPtr->x = 0.0f;
+		m_pVertexPtr->y = 0.0f;
+		m_pVertexPtr->z = 0.0f;
 
+		m_pVertexPtr->a = 1.0f;
+		m_pVertexPtr->r = 1.0f;
+		m_pVertexPtr->g = 1.0f;
+		m_pVertexPtr->b = 1.0f;
 
+		m_pVertexPtr++;
 
+		m_pVertexPtr->x = 20.f;
+		m_pVertexPtr->y = 0.0f;
+		m_pVertexPtr->z = 0.0f;
 
+		m_pVertexPtr->a = 1.0f;
+		m_pVertexPtr->r = 1.0f;
+		m_pVertexPtr->g = 1.0f;
+		m_pVertexPtr->b = 1.0f;
+
+		m_pVertexPtr++;
+
+		m_pVertexPtr->x = 20.f;
+		m_pVertexPtr->y = 20.f;
+		m_pVertexPtr->z = 0.0f;
+
+		m_pVertexPtr->a = 1.0f;
+		m_pVertexPtr->r = 1.0f;
+		m_pVertexPtr->g = 1.0f;
+		m_pVertexPtr->b = 1.0f;
+
+		m_pVertexPtr++;
+	
+		m_commandList->DrawInstanced(3, 1, 0, 0);
 	}
 
 	//____ setDefaultCanvas() ___________________________________________
@@ -397,7 +464,60 @@ namespace wg
 			assert(false);
 		}
 
+		// Setup the graphics pipeline state.
 
+		D3D12_GRAPHICS_PIPELINE_STATE_DESC desc = {};
+		desc.pRootSignature = m_pFillRootSignature.Get();
+		desc.VS.pShaderBytecode = m_fillVertexShaderBlob->GetBufferPointer();
+		desc.VS.BytecodeLength = m_fillVertexShaderBlob->GetBufferSize();
+		desc.PS.pShaderBytecode = m_fillPixelShaderBlob->GetBufferPointer();
+		desc.PS.BytecodeLength = m_fillPixelShaderBlob->GetBufferSize();
+
+		desc.BlendState.AlphaToCoverageEnable = false;
+		desc.BlendState.IndependentBlendEnable = false;
+		desc.BlendState.RenderTarget[0].BlendEnable = false;
+		desc.BlendState.RenderTarget[0].LogicOpEnable = false;
+		desc.BlendState.RenderTarget[0].RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
+
+		desc.SampleMask = 0xFFFFFFFF;
+		desc.SampleDesc = { 1,0 };
+
+		desc.RasterizerState.FillMode = D3D12_FILL_MODE_SOLID;
+		desc.RasterizerState.CullMode = D3D12_CULL_MODE_NONE; //might do none
+		desc.RasterizerState.FrontCounterClockwise = false;
+		desc.RasterizerState.DepthClipEnable = true;
+		desc.RasterizerState.ConservativeRaster = D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF;
+
+		desc.DepthStencilState.DepthEnable = false;
+		desc.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_LESS;
+		desc.DepthStencilState.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
+
+		D3D12_INPUT_ELEMENT_DESC elements[] = {
+			{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0,
+			D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA , 0 },
+			{ "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12,
+			D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
+		};
+
+		D3D12_INPUT_LAYOUT_DESC inputLayout = {};
+
+		inputLayout.NumElements = 2;
+		inputLayout.pInputElementDescs = elements;
+
+
+		desc.InputLayout = inputLayout;
+		desc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+
+
+		desc.NumRenderTargets = 1;
+		desc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
+		desc.NodeMask = 0;
+		desc.Flags = D3D12_PIPELINE_STATE_FLAG_NONE;
+
+		if (S_OK != m_pDX12Device->CreateGraphicsPipelineState(&desc, IID_PPV_ARGS(m_pFillPipeline.GetAddressOf())) )
+		{
+			assert(false);
+		}
 
 	}
 
