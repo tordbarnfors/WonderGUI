@@ -2609,7 +2609,7 @@ void GfxDeviceGen2::drawElipse(const RectSPX& canvas, spx thickness, HiColor fil
 
 	int yMid = (center.y & 0xFFFFFFC0) - outerRect.y * 64;
 	int yAdjust = center.y & 0x3F;						// Compensate for center not being on pixel boundary.
-	int centerOfs = center.x - (outerRect.x << 6);
+	int centerOfs = center.x - (outerRect.x * 64);
 	int samplePitch = 4;
 
 	for (int edge = 0; edge < 4; edge++)
@@ -2708,7 +2708,7 @@ void GfxDeviceGen2::drawElipse(const RectSPX& canvas, spx thickness, HiColor fil
 
 			// Take care of left and right edges that needs more calculations to get the angle right.
 
-			int pixFracLeft = (xStart << 6) - (centerOfs - radiusX[edge]);
+			int pixFracLeft = (xStart * 64) - (centerOfs - radiusX[edge]);
 			int pixFracRight = (centerOfs + radiusX[edge]) & 0x3F;
 
 			if (pixFracLeft > 0 && xStart > 0 && xStart <= samplePoints)
