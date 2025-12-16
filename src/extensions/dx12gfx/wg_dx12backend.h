@@ -129,13 +129,24 @@ namespace wg
 		const Transform* m_pTransformsBeg = nullptr;
 		const Transform* m_pTransformsEnd = nullptr;
 
+		struct Vertex {
+			float	x, y, z;
+			float	r, g, b, a;
+		};
+
+		const static int	c_vertexBufferSize = 16384;
+
+		Vertex*	m_pVertexBeg = nullptr;
+		Vertex* m_pVertexEnd = nullptr;
+		Vertex* m_pVertexPtr = nullptr;
+
+
 
 
 		Microsoft::WRL::ComPtr<ID3D12Device>		m_pDX12Device;
 		Microsoft::WRL::ComPtr<ID3D12CommandQueue>	m_pDX12CommandQueue;
 
 		Microsoft::WRL::ComPtr<ID3D12Resource>		m_pVertexBuffer;
-
 
 		struct FrameResources
 		{
