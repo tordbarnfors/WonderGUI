@@ -2756,7 +2756,7 @@ static bool copyToIndexedDestination(int width, int height, const uint8_t* pSrc,
 				pSrc += srcDesc.bits * 8;
 
 				if( !conv.convert(pDst, (uint32_t*) buffer, 64) )
-					return false;
+					goto error_out_of_palette_entries;
 
 				pDst += dstDesc.bits * 8;
 
@@ -2769,7 +2769,7 @@ static bool copyToIndexedDestination(int width, int height, const uint8_t* pSrc,
 				pSrc += srcDesc.bits / 8 * widthLeft;
 
 				if( !conv.convert(pDst, (uint32_t*) buffer, widthLeft) )
-					return false;
+					goto error_out_of_palette_entries;
 
 				pDst += dstDesc.bits / 8 * widthLeft;
 			}
@@ -2782,6 +2782,10 @@ static bool copyToIndexedDestination(int width, int height, const uint8_t* pSrc,
 		return true;
 	}
 
+error_out_of_palette_entries:
+
+	GfxBase::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "Out of entries in destination palette. All colors can not be represented. Some pixels copied to destination, but operation aborted.", nullptr, nullptr, __func__, __FILE__, __LINE__);
+	return false;
 }
 
 
