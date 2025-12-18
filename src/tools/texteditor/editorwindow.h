@@ -17,11 +17,11 @@ typedef StrongPtr<EditorWindow>		EditorWindow_p;
 
 class MyApp;
 
-class EditorWindow : public Object
+class EditorWindow : public wapp::Window
 {
 public:
 
-	static EditorWindow_p create(Window_p pWindow, MyApp* pApp, std::string title, std::string path) { return EditorWindow_p(new EditorWindow(pWindow, pApp, title, path)); }
+	static EditorWindow_p create(wapp::API* pAPI, MyApp* pApp, std::string title, std::string path) { return EditorWindow_p(new EditorWindow(pAPI, pApp, title, path)); }
 
 	void	setContent(const char* pContent);
 
@@ -32,7 +32,7 @@ public:
 
 protected:
 
-	EditorWindow(Window_p pWindow, MyApp* pApp, std::string title, std::string path );
+	EditorWindow(wapp::API* pAPI, MyApp* pApp, std::string title, std::string path );
 	~EditorWindow();
 
 	bool			_setupGUI();
@@ -47,7 +47,7 @@ protected:
 	bool			_loadFile( const std::string& path );
 
 	MyApp*			m_pApp;
-	Window_p	    m_pWindow;
+	wapp::API*		m_pAPI;
 
 	RootPanel_p		m_pRootPanel;
 	TextEditor_p	m_pEditor;

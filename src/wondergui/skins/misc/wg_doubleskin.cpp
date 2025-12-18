@@ -1,25 +1,24 @@
 /*=========================================================================
 
-						 >>> WonderGUI <<<
+                             >>> WonderGUI <<<
 
-  This file is part of Tord Jansson's WonderGUI Graphics Toolkit
-  and copyright (c) Tord Jansson, Sweden [tord.jansson@gmail.com].
+  This file is part of Tord Bärnfors' WonderGUI UI Toolkit and copyright
+  Tord Bärnfors, Sweden [mail: first name AT barnfors DOT c_o_m].
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is free software; you can redistribute
+  The WonderGUI UI Toolkit is free software; you can redistribute
   this file and/or modify it under the terms of the GNU General Public
   License as published by the Free Software Foundation; either
   version 2 of the License, or (at your option) any later version.
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is also available for use in commercial
-  closed-source projects under a separate license. Interested parties
-  should contact Tord Jansson [tord.jansson@gmail.com] for details.
+  The WonderGUI UI Toolkit is also available for use in commercial
+  closed source projects under a separate license. Interested parties
+  should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-
 #include <wg_doubleskin.h>
 #include <wg_geo.h>
 #include <wg_util.h>
@@ -356,12 +355,12 @@ namespace wg
 				m_bContentShifting = m_pBackSkin->_isContentShifting();
 
 			const int* p = m_pBackSkin->_transitionTimes();
-			for (int i = 0; i < StateBits_Nb ; i++)
+			for (int i = 0; i < PrimState_Nb ; i++)
 				m_transitionTimes[i] = p[i];
 		}
 		else
 		{
-			for (int i = 0; i < StateBits_Nb; i++)
+			for (int i = 0; i < PrimState_Nb; i++)
 				m_transitionTimes[i] = 0;
 		}
 
@@ -381,7 +380,7 @@ namespace wg
 			}
 
 			const int* p = m_pFrontSkin->_transitionTimes();
-			for (int i = 0; i < StateBits_Nb; i++)
+			for (int i = 0; i < PrimState_Nb; i++)
 			{
 				if( p[i] != 0)
 					m_transitionTimes[i] = std::max(m_transitionTimes[i],p[i]);

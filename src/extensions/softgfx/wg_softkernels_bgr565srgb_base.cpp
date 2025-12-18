@@ -97,7 +97,7 @@ namespace wg
 #ifdef __cplusplus
 extern "C" {
 #endif
-int	wg_addBaseSoftKernelsForBGR565sRGBCanvas( wg_obj backend )
+WG_EXPORT int	wg_addBaseSoftKernelsForBGR565sRGBCanvas( wg_obj backend )
 {
 	auto pBackend = static_cast<SoftBackend*>(reinterpret_cast<Object*>(backend));
 

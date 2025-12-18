@@ -66,6 +66,7 @@ public class StreamEncoder : Objekt
     }
     
     //____ C_Blueprint ________________________________________________________
+    [StructLayout(LayoutKind.Sequential)]
     private struct C_Blueprint
     {
         public int bufferBytes;

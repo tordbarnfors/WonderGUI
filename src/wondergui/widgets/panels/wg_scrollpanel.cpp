@@ -1,22 +1,22 @@
 /*=========================================================================
 
-						 >>> WonderGUI <<<
+                             >>> WonderGUI <<<
 
-  This file is part of Tord Jansson's WonderGUI Graphics Toolkit
-  and copyright (c) Tord Jansson, Sweden [tord.jansson@gmail.com].
+  This file is part of Tord Bärnfors' WonderGUI UI Toolkit and copyright
+  Tord Bärnfors, Sweden [mail: first name AT barnfors DOT c_o_m].
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is free software; you can redistribute
+  The WonderGUI UI Toolkit is free software; you can redistribute
   this file and/or modify it under the terms of the GNU General Public
   License as published by the Free Software Foundation; either
   version 2 of the License, or (at your option) any later version.
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is also available for use in commercial
-  closed-source projects under a separate license. Interested parties
-  should contact Tord Jansson [tord.jansson@gmail.com] for details.
+  The WonderGUI UI Toolkit is also available for use in commercial
+  closed source projects under a separate license. Interested parties
+  should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
 /*
@@ -65,16 +65,16 @@ namespace wg
 		return TYPEINFO;
 	}
 
-	//____ setPlacement() _____________________________________________________
+	//____ setChildPlacement() _____________________________________________________
 	/**
-		@brief Set placement of child smaller than view.
+		@brief Set placement of child when smaller than view.
 
-		Sets the placement of a child that is smaller than the view of the ScrollPanel.
+		Sets the placement of a child when it is smaller than the view of the ScrollPanel.
 
 		Default is NorthWest.
 	*/
 
-	void ScrollPanel::setPlacement(Placement placement)
+	void ScrollPanel::setChildPlacement(Placement placement)
 	{
 		if (placement == m_smallChildPlacement)
 			return;
@@ -303,7 +303,7 @@ namespace wg
 		m_pageOverlapY = y;
 	}
 
-	//____ setScrollWheelAxis() __________________________________________________
+	//____ setWheelAxis() __________________________________________________
 	/**
 	*	@brief Set scroll direction for each scroll wheel.
 	*
@@ -323,13 +323,13 @@ namespace wg
 	*	of the scrollbars orientation. To disable this behavior you can call setStealWheelFromScrollbars().
 	*
 	*/
-	void ScrollPanel::setScrollWheelAxis(Axis wheelOneAxis, Axis wheelTwoAxis)
+	void ScrollPanel::setWheelAxis(Axis wheelOneAxis, Axis wheelTwoAxis)
 	{
 		m_wheelOneAxis = wheelOneAxis;
 		m_wheelTwoAxis = wheelTwoAxis;
 	}
 
-	//____ setScrollWheelAxisShift() __________________________________________
+	//____ setWheelAxisShift() __________________________________________
 	/**
 	*	@brief Set modifier keys used to shift axis scrolled by mouse wheel.
 	*
@@ -341,7 +341,7 @@ namespace wg
 	*
 	*	Default axisShift modifier key is ALT. To disable this feature, set axisShift to ModKeys::None.
 	*/
-	void ScrollPanel::setScrollWheelAxisShift(ModKeys axisShift)
+	void ScrollPanel::setWheelAxisShift(ModKeys axisShift)
 	{
 		m_wheelAxisShiftCombo = axisShift;
 	}
@@ -506,62 +506,127 @@ namespace wg
 
 	spx ScrollPanel::_matchingHeight(spx width, int scale) const
 	{
+		SizeSPX defSize = _defaultSize(scale);
+
+		if( slot.isEmpty() )
+			return defSize.h;
+
+		bool bOverflows = false;
+		bool bEqual = false;
+
 		switch (m_widthConstraint)
 		{
 			case SizeConstraint::None:
-				return _defaultSize(scale).h;
+				if( width < defSize.w )
+					bOverflows = true;
+				break;
 			case SizeConstraint::LessOrEqual:
-			{
-				//TODO: Implement!!!
-
-				return _defaultSize(scale).h;
-			}
+				if( defSize.w > width )
+					bEqual = true;
+				break;
 			case SizeConstraint::Equal:
-			{
-				//TODO: Implement!!!
-
-				return _defaultSize(scale).h;
-			}
+				bEqual = true;
+				break;
 			case SizeConstraint::GreaterOrEqual:
-			{
-				//TODO: Implement!!!
+				if( width < defSize.w )
+					bOverflows = true;
+				else if( defSize.w < width )
+					bEqual = true;
+				break;
 
-				return _defaultSize(scale).h;
-			}
 		}
 
-		return 0;
+		if( bOverflows )
+		{
+			spx height = defSize.h;
+
+			if(scrollbarX.isDisplayable() && m_bAutohideScrollbarX && !m_bOverlayScrollbarX )
+			{
+				// Autohiding scrollbar will appear, so we need to make space for that one too.
+
+				height += scrollbarX._defaultSize(scale).h;
+			}
+
+			return height;
+		}
+		else if( bEqual )
+		{
+			SizeSPX contentBorders = _contentBorderSize(scale);
+			spx contentWidth = width - contentBorders.w;
+
+			spx contentHeight = slot._widget()->_matchingHeight(contentWidth, scale);
+
+			if( scrollbarY.isDisplayable() )
+				contentHeight = std::max(contentHeight, scrollbarY._defaultSize(scale).h);
+
+			return contentHeight + contentBorders.h;
+		}
+		else
+			return defSize.h;
+
 	}
 
 	//____ _matchingWidth() ___________________________________________________
 
 	spx ScrollPanel::_matchingWidth(spx height, int scale) const
 	{
+		SizeSPX defSize = _defaultSize(scale);
+
+		if( slot.isEmpty() )
+			return defSize.w;
+
+		bool bOverflows = false;
+		bool bEqual = false;
+
 		switch (m_heightConstraint)
 		{
 			case SizeConstraint::None:
-				return _defaultSize(scale).w;
+				if( height < defSize.h )
+					bOverflows = true;
+				break;
 			case SizeConstraint::LessOrEqual:
-			{
-				//TODO: Implement!!!
-
-				return _defaultSize(scale).w;
-			}
+				if( defSize.h > height )
+					bEqual = true;
+				break;
 			case SizeConstraint::Equal:
-			{
-				//TODO: Implement!!!
-
-				return _defaultSize(scale).w;
-			}
+				bEqual = true;
+				break;
 			case SizeConstraint::GreaterOrEqual:
-			{
-				//TODO: Implement!!!
+				if( height < defSize.h )
+					bOverflows = true;
+				else if( defSize.h < height )
+					bEqual = true;
+				break;
 
-				return _defaultSize(scale).w;
-			}
 		}
 
-		return 0;
+		if( bOverflows )
+		{
+			spx width = defSize.w;
+
+			if(scrollbarY.isDisplayable() && m_bAutohideScrollbarY && !m_bOverlayScrollbarY )
+			{
+				// Autohiding scrollbar will appear, so we need to make space for that one too.
+
+				width += scrollbarY._defaultSize(scale).w;
+			}
+
+			return width;
+		}
+		else if( bEqual )
+		{
+			SizeSPX contentBorders = _contentBorderSize(scale);
+			spx contentHeight = height - contentBorders.h;
+
+			spx contentWidth = slot._widget()->_matchingWidth(contentHeight, scale);
+
+			if( scrollbarX.isDisplayable() )
+				contentWidth = std::max(contentWidth, scrollbarX._defaultSize(scale).w);
+
+			return contentWidth + contentBorders.w;
+		}
+		else
+			return defSize.w;
 	}
 
 	//____ _defaultSize() ___________________________________________________
@@ -570,15 +635,24 @@ namespace wg
 	{
 		SizeSPX sz;
 
+		SizeSPX defSzBarX = scrollbarX.isDisplayable() ? scrollbarX._defaultSize(scale) : SizeSPX();
+		SizeSPX defSzBarY = scrollbarY.isDisplayable() ? scrollbarY._defaultSize(scale) : SizeSPX();
+
+		// Get default size for content which must have space for scrollbars if they are displayable
+
 		if( slot._widget() )
 			sz = slot._widget()->_defaultSize(scale);
 
-		if (scrollbarY.isDisplayable() && !m_bAutohideScrollbarY && !m_bOverlayScrollbarY)
-			sz.w += scrollbarY._defaultSize(scale).w;
+		sz.w = std::max(sz.w, defSzBarX.w);
+		sz.h = std::max(sz.h, defSzBarY.h);
 
-		if (scrollbarX.isDisplayable() && !m_bAutohideScrollbarX && !m_bOverlayScrollbarX)
-			sz.h += scrollbarX._defaultSize(scale).h;
+		//
 
+		if (!m_bAutohideScrollbarY && !m_bOverlayScrollbarY)
+			sz.w += defSzBarY.w;
+
+		if (!m_bAutohideScrollbarX && !m_bOverlayScrollbarX)
+			sz.h += defSzBarX.h;
 
 		sz += m_skin.contentBorderSize(scale);
 
@@ -591,22 +665,24 @@ namespace wg
 	{
 		auto content = _contentRect();
 
-		spx scrollbarYwidth = scrollbarY._defaultSize(m_scale).w;
-		spx scrollbarXheight = scrollbarX._defaultSize(m_scale).h;
+		bool bShowScrollbarX = scrollbarX.isDisplayable()
+								&& (m_widthConstraint == SizeConstraint::None || m_widthConstraint == SizeConstraint::GreaterOrEqual )
+								&& (!m_bAutohideScrollbarX || content.w < m_childDefaultSize.w);
 
 		bool bShowScrollbarY  = scrollbarY.isDisplayable()
 								&& (m_heightConstraint == SizeConstraint::None || m_heightConstraint == SizeConstraint::GreaterOrEqual )
-								&& (!m_bAutohideScrollbarY || content.h < m_childCanvas.h);
+								&& (!m_bAutohideScrollbarY || content.h < m_childDefaultSize.h);
 
-		bool bShowScrollbarX = scrollbarX.isDisplayable()
-								&& (m_widthConstraint == SizeConstraint::None || m_widthConstraint == SizeConstraint::GreaterOrEqual )
-								&& (!m_bAutohideScrollbarX || content.w < m_childCanvas.w);
+		spx scrollbarYwidth = scrollbarY._defaultSize(m_scale).w;
+		spx scrollbarXheight = scrollbarX._defaultSize(m_scale).h;
+
+
 
 		if (bShowScrollbarY && !m_bOverlayScrollbarY && !bShowScrollbarX)
-			bShowScrollbarX = (content.w - scrollbarYwidth < m_childCanvas.w);
+			bShowScrollbarX = (content.w - scrollbarYwidth < m_childDefaultSize.w);
 
 		if (bShowScrollbarX && !m_bOverlayScrollbarX && !bShowScrollbarY)
-			bShowScrollbarY = (content.h - scrollbarXheight < m_childCanvas.h);
+			bShowScrollbarY = (content.h - scrollbarXheight < m_childDefaultSize.h);
 
 
 		if (bShowScrollbarY)
@@ -840,9 +916,9 @@ namespace wg
 
 			if (pChild)
 			{
-				auto childSize = pChild->_defaultSize(scale);
-				m_childCanvas.setSize(childSize);
-				pChild->_resize(childSize, scale);
+				m_childDefaultSize = pChild->_defaultSize(scale);
+				m_childCanvas.setSize(m_childDefaultSize);
+				pChild->_resize(m_childDefaultSize, scale);
 			}
 		}
 
@@ -1148,6 +1224,8 @@ namespace wg
 
 	void ScrollPanel::_childRequestResize(StaticSlot* pSlot)
 	{
+		m_childDefaultSize = pSlot->_widget()->_defaultSize(m_scale);
+
 		_updateCanvasSize();
 		_updateRegions();
 		_childWindowCorrection();
@@ -1204,7 +1282,7 @@ namespace wg
 				else if (diffTop < 0 && diffBottom < 0)
 					window.y += std::max(diffTop, diffBottom);
 			}
-
+			 
 			if (window.pos() != startPos)
 			{
 				if( m_pDefaultTransition )
@@ -1243,6 +1321,7 @@ namespace wg
 	{
 		slot._setWidget(nullptr);
 
+		m_childDefaultSize.clear();
 		m_childCanvas.clear();
 		_childWindowCorrection();
 		_updateScrollbars();
@@ -1256,6 +1335,11 @@ namespace wg
 	void ScrollPanel::_replaceChild(StaticSlot* pSlot, Widget* pWidget)
 	{
 		slot._setWidget(pWidget);
+
+		if( pWidget )
+			m_childDefaultSize = pWidget->_defaultSize(m_scale);
+		else
+			m_childDefaultSize.clear();
 
 		_updateCanvasSize();
 		_childWindowCorrection();
@@ -1398,7 +1482,7 @@ namespace wg
 		if (!pWidget)
 			return SizeSPX();
 
-		auto prefSize = pWidget->_defaultSize(m_scale);
+		auto prefSize = m_childDefaultSize;
 		auto size = prefSize;
 
 		auto viewSize = viewMaxSize;

@@ -1,26 +1,24 @@
 /*=========================================================================
 
-						 >>> WonderGUI <<<
+                             >>> WonderGUI <<<
 
-  This file is part of Tord Jansson's WonderGUI Graphics Toolkit
-  and copyright (c) Tord Jansson, Sweden [tord.jansson@gmail.com].
+  This file is part of Tord Bärnfors' WonderGUI UI Toolkit and copyright
+  Tord Bärnfors, Sweden [mail: first name AT barnfors DOT c_o_m].
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is free software; you can redistribute
+  The WonderGUI UI Toolkit is free software; you can redistribute
   this file and/or modify it under the terms of the GNU General Public
   License as published by the Free Software Foundation; either
   version 2 of the License, or (at your option) any later version.
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is also available for use in commercial
-  closed-source projects under a separate license. Interested parties
-  should contact Tord Jansson [tord.jansson@gmail.com] for details.
+  The WonderGUI UI Toolkit is also available for use in commercial
+  closed source projects under a separate license. Interested parties
+  should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-
-
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
@@ -83,13 +81,13 @@ void WgText::Init()
 
 	m_scale = WG_SCALE_BASE;
 
-	m_markedLinkState = wg::StateEnum::Default;
+	m_markedLinkState = wg::State::Default;
 
 	m_alignment		= WgOrigo::NorthWest;
 	m_tintMode		= WG_TINTMODE_MULTIPLY;
 	m_lineSpaceAdj	= 1.f;
 
-	m_state			= wg::StateEnum::Default;
+	m_state			= wg::State::Default;
 
 	m_pHardLines	= new WgTextLine[1];
 	m_nHardLines	= 1;
@@ -541,7 +539,7 @@ void WgText::setStyle( wg::TextStyle * pStyle )
 
 bool WgText::setColor( const WgColor color )
 {
-	if( m_pBaseStyle && m_pBaseStyle->isColorStatic() && m_pBaseStyle->color(wg::StateEnum::Default) == wg::HiColor(color) )
+	if( m_pBaseStyle && m_pBaseStyle->isColorStatic() && m_pBaseStyle->color(wg::State::Default) == wg::HiColor(color) )
 		return false;
 
 	auto bp = m_pBaseStyle ? m_pBaseStyle->blueprint() : wg::TextStyle::Blueprint();
@@ -2340,7 +2338,7 @@ bool WgText::OnEvent( const WgEvent::Event * pEvent, WgEventHandler * pEventHand
 			if( m_pMarkedLink )
 			{
 				pEventHandler->QueueEvent( new WgEvent::LinkPress(pEvent->Widget(), m_pMarkedLink->link(), static_cast<const WgEvent::MouseButtonEvent*>(pEvent)->Button() ));
-				m_markedLinkState.setSelected(true);
+				m_markedLinkState.setSelekted(true);
 				bRefresh = true;
 			}
 			break;
@@ -2361,7 +2359,7 @@ bool WgText::OnEvent( const WgEvent::Event * pEvent, WgEventHandler * pEventHand
 			{
 				pEventHandler->QueueEvent( new WgEvent::LinkRelease(pEvent->Widget(), m_pMarkedLink->link(), static_cast<const WgEvent::MouseButtonEvent*>(pEvent)->Button() ));
 
-				if( m_markedLinkState.isSelected() )
+				if( m_markedLinkState.isSelekted() )
 					pEventHandler->QueueEvent( new WgEvent::LinkClick(pEvent->Widget(), m_pMarkedLink->link(), static_cast<const WgEvent::MouseButtonEvent*>(pEvent)->Button() ));
 
 				m_markedLinkState.setHovered(true);
@@ -2553,7 +2551,7 @@ bool WgText::GetCharAttr( wg::TextAttr& attr, int charOfs ) const
 		int selEnd = LineColToOffset( m_selEndLine, m_selEndCol );
 
 		if( charOfs >= selStart && charOfs < selEnd )
-			state.setSelected(true);
+			state.setSelekted(true);
 	}
 
 	WgBase::defaultStyle()->exportAttr(state, &attr, m_scale >> 6);

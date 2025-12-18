@@ -1,25 +1,24 @@
 /*=========================================================================
 
-						 >>> WonderGUI <<<
+                             >>> WonderGUI <<<
 
-  This file is part of Tord Jansson's WonderGUI Graphics Toolkit
-  and copyright (c) Tord Jansson, Sweden [tord.jansson@gmail.com].
+  This file is part of Tord Bärnfors' WonderGUI UI Toolkit and copyright
+  Tord Bärnfors, Sweden [mail: first name AT barnfors DOT c_o_m].
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is free software; you can redistribute
+  The WonderGUI UI Toolkit is free software; you can redistribute
   this file and/or modify it under the terms of the GNU General Public
   License as published by the Free Software Foundation; either
   version 2 of the License, or (at your option) any later version.
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is also available for use in commercial
-  closed-source projects under a separate license. Interested parties
-  should contact Tord Jansson [tord.jansson@gmail.com] for details.
+  The WonderGUI UI Toolkit is also available for use in commercial
+  closed source projects under a separate license. Interested parties
+  should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-
 #ifndef	WG_GFXDEVICE_DOT_H
 #define WG_GFXDEVICE_DOT_H
 #pragma once
@@ -99,7 +98,6 @@ namespace wg
 		const TypeInfo&		typeInfo(void) const override;
 		const static TypeInfo	TYPEINFO;
 
-		virtual const TypeInfo&	surfaceType( void ) const = 0;
 
 		//.____ Misc _______________________________________________________
 
@@ -129,12 +127,14 @@ namespace wg
 		virtual int			clipListSize() const = 0;
 		virtual const RectSPX& clipBounds() const = 0;
 
-		virtual void		setTint(HiColor color) = 0;
-		virtual void		setTint(const RectSPX& rect, Tintmap* pTintmap) = 0;
-		virtual void		clearTint() = 0;
-	
-		virtual bool		isTinting() const = 0;
+		virtual void		setTintColor(HiColor color) = 0;
+		virtual void		clearTintColor() = 0;
+		virtual bool		hasTintColor() const = 0;
 		virtual HiColor		tintColor() const = 0;
+
+		virtual void		setTintmap(const RectSPX& rect, Tintmap* pTintmap) = 0;
+		virtual void		clearTintmap() = 0;
+		virtual bool		hasTintmap() const = 0;
 		virtual Tintmap_p	tintmap() const = 0;
 		virtual RectSPX		tintmapRect() const = 0;
 
@@ -236,7 +236,6 @@ namespace wg
 
 		// Deprecated
 
-		virtual void		setTintColor(HiColor color) = 0;
 		virtual void		setTintGradient(const RectSPX& rect, const Gradient& gradient) = 0;
 		virtual void		clearTintGradient() = 0;
 

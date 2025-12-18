@@ -1,25 +1,24 @@
 /*=========================================================================
 
-						 >>> WonderGUI <<<
+                             >>> WonderGUI <<<
 
-  This file is part of Tord Jansson's WonderGUI Graphics Toolkit
-  and copyright (c) Tord Jansson, Sweden [tord.jansson@gmail.com].
+  This file is part of Tord Bärnfors' WonderGUI UI Toolkit and copyright
+  Tord Bärnfors, Sweden [mail: first name AT barnfors DOT c_o_m].
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is free software; you can redistribute
+  The WonderGUI UI Toolkit is free software; you can redistribute
   this file and/or modify it under the terms of the GNU General Public
   License as published by the Free Software Foundation; either
   version 2 of the License, or (at your option) any later version.
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is also available for use in commercial
-  closed-source projects under a separate license. Interested parties
-  should contact Tord Jansson [tord.jansson@gmail.com] for details.
+  The WonderGUI UI Toolkit is also available for use in commercial
+  closed source projects under a separate license. Interested parties
+  should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-
 #include <wg2_rangeslider.h>
 #include <wg2_gfxdevice.h>
 #include <wg2_event.h>
@@ -164,19 +163,19 @@ void WgRangeSlider::_onEvent(const WgEvent::Event* _pEvent, WgEventHandler* pHan
 			WgCoord pos = _pEvent->PointerPixelPos();
 
 			if( _handleGeo(PixelSize(),true).contains(pos) != m_beginHandleState.isHovered() )
-				_setHandleState(m_beginHandleState + wg::StateEnum::Hovered, true);
+				_setHandleState(m_beginHandleState + wg::State::Hovered, true);
 
 			if (_handleGeo(PixelSize(), false).contains(pos) != m_endHandleState.isHovered())
-				_setHandleState(m_endHandleState + wg::StateEnum::Hovered, false);
+				_setHandleState(m_endHandleState + wg::State::Hovered, false);
 			break;
 		}
 
 		case WG_EVENT_MOUSE_LEAVE:
 			if (m_beginHandleState.isHovered() && !m_beginHandleState.isPressed() )
-				_setHandleState(m_beginHandleState - wg::StateEnum::Hovered, true);
+				_setHandleState(m_beginHandleState - wg::State::Hovered, true);
 
 			if (m_endHandleState.isHovered() && !m_endHandleState.isPressed())
-				_setHandleState(m_endHandleState - wg::StateEnum::Hovered, false);
+				_setHandleState(m_endHandleState - wg::State::Hovered, false);
 
 			break;
 
@@ -193,12 +192,12 @@ void WgRangeSlider::_onEvent(const WgEvent::Event* _pEvent, WgEventHandler* pHan
 			WgRect  endHandle = _handleGeo(geo, false);
 			if (beginHandle.contains(pos))
 			{
-				_setHandleState(m_beginHandleState + wg::StateEnum::Pressed,true);
+				_setHandleState(m_beginHandleState + wg::State::Pressed,true);
 				m_valueAtPress = m_rangeBegin;
 			}
 			else if (endHandle.contains(pos))
 			{
-				_setHandleState(m_endHandleState + wg::StateEnum::Pressed, false);
+				_setHandleState(m_endHandleState + wg::State::Pressed, false);
 				m_valueAtPress = m_rangeEnd;
 			}
 			else
@@ -219,11 +218,11 @@ void WgRangeSlider::_onEvent(const WgEvent::Event* _pEvent, WgEventHandler* pHan
 //				Rect  handle = _handleGeo(m_size);
 			if (m_beginHandleState.isPressed())
 			{
-				_setHandleState(m_beginHandleState - wg::StateEnum::Pressed, true);
+				_setHandleState(m_beginHandleState - wg::State::Pressed, true);
 			}
 			else if (m_endHandleState.isPressed())
 			{
-				_setHandleState(m_endHandleState - wg::StateEnum::Pressed, false);
+				_setHandleState(m_endHandleState - wg::State::Pressed, false);
 			}
 			else
 			{

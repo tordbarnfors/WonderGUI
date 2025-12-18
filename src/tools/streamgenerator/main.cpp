@@ -1,7 +1,7 @@
 
 #include <cstdlib>
 #include <stdio.h>
-#include <unistd.h>
+//#include <unistd.h>
 
 #ifdef WIN32
 #	include <SDL.h>
@@ -85,7 +85,7 @@ int sortWidgets( const Widget * p1, const Widget * p2 )
 
 int main ( int argc, char** argv )
 { 
-	sleep(1);
+//	sleep(1);
 
 
 	//------------------------------------------------------
@@ -199,7 +199,7 @@ int main ( int argc, char** argv )
 	// 
 	
 	MsgLogger_p pLogger = MsgLogger::create( std::cout );
-	pLogger->logAllMsgs();
+	pLogger->logAllMsgs(true);
 	
 //	Base::msgRouter()->broadcastTo( pLogger );
 
@@ -329,7 +329,7 @@ int main ( int argc, char** argv )
 
 	auto pStreamDevice = GfxDeviceGen2::create(pStreamBackend);
 
-	auto pSurfaceFactory = StreamSurfaceFactory::create(pEncoder);
+	auto pSurfaceFactory = RemoteSurfaceFactory::create(pEncoder);
 
 
 //	pStreamPlug->openOutput(0);
@@ -862,17 +862,14 @@ void playDirectUpdate(GfxDevice_p pDevice, CanvasRef canvasRef )
 
 	auto& canvasInfo = pDevice->canvas(canvasRef);
 
-	SoftSurface_p	pMyCanvas = SoftSurface::create( { .size = canvasInfo.size/64,
-														.canvas = true,
-														.format = canvasInfo.format });
+	SoftSurface_p	pMyCanvas = SoftSurface::create( { 	.canvas = true,
+														.format = canvasInfo.format,
+														.size = canvasInfo.size / 64 });
 
-	SurfaceStreamer_p	pMyStreamer = SurfaceStreamer::create({
-		.canvasRef = canvasRef,
+	MirrorSurface_p	pMyMirror = MirrorSurface::create({
 		.encoder = s_pEncoder,
 		.surface = pMyCanvas
 	});
-
-	
 
 
 	int ticker = 0;
@@ -883,7 +880,6 @@ void playDirectUpdate(GfxDevice_p pDevice, CanvasRef canvasRef )
 
 	while (ticker < length)
 	{
-		pDevice->beginRender();
 
 		pMyDevice->beginRender();
 		pMyDevice->beginCanvasUpdate(pMyCanvas);
@@ -895,6 +891,13 @@ void playDirectUpdate(GfxDevice_p pDevice, CanvasRef canvasRef )
 
 		pMyDevice->endCanvasUpdate();
 		pMyDevice->endRender();
+
+		pDevice->beginRender();
+
+		pDevice->beginCanvasUpdate(canvasRef);
+		pDevice->setBlitSource(pMyMirror);
+		pDevice->blit({ 0,0 });
+		pDevice->endCanvasUpdate();
 
 		pDevice->endRender();
 		

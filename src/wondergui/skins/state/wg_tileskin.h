@@ -1,22 +1,22 @@
 /*=========================================================================
 
-						 >>> WonderGUI <<<
+                             >>> WonderGUI <<<
 
-  This file is part of Tord Jansson's WonderGUI Graphics Toolkit
-  and copyright (c) Tord Jansson, Sweden [tord.jansson@gmail.com].
+  This file is part of Tord Bärnfors' WonderGUI UI Toolkit and copyright
+  Tord Bärnfors, Sweden [mail: first name AT barnfors DOT c_o_m].
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is free software; you can redistribute
+  The WonderGUI UI Toolkit is free software; you can redistribute
   this file and/or modify it under the terms of the GNU General Public
   License as published by the Free Software Foundation; either
   version 2 of the License, or (at your option) any later version.
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is also available for use in commercial
-  closed-source projects under a separate license. Interested parties
-  should contact Tord Jansson [tord.jansson@gmail.com] for details.
+  The WonderGUI UI Toolkit is also available for use in commercial
+  closed source projects under a separate license. Interested parties
+  should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
 #ifndef WG_TILESKIN_DOT_H
@@ -25,7 +25,7 @@
 
 #include <wg_stateskin.h>
 #include <wg_surface.h>
-#include <wg_gradient.h>
+#include <wg_tintmap.h>
 
 #include <vector>
 
@@ -36,6 +36,18 @@ namespace wg
 	class TileSkin;
 	typedef	StrongPtr<TileSkin>	TileSkin_p;
 	typedef	WeakPtr<TileSkin>		TileSkin_wp;
+
+
+	struct _TileSkinStateData
+	{
+
+		Coord		contentShift;
+		Surface_p	surface;
+		HiColor		color;
+		bool		m_bOpaque;
+	};
+
+
 
 
 	class TileSkin : public StateSkin
@@ -73,7 +85,6 @@ namespace wg
 			BlendMode		blendMode = BlendMode::Blend;
 			HiColor			color = HiColor::Undefined;
 			Finalizer_p		finalizer = nullptr;
-			Gradient		gradient;
 			int				layer = -1;
 			int				markAlpha = 1;
 			Border			overflow;
@@ -82,6 +93,7 @@ namespace wg
 
 			std::vector<StateBP>	states;
 			Surface_p		surface;
+			Tintmap_p		tintmap;
 		};
 
 		//.____ Creation __________________________________________
@@ -114,21 +126,46 @@ namespace wg
 	protected:
 
 		TileSkin(const Blueprint& blueprint);
-		~TileSkin() {};
+		~TileSkin();
 
-		void		_updateOpaqueFlags();
-		void		_updateUnsetStateSurfaces();
-		void		_updateUnsetStateColors();
+		Surface *		_getSurface(State state) const
+		{
+						int idxTabEntry = (state.index() & m_stateSurfaceIndexMask) >> m_stateSurfaceIndexShift;
+						int entry = m_pStateSurfaceIndexTab[idxTabEntry];
+						return m_pStateSurfaces[entry];
+		}
 
-		BlendMode	m_blendMode;
+		const HiColor&	_getColor(State state) const
+		{
+						int idxTabEntry = (state.index() & m_stateColorIndexMask) >> m_stateColorIndexShift;
+						int entry = m_pStateColorIndexTab[idxTabEntry];
+						return m_pStateColors[entry];
+		}
 
-		Bitmask<uint32_t>	m_stateSurfaceMask = 1;
-		Bitmask<uint32_t>	m_stateColorMask = 1;
 
-		Surface_p	m_stateSurfaces[State::IndexAmount];
-		HiColor		m_stateColors[State::IndexAmount];
-		bool		m_bStateOpaque[State::IndexAmount];
-		Gradient	m_gradient;
+		BlendMode		m_blendMode;
+		Tintmap_p		m_pTintmap;
+
+		void *			m_pStateData;				// Pointer at memory block with state data.
+
+		uint8_t			m_stateColorIndexMask;
+		uint8_t			m_stateColorIndexShift;
+		uint8_t*		m_pStateColorIndexTab;		// Table with index values into m_pStateColors for each mode (72) or less.
+		HiColor*		m_pStateColors;				// Contains colors for states.
+
+		uint8_t			m_stateSurfaceIndexMask;
+		uint8_t			m_stateSurfaceIndexShift;
+		uint8_t*		m_pStateSurfaceIndexTab;
+		Surface **		m_pStateSurfaces;
+		int				m_nbStateSurfaces;			// So we know how many to decrease refCount of in destructor.
+
+
+
+		//
+
+
+
+
 	};
 
 

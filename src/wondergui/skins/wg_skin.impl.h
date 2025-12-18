@@ -1,22 +1,22 @@
 /*=========================================================================
 
-						 >>> WonderGUI <<<
+                             >>> WonderGUI <<<
 
-  This file is part of Tord Jansson's WonderGUI Graphics Toolkit
-  and copyright (c) Tord Jansson, Sweden [tord.jansson@gmail.com].
+  This file is part of Tord Bärnfors' WonderGUI UI Toolkit and copyright
+  Tord Bärnfors, Sweden [mail: first name AT barnfors DOT c_o_m].
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is free software; you can redistribute
+  The WonderGUI UI Toolkit is free software; you can redistribute
   this file and/or modify it under the terms of the GNU General Public
   License as published by the Free Software Foundation; either
   version 2 of the License, or (at your option) any later version.
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is also available for use in commercial
-  closed-source projects under a separate license. Interested parties
-  should contact Tord Jansson [tord.jansson@gmail.com] for details.
+  The WonderGUI UI Toolkit is also available for use in commercial
+  closed source projects under a separate license. Interested parties
+  should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
 #ifndef WG_SKINIMPL_DOT_H
@@ -79,16 +79,16 @@ namespace wg
 		bool		m_bTintChanged = false;
 	};
 
-	//____ RenderSettingsWithGradient _____________________________________________________
+	//____ RenderSettingsWithTintmap _____________________________________________________
 	/*
-	* Simple class for quickly and easily set layer, blend mode and tint color/gradient for
+	* Simple class for quickly and easily set layer, blend mode and tint color/map for
 	* rendering and then revert back automatically when deleted.
 	*/
 
-	class RenderSettingsWithGradient
+	class RenderSettingsWithTintmap
 	{
 	public:
-		RenderSettingsWithGradient(GfxDevice* pDevice, int layer, BlendMode blendMode, HiColor tintColor, const RectSPX& rect, const Gradient& tintGradient )
+		RenderSettingsWithTintmap(GfxDevice* pDevice, int layer, BlendMode blendMode, HiColor tintColor, const RectSPX& rect, Tintmap * pTintmap )
 		{
 			m_pDevice = pDevice;
 
@@ -104,12 +104,12 @@ namespace wg
 				pDevice->setBlendMode(blendMode);
 			}
 
-			if (!tintGradient.isUndefined())
+			if (pTintmap)
 			{
-				pDevice->setTintGradient(rect, tintGradient);
-				m_bGradient = true;
+				pDevice->setTintmap(rect, pTintmap);
+				m_bTintmap = true;
 			}
-			
+
 			if (tintColor != HiColor::Undefined)
 			{
 				m_prevTintColor = pDevice->tintColor();
@@ -119,10 +119,9 @@ namespace wg
 					m_bTintChanged = true;
 				}
 			}
-
 		}
 
-		~RenderSettingsWithGradient()
+		~RenderSettingsWithTintmap()
 		{
 			if (m_prevLayer != -1)
 				m_pDevice->setRenderLayer(m_prevLayer);
@@ -130,8 +129,8 @@ namespace wg
 				m_pDevice->setBlendMode(m_prevBlendMode);
 			if (m_bTintChanged)
 				m_pDevice->setTintColor(m_prevTintColor);
-			if (m_bGradient)
-				m_pDevice->clearTintGradient();
+			if (m_bTintmap)
+				m_pDevice->clearTintmap();
 		}
 
 		GfxDevice* m_pDevice;
@@ -139,9 +138,8 @@ namespace wg
 		BlendMode	m_prevBlendMode = BlendMode::Undefined;
 		HiColor		m_prevTintColor;
 		bool		m_bTintChanged = false;
-		bool		m_bGradient = false;
+		bool		m_bTintmap = false;
 	};
-
 
 }
 #endif //WG_SKINIMPL_DOT_H

@@ -1,25 +1,24 @@
 /*=========================================================================
 
-						 >>> WonderGUI <<<
+                             >>> WonderGUI <<<
 
-  This file is part of Tord Jansson's WonderGUI Graphics Toolkit
-  and copyright (c) Tord Jansson, Sweden [tord.jansson@gmail.com].
+  This file is part of Tord Bärnfors' WonderGUI UI Toolkit and copyright
+  Tord Bärnfors, Sweden [mail: first name AT barnfors DOT c_o_m].
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is free software; you can redistribute
+  The WonderGUI UI Toolkit is free software; you can redistribute
   this file and/or modify it under the terms of the GNU General Public
   License as published by the Free Software Foundation; either
   version 2 of the License, or (at your option) any later version.
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is also available for use in commercial
-  closed-source projects under a separate license. Interested parties
-  should contact Tord Jansson [tord.jansson@gmail.com] for details.
+  The WonderGUI UI Toolkit is also available for use in commercial
+  closed source projects under a separate license. Interested parties
+  should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-
 #include <wg_simplistic.h>
 
 #include <wg_sysfont.h>
@@ -29,6 +28,7 @@
 
 #include <wg_colorskin.h>
 #include <wg_boxskin.h>
+#include <wg_blockskin.h>
 
 #include <wg_basictextlayout.h>
 
@@ -40,9 +40,9 @@ const TypeInfo Simplistic::TYPEINFO = { "Simplistic", &Theme::TYPEINFO };
 
 //____ create() _______________________________________________________________
 
-Simplistic_p Simplistic::create(Font * pNormal, Font * pBold, Font * pItalic, Font * pMonospace )
+Simplistic_p Simplistic::create(Font * pNormal, Font * pBold, Font * pItalic, Font * pMonospace, Surface * pWidgets )
 {
-	return Simplistic_p(new Simplistic(pNormal, pBold, pItalic, pMonospace));
+	return Simplistic_p(new Simplistic(pNormal, pBold, pItalic, pMonospace, pWidgets));
 }
 
 //____ typeInfo() _____________________________________________________________
@@ -54,7 +54,7 @@ const TypeInfo& Simplistic::typeInfo(void) const
 
 //____ constructor ____________________________________________________________
 
-Simplistic::Simplistic( Font * pNormal, Font * pBold, Font * pItalic, Font * pMonospace )
+Simplistic::Simplistic( Font * pNormal, Font * pBold, Font * pItalic, Font * pMonospace, Surface * pWidgets )
 {
 	m_pFontNormal = pNormal;
 	m_pFontBold = pBold;
@@ -65,17 +65,25 @@ Simplistic::Simplistic( Font * pNormal, Font * pBold, Font * pItalic, Font * pMo
 	HiColor plateColor = Color::LightGrey;
 	HiColor borderColor = Color::DarkGrey;
 
-	HiColor titlebarColor = Color::LightGreen;
-	HiColor titlebarBorderColor = Color::DarkGreen;
+	HiColor titlebarColor = Color::LightGrey;
+	HiColor titlebarBorderColor = Color::DarkGrey;
+
+	HiColor titlebarColorSelected = Color::LightCyan;
+	HiColor titlebarBorderColorSelected = Color::DarkCyan;
+
 
 	m_pStrongStyle = TextStyle::create(WGBP(TextStyle, _.font = m_pFontBold, _.color = HiColor::Black, _.size = c_textSizeNormal));
 	m_pEmphasisStyle = TextStyle::create(WGBP(TextStyle, _.font = m_pFontItalic, _.color = HiColor::Black, _.size = c_textSizeNormal));
 	m_pCodeStyle = TextStyle::create(WGBP(TextStyle, _.font = m_pFontMonospace, _.color = HiColor::Black, _.size = c_textSizeNormal));
 	m_pMonospaceStyle = TextStyle::create(WGBP(TextStyle, _.font = m_pFontMonospace, _.color = HiColor::Black, _.size = c_textSizeNormal));
+	m_pFinePrintStyle = TextStyle::create(WGBP(TextStyle, _.font = m_pFontNormal, _.color = HiColor::Black, _.size = 9));
 
 
-	m_pBlackStyle = TextStyle::create( WGBP(TextStyle, _.font = m_pFontNormal, _.color = HiColor::Black, _.size = 12 ));
-	m_pWhiteStyle = TextStyle::create( WGBP(TextStyle, _.font = m_pFontNormal, _.color = HiColor::White, _.size = 12 ));
+	m_pBlackStyle = TextStyle::create( WGBP(TextStyle, _.font = m_pFontNormal, _.color = HiColor::Black, _.size = 12,	
+											_.states = { {State::Disabled, Color8::DarkGrey} } ));
+
+	m_pWhiteStyle = TextStyle::create( WGBP(TextStyle, _.font = m_pFontNormal, _.color = HiColor::White, _.size = 12,
+											_.states = { {State::Disabled, Color8::LightGrey} } ));
 
 	m_heading1Style = TextStyle::create( WGBP(TextStyle, _.font = m_pFontNormal, _.color = HiColor::Black, _.size = 20));
 	m_heading2Style = TextStyle::create( WGBP(TextStyle, _.font = m_pFontBold, _.color = HiColor::Black, _.size = 20));
@@ -84,29 +92,48 @@ Simplistic::Simplistic( Font * pNormal, Font * pBold, Font * pItalic, Font * pMo
 	m_heading5Style = TextStyle::create( WGBP(TextStyle, _.font = m_pFontBold, _.color = HiColor::Black, _.size = 14));
 	m_heading6Style = TextStyle::create( WGBP(TextStyle, _.font = m_pFontNormal, _.color = HiColor::Black, _.size = 14));
 
+
+
 	auto pLayoutCenteredNoWrap = BasicTextLayout::create( WGBP(BasicTextLayout,
 															   _.autoEllipsis = true,
 															   _.placement = Placement::Center,
 															   _.wrap = false ));
 
-	auto pPlateSkin = BoxSkin::create( WGBP(BoxSkin,
-											_.color = plateColor,
-											_.outlineColor = borderColor,
-											_.outlineThickness = 1,
-											_.padding = 3 ));
+	m_pOpenCloseTransition = ValueTransition::create(250000);
+
+
+	m_pPlateSkin = BlockSkin::create( WGBP(BlockSkin,
+										_.surface = pWidgets,
+										_.firstBlock = { 0,60,10,10 },
+										_.padding = 3,
+										_.frame = 3 ));
+
+	m_pCanvasSkin = BlockSkin::create(WGBP(BlockSkin,
+		_.surface = pWidgets,
+		_.firstBlock = { 24,60,10,10 },
+		_.padding = 3,
+		_.frame = 3));
+
+	m_pWindowSkin = BlockSkin::create(WGBP(BlockSkin,
+		_.surface = pWidgets,
+		_.firstBlock = { 36,60,10,10 },
+		_.padding = 5,
+		_.frame = 3));
+
 
 	auto pTitleBarSkin = BoxSkin::create( WGBP(BoxSkin,
 											_.color = titlebarColor,
 											_.outlineColor = titlebarBorderColor,
 											_.outlineThickness = 1,
-											_.padding = 4 ));
+											_.padding = 4,
+		_.states = { {State::Flagged,titlebarColorSelected,titlebarBorderColorSelected} }));
 
 	auto pLabelCapsuleSkin = BoxSkin::create( WGBP(BoxSkin,
-										  _.color = plateColor,
+										  _.color = HiColor::Transparent,
 										  _.outlineColor = borderColor,
 										  _.outlineThickness = 1,
-										  _.spacing = { 6,2,2,2},
-										  _.padding = { 8, 4, 4, 4} ));
+										  _.spacing = { 8,2,2,2},
+										  _.padding = { 10, 4, 4, 4} ));
 
 	auto pCapsuleLabelSkin = ColorSkin::create( WGBP(ColorSkin,
 													 _.color = plateColor,
@@ -123,6 +150,74 @@ Simplistic::Simplistic( Font * pNormal, Font * pBold, Font * pItalic, Font * pMo
 										  _.color = HiColor::Transparent,
 										  _.spacing = { 6,2,2,2},
 										  _.padding = { 16, 4, 4, 4} ));
+
+	auto pPlusMinusToggleSkin = BlockSkin::create( WGBP(BlockSkin,
+		_.surface = pWidgets,
+		_.firstBlock = { 0,0,14,14 },
+		_.axis = Axis::X,
+		_.blockSpacing = 2,
+		_.states = { State::Default, State::Hovered, State::Pressed, State::Checked, State::CheckedHovered, State::CheckedPressed } ));
+
+	auto pSelectableEntrySkin = BoxSkin::create(WGBP(BoxSkin,
+		_.markAlpha = 0,
+		_.states = { {State::Default, Color::Transparent,Color::Transparent},
+					 {State::Hovered, HiColor(Color::LightCyan).withAlpha(1024), HiColor(Color::DarkCyan).withAlpha(1024)},
+					 {State::Selekted, Color::LightCyan,Color::DarkCyan }
+		}
+	));
+
+	auto pButtonSkin = BlockSkin::create(WGBP(BlockSkin,
+		_.surface = pWidgets,
+		_.firstBlock = { 0,15,10,10 },
+		_.axis = Axis::X,
+		_.blockSpacing = 1,
+		_.frame = 4,
+		_.padding = 4,
+		_.states = { State::Default, State::Hovered, State::Pressed, State::Disabled }
+	));
+
+	auto pToggleButtonSkin = BlockSkin::create(WGBP(BlockSkin,
+		_.surface = pWidgets,
+		_.firstBlock = { 0,26,10,10 },
+		_.axis = Axis::X,
+		_.blockSpacing = 1,
+		_.frame = 4,
+		_.padding = 4,
+		_.states = { State::Default, State::Hovered, State::Checked, State::CheckedHovered, State::Disabled }
+	));
+
+	auto pCheckboxSkin = BlockSkin::create(WGBP(BlockSkin,
+		_.surface = pWidgets,
+		_.firstBlock = { 0,37,10,10 },
+		_.axis = Axis::X,
+		_.blockSpacing = 1,
+		_.states = { State::Default, State::Checked, State::Disabled, State::DisabledChecked }
+	));
+
+	auto pRadioButtonSkin = BlockSkin::create(WGBP(BlockSkin,
+		_.surface = pWidgets,
+		_.firstBlock = { 0,48,10,10 },
+		_.axis = Axis::X,
+		_.blockSpacing = 1,
+		_.states = { State::Default, State::Checked, State::Disabled }
+	));
+
+	auto pSelectBoxSkin = BlockSkin::create(WGBP(BlockSkin,
+		_.surface = pWidgets,
+		_.firstBlock = { 96,0,34,22},
+		_.frame = { 4,25,4,4 },
+		_.padding = { 3, 25, 3, 4,},
+		_.axis = Axis::Y,
+		_.blockSpacing = 1,
+		_.states = { State::Default, State::Hovered, State::Pressed, State::Disabled }
+	));
+
+	auto pSelectBoxEntrySkin = BoxSkin::create(WGBP(BoxSkin,
+		_.states = { {State::Default, Color::Transparent, Color::Transparent},
+					 {State::Hovered, HiColor(Color::LightCyan).withAlpha(2048), HiColor(Color::DarkCyan).withAlpha(2048)},
+					 {State::Selekted, Color::LightCyan,Color::DarkCyan }
+		}
+	));
 
 
 	m_labeledBoxBP = WGBP(LabelCapsule,
@@ -153,35 +248,95 @@ Simplistic::Simplistic( Font * pNormal, Font * pBold, Font * pItalic, Font * pMo
 	m_scrollPanelYBP = WGBP(ScrollPanel,
 						   _.childConstraintX = SizeConstraint::Equal,
 						   _.childConstraintY = SizeConstraint::GreaterOrEqual,
-						   _.scrollbarY.background = pScrollbarBgSkin,
+						   _.scrollbarY.back = pScrollbarBgSkin,
 						   _.scrollbarY.bar = pScrollbarSkin
 						   );
 
 	m_scrollPanelXBP = WGBP(ScrollPanel,
 						   _.childConstraintX = SizeConstraint::GreaterOrEqual,
 						   _.childConstraintY = SizeConstraint::Equal,
-						   _.scrollbarX.background = pScrollbarBgSkin,
+						   _.scrollbarX.back = pScrollbarBgSkin,
 						   _.scrollbarX.bar = pScrollbarSkin
 						   );
 
 	m_scrollPanelXYBP = WGBP(ScrollPanel,
-						   _.childConstraintX = SizeConstraint::GreaterOrEqual,
-						   _.childConstraintY = SizeConstraint::GreaterOrEqual,
-						   _.scrollbarX.background = pScrollbarBgSkin,
-						   _.scrollbarX.bar = pScrollbarSkin
-						   );
+							_.childConstraintX = SizeConstraint::GreaterOrEqual,
+							_.childConstraintY = SizeConstraint::GreaterOrEqual,
+							_.scrollbarX.back = pScrollbarBgSkin,
+							_.scrollbarX.bar = pScrollbarSkin,
+							_.scrollbarY.back = pScrollbarBgSkin,
+							_.scrollbarY.bar = pScrollbarSkin
+							);
+
+	m_splitPanelXBP = WGBP(SplitPanel,
+							_.axis = Axis::X,
+							_.handleSkin = pButtonSkin
+	);
+
+	m_splitPanelYBP = WGBP(SplitPanel,
+		_.axis = Axis::Y,
+		_.handleSkin = pButtonSkin
+	);
+
+	m_treeListDrawer = WGBP(DrawerPanel,
+							_.buttonSkin = pPlusMinusToggleSkin,
+							_.buttonPlacement = Placement::West,
+							_.buttonSize = Size{ 14, 14 },
+							_.transition = m_pOpenCloseTransition
+	);
+
+	m_treeListEntry = WGBP(PaddingCapsule,
+		_.skin = pSelectableEntrySkin
+	);
+
+	m_listTable = WGBP(TablePanel,
+		_.columnSpacing = 4,
+		_.rowSpacing = 1);
+
+	m_textEditor = WGBP(TextEditor,
+		_.skin = m_pCanvasSkin,
+		_.editor.style = m_pBlackStyle
+	);
+
+	m_lineEditor = WGBP(LineEditor,
+		_.skin = m_pCanvasSkin,
+		_.editor.style = m_pBlackStyle
+	);
+
+	m_selectBox = WGBP(SelectBox,
+		_.skin = pSelectBoxSkin,
+		_.listSkin = m_pCanvasSkin,
+		_.entryTextStyle  = m_pBlackStyle,
+		_.entrySkin = pSelectBoxEntrySkin
+	);
 
 	m_windowTitleBar = WGBP(TextDisplay,
 							_.skin = pTitleBarSkin,
+							_.display.style = m_heading5Style,
 							_.display.layout = pLayoutCenteredNoWrap );
 
-	/*
-	m_pushButtonBP;
+	
+	m_pushButtonBP = WGBP(Button,
+							_.skin = pButtonSkin,
+							_.label.style = m_pBlackStyle,
+                            _.label.layout = pLayoutCenteredNoWrap
+	);
 
-	m_toggleButtonBP;
-	m_radioButtonBP;
-	m_checkboxBP;
-*/
+	m_toggleButtonBP = WGBP(ToggleButton,
+							_.skin = pToggleButtonSkin,
+							_.label.style = m_pBlackStyle
+	);
+
+	m_checkboxBP = WGBP(ToggleButton,
+		_.icon.skin = pCheckboxSkin,
+		_.icon.spacing = 4,
+		_.label.style = m_pBlackStyle
+	);
+
+	m_radioButtonBP = WGBP(ToggleButton,
+		_.skin = pRadioButtonSkin,
+		_.label.style = m_pBlackStyle
+	);
 }
 
 
@@ -335,6 +490,12 @@ TextStyle_p Simplistic::calloutStyle() const
 	return m_pBlackStyle;
 }
 
+TextStyle_p Simplistic::finePrintStyle() const
+{
+	return m_pFinePrintStyle;
+}
+
+
 TextStyle_p Simplistic::defaultStyle() const
 {
 	return m_pBlackStyle;
@@ -344,6 +505,22 @@ TextStyle_p Simplistic::pressableStyle() const
 {
 	return m_pBlackStyle;
 }
+
+Skin_p Simplistic::plateSkin() const
+{
+	return m_pPlateSkin;
+}
+
+Skin_p Simplistic::canvasSkin() const
+{
+	return m_pCanvasSkin;
+}
+
+Skin_p Simplistic::windowSkin() const
+{
+	return m_pWindowSkin;
+}
+
 
 const LabelCapsule::Blueprint& Simplistic::labeledBox() const
 {
@@ -389,6 +566,48 @@ const ScrollPanel::Blueprint& Simplistic::scrollPanelXY() const
 {
 	return m_scrollPanelXYBP;
 }
+
+const SplitPanel::Blueprint& Simplistic::splitPanelX() const
+{
+	return m_splitPanelXBP;
+}
+
+const SplitPanel::Blueprint& Simplistic::splitPanelY() const
+{
+	return m_splitPanelYBP;
+}
+
+const DrawerPanel::Blueprint& Simplistic::treeListDrawer() const
+{
+	return m_treeListDrawer;
+}
+
+const PaddingCapsule::Blueprint& Simplistic::treeListEntry() const
+{
+	return m_treeListEntry;
+}
+
+const TablePanel::Blueprint& Simplistic::listTable() const
+{
+	return m_listTable;
+}
+
+
+const TextEditor::Blueprint& Simplistic::textEditor() const
+{
+	return m_textEditor;
+}
+
+const LineEditor::Blueprint& Simplistic::lineEditor() const
+{
+	return m_lineEditor;
+}
+
+const SelectBox::Blueprint& Simplistic::selectBox() const
+{
+	return m_selectBox;
+}
+
 
 const TextDisplay::Blueprint& Simplistic::windowTitleBar() const
 {

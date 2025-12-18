@@ -1,25 +1,24 @@
 /*=========================================================================
 
-						 >>> WonderGUI <<<
+                             >>> WonderGUI <<<
 
-  This file is part of Tord Jansson's WonderGUI Graphics Toolkit
-  and copyright (c) Tord Jansson, Sweden [tord.jansson@gmail.com].
+  This file is part of Tord Bärnfors' WonderGUI UI Toolkit and copyright
+  Tord Bärnfors, Sweden [mail: first name AT barnfors DOT c_o_m].
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is free software; you can redistribute
+  The WonderGUI UI Toolkit is free software; you can redistribute
   this file and/or modify it under the terms of the GNU General Public
   License as published by the Free Software Foundation; either
   version 2 of the License, or (at your option) any later version.
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is also available for use in commercial
-  closed-source projects under a separate license. Interested parties
-  should contact Tord Jansson [tord.jansson@gmail.com] for details.
+  The WonderGUI UI Toolkit is also available for use in commercial
+  closed source projects under a separate license. Interested parties
+  should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-
 #include <wg_skinslot.h>
 #include <wg_base.h>
 
@@ -80,7 +79,7 @@ namespace wg
 		
 		// Update transitions based on state change.
 
-		Bitmask<uint8_t> changedStatesMask = newState.bitmask() ^ oldState.bitmask();
+		Bitmask<uint8_t> changedStatesMask = newState.primStates() ^ oldState.primStates();
 
 		if (m_pSkin->_transitioningStates() & changedStatesMask )
 		{
@@ -89,7 +88,7 @@ namespace wg
 			// Check if this state change starts any new transition
 
 			bool bStartTransition = false;
-			for (int stateIndex = 0; stateIndex < StateBits_Nb; stateIndex++)
+			for (int stateIndex = 0; stateIndex < PrimState_Nb; stateIndex++)
 			{
 				if (changedStatesMask.bit(stateIndex) && pTransitionTimes[stateIndex] != 0)
 				{
@@ -107,11 +106,11 @@ namespace wg
 				if (!m_pPocket)
 					_initPocket(oldState);
 
-				m_pPocket->transitionTo = newState.bitmask();
+				m_pPocket->transitionTo = newState.primStates();
 
 				// Step through statebits and update transition progress
 
-				for (int i = 0; i < StateBits_Nb; i++)
+				for (int i = 0; i < PrimState_Nb; i++)
 				{
 					if (changedStatesMask.bit(i))
 					{
@@ -200,7 +199,7 @@ namespace wg
 		float* pOldStateFractions = nullptr;
 		float* pNewStateFractions = nullptr;
 
-		float oldFractionalState[StateBits_Nb];
+		float oldFractionalState[PrimState_Nb];
 
 		// Update possible state transition
 
@@ -208,7 +207,7 @@ namespace wg
 		{
 			auto pTransitionTimes = m_pSkin->_transitionTimes();
 
-			for (int i = 0; i < StateBits_Nb; i++)
+			for (int i = 0; i < PrimState_Nb; i++)
 			{
 				oldFractionalState[i] = m_pPocket->fractionalState[i];
 
@@ -284,12 +283,12 @@ namespace wg
 			m_pPocket->pHolder = this;
 		}
 
-		Bitmask<uint8_t> statemask = state.bitmask();
+		Bitmask<uint8_t> statemask = state.primStates();
 
 		m_pPocket->transitionFrom = statemask;
 		m_pPocket->transitionTo = statemask;
 
-		for (int i = 0; i < StateBits_Nb; i++)
+		for (int i = 0; i < PrimState_Nb; i++)
 			m_pPocket->fractionalState[i] = statemask.bit(i) ? 1.f : 0.f;
 
 		m_pPocket->bAnimated = false;

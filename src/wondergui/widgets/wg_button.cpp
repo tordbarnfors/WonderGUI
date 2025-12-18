@@ -1,27 +1,24 @@
 /*=========================================================================
 
-						 >>> WonderGUI <<<
+                             >>> WonderGUI <<<
 
-  This file is part of Tord Jansson's WonderGUI Graphics Toolkit
-  and copyright (c) Tord Jansson, Sweden [tord.jansson@gmail.com].
+  This file is part of Tord Bärnfors' WonderGUI UI Toolkit and copyright
+  Tord Bärnfors, Sweden [mail: first name AT barnfors DOT c_o_m].
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is free software; you can redistribute
+  The WonderGUI UI Toolkit is free software; you can redistribute
   this file and/or modify it under the terms of the GNU General Public
   License as published by the Free Software Foundation; either
   version 2 of the License, or (at your option) any later version.
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is also available for use in commercial
-  closed-source projects under a separate license. Interested parties
-  should contact Tord Jansson [tord.jansson@gmail.com] for details.
+  The WonderGUI UI Toolkit is also available for use in commercial
+  closed source projects under a separate license. Interested parties
+  should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-
-
-
 #include <wg_button.h>
 #include <wg_gfxdevice.h>
 #include <wg_util.h>
@@ -64,20 +61,25 @@ namespace wg
 
 	spx Button::_matchingHeight( spx width, int scale ) const
 	{
-		spx height = m_skin.defaultSize(scale).h;
+		spx defaultHeight = m_skin.defaultSize(scale).h;
+
+		if (label.isEmpty() && icon.isEmpty())
+			return defaultHeight;
+
+		spx iconHeight = _icon()._defaultSize(scale).h;
+		spx textHeight = 0;									// includes padding/spacing 
+
+		SizeSPX skinPadding = m_skin.contentBorderSize(scale);
 
 		if( !label.isEmpty() )
 		{
-			SizeSPX padding = m_skin.contentBorderSize(scale);
-
-			spx heightForText = label._matchingHeight(width-padding.w,scale) + padding.h;
-			if( heightForText > height )
-				height = heightForText;
+			SizeSPX iconPadding = _icon()._textPaddingSize(scale);
+			textHeight = label._matchingHeight(width-skinPadding.w-iconPadding.w,scale) + iconPadding.h;
 		}
 
-		//TODO: Take icon into account.
+		spx heightForContent = std::max(textHeight, iconHeight) + skinPadding.h;
 
-		return height;
+		return std::max(heightForContent, defaultHeight);
 	}
 
 

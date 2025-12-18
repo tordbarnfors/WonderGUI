@@ -1,53 +1,135 @@
 /*=========================================================================
 
-						 >>> WonderGUI <<<
+                             >>> WonderGUI <<<
 
-  This file is part of Tord Jansson's WonderGUI Graphics Toolkit
-  and copyright (c) Tord Jansson, Sweden [tord.jansson@gmail.com].
+  This file is part of Tord Bärnfors' WonderGUI UI Toolkit and copyright
+  Tord Bärnfors, Sweden [mail: first name AT barnfors DOT c_o_m].
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is free software; you can redistribute
+  The WonderGUI UI Toolkit is free software; you can redistribute
   this file and/or modify it under the terms of the GNU General Public
   License as published by the Free Software Foundation; either
   version 2 of the License, or (at your option) any later version.
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is also available for use in commercial
-  closed-source projects under a separate license. Interested parties
-  should contact Tord Jansson [tord.jansson@gmail.com] for details.
+  The WonderGUI UI Toolkit is also available for use in commercial
+  closed source projects under a separate license. Interested parties
+  should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-
 #include <wg_state.h>
 
 namespace wg
 {
-	const int State::s_bitmaskToIndex[MaxValue + 1] = {	0, 1, 0, 0, 2, 3, 4, 5, 6, 7, 0, 0, 8, 9, 10, 11,
-															12, 13, 0, 0, 0, 0, 0, 0, 14, 15, 0, 0, 0, 0, 0, 0,
-															16, 0, 0, 0, 0, 0, 0, 0, 17 };
+	const State State::DisabledFlaggedCheckedSelekted			= State(StateEnum::DisabledFlaggedCheckedSelekted);
+	const State State::DisabledFlaggedChecked					= State(StateEnum::DisabledFlaggedChecked);
+	const State State::DisabledFlaggedSelekted					= State(StateEnum::DisabledFlaggedSelekted);
+	const State State::DisabledFlagged							= State(StateEnum::DisabledFlagged);
+	const State State::DisabledCheckedSelekted					= State(StateEnum::DisabledCheckedSelekted);
+	const State State::DisabledChecked							= State(StateEnum::DisabledChecked);
+	const State State::DisabledSelekted							= State(StateEnum::DisabledSelekted);
+	const State State::Disabled									= State(StateEnum::Disabled);
+	const State State::TargetedFlaggedCheckedSelektedFocused	= State(StateEnum::TargetedFlaggedCheckedSelektedFocused);
+	const State State::TargetedFlaggedCheckedSelekted			= State(StateEnum::TargetedFlaggedCheckedSelekted);
+	const State State::TargetedFlaggedCheckedFocused			= State(StateEnum::TargetedFlaggedCheckedFocused);
+	const State State::TargetedFlaggedChecked					= State(StateEnum::TargetedFlaggedChecked);
+	const State State::TargetedFlaggedSelektedFocused			= State(StateEnum::TargetedFlaggedSelektedFocused);
+	const State State::TargetedFlaggedSelekted					= State(StateEnum::TargetedFlaggedSelekted);
+	const State State::TargetedFlaggedFocused					= State(StateEnum::TargetedFlaggedFocused);
+	const State State::TargetedFlagged							= State(StateEnum::TargetedFlagged);
+	const State State::TargetedCheckedSelektedFocused			= State(StateEnum::TargetedCheckedSelektedFocused);
+	const State State::TargetedCheckedSelekted					= State(StateEnum::TargetedCheckedSelekted);
+	const State State::TargetedCheckedFocused					= State(StateEnum::TargetedCheckedFocused);
+	const State State::TargetedChecked							= State(StateEnum::TargetedChecked);
+	const State State::TargetedSelektedFocused					= State(StateEnum::TargetedSelektedFocused);
+	const State State::TargetedSelekted							= State(StateEnum::TargetedSelekted);
+	const State State::TargetedFocused							= State(StateEnum::TargetedFocused);
+	const State State::Targeted									= State(StateEnum::Targeted);
+	const State State::FlaggedCheckedSelektedPressedFocused		= State(StateEnum::FlaggedCheckedSelektedPressedFocused);
+	const State State::FlaggedCheckedSelektedPressed			= State(StateEnum::FlaggedCheckedSelektedPressed);
+	const State State::FlaggedCheckedSelektedHoveredFocused		= State(StateEnum::FlaggedCheckedSelektedHoveredFocused);
+	const State State::FlaggedCheckedSelektedHovered			= State(StateEnum::FlaggedCheckedSelektedHovered);
+	const State State::FlaggedCheckedSelektedFocused			= State(StateEnum::FlaggedCheckedSelektedFocused);
+	const State State::FlaggedCheckedSelekted					= State(StateEnum::FlaggedCheckedSelekted);
+	const State State::FlaggedCheckedPressedFocused				= State(StateEnum::FlaggedCheckedPressedFocused);
+	const State State::FlaggedCheckedPressed					= State(StateEnum::FlaggedCheckedPressed);
+	const State State::FlaggedCheckedHoveredFocused				= State(StateEnum::FlaggedCheckedHoveredFocused);
+	const State State::FlaggedCheckedHovered					= State(StateEnum::FlaggedCheckedHovered);
+	const State State::FlaggedCheckedFocused					= State(StateEnum::FlaggedCheckedFocused);
+	const State State::FlaggedChecked							= State(StateEnum::FlaggedChecked);
+	const State State::FlaggedSelektedPressedFocused			= State(StateEnum::FlaggedSelektedPressedFocused);
+	const State State::FlaggedSelektedPressed					= State(StateEnum::FlaggedSelektedPressed);
+	const State State::FlaggedSelektedHoveredFocused			= State(StateEnum::FlaggedSelektedHoveredFocused);
+	const State State::FlaggedSelektedHovered					= State(StateEnum::FlaggedSelektedHovered);
+	const State State::FlaggedSelektedFocused					= State(StateEnum::FlaggedSelektedFocused);
+	const State State::FlaggedSelekted							= State(StateEnum::FlaggedSelekted);
+	const State State::FlaggedPressedFocused					= State(StateEnum::FlaggedPressedFocused);
+	const State State::FlaggedPressed							= State(StateEnum::FlaggedPressed);
+	const State State::FlaggedHoveredFocused					= State(StateEnum::FlaggedHoveredFocused);
+	const State State::FlaggedHovered							= State(StateEnum::FlaggedHovered);
+	const State State::FlaggedFocused							= State(StateEnum::FlaggedFocused);
+	const State State::Flagged									= State(StateEnum::Flagged);
+	const State State::CheckedSelektedPressedFocused			= State(StateEnum::CheckedSelektedPressedFocused);
+	const State State::CheckedSelektedPressed					= State(StateEnum::CheckedSelektedPressed);
+	const State State::CheckedSelektedHoveredFocused			= State(StateEnum::CheckedSelektedHoveredFocused);
+	const State State::CheckedSelektedHovered					= State(StateEnum::CheckedSelektedHovered);
+	const State State::CheckedSelektedFocused					= State(StateEnum::CheckedSelektedFocused);
+	const State State::CheckedSelekted							= State(StateEnum::CheckedSelekted);
+	const State State::CheckedPressedFocused					= State(StateEnum::CheckedPressedFocused);
+	const State State::CheckedPressed							= State(StateEnum::CheckedPressed);
+	const State State::CheckedHoveredFocused					= State(StateEnum::CheckedHoveredFocused);
+	const State State::CheckedHovered							= State(StateEnum::CheckedHovered);
+	const State State::CheckedFocused							= State(StateEnum::CheckedFocused);
+	const State State::Checked									= State(StateEnum::Checked);
+	const State State::SelektedPressedFocused					= State(StateEnum::SelektedPressedFocused);
+	const State State::SelektedPressed							= State(StateEnum::SelektedPressed);
+	const State State::SelektedHoveredFocused					= State(StateEnum::SelektedHoveredFocused);
+	const State State::SelektedHovered							= State(StateEnum::SelektedHovered);
+	const State State::SelektedFocused							= State(StateEnum::SelektedFocused);
+	const State State::Selekted									= State(StateEnum::Selekted);
+	const State State::PressedFocused							= State(StateEnum::PressedFocused);
+	const State State::Pressed									= State(StateEnum::Pressed);
+	const State State::HoveredFocused							= State(StateEnum::HoveredFocused);
+	const State State::Hovered									= State(StateEnum::Hovered);
+	const State State::Focused									= State(StateEnum::Focused);
+	const State State::Default									= State(StateEnum::Default);
 
-	const uint8_t State::s_indexToBitmask[IndexAmount] = { 0, 1, 4, 4 + 1, 4 + 2, 4 + 2 + 1, 8, 8 + 1, 8 + 4, 8 + 4 + 1, 8 + 4 + 2,
-															  8 + 4 + 2 + 1, 16, 16 + 1, 16 + 8, 16 + 8 + 1, 32, 32 + 8 };
 
+	const uint8_t State::s_weights[NbStates] = {
+		0, 32, 8, 40, 16, 48, 24, 56, 1, 33, 9, 41, 17, 49, 25, 57,
+		2, 34, 10, 42, 18, 50, 26, 58, 3, 35, 11, 43, 19, 51, 27, 59,
+		4, 36, 12, 44, 20, 52, 28, 60, 5, 37, 13, 45, 21, 53, 29, 61,
+		64, 96, 72, 104, 80, 112, 88, 120, 65, 97, 73, 105, 81, 113, 89, 121,
+		128, 160, 136, 168, 144, 176, 152, 184
+		};
 
-	const State State::Default					= State(0);
-	const State State::Focused					= State(1);
-	const State State::Hovered					= State(2);
-	const State State::HoveredFocused			= State(3);
-	const State State::Pressed					= State(4);
-	const State State::PressedFocused			= State(5);
-	const State State::Selected					= State(6);
-	const State State::SelectedFocused			= State(7);
-	const State State::SelectedHovered			= State(8);
-	const State State::SelectedHoveredFocused	= State(9);
-	const State State::SelectedPressed			= State(10);
-	const State State::SelectedPressedFocused	= State(11);
-	const State State::Targeted					= State(12);
-	const State State::TargetedFocused			= State(13);
-	const State State::TargetedSelected			= State(14);
-	const State State::TargetedSelectedFocused	= State(15);
-	const State State::Disabled					= State(16);
-	const State State::DisabledSelected			= State(17);
+	//____ bestMatch() ________________________________________________________
+
+	int State::bestMatch(int nAlternatives, const State* pAlternatives)
+	{
+		int		bestWeight = -1;
+		int		bestIndex = -1;
+
+		uint8_t	unwantedBits = ~s_weights[m_index];
+
+		for (int i = 0; i < nAlternatives; i++)
+		{
+			// First check that the alternative does NOT have PrimStates that we don't
+
+			int weight = pAlternatives[i].weight();
+
+			if ((pAlternatives[i].weight() & unwantedBits) != 0)
+				continue;
+
+			if (weight > bestWeight)
+			{
+				bestWeight = weight;
+				bestIndex = i;
+			}
+		}
+
+		return bestIndex;
+	}
 }

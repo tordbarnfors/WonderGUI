@@ -7,7 +7,6 @@
 #endif
 
 #include <wg_c_gfxtypes.h>
-#include <wg_c_memheap.h>
 #include <wg_c_gfxbase.h>
 #include <wg_c_blob.h>
 #include <wg_c_geo.h>
@@ -24,7 +23,6 @@ void 			updateWindowRects( int nRects, wg_rect * pRects, SDL_Window * pWindow );
 int				bQuit = 0;	// Set to false by myButtonClickCallback() or translateEvents().
 
 
-#define HEAPSIZE 4000000
 
 //____ main() _________________________________________________________________
 
@@ -44,12 +42,6 @@ int main ( int argc, char** argv )
 	//------------------------------------------------------
 	// Init WonderGUI
 	//------------------------------------------------------
-
-	void * pMemHeap = malloc( HEAPSIZE );
-
-	wg_obj heap = wg_initMemHeap( pMemHeap, HEAPSIZE );
-
- //   init_cpp_necessities(heap); 
 
 	wg_initGfxBase();
 
@@ -74,8 +66,10 @@ int main ( int argc, char** argv )
 
 	SDL_UnlockSurface(pWinSurf);
 
-	wg_obj hGfxDevice = wg_createSoftGfxDevice();
-	wg_addDefaultSoftKernels(hGfxDevice);
+	wg_obj hBackend = wg_createSoftBackend();
+	wg_addDefaultSoftKernels(hBackend);
+
+	wg_obj hGfxDevice = wg_createGfxDevice(hBackend);
 
 	//------------------------------------------------------
 	
@@ -187,7 +181,6 @@ int main ( int argc, char** argv )
 
 	wg_exitGfxBase();
 	exit_cpp_necessities();
-	wg_exitMemHeap(heap);
 
 	// Exit SDL
 

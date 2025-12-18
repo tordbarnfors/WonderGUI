@@ -1,31 +1,32 @@
 /*=========================================================================
 
-						 >>> WonderGUI <<<
+                             >>> WonderGUI <<<
 
-  This file is part of Tord Jansson's WonderGUI Graphics Toolkit
-  and copyright (c) Tord Jansson, Sweden [tord.jansson@gmail.com].
+  This file is part of Tord Bärnfors' WonderGUI UI Toolkit and copyright
+  Tord Bärnfors, Sweden [mail: first name AT barnfors DOT c_o_m].
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is free software; you can redistribute
+  The WonderGUI UI Toolkit is free software; you can redistribute
   this file and/or modify it under the terms of the GNU General Public
   License as published by the Free Software Foundation; either
   version 2 of the License, or (at your option) any later version.
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is also available for use in commercial
-  closed-source projects under a separate license. Interested parties
-  should contact Tord Jansson [tord.jansson@gmail.com] for details.
+  The WonderGUI UI Toolkit is also available for use in commercial
+  closed source projects under a separate license. Interested parties
+  should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-
 #include <wg_scroller.h>
 
 
 namespace wg
 {
 	using namespace Util;
+
+	const TypeInfo	Scroller::TYPEINFO = { "Scroller", &Component::TYPEINFO };
 
 	//____ constructor ____________________________________________________________
 
@@ -40,6 +41,14 @@ namespace wg
 	{
 
 	}
+
+	//____ typeInfo() _________________________________________________________
+
+	const TypeInfo& Scroller::typeInfo(void) const
+	{
+		return TYPEINFO;
+	}
+
 
 	//____ setSkins() _________________________________________________________
 	/**
@@ -82,30 +91,30 @@ namespace wg
 			_requestResize();
 	}
 
-	//____ setBackground() ____________________________________________________
+	//____ setBackSkin() ____________________________________________________
 
-	void Scroller::setBackground(Skin* pSkin)
+	void Scroller::setBackSkin(Skin* pSkin)
 	{
 		_replaceSkin(pSkin, m_skins[Part::Back]);
 	}
 
-	//____ setBar() _______________________________________________________
+	//____ setBarSkin() _______________________________________________________
 
-	void Scroller::setBar(Skin* pSkin)
+	void Scroller::setBarSkin(Skin* pSkin)
 	{
 		_replaceSkin(pSkin, m_skins[Part::Bar]);
 	}
 
-	//____ setForwardButton() _________________________________________________
+	//____ setForwardButtonSkin() _________________________________________________
 
-	void Scroller::setForwardButton(Skin* pSkin)
+	void Scroller::setForwardButtonSkin(Skin* pSkin)
 	{
 		_replaceSkin(pSkin, m_skins[Part::Next]);
 	}
 
-	//____ setBackwardButton() ________________________________________________
+	//____ setBackwardButtonSkin() ________________________________________________
 
-	void Scroller::setBackwardButton(Skin* pSkin)
+	void Scroller::setBackwardButtonSkin(Skin* pSkin)
 	{
 		_replaceSkin(pSkin, m_skins[Part::Prev]);
 	}
@@ -134,8 +143,8 @@ namespace wg
 
 	void Scroller::_initFromBlueprint(const Blueprint& bp)
 	{
-		if( bp.background )
-			m_skins[Part::Back] = bp.background;
+		if( bp.back )
+			m_skins[Part::Back] = bp.back;
 
 		if (bp.backwardButton)
 			m_skins[Part::Prev] = bp.backwardButton;
@@ -447,21 +456,23 @@ namespace wg
 
 	void Scroller::_setState(State state)
 	{
-		// We just copy Enabled/Focused/Selected to all our skins.
+		// We just copy Enabled/Focused/Checked/Flagged to all our skins.
 		// We ignore Targeted since that won't work without hover anyway.
 
 		bool bDisabled = state.isDisabled();
 		bool bFocused = state.isFocused();
-		bool bSelected = state.isSelected();
+		bool bChecked = state.isChecked();
+		bool bFlagged = state.isFlagged();
 
 		if (bDisabled != m_states[Part::Back].isDisabled() || bFocused != m_states[Part::Back].isFocused() ||
-			bSelected != m_states[Part::Back].isSelected() )
+			bChecked != m_states[Part::Back].isChecked() || bFlagged != m_states[Part::Back].isFlagged() )
 		{
 			for (int i = 0; i < Part_size; i++)
 			{
 				m_states[i].setDisabled(bDisabled);
 				m_states[i].setFocused(bFocused);
-				m_states[i].setSelected(bSelected);
+				m_states[i].setChecked(bChecked);
+				m_states[i].setFlagged(bChecked);
 			}
 
 			_requestRender();

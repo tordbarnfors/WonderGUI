@@ -4,10 +4,13 @@
 #include <iostream>
 #include <sstream>
 
+
+
 #ifdef WIN32
 #    include <SDL.h>
 #    include <SDL_image.h>
 #elif __APPLE__
+#include <unistd.h>
 #    include <SDL2/SDL.h>
 #    include <SDL2_image/SDL_image.h>
 #else
@@ -16,14 +19,12 @@
 #endif
 
 #include <wondergui.h>
-#include <wondergfx_c.h>
-#include <wondergfxstream_c.h>
+#include <wondergfx.h>
+#include <wondergfxstream.h>
 
 #include <wg_softsurface.h>
 #include <wg_softsurfacefactory.h>
-#include <wg_softgfxdevice.h>
 #include <wg_softkernels_default.h>
-#include <wg_softkernels_rgb565be_base.h>
 #include <wg_softkernels_rgb555be_base.h>
 #include <wg_softkernels_rgb555be_extras.h>
 
@@ -31,7 +32,7 @@
 #include <wg_gfxbackend.h>
 #include <wg_backendlogger.h>
 #include <wg_softbackend.h>
-#include <wg_softbackend_kernels.h>
+#include <wg_softkernels_default.h>
 
 #include <wg_gradyent.h>
 
@@ -50,25 +51,9 @@ bool			bQuit = false;	// Set to false by myButtonClickCallback() or translateEve
 
 int main ( int argc, char** argv )
 {
-
-	for (int i = 0; i < GfxFlip_size; i++)
-	{
-		GfxFlip flip = GfxFlip(i);
-
-		SizeI orgCanvas = { 768, 512 };
-		
-		CoordI org = { 320,200 };
-		CoordI flipped = Util::flipCoord(org, flip, orgCanvas);
-
-		SizeI flippedCanvas = Util::flipSize(orgCanvas, flip);
-		CoordI unflipped = Util::unflipCoord(flipped, flip, flippedCanvas);
-
-		SizeI unflippedCanvas = Util::unflipSize(flippedCanvas, flip);
-
-		assert(unflipped == org);
-		assert(unflippedCanvas == orgCanvas);
-
-	}
+#ifdef __APPLE__
+	sleep(1);
+#endif
 
 
 	//------------------------------------------------------
@@ -101,20 +86,16 @@ int main ( int argc, char** argv )
 
 	auto pSoftBackend = SoftBackend::create();
 	addDefaultSoftKernels(pSoftBackend);
+	addBaseSoftKernelsForRGB555BECanvas(pSoftBackend);
+	addExtraSoftKernelsForRGB555BECanvas(pSoftBackend);
 
 
-	auto pBackendLogger = BackendLogger::create(std::cout, pSoftBackend);
+
+	auto pBackendLogger = BackendLogger::create(&std::cout, pSoftBackend);
 
 	GfxDevice_p pGfxDevice = GfxDeviceGen2::create(pBackendLogger);
 
 
-
-	
-//	addDefaultSoftKernels(pGfxDevice);
-//	addBaseSoftKernelsForRGB565BECanvas(pGfxDevice);
-//	addBaseSoftKernelsForRGB555BECanvas(pGfxDevice);
-
-	
 	// First we load the 24-bit bmp containing the button graphics.
 	// No error handling or such to keep this example short and simple.
 
@@ -124,11 +105,6 @@ int main ( int argc, char** argv )
 
 
 	// Setup a bitmap font
-/*
-	SDL_Surface * pSDLFontSurf = IMG_Load( "resources/droid-20-ascii.png" );
-	SoftSurface_p pFontSurface = SoftSurface::create( SizeI( pSDLFontSurf->w, pSDLFontSurf->h ), PixelFormat::BGRA_8, (unsigned char*) pSDLFontSurf->pixels, pSDLFontSurf->pitch, 0 );
-	SDL_FreeSurface(pSDLFontSurf);
-*/
 
 	std::ifstream input("resources/droid_16_ascii_indexed.surf", std::ios::binary );
 	auto pReader = SurfaceReader::create( WGBP(SurfaceReader, _.factory = SoftSurfaceFactory::create() ));
@@ -204,37 +180,19 @@ int main ( int argc, char** argv )
 	auto pFocusSkin = ColorSkin::create({ .states = { {State::Default, Color::Red}, {State::Focused, Color::Green} } });
 	auto pHoverSkin = ColorSkin::create({ .states = { {State::Default, Color::Red}, {State::Hovered, Color::Green} } });
 	auto pHoverAndFocusSkin = ColorSkin::create({ .states = { {State::Default, Color::Red}, {State::Hovered, Color::Yellow}, {State::Focused, Color::Blue} } });
-	auto pSelectedHoverAndFocusSkin = ColorSkin::create({ .states = { {State::Default, Color::Red}, {State::Selected, Color::Pink}, {State::Hovered, Color::Yellow}, {State::Focused, Color::Blue} } });
+	auto pSelectedHoverAndFocusSkin = ColorSkin::create({ .states = { {State::Default, Color::Red}, {State::Selekted, Color::Pink}, {State::Hovered, Color::Yellow}, {State::Focused, Color::Blue} } });
 
-	auto pHoverWithFocusSkin = ColorSkin::create({ .states = {  {State::Selected, Color::Purple}, {State::Default, Color::Red}, {State::HoveredFocused, Color::Red}, {State::Hovered, Color::Yellow}, {State::Focused, Color::Blue} } });
+	auto pHoverWithFocusSkin = ColorSkin::create({ .states = {  {State::Selekted, Color::Purple}, {State::Default, Color::Red}, {State::HoveredFocused, Color::Red}, {State::Hovered, Color::Yellow}, {State::Focused, Color::Blue} } });
 
-/*
-	float redMtx[9] = {	0.14f,0.1f,0.14f,
-						0.1f, 0.0f, 0.1f,
-						0.14f, 0.1f, 0.14f};
-	
-	float blueMtx[9] = {0.15f, 0.15f, 0.15f, 0, 0.4f, 0, 0,0,0};
-	float greenMtx[9] = {0,0,0, 0,0.7f,0, 0,0,0};
-
-	auto pCanvas1 = SoftSurface::create({ .canvas = true, .format = PixelFormat::BGRX_8_sRGB, .size = {320,200} } );
-	auto pCanvas2 = SoftSurface::create({ .canvas = true, .format = PixelFormat::BGRX_8_sRGB, .size = {320,200} } );
-
-	pCanvas1->fill( Color::Black );
-	pCanvas2->fill( Color::Black );
-
-	
-	int dirX = 64, dirY = 64;
-
-	CoordSPX ball = {0,0};
-*/
 
 	//------------------------------------------------------
 	// Program Main Loop
 	//------------------------------------------------------
 
 	auto pGradient = Gradyent::create(Color::Black, Color::White, Color::White, Color::Red );
-	
-	
+
+	auto p16bitCanvas = SoftSurface::create({ .canvas = true, .format = PixelFormat::RGB_555_bigendian, .size = {240,240} });
+
 	while( !bQuit )
 	{
 		// Loop through SDL events, translate them to WonderGUI events
@@ -248,205 +206,42 @@ int main ( int argc, char** argv )
 		
 		pGfxDevice->beginRender();
 		pGfxDevice->beginCanvasUpdate(pCanvas);
-		
-		pGfxDevice->fill(Color8::Black);
-		
-		//
 
-//		pGfxDevice->setTint( RectSPX(0,0,512,512)*64, pGradient);
-//		pGfxDevice->fill( RectSPX(50,50,100,100)*64, Color::White );
-		
-/*
-		 pFocusSkin->_render(pGfxDevice, RectSPX(5, 5, 20, 20) * 64, 64, State::HoveredFocused);
-		 pHoverSkin->_render(pGfxDevice, RectSPX(5, 30, 20, 20) * 64, 64, State::HoveredFocused);
-		 pHoverAndFocusSkin->_render(pGfxDevice, RectSPX(5, 55, 20, 20) * 64, 64, State::SelectedHoveredFocused);
-		 pSelectedHoverAndFocusSkin->_render(pGfxDevice, RectSPX(5, 80, 20, 20) * 64, 64, State::SelectedHoveredFocused);
-		 pHoverWithFocusSkin->_render(pGfxDevice, RectSPX(5, 105, 20, 20) * 64, 64, State::SelectedHoveredFocused);
-*/
-		
-		 pGfxDevice->setBlitSource(pSRGBSurface);
-//		 pGfxDevice->blit({ 0,0 });
+		pGfxDevice->fill(Color8::White);
 
-//		 pGfxDevice->rotScaleBlit(RectSPX(128, 128, 256, 256) * 64, 45, 0.5f);
+		//================= BEGIN TEST CODE ==================================
 
-		 for (int i = 0; i < 5; i++)
-		 {
-			 RectF rect = { 10.f + i * 25.f, 10.f + i * 0.25f, 20.f, 10.f };
+		RectSPX updateRects[2] = {	{ 0,0,240*64,120*64},
+									{ 0,120*64,240*64,120*64}
+		};
 
-			 for (int j = 0; j < 5; j++)
-			 {
-				 pGfxDevice->fill(RectSPX(rect * 64), Color::White);
-				 rect.y += 12.f;
-				 rect.x += 0.25f;
-			 }
-		 }
+		RectSPX clippedRects[2] = {	{ 32*64,123*64,100*64,100*64},
+									{ 160*64,150*64,70*64,60*64}
+		};
 
 
-		//
-		
-/*
-		ball.x += dirX;
-		ball.y += dirY;
-		
-		if( ball.x > 320*64 || ball.x < 0 )
-			dirX = -dirX;
+		pGfxDevice->beginCanvasUpdate(p16bitCanvas, 2, updateRects);
+		pGfxDevice->setBlendMode(BlendMode::Replace);
+		pGfxDevice->fill(HiColor::Transparent);
+		pGfxDevice->setBlendMode(BlendMode::Blend);
+		pGfxDevice->setTintGradient({0,0,240*64,240*64}, Gradient(Color::Black, Color::White, Color::White, Color::Black));
+		pGfxDevice->drawElipse({0,0,240*64,240*64}, 100*64, HiColor(0,0,2048));
 
-		if( ball.y > 200*64 || ball.y < 0 )
-			dirY = -dirY;
-
-		
-		
-		pGfxDevice->setBlurMatrices(64*4, redMtx, greenMtx, blueMtx);
-		
-		pGfxDevice->beginCanvasUpdate(pCanvas1);
-		pGfxDevice->fill( RectSPX(ball.x,ball.y,20*64,20*64), Color::White );
-
-//		pGfxDevice->fill( RectSPX(0,1,20,20)*64, Color::White );
+		pGfxDevice->setClipList(2, clippedRects);
+		pGfxDevice->drawElipse({0,0,240*64,240*64}, 100*64, HiColor(0,0,2048));
 
 		pGfxDevice->endCanvasUpdate();
-		
-		pGfxDevice->beginCanvasUpdate(pCanvas2);
-		pGfxDevice->setBlitSource(pCanvas1);
-		
-		pGfxDevice->rotScaleBlur({0,0,320*64,200*64}, 7.f, 1.06f);
-		
-		//		pGfxDevice->blur( {0,0} );
-		pGfxDevice->endCanvasUpdate();
 
-		pGfxDevice->setBlitSource(pCanvas2);
-		pGfxDevice->blit( {0,0} );
-		
-		std::swap(pCanvas1, pCanvas2);
-
-*/
-		//
-/*
-		for( int i = 0 ; i < GfxFlip_size ; i++ )
-		{
-			RectI canvas = RectSPX( 4, i * 22, 20, 16 )*64;
-			
-			pGfxDevice->fill( canvas, Color8::Blue );
-	
-			RectI flippedCanvas = { canvas.x+22*64, canvas.y, Util::flipSize({canvas.w, canvas.h}, (GfxFlip) i ) };
-
-			pGfxDevice->fill( flippedCanvas, Color8::Blue );
-
-			RectI unflippedCanvas = { canvas.x+44*64, canvas.y, Util::unflipSize(flippedCanvas, (GfxFlip) i ) };
-
-			pGfxDevice->fill( unflippedCanvas, Color8::Blue );
-
-			
-			RectI org1 = RectSPX( 2,2,5,5 )*64;
-			RectI org2 = RectSPX( 13,2,5,5 )*64;
-
-			pGfxDevice->fill( org1 + canvas.pos(), Color8::Red );
-			pGfxDevice->fill( org2 + canvas.pos(), Color8::Green );
-
-			RectI flipped1 = Util::flipRect(org1, (GfxFlip)i, canvas);
-			RectI flipped2 = Util::flipRect(org2, (GfxFlip)i, canvas);
-
-			pGfxDevice->fill( flipped1 + flippedCanvas.pos(), Color8::Red );
-			pGfxDevice->fill( flipped2 + flippedCanvas.pos(), Color8::Green );
-
-			RectI unflipped1 = Util::unflipRect(flipped1, (GfxFlip)i, flippedCanvas);
-			RectI unflipped2 = Util::unflipRect(flipped2, (GfxFlip)i, flippedCanvas);
-
-			pGfxDevice->fill( unflipped1 + unflippedCanvas.pos(), Color8::Red );
-			pGfxDevice->fill( unflipped2 + unflippedCanvas.pos(), Color8::Green );
-
-			
-		}
-*/		
-		
-/*
- 
- 		pFont->setSize(10*64);
-		
-		pPrinter->setLineWidth(640*3*64);
-		pPrinter->resetCursor();
-		pPrinter->print("Hello from Printer!\n");
-		pPrinter->printAligned(Placement::Center, "This text should be centered, one line down!");
-
-		pPrinter->crlf();
-		pPrinter->print("First part of text,");
-		pPrinter->print(" second part of text on same line.");
-		
-		RectSPX box = { 20*64, 300*64, 640*64, 60*64 };
-
-		pGfxDevice->fill(box, HiColor::Black);
-		
-		pPrinter->printInBox(box, Placement::Center, "Multiline text that is\naligned inside a box.");
-		
-		pPrinter->crlf();
-		pPrinter->print("Yet another line.\n");
-		
-		pPrinter->printAt(box.pos(), "A little text");
-		
-		pPrinter->print("And another (one).");
-
-		pPrinter->setLineWidth(100*64);
-		pPrinter->printWrapping("This not so very long texts should be wrapping automatically every 100 pixels.\nThis is line two.", 20*64);
- */
-
-		
-/*
-		for( int y = 0 ; y < 17 ; y++ )
-		{
-			for( int x = 0 ; x < 17 ; x++ )
-			{
-				pGfxDevice->fill( RectI((4+x*16)*64+y*4,(4+y*16)*64+x*4,10*64,10*64), HiColor(4096,0,0,4096) );
-			}
-		}
-
-		pGfxDevice->fill( RectI((18*16)*64,0, 64*10, 64*300), HiColor(4096/16,0,0,4096) );
-*/
-		
-/*
-		auto pHWCanvas = SoftSurface::create( { .canvas = true, .format = PixelFormat::RGB_555_bigendian, .size = {256,256}} );
-		pHWCanvas->fill(Color8::Green);
-
-		pGfxDevice->beginCanvasUpdate(pHWCanvas);
-		pGfxDevice->setTintGradient( {0,0,256*64,256*64}, Gradient(Placement::West, HiColor::Black, HiColor::White) );
-		pGfxDevice->fill(HiColor::White);
-		pGfxDevice->endCanvasUpdate();
-
-		auto pHWCanvas2 = SoftSurface::create( { .canvas = true, .format = PixelFormat::RGB_565_bigendian, .size = {256,256}} );
-		pHWCanvas2->fill(Color8::Green);
-
- 
- 		pGfxDevice->beginCanvasUpdate(pHWCanvas2);
-		pGfxDevice->setTintGradient( {0,0,256*64,256*64}, Gradient(Placement::West, HiColor::Black, HiColor::White) );
-		pGfxDevice->fill(HiColor::White);
-		pGfxDevice->endCanvasUpdate();
-
-
-		pGfxDevice->setBlitSource(pHWCanvas);
+		pGfxDevice->setBlitSource(p16bitCanvas);
 		pGfxDevice->blit({0,0});
-		
-		pGfxDevice->setBlitSource(pHWCanvas2);
-		pGfxDevice->blit({0,256*64});
 
-		pGfxDevice->setBlitSource( pSRGBSurface );
-		pGfxDevice->blit({0,10*64});
-*/
-		
+
+		//================== END TEST CODE ====================================
+
 		pGfxDevice->endCanvasUpdate();
 		pGfxDevice->endRender();
 
-/*
-		uint8_t * pScreen = (uint8_t*) pWinSurf->pixels;
-		for( int y = 0 ; y < 10 ; y++ )
-		{
-			for( int x = 0 ; x < 256 ; x++ )
-			{
-				* pScreen++ = x;
-				* pScreen++ = x;
-				* pScreen++ = x;
-				* pScreen++ = x;
-			}
-			pScreen += pWinSurf->pitch - 256*4;
-		}
-*/
+
 		SDL_UnlockSurface(pWinSurf);
 
 		SDL_UpdateWindowSurface( pWin );

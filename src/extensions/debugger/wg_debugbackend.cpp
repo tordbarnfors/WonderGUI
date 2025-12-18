@@ -1,0 +1,280 @@
+/*=========================================================================
+
+                             >>> WonderGUI <<<
+
+  This file is part of Tord Bärnfors' WonderGUI UI Toolkit and copyright
+  Tord Bärnfors, Sweden [mail: first name AT barnfors DOT c_o_m].
+
+                                -----------
+
+  The WonderGUI UI Toolkit is free software; you can redistribute
+  this file and/or modify it under the terms of the GNU General Public
+  License as published by the Free Software Foundation; either
+  version 2 of the License, or (at your option) any later version.
+
+                                -----------
+
+  The WonderGUI UI Toolkit is also available for use in commercial
+  closed source projects under a separate license. Interested parties
+  should contact Bärnfors Technology AB [www.barnfors.com] for details.
+
+=========================================================================*/
+#include <wg_debugbackend.h>
+
+#include <wg_dummyinfopanel.h>
+#include <windows/wg_msglogviewer.h>
+#include <windows/wg_objectinspector.h>
+#include <windows/wg_objectlist.h>
+#include <windows/wg_skininspector.h>
+#include <windows/wg_surfaceinspector.h>
+#include <windows/wg_textstyleinspector.h>
+#include <windows/wg_widgetinspector.h>
+#include <windows/wg_widgettreeview.h>
+
+#include <objectinfopanels/wg_objectinfopanel.h>
+#include <objectinfopanels/wg_widgetinfopanel.h>
+#include <objectinfopanels/wg_fillerinfopanel.h>
+#include <objectinfopanels/wg_buttoninfopanel.h>
+#include <objectinfopanels/wg_textdisplayinfopanel.h>
+#include <objectinfopanels/wg_texteditorinfopanel.h>
+#include <objectinfopanels/wg_containerinfopanel.h>
+
+#include <objectinfopanels/wg_panelinfopanel.h>
+#include <objectinfopanels/wg_packpanelinfopanel.h>
+#include <objectinfopanels/wg_flexpanelinfopanel.h>
+#include <objectinfopanels/wg_scrollpanelinfopanel.h>
+#include <objectinfopanels/wg_twoslotpanelinfopanel.h>
+
+#include <objectinfopanels/wg_capsuleinfopanel.h>
+#include <objectinfopanels/wg_sizecapsuleinfopanel.h>
+#include <objectinfopanels/wg_reordercapsuleinfopanel.h>
+#include <objectinfopanels/wg_selectcapsuleinfopanel.h>
+#include <objectinfopanels/wg_labelcapsuleinfopanel.h>
+#include <objectinfopanels/wg_paddingcapsuleinfopanel.h>
+#include <objectinfopanels/wg_renderlayercapsuleinfopanel.h>
+#include <objectinfopanels/wg_scalecapsuleinfopanel.h>
+#include <objectinfopanels/wg_canvascapsuleinfopanel.h>
+
+
+#include <objectinfopanels/wg_skininfopanel.h>
+
+#include <slotinfopanels/wg_staticslotinfopanel.h>
+#include <slotinfopanels/wg_panelslotinfopanel.h>
+#include <slotinfopanels/wg_packpanelslotinfopanel.h>
+#include <slotinfopanels/wg_flexpanelslotinfopanel.h>
+#include <slotinfopanels/wg_twoslotpanelslotinfopanel.h>
+
+#include <componentinfopanels/wg_statictextinfopanel.h>
+#include <componentinfopanels/wg_editabletextinfopanel.h>
+#include <componentinfopanels/wg_iconinfopanel.h>
+#include <componentinfopanels/wg_scrollerinfopanel.h>
+#include <componentinfopanels/wg_glowinfopanel.h>
+
+#include <wg_panel.h>
+#include <wg_packpanel.h>
+#include <wg_flexpanel.h>
+#include <wg_stateskin.h>
+#include <wg_msg.h>
+
+
+namespace wg
+{
+
+	const TypeInfo DebugBackend::TYPEINFO = { "DebugBackend", &Object::TYPEINFO };
+
+
+	Widget_p factory( Object *)
+	{
+		return Widget_p();
+	}
+
+	//____ constructor _____________________________________________________________
+
+	DebugBackend::DebugBackend()
+	{
+
+		m_objectInfoFactories[&Object::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, IDebugger* pHolder, Object* pObject) { return (Widget_p) ObjectInfoPanel::create(panelBP, pHolder, pObject); };
+		m_objectInfoFactories[&Widget::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, IDebugger* pHolder, Object* pObject) { return (Widget_p) WidgetInfoPanel::create(panelBP, pHolder, (Widget*) pObject); };
+		m_objectInfoFactories[&Filler::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, IDebugger* pHolder, Object* pObject) { return (Widget_p) FillerInfoPanel::create(panelBP, pHolder, (Filler*)pObject); };
+		m_objectInfoFactories[&TextDisplay::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, IDebugger* pHolder, Object* pObject) { return (Widget_p)TextDisplayInfoPanel::create(panelBP, pHolder, (TextDisplay*)pObject); };
+		m_objectInfoFactories[&TextEditor::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, IDebugger* pHolder, Object* pObject) { return (Widget_p)TextEditorInfoPanel::create(panelBP, pHolder, (TextEditor*)pObject); };
+		m_objectInfoFactories[&Button::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, IDebugger* pHolder, Object* pObject) { return (Widget_p)ButtonInfoPanel::create(panelBP, pHolder, (Button*)pObject); };
+
+		m_objectInfoFactories[&Container::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, IDebugger* pHolder, Object* pObject) { return (Widget_p)ContainerInfoPanel::create(panelBP, pHolder, (Container*)pObject); };
+		m_objectInfoFactories[&Panel::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, IDebugger* pHolder, Object* pObject) { return (Widget_p)PanelInfoPanel::create(panelBP, pHolder, (Panel*)pObject); };
+		m_objectInfoFactories[&PackPanel::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, IDebugger* pHolder, Object* pObject) { return (Widget_p)PackPanelInfoPanel::create(panelBP, pHolder, (PackPanel*)pObject); };
+		m_objectInfoFactories[&FlexPanel::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, IDebugger* pHolder, Object* pObject) { return (Widget_p)FlexPanelInfoPanel::create(panelBP, pHolder, (FlexPanel*)pObject); };
+		m_objectInfoFactories[&TwoSlotPanel::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, IDebugger* pHolder, Object* pObject) { return (Widget_p)TwoSlotPanelInfoPanel::create(panelBP, pHolder, (TwoSlotPanel*)pObject); };
+		m_objectInfoFactories[&ScrollPanel::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, IDebugger* pHolder, Object* pObject) { return (Widget_p)ScrollPanelInfoPanel::create(panelBP, pHolder, (ScrollPanel*)pObject); };
+
+		m_objectInfoFactories[&Capsule::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, IDebugger* pHolder, Object* pObject) { return (Widget_p)CapsuleInfoPanel::create(panelBP, pHolder, (Capsule*)pObject); };
+		m_objectInfoFactories[&SizeCapsule::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, IDebugger* pHolder, Object* pObject) { return (Widget_p)SizeCapsuleInfoPanel::create(panelBP, pHolder, (SizeCapsule*)pObject); };
+		m_objectInfoFactories[&ReorderCapsule::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, IDebugger* pHolder, Object* pObject) { return (Widget_p)ReorderCapsuleInfoPanel::create(panelBP, pHolder, (ReorderCapsule*)pObject); };
+		m_objectInfoFactories[&SelectCapsule::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, IDebugger* pHolder, Object* pObject) { return (Widget_p)SelectCapsuleInfoPanel::create(panelBP, pHolder, (SelectCapsule*)pObject); };
+		m_objectInfoFactories[&LabelCapsule::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, IDebugger* pHolder, Object* pObject) { return (Widget_p)LabelCapsuleInfoPanel::create(panelBP, pHolder, (LabelCapsule*)pObject); };
+		m_objectInfoFactories[&PaddingCapsule::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, IDebugger* pHolder, Object* pObject) { return (Widget_p)PaddingCapsuleInfoPanel::create(panelBP, pHolder, (PaddingCapsule*)pObject); };
+		m_objectInfoFactories[&RenderLayerCapsule::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, IDebugger* pHolder, Object* pObject) { return (Widget_p)RenderLayerCapsuleInfoPanel::create(panelBP, pHolder, (RenderLayerCapsule*)pObject); };
+		m_objectInfoFactories[&ScaleCapsule::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, IDebugger* pHolder, Object* pObject) { return (Widget_p)ScaleCapsuleInfoPanel::create(panelBP, pHolder, (ScaleCapsule*)pObject); };
+		m_objectInfoFactories[&CanvasCapsule::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, IDebugger* pHolder, Object* pObject) { return (Widget_p)CanvasCapsuleInfoPanel::create(panelBP, pHolder, (CanvasCapsule*)pObject); };
+
+
+		m_objectInfoFactories[&Skin::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, IDebugger* pHolder, Object* pObject) { return (Widget_p)SkinInfoPanel::create(panelBP, pHolder, (Skin*)pObject); };
+
+		m_slotInfoFactories[&StaticSlot::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, IDebugger* pHolder, StaticSlot* pSlot) { return (Widget_p) StaticSlotInfoPanel::create(panelBP, pHolder, pSlot); };
+		m_slotInfoFactories[&PanelSlot::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, IDebugger* pHolder, StaticSlot* pSlot) { return (Widget_p)PanelSlotInfoPanel::create(panelBP, pHolder, pSlot); };
+		m_slotInfoFactories[&PackPanelSlot::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, IDebugger* pHolder, StaticSlot* pSlot) { return (Widget_p)PackPanelSlotInfoPanel::create(panelBP, pHolder, pSlot); };
+		m_slotInfoFactories[&FlexPanelSlot::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, IDebugger* pHolder, StaticSlot* pSlot) { return (Widget_p)FlexPanelSlotInfoPanel::create(panelBP, pHolder, pSlot); };
+		m_slotInfoFactories[&TwoSlotPanel::Slot::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, IDebugger* pHolder, StaticSlot* pSlot) { return (Widget_p)TwoSlotPanelSlotInfoPanel::create(panelBP, pHolder, pSlot); };
+
+		m_componentInfoFactories[&StaticText::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, IDebugger* pHolder, Component* pComponent) { return (Widget_p)StaticTextInfoPanel::create(panelBP, pHolder, (StaticText*)pComponent); };
+		m_componentInfoFactories[&EditableText::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, IDebugger* pHolder, Component* pComponent) { return (Widget_p)EditableTextInfoPanel::create(panelBP, pHolder, (EditableText*)pComponent); };
+		m_componentInfoFactories[&Icon::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, IDebugger* pHolder, Component* pComponent) { return (Widget_p)IconInfoPanel::create(panelBP, pHolder, (Icon*)pComponent); };
+		m_componentInfoFactories[&Scroller::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, IDebugger* pHolder, Component* pComponent) { return (Widget_p)ScrollerInfoPanel::create(panelBP, pHolder, (Scroller*)pComponent); };
+		m_componentInfoFactories[&Glow::TYPEINFO] = [](const DebugPanel::Blueprint& panelBP, IDebugger* pHolder, Component* pComponent) { return (Widget_p)GlowInfoPanel::create(panelBP, pHolder, (Glow*)pComponent); };
+
+		m_ignoreClasses.push_back(&DynamicSlot::TYPEINFO);
+		m_ignoreClasses.push_back(&Receiver::TYPEINFO);
+		m_ignoreClasses.push_back(&Component::TYPEINFO);
+		m_ignoreClasses.push_back(&DynamicText::TYPEINFO);
+		m_ignoreClasses.push_back(&StateSkin::TYPEINFO);
+	}
+
+	//____ typeInfo() _________________________________________________________
+
+	const TypeInfo& DebugBackend::typeInfo(void) const
+	{
+		return TYPEINFO;
+	}
+
+	//____ setBlueprint() ________________________________________________________
+
+	void DebugBackend::setBlueprint(const IDebugger::Blueprint& blueprint)
+	{
+		m_blueprint = blueprint;
+	}
+
+
+	//____ blueprint() ___________________________________________________________
+
+	const IDebugger::Blueprint& DebugBackend::blueprint()
+	{
+		return m_blueprint;
+	}
+
+	//____ createObjectInfoPanel() ____________________________________________________
+
+	Widget_p DebugBackend::createObjectInfoPanel(const TypeInfo * pType, Object * pObject )
+	{
+
+		auto it = m_objectInfoFactories.find( pType );
+		if( it == m_objectInfoFactories.end() )
+		{
+			// Check known classes we should ignore.
+
+			if (std::find(m_ignoreClasses.begin(), m_ignoreClasses.end(), pType) != m_ignoreClasses.end())
+				return nullptr;
+
+			// Unknown class
+
+			return DummyInfoPanel::create(m_blueprint,this, pType->className,pObject);
+		}
+
+		return it->second(m_blueprint,this,pObject);
+	}
+
+	//____ createSlotInfoPanel() ____________________________________________________
+
+	Widget_p DebugBackend::createSlotInfoPanel(const TypeInfo * pType, StaticSlot * pSlot )
+	{
+
+		auto it = m_slotInfoFactories.find( pType );
+		if( it == m_slotInfoFactories.end() )
+		{
+			// Check known classes we should ignore.
+
+			if (std::find(m_ignoreClasses.begin(), m_ignoreClasses.end(), pType) != m_ignoreClasses.end())
+				return nullptr;
+
+			// Unknown class
+
+			return DummyInfoPanel::create(m_blueprint,this, pType->className,pSlot);
+		}
+
+		return it->second(m_blueprint,this,pSlot);
+	}
+
+	//____ createComponentInfoPanel() ____________________________________________________
+
+	Widget_p DebugBackend::createComponentInfoPanel(const TypeInfo* pType, Component* pComponent)
+	{
+
+		auto it = m_componentInfoFactories.find(pType);
+		if (it == m_componentInfoFactories.end())
+		{
+			// Check known classes we should ignore.
+
+			if (std::find(m_ignoreClasses.begin(), m_ignoreClasses.end(), pType) != m_ignoreClasses.end())
+				return nullptr;
+
+			// Unknown class
+
+			return DummyInfoPanel::create(m_blueprint,this, pType->className,pComponent);
+		}
+
+		return it->second(m_blueprint, this, pComponent);
+	}
+
+	//____ createObjectInspector() ________________________________________________
+
+	ObjectInspector_p DebugBackend::createObjectInspector(Object* pObject)
+	{
+		return ObjectInspector::create(m_blueprint, this, pObject);
+	}
+
+	//____ createWidgetInspector() ________________________________________________
+
+	WidgetInspector_p DebugBackend::createWidgetInspector(Widget* pWidget)
+	{
+		return WidgetInspector::create(m_blueprint, this, pWidget);
+	}
+
+	//____ createSkinInspector() ________________________________________________
+
+	SkinInspector_p DebugBackend::createSkinInspector(Skin* pSkin)
+	{
+		return SkinInspector::create(m_blueprint, this, pSkin);
+	}
+
+	//____ createWidgetTreeView() ____________________________________________
+
+	WidgetTreeView_p DebugBackend::createWidgetTreeView(Widget* pRoot)
+	{
+		return WidgetTreeView::create(m_blueprint, this, pRoot);
+	}
+
+	//____ createMsgLogViewer() ________________________________________________
+
+	MsgLogViewer_p DebugBackend::createMsgLogViewer()
+	{
+		return MsgLogViewer::create(m_blueprint, this);
+	}
+
+	//____ setObjectSelectedCallback() ________________________________________
+
+	void DebugBackend::setObjectSelectedCallback(std::function<void(Object*,Object*)> pCallback)
+	{
+		m_objectSelectedCallback = pCallback;
+	}
+
+	//____ objectSelected() ____________________________________________________
+
+	void DebugBackend::objectSelected(Object* pSelected, Object* pCaller)
+	{
+		if (m_objectSelectedCallback)
+			m_objectSelectedCallback(pSelected, pCaller);
+	}
+
+
+
+} // namespace wg
+

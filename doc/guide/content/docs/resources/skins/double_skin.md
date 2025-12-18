@@ -25,7 +25,7 @@ Normally any content is placed inside frontSkins content area, but if *padding* 
 
 Setting *margin* in DoubleSkin works as normal, adding to the margin of the contained skins.
 
-Setting *layer* changes layer for both contained skins, but any of them will override it their own *layer* if set.
+Setting *layer* changes layer for both contained skins, but any of them will override it with their own *layer* if set.
 
 ## Examples
 

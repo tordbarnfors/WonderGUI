@@ -1,22 +1,22 @@
 /*=========================================================================
 
-						 >>> WonderGUI <<<
+                             >>> WonderGUI <<<
 
-  This file is part of Tord Jansson's WonderGUI Graphics Toolkit
-  and copyright (c) Tord Jansson, Sweden [tord.jansson@gmail.com].
+  This file is part of Tord Bärnfors' WonderGUI UI Toolkit and copyright
+  Tord Bärnfors, Sweden [mail: first name AT barnfors DOT c_o_m].
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is free software; you can redistribute
+  The WonderGUI UI Toolkit is free software; you can redistribute
   this file and/or modify it under the terms of the GNU General Public
   License as published by the Free Software Foundation; either
   version 2 of the License, or (at your option) any later version.
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is also available for use in commercial
-  closed-source projects under a separate license. Interested parties
-  should contact Tord Jansson [tord.jansson@gmail.com] for details.
+  The WonderGUI UI Toolkit is also available for use in commercial
+  closed source projects under a separate license. Interested parties
+  should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
 #ifndef WG_COLORSKIN_DOT_H
@@ -78,7 +78,7 @@ namespace wg
 		//.____ Creation __________________________________________
 
 		static ColorSkin_p	create( const Blueprint& blueprint );
-		static ColorSkin_p create(HiColor color,  Border contentBorder = Border() );
+		static ColorSkin_p create( HiColor color, Border padding = Border() );
 
 		//.____ Identification __________________________________________
 
@@ -102,15 +102,23 @@ namespace wg
 
 	protected:
 		ColorSkin(const Blueprint& blueprint );
-		~ColorSkin() {};
+		~ColorSkin();
 
-		void	_updateUnsetColors();
+		const HiColor&	_getColor(State state) const
+		{
+						int idxTabEntry = (state.index() & m_stateColorIndexMask) >> m_stateColorIndexShift;
+						int entry = m_pStateColorIndexTab[idxTabEntry];
+						return m_pStateColors[entry];
+		}
 
-		BlendMode	m_blendMode = BlendMode::Blend;
+		void *			m_pStateData;
 
-		Bitmask<uint32_t>	m_stateColorMask = 1;
+		BlendMode		m_blendMode = BlendMode::Blend;
 
-		HiColor		m_color[State::IndexAmount];
+		uint8_t			m_stateColorIndexMask;
+		uint8_t			m_stateColorIndexShift;
+		uint8_t*		m_pStateColorIndexTab;		// Table with index values into m_pStateColors for each mode (72) or less.
+		HiColor*		m_pStateColors;				// Contains colors for states.
 	};
 
 

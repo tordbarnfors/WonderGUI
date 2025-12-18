@@ -1,25 +1,24 @@
 /*=========================================================================
 
-						 >>> WonderGUI <<<
+                             >>> WonderGUI <<<
 
-  This file is part of Tord Jansson's WonderGUI Graphics Toolkit
-  and copyright (c) Tord Jansson, Sweden [tord.jansson@gmail.com].
+  This file is part of Tord Bärnfors' WonderGUI UI Toolkit and copyright
+  Tord Bärnfors, Sweden [mail: first name AT barnfors DOT c_o_m].
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is free software; you can redistribute
+  The WonderGUI UI Toolkit is free software; you can redistribute
   this file and/or modify it under the terms of the GNU General Public
   License as published by the Free Software Foundation; either
   version 2 of the License, or (at your option) any later version.
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is also available for use in commercial
-  closed-source projects under a separate license. Interested parties
-  should contact Tord Jansson [tord.jansson@gmail.com] for details.
+  The WonderGUI UI Toolkit is also available for use in commercial
+  closed source projects under a separate license. Interested parties
+  should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-
 #include <assert.h>
 #include <wg_stackpanel.h>
 #include <wg_util.h>
@@ -34,10 +33,10 @@ namespace wg
 	using namespace Util;
 
 	template class DynamicSlotVector<StackPanelSlot>;
-	template class Panel<StackPanelSlot>;
+	template class PanelTemplate<StackPanelSlot>;
 
 	const TypeInfo StackPanel::TYPEINFO = { "StackPanel", &Panel::TYPEINFO };
-	const TypeInfo StackPanelSlot::TYPEINFO = { "StackPanel::Slot", &DynamicSlot::TYPEINFO };
+	const TypeInfo StackPanelSlot::TYPEINFO = { "StackPanel::Slot", &PanelSlot::TYPEINFO };
 
 
 	//____ Slot::setMargin() _____________________________________________________
@@ -84,7 +83,7 @@ namespace wg
 
 	//____ constructor ____________________________________________________________
 
-	StackPanel::StackPanel() : Panel()
+	StackPanel::StackPanel() : PanelTemplate()
 	{
 		m_bSiblingsOverlap = true;
 	}
@@ -296,7 +295,7 @@ namespace wg
 		if( scale != m_scale )
 			m_defaultSize = _calcDefaultSize(scale);
 
-		Panel::_resize(size,scale);
+		PanelTemplate::_resize(size,scale);
 		_updateChildGeo(slots.begin(),slots.end(), false);
 	}
 

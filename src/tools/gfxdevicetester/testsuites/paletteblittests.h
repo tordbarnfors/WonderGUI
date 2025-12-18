@@ -18,13 +18,13 @@ public:
 
 	}
 
-	bool init(GfxDevice * pDevice, const RectI& canvas, WonderApp::Visitor * pAppVisitor)
+	bool init(GfxDevice * pDevice, const RectI& canvas, wapp::API * pAppAPI)
 	{
-		m_pLeaves = pAppVisitor->loadSurface("resources/blaetter.gif", pDevice->surfaceFactory(), { .sampleMethod = SampleMethod::Nearest } );
+		m_pLeaves = pAppAPI->loadSurface("resources/blaetter.gif", pDevice->surfaceFactory(), { .sampleMethod = SampleMethod::Nearest } );
 		if (!m_pLeaves)
 			return false;
 
-		m_pLeavesInterpolated = pAppVisitor->loadSurface("resources/blaetter.gif", pDevice->surfaceFactory(), { .sampleMethod = SampleMethod::Bilinear } );
+		m_pLeavesInterpolated = pAppAPI->loadSurface("resources/blaetter.gif", pDevice->surfaceFactory(), { .sampleMethod = SampleMethod::Bilinear } );
 		if (!m_pLeavesInterpolated)
 			return false;
 
@@ -45,7 +45,7 @@ public:
 
 	bool clearTint(GfxDevice* pDevice, const RectI& canvas)
 	{
-		pDevice->clearTint();
+		pDevice->clearTintmap();
 		return true;
 	}
 

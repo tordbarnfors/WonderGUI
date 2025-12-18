@@ -1,22 +1,22 @@
 /*=========================================================================
 
-						 >>> WonderGUI <<<
+                             >>> WonderGUI <<<
 
-  This file is part of Tord Jansson's WonderGUI Graphics Toolkit
-  and copyright (c) Tord Jansson, Sweden [tord.jansson@gmail.com].
+  This file is part of Tord Bärnfors' WonderGUI UI Toolkit and copyright
+  Tord Bärnfors, Sweden [mail: first name AT barnfors DOT c_o_m].
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is free software; you can redistribute
+  The WonderGUI UI Toolkit is free software; you can redistribute
   this file and/or modify it under the terms of the GNU General Public
   License as published by the Free Software Foundation; either
   version 2 of the License, or (at your option) any later version.
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is also available for use in commercial
-  closed-source projects under a separate license. Interested parties
-  should contact Tord Jansson [tord.jansson@gmail.com] for details.
+  The WonderGUI UI Toolkit is also available for use in commercial
+  closed source projects under a separate license. Interested parties
+  should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
 #ifndef WG_CANVASCAPSULE_DOT_H
@@ -28,7 +28,7 @@
 #include <wg_patches.h>
 #include <wg_canvaslayers.h>
 #include <wg_glow.h>
-#include <wg_gradient.h>
+#include <wg_tintmap.h>
 #include <wg_transitions.h>
 
 namespace wg
@@ -79,14 +79,14 @@ namespace wg
 			PointerStyle	pointer			= PointerStyle::Undefined;
 			int				renderLayer		= -1;
 			bool			scaleCanvas		= false;
-			bool			selectable		= true;
+			bool			selectable		= false;
 			Skin_p			skin;
 			bool			skinAroundCanvas = false;
 			bool			stickyFocus		= false;
 			SurfaceFactory_p surfaceFactory;
 			bool			tabLock			= false;
 			HiColor			tintColor		= HiColor::Undefined;
-			Gradient		tintGradient;
+			Tintmap_p		tintmap;
 			String			tooltip;
 			bool			usePickHandles = false;
 		};
@@ -119,9 +119,17 @@ namespace wg
 
 		void				setSkin(Skin* pSkin) override;
 
+		void				setSkinAroundCanvas(bool bSkin);
+		bool				isSkinAroundCanvas() const { return m_bSkinAroundCanvas; }
+
 		void				setTintColor(HiColor color, ColorTransition* pTransition = nullptr);
-		void				setTintGradient(const Gradient& gradient, ColorTransition* pTransition = nullptr);
+		inline HiColor		tintColor() { return m_tintColor; }
+
+		void				setTintmap(Tintmap* pTintmap, ColorTransition* pTransition = nullptr);
+		inline Tintmap_p	tintmap() { return m_pTintmap; }
+
 		void				setBlendMode(BlendMode mode);
+		inline BlendMode	blendMode() { return m_blendMode; }
 
 		void				setSurfaceFactory(SurfaceFactory* pFactory);
 		SurfaceFactory_p	surfaceFactory() const { return m_pFactory; }
@@ -138,10 +146,12 @@ namespace wg
 		void				setRenderLayer(int layer);
 		int					renderLayer() const { return m_renderLayer; }
 
-		
-		inline HiColor		tintColor() { return m_tintColor; }
-		inline Gradient		tintGradient() { return m_gradient; }
-		inline BlendMode	blendMode() { return m_blendMode; }
+		//.____ Content _____________________________________________
+
+		Surface_p			canvas() const { return m_pCanvas; }
+		Surface_p			glowCanvas() const { return m_pGlowCanvas; }
+
+		int					nbSideDisplays() const { return (int)m_sideDisplays.size(); }
 
 		//.____ Internal _________________________________________________
 
@@ -166,18 +176,17 @@ namespace wg
 			if( bp.tintColor != HiColor::Undefined )
 				m_tintColor	= bp.tintColor;
 
-			m_gradient		= bp.tintGradient;
+			m_pTintmap		= bp.tintmap;
 			m_bScaleCanvas  = bp.scaleCanvas;
 			m_placement		= bp.placement;
 			m_clearColor	= bp.clearColor;
 			
 			m_bSkinAroundCanvas = bp.skinAroundCanvas;
-
-			if( bp.child )
-				slot.setWidget(bp.child);
 			
 			glow._initFromBlueprint(bp.glow);
 
+			if (bp.child)
+				slot.setWidget(bp.child);
 		}
 		
 		virtual ~CanvasCapsule();
@@ -234,7 +243,7 @@ namespace wg
 		int					m_renderLayer = -1;
 
 		HiColor				m_tintColor = HiColor::White;
-		Gradient			m_gradient;
+		Tintmap_p			m_pTintmap;
 		BlendMode			m_blendMode = BlendMode::Blend;
 
 		PatchesSPX			m_patches;
@@ -250,14 +259,14 @@ namespace wg
 		HiColor				m_startTintColor;
 		HiColor				m_endTintColor;
 
-		Gradient			m_startGradient;
-		Gradient			m_endGradient;
+		Tintmap_p			m_pStartTintmap;
+		Tintmap_p			m_pEndTintmap;
 
 		ColorTransition_p	m_pTintColorTransition;
-		ColorTransition_p	m_pGradientTransition;
+		ColorTransition_p	m_pTintmapTransition;
 
 		int					m_tintColorTransitionProgress = 0;
-		int					m_gradientTransitionProgress = 0;
+		int					m_tintmapTransitionProgress = 0;
 	};
 
 

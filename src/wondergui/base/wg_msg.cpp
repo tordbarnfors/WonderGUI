@@ -1,25 +1,24 @@
 /*=========================================================================
 
-						 >>> WonderGUI <<<
+                             >>> WonderGUI <<<
 
-  This file is part of Tord Jansson's WonderGUI Graphics Toolkit
-  and copyright (c) Tord Jansson, Sweden [tord.jansson@gmail.com].
+  This file is part of Tord Bärnfors' WonderGUI UI Toolkit and copyright
+  Tord Bärnfors, Sweden [mail: first name AT barnfors DOT c_o_m].
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is free software; you can redistribute
+  The WonderGUI UI Toolkit is free software; you can redistribute
   this file and/or modify it under the terms of the GNU General Public
   License as published by the Free Software Foundation; either
   version 2 of the License, or (at your option) any later version.
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is also available for use in commercial
-  closed-source projects under a separate license. Interested parties
-  should contact Tord Jansson [tord.jansson@gmail.com] for details.
+  The WonderGUI UI Toolkit is also available for use in commercial
+  closed source projects under a separate license. Interested parties
+  should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-
 #include <wg_msg.h>
 #include <wg_key.h>
 #include <wg_widget.h>
@@ -796,39 +795,21 @@ namespace wg
 	{
 		return TYPEINFO;
 	}
-
-
-	//____ UnselectMsg _________________________________________________________
-
-	const TypeInfo UnselectMsg::TYPEINFO = { "UnselectMsg", &Msg::TYPEINFO };
-
-	UnselectMsg::UnselectMsg( Object * pSource )
-	{
-		m_type 			= MsgType::Unselect;
-		m_pSource 		= pSource;
-	}
-
-	const TypeInfo& UnselectMsg::typeInfo(void) const
-	{
-		return TYPEINFO;
-	}
-
-
 	
 	//____ ToggleMsg ______________________________________________
 
 	const TypeInfo ToggleMsg::TYPEINFO = { "ToggleMsg", &Msg::TYPEINFO };
 
-	ToggleMsg::ToggleMsg( Object * pSource, bool bSet )
+	ToggleMsg::ToggleMsg( Object * pSource, bool bChecked )
 	{
 		m_type = MsgType::Toggle;
 		m_pSource = pSource;
-		m_bSet = bSet;
+		m_bChecked = bChecked;
 	}
 
-	bool ToggleMsg::isSet() const
+	bool ToggleMsg::isChecked() const
 	{
-		return m_bSet;
+		return m_bChecked;
 	}
 
 	const TypeInfo& ToggleMsg::typeInfo(void) const
@@ -960,6 +941,39 @@ namespace wg
 	{
 		return TYPEINFO;
 	}
+
+	//____ SelectedMsg ________________________________________________________
+
+	const TypeInfo SelectedMsg::TYPEINFO = { "SelectedMsg", &Msg::TYPEINFO };
+
+	SelectedMsg::SelectedMsg(Object * pSource, std::vector<Widget_p>& selectedList)
+	{
+		m_type = MsgType::Selected;
+		m_pSource = pSource;
+		m_list = std::move(selectedList);
+	}
+
+	const TypeInfo& SelectedMsg::typeInfo(void) const
+	{
+		return TYPEINFO;
+	}
+
+	//____ UnselectedMsg ________________________________________________________
+
+	const TypeInfo UnselectedMsg::TYPEINFO = { "UnselectedMsg", &Msg::TYPEINFO };
+
+	UnselectedMsg::UnselectedMsg(Object * pSource, std::vector<Widget_p>& unselectedList)
+	{
+		m_type = MsgType::Unselected;
+		m_pSource = pSource;
+		m_list = std::move(unselectedList);
+	}
+
+	const TypeInfo& UnselectedMsg::typeInfo(void) const
+	{
+		return TYPEINFO;
+	}
+
 
 	//____ ItemMsg ________________________________________________________
 

@@ -26,11 +26,11 @@ WonderApp_p WonderApp::create()
 
 //____ init() _________________________________________________________________
 
-bool MyApp::init(Visitor* pVisitor)
+bool MyApp::init(wapp::API* pAPI)
 {
-	m_pAppVisitor = pVisitor;
+	m_pAppAPI = pAPI;
 
-	if (!_setupGUI(pVisitor))
+	if (!_setupGUI(pAPI))
 	{
 		printf("ERROR: Failed to setup GUI!\n");
 		return false;
@@ -45,7 +45,7 @@ bool MyApp::init(Visitor* pVisitor)
 
 bool MyApp::update()
 {
-	return true;
+	return m_pWindow != nullptr;
 }
 
 //____ exit() _________________________________________________________________
@@ -54,18 +54,24 @@ void MyApp::exit()
 {
 }
 
+//____ closeWindow() __________________________________________________________
+
+void MyApp::closeWindow(wapp::Window* pWindow)
+{
+	m_pWindow = nullptr;
+}
+
+
 
 //____ _setupGUI() ____________________________________________________________
 
-bool MyApp::_setupGUI(Visitor* pVisitor)
+bool MyApp::_setupGUI(wapp::API* pAPI)
 {
-	m_pWindow = pVisitor->createWindow({ .size = {800,700}, .title = "Font Generator" });
-
-	auto pRoot = m_pWindow->rootPanel();
+	m_pWindow = wapp::Window::create(pAPI, { .size = {800,700}, .title = "Font Generator" });
 
 	//
 
-	auto pFontBlob = pVisitor->loadBlob("resources/DroidSans.ttf");
+	auto pFontBlob = pAPI->loadBlob("resources/DroidSans.ttf");
 	auto pFont = FreeTypeFont::create(pFontBlob);
 
 	m_pTextStyle = TextStyle::create(WGBP(TextStyle,
@@ -89,14 +95,12 @@ bool MyApp::_setupGUI(Visitor* pVisitor)
 
 	//
 
-	if (!_loadSkins(pVisitor))
+	if (!_loadSkins(pAPI))
 		return false;
 
 	m_pLayout = PackLayout::create({ .wantedSize = PackLayout::WantedSize::Default,
 	.expandFactor = PackLayout::Factor::Weight, .shrinkFactor = PackLayout::Factor::Zero });
 
-	auto pPopupOverlay = PopupOverlay::create();
-	
 	
 	auto pBasePanel = PackPanel::create( { .axis = Axis::Y, .layout = m_pLayout });
 	
@@ -110,9 +114,7 @@ bool MyApp::_setupGUI(Visitor* pVisitor)
 
 	pBasePanel->setSlotWeight(0, 2, {0.f,1.f});
 
-	pPopupOverlay->mainSlot = pBasePanel;
-	
-	pRoot->slot = pPopupOverlay;
+	m_pWindow->mainCapsule()->slot = pBasePanel;
 
 	pSplitPanel->setSplit(0.3f);		// Needs to be done once it has the right size.
 	return true;
@@ -122,7 +124,7 @@ bool MyApp::_setupGUI(Visitor* pVisitor)
 
 bool MyApp::selectAndLoadTTF()
 {
-	auto selectedFile = m_pAppVisitor->openFileDialog("Select Font", "", {"*.ttf", "*.ttc", "*.otf"}, "Font Files");
+	auto selectedFile = m_pAppAPI->openFileDialog("Select Font", "", {"*.ttf", "*.ttc", "*.otf"}, "Font Files");
 
 	if (selectedFile.empty())
 		return false;
@@ -136,7 +138,7 @@ bool MyApp::selectAndLoadTTF()
 
 bool MyApp::loadTTF( const string& path)
 {
-	auto pBlob = m_pAppVisitor->loadBlob(path);
+	auto pBlob = m_pAppAPI->loadBlob(path);
 	
 	if( pBlob )
 	{
@@ -154,7 +156,7 @@ bool MyApp::saveBitmapFont()
 {
 //	static const char * filters[3] = { "*.*", "*.ttc", "*.otf" };
 	
-	std::string outputPath = m_pAppVisitor->saveFileDialog("Enter output name without extension", "", {}, "");
+	std::string outputPath = m_pAppAPI->saveFileDialog("Enter output name without extension", "", {}, "");
 
 	if( !outputPath.empty() )
 	{
@@ -485,7 +487,7 @@ Widget_p MyApp::createInputPanel()
 	pTopRow->setId( 2 );
 	
 	auto pLabel = TextDisplay::create( WGBP(TextDisplay,
-											_.display = WGBP(Text,
+											_.display = WGBP(DynamicText,
 															 _.style = m_pTextStyle,
 															 _.text = "Source: ",
 															 _.layout = m_pTextLayoutCentered )
@@ -493,12 +495,12 @@ Widget_p MyApp::createInputPanel()
 
 	auto pPath = TextDisplay::create( WGBP(TextDisplay,
 											 _.skin = m_pSectionSkin,
-											 _.display = WGBP(Text, _.style = m_pTextStyle, _.layout = m_pTextLayoutCentered)
+											 _.display = WGBP(DynamicText, _.style = m_pTextStyle, _.layout = m_pTextLayoutCentered)
 										   ) );
 	
 	auto pLoadButton = Button::create( WGBP(Button,
 											_.skin = m_pButtonSkin,
-											_.label = WGBP(Text, _.layout = m_pTextLayoutCentered, _.style = m_pTextStyle, _.text = "Select" )
+											_.label = WGBP(DynamicText, _.layout = m_pTextLayoutCentered, _.style = m_pTextStyle, _.text = "Select" )
 											));
 	
 	pTopRow->slots << pLabel;
@@ -513,7 +515,7 @@ Widget_p MyApp::createInputPanel()
 //	pBottomRow->setSizeBroker(m_pSizeBroker);
 
 	auto pSizeLabel = TextDisplay::create( WGBP(TextDisplay,
-												_.display = WGBP(Text,
+												_.display = WGBP(DynamicText,
 																 _.style = m_pTextStyle,
 																 _.text = "Size:",
 																 _.layout = m_pTextLayoutCentered )
@@ -533,7 +535,7 @@ Widget_p MyApp::createInputPanel()
 	}
 	
 	auto pModeLabel = TextDisplay::create( WGBP(TextDisplay,
-												_.display = WGBP(Text,
+												_.display = WGBP(DynamicText,
 																 _.style = m_pTextStyle,
 																 _.text = "Render mode:",
 																 _.layout = m_pTextLayoutCentered )
@@ -547,7 +549,7 @@ Widget_p MyApp::createInputPanel()
 										{ int(FreeTypeFont::RenderMode::BestShapes), String("BestShapes")} });
 	
 	auto pSRGBLabel = TextDisplay::create( WGBP(TextDisplay,
-												_.display = WGBP(Text,
+												_.display = WGBP(DynamicText,
 																 _.style = m_pTextStyle,
 																 _.text = "Stemdarkening:",
 																 _.layout = m_pTextLayoutCentered )
@@ -601,17 +603,17 @@ Widget_p MyApp::createCharsPanel()
 	
 	auto pWindow = ScrollPanel::create();
 
-	pWindow->scrollbarX.setBackground(BoxSkin::create(WGBP(BoxSkin,
+	pWindow->scrollbarX.setBackSkin(BoxSkin::create(WGBP(BoxSkin,
 		_.color = Color8::DarkOliveGreen,
 		_.outlineThickness = 1,
 		_.outlineColor = Color8::Black)));
-	pWindow->scrollbarX.setBar(m_pPlateSkin);
+	pWindow->scrollbarX.setBarSkin(m_pPlateSkin);
 
-	pWindow->scrollbarY.setBackground(BoxSkin::create(WGBP(BoxSkin,
+	pWindow->scrollbarY.setBackSkin(BoxSkin::create(WGBP(BoxSkin,
 		_.color = Color8::DarkOliveGreen,
 		_.outlineThickness = 1,
 		_.outlineColor = Color8::Black)));
-	pWindow->scrollbarY.setBar(m_pPlateSkin);
+	pWindow->scrollbarY.setBarSkin(m_pPlateSkin);
 
 	pWindow->setAutohideScrollbars(true, true);
 	pWindow->setSizeConstraints(SizeConstraint::GreaterOrEqual, SizeConstraint::GreaterOrEqual);
@@ -679,17 +681,17 @@ Widget_p MyApp::createOutputPanel()
 	auto pWindow = ScrollPanel::create();
 	pWindow->setSkin(m_pSectionSkin);
 	
-	pWindow->scrollbarX.setBackground(BoxSkin::create(WGBP(BoxSkin,
+	pWindow->scrollbarX.setBackSkin(BoxSkin::create(WGBP(BoxSkin,
 		_.color = Color8::DarkOliveGreen,
 		_.outlineThickness = 1,
 		_.outlineColor = Color8::Black)));
-	pWindow->scrollbarX.setBar(m_pPlateSkin);
+	pWindow->scrollbarX.setBarSkin(m_pPlateSkin);
 	
-	pWindow->scrollbarY.setBackground(BoxSkin::create(WGBP(BoxSkin,
+	pWindow->scrollbarY.setBackSkin(BoxSkin::create(WGBP(BoxSkin,
 		_.color = Color8::DarkOliveGreen,
 		_.outlineThickness = 1,
 		_.outlineColor = Color8::Black)));
-	pWindow->scrollbarY.setBar(m_pPlateSkin);
+	pWindow->scrollbarY.setBarSkin(m_pPlateSkin);
 	
 	pWindow->setAutohideScrollbars(true, false);
 	pWindow->setSizeConstraints(SizeConstraint::None, SizeConstraint::None);
@@ -714,14 +716,14 @@ Widget_p MyApp::createOutputPanel()
 
 //____ _loadSkins() ___________________________________________________________
 
-bool MyApp::_loadSkins(Visitor * pVisitor)
+bool MyApp::_loadSkins(wapp::API * pAPI)
 {
 	string path = "resources/greyskin/";
 
-	auto pPlateSurf = pVisitor->loadSurface(path + "plate.bmp");
-	auto pButtonSurf = pVisitor->loadSurface(path + "button.bmp");
-	auto pStateButtonSurf = pVisitor->loadSurface(path + "state_button.bmp");
-	auto pCheckBoxSurf = pVisitor->loadSurface(path + "checkbox.png");
+	auto pPlateSurf = pAPI->loadSurface(path + "plate.bmp");
+	auto pButtonSurf = pAPI->loadSurface(path + "button.bmp");
+	auto pStateButtonSurf = pAPI->loadSurface(path + "state_button.bmp");
+	auto pCheckBoxSurf = pAPI->loadSurface(path + "checkbox.png");
 
 	if (!pPlateSurf || !pButtonSurf || !pStateButtonSurf)
 		return false;
@@ -746,7 +748,7 @@ bool MyApp::_loadSkins(Visitor * pVisitor)
 		_.axis = Axis::X,
 		_.frame = 4,
 		_.padding = 4,
-		_.states = { State::Default, State::Hovered, State::Selected, State::SelectedHovered, State::Disabled }
+		_.states = { State::Default, State::Hovered, State::Checked, State::Checked + State::Hovered, State::Disabled }
 	));
 
 	m_pCheckBoxSkin = BlockSkin::create(WGBP(BlockSkin,
@@ -754,7 +756,7 @@ bool MyApp::_loadSkins(Visitor * pVisitor)
 		_.axis = Axis::Y,
 		_.frame = 3,
 //		_.defaultSize = { 12,12 },
-		_.states = { State::Default, State::Selected }
+		_.states = { State::Default, State::Checked }
 	));
 
 	m_pSectionSkin = BoxSkin::create(WGBP(BoxSkin,

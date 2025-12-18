@@ -1,25 +1,24 @@
 /*=========================================================================
 
-						 >>> WonderGUI <<<
+                             >>> WonderGUI <<<
 
-  This file is part of Tord Jansson's WonderGUI Graphics Toolkit
-  and copyright (c) Tord Jansson, Sweden [tord.jansson@gmail.com].
+  This file is part of Tord Bärnfors' WonderGUI UI Toolkit and copyright
+  Tord Bärnfors, Sweden [mail: first name AT barnfors DOT c_o_m].
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is free software; you can redistribute
+  The WonderGUI UI Toolkit is free software; you can redistribute
   this file and/or modify it under the terms of the GNU General Public
   License as published by the Free Software Foundation; either
   version 2 of the License, or (at your option) any later version.
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is also available for use in commercial
-  closed-source projects under a separate license. Interested parties
-  should contact Tord Jansson [tord.jansson@gmail.com] for details.
+  The WonderGUI UI Toolkit is also available for use in commercial
+  closed source projects under a separate license. Interested parties
+  should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-
 #include <wg_canvascapsule.h>
 #include <wg_canvasdisplay.h>
 
@@ -28,6 +27,8 @@
 #include <wg_util.h>
 
 #include <wg_boxskin.h>
+#include <wg_snapshottintmap.h>
+#include <wg_gradyent.h>
 
 namespace wg
 {
@@ -73,6 +74,16 @@ namespace wg
 		Capsule::setSkin(pSkin);
 	}
 
+	//____ setSkinAroundCanvas() _________________________________________________
+
+	void CanvasCapsule::setSkinAroundCanvas(bool bSkin)
+	{
+		if( bSkin != m_bSkinAroundCanvas )
+		{
+			m_bSkinAroundCanvas = bSkin;
+			_requestRender();
+		}
+	}
 
 	//____ setTintColor() ______________________________________________________
 
@@ -102,29 +113,29 @@ namespace wg
 		}
 	}
 
-	//____ setTintGradient() __________________________________________________
+	//____ setTintmap() __________________________________________________
 
-	void CanvasCapsule::setTintGradient(const Gradient& gradient, ColorTransition* pTransition)
+	void CanvasCapsule::setTintmap(Tintmap* pTintmap, ColorTransition* pTransition)
 	{
-		if (gradient != m_gradient)
+		if (pTintmap != m_pTintmap)
 		{
 			if (pTransition)
 			{
-				if (!m_pGradientTransition)
+				if (!m_pTintmapTransition)
 					_startReceiveUpdates();
 
-				m_pGradientTransition = pTransition;
-				m_gradientTransitionProgress = 0;
-				m_startGradient = m_gradient;
-				m_endGradient = gradient;
+				m_pTintmapTransition = pTransition;
+				m_tintmapTransitionProgress = 0;
+				m_pStartTintmap = m_pTintmap ? m_pTintmap : wg_static_cast<Tintmap_p>(Gradyent::create(HiColor::White, HiColor::White, HiColor::White, HiColor::White));
+				m_pEndTintmap = pTintmap;
 			}
 			else
 			{
-				if (m_pGradientTransition)
+				if (m_pTintmapTransition)
 					_stopReceiveUpdates();
 
-				m_pGradientTransition = nullptr;
-				m_gradient = gradient;
+				m_pTintmapTransition = nullptr;
+				m_pTintmap = pTintmap;
 				_requestRender();
 			}
 
@@ -311,7 +322,8 @@ namespace wg
 			SurfaceFactory* pFactory = m_pFactory ? m_pFactory : Base::defaultSurfaceFactory();
 			if (!pFactory)
 			{
-				//TODO: Error handling!
+				Base::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite,
+					"No surface factory available to create canvas surface.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 				return nullptr;
 			}
 
@@ -396,39 +408,28 @@ namespace wg
 			}
 		}
 
-		if (m_pGradientTransition)
+		if (m_pTintmapTransition)
 		{
-			int timestamp = m_gradientTransitionProgress + microPassed;
+			int timestamp = m_tintmapTransitionProgress + microPassed;
 
-			if (timestamp >= m_pGradientTransition->duration())
+			if (timestamp >= m_pTintmapTransition->duration())
 			{
-				m_gradientTransitionProgress = 0;
-				m_pGradientTransition = nullptr;
+				m_tintmapTransitionProgress = 0;
+				m_pTintmapTransition = nullptr;
 
-				if (m_gradient != m_endGradient)
-				{
-					m_gradient = m_endGradient;
-					_requestRender();
-				}
+				m_pTintmap = m_pEndTintmap;
+				m_pEndTintmap = nullptr;
+				m_pStartTintmap = nullptr;
+				_requestRender();
 
 				_stopReceiveUpdates();
 			}
 			else
 			{
-				m_gradientTransitionProgress = timestamp;
+				m_tintmapTransitionProgress = timestamp;
 
-				Gradient gradient;
-
-				gradient.topLeft = m_pGradientTransition->snapshot(timestamp, m_startGradient.topLeft, m_endGradient.topLeft);
-				gradient.topRight = m_pGradientTransition->snapshot(timestamp, m_startGradient.topRight, m_endGradient.topRight);
-				gradient.bottomLeft = m_pGradientTransition->snapshot(timestamp, m_startGradient.bottomLeft, m_endGradient.bottomLeft);
-				gradient.bottomRight = m_pGradientTransition->snapshot(timestamp, m_startGradient.bottomRight, m_endGradient.bottomRight);
-
-				if (gradient != m_gradient)
-				{
-					m_gradient = gradient;
-					_requestRender();
-				}
+				m_pTintmap = SnapshotTintmap::create( m_pStartTintmap, m_pEndTintmap, m_pTintmapTransition, timestamp );
+				_requestRender();
 			}
 		}
 	}
@@ -469,8 +470,8 @@ namespace wg
 
 		pDevice->setTintColor(m_tintColor);
 
-		if (m_gradient.isValid() )
-			pDevice->setTintGradient(canvasArea, m_gradient);
+		if (m_pTintmap)
+			pDevice->setTintmap(canvasArea, m_pTintmap);
 
 		pDevice->setBlitSource(m_pCanvas);
 		pDevice->stretchBlit(canvasArea);
@@ -485,8 +486,8 @@ namespace wg
 
 		pOutline2->_render(pDevice, seedArea, m_scale, m_state );
 */
-		if (m_gradient.isValid())
-			pDevice->clearTintGradient();
+		if (m_pTintmap)
+			pDevice->clearTintmap();
 
 		pDevice->setTintColor(c);
 		pDevice->setBlendMode(bm);
@@ -539,7 +540,7 @@ namespace wg
 
 		// We can't mask against canvas content if canvas is applied with some transparency.
 
-		if( m_tintColor.a != 4096 || (m_gradient.isValid() && !m_gradient.isOpaque()) )
+		if( m_tintColor.a != 4096 || (m_pTintmap && !m_pTintmap->isOpaque()) )
 			return;
 
 		//

@@ -1,27 +1,26 @@
 /*=========================================================================
 
-						 >>> WonderGUI <<<
+                             >>> WonderGUI <<<
 
-  This file is part of Tord Jansson's WonderGUI Graphics Toolkit
-  and copyright (c) Tord Jansson, Sweden [tord.jansson@gmail.com].
+  This file is part of Tord Bärnfors' WonderGUI UI Toolkit and copyright
+  Tord Bärnfors, Sweden [mail: first name AT barnfors DOT c_o_m].
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is free software; you can redistribute
+  The WonderGUI UI Toolkit is free software; you can redistribute
   this file and/or modify it under the terms of the GNU General Public
   License as published by the Free Software Foundation; either
   version 2 of the License, or (at your option) any later version.
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is also available for use in commercial
-  closed-source projects under a separate license. Interested parties
-  should contact Tord Jansson [tord.jansson@gmail.com] for details.
+  The WonderGUI UI Toolkit is also available for use in commercial
+  closed source projects under a separate license. Interested parties
+  should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-
 #include <wg_stateskin.h>
-#include <wg_util.h>
+#include <tuple>
 
 namespace wg
 {
@@ -38,78 +37,19 @@ namespace wg
 		return TYPEINFO;
 	}
 
-	//____ clearContentShift() ________________________________________________
-
-	void StateSkin::clearContentShift()
-	{
-		m_contentShiftStateMask = 1;			// Mode normal is set by default
-
-		for( int i = 0 ; i < State::IndexAmount ; i++ )
-			m_contentShift[i] = { 0,0 };
-
-		m_bContentShifting = false;
-	}
-
-	//____ setContentShift() ______________________________________________________
-
-	void StateSkin::setContentShift(State state, Coord shift)
-	{
-		int index = state;
-		m_contentShift[index] = shift;
-		m_contentShiftStateMask.setBit(index);
-
-		m_bContentShifting = true;				// Making it easy for us, just assume something will be shifting when this method is called.
-
-		_updateContentShift();
-	}
-
-	//____ setContentShift() _____________________________________________________
-
-	void StateSkin::setContentShift(std::initializer_list< std::pair<State, Coord> > stateShifts)
-	{
-		for (auto& shift : stateShifts)
-		{
-			int index = shift.first;
-			m_contentShift[index] = shift.second;
-			m_contentShiftStateMask.setBit(index);
-		}
-
-		m_bContentShifting = true;				// Making it easy for us, just assume something will be shifting when this method is called.
-
-		_updateContentShift();
-	}
-
 	//____ contentShift() ________________________________________________
 
 	Coord StateSkin::contentShift(State state) const
 	{
-		int index = state;
-		if (m_contentShiftStateMask.bit(index))
-			return m_contentShift[index];
-
-		return Coord();
+		return _getContentShift(state);
 	}
-
-	//____ _padding() _______________________________________________________
-/*
-	BorderSPX StateSkin::_padding(int scale, State state) const
-	{
-		BorderSPX b = align(ptsToSpx(m_padding,scale));
-		CoordSPX ofs = align(ptsToSpx(m_contentShift[state], scale));
-
-		b.left += ofs.x;
-		b.top += ofs.y;
-
-		return b;
-	}
-*/
 
 	//____ _contentBorder() _______________________________________________________
 
 	BorderSPX StateSkin::_contentBorder(int scale, State state) const
 	{
 		BorderSPX b = align(ptsToSpx(m_spacing, scale)) + align(ptsToSpx(m_padding, scale));
-		CoordSPX ofs = align(ptsToSpx(m_contentShift[state], scale));
+		CoordSPX ofs = align(ptsToSpx(_getContentShift(state), scale));
 
 		b.left += ofs.x;
 		b.top += ofs.y;
@@ -122,7 +62,7 @@ namespace wg
 
 	RectSPX StateSkin::_contentRect( const RectSPX& canvas, int scale, State state ) const
 	{
-		return canvas - align(ptsToSpx(m_spacing, scale)) - align(ptsToSpx(m_padding,scale)) + align(ptsToSpx(m_contentShift[state],scale));
+		return canvas - align(ptsToSpx(m_spacing, scale)) - align(ptsToSpx(m_padding,scale)) + align(ptsToSpx(_getContentShift(state),scale));
 	}
 
 	//____ _contentofs() __________________________________________________________
@@ -131,7 +71,7 @@ namespace wg
 	{
 		return align(ptsToSpx(Coord(m_spacing.left, m_spacing.top), scale)) +
 			   align(ptsToSpx(Coord(m_padding.left, m_padding.top), scale)) + 
-			   align(ptsToSpx(m_contentShift[state], scale));
+			   align(ptsToSpx(_getContentShift(state), scale));
 	}
 
 	//____ _dirtyRect() ______________________________________________________
@@ -140,24 +80,48 @@ namespace wg
 		float newValue2, float oldValue2, int newAnimPos, int oldAnimPos,
 		float* pNewStateFractions, float* pOldStateFractions) const
 	{
-		if (m_contentShift[newState] == m_contentShift[oldState])
+		if ( _getContentShift(newState) == _getContentShift(oldState) )
 			return RectSPX();
 		else
 			return canvas - align(ptsToSpx(m_spacing, scale)) + align(ptsToSpx(m_overflow, scale));
 	}
 
-	//____ _updateContentShift() _________________________________________________
+	//____ _bytesNeededForContentShiftData() __________________________________
 
-	void StateSkin::_updateContentShift()
+	int StateSkin::_bytesNeededForContentShiftData(int nbStates, const State* pStates)
 	{
-		for (int i = 0; i < State::IndexAmount; i++)
-		{
-			if ( !m_contentShiftStateMask.bit(i) )
-			{
-				int bestAlternative = bestStateIndexMatch(i, m_contentShiftStateMask);
-				m_contentShift[i] = m_contentShift[bestAlternative];
-			}
-		}
+		int indexTableSize;
+		int indexMask;
+		int indexShift;
+
+		std::tie(indexTableSize,indexMask,indexShift) = calcStateToIndexParam(nbStates,pStates);
+
+		return sizeof(Coord) * nbStates + alignUp8(indexTableSize);
 	}
+
+	//____ _prepareForContentShiftData() ___________________________________
+
+	Coord * StateSkin::_prepareForContentShiftData(void * pDest, int nbStates, const State * pStates)
+	{
+		int indexTableSize;
+		int indexMask;
+		int indexShift;
+
+		std::tie(indexTableSize,indexMask,indexShift) = calcStateToIndexParam(nbStates,pStates);
+
+		uint8_t * pIndex = (uint8_t*) pDest;
+		Coord * pShiftData = (Coord*) (pIndex + alignUp8(indexTableSize));
+
+		generateStateToIndexTab(pIndex, nbStates, pStates);
+
+		m_contentShiftIndexMask = (uint8_t) indexMask;
+		m_contentShiftIndexShift = (uint8_t) indexShift;
+
+		m_pContentShiftIndexTab = pIndex;
+		m_pContentShiftTable = pShiftData;
+
+		return pShiftData;
+	}
+
 
 } // namespace wg

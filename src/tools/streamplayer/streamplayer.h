@@ -19,21 +19,23 @@ class MyApp : public WonderApp
 {
 public:
 
-	bool		init(Visitor* pVisitor) override;
+	bool		init(wapp::API* pAPI) override;
 	bool		update() override;
 	void		exit() override;
+
+	void		closeWindow(wapp::Window* pWindow) override;
 
 
 private:
 
-	bool			_setupGUI(Visitor* pVisitor);
+	bool			_setupGUI(wapp::API* pAPI);
 	bool			_loadStream(std::string path);
 
 	bool			_setupStreamPlaying();
 
 
-	WonderApp::Visitor * m_pAppVisitor = nullptr;
-	Window_p			m_pWindow = nullptr;
+	wapp::API * m_pAppAPI = nullptr;
+	wapp::Window_p	m_pWindow = nullptr;
 	
 	TextStyle_p		m_pTextStyle;
 	TextStyle_p		m_pLabelStyle;

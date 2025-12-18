@@ -12,13 +12,13 @@ public:
 
 	}
 
-	bool init(GfxDevice * pDevice, const RectI& canvas, WonderApp::Visitor * pAppVisitor)
+	bool init(GfxDevice * pDevice, const RectI& canvas, wapp::API * pAppAPI)
 	{
-		m_pStdSurface = pAppVisitor->loadSurface("resources/mipmaptest.png", pDevice->surfaceFactory(), { .sampleMethod = SampleMethod::Bilinear } );
+		m_pStdSurface = pAppAPI->loadSurface("resources/mipmaptest.png", pDevice->surfaceFactory(), { .sampleMethod = SampleMethod::Bilinear } );
 		if (!m_pStdSurface)
 			return false;
 
-		m_pMipSurface = pAppVisitor->loadSurface("resources/mipmaptest.png", pDevice->surfaceFactory(), { .mipmap = true, .sampleMethod = SampleMethod::Bilinear } );
+		m_pMipSurface = pAppAPI->loadSurface("resources/mipmaptest.png", pDevice->surfaceFactory(), { .mipmap = true, .sampleMethod = SampleMethod::Bilinear } );
 		if (!m_pMipSurface)
 			return false;
 

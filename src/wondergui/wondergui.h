@@ -1,25 +1,24 @@
 /*=========================================================================
 
-						 >>> WonderGUI <<<
+                             >>> WonderGUI <<<
 
-  This file is part of Tord Jansson's WonderGUI Graphics Toolkit
-  and copyright (c) Tord Jansson, Sweden [tord.jansson@gmail.com].
+  This file is part of Tord Bärnfors' WonderGUI UI Toolkit and copyright
+  Tord Bärnfors, Sweden [mail: first name AT barnfors DOT c_o_m].
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is free software; you can redistribute
+  The WonderGUI UI Toolkit is free software; you can redistribute
   this file and/or modify it under the terms of the GNU General Public
   License as published by the Free Software Foundation; either
   version 2 of the License, or (at your option) any later version.
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is also available for use in commercial
-  closed-source projects under a separate license. Interested parties
-  should contact Tord Jansson [tord.jansson@gmail.com] for details.
+  The WonderGUI UI Toolkit is also available for use in commercial
+  closed source projects under a separate license. Interested parties
+  should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-
 #ifndef WONDERGUI_DOT_H
 #define WONDERGUI_DOT_H
 #pragma once
@@ -68,6 +67,7 @@
 #include <wg_filler.h>
 #include <wg_fillmeterskin.h>
 #include <wg_flexpanel.h>
+#include <wg_drawerpanel.h>
 #include <wg_fpsdisplay.h>
 #include <wg_framemeterskin.h>
 #include <wg_glow.h>
@@ -80,7 +80,6 @@
 #include <wg_labelcapsule.h>
 #include <wg_lambdapanel.h>
 #include <wg_lineeditor.h>
-#include <wg_list.h>
 #include <wg_modaloverlay.h>
 #include <wg_msg.h>
 #include <wg_msglogger.h>
@@ -90,8 +89,8 @@
 #include <wg_numberdisplay.h>
 #include <wg_numberlayout.h>
 #include <wg_overlay.h>
+#include <wg_paddingcapsule.h>
 #include <wg_packlayout.h>
-#include <wg_packlist.h>
 #include <wg_packpanel.h>
 #include <wg_panel.h>
 #include <wg_pianokeyboard.h>
@@ -108,7 +107,7 @@
 #include <wg_scrollbar.h>
 #include <wg_scroller.h>
 #include <wg_scrollpanel.h>
-#include <wg_blockslideskin.h>
+#include <wg_selectcapsule.h>
 #include <wg_scalecapsule.h>
 #include <wg_selectbox.h>
 #include <wg_sidecanvas.h>
@@ -134,8 +133,7 @@
 #include <wg_string.h>
 #include <wg_surfacedisplay.h>
 #include <wg_tablepanel.h>
-#include <wg_text.h>
-#include <wg_textbase.h>
+#include <wg_dynamictext.h>
 #include <wg_textdisplay.h>
 #include <wg_texteditor.h>
 #include <wg_textlayout.h>

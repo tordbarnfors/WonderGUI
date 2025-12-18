@@ -1,25 +1,24 @@
 /*=========================================================================
 
-						 >>> WonderGUI <<<
+                             >>> WonderGUI <<<
 
-  This file is part of Tord Jansson's WonderGUI Graphics Toolkit
-  and copyright (c) Tord Jansson, Sweden [tord.jansson@gmail.com].
+  This file is part of Tord Bärnfors' WonderGUI UI Toolkit and copyright
+  Tord Bärnfors, Sweden [mail: first name AT barnfors DOT c_o_m].
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is free software; you can redistribute
+  The WonderGUI UI Toolkit is free software; you can redistribute
   this file and/or modify it under the terms of the GNU General Public
   License as published by the Free Software Foundation; either
   version 2 of the License, or (at your option) any later version.
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is also available for use in commercial
-  closed-source projects under a separate license. Interested parties
-  should contact Tord Jansson [tord.jansson@gmail.com] for details.
+  The WonderGUI UI Toolkit is also available for use in commercial
+  closed source projects under a separate license. Interested parties
+  should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-
 #include <wg_labelcapsule.h>
 #include <wg_gfxdevice.h>
 
@@ -47,6 +46,30 @@ namespace wg
 	{
 		return TYPEINFO;
 	}
+
+	//____ setLabelPlacement() ________________________________________________
+
+	void LabelCapsule::setLabelPlacement(Placement placement)
+	{
+		if (placement != m_labelPlacement)
+		{
+			m_labelPlacement = placement;
+			_requestRender();
+		}
+	}
+
+	//____ setLabelSkin() _____________________________________________________
+
+	void LabelCapsule::setLabelSkin(Skin* pSkin)
+	{
+		if( pSkin != m_labelSkin.get() )
+		{ 
+			m_labelSkin.set(pSkin);
+			_requestRender();
+			_requestResize();
+		}
+	}
+
 
 	//____ _matchingWidth() ___________________________________________________
 

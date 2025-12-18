@@ -1,25 +1,24 @@
 /*=========================================================================
 
-						 >>> WonderGUI <<<
+                             >>> WonderGUI <<<
 
-  This file is part of Tord Jansson's WonderGUI Graphics Toolkit
-  and copyright (c) Tord Jansson, Sweden [tord.jansson@gmail.com].
+  This file is part of Tord Bärnfors' WonderGUI UI Toolkit and copyright
+  Tord Bärnfors, Sweden [mail: first name AT barnfors DOT c_o_m].
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is free software you can redistribute
+  The WonderGUI UI Toolkit is free software; you can redistribute
   this file and/or modify it under the terms of the GNU General Public
-  License as published by the Free Software Foundation either
+  License as published by the Free Software Foundation; either
   version 2 of the License, or (at your option) any later version.
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is also available for use in commercial
-  closed-source projects under a separate license. Interested parties
-  should contact Tord Jansson [tord.jansson@gmail.com] for details.
+  The WonderGUI UI Toolkit is also available for use in commercial
+  closed source projects under a separate license. Interested parties
+  should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-
 #ifndef WG_DEBUGOVERLAY_DOT_H
 #define WG_DEBUGOVERLAY_DOT_H
 #pragma once
@@ -28,7 +27,7 @@
 #include <wg_staticslotvector.h>
 #include <wg_packpanel.h>
 #include <wg_togglebutton.h>
-#include <wg_debugger.h>
+#include <wg_debugbackend.h>
 #include <wg_theme.h>
 
 #include <wg_scrollpanel.h>
@@ -48,12 +47,12 @@ namespace wg
 
 	public:
 
-		//____ ToolboxSlot ___________________________________________________________
+		//____ WindowSlot ___________________________________________________________
 
-		class ToolboxSlot : public Overlay::Slot
+		class WindowSlot : public Overlay::Slot
 		{
 			friend class DebugOverlay;
-			friend class CDesignToolboxSlotVector;
+			friend class CDesignWindowSlotVector;
 			template<class S> friend class StaticSlotVector;
 			template<class S> friend class SlotVector;
 
@@ -64,27 +63,26 @@ namespace wg
 			const static TypeInfo	TYPEINFO;
 
 		protected:
-			ToolboxSlot(SlotHolder * pHolder) : Overlay::Slot(pHolder) {}
+			WindowSlot(SlotHolder * pHolder) : Overlay::Slot(pHolder) {}
 
 			inline SlotHolder * _holder() { return static_cast<SlotHolder*>(Overlay::Slot::_holder()); }
 			inline const SlotHolder * _holder() const { return static_cast<const SlotHolder*>(Overlay::Slot::_holder()); }
 
 			const static bool safe_to_relocate = false;
 
-			bool		m_bVisible = true;
 			Placement	m_placement = Placement::NorthWest;
 			CoordSPX	m_placementPos;			// Widgets pos relative placement.
 			SizeSPX		m_chosenSize;
 		};
 
 
-		//____ CToolboxVector _________________________________________________
+		//____ CWindowVector _________________________________________________
 
-		class CToolboxVector : public StaticSlotVector<ToolboxSlot>
+		class CWindowVector : public StaticSlotVector<WindowSlot>
 		{
 			friend class DebugOverlay;
 
-			CToolboxVector(SlotHolder * pHolder) : StaticSlotVector<ToolboxSlot>(pHolder) {}
+			CWindowVector(SlotHolder * pHolder) : StaticSlotVector<WindowSlot>(pHolder) {}
 		};
 
 		//.____ Blueprint __________________________________________
@@ -92,7 +90,7 @@ namespace wg
 		struct Blueprint
 		{
 			Object_p		baggage;
-			Debugger_p		debugger;									// Mandatory!!!
+			DebugBackend_p	backend;									// Mandatory!!!
 			bool			disabled = false;
 			bool			dropTarget = false;
 			Finalizer_p		finalizer = nullptr;
@@ -102,13 +100,15 @@ namespace wg
 			uint8_t			pickCategory = 0;
 			bool			pickHandle = false;
 			PointerStyle	pointer = PointerStyle::Undefined;
-			bool			selectable = true;
+			bool			selectable = false;
 			Skin_p			skin;
 			bool			stickyFocus = false;
 			bool			tabLock = false;
 			Theme_p			theme;										// Mandatory!!!
 			String			tooltip;
 			bool			usePickHandles = false;
+			Surface_p		icons;										// Mandatory!!!
+			Surface_p		transparencyGrid;							// Mandatory!!! Chessboard pattern or similar
 		};
 
 		//.____ Creation __________________________________________
@@ -117,7 +117,7 @@ namespace wg
 
 		//.____ Components _______________________________________
 
-		CToolboxVector	toolboxes;
+		CWindowVector	windows;
 
 		//.____ Identification __________________________________________
 
@@ -126,8 +126,8 @@ namespace wg
 
 		//.____ Appearance _________________________________________________
 
-		void				setToolboxSkin(Skin * pSkin);
-		inline Skin_p		paletteSkin() const;
+		void				setWindowSkin(Skin * pSkin);
+		inline Skin_p		windowSkin() const;
 
 		void				setSelectionSkin(Skin * pSkin);
 		inline Skin_p		selectionSkin() const;
@@ -179,29 +179,36 @@ namespace wg
 		void			_resize( const SizeSPX& size, int scale ) override;
 		void			_receive( Msg * pMsg ) override;
 
-		// Toolbox creators
+		// Window creators
 
-		std::tuple<Widget_p, PackPanel_p> _createToolbox( const char * pTitle );
+		std::tuple<Widget_p, PackPanel_p> _createWindow( const char * pTitle );
 
-		void			_createSlotWidgetToolbox();
-
-
-		Widget_p		_createGenericSlotTool(StaticSlot * pSlot);
-		Widget_p		_createGenericWidgetTool(Widget * pWidget);
+		void			_createToolboxWindow();
+		void			_createWidgetInfoWindow();
+		void			_createWidgetTreeWindow();
+		void			_createMsgLogWindow();
+		void			_createObjectInfoWindow();
+		void			_createSkinInfoWindow();
 
 		//
 
 		void			_createResources();
 
-		Placement		_boxSection( CoordSPX pos, int boxIndex );
+		Placement		_windowFrameSection( CoordSPX pos, int windowIndex );
+		int				_windowIndex(Widget* pWidget);						// Lookup which window the widget is part of.
 
 
 		RectSPX			_selectionGeo() const;
-		void			_refreshRealGeo(ToolboxSlot * pSlot, bool bForceResize = false);
+		void			_refreshRealGeo(WindowSlot * pSlot, bool bForceResize = false);
 		void			_selectWidget(Widget * pWidget);
+		void			_selectSkin(Skin* pSkin);
+		void			_selectObject(Object* pSelected, Object * pSelectedFrom);
+
 		//
 
-		Debugger_p		m_pDebugger;
+		DebugBackend_p	m_pBackend;
+
+		PackLayout_p	m_pPackLayoutForScrollingContent;
 
 		PointerStyle	m_generatedPointerStyle = PointerStyle::Undefined;
 
@@ -212,35 +219,48 @@ namespace wg
 
 		Widget_wp		m_pSelectedWidget;
 		Skin_p			m_pSelectionSkin;
-		Skin_p			m_pToolboxSkin;
+		Skin_p			m_pWindowSkin;
 
-		PackPanel_p		m_pSlotTools;
 		PackPanel_p		m_pWidgetTools;
 
-		// Variables for toolbox drag
+		ScrollPanel_p	m_pWidgetTreeContainer;
+		PackPanel_p		m_pSkinContainer;
+		PackPanel_p		m_pAnyObjectContainer;			// Contains the object info panel for the currently selected object.
 
-		int				m_movingToolbox = -1;			// Index for toolbox that is being moved.
-		CoordSPX		m_movingToolboxStartOfs;
+		// Variables for window drag
 
-		// Variables for toolbox resize
+		int				m_movingWindow = -1;			// Index for Window that is being moved.
+		CoordSPX		m_movingWindowStartOfs;
 
-		int				m_resizingToolbox = -1;			// Index for toolbox that is being resized.
-		Placement		m_resizingToolboxDirection = Placement::Undefined;
-		RectSPX			m_resizingToolboxStartGeo;
+		// Variables for window resize
+
+		int				m_resizingWindow = -1;			// Index for Window that is being resized.
+		Placement		m_resizingWindowDirection = Placement::Undefined;
+		RectSPX			m_resizingWindowStartGeo;
 
 		// Resources
 
 		Theme_p			m_pTheme;
+		Surface_p		m_pIcons;
+		Surface_p		m_pTransparencyGrid;
 
-		DebugPanel::Blueprint	m_debugPanelBP;
+		Skin_p			m_pSelectIcon;
+
+		Skin_p			m_pRefreshIcon;
+		Skin_p			m_pExpandIcon;
+		Skin_p			m_pCondenseIcon;
+
+		TextLayout_p	m_pHeaderLayout;
+
+		IDebugger::Blueprint	m_debugPanelBP;
 
 	};
 
-	//____ paletteSkin() ______________________________________________________
+	//____ windowSkin() ______________________________________________________
 
-	Skin_p DebugOverlay::paletteSkin() const
+	Skin_p DebugOverlay::windowSkin() const
 	{
-		return m_pToolboxSkin;
+		return m_pWindowSkin;
 	}
 
 	//____ selectionSkin() ____________________________________________________

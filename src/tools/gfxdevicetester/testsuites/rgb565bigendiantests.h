@@ -10,14 +10,14 @@ public:
 		addTest("RGB565BE_Fills", &A8Tests::setCanvas, &A8Tests::fills, &A8Tests::finalize);
 	}
 
-	bool init(GfxDevice * pDevice, const RectI& canvas, WonderApp::Visitor * pAppVisitor)
+	bool init(GfxDevice * pDevice, const RectI& canvas, wapp::API * pAppAPI)
 	{
 		m_pCanvas = pDevice->surfaceFactory()->createSurface( WGBP(Surface,
 																   _.size = canvas.size()/64,
 																   _.format = PixelFormat::RGB_565_bigendian,
 																   _.canvas = true ) );
 
-		m_pImg = pAppVisitor->loadSurface("resources/splash.png", pDevice->surfaceFactory());
+		m_pImg = pAppAPI->loadSurface("resources/splash.png", pDevice->surfaceFactory());
 		if (!m_pImg)
 			return false;
 

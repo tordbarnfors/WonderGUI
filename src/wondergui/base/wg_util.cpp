@@ -1,25 +1,24 @@
 /*=========================================================================
 
-						 >>> WonderGUI <<<
+                             >>> WonderGUI <<<
 
-  This file is part of Tord Jansson's WonderGUI Graphics Toolkit
-  and copyright (c) Tord Jansson, Sweden [tord.jansson@gmail.com].
+  This file is part of Tord Bärnfors' WonderGUI UI Toolkit and copyright
+  Tord Bärnfors, Sweden [mail: first name AT barnfors DOT c_o_m].
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is free software; you can redistribute
+  The WonderGUI UI Toolkit is free software; you can redistribute
   this file and/or modify it under the terms of the GNU General Public
   License as published by the Free Software Foundation; either
   version 2 of the License, or (at your option) any later version.
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is also available for use in commercial
-  closed-source projects under a separate license. Interested parties
-  should contact Tord Jansson [tord.jansson@gmail.com] for details.
+  The WonderGUI UI Toolkit is also available for use in commercial
+  closed source projects under a separate license. Interested parties
+  should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-
 #include <wg_util.h>
 #include <wg_geo.h>
 #include <wg_surface.h>
@@ -289,35 +288,6 @@ namespace wg
 		return defaultSize;
 	}
 
-	//____ bestStateIndexMatch() ___________________________________________________
-
-	int Util::bestStateIndexMatch(int wantedStateIndex, Bitmask<uint32_t> availableStateIndices)
-	{
-		static uint32_t mask[State::IndexAmount] = {	1,
-											2+1,
-											4+1,
-											8 + 4 + 2 + 1,
-											16 + 4 + 1,
-											32 + 16 + 8 + 4 + 2 + 1,
-											64 + 1,
-											128 + 64 + 2 + 1,
-											256 + 64 + 4 + 1,
-											512 + 256 + 128 + 64 + 8 + 4 + 2 + 1,
-											1024 + 256 + 64 + 16 + 4 + 1,
-											2048 + 1024 + 512 + 256 + 128 + 64 + 32 + 16 + 8 + 4 + 2 + 1,
-											4096 + 4 + 1,
-											8192 + 4096 + 8 + 4 + 2 + 1,
-											16384 + 4096 + 256 + 64 + 4 + 1,
-											32768 + 16384 + 8192 + 4096 + 512 + 256 + 128 + 64 + 8 + 4 + 2 + 1,
-											65536 + 1,
-											65536*2 + 65536 + 64 + 1
-										};
-
-		int candidates = uint32_t(availableStateIndices) & mask[wantedStateIndex];
-
-		return mostSignificantBit(candidates);
-	}
-
 	//____ Checksum8::add() ________________________________________________________
 
 	void Util::Checksum8::add( const void * pData, uint32_t nBytes )
@@ -329,7 +299,6 @@ namespace wg
 
 		remainder = x;
 	}
-
 
 	//____ placementToOfs() ________________________________________________________
 
@@ -512,6 +481,109 @@ namespace wg
 		return object / useScale;
 	}
 
+	//____ generateStateToIndexTab() ___________________________________
+
+	void Util::generateStateToIndexTab(uint8_t * pDest, int nbStates, const State* pStates)
+	{
+		int indexTableSize;
+		int indexMask;
+		int indexShift;
+
+		std::tie(indexTableSize,indexMask,indexShift) = calcStateToIndexParam(nbStates,pStates);
+
+		for( int i = 0 ; i < indexTableSize ; i++ )
+		{
+			int wanted = i << indexShift;
+			pDest[i] = State( (StateEnum) wanted).bestMatch(nbStates, pStates);
+		}
+	}
+
+
+	//____ calcStateToIndexParam() ________________________________________
+
+	std::tuple<int,int,int> Util::calcStateToIndexParam(int nbStates, const State* pStates)
+	{
+
+		uint8_t	usedBits = 0;
+		for (int i = 0; i < nbStates; i++)
+			usedBits |= pStates[i].index();
+
+		// We start with values excluding Disabled, which is a special case.
+
+		int indexTableSize = 64;
+		int indexMask = 0x3F;
+		int indexShift = 0;
+
+		if (usedBits == 0)
+		{
+			indexMask = 0;
+			indexTableSize = 1;			// We always lookup default.
+		}
+		else
+		{
+			if ((usedBits & (int(StateEnum::Hovered) | int(StateEnum::Pressed))) == 0)
+			{
+				indexMask = 0xF;
+				indexTableSize = 16;
+				if ((usedBits & int(StateEnum::Focused)) == 0)
+				{
+					indexMask = 0x7;
+					indexTableSize = 8;
+					if ((usedBits & int(StateEnum::Checked)) == 0)
+					{
+						indexMask = 0x3;
+						indexTableSize = 4;
+						if ((usedBits & int(StateEnum::Selekted)) == 0)
+						{
+							indexMask = 0x1;
+							indexTableSize = 2;
+						}
+					}
+				}
+			}
+
+			if ((usedBits & int(StateEnum::Flagged)) == 0)
+			{
+				indexShift++;
+				indexTableSize /= 2;
+
+				if ((usedBits & int(StateEnum::Selekted)) == 0)
+				{
+					indexShift++;
+					indexTableSize /= 2;
+
+					if ((usedBits & int(StateEnum::Checked)) == 0)
+					{
+						indexShift++;
+						indexTableSize /= 2;
+
+						if ((usedBits & int(StateEnum::Focused)) == 0)
+						{
+							indexShift++;
+							indexTableSize /= 2;
+
+							if ((usedBits & (int(StateEnum::Hovered) | int(StateEnum::Pressed))) == 0)
+							{
+								indexShift += 2;
+								indexTableSize /= 4;
+							}
+						}
+					}
+				}
+			}
+
+			// Handle disabled, a maximum of 8 entries are added
+
+			if ((usedBits & int(StateEnum::Disabled)) != 0)
+			{
+				indexTableSize += 8*16 >> std::min(indexShift,6);
+				indexMask |= int(StateEnum::Disabled);
+			}
+		}
+
+		return std::make_tuple(indexTableSize,indexMask,indexShift);
+	}
+
 	//____ patchesToClipList() ____________________________________________________________________
 
 	Util::ClipPopData Util::patchesToClipList( GfxDevice * pDevice, const RectSPX& clip, const PatchesSPX& patches )
@@ -566,21 +638,28 @@ namespace wg
 		if( clip.contains(pDevice->clipBounds()))
 			return ClipPopData();
 
-		int nRects 				= pDevice->clipListSize();
-		const RectSPX * pRects 	= pDevice->clipList();
-		int allocSize = nRects * sizeof(RectSPX);
+		int nOldRects = pDevice->clipListSize();
+		const RectSPX* pOldRects = pDevice->clipList();
+		int allocSize = 0;
 
-		RectSPX * pNewRects = (RectSPX*) Base::memStackAlloc(allocSize);
-		int nNewRects = 0;
-
-		for( int i = 0 ; i < nRects ; i++ )
+		if (clip.isEmpty())
+			pDevice->setClipList(0, nullptr);
+		else
 		{
-			if (clip.isOverlapping(pRects[i]))
-				pNewRects[nNewRects++] = RectSPX::overlap(pRects[i], clip);
-		}
+			allocSize = nOldRects * sizeof(RectSPX);
 
-		pDevice->setClipList(nNewRects, pNewRects);
-		return { nRects, pRects, allocSize };
+			RectSPX* pNewRects = (RectSPX*)Base::memStackAlloc(allocSize);
+			int nNewRects = 0;
+
+			for (int i = 0; i < nOldRects; i++)
+			{
+				if (clip.isOverlapping(pOldRects[i]))
+					pNewRects[nNewRects++] = RectSPX::overlap(pOldRects[i], clip);
+			}
+
+			pDevice->setClipList(nNewRects, pNewRects);
+		}
+		return { nOldRects, pOldRects, allocSize };
 	}
 
 	//____ pushClipList() __________________________________________________________________

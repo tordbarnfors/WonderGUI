@@ -22,11 +22,11 @@ WonderApp_p WonderApp::create()
 
 //____ init() _________________________________________________________________
 
-bool MyApp::init(Visitor* pVisitor)
+bool MyApp::init(wapp::API* pAPI)
 {
 	WgBase::Init( Base::hostBridge() );
 	
-	if (!_setupGUI(pVisitor))
+	if (!_setupGUI(pAPI))
 	{
 		printf("ERROR: Failed to setup GUI!\n");
 		return false;
@@ -40,7 +40,7 @@ bool MyApp::init(Visitor* pVisitor)
 
 bool MyApp::update()
 {
-	return true;
+	return m_pWindow != nullptr;
 }
 
 //____ exit() _________________________________________________________________
@@ -50,18 +50,24 @@ void MyApp::exit()
 	WgBase::Exit();
 }
 
+//____ closeWindow() __________________________________________________________
+
+void MyApp::closeWindow(wapp::Window* pWindow)
+{
+	if (pWindow == m_pWindow)
+		m_pWindow = nullptr;
+}
+
 
 //____ _setupGUI() ____________________________________________________________
 
-bool MyApp::_setupGUI(Visitor* pVisitor)
+bool MyApp::_setupGUI(wapp::API* pAPI)
 {
-	m_pWindow = pVisitor->createWindow({ .size = {800,700}, .title = "LegacyRunner" });
-
-	auto pRoot = m_pWindow->rootPanel();
+	m_pWindow = wapp::Window::create(pAPI, { .size = {800,700}, .title = "LegacyRunner" });
 
 	//
 
-	auto pFontBlob = pVisitor->loadBlob("resources/DroidSans.ttf");
+	auto pFontBlob = pAPI->loadBlob("resources/DroidSans.ttf");
 	auto pFont = FreeTypeFont::create(pFontBlob);
 
 	m_pTextStyle = TextStyle::create(WGBP(TextStyle,
@@ -84,21 +90,16 @@ bool MyApp::_setupGUI(Visitor* pVisitor)
 
 	//
 
-	if (!_loadSkins(pVisitor))
+	if (!_loadSkins(pAPI))
 		return false;
 
-
-
-	auto pPopupOverlay = PopupOverlay::create();
-		
 	
 	auto pBasePanel = FlexPanel::create();
 	pBasePanel->setSkin(ColorSkin::create(Color::Beige));
 
 	m_pBasePanel = pBasePanel;
 
-	pPopupOverlay->mainSlot = pBasePanel;	
-	pRoot->slot = pPopupOverlay;
+	m_pWindow->mainCapsule()->slot = pBasePanel;
 	
 	
 	auto pLegacyRoot = LegacyRootCapsule::create( { .skin = ColorSkin::create(Color::Black) });
@@ -157,14 +158,14 @@ WgWidget * MyApp::_buildLegacyGUI()
 
 //____ _loadSkins() ___________________________________________________________
 
-bool MyApp::_loadSkins(Visitor * pVisitor)
+bool MyApp::_loadSkins(wapp::API * pAPI)
 {
 	string path = "resources/greyskin/";
 
-	auto pPlateSurf = pVisitor->loadSurface(path + "plate.bmp");
-	auto pButtonSurf = pVisitor->loadSurface(path + "button.bmp");
-	auto pStateButtonSurf = pVisitor->loadSurface(path + "state_button.bmp");
-	auto pCheckBoxSurf = pVisitor->loadSurface(path + "checkbox.png");
+	auto pPlateSurf = pAPI->loadSurface(path + "plate.bmp");
+	auto pButtonSurf = pAPI->loadSurface(path + "button.bmp");
+	auto pStateButtonSurf = pAPI->loadSurface(path + "state_button.bmp");
+	auto pCheckBoxSurf = pAPI->loadSurface(path + "checkbox.png");
 
 	if (!pPlateSurf || !pButtonSurf || !pStateButtonSurf)
 		return false;
@@ -198,7 +199,7 @@ bool MyApp::_loadSkins(Visitor * pVisitor)
 		_.axis = Axis::X,
 		_.frame = 4,
 		_.padding = 4,
-		_.states = { State::Default, State::Hovered, State::Selected, State::SelectedHovered, State::Disabled }
+		_.states = { State::Default, State::Hovered, State::Checked, State::Checked + State::Hovered, State::Disabled }
 	));
 
 	m_pCheckBoxSkin = BlockSkin::create(WGBP(BlockSkin,
@@ -206,7 +207,7 @@ bool MyApp::_loadSkins(Visitor * pVisitor)
 		_.axis = Axis::Y,
 		_.frame = 3,
 //		_.defaultSize = { 12,12 },
-		_.states = { State::Default, State::Selected }
+		_.states = { State::Default, State::Checked }
 	));
 
 	m_pSectionSkin = BoxSkin::create(WGBP(BoxSkin,

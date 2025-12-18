@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
 
+include(GenerateExportHeader)
+
 #set(CMAKE_XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY "Apple Development")
 #set(CMAKE_XCODE_ATTRIBUTE_CODE_DEVELOPMENT_TEAM 9B39M5G274)
 
@@ -46,22 +48,38 @@ if(WIN32)
 
 elseif(APPLE)
 
-	set(FREETYPE2_INCDIR ${WG_ROOT}/freetype/include)
-	set(FREETYPE2_LIBDIR ${WG_ROOT}/freetype/lib/)
-    set(FREETYPE2_LIB freetype bz2 z brotlidec brotlicommon )
 
-	find_library(SDL2_LIBS SDL2)
-	find_library(SDL2IMAGE_LIBS SDL2_image)
+    set(FREETYPE2_LIB freetype)
+    # Use the stable 'opt' path and the freetype2 subfolder
+    set(FREETYPE2_INCDIR "/opt/homebrew/opt/freetype/include/freetype2;/opt/homebrew/include" CACHE STRING "Freetype include dirs (list)")
+	set(FREETYPE2_LIBDIR  /opt/homebrew/opt/freetype/lib            CACHE FILEPATH "Path to libfreetype")
+    # If you previously set FREETYPE2_LIB to 'freetype', keep it:
+    set(FREETYPE2_LIB freetype)
 
-	find_library(OPENGL_LIBS OpenGL)
+    # Make sure the linker actually searches the lib dir:
+    # (CMake 3.13+)
+    add_link_options(-L${FREETYPE2_LIBDIR})
+    # or per-target:
+    # target_link_directories(streamgendll PRIVATE ${FREETYPE2_LIBDIR})
 
+    #--------------------
+    # Use local freetype instead of what is supplied by homebrew.
+    #--------------------
+	# set(FREETYPE2_INCDIR ${WG_ROOT}/freetype/include)
+	# set(FREETYPE2_LIBDIR ${WG_ROOT}/freetype/lib/)
+    # set(FREETYPE2_LIB freetype bz2 z brotlidec brotlicommon )
+
+    find_library(SDL2_LIBS SDL2)
+    find_library(SDL2IMAGE_LIBS SDL2_image)
+    find_library(OPENGL_LIBS OpenGL)
     find_library(APPKIT_LIB AppKit)
     find_library(METAL_LIB Metal)
 
 
 else()
-    	set(FREETYPE2_LIB freetype)
-	set(FREETYPE2_INCDIR /usr/include/freetype2)
+    set(FREETYPE2_LIB freetype)
+	set(FREETYPE2_INCDIR /usr/include/freetype2 CACHE STRING "Freetype include dirs (list)")
+	set(FREETYPE2_LIBDIR "" CACHE FILEPATH "Path to libfreetype.so or .a")
 
 	set(SDL2_LIBS SDL2)
 	set(SDL2IMAGE_LIBS SDL2_image)
@@ -79,11 +97,12 @@ endif()
 #
 #------------------------------------------------------------------------------
 
-set(WAPPLIB wappsdl2sw)				# WonderApp framework based on SDL2, using software rendering.
+#set(WAPPLIB wappwin32)				# WonderApp framework for Win32, using software rendering.
+#set(WAPPLIB wappsdl2sw)				# WonderApp framework based on SDL2, using software rendering.
 									# Works on Windows, Mac and Linux.
 #set(WAPPLIB wappsdl2gl)			# WonderApp framework based on SDL2, using OpenGL rendering.
 									# Works on Windows, Mac and Linux, although deprecated on both Windows and Mac.
-#set(WAPPLIB wappsdl2metal)			# WonderApp framework based on SDL2, using Metal rendering.
+set(WAPPLIB wappsdl2metal)			# WonderApp framework based on SDL2, using Metal rendering.
 									# Works on Mac.
 
 
@@ -142,6 +161,7 @@ add_subdirectory(extensions/legacygui)
 add_subdirectory(extensions/plugin)
 
 add_subdirectory(wonderapp/wappsdl2)
+#add_subdirectory(wonderapp/win32)
 
 add_subdirectory(tools)
 add_subdirectory(examples)

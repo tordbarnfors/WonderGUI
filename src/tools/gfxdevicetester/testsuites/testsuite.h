@@ -22,7 +22,7 @@ public:
 	TestSuite() {}
 	virtual ~TestSuite() {}
 
-	virtual bool			init(GfxDevice * pDevice, const RectSPX& canvas, WonderApp::Visitor * pAppVisitor ) { return true; }
+	virtual bool			init(GfxDevice * pDevice, const RectSPX& canvas, wapp::API * pAppAPI ) { return true; }
 	virtual bool			exit(GfxDevice * pDevice, const RectSPX& canvas ) { return true; }
 
 	string					name = "Unnamed TestSuite";

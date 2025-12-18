@@ -17,10 +17,11 @@ class MyApp : public WonderApp
 {
 public:
 	
-	bool		init(Visitor* pVisitor) override;
+	bool		init(wapp::API* pAPI) override;
 	bool		update() override;
 	void		exit() override;
 
+	void		closeWindow(wapp::Window* pWindow) override;
 
 	bool		setupGUI();
 	bool		openFile(const std::string& path);
@@ -31,7 +32,7 @@ public:
 	Button_p		createButton(const char* label );
 	ScrollPanel_p	createScrollPanel();
 
-	WonderApp::Visitor* m_pAppVisitor = nullptr;
+	wapp::API* 		m_pAPI = nullptr;
 
 	Skin_p			m_pPlateSkin;
 	Skin_p			m_pButtonSkin;
@@ -50,8 +51,8 @@ public:
 	
 private:
 
-	bool			_loadSkins(Visitor* pVisitor);
-	
+	bool			_loadSkins(wapp::API* pAPI);
+
 	std::string		_createWindowTitle( const std::string& path );
 	
 	std::vector<EditorWindow_p>	m_editorWindows;

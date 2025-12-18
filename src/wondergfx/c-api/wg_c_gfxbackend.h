@@ -1,25 +1,24 @@
 /*=========================================================================
 
-						 >>> WonderGUI <<<
+                             >>> WonderGUI <<<
 
-  This file is part of Tord Jansson's WonderGUI Graphics Toolkit
-  and copyright (c) Tord Jansson, Sweden [tord.jansson@gmail.com].
+  This file is part of Tord Bärnfors' WonderGUI UI Toolkit and copyright
+  Tord Bärnfors, Sweden [mail: first name AT barnfors DOT c_o_m].
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is free software; you can redistribute
+  The WonderGUI UI Toolkit is free software; you can redistribute
   this file and/or modify it under the terms of the GNU General Public
   License as published by the Free Software Foundation; either
   version 2 of the License, or (at your option) any later version.
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is also available for use in commercial
-  closed-source projects under a separate license. Interested parties
-  should contact Tord Jansson [tord.jansson@gmail.com] for details.
+  The WonderGUI UI Toolkit is also available for use in commercial
+  closed source projects under a separate license. Interested parties
+  should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-
 #ifndef WG_C_GFXBACKEND_DOT_H
 #define WG_C_GFXBACKEND_DOT_H
 #pragma once
@@ -72,33 +71,33 @@ typedef struct wg_sessionInfo_struct
 } wg_sessionInfo;
 
 
-void	wg_backendBeginRender( wg_obj backend );
-void	wg_backendEndRender( wg_obj backend );
+WG_EXPORT void	wg_backendBeginRender( wg_obj backend );
+WG_EXPORT void	wg_backendEndRender( wg_obj backend );
 
-void	wg_backendBeginSession( wg_obj backend, wg_canvasRef canvasRef, wg_obj canvasSurface, int nUpdateRects, const wg_rectSPX * pUpdateRects, const wg_sessionInfo * pInfo );
-void	wg_backendEndSession( wg_obj backend );
+WG_EXPORT void	wg_backendBeginSession( wg_obj backend, wg_canvasRef canvasRef, wg_obj canvasSurface, int nUpdateRects, const wg_rectSPX * pUpdateRects, const wg_sessionInfo * pInfo );
+WG_EXPORT void	wg_backendEndSession( wg_obj backend );
 
-void	wg_backendSetCanvasWithSurface( wg_obj backend, wg_obj surface );
-void	wg_backendSetCanvasWithRef( wg_obj backend, wg_canvasRef canvas );
+WG_EXPORT void	wg_backendSetCanvasWithSurface( wg_obj backend, wg_obj surface );
+WG_EXPORT void	wg_backendSetCanvasWithRef( wg_obj backend, wg_canvasRef canvas );
 
-void	wg_backendSetObjects(wg_obj backend, wg_obj* const * pBeg, wg_obj* const * pEnd);
+WG_EXPORT void	wg_backendSetObjects(wg_obj backend, wg_obj* const * pBeg, wg_obj* const * pEnd);
 
-void	wg_backendSetRects(wg_obj backend, const wg_rectSPX* pBeg, const wg_rectSPX* pEnd);
-void	wg_backendSetColors(wg_obj backend, const wg_color * pBeg, const wg_color * pEnd);
-void	wg_backendSetTransforms(wg_obj backend, const wg_transform * pBeg, const wg_transform * pEnd);
+WG_EXPORT void	wg_backendSetRects(wg_obj backend, const wg_rectSPX* pBeg, const wg_rectSPX* pEnd);
+WG_EXPORT void	wg_backendSetColors(wg_obj backend, const wg_color * pBeg, const wg_color * pEnd);
+WG_EXPORT void	wg_backendSetTransforms(wg_obj backend, const wg_transform * pBeg, const wg_transform * pEnd);
 
-void	wg_backendProcessCommands(wg_obj backend, const uint16_t* pBeg, const uint16_t * pEnd);
-
-
-wg_canvasInfo wg_backendCanvasInfo(wg_obj backend, wg_canvasRef ref);
-
-wg_obj	wg_backendSurfaceFactory(wg_obj backend);
-wg_obj	wg_backendEdgemapFactory(wg_obj backend);
+WG_EXPORT void	wg_backendProcessCommands(wg_obj backend, const uint16_t* pBeg, const uint16_t * pEnd);
 
 
-int		wg_backendMaxEdges(wg_obj backend);
+WG_EXPORT wg_canvasInfo wg_backendCanvasInfo(wg_obj backend, wg_canvasRef ref);
 
-const wg_typeInfo * wg_backendSurfaceType(wg_obj backend);
+WG_EXPORT wg_obj	wg_backendSurfaceFactory(wg_obj backend);
+WG_EXPORT wg_obj	wg_backendEdgemapFactory(wg_obj backend);
+
+
+WG_EXPORT int		wg_backendMaxEdges(wg_obj backend);
+
+WG_EXPORT const wg_typeInfo * wg_backendSurfaceType(wg_obj backend);
 
 
 #ifdef __cplusplus

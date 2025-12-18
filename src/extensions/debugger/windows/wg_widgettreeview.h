@@ -1,0 +1,85 @@
+/*=========================================================================
+
+                             >>> WonderGUI <<<
+
+  This file is part of Tord Bärnfors' WonderGUI UI Toolkit and copyright
+  Tord Bärnfors, Sweden [mail: first name AT barnfors DOT c_o_m].
+
+                                -----------
+
+  The WonderGUI UI Toolkit is free software; you can redistribute
+  this file and/or modify it under the terms of the GNU General Public
+  License as published by the Free Software Foundation; either
+  version 2 of the License, or (at your option) any later version.
+
+                                -----------
+
+  The WonderGUI UI Toolkit is also available for use in commercial
+  closed source projects under a separate license. Interested parties
+  should contact Bärnfors Technology AB [www.barnfors.com] for details.
+
+=========================================================================*/
+#ifndef	WG_WIDGETTREEVIEW_DOT_H
+#define WG_WIDGETTREEVIEW_DOT_H
+#pragma once
+
+#include <wg_tablepanel.h>
+#include <wg_debugwindow.h>
+#include <wg_selectcapsule.h>
+#include <wg_transitions.h>
+
+namespace wg
+{
+	class WidgetTreeView;
+	typedef	StrongPtr<WidgetTreeView>	WidgetTreeView_p;
+	typedef	WeakPtr<WidgetTreeView>	WidgetTreeView_wp;
+
+
+
+	class WidgetTreeView : public DebugWindow
+	{
+	public:
+
+		//.____ Creation __________________________________________
+
+		static WidgetTreeView_p		create( const Blueprint& blueprint, IDebugger * pHolder, Widget * pRoot ) { return WidgetTreeView_p(new WidgetTreeView(blueprint, pHolder, pRoot) ); }
+
+		//.____ Identification __________________________________________
+
+		const TypeInfo&			typeInfo(void) const override;
+		const static TypeInfo	TYPEINFO;
+
+		//.____ Control _______________________________________________
+
+		void	collapseAll();
+		void	expandAll();
+
+		void	select(Widget* pWidget);
+
+
+	protected:
+		WidgetTreeView(const Blueprint& blueprint, IDebugger* pHolder, Widget * pRoot );
+		~WidgetTreeView();
+
+		Widget_p	_generateInfoTree( const Blueprint& blueprintWidget, Widget * pWidget, int indentation = 0);
+		void		_expandOrCollapseRecursively(Widget* pWidget, bool bExpand);
+		Widget_p	_findWidgetRecursively(int idToFind, Widget* pPos);
+
+		Skin_p				m_pPaddingSkin;
+		Skin_p				m_pDrawerButtonSkin;
+		PackLayout_p		m_pPackLayout;
+
+		SelectCapsule_p		m_pSelectCapsule;
+
+		Widget_p			m_pSelectedWidget;
+
+		RouteId				m_routeIdForSelect;
+
+		std::vector<Widget_wp>	m_realWidgets;
+
+	};
+
+} // namespace wg
+#endif //WG_WidgetTreeView_DOT_H
+
+

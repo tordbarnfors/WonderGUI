@@ -1,30 +1,30 @@
 /*=========================================================================
 
-						 >>> WonderGUI <<<
+                             >>> WonderGUI <<<
 
-  This file is part of Tord Jansson's WonderGUI Graphics Toolkit
-  and copyright (c) Tord Jansson, Sweden [tord.jansson@gmail.com].
+  This file is part of Tord Bärnfors' WonderGUI UI Toolkit and copyright
+  Tord Bärnfors, Sweden [mail: first name AT barnfors DOT c_o_m].
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is free software; you can redistribute
+  The WonderGUI UI Toolkit is free software; you can redistribute
   this file and/or modify it under the terms of the GNU General Public
   License as published by the Free Software Foundation; either
   version 2 of the License, or (at your option) any later version.
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is also available for use in commercial
-  closed-source projects under a separate license. Interested parties
-  should contact Tord Jansson [tord.jansson@gmail.com] for details.
+  The WonderGUI UI Toolkit is also available for use in commercial
+  closed source projects under a separate license. Interested parties
+  should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-
 #ifndef	WG_ENUMEXTRAS_DOT_H
 #define WG_ENUMEXTRAS_DOT_H
 #pragma once
 
 #include <wg_types.h>
+#include <wg_key.h>
 #include <wg_gfxenumextras.h>
 
 namespace wg
@@ -39,6 +39,8 @@ namespace wg
 
 =========================================================================*/
 
+	const static PrimState       PrimState_min       = PrimState::Focused;
+	const static StateEnum       StateEnum_min       = StateEnum::Default;
 	const static CodePage        CodePage_min        = CodePage::Latin1;
 	const static PointerStyle    PointerStyle_min    = PointerStyle::Undefined;
 	const static MouseButton     MouseButton_min     = MouseButton::None;
@@ -52,8 +54,11 @@ namespace wg
 	const static SortOrder       SortOrder_min       = SortOrder::None;
 	const static SelectMode      SelectMode_min      = SelectMode::Unselectable;
 	const static TextEditMode    TextEditMode_min    = TextEditMode::Static;
+	const static KeyAction       KeyAction_min       = KeyAction::None;
 	const static MaskOp          MaskOp_min          = MaskOp::Recurse;
 
+	const static PrimState       PrimState_max       = PrimState::Disabled;
+	const static StateEnum       StateEnum_max       = StateEnum::DisabledFlaggedCheckedSelekted;
 	const static CodePage        CodePage_max        = CodePage::_874;
 	const static PointerStyle    PointerStyle_max    = PointerStyle::ResizeBeamWE;
 	const static MouseButton     MouseButton_max     = MouseButton::X2;
@@ -67,8 +72,11 @@ namespace wg
 	const static SortOrder       SortOrder_max       = SortOrder::Descending;
 	const static SelectMode      SelectMode_max      = SelectMode::FlipOnSelect;
 	const static TextEditMode    TextEditMode_max    = TextEditMode::Editable;
+	const static KeyAction       KeyAction_max       = KeyAction::CycleFocus;
 	const static MaskOp          MaskOp_max          = MaskOp::Mask;
 
+	const static int             PrimState_size      = (int)PrimState::Disabled + 1;
+	const static int             StateEnum_size      = (int)StateEnum::DisabledFlaggedCheckedSelekted + 1;
 	const static int             CodePage_size       = (int)CodePage::_874 + 1;
 	const static int             PointerStyle_size   = (int)PointerStyle::ResizeBeamWE + 1;
 	const static int             MouseButton_size    = (int)MouseButton::X2 + 1;
@@ -82,8 +90,11 @@ namespace wg
 	const static int             SortOrder_size      = (int)SortOrder::Descending + 1;
 	const static int             SelectMode_size     = (int)SelectMode::FlipOnSelect + 1;
 	const static int             TextEditMode_size   = (int)TextEditMode::Editable + 1;
+	const static int             KeyAction_size      = (int)KeyAction::CycleFocus + 1;
 	const static int             MaskOp_size         = (int)MaskOp::Mask + 1;
 
+	const char * toString(PrimState);
+	const char * toString(StateEnum);
 	const char * toString(CodePage);
 	const char * toString(PointerStyle);
 	const char * toString(MouseButton);
@@ -97,11 +108,19 @@ namespace wg
 	const char * toString(SortOrder);
 	const char * toString(SelectMode);
 	const char * toString(TextEditMode);
+	const char * toString(KeyAction);
 	const char * toString(MaskOp);
 
 //=========================================================================
 //. endAutoSection
 
+
+
+	const static ModKeys         ModKeys_min = ModKeys::None;
+	const static ModKeys         ModKeys_max = ModKeys::OSKeyCtrlAltShift;
+	const static int             ModKeys_size = (int)ModKeys::OSKeyCtrlAltShift + 1;
+
+	const char* toString(ModKeys);
 
 
 } // namespace wg

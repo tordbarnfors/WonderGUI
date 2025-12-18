@@ -1,22 +1,22 @@
 /*=========================================================================
 
-						 >>> WonderGUI <<<
+                             >>> WonderGUI <<<
 
-  This file is part of Tord Jansson's WonderGUI Graphics Toolkit
-  and copyright (c) Tord Jansson, Sweden [tord.jansson@gmail.com].
+  This file is part of Tord Bärnfors' WonderGUI UI Toolkit and copyright
+  Tord Bärnfors, Sweden [mail: first name AT barnfors DOT c_o_m].
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is free software; you can redistribute
+  The WonderGUI UI Toolkit is free software; you can redistribute
   this file and/or modify it under the terms of the GNU General Public
   License as published by the Free Software Foundation; either
   version 2 of the License, or (at your option) any later version.
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is also available for use in commercial
-  closed-source projects under a separate license. Interested parties
-  should contact Tord Jansson [tord.jansson@gmail.com] for details.
+  The WonderGUI UI Toolkit is also available for use in commercial
+  closed source projects under a separate license. Interested parties
+  should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
 #ifndef WG_BAKESKIN_DOT_H
@@ -26,7 +26,7 @@
 #include <wg_surface.h>
 #include <wg_skin.h>
 #include <wg_color.h>
-#include <wg_gradient.h>
+#include <wg_tintmap.h>
 
 #include <initializer_list>
 #include <utility>
@@ -48,7 +48,6 @@ namespace wg
 		{
 			BlendMode	blendMode = BlendMode::Undefined;
 			HiColor		color = HiColor::Undefined;
-			Gradient	gradient;
 			int			layer = -1;
 			Border		padding;
 
@@ -56,6 +55,7 @@ namespace wg
 			std::vector<Skin_p>	skins;
 
 			Surface_p	surface;
+			Tintmap_p	tintmap;
 		};
 
 		//.____ Creation __________________________________________
@@ -113,19 +113,19 @@ namespace wg
 		Surface_p			m_pBakeSurface;
 		BlendMode			m_blendMode = BlendMode::Undefined;
 		HiColor				m_tintColor = HiColor::White;
-		Gradient			m_gradient;
+		Tintmap_p			m_pTintmap;
 		bool				m_bContentPaddingSet = false;
 		bool				m_bSkinInSkin = false;
 
 		mutable int			m_cachedScale = 0;
 		mutable SizeSPX		m_cachedMinSize;						// Calculated minSize for scale represented by m_cachedScale;
 		mutable SizeSPX		m_cachedDefaultSize;					// Calculated defaultSize for scale represented by m_cachedScale;
-		mutable BorderSPX	m_cachedContentPadding[State::IndexAmount];
+		mutable BorderSPX	m_cachedContentPadding[State::NbStates];
 
 		Bitmask<uint8_t>	m_transitioningStates;
-		int					m_transitionTimes[StateBits_Nb];
+		int					m_transitionTimes[PrimState_Nb];
 
-		int					m_animationLengths[State::IndexAmount];
+		int					m_animationLengths[State::NbStates];
 	};
 
 } // namespace wg

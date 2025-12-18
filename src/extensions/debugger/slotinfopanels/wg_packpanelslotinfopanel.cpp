@@ -1,0 +1,65 @@
+/*=========================================================================
+
+                             >>> WonderGUI <<<
+
+  This file is part of Tord Bärnfors' WonderGUI UI Toolkit and copyright
+  Tord Bärnfors, Sweden [mail: first name AT barnfors DOT c_o_m].
+
+                                -----------
+
+  The WonderGUI UI Toolkit is free software; you can redistribute
+  this file and/or modify it under the terms of the GNU General Public
+  License as published by the Free Software Foundation; either
+  version 2 of the License, or (at your option) any later version.
+
+                                -----------
+
+  The WonderGUI UI Toolkit is also available for use in commercial
+  closed source projects under a separate license. Interested parties
+  should contact Bärnfors Technology AB [www.barnfors.com] for details.
+
+=========================================================================*/
+#include "wg_packpanelslotinfopanel.h"
+#include <wg_textdisplay.h>
+#include <wg_packpanel.h>
+
+namespace wg
+{
+
+	const TypeInfo PackPanelSlotInfoPanel::TYPEINFO = { "PackPanelSlotInfoPanel", &DebugPanel::TYPEINFO };
+
+
+	//____ constructor _____________________________________________________________
+
+	PackPanelSlotInfoPanel::PackPanelSlotInfoPanel(const Blueprint& blueprint, IDebugger* pHolder, StaticSlot * pStaticSlot) : DebugPanel( blueprint, pHolder, PackPanelSlot::TYPEINFO.className )
+	{
+		m_pTable = _createTable(2,2);
+		_initDecimalEntry(m_pTable, 0, "Weight: ");
+		_initDecimalEntry(m_pTable, 1, "Baseline: ");
+		refresh(pStaticSlot);
+
+		this->slot = m_pTable;
+	}
+
+	//____ typeInfo() _________________________________________________________
+
+	const TypeInfo& PackPanelSlotInfoPanel::typeInfo(void) const
+	{
+		return TYPEINFO;
+	}
+
+	//____ refresh() _____________________________________________________________
+
+	void PackPanelSlotInfoPanel::refresh(StaticSlot * pStaticSlot)
+	{
+		auto pInspected = static_cast<PackPanelSlot*>(pStaticSlot);
+
+		_refreshDecimalEntry(m_pTable, 0, pInspected->weight());
+		_refreshDecimalEntry(m_pTable, 1, pInspected->baseline());
+	}
+
+
+} // namespace wg
+
+
+

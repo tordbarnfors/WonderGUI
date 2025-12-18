@@ -1,22 +1,22 @@
 /*=========================================================================
 
-						 >>> WonderGUI <<<
+                             >>> WonderGUI <<<
 
-  This file is part of Tord Jansson's WonderGUI Graphics Toolkit
-  and copyright (c) Tord Jansson, Sweden [tord.jansson@gmail.com].
+  This file is part of Tord Bärnfors' WonderGUI UI Toolkit and copyright
+  Tord Bärnfors, Sweden [mail: first name AT barnfors DOT c_o_m].
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is free software; you can redistribute
+  The WonderGUI UI Toolkit is free software; you can redistribute
   this file and/or modify it under the terms of the GNU General Public
   License as published by the Free Software Foundation; either
   version 2 of the License, or (at your option) any later version.
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is also available for use in commercial
-  closed-source projects under a separate license. Interested parties
-  should contact Tord Jansson [tord.jansson@gmail.com] for details.
+  The WonderGUI UI Toolkit is also available for use in commercial
+  closed source projects under a separate license. Interested parties
+  should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
 #ifndef WG_CANVASDISPLAY_DOT_H
@@ -26,7 +26,7 @@
 
 #include <wg_widget.h>
 #include <wg_skin.h>
-#include <wg_gradient.h>
+#include <wg_tintmap.h>
 #include <wg_transitions.h>
 
 namespace wg
@@ -72,13 +72,13 @@ namespace wg
 			bool			pickHandle = false;
 			Placement		placement = Placement::Center;
 			PointerStyle	pointer = PointerStyle::Undefined;
-			bool			selectable = true;
+			bool			selectable = false;
 			Skin_p			skin;
 			bool			skinAroundCanvas = false;
 			bool			stickyFocus = false;
 			bool			tabLock = false;
 			HiColor			tintColor		= HiColor::Undefined;
-			Gradient		tintGradient;
+			Tintmap_p		tintmap;
 			String			tooltip;
 		};
 
@@ -102,7 +102,7 @@ namespace wg
 		Placement	placement() const { return m_placement; }
 
 		void		setTintColor(HiColor color, ColorTransition* pTransition = nullptr);
-		void		setTintGradient(const Gradient& gradient, ColorTransition* pTransition = nullptr);
+		void		setTintmap(Tintmap * pTintmap, ColorTransition* pTransition = nullptr);
 		void		setBlendMode(BlendMode mode);
 
 
@@ -115,16 +115,14 @@ namespace wg
 		
 		template<class BP> CanvasDisplay(const BP& bp) : Widget(bp)
 		{
-			m_defaultSize	= bp.defaultSize;
-			m_placement		= bp.placement;
-
-			m_blendMode		= bp.blendMode;
+			m_defaultSize		= bp.defaultSize;
+			m_placement			= bp.placement;
+			m_blendMode			= bp.blendMode;
+			m_pTintmap			= bp.tintmap;
+			m_bSkinAroundCanvas = bp.skinAroundCanvas;
 			
 			if( bp.tintColor != HiColor::Undefined )
 				m_tintColor	= bp.tintColor;
-
-			m_gradient		= bp.tintGradient;
-			m_bSkinAroundCanvas = bp.skinAroundCanvas;
 
 			if (bp.canvas)
 				setCanvas(bp.canvas);
@@ -156,7 +154,7 @@ namespace wg
 		bool				m_bSkinAroundCanvas = false;
 
 		HiColor				m_tintColor = HiColor::White;
-		Gradient			m_gradient;
+		Tintmap_p			m_pTintmap;
 		BlendMode			m_blendMode = BlendMode::Blend;
 
 		// Transitions
@@ -164,14 +162,14 @@ namespace wg
 		HiColor				m_startTintColor;
 		HiColor				m_endTintColor;
 
-		Gradient			m_startGradient;
-		Gradient			m_endGradient;
+		Tintmap_p			m_pStartTintmap;
+		Tintmap_p			m_pEndTintmap;
 
 		ColorTransition_p	m_pTintColorTransition;
-		ColorTransition_p	m_pGradientTransition;
+		ColorTransition_p	m_pTintmapTransition;
 
 		int					m_tintColorTransitionProgress = 0;
-		int					m_gradientTransitionProgress = 0;
+		int					m_tintmapTransitionProgress = 0;
 	};
 
 

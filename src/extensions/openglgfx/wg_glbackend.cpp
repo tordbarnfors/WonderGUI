@@ -1,25 +1,24 @@
 /*=========================================================================
 
-						 >>> WonderGUI <<<
+                             >>> WonderGUI <<<
 
-  This file is part of Tord Jansson's WonderGUI Graphics Toolkit
-  and copyright (c) Tord Jansson, Sweden [tord.jansson@gmail.com].
+  This file is part of Tord Bärnfors' WonderGUI UI Toolkit and copyright
+  Tord Bärnfors, Sweden [mail: first name AT barnfors DOT c_o_m].
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is free software; you can redistribute
+  The WonderGUI UI Toolkit is free software; you can redistribute
   this file and/or modify it under the terms of the GNU General Public
   License as published by the Free Software Foundation; either
   version 2 of the License, or (at your option) any later version.
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is also available for use in commercial
-  closed-source projects under a separate license. Interested parties
-  should contact Tord Jansson [tord.jansson@gmail.com] for details.
+  The WonderGUI UI Toolkit is also available for use in commercial
+  closed source projects under a separate license. Interested parties
+  should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-
 #include <cmath>
 #include <cstdlib>
 #include <cstdio>
@@ -140,7 +139,8 @@ void GlBackend::setCanvas(CanvasRef ref)
 	}
 	else
 	{
-		//TODO: Error handling!
+		GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "GlBackend::setCanvas(CanvasRef) only supports CanvasRef::Default.",
+			this, &TYPEINFO, __func__, __FILE__, __LINE__);
 	}
 }
 
@@ -1615,18 +1615,32 @@ const TypeInfo& GlBackend::typeInfo(void) const
 	return TYPEINFO;
 }
 
-//____ surfaceType() _______________________________________________________
-
-const TypeInfo& GlBackend::surfaceType( void ) const
-{
-	return GlSurface::TYPEINFO;
-}
-
 //____ maxEdges() _____________________________________________
 
 int GlBackend::maxEdges() const
 {
 	return c_maxSegments - 1;
+}
+
+//____ canBeBlitSource() _____________________________________________
+
+bool GlBackend::canBeBlitSource(const TypeInfo& type) const
+{
+	return (type == GlSurface::TYPEINFO);
+}
+
+//____ canBeCanvas() _____________________________________________
+
+bool GlBackend::canBeCanvas(const TypeInfo& type) const
+{
+	return (type == GlSurface::TYPEINFO);
+}
+
+//____ waitForCompletion() ____________________________________________________
+
+void GlBackend::waitForCompletion()
+{
+	glFinish();
 }
 
 //____ surfaceFactory() ______________________________________________________
@@ -1668,7 +1682,7 @@ const CanvasInfo * GlBackend::canvasInfo(CanvasRef ref) const
 		return &m_defaultCanvas;
 	else
 	{
-		//TODO: Error handling!
+		GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Only Default canvas is supported.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 		return &m_dummyCanvas;
 	}
 }
@@ -1684,7 +1698,7 @@ void GlBackend::beginRender()
 
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 	{
-		//TODO: Error handling!
+		GfxBase::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "Framebuffer is not complete.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 		return;
 	}
 
@@ -1801,9 +1815,6 @@ void GlBackend::beginSession( CanvasRef canvasRef, Surface * pCanvasSurface, int
 {
 	if( !pCanvasSurface && canvasRef != CanvasRef::Default )
 		return;
-
-	if( pCanvasSurface )
-		_setInfoForCanvasCompleted(pCanvasSurface, nUpdateRects, pUpdateRects );
 
 	// Reserve buffer for coordinates
 
@@ -2136,8 +2147,6 @@ void GlBackend::endSession()
 	m_pCommandQueue = nullptr;
 
 	m_objects.clear();
-
-	_canvasCompleted();
 }
 
 
@@ -2308,7 +2317,7 @@ void GlBackend::_loadPrograms(int uboBindingPoint)
 		LOG_INIT_GLERROR(glGetError());
 	}
 
-	// Create and init Fill Gradient shader
+	// Create and init Fill Tintmap shader
 
 	for (int i = 0; i < 2; i++)
 	{
@@ -2328,7 +2337,7 @@ void GlBackend::_loadPrograms(int uboBindingPoint)
 		LOG_INIT_GLERROR(glGetError());
 	}
 
-	// Create and init AA-Fill gradient shader
+	// Create and init AA-Fill Tintmap shader
 
 	for (int i = 0; i < 2; i++)
 	{

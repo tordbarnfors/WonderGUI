@@ -1,25 +1,24 @@
 /*=========================================================================
 
-						 >>> WonderGUI <<<
+                             >>> WonderGUI <<<
 
-  This file is part of Tord Jansson's WonderGUI Graphics Toolkit
-  and copyright (c) Tord Jansson, Sweden [tord.jansson@gmail.com].
+  This file is part of Tord Bärnfors' WonderGUI UI Toolkit and copyright
+  Tord Bärnfors, Sweden [mail: first name AT barnfors DOT c_o_m].
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is free software; you can redistribute
+  The WonderGUI UI Toolkit is free software; you can redistribute
   this file and/or modify it under the terms of the GNU General Public
   License as published by the Free Software Foundation; either
   version 2 of the License, or (at your option) any later version.
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is also available for use in commercial
-  closed-source projects under a separate license. Interested parties
-  should contact Tord Jansson [tord.jansson@gmail.com] for details.
+  The WonderGUI UI Toolkit is also available for use in commercial
+  closed source projects under a separate license. Interested parties
+  should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-
 #include <wg2_chart.h>
 #include <wg2_pen.h>
 #include <wg2_base.h>
@@ -843,7 +842,7 @@ void WgChart::_updateBitmapCache( wg::GfxDevice * pDevice )
 
 	pDevice->setBlendMode(WgBlendMode::Blend);
 
-	WgRect canvas = m_pSkin ? _skinContentRect( m_pSkin, m_pCacheBitmap->pixelSize(), WgStateEnum::Default, m_scale) : WgRect(0,0,m_pCacheBitmap->pixelSize());
+	WgRect canvas = m_pSkin ? _skinContentRect( m_pSkin, m_pCacheBitmap->pixelSize(), wg::State::Default, m_scale) : WgRect(0,0,m_pCacheBitmap->pixelSize());
 	WgRect waveCanvas = canvas - m_pixelPadding;
 
 
@@ -874,7 +873,7 @@ void WgChart::_onRender( wg::GfxDevice * pDevice, const WgRect& _canvas, const W
 {
 	WgWidget::_onRender(pDevice, _canvas, _window);
 
-	WgRect canvas = m_pSkin ? _skinContentRect( m_pSkin, _canvas, WgStateEnum::Default, m_scale) : _canvas;
+	WgRect canvas = m_pSkin ? _skinContentRect( m_pSkin, _canvas, wg::State::Default, m_scale) : _canvas;
 
 	// Preparations for both grid and wave drawing
 
@@ -904,28 +903,28 @@ void WgChart::_onRender( wg::GfxDevice * pDevice, const WgRect& _canvas, const W
 				WgPen	pen(pDevice, _canvas);
 				wg::TextAttr attr;
 
-				WgBase::defaultStyle()->exportAttr(WgStateEnum::Default, &attr, m_scale >> 6);
+				WgBase::defaultStyle()->exportAttr(wg::State::Default, &attr, m_scale >> 6);
 				if( m_sampleLabelStyle.pTextStyle )
-					m_sampleLabelStyle.pTextStyle->addToAttr(WgStateEnum::Default, &attr, m_scale >> 6);
+					m_sampleLabelStyle.pTextStyle->addToAttr(wg::State::Default, &attr, m_scale >> 6);
 
 				pen.SetScale(m_scale);
 				pen.SetAttributes(attr);
 
 				WgSize labelSize;
-				labelSize.w = WgUtil::lineWidth(nullptr, attr, wg::StateEnum::Default, line.label.chars(),m_scale);
+				labelSize.w = WgUtil::lineWidth(nullptr, attr, wg::State::Default, line.label.chars(),m_scale);
 				labelSize.h = pen.GetLineHeight();
 
 				WgCoord textOfs;
 				if (m_sampleLabelStyle.pSkin)
 				{
 					labelSize = _skinSizeForContent( m_sampleLabelStyle.pSkin, labelSize, m_scale);
-					textOfs = _skinContentRect( m_sampleLabelStyle.pSkin, labelSize, WgStateEnum::Default, m_scale ).pos();
+					textOfs = _skinContentRect( m_sampleLabelStyle.pSkin, labelSize, wg::State::Default, m_scale ).pos();
 				}
 
 				WgCoord labelPos = _placeLabel({ xOfs, yOfs2 }, m_sampleLabelStyle.alignment, m_sampleLabelStyle.offset, labelSize);
 
 				if (m_sampleLabelStyle.pSkin)
-					_renderSkin( m_sampleLabelStyle.pSkin, pDevice, WgStateEnum::Default, { labelPos,labelSize }, m_scale);
+					_renderSkin( m_sampleLabelStyle.pSkin, pDevice, wg::State::Default, { labelPos,labelSize }, m_scale);
 
 				pen.SetPos(labelPos + textOfs);
 				WgGfxDevice::PrintLine(pDevice, pen, attr, line.label.chars());
@@ -966,29 +965,29 @@ void WgChart::_onRender( wg::GfxDevice * pDevice, const WgRect& _canvas, const W
 				WgPen pen(pDevice, _canvas);
 				wg::TextAttr attr;
 
-				WgBase::defaultStyle()->exportAttr(WgStateEnum::Default, &attr, m_scale >> 6);
+				WgBase::defaultStyle()->exportAttr(wg::State::Default, &attr, m_scale >> 6);
 				if( m_valueLabelStyle.pTextStyle )
-					m_valueLabelStyle.pTextStyle->addToAttr(WgStateEnum::Default, &attr, m_scale >> 6);
+					m_valueLabelStyle.pTextStyle->addToAttr(wg::State::Default, &attr, m_scale >> 6);
 
 				pen.SetScale(m_scale);
 				pen.SetAttributes(attr);
 
 
 				WgSize labelSize;
-				labelSize.w = WgUtil::lineWidth(nullptr, attr, wg::StateEnum::Default, line.label.chars(),m_scale);
+				labelSize.w = WgUtil::lineWidth(nullptr, attr, wg::State::Default, line.label.chars(),m_scale);
 				labelSize.h = pen.GetLineHeight();
 
 				WgCoord textOfs;
 				if (m_valueLabelStyle.pSkin)
 				{
 					labelSize = _skinSizeForContent( m_valueLabelStyle.pSkin, labelSize, m_scale);
-					textOfs = _skinContentRect( m_valueLabelStyle.pSkin, labelSize, WgStateEnum::Default, m_scale).pos();
+					textOfs = _skinContentRect( m_valueLabelStyle.pSkin, labelSize, wg::State::Default, m_scale).pos();
 				}
 
 				WgCoord labelPos = _placeLabel({ xOfs, yOfs }, m_valueLabelStyle.alignment, m_valueLabelStyle.offset, labelSize);
 
 				if (m_valueLabelStyle.pSkin)
-					_renderSkin( m_valueLabelStyle.pSkin, pDevice, WgStateEnum::Default, { labelPos,labelSize }, m_scale);
+					_renderSkin( m_valueLabelStyle.pSkin, pDevice, wg::State::Default, { labelPos,labelSize }, m_scale);
 
 				pen.SetPos(labelPos + textOfs);
 				WgGfxDevice::PrintLine(pDevice, pen, attr, line.label.chars());
@@ -1247,7 +1246,7 @@ void WgChart::_resampleWave(Wave * pWave, bool bRequestRenderOnChanges )
 	WgSize	canvas = PixelSize();
 
 	if (m_pSkin)
-		canvas = _skinContentRect( m_pSkin, canvas, WgStateEnum::Default, m_scale);
+		canvas = _skinContentRect( m_pSkin, canvas, wg::State::Default, m_scale);
 
 
 	canvas -= m_pixelPadding;
@@ -1497,7 +1496,7 @@ void WgChart::_requestRenderOnNewSamples(   int begOrgSamples, int nbOrgTopSampl
 {
 	// Calculate size of our sample canvas
 
-	WgRect canvas = m_pSkin ? _skinContentRect( m_pSkin, PixelSize(), WgStateEnum::Default, m_scale).size() : PixelSize();
+	WgRect canvas = m_pSkin ? _skinContentRect( m_pSkin, PixelSize(), wg::State::Default, m_scale).size() : PixelSize();
 	canvas -= m_pixelPadding;
 
 	// Calculate needed margin (in pixels) for line thickness

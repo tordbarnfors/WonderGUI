@@ -1,6 +1,7 @@
 
 #include <cstdlib>
 #include <stdio.h>
+//#include <unistd.h>
 
 #ifdef WIN32
 #	include <SDL.h>
@@ -34,11 +35,16 @@
 #include <wg_glsurface.h>
 #include <wg_glsurfacefactory.h>
 #include <wg_gledgemapfactory.h>
-#include <wg_glgfxdevice.h>
 
 #include <wg_freetypefont.h>
 
 #include <wg_dynamicbuffer.h>
+
+#include <wg_drawerpanel.h>
+
+#include <wg_debugger.h>
+#include <themes/simplistic/wg_simplistic.h>
+
 
 //#define USE_OPEN_GL
 
@@ -136,7 +142,6 @@ bool scrollSkinTest(ComponentPtr<DynamicSlot> pSlot);
 bool tooltipLayerTest(ComponentPtr<DynamicSlot> pSlot);
 bool kerningTest(ComponentPtr<DynamicSlot> pSlot);
 bool circleSkinTest(ComponentPtr<DynamicSlot> pSlot);
-bool packListTest(ComponentPtr<DynamicSlot> pSlot);
 bool packPanelTest(ComponentPtr<DynamicSlot> pSlot);
 bool glyphAsSurfaceTest(ComponentPtr<DynamicSlot> pSlot, Font_p pFont );
 bool memHeapFragmentationTest(ComponentPtr<DynamicSlot> pSlot);
@@ -168,6 +173,8 @@ bool labelCapsuleTest(ComponentPtr<DynamicSlot> pEntry);
 bool elipsisTest(ComponentPtr<DynamicSlot> pEntry);
 bool packPanelSpacingBugTest(ComponentPtr<DynamicSlot> pEntry);
 bool bracketSkinTest(ComponentPtr<DynamicSlot> pEntry);
+bool selectCapsuleTest(ComponentPtr<DynamicSlot> pEntry);
+bool drawerPanelTest(ComponentPtr<DynamicSlot> pEntry);
 
 
 void nisBlendTest();
@@ -179,6 +186,7 @@ void textStyleTest();
 int main(int argc, char** argv)
 {
 
+//	sleep(1);
 
 /*	Base::init(nullptr);
 	unitTestMemHeap();
@@ -208,7 +216,6 @@ int main(int argc, char** argv)
 
 
 //	printf("Slot is safe to relocate: %d\n", StaticSlot::safe_to_relocate);
-//	printf("PackListSlot is safe to relocate: %d\n", PackListSlot::safe_to_relocate);
 //	printf("LambdaSlot is safe to relocate: %d\n", LambdaSlot::safe_to_relocate);
 
 
@@ -297,7 +304,7 @@ int main(int argc, char** argv)
 	SDL_Init(SDL_INIT_VIDEO);
 
 //	int posX = 100, posY = 100, width = 1300, height = 1620;
-	int posX = 100, posY = 100, width = 600, height = 600;
+	int posX = 100, posY = 100, width = 1400, height = 800;
 
 #ifdef USE_OPEN_GL
 
@@ -540,10 +547,10 @@ int main(int argc, char** argv)
 		//
 
 		MsgLogger_p pLogger = MsgLogger::create(std::cout);
-		pLogger->logAllMsgs();
-		pLogger->ignoreMsg(MsgType::MouseMove);
-		pLogger->ignoreMsg(MsgType::MouseDrag);
-		pLogger->ignoreMsg(MsgType::MouseRepeat);
+		pLogger->logAllMsgs(true);
+		pLogger->logMsg(MsgType::MouseMove, false);
+		pLogger->logMsg(MsgType::MouseDrag, false);
+		pLogger->logMsg(MsgType::MouseRepeat, false);
 
 		Base::msgRouter()->broadcastTo(pLogger);
 
@@ -620,14 +627,14 @@ int main(int argc, char** argv)
 		convertSDLFormat(&pixelDesc, pSDLSurf->format);
 		Surface_p pStateButtonSurface = pSurfaceFactory->createSurface({ .format = PixelFormat::BGR_8, .size = SizeI(pSDLSurf->w, pSDLSurf->h) }, (unsigned char*)pSDLSurf->pixels, pixelDesc, pSDLSurf->pitch);
 		SDL_FreeSurface(pSDLSurf);
-		//	BlockSkin_p pStateButtonSkin = BlockSkin::create(pStateButtonSurface, { State::Default, State::Hovered, State::Selected, State::SelectedHovered, State::Disabled }, Border(3), Axis::X);
+		//	BlockSkin_p pStateButtonSkin = BlockSkin::create(pStateButtonSurface, { State::Default, State::Hovered, State::Checked, State::Checked + State::Hovered, State::Disabled }, Border(3), Axis::X);
 		auto pStateButtonSkin = BlockSkin::create(BlockSkin::Blueprint
 		{
 			.axis = Axis::X,
 				.frame = 3,
 				.padding = 5,
 				.states = { State::Default, {}, State::Hovered, {},
-								State::Selected, {}, State::SelectedHovered, {},
+								State::Checked, {}, State::Checked + State::Hovered, {},
 								State::Disabled, {}
 			},
 				.surface = pStateButtonSurface
@@ -653,7 +660,7 @@ int main(int argc, char** argv)
 		convertSDLFormat(&pixelDesc, pSDLSurf->format);
 		Surface_p pListEntrySurface = pSurfaceFactory->createSurface({ .format = PixelFormat::BGRA_8, .size = SizeI(pSDLSurf->w, pSDLSurf->h) }, (unsigned char*)pSDLSurf->pixels, pixelDesc, pSDLSurf->pitch);
 		SDL_FreeSurface(pSDLSurf);
-		Skin_p pListEntrySkin = BlockSkin::create(pListEntrySurface, { State::Default, State::Hovered, State::Selected, State::SelectedHovered, State::Disabled }, Border(2), Axis::X);
+		Skin_p pListEntrySkin = BlockSkin::create(pListEntrySurface, { State::Default, State::Hovered, State::Selekted, State::Selekted + State::Hovered, State::Disabled }, Border(2), Axis::X);
 
 		pSDLSurf = IMG_Load("resources/splash.png");
 		convertSDLFormat(&pixelDesc, pSDLSurf->format);
@@ -662,17 +669,63 @@ int main(int argc, char** argv)
 		BlockSkin_p pImgSkin = BlockSkin::createStaticFromSurface(pImgSurface);
 
 
-		pSDLSurf = IMG_Load("resources/up_down_arrow.png");
-		convertSDLFormat(&pixelDesc, pSDLSurf->format);
-		Surface_p pUpDownArrowSurface = pSurfaceFactory->createSurface({ .format = PixelFormat::BGRA_8, .size = SizeI(pSDLSurf->w, pSDLSurf->h) }, (unsigned char*)pSDLSurf->pixels, pixelDesc, pSDLSurf->pitch);
-		SDL_FreeSurface(pSDLSurf);
-		Skin_p pUpDownArrowSkin = BlockSkin::create(pUpDownArrowSurface, { State::Default, State::Selected }, Border(0));
+		//------------------------------------------------------
+		// Init theme
+		//------------------------------------------------------
 
-		pSDLSurf = IMG_Load("resources/simple_icon.png");
+
+		auto pFont1Blob = loadBlob("resources/NotoSans-Regular.ttf");
+		auto pFont2Blob = loadBlob("resources/NotoSans-Bold.ttf");
+		auto pFont3Blob = loadBlob("resources/NotoSans-Italic.ttf");
+		auto pFont4Blob = loadBlob("resources/DroidSansMono.ttf");
+
+		auto pFont1 = FreeTypeFont::create(pFont1Blob);
+		auto pFont2 = FreeTypeFont::create(pFont2Blob);
+		auto pFont3 = FreeTypeFont::create(pFont3Blob);
+		auto pFont4 = FreeTypeFont::create(pFont4Blob);
+
+
+		pSDLSurf = IMG_Load("resources/skin_widgets.png");
 		convertSDLFormat(&pixelDesc, pSDLSurf->format);
-		Surface_p pSimpleIconSurface = pSurfaceFactory->createSurface({ .format = PixelFormat::BGRA_8, .size = SizeI(pSDLSurf->w, pSDLSurf->h) }, (unsigned char*)pSDLSurf->pixels, pixelDesc, pSDLSurf->pitch);
+		Surface_p pThemeSurface = pSurfaceFactory->createSurface({ .format = PixelFormat::BGRA_8, .size = SizeI(pSDLSurf->w, pSDLSurf->h) }, (unsigned char*)pSDLSurf->pixels, pixelDesc, pSDLSurf->pitch);
 		SDL_FreeSurface(pSDLSurf);
-		Skin_p pSimpleIconSkin = BlockSkin::createStaticFromSurface(pSimpleIconSurface, Border(0));
+
+		auto pTheme = Simplistic::create(pFont1,pFont2,pFont3,pFont4,pThemeSurface);
+		if (!pTheme)
+		{
+			Base::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "Failed to create default theme", nullptr, nullptr, __func__, __FILE__, __LINE__);
+			return -1;
+		}
+		Base::setDefaultTheme(pTheme);
+		Base::setDefaultStyle(pTheme->defaultStyle());
+
+
+
+		//------------------------------------------------------
+		// Setup debugger
+		//------------------------------------------------------
+
+		auto pDebugger = DebugBackend::create();
+
+
+		pSDLSurf = IMG_Load("resources/debugger_gfx.png");
+		convertSDLFormat(&pixelDesc, pSDLSurf->format);
+		Surface_p pIconSurface = pSurfaceFactory->createSurface({ .format = PixelFormat::BGRA_8, .size = SizeI(pSDLSurf->w, pSDLSurf->h) }, (unsigned char*)pSDLSurf->pixels, pixelDesc, pSDLSurf->pitch);
+		SDL_FreeSurface(pSDLSurf);
+
+		pSDLSurf = IMG_Load("resources/checkboardtile.png");
+		convertSDLFormat(&pixelDesc, pSDLSurf->format);
+		Surface_p pTransparencyGrid = pSurfaceFactory->createSurface({ .format = PixelFormat::BGRA_8, .size = SizeI(pSDLSurf->w, pSDLSurf->h), .tiling = true }, (unsigned char*)pSDLSurf->pixels, pixelDesc, pSDLSurf->pitch);
+		SDL_FreeSurface(pSDLSurf);
+
+
+		auto pDebugOverlay = DebugOverlay::create( { .backend = pDebugger, .theme = pTheme, .icons = pIconSurface, .transparencyGrid = pTransparencyGrid } );
+
+
+		pDebugOverlay->setActivated(true);
+
+		pRoot->slot = pDebugOverlay;
+		pRoot->setSkin(ColorSkin::create(Color::Black));
 
 		//------------------------------------------------------
 		// Setup a simple GUI consisting of a filled background and
@@ -680,8 +733,7 @@ int main(int argc, char** argv)
 		//------------------------------------------------------
 
 		DragNDropOverlay_p pDnDLayer = DragNDropOverlay::create();
-		pRoot->setSkin(ColorSkin::create(Color::Black));
-		pRoot->slot = pDnDLayer;
+		pDebugOverlay->mainSlot = pDnDLayer;
 
 		PopupOverlay_p pPopupOverlay = PopupOverlay::create();
 		pDnDLayer->mainSlot = pPopupOverlay;
@@ -698,23 +750,6 @@ int main(int argc, char** argv)
 
 		//		auto pTestSkin = BoxSkin::create( Border(5), {{State::Default, Color::Red, Color::Black}, {State::Pressed, Color::Red, Color::Pink} , {State::Hovered, Color::Green, Color::LightGreen} });
 		//		pTestSkin->setBlendMode(BlendMode::Add);
-
-		auto pTestSkin = MultiBlockSkin::create({ 10,10 }, Border(4));
-
-		int layer1 = pTestSkin->addLayer(pPressablePlateSurface, { State::Default, State::Hovered, State::Pressed, State::Disabled }, Axis::X);
-		pTestSkin->setLayerBlendMode(layer1, BlendMode::Blend);
-
-		int layer2 = pTestSkin->addLayer(pBackgroundSurface, { 0,0 });
-		pTestSkin->setLayerColor(layer2, { {State::Default, Color::Transparent}, {State::Hovered, HiColor(255,255,255,64) } });
-
-		Button_p pImage0 = Button::create();
-		pImage0->setSkin(pTestSkin);
-		pImage0->setPointerStyle(PointerStyle::Crosshair);
-
-		pBasePanel->slots.pushBack(pImage0, { .func = [](Widget* pWidget, Size size) {return Rect(size.w - 80 * 2, (size.h - 33 * 2) / 2, 80 * 2, 33 * 2); } });
-
-		Base::msgRouter()->addRoute(pImage0, MsgType::Select, [&](const Msg_p& pMsg) { bQuit = true; });
-
 
 		//	Image_p pImage = Image::create();
 		//	pImage->setSkin( pSimpleButtonSkin );
@@ -772,7 +807,6 @@ int main(int argc, char** argv)
 		//	tooltipLayerTest(pSlot);
 		//	kerningTest(pSlot);
 		//	circleSkinTest(pSlot);
-		//	packListTest(pSlot);
 		//	packPanelTest(pSlot);
 		//	glyphAsSurfaceTest(pSlot, pFont);
 		//	memHeapFragmentationTest(pSlot);
@@ -804,6 +838,10 @@ int main(int argc, char** argv)
 		//	elipsisTest(pSlot);
 		//	packPanelSpacingBugTest(pSlot);
 		//	bracketSkinTest(pSlot);
+		//	selectCapsuleTest(pSlot);
+		//	drawerPanelTest(pSlot);
+		//	areaChartTestWithGlobalGradient(pSlot);
+
 
 		//------------------------------------------------------
 		// Program Main Loop
@@ -2263,7 +2301,7 @@ bool selectBoxTest(ComponentPtr<DynamicSlot> pSlot)
 
 	auto pListEntrySkin = BoxSkin::create({ .color = Color::Transparent, .outlineColor = Color::Transparent, .outlineThickness = 1, .padding = 3,
 											 .states = {{State::Hovered, {.color = Color::Yellow, .outlineColor = Color::Orange }},
-														{State::Selected, {.color = Color::LightBlue, .outlineColor = Color::White }} } });
+														{State::Selekted, {.color = Color::LightBlue, .outlineColor = Color::White }} } });
 
 
 	pSelectBox->setListSkin(pListSkin);
@@ -2504,7 +2542,7 @@ bool scrollSkinTest(ComponentPtr<DynamicSlot> pSlot)
 											.blockSpacing = 0,
 											.slideDirection = Direction::Left,
 											.slideDuration = 100,
-											.slideState = StateBits::Selected,
+											.slideState = PrimState::Checked,
 											.states = { State::Default, {}, State::Hovered, {}, State::Disabled, {} },
 											.surface = pSliderSurf });
 
@@ -2584,7 +2622,7 @@ bool kerningTest(ComponentPtr<DynamicSlot> pSlot)
 
 	auto pDisplay1 = TextDisplay::create();
 
-	auto bp = Base::defaultStyle()->blueprint();
+	TextStyle::Blueprint bp; // = Base::defaultStyle()->blueprint();
 	bp.size = 32;
 
 	auto pBigStyle = TextStyle::create(bp);
@@ -2624,52 +2662,6 @@ bool circleSkinTest(ComponentPtr<DynamicSlot> pSlot)
 	return true;
 
 }
-
-//____ packListTest() ________________________________________________________
-
-bool packListTest(ComponentPtr<DynamicSlot> pSlot)
-{
-	auto pBaseLayer = FlexPanel::create();
-	pBaseLayer->setSkin(ColorSkin::create(Color::PapayaWhip));
-
-	auto pPackList = PackList::create();
-	pPackList->setSkin(ColorSkin::create(Color::Azure));
-
-	pPackList->header.setText("HEADER");
-//	pPackList->header.setSkin(ColorSkin::create(Color::Blue));
-	pPackList->header.setSkin(ColorSkin::create({	.color = Color::Yellow , 
-													.states = { { State::Hovered, Color::Brown },
-																{ State::Pressed, { .color = Color::Red }} } 
-												} ));
-
-	pPackList->setSortFunction( [](const Widget * pW1, const Widget * pW2) { return pW2->id() - pW1->id(); });
-
-
-	for (int i = 0; i < 10; i++)
-	{
-		char label[20];
-		snprintf(label, 20, "Value: %d", i);
-		auto pWidget = TextDisplay::create();
-		pWidget->display.setText(label);
-		pWidget->setId(i);
-
-
-		pPackList->slots << pWidget;
-
-	}
-
-
-
-
-
-	pBaseLayer->slots.pushBack(pPackList, { .pos = {10, 10}, .size = {200, 400} });
-
-
-	*pSlot = pBaseLayer;
-	return true;
-
-}
-
 
 //____ packPanelTest() ________________________________________________________
 
@@ -2879,15 +2871,15 @@ void textStyleTest()
 	auto pBase = TextStyle::create();
 	auto pAdded = TextStyle::create();
 
-	assert(pBase->bgColor(State::Selected) == Color::Transparent);
+	assert(pBase->bgColor(State::Selekted) == Color::Transparent);
 	assert(pBase->color(State::Hovered) == Color::Black);
 
 	pBase->setColor(Color::Red, State::Hovered);
 	assert(pBase->color(State::Default) == Color::Black);
 	assert(pBase->color(State::Hovered) == Color::Red);
 	assert(pBase->color(State::Pressed) == Color::Red);
-	assert(pBase->color(State::SelectedHoveredFocused) == Color::Red);
-	assert(pBase->color(State::SelectedFocused) == Color::Black);
+	assert(pBase->color(State::SelektedHoveredFocused) == Color::Red);
+	assert(pBase->color(State::SelektedFocused) == Color::Black);
 
 	pBase->setSize(16, State::Hovered);
 	pAdded->setSize(15);
@@ -3309,6 +3301,152 @@ bool areaChartTest2(ComponentPtr<DynamicSlot> pEntry)
 	pFlex->slots.pushBack(pButton3, { .pos = {105, 250 } });
 	return true;
 }
+
+//____ areaChartTestWithGlobalGradient() ______________________________________________________
+
+bool areaChartTestWithGlobalGradient(ComponentPtr<DynamicSlot> pEntry)
+{
+	auto pFlex = FlexPanel::create();
+
+	pFlex->setSkin(ColorSkin::create(Color::LightYellow));
+
+	auto pGraph = AreaChart::create(WGBP(AreaChart,
+		_.displayCeiling = 0.5f,
+		_.displayFloor = -0.5f,
+		_.displaySkin = BoxSkin::create(WGBP(BoxSkin,
+			_.color = Color::White,
+			_.outlineColor = Color::Green,
+			_.padding = 2,
+			_.outlineThickness = 2)),
+		_.skin = ColorSkin::create(Color::Pink)
+	));
+
+
+
+
+	pFlex->slots.pushBack(pGraph, { .pos = {10,10}, .size = {200,200} });
+
+	*pEntry = pFlex;
+
+
+	pGraph->entries.pushBack({
+		.bottomOutlineThickness = 0,
+		.color = Color::Transparent,
+		/*.flip = GfxFlip::Rot270,*/
+		.outlineColor = Color::Red,
+		.topOutlineThickness = 5,
+		});
+
+
+	static float topSamples[2][5] = { 0, -0.25f, 0.25f, 0.23f, 0.5f,
+									  0, 0.25f, -0.25f, -0.23f, -0.5f };
+
+	static float bottomSamples[1] = { 0.f };
+
+	static int transitionIndex = 0;
+
+	pGraph->entries.back().setTopSamples(5, topSamples[0]);
+
+
+
+
+
+	Color colors[6] = { Color::Red, Color::Green, Color::Blue, Color::Yellow, Color::Pink, Color::Brown };
+
+	// Setup grid
+
+	pGraph->xLines.pushBack({ .label = "-0.5", .labelAtEnd = true, .pos = -0.5f, .thickness = 0.5f });
+	pGraph->xLines.pushBack({ .label = "-0.25", .pos = -0.25f, .thickness = 0.5f });
+	pGraph->xLines.pushBack({ .label = "0.0", .pos = 0.0f, .thickness = 1.f });
+	pGraph->xLines.pushBack({ .label = "0.25", .pos = 0.25f, .thickness = 0.5f });
+
+	pGraph->yLines.pushBack({ .label = "0.0", .pos = 0.0f, .thickness = 0.5f });
+	pGraph->yLines.pushBack({ .label = "0.25", .pos = 0.25f, .thickness = 0.5f });
+	pGraph->yLines.pushBack({ .label = "0.5", .pos = 0.5f, .thickness = 0.5f });
+	pGraph->yLines.pushBack({ .label = "1.0", .labelAtEnd = true, .pos = 1.f, .thickness = 0.5f });
+
+	/*
+		pGraph->xLines.pushBack(WGBP(GridLine,
+								_.value = -0.25f
+								));
+	*/
+
+	//
+
+
+	pGraph->glow.setActive(true);
+
+
+	auto pTransition = ValueTransition::create(2000000, TransitionCurve::Bezier);
+	pGraph->entries.back().transitionSamples(pTransition, 5, topSamples[1], 1, bottomSamples);
+
+
+
+	auto pButtonSkin = BoxSkin::create({ .color = Color8::Grey,
+									  .outlineColor = Color8::Black,
+									  .outlineThickness = 1,
+									  .padding = 3
+		});
+
+
+	auto pButton = Button::create({ .label = {.text = "TRANSITION"}, .skin = pButtonSkin });
+
+	Base::msgRouter()->addRoute(pButton, MsgType::Select, [pGraph, pTransition](Msg* pMsg)
+	{
+		transitionIndex = (transitionIndex + 1) % 2;
+		pGraph->entries.back().transitionSamples(pTransition, 5, topSamples[transitionIndex], 1, bottomSamples);
+	});
+
+
+	pFlex->slots.pushBack(pButton, { .pos = {105, 220 } });
+
+	//---
+
+	auto pButton2 = Button::create({ .label = {.text = "RESIZE OUTLINE"}, .skin = pButtonSkin });
+
+	Base::msgRouter()->addRoute(pButton2, MsgType::Select, [pGraph](Msg* pMsg)
+	{
+		auto& entry = pGraph->entries.back();
+
+		pts top = entry.topOutlineThickness();
+
+		if( top == 1.f )
+			top = 5.f;
+		else
+			top = 1.f;
+
+		entry.setOutlineThickness(top, 0.f);
+	});
+
+	pFlex->slots.pushBack(pButton2, { .pos = {205, 220 } });
+
+	//---
+
+	auto pButton3 = Button::create({ .label = {.text = "RESIZE RANGE"}, .skin = pButtonSkin });
+
+	Base::msgRouter()->addRoute(pButton3, MsgType::Select, [pGraph](Msg* pMsg)
+	{
+		static bool bExpanded = false;
+
+		if( bExpanded )
+		{
+			pGraph->setDisplayRange(0.5f, -0.5f, ValueTransition::create( 400000 ) );
+			bExpanded = false;
+		}
+		else
+		{
+			pGraph->setDisplayRange(0.3f, -0.3f, ValueTransition::create( 400000 ) );
+			bExpanded = true;
+		}
+	});
+
+
+
+	pFlex->slots.pushBack(pButton3, { .pos = {105, 250 } });
+	return true;
+}
+
+
 
 //____ plotChartTest() ______________________________________________________
 
@@ -3761,7 +3899,7 @@ bool canvasCapsuleGlowTest(ComponentPtr<DynamicSlot> pEntry)
 	auto pBack = FlexPanel::create({ .skin = ColorSkin::create(Color::Black) });
 	*pEntry = pBack;
 
-	auto pMyStyle = TextStyle::create( WGOVR(Base::defaultStyle()->blueprint(), _.size = 30, _.color = Color::White ));
+	auto pMyStyle = TextStyle::create( { .color = Color::White, .size = 30 } );
 
 
 	auto pGlowCapsule = CanvasCapsule::create();
@@ -3808,8 +3946,8 @@ bool canvasCapsuleGlowTest(ComponentPtr<DynamicSlot> pEntry)
 	Base::msgRouter()->addRoute(pTintWhite, MsgType::Select, [pGlowCapsule,pTransition](Msg* pMsg) {pGlowCapsule->setTintColor(Color::White, pTransition); });
 	Base::msgRouter()->addRoute(pTintBlack, MsgType::Select, [pGlowCapsule, pTransition](Msg* pMsg) {pGlowCapsule->setTintColor(Color::Black, pTransition); });
 
-	Base::msgRouter()->addRoute(pGradientWhite, MsgType::Select, [pGlowCapsule, pTransition](Msg* pMsg) {pGlowCapsule->setTintGradient(Gradient( Placement::NorthWest, HiColor::White, HiColor::Black), pTransition); });
-	Base::msgRouter()->addRoute(pGradientBlack, MsgType::Select, [pGlowCapsule, pTransition](Msg* pMsg) {pGlowCapsule->setTintGradient(Gradient(Placement::SouthEast, HiColor::White, HiColor::Black), pTransition); });
+	Base::msgRouter()->addRoute(pGradientWhite, MsgType::Select, [pGlowCapsule, pTransition](Msg* pMsg) {pGlowCapsule->setTintmap( Gradyent::create(HiColor::White, HiColor::Black, Color::Green, Color::Green), pTransition); });
+	Base::msgRouter()->addRoute(pGradientBlack, MsgType::Select, [pGlowCapsule, pTransition](Msg* pMsg) {pGlowCapsule->setTintmap( Gradyent::create(HiColor::Black, HiColor::White, Color::Red, Color::Red), pTransition); });
 
 
 	auto pButtons = PackPanel::create({ .axis = Axis::X });
@@ -4741,6 +4879,69 @@ bool bracketSkinTest(ComponentPtr<DynamicSlot> pEntry)
 
 
 	*pEntry = pBaseLayer;
+	return true;
+
+}
+
+
+bool selectCapsuleTest(ComponentPtr<DynamicSlot> pEntry)
+{
+	auto pBaseLayer = FlexPanel::create();
+	pBaseLayer->setSkin(ColorSkin::create(Color::PapayaWhip));
+
+	auto pPackPanel = PackPanel::create();
+
+	auto pSkin = ColorSkin::create({
+
+			.states = { {State::Default,Color::Yellow}, {State::Selekted,Color::Green}}
+
+		});
+
+
+
+	auto pFiller1 = Filler::create({ .defaultSize = {100,100}, .skin = pSkin });
+	auto pFiller2 = Filler::create({ .defaultSize = {100,100}, .skin = pSkin });
+	auto pFiller3 = Filler::create({ .defaultSize = {100,100}, .skin = pSkin });
+
+
+	pPackPanel->slots.pushBack({ pFiller1, pFiller2, pFiller3} );
+	
+	auto pSelectCapsule = SelectCapsule::create( { .selectMode = SelectMode::MultiEntries });
+
+	pSelectCapsule->slot = pPackPanel;
+
+	pBaseLayer->slots.pushBack(pSelectCapsule, { .pos = {20,20} });
+
+	*pEntry = pBaseLayer;
+	return true;
+
+}
+
+bool drawerPanelTest(ComponentPtr<DynamicSlot> pEntry)
+{
+	auto pBaseLayer = FlexPanel::create();
+	pBaseLayer->setSkin(ColorSkin::create(Color::PapayaWhip));
+
+	auto pPanelSkin = BoxSkin::create(BoxSkin::Blueprint{ .color = Color::PapayaWhip, .outlineColor = Color::Black, .outlineThickness = 1 });
+
+	auto pHeaderSkin = BoxSkin::create(BoxSkin::Blueprint{ .color = Color::PapayaWhip, .outlineColor = Color::Black, .outlineThickness = 1,
+		.states = { {State::Checked, HiColor::White }} });
+
+	auto pDrawerPanel = DrawerPanel::create( { .skin = pPanelSkin } );
+
+	auto pHeader = TextDisplay::create(TextDisplay::Blueprint{ .display = {.text = "EXPAND ME" } });
+	auto pContent = Filler::create({ .defaultSize = {50,100}, .skin = pPanelSkin });
+
+	pDrawerPanel->slots[0] = pHeader;
+	pDrawerPanel->slots[1] = pContent;
+
+	pBaseLayer->slots.pushBack( pDrawerPanel, {.pos = {10,10} });
+
+	*pEntry = pBaseLayer;
+
+	pDrawerPanel->setTransition(ValueTransition::create(500000));
+	pDrawerPanel->setOpen(true);
+
 	return true;
 
 }

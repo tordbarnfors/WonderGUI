@@ -1,25 +1,24 @@
 /*=========================================================================
 
-						 >>> WonderGUI <<<
+                             >>> WonderGUI <<<
 
-  This file is part of Tord Jansson's WonderGUI Graphics Toolkit
-  and copyright (c) Tord Jansson, Sweden [tord.jansson@gmail.com].
+  This file is part of Tord Bärnfors' WonderGUI UI Toolkit and copyright
+  Tord Bärnfors, Sweden [mail: first name AT barnfors DOT c_o_m].
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is free software; you can redistribute
+  The WonderGUI UI Toolkit is free software; you can redistribute
   this file and/or modify it under the terms of the GNU General Public
   License as published by the Free Software Foundation; either
   version 2 of the License, or (at your option) any later version.
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is also available for use in commercial
-  closed-source projects under a separate license. Interested parties
-  should contact Tord Jansson [tord.jansson@gmail.com] for details.
+  The WonderGUI UI Toolkit is also available for use in commercial
+  closed source projects under a separate license. Interested parties
+  should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-
 #include <wg_selectbox.h>
 #include <wg_gfxdevice.h>
 #include <wg_util.h>
@@ -358,13 +357,13 @@ namespace wg
 		if (m_selectedEntryIndex >= 0)
 		{
 			State oldState = entries[m_selectedEntryIndex].m_state;
-			entries[m_selectedEntryIndex].m_state.setSelected(false);
+			entries[m_selectedEntryIndex].m_state.setSelekted(false);
 			_entryTextLayout()->onStateChanged(&entries[m_selectedEntryIndex], entries[m_selectedEntryIndex].m_state, oldState);
 			_requestRenderEntry(&entries[m_selectedEntryIndex]);
 		}
 
 		State oldState = entries[index].m_state;
-		entries[index].m_state.setSelected(true);
+		entries[index].m_state.setSelekted(true);
 		_entryTextLayout()->onStateChanged(&entries[index], entries[index].m_state, oldState);
 		_requestRenderEntry(&entries[index]);
 		m_selectedEntryIndex = index;
@@ -508,14 +507,14 @@ namespace wg
 
 	spx SelectBox::_sideCanvasMatchingWidth(const SideCanvas * pCanvas, spx height, int scale) const
 	{
-		return std::max(m_listCanvasDefaultSize.w, m_defaultSize.w);
+		return std::max(m_listCanvasDefaultSize.w, m_size.w);
 	}
 
 	//____ _sideCanvasDefaultSize() _________________________________________
 
 	SizeSPX SelectBox::_sideCanvasDefaultSize(const SideCanvas * pCanvas, int scale) const
 	{
-		return { std::max(m_listCanvasDefaultSize.w, m_defaultSize.w), m_listCanvasDefaultSize.h };
+		return { std::max(m_listCanvasDefaultSize.w, m_size.w), m_listCanvasDefaultSize.h };
 	}
 
 	//____ _sideCanvasRender() ________________________________________________

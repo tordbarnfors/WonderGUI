@@ -1,25 +1,24 @@
 /*=========================================================================
 
-						 >>> WonderGUI <<<
+                             >>> WonderGUI <<<
 
-  This file is part of Tord Jansson's WonderGUI Graphics Toolkit
-  and copyright (c) Tord Jansson, Sweden [tord.jansson@gmail.com].
+  This file is part of Tord Bärnfors' WonderGUI UI Toolkit and copyright
+  Tord Bärnfors, Sweden [mail: first name AT barnfors DOT c_o_m].
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is free software you can redistribute
+  The WonderGUI UI Toolkit is free software; you can redistribute
   this file and/or modify it under the terms of the GNU General Public
-  License as published by the Free Software Foundation either
+  License as published by the Free Software Foundation; either
   version 2 of the License, or (at your option) any later version.
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is also available for use in commercial
-  closed-source projects under a separate license. Interested parties
-  should contact Tord Jansson [tord.jansson@gmail.com] for details.
+  The WonderGUI UI Toolkit is also available for use in commercial
+  closed source projects under a separate license. Interested parties
+  should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-
 #include <wg_tablepanel.h>
 #include <wg_skinslot.h>
 #include <wg_patches.h>
@@ -418,28 +417,28 @@ void TablePanel::setColumnSpacing( pts before, pts between, pts after )
 
 //____ setRowSkins() __________________________________________________________
 
-void TablePanel::setRowSkins( Skin * pSkin1, Skin * pSkin2 )
+bool TablePanel::setRowSkins( Skin * pSkin1, Skin * pSkin2 )
 {
 	if( pSkin1 == nullptr && pSkin2 != nullptr )
 	{
-		//TODO: Error handling
-		
-		return;
+		Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Setting two skins, but the first one is null.",
+			this, &TYPEINFO, __func__, __FILE__, __LINE__);
+		return false;
 	}
 
 	if( pSkin2 == nullptr )
 		pSkin2 = pSkin1;
 	
 	if( pSkin1 == m_pRowSkins[0] && pSkin2 == m_pRowSkins[1] )
-		return;
+		return true;
 
 	if(pSkin2 != pSkin1)
 	{
 		if( pSkin1->margin() + pSkin1->padding() != pSkin2->margin() + pSkin2->padding() )
 		{
-			//TODO: Error handling
-			
-			return;
+			Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "When setting different skins for odd and even rows, their combined margin+padding must be equal.",
+				this, &TYPEINFO, __func__, __FILE__, __LINE__);			
+			return false;
 		}
 	}
 		
@@ -467,6 +466,8 @@ void TablePanel::setRowSkins( Skin * pSkin1, Skin * pSkin2 )
 	}
 	else
 		_requestRender();
+
+	return true;
 }
 
  

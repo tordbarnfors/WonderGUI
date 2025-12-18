@@ -1,25 +1,24 @@
 /*=========================================================================
 
-						 >>> WonderGUI <<<
+                             >>> WonderGUI <<<
 
-  This file is part of Tord Jansson's WonderGUI Graphics Toolkit
-  and copyright (c) Tord Jansson, Sweden [tord.jansson@gmail.com].
+  This file is part of Tord Bärnfors' WonderGUI UI Toolkit and copyright
+  Tord Bärnfors, Sweden [mail: first name AT barnfors DOT c_o_m].
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is free software; you can redistribute
+  The WonderGUI UI Toolkit is free software; you can redistribute
   this file and/or modify it under the terms of the GNU General Public
   License as published by the Free Software Foundation; either
   version 2 of the License, or (at your option) any later version.
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is also available for use in commercial
-  closed-source projects under a separate license. Interested parties
-  should contact Tord Jansson [tord.jansson@gmail.com] for details.
+  The WonderGUI UI Toolkit is also available for use in commercial
+  closed source projects under a separate license. Interested parties
+  should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-
 #include <algorithm>
 #include <wg_editabletext.h>
 #include <wg_charseq.h>
@@ -43,10 +42,20 @@ namespace wg
 {
 	using namespace Util;
 
+	const TypeInfo	EditableText::TYPEINFO = { "EditableText", &DynamicText::TYPEINFO };
+
+
 	//____ constructor _____________________________________________________________
 
-	EditableText::EditableText(Widget * pWidget ) : Text(pWidget)
+	EditableText::EditableText(Widget * pWidget ) : DynamicText(pWidget)
 	{
+	}
+
+	//____ typeInfo() _________________________________________________________
+
+	const TypeInfo& EditableText::typeInfo(void) const
+	{
+		return TYPEINFO;
 	}
 
 	//____ setMaxLines() _________________________________________________________
@@ -101,7 +110,7 @@ namespace wg
 
 	void EditableText::_receive( Msg * pMsg )
 	{
-		Text::_receive( pMsg );
+		DynamicText::_receive( pMsg );
 
 		MsgType type = pMsg->type();
 
@@ -305,7 +314,7 @@ namespace wg
 		m_editState.selectOfs = 0;
 		m_editState.wantedOfs = -1;
 
-		Text::_clear();
+		DynamicText::_clear();
 		_updateDisplayArea();
 	}
 
@@ -315,7 +324,7 @@ namespace wg
 	{
 		//TODO: Cut sequence if too many lines or chars.
 
-		Text::_setText( seq );
+		DynamicText::_setText( seq );
 		_caretToEnd();
 	}
 
@@ -323,7 +332,7 @@ namespace wg
 	{
 		//TODO: Cut sequence if too many lines or chars.
 
-		Text::_setText( pBuffer );
+		DynamicText::_setText( pBuffer );
 		_caretToEnd();
 	}
 
@@ -331,7 +340,7 @@ namespace wg
 	{
 		//TODO: Cut sequence if too many lines or chars.
 
-		Text::_setText( str );
+		DynamicText::_setText( str );
 		_caretToEnd();
 	}
 
@@ -346,7 +355,7 @@ namespace wg
 
 		if( m_editState.caretOfs == m_editState.selectOfs && m_editState.caretOfs == m_charBuffer.length() )
 		{
-			int newOfs = m_editState.caretOfs + Text::_append( seq );
+			int newOfs = m_editState.caretOfs + DynamicText::_append( seq );
 			_layout()->caretMove( this, newOfs, m_editState.caretOfs );
 
 			m_editState.caretOfs = newOfs;
@@ -355,7 +364,7 @@ namespace wg
 			_updateDisplayArea();
 		}
 
-		return Text::_append( seq );
+		return DynamicText::_append( seq );
 	}
 
 	//____ _insert() ________________________________________________________________
@@ -366,7 +375,7 @@ namespace wg
 
 		limit( ofs, 0, m_charBuffer.length() );
 
-		int added = Text::_insert(ofs,seq);
+		int added = DynamicText::_insert(ofs,seq);
 
 		/* Inserting text should affect the selection as little as possible. Therefore:
 		 *
@@ -424,7 +433,7 @@ namespace wg
 		limit( ofs, 0, m_charBuffer.length() );
 		limit( nDelete, 0, m_charBuffer.length() - ofs );
 
-		int sizeModif = Text::_replace(ofs,nDelete,seq);
+		int sizeModif = DynamicText::_replace(ofs,nDelete,seq);
 
 		// Replacing text should not affect caret or selection except where necessary.
 
@@ -488,7 +497,7 @@ namespace wg
 			_updateDisplayArea();
 		}
 
-		int ret = Text::_erase( ofs, len );
+		int ret = DynamicText::_erase( ofs, len );
 		_updateDisplayArea();
 		return ret;
 	}
@@ -537,7 +546,7 @@ namespace wg
 
 		// Set this last, so that bCaret is set when we call
 
-		Text::_setState(state);
+		DynamicText::_setState(state);
 	}
 
 

@@ -1,25 +1,24 @@
 /*=========================================================================
 
-						 >>> WonderGUI <<<
+                             >>> WonderGUI <<<
 
-  This file is part of Tord Jansson's WonderGUI Graphics Toolkit
-  and copyright (c) Tord Jansson, Sweden [tord.jansson@gmail.com].
+  This file is part of Tord Bärnfors' WonderGUI UI Toolkit and copyright
+  Tord Bärnfors, Sweden [mail: first name AT barnfors DOT c_o_m].
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is free software; you can redistribute
+  The WonderGUI UI Toolkit is free software; you can redistribute
   this file and/or modify it under the terms of the GNU General Public
   License as published by the Free Software Foundation; either
   version 2 of the License, or (at your option) any later version.
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is also available for use in commercial
-  closed-source projects under a separate license. Interested parties
-  should contact Tord Jansson [tord.jansson@gmail.com] for details.
+  The WonderGUI UI Toolkit is also available for use in commercial
+  closed source projects under a separate license. Interested parties
+  should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-
 #include <wonderapp.h>
 #include <sdlwindow_gl.h>
 
@@ -37,8 +36,10 @@
 #include <wg_glsurface.h>
 #include <wg_glsurfacefactory.h>
 #include <wg_gledgemapfactory.h>
-#include <wg_glgfxdevice.h>
+#include <wg_glbackend.h>
 
+#include <wg_dragndropoverlay.h>
+#include <wg_popupoverlay.h>
 
 
 using namespace wg;
@@ -90,7 +91,6 @@ SDLWindow_p SDLWindow::create(const Blueprint& blueprint)
     SDL_GLContext glContext = SDL_GL_CreateContext(pSDLWindow);
     SDL_GL_MakeCurrent(pSDLWindow, glContext);
 
-
     if (SDLWindowGL::s_bInitialized == false)
     {
         s_globalContext = glContext;
@@ -106,7 +106,8 @@ SDLWindow_p SDLWindow::create(const Blueprint& blueprint)
 
 #endif
 
-        auto pDevice = GlGfxDevice::create();
+		auto pBackend = GlBackend::create();
+        auto pDevice = GfxDeviceGen2::create(pBackend);
         Base::setDefaultGfxDevice(pDevice);
 
         auto pSurfaceFactory = GlSurfaceFactory::create();
@@ -114,7 +115,6 @@ SDLWindow_p SDLWindow::create(const Blueprint& blueprint)
 
 		auto pEdgemapFactory = GlEdgemapFactory::create();
 		Base::setDefaultEdgemapFactory(pEdgemapFactory);
-
 
     }
 
@@ -125,8 +125,8 @@ SDLWindow_p SDLWindow::create(const Blueprint& blueprint)
     glClear(GL_COLOR_BUFFER_BIT);
     glFlush();
 */
-    
-    wg_static_cast<GlGfxDevice_p>(Base::defaultGfxDevice())->setDefaultCanvas({int(geo.w)*64,int(geo.h)*64});
+	auto pBackend = wg_static_cast<GfxDeviceGen2_p>(Base::defaultGfxDevice())->backend();
+    wg_static_cast<GlBackend_p>(pBackend)->setDefaultCanvas({int(geo.w)*64,int(geo.h)*64}, 64);		//TODO: Hardcoded scale!
     auto pRootPanel = RootPanel::create(CanvasRef::Default, nullptr);
 
     SDLWindowGL_p pWindow = new SDLWindowGL(blueprint.title, pRootPanel, geo, pSDLWindow, glContext);
@@ -136,6 +136,15 @@ SDLWindow_p SDLWindow::create(const Blueprint& blueprint)
     if (blueprint.finalizer)
         pWindow->setFinalizer(blueprint.finalizer);
 
+	// Setup basic widget hierarchy.
+
+	auto pDragNDropOverlay = DragNDropOverlay::create();
+	pRootPanel->slot = pDragNDropOverlay;
+
+	auto pPopupOverlay = PopupOverlay::create();
+	pDragNDropOverlay->mainSlot = pPopupOverlay;
+
+	pWindow->m_pLastOverlay = pPopupOverlay;
 
     //TODO: This is ugly. It should be handled when windows gets focused.
 
@@ -170,7 +179,8 @@ void SDLWindowGL::onWindowSizeUpdated( int width, int height )
     m_geo.w = width;
     m_geo.h = height;
     
-    wg_static_cast<GlGfxDevice_p>(Base::defaultGfxDevice())->setDefaultCanvas(SizeSPX(width * 64, height * 64), 64);
+	auto pBackend = wg_static_cast<GfxDeviceGen2_p>(Base::defaultGfxDevice())->backend();
+    wg_static_cast<GlBackend_p>(pBackend)->setDefaultCanvas(SizeSPX(width * 64, height * 64), 64);
 
     m_pRootPanel->setCanvas(CanvasRef::Default);
 }
@@ -184,7 +194,8 @@ void SDLWindowGL::render()
 
     SDL_GL_MakeCurrent( m_pSDLWindow, s_globalContext );
 
-    wg_static_cast<GlGfxDevice_p>(Base::defaultGfxDevice())->setDefaultCanvas({int(m_geo.w)*64,int(m_geo.h)*64});
+	auto pBackend = wg_static_cast<GfxDeviceGen2_p>(Base::defaultGfxDevice())->backend();
+	wg_static_cast<GlBackend_p>(pBackend)->setDefaultCanvas({int(m_geo.w)*64,int(m_geo.h)*64},64);
     
     m_pRootPanel->render();
 

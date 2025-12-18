@@ -1,25 +1,24 @@
 /*=========================================================================
 
-						 >>> WonderGUI <<<
+                             >>> WonderGUI <<<
 
-  This file is part of Tord Jansson's WonderGUI Graphics Toolkit
-  and copyright (c) Tord Jansson, Sweden [tord.jansson@gmail.com].
+  This file is part of Tord Bärnfors' WonderGUI UI Toolkit and copyright
+  Tord Bärnfors, Sweden [mail: first name AT barnfors DOT c_o_m].
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is free software; you can redistribute
+  The WonderGUI UI Toolkit is free software; you can redistribute
   this file and/or modify it under the terms of the GNU General Public
   License as published by the Free Software Foundation; either
   version 2 of the License, or (at your option) any later version.
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is also available for use in commercial
-  closed-source projects under a separate license. Interested parties
-  should contact Tord Jansson [tord.jansson@gmail.com] for details.
+  The WonderGUI UI Toolkit is also available for use in commercial
+  closed source projects under a separate license. Interested parties
+  should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-
 /* TODO: See if we can be better off using multiple size-objects instead of changing size all the time.
    TODO: Separate glyph bitmap from glyph struct, not render or prio cache slot until bitmap is accessed (probably has more to do with Pen).
 */
@@ -64,9 +63,14 @@ namespace wg
 		return FreeTypeFont_p( new FreeTypeFont(WGBP(FreeTypeFont, _.blob = pTTFBlob )) );
 	}
 
-
 	FreeTypeFont_p FreeTypeFont::create( const Blueprint& blueprint )
 	{
+		if( !blueprint.blob )
+		{
+			GearBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Blueprint must contain a blob with the font", nullptr, &FreeTypeFont::TYPEINFO, __func__, __FILE__, __LINE__);
+			return nullptr;
+		}
+
 		return FreeTypeFont_p(new FreeTypeFont(blueprint));
 	}
 
@@ -74,12 +78,12 @@ namespace wg
 
 	FreeTypeFont::FreeTypeFont( const Blueprint& bp ) : Font(bp.backupFont)
 	{
-        if( s_nInstances == 0 )
+		if( s_nInstances == 0 )
         {
             FT_Error err = FT_Init_FreeType(&s_freeTypeLibrary);
             if (err != 0)
             {
-                //TODO: Error handling!
+				GearBase::throwError(ErrorLevel::Critical, ErrorCode::Internal, "Failed to init FreeType", this, &FreeTypeFont::TYPEINFO, __func__, __FILE__, __LINE__);
             }
         }
         s_nInstances++;
@@ -99,7 +103,7 @@ namespace wg
 											&m_ftFace );
 		if( err )
 		{
-			//TODO: Error handling...
+			GearBase::throwError(ErrorLevel::Critical, ErrorCode::InvalidParam, "FreeType failed to initialize font in blob", this, &FreeTypeFont::TYPEINFO, __func__, __FILE__, __LINE__);
 		}
 
 		m_renderMode = bp.renderMode;
@@ -471,7 +475,7 @@ namespace wg
 		err = FT_Load_Glyph( m_ftFace, pGlyph->kerningIndex, FT_LOAD_RENDER | FT_LOAD_COLOR | m_renderFlags );
 		if( err )
         {
-			//TODO: Error handling!
+			GfxBase::throwError(ErrorLevel::Error, ErrorCode::Internal, "FreeType failed to load glyph for bitmap generation", this, &FreeTypeFont::TYPEINFO, __func__, __FILE__, __LINE__);
 			
             if( bDifferentSize )
                 FT_Set_Char_Size( m_ftFace, m_size, 0, 0,0 );

@@ -1,25 +1,24 @@
 /*=========================================================================
 
-						 >>> WonderGUI <<<
+                             >>> WonderGUI <<<
 
-  This file is part of Tord Jansson's WonderGUI Graphics Toolkit
-  and copyright (c) Tord Jansson, Sweden [tord.jansson@gmail.com].
+  This file is part of Tord Bärnfors' WonderGUI UI Toolkit and copyright
+  Tord Bärnfors, Sweden [mail: first name AT barnfors DOT c_o_m].
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is free software; you can redistribute
+  The WonderGUI UI Toolkit is free software; you can redistribute
   this file and/or modify it under the terms of the GNU General Public
   License as published by the Free Software Foundation; either
   version 2 of the License, or (at your option) any later version.
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is also available for use in commercial
-  closed-source projects under a separate license. Interested parties
-  should contact Tord Jansson [tord.jansson@gmail.com] for details.
+  The WonderGUI UI Toolkit is also available for use in commercial
+  closed source projects under a separate license. Interested parties
+  should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-
 #include <wg_enumextras.h>
 #include <assert.h>
 
@@ -34,6 +33,100 @@ namespace wg
 				Any modifications here will be overwritten!
 
 =========================================================================*/
+
+	const char * toString(PrimState i)
+	{
+		static const char * names[] = { 
+			"Focused",
+			"Hovered",
+			"Pressed",
+			"Selected",
+			"Checked",
+			"Flagged",
+			"Targeted",
+			"Disabled" };
+
+		return names[(int)i];
+	}
+
+	const char * toString(StateEnum i)
+	{
+		static const char * names[] = { 
+			"Default",
+			"Flagged",
+			"Selekted",
+			"FlaggedSelekted",
+			"Checked",
+			"FlaggedChecked",
+			"CheckedSelekted",
+			"FlaggedCheckedSelekted",
+			"Focused",
+			"FlaggedFocused",
+			"SelektedFocused",
+			"FlaggedSelektedFocused",
+			"CheckedFocused",
+			"FlaggedCheckedFocused",
+			"CheckedSelektedFocused",
+			"FlaggedCheckedSelektedFocused",
+			"Hovered",
+			"FlaggedHovered",
+			"SelektedHovered",
+			"FlaggedSelektedHovered",
+			"CheckedHovered",
+			"FlaggedCheckedHovered",
+			"CheckedSelektedHovered",
+			"FlaggedCheckedSelektedHovered",
+			"HoveredFocused",
+			"FlaggedHoveredFocused",
+			"SelektedHoveredFocused",
+			"FlaggedSelektedHoveredFocused",
+			"CheckedHoveredFocused",
+			"FlaggedCheckedHoveredFocused",
+			"CheckedSelektedHoveredFocused",
+			"FlaggedCheckedSelektedHoveredFocused",
+			"Pressed",
+			"FlaggedPressed",
+			"SelektedPressed",
+			"FlaggedSelektedPressed",
+			"CheckedPressed",
+			"FlaggedCheckedPressed",
+			"CheckedSelektedPressed",
+			"FlaggedCheckedSelektedPressed",
+			"PressedFocused",
+			"FlaggedPressedFocused",
+			"SelektedPressedFocused",
+			"FlaggedSelektedPressedFocused",
+			"CheckedPressedFocused",
+			"FlaggedCheckedPressedFocused",
+			"CheckedSelektedPressedFocused",
+			"FlaggedCheckedSelektedPressedFocused",
+			"Targeted",
+			"TargetedFlagged",
+			"TargetedSelekted",
+			"TargetedFlaggedSelekted",
+			"TargetedChecked",
+			"TargetedFlaggedChecked",
+			"TargetedCheckedSelekted",
+			"TargetedFlaggedCheckedSelekted",
+			"TargetedFocused",
+			"TargetedFlaggedFocused",
+			"TargetedSelektedFocused",
+			"TargetedFlaggedSelektedFocused",
+			"TargetedCheckedFocused",
+			"TargetedFlaggedCheckedFocused",
+			"TargetedCheckedSelektedFocused",
+			"TargetedFlaggedCheckedSelektedFocused",
+			"Disabled",
+			"DisabledFlagged",
+			"DisabledSelekted",
+			"DisabledFlaggedSelekted",
+			"DisabledChecked",
+			"DisabledFlaggedChecked",
+			"DisabledCheckedSelekted",
+			"DisabledFlaggedCheckedSelekted" };
+
+		return names[(int)i];
+	}
 
 	const char * toString(CodePage i)
 	{
@@ -201,16 +294,18 @@ namespace wg
 			"DropLeave",
 			"DropDeliver",
 			"*/Select",
-			"Unselect",
 			"Toggle",
 			"ScrollbarMove",
 			"ValueUpdate",
 			"RangeUpdate",
 			"TextEdit",
+			"Selected",
+			"Unselected",
 			"ItemToggle",
 			"ItemMousePress",
 			"ItemsSelect",
 			"ItemsUnselect",
+			"PopupOpened",
 			"PopupSelect",
 			"PopupClosed",
 			"ModalMoveOutside",
@@ -257,6 +352,18 @@ namespace wg
 		return names[(int)i];
 	}
 
+	const char * toString(KeyAction i)
+	{
+		static const char * names[] = { 
+			"None",
+			"Insert",
+			"ReleaseFocus",
+			"CycleFocus" };
+
+		return names[(int)i];
+	}
+
+
 	const char * toString(MaskOp i)
 	{
 		static const char * names[] = { 
@@ -270,6 +377,44 @@ namespace wg
 
 //=========================================================================
 //. endAutoSection
+
+	const char* toString(ModKeys i)
+	{
+		static const char* names[] = {
+			"None",
+			"Shift",
+			"Alt",
+			"AltShift",
+#ifdef __APPLE__
+			"Command",
+			"CommandShift",
+			"CommandAlt",
+			"CommandAltShift",
+#else
+			"StdCtrl",
+			"StdCtrlShift",
+			"StdCtrlAlt",
+			"StdCtrlAltShift",
+#endif
+			"MacCtrl",
+			"MacCtrlShift",
+			"MacCtrlAlt",
+			"MacCtrlAltShift",
+			"MacCtrlCmd",
+			"MacCtrlCmdShift",
+			"MacCtrlCmdAlt",
+			"MacCtrlCmdAltShift",
+			"OSKey",
+			"OSKeyShift",
+			"OSKeyAlt",
+			"OSKeyAltShift",
+			"OSKeyCtrl",
+			"OSKeyCtrlShift",
+			"OSKeyCtrlAlt",
+			"OSKeyCtrlAltShift" };
+
+		return names[(int)i];
+	}
 
 
 

@@ -1,25 +1,24 @@
 /*=========================================================================
 
-						 >>> WonderGUI <<<
+                             >>> WonderGUI <<<
 
-  This file is part of Tord Jansson's WonderGUI Graphics Toolkit
-  and copyright (c) Tord Jansson, Sweden [tord.jansson@gmail.com].
+  This file is part of Tord Bärnfors' WonderGUI UI Toolkit and copyright
+  Tord Bärnfors, Sweden [mail: first name AT barnfors DOT c_o_m].
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is free software; you can redistribute
+  The WonderGUI UI Toolkit is free software; you can redistribute
   this file and/or modify it under the terms of the GNU General Public
   License as published by the Free Software Foundation; either
   version 2 of the License, or (at your option) any later version.
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is also available for use in commercial
-  closed-source projects under a separate license. Interested parties
-  should contact Tord Jansson [tord.jansson@gmail.com] for details.
+  The WonderGUI UI Toolkit is also available for use in commercial
+  closed source projects under a separate license. Interested parties
+  should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-
 #include <initializer_list>
 
 #include <wg_packpanel.h>
@@ -34,10 +33,10 @@ namespace wg
 	using namespace Util;
 
 	template class DynamicSlotVector<PackPanelSlot>;
-	template class Panel<PackPanelSlot>;
+	template class PanelTemplate<PackPanelSlot>;
 
 	const TypeInfo PackPanel::TYPEINFO = { "PackPanel", &Panel::TYPEINFO };
-	const TypeInfo PackPanelSlot::TYPEINFO = { "PackPanelSlot", &DynamicSlot::TYPEINFO };
+	const TypeInfo PackPanelSlot::TYPEINFO = { "PackPanelSlot", &PanelSlot::TYPEINFO };
 
 
 	bool PackPanelSlot::_setBlueprint( const Blueprint& bp )
@@ -713,7 +712,7 @@ namespace wg
 			m_defaultContentSize = _calcDefaultContentSize(scale, m_maxAscend, m_maxDescend);
 		}
 
-		Panel::_resize(size, scale);
+		PanelTemplate::_resize(size, scale);
 		_refreshChildGeo(true);
 
 		if (slots.isEmpty())

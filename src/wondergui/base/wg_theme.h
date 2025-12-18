@@ -1,25 +1,24 @@
 /*=========================================================================
 
-						 >>> WonderGUI <<<
+                             >>> WonderGUI <<<
 
-  This file is part of Tord Jansson's WonderGUI Graphics Toolkit
-  and copyright (c) Tord Jansson, Sweden [tord.jansson@gmail.com].
+  This file is part of Tord Bärnfors' WonderGUI UI Toolkit and copyright
+  Tord Bärnfors, Sweden [mail: first name AT barnfors DOT c_o_m].
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is free software; you can redistribute
+  The WonderGUI UI Toolkit is free software; you can redistribute
   this file and/or modify it under the terms of the GNU General Public
   License as published by the Free Software Foundation; either
   version 2 of the License, or (at your option) any later version.
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is also available for use in commercial
-  closed-source projects under a separate license. Interested parties
-  should contact Tord Jansson [tord.jansson@gmail.com] for details.
+  The WonderGUI UI Toolkit is also available for use in commercial
+  closed source projects under a separate license. Interested parties
+  should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-
 #ifndef	WG_THEME_DOT_H
 #define WG_THEME_DOT_H
 #pragma once
@@ -32,6 +31,14 @@
 #include <wg_button.h>
 #include <wg_scrollpanel.h>
 #include <wg_textdisplay.h>
+#include <wg_drawerpanel.h>
+#include <wg_paddingcapsule.h>
+#include <wg_texteditor.h>
+#include <wg_lineeditor.h>
+#include <wg_tablepanel.h>
+#include <wg_splitpanel.h>
+#include <wg_selectbox.h>
+
 
 namespace wg
 {
@@ -95,9 +102,18 @@ namespace wg
 		virtual TextStyle_p quoteStyle() const = 0;			// Usually italic
 		virtual TextStyle_p captionStyle() const = 0;		// Text under image or figure.
 		virtual TextStyle_p calloutStyle() const = 0;		// Separate text section in magazine or such which highligt key passages.
+		virtual TextStyle_p finePrintStyle() const = 0;		// Style for fine print text. As small as possible while remaining readable
+
 
 		virtual TextStyle_p defaultStyle() const = 0;		// Default style for UI elements
 		virtual TextStyle_p pressableStyle() const = 0;		// Default text style for buttons etc.
+
+		// Useful skins
+
+		virtual Skin_p		plateSkin() const = 0;			// Main backgroud element, with frame or bevel or such.
+		virtual Skin_p		canvasSkin() const = 0;			// Background for texteditors and other work-fields.
+		virtual Skin_p		windowSkin() const = 0;			// Background for window.
+
 
 		// Standard widgets
 
@@ -113,6 +129,20 @@ namespace wg
 		virtual const ScrollPanel::Blueprint& 		scrollPanelX() const = 0;
 		virtual const ScrollPanel::Blueprint& 		scrollPanelY() const = 0;
 		virtual const ScrollPanel::Blueprint& 		scrollPanelXY() const = 0;
+
+		virtual const SplitPanel::Blueprint&		splitPanelX() const = 0;
+		virtual const SplitPanel::Blueprint&		splitPanelY() const = 0;
+
+
+		virtual const DrawerPanel::Blueprint&		treeListDrawer() const = 0;
+		virtual const PaddingCapsule::Blueprint&	treeListEntry() const = 0;
+
+		virtual const TablePanel::Blueprint&		listTable() const = 0;		// Table for listing of items.
+
+		virtual const TextEditor::Blueprint&		textEditor() const = 0;
+		virtual const LineEditor::Blueprint&		lineEditor() const = 0;
+
+		virtual const SelectBox::Blueprint&			selectBox() const = 0;
 
 		//
 

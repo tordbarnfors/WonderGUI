@@ -1,25 +1,24 @@
 /*=========================================================================
 
-						 >>> WonderGUI <<<
+                             >>> WonderGUI <<<
 
-  This file is part of Tord Jansson's WonderGUI Graphics Toolkit
-  and copyright (c) Tord Jansson, Sweden [tord.jansson@gmail.com].
+  This file is part of Tord Bärnfors' WonderGUI UI Toolkit and copyright
+  Tord Bärnfors, Sweden [mail: first name AT barnfors DOT c_o_m].
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is free software; you can redistribute
+  The WonderGUI UI Toolkit is free software; you can redistribute
   this file and/or modify it under the terms of the GNU General Public
   License as published by the Free Software Foundation; either
   version 2 of the License, or (at your option) any later version.
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is also available for use in commercial
-  closed-source projects under a separate license. Interested parties
-  should contact Tord Jansson [tord.jansson@gmail.com] for details.
+  The WonderGUI UI Toolkit is also available for use in commercial
+  closed source projects under a separate license. Interested parties
+  should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-
 #include <algorithm>
 #include <cmath>
 #include <cstring>
@@ -198,31 +197,18 @@ namespace wg
 		return true;
 	}
 
-	//____ setTint() ___________________________________________________________
+	//____ setTintmap() ___________________________________________________________
 
-	void GfxDeviceGen1::setTint(HiColor color)
-	{
-		setTintColor(color);
-	}
-
-	void GfxDeviceGen1::setTint(const RectSPX& rect, Tintmap* pTintmap)
+	void GfxDeviceGen1::setTintmap(const RectSPX& rect, Tintmap* pTintmap)
 	{
 		// Do nothing. Not supported in Gen1
 	}
 
-	//____ clearTint() _________________________________________________________
+	//____ clearTintmap() _________________________________________________________
 
-	void GfxDeviceGen1::clearTint()
+	void GfxDeviceGen1::clearTintmap()
 	{
-		clearTintGradient();
-		setTintColor(HiColor::White);
-	}
-
-	//____ isTinting() _________________________________________________________
-
-	bool GfxDeviceGen1::isTinting() const
-	{
-		return (m_tintColor != HiColor::White || m_bTintGradient);
+		// Do nothing. Not supported in Gen1
 	}
 
 	//____ tintmap() ___________________________________________________________
@@ -248,6 +234,13 @@ namespace wg
 	void GfxDeviceGen1::setTintColor( HiColor color )
 	{
 		m_tintColor = color;
+	}
+
+	//____ clearTintColor() __________________________________________________________
+
+	void GfxDeviceGen1::clearTintColor()
+	{
+		m_tintColor = HiColor::White;
 	}
 
 	//____ setTintGradient() __________________________________________________
@@ -505,8 +498,8 @@ namespace wg
 
 			if (bounds.x < 0 || bounds.y < 0 || bounds.w > sz.w || bounds.h > sz.h)
 			{
-				//TODO: Error handling!
-
+				GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "UpdateRects contains rectangels outside canvas.",
+					this, &TYPEINFO, __func__, __FILE__, __LINE__);
 				return false;
 			}
 		}

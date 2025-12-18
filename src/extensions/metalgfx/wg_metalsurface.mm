@@ -363,7 +363,7 @@ namespace wg
 
 			default:
                 GfxBase::throwError( ErrorLevel::Critical, ErrorCode::InvalidParam, "Specified PixelFormat not supported", this, &TYPEINFO, __func__, __FILE__, __LINE__ );
-				assert(false);           // Should never get here, just avoiding compiler warnings.
+				assert(false);           // Just to really catch this in a clear way during development.
 				break;
 		}
 

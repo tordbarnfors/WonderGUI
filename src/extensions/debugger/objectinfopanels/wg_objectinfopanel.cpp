@@ -1,22 +1,22 @@
 /*=========================================================================
 
-						 >>> WonderGUI <<<
+                             >>> WonderGUI <<<
 
-  This file is part of Tord Jansson's WonderGUI Graphics Toolkit
-  and copyright (c) Tord Jansson, Sweden [tord.jansson@gmail.com].
+  This file is part of Tord Bärnfors' WonderGUI UI Toolkit and copyright
+  Tord Bärnfors, Sweden [mail: first name AT barnfors DOT c_o_m].
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is free software; you can redistribute
+  The WonderGUI UI Toolkit is free software; you can redistribute
   this file and/or modify it under the terms of the GNU General Public
   License as published by the Free Software Foundation; either
   version 2 of the License, or (at your option) any later version.
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is also available for use in commercial
-  closed-source projects under a separate license. Interested parties
-  should contact Tord Jansson [tord.jansson@gmail.com] for details.
+  The WonderGUI UI Toolkit is also available for use in commercial
+  closed source projects under a separate license. Interested parties
+  should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
 #include "wg_objectinfopanel.h"
@@ -33,17 +33,17 @@ namespace wg
 
 	//____ constructor _____________________________________________________________
 
-	ObjectInfoPanel::ObjectInfoPanel(const Blueprint& blueprint, Object * pObject) : DebugPanel( blueprint )
+	ObjectInfoPanel::ObjectInfoPanel(const Blueprint& blueprint, IDebugger* pHolder, Object * pObject) : DebugPanel( blueprint, pHolder, Object::TYPEINFO.className )
 	{
-		auto pTable = TablePanel::create( WGOVR(blueprint.table, _.columns = 2, _.rows = 2 ));
+		m_pInspected = pObject;
 
-		pTable->slots[0][0] = TextDisplay::create( WGOVR( blueprint.listEntryLabel, _.display.text = "Refcount: " ));
-		pTable->slots[0][1] = NumberDisplay::create( WGOVR( blueprint.listEntryInteger, _.display.value = pObject->refcount() ));
+		m_pTable = _createTable(3,2);
+		_initIntegerEntry(m_pTable, 0, "Refcount: ");
+		_initIntegerEntry(m_pTable, 1, "Weak pointers: ");
+		_initPointerEntry(m_pTable, 2, "Finalizer: ");
 
-		pTable->slots[1][0] = TextDisplay::create(WGOVR(blueprint.listEntryLabel, _.display.text = "Finalizer: "));
-		pTable->slots[1][1] = NumberDisplay::create( WGOVR( blueprint.listEntryPointer, _.display.value = pObject->finalizer()));
-
-		this->slot = pTable;
+		refresh();
+		this->slot = m_pTable;
 	}
 
 	//____ typeInfo() _________________________________________________________
@@ -51,6 +51,16 @@ namespace wg
 	const TypeInfo& ObjectInfoPanel::typeInfo(void) const
 	{
 		return TYPEINFO;
+	}
+
+	//____ refresh() _____________________________________________________________
+
+	void ObjectInfoPanel::refresh()
+	{
+		_refreshIntegerEntry(m_pTable, 0, m_pInspected->refcount());
+		_refreshIntegerEntry(m_pTable, 1, m_pInspected->weakPointers());
+		_refreshPointerEntry(m_pTable, 2, (void *) m_pInspected->finalizer().rawPtr(), m_pFinalizer );
+
 	}
 
 

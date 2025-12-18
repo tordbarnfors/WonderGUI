@@ -1,25 +1,24 @@
 /*=========================================================================
 
-						 >>> WonderGUI <<<
+                             >>> WonderGUI <<<
 
-  This file is part of Tord Jansson's WonderGUI Graphics Toolkit
-  and copyright (c) Tord Jansson, Sweden [tord.jansson@gmail.com].
+  This file is part of Tord Bärnfors' WonderGUI UI Toolkit and copyright
+  Tord Bärnfors, Sweden [mail: first name AT barnfors DOT c_o_m].
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is free software; you can redistribute
+  The WonderGUI UI Toolkit is free software; you can redistribute
   this file and/or modify it under the terms of the GNU General Public
   License as published by the Free Software Foundation; either
   version 2 of the License, or (at your option) any later version.
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is also available for use in commercial
-  closed-source projects under a separate license. Interested parties
-  should contact Tord Jansson [tord.jansson@gmail.com] for details.
+  The WonderGUI UI Toolkit is also available for use in commercial
+  closed source projects under a separate license. Interested parties
+  should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-
 #include <wg_overlay.h>
 #include <wg_patches.h>
 
@@ -93,7 +92,7 @@ namespace wg
 
 		while( pCover <  pEnd )
 		{
-			if( (pCover->m_geo + pCover->_widget()->_overflow()).isOverlapping( rect ) )
+			if( pCover->m_bVisible && (pCover->m_geo + pCover->_widget()->_overflow()).isOverlapping( rect ) )
 				pCover->_widget()->_maskPatches( patches, pCover->m_geo, RectSPX(0,0, m_size ) );
 
 			pCover = _incOverlaySlot(pCover,incNext);
@@ -141,6 +140,10 @@ namespace wg
 	void Overlay::_firstSlotWithGeo( SlotWithGeo& package ) const
 	{
 		const Slot * p = _beginOverlaySlots();
+
+		while( p < _endOverlaySlots() && !p->m_bVisible )
+			p = _incOverlaySlot(p,_sizeOfOverlaySlot());
+
 		if( p < _endOverlaySlots() )
 		{
 			package.geo = p->m_geo;
@@ -167,7 +170,13 @@ namespace wg
 			return;
 		}
 
-		p = _incOverlaySlot(p,_sizeOfOverlaySlot());
+		int slotSize = _sizeOfOverlaySlot();
+		p = _incOverlaySlot(p,slotSize);
+
+		while( p < _endOverlaySlots() && !p->m_bVisible )
+			p = _incOverlaySlot(p,slotSize);
+
+
 		if( p < _endOverlaySlots() )
 		{
 			package.geo = ((Slot*)p)->m_geo;

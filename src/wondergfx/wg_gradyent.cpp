@@ -1,27 +1,26 @@
 /*=========================================================================
 
-						 >>> WonderGUI <<<
+                             >>> WonderGUI <<<
 
-  This file is part of Tord Jansson's WonderGUI Graphics Toolkit
-  and copyright (c) Tord Jansson, Sweden [tord.jansson@gmail.com].
+  This file is part of Tord Bärnfors' WonderGUI UI Toolkit and copyright
+  Tord Bärnfors, Sweden [mail: first name AT barnfors DOT c_o_m].
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is free software; you can redistribute
+  The WonderGUI UI Toolkit is free software; you can redistribute
   this file and/or modify it under the terms of the GNU General Public
   License as published by the Free Software Foundation; either
   version 2 of the License, or (at your option) any later version.
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is also available for use in commercial
-  closed-source projects under a separate license. Interested parties
-  should contact Tord Jansson [tord.jansson@gmail.com] for details.
+  The WonderGUI UI Toolkit is also available for use in commercial
+  closed source projects under a separate license. Interested parties
+  should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-
-
 #include <wg_gradyent.h>
+#include <wg_gfxbase.h>
 
 namespace wg
 {
@@ -34,8 +33,8 @@ namespace wg
 	{
 		if (!top.isValid() || !bottom.isValid() || !left.isValid() || !right.isValid() )
 		{
-			//TODO: Error handling!
-
+			GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Invalid color(s) specified.",
+				nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return nullptr;
 		}
 
@@ -102,50 +101,65 @@ namespace wg
 		return TYPEINFO;
 	}
 
-	//____ exportHorizontalColors() ______________________________________________
+	//____ exportColors() ______________________________________________
 
-	void Gradyent::exportHorizontalColors(spx length, HiColor* pOutput)
+	void Gradyent::exportColors(SizeI tintmapSize, HiColor* pOutputX, HiColor* pOutputY )
 	{
-		if( m_bHorizontal )
+		// Special case if we have no gradient at all
+
+		if( !m_bHorizontal && !m_bVertical )
 		{
-			int len = length / 64;
-			for (int i = 0; i < len; i++)
+			if( pOutputX && pOutputY )
 			{
-				HiColor col;
-
-				col.r = m_left.r + ((int(m_right.r) - int(m_left.r)) * i / len);
-				col.g = m_left.g + ((int(m_right.g) - int(m_left.g)) * i / len);
-				col.b = m_left.b + ((int(m_right.b) - int(m_left.b)) * i / len);
-				col.a = m_left.a + ((int(m_right.a) - int(m_left.a)) * i / len);
-
-				pOutput[i] = col;
+				_fill( tintmapSize.w, pOutputX, m_left);
+				_fill( tintmapSize.w, pOutputX, m_top);
 			}
+			else if( pOutputX )
+				_fill( tintmapSize.w, pOutputX, m_left * m_top);
+			else
+				_fill( tintmapSize.h, pOutputY, m_left * m_top);
+			return;
 		}
-		else
-			_fill(length, pOutput, m_left);
-	}
 
-	//____ exportVerticalColors() ________________________________________________
+		// Normal case
 
-	void Gradyent::exportVerticalColors(spx length, HiColor* pOutput)
-	{
-		if( m_bVertical )
+		if( pOutputX )
 		{
-			int len = length / 64;
-			for (int i = 0; i < len; i++)
+			if( m_bHorizontal )
 			{
-				HiColor col;
+				HiColor left = m_left;
+				HiColor right = m_right;
 
-				col.r = m_top.r + ((int(m_bottom.r) - int(m_top.r)) * i / len);
-				col.g = m_top.g + ((int(m_bottom.g) - int(m_top.g)) * i / len);
-				col.b = m_top.b + ((int(m_bottom.b) - int(m_top.b)) * i / len);
-				col.a = m_top.a + ((int(m_bottom.a) - int(m_top.a)) * i / len);
+				if (!pOutputY)
+				{
+					left *= m_top;
+					right *= m_top;
+				}
 
-				pOutput[i] = col;
+				_export( tintmapSize.w, pOutputX, left, right );
 			}
+			else
+				_fill( tintmapSize.w, pOutputX, HiColor::White);
 		}
-		else
-			_fill(length, pOutput, m_top);
+
+		if( pOutputY )
+		{
+			if( m_bVertical )
+			{
+				HiColor top = m_top;
+				HiColor bottom = m_bottom;
+
+				if (!pOutputY)
+				{
+					top *= m_left;
+					bottom *= m_left;
+				}
+
+				_export( tintmapSize.h, pOutputY, top, bottom );
+			}
+			else
+				_fill( tintmapSize.h, pOutputY, HiColor::White);
+		}
 	}
 
 	//____ exportGradient() ______________________________________________________
@@ -162,6 +176,39 @@ namespace wg
 		return g;
 	}
 
+	//____ alpha() _______________________________________________________________
+
+	int Gradyent::alpha( const CoordSPX& pos, const RectSPX& area )
+	{
+		CoordSPX offset = pos - area.pos();
+
+		int verticalAlpha = m_top.a + (m_bottom.a - m_top.a) * (pos.y/area.h);
+		int horizontalAlpha = m_left.a + (m_right.a - m_left.a) * (pos.x/area.w);
+
+		return verticalAlpha * horizontalAlpha;
+	}
+
+	//____ _export() _____________________________________________________________
+
+	void Gradyent::_export(int entries, HiColor * pDest, const HiColor& from, const HiColor& to)
+	{
+		int diffR = int(to.r - int(from.r));
+		int diffG = int(to.g - int(from.g));
+		int diffB = int(to.b - int(from.b));
+		int diffA = int(to.a - int(from.a));
+
+		for (int i = 0; i < entries; i++)
+		{
+			HiColor col;
+
+			col.r = from.r + (diffR * i / entries);
+			col.g = from.g + (diffG * i / entries);
+			col.b = from.b + (diffB * i / entries);
+			col.a = from.a + (diffA * i / entries);
+
+			pDest[i] = col;
+		}
+	}
 
 	//____ _setFlags() ________________________________________________________
 
@@ -171,8 +218,6 @@ namespace wg
 		m_bHorizontal = (m_left != m_right);
 		m_bVertical = (m_top != m_bottom);
 	}
-
-
 }
 
 

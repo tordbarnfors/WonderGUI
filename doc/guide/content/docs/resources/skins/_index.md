@@ -12,7 +12,7 @@ Skins are very generic in that the same skin can be applied to widgets of all di
 
 There are many kinds of skins to choose from. The most simple skin is just a filled rectangle and is suitable for backgrounds and such. Other skins draws bitmaps, boxes, circles and even pie-charts. More advanced skins change their look depending on the state of the widget (like a pressed Button) or the value of the widget (like the progress of a progress-bar or the rotation of a knob). Skins can be animated and layered to create advanced effects.
 
-Skins are *Immutable Resource Objects* and are therefore created once, never modified and then applied to any number of Widgets.
+Skins are *Immutable Resource Objects* and are therefore created once, never modified and then used by any number of Widgets.
 
 
 
@@ -31,7 +31,7 @@ A skin isn't limited to any of these categories and some falls entirely outside,
 
 ## Properties available in all skins
 
-There are four properties that are available in all skins:
+There are six properties that are available in all skins:
 
 | Property  | Set in state | Description                                                  |
 | --------- | ------------ | ------------------------------------------------------------ |
@@ -39,6 +39,7 @@ There are four properties that are available in all skins:
 | layer     | no           | CanvasLayer that skin is draw in. Defaults to 0.             |
 | margin    | no           | Border around skin.                                          |
 | markAlpha | no           | Lowest alpha value that results in hovering and press.       |
+| overflow  | no           | Allows for skin to be drawn outside its normal area.         |
 | padding   | no           | Border around skin content inside skin.                      |
 
 ### *margin* and *padding*
@@ -46,6 +47,10 @@ There are four properties that are available in all skins:
 Margin and padding both specifies *Borders* and deals with the geometry of the widget. Margin is an empty area around the skin that is not rendered while padding specifies the distance from the edge of the skin to the area where the content of the widget is drawn. In the case of a button, the content is the text and/or icon. For a container the content is where all child widgets are drawn. Although a widget can place content outside the content area and even in the margin, all current widgets refrain from doing so.
 
 ![skin-borders](/docs/manual/skin-borders.png)
+
+### overflow
+
+Overflow is the opposite of margin and allows the  skin to be rendered partly outside the widget. This is useful for certain effects such as a glow around the widget or a shadow under it. The overflowing areas of a widget is only for visual effects and cans not be interacted with using the mouse.
 
 ### *markAlpha*
 

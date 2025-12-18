@@ -1,33 +1,31 @@
-
 /*=========================================================================
 
-						 >>> WonderGUI <<<
+                             >>> WonderGUI <<<
 
-  This file is part of Tord Jansson's WonderGUI Graphics Toolkit
-  and copyright (c) Tord Jansson, Sweden [tord.jansson@gmail.com].
+  This file is part of Tord Bärnfors' WonderGUI UI Toolkit and copyright
+  Tord Bärnfors, Sweden [mail: first name AT barnfors DOT c_o_m].
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is free software; you can redistribute
+  The WonderGUI UI Toolkit is free software; you can redistribute
   this file and/or modify it under the terms of the GNU General Public
   License as published by the Free Software Foundation; either
   version 2 of the License, or (at your option) any later version.
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is also available for use in commercial
-  closed-source projects under a separate license. Interested parties
-  should contact Tord Jansson [tord.jansson@gmail.com] for details.
+  The WonderGUI UI Toolkit is also available for use in commercial
+  closed source projects under a separate license. Interested parties
+  should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-
-
 #include <wg_base.h>
 
 #include <wg_msgrouter.h>
 #include <wg_basictextlayout.h>
 #include <wg_basicnumberlayout.h>
 #include <wg_inputhandler.h>
+#include <wg_theme.h>
 
 #include <wg_dummyfont.h>
 #include <wg_memstack.h>
@@ -122,6 +120,7 @@ namespace wg
 		s_pGUIContext->pMsgRouter = nullptr;
 		s_pGUIContext->pInputHandler = nullptr;
 		s_pGUIContext->pSkinSlotManager = nullptr;
+		s_pGUIContext->pDefaultTheme = nullptr;
 
 		s_pGUIContext->pDefaultCaret = nullptr;
 		s_pGUIContext->pDefaultTextLayout = nullptr;
@@ -204,6 +203,21 @@ namespace wg
 	{
 		return s_pGUIContext->pSkinSlotManager;
 	}
+
+	//____ defaultTheme() ______________________________________________________
+
+	Theme_p Base::defaultTheme()
+	{
+		return s_pGUIContext->pDefaultTheme;
+	}
+
+	//____ setDefaultTheme() ___________________________________________________
+
+	void Base::setDefaultTheme(Theme* pTheme)
+	{
+		s_pGUIContext->pDefaultTheme = pTheme;
+	}
+
 
 	//____ defaultCaret() ______________________________________________________
 
@@ -329,7 +343,7 @@ namespace wg
 
 		// Update wondergui systems
 
-		s_pGUIContext->pInputHandler->_update(timestamp/1000);
+		s_pGUIContext->pInputHandler->_update(timestamp);
 		s_pGUIContext->pSkinSlotManager->update(int(microPassed/1000));
 
 		// Update widgets.

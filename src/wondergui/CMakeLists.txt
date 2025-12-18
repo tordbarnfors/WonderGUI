@@ -83,10 +83,8 @@ set( SOURCES
 	components/wg_staticnumber.h
 	components/wg_statictext.cpp
 	components/wg_statictext.h
-	components/wg_text.cpp
-	components/wg_text.h
-	components/wg_textbase.cpp
-	components/wg_textbase.h
+	components/wg_dynamictext.cpp
+	components/wg_dynamictext.h
 	components/wg_component.cpp
 	components/wg_component.h
 
@@ -130,12 +128,15 @@ set( SOURCES
 	skins/state/wg_circleskin.h
 	skins/state/wg_colorskin.cpp
 	skins/state/wg_colorskin.h
-	skins/state/wg_gradientskin.cpp
-	skins/state/wg_gradientskin.h	
+#	skins/state/wg_gradientskin.cpp
+#	skins/state/wg_gradientskin.h	
 	skins/state/wg_multiblockskin.cpp
 	skins/state/wg_multiblockskin.h
 	skins/state/wg_tileskin.cpp
 	skins/state/wg_tileskin.h
+	skins/state/wg_tintmapskin.cpp
+	skins/state/wg_tintmapskin.h
+
 
 	slots/wg_slot.cpp
 	slots/wg_slot.h
@@ -194,6 +195,8 @@ set( SOURCES
 	widgets/wg_selectbox.h
 	widgets/wg_sidecanvas.cpp
 	widgets/wg_sidecanvas.h
+	widgets/wg_skindisplay.cpp
+	widgets/wg_skindisplay.h
 	widgets/wg_slider.cpp
 	widgets/wg_slider.h
 	widgets/wg_surfacedisplay.cpp
@@ -219,12 +222,16 @@ set( SOURCES
 	widgets/capsules/wg_capsule.h
 	widgets/capsules/wg_labelcapsule.cpp
 	widgets/capsules/wg_labelcapsule.h
+	widgets/capsules/wg_paddingcapsule.cpp
+	widgets/capsules/wg_paddingcapsule.h
 	widgets/capsules/wg_renderlayercapsule.cpp
 	widgets/capsules/wg_renderlayercapsule.h
 	widgets/capsules/wg_reordercapsule.cpp
 	widgets/capsules/wg_reordercapsule.h
 	widgets/capsules/wg_scalecapsule.cpp
 	widgets/capsules/wg_scalecapsule.h
+	widgets/capsules/wg_selectcapsule.cpp
+	widgets/capsules/wg_selectcapsule.h
 	widgets/capsules/wg_sizecapsule.cpp
 	widgets/capsules/wg_sizecapsule.h
 
@@ -239,19 +246,17 @@ set( SOURCES
 	widgets/overlays/wg_tooltipoverlay.cpp
 	widgets/overlays/wg_tooltipoverlay.h
 
-	widgets/lists/wg_list.cpp
-	widgets/lists/wg_list.h
-	widgets/lists/wg_packlist.cpp
-	widgets/lists/wg_packlist.h
-
+	widgets/panels/wg_drawerpanel.cpp
+	widgets/panels/wg_drawerpanel.h
 	widgets/panels/wg_flexpanel.cpp
 	widgets/panels/wg_flexpanel.h
 	widgets/panels/wg_lambdapanel.cpp
 	widgets/panels/wg_lambdapanel.h
 	widgets/panels/wg_packpanel.cpp
 	widgets/panels/wg_packpanel.h
-	widgets/panels/wg_panel.impl.h
+	widgets/panels/wg_panel.cpp
 	widgets/panels/wg_panel.h
+	widgets/panels/wg_panel.impl.h
 	widgets/panels/wg_rootpanel.cpp
 	widgets/panels/wg_rootpanel.h
 	widgets/panels/wg_scrollpanel.cpp
@@ -294,7 +299,12 @@ set(INCDIRS
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${SOURCES})
 
 add_library( wondergui STATIC ${SOURCES} )
-target_include_directories(wondergui PRIVATE ${INCDIRS} )
+generate_export_header(wondergui BASE_NAME wg)
+
+target_include_directories(wondergui PRIVATE ${INCDIRS} 
+	"${CMAKE_CURRENT_BINARY_DIR}"  # For generated header
+)
+
 target_link_libraries(wondergui PUBLIC wondergfx )
 
 list(TRANSFORM SOURCES PREPEND ${CMAKE_CURRENT_LIST_DIR}/ )

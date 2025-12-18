@@ -1,22 +1,22 @@
 /*=========================================================================
 
-						 >>> WonderGUI <<<
+                             >>> WonderGUI <<<
 
-  This file is part of Tord Jansson's WonderGUI Graphics Toolkit
-  and copyright (c) Tord Jansson, Sweden [tord.jansson@gmail.com].
+  This file is part of Tord Bärnfors' WonderGUI UI Toolkit and copyright
+  Tord Bärnfors, Sweden [mail: first name AT barnfors DOT c_o_m].
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is free software; you can redistribute
+  The WonderGUI UI Toolkit is free software; you can redistribute
   this file and/or modify it under the terms of the GNU General Public
   License as published by the Free Software Foundation; either
   version 2 of the License, or (at your option) any later version.
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is also available for use in commercial
-  closed-source projects under a separate license. Interested parties
-  should contact Tord Jansson [tord.jansson@gmail.com] for details.
+  The WonderGUI UI Toolkit is also available for use in commercial
+  closed source projects under a separate license. Interested parties
+  should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
 #ifndef WG_FILLMETERSKIN_DOT_H
@@ -25,7 +25,7 @@
 
 #include <wg_skin.h>
 #include <wg_color.h>
-#include <wg_gradient.h>
+#include <wg_tintmap.h>
 
 namespace wg
 {
@@ -51,7 +51,6 @@ namespace wg
 			Direction	direction = Direction::Right;
 			Finalizer_p	finalizer = nullptr;
 			Border		gfxPadding;
-			Gradient	gradient;
 
 			int			layer = -1;
 			int			markAlpha = 1;
@@ -64,6 +63,8 @@ namespace wg
 			Border		spacing;
 			bool		startFromCenter = false;
 			pts			startLength = 0;
+
+			Tintmap_p	tintmap;
 		};
 
 		//.____ Creation __________________________________________
@@ -92,7 +93,6 @@ namespace wg
 		RectSPX	_coverage(const RectSPX& geo, int scale, State state) const override;
 
 	protected:
-		FillMeterSkin();
 		FillMeterSkin(	const Blueprint& blueprint );
 		~FillMeterSkin() {};
 
@@ -110,7 +110,7 @@ namespace wg
         bool        m_bCenteredBarOrigin = false;
 		Border		m_gfxPadding;
 		
-		Gradient	m_gradient;
+		Tintmap_p	m_pTintmap;
 		bool		m_bGradient = false;
 		bool		m_bOpaque;
 	};

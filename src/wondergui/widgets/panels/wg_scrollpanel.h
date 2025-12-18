@@ -1,25 +1,24 @@
 /*=========================================================================
 
-						 >>> WonderGUI <<<
+                             >>> WonderGUI <<<
 
-  This file is part of Tord Jansson's WonderGUI Graphics Toolkit
-  and copyright (c) Tord Jansson, Sweden [tord.jansson@gmail.com].
+  This file is part of Tord Bärnfors' WonderGUI UI Toolkit and copyright
+  Tord Bärnfors, Sweden [mail: first name AT barnfors DOT c_o_m].
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is free software; you can redistribute
+  The WonderGUI UI Toolkit is free software; you can redistribute
   this file and/or modify it under the terms of the GNU General Public
   License as published by the Free Software Foundation; either
   version 2 of the License, or (at your option) any later version.
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is also available for use in commercial
-  closed-source projects under a separate license. Interested parties
-  should contact Tord Jansson [tord.jansson@gmail.com] for details.
+  The WonderGUI UI Toolkit is also available for use in commercial
+  closed source projects under a separate license. Interested parties
+  should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-
 #ifndef	WG_SCROLLPANEL_DOT_H
 #define	WG_SCROLLPANEL_DOT_H
 #pragma once
@@ -70,7 +69,7 @@ namespace wg
 			PointerStyle		pointer 			= PointerStyle::Undefined;
 			Scroller::Blueprint	scrollbarX;
 			Scroller::Blueprint	scrollbarY;
-			bool				selectable 			= true;
+			bool				selectable 			= false;
 			Skin_p				skin;
 			bool				stealWheelFromScrollbars = true;
 			pts					stepSize 			= 8;
@@ -104,23 +103,50 @@ namespace wg
 		//.____ Behavior _______________________________________________________
 
 		void			setAutohideScrollbars(bool scrollbarX, bool scrollbarY);
+		bool			autohideScrollbarX() const { return m_bAutohideScrollbarX; }
+		bool			autohideScrollbarY() const { return m_bAutohideScrollbarY; }
+
 		void			setOverlayScrollbars(bool scrollbarX, bool scrollbarY);
+		bool			overlayScrollbarX() const { return m_bOverlayScrollbarX; }
+		bool			overlayScrollbarY() const { return m_bOverlayScrollbarY; }
+
 
 		void			setStepSize(pts stepSize);
 		void			setStepSize(pts x, pts y);
+		pts				stepSizeX() const { return m_stepSizeX; }
+		pts				stepSizeY() const { return m_stepSizeY; }
+
 		void			setWheelStepSize(pts stepSize);
 		void			setWheelStepSize(pts x, pts y);
+		pts				wheelStepSizeX() const { return m_wheelStepSizeX; }
+		pts				wheelStepSizeY() const { return m_wheelStepSizeY; }
+
 		void			setPageOverlap(pts overlap);
 		void			setPageOverlap(pts x, pts y);
+		pts				pageOverlapX() const { return m_pageOverlapX; }
+		pts				pageOverlapY() const { return m_pageOverlapY; }
 
-		void			setScrollWheelAxis(Axis wheelOneAxis, Axis wheelTwoAxis);
-		void			setScrollWheelAxisShift(ModKeys axisShift);
+		void			setWheelAxis(Axis wheelOneAxis, Axis wheelTwoAxis);
+		Axis			wheelOneAxis() const { return m_wheelOneAxis; }
+		Axis			wheelTwoAxis() const { return m_wheelTwoAxis; }
+
+		void			setWheelAxisShift(ModKeys axisShift);
+		ModKeys			wheelAxisShift() const { return m_wheelAxisShiftCombo; }
+
 		void			setStealWheelFromScrollbars(bool bSteal);
-		void			setAutoscroll(bool autoscrollX, bool autoscrollY);
+		bool			stealWheelFromScrollbars() const { return m_bStealWheelFromScrollbars; }
 
-		void			setPlacement(Placement placement);
+		void			setAutoscroll(bool autoscrollX, bool autoscrollY);
+		bool			autoscrollX() const { return m_bAutoscrollX; }
+		bool			autoscrollY() const { return m_bAutoscrollY; }
+
+		void			setChildPlacement(Placement placement);
+		Placement		childPlacement() const { return m_smallChildPlacement; }
 
 		bool			setSizeConstraints(SizeConstraint width, SizeConstraint height);
+		SizeConstraint	widthConstraint() const { return m_widthConstraint; }
+		SizeConstraint	heightConstraint() const { return m_heightConstraint; }
+
 
 		//.____ Control _____________________________________________________
 
@@ -130,7 +156,7 @@ namespace wg
 		Coord			viewOffset() const;
 
 		void			setTransition(CoordTransition* pTransition);
-		CoordTransition_p	transition(CoordTransition* pTransition) const { return m_pDefaultTransition; }
+		CoordTransition_p	transition() const { return m_pDefaultTransition; }
 
 		bool			isTransitioning() const { return m_pTransitionInUse; }
 
@@ -288,6 +314,7 @@ namespace wg
 
 		RectSPX			m_childCanvas;								// Child canvas in our coordinate system
 		RectSPX			m_childWindow;								// Child view in our coordinate system.
+		SizeSPX			m_childDefaultSize;							// Default size from our child.
 
 		Placement		m_smallChildPlacement = Placement::NorthWest;	// Child placement within view if smaller than view.
 		SizeConstraint	m_widthConstraint = SizeConstraint::None;		// Constraint of child width.

@@ -104,7 +104,9 @@ int main ( int argc, char** argv )
 
 	if( parseCommandLine(argc,argv) != 0 )
 		return -1;
-	
+
+	// Load image
+
 	int width, height, channels;
 	unsigned char *pImage = stbi_load(g_pInputFileName, &width, &height, &channels, 4);
 	
@@ -113,11 +115,13 @@ int main ( int argc, char** argv )
 		printf( "Error loading/decoding '%s'\n", g_pInputFileName );
 		return -1;
 	}
-	
+
+	// Init wg
+
 	GfxBase::init();
 
-	
-	
+	// Convert surface
+
 	PixelDescription desc = Util::pixelFormatToDescription(PixelFormat::BGRA_8_sRGB);
 	
 	swap( desc.B_mask, desc.R_mask);
@@ -125,12 +129,23 @@ int main ( int argc, char** argv )
 	auto pOrg = SoftSurface::create( { .format = PixelFormat::BGRA_8, .size = {width,height}}, pImage, desc, 0 );
 	
 	auto pConverted = pOrg->convert({ .format = g_format }, SoftSurfaceFactory::create());
-	
-	std::ofstream out(g_pOutputFileName, std::ios::binary);
-	auto pWriter = SurfaceWriter::create({});
-	pWriter->writeSurfaceToStream(out, pConverted);
-	out.close();
 
+	if( pConverted == nullptr )
+	{
+		printf( "Failed to convert image. Likely reasons:\n - Destination format not supported\n - Too many colors to fit in destination palette (if destination is indexed)\n");
+		goto exit;
+	}
+
+	// Write surface
+
+	{
+		std::ofstream out(g_pOutputFileName, std::ios::binary);
+		auto pWriter = SurfaceWriter::create({});
+		pWriter->writeSurfaceToStream(out, pConverted);
+		out.close();
+	}
+
+exit:
 	GfxBase::exit();
 	stbi_image_free(pImage);
     return 0;
