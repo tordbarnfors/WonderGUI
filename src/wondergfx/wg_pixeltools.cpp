@@ -1,22 +1,22 @@
 /*=========================================================================
 
-						 >>> WonderGUI <<<
+                             >>> WonderGUI <<<
 
-  This file is part of Tord Jansson's WonderGUI Graphics Toolkit
-  and copyright (c) Tord Jansson, Sweden [tord.jansson@gmail.com].
+  This file is part of Tord Bärnfors' WonderGUI UI Toolkit and copyright
+  Tord Bärnfors, Sweden [mail: first name AT barnfors DOT c_o_m].
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is free software; you can redistribute
+  The WonderGUI UI Toolkit is free software; you can redistribute
   this file and/or modify it under the terms of the GNU General Public
   License as published by the Free Software Foundation; either
   version 2 of the License, or (at your option) any later version.
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is also available for use in commercial
-  closed-source projects under a separate license. Interested parties
-  should contact Tord Jansson [tord.jansson@gmail.com] for details.
+  The WonderGUI UI Toolkit is also available for use in commercial
+  closed source projects under a separate license. Interested parties
+  should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
 #include <wg_pixeltools.h>
@@ -2756,7 +2756,7 @@ static bool copyToIndexedDestination(int width, int height, const uint8_t* pSrc,
 				pSrc += srcDesc.bits * 8;
 
 				if( !conv.convert(pDst, (uint32_t*) buffer, 64) )
-					return false;
+					goto error_out_of_palette_entries;
 
 				pDst += dstDesc.bits * 8;
 
@@ -2769,7 +2769,7 @@ static bool copyToIndexedDestination(int width, int height, const uint8_t* pSrc,
 				pSrc += srcDesc.bits / 8 * widthLeft;
 
 				if( !conv.convert(pDst, (uint32_t*) buffer, widthLeft) )
-					return false;
+					goto error_out_of_palette_entries;
 
 				pDst += dstDesc.bits / 8 * widthLeft;
 			}
@@ -2782,6 +2782,10 @@ static bool copyToIndexedDestination(int width, int height, const uint8_t* pSrc,
 		return true;
 	}
 
+error_out_of_palette_entries:
+
+	GfxBase::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "Out of entries in destination palette. All colors can not be represented. Some pixels copied to destination, but operation aborted.", nullptr, nullptr, __func__, __FILE__, __LINE__);
+	return false;
 }
 
 

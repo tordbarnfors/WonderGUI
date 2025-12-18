@@ -1,25 +1,24 @@
 /*=========================================================================
 
-						 >>> WonderGUI <<<
+                             >>> WonderGUI <<<
 
-  This file is part of Tord Jansson's WonderGUI Graphics Toolkit
-  and copyright (c) Tord Jansson, Sweden [tord.jansson@gmail.com].
+  This file is part of Tord Bärnfors' WonderGUI UI Toolkit and copyright
+  Tord Bärnfors, Sweden [mail: first name AT barnfors DOT c_o_m].
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is free software; you can redistribute
+  The WonderGUI UI Toolkit is free software; you can redistribute
   this file and/or modify it under the terms of the GNU General Public
   License as published by the Free Software Foundation; either
   version 2 of the License, or (at your option) any later version.
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is also available for use in commercial
-  closed-source projects under a separate license. Interested parties
-  should contact Tord Jansson [tord.jansson@gmail.com] for details.
+  The WonderGUI UI Toolkit is also available for use in commercial
+  closed source projects under a separate license. Interested parties
+  should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-
 #ifndef	WG_BASE_DOT_H
 #define	WG_BASE_DOT_H
 #pragma once
@@ -52,6 +51,7 @@ namespace wg
 	class TextStyle;
 	class Receiver;
 	class SkinSlotManager;
+	class Theme;
 
 	typedef	StrongPtr<MsgRouter>		MsgRouter_p;
 	typedef	StrongPtr<NumberLayout>		NumberLayout_p;
@@ -61,7 +61,7 @@ namespace wg
 	typedef	StrongPtr<TextStyle>		TextStyle_p;
 	typedef	StrongPtr<PackLayout>		PackLayout_p;
 	typedef	StrongPtr<SkinSlotManager>	SkinSlotManager_p;
-
+	typedef	StrongPtr<Theme>			Theme_p;
 
 
 	class GUIContext : public Object
@@ -76,7 +76,8 @@ namespace wg
 		TextStyle_p			pDefaultTextStyle;
 		PackLayout_p		pDefaultPackLayout;
 		SkinSlotManager_p	pSkinSlotManager;
-		
+		Theme_p				pDefaultTheme;
+
 		HostBridge*		pHostBridge;
 
 		int64_t			timestamp;
@@ -122,6 +123,9 @@ namespace wg
 		static MsgRouter_p			msgRouter();
 		static InputHandler_p		inputHandler();
 		static SkinSlotManager_p	skinSlotManager();
+
+		static void			setDefaultTheme(Theme* pTheme);
+		static Theme_p		defaultTheme();
 
 		static void			setDefaultTextLayout( TextLayout * pTextLayout );
 		static TextLayout_p defaultTextLayout();

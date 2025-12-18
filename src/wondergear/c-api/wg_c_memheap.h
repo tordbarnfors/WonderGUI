@@ -1,26 +1,24 @@
 /*=========================================================================
 
-						 >>> WonderGUI <<<
+                             >>> WonderGUI <<<
 
-  This file is part of Tord Jansson's WonderGUI Graphics Toolkit
-  and copyright (c) Tord Jansson, Sweden [tord.jansson@gmail.com].
+  This file is part of Tord Bärnfors' WonderGUI UI Toolkit and copyright
+  Tord Bärnfors, Sweden [mail: first name AT barnfors DOT c_o_m].
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is free software; you can redistribute
+  The WonderGUI UI Toolkit is free software; you can redistribute
   this file and/or modify it under the terms of the GNU General Public
   License as published by the Free Software Foundation; either
   version 2 of the License, or (at your option) any later version.
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is also available for use in commercial
-  closed-source projects under a separate license. Interested parties
-  should contact Tord Jansson [tord.jansson@gmail.com] for details.
+  The WonderGUI UI Toolkit is also available for use in commercial
+  closed source projects under a separate license. Interested parties
+  should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-
-
 #ifndef WG_C_MEMHEAP_DOT_H
 #define WG_C_MEMHEAP_DOT_H
 #pragma once
@@ -33,19 +31,19 @@ extern "C" {
 
 	typedef void * wg_memHeap;
 
-	wg_memHeap	wg_initMemHeap( void * pHeap, int bytes );
-	void		wg_exitMemHeap( wg_memHeap heap );
+	WG_EXPORT wg_memHeap	wg_initMemHeap( void * pHeap, int bytes );
+	WG_EXPORT void			wg_exitMemHeap( wg_memHeap heap );
 
-	void *		wg_malloc( wg_memHeap heap, int bytes );
-	void  		wg_free( wg_memHeap heap, void * pBuffer );
+	WG_EXPORT void *		wg_malloc( wg_memHeap heap, int bytes );
+	WG_EXPORT void  		wg_free( wg_memHeap heap, void * pBuffer );
 /*
 	void		wg_drawFragmentMap( wg_memHeap heap, int nSections, uint16_t * pSectionTable, wg_obj surface );
 */
-	void		wg_setMemHeapDebugLevel( wg_memHeap heap, int level );
+	WG_EXPORT void			wg_setMemHeapDebugLevel( wg_memHeap heap, int level );
 
-	int			wg_memHeapCapacity( wg_memHeap heap );
-	int			wg_memHeapReserved( wg_memHeap heap );
-	int			wg_largestAvailableBlock( wg_memHeap heap );
+	WG_EXPORT int			wg_memHeapCapacity( wg_memHeap heap );
+	WG_EXPORT int			wg_memHeapReserved( wg_memHeap heap );
+	WG_EXPORT int			wg_largestAvailableBlock( wg_memHeap heap );
 
 #ifdef __cplusplus
 }

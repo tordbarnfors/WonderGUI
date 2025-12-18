@@ -19,9 +19,9 @@ WonderApp_p WonderApp::create()
 
 //____ init() _________________________________________________________________
 
-bool MyApp::init(Visitor* pVisitor)
+bool MyApp::init(wapp::API* pAPI)
 {
-	if (!setupGUI(pVisitor))
+	if (!setupGUI(pAPI))
 	{
 		printf("ERROR: Failed to setup GUI!\n");
 		return false;
@@ -37,7 +37,7 @@ bool MyApp::init(Visitor* pVisitor)
 
 bool MyApp::update()
 {
-	return true;
+	return m_pWindow != nullptr;
 }
 
 //____ exit() _________________________________________________________________
@@ -46,19 +46,27 @@ void MyApp::exit()
 {
 }
 
+//____ closeWindow() __________________________________________________________
+
+void MyApp::closeWindow(wapp::Window* pWindow)
+{
+	if (pWindow == m_pWindow)
+		m_pWindow = nullptr;
+}
+
 //____ setupGUI() _____________________________________________________________
 
-bool MyApp::setupGUI(Visitor* pVisitor)
+bool MyApp::setupGUI(wapp::API* pAPI)
 {
 	// Setup window
 	
-	auto pWindow = pVisitor->createWindow( {
+	auto pWindow = wapp::Window::create( pAPI, {
 		.title = "Layer Workbench"
 	});
 	
 	m_pWindow = pWindow;
 
-	auto pRoot = m_pWindow->rootPanel();
+	auto pRoot = m_pWindow->root();
 	
 	auto pLayers = CanvasLayers::create({
 		.baseLayer = 2,
@@ -119,7 +127,7 @@ bool MyApp::setupGUI(Visitor* pVisitor)
 		});
 
 
-	auto pSplashSurface = pVisitor->loadSurface("resources/splash.png");
+	auto pSplashSurface = pAPI->loadSurface("resources/splash.png");
 
 
 
@@ -138,7 +146,7 @@ bool MyApp::setupGUI(Visitor* pVisitor)
 	// Setup layout
 	
 	auto pBaseFlex = FlexPanel::create();
-	pRoot->slot = pBaseFlex;
+	m_pWindow->mainCapsule()->slot = pBaseFlex;
 
 	pBaseFlex->slots << createMovableBox(pBoxWithGlow, pBaseFlex);
 	pBaseFlex->slots << createMovableBox(pBoxWithShadow,pBaseFlex);
@@ -209,8 +217,8 @@ bool MyApp::setupGUI(Visitor* pVisitor)
 		.overflow = 8,
 		.states = {
 			{State::Hovered, HiColor::Transparent, HiColor(0,4096,0,2048)},
-			{State::Selected, HiColor::Transparent, HiColor(0,0,4096,2048)},
-			{State::SelectedHovered, HiColor::Transparent, HiColor(0,4096,4096,2048)}
+			{State::Selekted, HiColor::Transparent, HiColor(0,0,4096,2048)},
+			{State::SelektedHovered, HiColor::Transparent, HiColor(0,4096,4096,2048)}
 		}
 	});
 	
@@ -241,7 +249,7 @@ bool MyApp::setupGUI(Visitor* pVisitor)
 		.skins = { pEntryMain2, pEntryOverflow }
 	});
 
-	
+/*
 	auto pList = PackList::create( { .entrySkin = pEntrySkin1, .entrySkin2 = pEntrySkin2, .skin = ColorSkin::create(Color::White) } );
 	
 	pList->slots << Filler::create({ .defaultSize = {100,40} });
@@ -250,6 +258,7 @@ bool MyApp::setupGUI(Visitor* pVisitor)
 	pList->slots << Filler::create({ .defaultSize = {100,40} });
 
 	pBaseFlex->slots << makeMovable(pList, pBaseFlex);
+*/
 
 	
 	return true;

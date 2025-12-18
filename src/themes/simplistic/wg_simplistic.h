@@ -1,25 +1,24 @@
 /*=========================================================================
 
-						 >>> WonderGUI <<<
+                             >>> WonderGUI <<<
 
-  This file is part of Tord Jansson's WonderGUI Graphics Toolkit
-  and copyright (c) Tord Jansson, Sweden [tord.jansson@gmail.com].
+  This file is part of Tord Bärnfors' WonderGUI UI Toolkit and copyright
+  Tord Bärnfors, Sweden [mail: first name AT barnfors DOT c_o_m].
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is free software; you can redistribute
+  The WonderGUI UI Toolkit is free software; you can redistribute
   this file and/or modify it under the terms of the GNU General Public
   License as published by the Free Software Foundation; either
   version 2 of the License, or (at your option) any later version.
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is also available for use in commercial
-  closed-source projects under a separate license. Interested parties
-  should contact Tord Jansson [tord.jansson@gmail.com] for details.
+  The WonderGUI UI Toolkit is also available for use in commercial
+  closed source projects under a separate license. Interested parties
+  should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-
 #ifndef	WG_THEME_SIMPLISTIC_DOT_H
 #define WG_THEME_SIMPLISTIC_DOT_H
 #pragma once
@@ -44,7 +43,7 @@ namespace wg
 
 		//.____ Creation __________________________________________
 
-		static Simplistic_p	create(Font * pNormal, Font * pBold, Font * pItalic, Font * pMonospace);
+		static Simplistic_p	create(Font * pNormal, Font * pBold, Font * pItalic, Font * pMonospace, Surface * pWidgets );
 
 		//.____ Identification __________________________________________
 
@@ -96,11 +95,18 @@ namespace wg
 		TextStyle_p quoteStyle() const override;		// Usually italic
 		TextStyle_p captionStyle() const override;		// Text under image or figure.
 		TextStyle_p calloutStyle() const override;		// Separate text section in magazine or such which highligt key passages.
+		TextStyle_p finePrintStyle() const override;	// Style for fine print text. As small as possible while remaining readable
 
 		TextStyle_p defaultStyle() const override;		// Default style for UI elements
 		TextStyle_p pressableStyle() const override;	// Default text style for buttons etc.
 
 
+
+		//
+
+		Skin_p		plateSkin() const override;
+		Skin_p		canvasSkin() const override;
+		Skin_p		windowSkin() const override;
 
 		//
 
@@ -117,12 +123,24 @@ namespace wg
 		const ScrollPanel::Blueprint& 		scrollPanelY() const override;
 		const ScrollPanel::Blueprint& 		scrollPanelXY() const override;
 
+		const SplitPanel::Blueprint&		splitPanelX() const override;
+		const SplitPanel::Blueprint&		splitPanelY() const override;
+
+		const DrawerPanel::Blueprint&		treeListDrawer() const override;
+		const PaddingCapsule::Blueprint&	treeListEntry() const override;
+
+		const TablePanel::Blueprint&		listTable() const override;
+		const TextEditor::Blueprint&		textEditor() const override;
+		const LineEditor::Blueprint&		lineEditor() const override;
+		const SelectBox::Blueprint&			selectBox() const override;
+
+
 		const TextDisplay::Blueprint& 		windowTitleBar() const override;
 
 
 
 	protected:
-		Simplistic( Font * pNormal, Font * pBold, Font * pItalic, Font * pMonospace );
+		Simplistic( Font * pNormal, Font * pBold, Font * pItalic, Font * pMonospace, Surface * pWidgets );
 		~Simplistic() {}
 
 		const static int	c_textSizeSmallest = 8;
@@ -149,10 +167,18 @@ namespace wg
 		TextStyle_p m_pEmphasisStyle;
 		TextStyle_p m_pCodeStyle;
 		TextStyle_p m_pMonospaceStyle;
+		TextStyle_p m_pFinePrintStyle;
 
 
 		TextStyle_p	m_pBlackStyle;
 		TextStyle_p	m_pWhiteStyle;
+
+
+		Skin_p		m_pPlateSkin;
+		Skin_p		m_pCanvasSkin;
+		Skin_p		m_pWindowSkin;
+
+		ValueTransition_p		m_pOpenCloseTransition;
 
 		LabelCapsule::Blueprint m_labeledBoxBP;
 		LabelCapsule::Blueprint m_labeledSectionBP;
@@ -166,6 +192,18 @@ namespace wg
 		ScrollPanel::Blueprint	m_scrollPanelXBP;
 		ScrollPanel::Blueprint	m_scrollPanelYBP;
 		ScrollPanel::Blueprint	m_scrollPanelXYBP;
+
+		SplitPanel::Blueprint	m_splitPanelXBP;
+		SplitPanel::Blueprint	m_splitPanelYBP;
+
+		DrawerPanel::Blueprint	m_treeListDrawer;
+		PaddingCapsule::Blueprint m_treeListEntry;
+
+		TablePanel::Blueprint	m_listTable;
+
+		TextEditor::Blueprint	m_textEditor;
+		LineEditor::Blueprint	m_lineEditor;
+		SelectBox::Blueprint	m_selectBox;
 
 		TextDisplay::Blueprint	m_windowTitleBar;
 	};

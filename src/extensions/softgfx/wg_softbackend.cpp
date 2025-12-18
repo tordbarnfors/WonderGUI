@@ -1,25 +1,24 @@
 /*=========================================================================
 
-						 >>> WonderGUI <<<
+                             >>> WonderGUI <<<
 
-  This file is part of Tord Jansson's WonderGUI Graphics Toolkit
-  and copyright (c) Tord Jansson, Sweden [tord.jansson@gmail.com].
+  This file is part of Tord Bärnfors' WonderGUI UI Toolkit and copyright
+  Tord Bärnfors, Sweden [mail: first name AT barnfors DOT c_o_m].
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is free software; you can redistribute
+  The WonderGUI UI Toolkit is free software; you can redistribute
   this file and/or modify it under the terms of the GNU General Public
   License as published by the Free Software Foundation; either
   version 2 of the License, or (at your option) any later version.
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is also available for use in commercial
-  closed-source projects under a separate license. Interested parties
-  should contact Tord Jansson [tord.jansson@gmail.com] for details.
+  The WonderGUI UI Toolkit is also available for use in commercial
+  closed source projects under a separate license. Interested parties
+  should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-
 #include <wg_softbackend.h>
 #include <wg_softsurfacefactory.h>
 #include <wg_softedgemapfactory.h>
@@ -235,15 +234,12 @@ namespace wg
 			setCanvas(canvasRef);
 		else
 			setCanvas(pCanvas);
-
-		_setInfoForCanvasCompleted(m_pCanvas,nUpdateRects, pUpdateRects );
 	}
 
 	//____ _endSession() _______________________________________________________
 
 	void SoftBackend::endSession()
 	{
-		_canvasCompleted();
 	}
 
 	//____ setCanvas() _____________________________________________
@@ -1550,11 +1546,27 @@ namespace wg
 		return c_maxSegments-1;
 	}
 
-	//____ surfaceType() ______________________________________________________
+	//____ canBeBlitSource() ___________________________________________
 
-	const TypeInfo& SoftBackend::surfaceType(void) const
+	bool SoftBackend::canBeBlitSource(const TypeInfo& type) const
 	{
-		return SoftSurface::TYPEINFO;
+		return (type == SoftSurface::TYPEINFO);
+	}
+
+	//____ canBeCanvas() ______________________________________________
+
+	bool SoftBackend::canBeCanvas(const TypeInfo& type) const
+	{
+		// Any type of surface can be a backend for software rendering as long as pixelbuffer can be reserved.
+
+		return true;
+	}
+
+	//____ waitForCompletion() ___________________________________________________
+
+	void SoftBackend::waitForCompletion()
+	{
+		return;
 	}
 
 	//____ setLineKernel() ____________________________________________________
@@ -1944,15 +1956,20 @@ namespace wg
 		{
 			// TODO: Optimize by using a lookup table.
 
-			if (blendMode == BlendMode::Blend && (srcFormat == PixelFormat::RGB_565_bigendian ||
-				srcFormat == PixelFormat::RGB_555_bigendian || srcFormat == PixelFormat::BGR_8_sRGB ||
-				srcFormat == PixelFormat::BGR_8_linear || srcFormat == PixelFormat::BGR_565_linear ||
-				srcFormat == PixelFormat::BGRX_8_sRGB || srcFormat == PixelFormat::BGRX_8_linear))
+			if (blendMode == BlendMode::Blend &&
+                (srcFormat == PixelFormat::RGB_565_bigendian ||
+				 srcFormat == PixelFormat::RGB_555_bigendian ||
+                 srcFormat == PixelFormat::BGR_8_sRGB ||
+				 srcFormat == PixelFormat::BGR_8_linear ||
+                 srcFormat == PixelFormat::BGR_565_linear ||
+                 srcFormat == PixelFormat::BGR_565_sRGB ||
+				 srcFormat == PixelFormat::BGRX_8_sRGB ||
+                 srcFormat == PixelFormat::BGRX_8_linear))
 			{
 				blendMode = BlendMode::Replace;
 			}
 		}
-
+        
 		// Add two-pass rendering fallback.
 
 		auto pixelDescSource = Util::pixelFormatToDescription(srcFormat);

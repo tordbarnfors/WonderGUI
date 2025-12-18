@@ -1,25 +1,24 @@
 /*=========================================================================
 
-						 >>> WonderGUI <<<
+                             >>> WonderGUI <<<
 
-  This file is part of Tord Jansson's WonderGUI Graphics Toolkit
-  and copyright (c) Tord Jansson, Sweden [tord.jansson@gmail.com].
+  This file is part of Tord Bärnfors' WonderGUI UI Toolkit and copyright
+  Tord Bärnfors, Sweden [mail: first name AT barnfors DOT c_o_m].
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is free software; you can redistribute
+  The WonderGUI UI Toolkit is free software; you can redistribute
   this file and/or modify it under the terms of the GNU General Public
   License as published by the Free Software Foundation; either
   version 2 of the License, or (at your option) any later version.
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is also available for use in commercial
-  closed-source projects under a separate license. Interested parties
-  should contact Tord Jansson [tord.jansson@gmail.com] for details.
+  The WonderGUI UI Toolkit is also available for use in commercial
+  closed source projects under a separate license. Interested parties
+  should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-
 #ifndef WG_WIDGET_DOT_H
 #define WG_WIDGET_DOT_H
 #pragma once
@@ -94,7 +93,7 @@ namespace wg
 			uint8_t			pickCategory = 0;
 			bool			pickHandle = false;
 			PointerStyle	pointer = PointerStyle::Undefined;
-			bool			selectable = true;
+			bool			selectable = false;
 			Skin_p			skin;
 			bool			stickyFocus = false;
 			bool			tabLock = false;
@@ -155,9 +154,14 @@ namespace wg
 		void				setSelectable(bool bSelectable);
 		inline bool			isSelectable() const;
 
-		virtual bool		setSelected( bool bSelected );
-		inline bool			isSelected();
+//		virtual bool		setSelekted( bool bSelected );
+//		inline bool			isSelekted();
 
+		virtual bool		setChecked( bool bChecked );
+		inline bool			isChecked();
+
+		virtual bool		setFlagged( bool bFlagged );
+		inline bool			isFlagged();
 
 		bool				grabFocus(bool bRaiseWindow = false);
 		bool				releaseFocus();
@@ -390,7 +394,7 @@ namespace wg
 		bool            m_bDropTarget = false;			// Set if this widget accepts to be the target of drag-n-drop operations.
 
 		bool			m_bTabLock = false;				// If set, the widget prevents focus shifting away from it with tab.
-		bool			m_bSelectable = true;			// Set if widget is allowed to be selected.
+		bool			m_bSelectable = false;			// Set if widget is allowed to be selected.
 		uint8_t			m_receivingUpdateCounter = 0;	//
 		bool			m_bPressed = false;				// Keeps track of pressed button when mouse leaves/re-enters widget.
 		bool			m_bStickyFocus = false;			// Set if widget should keep keyboard focus when mouse button pressed outside it.
@@ -788,11 +792,18 @@ namespace wg
 		return m_bSelectable;
 	}
 
-	//____ isSelected() __________________________________________________________
+	//____ isChecked() __________________________________________________________
 
-	inline bool Widget::isSelected()
+	inline bool Widget::isChecked()
 	{
-		return m_state.isSelected();
+		return m_state.isChecked();
+	};
+
+	//____ isFlagged() __________________________________________________________
+
+	inline bool Widget::isFlagged()
+	{
+		return m_state.isFlagged();
 	};
 
 	//____ nextSibling() ____________________________________________________________

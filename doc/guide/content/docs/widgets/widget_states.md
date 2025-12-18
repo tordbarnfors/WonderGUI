@@ -11,59 +11,115 @@ weight: 15
 
 ## States and properties
 
-There is a total of 18 states that a widget can enter, made up of combinations of six binary properties. The properties that determines the state are the following:
+Each widget has 8 boolean properties that are combined to form the state of the widget. These are:
 
-* *Enabled/disabled*
+* *Disabled (greyed out, not reacting to anything)*
 * *Focused (having keyboard focus)*
 * *Hovered (mouse pointer placed on widget)*
 * *Pressed (mouse pressed on widget)*
-* *Selected (like a checkbox or entry in a list being selected or not )*
+* *Checked (e.g. a checkbox or radiobutton being checked)*
+* *Selected (e.g. entry in a list being selected)*
 * *Targeted (hovering another dragged widget above the widget, targeted for drop action)*
+* *Flagged (a fully user definable extra state)*
 
-This could result in 2^5 = 32 different states, but some properties can only exist in combinations. For example, a pressed widget must be hovered as well and it can't be pressed or hovered if it is disabled. So we end up with the following 18 combinations:
+If all properties could be combined this would result in 2^8 = 256 different states, but some properties can only exist in combinations. For example, a pressed widget must be hovered as well and it can't be pressed or hovered if it is disabled. So we end up with the following 72 combinations:
 
-* *Default*
-* *Focused*
-* *Hovered*
-* *HoveredFocused*
-* *Pressed*
-* *PressedFocused*
-* *Selected*
-* *SelectedFocused*
-* *SelectedHovered*
-* *SelectedHoveredFocused*
-* *SelectedPressed*
-* *SelectedPressedFocused*
-* *Targeted*
-* *TargetedFocused*
-* *TargetedSelected*
-* *TargetedSelectedFocused*
-* *Disabled*
-* *DisabledSelected*
+		Default,
+		Flagged,
+		Selected,
+		SelectedFlagged,
+		Checked,
+		CheckedFlagged,
+		CheckedSelected,
+		CheckedSelectedFlagged,
+		Focused,
+		FocusedFlagged,
+		FocusedSelected,
+		FocusedSelectedFlagged,
+		FocusedChecked,
+		FocusedCheckedFlagged,
+		FocusedCheckedSelected,
+		FocusedCheckedSelectedFlagged,
+		Hovered,
+		HoveredFlagged,
+		HoveredSelected,
+		HoveredSelectedFlagged,
+		HoveredChecked,
+		HoveredCheckedFlagged,
+		HoveredCheckedSelected,
+		HoveredCheckedSelectedFlagged,
+		HoveredFocused,
+		HoveredFocusedFlagged,
+		HoveredFocusedSelected,
+		HoveredFocusedSelectedFlagged,
+		HoveredFocusedChecked,
+		HoveredFocusedCheckedFlagged,
+		HoveredFocusedCheckedSelected,
+		HoveredFocusedCheckedSelectedFlagged,
+		Pressed,
+		PressedFlagged,
+		PressedSelected,
+		PressedSelectedFlagged,
+		PressedChecked,
+		PressedCheckedFlagged,
+		PressedCheckedSelected,
+		PressedCheckedSelectedFlagged,
+		PressedFocused,
+		PressedFocusedFlagged,
+		PressedFocusedSelected,
+		PressedFocusedSelectedFlagged,
+		PressedFocusedChecked,
+		PressedFocusedCheckedFlagged,
+		PressedFocusedCheckedSelected,
+		PressedFocusedCheckedSelectedFlagged,
+		Targeted,
+		TargetedFlagged,
+		TargetedSelected,
+		TargetedSelectedFlagged,
+		TargetedChecked,
+		TargetedCheckedFlagged,
+		TargetedCheckedSelected,
+		TargetedCheckedSelectedFlagged,
+		TargetedFocused,
+		TargetedFocusedFlagged,
+		TargetedFocusedSelected,
+		TargetedFocusedSelectedFlagged,
+		TargetedFocusedChecked,
+		TargetedFocusedCheckedFlagged,
+		TargetedFocusedCheckedSelected,
+		TargetedFocusedCheckedSelectedFlagged,
+		Disabled,
+		DisabledFlagged,
+		DisabledSelected,
+		DisabledSelectedFlagged,
+		DisabledChecked,
+		DisabledCheckedFlagged,
+		DisabledCheckedSelected,
+		DisabledCheckedSelectedFlagged
 
 
 
 ## Controlling the state
 
-The state of a widget can not be directly set, only the disabled-property is fully controlled by the developer by calling *setEnabled()*. The developer can also control which widgets can be selected or become drop-targets through the *setSelectable()* and *setDropTarget()* methods and change focus to or from a widget using *grabFocus()/releaseFocus()*. The selected property can also be indirectly controlled since item lists, togglebuttons etc have methods for selecting and unselecting.
+The state of a widget can not be directly set by the developer, it is controlled by the widget itself. Neither can the properties that forms the state, with the exception of the disabled and flagged properties which are fully controlled by the developer by calling *setEnabled()* and *setFlagged()*. The developer can also control which widgets can be selected or become drop-targets through the *setSelectable()* and *setDropTarget()* methods and change focus to or from a widget using *grabFocus()/releaseFocus()*. The *selected* property can also be indirectly controlled since item lists etc have methods for selecting and unselecting.
 
-The state can be read from the widget using the *state()* method, which returns an object representing the state. This object has methods for reading individual abilities, such as isDisabled() and isFocused() and also methods for setting the same, although that is hardly useful unless you write widget code.
+The state can be read from the widget using the *state()* method, which returns an object representing the state. This object has methods for reading individual properties, such as isDisabled() and isFocused() and also methods for setting the same, although that is hardly useful unless you write widget code.
 
 
 
 ## Where are states used?
 
-Except for being used internally in the widget itself to control its behavior, the states are used when creating Skins and TextStyles. Certain parameters such as a texts color, size and decoration can be specified individually for various states, making it change appearance when interacting with it.
+Except for being used internally in the widget itself to control its behavior, the states are used when creating Skins and TextStyles. Certain parameters such as a texts color, size and decoration can be specified individually for various states, making it change appearance when its state is changed.
 
 
 
 ## Understanding state priority
 
-Since there is a total of 18 individual states you can specify the same parameter up to 18 times to exactly control the appearance of each and every state. However, that is an awful lot to specify so you don't want to do that. Instead you want to specify as little as possible and let WonderGUI pick the best appearance for each state. To do that you need to understand how WonderGUI prioritizes states.
+Since there is a total of 72 individual states you can specify the same parameter up to 72 times to exactly control the appearance of each and every state. However, that is an awful lot to specify so you don't want to do that. Instead you want to specify as little as possible and let WonderGUI pick the best appearance for each state. To do that you need to understand how WonderGUI prioritizes states.
 
 ### Setting up an example
 
-Let's say we create a TextStyle-object that we want to use on a LineEditor. We want the text to be displayed in dark gray and be highlighted to black when mouse pointer hovers so the user gets an indication that he can click to edit the text. For some reason we also want the text to be red when it has keyboard focus.
+Let's say we create a TextStyle-object that we want to use on a LineEditor. We want the text to be displayed in dark gray and be highlighted to black when mouse pointer hovers so the users gets an indication that they can click to edit the text. For some reason we also want the text to be red when it has keyboard focus.
 
 We therefore specify the colors of the different states as follows:
 

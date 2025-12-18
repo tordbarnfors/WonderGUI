@@ -50,7 +50,7 @@ target_include_directories(gfxdevicetester PRIVATE
 	${WGOPENGLGFX_INCDIRS}
 	${WGMETALGFX_INCDIRS}
 	${WGSOFTGFX_INCDIRS}
-	${GFXSTREAM_INCDIRS}
+	${WGGFXSTREAM_INCDIRS}
 )
 
 target_link_directories(gfxdevicetester PRIVATE 
@@ -62,7 +62,7 @@ target_link_libraries(gfxdevicetester PRIVATE
 	${WAPPLIB}
 	wgsoftgfx
 	wgopenglgfx
-	wgmetalgfx
+#	wgmetalgfx
 	wggfxstream
 )
 

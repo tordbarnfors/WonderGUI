@@ -1,25 +1,24 @@
 /*=========================================================================
 
-						 >>> WonderGUI <<<
+                             >>> WonderGUI <<<
 
-  This file is part of Tord Jansson's WonderGUI Graphics Toolkit
-  and copyright (c) Tord Jansson, Sweden [tord.jansson@gmail.com].
+  This file is part of Tord Bärnfors' WonderGUI UI Toolkit and copyright
+  Tord Bärnfors, Sweden [mail: first name AT barnfors DOT c_o_m].
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is free software; you can redistribute
+  The WonderGUI UI Toolkit is free software; you can redistribute
   this file and/or modify it under the terms of the GNU General Public
   License as published by the Free Software Foundation; either
   version 2 of the License, or (at your option) any later version.
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is also available for use in commercial
-  closed-source projects under a separate license. Interested parties
-  should contact Tord Jansson [tord.jansson@gmail.com] for details.
+  The WonderGUI UI Toolkit is also available for use in commercial
+  closed source projects under a separate license. Interested parties
+  should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-
 #ifndef	WG_TYPES_DOT_H
 #define WG_TYPES_DOT_H
 #pragma once
@@ -30,26 +29,115 @@
 
 namespace wg
 {
-
-	//___ StateBits ____________________________________________________
-
-	enum class StateBits
-	{
-		Focused = 0,
-		Pressed = 1,
-		Hovered = 2,
-		Selected = 3,
-		Targeted = 4,
-		Disabled = 5
-	};
-
-	static const int	StateBits_Nb = 6;
-	static const int	StateBits_MaxValue = 5;
-
+	static const int	PrimState_Nb = 8;
+	static const int	PrimState_MaxValue = 7;
 
 	typedef unsigned int	RouteId;
 
 	typedef uint16_t		TextStyle_h;
+
+	//___ PrimState ____________________________________________________
+
+	// These are the primitive or primary states that are the building 
+	// blocks of the 72 allowed States. 
+	// 
+	// These are used in the API where a specific (non-default) PrimState 
+	// needs to be specified. They are also used internally when a State
+	// needs to be broken up into its components for certain calculations.
+	//
+	// They are numbered in order of priority, where a higher PrimState
+	// trumps a lower one when only one can be chosen.
+
+
+	enum class PrimState		//. autoExtras
+	{					
+		Focused = 0,
+		Hovered = 1,
+		Pressed = 2,
+		Selected = 3,
+		Checked = 4,
+		Flagged = 5,
+		Targeted = 6,
+		Disabled = 7
+	};
+
+	//___ StateEnum ____________________________________________________
+
+	enum class StateEnum : uint8_t		//. autoExtras
+	{
+		Default,
+		Flagged,
+		Selekted,
+		FlaggedSelekted,
+		Checked,
+		FlaggedChecked,
+		CheckedSelekted,
+		FlaggedCheckedSelekted,
+		Focused,
+		FlaggedFocused,
+		SelektedFocused,
+		FlaggedSelektedFocused,
+		CheckedFocused,
+		FlaggedCheckedFocused,
+		CheckedSelektedFocused,
+		FlaggedCheckedSelektedFocused,
+		Hovered,
+		FlaggedHovered,
+		SelektedHovered,
+		FlaggedSelektedHovered,
+		CheckedHovered,
+		FlaggedCheckedHovered,
+		CheckedSelektedHovered,
+		FlaggedCheckedSelektedHovered,
+		HoveredFocused,
+		FlaggedHoveredFocused,
+		SelektedHoveredFocused,
+		FlaggedSelektedHoveredFocused,
+		CheckedHoveredFocused,
+		FlaggedCheckedHoveredFocused,
+		CheckedSelektedHoveredFocused,
+		FlaggedCheckedSelektedHoveredFocused,
+		Pressed,
+		FlaggedPressed,
+		SelektedPressed,
+		FlaggedSelektedPressed,
+		CheckedPressed,
+		FlaggedCheckedPressed,
+		CheckedSelektedPressed,
+		FlaggedCheckedSelektedPressed,
+		PressedFocused,
+		FlaggedPressedFocused,
+		SelektedPressedFocused,
+		FlaggedSelektedPressedFocused,
+		CheckedPressedFocused,
+		FlaggedCheckedPressedFocused,
+		CheckedSelektedPressedFocused,
+		FlaggedCheckedSelektedPressedFocused,
+		Targeted,
+		TargetedFlagged,
+		TargetedSelekted,
+		TargetedFlaggedSelekted,
+		TargetedChecked,
+		TargetedFlaggedChecked,
+		TargetedCheckedSelekted,
+		TargetedFlaggedCheckedSelekted,
+		TargetedFocused,
+		TargetedFlaggedFocused,
+		TargetedSelektedFocused,
+		TargetedFlaggedSelektedFocused,
+		TargetedCheckedFocused,
+		TargetedFlaggedCheckedFocused,
+		TargetedCheckedSelektedFocused,
+		TargetedFlaggedCheckedSelektedFocused,
+		Disabled,
+		DisabledFlagged,
+		DisabledSelekted,
+		DisabledFlaggedSelekted,
+		DisabledChecked,
+		DisabledFlaggedChecked,
+		DisabledCheckedSelekted,
+		DisabledFlaggedCheckedSelekted
+	};
 
 
 //____ ExtChar __________________________________________________________
@@ -261,13 +349,15 @@ namespace wg
  
  */
 		Select,						// Non-value widget triggered, like a button being pressed.
-		Unselect,					// Used by ToggleGroup when ToggleButton is unselected (but no other selected).
 		Toggle,						// Boolean value widget toggled, like for checkboxes, radiobuttons etc.
 		ScrollbarMove,
 		ValueUpdate,					// Value of widget changed, like for editvalue, animations, sliders etc
 		RangeUpdate,					// Range widget updated, such as scrollbar, scrollpanel, rangesliders etc.
 
 		TextEdit,						// Text widget edited, like texteditor, editline, etc.
+
+		Selected,					// List of widgets selected, like entries in a list.
+		Unselected,					// List of widgets unselected, like entries in a list.
 
 
 		ItemToggle,
@@ -281,6 +371,8 @@ namespace wg
 	//	ItemMouseDoubleClick,
 		ItemsSelect,
 		ItemsUnselect,
+
+
 
 		PopupOpened,
 		PopupSelect,
@@ -348,7 +440,7 @@ namespace wg
 
 	//____ KeyAction _______________________________________________________
 
-	enum class KeyAction
+	enum class KeyAction //. autoExtras
 	{
 		None,					// Return is ignored
 		Insert,					// Return is inserted into the text
@@ -358,7 +450,7 @@ namespace wg
 
 	//___  TextDecoration ________________________________________________________
 
-	enum class TextDecoration
+	enum class TextDecoration //. AutoExtras
 	{
 		Undefined,
 		None,

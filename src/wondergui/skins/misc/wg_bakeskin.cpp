@@ -1,25 +1,24 @@
 /*=========================================================================
 
-						 >>> WonderGUI <<<
+                             >>> WonderGUI <<<
 
-  This file is part of Tord Jansson's WonderGUI Graphics Toolkit
-  and copyright (c) Tord Jansson, Sweden [tord.jansson@gmail.com].
+  This file is part of Tord Bärnfors' WonderGUI UI Toolkit and copyright
+  Tord Bärnfors, Sweden [mail: first name AT barnfors DOT c_o_m].
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is free software; you can redistribute
+  The WonderGUI UI Toolkit is free software; you can redistribute
   this file and/or modify it under the terms of the GNU General Public
   License as published by the Free Software Foundation; either
   version 2 of the License, or (at your option) any later version.
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is also available for use in commercial
-  closed-source projects under a separate license. Interested parties
-  should contact Tord Jansson [tord.jansson@gmail.com] for details.
+  The WonderGUI UI Toolkit is also available for use in commercial
+  closed source projects under a separate license. Interested parties
+  should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-
 #include <wg_bakeskin.h>
 #include <wg_geo.h>
 #include <wg_util.h>
@@ -54,7 +53,7 @@ namespace wg
 
 		m_blendMode = blueprint.blendMode;
 		m_tintColor = blueprint.color;
-		m_gradient = blueprint.gradient;
+		m_pTintmap = blueprint.tintmap;
 		m_bSkinInSkin = blueprint.skinInSkin;
 		m_layer = blueprint.layer;
 
@@ -283,7 +282,7 @@ namespace wg
 
 		// Blit baked graphics to canvas.
 
-		RenderSettingsWithGradient settings(pDevice, m_layer, m_blendMode, m_tintColor, canvas, m_gradient);
+		RenderSettingsWithTintmap settings(pDevice, m_layer, m_blendMode, m_tintColor, canvas, m_pTintmap);
 
 		pDevice->setBlitSource(m_pBakeSurface);
 		pDevice->blit(canvas.pos(), { 0,0,canvas.size()});
@@ -367,7 +366,7 @@ namespace wg
 
 			BorderSPX padding = align(ptsToSpx(m_padding,scale));
 
-			for (int index = 0; index < State::IndexAmount; index++)
+			for (int index = 0; index < State::NbStates; index++)
 				m_cachedContentPadding[index] = padding;
 		}
 		else
@@ -378,14 +377,14 @@ namespace wg
 
 				if (m_bContentShifting)
 				{
-					for (int index = 0; index < State::IndexAmount; index++)
-						m_cachedContentPadding[index] = _stateContentBorder(scale,State(index));
+					for (int index = 0; index < State::NbStates; index++)
+						m_cachedContentPadding[index] = _stateContentBorder(scale,State(StateEnum(index)));
 				}
 				else
 				{
 					BorderSPX padding = _stateContentBorder(scale,State::Default);
 
-					for (int index = 0; index < State::IndexAmount; index++)
+					for (int index = 0; index < State::NbStates; index++)
 						m_cachedContentPadding[index] = padding;
 				}
 			}
@@ -397,8 +396,8 @@ namespace wg
 
 				for (auto& pSkin : m_skins)
 				{
-					for (int index = 0; index < State::IndexAmount; index++)
-						m_cachedContentPadding[index] = pSkin->_contentBorder(scale,State(index));
+					for (int index = 0; index < State::NbStates; index++)
+						m_cachedContentPadding[index] = pSkin->_contentBorder(scale,State((StateEnum)index));
 				}
 			}
 		}
@@ -440,7 +439,7 @@ namespace wg
 
 		// Update transition data
 
-		for (int i = 0; i < StateBits_Nb; i++)
+		for (int i = 0; i < PrimState_Nb; i++)
 			m_transitionTimes[i] = 0;
 
 		m_transitioningStates = 0;
@@ -450,7 +449,7 @@ namespace wg
 			m_transitioningStates |= pSkin->_transitioningStates();
 			auto p = pSkin->_transitionTimes();
 
-			for (int i = 0; i < StateBits_Nb; i++)
+			for (int i = 0; i < PrimState_Nb; i++)
 			{
 				if( p[i] > m_transitionTimes[i] )
 					m_transitionTimes[i] = p[i];
@@ -459,9 +458,9 @@ namespace wg
 
 		// Update animation lengths
 
-		for (int index = 0; index < State::IndexAmount; index++)
+		for (int index = 0; index < State::NbStates; index++)
 		{
-			State state = State(index);
+			State state = State( (StateEnum) index);
 
 			int		combinedLength = 0;
 

@@ -1,25 +1,24 @@
 /*=========================================================================
 
-						 >>> WonderGUI <<<
+                             >>> WonderGUI <<<
 
-  This file is part of Tord Jansson's WonderGUI Graphics Toolkit
-  and copyright (c) Tord Jansson, Sweden [tord.jansson@gmail.com].
+  This file is part of Tord Bärnfors' WonderGUI UI Toolkit and copyright
+  Tord Bärnfors, Sweden [mail: first name AT barnfors DOT c_o_m].
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is free software; you can redistribute
+  The WonderGUI UI Toolkit is free software; you can redistribute
   this file and/or modify it under the terms of the GNU General Public
   License as published by the Free Software Foundation; either
   version 2 of the License, or (at your option) any later version.
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is also available for use in commercial
-  closed-source projects under a separate license. Interested parties
-  should contact Tord Jansson [tord.jansson@gmail.com] for details.
+  The WonderGUI UI Toolkit is also available for use in commercial
+  closed source projects under a separate license. Interested parties
+  should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-
 #ifndef WG_C_GFXDEVICE_DOT_H
 #define WG_C_GFXDEVICE_DOT_H
 #pragma once
@@ -48,151 +47,152 @@ extern "C" {
 
 	//____ Creation ___________________________________________________
 
-	wg_obj		wg_createGfxDevice( wg_obj backend );
+	WG_EXPORT wg_obj		wg_createGfxDevice( wg_obj backend );
 
 	//____ Misc _______________________________________________________
 
-	const wg_typeInfo*		wg_deviceSurfaceType(wg_obj device);
+	WG_EXPORT int			wg_setBackend( wg_obj device, wg_obj backend );
+	WG_EXPORT wg_obj		wg_getBackend( wg_obj device );
 
-	int						wg_setBackend( wg_obj device, wg_obj backend );
-	wg_obj					wg_getBackend( wg_obj device );
+	WG_EXPORT wg_canvasInfo	wg_getCanvas(wg_obj device);
+	WG_EXPORT wg_canvasInfo	wg_getCanvasRef(wg_obj device, wg_canvasRef ref);
 
-	wg_canvasInfo			wg_getCanvas(wg_obj device);
-	wg_canvasInfo			wg_getCanvasRef(wg_obj device, wg_canvasRef ref);
+	WG_EXPORT wg_obj		wg_canvasLayers(wg_obj device);
 
-	wg_obj					wg_canvasLayers(wg_obj device);
-
-	wg_obj					wg_surfaceFactory(wg_obj device);
-	wg_obj					wg_edgemapFactory(wg_obj device);
+	WG_EXPORT wg_obj		wg_surfaceFactory(wg_obj device);
+	WG_EXPORT wg_obj		wg_edgemapFactory(wg_obj device);
 
 
-	int						wg_maxSegments(void);
+	WG_EXPORT int			wg_maxSegments(void);
 
 	//____ Geometry _________________________________________________
 
-	wg_sizeSPX				wg_canvasSize(wg_obj device);
+	WG_EXPORT wg_sizeSPX	wg_canvasSize(wg_obj device);
 
 	//____ State _________________________________________________
 
-	int						wg_setClipList(wg_obj device, int nRectangles, const wg_rectSPX* pRectangles);
-	void					wg_resetClipList(wg_obj device);
-	int						wg_pushClipList(wg_obj device, int nRectangles, const wg_rectSPX* pRectangles);
-	int						wg_popClipList(wg_obj device);
+	WG_EXPORT int			wg_setClipList(wg_obj device, int nRectangles, const wg_rectSPX* pRectangles);
+	WG_EXPORT void			wg_resetClipList(wg_obj device);
+	WG_EXPORT int			wg_pushClipList(wg_obj device, int nRectangles, const wg_rectSPX* pRectangles);
+	WG_EXPORT int			wg_popClipList(wg_obj device);
 
-	const wg_rectSPX*		wg_getClipList(wg_obj device);
-	int						wg_clipListSize(wg_obj device);
-	const wg_rectSPX*		wg_clipBounds(wg_obj device);
+	WG_EXPORT const wg_rectSPX*	wg_getClipList(wg_obj device);
+	WG_EXPORT int			wg_clipListSize(wg_obj device);
+	WG_EXPORT const wg_rectSPX*	wg_clipBounds(wg_obj device);
 
-	void					wg_setTintColor(wg_obj device, wg_color color);
-	wg_color				wg_getTintColor(wg_obj device);
-	void					wg_setTintmap(wg_obj device, const wg_rectSPX* rect, const wg_obj tintmap);
-	wg_obj					wg_getTintmap(wg_obj device);
-	wg_rectSPX				wg_getTintmapRect(wg_obj device);
-int							wg_isTinting(wg_obj device);
-	void					wg_clearTint(wg_obj device);
+	WG_EXPORT void			wg_setTintColor(wg_obj device, wg_color color);
+	WG_EXPORT wg_color		wg_getTintColor(wg_obj device);
+	WG_EXPORT void			wg_clearTintColor(wg_obj device);
+	WG_EXPORT int			wg_hasTintColor(wg_obj device);
 
-	int						wg_setBlendMode(wg_obj device, wg_blendMode blendMode);
-	wg_blendMode 			wg_getBlendMode(wg_obj device);
+	WG_EXPORT void			wg_setTintmap(wg_obj device, const wg_rectSPX* rect, const wg_obj tintmap);
+	WG_EXPORT wg_obj		wg_getTintmap(wg_obj device);
+	WG_EXPORT wg_rectSPX	wg_getTintmapRect(wg_obj device);
+	WG_EXPORT void			wg_clearTintmap(wg_obj device);
+	WG_EXPORT int			wg_hasTintmap(wg_obj device);
 
-	int						wg_setBlitSource(wg_obj device, wg_obj surface);
-	wg_obj 					wg_getBlitSource(wg_obj device);
+	WG_EXPORT int			wg_setBlendMode(wg_obj device, wg_blendMode blendMode);
+	WG_EXPORT wg_blendMode 	wg_getBlendMode(wg_obj device);
 
-	void					wg_setMorphFactor(wg_obj device, float factor);
-	float					wg_getMorphFactor(wg_obj device);
+	WG_EXPORT int			wg_setBlitSource(wg_obj device, wg_obj surface);
+	WG_EXPORT wg_obj 		wg_getBlitSource(wg_obj device);
 
-	void					wg_setBlurbrush(wg_obj device, wg_obj brush );
-	wg_obj					wg_getBlurbrush(wg_obj device);
+	WG_EXPORT void			wg_setMorphFactor(wg_obj device, float factor);
+	WG_EXPORT float			wg_getMorphFactor(wg_obj device);
 
-	void					wg_setFixedBlendColor(wg_obj device, wg_color color );
-	wg_color				wg_getFixedBlendColor(wg_obj device);
+	WG_EXPORT void			wg_setBlurbrush(wg_obj device, wg_obj brush );
+	WG_EXPORT wg_obj		wg_getBlurbrush(wg_obj device);
+
+	WG_EXPORT void			wg_setFixedBlendColor(wg_obj device, wg_color color );
+	WG_EXPORT wg_color		wg_getFixedBlendColor(wg_obj device);
 
 
-	void					wg_setRenderLayer(wg_obj device, int layer);
-	int						wg_getRenderLayer(wg_obj device);
+	WG_EXPORT void			wg_setRenderLayer(wg_obj device, int layer);
+	WG_EXPORT int			wg_getRenderLayer(wg_obj device);
 
 	//.____ Rendering ________________________________________________
 
-	int						wg_beginRender(wg_obj device);
-	int						wg_endRender(wg_obj device);
-	int						wg_isDeviceRendering(wg_obj device);
-	int						wg_isDeviceIdle(wg_obj device);
-	void					wg_flushDevice(wg_obj device);
+	WG_EXPORT int			wg_beginRender(wg_obj device);
+	WG_EXPORT int			wg_endRender(wg_obj device);
+	WG_EXPORT int			wg_isDeviceRendering(wg_obj device);
+	WG_EXPORT int			wg_isDeviceIdle(wg_obj device);
+	WG_EXPORT void			wg_flushDevice(wg_obj device);
 
-	int						wg_beginCanvasUpdateWithRef(wg_obj device, wg_canvasRef canvas, int nUpdateRects, const wg_rectSPX* pUpdateRects, wg_obj canvasLayers, int startLayer);
-	int						wg_beginCanvasUpdateWithSurface(wg_obj device, wg_obj surface, int nUpdateRects, const wg_rectSPX* pUpdateRects, wg_obj canvasLayers, int startLayer);
-	void					wg_endCanvasUpdate(wg_obj device);
+	WG_EXPORT int			wg_beginCanvasUpdateWithRef(wg_obj device, wg_canvasRef canvas, int nUpdateRects, const wg_rectSPX* pUpdateRects, wg_obj canvasLayers, int startLayer);
+	WG_EXPORT int			wg_beginCanvasUpdateWithSurface(wg_obj device, wg_obj surface, int nUpdateRects, const wg_rectSPX* pUpdateRects, wg_obj canvasLayers, int startLayer);
+	WG_EXPORT void			wg_endCanvasUpdate(wg_obj device);
 
-	void					wg_flattenLayers(wg_obj device);
-	void					wg_clearLayers(wg_obj device);
+	WG_EXPORT void			wg_flattenLayers(wg_obj device);
+	WG_EXPORT void			wg_clearLayers(wg_obj device);
 
 	// Draw methods.
 
-	void					wg_fill(wg_obj device, wg_color col);
-	void					wg_fillRect(wg_obj device, const wg_rectSPX* rect, wg_color col);
+	WG_EXPORT void			wg_fill(wg_obj device, wg_color col);
+	WG_EXPORT void			wg_fillRect(wg_obj device, const wg_rectSPX* rect, wg_color col);
 
-	void					wg_drawLine(wg_obj device, wg_coordSPX begin, wg_coordSPX end, wg_color color, wg_spx thickness);
-	void					wg_drawStraightLine(wg_obj device, wg_coordSPX begin, wg_direction dir, wg_spx length, wg_color color, wg_spx thickness);
+	WG_EXPORT void			wg_drawLine(wg_obj device, wg_coordSPX begin, wg_coordSPX end, wg_color color, wg_spx thickness);
+	WG_EXPORT void			wg_drawStraightLine(wg_obj device, wg_coordSPX begin, wg_direction dir, wg_spx length, wg_color color, wg_spx thickness);
 
 	// Blit methods
 
-	void					wg_blit(wg_obj device, wg_coordSPX dest);
-	void					wg_blitRect(wg_obj device, wg_coordSPX dest, const wg_rectSPX* src);
+	WG_EXPORT void			wg_blit(wg_obj device, wg_coordSPX dest);
+	WG_EXPORT void			wg_blitRect(wg_obj device, wg_coordSPX dest, const wg_rectSPX* src);
 
-	void					wg_flipBlit(wg_obj device, wg_coordSPX dest, wg_gfxFlip flip);
-	void					wg_flipBlitRect(wg_obj device, wg_coordSPX dest, const wg_rectSPX* src, wg_gfxFlip flip);
+	WG_EXPORT void			wg_flipBlit(wg_obj device, wg_coordSPX dest, wg_gfxFlip flip);
+	WG_EXPORT void			wg_flipBlitRect(wg_obj device, wg_coordSPX dest, const wg_rectSPX* src, wg_gfxFlip flip);
 
-	void					wg_stretchBlit(wg_obj device, const wg_rectSPX* dest);
-	void					wg_stretchBlitRect(wg_obj device, const wg_rectSPX* dest, const wg_rectSPX* src);
+	WG_EXPORT void			wg_stretchBlit(wg_obj device, const wg_rectSPX* dest);
+	WG_EXPORT void			wg_stretchBlitRect(wg_obj device, const wg_rectSPX* dest, const wg_rectSPX* src);
 
-	void					wg_stretchFlipBlit(wg_obj device, const wg_rectSPX* dest, wg_gfxFlip flip);
-	void					wg_stretchFlipBlitRect(wg_obj device, const wg_rectSPX* dest, const wg_rectSPX* src, wg_gfxFlip flip);
+	WG_EXPORT void			wg_stretchFlipBlit(wg_obj device, const wg_rectSPX* dest, wg_gfxFlip flip);
+	WG_EXPORT void			wg_stretchFlipBlitRect(wg_obj device, const wg_rectSPX* dest, const wg_rectSPX* src, wg_gfxFlip flip);
 
-	void					wg_precisionBlit(wg_obj device, const wg_rectSPX* dest, const wg_rectF* srcSPX);
-	void					wg_transformBlit(wg_obj device, const wg_rectSPX* dest, wg_coordF srcSPX, const wg_transform * pTransform);
-	void					wg_rotScaleBlit(wg_obj device, const wg_rectSPX* dest, float rotationDegrees, float scale, wg_coordF srcCenter, wg_coordF destCenter);
+	WG_EXPORT void			wg_precisionBlit(wg_obj device, const wg_rectSPX* dest, const wg_rectF* srcSPX);
+	WG_EXPORT void			wg_transformBlit(wg_obj device, const wg_rectSPX* dest, wg_coordF srcSPX, const wg_transform* pTransform);
+	WG_EXPORT void			wg_rotScaleBlit(wg_obj device, const wg_rectSPX* dest, float rotationDegrees, float scale, wg_coordF srcCenter, wg_coordF destCenter);
 
 	// Tile methods
 
-	void					wg_tile(wg_obj device, const wg_rectSPX* dest, wg_coordSPX shift);
-	void					wg_flipTile(wg_obj device, const wg_rectSPX* dest, wg_gfxFlip flip, wg_coordSPX shift);
+	WG_EXPORT void			wg_tile(wg_obj device, const wg_rectSPX* dest, wg_coordSPX shift);
+	WG_EXPORT void			wg_flipTile(wg_obj device, const wg_rectSPX* dest, wg_gfxFlip flip, wg_coordSPX shift);
 
-	void					wg_scaleTile(wg_obj device, const wg_rectSPX* dest, float scale, wg_coordSPX shift);
-	void					wg_scaleFlipTile(wg_obj device, const wg_rectSPX* dest, float scale, wg_gfxFlip flip, wg_coordSPX shift);
+	WG_EXPORT void			wg_scaleTile(wg_obj device, const wg_rectSPX* dest, float scale, wg_coordSPX shift);
+	WG_EXPORT void			wg_scaleFlipTile(wg_obj device, const wg_rectSPX* dest, float scale, wg_gfxFlip flip, wg_coordSPX shift);
 
 	// Blur methods
 
-	void					wg_blur(wg_obj device, wg_coordSPX dest);
-	void					wg_blurRect(wg_obj device, wg_coordSPX dest, const wg_rectSPX* src);
-	void					wg_stretchBlur(wg_obj device, const wg_rectSPX* dest);
-	void					wg_stretchBlurRect(wg_obj device, const wg_rectSPX* dest, const wg_rectSPX* src);
-	void					wg_transformBlur(wg_obj device, const wg_rectSPX* dest, wg_coordF srcSPX, const wg_transform* pTransform);
-	void					wg_rotScaleBlur(wg_obj device, const wg_rectSPX* dest, float rotationDegrees, float scale, wg_coordF srcCenter, wg_coordF destCenter);
+	WG_EXPORT void			wg_blur(wg_obj device, wg_coordSPX dest);
+	WG_EXPORT void			wg_blurRect(wg_obj device, wg_coordSPX dest, const wg_rectSPX* src);
+	WG_EXPORT void			wg_stretchBlur(wg_obj device, const wg_rectSPX* dest);
+	WG_EXPORT void			wg_stretchBlurRect(wg_obj device, const wg_rectSPX* dest, const wg_rectSPX* src);
+	WG_EXPORT void			wg_transformBlur(wg_obj device, const wg_rectSPX* dest, wg_coordF srcSPX, const wg_transform* pTransform);
+	WG_EXPORT void			wg_rotScaleBlur(wg_obj device, const wg_rectSPX* dest, float rotationDegrees, float scale, wg_coordF srcCenter, wg_coordF destCenter);
 
 	// Draw edgemap methods
 
-	void					wg_drawEdgemap(wg_obj device, wg_coordSPX dest, wg_obj edgemap);
-	void					wg_flipDrawEdgemap(wg_obj device, wg_coordSPX dest, wg_obj edgemap, wg_gfxFlip flip);
+	WG_EXPORT void			wg_drawEdgemap(wg_obj device, wg_coordSPX dest, wg_obj edgemap);
+	WG_EXPORT void			wg_flipDrawEdgemap(wg_obj device, wg_coordSPX dest, wg_obj edgemap, wg_gfxFlip flip);
 
-// Special draw/blit methods
+	// Special draw/blit methods
 
-	void					wg_blitNinePatch(wg_obj device, const wg_rectSPX* dstRect, const wg_borderSPX* dstFrame, const wg_ninePatch* patch, int scale);
+	WG_EXPORT void			wg_blitNinePatch(wg_obj device, const wg_rectSPX* dstRect, const wg_borderSPX* dstFrame, const wg_ninePatch* patch, int scale);
 
 	// Deprecated
 
-	void					wg_drawWave(wg_obj device, const wg_rectSPX* dest, const wg_waveLine* pTopBorder, const wg_waveLine* pBottomBorder, wg_color fill);
-	void					wg_flipDrawWave(wg_obj device, const wg_rectSPX* dest, const wg_waveLine* pTopBorder, const wg_waveLine* pBottomBorder, wg_color fill, wg_gfxFlip flip);
+	WG_DEPRECATED void		wg_drawWave(wg_obj device, const wg_rectSPX* dest, const wg_waveLine* pTopBorder, const wg_waveLine* pBottomBorder, wg_color fill);
+	WG_DEPRECATED void		wg_flipDrawWave(wg_obj device, const wg_rectSPX* dest, const wg_waveLine* pTopBorder, const wg_waveLine* pBottomBorder, wg_color fill, wg_gfxFlip flip);
 
-	void					wg_drawElipse(wg_obj device, const wg_rectSPX* canvas, wg_spx thickness, wg_color color, wg_spx outlineThickness, wg_color outlineColor);
+	WG_DEPRECATED void		wg_drawElipse(wg_obj device, const wg_rectSPX* canvas, wg_spx thickness, wg_color color, wg_spx outlineThickness, wg_color outlineColor);
 
-	void					wg_drawPieChart(wg_obj device, const wg_rectSPX* canvas, float start, int nSlices, const float* pSliceSizes, const wg_color* pSliceColors, float hubSize, wg_color hubColor, wg_color backColor, int bRectangular);
+	WG_DEPRECATED void		wg_drawPieChart(wg_obj device, const wg_rectSPX* canvas, float start, int nSlices, const float* pSliceSizes, const wg_color* pSliceColors, float hubSize, wg_color hubColor, wg_color backColor, int bRectangular);
 
-	void					wg_drawSegments(wg_obj device, const wg_rectSPX* dest, int nSegments, const wg_color* pSegmentColors, int nEdgeStrips, const int* pEdgeStrips, int edgeStripPitch, wg_tintMode tintMode);
-	void					wg_flipDrawSegments(wg_obj device, const wg_rectSPX* dest, int nSegments, const wg_color* pSegmentColors, int nEdgeStrips, const int* pEdgeStrips, int edgeStripPitch, wg_gfxFlip flip, wg_tintMode tintMode);
+	WG_DEPRECATED void		wg_drawSegments(wg_obj device, const wg_rectSPX* dest, int nSegments, const wg_color* pSegmentColors, int nEdgeStrips, const int* pEdgeStrips, int edgeStripPitch, wg_tintMode tintMode);
+	WG_DEPRECATED void		wg_flipDrawSegments(wg_obj device, const wg_rectSPX* dest, int nSegments, const wg_color* pSegmentColors, int nEdgeStrips, const int* pEdgeStrips, int edgeStripPitch, wg_gfxFlip flip, wg_tintMode tintMode);
 
-	void					wg_setTintGradient(wg_obj device, const wg_rectSPX* rect, const wg_gradient * pGradient);
-	void					wg_clearTintGradient(wg_obj device);
+	WG_DEPRECATED void		wg_setTintGradient(wg_obj device, const wg_rectSPX* rect, const wg_gradient * pGradient);
+	WG_DEPRECATED void		wg_clearTintGradient(wg_obj device);
 
-	void					wg_setBlurMatrices(wg_obj device, wg_spx radius, const float red[9], const float green[9], const float blue[9] );
+	WG_DEPRECATED void		wg_setBlurMatrices(wg_obj device, wg_spx radius, const float red[9], const float green[9], const float blue[9] );
 
 
 #ifdef __cplusplus

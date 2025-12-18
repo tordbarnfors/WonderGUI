@@ -1,32 +1,29 @@
 /*=========================================================================
 
-						 >>> WonderGUI <<<
+                             >>> WonderGUI <<<
 
-  This file is part of Tord Jansson's WonderGUI Graphics Toolkit
-  and copyright (c) Tord Jansson, Sweden [tord.jansson@gmail.com].
+  This file is part of Tord Bärnfors' WonderGUI UI Toolkit and copyright
+  Tord Bärnfors, Sweden [mail: first name AT barnfors DOT c_o_m].
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is free software; you can redistribute
+  The WonderGUI UI Toolkit is free software; you can redistribute
   this file and/or modify it under the terms of the GNU General Public
   License as published by the Free Software Foundation; either
   version 2 of the License, or (at your option) any later version.
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is also available for use in commercial
-  closed-source projects under a separate license. Interested parties
-  should contact Tord Jansson [tord.jansson@gmail.com] for details.
+  The WonderGUI UI Toolkit is also available for use in commercial
+  closed source projects under a separate license. Interested parties
+  should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-
 #include <wg_streamtrimbackend.h>
 
 namespace wg
 {
 	const TypeInfo StreamTrimBackend::TYPEINFO = { "StreamTrimBackend", &GfxBackend::TYPEINFO };
-
-	const TypeInfo s_unspecifiedSurfaceType = { "SurfaceType Unspecified, real backend missing", &Surface::TYPEINFO };
 
 	//____ destructor __________________________________________________
 
@@ -79,6 +76,8 @@ namespace wg
 
 			for (auto p = m_pUpdateRectsBeg; p < m_pUpdateRectsEnd; p++)
 			{
+				// All rectangles must be included in m_trimmedUpdateRects,
+				// even if it gets empty, so we start by adding it and trim it in place.
 
 				m_trimmedUpdateRects.push_back(*p);
 				auto pToTrim = &m_trimmedUpdateRects.back();
@@ -86,7 +85,7 @@ namespace wg
 				int level = 0;
 
 				if (pToTrim->isEmpty())
-					break;
+					continue;
 
 				for (auto pMask = m_masks.begin(); pMask < itMaskEnd; pMask++)
 				{
@@ -239,15 +238,33 @@ namespace wg
 		return m_pBackend->maxEdges();
 	}
 
-	//____ surfaceType() ______________________________________________________
+	//____ canBeBlitSource() ___________________________________________
 
-	const TypeInfo& StreamTrimBackend::surfaceType(void) const
+	bool StreamTrimBackend::canBeBlitSource(const TypeInfo& type) const
 	{
-		if( !m_pBackend)
-			return s_unspecifiedSurfaceType;
+		if (!m_pBackend)
+			return false;
 
-		return m_pBackend->surfaceType();
+		return m_pBackend->canBeBlitSource(type);
 	}
+
+	//____ canBeCanvas() ______________________________________________
+
+	bool StreamTrimBackend::canBeCanvas(const TypeInfo& type) const
+	{
+		if (!m_pBackend)
+			return false;
+
+		return m_pBackend->canBeCanvas(type);
+	}
+
+	//____ waitForCompletion() ___________________________________________________
+
+	void StreamTrimBackend::waitForCompletion()
+	{
+		return m_pBackend->waitForCompletion();
+	}
+
 
 	//____ addNonMaskingSession() ________________________________________________
 

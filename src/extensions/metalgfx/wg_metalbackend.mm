@@ -525,11 +525,32 @@ int MetalBackend::maxEdges() const
 	return c_maxSegments - 1;
 }
 
-//____ surfaceType() _______________________________________________________
+//____ canBeBlitSource() ______________________________________________________
 
-const TypeInfo& MetalBackend::surfaceType( void ) const
+bool MetalBackend::canBeBlitSource(const TypeInfo& type) const
 {
-	return MetalSurface::TYPEINFO;
+	return (type == MetalSurface::TYPEINFO);
+}
+
+//____ canBeCanvas() __________________________________________________________
+
+bool MetalBackend::canBeCanvas(const TypeInfo& type) const
+{
+	return (type == MetalSurface::TYPEINFO);
+}
+
+//____ waitForCompletion() ___________________________________________________
+
+void MetalBackend::waitForCompletion()
+{
+	if( m_flushesInProgress == 0 )
+		return;
+
+	id<MTLCommandBuffer> commandBuffer = [s_metalCommandQueue commandBuffer];
+	[commandBuffer commit];
+	[commandBuffer waitUntilCompleted];
+
+	return;
 }
 
 //____ surfaceFactory() _______________________________________________________
@@ -614,10 +635,6 @@ void MetalBackend::beginSession( CanvasRef canvasRef, Surface * pCanvasSurface, 
 	if( !pCanvasSurface && canvasRef != CanvasRef::Default )
 		return;
 
-//	if( pCanvasSurface )
-//		_setInfoForCanvasCompleted(pCanvasSurface, nUpdateRects, pUpdateRects );
-
-
 //	m_bFullCanvasSession = (nUpdateRects == 1 && pUpdateRects[0] == RectSPX(0,0,pCanvasSurface->pixelSize()*64) );
 
 	// Reserve buffer for coordinates
@@ -656,7 +673,7 @@ void MetalBackend::beginSession( CanvasRef canvasRef, Surface * pCanvasSurface, 
 	m_pExtrasBuffer = (float *)[m_extrasBufferId contents];
 	m_extrasBufferSize = 0;
 
-	// Setup a metal command queue for this session
+	// Setup a metal command buffer for this session
 
 	m_metalCommandBuffer = [s_metalCommandQueue commandBuffer];
 	m_metalCommandBuffer.label = @"MetalBackend";
@@ -719,8 +736,6 @@ void MetalBackend::endSession()
 	[m_metalCommandBuffer addCompletedHandler:^(id<MTLCommandBuffer> cb) {
 		// Shared buffer is populated.
 		m_flushesInProgress--;
-
-//		_canvasCompleted();
 	}];
 
 	// Finalize rendering here & push the command buffer to the GPU.

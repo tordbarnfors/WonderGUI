@@ -1,25 +1,24 @@
 /*=========================================================================
 
-						 >>> WonderGUI <<<
+                             >>> WonderGUI <<<
 
-  This file is part of Tord Jansson's WonderGUI Graphics Toolkit
-  and copyright (c) Tord Jansson, Sweden [tord.jansson@gmail.com].
+  This file is part of Tord Bärnfors' WonderGUI UI Toolkit and copyright
+  Tord Bärnfors, Sweden [mail: first name AT barnfors DOT c_o_m].
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is free software; you can redistribute
+  The WonderGUI UI Toolkit is free software; you can redistribute
   this file and/or modify it under the terms of the GNU General Public
   License as published by the Free Software Foundation; either
   version 2 of the License, or (at your option) any later version.
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is also available for use in commercial
-  closed-source projects under a separate license. Interested parties
-  should contact Tord Jansson [tord.jansson@gmail.com] for details.
+  The WonderGUI UI Toolkit is also available for use in commercial
+  closed source projects under a separate license. Interested parties
+  should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-
 #include <wg_bracketskin.h>
 #include <wg_gfxdevice.h>
 #include <wg_geo.h>
@@ -54,8 +53,22 @@ namespace wg
 		if (m_size.h < m_thickness)
 			m_size.h = m_thickness;
 
+		// Generate lists of states that affects shift and color.
 
-		m_color[0] = bp.color;
+		State	shiftingStates[State::NbStates];
+		Coord	stateShifts[State::NbStates];
+
+		State	colorStates[State::NbStates];
+		HiColor stateColors[State::NbStates];
+
+		int 	nbShiftingStates = 1;
+		int		nbColorStates = 1;
+
+		shiftingStates[0] = State::Default;
+		colorStates[0] = State::Default;
+
+		stateShifts[0] = { 0,0 };
+		stateColors[0] = bp.color;
 
 		for (auto& stateInfo : bp.states)
 		{
@@ -63,22 +76,64 @@ namespace wg
 
 			if (stateInfo.data.contentShift.x != 0 || stateInfo.data.contentShift.y != 0)
 			{
-				m_contentShiftStateMask.setBit(index);
-				m_contentShift[index] = stateInfo.data.contentShift;
+				int index = stateInfo.state == State::Default ? 0 : nbShiftingStates++;
+				shiftingStates[index] = stateInfo.state;
+				stateShifts[index] = stateInfo.data.contentShift;
 				m_bContentShifting = true;
 			}
 
 			if (stateInfo.data.color != HiColor::Undefined)
 			{
-				m_stateColorMask.setBit(index);
-				m_color[index] = stateInfo.data.color;
+				int index = stateInfo.state == State::Default ? 0 : nbColorStates++;
+				colorStates[index] = stateInfo.state;
+				stateColors[index] = stateInfo.data.color;
 			}
-
 		}
 
-		_updateContentShift();
-		_updateUnsetColors();
+		// Calc size of index table for color, get its index masks & shifts.
+
+		int	colorIndexEntries;
+
+		std::tie(colorIndexEntries, m_colorIndexMask, m_colorIndexShift) = calcStateToIndexParam(nbColorStates, colorStates);
+
+		// Calculate memory needed for all state data
+
+		int shiftBytes = _bytesNeededForContentShiftData(nbShiftingStates, shiftingStates);
+		int colorBytes = sizeof(HiColor) * nbColorStates;
+		int indexBytes = colorIndexEntries;
+
+		// Allocate and populate memory for state data
+
+		m_pStateData = malloc(shiftBytes + colorBytes + indexBytes);
+
+		auto pDest = (uint8_t*)m_pStateData;
+
+		auto pCoords = _prepareForContentShiftData(pDest, nbShiftingStates, shiftingStates);
+		for (int i = 0; i < nbShiftingStates; i++)
+			pCoords[i] = stateShifts[i];
+
+		pDest += shiftBytes;
+
+		auto pColors = (HiColor*)pDest;
+		for (int i = 0; i < nbColorStates; i++)
+			pColors[i] = stateColors[i];
+
+		m_pColors = pColors;
+
+		pDest += colorBytes;
+
+		m_pColorIndexTab = pDest;
+
+		generateStateToIndexTab(m_pColorIndexTab, nbColorStates, colorStates);
 	}
+
+	//____ destructor() _______________________________________________________
+
+	BracketSkin::~BracketSkin()
+	{
+		free(m_pStateData);
+	}
+
 
 	//____ typeInfo() _________________________________________________________
 
@@ -97,44 +152,44 @@ namespace wg
 		
 		RenderSettings settings(pDevice, m_layer, m_blendMode);
 
-		int i = state;
 
 		spx thickness = align(ptsToSpx(m_thickness, scale));
 		SizeSPX size = align(ptsToSpx(m_size, scale));
 
+		const HiColor& color = _getColor(state);
 
 		if (thickness*2 >= canvas.w || thickness*2 >= canvas.h)
 		{
-			pDevice->fill(canvas, m_color[i]); 
+			pDevice->fill(canvas, color); 
 		}
 		else
 		{
 			if (size.w * 2 >= canvas.w)
 			{
-				pDevice->fill({ canvas.x, canvas.y, canvas.w, thickness }, m_color[i]);
-				pDevice->fill({ canvas.x, canvas.y + canvas.h - thickness, canvas.w, thickness }, m_color[i]);
+				pDevice->fill({ canvas.x, canvas.y, canvas.w, thickness }, color);
+				pDevice->fill({ canvas.x, canvas.y + canvas.h - thickness, canvas.w, thickness }, color);
 			}
 			else
 			{
-				pDevice->fill({ canvas.x, canvas.y, size.w, thickness }, m_color[i]);
-				pDevice->fill({ canvas.x + canvas.w - size.w, canvas.y, size.w, thickness }, m_color[i]);
+				pDevice->fill({ canvas.x, canvas.y, size.w, thickness }, color);
+				pDevice->fill({ canvas.x + canvas.w - size.w, canvas.y, size.w, thickness }, color);
 
-				pDevice->fill({ canvas.x, canvas.y + canvas.h - thickness, size.w, thickness }, m_color[i]);
-				pDevice->fill({ canvas.x + canvas.w - size.w, canvas.y + canvas.h - thickness, size.w, thickness }, m_color[i]);
+				pDevice->fill({ canvas.x, canvas.y + canvas.h - thickness, size.w, thickness }, color);
+				pDevice->fill({ canvas.x + canvas.w - size.w, canvas.y + canvas.h - thickness, size.w, thickness }, color);
 			}
 
 			if (size.h * 2 >= canvas.h)
 			{
-				pDevice->fill({ canvas.x, canvas.y + thickness, thickness, canvas.h - thickness*2  }, m_color[i]);
-				pDevice->fill({ canvas.x + canvas.w - thickness, canvas.y + thickness, thickness, canvas.h - thickness*2 }, m_color[i]);
+				pDevice->fill({ canvas.x, canvas.y + thickness, thickness, canvas.h - thickness*2  }, color);
+				pDevice->fill({ canvas.x + canvas.w - thickness, canvas.y + thickness, thickness, canvas.h - thickness*2 }, color);
 			}
 			else
 			{
-				pDevice->fill({ canvas.x, canvas.y + thickness, thickness, size.h - thickness }, m_color[i]);
-				pDevice->fill({ canvas.x + canvas.w - thickness, canvas.y + thickness, thickness, size.h - thickness }, m_color[i]);
+				pDevice->fill({ canvas.x, canvas.y + thickness, thickness, size.h - thickness }, color);
+				pDevice->fill({ canvas.x + canvas.w - thickness, canvas.y + thickness, thickness, size.h - thickness }, color);
 
-				pDevice->fill({ canvas.x, canvas.y + canvas.h - size.h, thickness, size.h - thickness }, m_color[i]);
-				pDevice->fill({ canvas.x + canvas.w - thickness, canvas.y + canvas.h - size.h, thickness, size.h - thickness }, m_color[i]);
+				pDevice->fill({ canvas.x, canvas.y + canvas.h - size.h, thickness, size.h - thickness }, color);
+				pDevice->fill({ canvas.x + canvas.w - thickness, canvas.y + canvas.h - size.h, thickness, size.h - thickness }, color);
 			}
 		}
 	}
@@ -192,7 +247,7 @@ namespace wg
 
 		RectSPX canvas = _canvas - align(ptsToSpx(m_spacing, scale)) + align(ptsToSpx(m_overflow, scale));
 
-		if (m_color[i1] != m_color[i2] )
+		if (_getColor(newState) != _getColor(oldState) )
 			return canvas;
 
 		return StateSkin::_dirtyRect(canvas, scale, newState, oldState, newValue, oldValue, newValue2, oldValue2,
@@ -208,20 +263,5 @@ namespace wg
 
 		return RectSPX();
 	}
-
-	//____ _updateUnsetColors() _______________________________________________
-
-	void BracketSkin::_updateUnsetColors()
-	{
-		for (int i = 0; i < State::IndexAmount; i++)
-		{
-			if (!m_stateColorMask.bit(i))
-			{
-				int bestAlternative = bestStateIndexMatch(i, m_stateColorMask);
-				m_color[i] = m_color[bestAlternative];
-			}
-		}
-	}
-
 
 } // namespace wg

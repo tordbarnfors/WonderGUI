@@ -1,25 +1,24 @@
 /*=========================================================================
 
-						 >>> WonderGUI <<<
+                             >>> WonderGUI <<<
 
-  This file is part of Tord Jansson's WonderGUI Graphics Toolkit
-  and copyright (c) Tord Jansson, Sweden [tord.jansson@gmail.com].
+  This file is part of Tord Bärnfors' WonderGUI UI Toolkit and copyright
+  Tord Bärnfors, Sweden [mail: first name AT barnfors DOT c_o_m].
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is free software; you can redistribute
+  The WonderGUI UI Toolkit is free software; you can redistribute
   this file and/or modify it under the terms of the GNU General Public
   License as published by the Free Software Foundation; either
   version 2 of the License, or (at your option) any later version.
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is also available for use in commercial
-  closed-source projects under a separate license. Interested parties
-  should contact Tord Jansson [tord.jansson@gmail.com] for details.
+  The WonderGUI UI Toolkit is also available for use in commercial
+  closed source projects under a separate license. Interested parties
+  should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-
 #include <wg_multiblockskin.h>
 #include <wg_gfxdevice.h>
 #include <wg_geo.h>
@@ -48,7 +47,10 @@ namespace wg
 		m_blockSizePoints	= blockSize;
 		m_frame				= frame;
 
-		for( int i = 0 ; i < State::IndexAmount ; i++ )
+		m_pContentShiftIndexTab = &m_dummyIndex;
+		m_pContentShiftTable 	= &m_dummyCoord;
+
+		for( int i = 0 ; i < State::NbStates ; i++ )
 		m_bStateOpaque[i] = false;
 	}
 
@@ -70,10 +72,9 @@ namespace wg
 
 		layer.blendMode = BlendMode::Blend;
 		layer.pSurface = pSurf;
-		layer.stateBlockMask = 1;               // Only normal state is set.
 
 
-		for (int i = 0; i < State::IndexAmount; i++)
+		for (int i = 0; i < State::NbStates; i++)
 		{
 			layer.blockOfs[i] = ofs;
 			layer.tintColor[i] = HiColor::White;
@@ -94,12 +95,15 @@ namespace wg
 
 		layer.blendMode = BlendMode::Blend;
 		layer.pSurface = pSurf;
-		layer.stateBlockMask = 0;
 
 		//
 
-		for (int i = 0; i < State::IndexAmount; i++)
+		for (int i = 0; i < State::NbStates; i++)
 			layer.tintColor[i] = HiColor::White;
+
+		bool		statesSpecified[StateEnum_size];
+		for( int i = 0 ; i < StateEnum_size ; i++ )
+			statesSpecified[i] = false;
 
 		//
 
@@ -108,23 +112,24 @@ namespace wg
 		{
 			int index = state;
 
-			layer.stateBlockMask.setBit(index);
+			statesSpecified[index] = true;
 			layer.blockOfs[index] = blockStartOfs + Coord( blockPitch.w*ofs, blockPitch.h*ofs );
 			ofs++;
 		}
 
 		//
 
-		assert(layer.stateBlockMask.bit(0) == true);				// A block for state normal is required.
+		assert(statesSpecified[0] == true);				// A block for state normal is required.
 
 		// Fill in fallback states and update opacity flag
 
-		for (int i = 0; i < State::IndexAmount; i++)
+		for (int i = 0; i < State::NbStates; i++)
 		{
-			if (!layer.stateBlockMask.bit(i))
+			if (!statesSpecified[i])
 			{
-				int fallbackIndex = bestStateIndexMatch(i, layer.stateBlockMask);
-				layer.blockOfs[i] = layer.blockOfs[fallbackIndex];
+				int fallbackIndex = State( (StateEnum) i).bestMatch(int(stateBlocks.size()), stateBlocks.begin());
+
+				layer.blockOfs[i] = layer.blockOfs[ stateBlocks.begin()[fallbackIndex].index()];
 			}
 
 			_updateStateOpacity(i);
@@ -155,7 +160,7 @@ namespace wg
 	{
 		auto& layer = m_layers.at(layerIdx-1);
 
-		for (int i = 0; i < State::IndexAmount; i++)
+		for (int i = 0; i < State::NbStates; i++)
 		{
 			int16_t		oldAlpha = layer.tintColor[i].a;
 
@@ -178,6 +183,13 @@ namespace wg
 
 		//
 
+		bool		statesSpecified[StateEnum_size];
+		for( int i = 0 ; i < StateEnum_size ; i++ )
+			statesSpecified[i] = false;
+
+		int nStates = 0;
+		State		stateList[StateEnum_size];
+
 		for (auto& stateColor : stateColors)
 		{
 			int index = stateColor.first;
@@ -189,18 +201,21 @@ namespace wg
 			if (oldAlpha != stateColor.second.a)
 				_updateStateOpacity(index);
 
-			layer.stateColorMask.setBit(index);
+			statesSpecified[index] = true;
+
+			stateList[nStates++] = stateColor.first;
 		}
 
 		// Fill in fallback states and update opacity flag
 
-		for (int i = 0; i < State::IndexAmount; i++)
+
+		for (int i = 0; i < State::NbStates; i++)
 		{
-			if (!layer.stateColorMask.bit(i))
+			if (!statesSpecified[i])
 			{
 				int16_t		oldAlpha = layer.tintColor[i].a;
 
-				int fallbackIndex = bestStateIndexMatch(i, layer.stateBlockMask);
+				int fallbackIndex = State( (StateEnum) i).bestMatch(nStates, stateList);
 				layer.tintColor[i] = layer.tintColor[fallbackIndex];
 
 				if (oldAlpha != layer.tintColor[i].a )
@@ -223,7 +238,7 @@ namespace wg
 		{
 			layer.blendMode = blendMode;
 
-			for (int i = 0; i < State::IndexAmount; i++)
+			for (int i = 0; i < State::NbStates; i++)
 				_updateStateOpacity(i);
 		}
 

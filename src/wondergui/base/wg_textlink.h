@@ -1,31 +1,30 @@
 /*=========================================================================
 
-						 >>> WonderGUI <<<
+                             >>> WonderGUI <<<
 
-  This file is part of Tord Jansson's WonderGUI Graphics Toolkit
-  and copyright (c) Tord Jansson, Sweden [tord.jansson@gmail.com].
+  This file is part of Tord Bärnfors' WonderGUI UI Toolkit and copyright
+  Tord Bärnfors, Sweden [mail: first name AT barnfors DOT c_o_m].
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is free software; you can redistribute
+  The WonderGUI UI Toolkit is free software; you can redistribute
   this file and/or modify it under the terms of the GNU General Public
   License as published by the Free Software Foundation; either
   version 2 of the License, or (at your option) any later version.
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is also available for use in commercial
-  closed-source projects under a separate license. Interested parties
-  should contact Tord Jansson [tord.jansson@gmail.com] for details.
+  The WonderGUI UI Toolkit is also available for use in commercial
+  closed source projects under a separate license. Interested parties
+  should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-
 #ifndef WG_TEXTLINK_DOT_H
 #define WG_TEXTLINK_DOT_H
 #pragma once
 
 #include <string>
-
+#include <functional>
 
 #include <wg_pointers.h>
 #include <wg_geo.h>
@@ -47,28 +46,46 @@ namespace wg
 	class TextLink : public Object
 	{
 	public:
+
+		//.____ Blueprint __________________________________________
+
+		struct Blueprint
+		{
+			Finalizer_p				finalizer = nullptr;
+			int						id = 0;
+			std::string				link;
+			std::string				tooltip;
+		};
+
+
 		//.____ Creation __________________________________________
 
-		static TextLink_p create( const std::string& link ) { return TextLink_p(new TextLink(link)); }
-		static TextLink_p create( const std::string& link, TextStyle * pStyle ) { return TextLink_p(new TextLink(link, pStyle)); }
+		static TextLink_p create() { return TextLink_p(new TextLink()); }
+		static TextLink_p create( const Blueprint& blueprint ) { return TextLink_p(new TextLink(blueprint)); }
 
 		//.____ Identification __________________________________________
 
 		const TypeInfo&			typeInfo(void) const override;
 		const static TypeInfo	TYPEINFO;
 
-		//.____ Misc ___________________________________________________________
+		inline int				id() const { return m_id; }
 
+		//.____ Content ___________________________________________________________
+
+		void					setLink(const std::string& link) { m_link = link; }
 		const std::string&		link() const { return m_link; }
-		TextStyle_p				style() const;
+
+		void					setTooltip(const std::string& tooltip) { m_tooltip = tooltip; }	
+		const std::string&		tooltip() const { return m_tooltip; }
 
 	private:
-		TextLink( const std::string& link );
-		TextLink( const std::string& link, TextStyle * style );
+		TextLink() {};
+		TextLink( const Blueprint& bp );
 		~TextLink();
 
 		std::string				m_link;
-		TextStyle_p				m_pStyle;
+		std::string				m_tooltip;
+		int						m_id = 0;
 
 	};
 

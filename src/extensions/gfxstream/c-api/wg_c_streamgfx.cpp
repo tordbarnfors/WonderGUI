@@ -1,31 +1,33 @@
 /*=========================================================================
 
-						 >>> WonderGUI <<<
+                             >>> WonderGUI <<<
 
-  This file is part of Tord Jansson's WonderGUI Graphics Toolkit
-  and copyright (c) Tord Jansson, Sweden [tord.jansson@gmail.com].
+  This file is part of Tord Bärnfors' WonderGUI UI Toolkit and copyright
+  Tord Bärnfors, Sweden [mail: first name AT barnfors DOT c_o_m].
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is free software; you can redistribute
+  The WonderGUI UI Toolkit is free software; you can redistribute
   this file and/or modify it under the terms of the GNU General Public
   License as published by the Free Software Foundation; either
   version 2 of the License, or (at your option) any later version.
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is also available for use in commercial
-  closed-source projects under a separate license. Interested parties
-  should contact Tord Jansson [tord.jansson@gmail.com] for details.
+  The WonderGUI UI Toolkit is also available for use in commercial
+  closed source projects under a separate license. Interested parties
+  should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-
 #include <wg_c_streamgfx.h>
 #include <wg_c_internal.h>
 
 #include <wg_streambackend.h>
-#include <wg_streamsurface.h>
-#include <wg_streamsurfacefactory.h>
+#include <wg_remotesurface.h>
+#include <wg_remotesurfacefactory.h>
+#include <wg_mirrorsurface.h>
+#include <wg_mirrorsurfacefactory.h>
+
 #include <wg_streamedgemap.h>
 #include <wg_streamedgemapfactory.h>
 
@@ -45,7 +47,7 @@ wg_obj wg_createStreamBackend(wg_obj streamEncoder, int maxEdges )
 
 int wg_defineStreamBackendCanvasWithSurface( wg_obj streamBackend, wg_canvasRef ref, wg_obj surface )
 {
-	return getPtr(streamBackend)->defineCanvas( (CanvasRef) ref, static_cast<StreamSurface*>(reinterpret_cast<Object*>(surface)) );
+	return getPtr(streamBackend)->defineCanvas( (CanvasRef) ref, static_cast<RemoteSurface*>(reinterpret_cast<Object*>(surface)) );
 }
 
 int wg_defineStreamBackendCanvas( wg_obj streamBackend, wg_canvasRef ref, wg_sizeI pixelSize, wg_pixelFormat pixelFormat, int scale )
@@ -53,60 +55,110 @@ int wg_defineStreamBackendCanvas( wg_obj streamBackend, wg_canvasRef ref, wg_siz
 	return getPtr(streamBackend)->defineCanvas( (CanvasRef) ref, {pixelSize.w, pixelSize.h}, (PixelFormat) pixelFormat, scale );
 }
 
+void wg_encodeCanvasList(wg_obj streamBackend)
+{
+	getPtr(streamBackend)->encodeCanvasList();
+}
 
-wg_obj wg_createStreamSurface(wg_obj streamEncoder, const wg_surfaceBP* blueprint)
+void wg_encodeTick(wg_obj streamBackend, int32_t microsecPassed)
+{
+	getPtr(streamBackend)->encodeTick(microsecPassed);
+}
+
+wg_obj wg_createRemoteSurface(wg_obj streamEncoder, const wg_surfaceBP* blueprint)
 {
 	Surface::Blueprint	bp;
 	convertSurfaceBlueprint(&bp, blueprint);
 	auto pEncoder = static_cast<StreamEncoder*>(reinterpret_cast<Object*>(streamEncoder));
 
-	auto p = StreamSurface::create(pEncoder, bp);
+	auto p = RemoteSurface::create(pEncoder, bp);
 	p->retain();
 	return (wg_obj) static_cast<Object*>(p.rawPtr());
 }
 
 
-wg_obj wg_createStreamSurfaceFromBlob(wg_obj streamEncoder, const wg_surfaceBP* blueprint, wg_obj blob, int pitch)
+wg_obj wg_createRemoteSurfaceFromBlob(wg_obj streamEncoder, const wg_surfaceBP* blueprint, wg_obj blob, int pitch)
 {
 	Surface::Blueprint	bp;
 	convertSurfaceBlueprint(&bp, blueprint);
 	auto pEncoder = static_cast<StreamEncoder*>(reinterpret_cast<Object*>(streamEncoder));
 
-	auto p = StreamSurface::create(pEncoder, bp, static_cast<Blob*>(reinterpret_cast<Object*>(blob)), pitch );
+	auto p = RemoteSurface::create(pEncoder, bp, static_cast<Blob*>(reinterpret_cast<Object*>(blob)), pitch );
 	p->retain();
 	return (wg_obj) static_cast<Object*>(p.rawPtr());
 }
 
-wg_obj	wg_createStreamSurfaceFromBitmap(wg_obj streamEncoder, wg_obj factory, const wg_surfaceBP* blueprint, const uint8_t* pPixels,
+wg_obj	wg_createRemoteSurfaceFromBitmap(wg_obj streamEncoder, wg_obj factory, const wg_surfaceBP* blueprint, const uint8_t* pPixels,
 									   wg_pixelFormat pixelFormat, int pitch, const wg_color8 * pPalette )
 {
 	Surface::Blueprint	bp;
 	convertSurfaceBlueprint(&bp, blueprint);
 	auto pEncoder = static_cast<StreamEncoder*>(reinterpret_cast<Object*>(streamEncoder));
 
-	auto p = StreamSurface::create(pEncoder, bp, pPixels, (PixelFormat) pixelFormat, pitch, (const Color8*) pPalette);
+	auto p = RemoteSurface::create(pEncoder, bp, pPixels, (PixelFormat) pixelFormat, pitch, (const Color8*) pPalette);
 	p->retain();
 	return (wg_obj) static_cast<Object*>(p.rawPtr());
 }
 
-wg_obj	wg_createStreamSurfaceFromRawData(wg_obj streamEncoder, wg_obj factory, const wg_surfaceBP* blueprint, const uint8_t* pPixels,
+wg_obj	wg_createRemoteSurfaceFromRawData(wg_obj streamEncoder, wg_obj factory, const wg_surfaceBP* blueprint, const uint8_t* pPixels,
 										const wg_pixelDescription * pPixelDescription, int pitch, const wg_color8 * pPalette )
 {
 	Surface::Blueprint	bp;
 	convertSurfaceBlueprint(&bp, blueprint);
 	auto pEncoder = static_cast<StreamEncoder*>(reinterpret_cast<Object*>(streamEncoder));
 
-	auto p = StreamSurface::create(pEncoder, bp, pPixels, *(PixelDescription*) pPixelDescription, pitch, (const Color8*) pPalette);
+	auto p = RemoteSurface::create(pEncoder, bp, pPixels, *(PixelDescription*) pPixelDescription, pitch, (const Color8*) pPalette);
 	p->retain();
 	return (wg_obj) static_cast<Object*>(p.rawPtr());
 }
 
 
-wg_obj wg_createStreamSurfaceFactory(wg_obj streamEncoder)
+wg_obj wg_createRemoteSurfaceFactory(wg_obj streamEncoder)
 {
-	auto p = StreamSurfaceFactory::create(static_cast<StreamEncoder*>(reinterpret_cast<Object*>(streamEncoder)));
+	auto p = RemoteSurfaceFactory::create(static_cast<StreamEncoder*>(reinterpret_cast<Object*>(streamEncoder)));
 	p->retain();
 	return (wg_obj) static_cast<Object*>(p.rawPtr());
+}
+
+wg_obj wg_createMirrorSurface(wg_obj streamEncoder, wg_mirrorSurfaceBP* blueprint)
+{
+	MirrorSurface::Blueprint	bp;
+	bp.canvasRef = (CanvasRef) blueprint->canvasRef;
+	bp.encoder = static_cast<StreamEncoder*>(reinterpret_cast<Object*>(blueprint->encoder));
+	bp.surface = static_cast<Surface*>(reinterpret_cast<Object*>(blueprint->surface));
+	bp.streamOnCreate = blueprint->streamOnCreate != 0;
+	auto p = MirrorSurface::create(bp);
+	p->retain();
+	return (wg_obj) static_cast<Object*>(p.rawPtr());
+}
+
+wg_obj wg_createMirrorSurfaceFactory(wg_obj streamEncoder, wg_obj backingSurfaceFactory)
+{
+	auto pEncoder = static_cast<StreamEncoder*>(reinterpret_cast<Object*>(streamEncoder));
+	auto pBackingFactory = static_cast<SurfaceFactory*>(reinterpret_cast<Object*>(backingSurfaceFactory));
+	auto p = MirrorSurfaceFactory::create(pEncoder, pBackingFactory);
+	p->retain();
+	return (wg_obj) static_cast<Object*>(p.rawPtr());
+}
+
+void wg_setRememberRemoteSurfacesCreated(wg_obj remoteSurfaceFactory, int bRemember)
+{
+	static_cast<RemoteSurfaceFactory*>(reinterpret_cast<Object*>(remoteSurfaceFactory))->setRememberSurfacesCreated(bRemember == 1);
+}
+
+void wg_recreateRemoteSurfaces(wg_obj remoteSurfaceFactory)
+{
+	static_cast<RemoteSurfaceFactory*>(reinterpret_cast<Object*>(remoteSurfaceFactory))->recreateRemoteSurfaces();
+}
+
+void wg_setRememberMirrorSurfacesCreated(wg_obj mirrorSurfaceFactory, int bRemember)
+{
+	static_cast<MirrorSurfaceFactory*>(reinterpret_cast<Object*>(mirrorSurfaceFactory))->setRememberSurfacesCreated(bRemember == 1);
+}
+
+void wg_streamMirrorSurfacesAsNew(wg_obj mirrorSurfaceFactory)
+{
+	static_cast<MirrorSurfaceFactory*>(reinterpret_cast<Object*>(mirrorSurfaceFactory))->streamAllAsNew();
 }
 
 wg_obj wg_createStreamEdgemap(wg_obj streamEncoder, const wg_edgemapBP* blueprint )

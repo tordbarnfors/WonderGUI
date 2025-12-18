@@ -1,22 +1,22 @@
 /*=========================================================================
 
-						 >>> WonderGUI <<<
+                             >>> WonderGUI <<<
 
-  This file is part of Tord Jansson's WonderGUI Graphics Toolkit
-  and copyright (c) Tord Jansson, Sweden [tord.jansson@gmail.com].
+  This file is part of Tord Bärnfors' WonderGUI UI Toolkit and copyright
+  Tord Bärnfors, Sweden [mail: first name AT barnfors DOT c_o_m].
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is free software; you can redistribute
+  The WonderGUI UI Toolkit is free software; you can redistribute
   this file and/or modify it under the terms of the GNU General Public
   License as published by the Free Software Foundation; either
   version 2 of the License, or (at your option) any later version.
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is also available for use in commercial
-  closed-source projects under a separate license. Interested parties
-  should contact Tord Jansson [tord.jansson@gmail.com] for details.
+  The WonderGUI UI Toolkit is also available for use in commercial
+  closed source projects under a separate license. Interested parties
+  should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
 #ifndef WG_C_SOFTGFX_DOT_H
@@ -31,25 +31,25 @@
 extern "C" {
 #endif
 
-	wg_obj	wg_createSoftBackend(void);
-	int		wg_defineSoftBackendCanvas( wg_obj backend, wg_canvasRef ref, wg_obj softSurface );
+WG_EXPORT wg_obj	wg_createSoftBackend(void);
+WG_EXPORT int		wg_defineSoftBackendCanvas( wg_obj backend, wg_canvasRef ref, wg_obj softSurface );
 
 
-	wg_obj	wg_createSoftSurface(const wg_surfaceBP* blueprint);
-	wg_obj	wg_createSoftSurfaceFromBlob(const wg_surfaceBP* blueprint, wg_obj blob, int pitch);
-	wg_obj	wg_createSoftSurfaceFromBitmap(const wg_surfaceBP* blueprint, const uint8_t* pPixels,
-										   wg_pixelFormat pixelFormat, int pitch, const wg_color8 * pPalette, int paletteSize );
-	wg_obj	wg_createSoftSurfaceFromRawData(const wg_surfaceBP* blueprint, const uint8_t* pPixels,
-											const wg_pixelDescription * pPixelDescription, int pitch, const wg_color8 * pPalette, int paletteSize );
+WG_EXPORT wg_obj	wg_createSoftSurface(const wg_surfaceBP* blueprint);
+WG_EXPORT wg_obj	wg_createSoftSurfaceFromBlob(const wg_surfaceBP* blueprint, wg_obj blob, int pitch);
+WG_EXPORT wg_obj	wg_createSoftSurfaceFromBitmap(	wg_obj factory, const wg_surfaceBP* blueprint, const uint8_t* pPixels,
+													wg_pixelFormat pixelFormat, int pitch, const wg_color8 * pPalette, int paletteSize );
+WG_EXPORT wg_obj	wg_createSoftSurfaceFromRawData(wg_obj factory, const wg_surfaceBP* blueprint, const uint8_t* pPixels,
+													const wg_pixelDescription * pPixelDescription, int pitch, const wg_color8 * pPalette, int paletteSize );
 
-	wg_obj	wg_createSoftSurfaceFactory(void);
+WG_EXPORT wg_obj	wg_createSoftSurfaceFactory(void);
 
 
-	wg_obj	wg_createSoftEdgemap( const wg_edgemapBP* blueprint );
-	wg_obj	wg_createSoftEdgemapFromFloats( const wg_edgemapBP* blueprint, wg_sampleOrigo origo, const float * pSamples, int edges, int edgePitch, int samplePitch);
-	wg_obj	wg_createSoftEdgemapFromSpx( const wg_edgemapBP* blueprint, wg_sampleOrigo origo, const wg_spx * pSamples, int edges, int edgePitch, int samplePitch);
+WG_EXPORT wg_obj	wg_createSoftEdgemap( const wg_edgemapBP* blueprint );
+WG_EXPORT wg_obj	wg_createSoftEdgemapFromFloats( const wg_edgemapBP* blueprint, wg_sampleOrigo origo, const float * pSamples, int edges, int edgePitch, int samplePitch);
+WG_EXPORT wg_obj	wg_createSoftEdgemapFromSpx( const wg_edgemapBP* blueprint, wg_sampleOrigo origo, const wg_spx * pSamples, int edges, int edgePitch, int samplePitch);
 
-	wg_obj	wg_createSoftEdgemapFactory(void);
+WG_EXPORT wg_obj	wg_createSoftEdgemapFactory(void);
 
 
 

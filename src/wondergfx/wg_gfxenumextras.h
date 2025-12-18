@@ -1,25 +1,24 @@
 /*=========================================================================
 
-						 >>> WonderGUI <<<
+                             >>> WonderGUI <<<
 
-  This file is part of Tord Jansson's WonderGUI Graphics Toolkit
-  and copyright (c) Tord Jansson, Sweden [tord.jansson@gmail.com].
+  This file is part of Tord Bärnfors' WonderGUI UI Toolkit and copyright
+  Tord Bärnfors, Sweden [mail: first name AT barnfors DOT c_o_m].
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is free software; you can redistribute
+  The WonderGUI UI Toolkit is free software; you can redistribute
   this file and/or modify it under the terms of the GNU General Public
   License as published by the Free Software Foundation; either
   version 2 of the License, or (at your option) any later version.
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is also available for use in commercial
-  closed-source projects under a separate license. Interested parties
-  should contact Tord Jansson [tord.jansson@gmail.com] for details.
+  The WonderGUI UI Toolkit is also available for use in commercial
+  closed source projects under a separate license. Interested parties
+  should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-
 #ifndef	WG_GFXENUMEXTRAS_DOT_H
 #define WG_GFXENUMEXTRAS_DOT_H
 #pragma once
@@ -54,6 +53,7 @@ namespace wg
 	const static TransitionCurve TransitionCurve_min = TransitionCurve::Linear;
 	const static CanvasRef       CanvasRef_min       = CanvasRef::None;
 	const static SampleOrigo     SampleOrigo_min     = SampleOrigo::Top;
+	const static Compression     Compression_min     = Compression::None;
 
 	const static TintMode        TintMode_max        = TintMode::GradientXY;
 	const static EdgemapPalette  EdgemapPalette_max  = EdgemapPalette::ColorstripXY;
@@ -71,6 +71,7 @@ namespace wg
 	const static TransitionCurve TransitionCurve_max = TransitionCurve::Parametric;
 	const static CanvasRef       CanvasRef_max       = CanvasRef::Canvas_32;
 	const static SampleOrigo     SampleOrigo_max     = SampleOrigo::Bottom;
+	const static Compression     Compression_max     = Compression::Spx16I;
 
 	const static int             TintMode_size       = (int)TintMode::GradientXY + 1;
 	const static int             EdgemapPalette_size = (int)EdgemapPalette::ColorstripXY + 1;
@@ -88,6 +89,7 @@ namespace wg
 	const static int             TransitionCurve_size= (int)TransitionCurve::Parametric + 1;
 	const static int             CanvasRef_size      = (int)CanvasRef::Canvas_32 + 1;
 	const static int             SampleOrigo_size    = (int)SampleOrigo::Bottom + 1;
+	const static int             Compression_size    = (int)Compression::Spx16I + 1;
 
 	const char * toString(TintMode);
 	const char * toString(EdgemapPalette);
@@ -105,6 +107,7 @@ namespace wg
 	const char * toString(TransitionCurve);
 	const char * toString(CanvasRef);
 	const char * toString(SampleOrigo);
+	const char * toString(Compression);
 
 //=========================================================================
 //. endAutoSection

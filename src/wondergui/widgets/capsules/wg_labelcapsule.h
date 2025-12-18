@@ -1,22 +1,22 @@
 /*=========================================================================
 
-						 >>> WonderGUI <<<
+                             >>> WonderGUI <<<
 
-  This file is part of Tord Jansson's WonderGUI Graphics Toolkit
-  and copyright (c) Tord Jansson, Sweden [tord.jansson@gmail.com].
+  This file is part of Tord Bärnfors' WonderGUI UI Toolkit and copyright
+  Tord Bärnfors, Sweden [mail: first name AT barnfors DOT c_o_m].
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is free software; you can redistribute
+  The WonderGUI UI Toolkit is free software; you can redistribute
   this file and/or modify it under the terms of the GNU General Public
   License as published by the Free Software Foundation; either
   version 2 of the License, or (at your option) any later version.
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is also available for use in commercial
-  closed-source projects under a separate license. Interested parties
-  should contact Tord Jansson [tord.jansson@gmail.com] for details.
+  The WonderGUI UI Toolkit is also available for use in commercial
+  closed source projects under a separate license. Interested parties
+  should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
 #ifndef WG_LABELCAPSULE_DOT_H
@@ -24,7 +24,7 @@
 #pragma once
 
 #include <wg_capsule.h>
-#include <wg_text.h>
+#include <wg_dynamictext.h>
 
 namespace wg
 {
@@ -32,12 +32,12 @@ namespace wg
 	typedef	StrongPtr<LabelCapsule>	LabelCapsule_p;
 	typedef	WeakPtr<LabelCapsule>		LabelCapsule_wp;
 
-	//____ LabelCapsule ______________________________________________________
+	//____ LabelCapsule _______________________________________________________
 
 	class LabelCapsule : public Capsule
 	{
 	public:
-		//____ Blueprint __________________________________________
+		//____ Blueprint ______________________________________________________
 
 		struct Blueprint
 		{
@@ -47,7 +47,7 @@ namespace wg
 			bool			dropTarget = true;
 			Finalizer_p		finalizer = nullptr;
 			int				id = 0;
-			Text::Blueprint	label;
+			DynamicText::Blueprint	label;
 			Placement		labelPlacement = Placement::NorthWest;
 			Skin_p			labelSkin;
 			MarkPolicy		markPolicy = MarkPolicy::AlphaTest;
@@ -55,7 +55,7 @@ namespace wg
 			uint8_t			pickCategory = 0;
 			bool			pickHandle = false;
 			PointerStyle	pointer = PointerStyle::Undefined;
-			bool			selectable = true;
+			bool			selectable = false;
 			Skin_p			skin;
 			bool			stickyFocus = false;
 			bool			tabLock = false;
@@ -64,27 +64,34 @@ namespace wg
 
 		};
 
-
-		//.____ Creation __________________________________________
+		//.____ Creation ______________________________________________________
 
 		static LabelCapsule_p	create();
 		static LabelCapsule_p	create(const Blueprint& blueprint);
 
-		//.____ Components ____________________________________
+		//.____ Components ____________________________________________________
 
-		Text			label;
+		DynamicText			label;
 
-		//.____ Identification __________________________________________
+		//.____ Identification ________________________________________________
 
 		const TypeInfo& typeInfo(void) const override;
 		const static TypeInfo	TYPEINFO;
 
-		//.____ Internal _________________________________________________
+		//.____ Appearance ____________________________________________________
+
+		void		setLabelPlacement(Placement placement);
+		Placement	labelPlacement() const { return m_labelPlacement; }
+
+		void		setLabelSkin(Skin * pSkin);
+		Skin_p		labelSkin() const { return m_labelSkin.get(); }
+
+
+		//.____ Internal ______________________________________________________
 
 		spx				_matchingWidth(spx height, int scale) const override;
 		spx				_matchingHeight(spx width, int scale) const override;
 		SizeSPX			_defaultSize(int scale) const override;
-
 
 
 	protected:
@@ -103,7 +110,6 @@ namespace wg
 				m_labelSkin.set(bp.labelSkin);
 //				m_bOverflow = bp.skin->_overflowsGeo();
 			}
-
 
 			if (bp.child)
 				slot.setWidget(bp.child);

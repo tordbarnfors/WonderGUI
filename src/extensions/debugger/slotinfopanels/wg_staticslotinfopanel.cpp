@@ -1,22 +1,22 @@
 /*=========================================================================
 
-						 >>> WonderGUI <<<
+                             >>> WonderGUI <<<
 
-  This file is part of Tord Jansson's WonderGUI Graphics Toolkit
-  and copyright (c) Tord Jansson, Sweden [tord.jansson@gmail.com].
+  This file is part of Tord Bärnfors' WonderGUI UI Toolkit and copyright
+  Tord Bärnfors, Sweden [mail: first name AT barnfors DOT c_o_m].
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is free software; you can redistribute
+  The WonderGUI UI Toolkit is free software; you can redistribute
   this file and/or modify it under the terms of the GNU General Public
   License as published by the Free Software Foundation; either
   version 2 of the License, or (at your option) any later version.
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is also available for use in commercial
-  closed-source projects under a separate license. Interested parties
-  should contact Tord Jansson [tord.jansson@gmail.com] for details.
+  The WonderGUI UI Toolkit is also available for use in commercial
+  closed source projects under a separate license. Interested parties
+  should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
 #include "wg_staticslotinfopanel.h"
@@ -30,31 +30,21 @@ namespace wg
 
 	//____ constructor _____________________________________________________________
 
-	StaticSlotInfoPanel::StaticSlotInfoPanel(const Blueprint& blueprint, StaticSlot * pStaticSlot) : DebugPanel( blueprint )
+	StaticSlotInfoPanel::StaticSlotInfoPanel(const Blueprint& blueprint, IDebugger* pHolder, StaticSlot * pStaticSlot) : DebugPanel( blueprint, pHolder, StaticSlot::TYPEINFO.className )
 	{
-		auto pTable = TablePanel::create( WGOVR(blueprint.table, _.columns = 2, _.rows = 4 ));
+		m_pTable = _createTable( 5, 2);
 
 		int row = 0;
 
-		RectF geo = pStaticSlot->geo();
+		_initObjectPointerEntry(m_pTable, row++, "Widget: ");
+		_initPtsEntry(m_pTable, row++, "X offset (pts): ");
+		_initPtsEntry(m_pTable, row++, "Y offset (pts): ");
+		_initPtsEntry(m_pTable, row++, "Width (pts): ");
+		_initPtsEntry(m_pTable, row++, "Height (pts): ");
 
-		pTable->slots[row][0] = TextDisplay::create( WGOVR( blueprint.listEntryLabel, _.display.text = "Relative X: " ));
-		pTable->slots[row][1] = NumberDisplay::create( WGOVR(blueprint.listEntryPts, _.display.value = geo.x));
-		row++;
+		refresh(pStaticSlot);
 
-		pTable->slots[row][0] = TextDisplay::create(WGOVR(blueprint.listEntryLabel, _.display.text = "Relative Y: "));
-		pTable->slots[row][1] = NumberDisplay::create(WGOVR(blueprint.listEntryPts, _.display.value = geo.y));
-		row++;
-
-		pTable->slots[row][0] = TextDisplay::create(WGOVR(blueprint.listEntryLabel, _.display.text = "Relative W: "));
-		pTable->slots[row][1] = NumberDisplay::create(WGOVR(blueprint.listEntryPts, _.display.value = geo.w));
-		row++;
-
-		pTable->slots[row][0] = TextDisplay::create(WGOVR(blueprint.listEntryLabel, _.display.text = "Relative H: "));
-		pTable->slots[row][1] = NumberDisplay::create(WGOVR(blueprint.listEntryPts, _.display.value = geo.h));
-		row++;
-
-		this->slot = pTable;
+		this->slot = m_pTable;
 	}
 
 	//____ typeInfo() _________________________________________________________
@@ -62,6 +52,21 @@ namespace wg
 	const TypeInfo& StaticSlotInfoPanel::typeInfo(void) const
 	{
 		return TYPEINFO;
+	}
+
+	//____ refresh() _____________________________________________________________
+
+	void StaticSlotInfoPanel::refresh(StaticSlot * pStaticSlot)
+	{
+		int row = 0;
+
+		RectF geo = pStaticSlot->geo();
+
+		_refreshObjectPointerEntry(m_pTable, row++, pStaticSlot->widget(), m_pDisplayedChild);
+		_refreshPtsEntry(m_pTable, row++, geo.x);
+		_refreshPtsEntry(m_pTable, row++, geo.y);
+		_refreshPtsEntry(m_pTable, row++, geo.w);
+		_refreshPtsEntry(m_pTable, row++, geo.h);
 	}
 
 

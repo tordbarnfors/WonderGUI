@@ -21,14 +21,14 @@ public:
 		addTest("RotScaleBlit", &PatchBlitTests::setClockFace, &PatchBlitTests::rotScaleBlit, &PatchBlitTests::dummy);
 	}
 
-	bool init(GfxDevice * pDevice, const RectI& canvas, WonderApp::Visitor * pAppVisitor)
+	bool init(GfxDevice * pDevice, const RectI& canvas, wapp::API * pAppAPI)
 	{
 
-		m_pClockFace = pAppVisitor->loadSurface( "resources/clockface_2500.png", pDevice->surfaceFactory(), { .buffered = true, .sampleMethod = SampleMethod::Bilinear } );
+		m_pClockFace = pAppAPI->loadSurface( "resources/clockface_2500.png", pDevice->surfaceFactory(), { .buffered = true, .sampleMethod = SampleMethod::Bilinear } );
 		if (!m_pClockFace)
 			return false;
 
-		m_pSplash = pAppVisitor->loadSurface("resources/splash.png", pDevice->surfaceFactory(), { .buffered = true, .sampleMethod = SampleMethod::Bilinear });
+		m_pSplash = pAppAPI->loadSurface("resources/splash.png", pDevice->surfaceFactory(), { .buffered = true, .sampleMethod = SampleMethod::Bilinear });
 		if (!m_pSplash)
 			return false;
 

@@ -1,25 +1,24 @@
 /*=========================================================================
 
-						 >>> WonderGUI <<<
+                             >>> WonderGUI <<<
 
-  This file is part of Tord Jansson's WonderGUI Graphics Toolkit
-  and copyright (c) Tord Jansson, Sweden [tord.jansson@gmail.com].
+  This file is part of Tord Bärnfors' WonderGUI UI Toolkit and copyright
+  Tord Bärnfors, Sweden [mail: first name AT barnfors DOT c_o_m].
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is free software; you can redistribute
+  The WonderGUI UI Toolkit is free software; you can redistribute
   this file and/or modify it under the terms of the GNU General Public
   License as published by the Free Software Foundation; either
   version 2 of the License, or (at your option) any later version.
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is also available for use in commercial
-  closed-source projects under a separate license. Interested parties
-  should contact Tord Jansson [tord.jansson@gmail.com] for details.
+  The WonderGUI UI Toolkit is also available for use in commercial
+  closed source projects under a separate license. Interested parties
+  should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-
 #include <wg2_pianokeyboard.h>
 #include <wg2_gfxdevice.h>
 #include <wg2_event.h>
@@ -154,27 +153,18 @@ void WgPianoKeyboard::setSurfaces(const wg::Surface_p& pOddWhiteKeys, const wg::
 
 	m_blackKeySourceHeight	= m_pBlackKeys ? m_pBlackKeys->pixelSize().h  / states.size() : 0;
 
-	// Fill in state offsets
+	//
 
-	for (auto& ofs : m_stateOfsY)
-		ofs = -1;
+	wg::State usedStates[wg::State::NbStates];
 
-	wg::Bitmask<uint32_t>	stateMask;
-	int ofs = 0;
+	int nbStates = 0;
 	for (auto state : states)
-	{
-		int i = state;
-		stateMask.setBit(i);
-		m_stateOfsY[i] = ofs++;
-	}
+		usedStates[nbStates++] = state;
 
-	for (int i = 0; i < wg::State::IndexAmount; i++)
+	for (int i = 0; i < wg::State::NbStates; i++)
 	{
-		if (!stateMask.bit(i))
-		{
-			int bestAlternative = bestStateIndexMatch(i, stateMask);
-			m_stateOfsY[i] = m_stateOfsY[bestAlternative];
-		}
+		int bestAlternative = wg::State((wg::StateEnum)i).bestMatch(nbStates, usedStates);
+		m_stateOfsY[i] = bestAlternative;
 	}
 }
 
@@ -282,9 +272,9 @@ void WgPianoKeyboard::selectKey(int keyIdx)
 		return;
 	}
 
-	if (!m_keyInfo[keyIdx].state.isSelected())
+	if (!m_keyInfo[keyIdx].state.isSelekted())
 	{
-		m_keyInfo[keyIdx].state.setSelected(true);
+		m_keyInfo[keyIdx].state.setSelekted(true);
 		_requestRenderKey(keyIdx);
 	}
 }
@@ -299,9 +289,9 @@ void WgPianoKeyboard::unselectKey(int keyIdx)
 		return;
 	}
 
-	if (m_keyInfo[keyIdx].state.isSelected())
+	if (m_keyInfo[keyIdx].state.isSelekted())
 	{
-		m_keyInfo[keyIdx].state.setSelected(false);
+		m_keyInfo[keyIdx].state.setSelekted(false);
 		_requestRenderKey(keyIdx);
 	}
 }
@@ -316,7 +306,7 @@ bool WgPianoKeyboard::isKeySelected(int keyIdx) const
 		return false;
 	}
 
-	return m_keyInfo[keyIdx].state.isSelected();
+	return m_keyInfo[keyIdx].state.isSelekted();
 }
 
 //____ setSelectedKeys() __________________________________________________
@@ -336,7 +326,7 @@ void WgPianoKeyboard::setSelectedKeys(std::initializer_list<int> selectedKeys)
 
 	for (int i = 0; i < m_nbKeys; i++)
 	{
-		if( m_keyInfo[i].state.isSelected() )
+		if( m_keyInfo[i].state.isSelekted() )
 		{
 			bool bRemainSelected = false;
 
@@ -349,7 +339,7 @@ void WgPianoKeyboard::setSelectedKeys(std::initializer_list<int> selectedKeys)
 
 			if (!bRemainSelected)
 			{
-				m_keyInfo[i].state.setSelected(false);
+				m_keyInfo[i].state.setSelekted(false);
 				_requestRenderKey(i);
 			}
 		}
@@ -358,9 +348,9 @@ void WgPianoKeyboard::setSelectedKeys(std::initializer_list<int> selectedKeys)
 	// Secondly, select all newly selected
 
 	for (auto idx : selectedKeys)
-		if( !m_keyInfo[idx].state.isSelected() )
+		if( !m_keyInfo[idx].state.isSelekted() )
 		{
-			m_keyInfo[idx].state.setSelected(false);
+			m_keyInfo[idx].state.setSelekted(false);
 			_requestRenderKey(idx);
 		}
 }
@@ -371,9 +361,9 @@ void WgPianoKeyboard::unselectAllKeys()
 {
 	for (int i = 0; i < m_nbKeys; i++)
 	{
-		if (m_keyInfo[i].state.isSelected())
+		if (m_keyInfo[i].state.isSelekted())
 		{
-			m_keyInfo[i].state.setSelected(false);
+			m_keyInfo[i].state.setSelekted(false);
 			_requestRenderKey(i);
 		}
 	}

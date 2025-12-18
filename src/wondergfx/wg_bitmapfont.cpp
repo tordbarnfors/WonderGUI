@@ -1,22 +1,22 @@
 /*=========================================================================
 
-						 >>> WonderGUI <<<
+                             >>> WonderGUI <<<
 
-  This file is part of Tord Jansson's WonderGUI Graphics Toolkit
-  and copyright (c) Tord Jansson, Sweden [tord.jansson@gmail.com].
+  This file is part of Tord Bärnfors' WonderGUI UI Toolkit and copyright
+  Tord Bärnfors, Sweden [mail: first name AT barnfors DOT c_o_m].
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is free software; you can redistribute
+  The WonderGUI UI Toolkit is free software; you can redistribute
   this file and/or modify it under the terms of the GNU General Public
   License as published by the Free Software Foundation; either
   version 2 of the License, or (at your option) any later version.
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is also available for use in commercial
-  closed-source projects under a separate license. Interested parties
-  should contact Tord Jansson [tord.jansson@gmail.com] for details.
+  The WonderGUI UI Toolkit is also available for use in commercial
+  closed source projects under a separate license. Interested parties
+  should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
 /*
@@ -34,6 +34,7 @@
 #include <string.h>
 #include <wg_bitmapfont.h>
 #include <wg_gridwalker.h>
+#include <wg_gfxbase.h>
 
 
 inline int readUTF8Char( const char *& _pStr )
@@ -241,10 +242,31 @@ namespace wg
 		const char* pKerningBeg = strstr(pGlyphSpec, "[KERNING BEGIN]");
 		const char* pKerningEnd = strstr(pGlyphSpec, "[KERNING END]");
 
-		if (!pInfoBeg || !pInfoEnd || !pCharmapBeg || !pCharmapEnd)
+		if (!pInfoBeg)
 		{
-			//TODO: Error handling
+			GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Missing [INFO BEGIN] section.",
+				this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			return;
+		}
 
+		if (!pInfoEnd)
+		{
+			GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Missing [INFO END] section.",
+				this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			return;
+		}
+
+		if (!pCharmapBeg)
+		{
+			GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Missing [CHARMAP BEGIN] section.",
+				this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			return;
+		}
+
+		if (!pCharmapEnd)
+		{
+			GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Missing [CHARMAP END] section.",
+				this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return;
 		}
 

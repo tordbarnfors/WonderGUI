@@ -1,25 +1,24 @@
 /*=========================================================================
 
-						 >>> WonderGUI <<<
+                             >>> WonderGUI <<<
 
-  This file is part of Tord Jansson's WonderGUI Graphics Toolkit
-  and copyright (c) Tord Jansson, Sweden [tord.jansson@gmail.com].
+  This file is part of Tord Bärnfors' WonderGUI UI Toolkit and copyright
+  Tord Bärnfors, Sweden [mail: first name AT barnfors DOT c_o_m].
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is free software; you can redistribute
+  The WonderGUI UI Toolkit is free software; you can redistribute
   this file and/or modify it under the terms of the GNU General Public
   License as published by the Free Software Foundation; either
   version 2 of the License, or (at your option) any later version.
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is also available for use in commercial
-  closed-source projects under a separate license. Interested parties
-  should contact Tord Jansson [tord.jansson@gmail.com] for details.
+  The WonderGUI UI Toolkit is also available for use in commercial
+  closed source projects under a separate license. Interested parties
+  should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-
 #ifndef	WG_COLOR_DOT_H
 #define	WG_COLOR_DOT_H
 #pragma once
@@ -295,6 +294,7 @@ namespace wg
 		inline bool		isValid() const { return (argb & 0xE000E000E000E000) == 0 && a <= 4096 && r <= 4096 && g <= 4096 && b <= 4096; }
 
 		inline void		clamp();
+		inline HiColor	withAlpha(int alpha);
 
 		//.____ Operators ___________________________________________
 
@@ -343,6 +343,7 @@ namespace wg
 		//.____ Definitions ___________________________________________________
 
 		const static HiColor	Undefined;			// -1
+		const static HiColor	ShowError;			//
 		const static HiColor	Transparent;		// 0x000000
 		const static HiColor	TransparentBlack;	// 0x000000
 		const static HiColor	TransparentWhite;	// 0x000000
@@ -402,6 +403,12 @@ namespace wg
 		limit(g, 0, 4096);
 		limit(b, 0, 4096);
 		limit(a, 0, 4096);
+	}
+
+	//-------------------------------------------------------------------
+	inline HiColor HiColor::withAlpha(int alpha)
+	{
+		return HiColor{ r,g,b,alpha };
 	}
 
 	//-------------------------------------------------------------------

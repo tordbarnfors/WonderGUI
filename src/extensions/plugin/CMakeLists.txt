@@ -102,30 +102,35 @@ set(INCDIRS
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${PLUGIN_SOURCES})
 
 add_library( wgplugin STATIC ${PLUGIN_SOURCES} )
+generate_export_header(wgplugin BASE_NAME wg)
 
 target_include_directories(wgplugin PRIVATE
 	${WONDERGUI_INCDIRS}
 	${INCDIRS}
+	"${CMAKE_CURRENT_BINARY_DIR}"  # For generated header
 )
 
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${LEGACYPLUGIN_SOURCES})
 
 add_library( wglegacyplugin STATIC ${LEGACYPLUGIN_SOURCES} )
+generate_export_header(wglegacyplugin BASE_NAME wg)
 
 target_include_directories(wglegacyplugin PRIVATE
 	${WGLEGACYGUI_INCDIRS}
 	${INCDIRS}
+	"${CMAKE_CURRENT_BINARY_DIR}"  # For generated header
 )
 
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${HOST_SOURCES})
 
 add_library( wgpluginhost STATIC ${HOST_SOURCES} )
+generate_export_header(wgpluginhost BASE_NAME wg)
 
 target_include_directories(wgpluginhost PRIVATE
 	${WONDERGUI_INCDIRS}
 	${INCDIRS}
+	"${CMAKE_CURRENT_BINARY_DIR}"  # For generated header
 )
-
 
 set_target_properties( wgpluginhost wgplugin wglegacyplugin PROPERTIES FOLDER "Extensions" )
 

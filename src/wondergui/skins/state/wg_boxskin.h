@@ -1,22 +1,22 @@
 /*=========================================================================
 
-						 >>> WonderGUI <<<
+                             >>> WonderGUI <<<
 
-  This file is part of Tord Jansson's WonderGUI Graphics Toolkit
-  and copyright (c) Tord Jansson, Sweden [tord.jansson@gmail.com].
+  This file is part of Tord Bärnfors' WonderGUI UI Toolkit and copyright
+  Tord Bärnfors, Sweden [mail: first name AT barnfors DOT c_o_m].
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is free software; you can redistribute
+  The WonderGUI UI Toolkit is free software; you can redistribute
   this file and/or modify it under the terms of the GNU General Public
   License as published by the Free Software Foundation; either
   version 2 of the License, or (at your option) any later version.
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is also available for use in commercial
-  closed-source projects under a separate license. Interested parties
-  should contact Tord Jansson [tord.jansson@gmail.com] for details.
+  The WonderGUI UI Toolkit is also available for use in commercial
+  closed source projects under a separate license. Interested parties
+  should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
 #ifndef WG_BOXSKIN_DOT_H
@@ -113,18 +113,37 @@ namespace wg
 
 	protected:
 		BoxSkin( const Blueprint& blueprint );
-		~BoxSkin() {};
+		~BoxSkin();
 
-		void	_updateUnsetColors();
+		Border			m_outline;
+		BlendMode		m_blendMode = BlendMode::Blend;
 
-		Border		m_outline;
-		BlendMode	m_blendMode = BlendMode::Blend;
+		const HiColor&	_getFillColor(State state) const
+		{
+						int idxTabEntry = (state.index() & m_fillColorIndexMask) >> m_fillColorIndexShift;
+						int entry = m_pFillColorIndexTab[idxTabEntry];
+						return m_pFillColors[entry];
+		}
 
-		Bitmask<uint32_t>	m_stateColorMask = 1;
-		Bitmask<uint32_t>	m_stateOutlineColorMask = 1;
+		const HiColor&	_getOutlineColor(State state) const
+		{
+						int idxTabEntry = (state.index() & m_outlineColorIndexMask) >> m_outlineColorIndexShift;
+						int entry = m_pOutlineColorIndexTab[idxTabEntry];
+						return m_pOutlineColors[entry];
+		}
 
-		HiColor		m_fillColor[State::IndexAmount];
-		HiColor		m_outlineColor[State::IndexAmount];
+
+		void *			m_pStateData;				// Pointer at memory block with state data.
+
+		uint8_t			m_fillColorIndexMask;
+		uint8_t			m_fillColorIndexShift;
+		uint8_t*		m_pFillColorIndexTab;		// Table with index values into m_pFillColors for each mode (72) or less.
+		HiColor*		m_pFillColors;				// Contains colors for states.
+
+		uint8_t			m_outlineColorIndexMask;
+		uint8_t			m_outlineColorIndexShift;
+		uint8_t*		m_pOutlineColorIndexTab;		// Table with index values into m_pFillColors for each mode (72) or less.
+		HiColor*		m_pOutlineColors;				// Contains colors for states.
 	};
 
 

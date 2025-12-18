@@ -89,10 +89,14 @@ int main ( int argc, char** argv )
 	Blob_p pCanvasBlob = Blob::create( pWinSurf->pixels, 0);
 	SoftSurface_p pCanvas = SoftSurface::create({ .format = format, .size = SizeI(pWinSurf->w,pWinSurf->h) }, pCanvasBlob, pWinSurf->pitch);
 
-	SoftGfxDevice_p pGfxDevice = SoftGfxDevice::create();
-	addDefaultSoftKernels(pGfxDevice);
-//	addBaseSoftKernelsForRGB565BECanvas(pGfxDevice);
-	addBaseSoftKernelsForRGB555BECanvas(pGfxDevice);
+	auto pBackend = SoftBackend::create();
+	addDefaultSoftKernels(pBackend);
+	//	addBaseSoftKernelsForRGB565BECanvas(pBackend);
+	addBaseSoftKernelsForRGB555BECanvas(pBackend);
+
+
+	GfxDeviceGen2_p pGfxDevice = GfxDeviceGen2::create(pBackend);
+
 
 	
 	// First we load the 24-bit bmp containing the button graphics.
@@ -184,9 +188,9 @@ int main ( int argc, char** argv )
 	auto pFocusSkin = ColorSkin::create({ .states = { {State::Default, Color::Red}, {State::Focused, Color::Green} } });
 	auto pHoverSkin = ColorSkin::create({ .states = { {State::Default, Color::Red}, {State::Hovered, Color::Green} } });
 	auto pHoverAndFocusSkin = ColorSkin::create({ .states = { {State::Default, Color::Red}, {State::Hovered, Color::Yellow}, {State::Focused, Color::Blue} } });
-	auto pSelectedHoverAndFocusSkin = ColorSkin::create({ .states = { {State::Default, Color::Red}, {State::Selected, Color::Pink}, {State::Hovered, Color::Yellow}, {State::Focused, Color::Blue} } });
+	auto pSelectedHoverAndFocusSkin = ColorSkin::create({ .states = { {State::Default, Color::Red}, {State::Selekted, Color::Pink}, {State::Hovered, Color::Yellow}, {State::Focused, Color::Blue} } });
 
-	auto pHoverWithFocusSkin = ColorSkin::create({ .states = {  {State::Selected, Color::Purple}, {State::Default, Color::Red}, {State::HoveredFocused, Color::Red}, {State::Hovered, Color::Yellow}, {State::Focused, Color::Blue} } });
+	auto pHoverWithFocusSkin = ColorSkin::create({ .states = {  {State::Selekted, Color::Purple}, {State::Default, Color::Red}, {State::HoveredFocused, Color::Red}, {State::Hovered, Color::Yellow}, {State::Focused, Color::Blue} } });
 */
 	
 
@@ -226,9 +230,9 @@ int main ( int argc, char** argv )
 		/*
 		 pFocusSkin->_render(pGfxDevice, RectSPX(5, 5, 20, 20) * 64, 64, State::HoveredFocused);
 		 pHoverSkin->_render(pGfxDevice, RectSPX(5, 30, 20, 20) * 64, 64, State::HoveredFocused);
-		 pHoverAndFocusSkin->_render(pGfxDevice, RectSPX(5, 55, 20, 20) * 64, 64, State::SelectedHoveredFocused);
-		 pSelectedHoverAndFocusSkin->_render(pGfxDevice, RectSPX(5, 80, 20, 20) * 64, 64, State::SelectedHoveredFocused);
-		 pHoverWithFocusSkin->_render(pGfxDevice, RectSPX(5, 105, 20, 20) * 64, 64, State::SelectedHoveredFocused);
+		 pHoverAndFocusSkin->_render(pGfxDevice, RectSPX(5, 55, 20, 20) * 64, 64, State::SelektedHoveredFocused);
+		 pSelectedHoverAndFocusSkin->_render(pGfxDevice, RectSPX(5, 80, 20, 20) * 64, 64, State::SelektedHoveredFocused);
+		 pHoverWithFocusSkin->_render(pGfxDevice, RectSPX(5, 105, 20, 20) * 64, 64, State::SelektedHoveredFocused);
 		 */
 	
 		//

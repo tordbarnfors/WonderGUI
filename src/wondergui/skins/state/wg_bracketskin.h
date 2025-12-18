@@ -1,22 +1,22 @@
 /*=========================================================================
 
-						 >>> WonderGUI <<<
+                             >>> WonderGUI <<<
 
-  This file is part of Tord Jansson's WonderGUI Graphics Toolkit
-  and copyright (c) Tord Jansson, Sweden [tord.jansson@gmail.com].
+  This file is part of Tord Bärnfors' WonderGUI UI Toolkit and copyright
+  Tord Bärnfors, Sweden [mail: first name AT barnfors DOT c_o_m].
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is free software; you can redistribute
+  The WonderGUI UI Toolkit is free software; you can redistribute
   this file and/or modify it under the terms of the GNU General Public
   License as published by the Free Software Foundation; either
   version 2 of the License, or (at your option) any later version.
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is also available for use in commercial
-  closed-source projects under a separate license. Interested parties
-  should contact Tord Jansson [tord.jansson@gmail.com] for details.
+  The WonderGUI UI Toolkit is also available for use in commercial
+  closed source projects under a separate license. Interested parties
+  should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
 #ifndef WG_BRACKETSKIN_DOT_H
@@ -105,22 +105,30 @@ namespace wg
 
 	protected:
 		BracketSkin( const Blueprint& blueprint );
-		~BracketSkin() {};
+		~BracketSkin();
 
-		void	_updateUnsetColors();
+		const HiColor& _getColor(State state) const
+		{
+			int idxTabEntry = (state.index() & m_colorIndexMask) >> m_colorIndexShift;
+			int entry = m_pColorIndexTab[idxTabEntry];
+			return m_pColors[entry];
+		}
+
+		void*		m_pStateData;				// Pointer at memory block with state data.
 
 		BlendMode	m_blendMode = BlendMode::Blend;
 
-		Bitmask<uint32_t>	m_stateColorMask = 1;
-
-		HiColor		m_color[State::IndexAmount];
-
 		pts			m_thickness;
 		Size		m_size;
+
+		uint8_t		m_colorIndexMask;
+		uint8_t		m_colorIndexShift;
+		uint8_t*	m_pColorIndexTab;		// Table with index values into m_pFillColors for each mode (72) or less.
+		HiColor*	m_pColors;				// Contains colors for states.
 	};
 
 
 } // namespace wg
-#endif //WG_BOXSKIN_DOT_H
+#endif //WG_BRACKETSKIN_DOT_H
 
 

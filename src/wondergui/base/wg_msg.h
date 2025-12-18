@@ -1,25 +1,24 @@
 /*=========================================================================
 
-						 >>> WonderGUI <<<
+                             >>> WonderGUI <<<
 
-  This file is part of Tord Jansson's WonderGUI Graphics Toolkit
-  and copyright (c) Tord Jansson, Sweden [tord.jansson@gmail.com].
+  This file is part of Tord Bärnfors' WonderGUI UI Toolkit and copyright
+  Tord Bärnfors, Sweden [mail: first name AT barnfors DOT c_o_m].
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is free software; you can redistribute
+  The WonderGUI UI Toolkit is free software; you can redistribute
   this file and/or modify it under the terms of the GNU General Public
   License as published by the Free Software Foundation; either
   version 2 of the License, or (at your option) any later version.
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is also available for use in commercial
-  closed-source projects under a separate license. Interested parties
-  should contact Tord Jansson [tord.jansson@gmail.com] for details.
+  The WonderGUI UI Toolkit is also available for use in commercial
+  closed source projects under a separate license. Interested parties
+  should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-
 #ifndef WG_MSG_DOT_H
 #define WG_MSG_DOT_H
 #pragma once
@@ -218,6 +217,14 @@ namespace wg
 	typedef	StrongPtr<TextEditMsg>		TextEditMsg_p;
 	typedef	WeakPtr<TextEditMsg>	TextEditMsg_wp;
 
+	class SelectedMsg;
+	typedef	StrongPtr<SelectedMsg>		SelectedMsg_p;
+	typedef	WeakPtr<SelectedMsg>	SelectedMsg_wp;
+
+	class UnselectedMsg;
+	typedef	StrongPtr<UnselectedMsg>	UnselectedMsg_p;
+	typedef	WeakPtr<UnselectedMsg>		UnselectedMsg_wp;
+
 	class ItemMsg;
 	typedef	StrongPtr<ItemMsg>		ItemMsg_p;
 	typedef	WeakPtr<ItemMsg>	ItemMsg_wp;
@@ -365,7 +372,7 @@ namespace wg
 		InputMsg(char inputId, ModKeys modKeys, Coord pointerPos, CoordSPX pointerPosSPX, int64_t timestamp) : m_inputId(inputId), m_modKeys(modKeys), m_pointerPos(pointerPos), m_pointerPosSPX(pointerPosSPX), m_timestamp(timestamp) {}
 
 		char				m_inputId;			// Id of InputHandler posting this message, so we can separate multiple input sources from each other.
-		ModKeys		m_modKeys;			// Modifier keys pressed when message posted.
+		ModKeys				m_modKeys;			// Modifier keys pressed when message posted.
 		Coord				m_pointerPos;		// Screen position of pointer in points.
 		CoordSPX			m_pointerPosSPX;	// Screen position of pointer in subpixels.
 		int64_t				m_timestamp;		// Timestamp of input event.
@@ -975,25 +982,6 @@ namespace wg
 		SelectMsg( Object * pSource );
 	};
 
-	//____ UnselectMsg ___________________________________________________________
-
-	class UnselectMsg : public Msg
-	{
-	public:
-		//.____ Creation __________________________________________
-
-		inline static UnselectMsg_p	create(Object* pSource) { return new UnselectMsg(pSource); }
-
-		//.____ Identification __________________________________________
-
-		const TypeInfo& typeInfo(void) const override;
-		const static TypeInfo	TYPEINFO;
-
-	protected:
-		UnselectMsg(Object* pSource);
-	};
-
-
 	//____ ToggleMsg ___________________________________________________________
 
 	class ToggleMsg : public Msg
@@ -1001,7 +989,7 @@ namespace wg
 	public:
 		//.____ Creation __________________________________________
 
-		inline static ToggleMsg_p	create( Object * pSource, bool bSet ) { return new ToggleMsg(pSource,bSet); }
+		inline static ToggleMsg_p	create( Object * pSource, bool bChecked ) { return new ToggleMsg(pSource,bChecked); }
 
 		//.____ Identification __________________________________________
 
@@ -1010,12 +998,12 @@ namespace wg
 
 		//.____ Content _________________________________________________
 
-		bool		isSet() const;
+		bool		isChecked() const;
 
 	protected:
-		ToggleMsg( Object * pSource, bool bSet );
+		ToggleMsg( Object * pSource, bool bChecked );
 
-		bool	m_bSet;
+		bool	m_bChecked;
 	};
 
 	//____ ScrollbarMoveMsg ______________________________________________________
@@ -1134,6 +1122,59 @@ public:
 		int					m_nbInserted;
 	};
 
+	//____ SelectedMsg ________________________________________________________
+
+	class SelectedMsg : public Msg
+	{
+	public:
+		//.____ Creation ______________________________________________
+
+		inline static SelectedMsg_p	create(Object * pSource, std::vector<Widget_p>& selectedList) { return new SelectedMsg(pSource, selectedList); }
+
+		//.____ Identification __________________________________________
+
+		const TypeInfo& typeInfo(void) const override;
+		const static TypeInfo	TYPEINFO;
+
+		//.____ Content __________________________________________________
+
+		int				nbSelected() const { return m_list.size(); }
+		const Widget_p* selected() const { return m_list.data(); }
+
+
+
+	protected:
+		SelectedMsg(Object * pSource, std::vector<Widget_p>& selectedList);
+
+		std::vector<Widget_p> m_list;
+	};
+
+	//____ UnselectedMsg ________________________________________________________
+
+	class UnselectedMsg : public Msg
+	{
+	public:
+		//.____ Creation ______________________________________________
+
+		inline static UnselectedMsg_p	create(Object * pSource, std::vector<Widget_p>& unselectedList) { return new UnselectedMsg(pSource, unselectedList); }
+
+		//.____ Identification __________________________________________
+
+		const TypeInfo& typeInfo(void) const override;
+		const static TypeInfo	TYPEINFO;
+
+		//.____ Content __________________________________________________
+
+		int				nbUnselected() const { return m_list.size(); }
+		const Widget_p* unselected() const { return m_list.data(); }
+
+	protected:
+		UnselectedMsg(Object * pSource, std::vector<Widget_p>& selectedList);
+
+		std::vector<Widget_p> m_list;
+	};
+
+
 	//____ ItemInfo _______________________________
 
 	class ItemInfo
@@ -1232,7 +1273,7 @@ public:
 		ItemListMsg( Object * pSource, int nbItems, ItemInfo * pItems );
 		virtual ~ItemListMsg();
 		int				m_nbItems;
-		ItemInfo *	m_pItems;
+		ItemInfo *		m_pItems;
 	};
 
 

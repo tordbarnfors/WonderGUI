@@ -1,25 +1,24 @@
 /*=========================================================================
 
-						 >>> WonderGUI <<<
+                             >>> WonderGUI <<<
 
-  This file is part of Tord Jansson's WonderGUI Graphics Toolkit
-  and copyright (c) Tord Jansson, Sweden [tord.jansson@gmail.com].
+  This file is part of Tord Bärnfors' WonderGUI UI Toolkit and copyright
+  Tord Bärnfors, Sweden [mail: first name AT barnfors DOT c_o_m].
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is free software; you can redistribute
+  The WonderGUI UI Toolkit is free software; you can redistribute
   this file and/or modify it under the terms of the GNU General Public
   License as published by the Free Software Foundation; either
   version 2 of the License, or (at your option) any later version.
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is also available for use in commercial
-  closed-source projects under a separate license. Interested parties
-  should contact Tord Jansson [tord.jansson@gmail.com] for details.
+  The WonderGUI UI Toolkit is also available for use in commercial
+  closed source projects under a separate license. Interested parties
+  should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-
 #include <wg_plugincalls.h>
 #include <wg_pluginedgemap.h>
 #include <wg_base.h>
@@ -92,7 +91,7 @@ namespace wg
 	}
 
 	bool PluginEdgemap::setColors( int begin, int end, const Tintmap_p * pTintmaps )
-	{
+{
 		if (m_paletteType == EdgemapPalette::Flat)
 			return false;
 
@@ -103,41 +102,35 @@ namespace wg
 		int nVert = m_paletteType == EdgemapPalette::ColorstripY || m_paletteType == EdgemapPalette::ColorstripXY ? m_size.h * entries: 0;
 
 		int mem = (nHorr + nVert) * sizeof(HiColor);
+		auto pBuffer = (HiColor *) Base::memStackAlloc( mem );
 
-		auto pDest = (HiColor *) Base::memStackAlloc( mem );
+		int incX = 0, incY = 0;
 
-		const wg_color * pColorStripX = nullptr;
-		const wg_color * pColorStripY = nullptr;
+		HiColor * pColorstripsX = nullptr;
+		HiColor * pColorstripsY = nullptr;
 
-		if (nHorr > 0 )
+		if( nHorr > 0 )
 		{
-			pColorStripX = reinterpret_cast<const wg_color *>(pDest);
-			auto pMaps = pTintmaps;
-
-			for (int i = 0 ; i < entries ; i++)
-			{
-				Tintmap* pMap = *pMaps++;
-
-				pMap->exportHorizontalColors(m_size.w, pDest);
-				pDest += m_size.w;
-			}
+			pColorstripsX = pBuffer;
+			incX = m_size.w;
 		}
 
-		if (nVert > 0)
+		if( nVert > 0 )
 		{
-			pColorStripY = reinterpret_cast<const wg_color *>(pDest);
-			auto pMaps = pTintmaps;
-
-			for (int i = 0 ; i < entries ; i++)
-			{
-				Tintmap* pMap = *pMaps++;
-
-				pMap->exportVerticalColors(m_size.h, pDest);
-				pDest += m_size.h;
-			}
+			pColorstripsY = pBuffer + nHorr;
+			incY = m_size.h;
 		}
 
-		bool retVal = (bool) PluginCalls::edgemap->setEdgemapColorsFromStrips( m_cEdgemap, begin, end, pColorStripX, pColorStripY );
+		for (int seg = begin; seg < end; seg++)
+		{
+			Tintmap* pMap = *pTintmaps++;
+			pMap->exportColors(m_size, pColorstripsX, pColorstripsY);
+
+			pColorstripsX += incX;
+			pColorstripsY += incY;
+		}
+
+		bool retVal = (bool) PluginCalls::edgemap->setEdgemapColorsFromStrips( m_cEdgemap, begin, end, reinterpret_cast<const wg_color *>(pBuffer), reinterpret_cast<const wg_color *>(pBuffer+nHorr) );
 		Base::memStackFree( mem );
 		return retVal;
 	}

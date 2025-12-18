@@ -1,0 +1,38 @@
+set(CMAKE_CXX_STANDARD 20)
+
+set(CMAKE_C_VISIBILITY_PRESET invisible)
+set(CMAKE_CPP_VISIBILITY_PRESET invisible)
+set(CMAKE_VISIBILITY_INLINES_HIDDEN YES)
+
+add_library(streamgendll MODULE
+
+	${WONDERGEAR_SOURCES}
+	${WONDERGFX_SOURCES}
+	${WGGFXSTREAM_SOURCES}
+	${WGFREETYPEFONT_SOURCES}
+	${WGSOFTGFX_SOURCES}
+)
+
+generate_export_header(streamgendll BASE_NAME wg)
+
+#set_target_properties(streamgendll PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS TRUE)
+
+target_include_directories(streamgendll
+	PRIVATE ${WONDERGEAR_INCDIRS}
+	PRIVATE ${WONDERGFX_INCDIRS}
+	PRIVATE ${WGGFXSTREAM_INCDIRS}
+	PRIVATE ${WGFREETYPEFONT_INCDIRS}
+	PRIVATE ${WGSOFTGFX_INCDIRS}
+	PRIVATE ${FREETYPE2_INCDIR}
+
+	"${CMAKE_CURRENT_BINARY_DIR}"  # For generated header
+)
+
+target_link_directories(streamgendll PUBLIC
+    ${FREETYPE2_LIBDIR}
+)
+
+target_link_libraries(streamgendll
+	PRIVATE ${FREETYPE2_LIB}
+)
+

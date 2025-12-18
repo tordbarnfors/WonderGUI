@@ -1,22 +1,22 @@
 /*=========================================================================
 
-						 >>> WonderGUI <<<
+                             >>> WonderGUI <<<
 
-  This file is part of Tord Jansson's WonderGUI Graphics Toolkit
-  and copyright (c) Tord Jansson, Sweden [tord.jansson@gmail.com].
+  This file is part of Tord Bärnfors' WonderGUI UI Toolkit and copyright
+  Tord Bärnfors, Sweden [mail: first name AT barnfors DOT c_o_m].
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is free software; you can redistribute
+  The WonderGUI UI Toolkit is free software; you can redistribute
   this file and/or modify it under the terms of the GNU General Public
   License as published by the Free Software Foundation; either
   version 2 of the License, or (at your option) any later version.
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is also available for use in commercial
-  closed-source projects under a separate license. Interested parties
-  should contact Tord Jansson [tord.jansson@gmail.com] for details.
+  The WonderGUI UI Toolkit is also available for use in commercial
+  closed source projects under a separate license. Interested parties
+  should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
 #ifndef WG_GLBACKEND_DOT_H
@@ -93,7 +93,10 @@ namespace wg
 
 		int		maxEdges() const override;
 
-		const TypeInfo& surfaceType(void) const override;
+		bool	canBeBlitSource(const TypeInfo& type) const override;
+		bool	canBeCanvas(const TypeInfo& type) const override;
+
+		void	waitForCompletion() override;
 
 		static void		setShaderBlob(Blob* pBlob) { s_pShaderPrograms = pBlob; }
 		static Blob_p	shaderBlob() { return s_pShaderPrograms; }
@@ -197,7 +200,7 @@ namespace wg
 		GLuint  m_aaFillProg[2];								// [RGB/A_8 dest]
 		GLuint  m_aaFillTintmapProg[2];							// [RGB/A_8 dest]
 
-		GLuint  m_blurProg[2];									// [tintgradient]
+		GLuint  m_blurProg[2];									// [tintmap]
 		GLuint  m_blitProg[2];									// [RGB/A_8 dest]
 		GLuint  m_blitTintmapProg[2];							// [RGB/A_8 dest]
 

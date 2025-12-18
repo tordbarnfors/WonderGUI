@@ -1,26 +1,24 @@
 /*=========================================================================
 
-						 >>> WonderGUI <<<
+                             >>> WonderGUI <<<
 
-  This file is part of Tord Jansson's WonderGUI Graphics Toolkit
-  and copyright (c) Tord Jansson, Sweden [tord.jansson@gmail.com].
+  This file is part of Tord Bärnfors' WonderGUI UI Toolkit and copyright
+  Tord Bärnfors, Sweden [mail: first name AT barnfors DOT c_o_m].
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is free software; you can redistribute
+  The WonderGUI UI Toolkit is free software; you can redistribute
   this file and/or modify it under the terms of the GNU General Public
   License as published by the Free Software Foundation; either
   version 2 of the License, or (at your option) any later version.
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is also available for use in commercial
-  closed-source projects under a separate license. Interested parties
-  should contact Tord Jansson [tord.jansson@gmail.com] for details.
+  The WonderGUI UI Toolkit is also available for use in commercial
+  closed source projects under a separate license. Interested parties
+  should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-
-
 #ifndef WG_C_GFXBASE_DOT_H
 #define WG_C_GFXBASE_DOT_H
 #pragma once
@@ -33,23 +31,23 @@ extern "C" {
 #endif
 
 
-	int		wg_initGfxBase(void);
-	int		wg_exitGfxBase(void);
-	int		wg_isGfxBaseInitialized(void);
+WG_EXPORT int		wg_initGfxBase(void);
+WG_EXPORT int		wg_exitGfxBase(void);
+WG_EXPORT int		wg_isGfxBaseInitialized(void);
 
-	wg_obj	wg_defaultBitmapCache();
+WG_EXPORT wg_obj	wg_defaultBitmapCache();
 
-	void	wg_setDefaultSurfaceFactory( wg_obj factory );
-	wg_obj	wg_defaultSurfaceFactory();
+WG_EXPORT void	wg_setDefaultSurfaceFactory( wg_obj factory );
+WG_EXPORT wg_obj	wg_defaultSurfaceFactory();
 
-	void	wg_setDefaultEdgemapFactory( wg_obj factory );
-	wg_obj	wg_defaultEdgemapFactory();
+WG_EXPORT void	wg_setDefaultEdgemapFactory( wg_obj factory );
+WG_EXPORT wg_obj	wg_defaultEdgemapFactory();
 
-	void	wg_setDefaultGfxDevice( wg_obj device );
-	wg_obj	wg_defaultGfxDevice();
+WG_EXPORT void	wg_setDefaultGfxDevice( wg_obj device );
+WG_EXPORT wg_obj	wg_defaultGfxDevice();
 
-	void	wg_setDefaultToSRGB( int bSRGB );
-	int		wg_defaultToSRGB();
+WG_EXPORT void	wg_setDefaultToSRGB( int bSRGB );
+WG_EXPORT int		wg_defaultToSRGB();
 
 
 #ifdef __cplusplus

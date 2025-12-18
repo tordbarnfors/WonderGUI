@@ -13,34 +13,20 @@
 #include "device.h"
 #include "testsuites/testsuite.h"
 
-class Theme
-{
-public:
-	Skin_p		backPlateSkin() const { return m_pBackPlateSkin; }
-	Skin_p		buttonSkin() const { return m_pButtonSkin; }
-	TextStyle_p	smallTextStyle() const { return m_pSmallTextStyle; }
-	
-protected:
-	Skin_p		m_pBackPlateSkin;
-	Skin_p		m_pButtonSkin;
-
-	TextStyle_p	m_pSmallTextStyle;
-};
 
 
-
-
-class GfxDeviceTester : public WonderApp, public Theme
+class GfxDeviceTester : public WonderApp
 {
 	friend class WonderApp;
 public:
 
 
-	bool	init(Visitor* pVisitor) override;
+	bool	init(wapp::API* pAPI) override;
 	bool	update() override;
 	void	exit() override;
 
-	
+	void	closeWindow(wapp::Window* pWindow) override;
+
 
 	// Pre-init configuration
 
@@ -106,8 +92,7 @@ protected:
 	};
 
 
-	bool		setup_theme();
-	bool		setup_chrome();
+	bool		setup_chrome(Theme * pTheme);
 	void		teardown_chrome();
 
 	void		setup_testdevices();
@@ -133,8 +118,8 @@ protected:
 
 	const SizeI			g_canvasSize = { 512, 512 };
 
-	Visitor*			m_pVisitor = nullptr;
-	Window_p			m_pWindow;
+	wapp::API*			m_pAPI = nullptr;
+	wapp::Window_p		m_pWindow;
 
 	ScrollPanel_p		g_pViewPanel = nullptr;
 
@@ -151,9 +136,6 @@ protected:
 	vector<TestEntry>	g_tests;
 
 	vector<RectSPX>		g_clipList;
-
-	TextStyle_p			g_pButtonLabelStyle = nullptr;
-	TextLayout_p		g_pButtonLabelMapper = nullptr;
 
 	DisplayMode			g_displayMode = DisplayMode::Testee;
 	float				g_zoomFactor = 1.f;

@@ -41,7 +41,7 @@ pMySurface->copy( {50,50}, pOtherSurface, {0,0,100,40} );
 
 The source rectangle can be left out, in which case the whole source surface is copied to the specified destination.
 
-This copy operation works between any source and destination format, pixels are converted on the fly. No blending takes place, the alpha channel is copied as is, if both source and destination has alpha channel. If source is lacking an alpha channel, the destination pixels are made opaque. If destination lacks an alpha channel, the alpha channel of the source is simply dropped.
+This copy operation works between any source and destination format, pixels are converted on the fly. No blending takes place, the alpha channel is copied as is, if both source and destination has alpha channel. If source is lacking an alpha channel, the destination pixels are made opaque. If destination lacks an alpha channel, the alpha channel of the source is simply discarded.
 
 ### Considerations when copying to palette based surfaces
 
@@ -139,13 +139,13 @@ The rectangle supplied is relative to *the buffer rectangle and not the surface*
 
 By pushing pixels to the buffer we are guaranteed that those pixels in the buffer are identical to the ones in the surface. If we have a window into the surface and no separate buffer, the pushPixels() call will do nothing and cause no overhead. Either way we should always call pushPixels() before we read pixels.
 
-The only time you don't need to call pushPixels() is when you intend to fully overwrite all the pixels of the buffer.
+The only time you don't need to call pushPixels() is when you intend to fully replace *all* the pixels of the buffer, without reading any.
 
 We can now start to read and/or write the content of the buffer.
 
 ### Reading and writing pixels
 
-Reading and writing pixels is simply a matter of reading and writing the data pointer to by the pixels-member of the PixelBuffer struct. Typically you do know the format of the pixels in the surface beforehand since you have allocated it, but the format member can be read if you don't. 
+Reading and writing pixels is simply a matter of reading and writing the data pointed to by the pixels-member of the PixelBuffer struct. Typically you do know the format of the pixels in the surface beforehand since you have allocated it, but the format member can be read if you don't. 
 
 In the example below we draw a red line across the 64x64 buffer allocated above. The pixel format is known to be BGRA_8_sRGB, meaning one byte each for blue, green, red and alpha in that order.
 
@@ -172,9 +172,9 @@ Once we have written our pixels we need to pull them back into the surface.
 
 ### Pulling pixels to the surface
 
-Once we are done writing pixels we need to pull the pixels back into the surface. If you are modifying pixels, this is an important step. Even if you know that you have direct access to the pixels in the surface you should call pull, because there are some processes depending on the knowledge of what areas of the surface that have been modified.
+Once we are done writing pixels we need to pull the pixels back into the surface. If you are modifying pixels, this is an important step. Even if you know that you have direct access to the pixels in the surface you should call pull, since it tells WonderGUI what areas of the surface that have been modified.
 
-Pulling pixels works exactly like pushing, just moves them the other direction. The API is the same as when pushing. You can push all pixels of the buffer or a subset represented by a rectangle.
+Pulling pixels works exactly like pushing, just moves them the other direction. The parameters are the same as when pushing. You can pull all pixels of the buffer or a subset represented by a rectangle.
 
 ```c++
 pMySurface->pullPixels(bufferInfo);
@@ -205,7 +205,7 @@ PixelBuffer bufferInfo = pMySurface->allocPixelBuffer( {0,0,64,64} );
 
 pMySurface->pushPixels(bufferInfo);
 
-// Modify pixels
+// Modify pixels here...
 
 pMySurface->pullPixels(bufferInfo);
 pMySurface->freePixelBuffer(bufferInfo);

@@ -61,13 +61,16 @@ set(INCDIRS
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${SOURCES})
 
 add_library( wgsoftgfx STATIC ${SOURCES} )
+generate_export_header(wgsoftgfx BASE_NAME wg)
 
 target_include_directories(wgsoftgfx PRIVATE 
 	${WONDERGFX_INCDIRS}
 	${INCDIRS}
+	"${CMAKE_CURRENT_BINARY_DIR}"  # For generated header
 )
 
 set_target_properties( wgsoftgfx PROPERTIES FOLDER "Extensions" )
+
 
 
 list(TRANSFORM SOURCES PREPEND ${CMAKE_CURRENT_LIST_DIR}/ )

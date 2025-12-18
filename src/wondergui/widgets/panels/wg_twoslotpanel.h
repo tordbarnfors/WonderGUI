@@ -1,25 +1,24 @@
 /*=========================================================================
 
-						 >>> WonderGUI <<<
+                             >>> WonderGUI <<<
 
-  This file is part of Tord Jansson's WonderGUI Graphics Toolkit
-  and copyright (c) Tord Jansson, Sweden [tord.jansson@gmail.com].
+  This file is part of Tord Bärnfors' WonderGUI UI Toolkit and copyright
+  Tord Bärnfors, Sweden [mail: first name AT barnfors DOT c_o_m].
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is free software; you can redistribute
+  The WonderGUI UI Toolkit is free software; you can redistribute
   this file and/or modify it under the terms of the GNU General Public
   License as published by the Free Software Foundation; either
   version 2 of the License, or (at your option) any later version.
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is also available for use in commercial
-  closed-source projects under a separate license. Interested parties
-  should contact Tord Jansson [tord.jansson@gmail.com] for details.
+  The WonderGUI UI Toolkit is also available for use in commercial
+  closed source projects under a separate license. Interested parties
+  should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-
 #ifndef	WG_TWOSLOTPANEL_DOT_H
 #define	WG_TWOSLOTPANEL_DOT_H
 #pragma once
@@ -103,7 +102,7 @@ namespace wg
 			uint8_t			pickCategory	= 0;
 			bool			pickHandle		= false;
 			PointerStyle	pointer			= PointerStyle::Undefined;
-			bool			selectable		= true;
+			bool			selectable		= false;
 			Skin_p			skin;
 			bool			stickyFocus		= false;
 			bool			tabLock			= false;
@@ -129,7 +128,7 @@ namespace wg
 		//.____ Layout _______________________________________________________
 
 		void			setAxis(Axis orientaiton);
-		Axis			axis() const { return m_bHorizontal ? Axis::X : Axis::Y; }
+		Axis			axis() const { return m_axis; }
 
 		void			setLayout(PackLayout* pLayout);
 		PackLayout_p	layout() const { return m_pLayout; }
@@ -143,7 +142,7 @@ namespace wg
 		TwoSlotPanel();
 		template<class BP> TwoSlotPanel(const BP& bp) : slots(this), Container(bp)
 		{
-			m_bHorizontal = (bp.axis == Axis::X);
+			m_axis = bp.axis;
 			m_pLayout = bp.layout;
 
 			m_bSiblingsOverlap = false;
@@ -186,7 +185,7 @@ namespace wg
 
 		inline RectSPX	_slotOneRect(const RectSPX& contentRect) const
 		{
-			if (m_bHorizontal)
+			if (m_axis == Axis::X)
 				return { contentRect.x, contentRect.y, slots[0].m_length, contentRect.h };
 			else
 				return { contentRect.x, contentRect.y, contentRect.w, slots[0].m_length };
@@ -194,14 +193,14 @@ namespace wg
 
 		inline RectSPX	_slotTwoRect(const RectSPX& contentRect) const
 		{
-			if (m_bHorizontal)
+			if (m_axis == Axis::X)
 				return { contentRect.x + slots[0].m_length, contentRect.y, slots[1].m_length, contentRect.h };
 			else
 				return { contentRect.x, contentRect.y + slots[0].m_length, contentRect.w, slots[1].m_length };
 		}
 
 
-		bool			m_bHorizontal;
+		Axis			m_axis = Axis::X;
 		SizeSPX			m_defaultSize;
 		PackLayout_p	m_pLayout;
 	};

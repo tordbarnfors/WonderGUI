@@ -1,27 +1,29 @@
 /*=========================================================================
 
-						 >>> WonderGUI <<<
+                             >>> WonderGUI <<<
 
-  This file is part of Tord Jansson's WonderGUI Graphics Toolkit
-  and copyright (c) Tord Jansson, Sweden [tord.jansson@gmail.com].
+  This file is part of Tord Bärnfors' WonderGUI UI Toolkit and copyright
+  Tord Bärnfors, Sweden [mail: first name AT barnfors DOT c_o_m].
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is free software; you can redistribute
+  The WonderGUI UI Toolkit is free software; you can redistribute
   this file and/or modify it under the terms of the GNU General Public
   License as published by the Free Software Foundation; either
   version 2 of the License, or (at your option) any later version.
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is also available for use in commercial
-  closed-source projects under a separate license. Interested parties
-  should contact Tord Jansson [tord.jansson@gmail.com] for details.
+  The WonderGUI UI Toolkit is also available for use in commercial
+  closed source projects under a separate license. Interested parties
+  should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-
 #include <wonderapp.h>
 #include <wondergui.h>
+#include <wg_debugger.h>
+#include <wg_freetypefont.h>
+#include <themes/simplistic/wg_simplistic.h>
 
 #ifdef WIN32
 #	include <SDL.h>
@@ -32,6 +34,7 @@
 #	include <SDL2/SDL.h>
 #	include <SDL2_image/SDL_image.h>
 #	include <dlfcn.h>
+#	include <unistd.h>
 #else
 #	include <SDL2/SDL.h>
 #	include <SDL2/SDL_image.h>
@@ -47,10 +50,11 @@
 #include "tinyfiledialogs.h"
 
 using namespace wg;
+using namespace wapp;
 
-//____ MyAppVisitor ________________________________________________________
+//____ MyAppAPI ________________________________________________________
 
-class MyAppVisitor : public WonderApp::Visitor
+class MyAppAPI : public wapp::API
 {
 public:
 
@@ -62,13 +66,14 @@ public:
 	}
 
 	Blob_p 			loadBlob(const std::string& path) override;
-	Surface_p 		loadSurface(const std::string& path, SurfaceFactory* pFactory, const Surface::Blueprint& bp = Surface::Blueprint() ) override;
+	Surface_p 		loadSurface(const std::string& path, SurfaceFactory* pFactory = nullptr, const Surface::Blueprint& bp = Surface::Blueprint() ) override;
 
+	Theme_p			initDefaultTheme() override;
 
-	bool			notifyPopup(const std::string& title, const std::string& message, WonderApp::IconType iconType) override;
+	bool			notifyPopup(const std::string& title, const std::string& message, wapp::IconType iconType) override;
 
-	WonderApp::DialogButton	messageBox(	const std::string& title, const std::string& message, WonderApp::DialogType dialogType,
-										WonderApp::IconType iconType, WonderApp::DialogButton defaultButton = WonderApp::DialogButton::Undefined) override;
+	wapp::DialogButton	messageBox(	const std::string& title, const std::string& message, wapp::DialogType dialogType,
+										wapp::IconType iconType, wapp::DialogButton defaultButton = wapp::DialogButton::Undefined) override;
 
 	std::string		inputBox( const std::string& title, const std::string& message, const std::string& defaultInput) override;
 
@@ -85,14 +90,14 @@ public:
 													const std::string& singleFilterDescription) override;
 
 	std::string		selectFolderDialog(const std::string& title, const std::string& defaultPath) override;
-	
-	Window_p	createWindow(const Window::Blueprint& blueprint) override;
 
-	WonderApp::LibId	openLibrary(const std::string& path) override;
-	void*			loadSymbol(WonderApp::LibId lib, const std::string& symbol) override;
-	bool			closeLibrary(WonderApp::LibId lib) override;
+	wapp::LibId		openLibrary(const std::string& path) override;
+	void*			loadSymbol(wapp::LibId lib, const std::string& symbol) override;
+	bool			closeLibrary(wapp::LibId lib) override;
 
 	std::string		resourceDirectory() override;
+
+	wapp::WindowAPI::Result _createWindow( wapp::Window * pAPI, wg::Placement origin, wg::Coord pos, wg::Size size, const std::string& title, bool resizable, bool open) override;
 
 protected:
 	void			convertSDLFormat(PixelDescription* pWGFormat, const SDL_PixelFormat* pSDLFormat);
@@ -125,10 +130,18 @@ public:
 bool		init_system();
 void		exit_system();
 
-bool		process_system_events();
+bool		process_system_events(WonderApp* pApp);
 
 bool		init_wondergui();
 void		exit_wondergui();
+
+bool		backend_specific_init();
+void		backend_specific_exit();
+
+bool		init_debugger(MyAppAPI * pAPI);
+void		exit_debugger();
+
+SDLWindow * create_backend_specific_window(wapp::Window* pUserWindow, wg::Placement origin, wg::Coord pos, wg::Size size, const std::string& title, bool resizable, bool open);
 
 
 MouseButton translateSDLMouseButton(Uint8 button);
@@ -140,7 +153,14 @@ float				g_scale;
 
 MyHostBridge *		g_pHostBridge = nullptr;
 
-std::vector<SDLWindow_wp>	g_windows;
+wg::DebugFrontend_p	g_pDebugFrontend;
+wg::DebugBackend_p	g_pDebugBackend;
+
+wapp::Window_p		g_pDebugWindow;
+
+wg::Theme_p			g_pDefaultTheme;
+
+std::vector<SDLWindow*>	g_windows;
 
 int			g_argc = 0;
 char**		g_argv = nullptr;
@@ -165,6 +185,14 @@ SDL_Cursor * g_mousePointers[PointerStyle_size];
 
 int main(int argc, char *argv[] )
 {
+#ifdef __APPLE__
+	sleep(1);
+#endif
+
+#ifdef WIN32
+	SetProcessDPIAware();
+#endif
+
 	g_argc = argc;
 	g_argv = argv;
 
@@ -175,15 +203,23 @@ int main(int argc, char *argv[] )
 	
 	if (!init_wondergui() )
 		return -1;
-	
-	// Create app and visitor, make any app-specif initialization
+
+	if( !backend_specific_init() )
+		return -1;
+
+
+	// Create app and visitor, make any app-specific initialization
 
 	auto pApp = WonderApp::create();
-	auto pVisitor = new MyAppVisitor();
+	auto pAPI = new MyAppAPI();
+
+	// Setup debugger
+
+	init_debugger(pAPI);
 
 	// Initialize the app
 
-	bool bContinue = pApp->init( pVisitor );
+	bool bContinue = pApp->init( pAPI );
 
 	// Main loop
 
@@ -191,7 +227,7 @@ int main(int argc, char *argv[] )
 	{
 		// Handle system events
 
-		bContinue = process_system_events();
+		bContinue = process_system_events(pApp);
 
 		if (bContinue)
 		{
@@ -213,7 +249,7 @@ int main(int argc, char *argv[] )
 
 			// Remove any windows pointers for erased windows.
 
-			g_windows.erase(std::remove(g_windows.begin(), g_windows.end(), nullptr), g_windows.end());
+			g_windows.erase(std::remove_if(g_windows.begin(), g_windows.end(), [](SDLWindow* p){ if( p->SDLWindowPtr() == nullptr ) { delete p; return true; } return false; }), g_windows.end());
 
 
 			// Render. We do this outside the app since we might want to 
@@ -237,13 +273,17 @@ int main(int argc, char *argv[] )
 	//
 
 	pApp = nullptr;
-	
+
+	g_pDefaultTheme = nullptr;
+
 	Base::setErrorHandler(nullptr);		//TODO: WAPP-framework should have its own error-handler.
 
 	g_windows.clear();
-	
-	delete pVisitor;
 
+	delete pAPI;
+
+	exit_debugger();
+	backend_specific_exit();
 	exit_wondergui();
 	exit_system();
 	return 0;
@@ -329,8 +369,6 @@ bool init_wondergui()
 	pInput->mapCommand(SDLK_z, ModKeys::CommandShift, EditCmd::Redo);
 	
 	pInput->mapCommand(SDLK_ESCAPE, ModKeys::None, EditCmd::Escape);
-
-	
 	
 //	g_pRoot->setDebugMode(true);
 
@@ -344,6 +382,60 @@ void exit_wondergui()
 	Base::exit();
 	delete g_pHostBridge;
 	g_pHostBridge = nullptr;
+}
+
+//____ init_debugger() ________________________________________________________
+
+bool init_debugger(MyAppAPI* pAPI)
+{
+
+	auto pTheme = pAPI->initDefaultTheme();
+	auto pIconSurface = pAPI->loadSurface("resources/debugger_gfx.png");
+	auto pTransparencyGrid = pAPI->loadSurface("resources/checkboardtile.png", nullptr, { .tiling = true } );
+
+	if( !pTheme || !pIconSurface || !pTransparencyGrid )
+		return false;
+
+	g_pDebugBackend = DebugBackend::create();
+
+	g_pDebugFrontend = WGCREATE(DebugFrontend, _.backend = g_pDebugBackend, _.theme = pTheme, _.icons = pIconSurface, _.transparencyGrid = pTransparencyGrid );
+
+	Base::msgRouter()->addRoute(MsgType::KeyPress, [pAPI](Msg * _pMsg) {
+
+		KeyPressMsg * pMsg = static_cast<KeyPressMsg*>(_pMsg);
+
+		if( pMsg->translatedKeyCode() == Key::F12 && (pMsg->modKeys() == ModKeys::MacCtrlAlt || pMsg->modKeys() == ModKeys::StdCtrlAlt) )
+		{
+			if( !g_pDebugWindow )
+			{
+				auto pFocusedWindow = g_pFocusedWindow;
+				SizeI size = g_pDebugFrontend->spxSize() / 64;
+
+				auto pWindow = wapp::Window::create(pAPI, { .debug = false, .size = Size(size), .title = "Debugger"  });
+				g_pDebugWindow = pWindow;
+
+				pWindow->mainCapsule()->slot = g_pDebugFrontend;
+				g_pDebugFrontend->activate();
+			}
+			else
+			{
+				g_pDebugWindow = nullptr;
+				g_pDebugFrontend->deactivate();
+			}
+		}
+
+	});
+
+	return true;
+}
+
+//____ exitDebugger() _________________________________________________________
+
+void exit_debugger()
+{
+	g_pDebugWindow = nullptr;
+	g_pDebugFrontend = nullptr;
+	g_pDebugBackend = nullptr;
 }
 
 //____ eventWatcher() _________________________________________________________
@@ -435,7 +527,7 @@ void update_window_rects(const Rect* pRects, int nRects)
 
 //____ process_system_events() ________________________________________________
 
-bool process_system_events()
+bool process_system_events(WonderApp * pApp)
 {
 /*
 	SDL_Event e;
@@ -460,8 +552,8 @@ bool process_system_events()
 
 		switch (e.type)
 		{
-		case SDL_QUIT:
-			return false;
+//		case SDL_QUIT:
+//			return false;
 
 		case SDL_MOUSEMOTION:
 		{
@@ -574,9 +666,17 @@ bool process_system_events()
 					
 				case SDL_WINDOWEVENT_CLOSE:
 				{
-					pWindow->retain();			// We want to delay window destruction until _onCloseRequest() has returned.
-					bool bClose = pWindow->_onCloseRequest();
-					pWindow->release();
+					bool bClose = pWindow->userWindow()->onClose();
+					if( bClose )
+					{
+						if( pWindow->userWindow() == g_pDebugWindow )
+						{
+							g_pDebugWindow = nullptr;
+							g_pDebugFrontend->deactivate();
+						}
+						else
+							pApp->closeWindow(pWindow->userWindow());
+					}
 					break;
 				}
 
@@ -635,7 +735,7 @@ MouseButton translateSDLMouseButton(Uint8 button)
 
 //____ convertSDLFormat() ______________________________________________________
 
-void MyAppVisitor::convertSDLFormat(PixelDescription* pWGFormat, const SDL_PixelFormat* pSDLFormat)
+void MyAppAPI::convertSDLFormat(PixelDescription* pWGFormat, const SDL_PixelFormat* pSDLFormat)
 {
 	if( (pSDLFormat->palette != nullptr) )
 		pWGFormat->type = PixelType::Index;
@@ -652,7 +752,7 @@ void MyAppVisitor::convertSDLFormat(PixelDescription* pWGFormat, const SDL_Pixel
 
 //____ programArguments() _________________________________________________
 
-std::vector<std::string> MyAppVisitor::programArguments() const
+std::vector<std::string> MyAppAPI::programArguments() const
 {
 	std::vector<std::string>	args;
 
@@ -664,7 +764,7 @@ std::vector<std::string> MyAppVisitor::programArguments() const
 
 //____ loadBlob() _________________________________________________________
 
-Blob_p MyAppVisitor::loadBlob(const std::string& path)
+Blob_p MyAppAPI::loadBlob(const std::string& path)
 {
 	FILE* fp;
 
@@ -693,7 +793,7 @@ Blob_p MyAppVisitor::loadBlob(const std::string& path)
 
 //____ loadSurface() ______________________________________________________
 
-Surface_p MyAppVisitor::loadSurface(const std::string& path, SurfaceFactory* pFactory, const Surface::Blueprint& _bp)
+Surface_p MyAppAPI::loadSurface(const std::string& path, SurfaceFactory* pFactory, const Surface::Blueprint& _bp)
 {
 	if (path.rfind(".surf") == path.size() - 5 || path.rfind(".srf") == path.size() - 4)
 	{
@@ -785,11 +885,48 @@ Surface_p MyAppVisitor::loadSurface(const std::string& path, SurfaceFactory* pFa
 	
 }
 
+//____ initDefaultTheme() ____________________________________________________
+
+Theme_p MyAppAPI::initDefaultTheme()
+{
+	if( g_pDefaultTheme )
+		return g_pDefaultTheme;
+
+	// Create the default theme, which is a simplistic theme.
+	
+	auto pFont1Blob = loadBlob("resources/NotoSans-Regular.ttf");
+	auto pFont2Blob = loadBlob("resources/NotoSans-Bold.ttf");
+	auto pFont3Blob = loadBlob("resources/NotoSans-Italic.ttf");
+	auto pFont4Blob = loadBlob("resources/DroidSansMono.ttf");
+
+	auto pFont1 = FreeTypeFont::create(pFont1Blob);
+	auto pFont2 = FreeTypeFont::create(pFont2Blob);
+	auto pFont3 = FreeTypeFont::create(pFont3Blob);
+	auto pFont4 = FreeTypeFont::create(pFont4Blob);
+
+	auto pThemeSurface = loadSurface("resources/skin_widgets.png");
+
+	auto pTheme = Simplistic::create(pFont1,pFont2,pFont3,pFont4,pThemeSurface);
+	if (!pTheme)
+	{
+		Base::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "Failed to create default theme", nullptr, nullptr, __func__, __FILE__, __LINE__);
+		return nullptr;
+	}
+	Base::setDefaultTheme(pTheme);
+	Base::setDefaultStyle(pTheme->defaultStyle());
+
+	g_pDefaultTheme = pTheme;
+
+	return pTheme;
+}
+
+
+
 //____ notifyPopup() __________________________________________________________
 
-bool MyAppVisitor::notifyPopup(const std::string& title, const std::string& message, WonderApp::IconType iconType)
+bool MyAppAPI::notifyPopup(const std::string& title, const std::string& message, wapp::IconType iconType)
 {
-	if( iconType == WonderApp::IconType::Question )
+	if( iconType == wapp::IconType::Question )
 		return false;
 	
 	tinyfd_notifyPopup( title.c_str(), message.c_str(), iconNames[int(iconType)]);
@@ -798,48 +935,48 @@ bool MyAppVisitor::notifyPopup(const std::string& title, const std::string& mess
 
 //____ messageBox() ___________________________________________________________
 
-WonderApp::DialogButton	MyAppVisitor::messageBox(	const std::string& title, const std::string& message, 
-													WonderApp::DialogType dialogType, WonderApp::IconType iconType, 
-													WonderApp::DialogButton defaultButton)
+wapp::DialogButton	MyAppAPI::messageBox(	const std::string& title, const std::string& message,
+											wapp::DialogType dialogType, wapp::IconType iconType,
+											wapp::DialogButton defaultButton)
 {
 	int defaultButtonInt = 0;
 	
 	switch( dialogType )
 	{
-		case::WonderApp::DialogType::Ok:
+		case::wapp::DialogType::Ok:
 		{
-			if( defaultButton != WonderApp::DialogButton::Ok && defaultButton != WonderApp::DialogButton::Undefined )
+			if( defaultButton != wapp::DialogButton::Ok && defaultButton != wapp::DialogButton::Undefined )
 				goto wrongDefaultButton;
 			
 			defaultButtonInt = 1;
 			break;
 		}
 
-		case::WonderApp::DialogType::OkCancel:
+		case::wapp::DialogType::OkCancel:
 		{
-			if (defaultButton == WonderApp::DialogButton::Ok)
+			if (defaultButton == wapp::DialogButton::Ok)
 				defaultButtonInt = 1;
-			else if (defaultButton != WonderApp::DialogButton::Cancel && defaultButton != WonderApp::DialogButton::Undefined)
+			else if (defaultButton != wapp::DialogButton::Cancel && defaultButton != wapp::DialogButton::Undefined)
 				goto wrongDefaultButton;
 			break;
 		}
 
-		case::WonderApp::DialogType::YesNo:
+		case::wapp::DialogType::YesNo:
 		{
-			if (defaultButton == WonderApp::DialogButton::Yes)
+			if (defaultButton == wapp::DialogButton::Yes)
 				defaultButtonInt = 1;
-			else if (defaultButton != WonderApp::DialogButton::No && defaultButton != WonderApp::DialogButton::Undefined)
+			else if (defaultButton != wapp::DialogButton::No && defaultButton != wapp::DialogButton::Undefined)
 				goto wrongDefaultButton;
 			break;
 		}
 
-		case::WonderApp::DialogType::YesNoCancel:
+		case::wapp::DialogType::YesNoCancel:
 		{
-			if (defaultButton == WonderApp::DialogButton::Yes)
+			if (defaultButton == wapp::DialogButton::Yes)
 				defaultButtonInt = 1;
-			else if (defaultButton == WonderApp::DialogButton::No)
+			else if (defaultButton == wapp::DialogButton::No)
 				defaultButtonInt = 2;
-			else if( defaultButton != WonderApp::DialogButton::Cancel && defaultButton != WonderApp::DialogButton::Undefined )
+			else if( defaultButton != wapp::DialogButton::Cancel && defaultButton != wapp::DialogButton::Undefined )
 				goto wrongDefaultButton;
 			break;
 		}
@@ -847,37 +984,37 @@ WonderApp::DialogButton	MyAppVisitor::messageBox(	const std::string& title, cons
 	
 	{
 		int retval = tinyfd_messageBox( title.c_str(), message.c_str(), dialogNames[int(dialogType)], iconNames[int(iconType)], defaultButtonInt);
-		WonderApp::DialogButton selectedButton;
+		wapp::DialogButton selectedButton;
 		
 		switch( dialogType )
 		{
-			case::WonderApp::DialogType::Ok:
+			case::wapp::DialogType::Ok:
 			{
-				selectedButton = WonderApp::DialogButton::Ok;
+				selectedButton = wapp::DialogButton::Ok;
 				break;
 			}
 
-			case::WonderApp::DialogType::OkCancel:
+			case::wapp::DialogType::OkCancel:
 			{
-				selectedButton = retval == 1 ? WonderApp::DialogButton::Ok : WonderApp::DialogButton::Cancel;
+				selectedButton = retval == 1 ? wapp::DialogButton::Ok : wapp::DialogButton::Cancel;
 				break;
 			}
 
-			case::WonderApp::DialogType::YesNo:
+			case::wapp::DialogType::YesNo:
 			{
-				selectedButton = retval == 1 ? WonderApp::DialogButton::Yes : WonderApp::DialogButton::No;
+				selectedButton = retval == 1 ? wapp::DialogButton::Yes : wapp::DialogButton::No;
 				break;
 			}
 
 			default:
-			case::WonderApp::DialogType::YesNoCancel:
+			case::wapp::DialogType::YesNoCancel:
 			{
 				if( retval == 0 )
-					selectedButton = WonderApp::DialogButton::No;
+					selectedButton = wapp::DialogButton::No;
 				else if( retval == 1 )
-					selectedButton = WonderApp::DialogButton::Yes;
+					selectedButton = wapp::DialogButton::Yes;
 				else
-					selectedButton = WonderApp::DialogButton::Cancel;
+					selectedButton = wapp::DialogButton::Cancel;
 				break;
 			}
 		}
@@ -890,22 +1027,22 @@ wrongDefaultButton:
 	
 	Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Default button isn't a button of specified dialog type", nullptr, nullptr, __func__, __FILE__, __LINE__);
 	
-	return WonderApp::DialogButton::Undefined;
+	return wapp::DialogButton::Undefined;
 
 }
 
 //____ inputBox() _____________________________________________________________
 
-std::string MyAppVisitor::inputBox(const std::string& title, const std::string& message, const std::string& defaultInput)
+std::string MyAppAPI::inputBox(const std::string& title, const std::string& message, const std::string& defaultInput)
 {
 	return tinyfd_inputBox( title.c_str(), message.c_str(), defaultInput.c_str() );
 }
 
 //____ saveFileDialog() _______________________________________________________
 
-std::string MyAppVisitor::saveFileDialog(	const std::string& title, const std::string& defaultPathAndFile,
-											const std::vector<std::string>& filterPatterns,
-											const std::string& singleFilterDescription)
+std::string MyAppAPI::saveFileDialog(	const std::string& title, const std::string& defaultPathAndFile,
+										const std::vector<std::string>& filterPatterns,
+										const std::string& singleFilterDescription)
 {
 	const char* pPatternPointers[64];
 	const char** pPatterns = filterPatterns.empty() ? NULL : pPatternPointers;
@@ -923,9 +1060,9 @@ std::string MyAppVisitor::saveFileDialog(	const std::string& title, const std::s
 
 //____ openFileDialog() _______________________________________________________
 
-std::string MyAppVisitor::openFileDialog(	const std::string& title, const std::string& defaultPathAndFile,
-											const std::vector<std::string>& filterPatterns,
-											const std::string& singleFilterDescription)
+std::string MyAppAPI::openFileDialog(	const std::string& title, const std::string& defaultPathAndFile,
+										const std::vector<std::string>& filterPatterns,
+										const std::string& singleFilterDescription)
 {
 	const char* pPatternPointers[64];
 	const char** pPatterns = filterPatterns.empty() ? NULL : pPatternPointers;
@@ -943,10 +1080,10 @@ std::string MyAppVisitor::openFileDialog(	const std::string& title, const std::s
 
 //____ openMultiFileDialog() _______________________________________________________
 
-std::vector<std::string> MyAppVisitor::openMultiFileDialog(	const std::string& title, 
-															const std::string& defaultPathAndFile,
-															const std::vector<std::string>& filterPatterns,
-															const std::string& singleFilterDescription)
+std::vector<std::string> MyAppAPI::openMultiFileDialog(	const std::string& title,
+														const std::string& defaultPathAndFile,
+														const std::vector<std::string>& filterPatterns,
+														const std::string& singleFilterDescription)
 {
 	const char* pPatternPointers[64];
 	const char** pPatterns = filterPatterns.empty() ? NULL : pPatternPointers;
@@ -982,7 +1119,7 @@ std::vector<std::string> MyAppVisitor::openMultiFileDialog(	const std::string& t
 
 //____ selectFolderDialog() ___________________________________________________
 
-std::string MyAppVisitor::selectFolderDialog(const std::string& title, const std::string& defaultPath)
+std::string MyAppAPI::selectFolderDialog(const std::string& title, const std::string& defaultPath)
 {
 	return tinyfd_selectFolderDialog( title.c_str(), defaultPath.c_str());
 
@@ -990,18 +1127,26 @@ std::string MyAppVisitor::selectFolderDialog(const std::string& title, const std
 
 //____ createWindow() _________________________________________________________
 
-Window_p MyAppVisitor::createWindow(const Window::Blueprint& blueprint)
+WindowAPI::Result MyAppAPI::_createWindow( Window * pUserWindow, wg::Placement origin, wg::Coord pos, wg::Size size, const std::string& title, bool resizable, bool open)
 {
-	auto pWindow =  SDLWindow::create(blueprint);
+	auto pSDLWindow = create_backend_specific_window(pUserWindow,origin,pos,size,title,resizable,open);
 
-	g_windows.push_back(pWindow.rawPtr());
+	g_windows.push_back(pSDLWindow);
 
-	return pWindow;
+	WindowAPI::Result result;
+
+	result.pSysCalls = pSDLWindow;
+	result.success = true;
+	result.geo = {pos,size};
+	result.root = pSDLWindow->rootPanel();
+	result.debugger = g_pDebugFrontend;
+
+	return result;
 }
 
 //____ openLibrary() __________________________________________________________
 
-WonderApp::LibId MyAppVisitor::openLibrary(const std::string& path)
+wapp::LibId MyAppAPI::openLibrary(const std::string& path)
 {
 #ifdef WIN32
 	return (void*)LoadLibraryA(path.c_str());
@@ -1013,7 +1158,7 @@ WonderApp::LibId MyAppVisitor::openLibrary(const std::string& path)
 
 //____ loadSymbol() __________________________________________________________
 
-void* MyAppVisitor::loadSymbol(WonderApp::LibId lib, const std::string& symbol)
+void* MyAppAPI::loadSymbol(wapp::LibId lib, const std::string& symbol)
 {
 #ifdef WIN32
 	return GetProcAddress((HMODULE)lib, symbol.c_str());
@@ -1024,7 +1169,7 @@ void* MyAppVisitor::loadSymbol(WonderApp::LibId lib, const std::string& symbol)
 
 //____ closeLibrary() _________________________________________________________
 
-bool MyAppVisitor::closeLibrary(WonderApp::LibId lib)
+bool MyAppAPI::closeLibrary(wapp::LibId lib)
 {
 #ifdef WIN32
 	return FreeLibrary((HMODULE)lib);
@@ -1035,12 +1180,15 @@ bool MyAppVisitor::closeLibrary(WonderApp::LibId lib)
 
 //____ resourceDirectory() ____________________________________________________
 
-std::string MyAppVisitor::resourceDirectory()
+std::string MyAppAPI::resourceDirectory()
 {
+#ifdef __APPLE__
 	char* pBasePath = SDL_GetBasePath();
-//	char* pBasePath = nullptr;
+#else
+	char* pBasePath = nullptr;
+#endif
 
-	if( pBasePath == NULL )
+	if( pBasePath == nullptr )
 		return "resources/";
 	else
 	{

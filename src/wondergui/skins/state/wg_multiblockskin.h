@@ -1,22 +1,22 @@
 /*=========================================================================
 
-						 >>> WonderGUI <<<
+                             >>> WonderGUI <<<
 
-  This file is part of Tord Jansson's WonderGUI Graphics Toolkit
-  and copyright (c) Tord Jansson, Sweden [tord.jansson@gmail.com].
+  This file is part of Tord Bärnfors' WonderGUI UI Toolkit and copyright
+  Tord Bärnfors, Sweden [mail: first name AT barnfors DOT c_o_m].
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is free software; you can redistribute
+  The WonderGUI UI Toolkit is free software; you can redistribute
   this file and/or modify it under the terms of the GNU General Public
   License as published by the Free Software Foundation; either
   version 2 of the License, or (at your option) any later version.
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is also available for use in commercial
-  closed-source projects under a separate license. Interested parties
-  should contact Tord Jansson [tord.jansson@gmail.com] for details.
+  The WonderGUI UI Toolkit is also available for use in commercial
+  closed source projects under a separate license. Interested parties
+  should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
 #ifndef WG_MULTIBLOCKSKIN_DOT_H
@@ -91,11 +91,11 @@ namespace wg
 		{
 			Surface *			pSurface;
 			BlendMode			blendMode;
-			Bitmask<uint32_t>   stateBlockMask = 0;
-			Bitmask<uint32_t>   stateColorMask = 1;         // Normal state always exist for colors and is by default white.
+//			Bitmask<uint32_t>   stateBlockMask = 0;
+//			Bitmask<uint32_t>   stateColorMask = 1;         // Normal state always exist for colors and is by default white.
 
-			Coord				blockOfs[State::IndexAmount];		// Block for each state
-			HiColor				tintColor[State::IndexAmount];
+			Coord				blockOfs[State::NbStates];		// Block for each state
+			HiColor				tintColor[State::NbStates];
 	//		Placement			placementOrigo;
 	//		CoordI			placementOfs;
 	//		SizeI			dimensions;                   // Stored in pixels
@@ -113,7 +113,12 @@ namespace wg
 
 		std::vector<LayerData>	m_layers;
 
-		bool			m_bStateOpaque[State::IndexAmount];
+		bool			m_bStateOpaque[State::NbStates];
+
+		uint8_t			m_dummyIndex = 0;
+		Coord			m_dummyCoord;
+		
+
 
 	};
 

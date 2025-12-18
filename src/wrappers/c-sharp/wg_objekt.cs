@@ -4,7 +4,7 @@ namespace WG;
 
 public class Objekt
 {
-	internal protected const string NativeLib = "libstreamgendll";
+	internal protected const string NativeLib = "streamgendll";
 
     protected Objekt()
     {

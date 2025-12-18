@@ -1,22 +1,22 @@
 /*=========================================================================
 
-						 >>> WonderGUI <<<
+                             >>> WonderGUI <<<
 
-  This file is part of Tord Jansson's WonderGUI Graphics Toolkit
-  and copyright (c) Tord Jansson, Sweden [tord.jansson@gmail.com].
+  This file is part of Tord Bärnfors' WonderGUI UI Toolkit and copyright
+  Tord Bärnfors, Sweden [mail: first name AT barnfors DOT c_o_m].
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is free software; you can redistribute
+  The WonderGUI UI Toolkit is free software; you can redistribute
   this file and/or modify it under the terms of the GNU General Public
   License as published by the Free Software Foundation; either
   version 2 of the License, or (at your option) any later version.
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is also available for use in commercial
-  closed-source projects under a separate license. Interested parties
-  should contact Tord Jansson [tord.jansson@gmail.com] for details.
+  The WonderGUI UI Toolkit is also available for use in commercial
+  closed source projects under a separate license. Interested parties
+  should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
 #ifndef WG_BLOCKINGCAPSULE_DOT_H
@@ -62,7 +62,7 @@ namespace wg
 			bool			pickHandle = false;
 			PointerStyle	pointer = PointerStyle::Undefined;
 			int				scale = 0;
-			bool			selectable = true;
+			bool			selectable = false;
 			Skin_p			skin;
 			bool			stickyFocus = false;
 			bool			tabLock = false;
@@ -110,12 +110,12 @@ namespace wg
 		{
 			m_bAutoDeactivate	= bp.autoDeactivate;
 			m_bInverted			= bp.inverted;
-			m_bActive			= bp.active;
-			
+			m_bActive			= bp.active;			
+
 			if (bp.child)
 				slot.setWidget(bp.child);
 		}
-		
+
 		virtual ~BlockingCapsule();
 		
 		void	_receive(Msg* pMsg) override;

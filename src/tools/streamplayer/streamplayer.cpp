@@ -22,13 +22,13 @@ WonderApp_p WonderApp::create()
 
 //____ init() _________________________________________________________________
 
-bool MyApp::init(Visitor* pVisitor)
+bool MyApp::init(wapp::API* pAPI)
 {
-	m_pAppVisitor = pVisitor;
+	m_pAppAPI = pAPI;
 
 	std::string	streampath;
 
-	auto arguments = pVisitor->programArguments();
+	auto arguments = pAPI->programArguments();
 
 	if( arguments.size() >= 1 )
 		streampath = arguments[0];
@@ -36,7 +36,7 @@ bool MyApp::init(Visitor* pVisitor)
 	{
 		std::vector<std::string>	filetypes;
 
-		streampath = pVisitor->openFileDialog("Load gfxstream", "", filetypes, "");
+		streampath = pAPI->openFileDialog("Load gfxstream", "", filetypes, "");
 	}
 
 	if( !_loadStream(streampath) )
@@ -45,7 +45,7 @@ bool MyApp::init(Visitor* pVisitor)
 		return false;
 	};
 
-	if (!_setupGUI(pVisitor))
+	if (!_setupGUI(pAPI))
 	{
 		printf("ERROR: Failed to setup GUI!\n");
 		return false;
@@ -61,7 +61,7 @@ bool MyApp::init(Visitor* pVisitor)
 
 bool MyApp::update()
 {
-	wg_defineSoftGfxDeviceCanvas(m_streamGfxDevice, WG_CANVAS_1, m_streamBackCanvas);
+	wg_defineSoftBackendCanvas(m_streamGfxDevice, WG_CANVAS_1, m_streamBackCanvas);
 
 	if( wg_pumpUntilFrame(m_pump) )
 	{
@@ -205,11 +205,20 @@ void MyApp::exit()
 		wg_deletePatches(m_streamBackPatches);
 }
 
+//____ closeWindow() __________________________________________________________
+
+void MyApp::closeWindow(wapp::Window* pWindow)
+{
+	if (pWindow == m_pWindow)
+		m_pWindow = nullptr;
+}
+
+
 //____ _loadStream() __________________________________________________________
 
 bool MyApp::_loadStream(std::string path)
 {
-	m_pStreamBlob = m_pAppVisitor->loadBlob(path);
+	m_pStreamBlob = m_pAppAPI->loadBlob(path);
 
 	if( !m_pStreamBlob )
 		return false;
@@ -236,7 +245,7 @@ bool MyApp::_setupStreamPlaying()
 
 	m_streamGfxDevice = static_cast<Object*>(Base::defaultGfxDevice());
 
-	wg_defineSoftGfxDeviceCanvas(m_streamGfxDevice, WG_CANVAS_1, m_streamFrontCanvas);
+	wg_defineSoftBackendCanvas(m_streamGfxDevice, WG_CANVAS_1, m_streamFrontCanvas);
 
 
 	wg_obj	gfxDevice = static_cast<Object*>(Base::defaultGfxDevice());
@@ -264,15 +273,13 @@ bool MyApp::_setupStreamPlaying()
 
 //____ _setupGUI() ____________________________________________________________
 
-bool MyApp::_setupGUI(Visitor* pVisitor)
+bool MyApp::_setupGUI(wapp::API* pAPI)
 {
-	m_pWindow = pVisitor->createWindow({ .size = {800,480}, .title = "WonderGUI Stream Player" });
-
-	auto pRoot = m_pWindow->rootPanel();
+	m_pWindow = wapp::Window::create(pAPI, { .size = {800,480}, .title = "WonderGUI Stream Player" });
 
 	//
 
-	auto pFontBlob = pVisitor->loadBlob("resources/DroidSans.ttf");
+	auto pFontBlob = pAPI->loadBlob("resources/DroidSans.ttf");
 	auto pFont = FreeTypeFont::create(pFontBlob);
 
 	m_pTextStyle = TextStyle::create(WGBP(TextStyle,
@@ -295,10 +302,6 @@ bool MyApp::_setupGUI(Visitor* pVisitor)
 	m_pDisplay = SurfaceDisplay::create( WGBP(SurfaceDisplay,
 											  _.skin = pBgSkin));
 
-
-	pRoot->slot = m_pDisplay;
-
-
-
+	m_pWindow->mainCapsule()->slot = m_pDisplay;
 	return true;
 }

@@ -1,34 +1,34 @@
 /*=========================================================================
 
-						 >>> WonderGUI <<<
+                             >>> WonderGUI <<<
 
-  This file is part of Tord Jansson's WonderGUI Graphics Toolkit
-  and copyright (c) Tord Jansson, Sweden [tord.jansson@gmail.com].
+  This file is part of Tord Bärnfors' WonderGUI UI Toolkit and copyright
+  Tord Bärnfors, Sweden [mail: first name AT barnfors DOT c_o_m].
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is free software; you can redistribute
+  The WonderGUI UI Toolkit is free software; you can redistribute
   this file and/or modify it under the terms of the GNU General Public
   License as published by the Free Software Foundation; either
   version 2 of the License, or (at your option) any later version.
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is also available for use in commercial
-  closed-source projects under a separate license. Interested parties
-  should contact Tord Jansson [tord.jansson@gmail.com] for details.
+  The WonderGUI UI Toolkit is also available for use in commercial
+  closed source projects under a separate license. Interested parties
+  should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-
 #ifndef	WG_STATE_DOT_H
 #define WG_STATE_DOT_H
 #pragma once
 
 #include <wg_types.h>
 
+#include <algorithm>
+
 namespace wg
 {
-
 
 	class State
 	{
@@ -36,199 +36,341 @@ namespace wg
 
 		//.____ Creation _______________________________________________________
 
-		State() { m_bitmask = 0; }
-		State(int index) { m_bitmask = s_indexToBitmask[index]; }
+		constexpr State() : m_index(0) {}
+
+		constexpr State(StateEnum value) : m_enum(value) {}
 
 		//.____ State __________________________________________________________
 
-		inline bool	setDisabled(bool bDisabled) 
-		{ 
-			if (!bDisabled) 
-				m_isDisabled = 0; 
+		bool	setDisabled(bool bDisabled)
+		{
+			if (!bDisabled)
+				m_index &= ~DISABLED_MASK;
 			else
 			{
-				auto sel = m_isSelected;
-				m_bitmask = 0;
-				m_isSelected = sel;
-				m_isDisabled = 1;
+				m_index &= ~FOCUSED_MASK;
+				m_index = (m_index & ~MOUSE_INTERACTION_MASK) |
+					(static_cast<uint8_t>(MouseInteraction::None) << MOUSE_INTERACTION_BIT);
+				m_index |= DISABLED_MASK;
 			}
 			return true;
 		}
 
-		inline bool	setSelected(bool bSelected) 
-		{ 
-			m_isSelected = bSelected;
+		bool	setSelekted(bool bSelected)
+		{
+			if (bSelected)
+				m_index |= SELECTED_MASK;
+			else
+				m_index &= ~SELECTED_MASK;
 			return true;
 		}
 
-		inline bool	setFocused(bool bFocused) 
-		{ 
-			if (m_isDisabled) 
-				return false; 
-
-			m_isFocused = bFocused;
-			return true; 
+		bool	setChecked(bool bChecked)
+		{
+			if (bChecked)
+				m_index |= CHECKED_MASK;
+			else
+				m_index &= ~CHECKED_MASK;
+			return true;
 		}
 
-		inline bool	setHovered(bool bHovered) 
-		{ 
-			if (m_isDisabled)
+		bool	setFlagged(bool bFlagged)
+		{
+			if (bFlagged)
+				m_index |= FLAGGED_MASK;
+			else
+				m_index &= ~FLAGGED_MASK;
+			return true;
+		}
+
+		bool	setFocused(bool bFocused)
+		{
+			if (m_index & DISABLED_MASK)
+				return false;
+
+			if (bFocused)
+				m_index |= FOCUSED_MASK;
+			else
+				m_index &= ~FOCUSED_MASK;
+			return true;
+		}
+
+		bool	setHovered(bool bHovered)
+		{
+			if (m_index & DISABLED_MASK)
 				return false;
 
 			if (!bHovered)
-			{
-				m_isPressed = 0;
-				m_isTargeted = 0;
-			}
+				setMouseInteraction(MouseInteraction::None);
+			else if (getMouseInteraction() == MouseInteraction::None)
+				setMouseInteraction(MouseInteraction::Hovered);
 
-			m_isHovered = bHovered;
 			return true;
 		}
 
-		inline bool	setPressed(bool bPressed) 
-		{ 
-			if (m_isDisabled)
+		bool	setPressed(bool bPressed)
+		{
+			if (m_index & DISABLED_MASK)
 				return false;
 
 			if (bPressed)
-				m_isHovered = 1;
+				setMouseInteraction(MouseInteraction::Pressed);
+			else if (getMouseInteraction() == MouseInteraction::Pressed)
+				setMouseInteraction(MouseInteraction::Hovered);
 
-			m_isPressed = bPressed;
-			return true; 
+			return true;
 		}
 
-		inline bool	setTargeted(bool bTargeted) 
-		{ 
-			if (m_isDisabled)
+		bool	setTargeted(bool bTargeted)
+		{
+			if (m_index & DISABLED_MASK)
 				return false;
 
-			m_isTargeted = bTargeted;
-			return true; 
+			if (bTargeted)
+				setMouseInteraction(MouseInteraction::Targeted);
+			else if (getMouseInteraction() == MouseInteraction::Targeted)
+				setMouseInteraction(MouseInteraction::Hovered);
+
+			return true;
 		}
 
-
-		inline bool	isDisabled() const { return m_isDisabled; }
-		inline bool	isSelected() const { return m_isSelected; }
-		inline bool	isFocused() const { return m_isFocused; }
-		inline bool	isHovered() const { return m_isHovered; }
-		inline bool	isPressed() const { return m_isPressed; }
-		inline bool	isTargeted() const { return m_isTargeted; }
+		constexpr bool	isChecked() const { return m_index & CHECKED_MASK; }
+		constexpr bool	isFlagged() const { return m_index & FLAGGED_MASK; }
+		constexpr bool	isDisabled() const { return m_index & DISABLED_MASK; }
+		constexpr bool	isSelekted() const { return m_index & SELECTED_MASK; }
+		constexpr bool	isFocused() const { return m_index & FOCUSED_MASK; }
+		constexpr bool	isHovered() const { return getMouseInteraction() != MouseInteraction::None; }
+		constexpr bool	isPressed() const { return getMouseInteraction() == MouseInteraction::Pressed; }
+		constexpr bool	isTargeted() const { return getMouseInteraction() == MouseInteraction::Targeted; }
 
 		//._____ Operators _____________________________________________________
 
-		inline bool operator==(State state) const { return m_bitmask == state.m_bitmask; }
-		inline bool operator!=(State state) const { return m_bitmask != state.m_bitmask; }
+		constexpr bool operator==(State state) const { return m_index == state.m_index; }
+		constexpr bool operator!=(State state) const { return m_index != state.m_index; }
 
-		inline operator int() const { return s_bitmaskToIndex[m_bitmask]; }
+		constexpr operator int() const { return m_index; }
 
-		inline State operator+(State state) const
+		State operator+(State state) const
 		{
 			State s;
-			s.m_bitmask = m_bitmask | state.m_bitmask;
+			s.m_index = m_index | state.m_index;
 
-			if ( s.m_isDisabled)
+			if (s.m_index & DISABLED_MASK)
 			{
-				auto sel = s.m_isSelected;
-				s.m_bitmask = 0;
-				s.m_isSelected = sel;
-				s.m_isDisabled = 1;
+				s.m_index &= ~FOCUSED_MASK;
+				s.setMouseInteraction(MouseInteraction::None);
 			}
-			return s;
-		}
-		
-		inline State operator-(State state) const
-		{
-			State s;
-			if (state.m_isPressed)
-				state.m_isHovered = 0;				// Special case: Don't remove hovered just because we remove pressed.
-			s.m_bitmask = m_bitmask & ~state.m_bitmask;
-			if (!s.m_isHovered)
+			else
 			{
-				// If we remove hovered we can't keep a state dependant on it.
-				s.m_isPressed = 0;
-				s.m_isTargeted = 0;
+				MouseInteraction myMouse = getMouseInteraction();
+				MouseInteraction otherMouse = state.getMouseInteraction();
+				s.setMouseInteraction(std::max(myMouse, otherMouse));
 			}
+
 			return s;
 		}
 
-		inline State& operator+=(State state)
+		State operator-(State state) const
 		{
-			m_bitmask |= state.m_bitmask;
-			if (m_isDisabled)
+			State s;
+
+			s.m_index = m_index & ~state.m_index;
+
+			if (s.m_index & DISABLED_MASK)
 			{
-				auto sel = m_isSelected;
-				m_bitmask = 0;
-				m_isSelected = sel;
-				m_isDisabled = 1;
+				s.m_index &= ~FOCUSED_MASK;
+				s.setMouseInteraction(MouseInteraction::None);
 			}
+			else
+			{
+				MouseInteraction myMouse = getMouseInteraction();
+				MouseInteraction stateMouse = state.getMouseInteraction();
+
+				if (stateMouse == MouseInteraction::Hovered)
+					s.setMouseInteraction(MouseInteraction::None);
+				else if (stateMouse > MouseInteraction::Hovered && stateMouse != myMouse)
+					s.setMouseInteraction(myMouse);
+			}
+			return s;
+		}
+
+		State& operator+=(State state)
+		{
+			MouseInteraction oldMouseInteraction = getMouseInteraction();
+
+			m_index |= state.m_index;
+
+			if (m_index & DISABLED_MASK)
+			{
+				m_index &= ~FOCUSED_MASK;
+				setMouseInteraction(MouseInteraction::None);
+			}
+			else
+			{
+				setMouseInteraction(std::max(state.getMouseInteraction(), oldMouseInteraction));
+			}
+
 			return *this;
 		}
-		
-		inline State& operator-=(State state)
+
+		State& operator-=(State state)
 		{
-			if (state.m_isPressed)
-				state.m_isHovered = 0;				// Special case: Don't remove hovered just because we remove pressed.
-			m_bitmask &= ~state.m_bitmask;
-			if (!m_isHovered)
+			MouseInteraction oldMouseInteraction = getMouseInteraction();
+
+			m_index = m_index & ~state.m_index;
+
+			if (m_index & DISABLED_MASK)
 			{
-				// If we remove hovered we can't keep a state dependent on it.
-				m_isPressed = 0;
-				m_isTargeted = 0;
+				m_index &= ~FOCUSED_MASK;
+				setMouseInteraction(MouseInteraction::None);
 			}
+			else
+			{
+				MouseInteraction stateMouse = state.getMouseInteraction();
+
+				if (stateMouse == MouseInteraction::Hovered)
+					setMouseInteraction(MouseInteraction::None);
+				else if (stateMouse > MouseInteraction::Hovered && stateMouse != oldMouseInteraction)
+					setMouseInteraction(oldMouseInteraction);
+			}
+
 			return *this;
 		}
 
 		//.____ Misc ________________________________________________
 
-		inline uint8_t bitmask() const { return m_bitmask; }
+		constexpr uint8_t	index() const { return m_index; }
+		constexpr StateEnum value() const { return m_enum; }
+
+		constexpr uint8_t	weight() const { return s_weights[m_index]; }
+		Bitmask<uint8_t>	primStates() const { return s_weights[m_index]; }
+
+		int					bestMatch(int nAlternatives, const State* pAlternatives);
 
 
 		//.____ Definitions _________________________________________
 
-		static const State Default;
-		static const State Focused;
-		static const State Hovered;
-		static const State HoveredFocused;
-		static const State Pressed;
-		static const State PressedFocused;
-		static const State Selected;
-		static const State SelectedFocused;
-		static const State SelectedHovered;
-		static const State SelectedHoveredFocused;
-		static const State SelectedPressed;
-		static const State SelectedPressedFocused;
-		static const State Targeted;
-		static const State TargetedFocused;
-		static const State TargetedSelected;
-		static const State TargetedSelectedFocused;
+		static const State DisabledFlaggedCheckedSelekted;
+		static const State DisabledFlaggedChecked;
+		static const State DisabledFlaggedSelekted;
+		static const State DisabledFlagged;
+		static const State DisabledCheckedSelekted;
+		static const State DisabledChecked;
+		static const State DisabledSelekted;
 		static const State Disabled;
-		static const State DisabledSelected;
+		static const State TargetedFlaggedCheckedSelektedFocused;
+		static const State TargetedFlaggedCheckedSelekted;
+		static const State TargetedFlaggedCheckedFocused;
+		static const State TargetedFlaggedChecked;
+		static const State TargetedFlaggedSelektedFocused;
+		static const State TargetedFlaggedSelekted;
+		static const State TargetedFlaggedFocused;
+		static const State TargetedFlagged;
+		static const State TargetedCheckedSelektedFocused;
+		static const State TargetedCheckedSelekted;
+		static const State TargetedCheckedFocused;
+		static const State TargetedChecked;
+		static const State TargetedSelektedFocused;
+		static const State TargetedSelekted;
+		static const State TargetedFocused;
+		static const State Targeted;
+		static const State FlaggedCheckedSelektedPressedFocused;
+		static const State FlaggedCheckedSelektedPressed;
+		static const State FlaggedCheckedSelektedHoveredFocused;
+		static const State FlaggedCheckedSelektedHovered;
+		static const State FlaggedCheckedSelektedFocused;
+		static const State FlaggedCheckedSelekted;
+		static const State FlaggedCheckedPressedFocused;
+		static const State FlaggedCheckedPressed;
+		static const State FlaggedCheckedHoveredFocused;
+		static const State FlaggedCheckedHovered;
+		static const State FlaggedCheckedFocused;
+		static const State FlaggedChecked;
+		static const State FlaggedSelektedPressedFocused;
+		static const State FlaggedSelektedPressed;
+		static const State FlaggedSelektedHoveredFocused;
+		static const State FlaggedSelektedHovered;
+		static const State FlaggedSelektedFocused;
+		static const State FlaggedSelekted;
+		static const State FlaggedPressedFocused;
+		static const State FlaggedPressed;
+		static const State FlaggedHoveredFocused;
+		static const State FlaggedHovered;
+		static const State FlaggedFocused;
+		static const State Flagged;
+		static const State CheckedSelektedPressedFocused;
+		static const State CheckedSelektedPressed;
+		static const State CheckedSelektedHoveredFocused;
+		static const State CheckedSelektedHovered;
+		static const State CheckedSelektedFocused;
+		static const State CheckedSelekted;
+		static const State CheckedPressedFocused;
+		static const State CheckedPressed;
+		static const State CheckedHoveredFocused;
+		static const State CheckedHovered;
+		static const State CheckedFocused;
+		static const State Checked;
+		static const State SelektedPressedFocused;
+		static const State SelektedPressed;
+		static const State SelektedHoveredFocused;
+		static const State SelektedHovered;
+		static const State SelektedFocused;
+		static const State Selekted;
+		static const State PressedFocused;
+		static const State Pressed;
+		static const State HoveredFocused;
+		static const State Hovered;
+		static const State Focused;
+		static const State Default;
 
-		static const int	IndexAmount = 18;			// Number of states
-		static const int	MaxValue = 40;				// Highest value for m_bitmask
+
+		static const int	NbStates = 72;			// Number of state combinations
+		static const int	MaxValue = 71;				// Highest value for m_index
+
+		static const uint8_t	s_weights[NbStates];
 
 	private:
 
-		const static int		s_bitmaskToIndex[MaxValue + 1];
-		const static uint8_t	s_indexToBitmask[IndexAmount];
-
-		union 
+		enum class MouseInteraction : uint8_t
 		{
-			struct
-			{
-				uint8_t	m_isFocused : 1;
-				uint8_t m_isPressed : 1;
-				uint8_t	m_isHovered : 1;
-				uint8_t m_isSelected : 1;
-				uint8_t m_isTargeted : 1;
-				uint8_t m_isDisabled : 1;
-
-			};
-				uint8_t	m_bitmask;
+			None = 0,
+			Hovered = 1,
+			Pressed = 2,
+			Targeted = 3,
 		};
 
-	};
+		// Bit positions (LSB to MSB)
+		static constexpr uint8_t FLAGGED_BIT = 0;
+		static constexpr uint8_t SELECTED_BIT = 1;
+		static constexpr uint8_t CHECKED_BIT = 2;
+		static constexpr uint8_t FOCUSED_BIT = 3;
+		static constexpr uint8_t MOUSE_INTERACTION_BIT = 4;  // 2 bits: positions 4-5
+		static constexpr uint8_t DISABLED_BIT = 6;
 
+		// Bit masks
+		static constexpr uint8_t FOCUSED_MASK = 1 << FOCUSED_BIT;
+		static constexpr uint8_t MOUSE_INTERACTION_MASK = 0b11 << MOUSE_INTERACTION_BIT;
+		static constexpr uint8_t SELECTED_MASK = 1 << SELECTED_BIT;
+		static constexpr uint8_t CHECKED_MASK = 1 << CHECKED_BIT;
+		static constexpr uint8_t FLAGGED_MASK = 1 << FLAGGED_BIT;
+		static constexpr uint8_t DISABLED_MASK = 1 << DISABLED_BIT;
+
+		// Helper functions for mouse interaction
+		constexpr MouseInteraction getMouseInteraction() const {
+			return static_cast<MouseInteraction>((m_index & MOUSE_INTERACTION_MASK) >> MOUSE_INTERACTION_BIT);
+		}
+
+		void setMouseInteraction(MouseInteraction value) {
+			m_index = (m_index & ~MOUSE_INTERACTION_MASK) |
+				(static_cast<uint8_t>(value) << MOUSE_INTERACTION_BIT);
+		}
+
+		union
+		{
+			uint8_t		m_index;
+			StateEnum	m_enum;
+		};
+	};
 
 }
 

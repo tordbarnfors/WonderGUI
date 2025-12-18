@@ -1,25 +1,24 @@
 /*=========================================================================
 
-						 >>> WonderGUI <<<
+                             >>> WonderGUI <<<
 
-  This file is part of Tord Jansson's WonderGUI Graphics Toolkit
-  and copyright (c) Tord Jansson, Sweden [tord.jansson@gmail.com].
+  This file is part of Tord Bärnfors' WonderGUI UI Toolkit and copyright
+  Tord Bärnfors, Sweden [mail: first name AT barnfors DOT c_o_m].
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is free software; you can redistribute
+  The WonderGUI UI Toolkit is free software; you can redistribute
   this file and/or modify it under the terms of the GNU General Public
   License as published by the Free Software Foundation; either
   version 2 of the License, or (at your option) any later version.
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is also available for use in commercial
-  closed-source projects under a separate license. Interested parties
-  should contact Tord Jansson [tord.jansson@gmail.com] for details.
+  The WonderGUI UI Toolkit is also available for use in commercial
+  closed source projects under a separate license. Interested parties
+  should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-
 #include <wg_togglebutton.h>
 #include <wg_surface.h>
 #include <wg_gfxdevice.h>
@@ -178,12 +177,12 @@ namespace wg
 		else
 			state.setPressed(false);
 
-		// Possibly flip selected
+		// Possibly flip checked
 
 		if( state.isPressed() != m_state.isPressed() )
 		{
 			if( state.isPressed() != m_bFlipOnRelease )
-				state.setSelected( !state.isSelected() );
+				state.setChecked( !state.isChecked() );
 		}
 
 		//
@@ -196,10 +195,10 @@ namespace wg
 
 	void ToggleButton::_setState( State state, bool bPostMsg )
 	{
-		// If state has changed from selected to unselected we need to check with Togglegroup
+		// If state has changed from checked to unchecked we need to check with Togglegroup
 
-		if( !state.isSelected() && m_state.isSelected() && m_pToggleGroup && !m_pToggleGroup->_unselect(this) )
-			state.setSelected(true);
+		if( !state.isChecked() && m_state.isChecked() && m_pToggleGroup && !m_pToggleGroup->_uncheck(this) )
+			state.setChecked(true);
 
 		//
 
@@ -213,13 +212,13 @@ namespace wg
 			//TODO: Remove once icon uses CSkinSlot.
 			_requestRender();
 		}
-		if( state.isSelected() != oldState.isSelected() )
+		if( state.isChecked() != oldState.isChecked() )
 		{
 			if( bPostMsg )
-				Base::msgRouter()->post( ToggleMsg::create(this, state.isSelected() ) );
+				Base::msgRouter()->post( ToggleMsg::create(this, state.isChecked() ) );
 
-			if( m_pToggleGroup && state.isSelected() )
-				m_pToggleGroup->_select(this);
+			if( m_pToggleGroup && state.isChecked() )
+				m_pToggleGroup->_check(this);
 		}
 	}
 

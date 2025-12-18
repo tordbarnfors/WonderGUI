@@ -1,22 +1,22 @@
 /*=========================================================================
 
-						 >>> WonderGUI <<<
+                             >>> WonderGUI <<<
 
-  This file is part of Tord Jansson's WonderGUI Graphics Toolkit
-  and copyright (c) Tord Jansson, Sweden [tord.jansson@gmail.com].
+  This file is part of Tord Bärnfors' WonderGUI UI Toolkit and copyright
+  Tord Bärnfors, Sweden [mail: first name AT barnfors DOT c_o_m].
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is free software; you can redistribute
+  The WonderGUI UI Toolkit is free software; you can redistribute
   this file and/or modify it under the terms of the GNU General Public
   License as published by the Free Software Foundation; either
   version 2 of the License, or (at your option) any later version.
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is also available for use in commercial
-  closed-source projects under a separate license. Interested parties
-  should contact Tord Jansson [tord.jansson@gmail.com] for details.
+  The WonderGUI UI Toolkit is also available for use in commercial
+  closed source projects under a separate license. Interested parties
+  should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
 #ifndef WG_STATESKIN_DOT_H
@@ -27,13 +27,15 @@
 
 #include <initializer_list>
 #include <utility>
+#include <vector>
 
 namespace wg
 {
-
 	class StateSkin;
+
 	typedef	StrongPtr<StateSkin>	StateSkin_p;
 	typedef	WeakPtr<StateSkin>		StateSkin_wp;
+
 
 	class StateSkin : public Skin
 	{
@@ -45,9 +47,6 @@ namespace wg
 
 		//.____ Behavior _______________________________________________________
 
-		void			clearContentShift();
-		void			setContentShift(State state, Coord shift);
-		void			setContentShift(std::initializer_list< std::pair<State, Coord> > StateShifts);
 		Coord			contentShift(State state) const;
 
 		//.____ Internal ________________________________________________________
@@ -73,10 +72,27 @@ namespace wg
 
 		~StateSkin() {}
 
-		void			_updateContentShift();
 
-        Coord				m_contentShift[State::IndexAmount];
-		Bitmask<uint32_t>	m_contentShiftStateMask = 1;		// Bitfield with one bit set for each stateIndex that has been explicitly set.
+		int				_bytesNeededForContentShiftData(int nbStates, const State* pStates);
+		Coord * 		_prepareForContentShiftData(void * pDest, int nbStates, const State * pStates);
+
+		Coord 			_getContentShift(State state) const
+		{
+						int idxTabEntry = (state.index() & m_contentShiftIndexMask) >> m_contentShiftIndexShift;
+						int entry = m_pContentShiftIndexTab[idxTabEntry];
+						return m_pContentShiftTable[entry];
+		}
+
+		// Mask and shift values to apply to stateIndex in order to make m_pContentShiftIndexTab
+		// shorter when bits least or most significant bits of index can be ignored.
+
+		uint8_t			m_contentShiftIndexMask;		
+		uint8_t			m_contentShiftIndexShift;
+
+		// 
+
+		uint8_t*		m_pContentShiftIndexTab;		// Table with index values into m_pContentShiftTable for each mode (72) or less.
+		Coord*			m_pContentShiftTable;			// Contains content shift values used.
 	};
 
 

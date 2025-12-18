@@ -8,17 +8,17 @@ set( SOURCES
 
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${SOURCES})
 
-add_executable(gfxworkbench
-	${SOURCES}
-)
+add_executable(gfxworkbench ${SOURCES})
+generate_export_header(wondergfx BASE_NAME wg)
+
 
 target_include_directories(gfxworkbench PRIVATE 
 	${SDL2_INCDIR}
 	${SDL2IMAGE_INCDIR}
 	${WONDERGUI_INCDIRS}
 	${WGSOFTGFX_INCDIRS}
-	${GFXSTREAM_INCDIRS}
-
+	${WGGFXSTREAM_INCDIRS}
+	"${CMAKE_CURRENT_BINARY_DIR}"  # For generated header
 )
 
 

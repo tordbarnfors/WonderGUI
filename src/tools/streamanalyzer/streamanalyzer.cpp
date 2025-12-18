@@ -9,6 +9,10 @@
 #include <wg_softkernels_bgr565srgb_extras.h>
 
 
+#include <wg_softkernels_bgr565srgb_base.h>
+#include <wg_softkernels_bgr565srgb_extras.h>
+
+
 #include <wg_softkernels_default.h>
 
 #include <wg_gfxdevice_gen2.h>
@@ -22,6 +26,7 @@
 #include <fstream>
 
 using namespace wg;
+using namespace wapp;
 using namespace std;
 
 //____ create() _______________________________________________________________
@@ -33,17 +38,18 @@ WonderApp_p WonderApp::create()
 
 //____ init() _________________________________________________________________
 
-bool MyApp::init(Visitor* pVisitor)
+bool MyApp::init(API* pAPI)
 {
-	m_pAppVisitor = pVisitor;
+	m_pAppAPI = pAPI;
 
-	if (!_setupGUI(pVisitor))
+	if (!_setupGUI(pAPI))
 	{
+		printf("ERROR: Failed to setup GUI!\n");
 		printf("ERROR: Failed to setup GUI!\n");
 		return false;
 	}
 		
-	auto arguments = pVisitor->programArguments();
+	auto arguments = pAPI->programArguments();
 /*
 	if ( !arguments.empty() )
 	{
@@ -61,9 +67,11 @@ bool MyApp::init(Visitor* pVisitor)
 	auto pSoftBackend = wg_dynamic_cast<SoftBackend_p>(pDeviceGen2->backend());
 	if( pSoftBackend )
 	{
+		addBaseSoftKernelsForBGR565sRGBCanvas(pSoftBackend);
 		addExtraSoftKernelsForRGB555BECanvas(pSoftBackend);
+		addExtraSoftKernelsForBGR565sRGBCanvas(pSoftBackend);
 	}
-	
+
 	return true;
 }
 
@@ -71,7 +79,7 @@ bool MyApp::init(Visitor* pVisitor)
 
 bool MyApp::update()
 {
-	return true;
+	return (m_pWindow != nullptr);
 }
 
 //____ exit() _________________________________________________________________
@@ -81,24 +89,30 @@ void MyApp::exit()
 	Base::setErrorHandler( nullptr );
 }
 
+//____ closeWindow() __________________________________________________________
+
+void MyApp::closeWindow(wapp::Window* pWindow)
+{
+	if( pWindow == m_pRecordedStepsWindow)
+		m_pRecordedStepsWindow = nullptr;
+
+	if( pWindow == m_pWindow )
+		m_pWindow = nullptr;
+}
+
+
 
 //____ _setupGUI() ____________________________________________________________
 
-bool MyApp::_setupGUI(Visitor* pVisitor)
+bool MyApp::_setupGUI(API* pAPI)
 {
-	m_pWindow = pVisitor->createWindow({ .minSize = { 600, 200 }, .size = {1600,800}, .title = "Stream Analyzer" });
-
-	m_pWindow->setCloseRequestHandler([](void) {
-		return true;
-	});
-	
-	auto pRoot = m_pWindow->rootPanel();
-	
+	m_pWindow = wapp::Window::create(pAPI,{ /*.minSize = { 600, 200 },*/ .size = {1600,800}, .title = "Stream Analyzer" });
+		
 	//
 
-	auto path = pVisitor->resourceDirectory();
+	auto path = pAPI->resourceDirectory();
 	
-	auto pFontBlob = pVisitor->loadBlob( path + "DroidSans.ttf");
+	auto pFontBlob = pAPI->loadBlob( path + "DroidSans.ttf");
 	auto pFont = FreeTypeFont::create(pFontBlob);
 	m_pFont = pFont;
 	
@@ -129,27 +143,19 @@ bool MyApp::_setupGUI(Visitor* pVisitor)
 
 	//
 
-	if (!_loadSkins(pVisitor))
+	if (!_loadSkins(pAPI))
 		return false;
 
 	m_pLayout = PackLayout::create({ .wantedSize = PackLayout::WantedSize::Default,
 	.expandFactor = PackLayout::Factor::Weight, .shrinkFactor = PackLayout::Factor::Weight });
 
-	m_pDebugger = Debugger::create();
+	m_pDebugger = DebugBackend::create();
 
-	auto pDbgFont1Blob = pVisitor->loadBlob("resources/NotoSans-Regular.ttf");
-	auto pDbgFont2Blob = pVisitor->loadBlob("resources/NotoSans-Bold.ttf");
-	auto pDbgFont3Blob = pVisitor->loadBlob("resources/NotoSans-Italic.ttf");
-	auto pDbgFont4Blob = pVisitor->loadBlob("resources/DroidSansMono.ttf");
+	auto pTheme = pAPI->initDefaultTheme();
+	auto pIconSurface = pAPI->loadSurface("resources/debugger_gfx.png");
+	auto pTransparencyGrid = pAPI->loadSurface("resources/checkboardtile.png", nullptr, { .tiling = true } );
 
-	auto pDbgFont1 = FreeTypeFont::create(pDbgFont1Blob);
-	auto pDbgFont2 = FreeTypeFont::create(pDbgFont2Blob);
-	auto pDbgFont3 = FreeTypeFont::create(pDbgFont3Blob);
-	auto pDbgFont4 = FreeTypeFont::create(pDbgFont4Blob);
-
-	auto pTheme = Simplistic::create(pDbgFont1, pDbgFont2, pDbgFont3, pDbgFont4);
-
-	m_pDebugOverlay = DebugOverlay::create( { .debugger = m_pDebugger, .theme = pTheme } );
+	m_pDebugOverlay = DebugOverlay::create( { .backend = m_pDebugger, .theme = pTheme, .icons = pIconSurface, .transparencyGrid = pTransparencyGrid } );
 
 	m_pDebugOverlay->setActivated(true);
 
@@ -180,11 +186,17 @@ bool MyApp::_setupGUI(Visitor* pVisitor)
 
 	pPopupOverlay->mainSlot = pBasePanel;
 
+
+	auto pPopupOverlayForDebugger = PopupOverlay::create();
+	pPopupOverlayForDebugger->mainSlot = m_pDebugOverlay;
+
 	m_pDebugOverlay->mainSlot = pPopupOverlay;
 
-	pRoot->slot = m_pDebugOverlay;
+	m_pWindow->mainCapsule()->slot = pPopupOverlayForDebugger;
 
 	pSplitPanel->setSplit(0.5f);
+
+	m_pDebugOverlay->grabFocus();
 
 	return true;
 }
@@ -203,7 +215,7 @@ Widget_p MyApp::createTopBar()
 
 	auto pLoadButton = Button::create( WGBP(Button,
 											_.skin = m_pButtonSkin,
-											_.label = WGBP(Text, _.layout = m_pTextLayoutCentered, _.style = m_pTextStyle, _.text = "Load" )
+											_.label = WGBP(DynamicText, _.layout = m_pTextLayoutCentered, _.style = m_pTextStyle, _.text = "Load" )
 											));
 
 	auto pSpacer1 = Filler::create( WGBP(Filler, _.defaultSize = { 20,1 } ));
@@ -239,7 +251,7 @@ Widget_p MyApp::createDisplayPanel()
 
 	pWindow->setSkin(ColorSkin::create({ .color = Color::DarkSlateBlue }));
 	pWindow->setSizeConstraints(SizeConstraint::None, SizeConstraint::GreaterOrEqual);
-	pWindow->setPlacement(Placement::Center);
+	pWindow->setChildPlacement(Placement::Center);
 
 	auto pLineup = PackPanel::create( { .axis = Axis::X,
 										.slotAlignment = Alignment::Center,
@@ -293,44 +305,51 @@ Widget_p MyApp::createLogPanel()
 
 	auto pFrameLogButton = ToggleButton::create( WGBP(ToggleButton,
 											_.skin = m_pToggleButtonSkin,
-											_.selected = true,
-											_.label = WGBP(Text, _.layout = m_pTextLayoutCentered, _.style = m_pTextStyle, _.text = "Frame data" )
+											_.checked = true,
+											_.label = WGBP(DynamicText, _.layout = m_pTextLayoutCentered, _.style = m_pTextStyle, _.text = "Frame data" )
 											));
+
+	auto pBackendLogButton = ToggleButton::create( WGBP(ToggleButton,
+											_.skin = m_pToggleButtonSkin,
+											_.label = WGBP(DynamicText, _.layout = m_pTextLayoutCentered, _.style = m_pTextStyle, _.text = "Backend data" )
+											));
+
 
 	auto pFullLogButton = ToggleButton::create( WGBP(ToggleButton,
 											_.skin = m_pToggleButtonSkin,
-											_.label = WGBP(Text, _.layout = m_pTextLayoutCentered, _.style = m_pTextStyle, _.text = "File data" )
+											_.label = WGBP(DynamicText, _.layout = m_pTextLayoutCentered, _.style = m_pTextStyle, _.text = "File data" )
 											));
 
 	auto pOptimizerInLogButton = ToggleButton::create( WGBP(ToggleButton,
 											_.skin = m_pToggleButtonSkin,
-											_.label = WGBP(Text, _.layout = m_pTextLayoutCentered, _.style = m_pTextStyle, _.text = "Optimizer input" )
+											_.label = WGBP(DynamicText, _.layout = m_pTextLayoutCentered, _.style = m_pTextStyle, _.text = "Optimizer input" )
 											));
 
 	auto pOptimizerOutLogButton = ToggleButton::create( WGBP(ToggleButton,
 											_.skin = m_pToggleButtonSkin,
-											_.label = WGBP(Text, _.layout = m_pTextLayoutCentered, _.style = m_pTextStyle, _.text = "Optimizer output" )
+											_.label = WGBP(DynamicText, _.layout = m_pTextLayoutCentered, _.style = m_pTextStyle, _.text = "Optimizer output" )
 											));
 
 	
 	auto pResourcesButton = ToggleButton::create( WGBP(ToggleButton,
 											_.skin = m_pToggleButtonSkin,
-											_.label = WGBP(Text, _.layout = m_pTextLayoutCentered, _.style = m_pTextStyle, _.text = "Resources" )
+											_.label = WGBP(DynamicText, _.layout = m_pTextLayoutCentered, _.style = m_pTextStyle, _.text = "Resources" )
 											));
 
 	auto pStatisticsButton = ToggleButton::create( WGBP(ToggleButton,
 											_.skin = m_pToggleButtonSkin,
-											_.label = WGBP(Text, _.layout = m_pTextLayoutCentered, _.style = m_pTextStyle, _.text = "Statistics" )
+											_.label = WGBP(DynamicText, _.layout = m_pTextLayoutCentered, _.style = m_pTextStyle, _.text = "Statistics" )
 											));
 
 	auto pErrorLogButton = ToggleButton::create( WGBP(ToggleButton,
 											_.skin = m_pToggleButtonSkin,
-											_.label = WGBP(Text, _.layout = m_pTextLayoutCentered, _.style = m_pTextStyle, _.text = "Errors" )
+											_.label = WGBP(DynamicText, _.layout = m_pTextLayoutCentered, _.style = m_pTextStyle, _.text = "Errors" )
 											));
 	
 	
 	auto pToggleGroup = ToggleGroup::create();
 	pToggleGroup->add(pFrameLogButton);
+	pToggleGroup->add(pBackendLogButton);
 	pToggleGroup->add(pFullLogButton);
 	pToggleGroup->add(pOptimizerInLogButton);
 	pToggleGroup->add(pOptimizerOutLogButton);
@@ -338,42 +357,56 @@ Widget_p MyApp::createLogPanel()
 	pToggleGroup->add(pStatisticsButton);
 	pToggleGroup->add(pErrorLogButton);
 
-	Base::msgRouter()->addRoute(pFrameLogButton, MsgType::Select, [this](Msg* pMsg)
+	Base::msgRouter()->addRoute(pFrameLogButton, MsgType::Toggle, [this](Msg* pMsg)
 		{
-			this->showFrameLog();
-		});
-	
-	Base::msgRouter()->addRoute(pFullLogButton, MsgType::Select, [this](Msg* pMsg)
-		{
-			this->showFullLog();
+			if( static_cast<ToggleMsg*>(pMsg)->isChecked() )
+				this->showFrameLog();
 		});
 
-	Base::msgRouter()->addRoute(pOptimizerInLogButton, MsgType::Select, [this](Msg* pMsg)
+	Base::msgRouter()->addRoute(pBackendLogButton, MsgType::Toggle, [this](Msg* pMsg)
 		{
-			this->showOptimizerInLog();
-		});
-	
-	Base::msgRouter()->addRoute(pOptimizerOutLogButton, MsgType::Select, [this](Msg* pMsg)
-		{
-			this->showOptimizerOutLog();
-		});
-	
-	Base::msgRouter()->addRoute(pResourcesButton, MsgType::Select, [this](Msg* pMsg)
-		{
-			this->showResources();
+			if( static_cast<ToggleMsg*>(pMsg)->isChecked() )
+				this->showBackendLog();
 		});
 
-	Base::msgRouter()->addRoute(pStatisticsButton, MsgType::Select, [this](Msg* pMsg)
+	Base::msgRouter()->addRoute(pFullLogButton, MsgType::Toggle, [this](Msg* pMsg)
 		{
-			this->showStatistics();
+			if( static_cast<ToggleMsg*>(pMsg)->isChecked() )
+				this->showFullLog();
 		});
 
-	Base::msgRouter()->addRoute(pErrorLogButton, MsgType::Select, [this](Msg* pMsg)
+	Base::msgRouter()->addRoute(pOptimizerInLogButton, MsgType::Toggle, [this](Msg* pMsg)
 		{
-			this->showErrors();
+			if( static_cast<ToggleMsg*>(pMsg)->isChecked() )
+				this->showOptimizerInLog();
+		});
+	
+	Base::msgRouter()->addRoute(pOptimizerOutLogButton, MsgType::Toggle, [this](Msg* pMsg)
+		{
+			if( static_cast<ToggleMsg*>(pMsg)->isChecked() )
+				this->showOptimizerOutLog();
+		});
+	
+	Base::msgRouter()->addRoute(pResourcesButton, MsgType::Toggle, [this](Msg* pMsg)
+		{
+			if( static_cast<ToggleMsg*>(pMsg)->isChecked() )
+				this->showResources();
+		});
+
+	Base::msgRouter()->addRoute(pStatisticsButton, MsgType::Toggle, [this](Msg* pMsg)
+		{
+			if( static_cast<ToggleMsg*>(pMsg)->isChecked() )
+				this->showStatistics();
+		});
+
+	Base::msgRouter()->addRoute(pErrorLogButton, MsgType::Toggle, [this](Msg* pMsg)
+		{
+			if( static_cast<ToggleMsg*>(pMsg)->isChecked() )
+				this->showErrors();
 		});
 	
 	pLogButtonRow->slots << pFrameLogButton;
+	pLogButtonRow->slots << pBackendLogButton;
 	pLogButtonRow->slots << pFullLogButton;
 	pLogButtonRow->slots << pOptimizerInLogButton;
 	pLogButtonRow->slots << pOptimizerOutLogButton;
@@ -381,7 +414,7 @@ Widget_p MyApp::createLogPanel()
 	pLogButtonRow->slots << pStatisticsButton;
 	pLogButtonRow->slots << pErrorLogButton;
 	
-	pLogButtonRow->setSlotWeight(0, 7, 0.f );
+	pLogButtonRow->setSlotWeight(0, 8, 0.f );
 	
 	TextEditor::Blueprint displayBP;
 	displayBP.skin = ColorSkin::create(Color8::LightYellow);
@@ -397,6 +430,18 @@ Widget_p MyApp::createLogPanel()
 	m_pFrameLogDisplay = pFrameLogText;
 
 	m_pFrameLogContainer = pFrameLogWindow;
+
+	// Create backend frame log hierarchy
+
+	auto pBackendLogWindow = _standardScrollPanel();
+
+	auto pBackendLogText = TextEditor::create( displayBP );
+	pBackendLogWindow->slot = pBackendLogText;
+
+	m_pBackendLogDisplay = pBackendLogText;
+
+	m_pBackendLogContainer = pBackendLogWindow;
+
 
 	// Create full log hierarchy
 	
@@ -509,7 +554,7 @@ Widget_p MyApp::createNavigationPanel()
 
 	
 	auto pProgressText = TextDisplay::create(WGBP(TextDisplay,
-		_.display = WGBP(Text, _.layout = m_pTextLayoutCentered, _.style = pProgressStyle, _.text = "-/-")
+		_.display = WGBP(DynamicText, _.layout = m_pTextLayoutCentered, _.style = pProgressStyle, _.text = "-/-")
 	));
 	m_pProgressText = pProgressText;
 
@@ -534,30 +579,30 @@ Widget_p MyApp::createNavigationPanel()
 	auto pLongLeftButton = Button::create(WGBP(Button,
 		_.skin = m_pButtonSkin,
 		_.selectOnPress = true,
-		_.label = WGBP(Text, _.layout = m_pTextLayoutCentered,_.style = m_pTextStyle, _.text = " << ")
+		_.label = WGBP(DynamicText, _.layout = m_pTextLayoutCentered,_.style = m_pTextStyle, _.text = " << ")
 	));
 
 	auto pLeftButton = Button::create(WGBP(Button,
 		_.skin = m_pButtonSkin,
 		_.selectOnPress = true,
-		_.label = WGBP(Text, _.layout = m_pTextLayoutCentered, _.style = m_pTextStyle, _.text = " < ")
+		_.label = WGBP(DynamicText, _.layout = m_pTextLayoutCentered, _.style = m_pTextStyle, _.text = " < ")
 	));
 
 	auto pPauseButton = Button::create(WGBP(Button,
 		_.skin = m_pButtonSkin,
-		_.label = WGBP(Text, _.layout = m_pTextLayoutCentered, _.style = m_pTextStyle, _.text = " || ")
+		_.label = WGBP(DynamicText, _.layout = m_pTextLayoutCentered, _.style = m_pTextStyle, _.text = " || ")
 	));
 
 	auto pRightButton = Button::create(WGBP(Button,
 		_.skin = m_pButtonSkin,
 		_.selectOnPress = true,
-		_.label = WGBP(Text, _.layout = m_pTextLayoutCentered, _.style = m_pTextStyle, _.text = " > ")
+		_.label = WGBP(DynamicText, _.layout = m_pTextLayoutCentered, _.style = m_pTextStyle, _.text = " > ")
 	));
 
 	auto pLongRightButton = Button::create(WGBP(Button,
 		_.skin = m_pButtonSkin,
 		_.selectOnPress = true,
-		_.label = WGBP(Text, _.layout = m_pTextLayoutCentered, _.style = m_pTextStyle, _.text = " >> ")
+		_.label = WGBP(DynamicText, _.layout = m_pTextLayoutCentered, _.style = m_pTextStyle, _.text = " >> ")
 	));
 
 	pPlayButtons->slots << Filler::create();
@@ -605,7 +650,7 @@ Widget_p MyApp::createNavigationPanel()
 	{
 		auto pButton = Button::create(WGBP(Button,
 			_.skin = m_pButtonSkin,
-			_.label = WGBP(Text, _.layout = m_pTextLayoutCentered, _.style = m_pTextStyle, _.text = skipButtonLabels[i] )
+			_.label = WGBP(DynamicText, _.layout = m_pTextLayoutCentered, _.style = m_pTextStyle, _.text = skipButtonLabels[i] )
 		));
 
 		pSkipButtons->slots << pButton;
@@ -614,7 +659,7 @@ Widget_p MyApp::createNavigationPanel()
 		Base::msgRouter()->addRoute(pButton, MsgType::Select, [this,skip](Msg* pMsg)
 			{
 				m_recordedSteps.clear();
-				this->m_bRecordSteps = this->m_pRecordStepsToggle->isSelected();
+				this->m_bRecordSteps = this->m_pRecordStepsToggle->isChecked();
 				this->skipFrames( skip );
 				this->m_bRecordSteps = false;
 			});
@@ -633,13 +678,13 @@ Widget_p MyApp::createNavigationPanel()
 	//
 	
 	auto pRectToggle = ToggleButton::create(WGBP(ToggleButton,
-		_.label = WGBP(Text, _.style = m_pTextStyle, _.text = "Show debug rectangles"),
-		_.icon = WGBP(Icon, _.skin = m_pToggleButtonSkin, _.padding = { 0,8,0,0 })
+		_.label = WGBP(DynamicText, _.style = m_pTextStyle, _.text = "Show debug rectangles"),
+		_.icon = WGBP(Icon, _.skin = m_pToggleButtonSkin, _.spacing = 8 )
 	));
 
 	Base::msgRouter()->addRoute(pRectToggle, MsgType::Toggle, [this](Msg* pMsg)
 		{
-			this->toggleDebugRects(static_cast<ToggleMsg*>(pMsg)->isSet());
+			this->toggleDebugRects(static_cast<ToggleMsg*>(pMsg)->isChecked());
 		});
 
 
@@ -649,8 +694,8 @@ Widget_p MyApp::createNavigationPanel()
 	//
 	
 	auto pRecordStepsToggle = ToggleButton::create(WGBP(ToggleButton,
-		_.label = WGBP(Text, _.style = m_pTextStyle, _.text = "Record optimize steps"),
-		_.icon = WGBP(Icon, _.skin = m_pToggleButtonSkin, _.padding = { 0,8,0,0 })
+		_.label = WGBP(DynamicText, _.style = m_pTextStyle, _.text = "Record optimize steps"),
+		_.icon = WGBP(Icon, _.skin = m_pToggleButtonSkin, _.spacing = 8 )
 	));
 
 	m_pRecordStepsToggle = pRecordStepsToggle;
@@ -683,14 +728,14 @@ Widget_p MyApp::createNavigationPanel()
 	{
 
 		m_recordedSteps.clear();
-		this->m_bRecordSteps = this->m_pRecordStepsToggle->isSelected();
+		this->m_bRecordSteps = this->m_pRecordStepsToggle->isChecked();
 
 		int frame = 235;
 		
 
 		_resetStream();
-		_playFrames( 0, frame, true );
-		_playFrames( frame, frame+1, false );
+		_playFrames( 0, frame, true, nullptr );
+		_playFrames( frame, frame+1, false, m_pBackendLogDisplay );
 
 		// Update the log
 		
@@ -756,20 +801,20 @@ Widget_p MyApp::createNavigationPanel()
 
 //____ _loadSkins() ___________________________________________________________
 
-bool MyApp::_loadSkins(Visitor * pVisitor)
+bool MyApp::_loadSkins(API * pAPI)
 {
 	
-	auto path = pVisitor->resourceDirectory();
+	auto path = pAPI->resourceDirectory();
 
 
 #ifndef __APPLE__
 	path.append("greyskin/");
 #endif
 
-	auto pPlateSurf = pVisitor->loadSurface(path + "plate.bmp");
-	auto pButtonSurf = pVisitor->loadSurface(path + "button.bmp");
-	auto pStateButtonSurf = pVisitor->loadSurface(path + "state_button.bmp");
-	auto pCheckBoxSurf = pVisitor->loadSurface(path + "checkbox.png");
+	auto pPlateSurf = pAPI->loadSurface(path + "plate.bmp");
+	auto pButtonSurf = pAPI->loadSurface(path + "button.bmp");
+	auto pStateButtonSurf = pAPI->loadSurface(path + "state_button.bmp");
+	auto pCheckBoxSurf = pAPI->loadSurface(path + "checkbox.png");
 
 	if (!pPlateSurf || !pButtonSurf || !pStateButtonSurf)
 		return false;
@@ -794,7 +839,7 @@ bool MyApp::_loadSkins(Visitor * pVisitor)
 		_.axis = Axis::X,
 		_.frame = 4,
 		_.padding = 4,
-		_.states = { State::Default, State::Hovered, State::Selected, State::SelectedHovered, State::Disabled }
+		_.states = { State::Default, State::Hovered, State::Checked, State::Checked + State::Hovered, State::Disabled }
 	));
 
 	m_pCheckBoxSkin = BlockSkin::create(WGBP(BlockSkin,
@@ -802,7 +847,7 @@ bool MyApp::_loadSkins(Visitor * pVisitor)
 		_.axis = Axis::Y,
 		_.frame = 3,
 //		_.defaultSize = { 12,12 },
-		_.states = { State::Default, State::Selected }
+		_.states = { State::Default, State::Checked }
 	));
 
 	m_pSectionSkin = BoxSkin::create(WGBP(BoxSkin,
@@ -826,7 +871,7 @@ bool MyApp::_loadSkins(Visitor * pVisitor)
 
 void MyApp::selectAndLoadStream()
 {
-	auto selectedFile = m_pAppVisitor->openFileDialog("Select GfxStream", "", { "*.wax", "*.dat" }, "Stream files");
+	auto selectedFile = m_pAppAPI->openFileDialog("Select GfxStream", "", { "*.wax", "*.dat" }, "Stream files");
 	
 	if( selectedFile.empty()  )
 		return;
@@ -839,7 +884,7 @@ void MyApp::selectAndLoadStream()
 bool MyApp::loadStream(std::string path)
 {
 
-	auto pStream = m_pAppVisitor->loadBlob(path);
+	auto pStream = m_pAppAPI->loadBlob(path);
 
 	m_pStreamBlob = pStream;
 
@@ -854,7 +899,7 @@ bool MyApp::loadStream(std::string path)
 	}
 
 	// Setup streamwrapper and pump
-/*
+
 	auto pStreamGfxBackend = LinearBackend::create(
 		[this](CanvasRef ref, int bytes)
 		{
@@ -912,8 +957,8 @@ bool MyApp::loadStream(std::string path)
 				m_recordedSteps.push_back(rec);
 			}
 		} );
-*/
-	auto pStreamGfxBackend = SoftBackend::create();
+
+//	auto pStreamGfxBackend = SoftBackend::create();
 
 	auto pTrimGfxBackend = StreamTrimBackend::create(pStreamGfxBackend);
 
@@ -946,8 +991,9 @@ bool MyApp::loadStream(std::string path)
 	m_pStreamGfxDevice = pStreamGfxDevice;
 	m_pStreamGfxBackend = pStreamGfxBackend;
 	m_pStreamTrimGfxBackend = pTrimGfxBackend;
-	
-	m_pStreamPlayer	= StreamPlayer::create( pTrimGfxBackend, m_pStreamSurfaceFactory, pTrimGfxBackend->edgemapFactory() );
+	m_pBackendLogger = BackendLogger::create(nullptr, pTrimGfxBackend);
+
+	m_pStreamPlayer	= StreamPlayer::create( m_pBackendLogger, m_pStreamSurfaceFactory, pTrimGfxBackend->edgemapFactory() );
 	m_pStreamPlayer->setStoreDirtyRects(true);
 	m_pStreamPlayer->setMaxDirtyRects(10000);
 	m_pStreamPlayer->setCanvasInfoCallback([this](const CanvasInfo * pBegin, const CanvasInfo * pEnd) { setupScreens(pBegin,pEnd); } );
@@ -1030,13 +1076,13 @@ void MyApp::setupScreens()
 
 	for (int i = 0; i < 11; i++)
 	{
-		auto pSurf = pFactory->createSurface({ .format = PixelFormat::RGB_555_bigendian, .identity = int(CanvasRef::Default) + i, .size = {800,480}});
+		auto pSurf = pFactory->createSurface({ .format = PixelFormat::BGR_565_sRGB, .identity = int(CanvasRef::Default) + i, .size = {800,480}});
 		pSurf->fill(HiColor::Black);
 
 		m_screens.push_back(pSurf);
 
-		if(pLinearBackend)
-			pLinearBackend->defineCanvas(CanvasRef(int(CanvasRef::Default) + i), {240*64,240*64}, PixelFormat::RGB_555_bigendian, 64 );
+		if( pLinearBackend )
+			pLinearBackend->defineCanvas(CanvasRef(int(CanvasRef::Default) + i), {800*64,480*64}, PixelFormat::BGR_565_sRGB, 64 );
 		else
 			pSoftBackend->defineCanvas(CanvasRef(int(CanvasRef::Default) + i), wg_dynamic_cast<SoftSurface_p>(pSurf));
 	}
@@ -1076,7 +1122,7 @@ void MyApp::updateGUIAfterReload()
 		auto pDisplay = SurfaceDisplay::create({ .surface = pScreen });
 
 
-		auto pOverlaySurface = pSurfFactory->createSurface( WGBP(Surface, _.size = pScreen->pixelSize()) );
+		auto pOverlaySurface = pSurfFactory->createSurface( WGBP(Surface, _.size = pScreen->pixelSize(), _.canvas = true) );
 		auto pOverlayDisplay = SurfaceDisplay::create({ .surface = pOverlaySurface });
 
 		m_debugOverlays.push_back(pOverlaySurface);
@@ -1103,14 +1149,14 @@ void MyApp::updateGUIAfterReload()
 		auto pToggle = ToggleButton::create( WGBP(ToggleButton,
 												_.skin = m_pToggleButtonSkin,
 												_.label.text = label,
-												_.selected = true
+												_.checked = true
 											) );
 
 		auto pScreenLineup = m_pScreenLineup;
 		Base::msgRouter()->addRoute(pToggle, MsgType::Toggle, [toggleNb, pScreenLineup](Msg* pMsg)
 			{
 				auto pMessage = static_cast<ToggleMsg*>(pMsg);
-				pScreenLineup->slots[toggleNb].setVisible(pMessage->isSet());
+				pScreenLineup->slots[toggleNb].setVisible(pMessage->isChecked());
 			});
 
 		m_pDisplayToggles->slots << pToggle;
@@ -1152,15 +1198,15 @@ void MyApp::setFrame( int frame )
 	
 	if( frame > m_currentFrame )
 	{
-		_playFrames( m_currentFrame+1, frame, true );
-		_playFrames( frame, frame+1, false );
+		_playFrames( m_currentFrame+1, frame, true, nullptr );
 	}
 	else
 	{
 		_resetStream();
-		_playFrames( 0, frame, true );
-		_playFrames( frame, frame+1, false );
+		_playFrames( 0, frame, true, nullptr );
 	}
+
+	_playFrames( frame, frame+1, false, m_pBackendLogDisplay );
 
 	// Update the log
 	
@@ -1194,14 +1240,11 @@ void MyApp::skipFrames(int frames)
 	if( destFrame == m_currentFrame )
 		return;
 	
-	_playFrames( m_currentFrame+1, destFrame+1, true );
+	_playFrames( m_currentFrame+1, destFrame+1, true, nullptr );
 
-	// Update the logs
+	// Update the stream log
 
 	_logFrames( m_currentFrame, m_currentFrame+1, false, m_pFrameLogDisplay );
-
-	_logBackend( m_currentFrame+1, destFrame+1, false, m_pOptimizerInLogDisplay);
-	_logBackend( m_currentFrame+1, destFrame+1, true, m_pOptimizerOutLogDisplay);
 
 	//
 
@@ -1224,6 +1267,14 @@ void MyApp::showFrameLog()
 {
 	m_pLogCapsule->slot = m_pFrameLogContainer;
 }
+
+//____ showBackendLog() _________________________________________________________
+
+void MyApp::showBackendLog()
+{
+	m_pLogCapsule->slot = m_pBackendLogContainer;
+}
+
 
 //____ showFullLog() __________________________________________________________
 
@@ -1294,17 +1345,9 @@ void MyApp::openRecordedStepsWindow()
 {
 	if( !m_pRecordedStepsWindow )
 	{
-		m_pRecordedStepsWindow = m_pAppVisitor->createWindow( { .title = "Recorded Steps" } );
-
-		m_pRecordedStepsWindow->setCloseRequestHandler([this](void) {
-			this->m_pRecordedStepsWindow = nullptr;
-			return true;
-		});
-		
-		auto pRoot = m_pRecordedStepsWindow->rootPanel();
+		m_pRecordedStepsWindow = Window::create( m_pAppAPI, { .title = "Recorded Steps" } );
 
 		auto pScroll = ScrollPanel::create( { .skin = m_pPlateSkin } );
-		pRoot->slot = pScroll;
 		
 		auto pStepList = PackPanel::create( { .axis = Axis::Y } );
 		
@@ -1317,9 +1360,9 @@ void MyApp::openRecordedStepsWindow()
 		}
 		
 		pScroll->slot = pStepList;
-		
-	}
-	
+
+		m_pRecordedStepsWindow->mainCapsule()->slot = pScroll;		
+	}	
 	
 }
 
@@ -1338,7 +1381,7 @@ void MyApp::_resetStream()
 
 //____ _playFrames() __________________________________________________________
 
-void MyApp::_playFrames( int begin, int end, bool bOptimize )
+void MyApp::_playFrames( int begin, int end, bool bOptimize, TextEditor * pBackendLogDisplay )
 {
 	uint8_t * pBegin = m_frames[begin];
 	uint8_t * pEnd = end == m_frames.size() ? (uint8_t*) m_pStreamBlob->end() : (uint8_t*) m_frames[end];
@@ -1349,6 +1392,11 @@ void MyApp::_playFrames( int begin, int end, bool bOptimize )
 
 	m_pStreamPlayer->clearDirtyRects();
 
+
+	std::ostringstream	logStream;
+	if( pBackendLogDisplay )
+		m_pBackendLogger->setOStream(&logStream);
+
 	if( bOptimize )
 	{
 		m_pStreamPump->pumpAllFrames(m_pStreamTrimGfxBackend);
@@ -1356,6 +1404,13 @@ void MyApp::_playFrames( int begin, int end, bool bOptimize )
 	}
 	else
 		m_pStreamPump->pumpAll();
+
+	if( pBackendLogDisplay )
+	{
+		pBackendLogDisplay->editor.setText(logStream.str());
+		m_pBackendLogger->setOStream(nullptr);
+	}
+
 }
 
 //____ _logFrames() ___________________________________________________________
@@ -1383,7 +1438,7 @@ void MyApp::_logFrames( int begin, int end, bool bOptimize, TextEditor * pDispla
 }
 
 //____ _logBackend() ___________________________________________________________
-
+/*
 void MyApp::_logBackend( int begin, int end, bool bOptimize, TextEditor * pDisplay )
 {
 	uint8_t * pBegin = m_frames[begin];
@@ -1408,6 +1463,7 @@ void MyApp::_logBackend( int begin, int end, bool bOptimize, TextEditor * pDispl
 
 	pDisplay->editor.setText( logStream.str() );
 }
+ */
 
 //____ _updateFrameCounterAndSlider() _________________________________________
 
@@ -1476,7 +1532,7 @@ void MyApp::_updateDebugOverlays()
 	
 	for( int i = 0 ; i < m_debugOverlays.size() ; i++ )
 	{
-		CanvasRef canvas = (CanvasRef) (i+1);
+		CanvasRef canvas = (CanvasRef) (i+2);
 		auto pOverlay = m_debugOverlays[i];
 		auto [nRects, pRects] = m_pStreamPlayer->dirtyRects(canvas);
 
@@ -1502,17 +1558,17 @@ ScrollPanel_p MyApp::_standardScrollPanel()
 {
 	auto pWidget = ScrollPanel::create();
 
-	pWidget->scrollbarX.setBackground(BoxSkin::create(WGBP(BoxSkin,
+	pWidget->scrollbarX.setBackSkin(BoxSkin::create(WGBP(BoxSkin,
 		_.color = Color8::DarkOliveGreen,
 		_.outlineThickness = 1,
 		_.outlineColor = Color8::Black)));
-	pWidget->scrollbarX.setBar(m_pPlateSkin);
+	pWidget->scrollbarX.setBarSkin(m_pPlateSkin);
 
-	pWidget->scrollbarY.setBackground(BoxSkin::create(WGBP(BoxSkin,
+	pWidget->scrollbarY.setBackSkin(BoxSkin::create(WGBP(BoxSkin,
 		_.color = Color8::DarkOliveGreen,
 		_.outlineThickness = 1,
 		_.outlineColor = Color8::Black)));
-	pWidget->scrollbarY.setBar(m_pPlateSkin);
+	pWidget->scrollbarY.setBarSkin(m_pPlateSkin);
 
 	pWidget->setAutohideScrollbars(true, true);
 	pWidget->setSizeConstraints(SizeConstraint::GreaterOrEqual, SizeConstraint::GreaterOrEqual);

@@ -1,25 +1,24 @@
 /*=========================================================================
 
-						 >>> WonderGUI <<<
+                             >>> WonderGUI <<<
 
-  This file is part of Tord Jansson's WonderGUI Graphics Toolkit
-  and copyright (c) Tord Jansson, Sweden [tord.jansson@gmail.com].
+  This file is part of Tord Bärnfors' WonderGUI UI Toolkit and copyright
+  Tord Bärnfors, Sweden [mail: first name AT barnfors DOT c_o_m].
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is free software; you can redistribute
+  The WonderGUI UI Toolkit is free software; you can redistribute
   this file and/or modify it under the terms of the GNU General Public
   License as published by the Free Software Foundation; either
   version 2 of the License, or (at your option) any later version.
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is also available for use in commercial
-  closed-source projects under a separate license. Interested parties
-  should contact Tord Jansson [tord.jansson@gmail.com] for details.
+  The WonderGUI UI Toolkit is also available for use in commercial
+  closed source projects under a separate license. Interested parties
+  should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-
 #include <wg_blockslideskin.h>
 #include <wg_geo.h>
 #include <wg_util.h>
@@ -50,14 +49,10 @@ namespace wg
 		m_slideDuration = bp.slideDuration;
 		m_slideState = bp.slideState;
 
-		m_gradient	= bp.gradient;
+		m_pTintmap	= bp.tintmap;
 		m_blendMode = bp.blendMode;
 
 		m_transitionTimes[int(m_slideState)] = m_slideDuration;
-
-		m_stateColors[0] = bp.color;
-
-
 
 		Axis slideAxis = bp.slideDirection == Direction::Up || bp.slideDirection == Direction::Down ? Axis::Y : Axis::X;
 
@@ -106,43 +101,109 @@ namespace wg
 		else if (m_slideDirection == Direction::Left)
 			block.x += m_slideDistance;
 
-		m_stateBlocks[0] = block.pos();
 
+		// Generate lists of states that affects shift, color and block.
 
+		State	shiftingStates[State::NbStates];
+		Coord	stateShifts[State::NbStates];
+
+		State	colorStates[State::NbStates];
+		HiColor stateColors[State::NbStates];
+
+		State	blockStates[State::NbStates];
+		Coord	stateBlocks[State::NbStates];
+
+		int 	nbShiftingStates = 1;
+		int		nbColorStates = 1;
+		int		nbBlockStates = 1;
+
+		shiftingStates[0] = State::Default;
+		colorStates[0] = State::Default;
+		blockStates[0] = State::Default;
+
+		stateShifts[0] = {0,0};
+		stateColors[0] = bp.color;
+		stateBlocks[0] = block;
+
+		Coord blockOfs = block.pos();
 		Coord pitch = slideAxis == Axis::X ? Coord(0, block.h + bp.blockSpacing) : Coord(block.w + bp.blockSpacing, 0);
 
-		int ofs = 0;
-		for ( auto& stateInfo : bp.states )
+		for (auto& stateInfo : bp.states)
 		{
+			int index = stateInfo.state;
+
+			if (stateInfo.data.contentShift.x != 0 || stateInfo.data.contentShift.y != 0)
 			{
-				int index = stateInfo.state;
+				int index = stateInfo.state == State::Default ? 0 : nbShiftingStates++;
+				shiftingStates[index] = stateInfo.state;
+				stateShifts[index] = stateInfo.data.contentShift;
+				m_bContentShifting = true;
+			}
 
-				if (stateInfo.data.contentShift.x != 0 || stateInfo.data.contentShift.y != 0)
-				{
-					m_contentShiftStateMask.setBit(index);
-					m_contentShift[index] = stateInfo.data.contentShift;
-					m_bContentShifting = true;
-				}
+			if ( stateInfo.state != State::Default && !stateInfo.data.blockless )
+			{
+				int index = stateInfo.state == State::Default ? 0 : nbBlockStates++;
+				stateBlocks[index] = blockOfs + pitch * index;
+				blockStates[index] = stateInfo.state;
+			}
 
-				if ( !stateInfo.data.blockless && stateInfo.state != State::Default )
-				{
-					ofs++;
-					m_stateBlockMask.setBit(index);
-					m_stateBlocks[index] = block.pos() + pitch * ofs;
-				}
-
-				if (stateInfo.data.color != HiColor::Undefined)
-				{
-					m_stateColorMask.setBit(index);
-					m_stateColors[index] = stateInfo.data.color;
-				}
-
+			if(stateInfo.data.color != HiColor::Undefined )
+			{
+				int index = stateInfo.state == State::Default ? 0 : nbColorStates++;
+				colorStates[index] = stateInfo.state;
+				stateColors[index] = stateInfo.data.color;
 			}
 		}
 
-		_updateContentShift();
-		_updateUnsetStateBlocks();
-		_updateUnsetStateColors();
+		// Calc size of index table for block and color, get their index masks & shifts.
+
+		int	blockIndexEntries;
+		int	colorIndexEntries;
+
+		std::tie(blockIndexEntries,m_blockIndexMask,m_blockIndexShift) = calcStateToIndexParam(nbBlockStates, blockStates);
+		std::tie(colorIndexEntries,m_colorIndexMask,m_colorIndexShift) = calcStateToIndexParam(nbColorStates, colorStates);
+
+
+		// Calculate memory needed for all state data
+
+		int shiftBytes 		= _bytesNeededForContentShiftData(nbShiftingStates, shiftingStates);
+		int blockBytes		= sizeof(Coord) * nbBlockStates;
+		int colorBytes		= sizeof(HiColor) * nbColorStates;
+		int indexBytes		= blockIndexEntries+colorIndexEntries;
+
+		// Allocate and pupulate memory for state data
+
+		m_pStateData = malloc(shiftBytes + blockBytes + colorBytes + indexBytes);
+
+		auto pDest = (uint8_t*) m_pStateData;
+
+		auto pCoords = _prepareForContentShiftData(pDest, nbShiftingStates, shiftingStates);
+		for( int i = 0 ; i < nbShiftingStates ; i++ )
+			pCoords[i] = stateShifts[i];
+
+		pDest += shiftBytes;
+
+		auto pBlocks = (Coord*) pDest;
+		for( int i = 0 ; i < nbBlockStates ; i++ )
+			pBlocks[i] = stateBlocks[i];
+
+		m_pBlocks = pBlocks;
+		pDest += blockBytes;
+
+		auto pColors = (HiColor*) pDest;
+		for( int i = 0 ; i < nbColorStates ; i++ )
+			pColors[i] = stateColors[i];
+
+		m_pColors = pColors;
+
+		pDest += colorBytes;
+
+		m_pBlockIndexTab = pDest;
+		m_pColorIndexTab = pDest + blockIndexEntries;
+
+		generateStateToIndexTab(m_pBlockIndexTab, nbBlockStates, blockStates);
+		generateStateToIndexTab(m_pColorIndexTab, nbColorStates, colorStates);
+
 		_updateOpaqueFlags();
 	}
 
@@ -172,8 +233,7 @@ namespace wg
 
 		RectSPX canvas = _canvas - align(ptsToSpx(m_spacing, scale)) + align(ptsToSpx(m_overflow, scale));
 
-		int idx = state;
-		RenderSettingsWithGradient settings(pDevice, m_layer, m_blendMode, m_stateColors[idx], canvas, m_gradient);
+		RenderSettingsWithTintmap settings(pDevice, m_layer, m_blendMode, _getColor(state), canvas, m_pTintmap);
 
 		pDevice->setBlitSource(m_pSurface);
 
@@ -186,37 +246,42 @@ namespace wg
 
 	RectSPX BlockSlideSkin::_partInCanvas(int scale, State state, float* pStateFractions) const
 	{
-		int idx = state;
-		Coord blockOfs = m_stateBlocks[idx];
+		Coord blockOfs = _getBlock(state);
 
 		Rect source = { blockOfs, m_blockSize };
 
 		State	slideStateMask;
 		switch (m_slideState)
 		{
-		case StateBits::Focused:
+		case PrimState::Focused:
 			slideStateMask = State::Focused;
 			break;
-		case StateBits::Hovered:
+		case PrimState::Hovered:
 			slideStateMask = State::Hovered;
 			break;
-		case StateBits::Pressed:
+		case PrimState::Pressed:
 			slideStateMask = State::Pressed;
 			break;
-		case StateBits::Selected:
-			slideStateMask = State::Selected;
-			break;
-		case StateBits::Targeted:
+		case PrimState::Targeted:
 			slideStateMask = State::Targeted;
 			break;
-		case StateBits::Disabled:
+		case PrimState::Selected:
+			slideStateMask = State::Selekted;
+			break;
+		case PrimState::Checked:
+			slideStateMask = State::Checked;
+			break;
+		case PrimState::Flagged:
+			slideStateMask = State::Flagged;
+			break;
+		case PrimState::Disabled:
 			slideStateMask = State::Disabled;
 			break;
 		default:
 			assert(false);
 		}
 
-		bool bMaximized = ((slideStateMask.bitmask() & state.bitmask()) != 0);
+		bool bMaximized = ((slideStateMask.index() & state.index()) != 0);
 
 		float offset = 0.f;
 		if (pStateFractions != nullptr)
@@ -327,7 +392,7 @@ namespace wg
 			bOpaque = false;
 		else if (m_blendMode == BlendMode::Replace)
 			bOpaque = true;
-		else if (!m_gradient.isUndefined() && !m_gradient.isOpaque())
+		else if (m_pTintmap && !m_pTintmap->isOpaque())
 			bOpaque = false;
 		else if (m_blendMode == BlendMode::Blend)
 		{
@@ -339,43 +404,14 @@ namespace wg
 
 		if (bTintDecides)
 		{
-			for (int i = 0; i < State::IndexAmount; i++)
-				m_bStateOpaque[i] = m_stateColors[i].a == 4096;
+			for (int i = 0; i < State::NbStates; i++)
+				m_bStateOpaque[i] = _getColor((StateEnum)i).a == 4096;
 		}
 		else
 		{
-			for (int i = 0; i < State::IndexAmount; i++)
+			for (int i = 0; i < State::NbStates; i++)
 				m_bStateOpaque[i] = bOpaque;
 		}
 	}
-
-	//____ _updateUnsetStateBlocks() _______________________________________________
-
-	void BlockSlideSkin::_updateUnsetStateBlocks()
-	{
-		for (int i = 0; i < State::IndexAmount; i++)
-		{
-			if (!m_stateBlockMask.bit(i))
-			{
-				int bestAlternative = bestStateIndexMatch(i, m_stateBlockMask);
-				m_stateBlocks[i] = m_stateBlocks[bestAlternative];
-			}
-		}
-	}
-
-	//____ _updateUnsetStateColors() _______________________________________________
-
-	void BlockSlideSkin::_updateUnsetStateColors()
-	{
-		for (int i = 0; i < State::IndexAmount; i++)
-		{
-			if (!m_stateColorMask.bit(i))
-			{
-				int bestAlternative = bestStateIndexMatch(i, m_stateColorMask);
-				m_stateColors[i] = m_stateColors[bestAlternative];
-			}
-		}
-	}
-
 
 }

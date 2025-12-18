@@ -1,22 +1,22 @@
 /*=========================================================================
 
-						 >>> WonderGUI <<<
+                             >>> WonderGUI <<<
 
-  This file is part of Tord Jansson's WonderGUI Graphics Toolkit
-  and copyright (c) Tord Jansson, Sweden [tord.jansson@gmail.com].
+  This file is part of Tord Bärnfors' WonderGUI UI Toolkit and copyright
+  Tord Bärnfors, Sweden [mail: first name AT barnfors DOT c_o_m].
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is free software; you can redistribute
+  The WonderGUI UI Toolkit is free software; you can redistribute
   this file and/or modify it under the terms of the GNU General Public
   License as published by the Free Software Foundation; either
   version 2 of the License, or (at your option) any later version.
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is also available for use in commercial
-  closed-source projects under a separate license. Interested parties
-  should contact Tord Jansson [tord.jansson@gmail.com] for details.
+  The WonderGUI UI Toolkit is also available for use in commercial
+  closed source projects under a separate license. Interested parties
+  should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
 #ifndef WG_TEXTSTYLE_DOT_H
@@ -164,30 +164,80 @@ namespace wg
 		TextStyle( const Blueprint& blueprint );
 		virtual ~TextStyle();
 
-		void		_refreshSize();
-		void		_refreshColor();
-		void		_refreshBgColor();
-		void		_refreshDecoration();
+		int _findOrAddState(State searchFor, State * pStates, int& nbStates)
+		{
+			int index = 0;
+			while( index < nbStates && pStates[index] != searchFor )
+				index++;
+
+			if( index == nbStates )
+				nbStates++;
+
+			return index;
+		}
+
+		const pts		_getSize(State state) const
+		{
+						int idxTabEntry = (state.index() & m_sizeIndexMask) >> m_sizeIndexShift;
+						int entry = m_pSizeIndexTab[idxTabEntry];
+						return m_pSizes[entry];
+		}
+
+		const HiColor&	_getColor(State state) const
+		{
+						int idxTabEntry = (state.index() & m_colorIndexMask) >> m_colorIndexShift;
+						int entry = m_pColorIndexTab[idxTabEntry];
+						return m_pColors[entry];
+		}
+
+		const HiColor&	_getBackColor(State state) const
+		{
+						int idxTabEntry = (state.index() & m_backColorIndexMask) >> m_backColorIndexShift;
+						int entry = m_pBackColorIndexTab[idxTabEntry];
+						return m_pBackColors[entry];
+		}
+
+		const TextDecoration _getDecoration(State state) const
+		{
+						int idxTabEntry = (state.index() & m_decorationIndexMask) >> m_decorationIndexShift;
+						int entry = m_pDecorationIndexTab[idxTabEntry];
+						return m_pDecorations[entry];
+		}
+
+		void *				m_pStateData;
 
 		Font_p				m_pFont;
 		TextLink_p			m_pLink;
 		BlendMode			m_blendMode = BlendMode::Blend;
 		BlendMode			m_backBlendMode = BlendMode::Blend;
 
-		pts					m_size[State::IndexAmount];
-		HiColor				m_color[State::IndexAmount];
-		HiColor				m_backColor[State::IndexAmount];
-		TextDecoration		m_decoration[State::IndexAmount];
+		uint8_t				m_sizeIndexMask;
+		uint8_t				m_sizeIndexShift;
+		uint8_t*			m_pSizeIndexTab;			// Table with index values into m_pSizes for each mode (72) or less.
+		pts*				m_pSizes;					// Contains sizes for states.
 
-		Bitmask<uint32_t>	m_sizeSetMask = 0;
-		Bitmask<uint32_t>	m_colorSetMask = 0;
-		Bitmask<uint32_t>	m_backColorSetMask = 0;
-		Bitmask<uint32_t>	m_decorationSetMask = 0;
+		uint8_t				m_colorIndexMask;
+		uint8_t				m_colorIndexShift;
+		uint8_t*			m_pColorIndexTab;			// Table with index values into m_pColors for each mode (72) or less.
+		HiColor*			m_pColors;					// Contains colors for states.
 
-		bool				m_bStaticColor = true;         // Combined color is identical in all states.
-		bool				m_bStaticBgColor = true;       // Combined background color is identical in all states.
-		bool				m_bStaticSize = true;          // Combined size is identical for in states.
-		bool				m_bStaticDecoration = true;    // Combined decoration is identical in all states.
+		uint8_t				m_backColorIndexMask;
+		uint8_t				m_backColorIndexShift;
+		uint8_t*			m_pBackColorIndexTab;		// Table with index values into m_pBackColors for each mode (72) or less.
+		HiColor*			m_pBackColors;				// Contains back colors for states.
+
+		uint8_t				m_decorationIndexMask;
+		uint8_t				m_decorationIndexShift;
+		uint8_t*			m_pDecorationIndexTab;		// Table with index values into m_pDecorations for each mode (72) or less.
+		TextDecoration*		m_pDecorations;				// Contains decorations for states.
+
+		int 				m_nUniqueStates;			// States specified in blueprint. Saved so we easier can recreate blueprint.
+		State *				m_pUniqueStates;
+
+		bool				m_bStaticColor = true;      // Combined color is identical in all states.
+		bool				m_bStaticBgColor = true;    // Combined background color is identical in all states.
+		bool				m_bStaticSize = true;       // Combined size is identical in all states.
+		bool				m_bStaticDecoration = true; // Combined decoration is identical in all states.
 
 		TextStyle_h			m_handle;
 
@@ -211,25 +261,25 @@ namespace wg
 	//______________________________________________________________________________
 	inline HiColor TextStyle::color( State state ) const
 	{
-		return m_color[state];
+		return _getColor(state);
 	}
 
 	//______________________________________________________________________________
 	inline 	HiColor TextStyle::backColor( State state ) const
 	{
-		return m_backColor[state];
+		return _getBackColor(state);
 	}
 
 	//______________________________________________________________________________
 	inline pts TextStyle::size( State state ) const
 	{
-		return m_size[state];
+		return _getSize(state);
 	}
 
 	//______________________________________________________________________________
 	inline TextDecoration TextStyle::decoration( State state ) const
 	{
-		return m_decoration[state];
+		return _getDecoration(state);
 	}
 
 	//______________________________________________________________________________

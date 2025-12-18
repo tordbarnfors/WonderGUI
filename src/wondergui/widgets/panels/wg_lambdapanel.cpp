@@ -1,25 +1,24 @@
 /*=========================================================================
 
-						 >>> WonderGUI <<<
+                             >>> WonderGUI <<<
 
-  This file is part of Tord Jansson's WonderGUI Graphics Toolkit
-  and copyright (c) Tord Jansson, Sweden [tord.jansson@gmail.com].
+  This file is part of Tord Bärnfors' WonderGUI UI Toolkit and copyright
+  Tord Bärnfors, Sweden [mail: first name AT barnfors DOT c_o_m].
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is free software you can redistribute
+  The WonderGUI UI Toolkit is free software; you can redistribute
   this file and/or modify it under the terms of the GNU General Public
-  License as published by the Free Software Foundation either
+  License as published by the Free Software Foundation; either
   version 2 of the License, or (at your option) any later version.
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is also available for use in commercial
-  closed-source projects under a separate license. Interested parties
-  should contact Tord Jansson [tord.jansson@gmail.com] for details.
+  The WonderGUI UI Toolkit is also available for use in commercial
+  closed source projects under a separate license. Interested parties
+  should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-
 #include <wg_lambdapanel.h>
 #include <wg_patches.h>
 #include <wg_util.h>
@@ -34,11 +33,11 @@ namespace wg
 	using namespace Util;
 
 	template class DynamicSlotVector<LambdaPanelSlot>;
-	template class Panel<LambdaPanelSlot>;
+	template class PanelTemplate<LambdaPanelSlot>;
 
 
 	const TypeInfo LambdaPanel::TYPEINFO = { "LambdaPanel", &Panel::TYPEINFO };
-	const TypeInfo LambdaPanelSlot::TYPEINFO = { "LambdaPanelSlot", &DynamicSlot::TYPEINFO };
+	const TypeInfo LambdaPanelSlot::TYPEINFO = { "LambdaPanelSlot", &PanelSlot::TYPEINFO };
 
 //____ LambdaPanelSlot::setFunction() ____________________________________________________
 
@@ -355,7 +354,7 @@ namespace wg
 
 	void LambdaPanel::_resize( const SizeSPX& size, int scale )
 	{
-		Panel::_resize( size, scale );
+		PanelTemplate::_resize( size, scale );
 
 		for (auto& slot : slots)
 			_updateGeo(&slot, false, false);

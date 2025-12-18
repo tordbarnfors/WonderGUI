@@ -1,25 +1,24 @@
 /*=========================================================================
 
-						 >>> WonderGUI <<<
+                             >>> WonderGUI <<<
 
-  This file is part of Tord Jansson's WonderGUI Graphics Toolkit
-  and copyright (c) Tord Jansson, Sweden [tord.jansson@gmail.com].
+  This file is part of Tord Bärnfors' WonderGUI UI Toolkit and copyright
+  Tord Bärnfors, Sweden [mail: first name AT barnfors DOT c_o_m].
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is free software; you can redistribute
+  The WonderGUI UI Toolkit is free software; you can redistribute
   this file and/or modify it under the terms of the GNU General Public
   License as published by the Free Software Foundation; either
   version 2 of the License, or (at your option) any later version.
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is also available for use in commercial
-  closed-source projects under a separate license. Interested parties
-  should contact Tord Jansson [tord.jansson@gmail.com] for details.
+  The WonderGUI UI Toolkit is also available for use in commercial
+  closed source projects under a separate license. Interested parties
+  should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-
 #ifndef	WG_GEO_DOT_H
 #define	WG_GEO_DOT_H
 #pragma once
@@ -341,6 +340,7 @@ namespace wg
 		inline void limit( const SizeT<Type>& min, const SizeT<Type>& max );
 		inline void clear()		{ w = 0; h = 0; }
 		inline bool	isEmpty() const { return (w == 0 && h == 0); }
+		inline bool	isValid() const { return (w >= 0 && h >= 0); }
 
 		//.____ Operators ___________________________________________
 
@@ -520,6 +520,7 @@ namespace wg
 		inline Type bottom() const;								///< @brief Get Y coordinate of bottom border.
 
 		inline bool	isEmpty() const;							///< @brief Check if rectangle has no area.
+		inline bool	isValid() const;							///< @brief Check that width and height are not negtive.
 		inline void clear();									///< @brief Sets all values to zero.
 
 		inline CoordT<Type> distance( CoordT<Type> coord ) const;   ////< @brief Get distance (signed) between coordinate and rectangle. 0 if inside.
@@ -1043,6 +1044,16 @@ namespace wg
 	{
 		return (w==0||h==0)?true:false;
 	}
+
+	 //_____________________________________________________________________________
+	 /**
+	  * 	Check that rect doesn't have negative width or height.
+	  **/
+	 template<typename Type>
+	 inline bool	RectT<Type>::isValid() const
+	 {
+		 return (w >= 0 && h >= 0) ? true : false;
+	 }
 
 	//_____________________________________________________________________________
 	/**

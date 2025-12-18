@@ -13,9 +13,9 @@ public:
 		addTest("GradientBlur", &BlurTests::setGradientAndBlurbrush, &BlurTests::blur, &BlurTests::clearTint);
 	}
 
-	bool init(GfxDevice * pDevice, const RectI& canvas, WonderApp::Visitor * pAppVisitor)
+	bool init(GfxDevice * pDevice, const RectI& canvas, wapp::API * pAppAPI)
 	{
-//		m_pImg = pAppVisitor->loadSurface("resources/mipmaptest.png", pDevice->surfaceFactory());
+//		m_pImg = pAppAPI->loadSurface("resources/mipmaptest.png", pDevice->surfaceFactory());
 //		if (!m_pImg)
 //			return false;
 
@@ -41,13 +41,14 @@ public:
 
 	bool clearTint(GfxDevice* pDevice, const RectI& canvas)
 	{
-		pDevice->clearTint();
+		pDevice->clearTintColor();
+		pDevice->clearTintmap();
 		return true;
 	}
 
 	bool setTintAndBlurbrush(GfxDevice* pDevice, const RectI& canvas)
 	{
-		pDevice->setTint(Color::Blue);
+		pDevice->setTintColor(Color::Blue);
 		setBlurbrush(pDevice, canvas);
 		return true;
 	}

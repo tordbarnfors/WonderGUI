@@ -10,15 +10,18 @@ set(SOURCES
 	sdlwindow.cpp
 	tinyfiledialogs.h
 	tinyfiledialogs.c
-	../common/wonderapp.h
-	../common/window.h
-	../common/window.cpp
+	../common/wappapi.h
+	../common/wappwindow.h
+	../common/wappwindow.cpp
+    ../common/wappwindowapi.h
+    ../common/wonderapp.h
 )
 
 set(INCDIRS
 	${CMAKE_CURRENT_LIST_DIR}
 	${WONDERGUI_INCDIRS}
 	${WGFREETYPEFONT_INCDIRS}
+	${WGDEBUGGER_INCDIRS}
 	${PROJECT_SOURCE_DIR}/wonderapp/common
 	${PROJECT_SOURCE_DIR}
 )
@@ -27,13 +30,13 @@ set(INCDIRS
 
 add_library(wappsdl2sw STATIC
     ${SOURCES}
-    sdlwindow_sw.h
-    sdlwindow_sw.cpp
+    backend_software.cpp
 )
 
 target_include_directories(wappsdl2sw PRIVATE
     ${INCDIRS}
     ${WGSOFTGFX_INCDIRS}
+    ${WGDEBUGGER_INCDIRS}
     ${SDL2_INCDIR}
     ${SDL2IMAGE_INCDIR}
 )
@@ -50,6 +53,8 @@ target_link_libraries(wappsdl2sw PRIVATE
     wgsoftgfx
     wgfreetypefont
     wondergui
+    wgdebugger
+    wg_theme_simplistic
     ${FREETYPE2_LIB}
     ${SDL2_LIBS}
     ${SDL2IMAGE_LIBS}
@@ -59,8 +64,7 @@ target_link_libraries(wappsdl2sw PRIVATE
 
 add_library(wappsdl2gl STATIC
     ${SOURCES}
-    sdlwindow_gl.h
-    sdlwindow_gl.cpp
+    backend_opengl.cpp
 )
 
 #target_compile_definitions(wappsdl2gl PRIVATE USE_OPENGL)
@@ -68,6 +72,7 @@ add_library(wappsdl2gl STATIC
 target_include_directories(wappsdl2gl PRIVATE
     ${INCDIRS}
     ${WGOPENGLGFX_INCDIRS}
+    ${WGDEBUGGER_INCDIRS}
     ${SDL2_INCDIR}
     ${SDL2IMAGE_INCDIR}
 )
@@ -85,6 +90,8 @@ target_link_libraries(wappsdl2gl PRIVATE
     wgopenglgfx
     wgfreetypefont
     wondergui
+    wgdebugger
+    wg_theme_simplistic
     ${FREETYPE2_LIB}
     ${SDL2_LIBS}
     ${SDL2IMAGE_LIBS}
@@ -98,8 +105,7 @@ if(APPLE)
 
     add_library(wappsdl2metal STATIC
         ${SOURCES}
-        sdlwindow_metal.h
-        sdlwindow_metal.mm
+        backend_metal.mm
     )
 
     #target_compile_definitions(wappsdl2metal PRIVATE USE_OPENGL)
@@ -107,6 +113,7 @@ if(APPLE)
     target_include_directories(wappsdl2metal PRIVATE
         ${INCDIRS}
         ${WGMETALGFX_INCDIRS}
+        ${WGDEBUGGER_INCDIRS}
         ${SDL2_INCDIR}
         ${SDL2IMAGE_INCDIR}
     )
@@ -124,6 +131,8 @@ if(APPLE)
         wgmetalgfx
         wgfreetypefont
         wondergui
+        wgdebugger
+        wg_theme_simplistic
         ${FREETYPE2_LIB}
         ${SDL2_LIBS}
         ${SDL2IMAGE_LIBS}

@@ -67,6 +67,7 @@ public class SurfaceWriter : Objekt
 	}
 
 
+	[StructLayout(LayoutKind.Sequential)]
 	protected struct C_Blueprint
 	{
 		public int saveInfo;

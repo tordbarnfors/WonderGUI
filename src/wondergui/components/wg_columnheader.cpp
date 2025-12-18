@@ -1,31 +1,31 @@
 /*=========================================================================
 
-						 >>> WonderGUI <<<
+                             >>> WonderGUI <<<
 
-  This file is part of Tord Jansson's WonderGUI Graphics Toolkit
-  and copyright (c) Tord Jansson, Sweden [tord.jansson@gmail.com].
+  This file is part of Tord Bärnfors' WonderGUI UI Toolkit and copyright
+  Tord Bärnfors, Sweden [mail: first name AT barnfors DOT c_o_m].
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is free software; you can redistribute
+  The WonderGUI UI Toolkit is free software; you can redistribute
   this file and/or modify it under the terms of the GNU General Public
   License as published by the Free Software Foundation; either
   version 2 of the License, or (at your option) any later version.
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is also available for use in commercial
-  closed-source projects under a separate license. Interested parties
-  should contact Tord Jansson [tord.jansson@gmail.com] for details.
+  The WonderGUI UI Toolkit is also available for use in commercial
+  closed source projects under a separate license. Interested parties
+  should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-
 #include <wg_columnheader.h>
 #include <wg_msg.h>
 #include <wg_inputhandler.h>
 
 namespace wg
 {
+	const TypeInfo	ColumnHeader::TYPEINFO = { "ColumnHeader", &Component::TYPEINFO };
 
 	//____ constructor ___________________________________________________________
 
@@ -43,6 +43,14 @@ namespace wg
 	{
 		_layout()->removeText(this);
 	}
+
+	//____ typeInfo() _________________________________________________________
+
+	const TypeInfo& ColumnHeader::typeInfo(void) const
+	{
+		return TYPEINFO;
+	}
+
 
 	//____ _initFromBlueprint() ___________________________________________________
 
@@ -130,7 +138,7 @@ namespace wg
 		if (order != m_sortOrder)
 		{
 			m_sortOrder = order;
-			m_state.setSelected(order != SortOrder::None);
+			m_state.setChecked(order != SortOrder::None);
 			_requestRender();
 		}
 	}
@@ -141,7 +149,7 @@ namespace wg
 	{
 		State oldState = m_state;
 		m_state = state;
-		m_state.setSelected(m_sortOrder != SortOrder::None);
+		m_state.setChecked(m_sortOrder != SortOrder::None);
 		_layout()->onStateChanged(this, state, oldState);
 
 
@@ -287,7 +295,7 @@ namespace wg
 						else
 							m_sortOrder = SortOrder::Ascending;
 
-						m_state.setSelected(true);
+						m_state.setChecked(true);
 						_notify( ComponentNotif::SortOrderChanged, 0, nullptr );
 					}
 					pMsg->swallow();

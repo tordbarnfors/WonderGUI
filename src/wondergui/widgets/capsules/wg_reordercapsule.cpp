@@ -1,31 +1,31 @@
 /*=========================================================================
 
-						>>> WonderGUI <<<
+                             >>> WonderGUI <<<
 
- This file is part of Tord Jansson's WonderGUI Graphics Toolkit
- and copyright (c) Tord Jansson, Sweden [tord.jansson@gmail.com].
+  This file is part of Tord Bärnfors' WonderGUI UI Toolkit and copyright
+  Tord Bärnfors, Sweden [mail: first name AT barnfors DOT c_o_m].
 
-						   -----------
+                                -----------
 
- The WonderGUI Graphics Toolkit is free software; you can redistribute
- this file and/or modify it under the terms of the GNU General Public
- License as published by the Free Software Foundation; either
- version 2 of the License, or (at your option) any later version.
+  The WonderGUI UI Toolkit is free software; you can redistribute
+  this file and/or modify it under the terms of the GNU General Public
+  License as published by the Free Software Foundation; either
+  version 2 of the License, or (at your option) any later version.
 
-						   -----------
+                                -----------
 
- The WonderGUI Graphics Toolkit is also available for use in commercial
- closed-source projects under a separate license. Interested parties
- should contact Tord Jansson [tord.jansson@gmail.com] for details.
+  The WonderGUI UI Toolkit is also available for use in commercial
+  closed source projects under a separate license. Interested parties
+  should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-
 #include <wg_reordercapsule.h>
 #include <wg_msg.h>
 #include <wg_colorskin.h>
 #include <wg_dataset.h>
 #include <wg_packpanel.h>
 #include <wg_msgrouter.h>
+#include <wg_sizecapsule.h>
 
 namespace wg
 {
@@ -111,6 +111,13 @@ namespace wg
 		}
 	}
 
+	//____ setDragOutside() ______________________________________________________
+
+	void ReorderCapsule::setDragOutside( bool bDragOutside )
+	{
+		m_bDragOutside = bDragOutside;
+	}
+
 	//____ _receive() ____________________________________________________________
 
 	void ReorderCapsule::_receive(Msg* _pMsg)
@@ -129,7 +136,7 @@ namespace wg
 
 				auto pickOfs = ptsToSpx( pMsg->pickOfs(), m_scale );
 
-				Widget * pWidget = _findWidget(pickOfs, SearchMode::ActionTarget);
+				Widget_p pWidget = _findWidget(pickOfs, SearchMode::ActionTarget);	// Widget_p since we need to secure refcount.
 
 				while( pWidget != nullptr && pWidget != this && pWidget->parent() != pContainer )
 					pWidget = pWidget->parent();
@@ -139,13 +146,21 @@ namespace wg
 				if( pWidget && pWidget != this )
 				{
 					auto pPackPanel = static_cast<PackPanel*>(pContainer);
-					auto pFound = pPackPanel->slots.find(pWidget);
+					auto pSlot = pPackPanel->slots.find(pWidget);
 
 					Coord offset = -(pMsg->pointerPos() - pWidget->globalGeo().pos());
 
-					auto pDataset = ReorderCapsule::DropData::create({pWidget,pFound->weight()});
+					auto pDataset = DropData::create({pWidget,pSlot->weight()});
 					pMsg->setContent(DropType::Widget, m_pickCategory, pDataset);
-					pMsg->setDragWidget(pWidget, offset );
+
+					m_pHoveredPosFiller->setDefaultSize(pWidget->defaultSize() );
+					pSlot->setWidget(m_pHoveredPosFiller);
+
+					auto pSizeCapsule = SizeCapsule::create();
+					pSizeCapsule->setDefaultSize(pWidget->size());		// Should keep its size while reordering.
+					pSizeCapsule->slot = pWidget;
+
+					pMsg->setDragWidget(pSizeCapsule, offset );
 					pMsg->setHotspot(Placement::Center);
 
 					if( !m_bDragOutside )
@@ -171,15 +186,11 @@ namespace wg
 
 
 
-					m_pickedPos = int( pFound - pPackPanel->slots.begin());
-					m_pickedWeight = pFound->weight();
+					m_pickedPos = int( pSlot - pPackPanel->slots.begin());
+					m_pickedWeight = pSlot->weight();
 
 					m_markedPos = m_pickedPos;
 					m_hoveredPos = m_pickedPos;
-
-					m_pHoveredPosFiller->setDefaultSize(pWidget->defaultSize() );
-					static_cast<DynamicSlot*>(pWidget->_slot())->setWidget(m_pHoveredPosFiller);
-
 
 					m_transitionProgress = m_pTransition->duration();
 

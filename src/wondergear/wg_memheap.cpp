@@ -1,25 +1,24 @@
 /*=========================================================================
 
-                         >>> WonderGUI <<<
+                             >>> WonderGUI <<<
 
-  This file is part of Tord Jansson's WonderGUI Graphics Toolkit
-  and copyright (c) Tord Jansson, Sweden [tord.jansson@gmail.com].
+  This file is part of Tord Bärnfors' WonderGUI UI Toolkit and copyright
+  Tord Bärnfors, Sweden [mail: first name AT barnfors DOT c_o_m].
 
-                            -----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is free software; you can redistribute
+  The WonderGUI UI Toolkit is free software; you can redistribute
   this file and/or modify it under the terms of the GNU General Public
   License as published by the Free Software Foundation; either
   version 2 of the License, or (at your option) any later version.
 
-                            -----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is also available for use in commercial
-  closed-source projects under a separate license. Interested parties
-  should contact Tord Jansson [tord.jansson@gmail.com] for details.
+  The WonderGUI UI Toolkit is also available for use in commercial
+  closed source projects under a separate license. Interested parties
+  should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-
 #include <wg_memheap.h>
 #include <wg_gearbase.h>
 #include <cstddef>
@@ -166,7 +165,7 @@ namespace wg
 		  
 		  if( pHead->boundsGuard != 0xDEADBEEF )
 		  {
-			  GearBase::throwError(ErrorLevel::Critical, ErrorCode::Internal, "Header of block being freed is corrupt. Either provided pointer is wrong or we an out-of-bounds write somewhere.", nullptr, nullptr, __func__, __FILE__, __LINE__);
+			  GearBase::throwError(ErrorLevel::Critical, ErrorCode::Internal, "Header of block being freed is corrupt. Either provided pointer is wrong or we have an out-of-bounds write somewhere.", nullptr, nullptr, __func__, __FILE__, __LINE__);
 		  }
 
 		  if( pHead->pNextBlock->boundsGuard != 0xDEADBEEF )

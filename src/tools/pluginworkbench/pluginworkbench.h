@@ -19,10 +19,11 @@ using namespace wg;
 class MyApp : public WonderApp
 {
 public:
-	bool		init(Visitor* pVisitor) override;
+	bool		init(wapp::API* pAPI) override;
 	bool		update() override;
 	void		exit() override;
 
+	void	closeWindow(wapp::Window* pWindow) override;
 
 private:
 
@@ -34,13 +35,13 @@ private:
 	typedef void (*mapInputCommandFunc)(uint32_t native_keycode, wg_modkeys modkeys, wg_editCommand command);
 
 	
-	bool			_setupGUI(Visitor* pVisitor);
-	bool			_loadSkins(Visitor* pVisitor);
+	bool			_setupGUI(wapp::API* pAPI);
+	bool			_loadSkins(wapp::API* pAPI);
 
 
-	WonderApp::Visitor * m_pAppVisitor = nullptr;
-	Window_p			m_pWindow = nullptr;
-	WonderApp::LibId	m_libId = 0;
+	wapp::API *			m_pAppAPI = nullptr;
+	wapp::Window_p		m_pWindow = nullptr;
+	wapp::LibId			m_libId = 0;
 
 
 	PluginCapsule_p		m_pPluginCapsule;
