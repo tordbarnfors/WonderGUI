@@ -3421,40 +3421,66 @@ void GfxDeviceGen2::_encodeStateChanges()
 				int nHorrColors = pTintmap->isHorizontal() ? newState.tintmapRect.w/64 : 0;
 				int nVertColors = pTintmap->isVertical() ? newState.tintmapRect.h/64 : 0;
 
-				colorBuffer.resize(tintmapStartOfs + nHorrColors + nVertColors );
+				if(nHorrColors == 0 && nVertColors == 0)
+                {
+					// Convert Tintmap to plain tint colors.
 
-				HiColor * pOutX = nHorrColors ? &colorBuffer[tintmapStartOfs] : nullptr;
-				HiColor * pOutY = nVertColors ? &colorBuffer[tintmapStartOfs + nHorrColors] : nullptr;
+					HiColor tempX, tempY;
+                    pTintmap->exportColors({1, 1}, &tempX, &tempY);
 
-				pTintmap->exportColors(newState.tintmapRect.size()/64, pOutX, pOutY);
+                    auto tintColor = tempX * tempY;
 
-				if( newState.tintColor != HiColor::Undefined )
+					if(newState.tintColor != HiColor::Undefined)
+						tintColor *= newState.tintColor;
+
+                    colorBuffer.push_back(tintColor);
+                    encodedState.tintColor = tintColor;
+
+					encodedState.pTintmap = newState.pTintmap;			// Set this for future comparisons
+                    encodedState.tintmapRect = newState.tintmapRect;	// " -
+
+                    statesChanged |= int(StateChange::TintColor);
+                }
+				else
 				{
-					// We need to tint either the horizontal or vertical colors
+                    colorBuffer.resize(tintmapStartOfs + nHorrColors + nVertColors);
 
-					HiColor * pBeg = &colorBuffer[tintmapStartOfs];
-					HiColor * pEnd = nHorrColors > 0 ? pBeg + nHorrColors : pBeg + nVertColors;
+                    HiColor* pOutX = nHorrColors ? &colorBuffer[tintmapStartOfs] : nullptr;
+                    HiColor* pOutY = nVertColors ? &colorBuffer[tintmapStartOfs + nHorrColors] : nullptr;
 
-					if( nVertColors > 0 && nVertColors < nHorrColors )
-					{
-						pBeg = pEnd;
-						pEnd += nVertColors;
-					}
+                    pTintmap->exportColors(newState.tintmapRect.size() / 64, pOutX, pOutY);
 
-					for( auto p = pBeg ; p < pEnd ; p++ )
-						*p *= newState.tintColor;
+                    if(newState.tintColor != HiColor::Undefined)
+                    {
+                        // We need to tint either the horizontal or vertical colors
+
+                        HiColor* pBeg = &colorBuffer[tintmapStartOfs];
+                        HiColor* pEnd = nHorrColors > 0 ? pBeg + nHorrColors : pBeg + nVertColors;
+
+                        if(nVertColors > 0 && nVertColors < nHorrColors)
+                        {
+                            pBeg = pEnd;
+                            pEnd += nVertColors;
+                        }
+
+                        for(auto p = pBeg; p < pEnd; p++)
+                        {
+                            *p *= newState.tintColor;
+                        }
+                    }
+
+                    cmdBuffer.secureSpace(sizeof(newState.tintmapRect) + 2 * 4);
+
+                    cmdBuffer.pushUnchecked(newState.tintmapRect);
+                    cmdBuffer.pushUnchecked(nHorrColors);
+                    cmdBuffer.pushUnchecked(nVertColors);
+
+                    encodedState.pTintmap = newState.pTintmap;
+                    encodedState.tintmapRect = newState.tintmapRect;
+
+                    statesChanged |= int(StateChange::TintMap);
 				}
 
-				cmdBuffer.secureSpace(sizeof(newState.tintmapRect) + 2*4);
-
-				cmdBuffer.pushUnchecked(newState.tintmapRect);
-				cmdBuffer.pushUnchecked(nHorrColors);
-				cmdBuffer .pushUnchecked(nVertColors);
-
-				encodedState.pTintmap = newState.pTintmap;
-				encodedState.tintmapRect = newState.tintmapRect;
-
-				statesChanged |= int(StateChange::TintMap);
 			}
 			else
 			{
