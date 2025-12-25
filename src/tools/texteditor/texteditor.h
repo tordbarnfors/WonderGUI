@@ -24,7 +24,6 @@ public:
 	void		closeWindow(wapp::Window* pWindow) override;
 
 	bool		setupGUI();
-	bool		openFile(const std::string& path);
 	bool 		createEditorWindow( const std::string& windowTitle, const std::string& path );
 	
 	// These are made public for our subclasses.

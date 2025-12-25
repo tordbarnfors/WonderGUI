@@ -124,7 +124,7 @@ bool MyApp::_setupGUI(wapp::API* pAPI)
 
 bool MyApp::selectAndLoadTTF()
 {
-	auto selectedFile = m_pAppAPI->openFileDialog("Select Font", "", {"*.ttf", "*.ttc", "*.otf"}, "Font Files");
+	auto selectedFile = m_pAppAPI->openFileDialog("Select Font", "", "", {"*.ttf", "*.ttc", "*.otf"}, "Font Files");
 
 	if (selectedFile.empty())
 		return false;
@@ -156,7 +156,7 @@ bool MyApp::saveBitmapFont()
 {
 //	static const char * filters[3] = { "*.*", "*.ttc", "*.otf" };
 	
-	std::string outputPath = m_pAppAPI->saveFileDialog("Enter output name without extension", "", {}, "");
+	std::string outputPath = m_pAppAPI->saveFileDialog("Enter output name without extension", "", "", {}, "");
 
 	if( !outputPath.empty() )
 	{

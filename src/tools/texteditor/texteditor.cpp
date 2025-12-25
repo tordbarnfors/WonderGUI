@@ -33,12 +33,11 @@ bool MyApp::init(API* pAPI)
 	if( arguments.empty() )
 	{
 		createEditorWindow("Untitled 1", "");
-		createEditorWindow("Untitled 2", "");
 
 	}
 	for ( auto& arg : arguments )
 	{
-		openFile(arg);
+		createEditorWindow("", arg);
 	}
 
 	startTime = m_pAPI->time();
@@ -228,45 +227,6 @@ ScrollPanel_p MyApp::createScrollPanel()
 	
 	
 	return pScrollPanel;
-}
-
-
-
-
-
-//____ openFile() ____________________________________________________________
-
-bool MyApp::openFile(const std::string& path)
-{
-	createEditorWindow("",path);
-
-	
-	FILE* fp;
-
-#ifdef WIN32
-	errno_t err = fopen_s(&fp, path.c_str(), "rb");
-#else
-	fp = fopen(path.c_str(), "rb");
-#endif
-	if (!fp)
-		return false;
-
-	fseek(fp, 0, SEEK_END);
-	int size = (int)ftell(fp);
-	fseek(fp, 0, SEEK_SET);
-
-	auto pText = new char[size+1];
-	int nRead = (int)fread(pText, 1, size, fp);
-	fclose(fp);
-
-	if (nRead < size)
-		return 0;
-	
-	pText[size] = 0;
-	
-	m_editorWindows.back()->setContent(pText);
-	
-	return true;
 }
 
 //____ _createWindowTitle() ___________________________________________________

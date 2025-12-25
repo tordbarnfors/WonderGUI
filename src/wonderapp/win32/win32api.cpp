@@ -23,6 +23,7 @@
 #include <win32window.h>
 
 #include <windows.h>
+#include <shobjidl.h>
 #include <fstream>
 #include <iostream>
 
@@ -60,7 +61,7 @@ int64_t Win32API::time()
 
 //____ loadBlob() _____________________________________________________________
 
-wg::Blob_p Win32API::loadBlob(const std::string& path)
+wg::Blob_p Win32API::loadBlob(const std::string& path, bool bNullTerminate)
 {
 	Blob_p	pBlob;
 	DWORD	bytesRead = 0;
@@ -85,7 +86,7 @@ wg::Blob_p Win32API::loadBlob(const std::string& path)
 	if (fileSize == 0)
 		goto cleanup;
 
-	pBlob = Blob::create(fileSize);
+	pBlob = Blob::create(fileSize, bNullTerminate);
 
 	if (!ReadFile(hFile, pBlob->data(), fileSize, &bytesRead, NULL))
 	{
@@ -269,8 +270,9 @@ std::string Win32API::inputBox(const std::string& title, const std::string& mess
 
 //____ saveFileDialog() _______________________________________________________
 
-std::string Win32API::saveFileDialog(const std::string& title, const std::string& defaultPathAndFile,
-	const std::vector<std::string>& filterPatterns, const std::string& singleFilterDescription)
+std::string Win32API::saveFileDialog(const std::string& title, const std::string& defaultPath, 
+	const std::string& defaultFilename, const std::vector<std::string>& filterPatterns, 
+	const std::string& singleFilterDescription)
 {
 	//TODO: Implement!!!
 	return "";
@@ -278,16 +280,99 @@ std::string Win32API::saveFileDialog(const std::string& title, const std::string
 
 //____ openFileDialog() _______________________________________________________
 
-std::string Win32API::openFileDialog(const std::string& title, const std::string& defaultPathAndFile,
-	const std::vector<std::string>& filterPatterns, const std::string& singleFilterDescription)
+std::string Win32API::openFileDialog(const std::string& title, const std::string& defaultPath, 
+	const std::string& defaultFilename, const std::vector<std::string>& filterPatterns, 
+	const std::string& singleFilterDescription)
 {
-	//TODO: Implement!!!
-	return "";
+	std::string result;
+
+	HRESULT hr = CoInitializeEx(NULL, COINIT_APARTMENTTHREADED);
+	if (SUCCEEDED(hr))
+	{
+		IFileOpenDialog* pFileOpen;
+		hr = CoCreateInstance(CLSID_FileOpenDialog, NULL, CLSCTX_ALL,
+			IID_IFileOpenDialog, (void**)&pFileOpen);
+
+		if (SUCCEEDED(hr))
+		{
+			pFileOpen->SetTitle(_stringToWString(title).c_str());
+			pFileOpen->SetFileName(_stringToWString(defaultFilename).c_str());
+
+			IShellItem* psiFolder;
+			hr = SHCreateItemFromParsingName(_stringToWString(defaultPath).c_str(),
+				NULL, IID_PPV_ARGS(&psiFolder));
+			if (SUCCEEDED(hr))
+			{
+				pFileOpen->SetFolder(psiFolder);
+				psiFolder->Release();
+			}
+
+			// Set up file type filters
+
+			if (!filterPatterns.empty())
+			{
+				std::string	combinedPatterns;
+				for (const auto& pattern : filterPatterns)
+				{
+					if (!combinedPatterns.empty())
+						combinedPatterns += ";";
+					combinedPatterns += pattern;
+				}
+
+				auto patternDesc = _stringToWString(singleFilterDescription);
+				auto patterns = _stringToWString(combinedPatterns);
+
+				COMDLG_FILTERSPEC fileTypes[2] = {
+					{ patternDesc.c_str(), patterns.c_str()},
+					{ L"All Files", L"*.*"}
+				};
+
+				pFileOpen->SetFileTypes(ARRAYSIZE(fileTypes), fileTypes);
+				pFileOpen->SetFileTypeIndex(1); // 1-based index (1 = first filter)
+			}
+
+
+			// Show the dialog
+			hr = pFileOpen->Show(NULL);
+
+			if (SUCCEEDED(hr))
+			{
+				IShellItem* pItem;
+				hr = pFileOpen->GetResult(&pItem);
+				if (SUCCEEDED(hr))
+				{
+					PWSTR pszFilePath;
+					hr = pItem->GetDisplayName(SIGDN_FILESYSPATH, &pszFilePath);
+					if (SUCCEEDED(hr))
+					{
+						// Get the required buffer size
+						int sizeNeeded = WideCharToMultiByte(CP_UTF8, 0, pszFilePath, -1,
+							nullptr, 0, nullptr, nullptr);
+						if (sizeNeeded > 0)
+						{
+							// Convert
+							result.resize(sizeNeeded - 1, 0); // -1 to exclude null terminator
+							WideCharToMultiByte(CP_UTF8, 0, pszFilePath, -1,
+								&result[0], sizeNeeded, nullptr, nullptr);
+						}
+
+						CoTaskMemFree(pszFilePath);
+					}
+					pItem->Release();
+				}
+			}
+			pFileOpen->Release();
+		}
+		CoUninitialize();
+	}
+
+	return result;
 }
 
 //____ openMultiFileDialog() __________________________________________________
 
-std::vector<std::string> Win32API::openMultiFileDialog(const std::string& title, const std::string& defaultPathAndFile,
+std::vector<std::string> Win32API::openMultiFileDialog(const std::string& title, 
+	const std::string& defaultPath, const std::string& defaultFilename,	
 	const std::vector<std::string>& filterPatterns, const std::string& singleFilterDescription)
 {
 	//TODO: Implement!!!
@@ -349,3 +434,23 @@ std::string Win32API::resourceDirectory()
 	return "resources/";
 }
 
+//____ _stringToWString() _____________________________________________________
+
+std::wstring Win32API::_stringToWString(const std::string& str)
+{
+	if (str.empty())
+		return std::wstring();
+
+	// Get the required buffer size
+	int sizeNeeded = MultiByteToWideChar(CP_UTF8, 0, str.c_str(), -1,
+		nullptr, 0);
+	if (sizeNeeded <= 0)
+		return std::wstring();
+
+	// Convert
+	std::wstring result(sizeNeeded - 1, 0); // -1 to exclude null terminator
+	MultiByteToWideChar(CP_UTF8, 0, str.c_str(), -1,
+		&result[0], sizeNeeded);
+
+	return result;
+}

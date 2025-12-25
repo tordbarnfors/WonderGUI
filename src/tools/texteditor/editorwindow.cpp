@@ -144,7 +144,7 @@ void EditorWindow::_clear()
 
 bool EditorWindow::_selectAndLoadFile()
 {
-	auto path = m_pAPI->openFileDialog("Load File", "", { "*.txt", "*.*" }, "Text Files");
+	auto path = m_pAPI->openFileDialog("Load File", "", "", {"*.txt"}, "Text Files");
 
 	if( path.empty() )
 		return false;
@@ -177,7 +177,7 @@ bool EditorWindow::_selectAndSaveFile()
 
 bool EditorWindow::_loadFile( const std::string& path )
 {
-	auto pBlob = m_pAPI->loadBlob(path);
+	auto pBlob = m_pAPI->loadBlob(path,true);
 	if( !pBlob )
 		return false;
 	

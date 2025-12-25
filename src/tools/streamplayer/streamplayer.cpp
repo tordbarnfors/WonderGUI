@@ -36,7 +36,7 @@ bool MyApp::init(wapp::API* pAPI)
 	{
 		std::vector<std::string>	filetypes;
 
-		streampath = pAPI->openFileDialog("Load gfxstream", "", filetypes, "");
+		streampath = pAPI->openFileDialog("Load gfxstream", "", "", filetypes, "");
 	}
 
 	if( !_loadStream(streampath) )
