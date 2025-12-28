@@ -70,6 +70,7 @@ namespace wg
 				Skin_p			skin;
 				bool			stickyFocus = false;
 				bool			tabLock = false;
+				bool			takesFocusFromChild = true;
 				String			tooltip;
 				bool			usePickHandles = false;
 			};
@@ -93,8 +94,11 @@ namespace wg
 
 			//.____ Behavior ______________________________________________________
 
+			void		setTakesFocusFromChild(bool bTakesFocus);
+			bool		takesFocusFromChild() const { return m_bTakesFocusFromChild;  }
+
 			void		setUsePickHandles( bool bUseHandles );
-			bool		usePickHandles() { return m_bUsePickHandles;}
+			bool		usePickHandles() const { return m_bUsePickHandles;}
 
 			//.____ Misc ______________________________________________________
 
@@ -114,6 +118,7 @@ namespace wg
 			template<class BP> Container( const BP& bp ) : Widget(bp) 
 			{
 				m_bUsePickHandles = bp.usePickHandles;
+				m_bTakesFocusFromChild = bp.takesFocusFromChild;
 				m_overflow = m_skin.overflow(m_scale);
 			}
 
@@ -190,6 +195,7 @@ namespace wg
 
 			bool					m_bSiblingsOverlap = true;	// Set if children (might be) overlapping each other (special considerations to be taken during rendering).		
 			bool					m_bUsePickHandles = false;
+			bool					m_bTakesFocusFromChild = true;
 			BorderSPX				m_overflow;
 
 	};

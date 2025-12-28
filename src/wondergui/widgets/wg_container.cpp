@@ -68,6 +68,13 @@ namespace wg
 			_requestResize();
 	}
 
+	//____ setTakesFocusFromChild() _______________________________________________
+
+	void Container::setTakesFocusFromChild(bool bTakesFocus)
+	{
+		m_bTakesFocusFromChild = bTakesFocus;
+	}
+
 	//____ setUsePickingHandles() ____________________________________________
 
 	void Container::setUsePickHandles( bool bUseHandles )

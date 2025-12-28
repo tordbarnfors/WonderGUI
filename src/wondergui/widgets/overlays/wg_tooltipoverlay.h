@@ -70,6 +70,7 @@ namespace wg
 			Skin_p			skin;
 			bool			stickyFocus = false;
 			bool			tabLock = false;
+			bool			takesFocusFromChild = false;
 			String			tooltip;
 			bool			usePickHandles = false;
 		};

@@ -477,7 +477,7 @@ namespace wg
 		// message.
 
 		Widget* pFocused = _focusedWidget();
-		if (pFocused)
+		if (pFocused && (!pWidget->isContainer() || static_cast<Container*>(pWidget)->takesFocusFromChild()) )
 		{
 			bool focusedIsSameOrAncestor = pFocused == pWidget ? true : pFocused->isContainer() && static_cast<Container*>(pFocused)->contains(pWidget);
 

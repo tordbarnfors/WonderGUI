@@ -44,11 +44,12 @@ namespace wg
 
 	//____ Constructor _______________________________________________________
 
-	ScrollPanel::ScrollPanel() : slot(this), scrollbarX(this, this, Axis::X), scrollbarY(this, this, Axis::Y)
+	ScrollPanel::ScrollPanel() : slot(this), scrollbarX(this, this, Axis::X), scrollbarY(this, this, Axis::Y), m_cornerSkin(this)
 	{
 		scrollbarX._setState(State::Disabled);
 		scrollbarY._setState(State::Disabled);
 
+		m_bTakesFocusFromChild = false;
 	}
 
 	//____ Destructor _________________________________________________________
@@ -1045,6 +1046,19 @@ namespace wg
 
 		if (!m_scrollbarYRegion.isEmpty())
 			scrollbarY._render(pDevice, m_scrollbarYRegion + canvas.pos(), m_scale);
+
+		if (!m_cornerSkin.isEmpty() && !m_scrollbarXRegion.isEmpty() && !m_scrollbarYRegion.isEmpty() &&
+			!m_bOverlayScrollbarX && !m_bOverlayScrollbarY)
+		{
+			RectSPX cornerRect = {
+				m_scrollbarYRegion.x,
+				m_scrollbarXRegion.y,
+				m_scrollbarYRegion.w,
+				m_scrollbarXRegion.h
+			};
+
+			m_cornerSkin.render(pDevice, cornerRect + canvas.pos(), m_scale, m_state);
+		}
 	}
 
 	//____ _maskPatches() _____________________________________________________

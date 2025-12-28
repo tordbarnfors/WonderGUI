@@ -43,8 +43,10 @@ protected:
 	void			_clear();
 	bool			_selectAndLoadFile();
 	bool			_selectAndSaveFile();
-	bool			_saveFile();
+	bool			_saveFileCallback();
 	bool			_loadFile( const std::string& path );
+	bool			_saveFile(const std::string& path);
+	void			_setPathAndTitle(const std::string& path);
 
 	MyApp*			m_pApp;
 	wapp::API*		m_pAPI;

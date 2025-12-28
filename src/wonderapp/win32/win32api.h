@@ -73,6 +73,8 @@ public:
 
 private:
 
-	std::wstring _stringToWString(const std::string& str);
+	void _openFileDialog(std::vector<std::string>* pMultiOutput, std::string* pSingleOutput, const std::string& title,
+		const std::string& defaultPath, const std::string& defaultFilename,
+		const std::vector<std::string>& filterPatterns, const std::string& singleFilterDescription);
 
 };

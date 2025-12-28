@@ -50,6 +50,8 @@ bool EditorWindow::_setupGUI()
 {
 	//
 
+	auto pTheme = m_pApp->m_pTheme;
+
 	auto pMainContainer = PackPanel::create();
 	pMainContainer->setAxis(Axis::Y);
 
@@ -60,15 +62,20 @@ bool EditorWindow::_setupGUI()
 
 	// Create our TextEditor widget
 
-	auto pTextEditor = TextEditor::create( { 	.editor = { .style = m_pApp->m_pEditorStyle },
-												.skin = m_pApp->m_pSectionSkin });
+	auto pTextEditor = TextEditor::create( WGOVR( pTheme->textEditor(), _.editor.style = m_pApp->m_pEditorStyle, _.stickyFocus = true ));
 
 	Base::msgRouter()->addRoute(pTextEditor, MsgType::TextEdit, [this](Msg * pMsg) { this->_contentModified(pMsg); } );
 	
 
 	// Create and setup a scrollpanel to wrap the text editor.
 
-	auto pScrollPanel = m_pApp->createScrollPanel();
+	auto pScrollPanel = ScrollPanel::create(pTheme->scrollPanelXY());
+
+	//	pScrollPanel->setAutohideScrollbars(true, true);
+	//	pScrollPanel->setSizeConstraints(SizeConstraint::GreaterOrEqual, SizeConstraint::GreaterOrEqual);
+
+	pScrollPanel->setTransition(CoordTransition::create(300000));
+
 
 	pScrollPanel->slot = pTextEditor;
 
@@ -97,17 +104,18 @@ bool EditorWindow::_setupGUI()
 
 Widget_p EditorWindow::_createTopBar()
 {
+	auto pTheme = m_pApp->m_pTheme;
 
 	auto pBar = PackPanel::create();
 	pBar->setAxis(Axis::X);
 	pBar->setLayout(m_pApp->m_pLayout);
-	pBar->setSkin(m_pApp->m_pPlateSkin);
+	pBar->setSkin( pTheme->plateSkin() );
 
-	auto pClearButton = m_pApp->createButton("Clear");
-	auto pNewButton = m_pApp->createButton("New");
-	auto pLoadButton = m_pApp->createButton("Load");
-	auto pSaveButton = m_pApp->createButton("Save");
-	auto pSaveAsButton = m_pApp->createButton("Save as...");
+	auto pClearButton = Button::create(WGOVR(pTheme->pushButton(), _.label.text = "Clear"));
+	auto pNewButton = Button::create(WGOVR(pTheme->pushButton(), _.label.text = "New"));
+	auto pLoadButton = Button::create(WGOVR(pTheme->pushButton(), _.label.text = "Load"));
+	auto pSaveButton = Button::create(WGOVR(pTheme->pushButton(), _.label.text = "Save"));
+	auto pSaveAsButton = Button::create(WGOVR(pTheme->pushButton(), _.label.text = "Save as..."));
 
 	auto pSpacer = Filler::create(WGBP(Filler, _.defaultSize = { 20,1 }));
 	
@@ -122,7 +130,7 @@ Widget_p EditorWindow::_createTopBar()
 	Base::msgRouter()->addRoute(pNewButton, MsgType::Select, [this](Msg* pMsg) {this->m_pApp->createEditorWindow( "", "" ); });
 
 	Base::msgRouter()->addRoute(pLoadButton, MsgType::Select, [this](Msg* pMsg) {this->_selectAndLoadFile(); });
-	Base::msgRouter()->addRoute(pSaveButton, MsgType::Select, [this](Msg* pMsg) {this->_saveFile(); });
+	Base::msgRouter()->addRoute(pSaveButton, MsgType::Select, [this](Msg* pMsg) {this->_saveFileCallback(); });
 	Base::msgRouter()->addRoute(pSaveAsButton, MsgType::Select, [this](Msg* pMsg) {this->_selectAndSaveFile(); });
 
 	m_pSaveButton = pSaveButton;
@@ -160,17 +168,12 @@ bool EditorWindow::_selectAndLoadFile()
 
 bool EditorWindow::_selectAndSaveFile()
 {
-	/*
-	 auto selectedFiles = m_pAppAPI->openMultiFileDialog("Select Images", "", { "*.surf", "*.qoi" }, "Image files");
+	auto selectedFile = m_pAPI->saveFileDialog("Save File", "", "", { "*.*" }, "Text Files");
 
-		if( selectedFiles.empty()  )
-			return;
+	if (selectedFile.empty())
+		return false;
 
-		m_imagePaths = selectedFiles;
-		loadImage(0);
-	*/
-	
-	return false;
+	return _saveFile(selectedFile);
 }
 
 //____ _loadFile() ____________________________________________________
@@ -182,23 +185,22 @@ bool EditorWindow::_loadFile( const std::string& path )
 		return false;
 	
 	m_pEditor->editor.setText((char*) pBlob->data());
+	_setPathAndTitle(path);
 
 	return true;
 }
 
 
-//____ _saveFile() ___________________________________________________
+//____ _saveFileCallback() ___________________________________________________
 
-bool EditorWindow::_saveFile()
+bool EditorWindow::_saveFileCallback()
 {
 	if( m_path.empty() )
 	{
 		return _selectAndSaveFile();
 	}
-	
-	
-	
-	return false;
+	else
+		return _saveFile(m_path);
 }
 
 //____ _contentModified() ____________________________________________________
@@ -211,3 +213,42 @@ void EditorWindow::_contentModified(Msg* pMsg)
 	m_pSaveAsButton->setDisabled(bDisableSave);
 }
 
+//____ saveFile() ___________________________________________________
+
+bool EditorWindow::_saveFile(const std::string& path)
+{
+	String decoratedText = m_pEditor->editor.text();
+
+	CharSeq	converter(decoratedText);
+
+	auto basket = converter.getUtf8();
+
+	FILE* fp = fopen(path.c_str(), "w");
+	if (!fp)
+		return false;
+
+	int elementsWritten = fwrite(basket.ptr, basket.length, 1, fp);
+	fclose(fp);
+
+	if (elementsWritten != 1)
+		m_pAPI->messageBox("Not saved", "We failed to save the file. Maybe the destination is write protected or out of space?", wapp::DialogType::Ok, wapp::IconType::Error, wapp::DialogButton::Ok);
+	else
+		_setPathAndTitle(path);
+
+	return (elementsWritten == 1);
+}
+
+//____ _setPathAndTitle() ___________________________________________________
+
+void EditorWindow::_setPathAndTitle(const std::string& path)
+{
+	m_path = path;
+
+	auto lastSlash = path.find_last_of("/\\");
+	if (lastSlash != std::string::npos)
+		m_title = path.substr(lastSlash + 1);
+	else
+		m_title = path;
+
+	setTitle(m_title);
+}
