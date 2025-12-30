@@ -89,6 +89,8 @@ bool MyApp::setupGUI()
 
 	m_pTheme = m_pAPI->initDefaultTheme();
 
+	m_pEditorLayout = BasicTextLayout::create({ .tabWidth = 4 });
+
 	m_pEditorStyle = m_pTheme->monospaceStyle();
 					
 	m_pTextLayoutCentered = BasicTextLayout::create(WGBP(BasicTextLayout,

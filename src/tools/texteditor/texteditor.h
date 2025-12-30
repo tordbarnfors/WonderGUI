@@ -32,6 +32,8 @@ public:
 	wg::Theme_p		m_pTheme;
 
 	PackLayout_p	m_pLayout;
+	TextLayout_p	m_pEditorLayout;
+
 
 	TextStyle_p		m_pLabelStyle;
 	TextStyle_p		m_pEditorStyle;

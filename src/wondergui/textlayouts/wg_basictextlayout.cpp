@@ -52,6 +52,7 @@ namespace wg
         m_bAutoElipsis          = bp.autoEllipsis;
 
 		m_bLineWrap				= bp.wrap;
+		m_tabWidth				= bp.tabWidth;
 
 		if (bp.finalizer)
 			setFinalizer(bp.finalizer);
@@ -149,6 +150,9 @@ namespace wg
 		const BlockHeader * pHeader = _header(pBlock);
 		const LineInfo * pLineInfo = _lineInfo(pBlock);
 
+		int	scale = _scale(pText);
+		State state = _state(pText);
+
 		// Find correct line and determine yOfs
 
 		spx yOfs = _textPosY( pHeader, _size(pText).h );
@@ -164,12 +168,12 @@ namespace wg
 		spx xOfs = _linePosX( pLineInfo, _size(pText).w );
 
 		TextAttr		baseAttr;
-		_baseStyle(pText)->exportAttr( _state(pText), &baseAttr, _scale(pText) );
+		_baseStyle(pText)->exportAttr( state, &baseAttr, scale );
 
 		const Char * pFirst = _chars(pText) + pLineInfo->offset;
 		const Char * pLast = pFirst + charOfs;
 
-		xOfs += _charDistance( pFirst, pLast, baseAttr, _scale(pText), _state(pText) );
+		xOfs += _charDistance( pFirst, pLast, baseAttr, scale, state );
 
 		// Get cell width
 
@@ -178,7 +182,7 @@ namespace wg
 		TextAttr	attr = baseAttr;
 
 		if( pLast->styleHandle() != 0 )
-			pLast->stylePtr()->addToAttr( _state(pText), &attr, _scale(pText) );
+			pLast->stylePtr()->addToAttr( state, &attr, scale );
 
 		Font * pFont = attr.pFont.rawPtr();
 		pFont->setSize(attr.size);
@@ -192,6 +196,8 @@ namespace wg
 			width = glyph.advance;				// Do not advance for last, just apply kerning.
 		else if( pLast->code() == 32 )
 			width = pFont->whitespaceAdvance();
+		else if (pLast->code() == '\t')
+			width = _tabWidthSPX(pFont->whitespaceAdvance(), xOfs );
 
 		return RectSPX(xOfs,yOfs,width,pLineInfo->height);
 	}
@@ -311,6 +317,8 @@ namespace wg
 			}
 			else if( pChar->code() == 32 && pChar != pLast )
 				distance += pFont->whitespaceAdvance();
+			else if (pChar->code() == '\t' && pChar != pLast )
+				distance += _tabWidthSPX(pFont->whitespaceAdvance(), distance);
 
 			std::swap(pGlyph, pPrevGlyph);
 			pChar++;
@@ -344,6 +352,7 @@ namespace wg
 
 	void BasicTextLayout::render( TextItem * pText, GfxDevice * pDevice, const RectSPX& canvas )
 	{
+		int scale = _scale(pText);
 
 		void * pBlock = _dataBlock(pText);
 		BlockHeader * pHeader = _header(pBlock);
@@ -354,7 +363,7 @@ namespace wg
 		lineStart.y += _textPosY( pHeader, canvas.h );
 
 		TextAttr		baseAttr;
-		_baseStyle(pText)->exportAttr( _state(pText), &baseAttr, _scale(pText) );
+		_baseStyle(pText)->exportAttr( _state(pText), &baseAttr, scale );
 
 		TextAttr		attr;
 		Font_p 			pFont = nullptr;
@@ -486,7 +495,7 @@ namespace wg
 						attr = baseAttr;
 
 						if( pChar->styleHandle() != 0 )
-							pChar->stylePtr()->addToAttr( _state(pText), &attr, _scale(pText) );
+							pChar->stylePtr()->addToAttr( _state(pText), &attr, scale );
 
 						if( pFont != attr.pFont || attr.size != oldFontSize )
 						{
@@ -548,6 +557,8 @@ namespace wg
 					}
 					else if( pChar->code() == 32 )
 						pos.x += pFont->whitespaceAdvance();
+					else if (pChar->code() == '\t')
+						pos.x += _tabWidthSPX(pFont->whitespaceAdvance(), pos.x - canvas.x);
 
 					std::swap(pPrevGlyph, pGlyph);
 					pChar++;
@@ -1264,6 +1275,8 @@ namespace wg
 			}
 			else if (pChars->code() == 32)
 				potentialWidth += spaceAdv;
+			else if (pChars->code() == '\t')
+				potentialWidth += _tabWidthSPX(spaceAdv, potentialWidth);
 
 			std::swap(pGlyph, pPrevGlyph);
 
@@ -1309,7 +1322,7 @@ namespace wg
 				else
 				{
 					int code = pChars->code();
-					if (code == 32)
+					if (code == 32 || code == '\t' )
 					{
 						pBreakpoint = pChars + 1;
 					}
@@ -1415,6 +1428,8 @@ namespace wg
 			}
 			else if (pChars->code() == 32)
 				potentialWidth += spaceAdv;
+			else if (pChars->code() == '\t')
+				potentialWidth += _tabWidthSPX(spaceAdv, potentialWidth);
 
 			std::swap(pPrevGlyph, pGlyph);
 
@@ -1507,7 +1522,7 @@ namespace wg
 				else
 				{
 					int code = pChars->code();
-					if (code == 32 && m_bLineWrap)
+					if ((code == 32 || code == '\t') && m_bLineWrap)
 					{
 						pBreakpoint = pChars + 1;
 						bpMaxAscend = maxAscend;
@@ -1677,6 +1692,8 @@ namespace wg
 			}
 			else if (pChars->code() == 32)
 				potentialWidth += spaceAdv;
+			else if (pChars->code() == '\t')
+				potentialWidth += _tabWidthSPX(spaceAdv, potentialWidth);
 
 			std::swap(pPrevGlyph, pGlyph);
 
@@ -1801,7 +1818,7 @@ namespace wg
 				else
 				{
 					int code = pChars->code();
-					if (code == 32)
+					if (code == 32 || code == '\t' )
 					{
 						pBreakpoint = pChars + 1;
 						bpWidth = width;
@@ -1898,6 +1915,8 @@ namespace wg
 			}
 			else if( pChars->code() == 32 )
 				width += spaceAdv;
+			else if (pChars->code() == '\t')
+				width += _tabWidthSPX(spaceAdv, width);
 
 			std::swap( pPrevGlyph, pGlyph);
 
@@ -2048,6 +2067,8 @@ SizeSPX BasicTextLayout::_calcDefaultSize( const Char * pChars, const TextStyle 
 		}
 		else if( pChars->code() == 32 )
 			width += spaceAdv;
+		else if (pChars->code() == '\t')
+			width += _tabWidthSPX(spaceAdv, width);
 
 		std::swap( pPrevGlyph, pGlyph);
 
@@ -2341,6 +2362,8 @@ SizeSPX BasicTextLayout::_calcDefaultSize( const Char * pChars, const TextStyle 
 			}
 			else if( pChar->code() == 32 )
 				distance += pFont->whitespaceAdvance();
+			else if (pChar->code() == '\t')
+				distance += _tabWidthSPX(pFont->whitespaceAdvance(), distance);
 
 			// Check if we have passed our mark.
 
@@ -2380,6 +2403,5 @@ SizeSPX BasicTextLayout::_calcDefaultSize( const Char * pChars, const TextStyle 
 
 		return -1;			// We should never get here...
 	}
-
 
 } // namespace wg

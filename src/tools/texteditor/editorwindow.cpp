@@ -62,7 +62,7 @@ bool EditorWindow::_setupGUI()
 
 	// Create our TextEditor widget
 
-	auto pTextEditor = TextEditor::create( WGOVR( pTheme->textEditor(), _.editor.style = m_pApp->m_pEditorStyle, _.stickyFocus = true ));
+	auto pTextEditor = TextEditor::create( WGOVR( pTheme->textEditor(), _.editor.layout = m_pApp->m_pEditorLayout, _.editor.style = m_pApp->m_pEditorStyle, _.stickyFocus = true ));
 
 	Base::msgRouter()->addRoute(pTextEditor, MsgType::TextEdit, [this](Msg * pMsg) { this->_contentModified(pMsg); } );
 	
@@ -189,7 +189,6 @@ bool EditorWindow::_loadFile( const std::string& path )
 
 	return true;
 }
-
 
 //____ _saveFileCallback() ___________________________________________________
 
