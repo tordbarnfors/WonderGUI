@@ -581,8 +581,15 @@ std::string	Win32HostBridge::getClipboardText()
 		if (hData != NULL) {
 			char* pszText = static_cast<char*>(GlobalLock(hData));
 			if (pszText != NULL) {
+
 				clipboardText = pszText;
 				GlobalUnlock(hData);
+
+				// Remove any carriage return characters
+
+				clipboardText.erase(
+					std::remove(clipboardText.begin(), clipboardText.end(), '\r'),
+					clipboardText.end());
 			}
 		}
 		CloseClipboard();

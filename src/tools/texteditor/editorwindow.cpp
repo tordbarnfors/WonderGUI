@@ -183,7 +183,7 @@ bool EditorWindow::_loadFile( const std::string& path )
 	auto pBlob = m_pAPI->loadBlob(path,true);
 	if( !pBlob )
 		return false;
-	
+
 	m_pEditor->editor.setText((char*) pBlob->data());
 	_setPathAndTitle(path);
 

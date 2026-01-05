@@ -26,6 +26,10 @@ public:
 	bool		setupGUI();
 	bool 		createEditorWindow( const std::string& windowTitle, const std::string& path );
 	
+
+
+
+
 	// These are made public for our subclasses.
 
 	wapp::API* 		m_pAPI = nullptr;
@@ -35,7 +39,6 @@ public:
 	TextLayout_p	m_pEditorLayout;
 
 
-	TextStyle_p		m_pLabelStyle;
 	TextStyle_p		m_pEditorStyle;
 
 	TextLayout_p	m_pTextLayoutCentered;
