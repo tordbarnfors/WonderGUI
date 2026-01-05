@@ -720,7 +720,7 @@ namespace wg
 		return Util::spxToPts( rect + m_geo.pos(), m_scale );
 	}
 
-	//____ _isChildVisible() __________________________________________________
+	//____ _isChildVisible() ______________________________________________________
 
 	bool RootPanel::_isChildVisible(const StaticSlot* pSlot) const
 	{
@@ -741,26 +741,28 @@ namespace wg
 		return DynamicSlot::TYPEINFO;
 	}
 
-	//____ _container() __________________________________________________
+	//____ _container() ___________________________________________________________
 
 	Container* RootPanel::_container()
 	{
 		return nullptr;
 	}
 
-	//____ _root() __________________________________________________
+	//____ _root() ________________________________________________________________
 
 	Root* RootPanel::_root()
 	{
 		return this;
 	}
 
-	//____ _scale() _______________________________________________
+	//____ _scale() _______________________________________________________________
 
 	int RootPanel::_scale() const
 	{
 		return m_scale;
 	}
+
+	//____ _childRequestRender() __________________________________________________
 
 	void RootPanel::_childRequestRender(StaticSlot* pSlot, const RectSPX& rect)
 	{

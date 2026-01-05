@@ -144,14 +144,14 @@ namespace wg
 
 	void AreaChart::_requestRenderAreaChartEntry(AreaChartEntry* pAreaChartEntry, float leftmost, float rightmost)
 	{
-		//TODO: Take max/min sample values into account after they are maintained.
+		//TODO: I suspect this gets wrong if Chart is flipped so it is mirrored and chart has non-standard leftmost/rightmost.
 
 		RectSPX dirt;
 
 		if( pAreaChartEntry->m_bAxisSwapped )
 		{
 			dirt.x = m_chartCanvas.x;
-			dirt.y = m_chartCanvas.y + m_chartCanvas.h * leftmost;;
+			dirt.y = m_chartCanvas.y + m_chartCanvas.h * leftmost;
 			dirt.w = m_chartCanvas.w;
 			dirt.h = m_chartCanvas.h * (rightmost - leftmost);
 		}
@@ -212,11 +212,8 @@ namespace wg
 
 		for (auto& graph : entries)
 		{
-			if (graph.m_bVisible && graph.m_pWaveform)
-			{
-				auto pEdgemap = graph.m_pWaveform->refresh();
-				pDevice->flipDrawEdgemap(canvas + graph.m_waveformPos, pEdgemap, graph.m_flip );
-			}
+			if (graph.m_bVisible && graph.m_pEdgemap)
+				pDevice->flipDrawEdgemap(canvas + graph.m_waveformPos, graph.m_pEdgemap, graph.m_flip );
 		}
 
 		Util::popClipList(pDevice, popData);
@@ -322,13 +319,15 @@ namespace wg
 
 	//____ _updateAreaChartEntrys() ______________________________________________________
 
-	void AreaChart::_updateAreaChartEntrys()
+	bool AreaChart::_updateAreaChartEntrys()
 	{
+		bool bHasDirtyRects = false;
+
 		for (auto& graph : entries)
 		{
 			if (graph.m_bVisible)
 			{
-				bool bNeedsRendering = false;
+				bool bNeedsFullRendering = false;
 				spx displayHeight = graph.m_bAxisSwapped ? m_chartCanvas.w : m_chartCanvas.h;
 
 				if (!graph.m_pWaveform)
@@ -355,7 +354,7 @@ namespace wg
 					_updateWaveformEdge(graph.m_pWaveform, true, (int) graph.m_topSamples.size(), graph.m_topSamples.data(), graph.m_bAxisSwapped );
 					_updateWaveformEdge(graph.m_pWaveform, false, (int) graph.m_bottomSamples.size(), graph.m_bottomSamples.data(), graph.m_bAxisSwapped );
 
-					bNeedsRendering = true;
+					bNeedsFullRendering = true;
 				}
 				else
 				{
@@ -378,7 +377,7 @@ namespace wg
 
 						graph.m_bColorsChanged = false;
 
-						bNeedsRendering = true;
+						bNeedsFullRendering = true;
 					}
 
 					if (graph.m_bSamplesChanged)
@@ -387,14 +386,14 @@ namespace wg
 						_updateWaveformEdge(graph.m_pWaveform, false, (int) graph.m_bottomSamples.size(), graph.m_bottomSamples.data(), graph.m_bAxisSwapped );
 						graph.m_bSamplesChanged = false;
 
-						bNeedsRendering = true;
+						bHasDirtyRects = true;
 					}
 				}
-				if (bNeedsRendering )
+				if (bNeedsFullRendering )
 					_requestRenderAreaChartEntry(&graph, graph.m_begin, graph.m_end);
 			}
-
 		}
+		return bHasDirtyRects;
 	}
 
 	//____ _updateWaveformEdge() _________________________________________________
@@ -466,7 +465,47 @@ namespace wg
 
 	void AreaChart::_preRender()
 	{
-		_updateAreaChartEntrys();
+		bool bDirtyRects = _updateAreaChartEntrys();
+
+		if( bDirtyRects )
+		{
+			//TODO: Limited range not tested.
+
+			for (auto& graph : entries)
+			{
+				if (graph.m_bVisible && graph.m_pWaveform)
+				{
+					auto pEdgemap = graph.m_pWaveform->refresh();
+					graph.m_pEdgemap = pEdgemap;
+
+					const RectSPX * pRects = graph.m_pWaveform->firstDirtyRect();
+					int nbRects = graph.m_pWaveform->nbDirtyRects();
+
+					if( graph.m_flip == GfxFlip::None )
+					{
+						for( int i = 0 ; i < nbRects ; i++ )
+						{
+							RectSPX r = pRects[i] + graph.m_waveformPos + m_chartCanvas.pos();
+							_requestRender(r);
+						}
+					}
+					else
+					{
+						SizeSPX	canvasSize = m_chartCanvas.size();
+
+						if( graph.m_bAxisSwapped )
+							std::swap(canvasSize.w,canvasSize.h);
+
+						for( int i = 0 ; i < nbRects ; i++ )
+						{
+							RectSPX r = Util::flipRect(pRects[i] + graph.m_waveformPos, graph.m_flip, canvasSize) + m_chartCanvas.pos();
+							_requestRender(r);
+						}
+					}
+				}
+			}
+		}
+
 		m_bPreRenderRequested = false;
 	}
 

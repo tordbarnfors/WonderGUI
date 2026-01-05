@@ -3230,7 +3230,7 @@ bool areaChartTest2(ComponentPtr<DynamicSlot> pEntry)
 	//
 
 
-	pGraph->glow.setActive(true);
+//	pGraph->glow.setActive(true);
 
 
 	auto pTransition = ValueTransition::create(2000000, TransitionCurve::Bezier);
