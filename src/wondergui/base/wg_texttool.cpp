@@ -257,8 +257,11 @@ namespace wg
 		}
 
 		uint32_t n = 0;
-		for( unsigned char * p = (unsigned char *) pDst ; n < maxChars && p[n] != 0 ; n++ )
-			pDst[n].setCode( pCP[p[n]] );
+		for (unsigned char* p = (unsigned char*)pDst; n < maxChars && p[n] != 0; n++)
+		{
+			uint16_t code = p[n];
+			pDst[n].setCode(code < 128 ? code : pCP[code-128]);
+		}
 
 		if( n != maxChars )
 			pDst[n].setCode(0);
@@ -277,7 +280,10 @@ namespace wg
 
 		uint32_t n = 0;
 		for( unsigned char * p = (unsigned char *) pDst ; n < maxChars && p[n] != 0 ; n++ )
-			pDst[n] = pCP[p[n]];
+		{
+			uint16_t code = p[n];
+			pDst[n] = (code < 128 ? code : pCP[code-128]);
+		}
 
 		if( n != maxChars )
 			pDst[n] = 0;
@@ -1122,7 +1128,10 @@ namespace wg
 
 		int nBytes = 0;
 		for( int i = 0 ; i < maxChars && p[i] != 0 ; i++ )
-			nBytes += writeUTF8( pCP[p[i]], pDest + nBytes );
+		{
+			uint16_t code = p[i];
+			nBytes += writeUTF8(code < 128 ? code : pCP[code - 128], pDest + nBytes);
+		}
 
 		pDest[nBytes] = 0;					// Yes, we do terminate destination!
 		return nBytes;
@@ -1184,7 +1193,10 @@ namespace wg
 
 		int nBytes = 0;
 		for( int i = 0 ; i < maxChars && p[i] != 0 ; i++ )
-			nBytes += sizeUTF8( p[i] );
+		{
+			uint16_t code = p[i];
+			nBytes += sizeUTF8(code < 128 ? code : pCP[code - 128]);
+		}
 
 		return nBytes;
 	}

@@ -41,7 +41,7 @@ namespace wg
 
 	const static PrimState       PrimState_min       = PrimState::Focused;
 	const static StateEnum       StateEnum_min       = StateEnum::Default;
-	const static CodePage        CodePage_min        = CodePage::Latin1;
+	const static CodePage        CodePage_min        = CodePage::Undefined;
 	const static PointerStyle    PointerStyle_min    = PointerStyle::Undefined;
 	const static MouseButton     MouseButton_min     = MouseButton::None;
 	const static PlayMode        PlayMode_min        = PlayMode::Forward;
@@ -59,7 +59,7 @@ namespace wg
 
 	const static PrimState       PrimState_max       = PrimState::Disabled;
 	const static StateEnum       StateEnum_max       = StateEnum::DisabledFlaggedCheckedSelekted;
-	const static CodePage        CodePage_max        = CodePage::_874;
+	const static CodePage        CodePage_max        = CodePage::RiscOS;
 	const static PointerStyle    PointerStyle_max    = PointerStyle::ResizeBeamWE;
 	const static MouseButton     MouseButton_max     = MouseButton::X2;
 	const static PlayMode        PlayMode_max        = PlayMode::BackwardPingPong;
@@ -77,7 +77,7 @@ namespace wg
 
 	const static int             PrimState_size      = (int)PrimState::Disabled + 1;
 	const static int             StateEnum_size      = (int)StateEnum::DisabledFlaggedCheckedSelekted + 1;
-	const static int             CodePage_size       = (int)CodePage::_874 + 1;
+	const static int             CodePage_size       = (int)CodePage::RiscOS + 1;
 	const static int             PointerStyle_size   = (int)PointerStyle::ResizeBeamWE + 1;
 	const static int             MouseButton_size    = (int)MouseButton::X2 + 1;
 	const static int             PlayMode_size       = (int)PlayMode::BackwardPingPong + 1;
