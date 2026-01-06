@@ -6,6 +6,8 @@ set( SOURCES
 	texteditor.h
 	editorwindow.cpp
 	editorwindow.h
+	textbuffer.cpp
+	textbuffer.h
 )
 
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${SOURCES})

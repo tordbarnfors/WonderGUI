@@ -61,6 +61,9 @@ bool MyApp::update()
 		startTime = time;
 	}
 */
+	for( auto pWin : m_editorWindows )
+		pWin->update();
+
 	return !m_editorWindows.empty();
 }
 
