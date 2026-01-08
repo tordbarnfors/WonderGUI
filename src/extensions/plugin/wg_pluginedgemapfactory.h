@@ -62,6 +62,19 @@ namespace wg
 		PluginEdgemapFactory( wg_obj cFactory );
 		~PluginEdgemapFactory();
 
+		class bpTranslator
+		{
+		public:
+			bpTranslator( const Edgemap::Blueprint& cppBP );
+			~bpTranslator();
+
+			wg_edgemapBP * bp();
+		private:
+			wg_edgemapBP	m_cBP;
+
+			int		m_memReserved;
+		};
+
 
 		wg_obj	m_cFactory;
 	};

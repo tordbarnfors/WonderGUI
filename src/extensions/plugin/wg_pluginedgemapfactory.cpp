@@ -25,6 +25,8 @@
 #include <wg_pluginedgemap.h>
 #include <wg_pluginedgemapfactory.h>
 
+#include <wg_gfxbase.h>
+
 
 namespace wg
 {
@@ -75,7 +77,9 @@ namespace wg
 
 	Edgemap_p PluginEdgemapFactory::createEdgemap(const Edgemap::Blueprint& blueprint)
 	{
-		auto obj = PluginCalls::edgemapFactory->createEdgemap(m_cFactory, (wg_edgemapBP*) &blueprint);
+		bpTranslator cBP(blueprint);
+
+		auto obj = PluginCalls::edgemapFactory->createEdgemap(m_cFactory, cBP.bp());
 		auto pEdgemap = PluginEdgemap::create(obj);
 		PluginCalls::object->release(obj);
 		return pEdgemap;
@@ -83,7 +87,9 @@ namespace wg
 
 	Edgemap_p PluginEdgemapFactory::createEdgemap(const Edgemap::Blueprint& blueprint, SampleOrigo origo, const float* pSamples, int edges, int edgePitch, int samplePitch)
 	{
-		auto obj = PluginCalls::edgemapFactory->createEdgemapFromFloats(m_cFactory, (wg_edgemapBP*)&blueprint, (wg_sampleOrigo) origo, pSamples, edges, edgePitch, samplePitch);
+		bpTranslator cBP(blueprint);
+
+		auto obj = PluginCalls::edgemapFactory->createEdgemapFromFloats(m_cFactory, cBP.bp(), (wg_sampleOrigo) origo, pSamples, edges, edgePitch, samplePitch);
 		auto pEdgemap = PluginEdgemap::create(obj);
 		PluginCalls::object->release(obj);
 		return pEdgemap;
@@ -91,11 +97,70 @@ namespace wg
 
 	Edgemap_p PluginEdgemapFactory::createEdgemap(const Edgemap::Blueprint& blueprint, SampleOrigo origo, const spx* pSamples, int edges, int edgePitch, int samplePitch)
 	{
-		auto obj = PluginCalls::edgemapFactory->createEdgemapFromSpx(m_cFactory, (wg_edgemapBP*)&blueprint, (wg_sampleOrigo)origo, pSamples, edges, edgePitch, samplePitch);
+		bpTranslator cBP(blueprint);
+
+		auto obj = PluginCalls::edgemapFactory->createEdgemapFromSpx(m_cFactory, cBP.bp(), (wg_sampleOrigo)origo, pSamples, edges, edgePitch, samplePitch);
 		auto pEdgemap = PluginEdgemap::create(obj);
 		PluginCalls::object->release(obj);
 		return pEdgemap;
 	}
+
+	PluginEdgemapFactory::bpTranslator::bpTranslator( const Edgemap::Blueprint& cppBP )
+	{
+		m_memReserved = 0;
+
+		m_cBP.colors = (wg_color*) cppBP.colors;
+		m_cBP.colorstripsX = (wg_color*) cppBP.colorstripsX;
+		m_cBP.colorstripsY = (wg_color*) cppBP.colorstripsY;
+		m_cBP.paletteType = (wg_edgemapPalette) cppBP.paletteType;
+		m_cBP.tintmaps = nullptr;
+		m_cBP.segments = cppBP.segments;
+		m_cBP.size.w = cppBP.size.w;
+		m_cBP.size.h = cppBP.size.h;
+
+		if( cppBP.tintmaps != nullptr )
+		{
+			bool bHorr = false;
+			bool bVert = false;
+
+			for( int i = 0 ; i < cppBP.segments ; i++ )
+			{
+				if( cppBP.tintmaps[i]->isHorizontal() )
+					bHorr = true;
+
+				if( cppBP.tintmaps[i]->isVertical() )
+					bVert = true;
+			}
+
+			m_memReserved = (int(bHorr) * cppBP.size.w + int(bVert) * cppBP.size.h) * cppBP.segments * sizeof(HiColor);
+
+			auto pColorstrips = (HiColor*) GfxBase::memStackAlloc(m_memReserved);
+
+			HiColor * pColorstripsX = bHorr ? pColorstrips : nullptr;
+			int incX = bHorr ? cppBP.size.w : 0;
+
+			HiColor * pColorstripsY = bVert ? pColorstrips + incX * cppBP.segments : nullptr;
+			int incY = bVert ? cppBP.size.h : 0;
+
+			m_cBP.colorstripsX = (wg_color*) pColorstripsX;
+			m_cBP.colorstripsY = (wg_color*) pColorstripsY;
+
+			for( int i = 0 ; i < cppBP.segments ; i++ )
+			{
+				cppBP.tintmaps[i]->exportColors(cppBP.size, pColorstripsX, pColorstripsY);
+				pColorstripsX += incX;
+				pColorstripsY += incY;
+			}
+		}
+	}
+
+	PluginEdgemapFactory::bpTranslator::~bpTranslator()
+	{
+		if( m_memReserved > 0 )
+			GfxBase::memStackFree(m_memReserved);
+	}
+
+
 
 
 } // namespace wg
