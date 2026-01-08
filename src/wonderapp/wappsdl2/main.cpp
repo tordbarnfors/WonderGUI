@@ -65,7 +65,7 @@ public:
 		return SDL_GetPerformanceCounter() * 1000000 / SDL_GetPerformanceFrequency();
 	}
 
-	Blob_p 			loadBlob(const std::string& path) override;
+	Blob_p 			loadBlob(const std::string& path, bool bNullTerminate = false) override;
 	Surface_p 		loadSurface(const std::string& path, SurfaceFactory* pFactory = nullptr, const Surface::Blueprint& bp = Surface::Blueprint() ) override;
 
 	Theme_p			initDefaultTheme() override;
@@ -77,15 +77,15 @@ public:
 
 	std::string		inputBox( const std::string& title, const std::string& message, const std::string& defaultInput) override;
 
-	std::string		saveFileDialog(	const std::string& title, const std::string& defaultPathAndFile,
+	std::string		saveFileDialog(	const std::string& title, const std::string& defaultPath, const std::string& defaultFile,
 									const std::vector<std::string>& filterPatterns,
 									const std::string& singleFilterDescription) override;
 
-	std::string		openFileDialog( const std::string& title, const std::string& defaultPathAndFile,
+	std::string		openFileDialog( const std::string& title, const std::string& defaultPath, const std::string& defaultFile,
 									const std::vector<std::string>& filterPatterns,
 									const std::string& singleFilterDescription) override;
 
-	std::vector<std::string> openMultiFileDialog(	const std::string& title, const std::string& defaultPathAndFile,
+	std::vector<std::string> openMultiFileDialog(	const std::string& title, const std::string& defaultPath, const std::string& defaultFile,
 													const std::vector<std::string>& filterPatterns,
 													const std::string& singleFilterDescription) override;
 
@@ -764,7 +764,7 @@ std::vector<std::string> MyAppAPI::programArguments() const
 
 //____ loadBlob() _________________________________________________________
 
-Blob_p MyAppAPI::loadBlob(const std::string& path)
+Blob_p MyAppAPI::loadBlob(const std::string& path, bool bNullTerminate)
 {
 	FILE* fp;
 
@@ -780,7 +780,7 @@ Blob_p MyAppAPI::loadBlob(const std::string& path)
 	int size = (int)ftell(fp);
 	fseek(fp, 0, SEEK_SET);
 
-	Blob_p pBlob = Blob::create(size);
+	Blob_p pBlob = Blob::create(size, bNullTerminate);
 
 	int nRead = (int)fread(pBlob->data(), 1, size, fp);
 	fclose(fp);
@@ -1040,7 +1040,7 @@ std::string MyAppAPI::inputBox(const std::string& title, const std::string& mess
 
 //____ saveFileDialog() _______________________________________________________
 
-std::string MyAppAPI::saveFileDialog(	const std::string& title, const std::string& defaultPathAndFile,
+std::string MyAppAPI::saveFileDialog(	const std::string& title, const std::string& defaultPath, const std::string& defaultFile,
 										const std::vector<std::string>& filterPatterns,
 										const std::string& singleFilterDescription)
 {
@@ -1049,6 +1049,14 @@ std::string MyAppAPI::saveFileDialog(	const std::string& title, const std::strin
 
 	for (int i = 0; i < filterPatterns.size(); i++)
 		pPatternPointers[i] = filterPatterns[i].c_str();
+
+	std::string defaultPathAndFile = defaultPath;
+	if (!defaultFile.empty())
+	{
+		if (!defaultPathAndFile.empty() && defaultPathAndFile.back() != '/' && defaultPathAndFile.back() != '\\')
+			defaultPathAndFile += '/';
+		defaultPathAndFile += defaultFile;
+	}
 
 	auto pResult = tinyfd_saveFileDialog( title.c_str(), defaultPathAndFile.c_str(), int(filterPatterns.size()), pPatterns, singleFilterDescription.c_str() );
 	
@@ -1060,10 +1068,18 @@ std::string MyAppAPI::saveFileDialog(	const std::string& title, const std::strin
 
 //____ openFileDialog() _______________________________________________________
 
-std::string MyAppAPI::openFileDialog(	const std::string& title, const std::string& defaultPathAndFile,
+std::string MyAppAPI::openFileDialog(	const std::string& title, const std::string& defaultPath, const std::string& defaultFile,
 										const std::vector<std::string>& filterPatterns,
 										const std::string& singleFilterDescription)
 {
+	std::string defaultPathAndFile = defaultPath;
+	if (!defaultFile.empty())
+	{
+		if (!defaultPathAndFile.empty() && defaultPathAndFile.back() != '/' && defaultPathAndFile.back() != '\\')
+			defaultPathAndFile += '/';
+		defaultPathAndFile += defaultFile;
+	}
+
 	const char* pPatternPointers[64];
 	const char** pPatterns = filterPatterns.empty() ? NULL : pPatternPointers;
 
@@ -1081,10 +1097,18 @@ std::string MyAppAPI::openFileDialog(	const std::string& title, const std::strin
 //____ openMultiFileDialog() _______________________________________________________
 
 std::vector<std::string> MyAppAPI::openMultiFileDialog(	const std::string& title,
-														const std::string& defaultPathAndFile,
+														const std::string& defaultPath, const std::string& defaultFile,
 														const std::vector<std::string>& filterPatterns,
 														const std::string& singleFilterDescription)
 {
+	std::string defaultPathAndFile = defaultPath;
+	if (!defaultFile.empty())
+	{
+		if (!defaultPathAndFile.empty() && defaultPathAndFile.back() != '/' && defaultPathAndFile.back() != '\\')
+			defaultPathAndFile += '/';
+		defaultPathAndFile += defaultFile;
+	}
+
 	const char* pPatternPointers[64];
 	const char** pPatterns = filterPatterns.empty() ? NULL : pPatternPointers;
 

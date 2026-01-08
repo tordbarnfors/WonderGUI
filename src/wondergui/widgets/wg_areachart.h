@@ -153,6 +153,8 @@ namespace wg
 
 		Waveform_p			m_pWaveform;
 		CoordSPX			m_waveformPos;			// Only x has any impact for now, y should be fixed at 0.
+
+		Edgemap_p			m_pEdgemap;				// Edgemap exported by waveform on preRender call.
 	};
 
 
@@ -263,7 +265,7 @@ namespace wg
 
 		void		_preRender() override;
 
-		void		_updateAreaChartEntrys();
+		bool		_updateAreaChartEntrys();
 
 		RectSPX		_entryRangeToRect( float begin, float end, bool bAxisSwapped) const;
 

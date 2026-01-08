@@ -128,6 +128,7 @@ namespace wg
 			Skin_p			skin;
 			bool			stickyFocus		= false;
 			bool			tabLock			= false;
+			bool			takesFocusFromChild = true;
 			String			tooltip;
 			bool			usePickHandles = false;
 

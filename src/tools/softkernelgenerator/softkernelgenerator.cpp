@@ -85,7 +85,9 @@ bool MyApp::_setupGUI(wapp::API* pAPI)
 		
 	pBasePanel->slots << _buildButtonRow();
 	pBasePanel->slots << pWindow;
-	pBasePanel->setSlotWeight(0, 1, 0.f);
+	pBasePanel->slots << _buildExportSection();
+
+	pBasePanel->setSlotWeight(0, 3, { 0.f,1.f, 0.f });
 
 	m_pWindow->mainCapsule()->slot = pBasePanel;
 
@@ -207,7 +209,7 @@ void MyApp::eraseCustomBlitEntry(int index)
 
 bool MyApp::exportSource()
 {
-	auto path = m_pAPI->saveFileDialog("Export Kernels", "", {}, "" );
+	auto path = m_pAPI->saveFileDialog("Export Kernels", "", "", {}, "" );
 	
 	if( path.empty() )
 		return false;
@@ -350,10 +352,11 @@ Widget_p MyApp::_buildList()
 	pList->slots << _buildGlobalSettingsSection();
 	pList->slots << _buildOptimizedBlitsSection();
 	pList->slots << _buildListSummarySection();
-	pList->slots << _buildExportSection();
 
 	pList->setSlotWeight(pList->slots.begin(), pList->slots.end(), 0.f);
 	
+	pList->slots << Filler::create({ .skin = m_pTheme->canvasSkin() });
+
 	m_pList = pList;
 
 	return pList;

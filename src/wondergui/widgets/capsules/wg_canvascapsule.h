@@ -85,6 +85,7 @@ namespace wg
 			bool			stickyFocus		= false;
 			SurfaceFactory_p surfaceFactory;
 			bool			tabLock			= false;
+			bool			takesFocusFromChild = true;
 			HiColor			tintColor		= HiColor::Undefined;
 			Tintmap_p		tintmap;
 			String			tooltip;

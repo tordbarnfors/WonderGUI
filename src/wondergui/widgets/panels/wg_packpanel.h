@@ -127,6 +127,7 @@ namespace wg
 			pts				spacingBefore	= 0;
 			bool			stickyFocus		= false;
 			bool			tabLock 		= false;
+			bool			takesFocusFromChild = true;
 			String			tooltip;
 			bool			usePickHandles	= false;
 		};

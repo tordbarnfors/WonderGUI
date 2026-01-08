@@ -101,6 +101,9 @@ Simplistic::Simplistic( Font * pNormal, Font * pBold, Font * pItalic, Font * pMo
 
 	m_pOpenCloseTransition = ValueTransition::create(250000);
 
+	m_pNoBevelPlateSkin = ColorSkin::create( WGBP(ColorSkin,
+											   _.color = plateColor,
+												_.padding = 3));
 
 	m_pPlateSkin = BlockSkin::create( WGBP(BlockSkin,
 										_.surface = pWidgets,
@@ -265,7 +268,8 @@ Simplistic::Simplistic( Font * pNormal, Font * pBold, Font * pItalic, Font * pMo
 							_.scrollbarX.back = pScrollbarBgSkin,
 							_.scrollbarX.bar = pScrollbarSkin,
 							_.scrollbarY.back = pScrollbarBgSkin,
-							_.scrollbarY.bar = pScrollbarSkin
+							_.scrollbarY.bar = pScrollbarSkin,
+							_.cornerSkin = m_pNoBevelPlateSkin
 							);
 
 	m_splitPanelXBP = WGBP(SplitPanel,

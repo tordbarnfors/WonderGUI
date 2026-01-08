@@ -871,7 +871,7 @@ bool MyApp::_loadSkins(API * pAPI)
 
 void MyApp::selectAndLoadStream()
 {
-	auto selectedFile = m_pAppAPI->openFileDialog("Select GfxStream", "", { "*.wax", "*.dat" }, "Stream files");
+	auto selectedFile = m_pAppAPI->openFileDialog("Select GfxStream", "", "", {"*.wax", "*.dat"}, "Stream files");
 	
 	if( selectedFile.empty()  )
 		return;

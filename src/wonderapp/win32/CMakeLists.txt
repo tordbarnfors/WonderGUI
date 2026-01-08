@@ -39,15 +39,11 @@ add_library(wappwin32 STATIC
 target_include_directories(wappwin32 PRIVATE
     ${INCDIRS}
     ${WGSOFTGFX_INCDIRS}
-    ${SDL2_INCDIR}
-    ${SDL2IMAGE_INCDIR}
 )
 
 set_target_properties(wappwin32 PROPERTIES FOLDER "WonderApp" )
 
 target_link_directories(wappwin32 PUBLIC
-    ${SDL2_LIBDIR}
-    ${SDL2IMAGE_LIBDIR}
     ${FREETYPE2_LIBDIR}
 )
 
@@ -58,8 +54,6 @@ target_link_libraries(wappwin32 PRIVATE
     wgdebugger
     wg_theme_simplistic
     ${FREETYPE2_LIB}
-    ${SDL2_LIBS}
-    ${SDL2IMAGE_LIBS}
 )
 
 

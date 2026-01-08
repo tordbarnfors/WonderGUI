@@ -23,6 +23,9 @@
 #include <windows.h>
 #include <wg_softsurface.h>
 
+extern std::wstring _stringToWString(const std::string& str);
+
+
 using namespace wg;
 
 //____ constructor ___________________________________________________
@@ -39,7 +42,6 @@ Win32Window::Win32Window(wapp::Window* pUserWindow, wg::Placement origin, wg::Co
 
 	if (!m_windowHandle)
 	{
-		int x = 0;
 		// Error handling!
 	}
 	else
@@ -203,14 +205,36 @@ bool Win32Window::restore()
 
 bool Win32Window::setTitle(std::string& title)
 {
-	return false;
+	auto wTitle = _stringToWString(title);
+	SetWindowTextW(m_windowHandle, wTitle.c_str());
+	return true;
 }
 
 //____ title() ________________________________________________________________
 
 std::string Win32Window::title()
 {
-	return "";
+	int length = GetWindowTextLengthW(m_windowHandle);
+
+	if (length == 0)
+		return std::string();
+
+	// Get the wide string
+	std::vector<wchar_t> wideString(length + 1);
+	GetWindowTextW(m_windowHandle, wideString.data(), length + 1);
+
+	// Convert to UTF-8
+	int utf8Size = WideCharToMultiByte(CP_UTF8, 0, wideString.data(), -1, nullptr, 0, nullptr, nullptr);
+
+	if (utf8Size > 0)
+	{
+		std::string utf8String(utf8Size - 1, 0); // -1 to exclude null terminator
+		WideCharToMultiByte(CP_UTF8, 0, wideString.data(), -1, &utf8String[0], utf8Size, nullptr, nullptr);
+		return utf8String;
+	}
+
+	return std::string();
 }
 
 
+ 

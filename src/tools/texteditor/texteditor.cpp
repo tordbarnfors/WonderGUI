@@ -26,6 +26,8 @@ bool MyApp::init(API* pAPI)
 {
 	m_pAPI = pAPI;
 
+	setupGUI();
+
 	// Add any text-file from the argument list
 
 	auto arguments = pAPI->programArguments();
@@ -33,12 +35,12 @@ bool MyApp::init(API* pAPI)
 	if( arguments.empty() )
 	{
 		createEditorWindow("Untitled 1", "");
-		createEditorWindow("Untitled 2", "");
 
 	}
-	for ( auto& arg : arguments )
+	else
 	{
-		openFile(arg);
+		for (auto& arg : arguments)
+			createEditorWindow("", arg);
 	}
 
 	startTime = m_pAPI->time();
@@ -59,6 +61,9 @@ bool MyApp::update()
 		startTime = time;
 	}
 */
+	for( auto pWin : m_editorWindows )
+		pWin->update();
+
 	return !m_editorWindows.empty();
 }
 
@@ -85,90 +90,17 @@ void MyApp::closeWindow(wapp::Window* _pWindow)
 bool MyApp::setupGUI()
 {
 
-	auto pFontBlob = m_pAPI->loadBlob("resources/DroidSans.ttf");
-	auto pFont = FreeTypeFont::create(pFontBlob);
+	m_pTheme = m_pAPI->initDefaultTheme();
 
-	m_pTextStyle = TextStyle::create(WGBP(TextStyle,
-									_.font = pFont,
-									_.size = 14,
-									_.color = Color8::Black,
-									_.states = {{State::Disabled, Color8::DarkGrey}
-	} ));
+	m_pEditorLayout = BasicTextLayout::create({ .tabWidth = 4 });
 
-	m_pLabelStyle = TextStyle::create(WGBP(TextStyle,
-									_.font = pFont,
-									_.size = 16,
-									_.color = Color8::Black));
-
-	m_pEditorStyle = m_pTextStyle;
+	m_pEditorStyle = m_pTheme->monospaceStyle();
 					
-		
-	Base::setDefaultStyle(m_pTextStyle);
-
 	m_pTextLayoutCentered = BasicTextLayout::create(WGBP(BasicTextLayout,
 		_.placement = Placement::Center));
 
 
 	//
-
-	if (!_loadSkins(m_pAPI))
-		return false;
-
-	return true;
-}
-
-//____ _loadSkins() ___________________________________________________________
-
-bool MyApp::_loadSkins(API * pAPI)
-{
-	string path = "resources/greyskin/";
-
-	auto pPlateSurf = pAPI->loadSurface(path + "plate.bmp");
-	auto pButtonSurf = pAPI->loadSurface(path + "button.bmp");
-	auto pStateButtonSurf = pAPI->loadSurface(path + "state_button.bmp");
-	auto pCheckBoxSurf = pAPI->loadSurface(path + "checkbox.png");
-
-	if (!pPlateSurf || !pButtonSurf || !pStateButtonSurf)
-		return false;
-
-	m_pPlateSkin = BlockSkin::create(WGBP(BlockSkin,
-		_.surface = pPlateSurf,
-		_.axis = Axis::X,
-		_.frame = 4,
-		_.padding = 4
-	));
-
-	m_pButtonSkin = BlockSkin::create(WGBP(BlockSkin,
-		_.surface = pButtonSurf,
-		_.axis = Axis::X,
-		_.frame = 4,
-		_.padding = { 4,10,4,10 },
-		_.states = { State::Default, State::Hovered, State::Pressed, State::Disabled }
-	));
-
-	m_pToggleButtonSkin = BlockSkin::create(WGBP(BlockSkin,
-		_.surface = pStateButtonSurf,
-		_.axis = Axis::X,
-		_.frame = 4,
-		_.padding = 4,
-		_.states = { State::Default, State::Hovered, State::Checked, State::Checked + State::Hovered, State::Disabled }
-	));
-
-	m_pCheckBoxSkin = BlockSkin::create(WGBP(BlockSkin,
-		_.surface = pCheckBoxSurf,
-		_.axis = Axis::Y,
-		_.frame = 3,
-//		_.defaultSize = { 12,12 },
-		_.states = { State::Default, State::Checked }
-	));
-
-	m_pSectionSkin = BoxSkin::create(WGBP(BoxSkin,
-		_.color = HiColor::White,
-		_.outlineThickness = 1,
-		_.outlineColor = Color8::Black,
-		_.padding = { 2,2,2,2 }
-	));
-
 
 	return true;
 }
@@ -184,88 +116,9 @@ bool MyApp::createEditorWindow( const std::string& windowTitle, const std::strin
 	else
 		title = windowTitle;
 
-	if (m_editorWindows.empty())
-		setupGUI();
-
 	auto pEditorWindow = EditorWindow::create(m_pAPI, this, title, path );
 
 	m_editorWindows.push_back(pEditorWindow);
-	return true;
-}
-
-//____ createButton() _________________________________________________________
-
-Button_p MyApp::createButton(const char* label)
-{
-	return Button::create({
-		.label = {.layout = m_pTextLayoutCentered, .style = m_pTextStyle, .text = label },
-		.skin = m_pButtonSkin
-	});
-}
-
-//____ createScrollPanel() ____________________________________________________
-
-ScrollPanel_p MyApp::createScrollPanel()
-{
-	auto pScrollPanel = ScrollPanel::create();
-
-	pScrollPanel->scrollbarX.setBackSkin(BoxSkin::create(WGBP(BoxSkin,
-		_.color = Color8::DarkOliveGreen,
-		_.outlineThickness = 1,
-		_.outlineColor = Color8::Black)));
-	pScrollPanel->scrollbarX.setBarSkin(m_pButtonSkin);
-
-	pScrollPanel->scrollbarY.setBackSkin(BoxSkin::create(WGBP(BoxSkin,
-		_.color = Color8::DarkOliveGreen,
-		_.outlineThickness = 1,
-		_.outlineColor = Color8::Black)));
-	pScrollPanel->scrollbarY.setBarSkin(m_pButtonSkin);
-
-	pScrollPanel->setAutohideScrollbars(true, true);
-	pScrollPanel->setSizeConstraints(SizeConstraint::GreaterOrEqual, SizeConstraint::GreaterOrEqual);
-
-	pScrollPanel->setTransition(CoordTransition::create(300000));
-	
-	
-	return pScrollPanel;
-}
-
-
-
-
-
-//____ openFile() ____________________________________________________________
-
-bool MyApp::openFile(const std::string& path)
-{
-	createEditorWindow("",path);
-
-	
-	FILE* fp;
-
-#ifdef WIN32
-	errno_t err = fopen_s(&fp, path.c_str(), "rb");
-#else
-	fp = fopen(path.c_str(), "rb");
-#endif
-	if (!fp)
-		return false;
-
-	fseek(fp, 0, SEEK_END);
-	int size = (int)ftell(fp);
-	fseek(fp, 0, SEEK_SET);
-
-	auto pText = new char[size+1];
-	int nRead = (int)fread(pText, 1, size, fp);
-	fclose(fp);
-
-	if (nRead < size)
-		return 0;
-	
-	pText[size] = 0;
-	
-	m_editorWindows.back()->setContent(pText);
-	
 	return true;
 }
 

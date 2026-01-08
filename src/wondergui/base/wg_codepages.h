@@ -49,7 +49,7 @@ namespace wg
 		static inline const uint16_t* getCodePage( CodePage codePage ) { return LookupTable[(int)codePage]; }
 
 	private:
-		static uint16_t* LookupTable[CodePage_size];
+		const static uint16_t* LookupTable[CodePage_size];
 	};
 
 

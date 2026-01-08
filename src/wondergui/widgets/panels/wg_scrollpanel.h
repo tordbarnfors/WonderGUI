@@ -55,6 +55,7 @@ namespace wg
 			Placement			childPlacement 		= Placement::NorthWest;
 			SizeConstraint		childConstraintX 	= SizeConstraint::None;
 			SizeConstraint		childConstraintY 	= SizeConstraint::None;
+			Skin_p				cornerSkin;
 			bool				disabled 			= false;
 			bool				dropTarget 			= false;
 			Finalizer_p			finalizer 			= nullptr;
@@ -75,6 +76,7 @@ namespace wg
 			pts					stepSize 			= 8;
 			bool				stickyFocus			= false;
 			bool				tabLock 			= false;
+			bool				takesFocusFromChild = false;
 			String				tooltip;
 			CoordTransition_p	transition;
 			bool				usePickHandles		= false;
@@ -186,7 +188,7 @@ namespace wg
 		
 	protected:
 		ScrollPanel();
-		template<class BP> ScrollPanel(const BP& bp) : slot(this), scrollbarX(this, this, Axis::X), scrollbarY(this, this, Axis::Y), Container(bp)
+		template<class BP> ScrollPanel(const BP& bp) : slot(this), scrollbarX(this, this, Axis::X), scrollbarY(this, this, Axis::Y), m_cornerSkin(this), Container(bp)
 		{
 			scrollbarX._initFromBlueprint(bp.scrollbarX);
 			scrollbarY._initFromBlueprint(bp.scrollbarY);
@@ -220,6 +222,9 @@ namespace wg
 			m_bStealWheelFromScrollbars = bp.stealWheelFromScrollbars;
 
 			m_pDefaultTransition	= bp.transition;
+
+			if( bp.cornerSkin )
+				m_cornerSkin.set(bp.cornerSkin);
 			
 			_updateRegions();
 			_updateCanvasSize();
@@ -343,6 +348,8 @@ namespace wg
 
 		bool			m_bChildRequestedResize = false;
 		
+		SkinSlot		m_cornerSkin;
+
 		// Transition related
 		
 		CoordTransition_p	m_pDefaultTransition;

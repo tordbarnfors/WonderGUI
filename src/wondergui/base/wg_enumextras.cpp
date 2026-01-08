@@ -131,17 +131,24 @@ namespace wg
 	const char * toString(CodePage i)
 	{
 		static const char * names[] = { 
+			"Undefined",
 			"Latin1",
-			"_1250",
-			"_1251",
-			"_1252",
-			"_1253",
-			"_1254",
-			"_1255",
-			"_1256",
-			"_1257",
-			"_1258",
-			"_874" };
+			"DOS_437",
+			"DOS_850",
+			"Win_1250",
+			"Win_1251",
+			"Win_1252",
+			"Win_1253",
+			"Win_1254",
+			"Win_1255",
+			"Win_1256",
+			"Win_1257",
+			"Win_1258",
+			"Win_874",
+			"MacRoman",
+			"AtariST",
+			"RiscOS"
+		};
 
 		return names[(int)i];
 	}

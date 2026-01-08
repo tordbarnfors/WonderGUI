@@ -42,9 +42,13 @@ namespace wg
 
 		struct Blueprint
 		{
+            bool        autoEllipsis         = true;
+
 			Caret_p		caret = nullptr;
 			Finalizer_p	finalizer = nullptr;
 
+			float		lineSpacing			= 1.f;
+			float		paragraphSpacing	= 0.f;					// Add to lineSpacing at hard line endings.
 			Placement	placement = Placement::NorthWest;
 
 			BlendMode	selectionBackBlend	= BlendMode::Invert;
@@ -52,10 +56,7 @@ namespace wg
 			BlendMode	selectionCharBlend	= BlendMode::Invert;
 			HiColor		selectionCharColor	= HiColor::White;
 
-			float		lineSpacing			= 1.f;
-			float		paragraphSpacing	= 0.f;					// Add to lineSpacing at hard line endings.
-            bool        autoEllipsis         = true;
-
+			int			tabWidth			= 8;					// Number of whitespace characters a tab corresonds to.
 			bool		wrap = false;
 		};
 
@@ -191,6 +192,11 @@ namespace wg
 		void 			_renderBackSection( TextItem * pText, GfxDevice * pDevice, const RectSPX& canvas,
 											int begChar, int endChar, HiColor color );
 
+		inline spx		_tabWidthSPX(spx whitespaceWidth, spx ofs) const
+		{
+			spx tabWidth = whitespaceWidth * m_tabWidth;
+			return tabWidth == 0 ? 0 : tabWidth - (ofs % tabWidth);
+		}
 
 		enum struct SelectMode
 		{
@@ -216,6 +222,8 @@ namespace wg
 
 		float			m_hardLineSpacing = 1.f;
 		float			m_softLineSpacing = 1.f;
+
+		int				m_tabWidth = 8;
 
 		TextItem *		m_pFocusedText = nullptr;
         bool            m_bAutoElipsis = false;

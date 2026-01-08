@@ -155,20 +155,28 @@ namespace wg
 
 	enum class CodePage		//. autoExtras
 	{
+		Undefined = 0,
 		Latin1,
-		_1250,		///< Windows Cental Europe
-		_1251,		///< Windows Cyrillic
-		_1252,		///< Windows Latin-1 extended
-		_1253,		///< Windows Greek
-		_1254,		///< Windows Turkish
-		_1255,		///< Windows Hebrew
-		_1256,		///< Windows Arabic
-		_1257,		///< Windows Baltic
-		_1258,		///< Windows Vietnam
-		_874,		///< Windows Thai
+		DOS_437,		///< OEM United States
+		DOS_850,		///< OEM Multilingual Latin 1
+
+		Win_1250,		///< Windows Cental Europe
+		Win_1251,		///< Windows Cyrillic
+		Win_1252,		///< Windows Latin-1 extended
+		Win_1253,		///< Windows Greek
+		Win_1254,		///< Windows Turkish
+		Win_1255,		///< Windows Hebrew
+		Win_1256,		///< Windows Arabic
+		Win_1257,		///< Windows Baltic
+		Win_1258,		///< Windows Vietnam
+		Win_874,		///< Windows Thai
+
+		MacRoman,		///< Macintosh Roman
+		AtariST,		///< Atari ST
+		RiscOS,			///< Acorn Archimedes
 	};
 
-	static const CodePage DefaultCodePage = CodePage::_1252;
+	static const CodePage DefaultCodePage = CodePage::Win_1252;
 
 	//____ BreakRules ____________________________________________________________
 

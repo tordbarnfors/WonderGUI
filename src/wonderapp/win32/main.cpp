@@ -28,7 +28,12 @@ POINT						g_mouseLockPos = { -1, -1 };
 
 PointerStyle				g_currentPointerStyle = PointerStyle::Undefined;
 
-static void _setMouseButton(MouseButton button, bool bPressed);
+int							g_mouseCaptureRefCount = 0;
+
+
+std::wstring _stringToWString(const std::string& str);
+
+static void _setMouseButton(HWND hwnd, MouseButton button, bool bPressed);
 static void _setPointer();
 
 
@@ -166,7 +171,7 @@ LRESULT CALLBACK windowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 				SetCursorPos(g_mouseLockPos.x, g_mouseLockPos.y);
 			}
 			else
-				pos = { LOWORD(lparam)*scaleFactor, HIWORD(lparam)*scaleFactor };
+				pos = { (int16_t)LOWORD(lparam)*scaleFactor, (int16_t)HIWORD(lparam)*scaleFactor };
 
 			LARGE_INTEGER counter;
 			QueryPerformanceCounter(&counter);
@@ -188,37 +193,52 @@ LRESULT CALLBACK windowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 
 		case WM_LBUTTONDOWN:
 		{
-			_setMouseButton(MouseButton::Left, true);
+			_setMouseButton(hwnd, MouseButton::Left, true);
 			break;
 		}
 
 		case WM_LBUTTONUP:
 		{
-			_setMouseButton(MouseButton::Left, false);
+			_setMouseButton(hwnd, MouseButton::Left, false);
 			break;
 		}	
 
 		case WM_RBUTTONDOWN:
 		{
-			_setMouseButton(MouseButton::Right, true);
+			_setMouseButton(hwnd, MouseButton::Right, true);
 			break;
 		}
 
 		case WM_RBUTTONUP:
 		{
-			_setMouseButton(MouseButton::Right, false);
+			_setMouseButton(hwnd, MouseButton::Right, false);
 			break;
 		}
 
 		case WM_MBUTTONDOWN:
 		{
-			_setMouseButton(MouseButton::Middle, true);
+			_setMouseButton(hwnd, MouseButton::Middle, true);
 			break;
 		}
 
 		case WM_MBUTTONUP:
 		{
-			_setMouseButton(MouseButton::Middle, false);
+			_setMouseButton(hwnd, MouseButton::Middle, false);
+			break;
+		}
+
+		case WM_CAPTURECHANGED:
+		{
+			//Set mouse button up for all pressed buttons.
+
+			auto p = Base::inputHandler();
+			for (int i = (int)MouseButton_min; i < (int)MouseButton_max; i++)
+			{
+				if (p->isButtonPressed(MouseButton(i)))
+					p->setButton(MouseButton(i), false);
+			}
+
+			g_mouseCaptureRefCount = 0;
 			break;
 		}
 
@@ -274,7 +294,7 @@ LRESULT CALLBACK windowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 			wchar_t wch = (wchar_t)wparam;
 
 			// Ignore control characters - handle them in WM_KEYDOWN instead
-			if (wch < 32 && wch != '\t' && wch != '\r' && wch != '\n') {
+			if (wch < 32 && wch != '\t' && wch != '\n') {
 				return 0;  // or break to let DefWindowProc handle it
 			}
 
@@ -561,8 +581,15 @@ std::string	Win32HostBridge::getClipboardText()
 		if (hData != NULL) {
 			char* pszText = static_cast<char*>(GlobalLock(hData));
 			if (pszText != NULL) {
+
 				clipboardText = pszText;
 				GlobalUnlock(hData);
+
+				// Remove any carriage return characters
+
+				clipboardText.erase(
+					std::remove(clipboardText.begin(), clipboardText.end(), '\r'),
+					clipboardText.end());
 			}
 		}
 		CloseClipboard();
@@ -583,9 +610,9 @@ bool Win32HostBridge::setClipboardText(const std::string& text)
 		size_t len = text.size();
 		if (len > 0)
 		{
-			HGLOBAL hMem = GlobalAlloc(GMEM_MOVEABLE, len);
+			HGLOBAL hMem = GlobalAlloc(GMEM_MOVEABLE, len+1);
 			if (hMem) {
-				memcpy(GlobalLock(hMem), text.c_str(), len);
+				memcpy(GlobalLock(hMem), text.c_str(), len+1);
 				GlobalUnlock(hMem);
 				SetClipboardData(CF_TEXT, hMem);
 				success = true;
@@ -615,8 +642,21 @@ bool Win32HostBridge::yieldFocus(uintptr_t windowRef)
 
 //____ _setMouseButton() _______________________________________________________
 
-static void _setMouseButton(MouseButton button, bool bPressed)
+static void _setMouseButton(HWND hwdn, MouseButton button, bool bPressed)
 {
+	if (bPressed)
+	{
+		if (g_mouseCaptureRefCount == 0)
+			SetCapture( hwdn );
+		g_mouseCaptureRefCount++;
+	}
+	else
+	{
+		g_mouseCaptureRefCount--;
+		if(g_mouseCaptureRefCount == 0)
+			ReleaseCapture();
+	}
+
 	LARGE_INTEGER counter;
 	QueryPerformanceCounter(&counter);
 	int64_t timestamp = int64_t(counter.QuadPart * g_ticksToMicroseconds);
@@ -674,4 +714,25 @@ static void _setPointer()
 			SetCursor(LoadCursor(NULL, IDC_ARROW));
 			break;
 	}
+}
+
+//____ _stringToWString() _____________________________________________________
+
+std::wstring _stringToWString(const std::string& str)
+{
+	if (str.empty())
+		return std::wstring();
+
+	// Get the required buffer size
+	int sizeNeeded = MultiByteToWideChar(CP_UTF8, 0, str.c_str(), -1,
+		nullptr, 0);
+	if (sizeNeeded <= 0)
+		return std::wstring();
+
+	// Convert
+	std::wstring result(sizeNeeded - 1, 0); // -1 to exclude null terminator
+	MultiByteToWideChar(CP_UTF8, 0, str.c_str(), -1,
+		&result[0], sizeNeeded);
+
+	return result;
 }

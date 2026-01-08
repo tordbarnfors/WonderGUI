@@ -35,7 +35,7 @@ public:
 
 	int64_t						time() override;
 
-	wg::Blob_p 					loadBlob(const std::string& path) override;
+	wg::Blob_p 					loadBlob(const std::string& path, bool bNullTerminate = false) override;
 	wg::Surface_p 				loadSurface(const std::string& path, wg::SurfaceFactory* pFactory = nullptr, 
 											const wg::Surface::Blueprint& bp = wg::Surface::Blueprint()) override;
 
@@ -48,15 +48,15 @@ public:
 
 	std::string					inputBox(const std::string& title, const std::string& message, const std::string& defaultInput) override;
 
-	std::string					saveFileDialog( const std::string& title, const std::string& defaultPathAndFile,
+	std::string					saveFileDialog( const std::string& title, const std::string& defaultPath, const std::string& defaultFilename,
 												const std::vector<std::string>& filterPatterns,
 												const std::string& singleFilterDescription) override;
 
-	std::string					openFileDialog( const std::string& title, const std::string& defaultPathAndFile,
+	std::string					openFileDialog( const std::string& title, const std::string& defaultPath, const std::string& defaultFilename,
 												const std::vector<std::string>& filterPatterns,
 												const std::string& singleFilterDescription) override;
 
-	std::vector<std::string>	openMultiFileDialog(const std::string& title, const std::string& defaultPathAndFile,
+	std::vector<std::string>	openMultiFileDialog(const std::string& title, const std::string& defaultPath, const std::string& defaultFilename,
 												const std::vector<std::string>& filterPatterns,
 												const std::string& singleFilterDescription) override;
 
@@ -73,5 +73,8 @@ public:
 
 private:
 
+	void _openFileDialog(std::vector<std::string>* pMultiOutput, std::string* pSingleOutput, const std::string& title,
+		const std::string& defaultPath, const std::string& defaultFilename,
+		const std::vector<std::string>& filterPatterns, const std::string& singleFilterDescription);
 
 };

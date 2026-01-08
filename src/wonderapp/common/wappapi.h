@@ -75,7 +75,7 @@ namespace wapp
 
 		virtual int64_t			time() = 0;					// Time in millisec since any arbitrary time before call to init().
 
-		virtual wg::Blob_p		loadBlob(const std::string& path) = 0;
+		virtual wg::Blob_p		loadBlob(const std::string& path, bool bNullTerminate = false) = 0;
 		virtual wg::Surface_p	loadSurface(const std::string& path, wg::SurfaceFactory* pFactory = nullptr,
 			const wg::Surface::Blueprint& blueprint = wg::Surface::Blueprint()) = 0;
 
@@ -88,15 +88,15 @@ namespace wapp
 
 		virtual std::string		inputBox(const std::string& title, const std::string& message, const std::string& defaultInput) = 0;
 
-		virtual std::string		saveFileDialog(const std::string& title, const std::string& defaultPathAndFile,
+		virtual std::string		saveFileDialog(const std::string& title, const std::string& defaultPath, const std::string& defaultFilename,
 			const std::vector<std::string>& filterPatterns,
 			const std::string& singleFilterDescription) = 0;
 
-		virtual std::string		openFileDialog(const std::string& title, const std::string& defaultPathAndFile,
+		virtual std::string		openFileDialog(const std::string& title, const std::string& defaultPath, const std::string& defaultFilename,
 			const std::vector<std::string>& filterPatterns,
 			const std::string& singleFilterDescription) = 0;
 
-		virtual std::vector<std::string> openMultiFileDialog(const std::string& title, const std::string& defaultPathAndFile,
+		virtual std::vector<std::string> openMultiFileDialog(const std::string& title, const std::string& defaultPath, const std::string& defaultFilename,
 			const std::vector<std::string>& filterPatterns,
 			const std::string& singleFilterDescription) = 0;
 

@@ -31,9 +31,14 @@ namespace wg
 	/**
 	 * @brief Create an empty blob of the specified size.
 	 *
-	 * Create an empty blob of the specified size.
+	 * Create an empty blob of the specified size. The Blob has uninitialized
+	 * data, but is zero-terminated (an additional byte is set to zero).
 	 *
-	 * @param size Size in bytes of area to allocate.
+	 * @param size				Size in bytes of area to allocate.
+	 * 
+	 * @param bNullTerminate	If true, an extra byte is allocated and set to zero after 
+	 *							the data area. It is not included in the size returned by size().
+	 *
 	 *
 	 * Allocates a memory buffer of the given size and wraps it into a Blob.
 	 * The memory buffer will not move and can be accessed randomly at any
@@ -41,9 +46,12 @@ namespace wg
 	 * buffer is released.
 	 */
 
-	Blob_p Blob::create( int size )
+	Blob_p Blob::create( int size, bool bNullTerminate )
 	{
-		Blob * pBlob = new(size) Blob( size );
+		Blob * pBlob = new(size + (bNullTerminate ? 1 : 0) ) Blob( size );
+		
+		if (bNullTerminate)
+			*(((char*)pBlob) + sizeof(Blob) + size) = 0; // Null-termination of data.
 		return Blob_p(pBlob);
 	}
 

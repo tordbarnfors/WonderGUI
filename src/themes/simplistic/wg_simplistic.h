@@ -175,6 +175,7 @@ namespace wg
 
 
 		Skin_p		m_pPlateSkin;
+		Skin_p		m_pNoBevelPlateSkin;
 		Skin_p		m_pCanvasSkin;
 		Skin_p		m_pWindowSkin;
 

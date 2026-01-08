@@ -51,7 +51,7 @@ namespace wg
 	public:
 		//.____ Creation __________________________________________
 
-		static Blob_p	create( int size );
+		static Blob_p	create( int size, bool bNullTerminate = false );
 		static Blob_p	create( void * pData, std::function<void()> destructor );
 		static Blob_p	create( void * pData, int size, std::function<void()> destructor );
 
