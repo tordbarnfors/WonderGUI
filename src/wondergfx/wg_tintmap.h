@@ -56,8 +56,6 @@ namespace wg
 
 		virtual void exportColors(SizeI tintmapSize, HiColor* pOutputX, HiColor* pOutputY ) = 0;
 
-		virtual Gradient exportGradient() = 0;			// To support legacy code.
-
 		//.____ Misc ___________________________________________________
 
 		virtual int alpha( const CoordSPX& pos, const RectSPX& area ) = 0;

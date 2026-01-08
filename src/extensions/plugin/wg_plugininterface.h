@@ -442,14 +442,6 @@ typedef struct wg_edgemap_calls_struct
 
 
 
-
-
-
-//.____ Content _______________________________________________________
-
-
-
-
 //____ wg_edgemapfactory_calls ________________________________________________
 
 typedef struct wg_edgemapfactory_calls_struct

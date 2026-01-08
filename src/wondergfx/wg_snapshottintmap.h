@@ -64,8 +64,6 @@ namespace wg
 
 		void exportColors(SizeI tintmapSize, HiColor* pOutputX, HiColor* pOutputY ) override;
 
-		Gradient exportGradient() override;
-
 		//.____ Misc ___________________________________________________
 
 		int alpha( const CoordSPX& pos, const RectSPX& area ) override;

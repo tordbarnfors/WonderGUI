@@ -162,20 +162,6 @@ namespace wg
 		}
 	}
 
-	//____ exportGradient() ______________________________________________________
-
-	Gradient Gradyent::exportGradient()
-	{
-		Gradient g;
-		
-		g.topLeft = m_top * m_left;
-		g.bottomLeft = m_bottom * m_left;
-		g.topRight = m_top * m_right;
-		g.bottomRight = m_bottom * m_right;
-
-		return g;
-	}
-
 	//____ alpha() _______________________________________________________________
 
 	int Gradyent::alpha( const CoordSPX& pos, const RectSPX& area )

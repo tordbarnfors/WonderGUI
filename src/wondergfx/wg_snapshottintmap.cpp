@@ -114,23 +114,6 @@ namespace wg
 		GfxBase::memStackFree(bufferSizeX);
 	}
 
-	//____ exportGradient() ______________________________________________________
-
-	Gradient SnapshotTintmap::exportGradient()
-	{
-		Gradient g1 = m_pFrom->exportGradient();
-		Gradient g2 = m_pTo->exportGradient();
-
-		Gradient out;
-
-		out.topLeft = m_pTransition->snapshot(m_timestamp, g1.topLeft, g2.topLeft );
-		out.topRight = m_pTransition->snapshot(m_timestamp, g1.topRight, g2.topRight );
-		out.bottomLeft = m_pTransition->snapshot(m_timestamp, g1.bottomLeft, g2.bottomLeft );
-		out.bottomRight = m_pTransition->snapshot(m_timestamp, g1.bottomRight, g2.bottomRight );
-
-		return out;
-	}
-
 	//____ alpha() _______________________________________________________________
 
 	int SnapshotTintmap::alpha( const CoordSPX& pos, const RectSPX& area )
