@@ -122,6 +122,7 @@ namespace wg
 			pTintmaps[i] = stateTintmaps[i];
 
 		m_pStateTintmaps = pTintmaps;
+		m_nbStateTintmaps = nbTintmapStates;
 
 		pDest += tintmapBytes;
 
