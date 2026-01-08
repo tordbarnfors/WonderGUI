@@ -51,6 +51,9 @@ namespace wg
 		static wg_hostbridge_calls*		hostBridge;
 		static wg_plugincapsule_calls*	pluginCapsule;
 		static wg_blurbrush_calls*		blurbrush;
+		static wg_tintmap_calls*		tintmap;
+		static wg_gradyent_calls*		gradyent;
+		static wg_statictintmap_calls*	staticTintmap;
 
 		static bool _init(wg_plugin_interface* pCallsCollection);
 	};

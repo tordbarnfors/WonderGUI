@@ -19,27 +19,22 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef WG_C_TINTMAP_DOT_H
-#define WG_C_TINTMAP_DOT_H
+#ifndef WG_C_STATICTINTMAP_DOT_H
+#define WG_C_STATICTINTMAP_DOT_H
 #pragma once
 
-#include <wg_c_gfxtypes.h>
-#include <wg_c_geo.h>
+#include <wg_c_geartypes.h>
 #include <wg_c_color.h>
+#include <wg_c_geo.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-WG_EXPORT int	wg_isTintmapOpaque( wg_obj tintmap );
-WG_EXPORT int	wg_isTintmapVertical( wg_obj tintmap );
-WG_EXPORT int	wg_isTintmapHorizontal( wg_obj tintmap );
-
-WG_EXPORT void 	wg_exportTintmapColors( wg_obj tintmap, wg_sizeI tintmapSize, wg_color* pOutputX, wg_color* pOutputY);
+WG_EXPORT wg_obj	wg_createStaticTintmap( wg_sizeI size, const wg_color * pColorstripX, const wg_color * pColorstripY );
 
 #ifdef __cplusplus
 }
 #endif
 
 #endif
-

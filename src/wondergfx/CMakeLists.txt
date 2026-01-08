@@ -59,6 +59,8 @@ set( SOURCES
 	wg_printer.h
 	wg_snapshottintmap.cpp
 	wg_snapshottintmap.h
+	wg_statictintmap.cpp
+	wg_statictintmap.h
 	wg_surface.cpp
 	wg_surface.h
 	wg_surfacefactory.cpp
@@ -117,6 +119,8 @@ set( SOURCES
 	c-api/wg_c_patches.h
 	c-api/wg_c_printer.cpp
 	c-api/wg_c_printer.h
+	c-api/wg_c_statictintmap.cpp
+	c-api/wg_c_statictintmap.h
 	c-api/wg_c_surface.cpp
 	c-api/wg_c_surface.h
 	c-api/wg_c_surfacefactory.cpp

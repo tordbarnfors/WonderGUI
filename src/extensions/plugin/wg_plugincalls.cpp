@@ -41,6 +41,9 @@ namespace wg
 	wg_hostbridge_calls*		PluginCalls::hostBridge		= nullptr;
 	wg_plugincapsule_calls*		PluginCalls::pluginCapsule	= nullptr;
 	wg_blurbrush_calls*			PluginCalls::blurbrush		= nullptr;
+	wg_tintmap_calls*			PluginCalls::tintmap		= nullptr;
+	wg_gradyent_calls*			PluginCalls::gradyent		= nullptr;
+	wg_statictintmap_calls*		PluginCalls::staticTintmap	= nullptr;
 
 
 	//___ _init() ______________________________________________________________
@@ -104,6 +107,15 @@ namespace wg
 		if (pCallsCollection->pBlurbrush->structSize < sizeof(wg_blurbrush_calls))
 			goto	error_too_old_abi;
 
+		if (pCallsCollection->pTintmap->structSize < sizeof(wg_tintmap_calls))
+			goto	error_too_old_abi;
+
+		if (pCallsCollection->pGradyent->structSize < sizeof(wg_gradyent_calls))
+			goto	error_too_old_abi;
+
+		if (pCallsCollection->pStaticTintmap->structSize < sizeof(wg_statictintmap_calls))
+			goto	error_too_old_abi;
+
 
 		bitmapCache		= pCallsCollection->pBitmapCache;
 		bitmapFont		= pCallsCollection->pBitmapFont;
@@ -121,6 +133,9 @@ namespace wg
 		hostBridge		= pCallsCollection->pHostBridge;
 		pluginCapsule	= pCallsCollection->pPluginCapsule;
 		blurbrush		= pCallsCollection->pBlurbrush;
+		tintmap			= pCallsCollection->pTintmap;
+		gradyent		= pCallsCollection->pGradyent;
+		staticTintmap	= pCallsCollection->pStaticTintmap;
 
 		return true;
 

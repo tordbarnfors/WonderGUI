@@ -41,6 +41,10 @@
 #include <wg_c_edgemapfactory.h>
 #include <wg_c_plugincapsule.h>
 
+#include <wg_c_tintmap.h>
+#include <wg_c_gradyent.h>
+#include <wg_c_statictintmap.h>
+
 
 struct wg_c_calls_body
 {
@@ -63,6 +67,10 @@ struct wg_c_calls_body
 	wg_hostbridge_calls			hostBridge;
 	wg_plugincapsule_calls		pluginCapsule;
 	wg_blurbrush_calls			blurbrush;
+
+	wg_tintmap_calls			tintmap;
+	wg_gradyent_calls			gradyent;
+	wg_statictintmap_calls		staticTintmap;
 };
 
 static wg_c_calls_body	body;
@@ -135,6 +143,13 @@ void wg_populatePluginInterface(wg_plugin_interface * pHeader)
 	pBody->gfxDevice.clipBounds				= &wg_clipBounds;
 	pBody->gfxDevice.setTintColor			= &wg_setTintColor;
 	pBody->gfxDevice.getTintColor			= &wg_getTintColor;
+
+	pBody->gfxDevice.setTintmap				= &wg_setTintmap;
+	pBody->gfxDevice.getTintmap				= &wg_getTintmap;
+	pBody->gfxDevice.getTintmapRect			= &wg_getTintmapRect;
+	pBody->gfxDevice.clearTintmap			= &wg_clearTintmap;
+	pBody->gfxDevice.hasTintmap				= &wg_hasTintmap;
+
 	pBody->gfxDevice.setTintGradient		= &wg_setTintGradient;
 	pBody->gfxDevice.clearTintGradient		= &wg_clearTintGradient;
 	pBody->gfxDevice.setBlendMode			= &wg_setBlendMode;
@@ -318,23 +333,6 @@ void wg_populatePluginInterface(wg_plugin_interface * pHeader)
 	pBody->edgemap.exportFloatSamples		= &wg_exportFloatSamples;
 	pBody->edgemap.importPaletteEntries		= &wg_importEdgemapPaletteEntries;
 
-
-
-
-	wg_edgemapPalette	(*edgemapPaletteType)(wg_obj edgemap);
-	int					(*setEdgemapColors)(wg_obj edgemap, int begin, int end, const wg_color * pColors);
-	int					(*setEdgemapColorsFromGradients)(wg_obj edgemap, int begin, int end, const wg_gradient * pGradients );
-	int					(*setEdgemapColorsFromTintmaps)(wg_obj edgemap, int begin, int end, wg_obj * pTintmaps );
-	int					(*setEdgemapColorsFromStrips)(wg_obj edgemap, int begin, int end, const wg_color * pColorstripX, const wg_color * pColorstripY );
-
-	int					(*importEdgemapPaletteEntries)(wg_obj edgemap, int begin, int end, const wg_color * pColors );
-
-	const wg_color *  	(*edgemapFlatColors)(wg_obj edgemap);
-	const wg_color *  	(*edgemapColorstripsX)(wg_obj edgemap);
-	const wg_color *  	(*edgemapColorstripsY)(wg_obj edgemap);
-
-
-
 	pBody->edgemapFactory.structSize		= sizeof(wg_edgemapfactory_calls);
 	pBody->edgemapFactory.createEdgemap		= &wg_createEdgemap;
 	pBody->edgemapFactory.createEdgemapFromFloats = &wg_createEdgemapFromFloats;
@@ -370,6 +368,17 @@ void wg_populatePluginInterface(wg_plugin_interface * pHeader)
 	pBody->blurbrush.green					= &wg_blurbrushGreen;
 	pBody->blurbrush.red					= &wg_blurbrushRed;
 
+	pBody->tintmap.structSize				= sizeof(wg_tintmap_calls);
+	pBody->tintmap.exportTintmapColors		= &wg_exportTintmapColors;
+	pBody->tintmap.isTintmapHorizontal		= &wg_isTintmapHorizontal;
+	pBody->tintmap.isTintmapVertical		= &wg_isTintmapVertical;
+	pBody->tintmap.isTintmapOpaque			= &wg_isTintmapOpaque;
+
+	pBody->gradyent.structSize				= sizeof(wg_gradyent_calls);
+	pBody->gradyent.createGradyent			= &wg_createGradyent;
+
+	pBody->staticTintmap.structSize			= sizeof(wg_statictintmap_calls);
+	pBody->staticTintmap.createStaticTintmap= &wg_createStaticTintmap;
 
 	pHeader->structSize			= sizeof(wg_plugin_interface);
 	pHeader->pBitmapCache		= &pBody->bitmapCache;
@@ -391,6 +400,11 @@ void wg_populatePluginInterface(wg_plugin_interface * pHeader)
 	pHeader->pHostBridge		= &pBody->hostBridge;
 	pHeader->pPluginCapsule		= &pBody->pluginCapsule;
 	pHeader->pBlurbrush			= &pBody->blurbrush;
+
+	pHeader->pTintmap			= &pBody->tintmap;
+	pHeader->pGradyent			= &pBody->gradyent;
+	pHeader->pStaticTintmap		= &pBody->staticTintmap;
+
 }
 
 

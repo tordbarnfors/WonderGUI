@@ -25,6 +25,7 @@
 #include <wg_pluginedgemap.h>
 #include <wg_pluginsurfacefactory.h>
 #include <wg_plugincanvaslayers.h>
+#include <wg_statictintmap.h>
 
 #include <wg_base.h>
 #include <assert.h>
@@ -189,6 +190,64 @@ namespace wg
 
         return *(HiColor*)&col;
     }
+
+	//____ setTintmap() __________________________________________________________
+
+	void PluginGfxDevice::setTintmap(const RectSPX& rect, Tintmap* pTintmap)
+	{
+		int colorsX = pTintmap->isHorizontal() ? rect.w : 0;
+		int colorsY = pTintmap->isVertical() ? rect.h : 0;
+
+		if( colorsX == 0 && colorsY == 0 )
+			colorsY = 1;						// We need to transfer at least one color.
+
+		int allocSize = (colorsX + colorsY) * sizeof(HiColor);
+
+		auto pColors = (wg_color*) GfxBase::memStackAlloc(allocSize);
+
+		wg_color * pColorsX = colorsX > 0 ? pColors : nullptr;
+		wg_color * pColorsY = colorsY > 0 ? pColors + colorsX : nullptr;
+
+		pTintmap->exportColors({colorsX,colorsY}, (HiColor*) pColorsX, (HiColor*) pColorsY);
+
+		wg_obj replacementTintmap = PluginCalls::staticTintmap->createStaticTintmap( {colorsX,colorsY}, pColorsX, pColorsY );
+
+		PluginCalls::gfxDevice->setTintmap( m_cDevice, (wg_rectSPX*)&rect, replacementTintmap );
+
+		GfxBase::memStackFree(allocSize);
+	}
+
+	//____ clearTintmap() ________________________________________________________
+
+	void PluginGfxDevice::clearTintmap()
+	{
+		PluginCalls::gfxDevice->clearTintmap(m_cDevice);
+	}
+
+	//____ hasTintmap() __________________________________________________________
+
+	bool PluginGfxDevice::hasTintmap() const
+	{
+		return (PluginCalls::gfxDevice->hasTintmap(m_cDevice) == 1);
+	}
+
+	//____ tintmap() _____________________________________________________________
+
+	Tintmap_p PluginGfxDevice::tintmap() const
+	{
+		//TODO: Handle this in some better way.
+
+		return nullptr;
+	}
+
+	//____ tintmapRect() _________________________________________________________
+
+	RectSPX PluginGfxDevice::tintmapRect() const
+	{
+		auto rect = (PluginCalls::gfxDevice->getTintmapRect(m_cDevice) );
+		return { rect.x, rect.y, rect.w, rect.h };
+	}
+
 
     //____ setTintGradient() __________________________________________________
 

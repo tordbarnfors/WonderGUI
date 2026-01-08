@@ -74,6 +74,12 @@ namespace wg
         void        setTintColor( HiColor color ) override;
         HiColor		tintColor() const override;
 
+		void		setTintmap(const RectSPX& rect, Tintmap* pTintmap) override;
+		void		clearTintmap() override;
+		bool		hasTintmap() const override;
+		Tintmap_p	tintmap() const override;
+		RectSPX		tintmapRect() const override;
+
         void        setTintGradient(const RectSPX& rect, const Gradient& gradient) override;
         void        clearTintGradient() override;
 

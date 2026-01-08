@@ -195,6 +195,14 @@ typedef struct wg_gfxdevice_calls_struct
 	const wg_rectSPX*	(*clipBounds)(wg_obj device);
 	void				(*setTintColor)(wg_obj device, wg_color color);
 	wg_color			(*getTintColor)(wg_obj device);
+
+	void				(*setTintmap)(wg_obj device, const wg_rectSPX* rect, const wg_obj tintmap);
+	wg_obj				(*getTintmap)(wg_obj device);
+	wg_rectSPX			(*getTintmapRect)(wg_obj device);
+	void				(*clearTintmap)(wg_obj device);
+	int					(*hasTintmap)(wg_obj device);
+
+
 	void				(*setTintGradient)(wg_obj device, const wg_rectSPX* rect, const wg_gradient* gradient);
 	void				(*clearTintGradient)(wg_obj device);
 	int					(*setBlendMode)(wg_obj device, wg_blendMode blendMode);
@@ -493,6 +501,45 @@ typedef struct wg_blurbrush_calls_struct
 
 } wg_blurbrush_calls;
 
+
+//____ wg_tintmap_calls_struct _____________________________________________
+
+typedef struct wg_tintmap_calls_struct
+{
+	int				structSize;
+
+	int	(*isTintmapOpaque)( wg_obj tintmap );
+	int	(*isTintmapVertical)( wg_obj tintmap );
+	int	(*isTintmapHorizontal)( wg_obj tintmap );
+
+	void (*exportTintmapColors)( wg_obj tintmap, wg_sizeI tintmapSize, wg_color* pOutputX, wg_color* pOutputY);
+
+} wg_tintmap_calls;
+
+//____ wg_gradyent_calls_struct _____________________________________________
+
+typedef struct wg_gradyent_calls_struct
+{
+	int				structSize;
+
+	wg_obj	(*createGradyent)(wg_color top, wg_color bottom, wg_color left, wg_color right);
+
+} wg_gradyent_calls;
+
+//____ wg_statictintmap_calls_struct _____________________________________________
+
+typedef struct wg_statictintmap_calls_struct
+{
+	int				structSize;
+
+	wg_obj	(*createStaticTintmap)( wg_sizeI size, const wg_color * pColorstripX, const wg_color * pColorstripY );
+
+} wg_statictintmap_calls;
+
+
+
+
+
 //____ wg_plugin_interface ____________________________________________________
 
 typedef struct wg_plugin_interface_struct
@@ -516,6 +563,9 @@ typedef struct wg_plugin_interface_struct
 	wg_hostbridge_calls *		pHostBridge;
 	wg_plugincapsule_calls *	pPluginCapsule;
 	wg_blurbrush_calls *		pBlurbrush;
+	wg_tintmap_calls *			pTintmap;
+	wg_gradyent_calls *			pGradyent;
+	wg_statictintmap_calls *	pStaticTintmap;
 
 } wg_plugin_interface;
 
