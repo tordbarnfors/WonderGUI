@@ -29,25 +29,48 @@ inline EdgemapFactory* getPtr(wg_obj obj) {
 	return static_cast<EdgemapFactory*>(reinterpret_cast<Object*>(obj));
 }
 
-wg_obj wg_createEdgemap(wg_obj factory, const wg_edgemapBP* blueprint)
+
+static void convertBP(const wg_edgemapBP* pSrc, Edgemap::Blueprint& dest)
 {
-	auto p = getPtr(factory)->createEdgemap(*(const Edgemap::Blueprint*)blueprint);
+	dest.colors			= (const HiColor*) pSrc->colors;
+	dest.colorstripsX	= (const HiColor*) pSrc->colorstripsX;
+	dest.colorstripsY	= (const HiColor*) pSrc->colorstripsY;
+	dest.paletteType	= (EdgemapPalette) pSrc->paletteType;
+	dest.tintmaps		= (const Tintmap_p *) pSrc->tintmaps;		 // IS THIS INDIRECT CONVERSION SAFE?
+	dest.segments 		= pSrc->segments;
+	dest.size.w			= pSrc->size.w;
+	dest.size.h			= pSrc->size.h;
+}
+
+
+wg_obj wg_createEdgemap(wg_obj factory, const wg_edgemapBP* pCBP)
+{
+	Edgemap::Blueprint	cppBP;
+	convertBP(pCBP,cppBP);
+
+	auto p = getPtr(factory)->createEdgemap(cppBP);
 	p->retain();
 	return (wg_obj) static_cast<Object*>(p.rawPtr());
 }
 
-wg_obj wg_createEdgemapFromFloats(wg_obj factory, const wg_edgemapBP* blueprint, wg_sampleOrigo origo,
+wg_obj wg_createEdgemapFromFloats(wg_obj factory, const wg_edgemapBP* pCBP, wg_sampleOrigo origo,
 	const float* pSamples, int edges, int edgePitch, int samplePitch)
 {
-	auto p = getPtr(factory)->createEdgemap(*(const Edgemap::Blueprint*)blueprint, (SampleOrigo) origo, pSamples, edges, edgePitch, samplePitch);
+	Edgemap::Blueprint	cppBP;
+	convertBP(pCBP,cppBP);
+
+	auto p = getPtr(factory)->createEdgemap(cppBP, (SampleOrigo) origo, pSamples, edges, edgePitch, samplePitch);
 	p->retain();
 	return (wg_obj) static_cast<Object*>(p.rawPtr());
 }
 
-wg_obj wg_createEdgemapFromSpx(wg_obj factory, const wg_edgemapBP* blueprint, wg_sampleOrigo origo,
+wg_obj wg_createEdgemapFromSpx(wg_obj factory, const wg_edgemapBP* pCBP, wg_sampleOrigo origo,
 	const wg_spx* pSamples, int edges, int edgePitch, int samplePitch)
 {
-	auto p = getPtr(factory)->createEdgemap(*(const Edgemap::Blueprint*)blueprint, (SampleOrigo)origo, (const spx*) pSamples, edges, edgePitch, samplePitch);
+	Edgemap::Blueprint	cppBP;
+	convertBP(pCBP,cppBP);
+
+	auto p = getPtr(factory)->createEdgemap(cppBP, (SampleOrigo)origo, (const spx*) pSamples, edges, edgePitch, samplePitch);
 	p->retain();
 	return (wg_obj) static_cast<Object*>(p.rawPtr());
 }

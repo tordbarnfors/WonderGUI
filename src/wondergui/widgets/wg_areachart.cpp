@@ -354,6 +354,8 @@ namespace wg
 					_updateWaveformEdge(graph.m_pWaveform, true, (int) graph.m_topSamples.size(), graph.m_topSamples.data(), graph.m_bAxisSwapped );
 					_updateWaveformEdge(graph.m_pWaveform, false, (int) graph.m_bottomSamples.size(), graph.m_bottomSamples.data(), graph.m_bAxisSwapped );
 
+					graph.m_pEdgemap = graph.m_pWaveform->refresh();
+
 					bNeedsFullRendering = true;
 				}
 				else

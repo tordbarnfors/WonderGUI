@@ -47,7 +47,7 @@ namespace wg
 		m_pColors = new HiColor[totalColors];
 
 		memcpy(m_pColors, pColorstripX, m_size.w * sizeof(HiColor) );
-		memcpy(m_pColors + m_size.w * sizeof(HiColor), pColorstripX, m_size.h * sizeof(HiColor) );
+		memcpy(m_pColors + m_size.w, pColorstripY, m_size.h * sizeof(HiColor) );
 
 		int alpha = 0;
 		for( int i = 0 ; i < totalColors ; i++ )

@@ -24,11 +24,11 @@
 #pragma once
 
 #include <wg_edgemapfactory.h>
+#include <wg_c_edgemap.h>
 
 #include <vector>
 
 typedef void* wg_obj;
-typedef struct wg_edgemapBP_struct wg_edgemapBP;
 
 namespace wg
 {
@@ -68,7 +68,7 @@ namespace wg
 			bpTranslator( const Edgemap::Blueprint& cppBP );
 			~bpTranslator();
 
-			wg_edgemapBP * bp();
+			const wg_edgemapBP * bp() const { return &m_cBP; };
 		private:
 			wg_edgemapBP	m_cBP;
 

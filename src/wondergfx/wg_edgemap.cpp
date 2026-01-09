@@ -141,32 +141,10 @@ namespace wg
 				// We have colorstrips defined. This overrides everything else, so we ignore tintmaps, gradients and colors.
 
 				if (bp.colorstripsX)
-				{
-					auto pInput = bp.colorstripsX;
-					auto pOutput = m_pColorstripsX;
-
-					for (int seg = 0; seg < bp.segments; seg++)
-					{
-						memcpy(pOutput, pInput, bp.size.w * sizeof(HiColor));
-
-						pInput += bp.size.w;
-						pOutput += bp.size.w;
-					}
-				}
+					memcpy(m_pColorstripsX, bp.colorstripsX, bp.size.w * sizeof(HiColor) * bp.segments );
 
 				if (bp.colorstripsY)
-				{
-					auto pInput = bp.colorstripsY;
-					auto pOutput = m_pColorstripsY + bp.size.w;
-
-					for (int seg = 0; seg < bp.segments; seg++)
-					{
-						memcpy(pOutput, pInput, bp.size.h * sizeof(HiColor));
-
-						pInput += bp.size.h;
-						pOutput += bp.size.h;
-					}
-				}
+					memcpy(m_pColorstripsY, bp.colorstripsY, bp.size.h * sizeof(HiColor) * bp.segments );
 			}
 			else if( bp.tintmaps )
 			{

@@ -149,7 +149,7 @@ namespace wg
 				HiColor top = m_top;
 				HiColor bottom = m_bottom;
 
-				if (!pOutputY)
+				if (!pOutputX)
 				{
 					top *= m_left;
 					bottom *= m_left;
