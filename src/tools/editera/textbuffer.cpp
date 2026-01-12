@@ -1,13 +1,13 @@
 #include "textbuffer.h"
 
-#include "texteditor.h"
+#include "editera.h"
 
 
 const TypeInfo TextBuffer::TYPEINFO = { "TextBuffer", &Object::TYPEINFO };
 
 //____ constructor ____________________________________________________________
 
-TextBuffer::TextBuffer(MyApp* pApp, wapp::API* pAPI, Theme * pTheme, TextLayout * pTextLayout, TextStyle * pTextStyle )
+TextBuffer::TextBuffer(Editera* pApp, wapp::API* pAPI, Theme * pTheme, TextLayout * pTextLayout, TextStyle * pTextStyle )
 	: m_pApp(pApp)
 	, m_pAPI(pAPI)
 {

@@ -2,8 +2,8 @@ set(CMAKE_CXX_STANDARD 20)
 
 set( SOURCES
 
-	texteditor.cpp
-	texteditor.h
+	editera.cpp
+	editera.h
 	editorwindow.cpp
 	editorwindow.h
 	textbuffer.cpp
@@ -12,17 +12,17 @@ set( SOURCES
 
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${SOURCES})
 
-add_executable(texteditor
+add_executable(editera
 	${SOURCES}
 )
 
-target_include_directories(texteditor PRIVATE 
+target_include_directories(editera PRIVATE 
 	${WAPP_INCDIRS}
 )
 
-target_working_directory(texteditor ${WG_ROOT} )
+target_working_directory(editera ${WG_ROOT} )
 
-target_link_libraries(texteditor PRIVATE
+target_link_libraries(editera PRIVATE
 	${WAPPLIB}
 )
 

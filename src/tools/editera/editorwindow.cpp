@@ -1,6 +1,6 @@
 
 #include "editorwindow.h"
-#include "texteditor.h"
+#include "editera.h"
 
 #include <wondergui.h>
 #include <wg_freetypefont.h>
@@ -15,7 +15,7 @@ using namespace std;
 
 //____ constructor ____________________________________________________________
 
-EditorWindow::EditorWindow(API * pAPI, MyApp* pApp, std::string title, std::string path ) : Window(pAPI,{ .open = true, .resizable = true, .size = {800,600}, .title = title })
+EditorWindow::EditorWindow(API * pAPI, Editera* pApp, std::string title, std::string path ) : Window(pAPI,{ .open = true, .resizable = true, .size = {800,600}, .title = title })
 {
 	m_pAPI = pAPI;
 	m_pAPI = pAPI;

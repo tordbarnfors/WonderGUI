@@ -17,13 +17,13 @@ using namespace wg;
 class EditorWindow;
 typedef StrongPtr<EditorWindow>		EditorWindow_p;
 
-class MyApp;
+class Editera;
 
 class EditorWindow : public wapp::Window
 {
 public:
 
-	static EditorWindow_p create(wapp::API* pAPI, MyApp* pApp, std::string title, std::string path) { return EditorWindow_p(new EditorWindow(pAPI, pApp, title, path)); }
+	static EditorWindow_p create(wapp::API* pAPI, Editera* pApp, std::string title, std::string path) { return EditorWindow_p(new EditorWindow(pAPI, pApp, title, path)); }
 
 	void	update();
 
@@ -33,7 +33,7 @@ public:
 
 protected:
 
-	EditorWindow(wapp::API* pAPI, MyApp* pApp, std::string title, std::string path );
+	EditorWindow(wapp::API* pAPI, Editera* pApp, std::string title, std::string path );
 	~EditorWindow();
 
 	bool			_setupGUI();
@@ -44,7 +44,7 @@ protected:
 	bool			_saveFileCallback();
 	void			_setTitle(const std::string& path);
 
-	MyApp*			m_pApp;
+	Editera*		m_pApp;
 	wapp::API*		m_pAPI;
 
 	RootPanel_p		m_pRootPanel;

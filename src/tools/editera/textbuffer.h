@@ -11,7 +11,7 @@ class TextBuffer;
 typedef StrongPtr<TextBuffer>	TextBuffer_p;
 typedef WeakPtr<TextBuffer>		TextBuffer_wp;
 
-class MyApp;
+class Editera;
 
 class TextBuffer : public Object
 {
@@ -19,7 +19,7 @@ public:
 
 	//.____ Creation ___________________________________________________________
 	
-	static TextBuffer_p	create(MyApp* pApp, wapp::API* pAPI, Theme* pTheme, TextLayout* pTextLayout, TextStyle* pTextStyle) 
+	static TextBuffer_p	create(Editera* pApp, wapp::API* pAPI, Theme* pTheme, TextLayout* pTextLayout, TextStyle* pTextStyle) 
 	{ 
 		return TextBuffer_p(new TextBuffer(pApp, pAPI, pTheme, pTextLayout, pTextStyle )); 
 	}
@@ -57,10 +57,10 @@ public:
 
 
 protected:
-	TextBuffer(MyApp* pApp, wapp::API* pAPI, Theme* pTheme, TextLayout* pTextLayout, TextStyle* pTextStyle);
+	TextBuffer(Editera* pApp, wapp::API* pAPI, Theme* pTheme, TextLayout* pTextLayout, TextStyle* pTextStyle);
 	~TextBuffer();
 
-	MyApp*			m_pApp;
+	Editera*		m_pApp;
 	wapp::API*		m_pAPI;
 
 	TextEditor_p	m_pEditor;

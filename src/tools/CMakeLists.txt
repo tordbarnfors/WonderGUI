@@ -1,5 +1,6 @@
 
 
+add_subdirectory(editera)
 add_subdirectory(fontgenerator)
 add_subdirectory(gfxdevicetester)
 add_subdirectory(gfxworkbench)
@@ -14,7 +15,6 @@ add_subdirectory(streamanalyzer)
 add_subdirectory(streamgenerator)
 add_subdirectory(streamplayer)
 add_subdirectory(streamgendll)
-add_subdirectory(texteditor)
 add_subdirectory(unittester)
 add_subdirectory(workbench)
 add_subdirectory(legacyworkbench)
@@ -26,6 +26,7 @@ add_subdirectory(widgetgallery)
 
 
 set_target_properties(
+	editera
 	gfxdevicetester
 	embeddedworkbench
 	legacyworkbench
@@ -45,7 +46,6 @@ set_target_properties(
 	streamplayer
 	streamgendll
 	surfviewer
-	texteditor
 	unittester
 	workbench
 	legacyrunner
