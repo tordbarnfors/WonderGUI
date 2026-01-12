@@ -108,19 +108,16 @@ Widget_p EditorWindow::_createTopBar()
 {
 	auto pTheme = m_pApp->m_pTheme;
 
-	auto pBar = PackPanel::create();
-	pBar->setAxis(Axis::X);
-	pBar->setLayout(m_pApp->m_pLayout);
-	pBar->setSkin( pTheme->plateSkin() );
+	auto pBar = WGCREATE( PackPanel, _.axis = Axis::X, _.layout = m_pApp->m_pLayout, _.skin = pTheme->plateSkin() );
 
-	auto pClearButton = Button::create(WGOVR(pTheme->pushButton(), _.label.text = "Clear"));
-	auto pNewButton = Button::create(WGOVR(pTheme->pushButton(), _.label.text = "New"));
-	auto pLoadButton = Button::create(WGOVR(pTheme->pushButton(), _.label.text = "Load"));
-	auto pSaveButton = Button::create(WGOVR(pTheme->pushButton(), _.label.text = "Save"));
-	auto pSaveAsButton = Button::create(WGOVR(pTheme->pushButton(), _.label.text = "Save as..."));
+	auto pClearButton 	= WGCREATE( Button, _= pTheme->pushButton(), _.label.text = "Clear");
+	auto pNewButton 	= WGCREATE( Button, _= pTheme->pushButton(), _.label.text = "New");
+	auto pLoadButton 	= WGCREATE( Button, _= pTheme->pushButton(), _.label.text = "Load");
+	auto pSaveButton 	= WGCREATE( Button, _= pTheme->pushButton(), _.label.text = "Save");
+	auto pSaveAsButton 	= WGCREATE( Button, _= pTheme->pushButton(), _.label.text = "Save as...");
 
-	auto pSpacer = Filler::create(WGBP(Filler, _.defaultSize = { 20,1 }));
-	
+	auto pSpacer = WGCREATE( Filler, _.defaultSize = { 20,1 } );
+
 	pBar->slots.pushBack({ { pClearButton, {.weight = 0} },
 						   { pNewButton, {.weight = 0} },
 						   { pLoadButton, {.weight = 0} },
@@ -128,16 +125,18 @@ Widget_p EditorWindow::_createTopBar()
 						   { pSaveAsButton, {.weight = 0 }},
 							pSpacer });
 
-	Base::msgRouter()->addRoute(pClearButton, MsgType::Select, [this](Msg* pMsg) {this->m_pTextBuffer->clear(); });
-	Base::msgRouter()->addRoute(pNewButton, MsgType::Select, [this](Msg* pMsg) {this->m_pApp->createEditorWindow( "", "" ); });
+	auto pRouter = Base::msgRouter();
 
-	Base::msgRouter()->addRoute(pLoadButton, MsgType::Select, [this](Msg* pMsg) {this->_selectAndLoadFile(); });
-	Base::msgRouter()->addRoute(pSaveButton, MsgType::Select, [this](Msg* pMsg) {this->_saveFileCallback(); });
-	Base::msgRouter()->addRoute(pSaveAsButton, MsgType::Select, [this](Msg* pMsg) {this->_selectAndSaveFile(); });
+	pRouter->addRoute(pClearButton, MsgType::Select, [this](Msg* pMsg) {this->m_pTextBuffer->clear(); });
+	pRouter->addRoute(pNewButton, MsgType::Select, [this](Msg* pMsg) {this->m_pApp->createEditorWindow( "", "" ); });
+
+	pRouter->addRoute(pLoadButton, MsgType::Select, [this](Msg* pMsg) {this->_selectAndLoadFile(); });
+	pRouter->addRoute(pSaveButton, MsgType::Select, [this](Msg* pMsg) {this->_saveFileCallback(); });
+	pRouter->addRoute(pSaveAsButton, MsgType::Select, [this](Msg* pMsg) {this->_selectAndSaveFile(); });
 
 	m_pSaveButton = pSaveButton;
 	m_pSaveAsButton = pSaveAsButton;
-	
+	 
 	return pBar;
 }
 
