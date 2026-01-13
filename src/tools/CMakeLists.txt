@@ -1,5 +1,6 @@
 
 
+add_subdirectory(compressbench)
 add_subdirectory(editera)
 add_subdirectory(fontgenerator)
 add_subdirectory(gfxdevicetester)
@@ -26,6 +27,7 @@ add_subdirectory(widgetgallery)
 
 
 set_target_properties(
+	compressbench
 	editera
 	gfxdevicetester
 	embeddedworkbench
