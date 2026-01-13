@@ -122,25 +122,10 @@ bool MyApp::_setupGUI(API* pAPI)
 
 
 /*
-int compress(uint8_t * pDest, uint16_t* pBegin, uint16_t* pEnd)
-{
-	uint16_t * pRead = pBegin;
-	uint8_t * pWrite = pDest;
-	while( pRead < pEnd )
-	{
-		uint16_t value = *pRead++;
-		uint16_t count = 1;
-		while( pRead < pEnd && *pRead == value && count < 255 )
-		{
-			count++;
-			pRead++;
-		}
-		*pWrite++ = (uint8_t) value;
-		*pWrite++ = (uint8_t) (value >> 8);
-		*pWrite++ = count;
-	}
-	return int(pWrite - pDest);
-}
+	00 0xxxxx		New pixels(1 - 32)
+	00 1xxxxx		Repeat previous pixel(1 - 32)
+	01 xxxxxx		Pixel from index
+	1 rrgggbb		Modif rgb values
 */
 
 
@@ -149,8 +134,6 @@ int compress(uint8_t* pDest, uint16_t* pBegin, uint16_t* pEnd)
 	uint16_t palette[64];
 
 	uint8_t	pixelToIndex[65536];
-
-
 
 
 	for (int i = 0; i < 64; i++)
