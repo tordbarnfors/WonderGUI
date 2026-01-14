@@ -12,6 +12,9 @@ using namespace wapp;
 using namespace std;
 
 int compress(uint8_t* pDest, uint16_t* pBegin, uint16_t* pEnd);
+int roundtrip(Blob_p pPixels);
+int decompress(uint16_t* pDest, uint8_t* pBegin, uint8_t* pEnd);
+
 
 
 //____ create() _______________________________________________________________
@@ -31,27 +34,35 @@ bool MyApp::init(API * pAPI)
 
 	auto pSource = pAPI->loadBlob(selected);
 
-	int srcSize = pSource->size() & 0xFFFFFFFE;
+	auto pInspector = SurfaceFileInspector::create(pSource->data());
+
+	auto pPixels = (uint16_t*) (((char*)pSource->data()) + pInspector->pixelDataOffset());
+	auto srcSize = pInspector->pixelDataBytes();
+
+	auto pBlob = Blob::create(pPixels, srcSize, nullptr);
+	roundtrip(pBlob);
+
+
 
 //	assert(pSource->size() % 2 == 0);
 
-	auto pDest = (uint8_t *) Base::memStackAlloc(pSource->size() * 2);
+	auto pDest = (uint8_t *) Base::memStackAlloc(srcSize * 2);
 
 
 
-	int size = compress(pDest, (uint16_t*)pSource->data(), ((uint16_t*)pSource->data()) + srcSize / 2);
+	int size = compress(pDest, pPixels, pPixels + srcSize / 2);
 
 	snprintf(m_message, 1024, "Uncompressed size: %d\nCompressed size: %d\nRatio: %d%%", srcSize, size, size * 100 / srcSize);
 
 
-	Base::memStackFree(pSource->size() * 2);
+	Base::memStackFree(srcSize * 2);
+
 
 	if (!_setupGUI(pAPI))
 	{
 		printf("ERROR: Failed to setup GUI!\n");
 		return false;
 	}
-
 
 	return true;
 }
@@ -128,6 +139,31 @@ bool MyApp::_setupGUI(API* pAPI)
 	1 rrgggbb		Modif rgb values
 */
 
+int roundtrip( Blob_p pPixels )
+{
+	assert(pPixels->size() % 2 == 0);
+
+	Blob_p pCompressed = Blob::create(pPixels->size()*2 );
+
+	Blob_p pDecompressed = Blob::create(pPixels->size()+4);
+
+	int compressedSize = compress((uint8_t*)pCompressed->data(), (uint16_t*)pPixels->data(), ((uint16_t*)pPixels->data()) + pPixels->size() / 2);
+
+	int decompressedSize = decompress((uint16_t*)pDecompressed->data(), (uint8_t*)pCompressed->data(), ((uint8_t*)pCompressed->data()) + compressedSize);
+
+	uint16_t* pOriginal = (uint16_t*)pPixels->data();
+	uint16_t* pReconstructed = (uint16_t*)pDecompressed->data();
+	for (int i = 0; i < pPixels->size() / 2; i++)
+	{
+		if (pOriginal[i] != pReconstructed[i])
+		{
+			printf("ERROR: Mismatch at pixel %d: original=%04X, reconstructed=%04X\n", i, pOriginal[i], pReconstructed[i]);
+			return -1;
+		}
+	}
+
+	return compressedSize;
+}
 
 int compress(uint8_t* pDest, uint16_t* pBegin, uint16_t* pEnd)
 {
@@ -160,7 +196,7 @@ int compress(uint8_t* pDest, uint16_t* pBegin, uint16_t* pEnd)
 		if (value == prevValue)
 		{
 			uint16_t count = 1;
-			while (pRead < pEnd && *pRead == value && count < 33)
+			while (pRead < pEnd && *pRead == value && count < 32)
 			{
 				count++;
 				pRead++;
@@ -191,7 +227,7 @@ int compress(uint8_t* pDest, uint16_t* pBegin, uint16_t* pEnd)
 
 				if (diffR < 4 && diffG < 8 && diffB < 4)
 				{
-					*pWrite++ = 0x80 | (diffR << 5) | (diffG << 3) | diffB;		// Store as RGB-delta
+					*pWrite++ = 0x80 | (diffR << 5) | (diffG << 2) | diffB;		// Store as RGB-delta
 					palette[index] = value;
 				}
 				else
@@ -254,8 +290,10 @@ int compress(uint8_t* pDest, uint16_t* pBegin, uint16_t* pEnd)
 }
 
 
-void decompress(uint16_t* pDest, uint8_t* pBegin, uint8_t* pEnd)
+int decompress(uint16_t* pDest, uint8_t* pBegin, uint8_t* pEnd)
 {
+	uint16_t* pOriginalDest = pDest;
+
 	uint16_t palette[64];
 
 	uint8_t	pixelToIndex[65536];
@@ -300,7 +338,8 @@ void decompress(uint16_t* pDest, uint8_t* pBegin, uint8_t* pEnd)
 		else if (v < 0x80)
 		{
 			int index = v & 0x3F;
-			*pDest++ = palette[index];
+			lastPixel = palette[index];
+			*pDest++ = lastPixel;
 		}
 		else
 		{
@@ -308,14 +347,16 @@ void decompress(uint16_t* pDest, uint8_t* pBegin, uint8_t* pEnd)
 			uint8_t g = uint8_t((lastPixel >> 5) & 0x003F);
 			uint8_t b = uint8_t((lastPixel >> 11) & 0x001F);
 
-			r += (v >> 5) - 2;
+			r += ((v >> 5) & 0x3) - 2;
 			g += ((v >> 2) & 0x7) - 4;
 			b += (v & 0x3) - 2;
 
-			lastPixel = (r << 11) | (g << 4) | b;
+			lastPixel = (b << 11) | (g << 5) | r;
 			*pDest++ = lastPixel;
 
 			palette[pixelToIndex[lastPixel]] = lastPixel;
 		}
 	}
+
+	return int(pDest - pOriginalDest);
 }

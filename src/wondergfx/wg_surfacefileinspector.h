@@ -40,7 +40,7 @@ public:
 
 	//.____ Creation __________________________________________
 
-	static SurfaceFileInspector_p	create( const char * pSurfaceFileInMemory );
+	static SurfaceFileInspector_p	create( const void * pSurfaceFileInMemory );
 
 	//.____ Identification _________________________________________________
 
@@ -65,7 +65,7 @@ public:
 	bool			isExtraDataCompressed();
 
 protected:
-	SurfaceFileInspector( const char * pSurfaceFileInMemory );
+	SurfaceFileInspector( const void * pSurfaceFileInMemory );
 
 	SurfaceFileHeader	m_header;
 	const uint8_t *		m_pSurfaceFileInMemory;

@@ -31,18 +31,18 @@ const TypeInfo SurfaceFileInspector::TYPEINFO = { "SurfaceFileInspector", &Objec
 
 //.____ create() _____________________________________________________________
 
-SurfaceFileInspector_p SurfaceFileInspector::create( const char * pSurfaceFileInMemory )
+SurfaceFileInspector_p SurfaceFileInspector::create( const void * pSurfaceFileInMemory )
 {
 	return SurfaceFileInspector_p( new SurfaceFileInspector(pSurfaceFileInMemory) );
 }
 
 //____ constructor ___________________________________________________________
 
-SurfaceFileInspector::SurfaceFileInspector( const char * pSurfaceFileInMemory )
+SurfaceFileInspector::SurfaceFileInspector( const void * pSurfaceFileInMemory )
 {
 	// Read the header
 
-	int headerSize = * (const int16_t*)&pSurfaceFileInMemory[6];
+	int headerSize = * (const int16_t*)&((const char*)pSurfaceFileInMemory)[6];
 	std::memcpy( &m_header, pSurfaceFileInMemory, headerSize);
 }
 
