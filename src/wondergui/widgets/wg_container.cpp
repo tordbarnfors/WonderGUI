@@ -328,6 +328,20 @@ namespace wg
 			}
 		}
 
+		if( oldState.isChecked() != state.isChecked() )
+		{
+			bool bChecked = state.isChecked();
+			Widget * p = _firstChild();
+			while( p )
+			{
+				State s = p->m_state;
+				s.setChecked(bChecked);
+				p->_setState( s );
+				p = p->_nextSibling();
+			}
+		}
+
+
 		if( oldState.isSelekted() != state.isSelekted() )
 		{
 			bool bSelected = state.isSelekted();
