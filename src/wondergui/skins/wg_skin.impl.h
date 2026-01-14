@@ -53,7 +53,7 @@ namespace wg
 				pDevice->setBlendMode(blendMode);
 			}
 
-			if (tintColor != HiColor::White)
+			if (tintColor != HiColor::Undefined && tintColor != HiColor::White)
 			{
 				m_prevTintColor = pDevice->tintColor();
 				pDevice->setTintColor(tintColor);
@@ -110,7 +110,7 @@ namespace wg
 				m_bTintmap = true;
 			}
 
-			if (tintColor != HiColor::Undefined)
+			if (tintColor != HiColor::Undefined && tintColor != HiColor::White )
 			{
 				m_prevTintColor = pDevice->tintColor();
 				if (tintColor != m_prevTintColor)
