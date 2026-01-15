@@ -2339,6 +2339,7 @@ bool WgText::OnEvent( const WgEvent::Event * pEvent, WgEventHandler * pEventHand
 			{
 				pEventHandler->QueueEvent( new WgEvent::LinkPress(pEvent->Widget(), m_pMarkedLink->link(), static_cast<const WgEvent::MouseButtonEvent*>(pEvent)->Button() ));
 				m_markedLinkState.setSelekted(true);
+				m_markedLinkState.setChecked(true);
 				bRefresh = true;
 			}
 			break;
@@ -2359,7 +2360,7 @@ bool WgText::OnEvent( const WgEvent::Event * pEvent, WgEventHandler * pEventHand
 			{
 				pEventHandler->QueueEvent( new WgEvent::LinkRelease(pEvent->Widget(), m_pMarkedLink->link(), static_cast<const WgEvent::MouseButtonEvent*>(pEvent)->Button() ));
 
-				if( m_markedLinkState.isSelekted() )
+				if( m_markedLinkState.isChecked() || m_markedLinkState.isSelekted() )
 					pEventHandler->QueueEvent( new WgEvent::LinkClick(pEvent->Widget(), m_pMarkedLink->link(), static_cast<const WgEvent::MouseButtonEvent*>(pEvent)->Button() ));
 
 				m_markedLinkState.setHovered(true);
@@ -2551,7 +2552,10 @@ bool WgText::GetCharAttr( wg::TextAttr& attr, int charOfs ) const
 		int selEnd = LineColToOffset( m_selEndLine, m_selEndCol );
 
 		if( charOfs >= selStart && charOfs < selEnd )
+		{
 			state.setSelekted(true);
+			state.setChecked(true);
+		}
 	}
 
 	WgBase::defaultStyle()->exportAttr(state, &attr, m_scale >> 6);

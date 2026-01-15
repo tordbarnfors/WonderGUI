@@ -415,8 +415,8 @@ void WgGfxDevice::_drawTextBg( wg::GfxDevice * pDevice, const WgText * pText, co
 	if( !pStyle )
 		pStyle = WgBase::defaultStyle();
 
-    wg::Color selectionBgColor = pStyle->backColor(state + wg::State::Selekted);
-    
+    wg::Color selectionBgColor = pStyle->backColor(state + wg::State::Selekted + wg::State::Checked);
+
 	if( selStart != selEnd && selectionBgColor.a != 0 )
 	{
 		_drawTextSectionBg( pDevice, pText, dest, selStart, selEnd, selectionBgColor );
