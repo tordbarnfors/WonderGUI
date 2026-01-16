@@ -23,10 +23,12 @@
 #include <wg_surface.h>
 #include <wg_patches.h>
 #include <wg_gfxbase.h>
+#include <wg_compress.h>
 
 
 #include <vector>
 #include <cstdint>
+#include <algorithm>
 //#include <cstring>
 
 using namespace std;
@@ -93,6 +95,50 @@ namespace wg
 	{
 		m_pTrimDecompressor = pDecompressor;
 	}
+
+	//____ setPacing() ______________________________________________________
+
+	void StreamPump::setPacing( uint16_t fenceId, uint16_t byteInterval, int maxFencesInFlight )
+	{
+		m_fenceId = fenceId;
+		m_fenceByteInterval = byteInterval;
+		m_maxFencesInFlight = maxFencesInFlight;
+
+		m_fenceValueSent = 0;
+		m_fenceValueReceived = 0;
+		m_bytesUntilFence = m_fenceByteInterval;
+	}
+
+	//____ restartPacing() _______________________________________________________
+
+	void StreamPump::restartPacing()
+	{
+		m_fenceValueSent = 0;
+		m_fenceValueReceived = 0;
+		m_bytesUntilFence = m_fenceByteInterval;
+	}
+
+	//____ pacingFencePassed() ____________________________________________
+
+	bool StreamPump::pacingFencePassed(uint32_t fenceValue)
+	{
+		if( fenceValue <= m_fenceValueReceived )
+		{
+			GfxBase::throwError( ErrorLevel::Error, ErrorCode::InvalidParam, "Fence value received is lower than previous one", this, &StreamPump::TYPEINFO, __func__, __FILE__, __LINE__ );
+
+			return false;
+		}
+
+		if( fenceValue > m_fenceValueSent )
+		{
+			GfxBase::throwError( ErrorLevel::Error, ErrorCode::InvalidParam, "Fence value received is higher than what we have sent", this, &StreamPump::TYPEINFO, __func__, __FILE__, __LINE__ );
+
+			return false;
+		}
+
+		m_fenceValueReceived = fenceValue;
+	}
+
 
 	//____ peekChunk() ________________________________________________________
 
@@ -467,6 +513,93 @@ namespace wg
 
 		return true;
 	}
+
+	//____ pumpAllWithPacing() __________________________________________________________
+
+	bool StreamPump::pumpAllWithPacing()
+	{
+		if (!m_pInput || !m_pOutput)
+			return false;
+
+		int	nSegments;
+		const GfxStream::Data* pSegments;
+
+		if (!m_pInput->hasChunks())
+			m_pInput->fetchChunks();
+
+		while (m_pInput->hasChunks())
+		{
+			std::tie(nSegments, pSegments) = m_pInput->showChunks();
+
+			int	bytesProcessed = 0;
+			for (int i = 0; i < nSegments; i++)
+			{
+				auto pBegin = pSegments[i].pBegin;
+				auto pEnd = pSegments[i].pEnd;
+
+				if( pEnd - pBegin <= m_bytesUntilFence )
+				{
+					m_pOutput->processChunks(pBegin, pEnd);
+					bytesProcessed += pEnd - pBegin;
+					m_bytesUntilFence -= pEnd - pBegin;
+				}
+				else
+				{
+					// We need to insert a fence
+
+					auto pChunk = (GfxStream::Chunk *) pBegin;
+
+					while( (uint8_t*) pChunk != pEnd )
+					{
+						int maxBytes = std::min( m_bytesUntilFence, int(pEnd - (uint8_t*)pChunk) );
+						int bytes = 0;
+
+						// Find where we need to put our fence
+
+						while( pChunk->chunkSize() + bytes <= maxBytes )
+						{
+							bytes += pChunk->chunkSize();
+							pChunk = pChunk->next();
+						}
+
+						// Process chunks until position for fence
+
+						if( bytes > 0 )
+						{
+							m_pOutput->processChunks(pBegin, pChunk);
+							bytesProcessed += bytes;
+						}
+
+						// Stop if we have max fences in flight
+
+						if( m_fenceValueSent - m_fenceValueReceived >= m_maxFencesInFlight )
+						{
+							m_bytesUntilFence -= bytes;
+							m_pInput->discardChunks(bytesProcessed);
+							return false;
+						}
+
+						// Create and process our fence
+
+						m_fenceValueSent++;
+
+						uint8_t 	fenceChunk[8];
+						GfxStream::createChunk( fenceChunk, GfxStream::ChunkId::Fence, 4, &m_fenceValueSent );
+						m_pOutput->processChunks( fenceChunk, fenceChunk+8 );
+
+						m_bytesUntilFence = m_fenceByteInterval;
+					}
+				}
+			}
+
+			m_pInput->discardChunks(bytesProcessed);
+
+			m_pInput->fetchChunks();
+		}
+
+		return true;
+	}
+
 
 	//____ pumpBytes() __________________________________________________________
 

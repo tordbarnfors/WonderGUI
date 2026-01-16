@@ -85,7 +85,8 @@ namespace wg
 		void	clearDirtyRects();
 
 		void	setCanvasInfoCallback( const std::function<void(const CanvasInfo * pBegin, const CanvasInfo * pEnd)>& callback );
-		
+		void	setFenceCallback( const std::function<void(uint16_t fenceID, uint32_t fenceValue)>& callback );
+
 		void	reset();
 		
 		const std::vector<Object_p>& objects() const { return m_vObjects; }
@@ -195,6 +196,7 @@ namespace wg
 		PatchesSPX			m_dirtyRects[CanvasRef_size];
 
 		std::function<void(const CanvasInfo * pBegin, const CanvasInfo * pEnd)>	m_canvasInfoCallback;
+		std::function<void(uint16_t fenceID, uint32_t fenceValue)> m_fenceCallback;
 	};
 
 }

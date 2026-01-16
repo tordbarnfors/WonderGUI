@@ -25,6 +25,9 @@
 
 #include <wg_gfxtypes.h>
 
+#include <assert.h>
+#include <cstring>
+
 
 #define WG_GFXSTREAM_USE_SURFACE_UPDATE2
 
@@ -48,7 +51,7 @@ namespace wg
 
 		//____ ChunkId ____________________________________________________
 
-		enum class ChunkId : uint8_t    //. autoExtras
+		enum class ChunkId : uint8_t    // Can't use autoExtras, change min/max/size and toString() manually!!!
 		{
 			OutOfData = 0,
 
@@ -82,12 +85,13 @@ namespace wg
 			EdgemapSamples = 25,
 			DeleteEdgemap = 26,
 
-			SurfaceUpdate2 = 27
+			SurfaceUpdate2 = 27,
+			Fence = 28
 		};
 
 		const static ChunkId      ChunkId_min      = ChunkId::OutOfData;
-		const static ChunkId      ChunkId_max      = ChunkId::SurfaceUpdate2;
-		const static int          ChunkId_size     = (int)ChunkId::SurfaceUpdate2 + 1;
+		const static ChunkId      ChunkId_max      = ChunkId::Fence;
+		const static int          ChunkId_size     = (int)ChunkId::Fence + 1;
 
 		struct SPX
 		{
@@ -114,7 +118,7 @@ namespace wg
 		struct Header
 		{
 			ChunkId			type;
-			uint8_t			format;		// Type specific information about the format of the content. Used by some types.
+			uint8_t			dummy;		// 8 bits of future use data. Should be set to 0.
     		int				size;
 		};
 
@@ -161,9 +165,9 @@ namespace wg
 				return m_size + 4;
 			}
 
-			uint8_t		format() const
+			uint8_t		dummy() const
 			{
-				return m_format;
+				return m_dummy;
 			}
 
 			int			dataSize() const
@@ -184,7 +188,7 @@ namespace wg
 
 		protected:
 			GfxStream::ChunkId	m_type;
-			uint8_t				m_format;
+			uint8_t				m_dummy;
 			uint16_t			m_size;
 		};
 
@@ -278,6 +282,31 @@ namespace wg
 		
 			return size[int(spxFormat)];
 		}
+
+		inline static Chunk * createChunk( void * pDest, ChunkId type, int dataSize, void * pData )
+		{
+			assert( reinterpret_cast<uintptr_t>(pDest) % 2 == 0 );
+			assert( reinterpret_cast<uintptr_t>(pData) % 2 == 0 );
+			assert( dataSize % 2 == 0 );
+
+			((uint8_t*)pDest)[0] = (uint8_t) type;
+			((uint8_t*)pDest)[1] = 0;
+			((uint16_t*)pDest)[1] = dataSize;
+
+			uint16_t * pWrite = &((uint16_t*)pData)[2];
+
+			if( dataSize <= 16 )
+			{
+				uint16_t * pRead = (uint16_t*) pData;
+				uint16_t * pEnd = pRead + (dataSize/2);
+
+				while( pRead < pEnd )
+					* pWrite++ = * pRead++;
+			}
+			else
+				memcpy( pWrite, pData, dataSize );
+		}
+
 
 		inline static DataInfo decodeDataInfo(const uint8_t* pChunk)
 		{

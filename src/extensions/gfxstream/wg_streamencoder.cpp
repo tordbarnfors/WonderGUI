@@ -121,7 +121,7 @@ namespace wg
 			flush();
 
 		_pushChar((char)header.type);
-		_pushChar((char)header.format);
+		_pushChar((char)header.dummy);
 		_pushShort(header.size);
 	}
 }

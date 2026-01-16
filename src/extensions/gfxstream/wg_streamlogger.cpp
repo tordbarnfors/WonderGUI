@@ -113,9 +113,6 @@ namespace wg
 				m_charStream << " [" << m_beginRenderNb << "]";
 			}
 
-			if( header.format != 0 )
-				m_charStream << "(format=" << header.format << ")";
-
 			m_charStream << std::endl;
 		}
 
@@ -159,6 +156,18 @@ namespace wg
 				break;
 			}
 
+			case GfxStream::ChunkId::Fence:
+			{
+				uint16_t	fenceID;
+				uint32_t	fenceValue;
+
+				decoder >> fenceID;
+				decoder >> fenceValue;
+
+				m_charStream << "    id: " << fenceID << ", value: " << fenceValue << std::endl;
+				break;
+			}
+				
 			case GfxStream::ChunkId::BeginRender:
 				break;
 

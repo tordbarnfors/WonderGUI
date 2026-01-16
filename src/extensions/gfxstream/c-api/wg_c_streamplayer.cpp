@@ -78,3 +78,8 @@ void wg_clearStreamPlayerDirtyRects(wg_obj streamPlayer)
 {
 	getPtr(streamPlayer)->clearDirtyRects();
 }
+
+void wg_setStreamPlayerFenceCallback(wg_obj streamPlayer, wg_streamPlayerFence_func callback)
+{
+	getPtr(streamPlayer)->setFenceCallback( callback );
+}
