@@ -195,8 +195,8 @@ namespace wg
 
 	void PluginGfxDevice::setTintmap(const RectSPX& rect, Tintmap* pTintmap)
 	{
-		int colorsX = pTintmap->isHorizontal() ? rect.w : 0;
-		int colorsY = pTintmap->isVertical() ? rect.h : 0;
+		int colorsX = pTintmap->isHorizontal() ? rect.w/64 : 0;
+		int colorsY = pTintmap->isVertical() ? rect.h/64 : 0;
 
 		if( colorsX == 0 && colorsY == 0 )
 			colorsY = 1;						// We need to transfer at least one color.
