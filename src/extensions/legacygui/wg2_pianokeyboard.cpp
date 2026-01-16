@@ -275,6 +275,7 @@ void WgPianoKeyboard::selectKey(int keyIdx)
 	if (!m_keyInfo[keyIdx].state.isSelekted())
 	{
 		m_keyInfo[keyIdx].state.setSelekted(true);
+		m_keyInfo[keyIdx].state.setChecked(true);
 		_requestRenderKey(keyIdx);
 	}
 }
@@ -292,6 +293,7 @@ void WgPianoKeyboard::unselectKey(int keyIdx)
 	if (m_keyInfo[keyIdx].state.isSelekted())
 	{
 		m_keyInfo[keyIdx].state.setSelekted(false);
+		m_keyInfo[keyIdx].state.setChecked(false);
 		_requestRenderKey(keyIdx);
 	}
 }
@@ -340,6 +342,7 @@ void WgPianoKeyboard::setSelectedKeys(std::initializer_list<int> selectedKeys)
 			if (!bRemainSelected)
 			{
 				m_keyInfo[i].state.setSelekted(false);
+				m_keyInfo[i].state.setChecked(false);
 				_requestRenderKey(i);
 			}
 		}
@@ -351,6 +354,7 @@ void WgPianoKeyboard::setSelectedKeys(std::initializer_list<int> selectedKeys)
 		if( !m_keyInfo[idx].state.isSelekted() )
 		{
 			m_keyInfo[idx].state.setSelekted(false);
+			m_keyInfo[idx].state.setChecked(false);
 			_requestRenderKey(idx);
 		}
 }
@@ -364,6 +368,7 @@ void WgPianoKeyboard::unselectAllKeys()
 		if (m_keyInfo[i].state.isSelekted())
 		{
 			m_keyInfo[i].state.setSelekted(false);
+			m_keyInfo[i].state.setChecked(false);
 			_requestRenderKey(i);
 		}
 	}

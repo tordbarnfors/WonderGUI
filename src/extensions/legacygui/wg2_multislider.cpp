@@ -1385,6 +1385,7 @@ void WgMultiSlider::_onRender( wg::GfxDevice * pDevice, const WgRect& _canvas, c
 				WgState	emptyPartState = slider.sliderState;
 				WgState filledPartState = slider.sliderState;
 				filledPartState.setSelekted(true);
+				filledPartState.setChecked(true);
 
                 if( _skinDirtyRect(pBgSkin, {0,0,100,100}, m_scale, emptyPartState, filledPartState).isEmpty() )
                     _renderSkin( pBgSkin, pDevice, emptyPartState, bgGeo, m_scale);
