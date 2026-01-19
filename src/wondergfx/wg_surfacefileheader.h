@@ -30,6 +30,10 @@
 namespace wg
 {
 
+	char const s_compressionHeader_None[4] = { 'N','O','N','E' };
+	char const s_compressionHeader_Q565[4] = { 'Q','5','6','5' };
+
+
 //____ wgsf_header ____________________________________________________________
 
 struct SurfaceFileHeader
@@ -80,7 +84,7 @@ struct SurfaceFileHeader
 
 	int32_t			paletteSize 			= 0;
 	char			paletteFiltering[4]		= { 'N','O','N','E' };
-	char			paletteFilteringParams[8] = { 0,0,0,0,0,0,0,0 };
+	int8_t			paletteFilteringParams[8] = { 0,0,0,0,0,0,0,0 };
 	char 			paletteCompression[4]	= { 'N','O','N','E' };
 	int16_t			paletteDecompressMargin	= 0;
 	int8_t			paletteDataPadding		= 0;					// Number of extra bytes at end of pixel data to ensure each block starts on 32-bit alignment.

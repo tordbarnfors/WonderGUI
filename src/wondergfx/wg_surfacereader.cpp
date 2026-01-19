@@ -22,6 +22,7 @@
 #include <wg_surfacereader.h>
 #include <wg_gfxbase.h>
 #include <wg_gfxutil.h>
+#include <wg_compress.h>
 
 #include <cstring>
 
@@ -125,22 +126,32 @@ namespace wg
 
 		int lineBytes = header.width * pSurface->pixelBits()/8;
 
-		if( pixbuf.pitch > lineBytes )
+		if (*(uint32_t*)&header.pixelCompression == *(uint32_t*) "NONE" )
 		{
-			// Pitch is involved, we need to read line by line
-
-			char * pPixels = (char *) pixbuf.pixels;
-
-			for( int y = 0 ; y < header.height ; y++ )
+			if (pixbuf.pitch > lineBytes)
 			{
-				stream.read( pPixels, lineBytes );
-				pPixels += pixbuf.pitch;
+				// Pitch is involved, we need to read line by line
+
+				char* pPixels = (char*)pixbuf.pixels;
+
+				for (int y = 0; y < header.height; y++)
+				{
+					stream.read(pPixels, lineBytes);
+					pPixels += pixbuf.pitch;
+				}
+			}
+			else
+			{
+				stream.read((char*)pixbuf.pixels, lineBytes * header.height);
 			}
 		}
 		else
 		{
-			stream.read( (char*) pixbuf.pixels, lineBytes * header.height );
+			GfxBase::throwError(ErrorLevel::Error, ErrorCode::Other, "Unsupported pixel compression format.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			pSurface->freePixelBuffer(pixbuf);
+			return nullptr;
 		}
+
 
 		pSurface->pullPixels(pixbuf);
 		pSurface->freePixelBuffer(pixbuf);
@@ -241,22 +252,30 @@ namespace wg
 
 		int lineBytes = header.width * pSurface->pixelBits()/8;
 
-		if( pixbuf.pitch > lineBytes )
+		if (*(uint32_t*)&header.pixelCompression == *(uint32_t*)"NONE")
+			_copyUncompressedFromMemory(pixbuf.pixels, pData, lineBytes, pixbuf.pitch, pixbuf.rect.h);
+		else if (*(uint32_t*)&header.pixelCompression == *(uint32_t*)"Q565")
 		{
-			// Pitch is involved, we need to read line by line
+			auto pDesc = pSurface->pixelDescription();
 
-			char * pPixels = (char *) pixbuf.pixels;
-
-			for( int y = 0 ; y < header.height ; y++ )
+			if( pDesc->bits != 16 || pDesc->type != PixelType::Chunky )
 			{
-				std::memcpy( pPixels, pData, lineBytes );
-				pData += lineBytes;
-				pPixels += pixbuf.pitch;
+				GfxBase::throwError(ErrorLevel::Error, ErrorCode::Other, "Can only decompress Q565 pixels to chunky 16-bit surfaces.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				pSurface->freePixelBuffer(pixbuf);
+				return nullptr;
 			}
-		}
-		else
-		{
-			std::memcpy( pixbuf.pixels, pData, lineBytes * header.height );
+
+			if (pixbuf.pitch != lineBytes)
+			{
+				GfxBase::throwError(ErrorLevel::Error, ErrorCode::Other, "Can only decompress Q565 compressed pixels to surfaces that have no pitch.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				pSurface->freePixelBuffer(pixbuf);
+				return nullptr;
+			}
+
+			auto pTable = (uint8_t*) GfxBase::memStackAlloc(65536);
+			generateTablesForQ565(pTable);
+			decompressPixelsQ565((uint16_t*) pixbuf.pixels, (const uint8_t*) pData, ((const uint8_t*)pData) + header.pixelBytes, pTable);
+			GfxBase::memStackFree(65536);
 		}
 
 		pSurface->pullPixels(pixbuf);
@@ -325,6 +344,29 @@ int SurfaceReader::_addFlagsFromOtherBlueprint(Surface::Blueprint& dest, const S
 		dest.tiling = true;
 
 	return errorCode;
+}
+
+//____ _copyUncompressedFromMemory() _________________________________________
+
+void SurfaceReader::_copyUncompressedFromMemory(void* pDest, const void* pSource, int rowBytes, int pitch, int rows)
+{
+	if (pitch > rowBytes)
+	{
+		// Pitch is involved, we need to copy line by line
+
+		char* pPixelsDest = (char*)pDest;
+		const char* pPixelsSource = (const char*)pSource;
+		for (int y = 0; y < rows; y++)
+		{
+			std::memcpy(pPixelsDest, pPixelsSource, rowBytes);
+			pPixelsDest += pitch;
+			pPixelsSource += rowBytes;
+		}
+	}
+	else
+	{
+		std::memcpy(pDest, pSource, rowBytes * rows);
+	}
 }
 
 

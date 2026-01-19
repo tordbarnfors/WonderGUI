@@ -89,6 +89,8 @@ protected:
 	Surface_p		_readSurfFromStream(std::istream& stream, const Surface::Blueprint& extraFlags);
 	Surface_p		_readQOIFromStream(std::istream& stream, const Surface::Blueprint& extraFlags);
 
+	void			_copyUncompressedFromMemory(void * pDest, const void * pSource, int rowBytes, int pitch, int rows);
+
 
 	SurfaceFactory_p	m_pFactory;
 };

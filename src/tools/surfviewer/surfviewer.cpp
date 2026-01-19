@@ -305,7 +305,7 @@ bool MyApp::_loadSkins(wapp::API * pAPI)
 
 void MyApp::selectAndLoadImage()
 {
-	auto selectedFiles = m_pAppAPI->openMultiFileDialog("Select Images", "", { "*.surf", "*.qoi" }, "Image files");
+	auto selectedFiles = m_pAppAPI->openMultiFileDialog("Select Images", "", "", { "*.surf", "*.qoi" }, "Image files");
 	
 	if( selectedFiles.empty()  )
 		return;

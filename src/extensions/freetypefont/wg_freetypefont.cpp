@@ -303,7 +303,7 @@ namespace wg
 
 	bool FreeTypeFont::isMonospace()
 	{
-		return FT_IS_FIXED_WIDTH( m_ftFace )>0?true:false;
+		return FT_IS_FIXED_WIDTH( m_ftFace );
 	}
 
 	//____ maxAdvance() ___________________________________________________
