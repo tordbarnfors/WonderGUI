@@ -13,6 +13,8 @@ set( SOURCES
 	wg_color.h
 	wg_compress.cpp
 	wg_compress.h
+	wg_compressor.cpp
+	wg_compressor.h
 	wg_dummyfont.cpp
 	wg_dummyfont.h
 	wg_edgemap.cpp
@@ -57,6 +59,8 @@ set( SOURCES
 	wg_pixeltools.h
 	wg_printer.cpp
 	wg_printer.h
+	wg_q565compressor.cpp
+	wg_q565compressor.h
 	wg_snapshottintmap.cpp
 	wg_snapshottintmap.h
 	wg_statictintmap.cpp

@@ -27,7 +27,7 @@
 
 #include <wg_surfacefileheader.h>
 #include <wg_surfacefactory.h>
-#include <wg_compress.h>
+#include <wg_compressor.h>
 
 namespace wg
 {
@@ -59,7 +59,9 @@ public:
 	struct Blueprint
 	{
 		Finalizer_p			finalizer = nullptr;
-		PixelCompression	pixelCompression = PixelCompression::None;
+		Compressor_p		pixelCompressor;
+		Compressor_p		paletteCompressor;
+		Compressor_p		extrasCompressor;
 		SaveInfo			saveInfo;
 	};
 
@@ -82,7 +84,9 @@ protected:
 	SurfaceWriter(const BP& bp)
 	{
 		m_saveInfo = bp.saveInfo;
-		m_pixelCompression = bp.pixelCompression;
+		m_pPixelCompressor = bp.pixelCompressor;
+		m_pPaletteCompressor = bp.paletteCompressor;
+		m_pExtrasCompressor = bp.extrasCompressor;
 
 		if (bp.finalizer)
 			setFinalizer(bp.finalizer);
@@ -91,23 +95,25 @@ protected:
 	virtual ~SurfaceWriter() {}
 	
 	int				_prepareHeader( SurfaceFileHeader * pHeader, Surface * pSurface, bool bExtrasData );
-	bool			_setPixelDataInfo(	SurfaceFileHeader* pHeader, PixelFilter filter, SizeI filterBlock,
-										PixelCompression compression, int bytesOfCompressedPixels, int decompressMargin = 0 );
-	bool			_setPaletteDataInfo(SurfaceFileHeader* pHeader, PaletteFilter filter, int8_t filterParam[8],
-										PaletteCompression compression, int bytesOfCompressedPalette, int decompressMargin = 0 );
-	bool			_setExtraDataInfo(SurfaceFileHeader* pHeader, ExtrasCompression compression, int bytesOfCompressedExtraData, int decompressMargin = 0);
+	bool			_setPixelDataInfo(	SurfaceFileHeader* pHeader, int bytesOfCompressedPixels, int decompressMargin = 0 );
+	bool			_setPaletteDataInfo(SurfaceFileHeader* pHeader, int bytesOfCompressedPalette, int decompressMargin = 0 );
+	bool			_setExtraDataInfo(SurfaceFileHeader* pHeader, int bytesOfCompressedExtraData, int decompressMargin = 0);
 
-	int				_safePixelBufferSize(Surface* pSurface, PixelCompression compression);
-	int				_safePaletteBufferSize(Surface* pSurface, PaletteCompression compression);
-	int				_safeExtrasBufferSize(void * pBegin, void * pEnd, ExtrasCompression compression);
+	int				_safePixelBufferSize(Surface* pSurface);
+	int				_safePaletteBufferSize(Surface* pSurface);
+	int				_safeExtrasBufferSize(void * pBegin, void * pEnd);
 
-	int				_encodePixelData(void* pDest, Surface* pSurface, PixelCompression compression);
-	int				_encodePaletteData(void* pDest, Surface* pSurface, PaletteCompression compression);
-	int				_encodeExtrasData(void* pDest, void * pBegin, void * pEnd, ExtrasCompression compression);
+	int				_encodePixelData(void* pDest, Surface* pSurface);
+	int				_encodePaletteData(void* pDest, Surface* pSurface);
+	int				_encodeExtrasData(void* pDest, void * pBegin, void * pEnd);
 
 
 	SaveInfo			m_saveInfo;
-	PixelCompression	m_pixelCompression = PixelCompression::None;
+
+	Compressor_p		m_pPixelCompressor;
+	Compressor_p		m_pPaletteCompressor;
+	Compressor_p		m_pExtrasCompressor;
+
 };
 
 

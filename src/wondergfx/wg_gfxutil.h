@@ -38,6 +38,19 @@ namespace wg
 
 	namespace Util		/** @private */
 	{
+
+		// Helper to create endian-aware uint32_t from four chars
+
+		static constexpr uint32_t makeEndianSpecificToken(char a, char b, char c, char d) {
+			#if WG_IS_BIG_ENDIAN
+				return (a << 24) | (b << 16) | (c << 8) | d;
+			#else
+				return a | (b << 8) | (c << 16) | (d << 24);
+			#endif
+		}
+
+
+
 		struct Matrix22
 		{
 			int xx, xy;

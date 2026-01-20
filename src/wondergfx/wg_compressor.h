@@ -19,29 +19,51 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef	WG_COMPRESS_DOT_H
-#define	WG_COMPRESS_DOT_H
+#ifndef	WG_COMPRESSOR_DOT_H
+#define	WG_COMPRESSOR_DOT_H
 #pragma once
 
-#include <ctype.h>
-#include <tuple>
-#include <limits>
+#include <wg_object.h>
 
-#include <wg_gfxtypes.h>
 
 namespace wg
-{	
+{
+
+	class Compressor;
+	typedef StrongPtr<Compressor>	Compressor_p;
+ 	typedef WeakPtr<Compressor>		Compressor_wp;
+
+	class Compressor : public Object
+	{
+	public:
+
+		//.____ Identification __________________________________________
+
+		const TypeInfo& typeInfo(void) const override;
+		const static TypeInfo	TYPEINFO;
+
+		virtual uint32_t idToken() const = 0;
+
+		//.____ Misc ____________________________________________________
+
+		virtual int		maxCompressedSize( int uncompressedSize ) = 0;
+
+		virtual int		compress( void * pDest, const void * pSrcBegin, const void * pSrcEnd ) = 0;
+		virtual int		decompress( void * pDest, const void * pSrcBegin, const void * pSrcEnd ) = 0;
+
+
+	protected:
+		Compressor() {};
+		virtual ~Compressor() {};
+
+
+};
 
 
 
-
-	std::tuple<Compression,int, const spx *> compressSpx( const spx * pBegin, const spx * pEnd, uint8_t * pDest, int maxChunkBytes = 0 );
-
-	int 						compressSpxU8I( const spx * pSource, const spx * pEnd, uint8_t * pDest );
-	int 						compressSpx16B( const spx * pSource, const spx * pEnd, uint8_t * pDest );
-	int 						compressSpx16I( const spx * pSource, const spx * pEnd, uint8_t * pDest );
-
-	void						decompressSpx( Compression type, const void * pSource, int nbBytes, void * pDest );
 }
 
-#endif // WG_COMPRESS_DOT_H
+
+
+
+#endif //WG_COMPRESSOR_DOT_H

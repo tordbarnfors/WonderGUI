@@ -22,7 +22,9 @@
 #include <wg_surfacereader.h>
 #include <wg_gfxbase.h>
 #include <wg_gfxutil.h>
-#include <wg_compress.h>
+
+#include <wg_compressor.h>
+#include <wg_q565compressor.h>
 
 #include <cstring>
 
@@ -119,7 +121,6 @@ namespace wg
 			GfxBase::memStackFree(paletteBytes);
 
 		// Read pixels into PixelBuffer
-		// We only support uncompressed pixels for the moment
 
 		auto pixbuf = pSurface->allocPixelBuffer();
 
@@ -147,9 +148,32 @@ namespace wg
 		}
 		else
 		{
-			GfxBase::throwError(ErrorLevel::Error, ErrorCode::Other, "Unsupported pixel compression format.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
-			pSurface->freePixelBuffer(pixbuf);
-			return nullptr;
+			Compressor * pCompressor = _findCompressor(header.pixelCompression);
+
+			if( !pCompressor )
+			{
+				char msg[] = "Don't know how to decompress 'XXXX'.";
+				* (uint32_t*)&msg[30] = header.pixelCompression;
+
+				GfxBase::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, msg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				pSurface->freePixelBuffer(pixbuf);
+				return nullptr;
+			}
+
+			auto pDesc = pSurface->pixelDescription();
+
+			if (pixbuf.pitch != lineBytes)
+			{
+				GfxBase::throwError(ErrorLevel::Error, ErrorCode::Other, "Can only decompress compressed pixels to surfaces that have no pitch.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				pSurface->freePixelBuffer(pixbuf);
+				return nullptr;
+			}
+
+			auto pData = GfxBase::memStackAlloc(header.pixelBytes);
+			stream.read(pData, header.pixelBytes);
+			pCompressor->decompress(pixbuf.pixels, pData, ((const uint8_t*)pData) + header.pixelBytes);
+			GfxBase::memStackFree(header.pixelBytes);
+
 		}
 
 
@@ -231,7 +255,6 @@ namespace wg
 			return nullptr;
 		}
 
-
 		// Prepare palette
 
 		int paletteBytes = header.paletteSize*sizeof(Color8);
@@ -252,30 +275,32 @@ namespace wg
 
 		int lineBytes = header.width * pSurface->pixelBits()/8;
 
-		if (*(uint32_t*)&header.pixelCompression == *(uint32_t*)"NONE")
+		if (header.pixelCompression == *(uint32_t*)"NONE")
 			_copyUncompressedFromMemory(pixbuf.pixels, pData, lineBytes, pixbuf.pitch, pixbuf.rect.h);
-		else if (*(uint32_t*)&header.pixelCompression == *(uint32_t*)"Q565")
+		else
 		{
-			auto pDesc = pSurface->pixelDescription();
+			Compressor * pCompressor = _findCompressor(header.pixelCompression);
 
-			if( pDesc->bits != 16 || pDesc->type != PixelType::Chunky )
+			if( !pCompressor )
 			{
-				GfxBase::throwError(ErrorLevel::Error, ErrorCode::Other, "Can only decompress Q565 pixels to chunky 16-bit surfaces.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				char msg[] = "Don't know how to decompress 'XXXX'.";
+				* (uint32_t*)&msg[30] = header.pixelCompression;
+
+				GfxBase::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, msg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 				pSurface->freePixelBuffer(pixbuf);
 				return nullptr;
 			}
+
+			auto pDesc = pSurface->pixelDescription();
 
 			if (pixbuf.pitch != lineBytes)
 			{
-				GfxBase::throwError(ErrorLevel::Error, ErrorCode::Other, "Can only decompress Q565 compressed pixels to surfaces that have no pitch.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				GfxBase::throwError(ErrorLevel::Error, ErrorCode::Other, "Can only decompress compressed pixels to surfaces that have no pitch.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 				pSurface->freePixelBuffer(pixbuf);
 				return nullptr;
 			}
 
-			auto pTable = (uint8_t*) GfxBase::memStackAlloc(65536);
-			generateTablesForQ565(pTable);
-			decompressPixelsQ565((uint16_t*) pixbuf.pixels, (const uint8_t*) pData, ((const uint8_t*)pData) + header.pixelBytes, pTable);
-			GfxBase::memStackFree(65536);
+			pCompressor->decompress(pixbuf.pixels, pData, ((const uint8_t*)pData) + header.pixelBytes);
 		}
 
 		pSurface->pullPixels(pixbuf);
@@ -366,6 +391,25 @@ void SurfaceReader::_copyUncompressedFromMemory(void* pDest, const void* pSource
 	else
 	{
 		std::memcpy(pDest, pSource, rowBytes * rows);
+	}
+}
+
+//____ _findCompressor() ______________________________________________________
+
+Compressor * SurfaceReader::_findCompressor( uint32_t idToken )
+{
+	for( auto& p : m_compressors )
+		if( p->idToken() == idToken )
+			return p;
+
+	if( m_bAutoCompressors )
+	{
+		if( idToken == Q565Compressor::ID_TOKEN )
+		{
+			auto pCompressor = Q565Compressor::create();
+			m_compressors.push_back(pCompressor);
+			return pCompressor;
+		}
 	}
 }
 

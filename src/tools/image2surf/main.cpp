@@ -2,6 +2,7 @@
 #include <wondergfx.h>
 #include <wg_softsurface.h>
 #include <wg_softsurfacefactory.h>
+#include <wg_q565compressor.h>
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
@@ -17,6 +18,8 @@ bool	bQuit = false;
 
 
 PixelFormat		g_format = PixelFormat::BGRA_8;
+
+Compressor_p	g_pPixelCompressor;
 
 char *			g_pInputFileName = nullptr;
 char *			g_pOutputFileName = nullptr;
@@ -46,6 +49,24 @@ int parseCommandLine( int argc, char** argv )
 			if( g_format == PixelFormat::Undefined )
 			{
 				printf( "ERROR: '%s' is not a valid pixelformat!\n", pValue );
+				return -1;
+			}
+		}
+		else if( strstr(pArg, "--pixelcomp=") == pArg )
+		{
+			char * pValue = pArg + 12;
+
+			if( strcmp(pValue, "NONE" ) == 0)
+			{
+				// No compression, do nothing.
+			}
+			else if( strcmp(pValue, "Q565" ) == 0)
+			{
+				g_pPixelCompressor = Q565Compressor::create();
+			}
+			else
+			{
+				printf( "ERROR: '%s' is not a recognized compressor format.\n", pValue );
 				return -1;
 			}
 		}
@@ -81,15 +102,19 @@ void printUsage(char** argv)
 	printf( "%s [param] inputImage outputSurface\n\n", argv[0]);
 
 	printf( "Parameters:\n\n" );
-	printf( "--format=[format]   - Set format of output surface.\n" );
-	
+	printf( "--format=[format]          - Set format of output surface.\n" );
+	printf( "--pixelcomp=[compression]  - Set compression for pixel data.\n" );
+
 	
 	printf( "\nOutput formats:\n" );
 	for( int format = int(PixelFormat_min) ; format < int(PixelFormat_size) ; format++ )
 	{
 		if( PixelFormat(format) != PixelFormat::Undefined )
-			printf( "%s\n", toString((PixelFormat)format) );
+			printf( "    %s\n", toString((PixelFormat)format) );
 	}
+
+	printf( "\nCompression formats:\n" );
+	printf( "    Q565 - QOI inspired compression for 16-bit pixels.\n");
 }
 
 //____ main() _________________________________________________________________
@@ -140,7 +165,7 @@ int main ( int argc, char** argv )
 
 	{
 		std::ofstream out(g_pOutputFileName, std::ios::binary);
-		auto pWriter = SurfaceWriter::create({});
+		auto pWriter = SurfaceWriter::create({ .pixelCompressor = g_pPixelCompressor });
 		pWriter->writeSurfaceToStream(out, pConverted);
 		out.close();
 	}
