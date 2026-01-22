@@ -618,8 +618,8 @@ namespace wg
 	{
 		//TODO: Throw errors, not just return false.
 
-//		if( bp.size.w <= 0 || bp.size.h <= 0 )
-//			return false;
+		if( bp.size.w <= 0 || bp.size.h <= 0 )
+			return false;
 
 		if( bp.segments <= 0 || bp.segments > maxSegments )
 			return false;

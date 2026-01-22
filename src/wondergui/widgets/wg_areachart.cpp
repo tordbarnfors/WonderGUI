@@ -336,27 +336,30 @@ namespace wg
 
 					RectSPX rect = _entryRangeToRect(graph.m_begin, graph.m_end, graph.m_bAxisSwapped);
 
-					graph.m_waveformPos = rect.pos();
+					if( !rect.isEmpty() )
+					{
+						graph.m_waveformPos = rect.pos();
 
-					graph.m_pWaveform = Waveform::create(WGBP(Waveform,
-						_.size = rect.size()/64,
-						_.bottomOutlineThickness = graph.m_bottomOutlineThickness*m_scale,
-						_.color = graph.m_fillColor,
-						_.gradient = graph.m_fillGradient,
-						_.origo = SampleOrigo::Top,
-						_.outlineColor = graph.m_outlineColor,
-						_.outlineGradient = graph.m_outlineGradient,
-						_.topOutlineThickness = graph.m_topOutlineThickness*m_scale
-					), m_pEdgemapFactory);
+						graph.m_pWaveform = Waveform::create(WGBP(Waveform,
+							_.size = rect.size()/64,
+							_.bottomOutlineThickness = graph.m_bottomOutlineThickness*m_scale,
+							_.color = graph.m_fillColor,
+							_.gradient = graph.m_fillGradient,
+							_.origo = SampleOrigo::Top,
+							_.outlineColor = graph.m_outlineColor,
+							_.outlineGradient = graph.m_outlineGradient,
+							_.topOutlineThickness = graph.m_topOutlineThickness*m_scale
+						), m_pEdgemapFactory);
 
-					// Interpolate and set samples
+						// Interpolate and set samples
 
-					_updateWaveformEdge(graph.m_pWaveform, true, (int) graph.m_topSamples.size(), graph.m_topSamples.data(), graph.m_bAxisSwapped );
-					_updateWaveformEdge(graph.m_pWaveform, false, (int) graph.m_bottomSamples.size(), graph.m_bottomSamples.data(), graph.m_bAxisSwapped );
+						_updateWaveformEdge(graph.m_pWaveform, true, (int) graph.m_topSamples.size(), graph.m_topSamples.data(), graph.m_bAxisSwapped );
+						_updateWaveformEdge(graph.m_pWaveform, false, (int) graph.m_bottomSamples.size(), graph.m_bottomSamples.data(), graph.m_bAxisSwapped );
 
-					graph.m_pEdgemap = graph.m_pWaveform->refresh();
+						graph.m_pEdgemap = graph.m_pWaveform->refresh();
 
-					bNeedsFullRendering = true;
+						bNeedsFullRendering = true;
+					}
 				}
 				else
 				{
