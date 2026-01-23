@@ -101,46 +101,64 @@ int LZCompressor::compress( void * _pDest, const void * _pBegin, const void * _p
 	int windowIdx = 0;
 	uint8_t * 	pBestMatch = nullptr;
 
+	int		nbNewInserts = 0;
+	uint8_t * pNewInserts = nullptr;
 
 	while( pRead <= (pEnd - 3) )
 	{
-		int			bestMatchLength = 0;
-
 		uint32_t hash = hash_bytes(pRead);		// Hash value for comming three bytes. Entry in hash table.
 
 		int matchWindowOfs = pHash[hash];			// Entry in window for this hash.
 
-		int matchLength = 0;
-
-		uint8_t * pMatch = pRead - ((windowIdx + m_hashSize - matchWindowOfs)%m_hashSize);	// Pointer at latest match according to hash table.
+		uint8_t * pMatch = pRead - ((windowIdx + m_windowSize - matchWindowOfs)%m_windowSize);	// Pointer at latest match given matchWindowOfs.
 
 		if( pRead == pMatch )
 			pMatch -= 65536;
 
-		if( pMatch >= pBegin )
+		int	bestMatchLength = 0;
+		int steps = 0;
+
+		while( steps < m_maxSteps && pMatch >= pBegin && pMatch[0] == pRead[0] && pMatch[1] == pRead[1] && pMatch[2] == pRead[2] )
 		{
-			if( pMatch[0] == pRead[0] && pMatch[1] == pRead[1] && pMatch[2] == pRead[2] )
+			// This is indeed a match, lets check its length.
+
+			int matchLength = 3;
+			while( matchLength < 66 && pRead + matchLength < pEnd )
 			{
-				// This is indeed a match, lets check its length.
+				if( pMatch[matchLength] == pRead[matchLength] )
+					matchLength++;
+				else
+					break;
+			}
 
-				matchLength = 3;
-				while( matchLength < 66 && pRead + matchLength < pEnd )
-				{
-					if( pMatch[matchLength] == pRead[matchLength] )
-						matchLength++;
-					else
-						break;
-				}
+			// Check if we found a better match than before
 
-				// Right now we just take the first match
-
+			if( matchLength > bestMatchLength )
+			{
 				pBestMatch = pMatch;
 				bestMatchLength = matchLength;
+
+				if( matchLength == 66 )
+					break;
 			}
+
+			matchWindowOfs = pWindow[matchWindowOfs];
+			pMatch = pRead - ((windowIdx + m_windowSize - matchWindowOfs)%m_windowSize);
+
+			if( pRead == pMatch )
+				pMatch -= 65536;
+
+			steps++;
 		}
 
 		if( bestMatchLength > 0 )
 		{
+			if( nbNewInserts != 0 )
+			{
+				* pNewInserts = nbNewInserts-1;
+				nbNewInserts = 0;
+			}
+
 			int offset = int(pRead - pBestMatch) -1;
 
 			assert(offset >= 0 && offset <= 65535);
@@ -168,13 +186,29 @@ int LZCompressor::compress( void * _pDest, const void * _pBegin, const void * _p
 //			hash = hash_bytes(++pRead);
 			windowIdx = windowIdx & (m_windowSize-1);		// Loop windowIdx;
 
-			// Right now we are storing misses one by one
+			if( nbNewInserts == 0 )
+			{
+				pNewInserts = pWrite;
+				* pWrite++ = 0;
+			}
 
-			* pWrite++ = 0;
 			* pWrite++ = * pRead++;
+			nbNewInserts++;
+
+			if( nbNewInserts == 128 )
+			{
+				* pNewInserts = 128-1;
+				nbNewInserts = 0;
+			}
 		}
 
 	}
+
+	// Make sure to finish up last chunk of new inserts
+
+	if( nbNewInserts > 0 )
+		* pNewInserts = nbNewInserts-1;
+
 
 	// Add any remaining bytes (1 or 2)
 
