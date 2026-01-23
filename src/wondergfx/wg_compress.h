@@ -30,10 +30,7 @@
 #include <wg_gfxtypes.h>
 
 namespace wg
-{	
-
-
-
+{
 
 	std::tuple<Compression,int, const spx *> compressSpx( const spx * pBegin, const spx * pEnd, uint8_t * pDest, int maxChunkBytes = 0 );
 

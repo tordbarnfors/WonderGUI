@@ -1,6 +1,8 @@
 
 set( SOURCES
 
+	wg_backendlogger.cpp
+	wg_backendlogger.h
 	wg_bitmapcache.cpp
 	wg_bitmapcache.h
 	wg_bitmapfont.cpp
@@ -50,8 +52,8 @@ set( SOURCES
 	wg_gradyent.h
 	wg_gridwalker.cpp
 	wg_gridwalker.h
-	wg_backendlogger.cpp
-	wg_backendlogger.h
+	wg_lzcompressor.cpp
+	wg_lzcompressor.h
 	wg_patches.impl.h
 	wg_patches.cpp
 	wg_patches.h
