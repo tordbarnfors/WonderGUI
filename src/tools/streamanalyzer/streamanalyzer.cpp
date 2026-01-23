@@ -274,7 +274,7 @@ Widget_p MyApp::createLowerPanel()
 	auto pBase = TwoSlotPanel::create();
 	pBase->setAxis(Axis::X);
 
-	auto pLayout = PackLayout::create( { .expandFactor = PackLayout::Factor::Weight } );
+	auto pLayout = PackLayout::create( { .expandFactor = PackLayout::Factor::Weight, .shrinkFactor = PackLayout::Factor::Weight } );
 	
 	pBase->setLayout(pLayout);
 	
