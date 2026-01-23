@@ -198,7 +198,6 @@ int Q565Compressor::compress( void * pDest, const void * pBegin, const void * pE
 
 int Q565Compressor::decompress( void * _pDest, const void * pBegin, const void * pEnd )
 {
-	uint16_t* pOriginalDest = (uint16_t*) _pDest;
 	uint16_t* pDest = (uint16_t*) _pDest;
 
 	uint16_t palette[64];
@@ -260,7 +259,7 @@ int Q565Compressor::decompress( void * _pDest, const void * pBegin, const void *
 		}
 	}
 
-	return int(pDest - pOriginalDest);
+	return int( ((uint8_t*)pDest) - ((uint8_t*)_pDest) );
 }
 
 
