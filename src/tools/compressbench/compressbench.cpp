@@ -3,18 +3,15 @@
 
 #include <wondergui.h>
 #include <wg_freetypefont.h>
+
 #include <string>
+#include <filesystem>
 
-
+#include <cstring>
 
 using namespace wg;
 using namespace wapp;
 using namespace std;
-
-int compress(uint8_t* pDest, uint16_t* pBegin, uint16_t* pEnd);
-int roundtrip(Blob_p pPixels);
-int decompress(uint16_t* pDest, uint8_t* pBegin, uint8_t* pEnd);
-
 
 
 //____ create() _______________________________________________________________
@@ -29,8 +26,8 @@ WonderApp_p WonderApp::create()
 bool MyApp::init(API * pAPI)
 {
 	m_pAPI = pAPI;
-
-	std::string selected = pAPI->openFileDialog("File to compress", "c://Workspace//WonderGUI//resources", "", { "" }, "");
+/*
+	std::string selected = pAPI->openFileDialog("File to compress", "", "", { "" }, "");
 
 	auto pSource = pAPI->loadBlob(selected);
 
@@ -56,6 +53,10 @@ bool MyApp::init(API * pAPI)
 
 
 	Base::memStackFree(srcSize * 2);
+
+*/
+	m_pCompressor = LZCompressor::create();
+//	m_pCompressor = Q565Compressor::create();
 
 
 	if (!_setupGUI(pAPI))
@@ -93,270 +94,234 @@ void MyApp::closeWindow(Window* pWindow)
 
 bool MyApp::_setupGUI(API* pAPI)
 {
-	m_pWindow = Window::create(pAPI, { .size = {800,600}, .title = "Hello World" });
+	m_pWindow = Window::create(pAPI, { .size = {600,600}, .title = "Compress Bench" });
 
-	//
+	auto pTheme = pAPI->initDefaultTheme();
 
-	auto pFontBlob = pAPI->loadBlob("resources/DroidSans.ttf");
+	// Create and populate button panel
 
-	if (!pFontBlob)
-		return false;
+	auto pButtonPanel = PackPanel::create( { .axis = Axis::X, .skin = pTheme->plateSkin() } );
 
-	auto pFont = FreeTypeFont::create(pFontBlob);
+	auto pLoadButton = WGCREATE( Button, _ = pTheme->pushButton(), _.label.text = "Select test images..." );
+	auto pRunButton = WGCREATE( Button, _ = pTheme->pushButton(), _.label.text = "Run tests" );
+	auto pSyntheticTestButton = WGCREATE( Button, _ = pTheme->pushButton(), _.label.text = "Run 'synthetic' test" );
 
-	m_pTextStyle = TextStyle::create({
-		.color = Color8::Black,
-		.font = pFont, 
-		.size = 14,
-	});
+	pButtonPanel->slots.pushBack({
+//		{ WGCREATE( Filler ), { .weight = 1 } },
+		{ pLoadButton, { .weight = 0 } },
+//		{ WGCREATE( Filler ), { .weight = 0.5f } },
+		{ pRunButton, { .weight = 0 } },
+		{ pSyntheticTestButton, { .weight = 0 } },
+		{ WGCREATE( Filler ), { .weight = 1 } }
+	} );
 
-	m_pTextLayoutCentered = BasicTextLayout::create({ .placement = Placement::Center });
+	Base::msgRouter()->addRoute(pLoadButton, MsgType::Select, [this](Msg * pMsg){ onLoad(); } );
+	Base::msgRouter()->addRoute(pRunButton, MsgType::Select, [this](Msg * pMsg){ onRun(); } );
+	Base::msgRouter()->addRoute(pSyntheticTestButton, MsgType::Select, [this](Msg * pMsg){ onRunSyntheticTest(); } );
 
-	//
+	// Create main section
 
-	auto pBgSkin = ColorSkin::create( Color::PapayaWhip );
+	m_pResultTable = WGCREATE( TablePanel, _ = pTheme->listTable(), _.columns = 5, _.rows = 1, _.skin = pTheme->canvasSkin() );
 
-	auto pTextDisplay = TextDisplay::create({
+	TextDisplay::Blueprint columnLabelBP( { .skin = pTheme->plateSkin(), .display = { .style = pTheme->strongStyle() }} );
 
-		.display = {
-			.layout = m_pTextLayoutCentered, 
-			.style = m_pTextStyle, 
-			.text = m_message 
-		},
+	auto pColumnLabel1 = WGCREATE( TextDisplay, _ = columnLabelBP, _.display.text = "Filename" );
+	auto pColumnLabel2 = WGCREATE( TextDisplay, _ = columnLabelBP, _.display.text = "Ratio (%)" );
+	auto pColumnLabel3 = WGCREATE( TextDisplay, _ = columnLabelBP, _.display.text = "Compress speed (microsec)" );
+	auto pColumnLabel4 = WGCREATE( TextDisplay, _ = columnLabelBP, _.display.text = "Decompress speed (microsec)" );
+	auto pColumnLabel5 = WGCREATE( TextDisplay, _ = columnLabelBP, _.display.text = "Check" );
 
-		.skin = pBgSkin
-	});
 
-	m_pWindow->mainCapsule()->slot = pTextDisplay;
+
+	m_pResultTable->slots.replaceRow( 0, { pColumnLabel1, pColumnLabel2, pColumnLabel3, pColumnLabel4, pColumnLabel5 } );
+
+
+
+
+	// Create and populate main panel
+
+	auto pMainPanel = PackPanel::create( { .axis = Axis::Y, .skin = pTheme->windowSkin() } );
+
+	pMainPanel->slots.pushBack( pButtonPanel, { .weight = 0 } );
+	pMainPanel->slots.pushBack( m_pResultTable, { .weight = 1 } );
+
+
+
+	m_pWindow->mainCapsule()->slot = pMainPanel;
 	return true;
 }
 
+//____ onLoad() _______________________________________________________________
 
-/*
-	00 0xxxxx		New pixels(1 - 32)
-	00 1xxxxx		Repeat previous pixel(1 - 32)
-	01 xxxxxx		Pixel from index
-	1 rrgggbb		Modif rgb values
-*/
-
-int roundtrip( Blob_p pPixels )
+void MyApp::onLoad()
 {
-	assert(pPixels->size() % 2 == 0);
+	auto filePaths = m_pAPI->openMultiFileDialog("Select Test Images", "", "", {}, "");
 
-	Blob_p pCompressed = Blob::create(pPixels->size()*2 );
-
-	Blob_p pDecompressed = Blob::create(pPixels->size()+4);
-
-	int compressedSize = compress((uint8_t*)pCompressed->data(), (uint16_t*)pPixels->data(), ((uint16_t*)pPixels->data()) + pPixels->size() / 2);
-
-	int decompressedSize = decompress((uint16_t*)pDecompressed->data(), (uint8_t*)pCompressed->data(), ((uint8_t*)pCompressed->data()) + compressedSize);
-
-	uint16_t* pOriginal = (uint16_t*)pPixels->data();
-	uint16_t* pReconstructed = (uint16_t*)pDecompressed->data();
-	for (int i = 0; i < pPixels->size() / 2; i++)
+	if( filePaths.size() > 0 )
 	{
-		if (pOriginal[i] != pReconstructed[i])
+		m_testSurfaces.clear();
+
+		for( auto& path : filePaths )
 		{
-			printf("ERROR: Mismatch at pixel %d: original=%04X, reconstructed=%04X\n", i, pOriginal[i], pReconstructed[i]);
-			return -1;
+			auto pSurface = m_pAPI->loadSurface(path);
+			if( pSurface )
+			{
+				string name = std::filesystem::path(path).stem().string();
+				m_testSurfaces.push_back({name, pSurface});
+			}
 		}
+
+		refreshList();
+
 	}
 
-	return compressedSize;
+
 }
 
-int compress(uint8_t* pDest, uint16_t* pBegin, uint16_t* pEnd)
+//____ onRun() ________________________________________________________________
+
+void MyApp::onRun()
 {
-	uint16_t palette[64];
-
-	uint8_t	pixelToIndex[65536];
-
-
-	for (int i = 0; i < 64; i++)
-		palette[i] = 0;
-
-	for (int i = 0; i < 65536; i++)
+	for( int i = 0 ; i < m_testSurfaces.size() ; i++ )
 	{
-		int r = i & 0x001F;
-		int g = (i >> 5) & 0x003F;
-		int b = (i >> 11) & 0x001F;
+		auto pSurface = m_testSurfaces[i].pSurface;
+		auto pixbuf = pSurface->allocPixelBuffer();
+		pSurface->pushPixels(pixbuf);
 
-		pixelToIndex[i] = (r * 3 + g * 5 + b * 7) % 64;
-	}
+		int srcSize = pixbuf.pitch * pixbuf.rect.h;
+
+		// Do compression
+
+		int memNeeded = m_pCompressor->maxCompressedSize(srcSize);
+		auto pCompressArea = (uint8_t*) Base::memStackAlloc(memNeeded);
+
+		auto beforeCompTS = m_pAPI->time();
+		int compressedSize = m_pCompressor->compress(pCompressArea, pixbuf.pixels, pixbuf.pixels + srcSize );
+		auto afterCompTS = m_pAPI->time();
 
 
-	uint16_t prevValue = 0;
+		// Do decompression
 
-	uint16_t* pRead = pBegin;
-	uint8_t* pWrite = pDest;
-	while (pRead < pEnd)
-	{		
-		uint16_t value = *pRead++;
+		auto pDecompressArea = (uint8_t*) Base::memStackAlloc(srcSize+9);
+		strcpy((char*)pDecompressArea+srcSize, "DEADBEEF");
 
-		if (value == prevValue)
+		auto beforeDecompTS = m_pAPI->time();
+		int decompressedSize = m_pCompressor->decompress(pDecompressArea, pCompressArea, pCompressArea+compressedSize);
+		auto afterDecompTS = m_pAPI->time();
+
+		// Check decompressed result.
+
+		auto pResultDisplay = wg_dynamic_cast<TextDisplay_p>(m_pResultTable->slots[i+1][4].widget());
+
+		bool bEquivalent = true;
+
+		for( int j = 0 ; j < srcSize ; j++ )
 		{
-			uint16_t count = 1;
-			while (pRead < pEnd && *pRead == value && count < 32)
+			if( pixbuf.pixels[j] != pDecompressArea[j] )
 			{
-				count++;
-				pRead++;
+				char temp[64];
+				snprintf( temp, 64, "ERROR at offset %d%", j );
+
+				pResultDisplay->display.setText( temp );
+				bEquivalent = false;
+				break;
 			}
-
-			*pWrite++ = 0x20 | (count - 1);						// Store as repeat of previous value
 		}
-		else
-		{
-			uint8_t index = pixelToIndex[value];
 
-			if (palette[index] == value)
-				*pWrite++ = 0x40 | index;						// Store as index lookup
+		if( bEquivalent )
+		{
+			if( decompressedSize != srcSize )
+			{
+				pResultDisplay->display.setText( "ERROR: Decompressed size." );
+			}
+			else if( strcmp( (char*)pDecompressArea+srcSize, "DEADBEEF") != 0 )
+			{
+				pResultDisplay->display.setText( "ERROR: Decompressed destination overflow." );
+			}
 			else
 			{
-				uint16_t prevR = prevValue & 0x001F;
-				uint16_t prevG = (prevValue >> 5) & 0x003F;
-				uint16_t prevB = (prevValue >> 11) & 0x001F;
+				pResultDisplay->display.setText( "SUCCESS" );
 
-				uint16_t r = value & 0x001F;
-				uint16_t g = (value >> 5) & 0x003F;
-				uint16_t b = (value >> 11) & 0x001F;
+				// Update ratio display
 
-				uint16_t diffR = r - prevR + 2;
-				uint16_t diffG = g - prevG + 4;
-				uint16_t diffB = b - prevB + 2;
+				auto pRatioDisplay = wg_dynamic_cast<TextDisplay_p>(m_pResultTable->slots[i+1][1].widget());
 
+				char temp[16];
+				snprintf( temp, 16, "%d%", compressedSize*100/srcSize );
 
-				if (diffR < 4 && diffG < 8 && diffB < 4)
-				{
-					*pWrite++ = 0x80 | (diffR << 5) | (diffG << 2) | diffB;		// Store as RGB-delta
-					palette[index] = value;
-				}
-				else
-				{
-					auto pCounter = pWrite;
+				pRatioDisplay->display.setText( temp );
 
-					*pWrite++ = 1;
-					*pWrite++ = (uint8_t)value;
-					*pWrite++ = (uint8_t)(value >> 8);
+				// Update Compress speed
 
-					palette[index] = value;
+				auto pCompTimeDisplay = wg_dynamic_cast<TextDisplay_p>(m_pResultTable->slots[i+1][2].widget());
 
-					int count = 1;
-					while (pRead < pEnd && count < 32)
-					{
-						uint16_t futureValue = *pRead;
+				snprintf( temp, 16, "%d%", int(afterCompTS-beforeCompTS) );
+				pCompTimeDisplay->display.setText( temp );
 
-						if (futureValue == value)
-							break;				// Next pixel is start of repetive section
+				// Update Decompress speed
 
-						uint8_t futureIndex = pixelToIndex[futureValue];
-						if (palette[futureIndex] == futureValue)
-							break;				// Next pixel can be taken from index;
+				auto pDecompTimeDisplay = wg_dynamic_cast<TextDisplay_p>(m_pResultTable->slots[i+1][3].widget());
 
-						uint16_t futureR = futureValue & 0x001F;
-						uint16_t futureG = (futureValue >> 5) & 0x003F;
-						uint16_t futureB = (futureValue >> 11) & 0x001F;
-
-						uint16_t diffR = futureR - r + 2;
-						uint16_t diffG = futureG - g + 4;
-						uint16_t diffB = futureB - b + 2;
-
-						if (diffR < 4 && diffG < 8 && diffB < 4)
-							break;				// Next pixel can be stored as RGB-delta.
-
-						palette[futureIndex] = futureValue;
-
-						value = futureValue;
-
-						r = futureR;
-						g = futureG;
-						b = futureB;
-
-						*pWrite++ = (uint8_t)value;
-						*pWrite++ = (uint8_t)(value >> 8);
-
-						pRead++;
-						count++;
-					}
-
-					*pCounter = count-1;
-				}
+				snprintf( temp, 16, "%d%", int(afterDecompTS-beforeDecompTS) );
+				pDecompTimeDisplay->display.setText( temp );
 
 			}
 		}
 
-		prevValue = value;
+		// Cleanup
+
+		Base::memStackFree(srcSize+9);
+		Base::memStackFree(memNeeded);
+		pSurface->freePixelBuffer(pixbuf);
 	}
-	return int(pWrite - pDest);
+
 }
 
 
-int decompress(uint16_t* pDest, uint8_t* pBegin, uint8_t* pEnd)
+//____ onRunSyntheticTest() ________________________________________________________________
+
+void MyApp::onRunSyntheticTest()
 {
-	uint16_t* pOriginalDest = pDest;
+	const static char testData[] = "ABBABBACDEFMMMMMMMARABBABOUABasdfdsafasdjwerjaewk dguiaafanlken adsökjj";
 
-	uint16_t palette[64];
+	int srcSize = sizeof(testData);
 
-	uint8_t	pixelToIndex[65536];
+	uint8_t 	compressArea[256];
+	char 		decompressArea[256];
 
-	for (int i = 0; i < 64; i++)
-		palette[i] = 0;
-
-	for (int i = 0; i < 65536; i++)
+	for( int i = 0 ; i < 256 ; i++ )
 	{
-		int r = i & 0x001F;
-		int g = (i >> 5) & 0x003F;
-		int b = (i >> 11) & 0x001F;
-
-		pixelToIndex[i] = (r * 3 + g * 5 + b * 7) % 64;
+		compressArea[i] = ' ';
+		decompressArea[i] = 0;
 	}
 
-	uint16_t	lastPixel = 0;
 
-	auto pRead = pBegin;
-	while (pRead < pEnd)
+	int compressedSize = m_pCompressor->compress(compressArea, testData, testData + srcSize );
+	int decompressedSize = m_pCompressor->decompress(decompressArea, compressArea, compressArea+compressedSize);
+
+
+}
+
+
+//____ refreshList() __________________________________________________________
+
+void MyApp::refreshList()
+{
+	m_pResultTable->rows.resize(int(m_testSurfaces.size())+1);
+
+	int index = 1;
+	for( auto& test : m_testSurfaces )
 	{
-		uint8_t v = *pRead++;
+		auto pName = TextDisplay::create({ .display = { .text = test.name.c_str() } });
+		auto pRatio = TextDisplay::create({ .display = { .text = "---" } });
+		auto pCompMS = TextDisplay::create({ .display = { .text = "---" } });
+		auto pDecompMS = TextDisplay::create({ .display = { .text = "---" } });
+		auto pCheck = TextDisplay::create({ .display = { .text = "---" } });
 
-		if (v < 0x20)
-		{
-			int nbPixels = v + 1;
-			for (int i = 0; i < nbPixels; i++)
-			{
-				lastPixel = *pRead++;
-				lastPixel |= (*pRead++) << 8;
-				*pDest++ = lastPixel;
 
-				palette[pixelToIndex[lastPixel]] = lastPixel;
-			}
-		}
-		else if (v < 0x40)
-		{
-			int nbPixels = (v & 0x1F) + 1;
-			for (int i = 0; i < nbPixels; i++)
-				*pDest++ = lastPixel;
-		}
-		else if (v < 0x80)
-		{
-			int index = v & 0x3F;
-			lastPixel = palette[index];
-			*pDest++ = lastPixel;
-		}
-		else
-		{
-			uint8_t r = uint8_t(lastPixel & 0x001F);
-			uint8_t g = uint8_t((lastPixel >> 5) & 0x003F);
-			uint8_t b = uint8_t((lastPixel >> 11) & 0x001F);
-
-			r += ((v >> 5) & 0x3) - 2;
-			g += ((v >> 2) & 0x7) - 4;
-			b += (v & 0x3) - 2;
-
-			lastPixel = (b << 11) | (g << 5) | r;
-			*pDest++ = lastPixel;
-
-			palette[pixelToIndex[lastPixel]] = lastPixel;
-		}
+		m_pResultTable->slots.replaceRow(index, { pName, pRatio, pCompMS, pDecompMS, pCheck });
+		index++;
 	}
 
-	return int(pDest - pOriginalDest);
+
 }
