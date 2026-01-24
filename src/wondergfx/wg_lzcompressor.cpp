@@ -121,29 +121,26 @@ int LZCompressor::compress( void * _pDest, const void * _pBegin, const void * _p
 		{
 			// This is indeed a match, lets check its length.
 
-//			if( pMatch[bestMatchLength] == pRead[bestMatchLength] )
-//			{
-				int matchLength = 3;
+			int matchLength = 3;
 
-				while( matchLength < 66 && pRead + matchLength < pEnd )
-				{
-					if( pMatch[matchLength] == pRead[matchLength] )
-						matchLength++;
-					else
-						break;
-				}
+			while( matchLength < 66 && pRead + matchLength < pEnd )
+			{
+				if( pMatch[matchLength] == pRead[matchLength] )
+					matchLength++;
+				else
+					break;
+			}
 
-				// Check if we found a better match than before
+			// Check if we found a better match than before
 
-				if( matchLength > bestMatchLength )
-				{
-					pBestMatch = pMatch;
-					bestMatchLength = matchLength;
+			if( matchLength > bestMatchLength )
+			{
+				pBestMatch = pMatch;
+				bestMatchLength = matchLength;
 
-					if( matchLength == 66 )
-						break;
-				}
-//			}
+				if( matchLength == 66 )
+					break;
+			}
 
 
 			matchWindowOfs = pWindow[matchWindowOfs];
@@ -178,12 +175,17 @@ int LZCompressor::compress( void * _pDest, const void * _pBegin, const void * _p
 
 			// Insert value into hash table & update sliding window, for all skipped values
 
-			for( int i = 0 ; i < bestMatchLength ; i++ )
+			if( pRead + bestMatchLength > (pEnd - 3) )
+				pRead += bestMatchLength;
+			else
 			{
-				pWindow[windowIdx] = pHash[hash];
-				pHash[hash] = windowIdx++;
-				hash = hash_bytes(++pRead);
-				windowIdx = windowIdx & (m_windowSize-1);		// Loop windowIdx;
+				for( int i = 0 ; i < bestMatchLength ; i++ )
+				{
+					hash = hash_bytes(pRead++);
+					pWindow[windowIdx] = pHash[hash];
+					pHash[hash] = windowIdx++;
+					windowIdx = windowIdx & (m_windowSize-1);		// Loop windowIdx;
+				}
 			}
 		}
 		else
@@ -192,7 +194,6 @@ int LZCompressor::compress( void * _pDest, const void * _pBegin, const void * _p
 
 			pWindow[windowIdx] = pHash[hash];
 			pHash[hash] = windowIdx++;
-//			hash = hash_bytes(++pRead);
 			windowIdx = windowIdx & (m_windowSize-1);		// Loop windowIdx;
 
 			if( nbNewInserts == 0 )
