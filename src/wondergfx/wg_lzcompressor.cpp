@@ -90,8 +90,8 @@ int LZCompressor::compress( void * _pDest, const void * _pBegin, const void * _p
 	auto pWindow = (uint16_t *) GfxBase::memStackAlloc(windowSize);
 
 
-	memset( pHash, -1, hashSize );
-	memset( pWindow, -1, windowSize );
+	memset( pHash, 0, hashSize );
+	memset( pWindow, 0, windowSize );
 
 	//
 
@@ -112,41 +112,42 @@ int LZCompressor::compress( void * _pDest, const void * _pBegin, const void * _p
 
 		uint8_t * pMatch = pRead - ((windowIdx + m_windowSize - matchWindowOfs)%m_windowSize);	// Pointer at latest match given matchWindowOfs.
 
-		if( pRead == pMatch )
-			pMatch -= 65536;
+		assert( pMatch <= pRead );
 
 		int	bestMatchLength = 0;
 		int steps = 0;
 
-		while( steps < m_maxSteps && pMatch >= pBegin && pMatch[0] == pRead[0] && pMatch[1] == pRead[1] && pMatch[2] == pRead[2] )
+		while( steps < m_maxSteps && pMatch != pRead && pMatch >= pBegin && pMatch[0] == pRead[0] && pMatch[1] == pRead[1] && pMatch[2] == pRead[2] )
 		{
 			// This is indeed a match, lets check its length.
 
-			int matchLength = 3;
-			while( matchLength < 66 && pRead + matchLength < pEnd )
-			{
-				if( pMatch[matchLength] == pRead[matchLength] )
-					matchLength++;
-				else
-					break;
-			}
+//			if( pMatch[bestMatchLength] == pRead[bestMatchLength] )
+//			{
+				int matchLength = 3;
 
-			// Check if we found a better match than before
+				while( matchLength < 66 && pRead + matchLength < pEnd )
+				{
+					if( pMatch[matchLength] == pRead[matchLength] )
+						matchLength++;
+					else
+						break;
+				}
 
-			if( matchLength > bestMatchLength )
-			{
-				pBestMatch = pMatch;
-				bestMatchLength = matchLength;
+				// Check if we found a better match than before
 
-				if( matchLength == 66 )
-					break;
-			}
+				if( matchLength > bestMatchLength )
+				{
+					pBestMatch = pMatch;
+					bestMatchLength = matchLength;
+
+					if( matchLength == 66 )
+						break;
+				}
+//			}
+
 
 			matchWindowOfs = pWindow[matchWindowOfs];
 			pMatch = pRead - ((windowIdx + m_windowSize - matchWindowOfs)%m_windowSize);
-
-			if( pRead == pMatch )
-				pMatch -= 65536;
 
 			steps++;
 		}
@@ -163,9 +164,17 @@ int LZCompressor::compress( void * _pDest, const void * _pBegin, const void * _p
 
 			assert(offset >= 0 && offset <= 65535);
 
-			* pWrite++ = (bestMatchLength - 3) + 192;
-			* pWrite++ = uint8_t(offset);
-			* pWrite++ = uint8_t(offset>>8);
+			if( offset < 256 )
+			{
+				* pWrite++ = (bestMatchLength - 3) + 128;
+				* pWrite++ = uint8_t(offset);
+			}
+			else
+			{
+				* pWrite++ = (bestMatchLength - 3) + 192;
+				* pWrite++ = uint8_t(offset);
+				* pWrite++ = uint8_t(offset>>8);
+			}
 
 			// Insert value into hash table & update sliding window, for all skipped values
 
@@ -249,7 +258,7 @@ int LZCompressor::decompress( void * pDest, const void * pBegin, const void * pE
 		{
 			if( byte1 < 192 )
 			{
-				int copyAmount = byte1 - 128 + 2;
+				int copyAmount = byte1 - 128 + 3;
 				uint8_t* pCopyFrom = pWrite - 1 - (* pRead++);
 				for( int i = 0 ; i  < copyAmount ; i++ )
 					* pWrite++ = * pCopyFrom++;

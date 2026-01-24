@@ -32,8 +32,8 @@
 *	Encoding:
 *
 *	0xxxxxxx						New pixels(1 - 128)
-*	10xxxxxx yyyyyyyy				Replay X (2-65) bytes, starting from Y (1-256) bytes back.
-*	11xxxxxx yyyyyyyy yyyyyyyy		Replay X (3-66) bytes, starting from Y (1-65536) bytes back. Low byte first (little-endian).
+*	10xxxxxx yyyyyyyy				Replay X (3-66) bytes, starting from Y (1-255) bytes back.
+*	11xxxxxx yyyyyyyy yyyyyyyy		Replay X (3-66) bytes, starting from Y (1-65535) bytes back. Low byte first (little-endian).
 */
 
 
