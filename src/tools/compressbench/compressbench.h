@@ -33,8 +33,11 @@ private:
 	void			onLoad();
 	void			onRun();
 	void			onRunSyntheticTest();
+	void			onCompressorSelected();
 
 	void			refreshList();
+	void 			updateListRow( int row, int srcSize, int compressedSize, int compressMicroSec, int decompressMicroSec );
+
 
 	struct TestSurface
 	{
@@ -44,8 +47,15 @@ private:
 
 	std::vector<TestSurface>	m_testSurfaces;
 
+	Theme_p			m_pTheme;
+
 	TablePanel_p	m_pResultTable;
 
+	std::vector<Compressor_p>	m_compressors;
 	Compressor_p	m_pCompressor;
+
+	SelectBox_p		m_pCompressorSelector;
+
+	TextLayout_p	m_pLayoutRight;
 
 };

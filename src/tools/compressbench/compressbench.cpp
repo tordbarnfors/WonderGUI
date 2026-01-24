@@ -26,38 +26,11 @@ WonderApp_p WonderApp::create()
 bool MyApp::init(API * pAPI)
 {
 	m_pAPI = pAPI;
-/*
-	std::string selected = pAPI->openFileDialog("File to compress", "", "", { "" }, "");
 
-	auto pSource = pAPI->loadBlob(selected);
+	m_compressors.push_back( LZCompressor::create() );
+	m_compressors.push_back( Q565Compressor::create() );
 
-	auto pInspector = SurfaceFileInspector::create(pSource->data());
-
-	auto pPixels = (uint16_t*) (((char*)pSource->data()) + pInspector->pixelDataOffset());
-	auto srcSize = pInspector->pixelDataBytes();
-
-	auto pBlob = Blob::create(pPixels, srcSize, nullptr);
-	roundtrip(pBlob);
-
-
-
-//	assert(pSource->size() % 2 == 0);
-
-	auto pDest = (uint8_t *) Base::memStackAlloc(srcSize * 2);
-
-
-
-	int size = compress(pDest, pPixels, pPixels + srcSize / 2);
-
-	snprintf(m_message, 1024, "Uncompressed size: %d\nCompressed size: %d\nRatio: %d%%", srcSize, size, size * 100 / srcSize);
-
-
-	Base::memStackFree(srcSize * 2);
-
-*/
-	m_pCompressor = LZCompressor::create();
-//	m_pCompressor = Q565Compressor::create();
-
+	m_pCompressor = m_compressors[0];
 
 	if (!_setupGUI(pAPI))
 	{
@@ -97,6 +70,9 @@ bool MyApp::_setupGUI(API* pAPI)
 	m_pWindow = Window::create(pAPI, { .size = {600,600}, .title = "Compress Bench" });
 
 	auto pTheme = pAPI->initDefaultTheme();
+	m_pTheme = pTheme;
+
+	m_pLayoutRight = BasicTextLayout::create( { .placement = Placement::East } );
 
 	// Create and populate button panel
 
@@ -106,34 +82,43 @@ bool MyApp::_setupGUI(API* pAPI)
 	auto pRunButton = WGCREATE( Button, _ = pTheme->pushButton(), _.label.text = "Run tests" );
 	auto pSyntheticTestButton = WGCREATE( Button, _ = pTheme->pushButton(), _.label.text = "Run 'synthetic' test" );
 
+	m_pCompressorSelector = SelectBox::create( pTheme->selectBox() );
+	m_pCompressorSelector->entries.pushBack( SelectBoxEntry::Blueprint{ .id = 0, .text = "LZWP (Lempel-Ziw based w improvements)" } );
+	m_pCompressorSelector->entries.pushBack( SelectBoxEntry::Blueprint{ .id = 1, .text = "Q565 (QOI inspired for RGB565)" } );
+	m_pCompressorSelector->selectEntryByIndex(0);
+
 	pButtonPanel->slots.pushBack({
 //		{ WGCREATE( Filler ), { .weight = 1 } },
 		{ pLoadButton, { .weight = 0 } },
 //		{ WGCREATE( Filler ), { .weight = 0.5f } },
 		{ pRunButton, { .weight = 0 } },
 		{ pSyntheticTestButton, { .weight = 0 } },
-		{ WGCREATE( Filler ), { .weight = 1 } }
+		{ WGCREATE( Filler ), { .weight = 1 } },
+		{ m_pCompressorSelector, { .weight = 0 } }
 	} );
 
 	Base::msgRouter()->addRoute(pLoadButton, MsgType::Select, [this](Msg * pMsg){ onLoad(); } );
 	Base::msgRouter()->addRoute(pRunButton, MsgType::Select, [this](Msg * pMsg){ onRun(); } );
 	Base::msgRouter()->addRoute(pSyntheticTestButton, MsgType::Select, [this](Msg * pMsg){ onRunSyntheticTest(); } );
+	Base::msgRouter()->addRoute(m_pCompressorSelector, MsgType::Select, [this](Msg * pMsg){ onCompressorSelected(); } );
 
 	// Create main section
 
-	m_pResultTable = WGCREATE( TablePanel, _ = pTheme->listTable(), _.columns = 5, _.rows = 1, _.skin = pTheme->canvasSkin() );
+	m_pResultTable = WGCREATE( TablePanel, _ = pTheme->listTable(), _.columns = 7, _.rows = 2, _.skin = pTheme->canvasSkin() );
 
 	TextDisplay::Blueprint columnLabelBP( { .skin = pTheme->plateSkin(), .display = { .style = pTheme->strongStyle() }} );
 
 	auto pColumnLabel1 = WGCREATE( TextDisplay, _ = columnLabelBP, _.display.text = "Filename" );
 	auto pColumnLabel2 = WGCREATE( TextDisplay, _ = columnLabelBP, _.display.text = "Ratio (%)" );
-	auto pColumnLabel3 = WGCREATE( TextDisplay, _ = columnLabelBP, _.display.text = "Compress speed (microsec)" );
-	auto pColumnLabel4 = WGCREATE( TextDisplay, _ = columnLabelBP, _.display.text = "Decompress speed (microsec)" );
-	auto pColumnLabel5 = WGCREATE( TextDisplay, _ = columnLabelBP, _.display.text = "Check" );
+	auto pColumnLabel3 = WGCREATE( TextDisplay, _ = columnLabelBP, _.display.text = "Comp size" );
+	auto pColumnLabel4 = WGCREATE( TextDisplay, _ = columnLabelBP, _.display.text = "Org size" );
+	auto pColumnLabel5 = WGCREATE( TextDisplay, _ = columnLabelBP, _.display.text = "Comp time (usec)" );
+	auto pColumnLabel6 = WGCREATE( TextDisplay, _ = columnLabelBP, _.display.text = "Decomp time (usec)" );
+	auto pColumnLabel7 = WGCREATE( TextDisplay, _ = columnLabelBP, _.display.text = "Status" );
 
+	refreshList();
 
-
-	m_pResultTable->slots.replaceRow( 0, { pColumnLabel1, pColumnLabel2, pColumnLabel3, pColumnLabel4, pColumnLabel5 } );
+	m_pResultTable->slots.replaceRow( 0, { pColumnLabel1, pColumnLabel2, pColumnLabel3, pColumnLabel4, pColumnLabel5, pColumnLabel6, pColumnLabel7 } );
 
 
 
@@ -145,9 +130,13 @@ bool MyApp::_setupGUI(API* pAPI)
 	pMainPanel->slots.pushBack( pButtonPanel, { .weight = 0 } );
 	pMainPanel->slots.pushBack( m_pResultTable, { .weight = 1 } );
 
+	// Create scrollpanel
 
+	auto pScrollPanel = ScrollPanel::create( pTheme->scrollPanelXY() );
 
-	m_pWindow->mainCapsule()->slot = pMainPanel;
+	pScrollPanel->slot = pMainPanel;
+
+	m_pWindow->mainCapsule()->slot = pScrollPanel;
 	return true;
 }
 
@@ -182,6 +171,12 @@ void MyApp::onLoad()
 
 void MyApp::onRun()
 {
+	int srcTotalBytes = 0;
+	int compressedTotalBytes = 0;
+
+	int compressTimeTotal = 0;
+	int decompressTimeTotal = 0;
+
 	for( int i = 0 ; i < m_testSurfaces.size() ; i++ )
 	{
 		auto pSurface = m_testSurfaces[i].pSurface;
@@ -189,7 +184,7 @@ void MyApp::onRun()
 		pSurface->pushPixels(pixbuf);
 
 		int srcSize = pixbuf.pitch * pixbuf.rect.h;
-
+		
 		// Do compression
 
 		int memNeeded = m_pCompressor->maxCompressedSize(srcSize);
@@ -211,7 +206,7 @@ void MyApp::onRun()
 
 		// Check decompressed result.
 
-		auto pResultDisplay = wg_dynamic_cast<TextDisplay_p>(m_pResultTable->slots[i+1][4].widget());
+		auto pResultDisplay = wg_dynamic_cast<TextDisplay_p>(m_pResultTable->slots[i+1][6].widget());
 
 		bool bEquivalent = true;
 
@@ -220,7 +215,7 @@ void MyApp::onRun()
 			if( pixbuf.pixels[j] != pDecompressArea[j] )
 			{
 				char temp[64];
-				snprintf( temp, 64, "ERROR at offset %d%", j );
+				snprintf( temp, 64, "ERROR at offset %d", j );
 
 				pResultDisplay->display.setText( temp );
 				bEquivalent = false;
@@ -242,29 +237,7 @@ void MyApp::onRun()
 			{
 				pResultDisplay->display.setText( "SUCCESS" );
 
-				// Update ratio display
-
-				auto pRatioDisplay = wg_dynamic_cast<TextDisplay_p>(m_pResultTable->slots[i+1][1].widget());
-
-				char temp[16];
-				snprintf( temp, 16, "%d%", compressedSize*100/srcSize );
-
-				pRatioDisplay->display.setText( temp );
-
-				// Update Compress speed
-
-				auto pCompTimeDisplay = wg_dynamic_cast<TextDisplay_p>(m_pResultTable->slots[i+1][2].widget());
-
-				snprintf( temp, 16, "%d%", int(afterCompTS-beforeCompTS) );
-				pCompTimeDisplay->display.setText( temp );
-
-				// Update Decompress speed
-
-				auto pDecompTimeDisplay = wg_dynamic_cast<TextDisplay_p>(m_pResultTable->slots[i+1][3].widget());
-
-				snprintf( temp, 16, "%d%", int(afterDecompTS-beforeDecompTS) );
-				pDecompTimeDisplay->display.setText( temp );
-
+				updateListRow( i+1, srcSize, compressedSize, int(afterCompTS-beforeCompTS), int(afterDecompTS-beforeDecompTS) );
 			}
 		}
 
@@ -273,9 +246,72 @@ void MyApp::onRun()
 		Base::memStackFree(srcSize+9);
 		Base::memStackFree(memNeeded);
 		pSurface->freePixelBuffer(pixbuf);
+
+		// Sum up totals
+
+		srcTotalBytes += srcSize;
+		compressedTotalBytes += compressedSize;
+
+		compressTimeTotal += int(afterCompTS - beforeCompTS);
+		decompressTimeTotal += int(afterDecompTS - beforeDecompTS);
 	}
 
+	updateListRow( int(m_testSurfaces.size()+1), srcTotalBytes, compressedTotalBytes, compressTimeTotal, decompressTimeTotal );
 }
+
+
+//____ onCompressorSelected() _________________________________________________
+
+void MyApp::onCompressorSelected()
+{
+	int idx = m_pCompressorSelector->selectedEntryId();
+	m_pCompressor = m_compressors[idx];
+}
+
+
+
+//____ updateListRow() ________________________________________________________
+
+void MyApp::updateListRow( int row, int srcSize, int compressedSize, int compressMicroSec, int decompressMicroSec )
+{
+	char temp[16];
+
+	// Update ratio display
+
+	auto pRatioDisplay = wg_dynamic_cast<TextDisplay_p>(m_pResultTable->slots[row][1].widget());
+
+	snprintf( temp, 16, "%d", compressedSize*100/srcSize );
+	pRatioDisplay->display.setText( temp );
+
+	// Update uncompressed size
+
+	auto pCompDisplay = wg_dynamic_cast<TextDisplay_p>(m_pResultTable->slots[row][2].widget());
+
+	snprintf( temp, 16, "%d", compressedSize );
+	pCompDisplay->display.setText( temp );
+
+	// Update uncompressed size
+
+	auto pUncompDisplay = wg_dynamic_cast<TextDisplay_p>(m_pResultTable->slots[row][3].widget());
+
+	snprintf( temp, 16, "%d", srcSize );
+	pUncompDisplay->display.setText( temp );
+
+	// Update Compress speed
+
+	auto pCompTimeDisplay = wg_dynamic_cast<TextDisplay_p>(m_pResultTable->slots[row][4].widget());
+
+	snprintf( temp, 16, "%d", compressMicroSec );
+	pCompTimeDisplay->display.setText( temp );
+
+	// Update Decompress speed
+
+	auto pDecompTimeDisplay = wg_dynamic_cast<TextDisplay_p>(m_pResultTable->slots[row][5].widget());
+
+	snprintf( temp, 16, "%d", decompressMicroSec );
+	pDecompTimeDisplay->display.setText( temp );
+}
+
 
 
 //____ onRunSyntheticTest() ________________________________________________________________
@@ -295,11 +331,8 @@ void MyApp::onRunSyntheticTest()
 		decompressArea[i] = 0;
 	}
 
-
 	int compressedSize = m_pCompressor->compress(compressArea, testData, testData + srcSize );
 	int decompressedSize = m_pCompressor->decompress(decompressArea, compressArea, compressArea+compressedSize);
-
-
 }
 
 
@@ -307,21 +340,36 @@ void MyApp::onRunSyntheticTest()
 
 void MyApp::refreshList()
 {
-	m_pResultTable->rows.resize(int(m_testSurfaces.size())+1);
+	m_pResultTable->rows.resize(int(m_testSurfaces.size())+2);
 
 	int index = 1;
 	for( auto& test : m_testSurfaces )
 	{
 		auto pName = TextDisplay::create({ .display = { .text = test.name.c_str() } });
-		auto pRatio = TextDisplay::create({ .display = { .text = "---" } });
-		auto pCompMS = TextDisplay::create({ .display = { .text = "---" } });
-		auto pDecompMS = TextDisplay::create({ .display = { .text = "---" } });
+		auto pRatio = TextDisplay::create({ .display = { .text = "---", .layout = m_pLayoutRight } });
+		auto pCompSize = TextDisplay::create({ .display = { .text = "---", .layout = m_pLayoutRight } });
+		auto pUncompSize = TextDisplay::create({ .display = { .text = "---", .layout = m_pLayoutRight } });
+		auto pCompMS = TextDisplay::create({ .display = { .text = "---", .layout = m_pLayoutRight } });
+		auto pDecompMS = TextDisplay::create({ .display = { .text = "---", .layout = m_pLayoutRight } });
 		auto pCheck = TextDisplay::create({ .display = { .text = "---" } });
 
 
-		m_pResultTable->slots.replaceRow(index, { pName, pRatio, pCompMS, pDecompMS, pCheck });
+		m_pResultTable->slots.replaceRow(index, { pName, pRatio, pCompSize, pUncompSize, pCompMS, pDecompMS, pCheck });
 		index++;
 	}
 
+	//
 
+	auto pSummaryStyle = m_pTheme->strongStyle();
+
+	auto pName = TextDisplay::create({ .display = { .text = "TOTAL", .style = pSummaryStyle } });
+	auto pRatio = TextDisplay::create({ .display = { .text = "---", .layout = m_pLayoutRight, .style = pSummaryStyle } });
+	auto pCompSize = TextDisplay::create({ .display = { .text = "---", .layout = m_pLayoutRight, .style = pSummaryStyle  } });
+	auto pUncompSize = TextDisplay::create({ .display = { .text = "---", .layout = m_pLayoutRight, .style = pSummaryStyle  } });
+	auto pCompMS = TextDisplay::create({ .display = { .text = "---", .layout = m_pLayoutRight, .style = pSummaryStyle } });
+	auto pDecompMS = TextDisplay::create({ .display = { .text = "---", .layout = m_pLayoutRight, .style = pSummaryStyle } });
+	auto pCheck = TextDisplay::create({ .display = { .text = "---", .style = pSummaryStyle } });
+
+	m_pResultTable->slots.replaceRow(index, { pName, pRatio, pCompSize, pUncompSize, pCompMS, pDecompMS, pCheck });
 }
+
