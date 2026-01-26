@@ -24,6 +24,8 @@
 #include <wg_gfxutil.h>
 #include <wg_gfxbase.h>
 
+#include <algorithm>
+
 namespace wg
 {
 const TypeInfo LZCompressor::TYPEINFO = { "LZCompressor", &Compressor::TYPEINFO };
@@ -41,7 +43,18 @@ LZCompressor_p LZCompressor::create()
 
 LZCompressor::LZCompressor()
 {
+	m_pHashTable = new uint16_t[m_hashSize];
+
+	memset( m_pHashTable, 0, m_hashSize*sizeof(uint16_t) );
 }
+
+//____ destructor ____________________________________________________________
+
+LZCompressor::~LZCompressor()
+{
+	delete [] m_pHashTable;
+}
+
 
 //____ typeInfo() _________________________________________________________
 
@@ -61,11 +74,9 @@ uint32_t LZCompressor::idToken() const
 
 int LZCompressor::maxCompressedSize( int uncompressedSize )
 {
-	// Worst case scenario is one extra byte per 3 bytes.
+	// Worst case scenario is one extra byte for every 4 bytes.
 
-//	int maxExtra = (uncompressedSize/3)+1;
-
-	int maxExtra = uncompressedSize;			//TEMP!!!
+	int maxExtra = (uncompressedSize/4)+1;
 
 	return uncompressedSize + maxExtra;
 }
@@ -83,14 +94,10 @@ int LZCompressor::compress( void * _pDest, const void * _pBegin, const void * _p
 
 	// Generate and initialize our tables
 
-	int hashSize = m_hashSize*sizeof(uint16_t);
 	int windowSize = m_windowSize*sizeof(uint16_t);
 
-	auto pHash = (uint16_t *) GfxBase::memStackAlloc(hashSize);
 	auto pWindow = (uint16_t *) GfxBase::memStackAlloc(windowSize);
 
-
-	memset( pHash, 0, hashSize );
 	memset( pWindow, 0, windowSize );
 
 	//
@@ -108,7 +115,7 @@ int LZCompressor::compress( void * _pDest, const void * _pBegin, const void * _p
 	{
 		uint32_t hash = hash_bytes(pRead);		// Hash value for comming three bytes. Entry in hash table.
 
-		int matchWindowOfs = pHash[hash];			// Entry in window for this hash.
+		int matchWindowOfs = m_pHashTable[hash];			// Entry in window for this hash.
 
 		uint8_t * pMatch = pRead - ((windowIdx + m_windowSize - matchWindowOfs)%m_windowSize);	// Pointer at latest match given matchWindowOfs.
 
@@ -117,30 +124,36 @@ int LZCompressor::compress( void * _pDest, const void * _pBegin, const void * _p
 		int	bestMatchLength = 0;
 		int steps = 0;
 
-		while( steps < m_maxSteps && pMatch != pRead && pMatch >= pBegin && pMatch[0] == pRead[0] && pMatch[1] == pRead[1] && pMatch[2] == pRead[2] )
+		int maxLength = std::min( 66, int(pEnd - pRead) );
+
+		while( steps < m_maxSteps && pMatch < pRead && pMatch >= pBegin )
 		{
 			// This is indeed a match, lets check its length.
 
-			int matchLength = 3;
-
-			while( matchLength < 66 && pRead + matchLength < pEnd )
+			if( pMatch[bestMatchLength] == pRead[bestMatchLength] && pMatch[0] == pRead[0] && pMatch[1] == pRead[1] && pMatch[2] == pRead[2] )
 			{
-				if( pMatch[matchLength] == pRead[matchLength] )
-					matchLength++;
-				else
-					break;
+				int matchLength = 3;
+
+				while( matchLength < maxLength )
+				{
+					if( pMatch[matchLength] == pRead[matchLength] )
+						matchLength++;
+					else
+						break;
+				}
+
+				// Check if we found a better match than before
+
+				if( matchLength > bestMatchLength )
+				{
+					pBestMatch = pMatch;
+					bestMatchLength = matchLength;
+
+					if( matchLength == maxLength )
+						break;
+				}
 			}
 
-			// Check if we found a better match than before
-
-			if( matchLength > bestMatchLength )
-			{
-				pBestMatch = pMatch;
-				bestMatchLength = matchLength;
-
-				if( matchLength == 66 )
-					break;
-			}
 
 
 			matchWindowOfs = pWindow[matchWindowOfs];
@@ -151,11 +164,15 @@ int LZCompressor::compress( void * _pDest, const void * _pBegin, const void * _p
 
 		if( bestMatchLength > 0 )
 		{
+			// End new inserts chunk if we have one
+
 			if( nbNewInserts != 0 )
 			{
 				* pNewInserts = nbNewInserts-1;
 				nbNewInserts = 0;
 			}
+
+			// Save encoded data
 
 			int offset = int(pRead - pBestMatch) -1;
 
@@ -182,8 +199,8 @@ int LZCompressor::compress( void * _pDest, const void * _pBegin, const void * _p
 				for( int i = 0 ; i < bestMatchLength ; i++ )
 				{
 					hash = hash_bytes(pRead++);
-					pWindow[windowIdx] = pHash[hash];
-					pHash[hash] = windowIdx++;
+					pWindow[windowIdx] = m_pHashTable[hash];
+					m_pHashTable[hash] = windowIdx++;
 					windowIdx = windowIdx & (m_windowSize-1);		// Loop windowIdx;
 				}
 			}
@@ -192,9 +209,11 @@ int LZCompressor::compress( void * _pDest, const void * _pBegin, const void * _p
 		{
 			// Insert value into hash table & update sliding window
 
-			pWindow[windowIdx] = pHash[hash];
-			pHash[hash] = windowIdx++;
+			pWindow[windowIdx] = m_pHashTable[hash];
+			m_pHashTable[hash] = windowIdx++;
 			windowIdx = windowIdx & (m_windowSize-1);		// Loop windowIdx;
+
+			// Begin new inserts chunk if we don't have one
 
 			if( nbNewInserts == 0 )
 			{
@@ -202,8 +221,12 @@ int LZCompressor::compress( void * _pDest, const void * _pBegin, const void * _p
 				* pWrite++ = 0;
 			}
 
+			//Insert unencoded data
+
 			* pWrite++ = * pRead++;
 			nbNewInserts++;
+
+			// End new inserts chunk if we have reach its limit
 
 			if( nbNewInserts == 128 )
 			{
@@ -233,7 +256,6 @@ int LZCompressor::compress( void * _pDest, const void * _pBegin, const void * _p
 	// Cleanup and return
 
 	GfxBase::memStackFree(windowSize);
-	GfxBase::memStackFree(hashSize);
 
 	return int(pWrite - pDest);
 }
