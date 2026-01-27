@@ -48,9 +48,18 @@ namespace wg
 	{
 	public:
 
+		//____ Blueprint ____________________________________________________________
+
+		struct Blueprint
+		{
+			bool			decompressOnly = false;
+			Finalizer_p		finalizer = nullptr;
+		};
+
 		//.____ Creation __________________________________________________________
 
 		static LZCompressor_p		create();
+		static LZCompressor_p		create( const Blueprint& blueprint );
 
 		//.____ Identification __________________________________________
 
@@ -71,21 +80,16 @@ namespace wg
 
 	protected:
 		LZCompressor();
+		LZCompressor( const Blueprint& blueprint );
 		virtual ~LZCompressor();
-/*
-		inline uint32_t hash_bytes(uint8_t* data)
-		{
-			uint32_t h = data[0];
-			h = ((h << 5) ^ data[1]) & (m_hashSize - 1);
-			h = ((h << 5) ^ data[2]) & (m_hashSize - 1);
-			return h;
-		}
-*/
+
+		void		_generateTable();
+
 		inline uint32_t hash_bytes(uint8_t* data) {
 			return ((data[0] << 8) ^ (data[1] << 4) ^ data[2]) & (m_hashSize - 1);
 		}
 
-		uint16_t * m_pHashTable;
+		uint16_t * m_pHashTable = nullptr;
 
 		int		m_hashSize = 65536;			// Minimum 16384, maximum 65536. Must be modulo 2.
 		int		m_windowSize = 32768;		// Minimum 4096, maximum 32768. Must be modulo 2.

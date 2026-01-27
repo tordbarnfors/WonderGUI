@@ -39,14 +39,27 @@ LZCompressor_p LZCompressor::create()
 	return LZCompressor_p( new LZCompressor() );
 }
 
+LZCompressor_p LZCompressor::create( const Blueprint& blueprint )
+{
+	return LZCompressor_p( new LZCompressor(blueprint) );
+}
+
 //____ constructor ____________________________________________________________
 
 LZCompressor::LZCompressor()
 {
-	m_pHashTable = new uint16_t[m_hashSize];
-
-	memset( m_pHashTable, 0, m_hashSize*sizeof(uint16_t) );
+	_generateTable();
 }
+
+LZCompressor::LZCompressor( const Blueprint& blueprint )
+{
+	if( !blueprint.decompressOnly )
+		_generateTable();
+
+	if( blueprint.finalizer )
+		setFinalizer(blueprint.finalizer);
+}
+
 
 //____ destructor ____________________________________________________________
 
@@ -82,11 +95,16 @@ int LZCompressor::maxCompressedSize( int uncompressedSize )
 }
 
 
-
 //____ compress() _____________________________________________________________
 
 int LZCompressor::compress( void * _pDest, const void * _pBegin, const void * _pEnd )
 {
+	if( m_pHashTable == nullptr )
+	{
+		GfxBase::throwError(ErrorLevel::Error, ErrorCode::IllegalCall, "Attempting to compress with a compressor in decompress only mode.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+		return 0;
+	}
+
 	auto pDest = (uint8_t*) _pDest;
 	auto pBegin = (uint8_t*) _pBegin;
 	auto pEnd = (uint8_t*) _pEnd;
@@ -301,6 +319,15 @@ int LZCompressor::decompress( void * pDest, const void * pBegin, const void * pE
 	}
 
 	return int(pWrite - (uint8_t*) pDest);
+}
+
+//____ _generateTable() _______________________________________________________
+
+void LZCompressor::_generateTable()
+{
+	m_pHashTable = new uint16_t[m_hashSize];
+
+	memset( m_pHashTable, 0, m_hashSize*sizeof(uint16_t) );
 }
 
 

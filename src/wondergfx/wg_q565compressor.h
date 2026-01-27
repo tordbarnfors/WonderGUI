@@ -49,9 +49,18 @@ namespace wg
 	{
 	public:
 
+		//.____ Blueprint ___________________________________________________________
+
+		struct Blueprint
+		{
+			bool			decompressOnly = false;
+			Finalizer_p		finalizer = nullptr;
+		};
+
 		//.____ Creation __________________________________________________________
 
 		static Q565Compressor_p		create();
+		static Q565Compressor_p		create( const Blueprint& blueprint );
 
 		//.____ Identification __________________________________________
 
@@ -72,16 +81,16 @@ namespace wg
 
 	protected:
 		Q565Compressor();
+		Q565Compressor( const Blueprint& blueprint );
 		virtual ~Q565Compressor() {};
 
-		uint8_t	m_pixelToIndexTable[65536];
+		void		_generateTable();
+
+
+		uint8_t *	m_pPixelToIndexTable = nullptr;
 };
 
-
-
 }
-
-
 
 
 #endif //WG_Q565COMPRESSOR_DOT_H
