@@ -2,10 +2,6 @@
 # Generate c-file from a binary file.
 # Saves to file with same name but with c-extension.
 
-def printUsage()
-  puts "bin2src file.template"
-  puts
-end
 
 for fileName in $*
   

@@ -24,6 +24,7 @@
 #include <wg_gfxutil.h>
 
 #include <wg_compressor.h>
+#include <wg_lzcompressor.h>
 #include <wg_q565compressor.h>
 
 #include <cstring>
@@ -406,7 +407,14 @@ Compressor * SurfaceReader::_findCompressor( uint32_t idToken )
 	{
 		if( idToken == Q565Compressor::ID_TOKEN )
 		{
-			auto pCompressor = Q565Compressor::create();
+			auto pCompressor = Q565Compressor::create( { .decompressOnly = true } );
+			m_compressors.push_back(pCompressor);
+			return pCompressor;
+		}
+
+		if( idToken == LZCompressor::ID_TOKEN )
+		{
+			auto pCompressor = LZCompressor::create( { .decompressOnly = true } );
 			m_compressors.push_back(pCompressor);
 			return pCompressor;
 		}

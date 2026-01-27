@@ -64,6 +64,10 @@ int parseCommandLine( int argc, char** argv )
 			{
 				g_pPixelCompressor = Q565Compressor::create();
 			}
+			else if( strcmp(pValue, "LZWG" ) == 0)
+			{
+				g_pPixelCompressor = LZCompressor::create();
+			}
 			else
 			{
 				printf( "ERROR: '%s' is not a recognized compressor format.\n", pValue );
@@ -115,6 +119,7 @@ void printUsage(char** argv)
 
 	printf( "\nCompression formats:\n" );
 	printf( "    Q565 - QOI inspired compression for 16-bit pixels.\n");
+	printf( "    LZWG - Lempel-Ziw derivative for compression of any data.\n");
 }
 
 //____ main() _________________________________________________________________
