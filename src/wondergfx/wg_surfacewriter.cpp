@@ -69,13 +69,7 @@ namespace wg
 
 		// Encode data into buffer and update header info
 
-		int bytesPixelData = _encodePixelData(pBuffer, pSurface);
-		_setPixelDataInfo(&header, bytesPixelData, 0);
-
-		pWrite += bytesPixelData;
-
-		for (int i = 0; i < header.pixelDataPadding; i++)
-			*pWrite++ = 0;
+		// Palette data
 
 		int bytesPaletteData = 0;
 		if (pSurface->palette())
@@ -89,6 +83,18 @@ namespace wg
 			for (int i = 0; i < header.paletteDataPadding; i++)
 				*pWrite++ = 0;
 		}
+
+		// Pixel data
+
+		int bytesPixelData = _encodePixelData(pWrite, pSurface);
+		_setPixelDataInfo(&header, bytesPixelData, 0);
+
+		pWrite += bytesPixelData;
+
+		for (int i = 0; i < header.pixelDataPadding; i++)
+			*pWrite++ = 0;
+
+		// Extra data
 
 		int bytesExtrasData = 0;
 		if (pExtraData && extraDataSize > 0)
@@ -137,14 +143,6 @@ namespace wg
 
 		// Encode data into buffer and update header info
 
-		int bytesPixelData = _encodePixelData(pBuffer, pSurface );
-		_setPixelDataInfo(&header, bytesPixelData, 0);
-
-		pWrite += bytesPixelData;
-
-		for (int i = 0; i < header.pixelDataPadding; i++)
-			*pWrite++ = 0;
-
 		int bytesPaletteData = 0;
 		if (pSurface->palette())
 		{
@@ -157,6 +155,14 @@ namespace wg
 			for (int i = 0; i < header.paletteDataPadding; i++)
 				*pWrite++ = 0;
 		}
+
+		int bytesPixelData = _encodePixelData(pWrite, pSurface );
+		_setPixelDataInfo(&header, bytesPixelData, 0);
+
+		pWrite += bytesPixelData;
+
+		for (int i = 0; i < header.pixelDataPadding; i++)
+			*pWrite++ = 0;
 
 		int bytesExtrasData = 0;
 		if( pExtraData && extraDataSize > 0 )
@@ -383,7 +389,7 @@ namespace wg
 			return 0;
 
 		if( m_pPaletteCompressor )
-			return m_pPaletteCompressor->compress(pDest, pPalette, pPalette + nColors );
+			return m_pPaletteCompressor->compress(pDest, pPalette, pPalette + nColors * sizeof(Color8) );
 		else
 		{
 			std::memcpy( pDest, pPalette, nColors * sizeof(Color8) );
