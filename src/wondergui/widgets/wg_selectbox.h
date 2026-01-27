@@ -214,6 +214,8 @@ namespace wg
 		inline TextLayout * _entryTextLayout() { return m_pEntryTextLayout ? m_pEntryTextLayout : Base::defaultTextLayout(); }
 		inline const TextLayout * _entryTextLayout() const { return m_pEntryTextLayout ? m_pEntryTextLayout: Base::defaultTextLayout();  }
 
+		void		_recalcListCanvasSize();
+
 		//
 		
 		void		_didAddEntries(SelectBoxEntry * pEntry, int nb) override;
