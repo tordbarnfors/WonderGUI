@@ -419,6 +419,8 @@ Compressor * SurfaceReader::_findCompressor( uint32_t idToken )
 			return pCompressor;
 		}
 	}
+
+	return nullptr;
 }
 
 
