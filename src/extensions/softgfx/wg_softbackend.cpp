@@ -789,7 +789,7 @@ namespace wg
 
 						length = end.y - beg.y;
 						if (length == 0)
-							return;											// TODO: Should stil draw the caps!
+							continue;								// TODO: Should stil draw the caps!
 
 						// Need multiplication instead of shift as operand might be negative
 						slope = ((end.x - beg.x) * 65536) / length;
