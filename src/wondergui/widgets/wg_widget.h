@@ -144,6 +144,8 @@ namespace wg
 
 		Widget_p			commonAncestor(Widget* pOtherWidget);
 
+		StaticSlot* 		slot() const { return m_pSlot; }
+
 		//.____ State _________________________________________________________
 
 		inline const State&	state() const;
