@@ -5,15 +5,6 @@
 #include <string>
 #include <fstream>
 
-#ifdef WIN32
-#    include <SDL_image.h>
-#elif __APPLE__
-#    include <SDL2_image/SDL_image.h>
-#else
-#    include <SDL2/SDL_image.h>
-#endif
-
-
 using namespace wg;
 using namespace std;
 
@@ -216,23 +207,6 @@ bool MyApp::saveBitmapFont()
 			}
 			break;
 			
-			case 2:				// 32-bit PNG (compressed)
-			{
-				std::string pngPath = outputPath + ".png";
-
-				// Save PNG
-
-				auto pixbuf = m_pBitmapFontSurface->allocPixelBuffer();
-				m_pBitmapFontSurface->pushPixels(pixbuf);
-
-				PixelDescription pixdesc = Util::pixelFormatToDescription(pixbuf.format);
-
-				auto pSDLSurf = SDL_CreateRGBSurfaceFrom(pixbuf.pixels, pixbuf.rect.w, pixbuf.rect.h, pixdesc.bits, pixbuf.pitch, (Uint32) pixdesc.R_mask, (Uint32) pixdesc.G_mask, (Uint32) pixdesc.B_mask, (Uint32) pixdesc.A_mask);
-
-				IMG_SavePNG(pSDLSurf, pngPath.c_str());
-				m_pBitmapFontSurface->freePixelBuffer(pixbuf);
-			}
-			break;
 		}
 
 				
@@ -657,9 +631,9 @@ Widget_p MyApp::createOutputPanel()
 	auto pImageFormatSelector = SelectBox::create();
 	pImageFormatSelector->setSkin(m_pButtonSkin);
 	pImageFormatSelector->setListSkin(m_pPlateSkin);
-	pImageFormatSelector->entries.pushBack({ 	{ 0, String("Uncompressed 8-bit indexed SURF") },
-												{ 1, String("Uncompressed 32-bit SURF") },
-												{ 2, String("Compressed 32-bit PNG")} });
+	pImageFormatSelector->entries.pushBack({ { 0, String("Uncompressed 8-bit indexed SURF") },
+												{ 1, String("Uncompressed 32-bit SURF") } });
+//												{ 2, String("Compressed 32-bit PNG")} });
 	pImageFormatSelector->selectEntryByIndex(1);
 	m_pImageFormatSelector = pImageFormatSelector;
 	

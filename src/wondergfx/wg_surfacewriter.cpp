@@ -47,51 +47,74 @@ namespace wg
 
 	void SurfaceWriter::writeSurfaceToStream( std::ostream& stream, Surface * pSurface, int extraDataSize, char * pExtraData )
 	{
-		//TODO: Should clear X-channel on BGRX surfaces? Make it optional?
-
 		// Fill in header
 
 		SurfaceFileHeader	header;
-		int headerBytes = _generateHeader(&header, pSurface, extraDataSize);
+		int headerBytes = _prepareHeader(&header, pSurface, extraDataSize);
+
+		// Calculate buffer needed for pixels, palette and extra data
+
+		int bytesNeeded = _safePixelBufferSize(pSurface);
+
+		if (pSurface->palette())
+			bytesNeeded += _safePaletteBufferSize(pSurface);
+
+		if (pExtraData && extraDataSize > 0)
+			bytesNeeded += _safeExtrasBufferSize(pExtraData, pExtraData + extraDataSize);
+
+		// Allocate buffer
+
+		char* pBuffer = GfxBase::memStackAlloc(bytesNeeded);
+		auto pWrite = pBuffer;
+
+		// Encode data into buffer and update header info
+
+		// Palette data
+
+		int bytesPaletteData = 0;
+		if (pSurface->palette())
+		{
+			int8_t	filterParams[8] = { 0,0,0,0,0,0,0,0 };
+
+			bytesPaletteData = _encodePaletteData(pWrite, pSurface);
+			_setPaletteDataInfo(&header, bytesPaletteData, 0);
+			pWrite += bytesPaletteData;
+
+			for (int i = 0; i < header.paletteDataPadding; i++)
+				*pWrite++ = 0;
+		}
+
+		// Pixel data
+
+		int bytesPixelData = _encodePixelData(pWrite, pSurface);
+		_setPixelDataInfo(&header, bytesPixelData, 0);
+
+		pWrite += bytesPixelData;
+
+		for (int i = 0; i < header.pixelDataPadding; i++)
+			*pWrite++ = 0;
+
+		// Extra data
+
+		int bytesExtrasData = 0;
+		if (pExtraData && extraDataSize > 0)
+		{
+			bytesExtrasData = _encodeExtrasData(pWrite, pExtraData, pExtraData + extraDataSize);
+			_setExtraDataInfo(&header, bytesExtrasData, 0);
+			pWrite += bytesExtrasData;
+		}
 
 		// Write header
 
-		stream.write((char*) &header, headerBytes);
+		stream.write((char*)&header, headerBytes);
 
-		// Write palette
+		// Write compressed data
 
-		if( pSurface->palette() )
-			stream.write( (char*) pSurface->palette(), pSurface->paletteSize()*sizeof(Color8) );
+		stream.write(pBuffer, bytesPixelData + bytesPaletteData + bytesExtrasData);
 
-		// Write pixels
+		// Release temp buffer
 
-		int lineBytes = header.width * pSurface->pixelBits()/8;
-		auto pixbuf = pSurface->allocPixelBuffer();
-		pSurface->pushPixels(pixbuf);
-
-		if( pixbuf.pitch > lineBytes )
-		{
-			// Pitch is involved, we need to write line by line
-
-			char * pPixels = (char *) pixbuf.pixels;
-
-			for( int y = 0 ; y < header.height ; y++ )
-			{
-				stream.write( pPixels, lineBytes );
-				pPixels += pixbuf.pitch;
-			}
-		}
-		else
-		{
-			stream.write( (char*) pixbuf.pixels, lineBytes * header.height );
-		}
-
-		pSurface->freePixelBuffer(pixbuf);
-
-		// write extra data
-
-		if( extraDataSize > 0 )
-			stream.write( pExtraData, extraDataSize );
+		GfxBase::memStackFree(bytesNeeded);
 	}
 
 	//____ _writeSurfaceToBlob() _________________________________________________
@@ -101,71 +124,82 @@ namespace wg
 		// Fill in header
 
 		SurfaceFileHeader	header;
-		int headerBytes = _generateHeader(&header, pSurface, extraDataSize);
+		int headerBytes = _prepareHeader(&header, pSurface, extraDataSize);
 
-		// Calculate size needed for blob
+		// Calculate buffer needed for pixels, palette and extra data
 
-		int size = headerBytes + header.paletteBytes + header.pixelBytes + header.extraDataBytes;
+		int bytesNeeded = _safePixelBufferSize( pSurface );
+
+		if (pSurface->palette())
+			bytesNeeded += _safePaletteBufferSize( pSurface );
+
+		if( pExtraData && extraDataSize > 0 )
+			bytesNeeded += _safeExtrasBufferSize(pExtraData, pExtraData + extraDataSize);
+
+		// Allocate buffer
+
+		char * pBuffer = GfxBase::memStackAlloc(bytesNeeded);
+		auto pWrite = pBuffer;
+
+		// Encode data into buffer and update header info
+
+		int bytesPaletteData = 0;
+		if (pSurface->palette())
+		{
+			int8_t	filterParams[8] = { 0,0,0,0,0,0,0,0 };
+
+			bytesPaletteData = _encodePaletteData(pWrite, pSurface );
+			_setPaletteDataInfo(&header, bytesPaletteData, 0);
+			pWrite += bytesPaletteData;
+
+			for (int i = 0; i < header.paletteDataPadding; i++)
+				*pWrite++ = 0;
+		}
+
+		int bytesPixelData = _encodePixelData(pWrite, pSurface );
+		_setPixelDataInfo(&header, bytesPixelData, 0);
+
+		pWrite += bytesPixelData;
+
+		for (int i = 0; i < header.pixelDataPadding; i++)
+			*pWrite++ = 0;
+
+		int bytesExtrasData = 0;
+		if( pExtraData && extraDataSize > 0 )
+		{
+			bytesExtrasData = _encodeExtrasData(pWrite, pExtraData, pExtraData + extraDataSize);
+			_setExtraDataInfo(&header, bytesExtrasData, 0);
+			pWrite += bytesExtrasData;
+		}
+
+		// Calculate size needed for blob and create blob
+
+		int size = headerBytes + bytesPixelData + bytesPaletteData + bytesExtrasData;
 
 		Blob_p pBlob = Blob::create(size);
 
-		char * pWrite = (char*) pBlob->data();
+		pWrite = (char*) pBlob->data();
 
 		// Write header
 
 		std::memcpy(pWrite, &header, headerBytes);
 		pWrite += headerBytes;
 
-		// Write palette
+		// Write compressed data
 
-		if( pSurface->palette() )
-		{
-			std::memcpy(pWrite, pSurface->palette(), pSurface->paletteSize()*sizeof(Color8) );
-			pWrite += pSurface->paletteSize()*sizeof(Color8);
-		}
+		std::memcpy(pWrite, pBuffer, bytesPixelData + bytesPaletteData + bytesExtrasData);
 
-		// Write pixels
+		// Release temp buffer
 
-		int lineBytes = header.width * pSurface->pixelBits()/8;
-		auto pixbuf = pSurface->allocPixelBuffer();
-		pSurface->pushPixels(pixbuf);
-
-		if( pixbuf.pitch > lineBytes )
-		{
-			// Pitch is involved, we need to write line by line
-
-			char * pPixels = (char *) pixbuf.pixels;
-
-			for( int y = 0 ; y < header.height ; y++ )
-			{
-				std::memcpy(pWrite, pPixels, lineBytes );
-				pWrite += lineBytes;
-				pPixels += pixbuf.pitch;
-			}
-		}
-		else
-		{
-			std::memcpy(pWrite, pixbuf.pixels, lineBytes * header.height );
-			pWrite += lineBytes * header.height;
-		}
-
-		pSurface->freePixelBuffer(pixbuf);
-
-		// write extra data
-
-		if( extraDataSize > 0 )
-		{
-			std::memcpy( pWrite, pExtraData, extraDataSize );
-			pWrite += extraDataSize;
-		}
+		GfxBase::memStackFree(bytesNeeded);
 
 		return pBlob;
 	}
 
 
-	//____ _generateHeader() _____________________________________________________
+	//____ _prepareHeader() _____________________________________________________
 
-	int SurfaceWriter::_generateHeader( SurfaceFileHeader * pHeader, Surface * pSurface, int extraDataSize )
+	int SurfaceWriter::_prepareHeader( SurfaceFileHeader * pHeader, Surface * pSurface, bool bExtrasData )
 	{
 		auto bp = pSurface->blueprint();
 
@@ -200,17 +234,15 @@ namespace wg
 			pHeader->identity = bp.identity;
 
 		if( bp.palette )
-		{
-			pHeader->paletteBytes = bp.paletteSize*sizeof(Color8);
 			pHeader->paletteSize = bp.paletteSize;
-		}
-
 
 		int headerBytes;
-		if( extraDataSize != 0 )
+		if( bExtrasData )
 			headerBytes = 88;
 		else if( bp.palette )
 			headerBytes = 80;
+		else if( m_pPixelCompressor )
+			headerBytes = 56;
 		else if( (m_saveInfo.scale && bp.scale != 64) || (m_saveInfo.identity && bp.identity != 0) )
 			headerBytes = 40;
 		else
@@ -218,23 +250,166 @@ namespace wg
 
 		pHeader->headerBytes = headerBytes;
 
-		int lineBytes = bp.size.w * pSurface->pixelBits()/8;
-
-		pHeader->pixelBytes = lineBytes * bp.size.h;
-		pHeader->extraDataBytes = extraDataSize;
-
 		return headerBytes;
 	}
 
+	//____ _setPixelDataInfo() _________________________________________________
 
+	bool  SurfaceWriter::_setPixelDataInfo(SurfaceFileHeader* pHeader, int bytesOfCompressedPixels, int decompressMargin)
+	{
+		if( m_pPixelCompressor )
+			pHeader->pixelCompression = m_pPixelCompressor->idToken();
+
+		pHeader->pixelDecompressMargin = decompressMargin;
+
+		int paddedPixelBytes = bytesOfCompressedPixels + 3 & ~0x03; // Ensure 32-bit alignment
+
+		pHeader->pixelBytes = paddedPixelBytes;
+		pHeader->pixelDataPadding = (int8_t)(paddedPixelBytes - bytesOfCompressedPixels);
+		return true;
+	}
+
+	//____ _setPaletteDataInfo() _________________________________________________
+
+	bool SurfaceWriter::_setPaletteDataInfo(SurfaceFileHeader* pHeader,	int bytesOfCompressedPalette, int decompressMargin)
+	{
+		if( m_pPaletteCompressor )
+			pHeader->paletteCompression = m_pPaletteCompressor->idToken();
+
+		pHeader->paletteDecompressMargin = decompressMargin;
+
+		int paddedPaletteBytes = bytesOfCompressedPalette + 3 & ~0x03; // Ensure 32-bit alignment
+
+		pHeader->paletteBytes = paddedPaletteBytes;
+		pHeader->paletteDataPadding = (int8_t)(paddedPaletteBytes - bytesOfCompressedPalette);
+
+		return true;
+	}
+
+	//____ _setExtraDataInfo() _________________________________________________
+
+	bool SurfaceWriter::_setExtraDataInfo(SurfaceFileHeader* pHeader, int bytesOfCompressedExtraData, int decompressMargin)
+	{
+		if( m_pExtrasCompressor )
+			pHeader->extraDataCompression = m_pExtrasCompressor->idToken();
+
+		pHeader->extraDataDecompressMargin = decompressMargin;
+		pHeader->extraDataBytes = bytesOfCompressedExtraData;
+		return true;
+	}
+
+	//____ _safePixelBufferSize() _________________________________________________
+
+	int SurfaceWriter::_safePixelBufferSize(Surface* pSurface)
+	{
+		int uncompressedSize = pSurface->pixelWidth() * pSurface->pixelHeight() * pSurface->pixelBits() / 8;
+
+		if( m_pPixelCompressor )
+			return m_pPixelCompressor->maxCompressedSize(uncompressedSize);
+		else
+			return uncompressedSize;
+	}
+
+	//____ _safePaletteBufferSize() _________________________________________________
+
+	int  SurfaceWriter::_safePaletteBufferSize(Surface* pSurface)
+	{
+		int uncompressedSize = pSurface->paletteSize() * sizeof(Color8);
+
+		if( m_pPaletteCompressor )
+			return m_pPaletteCompressor->maxCompressedSize(uncompressedSize);
+		else
+			return uncompressedSize;
+	}
+
+	//____ _safeExtrasBufferSize() _________________________________________________
+
+	int  SurfaceWriter::_safeExtrasBufferSize(void* pBegin, void* pEnd)
+	{
+		int uncompressedSize = (int)((uint8_t*)pEnd - (uint8_t*)pBegin);
+
+		if( m_pExtrasCompressor )
+			return m_pExtrasCompressor->maxCompressedSize(uncompressedSize);
+		else
+			return uncompressedSize;
+	}
+
+	//____ _encodePixelData() _________________________________________________
+
+	int SurfaceWriter::_encodePixelData(void* pDest, Surface* pSurface)
+	{
+		uint8_t* pWrite = (uint8_t*)pDest;
+
+		auto pixbuf = pSurface->allocPixelBuffer();
+		pSurface->pushPixels(pixbuf);
+
+		SizeI size = pSurface->pixelSize();
+
+		int lineBytes = size.w * (pSurface->pixelBits() / 8);
+
+		if( m_pPixelCompressor )
+		{
+			int bytes = m_pPixelCompressor->compress(pWrite, pixbuf.pixels, pixbuf.pixels + lineBytes * size.h );
+			pWrite += bytes;
+		}
+		else
+		{
+			if (pixbuf.pitch > lineBytes)
+			{
+				// Pitch is involved, we need to write line by line
+
+				char* pPixels = (char*)pixbuf.pixels;
+
+				for (int y = 0; y < size.h; y++)
+				{
+					std::memcpy(pWrite, pPixels, lineBytes);
+					pWrite += lineBytes;
+					pPixels += pixbuf.pitch;
+				}
+			}
+			else
+			{
+				std::memcpy(pWrite, pixbuf.pixels, lineBytes * size.h);
+				pWrite += lineBytes * size.h;
+			}
+		}
+
+		pSurface->freePixelBuffer(pixbuf);
+		return int(pWrite - (uint8_t*)pDest);
+	}
+
+	//____ _encodePaletteData() _________________________________________________
+
+	int SurfaceWriter::_encodePaletteData(void* pDest, Surface* pSurface)
+	{
+		auto pPalette = pSurface->palette();
+		int nColors = pSurface->paletteSize();
+
+		if( pPalette == nullptr || nColors == 0 )
+			return 0;
+
+		if( m_pPaletteCompressor )
+			return m_pPaletteCompressor->compress(pDest, pPalette, pPalette + nColors * sizeof(Color8) );
+		else
+		{
+			std::memcpy( pDest, pPalette, nColors * sizeof(Color8) );
+			return nColors * sizeof(Color8);
+		}
+	}
+
+	//____ _encodeExtrasData() _________________________________________________
+
+	int SurfaceWriter::_encodeExtrasData(void* pDest, void* pBegin, void* pEnd)
+	{
+		if( m_pExtrasCompressor )
+			return m_pExtrasCompressor->compress(pDest, pBegin, pEnd);
+		else
+		{
+			int dataSize = int((uint8_t*)pEnd - (uint8_t*)pBegin);
+			std::memcpy( pDest, pBegin, dataSize );
+			return dataSize;
+		}
+	}
 
 } // namespace wg
-
-
-
-
-
-
-
-
 

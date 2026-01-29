@@ -26,15 +26,35 @@
 #include <cstdint>
 #include <wg_gfxtypes.h>
 #include <wg_geo.h>
+#include <wg_gfxutil.h>
 
 namespace wg
 {
+
+/*
+namespace SurfaceFileToken
+{
+	const uint32_t SURF = _makeEndianSpecificToken( 'S','U','R','F' );
+	const uint32_t NONE = _makeEndianSpecificToken( 'N','O','N','E' );
+	const uint32_t Q565 = _makeEndianSpecificToken( 'Q','5','6','5' );
+}
+
+enum class PixelCompression
+{
+	const uint32_t SURF = _makeEndianSpecificToken( 'S','U','R','F' );
+	const uint32_t NONE = _makeEndianSpecificToken( 'N','O','N','E' );
+	const uint32_t Q565 = _makeEndianSpecificToken( 'Q','5','6','5' );
+}
+*/
+
+
+
 
 //____ wgsf_header ____________________________________________________________
 
 struct SurfaceFileHeader
 {
-	char 			header[4]				= { 'S', 'U', 'R', 'F' };
+	uint32_t		identifier				= Util::makeEndianSpecificToken( 'S','U','R','F' );
 	int16_t			versionNumber			= 1;
 	int16_t			headerBytes				= 0;
 	int32_t			paletteBytes			= 0;		// Includes padding
@@ -68,10 +88,10 @@ struct SurfaceFileHeader
 
 	//	-- 40 bytes header ends here.
 
-	char			pixelFiltering[4]		= { 'N','O','N','E' };
+	uint32_t		pixelFiltering			= Util::makeEndianSpecificToken( 'N','O','N','E' );
 	int16_t			filterBlockWidth		= 1;
 	int16_t			filterBlockHeight		= 1;
-	char			pixelCompression[4]		= { 'N','O','N','E' };
+	uint32_t		pixelCompression		= Util::makeEndianSpecificToken( 'N','O','N','E' );
 	int16_t			pixelDecompressMargin	= 0;
 	int8_t			pixelDataPadding		= 0;					// Number of extra bytes at end of pixel data to ensure each block starts on 32-bit alignment.
 	int8_t			reserved2				= 0;
@@ -79,16 +99,16 @@ struct SurfaceFileHeader
 	//	-- 56 bytes header ends here.
 
 	int32_t			paletteSize 			= 0;
-	char			paletteFiltering[4]		= { 'N','O','N','E' };
-	char			paletteFilteringParams[8] = { 0,0,0,0,0,0,0,0 };
-	char 			paletteCompression[4]	= { 'N','O','N','E' };
+	uint32_t		paletteFiltering		= Util::makeEndianSpecificToken( 'N','O','N','E' );
+	int8_t			paletteFilteringParams[8] = { 0,0,0,0,0,0,0,0 };
+	uint32_t		paletteCompression		= Util::makeEndianSpecificToken( 'N','O','N','E' );
 	int16_t			paletteDecompressMargin	= 0;
 	int8_t			paletteDataPadding		= 0;					// Number of extra bytes at end of pixel data to ensure each block starts on 32-bit alignment.
 	int8_t			reserved3				= 0;
 
 	//	-- 80 bytes header ends here.
 
-	char			extraDataCompression[4] = { 'N','O','N','E' };
+	uint32_t		extraDataCompression	= Util::makeEndianSpecificToken( 'N','O','N','E' );
 	int16_t			extraDataDecompressMargin = 0;
 	int16_t			reserved4				= 0;
 

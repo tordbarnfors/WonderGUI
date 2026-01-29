@@ -101,9 +101,12 @@ int compressSpx16I( const spx * pBeg, const spx * pEnd, uint8_t * pDest )
 	return int(((uint8_t*)wp) - pDest);
 }
 
-//____ decompress() ___________________________________________________________
 
-void decompress( Compression type, const void * pSource, int nbBytes, void * pDest )
+
+
+//____ decompressSpx() ___________________________________________________________
+
+void decompressSpx( Compression type, const void * pSource, int nbBytes, void * pDest )
 {
 	switch( type )
 	{
@@ -139,7 +142,6 @@ void decompress( Compression type, const void * pSource, int nbBytes, void * pDe
 		}
 	}
 }
-
 
 
 } // namespace wg

@@ -356,7 +356,7 @@ namespace wg
 				uint8_t* pBuffer = (uint8_t*) GfxBase::memStackAlloc(dataSize);
 
 				decoder >> GfxStream::ReadBytes{ dataSize, pBuffer };
-				decompress(dataInfo.compression, pBuffer, dataSize, pDest);
+				decompressSpx(dataInfo.compression, pBuffer, dataSize, pDest);
 
 				GfxBase::memStackFree(dataSize);
 			}
@@ -449,7 +449,7 @@ namespace wg
 				uint8_t* pBuffer = (uint8_t*) GfxBase::memStackAlloc(dataSize);
 
 				decoder >> GfxStream::ReadBytes{ dataSize, pBuffer };
-				decompress(dataInfo.compression, pBuffer, dataSize, pDest);
+				decompressSpx(dataInfo.compression, pBuffer, dataSize, pDest);
 
 				GfxBase::memStackFree(dataSize);
 			}
@@ -813,7 +813,7 @@ namespace wg
 				auto pBuffer = (spx *) GfxBase::memStackAlloc(dataSize);
 
 				decoder >> GfxStream::ReadBytes{ dataSize, pBuffer };
-				decompress(dataInfo.compression, pBuffer, dataSize - dataInfo.bPadded, pDest);
+				decompressSpx(dataInfo.compression, pBuffer, dataSize - dataInfo.bPadded, pDest);
 
 				GfxBase::memStackFree(dataSize);
 			}

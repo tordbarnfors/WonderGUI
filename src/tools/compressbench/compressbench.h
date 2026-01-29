@@ -25,16 +25,37 @@ public:
 private:
 
 	bool			_setupGUI(wapp::API* pAPI);
-
 	bool			m_bContinue = true;
 
 	wapp::API *		m_pAPI = nullptr;
 	wapp::Window_p	m_pWindow = nullptr;
-	
-	TextStyle_p		m_pTextStyle;
-	TextStyle_p		m_pLabelStyle;
 
-	TextLayout_p	m_pTextLayoutCentered;
+	void			onLoad();
+	void			onRun();
+	void			onRunSyntheticTest();
+	void			onCompressorSelected();
 
-	char			m_message[1024] = { 0 };
+	void			refreshList();
+	void 			updateListRow( int row, int srcSize, int compressedSize, int compressMicroSec, int decompressMicroSec );
+
+
+	struct TestSurface
+	{
+		std::string 	name;
+		Surface_p		pSurface;
+	};
+
+	std::vector<TestSurface>	m_testSurfaces;
+
+	Theme_p			m_pTheme;
+
+	TablePanel_p	m_pResultTable;
+
+	std::vector<Compressor_p>	m_compressors;
+	Compressor_p	m_pCompressor;
+
+	SelectBox_p		m_pCompressorSelector;
+
+	TextLayout_p	m_pLayoutRight;
+
 };

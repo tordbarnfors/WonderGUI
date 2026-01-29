@@ -23,6 +23,10 @@
 #include <wg_gfxbase.h>
 #include <wg_gfxutil.h>
 
+#include <wg_compressor.h>
+#include <wg_lzcompressor.h>
+#include <wg_q565compressor.h>
+
 #include <cstring>
 
 namespace wg
@@ -118,29 +122,61 @@ namespace wg
 			GfxBase::memStackFree(paletteBytes);
 
 		// Read pixels into PixelBuffer
-		// We only support uncompressed pixels for the moment
 
 		auto pixbuf = pSurface->allocPixelBuffer();
 
 
 		int lineBytes = header.width * pSurface->pixelBits()/8;
 
-		if( pixbuf.pitch > lineBytes )
+		if (*(uint32_t*)&header.pixelCompression == *(uint32_t*) "NONE" )
 		{
-			// Pitch is involved, we need to read line by line
-
-			char * pPixels = (char *) pixbuf.pixels;
-
-			for( int y = 0 ; y < header.height ; y++ )
+			if (pixbuf.pitch > lineBytes)
 			{
-				stream.read( pPixels, lineBytes );
-				pPixels += pixbuf.pitch;
+				// Pitch is involved, we need to read line by line
+
+				char* pPixels = (char*)pixbuf.pixels;
+
+				for (int y = 0; y < header.height; y++)
+				{
+					stream.read(pPixels, lineBytes);
+					pPixels += pixbuf.pitch;
+				}
+			}
+			else
+			{
+				stream.read((char*)pixbuf.pixels, lineBytes * header.height);
 			}
 		}
 		else
 		{
-			stream.read( (char*) pixbuf.pixels, lineBytes * header.height );
+			Compressor * pCompressor = _findCompressor(header.pixelCompression);
+
+			if( !pCompressor )
+			{
+				char msg[] = "Don't know how to decompress 'XXXX'.";
+				* (uint32_t*)&msg[30] = header.pixelCompression;
+
+				GfxBase::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, msg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				pSurface->freePixelBuffer(pixbuf);
+				return nullptr;
+			}
+
+			auto pDesc = pSurface->pixelDescription();
+
+			if (pixbuf.pitch != lineBytes)
+			{
+				GfxBase::throwError(ErrorLevel::Error, ErrorCode::Other, "Can only decompress compressed pixels to surfaces that have no pitch.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				pSurface->freePixelBuffer(pixbuf);
+				return nullptr;
+			}
+
+			auto pData = GfxBase::memStackAlloc(header.pixelBytes);
+			stream.read(pData, header.pixelBytes);
+			pCompressor->decompress(pixbuf.pixels, pData, ((const uint8_t*)pData) + header.pixelBytes);
+			GfxBase::memStackFree(header.pixelBytes);
+
 		}
+
 
 		pSurface->pullPixels(pixbuf);
 		pSurface->freePixelBuffer(pixbuf);
@@ -220,7 +256,6 @@ namespace wg
 			return nullptr;
 		}
 
-
 		// Prepare palette
 
 		int paletteBytes = header.paletteSize*sizeof(Color8);
@@ -241,22 +276,32 @@ namespace wg
 
 		int lineBytes = header.width * pSurface->pixelBits()/8;
 
-		if( pixbuf.pitch > lineBytes )
-		{
-			// Pitch is involved, we need to read line by line
-
-			char * pPixels = (char *) pixbuf.pixels;
-
-			for( int y = 0 ; y < header.height ; y++ )
-			{
-				std::memcpy( pPixels, pData, lineBytes );
-				pData += lineBytes;
-				pPixels += pixbuf.pitch;
-			}
-		}
+		if (header.pixelCompression == *(uint32_t*)"NONE")
+			_copyUncompressedFromMemory(pixbuf.pixels, pData, lineBytes, pixbuf.pitch, pixbuf.rect.h);
 		else
 		{
-			std::memcpy( pixbuf.pixels, pData, lineBytes * header.height );
+			Compressor * pCompressor = _findCompressor(header.pixelCompression);
+
+			if( !pCompressor )
+			{
+				char msg[] = "Don't know how to decompress 'XXXX'.";
+				* (uint32_t*)&msg[30] = header.pixelCompression;
+
+				GfxBase::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, msg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				pSurface->freePixelBuffer(pixbuf);
+				return nullptr;
+			}
+
+			auto pDesc = pSurface->pixelDescription();
+
+			if (pixbuf.pitch != lineBytes)
+			{
+				GfxBase::throwError(ErrorLevel::Error, ErrorCode::Other, "Can only decompress compressed pixels to surfaces that have no pitch.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				pSurface->freePixelBuffer(pixbuf);
+				return nullptr;
+			}
+
+			pCompressor->decompress(pixbuf.pixels, pData, ((const uint8_t*)pData) + header.pixelBytes);
 		}
 
 		pSurface->pullPixels(pixbuf);
@@ -325,6 +370,55 @@ int SurfaceReader::_addFlagsFromOtherBlueprint(Surface::Blueprint& dest, const S
 		dest.tiling = true;
 
 	return errorCode;
+}
+
+//____ _copyUncompressedFromMemory() _________________________________________
+
+void SurfaceReader::_copyUncompressedFromMemory(void* pDest, const void* pSource, int rowBytes, int pitch, int rows)
+{
+	if (pitch > rowBytes)
+	{
+		// Pitch is involved, we need to copy line by line
+
+		char* pPixelsDest = (char*)pDest;
+		const char* pPixelsSource = (const char*)pSource;
+		for (int y = 0; y < rows; y++)
+		{
+			std::memcpy(pPixelsDest, pPixelsSource, rowBytes);
+			pPixelsDest += pitch;
+			pPixelsSource += rowBytes;
+		}
+	}
+	else
+	{
+		std::memcpy(pDest, pSource, rowBytes * rows);
+	}
+}
+
+//____ _findCompressor() ______________________________________________________
+
+Compressor * SurfaceReader::_findCompressor( uint32_t idToken )
+{
+	for( auto& p : m_compressors )
+		if( p->idToken() == idToken )
+			return p;
+
+	if( m_bAutoCompressors )
+	{
+		if( idToken == Q565Compressor::ID_TOKEN )
+		{
+			auto pCompressor = Q565Compressor::create( { .decompressOnly = true } );
+			m_compressors.push_back(pCompressor);
+			return pCompressor;
+		}
+
+		if( idToken == LZCompressor::ID_TOKEN )
+		{
+			auto pCompressor = LZCompressor::create( { .decompressOnly = true } );
+			m_compressors.push_back(pCompressor);
+			return pCompressor;
+		}
+	}
 }
 
 

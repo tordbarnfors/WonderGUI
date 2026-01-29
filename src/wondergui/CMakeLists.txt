@@ -179,6 +179,8 @@ set( SOURCES
 	widgets/wg_knob.h
 	widgets/wg_lineeditor.cpp
 	widgets/wg_lineeditor.h
+	widgets/wg_meter.cpp
+	widgets/wg_meter.h	
 	widgets/wg_pianokeyboard.cpp
 	widgets/wg_pianokeyboard.h
 	widgets/wg_plotchart.cpp

@@ -116,12 +116,12 @@ namespace wg
 		int oldSize = (int)StaticVector<EntryType>::m_entries.size();
 
 		if( nb < oldSize )
-			_willEraseEntries(&StaticVector<EntryType>::m_entries[oldSize], nb);
+			_willEraseEntries(&StaticVector<EntryType>::m_entries[nb], oldSize-nb);
 
 		StaticVector<EntryType>::m_entries.resize(nb);
 
 		if( nb > oldSize )
-			_didAddEntries(&StaticVector<EntryType>::m_entries[oldSize], nb);
+			_didAddEntries(&StaticVector<EntryType>::m_entries[oldSize], nb-oldSize);
 	}
 
 	//____ pushBack() _________________________________________________________________

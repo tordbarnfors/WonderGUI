@@ -262,7 +262,9 @@ namespace wg
 	{
 		Widget::_resize(size, scale);
 
-		m_matchingHeight = _matchingHeight(size.w,m_scale);
+		_recalcListCanvasSize();
+
+//		m_matchingHeight = _matchingHeight(size.w,m_scale);
 	}
 
 	//____ _setState() ________________________________________________________
@@ -477,6 +479,72 @@ namespace wg
 	void SelectBox::_willEraseEntries(SelectBoxEntry * pEntry, int nb)
 	{
 		//TODO: Implement!!!
+	}
+
+	//____ _recalcListCanvasSize() ______________________________________________________
+
+	void SelectBox::_recalcListCanvasSize()
+	{
+		auto pMapper = _entryTextLayout();
+
+		SizeSPX entryPadding = m_pEntrySkin ? m_pEntrySkin->_contentBorderSize(m_scale) : SizeSPX();
+		SizeSPX boxPadding = m_skin.contentBorderSize(m_scale);
+		SizeSPX listPadding = m_pListCanvas->m_skin.contentBorderSize(m_scale);
+
+		SizeSPX defaultSize;
+		spx 	matchingHeight = 0;
+
+		SizeSPX listCanvasDefaultSize;
+		spx 	listCanvasMatchingHeight = 0;
+
+
+		for ( auto& entry : entries)
+		{
+			auto pEntry = &entry;
+
+			// Set entry parent and mapper.
+
+			pEntry->m_pParent = this;
+			pMapper->addText(pEntry);
+
+			// Update entry height and listCanvas matchingHeight
+
+			spx entryHeight = pMapper->matchingHeight(pEntry, m_entryContentWidth, m_scale) + entryPadding.h;
+
+			pEntry->m_height = entryHeight;
+			listCanvasMatchingHeight += entryHeight;
+
+			// Update m_matchingHeight
+
+			spx boxHeight = pMapper->matchingHeight(pEntry, (m_size.w - boxPadding.w), m_scale ) + boxPadding.h;
+
+			if (boxHeight > matchingHeight)
+				matchingHeight = boxHeight;
+
+			// Update m_defaultSize and m_listCanvasDefaultSize
+
+			SizeSPX contentDefault = pMapper->defaultSize(pEntry, m_scale);
+			SizeSPX entryDefault = contentDefault + entryPadding;
+			SizeSPX boxDefault = contentDefault + boxPadding;
+
+			if (entryDefault.w + listPadding.w > listCanvasDefaultSize.w)
+				listCanvasDefaultSize.w = entryDefault.w + listPadding.w;
+			listCanvasDefaultSize.h += entryDefault.h;
+
+			if (defaultSize.w < boxDefault.w)
+				defaultSize.w = boxDefault.w;
+			if (defaultSize.h < boxDefault.h)
+				defaultSize.h = boxDefault.h;
+
+			pEntry++;
+		}
+
+		m_defaultSize = defaultSize;
+		m_matchingHeight = matchingHeight;
+
+		m_listCanvasDefaultSize = listCanvasDefaultSize;
+		m_listCanvasMatchingHeight = m_listCanvasMatchingHeight;
+
 	}
 
 	//____ _sideCanvasMatchingHeight() ________________________________________

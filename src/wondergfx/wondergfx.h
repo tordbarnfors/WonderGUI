@@ -31,6 +31,7 @@
 #include <wg_blurbrush.h>
 #include <wg_canvaslayers.h>
 #include <wg_color.h>
+#include <wg_compressor.h>
 #include <wg_dummyfont.h>
 #include <wg_edgemap.h>
 #include <wg_edgemapfactory.h>
@@ -40,7 +41,6 @@
 #include <wg_gfxbackend.h>
 #include <wg_gfxbase.h>
 #include <wg_gfxdevice.h>
-#include <wg_gfxdevice_gen1.h>
 #include <wg_gfxdevice_gen2.h>
 #include <wg_gfxdevicefactory.h>
 #include <wg_gfxenumextras.h>
@@ -48,9 +48,13 @@
 #include <wg_gfxutil.h>
 #include <wg_gradyent.h>
 #include <wg_gridwalker.h>
+#include <wg_lzcompressor.h>
 #include <wg_patches.h>
 #include <wg_pixeltools.h>
 #include <wg_printer.h>
+#include <wg_q565compressor.h>
+#include <wg_snapshottintmap.h>
+#include <wg_statictintmap.h>
 #include <wg_surface.h>
 #include <wg_surfacefactory.h>
 #include <wg_surfacefileheader.h>
