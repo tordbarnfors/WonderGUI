@@ -26,6 +26,7 @@
 #include <wg_gfxbackend.h>
 #include <wg_streamencoder.h>
 #include <wg_remotesurface.h>
+#include <wg_compressor.h>
 
 #include <functional>
 
@@ -102,8 +103,8 @@ namespace wg
 
 		// Static so it can be used by StreamSurface and StreamEdgemap as well.
 
-		static void _compressSplitAndEncodeSpx( StreamEncoder * pEncoder, GfxStream::ChunkId chunkType, const spx * pBeg, const spx * pEnd );
-		static void _splitAndEncode( StreamEncoder * pEncoder, GfxStream::ChunkId chunkType, Compression compression, const void * pBeg, const void * pEnd, int entrySize, int unpackedSize = 0 );
+//		static void _compressSplitAndEncodeSpx( StreamEncoder * pEncoder, GfxStream::ChunkId chunkType, const spx * pBeg, const spx * pEnd );
+		static void _compressSplitAndEncode( StreamEncoder * pEncoder, GfxStream::ChunkId chunkType, Compressor * pCompressor, const void * pBeg, const void * pEnd, int entrySize, int unpackedSize = 0 );
 
 		std::vector<CanvasInfo>	m_definedCanvases;
 		StreamEncoder_p			m_pEncoder;

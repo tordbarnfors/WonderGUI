@@ -25,6 +25,7 @@
 
 #include <wg_surface.h>
 #include <wg_streamencoder.h>
+#include <wg_compressor.h>
 
 
 namespace wg
@@ -43,6 +44,7 @@ namespace wg
 		struct Blueprint
 		{
 			CanvasRef		canvasRef = CanvasRef::None;	// Stream to specified reference, otherwise create surface and stream to that.
+			Compressor_p	compressor;
 			StreamEncoder_p	encoder;						// Required
 			Finalizer_p		finalizer = nullptr;
 			Surface_p		surface;						// Required
@@ -95,6 +97,7 @@ namespace wg
 		void	_sendPixels(int nRects, const RectI* pRects);
 
 		StreamEncoder_p	m_pEncoder;
+		Compressor_p	m_pCompressor;
 
 		Surface_p		m_pSurface;							// Surface we stream from.
 		int				m_observerId;

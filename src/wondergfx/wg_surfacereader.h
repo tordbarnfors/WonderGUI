@@ -46,8 +46,8 @@ public:
 
 	struct Blueprint
 	{
-		std::vector<Compressor_p>	compressors;
 		bool						autoCompressors = true;		// Create and use known compressors on demand.
+		std::vector<Compressor_p>	compressors;
 		SurfaceFactory_p			factory;
 		Finalizer_p					finalizer = nullptr;
 	};

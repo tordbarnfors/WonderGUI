@@ -29,6 +29,7 @@
 #include <wg_streamdecoder.h>
 #include <wg_gfxbackend.h>
 #include <wg_patches.h>
+#Include <wg_compressor.h>
 
 #include <vector>
 #include <tuple>
@@ -44,20 +45,38 @@ namespace wg
 	{
 	public:
 
-		//.____ Creation __________________________________________
+		//.____ Blueprint ___________________________________________________________
+/*
+
+	TODO: Implement!!!
+
+		struct Blueprint
+		{
+			bool						autoCompressors = true;		// Create and use known compressors on demand.
+			std::function<void(const CanvasInfo * pBegin, const CanvasInfo * pEnd)> canvasInfoCallback;
+			std::vector<Compressor_p>	compressors;
+			GfxBackend_p				backend;
+			EdgemapFactory_p			edgemapFactory;
+			Finalizer_p					finalizer = nullptr;
+			int							maxDirtyRects = 64;
+			bool						storeDirtyRects = false;
+			SurfaceFactory_p			surfaceFactory;
+		};
+*/
+		//.____ Creation ____________________________________________________________
 
 		static StreamPlayer_p	create(GfxBackend * pBackend, SurfaceFactory * pSurfaceFactory, EdgemapFactory * pEdgemapFactory);
 
-		//.____ Components _______________________________________
+		//.____ Components __________________________________________________________
 
 		StreamSink		input;
 
-		//.____ Identification __________________________________________
+		//.____ Identification ______________________________________________________
 
 		const TypeInfo&		typeInfo(void) const override;
 		const static TypeInfo	TYPEINFO;
 
-		//.____ Misc _____________________________________________________
+		//.____ Misc ________________________________________________________________
 
 		void	setStoreDirtyRects(bool bStore);
 		void	setMaxDirtyRects(int max);
@@ -70,13 +89,15 @@ namespace wg
 		void	reset();
 		
 		const std::vector<Object_p>& objects() const { return m_vObjects; }
-		
+
 	protected:
 		StreamPlayer(GfxBackend * pDevice, SurfaceFactory * pSurfaceFactory, EdgemapFactory * pEdgemapFactory);
 		~StreamPlayer();
 
 		void	_processStreamChunks(const uint8_t* pBegin, const uint8_t* pEnd) override;
 		bool	_playChunk();
+		Compressor * _findCompressor( uint32_t idToken );
+
 
 		StreamDecoder_p		m_pDecoder;
 		GfxBackend_p		m_pBackend;
@@ -143,6 +164,9 @@ namespace wg
 		ClipListInfo		m_clipList = { 0, false };
 
 		std::vector<ClipRectsBuffer>	m_clipListBufferStack;
+
+		std::vector<Compressor_p>		m_compressors;
+		bool				m_bAutoCompressors = true;
 
 		bool				m_bStoreDirtyRects = false;
 		int					m_maxDirtyRects = 64;

@@ -588,6 +588,22 @@ namespace wg
 
 			if(dataInfo.bLastChunk)
 			{
+				// Possibly decompress data
+
+				if( dataInfo.compression != makeEndianSpecificToken( 'N', 'O', 'N', 'E ') )
+				{
+					auto pCompressor = _findCompressor( uint32_t idToken );
+
+					if( pCompressor )
+					{
+						pCompressor->decompress( m_pUpdatingSurfaceDataBuffer, m_pUpdatingSurfaceDataBuffer + dataInfo.dataStart, m_pUpdatingSurfaceDataBuffer + dataInfo.totalSize );
+					}
+					else
+					{
+						GfxBase::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "Unknown compression method for data chunk, can not decompress.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+					}
+				}
+
 				// Get bounds for rect and alloc pixelBuffer
 
 				RectI bounds = m_updatingSurfaceRects[0];
@@ -804,11 +820,11 @@ namespace wg
 			int dataSize = header.size - GfxStream::DataInfoSize;		// includes possible padding.
 			spx* pDest = m_pEdgemapSampleBuffer + dataInfo.chunkOffset/ sizeof(spx);
 
-			if( dataInfo.compression == Compression::None )
+/*			if( dataInfo.compression == Compression::None )
 			{
 				decoder >> GfxStream::ReadBytes{ dataSize, pDest };
 			}
-			else
+*/			else
 			{
 				auto pBuffer = (spx *) GfxBase::memStackAlloc(dataSize);
 
@@ -865,5 +881,30 @@ namespace wg
 		m_vObjects.clear();
 	}
 
+	//____ _findCompressor() ______________________________________________________
+
+	Compressor * StreamPlayer::_findCompressor( uint32_t idToken )
+	{
+		for( auto& p : m_compressors )
+			if( p->idToken() == idToken )
+				return p;
+
+		if( m_bAutoCompressors )
+		{
+			if( idToken == Q565Compressor::ID_TOKEN )
+			{
+				auto pCompressor = Q565Compressor::create( { .decompressOnly = true } );
+				m_compressors.push_back(pCompressor);
+				return pCompressor;
+			}
+
+			if( idToken == LZCompressor::ID_TOKEN )
+			{
+				auto pCompressor = LZCompressor::create( { .decompressOnly = true } );
+				m_compressors.push_back(pCompressor);
+				return pCompressor;
+			}
+		}
+	}
 
 } //namespace wg

@@ -300,7 +300,7 @@ namespace wg
 		*pEncoder << m_inStreamId;
 		*pEncoder << rect;
 
-		StreamBackend::_splitAndEncode(pEncoder, GfxStream::ChunkId::SurfacePixels, Compression::None, pBuffer, pBuffer + dataSize, pixelSize);
+		StreamBackend::_compressSplitAndEncode(pEncoder, GfxStream::ChunkId::SurfacePixels, nullptr, pBuffer, pBuffer + dataSize);
 
 		GfxBase::memStackFree(allocSize);
 	}

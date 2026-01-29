@@ -179,7 +179,7 @@ void StreamEdgemap::_samplesUpdated(int edgeBegin, int edgeEnd, int sampleBegin,
 
 		// Compress and stream samples
 
-		StreamBackend::_compressSplitAndEncodeSpx( m_pEncoder, GfxStream::ChunkId::EdgemapSamples, pBuffer, pBuffer + samples );
+		StreamBackend::_compressSplitAndEncode( m_pEncoder, GfxStream::ChunkId::EdgemapSamples, nullptr, pBuffer, pBuffer + samples );
 
 		// Release temporary buffer
 

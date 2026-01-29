@@ -26,7 +26,7 @@
 #include <wg_gfxtypes.h>
 
 
-//#define WG_GFXSTREAM_USE_SURFACE_UPDATE2
+#define WG_GFXSTREAM_USE_SURFACE_UPDATE2
 
 namespace wg
 {
@@ -122,7 +122,8 @@ namespace wg
 		{
 			int32_t		totalSize;
 			int32_t		chunkOffset;
-			Compression	compression;
+			uint32_t	compression;
+			int32_t		dataStart;		// Offset at which receive data will start, which can be decompressed to buffers start.
 			bool		bFirstChunk;
 			bool		bLastChunk;
 			bool		bPadded;

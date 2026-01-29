@@ -53,6 +53,7 @@ namespace wg
 	MirrorSurface::MirrorSurface(const Blueprint& blueprint) : Surface( blueprint.surface->blueprint(), blueprint.surface->pixelFormat(), blueprint.surface->sampleMethod() )
 	{
 		m_pEncoder = blueprint.encoder;
+		m_pCompressor = blueprint.compressor;
 		m_pSurface = blueprint.surface;
 		m_canvasRef = blueprint.canvasRef;
 
@@ -258,37 +259,7 @@ namespace wg
 		for (int i = 0; i < nRects; i++)
 			encoder << pRects[i];
 
-		StreamBackend::_splitAndEncode(m_pEncoder, GfxStream::ChunkId::SurfacePixels, Compression::None, pBuffer, pBuffer + allocSize, 1);
-
-#else
-		// Send pixels using old SurfaceUpdate method for compatibility with old firmware.
-		// NO SUPPORT FOR CANVASREF!
-
-		StreamEncoder& encoder = *m_pEncoder;
-
-		for (int i = 0; i < nRects; i++)
-		{
-			encoder << GfxStream::Header{ GfxStream::ChunkId::SurfaceUpdate, 0, 18 };
-			encoder << m_surfaceId;
-			encoder << pRects[i];
-
-			uint8_t * pDest = pBuffer;
-
-			uint8_t * pLine = pixelBuffer.pixels + (pRects[i].y - pixelBuffer.rect.y) * pixelBuffer.pitch +
-				((pRects[i].x - pixelBuffer.rect.x) * pixelDescription.bits) / 8;
-
-			int lineLength = (pRects[i].w * pixelDescription.bits) / 8;
-
-			for (int y = 0; y < pixelBuffer.rect.h; y++)
-			{
-				memcpy(pDest, pLine, lineLength);
-				pLine += pixelBuffer.pitch;
-				pDest += lineLength;
-			}
-
-			StreamBackend::_splitAndEncode(m_pEncoder, GfxStream::ChunkId::SurfacePixels, Compression::None, pBuffer, pDest, 4);
-		}
-#endif
+		StreamBackend::_compressSplitAndEncode(m_pEncoder, GfxStream::ChunkId::SurfacePixels, m_pCompressor, pBuffer, pBuffer + allocSize);
 
 		// Cleanup
 
