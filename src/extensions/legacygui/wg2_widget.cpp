@@ -426,6 +426,7 @@ bool WgWidget::SetSelected()
 		if (!m_state.isChecked())
 		{
 			m_state.setChecked(true);
+			m_state.setSelekted(true);
 			_requestRender();
 		}
 		return true;
@@ -444,6 +445,7 @@ bool WgWidget::SetNormal()
 		if (m_state.isChecked())
 		{
 			m_state.setChecked(false);
+			m_state.setSelekted(false);
 			_requestRender();
 		}
 		return true;

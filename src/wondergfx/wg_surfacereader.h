@@ -24,6 +24,7 @@
 #pragma once
 
 #include <istream>
+#include <vector>
 
 #include <wg_surfacefileheader.h>
 #include <wg_surfacefactory.h>

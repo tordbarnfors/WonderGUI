@@ -38,10 +38,20 @@ namespace wg
 	{
 	public:
 
+		struct Blueprint
+		{
+			ColorSpace	colorSpace = ColorSpace::sRGB;
+			HiColor		bottom = HiColor::White;
+			Finalizer_p	finalizer = nullptr;
+			HiColor		left = HiColor::White;
+			HiColor		right = HiColor::White;
+			HiColor		top = HiColor::White;
+		};
 
 		//.____ Creation __________________________________________
 
-		static Gradyent_p	create(HiColor top, HiColor bottom, HiColor left, HiColor right);
+		static Gradyent_p	create( const Blueprint& blueprint );
+		static Gradyent_p	create(HiColor top, HiColor bottom, HiColor left, HiColor right, ColorSpace colorSpace = ColorSpace::Linear );
 		static Gradyent_p	create( const Gradient& gradient );									//NOTE! Only here for legacy reasons. Conversion from corner to side colors performed and only one direction supported.
 
 		//.____ Identification __________________________________________
@@ -60,11 +70,13 @@ namespace wg
 
 	protected:
 
-		Gradyent(HiColor top, HiColor bottom, HiColor left, HiColor right);
+		Gradyent(HiColor top, HiColor bottom, HiColor left, HiColor right, ColorSpace colorSpace);
 		virtual ~Gradyent() {};
 
 		void	_export(int entries, HiColor * pDest, const HiColor& from, const HiColor& to);
 		void	_setFlags();
+
+		ColorSpace	m_colorSpace;
 
 		HiColor		m_top;
 		HiColor		m_bottom;

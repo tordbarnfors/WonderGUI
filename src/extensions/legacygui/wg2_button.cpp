@@ -212,6 +212,7 @@ void WgButton::_onRender( wg::GfxDevice * pDevice, const WgRect& _canvas, const 
 	WgState    state;
 	state.setFocused(m_bFocused);
 	state.setSelekted(m_bSelected);
+	state.setChecked(m_bSelected);
 	state.setHovered(m_bPointerInside);
 	state.setPressed(m_bPressed);
 	state.setDisabled(!m_bEnabled);
