@@ -407,14 +407,14 @@ Compressor * SurfaceReader::_findCompressor( uint32_t idToken )
 	{
 		if( idToken == Q565Compressor::ID_TOKEN )
 		{
-			auto pCompressor = Q565Compressor::create( { .decompressOnly = true } );
+			auto pCompressor = Q565Compressor::create( WGBP(Q565Compressor, _.decompressOnly = true ) );
 			m_compressors.push_back(pCompressor);
 			return pCompressor;
 		}
 
 		if( idToken == LZCompressor::ID_TOKEN )
 		{
-			auto pCompressor = LZCompressor::create( { .decompressOnly = true } );
+			auto pCompressor = LZCompressor::create( WGBP(LZCompressor, _.decompressOnly = true ) );
 			m_compressors.push_back(pCompressor);
 			return pCompressor;
 		}
