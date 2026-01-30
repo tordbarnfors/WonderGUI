@@ -159,16 +159,16 @@ namespace wg
 	{
 		info.totalSize = _pullInt();
 		info.chunkOffset = _pullInt();
+		info.compression = _pullInt();
+		info.dataStart = _pullInt();
 
-		uint16_t flagsAndCompression = _pullShort();
+		uint16_t flags = _pullShort();
 
-		info.bFirstChunk = (flagsAndCompression >> 8) & 0x1;
-		info.bLastChunk = (flagsAndCompression >> 9) & 0x1;
-		info.bPadded = (flagsAndCompression >> 10) & 0x1;
-		info.compression = (Compression) (flagsAndCompression & 0xFF);
+		info.bFirstChunk = flags & 0x1;
+		info.bLastChunk = (flags >> 1) & 0x1;
+		info.bPadded = (flags >> 2) & 0x1;
 		return *this;
 	}
-
 
 	StreamDecoder& StreamDecoder::operator>> (uint8_t& i)
 	{

@@ -223,8 +223,6 @@ namespace wg
 
 		auto pBuffer = (uint8_t *) GfxBase::memStackAlloc(allocSize);
 
-#ifdef WG_GFXSTREAM_USE_SURFACE_UPDATE2
-
 		//TODO: We can get too many rectangels to fit in the chunk!
 
 		// Copy pixels from rectangles to continuous buffer memory.

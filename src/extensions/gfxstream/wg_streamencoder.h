@@ -219,7 +219,9 @@ namespace wg
 	{
 		_pushInt(info.totalSize);
 		_pushInt(info.chunkOffset);
-		_pushShort((int(info.bFirstChunk) << 8) | (int(info.bLastChunk) << 9) | (int(info.bPadded) << 10)| int(info.compression));
+		_pushInt(info.compression);
+		_pushInt(info.dataStart);
+		_pushShort( int(info.bFirstChunk) | (int(info.bLastChunk) << 1) | (int(info.bPadded) << 2) );
 		return *this;
 	}
 

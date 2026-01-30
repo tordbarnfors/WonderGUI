@@ -22,6 +22,10 @@
 #include <wg_streamplayer.h>
 #include <wg_gfxbase.h>
 #include <wg_compress.h>
+#include <wg_compressor.h>
+#include <wg_q565compressor.h>
+#include <wg_lzcompressor.h>
+#include <wg_spxcompressor.h>
 #include <assert.h>
 
 namespace wg
@@ -347,18 +351,20 @@ namespace wg
 			int dataSize = header.size - GfxStream::DataInfoSize - dataInfo.bPadded;
 			char* pDest = ((char*)m_vRects.data()) + dataInfo.chunkOffset;
 
-			if (dataInfo.compression == Compression::None)
+			if (dataInfo.compression == Util::makeEndianSpecificToken('N','O','N','E') )
 			{
 				decoder >> GfxStream::ReadBytes{ dataSize, pDest };
 			}
 			else
 			{
+/*
 				uint8_t* pBuffer = (uint8_t*) GfxBase::memStackAlloc(dataSize);
 
 				decoder >> GfxStream::ReadBytes{ dataSize, pBuffer };
 				decompressSpx(dataInfo.compression, pBuffer, dataSize, pDest);
 
 				GfxBase::memStackFree(dataSize);
+ */
 			}
 
 			if (dataInfo.bLastChunk)
@@ -440,19 +446,19 @@ namespace wg
 			int dataSize = header.size - GfxStream::DataInfoSize - dataInfo.bPadded;
 			char* pDest = ((char*)m_vUpdateRects.data()) + dataInfo.chunkOffset;
 
-			if (dataInfo.compression == Compression::None)
+			if (dataInfo.compression == Util::makeEndianSpecificToken('N','O','N','E'))
 			{
 				decoder >> GfxStream::ReadBytes{ dataSize, pDest };
 			}
 			else
 			{
-				uint8_t* pBuffer = (uint8_t*) GfxBase::memStackAlloc(dataSize);
+/*				uint8_t* pBuffer = (uint8_t*) GfxBase::memStackAlloc(dataSize);
 
 				decoder >> GfxStream::ReadBytes{ dataSize, pBuffer };
 				decompressSpx(dataInfo.compression, pBuffer, dataSize, pDest);
 
 				GfxBase::memStackFree(dataSize);
-			}
+*/			}
 
 			if (m_bStoreDirtyRects)
 			{
@@ -590,9 +596,11 @@ namespace wg
 			{
 				// Possibly decompress data
 
-				if( dataInfo.compression != makeEndianSpecificToken( 'N', 'O', 'N', 'E ') )
+				uint32_t	test = Util::makeEndianSpecificToken( 'N', 'O', 'N', 'E');
+
+				if( dataInfo.compression != Util::makeEndianSpecificToken( 'N', 'O', 'N', 'E') )
 				{
-					auto pCompressor = _findCompressor( uint32_t idToken );
+					auto pCompressor = _findCompressor( dataInfo.compression );
 
 					if( pCompressor )
 					{
@@ -820,19 +828,19 @@ namespace wg
 			int dataSize = header.size - GfxStream::DataInfoSize;		// includes possible padding.
 			spx* pDest = m_pEdgemapSampleBuffer + dataInfo.chunkOffset/ sizeof(spx);
 
-/*			if( dataInfo.compression == Compression::None )
+			if( dataInfo.compression == Util::makeEndianSpecificToken('N','O','N','E') )
 			{
 				decoder >> GfxStream::ReadBytes{ dataSize, pDest };
 			}
-*/			else
+			else
 			{
-				auto pBuffer = (spx *) GfxBase::memStackAlloc(dataSize);
+/*				auto pBuffer = (spx *) GfxBase::memStackAlloc(dataSize);
 
 				decoder >> GfxStream::ReadBytes{ dataSize, pBuffer };
 				decompressSpx(dataInfo.compression, pBuffer, dataSize - dataInfo.bPadded, pDest);
 
 				GfxBase::memStackFree(dataSize);
-			}
+*/			}
 
 			if (dataInfo.bLastChunk)
 			{
@@ -904,7 +912,16 @@ namespace wg
 				m_compressors.push_back(pCompressor);
 				return pCompressor;
 			}
+
+			if( idToken == SPXCompressor::ID_TOKEN )
+			{
+				auto pCompressor = SPXCompressor::create( { .decompressOnly = true } );
+				m_compressors.push_back(pCompressor);
+				return pCompressor;
+			}
 		}
+
+		return nullptr;
 	}
 
 } //namespace wg

@@ -181,28 +181,28 @@ namespace wg
 
 	void StreamBackend::setRects(const RectSPX* pBeg, const RectSPX* pEnd)
 	{
-		_compressSplitAndEncode( m_pEncoder, GfxStream::ChunkId::Rects, nullptr, (const spx *) pBeg, (const spx *) pEnd );
+		_compressSplitAndEncode( m_pEncoder, GfxStream::ChunkId::Rects, nullptr, pBeg, pEnd );
 	}
 
 	//____ setColors() ___________________________________________________________
 
 	void StreamBackend::setColors(const HiColor* pBeg, const HiColor* pEnd)
 	{
-		_compressSplitAndEncode( m_pEncoder, GfxStream::ChunkId::Colors, nullptr, pBeg, pEnd, sizeof(HiColor) );
+		_compressSplitAndEncode( m_pEncoder, GfxStream::ChunkId::Colors, nullptr, pBeg, pEnd );
 	}
 
 	//____ setTransforms() _______________________________________________________
 
 	void StreamBackend::setTransforms(const Transform * pBeg, const Transform * pEnd)
 	{
-		_compressSplitAndEncode( m_pEncoder, GfxStream::ChunkId::Transforms, nullptr, pBeg, pEnd, sizeof(Transform) );
+		_compressSplitAndEncode( m_pEncoder, GfxStream::ChunkId::Transforms, nullptr, pBeg, pEnd );
 	}
 
 	//____ processCommands() _____________________________________________________
 
 	void StreamBackend::processCommands( const uint16_t* pBeg, const uint16_t * pEnd)
 	{
-		_compressSplitAndEncode( m_pEncoder, GfxStream::ChunkId::Commands, nullptr, pBeg, pEnd, sizeof(int32_t) );
+		_compressSplitAndEncode( m_pEncoder, GfxStream::ChunkId::Commands, nullptr, pBeg, pEnd );
 	}
 
 	//____ defineCanvas() ________________________________________________________
@@ -404,7 +404,7 @@ namespace wg
 		char * pEnd = (char *) _pEnd;
 
 		int memStackAllocated = 0;
-		int	workBufferSize = pEnd - pBeg;
+		int	workBufferSize = int(pEnd - pBeg);
 		int dataStart = 0;
 
 
@@ -412,7 +412,7 @@ namespace wg
 
 		if( pCompressor )
 		{
-			memStackAllocated = pCompressor->maxCompressedSize();
+			memStackAllocated = pCompressor->maxCompressedSize(int(pEnd - pBeg));
 			auto pBuffer = GfxBase::memStackAlloc(memStackAllocated);
 
 			int size = pCompressor->compress(pBuffer, _pBeg, _pEnd );
@@ -426,7 +426,7 @@ namespace wg
 
 		char * p = pBeg;
 
-		int maxBytesInChunk = ((GfxStream::c_maxBlockSize - 4 - GfxStream::DataInfoSize) / entrySize) * entrySize;
+		int maxBytesInChunk = (GfxStream::c_maxBlockSize - 4 - GfxStream::DataInfoSize);
 
 		while( p < pEnd )
 		{
@@ -437,7 +437,7 @@ namespace wg
 
 			GfxStream::DataInfo info;
 			info.totalSize = workBufferSize;
-			info.chunkOffset = int(p - pBeg);
+			info.chunkOffset = int(p - pBeg) + dataStart;
 			info.compression = compression;
 			info.dataStart = dataStart;
 			info.bFirstChunk = (bool)(p == pBeg);

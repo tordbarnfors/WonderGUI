@@ -1,7 +1,6 @@
 
 #include <cstdlib>
 #include <stdio.h>
-//#include <unistd.h>
 
 #ifdef WIN32
 #	include <SDL.h>
@@ -9,6 +8,7 @@
 #elif __APPLE__
 #	include <SDL2/SDL.h>
 #	include <SDL2_image/SDL_image.h>
+#	include <unistd.h>
 #else
 #	include <SDL2/SDL.h>
 #	include <SDL2/SDL_image.h>
@@ -85,8 +85,9 @@ int sortWidgets( const Widget * p1, const Widget * p2 )
 
 int main ( int argc, char** argv )
 { 
-//	sleep(1);
-
+#ifdef __APPLE__
+	sleep(1);
+#endif
 
 	//------------------------------------------------------
 	// Init SDL
@@ -684,7 +685,7 @@ void convertSDLFormat( PixelDescription * pWGFormat, const SDL_PixelFormat * pSD
 
 void playImageStreamingTest(GfxDevice_p pDevice, CanvasRef canvasRef, SurfaceFactory_p pFactory )
 {
-	SDL_Surface * pLogoImg = IMG_Load( "IDR_TOPLOGO_NARROW_SUMMIT.png" );
+	SDL_Surface * pLogoImg = IMG_Load( "Flow Studio Boot Image.png" );
 //    convertSDLFormat( &format, pFontSurf->format );
 
 	SizeI logoSize = SizeI(pLogoImg->w,pLogoImg->h);
@@ -867,6 +868,7 @@ void playDirectUpdate(GfxDevice_p pDevice, CanvasRef canvasRef )
 														.size = canvasInfo.size / 64 });
 
 	MirrorSurface_p	pMyMirror = MirrorSurface::create({
+		.compressor = LZCompressor::create(),
 		.encoder = s_pEncoder,
 		.surface = pMyCanvas
 	});

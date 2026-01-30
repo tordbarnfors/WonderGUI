@@ -403,7 +403,7 @@ namespace wg
 					uint8_t* pDest = ((uint8_t*)updateRects.data()) + info.chunkOffset;
 					int dataSize = (GfxStream::dataSize(p) - GfxStream::DataInfoSize);
 
-					decompressSpx(info.compression, pSrc, dataSize, pDest);
+//					decompressSpx(info.compression, pSrc, dataSize, pDest);
 
 					if (info.bLastChunk)
 						pTrimBackend->addMaskingSession(canvasRef, nullptr, nUpdateRects, updateRects.data());

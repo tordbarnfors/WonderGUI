@@ -29,7 +29,7 @@
 #include <wg_streamdecoder.h>
 #include <wg_gfxbackend.h>
 #include <wg_patches.h>
-#Include <wg_compressor.h>
+#include <wg_compressor.h>
 
 #include <vector>
 #include <tuple>

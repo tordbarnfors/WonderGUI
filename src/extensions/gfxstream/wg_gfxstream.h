@@ -249,7 +249,7 @@ namespace wg
 
 		static const int ColorSize = 8;
 		static const int NinePatchSize = 16 + 8 + 10 + 10;
-		static const int DataInfoSize = 10;
+		static const int DataInfoSize = 18;
 		static const int HeaderSize = 4;
 
 		inline static GfxStream::ChunkId chunkType(const uint8_t* pChunk)
@@ -287,13 +287,15 @@ namespace wg
 
 			info.totalSize		= pChunkData[0] + int(pChunkData[1]) * 65536;
 			info.chunkOffset	= pChunkData[2] + int(pChunkData[3]) * 65536;
+			info.compression	= pChunkData[4] + int(pChunkData[5]) * 65536;
+			info.dataStart		= pChunkData[6] + int(pChunkData[7]) * 65536;
 
-			uint16_t flagsAndCompression = pChunkData[4];
 
-			info.bFirstChunk = (flagsAndCompression >> 8) & 0x1;
-			info.bLastChunk = (flagsAndCompression >> 9) & 0x1;
-			info.bPadded = (flagsAndCompression >> 10) & 0x1;
-			info.compression = (Compression) (flagsAndCompression & 0xFF);
+			uint16_t flags = pChunkData[8];
+
+			info.bFirstChunk = flags & 0x1;
+			info.bLastChunk = (flags >> 1) & 0x1;
+			info.bPadded = (flags >> 2) & 0x1;
 			return info;
 		};
 
