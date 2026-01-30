@@ -21,7 +21,6 @@
 =========================================================================*/
 #include <wg_streamplayer.h>
 #include <wg_gfxbase.h>
-#include <wg_compress.h>
 #include <wg_compressor.h>
 #include <wg_q565compressor.h>
 #include <wg_lzcompressor.h>
@@ -595,8 +594,6 @@ namespace wg
 			if(dataInfo.bLastChunk)
 			{
 				// Possibly decompress data
-
-				uint32_t	test = Util::makeEndianSpecificToken( 'N', 'O', 'N', 'E');
 
 				if( dataInfo.compression != Util::makeEndianSpecificToken( 'N', 'O', 'N', 'E') )
 				{

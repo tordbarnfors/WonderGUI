@@ -39,9 +39,19 @@ namespace wg
 	{
 	public:
 
+		//.____ Blueprint ___________________________________________________________
+
+		struct Blueprint
+		{
+			bool			decompressOnly = false;
+			Finalizer_p		finalizer = nullptr;
+		};
+
 		//.____ Creation __________________________________________________________
 
 		static SPXCompressor_p		create();
+		static SPXCompressor_p		create( const Blueprint& blueprint );
+
 
 		//.____ Identification __________________________________________
 

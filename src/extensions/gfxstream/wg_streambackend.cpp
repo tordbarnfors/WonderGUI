@@ -29,7 +29,6 @@
 #include <wg_remotesurfacefactory.h>
 #include <wg_streamedgemapfactory.h>
 #include <wg_gfxbase.h>
-#include <wg_compress.h>
 
 #include <assert.h>
 

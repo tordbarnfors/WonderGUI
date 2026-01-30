@@ -30,6 +30,7 @@
 #include <wg_streamsource.h>
 #include <wg_streamsink.h>
 #include <wg_streamtrimbackend.h>
+#include <wg_compressor.h>
 
 
 #include <vector>
@@ -59,6 +60,8 @@ namespace wg
 
 		void		setInput(const StreamSource_p& pInput);
 		void		setOutput(const StreamSink_p& pOutput);
+
+		void		setTrimDecompressor( Compressor * pDecompressor );		// If trimming output, we might need to decompress UpdateRects-chunk.
 
 		GfxStream::ChunkId	peekChunk();
 
@@ -104,6 +107,7 @@ namespace wg
 
 		StreamSource_p	m_pInput;
 		StreamSink_p		m_pOutput;
+		Compressor_p		m_pTrimDecompressor;
 	};
 }
 

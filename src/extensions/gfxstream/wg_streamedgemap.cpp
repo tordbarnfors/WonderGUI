@@ -23,7 +23,6 @@
 #include <wg_streambackend.h>
 #include <wg_gfxbase.h>
 #include <wg_gradyent.h>
-#include <wg_compress.h>
 
 #include <cstring>
 

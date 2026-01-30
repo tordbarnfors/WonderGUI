@@ -37,6 +37,14 @@ SPXCompressor_p SPXCompressor::create()
 	return SPXCompressor_p( new SPXCompressor() );
 }
 
+SPXCompressor_p SPXCompressor::create( const Blueprint& blueprint )
+{
+	auto p = SPXCompressor_p( new SPXCompressor() );
+	if( blueprint.finalizer )
+		p->setFinalizer(blueprint.finalizer);
+}
+
+
 //____ constructor ____________________________________________________________
 
 SPXCompressor::SPXCompressor()
