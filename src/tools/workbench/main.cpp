@@ -175,6 +175,7 @@ bool packPanelSpacingBugTest(ComponentPtr<DynamicSlot> pEntry);
 bool bracketSkinTest(ComponentPtr<DynamicSlot> pEntry);
 bool selectCapsuleTest(ComponentPtr<DynamicSlot> pEntry);
 bool drawerPanelTest(ComponentPtr<DynamicSlot> pEntry);
+bool tintmapTest(ComponentPtr<DynamicSlot> pEntry);
 
 
 void nisBlendTest();
@@ -814,7 +815,7 @@ int main(int argc, char** argv)
 		//	twoSlotPanelTest(pSlot);
 		//	customSkinTest(pSlot);
 		//	areaChartTest(pSlot);
-			areaChartTest2(pSlot);
+		//	areaChartTest2(pSlot);
 		//	plotChartTest(pSlot);
 		//	nortonCommanderTest(pSlot);
 		//	skinMarginTest(pSlot);
@@ -841,6 +842,7 @@ int main(int argc, char** argv)
 		//	selectCapsuleTest(pSlot);
 		//	drawerPanelTest(pSlot);
 		//	areaChartTestWithGlobalGradient(pSlot);
+		tintmapTest(pSlot);
 
 
 		//------------------------------------------------------
@@ -4944,4 +4946,26 @@ bool drawerPanelTest(ComponentPtr<DynamicSlot> pEntry)
 
 	return true;
 
+}
+
+
+bool tintmapTest(ComponentPtr<DynamicSlot> pEntry)
+{
+	auto pBasePanel = PackPanel::create( { .axis = Axis::Y });
+
+	auto pLinearGradient = Gradyent::create( Color::White, Color::White, Color::Black, Color::White );
+	auto pSRGBGradient = Gradyent::create( Color::White, Color::White, Color::Black, Color::White, ColorSpace::sRGB );
+
+	auto pLinearGradientSkin = TintmapSkin::create( pLinearGradient );
+	auto pSRGBGradientSkin = TintmapSkin::create( pSRGBGradient );
+
+
+	auto pFiller1 = Filler::create( { .defaultSize = {50,50}, .skin = pLinearGradientSkin } );
+	auto pFiller2 = Filler::create( { .defaultSize = {50,50}, .skin = pSRGBGradientSkin } );
+
+	pBasePanel->slots.pushBack( { pFiller1, pFiller2 });
+
+	*pEntry = pBasePanel;
+
+	return true;
 }

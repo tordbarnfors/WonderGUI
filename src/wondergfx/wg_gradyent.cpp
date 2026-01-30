@@ -29,7 +29,7 @@ namespace wg
 
 	//____ create() ___________________________________________________________
 
-	Gradyent_p	Gradyent::create(HiColor top, HiColor bottom, HiColor left, HiColor right)
+	Gradyent_p	Gradyent::create(HiColor top, HiColor bottom, HiColor left, HiColor right, ColorSpace colorSpace)
 	{
 		if (!top.isValid() || !bottom.isValid() || !left.isValid() || !right.isValid() )
 		{
@@ -38,9 +38,24 @@ namespace wg
 			return nullptr;
 		}
 
-		return Gradyent_p(new Gradyent(top, bottom, left, right));
+		return Gradyent_p(new Gradyent(top, bottom, left, right, colorSpace));
 	}
 
+	Gradyent_p Gradyent::create( const Blueprint& blueprint )
+	{
+		if (!blueprint.top.isValid() || !blueprint.bottom.isValid() || !blueprint.left.isValid() || !blueprint.right.isValid() )
+		{
+			GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Invalid color(s) specified.",
+				nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
+			return nullptr;
+		}
+
+		auto pGradyent = Gradyent_p(new Gradyent(blueprint.top, blueprint.bottom, blueprint.left, blueprint.right, blueprint.colorSpace));
+		if( blueprint.finalizer )
+			pGradyent->setFinalizer(blueprint.finalizer);
+
+		return pGradyent;
+	}
 
 	Gradyent_p Gradyent::create( const Gradient& gradient )
 	{
@@ -76,16 +91,18 @@ namespace wg
 
 
 		if (xDiff > yDiff)
-			return Gradyent_p( new Gradyent(HiColor::White, HiColor::White, left, right) );
+			return Gradyent_p( new Gradyent(HiColor::White, HiColor::White, left, right, ColorSpace::Linear) );
 		else
-			return Gradyent_p( new Gradyent(top, bottom, HiColor::White, HiColor::White) );
+			return Gradyent_p( new Gradyent(top, bottom, HiColor::White, HiColor::White, ColorSpace::Linear) );
 	}
 
 
 	//____ constructor ________________________________________________________
 
-	Gradyent::Gradyent(HiColor top, HiColor bottom, HiColor left, HiColor right)
+	Gradyent::Gradyent(HiColor top, HiColor bottom, HiColor left, HiColor right, ColorSpace colorSpace)
 	{
+		m_colorSpace = colorSpace;
+
 		m_top		= top;
 		m_bottom	= bottom;
 		m_left		= left;
@@ -178,21 +195,50 @@ namespace wg
 
 	void Gradyent::_export(int entries, HiColor * pDest, const HiColor& from, const HiColor& to)
 	{
-		int diffR = int(to.r - int(from.r));
-		int diffG = int(to.g - int(from.g));
-		int diffB = int(to.b - int(from.b));
-		int diffA = int(to.a - int(from.a));
-
-		for (int i = 0; i < entries; i++)
+		if( m_colorSpace == ColorSpace::sRGB )
 		{
-			HiColor col;
+			int fromR = HiColor::packSRGBTab[from.r];
+			int fromG = HiColor::packSRGBTab[from.g];
+			int fromB = HiColor::packSRGBTab[from.b];
 
-			col.r = from.r + (diffR * i / entries);
-			col.g = from.g + (diffG * i / entries);
-			col.b = from.b + (diffB * i / entries);
-			col.a = from.a + (diffA * i / entries);
+			int toR = HiColor::packSRGBTab[to.r];
+			int toG = HiColor::packSRGBTab[to.g];
+			int toB = HiColor::packSRGBTab[to.b];
 
-			pDest[i] = col;
+			int diffR = int(toR - int(fromR))*16;
+			int diffG = int(toG - int(fromG))*16;
+			int diffB = int(toB - int(fromB))*16;
+			int diffA = int(to.a - int(from.a));
+
+			for (int i = 0; i < entries; i++)
+			{
+				HiColor col;
+
+				col.r = HiColor::unpackSRGBTab[fromR + (diffR * i / (entries*16))];
+				col.g = HiColor::unpackSRGBTab[fromG + (diffG * i / (entries*16))];
+				col.b = HiColor::unpackSRGBTab[fromB + (diffB * i / (entries*16))];
+				col.a = from.a + (diffA * i / entries);
+				pDest[i] = col;
+			}
+		}
+		else
+		{
+			int diffR = int(to.r - int(from.r));
+			int diffG = int(to.g - int(from.g));
+			int diffB = int(to.b - int(from.b));
+			int diffA = int(to.a - int(from.a));
+
+			for (int i = 0; i < entries; i++)
+			{
+				HiColor col;
+
+				col.r = from.r + (diffR * i / entries);
+				col.g = from.g + (diffG * i / entries);
+				col.b = from.b + (diffB * i / entries);
+				col.a = from.a + (diffA * i / entries);
+
+				pDest[i] = col;
+			}
 		}
 	}
 
