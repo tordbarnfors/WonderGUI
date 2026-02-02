@@ -1000,7 +1000,8 @@ bool MyApp::loadStream(std::string path)
 
 
 	m_pStreamPump = StreamPump::create( StreamSource_p(), StreamSink_p(m_pStreamPlayer.rawPtr(),m_pStreamPlayer->input) );
-	
+	m_pStreamPump->setTrimDecompressor( SPXCompressor::create() );
+
 	// Pump through first chunks to get ID
 
 	m_screens.clear();
@@ -1050,13 +1051,15 @@ void MyApp::setupScreens(const CanvasInfo* pBeg, const CanvasInfo* pEnd)
 
 	for( auto pCanvas = pBeg ; pCanvas < pEnd ; pCanvas++ )
 	{
-		auto pSurf = pFactory->createSurface({ .format = pCanvas->format, .identity = int(pCanvas->ref), .scale = pCanvas->scale, .size = pCanvas->size/64 });
+		auto format = pCanvas->format != PixelFormat::Undefined ? pCanvas->format : PixelFormat::BGRA_8_sRGB;
+
+		auto pSurf = pFactory->createSurface({ .format = format, .identity = int(pCanvas->ref), .scale = pCanvas->scale, .size = pCanvas->size/64 });
 		pSurf->fill(HiColor::Black);
 
 		m_screens.push_back(pSurf);
 
 		if( pLinearBackend )
-			pLinearBackend->defineCanvas(pCanvas->ref, pCanvas->size, pCanvas->format, pCanvas->scale );
+			pLinearBackend->defineCanvas(pCanvas->ref, pCanvas->size, format, pCanvas->scale );
 		else
 			pSoftBackend->defineCanvas(pCanvas->ref, wg_dynamic_cast<SoftSurface_p>(pSurf));
 	}

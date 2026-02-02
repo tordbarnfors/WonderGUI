@@ -45,16 +45,31 @@ namespace wg
 
 	public:
 
-		//.____ Creation __________________________________________
+		//.____ Blueprint ___________________________________________________________
+
+		struct Blueprint
+		{
+			Compressor_p	colorCompressor;
+			Compressor_p	commandCompressor;
+			StreamEncoder_p	encoder;					// Mandatory!
+			Finalizer_p		finalizer = nullptr;
+			int				maxEdges = 15;
+			Compressor_p	objectCompressor;
+			Compressor_p	rectCompressor;		// Both for render rects and update rects.
+			Compressor_p	transformCompressor;
+		};
+
+		//.____ Creation ____________________________________________________________
 
 		static StreamBackend_p	create( StreamEncoder * pEncoder, int maxEdges = 15 );
+		static StreamBackend_p	create( const Blueprint& blueprint );
 
-		//.____ Identification __________________________________________
+		//.____ Identification ______________________________________________________
 
 		const TypeInfo&		typeInfo(void) const override;
 		const static TypeInfo	TYPEINFO;
 
-		//.____ Rendering ________________________________________________
+		//.____ Rendering ___________________________________________________________
 
 		void	beginRender() override;
 		void	endRender() override;
@@ -74,7 +89,7 @@ namespace wg
 		void	processCommands( const uint16_t* pBeg, const uint16_t * pEnd) override;
 
 
-		//.____ Misc _________________________________________________________
+		//.____ Misc ________________________________________________________________
 
 		bool	defineCanvas( CanvasRef ref, RemoteSurface * pSurface );
 		bool	defineCanvas( CanvasRef ref, const SizeI& pixelSize, PixelFormat pixelFormat, int scale = 64 );
@@ -99,11 +114,11 @@ namespace wg
 	protected:
 
 		StreamBackend(StreamEncoder * pEncoder, int maxEdges );
+		StreamBackend(const Blueprint& blueprint );
 		~StreamBackend();
 
 		// Static so it can be used by StreamSurface and StreamEdgemap as well.
 
-//		static void _compressSplitAndEncodeSpx( StreamEncoder * pEncoder, GfxStream::ChunkId chunkType, const spx * pBeg, const spx * pEnd );
 		static void _compressSplitAndEncode( StreamEncoder * pEncoder, GfxStream::ChunkId chunkType, Compressor * pCompressor, const void * pBeg, const void * pEnd );
 
 		std::vector<CanvasInfo>	m_definedCanvases;
@@ -112,6 +127,12 @@ namespace wg
 
 		SurfaceFactory_p		m_pSurfaceFactory;
 		EdgemapFactory_p		m_pEdgemapFactory;
+
+		Compressor_p			m_pObjectCompressor;
+		Compressor_p			m_pRectCompressor;		// Both for render rects and update rects.
+		Compressor_p			m_pColorCompressor;
+		Compressor_p			m_pTransformCompressor;
+		Compressor_p			m_pCommandCompressor;
 
 		std::vector<uint16_t>	m_objects;
 

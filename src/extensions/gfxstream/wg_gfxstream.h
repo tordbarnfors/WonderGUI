@@ -120,9 +120,9 @@ namespace wg
 
 		struct DataInfo
 		{
-			int32_t		totalSize;
-			int32_t		chunkOffset;
-			uint32_t	compression;
+			int32_t		bufferSize;		// Size of buffer needed to read content
+			int32_t		chunkOffset;	// Offset of this chunk.
+			uint32_t	compression;	// TokenID for compression used.
 			int32_t		dataStart;		// Offset at which receive data will start, which can be decompressed to buffers start.
 			bool		bFirstChunk;
 			bool		bLastChunk;
@@ -285,7 +285,7 @@ namespace wg
 
 			const uint16_t* pChunkData = (uint16_t*) (pChunk + headerSize(pChunk));
 
-			info.totalSize		= pChunkData[0] + int(pChunkData[1]) * 65536;
+			info.bufferSize		= pChunkData[0] + int(pChunkData[1]) * 65536;
 			info.chunkOffset	= pChunkData[2] + int(pChunkData[3]) * 65536;
 			info.compression	= pChunkData[4] + int(pChunkData[5]) * 65536;
 			info.dataStart		= pChunkData[6] + int(pChunkData[7]) * 65536;

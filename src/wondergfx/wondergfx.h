@@ -54,6 +54,7 @@
 #include <wg_printer.h>
 #include <wg_q565compressor.h>
 #include <wg_snapshottintmap.h>
+#include <wg_spxcompressor.h>
 #include <wg_statictintmap.h>
 #include <wg_surface.h>
 #include <wg_surfacefactory.h>

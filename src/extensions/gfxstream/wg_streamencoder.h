@@ -217,7 +217,7 @@ namespace wg
 
 	StreamEncoder& StreamEncoder::operator<< (const GfxStream::DataInfo& info)
 	{
-		_pushInt(info.totalSize);
+		_pushInt(info.bufferSize);
 		_pushInt(info.chunkOffset);
 		_pushInt(info.compression);
 		_pushInt(info.dataStart);

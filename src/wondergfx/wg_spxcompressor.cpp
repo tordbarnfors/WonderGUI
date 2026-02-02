@@ -42,6 +42,7 @@ SPXCompressor_p SPXCompressor::create( const Blueprint& blueprint )
 	auto p = SPXCompressor_p( new SPXCompressor() );
 	if( blueprint.finalizer )
 		p->setFinalizer(blueprint.finalizer);
+	return p;
 }
 
 

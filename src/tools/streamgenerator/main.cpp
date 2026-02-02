@@ -321,7 +321,21 @@ int main ( int argc, char** argv )
 
 	// StreamGfxDevice and StreamSurfaceFactory feeding encoder
 
-	auto pStreamBackend = StreamBackend::create(pEncoder);
+	auto pLZCompressor = LZCompressor::create();
+	auto pSPXCompressor = SPXCompressor::create();
+	auto pQ565Compressor = Q565Compressor::create();
+
+
+	StreamBackend::Blueprint bp;
+
+	bp.encoder = pEncoder;
+	bp.commandCompressor = pLZCompressor;
+//	bp.objectCompressor = pLZCompressor;
+	bp.colorCompressor = pLZCompressor;
+	bp.rectCompressor = pSPXCompressor;
+//	bp.transformCompressor = pLZCompressor;
+
+	auto pStreamBackend = StreamBackend::create(bp);
 //    pStreamBackend->defineCanvas(CanvasRef::Canvas_1, {800,480}, PixelFormat::Undefined );
 
 	pStreamBackend->defineCanvas(CanvasRef::Canvas_1, {240,240}, PixelFormat::Undefined );
@@ -360,12 +374,12 @@ int main ( int argc, char** argv )
 	// Record stream
 	//------------------------------------------------------
 
-   playDirectUpdate( pStreamDevice, CanvasRef::Canvas_1 );
+//   playDirectUpdate( pStreamDevice, CanvasRef::Canvas_1 );
 //   playRectangleDance( pStreamDevice, CanvasRef::Canvas_1 );
 //	  playRectangleDanceDualScreen( pStreamDevice, CanvasRef::Canvas_1, CanvasRef::Canvas_2 );
 //    playLogoFadeIn( pStreamDevice, CanvasRef::Canvas_1, pSurfaceFactory );
 //    playSurfaceStressTest( pStreamDevice, CanvasRef::Canvas_1, pSurfaceFactory );
-//	playBounceRects( pStreamDevice, CanvasRef::Canvas_1 );
+	playBounceRects( pStreamDevice, CanvasRef::Canvas_1 );
 //	playDualScreenBounceRects( pStreamDevice, CanvasRef::Canvas_1, CanvasRef::Canvas_2 );
 
 //	playImageStreamingTest( pStreamDevice, CanvasRef::Canvas_1, pSurfaceFactory );

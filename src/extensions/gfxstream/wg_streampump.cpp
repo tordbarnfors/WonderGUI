@@ -404,7 +404,7 @@ namespace wg
 					GfxStream::DataInfo info = GfxStream::decodeDataInfo(p);
 
 					if( info.bFirstChunk )
-						pBuffer = (uint8_t*) GfxBase::memStackAlloc(info.totalSize);
+						pBuffer = (uint8_t*) GfxBase::memStackAlloc(info.bufferSize);
 
 					uint8_t* pSrc = p + GfxStream::HeaderSize + GfxStream::DataInfoSize;
 					int dataSize = (GfxStream::dataSize(p) - GfxStream::DataInfoSize);
@@ -417,13 +417,13 @@ namespace wg
 						if( info.compression != Util::makeEndianSpecificToken('N','O','N','E') )
 						{
 							if( m_pTrimDecompressor && m_pTrimDecompressor->idToken() == info.compression )
-								m_pTrimDecompressor->decompress(pBuffer, pBuffer+info.dataStart, pBuffer+info.totalSize);
+								m_pTrimDecompressor->decompress(pBuffer, pBuffer+info.dataStart, pBuffer+info.bufferSize);
 							else
 								GfxBase::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "StreamPump does not have the right compressor to decompress UpdateRects hunks.", nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
 						}
 
 						pTrimBackend->addMaskingSession(canvasRef, nullptr, nUpdateRects, (RectSPX*) pBuffer);
-						GfxBase::memStackFree(info.totalSize);
+						GfxBase::memStackFree(info.bufferSize);
 					}
 				}
 

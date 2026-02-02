@@ -98,6 +98,30 @@ namespace wg
 		bool	_playChunk();
 		Compressor * _findCompressor( uint32_t idToken );
 
+		struct DataBuffer
+		{
+			~DataBuffer() { delete [] pBuffer; }
+
+			void release() { delete [] pBuffer; pBuffer = nullptr; capacity = 0; size = 0; }
+
+			void reset(int minCapacity)
+			{
+				if( minCapacity > capacity )
+				{
+					delete [] pBuffer;
+					pBuffer = new uint8_t[minCapacity];
+					capacity = minCapacity;
+					size = 0;
+				}
+			}
+
+			uint8_t *	pBuffer = nullptr;
+			int			capacity = 0;
+			int			size = 0;			// Stays zero until buffer filled and data decompressed.
+		};
+
+		bool	_loadChunkIntoDataBuffer( DataBuffer& buffer, int chunkDataSize );
+
 
 		StreamDecoder_p		m_pDecoder;
 		GfxBackend_p		m_pBackend;
@@ -106,22 +130,20 @@ namespace wg
 
 		std::vector<Object_p>	m_vObjects;		// Surfaces and Edgemaps.
 
-		std::vector<RectSPX>	m_vRects;
-		std::vector<HiColor>	m_vColors;
-		std::vector<Transform>	m_vTransforms;
 		std::vector<Object*>	m_vActionObjects;
-		std::vector<uint16_t>	m_vCommands;
+
+		DataBuffer				m_objectsDataBuffer;
+		DataBuffer				m_rectsDataBuffer;
+		DataBuffer				m_transformsDataBuffer;
+		DataBuffer				m_colorsDataBuffer;
+		DataBuffer				m_commandsDataBuffer;
 
 		Surface_p			m_pUpdatingSurface;
 		std::vector<RectI>	m_updatingSurfaceRects;
-		uint8_t *			m_pUpdatingSurfaceDataBuffer = nullptr;
-
-//		RectI				m_updatingRect;
-//		PixelBuffer			m_pixelBuffer;
-//		CoordI				m_updateOffset;
+		DataBuffer			m_updatingSurfaceDataBuffer;
 
 		Edgemap_p			m_pUpdatingEdgemap;
-		spx *				m_pEdgemapSampleBuffer = nullptr;
+		DataBuffer			m_edgemapSampleBuffer;
 
 		int					m_edgemapUpdateEdgeBegin;
 		int					m_edgemapUpdateEdgeEnd;
@@ -129,7 +151,7 @@ namespace wg
 		int					m_edgemapUpdateSampleEnd;
 		
 		GfxBackend::SessionInfo	m_sessionInfo;			// Temporary for BeginSession/UpdateRects
-		std::vector<RectSPX>	m_vUpdateRects;
+		DataBuffer			m_updateRectsDataBuffer;
 
 		CanvasRef			m_baseCanvasRef;
 		Surface_p			m_baseCanvasSurface;

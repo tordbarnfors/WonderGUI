@@ -157,7 +157,7 @@ namespace wg
 
 	StreamDecoder& StreamDecoder::operator>> (GfxStream::DataInfo& info)
 	{
-		info.totalSize = _pullInt();
+		info.bufferSize = _pullInt();
 		info.chunkOffset = _pullInt();
 		info.compression = _pullInt();
 		info.dataStart = _pullInt();
