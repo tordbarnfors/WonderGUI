@@ -749,7 +749,7 @@ namespace wg
 				//TODO: Proper 26:6 support
 
 
-				auto& mtx = s_blitFlipTransforms[flip];
+				auto& mtx = s_standardTransforms[flip];
 
 				RectI _dest = { 
 					Util::roundToPixels(destX), 
@@ -1305,9 +1305,9 @@ namespace wg
 
 					Segment& seg = *pSegment;
 
-					if (transform <= int(GfxFlip_max) )
+					if (transform < NbStandardTransforms )
 					{
-						const Transform& mtx = s_blitFlipTransforms[transform];
+						const Transform& mtx = s_standardTransforms[transform];
 
 						// Step forward _src by half a pixel, so we start from correct pixel.
 
@@ -1343,7 +1343,7 @@ namespace wg
 					{
 						binalInt mtx[2][2];
 
-						const Transform* pTransform = &m_pTransformsBeg[transform - GfxFlip_size];
+						const Transform* pTransform = &m_pTransformsBeg[transform - NbStandardTransforms];
 
 						mtx[0][0] = binalInt(pTransform->xx * BINAL_MUL);
 						mtx[0][1] = binalInt(pTransform->xy * BINAL_MUL);

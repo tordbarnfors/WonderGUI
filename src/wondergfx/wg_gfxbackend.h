@@ -146,11 +146,13 @@ namespace wg
 
 		virtual void	waitForCompletion() = 0;
 
+		static const int	NbStandardTransforms = GfxFlip_size + 3;
+
 	protected:
 		GfxBackend() {};
 		virtual ~GfxBackend() {};
 
-		static const Transform			s_blitFlipTransforms[GfxFlip_size];
+		static const Transform			s_standardTransforms[NbStandardTransforms];
 		static const int				s_defaultBlur[9];
 		static const spx				s_defaultBlurRadius;
 

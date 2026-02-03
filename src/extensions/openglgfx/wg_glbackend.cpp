@@ -853,7 +853,7 @@ void GlBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd)
 
 			//
 
-			auto& mtx = s_blitFlipTransforms[flip];
+			auto& mtx = s_standardTransforms[flip];
 
 			RectSPX _destIn = {
 				destX,
@@ -1253,7 +1253,7 @@ void GlBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd)
 					*pExtrasGL++ = GLfloat(dstY >> 6) + 0.5f;
 				}
 
-				auto& mtx = transform < GfxFlip_size ? s_blitFlipTransforms[transform] : m_pTransformsBeg[transform - GfxFlip_size];
+				auto& mtx = transform < NbStandardTransforms ? s_standardTransforms[transform] : m_pTransformsBeg[transform - NbStandardTransforms];
 
 
 				*pExtrasGL++ = mtx.xx;

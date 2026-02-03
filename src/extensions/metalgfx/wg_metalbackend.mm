@@ -1485,7 +1485,7 @@ void MetalBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd)
 
 				//
 
-				auto& mtx = s_blitFlipTransforms[flip];
+				auto& mtx = s_standardTransforms[flip];
 
 				RectSPX _destIn = {
 					destX,
@@ -1877,7 +1877,7 @@ void MetalBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd)
 					int32_t transform = *p++;
 					p++;						// padding
 
-					auto& mtx = transform < GfxFlip_size ? s_blitFlipTransforms[transform] : m_pTransformsBeg[transform - GfxFlip_size];
+					auto& mtx = transform < NbStandardTransforms ? s_standardTransforms[transform] : m_pTransformsBeg[transform - NbStandardTransforms];
 
 					*pExtrasMTL++ = mtx.xx;
 					*pExtrasMTL++ = mtx.xy;

@@ -27,8 +27,10 @@ namespace wg
 
 	// Transforms for flipping movement over SOURCE when blitting
 
-const Transform			GfxBackend::s_blitFlipTransforms[GfxFlip_size] = {
+const Transform			GfxBackend::s_standardTransforms[NbStandardTransforms] = {
+
 	{ 1,0,0,1 },			// Normal
+
 	{ -1,0,0,1 },			// FlipX
 	{ 1,0,0,-1 },			// FlipY
 	{ 0,-1,1,0 },			// Rot90
@@ -39,7 +41,11 @@ const Transform			GfxBackend::s_blitFlipTransforms[GfxFlip_size] = {
 	{ -1,0,0,1 },			// Rot180FlipY
 	{ 0,1,-1,0 },			// Rot270
 	{ 0,-1,-1,0 },			// Rot270FlipX
-	{ 0,1,1,0 }				// Rot270FlipY
+	{ 0,1,1,0 },			// Rot270FlipY
+
+	{ 0,0,0,1 },			// FloodX
+	{ 1,0,0,0 },			// FloodY
+	{ 0,0,0,0 },			// FloodXY
 };
 
 const int GfxBackend::s_defaultBlur[9] = { 6553, 6553, 6553, 6553, 6553, 6553, 6553, 6553, 6553 };

@@ -3311,7 +3311,7 @@ void GfxDeviceGen2::_transformBlitComplex(const RectSPX& _dest, CoordI src, cons
 		}
 
 
-		int transformOfs = int(m_pActiveCanvas->transforms.size()) + GfxFlip_size;
+		int transformOfs = int(m_pActiveCanvas->transforms.size()) + GfxBackend::NbStandardTransforms;
 		m_pActiveCanvas->transforms.emplace_back(matrix);
 
 		for( int i = 0 ; i < nRects ; i++ )
