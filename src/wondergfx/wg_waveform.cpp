@@ -445,8 +445,8 @@ namespace wg
 
 			spx * pBuffer = (spx*) GfxBase::memStackAlloc(allocated);
 
-			memcpy(pBuffer, m_pTopSamples + m_dirtBegin, dirtSize*sizeof(spx) );
-			memcpy(pBuffer+dirtSize, m_pBottomSamples + m_dirtBegin, dirtSize*sizeof(spx) );
+			memcpy(pBuffer, m_pTopSamples + dirtBegin, dirtSize*sizeof(spx) );
+			memcpy(pBuffer+dirtSize, m_pBottomSamples + dirtBegin, dirtSize*sizeof(spx) );
 
 			// Loop through new edges and fix possible issues.
 
@@ -474,8 +474,8 @@ namespace wg
 
 			spx * pBuffer = (spx*) GfxBase::memStackAlloc(allocated);
 
-			_drawLine(m_pTopSamples + m_dirtBegin, pBuffer, pBuffer + dirtSize, dirtSize, m_topBrush );
-			_drawLine(m_pBottomSamples + m_dirtBegin, pBuffer+dirtSize*2, pBuffer + dirtSize*3, dirtSize, m_bottomBrush );
+			_drawLine(m_pTopSamples + dirtBegin, pBuffer, pBuffer + dirtSize, dirtSize, m_topBrush );
+			_drawLine(m_pBottomSamples + dirtBegin, pBuffer+dirtSize*2, pBuffer + dirtSize*3, dirtSize, m_bottomBrush );
 
 			// Loop through new edges and fix possible issues.
 
@@ -729,8 +729,14 @@ namespace wg
 	{
 		assert( m_pSegmentBounds );
 
-		int firstSegment = m_dirtBegin / m_segmentWidth;
-		int lastSegment = (m_dirtEnd-1) / m_segmentWidth;
+		int padding = std::max(m_topSamplesPadding,m_bottomSamplesPadding);
+
+		int dirtBegin = std::max(0,m_dirtBegin-padding);
+		int dirtEnd = std::min(m_nbSamples,m_dirtEnd+padding);
+		int dirtSize = dirtEnd - dirtBegin;
+
+		int firstSegment = dirtBegin / m_segmentWidth;
+		int lastSegment = (dirtEnd-1) / m_segmentWidth;
 
 		auto pSeg = m_pSegmentBounds;
 

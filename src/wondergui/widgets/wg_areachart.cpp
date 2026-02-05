@@ -210,10 +210,12 @@ namespace wg
 	{
 		auto popData = Util::limitClipList(pDevice, canvas);
 
-		for (auto& graph : entries)
+		auto p = entries.end();
+		while( p > entries.begin() )
 		{
-			if (graph.m_bVisible && graph.m_pEdgemap)
-				pDevice->flipDrawEdgemap(canvas + graph.m_waveformPos, graph.m_pEdgemap, graph.m_flip );
+			p--;
+			if (p->m_bVisible && p->m_pEdgemap)
+				pDevice->flipDrawEdgemap(canvas + p->m_waveformPos, p->m_pEdgemap, p->m_flip );
 		}
 
 		Util::popClipList(pDevice, popData);

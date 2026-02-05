@@ -134,7 +134,7 @@ void MetalEdgemap::_samplesUpdated(int edgeBegin, int edgeEnd, int sampleBegin, 
 
 	const spx* pEdges = m_pSamples + edgeStripPitch * columnBegin;
 
-	auto pOut = m_pBuffer + sampleBegin * edgeStripPitch * 4;
+	auto pOut = m_pBuffer + columnBegin * edgeStripPitch * 4;
 
 	for (int i = 0; i < nPixelColumns; i++)
 	{
@@ -150,7 +150,7 @@ void MetalEdgemap::_samplesUpdated(int edgeBegin, int edgeEnd, int sampleBegin, 
 			float beginAdder;
 			float endAdder;
 
-			if ((edgeOut & 0xFFFFFFC0) <= (unsigned int)edgeIn)
+			if ((edgeOut & 0xFFFFFFC0) == (edgeIn & 0xFFFFFFC0))
 			{
 				float firstPixelCoverage = ((64 - (edgeOut & 0x3F)) + (edgeOut - edgeIn) / 2) / 64.f;
 
