@@ -49,8 +49,7 @@ namespace wg
 		m_origo(bp.origo),
 		m_nbSamples(bp.size.w+1),
 		m_pFactory(pFactory),
-		m_size(bp.size),
-		m_segmentWidth(bp.segmentWidth)
+		m_size(bp.size)
 	{
 
 		m_bHasOutlines = bp.topOutlineThickness > 0 || bp.bottomOutlineThickness > 0;
@@ -125,20 +124,10 @@ namespace wg
 	{
 		delete [] m_pBuffer;
 
-		int nSegments = (nbSamples + m_segmentWidth-1) / m_segmentWidth;
-
-		int segBoundsBufferSize = sizeof(SegmentBounds) * nSegments;
-		int dirtyRectsBufferSize = sizeof(RectSPX) * nSegments * 2;
 		int sampleBufferSize = ((nbSamples+m_topSamplesPadding*2)+(nbSamples+m_bottomSamplesPadding*2))*sizeof(spx);
 
-		m_pBuffer = new uint8_t[segBoundsBufferSize+dirtyRectsBufferSize+sampleBufferSize];
+		m_pBuffer = new uint8_t[sampleBufferSize];
 		uint8_t * pBuffer = m_pBuffer;
-
-		m_pSegmentBounds = (SegmentBounds*) pBuffer;
-		pBuffer += segBoundsBufferSize;
-
-		m_pDirtyRects = (RectSPX*) pBuffer;
-		pBuffer += dirtyRectsBufferSize;
 
 		spx * pSamples = (spx*) pBuffer;
 
@@ -149,17 +138,6 @@ namespace wg
 
 		m_dirtBegin	= 0;
 		m_dirtEnd 	= m_nbSamples;
-
-
-		for( int i = 0 ; i < nSegments ; i++ )
-		{
-			m_pSegmentBounds[i].topBeg = INT_MAX;
-			m_pSegmentBounds[i].topEnd = 0;
-			m_pSegmentBounds[i].bottomBeg = INT_MAX;
-			m_pSegmentBounds[i].bottomEnd = 0;
-		}
-
-		m_nDirtyRects = 0;
 
 		if( bClearSamples )
 			memset( pSamples, 0, sampleBufferSize);
@@ -464,8 +442,6 @@ namespace wg
 			m_pEdgemap->importSamples(SampleOrigo::Top, pBuffer, 0, 1, dirtBegin, dirtEnd);
 			m_pEdgemap->importSamples(SampleOrigo::Top, pBuffer + dirtSize, 1, 2, dirtBegin, dirtEnd);
 
-			_updateSegmentBoundsAndDirtyRects(pBuffer, pBuffer, pBuffer + dirtSize, pBuffer + dirtSize);
-
 			GfxBase::memStackFree(allocated);
 		}
 		else
@@ -503,8 +479,6 @@ namespace wg
 
 			m_pEdgemap->importSamples(SampleOrigo::Top, pBuffer, 0, 2, dirtBegin, dirtEnd);
 			m_pEdgemap->importSamples(SampleOrigo::Top, pBuffer + dirtSize*2, 2, 4, dirtBegin, dirtEnd);
-
-			_updateSegmentBoundsAndDirtyRects(pBuffer, pBuffer + dirtSize, pBuffer + dirtSize*2, pBuffer + dirtSize*3);
 
 			GfxBase::memStackFree(allocated);
 		}
@@ -723,123 +697,6 @@ namespace wg
 		return int( p - pDest );
 	}
 
-	//____ _updateSegmentBoundsAndDirtyRects() ________________________________________________
-
-	void Waveform::_updateSegmentBoundsAndDirtyRects( spx * pOuterTopSamples, spx * pInnerTopSamples, spx * pInnerBottomSamples, spx * pOuterBottomSamples )
-	{
-		assert( m_pSegmentBounds );
-
-		int padding = std::max(m_topSamplesPadding,m_bottomSamplesPadding);
-
-		int dirtBegin = std::max(0,m_dirtBegin-padding);
-		int dirtEnd = std::min(m_nbSamples,m_dirtEnd+padding);
-		int dirtSize = dirtEnd - dirtBegin;
-
-		int firstSegment = dirtBegin / m_segmentWidth;
-		int lastSegment = (dirtEnd-1) / m_segmentWidth;
-
-		auto pSeg = m_pSegmentBounds;
-
-		auto pDirtyRects = m_pDirtyRects;
-
-		for( int seg = firstSegment ; seg <= lastSegment ; seg++ )
-		{
-			int sampleOfs = seg * m_segmentWidth;
-
-			int segSamples;
-
-			if( seg == lastSegment )
-			{
-				segSamples = (m_nbSamples % m_segmentWidth);
-				if( segSamples == 0 )
-					segSamples = m_segmentWidth;
-			}
-			else
-				segSamples = m_segmentWidth+1;			// Include first sample of next segment since this is our edge-sample.
-
-			int topBeg = INT_MAX;
-			int topEnd = 0;
-			int bottomBeg = INT_MAX;
-			int bottomEnd = 0;
-
-			for( int sample = 0 ; sample < segSamples ; sample++ )
-			{
-				topBeg = std::min(topBeg, pOuterTopSamples[sampleOfs]);
-				topEnd = std::max(topEnd, pInnerTopSamples[sampleOfs]);
-
-				bottomBeg = std::min(bottomBeg, pInnerBottomSamples[sampleOfs]);
-				bottomEnd = std::max(bottomEnd, pOuterBottomSamples[sampleOfs]);
-				sampleOfs++;
-			}
-
-			int dirt1_Y1 = 0;
-			int dirt1_Y2 = 0;
-
-			int dirt2_Y1 = 0;
-			int dirt2_Y2 = 0;
-
-			if( topBeg != pSeg->topBeg || topEnd != pSeg->topEnd )
-			{
-				// Top has moved
-
-				dirt1_Y1 = std::min(topBeg, pSeg->topBeg) & 0xFFFFFFC0;
-				dirt1_Y2 = (std::max(topEnd, pSeg->topEnd)+63) & 0xFFFFFFC0;
-			}
-
-			if( bottomBeg != pSeg->bottomBeg || bottomEnd != pSeg->bottomEnd )
-			{
-				// Bottom has moved
-
-				dirt2_Y1 = std::min(bottomBeg, pSeg->bottomBeg) & 0xFFFFFFC0;
-				dirt2_Y2 = (std::max(bottomEnd, pSeg->bottomEnd)+63) & 0xFFFFFFC0;
-			}
-
-			if( dirt1_Y1 != dirt1_Y2 && dirt2_Y1 != dirt2_Y2 && dirt2_Y1 <= dirt1_Y2 + 4*64 )
-			{
-				// We have both dirt1 and dirt2 and they are close enough to combine them
-
-				pDirtyRects->x = seg * m_segmentWidth * 64;
-				pDirtyRects->w = (segSamples-1) * 64;
-				pDirtyRects->y = dirt1_Y1;
-				pDirtyRects->h = dirt2_Y2 - dirt1_Y1;
-				pDirtyRects++;
-			}
-			else
-			{
-				// Add dirt1 if we have it
-
-				if( dirt1_Y1 != dirt1_Y2 )
-				{
-					pDirtyRects->x = seg * m_segmentWidth * 64;
-					pDirtyRects->w = (segSamples-1) * 64;
-					pDirtyRects->y = dirt1_Y1;
-					pDirtyRects->h = dirt1_Y2 - dirt1_Y1;
-					pDirtyRects++;
-				}
-
-				// Add dirt2 if we have it
-
-				if( dirt2_Y1 != dirt2_Y2 )
-				{
-					pDirtyRects->x = seg * m_segmentWidth * 64;
-					pDirtyRects->w = (segSamples-1) * 64;
-					pDirtyRects->y = dirt2_Y1;
-					pDirtyRects->h = dirt2_Y2 - dirt2_Y1;
-					pDirtyRects++;
-				}
-
-			}
-
-			pSeg->topBeg = topBeg;
-			pSeg->topEnd = topEnd;
-			pSeg->bottomBeg = bottomBeg;
-			pSeg->bottomEnd = bottomEnd;
-
-			pSeg++;
-		}
-
-		m_nDirtyRects = int(pDirtyRects - m_pDirtyRects);
-	}
 }
 
 

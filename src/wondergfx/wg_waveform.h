@@ -50,7 +50,6 @@ namespace wg
 			SampleOrigo			origo = SampleOrigo::Top;
 			HiColor				outlineColor = Color8::DarkGrey;
 			Gradient			outlineGradient;						// Overrides outlineColor when set.
-			int					segmentWidth = 64;						// Width in samples of each segment to render.
 			SizeI				size;									// Mandatory
 			spx					topOutlineThickness = 64;
 		};
@@ -101,10 +100,6 @@ namespace wg
 
 		Edgemap_p	refresh();
 
-		inline int				nbDirtyRects() const { return m_nDirtyRects; }
-		inline const RectSPX*	firstDirtyRect() const { return m_nDirtyRects > 0 ? m_pDirtyRects : nullptr; }
-
-
 	protected:
 
 		Waveform( const Blueprint& bp, EdgemapFactory * pFactory );
@@ -130,26 +125,10 @@ namespace wg
 		int			_generateColorPalette( HiColor * pDest );
 		int			_generateGradientPalette( Gradient * pDest );
 
-		void		_updateSegmentBoundsAndDirtyRects( spx * pOuterTopSamples, spx * pInnerTopSamples, spx * pInnerBottomSamples, spx * pOuterBottomSamples );
-
 		void		_setupBuffer(int nbSamples, bool bClearSamples);
 
 
-		struct 		SegmentBounds
-		{
-			spx		topBeg;					// Smallest value of top sample within segment. If outlined, sample is from the top of the outline.
-			spx		topEnd;					// Greatest value of top sample within segment. If outlined, sample is form the bottom of the outline.
-			spx		bottomBeg;
-			spx		bottomEnd;
-		};
-
 		uint8_t *	m_pBuffer = nullptr;
-
-		int				m_segmentWidth = 64;					// Width in samples. 0 = Don't use dirt sections.
-		SegmentBounds *	m_pSegmentBounds = nullptr;
-
-		RectSPX *	m_pDirtyRects = nullptr;
-		int			m_nDirtyRects = 0;
 
 		SizeI		m_size;
 		

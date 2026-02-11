@@ -55,7 +55,7 @@ namespace wg
 			int			layer = -1;
 			int			markAlpha = 1;
 
-			HiColor		maxColor = HiColor::Undefined;		// Overrides barColor when both min/max are set
+			HiColor		maxColor = HiColor::Undefined;		// Overrides color when both min/max are set
 			HiColor		minColor = HiColor::Undefined;
 
 			Border		overflow;

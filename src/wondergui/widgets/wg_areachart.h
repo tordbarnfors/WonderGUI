@@ -28,7 +28,17 @@
 
 namespace wg
 {
+
 	class AreaChart;
+
+	struct 		SectionBounds
+	{
+		spx		topBeg;					// Smallest value of top sample within section. If outlined, sample is from the top of the outline.
+		spx		topEnd;					// Greatest value of top sample within section. If outlined, sample is form the bottom of the outline.
+		spx		bottomBeg;
+		spx		bottomEnd;
+	};
+
 
 	class AreaChartEntry
 	{
@@ -151,6 +161,8 @@ namespace wg
 		bool				m_bSamplesChanged = false;
 		bool				m_bColorsChanged = false;
 
+		std::vector<SectionBounds>	m_sectionBounds;
+
 		Waveform_p			m_pWaveform;
 		CoordSPX			m_waveformPos;			// Only x has any impact for now, y should be fixed at 0.
 
@@ -175,6 +187,8 @@ namespace wg
 
 			Placement		bottomLabelPlacement = Placement::South;
 			pts				bottomLabelSpacing = 1;
+
+			pts				dirtySectionWidth = 64;
 
 			float			displayCeiling = 0.f;
 			float			displayFloor = 1.f;
@@ -244,6 +258,7 @@ namespace wg
 		template<class BP> AreaChart( const BP& bp ) : Chart(bp), entries(this)
 		{
 			m_pEdgemapFactory = bp.edgemapFactory;
+			m_dirtySectionWidth = bp.dirtySectionWidth;
 		}
 
 		virtual ~AreaChart();
@@ -270,12 +285,20 @@ namespace wg
 		RectSPX		_entryRangeToRect( float begin, float end, bool bAxisSwapped) const;
 
 		void		_requestRenderAreaChartEntry(AreaChartEntry* pAreaChartEntry, float leftmost, float rightmost);
+		void		_requestRenderEntrySection(AreaChartEntry* pAreaChartEntry, int section, spx beginY, spx endY);
 
 		void		_waveformNeedsRefresh(AreaChartEntry* pAreaChartEntry, bool bGeo, bool bSamples, bool bColor);
+
+		void		_updateSectionBoundsAndRequestRender();
 
 		//
 
 	private:
+
+		pts			m_dirtySectionWidth = 64;
+
+		SectionBounds *	m_pSectionBounds = nullptr;
+
 
 		bool			m_bPreRenderRequested = false;
 		bool			m_bTransitioning = false;

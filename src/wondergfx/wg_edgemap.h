@@ -131,6 +131,8 @@ namespace wg
 		bool 			exportSamples( SampleOrigo origo, float * pDestination, int edgeBegin, int edgeEnd,
 									  int sampleBegin, int sampleEnd, int edgePitch = 0, int samplePitch = 0 );
 
+		void			exportBounds( spx * pMinMaxOutput, int nSections, int sectionWidth,
+											int topEdge, int bottomEdge, int mapOffset = 0, int minMaxPitch = 2 );
 
 	protected:
 
