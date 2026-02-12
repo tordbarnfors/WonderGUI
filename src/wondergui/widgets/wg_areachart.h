@@ -291,8 +291,6 @@ namespace wg
 
 		void		_waveformNeedsRefresh(AreaChartEntry* pAreaChartEntry, bool bGeo, bool bSamples, bool bColor);
 
-		void		_updateSectionBoundsAndRequestRender();
-
 		//
 
 	private:

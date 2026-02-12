@@ -87,7 +87,7 @@ namespace wg
 		// If we turned visible we might have a waveform that needs refresh.
 		// (we don't perform refresh while hidden)
 
-		if (pAreaChartEntry->m_bVisible && pAreaChartEntry->m_pWaveform && (pAreaChartEntry->m_bSamplesChanged || pAreaChartEntry->m_bColorsChanged))
+		if (pAreaChartEntry->m_bVisible && (pAreaChartEntry->m_bSamplesChanged || pAreaChartEntry->m_bColorsChanged))
 			_waveformNeedsRefresh(pAreaChartEntry, false, pAreaChartEntry->m_bSamplesChanged, pAreaChartEntry->m_bColorsChanged);
 	}
 
@@ -323,7 +323,7 @@ namespace wg
 
 	bool AreaChart::_updateAreaChartEntrys()
 	{
-		bool bHasDirtyRects = false;
+		bool bSamplesChanged = false;
 
 		for( int entry = 0 ; entry < entries.size() ; entry++ )
 		{
@@ -361,7 +361,9 @@ namespace wg
 						_updateWaveformEdge(entry, graph.m_pWaveform, false, (int) graph.m_bottomSamples.size(), graph.m_bottomSamples.data(), graph.m_bAxisSwapped );
 
 						graph.m_pEdgemap = graph.m_pWaveform->refresh();
+						graph.m_bSamplesChanged = true;						// So _preRender() will understand.
 
+						bSamplesChanged = true;
 						bNeedsFullRendering = true;
 					}
 				}
@@ -393,16 +395,15 @@ namespace wg
 					{
 						_updateWaveformEdge(entry, graph.m_pWaveform, true, (int) graph.m_topSamples.size(), graph.m_topSamples.data(), graph.m_bAxisSwapped );
 						_updateWaveformEdge(entry, graph.m_pWaveform, false, (int) graph.m_bottomSamples.size(), graph.m_bottomSamples.data(), graph.m_bAxisSwapped );
-						graph.m_bSamplesChanged = false;
 
-						bHasDirtyRects = true;
+						bSamplesChanged = true;
 					}
 				}
 				if (bNeedsFullRendering )
 					_requestRenderAreaChartEntry(&graph, graph.m_begin, graph.m_end);
 			}
 		}
-		return bHasDirtyRects;
+		return bSamplesChanged;
 	}
 
 	//____ _updateWaveformEdge() _________________________________________________
@@ -501,9 +502,9 @@ namespace wg
 
 	void AreaChart::_preRender()
 	{
-		bool bDirtyRects = _updateAreaChartEntrys();
+		bool bSamplesChanged = _updateAreaChartEntrys();
 
-		if( bDirtyRects )
+		if( bSamplesChanged )
 		{
 			//TODO: Limited range not tested.
 
@@ -513,7 +514,7 @@ namespace wg
 
 			for (auto& entry : entries)
 			{
-				if (entry.m_bVisible && entry.m_pWaveform)
+				if (entry.m_bSamplesChanged && entry.m_bVisible && entry.m_pWaveform )
 				{
 					auto pEdgemap = entry.m_pWaveform->refresh();
 					entry.m_pEdgemap = pEdgemap;
@@ -584,12 +585,16 @@ namespace wg
 					else
 					{
 						entry.m_sectionBounds.resize(nSections);
-						pEdgemap->exportBounds(&entry.m_sectionBounds.front().topBeg, nSections, dirtySectionWidth/64, 0, 1, entry.m_waveformPos.x/64, boundsPitch );
-						pEdgemap->exportBounds(&entry.m_sectionBounds.front().bottomBeg, nSections, dirtySectionWidth/64, 2, 3, entry.m_waveformPos.x/64, boundsPitch );
 
-//						_requestRender(m_chartCanvas);
+						auto pBounds = &entry.m_sectionBounds.front();
+						pEdgemap->exportBounds(&pBounds->topBeg, nSections, dirtySectionWidth/64, 0, 1, entry.m_waveformPos.x/64, boundsPitch );
+						pEdgemap->exportBounds(&pBounds->bottomBeg, nSections, dirtySectionWidth/64, 2, 3, entry.m_waveformPos.x/64, boundsPitch );
 
+//						for( int section = 0 ; section < nSections ; section++ )
+//							_requestRenderEntrySection(&entry, section, pBounds[section].topBeg, pBounds[section].bottomEnd);
 					}
+
+					entry.m_bSamplesChanged = false;
 				}
 			}
 		}
@@ -616,6 +621,7 @@ namespace wg
 		if( dirt.x + dirt.w > canvasSize.w )
 			dirt.w = canvasSize.w - dirt.x;
 
+//		RectSPX r = dirt + m_chartCanvas.pos()
 		RectSPX r = Util::flipRect(dirt, pEntry->m_flip, canvasSize) + m_chartCanvas.pos();
 		_requestRender(r);
 	}
