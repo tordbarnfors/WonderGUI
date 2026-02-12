@@ -3176,11 +3176,15 @@ bool areaChartTest2(ComponentPtr<DynamicSlot> pEntry)
 			_.outlineColor = Color::Green,
 			_.padding = 2,
 			_.outlineThickness = 2)),
-		_.skin = ColorSkin::create(Color::Pink)
+		_.skin = ColorSkin::create(Color::Pink),
+		_.resampler = []( int entry, bool bTopSamples, int nOutput, float * pOutput, int nInput, float * pInput )
+		{
+			for(int i = 0 ; i < nOutput ; i++ )
+				pOutput[i] = pInput[i*nInput/nOutput];
+
+			return false;
+		};
 	));
-
-
-
 
 	pFlex->slots.pushBack(pGraph, { .pos = {10,10}, .size = {200,200} });
 

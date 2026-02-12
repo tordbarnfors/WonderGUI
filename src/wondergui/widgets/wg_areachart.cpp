@@ -325,8 +325,10 @@ namespace wg
 	{
 		bool bHasDirtyRects = false;
 
-		for (auto& graph : entries)
+		for( int entry = 0 ; entry < entries.size() ; entry++ )
 		{
+			auto&  graph = entries[entry];
+
 			if (graph.m_bVisible)
 			{
 				bool bNeedsFullRendering = false;
@@ -355,8 +357,8 @@ namespace wg
 
 						// Interpolate and set samples
 
-						_updateWaveformEdge(graph.m_pWaveform, true, (int) graph.m_topSamples.size(), graph.m_topSamples.data(), graph.m_bAxisSwapped );
-						_updateWaveformEdge(graph.m_pWaveform, false, (int) graph.m_bottomSamples.size(), graph.m_bottomSamples.data(), graph.m_bAxisSwapped );
+						_updateWaveformEdge(entry, graph.m_pWaveform, true, (int) graph.m_topSamples.size(), graph.m_topSamples.data(), graph.m_bAxisSwapped );
+						_updateWaveformEdge(entry, graph.m_pWaveform, false, (int) graph.m_bottomSamples.size(), graph.m_bottomSamples.data(), graph.m_bAxisSwapped );
 
 						graph.m_pEdgemap = graph.m_pWaveform->refresh();
 
@@ -389,8 +391,8 @@ namespace wg
 
 					if (graph.m_bSamplesChanged)
 					{
-						_updateWaveformEdge(graph.m_pWaveform, true, (int) graph.m_topSamples.size(), graph.m_topSamples.data(), graph.m_bAxisSwapped );
-						_updateWaveformEdge(graph.m_pWaveform, false, (int) graph.m_bottomSamples.size(), graph.m_bottomSamples.data(), graph.m_bAxisSwapped );
+						_updateWaveformEdge(entry, graph.m_pWaveform, true, (int) graph.m_topSamples.size(), graph.m_topSamples.data(), graph.m_bAxisSwapped );
+						_updateWaveformEdge(entry, graph.m_pWaveform, false, (int) graph.m_bottomSamples.size(), graph.m_bottomSamples.data(), graph.m_bAxisSwapped );
 						graph.m_bSamplesChanged = false;
 
 						bHasDirtyRects = true;
@@ -405,7 +407,7 @@ namespace wg
 
 	//____ _updateWaveformEdge() _________________________________________________
 
-	void AreaChart::_updateWaveformEdge(Waveform* pWaveform, bool bTopEdge, int nSamples, float* pSamples, bool bAxisSwapped )
+	void AreaChart::_updateWaveformEdge(int entry, Waveform* pWaveform, bool bTopEdge, int nSamples, float* pSamples, bool bAxisSwapped )
 	{
 		// TODO: Better interpolation, especially when shrinking.
 
@@ -428,22 +430,49 @@ namespace wg
 		{
 			spx * pConverted = (spx*) Base::memStackAlloc(wfSamples * sizeof(spx));
 
-			float stepFactor = (nSamples - 1) / (float) wfSamples;
-
 			float valueFactor = height / (m_displayFloor - m_displayCeiling);
 
-			for (int i = 0; i < wfSamples; i++)
+			bool bResampled = false;
+
+			// If we have a resampler we try with that first
+
+			if( m_pResampler )
 			{
-				float sample = stepFactor * i;
-				int ofs = (int)sample;
-				float frac2 = sample - ofs;
-				float frac1 = 1.f - frac2;
+				float * pIntermediate = (float*) Base::memStackAlloc(wfSamples * sizeof(float));
 
-				float val1 = (pSamples[ofs] - m_displayCeiling) * valueFactor;
-				float val2 = (pSamples[ofs + 1] - m_displayCeiling) * valueFactor;
+				bResampled = m_pResampler( entry, bTopEdge, wfSamples, pIntermediate, nSamples, pSamples );
 
-				pConverted[i] = int(val1 * frac1 + val2 * frac2);
+				if( bResampled )
+				{
+					// Convert intermediate samples to spx in correct range.
+
+					for (int i = 0; i < wfSamples; i++)
+						pConverted[i] = (pIntermediate[i] - m_displayCeiling) * valueFactor;
+				}
+
+				Base::memStackFree(wfSamples * sizeof(float));
 			}
+
+			// Fall back to default resampler
+
+			if( !bResampled )
+			{
+				float stepFactor = (nSamples - 1) / (float) wfSamples;
+
+				for (int i = 0; i < wfSamples; i++)
+				{
+					float sample = stepFactor * i;
+					int ofs = (int)sample;
+					float frac2 = sample - ofs;
+					float frac1 = 1.f - frac2;
+
+					float interpolated = pSamples[ofs] * frac1 + pSamples[ofs+1] * frac2;
+
+					pConverted[i] = int((interpolated - m_displayCeiling) * valueFactor);
+				}
+			}
+
+			//
 
 			if (bTopEdge)
 				pWaveform->setSamples(0, wfSamples, pConverted, nullptr);

@@ -218,6 +218,8 @@ namespace wg
 			bool			pickHandle = false;
 			PointerStyle	pointer = PointerStyle::Undefined;
 
+			std::function<bool(int,bool,int,float*,int,float*)>	resampler;
+
 			Placement		rightLabelPlacement = Placement::East;
 			pts				rightLabelSpacing = 4;
 
@@ -233,7 +235,6 @@ namespace wg
 
 			Placement		topLabelPlacement = Placement::North;
 			pts				topLabelSpacing = 1;
-
 		};
 
 
@@ -259,6 +260,7 @@ namespace wg
 		{
 			m_pEdgemapFactory = bp.edgemapFactory;
 			m_dirtySectionWidth = bp.dirtySectionWidth;
+			m_pResampler = bp.resampler;
 		}
 
 		virtual ~AreaChart();
@@ -274,7 +276,7 @@ namespace wg
 		void		_didMoveEntries(AreaChartEntry* pFrom, AreaChartEntry* pTo, int nb) override;
 		void		_willEraseEntries(AreaChartEntry* pEntry, int nb) override;
 
-		void		_updateWaveformEdge(Waveform* pWaveform, bool bTopEdge, int nSamples, float* pSamples, bool bAxisSwapped);
+		void		_updateWaveformEdge(int entry, Waveform* pWaveform, bool bTopEdge, int nSamples, float* pSamples, bool bAxisSwapped);
 
 		void		_update(int microPassed, int64_t microsecTimestamp) override;
 
@@ -299,10 +301,13 @@ namespace wg
 
 		SectionBounds *	m_pSectionBounds = nullptr;
 
-
 		bool			m_bPreRenderRequested = false;
 		bool			m_bTransitioning = false;
 		EdgemapFactory_p	m_pEdgemapFactory;
+
+//		bool		resampler( int entry, bool bTopSamples, int nOutput, float * pOutput, int nInput, float * pInput );
+
+		std::function<bool(int,bool,int,float*,int,float*)>	m_pResampler;
 	};
 
 
