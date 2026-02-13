@@ -3184,6 +3184,7 @@ bool areaChartTest2(ComponentPtr<DynamicSlot> pEntry)
 
 			return false;
 		};
+		_.preservePeaks = true
 	));
 
 	pFlex->slots.pushBack(pGraph, { .pos = {10,10}, .size = {200,200} });

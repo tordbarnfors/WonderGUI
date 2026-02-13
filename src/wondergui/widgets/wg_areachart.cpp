@@ -458,19 +458,45 @@ namespace wg
 
 			if( !bResampled )
 			{
-				float stepFactor = (nSamples - 1) / (float) wfSamples;
-
-				for (int i = 0; i < wfSamples; i++)
+//				if( nSamples <= wfSamples )
 				{
-					float sample = stepFactor * i;
-					int ofs = (int)sample;
-					float frac2 = sample - ofs;
-					float frac1 = 1.f - frac2;
+					float stepFactor = (nSamples - 1) / (float) wfSamples;
 
-					float interpolated = pSamples[ofs] * frac1 + pSamples[ofs+1] * frac2;
+					for (int i = 0; i < wfSamples; i++)
+					{
+						float sample = stepFactor * i;
+						int ofs = (int)sample;
+						float frac2 = sample - ofs;
+						float frac1 = 1.f - frac2;
 
-					pConverted[i] = int((interpolated - m_displayCeiling) * valueFactor);
+						float interpolated = pSamples[ofs] * frac1 + pSamples[ofs+1] * frac2;
+
+						pConverted[i] = int((interpolated - m_displayCeiling) * valueFactor);
+					}
+
+					if( m_bpreservePeaks )
+					{
+						for( int i = 1 ; i < nSamples-1 ; i++ )
+						{
+							float sample = pSamples[i];
+							float neighbour1 = pSamples[i-1];
+							float neighbour2 = pSamples[i+1];
+							if( neighbour1 > neighbour2 )
+								std::swap( neighbour1, neighbour2 );
+
+							if( sample < neighbour1 || sample > neighbour2 )
+							{
+								int x = int((wfSamples*i/(float)(nSamples-1))+0.5f);
+								pConverted[x] = int((sample - m_displayCeiling) * valueFactor);
+							}
+						}
+					}
 				}
+//				else
+//				{
+//
+//				}
+
 			}
 
 			//
