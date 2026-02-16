@@ -76,7 +76,8 @@ private:
 
 	ScrollPanel_p	_standardScrollPanel();
 	Widget_p		_buildSurfaceDisplayWithIndexTag( Surface * pSurf, int index );
-	
+	Widget_p		_buildEdgemapDisplayWithIndexTag( Edgemap * pEdgemap, int index );
+
 	wapp::API * 		m_pAppAPI = nullptr;
 	wapp::Window_p		m_pWindow;
 	wapp::Window_p		m_pRecordedStepsWindow;

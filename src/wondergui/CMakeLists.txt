@@ -169,6 +169,8 @@ set( SOURCES
 	widgets/wg_chart.h
 	widgets/wg_container.cpp
 	widgets/wg_container.h
+	widgets/wg_edgemapdisplay.cpp
+	widgets/wg_edgemapdisplay.h
 	widgets/wg_filler.cpp
 	widgets/wg_filler.h
 	widgets/wg_fpsdisplay.cpp

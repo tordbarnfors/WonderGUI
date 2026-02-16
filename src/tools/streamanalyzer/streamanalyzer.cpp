@@ -45,7 +45,6 @@ bool MyApp::init(API* pAPI)
 	if (!_setupGUI(pAPI))
 	{
 		printf("ERROR: Failed to setup GUI!\n");
-		printf("ERROR: Failed to setup GUI!\n");
 		return false;
 	}
 		
@@ -1507,12 +1506,21 @@ void MyApp::_updateResourcesView()
 	int index = 0;
 	for( auto pObj : objects )
 	{
-		if( pObj != nullptr && pObj->isInstanceOf(Surface::TYPEINFO) )
+		if( pObj != nullptr )
 		{
-			auto pSurf = wg_static_cast<Surface_p>(pObj);
+			if( pObj->isInstanceOf(Surface::TYPEINFO) )
+			{
+				auto pSurf = wg_static_cast<Surface_p>(pObj);
 
-			auto pWidget = _buildSurfaceDisplayWithIndexTag( pSurf, index );
-			m_pResourcePanel->slots.pushBack( pWidget, { .weight = 0 } );
+				auto pWidget = _buildSurfaceDisplayWithIndexTag( pSurf, index );
+				m_pResourcePanel->slots.pushBack( pWidget, { .weight = 0 } );
+			}
+			else if( pObj->isInstanceOf(Edgemap::TYPEINFO) )
+			{
+				auto pEdgemap = wg_static_cast<Edgemap_p>(pObj);
+				auto pWidget = _buildEdgemapDisplayWithIndexTag( pEdgemap, index );
+				m_pResourcePanel->slots.pushBack( pWidget, { .weight = 0 } );
+			}
 		}
 		index++;
 	}
@@ -1584,10 +1592,12 @@ Widget_p MyApp::_buildSurfaceDisplayWithIndexTag( Surface * pSurf, int index )
 	auto pBase = PackPanel::create( { .axis = Axis::Y, .id = index, .spacing = 4 });
 	pBase->setAxis(Axis::Y);
 	pBase->setId(index);
-	
+
+	int bytes = (pSurf->pixelBits() * pSurf->pixelWidth() / 8) * pSurf->pixelHeight();
+
 	char	label[256];
-	snprintf( label, 256, "%d: %dx%d %s", index, pSurf->pixelWidth(), pSurf->pixelHeight(), toString(pSurf->pixelFormat()) );
-	
+	snprintf( label, 256, "%d: Surface %dx%d %s, ~%d kb", index, pSurf->pixelWidth(), pSurf->pixelHeight(), toString(pSurf->pixelFormat()), bytes/1024 );
+
 	auto pLabel = TextDisplay::create( WGBP(TextDisplay,
 						 _.display.style = m_pBigWhiteStyle,
 						 _.display.text = label,
@@ -1607,6 +1617,41 @@ Widget_p MyApp::_buildSurfaceDisplayWithIndexTag( Surface * pSurf, int index )
 	pBase->slots << pLabel;
 	pBase->slots << pCentering;
 		
+	return pBase;
+}
+
+//____ _buildEdgemapDisplayWithIndexTag() ______________________________________
+
+Widget_p MyApp::_buildEdgemapDisplayWithIndexTag( Edgemap * pEdgemap, int index )
+{
+	auto pBase = PackPanel::create( { .axis = Axis::Y, .id = index, .spacing = 4 });
+	pBase->setAxis(Axis::Y);
+	pBase->setId(index);
+
+	int bytes = sizeof(spx) * (pEdgemap->pixelSize().w+1) * (pEdgemap->segments()+1);
+
+	char	label[256];
+	snprintf( label, 256, "%d: Edgemap %dx%d, ~%d kb", index, pEdgemap->pixelSize().w, pEdgemap->pixelSize().h, bytes/1024 );
+
+	auto pLabel = TextDisplay::create( WGBP(TextDisplay,
+						 _.display.style = m_pBigWhiteStyle,
+						 _.display.text = label,
+						_.display.layout = m_pTextLayoutCentered
+				));
+
+	auto pDisplay = EdgemapDisplay::create( WGBP(EdgemapDisplay,
+												 _.edgemap = pEdgemap,
+												 _.skin = m_pRedOutlinedBlackSkin ));
+
+	auto pCentering = StackPanel::create();
+	pCentering->slots << pDisplay;
+	pCentering->slots[0].setPlacement(Placement::Center);
+	pCentering->slots[0].setSizePolicy(SizePolicy2D::Original);
+
+
+	pBase->slots << pLabel;
+	pBase->slots << pCentering;
+
 	return pBase;
 }
 
