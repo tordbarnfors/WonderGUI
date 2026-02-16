@@ -142,3 +142,9 @@ int wg_exportFloatSamples(wg_obj edgemap, wg_sampleOrigo origo, float* pDestinat
 	return getPtr(edgemap)->exportSamples((SampleOrigo)origo, pDestination,
 		edgeBegin, edgeEnd, sampleBegin, sampleEnd, edgePitch, samplePitch);
 }
+
+void wg_exportBounds( wg_obj edgemap, wg_spx * pMinMaxOutput, int nSections, int sectionWidth,
+	int topEdge, int bottomEdge, int mapOffset, int minMaxPitch )
+{
+	return getPtr(edgemap)->exportBounds(pMinMaxOutput, nSections, sectionWidth, topEdge, bottomEdge, mapOffset, minMaxPitch );
+}
