@@ -19,33 +19,36 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef	WG_Q565COMPRESSOR_DOT_H
-#define	WG_Q565COMPRESSOR_DOT_H
+#ifndef	WG_RLECOMPRESSOR_DOT_H
+#define	WG_RLECOMPRESSOR_DOT_H
 #pragma once
 
 #include <wg_compressor.h>
 
 
 /*
-*  QOI-inspired fast and easy compression for 16-bit 565 pixels.
+*  Simple and fast RLE compression of primitives of selectable size.
 *
-*	Q565 compression format:
+*	RLEx compression format:
 *
-	00 0xxxxx		New pixels(1 - 32)
-	00 1xxxxx		Repeat previous pixel(1 - 32)
-	01 xxxxxx		Pixel from index
-	1 rrgggbb		Delta rgb values -2 > +1 for r and b, -4 > +3 for g
+
+	Byte value:
+
+	0-127			Copy 1-128 following primitives verbatim.
+	-1 - -128		Repeat previous primitive 1-128 times.
+
 */
+
 
 
 namespace wg
 {
 
-	class Q565Compressor;
-	typedef StrongPtr<Q565Compressor>	Q565Compressor_p;
-	typedef WeakPtr<Q565Compressor>		Q565Compressor_wp;
+	class RLECompressor;
+	typedef StrongPtr<RLECompressor>	RLECompressor_p;
+	typedef WeakPtr<RLECompressor>		RLECompressor_wp;
 
-	class Q565Compressor : public Compressor
+	class RLECompressor : public Compressor
 	{
 	public:
 
@@ -53,14 +56,15 @@ namespace wg
 
 		struct Blueprint
 		{
+			int				primSize = 1;				// Size in byte of primitive to RLE encode.
 			bool			decompressOnly = false;
 			Finalizer_p		finalizer = nullptr;
 		};
 
 		//.____ Creation __________________________________________________________
 
-		static Q565Compressor_p		create();
-		static Q565Compressor_p		create( const Blueprint& blueprint );
+		static RLECompressor_p		create();
+		static RLECompressor_p		create( const Blueprint& blueprint );
 
 		//.____ Identification __________________________________________
 
@@ -80,17 +84,14 @@ namespace wg
 
 
 	protected:
-		Q565Compressor();
-		Q565Compressor( const Blueprint& blueprint );
-		virtual ~Q565Compressor();
+		RLECompressor();
+		RLECompressor( const Blueprint& blueprint );
+		virtual ~RLECompressor() {};
 
-		void		_generateTable();
-
-
-		uint8_t *	m_pPixelToIndexTable = nullptr;
+		int		m_primSize = 1;
 };
 
 }
 
 
-#endif //WG_Q565COMPRESSOR_DOT_H
+#endif //WG_RLECOMPRESSOR_DOT_H

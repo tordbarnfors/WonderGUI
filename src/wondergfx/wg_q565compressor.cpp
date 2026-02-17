@@ -58,11 +58,18 @@ Q565Compressor::Q565Compressor( const Blueprint& blueprint )
 		setFinalizer(blueprint.finalizer);
 }
 
+//____ destructor _____________________________________________________________
+
+Q565Compressor::~Q565Compressor()
+{
+	delete [] m_pPixelToIndexTable;
+}
+
+
 //____ typeInfo() _________________________________________________________
 
 const TypeInfo& Q565Compressor::typeInfo(void) const
 {
-	delete [] m_pPixelToIndexTable;
 	return TYPEINFO;
 }
 

@@ -29,6 +29,8 @@ bool MyApp::init(API * pAPI)
 
 	m_compressors.push_back( LZCompressor::create() );
 	m_compressors.push_back( Q565Compressor::create() );
+	m_compressors.push_back( RLECompressor::create({ .primSize = 1}) );
+	m_compressors.push_back( RLECompressor::create({ .primSize = 2}) );
 
 	m_pCompressor = m_compressors[0];
 
@@ -85,6 +87,8 @@ bool MyApp::_setupGUI(API* pAPI)
 	m_pCompressorSelector = SelectBox::create( pTheme->selectBox() );
 	m_pCompressorSelector->entries.pushBack( SelectBoxEntry::Blueprint{ .id = 0, .text = "LZWP (Lempel-Ziw based w improvements)" } );
 	m_pCompressorSelector->entries.pushBack( SelectBoxEntry::Blueprint{ .id = 1, .text = "Q565 (QOI inspired for RGB565)" } );
+	m_pCompressorSelector->entries.pushBack( SelectBoxEntry::Blueprint{ .id = 2, .text = "RLEx-1 (Simple one byte run length encoding)" } );
+	m_pCompressorSelector->entries.pushBack( SelectBoxEntry::Blueprint{ .id = 3, .text = "RLEx-2 (Simple two byte run length encoding)" } );
 	m_pCompressorSelector->selectEntryByIndex(0);
 
 	pButtonPanel->slots.pushBack({

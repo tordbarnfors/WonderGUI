@@ -53,6 +53,7 @@
 #include <wg_pixeltools.h>
 #include <wg_printer.h>
 #include <wg_q565compressor.h>
+#include <wg_rlecompressor.h>
 #include <wg_snapshottintmap.h>
 #include <wg_spxcompressor.h>
 #include <wg_statictintmap.h>

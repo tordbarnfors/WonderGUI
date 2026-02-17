@@ -61,6 +61,8 @@ set( SOURCES
 	wg_printer.h
 	wg_q565compressor.cpp
 	wg_q565compressor.h
+	wg_rlecompressor.cpp
+	wg_rlecompressor.h
 	wg_snapshottintmap.cpp
 	wg_snapshottintmap.h
 	wg_spxcompressor.cpp
