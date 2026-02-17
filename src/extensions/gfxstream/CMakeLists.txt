@@ -25,6 +25,8 @@ set( SOURCES
 	wg_streamlogger.h
 	wg_streamloopwrapper.cpp
 	wg_streamloopwrapper.h
+	wg_streammerger.cpp
+	wg_streammerger.h
 	wg_streamplayer.cpp
 	wg_streamplayer.h
 	wg_streampump.cpp
