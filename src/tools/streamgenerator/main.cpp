@@ -324,6 +324,7 @@ int main ( int argc, char** argv )
 	auto pLZCompressor = LZCompressor::create();
 	auto pSPXCompressor = SPXCompressor::create();
 	auto pQ565Compressor = Q565Compressor::create();
+	auto pRLECompressor = RLECompressor::create();
 
 
 	StreamBackend::Blueprint bp;

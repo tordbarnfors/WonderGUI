@@ -25,6 +25,7 @@
 #include <wg_q565compressor.h>
 #include <wg_lzcompressor.h>
 #include <wg_spxcompressor.h>
+#include <wg_rlecompressor.h>
 #include <assert.h>
 
 namespace wg
@@ -814,24 +815,32 @@ namespace wg
 		{
 			if( idToken == Q565Compressor::ID_TOKEN )
 			{
-				auto pCompressor = Q565Compressor::create( { .decompressOnly = true } );
+				auto pCompressor = Q565Compressor::create( WGBP(Q565Compressor, _.decompressOnly = true) );
 				m_compressors.push_back(pCompressor);
 				return pCompressor;
 			}
 
 			if( idToken == LZCompressor::ID_TOKEN )
 			{
-				auto pCompressor = LZCompressor::create( { .decompressOnly = true } );
+				auto pCompressor = LZCompressor::create( WGBP(LZCompressor, _.decompressOnly = true) );
 				m_compressors.push_back(pCompressor);
 				return pCompressor;
 			}
 
 			if( idToken == SPXCompressor::ID_TOKEN )
 			{
-				auto pCompressor = SPXCompressor::create( { .decompressOnly = true } );
+				auto pCompressor = SPXCompressor::create(WGBP(SPXCompressor, _.decompressOnly = true)  );
 				m_compressors.push_back(pCompressor);
 				return pCompressor;
 			}
+
+			if (idToken == RLECompressor::ID_TOKEN)
+			{
+				auto pCompressor = RLECompressor::create(WGBP(RLECompressor, _.decompressOnly = true) );
+				m_compressors.push_back(pCompressor);
+				return pCompressor;
+			}
+
 		}
 
 		return nullptr;

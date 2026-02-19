@@ -3,6 +3,8 @@
 #include <wg_softsurface.h>
 #include <wg_softsurfacefactory.h>
 #include <wg_q565compressor.h>
+#include <wg_lzcompressor.h>
+#include <wg_rlecompressor.h>
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
@@ -68,6 +70,14 @@ int parseCommandLine( int argc, char** argv )
 			{
 				g_pPixelCompressor = LZCompressor::create();
 			}
+			else if (strcmp(pValue, "RLE1") == 0)
+			{
+				g_pPixelCompressor = RLECompressor::create( WGBP(RLECompressor, _.primSize = 1 ));
+			}
+			else if (strcmp(pValue, "RLE2") == 0)
+			{
+				g_pPixelCompressor = RLECompressor::create(WGBP(RLECompressor, _.primSize = 2 ));
+			}
 			else
 			{
 				printf( "ERROR: '%s' is not a recognized compressor format.\n", pValue );
@@ -120,6 +130,8 @@ void printUsage(char** argv)
 	printf( "\nCompression formats:\n" );
 	printf( "    Q565 - QOI inspired compression for 16-bit pixels.\n");
 	printf( "    LZWG - Lempel-Ziw derivative for compression of any data.\n");
+	printf("     RLE1 - Simple RLE-compression, with one byte prim size.\n");
+	printf("     RLE2 - Simple RLE-compression, with two byte prim size.\n");
 }
 
 //____ main() _________________________________________________________________
