@@ -4959,11 +4959,16 @@ bool tintmapTest(ComponentPtr<DynamicSlot> pEntry)
 	auto pLinearGradientSkin = TintmapSkin::create( pLinearGradient );
 	auto pSRGBGradientSkin = TintmapSkin::create( pSRGBGradient );
 
+	auto pColorbandSkin = TintmapSkin::create(Colorbands::create( Axis::X, { {Color::Red, 0.33f}, {Color::Green, 0.66f}, {Color::Blue, 1.f} }));
+
 
 	auto pFiller1 = Filler::create( { .defaultSize = {50,50}, .skin = pLinearGradientSkin } );
 	auto pFiller2 = Filler::create( { .defaultSize = {50,50}, .skin = pSRGBGradientSkin } );
+	auto pFiller3 = Filler::create({ .defaultSize = {50,50}, .skin = pColorbandSkin });
 
-	pBasePanel->slots.pushBack( { pFiller1, pFiller2 });
+
+
+	pBasePanel->slots.pushBack( { pFiller1, pFiller2, pFiller3 });
 
 	*pEntry = pBasePanel;
 

@@ -13,6 +13,8 @@ set( SOURCES
 	wg_canvaslayers.h
 	wg_color.cpp
 	wg_color.h
+	wg_colorbands.cpp
+	wg_colorbands.h
 	wg_compressor.cpp
 	wg_compressor.h
 	wg_dummyfont.cpp

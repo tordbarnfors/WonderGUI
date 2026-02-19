@@ -31,6 +31,7 @@
 #include <wg_blurbrush.h>
 #include <wg_canvaslayers.h>
 #include <wg_color.h>
+#include <wg_colorbands.h>
 #include <wg_compressor.h>
 #include <wg_dummyfont.h>
 #include <wg_edgemap.h>
