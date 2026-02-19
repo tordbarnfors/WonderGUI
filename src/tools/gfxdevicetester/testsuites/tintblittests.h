@@ -69,28 +69,28 @@ public:
 	bool setTintX(GfxDevice * pDevice, const RectI& canvas)
 	{
 		pDevice->setBlitSource(m_pImg);
-		pDevice->setTintGradient(canvas, Gradient(Placement::West, Color::Red, Color::Blue) );
+		pDevice->setTintmap(canvas, Gradyent::create(Color::White, Color::White, Color::Red, Color::Blue, ColorSpace::sRGB));
 		return true;
 	}
 
 	bool setTintY(GfxDevice * pDevice, const RectI& canvas)
 	{
 		pDevice->setBlitSource(m_pImg);
-		pDevice->setTintGradient(canvas, Gradient(Placement::North, Color::Red, Color::Blue) );
+		pDevice->setTintmap(canvas, Gradyent::create(Color::Red, Color::Blue, Color::White, Color::White, ColorSpace::sRGB));
 		return true;
 	}
 
 	bool setTintXY(GfxDevice * pDevice, const RectI& canvas)
 	{
 		pDevice->setBlitSource(m_pImg);
-		pDevice->setTintGradient(canvas, Gradient(Placement::NorthWest, Color::Red, Color::Blue));
+		pDevice->setTintmap(canvas, Gradyent::create(Color::Red, Color::Blue, Color::Red, Color::Blue, ColorSpace::sRGB));
 		return true;
 	}
 
 	bool setOffsetTintXY(GfxDevice * pDevice, const RectI& canvas)
 	{
 		pDevice->setBlitSource(m_pImg);
-		pDevice->setTintGradient(RectI( 200,200,100,100 )*64, Gradient(Placement::NorthWest, Color::Red, Color::Blue));
+		pDevice->setTintmap(canvas, Gradyent::create(Color::Red, Color::Blue, Color::Red, Color::Blue, ColorSpace::sRGB));
 		return true;
 	}
 

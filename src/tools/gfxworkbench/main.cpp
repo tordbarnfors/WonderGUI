@@ -403,34 +403,6 @@ int main ( int argc, char** argv )
 		pGfxDevice->fill( RectI((18*16)*64,0, 64*10, 64*300), HiColor(4096/16,0,0,4096) );
 */
 		
-/*
-		auto pHWCanvas = SoftSurface::create( { .canvas = true, .format = PixelFormat::RGB_555_bigendian, .size = {256,256}} );
-		pHWCanvas->fill(Color8::Green);
-
-		pGfxDevice->beginCanvasUpdate(pHWCanvas);
-		pGfxDevice->setTintGradient( {0,0,256*64,256*64}, Gradient(Placement::West, HiColor::Black, HiColor::White) );
-		pGfxDevice->fill(HiColor::White);
-		pGfxDevice->endCanvasUpdate();
-
-		auto pHWCanvas2 = SoftSurface::create( { .canvas = true, .format = PixelFormat::RGB_565_bigendian, .size = {256,256}} );
-		pHWCanvas2->fill(Color8::Green);
-
- 
- 		pGfxDevice->beginCanvasUpdate(pHWCanvas2);
-		pGfxDevice->setTintGradient( {0,0,256*64,256*64}, Gradient(Placement::West, HiColor::Black, HiColor::White) );
-		pGfxDevice->fill(HiColor::White);
-		pGfxDevice->endCanvasUpdate();
-
-
-		pGfxDevice->setBlitSource(pHWCanvas);
-		pGfxDevice->blit({0,0});
-		
-		pGfxDevice->setBlitSource(pHWCanvas2);
-		pGfxDevice->blit({0,256*64});
-
-		pGfxDevice->setBlitSource( pSRGBSurface );
-		pGfxDevice->blit({0,10*64});
-*/
 		
 		pGfxDevice->endCanvasUpdate();
 		pGfxDevice->endRender();

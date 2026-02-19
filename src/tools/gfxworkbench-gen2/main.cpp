@@ -224,7 +224,7 @@ int main ( int argc, char** argv )
 		pGfxDevice->setBlendMode(BlendMode::Replace);
 		pGfxDevice->fill(HiColor::Transparent);
 		pGfxDevice->setBlendMode(BlendMode::Blend);
-		pGfxDevice->setTintGradient({0,0,240*64,240*64}, Gradient(Color::Black, Color::White, Color::White, Color::Black));
+		pGfxDevice->setTintmap({0,0,240*64,240*64}, Gradyent::create(Color::White, Color::White, Color::Black, Color::White, ColorSpace::sRGB));
 		pGfxDevice->drawElipse({0,0,240*64,240*64}, 100*64, HiColor(0,0,2048));
 
 		pGfxDevice->setClipList(2, clippedRects);

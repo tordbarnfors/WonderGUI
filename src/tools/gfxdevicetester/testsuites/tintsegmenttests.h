@@ -87,32 +87,25 @@ public:
 	{
         m_flip = GfxFlip::None;
 		pDevice->setTintColor(Color::White);
-		pDevice->clearTintGradient();
+		pDevice->clearTintmap();
 		return true;
 	}
     
 	bool	setBaseGradientX(GfxDevice * pDevice, const RectI& canvas)
 	{
-//		pDevice->setTintColor({ 128,255,255,255 });
-
-//		pDevice->setTintGradient(canvas, { 0,0,0,255 }, { 255,255,255,255 }, { 255,255,255,255 }, { 0,0,0,255 } );
-		pDevice->setTintGradient(canvas, Gradient(Placement::West, Color::White, Color::Black) );
+		pDevice->setTintmap(canvas, Gradyent::create(Color::White, Color::White, Color::White, Color::Black, ColorSpace::sRGB) );
 		return true;
 	}
 
 	bool	setBaseGradientY(GfxDevice * pDevice, const RectI& canvas)
 	{
-		//		pDevice->setTintColor({ 128,255,255,255 });
-
-		pDevice->setTintGradient(canvas, Gradient(Placement::North, Color::White, Color::Black));
+		pDevice->setTintmap(canvas, Gradyent::create(Color::White, Color::Black, Color::White, Color::White, ColorSpace::sRGB));
 		return true;
 	}
 
 	bool	setBaseGradientXY(GfxDevice * pDevice, const RectI& canvas)
 	{
-		//		pDevice->setTintColor({ 128,255,255,255 });
-
-		pDevice->setTintGradient(canvas, Gradient(Placement::NorthWest, Color::White, Color::Black));
+		pDevice->setTintmap(canvas, Gradyent::create(Color::White, Color::Black, Color::White, Color::Black, ColorSpace::sRGB));
 		return true;
 	}
 
@@ -124,11 +117,9 @@ public:
 
     bool    rot90SetBaseGradientXY(GfxDevice * pDevice, const RectI& canvas)
     {
-        //        pDevice->setTintColor({ 128,255,255,255 });
-
         m_flip = GfxFlip::Rot90;
-        pDevice->setTintGradient(canvas, Gradient(Placement::NorthWest, Color::White, Color::Black));
-        return true;
+		pDevice->setTintmap(canvas, Gradyent::create(Color::White, Color::Black, Color::White, Color::Black, ColorSpace::sRGB));
+		return true;
     }
 
     

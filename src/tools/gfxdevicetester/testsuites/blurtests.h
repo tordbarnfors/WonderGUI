@@ -1,5 +1,6 @@
 #include "testsuite.h"
 #include <wg_blurbrush.h>
+#include <wg_gradyent.h>
 
 class BlurTests : public TestSuite
 {
@@ -22,6 +23,8 @@ public:
 		m_pCanvasSurface = pDevice->surfaceFactory()->createSurface( { .canvas = true, .size = canvas.size()/64  } );
 		m_pBlurSurface[0] = pDevice->surfaceFactory()->createSurface( { .canvas = true, .format = PixelFormat::BGRX_8, .size = canvas.size() / 64 } );
 		m_pBlurSurface[1] = pDevice->surfaceFactory()->createSurface( { .canvas = true, .format = PixelFormat::BGRX_8, .size = canvas.size() / 64 } );
+
+		m_pGradient = Gradyent::create(Color::White, Color::White, Color::Red, Color::Blue, ColorSpace::sRGB );
 
 		return true;
 	}
@@ -56,7 +59,7 @@ public:
 
 	bool setGradientAndBlurbrush(GfxDevice* pDevice, const RectI& canvas)
 	{
-		pDevice->setTintGradient(RectSPX(0, 0, 512, 512) * 64, Gradient(Placement::West, Color::Red, Color::Blue));
+		pDevice->setTintmap(RectSPX(0, 0, 512, 512) * 64, m_pGradient );
 		setBlurbrush(pDevice, canvas);
 		return true;
 	}
@@ -127,4 +130,5 @@ private:
 	Surface_p	m_pBlurSurface[2];
 
 	Blurbrush_p	m_pBrush;
+	Tintmap_p	m_pGradient;
 };
