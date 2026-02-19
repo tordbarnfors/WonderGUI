@@ -773,8 +773,8 @@ namespace wg
 				delete [] buffer.pBuffer;
 				buffer.pBuffer = new uint8_t[dataInfo.bufferSize];
 				buffer.capacity = dataInfo.bufferSize;
-				buffer.size = 0;
 			}
+			buffer.size = 0;
 		}
 
 		int dataSize = chunkDataSize - GfxStream::DataInfoSize - dataInfo.bPadded;
@@ -801,6 +801,8 @@ namespace wg
 				buffer.size = dataInfo.bufferSize;
 			}
 		}
+
+		return true;
 	}
 
 	//____ _findCompressor() ______________________________________________________
