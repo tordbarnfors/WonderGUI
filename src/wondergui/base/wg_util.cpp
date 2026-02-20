@@ -510,8 +510,8 @@ namespace wg
 
 		// We start with values excluding Disabled, which is a special case.
 
-		int indexTableSize = 64;
-		int indexMask = 0x3F;
+		int indexTableSize;
+		int indexMask;
 		int indexShift = 0;
 
 		if (usedBits == 0)
@@ -521,63 +521,37 @@ namespace wg
 		}
 		else
 		{
-			if ((usedBits & (int(StateEnum::Hovered) | int(StateEnum::Pressed))) == 0)
+			if( (usedBits & 0x3F) == 0 )		// Mouse interaction bits are a combo.
+				indexShift = 6;
+			else if( (usedBits & 0xF) == 0 )
+				indexShift = 4;
+			else if( (usedBits & 0x7) == 0 )
+				indexShift = 3;
+			else if( (usedBits & 0x3) == 0 )
+				indexShift = 2;
+			else if( (usedBits & 0x1) == 0 )
+				indexShift = 1;
+
+			if( usedBits & int(StateEnum::Disabled))
 			{
-				indexMask = 0xF;
-				indexTableSize = 16;
-				if ((usedBits & int(StateEnum::Focused)) == 0)
-				{
-					indexMask = 0x7;
+				indexTableSize = ((usedBits & 0x47) + 1) >> indexShift;
+				indexMask = 0x7F;
+			}
+			else
+			{
+				if(usedBits & 0x30)				// Mouse interaction bits are a combo.
+					indexTableSize = 64;
+				else if(usedBits & 0x8)
+					indexTableSize = 16;
+				else if(usedBits & 0x4)
 					indexTableSize = 8;
-					if ((usedBits & int(StateEnum::Checked)) == 0)
-					{
-						indexMask = 0x3;
-						indexTableSize = 4;
-						if ((usedBits & int(StateEnum::Selekted)) == 0)
-						{
-							indexMask = 0x1;
-							indexTableSize = 2;
-						}
-					}
-				}
-			}
+				else if(usedBits & 0x2)
+					indexTableSize = 4;
+				else // last bit needs to be set, otherwise we would not have gotten this far.
+					indexTableSize = 2;
 
-			if ((usedBits & int(StateEnum::Flagged)) == 0)
-			{
-				indexShift++;
-				indexTableSize /= 2;
-
-				if ((usedBits & int(StateEnum::Selekted)) == 0)
-				{
-					indexShift++;
-					indexTableSize /= 2;
-
-					if ((usedBits & int(StateEnum::Checked)) == 0)
-					{
-						indexShift++;
-						indexTableSize /= 2;
-
-						if ((usedBits & int(StateEnum::Focused)) == 0)
-						{
-							indexShift++;
-							indexTableSize /= 2;
-
-							if ((usedBits & (int(StateEnum::Hovered) | int(StateEnum::Pressed))) == 0)
-							{
-								indexShift += 2;
-								indexTableSize /= 4;
-							}
-						}
-					}
-				}
-			}
-
-			// Handle disabled, a maximum of 8 entries are added
-
-			if ((usedBits & int(StateEnum::Disabled)) != 0)
-			{
-				indexTableSize += 8*16 >> std::min(indexShift,6);
-				indexMask |= int(StateEnum::Disabled);
+				indexMask = indexTableSize - 1;
+				indexTableSize >>= indexShift;
 			}
 		}
 
