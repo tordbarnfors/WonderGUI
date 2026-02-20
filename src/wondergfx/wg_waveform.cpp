@@ -496,6 +496,12 @@ namespace wg
 		limit(sampleBegin, 0, m_nbSamples);
 		limit(sampleEnd, sampleBegin, m_nbSamples);
 
+		while( sampleBegin < sampleEnd && pSamples[sampleBegin] == sample )
+			sampleBegin++;
+
+		while( sampleEnd > sampleBegin && pSamples[sampleEnd-1] == sample )
+			sampleEnd--;
+
 		spx * p = pSamples + sampleBegin;
 		for( int i = 0 ; i < sampleEnd - sampleBegin ; i++ )
 			* p++ = sample;
