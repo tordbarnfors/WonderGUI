@@ -156,7 +156,7 @@ bool MyApp::_setupGUI(API* pAPI)
 
 	m_pDebugOverlay = DebugOverlay::create( { .backend = m_pDebugger, .theme = pTheme, .icons = pIconSurface, .transparencyGrid = pTransparencyGrid } );
 
-	m_pDebugOverlay->setActivated(true);
+//	m_pDebugOverlay->setActivated(true);
 
 	auto pPopupOverlay = PopupOverlay::create();
 

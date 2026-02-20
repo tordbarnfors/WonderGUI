@@ -41,6 +41,7 @@
 #include <wg_surfacefactory.h>
 #include <wg_skin.h>
 #include <wg_gradient.h>
+#include <wg_waveform.h>
 
 
 //____ WgChart ____________________________________________________________
@@ -184,6 +185,7 @@ protected:
         bool                ignoreDynamicScaling = false;
 
         wg::Gradient        m_waveGradient;
+		wg::Waveform_p		m_pWaveform;
 	};
 
 	struct LabelStyle

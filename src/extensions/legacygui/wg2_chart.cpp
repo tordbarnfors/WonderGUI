@@ -279,9 +279,15 @@ bool WgChart::SetWaveStyle(int waveId, WgColor fillColor, float topLineThickness
 
 	if(transitionMs == 0)
 	{
-	   p->fillColor = fillColor;
-	   p->topLineColor = topLineColor;
-	   p->bottomLineColor = bottomLineColor;
+		p->fillColor = fillColor;
+		p->topLineColor = topLineColor;
+		p->bottomLineColor = bottomLineColor;
+
+		if( p->m_pWaveform )
+		{
+			p->m_pWaveform->setColor(fillColor);
+			p->m_pWaveform->setOutlineColor(topLineColor);
+		}
 	}
 
 
@@ -290,6 +296,9 @@ bool WgChart::SetWaveStyle(int waveId, WgColor fillColor, float topLineThickness
 		p->fadeTimeCounter = 0;
 		_startReceiveTicks();
 	}
+
+	if( p->topLineThickness != topLineThickness || p->bottomLineThickness != bottomLineThickness )
+		p->m_pWaveform = nullptr;			// We have to create a new waveform when changing outline thickness.
 
 	p->topLineThickness = topLineThickness;
 	p->bottomLineThickness = bottomLineThickness;
@@ -310,7 +319,17 @@ bool WgChart::SetWaveGradient(int waveId, wg::Gradient gradient)
     if (!p)
         return false;
 
-    p->m_waveGradient = gradient;
+	if( gradient != p->m_waveGradient )
+	{
+		p->m_waveGradient = gradient;
+
+		if( p->m_pWaveform )
+		{
+			p->m_pWaveform->setGradient(gradient);
+			p->m_pWaveform->setOutlineGradient(gradient);
+		}
+	}
+
     return true;
 }
 
@@ -1069,7 +1088,40 @@ void WgChart::_renderWave( Wave& wave, wg::GfxDevice * pDevice, const WgRect& wa
 
 	if(length >= 1)
 	{
-        if(useGradient)
+		if( !wave.m_pWaveform || wave.m_pWaveform->size() != waveCanvas.size() )
+		{
+			wg::Waveform::Blueprint bp;
+			
+			bp.size = waveCanvas.size();
+			bp.color = wave.fillColor;
+			bp.bottomOutlineThickness = wave.bottomLineThickness*64*m_scale/WG_SCALE_BASE;
+			bp.optimize = true;
+			bp.outlineColor = wave.topLineColor;
+			bp.topOutlineThickness = wave.topLineThickness*64*m_scale/WG_SCALE_BASE;
+
+			if( useGradient )
+			{
+				bp.gradient = wave.m_waveGradient;
+				bp.outlineGradient = wave.m_waveGradient;
+			}
+
+			wave.m_pWaveform = wg::Waveform::create(bp, pDevice->edgemapFactory());
+		}
+
+		if( wave.resampledTop.empty() )
+			wave.m_pWaveform->setFlatTopLine(0, waveCanvas.w+1, wave.resampledDefault );
+		else
+			wave.m_pWaveform->setSamples(0, (int) wave.resampledTop.size(), wave.resampledTop.data(), nullptr);
+
+		if( wave.resampledBottom.empty() )
+			wave.m_pWaveform->setFlatBottomLine(0, waveCanvas.w+1, wave.resampledDefault );
+		else
+			wave.m_pWaveform->setSamples(0, (int) wave.resampledBottom.size(), nullptr, wave.resampledBottom.data());
+
+		auto pEdgemap = wave.m_pWaveform->refresh();
+		pDevice->drawEdgemap(waveCanvas.pos()*64,pEdgemap);
+/*
+		if(useGradient)
         {
             pDevice->setTintGradient(WgRect(waveCanvas.x + xOfs, waveCanvas.y, length, waveCanvas.h)*64, wave.m_waveGradient);
         }
@@ -1080,7 +1132,7 @@ void WgChart::_renderWave( Wave& wave, wg::GfxDevice * pDevice, const WgRect& wa
         {
             pDevice->clearTintGradient();
         }
-//        pDevice->ClipDrawHorrWave(waveClip, WgCoord(waveCanvas.x + xOfs, waveCanvas.y), length, top, bottom, wave.fillColor, wave.fillColor);
+ */
 	}
 }
 
