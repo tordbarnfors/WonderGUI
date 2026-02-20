@@ -874,6 +874,13 @@ bool WgScrollPanel::PositionContentInViewPixels( WgCoord posInContent, WgOrigo v
 	return SetViewPixelOfs(pos.x,pos.y);
 }
 
+//____ SetInstantIntoView() ___________________________________________________
+
+void WgScrollPanel::SetInstantIntoView(bool bInstant)
+{
+	m_bInstantIntoView = bInstant;
+}
+
 //____ ScrollIntoView() ________________________________________________________
 
 void WgScrollPanel::ScrollIntoView( WgWidget * pWidget, const WgBorders& margin, const WgRect& viewSection )
@@ -1451,17 +1458,23 @@ void WgScrollPanel::_onEvent( const WgEvent::Event * _pEvent, WgEventHandler * p
 
 				// Scale the distance and apply to current pos.
 
-				if( distance.x < 0 )
-					distance.x = distance.x / 4 -1;
+				if( !(m_bInstantIntoView && abs(intoViewScroll.x ) > abs(rubberBorderScroll.x)) )
+				{
+					if( distance.x < 0 )
+						distance.x = distance.x / 4 -1;
 
-				if( distance.x > 0 )
-					distance.x = distance.x / 4 + 1;
+					if( distance.x > 0 )
+						distance.x = distance.x / 4 + 1;
+				}
 
-				if( distance.y < 0 )
-					distance.y = distance.y / 4 -1;
+			   if( !(m_bInstantIntoView && abs(intoViewScroll.y ) > abs(rubberBorderScroll.y)) )
+				  {
+					if( distance.y < 0 )
+						distance.y = distance.y / 4 -1;
 
-				if( distance.y > 0 )
-					distance.y = distance.y / 4 + 1;
+					if( distance.y > 0 )
+						distance.y = distance.y / 4 + 1;
+				}
 
 				if( distance.x != 0 || distance.y != 0 )
 					SetViewPixelOfs( m_viewPixOfs.x + distance.x, m_viewPixOfs.y + distance.y );
