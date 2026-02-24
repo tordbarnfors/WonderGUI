@@ -25,6 +25,7 @@
 
 #include <wg_chart.h>
 #include <wg_waveform.h>
+#include <wg_spans.h>
 
 namespace wg
 {
@@ -49,7 +50,6 @@ namespace wg
 		{
 			pts					bottomOutlineThickness = 1;
 			HiColor				color = Color8::LightGrey;
-			GfxFlip				flip = GfxFlip::None;
 			Gradient			gradient;								// Overrides color when set.
 			int					id = 0;
 			HiColor				outlineColor = Color8::DarkGrey;
@@ -84,9 +84,6 @@ namespace wg
 		void	setVisible(bool bVisible);
 		bool	isVisible() const { return m_bVisible; }
 
-		void	setFlip( GfxFlip flip );
-		GfxFlip flip() const { return m_flip; }
-
 		bool	isTransitioningColors() const { return m_pColorTransition; }
 		bool	isTransitioningSamples() const { return m_pSampleTransition; }
 
@@ -116,9 +113,6 @@ namespace wg
 
 		pts					m_topOutlineThickness = 1;
 		pts					m_bottomOutlineThickness = 1;
-
-		GfxFlip				m_flip = GfxFlip::None;
-		bool				m_bAxisSwapped = false;				// Set if flip results in X and Y being swapped.
 
 		// Transitions
 
@@ -200,6 +194,8 @@ namespace wg
 			EdgemapFactory_p	edgemapFactory = nullptr;
 			Finalizer_p		finalizer = nullptr;
 
+			GfxFlip			flip = GfxFlip::None;
+
 			Glow::Blueprint	glow;
 
 			HiColor			gridColor = Color::DarkGray;
@@ -254,6 +250,10 @@ namespace wg
 		const TypeInfo&			typeInfo(void) const override;
 		const static TypeInfo	TYPEINFO;
 
+		//.____ Appearance _______________________________________________
+
+		void	setFlip( GfxFlip flip );
+		GfxFlip flip() const { return m_flip; }
 
 	protected:
 		AreaChart();
@@ -263,7 +263,11 @@ namespace wg
 			m_pEdgemapFactory = bp.edgemapFactory;
 			m_dirtySectionWidth = bp.dirtySectionWidth;
 			m_pResampler = bp.resampler;
-			m_bpreservePeaks = bp.preservePeaks;
+			m_bPreservePeaks = bp.preservePeaks;
+
+			m_flip = bp.flip;
+			m_bAxisSwapped = ( bp.flip == GfxFlip::Rot90 || bp.flip == GfxFlip::Rot90FlipX || bp.flip == GfxFlip::Rot90FlipY ||
+							   bp.flip == GfxFlip::Rot270 || bp.flip == GfxFlip::Rot270FlipX || bp.flip == GfxFlip::Rot270FlipY );
 		}
 
 		virtual ~AreaChart();
@@ -290,7 +294,7 @@ namespace wg
 		RectSPX		_entryRangeToRect( float begin, float end, bool bAxisSwapped) const;
 
 		void		_requestRenderAreaChartEntry(AreaChartEntry* pAreaChartEntry, float leftmost, float rightmost);
-		void		_requestRenderEntrySection(AreaChartEntry* pAreaChartEntry, int section, spx beginY, spx endY);
+		void		_requestRenderSectionSpan(int section, spx beginY, spx endY);
 
 		void		_waveformNeedsRefresh(AreaChartEntry* pAreaChartEntry, bool bGeo, bool bSamples, bool bColor);
 
@@ -298,15 +302,16 @@ namespace wg
 
 	private:
 
-		pts			m_dirtySectionWidth = 64;
+		GfxFlip				m_flip = GfxFlip::None;
+		bool				m_bAxisSwapped = false;				// Set if flip results in X and Y being swapped.
 
-		SectionBounds *	m_pSectionBounds = nullptr;
+		pts				m_dirtySectionWidth = 64;
 
 		bool			m_bPreRenderRequested = false;
 		bool			m_bTransitioning = false;
 		EdgemapFactory_p	m_pEdgemapFactory;
 
-		bool			m_bpreservePeaks = false;
+		bool			m_bPreservePeaks = false;
 
 //		bool		resampler( int entry, bool bTopSamples, int nOutput, float * pOutput, int nInput, float * pInput );
 

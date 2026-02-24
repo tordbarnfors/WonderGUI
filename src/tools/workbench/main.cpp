@@ -3176,6 +3176,7 @@ bool areaChartTest2(ComponentPtr<DynamicSlot> pEntry)
 			_.outlineColor = Color::Green,
 			_.padding = 2,
 			_.outlineThickness = 2)),
+//		_.flip = GfxFlip::Rot270,
 		_.skin = ColorSkin::create(Color::Pink),
 		_.resampler = []( int entry, bool bTopSamples, int nOutput, float * pOutput, int nInput, float * pInput )
 		{
@@ -3195,7 +3196,6 @@ bool areaChartTest2(ComponentPtr<DynamicSlot> pEntry)
 	pGraph->entries.pushBack({
 		.bottomOutlineThickness = 0,
 		.color = Color::Transparent,
-		.flip = GfxFlip::Rot270,
 		.outlineColor = Color::Red,
 		.topOutlineThickness = 5,
 		});

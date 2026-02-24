@@ -50,6 +50,20 @@ namespace wg
 		return TYPEINFO;
 	}
 
+	//____ setFlip() _____________________________________________________________
+
+	void AreaChart::setFlip( GfxFlip flip )
+	{
+		if( flip != m_flip )
+		{
+			m_flip = flip;
+			m_bAxisSwapped = ( flip == GfxFlip::Rot90 || flip == GfxFlip::Rot90FlipX || flip == GfxFlip::Rot90FlipY ||
+							  flip == GfxFlip::Rot270 || flip == GfxFlip::Rot270FlipX || flip == GfxFlip::Rot270FlipY );
+
+			_fullRefreshOfChart();
+		}
+	}
+
 	//____ _startedOrEndedTransition() __________________________________________
 
 	void AreaChart::_startedOrEndedTransition()
@@ -148,7 +162,7 @@ namespace wg
 
 		RectSPX dirt;
 
-		if( pAreaChartEntry->m_bAxisSwapped )
+		if( m_bAxisSwapped )
 		{
 			dirt.x = m_chartCanvas.x;
 			dirt.y = m_chartCanvas.y + m_chartCanvas.h * leftmost;
@@ -215,7 +229,7 @@ namespace wg
 		{
 			p--;
 			if (p->m_bVisible && p->m_pEdgemap)
-				pDevice->flipDrawEdgemap(canvas + p->m_waveformPos, p->m_pEdgemap, p->m_flip );
+				pDevice->flipDrawEdgemap(canvas + p->m_waveformPos, p->m_pEdgemap, m_flip );
 		}
 
 		Util::popClipList(pDevice, popData);
@@ -332,13 +346,13 @@ namespace wg
 			if (graph.m_bVisible)
 			{
 				bool bNeedsFullRendering = false;
-				spx displayHeight = graph.m_bAxisSwapped ? m_chartCanvas.w : m_chartCanvas.h;
+				spx displayHeight = m_bAxisSwapped ? m_chartCanvas.w : m_chartCanvas.h;
 
 				if (!graph.m_pWaveform)
 				{
 					// Generate waveform
 
-					RectSPX rect = _entryRangeToRect(graph.m_begin, graph.m_end, graph.m_bAxisSwapped);
+					RectSPX rect = _entryRangeToRect(graph.m_begin, graph.m_end, m_bAxisSwapped);
 
 					if( !rect.isEmpty() )
 					{
@@ -357,8 +371,8 @@ namespace wg
 
 						// Interpolate and set samples
 
-						_updateWaveformEdge(entry, graph.m_pWaveform, true, (int) graph.m_topSamples.size(), graph.m_topSamples.data(), graph.m_bAxisSwapped );
-						_updateWaveformEdge(entry, graph.m_pWaveform, false, (int) graph.m_bottomSamples.size(), graph.m_bottomSamples.data(), graph.m_bAxisSwapped );
+						_updateWaveformEdge(entry, graph.m_pWaveform, true, (int) graph.m_topSamples.size(), graph.m_topSamples.data(), m_bAxisSwapped );
+						_updateWaveformEdge(entry, graph.m_pWaveform, false, (int) graph.m_bottomSamples.size(), graph.m_bottomSamples.data(), m_bAxisSwapped );
 
 						graph.m_pEdgemap = graph.m_pWaveform->refresh();
 						graph.m_bSamplesChanged = true;						// So _preRender() will understand.
@@ -393,8 +407,8 @@ namespace wg
 
 					if (graph.m_bSamplesChanged)
 					{
-						_updateWaveformEdge(entry, graph.m_pWaveform, true, (int) graph.m_topSamples.size(), graph.m_topSamples.data(), graph.m_bAxisSwapped );
-						_updateWaveformEdge(entry, graph.m_pWaveform, false, (int) graph.m_bottomSamples.size(), graph.m_bottomSamples.data(), graph.m_bAxisSwapped );
+						_updateWaveformEdge(entry, graph.m_pWaveform, true, (int) graph.m_topSamples.size(), graph.m_topSamples.data(), m_bAxisSwapped );
+						_updateWaveformEdge(entry, graph.m_pWaveform, false, (int) graph.m_bottomSamples.size(), graph.m_bottomSamples.data(), m_bAxisSwapped );
 
 						bSamplesChanged = true;
 					}
@@ -474,7 +488,7 @@ namespace wg
 						pConverted[i] = int((interpolated - m_displayCeiling) * valueFactor);
 					}
 
-					if( m_bpreservePeaks )
+					if( m_bPreservePeaks )
 					{
 						for( int i = 1 ; i < nSamples-1 ; i++ )
 						{
@@ -532,11 +546,28 @@ namespace wg
 
 		if( bSamplesChanged )
 		{
+
 			//TODO: Limited range not tested.
 
 			spx dirtySectionWidth = m_dirtySectionWidth * m_scale;
 
 			int boundsPitch = sizeof(SectionBounds) / sizeof(spx);
+
+			SizeSPX	canvasSize = m_chartCanvas.size();
+			if( m_bAxisSwapped )
+				std::swap(canvasSize.w,canvasSize.h);
+
+			int nSections = (canvasSize.w + (dirtySectionWidth-1)) / dirtySectionWidth;
+
+			// Prepare dirt spans for sections
+
+			int sectionDirtAlloc = nSections * sizeof( Spans<spx,4,4*64> );
+			auto pSectionDirt = (Spans<spx,4,4*64>*) Base::memStackAlloc(sectionDirtAlloc);
+
+			for( int i = 0 ; i < nSections ; i++ )
+				pSectionDirt[i].size = 0;
+
+			//
 
 			for (auto& entry : entries)
 			{
@@ -545,68 +576,31 @@ namespace wg
 					auto pEdgemap = entry.m_pWaveform->refresh();
 					entry.m_pEdgemap = pEdgemap;
 
-					spx	canvasWidth = entry.m_bAxisSwapped ? m_chartCanvas.h : m_chartCanvas.w;
-					int nSections = (canvasWidth + (dirtySectionWidth-1)) / dirtySectionWidth;
-
-
 					if( entry.m_sectionBounds.size() == nSections )
 					{
-						auto pBuffer = (SectionBounds*) Base::memStackAlloc(sizeof(SectionBounds) * nSections );
+						SectionBounds * pSection = &entry.m_sectionBounds.front();
+						for( int section = 0 ; section < nSections ; section++ )
+						{
+							pSectionDirt[section].add( pSection->topBeg & ~63, (pSection->topEnd + 63) & ~63 );
+							pSectionDirt[section].add( pSection->bottomBeg & ~63, (pSection->bottomEnd + 63) & ~63 );
+							pSection++;
+						}
+
+						auto pBuffer = &entry.m_sectionBounds.front();
 
 						pEdgemap->exportBounds(&pBuffer->topBeg, nSections, dirtySectionWidth/64, 0, 1, entry.m_waveformPos.x/64, boundsPitch );
 						pEdgemap->exportBounds(&pBuffer->bottomBeg, nSections, dirtySectionWidth/64, 2, 3, entry.m_waveformPos.x/64, boundsPitch );
 
-						SectionBounds * pNew = pBuffer;
-						SectionBounds * pSaved = &entry.m_sectionBounds.front();
-
+						pSection = &entry.m_sectionBounds.front();
 						for( int section = 0 ; section < nSections ; section++ )
 						{
-							int dirt1_Y1 = 0;
-							int dirt1_Y2 = 0;
+							assert( pSection->topBeg <= pSection->topEnd );
+							assert( pSection->bottomBeg <= pSection->bottomEnd );
 
-							int dirt2_Y1 = 0;
-							int dirt2_Y2 = 0;
-
-							if( pNew->topBeg != pSaved->topBeg || pNew->topEnd != pSaved->topEnd )
-							{
-								// Top has moved
-
-								dirt1_Y1 = std::min(pNew->topBeg, pSaved->topBeg) & 0xFFFFFFC0;
-								dirt1_Y2 = (std::max(pNew->topEnd, pSaved->topEnd)+63) & 0xFFFFFFC0;
-							}
-
-							if( pNew->bottomBeg != pSaved->bottomBeg || pNew->bottomEnd != pSaved->bottomEnd )
-							{
-								// Bottom has moved
-
-								dirt2_Y1 = std::min(pNew->bottomBeg, pSaved->bottomBeg) & 0xFFFFFFC0;
-								dirt2_Y2 = (std::max(pNew->bottomEnd, pSaved->bottomEnd)+63) & 0xFFFFFFC0;
-							}
-
-							if( dirt1_Y1 != dirt1_Y2 && dirt2_Y1 != dirt2_Y2 && dirt2_Y1 <= dirt1_Y2 + 4*64 )
-							{
-								// We have both dirt1 and dirt2 and they are close enough to combine them
-
-								_requestRenderEntrySection(&entry, section, dirt1_Y1, dirt2_Y2);
-							}
-							else
-							{
-								// Add dirt1 if we have it
-
-								if( dirt1_Y1 != dirt1_Y2 )
-									_requestRenderEntrySection(&entry, section, dirt1_Y1, dirt1_Y2);
-
-								// Add dirt2 if we have it
-
-								if( dirt2_Y1 != dirt2_Y2 )
-									_requestRenderEntrySection(&entry, section, dirt2_Y1, dirt2_Y2);
-							}
-
-							* pSaved++ = * pNew++;
+							pSectionDirt[section].add( pSection->topBeg & ~63, (pSection->topEnd + 63) & ~63 );
+							pSectionDirt[section].add( pSection->bottomBeg & ~63, (pSection->bottomEnd + 63) & ~63 );
+							pSection++;
 						}
-
-
-						Base::memStackFree(sizeof(SectionBounds) * nSections );
 					}
 					else
 					{
@@ -623,14 +617,42 @@ namespace wg
 					entry.m_bSamplesChanged = false;
 				}
 			}
+
+			// Request render dirty sections
+
+			int sectionNb = 0;
+			for( int sec = 0 ; sec < nSections ; sec++ )
+			{
+				auto& section = pSectionDirt[sec];
+				for( int i = 0 ; i < section.size ; i++ )
+				{
+						RectSPX dirt;
+						dirt.x = sectionNb * dirtySectionWidth;
+						dirt.w = dirtySectionWidth;
+						dirt.y = section.array[i].begin;
+						dirt.h = section.array[i].end - section.array[i].begin;
+
+						if( dirt.x + dirt.w > canvasSize.w )
+							dirt.w = canvasSize.w - dirt.x;
+
+						RectSPX r = Util::flipRect(dirt, m_flip, canvasSize) + m_chartCanvas.pos();
+						_requestRender(r);
+				}
+
+//					_requestRenderSectionSpan(sectionNb, section.array[i].begin, section.array[i].end );
+
+				sectionNb++;
+			}
+
+			Base::memStackFree(sectionDirtAlloc);
 		}
 
 		m_bPreRenderRequested = false;
 	}
 
-	//____ _requestRenderEntrySection() ___________________________________________________
+	//____ _requestRenderSectionSpan() ___________________________________________________
 
-	void AreaChart::_requestRenderEntrySection(AreaChartEntry* pEntry, int section, spx beginY, spx endY)
+	void AreaChart::_requestRenderSectionSpan(int section, spx beginY, spx endY)
 	{
 		int dirtySectionWidth = m_dirtySectionWidth * m_scale;
 
@@ -641,14 +663,14 @@ namespace wg
 		dirt.h = endY - beginY;
 
 		SizeSPX	canvasSize = m_chartCanvas.size();
-		if( pEntry->m_bAxisSwapped )
+		if( m_bAxisSwapped )
 			std::swap(canvasSize.w,canvasSize.h);
 
 		if( dirt.x + dirt.w > canvasSize.w )
 			dirt.w = canvasSize.w - dirt.x;
 
 //		RectSPX r = dirt + m_chartCanvas.pos()
-		RectSPX r = Util::flipRect(dirt, pEntry->m_flip, canvasSize) + m_chartCanvas.pos();
+		RectSPX r = Util::flipRect(dirt, m_flip, canvasSize) + m_chartCanvas.pos();
 		_requestRender(r);
 	}
 
@@ -667,10 +689,6 @@ namespace wg
 		m_end = bp.rangeEnd;
 		m_topOutlineThickness = bp.topOutlineThickness;
 		m_bVisible = bp.visible;
-		m_flip = bp.flip;
-
-		m_bAxisSwapped = ( bp.flip == GfxFlip::Rot90 || bp.flip == GfxFlip::Rot90FlipX || bp.flip == GfxFlip::Rot90FlipY ||
-						   bp.flip == GfxFlip::Rot270 || bp.flip == GfxFlip::Rot270FlipX || bp.flip == GfxFlip::Rot270FlipY );
 		m_topSamples.push_back(0.f);
 		m_bottomSamples.push_back(0.f);
 	}
@@ -863,20 +881,6 @@ namespace wg
 		{
 			m_bVisible = bVisible;
 			m_pDisplay->_entryVisibilityChanged(this);
-		}
-	}
-
-	//____ setFlip() _____________________________________________________________
-
-	void AreaChartEntry::setFlip( GfxFlip flip )
-	{
-		if( flip != m_flip )
-		{
-			m_flip = flip;
-			m_bAxisSwapped = ( flip == GfxFlip::Rot90 || flip == GfxFlip::Rot90FlipX || flip == GfxFlip::Rot90FlipY ||
-							  flip == GfxFlip::Rot270 || flip == GfxFlip::Rot270FlipX || flip == GfxFlip::Rot270FlipY );
-
-			m_pDisplay->_fullRefreshOfChart();
 		}
 	}
 

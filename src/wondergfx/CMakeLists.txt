@@ -65,6 +65,7 @@ set( SOURCES
 	wg_q565compressor.h
 	wg_snapshottintmap.cpp
 	wg_snapshottintmap.h
+	wg_spans.h
 	wg_spxcompressor.cpp
 	wg_spxcompressor.h
 	wg_statictintmap.cpp
