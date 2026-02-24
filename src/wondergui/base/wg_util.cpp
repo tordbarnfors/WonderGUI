@@ -534,7 +534,7 @@ namespace wg
 
 			if( usedBits & int(StateEnum::Disabled))
 			{
-				indexTableSize = ((usedBits & 0x47) + 1) >> indexShift;
+				indexTableSize = ((usedBits & 0x47) >> indexShift) + 1;
 				indexMask = 0x7F;
 			}
 			else
