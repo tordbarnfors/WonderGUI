@@ -581,8 +581,11 @@ namespace wg
 						SectionBounds * pSection = &entry.m_sectionBounds.front();
 						for( int section = 0 ; section < nSections ; section++ )
 						{
-							pSectionDirt[section].add( pSection->topBeg & ~63, (pSection->topEnd + 63) & ~63 );
-							pSectionDirt[section].add( pSection->bottomBeg & ~63, (pSection->bottomEnd + 63) & ~63 );
+							if( pSection->topBeg < pSection->topEnd )
+								pSectionDirt[section].add( pSection->topBeg & ~63, (pSection->topEnd + 63) & ~63 );
+
+							if( pSection->bottomBeg < pSection->bottomEnd )
+								pSectionDirt[section].add( pSection->bottomBeg & ~63, (pSection->bottomEnd + 63) & ~63 );
 							pSection++;
 						}
 
@@ -594,11 +597,11 @@ namespace wg
 						pSection = &entry.m_sectionBounds.front();
 						for( int section = 0 ; section < nSections ; section++ )
 						{
-							assert( pSection->topBeg <= pSection->topEnd );
-							assert( pSection->bottomBeg <= pSection->bottomEnd );
+							if( pSection->topBeg < pSection->topEnd )
+								pSectionDirt[section].add( pSection->topBeg & ~63, (pSection->topEnd + 63) & ~63 );
 
-							pSectionDirt[section].add( pSection->topBeg & ~63, (pSection->topEnd + 63) & ~63 );
-							pSectionDirt[section].add( pSection->bottomBeg & ~63, (pSection->bottomEnd + 63) & ~63 );
+							if( pSection->bottomBeg < pSection->bottomEnd )
+								pSectionDirt[section].add( pSection->bottomBeg & ~63, (pSection->bottomEnd + 63) & ~63 );
 							pSection++;
 						}
 					}
