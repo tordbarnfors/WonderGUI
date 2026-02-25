@@ -298,6 +298,8 @@ namespace wg
 
 		void		_waveformNeedsRefresh(AreaChartEntry* pAreaChartEntry, bool bGeo, bool bSamples, bool bColor);
 
+		void 		_importSegmentBounds(Edgemap * pEdgemap, SectionBounds * pDest, int nSections, int sectionWidth, int mapOffset);
+
 		//
 
 	private:

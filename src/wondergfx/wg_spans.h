@@ -132,6 +132,8 @@ namespace wg
 
 			for( Span * p = pSmallestGap+1 ; p < pLast ; p++ )
 				p[0] = p[1];
+
+			size--;
 		}
 	};
 

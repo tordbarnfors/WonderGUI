@@ -578,40 +578,41 @@ namespace wg
 
 					if( entry.m_sectionBounds.size() == nSections )
 					{
-						SectionBounds * pSection = &entry.m_sectionBounds.front();
+						auto pBuffer = (SectionBounds*) Base::memStackAlloc(sizeof(SectionBounds) * nSections );
+
+						_importSegmentBounds(pEdgemap, pBuffer, nSections, dirtySectionWidth/64, entry.m_waveformPos.x/64);
+
+						SectionBounds * pOld = &entry.m_sectionBounds.front();
+						SectionBounds * pNew = pBuffer;
+
 						for( int section = 0 ; section < nSections ; section++ )
 						{
-							if( pSection->topBeg < pSection->topEnd )
-								pSectionDirt[section].add( pSection->topBeg & ~63, (pSection->topEnd + 63) & ~63 );
+							if( pNew->topBeg < pNew->topEnd || pOld->topBeg < pOld->topEnd )
+							{
+								spx begin = std::min(pOld->topBeg, pNew->topBeg);
+								spx end = std::max(pOld->topEnd, pNew->topEnd);
 
-							if( pSection->bottomBeg < pSection->bottomEnd )
-								pSectionDirt[section].add( pSection->bottomBeg & ~63, (pSection->bottomEnd + 63) & ~63 );
-							pSection++;
+								pSectionDirt[section].add( begin & ~63, (end + 63) & ~63 );
+							}
+
+							if( pNew->bottomBeg < pNew->bottomEnd || pOld->bottomBeg < pOld->bottomEnd )
+							{
+								spx begin = std::min(pOld->bottomBeg, pNew->bottomBeg);
+								spx end = std::max(pOld->bottomEnd, pNew->bottomEnd);
+
+								pSectionDirt[section].add( begin & ~63, (end + 63) & ~63 );
+							}
+
+							* pOld++ = * pNew++;
 						}
 
-						auto pBuffer = &entry.m_sectionBounds.front();
-
-						pEdgemap->exportBounds(&pBuffer->topBeg, nSections, dirtySectionWidth/64, 0, 1, entry.m_waveformPos.x/64, boundsPitch );
-						pEdgemap->exportBounds(&pBuffer->bottomBeg, nSections, dirtySectionWidth/64, 2, 3, entry.m_waveformPos.x/64, boundsPitch );
-
-						pSection = &entry.m_sectionBounds.front();
-						for( int section = 0 ; section < nSections ; section++ )
-						{
-							if( pSection->topBeg < pSection->topEnd )
-								pSectionDirt[section].add( pSection->topBeg & ~63, (pSection->topEnd + 63) & ~63 );
-
-							if( pSection->bottomBeg < pSection->bottomEnd )
-								pSectionDirt[section].add( pSection->bottomBeg & ~63, (pSection->bottomEnd + 63) & ~63 );
-							pSection++;
-						}
+						Base::memStackFree(sizeof(SectionBounds) * nSections );
 					}
 					else
 					{
 						entry.m_sectionBounds.resize(nSections);
 
-						auto pBounds = &entry.m_sectionBounds.front();
-						pEdgemap->exportBounds(&pBounds->topBeg, nSections, dirtySectionWidth/64, 0, 1, entry.m_waveformPos.x/64, boundsPitch );
-						pEdgemap->exportBounds(&pBounds->bottomBeg, nSections, dirtySectionWidth/64, 2, 3, entry.m_waveformPos.x/64, boundsPitch );
+						_importSegmentBounds(pEdgemap, &entry.m_sectionBounds.front(), nSections, dirtySectionWidth/64, entry.m_waveformPos.x/64);
 
 //						for( int section = 0 ; section < nSections ; section++ )
 //							_requestRenderEntrySection(&entry, section, pBounds[section].topBeg, pBounds[section].bottomEnd);
@@ -652,6 +653,28 @@ namespace wg
 
 		m_bPreRenderRequested = false;
 	}
+
+	//____ _importSegmentBounds() ________________________________________________
+
+	void AreaChart::_importSegmentBounds(Edgemap * pEdgemap, SectionBounds * pDest, int nSections, int sectionWidth, int mapOffset)
+	{
+		int boundsPitch = sizeof(SectionBounds) / sizeof(spx);
+
+		if( pEdgemap->segments() == 3 )
+		{
+			pEdgemap->exportBounds(&pDest->topBeg, nSections, sectionWidth, 0, 0, mapOffset, boundsPitch );
+			pEdgemap->exportBounds(&pDest->bottomBeg, nSections, sectionWidth, 1, 1, mapOffset, boundsPitch );
+		}
+		else
+		{
+			assert( pEdgemap->segments() == 5);
+
+			pEdgemap->exportBounds(&pDest->topBeg, nSections, sectionWidth, 0, 1, mapOffset, boundsPitch );
+			pEdgemap->exportBounds(&pDest->bottomBeg, nSections, sectionWidth, 2, 3, mapOffset, boundsPitch );
+		}
+
+	}
+
 
 	//____ _requestRenderSectionSpan() ___________________________________________________
 
