@@ -285,9 +285,9 @@ namespace wg
 			memcpy(m_pBuffer, pOldBuffer + m_readOfs, chunkSize1);
 			memcpy(m_pBuffer + chunkSize1, pOldBuffer, chunkSize2);
 
-			m_readOfs = 0;
 			m_writeOfs = chunkSize1 + chunkSize2;
 			m_processedOfs = (m_processedOfs - m_readOfs + oldBufferSize) % oldBufferSize;
+			m_readOfs = 0;
 		}
 
 		m_bufferOverflow = 0;
