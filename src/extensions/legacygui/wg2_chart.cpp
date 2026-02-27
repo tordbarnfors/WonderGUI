@@ -1309,7 +1309,7 @@ void WgChart::_resampleWave(Wave * pWave, bool bRequestRenderOnChanges )
 	int nResampled = 0;
 
 	if(sampleScale != 0)
-		nResampled = (int) (pWave->nSamples / sampleScale);
+		nResampled = canvas.w + 1;
 
 	if (nResampled < 0)
 		nResampled = 0;
