@@ -80,7 +80,6 @@ extern "C" {
 
 	WG_EXPORT int	wg_edgemapSamples(wg_obj edgemap);
 
-
 	WG_EXPORT int 	wg_importSpxSamples(wg_obj edgemap, wg_sampleOrigo origo, const wg_spx* pSource,
 										int edgeBegin, int edgeEnd, int sampleBegin, int sampleEnd, 
 										int edgePitch, int samplePitch);
@@ -96,6 +95,9 @@ extern "C" {
 	WG_EXPORT int 	wg_exportFloatSamples(	wg_obj edgemap, wg_sampleOrigo origo, float* pDestination,
 											int edgeBegin, int edgeEnd,	int sampleBegin, int sampleEnd, 
 											int edgePitch, int samplePitch);
+
+	WG_EXPORT void	wg_exportBounds( wg_obj edgemap, wg_spx * pMinMaxOutput, int nSections, int sectionWidth,
+									 int topEdge, int bottomEdge, int mapOffset, int minMaxPitch );
 
 
 #ifdef __cplusplus

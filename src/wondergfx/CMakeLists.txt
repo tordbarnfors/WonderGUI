@@ -67,6 +67,7 @@ set( SOURCES
 	wg_rlecompressor.h
 	wg_snapshottintmap.cpp
 	wg_snapshottintmap.h
+	wg_spans.h
 	wg_spxcompressor.cpp
 	wg_spxcompressor.h
 	wg_statictintmap.cpp

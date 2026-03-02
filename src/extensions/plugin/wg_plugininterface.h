@@ -446,6 +446,7 @@ typedef struct wg_edgemap_calls_struct
 	int 				(*exportFloatSamples)(wg_obj edgemap, wg_sampleOrigo origo, float* pDestination, int edgeBegin, int edgeEnd, int sampleBegin, int sampleEnd, int edgePitch, int samplePitch);
 	int					(*importPaletteEntries)(wg_obj edgemap, int begin, int end, const wg_color * pColors );
 
+	void				(*exportBounds)( wg_obj edgemap, wg_spx * pMinMaxOutput, int nSections, int sectionWidth, int topEdge, int bottomEdge, int mapOffset, int minMaxPitch );
 } wg_edgemap_calls;
 
 

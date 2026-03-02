@@ -181,6 +181,15 @@ namespace wg
 		assert(false);
 	}
 
+	//____ exportBounds() ________________________________________________________
+
+	void PluginEdgemap::exportBounds( spx * pMinMaxOutput, int nSections, int sectionWidth,
+				 int topEdge, int bottomEdge, int mapOffset, int minMaxPitch )
+	{
+		PluginCalls::edgemap->exportBounds( m_cEdgemap, pMinMaxOutput, nSections, sectionWidth, topEdge, bottomEdge, mapOffset, minMaxPitch );
+	}
+
+
 	//____ _importSamples() ______________________________________________________
 
 	void  PluginEdgemap::_importSamples(SampleOrigo origo, const spx* pSource, int edgeBegin, int edgeEnd,

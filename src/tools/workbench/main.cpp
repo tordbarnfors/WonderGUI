@@ -541,7 +541,7 @@ int main(int argc, char** argv)
 
 		pRoot->setCanvasLayers(pCanvasLayers);
 
-		//		pRoot->setDebugMode(true);
+		pRoot->setDebugMode(true);
 
 		Base::inputHandler()->setFocusedWindow(pRoot);
 
@@ -723,7 +723,7 @@ int main(int argc, char** argv)
 		auto pDebugOverlay = DebugOverlay::create( { .backend = pDebugger, .theme = pTheme, .icons = pIconSurface, .transparencyGrid = pTransparencyGrid } );
 
 
-		pDebugOverlay->setActivated(true);
+//		pDebugOverlay->setActivated(true);
 
 		pRoot->slot = pDebugOverlay;
 		pRoot->setSkin(ColorSkin::create(Color::Black));
@@ -815,7 +815,7 @@ int main(int argc, char** argv)
 		//	twoSlotPanelTest(pSlot);
 		//	customSkinTest(pSlot);
 		//	areaChartTest(pSlot);
-		//	areaChartTest2(pSlot);
+			areaChartTest2(pSlot);
 		//	plotChartTest(pSlot);
 		//	nortonCommanderTest(pSlot);
 		//	skinMarginTest(pSlot);
@@ -842,7 +842,7 @@ int main(int argc, char** argv)
 		//	selectCapsuleTest(pSlot);
 		//	drawerPanelTest(pSlot);
 		//	areaChartTestWithGlobalGradient(pSlot);
-		tintmapTest(pSlot);
+		//	tintmapTest(pSlot);
 
 
 		//------------------------------------------------------
@@ -3176,11 +3176,17 @@ bool areaChartTest2(ComponentPtr<DynamicSlot> pEntry)
 			_.outlineColor = Color::Green,
 			_.padding = 2,
 			_.outlineThickness = 2)),
-		_.skin = ColorSkin::create(Color::Pink)
+//		_.flip = GfxFlip::Rot270,
+		_.skin = ColorSkin::create(Color::Pink),
+		_.resampler = []( int entry, bool bTopSamples, int nOutput, float * pOutput, int nInput, float * pInput )
+		{
+			for(int i = 0 ; i < nOutput ; i++ )
+				pOutput[i] = pInput[i*nInput/nOutput];
+
+			return false;
+		};
+		_.preservePeaks = true
 	));
-
-
-
 
 	pFlex->slots.pushBack(pGraph, { .pos = {10,10}, .size = {200,200} });
 
@@ -3190,7 +3196,6 @@ bool areaChartTest2(ComponentPtr<DynamicSlot> pEntry)
 	pGraph->entries.pushBack({
 		.bottomOutlineThickness = 0,
 		.color = Color::Transparent,
-		/*.flip = GfxFlip::Rot270,*/
 		.outlineColor = Color::Red,
 		.topOutlineThickness = 5,
 		});

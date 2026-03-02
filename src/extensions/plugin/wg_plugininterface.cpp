@@ -332,6 +332,7 @@ void wg_populatePluginInterface(wg_plugin_interface * pHeader)
 	pBody->edgemap.exportSpxSamples			= &wg_exportSpxSamples;
 	pBody->edgemap.exportFloatSamples		= &wg_exportFloatSamples;
 	pBody->edgemap.importPaletteEntries		= &wg_importEdgemapPaletteEntries;
+	pBody->edgemap.exportBounds				= &wg_exportBounds;
 
 	pBody->edgemapFactory.structSize		= sizeof(wg_edgemapfactory_calls);
 	pBody->edgemapFactory.createEdgemap		= &wg_createEdgemap;

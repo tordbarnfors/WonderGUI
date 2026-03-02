@@ -61,6 +61,7 @@
 #include <wg_dragndropoverlay.h>
 #include <wg_dynamicslotvector.h>
 #include <wg_dynamicvector.h>
+#include <wg_edgemapdisplay.h>
 #include <wg_editablenumber.h>
 #include <wg_editabletext.h>
 #include <wg_enumextras.h>

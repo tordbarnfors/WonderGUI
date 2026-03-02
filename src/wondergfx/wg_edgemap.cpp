@@ -511,6 +511,87 @@ namespace wg
 		return false;
 	}
 
+
+	//____ exportBounds() ___________________________________________________
+
+	// NOTE: mapOffset may be negative.
+
+	void Edgemap::exportBounds( spx * pMinMaxOutput, int nSections, int sectionWidth, int topEdge, int bottomEdge, int mapOffset, int minMaxPitch  )
+	{
+		int nEdges = m_nbSegments-1;
+		int totalSamples = m_size.w+1;
+
+
+		int section = 0;
+		int sectionSamples = sectionWidth+1;
+
+		int startSample = -mapOffset;
+
+		while( startSample < -sectionWidth && section < nSections )
+		{
+			pMinMaxOutput[0] = INT_MAX;
+			pMinMaxOutput[1] = INT_MIN;
+			pMinMaxOutput += minMaxPitch;
+
+			startSample += sectionWidth;
+			section++;
+		}
+
+		if( startSample < 0 )
+		{
+			sectionSamples -= (-startSample);
+			startSample = 0;
+		}
+
+		spx * pTopSamples = m_pSamples + topEdge;
+		spx * pBottomSamples = m_pSamples + bottomEdge;
+
+		while( section < nSections )
+		{
+			// Handle special case where we run out of samples in this section
+
+			if( startSample + sectionSamples > m_size.w )
+			{
+				sectionSamples = (m_size.w - startSample) + 1;
+				if( sectionSamples <= 1 )
+				{
+					while( section < nSections )
+					{
+						pMinMaxOutput[0] = INT_MAX;
+						pMinMaxOutput[1] = INT_MIN;
+						pMinMaxOutput += minMaxPitch;
+						section++;
+					}
+					return;
+				}
+			}
+
+			//
+
+			int sampleOfs = startSample * nEdges;
+
+			spx minSample = INT_MAX;
+			spx maxSample = INT_MIN;
+
+			for( int i = 0 ; i < sectionSamples ; i++ )
+			{
+				minSample = std::min(minSample, pTopSamples[sampleOfs]);
+				maxSample = std::max(maxSample, pBottomSamples[sampleOfs]);
+
+				sampleOfs += nEdges;
+			}
+
+			pMinMaxOutput[0] = minSample;
+			pMinMaxOutput[1] = maxSample;
+			pMinMaxOutput += minMaxPitch;
+
+			section++;
+			startSample += sectionSamples-1;
+
+			sectionSamples = sectionWidth+1;
+		}
+	}
+
 	//____ _importSamples() ________________________________________________________
 
 	void Edgemap::_importSamples(SampleOrigo origo, const spx* pSource, int edgeBegin, int edgeEnd,

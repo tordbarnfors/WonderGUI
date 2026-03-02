@@ -70,7 +70,10 @@ namespace wg
 
 		void			exportLegacyPalette( HiColor * pDest ) const override;
 
-		
+		void			exportBounds( spx * pMinMaxOutput, int nSections, int sectionWidth,
+						 int topEdge, int bottomEdge, int mapOffset = 0, int minMaxPitch = 2 ) override;
+
+
 		//.____ Misc _________________________________________________________
 		 
 		inline wg_obj		cObject() { return m_cEdgemap; }

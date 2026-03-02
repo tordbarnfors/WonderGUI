@@ -235,8 +235,8 @@ public:
 	WgRect              ContentInViewPixels() const;          // Section of content displayed in the view.
 	bool                PositionContentInViewPixels( WgCoord posInContent, WgOrigo viewPosOrigo = WgOrigo::Center, WgCoord viewPosOffset = {0,0} );
 
+	void				SetInstantIntoView(bool bInstant);	// Set to make scrollIntoView() jump directly to distination (no scrolling).
 	void                ScrollIntoView( WgWidget * pWidget, const WgBorders& margin = 0, const WgRect& viewSection = WgRect() );
-
 
 	void                SetRubberBorder( const WgBorders& border );
 	void                EnableRubberBorder( bool bEnabled );
@@ -380,7 +380,7 @@ private:
 	WgWidgetWeakPtr m_pScrollIntoViewChild;                 // Child that should be scrolled into viewSection of view.
 	WgRect          m_scrollIntoViewSection;                // Section of view child should be scrolled into (default is whole view).
 	WgBorders       m_scrollIntoViewMargin;                 // Margin around child that should be visible.
-
+	bool			m_bInstantIntoView = false;				// Set to make ScrollIntoView() jump directly to destination.
 	WgBorders       m_rubberBorder;
 	bool            m_bRubberBorder = false;
 	bool            m_bRubberBorderHold = false;            // When set, rubber border is temporary disabled.

@@ -162,7 +162,7 @@ namespace wg
 				float beginAdder;
 				float endAdder;
 
-				if ((edgeOut & 0xFFFFFFC0) <= (unsigned int)edgeIn)
+				if ((edgeOut & 0xFFFFFFC0) == (edgeIn & 0xFFFFFFC0))
 				{
 					float firstPixelCoverage = ((64 - (edgeOut & 0x3F)) + (edgeOut - edgeIn) / 2) / 64.f;
 
