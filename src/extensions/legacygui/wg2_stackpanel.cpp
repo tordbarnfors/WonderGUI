@@ -233,7 +233,7 @@ void WgStackPanel::_onRenderRequested( WgVectorHook * _pHook )
 {
 	WgStackHook * pHook = static_cast<WgStackHook*>(_pHook);
 
-	_onRenderRequested(pHook, pHook->_getGeo(WgRect(0,0,m_size)));
+	_onRenderRequested(pHook, WgRect(0,0,m_size));
 }
 
 void WgStackPanel::_onRenderRequested( WgVectorHook * _pHook, const WgRect& _rect )
