@@ -85,12 +85,11 @@ namespace wg
 
 	bool StreamLogger::_logChunk()
 	{
-		GfxStream::Header header;
-
-		int chunkSize = m_pDecoder->chunkSize();
-
 		auto& decoder = * m_pDecoder;
 
+		int chunkSize = decoder.chunkSize();
+
+		GfxStream::Header header;
 		decoder >> header;
 
 		if (header.type == GfxStream::ChunkId::OutOfData)
@@ -253,42 +252,42 @@ namespace wg
 			case GfxStream::ChunkId::Objects:
 			{
 				_readPrintDataInfo();
-				m_pDecoder->skip(header.size - GfxStream::DataInfoSize);
+				decoder.skip(header.size - GfxStream::DataInfoSize);
 				break;
 			}
 
 			case GfxStream::ChunkId::Rects:
 			{
 				_readPrintDataInfo();
-				m_pDecoder->skip(header.size - GfxStream::DataInfoSize);
+				decoder.skip(header.size - GfxStream::DataInfoSize);
 				break;
 			}
 
 			case GfxStream::ChunkId::Colors:
 			{
 				_readPrintDataInfo();
-				m_pDecoder->skip(header.size - GfxStream::DataInfoSize);
+				decoder.skip(header.size - GfxStream::DataInfoSize);
 				break;
 			}
 
 			case GfxStream::ChunkId::Transforms:
 			{
 				_readPrintDataInfo();
-				m_pDecoder->skip(header.size - GfxStream::DataInfoSize);
+				decoder.skip(header.size - GfxStream::DataInfoSize);
 				break;
 			}
 
 			case GfxStream::ChunkId::Commands:
 			{
 				_readPrintDataInfo();
-				m_pDecoder->skip(header.size - GfxStream::DataInfoSize);
+				decoder.skip(header.size - GfxStream::DataInfoSize);
 				break;
 			}
 
 			case GfxStream::ChunkId::UpdateRects:
 			{
 				_readPrintDataInfo();
-				m_pDecoder->skip(header.size - GfxStream::DataInfoSize);
+				decoder.skip(header.size - GfxStream::DataInfoSize);
 				break;
 			}
 
@@ -310,6 +309,8 @@ namespace wg
 				decoder >> bp.tiling;
 				decoder >> bp.paletteCapacity;
 				decoder >> bp.paletteSize;
+
+				decoder.skip(bp.paletteSize*4);
 
 
 				m_charStream << "    surfaceId   = " << surfaceId << std::endl;
@@ -363,7 +364,7 @@ namespace wg
 			case GfxStream::ChunkId::SurfacePixels:
 			{
 				_readPrintDataInfo();
-				m_pDecoder->skip(header.size - GfxStream::DataInfoSize);
+				decoder.skip(header.size - GfxStream::DataInfoSize);
 				break;
 			}
 
@@ -501,7 +502,7 @@ namespace wg
 			case GfxStream::ChunkId::EdgemapSamples:
 			{
 				_readPrintDataInfo();
-				m_pDecoder->skip(header.size - GfxStream::DataInfoSize);
+				decoder.skip(header.size - GfxStream::DataInfoSize);
 				break;
 			}
 
@@ -519,7 +520,7 @@ namespace wg
 				m_charStream << "Unknown Chunk Type: " << (int) header.type << std::endl;
 				m_charStream << "    size: " << (int)header.size << std::endl;
 
-				m_pDecoder->skip(header.size);
+				decoder.skip(header.size);
 				break;
 			}				
 		}
