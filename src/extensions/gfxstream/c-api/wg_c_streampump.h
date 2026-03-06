@@ -37,9 +37,9 @@ extern "C" {
 	WG_EXPORT void				wg_setStreamPumpInput(wg_obj streamPump, wg_component input);
 	WG_EXPORT void				wg_setStreamPumpOutput(wg_obj streamPump, wg_component output);
 
-	WG_EXPORT void				wg_setStreamPumpPacing(wg_obj streamPump, uint16_t fenceId, uint16_t byteInterval, int maxFencesInFlight );
-	WG_EXPORT void				wg_restartStreamPumpPacing(wg_obj streamPump);
-	WG_EXPORT int				wg_streamPumpPacingFencePassed(wg_obj streamPump, uint32_t fenceValue);
+	WG_EXPORT void				wg_setFlowControl(wg_obj streamPump, uint16_t fenceId, int credits, int bytesPerCredit );
+	WG_EXPORT void				wg_restartFlowControl(wg_obj streamPump, int credits);
+	WG_EXPORT int				wg_AddFlowControlCredits(wg_obj streamPump, int credits);
 
 
 
