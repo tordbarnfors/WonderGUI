@@ -147,17 +147,18 @@ bool MyApp::_setupGUI(API* pAPI)
 
 	m_pLayout = PackLayout::create({ .wantedSize = PackLayout::WantedSize::Default,
 	.expandFactor = PackLayout::Factor::Weight, .shrinkFactor = PackLayout::Factor::Weight });
-
+/*
 	m_pDebugger = DebugBackend::create();
 
 	auto pTheme = pAPI->initDefaultTheme();
-	auto pIconSurface = pAPI->loadSurface("resources/debugger_gfx.png");
-	auto pTransparencyGrid = pAPI->loadSurface("resources/checkboardtile.png", nullptr, { .tiling = true } );
+	auto path = pAPI->resourceDirectory();
+	auto pIconSurface = pAPI->loadSurface( path + "debugger_gfx.png");
+	auto pTransparencyGrid = pAPI->loadSurface(path + "checkboardtile.png", nullptr, { .tiling = true } );
 
 	m_pDebugOverlay = DebugOverlay::create( { .backend = m_pDebugger, .theme = pTheme, .icons = pIconSurface, .transparencyGrid = pTransparencyGrid } );
 
-//	m_pDebugOverlay->setActivated(true);
-
+	m_pDebugOverlay->setActivated(true);
+*/
 	auto pPopupOverlay = PopupOverlay::create();
 
 
@@ -186,16 +187,16 @@ bool MyApp::_setupGUI(API* pAPI)
 	pPopupOverlay->mainSlot = pBasePanel;
 
 
-	auto pPopupOverlayForDebugger = PopupOverlay::create();
-	pPopupOverlayForDebugger->mainSlot = m_pDebugOverlay;
+//	auto pPopupOverlayForDebugger = PopupOverlay::create();
+//	pPopupOverlayForDebugger->mainSlot = m_pDebugOverlay;
 
-	m_pDebugOverlay->mainSlot = pPopupOverlay;
+//	m_pDebugOverlay->mainSlot = pPopupOverlay;
 
-	m_pWindow->mainCapsule()->slot = pPopupOverlayForDebugger;
+	m_pWindow->mainCapsule()->slot = pPopupOverlay;
 
 	pSplitPanel->setSplit(0.5f);
 
-	m_pDebugOverlay->grabFocus();
+//	m_pDebugOverlay->grabFocus();
 
 	return true;
 }
