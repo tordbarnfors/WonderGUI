@@ -6,6 +6,7 @@
 using namespace wg;
 using namespace wg::Util;
 
+// Macro for restrict keyword
 #if (_MSC_VER > 1800)
 #define WG_RESTRICT __restrict
 #else
@@ -25,24 +26,21 @@ static inline void _read_pixel_fast8(const uint8_t* WG_RESTRICT pPixel, const Co
 		outR = HiColor::packLinearTab[p[2]];
 		outA = HiColor::packLinearTab[p[3]];
 	}
-
-	if constexpr(format == PixelFormat::BGRA_8_linear || format == PixelFormat::BGRA_8_sRGB)
+	else if constexpr(format == PixelFormat::BGRA_8_linear || format == PixelFormat::BGRA_8_sRGB)
 	{
 		outB = pPixel[0];
 		outG = pPixel[1];
 		outR = pPixel[2];
 		outA = pPixel[3];
 	}
-
-	if constexpr(format == PixelFormat::BGR_8_linear || format == PixelFormat::BGR_8_sRGB || format == PixelFormat::BGRX_8_linear || format == PixelFormat::BGRX_8_sRGB)
+	else if constexpr(format == PixelFormat::BGR_8_linear || format == PixelFormat::BGR_8_sRGB || format == PixelFormat::BGRX_8_linear || format == PixelFormat::BGRX_8_sRGB)
 	{
 		outB = pPixel[0];
 		outG = pPixel[1];
 		outR = pPixel[2];
 		outA = 255;
 	}
-
-	if constexpr(format == PixelFormat::BGR_565_linear || format == PixelFormat::BGR_565_sRGB)
+	else if constexpr(format == PixelFormat::BGR_565_linear || format == PixelFormat::BGR_565_sRGB)
 	{
 		uint16_t pixel = *(uint16_t*)pPixel;
 #if WG_IS_BIG_ENDIAN
@@ -53,8 +51,7 @@ static inline void _read_pixel_fast8(const uint8_t* WG_RESTRICT pPixel, const Co
 		outR = SoftBackend::s_fast8_channel_5[pixel >> 11];
 		outA = 255;
 	}
-
-	if constexpr(format == PixelFormat::RGB_565_bigendian)
+	else if constexpr(format == PixelFormat::RGB_565_bigendian)
 	{
 		uint16_t pixel = *(uint16_t*)pPixel;
 #if WG_IS_LITTLE_ENDIAN
@@ -65,8 +62,7 @@ static inline void _read_pixel_fast8(const uint8_t* WG_RESTRICT pPixel, const Co
 		outB = SoftBackend::s_fast8_channel_5[pixel >> 11];
 		outA = 255;
 	}
-
-	if constexpr(format == PixelFormat::RGB_555_bigendian)
+	else if constexpr(format == PixelFormat::RGB_555_bigendian)
 	{
 		uint16_t pixel = *(uint16_t*)pPixel;
 #if WG_IS_LITTLE_ENDIAN
@@ -77,24 +73,21 @@ static inline void _read_pixel_fast8(const uint8_t* WG_RESTRICT pPixel, const Co
 		outB = SoftBackend::s_fast8_channel_5[pixel >> 11];
 		outA = 255;
 	}
-
-	if constexpr(format == PixelFormat::BGRA_4_linear)
+	else if constexpr(format == PixelFormat::BGRA_4_linear)
 	{
 		outB = SoftBackend::s_fast8_channel_4_1[pPixel[0]];
 		outG = SoftBackend::s_fast8_channel_4_2[pPixel[0]];
 		outR = SoftBackend::s_fast8_channel_4_1[pPixel[1]];
 		outA = SoftBackend::s_fast8_channel_4_2[pPixel[1]];
 	}
-
-	if constexpr(format == PixelFormat::Alpha_8)
+	else if constexpr(format == PixelFormat::Alpha_8)
 	{
 		outB = 255;
 		outG = 255;
 		outR = 255;
 		outA = *pPixel;
 	}
-
-	if constexpr(format == PixelFormat::Index_8_sRGB || format == PixelFormat::Index_8_linear)
+	else if constexpr(format == PixelFormat::Index_8_sRGB || format == PixelFormat::Index_8_linear)
 	{
 		Color8 c = pPalette[*pPixel];
 		outB = c.b;
@@ -107,9 +100,10 @@ static inline void _read_pixel_fast8(const uint8_t* WG_RESTRICT pPixel, const Co
 
 //____ read_pixel() _______________________________________________________
 
-inline void _read_pixel(const uint8_t* WG_RESTRICT pPixel, PixelFormat format, const Color8* WG_RESTRICT pPalette, const HiColor* WG_RESTRICT pPalette4096, int16_t& outB, int16_t& outG, int16_t& outR, int16_t& outA)
+template<PixelFormat format>
+static inline void _read_pixel(const uint8_t* WG_RESTRICT pPixel, const Color8* WG_RESTRICT pPalette, const HiColor* WG_RESTRICT pPalette4096, int16_t& outB, int16_t& outG, int16_t& outR, int16_t& outA)
 {
-	if (format == PixelFormat::Undefined)
+	if constexpr(format == PixelFormat::Undefined)
 	{
 		const int16_t* p = (const int16_t*)pPixel;
 
@@ -118,40 +112,35 @@ inline void _read_pixel(const uint8_t* WG_RESTRICT pPixel, PixelFormat format, c
 		outR = p[2];
 		outA = p[3];
 	}
-
-	if (format == PixelFormat::BGRA_8_linear)
+	else if constexpr(format == PixelFormat::BGRA_8_linear)
 	{
 		outB = HiColor::unpackLinearTab[pPixel[0]];
 		outG = HiColor::unpackLinearTab[pPixel[1]];
 		outR = HiColor::unpackLinearTab[pPixel[2]];
 		outA = HiColor::unpackLinearTab[pPixel[3]];
 	}
-
-	if (format == PixelFormat::BGRA_8_sRGB)
+	else if constexpr(format == PixelFormat::BGRA_8_sRGB)
 	{
 		outB = HiColor::unpackSRGBTab[pPixel[0]];
 		outG = HiColor::unpackSRGBTab[pPixel[1]];
 		outR = HiColor::unpackSRGBTab[pPixel[2]];
 		outA = HiColor::unpackLinearTab[pPixel[3]];
 	}
-
-	if (format == PixelFormat::BGR_8_linear || format == PixelFormat::BGRX_8_linear )
+	else if constexpr(format == PixelFormat::BGR_8_linear || format == PixelFormat::BGRX_8_linear)
 	{
 		outB = HiColor::unpackLinearTab[pPixel[0]];
 		outG = HiColor::unpackLinearTab[pPixel[1]];
 		outR = HiColor::unpackLinearTab[pPixel[2]];
 		outA = 4096;
 	}
-
-	if (format == PixelFormat::BGR_8_sRGB || format == PixelFormat::BGRX_8_sRGB)
+	else if constexpr(format == PixelFormat::BGR_8_sRGB || format == PixelFormat::BGRX_8_sRGB)
 	{
 		outB = HiColor::unpackSRGBTab[pPixel[0]];
 		outG = HiColor::unpackSRGBTab[pPixel[1]];
 		outR = HiColor::unpackSRGBTab[pPixel[2]];
 		outA = 4096;
 	}
-
-	if (format == PixelFormat::BGR_565_sRGB)
+	else if constexpr(format == PixelFormat::BGR_565_sRGB)
 	{
 		uint16_t pixel = *(uint16_t*)pPixel;
 #if WG_IS_BIG_ENDIAN
@@ -162,8 +151,7 @@ inline void _read_pixel(const uint8_t* WG_RESTRICT pPixel, PixelFormat format, c
 		outR = SoftBackend::s_channel_5_sRGB[pixel >> 11];
 		outA = 4096;
 	}
-
-	if (format == PixelFormat::BGR_565_linear)
+	else if constexpr(format == PixelFormat::BGR_565_linear)
 	{
 		uint16_t pixel = *(uint16_t*)pPixel;
 #if WG_IS_BIG_ENDIAN
@@ -174,8 +162,7 @@ inline void _read_pixel(const uint8_t* WG_RESTRICT pPixel, PixelFormat format, c
 		outR = SoftBackend::s_channel_5_linear[pixel >> 11];
 		outA = 4096;
 	}
-
-	if (format == PixelFormat::RGB_565_bigendian)
+	else if constexpr(format == PixelFormat::RGB_565_bigendian)
 	{
 		uint16_t pixel = *(uint16_t*)pPixel;
 #if WG_IS_LITTLE_ENDIAN
@@ -186,8 +173,7 @@ inline void _read_pixel(const uint8_t* WG_RESTRICT pPixel, PixelFormat format, c
 		outB = SoftBackend::s_channel_5_linear[pixel >> 11];
 		outA = 4096;
 	}
-
-	if (format == PixelFormat::RGB_555_bigendian)
+	else if constexpr(format == PixelFormat::RGB_555_bigendian)
 	{
 		uint16_t pixel = *(uint16_t*)pPixel;
 #if WG_IS_LITTLE_ENDIAN
@@ -198,24 +184,21 @@ inline void _read_pixel(const uint8_t* WG_RESTRICT pPixel, PixelFormat format, c
 		outB = SoftBackend::s_channel_5_linear[pixel >> 11];
 		outA = 4096;
 	}
-	
-	if (format == PixelFormat::BGRA_4_linear)
+	else if constexpr(format == PixelFormat::BGRA_4_linear)
 	{
 		outB = SoftBackend::s_channel_4_1[pPixel[0]];
 		outG = SoftBackend::s_channel_4_2[pPixel[0]];
 		outR = SoftBackend::s_channel_4_1[pPixel[1]];
 		outA = SoftBackend::s_channel_4_2[pPixel[1]];
 	}
-
-	if (format == PixelFormat::Alpha_8)
+	else if constexpr(format == PixelFormat::Alpha_8)
 	{
 		outB = 4096;
 		outG = 4096;
 		outR = 4096;
 		outA = HiColor::unpackLinearTab[*pPixel];
 	}
-
-	if (format == PixelFormat::Index_8_sRGB || format == PixelFormat::Index_8_linear)
+	else if constexpr(format == PixelFormat::Index_8_sRGB || format == PixelFormat::Index_8_linear)
 	{
 		const HiColor* p = &pPalette4096[(*pPixel)];
 		outB = p->b;
@@ -241,62 +224,53 @@ static inline void _write_pixel_fast8(uint8_t* pPixel, int16_t b, int16_t g, int
 		p[2] = HiColor::unpackLinearTab[r];
 		p[3] = HiColor::unpackLinearTab[a];
 	}
-
-	if constexpr(format == PixelFormat::BGRA_8_linear || format == PixelFormat::BGRA_8_sRGB)
+	else if constexpr(format == PixelFormat::BGRA_8_linear || format == PixelFormat::BGRA_8_sRGB)
 	{
 		pPixel[0] = (uint8_t)b;
 		pPixel[1] = (uint8_t)g;
 		pPixel[2] = (uint8_t)r;
 		pPixel[3] = (uint8_t)a;
 	}
-
-	if constexpr(format == PixelFormat::BGR_8_linear || format == PixelFormat::BGR_8_sRGB || format == PixelFormat::BGRX_8_linear || format == PixelFormat::BGRX_8_sRGB)
+	else if constexpr(format == PixelFormat::BGR_8_linear || format == PixelFormat::BGR_8_sRGB || format == PixelFormat::BGRX_8_linear || format == PixelFormat::BGRX_8_sRGB)
 	{
 		pPixel[0] = (uint8_t)b;
 		pPixel[1] = (uint8_t)g;
 		pPixel[2] = (uint8_t)r;
 	}
-
-	if constexpr(format == PixelFormat::BGR_565_linear || format == PixelFormat::BGR_565_sRGB)
+	else if constexpr(format == PixelFormat::BGR_565_linear || format == PixelFormat::BGR_565_sRGB)
 	{
 		pPixel[0] = (b >> 3) | ((g & 0xFC) << 3);
 		pPixel[1] = (g >> 5) | (r & 0xF8);
-
 	}
-
-	if constexpr(format == PixelFormat::RGB_565_bigendian)
+	else if constexpr(format == PixelFormat::RGB_565_bigendian)
 	{
 		pPixel[0] = (b & 0xF8) | (g >> 5);
 		pPixel[1] = ((g & 0x1C) << 3) | (r >> 3);
 	}
-
-	if constexpr(format == PixelFormat::RGB_555_bigendian)
+	else if constexpr(format == PixelFormat::RGB_555_bigendian)
 	{
 		pPixel[0] = (b & 0xF8) | (g >> 5);
 		pPixel[1] = ((g & 0x18) << 3) | (r >> 3);
 	}
-
-	if constexpr(format == PixelFormat::BGRA_4_linear)
+	else if constexpr(format == PixelFormat::BGRA_4_linear)
 	{
 		pPixel[0] = (b >> 4) | (g & 0xF0);
 		pPixel[1] = (r >> 4) | (a & 0xF0);
 	}
-
-	if constexpr(format == PixelFormat::Alpha_8)
+	else if constexpr(format == PixelFormat::Alpha_8)
 	{
 		pPixel[0] = (uint8_t)a;
 	}
-
 }
 
 
 //____ write_pixel() _______________________________________________________
-
-inline void _write_pixel(uint8_t* pPixel, PixelFormat format, int16_t b, int16_t g, int16_t r, int16_t a)
+template<PixelFormat format>
+static inline void _write_pixel(uint8_t* pPixel, int16_t b, int16_t g, int16_t r, int16_t a)
 {
 	//TODO: support BigEndian systems!
 
-	if (format == PixelFormat::Undefined)
+	if constexpr(format == PixelFormat::Undefined)
 	{
 		int16_t* p = (int16_t*)pPixel;
 
@@ -305,68 +279,58 @@ inline void _write_pixel(uint8_t* pPixel, PixelFormat format, int16_t b, int16_t
 		p[2] = r;
 		p[3] = a;
 	}
-
-	if (format == PixelFormat::BGRA_8_linear)
+	else if constexpr(format == PixelFormat::BGRA_8_linear)
 	{
 		pPixel[0] = HiColor::packLinearTab[b];
 		pPixel[1] = HiColor::packLinearTab[g];
 		pPixel[2] = HiColor::packLinearTab[r];
 		pPixel[3] = HiColor::packLinearTab[a];
 	}
-
-	if (format == PixelFormat::BGRA_8_sRGB)
+	else if constexpr(format == PixelFormat::BGRA_8_sRGB)
 	{
 		pPixel[0] = HiColor::packSRGBTab[b];
 		pPixel[1] = HiColor::packSRGBTab[g];
 		pPixel[2] = HiColor::packSRGBTab[r];
 		pPixel[3] = HiColor::packLinearTab[a];
 	}
-
-	if (format == PixelFormat::BGR_8_linear || format == PixelFormat::BGRX_8_linear)
+	else if constexpr(format == PixelFormat::BGR_8_linear || format == PixelFormat::BGRX_8_linear)
 	{
 		pPixel[0] = HiColor::packLinearTab[b];
 		pPixel[1] = HiColor::packLinearTab[g];
 		pPixel[2] = HiColor::packLinearTab[r];
 	}
-
-	if (format == PixelFormat::BGR_8_sRGB || format == PixelFormat::BGRX_8_sRGB)
+	else if constexpr(format == PixelFormat::BGR_8_sRGB || format == PixelFormat::BGRX_8_sRGB)
 	{
 		pPixel[0] = HiColor::packSRGBTab[b];
 		pPixel[1] = HiColor::packSRGBTab[g];
 		pPixel[2] = HiColor::packSRGBTab[r];
 	}
-
-	if (format == PixelFormat::BGR_565_sRGB)
+	else if constexpr(format == PixelFormat::BGR_565_sRGB)
 	{
 		pPixel[0] = (HiColor::packSRGBTab[b] >> 3) | ((HiColor::packSRGBTab[g] & 0xFC) << 3);
 		pPixel[1] = (HiColor::packSRGBTab[g] >> 5) | (HiColor::packSRGBTab[r] & 0xF8);
 	}
-
-	if (format == PixelFormat::BGR_565_linear)
+	else if constexpr(format == PixelFormat::BGR_565_linear)
 	{
 		pPixel[0] = (HiColor::packLinearTab[b] >> 3) | ((HiColor::packLinearTab[g] & 0xFC) << 3);
 		pPixel[1] = (HiColor::packLinearTab[g] >> 5) | (HiColor::packLinearTab[r] & 0xF8);
 	}
-
-	if (format == PixelFormat::RGB_565_bigendian)
+	else if constexpr(format == PixelFormat::RGB_565_bigendian)
 	{
 		pPixel[0] = (HiColor::packLinearTab[b] & 0xF8) | (HiColor::packLinearTab[g] >> 5);
 		pPixel[1] = ((HiColor::packLinearTab[g] & 0x1C) << 3) | (HiColor::packLinearTab[r] >> 3);
 	}
-
-	if (format == PixelFormat::RGB_555_bigendian)
+	else if constexpr(format == PixelFormat::RGB_555_bigendian)
 	{
 		pPixel[0] = (HiColor::packLinearTab[b] & 0xF8) | (HiColor::packLinearTab[g] >> 5);
 		pPixel[1] = ((HiColor::packLinearTab[g] & 0x18) << 3) | (HiColor::packLinearTab[r] >> 3);
 	}
-	
-	if (format == PixelFormat::BGRA_4_linear)
+	else if constexpr(format == PixelFormat::BGRA_4_linear)
 	{
 		pPixel[0] = (HiColor::packLinearTab[b] >> 4) | (HiColor::packLinearTab[g] & 0xF0);
 		pPixel[1] = (HiColor::packLinearTab[r] >> 4) | (HiColor::packLinearTab[a] & 0xF0);
 	}
-
-	if (format == PixelFormat::Alpha_8)
+	else if constexpr(format == PixelFormat::Alpha_8)
 	{
 		pPixel[0] = HiColor::packLinearTab[a];
 	}
@@ -374,7 +338,7 @@ inline void _write_pixel(uint8_t* pPixel, PixelFormat format, int16_t b, int16_t
 
 //____ _blend_pixels_fast8() ____________________________________________________
 template<BlendMode mode, PixelFormat destFormat>
-inline void	_blend_pixels_fast8(int morphFactor,
+static inline void _blend_pixels_fast8(int morphFactor,
 	int16_t srcB, int16_t srcG, int16_t srcR, int16_t srcA,
 	int16_t backB, int16_t backG, int16_t backR, int16_t backA,
 	int16_t& outB, int16_t& outG, int16_t& outR, int16_t& outA,
@@ -385,51 +349,53 @@ inline void	_blend_pixels_fast8(int morphFactor,
 	// into templates where only one BlendMode is possible. With if-statements,
 	// the statements are properly detected as never occuring and completely removed.
 
-	if (destFormat == PixelFormat::Alpha_8)
+	if constexpr(destFormat == PixelFormat::Alpha_8)
 	{
 		// Alpha only destination. We treat alpha differently when there is no other channel.
 
-		if (mode == BlendMode::Replace)
+		if constexpr(mode == BlendMode::Replace) {
 			outA = srcA;
-
-		if (mode == BlendMode::Morph)
+		}
+		else if constexpr(mode == BlendMode::Morph)
 		{
 			int invMorph = 4096 - morphFactor;
 			outA = (backA * invMorph + srcA * morphFactor) >> 12;
 		}
-
-		if (mode == BlendMode::Blend)
+		else if constexpr(mode == BlendMode::Blend)
 		{
 			int alpha = SoftBackend::s_mulTab[srcA];
 			int invAlpha = 65536 - alpha;
 
 			outA = (backA * invAlpha + 255 * alpha) >> 16;
 		}
-
-		if (mode == BlendMode::BlendFixedColor)
+		else if constexpr(mode == BlendMode::BlendFixedColor)
 		{
 			int alpha = SoftBackend::s_mulTab[srcA];
 			int invAlpha = 65536 - alpha;
 
 			outA = (fixedA * invAlpha + 255 * alpha) >> 16;
 		}
-		
-		if (mode == BlendMode::Add)
+		else if constexpr(mode == BlendMode::Add)
+		{
 			outA = limitUint8(backA + srcA);
-
-		if (mode == BlendMode::Subtract)
+		}
+		else if constexpr(mode == BlendMode::Subtract)
+		{
 			outA = limitUint8(backA - srcA);
-
-		if (mode == BlendMode::Multiply)
+		}
+		else if constexpr(mode == BlendMode::Multiply)
+		{
 			outA = (SoftBackend::s_mulTab[backA] * srcA) >> 16;
-
-		if (mode == BlendMode::Min)
+		}
+		else if constexpr(mode == BlendMode::Min)
+		{
 			outA = srcA - limitUint8(srcA - backA);
-
-		if (mode == BlendMode::Max)
+		}
+		else if constexpr(mode == BlendMode::Max)
+		{
 			outA = backA + limitUint8(srcA - backA);
-
-		if (mode == BlendMode::Invert)
+		}
+		else if constexpr(mode == BlendMode::Invert)
 		{
 			int srcA2 = SoftBackend::s_mulTab[srcA];
 			outA = (srcA2 * (255 - backA) + backA * (65536 - srcA2)) >> 16;
@@ -437,15 +403,14 @@ inline void	_blend_pixels_fast8(int morphFactor,
 	}
 	else
 	{
-		if (mode == BlendMode::Replace)
+		if constexpr(mode == BlendMode::Replace)
 		{
 			outB = srcB;
 			outG = srcG;
 			outR = srcR;
 			outA = srcA;
 		}
-
-		if (mode == BlendMode::Morph)
+		else if constexpr(mode == BlendMode::Morph)
 		{
 			int invMorph = 4096 - morphFactor;
 
@@ -454,8 +419,7 @@ inline void	_blend_pixels_fast8(int morphFactor,
 			outR = (backR * invMorph + srcR * morphFactor) >> 12;
 			outA = (backA * invMorph + srcA * morphFactor) >> 12;
 		}
-
-		if (mode == BlendMode::Blend)
+		else if constexpr(mode == BlendMode::Blend)
 		{
 			int alpha = SoftBackend::s_mulTab[srcA];
 			int invAlpha = 65536 - alpha;
@@ -465,8 +429,7 @@ inline void	_blend_pixels_fast8(int morphFactor,
 			outR = (backR * invAlpha + srcR * alpha) >> 16;
 			outA = (backA * invAlpha + 255 * alpha) >> 16;
 		}
-
-		if (mode == BlendMode::BlendFixedColor)
+		else if constexpr(mode == BlendMode::BlendFixedColor)
 		{
 			int alpha = SoftBackend::s_mulTab[srcA];
 			int invAlpha = 65536 - alpha;
@@ -476,8 +439,7 @@ inline void	_blend_pixels_fast8(int morphFactor,
 			outR = (fixedR * invAlpha + srcR * alpha) >> 16;
 			outA = (fixedA * invAlpha + 255 * alpha) >> 16;
 		}
-		
-		if (mode == BlendMode::Add)
+		else if constexpr(mode == BlendMode::Add)
 		{
 			int alpha = SoftBackend::s_mulTab[srcA];
 
@@ -486,8 +448,7 @@ inline void	_blend_pixels_fast8(int morphFactor,
 			outR = limitUint8(backR + (srcR * alpha >> 16));
 			outA = backA;
 		}
-
-		if (mode == BlendMode::Subtract)
+		else if constexpr(mode == BlendMode::Subtract)
 		{
 			int alpha = SoftBackend::s_mulTab[srcA];
 
@@ -496,32 +457,28 @@ inline void	_blend_pixels_fast8(int morphFactor,
 			outR = limitUint8(backR - (srcR * alpha >> 16));
 			outA = backA;
 		}
-
-		if (mode == BlendMode::Multiply)
+		else if constexpr(mode == BlendMode::Multiply)
 		{
 			outB = (SoftBackend::s_mulTab[backB] * srcB) >> 16;
 			outG = (SoftBackend::s_mulTab[backG] * srcG) >> 16;
 			outR = (SoftBackend::s_mulTab[backR] * srcR) >> 16;
 			outA = backA;
 		}
-
-		if (mode == BlendMode::Min)
+		else if constexpr(mode == BlendMode::Min)
 		{
 			outB = srcB - limitUint8(srcB - backB);
 			outG = srcG - limitUint8(srcG - backG);
 			outR = srcR - limitUint8(srcR - backR);
 			outA = backA;
 		}
-
-		if (mode == BlendMode::Max)
+		else if constexpr(mode == BlendMode::Max)
 		{
 			outB = backB + limitUint8(srcB - backB);
 			outG = backG + limitUint8(srcG - backG);
 			outR = backR + limitUint8(srcR - backR);
 			outA = backA;
 		}
-
-		if (mode == BlendMode::Invert)
+		else if constexpr(mode == BlendMode::Invert)
 		{
 			int srcB2 = SoftBackend::s_mulTab[srcB];
 			int srcG2 = SoftBackend::s_mulTab[srcG];
@@ -537,8 +494,8 @@ inline void	_blend_pixels_fast8(int morphFactor,
 
 
 //____ _blend_pixels() ____________________________________________________
-
-inline void	_blend_pixels(BlendMode mode, int morphFactor, PixelFormat destFormat,
+template<BlendMode mode, PixelFormat destFormat>
+static inline void	_blend_pixels(int morphFactor,
 	int16_t srcB, int16_t srcG, int16_t srcR, int16_t srcA,
 	int16_t backB, int16_t backG, int16_t backR, int16_t backA,
 	int16_t& outB, int16_t& outG, int16_t& outR, int16_t& outA,
@@ -549,65 +506,67 @@ inline void	_blend_pixels(BlendMode mode, int morphFactor, PixelFormat destForma
 	// into templates where only one BlendMode is possible. With if-statements,
 	// the statements are properly detected as never occuring and completely removed.
 
-	if (destFormat == PixelFormat::Alpha_8)
+	if constexpr(destFormat == PixelFormat::Alpha_8)
 	{
 		// Alpha only destination. We treat alpha differently when there is no other channel.
-
-		if (mode == BlendMode::Replace)
+		if constexpr(mode == BlendMode::Replace)
+		{
 			outA = srcA;
-
-		if (mode == BlendMode::Morph)
+		}
+		else if constexpr(mode == BlendMode::Morph)
 		{
 			int invMorph = 4096 - morphFactor;
 			outA = (backA * invMorph + srcA * morphFactor) >> 12;
 		}
-
-		if (mode == BlendMode::Blend)
+		else if constexpr(mode == BlendMode::Blend)
 		{
 			int alpha = srcA;
 			int invAlpha = 4096 - alpha;
 
 			outA = (backA * invAlpha + 4096 * alpha) >> 12;
 		}
-
-		if (mode == BlendMode::BlendFixedColor)
+		else if constexpr(mode == BlendMode::BlendFixedColor)
 		{
 			int alpha = srcA;
 			int invAlpha = 4096 - alpha;
 
 			outA = (fixedA * invAlpha + 4096 * alpha) >> 12;
 		}
-		
-		if (mode == BlendMode::Add)
+		else if constexpr(mode == BlendMode::Add)
+		{
 			outA = SoftBackend::s_limit4096Tab[4097 + backA + srcA];
-
-		if (mode == BlendMode::Subtract)
+		}
+		else if constexpr(mode == BlendMode::Subtract)
+		{
 			outA = SoftBackend::s_limit4096Tab[4097 + backA - srcA];
-
-		if (mode == BlendMode::Multiply)
+		}
+		else if constexpr(mode == BlendMode::Multiply)
+		{
 			outA = (backA * srcA) >> 12;
-
-		if (mode == BlendMode::Min)
+		}
+		else if constexpr(mode == BlendMode::Min)
+		{
 			outA = std::min(backA, srcA);
-
-		if (mode == BlendMode::Max)
+		}
+		else if constexpr(mode == BlendMode::Max)
+		{
 			outA = std::max(backA, srcA);
-
-		if (mode == BlendMode::Invert)
+		}
+		else if constexpr(mode == BlendMode::Invert)
+		{
 			outA = (srcA * (4096 - backA) + backA * (4096 - srcA)) >> 12;
-
+		}
 	}
 	else
 	{
-		if (mode == BlendMode::Replace)
+		if constexpr (mode == BlendMode::Replace)
 		{
 			outB = srcB;
 			outG = srcG;
 			outR = srcR;
 			outA = srcA;
 		}
-
-		if (mode == BlendMode::Morph)
+		else if constexpr(mode == BlendMode::Morph)
 		{
 			int invMorph = 4096 - morphFactor;
 
@@ -616,8 +575,7 @@ inline void	_blend_pixels(BlendMode mode, int morphFactor, PixelFormat destForma
 			outR = (backR * invMorph + srcR * morphFactor) >> 12;
 			outA = (backA * invMorph + srcA * morphFactor) >> 12;
 		}
-
-		if (mode == BlendMode::Blend)
+		else if constexpr(mode == BlendMode::Blend)
 		{
 			int alpha = srcA;
 			int invAlpha = 4096 - alpha;
@@ -627,8 +585,7 @@ inline void	_blend_pixels(BlendMode mode, int morphFactor, PixelFormat destForma
 			outR = (backR * invAlpha + srcR * alpha) >> 12;
 			outA = (backA * invAlpha + 4096 * alpha) >> 12;
 		}
-
-		if (mode == BlendMode::BlendFixedColor)
+		else if constexpr(mode == BlendMode::BlendFixedColor)
 		{
 			int alpha = srcA;
 			int invAlpha = 4096 - alpha;
@@ -638,8 +595,7 @@ inline void	_blend_pixels(BlendMode mode, int morphFactor, PixelFormat destForma
 			outR = (fixedR * invAlpha + srcR * alpha) >> 12;
 			outA = (fixedA * invAlpha + 4096 * alpha) >> 12;
 		}
-		
-		if (mode == BlendMode::Add)
+		else if constexpr(mode == BlendMode::Add)
 		{
 			int alpha = srcA;
 
@@ -648,8 +604,7 @@ inline void	_blend_pixels(BlendMode mode, int morphFactor, PixelFormat destForma
 			outR = SoftBackend::s_limit4096Tab[4097 + backR + (srcR * alpha >> 12)];
 			outA = backA;
 		}
-
-		if (mode == BlendMode::Subtract)
+		else if constexpr(mode == BlendMode::Subtract)
 		{
 			int alpha = srcA;
 
@@ -658,32 +613,28 @@ inline void	_blend_pixels(BlendMode mode, int morphFactor, PixelFormat destForma
 			outR = SoftBackend::s_limit4096Tab[4097 + backR - (srcR * alpha >> 12)];
 			outA = backA;
 		}
-
-		if (mode == BlendMode::Multiply)
+		else if constexpr(mode == BlendMode::Multiply)
 		{
 			outB = (backB * srcB) >> 12;
 			outG = (backG * srcG) >> 12;
 			outR = (backR * srcR) >> 12;
 			outA = backA;
 		}
-
-		if (mode == BlendMode::Min)
+		else if constexpr(mode == BlendMode::Min)
 		{
 			outB = std::min(backB, srcB);
 			outG = std::min(backG, srcG);
 			outR = std::min(backR, srcR);
 			outA = backA;
 		}
-
-		if (mode == BlendMode::Max)
+		else if constexpr(mode == BlendMode::Max)
 		{
 			outB = std::max(backB, srcB);
 			outG = std::max(backG, srcG);
 			outR = std::max(backR, srcR);
 			outA = backA;
 		}
-
-		if (mode == BlendMode::Invert)
+		else if constexpr(mode == BlendMode::Invert)
 		{
 			outB = (srcB * (4096 - backB) + backB * (4096 - srcB)) >> 12;
 			outG = (srcG * (4096 - backG) + backG * (4096 - srcG)) >> 12;
@@ -695,51 +646,49 @@ inline void	_blend_pixels(BlendMode mode, int morphFactor, PixelFormat destForma
 
 
 //____ _color_tint_init() _________________________________________________
-
-inline void _color_tint_init(TintMode tintMode, const SoftBackend::ColTrans& tint, int bits, int16_t inB, int16_t inG, int16_t inR, int16_t inA,
-							 int16_t& outB, int16_t& outG, int16_t& outR, int16_t& outA, const HiColor*& WG_RESTRICT pTintmapX, const HiColor*& WG_RESTRICT pTintmapY, CoordI patchPos)
+template<TintMode tintMode>
+static inline void _color_tint_init(const SoftBackend::ColTrans& tint, int bits, int16_t inB, int16_t inG, int16_t inR, int16_t inA,
+                             int16_t& outB, int16_t& outG, int16_t& outR, int16_t& outA, const HiColor*& WG_RESTRICT pTintmapX, const HiColor*& WG_RESTRICT pTintmapY, CoordI patchPos)
 {
-	if (tintMode == TintMode::None)
+	if constexpr(tintMode == TintMode::None)
 	{
 		outR = inR;
 		outG = inG;
 		outB = inB;
 		outA = inA;
 	}
-
-	if (tintMode == TintMode::Flat)
-	{
+    else if constexpr(tintMode == TintMode::Flat)
+    {
 		outR = (inR * tint.flatTintColor.r) >> 12;
 		outG = (inG * tint.flatTintColor.g) >> 12;
 		outB = (inB * tint.flatTintColor.b) >> 12;
 		outA = (inA * tint.flatTintColor.a) >> 12;
 	}
 
-	if (tintMode == TintMode::GradientX || tintMode == TintMode::GradientXY)
-	{
+    if constexpr(tintMode == TintMode::GradientX || tintMode == TintMode::GradientXY)
+    {
 		pTintmapX = tint.pTintAxisX + patchPos.x - tint.tintRect.x;
 	}
-	
-	if (tintMode == TintMode::GradientY || tintMode == TintMode::GradientXY)
-	{
+
+    if constexpr(tintMode == TintMode::GradientY || tintMode == TintMode::GradientXY)
+    {
 		pTintmapY = tint.pTintAxisY + patchPos.y - tint.tintRect.y;
 	}
 }
 
 //____ _color_tint_line() _________________________________________________
-
-inline void _color_tint_line(TintMode tintMode, const SoftBackend::ColTrans& tint, int bits, int16_t inB, int16_t inG, int16_t inR, int16_t inA,
-							 int16_t& lineB, int16_t& lineG, int16_t& lineR, int16_t& lineA,
-							 int16_t& outB, int16_t& outG, int16_t& outR, int16_t& outA,
-							 const HiColor*& pTintmapX, const HiColor*&  pTintmapY, CoordI patchPos)
+template<TintMode tintMode>
+static inline void _color_tint_line(const SoftBackend::ColTrans& tint, int bits, int16_t inB, int16_t inG, int16_t inR, int16_t inA,
+                                                        int16_t& lineB, int16_t& lineG, int16_t& lineR, int16_t& lineA,
+                                                        int16_t& outB, int16_t& outG, int16_t& outR, int16_t& outA,
+                                                        const HiColor*& pTintmapX, const HiColor*& pTintmapY, CoordI patchPos)
 {
-	if (tintMode == TintMode::GradientX || tintMode == TintMode::GradientXY )
+	if constexpr(tintMode == TintMode::GradientX || tintMode == TintMode::GradientXY )
 	{
 		pTintmapX = tint.pTintAxisX + patchPos.x - tint.tintRect.x;
 	}
-
-	if (tintMode == TintMode::GradientY )
-	{
+	else if constexpr(tintMode == TintMode::GradientY)
+    {
 		outB = (inB * pTintmapY->b) >> 12;
 		outG = (inG * pTintmapY->g) >> 12;
 		outR = (inR * pTintmapY->r) >> 12;
@@ -747,9 +696,8 @@ inline void _color_tint_line(TintMode tintMode, const SoftBackend::ColTrans& tin
 
 		pTintmapY++;
 	}
-
-	if (tintMode == TintMode::GradientXY )
-	{
+    else if constexpr(tintMode == TintMode::GradientXY)
+    {
 		lineB = (inB * pTintmapY->b) >> 12;
 		lineG = (inG * pTintmapY->g) >> 12;
 		lineR = (inR * pTintmapY->r) >> 12;
@@ -761,12 +709,12 @@ inline void _color_tint_line(TintMode tintMode, const SoftBackend::ColTrans& tin
 
 
 //____ _color_tint_pixel() ______________________________________________________
-
-inline void _color_tint_pixel(TintMode tintMode, int16_t inB, int16_t inG, int16_t inR, int16_t inA,
-							  int16_t& lineB, int16_t& lineG, int16_t& lineR, int16_t& lineA,
-							  int16_t& outB, int16_t& outG, int16_t& outR, int16_t& outA, const HiColor*& pTintmapX)
+template<TintMode tintMode>
+static inline void _color_tint_pixel(int16_t inB, int16_t inG, int16_t inR, int16_t inA,
+                              int16_t& lineB, int16_t& lineG, int16_t& lineR, int16_t& lineA,
+                              int16_t& outB, int16_t& outG, int16_t& outR, int16_t& outA, const HiColor*& pTintmapX)
 {
-	if (tintMode == TintMode::GradientX)
+	if constexpr(tintMode == TintMode::GradientX)
 	{
 		outB = (inB * pTintmapX->b) >> 12;
 		outG = (inG * pTintmapX->g) >> 12;
@@ -775,8 +723,7 @@ inline void _color_tint_pixel(TintMode tintMode, int16_t inB, int16_t inG, int16
 
 		pTintmapX++;
 	}
-	
-	if (tintMode == TintMode::GradientXY)
+	else if constexpr(tintMode == TintMode::GradientXY)
 	{
 		outB = (lineB * pTintmapX->b) >> 12;
 		outG = (lineG * pTintmapX->g) >> 12;
@@ -788,44 +735,43 @@ inline void _color_tint_pixel(TintMode tintMode, int16_t inB, int16_t inG, int16
 }
 
 //____ _texel_tint_init() _________________________________________________
-
-inline void _texel_tint_init(TintMode tintMode, const SoftBackend::ColTrans& tint, int bits,
-							 int16_t& outB, int16_t& outG, int16_t& outR, int16_t& outA,
-							 const HiColor*& pTintmapX, const HiColor*&  pTintmapY, CoordI patchPos)
+template<TintMode tintMode>
+inline void _texel_tint_init(const SoftBackend::ColTrans& tint, int bits,
+                             int16_t& outB, int16_t& outG, int16_t& outR, int16_t& outA,
+                             const HiColor*& pTintmapX, const HiColor*& pTintmapY, CoordI patchPos)
 {
-	if (tintMode == TintMode::Flat)
-	{
+    if constexpr(tintMode == TintMode::Flat)
+    {
 		outR = tint.flatTintColor.r;
 		outG = tint.flatTintColor.g;
 		outB = tint.flatTintColor.b;
 		outA = tint.flatTintColor.a;
 	}
 
-	if (tintMode == TintMode::GradientX || tintMode == TintMode::GradientXY)
+	if constexpr(tintMode == TintMode::GradientX || tintMode == TintMode::GradientXY)
 	{
 		pTintmapX = tint.pTintAxisX + patchPos.x - tint.tintRect.x;
 	}
-	
-	if (tintMode == TintMode::GradientY || tintMode == TintMode::GradientXY)
-	{
+
+    if constexpr(tintMode == TintMode::GradientY || tintMode == TintMode::GradientXY)
+    {
 		pTintmapY = tint.pTintAxisY + patchPos.y - tint.tintRect.y;
 	}
 }
 
 //____ _texel_tint_line() _________________________________________________
-
-inline void _texel_tint_line(TintMode tintMode, const SoftBackend::ColTrans& tint, int bits,
+template <TintMode tintMode>
+inline void _texel_tint_line(const SoftBackend::ColTrans& tint, int bits,
 							 int16_t& lineB, int16_t& lineG, int16_t& lineR, int16_t& lineA,
 							 int16_t& outB, int16_t& outG, int16_t& outR, int16_t& outA,
 							 const HiColor*& pTintmapX, const HiColor*&  pTintmapY, CoordI patchPos)
 {
-	if (tintMode == TintMode::GradientX || tintMode == TintMode::GradientXY )
+	if constexpr(tintMode == TintMode::GradientX || tintMode == TintMode::GradientXY )
 	{
 		pTintmapX = tint.pTintAxisX + patchPos.x - tint.tintRect.x;
 	}
-
-	if (tintMode == TintMode::GradientY )
-	{
+    else if constexpr(tintMode == TintMode::GradientY)
+    {
 		outB = pTintmapY->b;
 		outG = pTintmapY->g;
 		outR = pTintmapY->r;
@@ -834,7 +780,7 @@ inline void _texel_tint_line(TintMode tintMode, const SoftBackend::ColTrans& tin
 		pTintmapY++;
 	}
 
-	if (tintMode == TintMode::GradientXY )
+	if constexpr(tintMode == TintMode::GradientXY )
 	{
 		lineB = pTintmapY->b;
 		lineG = pTintmapY->g;
@@ -846,18 +792,18 @@ inline void _texel_tint_line(TintMode tintMode, const SoftBackend::ColTrans& tin
 }
 
 //____ _texel_tint_pixel() ________________________________________________
-
-inline void _texel_tint_pixel(TintMode tintMode, int bits, int16_t& pixelB, int16_t& pixelG, int16_t& pixelR, int16_t& pixelA,
-							  int16_t& lineB, int16_t& lineG, int16_t& lineR, int16_t& lineA,
-							  int16_t& tintB, int16_t& tintG, int16_t& tintR, int16_t& tintA, const HiColor*& pTintmapX)
+template<TintMode tintMode>
+inline void _texel_tint_pixel(int bits, int16_t& pixelB, int16_t& pixelG, int16_t& pixelR, int16_t& pixelA,
+                              int16_t& lineB, int16_t& lineG, int16_t& lineR, int16_t& lineA,
+                              int16_t& tintB, int16_t& tintG, int16_t& tintR, int16_t& tintA, const HiColor*& pTintmapX)
 {
-	if (tintMode == TintMode::None)
+	if constexpr(tintMode == TintMode::None)
 	{
 	}
 	else
 	{
-		if (tintMode == TintMode::GradientX)
-		{
+        if constexpr(tintMode == TintMode::GradientX)
+        {
 			tintB = pTintmapX->b;
 			tintG = pTintmapX->g;
 			tintR = pTintmapX->r;
@@ -865,9 +811,8 @@ inline void _texel_tint_pixel(TintMode tintMode, int bits, int16_t& pixelB, int1
 			
 			pTintmapX++;
 		}
-
-		if (tintMode == TintMode::GradientXY)
-		{
+        else if constexpr(tintMode == TintMode::GradientXY)
+        {
 			tintB = (pTintmapX->b * lineB) >> 12;
 			tintG = (pTintmapX->g * lineG) >> 12;
 			tintR = (pTintmapX->r * lineR) >> 12;
@@ -876,7 +821,6 @@ inline void _texel_tint_pixel(TintMode tintMode, int bits, int16_t& pixelB, int1
 			pTintmapX++;
 		}
 
-		
 		pixelB = (pixelB * tintB) >> 12;
 		pixelG = (pixelG * tintG) >> 12;
 		pixelR = (pixelR * tintR) >> 12;
@@ -980,10 +924,10 @@ void _draw_line(uint8_t* WG_RESTRICT pRow, int rowInc, int pixelInc, int length,
 			}
 			else
 			{
-				_read_pixel(pDst, DSTFORMAT, nullptr, nullptr, backB, backG, backR, backA);
-				_blend_pixels(EdgeBlendMode, tint.morphFactor, DSTFORMAT, srcB, srcG, srcR, alpha, backB, backG, backR, backA,
-							  outB, outG, outR, outA, fixedB, fixedG, fixedR, fixedA);
-				_write_pixel(pDst, DSTFORMAT, outB, outG, outR, outA);
+				_read_pixel<DSTFORMAT>(pDst, nullptr, nullptr, backB, backG, backR, backA);
+				_blend_pixels<EdgeBlendMode, DSTFORMAT>(tint.morphFactor, srcB, srcG, srcR, alpha, backB, backG, backR, backA,
+														outB, outG, outR, outA, fixedB, fixedG, fixedR, fixedA);
+				_write_pixel<DSTFORMAT>(pDst, outB, outG, outR, outA);
 			}
 		}
 		else
@@ -1004,10 +948,10 @@ void _draw_line(uint8_t* WG_RESTRICT pRow, int rowInc, int pixelInc, int length,
 			}
 			else
 			{
-				_read_pixel(pDst, DSTFORMAT, nullptr, nullptr, backB, backG, backR, backA);
-				_blend_pixels(EdgeBlendMode, tint.morphFactor, DSTFORMAT, srcB, srcG, srcR, alpha, backB, backG, backR, backA,
-							  outB, outG, outR, outA, fixedB, fixedG, fixedR, fixedA);
-				_write_pixel(pDst, DSTFORMAT, outB, outG, outR, outA);
+				_read_pixel<DSTFORMAT>(pDst, nullptr, nullptr, backB, backG, backR, backA);
+				_blend_pixels<EdgeBlendMode, DSTFORMAT>(tint.morphFactor, srcB, srcG, srcR, alpha, backB, backG, backR, backA,
+														outB, outG, outR, outA, fixedB, fixedG, fixedR, fixedA);
+				_write_pixel<DSTFORMAT>(pDst, outB, outG, outR, outA);
 			}
 
 			ofs++;
@@ -1031,10 +975,10 @@ void _draw_line(uint8_t* WG_RESTRICT pRow, int rowInc, int pixelInc, int length,
 					}
 					else
 					{
-						_read_pixel(pDst, DSTFORMAT, nullptr, nullptr, backB, backG, backR, backA);
-						_blend_pixels(BLEND, tint.morphFactor, DSTFORMAT, srcB, srcG, srcR, srcA, backB, backG, backR, backA,
-									  outB, outG, outR, outA, fixedB, fixedG, fixedR, fixedA);
-						_write_pixel(pDst, DSTFORMAT, outB, outG, outR, outA);
+						_read_pixel<DSTFORMAT>(pDst, nullptr, nullptr, backB, backG, backR, backA);
+						_blend_pixels<BLEND, DSTFORMAT>(tint.morphFactor, srcB, srcG, srcR, srcA, backB, backG, backR, backA,
+																outB, outG, outR, outA, fixedB, fixedG, fixedR, fixedA);
+						_write_pixel<DSTFORMAT>(pDst, outB, outG, outR, outA);
 					}
 					ofs++;
 					pDst += pixelInc;
@@ -1061,10 +1005,10 @@ void _draw_line(uint8_t* WG_RESTRICT pRow, int rowInc, int pixelInc, int length,
 				}
 				else
 				{
-					_read_pixel(pDst, DSTFORMAT, nullptr, nullptr, backB, backG, backR, backA);
-					_blend_pixels(EdgeBlendMode, tint.morphFactor, DSTFORMAT, srcB, srcG, srcR, alpha, backB, backG, backR, backA,
-								  outB, outG, outR, outA, fixedB, fixedG, fixedR, fixedA);
-					_write_pixel(pDst, DSTFORMAT, outB, outG, outR, outA);
+					_read_pixel<DSTFORMAT>(pDst, nullptr, nullptr, backB, backG, backR, backA);
+					_blend_pixels<EdgeBlendMode, DSTFORMAT>(tint.morphFactor, srcB, srcG, srcR, alpha, backB, backG, backR, backA,
+															outB, outG, outR, outA, fixedB, fixedG, fixedR, fixedA);
+					_write_pixel<DSTFORMAT>(pDst, outB, outG, outR, outA);
 				}
 
 			}
@@ -1190,10 +1134,10 @@ void _clip_draw_line(int clipStart, int clipEnd, uint8_t* WG_RESTRICT pRow, int 
 			}
 			else
 			{
-				_read_pixel(pDst, DSTFORMAT, nullptr, nullptr, backB, backG, backR, backA);
-				_blend_pixels(EdgeBlendMode, tint.morphFactor, DSTFORMAT, srcB, srcG, srcR, alpha, backB, backG, backR, backA,
-							  outB, outG, outR, outA, fixedB, fixedG, fixedR, fixedA);
-				_write_pixel(pDst, DSTFORMAT, outB, outG, outR, outA);
+				_read_pixel<DSTFORMAT>(pDst, nullptr, nullptr, backB, backG, backR, backA);
+				_blend_pixels<EdgeBlendMode, DSTFORMAT>(tint.morphFactor, srcB, srcG, srcR, alpha, backB, backG, backR, backA,
+														outB, outG, outR, outA, fixedB, fixedG, fixedR, fixedA);
+				_write_pixel<DSTFORMAT>(pDst, outB, outG, outR, outA);
 			}
 		}
 		else
@@ -1214,10 +1158,10 @@ void _clip_draw_line(int clipStart, int clipEnd, uint8_t* WG_RESTRICT pRow, int 
 			}
 			else
 			{
-				_read_pixel(pDst, DSTFORMAT, nullptr, nullptr, backB, backG, backR, backA);
-				_blend_pixels(EdgeBlendMode, tint.morphFactor, DSTFORMAT, srcB, srcG, srcR, alpha, backB, backG, backR, backA,
-							  outB, outG, outR, outA, fixedB, fixedG, fixedR, fixedA);
-				_write_pixel(pDst, DSTFORMAT, outB, outG, outR, outA);
+				_read_pixel<DSTFORMAT>(pDst, nullptr, nullptr, backB, backG, backR, backA);
+				_blend_pixels<EdgeBlendMode, DSTFORMAT>(tint.morphFactor, srcB, srcG, srcR, alpha, backB, backG, backR, backA,
+														outB, outG, outR, outA, fixedB, fixedG, fixedR, fixedA);
+				_write_pixel<DSTFORMAT>(pDst, outB, outG, outR, outA);
 			}
 
 			ofs++;
@@ -1245,10 +1189,10 @@ void _clip_draw_line(int clipStart, int clipEnd, uint8_t* WG_RESTRICT pRow, int 
 					}
 					else
 					{
-						_read_pixel(pDst, DSTFORMAT, nullptr, nullptr, backB, backG, backR, backA);
-						_blend_pixels(BLEND, tint.morphFactor, DSTFORMAT, srcB, srcG, srcR, srcA, backB, backG, backR, backA,
-									  outB, outG, outR, outA, fixedB, fixedG, fixedR, fixedA);
-						_write_pixel(pDst, DSTFORMAT, outB, outG, outR, outA);
+						_read_pixel<DSTFORMAT>(pDst, nullptr, nullptr, backB, backG, backR, backA);
+						_blend_pixels<BLEND, DSTFORMAT>(tint.morphFactor, srcB, srcG, srcR, srcA, backB, backG, backR, backA,
+																outB, outG, outR, outA, fixedB, fixedG, fixedR, fixedA);
+						_write_pixel<DSTFORMAT>(pDst, outB, outG, outR, outA);
 					}
 
 					ofs++;
@@ -1276,10 +1220,10 @@ void _clip_draw_line(int clipStart, int clipEnd, uint8_t* WG_RESTRICT pRow, int 
 				}
 				else
 				{
-					_read_pixel(pDst, DSTFORMAT, nullptr, nullptr, backB, backG, backR, backA);
-					_blend_pixels(EdgeBlendMode, tint.morphFactor, DSTFORMAT, srcB, srcG, srcR, alpha, backB, backG, backR, backA,
-								  outB, outG, outR, outA, fixedB, fixedG, fixedR, fixedA);
-					_write_pixel(pDst, DSTFORMAT, outB, outG, outR, outA);
+					_read_pixel<DSTFORMAT>(pDst, nullptr, nullptr, backB, backG, backR, backA);
+					_blend_pixels<EdgeBlendMode, DSTFORMAT>(tint.morphFactor, srcB, srcG, srcR, alpha, backB, backG, backR, backA,
+															outB, outG, outR, outA, fixedB, fixedG, fixedR, fixedA);
+					_write_pixel<DSTFORMAT>(pDst, outB, outG, outR, outA);
 				}
 			}
 		}
@@ -1332,11 +1276,10 @@ void _fill(uint8_t* WG_RESTRICT pDst, int pitchX, int pitchY, int nLines, int li
 	const HiColor* pTintmapX;
 	const HiColor* pTintmapY;
 
-	_color_tint_init(TINT, tint, bits, srcB, srcG, srcR, srcA, tintedB, tintedG, tintedR, tintedA,
-		pTintmapX, pTintmapY, patchPos);
+    _color_tint_init<TINT>(tint, bits, srcB, srcG, srcR, srcA, tintedB, tintedG, tintedR, tintedA,
+                            pTintmapX, pTintmapY, patchPos);
 
-
-	// Step 2: Setup fixed blend color
+    // Step 2: Setup fixed blend color
 	
 	int16_t fixedB, fixedG, fixedR, fixedA;
 
@@ -1364,21 +1307,21 @@ void _fill(uint8_t* WG_RESTRICT pDst, int pitchX, int pitchY, int nLines, int li
 
 		int16_t lineB, lineG, lineR, lineA;
 
-		_color_tint_line(TINT, tint, bits, srcB, srcG, srcR, srcA,
-						 lineB, lineG, lineR, lineA,
-						 tintedB, tintedG, tintedR, tintedA,
-						 pTintmapX, pTintmapY, patchPos);
+        _color_tint_line<TINT>(tint, bits, srcB, srcG, srcR, srcA,
+                             lineB, lineG, lineR, lineA,
+                             tintedB, tintedG, tintedR, tintedA,
+                             pTintmapX, pTintmapY, patchPos);
 
-		for (int x = 0; x < lineLength; x++)
+        for (int x = 0; x < lineLength; x++)
 		{
 			// Step 4: Apply any horizontal tint gradient
 
-			_color_tint_pixel(TINT, srcB, srcG, srcR, srcA,
-							 lineB, lineG, lineR, lineA,
-							 tintedB, tintedG, tintedR, tintedA,
-							 pTintmapX);
+            _color_tint_pixel<TINT>(srcB, srcG, srcR, srcA,
+                                    lineB, lineG, lineR, lineA,
+                                    tintedB, tintedG, tintedR, tintedA,
+                                    pTintmapX);
 
-			// Step 5: Get color components of background pixel blending into backX
+            // Step 5: Get color components of background pixel blending into backX
 			// Step 6: Blend srcX and backX into outX
 			// Step 7: Write resulting pixel to destination
 
@@ -1394,10 +1337,10 @@ void _fill(uint8_t* WG_RESTRICT pDst, int pitchX, int pitchY, int nLines, int li
 			}
 			else
 			{
-				_read_pixel(pDst, DSTFORMAT, nullptr, nullptr, backB, backG, backR, backA);
-				_blend_pixels(BLEND, tint.morphFactor, DSTFORMAT, tintedB, tintedG, tintedR, tintedA, backB, backG, backR, backA,
-							  outB, outG, outR, outA, fixedB, fixedG, fixedR, fixedA);
-				_write_pixel(pDst, DSTFORMAT, outB, outG, outR, outA);
+				_read_pixel<DSTFORMAT>(pDst, nullptr, nullptr, backB, backG, backR, backA);
+				_blend_pixels<BLEND, DSTFORMAT>(tint.morphFactor, tintedB, tintedG, tintedR, tintedA, backB, backG, backR, backA,
+														outB, outG, outR, outA, fixedB, fixedG, fixedR, fixedA);
+				_write_pixel<DSTFORMAT>(pDst, outB, outG, outR, outA);
 			}
 
 			// Step 7: Increment destination pointers
@@ -1452,7 +1395,7 @@ void _straight_blit(const uint8_t* WG_RESTRICT pSrc, uint8_t* WG_RESTRICT pDst, 
 		pSrc = pSrcSurf->pixels();
 		maskX = pSrcSurf->tileMaskX();
 		maskY = pSrcSurf->tileMaskY();
-		
+
 		srcXstart = srcX;
 	}
 
@@ -1473,9 +1416,9 @@ void _straight_blit(const uint8_t* WG_RESTRICT pSrc, uint8_t* WG_RESTRICT pDst, 
 	const HiColor* pTintmapX;
 	const HiColor* pTintmapY;
 
-	_texel_tint_init(TINT, tint, bits, tintB, tintG, tintR, tintA, pTintmapX, pTintmapY, patchPos);
+    _texel_tint_init<TINT>(tint, bits, tintB, tintG, tintR, tintA, pTintmapX, pTintmapY, patchPos);
 
-	// Step 2: Setup fixed blend color
+    // Step 2: Setup fixed blend color
 	
 	int16_t fixedB, fixedG, fixedR, fixedA;
 	
@@ -1510,10 +1453,10 @@ void _straight_blit(const uint8_t* WG_RESTRICT pSrc, uint8_t* WG_RESTRICT pDst, 
 
 		int16_t lineB, lineG, lineR, lineA;
 
-		_texel_tint_line(TINT, tint, bits, lineB, lineG, lineR, lineA,
-						 tintB, tintG, tintR, tintA, pTintmapX, pTintmapY, patchPos);
+        _texel_tint_line<TINT>(tint, bits, lineB, lineG, lineR, lineA,
+                               tintB, tintG, tintR, tintA, pTintmapX, pTintmapY, patchPos);
 
-		for (int x = 0; x < lineLength; x++)
+        for (int x = 0; x < lineLength; x++)
 		{
 			// Step 4: Read source pixels
 
@@ -1544,8 +1487,8 @@ void _straight_blit(const uint8_t* WG_RESTRICT pSrc, uint8_t* WG_RESTRICT pDst, 
 						ofs.x = surfSize.w -1;
 					if( ofs.y >= surfSize.h )
 						ofs.y = surfSize.h -1;
-					
-					_read_pixel(pSrc + ofs.y * yPitch + ofs.x * xPitch, SRCFORMAT, pPalette, pPalette4096, inB[i], inG[i], inR[i], inA[i]);
+
+					_read_pixel<SRCFORMAT>(pSrc + ofs.y * yPitch + ofs.x * xPitch, pPalette, pPalette4096, inB[i], inG[i], inR[i], inA[i]);
 				}
 				
 				int tSrcB = ( inB[0] * tint.blurMtxB[0] + inB[1] * tint.blurMtxB[1] + inB[2] * tint.blurMtxB[2]
@@ -1591,17 +1534,17 @@ void _straight_blit(const uint8_t* WG_RESTRICT pSrc, uint8_t* WG_RESTRICT pDst, 
 					_read_pixel_fast8<SRCFORMAT>(pSrc, pPalette, pPalette4096, srcB, srcG, srcR, srcA);
 				}
 				else
-					_read_pixel(pSrc, SRCFORMAT, pPalette, pPalette4096, srcB, srcG, srcR, srcA);
+					_read_pixel<SRCFORMAT>(pSrc, pPalette, pPalette4096, srcB, srcG, srcR, srcA);
 			}
 
 
 			// Step 5: Apply any tint
 
-			_texel_tint_pixel(TINT, bits, srcB, srcG, srcR, srcA,
-							  lineB, lineG, lineR, lineA,
-							  tintB, tintG, tintR, tintA, pTintmapX );
+            _texel_tint_pixel<TINT>(bits, srcB, srcG, srcR, srcA,
+                                    lineB, lineG, lineR, lineA,
+                                    tintB, tintG, tintR, tintA, pTintmapX);
 
-			// Step 6: Get color components of background pixel blending into backX
+            // Step 6: Get color components of background pixel blending into backX
 			// Step 7: Blend srcX and backX into outX
 			// Step 8: Write resulting pixel to destination
 
@@ -1617,10 +1560,10 @@ void _straight_blit(const uint8_t* WG_RESTRICT pSrc, uint8_t* WG_RESTRICT pDst, 
 			}
 			else
 			{
-				_read_pixel(pDst, DSTFORMAT, nullptr, nullptr, backB, backG, backR, backA);
-				_blend_pixels(BLEND, tint.morphFactor, DSTFORMAT, srcB, srcG, srcR, srcA, backB, backG, backR, backA,
-							  outB, outG, outR, outA, fixedB, fixedG, fixedR, fixedA);
-				_write_pixel(pDst, DSTFORMAT, outB, outG, outR, outA);
+				_read_pixel<DSTFORMAT>(pDst, nullptr, nullptr, backB, backG, backR, backA);
+				_blend_pixels<BLEND, DSTFORMAT>(tint.morphFactor, srcB, srcG, srcR, srcA, backB, backG, backR, backA,
+														outB, outG, outR, outA, fixedB, fixedG, fixedR, fixedA);
+				_write_pixel<DSTFORMAT>(pDst, outB, outG, outR, outA);
 			}
 
 			// Step 9: Increment source and destination pointers
@@ -1781,22 +1724,22 @@ void _transform_blit(const SoftSurface* WG_RESTRICT pSrcSurf, BinalCoord pos, co
 						else
 						{
 							if (ofsX >= 0 && ofsY >= 0 && ofsX < srcMax_w && ofsY < srcMax_h)
-								_read_pixel(p, SRCFORMAT, pPalette, pPalette4096, src11_b, src11_g, src11_r, src11_a);
+								_read_pixel<SRCFORMAT>(p, pPalette, pPalette4096, src11_b, src11_g, src11_r, src11_a);
 							else
 								src11_b = src11_g = src11_r = src11_a = 0;
 
 							if ((ofsX + BINAL_MUL) >= 0 && ofsY >= 0 && (ofsX + BINAL_MUL) < srcMax_w && ofsY < srcMax_h)
-								_read_pixel(p + srcPixelBytes, SRCFORMAT, pPalette, pPalette4096, src12_b, src12_g, src12_r, src12_a);
+								_read_pixel<SRCFORMAT>(p + srcPixelBytes, pPalette, pPalette4096, src12_b, src12_g, src12_r, src12_a);
 							else
 								src12_b = src12_g = src12_r = src12_a = 0;
 
 							if (ofsX >= 0 && (ofsY + BINAL_MUL) >= 0 && ofsX < srcMax_w && (ofsY + BINAL_MUL) < srcMax_h)
-								_read_pixel(p + srcPitch, SRCFORMAT, pPalette, pPalette4096, src21_b, src21_g, src21_r, src21_a);
+								_read_pixel<SRCFORMAT>(p + srcPitch, pPalette, pPalette4096, src21_b, src21_g, src21_r, src21_a);
 							else
 								src21_b = src21_g = src21_r = src21_a = 0;
 
 							if ((ofsX + BINAL_MUL) >= 0 && (ofsY + BINAL_MUL) >= 0 && (ofsX + BINAL_MUL) < srcMax_w && (ofsY + BINAL_MUL) < srcMax_h)
-								_read_pixel(p + srcPitch + srcPixelBytes, SRCFORMAT, pPalette, pPalette4096, src22_b, src22_g, src22_r, src22_a);
+								_read_pixel<SRCFORMAT>(p + srcPitch + srcPixelBytes, pPalette, pPalette4096, src22_b, src22_g, src22_r, src22_a);
 							else
 								src22_b = src22_g = src22_r = src22_a = 0;
 						}
@@ -1835,10 +1778,10 @@ void _transform_blit(const SoftSurface* WG_RESTRICT pSrcSurf, BinalCoord pos, co
 					}
 					else
 					{
-						_read_pixel(p, SRCFORMAT, pPalette, pPalette4096, src11_b, src11_g, src11_r, src11_a);
-						_read_pixel(p2, SRCFORMAT, pPalette, pPalette4096, src12_b, src12_g, src12_r, src12_a);
-						_read_pixel(p3, SRCFORMAT, pPalette, pPalette4096, src21_b, src21_g, src21_r, src21_a);
-						_read_pixel(p4, SRCFORMAT, pPalette, pPalette4096, src22_b, src22_g, src22_r, src22_a);
+						_read_pixel<SRCFORMAT>(p, pPalette, pPalette4096, src11_b, src11_g, src11_r, src11_a);
+						_read_pixel<SRCFORMAT>(p2, pPalette, pPalette4096, src12_b, src12_g, src12_r, src12_a);
+						_read_pixel<SRCFORMAT>(p3, pPalette, pPalette4096, src21_b, src21_g, src21_r, src21_a);
+						_read_pixel<SRCFORMAT>(p4, pPalette, pPalette4096, src22_b, src22_g, src22_r, src22_a);
 					}
 				}
 
@@ -1887,8 +1830,8 @@ void _transform_blit(const SoftSurface* WG_RESTRICT pSrcSurf, BinalCoord pos, co
 							ofs.x = surfSize.w -1;
 						if( ofs.y >= surfSize.h )
 							ofs.y = surfSize.h -1;
-						
-						_read_pixel(p + ofs.y * srcPitch + ofs.x * srcPixelBytes, SRCFORMAT, pPalette, pPalette4096, inB[i], inG[i], inR[i], inA[i]);
+
+						_read_pixel<SRCFORMAT>(p + ofs.y * srcPitch + ofs.x * srcPixelBytes, pPalette, pPalette4096, inB[i], inG[i], inR[i], inA[i]);
 					}
 					
 					int tSrcB = ( inB[0] * tint.blurMtxB[0] + inB[1] * tint.blurMtxB[1] + inB[2] * tint.blurMtxB[2]
@@ -1952,7 +1895,7 @@ void _transform_blit(const SoftSurface* WG_RESTRICT pSrcSurf, BinalCoord pos, co
 					if constexpr(bFast8)
 						_read_pixel_fast8<SRCFORMAT>(p, pPalette, pPalette4096, srcB, srcG, srcR, srcA);
 					else
-						_read_pixel(p, SRCFORMAT, pPalette, pPalette4096, srcB, srcG, srcR, srcA);
+						_read_pixel<SRCFORMAT>(p, pPalette, pPalette4096, srcB, srcG, srcR, srcA);
 				}
 			}
 
@@ -1972,10 +1915,10 @@ void _transform_blit(const SoftSurface* WG_RESTRICT pSrcSurf, BinalCoord pos, co
 			}
 			else
 			{
-				_read_pixel(pDst, DSTFORMAT, nullptr, nullptr, backB, backG, backR, backA);
-				_blend_pixels(BLEND, tint.morphFactor, DSTFORMAT, srcB, srcG, srcR, srcA, backB, backG, backR, backA,
-							  outB, outG, outR, outA, fixedB, fixedG, fixedR, fixedA);
-				_write_pixel(pDst, DSTFORMAT, outB, outG, outR, outA);
+				_read_pixel<DSTFORMAT>(pDst, nullptr, nullptr, backB, backG, backR, backA);
+				_blend_pixels<BLEND, DSTFORMAT>(tint.morphFactor, srcB, srcG, srcR, srcA, backB, backG, backR, backA,
+														outB, outG, outR, outA, fixedB, fixedG, fixedR, fixedA);
+				_write_pixel<DSTFORMAT>(pDst, outB, outG, outR, outA);
 			}
 
 			// Step 6: Increment source and destination pointers
@@ -2000,17 +1943,15 @@ static inline void _add_segment_color(int blendFraction, int offset, const int16
 		accB += (blendFraction * pSegmentColor[2]) >> 4;
 		accA += blendFraction << 8;
 	}
-
-	if constexpr(SOURCE == SoftBackend::StripSource::Tintmaps)
+	else if constexpr(SOURCE == SoftBackend::StripSource::Tintmaps)
 	{
 		accB += (blendFraction * pSegmentTintmap[offset].b) >> 4;
 		accG += (blendFraction * pSegmentTintmap[offset].g) >> 4;
 		accR += (blendFraction * pSegmentTintmap[offset].r) >> 4;
 		accA += blendFraction << 8;
 	}
-
-	if constexpr(SOURCE == SoftBackend::StripSource::ColorsAndTintmaps)
-	{
+    else if constexpr(SOURCE == SoftBackend::StripSource::ColorsAndTintmaps)
+    {
 		accB += (blendFraction >> 4) * ((pSegmentTintmap[offset].b * pSegmentColor[2]) >> 12);
 		accG += (blendFraction >> 4) * ((pSegmentTintmap[offset].g * pSegmentColor[1]) >> 12);
 		accR += (blendFraction >> 4) * ((pSegmentTintmap[offset].r * pSegmentColor[0]) >> 12);
@@ -2050,9 +1991,7 @@ void _draw_segment_strip(int colBeg, int colEnd, uint8_t* WG_RESTRICT pStripStar
 		fixedA = tint.fixedBlendColor.a;
 	}
 
-
 	// Render the column
-
 	int offset = colBeg;				// 24.8 format, but binals cleared (always pointing at beginning of full pixel).
 	uint8_t* WG_RESTRICT pDst = pStripStart + (offset >> 8) * pixelPitch;
 
@@ -2138,7 +2077,7 @@ void _draw_segment_strip(int colBeg, int colEnd, uint8_t* WG_RESTRICT pStripStar
 						}
 						else
 						{
-							_write_pixel(pDst, DSTFORMAT, inB, inG, inR, inA);
+							_write_pixel<DSTFORMAT>(pDst, inB, inG, inR, inA);
 						}
 
 						pDst += pixelPitch;
@@ -2166,8 +2105,7 @@ void _draw_segment_strip(int colBeg, int colEnd, uint8_t* WG_RESTRICT pStripStar
 								inA = pSegmentTintmap[offset >> 8].a;
 							}
 						}
-
-						if constexpr(SOURCE == SoftBackend::StripSource::ColorsAndTintmaps)
+						else if constexpr(SOURCE == SoftBackend::StripSource::ColorsAndTintmaps)
 						{
 							if constexpr(bFast8)
 							{
@@ -2197,10 +2135,10 @@ void _draw_segment_strip(int colBeg, int colEnd, uint8_t* WG_RESTRICT pStripStar
 						}
 						else
 						{
-							_read_pixel(pDst, DSTFORMAT, nullptr, nullptr, backB, backG, backR, backA);
-							_blend_pixels(BLEND, tint.morphFactor, DSTFORMAT, inB, inG, inR, inA, backB, backG, backR, backA,
-								outB, outG, outR, outA, fixedB, fixedG, fixedR, fixedA);
-							_write_pixel(pDst, DSTFORMAT, outB, outG, outR, outA);
+							_read_pixel<DSTFORMAT>(pDst, nullptr, nullptr, backB, backG, backR, backA);
+							_blend_pixels<BLEND, DSTFORMAT>(tint.morphFactor, inB, inG, inR, inA, backB, backG, backR, backA,
+															outB, outG, outR, outA, fixedB, fixedG, fixedR, fixedA);
+							_write_pixel<DSTFORMAT>(pDst, outB, outG, outR, outA);
 						}
 
 						pDst += pixelPitch;
@@ -2250,7 +2188,7 @@ void _draw_segment_strip(int colBeg, int colEnd, uint8_t* WG_RESTRICT pStripStar
 
 				int16_t backB, backG, backR, backA;
 
-				_read_pixel(pDst, DSTFORMAT, nullptr, nullptr, backB, backG, backR, backA);
+				_read_pixel<DSTFORMAT>(pDst, nullptr, nullptr, backB, backG, backR, backA);
 
 				int16_t outB = 0, outG = 0, outR = 0, outA = 0;
 
@@ -2272,8 +2210,7 @@ void _draw_segment_strip(int colBeg, int colEnd, uint8_t* WG_RESTRICT pStripStar
 					outR = accR >> 12;
 					outA = accA >> 12;
 				}
-
-				if constexpr(BLEND == BlendMode::Blend)
+				else if constexpr(BLEND == BlendMode::Blend)
 				{
 					int backFraction = 65536;
 
@@ -2299,8 +2236,7 @@ void _draw_segment_strip(int colBeg, int colEnd, uint8_t* WG_RESTRICT pStripStar
 					outR = (accR >> 12) + ((backR * backFraction) >> 16);
 					outA = (accA >> 12) + ((backA * backFraction) >> 16);	// This should be correct... 							
 				}
-
-				if constexpr(BLEND == BlendMode::BlendFixedColor)
+				else if constexpr(BLEND == BlendMode::BlendFixedColor)
 				{
 					int backFraction = 65536;
 
@@ -2325,8 +2261,7 @@ void _draw_segment_strip(int colBeg, int colEnd, uint8_t* WG_RESTRICT pStripStar
 					outR = (accR >> 12) + ((fixedR * backFraction) >> 16);
 					outA = (accA >> 12) + ((fixedA * backFraction) >> 16);	// This should be correct...
 				}
-
-				if constexpr(BLEND == BlendMode::Add)
+				else if constexpr(BLEND == BlendMode::Add)
 				{
 					for (int i = 0; i <= edge; i++)
 					{
@@ -2348,8 +2283,7 @@ void _draw_segment_strip(int colBeg, int colEnd, uint8_t* WG_RESTRICT pStripStar
 					outR = SoftBackend::s_limit4096Tab[4097 + backR + (accR >> 12)];
 					outA = backA;
 				}
-
-				if constexpr(BLEND == BlendMode::Subtract)
+				else if constexpr(BLEND == BlendMode::Subtract)
 				{
 					for (int i = 0; i <= edge; i++)
 					{
@@ -2371,8 +2305,7 @@ void _draw_segment_strip(int colBeg, int colEnd, uint8_t* WG_RESTRICT pStripStar
 					outR = SoftBackend::s_limit4096Tab[4097 + backR - (accR >> 12)];
 					outA = backA;
 				}
-
-				if constexpr(BLEND == BlendMode::Multiply)
+				else if constexpr(BLEND == BlendMode::Multiply)
 				{
 					for (int i = 0; i <= edge; i++)
 					{
@@ -2385,8 +2318,7 @@ void _draw_segment_strip(int colBeg, int colEnd, uint8_t* WG_RESTRICT pStripStar
 					outR = (backR * (accR >> 12)) >> 12;
 					outA = backA;
 				}
-
-				if constexpr(BLEND == BlendMode::Invert)
+				else if constexpr(BLEND == BlendMode::Invert)
 				{
 					for (int i = 0; i <= edge; i++)
 					{
@@ -2403,8 +2335,7 @@ void _draw_segment_strip(int colBeg, int colEnd, uint8_t* WG_RESTRICT pStripStar
 					outR = (srcR2 * (4096 - backR) + backR * (4096 - srcR2)) >> 12;
 					outA = backA;
 				}
-
-				if constexpr(BLEND == BlendMode::Min)
+				else if constexpr(BLEND == BlendMode::Min)
 				{
 					int backFraction = 65536;
 
@@ -2432,8 +2363,7 @@ void _draw_segment_strip(int colBeg, int colEnd, uint8_t* WG_RESTRICT pStripStar
 					outG = std::min(backG, srcG);
 					outR = std::min(backR, srcR);
 				}
-
-				if constexpr(BLEND == BlendMode::Max)
+				else if constexpr(BLEND == BlendMode::Max)
 				{
 					int backFraction = 65536;
 
@@ -2443,9 +2373,9 @@ void _draw_segment_strip(int colBeg, int colEnd, uint8_t* WG_RESTRICT pStripStar
 						
 						if constexpr( SOURCE == SoftBackend::StripSource::Colors)
 							alpha = pSegmentColors[i * 4 + 3];
-						if constexpr( SOURCE == SoftBackend::StripSource::Tintmaps )
+						else if constexpr( SOURCE == SoftBackend::StripSource::Tintmaps )
 							alpha = pSegmentTintmap[offset >> 8].a;
-						if constexpr( SOURCE == SoftBackend::StripSource::ColorsAndTintmaps )
+						else if constexpr( SOURCE == SoftBackend::StripSource::ColorsAndTintmaps )
 							alpha = pSegmentColors[i * 4 + 3] * pSegmentTintmap[offset >> 8].a / 4096;
 
 						int blendFraction = ((segmentFractions[i] * alpha) / 4096);
@@ -2461,8 +2391,7 @@ void _draw_segment_strip(int colBeg, int colEnd, uint8_t* WG_RESTRICT pStripStar
 					outG = std::max(backG, srcG);
 					outR = std::max(backR, srcR);
 				}
-
-				if constexpr(BLEND == BlendMode::Morph)
+				else if constexpr(BLEND == BlendMode::Morph)
 				{
 					int backFraction = 65536;
 
@@ -2490,7 +2419,7 @@ void _draw_segment_strip(int colBeg, int colEnd, uint8_t* WG_RESTRICT pStripStar
 					outA = (backA * invMorph + (backFraction >> 4) * tint.morphFactor) >> 12;
 				}
 
-				_write_pixel(pDst, DSTFORMAT, outB, outG, outR, outA);
+				_write_pixel<DSTFORMAT>(pDst, outB, outG, outR, outA);
 			}
 			pDst += pixelPitch;
 			offset += 256;

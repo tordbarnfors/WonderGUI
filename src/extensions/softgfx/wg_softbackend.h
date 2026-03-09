@@ -179,8 +179,8 @@ namespace wg
 		alignas(kCacheLineSize) static const uint8_t s_fast8_channel_5[32];
 		alignas(kCacheLineSize) static const uint8_t s_fast8_channel_6[64];
 
+		// These are created in runtime. Can't be aligned
 		alignas(kCacheLineSize) static int s_mulTab[256];
-
 		alignas(kCacheLineSize) static int16_t s_limit4096Tab[4097 * 3];
 
 		const static int	c_maxSegments = 16;
