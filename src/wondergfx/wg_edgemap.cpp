@@ -23,6 +23,7 @@
 #include <wg_gradyent.h>
 
 #include <cstring>
+#include <climits>
 
 namespace wg
 {

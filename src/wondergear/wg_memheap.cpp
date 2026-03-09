@@ -82,7 +82,7 @@ namespace wg
 		  _checkIntegrity();
 	  }
 	  
-    bytes =(bytes+3) & 0xFFFFFFFC;
+    bytes = (bytes+3) & 0xFFFFFFFC;
 
     Header * pHead = m_pFirstFree;
 
@@ -95,9 +95,9 @@ namespace wg
 		return nullptr;
 	}
 
-    int blockCapacity = (int) (((char*)pHead->pNextBlock) - ((char*)&pHead[1]));
+    size_t blockCapacity = (size_t)(((char *)pHead->pNextBlock) - ((char *)&pHead[1]));
 
-    if( blockCapacity > bytes + sizeof(Header) )
+    if (blockCapacity > size_t(bytes) + sizeof(Header))
     {
       Header * pNew = (Header*) (((char*)&pHead[1]) + bytes);
 

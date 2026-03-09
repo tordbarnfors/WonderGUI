@@ -989,8 +989,8 @@ namespace wg
 		BinalCoord	src;
 		binalInt	mtx[2][2];
 
-		float	sz = (float)sin(-rotationDegrees*3.14159265/180);
-		float	cz = (float)cos(-rotationDegrees*3.14159265 / 180);
+		float	sz = std::sin(-rotationDegrees*3.14159265f/180.f);
+		float	cz = std::cos(-rotationDegrees*3.14159265f/180.f);
 
 		scale = 1.f / scale;
 
@@ -1208,8 +1208,8 @@ namespace wg
 		BinalCoord	src;
 		binalInt	mtx[2][2];
 
-		float	sz = (float)sin(-rotationDegrees*3.14159265/180);
-		float	cz = (float)cos(-rotationDegrees*3.14159265 / 180);
+		float	sz = std::sin(-rotationDegrees*3.14159265f/180.f);
+		float	cz = std::cos(-rotationDegrees*3.14159265f/180.f);
 
 		scale = 1.f / scale;
 
@@ -2042,10 +2042,10 @@ namespace wg
 				else
 				{
 					rot *= 3.14159265358979f * 2;
-					float s = sin(rot);
-					float c = cos(rot);
+					float s = std::sin(rot);
+                    float c = std::cos(rot);
 
-					float decF = (c/s) * (quadH << 12) / float(quadW);
+                    float decF = (c/s) * (quadH << 12) / float(quadW);
 
 					if (decF > 400000*4096)
 						decF = 400000*4096;
