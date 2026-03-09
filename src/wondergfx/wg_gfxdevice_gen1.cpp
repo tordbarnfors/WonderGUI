@@ -1,18 +1,18 @@
 /*=========================================================================
 
-                             >>> WonderGUI <<<
+							 >>> WonderGUI <<<
 
   This file is part of Tord Bärnfors' WonderGUI UI Toolkit and copyright
   Tord Bärnfors, Sweden [mail: first name AT barnfors DOT c_o_m].
 
-                                -----------
+								-----------
 
   The WonderGUI UI Toolkit is free software; you can redistribute
   this file and/or modify it under the terms of the GNU General Public
   License as published by the Free Software Foundation; either
   version 2 of the License, or (at your option) any later version.
 
-                                -----------
+								-----------
 
   The WonderGUI UI Toolkit is also available for use in commercial
   closed source projects under a separate license. Interested parties
@@ -350,23 +350,23 @@ namespace wg
 			BlendMode	savedBlendMode = m_blendMode;
 			HiColor		savedTintColor = m_tintColor;
 
-            setTintColor(Color::White);
-            clearTintGradient();
+			setTintColor(Color::White);
+			clearTintGradient();
 
-            if( m_pCanvasLayers->_layerClearFunc(m_renderLayer) != nullptr )
-            {
-                //NOTE! BlendMode can be anything when calling initializer.
+			if( m_pCanvasLayers->_layerClearFunc(m_renderLayer) != nullptr )
+			{
+				//NOTE! BlendMode can be anything when calling initializer.
 
-                m_pCanvasLayers->_layerClearFunc(m_renderLayer)(this);
-            }
-            else
-            {
-                setBlendMode(BlendMode::Replace);
-                fill(Color::Transparent);
-            }
+				m_pCanvasLayers->_layerClearFunc(m_renderLayer)(this);
+			}
+			else
+			{
+				setBlendMode(BlendMode::Replace);
+				fill(Color::Transparent);
+			}
 
 
-            setBlendMode(savedBlendMode);
+			setBlendMode(savedBlendMode);
 			setTintColor(savedTintColor);
 
 			m_pClipRects = pSavedClipRects;
@@ -556,7 +556,7 @@ namespace wg
 		if (pCanvasLayers)
 			layer = (startLayer > 0 && startLayer <= pCanvasLayers->size()) ? startLayer : pCanvasLayers->baseLayer();
 
-        m_layerSurfaces[0] = pSurface;
+		m_layerSurfaces[0] = pSurface;
 
 		m_renderLayer = layer;
 		m_tintColor = HiColor::White;
@@ -568,7 +568,7 @@ namespace wg
 		m_fixedBlendColor = HiColor::Black;
 		_canvasWasChanged();
 
-        // Call Canvas Initializer
+		// Call Canvas Initializer
 
 		if( !m_bIsProxyDevice )
 		{
@@ -589,8 +589,8 @@ namespace wg
 	{
 /*		// Sanity checks
 
-        // It is OK for canvas stack to be empty, we need another way to sync
-        // begin/endCanvasUpdate() calls.
+		// It is OK for canvas stack to be empty, we need another way to sync
+		// begin/endCanvasUpdate() calls.
 
 		if (m_canvasStack.empty())
 		{
@@ -607,62 +607,62 @@ namespace wg
 			int nbLayers = m_pCanvasLayers->size();
 			for (int layerIdx = 1; layerIdx <= nbLayers; layerIdx++)
 			{
-                // Call pre-blend canvas modifier no matter if layer has a surface or not
+				// Call pre-blend canvas modifier no matter if layer has a surface or not
 
-                if( m_pCanvasLayers->_canvasModifier(layerIdx) != nullptr )
-                {
-                    if (bFirst)
-                    {
-                        setClipList(m_nCanvasUpdateRects, m_pCanvasUpdateRects);
-                        setBlendMode(BlendMode::Blend);
-                        setTintColor(Color::White);
-                        clearTintGradient();
-                        setRenderLayer(0);
-                        bFirst = false;
-                    }
-
-                    m_pCanvasLayers->_canvasModifier(layerIdx)(this);
-                }
-
-                // Finalize and blend layer if it has a surface.
-
-                if (m_layerSurfaces[layerIdx])
+				if( m_pCanvasLayers->_canvasModifier(layerIdx) != nullptr )
 				{
 					if (bFirst)
 					{
 						setClipList(m_nCanvasUpdateRects, m_pCanvasUpdateRects);
-                        setBlendMode(BlendMode::Blend);
+						setBlendMode(BlendMode::Blend);
 						setTintColor(Color::White);
 						clearTintGradient();
 						setRenderLayer(0);
 						bFirst = false;
 					}
 
-                    // Call layer finalizer before blending
+					m_pCanvasLayers->_canvasModifier(layerIdx)(this);
+				}
 
-                    if( m_pCanvasLayers->_layerPreBlendFunc(layerIdx) != nullptr )
-                    {
-                        setRenderLayer(layerIdx);
-                        m_pCanvasLayers->_layerPreBlendFunc(layerIdx)(this);
-                        setRenderLayer(0);
-                    }
+				// Finalize and blend layer if it has a surface.
 
-                    // Blend layer onto base layer
+				if (m_layerSurfaces[layerIdx])
+				{
+					if (bFirst)
+					{
+						setClipList(m_nCanvasUpdateRects, m_pCanvasUpdateRects);
+						setBlendMode(BlendMode::Blend);
+						setTintColor(Color::White);
+						clearTintGradient();
+						setRenderLayer(0);
+						bFirst = false;
+					}
 
-                    setBlitSource(m_layerSurfaces[layerIdx]);
+					// Call layer finalizer before blending
 
-                    if( m_pCanvasLayers->_layerBlendFunc(layerIdx) != nullptr )
-                        m_pCanvasLayers->_layerBlendFunc(layerIdx)(this);
-                    else
-                        blit({ 0,0 });
+					if( m_pCanvasLayers->_layerPreBlendFunc(layerIdx) != nullptr )
+					{
+						setRenderLayer(layerIdx);
+						m_pCanvasLayers->_layerPreBlendFunc(layerIdx)(this);
+						setRenderLayer(0);
+					}
+
+					// Blend layer onto base layer
+
+					setBlitSource(m_layerSurfaces[layerIdx]);
+
+					if( m_pCanvasLayers->_layerBlendFunc(layerIdx) != nullptr )
+						m_pCanvasLayers->_layerBlendFunc(layerIdx)(this);
+					else
+						blit({ 0,0 });
 				}
 			}
 
-            // Call Canvas Finalizer
+			// Call Canvas Finalizer
 
-            if( m_pCanvasLayers->_canvasFinalizeFunc() != nullptr )
-                m_pCanvasLayers->_canvasFinalizeFunc()(this);
-        }
+			if( m_pCanvasLayers->_canvasFinalizeFunc() != nullptr )
+				m_pCanvasLayers->_canvasFinalizeFunc()(this);
+		}
 
 		// Dereference surfaces
 
@@ -811,7 +811,7 @@ namespace wg
 			swap(dstSize.w, dstSize.h);
 
 
-        _transformBlitSimple({ dest, dstSize }, {ofsX, ofsY}, s_blitFlipTransforms[(int)flip], OpType::Blit);
+		_transformBlitSimple({ dest, dstSize }, {ofsX, ofsY}, s_blitFlipTransforms[(int)flip], OpType::Blit);
 	}
 
 
@@ -2043,9 +2043,9 @@ namespace wg
 				{
 					rot *= 3.14159265358979f * 2;
 					float s = std::sin(rot);
-                    float c = std::cos(rot);
+					float c = std::cos(rot);
 
-                    float decF = (c/s) * (quadH << 12) / float(quadW);
+					float decF = (c/s) * (quadH << 12) / float(quadW);
 
 					if (decF > 400000*4096)
 						decF = 400000*4096;
