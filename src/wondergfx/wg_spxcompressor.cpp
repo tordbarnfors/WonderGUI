@@ -24,6 +24,8 @@
 #include <wg_gfxutil.h>
 #include <wg_gfxbase.h>
 
+#include <cstring>
+
 namespace wg
 {
 const TypeInfo SPXCompressor::TYPEINFO = { "SPXCompressor", &Compressor::TYPEINFO };
@@ -123,7 +125,7 @@ int SPXCompressor::compress( void * _pDest, const void * _pBegin, const void * _
 	{
 		*pDest++ = Compression::None;
 
-		memcpy(pDest, pBeg, ((uint8_t*)pEnd) - ((uint8_t*)pBeg));
+		std::memcpy(pDest, pBeg, ((uint8_t*)pEnd) - ((uint8_t*)pBeg));
 		return int(((uint8_t*)pEnd) - (uint8_t*)_pDest);
 	}
 }
@@ -143,8 +145,10 @@ int SPXCompressor::decompress( void * _pDest, const void * pBegin, const void * 
 	switch (type)
 	{
 		case Compression::None:
-			memcpy(pDest, pSource, nbBytes);
+		{
+			std::memcpy(pDest, pSource, nbBytes);
 			return nbBytes;
+		}
 	
 		case Compression::SpxU8I:
 		{
@@ -169,9 +173,13 @@ int SPXCompressor::decompress( void * _pDest, const void * pBegin, const void * 
 				*wp++ = (spx)(*rp++);
 			return nbBytes * 2;
 		}
+
+		default:
+		{
+			return -1;
+		}
 	}
 }
-
 
 
 
