@@ -892,19 +892,22 @@ Theme_p MyAppAPI::initDefaultTheme()
 	if( g_pDefaultTheme )
 		return g_pDefaultTheme;
 
+
+	auto path = resourceDirectory();
+
 	// Create the default theme, which is a simplistic theme.
 	
-	auto pFont1Blob = loadBlob("resources/NotoSans-Regular.ttf");
-	auto pFont2Blob = loadBlob("resources/NotoSans-Bold.ttf");
-	auto pFont3Blob = loadBlob("resources/NotoSans-Italic.ttf");
-	auto pFont4Blob = loadBlob("resources/DroidSansMono.ttf");
+	auto pFont1Blob = loadBlob( path + "NotoSans-Regular.ttf");
+	auto pFont2Blob = loadBlob( path + "NotoSans-Bold.ttf");
+	auto pFont3Blob = loadBlob( path + "NotoSans-Italic.ttf");
+	auto pFont4Blob = loadBlob( path + "DroidSansMono.ttf");
 
 	auto pFont1 = FreeTypeFont::create(pFont1Blob);
 	auto pFont2 = FreeTypeFont::create(pFont2Blob);
 	auto pFont3 = FreeTypeFont::create(pFont3Blob);
 	auto pFont4 = FreeTypeFont::create(pFont4Blob);
 
-	auto pThemeSurface = loadSurface("resources/skin_widgets.png");
+	auto pThemeSurface = loadSurface(path + "skin_widgets.png");
 
 	auto pTheme = Simplistic::create(pFont1,pFont2,pFont3,pFont4,pThemeSurface);
 	if (!pTheme)
