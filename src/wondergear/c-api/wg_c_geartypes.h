@@ -25,7 +25,17 @@
 
 #include <stdint.h>
 
+#if __has_include(<wg_export.h>)
 #include <wg_export.h>
+#else
+#	define WG_EXPORT
+#	define WG_NO_EXPORT
+#	define WG_DEPRECATED
+#	define	WG_DEPRECATED_EXPORT
+#	define	WG_DEPRECATED_NO_EXPORT
+#endif
+
+
 
 #ifdef __cplusplus
 extern "C" {
