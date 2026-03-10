@@ -25,6 +25,7 @@
 #include <wg_gfxbase.h>
 
 #include <algorithm>
+#include <cstring>
 
 namespace wg
 {
@@ -116,7 +117,7 @@ int LZCompressor::compress( void * _pDest, const void * _pBegin, const void * _p
 
 	auto pWindow = (uint16_t *) GfxBase::memStackAlloc(windowSize);
 
-	memset( pWindow, 0, windowSize );
+	std::memset( pWindow, 0, windowSize );
 
 	//
 
@@ -327,7 +328,7 @@ void LZCompressor::_generateTable()
 {
 	m_pHashTable = new uint16_t[m_hashSize];
 
-	memset( m_pHashTable, 0, m_hashSize*sizeof(uint16_t) );
+	std::memset( m_pHashTable, 0, m_hashSize*sizeof(uint16_t) );
 }
 
 

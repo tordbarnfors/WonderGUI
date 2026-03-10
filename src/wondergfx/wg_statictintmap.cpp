@@ -1,18 +1,18 @@
 /*=========================================================================
 
-                             >>> WonderGUI <<<
+							 >>> WonderGUI <<<
 
   This file is part of Tord Bärnfors' WonderGUI UI Toolkit and copyright
   Tord Bärnfors, Sweden [mail: first name AT barnfors DOT c_o_m].
 
-                                -----------
+								-----------
 
   The WonderGUI UI Toolkit is free software; you can redistribute
   this file and/or modify it under the terms of the GNU General Public
   License as published by the Free Software Foundation; either
   version 2 of the License, or (at your option) any later version.
 
-                                -----------
+								-----------
 
   The WonderGUI UI Toolkit is also available for use in commercial
   closed source projects under a separate license. Interested parties
@@ -21,6 +21,8 @@
 =========================================================================*/
 #include <wg_statictintmap.h>
 #include <wg_gfxbase.h>
+
+#include <cstring>
 
 namespace wg
 {
@@ -46,8 +48,8 @@ namespace wg
 
 		m_pColors = new HiColor[totalColors];
 
-		memcpy(m_pColors, pColorstripX, m_size.w * sizeof(HiColor) );
-		memcpy(m_pColors + m_size.w, pColorstripY, m_size.h * sizeof(HiColor) );
+		std::memcpy(m_pColors, pColorstripX, m_size.w * sizeof(HiColor) );
+		std::memcpy(m_pColors + m_size.w, pColorstripY, m_size.h * sizeof(HiColor));
 
 		int alpha = 0;
 		for( int i = 0 ; i < totalColors ; i++ )
@@ -82,7 +84,7 @@ namespace wg
 			int copyAmount = std::min(tintmapSize.w, m_size.w);
 
 			if(copyAmount > 0)
-				memcpy( pOutputX, m_pColors, copyAmount * sizeof(HiColor));
+				std::memcpy(pOutputX, m_pColors, copyAmount * sizeof(HiColor));
 
 			if( copyAmount < tintmapSize.w )
 			{
@@ -96,7 +98,7 @@ namespace wg
 			int copyAmount = std::min(tintmapSize.h, m_size.h);
 
 			if(copyAmount > 0)
-				memcpy( pOutputY, m_pColors + m_size.w, copyAmount * sizeof(HiColor));
+				std::memcpy(pOutputY, m_pColors + m_size.w, copyAmount * sizeof(HiColor));
 
 			if( copyAmount < tintmapSize.h )
 			{

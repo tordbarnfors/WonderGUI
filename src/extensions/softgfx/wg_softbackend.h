@@ -28,7 +28,16 @@
 
 namespace wg
 {
-
+#if defined(__ARM_ARCH) && defined(__APPLE__)
+	// Apple Silicon (M1/M2/M3)
+	static constexpr size_t kCacheLineSize = 128;
+#elif defined(__ARM_ARCH)
+	// Cortex-M7 and most other ARM (Cortex-A typically 64)
+	static constexpr size_t kCacheLineSize = 32;
+#else
+	// x86/x64
+	static constexpr size_t kCacheLineSize = 64;
+#endif
 
 	class SoftBackend;
 	typedef	StrongPtr<SoftBackend>	SoftBackend_p;
@@ -159,20 +168,19 @@ namespace wg
 		typedef	void(*TransformBlitOp_p)(const SoftSurface* pSrcSurf, BinalCoord pos, const binalInt matrix[2][2], uint8_t* pDst, int dstPitchX, int dstPitchY, int nLines, int lineLength, const ColTrans& tint, CoordI patchPos);
 		typedef void(*SegmentOp_p)(int clipBeg, int clipEnd, uint8_t* pStripStart, int pixelPitch, int nEdges, SegmentEdge* pEdges, const int16_t* pSegmentColors, const HiColor * pSegmentTintmap, int segmentTintmapPitch, const bool* pTransparentSegments, const bool* pOpaqueSegments, const ColTrans& tint);
 
-		static const int16_t 	s_channel_4_1[256];
-		static const int16_t	s_channel_4_2[256];
-		static const int16_t	s_channel_5_linear[32];
-		static const int16_t	s_channel_6_linear[64];
-		static const int16_t	s_channel_5_sRGB[32];
-		static const int16_t	s_channel_6_sRGB[64];
-		static const uint8_t	s_fast8_channel_4_1[256];
-		static const uint8_t 	s_fast8_channel_4_2[256];
-		static const uint8_t	s_fast8_channel_5[32];
-		static const uint8_t	s_fast8_channel_6[64];
+		alignas(kCacheLineSize) static const int16_t s_channel_4_1[256];
+		alignas(kCacheLineSize) static const int16_t s_channel_4_2[256];
+		alignas(kCacheLineSize) static const int16_t s_channel_5_linear[32];
+		alignas(kCacheLineSize) static const int16_t s_channel_6_linear[64];
+		alignas(kCacheLineSize) static const int16_t s_channel_5_sRGB[32];
+		alignas(kCacheLineSize) static const int16_t s_channel_6_sRGB[64];
+		alignas(kCacheLineSize) static const uint8_t s_fast8_channel_4_1[256];
+		alignas(kCacheLineSize) static const uint8_t s_fast8_channel_4_2[256];
+		alignas(kCacheLineSize) static const uint8_t s_fast8_channel_5[32];
+		alignas(kCacheLineSize) static const uint8_t s_fast8_channel_6[64];
 
-		static int 				s_mulTab[256];
-
-		static int16_t			s_limit4096Tab[4097 * 3];
+		alignas(kCacheLineSize) static int s_mulTab[256];
+		alignas(kCacheLineSize) static int16_t s_limit4096Tab[4097 * 3];
 
 		const static int	c_maxSegments = 16;
 
