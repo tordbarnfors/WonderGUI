@@ -465,9 +465,9 @@ void _draw_segment_strip_blend_to_bgr565srgb(int colBeg, int colEnd, uint8_t* pS
 			{
 				int16_t inB, inG, inR, inA;
 
-				inR = pSegmentColors[0];
+				inB = pSegmentColors[0];
 				inG = pSegmentColors[1];
-				inB = pSegmentColors[2];
+				inR = pSegmentColors[2];
 				inA = pSegmentColors[3];
 
 				if (*pOpaqueSegments)
@@ -591,9 +591,9 @@ void _draw_segment_strip_blend_to_bgr565srgb(int colBeg, int colEnd, uint8_t* pS
 					int blendFraction = ((segmentFractions[i] * alpha) / 4096);
 					backFraction -= blendFraction;
 
-					accR += blendFraction * pSegmentColors[i*4+0];
+					accB += blendFraction * pSegmentColors[i*4+0];
 					accG += blendFraction * pSegmentColors[i*4+1];
-					accB += blendFraction * pSegmentColors[i*4+2];
+					accR += blendFraction * pSegmentColors[i*4+2];
 				}
 
 				outB = (accB + (backB * backFraction)) >> 16;
