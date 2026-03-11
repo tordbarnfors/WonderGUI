@@ -689,7 +689,29 @@ namespace wg
 	{
 		Gradient transparent(Color::Transparent);
 		Gradient outline = m_outlineGradient.isUndefined() ? Gradient(m_outlineColor) : m_outlineGradient;
-		Gradient fill = m_gradient.isUndefined() ? Gradient(m_color): m_gradient;
+		Gradient fill;
+
+		if( m_gradient.isUndefined() )
+			fill = Gradient(m_color);
+		else
+		{
+			fill = m_gradient;
+			fill.topLeft *= m_color;
+			fill.topRight *= m_color;
+			fill.bottomLeft *= m_color;
+			fill.bottomRight *= m_color;
+		}
+
+		if( m_outlineGradient.isUndefined() )
+			outline = Gradient(m_outlineColor);
+		else
+		{
+			outline = m_outlineGradient;
+			outline.topLeft *= m_outlineColor;
+			outline.topRight *= m_outlineColor;
+			outline.bottomLeft *= m_outlineColor;
+			outline.bottomRight *= m_outlineColor;
+		}
 
 		Gradient * p = pDest;
 		* p++ = transparent;
@@ -702,7 +724,6 @@ namespace wg
 
 		return int( p - pDest );
 	}
-
 }
 
 
