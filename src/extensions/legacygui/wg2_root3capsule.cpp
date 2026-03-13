@@ -97,7 +97,6 @@ void WgRoot3Capsule::_setState( WgState state )
 
 void WgRoot3Capsule::_childRequestResize( wg::StaticSlot * pSlot )
 {
-	RootPanel::_childRequestResize(pSlot);
 	_requestResize();
 }
 
