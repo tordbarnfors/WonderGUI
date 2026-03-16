@@ -591,7 +591,7 @@ namespace wg
 				// Get bounds for rect and alloc pixelBuffer
 
 				RectI bounds = m_updatingSurfaceRects[0];
-				for( int i = 1 ; i < m_updatingSurfaceRects.size() ; i++ )
+				for(size_t i = 1 ; i < m_updatingSurfaceRects.size() ; i++ )
 					bounds.growToContain(m_updatingSurfaceRects[i]);
 
 				auto pixelBuffer = m_pUpdatingSurface->allocPixelBuffer(bounds);

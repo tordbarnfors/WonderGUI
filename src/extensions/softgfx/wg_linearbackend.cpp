@@ -174,7 +174,7 @@ namespace wg
 		uint8_t * pCanvasBuffer = (uint8_t*) m_beginCanvasRenderCallback( ref, bytesNeeded );
 
 		int ofs = 0;
-		for( int i = 0 ; i < m_canvasSegments.size() ; i++ )
+		for(size_t i = 0 ; i < m_canvasSegments.size() ; i++ )
 		{
 			auto& updateRect = m_canvasSegments[i].rect;
 			m_canvasSegments[i].pitch = updateRect.w * m_canvasPixelBytes;

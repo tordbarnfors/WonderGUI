@@ -262,7 +262,7 @@ namespace wg
 
 		pHeader->pixelDecompressMargin = decompressMargin;
 
-		int paddedPixelBytes = bytesOfCompressedPixels + 3 & ~0x03; // Ensure 32-bit alignment
+		int paddedPixelBytes = (bytesOfCompressedPixels + 3) & ~0x03; // Ensure 32-bit alignment
 
 		pHeader->pixelBytes = paddedPixelBytes;
 		pHeader->pixelDataPadding = (int8_t)(paddedPixelBytes - bytesOfCompressedPixels);
@@ -278,7 +278,7 @@ namespace wg
 
 		pHeader->paletteDecompressMargin = decompressMargin;
 
-		int paddedPaletteBytes = bytesOfCompressedPalette + 3 & ~0x03; // Ensure 32-bit alignment
+		int paddedPaletteBytes = (bytesOfCompressedPalette + 3) & ~0x03; // Ensure 32-bit alignment
 
 		pHeader->paletteBytes = paddedPaletteBytes;
 		pHeader->paletteDataPadding = (int8_t)(paddedPaletteBytes - bytesOfCompressedPalette);
