@@ -843,7 +843,7 @@ void GfxDeviceGen2::clearLayers()
 	clearTintmap();
 	clearTintColor();
 
-	for (int i = 1; i < canvasEntry.layers.size(); i++)
+	for (size_t i = 1; i < canvasEntry.layers.size(); i++)
 	{
 		auto& info = canvasEntry.pLayerInfo->m_layers[i - 1];
 		auto& layer = canvasEntry.layers[i];
@@ -890,7 +890,7 @@ void GfxDeviceGen2::_resetCanvas()
 	memset(&canvasEntry.sessionInfo, 0, sizeof(canvasEntry.sessionInfo));
 
 
-	for (int i = 0; i < canvasEntry.layers.size(); i++)
+	for (size_t i = 0; i < canvasEntry.layers.size(); i++)
 	{
 		auto& info = canvasEntry.pLayerInfo->m_layers[i - 1];
 		auto& layer = canvasEntry.layers[i];
@@ -918,7 +918,7 @@ void GfxDeviceGen2::_doFlattenLayers()
 
 	// Finalize additional layers
 
-	for (int i = 1; i < canvasData.layers.size(); i++)
+	for (size_t i = 1; i < canvasData.layers.size(); i++)
 	{
 		auto& info = canvasData.pLayerInfo->m_layers[i - 1];
 		auto& layer = canvasData.layers[i];
@@ -1049,7 +1049,7 @@ void GfxDeviceGen2::_doFlattenLayers()
 
 	// Render additional layers
 
-	for (int i = 1; i < canvasData.layers.size(); i++)
+	for (size_t i = 1; i < canvasData.layers.size(); i++)
 	{
 		auto& info = canvasData.pLayerInfo->m_layers[i - 1];
 		auto& layer = canvasData.layers[i];
@@ -1752,8 +1752,8 @@ void GfxDeviceGen2::rotScaleBlit(const RectSPX& dest, float rotationDegrees, flo
 	CoordF		src;
 	Transform	mtx;
 
-	float	sz = (float)sin(-rotationDegrees * 3.14159265 / 180);
-	float	cz = (float)cos(-rotationDegrees * 3.14159265 / 180);
+	float	sz = std::sin(-rotationDegrees * 3.14159265f / 180.f);
+	float	cz = std::cos(-rotationDegrees * 3.14159265f / 180.f);
 
 	scale = 1.f / scale;
 
@@ -2152,8 +2152,8 @@ void GfxDeviceGen2::rotScaleBlur(const RectSPX& dest, float rotationDegrees, flo
 	CoordSPX	src;
 	Transform	mtx;
 
-	float	sz = (float)sin(-rotationDegrees * 3.14159265 / 180);
-	float	cz = (float)cos(-rotationDegrees * 3.14159265 / 180);
+	float	sz = std::sin(-rotationDegrees * 3.14159265f / 180.f);
+	float	cz = std::cos(-rotationDegrees * 3.14159265f / 180.f);
 
 	scale = 1.f / scale;
 
@@ -3043,9 +3043,9 @@ void GfxDeviceGen2::drawPieChart(const RectSPX& _canvas, float start, int nSlice
 			}
 			else
 			{
-				rot *= 3.14159265358979f * 2;
-				float s = sin(rot);
-				float c = cos(rot);
+				rot *= 3.14159265358979f * 2.f;
+				float s = std::sin(rot);
+				float c = std::cos(rot);
 
 				float decF = (c / s) * (quadH << 12) / float(quadW);
 

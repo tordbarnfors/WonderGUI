@@ -169,8 +169,8 @@ namespace wg
 
 		for (int i = 0; i < c_nCurveTabEntries; i++)
 		{
-			double y = 1.f - i / (double)c_nCurveTabEntries;
-			s_curveTab[i] = (int)(Util::squareRoot(1.f - y*y)*65536.f);
+			double y = 1.0 - i / (double)c_nCurveTabEntries;
+			s_curveTab[i] = (int)(Util::squareRoot(1.0 - y*y)*65536.0);
 		}
 	}
 
