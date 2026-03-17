@@ -1312,9 +1312,13 @@ void MetalBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd)
 				{
 					HiColor col = *pColors++;
 
+					CoordSPX begin, end;
+
 					auto p32 = (const spx *) p;
-					CoordSPX begin = { *p32++, *p32++ };
-					CoordSPX end = { *p32++, *p32++ };
+					begin.x = *p32++;
+					begin.y = *p32++;
+					end.x = *p32++;
+					end.y = *p32++;
 					p = (const uint16_t*) p32;
 
 					float thickness = *p++ / 64.f;

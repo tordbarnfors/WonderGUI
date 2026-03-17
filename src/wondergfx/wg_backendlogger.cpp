@@ -386,9 +386,13 @@ namespace wg
 
 					for (int i = 0; i < nLines; i++)
 					{
+						CoordSPX beg, end;
+
 						auto p32 = (const spx *) p;
-						CoordSPX beg = { *p32++, *p32++ };
-						CoordSPX end = { *p32++, *p32++ };
+						beg.x = *p32++;
+						beg.y = *p32++;
+						end.x = *p32++;
+						end.y = *p32++;
 						p = (const uint16_t*) p32;
 
 						spx thickness = *p++;
