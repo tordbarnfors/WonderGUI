@@ -119,7 +119,7 @@ namespace wg
 
 		// Static so it can be used by StreamSurface and StreamEdgemap as well.
 
-		static void _compressSplitAndEncode( StreamEncoder * pEncoder, GfxStream::ChunkId chunkType, Compressor * pCompressor, const void * pBeg, const void * pEnd );
+		static void _compressSplitAndEncode( StreamEncoder * pEncoder, GfxStream::ChunkId chunkType, uint16_t objectID, Compressor * pCompressor, const void * pBeg, const void * pEnd );
 
 		std::vector<CanvasInfo>	m_definedCanvases;
 		StreamEncoder_p			m_pEncoder;

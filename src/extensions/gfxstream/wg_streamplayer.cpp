@@ -320,7 +320,10 @@ namespace wg
 
 		case GfxStream::ChunkId::Objects:
 		{
-			_loadChunkIntoDataBuffer(m_objectsDataBuffer, header.size);
+			GfxStream::DataInfo dataInfo;
+			decoder >> dataInfo;
+
+			_loadIntoDataBuffer(dataInfo, m_objectsDataBuffer, header.size);
 
 			if( m_objectsDataBuffer.size > 0 )
 			{
@@ -347,7 +350,10 @@ namespace wg
 
 		case GfxStream::ChunkId::Rects:
 		{
-			_loadChunkIntoDataBuffer(m_rectsDataBuffer, header.size);
+			GfxStream::DataInfo dataInfo;
+			decoder >> dataInfo;
+
+			_loadIntoDataBuffer(dataInfo, m_rectsDataBuffer, header.size);
 
 			if (m_rectsDataBuffer.size > 0)
 				m_pBackend->setRects((RectSPX*) m_rectsDataBuffer.pBuffer, (RectSPX*) (m_rectsDataBuffer.pBuffer + m_rectsDataBuffer.size) );
@@ -357,7 +363,10 @@ namespace wg
 
 		case GfxStream::ChunkId::Colors:
 		{
-			_loadChunkIntoDataBuffer(m_colorsDataBuffer, header.size);
+			GfxStream::DataInfo dataInfo;
+			decoder >> dataInfo;
+
+			_loadIntoDataBuffer(dataInfo, m_colorsDataBuffer, header.size);
 
 			if (m_colorsDataBuffer.size > 0)
 				m_pBackend->setColors((HiColor*)m_colorsDataBuffer.pBuffer, (HiColor*)(m_colorsDataBuffer.pBuffer + m_colorsDataBuffer.size) );
@@ -367,7 +376,10 @@ namespace wg
 
 		case GfxStream::ChunkId::Transforms:
 		{
-			_loadChunkIntoDataBuffer(m_transformsDataBuffer, header.size);
+			GfxStream::DataInfo dataInfo;
+			decoder >> dataInfo;
+
+			_loadIntoDataBuffer(dataInfo, m_transformsDataBuffer, header.size);
 
 			if (m_transformsDataBuffer.size > 0)
 				m_pBackend->setTransforms((Transform*)m_transformsDataBuffer.pBuffer, (Transform*)(m_transformsDataBuffer.pBuffer + m_transformsDataBuffer.size) );
@@ -378,7 +390,10 @@ namespace wg
 
 		case GfxStream::ChunkId::Commands:
 		{
-			_loadChunkIntoDataBuffer(m_commandsDataBuffer, header.size);
+			GfxStream::DataInfo dataInfo;
+			decoder >> dataInfo;
+
+			_loadIntoDataBuffer(dataInfo, m_commandsDataBuffer, header.size);
 
 			if (m_commandsDataBuffer.size > 0)
 				m_pBackend->processCommands( (uint16_t*) m_commandsDataBuffer.pBuffer, (uint16_t*) (m_commandsDataBuffer.pBuffer + m_commandsDataBuffer.size) );
@@ -388,7 +403,10 @@ namespace wg
 		
 		case GfxStream::ChunkId::UpdateRects:
 		{
-			_loadChunkIntoDataBuffer(m_updateRectsDataBuffer, header.size);
+			GfxStream::DataInfo dataInfo;
+			decoder >> dataInfo;
+
+			_loadIntoDataBuffer(dataInfo, m_updateRectsDataBuffer, header.size);
 
 			if( m_updateRectsDataBuffer.size > 0 )
 			{
@@ -475,9 +493,11 @@ namespace wg
 				break;
 			}
 
-			m_pUpdatingSurface = wg_static_cast<Surface_p>(m_vObjects[objectId]);
-			m_updatingSurfaceRects.resize(1);
-			m_updatingSurfaceRects[0] = rect;
+			auto& buffer = m_surfaceDataBuffers.emplace_back(wg_static_cast<Surface_p>(m_vObjects[objectId]));
+
+			buffer.rects.resize(1);
+			buffer.rects[0] = rect;
+
 			break;
 		}
 
@@ -493,19 +513,14 @@ namespace wg
 			decoder >> surfaceId;
 			decoder >> nRects;
 
-			if( canvasRef != CanvasRef::None )
-			{
-				auto * pCanvasInfo = m_pBackend->canvasInfo(canvasRef);
-				m_pUpdatingSurface = pCanvasInfo->pSurface;
-			}
-			else
-			{
-				m_pUpdatingSurface = wg_static_cast<Surface_p>(m_vObjects[surfaceId]);
-			}
 
-			m_updatingSurfaceRects.resize(nRects);
+			Surface_p pSurf = (canvasRef != CanvasRef::None ) ? m_pBackend->canvasInfo(canvasRef)->pSurface : wg_static_cast<Surface_p>(m_vObjects[surfaceId]);
+
+			auto& buffer = m_surfaceDataBuffers.emplace_back(pSurf);
+
+			buffer.rects.resize(nRects);
 			for( int i = 0 ; i < nRects ; i++ )
-				decoder >> m_updatingSurfaceRects[i];
+				decoder >> buffer.rects[i];
 
 			break;
 		}
@@ -513,23 +528,32 @@ namespace wg
 
 		case GfxStream::ChunkId::SurfacePixels:
 		{
-			_loadChunkIntoDataBuffer(m_updatingSurfaceDataBuffer, header.size);
+			GfxStream::DataInfo dataInfo;
+			decoder >> dataInfo;
 
-			if(m_updatingSurfaceDataBuffer.size > 0)
+			auto pSurface = wg_static_cast<Surface_p>(m_vObjects[dataInfo.objectId]);
+
+			auto it = m_surfaceDataBuffers.begin();
+			while( it->pSurface != pSurface )
+				it++;
+
+			_loadIntoDataBuffer( dataInfo, it->buffer, header.size);
+
+			if(it->buffer.size > 0)
 			{
 				// Get bounds for rect and alloc pixelBuffer
 
-				RectI bounds = m_updatingSurfaceRects[0];
-				for( int i = 1 ; i < m_updatingSurfaceRects.size() ; i++ )
-					bounds.growToContain(m_updatingSurfaceRects[i]);
+				RectI bounds = it->rects[0];
+				for( int i = 1 ; i < it->rects.size() ; i++ )
+					bounds.growToContain(it->rects[i]);
 
-				auto pixelBuffer = m_pUpdatingSurface->allocPixelBuffer(bounds);
-				int pixelBits = m_pUpdatingSurface->pixelBits();
+				auto pixelBuffer = pSurface->allocPixelBuffer(bounds);
+				int pixelBits = pSurface->pixelBits();
 
 				// Go through rects and copy pixels
 
-				uint8_t * pSource = m_updatingSurfaceDataBuffer.pBuffer;
-				for( RectI& rect : m_updatingSurfaceRects )
+				uint8_t * pSource = it->buffer.pBuffer;
+				for( RectI& rect : it->rects )
 				{
 					uint8_t * pDest = pixelBuffer.pixels + (rect.y - pixelBuffer.rect.y) * pixelBuffer.pitch + (rect.x - pixelBuffer.rect.x) * pixelBits/8;
 					int span = rect.w * pixelBits/8;
@@ -544,11 +568,10 @@ namespace wg
 
 				// Clean up
 
-				m_pUpdatingSurface->pushPixels(pixelBuffer);
-				m_pUpdatingSurface->freePixelBuffer(pixelBuffer);
+				pSurface->pushPixels(pixelBuffer);
+				pSurface->freePixelBuffer(pixelBuffer);
 
-				if( m_updatingSurfaceDataBuffer.capacity > 16384 )
-					m_updatingSurfaceDataBuffer.release();
+				m_surfaceDataBuffers.erase(it);
 			}
 
 			break;
@@ -706,25 +729,27 @@ namespace wg
 //				break;
 			}
 
-			m_pUpdatingEdgemap = wg_static_cast<Edgemap_p>(m_vObjects[objectId]);
-
-			m_edgemapUpdateEdgeBegin 	= edgeBegin;
-			m_edgemapUpdateEdgeEnd 		= edgeEnd;
-			m_edgemapUpdateSampleBegin	= sampleBegin;
-			m_edgemapUpdateSampleEnd	= sampleEnd;
-
+			m_edgemapDataBuffers.emplace_back(wg_static_cast<Edgemap_p>(m_vObjects[objectId]), edgeBegin, edgeEnd, sampleBegin, sampleEnd);
 			break;
 		}
 				
 		case GfxStream::ChunkId::EdgemapSamples:
 		{
-			_loadChunkIntoDataBuffer( m_edgemapSampleBuffer, header.size);
+			GfxStream::DataInfo dataInfo;
+			decoder >> dataInfo;
 
-			if (m_edgemapSampleBuffer.size > 0)
+			auto pEdgemap = wg_static_cast<Edgemap_p>(m_vObjects[dataInfo.objectId]);
+
+			auto it = m_edgemapDataBuffers.begin();
+			while( it->pEdgemap != pEdgemap )
+				it++;
+
+			_loadIntoDataBuffer( dataInfo, it->buffer, header.size);
+
+			if (it->buffer.size > 0)
 			{
-				m_pUpdatingEdgemap->importSamples(SampleOrigo::Top, (spx*) m_edgemapSampleBuffer.pBuffer, m_edgemapUpdateEdgeBegin, m_edgemapUpdateEdgeEnd, m_edgemapUpdateSampleBegin, m_edgemapUpdateSampleEnd, 1, (m_edgemapUpdateEdgeEnd-m_edgemapUpdateEdgeBegin));
-
-				m_edgemapSampleBuffer.release();
+				pEdgemap->importSamples(SampleOrigo::Top, (spx*) it->buffer.pBuffer, it->edgeBegin, it->edgeEnd, it->sampleBegin, it->sampleEnd, 1, (it->edgeEnd - it->edgeBegin));
+				m_edgemapDataBuffers.erase(it);
 			}
 
 			break;
@@ -757,14 +782,11 @@ namespace wg
 		return true;
 	}
 
-	//____ _loadChunkIntoDataBuffer() ________________________________________________
+	//____ _loadIntoDataBuffer() ________________________________________________
 
-	bool StreamPlayer::_loadChunkIntoDataBuffer( DataBuffer& buffer, int chunkDataSize )
+	bool StreamPlayer::_loadIntoDataBuffer( GfxStream::DataInfo& dataInfo, DataBuffer& buffer, int chunkDataSize )
 	{
 		auto& decoder = * m_pDecoder;
-
-		GfxStream::DataInfo dataInfo;
-		decoder >> dataInfo;
 
 		if( dataInfo.bFirstChunk )
 		{

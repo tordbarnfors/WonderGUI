@@ -161,6 +161,7 @@ namespace wg
 		info.chunkOffset = _pullInt();
 		info.compression = _pullInt();
 		info.dataStart = _pullInt();
+		info.objectId = _pullShort();
 
 		uint16_t flags = _pullShort();
 

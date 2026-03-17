@@ -221,6 +221,7 @@ namespace wg
 		_pushInt(info.chunkOffset);
 		_pushInt(info.compression);
 		_pushInt(info.dataStart);
+		_pushShort(info.objectId);
 		_pushShort( int(info.bFirstChunk) | (int(info.bLastChunk) << 1) | (int(info.bPadded) << 2) );
 		return *this;
 	}

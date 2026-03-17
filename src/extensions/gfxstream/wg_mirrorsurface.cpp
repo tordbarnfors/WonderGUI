@@ -257,7 +257,7 @@ namespace wg
 		for (int i = 0; i < nRects; i++)
 			encoder << pRects[i];
 
-		StreamBackend::_compressSplitAndEncode(m_pEncoder, GfxStream::ChunkId::SurfacePixels, m_pCompressor, pBuffer, pBuffer + allocSize);
+		StreamBackend::_compressSplitAndEncode(m_pEncoder, GfxStream::ChunkId::SurfacePixels, m_surfaceId, m_pCompressor, pBuffer, pBuffer + allocSize);
 
 		// Cleanup
 

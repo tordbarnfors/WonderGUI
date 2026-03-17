@@ -120,7 +120,8 @@ namespace wg
 			int			size = 0;			// Stays zero until buffer filled and data decompressed.
 		};
 
-		bool	_loadChunkIntoDataBuffer( DataBuffer& buffer, int chunkDataSize );
+//		bool	_loadChunkIntoDataBuffer( DataBuffer& buffer, int chunkDataSize );
+		bool	_loadIntoDataBuffer( GfxStream::DataInfo& dataInfo, DataBuffer& buffer, int chunkDataSize );
 
 
 		StreamDecoder_p		m_pDecoder;
@@ -138,18 +139,39 @@ namespace wg
 		DataBuffer				m_colorsDataBuffer;
 		DataBuffer				m_commandsDataBuffer;
 
-		Surface_p			m_pUpdatingSurface;
-		std::vector<RectI>	m_updatingSurfaceRects;
-		DataBuffer			m_updatingSurfaceDataBuffer;
 
-		Edgemap_p			m_pUpdatingEdgemap;
-		DataBuffer			m_edgemapSampleBuffer;
+		struct SurfaceDataBuffer
+		{
+			SurfaceDataBuffer(const Surface_p& pSurface) : pSurface(pSurface) {}
 
-		int					m_edgemapUpdateEdgeBegin;
-		int					m_edgemapUpdateEdgeEnd;
-		int					m_edgemapUpdateSampleBegin;
-		int					m_edgemapUpdateSampleEnd;
-		
+			Surface_p			pSurface;
+			std::vector<RectI>	rects;
+			DataBuffer			buffer;
+		};
+
+		struct EdgemapDataBuffer
+		{
+			EdgemapDataBuffer(const Edgemap_p& pEgemap, int edgeBegin, int edgeEnd, int sampleBegin, int sampleEnd)
+			  :	pEdgemap(pEdgemap),
+				edgeBegin(edgeBegin),
+				edgeEnd(edgeEnd),
+				sampleBegin(sampleBegin),
+				sampleEnd(sampleEnd) {}
+
+			Edgemap_p			pEdgemap;
+
+			int					edgeBegin;
+			int					edgeEnd;
+			int					sampleBegin;
+			int					sampleEnd;
+
+			DataBuffer			buffer;
+		};
+
+		std::vector<SurfaceDataBuffer>	m_surfaceDataBuffers;
+		std::vector<EdgemapDataBuffer>	m_edgemapDataBuffers;
+
+
 		GfxBackend::SessionInfo	m_sessionInfo;			// Temporary for BeginSession/UpdateRects
 		DataBuffer			m_updateRectsDataBuffer;
 

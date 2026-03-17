@@ -120,6 +120,7 @@ namespace wg
 
 		struct DataInfo
 		{
+			int16_t		objectId;		// Object for which this buffer contains data
 			int32_t		bufferSize;		// Size of buffer needed to read content
 			int32_t		chunkOffset;	// Offset of this chunk.
 			uint32_t	compression;	// TokenID for compression used.
@@ -249,7 +250,7 @@ namespace wg
 
 		static const int ColorSize = 8;
 		static const int NinePatchSize = 16 + 8 + 10 + 10;
-		static const int DataInfoSize = 18;
+		static const int DataInfoSize = 20;
 		static const int HeaderSize = 4;
 
 		inline static GfxStream::ChunkId chunkType(const uint8_t* pChunk)
@@ -289,9 +290,9 @@ namespace wg
 			info.chunkOffset	= pChunkData[2] + int(pChunkData[3]) * 65536;
 			info.compression	= pChunkData[4] + int(pChunkData[5]) * 65536;
 			info.dataStart		= pChunkData[6] + int(pChunkData[7]) * 65536;
+			info.objectId		= pChunkData[8];
 
-
-			uint16_t flags = pChunkData[8];
+			uint16_t flags = pChunkData[9];
 
 			info.bFirstChunk = flags & 0x1;
 			info.bLastChunk = (flags >> 1) & 0x1;

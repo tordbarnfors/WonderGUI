@@ -378,9 +378,9 @@ int main ( int argc, char** argv )
 //   playDirectUpdate( pStreamDevice, CanvasRef::Canvas_1 );
 //   playRectangleDance( pStreamDevice, CanvasRef::Canvas_1 );
 //	  playRectangleDanceDualScreen( pStreamDevice, CanvasRef::Canvas_1, CanvasRef::Canvas_2 );
-//    playLogoFadeIn( pStreamDevice, CanvasRef::Canvas_1, pSurfaceFactory );
+    playLogoFadeIn( pStreamDevice, CanvasRef::Canvas_1, pSurfaceFactory );
 //    playSurfaceStressTest( pStreamDevice, CanvasRef::Canvas_1, pSurfaceFactory );
-	playBounceRects( pStreamDevice, CanvasRef::Canvas_1 );
+//	playBounceRects( pStreamDevice, CanvasRef::Canvas_1 );
 //	playDualScreenBounceRects( pStreamDevice, CanvasRef::Canvas_1, CanvasRef::Canvas_2 );
 
 //	playImageStreamingTest( pStreamDevice, CanvasRef::Canvas_1, pSurfaceFactory );
