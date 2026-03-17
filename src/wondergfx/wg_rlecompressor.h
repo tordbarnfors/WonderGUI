@@ -31,12 +31,19 @@
 *
 *	RLEx compression format:
 *
-
-	Byte value:
-
-	0-127			Copy 1-128 following primitives verbatim.
-	-1 - -128		Repeat previous primitive 1-128 times.
-
+*	First byte in stream is primitive size. If primitive size is larger
+*	than 1, then a padding byte follows.
+*
+*	Byte value for primitive size 1:
+*
+*	0-127			Copy 1-128 bytes following primitives verbatim.
+*	-1 - -128		Repeat previous primitive 1-128 times.
+*
+*	Word value for primitive size 2+:
+*
+*	0-32767			Copy 1-32768 uint16_t following primitives verbatim.
+*	-1 - -32768		Repeat previous primitive 1-32768 times.
+*
 */
 
 
@@ -56,7 +63,7 @@ namespace wg
 
 		struct Blueprint
 		{
-			int				primSize = 1;				// Size in byte of primitive to RLE encode.
+			int				primSize = 1;				// Size in byte of primitive to RLE encode. Must be 1 or a mutiple of 2, less than 256.
 			bool			decompressOnly = false;
 			Finalizer_p		finalizer = nullptr;
 		};

@@ -77,17 +77,10 @@ int RLECompressor::maxCompressedSize( int uncompressedSize )
 {
 	int maxExtra;
 
-	switch( m_primSize )
-	{
-		case 1:
-			maxExtra = ((uncompressedSize + 127) / 128) + 1;		// Worst case scenario is one extra byte per 128 bytes + 1 extra byte for header.
-			break;
-		case 2:
-			maxExtra = ((uncompressedSize + 65535) / 65536) + 2;	// Worst case scenario is one extra word per 32768 words + 1 extra word for header.
-			break;
-		default:
-			assert( false );		// Not supported primSize.
-	}
+	if( m_primSize == 1 )
+		maxExtra = ((uncompressedSize + 127) / 128) + 1;		// Worst case scenario is one extra byte per 128 bytes + 1 extra byte for header.
+	else
+		maxExtra = ((uncompressedSize + 65535) / 65536)*2 + 2;	// Worst case scenario is one extra word per 32768 words + 1 extra word for header.
 
 	return uncompressedSize + maxExtra;
 }
@@ -96,6 +89,12 @@ int RLECompressor::maxCompressedSize( int uncompressedSize )
 
 int RLECompressor::compress( void * pDest, const void * pBegin, const void * pEnd )
 {
+	if( (((int8_t*) pEnd) - ((int8_t*) pBegin)) % m_primSize != 0 )
+	{
+		GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Size of data to compress is not a multiple of primSize.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+		return -1;
+	}
+
 	if( m_primSize == 1 )
 	{
 		int8_t * pRead = (int8_t*) pBegin;
@@ -116,7 +115,7 @@ int RLECompressor::compress( void * pDest, const void * pBegin, const void * pEn
 				* pSpanHead = span-1;
 
 				int repeats = 2;
-				while( pRead[repeats] == last && repeats < ((int8_t*) pEnd) - pRead )
+				while( repeats < ((int8_t*) pEnd) - pRead && pRead[repeats] == last )
 					repeats++;
 
 				while( repeats >= 2 )
@@ -174,7 +173,7 @@ int RLECompressor::compress( void * pDest, const void * pBegin, const void * pEn
 				* pSpanHead = span-1;
 
 				int repeats = 2;
-				while( pRead[repeats] == last && repeats < ((int16_t*) pEnd) - pRead )
+				while( repeats < ((int16_t*) pEnd) - pRead && pRead[repeats] == last )
 					repeats++;
 
 				while( repeats >= 2 )
@@ -211,6 +210,74 @@ int RLECompressor::compress( void * pDest, const void * pBegin, const void * pEn
 		return int( ((int8_t*)pWrite) - (int8_t*)pDest);
 
 	}
+	else
+	{
+		int words = m_primSize/2;
+
+		int16_t * pRead = (int16_t*) pBegin;
+		int16_t * pWrite = (int16_t*) pDest;
+
+		* pWrite++ = m_primSize;
+
+		int16_t * pSpanHead = pWrite++;
+		int16_t * pLast = pRead;
+		std::memcpy( pWrite, pRead, m_primSize );
+		pRead += words;
+		pWrite += words;
+
+		int span = 1;
+
+		while( pRead < (int16_t*)pEnd )
+		{
+			if( (pRead+words) < (int16_t*) pEnd && std::memcmp( pRead, pLast, m_primSize ) == 0 )
+			{
+				* pSpanHead = span-1;
+
+				int repeats = 1;
+				int maxRepeats = int(((int16_t*) pEnd) - pRead) / words;
+
+				while( repeats < maxRepeats && std::memcmp( pRead + repeats*words, pLast, m_primSize ) == 0 )
+					repeats++;
+
+				while( repeats >= 1 )
+				{
+					int nToWrite = std::min(repeats,32768);
+					* pWrite++ = -nToWrite;
+					repeats -= nToWrite;
+					pRead += nToWrite * words;
+				}
+
+				if( pRead == (int16_t*) pEnd )
+					return int( ((int8_t*)pWrite) - (int8_t*)pDest);
+
+				pSpanHead = pWrite++;
+				span = 0;
+			}
+			else
+			{
+				if( span == 32768 )
+				{
+					* pSpanHead = 32767;
+					pSpanHead = pWrite++;
+					span = 0;
+				}
+			}
+
+			std::memcpy( pWrite, pRead, m_primSize );
+			pLast = pRead;
+			pRead += words;
+			pWrite += words;
+
+			span++;
+		}
+
+		* pSpanHead = span-1;
+
+		return int( ((int8_t*)pWrite) - (int8_t*)pDest);
+
+	}
+
+
 }
 
 //____ decompress() ___________________________________________________________
@@ -250,8 +317,6 @@ int RLECompressor::decompress( void * pDest, const void * pBegin, const void * p
 
 		while( pRead < pEnd )
 		{
-			int byteOfs = int(pWrite - (int16_t*) pDest)*2;
-
 			int length = * pRead++;
 			if( length >= 0 )
 			{
@@ -269,6 +334,37 @@ int RLECompressor::decompress( void * pDest, const void * pBegin, const void * p
 
 		return int( ((int8_t*)pWrite) - ((int8_t*)pDest) );
 	}
+	else
+	{
+		int words = primSize/2;
+
+		int16_t * pRead = ((int16_t*) pBegin)+1;
+		int16_t * pWrite = (int16_t*) pDest;
+
+		while( pRead < pEnd )
+		{
+			int length = * pRead++;
+			if( length >= 0 )
+			{
+				for( int i = 0 ; i <= length ; i++ )
+					for( int j = 0 ; j < words ; j++ )
+					* pWrite++ = * pRead++;
+			}
+			else
+			{
+				length = -length;
+				for( int i = 0 ; i < length ; i++ )
+				{
+					int16_t * pV = pWrite - words;
+					for( int j = 0 ; j < words ; j++ )
+						* pWrite++ = * pV++;
+				}
+			}
+		}
+
+		return int( ((int8_t*)pWrite) - ((int8_t*)pDest) );
+	}
+
 
 }
 

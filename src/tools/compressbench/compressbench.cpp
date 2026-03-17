@@ -31,6 +31,7 @@ bool MyApp::init(API * pAPI)
 	m_compressors.push_back( Q565Compressor::create() );
 	m_compressors.push_back( RLECompressor::create({ .primSize = 1}) );
 	m_compressors.push_back( RLECompressor::create({ .primSize = 2}) );
+	m_compressors.push_back( RLECompressor::create({ .primSize = 4}) );
 
 	m_pCompressor = m_compressors[0];
 
@@ -89,6 +90,7 @@ bool MyApp::_setupGUI(API* pAPI)
 	m_pCompressorSelector->entries.pushBack( SelectBoxEntry::Blueprint{ .id = 1, .text = "Q565 (QOI inspired for RGB565)" } );
 	m_pCompressorSelector->entries.pushBack( SelectBoxEntry::Blueprint{ .id = 2, .text = "RLEx-1 (Simple one byte run length encoding)" } );
 	m_pCompressorSelector->entries.pushBack( SelectBoxEntry::Blueprint{ .id = 3, .text = "RLEx-2 (Simple two byte run length encoding)" } );
+	m_pCompressorSelector->entries.pushBack( SelectBoxEntry::Blueprint{ .id = 4, .text = "RLEx-4 (Simple four byte run length encoding)" } );
 	m_pCompressorSelector->selectEntryByIndex(0);
 
 	pButtonPanel->slots.pushBack({
