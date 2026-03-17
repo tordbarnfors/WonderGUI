@@ -1033,13 +1033,19 @@ void GfxDeviceGen2::_doFlattenLayers()
 		if( !baseLayer.objects.empty() )
 			m_pBackend->setObjects( baseLayer.objects.data(), baseLayer.objects.data() + baseLayer.objects.size() );
 
-		RectSPX* pRectsBeg = baseLayer.rects.data();
-		RectSPX* pRectsEnd = pRectsBeg + baseLayer.rects.size();
-		m_pBackend->setRects(pRectsBeg, pRectsEnd);
+		if( !baseLayer.rects.empty() )
+		{
+			RectSPX* pRectsBeg = baseLayer.rects.data();
+			RectSPX* pRectsEnd = pRectsBeg + baseLayer.rects.size();
+			m_pBackend->setRects(pRectsBeg, pRectsEnd);
+		}
 
-		HiColor* pColorsBeg = baseLayer.colors.data();
-		HiColor* pColorsEnd = pColorsBeg + baseLayer.colors.size();
-		m_pBackend->setColors(pColorsBeg, pColorsEnd);
+		if( !baseLayer.rects.empty() )
+		{
+			HiColor* pColorsBeg = baseLayer.colors.data();
+			HiColor* pColorsEnd = pColorsBeg + baseLayer.colors.size();
+			m_pBackend->setColors(pColorsBeg, pColorsEnd);
+		}
 
 		uint8_t* pCommandsBeg = baseLayer.commands.data();
 		uint8_t* pCommandsEnd = pCommandsBeg + baseLayer.commands.size();
@@ -1054,7 +1060,7 @@ void GfxDeviceGen2::_doFlattenLayers()
 		auto& info = canvasData.pLayerInfo->m_layers[i - 1];
 		auto& layer = canvasData.layers[i];
 
-		if( layer.commands.size() == 0 )
+		if( layer.commands.empty() )
 			continue;
 
 		// Check if we can do direct rendering
@@ -1072,13 +1078,19 @@ void GfxDeviceGen2::_doFlattenLayers()
 			if( !layer.objects.empty() )
 				m_pBackend->setObjects( layer.objects.data(), layer.objects.data() + layer.objects.size() );
 
-			RectSPX* pRectsBeg = layer.rects.data();
-			RectSPX* pRectsEnd = pRectsBeg + layer.rects.size();
-			m_pBackend->setRects(pRectsBeg, pRectsEnd);
+			if( !layer.rects.empty() )
+			{
+				RectSPX* pRectsBeg = layer.rects.data();
+				RectSPX* pRectsEnd = pRectsBeg + layer.rects.size();
+				m_pBackend->setRects(pRectsBeg, pRectsEnd);
+			}
 
-			HiColor* pColorsBeg = layer.colors.data();
-			HiColor* pColorsEnd = pColorsBeg + layer.colors.size();
-			m_pBackend->setColors(pColorsBeg, pColorsEnd);
+			if( !layer.colors.empty() )
+			{
+				HiColor* pColorsBeg = layer.colors.data();
+				HiColor* pColorsEnd = pColorsBeg + layer.colors.size();
+				m_pBackend->setColors(pColorsBeg, pColorsEnd);
+			}
 
 			uint8_t* pCommandsBeg = layer.commands.data();
 			uint8_t* pCommandsEnd = pCommandsBeg + layer.finalCommandsOfs;
@@ -1103,13 +1115,19 @@ void GfxDeviceGen2::_doFlattenLayers()
 		{
 			// Send buffers and commands to backend
 
-			RectSPX* pRectsBeg = layer.rects.data();
-			RectSPX* pRectsEnd = pRectsBeg + layer.rects.size();
-			m_pBackend->setRects(pRectsBeg, pRectsEnd);
+			if( !layer.rects.empty() )
+			{
+				RectSPX* pRectsBeg = layer.rects.data();
+				RectSPX* pRectsEnd = pRectsBeg + layer.rects.size();
+				m_pBackend->setRects(pRectsBeg, pRectsEnd);
+			}
 
-			HiColor* pColorsBeg = layer.colors.data();
-			HiColor* pColorsEnd = pColorsBeg + layer.colors.size();
-			m_pBackend->setColors(pColorsBeg, pColorsEnd);
+			if( !layer.colors.empty() )
+			{
+				HiColor* pColorsBeg = layer.colors.data();
+				HiColor* pColorsEnd = pColorsBeg + layer.colors.size();
+				m_pBackend->setColors(pColorsBeg, pColorsEnd);
+			}
 
 			uint8_t* pCommandsBeg = layer.commands.data();
 			uint8_t* pCommandsEnd = pCommandsBeg + layer.commands.size();
