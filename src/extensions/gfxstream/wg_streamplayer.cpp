@@ -46,17 +46,13 @@ namespace wg
 		m_pEdgemapFactory = pEdgemapFactory;
 
 		m_pDecoder = StreamDecoder::create();
-
-		m_clipListBuffer.pRects = new RectI[c_clipListBufferSize];
-		m_clipListBuffer.nRects = 0;
-		m_clipListBuffer.capacity = c_clipListBufferSize;
 	}
 
 	//____ Destructor _________________________________________________________
 
 	StreamPlayer::~StreamPlayer()
 	{
-		delete[] m_clipListBuffer.pRects;
+		reset();
 	}
 
 	//____ typeInfo() _________________________________________________________
@@ -863,6 +859,22 @@ namespace wg
 	void StreamPlayer::reset()
 	{
 		m_vObjects.clear();
+
+		if( m_pUpdatingSurfaceDataBuffer )
+		{
+			free( m_pUpdatingSurfaceDataBuffer );
+			m_pUpdatingSurfaceDataBuffer = nullptr;
+		}
+
+		if( m_pEdgemapSampleBuffer )
+		{
+			delete [] m_pEdgemapSampleBuffer;
+			m_pEdgemapSampleBuffer = nullptr;
+		}
+
+		m_pUpdatingSurface = nullptr;
+		m_pUpdatingEdgemap = nullptr;
+
 	}
 
 
