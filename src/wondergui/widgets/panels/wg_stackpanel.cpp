@@ -76,7 +76,7 @@ namespace wg
 		m_placement		= bp.placement;
 		m_sizePolicy	= bp.sizePolicy;
 		m_bVisible		= bp.visible;
-		
+
 		return true;
 	}
 
@@ -119,7 +119,7 @@ namespace wg
 	{
 		if( padding.size() < amount )
 			return false;
-		
+
 		_setSlotMargins( &slots[index], amount, padding.begin());
 		return true;
 	}
@@ -145,6 +145,11 @@ namespace wg
 
 		while( pSlot != pEnd )
 		{
+			if(!pSlot->isVisible())
+			{
+				pSlot++;
+				continue;
+			}
 			SizeSPX marginSize = Util::align(Util::ptsToSpx(pSlot->m_margin, scale));
 			spx width = _width - marginSize.w;
 
@@ -216,6 +221,11 @@ namespace wg
 
 		while( pSlot != pEnd )
 		{
+			if(!pSlot->isVisible())
+			{
+				pSlot++;
+				continue;
+			}
 			SizeSPX marginSize = Util::align(Util::ptsToSpx(pSlot->m_margin, scale));
 			spx height = _height - marginSize.h;
 
@@ -312,7 +322,7 @@ namespace wg
 	{
 		StackPanelSlot * pSlot = static_cast<StackPanelSlot*>(_pSlot);
 		StackPanelSlot * pEnd = pSlot+nb;
-		
+
 		bool	bRequestResize = false;
 
 		while( pSlot != pEnd )
@@ -324,14 +334,11 @@ namespace wg
 
 			pSlot++;
 		}
-		
+
 		_refreshOverflow();
-		
+
 		if( bRequestResize )
 			_requestResize();
-		
-		
-		
 	}
 
 	//____ _makeWidgetAppear() _______________________________________________________
@@ -339,7 +346,7 @@ namespace wg
 	bool StackPanel::_makeWidgetAppear( StackPanelSlot * pSlot )
 	{
 		bool bRequestResize = false;
-		
+
 		SizeSPX defaultSize = pSlot->_defaultSizeWithMargin(m_scale);
 
 		if(defaultSize.w > m_defaultSize.w )
@@ -492,9 +499,9 @@ namespace wg
 						combArea = newRenderArea;
 					else if( !newRenderArea.isEmpty() )
 						combArea.growToContain(newRenderArea);
-					
+
 					_requestRender(combArea);
-					
+
 					if( pSlot->_widget()->_hasOverflow() )
 						_refreshOverflow();
 				}
@@ -535,7 +542,7 @@ namespace wg
 
 		if( pNewChild->_hasOverflow() || (pOldChild && pOldChild->_hasOverflow()))
 			_refreshOverflow();
-		
+
 		_childRequestResize(&slot);
 	}
 
@@ -689,14 +696,14 @@ namespace wg
 	RectSPX StackPanel::_childGeo( const StackPanelSlot * pSlot ) const
 	{
 		//TODO: There should be some handling of widget that doesn't fit on one axis, using matchingWidth()/matchingHeight().
-		
+
 		RectSPX base = RectSPX( m_size ) - align(ptsToSpx(pSlot->m_margin,m_scale));
 
 		if( base.w <= 0 || base.h <= 0 )
 			return RectSPX();
 
 		RectSPX geo = rectFromPolicy(pSlot->m_sizePolicy, pSlot->m_placement, base, pSlot->_widget()->_defaultSize(m_scale));
-		
+
 		return geo;
 	}
 

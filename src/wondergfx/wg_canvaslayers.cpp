@@ -69,7 +69,7 @@ namespace wg
 						
 		}
 
-		if (bp.baseLayer < 0 || bp.baseLayer > bp.layers.size())
+		if (bp.baseLayer < 0 || bp.baseLayer > (int)bp.layers.size())
 		{
 			GfxBase::throwError(ErrorLevel::Critical, ErrorCode::InvalidParam, "Default layer is out of bounds.", nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return nullptr;
@@ -111,7 +111,7 @@ namespace wg
 
 	PixelFormat CanvasLayers::layerFormat(int layer) const
 	{
-		if (layer < 1 || layer > m_layers.size() )
+		if (layer < 1 || layer > (int)m_layers.size())
 		{
 			GfxBase::throwError(ErrorLevel::SilentError, ErrorCode::InvalidParam, "Layer does not exist.", nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return PixelFormat::Undefined;

@@ -23,7 +23,7 @@
 #define WG_C_PATCHES_DOT_H
 #pragma once
 
-#include <wg_export.h>
+#include <wg_c_geartypes.h>
 #include <wg_c_geo.h>
 
 #ifdef __cplusplus

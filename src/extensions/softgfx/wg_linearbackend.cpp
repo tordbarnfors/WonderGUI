@@ -174,7 +174,7 @@ namespace wg
 		uint8_t * pCanvasBuffer = (uint8_t*) m_beginCanvasRenderCallback( ref, bytesNeeded );
 
 		int ofs = 0;
-		for( int i = 0 ; i < m_canvasSegments.size() ; i++ )
+		for(size_t i = 0 ; i < m_canvasSegments.size() ; i++ )
 		{
 			auto& updateRect = m_canvasSegments[i].rect;
 			m_canvasSegments[i].pitch = updateRect.w * m_canvasPixelBytes;
@@ -576,9 +576,13 @@ namespace wg
 					if( m_colTrans.mode == TintMode::Flat )
 					fillColor = fillColor * m_colTrans.flatTintColor;
 
+					CoordSPX beg, end;
+
 					auto p32 = (const spx *) p;
-					CoordSPX beg = { *p32++, *p32++ };
-					CoordSPX end = { *p32++, *p32++ };
+					beg.x = *p32++;
+					beg.y = *p32++;
+					end.x = *p32++;
+					end.y = *p32++;
 					p = (const uint16_t*) p32;
 
 					spx thickness = * p++;

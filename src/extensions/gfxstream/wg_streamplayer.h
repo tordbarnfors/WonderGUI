@@ -186,28 +186,7 @@ namespace wg
 		char *	m_pTempBuffer = nullptr;
 		int		m_bytesLoaded;
 		int		m_bufferSize;
-
-		struct ClipRectsBuffer
-		{
-			RectI*	pRects;
-			int		nRects;
-			int		capacity;
-		};
-
-		struct ClipListInfo
-		{
-			int nRects;
-			bool bCanvas;
-		};
 		
-		constexpr static int c_clipListBufferSize = 1024;		// Ridiculously high for most cases, but needed by StreamAnalyzer when rewinding a stream.
-
-		std::vector<ClipListInfo>	m_clipListInfoStack;		// Number of rects for each clipList pushed.
-
-		ClipRectsBuffer		m_clipListBuffer = { nullptr, 0, 0 };
-		ClipListInfo		m_clipList = { 0, false };
-
-		std::vector<ClipRectsBuffer>	m_clipListBufferStack;
 
 		std::vector<Compressor_p>		m_compressors;
 		bool				m_bAutoCompressors = true;

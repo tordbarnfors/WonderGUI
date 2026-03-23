@@ -50,17 +50,13 @@ namespace wg
 		m_pEdgemapFactory = pEdgemapFactory;
 
 		m_pDecoder = StreamDecoder::create();
-
-		m_clipListBuffer.pRects = new RectI[c_clipListBufferSize];
-		m_clipListBuffer.nRects = 0;
-		m_clipListBuffer.capacity = c_clipListBufferSize;
 	}
 
 	//____ Destructor _________________________________________________________
 
 	StreamPlayer::~StreamPlayer()
 	{
-		delete[] m_clipListBuffer.pRects;
+		reset();
 	}
 
 	//____ typeInfo() _________________________________________________________
@@ -544,7 +540,7 @@ namespace wg
 				// Get bounds for rect and alloc pixelBuffer
 
 				RectI bounds = it->rects[0];
-				for( int i = 1 ; i < it->rects.size() ; i++ )
+				for( size_t i = 1 ; i < it->rects.size() ; i++ )
 					bounds.growToContain(it->rects[i]);
 
 				auto pixelBuffer = pSurface->allocPixelBuffer(bounds);
