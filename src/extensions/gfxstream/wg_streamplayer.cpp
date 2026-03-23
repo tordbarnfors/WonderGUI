@@ -101,6 +101,9 @@ namespace wg
 	void StreamPlayer::reset()
 	{
 		m_vObjects.clear();
+
+		m_surfaceDataBuffers.clear();
+		m_edgemapDataBuffers.clear();
 	}
 
 	//____ clearDirtyRects() _____________________________________________________
