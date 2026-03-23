@@ -151,7 +151,7 @@ namespace wg
 
 		struct EdgemapDataBuffer
 		{
-			EdgemapDataBuffer(const Edgemap_p& pEgemap, int edgeBegin, int edgeEnd, int sampleBegin, int sampleEnd)
+			EdgemapDataBuffer(const Edgemap_p& pEdgemap, int edgeBegin, int edgeEnd, int sampleBegin, int sampleEnd)
 			  :	pEdgemap(pEdgemap),
 				edgeBegin(edgeBegin),
 				edgeEnd(edgeEnd),
