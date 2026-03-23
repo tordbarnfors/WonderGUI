@@ -112,7 +112,7 @@ bool MyApp::_setupGUI(API* pAPI)
 
 	m_pResultTable = WGCREATE( TablePanel, _ = pTheme->listTable(), _.columns = 7, _.rows = 2, _.skin = pTheme->canvasSkin() );
 
-	TextDisplay::Blueprint columnLabelBP( { .skin = pTheme->plateSkin(), .display = { .style = pTheme->strongStyle() }} );
+	TextDisplay::Blueprint columnLabelBP( { .display = {.style = pTheme->strongStyle() }, .skin = pTheme->plateSkin() } );
 
 	auto pColumnLabel1 = WGCREATE( TextDisplay, _ = columnLabelBP, _.display.text = "Filename" );
 	auto pColumnLabel2 = WGCREATE( TextDisplay, _ = columnLabelBP, _.display.text = "Ratio (%)" );
@@ -352,11 +352,11 @@ void MyApp::refreshList()
 	for( auto& test : m_testSurfaces )
 	{
 		auto pName = TextDisplay::create({ .display = { .text = test.name.c_str() } });
-		auto pRatio = TextDisplay::create({ .display = { .text = "---", .layout = m_pLayoutRight } });
-		auto pCompSize = TextDisplay::create({ .display = { .text = "---", .layout = m_pLayoutRight } });
-		auto pUncompSize = TextDisplay::create({ .display = { .text = "---", .layout = m_pLayoutRight } });
-		auto pCompMS = TextDisplay::create({ .display = { .text = "---", .layout = m_pLayoutRight } });
-		auto pDecompMS = TextDisplay::create({ .display = { .text = "---", .layout = m_pLayoutRight } });
+		auto pRatio = TextDisplay::create({ .display = { .layout = m_pLayoutRight, .text = "---" } });
+		auto pCompSize = TextDisplay::create({ .display = { .layout = m_pLayoutRight, .text = "---" } });
+		auto pUncompSize = TextDisplay::create({ .display = { .layout = m_pLayoutRight, .text = "---" } });
+		auto pCompMS = TextDisplay::create({ .display = { .layout = m_pLayoutRight, .text = "---" } });
+		auto pDecompMS = TextDisplay::create({ .display = { .layout = m_pLayoutRight, .text = "---" } });
 		auto pCheck = TextDisplay::create({ .display = { .text = "---" } });
 
 
@@ -368,13 +368,13 @@ void MyApp::refreshList()
 
 	auto pSummaryStyle = m_pTheme->strongStyle();
 
-	auto pName = TextDisplay::create({ .display = { .text = "TOTAL", .style = pSummaryStyle } });
-	auto pRatio = TextDisplay::create({ .display = { .text = "---", .layout = m_pLayoutRight, .style = pSummaryStyle } });
-	auto pCompSize = TextDisplay::create({ .display = { .text = "---", .layout = m_pLayoutRight, .style = pSummaryStyle  } });
-	auto pUncompSize = TextDisplay::create({ .display = { .text = "---", .layout = m_pLayoutRight, .style = pSummaryStyle  } });
-	auto pCompMS = TextDisplay::create({ .display = { .text = "---", .layout = m_pLayoutRight, .style = pSummaryStyle } });
-	auto pDecompMS = TextDisplay::create({ .display = { .text = "---", .layout = m_pLayoutRight, .style = pSummaryStyle } });
-	auto pCheck = TextDisplay::create({ .display = { .text = "---", .style = pSummaryStyle } });
+	auto pName = TextDisplay::create({ .display = {.style = pSummaryStyle, .text = "TOTAL" } });
+	auto pRatio = TextDisplay::create({ .display = { .layout = m_pLayoutRight, .style = pSummaryStyle, .text = "---" } });
+	auto pCompSize = TextDisplay::create({ .display = { .layout = m_pLayoutRight, .style = pSummaryStyle, .text = "---"  } });
+	auto pUncompSize = TextDisplay::create({ .display = { .layout = m_pLayoutRight, .style = pSummaryStyle, .text = "---"  } });
+	auto pCompMS = TextDisplay::create({ .display = { .layout = m_pLayoutRight, .style = pSummaryStyle, .text = "---" } });
+	auto pDecompMS = TextDisplay::create({ .display = { .layout = m_pLayoutRight, .style = pSummaryStyle, .text = "---" } });
+	auto pCheck = TextDisplay::create({ .display = { .style = pSummaryStyle, .text = "---" } });
 
 	m_pResultTable->slots.replaceRow(index, { pName, pRatio, pCompSize, pUncompSize, pCompMS, pDecompMS, pCheck });
 }

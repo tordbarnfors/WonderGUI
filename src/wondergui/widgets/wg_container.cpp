@@ -51,7 +51,10 @@ namespace wg
 
 	void Container::setSkin(Skin* pNewSkin)
 	{
+	
 		Skin_p pOldSkin = m_skin.get();
+		if (pNewSkin == pOldSkin)
+			return;
 
 		m_skin.set(pNewSkin);
 

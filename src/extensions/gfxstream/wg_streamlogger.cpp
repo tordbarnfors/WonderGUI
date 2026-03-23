@@ -85,12 +85,11 @@ namespace wg
 
 	bool StreamLogger::_logChunk()
 	{
-		GfxStream::Header header;
-
-		int chunkSize = m_pDecoder->chunkSize();
-
 		auto& decoder = * m_pDecoder;
 
+		int chunkSize = decoder.chunkSize();
+
+		GfxStream::Header header;
 		decoder >> header;
 
 		if (header.type == GfxStream::ChunkId::OutOfData)
@@ -254,7 +253,7 @@ namespace wg
 			{
 				int payloadSize = header.size - GfxStream::DataInfoSize;
 				_readPrintDataInfo(payloadSize);
-				m_pDecoder->skip(payloadSize);
+				decoder.skip(payloadSize);
 				break;
 			}
 
@@ -262,7 +261,7 @@ namespace wg
 			{
 				int payloadSize = header.size - GfxStream::DataInfoSize;
 				_readPrintDataInfo(payloadSize);
-				m_pDecoder->skip(payloadSize);
+				decoder.skip(payloadSize);
 				break;
 			}
 
@@ -270,7 +269,7 @@ namespace wg
 			{
 				int payloadSize = header.size - GfxStream::DataInfoSize;
 				_readPrintDataInfo(payloadSize);
-				m_pDecoder->skip(payloadSize);
+				decoder.skip(payloadSize);
 				break;
 			}
 
@@ -278,7 +277,7 @@ namespace wg
 			{
 				int payloadSize = header.size - GfxStream::DataInfoSize;
 				_readPrintDataInfo(payloadSize);
-				m_pDecoder->skip(payloadSize);
+				decoder.skip(payloadSize);
 				break;
 			}
 
@@ -286,7 +285,7 @@ namespace wg
 			{
 				int payloadSize = header.size - GfxStream::DataInfoSize;
 				_readPrintDataInfo(payloadSize);
-				m_pDecoder->skip(payloadSize);
+				decoder.skip(payloadSize);
 				break;
 			}
 
@@ -294,7 +293,7 @@ namespace wg
 			{
 				int payloadSize = header.size - GfxStream::DataInfoSize;
 				_readPrintDataInfo(payloadSize);
-				m_pDecoder->skip(payloadSize);
+				decoder.skip(payloadSize);
 				break;
 			}
 
@@ -316,6 +315,8 @@ namespace wg
 				decoder >> bp.tiling;
 				decoder >> bp.paletteCapacity;
 				decoder >> bp.paletteSize;
+
+				decoder.skip(bp.paletteSize*4);
 
 
 				m_charStream << "    surfaceId   = " << surfaceId << std::endl;
@@ -370,7 +371,7 @@ namespace wg
 			{
 				int payloadSize = header.size - GfxStream::DataInfoSize;
 				_readPrintDataInfo(payloadSize);
-				m_pDecoder->skip(payloadSize);
+				decoder.skip(payloadSize);
 				break;
 			}
 
@@ -509,7 +510,7 @@ namespace wg
 			{
 				int payloadSize = header.size - GfxStream::DataInfoSize;
 				_readPrintDataInfo(payloadSize);
-				m_pDecoder->skip(payloadSize);
+				decoder.skip(payloadSize);
 				break;
 			}
 
@@ -527,7 +528,7 @@ namespace wg
 				m_charStream << "Unknown Chunk Type: " << (int) header.type << std::endl;
 				m_charStream << "    size: " << (int)header.size << std::endl;
 
-				m_pDecoder->skip(header.size);
+				decoder.skip(header.size);
 				break;
 			}				
 		}

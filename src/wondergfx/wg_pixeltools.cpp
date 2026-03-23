@@ -262,7 +262,7 @@ static void readConvBGRX8( const uint8_t * pSrc, uint8_t * pDst, int nbPixels, c
 		* pDst++ = pRGBConvTab[*pSrc++];
 		* pDst++ = pRGBConvTab[*pSrc++];
 		* pDst++ = pRGBConvTab[*pSrc++];
-		* pDst++ = 255;
+		* pDst++ = 255; pSrc++;
 	}
 }
 

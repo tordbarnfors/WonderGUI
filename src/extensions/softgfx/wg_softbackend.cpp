@@ -943,7 +943,7 @@ namespace wg
 
 				// Apply tinting
 
-				int16_t	colors[c_maxSegments * 4][4];				// RGBA order of elements
+				int16_t	colors[c_maxSegments * 4][4];				// BGRA order of elements
 				bool	transparentSegments[c_maxSegments];
 				bool	opaqueSegments[c_maxSegments];
 
@@ -997,11 +997,11 @@ namespace wg
 					
 					for (int i = 0; i < nSegments; i++)
 					{
-						colors[i][0] = (pSegmentColors[i].r * m_colTrans.flatTintColor.r) >> 12;
+						colors[i][0] = (pSegmentColors[i].b * m_colTrans.flatTintColor.b) >> 12;
 						colors[i][1] = (pSegmentColors[i].g * m_colTrans.flatTintColor.g) >> 12;
-						colors[i][2] = (pSegmentColors[i].b * m_colTrans.flatTintColor.b) >> 12;
+						colors[i][2] = (pSegmentColors[i].r * m_colTrans.flatTintColor.r) >> 12;
 						colors[i][3] = (pSegmentColors[i].a * m_colTrans.flatTintColor.a) >> 12;
-						
+
 						transparentSegments[i] = (colors[i][3] == 0);
 						opaqueSegments[i] = (colors[i][3] == 4096);						
 					}
@@ -1336,9 +1336,9 @@ namespace wg
 							{
 								HiColor& col = pTintColorsX[i*segmentPitchTintmapX+columnOfs];
 
-								colors[i][0] = col.r;
+								colors[i][0] = col.b;
 								colors[i][1] = col.g;
-								colors[i][2] = col.b;
+								colors[i][2] = col.r;
 								colors[i][3] = col.a;
 							}
 						}

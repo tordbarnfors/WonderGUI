@@ -2010,9 +2010,9 @@ inline void _add_segment_color(SoftBackend::StripSource SOURCE, int blendFractio
 {
 	if (SOURCE == SoftBackend::StripSource::Colors)
 	{
-		accR += (blendFraction * pSegmentColor[0]) >> 4;
+		accB += (blendFraction * pSegmentColor[0]) >> 4;
 		accG += (blendFraction * pSegmentColor[1]) >> 4;
-		accB += (blendFraction * pSegmentColor[2]) >> 4;
+		accR += (blendFraction * pSegmentColor[2]) >> 4;
 		accA += blendFraction << 8;
 	}
 
@@ -2026,9 +2026,9 @@ inline void _add_segment_color(SoftBackend::StripSource SOURCE, int blendFractio
 
 	if (SOURCE == SoftBackend::StripSource::ColorsAndTintmaps)
 	{
-		accB += (blendFraction >> 4) * ((pSegmentTintmap[offset].b * pSegmentColor[2]) >> 12);
+		accB += (blendFraction >> 4) * ((pSegmentTintmap[offset].b * pSegmentColor[0]) >> 12);
 		accG += (blendFraction >> 4) * ((pSegmentTintmap[offset].g * pSegmentColor[1]) >> 12);
-		accR += (blendFraction >> 4) * ((pSegmentTintmap[offset].r * pSegmentColor[0]) >> 12);
+		accR += (blendFraction >> 4) * ((pSegmentTintmap[offset].r * pSegmentColor[2]) >> 12);
 		accA += blendFraction << 8;
 	}
 
@@ -2103,16 +2103,16 @@ void _draw_segment_strip(int colBeg, int colEnd, uint8_t* pStripStart, int pixel
 				{
 					if (bFast8)
 					{
-						inR = HiColor::packLinearTab[pSegmentColors[0]];
+						inB = HiColor::packLinearTab[pSegmentColors[0]];
 						inG = HiColor::packLinearTab[pSegmentColors[1]];
-						inB = HiColor::packLinearTab[pSegmentColors[2]];
+						inR = HiColor::packLinearTab[pSegmentColors[2]];
 						inA = HiColor::packLinearTab[pSegmentColors[3]];
 					}
 					else
 					{
-						inR = pSegmentColors[0];
+						inB = pSegmentColors[0];
 						inG = pSegmentColors[1];
-						inB = pSegmentColors[2];
+						inR = pSegmentColors[2];
 						inA = pSegmentColors[3];
 					}
 				}
@@ -2144,16 +2144,16 @@ void _draw_segment_strip(int colBeg, int colEnd, uint8_t* pStripStart, int pixel
 						{
 							if (bFast8)
 							{
-								inB = HiColor::packLinearTab[(pSegmentTintmap[offset >> 8].b * pSegmentColors[2]) >> 12];
+								inB = HiColor::packLinearTab[(pSegmentTintmap[offset >> 8].b * pSegmentColors[0]) >> 12];
 								inG = HiColor::packLinearTab[(pSegmentTintmap[offset >> 8].g * pSegmentColors[1]) >> 12];
-								inR = HiColor::packLinearTab[(pSegmentTintmap[offset >> 8].r * pSegmentColors[0]) >> 12];
+								inR = HiColor::packLinearTab[(pSegmentTintmap[offset >> 8].r * pSegmentColors[2]) >> 12];
 								inA = HiColor::packLinearTab[(pSegmentTintmap[offset >> 8].a * pSegmentColors[3]) >> 12];
 							}
 							else
 							{
-								inB = (pSegmentTintmap[offset >> 8].b * pSegmentColors[2]) >> 12;
+								inB = (pSegmentTintmap[offset >> 8].b * pSegmentColors[0]) >> 12;
 								inG = (pSegmentTintmap[offset >> 8].g * pSegmentColors[1]) >> 12;
-								inR = (pSegmentTintmap[offset >> 8].r * pSegmentColors[0]) >> 12;
+								inR = (pSegmentTintmap[offset >> 8].r * pSegmentColors[2]) >> 12;
 								inA = (pSegmentTintmap[offset >> 8].a * pSegmentColors[3]) >> 12;
 							}
 						}
@@ -2197,16 +2197,16 @@ void _draw_segment_strip(int colBeg, int colEnd, uint8_t* pStripStart, int pixel
 						{
 							if (bFast8)
 							{
-								inB = HiColor::packLinearTab[(pSegmentTintmap[offset >> 8].b * pSegmentColors[2]) >> 12];
+								inB = HiColor::packLinearTab[(pSegmentTintmap[offset >> 8].b * pSegmentColors[0]) >> 12];
 								inG = HiColor::packLinearTab[(pSegmentTintmap[offset >> 8].g * pSegmentColors[1]) >> 12];
-								inR = HiColor::packLinearTab[(pSegmentTintmap[offset >> 8].r * pSegmentColors[0]) >> 12];
+								inR = HiColor::packLinearTab[(pSegmentTintmap[offset >> 8].r * pSegmentColors[2]) >> 12];
 								inA = HiColor::packLinearTab[(pSegmentTintmap[offset >> 8].a * pSegmentColors[3]) >> 12];
 							}
 							else
 							{
-								inB = (pSegmentTintmap[offset >> 8].b * pSegmentColors[2]) >> 12;
+								inB = (pSegmentTintmap[offset >> 8].b * pSegmentColors[0]) >> 12;
 								inG = (pSegmentTintmap[offset >> 8].g * pSegmentColors[1]) >> 12;
-								inR = (pSegmentTintmap[offset >> 8].r * pSegmentColors[0]) >> 12;
+								inR = (pSegmentTintmap[offset >> 8].r * pSegmentColors[2]) >> 12;
 								inA = (pSegmentTintmap[offset >> 8].a * pSegmentColors[3]) >> 12;
 							}
 						}
