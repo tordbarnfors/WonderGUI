@@ -23,6 +23,7 @@
 #include <wg_rlecompressor.h>
 #include <wg_gfxutil.h>
 #include <wg_gfxbase.h>
+#include <cstring>
 
 namespace wg
 {

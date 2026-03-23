@@ -27,7 +27,7 @@
 
 #include <vector>
 #include <cstdint>
-//#include <cstring>
+#include <cstring>
 
 using namespace std;
 
@@ -410,7 +410,7 @@ namespace wg
 					int dataSize = (GfxStream::dataSize(p) - GfxStream::DataInfoSize);
 					uint8_t* pDest = pBuffer + info.chunkOffset;
 
-					memcpy(pDest, pSrc, dataSize);
+					std::memcpy(pDest, pSrc, dataSize);
 
 					if (info.bLastChunk)
 					{

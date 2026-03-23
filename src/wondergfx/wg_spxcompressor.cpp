@@ -185,7 +185,7 @@ int SPXCompressor::decompress( void * _pDest, const void * pBegin, const void * 
 
 		default:
 		{
-			return -1;
+			return 0;
 		}
 	}
 }
