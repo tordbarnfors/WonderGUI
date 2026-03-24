@@ -119,7 +119,7 @@ namespace wg
 
 	//____ addCredits() ____________________________________________
 
-	bool StreamPump::addCredits(int credits)
+	void StreamPump::addCredits(int credits)
 	{
 		m_credits += credits;
 	}

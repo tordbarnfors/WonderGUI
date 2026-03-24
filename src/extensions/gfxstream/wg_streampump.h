@@ -77,7 +77,7 @@ namespace wg
 
 		void		setFlowControl( uint16_t fenceId, int startCredits, int bytesPerCredit );
 		void		restartFlowControl(int bytesPerCredit);				// Reset fence values, fences in flight and bytes until next fence.
-		bool		addCredits(int credits);
+		void		addCredits(int credits);
 
 	protected:
 
