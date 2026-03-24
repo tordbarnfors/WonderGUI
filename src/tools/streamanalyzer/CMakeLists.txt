@@ -23,12 +23,12 @@ set(RESOURCES
 
 )
 
-find_package(Freetype REQUIRED)
-
-get_target_property(FREETYPE_DYLIB Freetype::Freetype IMPORTED_LOCATION)
-if(NOT FREETYPE_DYLIB)
-    get_target_property(FREETYPE_DYLIB Freetype::Freetype IMPORTED_LOCATION_RELEASE)
-endif()
+#find_package(Freetype REQUIRED)
+#
+#get_target_property(FREETYPE_DYLIB Freetype::Freetype IMPORTED_LOCATION)
+#if(NOT FREETYPE_DYLIB)
+#    get_target_property(FREETYPE_DYLIB Freetype::Freetype IMPORTED_LOCATION_RELEASE)
+#endif()
 
 
 set(FRAMEWORKS
@@ -59,7 +59,7 @@ target_link_libraries(streamanalyzer PRIVATE
 	wgsoftgfx
 	wgdebugger
 	wg_theme_simplistic
-	Freetype::Freetype
+#	Freetype::Freetype
 )
 
 SET_SOURCE_FILES_PROPERTIES(${RESOURCES} PROPERTIES MACOSX_PACKAGE_LOCATION Resources)
@@ -87,25 +87,25 @@ set_target_properties(streamanalyzer PROPERTIES
 #    INSTALL_RPATH @executable_path/../Frameworks
 )
 
-add_custom_command(TARGET streamanalyzer POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E make_directory
-        "$<TARGET_BUNDLE_DIR:streamanalyzer>/Contents/Frameworks"
-    COMMAND ${CMAKE_COMMAND} -E copy
-        "${FREETYPE_DYLIB}"
-        "$<TARGET_BUNDLE_DIR:streamanalyzer>/Contents/Frameworks/libfreetype.6.dylib"
-    COMMAND install_name_tool -id "@rpath/libfreetype.6.dylib"
-        "$<TARGET_BUNDLE_DIR:streamanalyzer>/Contents/Frameworks/libfreetype.6.dylib"
-    COMMAND install_name_tool -change
-        "/opt/homebrew/opt/freetype/lib/libfreetype.6.dylib"
-        "@rpath/libfreetype.6.dylib"
-        "$<TARGET_BUNDLE_DIR:streamanalyzer>/Contents/MacOS/streamanalyzer"
-    COMMAND install_name_tool -add_rpath "@executable_path/../Frameworks"
-        "$<TARGET_BUNDLE_DIR:streamanalyzer>/Contents/MacOS/streamanalyzer"
-    COMMAND install_name_tool -delete_rpath "/opt/homebrew/opt/freetype/lib"
-        "$<TARGET_BUNDLE_DIR:streamanalyzer>/Contents/MacOS/streamanalyzer"
-    COMMAND install_name_tool -delete_rpath "/Library/Frameworks"
-        "$<TARGET_BUNDLE_DIR:streamanalyzer>/Contents/MacOS/streamanalyzer"
-    COMMAND codesign --force --deep --sign -
-        "$<TARGET_BUNDLE_DIR:streamanalyzer>"
-    COMMENT "Bundling libfreetype.6.dylib"
-)
+#add_custom_command(TARGET streamanalyzer POST_BUILD
+#    COMMAND ${CMAKE_COMMAND} -E make_directory
+#        "$<TARGET_BUNDLE_DIR:streamanalyzer>/Contents/Frameworks"
+#    COMMAND ${CMAKE_COMMAND} -E copy
+#        "${FREETYPE_DYLIB}"
+#        "$<TARGET_BUNDLE_DIR:streamanalyzer>/Contents/Frameworks/libfreetype.6.dylib"
+#    COMMAND install_name_tool -id "@rpath/libfreetype.6.dylib"
+#        "$<TARGET_BUNDLE_DIR:streamanalyzer>/Contents/Frameworks/libfreetype.6.dylib"
+#    COMMAND install_name_tool -change
+#        "/opt/homebrew/opt/freetype/lib/libfreetype.6.dylib"
+#        "@rpath/libfreetype.6.dylib"
+#        "$<TARGET_BUNDLE_DIR:streamanalyzer>/Contents/MacOS/streamanalyzer"
+#    COMMAND install_name_tool -add_rpath "@executable_path/../Frameworks"
+#        "$<TARGET_BUNDLE_DIR:streamanalyzer>/Contents/MacOS/streamanalyzer"
+#    COMMAND install_name_tool -delete_rpath "/opt/homebrew/opt/freetype/lib"
+#        "$<TARGET_BUNDLE_DIR:streamanalyzer>/Contents/MacOS/streamanalyzer"
+#    COMMAND install_name_tool -delete_rpath "/Library/Frameworks"
+#        "$<TARGET_BUNDLE_DIR:streamanalyzer>/Contents/MacOS/streamanalyzer"
+#    COMMAND codesign --force --deep --sign -
+#        "$<TARGET_BUNDLE_DIR:streamanalyzer>"
+#    COMMENT "Bundling libfreetype.6.dylib"
+#)

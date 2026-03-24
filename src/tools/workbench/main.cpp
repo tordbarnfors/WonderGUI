@@ -176,6 +176,7 @@ bool bracketSkinTest(ComponentPtr<DynamicSlot> pEntry);
 bool selectCapsuleTest(ComponentPtr<DynamicSlot> pEntry);
 bool drawerPanelTest(ComponentPtr<DynamicSlot> pEntry);
 bool tintmapTest(ComponentPtr<DynamicSlot> pEntry);
+bool popupLayerFocusTest(ComponentPtr<DynamicSlot> pEntry);
 
 
 void nisBlendTest();
@@ -815,7 +816,7 @@ int main(int argc, char** argv)
 		//	twoSlotPanelTest(pSlot);
 		//	customSkinTest(pSlot);
 		//	areaChartTest(pSlot);
-			areaChartTest2(pSlot);
+		//	areaChartTest2(pSlot);
 		//	plotChartTest(pSlot);
 		//	nortonCommanderTest(pSlot);
 		//	skinMarginTest(pSlot);
@@ -843,7 +844,7 @@ int main(int argc, char** argv)
 		//	drawerPanelTest(pSlot);
 		//	areaChartTestWithGlobalGradient(pSlot);
 		//	tintmapTest(pSlot);
-
+			popupLayerFocusTest(pSlot);
 
 		//------------------------------------------------------
 		// Program Main Loop
@@ -4976,6 +4977,35 @@ bool tintmapTest(ComponentPtr<DynamicSlot> pEntry)
 	pBasePanel->slots.pushBack( { pFiller1, pFiller2, pFiller3 });
 
 	*pEntry = pBasePanel;
+
+	return true;
+}
+
+
+
+bool popupLayerFocusTest(ComponentPtr<DynamicSlot> pEntry)
+{
+	auto pPopupOverlay = PopupOverlay::create();
+	auto pBasePanel = FlexPanel::create();
+	pPopupOverlay->mainSlot = pBasePanel;
+
+
+
+	auto pPopup = PackPanel::create({ .axis = Axis::Y, .skin = BoxSkin::create({.color = Color::Grey, .outlineColor = Color::Black, .padding = 4 }) });
+
+	auto pTextInput = TextEditor::create({ .editor = {.text = "Type here..." }, .skin = BoxSkin::create({.color = Color::White, .outlineColor = Color::Black, .padding = 2 }) });
+	pPopup->slots.pushBack(pTextInput);
+
+
+	auto pPopupOpener = PopupOpener::create({ .popup = pPopup, .skin = BoxSkin::create({.color = Color::White, .outlineColor = Color::Black, .padding = 4 }) });
+	pBasePanel->slots.pushBack(pPopupOpener, { .pos = {10,10}, .size = {100,30} });
+
+
+	auto pOtherInput = TextEditor::create({ .editor = {.text = "Other input..." }, .skin = BoxSkin::create({.color = Color::White, .outlineColor = Color::Black, .padding = 2 }) });
+	pBasePanel->slots.pushBack(pOtherInput, { .pos = {10,150}, .size = {200,150} });
+
+
+	*pEntry = pPopupOverlay;
 
 	return true;
 }

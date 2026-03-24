@@ -471,6 +471,9 @@ namespace wg
 
 		Widget* pWidget = m_pMarkedWidget.rawPtr();
 
+		if (!pWidget)
+			return;
+
 		// Check stickiness of focus, i.e. wether widget should keep focus when mouse pressed outside.
 		// This needs to be done before we post any MousePress messages, so that any FocusLost messages
 		// comes before any FocusGained generated from (and inserted right after) the MousePress
@@ -567,7 +570,11 @@ namespace wg
 		// Post BUTTON_RELEASE events for widget that was pressed
 
 		Widget * pWidget = m_latestPressWidgets[(int)button].rawPtr();
-		bool bIsInside = pWidget ? pWidget->globalGeo().contains( m_pointerPos ) : false;
+
+		if (!pWidget)
+			return;
+
+		bool bIsInside = pWidget->globalGeo().contains( m_pointerPos );
 
 		auto pMsg = MouseReleaseMsg::create( m_inputId, button, pWidget, bIsInside, m_modKeys, m_pointerPos, m_pointerPosSPX, timestamp );
 		pMsg->setCopyTo(pWidget);
