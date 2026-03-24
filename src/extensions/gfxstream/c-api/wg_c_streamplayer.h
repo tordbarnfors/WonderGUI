@@ -30,6 +30,9 @@
 extern "C" {
 #endif
 
+	typedef	void(*wg_streamPlayerFence_func)(uint16_t fenceID, uint32_t fenceValue);
+
+
 	WG_EXPORT wg_obj		wg_createStreamPlayer(wg_obj backend, wg_obj surfaceFactory, wg_obj edgemapFactory);
 
 	WG_EXPORT wg_component	wg_getStreamPlayerInput(wg_obj streamPlayer);
@@ -42,6 +45,11 @@ extern "C" {
 	WG_EXPORT int			wg_getStreamPlayerDirtyRects(wg_obj streamPlayer, wg_canvasRef canvas, const wg_rectI **pRects );
 
 	WG_EXPORT void			wg_clearStreamPlayerDirtyRects(wg_obj streamPlayer);
+
+/*WG_EXPORT void			wg_setStreamPlayerCanvasInfoCallback( const std::function<void(const CanvasInfo * pBegin, const CanvasInfo * pEnd)>& callback ); */
+	WG_EXPORT void			wg_setStreamPlayerFenceCallback(wg_obj streamPlayer, wg_streamPlayerFence_func callback );
+
+
 
 #ifdef __cplusplus
 }

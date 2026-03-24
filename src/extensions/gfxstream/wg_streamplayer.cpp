@@ -121,6 +121,13 @@ namespace wg
 		m_canvasInfoCallback = callback;
 	}
 
+	//____ setFenceCallback() ____________________________________________________
+
+	void StreamPlayer::setFenceCallback( const std::function<void(uint16_t fenceID, uint32_t fenceValue)>& callback )
+	{
+		m_fenceCallback = callback;
+	}
+
 	//____ _processStreamChunks() _____________________________________________
 
 	void StreamPlayer::_processStreamChunks(const uint8_t* pBegin, const uint8_t* pEnd)
@@ -129,7 +136,6 @@ namespace wg
 
 		while (_playChunk() == true);
 	}
-
 
 	//____ _playChunk() ____________________________________________________________
 
@@ -185,6 +191,20 @@ namespace wg
 
 			if( m_canvasInfoCallback )
 				m_canvasInfoCallback(canvas, canvas+nbCanvases);
+
+			break;
+		}
+
+		case GfxStream::ChunkId::Fence:
+		{
+			uint16_t	fenceID;
+			uint32_t	fenceValue;
+
+			decoder >> fenceID;
+			decoder >> fenceValue;
+
+			if( m_fenceCallback )
+				m_fenceCallback(fenceID, fenceValue);
 
 			break;
 		}

@@ -53,7 +53,8 @@ namespace wg
 			"EdgemapUpdate",
 			"EdgemapSamples",
 			"DeleteEdgemap",
-			"SurfaceUpdate2"
+			"SurfaceUpdate2",
+			"Fence"
 		};
 
 		return names[(int)i];

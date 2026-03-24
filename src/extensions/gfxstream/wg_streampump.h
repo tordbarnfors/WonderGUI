@@ -72,7 +72,12 @@ namespace wg
 		bool		pumpAll();						// Pump all complete data chunks in the stream.
 		int			pumpBytes( int maxBytes );		// Will pump full chunks up until maxBytes has been reached. Will likely return fewer bytes than requested.
 													// Will return 0 if no more data or first chunk is larger than maxBytes.
-		
+
+		bool		pumpAllWithPacing();			// Pump all complete data chunks with pacing-fences inserted. Stop when we have max fences in flight.
+
+		void		setPacing( uint16_t fenceId, uint16_t byteInterval, int maxFencesInFlight );
+		void		restartPacing();				// Reset fence values, fences in flight and bytes until next fence.
+		bool		pacingFencePassed(uint32_t fenceValue);
 
 	protected:
 
@@ -105,9 +110,19 @@ namespace wg
 		void			_trimFrames(StreamTrimBackend* pTrimBackend, int nSegments, const GfxStream::Data* pSegments, const uint8_t* pEndPoint);
 
 
-		StreamSource_p	m_pInput;
+		StreamSource_p		m_pInput;
 		StreamSink_p		m_pOutput;
 		Compressor_p		m_pTrimDecompressor;
+
+		// For pacing
+
+		uint16_t			m_fenceId = 0;
+		int					m_fenceByteInterval = 0;			// Max number of bytes in stream between two fences must be at least c_maxBlockSize.
+		int					m_maxFencesInFlight = 0;			// Max number of fences sent but not yet received before we need to pause.
+		uint32_t			m_fenceValueSent = 0;
+		uint32_t			m_fenceValueReceived = 0;
+
+		int					m_bytesUntilFence = 0;
 	};
 }
 

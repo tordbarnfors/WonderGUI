@@ -58,6 +58,21 @@ void wg_setStreamPumpOutput(wg_obj streamPump, wg_component output)
 	getPtr(streamPump)->setOutput(pOutput);
 }
 
+void wg_setStreamPumpPacing(wg_obj streamPump, uint16_t fenceId, uint16_t byteInterval, int maxFencesInFlight )
+{
+	getPtr(streamPump)->setPacing( fenceId, byteInterval, maxFencesInFlight );
+}
+
+void wg_restartStreamPumpPacing(wg_obj streamPump)
+{
+	getPtr(streamPump)->restartPacing();
+}
+
+int wg_streamPumpPacingFencePassed(wg_obj streamPump, uint32_t fenceValue)
+{
+	return getPtr(streamPump)->pacingFencePassed(fenceValue);
+}
+
 wg_streamChunkId wg_peekChunk(wg_obj streamPump)
 {
 	return (wg_streamChunkId) getPtr(streamPump)->peekChunk();

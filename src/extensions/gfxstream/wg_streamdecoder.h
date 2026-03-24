@@ -73,6 +73,7 @@ namespace wg
 		inline StreamDecoder& operator>> (int16_t&);
 		inline StreamDecoder& operator>> (uint16_t&);
 		inline StreamDecoder& operator>> (int&);
+		inline StreamDecoder& operator>> (uint32_t&);
 		inline StreamDecoder& operator>> (float&);
 		inline StreamDecoder& operator>> (bool&);
 
@@ -142,13 +143,13 @@ namespace wg
 		if (_hasChunk())
 		{
 			header.type = (GfxStream::ChunkId)_pullChar();
-			header.format = _pullChar();
+			header.dummy = _pullChar();
 			header.size = _pullShort();
 		}
 		else
 		{
 			header.type = GfxStream::ChunkId::OutOfData;
-			header.format = 0;
+			header.dummy = 0;
 			header.size = 0;
 		}
 
@@ -190,6 +191,12 @@ namespace wg
 	}
 
 	StreamDecoder& StreamDecoder::operator>> (int& i)
+	{
+		i = _pullInt();
+		return *this;
+	}
+
+	StreamDecoder& StreamDecoder::operator>> (uint32_t& i)
 	{
 		i = _pullInt();
 		return *this;
@@ -442,7 +449,7 @@ namespace wg
 		GfxStream::Header header;
 
 		header.type = (GfxStream::ChunkId) m_pDataRead[0];
-		header.format = m_pDataRead[1];
+		header.dummy = m_pDataRead[1];
 		header.size = * (uint16_t*)(&m_pDataRead[2]);
 		return header;
 	}

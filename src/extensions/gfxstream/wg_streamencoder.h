@@ -91,6 +91,7 @@ namespace wg
 		inline StreamEncoder& operator<< (int16_t);
 		inline StreamEncoder& operator<< (uint16_t);
 		inline StreamEncoder& operator<< (int32_t);
+		inline StreamEncoder& operator<< (uint32_t);
 		inline StreamEncoder& operator<< (float);
 		inline StreamEncoder& operator<< (bool);
 
@@ -247,6 +248,12 @@ namespace wg
 	StreamEncoder& StreamEncoder::operator<< (int32_t int32)
 	{
 		_pushInt(int32);
+		return *this;
+	}
+
+	StreamEncoder& StreamEncoder::operator<< (uint32_t uint32)
+	{
+		_pushInt(uint32);
 		return *this;
 	}
 
