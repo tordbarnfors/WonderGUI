@@ -23,7 +23,6 @@
 #include <wg_surface.h>
 #include <wg_patches.h>
 #include <wg_gfxbase.h>
-#include <wg_compress.h>
 
 
 #include <vector>
@@ -96,47 +95,33 @@ namespace wg
 		m_pTrimDecompressor = pDecompressor;
 	}
 
-	//____ setPacing() ______________________________________________________
+	//____ setFlowControl() ______________________________________________________
 
-	void StreamPump::setPacing( uint16_t fenceId, uint16_t byteInterval, int maxFencesInFlight )
+	void StreamPump::setFlowControl( uint16_t fenceId, int startCredits, int bytesPerCredit )
 	{
 		m_fenceId = fenceId;
-		m_fenceByteInterval = byteInterval;
-		m_maxFencesInFlight = maxFencesInFlight;
+		m_bytesPerCredit = bytesPerCredit;
+		m_credits = startCredits;
 
 		m_fenceValueSent = 0;
-		m_fenceValueReceived = 0;
-		m_bytesUntilFence = m_fenceByteInterval;
+		m_bytesUntilFence = bytesPerCredit;
 	}
 
-	//____ restartPacing() _______________________________________________________
+	//____ restartFlowControl() _______________________________________________________
 
-	void StreamPump::restartPacing()
+	void StreamPump::restartFlowControl( int credits)
 	{
 		m_fenceValueSent = 0;
-		m_fenceValueReceived = 0;
-		m_bytesUntilFence = m_fenceByteInterval;
+		m_bytesUntilFence = m_bytesPerCredit;
+
+		m_credits = credits;
 	}
 
-	//____ pacingFencePassed() ____________________________________________
+	//____ addCredits() ____________________________________________
 
-	bool StreamPump::pacingFencePassed(uint32_t fenceValue)
+	bool StreamPump::addCredits(int credits)
 	{
-		if( fenceValue <= m_fenceValueReceived )
-		{
-			GfxBase::throwError( ErrorLevel::Error, ErrorCode::InvalidParam, "Fence value received is lower than previous one", this, &StreamPump::TYPEINFO, __func__, __FILE__, __LINE__ );
-
-			return false;
-		}
-
-		if( fenceValue > m_fenceValueSent )
-		{
-			GfxBase::throwError( ErrorLevel::Error, ErrorCode::InvalidParam, "Fence value received is higher than what we have sent", this, &StreamPump::TYPEINFO, __func__, __FILE__, __LINE__ );
-
-			return false;
-		}
-
-		m_fenceValueReceived = fenceValue;
+		m_credits += credits;
 	}
 
 
@@ -514,9 +499,9 @@ namespace wg
 		return true;
 	}
 
-	//____ pumpAllWithPacing() __________________________________________________________
+	//____ pumpAllWithFlowControl() __________________________________________________________
 
-	bool StreamPump::pumpAllWithPacing()
+	bool StreamPump::pumpAllWithFlowControl()
 	{
 		if (!m_pInput || !m_pOutput)
 			return false;
@@ -570,9 +555,9 @@ namespace wg
 							bytesProcessed += bytes;
 						}
 
-						// Stop if we have max fences in flight
+						// Stop if we are out of credits
 
-						if( m_fenceValueSent - m_fenceValueReceived >= m_maxFencesInFlight )
+						if( m_credits == 0 )
 						{
 							m_bytesUntilFence -= bytes;
 							m_pInput->discardChunks(bytesProcessed);
@@ -581,13 +566,14 @@ namespace wg
 
 						// Create and process our fence
 
+						m_credits--;
 						m_fenceValueSent++;
 
 						uint8_t 	fenceChunk[8];
 						GfxStream::createChunk( fenceChunk, GfxStream::ChunkId::Fence, 4, &m_fenceValueSent );
 						m_pOutput->processChunks( fenceChunk, fenceChunk+8 );
 
-						m_bytesUntilFence = m_fenceByteInterval;
+						m_bytesUntilFence = m_bytesPerCredit;
 					}
 				}
 			}
