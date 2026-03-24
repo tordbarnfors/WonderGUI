@@ -284,7 +284,7 @@ namespace wg
 			return size[int(spxFormat)];
 		}
 
-		inline static Chunk * createChunk( void * pDest, ChunkId type, int dataSize, void * pData )
+		inline static void createChunk( void * pDest, ChunkId type, int dataSize, void * pData )
 		{
 			assert( reinterpret_cast<uintptr_t>(pDest) % 2 == 0 );
 			assert( reinterpret_cast<uintptr_t>(pData) % 2 == 0 );

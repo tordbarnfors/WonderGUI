@@ -39,7 +39,7 @@ extern "C" {
 
 	WG_EXPORT void				wg_setFlowControl(wg_obj streamPump, uint16_t fenceId, int credits, int bytesPerCredit );
 	WG_EXPORT void				wg_restartFlowControl(wg_obj streamPump, int credits);
-	WG_EXPORT int				wg_AddFlowControlCredits(wg_obj streamPump, int credits);
+	WG_EXPORT void				wg_AddFlowControlCredits(wg_obj streamPump, int credits);
 
 
 

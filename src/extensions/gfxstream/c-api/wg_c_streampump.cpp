@@ -68,9 +68,9 @@ void wg_restartFlowContol(wg_obj streamPump, int credits)
 	getPtr(streamPump)->restartFlowControl(credits);
 }
 
-int wg_addFlowControlCredits(wg_obj streamPump, int credits)
+void wg_addFlowControlCredits(wg_obj streamPump, int credits)
 {
-	return getPtr(streamPump)->addCredits(credits);
+	getPtr(streamPump)->addCredits(credits);
 }
 
 wg_streamChunkId wg_peekChunk(wg_obj streamPump)

@@ -127,7 +127,7 @@ namespace wg
 			input.bytesShown = nBytes;
 		}
 
-		return std::make_tuple(m_combinedChunks.size(), &m_combinedChunks.front() );
+		return std::make_tuple( (int) m_combinedChunks.size(), &m_combinedChunks.front() );
 	}
 
 	//____ _discardStreamChunks() ________________________________________________
