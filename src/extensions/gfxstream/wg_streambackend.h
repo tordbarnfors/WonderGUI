@@ -26,7 +26,7 @@
 #include <wg_gfxbackend.h>
 #include <wg_streamencoder.h>
 #include <wg_remotesurface.h>
-#include <wg_compressor.h>
+#include <wg_compression.h>
 
 #include <functional>
 

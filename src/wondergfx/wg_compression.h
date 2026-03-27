@@ -19,8 +19,8 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef	WG_COMPRESSOR_DOT_H
-#define	WG_COMPRESSOR_DOT_H
+#ifndef	WG_COMPRESSION_DOT_H
+#define	WG_COMPRESSION_DOT_H
 #pragma once
 
 #include <wg_object.h>
@@ -66,4 +66,4 @@ namespace wg
 
 
 
-#endif //WG_COMPRESSOR_DOT_H
+#endif //WG_COMPRESSION_DOT_H

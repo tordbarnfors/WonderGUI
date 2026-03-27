@@ -20,7 +20,7 @@
 
 =========================================================================*/
 
-#include <wg_lzcompressor.h>
+#include <wg_lzcompression.h>
 #include <wg_gfxutil.h>
 #include <wg_gfxbase.h>
 

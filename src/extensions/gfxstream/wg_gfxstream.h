@@ -24,6 +24,7 @@
 #pragma once
 
 #include <wg_gfxtypes.h>
+#include <wg_gfxutil.h>
 
 #include <assert.h>
 #include <cstring>
@@ -132,6 +133,7 @@ namespace wg
 			bool		bFirstChunk;
 			bool		bLastChunk;
 			bool		bPadded;
+			uint8_t		encodedSize;	// Read only. Set by decoder. Size in stream for this DataInfo. Depends on version of stream.
 		};
 
 		struct WriteBytes
@@ -315,17 +317,66 @@ namespace wg
 
 			const uint16_t* pChunkData = (uint16_t*) (pChunk + headerSize(pChunk));
 
-			info.bufferSize		= pChunkData[0] + int(pChunkData[1]) * 65536;
-			info.chunkOffset	= pChunkData[2] + int(pChunkData[3]) * 65536;
-			info.compression	= pChunkData[4] + int(pChunkData[5]) * 65536;
-			info.dataStart		= pChunkData[6] + int(pChunkData[7]) * 65536;
-			info.objectId		= pChunkData[8];
+			if( (pChunkData[4] & 0xFF) < 4 )			// Old style DataInfo.
+			{
+				int totalSize = pChunkData[0] + int(pChunkData[1]) * 65536;
+				int chunkOfs = pChunkData[2] + int(pChunkData[3]) * 65536;
+				int compression = pChunkData[4] & 0xFF;
+				int flags = pChunkData[4] >> 8;
 
-			uint16_t flags = pChunkData[9];
+				info.bufferSize = totalSize;
+				info.objectId = 0;			// Will this work????
 
-			info.bFirstChunk = flags & 0x1;
-			info.bLastChunk = (flags >> 1) & 0x1;
-			info.bPadded = (flags >> 2) & 0x1;
+				switch( compression )
+				{
+					case 0:
+						info.compression = Util::makeEndianSpecificToken('N','O','N','E');
+						info.dataStart = 0;
+						info.chunkOffset = chunkOfs;
+						break;
+					case 1:
+						info.compression = Util::makeEndianSpecificToken('U','8','I',' ');
+						info.dataStart = 3*(totalSize/4);
+						info.chunkOffset = info.dataStart + chunkOfs/4;
+						break;
+					case 2:
+						info.compression = Util::makeEndianSpecificToken('S','1','6','B');
+						info.dataStart = totalSize/2;
+						info.chunkOffset = info.dataStart + chunkOfs/2;
+						break;
+					case 3:
+						info.compression = Util::makeEndianSpecificToken('S','1','6','I');
+						info.dataStart = totalSize/2;
+						info.chunkOffset = info.dataStart + chunkOfs/2;
+						break;
+
+					default:
+						assert(false);
+				}
+
+				info.bFirstChunk = flags & 0x1;
+				info.bLastChunk = (flags >> 1) & 0x1;
+				info.bPadded = (flags >> 2) & 0x1;
+
+				info.encodedSize = 10;
+			}
+			else
+			{
+				info.bufferSize		= pChunkData[0] + int(pChunkData[1]) * 65536;
+				info.chunkOffset	= pChunkData[2] + int(pChunkData[3]) * 65536;
+				info.compression	= pChunkData[4] + int(pChunkData[5]) * 65536;
+				info.dataStart		= pChunkData[6] + int(pChunkData[7]) * 65536;
+				info.objectId		= pChunkData[8];
+
+				uint16_t flags = pChunkData[9];
+
+				info.bFirstChunk = flags & 0x1;
+				info.bLastChunk = (flags >> 1) & 0x1;
+				info.bPadded = (flags >> 2) & 0x1;
+
+				info.encodedSize = 20;
+			}
+
 			return info;
 		};
 

@@ -23,10 +23,10 @@
 #include <wg_gfxbase.h>
 #include <wg_gfxutil.h>
 
-#include <wg_compressor.h>
-#include <wg_lzcompressor.h>
-#include <wg_q565compressor.h>
-#include <wg_rlecompressor.h>
+#include <wg_compression.h>
+#include <wg_lzcompression.h>
+#include <wg_q565compression.h>
+#include <wg_rlecompression.h>
 
 #include <cstring>
 
@@ -150,7 +150,7 @@ namespace wg
 		}
 		else
 		{
-			Compressor * pCompressor = _findCompressor(header.pixelCompression);
+			Compressor * pCompressor = GfxBase::getDecompressor(header.pixelCompression);
 
 			if( !pCompressor )
 			{
@@ -281,7 +281,7 @@ namespace wg
 			_copyUncompressedFromMemory(pixbuf.pixels, pData, lineBytes, pixbuf.pitch, pixbuf.rect.h);
 		else
 		{
-			Compressor * pCompressor = _findCompressor(header.pixelCompression);
+			Compressor * pCompressor = GfxBase::getDecompressor(header.pixelCompression);
 
 			if( !pCompressor )
 			{
@@ -395,44 +395,6 @@ void SurfaceReader::_copyUncompressedFromMemory(void* pDest, const void* pSource
 		std::memcpy(pDest, pSource, rowBytes * rows);
 	}
 }
-
-//____ _findCompressor() ______________________________________________________
-
-Compressor * SurfaceReader::_findCompressor( uint32_t idToken )
-{
-	for( auto& p : m_compressors )
-		if( p->idToken() == idToken )
-			return p;
-
-	if( m_bAutoCompressors )
-	{
-		if( idToken == Q565Compressor::ID_TOKEN )
-		{
-			auto pCompressor = Q565Compressor::create( WGBP(Q565Compressor, _.decompressOnly = true) );
-			m_compressors.push_back(pCompressor);
-			return pCompressor;
-		}
-
-		if( idToken == LZCompressor::ID_TOKEN )
-		{
-			auto pCompressor = LZCompressor::create( WGBP(LZCompressor, _.decompressOnly = true ) );
-			m_compressors.push_back(pCompressor);
-			return pCompressor;
-		}
-
-		if (idToken == RLECompressor::ID_TOKEN)
-		{
-			auto pCompressor = RLECompressor::create(WGBP(RLECompressor, _.decompressOnly = true));
-			m_compressors.push_back(pCompressor);
-			return pCompressor;
-		}
-
-	}
-
-	return nullptr;
-}
-
-
 
 
 } // namespace wg

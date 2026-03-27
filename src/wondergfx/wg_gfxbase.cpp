@@ -25,6 +25,14 @@
 #include <wg_edgemaptools.h>
 #include <wg_gfxutil.h>
 
+#include <wg_compression.h>
+#include <wg_q565compression.h>
+#include <wg_lzcompression.h>
+#include <wg_spxcompression.h>
+#include <wg_rlecompression.h>
+#include <wg_legacycompression.h>
+
+
 
 namespace wg
 {
@@ -33,6 +41,8 @@ namespace wg
 	GfxContext_p		GfxBase::s_pGfxContext;
 
 	int 				GfxBase::s_curveTab[c_nCurveTabEntries];
+
+	std::vector<Compressor_p> GfxBase::s_decompressors;
 
 
 	namespace PixelTools
@@ -95,6 +105,8 @@ namespace wg
 		
 		delete [] PixelTools::pConv_16_linear_to_8_sRGB;
 		PixelTools::pConv_16_linear_to_8_sRGB = nullptr;
+
+		s_decompressors.clear();
 
 		return GearBase::exit();
 	}
@@ -159,6 +171,73 @@ namespace wg
 	void GfxBase::setDefaultToSRGB( bool bSRGB )
 	{
 		s_pGfxContext->bSRGB = bSRGB;
+	}
+
+	//____ getDecompressor() _______________________________________________________
+
+	Compressor_p GfxBase::getDecompressor( uint32_t idToken )
+	{
+		for( auto& p : s_decompressors )
+			if( p->idToken() == idToken )
+				return p;
+
+		if( idToken == Q565Compressor::ID_TOKEN )
+		{
+			auto pCompressor = Q565Compressor::create( WGBP(Q565Compressor, _.decompressOnly = true) );
+			s_decompressors.push_back(pCompressor);
+			return pCompressor;
+		}
+
+		if( idToken == LZCompressor::ID_TOKEN )
+		{
+			auto pCompressor = LZCompressor::create( WGBP(LZCompressor, _.decompressOnly = true) );
+			s_decompressors.push_back(pCompressor);
+			return pCompressor;
+		}
+
+		if( idToken == SPXCompressor::ID_TOKEN )
+		{
+			auto pCompressor = SPXCompressor::create(WGBP(SPXCompressor, _.decompressOnly = true)  );
+			s_decompressors.push_back(pCompressor);
+			return pCompressor;
+		}
+
+		if (idToken == RLECompressor::ID_TOKEN)
+		{
+			auto pCompressor = RLECompressor::create(WGBP(RLECompressor, _.decompressOnly = true) );
+			s_decompressors.push_back(pCompressor);
+			return pCompressor;
+		}
+
+		if (idToken == U8ICompressor::ID_TOKEN)
+		{
+			auto pCompressor = U8ICompressor::create(WGBP(U8ICompressor, _.decompressOnly = true) );
+			s_decompressors.push_back(pCompressor);
+			return pCompressor;
+		}
+
+		if (idToken == S16ICompressor::ID_TOKEN)
+		{
+			auto pCompressor = S16ICompressor::create(WGBP(S16ICompressor, _.decompressOnly = true) );
+			s_decompressors.push_back(pCompressor);
+			return pCompressor;
+		}
+
+		if (idToken == S16BCompressor::ID_TOKEN)
+		{
+			auto pCompressor = S16BCompressor::create(WGBP(S16BCompressor, _.decompressOnly = true) );
+			s_decompressors.push_back(pCompressor);
+			return pCompressor;
+		}
+
+		return nullptr;
+	}
+
+	//____ addDecompressor() _______________________________________________________
+
+	void GfxBase::addDecompressor( Compressor * pCompressor )
+	{
+		s_decompressors.push_back(pCompressor);
 	}
 
 	//____ _genCurveTab() ___________________________________________________________

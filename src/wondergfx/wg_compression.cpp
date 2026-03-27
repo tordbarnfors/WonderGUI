@@ -19,7 +19,7 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#include <wg_compressor.h>
+#include <wg_compression.h>
 
 namespace wg
 {

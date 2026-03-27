@@ -29,7 +29,7 @@
 #include <wg_streamdecoder.h>
 #include <wg_gfxbackend.h>
 #include <wg_patches.h>
-#include <wg_compressor.h>
+#include <wg_compression.h>
 
 #include <vector>
 #include <tuple>
@@ -52,9 +52,7 @@ namespace wg
 
 		struct Blueprint
 		{
-			bool						autoCompressors = true;		// Create and use known compressors on demand.
 			std::function<void(const CanvasInfo * pBegin, const CanvasInfo * pEnd)> canvasInfoCallback;
-			std::vector<Compressor_p>	compressors;
 			GfxBackend_p				backend;
 			EdgemapFactory_p			edgemapFactory;
 			Finalizer_p					finalizer = nullptr;
@@ -97,7 +95,6 @@ namespace wg
 
 		void	_processStreamChunks(const uint8_t* pBegin, const uint8_t* pEnd) override;
 		bool	_playChunk();
-		Compressor * _findCompressor( uint32_t idToken );
 
 		struct DataBuffer
 		{
@@ -139,6 +136,8 @@ namespace wg
 		DataBuffer				m_transformsDataBuffer;
 		DataBuffer				m_colorsDataBuffer;
 		DataBuffer				m_commandsDataBuffer;
+
+		uint16_t				m_updateObject = 0;			// ObjectID from latest SurfaceUpdate, SurfaceUpdate2 and EdgemapUpdate. Needed for pixels when stream has old-format DataInfo.
 
 
 		struct SurfaceDataBuffer
@@ -187,10 +186,6 @@ namespace wg
 		char *	m_pTempBuffer = nullptr;
 		int		m_bytesLoaded;
 		int		m_bufferSize;
-		
-
-		std::vector<Compressor_p>		m_compressors;
-		bool				m_bAutoCompressors = true;
 
 		bool				m_bStoreDirtyRects = false;
 		int					m_maxDirtyRects = 64;

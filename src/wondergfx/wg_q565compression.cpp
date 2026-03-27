@@ -20,7 +20,7 @@
 
 =========================================================================*/
 
-#include <wg_q565compressor.h>
+#include <wg_q565compression.h>
 #include <wg_gfxutil.h>
 #include <wg_gfxbase.h>
 

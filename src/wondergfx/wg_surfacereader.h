@@ -28,7 +28,7 @@
 
 #include <wg_surfacefileheader.h>
 #include <wg_surfacefactory.h>
-#include <wg_compressor.h>
+#include <wg_compression.h>
 
 namespace wg
 {
@@ -47,8 +47,6 @@ public:
 
 	struct Blueprint
 	{
-		bool						autoCompressors = true;		// Create and use known compressors on demand.
-		std::vector<Compressor_p>	compressors;
 		SurfaceFactory_p			factory;
 		Finalizer_p					finalizer = nullptr;
 	};
@@ -79,10 +77,6 @@ protected:
 	template<class BP> SurfaceReader(const BP& bp)
 	{
 		m_pFactory = bp.factory;
-		m_bAutoCompressors = bp.autoCompressors;
-
-		for( auto& p : bp.compressors )
-			m_compressors.push_back(p);
 
 		if (bp.finalizer)
 			setFinalizer(bp.finalizer);
@@ -99,14 +93,8 @@ protected:
 
 	void			_copyUncompressedFromMemory(void * pDest, const void * pSource, int rowBytes, int pitch, int rows);
 
-	Compressor *	_findCompressor( uint32_t idToken );
-
 
 	SurfaceFactory_p	m_pFactory;
-
-	std::vector<Compressor_p>	m_compressors;
-
-	bool				m_bAutoCompressors = true;
 };
 
 

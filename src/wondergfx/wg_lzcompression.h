@@ -19,59 +19,47 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef	WG_RLECOMPRESSOR_DOT_H
-#define	WG_RLECOMPRESSOR_DOT_H
+#ifndef	WG_LZCOMPRESSION_DOT_H
+#define	WG_LZCOMPRESSION_DOT_H
 #pragma once
 
-#include <wg_compressor.h>
+#include <wg_compression.h>
 
 
 /*
-*  Simple and fast RLE compression of primitives of selectable size.
+*  Lempel-Ziw based compression for any data with repetitive patterns.
 *
-*	RLEx compression format:
+*	Encoding:
 *
-*	First byte in stream is primitive size. If primitive size is larger
-*	than 1, then a padding byte follows.
-*
-*	Byte value for primitive size 1:
-*
-*	0-127			Copy 1-128 bytes following primitives verbatim.
-*	-1 - -128		Repeat previous primitive 1-128 times.
-*
-*	Word value for primitive size 2+:
-*
-*	0-32767			Copy 1-32768 uint16_t following primitives verbatim.
-*	-1 - -32768		Repeat previous primitive 1-32768 times.
-*
+*	0xxxxxxx						New pixels(1 - 128)
+*	10xxxxxx yyyyyyyy				Replay X (3-66) bytes, starting from Y (1-255) bytes back.
+*	11xxxxxx yyyyyyyy yyyyyyyy		Replay X (3-66) bytes, starting from Y (1-65535) bytes back. Low byte first (little-endian).
 */
-
 
 
 namespace wg
 {
 
-	class RLECompressor;
-	typedef StrongPtr<RLECompressor>	RLECompressor_p;
-	typedef WeakPtr<RLECompressor>		RLECompressor_wp;
+	class LZCompressor;
+	typedef StrongPtr<LZCompressor>	LZCompressor_p;
+	typedef WeakPtr<LZCompressor>		LZCompressor_wp;
 
-	class RLECompressor : public Compressor
+	class LZCompressor : public Compressor
 	{
 	public:
 
-		//.____ Blueprint ___________________________________________________________
+		//____ Blueprint ____________________________________________________________
 
 		struct Blueprint
 		{
-			int				primSize = 1;				// Size in byte of primitive to RLE encode. Must be 1 or a mutiple of 2, less than 256.
 			bool			decompressOnly = false;
 			Finalizer_p		finalizer = nullptr;
 		};
 
 		//.____ Creation __________________________________________________________
 
-		static RLECompressor_p		create();
-		static RLECompressor_p		create( const Blueprint& blueprint );
+		static LZCompressor_p		create();
+		static LZCompressor_p		create( const Blueprint& blueprint );
 
 		//.____ Identification __________________________________________
 
@@ -91,14 +79,28 @@ namespace wg
 
 
 	protected:
-		RLECompressor();
-		RLECompressor( const Blueprint& blueprint );
-		virtual ~RLECompressor() {};
+		LZCompressor();
+		LZCompressor( const Blueprint& blueprint );
+		virtual ~LZCompressor();
 
-		int		m_primSize = 1;
+		void		_generateTable();
+
+		inline uint32_t hash_bytes(uint8_t* data) {
+			return ((data[0] << 8) ^ (data[1] << 4) ^ data[2]) & (m_hashSize - 1);
+		}
+
+		uint16_t * m_pHashTable = nullptr;
+
+		int		m_hashSize = 65536;			// Minimum 16384, maximum 65536. Must be modulo 2.
+		int		m_windowSize = 32768;		// Minimum 4096, maximum 32768. Must be modulo 2.
+		int		m_maxSteps = 6;				// Minimum 1. Affects compression and speed a lot.
 };
+
+
 
 }
 
 
-#endif //WG_RLECOMPRESSOR_DOT_H
+
+
+#endif //WG_LZCOMPRESSION_DOT_H

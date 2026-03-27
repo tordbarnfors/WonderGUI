@@ -21,11 +21,6 @@
 =========================================================================*/
 #include <wg_streamplayer.h>
 #include <wg_gfxbase.h>
-#include <wg_compressor.h>
-#include <wg_q565compressor.h>
-#include <wg_lzcompressor.h>
-#include <wg_spxcompressor.h>
-#include <wg_rlecompressor.h>
 #include <assert.h>
 
 namespace wg
@@ -517,6 +512,7 @@ namespace wg
 			buffer.rects.resize(1);
 			buffer.rects[0] = rect;
 
+			m_updateObject = objectId;
 			break;
 		}
 
@@ -541,6 +537,7 @@ namespace wg
 			for( int i = 0 ; i < nRects ; i++ )
 				decoder >> buffer.rects[i];
 
+			m_updateObject = surfaceId;
 			break;
 		}
 
@@ -550,7 +547,8 @@ namespace wg
 			GfxStream::DataInfo dataInfo;
 			decoder >> dataInfo;
 
-			auto pSurface = wg_static_cast<Surface_p>(m_vObjects[dataInfo.objectId]);
+			int objectId = dataInfo.objectId > 0 ? dataInfo.objectId : m_updateObject;
+			auto pSurface = wg_static_cast<Surface_p>(m_vObjects[objectId]);
 
 			auto it = m_surfaceDataBuffers.begin();
 			while( it->pSurface != pSurface )
@@ -749,6 +747,8 @@ namespace wg
 			}
 
 			m_edgemapDataBuffers.emplace_back(wg_static_cast<Edgemap_p>(m_vObjects[objectId]), edgeBegin, edgeEnd, sampleBegin, sampleEnd);
+
+			m_updateObject = objectId;
 			break;
 		}
 				
@@ -757,7 +757,8 @@ namespace wg
 			GfxStream::DataInfo dataInfo;
 			decoder >> dataInfo;
 
-			auto pEdgemap = wg_static_cast<Edgemap_p>(m_vObjects[dataInfo.objectId]);
+			int objectId = dataInfo.objectId > 0 ? dataInfo.objectId : m_updateObject;
+			auto pEdgemap = wg_static_cast<Edgemap_p>(m_vObjects[objectId]);
 
 			auto it = m_edgemapDataBuffers.begin();
 			while( it->pEdgemap != pEdgemap )
@@ -818,7 +819,7 @@ namespace wg
 			buffer.size = 0;
 		}
 
-		int dataSize = chunkDataSize - GfxStream::DataInfoSize - dataInfo.bPadded;
+		int dataSize = chunkDataSize - dataInfo.encodedSize - dataInfo.bPadded;
 
 		decoder >> GfxStream::ReadBytes{ dataSize, buffer.pBuffer + dataInfo.chunkOffset };
 		decoder.align();
@@ -827,7 +828,7 @@ namespace wg
 		{
 			if(dataInfo.compression != Util::makeEndianSpecificToken('N','O','N','E') )
 			{
-				auto pCompressor = _findCompressor(dataInfo.compression);
+				auto pCompressor = GfxBase::getDecompressor(dataInfo.compression);
 
 				if( pCompressor )
 					buffer.size = pCompressor->decompress(buffer.pBuffer, buffer.pBuffer + dataInfo.dataStart, buffer.pBuffer + dataInfo.bufferSize);
@@ -835,6 +836,7 @@ namespace wg
 				{
 					GfxBase::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "Don't know how to decompress data in chunk, add matching compressor.",
 										this, &StreamPlayer::TYPEINFO, __func__, __FILE__, __LINE__ );
+					return false;
 				}
 			}
 			else
@@ -846,47 +848,5 @@ namespace wg
 		return true;
 	}
 
-	//____ _findCompressor() ______________________________________________________
-
-	Compressor * StreamPlayer::_findCompressor( uint32_t idToken )
-	{
-		for( auto& p : m_compressors )
-			if( p->idToken() == idToken )
-				return p;
-
-		if( m_bAutoCompressors )
-		{
-			if( idToken == Q565Compressor::ID_TOKEN )
-			{
-				auto pCompressor = Q565Compressor::create( WGBP(Q565Compressor, _.decompressOnly = true) );
-				m_compressors.push_back(pCompressor);
-				return pCompressor;
-			}
-
-			if( idToken == LZCompressor::ID_TOKEN )
-			{
-				auto pCompressor = LZCompressor::create( WGBP(LZCompressor, _.decompressOnly = true) );
-				m_compressors.push_back(pCompressor);
-				return pCompressor;
-			}
-
-			if( idToken == SPXCompressor::ID_TOKEN )
-			{
-				auto pCompressor = SPXCompressor::create(WGBP(SPXCompressor, _.decompressOnly = true)  );
-				m_compressors.push_back(pCompressor);
-				return pCompressor;
-			}
-
-			if (idToken == RLECompressor::ID_TOKEN)
-			{
-				auto pCompressor = RLECompressor::create(WGBP(RLECompressor, _.decompressOnly = true) );
-				m_compressors.push_back(pCompressor);
-				return pCompressor;
-			}
-
-		}
-
-		return nullptr;
-	}
 
 } //namespace wg

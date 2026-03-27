@@ -27,7 +27,7 @@
 
 #include <wg_surfacefileheader.h>
 #include <wg_surfacefactory.h>
-#include <wg_compressor.h>
+#include <wg_compression.h>
 
 namespace wg
 {

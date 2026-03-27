@@ -19,12 +19,12 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef	WG_SPXCOMPRESSOR_DOT_H
-#define	WG_SPXCOMPRESSOR_DOT_H
+#ifndef	WG_SPXCOMPRESSION_DOT_H
+#define	WG_SPXCOMPRESSION_DOT_H
 #pragma once
 
-#include <wg_compressor.h>
-
+#include <wg_compression.h>
+#include <wg_gfxtypes.h>
 
 
 
@@ -82,6 +82,8 @@ namespace wg
 			Spx16I = 3
 		};
 
+		int		_compress( Compression type, void * pDest, const spx * pSrcBegin, const spx * pSrcEnd );
+		int		_decompress( Compression type, spx * pDest, const void * pSrcBegin, const void * pSrcEnd );
 
 };
 
@@ -92,4 +94,4 @@ namespace wg
 
 
 
-#endif //WG_Q565COMPRESSOR_DOT_H
+#endif //WG_SPXCOMPRESSION_DOT_H

@@ -1000,7 +1000,6 @@ bool MyApp::loadStream(std::string path)
 
 
 	m_pStreamPump = StreamPump::create( StreamSource_p(), StreamSink_p(m_pStreamPlayer.rawPtr(),m_pStreamPlayer->input) );
-	m_pStreamPump->setTrimDecompressor( SPXCompressor::create() );
 
 	// Pump through first chunks to get ID
 

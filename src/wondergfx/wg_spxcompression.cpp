@@ -20,7 +20,7 @@
 
 =========================================================================*/
 
-#include <wg_spxcompressor.h>
+#include <wg_spxcompression.h>
 #include <wg_gfxutil.h>
 #include <wg_gfxbase.h>
 
@@ -90,8 +90,6 @@ int SPXCompressor::compress( void * _pDest, const void * _pBegin, const void * _
 	const spx* pBeg = (const spx*) _pBegin;
 	const spx* pEnd= (const spx*)_pEnd;
 
-	auto pDest = (Compression *) _pDest;
-
 	const int add = (1 << 21);
 
 	int spxMask = 0;
@@ -99,69 +97,97 @@ int SPXCompressor::compress( void * _pDest, const void * _pBegin, const void * _
 	for (auto p = pBeg; p != pEnd; p++)
 		spxMask |= *p + add;
 
+	Compression type = Compression::None;
 
 	if ((spxMask & 0xFFDFC03F) == 0)					// Check if all spx fits in uint8_t without binals.
-	{
-		* pDest++ = Compression::SpxU8I;
-		auto wp = (uint8_t*) pDest;
-
-		while (pBeg < pEnd)
-			*wp++ = (uint8_t)((*pBeg++) >> 6);
-
-		return int(wp - (uint8_t*)_pDest);
-	}
+		type = Compression::SpxU8I;
 	else if ((spxMask & 0xFFDF0000) == 0)				// Check if all spx fits in int16_t with binals.
-	{
-		*pDest++ = Compression::Spx16B;
-		auto wp = (int16_t*)pDest;
-
-		while (pBeg < pEnd)
-			*wp++ = (int16_t)(*pBeg++);
-
-		return int(((uint8_t*)wp) - (uint8_t*)_pDest);
-	}
+		type = Compression::Spx16B;
 	else if ((spxMask & 0xFFC0003F) == 0)				// Check if all spx fits in int16_t without binals.
-	{
-		*pDest++ = Compression::Spx16I;
-		auto wp = (int16_t*)pDest;
+		type = Compression::Spx16I;
 
-		while (pBeg < pEnd)
-			*wp++ = (int16_t)((*pBeg++) >> 6);
-
-		return int(((uint8_t*)wp) - (uint8_t*)_pDest);
-	}
-	else
-	{
-		*pDest++ = Compression::None;
-
-		std::memcpy(pDest, pBeg, ((uint8_t*)pEnd) - ((uint8_t*)pBeg));
-		return int(((uint8_t*)pEnd) - (uint8_t*)_pDest);
-	}
+	auto pDest = (Compression *) _pDest;
+	* pDest++ = type;
+	return _compress(type, pDest, pBeg, pEnd) + sizeof(Compression);
 }
 
 //____ decompress() ___________________________________________________________
 
-int SPXCompressor::decompress( void * _pDest, const void * pBegin, const void * pEnd )
+int SPXCompressor::decompress( void * pDest, const void * pBegin, const void * pEnd )
 {
 	Compression* pSource = (Compression*)pBegin;
 	Compression type = * pSource++;
 
-	int nbBytes = int(((uint8_t*)pEnd) - ((uint8_t*)pSource));
+	return _decompress( type, (spx*) pDest, pSource, pEnd );
+}
 
-	spx* pDest = (spx*)_pDest;
+
+//____ _compress() _____________________________________________________________
+
+int SPXCompressor::_compress( Compression type, void * pDest, const spx * pBeg, const spx * pEnd )
+{
+	switch(type)
+	{
+		case Compression::None:
+		{
+			std::memcpy(pDest, pBeg, ((uint8_t*)pEnd) - ((uint8_t*)pBeg));
+			return int(((uint8_t*)pEnd) - (uint8_t*)pDest);
+		}
+
+		case Compression::SpxU8I:
+		{
+			auto wp = (uint8_t*) pDest;
+
+			while (pBeg < pEnd)
+				*wp++ = (uint8_t)((*pBeg++) >> 6);
+
+			return int(wp - (uint8_t*)pDest);
+		}
+
+		case Compression::Spx16B:
+		{
+			auto wp = (int16_t*)pDest;
+
+			while (pBeg < pEnd)
+				*wp++ = (int16_t)(*pBeg++);
+
+			return int(((uint8_t*)wp) - (uint8_t*)pDest);
+		}
+
+		case Compression::Spx16I:
+		{
+			auto wp = (int16_t*)pDest;
+
+			while (pBeg < pEnd)
+				*wp++ = (int16_t)((*pBeg++) >> 6);
+
+			return int(((uint8_t*)wp) - (uint8_t*)pDest);
+		}
+	}
+
+	return 0;
+}
+
+
+//____ _decompress() ___________________________________________________________
+
+int SPXCompressor::_decompress( Compression type, spx * pDest, const void * pBegin, const void * pEnd )
+{
+	int nbBytes = int(((uint8_t*)pEnd) - ((uint8_t*)pBegin));
+
 	auto wp = pDest;
 
 	switch (type)
 	{
 		case Compression::None:
 		{
-			std::memcpy(pDest, pSource, nbBytes);
+			std::memcpy(pDest, pBegin, nbBytes);
 			return nbBytes;
 		}
 	
 		case Compression::SpxU8I:
 		{
-			auto rp = (uint8_t*)pSource;
+			auto rp = (uint8_t*)pBegin;
 			for (int i = 0; i < nbBytes; i++)
 				*wp++ = ((spx)(*rp++)) << 6;
 			return nbBytes * 4;
@@ -169,7 +195,7 @@ int SPXCompressor::decompress( void * _pDest, const void * pBegin, const void * 
 
 		case Compression::Spx16I:
 		{
-			auto rp = (uint16_t*)pSource;
+			auto rp = (uint16_t*)pBegin;
 			for (int i = 0; i < nbBytes / 2; i++)
 				*wp++ = ((spx)(*rp++)) << 6;
 			return nbBytes * 2;
@@ -177,17 +203,14 @@ int SPXCompressor::decompress( void * _pDest, const void * pBegin, const void * 
 
 		case Compression::Spx16B:
 		{
-			auto rp = (uint16_t*)pSource;
+			auto rp = (uint16_t*)pBegin;
 			for (int i = 0; i < nbBytes / 2; i++)
 				*wp++ = (spx)(*rp++);
 			return nbBytes * 2;
 		}
-
-		default:
-		{
-			return 0;
-		}
 	}
+
+	return 0;
 }
 
 

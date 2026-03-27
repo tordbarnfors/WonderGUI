@@ -28,6 +28,7 @@
 #include <wg_geo.h>
 #include <wg_color.h>
 #include <wg_streamsource.h>
+#include <wg_gfxutil.h>
 
 #include <cstring>
 
@@ -54,15 +55,20 @@ namespace wg
 
 		//.____ Control _______________________________________________________
 
+		void				setVersion(uint16_t version);
 		void				setInput( const void * pBegin, const void * pEnd);
+
+		//.____ Misc ________________________________________________________________
 
 		bool				isEmpty();
 		GfxStream::Header	peek();
 		inline int			chunkSize();
-		
 
 		void				skip(int bytes);
 		void				align();
+
+//		inline int			dataInfoSize() const { return m_dataInfoSize; }
+
 
 		//.____ Operators _____________________________________________
 
@@ -121,17 +127,8 @@ namespace wg
 		inline void		_pullBytes(int nBytes, void* pBytes);
 		inline void		_skipBytes(int nBytes);
 
-		GfxStream::SpxFormat	m_spxFormat;
-
-		typedef	const uint8_t* (*SpxOp_p)(const uint8_t* pStream, spx& output);
-		typedef	const uint8_t*(*CoordOp_p)(const uint8_t* pStream, CoordI& output);
-		typedef	const uint8_t*(*SizeOp_p)(const uint8_t* pStream, SizeI& output);
-		typedef	const uint8_t*(*RectOp_p)(const uint8_t* pStream, RectI& output);
-
-		static const SpxOp_p	s_spxOps[4];
-		static const CoordOp_p	s_coordOps[4];
-		static const SizeOp_p	s_sizeOps[4];
-		static const RectOp_p	s_rectOps[4];
+		uint16_t		m_version;
+		int				m_dataInfoSize = 20;
 
 		const uint8_t* m_pDataBegin = nullptr;
 		const uint8_t* m_pDataEnd = nullptr;
@@ -158,17 +155,66 @@ namespace wg
 
 	StreamDecoder& StreamDecoder::operator>> (GfxStream::DataInfo& info)
 	{
-		info.bufferSize = _pullInt();
-		info.chunkOffset = _pullInt();
-		info.compression = _pullInt();
-		info.dataStart = _pullInt();
-		info.objectId = _pullShort();
+		if( m_pDataRead[8] < 4 )			// Old format DataInfo.
+		{
+			int totalSize = _pullInt();
+			int chunkOfs = _pullInt();
+			int compression = _pullChar();
+			int flags = _pullChar();
 
-		uint16_t flags = _pullShort();
+			info.bufferSize = totalSize;
+			info.objectId = 0;			// Will this work????
 
-		info.bFirstChunk = flags & 0x1;
-		info.bLastChunk = (flags >> 1) & 0x1;
-		info.bPadded = (flags >> 2) & 0x1;
+			switch( compression )
+			{
+				case 0:
+					info.compression = Util::makeEndianSpecificToken('N','O','N','E');
+					info.dataStart = 0;
+					info.chunkOffset = chunkOfs;
+					break;
+				case 1:
+					info.compression = Util::makeEndianSpecificToken('U','8','I',' ');
+					info.dataStart = 3*(totalSize/4);
+					info.chunkOffset = info.dataStart + chunkOfs/4;
+					break;
+				case 2:
+					info.compression = Util::makeEndianSpecificToken('S','1','6','B');
+					info.dataStart = totalSize/2;
+					info.chunkOffset = info.dataStart + chunkOfs/2;
+					break;
+				case 3:
+					info.compression = Util::makeEndianSpecificToken('S','1','6','I');
+					info.dataStart = totalSize/2;
+					info.chunkOffset = info.dataStart + chunkOfs/2;
+					break;
+
+				default:
+					assert(false);
+			}
+
+			info.bFirstChunk = flags & 0x1;
+			info.bLastChunk = (flags >> 1) & 0x1;
+			info.bPadded = (flags >> 2) & 0x1;
+
+			info.encodedSize = 10;
+		}
+		else
+		{
+			info.bufferSize = _pullInt();
+			info.chunkOffset = _pullInt();
+			info.compression = _pullInt();
+			info.dataStart = _pullInt();
+			info.objectId = _pullShort();
+
+			uint16_t flags = _pullShort();
+
+			info.bFirstChunk = flags & 0x1;
+			info.bLastChunk = (flags >> 1) & 0x1;
+			info.bPadded = (flags >> 2) & 0x1;
+
+			info.encodedSize = 20;
+		}
+
 		return *this;
 	}
 
@@ -217,21 +263,19 @@ namespace wg
 
 	StreamDecoder& StreamDecoder::operator>> (GfxStream::SPX& value)
 	{
-		if(m_spxFormat == GfxStream::SpxFormat::Int32_dec )
-			value.value = _pullInt();
-		else if(m_spxFormat == GfxStream::SpxFormat::Uint16_dec )
-			value.value = uint16_t(_pullShort());			// Value is unsigned.
-		else if(m_spxFormat == GfxStream::SpxFormat::Int16_int )
-			value.value = int(_pullShort()) << 6;
-		else if(m_spxFormat == GfxStream::SpxFormat::Uint8_int )
-			value.value = int(uint8_t(_pullChar())) << 6;	// Make sure value is unsigned.
+		value.value = _pullInt();
 		return *this;
 	}
 
 
 	StreamDecoder& StreamDecoder::operator>> (CoordI& coord)
 	{
-		m_pDataRead = s_coordOps[int(m_spxFormat)](m_pDataRead, coord);
+		uint16_t* p = (uint16_t*)m_pDataRead;
+
+		coord.x = p[0] + (int(p[1]) << 16);
+		coord.y = p[2] + (int(p[3]) << 16);
+
+		m_pDataRead += 8;
 		return *this;
 	}
 
@@ -242,22 +286,33 @@ namespace wg
 		return *this;
 	}
 
-	StreamDecoder& StreamDecoder::operator>> (SizeI& sz)
+	StreamDecoder& StreamDecoder::operator>> (SizeI& size)
 	{
-		m_pDataRead = s_sizeOps[int(m_spxFormat)](m_pDataRead, sz);
+		uint16_t* p = (uint16_t*)m_pDataRead;
+
+		size.w = p[0] + (int(p[1]) << 16);
+		size.h = p[2] + (int(p[3]) << 16);
+
+		m_pDataRead += 8;
 		return *this;
 	}
 
-	StreamDecoder& StreamDecoder::operator>> (SizeF& sz)
+	StreamDecoder& StreamDecoder::operator>> (SizeF& size)
 	{
-		sz.w = _pullFloat();
-		sz.h = _pullFloat();
+		size.w = _pullFloat();
+		size.h = _pullFloat();
 		return *this;
 	}
 
 	StreamDecoder& StreamDecoder::operator>> (RectI& rect)
 	{
-		m_pDataRead = s_rectOps[int(m_spxFormat)](m_pDataRead, rect);
+		uint16_t* p = (uint16_t*)m_pDataRead;
+
+		rect.x = p[0] + (int(p[1]) << 16);
+		rect.y = p[2] + (int(p[3]) << 16);
+		rect.w = p[4] + (int(p[5]) << 16);
+		rect.h = p[6] + (int(p[7]) << 16);
+		m_pDataRead += 16;
 		return *this;
 	}
 

@@ -28,6 +28,7 @@
 #include <wg_gearbase.h>
 #include <wg_gfxdevice.h>
 #include <wg_gfxdevicefactory.h>
+#include <wg_compression.h>
 
 namespace wg
 {
@@ -99,7 +100,8 @@ namespace wg
 		static constexpr int *		curveTab() { return s_curveTab; }
 		static constexpr int		curveTabSize() { return c_nCurveTabEntries; }
 
-		
+		static Compressor_p			getDecompressor( uint32_t idToken );
+		static void					addDecompressor( Compressor * pCompressor );
 
 	private:
 
@@ -111,6 +113,8 @@ namespace wg
 
 		const static int 			c_nCurveTabEntries = 1024;
 		static int 					s_curveTab[c_nCurveTabEntries];
+
+		static std::vector<Compressor_p>	s_decompressors;
 	};
 
 

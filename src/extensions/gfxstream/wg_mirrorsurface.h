@@ -25,7 +25,7 @@
 
 #include <wg_surface.h>
 #include <wg_streamencoder.h>
-#include <wg_compressor.h>
+#include <wg_compression.h>
 
 
 namespace wg

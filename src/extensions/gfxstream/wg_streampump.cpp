@@ -88,13 +88,6 @@ namespace wg
 		m_pOutput = pStream;
 	}
 
-	//____ setTrimDecompressor() _________________________________________________
-
-	void StreamPump::setTrimDecompressor( Compressor * pDecompressor )
-	{
-		m_pTrimDecompressor = pDecompressor;
-	}
-
 	//____ setFlowControl() ______________________________________________________
 
 	void StreamPump::setFlowControl( uint16_t fenceId, int startCredits, int bytesPerCredit )
@@ -437,8 +430,8 @@ namespace wg
 					if( info.bFirstChunk )
 						pBuffer = (uint8_t*) GfxBase::memStackAlloc(info.bufferSize);
 
-					uint8_t* pSrc = p + GfxStream::HeaderSize + GfxStream::DataInfoSize;
-					int dataSize = (GfxStream::dataSize(p) - GfxStream::DataInfoSize);
+					uint8_t* pSrc = p + GfxStream::HeaderSize + info.encodedSize;
+					int dataSize = GfxStream::dataSize(p) - info.encodedSize;
 					uint8_t* pDest = pBuffer + info.chunkOffset;
 
 					std::memcpy(pDest, pSrc, dataSize);
@@ -447,8 +440,9 @@ namespace wg
 					{
 						if( info.compression != Util::makeEndianSpecificToken('N','O','N','E') )
 						{
-							if( m_pTrimDecompressor && m_pTrimDecompressor->idToken() == info.compression )
-								m_pTrimDecompressor->decompress(pBuffer, pBuffer+info.dataStart, pBuffer+info.bufferSize);
+							auto pDecompressor = GfxBase::getDecompressor(info.compression);
+							if( pDecompressor )
+								pDecompressor->decompress(pBuffer, pBuffer+info.dataStart, pBuffer+info.bufferSize);
 							else
 								GfxBase::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "StreamPump does not have the right compressor to decompress UpdateRects hunks.", nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
 						}

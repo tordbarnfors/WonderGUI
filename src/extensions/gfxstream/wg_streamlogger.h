@@ -75,7 +75,7 @@ namespace wg
 		bool	_logChunk();
 
 		int		_readPrintPatches();
-		void	_readPrintDataInfo(int payloadSize);
+		int		_readPrintDataInfo(int payloadSize);
 
 
 

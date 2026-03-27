@@ -15,8 +15,10 @@ set( SOURCES
 	wg_color.h
 	wg_colorbands.cpp
 	wg_colorbands.h
-	wg_compressor.cpp
-	wg_compressor.h
+	wg_compression.cpp
+	wg_compression.h
+	wg_dummycompression.cpp
+	wg_dummycompression.h
 	wg_dummyfont.cpp
 	wg_dummyfont.h
 	wg_edgemap.cpp
@@ -52,8 +54,10 @@ set( SOURCES
 	wg_gradyent.h
 	wg_gridwalker.cpp
 	wg_gridwalker.h
-	wg_lzcompressor.cpp
-	wg_lzcompressor.h
+	wg_legacycompression.cpp
+	wg_legacycompression.h
+	wg_lzcompression.cpp
+	wg_lzcompression.h
 	wg_patches.impl.h
 	wg_patches.cpp
 	wg_patches.h
@@ -61,15 +65,15 @@ set( SOURCES
 	wg_pixeltools.h
 	wg_printer.cpp
 	wg_printer.h
-	wg_q565compressor.cpp
-	wg_q565compressor.h
-	wg_rlecompressor.cpp
-	wg_rlecompressor.h
+	wg_q565compression.cpp
+	wg_q565compression.h
+	wg_rlecompression.cpp
+	wg_rlecompression.h
 	wg_snapshottintmap.cpp
 	wg_snapshottintmap.h
 	wg_spans.h
-	wg_spxcompressor.cpp
-	wg_spxcompressor.h
+	wg_spxcompression.cpp
+	wg_spxcompression.h
 	wg_statictintmap.cpp
 	wg_statictintmap.h
 	wg_surface.cpp

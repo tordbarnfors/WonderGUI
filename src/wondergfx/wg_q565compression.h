@@ -19,36 +19,37 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef	WG_LZCOMPRESSOR_DOT_H
-#define	WG_LZCOMPRESSOR_DOT_H
+#ifndef	WG_Q565COMPRESSION_DOT_H
+#define	WG_Q565COMPRESSION_DOT_H
 #pragma once
 
-#include <wg_compressor.h>
+#include <wg_compression.h>
 
 
 /*
-*  Lempel-Ziw based compression for any data with repetitive patterns.
+*  QOI-inspired fast and easy compression for 16-bit 565 pixels.
 *
-*	Encoding:
+*	Q565 compression format:
 *
-*	0xxxxxxx						New pixels(1 - 128)
-*	10xxxxxx yyyyyyyy				Replay X (3-66) bytes, starting from Y (1-255) bytes back.
-*	11xxxxxx yyyyyyyy yyyyyyyy		Replay X (3-66) bytes, starting from Y (1-65535) bytes back. Low byte first (little-endian).
+	00 0xxxxx		New pixels(1 - 32)
+	00 1xxxxx		Repeat previous pixel(1 - 32)
+	01 xxxxxx		Pixel from index
+	1 rrgggbb		Delta rgb values -2 > +1 for r and b, -4 > +3 for g
 */
 
 
 namespace wg
 {
 
-	class LZCompressor;
-	typedef StrongPtr<LZCompressor>	LZCompressor_p;
-	typedef WeakPtr<LZCompressor>		LZCompressor_wp;
+	class Q565Compressor;
+	typedef StrongPtr<Q565Compressor>	Q565Compressor_p;
+	typedef WeakPtr<Q565Compressor>		Q565Compressor_wp;
 
-	class LZCompressor : public Compressor
+	class Q565Compressor : public Compressor
 	{
 	public:
 
-		//____ Blueprint ____________________________________________________________
+		//.____ Blueprint ___________________________________________________________
 
 		struct Blueprint
 		{
@@ -58,8 +59,8 @@ namespace wg
 
 		//.____ Creation __________________________________________________________
 
-		static LZCompressor_p		create();
-		static LZCompressor_p		create( const Blueprint& blueprint );
+		static Q565Compressor_p		create();
+		static Q565Compressor_p		create( const Blueprint& blueprint );
 
 		//.____ Identification __________________________________________
 
@@ -79,28 +80,17 @@ namespace wg
 
 
 	protected:
-		LZCompressor();
-		LZCompressor( const Blueprint& blueprint );
-		virtual ~LZCompressor();
+		Q565Compressor();
+		Q565Compressor( const Blueprint& blueprint );
+		virtual ~Q565Compressor();
 
 		void		_generateTable();
 
-		inline uint32_t hash_bytes(uint8_t* data) {
-			return ((data[0] << 8) ^ (data[1] << 4) ^ data[2]) & (m_hashSize - 1);
-		}
 
-		uint16_t * m_pHashTable = nullptr;
-
-		int		m_hashSize = 65536;			// Minimum 16384, maximum 65536. Must be modulo 2.
-		int		m_windowSize = 32768;		// Minimum 4096, maximum 32768. Must be modulo 2.
-		int		m_maxSteps = 6;				// Minimum 1. Affects compression and speed a lot.
+		uint8_t *	m_pPixelToIndexTable = nullptr;
 };
-
-
 
 }
 
 
-
-
-#endif //WG_LZCOMPRESSOR_DOT_H
+#endif //WG_Q565COMPRESSION_DOT_H

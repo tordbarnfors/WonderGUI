@@ -2,9 +2,9 @@
 #include <wondergfx.h>
 #include <wg_softsurface.h>
 #include <wg_softsurfacefactory.h>
-#include <wg_q565compressor.h>
-#include <wg_lzcompressor.h>
-#include <wg_rlecompressor.h>
+#include <wg_q565compression.h>
+#include <wg_lzcompression.h>
+#include <wg_rlecompression.h>
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
