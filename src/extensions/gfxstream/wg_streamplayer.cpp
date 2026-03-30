@@ -337,7 +337,7 @@ namespace wg
 			GfxStream::DataInfo dataInfo;
 			decoder >> dataInfo;
 
-			_loadIntoDataBuffer(dataInfo, m_objectsDataBuffer, header.size);
+			_loadIntoDataBuffer(dataInfo, m_objectsDataBuffer, header.size - dataInfo.encodedSize);
 
 			if( m_objectsDataBuffer.size > 0 )
 			{
@@ -367,7 +367,7 @@ namespace wg
 			GfxStream::DataInfo dataInfo;
 			decoder >> dataInfo;
 
-			_loadIntoDataBuffer(dataInfo, m_rectsDataBuffer, header.size);
+			_loadIntoDataBuffer(dataInfo, m_rectsDataBuffer, header.size - dataInfo.encodedSize);
 
 			if (m_rectsDataBuffer.size > 0)
 				m_pBackend->setRects((RectSPX*) m_rectsDataBuffer.pBuffer, (RectSPX*) (m_rectsDataBuffer.pBuffer + m_rectsDataBuffer.size) );
@@ -380,7 +380,7 @@ namespace wg
 			GfxStream::DataInfo dataInfo;
 			decoder >> dataInfo;
 
-			_loadIntoDataBuffer(dataInfo, m_colorsDataBuffer, header.size);
+			_loadIntoDataBuffer(dataInfo, m_colorsDataBuffer, header.size - dataInfo.encodedSize);
 
 			if (m_colorsDataBuffer.size > 0)
 				m_pBackend->setColors((HiColor*)m_colorsDataBuffer.pBuffer, (HiColor*)(m_colorsDataBuffer.pBuffer + m_colorsDataBuffer.size) );
@@ -393,7 +393,7 @@ namespace wg
 			GfxStream::DataInfo dataInfo;
 			decoder >> dataInfo;
 
-			_loadIntoDataBuffer(dataInfo, m_transformsDataBuffer, header.size);
+			_loadIntoDataBuffer(dataInfo, m_transformsDataBuffer, header.size - dataInfo.encodedSize);
 
 			if (m_transformsDataBuffer.size > 0)
 				m_pBackend->setTransforms((Transform*)m_transformsDataBuffer.pBuffer, (Transform*)(m_transformsDataBuffer.pBuffer + m_transformsDataBuffer.size) );
@@ -407,7 +407,7 @@ namespace wg
 			GfxStream::DataInfo dataInfo;
 			decoder >> dataInfo;
 
-			_loadIntoDataBuffer(dataInfo, m_commandsDataBuffer, header.size);
+			_loadIntoDataBuffer(dataInfo, m_commandsDataBuffer, header.size - dataInfo.encodedSize);
 
 			if (m_commandsDataBuffer.size > 0)
 				m_pBackend->processCommands( (uint16_t*) m_commandsDataBuffer.pBuffer, (uint16_t*) (m_commandsDataBuffer.pBuffer + m_commandsDataBuffer.size) );
@@ -420,7 +420,7 @@ namespace wg
 			GfxStream::DataInfo dataInfo;
 			decoder >> dataInfo;
 
-			_loadIntoDataBuffer(dataInfo, m_updateRectsDataBuffer, header.size);
+			_loadIntoDataBuffer(dataInfo, m_updateRectsDataBuffer, header.size - dataInfo.encodedSize);
 
 			if( m_updateRectsDataBuffer.size > 0 )
 			{
@@ -554,7 +554,7 @@ namespace wg
 			while( it->pSurface != pSurface )
 				it++;
 
-			_loadIntoDataBuffer( dataInfo, it->buffer, header.size);
+			_loadIntoDataBuffer( dataInfo, it->buffer, header.size - dataInfo.encodedSize);
 
 			if(it->buffer.size > 0)
 			{
@@ -764,7 +764,7 @@ namespace wg
 			while( it->pEdgemap != pEdgemap )
 				it++;
 
-			_loadIntoDataBuffer( dataInfo, it->buffer, header.size);
+			_loadIntoDataBuffer( dataInfo, it->buffer, header.size - dataInfo.encodedSize);
 
 			if (it->buffer.size > 0)
 			{
@@ -791,7 +791,6 @@ namespace wg
 			break;
 		}
 
-
 		default:
 			// We don't know how to handle this, so let's just skip it
 
@@ -804,7 +803,7 @@ namespace wg
 
 	//____ _loadIntoDataBuffer() ________________________________________________
 
-	bool StreamPlayer::_loadIntoDataBuffer( GfxStream::DataInfo& dataInfo, DataBuffer& buffer, int chunkDataSize )
+	bool StreamPlayer::_loadIntoDataBuffer( GfxStream::DataInfo& dataInfo, DataBuffer& buffer, int dataSize )
 	{
 		auto& decoder = * m_pDecoder;
 
@@ -819,34 +818,10 @@ namespace wg
 			buffer.size = 0;
 		}
 
-		int dataSize = chunkDataSize - dataInfo.encodedSize - dataInfo.bPadded;
+		buffer.size = GfxStream::loadDecompressData(dataInfo, buffer.pBuffer, decoder.readPtr(), dataSize);
 
-		decoder >> GfxStream::ReadBytes{ dataSize, buffer.pBuffer + dataInfo.chunkOffset };
-		decoder.align();
-
-		if( dataInfo.bLastChunk )
-		{
-			if(dataInfo.compression != Util::makeEndianSpecificToken('N','O','N','E') )
-			{
-				auto pCompressor = GfxBase::getDecompressor(dataInfo.compression);
-
-				if( pCompressor )
-					buffer.size = pCompressor->decompress(buffer.pBuffer, buffer.pBuffer + dataInfo.dataStart, buffer.pBuffer + dataInfo.bufferSize);
-				else
-				{
-					GfxBase::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "Don't know how to decompress data in chunk, add matching compressor.",
-										this, &StreamPlayer::TYPEINFO, __func__, __FILE__, __LINE__ );
-					return false;
-				}
-			}
-			else
-			{
-				buffer.size = dataInfo.bufferSize;
-			}
-		}
-
+		decoder.skip(dataSize);
 		return true;
 	}
-
 
 } //namespace wg

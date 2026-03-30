@@ -67,6 +67,8 @@ namespace wg
 		void				skip(int bytes);
 		void				align();
 
+		const uint8_t *		readPtr() const { return m_pDataRead; }
+
 //		inline int			dataInfoSize() const { return m_dataInfoSize; }
 
 
@@ -155,66 +157,8 @@ namespace wg
 
 	StreamDecoder& StreamDecoder::operator>> (GfxStream::DataInfo& info)
 	{
-		if( m_pDataRead[8] < 4 )			// Old format DataInfo.
-		{
-			int totalSize = _pullInt();
-			int chunkOfs = _pullInt();
-			int compression = _pullChar();
-			int flags = _pullChar();
-
-			info.bufferSize = totalSize;
-			info.objectId = 0;			// Will this work????
-
-			switch( compression )
-			{
-				case 0:
-					info.compression = Util::makeEndianSpecificToken('N','O','N','E');
-					info.dataStart = 0;
-					info.chunkOffset = chunkOfs;
-					break;
-				case 1:
-					info.compression = Util::makeEndianSpecificToken('U','8','I',' ');
-					info.dataStart = 3*(totalSize/4);
-					info.chunkOffset = info.dataStart + chunkOfs/4;
-					break;
-				case 2:
-					info.compression = Util::makeEndianSpecificToken('S','1','6','B');
-					info.dataStart = totalSize/2;
-					info.chunkOffset = info.dataStart + chunkOfs/2;
-					break;
-				case 3:
-					info.compression = Util::makeEndianSpecificToken('S','1','6','I');
-					info.dataStart = totalSize/2;
-					info.chunkOffset = info.dataStart + chunkOfs/2;
-					break;
-
-				default:
-					assert(false);
-			}
-
-			info.bFirstChunk = flags & 0x1;
-			info.bLastChunk = (flags >> 1) & 0x1;
-			info.bPadded = (flags >> 2) & 0x1;
-
-			info.encodedSize = 10;
-		}
-		else
-		{
-			info.bufferSize = _pullInt();
-			info.chunkOffset = _pullInt();
-			info.compression = _pullInt();
-			info.dataStart = _pullInt();
-			info.objectId = _pullShort();
-
-			uint16_t flags = _pullShort();
-
-			info.bFirstChunk = flags & 0x1;
-			info.bLastChunk = (flags >> 1) & 0x1;
-			info.bPadded = (flags >> 2) & 0x1;
-
-			info.encodedSize = 20;
-		}
-
+		info = GfxStream::readDataInfo(m_pDataRead);
+		m_pDataRead += info.encodedSize;
 		return *this;
 	}
 
