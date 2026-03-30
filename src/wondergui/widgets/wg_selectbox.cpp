@@ -543,7 +543,7 @@ namespace wg
 		m_matchingHeight = matchingHeight;
 
 		m_listCanvasDefaultSize = listCanvasDefaultSize;
-		m_listCanvasMatchingHeight = m_listCanvasMatchingHeight;
+		m_listCanvasMatchingHeight = listCanvasMatchingHeight;
 
 	}
 
