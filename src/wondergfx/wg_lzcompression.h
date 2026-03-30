@@ -44,15 +44,21 @@ namespace wg
 	typedef StrongPtr<LZCompressor>	LZCompressor_p;
 	typedef WeakPtr<LZCompressor>		LZCompressor_wp;
 
+	class LZDecompressor;
+	typedef StrongPtr<LZDecompressor>	LZDecompressor_p;
+	typedef WeakPtr<LZDecompressor>		LZDecompressor_wp;
+
+
+	//____ LZCompressor ___________________________________________________________
+
 	class LZCompressor : public Compressor
 	{
 	public:
 
-		//____ Blueprint ____________________________________________________________
+		//.____ Blueprint ___________________________________________________________
 
 		struct Blueprint
 		{
-			bool			decompressOnly = false;
 			Finalizer_p		finalizer = nullptr;
 		};
 
@@ -75,12 +81,10 @@ namespace wg
 		int		maxCompressedSize( int uncompressedSize ) override;
 
 		int		compress( void * pDest, const void * pSrcBegin, const void * pSrcEnd ) override;
-		int		decompress( void * pDest, const void * pSrcBegin, const void * pSrcEnd ) override;
-
 
 	protected:
 		LZCompressor();
-		LZCompressor( const Blueprint& blueprint );
+		LZCompressor(const Blueprint& blueprint);
 		virtual ~LZCompressor();
 
 		void		_generateTable();
@@ -94,13 +98,38 @@ namespace wg
 		int		m_hashSize = 65536;			// Minimum 16384, maximum 65536. Must be modulo 2.
 		int		m_windowSize = 32768;		// Minimum 4096, maximum 32768. Must be modulo 2.
 		int		m_maxSteps = 6;				// Minimum 1. Affects compression and speed a lot.
-};
+	};
 
+
+	//____ LZDecompressor _________________________________________________________
+
+	class LZDecompressor : public Decompressor
+	{
+	public:
+
+		//.____ Creation __________________________________________________________
+
+		static LZDecompressor_p		create();
+
+		//.____ Identification __________________________________________
+
+		const TypeInfo& typeInfo(void) const override;
+		const static TypeInfo	TYPEINFO;
+
+		uint32_t idToken() const override;
+
+		const static uint32_t	ID_TOKEN;
+
+		//.____ Misc ____________________________________________________
+
+		int		decompress( void * pDest, const void * pSrcBegin, const void * pSrcEnd ) override;
+
+	protected:
+		LZDecompressor();
+		virtual ~LZDecompressor();
+	};
 
 
 }
-
-
-
 
 #endif //WG_LZCOMPRESSION_DOT_H

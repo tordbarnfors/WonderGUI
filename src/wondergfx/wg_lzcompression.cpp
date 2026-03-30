@@ -30,8 +30,10 @@
 namespace wg
 {
 const TypeInfo LZCompressor::TYPEINFO = { "LZCompressor", &Compressor::TYPEINFO };
+const TypeInfo LZDecompressor::TYPEINFO = { "LZDecompressor", &Decompressor::TYPEINFO };
 
 const uint32_t LZCompressor::ID_TOKEN = Util::makeEndianSpecificToken('L', 'Z', 'W', 'G');
+const uint32_t LZDecompressor::ID_TOKEN = Util::makeEndianSpecificToken('L', 'Z', 'W', 'G');
 
 //____ create() _____________________________________________________________
 
@@ -54,13 +56,11 @@ LZCompressor::LZCompressor()
 
 LZCompressor::LZCompressor( const Blueprint& blueprint )
 {
-	if( !blueprint.decompressOnly )
-		_generateTable();
+	_generateTable();
 
 	if( blueprint.finalizer )
 		setFinalizer(blueprint.finalizer);
 }
-
 
 //____ destructor ____________________________________________________________
 
@@ -68,7 +68,6 @@ LZCompressor::~LZCompressor()
 {
 	delete [] m_pHashTable;
 }
-
 
 //____ typeInfo() _________________________________________________________
 
@@ -95,17 +94,10 @@ int LZCompressor::maxCompressedSize( int uncompressedSize )
 	return uncompressedSize + maxExtra;
 }
 
-
 //____ compress() _____________________________________________________________
 
 int LZCompressor::compress( void * _pDest, const void * _pBegin, const void * _pEnd )
 {
-	if( m_pHashTable == nullptr )
-	{
-		GfxBase::throwError(ErrorLevel::Error, ErrorCode::IllegalCall, "Attempting to compress with a compressor in decompress only mode.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
-		return 0;
-	}
-
 	auto pDest = (uint8_t*) _pDest;
 	auto pBegin = (uint8_t*) _pBegin;
 	auto pEnd = (uint8_t*) _pEnd;
@@ -172,7 +164,6 @@ int LZCompressor::compress( void * _pDest, const void * _pBegin, const void * _p
 						break;
 				}
 			}
-
 
 
 			matchWindowOfs = pWindow[matchWindowOfs];
@@ -279,9 +270,54 @@ int LZCompressor::compress( void * _pDest, const void * _pBegin, const void * _p
 	return int(pWrite - pDest);
 }
 
+//____ _generateTable() _______________________________________________________
+
+void LZCompressor::_generateTable()
+{
+	m_pHashTable = new uint16_t[m_hashSize];
+
+	std::memset( m_pHashTable, 0, m_hashSize*sizeof(uint16_t) );
+}
+
+
+
+
+//____ create() _____________________________________________________________
+
+LZDecompressor_p LZDecompressor::create()
+{
+	return LZDecompressor_p( new LZDecompressor() );
+}
+
+//____ constructor ____________________________________________________________
+
+LZDecompressor::LZDecompressor()
+{
+}
+
+//____ destructor ____________________________________________________________
+
+LZDecompressor::~LZDecompressor()
+{
+}
+
+//____ typeInfo() _________________________________________________________
+
+const TypeInfo& LZDecompressor::typeInfo(void) const
+{
+	return TYPEINFO;
+}
+
+//____ idToken() ___________________________________________________
+
+uint32_t LZDecompressor::idToken() const
+{
+	return ID_TOKEN;
+}
+
 //____ decompress() ___________________________________________________________
 
-int LZCompressor::decompress( void * pDest, const void * pBegin, const void * pEnd )
+int LZDecompressor::decompress( void * pDest, const void * pBegin, const void * pEnd )
 {
 	uint8_t* pWrite = (uint8_t*) pDest;
 	uint8_t * pRead = (uint8_t*) pBegin;
@@ -322,15 +358,6 @@ int LZCompressor::decompress( void * pDest, const void * pBegin, const void * pE
 	return int(pWrite - (uint8_t*) pDest);
 }
 
-//____ _generateTable() _______________________________________________________
-
-void LZCompressor::_generateTable()
-{
-	m_pHashTable = new uint16_t[m_hashSize];
-
-	std::memset( m_pHashTable, 0, m_hashSize*sizeof(uint16_t) );
-}
 
 
 }
-

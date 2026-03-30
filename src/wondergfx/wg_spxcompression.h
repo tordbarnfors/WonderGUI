@@ -35,23 +35,19 @@ namespace wg
 	typedef StrongPtr<SPXCompressor>	SPXCompressor_p;
 	typedef WeakPtr<SPXCompressor>		SPXCompressor_wp;
 
+	class SPXDecompressor;
+	typedef StrongPtr<SPXDecompressor>	SPXDecompressor_p;
+	typedef WeakPtr<SPXDecompressor>	SPXDecompressor_wp;
+
+	//____ SPXCompressor _________________________________________________________
+
 	class SPXCompressor : public Compressor
 	{
 	public:
 
-		//.____ Blueprint ___________________________________________________________
-
-		struct Blueprint
-		{
-			bool			decompressOnly = false;
-			Finalizer_p		finalizer = nullptr;
-		};
-
 		//.____ Creation __________________________________________________________
 
 		static SPXCompressor_p		create();
-		static SPXCompressor_p		create( const Blueprint& blueprint );
-
 
 		//.____ Identification __________________________________________
 
@@ -67,11 +63,10 @@ namespace wg
 		int		maxCompressedSize( int uncompressedSize ) override;
 
 		int		compress( void * pDest, const void * pSrcBegin, const void * pSrcEnd ) override;
-		int		decompress( void * pDest, const void * pSrcBegin, const void * pSrcEnd ) override;
 
 
 	protected:
-		SPXCompressor();
+		SPXCompressor() {};
 		virtual ~SPXCompressor() {};
 
 		enum class Compression : uint32_t			//.autoExtras
@@ -81,17 +76,44 @@ namespace wg
 			Spx16B = 2,
 			Spx16I = 3
 		};
+	};
 
-		int		_compress( Compression type, void * pDest, const spx * pSrcBegin, const spx * pSrcEnd );
-		int		_decompress( Compression type, spx * pDest, const void * pSrcBegin, const void * pSrcEnd );
+	//____ SPXDecompressor _______________________________________________________
 
-};
+	class SPXDecompressor : public Decompressor
+	{
+	public:
 
+		//.____ Creation __________________________________________________________
 
+		static SPXDecompressor_p		create();
+
+		//.____ Identification __________________________________________
+
+		const TypeInfo& typeInfo(void) const override;
+		const static TypeInfo	TYPEINFO;
+
+		uint32_t idToken() const override;
+
+		const static uint32_t	ID_TOKEN;
+
+		//.____ Misc ____________________________________________________
+
+		int		decompress( void * pDest, const void * pSrcBegin, const void * pSrcEnd ) override;
+
+	protected:
+		SPXDecompressor() {};
+		virtual ~SPXDecompressor() {};
+
+		enum class Compression : uint32_t			//.autoExtras
+		{
+			None = 0,
+			SpxU8I = 1,
+			Spx16B = 2,
+			Spx16I = 3
+		};
+	};
 
 }
-
-
-
 
 #endif //WG_SPXCOMPRESSION_DOT_H

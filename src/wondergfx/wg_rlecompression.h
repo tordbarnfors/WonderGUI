@@ -55,6 +55,12 @@ namespace wg
 	typedef StrongPtr<RLECompressor>	RLECompressor_p;
 	typedef WeakPtr<RLECompressor>		RLECompressor_wp;
 
+	class RLEDecompressor;
+	typedef StrongPtr<RLEDecompressor>	RLEDecompressor_p;
+	typedef WeakPtr<RLEDecompressor>	RLEDecompressor_wp;
+
+	//____ RLECompressor _________________________________________________________
+
 	class RLECompressor : public Compressor
 	{
 	public:
@@ -63,8 +69,7 @@ namespace wg
 
 		struct Blueprint
 		{
-			int				primSize = 1;				// Size in byte of primitive to RLE encode. Must be 1 or a mutiple of 2, less than 256.
-			bool			decompressOnly = false;
+			int				primSize = 1;				// Size in byte of primitives to RLE encode. Must be 1 or a mutiple of 2, less than 256.
 			Finalizer_p		finalizer = nullptr;
 		};
 
@@ -87,8 +92,9 @@ namespace wg
 		int		maxCompressedSize( int uncompressedSize ) override;
 
 		int		compress( void * pDest, const void * pSrcBegin, const void * pSrcEnd ) override;
-		int		decompress( void * pDest, const void * pSrcBegin, const void * pSrcEnd ) override;
 
+		void	setPrimSize( int primSize ) { m_primSize = primSize; }
+		int		primSize() const { return m_primSize; }
 
 	protected:
 		RLECompressor();
@@ -96,7 +102,36 @@ namespace wg
 		virtual ~RLECompressor() {};
 
 		int		m_primSize = 1;
-};
+	};
+
+	//____ RLEDecompressor _________________________________________________________
+
+	class RLEDecompressor : public Decompressor
+	{
+	public:
+
+		//.____ Creation __________________________________________________________
+
+		static RLEDecompressor_p		create();
+
+		//.____ Identification __________________________________________
+
+		const TypeInfo& typeInfo(void) const override;
+		const static TypeInfo	TYPEINFO;
+
+		uint32_t idToken() const override;
+
+		const static uint32_t	ID_TOKEN;
+
+		//.____ Misc ____________________________________________________
+
+		int		decompress( void * pDest, const void * pSrcBegin, const void * pSrcEnd ) override;
+
+	protected:
+		RLEDecompressor() {};
+		virtual ~RLEDecompressor() {};
+	};
+
 
 }
 

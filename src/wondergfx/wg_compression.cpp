@@ -24,10 +24,18 @@
 namespace wg
 {
 	const TypeInfo Compressor::TYPEINFO = { "Compressor", &Object::TYPEINFO };
+	const TypeInfo Decompressor::TYPEINFO = { "Decompressor", &Object::TYPEINFO };
 
 	//____ typeInfo() _________________________________________________________
 
 	const TypeInfo& Compressor::typeInfo(void) const
+	{
+		return TYPEINFO;
+	}
+
+	//____ typeInfo() _________________________________________________________
+
+	const TypeInfo& Decompressor::typeInfo(void) const
 	{
 		return TYPEINFO;
 	}

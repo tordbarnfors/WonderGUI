@@ -27,8 +27,11 @@
 namespace wg
 {
 const TypeInfo Q565Compressor::TYPEINFO = { "Q565Compressor", &Compressor::TYPEINFO };
+const TypeInfo Q565Decompressor::TYPEINFO = { "Q565Decompressor", &Decompressor::TYPEINFO };
 
 const uint32_t Q565Compressor::ID_TOKEN = Util::makeEndianSpecificToken('Q', '5', '6', '5');
+const uint32_t Q565Decompressor::ID_TOKEN = Util::makeEndianSpecificToken('Q', '5', '6', '5');
+
 
 //____ create() _____________________________________________________________
 
@@ -37,34 +40,24 @@ Q565Compressor_p Q565Compressor::create()
 	return Q565Compressor_p( new Q565Compressor() );
 }
 
-Q565Compressor_p Q565Compressor::create( const Blueprint& blueprint )
-{
-	return Q565Compressor_p( new Q565Compressor(blueprint) );
-}
-
-
 //____ constructor ____________________________________________________________
 
 Q565Compressor::Q565Compressor()
 {
-	_generateTable();
-}
-
-Q565Compressor::Q565Compressor( const Blueprint& blueprint )
-{
-	_generateTable();						// Used also in decompress operations.
-
-	if( blueprint.finalizer )
-		setFinalizer(blueprint.finalizer);
+	for (int i = 0; i < 65536; i++)
+	{
+		int r = i & 0x001F;
+		int g = (i >> 5) & 0x003F;
+		int b = (i >> 11) & 0x001F;
+		m_pixelToIndexTable[i] = (r * 3 + g * 5 + b * 7) % 64;
+	}
 }
 
 //____ destructor _____________________________________________________________
 
 Q565Compressor::~Q565Compressor()
 {
-	delete [] m_pPixelToIndexTable;
 }
-
 
 //____ typeInfo() _________________________________________________________
 
@@ -95,12 +88,6 @@ int Q565Compressor::maxCompressedSize( int uncompressedSize )
 
 int Q565Compressor::compress( void * pDest, const void * pBegin, const void * pEnd )
 {
-	if( m_pPixelToIndexTable == nullptr )
-	{
-		GfxBase::throwError(ErrorLevel::Error, ErrorCode::IllegalCall, "Attempting to compress with a compressor in decompress only mode.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
-		return 0;
-	}
-
 	if( ((intptr_t(pBegin) | intptr_t(pEnd) ) &0x1) == 1 )
 	{
 		GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Data to compress must start/stop on WORD boundary.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
@@ -133,7 +120,7 @@ int Q565Compressor::compress( void * pDest, const void * pBegin, const void * pE
 		}
 		else
 		{
-			uint8_t index = m_pPixelToIndexTable[value];
+			uint8_t index = m_pixelToIndexTable[value];
 
 			if (palette[index] == value)
 				*pWrite++ = 0x40 | index;						// Store as index lookup
@@ -175,7 +162,7 @@ int Q565Compressor::compress( void * pDest, const void * pBegin, const void * pE
 						if (futureValue == value)
 							break;				// Next pixel is start of repetive section
 
-						uint8_t futureIndex = m_pPixelToIndexTable[futureValue];
+						uint8_t futureIndex = m_pixelToIndexTable[futureValue];
 						if (palette[futureIndex] == futureValue)
 							break;				// Next pixel can be taken from index;
 
@@ -216,9 +203,50 @@ int Q565Compressor::compress( void * pDest, const void * pBegin, const void * pE
 	return int( pWrite - (uint8_t*)pDest);
 }
 
+//____ create() _____________________________________________________________
+
+Q565Decompressor_p Q565Decompressor::create()
+{
+	return Q565Decompressor_p( new Q565Decompressor() );
+}
+
+//____ constructor ____________________________________________________________
+
+Q565Decompressor::Q565Decompressor()
+{
+	for (int i = 0; i < 65536; i++)
+	{
+		int r = i & 0x001F;
+		int g = (i >> 5) & 0x003F;
+		int b = (i >> 11) & 0x001F;
+		m_pixelToIndexTable[i] = (r * 3 + g * 5 + b * 7) % 64;
+	}
+}
+
+//____ destructor _____________________________________________________________
+
+Q565Decompressor::~Q565Decompressor()
+{
+}
+
+//____ typeInfo() _________________________________________________________
+
+const TypeInfo& Q565Decompressor::typeInfo(void) const
+{
+	return TYPEINFO;
+}
+
+//____ idToken() ___________________________________________________
+
+uint32_t Q565Decompressor::idToken() const
+{
+	return ID_TOKEN;
+}
+
+
 //____ decompress() ___________________________________________________________
 
-int Q565Compressor::decompress( void * _pDest, const void * pBegin, const void * pEnd )
+int Q565Decompressor::decompress( void * _pDest, const void * pBegin, const void * pEnd )
 {
 	uint16_t* pDest = (uint16_t*) _pDest;
 
@@ -245,7 +273,7 @@ int Q565Compressor::decompress( void * _pDest, const void * pBegin, const void *
 					lastPixel |= (*pRead++) << 8;
 					*pDest++ = lastPixel;
 
-					palette[m_pPixelToIndexTable[lastPixel]] = lastPixel;
+					palette[m_pixelToIndexTable[lastPixel]] = lastPixel;
 				}
 			}
 			else
@@ -276,7 +304,7 @@ int Q565Compressor::decompress( void * _pDest, const void * pBegin, const void *
 				lastPixel = (b << 11) | (g << 5) | r;
 				*pDest++ = lastPixel;
 
-				palette[m_pPixelToIndexTable[lastPixel]] = lastPixel;
+				palette[m_pixelToIndexTable[lastPixel]] = lastPixel;
 			}
 		}
 	}
@@ -284,22 +312,5 @@ int Q565Compressor::decompress( void * _pDest, const void * pBegin, const void *
 	return int( ((uint8_t*)pDest) - ((uint8_t*)_pDest) );
 }
 
-//____ _generateTable() _______________________________________________________
-
-void Q565Compressor::_generateTable()
-{
-	m_pPixelToIndexTable = new uint8_t[65536];
-
-	for (int i = 0; i < 65536; i++)
-	{
-		int r = i & 0x001F;
-		int g = (i >> 5) & 0x003F;
-		int b = (i >> 11) & 0x001F;
-		m_pPixelToIndexTable[i] = (r * 3 + g * 5 + b * 7) % 64;
-	}
-}
-
-
 
 }
-

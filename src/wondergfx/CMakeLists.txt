@@ -17,8 +17,6 @@ set( SOURCES
 	wg_colorbands.h
 	wg_compression.cpp
 	wg_compression.h
-	wg_dummycompression.cpp
-	wg_dummycompression.h
 	wg_dummyfont.cpp
 	wg_dummyfont.h
 	wg_edgemap.cpp
@@ -54,8 +52,6 @@ set( SOURCES
 	wg_gradyent.h
 	wg_gridwalker.cpp
 	wg_gridwalker.h
-	wg_legacycompression.cpp
-	wg_legacycompression.h
 	wg_lzcompression.cpp
 	wg_lzcompression.h
 	wg_patches.impl.h

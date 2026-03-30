@@ -28,8 +28,10 @@
 namespace wg
 {
 const TypeInfo RLECompressor::TYPEINFO = { "RLECompressor", &Compressor::TYPEINFO };
+const TypeInfo RLEDecompressor::TYPEINFO = { "RLEDecompressor", &Decompressor::TYPEINFO };
 
 const uint32_t RLECompressor::ID_TOKEN = Util::makeEndianSpecificToken('R', 'L', 'E', 'x');
+const uint32_t RLEDecompressor::ID_TOKEN = Util::makeEndianSpecificToken('R', 'L', 'E', 'x');
 
 //____ create() _____________________________________________________________
 
@@ -277,13 +279,33 @@ int RLECompressor::compress( void * pDest, const void * pBegin, const void * pEn
 		return int( ((int8_t*)pWrite) - (int8_t*)pDest);
 
 	}
+}
 
 
+//____ create() _____________________________________________________________
+
+RLEDecompressor_p RLEDecompressor::create()
+{
+	return RLEDecompressor_p( new RLEDecompressor() );
+}
+
+//____ typeInfo() _________________________________________________________
+
+const TypeInfo& RLEDecompressor::typeInfo(void) const
+{
+	return TYPEINFO;
+}
+
+//____ idToken() ___________________________________________________
+
+uint32_t RLEDecompressor::idToken() const
+{
+	return ID_TOKEN;
 }
 
 //____ decompress() ___________________________________________________________
 
-int RLECompressor::decompress( void * pDest, const void * pBegin, const void * pEnd )
+int RLEDecompressor::decompress( void * pDest, const void * pBegin, const void * pEnd )
 {
 	int primSize = * (int8_t*) pBegin;
 
@@ -365,8 +387,6 @@ int RLECompressor::decompress( void * pDest, const void * pBegin, const void * p
 
 		return int( ((int8_t*)pWrite) - ((int8_t*)pDest) );
 	}
-
-
 }
 
 

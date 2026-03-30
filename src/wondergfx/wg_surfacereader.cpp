@@ -150,9 +150,9 @@ namespace wg
 		}
 		else
 		{
-			Compressor * pCompressor = GfxBase::getDecompressor(header.pixelCompression);
+			Decompressor * pDecompressor = GfxBase::getDecompressor(header.pixelCompression);
 
-			if( !pCompressor )
+			if( !pDecompressor )
 			{
 				char msg[] = "Don't know how to decompress 'XXXX'.";
 				* (uint32_t*)&msg[30] = header.pixelCompression;
@@ -173,7 +173,7 @@ namespace wg
 
 			auto pData = GfxBase::memStackAlloc(header.pixelBytes);
 			stream.read(pData, header.pixelBytes);
-			pCompressor->decompress(pixbuf.pixels, pData, ((const uint8_t*)pData) + header.pixelBytes);
+			pDecompressor->decompress(pixbuf.pixels, pData, ((const uint8_t*)pData) + header.pixelBytes);
 			GfxBase::memStackFree(header.pixelBytes);
 
 		}
@@ -281,9 +281,9 @@ namespace wg
 			_copyUncompressedFromMemory(pixbuf.pixels, pData, lineBytes, pixbuf.pitch, pixbuf.rect.h);
 		else
 		{
-			Compressor * pCompressor = GfxBase::getDecompressor(header.pixelCompression);
+			Decompressor * pDecompressor = GfxBase::getDecompressor(header.pixelCompression);
 
-			if( !pCompressor )
+			if( !pDecompressor )
 			{
 				char msg[] = "Don't know how to decompress 'XXXX'.";
 				* (uint32_t*)&msg[30] = header.pixelCompression;
@@ -302,7 +302,7 @@ namespace wg
 				return nullptr;
 			}
 
-			pCompressor->decompress(pixbuf.pixels, pData, ((const uint8_t*)pData) + header.pixelBytes);
+			pDecompressor->decompress(pixbuf.pixels, pData, ((const uint8_t*)pData) + header.pixelBytes);
 		}
 
 		pSurface->pullPixels(pixbuf);

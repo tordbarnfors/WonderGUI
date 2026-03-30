@@ -45,22 +45,20 @@ namespace wg
 	typedef StrongPtr<Q565Compressor>	Q565Compressor_p;
 	typedef WeakPtr<Q565Compressor>		Q565Compressor_wp;
 
+	class Q565Decompressor;
+	typedef StrongPtr<Q565Decompressor>	Q565Decompressor_p;
+	typedef WeakPtr<Q565Decompressor>	Q565Decompressor_wp;
+
+
+	//____ Q565Compressor ________________________________________________________
+
 	class Q565Compressor : public Compressor
 	{
 	public:
 
-		//.____ Blueprint ___________________________________________________________
-
-		struct Blueprint
-		{
-			bool			decompressOnly = false;
-			Finalizer_p		finalizer = nullptr;
-		};
-
 		//.____ Creation __________________________________________________________
 
 		static Q565Compressor_p		create();
-		static Q565Compressor_p		create( const Blueprint& blueprint );
 
 		//.____ Identification __________________________________________
 
@@ -76,19 +74,44 @@ namespace wg
 		int		maxCompressedSize( int uncompressedSize ) override;
 
 		int		compress( void * pDest, const void * pSrcBegin, const void * pSrcEnd ) override;
-		int		decompress( void * pDest, const void * pSrcBegin, const void * pSrcEnd ) override;
-
 
 	protected:
 		Q565Compressor();
-		Q565Compressor( const Blueprint& blueprint );
 		virtual ~Q565Compressor();
 
-		void		_generateTable();
+		uint8_t 	m_pixelToIndexTable[65536];
+	};
 
 
-		uint8_t *	m_pPixelToIndexTable = nullptr;
-};
+	//____ Q565Decompressor ______________________________________________________
+
+	class Q565Decompressor : public Decompressor
+	{
+	public:
+
+		//.____ Creation __________________________________________________________
+
+		static Q565Decompressor_p		create();
+
+		//.____ Identification __________________________________________
+
+		const TypeInfo& typeInfo(void) const override;
+		const static TypeInfo	TYPEINFO;
+
+		uint32_t idToken() const override;
+
+		const static uint32_t	ID_TOKEN;
+
+		//.____ Misc ____________________________________________________
+
+		int		decompress( void * pDest, const void * pSrcBegin, const void * pSrcEnd ) override;
+
+	protected:
+		Q565Decompressor();
+		virtual ~Q565Decompressor();
+
+		uint8_t 	m_pixelToIndexTable[65536];
+	};
 
 }
 

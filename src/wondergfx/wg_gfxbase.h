@@ -100,8 +100,8 @@ namespace wg
 		static constexpr int *		curveTab() { return s_curveTab; }
 		static constexpr int		curveTabSize() { return c_nCurveTabEntries; }
 
-		static Compressor_p			getDecompressor( uint32_t idToken );
-		static void					addDecompressor( Compressor * pCompressor );
+		static Decompressor_p		getDecompressor( uint32_t idToken );
+		static void					addDecompressor( Decompressor * pDecompressor );
 
 	private:
 
@@ -114,7 +114,7 @@ namespace wg
 		const static int 			c_nCurveTabEntries = 1024;
 		static int 					s_curveTab[c_nCurveTabEntries];
 
-		static std::vector<Compressor_p>	s_decompressors;
+		static std::vector<Decompressor_p>	s_decompressors;
 	};
 
 

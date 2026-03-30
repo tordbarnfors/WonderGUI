@@ -29,29 +29,16 @@
 namespace wg
 {
 const TypeInfo SPXCompressor::TYPEINFO = { "SPXCompressor", &Compressor::TYPEINFO };
+const TypeInfo SPXDecompressor::TYPEINFO = { "SPXDecompressor", &Decompressor::TYPEINFO };
 
 const uint32_t SPXCompressor::ID_TOKEN = Util::makeEndianSpecificToken('S', 'P', 'X', '0');
+const uint32_t SPXDecompressor::ID_TOKEN = Util::makeEndianSpecificToken('S', 'P', 'X', '0');
 
 //____ create() _____________________________________________________________
 
 SPXCompressor_p SPXCompressor::create()
 {
 	return SPXCompressor_p( new SPXCompressor() );
-}
-
-SPXCompressor_p SPXCompressor::create( const Blueprint& blueprint )
-{
-	auto p = SPXCompressor_p( new SPXCompressor() );
-	if( blueprint.finalizer )
-		p->setFinalizer(blueprint.finalizer);
-	return p;
-}
-
-
-//____ constructor ____________________________________________________________
-
-SPXCompressor::SPXCompressor()
-{
 }
 
 //____ typeInfo() _________________________________________________________
@@ -108,30 +95,13 @@ int SPXCompressor::compress( void * _pDest, const void * _pBegin, const void * _
 
 	auto pDest = (Compression *) _pDest;
 	* pDest++ = type;
-	return _compress(type, pDest, pBeg, pEnd) + sizeof(Compression);
-}
 
-//____ decompress() ___________________________________________________________
-
-int SPXCompressor::decompress( void * pDest, const void * pBegin, const void * pEnd )
-{
-	Compression* pSource = (Compression*)pBegin;
-	Compression type = * pSource++;
-
-	return _decompress( type, (spx*) pDest, pSource, pEnd );
-}
-
-
-//____ _compress() _____________________________________________________________
-
-int SPXCompressor::_compress( Compression type, void * pDest, const spx * pBeg, const spx * pEnd )
-{
 	switch(type)
 	{
 		case Compression::None:
 		{
 			std::memcpy(pDest, pBeg, ((uint8_t*)pEnd) - ((uint8_t*)pBeg));
-			return int(((uint8_t*)pEnd) - (uint8_t*)pDest);
+			return int(((uint8_t*)pEnd) - (uint8_t*)pDest) + sizeof(Compression);
 		}
 
 		case Compression::SpxU8I:
@@ -141,7 +111,7 @@ int SPXCompressor::_compress( Compression type, void * pDest, const spx * pBeg, 
 			while (pBeg < pEnd)
 				*wp++ = (uint8_t)((*pBeg++) >> 6);
 
-			return int(wp - (uint8_t*)pDest);
+			return int(wp - (uint8_t*)pDest) + sizeof(Compression);
 		}
 
 		case Compression::Spx16B:
@@ -151,7 +121,7 @@ int SPXCompressor::_compress( Compression type, void * pDest, const spx * pBeg, 
 			while (pBeg < pEnd)
 				*wp++ = (int16_t)(*pBeg++);
 
-			return int(((uint8_t*)wp) - (uint8_t*)pDest);
+			return int(((uint8_t*)wp) - (uint8_t*)pDest) + sizeof(Compression);
 		}
 
 		case Compression::Spx16I:
@@ -161,19 +131,45 @@ int SPXCompressor::_compress( Compression type, void * pDest, const spx * pBeg, 
 			while (pBeg < pEnd)
 				*wp++ = (int16_t)((*pBeg++) >> 6);
 
-			return int(((uint8_t*)wp) - (uint8_t*)pDest);
+			return int(((uint8_t*)wp) - (uint8_t*)pDest) + sizeof(Compression);
 		}
 	}
 
 	return 0;
 }
 
+//____ create() _____________________________________________________________
 
-//____ _decompress() ___________________________________________________________
-
-int SPXCompressor::_decompress( Compression type, spx * pDest, const void * pBegin, const void * pEnd )
+SPXDecompressor_p SPXDecompressor::create()
 {
-	int nbBytes = int(((uint8_t*)pEnd) - ((uint8_t*)pBegin));
+	return SPXDecompressor_p( new SPXDecompressor() );
+}
+
+//____ typeInfo() _________________________________________________________
+
+const TypeInfo& SPXDecompressor::typeInfo(void) const
+{
+	return TYPEINFO;
+}
+
+//____ idToken() ___________________________________________________
+
+uint32_t SPXDecompressor::idToken() const
+{
+	return ID_TOKEN;
+}
+
+
+//____ decompress() ___________________________________________________________
+
+int SPXDecompressor::decompress( void * _pDest, const void * pBegin, const void * pEnd )
+{
+	Compression* pSource = (Compression*)pBegin;
+	Compression type = * pSource++;
+
+	spx * pDest = (spx *) _pDest;
+
+	int nbBytes = int(((uint8_t*)pEnd) - ((uint8_t*)pSource));
 
 	auto wp = pDest;
 
@@ -181,13 +177,13 @@ int SPXCompressor::_decompress( Compression type, spx * pDest, const void * pBeg
 	{
 		case Compression::None:
 		{
-			std::memcpy(pDest, pBegin, nbBytes);
+			std::memcpy(pDest, pSource, nbBytes);
 			return nbBytes;
 		}
-	
+
 		case Compression::SpxU8I:
 		{
-			auto rp = (uint8_t*)pBegin;
+			auto rp = (uint8_t*)pSource;
 			for (int i = 0; i < nbBytes; i++)
 				*wp++ = ((spx)(*rp++)) << 6;
 			return nbBytes * 4;
@@ -195,7 +191,7 @@ int SPXCompressor::_decompress( Compression type, spx * pDest, const void * pBeg
 
 		case Compression::Spx16I:
 		{
-			auto rp = (uint16_t*)pBegin;
+			auto rp = (uint16_t*)pSource;
 			for (int i = 0; i < nbBytes / 2; i++)
 				*wp++ = ((spx)(*rp++)) << 6;
 			return nbBytes * 2;
@@ -203,7 +199,7 @@ int SPXCompressor::_decompress( Compression type, spx * pDest, const void * pBeg
 
 		case Compression::Spx16B:
 		{
-			auto rp = (uint16_t*)pBegin;
+			auto rp = (uint16_t*)pSource;
 			for (int i = 0; i < nbBytes / 2; i++)
 				*wp++ = (spx)(*rp++);
 			return nbBytes * 2;
@@ -212,7 +208,6 @@ int SPXCompressor::_decompress( Compression type, spx * pDest, const void * pBeg
 
 	return 0;
 }
-
 
 
 }

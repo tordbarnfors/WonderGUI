@@ -33,6 +33,13 @@ namespace wg
 	typedef StrongPtr<Compressor>	Compressor_p;
  	typedef WeakPtr<Compressor>		Compressor_wp;
 
+	class Decompressor;
+	typedef StrongPtr<Decompressor>	Decompressor_p;
+	typedef WeakPtr<Decompressor>	Decompressor_wp;
+
+
+	//____ Compressor ____________________________________________________________
+
 	class Compressor : public Object
 	{
 	public:
@@ -47,19 +54,35 @@ namespace wg
 		//.____ Misc ____________________________________________________
 
 		virtual int		maxCompressedSize( int uncompressedSize ) = 0;
-
 		virtual int		compress( void * pDest, const void * pSrcBegin, const void * pSrcEnd ) = 0;
-		virtual int		decompress( void * pDest, const void * pSrcBegin, const void * pSrcEnd ) = 0;
-
 
 	protected:
 		Compressor() {};
 		virtual ~Compressor() {};
+	};
 
 
-};
+	//____ Decompressor __________________________________________________________
 
+	class Decompressor : public Object
+	{
+	public:
 
+		//.____ Identification __________________________________________
+
+		const TypeInfo& typeInfo(void) const override;
+		const static TypeInfo	TYPEINFO;
+
+		virtual uint32_t idToken() const = 0;
+
+		//.____ Misc ____________________________________________________
+
+		virtual int		decompress( void * pDest, const void * pSrcBegin, const void * pSrcEnd ) = 0;
+
+	protected:
+		Decompressor() {};
+		virtual ~Decompressor() {};
+	};
 
 }
 
