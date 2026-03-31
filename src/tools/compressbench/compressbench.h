@@ -52,7 +52,10 @@ private:
 	TablePanel_p	m_pResultTable;
 
 	std::vector<Compressor_p>	m_compressors;
+	std::vector<Decompressor_p>	m_decompressors;
+
 	Compressor_p	m_pCompressor;
+	Decompressor_p	m_pDecompressor;
 
 	SelectBox_p		m_pCompressorSelector;
 

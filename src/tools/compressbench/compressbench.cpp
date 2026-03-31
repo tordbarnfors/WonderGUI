@@ -33,7 +33,18 @@ bool MyApp::init(API * pAPI)
 	m_compressors.push_back( RLECompressor::create({ .primSize = 2}) );
 	m_compressors.push_back( RLECompressor::create({ .primSize = 4}) );
 
+	m_decompressors.push_back( LZDecompressor::create() );
+	m_decompressors.push_back( Q565Decompressor::create() );
+
+	auto pRLEDecompressor = RLEDecompressor::create();
+
+	m_decompressors.push_back( pRLEDecompressor );
+	m_decompressors.push_back( pRLEDecompressor );
+	m_decompressors.push_back( pRLEDecompressor );
+
+
 	m_pCompressor = m_compressors[0];
+	m_pDecompressor = m_decompressors[0];
 
 	if (!_setupGUI(pAPI))
 	{
@@ -207,7 +218,7 @@ void MyApp::onRun()
 		strcpy((char*)pDecompressArea+srcSize, "DEADBEEF");
 
 		auto beforeDecompTS = m_pAPI->time();
-		int decompressedSize = m_pCompressor->decompress(pDecompressArea, pCompressArea, pCompressArea+compressedSize);
+		int decompressedSize = m_pDecompressor->decompress(pDecompressArea, pCompressArea, pCompressArea+compressedSize);
 		auto afterDecompTS = m_pAPI->time();
 
 		// Check decompressed result.
@@ -272,6 +283,7 @@ void MyApp::onCompressorSelected()
 {
 	int idx = m_pCompressorSelector->selectedEntryId();
 	m_pCompressor = m_compressors[idx];
+	m_pDecompressor = m_decompressors[idx];
 }
 
 
@@ -338,7 +350,7 @@ void MyApp::onRunSyntheticTest()
 	}
 
 	int compressedSize = m_pCompressor->compress(compressArea, testData, testData + srcSize );
-	int decompressedSize = m_pCompressor->decompress(decompressArea, compressArea, compressArea+compressedSize);
+	int decompressedSize = m_pDecompressor->decompress(decompressArea, compressArea, compressArea+compressedSize);
 }
 
 
