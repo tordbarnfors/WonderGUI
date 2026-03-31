@@ -277,7 +277,7 @@ namespace wg
 			std::vector<RenderLayer>	layers;
 			std::vector<ClipList>		clipListStack;
 
-			std::vector<Transform>		transforms;			// Excluding the first 12 standardard ones for flip.
+			std::vector<Transform>		transforms;			// Excluding the first 15 standardard ones for flip and flood.
 
 			CanvasLayers_p				pLayerInfo;
 

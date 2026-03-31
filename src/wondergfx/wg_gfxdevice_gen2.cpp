@@ -195,6 +195,15 @@ bool GfxDeviceGen2::setClipList(int nRectangles, const RectSPX* pRectangles)
 	m_pActiveClipList->nRects = nRectangles;
 	m_pActiveClipList->pRects = pRectangles;
 	m_pActiveClipList->bounds = bounds;
+
+	// Can not add more lines to existing command if clip list changed.
+
+	for( auto& layer : m_pActiveCanvas->layers )
+	{
+		if( layer.latestCommand == Command::Line )
+			layer.latestCommand = Command::None;
+	}
+
 	return true;
 }
 
@@ -204,6 +213,14 @@ void GfxDeviceGen2::resetClipList()
 {
 	if (m_pActiveClipList)
 		* m_pActiveClipList = m_pActiveCanvas->updateRects;
+
+	// Can not add more lines to existing command if clip list changed.
+
+	for( auto& layer : m_pActiveCanvas->layers )
+	{
+		if( layer.latestCommand == Command::Line )
+			layer.latestCommand = Command::None;
+	}
 }
 
 //____ pushClipList() _____________________________________________________
@@ -238,6 +255,15 @@ bool GfxDeviceGen2::pushClipList(int nRectangles, const RectSPX* pRectangles)
 	m_pActiveCanvas->clipListStack.emplace_back( ClipList{ nRectangles, pRectangles, bounds });
 
 	m_pActiveClipList = &m_pActiveCanvas->clipListStack.back();
+
+	// Can not add more lines to existing command if clip list changed.
+
+	for( auto& layer : m_pActiveCanvas->layers )
+	{
+		if( layer.latestCommand == Command::Line )
+			layer.latestCommand = Command::None;
+	}
+
 	return true;
 }
 
@@ -263,6 +289,15 @@ bool GfxDeviceGen2::popClipList()
 
 	m_pActiveCanvas->clipListStack.pop_back();
 	m_pActiveClipList = &m_pActiveCanvas->clipListStack.back();
+
+	// Can not add more lines to existing command if clip list changed.
+
+	for( auto& layer : m_pActiveCanvas->layers )
+	{
+		if( layer.latestCommand == Command::Line )
+			layer.latestCommand = Command::None;
+	}
+
 	return true;
 }
 
