@@ -73,7 +73,7 @@ namespace wg
 		void	setColors(const HiColor* pBeg, const HiColor* pEnd) override;
 		void	setTransforms(const Transform* pBeg, const Transform* pEnd) override;
 
-		void	processCommands(const uint16_t* pBeg, const uint16_t* pEnd) override;
+		void	processCommands(const uint16_t* pBeg, const uint16_t* pEnd, int version) override;
 
 		void    autopresent( id<MTLDrawable> drawable );           // endRender() will clear this, so needs to be set for each begin/end render cycle.
 

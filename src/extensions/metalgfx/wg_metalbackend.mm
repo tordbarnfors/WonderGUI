@@ -835,7 +835,7 @@ void MetalBackend::setTransforms(const Transform* pBeg, const Transform* pEnd)
 
 //____ processCommands() _____________________________________________________
 
-void MetalBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd)
+void MetalBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, int version)
 {
 	const RectSPX* 	pRects = m_pRectsPtr;
 	const HiColor* 	pColors = m_pColorsPtr;
@@ -844,6 +844,8 @@ void MetalBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd)
 	VertexMTL *	pVertexMTL	= m_pVertexBuffer + m_nVertices;
 	ColorMTL*	pColorMTL	= m_pColorBuffer + m_nColors;
 	float*		pExtrasMTL	= m_pExtrasBuffer + m_extrasBufferSize;
+
+	int 		customTransformStart = version == 1 ? GfxFlip_size : NbStandardTransforms;
 
 
 	auto p = pBeg;
@@ -1881,7 +1883,7 @@ void MetalBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd)
 					int32_t transform = *p++;
 					p++;						// padding
 
-					auto& mtx = transform < NbStandardTransforms ? s_standardTransforms[transform] : m_pTransformsBeg[transform - NbStandardTransforms];
+					auto& mtx = transform < customTransformStart ? s_standardTransforms[transform] : m_pTransformsBeg[transform - customTransformStart];
 
 					*pExtrasMTL++ = mtx.xx;
 					*pExtrasMTL++ = mtx.xy;

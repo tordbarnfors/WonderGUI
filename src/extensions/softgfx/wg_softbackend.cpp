@@ -349,12 +349,13 @@ namespace wg
 
 	//____ processCommands() _____________________________________________
 
-	void SoftBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd)
+	void SoftBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, int version)
 	{
 		const RectSPX *	pRects = m_pRectsPtr;
 		const HiColor*	pColors = m_pColorsPtr;
 		Object* const *	pObjects = m_pObjectsPtr;
 
+		int 		customTransformStart = version == 1 ? GfxFlip_size : NbStandardTransforms;
 
 		auto p = pBeg;
 		while (p < pEnd)
@@ -1396,7 +1397,7 @@ namespace wg
 
 					RectI	patch = (*pRects++) / 64;
 
-					if (transform < NbStandardTransforms )
+					if (transform < customTransformStart )
 					{
 						const Transform& mtx = s_standardTransforms[transform];
 
@@ -1429,7 +1430,7 @@ namespace wg
 					{
 						binalInt mtx[2][2];
 
-						const Transform* pTransform = &m_pTransformsBeg[transform - NbStandardTransforms];
+						const Transform* pTransform = &m_pTransformsBeg[transform - customTransformStart];
 
 						mtx[0][0] = binalInt(pTransform->xx * BINAL_MUL);
 						mtx[0][1] = binalInt(pTransform->xy * BINAL_MUL);

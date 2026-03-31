@@ -86,7 +86,7 @@ WG_EXPORT void	wg_backendSetRects(wg_obj backend, const wg_rectSPX* pBeg, const 
 WG_EXPORT void	wg_backendSetColors(wg_obj backend, const wg_color * pBeg, const wg_color * pEnd);
 WG_EXPORT void	wg_backendSetTransforms(wg_obj backend, const wg_transform * pBeg, const wg_transform * pEnd);
 
-WG_EXPORT void	wg_backendProcessCommands(wg_obj backend, const uint16_t* pBeg, const uint16_t * pEnd);
+WG_EXPORT void	wg_backendProcessCommands(wg_obj backend, const uint16_t* pBeg, const uint16_t * pEnd, int version);
 
 
 WG_EXPORT wg_canvasInfo wg_backendCanvasInfo(wg_obj backend, wg_canvasRef ref);

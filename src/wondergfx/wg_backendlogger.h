@@ -66,7 +66,7 @@ public:
 	void	setRects(const RectSPX* pBeg, const RectSPX* pEnd) override;
 	void	setColors(const HiColor* pBeg, const HiColor* pEnd) override;
 	void	setTransforms(const Transform * pBeg, const Transform * pEnd) override;
-	void	processCommands(const uint16_t* pBeg, const uint16_t* pEnd) override;
+	void	processCommands(const uint16_t* pBeg, const uint16_t* pEnd, int version) override;
 
 	//.____ Control _____________________________________________________________
 

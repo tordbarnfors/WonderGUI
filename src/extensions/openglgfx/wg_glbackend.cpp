@@ -287,7 +287,7 @@ void GlBackend::setTransforms(const Transform* pBeg, const Transform* pEnd)
 
 //____ processCommands() _________________________________________________
 
-void GlBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd)
+void GlBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, int version)
 {
 	const RectSPX* 	pRects = m_pRectsPtr;
 	const HiColor* 	pColors = m_pColorsPtr;
@@ -298,6 +298,8 @@ void GlBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd)
 	ColorGL*	pColorGL	= m_pColorBuffer + m_nColors;
 	GLfloat*	pExtrasGL	= m_pExtrasBuffer + m_extrasBufferSize;
 	int*		pCommandGL	= m_pCommandQueue + m_commandQueueSize;
+
+	int 		customTransformStart = version == 1 ? GfxFlip_size : NbStandardTransforms;
 
 	auto p = pBeg;
 	while (p < pEnd)
@@ -1257,7 +1259,7 @@ void GlBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd)
 					*pExtrasGL++ = GLfloat(dstY >> 6) + 0.5f;
 				}
 
-				auto& mtx = transform < NbStandardTransforms ? s_standardTransforms[transform] : m_pTransformsBeg[transform - NbStandardTransforms];
+				auto& mtx = transform < customTransformStart ? s_standardTransforms[transform] : m_pTransformsBeg[transform - customTransformStart];
 
 
 				*pExtrasGL++ = mtx.xx;

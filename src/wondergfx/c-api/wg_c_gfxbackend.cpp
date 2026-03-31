@@ -79,9 +79,9 @@ void wg_backendSetTransforms(wg_obj backend, const wg_transform * pBeg, const wg
 	getPtr(backend)->setTransforms( (const Transform *) pBeg, (const Transform *) pEnd );
 }
 
-void wg_backendProcessCommands(wg_obj backend, const uint16_t* pBeg, const uint16_t * pEnd)
+void wg_backendProcessCommands(wg_obj backend, const uint16_t* pBeg, const uint16_t * pEnd, int version)
 {
-	getPtr(backend)->processCommands( pBeg, pEnd );
+	getPtr(backend)->processCommands( pBeg, pEnd, version );
 }
 
 wg_canvasInfo wg_backendCanvasInfo(wg_obj backend, wg_canvasRef ref)

@@ -186,6 +186,8 @@ namespace wg
 		char *	m_pTempBuffer = nullptr;
 		int		m_bytesLoaded;
 		int		m_bufferSize;
+		int		m_streamMajorVersion = 0;
+		int		m_streamMinorVersion = 0;
 
 		bool				m_bStoreDirtyRects = false;
 		int					m_maxDirtyRects = 64;

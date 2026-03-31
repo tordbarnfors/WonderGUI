@@ -220,7 +220,7 @@ namespace wg
 
 	//____ processCommands() _____________________________________________________
 
-	void StreamBackend::processCommands( const uint16_t* pBeg, const uint16_t * pEnd)
+	void StreamBackend::processCommands( const uint16_t* pBeg, const uint16_t * pEnd, int version)
 	{
 		_compressSplitAndEncode( m_pEncoder, GfxStream::ChunkId::Commands, 0, m_pCommandCompressor, pBeg, pEnd );
 	}

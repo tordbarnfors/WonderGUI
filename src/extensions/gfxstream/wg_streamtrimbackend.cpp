@@ -192,10 +192,10 @@ namespace wg
 
 	//____ processCommands() _______________________________________________
 
-	void StreamTrimBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd)
+	void StreamTrimBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, int version)
 	{
 		if (m_pBackend)
-			m_pBackend->processCommands(pBeg, pEnd);
+			m_pBackend->processCommands(pBeg, pEnd, version);
 	}
 
 	//____ canvasInfo() __________________________________________________

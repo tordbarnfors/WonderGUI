@@ -129,7 +129,7 @@ namespace wg
 		virtual void	setColors(const HiColor* pBeg, const HiColor* pEnd) = 0;
 		virtual void	setTransforms(const Transform * pBeg, const Transform * pEnd) = 0;
 
-		virtual void	processCommands( const uint16_t* pBeg, const uint16_t * pEnd) = 0;
+		virtual void	processCommands( const uint16_t* pBeg, const uint16_t * pEnd, int version = 2) = 0;
 
 
 		//.____ Misc _________________________________________________________

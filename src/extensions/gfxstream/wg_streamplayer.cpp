@@ -153,8 +153,8 @@ namespace wg
 			uint16_t	version;
 			decoder >> version;
 
-			//TODO: Something if version isn't supported.
-
+			m_streamMajorVersion = version/256;
+			m_streamMinorVersion = version & 0xFF;
 			break;
 		}
 
@@ -410,7 +410,11 @@ namespace wg
 			_loadIntoDataBuffer(dataInfo, m_commandsDataBuffer, header.size - dataInfo.encodedSize);
 
 			if (m_commandsDataBuffer.size > 0)
-				m_pBackend->processCommands( (uint16_t*) m_commandsDataBuffer.pBuffer, (uint16_t*) (m_commandsDataBuffer.pBuffer + m_commandsDataBuffer.size) );
+			{
+				int commandQueueVersion = m_streamMajorVersion < 3 ? 1 : 2;
+
+				m_pBackend->processCommands( (uint16_t*) m_commandsDataBuffer.pBuffer, (uint16_t*) (m_commandsDataBuffer.pBuffer + m_commandsDataBuffer.size), commandQueueVersion );
+			}
 
 			break;
 		}

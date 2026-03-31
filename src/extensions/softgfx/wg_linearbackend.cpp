@@ -185,11 +185,11 @@ namespace wg
 
 	//____ processCommands() _____________________________________________
 
-	void LinearBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd)
+	void LinearBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, int version)
 	{
 		if( m_pCanvas )
 		{
-			SoftBackend::processCommands(pBeg,pEnd);
+			SoftBackend::processCommands(pBeg,pEnd, version);
 			return;
 		}
 
@@ -200,6 +200,8 @@ namespace wg
 		Segment *	pSegBeg = m_canvasSegments.data();
 		Segment *	pSegEnd = m_canvasSegments.data() + m_canvasSegments.size();
 		Segment *	pSegment = pSegBeg;
+
+		int 		customTransformStart = version == 1 ? GfxFlip_size : NbStandardTransforms;
 
 		auto p = pBeg;
 		while (p < pEnd)
@@ -1309,7 +1311,7 @@ namespace wg
 
 					Segment& seg = *pSegment;
 
-					if (transform < NbStandardTransforms )
+					if (transform < customTransformStart )
 					{
 						const Transform& mtx = s_standardTransforms[transform];
 
@@ -1347,7 +1349,7 @@ namespace wg
 					{
 						binalInt mtx[2][2];
 
-						const Transform* pTransform = &m_pTransformsBeg[transform - NbStandardTransforms];
+						const Transform* pTransform = &m_pTransformsBeg[transform - customTransformStart];
 
 						mtx[0][0] = binalInt(pTransform->xx * BINAL_MUL);
 						mtx[0][1] = binalInt(pTransform->xy * BINAL_MUL);

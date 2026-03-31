@@ -77,7 +77,7 @@ namespace wg
 		void	setCanvas( CanvasRef ref ) override;
 
 
-		void	processCommands( const uint16_t* pBeg, const uint16_t * pEnd) override;
+		void	processCommands( const uint16_t* pBeg, const uint16_t * pEnd, int version) override;
 
 
 	protected:
