@@ -670,8 +670,8 @@ namespace wg
 
 	Widget* RootPanel::_focusedChild() const
 	{
-		if (!m_pFocusedChild)
-			return slot._widget();
+//		if (!m_pFocusedChild)
+//			return slot._widget();
 
 		return m_pFocusedChild;
 	}
@@ -811,7 +811,15 @@ namespace wg
 		if (pWidget != m_pFocusedChild.rawPtr())
 			return true;					// Didn't have focus, although widget seems to believe it.
 
-		Widget* pNewFocus = slot._widget();	// We revert keyboard focus to our base widget.
+		// This is an incomplete solution.
+		// In some cases we want to keep focus within window when child releases focus,
+		// in others we want to yield focus to another window. What to do?
+
+		// For the moment we yield focus to another window, since that is the behavior
+		// mostly wanted by Softube plugins.
+
+		Widget* pNewFocus = nullptr;
+//		Widget* pNewFocus = slot._widget();	// We revert keyboard focus to our base widget.
 
 		if (Base::hostBridge() && Base::hostBridge()->yieldFocus(m_windowRef)) // Let OS know that we don't need focus anymore.
 			Base::inputHandler()->setFocusedWindow(nullptr);

@@ -946,9 +946,9 @@ namespace wg
 		// Save old keyboard focus, which we assume belonged to previous menu in hierarchy.
 
 		if( popupSlots.size() < 2 )
-			m_pKeyFocus = Base::inputHandler()->focusedWidget().rawPtr();
+			m_pKeyFocus = _root()->_focusedChild();
 		else
-			popupSlots[1].m_pKeyFocus = Base::inputHandler()->focusedWidget().rawPtr();
+			popupSlots[1].m_pKeyFocus = _root()->_focusedChild();
 
 		// Steal keyboard focus to top menu
 
@@ -969,7 +969,12 @@ namespace wg
 		//
 
 		if( popupSlots.isEmpty() )
-			_holder()->_childRequestFocus( _slot(), m_pKeyFocus.rawPtr() );
+		{
+			if( m_pKeyFocus )
+				_holder()->_childRequestFocus( _slot(), m_pKeyFocus.rawPtr() );
+			else if( _root()->_focusedChild() )
+				_holder()->_childReleaseFocus( _slot(), _root()->_focusedChild() );
+		}
 		else
 			_holder()->_childRequestFocus( _slot(),  popupSlots._first()->m_pKeyFocus.rawPtr() );
 	}
