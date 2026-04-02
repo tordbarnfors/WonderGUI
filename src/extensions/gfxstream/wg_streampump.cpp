@@ -550,9 +550,15 @@ namespace wg
 						m_credits--;
 						m_fenceValueSent++;
 
-						uint8_t 	fenceChunk[8];
-						GfxStream::createChunk( fenceChunk, GfxStream::ChunkId::Fence, 4, &m_fenceValueSent );
-						m_pOutput->processChunks( fenceChunk, fenceChunk+8 );
+						uint16_t	data[3];
+						uint8_t 	fenceChunk[10];
+
+						data[0] = m_fenceId;
+						data[1]	= (uint16_t) m_fenceValueSent;
+						data[2] = (uint16_t) (m_fenceValueSent >> 16);
+
+						GfxStream::createChunk( fenceChunk, GfxStream::ChunkId::Fence, 6, data );
+						m_pOutput->processChunks( fenceChunk, fenceChunk+10 );
 
 						m_bytesUntilFence = m_bytesPerCredit;
 					}
