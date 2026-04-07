@@ -478,11 +478,12 @@ namespace wg
 
 	const TypeInfo PointerChangeMsg::TYPEINFO = { "PointerChangeMsg", &Msg::TYPEINFO };
 
-	PointerChangeMsg::PointerChangeMsg( char inputId, PointerStyle style )
+	PointerChangeMsg::PointerChangeMsg( char inputId, PointerStyle style, Object * pSource )
 	{
 		m_type = MsgType::PointerChange;
 		m_style = style;
 		m_inputId = inputId;
+		m_pSource = pSource;
 	}
 
 	PointerStyle PointerChangeMsg::style() const

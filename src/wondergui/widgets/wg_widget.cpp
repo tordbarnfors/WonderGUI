@@ -69,6 +69,21 @@ namespace wg
 		return false;
 	}
 
+	//____ root() ________________________________________________________________
+	/**
+	* @brief Returns the root of the widget.
+	*
+	*
+	* Returns the root of the widget.
+	*
+	* @return Root of the widget or null if widget has no root.
+	*/
+
+	Root_p Widget::root() const
+	{
+	return _root();
+	}
+
 	//____ parent() _______________________________________________________________
 	/**
 	 * @brief Returns the parent of the widget.

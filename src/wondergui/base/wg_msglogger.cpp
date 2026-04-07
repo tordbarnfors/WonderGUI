@@ -57,6 +57,14 @@ namespace wg
 		return TYPEINFO;
 	}
 
+	//____ setFilter() ___________________________________________________________
+
+	void MsgLogger::setFilter(std::function<bool(const Msg * pMsg)> func)
+	{
+		m_filterFunc = func;
+	}
+
+
 	//____ LogMsg _______________________________________________________________
 
 	void MsgLogger::logMsg( MsgType type, bool bLog )
@@ -127,8 +135,16 @@ namespace wg
 
 	void MsgLogger::receive( Msg * _pMsg )
 	{
+		if( m_filterFunc )
+		{
+			if( !m_filterFunc(_pMsg) )
+				return;
+		}
+
 		if( m_msgFilter[(int)_pMsg->type()] == false )
 			return;
+
+
 
 		string	source;
 		string	copyTo;

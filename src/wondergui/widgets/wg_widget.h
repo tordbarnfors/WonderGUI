@@ -52,6 +52,10 @@ namespace wg
 	typedef	StrongPtr<Container>	Container_p;
 	typedef	WeakPtr<Container>	Container_wp;
 
+	class Root;
+	typedef	StrongPtr<Root>	Root_p;
+	typedef	WeakPtr<Root>	Root_wp;
+
 	class Msg;
 	typedef	StrongPtr<Msg>			Msg_p;
 	typedef	WeakPtr<Msg>			Msg_wp;
@@ -137,6 +141,7 @@ namespace wg
 		inline Widget_p		nextSibling() const;
 		inline Widget_p		prevSibling() const;
 		Container_p			parent() const;
+		Root_p				root() const;
 
 		void				releaseFromParent();
 
@@ -224,6 +229,7 @@ namespace wg
 
 		//.____ Internal ______________________________________________________
 
+		inline Root* _root() const { return m_pHolder ? m_pHolder->_root() : nullptr; }
 		inline Container* _parent() const { return m_pHolder ? m_pHolder->_container() : nullptr; }
 		inline Widget* _nextSibling() const { return m_pHolder ? m_pHolder->_nextChild(m_pSlot) : nullptr; }
 		inline Widget* _prevSibling() const { return m_pHolder ? m_pHolder->_prevChild(m_pSlot) : nullptr; }

@@ -25,6 +25,7 @@
 #include <wg_togglebutton.h>
 #include <wg_button.h>
 #include <wg_filler.h>
+#include <wg_root.h>
 
 #include <wg_boxskin.h>
 #include <wg_colorskin.h>
@@ -33,6 +34,7 @@
 #include <wg_msgrouter.h>
 #include <wg_msg.h>
 #include <wg_msglogger.h>
+
 
 namespace wg
 {
@@ -183,6 +185,17 @@ namespace wg
 				m_pLogList->slots.erase(0, m_pLogList->slots.size() - 200);
 		});
 
+		m_pLogger->setFilter([this](const Msg * pMsg){
+
+			auto pSource = pMsg->sourceRawPtr();
+
+			auto pWidget = dynamic_cast<Widget*>(pSource);
+
+			if( pWidget && pWidget->root() == this->root() )
+				return false;											// Skip any messages originating from DebugFrontend.
+
+			return true;
+		});
 
 		slot = m_pMainPanel;
 

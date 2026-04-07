@@ -678,7 +678,7 @@ namespace wg
 		inline char		inputId() const { return m_inputId; }
 
 	protected:
-		PointerChangeMsg( char inputId, PointerStyle style );
+		PointerChangeMsg( char inputId, PointerStyle style, Object * pSource );
 
 		char			m_inputId;
 		PointerStyle	m_style;

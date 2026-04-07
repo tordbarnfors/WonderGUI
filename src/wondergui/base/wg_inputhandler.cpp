@@ -371,7 +371,7 @@ namespace wg
 		if( newStyle != m_pointerStyle )
 		{
 			Base::hostBridge()->setPointerStyle(newStyle);
-			Base::msgRouter()->post( new PointerChangeMsg( m_inputId, newStyle ) );
+			Base::msgRouter()->post( new PointerChangeMsg( m_inputId, newStyle, pNowMarked ) );
 			m_pointerStyle = newStyle;
 		}
 	}

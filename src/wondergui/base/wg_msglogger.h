@@ -64,6 +64,9 @@ namespace wg
 
 		void logAllMsgs(bool bLog);
 
+		void setFilter(std::function<bool(const Msg * pMsg)> func);
+
+
 		//.____ Misc _______________________________________________________
 
 		void receive(Msg * _pMsg) override;
@@ -87,7 +90,8 @@ namespace wg
 		std::string _formatMouseButton( MouseButton button ) const;
 		std::string _formatEditCommand( EditCmd command ) const;
 
-		bool			m_msgFilter[MsgType_size];
+		bool								m_msgFilter[MsgType_size];
+		std::function<bool(const Msg * pMsg)>		m_filterFunc;
 
 		std::ostream *						m_pStream = nullptr;
 		std::function<void(const char*)>	m_func;
