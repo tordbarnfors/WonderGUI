@@ -297,7 +297,7 @@ namespace wg
 			((uint8_t*)pDest)[1] = 0;
 			((uint16_t*)pDest)[1] = dataSize;
 
-			uint16_t * pWrite = &((uint16_t*)pData)[2];
+			uint16_t * pWrite = &((uint16_t*)pDest)[2];
 
 			if( dataSize <= 16 )
 			{
