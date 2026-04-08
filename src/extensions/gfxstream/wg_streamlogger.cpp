@@ -260,43 +260,43 @@ namespace wg
 
 			case GfxStream::ChunkId::Objects:
 			{
-				int payloadSize = _readPrintDataInfo(header.size);
-				decoder.skip(payloadSize);
+				int toSkip = _readPrintDataInfo(header.size);
+				decoder.skip(toSkip);
 				break;
 			}
 
 			case GfxStream::ChunkId::Rects:
 			{
-				int payloadSize = _readPrintDataInfo(header.size);
-				decoder.skip(payloadSize);
+				int toSkip = _readPrintDataInfo(header.size);
+				decoder.skip(toSkip);
 				break;
 			}
 
 			case GfxStream::ChunkId::Colors:
 			{
-				int payloadSize = _readPrintDataInfo(header.size);
-				decoder.skip(payloadSize);
+				int toSkip = _readPrintDataInfo(header.size);
+				decoder.skip(toSkip);
 				break;
 			}
 
 			case GfxStream::ChunkId::Transforms:
 			{
-				int payloadSize = _readPrintDataInfo(header.size);
-				decoder.skip(payloadSize);
+				int toSkip = _readPrintDataInfo(header.size);
+				decoder.skip(toSkip);
 				break;
 			}
 
 			case GfxStream::ChunkId::Commands:
 			{
-				int payloadSize = _readPrintDataInfo(header.size);
-				decoder.skip(payloadSize);
+				int toSkip = _readPrintDataInfo(header.size);
+				decoder.skip(toSkip);
 				break;
 			}
 
 			case GfxStream::ChunkId::UpdateRects:
 			{
-				int payloadSize = _readPrintDataInfo(header.size);
-				decoder.skip(payloadSize);
+				int toSkip = _readPrintDataInfo(header.size);
+				decoder.skip(toSkip);
 				break;
 			}
 
@@ -372,8 +372,8 @@ namespace wg
 
 			case GfxStream::ChunkId::SurfacePixels:
 			{
-				int payloadSize = _readPrintDataInfo(header.size);
-				decoder.skip(payloadSize);
+				int toSkip = _readPrintDataInfo(header.size);
+				decoder.skip(toSkip);
 				break;
 			}
 
@@ -510,8 +510,8 @@ namespace wg
 
 			case GfxStream::ChunkId::EdgemapSamples:
 			{
-				int payloadSize = _readPrintDataInfo(header.size);
-				decoder.skip(payloadSize);
+				int toSkip = _readPrintDataInfo(header.size);
+				decoder.skip(toSkip);
 				break;
 			}
 
@@ -586,7 +586,7 @@ namespace wg
 		m_charStream << "    chunkOffset = " << dataInfo.chunkOffset << std::endl;
 		m_charStream << "    compression = " << compStr << ", bFirstChunk = " << dataInfo.bFirstChunk << ", bLastChunk = " << dataInfo.bLastChunk << ", bPadded = " << dataInfo.bPadded << std::endl;
 
-		return payloadSize;
+		return payloadSize + int(dataInfo.bPadded);
 	}
 
 

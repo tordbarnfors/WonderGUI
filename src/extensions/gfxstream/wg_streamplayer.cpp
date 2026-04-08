@@ -824,7 +824,7 @@ namespace wg
 
 		buffer.size = GfxStream::loadDecompressData(dataInfo, buffer.pBuffer, decoder.readPtr(), dataSize);
 
-		decoder.skip(dataSize);
+		decoder.skip(dataSize + int(dataInfo.bPadded));
 		return true;
 	}
 
