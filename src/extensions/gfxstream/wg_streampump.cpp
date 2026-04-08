@@ -503,26 +503,27 @@ namespace wg
 				auto pBegin = pSegments[i].pBegin;
 				auto pEnd = pSegments[i].pEnd;
 
-				if( pEnd - pBegin <= m_bytesUntilFence )
+				while (pBegin != pEnd)
 				{
-					m_pOutput->processChunks(pBegin, pEnd);
-					bytesProcessed += pEnd - pBegin;
-					m_bytesUntilFence -= pEnd - pBegin;
-				}
-				else
-				{
-					// We need to insert a fence
-
-					auto pChunk = (GfxStream::Chunk *) pBegin;
-
-					while( (uint8_t*) pChunk != pEnd )
+					if (pEnd - pBegin <= m_bytesUntilFence)
 					{
-						int maxBytes = std::min( m_bytesUntilFence, int(pEnd - (uint8_t*)pChunk) );
+						m_pOutput->processChunks(pBegin, pEnd);
+						bytesProcessed += pEnd - pBegin;
+						m_bytesUntilFence -= pEnd - pBegin;
+						break;
+					}
+					else
+					{
+						// We need to insert a fence
+
+						auto pChunk = (GfxStream::Chunk*)pBegin;
+
+						int maxBytes = std::min(m_bytesUntilFence, int(pEnd - pBegin));
 						int bytes = 0;
 
 						// Find where we need to put our fence
 
-						while( pChunk->chunkSize() + bytes <= maxBytes )
+						while (pChunk->chunkSize() + bytes <= maxBytes)
 						{
 							bytes += pChunk->chunkSize();
 							pChunk = pChunk->next();
@@ -530,15 +531,16 @@ namespace wg
 
 						// Process chunks until position for fence
 
-						if( bytes > 0 )
+						if (bytes > 0)
 						{
 							m_pOutput->processChunks(pBegin, pChunk);
 							bytesProcessed += bytes;
+							pBegin = (uint8_t*)pChunk;
 						}
 
 						// Stop if we are out of credits
 
-						if( m_credits == 0 )
+						if (m_credits == 0)
 						{
 							m_bytesUntilFence -= bytes;
 							m_pInput->discardChunks(bytesProcessed);
@@ -554,19 +556,19 @@ namespace wg
 						uint8_t 	fenceChunk[10];
 
 						data[0] = m_fenceId;
-						data[1]	= (uint16_t) m_fenceValueSent;
-						data[2] = (uint16_t) (m_fenceValueSent >> 16);
+						data[1] = (uint16_t)m_fenceValueSent;
+						data[2] = (uint16_t)(m_fenceValueSent >> 16);
 
-						GfxStream::createChunk( fenceChunk, GfxStream::ChunkId::Fence, 6, data );
-						m_pOutput->processChunks( fenceChunk, fenceChunk+10 );
+						GfxStream::createChunk(fenceChunk, GfxStream::ChunkId::Fence, 6, data);
+						m_pOutput->processChunks(fenceChunk, fenceChunk + 10);
 
 						m_bytesUntilFence = m_bytesPerCredit;
 					}
+
 				}
 			}
 
 			m_pInput->discardChunks(bytesProcessed);
-
 			m_pInput->fetchChunks();
 		}
 

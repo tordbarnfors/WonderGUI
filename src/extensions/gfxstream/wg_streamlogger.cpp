@@ -580,7 +580,7 @@ namespace wg
 		* (uint32_t *) compStr = dataInfo.compression;
 		compStr[4] = 0;
 
-		m_charStream << "    objectId = " << dataInfo.objectId << " bytes" << std::endl;
+		m_charStream << "    objectId = " << dataInfo.objectId << std::endl;
 		m_charStream << "    payload size = " << payloadSize << " bytes" << std::endl;
 		m_charStream << "    bufferSize = " << dataInfo.bufferSize << " bytes" << std::endl;
 		m_charStream << "    chunkOffset = " << dataInfo.chunkOffset << std::endl;
