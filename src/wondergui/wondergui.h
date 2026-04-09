@@ -106,6 +106,7 @@
 #include <wg_root.h>
 #include <wg_rootpanel.h>
 #include <wg_scrollbar.h>
+#include <wg_scrollcapsule.h>
 #include <wg_scroller.h>
 #include <wg_scrollpanel.h>
 #include <wg_selectcapsule.h>

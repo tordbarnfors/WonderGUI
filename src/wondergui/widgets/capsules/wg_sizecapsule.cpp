@@ -126,8 +126,8 @@ namespace wg
 	   // Special handling of m_maxSize to allow -1 to equal MAX.
 	  
 	   SizeSPX maxSize;
-	   maxSize.w = m_maxSize.w < 0 ? 0x3FFFFFC0 : align(ptsToSpx(m_maxSize.w, scale));
-	   maxSize.h = m_maxSize.h < 0 ? 0x3FFFFFC0 : align(ptsToSpx(m_maxSize.h, scale));
+	   maxSize.w = m_maxSize.w < 0 ? MAX_WIDGET_SIZE_SPX : align(ptsToSpx(m_maxSize.w, scale));
+	   maxSize.h = m_maxSize.h < 0 ? MAX_WIDGET_SIZE_SPX : align(ptsToSpx(m_maxSize.h, scale));
 
 	   //
 	   
@@ -272,8 +272,8 @@ namespace wg
    SizeSPX SizeCapsule::_maxSize(int scale) const
    {
 	   SizeSPX size;
-	   size.w = m_maxSize.w < 0 ? 0x3FFFFFC0 : align(ptsToSpx(m_maxSize.w, scale));
-	   size.h = m_maxSize.h < 0 ? 0x3FFFFFC0 : align(ptsToSpx(m_maxSize.h, scale));
+	   size.w = m_maxSize.w < 0 ? MAX_WIDGET_SIZE_SPX : align(ptsToSpx(m_maxSize.w, scale));
+	   size.h = m_maxSize.h < 0 ? MAX_WIDGET_SIZE_SPX : align(ptsToSpx(m_maxSize.h, scale));
 
 	   if( slot._widget() )
 		   size = SizeSPX::min(size,slot._widget()->_maxSize(scale));
@@ -304,7 +304,7 @@ namespace wg
 	   }
 	   else if (slot._widget())
 	   {
-		   spx max = m_maxSize.h < 0 ? 0x3FFFFFC0 : align(ptsToSpx(m_maxSize.h, scale));
+		   spx max = m_maxSize.h < 0 ? MAX_WIDGET_SIZE_SPX : align(ptsToSpx(m_maxSize.h, scale));
 
 		   spx h = slot._widget()->_matchingHeight(width, scale);
 		   limit(h, ptsToSpx(m_minSize.h,scale), max);
@@ -339,7 +339,7 @@ namespace wg
 	   }
 	   else if( slot._widget() )
 	   {
-		   spx max = m_maxSize.w < 0 ? 0x3FFFFFC0 : align(ptsToSpx(m_maxSize.w, scale));
+		   spx max = m_maxSize.w < 0 ? MAX_WIDGET_SIZE_SPX : align(ptsToSpx(m_maxSize.w, scale));
 
 		   spx w = slot._widget()->_matchingWidth(height,scale);
 		   limit( w, ptsToSpx(m_minSize.w,scale), max );

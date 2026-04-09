@@ -378,6 +378,8 @@ namespace wg
 
 //		GUIContext *	m_pContextAtConstruction = nullptr;
 
+		const static int MAX_WIDGET_SIZE_SPX = 0x3FFFFFC0;
+
 		Object_p		m_pBaggage;
 
 		SkinSlot		m_skin;

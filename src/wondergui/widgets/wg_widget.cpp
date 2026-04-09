@@ -641,7 +641,7 @@ namespace wg
 
 	SizeSPX Widget::_maxSize(int scale) const
 	{
-		return SizeSPX(0x3FFFFFC0, 0x3FFFFFC0);
+		return SizeSPX(MAX_WIDGET_SIZE_SPX, MAX_WIDGET_SIZE_SPX);
 	}
 
 	//____ receive() _______________________________________________________________
