@@ -232,6 +232,8 @@ set( SOURCES
 	widgets/capsules/wg_reordercapsule.h
 	widgets/capsules/wg_scalecapsule.cpp
 	widgets/capsules/wg_scalecapsule.h
+	widgets/capsules/wg_scrollcapsule.cpp
+	widgets/capsules/wg_scrollcapsule.h
 	widgets/capsules/wg_selectcapsule.cpp
 	widgets/capsules/wg_selectcapsule.h
 	widgets/capsules/wg_sizecapsule.cpp

@@ -57,6 +57,355 @@ namespace wg
 	{
 	}
 
+	//____ _receive() ____________________________________________________________
+
+	void ScrollCapsule::_receive(Msg * pMsg)
+	{
+		bool bX = false, bY = false;
+
+		// Give our scrollbars the opportunity to process
+
+//		if (!(m_bStealWheelFromScrollbars && pMsg->type() == MsgType::WheelRoll))
+		{
+			if (scrollbarX.isDisplayable())
+				bX = scrollbarX._receive(pMsg);
+
+			if (scrollbarY.isDisplayable())
+				bY = scrollbarY._receive(pMsg);
+		}
+
+		// Leave if processed by our scrollbars.
+
+		if (bX || bY)
+			return;
+	}
+
+	//____ _maskPatches() ________________________________________________________
+
+	void ScrollCapsule::_maskPatches(PatchesSPX& patches, const RectSPX& geo, const RectSPX& clip)
+	{
+		//TODO: Implement!!!
+	}
+
+	//____ _findWidget() _________________________________________________________
+
+	Widget * ScrollCapsule::_findWidget(const CoordSPX& pos, SearchMode mode)
+	{
+		Widget* pFound = nullptr;
+
+		if (!slot.isEmpty() && m_viewRegion.contains(pos))
+		{
+			auto pChild = slot._widget();
+			if (pChild->isContainer())
+				pFound = static_cast<Container*>(pChild)->_findWidget(pos - m_childCanvas.pos(), mode);
+			else if (mode == SearchMode::Geometry || pChild->_markTest(pos - m_childCanvas.pos()))
+				pFound = pChild;
+		}
+
+		if (!pFound)
+		{
+			// Test against ourself
+
+			if (mode == SearchMode::Geometry || _alphaTest(pos) )
+				pFound = this;
+		}
+
+		return pFound;
+	}
+
+	//____ _firstSlotWithGeo() ___________________________________________________
+
+	void ScrollCapsule::_firstSlotWithGeo(SlotWithGeo& package) const
+	{
+		package.pSlot = &slot;
+		package.geo = m_childCanvas;
+	}
+
+	//____ _slotGeo() ____________________________________________________________
+
+	RectSPX ScrollCapsule::_slotGeo(const StaticSlot * pSlot) const
+	{
+		return m_viewRegion;
+	}
+
+	//____ _childOverflowChanged() _______________________________________________
+
+	void ScrollCapsule::_childOverflowChanged( StaticSlot * pSlot, const BorderSPX& oldOverflow, const BorderSPX& newOverflow )
+	{
+		// We can ignore this since we always clip our only child.
+	}
+
+	//____ _childWindowSection() _________________________________________________
+
+	RectSPX ScrollCapsule::_childWindowSection(const StaticSlot * pSlot) const
+	{
+		return m_viewRegion - m_childCanvas.pos();
+
+	}
+
+	//____ _childLocalToGlobal() _________________________________________________
+
+	RectSPX ScrollCapsule::_childLocalToGlobal(const StaticSlot* pSlot, const RectSPX& rect) const
+	{
+		return _toGlobal(rect + m_childCanvas.pos());
+	}
+
+	//____ _globalToChildLocal() _________________________________________________
+
+	RectSPX ScrollCapsule::_globalToChildLocal(const StaticSlot* pSlot, const RectSPX& rect) const
+	{
+		return _toLocal(rect) - m_childCanvas.pos();
+	}
+
+	//____ _globalPtsToChildLocalSpx() ___________________________________________
+
+	RectSPX ScrollCapsule::_globalPtsToChildLocalSpx(const StaticSlot* pSlot, const Rect& rect) const
+	{
+		RectSPX rectSPX = m_pHolder ? m_pHolder->_globalPtsToChildLocalSpx(m_pSlot, rect) : Util::align(Util::ptsToSpx(rect, m_scale));
+
+		return rectSPX - m_childCanvas.pos();
+	}
+
+	//____ _childLocalSpxToGlobalPts() ___________________________________________
+
+	Rect ScrollCapsule::_childLocalSpxToGlobalPts(const StaticSlot* pSlot, const RectSPX& _rect) const
+	{
+		RectSPX rect = _rect + m_childCanvas.pos();
+
+		if( m_pHolder )
+			return m_pHolder->_childLocalSpxToGlobalPts( m_pSlot, rect );
+		else
+			return Util::spxToPts(rect, m_scale);
+	}
+
+	//____ _childRequestRender() _________________________________________________
+
+	void ScrollCapsule::_childRequestRender(StaticSlot * pSlot, const RectSPX& rect)
+	{
+		RectSPX visible = RectSPX::overlap(rect + m_childCanvas.pos(), m_viewRegion);
+		if (!visible.isEmpty())
+			_requestRender(visible);
+	}
+
+	//____ _childRequestResize() _________________________________________________
+
+	void ScrollCapsule::_childRequestResize(StaticSlot * pSlot)
+	{
+		_requestResize();
+
+		auto oldCanvas = m_childCanvas;
+		auto oldView = m_viewRegion;
+
+		_updateRegions();
+		_childCanvasCorrection();
+
+		if( m_childCanvas != oldCanvas || m_viewRegion != oldView )
+		{
+			_updateScrollbars(oldCanvas, oldView);
+			_requestRender();
+		}
+	}
+
+	//____ _childRequestInView() _________________________________________________
+
+	void ScrollCapsule::_childRequestInView(StaticSlot * pSlot)
+	{
+		// Our only child is always in view as much as possible, so just pass it on like any
+		// normal container.
+
+		_requestInView( m_viewRegion, m_viewRegion);
+	}
+
+	void ScrollCapsule::_childRequestInView(StaticSlot * pSlot, const RectSPX& mustHaveArea, const RectSPX& niceToHaveArea)
+	{
+		if (!m_viewRegion.contains(niceToHaveArea + m_childCanvas.pos()))
+		{
+			RectSPX window = m_viewRegion - m_childCanvas.pos();
+			CoordSPX	startPos = window.pos();
+
+			for (int i = 0; i < 2; i++)
+			{
+				RectSPX inside = i == 0 ? niceToHaveArea : mustHaveArea;
+
+				int diffLeft = inside.x - window.x;
+				int diffRight = inside.right() - window.right();
+				int diffTop = inside.y - window.y;
+				int diffBottom = inside.bottom() - window.bottom();
+
+				if (diffLeft > 0 && diffRight > 0)
+					window.x += std::min(diffLeft, diffRight);
+				else if (diffLeft < 0 && diffRight < 0)
+					window.x += std::max(diffLeft, diffRight);
+
+				if (diffTop > 0 && diffBottom > 0)
+					window.y += std::min(diffTop, diffBottom);
+				else if (diffTop < 0 && diffBottom < 0)
+					window.y += std::max(diffTop, diffBottom);
+			}
+
+			if (window.pos() != startPos)
+			{
+//				if( m_pDefaultTransition )
+//					_setViewTransition(window.pos(), nullptr);
+//				else
+					_setViewOffset(window.pos());
+			}
+
+			// Forward to any outer ScrollPanel
+
+			RectSPX newMustHaveArea = RectSPX::overlap(mustHaveArea + m_childCanvas.pos(), m_viewRegion);
+			RectSPX newNiceToHaveArea = RectSPX::overlap(niceToHaveArea + m_childCanvas.pos(), m_viewRegion);
+
+			_requestInView(newMustHaveArea, newNiceToHaveArea);
+
+		}
+	}
+
+	//____ _releaseChild() _______________________________________________________
+
+	void ScrollCapsule::_releaseChild(StaticSlot * pSlot)
+	{
+		Capsule::_releaseChild(pSlot);
+		_updateRegions();
+	}
+
+	//____ _replaceChild() _______________________________________________________
+
+	void ScrollCapsule::_replaceChild(StaticSlot * pSlot, Widget * pWidget)
+	{
+		Capsule::_replaceChild(pSlot, pWidget);
+		_updateRegions();
+		_setViewOffset({0,0});
+	}
+
+	//____ _componentPos() ____________________________________________________
+
+	CoordSPX ScrollCapsule::_componentPos(const Component* pComponent) const
+	{
+		if (pComponent == &scrollbarX)
+			return m_scrollbarXRegion.pos();
+		else
+			return m_scrollbarYRegion.pos();
+	}
+
+	//____ _componentSize() ___________________________________________________
+
+	SizeSPX ScrollCapsule::_componentSize(const Component* pComponent) const
+	{
+		if (pComponent == &scrollbarX)
+			return m_scrollbarXRegion.size();
+		else
+			return m_scrollbarYRegion.size();
+
+	}
+
+	//____ _componentGeo() ____________________________________________________
+
+	RectSPX ScrollCapsule::_componentGeo(const Component* pComponent) const
+	{
+		if (pComponent == &scrollbarX)
+			return m_scrollbarXRegion;
+		else
+			return m_scrollbarYRegion;
+	}
+
+	//____ _setViewOffset() _______________________________________________________
+
+	bool ScrollCapsule::_setViewOffset( CoordSPX _offset )
+	{
+		CoordSPX offset = Util::align(_offset);
+
+		auto oldChildCanvas = m_childCanvas;
+		auto wantedChildCanvasPos = -offset;
+
+		m_childCanvas.setPos(wantedChildCanvasPos);
+
+		_childCanvasCorrection();
+
+		if( oldChildCanvas.pos() != m_childCanvas.pos() )
+		{
+			_updateScrollbars(oldChildCanvas, m_viewRegion);
+			_requestRender();
+		}
+
+		return ( m_childCanvas.pos() == wantedChildCanvasPos);
+	}
+
+	//____ _render() _____________________________________________________________
+
+	void ScrollCapsule::_render(GfxDevice* pDevice, const RectSPX& canvas, const RectSPX& window)
+	{
+		m_skin.render(pDevice, canvas, m_scale, m_state);
+
+		if (!slot.isEmpty())
+		{
+			auto clipPop = Util::limitClipList(pDevice, m_viewRegion + canvas.pos() );
+			slot._widget()->_render(pDevice, m_childCanvas + canvas.pos(), m_viewRegion + canvas.pos());
+			Util::popClipList(pDevice, clipPop);
+		}
+
+		if (!m_scrollbarXRegion.isEmpty())
+			scrollbarX._render(pDevice, m_scrollbarXRegion + canvas.pos(), m_scale);
+
+		if (!m_scrollbarYRegion.isEmpty())
+			scrollbarY._render(pDevice, m_scrollbarYRegion + canvas.pos(), m_scale);
+
+		if (!m_cornerSkin.isEmpty() && !m_scrollbarXRegion.isEmpty() && !m_scrollbarYRegion.isEmpty() && !m_bOverlayScrollbars)
+		{
+			RectSPX cornerRect = {
+				m_scrollbarYRegion.x,
+				m_scrollbarXRegion.y,
+				m_scrollbarYRegion.w,
+				m_scrollbarXRegion.h
+			};
+
+			m_cornerSkin.render(pDevice, cornerRect + canvas.pos(), m_scale, m_state);
+		}
+	}
+
+	//____ _alphaTest() __________________________________________________________
+
+	bool ScrollCapsule::_alphaTest(const CoordSPX& ofs)
+	{
+		return true;	//TODO: Implement!!!
+	}
+
+	//____ _resize() _____________________________________________________________
+
+	void ScrollCapsule::_resize(const SizeSPX& size, int scale)
+	{
+		auto oldScale = m_scale;
+		auto oldCanvas = m_childCanvas;
+		auto oldView = m_viewRegion;
+
+		m_size = size;
+		m_scale = scale;
+
+		_updateRegions();
+		_updateScrollbars( oldCanvas, oldView );
+		_childCanvasCorrection();
+
+		if( !slot.isEmpty() && (oldCanvas.size() != m_childCanvas.size() || scale != oldScale) )
+		   slot._widget()->_resize(m_childCanvas.size(), scale);
+	}
+
+	//____ _setState() ___________________________________________________________
+
+	void ScrollCapsule::_setState(State state)
+	{
+		//TODO: Implement!!!
+	}
+
+	//____ _calcOverflow() _______________________________________________________
+
+	BorderSPX ScrollCapsule::_calcOverflow()
+	{
+		//TODO: Implement!!!
+
+		return BorderSPX();
+	}
+
+
 
 	//____ _matchingHeight() _________________________________________________________
 
@@ -258,14 +607,9 @@ namespace wg
 
 		Widget* pChild = slot._widget();
 
-		bool bScrollX = m_bScrollX && scrollbarX.isDisplayable();
-		bool bScrollY = m_bScrollY && scrollbarY.isDisplayable();
-
-
-
 		// If we don't have a child or don't scroll, the whole area is view region and there are no scrollbars.
 
-		if (!pChild || !(bScrollX || bScrollY) )
+		if (!pChild || !(m_bScrollX || m_bScrollY) )
 		{
 			m_scrollbarXRegion = { window.x, window.y + window.h, window.w, 0 };
 			m_scrollbarYRegion = { window.x + window.w, window.y, 0, window.h };
@@ -276,25 +620,50 @@ namespace wg
 
 		// If we scroll in both directions
 
-		if (bScrollX && bScrollY)
+		if (m_bScrollX && m_bScrollY)
 		{
-/*
 			SizeSPX canvasSize = pChild->_defaultSize(m_scale);
 
-			bool bScrollbarX = (canvasSize.w > window.w || !m_bAutoHideScrollbars);
-			bool bScrollbarY = (canvasSize.w > window.w || !m_bAutoHideScrollbars);
+			spx scrollbarYWidth = scrollbarY._defaultSize(m_scale).w;
+			spx scrollbarXHeight = scrollbarX._defaultSize(m_scale).h;
 
-
-
-
-			if (canvasSize.w < window.w && canvasSize.h < window.h)
+			if( m_bOverlayScrollbars )
 			{
 				m_viewRegion = window;
-				m_childCanvas = window;
+
+				if (m_childCanvas.w > window.w || !m_bAutoHideScrollbars)
+					m_scrollbarXRegion = { window.x, window.y + window.h - scrollbarXHeight, window.w, scrollbarXHeight };
+				else
+					m_scrollbarXRegion = { window.x, window.y + window.h, window.w, 0 };
+
+				if (m_childCanvas.h > window.h || !m_bAutoHideScrollbars)
+					m_scrollbarYRegion = { window.x + window.w - scrollbarYWidth, window.y, scrollbarYWidth, window.h };
+				else
+					m_scrollbarYRegion = { window.x + window.w, window.y, 0, window.h };
 			}
+			else
+			{
+				spx spaceForScrollbarX, spaceForScrollbarY;
 
-*/
+				if( m_bAutoHideScrollbars )
+				{
+					spaceForScrollbarY = (canvasSize.h > window.h) ? scrollbarYWidth : 0;
+					spaceForScrollbarX = (canvasSize.w > window.w - spaceForScrollbarY) ? scrollbarXHeight : 0;
+					spaceForScrollbarY = (canvasSize.h > window.h - spaceForScrollbarX) ? scrollbarYWidth : 0;
+				}
+				else
+				{
+					spaceForScrollbarY = scrollbarYWidth;
+					spaceForScrollbarX = scrollbarXHeight;
+				}
 
+				m_viewRegion = { window.x, window.y, window.w - spaceForScrollbarY, window.h - spaceForScrollbarX };
+				m_scrollbarXRegion = { window.x, window.y + window.h - spaceForScrollbarX, window.w - spaceForScrollbarY, spaceForScrollbarX };
+				m_scrollbarYRegion = { window.x + window.w - spaceForScrollbarY, window.y, spaceForScrollbarY, window.h - spaceForScrollbarX };
+
+				m_childCanvas.w = std::max( canvasSize.w, window.w );
+				m_childCanvas.h = std::max( canvasSize.h, window.h );
+			}
 
 		}
 		else if (m_bScrollY)
@@ -404,30 +773,116 @@ namespace wg
 
 	}
 
+	//____ _childCanvasCorrection() ______________________________________________
 
+	void ScrollCapsule::_childCanvasCorrection()
+	{
+		if( !m_childCanvas.contains(m_viewRegion) )
+		{
+			if( m_childCanvas.x > m_viewRegion.x )
+				m_childCanvas.x = m_viewRegion.x;
 
+			if( m_childCanvas.x + m_childCanvas.w < m_viewRegion.x + m_viewRegion.w )
+				m_childCanvas.x = m_viewRegion.x + m_viewRegion.w - m_childCanvas.w;
+
+			if( m_childCanvas.y > m_viewRegion.y )
+				m_childCanvas.y = m_viewRegion.y;
+
+			if( m_childCanvas.y + m_childCanvas.h < m_viewRegion.y + m_viewRegion.h )
+				m_childCanvas.y = m_viewRegion.y + m_viewRegion.h - m_childCanvas.h;
+		}
+	}
+
+	//____ _updateScrollbars() ___________________________________________________
+
+	void ScrollCapsule::_updateScrollbars( const RectSPX& oldCanvas, const RectSPX& oldView )
+	{
+		if (scrollbarX.isDisplayable() )
+		{
+			spx newViewOfs = m_viewRegion.x - m_childCanvas.x;
+			spx newViewLen = m_viewRegion.w;
+			spx newContentLen = m_childCanvas.w;
+
+			spx oldViewOfs = oldView.x - oldCanvas.x;
+			spx oldViewLen = oldView.w;
+			spx oldContentLen = oldCanvas.w;
+
+			if( newViewOfs != oldViewOfs || newViewLen != oldViewLen || newContentLen != oldContentLen )
+				scrollbarX._update(newViewOfs, oldViewOfs, newViewLen, oldViewLen, newContentLen, oldContentLen);
+
+			if (newViewLen == newContentLen && oldViewLen != oldContentLen)
+				scrollbarX._setState(State::Disabled);
+			else if (newViewLen != newContentLen && oldViewLen == oldContentLen)
+				scrollbarX._setState(State::Default);
+		}
+
+		if (scrollbarY.isDisplayable() )
+		{
+			spx newViewOfs = m_viewRegion.y - m_childCanvas.y;
+			spx newViewLen = m_viewRegion.h;
+			spx newContentLen = m_childCanvas.h;
+
+			spx oldViewOfs = oldView.y - oldCanvas.y;
+			spx oldViewLen = oldView.h;
+			spx oldContentLen = oldCanvas.h;
+
+			if( newViewOfs != oldViewOfs || newViewLen != oldViewLen || newContentLen != oldContentLen )
+				scrollbarY._update(newViewOfs, oldViewOfs, newViewLen, oldViewLen, newContentLen, oldContentLen);
+
+			if (newViewLen == newContentLen && oldViewLen != oldContentLen)
+				scrollbarY._setState(State::Disabled);
+			else if (newViewLen != newContentLen && oldViewLen == oldContentLen)
+				scrollbarY._setState(State::Default);
+		}
+	}
 
 	void ScrollCapsule::_scrollbarStep(const Scroller* pComponent, int dir)
 	{
+		//TODO: Implement!!!
 	}
 
 	void ScrollCapsule::_scrollbarPage(const Scroller* pComponent, int dir)
 	{ 
+		//TODO: Implement!!!
 	}
 
 	void ScrollCapsule::_scrollbarWheel(const Scroller* pComponent, int dir)
 	{
-
+		//TODO: Implement!!!
 	}
-		
+
+	//____ _scrollbarMove() ______________________________________________________
+
 	spx ScrollCapsule::_scrollbarMove(const Scroller* pComponent, spx pos)
 	{
-		return 0;
+		pos = Util::align(pos);
+
+		auto oldChildCanvas = m_childCanvas;
+
+		if (pComponent == &scrollbarX)
+		{
+			m_childCanvas.x = m_viewRegion.x - pos;
+		}
+		else
+		{
+			m_childCanvas.y = m_viewRegion.y - pos;
+		}
+
+		_childCanvasCorrection();
+		_updateScrollbars(oldChildCanvas, m_viewRegion);
+		_requestRender();
+
+		return pos;
 	}
+
+	//____ _scrollbarOfsLenContent() _____________________________________________
 
 	std::tuple<spx, spx, spx> ScrollCapsule::_scrollbarOfsLenContent(const Scroller* pComponent)
 	{
-		return std::make_tuple(0, 0, 0);
+		if (pComponent == &scrollbarX)
+			return std::make_tuple(m_viewRegion.x - m_childCanvas.x,m_viewRegion.w, m_childCanvas.w);
+		else
+			return std::make_tuple(m_viewRegion.y - m_childCanvas.y,m_viewRegion.h, m_childCanvas.h);
 	}
 
 

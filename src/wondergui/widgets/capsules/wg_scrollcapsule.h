@@ -114,11 +114,21 @@ namespace wg
 			m_bScrollX = bp.scrollX;
 			m_bScrollY = bp.scrollY;
 
+			m_cornerSkin.set( bp.cornerSkin );
+
 			if (bp.child)
 				slot.setWidget(bp.child);
 		}
 
 		virtual ~ScrollCapsule();
+
+		void		_receive(Msg * pMsg) override;
+		void		_maskPatches(PatchesSPX& patches, const RectSPX& geo, const RectSPX& clip) override;
+
+		void		_render(GfxDevice* pDevice, const RectSPX& _canvas, const RectSPX& _window) override;
+		bool		_alphaTest(const CoordSPX& ofs) override;
+		void		_resize(const SizeSPX& size, int scale) override;
+		void		_setState(State state) override;
 
 
 		spx			_matchingHeight(spx width, int scale) const override;
@@ -128,7 +138,44 @@ namespace wg
 		SizeSPX		_minSize(int scale) const override;
 		SizeSPX		_maxSize(int scale) const override;
 
+		BorderSPX	_calcOverflow() override;
+
 		void		_updateRegions();
+		bool		_setViewOffset( CoordSPX offset );
+		void		_childCanvasCorrection();
+		void		_updateScrollbars( const RectSPX& oldCanvas, const RectSPX& oldView );
+
+		// Overloaded from Container
+
+		Widget *	_findWidget(const CoordSPX& pos, SearchMode mode) override;
+
+		void		_firstSlotWithGeo(SlotWithGeo& package) const override;
+
+		RectSPX		_slotGeo(const StaticSlot * pSlot) const override;
+		void		_childOverflowChanged( StaticSlot * pSlot, const BorderSPX& oldOverflow, const BorderSPX& newOverflow ) override;
+
+		RectSPX		_childWindowSection(const StaticSlot * pSlot) const override;
+
+		RectSPX		_childLocalToGlobal(const StaticSlot* pSlot, const RectSPX& rect) const override;
+		RectSPX		_globalToChildLocal(const StaticSlot* pSlot, const RectSPX& rect) const override;
+		RectSPX		_globalPtsToChildLocalSpx(const StaticSlot* pSlot, const Rect& rect) const override;
+		Rect		_childLocalSpxToGlobalPts(const StaticSlot* pSlot, const RectSPX& rect) const override;
+
+		void		_childRequestRender(StaticSlot * pSlot, const RectSPX& rect) override;
+		void		_childRequestResize(StaticSlot * pSlot) override;
+
+		void		_childRequestInView(StaticSlot * pSlot) override;
+		void		_childRequestInView(StaticSlot * pSlot, const RectSPX& mustHaveArea, const RectSPX& niceToHaveArea) override;
+
+		void		_releaseChild(StaticSlot * pSlot) override;
+		void		_replaceChild(StaticSlot * pSlot, Widget * pWidget) override;
+
+
+		//
+
+		CoordSPX		_componentPos(const Component* pComponent) const override;
+		SizeSPX			_componentSize(const Component* pComponent) const override;
+		RectSPX			_componentGeo(const Component* pComponent) const override;
 
 
 		// Needed for Scroller

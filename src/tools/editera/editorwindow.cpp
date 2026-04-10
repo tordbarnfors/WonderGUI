@@ -72,21 +72,30 @@ bool EditorWindow::_setupGUI()
 
 	// Create and setup a scrollpanel to wrap the text editor.
 
-	auto pScrollPanel = ScrollPanel::create(pTheme->scrollPanelXY());
+	ScrollCapsule::Blueprint bp;
+	bp.scrollbarX.back = BoxSkin::create( {.color = Color::AntiqueWhite, .outlineColor = Color::Black, .outlineThickness = 1 } );
+	bp.scrollbarX.bar = BoxSkin::create( {.color = Color::LightGrey, .outlineColor = Color::Black, .outlineThickness = 1, .padding = 8 } );
+
+	bp.scrollbarY.back = BoxSkin::create( {.color = Color::AntiqueWhite, .outlineColor = Color::Black, .outlineThickness = 1 } );
+	bp.scrollbarY.bar = BoxSkin::create( {.color = Color::LightGrey, .outlineColor = Color::Black, .outlineThickness = 1, .padding = 8 } );
+
+	bp.cornerSkin = ColorSkin::create( {.color = Color::DarkGrey } );
+
+	auto pScrollCapsule = ScrollCapsule::create(bp);
 
 	//	pScrollPanel->setAutohideScrollbars(true, true);
 	//	pScrollPanel->setSizeConstraints(SizeConstraint::GreaterOrEqual, SizeConstraint::GreaterOrEqual);
 
-	pScrollPanel->setTransition(CoordTransition::create(300000));
+//	pScrollPanel->setTransition(CoordTransition::create(300000));
 
 
-	pScrollPanel->slot = m_pTextBuffer->editor();
+	pScrollCapsule->slot = m_pTextBuffer->editor();
 
 
 	// 
 
 	pMainContainer->slots << pTopBar;
-	pMainContainer->slots << pScrollPanel;
+	pMainContainer->slots << pScrollCapsule;
 	pMainContainer->setSlotWeight(0, 2, { 0.f, 1.f });
 
 
