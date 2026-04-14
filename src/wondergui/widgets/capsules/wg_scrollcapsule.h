@@ -43,6 +43,7 @@ namespace wg
 		struct Blueprint
 		{
 			bool				autoHideScrollbars = true;
+			Axis				autoScrollAxis = Axis::Undefined;
 			Object_p			baggage;
 			Widget_p			child;
 			Skin_p				cornerSkin;
@@ -52,6 +53,8 @@ namespace wg
 			int					id = 0;
 			MarkPolicy			markPolicy = MarkPolicy::AlphaTest;
 			bool				overlayScrollbars = false;
+			pts					pageOverlapX = 8;
+			pts					pageOverlapY = 8;
 			bool				pickable = false;
 			uint8_t				pickCategory = 0;
 			bool				pickHandle = false;
@@ -62,11 +65,23 @@ namespace wg
 			bool				scrollY = true;
 			bool				selectable = false;
 			Skin_p				skin;
+			pts					stepSizeX = 8;
+			pts					stepSizeY = 8;	
 			bool				stickyFocus = false;
 			bool				tabLock = false;
 			bool				takesFocusFromChild = true;
 			String				tooltip;
 			bool				usePickHandles = false;
+
+			Axis				wheelAxis = Axis::Y;						// Scroll direction of primary mouse wheel. Secondary mouse wheel is the oposite.
+			ModKeys				wheelAxisModifier = ModKeys::Shift;		// Flips the scroll direction of primary mouse wheel.
+			ModKeys				wheelAccelerator = ModKeys::Alt;
+			int					wheelAccelFactor = 5;
+
+			bool				wheelFollowsScrollbar = true;
+
+			pts					wheelStepSizeX = 16;
+			pts					wheelStepSizeY = 16;
 		};
 
 /*
@@ -109,10 +124,23 @@ namespace wg
 			scrollbarX._initFromBlueprint(bp.scrollbarX);
 			scrollbarY._initFromBlueprint(bp.scrollbarY);
 
-			m_bAutoHideScrollbars = bp.autoHideScrollbars;
-			m_bOverlayScrollbars = bp.overlayScrollbars;
-			m_bScrollX = bp.scrollX;
-			m_bScrollY = bp.scrollY;
+			m_bAutoHideScrollbars	= bp.autoHideScrollbars;
+			m_bOverlayScrollbars	= bp.overlayScrollbars;
+			m_bScrollX				= bp.scrollX;
+			m_bScrollY				= bp.scrollY;
+			m_autoScrollAxis		= bp.autoScrollAxis;
+			m_stepSizeX				= bp.stepSizeX;
+			m_stepSizeY				= bp.stepSizeY;
+			m_pageOverlapX			= bp.pageOverlapX;
+			m_pageOverlapY			= bp.pageOverlapY;
+
+			m_wheelStepSizeX		= bp.wheelStepSizeX;
+			m_wheelStepSizeY		= bp.wheelStepSizeY;
+			m_wheelAxis				= bp.wheelAxis;
+			m_wheelAxisModifier		= bp.wheelAxisModifier;
+			m_wheelAccelerator		= bp.wheelAccelerator;
+			m_wheelAccelFactor		= bp.wheelAccelFactor;
+			m_bWheelFollowsScrollbar = bp.wheelFollowsScrollbar;
 
 			m_cornerSkin.set( bp.cornerSkin );
 
@@ -173,33 +201,50 @@ namespace wg
 
 		//
 
-		CoordSPX		_componentPos(const Component* pComponent) const override;
-		SizeSPX			_componentSize(const Component* pComponent) const override;
-		RectSPX			_componentGeo(const Component* pComponent) const override;
+		CoordSPX	_componentPos(const Component* pComponent) const override;
+		SizeSPX		_componentSize(const Component* pComponent) const override;
+		RectSPX		_componentGeo(const Component* pComponent) const override;
 
 
 		// Needed for Scroller
 
-		void	_scrollbarStep(const Scroller* pComponent, int dir) override;
-		void	_scrollbarPage(const Scroller* pComponent, int dir) override;
-		void	_scrollbarWheel(const Scroller* pComponent, int dir) override;
-		spx		_scrollbarMove(const Scroller* pComponent, spx pos) override;
+		void		_scrollbarStep(const Scroller* pComponent, int dir) override;
+		void		_scrollbarPage(const Scroller* pComponent, int dir) override;
+		void		_scrollbarWheel(const Scroller* pComponent, int dir) override;
+		spx			_scrollbarMove(const Scroller* pComponent, spx pos) override;
 		std::tuple<spx, spx, spx> _scrollbarOfsLenContent(const Scroller* pComponent) override;
 
 
 
-		bool		m_bScrollX = true;
-		bool		m_bScrollY = true;
-		bool		m_bOverlayScrollbars = false;
-		bool		m_bAutoHideScrollbars = true;
+		bool		m_bScrollX = true;							// Set if view should be able to scroll horizontally.
+		bool		m_bScrollY = true;							// Set if view should be able to scroll vertically.
+		bool		m_bOverlayScrollbars = false;				// Set if scrollbars should be rendered on top of the content instead of next to it. Overlay scrollbars will not take part in layout and will not affect the size of the child canvas.
+		bool		m_bAutoHideScrollbars = true;				// Set if scrollbars should automatically hide when view equals size of child canvas.
+																// If overlay scrollbars are used, auto hide when view not scrolling and mouse not over scroll region. 
+		Axis		m_autoScrollAxis = Axis::Undefined;
 
-		SkinSlot		m_cornerSkin;
+		pts			m_stepSizeX = 16;
+		pts			m_stepSizeY = 16;
+		pts			m_pageOverlapX = 16;
+		pts			m_pageOverlapY = 16;
 
-		RectSPX			m_viewRegion;
-		RectSPX			m_scrollbarXRegion;
-		RectSPX			m_scrollbarYRegion;
+		pts			m_wheelStepSizeX = 16;
+		pts			m_wheelStepSizeY = 16;
 
-		RectSPX			m_childCanvas;								// Child canvas in our coordinate system
+		Axis		m_wheelAxis = Axis::Y;						// Scroll direction of primary mouse wheel. Secondary mouse wheel is the oposite.
+		ModKeys		m_wheelAxisModifier = ModKeys::Shift;		// Flips the scroll direction of primary mouse wheel.
+		ModKeys		m_wheelAccelerator = ModKeys::Alt;
+		int			m_wheelAccelFactor = 5;
+
+		bool		m_bWheelFollowsScrollbar = true;
+
+		SkinSlot	m_cornerSkin;
+
+		RectSPX		m_viewRegion;
+		RectSPX		m_scrollbarXRegion;							// Region for horizontal scrollbar
+		RectSPX		m_scrollbarYRegion;							// Region for vertical scrollbar
+
+		RectSPX		m_childCanvas;								// Child canvas in our coordinate system
 
 
 	};

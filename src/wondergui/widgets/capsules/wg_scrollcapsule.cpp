@@ -21,9 +21,13 @@
 =========================================================================*/
 
 #include <wg_scrollcapsule.h>
+#include <wg_base.h>
+#include <wg_inputhandler.h>
 
 namespace wg
 {
+	using namespace Util;
+
 	const TypeInfo	ScrollCapsule::TYPEINFO = { "ScrollCapsule", &Capsule::TYPEINFO };
 
 	//____ create() ___________________________________________________________
@@ -65,7 +69,7 @@ namespace wg
 
 		// Give our scrollbars the opportunity to process
 
-//		if (!(m_bStealWheelFromScrollbars && pMsg->type() == MsgType::WheelRoll))
+		if (pMsg->type() != MsgType::WheelRoll || m_bWheelFollowsScrollbar)
 		{
 			if (scrollbarX.isDisplayable())
 				bX = scrollbarX._receive(pMsg);
@@ -78,6 +82,50 @@ namespace wg
 
 		if (bX || bY)
 			return;
+
+		switch (pMsg->type())
+		{
+		case MsgType::WheelRoll:
+		{
+			auto p = static_cast<WheelRollMsg*>(pMsg);
+
+			if( m_wheelAxis == Axis::Undefined || p->wheel() < 1 || p->wheel() > 2 )
+				break;		// No scroll axis defined, ignore.
+
+
+			Axis direction = m_wheelAxis;
+			if (p->wheel() == 2 || p->modKeys() & m_wheelAxisModifier )
+				direction = m_wheelAxis == Axis::X ? Axis::Y : Axis::X;
+
+			int factor = p->distance();
+
+			if( p->invertScroll() )
+				factor = -factor;
+
+			if (p->modKeys() & m_wheelAccelerator)
+				factor *= m_wheelAccelFactor;
+
+			if (direction == Axis::X)
+			{
+				spx movement = factor * ptsToSpx(m_wheelStepSizeX, m_scale);
+				_setViewOffset({ (m_viewRegion.x - m_childCanvas.x) - movement, (m_viewRegion.y - m_childCanvas.y) });
+			}
+			else if (direction == Axis::Y)
+			{
+				spx movement = factor * ptsToSpx(m_wheelStepSizeY, m_scale);
+				_setViewOffset({ (m_viewRegion.x - m_childCanvas.x), (m_viewRegion.y - m_childCanvas.y) - movement });
+			}
+
+			p->swallow();
+			break;
+		}
+
+		default:
+			break;
+		}
+
+
+
 	}
 
 	//____ _maskPatches() ________________________________________________________
@@ -161,7 +209,7 @@ namespace wg
 
 	RectSPX ScrollCapsule::_globalPtsToChildLocalSpx(const StaticSlot* pSlot, const Rect& rect) const
 	{
-		RectSPX rectSPX = m_pHolder ? m_pHolder->_globalPtsToChildLocalSpx(m_pSlot, rect) : Util::align(Util::ptsToSpx(rect, m_scale));
+		RectSPX rectSPX = m_pHolder ? m_pHolder->_globalPtsToChildLocalSpx(m_pSlot, rect) : align(ptsToSpx(rect, m_scale));
 
 		return rectSPX - m_childCanvas.pos();
 	}
@@ -175,7 +223,7 @@ namespace wg
 		if( m_pHolder )
 			return m_pHolder->_childLocalSpxToGlobalPts( m_pSlot, rect );
 		else
-			return Util::spxToPts(rect, m_scale);
+			return spxToPts(rect, m_scale);
 	}
 
 	//____ _childRequestRender() _________________________________________________
@@ -192,18 +240,6 @@ namespace wg
 	void ScrollCapsule::_childRequestResize(StaticSlot * pSlot)
 	{
 		_requestResize();
-
-		auto oldCanvas = m_childCanvas;
-		auto oldView = m_viewRegion;
-
-		_updateRegions();
-		_childCanvasCorrection();
-
-		if( m_childCanvas != oldCanvas || m_viewRegion != oldView )
-		{
-			_updateScrollbars(oldCanvas, oldView);
-			_requestRender();
-		}
 	}
 
 	//____ _childRequestInView() _________________________________________________
@@ -313,7 +349,7 @@ namespace wg
 
 	bool ScrollCapsule::_setViewOffset( CoordSPX _offset )
 	{
-		CoordSPX offset = Util::align(_offset);
+		CoordSPX offset = align(_offset);
 
 		auto oldChildCanvas = m_childCanvas;
 		auto wantedChildCanvasPos = -offset;
@@ -339,9 +375,9 @@ namespace wg
 
 		if (!slot.isEmpty())
 		{
-			auto clipPop = Util::limitClipList(pDevice, m_viewRegion + canvas.pos() );
+			auto clipPop = limitClipList(pDevice, m_viewRegion + canvas.pos() );
 			slot._widget()->_render(pDevice, m_childCanvas + canvas.pos(), m_viewRegion + canvas.pos());
-			Util::popClipList(pDevice, clipPop);
+			popClipList(pDevice, clipPop);
 		}
 
 		if (!m_scrollbarXRegion.isEmpty())
@@ -382,8 +418,20 @@ namespace wg
 		m_scale = scale;
 
 		_updateRegions();
-		_updateScrollbars( oldCanvas, oldView );
 		_childCanvasCorrection();
+
+		if (m_autoScrollAxis == Axis::X)
+		{
+			if (oldView.x + oldView.w == oldCanvas.x + oldCanvas.w)
+				m_viewRegion.x = m_childCanvas.x + m_childCanvas.w - m_viewRegion.w;
+		}
+		else if (m_autoScrollAxis == Axis::Y)
+		{
+			if (oldView.y + oldView.h == oldCanvas.y + oldCanvas.h)
+				m_viewRegion.y = m_childCanvas.y + m_childCanvas.h - m_viewRegion.h;
+		}
+
+		_updateScrollbars( oldCanvas, oldView );
 
 		if( !slot.isEmpty() && (oldCanvas.size() != m_childCanvas.size() || scale != oldScale) )
 		   slot._widget()->_resize(m_childCanvas.size(), scale);
@@ -661,8 +709,8 @@ namespace wg
 				m_scrollbarXRegion = { window.x, window.y + window.h - spaceForScrollbarX, window.w - spaceForScrollbarY, spaceForScrollbarX };
 				m_scrollbarYRegion = { window.x + window.w - spaceForScrollbarY, window.y, spaceForScrollbarY, window.h - spaceForScrollbarX };
 
-				m_childCanvas.w = std::max( canvasSize.w, window.w );
-				m_childCanvas.h = std::max( canvasSize.h, window.h );
+				m_childCanvas.w = std::max( canvasSize.w, window.w - spaceForScrollbarY );
+				m_childCanvas.h = std::max( canvasSize.h, window.h - spaceForScrollbarX );
 			}
 
 		}
@@ -712,7 +760,7 @@ namespace wg
 				{
 					m_viewRegion = window;
 					m_childCanvas.w = m_viewRegion.w;
-					m_childCanvas.h = canvasHeight;
+					m_childCanvas.h = m_viewRegion.h;
 					m_scrollbarYRegion = { window.x + window.w, window.y, 0, window.h };
 				}
 				m_scrollbarXRegion = { window.x, window.y + window.h, window.w, 0 };
@@ -763,7 +811,7 @@ namespace wg
 				else
 				{
 					m_viewRegion = window;
-					m_childCanvas.w = canvasWidth;
+					m_childCanvas.w = m_viewRegion.w;
 					m_childCanvas.h = m_viewRegion.h;
 					m_scrollbarXRegion = { window.x, window.y + window.h, window.x, 0 };
 				}
@@ -836,43 +884,53 @@ namespace wg
 		}
 	}
 
+	//____ _scrollbarStep() ______________________________________________________
+
 	void ScrollCapsule::_scrollbarStep(const Scroller* pComponent, int dir)
 	{
-		//TODO: Implement!!!
+		if (pComponent == &scrollbarX)
+			_setViewOffset({ m_viewRegion.x + dir * ptsToSpx(m_stepSizeX,m_scale), (m_viewRegion.y - m_childCanvas.y) });
+		else
+			_setViewOffset({ (m_viewRegion.x - m_childCanvas.x), m_viewRegion.y + dir * ptsToSpx(m_stepSizeY,m_scale) });
 	}
+
+	//____ _scrollbarPage() ______________________________________________________
 
 	void ScrollCapsule::_scrollbarPage(const Scroller* pComponent, int dir)
 	{ 
-		//TODO: Implement!!!
+		if( pComponent == &scrollbarX )
+			_setViewOffset({ (m_viewRegion.x - m_childCanvas.x) + dir * (m_viewRegion.w - ptsToSpx(m_pageOverlapX,m_scale)), (m_viewRegion.y - m_childCanvas.y) });
+		else
+			_setViewOffset({ (m_viewRegion.x - m_childCanvas.x), (m_viewRegion.y - m_childCanvas.y) + dir * (m_viewRegion.h - ptsToSpx(m_pageOverlapY,m_scale)) });
 	}
+
+	//____ _scrollbarWheel() ______________________________________________________
 
 	void ScrollCapsule::_scrollbarWheel(const Scroller* pComponent, int dir)
 	{
-		//TODO: Implement!!!
+		if (Base::inputHandler()->modifierKeys() & m_wheelAccelerator)
+			dir *= m_wheelAccelFactor;
+
+		if (pComponent == &scrollbarX)
+			_setViewOffset({ (m_viewRegion.x - m_childCanvas.x) - dir * ptsToSpx(m_wheelStepSizeX,m_scale), (m_viewRegion.y - m_childCanvas.y) });
+		else
+			_setViewOffset({ (m_viewRegion.x - m_childCanvas.x), (m_viewRegion.y - m_childCanvas.y) - dir * ptsToSpx(m_wheelStepSizeY,m_scale) });
 	}
 
 	//____ _scrollbarMove() ______________________________________________________
 
 	spx ScrollCapsule::_scrollbarMove(const Scroller* pComponent, spx pos)
 	{
-		pos = Util::align(pos);
-
-		auto oldChildCanvas = m_childCanvas;
-
 		if (pComponent == &scrollbarX)
 		{
-			m_childCanvas.x = m_viewRegion.x - pos;
+			_setViewOffset({ pos - m_viewRegion.x, (m_viewRegion.y - m_childCanvas.y) });
+			return m_viewRegion.x - m_childCanvas.x;
 		}
 		else
 		{
-			m_childCanvas.y = m_viewRegion.y - pos;
+			_setViewOffset({ (m_viewRegion.x - m_childCanvas.x), pos - m_viewRegion.y });
+			return m_viewRegion.y - m_childCanvas.y;
 		}
-
-		_childCanvasCorrection();
-		_updateScrollbars(oldChildCanvas, m_viewRegion);
-		_requestRender();
-
-		return pos;
 	}
 
 	//____ _scrollbarOfsLenContent() _____________________________________________
