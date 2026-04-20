@@ -408,7 +408,7 @@ namespace wg
 
 	uint32_t Util::alignUp8(uint32_t value)
 	{
-		return (value + 7) & 0xFFFFFFFF;
+		return (value + 7) & 0xFFFFFFF8;
 	}
 
 } // namespace wg
