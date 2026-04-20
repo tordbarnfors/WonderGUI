@@ -7,6 +7,7 @@
 #include <string>
 #include <fstream>
 
+#include <themes/wg_oldskool.h>
 
 using namespace wg;
 using namespace wapp;
@@ -115,15 +116,15 @@ bool EditorWindow::_setupGUI()
 
 Widget_p EditorWindow::_createTopBar()
 {
-	auto pTheme = m_pApp->m_pTheme;
+	auto pBar = WGCREATE( PackPanel, _.axis = Axis::X, _.layout = m_pApp->m_pLayout, _.skin = Oldskool::Skins::Plate );
 
-	auto pBar = WGCREATE( PackPanel, _.axis = Axis::X, _.layout = m_pApp->m_pLayout, _.skin = pTheme->plateSkin() );
 
-	auto pClearButton 	= WGCREATE( Button, _= pTheme->pushButton(), _.label.text = "Clear");
-	auto pNewButton 	= WGCREATE( Button, _= pTheme->pushButton(), _.label.text = "New");
-	auto pLoadButton 	= WGCREATE( Button, _= pTheme->pushButton(), _.label.text = "Load");
-	auto pSaveButton 	= WGCREATE( Button, _= pTheme->pushButton(), _.label.text = "Save");
-	auto pSaveAsButton 	= WGCREATE( Button, _= pTheme->pushButton(), _.label.text = "Save as...");
+	auto pClearButton = WGCREATE( Oldskool::Button, _.label.text = "Clear" );
+	auto pNewButton = WGCREATE( Oldskool::Button, _.label.text = "New");
+	auto pLoadButton = WGCREATE( Oldskool::Button, _.label.text = "Load");
+	auto pSaveButton = WGCREATE( Oldskool::Button, _.label.text = "Save");
+	auto pSaveAsButton = WGCREATE( Oldskool::Button, _.label.text = "Save as...");
+
 
 	auto pSpacer = WGCREATE( Filler, _.defaultSize = { 20,1 } );
 

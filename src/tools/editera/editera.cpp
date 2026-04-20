@@ -6,6 +6,8 @@
 #include <string>
 #include <fstream>
 
+#include <themes/wg_oldskool.h>
+
 
 using namespace wg;
 using namespace wapp;
@@ -71,6 +73,7 @@ bool Editera::update()
 
 void Editera::exit()
 {
+	Oldskool::exit();
 }
 
 //____ closeWindow() __________________________________________________________
@@ -89,8 +92,25 @@ void Editera::closeWindow(wapp::Window* _pWindow)
 
 bool Editera::setupGUI()
 {
-
 	m_pTheme = m_pAPI->initDefaultTheme();
+
+	auto path = m_pAPI->resourceDirectory();
+
+	auto pFont1Blob = m_pAPI->loadBlob(path + "NotoSans-Regular.ttf");
+	auto pFont2Blob = m_pAPI->loadBlob(path + "NotoSans-Bold.ttf");
+	auto pFont3Blob = m_pAPI->loadBlob(path + "NotoSans-Italic.ttf");
+	auto pFont4Blob = m_pAPI->loadBlob(path + "DroidSansMono.ttf");
+
+	auto pFont1 = FreeTypeFont::create(pFont1Blob);
+	auto pFont2 = FreeTypeFont::create(pFont2Blob);
+	auto pFont3 = FreeTypeFont::create(pFont3Blob);
+	auto pFont4 = FreeTypeFont::create(pFont4Blob);
+
+	auto pThemeSurface = m_pAPI->loadSurface(path + "skin_widgets.png");
+
+
+
+	Oldskool::init(pFont1, pFont2, pFont3, pFont4, pThemeSurface);
 
 	m_pEditorLayout = BasicTextLayout::create({ .tabWidth = 4 });
 
