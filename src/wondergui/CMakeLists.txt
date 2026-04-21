@@ -238,6 +238,8 @@ set( SOURCES
 	widgets/capsules/wg_selectcapsule.h
 	widgets/capsules/wg_sizecapsule.cpp
 	widgets/capsules/wg_sizecapsule.h
+	widgets/capsules/wg_wirecapsule.cpp
+	widgets/capsules/wg_wirecapsule.h
 
 	widgets/overlays/wg_dragndropoverlay.cpp
 	widgets/overlays/wg_dragndropoverlay.h
@@ -256,6 +258,8 @@ set( SOURCES
 	widgets/panels/wg_flexpanel.h
 	widgets/panels/wg_lambdapanel.cpp
 	widgets/panels/wg_lambdapanel.h
+	widgets/panels/wg_nodepanel.cpp
+	widgets/panels/wg_nodepanel.h
 	widgets/panels/wg_packpanel.cpp
 	widgets/panels/wg_packpanel.h
 	widgets/panels/wg_panel.cpp

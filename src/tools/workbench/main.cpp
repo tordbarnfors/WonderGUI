@@ -177,6 +177,7 @@ bool selectCapsuleTest(ComponentPtr<DynamicSlot> pEntry);
 bool drawerPanelTest(ComponentPtr<DynamicSlot> pEntry);
 bool tintmapTest(ComponentPtr<DynamicSlot> pEntry);
 bool popupLayerFocusTest(ComponentPtr<DynamicSlot> pEntry);
+bool nodePanelTest(ComponentPtr<DynamicSlot> pEntry);
 
 
 void nisBlendTest();
@@ -844,7 +845,8 @@ int main(int argc, char** argv)
 		//	drawerPanelTest(pSlot);
 		//	areaChartTestWithGlobalGradient(pSlot);
 		//	tintmapTest(pSlot);
-			popupLayerFocusTest(pSlot);
+		//	popupLayerFocusTest(pSlot);
+		nodePanelTest(pSlot);
 
 		//------------------------------------------------------
 		// Program Main Loop
@@ -5007,5 +5009,26 @@ bool popupLayerFocusTest(ComponentPtr<DynamicSlot> pEntry)
 
 	*pEntry = pPopupOverlay;
 
+	return true;
+}
+
+
+bool nodePanelTest(ComponentPtr<DynamicSlot> pEntry)
+{
+	auto pBaseLayer = FlexPanel::create();
+	pBaseLayer->setSkin(ColorSkin::create(Color::PapayaWhip));
+
+	auto pNodePanel = NodePanel::create({ .skin = BoxSkin::create({ .color = Color::White, .outlineColor = Color::Black, .padding = 4 }) });
+
+	auto pNodeSkin = BoxSkin::create({ .color = Color::LightGray, .outlineColor = Color::Black });
+
+	auto pNode1 = Filler::create({ .defaultSize = {50,50}, .skin = pNodeSkin });
+	auto pNode2 = Filler::create({ .defaultSize = {50,50}, .skin = pNodeSkin });
+
+	pNodePanel->slots.pushBack({ pNode1, pNode2 });
+
+	pBaseLayer->slots.pushBack(pNodePanel, { .pos = {10,10}, .size = {300,300} });
+
+	*pEntry = pBaseLayer;
 	return true;
 }

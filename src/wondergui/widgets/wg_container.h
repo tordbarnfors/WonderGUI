@@ -200,6 +200,18 @@ namespace wg
 
 	};
 
+	class ChildObserver
+	{
+	public:
+		virtual void	_childrenRearranged() = 0;
+		virtual void	_childAdded(Widget * pChild) = 0;
+		virtual void	_childRemoved(Widget * pChild) = 0;
+		virtual void	_childGeoUpdated(Widget * pChild, const RectSPX& oldGeo, const RectSPX& newGeo) = 0;
+
+		// + Pointer to container, so we can get its size etc.
+	};
+
+
 
 } // namespace wg
 #endif //WG_CONTAINER_DOT_H
