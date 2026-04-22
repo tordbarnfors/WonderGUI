@@ -26,6 +26,7 @@
 
 #include <wg_capsule.h>
 #include <wg_scroller.h>
+#include <wg_transitions.h>
 
 namespace wg
 {
@@ -115,6 +116,14 @@ namespace wg
 
 		const TypeInfo& typeInfo(void) const override;
 		const static TypeInfo	TYPEINFO;
+
+		//.____ Control _____________________________________________________________
+
+		bool			setViewOffset(Coord offset, CoordTransition* pTransition = nullptr);
+		inline Coord	viewOffset() const;
+		inline Size		viewSize() const;
+		inline Size		contentSize() const;
+
 
 	protected:
 		ScrollCapsule();
@@ -248,6 +257,29 @@ namespace wg
 
 
 	};
+
+	//____ viewOffset() __________________________________________________________
+
+	Coord ScrollCapsule::viewOffset() const
+	{
+		return Util::spxToPts(m_childCanvas.pos() - m_viewRegion.pos(), m_scale);
+	}
+
+	//____ viewSize() ____________________________________________________________
+
+	Size ScrollCapsule::viewSize() const
+	{
+		return Util::spxToPts(m_viewRegion.size(), m_scale);
+	}
+
+	//____ contentSize() __________________________________________________________
+
+	Size ScrollCapsule::contentSize() const
+	{
+		return Util::spxToPts(m_childCanvas.size(), m_scale);
+	}
+
+
 
 } // namespace wg
 

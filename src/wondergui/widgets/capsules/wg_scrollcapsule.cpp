@@ -61,6 +61,14 @@ namespace wg
 	{
 	}
 
+	//____ setViewOffset() _______________________________________________________
+
+	bool ScrollCapsule::setViewOffset(Coord _offset, CoordTransition* pTransition)
+	{
+		CoordSPX offset = Util::ptsToSpx(_offset, m_scale);
+		return _setViewOffset(offset);
+	}
+
 	//____ _receive() ____________________________________________________________
 
 	void ScrollCapsule::_receive(Msg * pMsg)
