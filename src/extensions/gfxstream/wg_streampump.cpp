@@ -115,6 +115,10 @@ namespace wg
 	void StreamPump::addCredits(int credits)
 	{
 		m_credits += credits;
+
+//		char temp[128];
+//		snprintf(temp, 128, "Added %d credits.", credits);
+//		GfxBase::throwError(ErrorLevel::Warning, ErrorCode::Other, temp, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 	}
 
 
@@ -563,6 +567,10 @@ namespace wg
 						m_pOutput->processChunks(fenceChunk, fenceChunk + 10);
 
 						m_bytesUntilFence = m_bytesPerCredit;
+
+//						char temp[128];
+//						snprintf(temp, 128, "Sending a fence as part of flow control. Id = %d, Value = %d. %d credits left", m_fenceId, m_fenceValueSent, m_credits);
+//						GfxBase::throwError(ErrorLevel::Warning, ErrorCode::Other, temp, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 					}
 
 				}
