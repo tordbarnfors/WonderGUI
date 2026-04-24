@@ -24,6 +24,8 @@
 #include <wg_msglogger.h>
 #include <wg_widget.h>
 
+#include <cstring>
+
 namespace wg
 {
 

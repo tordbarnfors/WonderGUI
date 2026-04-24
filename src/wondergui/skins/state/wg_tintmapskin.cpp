@@ -25,6 +25,8 @@
 #include <wg_util.h>
 #include <wg_skin.impl.h>
 
+#include <cstring>
+
 namespace wg
 {
 

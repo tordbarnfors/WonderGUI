@@ -25,7 +25,7 @@
 
 #include <wg_tablepanel.h>
 #include <wg_debugpanel.h>
-#include <wg_CanvasCapsule.h>
+#include <wg_canvascapsule.h>
 
 namespace wg
 {
