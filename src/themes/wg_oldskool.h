@@ -96,13 +96,15 @@ namespace wg::Oldskool
 		inline Skin_p		RadioButton;
 		inline Skin_p		SelectBox;
 		inline Skin_p		SelectBoxEntry;
+		inline Skin_p		ScrollbarTrack;
+		inline Skin_p		ScrollbarHandle;
+		inline Skin_p		SplitHandle;
 	}
 
-
-
-
-	inline ValueTransition_p	openCloseTransition;
-
+	namespace Transitions
+	{
+		inline ValueTransition_p	openClose;
+	}
 
 	inline Skin_p		_pLabelCapsuleSkin;
 	inline Skin_p		_pCapsuleLabelSkin;
@@ -151,7 +153,7 @@ namespace wg::Oldskool
 			_.placement = Placement::Center,
 			_.wrap = false));
 
-		openCloseTransition = ValueTransition::create(250000);
+		Transitions::openClose = ValueTransition::create(250000);
 
 		Skins::Plate = BlockSkin::create(WGBP(BlockSkin,
 			_.surface = pWidgets,
@@ -221,6 +223,16 @@ namespace wg::Oldskool
 			}
 		));
 
+		Skins::SplitHandle = BlockSkin::create(WGBP(BlockSkin,
+			_.surface = pWidgets,
+			_.firstBlock = { 0,15,10,10 },
+			_.axis = Axis::X,
+			_.blockSpacing = 1,
+			_.frame = 4,
+			_.padding = 4,
+			_.states = { State::Default, State::Hovered, State::Pressed, State::Disabled }
+		));
+
 
 		Skins::Button = BlockSkin::create(WGBP(BlockSkin,
 			_.surface = pWidgets,
@@ -276,6 +288,20 @@ namespace wg::Oldskool
 			}
 		));
 
+		Skins::ScrollbarTrack = BoxSkin::create(WGBP(BoxSkin,
+			_.color = Color::DarkGray,
+			_.outlineColor = Color::Black,
+			_.outlineThickness = 1,
+			_.padding = 2));
+
+		Skins::ScrollbarHandle = BoxSkin::create(WGBP(BoxSkin,
+			_.color = Color::LightGray,
+			_.outlineColor = Color::Black,
+			_.outlineThickness = 1,
+			_.padding = 6));
+
+
+
 		return true; 
 	}
 
@@ -284,7 +310,7 @@ namespace wg::Oldskool
 		return true; 
 	}
 
-
+	//____ Button _______________________________________________________
 
 	class Button : public wg::Button
 	{
@@ -322,7 +348,7 @@ namespace wg::Oldskool
 
 	};
 
-
+	//____ ToggleButton _______________________________________________________
 
 	class ToggleButton : public wg::ToggleButton
 	{
@@ -361,6 +387,8 @@ namespace wg::Oldskool
 		{
 		}
 	};
+
+	//____ Checkbox ______________________________________________________
 
 	class Checkbox : public wg::ToggleButton
 	{
@@ -401,6 +429,8 @@ namespace wg::Oldskool
 
 	};
 
+	//____ RadioButton ______________________________________________________
+
 	class RadioButton : public wg::ToggleButton
 	{
 	public:
@@ -438,10 +468,11 @@ namespace wg::Oldskool
 
 	};
 
-	class LabelCapsule : public wg::LabelCapsule
+	//____ LabelAndFrameCapsule ______________________________________________________
+
+	class LabelAndFrameCapsule : public wg::LabelCapsule
 	{
 	public:
-		//____ Blueprint ______________________________________________________
 
 		struct Blueprint
 		{
@@ -451,14 +482,451 @@ namespace wg::Oldskool
 			bool			dropTarget = true;
 			Finalizer_p		finalizer = nullptr;
 			int				id = 0;
-			DynamicText::Blueprint	label;
-			Placement		labelPlacement = Placement::NorthWest;
-			Skin_p			labelSkin;
+			DynamicText::Blueprint	label = { .layout = TextLayouts::LeftNoWrap, .style = TextStyles::NormalDark };
+			Placement		labelPlacement = Placement::North;
+			Skin_p			labelSkin = _pCapsuleLabelSkin;
 			MarkPolicy		markPolicy = MarkPolicy::AlphaTest;
 			bool			pickable = true;
 			uint8_t			pickCategory = 0;
 			bool			pickHandle = false;
 			PointerStyle	pointer = PointerStyle::Undefined;
+			bool			selectable = false;
+			Skin_p			skin = _pLabelCapsuleSkin;
+			bool			stickyFocus = false;
+			bool			tabLock = false;
+			bool			takesFocusFromChild = true;
+			String			tooltip;
+			bool			usePickHandles = false;
+
+		};
+
+		inline static wg::LabelCapsule_p	create() { return new LabelAndFrameCapsule(Blueprint()); }
+		inline static wg::LabelCapsule_p	create(const Blueprint& blueprint) { return new LabelAndFrameCapsule(blueprint); }
+
+	protected:
+
+		LabelAndFrameCapsule(const Blueprint& bp) : wg::LabelCapsule(bp) {}
+
+	};
+
+	//____ LabeledSectionCapsule ______________________________________________________
+
+	class LabeledSectionCapsule : public wg::LabelCapsule
+	{
+	public:
+
+		struct Blueprint
+		{
+			Object_p		baggage;
+			Widget_p		child;
+			bool			disabled = false;
+			bool			dropTarget = true;
+			Finalizer_p		finalizer = nullptr;
+			int				id = 0;
+			DynamicText::Blueprint	label = { .layout = TextLayouts::LeftNoWrap, .style = TextStyles::NormalDark };
+			Placement		labelPlacement = Placement::North;
+			Skin_p			labelSkin = _pCapsuleLabelSkin2;
+			MarkPolicy		markPolicy = MarkPolicy::AlphaTest;
+			bool			pickable = true;
+			uint8_t			pickCategory = 0;
+			bool			pickHandle = false;
+			PointerStyle	pointer = PointerStyle::Undefined;
+			bool			selectable = false;
+			Skin_p			skin = _pInvisibleBoxSkin;
+			bool			stickyFocus = false;
+			bool			tabLock = false;
+			bool			takesFocusFromChild = true;
+			String			tooltip;
+			bool			usePickHandles = false;
+
+		};
+
+		inline static wg::LabelCapsule_p	create() { return new LabeledSectionCapsule(Blueprint()); }
+		inline static wg::LabelCapsule_p	create(const Blueprint& blueprint) { return new LabeledSectionCapsule(blueprint); }
+
+	protected:
+
+		LabeledSectionCapsule(const Blueprint& bp) : wg::LabelCapsule(bp) {}
+
+	};
+
+	//____ ScrollCapsuleX _____________________________________________________
+
+	class ScrollCapsuleX : public wg::ScrollCapsule
+	{
+	public:
+
+		struct Blueprint
+		{
+			bool				autoHideScrollbars = true;
+			Axis				autoScrollAxis = Axis::Undefined;
+			Object_p			baggage;
+			Widget_p			child;
+			Skin_p				cornerSkin;
+			bool				disabled = false;
+			bool				dropTarget = false;
+			Finalizer_p			finalizer = nullptr;
+			int					id = 0;
+			MarkPolicy			markPolicy = MarkPolicy::AlphaTest;
+			bool				overlayScrollbars = false;
+			pts					pageOverlapX = 8;
+			pts					pageOverlapY = 8;
+			bool				pickable = false;
+			uint8_t				pickCategory = 0;
+			bool				pickHandle = false;
+			PointerStyle		pointer = PointerStyle::Undefined;
+			Scroller::Blueprint	scrollbarX = { .back = Skins::ScrollbarTrack, .bar = Skins::ScrollbarHandle };
+			Scroller::Blueprint	scrollbarY = { .back = Skins::ScrollbarTrack, .bar = Skins::ScrollbarHandle };
+			bool				scrollX = true;
+			bool				scrollY = false;
+			bool				selectable = false;
+			Skin_p				skin;
+			pts					stepSizeX = 8;
+			pts					stepSizeY = 8;
+			bool				stickyFocus = false;
+			bool				tabLock = false;
+			bool				takesFocusFromChild = true;
+			String				tooltip;
+			bool				usePickHandles = false;
+
+			Axis				wheelAxis = Axis::Y;						// Scroll direction of primary mouse wheel. Secondary mouse wheel is the oposite.
+			ModKeys				wheelAxisModifier = ModKeys::Shift;		// Flips the scroll direction of primary mouse wheel.
+			ModKeys				wheelAccelerator = ModKeys::Alt;
+			int					wheelAccelFactor = 5;
+
+			bool				wheelFollowsScrollbar = true;
+
+			pts					wheelStepSizeX = 16;
+			pts					wheelStepSizeY = 16;
+		};
+
+		inline static wg::ScrollCapsule_p	create() { return new ScrollCapsuleX(Blueprint()); }
+		inline static wg::ScrollCapsule_p	create(const Blueprint& blueprint) { return new ScrollCapsuleX(blueprint); }
+
+	protected:
+
+		ScrollCapsuleX(const Blueprint& bp) : wg::ScrollCapsule(bp) {}
+	};
+
+	//____ ScrollCapsuleY ____________________________________________________________
+
+	class ScrollCapsuleY : public wg::ScrollCapsule
+	{
+	public:
+
+		//____ Blueprint ____________________________________________________________
+
+		struct Blueprint
+		{
+			bool				autoHideScrollbars = true;
+			Axis				autoScrollAxis = Axis::Undefined;
+			Object_p			baggage;
+			Widget_p			child;
+			Skin_p				cornerSkin;
+			bool				disabled = false;
+			bool				dropTarget = false;
+			Finalizer_p			finalizer = nullptr;
+			int					id = 0;
+			MarkPolicy			markPolicy = MarkPolicy::AlphaTest;
+			bool				overlayScrollbars = false;
+			pts					pageOverlapX = 8;
+			pts					pageOverlapY = 8;
+			bool				pickable = false;
+			uint8_t				pickCategory = 0;
+			bool				pickHandle = false;
+			PointerStyle		pointer = PointerStyle::Undefined;
+			Scroller::Blueprint	scrollbarX = { .back = Skins::ScrollbarTrack, .bar = Skins::ScrollbarHandle };
+			Scroller::Blueprint	scrollbarY = { .back = Skins::ScrollbarTrack, .bar = Skins::ScrollbarHandle };
+			bool				scrollX = false;
+			bool				scrollY = true;
+			bool				selectable = false;
+			Skin_p				skin;
+			pts					stepSizeX = 8;
+			pts					stepSizeY = 8;
+			bool				stickyFocus = false;
+			bool				tabLock = false;
+			bool				takesFocusFromChild = true;
+			String				tooltip;
+			bool				usePickHandles = false;
+
+			Axis				wheelAxis = Axis::Y;						// Scroll direction of primary mouse wheel. Secondary mouse wheel is the oposite.
+			ModKeys				wheelAxisModifier = ModKeys::Shift;		// Flips the scroll direction of primary mouse wheel.
+			ModKeys				wheelAccelerator = ModKeys::Alt;
+			int					wheelAccelFactor = 5;
+
+			bool				wheelFollowsScrollbar = true;
+
+			pts					wheelStepSizeX = 16;
+			pts					wheelStepSizeY = 16;
+		};
+
+		inline static wg::ScrollCapsule_p	create() { return new ScrollCapsuleY(Blueprint()); }
+		inline static wg::ScrollCapsule_p	create(const Blueprint& blueprint) { return new ScrollCapsuleY(blueprint); }
+
+	protected:
+
+		ScrollCapsuleY(const Blueprint& bp) : wg::ScrollCapsule(bp) {}
+
+
+	};
+
+	//____ ScrollCapsuleXY ______________________________________________________
+
+	class ScrollCapsuleXY : public wg::ScrollCapsule
+	{
+	public:
+
+		struct Blueprint
+		{
+			bool				autoHideScrollbars = true;
+			Axis				autoScrollAxis = Axis::Undefined;
+			Object_p			baggage;
+			Widget_p			child;
+			Skin_p				cornerSkin;
+			bool				disabled = false;
+			bool				dropTarget = false;
+			Finalizer_p			finalizer = nullptr;
+			int					id = 0;
+			MarkPolicy			markPolicy = MarkPolicy::AlphaTest;
+			bool				overlayScrollbars = false;
+			pts					pageOverlapX = 8;
+			pts					pageOverlapY = 8;
+			bool				pickable = false;
+			uint8_t				pickCategory = 0;
+			bool				pickHandle = false;
+			PointerStyle		pointer = PointerStyle::Undefined;
+			Scroller::Blueprint	scrollbarX = { .back = Skins::ScrollbarTrack, .bar = Skins::ScrollbarHandle };
+			Scroller::Blueprint	scrollbarY = { .back = Skins::ScrollbarTrack, .bar = Skins::ScrollbarHandle };
+			bool				scrollX = true;
+			bool				scrollY = true;
+			bool				selectable = false;
+			Skin_p				skin;
+			pts					stepSizeX = 8;
+			pts					stepSizeY = 8;
+			bool				stickyFocus = false;
+			bool				tabLock = false;
+			bool				takesFocusFromChild = true;
+			String				tooltip;
+			bool				usePickHandles = false;
+
+			Axis				wheelAxis = Axis::Y;						// Scroll direction of primary mouse wheel. Secondary mouse wheel is the oposite.
+			ModKeys				wheelAxisModifier = ModKeys::Shift;		// Flips the scroll direction of primary mouse wheel.
+			ModKeys				wheelAccelerator = ModKeys::Alt;
+			int					wheelAccelFactor = 5;
+
+			bool				wheelFollowsScrollbar = true;
+
+			pts					wheelStepSizeX = 16;
+			pts					wheelStepSizeY = 16;
+		};
+
+		inline static wg::ScrollCapsule_p	create() { return new ScrollCapsuleXY(Blueprint()); }
+		inline static wg::ScrollCapsule_p	create(const Blueprint& blueprint) { return new ScrollCapsuleXY(blueprint); }
+
+	protected:
+
+		ScrollCapsuleXY(const Blueprint& bp) : wg::ScrollCapsule(bp) {}
+
+
+	};
+
+	//____ SplitPanelX ____________________________________________________________
+
+	class SplitPanelX : public wg::SplitPanel
+	{
+	public:
+		struct Blueprint
+		{
+			Axis			axis = Axis::X;
+			Object_p		baggage;
+			bool			disabled = false;
+			bool			dropTarget = false;
+			Finalizer_p		finalizer = nullptr;
+			Skin_p			handleSkin = Skins::SplitHandle;
+			pts				handleThickness = 0;
+			int				id = 0;
+			MarkPolicy		markPolicy = MarkPolicy::AlphaTest;
+			MaskOp			maskOp = MaskOp::Recurse;
+			bool			pickable = false;
+			uint8_t			pickCategory = 0;
+			bool			pickHandle = false;
+			PointerStyle	pointer = PointerStyle::Undefined;
+			float			resizeRatio = 0.5f;
+			bool			selectable = false;
+			Skin_p			skin;
+			bool			stickyFocus = false;
+			bool			tabLock = false;
+			bool			takesFocusFromChild = false;
+			String			tooltip;
+			bool			usePickHandles = false;
+
+		};
+
+		inline static wg::SplitPanel_p	create() { return new SplitPanelX(Blueprint()); }
+		inline static wg::SplitPanel_p	create(const Blueprint& blueprint) { return new SplitPanelX(blueprint); }
+
+	protected:
+
+		SplitPanelX(const Blueprint& bp) : wg::SplitPanel(bp)
+		{}
+	};
+
+	//____ SplitPanelY ______________________________________________________
+
+	class SplitPanelY : public wg::SplitPanel
+	{
+	public:
+		struct Blueprint
+		{
+			Axis			axis = Axis::Y;
+			Object_p		baggage;
+			bool			disabled = false;
+			bool			dropTarget = false;
+			Finalizer_p		finalizer = nullptr;
+			Skin_p			handleSkin = Skins::SplitHandle;
+			pts				handleThickness = 0;
+			int				id = 0;
+			MarkPolicy		markPolicy = MarkPolicy::AlphaTest;
+			MaskOp			maskOp = MaskOp::Recurse;
+			bool			pickable = false;
+			uint8_t			pickCategory = 0;
+			bool			pickHandle = false;
+			PointerStyle	pointer = PointerStyle::Undefined;
+			float			resizeRatio = 0.5f;
+			bool			selectable = false;
+			Skin_p			skin;
+			bool			stickyFocus = false;
+			bool			tabLock = false;
+			bool			takesFocusFromChild = false;
+			String			tooltip;
+			bool			usePickHandles = false;
+
+		};
+
+		inline static wg::SplitPanel_p	create() { return new SplitPanelY(Blueprint()); }
+		inline static wg::SplitPanel_p	create(const Blueprint& blueprint) { return new SplitPanelY(blueprint); }
+
+	protected:
+
+		SplitPanelY(const Blueprint& bp) : wg::SplitPanel(bp) {}
+	};
+
+	//____ TreeListDrawer ______________________________________________________
+
+	class TreeListDrawer : public wg::DrawerPanel
+	{
+	public:
+
+		struct Blueprint
+		{
+			Object_p			baggage;
+			Coord				buttonOfs;
+			Placement			buttonPlacement = Placement::West;
+			Size				buttonSize = Size{ 14, 14 };
+			Skin_p				buttonSkin = _pPlusMinusToggleSkin;
+			bool				disabled = false;
+			Direction			direction = Direction::Down;
+			bool				dropTarget = false;
+			Finalizer_p			finalizer = nullptr;
+			int					id = 0;
+			MarkPolicy			markPolicy = MarkPolicy::AlphaTest;
+			MaskOp				maskOp = MaskOp::Recurse;
+			bool				pickable = false;
+			uint8_t				pickCategory = 0;
+			bool				pickHandle = false;
+			PointerStyle		pointer = PointerStyle::Undefined;
+			bool				selectable = true;
+			Skin_p				skin;
+			bool				stickyFocus = false;
+			bool				tabLock = false;
+			bool				takesFocusFromChild = true;
+			String				tooltip;
+			ValueTransition_p	transition = Transitions::openClose;
+			bool				usePickHandles = false;
+		};
+
+		inline static wg::DrawerPanel_p	create() { return new TreeListDrawer(Blueprint()); }
+		inline static wg::DrawerPanel_p	create(const Blueprint& blueprint) { return new TreeListDrawer(blueprint); }
+
+	protected:
+
+		TreeListDrawer(const Blueprint& bp) : wg::DrawerPanel(bp) {}
+	};
+
+	//____ TreeListEntry ______________________________________________________
+
+	class TreeListEntry : public wg::PaddingCapsule
+	{
+	public:
+
+		struct Blueprint
+		{
+
+			Object_p		baggage;
+			Widget_p		child;
+			bool			disabled = false;
+			bool			dropTarget = false;
+			Finalizer_p		finalizer = nullptr;
+			int				id = 0;
+			MarkPolicy		markPolicy = MarkPolicy::AlphaTest;
+			bool			pickable = false;
+			uint8_t			pickCategory = 0;
+			bool			pickHandle = false;
+			Border			padding;
+			PointerStyle	pointer = PointerStyle::Undefined;
+			bool			selectable = false;
+			Skin_p			skin = _pSelectableEntrySkin;
+			bool			stickyFocus = false;
+			bool			tabLock = false;
+			bool			takesFocusFromChild = true;
+			String			tooltip;
+			bool			usePickHandles = false;
+		};
+
+		inline static wg::PaddingCapsule_p	create() { return new TreeListEntry(Blueprint()); }
+		inline static wg::PaddingCapsule_p	create(const Blueprint& blueprint) { return new TreeListEntry(blueprint); }
+
+	protected:
+
+		TreeListEntry(const Blueprint& bp) : wg::PaddingCapsule(bp) {}
+	};
+
+	//____ ListTable ______________________________________________________
+
+	class ListTable : public wg::TablePanel
+	{
+		struct Blueprint
+		{
+			Object_p		baggage;
+
+			PackLayout_p	columnLayout;
+			int				columns = 2;
+
+			pts				columnSpacing = 4;
+			pts				columnSpacingAfter = 0;
+			pts				columnSpacingBefore = 0;
+
+			bool			disabled = false;
+			bool			dropTarget = false;
+			Finalizer_p		finalizer = nullptr;
+			int				id = 0;
+			MarkPolicy		markPolicy = MarkPolicy::Undefined;
+			MaskOp			maskOp = MaskOp::Recurse;
+			bool			pickable = false;
+			uint8_t			pickCategory = 0;
+			bool			pickHandle = false;
+			PointerStyle	pointer = PointerStyle::Undefined;
+
+			PackLayout_p	rowLayout;
+			int				rows = 2;
+
+			Skin_p			rowSkin;
+			Skin_p			rowSkin2;
+
+			pts				rowSpacing = 1;
+			pts				rowSpacingAfter = 0;
+			pts				rowSpacingBefore = 0;
+
 			bool			selectable = false;
 			Skin_p			skin;
 			bool			stickyFocus = false;
@@ -469,20 +937,119 @@ namespace wg::Oldskool
 
 		};
 
-		//.____ Creation ______________________________________________________
-
-
-		inline static wg::LabelCapsule_p	create() { return new wg::Oldskool::LabelCapsule(Blueprint()); }
-		inline static wg::LabelCapsule_p	create(const Blueprint& blueprint) { return new wg::Oldskool::LabelCapsule(blueprint); }
+		inline static wg::TablePanel_p	create() { return new ListTable(Blueprint()); }
+		inline static wg::TablePanel_p	create(const Blueprint& blueprint) { return new ListTable(blueprint); }
 
 	protected:
 
-		LabelCapsule(const Blueprint& bp) : wg::LabelCapsule(bp)
-		{
-		}
-
+		ListTable(const Blueprint& bp) : wg::TablePanel(bp) {}
 	};
 
+	//____ LineEditor ______________________________________________________
+
+	class LineEditor : public wg::LineEditor
+	{
+	public:
+
+		struct Blueprint
+		{
+			Object_p		baggage;
+			spx				defaultLengthInChars = 20;		// Set to zero for returning default width calculated from actual text in field.
+			bool			disabled = false;
+			bool			dropTarget = false;
+			EditableText::Blueprint	editor = { .style = TextStyles::NormalDark };
+			Finalizer_p		finalizer = nullptr;
+			int				id = 0;
+			MarkPolicy		markPolicy = MarkPolicy::AlphaTest;
+			bool			pickable = false;
+			uint8_t			pickCategory = 0;
+			bool			pickHandle = false;
+			PointerStyle	pointer = PointerStyle::Ibeam;
+			KeyAction		returnKeyAction = KeyAction::ReleaseFocus;
+			bool			selectable = false;
+			Skin_p			skin = Skins::Canvas;
+			bool			stickyFocus = false;
+			bool			tabLock = false;
+			String			tooltip;
+		};
+
+		inline static wg::LineEditor_p	create() { return new LineEditor(Blueprint()); }
+		inline static wg::LineEditor_p	create(const Blueprint& blueprint) { return new LineEditor(blueprint); }
+
+	protected:
+
+		LineEditor(const Blueprint& bp) : wg::LineEditor(bp) {}
+	};
+
+	//____ SelectBox ______________________________________________________
+
+	class SelectBox : public wg::SelectBox
+	{
+	public:
+
+		struct Blueprint
+		{
+			Object_p		baggage;
+			bool			disabled = false;
+			bool			dropTarget = false;
+			Skin_p			entrySkin = Skins::SelectBoxEntry;
+			TextStyle_p		entryTextStyle = TextStyles::NormalDark;
+			TextLayout_p	entryTextLayout;
+			Finalizer_p		finalizer = nullptr;
+			int				id = 0;
+			Skin_p			listSkin = Skins::SelectBox;
+			MarkPolicy		markPolicy = MarkPolicy::AlphaTest;
+			bool			pickable = false;
+			uint8_t			pickCategory = 0;
+			bool			pickHandle = false;
+			PointerStyle	pointer = PointerStyle::Undefined;
+			bool			selectable = false;
+			Skin_p			skin = Skins::Canvas;
+			bool			stickyFocus = false;
+			bool			tabLock = false;
+			String			tooltip;
+		};
+
+		inline static wg::SelectBox_p	create() { return new SelectBox(Blueprint()); }
+		inline static wg::SelectBox_p	create(const Blueprint& blueprint) { return new SelectBox(blueprint); }
+
+	protected:
+
+		SelectBox(const Blueprint& bp) : wg::SelectBox(bp) {}
+	};
+
+	//____ WindowTitleBar ______________________________________________________
+
+	class WindowTitleBar : public wg::TextDisplay
+	{
+	public:
+
+		struct Blueprint
+		{
+			Object_p		baggage;
+			bool			disabled = false;
+			DynamicText::Blueprint	display = { .layout = TextLayouts::CenteredNoWrap, .style = TextStyles::Heading5 };
+			bool			dropTarget = false;
+			Finalizer_p		finalizer = nullptr;
+			int				id = 0;
+			MarkPolicy		markPolicy = MarkPolicy::AlphaTest;
+			bool			pickable = false;
+			uint8_t			pickCategory = 0;
+			bool			pickHandle = false;
+			PointerStyle	pointer = PointerStyle::Undefined;
+			bool			selectable = false;
+			Skin_p			skin = Skins::Titlebar;
+			bool			stickyFocus = false;
+			bool			tabLock = false;
+			String			tooltip;
+		};
+
+		inline static wg::TextDisplay_p	create() { return new WindowTitleBar(Blueprint()); }
+		inline static wg::TextDisplay_p	create(const Blueprint& blueprint) { return new WindowTitleBar(blueprint); }
+
+	protected:
+		WindowTitleBar(const Blueprint& bp) : wg::TextDisplay(bp) {}
+	};
 
 } // namespace wg
 #endif //WG_THEME_OLDSKOOL_DOT_H
