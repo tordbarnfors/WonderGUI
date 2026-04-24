@@ -488,7 +488,7 @@ namespace wg
 
 	bool StreamPump::pumpAllWithFlowControl()
 	{
-		if (!m_pInput || !m_pOutput)
+		if (!m_pInput || !m_pOutput || m_credits == 0)
 			return false;
 
 		int	nSegments;
@@ -542,15 +542,6 @@ namespace wg
 							pBegin = (uint8_t*)pChunk;
 						}
 
-						// Stop if we are out of credits
-
-						if (m_credits == 0)
-						{
-							m_bytesUntilFence -= bytes;
-							m_pInput->discardChunks(bytesProcessed);
-							return false;
-						}
-
 						// Create and process our fence
 
 						m_credits--;
@@ -567,6 +558,14 @@ namespace wg
 						m_pOutput->processChunks(fenceChunk, fenceChunk + 10);
 
 						m_bytesUntilFence = m_bytesPerCredit;
+
+						// Stop if we are out of credits
+
+						if (m_credits == 0)
+						{
+							m_pInput->discardChunks(bytesProcessed);
+							return false;
+						}
 
 //						char temp[128];
 //						snprintf(temp, 128, "Sending a fence as part of flow control. Id = %d, Value = %d. %d credits left", m_fenceId, m_fenceValueSent, m_credits);
