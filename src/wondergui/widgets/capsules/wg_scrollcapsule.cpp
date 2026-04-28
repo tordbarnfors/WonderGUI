@@ -247,6 +247,7 @@ namespace wg
 
 	void ScrollCapsule::_childRequestResize(StaticSlot * pSlot)
 	{
+		m_bChildRequestedResize = true;
 		_requestResize();
 	}
 
@@ -441,8 +442,10 @@ namespace wg
 
 		_updateScrollbars( oldCanvas, oldView );
 
-		if( !slot.isEmpty() && (oldCanvas.size() != m_childCanvas.size() || scale != oldScale) )
-		   slot._widget()->_resize(m_childCanvas.size(), scale);
+		if( !slot.isEmpty() && (m_bChildRequestedResize || oldCanvas.size() != m_childCanvas.size() || scale != oldScale) )
+			slot._widget()->_resize(m_childCanvas.size(), scale);
+
+		m_bChildRequestedResize = false;
 	}
 
 	//____ _setState() ___________________________________________________________
@@ -734,13 +737,13 @@ namespace wg
 				m_scrollbarYRegion = { window.x + window.w - scrollbarYWidth, window.y, scrollbarYWidth, window.h };
 				m_scrollbarXRegion = { window.x, window.y + window.h, window.w - scrollbarYWidth, 0 };
 				m_childCanvas.w = m_viewRegion.w;
-				m_childCanvas.h = pChild->_matchingHeight(m_viewRegion.w, m_scale);
+				m_childCanvas.h = std::max(m_viewRegion.h, pChild->_matchingHeight(m_viewRegion.w, m_scale));
 			}
 			else if( m_bOverlayScrollbars)
 			{
 				m_viewRegion = window;
 				m_childCanvas.w = m_viewRegion.w;
-				m_childCanvas.h = pChild->_matchingHeight(m_viewRegion.w, m_scale);
+				m_childCanvas.h = std::max(m_viewRegion.h, pChild->_matchingHeight(m_viewRegion.w, m_scale));
 
 				if (m_childCanvas.h > window.h || !m_bAutoHideScrollbars)
 					m_scrollbarYRegion = { window.x + window.w - scrollbarYWidth, window.y, scrollbarYWidth, window.h };
@@ -785,13 +788,13 @@ namespace wg
 				m_viewRegion = { window.x, window.y, window.w, window.h - scrollbarXHeight };
 				m_scrollbarXRegion = { window.x, window.y + window.h - scrollbarXHeight, window.w, scrollbarXHeight };
 				m_scrollbarYRegion = { window.x + window.w, window.y, 0, window.h - scrollbarXHeight };
-				m_childCanvas.w = pChild->_matchingWidth(m_viewRegion.h, m_scale);
+				m_childCanvas.w = std::max(m_viewRegion.w, pChild->_matchingWidth(m_viewRegion.h, m_scale));
 				m_childCanvas.h = m_viewRegion.h;
 			}
 			else if (m_bOverlayScrollbars)
 			{
 				m_viewRegion = window;
-				m_childCanvas.w = pChild->_matchingWidth(m_viewRegion.h, m_scale);
+				m_childCanvas.w = std::max(m_viewRegion.w, pChild->_matchingWidth(m_viewRegion.h, m_scale));
 				m_childCanvas.h = m_viewRegion.h;
 
 				if (m_childCanvas.w > window.w || !m_bAutoHideScrollbars)

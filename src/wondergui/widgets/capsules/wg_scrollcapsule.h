@@ -246,6 +246,7 @@ namespace wg
 		int			m_wheelAccelFactor = 5;
 
 		bool		m_bWheelFollowsScrollbar = true;
+		bool		m_bChildRequestedResize = false;
 
 		SkinSlot	m_cornerSkin;
 
