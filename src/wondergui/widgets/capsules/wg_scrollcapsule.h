@@ -72,6 +72,7 @@ namespace wg
 			bool				tabLock = false;
 			bool				takesFocusFromChild = true;
 			String				tooltip;
+			CoordTransition_p	transition;
 			bool				usePickHandles = false;
 
 			Axis				wheelAxis = Axis::Y;						// Scroll direction of primary mouse wheel. Secondary mouse wheel is the oposite.
@@ -84,21 +85,6 @@ namespace wg
 			pts					wheelStepSizeX = 16;
 			pts					wheelStepSizeY = 16;
 		};
-
-/*
-		bool scrollX;
-		bool scrollY;
-		bool overlayScrollbars;
-		bool autoHideScrollbars;
-*/
-
-		/*	
-		*	corner skin
-		*	wheel handling
-		*	step size
-		*	page overlap
-		* 
-		*/
 
 
 		//.____ Creation ______________________________________________________
@@ -124,6 +110,10 @@ namespace wg
 		inline Size		viewSize() const;
 		inline Size		contentSize() const;
 
+		void			setTransition(CoordTransition* pTransition);
+		CoordTransition_p	transition() const { return m_pDefaultTransition; }
+
+		bool			isTransitioning() const { return m_pTransitionInUse; }
 
 	protected:
 		ScrollCapsule();
@@ -151,6 +141,8 @@ namespace wg
 			m_wheelAccelFactor		= bp.wheelAccelFactor;
 			m_bWheelFollowsScrollbar = bp.wheelFollowsScrollbar;
 
+			m_pDefaultTransition	= bp.transition;
+
 			m_cornerSkin.set( bp.cornerSkin );
 
 			if (bp.child)
@@ -159,6 +151,7 @@ namespace wg
 
 		virtual ~ScrollCapsule();
 
+		void		_update(int microPassed, int64_t microsecTimestamp) override;
 		void		_receive(Msg * pMsg) override;
 		void		_maskPatches(PatchesSPX& patches, const RectSPX& geo, const RectSPX& clip) override;
 
@@ -166,6 +159,7 @@ namespace wg
 		bool		_alphaTest(const CoordSPX& ofs) override;
 		void		_resize(const SizeSPX& size, int scale) override;
 		void		_setState(State state) override;
+
 
 
 		spx			_matchingHeight(spx width, int scale) const override;
@@ -179,6 +173,7 @@ namespace wg
 
 		void		_updateRegions();
 		bool		_setViewOffset( CoordSPX offset );
+		bool 		_setViewTransition( CoordSPX offset, CoordTransition * pTransition );
 		void		_childCanvasCorrection();
 		void		_updateScrollbars( const RectSPX& oldCanvas, const RectSPX& oldView );
 
@@ -250,12 +245,22 @@ namespace wg
 
 		SkinSlot	m_cornerSkin;
 
+		// Geometry for regions and child.
+
 		RectSPX		m_viewRegion;
 		RectSPX		m_scrollbarXRegion;							// Region for horizontal scrollbar
 		RectSPX		m_scrollbarYRegion;							// Region for vertical scrollbar
 
 		RectSPX		m_childCanvas;								// Child canvas in our coordinate system
 
+		// Transition related
+
+		CoordTransition_p	m_pDefaultTransition;
+		CoordTransition_p	m_pTransitionInUse;
+		int					m_transitionProgress = 0;
+
+		CoordSPX			m_startViewOfs;
+		CoordSPX			m_endViewOfs;
 
 	};
 

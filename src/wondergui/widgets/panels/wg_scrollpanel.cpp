@@ -420,7 +420,6 @@ namespace wg
 	{
 		CoordSPX offset = ptsToSpx(_offset, m_scale);
 
-
 		if( pTransition || m_pDefaultTransition )
 			return _setViewTransition(offset, pTransition);
 		else
@@ -1311,7 +1310,6 @@ namespace wg
 			RectSPX newNiceToHaveArea = RectSPX::overlap(niceToHaveArea + m_childCanvas.pos(), m_childWindow);
 
 			_requestInView(newMustHaveArea, newNiceToHaveArea);
-
 		}
 	}
 
