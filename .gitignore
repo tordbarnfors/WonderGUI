@@ -33,6 +33,7 @@ glew/
 build/
 vsbuild/
 68build/
+tuxbuild/
 
 freetype/include
 freetype/lib

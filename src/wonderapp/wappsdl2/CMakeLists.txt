@@ -50,11 +50,11 @@ target_link_directories(wappsdl2sw PUBLIC
 )
 
 target_link_libraries(wappsdl2sw PRIVATE
+    wg_theme_simplistic
+    wgdebugger
     wgsoftgfx
     wgfreetypefont
     wondergui
-    wgdebugger
-    wg_theme_simplistic
     ${FREETYPE2_LIB}
     ${SDL2_LIBS}
     ${SDL2IMAGE_LIBS}

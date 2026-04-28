@@ -20,7 +20,7 @@
 
 =========================================================================*/
 #include "wg_texteditorinfopanel.h"
-#include <wg_TextEditor.h>
+#include <wg_texteditor.h>
 #include <wg_numberdisplay.h>
 #include <wg_basicnumberlayout.h>
 

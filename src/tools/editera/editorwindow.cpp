@@ -73,6 +73,9 @@ bool EditorWindow::_setupGUI()
 
 	// Create and setup a scrollpanel to wrap the text editor.
 
+	auto pScrollCapsule = Oldskool::ScrollCapsuleXY::create();
+
+/*
 	ScrollCapsule::Blueprint bp;
 	bp.scrollbarX.back = BoxSkin::create( {.color = Color::AntiqueWhite, .outlineColor = Color::Black, .outlineThickness = 1 } );
 	bp.scrollbarX.bar = BoxSkin::create( {.color = Color::LightGrey, .outlineColor = Color::Black, .outlineThickness = 1, .padding = 8 } );
@@ -83,6 +86,7 @@ bool EditorWindow::_setupGUI()
 	bp.cornerSkin = ColorSkin::create( {.color = Color::DarkGrey } );
 
 	auto pScrollCapsule = ScrollCapsule::create(bp);
+*/
 
 	//	pScrollPanel->setAutohideScrollbars(true, true);
 	//	pScrollPanel->setSizeConstraints(SizeConstraint::GreaterOrEqual, SizeConstraint::GreaterOrEqual);
