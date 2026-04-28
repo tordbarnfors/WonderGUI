@@ -307,6 +307,50 @@ namespace wg::Oldskool
 
 	inline bool exit() 
 	{
+		Fonts::Normal = nullptr;
+		Fonts::Bold = nullptr;
+		Fonts::Italic = nullptr;
+		Fonts::Mono = nullptr;
+
+		TextStyles::Heading1 = nullptr;
+		TextStyles::Heading2 = nullptr;
+		TextStyles::Heading3 = nullptr;
+		TextStyles::Heading4 = nullptr;
+		TextStyles::Heading5 = nullptr;
+		TextStyles::Heading6 = nullptr;
+		TextStyles::Strong = nullptr;
+		TextStyles::Emphasis = nullptr;
+		TextStyles::Code = nullptr;
+		TextStyles::Mono = nullptr;
+		TextStyles::FinePrint = nullptr;
+		TextStyles::NormalDark = nullptr;
+		TextStyles::NormalBright = nullptr;
+
+
+		TextLayouts::LeftNoWrap = nullptr;
+		TextLayouts::CenteredNoWrap = nullptr;
+
+		Skins::Plate = nullptr;
+		Skins::PlateNoBevel = nullptr;
+		Skins::Canvas = nullptr;
+		Skins::Window = nullptr;
+		Skins::Titlebar = nullptr;
+		Skins::Button = nullptr;
+		Skins::ToggleButton = nullptr;
+		Skins::Checkbox = nullptr;
+		Skins::RadioButton = nullptr;
+		Skins::SelectBox = nullptr;
+		Skins::SelectBoxEntry = nullptr;
+
+		Transitions::openClose = nullptr;
+
+		_pLabelCapsuleSkin = nullptr;
+		_pCapsuleLabelSkin = nullptr;
+		_pCapsuleLabelSkin2 = nullptr;
+		_pInvisibleBoxSkin = nullptr;
+		_pPlusMinusToggleSkin = nullptr;
+		_pSelectableEntrySkin = nullptr;
+
 		return true; 
 	}
 
@@ -587,6 +631,7 @@ namespace wg::Oldskool
 			bool				tabLock = false;
 			bool				takesFocusFromChild = true;
 			String				tooltip;
+			CoordTransition_p	transition;
 			bool				usePickHandles = false;
 
 			Axis				wheelAxis = Axis::Y;						// Scroll direction of primary mouse wheel. Secondary mouse wheel is the oposite.
@@ -647,6 +692,7 @@ namespace wg::Oldskool
 			bool				tabLock = false;
 			bool				takesFocusFromChild = true;
 			String				tooltip;
+			CoordTransition_p	transition;
 			bool				usePickHandles = false;
 
 			Axis				wheelAxis = Axis::Y;						// Scroll direction of primary mouse wheel. Secondary mouse wheel is the oposite.
@@ -707,6 +753,7 @@ namespace wg::Oldskool
 			bool				tabLock = false;
 			bool				takesFocusFromChild = true;
 			String				tooltip;
+			CoordTransition_p	transition;
 			bool				usePickHandles = false;
 
 			Axis				wheelAxis = Axis::Y;						// Scroll direction of primary mouse wheel. Secondary mouse wheel is the oposite.
