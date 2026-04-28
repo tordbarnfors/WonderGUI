@@ -24,6 +24,7 @@
 #include <wg_debugger.h>
 #include <wg_freetypefont.h>
 #include <themes/simplistic/wg_simplistic.h>
+#include <widgetkits/wg_oldskool.h>
 
 #ifdef WIN32
 #	include <SDL.h>
@@ -69,6 +70,7 @@ public:
 	Surface_p 		loadSurface(const std::string& path, SurfaceFactory* pFactory = nullptr, const Surface::Blueprint& bp = Surface::Blueprint() ) override;
 
 	Theme_p			initDefaultTheme() override;
+	bool			initDefaultWidgetKit() override;
 
 	bool			notifyPopup(const std::string& title, const std::string& message, wapp::IconType iconType) override;
 
@@ -379,6 +381,7 @@ bool init_wondergui()
 
 void exit_wondergui()
 {
+	wkit::exit();
 	Base::exit();
 	delete g_pHostBridge;
 	g_pHostBridge = nullptr;
@@ -923,6 +926,37 @@ Theme_p MyAppAPI::initDefaultTheme()
 	return pTheme;
 }
 
+//____ initDefaultWidgetKit() ____________________________________________________
+
+bool MyAppAPI::initDefaultWidgetKit()
+{
+
+	if( !wkit::isInitialized() )
+	{
+		auto path = resourceDirectory();
+
+		auto pFont1Blob = loadBlob( path + "NotoSans-Regular.ttf");
+		auto pFont2Blob = loadBlob( path + "NotoSans-Bold.ttf");
+		auto pFont3Blob = loadBlob( path + "NotoSans-Italic.ttf");
+		auto pFont4Blob = loadBlob( path + "DroidSansMono.ttf");
+
+		auto pFont1 = FreeTypeFont::create(pFont1Blob);
+		auto pFont2 = FreeTypeFont::create(pFont2Blob);
+		auto pFont3 = FreeTypeFont::create(pFont3Blob);
+		auto pFont4 = FreeTypeFont::create(pFont4Blob);
+
+		auto pSkinBlocks = loadSurface(path + "oldskool_skinblocks.png");
+
+		if (!wkit::init(pFont1, pFont2, pFont3, pFont4, pSkinBlocks))
+		{
+			Base::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "Failed to init default widget kit", nullptr, nullptr, __func__, __FILE__, __LINE__);
+			return false;
+		}
+	}
+
+	return true;
+}
+
 
 
 //____ notifyPopup() __________________________________________________________
@@ -1209,12 +1243,12 @@ bool MyAppAPI::closeLibrary(wapp::LibId lib)
 
 std::string MyAppAPI::resourceDirectory()
 {
-#ifdef __APPLE__
-	char* pBasePath = SDL_GetBasePath();
-#else
 	char* pBasePath = nullptr;
+/*
+#ifdef __APPLE__
+	pBasePath = SDL_GetBasePath();
 #endif
-
+*/
 	if( pBasePath == nullptr )
 		return "resources/";
 	else

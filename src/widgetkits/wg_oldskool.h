@@ -23,10 +23,30 @@
 #define	WG_THEME_OLDSKOOL_DOT_H
 #pragma once
 
+#include <wg_font.h>
+#include <wg_textstyle.h>
+#include <wg_basictextlayout.h>
+#include <wg_blockskin.h>
+#include <wg_boxskin.h>
+#include <wg_colorskin.h>
+
+#include <wg_labelcapsule.h>
+#include <wg_paddingcapsule.h>
+#include <wg_scrollcapsule.h>
+
+#include <wg_splitpanel.h>
+#include <wg_tablepanel.h>
+#include <wg_drawerpanel.h>
+
 #include <wg_button.h>
+#include <wg_togglebutton.h>
+#include <wg_lineeditor.h>
+#include <wg_texteditor.h>
+#include <wg_textdisplay.h>
+#include <wg_selectbox.h>
 
 
-namespace wg::Oldskool
+namespace wg::oldskool
 {
 	namespace Colors
 	{
@@ -114,11 +134,18 @@ namespace wg::Oldskool
 	inline Skin_p		_pSelectableEntrySkin;
 
 
+	inline bool isInitialized()
+	{
+		return Fonts::Normal != nullptr;
+	}
 
 
-
-	inline bool init(Font* pNormal, Font* pBold, Font* pItalic, Font* pMonospace, Surface* pWidgets ) 
+	inline bool init(Font* pNormal, Font* pBold, Font* pItalic, Font* pMonospace, Surface* pSkinBlocks ) 
 	{ 
+		if( !pNormal || !pBold || !pItalic || !pMonospace || !pSkinBlocks )
+			return false;
+
+
 		Fonts::Normal	= pNormal;
 		Fonts::Bold		= pBold;
 		Fonts::Italic	= pItalic;
@@ -156,7 +183,7 @@ namespace wg::Oldskool
 		Transitions::openClose = ValueTransition::create(250000);
 
 		Skins::Plate = BlockSkin::create(WGBP(BlockSkin,
-			_.surface = pWidgets,
+			_.surface = pSkinBlocks,
 			_.firstBlock = { 0,60,10,10 },
 			_.padding = 3,
 			_.frame = 3));
@@ -166,13 +193,13 @@ namespace wg::Oldskool
 			_.padding = 3));
 
 		Skins::Canvas = BlockSkin::create(WGBP(BlockSkin,
-			_.surface = pWidgets,
+			_.surface = pSkinBlocks,
 			_.firstBlock = { 24,60,10,10 },
 			_.padding = 3,
 			_.frame = 3));
 
 		Skins::Window = BlockSkin::create(WGBP(BlockSkin,
-			_.surface = pWidgets,
+			_.surface = pSkinBlocks,
 			_.firstBlock = { 36,60,10,10 },
 			_.padding = 5,
 			_.frame = 3));
@@ -209,7 +236,7 @@ namespace wg::Oldskool
 			_.padding = { 16, 4, 4, 4 }));
 
 		_pPlusMinusToggleSkin = BlockSkin::create(WGBP(BlockSkin,
-			_.surface = pWidgets,
+			_.surface = pSkinBlocks,
 			_.firstBlock = { 0,0,14,14 },
 			_.axis = Axis::X,
 			_.blockSpacing = 2,
@@ -224,7 +251,7 @@ namespace wg::Oldskool
 		));
 
 		Skins::SplitHandle = BlockSkin::create(WGBP(BlockSkin,
-			_.surface = pWidgets,
+			_.surface = pSkinBlocks,
 			_.firstBlock = { 0,15,10,10 },
 			_.axis = Axis::X,
 			_.blockSpacing = 1,
@@ -235,7 +262,7 @@ namespace wg::Oldskool
 
 
 		Skins::Button = BlockSkin::create(WGBP(BlockSkin,
-			_.surface = pWidgets,
+			_.surface = pSkinBlocks,
 			_.firstBlock = { 0,15,10,10 },
 			_.axis = Axis::X,
 			_.blockSpacing = 1,
@@ -246,7 +273,7 @@ namespace wg::Oldskool
 
 
 		Skins::ToggleButton = BlockSkin::create(WGBP(BlockSkin,
-			_.surface = pWidgets,
+			_.surface = pSkinBlocks,
 			_.firstBlock = { 0,26,10,10 },
 			_.axis = Axis::X,
 			_.blockSpacing = 1,
@@ -256,7 +283,7 @@ namespace wg::Oldskool
 		));
 
 		Skins::Checkbox = BlockSkin::create(WGBP(BlockSkin,
-			_.surface = pWidgets,
+			_.surface = pSkinBlocks,
 			_.firstBlock = { 0,37,10,10 },
 			_.axis = Axis::X,
 			_.blockSpacing = 1,
@@ -264,7 +291,7 @@ namespace wg::Oldskool
 		));
 
 		Skins::RadioButton = BlockSkin::create(WGBP(BlockSkin,
-			_.surface = pWidgets,
+			_.surface = pSkinBlocks,
 			_.firstBlock = { 0,48,10,10 },
 			_.axis = Axis::X,
 			_.blockSpacing = 1,
@@ -272,7 +299,7 @@ namespace wg::Oldskool
 		));
 
 		Skins::SelectBox = BlockSkin::create(WGBP(BlockSkin,
-			_.surface = pWidgets,
+			_.surface = pSkinBlocks,
 			_.firstBlock = { 96,0,34,22 },
 			_.frame = { 4,25,4,4 },
 			_.padding = { 3, 25, 3, 4, },
@@ -375,14 +402,14 @@ namespace wg::Oldskool
 			PointerStyle	pointer = PointerStyle::Undefined;
 			bool			selectable = false;
 			bool			selectOnPress = false;
-			Skin_p			skin = wg::Oldskool::Skins::Button;
+			Skin_p			skin = Skins::Button;
 			bool			stickyFocus = false;
 			bool			tabLock = false;
 			String			tooltip;
 		};
 
-		inline static wg::Button_p	create() { return new wg::Oldskool::Button(Blueprint()); }
-		inline static wg::Button_p	create(const Blueprint& blueprint) { return new wg::Oldskool::Button(blueprint); }
+		inline static wg::Button_p	create() { return new Button(Blueprint()); }
+		inline static wg::Button_p	create(const Blueprint& blueprint) { return new Button(blueprint); }
 
 	protected:
 
@@ -422,8 +449,8 @@ namespace wg::Oldskool
 			String			tooltip;
 		};
 
-		inline static wg::ToggleButton_p	create() { return new wg::Oldskool::ToggleButton(Blueprint()); }
-		inline static wg::ToggleButton_p	create(const Blueprint& blueprint) { return new wg::Oldskool::ToggleButton(blueprint); }
+		inline static wg::ToggleButton_p	create() { return new ToggleButton(Blueprint()); }
+		inline static wg::ToggleButton_p	create(const Blueprint& blueprint) { return new ToggleButton(blueprint); }
 
 	protected:
 
@@ -462,8 +489,8 @@ namespace wg::Oldskool
 			String			tooltip;
 		};
 
-		inline static wg::ToggleButton_p	create() { return new wg::Oldskool::Checkbox(Blueprint()); }
-		inline static wg::ToggleButton_p	create(const Blueprint& blueprint) { return new wg::Oldskool::Checkbox(blueprint); }
+		inline static wg::ToggleButton_p	create() { return new Checkbox(Blueprint()); }
+		inline static wg::ToggleButton_p	create(const Blueprint& blueprint) { return new Checkbox(blueprint); }
 
 	protected:
 
@@ -502,7 +529,7 @@ namespace wg::Oldskool
 			String			tooltip;
 		};
 
-		inline static wg::ToggleButton_p	create(const Blueprint& blueprint) { return new wg::Oldskool::RadioButton(blueprint); }
+		inline static wg::ToggleButton_p	create(const Blueprint& blueprint) { return new RadioButton(blueprint); }
 
 	protected:
 
@@ -991,6 +1018,47 @@ namespace wg::Oldskool
 
 		ListTable(const Blueprint& bp) : wg::TablePanel(bp) {}
 	};
+
+	//____ TextEditor ______________________________________________________
+
+
+	class TextEditor : public wg::TextEditor
+	{
+	public:
+
+		//____ Blueprint ______________________________________________________
+
+		struct Blueprint
+		{
+			Object_p		baggage;
+			bool			disabled = false;
+			bool			dropTarget = false;
+			EditableText::Blueprint	editor = { .style = TextStyles::NormalDark };
+			Finalizer_p		finalizer = nullptr;
+			int				id = 0;
+			MarkPolicy		markPolicy = MarkPolicy::AlphaTest;
+			bool			pickable = false;
+			uint8_t			pickCategory = 0;
+			bool			pickHandle = false;
+			PointerStyle	pointer = PointerStyle::Undefined;
+			KeyAction		returnKeyAction = KeyAction::Insert;
+			bool			selectable = false;
+			Skin_p			skin = Skins::Canvas;
+			bool			stickyFocus = false;
+			bool			tabLock = false;
+			String			tooltip;
+		};
+
+		inline static wg::TextEditor_p	create() { return new TextEditor(Blueprint()); }
+		inline static wg::TextEditor_p	create(const Blueprint& blueprint) { return new TextEditor(blueprint); }
+
+	protected:
+
+		TextEditor(const Blueprint& bp) : wg::TextEditor(bp) {}
+
+
+	};
+
 
 	//____ LineEditor ______________________________________________________
 

@@ -20,7 +20,6 @@
 #include <wg_linearbackend.h>
 
 #include <wg_streamtrimbackend.h>
-#include <themes/simplistic/wg_simplistic.h>
 
 #include <string>
 #include <fstream>

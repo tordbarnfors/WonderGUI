@@ -7,14 +7,18 @@ const TypeInfo TextBuffer::TYPEINFO = { "TextBuffer", &Object::TYPEINFO };
 
 //____ constructor ____________________________________________________________
 
-TextBuffer::TextBuffer(Editera* pApp, wapp::API* pAPI, Theme * pTheme, TextLayout * pTextLayout, TextStyle * pTextStyle )
+TextBuffer::TextBuffer(Editera* pApp, wapp::API* pAPI, TextLayout * pTextLayout, TextStyle * pTextStyle )
 	: m_pApp(pApp)
 	, m_pAPI(pAPI)
 {
 
 	// Create our TextEditor widget
 
-	auto pTextEditor = TextEditor::create(WGOVR(pTheme->textEditor(), _.editor.layout = pApp->m_pEditorLayout, _.editor.style = pApp->m_pEditorStyle, _.stickyFocus = true));
+	auto pTextEditor = wkit::TextEditor::create( {
+		.editor = { .layout = pApp->m_pEditorLayout, .style = pApp->m_pEditorStyle },
+		.stickyFocus = true
+	});
+
 	m_pEditor = pTextEditor;
 
 	Base::msgRouter()->addRoute(pTextEditor, MsgType::TextEdit, [this](Msg* pMsg) { this->m_bContentModified = true; });

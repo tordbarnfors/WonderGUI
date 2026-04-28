@@ -7,7 +7,7 @@
 #include <string>
 #include <fstream>
 
-#include <themes/wg_oldskool.h>
+#include <widgetkits/wg_oldskool.h>
 
 using namespace wg;
 using namespace wapp;
@@ -23,7 +23,7 @@ EditorWindow::EditorWindow(API * pAPI, Editera* pApp, std::string title, std::st
 	m_pApp = pApp;
 	m_title = title;
 
-	m_pTextBuffer = TextBuffer::create(pApp, pAPI, pApp->m_pTheme, pApp->m_pEditorLayout, pApp->m_pEditorStyle );
+	m_pTextBuffer = TextBuffer::create(pApp, pAPI, pApp->m_pEditorLayout, pApp->m_pEditorStyle );
 
 //	m_path = path;
 		
@@ -62,8 +62,6 @@ bool EditorWindow::_setupGUI()
 {
 	//
 
-	auto pTheme = m_pApp->m_pTheme;
-
 	auto pMainContainer = PackPanel::create();
 	pMainContainer->setAxis(Axis::Y);
 
@@ -73,29 +71,9 @@ bool EditorWindow::_setupGUI()
 
 	// Create and setup a scrollpanel to wrap the text editor.
 
-	auto pScrollCapsule = Oldskool::ScrollCapsuleXY::create();
-
-/*
-	ScrollCapsule::Blueprint bp;
-	bp.scrollbarX.back = BoxSkin::create( {.color = Color::AntiqueWhite, .outlineColor = Color::Black, .outlineThickness = 1 } );
-	bp.scrollbarX.bar = BoxSkin::create( {.color = Color::LightGrey, .outlineColor = Color::Black, .outlineThickness = 1, .padding = 8 } );
-
-	bp.scrollbarY.back = BoxSkin::create( {.color = Color::AntiqueWhite, .outlineColor = Color::Black, .outlineThickness = 1 } );
-	bp.scrollbarY.bar = BoxSkin::create( {.color = Color::LightGrey, .outlineColor = Color::Black, .outlineThickness = 1, .padding = 8 } );
-
-	bp.cornerSkin = ColorSkin::create( {.color = Color::DarkGrey } );
-
-	auto pScrollCapsule = ScrollCapsule::create(bp);
-*/
-
-	//	pScrollPanel->setAutohideScrollbars(true, true);
-	//	pScrollPanel->setSizeConstraints(SizeConstraint::GreaterOrEqual, SizeConstraint::GreaterOrEqual);
-
-//	pScrollPanel->setTransition(CoordTransition::create(300000));
-
+	auto pScrollCapsule = wkit::ScrollCapsuleXY::create();
 
 	pScrollCapsule->slot = m_pTextBuffer->editor();
-
 
 	// 
 
@@ -120,14 +98,14 @@ bool EditorWindow::_setupGUI()
 
 Widget_p EditorWindow::_createTopBar()
 {
-	auto pBar = WGCREATE( PackPanel, _.axis = Axis::X, _.layout = m_pApp->m_pLayout, _.skin = Oldskool::Skins::Plate );
+	auto pBar = WGCREATE( PackPanel, _.axis = Axis::X, _.layout = m_pApp->m_pLayout, _.skin = wkit::Skins::Plate );
 
 
-	auto pClearButton = WGCREATE( Oldskool::Button, _.label.text = "Clear" );
-	auto pNewButton = WGCREATE( Oldskool::Button, _.label.text = "New");
-	auto pLoadButton = WGCREATE( Oldskool::Button, _.label.text = "Load");
-	auto pSaveButton = WGCREATE( Oldskool::Button, _.label.text = "Save");
-	auto pSaveAsButton = WGCREATE( Oldskool::Button, _.label.text = "Save as...");
+	auto pClearButton = WGCREATE( wkit::Button, _.label.text = "Clear" );
+	auto pNewButton = WGCREATE( wkit::Button, _.label.text = "New");
+	auto pLoadButton = WGCREATE( wkit::Button, _.label.text = "Load");
+	auto pSaveButton = WGCREATE( wkit::Button, _.label.text = "Save");
+	auto pSaveAsButton = WGCREATE( wkit::Button, _.label.text = "Save as...");
 
 
 	auto pSpacer = WGCREATE( Filler, _.defaultSize = { 20,1 } );

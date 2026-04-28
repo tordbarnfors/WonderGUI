@@ -80,6 +80,7 @@ namespace wapp
 			const wg::Surface::Blueprint& blueprint = wg::Surface::Blueprint()) = 0;
 
 		virtual wg::Theme_p		initDefaultTheme() = 0;
+		virtual bool			initDefaultWidgetKit() = 0;
 
 		virtual bool			notifyPopup(const std::string& title, const std::string& message, IconType iconType) = 0;
 
