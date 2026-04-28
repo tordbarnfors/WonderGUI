@@ -98,6 +98,7 @@ void WgRoot3Capsule::_setState( WgState state )
 void WgRoot3Capsule::_childRequestResize( wg::StaticSlot * pSlot )
 {
 	_requestResize();
+	slot->_resize(m_geo.size(),RootPanel::m_scale);
 }
 
 void WgRoot3Capsule::_childRequestRender(wg::StaticSlot* pSlot, const wg::RectSPX& rect)
