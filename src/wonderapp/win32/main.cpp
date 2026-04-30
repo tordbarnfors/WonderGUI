@@ -10,6 +10,8 @@
 #include <win32window.h>
 #include <win32api.h>
 
+#include <wg_debugger.h>
+
 #include <vector>
 
 using namespace wg;
@@ -30,13 +32,18 @@ PointerStyle				g_currentPointerStyle = PointerStyle::Undefined;
 
 int							g_mouseCaptureRefCount = 0;
 
+DebugFrontend_p				g_pDebugFrontend;
+DebugBackend_p				g_pDebugBackend;
+
+Window_p					g_pDebugWindow;
 
 std::wstring _stringToWString(const std::string& str);
 
 static void _setMouseButton(HWND hwnd, MouseButton button, bool bPressed);
 static void _setPointer();
 
-
+bool		init_debugger(Win32API* pAPI);
+void		exit_debugger();
 
 
 //____ Win32HostBridge ___________________________________________________________
@@ -88,7 +95,16 @@ LRESULT CALLBACK windowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 			bool bClose = pointer->userWindow()->onClose();
 
 			if (bClose)
-				g_pApp->closeWindow(pointer->userWindow());
+			{
+				if (pointer->userWindow() == g_pDebugWindow)
+				{
+					g_pDebugWindow = nullptr;
+					g_pDebugFrontend->deactivate();
+				}
+				else
+					g_pApp->closeWindow(pointer->userWindow());
+
+			}
 			return 0;
 		}
 
@@ -465,11 +481,14 @@ int main(int arch, char * argv[] ) {
 	auto pGfxDevice = wg::GfxDeviceGen2::create(pBackend);
 	Base::setDefaultGfxDevice(pGfxDevice);
 
-
 	// Create app and API visitor, make any app-specific initialization
 
 	g_pApp = WonderApp::create();
 	auto pAPI = new Win32API();
+
+	// Create and initialize debugger
+
+	init_debugger(pAPI);
 
 	// Initialize the app
 
@@ -512,6 +531,8 @@ int main(int arch, char * argv[] ) {
 
 		Sleep(1);
 	}
+
+	exit_debugger();
 
 	g_pApp->exit();
 	g_pApp = nullptr;
@@ -735,4 +756,57 @@ std::wstring _stringToWString(const std::string& str)
 		&result[0], sizeNeeded);
 
 	return result;
+}
+
+//____ init_debugger() ________________________________________________________
+
+bool init_debugger(Win32API* pAPI)
+{
+
+	auto pTheme = pAPI->initDefaultTheme();
+	auto pIconSurface = pAPI->loadSurface("resources/debugger_gfx.png");
+	auto pTransparencyGrid = pAPI->loadSurface("resources/checkboardtile.png", nullptr, { .tiling = true });
+
+	if (!pTheme || !pIconSurface || !pTransparencyGrid)
+		return false;
+
+	g_pDebugBackend = DebugBackend::create();
+
+	g_pDebugFrontend = WGCREATE(DebugFrontend, _.backend = g_pDebugBackend, _.theme = pTheme, _.icons = pIconSurface, _.transparencyGrid = pTransparencyGrid);
+
+	Base::msgRouter()->addRoute(MsgType::KeyPress, [pAPI](Msg* _pMsg) {
+
+		KeyPressMsg* pMsg = static_cast<KeyPressMsg*>(_pMsg);
+
+		if (pMsg->translatedKeyCode() == Key::F12 && (pMsg->modKeys() == ModKeys::MacCtrlShift || pMsg->modKeys() == ModKeys::StdCtrlShift))
+		{
+			if (!g_pDebugWindow)
+			{
+				SizeI size = g_pDebugFrontend->spxSize() / 64;
+
+				auto pWindow = wapp::Window::create(pAPI, { .debug = false, .size = Size(size), .title = "Debugger" });
+				g_pDebugWindow = pWindow;
+
+				pWindow->mainCapsule()->slot = g_pDebugFrontend;
+				g_pDebugFrontend->activate();
+			}
+			else
+			{
+				g_pDebugWindow = nullptr;
+				g_pDebugFrontend->deactivate();
+			}
+		}
+
+		});
+
+	return true;
+}
+
+//____ exitDebugger() _________________________________________________________
+
+void exit_debugger()
+{
+	g_pDebugWindow = nullptr;
+	g_pDebugFrontend = nullptr;
+	g_pDebugBackend = nullptr;
 }

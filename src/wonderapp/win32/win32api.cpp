@@ -38,8 +38,10 @@
 using namespace wg;
 using namespace wapp;
 
-extern float		g_ticksToMicroseconds;
-extern Theme_p		g_pDefaultTheme;
+extern float			g_ticksToMicroseconds;
+extern Theme_p			g_pDefaultTheme;
+extern DebugFrontend_p	g_pDebugFrontend;
+
 
 extern std::wstring _stringToWString(const std::string& str);
 
@@ -244,6 +246,37 @@ wg::Theme_p Win32API::initDefaultTheme()
 
 	return pTheme;
 }
+
+//____ initDefaultWidgetKit() ____________________________________________________
+
+bool Win32API::initDefaultWidgetKit()
+{
+	if (!wkit::isInitialized())
+	{
+		auto path = resourceDirectory();
+
+		auto pFont1Blob = loadBlob(path + "NotoSans-Regular.ttf");
+		auto pFont2Blob = loadBlob(path + "NotoSans-Bold.ttf");
+		auto pFont3Blob = loadBlob(path + "NotoSans-Italic.ttf");
+		auto pFont4Blob = loadBlob(path + "DroidSansMono.ttf");
+
+		auto pFont1 = FreeTypeFont::create(pFont1Blob);
+		auto pFont2 = FreeTypeFont::create(pFont2Blob);
+		auto pFont3 = FreeTypeFont::create(pFont3Blob);
+		auto pFont4 = FreeTypeFont::create(pFont4Blob);
+
+		auto pSkinBlocks = loadSurface( "resources/skin_widgets.png");
+
+		if (!wkit::init(pFont1, pFont2, pFont3, pFont4, pSkinBlocks))
+		{
+			Base::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "Failed to init default widget kit", nullptr, nullptr, __func__, __FILE__, __LINE__);
+			return false;
+		}
+	}
+
+	return true;
+}
+
 
 //____ notifyPopup() __________________________________________________________
 
@@ -452,6 +485,7 @@ WindowAPI::Result Win32API::_createWindow(Window* pAPI, wg::Placement origin, wg
 	result.geo = { pos, size };
 	result.errorMsg = result.success ? "" : "Failed to create Win32 window.";
 	result.root = pWindow->rootPanel();
+	result.debugger = g_pDebugFrontend;
 	return result;
 }
 

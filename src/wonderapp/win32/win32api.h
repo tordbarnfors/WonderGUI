@@ -40,6 +40,8 @@ public:
 											const wg::Surface::Blueprint& bp = wg::Surface::Blueprint()) override;
 
 	wg::Theme_p					initDefaultTheme() override;
+	bool						initDefaultWidgetKit() override;
+
 
 	bool						notifyPopup(const std::string& title, const std::string& message, wapp::IconType iconType) override;
 
