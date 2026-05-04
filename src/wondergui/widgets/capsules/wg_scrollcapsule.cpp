@@ -345,17 +345,26 @@ namespace wg
 
 	void ScrollCapsule::_releaseChild(StaticSlot * pSlot)
 	{
-		Capsule::_releaseChild(pSlot);
+		slot._clearWidget();
+		_requestRender();
 		_updateRegions();
+
+		_requestResize();
 	}
 
 	//____ _replaceChild() _______________________________________________________
 
 	void ScrollCapsule::_replaceChild(StaticSlot * pSlot, Widget * pWidget)
-	{
-		Capsule::_replaceChild(pSlot, pWidget);
+{
+		slot._setWidget(pWidget );
+
+		_requestRender();
+
 		_updateRegions();
 		_setViewOffset({0,0});
+
+		m_bChildRequestedResize = true;		// Not technically true, but we want same behavior.
+		_requestResize();
 	}
 
 	//____ _componentPos() ____________________________________________________
@@ -1035,7 +1044,4 @@ namespace wg
 		else
 			return std::make_tuple(m_viewRegion.y - m_childCanvas.y,m_viewRegion.h, m_childCanvas.h);
 	}
-
-
-
 }
