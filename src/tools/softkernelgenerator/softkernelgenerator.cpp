@@ -62,12 +62,10 @@ bool MyApp::_setupGUI(wapp::API* pAPI)
 
 	//
 
-	m_pTheme = pAPI->initDefaultTheme();
-	if (!m_pTheme)
-		return false;
+	pAPI->initDefaultWidgetKit();
 
-	m_pTextStyle = m_pTheme->defaultStyle();
-	m_pLabelStyle = m_pTheme->heading5Style();
+	m_pTextStyle = wkit::TextStyles::NormalDark;
+	m_pLabelStyle = wkit::TextStyles::Heading5;
 
 	Base::setDefaultStyle(m_pTextStyle);
 
@@ -79,7 +77,7 @@ bool MyApp::_setupGUI(wapp::API* pAPI)
 
 	auto pBasePanel = PackPanel::create( { .axis = Axis::Y });
 
-	auto pWindow = ScrollPanel::create(m_pTheme->scrollPanelY());
+	auto pWindow = wkit::ScrollCapsuleY::create();
 
 	pWindow->slot = _buildList();
 		
@@ -91,7 +89,7 @@ bool MyApp::_setupGUI(wapp::API* pAPI)
 
 	m_pWindow->mainCapsule()->slot = pBasePanel;
 
-	m_pScrollPanel = pWindow;
+	m_pScrollCapsule = pWindow;
 
 	return true;
 }
@@ -310,7 +308,7 @@ void MyApp::_refreshSummary()
 
 void MyApp::_refreshList()
 {
-	m_pScrollPanel->slot = _buildList();
+	m_pScrollCapsule->slot = _buildList();
 }
 
 
@@ -319,13 +317,13 @@ void MyApp::_refreshList()
 
 Widget_p	MyApp::_buildButtonRow()
 {
-	auto pButtonRow = PackPanel::create({ .axis = Axis::X, .skin = m_pTheme->plateSkin() });
+	auto pButtonRow = PackPanel::create({ .axis = Axis::X, .skin = wkit::Skins::Plate });
 	pButtonRow->setSpacing(2, 4, 2);
 
-	auto pClearButton = Button::create( WGOVR(m_pTheme->pushButton(), _.label.text = "Clear"));
-	auto pResetButton = Button::create( WGOVR(m_pTheme->pushButton(), _.label.text = "Reset"));
-	auto pLoadButton = Button::create(WGOVR(m_pTheme->pushButton(), _.label.text = "Load", _.disabled = true ));
-	auto pSaveButton = Button::create(WGOVR(m_pTheme->pushButton(), _.label.text = "Save", _.disabled = true));
+	auto pClearButton = WGCREATE( wkit::Button, _.label.text = "Clear");
+	auto pResetButton = WGCREATE( wkit::Button, _.label.text = "Reset");
+	auto pLoadButton = WGCREATE( wkit::Button, _.label.text = "Load", _.disabled = true );
+	auto pSaveButton = WGCREATE( wkit::Button, _.label.text = "Save", _.disabled = true);
 
 	Base::msgRouter()->addRoute( pClearButton, MsgType::Select, [this](Msg*) {this->clear(); });
 	Base::msgRouter()->addRoute( pResetButton, MsgType::Select, [this](Msg*) {this->reset(); });
@@ -355,7 +353,7 @@ Widget_p MyApp::_buildList()
 
 	pList->setSlotWeight(pList->slots.begin(), pList->slots.end(), 0.f);
 	
-	pList->slots << Filler::create({ .skin = m_pTheme->canvasSkin() });
+	pList->slots << Filler::create({ .skin = wkit::Skins::Canvas });
 
 	m_pList = pList;
 
@@ -378,10 +376,10 @@ PackPanel_p MyApp::_buildToggleButtonRow(std::string title, std::vector<KernelDB
 
 	for (auto blitType : blitTypes)
 	{
-		auto pWidget = ToggleButton::create(WGOVR(m_pTheme->checkbox(),
+		auto pWidget = WGCREATE( wkit::Checkbox,
 			_.id = (int)blitType;
 			_.label.text = labels[int(blitType)],
-			_.checked = selected[int(blitType)]));
+			_.checked = selected[int(blitType)]);
 
 		auto pObj = this;
 		Base::msgRouter()->addRoute(pWidget, MsgType::Toggle, pressCallback);
@@ -402,10 +400,10 @@ PackPanel_p MyApp::_buildToggleButtonRow(string title, std::vector<BlendMode> bl
 
 	for (auto blendMode : blendModes)
 	{
-		auto pWidget = ToggleButton::create(WGOVR(m_pTheme->checkbox(),
+		auto pWidget = WGCREATE( wkit::Checkbox,
 			_.id = (int)blendMode;
 			_.label.text = toString(blendMode),
-			_.checked = selected[int(blendMode)] ));
+			_.checked = selected[int(blendMode)] );
 
 		auto pObj = this;
 		Base::msgRouter()->addRoute(pWidget, MsgType::Toggle, pressCallback );
@@ -426,10 +424,10 @@ PackPanel_p MyApp::_buildToggleButtonRow(string title, std::vector<TintMode> tin
 
 	for (auto tintMode : tintModes)
 	{
-		auto pWidget = ToggleButton::create(WGOVR(m_pTheme->checkbox(),
+		auto pWidget = WGCREATE( wkit::Checkbox,
 			_.id = (int)tintMode;
 			_.label.text = toString(tintMode),
-			_.checked = selected[int(tintMode)] ));
+			_.checked = selected[int(tintMode)] );
 
 		auto pObj = this;
 		Base::msgRouter()->addRoute(pWidget, MsgType::Toggle, pressCallback );
@@ -449,10 +447,10 @@ PackPanel_p MyApp::_buildToggleButtonRow(string title, std::vector<PixelFormat> 
 
 	for (auto format : formats)
 	{
-		auto pWidget = ToggleButton::create(WGOVR(m_pTheme->checkbox(),
+		auto pWidget = WGCREATE( wkit::Checkbox,
 			_.id = (int)format;
 			_.label.text = toString(format),
-			_.checked = selected[int(format)]));
+			_.checked = selected[int(format)]);
 
 		auto pObj = this;
 		Base::msgRouter()->addRoute(pWidget, MsgType::Toggle, pressCallback );
@@ -468,7 +466,7 @@ PackPanel_p MyApp::_buildToggleButtonRow(string title, std::vector<PixelFormat> 
 
 Widget_p MyApp::_buildGlobalSettingsSection()
 {
-	auto pTopSection = PackPanel::create( { .axis = Axis::X, .skin = m_pTheme->canvasSkin(), .spacing = 10, .spacingAfter = 5, .spacingBefore = 5});
+	auto pTopSection = PackPanel::create( { .axis = Axis::X, .skin = wkit::Skins::Canvas, .spacing = 10, .spacingAfter = 5, .spacingBefore = 5});
 
 	// Togglebuttons for TintModes
 
@@ -543,7 +541,7 @@ Widget_p MyApp::_buildHeaderWithCloseButton(std::string title, std::function<voi
 		_.display.layout = m_pTextLayoutCentered
 	));
 
-	auto pButton = Button::create(WGOVR(m_pTheme->pushButton(), _.label.text = "Delete" ));
+	auto pButton = WGCREATE( wkit::Button, _.label.text = "Delete" );
 
 
 
@@ -593,7 +591,7 @@ Widget_p MyApp::_buildOptimizedBlitsSection()
 	int index = 0;
 	for (auto it = m_pDB->beginCustomBlits(); it < m_pDB->endCustomBlits(); it++)
 	{
-		auto pEntry = PackPanel::create( { .axis = Axis::Y, .skin = m_pTheme->canvasSkin() } );
+		auto pEntry = PackPanel::create( { .axis = Axis::Y, .skin = wkit::Skins::Canvas } );
 
 		// Top Row
 
@@ -635,8 +633,8 @@ Widget_p MyApp::_buildOptimizedBlitsSection()
 
 	// "Add Entry" button
 
-	auto pRow = PackPanel::create( { .axis = Axis::X, .skin = m_pTheme->canvasSkin() });
-	auto pButton = Button::create(WGOVR(m_pTheme->pushButton(), _.label.text = "Add Entry" ));
+	auto pRow = PackPanel::create( { .axis = Axis::X, .skin = wkit::Skins::Canvas });
+	auto pButton = WGCREATE( wkit::Button, _.label.text = "Add Entry" );
 
 	pRow->slots << Filler::create();
 	pRow->slots << pButton;
@@ -658,7 +656,7 @@ Widget_p MyApp::_buildOptimizedBlitsSection()
 
 wg::Widget_p MyApp::_buildListSummarySection()
 {
-	auto pSection = PackPanel::create( { .axis = Axis::Y, .skin = m_pTheme->canvasSkin() });
+	auto pSection = PackPanel::create( { .axis = Axis::Y, .skin = wkit::Skins::Canvas });
 	pSection->setSpacing(5, 10, 5);
 
 	auto kernelCount = m_pDB->countKernels();
@@ -749,18 +747,18 @@ wg::Widget_p MyApp::_buildLabeledList(int nColumns, std::initializer_list < std:
 
 wg::Widget_p MyApp::_buildExportSection()
 {
-	auto pSection = PackPanel::create({ .axis = Axis::X, .skin = m_pTheme->plateSkin() });
+	auto pSection = PackPanel::create({ .axis = Axis::X, .skin = wkit::Skins::Plate });
 
 	
 	auto pEditorLabel = TextDisplay::create( WGBP(TextDisplay,
 												  _.display.text = "AddKernel function name: "
 											));
 	
-	auto pEditor = LineEditor::create( WGOVR(m_pTheme->lineEditor(), _.editor.text = "addDefaultSoftKernels" ));
-	
+	auto pEditor = WGCREATE( wkit::LineEditor, _.editor.text = "addDefaultSoftKernels" );
+
 	m_pKernelFuncNameEditor = pEditor;
 	
-	auto pButton = Button::create(WGOVR(m_pTheme->pushButton(), _.label.text = "Export Source Code"));
+	auto pButton = WGCREATE( wkit::Button, _.label.text = "Export Source Code");
 
 	pSection->slots << pEditorLabel;
 	pSection->slots << pEditor;

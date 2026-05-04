@@ -69,14 +69,12 @@ private:
 	
 	wapp::Window_p		m_pWindow;
 
-	wg::Theme_p			m_pTheme;
-
 	wg::TextStyle_p		m_pTextStyle;
 	wg::TextStyle_p		m_pLabelStyle;
 
 	wg::TextLayout_p	m_pTextLayoutCentered;
 
-	wg::ScrollPanel_p	m_pScrollPanel;
+	wg::ScrollCapsule_p	m_pScrollCapsule;
 	wg::PackPanel_p		m_pList;
 	wg::LineEditor_p	m_pKernelFuncNameEditor;
 

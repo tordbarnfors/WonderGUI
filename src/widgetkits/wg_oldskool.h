@@ -476,7 +476,7 @@ namespace wg::oldskool
 			bool			flipOnRelease = false;
 			Icon::Blueprint	icon = { .skin = Skins::Checkbox, .spacing = 4 };
 			int				id = 0;
-			DynamicText::Blueprint label = { .layout = TextLayouts::CenteredNoWrap, .style = TextStyles::NormalDark };
+			DynamicText::Blueprint label = { .layout = TextLayouts::LeftNoWrap, .style = TextStyles::NormalDark };
 			MarkPolicy		markPolicy = MarkPolicy::AlphaTest;
 			bool			pickable = false;
 			uint8_t			pickCategory = 0;
@@ -516,7 +516,7 @@ namespace wg::oldskool
 			bool			flipOnRelease = false;
 			Icon::Blueprint	icon;
 			int				id = 0;
-			DynamicText::Blueprint label = { .layout = TextLayouts::CenteredNoWrap, .style = TextStyles::NormalDark };
+			DynamicText::Blueprint label = { .layout = TextLayouts::LeftNoWrap, .style = TextStyles::NormalDark };
 			MarkPolicy		markPolicy = MarkPolicy::AlphaTest;
 			bool			pickable = false;
 			uint8_t			pickCategory = 0;
@@ -969,6 +969,7 @@ namespace wg::oldskool
 
 	class ListTable : public wg::TablePanel
 	{
+	public:
 		struct Blueprint
 		{
 			Object_p		baggage;
@@ -1112,14 +1113,14 @@ namespace wg::oldskool
 			TextLayout_p	entryTextLayout;
 			Finalizer_p		finalizer = nullptr;
 			int				id = 0;
-			Skin_p			listSkin = Skins::SelectBox;
+			Skin_p			listSkin = Skins::Canvas;
 			MarkPolicy		markPolicy = MarkPolicy::AlphaTest;
 			bool			pickable = false;
 			uint8_t			pickCategory = 0;
 			bool			pickHandle = false;
 			PointerStyle	pointer = PointerStyle::Undefined;
 			bool			selectable = false;
-			Skin_p			skin = Skins::Canvas;
+			Skin_p			skin = Skins::SelectBox;
 			bool			stickyFocus = false;
 			bool			tabLock = false;
 			String			tooltip;

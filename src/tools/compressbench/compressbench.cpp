@@ -83,20 +83,19 @@ bool MyApp::_setupGUI(API* pAPI)
 {
 	m_pWindow = Window::create(pAPI, { .size = {600,600}, .title = "Compress Bench" });
 
-	auto pTheme = pAPI->initDefaultTheme();
-	m_pTheme = pTheme;
+	pAPI->initDefaultWidgetKit();
 
 	m_pLayoutRight = BasicTextLayout::create( { .placement = Placement::East } );
 
 	// Create and populate button panel
 
-	auto pButtonPanel = PackPanel::create( { .axis = Axis::X, .skin = pTheme->plateSkin() } );
+	auto pButtonPanel = PackPanel::create( { .axis = Axis::X, .skin = wkit::Skins::Plate } );
 
-	auto pLoadButton = WGCREATE( Button, _ = pTheme->pushButton(), _.label.text = "Select test images..." );
-	auto pRunButton = WGCREATE( Button, _ = pTheme->pushButton(), _.label.text = "Run tests" );
-	auto pSyntheticTestButton = WGCREATE( Button, _ = pTheme->pushButton(), _.label.text = "Run 'synthetic' test" );
+	auto pLoadButton = WGCREATE( wkit::Button, _.label.text = "Select test images..." );
+	auto pRunButton = WGCREATE( wkit::Button, _.label.text = "Run tests" );
+	auto pSyntheticTestButton = WGCREATE( wkit::Button, _.label.text = "Run 'synthetic' test" );
 
-	m_pCompressorSelector = SelectBox::create( pTheme->selectBox() );
+	m_pCompressorSelector = wkit::SelectBox::create();
 	m_pCompressorSelector->entries.pushBack( SelectBoxEntry::Blueprint{ .id = 0, .text = "LZWP (Lempel-Ziw based w improvements)" } );
 	m_pCompressorSelector->entries.pushBack( SelectBoxEntry::Blueprint{ .id = 1, .text = "Q565 (QOI inspired for RGB565)" } );
 	m_pCompressorSelector->entries.pushBack( SelectBoxEntry::Blueprint{ .id = 2, .text = "RLEx-1 (Simple one byte run length encoding)" } );
@@ -121,9 +120,9 @@ bool MyApp::_setupGUI(API* pAPI)
 
 	// Create main section
 
-	m_pResultTable = WGCREATE( TablePanel, _ = pTheme->listTable(), _.columns = 7, _.rows = 2, _.skin = pTheme->canvasSkin() );
+	m_pResultTable = WGCREATE( wkit::ListTable, _.columns = 7, _.rows = 2, _.skin = wkit::Skins::Canvas );
 
-	TextDisplay::Blueprint columnLabelBP( { .display = {.style = pTheme->strongStyle() }, .skin = pTheme->plateSkin() } );
+	TextDisplay::Blueprint columnLabelBP( { .display = {.style = wkit::TextStyles::Strong }, .skin = wkit::Skins::Plate } );
 
 	auto pColumnLabel1 = WGCREATE( TextDisplay, _ = columnLabelBP, _.display.text = "Filename" );
 	auto pColumnLabel2 = WGCREATE( TextDisplay, _ = columnLabelBP, _.display.text = "Ratio (%)" );
@@ -142,18 +141,18 @@ bool MyApp::_setupGUI(API* pAPI)
 
 	// Create and populate main panel
 
-	auto pMainPanel = PackPanel::create( { .axis = Axis::Y, .skin = pTheme->windowSkin() } );
+	auto pMainPanel = PackPanel::create( { .axis = Axis::Y, .skin = wkit::Skins::Window } );
 
 	pMainPanel->slots.pushBack( pButtonPanel, { .weight = 0 } );
 	pMainPanel->slots.pushBack( m_pResultTable, { .weight = 1 } );
 
-	// Create scrollpanel
+	// Create scrollcapsule
 
-	auto pScrollPanel = ScrollPanel::create( pTheme->scrollPanelXY() );
+	auto pScrollCapsule = wkit::ScrollCapsuleXY::create();
 
-	pScrollPanel->slot = pMainPanel;
+	pScrollCapsule->slot = pMainPanel;
 
-	m_pWindow->mainCapsule()->slot = pScrollPanel;
+	m_pWindow->mainCapsule()->slot = pScrollCapsule;
 	return true;
 }
 
@@ -378,7 +377,7 @@ void MyApp::refreshList()
 
 	//
 
-	auto pSummaryStyle = m_pTheme->strongStyle();
+	auto pSummaryStyle = wkit::TextStyles::Strong;
 
 	auto pName = TextDisplay::create({ .display = {.style = pSummaryStyle, .text = "TOTAL" } });
 	auto pRatio = TextDisplay::create({ .display = { .layout = m_pLayoutRight, .style = pSummaryStyle, .text = "---" } });
