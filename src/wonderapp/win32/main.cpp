@@ -262,7 +262,7 @@ LRESULT CALLBACK windowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 		{
 			Win32Window* pointer = reinterpret_cast<Win32Window*>(GetWindowLongPtr(hwnd, GWLP_USERDATA));
 			Base::inputHandler()->setFocusedWindow(pointer->rootPanel());
-			break;
+			return 0;
 		}
 
 		case WM_KILLFOCUS:
@@ -271,7 +271,7 @@ LRESULT CALLBACK windowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 
 			if (Base::inputHandler()->focusedWindow() == pointer->rootPanel())
 				Base::inputHandler()->setFocusedWindow(nullptr);
-			break;
+			return 0;
 		}
 
 		case WM_SETCURSOR:
@@ -284,24 +284,27 @@ LRESULT CALLBACK windowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 			break;
 		}
 
-
-
+		case WM_SYSKEYDOWN:
 		case WM_KEYDOWN:
 		{
+			if (lparam & KF_REPEAT)
+				break;				// This is a key repeat message. Input handler generates our own key repeats, so ignore these.
+
 			LARGE_INTEGER counter;
 			QueryPerformanceCounter(&counter);
 			int64_t timestamp = int64_t(counter.QuadPart * g_ticksToMicroseconds);
 			Base::inputHandler()->setKey(static_cast<int>(wparam), true, timestamp);
-			return 0;
+			break;
 		}
 
 		case WM_KEYUP:
+		case WM_SYSKEYUP:
 		{
 			LARGE_INTEGER counter;
 			QueryPerformanceCounter(&counter);
 			int64_t timestamp = int64_t(counter.QuadPart * g_ticksToMicroseconds);
 			Base::inputHandler()->setKey(static_cast<int>(wparam), false, timestamp);
-			return 0;
+			break;
 		}
 
 		case WM_CHAR:
