@@ -767,6 +767,9 @@ bool init_debugger(Win32API* pAPI)
 {
 
 	auto pTheme = pAPI->initDefaultTheme();
+
+	pAPI->initDefaultWidgetKit();
+
 	auto pIconSurface = pAPI->loadSurface("resources/debugger_gfx.png");
 	auto pTransparencyGrid = pAPI->loadSurface("resources/checkboardtile.png", nullptr, { .tiling = true });
 

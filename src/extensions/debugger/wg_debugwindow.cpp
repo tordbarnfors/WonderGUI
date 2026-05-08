@@ -120,7 +120,7 @@ namespace wg
 		auto pButtonRow = PackPanel::create(WGBP(PackPanel,
 		  _.axis = Axis::X,
 		  _.layout = pPackLayout,
-		  _.skin = bp.theme->plateSkin()));
+		  _.skin = dbgkit::Skins::Plate));
 
 		auto pAutoRefreshIcon = BlockSkin::create(WGBP(BlockSkin,
 			  _.surface = bp.icons,
@@ -130,8 +130,8 @@ namespace wg
 			  _.surface = bp.icons,
 			  _.firstBlock = { 0,0,16,16 } ));
 
-		auto pAutoRefreshButton = ToggleButton::create(WGOVR(bp.theme->toggleButton(), _.icon.skin = pAutoRefreshIcon));
-		auto pRefreshButton = Button::create(WGOVR(bp.theme->pushButton(), _.icon.skin = pRefreshIcon));
+		auto pAutoRefreshButton = WGCREATE(dbgkit::ToggleButton, _.icon.skin = pAutoRefreshIcon);
+		auto pRefreshButton = WGCREATE(dbgkit::Button, _.icon.skin = pRefreshIcon);
 
 		Base::msgRouter()->addRoute(pAutoRefreshButton, MsgType::Toggle, [this](Msg* _pMsg) {
 
@@ -162,7 +162,7 @@ namespace wg
 
 	DrawerPanel_p DebugWindow::_createDrawer(const CharSeq& label, Widget* pHeaderValue, Widget* pContent)
 	{
-		auto pDrawer = WGCREATE(DrawerPanel, _ = m_pHolder->blueprint().theme->treeListDrawer(), _.skin = m_pIndentationSkin, _.buttonOfs.x -= 16);
+		auto pDrawer = WGCREATE(dbgkit::TreeListDrawer, _.skin = m_pIndentationSkin, _.buttonOfs.x -= 16);
 
 		auto pHeaderPanel = WGCREATE(TwoSlotPanel, _.axis = Axis::X);
 		pHeaderPanel->slots[0] = WGCREATE(TextDisplay, _ = m_pHolder->blueprint().listEntryLabel, _.display.text = label);
@@ -224,7 +224,7 @@ namespace wg
 	{
 		auto pDisplay = TextDisplay::create(WGBP(TextDisplay,
 			_.display.text = _createObjectTitle(pObject),
-			_.display.style = m_pHolder->blueprint().theme->heading5Style()
+			_.display.style = dbgkit::TextStyles::Heading5
 		));
 
 		return pDisplay;
@@ -241,7 +241,7 @@ namespace wg
 		buf.pushBack(pObject->typeInfo().className);
 		int ofs = buf.length();
 		buf.pushBack(temp);
-		buf.setStyle(m_pHolder->blueprint().theme->defaultStyle(), ofs, 10000);
+		buf.setStyle(dbgkit::TextStyles::Default, ofs, 10000);
 
 		return &buf;
 	}
@@ -250,7 +250,7 @@ namespace wg
 
 	Widget_p DebugWindow::_createClassInfoPanels(const Blueprint& bp, Object* pObject) const
 	{
-		auto pScrollPanel = WGCREATE(ScrollPanel, _ = bp.theme->scrollPanelY());
+		auto pScrollPanel = WGCREATE(dbgkit::ScrollCapsuleY);
 
 		auto pInnerPanel = WGCREATE(PackPanel, _.axis = Axis::Y, _.layout = PackLayout::create({}));
 
@@ -388,7 +388,7 @@ namespace wg
 		if (pPointer)
 		{
 			buff.pushBack(pPointer->typeInfo().className);
-			buff.setStyle(m_pHolder->blueprint().theme->finePrintStyle(), 0, 1000);
+			buff.setStyle(dbgkit::TextStyles::FinePrint, 0, 1000);
 
 			int ofs = buff.nbChars();
 
@@ -492,7 +492,7 @@ namespace wg
 		if (pPointer)
 		{
 			buff.pushBack(pPointer->typeInfo().className);
-			buff.setStyle(m_pHolder->blueprint().theme->finePrintStyle(), 0, 1000);
+			buff.setStyle(dbgkit::TextStyles::FinePrint, 0, 1000);
 
 			int ofs = buff.nbChars();
 

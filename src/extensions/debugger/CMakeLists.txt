@@ -117,6 +117,7 @@ add_library( wgdebugger STATIC ${SOURCES} )
 target_include_directories(wgdebugger PRIVATE
     ${INCDIRS}
     ${WONDERGUI_INCDIRS}
+	${WG_ROOT}/src/
 )
 
 set_target_properties( wgdebugger PROPERTIES FOLDER "Extensions" )

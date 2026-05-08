@@ -43,13 +43,13 @@ namespace wg
 
 	DebugFrontendWindow::DebugFrontendWindow(const Blueprint& bp) : Capsule(bp)
 	{
-		auto pMainPanel = WGCREATE(PackPanel, _.axis = Axis::Y, _.skin = bp.theme->windowSkin() );
+		auto pMainPanel = WGCREATE(PackPanel, _.axis = Axis::Y, _.skin = dbgkit::Skins::Window );
 
 		auto pLabelRow = WGCREATE(PackPanel, _.axis = Axis::X );
 
-		m_pLabel = WGCREATE(TextDisplay, _ = bp.theme->windowTitleBar(), _.pickHandle = true );
+		m_pLabel = WGCREATE(dbgkit::WindowTitleBar, _.pickHandle = true );
 
-		auto pCloseButton = WGCREATE(Button, _ = bp.theme->pushButton(), _.label.text = " X " );
+		auto pCloseButton = WGCREATE(dbgkit::Button, _.label.text = " X " );
 
 		Base::msgRouter()->addRoute(pCloseButton, MsgType::Select, [this](Msg* pMsg){
 			this->releaseFromParent();
@@ -59,7 +59,7 @@ namespace wg
 		pLabelRow->slots.pushBack( m_pLabel, WGBP(PackPanelSlot, _.weight = 1.f));
 		pLabelRow->slots.pushBack( pCloseButton, WGBP(PackPanelSlot, _.weight = 0.f));
 
-		m_pContentHolder = WGCREATE(RenderLayerCapsule, _.skin = bp.theme->canvasSkin() );
+		m_pContentHolder = WGCREATE(RenderLayerCapsule, _.skin = dbgkit::Skins::Canvas );
 
 		pMainPanel->slots.pushBack( pLabelRow, WGBP(PackPanelSlot, _.weight = 0.f));
 		pMainPanel->slots.pushBack( m_pContentHolder, WGBP(PackPanelSlot, _.weight = 1.f));

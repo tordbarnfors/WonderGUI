@@ -86,6 +86,7 @@ namespace wg::oldskool
 		inline TextStyle_p	Heading5;
 		inline TextStyle_p	Heading6;
 
+		inline TextStyle_p	Default;
 		inline TextStyle_p	Strong;
 		inline TextStyle_p	Emphasis;
 		inline TextStyle_p	Code;
@@ -151,8 +152,8 @@ namespace wg::oldskool
 		Fonts::Italic	= pItalic;
 		Fonts::Mono		= pMonospace;
 
-		TextStyles::Strong		= TextStyle::create({ .color = HiColor::Black, .font = Fonts::Bold, .size = TextSizes::Normal });
-		TextStyles::Emphasis	= TextStyle::create({ .color = HiColor::Black, .font = Fonts::Italic, .size = TextSizes::Normal });
+		TextStyles::Strong		= TextStyle::create(WGBP(TextStyle, _.color = HiColor::Black, _.font = Fonts::Bold, _.size = TextSizes::Normal ));
+		TextStyles::Emphasis	= TextStyle::create(WGBP(TextStyle, _.color = HiColor::Black, _.font = Fonts::Italic, _.size = TextSizes::Normal ));
 		TextStyles::Code		= TextStyle::create(WGBP(TextStyle, _.font = Fonts::Mono, _.color = HiColor::Black, _.size = TextSizes::Normal));
 		TextStyles::Mono		= TextStyle::create(WGBP(TextStyle, _.font = Fonts::Mono, _.color = HiColor::Black, _.size = TextSizes::Normal));
 		TextStyles::FinePrint	= TextStyle::create(WGBP(TextStyle, _.font = Fonts::Normal, _.color = HiColor::Black, _.size = 9));
@@ -162,6 +163,8 @@ namespace wg::oldskool
 
 		TextStyles::NormalBright = TextStyle::create(WGBP(TextStyle, _.font = Fonts::Normal, _.color = HiColor::White, _.size = TextSizes::Normal,
 								_.states = { {State::Disabled, Color8::LightGrey} }));
+
+		TextStyles::Default = TextStyles::NormalDark;
 
 		TextStyles::Heading1 = TextStyle::create(WGBP(TextStyle, _.font = Fonts::Normal, _.color = HiColor::Black, _.size = 20));
 		TextStyles::Heading2 = TextStyle::create(WGBP(TextStyle, _.font = Fonts::Bold, _.color = HiColor::Black, _.size = 20));
@@ -345,6 +348,7 @@ namespace wg::oldskool
 		TextStyles::Heading4 = nullptr;
 		TextStyles::Heading5 = nullptr;
 		TextStyles::Heading6 = nullptr;
+		TextStyles::Default = nullptr;
 		TextStyles::Strong = nullptr;
 		TextStyles::Emphasis = nullptr;
 		TextStyles::Code = nullptr;
@@ -394,7 +398,7 @@ namespace wg::oldskool
 			Finalizer_p		finalizer = nullptr;
 			Icon::Blueprint	icon;
 			int				id = 0;
-			DynamicText::Blueprint label = { .layout = TextLayouts::CenteredNoWrap, .style = TextStyles::NormalDark };
+			DynamicText::Blueprint label = WGBP(DynamicText, _.layout = TextLayouts::CenteredNoWrap, _.style = TextStyles::NormalDark );
 			MarkPolicy		markPolicy = MarkPolicy::AlphaTest;
 			bool			pickable = false;
 			uint8_t			pickCategory = 0;
@@ -436,7 +440,7 @@ namespace wg::oldskool
 			bool			flipOnRelease = false;
 			Icon::Blueprint	icon;
 			int				id = 0;
-			DynamicText::Blueprint label = { .layout = TextLayouts::CenteredNoWrap, .style = TextStyles::NormalDark };
+			DynamicText::Blueprint label = WGBP(DynamicText, _.layout = TextLayouts::CenteredNoWrap, _.style = TextStyles::NormalDark );
 			MarkPolicy		markPolicy = MarkPolicy::AlphaTest;
 			bool			pickable = false;
 			uint8_t			pickCategory = 0;
@@ -474,9 +478,9 @@ namespace wg::oldskool
 			bool			dropTarget = false;
 			Finalizer_p		finalizer = nullptr;
 			bool			flipOnRelease = false;
-			Icon::Blueprint	icon = { .skin = Skins::Checkbox, .spacing = 4 };
+			Icon::Blueprint	icon = WGBP(Icon, _.skin = Skins::Checkbox, _.spacing = 4 );
 			int				id = 0;
-			DynamicText::Blueprint label = { .layout = TextLayouts::LeftNoWrap, .style = TextStyles::NormalDark };
+			DynamicText::Blueprint label = WGBP(DynamicText, _.layout = TextLayouts::LeftNoWrap, _.style = TextStyles::NormalDark );
 			MarkPolicy		markPolicy = MarkPolicy::AlphaTest;
 			bool			pickable = false;
 			uint8_t			pickCategory = 0;
@@ -516,7 +520,7 @@ namespace wg::oldskool
 			bool			flipOnRelease = false;
 			Icon::Blueprint	icon;
 			int				id = 0;
-			DynamicText::Blueprint label = { .layout = TextLayouts::LeftNoWrap, .style = TextStyles::NormalDark };
+			DynamicText::Blueprint label = WGBP(DynamicText, _.layout = TextLayouts::LeftNoWrap, _.style = TextStyles::NormalDark );
 			MarkPolicy		markPolicy = MarkPolicy::AlphaTest;
 			bool			pickable = false;
 			uint8_t			pickCategory = 0;
@@ -553,7 +557,7 @@ namespace wg::oldskool
 			bool			dropTarget = true;
 			Finalizer_p		finalizer = nullptr;
 			int				id = 0;
-			DynamicText::Blueprint	label = { .layout = TextLayouts::LeftNoWrap, .style = TextStyles::NormalDark };
+			DynamicText::Blueprint	label = WGBP(DynamicText, _.layout = TextLayouts::LeftNoWrap, _.style = TextStyles::NormalDark );
 			Placement		labelPlacement = Placement::North;
 			Skin_p			labelSkin = _pCapsuleLabelSkin;
 			MarkPolicy		markPolicy = MarkPolicy::AlphaTest;
@@ -594,7 +598,7 @@ namespace wg::oldskool
 			bool			dropTarget = true;
 			Finalizer_p		finalizer = nullptr;
 			int				id = 0;
-			DynamicText::Blueprint	label = { .layout = TextLayouts::LeftNoWrap, .style = TextStyles::NormalDark };
+			DynamicText::Blueprint	label = WGBP(DynamicText, _.layout = TextLayouts::LeftNoWrap, _.style = TextStyles::NormalDark );
 			Placement		labelPlacement = Placement::North;
 			Skin_p			labelSkin = _pCapsuleLabelSkin2;
 			MarkPolicy		markPolicy = MarkPolicy::AlphaTest;
@@ -646,8 +650,8 @@ namespace wg::oldskool
 			uint8_t				pickCategory = 0;
 			bool				pickHandle = false;
 			PointerStyle		pointer = PointerStyle::Undefined;
-			Scroller::Blueprint	scrollbarX = { .back = Skins::ScrollbarTrack, .bar = Skins::ScrollbarHandle };
-			Scroller::Blueprint	scrollbarY = { .back = Skins::ScrollbarTrack, .bar = Skins::ScrollbarHandle };
+			Scroller::Blueprint	scrollbarX = WGBP(Scroller, _.back = Skins::ScrollbarTrack, _.bar = Skins::ScrollbarHandle );
+			Scroller::Blueprint	scrollbarY = WGBP(Scroller, _.back = Skins::ScrollbarTrack, _.bar = Skins::ScrollbarHandle );
 			bool				scrollX = true;
 			bool				scrollY = false;
 			bool				selectable = false;
@@ -707,8 +711,8 @@ namespace wg::oldskool
 			uint8_t				pickCategory = 0;
 			bool				pickHandle = false;
 			PointerStyle		pointer = PointerStyle::Undefined;
-			Scroller::Blueprint	scrollbarX = { .back = Skins::ScrollbarTrack, .bar = Skins::ScrollbarHandle };
-			Scroller::Blueprint	scrollbarY = { .back = Skins::ScrollbarTrack, .bar = Skins::ScrollbarHandle };
+			Scroller::Blueprint	scrollbarX = WGBP(Scroller, _.back = Skins::ScrollbarTrack, _.bar = Skins::ScrollbarHandle );
+			Scroller::Blueprint	scrollbarY = WGBP(Scroller, _.back = Skins::ScrollbarTrack, _.bar = Skins::ScrollbarHandle );
 			bool				scrollX = false;
 			bool				scrollY = true;
 			bool				selectable = false;
@@ -768,8 +772,8 @@ namespace wg::oldskool
 			uint8_t				pickCategory = 0;
 			bool				pickHandle = false;
 			PointerStyle		pointer = PointerStyle::Undefined;
-			Scroller::Blueprint	scrollbarX = { .back = Skins::ScrollbarTrack, .bar = Skins::ScrollbarHandle };
-			Scroller::Blueprint	scrollbarY = { .back = Skins::ScrollbarTrack, .bar = Skins::ScrollbarHandle };
+			Scroller::Blueprint	scrollbarX = WGBP(Scroller, _.back = Skins::ScrollbarTrack, _.bar = Skins::ScrollbarHandle);
+			Scroller::Blueprint	scrollbarY = WGBP(Scroller, _.back = Skins::ScrollbarTrack, _.bar = Skins::ScrollbarHandle );
 			bool				scrollX = true;
 			bool				scrollY = true;
 			bool				selectable = false;
@@ -1034,7 +1038,7 @@ namespace wg::oldskool
 			Object_p		baggage;
 			bool			disabled = false;
 			bool			dropTarget = false;
-			EditableText::Blueprint	editor = { .style = TextStyles::NormalDark };
+			EditableText::Blueprint	editor = WGBP(EditableText, _.style = TextStyles::NormalDark );
 			Finalizer_p		finalizer = nullptr;
 			int				id = 0;
 			MarkPolicy		markPolicy = MarkPolicy::AlphaTest;
@@ -1073,7 +1077,7 @@ namespace wg::oldskool
 			spx				defaultLengthInChars = 20;		// Set to zero for returning default width calculated from actual text in field.
 			bool			disabled = false;
 			bool			dropTarget = false;
-			EditableText::Blueprint	editor = { .style = TextStyles::NormalDark };
+			EditableText::Blueprint	editor = WGBP(EditableText, _.style = TextStyles::NormalDark );
 			Finalizer_p		finalizer = nullptr;
 			int				id = 0;
 			MarkPolicy		markPolicy = MarkPolicy::AlphaTest;
@@ -1144,7 +1148,7 @@ namespace wg::oldskool
 		{
 			Object_p		baggage;
 			bool			disabled = false;
-			DynamicText::Blueprint	display = { .layout = TextLayouts::CenteredNoWrap, .style = TextStyles::Heading5 };
+			DynamicText::Blueprint	display = WGBP(DynamicText, _.layout = TextLayouts::CenteredNoWrap, _.style = TextStyles::Heading5 );
 			bool			dropTarget = false;
 			Finalizer_p		finalizer = nullptr;
 			int				id = 0;

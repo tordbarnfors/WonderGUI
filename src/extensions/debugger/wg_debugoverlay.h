@@ -30,7 +30,7 @@
 #include <wg_debugbackend.h>
 #include <wg_theme.h>
 
-#include <wg_scrollpanel.h>
+#include <wg_scrollcapsule.h>
 
 namespace wg
 {
@@ -224,7 +224,7 @@ namespace wg
 
 		PackPanel_p		m_pWidgetTools;
 
-		ScrollPanel_p	m_pWidgetTreeContainer;
+		ScrollCapsule_p	m_pWidgetTreeContainer;
 		PackPanel_p		m_pSkinContainer;
 		PackPanel_p		m_pAnyObjectContainer;			// Contains the object info panel for the currently selected object.
 

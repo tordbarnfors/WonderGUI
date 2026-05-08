@@ -34,11 +34,15 @@
 #include <wg_drawerpanel.h>
 #include <wg_paddingcapsule.h>
 
+#include <widgetkits/wg_oldskool.h>
+
 
 #include <wg_slot.h>
 
 namespace wg
 {
+	namespace dbgkit = oldskool;
+
 	class IDebugger
 	{
 	public:

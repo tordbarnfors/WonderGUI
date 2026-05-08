@@ -52,7 +52,7 @@ namespace wg
 		if( pRoot )
 			m_pSelectCapsule->slot = _generateInfoTree(blueprint, pRoot );
 		else
-			m_pSelectCapsule->slot = Filler::create( WGBP(Filler, _.skin = blueprint.theme->canvasSkin() ));
+			m_pSelectCapsule->slot = Filler::create( WGBP(Filler, _.skin = dbgkit::Skins::Canvas ));
 
 		m_routeIdForSelect = Base::msgRouter()->addRoute(m_pSelectCapsule, MsgType::Selected, [this](Msg* pMsg) {
 		

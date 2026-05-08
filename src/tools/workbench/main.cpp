@@ -41,9 +41,9 @@
 #include <wg_dynamicbuffer.h>
 
 #include <wg_drawerpanel.h>
+#include <wg_scrollcapsule.h>
 
 #include <wg_debugger.h>
-#include <themes/simplistic/wg_simplistic.h>
 
 
 //#define USE_OPEN_GL
@@ -178,6 +178,7 @@ bool drawerPanelTest(ComponentPtr<DynamicSlot> pEntry);
 bool tintmapTest(ComponentPtr<DynamicSlot> pEntry);
 bool popupLayerFocusTest(ComponentPtr<DynamicSlot> pEntry);
 bool nodePanelTest(ComponentPtr<DynamicSlot> pEntry);
+bool elipsisWrapTextTest(ComponentPtr<DynamicSlot> pEntry);
 
 
 void nisBlendTest();
@@ -846,7 +847,9 @@ int main(int argc, char** argv)
 		//	areaChartTestWithGlobalGradient(pSlot);
 		//	tintmapTest(pSlot);
 		//	popupLayerFocusTest(pSlot);
-		nodePanelTest(pSlot);
+		  nodePanelTest(pSlot);
+		//  elipsisWrapTextTest(pSlot);
+
 
 		//------------------------------------------------------
 		// Program Main Loop
@@ -863,7 +866,7 @@ int main(int argc, char** argv)
 			//		SDL_UpdateWindowSurface(pWin);
 			updateWindowRects(pRoot, pWin);
 
-			SDL_Delay(4);
+			SDL_Delay(16);
 		}
 
 		// Cleanup
@@ -5030,5 +5033,54 @@ bool nodePanelTest(ComponentPtr<DynamicSlot> pEntry)
 	pBaseLayer->slots.pushBack(pNodePanel, { .pos = {10,10}, .size = {300,300} });
 
 	*pEntry = pBaseLayer;
+	return true;
+}
+
+
+bool elipsisWrapTextTest(ComponentPtr<DynamicSlot> pEntry)
+{
+
+	auto pBaseLayer = FlexPanel::create();
+	pBaseLayer->setSkin(ColorSkin::create(Color::LightGrey));
+
+	auto pTextLayout = BasicTextLayout::create({ .autoEllipsis = true, .wrap = true });
+	auto pEditorSkin = BoxSkin::create({ .color = Color::White, .outlineColor = Color::Black, .padding = 2 });
+
+	auto pPanelSkin = ColorSkin::create({ .color = Color::PapayaWhip });
+	auto pPackPanel = PackPanel::create({ .axis = Axis::Y, .skin = pEditorSkin });
+
+
+
+	char texts[5][200] = { "This is a long text entry that should want to wrap and eventually show an ellipsis if it gets too long",
+						"This is shorter but should still wrap and show elipsis if needed",
+						"A slightly different long text entry that should want to wrap and eventually show an ellipsis if it gets too long",
+						"Even slightly different long text entry that should want to wrap and eventually show an ellipsis if it gets too long",
+						"A slightly different long text entry that should want to wrap and eventually show an ellipsis if it gets too long"
+	};
+
+
+	auto pScrollbarBack = BoxSkin::create({ .color = Color::Black, .outlineColor = Color::Green, .padding = 2 });
+	auto pScrollbarBar = BoxSkin::create({ .color = Color::LightGrey, .outlineColor = Color::DarkBlue, .padding = 4 });
+
+	auto pScrollCapsule = ScrollCapsule::create({ .scrollbarY = { .back = pScrollbarBack, .bar = pScrollbarBar }, .scrollX = false });
+
+	pScrollCapsule->slot = pPackPanel;
+
+
+	pBaseLayer->slots.pushBack(pScrollCapsule, { .pos = {10,10}, .size = {200,200} });
+
+	*pEntry = pBaseLayer;
+
+	for (int i = 0; i < 5; i++)
+	{
+		auto pTextDisplay = TextDisplay::create({ .display = {.layout = pTextLayout }, .skin = pEditorSkin });
+		pTextDisplay->display.setText(texts[i]);
+		pPackPanel->slots.pushBack(pTextDisplay);
+	}
+
+	pPackPanel->slots.pushBack(Filler::create());
+	pPackPanel->setSlotWeight(0, 5, 0.f);
+
+
 	return true;
 }
