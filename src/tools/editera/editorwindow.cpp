@@ -137,28 +137,48 @@ Widget_p EditorWindow::_createTopBar()
 
 bool EditorWindow::_selectAndLoadFile()
 {
-	auto path = m_pAPI->openFileDialog("Load File", "", "", {"*.txt"}, "Text Files");
+//	auto path = m_pAPI->openFileDialog("Load File", "", "", {"*.txt"}, "Text Files");
 
-	if( path.empty() )
+	auto paths = m_pAPI->openMultiFileDialog("Load File(s)", "", "", { "*.txt" }, "Text Files");
+
+	if( paths.empty() )
 		return false;
 	
+	int nbLoaded = 0;
+
+	for (auto& path : paths)
+	{
+		bool bSuccess;
+		if (!m_pTextBuffer->isEmpty())
+			bSuccess = m_pApp->createEditorWindow("", path);
+		else
+		{
+			bSuccess = m_pTextBuffer->loadFromFile(path);
+			if( bSuccess )
+				_setTitle(path);
+		}
+
+		nbLoaded += bSuccess;
+	}
 	
-	if( !m_pTextBuffer->isEmpty() )
-		return m_pApp->createEditorWindow("", path );
-	else
-		return m_pTextBuffer->loadFromFile(path);
+	return nbLoaded == paths.size();
 }
 
 //____ _selectAndSaveFile() ___________________________________________________
 
 bool EditorWindow::_selectAndSaveFile()
 {
-	auto selectedFile = m_pAPI->saveFileDialog("Save File", "", "", { "*.*" }, "Text Files");
+	auto selectedPath = m_pAPI->saveFileDialog("Save File", "", "", { "*.*" }, "Text Files");
 
-	if (selectedFile.empty())
+	if (selectedPath.empty())
 		return false;
 
-	return m_pTextBuffer->saveToFile(selectedFile);
+	bool bOk = m_pTextBuffer->saveToFile(selectedPath);
+
+	if (bOk)
+		_setTitle(selectedPath);
+
+	return bOk;
 }
 
 //____ _saveFileCallback() ___________________________________________________
