@@ -33,7 +33,6 @@
 #include <wg_drawerpanel.h>
 #include <wg_paddingcapsule.h>
 #include <wg_packpanel.h>
-#include <wg_theme.h>
 
 
 namespace wg

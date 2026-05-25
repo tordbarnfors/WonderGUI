@@ -51,7 +51,6 @@ namespace wg
 
 		struct Blueprint
 		{
-			Theme_p						theme;
 			Surface_p					icons;
 
 			Surface_p					transparencyGrid;
@@ -68,8 +67,8 @@ namespace wg
 			TextDisplay::Blueprint		textField;
 			TextDisplay::Blueprint		infoDisplay;
 			TablePanel::Blueprint		table;
-			DrawerPanel::Blueprint		listEntryDrawer;
-			PaddingCapsule::Blueprint	selectableListEntryCapsule;
+			dbgkit::TreeListDrawer::Blueprint		listEntryDrawer;
+			dbgkit::TreeListEntry::Blueprint	selectableListEntryCapsule;
 		};
 
 		virtual const Blueprint& blueprint() = 0;

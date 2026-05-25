@@ -2,7 +2,6 @@
 
 
 #include <wg_gfxdevice.h>
-#include <wg_theme.h>
 
 #include <wondergui.h>
 #include <wondergfxstream.h>
@@ -17,7 +16,7 @@ class Device : public wg::PackPanel
 {
 public:
 
-    static Device_p create( const std::string& name, wg::GfxDevice * pDevice, wg::CanvasRef canvasRef, wg::Surface * pSurface, wg::Theme * pTheme ) { return new Device(name, pDevice, canvasRef, pSurface, pTheme);};
+    static Device_p create( const std::string& name, wg::GfxDevice * pDevice, wg::CanvasRef canvasRef, wg::Surface * pSurface ) { return new Device(name, pDevice, canvasRef, pSurface);};
 
     const std::string&   name() const { return m_name; }
 
@@ -32,7 +31,7 @@ public:
 	bool			needsRedraw() { return m_bNeedsRedraw; };
 
 protected:
-	Device( const std::string& name, wg::GfxDevice * pDevice, wg::CanvasRef canvasRef, wg::Surface * pSurface, wg::Theme * pTheme );
+	Device( const std::string& name, wg::GfxDevice * pDevice, wg::CanvasRef canvasRef, wg::Surface * pSurface );
     virtual ~Device() {};
 
     

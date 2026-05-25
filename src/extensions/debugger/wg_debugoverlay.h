@@ -28,7 +28,6 @@
 #include <wg_packpanel.h>
 #include <wg_togglebutton.h>
 #include <wg_debugbackend.h>
-#include <wg_theme.h>
 
 #include <wg_scrollcapsule.h>
 
@@ -105,7 +104,6 @@ namespace wg
 			bool			stickyFocus = false;
 			bool			tabLock = false;
 			bool			takesFocusFromChild = false;
-			Theme_p			theme;										// Mandatory!!!
 			String			tooltip;
 			bool			usePickHandles = false;
 			Surface_p		icons;										// Mandatory!!!
@@ -241,7 +239,6 @@ namespace wg
 
 		// Resources
 
-		Theme_p			m_pTheme;
 		Surface_p		m_pIcons;
 		Surface_p		m_pTransparencyGrid;
 

@@ -42,7 +42,6 @@ namespace wg
 	DebugFrontend::DebugFrontend(const Blueprint& bp) : Capsule(bp)
 	{
 		m_pBackend = bp.backend;
-		m_pTheme 	= bp.theme;
 		m_pIcons	= bp.icons;
 		m_pTransparencyGrid = bp.transparencyGrid;
 
@@ -198,7 +197,7 @@ namespace wg
 
 		if( !pWindow )
 		{
-			pWindow = WGCREATE(DebugFrontendWindow, _.theme = m_pTheme);
+			pWindow = WGCREATE(DebugFrontendWindow);
 			m_pWorkspace->slots.pushBack(pWindow, WGBP(PackPanelSlot, _.weight = 0.f));
 		}
 
@@ -444,7 +443,6 @@ namespace wg
 
 	void DebugFrontend::_createDebuggerBP()
 	{
-		m_debugPanelBP.theme = m_pTheme;
 		m_debugPanelBP.icons = m_pIcons;
 		m_debugPanelBP.transparencyGrid = m_pTransparencyGrid;
 
@@ -519,8 +517,8 @@ namespace wg
 //		m_debugPanelBP.listEntryPointer = WGBP(NumberDisplay,
 //											 _.display.layout = pPointerLayout );
 
-		m_debugPanelBP.listEntryDrawer = m_pTheme->treeListDrawer();
-		m_debugPanelBP.selectableListEntryCapsule = WGOVR( m_pTheme->treeListEntry(), _.selectable = true );
+		m_debugPanelBP.listEntryDrawer = dbgkit::TreeListDrawer::Blueprint();
+		m_debugPanelBP.selectableListEntryCapsule = WGOVR( dbgkit::TreeListEntry::Blueprint(), _.selectable = true);
 
 		m_debugPanelBP.textField = WGBP(TextDisplay,
 			_.display.style = dbgkit::TextStyles::Default,

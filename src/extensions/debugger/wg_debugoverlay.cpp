@@ -60,7 +60,6 @@ namespace wg
 	DebugOverlay::DebugOverlay(const Blueprint& bp) : Overlay(bp), windows(this)
 	{
 		m_pBackend = bp.backend;
-		m_pTheme 	= bp.theme;
 		m_pIcons	= bp.icons;
 		m_pTransparencyGrid = bp.transparencyGrid;
 
@@ -1169,7 +1168,6 @@ namespace wg
 			_.decimalMin = 2
 		));
 
-		m_debugPanelBP.theme = m_pTheme;
 		m_debugPanelBP.icons = m_pIcons;
 		m_debugPanelBP.transparencyGrid = m_pTransparencyGrid;
 
@@ -1204,8 +1202,8 @@ namespace wg
 //		m_debugPanelBP.listEntryPointer = WGBP(NumberDisplay,
 //											 _.display.layout = pPointerLayout );
 
-		m_debugPanelBP.listEntryDrawer = m_pTheme->treeListDrawer();
-		m_debugPanelBP.selectableListEntryCapsule = WGOVR( m_pTheme->treeListEntry(), _.selectable = true );
+		m_debugPanelBP.listEntryDrawer = dbgkit::TreeListDrawer::Blueprint();
+		m_debugPanelBP.selectableListEntryCapsule = WGOVR( dbgkit::TreeListEntry::Blueprint(), _.selectable = true );
 
 		m_debugPanelBP.textField = WGBP(TextDisplay,
 			_.display.style = dbgkit::TextStyles::Default,

@@ -778,7 +778,7 @@ bool init_debugger(Win32API* pAPI)
 
 	g_pDebugBackend = DebugBackend::create();
 
-	g_pDebugFrontend = WGCREATE(DebugFrontend, _.backend = g_pDebugBackend, _.theme = pTheme, _.icons = pIconSurface, _.transparencyGrid = pTransparencyGrid);
+	g_pDebugFrontend = WGCREATE(DebugFrontend, _.backend = g_pDebugBackend, _.icons = pIconSurface, _.transparencyGrid = pTransparencyGrid);
 
 	Base::msgRouter()->addRoute(MsgType::KeyPress, [pAPI](Msg* _pMsg) {
 

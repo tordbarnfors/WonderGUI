@@ -92,7 +92,7 @@ protected:
 	};
 
 
-	bool		setup_chrome(Theme * pTheme);
+	bool		setup_chrome();
 	void		teardown_chrome();
 
 	void		setup_testdevices();
