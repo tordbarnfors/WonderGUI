@@ -23,7 +23,6 @@
 #include <wondergui.h>
 #include <wg_debugger.h>
 #include <wg_freetypefont.h>
-#include <themes/simplistic/wg_simplistic.h>
 #include <widgetkits/wg_oldskool.h>
 
 #ifdef WIN32
@@ -69,7 +68,6 @@ public:
 	Blob_p 			loadBlob(const std::string& path, bool bNullTerminate = false) override;
 	Surface_p 		loadSurface(const std::string& path, SurfaceFactory* pFactory = nullptr, const Surface::Blueprint& bp = Surface::Blueprint() ) override;
 
-	Theme_p			initDefaultTheme() override;
 	bool			initDefaultWidgetKit() override;
 
 	bool			notifyPopup(const std::string& title, const std::string& message, wapp::IconType iconType) override;
@@ -159,8 +157,6 @@ wg::DebugFrontend_p	g_pDebugFrontend;
 wg::DebugBackend_p	g_pDebugBackend;
 
 wapp::Window_p		g_pDebugWindow;
-
-wg::Theme_p			g_pDefaultTheme;
 
 std::vector<SDLWindow*>	g_windows;
 
@@ -276,8 +272,6 @@ int main(int argc, char *argv[] )
 
 	pApp = nullptr;
 
-	g_pDefaultTheme = nullptr;
-
 	Base::setErrorHandler(nullptr);		//TODO: WAPP-framework should have its own error-handler.
 
 	g_windows.clear();
@@ -392,17 +386,16 @@ void exit_wondergui()
 bool init_debugger(MyAppAPI* pAPI)
 {
 
-	auto pTheme = pAPI->initDefaultTheme();
 	pAPI->initDefaultWidgetKit();
 	auto pIconSurface = pAPI->loadSurface("resources/debugger_gfx.png");
 	auto pTransparencyGrid = pAPI->loadSurface("resources/checkboardtile.png", nullptr, { .tiling = true } );
 
-	if( !pTheme || !pIconSurface || !pTransparencyGrid )
+	if( !pIconSurface || !pTransparencyGrid )
 		return false;
 
 	g_pDebugBackend = DebugBackend::create();
 
-	g_pDebugFrontend = WGCREATE(DebugFrontend, _.backend = g_pDebugBackend, _.theme = pTheme, _.icons = pIconSurface, _.transparencyGrid = pTransparencyGrid );
+	g_pDebugFrontend = WGCREATE(DebugFrontend, _.backend = g_pDebugBackend, _.icons = pIconSurface, _.transparencyGrid = pTransparencyGrid );
 
 	Base::msgRouter()->addRoute(MsgType::KeyPress, [pAPI](Msg * _pMsg) {
 
@@ -887,44 +880,6 @@ Surface_p MyAppAPI::loadSurface(const std::string& path, SurfaceFactory* pFactor
 	}
 	
 	
-}
-
-//____ initDefaultTheme() ____________________________________________________
-
-Theme_p MyAppAPI::initDefaultTheme()
-{
-	if( g_pDefaultTheme )
-		return g_pDefaultTheme;
-
-
-	auto path = resourceDirectory();
-
-	// Create the default theme, which is a simplistic theme.
-	
-	auto pFont1Blob = loadBlob( path + "NotoSans-Regular.ttf");
-	auto pFont2Blob = loadBlob( path + "NotoSans-Bold.ttf");
-	auto pFont3Blob = loadBlob( path + "NotoSans-Italic.ttf");
-	auto pFont4Blob = loadBlob( path + "DroidSansMono.ttf");
-
-	auto pFont1 = FreeTypeFont::create(pFont1Blob);
-	auto pFont2 = FreeTypeFont::create(pFont2Blob);
-	auto pFont3 = FreeTypeFont::create(pFont3Blob);
-	auto pFont4 = FreeTypeFont::create(pFont4Blob);
-
-	auto pThemeSurface = loadSurface(path + "skin_widgets.png");
-
-	auto pTheme = Simplistic::create(pFont1,pFont2,pFont3,pFont4,pThemeSurface);
-	if (!pTheme)
-	{
-		Base::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "Failed to create default theme", nullptr, nullptr, __func__, __FILE__, __LINE__);
-		return nullptr;
-	}
-	Base::setDefaultTheme(pTheme);
-	Base::setDefaultStyle(pTheme->defaultStyle());
-
-	g_pDefaultTheme = pTheme;
-
-	return pTheme;
 }
 
 //____ initDefaultWidgetKit() ____________________________________________________

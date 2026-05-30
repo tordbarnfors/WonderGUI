@@ -50,7 +50,6 @@ target_link_directories(wappsdl2sw PUBLIC
 )
 
 target_link_libraries(wappsdl2sw PRIVATE
-    wg_theme_simplistic
     wgdebugger
     wgsoftgfx
     wgfreetypefont

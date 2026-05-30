@@ -19,7 +19,6 @@ using namespace wapp;
 using namespace std;
 
 WonderApp_p					g_pApp;
-Theme_p						g_pDefaultTheme;
 
 std::vector<Win32Window*>	g_win32Windows;
 float						g_ticksToMicroseconds;		
@@ -539,7 +538,6 @@ int main(int arch, char * argv[] ) {
 
 	g_pApp->exit();
 	g_pApp = nullptr;
-	g_pDefaultTheme = nullptr;
 
 	Base::exit();
 
@@ -765,15 +763,12 @@ std::wstring _stringToWString(const std::string& str)
 
 bool init_debugger(Win32API* pAPI)
 {
-
-	auto pTheme = pAPI->initDefaultTheme();
-
 	pAPI->initDefaultWidgetKit();
 
 	auto pIconSurface = pAPI->loadSurface("resources/debugger_gfx.png");
 	auto pTransparencyGrid = pAPI->loadSurface("resources/checkboardtile.png", nullptr, { .tiling = true });
 
-	if (!pTheme || !pIconSurface || !pTransparencyGrid)
+	if (pIconSurface || !pTransparencyGrid)
 		return false;
 
 	g_pDebugBackend = DebugBackend::create();

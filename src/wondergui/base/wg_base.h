@@ -51,7 +51,6 @@ namespace wg
 	class TextStyle;
 	class Receiver;
 	class SkinSlotManager;
-	class Theme;
 
 	typedef	StrongPtr<MsgRouter>		MsgRouter_p;
 	typedef	StrongPtr<NumberLayout>		NumberLayout_p;
@@ -61,7 +60,6 @@ namespace wg
 	typedef	StrongPtr<TextStyle>		TextStyle_p;
 	typedef	StrongPtr<PackLayout>		PackLayout_p;
 	typedef	StrongPtr<SkinSlotManager>	SkinSlotManager_p;
-	typedef	StrongPtr<Theme>			Theme_p;
 
 
 	class GUIContext : public Object
@@ -76,8 +74,7 @@ namespace wg
 		TextStyle_p			pDefaultTextStyle;
 		PackLayout_p		pDefaultPackLayout;
 		SkinSlotManager_p	pSkinSlotManager;
-		Theme_p				pDefaultTheme;
-
+	
 		HostBridge*		pHostBridge;
 
 		int64_t			timestamp;
@@ -123,9 +120,6 @@ namespace wg
 		static MsgRouter_p			msgRouter();
 		static InputHandler_p		inputHandler();
 		static SkinSlotManager_p	skinSlotManager();
-
-		static void			setDefaultTheme(Theme* pTheme);
-		static Theme_p		defaultTheme();
 
 		static void			setDefaultTextLayout( TextLayout * pTextLayout );
 		static TextLayout_p defaultTextLayout();

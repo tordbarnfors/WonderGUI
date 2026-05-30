@@ -31,10 +31,8 @@ namespace wg
 	class Blob;
 	class Surface;
 	class SurfaceFactory;
-	class Theme;
 	typedef    wg::StrongPtr<Blob>        Blob_p;
 	typedef    wg::StrongPtr<Surface>     Surface_p;
-	typedef    wg::StrongPtr<Theme>       Theme_p;
 }
 
 namespace wapp
@@ -79,7 +77,6 @@ namespace wapp
 		virtual wg::Surface_p	loadSurface(const std::string& path, wg::SurfaceFactory* pFactory = nullptr,
 			const wg::Surface::Blueprint& blueprint = wg::Surface::Blueprint()) = 0;
 
-		virtual wg::Theme_p		initDefaultTheme() = 0;
 		virtual bool			initDefaultWidgetKit() = 0;
 
 		virtual bool			notifyPopup(const std::string& title, const std::string& message, IconType iconType) = 0;

@@ -29,7 +29,6 @@
 
 #include <wg_softsurface.h>
 #include <wg_freetypefont.h>
-#include <themes/simplistic/wg_simplistic.h>
 
 
 #define STB_IMAGE_IMPLEMENTATION
@@ -39,7 +38,6 @@ using namespace wg;
 using namespace wapp;
 
 extern float			g_ticksToMicroseconds;
-extern Theme_p			g_pDefaultTheme;
 extern DebugFrontend_p	g_pDebugFrontend;
 
 
@@ -210,41 +208,6 @@ wg::Surface_p Win32API::loadSurface(const std::string& path, wg::SurfaceFactory*
 		}
 	}
 	return nullptr;
-}
-
-//____ initDefaultTheme() _____________________________________________________
-
-wg::Theme_p Win32API::initDefaultTheme()
-{
-	if (g_pDefaultTheme)
-		return g_pDefaultTheme;
-
-	// Create the default theme, which is a simplistic theme.
-
-	auto pFont1Blob = loadBlob("resources/NotoSans-Regular.ttf");
-	auto pFont2Blob = loadBlob("resources/NotoSans-Bold.ttf");
-	auto pFont3Blob = loadBlob("resources/NotoSans-Italic.ttf");
-	auto pFont4Blob = loadBlob("resources/DroidSansMono.ttf");
-
-	auto pFont1 = FreeTypeFont::create(pFont1Blob);
-	auto pFont2 = FreeTypeFont::create(pFont2Blob);
-	auto pFont3 = FreeTypeFont::create(pFont3Blob);
-	auto pFont4 = FreeTypeFont::create(pFont4Blob);
-
-	auto pThemeSurface = loadSurface("resources/skin_widgets.png");
-
-	auto pTheme = Simplistic::create(pFont1, pFont2, pFont3, pFont4, pThemeSurface);
-	if (!pTheme)
-	{
-		Base::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "Failed to create default theme", nullptr, nullptr, __func__, __FILE__, __LINE__);
-		return nullptr;
-	}
-	Base::setDefaultTheme(pTheme);
-	Base::setDefaultStyle(pTheme->defaultStyle());
-
-	g_pDefaultTheme = pTheme;
-
-	return pTheme;
 }
 
 //____ initDefaultWidgetKit() ____________________________________________________

@@ -43,6 +43,8 @@
 #include <wg_drawerpanel.h>
 #include <wg_scrollcapsule.h>
 
+#include <widgetkits/wg_oldskool.h>
+
 #include <wg_debugger.h>
 
 
@@ -672,9 +674,8 @@ int main(int argc, char** argv)
 		SDL_FreeSurface(pSDLSurf);
 		BlockSkin_p pImgSkin = BlockSkin::createStaticFromSurface(pImgSurface);
 
-
 		//------------------------------------------------------
-		// Init theme
+		// Init Oldskool widgetkit for debugger.
 		//------------------------------------------------------
 
 
@@ -688,22 +689,13 @@ int main(int argc, char** argv)
 		auto pFont3 = FreeTypeFont::create(pFont3Blob);
 		auto pFont4 = FreeTypeFont::create(pFont4Blob);
 
+		auto pSkinBlocks = loadSurface("resources/oldskool_skinblocks.png");
 
-		pSDLSurf = IMG_Load("resources/skin_widgets.png");
-		convertSDLFormat(&pixelDesc, pSDLSurf->format);
-		Surface_p pThemeSurface = pSurfaceFactory->createSurface({ .format = PixelFormat::BGRA_8, .size = SizeI(pSDLSurf->w, pSDLSurf->h) }, (unsigned char*)pSDLSurf->pixels, pixelDesc, pSDLSurf->pitch);
-		SDL_FreeSurface(pSDLSurf);
-
-		auto pTheme = Simplistic::create(pFont1,pFont2,pFont3,pFont4,pThemeSurface);
-		if (!pTheme)
+		if (!wg::oldskool::init(pFont1, pFont2, pFont3, pFont4, pSkinBlocks))
 		{
-			Base::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "Failed to create default theme", nullptr, nullptr, __func__, __FILE__, __LINE__);
-			return -1;
+			Base::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "Failed to init default widget kit", nullptr, nullptr, __func__, __FILE__, __LINE__);
+			return false;
 		}
-		Base::setDefaultTheme(pTheme);
-		Base::setDefaultStyle(pTheme->defaultStyle());
-
-
 
 		//------------------------------------------------------
 		// Setup debugger
@@ -723,13 +715,15 @@ int main(int argc, char** argv)
 		SDL_FreeSurface(pSDLSurf);
 
 
-		auto pDebugOverlay = DebugOverlay::create( { .backend = pDebugger, .theme = pTheme, .icons = pIconSurface, .transparencyGrid = pTransparencyGrid } );
+		auto pDebugOverlay = DebugOverlay::create( { .backend = pDebugger, .icons = pIconSurface, .transparencyGrid = pTransparencyGrid } );
 
 
 //		pDebugOverlay->setActivated(true);
 
 		pRoot->slot = pDebugOverlay;
 		pRoot->setSkin(ColorSkin::create(Color::Black));
+
+		pDebugOverlay->grabFocus();
 
 		//------------------------------------------------------
 		// Setup a simple GUI consisting of a filled background and

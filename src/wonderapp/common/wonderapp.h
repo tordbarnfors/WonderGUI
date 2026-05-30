@@ -25,7 +25,6 @@
 #include <wg_blob.h>
 #include <wg_surface.h>
 #include <wg_rootpanel.h>
-#include <wg_theme.h>
 
 #include <widgetkits/wg_oldskool.h>
 

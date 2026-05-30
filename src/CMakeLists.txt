@@ -106,7 +106,7 @@ else()
 endif()
 
 #set(WAPPLIB wappwin32)				# WonderApp framework for Win32, using software rendering.
-#set(WAPPLIB wappsdl2sw)				# WonderApp framework based on SDL2, using software rendering.
+#set(WAPPLIB wappsdl2sw)			# WonderApp framework based on SDL2, using software rendering.
 									# Works on Windows, Mac and Linux.
 #set(WAPPLIB wappsdl2gl)			# WonderApp framework based on SDL2, using OpenGL rendering.
 									# Works on Windows, Mac and Linux, although deprecated on both Windows and Mac.
@@ -178,7 +178,6 @@ endif()
 
 add_subdirectory(tools)
 add_subdirectory(examples)
-add_subdirectory(themes)
 
 
 #install(TARGETS example01 DESTINATION ${WG_ROOT}/distribution/examples)

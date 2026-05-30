@@ -52,7 +52,6 @@ target_link_libraries(wappwin32 PRIVATE
     wgfreetypefont
     wondergui
     wgdebugger
-    wg_theme_simplistic
     ${FREETYPE2_LIB}
 )
 

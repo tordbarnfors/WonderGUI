@@ -25,7 +25,6 @@
 #include <wg_basictextlayout.h>
 #include <wg_basicnumberlayout.h>
 #include <wg_inputhandler.h>
-#include <wg_theme.h>
 
 #include <wg_dummyfont.h>
 #include <wg_memstack.h>
@@ -120,7 +119,6 @@ namespace wg
 		s_pGUIContext->pMsgRouter = nullptr;
 		s_pGUIContext->pInputHandler = nullptr;
 		s_pGUIContext->pSkinSlotManager = nullptr;
-		s_pGUIContext->pDefaultTheme = nullptr;
 
 		s_pGUIContext->pDefaultCaret = nullptr;
 		s_pGUIContext->pDefaultTextLayout = nullptr;
@@ -203,21 +201,6 @@ namespace wg
 	{
 		return s_pGUIContext->pSkinSlotManager;
 	}
-
-	//____ defaultTheme() ______________________________________________________
-
-	Theme_p Base::defaultTheme()
-	{
-		return s_pGUIContext->pDefaultTheme;
-	}
-
-	//____ setDefaultTheme() ___________________________________________________
-
-	void Base::setDefaultTheme(Theme* pTheme)
-	{
-		s_pGUIContext->pDefaultTheme = pTheme;
-	}
-
 
 	//____ defaultCaret() ______________________________________________________
 

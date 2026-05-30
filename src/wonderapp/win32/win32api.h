@@ -39,7 +39,6 @@ public:
 	wg::Surface_p 				loadSurface(const std::string& path, wg::SurfaceFactory* pFactory = nullptr, 
 											const wg::Surface::Blueprint& bp = wg::Surface::Blueprint()) override;
 
-	wg::Theme_p					initDefaultTheme() override;
 	bool						initDefaultWidgetKit() override;
 
 

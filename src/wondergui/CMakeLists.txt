@@ -52,8 +52,6 @@ set( SOURCES
 	base/wg_textstylemanager.h
 	base/wg_texttool.cpp
 	base/wg_texttool.h
-	base/wg_theme.h
-	base/wg_theme.cpp	
 	base/wg_togglegroup.cpp
 	base/wg_togglegroup.h
 	base/wg_types.h
