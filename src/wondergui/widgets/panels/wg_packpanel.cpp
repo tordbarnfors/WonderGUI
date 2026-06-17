@@ -586,10 +586,14 @@ namespace wg
 
 		auto pSlot = static_cast<PackPanelSlot*>(_pSlot);
 
+		// We don't have to set defaultSize unless the slot is visible, as
+		// unhideSlots sets the defaultSize anyways. We do however have to set
+		// m_bResizeRequired, as otherwise the actual call to _resize() of the
+		// widget in the slot might not happen the next time it is visible
+		pSlot->m_bResizeRequired = true;
 		if( pSlot->m_bVisible )
 		{
 			pSlot->m_defaultSize = pSlot->_widget()->_defaultSize(m_scale);
-			pSlot->m_bResizeRequired = true;
 			_refreshGeometries();
 		}
 
@@ -1104,7 +1108,7 @@ namespace wg
 					}
 				}
 
-				if( p->m_bResizeRequired )
+				if( p->m_bResizeRequired && p->m_bVisible )
 				{
 					p->_widget()->_resize(geo.size(), m_scale);
 					p->m_bResizeRequired = false;
@@ -1199,7 +1203,7 @@ namespace wg
 					}
 				}
 
-				if (p->m_bResizeRequired)
+				if (p->m_bResizeRequired && p->m_bVisible)
 				{
 					p->_widget()->_resize(geo.size(), m_scale);
 					p->m_bResizeRequired = false;
