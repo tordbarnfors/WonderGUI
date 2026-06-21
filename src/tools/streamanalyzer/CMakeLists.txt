@@ -19,7 +19,7 @@ set(RESOURCES
 	${WG_ROOT}/resources/NotoSans-Bold.ttf
 	${WG_ROOT}/resources/NotoSans-Italic.ttf
 	${WG_ROOT}/resources/DroidSansMono.ttf
-	${WG_ROOT}/resources/skin_widgets.png
+	${WG_ROOT}/resources/oldskool_skinblocks.png
 
 )
 

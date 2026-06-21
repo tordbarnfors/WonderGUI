@@ -472,8 +472,13 @@ namespace wg
 	{
         //This takes the scale of the surface into account
         // Default size is when each point of the surface maps to a point of the skinarea.
-        
-		return align(ptsToSpx(m_ninePatch.block.size(),scale)) + align(ptsToSpx(m_spacing, scale));
+      
+		SizeSPX content = align(ptsToSpx(m_padding, scale));
+		SizeSPX blockSize = align(ptsToSpx(m_ninePatch.block.size(), scale));
+
+		SizeSPX default = { std::max(content.w, blockSize.w), std::max(content.h, blockSize.h) };
+
+		return default + align(ptsToSpx(m_spacing, scale));
 	}
 
 	//____ _sizeForContent() _______________________________________________________

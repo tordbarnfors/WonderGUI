@@ -991,9 +991,9 @@ namespace wg
 	void ScrollCapsule::_scrollbarStep(const Scroller* pComponent, int dir)
 	{
 		if (pComponent == &scrollbarX)
-			_setViewOffset({ m_viewRegion.x + dir * ptsToSpx(m_stepSizeX,m_scale), (m_viewRegion.y - m_childCanvas.y) });
+			_setViewOffset({ (m_viewRegion.x - m_childCanvas.x) + dir * ptsToSpx(m_stepSizeX,m_scale), (m_viewRegion.y - m_childCanvas.y) });
 		else
-			_setViewOffset({ (m_viewRegion.x - m_childCanvas.x), m_viewRegion.y + dir * ptsToSpx(m_stepSizeY,m_scale) });
+			_setViewOffset({ (m_viewRegion.x - m_childCanvas.x), (m_viewRegion.y - m_childCanvas.y) + dir * ptsToSpx(m_stepSizeY,m_scale) });
 	}
 
 	//____ _scrollbarPage() ______________________________________________________

@@ -16,6 +16,7 @@ TextBuffer::TextBuffer(Editera* pApp, wapp::API* pAPI, TextLayout * pTextLayout,
 
 	auto pTextEditor = wkit::TextEditor::create( {
 		.editor = { .layout = pApp->m_pEditorLayout, .style = pApp->m_pEditorStyle },
+		.skin = ColorSkin::create({.color = wkit::Colors::Canvas, .padding = 4 }),
 		.stickyFocus = true
 	});
 
