@@ -599,12 +599,19 @@ std::string	Win32HostBridge::getClipboardText()
 	std::string clipboardText;
 
 	if (OpenClipboard(NULL)) {
-		HANDLE hData = GetClipboardData(CF_TEXT);
+		HANDLE hData = GetClipboardData(CF_UNICODETEXT);
 		if (hData != NULL) {
-			char* pszText = static_cast<char*>(GlobalLock(hData));
-			if (pszText != NULL) {
+			const wchar_t* pWide = static_cast<const wchar_t*>(GlobalLock(hData));
+			if (pWide != NULL) {
 
-				clipboardText = pszText;
+				int len = WideCharToMultiByte(CP_UTF8, 0, pWide, -1, nullptr, 0, nullptr, nullptr);
+				
+				if (len > 0)
+				{
+					clipboardText.resize(len - 1);
+					WideCharToMultiByte(CP_UTF8, 0, pWide, -1, clipboardText.data(), len, nullptr, nullptr);
+				}
+
 				GlobalUnlock(hData);
 
 				// Remove any carriage return characters
@@ -629,15 +636,24 @@ bool Win32HostBridge::setClipboardText(const std::string& text)
 	if (OpenClipboard(NULL)) {
 		EmptyClipboard();
 
-		size_t len = text.size();
+		int len = MultiByteToWideChar(CP_UTF8, 0, text.data(), (int)text.size(),
+			nullptr, 0);
+
 		if (len > 0)
 		{
-			HGLOBAL hMem = GlobalAlloc(GMEM_MOVEABLE, len+1);
+			HGLOBAL hMem = GlobalAlloc(GMEM_MOVEABLE, (len+1) * sizeof(wchar_t) );
 			if (hMem) {
-				memcpy(GlobalLock(hMem), text.c_str(), len+1);
-				GlobalUnlock(hMem);
-				SetClipboardData(CF_TEXT, hMem);
-				success = true;
+				wchar_t* pWide = static_cast<wchar_t*>(GlobalLock(hMem));
+				if (pWide)
+				{
+					MultiByteToWideChar(CP_UTF8, 0, text.data(), (int)text.size(), pWide, len);
+					pWide[len] = L'\0';
+					GlobalUnlock(hMem);
+					SetClipboardData(CF_UNICODETEXT, hMem);
+					success = true;
+				}
+				else
+					GlobalFree(hMem);
 			}
 		}
 		CloseClipboard();
