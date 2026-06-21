@@ -52,6 +52,7 @@ namespace wg::oldskool
 	{
 		inline const Color	Plate = Color::LightGrey;
 		inline const Color	Border = Color::DarkGrey;
+		inline const Color	Canvas = Color::White;
 
 		inline const Color	Titlebar = Color::LightGrey;
 		inline const Color	TitlebarBorder = Color::DarkGrey;
@@ -118,7 +119,12 @@ namespace wg::oldskool
 		inline Skin_p		SelectBox;
 		inline Skin_p		SelectBoxEntry;
 		inline Skin_p		ScrollbarTrack;
-		inline Skin_p		ScrollbarHandle;
+		inline Skin_p		ScrollbarHandleX;
+		inline Skin_p		ScrollbarHandleY;
+		inline Skin_p		ScrollbarButtonUp;
+		inline Skin_p		ScrollbarButtonDown;
+		inline Skin_p		ScrollbarButtonLeft;
+		inline Skin_p		ScrollbarButtonRight;
 		inline Skin_p		SplitHandle;
 	}
 
@@ -322,14 +328,71 @@ namespace wg::oldskool
 			_.color = Color::DarkGray,
 			_.outlineColor = Color::Black,
 			_.outlineThickness = 1,
-			_.padding = 2));
+			_.padding = 0));
 
+		Skins::ScrollbarHandleX = BlockSkin::create(WGBP(BlockSkin,
+			_.surface = pSkinBlocks,
+			_.firstBlock = { 0,114,18,21 },
+			_.axis = Axis::X,
+			_.blockSpacing = 1,
+			_.frame = 3,
+			_.padding = 8,
+			_.rigidPartX = {4,10,YSections::Center},
+			_.states = { State::Default, State::Hovered, State::Pressed, State::Disabled }
+		));
+
+		Skins::ScrollbarHandleY = BlockSkin::create(WGBP(BlockSkin,
+			_.surface = pSkinBlocks,
+			_.firstBlock = { 131,0,21,18 },
+			_.axis = Axis::Y,
+			_.blockSpacing = 1,
+			_.frame = 3,
+			_.padding = 8,
+			_.rigidPartY = { 4,10,XSections::Center },
+			_.states = { State::Default, State::Hovered, State::Pressed, State::Disabled }
+		));
+
+
+		Skins::ScrollbarButtonUp = BlockSkin::create(WGBP(BlockSkin,
+			_.surface = pSkinBlocks,
+			_.firstBlock = { 74,15, 21, 18 },
+			_.axis = Axis::Y,
+			_.blockSpacing = 1,
+			_.states = { State::Default, State::Hovered, State::Pressed, State::Disabled }
+		));
+
+		Skins::ScrollbarButtonDown = BlockSkin::create(WGBP(BlockSkin,
+			_.surface = pSkinBlocks,
+			_.firstBlock = { 52, 15, 21, 18 },
+			_.axis = Axis::Y,
+			_.blockSpacing = 1,
+			_.states = { State::Default, State::Hovered, State::Pressed, State::Disabled }
+		));
+
+		Skins::ScrollbarButtonLeft = BlockSkin::create(WGBP(BlockSkin,
+			_.surface = pSkinBlocks,
+			_.firstBlock = { 76,92, 18, 21 },
+			_.axis = Axis::X,
+			_.blockSpacing = 1,
+			_.states = { State::Default, State::Hovered, State::Pressed, State::Disabled }
+		));
+
+		Skins::ScrollbarButtonRight = BlockSkin::create(WGBP(BlockSkin,
+			_.surface = pSkinBlocks,
+			_.firstBlock = { 0,92, 18, 21 },
+			_.axis = Axis::X,
+			_.blockSpacing = 1,
+			_.states = { State::Default, State::Hovered, State::Pressed, State::Disabled }
+		));
+
+
+/*
 		Skins::ScrollbarHandle = BoxSkin::create(WGBP(BoxSkin,
 			_.color = Color::LightGray,
 			_.outlineColor = Color::Black,
 			_.outlineThickness = 1,
 			_.padding = 6));
-
+*/
 
 
 		return true; 
@@ -637,7 +700,7 @@ namespace wg::oldskool
 			Axis				autoScrollAxis = Axis::Undefined;
 			Object_p			baggage;
 			Widget_p			child;
-			Skin_p				cornerSkin;
+			Skin_p				cornerSkin = Skins::PlateNoBevel;
 			bool				disabled = false;
 			bool				dropTarget = false;
 			Finalizer_p			finalizer = nullptr;
@@ -650,8 +713,14 @@ namespace wg::oldskool
 			uint8_t				pickCategory = 0;
 			bool				pickHandle = false;
 			PointerStyle		pointer = PointerStyle::Undefined;
-			Scroller::Blueprint	scrollbarX = WGBP(Scroller, _.back = Skins::ScrollbarTrack, _.bar = Skins::ScrollbarHandle );
-			Scroller::Blueprint	scrollbarY = WGBP(Scroller, _.back = Skins::ScrollbarTrack, _.bar = Skins::ScrollbarHandle );
+			Scroller::Blueprint	scrollbarX = WGBP(Scroller, _.back = Skins::ScrollbarTrack, 
+															_.backwardButton = Skins::ScrollbarButtonLeft,
+															_.bar = Skins::ScrollbarHandleX,
+															_.forwardButton = Skins::ScrollbarButtonRight);
+			Scroller::Blueprint	scrollbarY = WGBP(Scroller, _.back = Skins::ScrollbarTrack, 
+															_.backwardButton = Skins::ScrollbarButtonUp, 
+															_.bar = Skins::ScrollbarHandleY,
+															_.forwardButton = Skins::ScrollbarButtonDown );
 			bool				scrollX = true;
 			bool				scrollY = false;
 			bool				selectable = false;
@@ -698,7 +767,7 @@ namespace wg::oldskool
 			Axis				autoScrollAxis = Axis::Undefined;
 			Object_p			baggage;
 			Widget_p			child;
-			Skin_p				cornerSkin;
+			Skin_p				cornerSkin = Skins::PlateNoBevel;
 			bool				disabled = false;
 			bool				dropTarget = false;
 			Finalizer_p			finalizer = nullptr;
@@ -711,8 +780,14 @@ namespace wg::oldskool
 			uint8_t				pickCategory = 0;
 			bool				pickHandle = false;
 			PointerStyle		pointer = PointerStyle::Undefined;
-			Scroller::Blueprint	scrollbarX = WGBP(Scroller, _.back = Skins::ScrollbarTrack, _.bar = Skins::ScrollbarHandle );
-			Scroller::Blueprint	scrollbarY = WGBP(Scroller, _.back = Skins::ScrollbarTrack, _.bar = Skins::ScrollbarHandle );
+			Scroller::Blueprint	scrollbarX = WGBP(Scroller, _.back = Skins::ScrollbarTrack, 
+															_.backwardButton = Skins::ScrollbarButtonLeft,
+															_.bar = Skins::ScrollbarHandleX,
+															_.forwardButton = Skins::ScrollbarButtonRight);
+			Scroller::Blueprint	scrollbarY = WGBP(Scroller, _.back = Skins::ScrollbarTrack, 
+															_.backwardButton = Skins::ScrollbarButtonUp, 
+															_.bar = Skins::ScrollbarHandleY,
+															_.forwardButton = Skins::ScrollbarButtonDown );
 			bool				scrollX = false;
 			bool				scrollY = true;
 			bool				selectable = false;
@@ -759,7 +834,7 @@ namespace wg::oldskool
 			Axis				autoScrollAxis = Axis::Undefined;
 			Object_p			baggage;
 			Widget_p			child;
-			Skin_p				cornerSkin;
+			Skin_p				cornerSkin = Skins::PlateNoBevel;
 			bool				disabled = false;
 			bool				dropTarget = false;
 			Finalizer_p			finalizer = nullptr;
@@ -772,8 +847,14 @@ namespace wg::oldskool
 			uint8_t				pickCategory = 0;
 			bool				pickHandle = false;
 			PointerStyle		pointer = PointerStyle::Undefined;
-			Scroller::Blueprint	scrollbarX = WGBP(Scroller, _.back = Skins::ScrollbarTrack, _.bar = Skins::ScrollbarHandle);
-			Scroller::Blueprint	scrollbarY = WGBP(Scroller, _.back = Skins::ScrollbarTrack, _.bar = Skins::ScrollbarHandle );
+			Scroller::Blueprint	scrollbarX = WGBP(Scroller, _.back = Skins::ScrollbarTrack, 
+															_.backwardButton = Skins::ScrollbarButtonLeft,
+															_.bar = Skins::ScrollbarHandleX,
+															_.forwardButton = Skins::ScrollbarButtonRight);
+			Scroller::Blueprint	scrollbarY = WGBP(Scroller, _.back = Skins::ScrollbarTrack, 
+															_.backwardButton = Skins::ScrollbarButtonUp, 
+															_.bar = Skins::ScrollbarHandleY,
+															_.forwardButton = Skins::ScrollbarButtonDown );
 			bool				scrollX = true;
 			bool				scrollY = true;
 			bool				selectable = false;
