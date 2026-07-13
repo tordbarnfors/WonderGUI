@@ -204,8 +204,8 @@ namespace wg::oldskool
 		Skins::Canvas = BlockSkin::create(WGBP(BlockSkin,
 			_.surface = pSkinBlocks,
 			_.firstBlock = { 24,60,10,10 },
-			_.padding = 3,
-			_.frame = 3));
+			_.padding = 1,
+			_.frame = 1));
 
 		Skins::Window = BlockSkin::create(WGBP(BlockSkin,
 			_.surface = pSkinBlocks,

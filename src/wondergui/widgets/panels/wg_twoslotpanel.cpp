@@ -278,7 +278,12 @@ namespace wg
 
 		//TODO: Optimize. If scale and breadth remains same then we only need to force update those that have requested resize.
 		bool bForceUpdate = true; //(scale != m_scale || breadthDiff != 0);
-			
+	
+		if (scale != m_scale)
+		{
+			m_defaultSize = _calcDefaultSize(scale);
+		}
+
 		Container::_resize(size,scale);
 		_updateGeo( bForceUpdate );
 		_refreshOverflow();

@@ -106,7 +106,7 @@ cleanup:
 
 //____ loadSurface() __________________________________________________________
 
-wg::Surface_p Win32API::loadSurface(const std::string& path, wg::SurfaceFactory* pFactory, const wg::Surface::Blueprint& bp)
+wg::Surface_p Win32API::loadSurface(const std::string& path, wg::SurfaceFactory* pFactory, const wg::Surface::Blueprint& _bp)
 {
 	if (path.rfind(".surf") == path.size() - 5 || path.rfind(".srf") == path.size() - 4)
 	{
@@ -115,7 +115,7 @@ wg::Surface_p Win32API::loadSurface(const std::string& path, wg::SurfaceFactory*
 			return nullptr;
 
 		auto pReader = SurfaceReader::create({ .factory = Base::defaultSurfaceFactory() });
-		Surface_p pSurface = pReader->readSurfaceFromStream(input, bp);
+		Surface_p pSurface = pReader->readSurfaceFromStream(input, _bp);
 		input.close();
 		return pSurface;
 	}
@@ -194,14 +194,11 @@ wg::Surface_p Win32API::loadSurface(const std::string& path, wg::SurfaceFactory*
 				return nullptr;
 			}
 
-			Surface_p pSurface = wg::SoftSurface::create({
-				.canvas = false,
-				.format = destFormat,
-				.size = { width, height }
-				},
-				(uint8_t*)data,
-				pixelDesc,
-				0, nullptr, 0);
+			auto bp = _bp;
+			bp.format = destFormat;
+			bp.size = { width, height };
+
+			Surface_p pSurface = wg::SoftSurface::create( bp, (uint8_t*)data, pixelDesc, 0, nullptr, 0);
 
 			stbi_image_free(data);
 			return pSurface;

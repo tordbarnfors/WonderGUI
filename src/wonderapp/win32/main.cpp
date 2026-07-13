@@ -784,7 +784,7 @@ bool init_debugger(Win32API* pAPI)
 	auto pIconSurface = pAPI->loadSurface("resources/debugger_gfx.png");
 	auto pTransparencyGrid = pAPI->loadSurface("resources/checkboardtile.png", nullptr, { .tiling = true });
 
-	if (pIconSurface || !pTransparencyGrid)
+	if (!pIconSurface || !pTransparencyGrid)
 		return false;
 
 	g_pDebugBackend = DebugBackend::create();

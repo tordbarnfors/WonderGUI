@@ -252,7 +252,10 @@ namespace wg
 	{
 		auto pScrollPanel = WGCREATE(dbgkit::ScrollCapsuleY);
 
-		auto pInnerPanel = WGCREATE(PackPanel, _.axis = Axis::Y, _.layout = PackLayout::create({}));
+		auto pInnerPanel = WGCREATE(PackPanel, 
+			_.axis = Axis::Y, 
+			_.layout = PackLayout::create({}), 
+			_.skin = WGCREATE(ColorSkin, _.color = HiColor::Transparent, _.padding = 3 ));
 
 		pInnerPanel->slots << _createObjectHeader(pObject);
 

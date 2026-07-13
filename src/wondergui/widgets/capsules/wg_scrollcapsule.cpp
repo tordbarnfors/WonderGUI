@@ -569,7 +569,18 @@ namespace wg
 		// If we scroll horizontally, we always have content of default width, thus also default height.
 
 		if (m_bScrollX && scrollbarX.isDisplayable())
-			return _defaultSize(scale).h;
+		{
+			SizeSPX def = _defaultSize(scale);
+			spx height = def.h;
+
+			// If scrollbarX is set to auto hide and be outside view area, it is not included
+			// in defaultSize() but will be displayed if given width is less than content width.
+
+			if ((!m_bOverlayScrollbars && m_bAutoHideScrollbars) && width < def.w)
+				height += scrollbarX._defaultSize(scale).h;
+
+			return height;
+		}
 
 		// We need to calculate the matching height based on the width and the content.
 
@@ -598,7 +609,18 @@ namespace wg
 		// If we scroll vertically, we always have content of default height, thus also default width.
 
 		if (m_bScrollY && scrollbarY.isDisplayable())
-			return _defaultSize(scale).w;
+		{
+			SizeSPX def = _defaultSize(scale);
+			spx width = def.w;
+
+			// If scrollbarY is set to auto hide and be outside view area, it is not included
+			// in defaultSize() but will be displayed if given height is less than content height.
+
+			if ((!m_bOverlayScrollbars && m_bAutoHideScrollbars) && height < def.h)
+				width += scrollbarY._defaultSize(scale).w;
+
+			return width;
+		}
 
 		// We need to calculate the matching width based on the height and the content.
 
