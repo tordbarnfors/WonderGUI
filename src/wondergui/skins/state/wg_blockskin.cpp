@@ -476,9 +476,9 @@ namespace wg
 		SizeSPX content = align(ptsToSpx(m_padding, scale));
 		SizeSPX blockSize = align(ptsToSpx(m_ninePatch.block.size(), scale));
 
-		SizeSPX default = { std::max(content.w, blockSize.w), std::max(content.h, blockSize.h) };
+		SizeSPX def = { std::max(content.w, blockSize.w), std::max(content.h, blockSize.h) };
 
-		return default + align(ptsToSpx(m_spacing, scale));
+		return def + align(ptsToSpx(m_spacing, scale));
 	}
 
 	//____ _sizeForContent() _______________________________________________________
