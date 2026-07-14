@@ -822,7 +822,7 @@ namespace wg
 			buffer.size = 0;
 		}
 
-		buffer.size = GfxStream::loadDecompressData(dataInfo, buffer.pBuffer, decoder.readPtr(), dataSize - int(dataInfo.bPadded) );
+		buffer.size = GfxStream::loadDecompressData(dataInfo, buffer.pBuffer, decoder.readPtr(), dataSize);
 
 		decoder.skip(dataSize);
 		return true;
