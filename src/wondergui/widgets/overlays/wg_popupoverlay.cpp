@@ -605,50 +605,27 @@ namespace wg
 					}
 				}
 
-				// A popup in state ClosingDelay should be promoted to
-				// state PeekOpen if pointer has entered its launcherGeo and
-				// to state WeakOpen if pointer has entered its geo.
-				// Promoting to WeakOpen Should also promote any ancestor also in state ClosingDelay.
+				// Find the popup beneath the mouse pointer and revert any initiated closing of it.
+				// Also revert closing of a popup if mouse pointer is within its launcherGeo.
 
 				for (Slot * pSlot = popupSlots._begin() ; pSlot != popupSlots._end() ; pSlot++)
 				{
 					Slot& popup = *pSlot;
 
-					if (popup.m_state == Slot::State::ClosingDelay)
+					if (popup.m_launcherGeo.contains(pointerPos))
 					{
-						if (popup.m_launcherGeo.contains(pointerPos))
+						if (popup.m_state == Slot::State::ClosingDelay)
 						{
+							// When pointer enters the launcherGeo of a popup in state ClosingDelay, the popup should be promoted to PeekOpen.
+
 							popup.m_state = popup.m_bPeek ? Slot::State::PeekOpen : Slot::State::FixedOpen;
 							popup.m_stateCounter = 0;
 							_requestRender( popup._widget()->_renderBounds() + popup.m_geo.pos() );
 						}
-						else if (popup.m_geo.contains(pointerPos))
+						else if (popup.m_state == Slot::State::Closing)
 						{
-							Slot * p = &popup;
-							while (p != popupSlots._end() && p->m_state == Slot::State::ClosingDelay)
-							{
-								p->m_state = Slot::State::WeakOpen;
-								p->m_stateCounter = 0;
-								p++;
-							}
-							break;		// Nothing more to do further down.
-						}
-					}
-				}
+							// When pointer enters the launcherGeo of a popup in state Closing, the popup should be promoted to Opening.
 
-				// A popup in state Closing should be promoted to
-				// state Opening if pointer has entered its launcherGeo and
-				// to state WeakOpen if pointer has entered its geo.
-				// Promoting to WeakOpen Should also promote any ancestor also in state Closing.
-
-				for (Slot * pSlot = popupSlots._begin() ; pSlot != popupSlots._end() ; pSlot++)
-				{
-					Slot& popup = *pSlot;
-
-					if (popup.m_state == Slot::State::Closing)
-					{
-						if (popup.m_launcherGeo.contains(pointerPos))
-						{
 							popup.m_state = Slot::State::Opening;
 
 							if( m_openingFadeMs > 0 && m_closingFadeMs > 0 )
@@ -656,8 +633,25 @@ namespace wg
 							else
 								popup.m_stateCounter = 0;
 						}
-						else if (popup.m_geo.contains(pointerPos))
+					}
+					else if (popup.m_geo.contains(pointerPos))
+					{
+						if (popup.m_state == Slot::State::ClosingDelay)
 						{
+							// When pointer enters a popup in state ClosingDelay, the popup and its ancestors should be promoted to state WeakOpen.
+
+							Slot * p = &popup;
+							while (p != popupSlots._end() && p->m_state == Slot::State::ClosingDelay)
+							{
+								p->m_state = Slot::State::WeakOpen;
+								p->m_stateCounter = 0;
+								p++;
+							}
+						}
+						else if (popup.m_state == Slot::State::Closing)
+						{
+							// When pointer enters a popup in state Closing, the popup and its ancestors should be promoted to state WeakOpen.
+
 							Slot * p = &popup;
 							while (p != popupSlots._end() && p->m_state == Slot::State::Closing)
 							{
@@ -666,12 +660,11 @@ namespace wg
 								p->m_stateCounter = 0;
 								p++;
 							}
-							break;		// Nothing more to do further down.
 						}
+
+						break;		// We have found and acted on our hovered popup, we should not act on any lower popup that might overlap geometrically.
 					}
 				}
-
-
 
 				// If pointer has entered a selectable widget of a popup that isn't the top one
 				// and all widgets between them have bPeek=true, they should all enter
@@ -701,7 +694,6 @@ namespace wg
 						p++;
 					}
 				}
-
 
 			}
 			break;

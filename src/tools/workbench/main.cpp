@@ -546,7 +546,7 @@ int main(int argc, char** argv)
 
 		pRoot->setCanvasLayers(pCanvasLayers);
 
-		pRoot->setDebugMode(true);
+//		pRoot->setDebugMode(true);
 
 		Base::inputHandler()->setFocusedWindow(pRoot);
 
@@ -779,7 +779,7 @@ int main(int argc, char** argv)
 		//	textEditorTest(pSlot);
 		//	lineEditorTest(pSlot);
 		//	popupOpenerTest(pSlot);
-		//	popupOpenerTest2(pSlot);
+			popupOpenerTest2(pSlot);
 		//	scrollbarTest(pSlot);
 		//	modalLayerTest(pSlot);
 		//	splitPanelTest(pSlot);
@@ -841,7 +841,7 @@ int main(int argc, char** argv)
 		//	areaChartTestWithGlobalGradient(pSlot);
 		//	tintmapTest(pSlot);
 		//	popupLayerFocusTest(pSlot);
-		  nodePanelTest(pSlot);
+		//  nodePanelTest(pSlot);
 		//  elipsisWrapTextTest(pSlot);
 
 
@@ -1471,7 +1471,15 @@ bool popupOpenerTest2(ComponentPtr<DynamicSlot> pEntry)
 	pOpener->setPopup(pOpened);
 
 
-	auto pSubEntry1 = Filler::create( { .defaultSize = { 100, 20 }, .id = 11, .skin = pButtonSkin });
+	auto pSubEntry1 = PackPanel::create({ .axis = Axis::Y });
+
+	auto pSubEntry1_1 = Filler::create( { .defaultSize = { 100, 20 }, .id = 11, .skin = pButtonSkin });
+	auto pSubEntry1_2 = Filler::create( { .defaultSize = { 100, 20 }, .id = 12, .skin = pButtonSkin });
+	auto pSubEntry1_3 = Filler::create( { .defaultSize = { 100, 20 }, .id = 13, .skin = pButtonSkin });
+	auto pSubEntry1_4 = Filler::create( { .defaultSize = { 100, 20 }, .id = 14, .skin = pButtonSkin });
+
+	pSubEntry1->slots.pushBack({pSubEntry1_1,pSubEntry1_2,pSubEntry1_3,pSubEntry1_4});
+
 
 	auto pSubEntry2 = Filler::create( { .defaultSize = { 100, 20 }, .id = 21, .skin = pButtonSkin });
 
