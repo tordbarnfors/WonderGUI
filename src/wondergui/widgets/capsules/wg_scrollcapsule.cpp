@@ -445,6 +445,9 @@ namespace wg
 		if( !slot.isEmpty() && (m_bChildRequestedResize || oldCanvas.size() != m_childCanvas.size() || scale != oldScale) )
 			slot._widget()->_resize(m_childCanvas.size(), scale);
 
+		if (oldCanvas.pos() != m_childCanvas.pos())
+			_requestRender();
+
 		m_bChildRequestedResize = false;
 	}
 
@@ -529,7 +532,7 @@ namespace wg
 	SizeSPX ScrollCapsule::_defaultSize(int scale) const
 	{
 		SizeSPX sz = m_skin.contentBorderSize(scale);
-			
+
 		if (slot._widget())
 		{
 			// Scrollbars will only be shown if we have a child.
@@ -755,7 +758,7 @@ namespace wg
 			else
 			{
 				// We have a scrollbar outside view with autohide, this is the tricky alternative.
-				// First we determine height of canvas without scrollbar, 
+				// First we determine height of canvas without scrollbar,
 				// then we determine if scrollbar is needed and if so, we adjust view region and canvas size accordingly.
 
 				spx canvasHeight = pChild->_matchingHeight(window.w, m_scale);
@@ -807,7 +810,7 @@ namespace wg
 			else
 			{
 				// We have a scrollbar outside view with autohide, this is the tricky alternative.
-				// First we determine width of canvas without scrollbar, 
+				// First we determine width of canvas without scrollbar,
 				// then we determine if scrollbar is needed and if so, we adjust view region and canvas size accordingly.
 
 				spx canvasWidth = pChild->_matchingWidth(window.h, m_scale);
@@ -908,7 +911,7 @@ namespace wg
 	//____ _scrollbarPage() ______________________________________________________
 
 	void ScrollCapsule::_scrollbarPage(const Scroller* pComponent, int dir)
-	{ 
+	{
 		if( pComponent == &scrollbarX )
 			_setViewOffset({ (m_viewRegion.x - m_childCanvas.x) + dir * (m_viewRegion.w - ptsToSpx(m_pageOverlapX,m_scale)), (m_viewRegion.y - m_childCanvas.y) });
 		else
