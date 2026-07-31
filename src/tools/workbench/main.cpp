@@ -779,7 +779,7 @@ int main(int argc, char** argv)
 		//	textEditorTest(pSlot);
 		//	lineEditorTest(pSlot);
 		//	popupOpenerTest(pSlot);
-			popupOpenerTest2(pSlot);
+		//	popupOpenerTest2(pSlot);
 		//	scrollbarTest(pSlot);
 		//	modalLayerTest(pSlot);
 		//	splitPanelTest(pSlot);
@@ -841,7 +841,7 @@ int main(int argc, char** argv)
 		//	areaChartTestWithGlobalGradient(pSlot);
 		//	tintmapTest(pSlot);
 		//	popupLayerFocusTest(pSlot);
-		//  nodePanelTest(pSlot);
+			nodePanelTest(pSlot);
 		//  elipsisWrapTextTest(pSlot);
 
 
@@ -5023,16 +5023,46 @@ bool nodePanelTest(ComponentPtr<DynamicSlot> pEntry)
 	auto pBaseLayer = FlexPanel::create();
 	pBaseLayer->setSkin(ColorSkin::create(Color::PapayaWhip));
 
-	auto pNodePanel = NodePanel::create({ .skin = BoxSkin::create({ .color = Color::White, .outlineColor = Color::Black, .padding = 4 }) });
+	auto pNodePanel = NodePanel::create({ .skin = BoxSkin::create({ .color = Color::Transparent, .outlineColor = Color::Black, .padding = 4 }) });
+
+	auto pNodeWires = Nodewires::create({ .skin = BoxSkin::create({ .color = Color::White, .outlineColor = Color::Black, .padding = 4 }) });
+
+	pNodeWires->attachTo(pNodePanel);
 
 	auto pNodeSkin = BoxSkin::create({ .color = Color::LightGray, .outlineColor = Color::Black });
 
 	auto pNode1 = Filler::create({ .defaultSize = {50,50}, .skin = pNodeSkin });
 	auto pNode2 = Filler::create({ .defaultSize = {50,50}, .skin = pNodeSkin });
+	auto pNode3 = Filler::create({ .defaultSize = {50,50}, .skin = pNodeSkin });
 
-	pNodePanel->slots.pushBack({ pNode1, pNode2 });
+	pNodePanel->slots.pushBack(pNode1, { .center = {100,60} });
+	pNodePanel->slots.pushBack(pNode2, { .center = {100,60*2} });
+	pNodePanel->slots.pushBack(pNode3, { .center = {100,60*3} });
+
+	pNodeWires->addWire(1, Placement::South, 2, Placement::North );
+	pNodeWires->addWire(2, Placement::South, 3, Placement::North );
+
+	pNodePanel->setNodePosModifier([](const NodePanel * pPanel, NodeVector::const_iterator it, CoordSPX coord){
+
+		if( it != pPanel->nodes.begin() )
+		{
+			auto prev = it-1;
+			if( prev->centerSPX().y >= coord.y )
+				coord.y = prev->centerSPX().y + 64;
+		}
+
+		if( it != pPanel->nodes.end()-1 )
+		{
+			auto next = it+1;
+			if( next->centerSPX().y <= coord.y )
+				coord.y = next->centerSPX().y - 64;
+		}
+
+		return coord;
+	} );
 
 	pBaseLayer->slots.pushBack(pNodePanel, { .pos = {10,10}, .size = {300,300} });
+	pBaseLayer->slots.pushBack(pNodeWires, { .pos = {10,10}, .size = {300,300} });
 
 	*pEntry = pBaseLayer;
 	return true;

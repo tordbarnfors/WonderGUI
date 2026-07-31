@@ -24,12 +24,41 @@
 #pragma once
 
 #include <wg_panel.h>
+#include <wg_staticvector.h>
 
 namespace wg
 {
 	class	NodePanel;
 	typedef	StrongPtr<NodePanel>	NodePanel_p;
 	typedef	WeakPtr<NodePanel>		NodePanel_wp;
+
+	class Node;
+
+	//____ NodeObserver __________________________________________________________
+
+	class NodeObserver
+	{
+	public:
+		virtual void	_nodeCanvasResized(SizeSPX oldSize, SizeSPX newSize) = 0;
+		virtual void	_nodeCanvasDestroyed() = 0;
+		virtual void	_nodeMovedOrResized(int nodeId, const RectSPX& oldGeo, const RectSPX& newGeo) = 0;
+		virtual void	_nodeAdded(int nodeId, const RectSPX& geo, bool bVisible ) = 0;
+		virtual void	_nodeRemoved(int nodeId) = 0;
+		virtual void	_nodeHidden(int nodeId) = 0;
+		virtual void	_nodeUnhidden(int nodeId) = 0;
+	};
+
+
+	//____ NodeVector ____________________________________________________________
+
+	class NodeVector : public StaticVector<Node>
+	{
+		friend class NodePanel;
+	public:
+		iterator 	find(int nodeId);
+		bool 		has(int nodeId);
+	};
+
 
 	//____ NodePanelSlot __________________________________________________________
 
@@ -38,18 +67,29 @@ namespace wg
 	public:
 
 		friend class NodePanel;
+		friend class Node;
 		template<class S> friend class DynamicSlotVector;
 
 		//.____ Blueprint _______________________________________________________
 
 		struct Blueprint
 		{
+			Coord	center;
+			int		nodeId = 0;
 			bool	visible = true;
 		};
 
 		//.____ Identification ________________________________________________
 
 		const static TypeInfo	TYPEINFO;
+
+		int		nodeId() const { return m_nodeId; };
+
+		//.____ Geometry ______________________________________________________
+
+		void	setCenter(Coord pos);
+		Coord	center() const { return m_center; };
+
 
 	protected:
 
@@ -60,13 +100,48 @@ namespace wg
 
 		bool _setBlueprint(const Blueprint& bp);
 
+		int 	m_nodeId;
+		Coord 	m_center;
+
 	};
+
+	//_____ Node _________________________________________________________________
+
+	class Node
+	{
+		friend class NodePanel;
+
+	public:
+		inline int 				id() const { return m_id; }
+		inline Widget * 		widget() const { return m_pWidget; }
+		inline const RectSPX& 	geoSPX() const { return ((NodePanelSlot*) m_pWidget->_slot())->m_geo; }
+		inline const CoordSPX 	centerSPX() const { return ((NodePanelSlot*) m_pWidget->_slot())->m_geo.center(); }
+
+		void					setVisible(bool bVisible) { ((NodePanelSlot*) m_pWidget->_slot())->setVisible(bVisible); }
+		inline bool				isVisible() const { return ((NodePanelSlot*) m_pWidget->_slot())->m_bVisible; }
+
+		Coord					setCenter(Coord pos) { ((NodePanelSlot*) m_pWidget->_slot())->setCenter(pos); }
+		Coord					center() const { return ((NodePanelSlot*) m_pWidget->_slot())->center(); }
+
+		inline	DynamicSlotVector<NodePanelSlot>::iterator	slot() const { return (NodePanelSlot*) m_pWidget->_slot(); }
+
+	private:
+		Node(int nodeId, Widget * pWidget) : m_id(nodeId), m_pWidget(pWidget) {};
+
+		int			m_id;
+		Widget * 	m_pWidget;
+
+	};
+
 
 
 	//____ NodePanel __________________________________________________________
 
 	class NodePanel : public PanelTemplate<NodePanelSlot>
 	{
+		friend class Node;
+		friend class NodePanelSlot;
+
 	public:
 
 		//.____ Blueprint _____________________________________________________
@@ -98,6 +173,10 @@ namespace wg
 		static NodePanel_p	create() { return NodePanel_p(new NodePanel()); }
 		static NodePanel_p	create(const Blueprint& blueprint) { return NodePanel_p(new NodePanel(blueprint)); }
 
+		//.____ Components _______________________________________
+
+		NodeVector		nodes;
+
 		//.____ Identification __________________________________________
 		const TypeInfo& typeInfo(void) const override;
 		const static TypeInfo	TYPEINFO;
@@ -106,9 +185,16 @@ namespace wg
 
 		void			setDefaultSize(Size size);
 
+		//.____ Misc ________________________________________________________________
+
+		void			clearNodePosModifier();
+		void			setNodePosModifier( const std::function<CoordSPX(const NodePanel * pPanel, NodeVector::const_iterator nodeIt, CoordSPX pos)>& callback );
+
 		//.____ Internal ______________________________________________________
 
 		SizeSPX			_defaultSize(int scale) const override;
+		bool			_addObserver( NodeObserver * pObserver );
+		bool			_removeObserver( NodeObserver * pObserver );
 
 	protected:
 
@@ -119,12 +205,15 @@ namespace wg
 
 		~NodePanel();
 
+		void		_updateNodeGeo( NodePanelSlot * pSlot, CoordSPX center, bool bRequestRender );
+
+
 		// Overloaded from Widget
 
 		void		_receive(Msg* pMsg) override;
 		void		_render(GfxDevice* pDevice, const RectSPX& _canvas, const RectSPX& _window) override;
+		void		_resize(const SizeSPX& size, int scale) override;
 
-		
 		// Overloaded from Container
 
 		const TypeInfo& _slotTypeInfo(const StaticSlot* pSlot) const override;
@@ -149,9 +238,10 @@ namespace wg
 		CoordSPX	m_draggedChildStartPos;
 
 
+
+		std::vector<NodeObserver*>	m_observers;
+		std::function<CoordSPX(const NodePanel * pPanel, NodeVector::const_iterator nodeIt, CoordSPX pos)> m_nodePosModifier;
 	};
-
-
 }
 
 #endif //WG_NODEPANEL_DOT_H

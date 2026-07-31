@@ -209,6 +209,8 @@ set( SOURCES
 	widgets/wg_timer.h
 	widgets/wg_togglebutton.cpp
 	widgets/wg_togglebutton.h
+	widgets/wg_nodewires.cpp
+	widgets/wg_nodewires.h
 	widgets/wg_numberdisplay.cpp
 	widgets/wg_numberdisplay.h
 	widgets/wg_widget.cpp
@@ -236,8 +238,6 @@ set( SOURCES
 	widgets/capsules/wg_selectcapsule.h
 	widgets/capsules/wg_sizecapsule.cpp
 	widgets/capsules/wg_sizecapsule.h
-	widgets/capsules/wg_wirecapsule.cpp
-	widgets/capsules/wg_wirecapsule.h
 
 	widgets/overlays/wg_dragndropoverlay.cpp
 	widgets/overlays/wg_dragndropoverlay.h

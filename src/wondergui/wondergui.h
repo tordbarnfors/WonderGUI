@@ -87,6 +87,7 @@
 #include <wg_msgrouter.h>
 #include <wg_multiblockskin.h>
 #include <wg_nodepanel.h>
+#include <wg_nodewires.h>
 #include <wg_number.h>
 #include <wg_numberdisplay.h>
 #include <wg_numberlayout.h>
@@ -154,6 +155,5 @@
 #include <wg_types.h>
 #include <wg_util.h>
 #include <wg_widget.h>
-#include <wg_wirecapsule.h>
 
 #endif //WONDERGUI_DOT_H
