@@ -66,7 +66,7 @@ namespace wg
 
 	//____ NodeVector::find() ____________________________________________________
 
-	NodeVector::iterator NodeVector::find(int nodeId)
+	NodePanel::NodeVector::iterator NodePanel::NodeVector::find(int nodeId)
 	{
 		auto it = std::lower_bound( m_entries.begin(), m_entries.end(), nodeId, [](const Node& node, int nodeId) { return node.id() < nodeId; } );
 		if( it != m_entries.end() && it->id() == nodeId )
@@ -77,7 +77,7 @@ namespace wg
 
 	//____ NodeVector::has() _____________________________________________________
 
-	bool NodeVector::has(int nodeId)
+	bool NodePanel::NodeVector::has(int nodeId)
 	{
 		auto it = std::lower_bound( m_entries.begin(), m_entries.end(), nodeId, [](const Node& node, int nodeId) { return node.id() < nodeId; } );
 		if( it != m_entries.end() && it->id() == nodeId )
@@ -135,7 +135,7 @@ namespace wg
 
 	//____ _addObserver() _________________________________________________________
 
-	bool NodePanel::_addObserver( NodeObserver * pObserver )
+	bool NodePanel::_addObserver( Observer * pObserver )
 	{
 		// Add observer
 
@@ -158,7 +158,7 @@ namespace wg
 
 	//____ _removeObserver() ______________________________________________________
 
-	bool NodePanel::_removeObserver( NodeObserver * pObserver )
+	bool NodePanel::_removeObserver( Observer * pObserver )
 	{
 		auto it = std::find( m_observers.begin(), m_observers.end(), pObserver);
 

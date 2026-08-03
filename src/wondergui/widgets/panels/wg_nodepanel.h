@@ -32,33 +32,6 @@ namespace wg
 	typedef	StrongPtr<NodePanel>	NodePanel_p;
 	typedef	WeakPtr<NodePanel>		NodePanel_wp;
 
-	class Node;
-
-	//____ NodeObserver __________________________________________________________
-
-	class NodeObserver
-	{
-	public:
-		virtual void	_nodeCanvasResized(SizeSPX oldSize, SizeSPX newSize) = 0;
-		virtual void	_nodeCanvasDestroyed() = 0;
-		virtual void	_nodeMovedOrResized(int nodeId, const RectSPX& oldGeo, const RectSPX& newGeo) = 0;
-		virtual void	_nodeAdded(int nodeId, const RectSPX& geo, bool bVisible ) = 0;
-		virtual void	_nodeRemoved(int nodeId) = 0;
-		virtual void	_nodeHidden(int nodeId) = 0;
-		virtual void	_nodeUnhidden(int nodeId) = 0;
-	};
-
-
-	//____ NodeVector ____________________________________________________________
-
-	class NodeVector : public StaticVector<Node>
-	{
-		friend class NodePanel;
-	public:
-		iterator 	find(int nodeId);
-		bool 		has(int nodeId);
-	};
-
 
 	//____ NodePanelSlot __________________________________________________________
 
@@ -104,34 +77,6 @@ namespace wg
 
 	};
 
-	//_____ Node _________________________________________________________________
-
-	class Node
-	{
-		friend class NodePanel;
-
-	public:
-		inline int 				id() const { return m_id; }
-		inline Widget * 		widget() const { return m_pWidget; }
-
-		void					setVisible(bool bVisible) { ((NodePanelSlot*) m_pWidget->_slot())->setVisible(bVisible); }
-		inline bool				isVisible() const { return ((NodePanelSlot*) m_pWidget->_slot())->m_bVisible; }
-
-		Coord					setCenter(Coord pos) { ((NodePanelSlot*) m_pWidget->_slot())->setCenter(pos); }
-		Coord					center() const { return ((NodePanelSlot*) m_pWidget->_slot())->center(); }
-
-		Rect					geo() const { auto pSlot = (NodePanelSlot*) m_pWidget->_slot(); Size sz = pSlot->size(); return { Rect(pSlot->center() - Coord(sz)/2), sz};  }
-
-		inline	DynamicSlotVector<NodePanelSlot>::iterator	slot() const { return (NodePanelSlot*) m_pWidget->_slot(); }
-
-	private:
-		Node(int nodeId, Widget * pWidget) : m_id(nodeId), m_pWidget(pWidget) {};
-
-		int			m_id;
-		Widget * 	m_pWidget;
-
-	};
-
 
 
 	//____ NodePanel __________________________________________________________
@@ -142,6 +87,58 @@ namespace wg
 		friend class NodePanelSlot;
 
 	public:
+
+		//_____ Node _________________________________________________________________
+
+		class Node
+		{
+			friend class NodePanel;
+
+		public:
+			inline int 				id() const { return m_id; }
+			inline Widget * 		widget() const { return m_pWidget; }
+
+			void					setVisible(bool bVisible) { ((NodePanelSlot*) m_pWidget->_slot())->setVisible(bVisible); }
+			inline bool				isVisible() const { return ((NodePanelSlot*) m_pWidget->_slot())->m_bVisible; }
+
+			Coord					setCenter(Coord pos) { ((NodePanelSlot*) m_pWidget->_slot())->setCenter(pos); }
+			Coord					center() const { return ((NodePanelSlot*) m_pWidget->_slot())->center(); }
+
+			Rect					geo() const { auto pSlot = (NodePanelSlot*) m_pWidget->_slot(); Size sz = pSlot->size(); return { Rect(pSlot->center() - Coord(sz)/2), sz};  }
+
+			inline	DynamicSlotVector<NodePanelSlot>::iterator	slot() const { return (NodePanelSlot*) m_pWidget->_slot(); }
+
+		private:
+			Node(int nodeId, Widget * pWidget) : m_id(nodeId), m_pWidget(pWidget) {};
+
+			int			m_id;
+			Widget * 	m_pWidget;
+
+		};
+
+		//____ NodeVector ____________________________________________________________
+
+		class NodeVector : public StaticVector<Node>
+		{
+			friend class NodePanel;
+		public:
+			iterator 	find(int nodeId);
+			bool 		has(int nodeId);
+		};
+
+		//____ Observer __________________________________________________________
+
+		class Observer
+		{
+		public:
+			virtual void	_nodeCanvasResized(SizeSPX oldSize, SizeSPX newSize) = 0;
+			virtual void	_nodeCanvasDestroyed() = 0;
+			virtual void	_nodeMovedOrResized(int nodeId, const RectSPX& oldGeo, const RectSPX& newGeo) = 0;
+			virtual void	_nodeAdded(int nodeId, const RectSPX& geo, bool bVisible ) = 0;
+			virtual void	_nodeRemoved(int nodeId) = 0;
+			virtual void	_nodeHidden(int nodeId) = 0;
+			virtual void	_nodeUnhidden(int nodeId) = 0;
+		};
 
 		//.____ Blueprint _____________________________________________________
 
@@ -192,8 +189,8 @@ namespace wg
 		//.____ Internal ______________________________________________________
 
 		SizeSPX			_defaultSize(int scale) const override;
-		bool			_addObserver( NodeObserver * pObserver );
-		bool			_removeObserver( NodeObserver * pObserver );
+		bool			_addObserver( Observer * pObserver );
+		bool			_removeObserver( Observer * pObserver );
 
 	protected:
 
@@ -238,7 +235,7 @@ namespace wg
 
 
 
-		std::vector<NodeObserver*>	m_observers;
+		std::vector<Observer*>	m_observers;
 		std::function<Coord(const NodePanel * pPanel, NodeVector::const_iterator nodeIt, Coord pos)> m_nodePosModifier;
 	};
 }

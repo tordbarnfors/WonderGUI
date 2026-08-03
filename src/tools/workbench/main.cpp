@@ -5062,7 +5062,7 @@ bool nodePanelTest(ComponentPtr<DynamicSlot> pEntry)
 	} );
 */
 
-	pNodePanel->setNodePosModifier([](const NodePanel * pPanel, NodeVector::const_iterator it, Coord center){
+	pNodePanel->setNodePosModifier([](const NodePanel * pPanel, NodePanel::NodeVector::const_iterator it, Coord center){
 
 		Rect rect = it->geo();
 		rect.y = center.y - rect.h/2;

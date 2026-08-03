@@ -32,7 +32,7 @@ class Nodewires;
 typedef StrongPtr<Nodewires>	Nodewires_p;
 typedef WeakPtr<Nodewires>		Nodewires_wp;
 
-class Nodewires : public Widget, public NodeObserver
+class Nodewires : public Widget, public NodePanel::Observer
 {
 public:
 
@@ -99,7 +99,7 @@ private:
 	void		_render(GfxDevice* pDevice, const RectSPX& _canvas, const RectSPX& _window) override;
 
 	void 		_requestRenderWire( const Wire& wire );
-	void		_updateWirePositions( Wire& wire, Node * pFromNode, Node * pToNode  );
+	void		_updateWirePositions( Wire& wire, NodePanel::Node * pFromNode, NodePanel::Node * pToNode  );
 
 
 //	void 		_requestRenderAffectedWires( int nodeId );

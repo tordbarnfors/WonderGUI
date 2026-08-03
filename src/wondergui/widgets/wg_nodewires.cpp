@@ -244,10 +244,10 @@ namespace wg
 
 	//____ _updateWirePositions() ________________________________________________
 
-	void Nodewires::_updateWirePositions( Wire& wire, Node * pFromNode, Node * pToNode )
+	void Nodewires::_updateWirePositions( Wire& wire, NodePanel::Node * pFromNode, NodePanel::Node * pToNode )
 	{
-		auto& fromRect = pFromNode->geoSPX();
-		auto& toRect = pToNode->geoSPX();
+		const auto& fromRect = pFromNode->slot()->_geo();
+		const auto& toRect = pToNode->slot()->_geo();
 
 		CoordSPX fromPos = Util::placementToOfs(wire.fromPlacement, fromRect);
 		CoordSPX toPos = Util::placementToOfs(wire.toPlacement, toRect);
