@@ -87,9 +87,8 @@ namespace wg
 
 		//.____ Geometry ______________________________________________________
 
-		void	setCenter(Coord pos);
-		Coord	center() const { return m_center; };
-
+		void	setCenter(Coord pos);					// Note: center position is within parent contentRect, not canvas.
+		Coord	center() const { return m_center; };	// "-
 
 	protected:
 
@@ -114,14 +113,14 @@ namespace wg
 	public:
 		inline int 				id() const { return m_id; }
 		inline Widget * 		widget() const { return m_pWidget; }
-		inline const RectSPX& 	geoSPX() const { return ((NodePanelSlot*) m_pWidget->_slot())->m_geo; }
-		inline const CoordSPX 	centerSPX() const { return ((NodePanelSlot*) m_pWidget->_slot())->m_geo.center(); }
 
 		void					setVisible(bool bVisible) { ((NodePanelSlot*) m_pWidget->_slot())->setVisible(bVisible); }
 		inline bool				isVisible() const { return ((NodePanelSlot*) m_pWidget->_slot())->m_bVisible; }
 
 		Coord					setCenter(Coord pos) { ((NodePanelSlot*) m_pWidget->_slot())->setCenter(pos); }
 		Coord					center() const { return ((NodePanelSlot*) m_pWidget->_slot())->center(); }
+
+		Rect					geo() const { auto pSlot = (NodePanelSlot*) m_pWidget->_slot(); Size sz = pSlot->size(); return { Rect(pSlot->center() - Coord(sz)/2), sz};  }
 
 		inline	DynamicSlotVector<NodePanelSlot>::iterator	slot() const { return (NodePanelSlot*) m_pWidget->_slot(); }
 
@@ -188,7 +187,7 @@ namespace wg
 		//.____ Misc ________________________________________________________________
 
 		void			clearNodePosModifier();
-		void			setNodePosModifier( const std::function<CoordSPX(const NodePanel * pPanel, NodeVector::const_iterator nodeIt, CoordSPX pos)>& callback );
+		void			setNodePosModifier( const std::function<Coord(const NodePanel * pPanel, NodeVector::const_iterator nodeIt, Coord pos)>& callback );
 
 		//.____ Internal ______________________________________________________
 
@@ -235,12 +234,12 @@ namespace wg
 		Size		m_defaultSize = { 256, 256 };
 
 		Widget*		m_pDraggedChild = nullptr;
-		CoordSPX	m_draggedChildStartPos;
+		Coord		m_draggedChildStartPos;
 
 
 
 		std::vector<NodeObserver*>	m_observers;
-		std::function<CoordSPX(const NodePanel * pPanel, NodeVector::const_iterator nodeIt, CoordSPX pos)> m_nodePosModifier;
+		std::function<Coord(const NodePanel * pPanel, NodeVector::const_iterator nodeIt, Coord pos)> m_nodePosModifier;
 	};
 }
 

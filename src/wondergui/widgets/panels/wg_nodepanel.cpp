@@ -128,7 +128,7 @@ namespace wg
 
 	//____ setNodePosModifier() __________________________________________________
 
-	void NodePanel::setNodePosModifier( const std::function<CoordSPX(const NodePanel * pPanel, NodeVector::const_iterator nodeIt, CoordSPX pos)>& callback )
+	void NodePanel::setNodePosModifier( const std::function<Coord(const NodePanel * pPanel, NodeVector::const_iterator nodeIt, Coord pos)>& callback )
 	{
 		m_nodePosModifier = callback;
 	}
@@ -201,7 +201,7 @@ namespace wg
 					if( slot.isVisible() && slot._geo().contains(pointerPos) )
 					{
 						m_pDraggedChild = slot._widget();
-						m_draggedChildStartPos = ptsToSpx(slot.m_center, m_scale) + _contentRect().pos();
+						m_draggedChildStartPos = slot.m_center;
 						slots.moveToFront(&slot);
 
 						State s = slot._widget()->state();
@@ -239,12 +239,14 @@ namespace wg
 					auto pSlot = static_cast<NodePanelSlot*>(m_pDraggedChild->_slot());
 
 					auto pMsg = static_cast<MouseDragMsg*>(_pMsg);
-					CoordSPX newPos = m_draggedChildStartPos + pMsg->_draggedTotal();
+					Coord newPos = m_draggedChildStartPos + spxToPts(pMsg->_draggedTotal(), m_scale);
 
 					if( m_nodePosModifier )
 						newPos = m_nodePosModifier(this, nodes.find(pSlot->nodeId()), newPos );
 
-					_updateNodeGeo(pSlot, newPos, true );
+					CoordSPX newPosSPX = ptsToSpx(newPos,m_scale) + _contentRect().pos();
+
+					_updateNodeGeo(pSlot, newPosSPX, true );
 
 					pMsg->swallow();
 				}

@@ -5041,25 +5041,50 @@ bool nodePanelTest(ComponentPtr<DynamicSlot> pEntry)
 
 	pNodeWires->addWire(1, Placement::South, 2, Placement::North );
 	pNodeWires->addWire(2, Placement::South, 3, Placement::North );
-
-	pNodePanel->setNodePosModifier([](const NodePanel * pPanel, NodeVector::const_iterator it, CoordSPX coord){
+/*
+	pNodePanel->setNodePosModifier([](const NodePanel * pPanel, NodeVector::const_iterator it, Coord coord){
 
 		if( it != pPanel->nodes.begin() )
 		{
 			auto prev = it-1;
-			if( prev->centerSPX().y >= coord.y )
-				coord.y = prev->centerSPX().y + 64;
+			if( prev->center().y >= coord.y )
+				coord.y = prev->center().y + 1;
 		}
 
 		if( it != pPanel->nodes.end()-1 )
 		{
 			auto next = it+1;
-			if( next->centerSPX().y <= coord.y )
-				coord.y = next->centerSPX().y - 64;
+			if( next->center().y <= coord.y )
+				coord.y = next->center().y - 1;
 		}
 
 		return coord;
 	} );
+*/
+
+	pNodePanel->setNodePosModifier([](const NodePanel * pPanel, NodeVector::const_iterator it, Coord center){
+
+		Rect rect = it->geo();
+		rect.y = center.y - rect.h/2;
+
+
+		if( it != pPanel->nodes.begin() )
+		{
+			auto prev = it-1;
+			if( prev->geo().bottom() >= rect.y - 4 )
+				center.y = Rect( 0, prev->geo().bottom() + 4, 0, rect.h ).center().y;
+		}
+
+		if( it != pPanel->nodes.end()-1 )
+		{
+			auto next = it+1;
+			if( next->geo().y <= rect.bottom() + 4 )
+				center.y = Rect( 0, next->geo().y - rect.h - 4, 0, rect.h ).center().y;
+		}
+
+		return center;
+	} );
+
 
 	pBaseLayer->slots.pushBack(pNodePanel, { .pos = {10,10}, .size = {300,300} });
 	pBaseLayer->slots.pushBack(pNodeWires, { .pos = {10,10}, .size = {300,300} });
