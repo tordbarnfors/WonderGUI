@@ -47,8 +47,6 @@ private:
 
 	std::vector<TestSurface>	m_testSurfaces;
 
-	Theme_p			m_pTheme;
-
 	TablePanel_p	m_pResultTable;
 
 	std::vector<Compressor_p>	m_compressors;

@@ -1654,26 +1654,26 @@ bool TablePanel::_refreshColumnCache( int column, TablePanelColumn::Cache& cache
 
 SizeSPX TablePanel::_sumOfPadding(int scale) const
 {
-	SizeSPX sizeAddition = m_skin.contentBorderSize(m_scale);
+	SizeSPX sizeAddition = m_skin.contentBorderSize(scale);
 
 	if (m_pRowSkins[0] && m_nVisibleRows > 0)
 	{
-		auto rowBorder = m_pRowSkins[0]->_contentBorderSize(m_scale);
+		auto rowBorder = m_pRowSkins[0]->_contentBorderSize(scale);
 		sizeAddition.w += rowBorder.w;
 		sizeAddition.h += rowBorder.h * m_nVisibleRows;
 	}
 
 	if( m_nVisibleColumns > 0 )
-		sizeAddition.w += align(ptsToSpx(m_spacingX[0], m_scale)) + align(ptsToSpx(m_spacingX[1], m_scale)) * (m_nVisibleColumns-1) + align(ptsToSpx(m_spacingX[2], m_scale));
+		sizeAddition.w += align(ptsToSpx(m_spacingX[0], scale)) + align(ptsToSpx(m_spacingX[1], scale)) * (m_nVisibleColumns-1) + align(ptsToSpx(m_spacingX[2], scale));
 
 	if( m_nVisibleRows > 0 )
-		sizeAddition.h += align(ptsToSpx(m_spacingY[0], m_scale)) + align(ptsToSpx(m_spacingY[1], m_scale)) * (m_nVisibleRows-1) + align(ptsToSpx(m_spacingY[2], m_scale));
+		sizeAddition.h += align(ptsToSpx(m_spacingY[0], scale)) + align(ptsToSpx(m_spacingY[1], scale)) * (m_nVisibleRows-1) + align(ptsToSpx(m_spacingY[2], scale));
 
 	return sizeAddition;
 }
 
 
-//____ _updateMinMaxDefaultSize() _____________________________________________
+//____ _updateMinDefaultSize() _____________________________________________
 
 void TablePanel::_updateMinDefaultSize()
 {

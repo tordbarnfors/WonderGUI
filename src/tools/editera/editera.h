@@ -33,7 +33,6 @@ public:
 	// These are made public for our subclasses.
 
 	wapp::API* 		m_pAPI = nullptr;
-	wg::Theme_p		m_pTheme;
 
 	PackLayout_p	m_pLayout;
 	TextLayout_p	m_pEditorLayout;

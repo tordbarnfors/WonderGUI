@@ -19,9 +19,9 @@ public:
 
 	//.____ Creation ___________________________________________________________
 	
-	static TextBuffer_p	create(Editera* pApp, wapp::API* pAPI, Theme* pTheme, TextLayout* pTextLayout, TextStyle* pTextStyle) 
+	static TextBuffer_p	create(Editera* pApp, wapp::API* pAPI, TextLayout* pTextLayout, TextStyle* pTextStyle) 
 	{ 
-		return TextBuffer_p(new TextBuffer(pApp, pAPI, pTheme, pTextLayout, pTextStyle )); 
+		return TextBuffer_p(new TextBuffer(pApp, pAPI, pTextLayout, pTextStyle ));
 	}
 
 	//.____ Identification _________________________________________________
@@ -57,7 +57,7 @@ public:
 
 
 protected:
-	TextBuffer(Editera* pApp, wapp::API* pAPI, Theme* pTheme, TextLayout* pTextLayout, TextStyle* pTextStyle);
+	TextBuffer(Editera* pApp, wapp::API* pAPI, TextLayout* pTextLayout, TextStyle* pTextStyle);
 	~TextBuffer();
 
 	Editera*		m_pApp;

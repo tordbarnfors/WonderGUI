@@ -52,7 +52,7 @@ namespace wg
 		if( pRoot )
 			m_pSelectCapsule->slot = _generateInfoTree(blueprint, pRoot );
 		else
-			m_pSelectCapsule->slot = Filler::create( WGBP(Filler, _.skin = blueprint.theme->canvasSkin() ));
+			m_pSelectCapsule->slot = Filler::create( WGBP(Filler, _.skin = dbgkit::Skins::Canvas ));
 
 		m_routeIdForSelect = Base::msgRouter()->addRoute(m_pSelectCapsule, MsgType::Selected, [this](Msg* pMsg) {
 		
@@ -205,13 +205,13 @@ namespace wg
 	{
 		if (pWidget->isContainer())
 		{
-			auto pDrawer = DrawerPanel::create( WGOVR(blueprint.listEntryDrawer, 
+			auto pDrawer = dbgkit::TreeListDrawer::create( WGOVR(blueprint.listEntryDrawer, 
 				_.buttonOfs.x += pts(indentation * 16)
 			));
 
 			auto pNameDisplay = TextDisplay::create(WGOVR(blueprint.listEntryLabel, _.display.text = pWidget->typeInfo().className));
 
-			auto pEntry = PaddingCapsule::create(WGOVR(blueprint.selectableListEntryCapsule,
+			auto pEntry = dbgkit::TreeListEntry::create(WGOVR(blueprint.selectableListEntryCapsule,
 				_.padding.left += pts((indentation + 1) * 16),
 				_.child = pNameDisplay
 			));
@@ -254,7 +254,7 @@ namespace wg
 		{
 			auto pNameDisplay = TextDisplay::create(WGOVR(blueprint.listEntryLabel, _.display.text = pWidget->typeInfo().className));
 
-			auto pEntry = PaddingCapsule::create(WGOVR(blueprint.selectableListEntryCapsule,
+			auto pEntry = dbgkit::TreeListEntry::create(WGOVR(blueprint.selectableListEntryCapsule,
 				_.padding.left += pts((indentation + 1) * 16),
 				_.child = pNameDisplay
 			));

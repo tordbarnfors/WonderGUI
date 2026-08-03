@@ -41,9 +41,11 @@
 #include <wg_dynamicbuffer.h>
 
 #include <wg_drawerpanel.h>
+#include <wg_scrollcapsule.h>
+
+#include <widgetkits/wg_oldskool.h>
 
 #include <wg_debugger.h>
-#include <themes/simplistic/wg_simplistic.h>
 
 
 //#define USE_OPEN_GL
@@ -178,6 +180,7 @@ bool drawerPanelTest(ComponentPtr<DynamicSlot> pEntry);
 bool tintmapTest(ComponentPtr<DynamicSlot> pEntry);
 bool popupLayerFocusTest(ComponentPtr<DynamicSlot> pEntry);
 bool nodePanelTest(ComponentPtr<DynamicSlot> pEntry);
+bool elipsisWrapTextTest(ComponentPtr<DynamicSlot> pEntry);
 
 
 void nisBlendTest();
@@ -543,7 +546,7 @@ int main(int argc, char** argv)
 
 		pRoot->setCanvasLayers(pCanvasLayers);
 
-		pRoot->setDebugMode(true);
+//		pRoot->setDebugMode(true);
 
 		Base::inputHandler()->setFocusedWindow(pRoot);
 
@@ -671,9 +674,8 @@ int main(int argc, char** argv)
 		SDL_FreeSurface(pSDLSurf);
 		BlockSkin_p pImgSkin = BlockSkin::createStaticFromSurface(pImgSurface);
 
-
 		//------------------------------------------------------
-		// Init theme
+		// Init Oldskool widgetkit for debugger.
 		//------------------------------------------------------
 
 
@@ -687,22 +689,13 @@ int main(int argc, char** argv)
 		auto pFont3 = FreeTypeFont::create(pFont3Blob);
 		auto pFont4 = FreeTypeFont::create(pFont4Blob);
 
+		auto pSkinBlocks = loadSurface("resources/oldskool_skinblocks.png");
 
-		pSDLSurf = IMG_Load("resources/skin_widgets.png");
-		convertSDLFormat(&pixelDesc, pSDLSurf->format);
-		Surface_p pThemeSurface = pSurfaceFactory->createSurface({ .format = PixelFormat::BGRA_8, .size = SizeI(pSDLSurf->w, pSDLSurf->h) }, (unsigned char*)pSDLSurf->pixels, pixelDesc, pSDLSurf->pitch);
-		SDL_FreeSurface(pSDLSurf);
-
-		auto pTheme = Simplistic::create(pFont1,pFont2,pFont3,pFont4,pThemeSurface);
-		if (!pTheme)
+		if (!wg::oldskool::init(pFont1, pFont2, pFont3, pFont4, pSkinBlocks))
 		{
-			Base::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "Failed to create default theme", nullptr, nullptr, __func__, __FILE__, __LINE__);
-			return -1;
+			Base::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "Failed to init default widget kit", nullptr, nullptr, __func__, __FILE__, __LINE__);
+			return false;
 		}
-		Base::setDefaultTheme(pTheme);
-		Base::setDefaultStyle(pTheme->defaultStyle());
-
-
 
 		//------------------------------------------------------
 		// Setup debugger
@@ -722,13 +715,15 @@ int main(int argc, char** argv)
 		SDL_FreeSurface(pSDLSurf);
 
 
-		auto pDebugOverlay = DebugOverlay::create( { .backend = pDebugger, .theme = pTheme, .icons = pIconSurface, .transparencyGrid = pTransparencyGrid } );
+		auto pDebugOverlay = DebugOverlay::create( { .backend = pDebugger, .icons = pIconSurface, .transparencyGrid = pTransparencyGrid } );
 
 
 //		pDebugOverlay->setActivated(true);
 
 		pRoot->slot = pDebugOverlay;
 		pRoot->setSkin(ColorSkin::create(Color::Black));
+
+		pDebugOverlay->grabFocus();
 
 		//------------------------------------------------------
 		// Setup a simple GUI consisting of a filled background and
@@ -846,7 +841,9 @@ int main(int argc, char** argv)
 		//	areaChartTestWithGlobalGradient(pSlot);
 		//	tintmapTest(pSlot);
 		//	popupLayerFocusTest(pSlot);
-		nodePanelTest(pSlot);
+			nodePanelTest(pSlot);
+		//  elipsisWrapTextTest(pSlot);
+
 
 		//------------------------------------------------------
 		// Program Main Loop
@@ -863,7 +860,7 @@ int main(int argc, char** argv)
 			//		SDL_UpdateWindowSurface(pWin);
 			updateWindowRects(pRoot, pWin);
 
-			SDL_Delay(4);
+			SDL_Delay(16);
 		}
 
 		// Cleanup
@@ -1474,7 +1471,15 @@ bool popupOpenerTest2(ComponentPtr<DynamicSlot> pEntry)
 	pOpener->setPopup(pOpened);
 
 
-	auto pSubEntry1 = Filler::create( { .defaultSize = { 100, 20 }, .id = 11, .skin = pButtonSkin });
+	auto pSubEntry1 = PackPanel::create({ .axis = Axis::Y });
+
+	auto pSubEntry1_1 = Filler::create( { .defaultSize = { 100, 20 }, .id = 11, .skin = pButtonSkin });
+	auto pSubEntry1_2 = Filler::create( { .defaultSize = { 100, 20 }, .id = 12, .skin = pButtonSkin });
+	auto pSubEntry1_3 = Filler::create( { .defaultSize = { 100, 20 }, .id = 13, .skin = pButtonSkin });
+	auto pSubEntry1_4 = Filler::create( { .defaultSize = { 100, 20 }, .id = 14, .skin = pButtonSkin });
+
+	pSubEntry1->slots.pushBack({pSubEntry1_1,pSubEntry1_2,pSubEntry1_3,pSubEntry1_4});
+
 
 	auto pSubEntry2 = Filler::create( { .defaultSize = { 100, 20 }, .id = 21, .skin = pButtonSkin });
 
@@ -5018,17 +5023,121 @@ bool nodePanelTest(ComponentPtr<DynamicSlot> pEntry)
 	auto pBaseLayer = FlexPanel::create();
 	pBaseLayer->setSkin(ColorSkin::create(Color::PapayaWhip));
 
-	auto pNodePanel = NodePanel::create({ .skin = BoxSkin::create({ .color = Color::White, .outlineColor = Color::Black, .padding = 4 }) });
+	auto pNodePanel = NodePanel::create({ .skin = BoxSkin::create({ .color = Color::Transparent, .outlineColor = Color::Black, .padding = 4 }) });
+
+	auto pNodeWires = Nodewires::create({ .skin = BoxSkin::create({ .color = Color::White, .outlineColor = Color::Black, .padding = 4 }) });
+
+	pNodeWires->attachTo(pNodePanel);
 
 	auto pNodeSkin = BoxSkin::create({ .color = Color::LightGray, .outlineColor = Color::Black });
 
 	auto pNode1 = Filler::create({ .defaultSize = {50,50}, .skin = pNodeSkin });
 	auto pNode2 = Filler::create({ .defaultSize = {50,50}, .skin = pNodeSkin });
+	auto pNode3 = Filler::create({ .defaultSize = {50,50}, .skin = pNodeSkin });
 
-	pNodePanel->slots.pushBack({ pNode1, pNode2 });
+	pNodePanel->slots.pushBack(pNode1, { .center = {100,60} });
+	pNodePanel->slots.pushBack(pNode2, { .center = {100,60*2} });
+	pNodePanel->slots.pushBack(pNode3, { .center = {100,60*3} });
+
+	pNodeWires->addWire(1, Placement::South, 2, Placement::North );
+	pNodeWires->addWire(2, Placement::South, 3, Placement::North );
+/*
+	pNodePanel->setNodePosModifier([](const NodePanel * pPanel, NodeVector::const_iterator it, Coord coord){
+
+		if( it != pPanel->nodes.begin() )
+		{
+			auto prev = it-1;
+			if( prev->center().y >= coord.y )
+				coord.y = prev->center().y + 1;
+		}
+
+		if( it != pPanel->nodes.end()-1 )
+		{
+			auto next = it+1;
+			if( next->center().y <= coord.y )
+				coord.y = next->center().y - 1;
+		}
+
+		return coord;
+	} );
+*/
+
+	pNodePanel->setNodePosModifier([](const NodePanel * pPanel, NodePanel::NodeVector::const_iterator it, Coord center){
+
+		Rect rect = it->geo();
+		rect.y = center.y - rect.h/2;
+
+
+		if( it != pPanel->nodes.begin() )
+		{
+			auto prev = it-1;
+			if( prev->geo().bottom() >= rect.y - 4 )
+				center.y = Rect( 0, prev->geo().bottom() + 4, 0, rect.h ).center().y;
+		}
+
+		if( it != pPanel->nodes.end()-1 )
+		{
+			auto next = it+1;
+			if( next->geo().y <= rect.bottom() + 4 )
+				center.y = Rect( 0, next->geo().y - rect.h - 4, 0, rect.h ).center().y;
+		}
+
+		return center;
+	} );
+
 
 	pBaseLayer->slots.pushBack(pNodePanel, { .pos = {10,10}, .size = {300,300} });
+	pBaseLayer->slots.pushBack(pNodeWires, { .pos = {10,10}, .size = {300,300} });
 
 	*pEntry = pBaseLayer;
+	return true;
+}
+
+
+bool elipsisWrapTextTest(ComponentPtr<DynamicSlot> pEntry)
+{
+
+	auto pBaseLayer = FlexPanel::create();
+	pBaseLayer->setSkin(ColorSkin::create(Color::LightGrey));
+
+	auto pTextLayout = BasicTextLayout::create({ .autoEllipsis = true, .wrap = true });
+	auto pEditorSkin = BoxSkin::create({ .color = Color::White, .outlineColor = Color::Black, .padding = 2 });
+
+	auto pPanelSkin = ColorSkin::create({ .color = Color::PapayaWhip });
+	auto pPackPanel = PackPanel::create({ .axis = Axis::Y, .skin = pEditorSkin });
+
+
+
+	char texts[5][200] = { "This is a long text entry that should want to wrap and eventually show an ellipsis if it gets too long",
+						"This is shorter but should still wrap and show elipsis if needed",
+						"A slightly different long text entry that should want to wrap and eventually show an ellipsis if it gets too long",
+						"Even slightly different long text entry that should want to wrap and eventually show an ellipsis if it gets too long",
+						"A slightly different long text entry that should want to wrap and eventually show an ellipsis if it gets too long"
+	};
+
+
+	auto pScrollbarBack = BoxSkin::create({ .color = Color::Black, .outlineColor = Color::Green, .padding = 2 });
+	auto pScrollbarBar = BoxSkin::create({ .color = Color::LightGrey, .outlineColor = Color::DarkBlue, .padding = 4 });
+
+	auto pScrollCapsule = ScrollCapsule::create({ .scrollbarY = { .back = pScrollbarBack, .bar = pScrollbarBar }, .scrollX = false });
+
+	pScrollCapsule->slot = pPackPanel;
+
+
+	pBaseLayer->slots.pushBack(pScrollCapsule, { .pos = {10,10}, .size = {200,200} });
+
+	*pEntry = pBaseLayer;
+
+	for (int i = 0; i < 5; i++)
+	{
+		auto pTextDisplay = TextDisplay::create({ .display = {.layout = pTextLayout }, .skin = pEditorSkin });
+		pTextDisplay->display.setText(texts[i]);
+		pPackPanel->slots.pushBack(pTextDisplay);
+	}
+
+	pPackPanel->slots.pushBack(Filler::create());
+	pPackPanel->setSlotWeight(0, 5, 0.f);
+
+
 	return true;
 }

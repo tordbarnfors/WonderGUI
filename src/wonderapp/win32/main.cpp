@@ -10,6 +10,8 @@
 #include <win32window.h>
 #include <win32api.h>
 
+#include <wg_debugger.h>
+
 #include <vector>
 
 using namespace wg;
@@ -17,7 +19,6 @@ using namespace wapp;
 using namespace std;
 
 WonderApp_p					g_pApp;
-Theme_p						g_pDefaultTheme;
 
 std::vector<Win32Window*>	g_win32Windows;
 float						g_ticksToMicroseconds;		
@@ -30,13 +31,18 @@ PointerStyle				g_currentPointerStyle = PointerStyle::Undefined;
 
 int							g_mouseCaptureRefCount = 0;
 
+DebugFrontend_p				g_pDebugFrontend;
+DebugBackend_p				g_pDebugBackend;
+
+Window_p					g_pDebugWindow;
 
 std::wstring _stringToWString(const std::string& str);
 
 static void _setMouseButton(HWND hwnd, MouseButton button, bool bPressed);
 static void _setPointer();
 
-
+bool		init_debugger(Win32API* pAPI);
+void		exit_debugger();
 
 
 //____ Win32HostBridge ___________________________________________________________
@@ -88,7 +94,16 @@ LRESULT CALLBACK windowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 			bool bClose = pointer->userWindow()->onClose();
 
 			if (bClose)
-				g_pApp->closeWindow(pointer->userWindow());
+			{
+				if (pointer->userWindow() == g_pDebugWindow)
+				{
+					g_pDebugWindow = nullptr;
+					g_pDebugFrontend->deactivate();
+				}
+				else
+					g_pApp->closeWindow(pointer->userWindow());
+
+			}
 			return 0;
 		}
 
@@ -246,7 +261,7 @@ LRESULT CALLBACK windowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 		{
 			Win32Window* pointer = reinterpret_cast<Win32Window*>(GetWindowLongPtr(hwnd, GWLP_USERDATA));
 			Base::inputHandler()->setFocusedWindow(pointer->rootPanel());
-			break;
+			return 0;
 		}
 
 		case WM_KILLFOCUS:
@@ -255,7 +270,7 @@ LRESULT CALLBACK windowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 
 			if (Base::inputHandler()->focusedWindow() == pointer->rootPanel())
 				Base::inputHandler()->setFocusedWindow(nullptr);
-			break;
+			return 0;
 		}
 
 		case WM_SETCURSOR:
@@ -268,24 +283,27 @@ LRESULT CALLBACK windowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 			break;
 		}
 
-
-
+		case WM_SYSKEYDOWN:
 		case WM_KEYDOWN:
 		{
+			if (lparam & KF_REPEAT)
+				break;				// This is a key repeat message. Input handler generates our own key repeats, so ignore these.
+
 			LARGE_INTEGER counter;
 			QueryPerformanceCounter(&counter);
 			int64_t timestamp = int64_t(counter.QuadPart * g_ticksToMicroseconds);
 			Base::inputHandler()->setKey(static_cast<int>(wparam), true, timestamp);
-			return 0;
+			break;
 		}
 
 		case WM_KEYUP:
+		case WM_SYSKEYUP:
 		{
 			LARGE_INTEGER counter;
 			QueryPerformanceCounter(&counter);
 			int64_t timestamp = int64_t(counter.QuadPart * g_ticksToMicroseconds);
 			Base::inputHandler()->setKey(static_cast<int>(wparam), false, timestamp);
-			return 0;
+			break;
 		}
 
 		case WM_CHAR:
@@ -465,11 +483,14 @@ int main(int arch, char * argv[] ) {
 	auto pGfxDevice = wg::GfxDeviceGen2::create(pBackend);
 	Base::setDefaultGfxDevice(pGfxDevice);
 
-
 	// Create app and API visitor, make any app-specific initialization
 
 	g_pApp = WonderApp::create();
 	auto pAPI = new Win32API();
+
+	// Create and initialize debugger
+
+	init_debugger(pAPI);
 
 	// Initialize the app
 
@@ -513,9 +534,10 @@ int main(int arch, char * argv[] ) {
 		Sleep(1);
 	}
 
+	exit_debugger();
+
 	g_pApp->exit();
 	g_pApp = nullptr;
-	g_pDefaultTheme = nullptr;
 
 	Base::exit();
 
@@ -577,12 +599,19 @@ std::string	Win32HostBridge::getClipboardText()
 	std::string clipboardText;
 
 	if (OpenClipboard(NULL)) {
-		HANDLE hData = GetClipboardData(CF_TEXT);
+		HANDLE hData = GetClipboardData(CF_UNICODETEXT);
 		if (hData != NULL) {
-			char* pszText = static_cast<char*>(GlobalLock(hData));
-			if (pszText != NULL) {
+			const wchar_t* pWide = static_cast<const wchar_t*>(GlobalLock(hData));
+			if (pWide != NULL) {
 
-				clipboardText = pszText;
+				int len = WideCharToMultiByte(CP_UTF8, 0, pWide, -1, nullptr, 0, nullptr, nullptr);
+				
+				if (len > 0)
+				{
+					clipboardText.resize(len - 1);
+					WideCharToMultiByte(CP_UTF8, 0, pWide, -1, clipboardText.data(), len, nullptr, nullptr);
+				}
+
 				GlobalUnlock(hData);
 
 				// Remove any carriage return characters
@@ -607,15 +636,24 @@ bool Win32HostBridge::setClipboardText(const std::string& text)
 	if (OpenClipboard(NULL)) {
 		EmptyClipboard();
 
-		size_t len = text.size();
+		int len = MultiByteToWideChar(CP_UTF8, 0, text.data(), (int)text.size(),
+			nullptr, 0);
+
 		if (len > 0)
 		{
-			HGLOBAL hMem = GlobalAlloc(GMEM_MOVEABLE, len+1);
+			HGLOBAL hMem = GlobalAlloc(GMEM_MOVEABLE, (len+1) * sizeof(wchar_t) );
 			if (hMem) {
-				memcpy(GlobalLock(hMem), text.c_str(), len+1);
-				GlobalUnlock(hMem);
-				SetClipboardData(CF_TEXT, hMem);
-				success = true;
+				wchar_t* pWide = static_cast<wchar_t*>(GlobalLock(hMem));
+				if (pWide)
+				{
+					MultiByteToWideChar(CP_UTF8, 0, text.data(), (int)text.size(), pWide, len);
+					pWide[len] = L'\0';
+					GlobalUnlock(hMem);
+					SetClipboardData(CF_UNICODETEXT, hMem);
+					success = true;
+				}
+				else
+					GlobalFree(hMem);
 			}
 		}
 		CloseClipboard();
@@ -735,4 +773,57 @@ std::wstring _stringToWString(const std::string& str)
 		&result[0], sizeNeeded);
 
 	return result;
+}
+
+//____ init_debugger() ________________________________________________________
+
+bool init_debugger(Win32API* pAPI)
+{
+	pAPI->initDefaultWidgetKit();
+
+	auto pIconSurface = pAPI->loadSurface("resources/debugger_gfx.png");
+	auto pTransparencyGrid = pAPI->loadSurface("resources/checkboardtile.png", nullptr, { .tiling = true });
+
+	if (!pIconSurface || !pTransparencyGrid)
+		return false;
+
+	g_pDebugBackend = DebugBackend::create();
+
+	g_pDebugFrontend = WGCREATE(DebugFrontend, _.backend = g_pDebugBackend, _.icons = pIconSurface, _.transparencyGrid = pTransparencyGrid);
+
+	Base::msgRouter()->addRoute(MsgType::KeyPress, [pAPI](Msg* _pMsg) {
+
+		KeyPressMsg* pMsg = static_cast<KeyPressMsg*>(_pMsg);
+
+		if (pMsg->translatedKeyCode() == Key::F12 && (pMsg->modKeys() == ModKeys::MacCtrlShift || pMsg->modKeys() == ModKeys::StdCtrlShift))
+		{
+			if (!g_pDebugWindow)
+			{
+				SizeI size = g_pDebugFrontend->spxSize() / 64;
+
+				auto pWindow = wapp::Window::create(pAPI, { .debug = false, .size = Size(size), .title = "Debugger" });
+				g_pDebugWindow = pWindow;
+
+				pWindow->mainCapsule()->slot = g_pDebugFrontend;
+				g_pDebugFrontend->activate();
+			}
+			else
+			{
+				g_pDebugWindow = nullptr;
+				g_pDebugFrontend->deactivate();
+			}
+		}
+
+		});
+
+	return true;
+}
+
+//____ exitDebugger() _________________________________________________________
+
+void exit_debugger()
+{
+	g_pDebugWindow = nullptr;
+	g_pDebugFrontend = nullptr;
+	g_pDebugBackend = nullptr;
 }

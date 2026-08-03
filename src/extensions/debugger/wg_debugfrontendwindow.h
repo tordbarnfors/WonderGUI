@@ -67,7 +67,6 @@ namespace wg
 			bool			stickyFocus = false;
 			bool			tabLock = false;
 			bool			takesFocusFromChild = true;
-			Theme_p			theme;										// Mandatory!!!
 			String			tooltip;
 			bool			usePickHandles = false;
 		};

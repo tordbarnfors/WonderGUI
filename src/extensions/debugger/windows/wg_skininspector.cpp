@@ -60,7 +60,7 @@ namespace wg
 
 		//----
 
-		m_pStateSelector = WGCREATE(SelectBox, _ = blueprint.theme->selectBox());
+		m_pStateSelector = WGCREATE(dbgkit::SelectBox);
 
 		for (int i = 0; i < StateEnum_size; i++)
 		{

@@ -23,15 +23,36 @@
 #define	WG_THEME_OLDSKOOL_DOT_H
 #pragma once
 
+#include <wg_font.h>
+#include <wg_textstyle.h>
+#include <wg_basictextlayout.h>
+#include <wg_blockskin.h>
+#include <wg_boxskin.h>
+#include <wg_colorskin.h>
+
+#include <wg_labelcapsule.h>
+#include <wg_paddingcapsule.h>
+#include <wg_scrollcapsule.h>
+
+#include <wg_splitpanel.h>
+#include <wg_tablepanel.h>
+#include <wg_drawerpanel.h>
+
 #include <wg_button.h>
+#include <wg_togglebutton.h>
+#include <wg_lineeditor.h>
+#include <wg_texteditor.h>
+#include <wg_textdisplay.h>
+#include <wg_selectbox.h>
 
 
-namespace wg::Oldskool
+namespace wg::oldskool
 {
 	namespace Colors
 	{
 		inline const Color	Plate = Color::LightGrey;
 		inline const Color	Border = Color::DarkGrey;
+		inline const Color	Canvas = Color::White;
 
 		inline const Color	Titlebar = Color::LightGrey;
 		inline const Color	TitlebarBorder = Color::DarkGrey;
@@ -66,6 +87,7 @@ namespace wg::Oldskool
 		inline TextStyle_p	Heading5;
 		inline TextStyle_p	Heading6;
 
+		inline TextStyle_p	Default;
 		inline TextStyle_p	Strong;
 		inline TextStyle_p	Emphasis;
 		inline TextStyle_p	Code;
@@ -97,7 +119,12 @@ namespace wg::Oldskool
 		inline Skin_p		SelectBox;
 		inline Skin_p		SelectBoxEntry;
 		inline Skin_p		ScrollbarTrack;
-		inline Skin_p		ScrollbarHandle;
+		inline Skin_p		ScrollbarHandleX;
+		inline Skin_p		ScrollbarHandleY;
+		inline Skin_p		ScrollbarButtonUp;
+		inline Skin_p		ScrollbarButtonDown;
+		inline Skin_p		ScrollbarButtonLeft;
+		inline Skin_p		ScrollbarButtonRight;
 		inline Skin_p		SplitHandle;
 	}
 
@@ -114,18 +141,25 @@ namespace wg::Oldskool
 	inline Skin_p		_pSelectableEntrySkin;
 
 
+	inline bool isInitialized()
+	{
+		return Fonts::Normal != nullptr;
+	}
 
 
-
-	inline bool init(Font* pNormal, Font* pBold, Font* pItalic, Font* pMonospace, Surface* pWidgets ) 
+	inline bool init(Font* pNormal, Font* pBold, Font* pItalic, Font* pMonospace, Surface* pSkinBlocks ) 
 	{ 
+		if( !pNormal || !pBold || !pItalic || !pMonospace || !pSkinBlocks )
+			return false;
+
+
 		Fonts::Normal	= pNormal;
 		Fonts::Bold		= pBold;
 		Fonts::Italic	= pItalic;
 		Fonts::Mono		= pMonospace;
 
-		TextStyles::Strong		= TextStyle::create({ .color = HiColor::Black, .font = Fonts::Bold, .size = TextSizes::Normal });
-		TextStyles::Emphasis	= TextStyle::create({ .color = HiColor::Black, .font = Fonts::Italic, .size = TextSizes::Normal });
+		TextStyles::Strong		= TextStyle::create(WGBP(TextStyle, _.color = HiColor::Black, _.font = Fonts::Bold, _.size = TextSizes::Normal ));
+		TextStyles::Emphasis	= TextStyle::create(WGBP(TextStyle, _.color = HiColor::Black, _.font = Fonts::Italic, _.size = TextSizes::Normal ));
 		TextStyles::Code		= TextStyle::create(WGBP(TextStyle, _.font = Fonts::Mono, _.color = HiColor::Black, _.size = TextSizes::Normal));
 		TextStyles::Mono		= TextStyle::create(WGBP(TextStyle, _.font = Fonts::Mono, _.color = HiColor::Black, _.size = TextSizes::Normal));
 		TextStyles::FinePrint	= TextStyle::create(WGBP(TextStyle, _.font = Fonts::Normal, _.color = HiColor::Black, _.size = 9));
@@ -135,6 +169,8 @@ namespace wg::Oldskool
 
 		TextStyles::NormalBright = TextStyle::create(WGBP(TextStyle, _.font = Fonts::Normal, _.color = HiColor::White, _.size = TextSizes::Normal,
 								_.states = { {State::Disabled, Color8::LightGrey} }));
+
+		TextStyles::Default = TextStyles::NormalDark;
 
 		TextStyles::Heading1 = TextStyle::create(WGBP(TextStyle, _.font = Fonts::Normal, _.color = HiColor::Black, _.size = 20));
 		TextStyles::Heading2 = TextStyle::create(WGBP(TextStyle, _.font = Fonts::Bold, _.color = HiColor::Black, _.size = 20));
@@ -156,7 +192,7 @@ namespace wg::Oldskool
 		Transitions::openClose = ValueTransition::create(250000);
 
 		Skins::Plate = BlockSkin::create(WGBP(BlockSkin,
-			_.surface = pWidgets,
+			_.surface = pSkinBlocks,
 			_.firstBlock = { 0,60,10,10 },
 			_.padding = 3,
 			_.frame = 3));
@@ -166,13 +202,13 @@ namespace wg::Oldskool
 			_.padding = 3));
 
 		Skins::Canvas = BlockSkin::create(WGBP(BlockSkin,
-			_.surface = pWidgets,
+			_.surface = pSkinBlocks,
 			_.firstBlock = { 24,60,10,10 },
-			_.padding = 3,
-			_.frame = 3));
+			_.padding = 1,
+			_.frame = 1));
 
 		Skins::Window = BlockSkin::create(WGBP(BlockSkin,
-			_.surface = pWidgets,
+			_.surface = pSkinBlocks,
 			_.firstBlock = { 36,60,10,10 },
 			_.padding = 5,
 			_.frame = 3));
@@ -209,7 +245,7 @@ namespace wg::Oldskool
 			_.padding = { 16, 4, 4, 4 }));
 
 		_pPlusMinusToggleSkin = BlockSkin::create(WGBP(BlockSkin,
-			_.surface = pWidgets,
+			_.surface = pSkinBlocks,
 			_.firstBlock = { 0,0,14,14 },
 			_.axis = Axis::X,
 			_.blockSpacing = 2,
@@ -224,7 +260,7 @@ namespace wg::Oldskool
 		));
 
 		Skins::SplitHandle = BlockSkin::create(WGBP(BlockSkin,
-			_.surface = pWidgets,
+			_.surface = pSkinBlocks,
 			_.firstBlock = { 0,15,10,10 },
 			_.axis = Axis::X,
 			_.blockSpacing = 1,
@@ -235,7 +271,7 @@ namespace wg::Oldskool
 
 
 		Skins::Button = BlockSkin::create(WGBP(BlockSkin,
-			_.surface = pWidgets,
+			_.surface = pSkinBlocks,
 			_.firstBlock = { 0,15,10,10 },
 			_.axis = Axis::X,
 			_.blockSpacing = 1,
@@ -246,7 +282,7 @@ namespace wg::Oldskool
 
 
 		Skins::ToggleButton = BlockSkin::create(WGBP(BlockSkin,
-			_.surface = pWidgets,
+			_.surface = pSkinBlocks,
 			_.firstBlock = { 0,26,10,10 },
 			_.axis = Axis::X,
 			_.blockSpacing = 1,
@@ -256,7 +292,7 @@ namespace wg::Oldskool
 		));
 
 		Skins::Checkbox = BlockSkin::create(WGBP(BlockSkin,
-			_.surface = pWidgets,
+			_.surface = pSkinBlocks,
 			_.firstBlock = { 0,37,10,10 },
 			_.axis = Axis::X,
 			_.blockSpacing = 1,
@@ -264,7 +300,7 @@ namespace wg::Oldskool
 		));
 
 		Skins::RadioButton = BlockSkin::create(WGBP(BlockSkin,
-			_.surface = pWidgets,
+			_.surface = pSkinBlocks,
 			_.firstBlock = { 0,48,10,10 },
 			_.axis = Axis::X,
 			_.blockSpacing = 1,
@@ -272,7 +308,7 @@ namespace wg::Oldskool
 		));
 
 		Skins::SelectBox = BlockSkin::create(WGBP(BlockSkin,
-			_.surface = pWidgets,
+			_.surface = pSkinBlocks,
 			_.firstBlock = { 96,0,34,22 },
 			_.frame = { 4,25,4,4 },
 			_.padding = { 3, 25, 3, 4, },
@@ -292,14 +328,71 @@ namespace wg::Oldskool
 			_.color = Color::DarkGray,
 			_.outlineColor = Color::Black,
 			_.outlineThickness = 1,
-			_.padding = 2));
+			_.padding = 0));
 
+		Skins::ScrollbarHandleX = BlockSkin::create(WGBP(BlockSkin,
+			_.surface = pSkinBlocks,
+			_.firstBlock = { 0,114,18,21 },
+			_.axis = Axis::X,
+			_.blockSpacing = 1,
+			_.frame = 3,
+			_.padding = 8,
+			_.rigidPartX = {4,10,YSections::Center},
+			_.states = { State::Default, State::Hovered, State::Pressed, State::Disabled }
+		));
+
+		Skins::ScrollbarHandleY = BlockSkin::create(WGBP(BlockSkin,
+			_.surface = pSkinBlocks,
+			_.firstBlock = { 131,0,21,18 },
+			_.axis = Axis::Y,
+			_.blockSpacing = 1,
+			_.frame = 3,
+			_.padding = 8,
+			_.rigidPartY = { 4,10,XSections::Center },
+			_.states = { State::Default, State::Hovered, State::Pressed, State::Disabled }
+		));
+
+
+		Skins::ScrollbarButtonUp = BlockSkin::create(WGBP(BlockSkin,
+			_.surface = pSkinBlocks,
+			_.firstBlock = { 74,15, 21, 18 },
+			_.axis = Axis::Y,
+			_.blockSpacing = 1,
+			_.states = { State::Default, State::Hovered, State::Pressed, State::Disabled }
+		));
+
+		Skins::ScrollbarButtonDown = BlockSkin::create(WGBP(BlockSkin,
+			_.surface = pSkinBlocks,
+			_.firstBlock = { 52, 15, 21, 18 },
+			_.axis = Axis::Y,
+			_.blockSpacing = 1,
+			_.states = { State::Default, State::Hovered, State::Pressed, State::Disabled }
+		));
+
+		Skins::ScrollbarButtonLeft = BlockSkin::create(WGBP(BlockSkin,
+			_.surface = pSkinBlocks,
+			_.firstBlock = { 76,92, 18, 21 },
+			_.axis = Axis::X,
+			_.blockSpacing = 1,
+			_.states = { State::Default, State::Hovered, State::Pressed, State::Disabled }
+		));
+
+		Skins::ScrollbarButtonRight = BlockSkin::create(WGBP(BlockSkin,
+			_.surface = pSkinBlocks,
+			_.firstBlock = { 0,92, 18, 21 },
+			_.axis = Axis::X,
+			_.blockSpacing = 1,
+			_.states = { State::Default, State::Hovered, State::Pressed, State::Disabled }
+		));
+
+
+/*
 		Skins::ScrollbarHandle = BoxSkin::create(WGBP(BoxSkin,
 			_.color = Color::LightGray,
 			_.outlineColor = Color::Black,
 			_.outlineThickness = 1,
 			_.padding = 6));
-
+*/
 
 
 		return true; 
@@ -307,6 +400,51 @@ namespace wg::Oldskool
 
 	inline bool exit() 
 	{
+		Fonts::Normal = nullptr;
+		Fonts::Bold = nullptr;
+		Fonts::Italic = nullptr;
+		Fonts::Mono = nullptr;
+
+		TextStyles::Heading1 = nullptr;
+		TextStyles::Heading2 = nullptr;
+		TextStyles::Heading3 = nullptr;
+		TextStyles::Heading4 = nullptr;
+		TextStyles::Heading5 = nullptr;
+		TextStyles::Heading6 = nullptr;
+		TextStyles::Default = nullptr;
+		TextStyles::Strong = nullptr;
+		TextStyles::Emphasis = nullptr;
+		TextStyles::Code = nullptr;
+		TextStyles::Mono = nullptr;
+		TextStyles::FinePrint = nullptr;
+		TextStyles::NormalDark = nullptr;
+		TextStyles::NormalBright = nullptr;
+
+
+		TextLayouts::LeftNoWrap = nullptr;
+		TextLayouts::CenteredNoWrap = nullptr;
+
+		Skins::Plate = nullptr;
+		Skins::PlateNoBevel = nullptr;
+		Skins::Canvas = nullptr;
+		Skins::Window = nullptr;
+		Skins::Titlebar = nullptr;
+		Skins::Button = nullptr;
+		Skins::ToggleButton = nullptr;
+		Skins::Checkbox = nullptr;
+		Skins::RadioButton = nullptr;
+		Skins::SelectBox = nullptr;
+		Skins::SelectBoxEntry = nullptr;
+
+		Transitions::openClose = nullptr;
+
+		_pLabelCapsuleSkin = nullptr;
+		_pCapsuleLabelSkin = nullptr;
+		_pCapsuleLabelSkin2 = nullptr;
+		_pInvisibleBoxSkin = nullptr;
+		_pPlusMinusToggleSkin = nullptr;
+		_pSelectableEntrySkin = nullptr;
+
 		return true; 
 	}
 
@@ -323,7 +461,7 @@ namespace wg::Oldskool
 			Finalizer_p		finalizer = nullptr;
 			Icon::Blueprint	icon;
 			int				id = 0;
-			DynamicText::Blueprint label = { .layout = TextLayouts::CenteredNoWrap, .style = TextStyles::NormalDark };
+			DynamicText::Blueprint label = WGBP(DynamicText, _.layout = TextLayouts::CenteredNoWrap, _.style = TextStyles::NormalDark );
 			MarkPolicy		markPolicy = MarkPolicy::AlphaTest;
 			bool			pickable = false;
 			uint8_t			pickCategory = 0;
@@ -331,14 +469,14 @@ namespace wg::Oldskool
 			PointerStyle	pointer = PointerStyle::Undefined;
 			bool			selectable = false;
 			bool			selectOnPress = false;
-			Skin_p			skin = wg::Oldskool::Skins::Button;
+			Skin_p			skin = Skins::Button;
 			bool			stickyFocus = false;
 			bool			tabLock = false;
 			String			tooltip;
 		};
 
-		inline static wg::Button_p	create() { return new wg::Oldskool::Button(Blueprint()); }
-		inline static wg::Button_p	create(const Blueprint& blueprint) { return new wg::Oldskool::Button(blueprint); }
+		inline static wg::Button_p	create() { return new Button(Blueprint()); }
+		inline static wg::Button_p	create(const Blueprint& blueprint) { return new Button(blueprint); }
 
 	protected:
 
@@ -365,7 +503,7 @@ namespace wg::Oldskool
 			bool			flipOnRelease = false;
 			Icon::Blueprint	icon;
 			int				id = 0;
-			DynamicText::Blueprint label = { .layout = TextLayouts::CenteredNoWrap, .style = TextStyles::NormalDark };
+			DynamicText::Blueprint label = WGBP(DynamicText, _.layout = TextLayouts::CenteredNoWrap, _.style = TextStyles::NormalDark );
 			MarkPolicy		markPolicy = MarkPolicy::AlphaTest;
 			bool			pickable = false;
 			uint8_t			pickCategory = 0;
@@ -378,8 +516,8 @@ namespace wg::Oldskool
 			String			tooltip;
 		};
 
-		inline static wg::ToggleButton_p	create() { return new wg::Oldskool::ToggleButton(Blueprint()); }
-		inline static wg::ToggleButton_p	create(const Blueprint& blueprint) { return new wg::Oldskool::ToggleButton(blueprint); }
+		inline static wg::ToggleButton_p	create() { return new ToggleButton(Blueprint()); }
+		inline static wg::ToggleButton_p	create(const Blueprint& blueprint) { return new ToggleButton(blueprint); }
 
 	protected:
 
@@ -403,9 +541,9 @@ namespace wg::Oldskool
 			bool			dropTarget = false;
 			Finalizer_p		finalizer = nullptr;
 			bool			flipOnRelease = false;
-			Icon::Blueprint	icon = { .skin = Skins::Checkbox, .spacing = 4 };
+			Icon::Blueprint	icon = WGBP(Icon, _.skin = Skins::Checkbox, _.spacing = 4 );
 			int				id = 0;
-			DynamicText::Blueprint label = { .layout = TextLayouts::CenteredNoWrap, .style = TextStyles::NormalDark };
+			DynamicText::Blueprint label = WGBP(DynamicText, _.layout = TextLayouts::LeftNoWrap, _.style = TextStyles::NormalDark );
 			MarkPolicy		markPolicy = MarkPolicy::AlphaTest;
 			bool			pickable = false;
 			uint8_t			pickCategory = 0;
@@ -418,8 +556,8 @@ namespace wg::Oldskool
 			String			tooltip;
 		};
 
-		inline static wg::ToggleButton_p	create() { return new wg::Oldskool::Checkbox(Blueprint()); }
-		inline static wg::ToggleButton_p	create(const Blueprint& blueprint) { return new wg::Oldskool::Checkbox(blueprint); }
+		inline static wg::ToggleButton_p	create() { return new Checkbox(Blueprint()); }
+		inline static wg::ToggleButton_p	create(const Blueprint& blueprint) { return new Checkbox(blueprint); }
 
 	protected:
 
@@ -445,7 +583,7 @@ namespace wg::Oldskool
 			bool			flipOnRelease = false;
 			Icon::Blueprint	icon;
 			int				id = 0;
-			DynamicText::Blueprint label = { .layout = TextLayouts::CenteredNoWrap, .style = TextStyles::NormalDark };
+			DynamicText::Blueprint label = WGBP(DynamicText, _.layout = TextLayouts::LeftNoWrap, _.style = TextStyles::NormalDark );
 			MarkPolicy		markPolicy = MarkPolicy::AlphaTest;
 			bool			pickable = false;
 			uint8_t			pickCategory = 0;
@@ -458,7 +596,7 @@ namespace wg::Oldskool
 			String			tooltip;
 		};
 
-		inline static wg::ToggleButton_p	create(const Blueprint& blueprint) { return new wg::Oldskool::RadioButton(blueprint); }
+		inline static wg::ToggleButton_p	create(const Blueprint& blueprint) { return new RadioButton(blueprint); }
 
 	protected:
 
@@ -482,7 +620,7 @@ namespace wg::Oldskool
 			bool			dropTarget = true;
 			Finalizer_p		finalizer = nullptr;
 			int				id = 0;
-			DynamicText::Blueprint	label = { .layout = TextLayouts::LeftNoWrap, .style = TextStyles::NormalDark };
+			DynamicText::Blueprint	label = WGBP(DynamicText, _.layout = TextLayouts::LeftNoWrap, _.style = TextStyles::NormalDark );
 			Placement		labelPlacement = Placement::North;
 			Skin_p			labelSkin = _pCapsuleLabelSkin;
 			MarkPolicy		markPolicy = MarkPolicy::AlphaTest;
@@ -523,7 +661,7 @@ namespace wg::Oldskool
 			bool			dropTarget = true;
 			Finalizer_p		finalizer = nullptr;
 			int				id = 0;
-			DynamicText::Blueprint	label = { .layout = TextLayouts::LeftNoWrap, .style = TextStyles::NormalDark };
+			DynamicText::Blueprint	label = WGBP(DynamicText, _.layout = TextLayouts::LeftNoWrap, _.style = TextStyles::NormalDark );
 			Placement		labelPlacement = Placement::North;
 			Skin_p			labelSkin = _pCapsuleLabelSkin2;
 			MarkPolicy		markPolicy = MarkPolicy::AlphaTest;
@@ -562,7 +700,7 @@ namespace wg::Oldskool
 			Axis				autoScrollAxis = Axis::Undefined;
 			Object_p			baggage;
 			Widget_p			child;
-			Skin_p				cornerSkin;
+			Skin_p				cornerSkin = Skins::PlateNoBevel;
 			bool				disabled = false;
 			bool				dropTarget = false;
 			Finalizer_p			finalizer = nullptr;
@@ -575,8 +713,14 @@ namespace wg::Oldskool
 			uint8_t				pickCategory = 0;
 			bool				pickHandle = false;
 			PointerStyle		pointer = PointerStyle::Undefined;
-			Scroller::Blueprint	scrollbarX = { .back = Skins::ScrollbarTrack, .bar = Skins::ScrollbarHandle };
-			Scroller::Blueprint	scrollbarY = { .back = Skins::ScrollbarTrack, .bar = Skins::ScrollbarHandle };
+			Scroller::Blueprint	scrollbarX = WGBP(Scroller, _.back = Skins::ScrollbarTrack, 
+															_.backwardButton = Skins::ScrollbarButtonLeft,
+															_.bar = Skins::ScrollbarHandleX,
+															_.forwardButton = Skins::ScrollbarButtonRight);
+			Scroller::Blueprint	scrollbarY = WGBP(Scroller, _.back = Skins::ScrollbarTrack, 
+															_.backwardButton = Skins::ScrollbarButtonUp, 
+															_.bar = Skins::ScrollbarHandleY,
+															_.forwardButton = Skins::ScrollbarButtonDown );
 			bool				scrollX = true;
 			bool				scrollY = false;
 			bool				selectable = false;
@@ -587,6 +731,7 @@ namespace wg::Oldskool
 			bool				tabLock = false;
 			bool				takesFocusFromChild = true;
 			String				tooltip;
+			CoordTransition_p	transition;
 			bool				usePickHandles = false;
 
 			Axis				wheelAxis = Axis::Y;						// Scroll direction of primary mouse wheel. Secondary mouse wheel is the oposite.
@@ -622,7 +767,7 @@ namespace wg::Oldskool
 			Axis				autoScrollAxis = Axis::Undefined;
 			Object_p			baggage;
 			Widget_p			child;
-			Skin_p				cornerSkin;
+			Skin_p				cornerSkin = Skins::PlateNoBevel;
 			bool				disabled = false;
 			bool				dropTarget = false;
 			Finalizer_p			finalizer = nullptr;
@@ -635,8 +780,14 @@ namespace wg::Oldskool
 			uint8_t				pickCategory = 0;
 			bool				pickHandle = false;
 			PointerStyle		pointer = PointerStyle::Undefined;
-			Scroller::Blueprint	scrollbarX = { .back = Skins::ScrollbarTrack, .bar = Skins::ScrollbarHandle };
-			Scroller::Blueprint	scrollbarY = { .back = Skins::ScrollbarTrack, .bar = Skins::ScrollbarHandle };
+			Scroller::Blueprint	scrollbarX = WGBP(Scroller, _.back = Skins::ScrollbarTrack, 
+															_.backwardButton = Skins::ScrollbarButtonLeft,
+															_.bar = Skins::ScrollbarHandleX,
+															_.forwardButton = Skins::ScrollbarButtonRight);
+			Scroller::Blueprint	scrollbarY = WGBP(Scroller, _.back = Skins::ScrollbarTrack, 
+															_.backwardButton = Skins::ScrollbarButtonUp, 
+															_.bar = Skins::ScrollbarHandleY,
+															_.forwardButton = Skins::ScrollbarButtonDown );
 			bool				scrollX = false;
 			bool				scrollY = true;
 			bool				selectable = false;
@@ -647,6 +798,7 @@ namespace wg::Oldskool
 			bool				tabLock = false;
 			bool				takesFocusFromChild = true;
 			String				tooltip;
+			CoordTransition_p	transition;
 			bool				usePickHandles = false;
 
 			Axis				wheelAxis = Axis::Y;						// Scroll direction of primary mouse wheel. Secondary mouse wheel is the oposite.
@@ -682,7 +834,7 @@ namespace wg::Oldskool
 			Axis				autoScrollAxis = Axis::Undefined;
 			Object_p			baggage;
 			Widget_p			child;
-			Skin_p				cornerSkin;
+			Skin_p				cornerSkin = Skins::PlateNoBevel;
 			bool				disabled = false;
 			bool				dropTarget = false;
 			Finalizer_p			finalizer = nullptr;
@@ -695,8 +847,14 @@ namespace wg::Oldskool
 			uint8_t				pickCategory = 0;
 			bool				pickHandle = false;
 			PointerStyle		pointer = PointerStyle::Undefined;
-			Scroller::Blueprint	scrollbarX = { .back = Skins::ScrollbarTrack, .bar = Skins::ScrollbarHandle };
-			Scroller::Blueprint	scrollbarY = { .back = Skins::ScrollbarTrack, .bar = Skins::ScrollbarHandle };
+			Scroller::Blueprint	scrollbarX = WGBP(Scroller, _.back = Skins::ScrollbarTrack, 
+															_.backwardButton = Skins::ScrollbarButtonLeft,
+															_.bar = Skins::ScrollbarHandleX,
+															_.forwardButton = Skins::ScrollbarButtonRight);
+			Scroller::Blueprint	scrollbarY = WGBP(Scroller, _.back = Skins::ScrollbarTrack, 
+															_.backwardButton = Skins::ScrollbarButtonUp, 
+															_.bar = Skins::ScrollbarHandleY,
+															_.forwardButton = Skins::ScrollbarButtonDown );
 			bool				scrollX = true;
 			bool				scrollY = true;
 			bool				selectable = false;
@@ -707,6 +865,7 @@ namespace wg::Oldskool
 			bool				tabLock = false;
 			bool				takesFocusFromChild = true;
 			String				tooltip;
+			CoordTransition_p	transition;
 			bool				usePickHandles = false;
 
 			Axis				wheelAxis = Axis::Y;						// Scroll direction of primary mouse wheel. Secondary mouse wheel is the oposite.
@@ -895,6 +1054,7 @@ namespace wg::Oldskool
 
 	class ListTable : public wg::TablePanel
 	{
+	public:
 		struct Blueprint
 		{
 			Object_p		baggage;
@@ -945,6 +1105,47 @@ namespace wg::Oldskool
 		ListTable(const Blueprint& bp) : wg::TablePanel(bp) {}
 	};
 
+	//____ TextEditor ______________________________________________________
+
+
+	class TextEditor : public wg::TextEditor
+	{
+	public:
+
+		//____ Blueprint ______________________________________________________
+
+		struct Blueprint
+		{
+			Object_p		baggage;
+			bool			disabled = false;
+			bool			dropTarget = false;
+			EditableText::Blueprint	editor = WGBP(EditableText, _.style = TextStyles::NormalDark );
+			Finalizer_p		finalizer = nullptr;
+			int				id = 0;
+			MarkPolicy		markPolicy = MarkPolicy::AlphaTest;
+			bool			pickable = false;
+			uint8_t			pickCategory = 0;
+			bool			pickHandle = false;
+			PointerStyle	pointer = PointerStyle::Undefined;
+			KeyAction		returnKeyAction = KeyAction::Insert;
+			bool			selectable = false;
+			Skin_p			skin = Skins::Canvas;
+			bool			stickyFocus = false;
+			bool			tabLock = false;
+			String			tooltip;
+		};
+
+		inline static wg::TextEditor_p	create() { return new TextEditor(Blueprint()); }
+		inline static wg::TextEditor_p	create(const Blueprint& blueprint) { return new TextEditor(blueprint); }
+
+	protected:
+
+		TextEditor(const Blueprint& bp) : wg::TextEditor(bp) {}
+
+
+	};
+
+
 	//____ LineEditor ______________________________________________________
 
 	class LineEditor : public wg::LineEditor
@@ -957,7 +1158,7 @@ namespace wg::Oldskool
 			spx				defaultLengthInChars = 20;		// Set to zero for returning default width calculated from actual text in field.
 			bool			disabled = false;
 			bool			dropTarget = false;
-			EditableText::Blueprint	editor = { .style = TextStyles::NormalDark };
+			EditableText::Blueprint	editor = WGBP(EditableText, _.style = TextStyles::NormalDark );
 			Finalizer_p		finalizer = nullptr;
 			int				id = 0;
 			MarkPolicy		markPolicy = MarkPolicy::AlphaTest;
@@ -997,14 +1198,14 @@ namespace wg::Oldskool
 			TextLayout_p	entryTextLayout;
 			Finalizer_p		finalizer = nullptr;
 			int				id = 0;
-			Skin_p			listSkin = Skins::SelectBox;
+			Skin_p			listSkin = Skins::Canvas;
 			MarkPolicy		markPolicy = MarkPolicy::AlphaTest;
 			bool			pickable = false;
 			uint8_t			pickCategory = 0;
 			bool			pickHandle = false;
 			PointerStyle	pointer = PointerStyle::Undefined;
 			bool			selectable = false;
-			Skin_p			skin = Skins::Canvas;
+			Skin_p			skin = Skins::SelectBox;
 			bool			stickyFocus = false;
 			bool			tabLock = false;
 			String			tooltip;
@@ -1028,7 +1229,7 @@ namespace wg::Oldskool
 		{
 			Object_p		baggage;
 			bool			disabled = false;
-			DynamicText::Blueprint	display = { .layout = TextLayouts::CenteredNoWrap, .style = TextStyles::Heading5 };
+			DynamicText::Blueprint	display = WGBP(DynamicText, _.layout = TextLayouts::CenteredNoWrap, _.style = TextStyles::Heading5 );
 			bool			dropTarget = false;
 			Finalizer_p		finalizer = nullptr;
 			int				id = 0;

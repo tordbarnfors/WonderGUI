@@ -29,7 +29,6 @@
 
 #include <wg_softsurface.h>
 #include <wg_freetypefont.h>
-#include <themes/simplistic/wg_simplistic.h>
 
 
 #define STB_IMAGE_IMPLEMENTATION
@@ -38,8 +37,9 @@
 using namespace wg;
 using namespace wapp;
 
-extern float		g_ticksToMicroseconds;
-extern Theme_p		g_pDefaultTheme;
+extern float			g_ticksToMicroseconds;
+extern DebugFrontend_p	g_pDebugFrontend;
+
 
 extern std::wstring _stringToWString(const std::string& str);
 
@@ -106,7 +106,7 @@ cleanup:
 
 //____ loadSurface() __________________________________________________________
 
-wg::Surface_p Win32API::loadSurface(const std::string& path, wg::SurfaceFactory* pFactory, const wg::Surface::Blueprint& bp)
+wg::Surface_p Win32API::loadSurface(const std::string& path, wg::SurfaceFactory* pFactory, const wg::Surface::Blueprint& _bp)
 {
 	if (path.rfind(".surf") == path.size() - 5 || path.rfind(".srf") == path.size() - 4)
 	{
@@ -115,7 +115,7 @@ wg::Surface_p Win32API::loadSurface(const std::string& path, wg::SurfaceFactory*
 			return nullptr;
 
 		auto pReader = SurfaceReader::create({ .factory = Base::defaultSurfaceFactory() });
-		Surface_p pSurface = pReader->readSurfaceFromStream(input, bp);
+		Surface_p pSurface = pReader->readSurfaceFromStream(input, _bp);
 		input.close();
 		return pSurface;
 	}
@@ -194,14 +194,11 @@ wg::Surface_p Win32API::loadSurface(const std::string& path, wg::SurfaceFactory*
 				return nullptr;
 			}
 
-			Surface_p pSurface = wg::SoftSurface::create({
-				.canvas = false,
-				.format = destFormat,
-				.size = { width, height }
-				},
-				(uint8_t*)data,
-				pixelDesc,
-				0, nullptr, 0);
+			auto bp = _bp;
+			bp.format = destFormat;
+			bp.size = { width, height };
+
+			Surface_p pSurface = wg::SoftSurface::create( bp, (uint8_t*)data, pixelDesc, 0, nullptr, 0);
 
 			stbi_image_free(data);
 			return pSurface;
@@ -210,40 +207,36 @@ wg::Surface_p Win32API::loadSurface(const std::string& path, wg::SurfaceFactory*
 	return nullptr;
 }
 
-//____ initDefaultTheme() _____________________________________________________
+//____ initDefaultWidgetKit() ____________________________________________________
 
-wg::Theme_p Win32API::initDefaultTheme()
+bool Win32API::initDefaultWidgetKit()
 {
-	if (g_pDefaultTheme)
-		return g_pDefaultTheme;
-
-	// Create the default theme, which is a simplistic theme.
-
-	auto pFont1Blob = loadBlob("resources/NotoSans-Regular.ttf");
-	auto pFont2Blob = loadBlob("resources/NotoSans-Bold.ttf");
-	auto pFont3Blob = loadBlob("resources/NotoSans-Italic.ttf");
-	auto pFont4Blob = loadBlob("resources/DroidSansMono.ttf");
-
-	auto pFont1 = FreeTypeFont::create(pFont1Blob);
-	auto pFont2 = FreeTypeFont::create(pFont2Blob);
-	auto pFont3 = FreeTypeFont::create(pFont3Blob);
-	auto pFont4 = FreeTypeFont::create(pFont4Blob);
-
-	auto pThemeSurface = loadSurface("resources/skin_widgets.png");
-
-	auto pTheme = Simplistic::create(pFont1, pFont2, pFont3, pFont4, pThemeSurface);
-	if (!pTheme)
+	if (!wkit::isInitialized())
 	{
-		Base::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "Failed to create default theme", nullptr, nullptr, __func__, __FILE__, __LINE__);
-		return nullptr;
+		auto path = resourceDirectory();
+
+		auto pFont1Blob = loadBlob(path + "NotoSans-Regular.ttf");
+		auto pFont2Blob = loadBlob(path + "NotoSans-Bold.ttf");
+		auto pFont3Blob = loadBlob(path + "NotoSans-Italic.ttf");
+		auto pFont4Blob = loadBlob(path + "DroidSansMono.ttf");
+
+		auto pFont1 = FreeTypeFont::create(pFont1Blob);
+		auto pFont2 = FreeTypeFont::create(pFont2Blob);
+		auto pFont3 = FreeTypeFont::create(pFont3Blob);
+		auto pFont4 = FreeTypeFont::create(pFont4Blob);
+
+		auto pSkinBlocks = loadSurface( "resources/oldskool_skinblocks.png");
+
+		if (!wkit::init(pFont1, pFont2, pFont3, pFont4, pSkinBlocks))
+		{
+			Base::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "Failed to init default widget kit", nullptr, nullptr, __func__, __FILE__, __LINE__);
+			return false;
+		}
 	}
-	Base::setDefaultTheme(pTheme);
-	Base::setDefaultStyle(pTheme->defaultStyle());
 
-	g_pDefaultTheme = pTheme;
-
-	return pTheme;
+	return true;
 }
+
 
 //____ notifyPopup() __________________________________________________________
 
@@ -452,6 +445,7 @@ WindowAPI::Result Win32API::_createWindow(Window* pAPI, wg::Placement origin, wg
 	result.geo = { pos, size };
 	result.errorMsg = result.success ? "" : "Failed to create Win32 window.";
 	result.root = pWindow->rootPanel();
+	result.debugger = g_pDebugFrontend;
 	return result;
 }
 

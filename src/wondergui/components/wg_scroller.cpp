@@ -456,7 +456,7 @@ namespace wg
 
 	void Scroller::_setState(State state)
 	{
-		// We just copy Enabled/Focused/Checked/Flagged to all our skins.
+		// We just copy Disabled/Focused/Checked/Flagged to all our skins.
 		// We ignore Targeted since that won't work without hover anyway.
 
 		bool bDisabled = state.isDisabled();

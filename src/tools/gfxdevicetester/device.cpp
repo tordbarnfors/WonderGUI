@@ -3,13 +3,13 @@
 #include "gfxdevicetester.h"
 
 
-Device::Device( const string& name, GfxDevice * pDevice, CanvasRef canvasRef, Surface * pSurface, Theme * pTheme )
+Device::Device( const string& name, GfxDevice * pDevice, CanvasRef canvasRef, Surface * pSurface )
   : m_name(name),
 	m_pDevice(pDevice),
 	m_pCanvas(pSurface),
 	m_canvasRef(canvasRef)
 {
-	setSkin( pTheme->plateSkin() );
+	setSkin( wkit::Skins::Plate );
 
 	auto pTitleBar = PackPanel::create();
 	pTitleBar->setAxis(Axis::X);
@@ -17,18 +17,16 @@ Device::Device( const string& name, GfxDevice * pDevice, CanvasRef canvasRef, Su
 												  _.expandFactor = PackLayout::Factor::Weight )));
 	
 
-	auto pTesteeButton = Button::create(WGOVR(pTheme->pushButton(), _.label.text = "TEST"));
+	auto pTesteeButton = WGCREATE( wkit::Button, _.label.text = "TEST");
 
-	auto pDiffButton = Button::create(WGOVR(pTheme->pushButton(), _.label.text = "DIFF"));
+	auto pDiffButton = WGCREATE( wkit::Button, _.label.text = "DIFF");
 
-	auto pRefButton = Button::create(WGOVR(pTheme->pushButton(), _.label.text = "REF"));
+	auto pRefButton = WGCREATE( wkit::Button, _.label.text = "REF");
 
 	
-	auto pTitle = TextDisplay::create( WGBP(TextDisplay,
-											_.display.text = name
-											));
+	auto pTitle = WGCREATE( TextDisplay, _.display.text = name );
 
-	auto pCloseButton = Button::create(WGOVR(pTheme->pushButton(), _.label.text = "CLOSE"));
+	auto pCloseButton = WGCREATE( wkit::Button, _.label.text = "CLOSE");
 
 
 	

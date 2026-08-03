@@ -66,7 +66,42 @@ namespace wg
 	bool ScrollCapsule::setViewOffset(Coord _offset, CoordTransition* pTransition)
 	{
 		CoordSPX offset = Util::ptsToSpx(_offset, m_scale);
-		return _setViewOffset(offset);
+
+		if( pTransition || m_pDefaultTransition )
+			return _setViewTransition(offset, pTransition);
+		else
+			return _setViewOffset(offset);
+	}
+
+	//____ setTransition() _______________________________________________________
+
+	void ScrollCapsule::setTransition(CoordTransition* pTransition)
+	{
+		m_pDefaultTransition = pTransition;
+	}
+
+
+	//____ _update() __________________________________________________________
+
+	void ScrollCapsule::_update(int microPassed, int64_t microsecTimestamp)
+	{
+		int timestamp = m_transitionProgress + microPassed;
+
+		if( timestamp >= m_pTransitionInUse->duration() )
+		{
+			m_transitionProgress = 0;
+			m_pTransitionInUse = nullptr;
+
+			_setViewOffset(m_endViewOfs);
+			_stopReceiveUpdates();
+		}
+		else
+		{
+			m_transitionProgress = timestamp;
+
+			CoordSPX ofs = m_pTransitionInUse->snapshot(timestamp, m_startViewOfs, m_endViewOfs);
+			_setViewOffset(ofs);
+		}
 	}
 
 	//____ _receive() ____________________________________________________________
@@ -290,9 +325,9 @@ namespace wg
 
 			if (window.pos() != startPos)
 			{
-//				if( m_pDefaultTransition )
-//					_setViewTransition(window.pos(), nullptr);
-//				else
+				if( m_pDefaultTransition )
+					_setViewTransition(window.pos(), nullptr);
+				else
 					_setViewOffset(window.pos());
 			}
 
@@ -310,17 +345,26 @@ namespace wg
 
 	void ScrollCapsule::_releaseChild(StaticSlot * pSlot)
 	{
-		Capsule::_releaseChild(pSlot);
+		slot._clearWidget();
+		_requestRender();
 		_updateRegions();
+
+		_requestResize();
 	}
 
 	//____ _replaceChild() _______________________________________________________
 
 	void ScrollCapsule::_replaceChild(StaticSlot * pSlot, Widget * pWidget)
-	{
-		Capsule::_replaceChild(pSlot, pWidget);
+{
+		slot._setWidget(pWidget );
+
+		_requestRender();
+
 		_updateRegions();
 		_setViewOffset({0,0});
+
+		m_bChildRequestedResize = true;		// Not technically true, but we want same behavior.
+		_requestResize();
 	}
 
 	//____ _componentPos() ____________________________________________________
@@ -376,6 +420,32 @@ namespace wg
 		return ( m_childCanvas.pos() == wantedChildCanvasPos);
 	}
 
+	//____ _setViewTransition() __________________________________________________
+
+	bool ScrollCapsule::_setViewTransition( CoordSPX offset, CoordTransition * pTransition )
+	{
+		if( !pTransition && !m_pDefaultTransition )
+			return false;
+
+		m_startViewOfs = m_viewRegion.pos() - m_childCanvas.pos();;
+		m_endViewOfs = offset;
+
+		if( !m_pTransitionInUse )
+			_startReceiveUpdates();
+
+		if( pTransition )
+			m_pTransitionInUse = pTransition;
+		else
+			m_pTransitionInUse = m_pDefaultTransition;
+
+		m_transitionProgress = 0;
+
+		// Should probably return false if offset is not reachable.
+
+		return true;
+	}
+
+
 	//____ _render() _____________________________________________________________
 
 	void ScrollCapsule::_render(GfxDevice* pDevice, const RectSPX& canvas, const RectSPX& window)
@@ -412,7 +482,12 @@ namespace wg
 
 	bool ScrollCapsule::_alphaTest(const CoordSPX& ofs)
 	{
-		return true;	//TODO: Implement!!!
+		if( Widget::_alphaTest(ofs) )
+			return true;
+
+		//TODO: Implement!!!
+
+		return true;
 	}
 
 	//____ _resize() _____________________________________________________________
@@ -455,19 +530,35 @@ namespace wg
 
 	void ScrollCapsule::_setState(State state)
 	{
-		//TODO: Implement!!!
+		Widget::_setState(state);
+
+		// Hovered, pressed etc is filtered away by scrollbars _setState(), so we don't need to
+		// deal with them. However, we need to make sure scrollbars are disabled when view is same as canvas.
+
+		State scrollbarXState = state;
+		State scrollbarYState = state;
+
+		if( m_viewRegion.w == m_childCanvas.w )
+			scrollbarXState.setDisabled(true);
+
+		if( m_viewRegion.h == m_childCanvas.h )
+			scrollbarYState.setDisabled(true);
+
+		scrollbarX._setState(scrollbarXState);
+		scrollbarY._setState(scrollbarYState);
 	}
 
 	//____ _calcOverflow() _______________________________________________________
 
 	BorderSPX ScrollCapsule::_calcOverflow()
 	{
-		//TODO: Implement!!!
+		//TODO: Scrollbars are not included in calculations.
 
-		return BorderSPX();
+		BorderSPX 	overflow = m_skin.overflow(m_scale);
+//		RectSPX		overflowGeo = RectSPX{ 0,0,m_size } + overflow;
+
+		return overflow;
 	}
-
-
 
 	//____ _matchingHeight() _________________________________________________________
 
@@ -481,7 +572,18 @@ namespace wg
 		// If we scroll horizontally, we always have content of default width, thus also default height.
 
 		if (m_bScrollX && scrollbarX.isDisplayable())
-			return _defaultSize(scale).h;
+		{
+			SizeSPX def = _defaultSize(scale);
+			spx height = def.h;
+
+			// If scrollbarX is set to auto hide and be outside view area, it is not included
+			// in defaultSize() but will be displayed if given width is less than content width.
+
+			if ((!m_bOverlayScrollbars && m_bAutoHideScrollbars) && width < def.w)
+				height += scrollbarX._defaultSize(scale).h;
+
+			return height;
+		}
 
 		// We need to calculate the matching height based on the width and the content.
 
@@ -510,7 +612,18 @@ namespace wg
 		// If we scroll vertically, we always have content of default height, thus also default width.
 
 		if (m_bScrollY && scrollbarY.isDisplayable())
-			return _defaultSize(scale).w;
+		{
+			SizeSPX def = _defaultSize(scale);
+			spx width = def.w;
+
+			// If scrollbarY is set to auto hide and be outside view area, it is not included
+			// in defaultSize() but will be displayed if given height is less than content height.
+
+			if ((!m_bOverlayScrollbars && m_bAutoHideScrollbars) && height < def.h)
+				width += scrollbarY._defaultSize(scale).w;
+
+			return width;
+		}
 
 		// We need to calculate the matching width based on the height and the content.
 
@@ -874,7 +987,7 @@ namespace wg
 
 			if (newViewLen == newContentLen && oldViewLen != oldContentLen)
 				scrollbarX._setState(State::Disabled);
-			else if (newViewLen != newContentLen && oldViewLen == oldContentLen)
+			else if (newViewLen != newContentLen && oldViewLen == oldContentLen && !m_state.isDisabled() )
 				scrollbarX._setState(State::Default);
 		}
 
@@ -893,7 +1006,7 @@ namespace wg
 
 			if (newViewLen == newContentLen && oldViewLen != oldContentLen)
 				scrollbarY._setState(State::Disabled);
-			else if (newViewLen != newContentLen && oldViewLen == oldContentLen)
+			else if (newViewLen != newContentLen && oldViewLen == oldContentLen && !m_state.isDisabled() )
 				scrollbarY._setState(State::Default);
 		}
 	}
@@ -903,9 +1016,9 @@ namespace wg
 	void ScrollCapsule::_scrollbarStep(const Scroller* pComponent, int dir)
 	{
 		if (pComponent == &scrollbarX)
-			_setViewOffset({ m_viewRegion.x + dir * ptsToSpx(m_stepSizeX,m_scale), (m_viewRegion.y - m_childCanvas.y) });
+			_setViewOffset({ (m_viewRegion.x - m_childCanvas.x) + dir * ptsToSpx(m_stepSizeX,m_scale), (m_viewRegion.y - m_childCanvas.y) });
 		else
-			_setViewOffset({ (m_viewRegion.x - m_childCanvas.x), m_viewRegion.y + dir * ptsToSpx(m_stepSizeY,m_scale) });
+			_setViewOffset({ (m_viewRegion.x - m_childCanvas.x), (m_viewRegion.y - m_childCanvas.y) + dir * ptsToSpx(m_stepSizeY,m_scale) });
 	}
 
 	//____ _scrollbarPage() ______________________________________________________
@@ -956,7 +1069,4 @@ namespace wg
 		else
 			return std::make_tuple(m_viewRegion.y - m_childCanvas.y,m_viewRegion.h, m_childCanvas.h);
 	}
-
-
-
 }

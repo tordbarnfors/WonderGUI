@@ -27,7 +27,7 @@
 #include <wg_packpanel.h>
 #include <wg_texteditor.h>
 #include <wg_msglogger.h>
-#include <wg_scrollpanel.h>
+#include <wg_scrollcapsule.h>
 
 namespace wg
 {
@@ -78,7 +78,7 @@ namespace wg
 		ToggleButton_p		m_pLogPointerStyleToggle;
 
 		PackPanel_p			m_pLogList;
-		ScrollPanel_p		m_pLogWindow;
+		ScrollCapsule_p		m_pLogWindow;
 
 		Skin_p				m_entrySkin[2];
 

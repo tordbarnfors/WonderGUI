@@ -42,7 +42,6 @@ namespace wg
 	DebugFrontend::DebugFrontend(const Blueprint& bp) : Capsule(bp)
 	{
 		m_pBackend = bp.backend;
-		m_pTheme 	= bp.theme;
 		m_pIcons	= bp.icons;
 		m_pTransparencyGrid = bp.transparencyGrid;
 
@@ -198,7 +197,7 @@ namespace wg
 
 		if( !pWindow )
 		{
-			pWindow = WGCREATE(DebugFrontendWindow, _.theme = m_pTheme);
+			pWindow = WGCREATE(DebugFrontendWindow);
 			m_pWorkspace->slots.pushBack(pWindow, WGBP(PackPanelSlot, _.weight = 0.f));
 		}
 
@@ -302,14 +301,14 @@ namespace wg
 	void DebugFrontend::_setupGUI()
 	{
 		auto pMainPanel = WGCREATE(PackPanel, _.axis = Axis::Y );
-		auto pTopBar 	= WGCREATE(PackPanel, _.axis = Axis::X, _.skin = m_pTheme->plateSkin() );
-		auto pLogSplit = WGCREATE(SplitPanel, _ = m_pTheme->splitPanelY() );
-		auto pTreeSplit = WGCREATE(SplitPanel, _ = m_pTheme->splitPanelX() );
+		auto pTopBar 	= WGCREATE(PackPanel, _.axis = Axis::X, _.skin = dbgkit::Skins::Plate );
+		auto pLogSplit = WGCREATE(dbgkit::SplitPanelY );
+		auto pTreeSplit = WGCREATE(dbgkit::SplitPanelX );
 
 		pMainPanel->slots.pushBack({ {	pTopBar, WGBP(PackPanelSlot, _.weight = 0.f)},
 										pLogSplit});
 
-		auto pWorkspaceScroller = WGCREATE(ScrollPanel, _ = m_pTheme->scrollPanelX() );
+		auto pWorkspaceScroller = WGCREATE(dbgkit::ScrollCapsuleX );
 
 		auto pWorkspaceReorder = WGCREATE(ReorderCapsule, _.dragOutside = false, _.usePickHandles = true );
 		pWorkspaceScroller->slot = pWorkspaceReorder;
@@ -341,7 +340,7 @@ namespace wg
 	{
 		auto pToolbox = PackPanel::create(WGBP(PackPanel, _.axis = Axis::X));
 
-		auto pPickButton = ToggleButton::create(WGOVR(m_pTheme->toggleButton(), _.icon.skin = m_pSelectIcon, _.icon.placement = Placement::Center));
+		auto pPickButton = WGCREATE( dbgkit::ToggleButton, _.icon.skin = m_pSelectIcon, _.icon.placement = Placement::Center);
 
 //		m_pPickWidgetButton = pPickButton;
 
@@ -351,7 +350,7 @@ namespace wg
 			setSelectMode(pButton->isChecked());
 		});
 
-		auto pUnselectButton = Button::create(WGOVR(m_pTheme->pushButton(), _.icon.skin = m_pUnselectIcon, _.icon.placement = Placement::Center));
+		auto pUnselectButton = WGCREATE( dbgkit::Button, _.icon.skin = m_pUnselectIcon, _.icon.placement = Placement::Center);
 
 		Base::msgRouter()->addRoute(pUnselectButton, MsgType::Select, [this](Msg* pMsg) {
 
@@ -387,22 +386,22 @@ namespace wg
 	{
 		auto pTreePanel = WGCREATE(PackPanel, _.axis = Axis::Y);
 
-		m_pListOfTreeViews = WGCREATE(PackPanel, _.axis = Axis::Y, _.skin = m_pTheme->canvasSkin(), _.layout = m_pDummyPackLayout );
+		m_pListOfTreeViews = WGCREATE(PackPanel, _.axis = Axis::Y, _.skin = dbgkit::Skins::Canvas, _.layout = m_pDummyPackLayout );
 
-		auto pTreeScrollPanel = WGCREATE(ScrollPanel, _ = m_pTheme->scrollPanelXY());
+		auto pTreeScrollPanel = WGCREATE(dbgkit::ScrollCapsuleXY);
 		pTreeScrollPanel->slot = m_pListOfTreeViews;
 
 		// Create button row with refresh, collapse and expand buttons
 
-		auto pButtonRow = PackPanel::create(WGBP(PackPanel, _.axis = Axis::X, _.skin = m_pTheme->plateSkin() ));
+		auto pButtonRow = PackPanel::create(WGBP(PackPanel, _.axis = Axis::X, _.skin = dbgkit::Skins::Plate ));
 
-		auto pRefreshButton = Button::create(WGOVR(m_pTheme->pushButton(), _.icon.skin = m_pRefreshIcon, _.icon.placement = Placement::Center));
+		auto pRefreshButton = WGCREATE( dbgkit::Button, _.icon.skin = m_pRefreshIcon, _.icon.placement = Placement::Center);
 
 		Base::msgRouter()->addRoute(pRefreshButton, MsgType::Select, [this](Msg* pMsg) {
 			_refreshWidgetTree();
 		});
 
-		auto pCollapseAllButton = Button::create(WGOVR(m_pTheme->pushButton(), _.icon.skin = m_pCondenseIcon, _.icon.placement = Placement::Center));
+		auto pCollapseAllButton = WGCREATE( dbgkit::Button, _.icon.skin = m_pCondenseIcon, _.icon.placement = Placement::Center);
 
 		Base::msgRouter()->addRoute(pCollapseAllButton, MsgType::Select, [this](Msg* pMsg) {
 
@@ -414,7 +413,7 @@ namespace wg
 			}
 		});
 
-		auto pExpandAllButton = Button::create(WGOVR(m_pTheme->pushButton(), _.icon.skin = m_pExpandIcon, _.icon.placement = Placement::Center));
+		auto pExpandAllButton = WGCREATE( dbgkit::Button, _.icon.skin = m_pExpandIcon, _.icon.placement = Placement::Center);
 
 		Base::msgRouter()->addRoute(pExpandAllButton, MsgType::Select, [this](Msg* pMsg) {
 
@@ -444,7 +443,6 @@ namespace wg
 
 	void DebugFrontend::_createDebuggerBP()
 	{
-		m_debugPanelBP.theme = m_pTheme;
 		m_debugPanelBP.icons = m_pIcons;
 		m_debugPanelBP.transparencyGrid = m_pTransparencyGrid;
 
@@ -460,29 +458,29 @@ namespace wg
 			_.placement = Placement::NorthWest));
 
 		auto pValueLayout = BasicNumberLayout::create( WGBP(BasicNumberLayout,
-			_.style = m_pTheme->defaultStyle(),
+			_.style = dbgkit::TextStyles::Default,
 			_.decimalMin = 2
 		));
 
 		auto pIntegerLayout = BasicNumberLayout::create(WGBP(BasicNumberLayout,
-			_.style = m_pTheme->defaultStyle(),
+			_.style = dbgkit::TextStyles::Default,
 			_.decimalMin = 0
 		));
 
 
 		CharBuffer chrBuff;
 		chrBuff.pushBack("0x");
-		chrBuff.setStyle(m_pTheme->defaultStyle());
+		chrBuff.setStyle(dbgkit::TextStyles::Default);
 
 		auto pPointerLayout = BasicNumberLayout::create(WGBP(BasicNumberLayout,
-			_.style = m_pTheme->defaultStyle(),
+			_.style = dbgkit::TextStyles::Default,
 			_.base = 16,
 			_.integerGrouping = 0,
 			_.prefix = String(&chrBuff)
 			));
 
 		auto pPtsLayout = BasicNumberLayout::create(WGBP(BasicNumberLayout,
-			_.style = m_pTheme->defaultStyle(),
+			_.style = dbgkit::TextStyles::Default,
 			_.decimalMin = 2
 		));
 
@@ -490,15 +488,15 @@ namespace wg
 
 		m_debugPanelBP.classCapsule = WGBP(LabelCapsule,
 			_.skin = ColorSkin::create(HiColor::Transparent, { 10,0,0,8 }),
-			_.label.style = m_pTheme->finePrintStyle()
+			_.label.style = dbgkit::TextStyles::FinePrint
 		);
 
 
 		m_debugPanelBP.listEntryLabel = WGBP(TextDisplay,
-											 _.display.style = m_pTheme->strongStyle() );
+											 _.display.style = dbgkit::TextStyles::Strong);
 
 		m_debugPanelBP.listEntryText = WGBP(TextDisplay,
-											 _.display.style = m_pTheme->defaultStyle(),
+											 _.display.style = dbgkit::TextStyles::Default,
 											 _.display.layout = pListTextLayout );
 
 		m_debugPanelBP.listEntryInteger = WGBP(NumberDisplay,
@@ -519,16 +517,16 @@ namespace wg
 //		m_debugPanelBP.listEntryPointer = WGBP(NumberDisplay,
 //											 _.display.layout = pPointerLayout );
 
-		m_debugPanelBP.listEntryDrawer = m_pTheme->treeListDrawer();
-		m_debugPanelBP.selectableListEntryCapsule = WGOVR( m_pTheme->treeListEntry(), _.selectable = true );
+		m_debugPanelBP.listEntryDrawer = dbgkit::TreeListDrawer::Blueprint();
+		m_debugPanelBP.selectableListEntryCapsule = WGOVR( dbgkit::TreeListEntry::Blueprint(), _.selectable = true);
 
 		m_debugPanelBP.textField = WGBP(TextDisplay,
-			_.display.style = m_pTheme->defaultStyle(),
+			_.display.style = dbgkit::TextStyles::Default,
 			_.display.layout = pWrapTextLayout,
-			_.skin = m_pTheme->canvasSkin() );
+			_.skin = dbgkit::Skins::Canvas );
 
 		m_debugPanelBP.infoDisplay = WGBP(TextDisplay,
-											 _.display.style = m_pTheme->emphasisStyle(),
+											 _.display.style = dbgkit::TextStyles::Emphasis,
 											 _.display.layout = pInfoLayout );
 
 		m_debugPanelBP.table = WGBP(TablePanel,

@@ -58,7 +58,7 @@ namespace wg
 		auto pButtonRow = PackPanel::create(WGBP(PackPanel,
 			_.axis = Axis::X,
 			_.layout = m_pPackLayout,
-			_.skin = bp.theme->plateSkin()));
+			_.skin = dbgkit::Skins::Plate));
 
 
 		auto pRecordIcon = BlockSkin::create(WGBP(BlockSkin,
@@ -103,16 +103,16 @@ namespace wg
 			_.axis = Axis::X));
 
 
-		m_pRecordButton = ToggleButton::create(WGOVR(bp.theme->toggleButton(), _.icon.skin = pRecordIcon));
-		m_pClearButton = Button::create(WGOVR(bp.theme->pushButton(), _.icon.skin = pClearIcon));
+		m_pRecordButton = WGCREATE(dbgkit::ToggleButton, _.icon.skin = pRecordIcon);
+		m_pClearButton = WGCREATE(dbgkit::Button, _.icon.skin = pClearIcon	);
 
-		auto pPadding = Filler::create(WGBP(Filler, _.defaultSize = { 20,0 }));
+		auto pPadding = WGCREATE(Filler, _.defaultSize = { 20,0 });
 
-		m_pLogMoveToggle = ToggleButton::create(WGOVR(bp.theme->toggleButton(), _.checked = true, _.icon.skin = pPointerIcon));
-		m_pLogDragToggle = ToggleButton::create(WGOVR(bp.theme->toggleButton(), _.checked = true, _.icon.skin = pDragIcon));
-		m_pLogButtonToggle = ToggleButton::create(WGOVR(bp.theme->toggleButton(), _.checked = true, _.icon.skin = pButtonIcon));
-		m_pLogKeysToggle = ToggleButton::create(WGOVR(bp.theme->toggleButton(), _.checked = true, _.icon.skin = pKeyIcon));
-		m_pLogPointerStyleToggle = ToggleButton::create(WGOVR(bp.theme->toggleButton(), _.checked = true, _.icon.skin = pPointerStyleIcon));
+		m_pLogMoveToggle = WGCREATE(dbgkit::ToggleButton, _.checked = true, _.icon.skin = pPointerIcon);
+		m_pLogDragToggle = WGCREATE(dbgkit::ToggleButton, _.checked = true, _.icon.skin = pDragIcon);
+		m_pLogButtonToggle = WGCREATE(dbgkit::ToggleButton, _.checked = true, _.icon.skin = pButtonIcon);
+		m_pLogKeysToggle = WGCREATE(dbgkit::ToggleButton, _.checked = true, _.icon.skin = pKeyIcon);
+		m_pLogPointerStyleToggle = WGCREATE(dbgkit::ToggleButton, _.checked = true, _.icon.skin = pPointerStyleIcon);
 
 		Base::msgRouter()->addRoute(m_pRecordButton, MsgType::Toggle, [this](Msg* _pMsg) {
 
@@ -155,12 +155,12 @@ namespace wg
 
 		//
 
-		m_pLogWindow = ScrollPanel::create(bp.theme->scrollPanelXY());
+		m_pLogWindow = dbgkit::ScrollCapsuleXY::create();
 		
 		m_pLogList = PackPanel::create( WGBP(PackPanel, 
 			_.axis = Axis::Y,
 			_.layout = m_pPackLayout,
-			_.skin = bp.theme->canvasSkin() ) );
+			_.skin = dbgkit::Skins::Canvas ) );
 
 		m_pLogWindow->slot = m_pLogList;
 

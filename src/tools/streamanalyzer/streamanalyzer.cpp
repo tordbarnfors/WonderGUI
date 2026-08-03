@@ -20,7 +20,6 @@
 #include <wg_linearbackend.h>
 
 #include <wg_streamtrimbackend.h>
-#include <themes/simplistic/wg_simplistic.h>
 
 #include <string>
 #include <fstream>
@@ -150,12 +149,11 @@ bool MyApp::_setupGUI(API* pAPI)
 /*
 	m_pDebugger = DebugBackend::create();
 
-	auto pTheme = pAPI->initDefaultTheme();
 	auto path = pAPI->resourceDirectory();
 	auto pIconSurface = pAPI->loadSurface( path + "debugger_gfx.png");
 	auto pTransparencyGrid = pAPI->loadSurface(path + "checkboardtile.png", nullptr, { .tiling = true } );
 
-	m_pDebugOverlay = DebugOverlay::create( { .backend = m_pDebugger, .theme = pTheme, .icons = pIconSurface, .transparencyGrid = pTransparencyGrid } );
+	m_pDebugOverlay = DebugOverlay::create( { .backend = m_pDebugger, .icons = pIconSurface, .transparencyGrid = pTransparencyGrid } );
 
 	m_pDebugOverlay->setActivated(true);
 */

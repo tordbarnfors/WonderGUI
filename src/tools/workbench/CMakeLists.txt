@@ -37,7 +37,6 @@ target_link_directories(workbench PRIVATE
 
 target_link_libraries(workbench PRIVATE
 	wgdebugger
-	wg_theme_simplistic
 	wgsoftgfx
 	wgopenglgfx
 	wgfreetypefont

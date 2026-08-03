@@ -73,7 +73,6 @@ namespace wg
 			bool			stickyFocus = false;
 			bool			tabLock = false;
 			bool			takesFocusFromChild = true;
-			Theme_p			theme;										// Mandatory!!!
 			String			tooltip;
 			bool			usePickHandles = false;
 			Surface_p		icons;										// Mandatory!!!
@@ -143,7 +142,6 @@ namespace wg
 
 		// Resources
 
-		Theme_p			m_pTheme;
 		Surface_p		m_pIcons;
 		Surface_p		m_pTransparencyGrid;
 

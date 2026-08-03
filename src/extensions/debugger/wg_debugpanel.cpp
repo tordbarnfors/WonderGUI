@@ -97,7 +97,7 @@ namespace wg
 
 	DrawerPanel_p DebugPanel::_createDrawer(const CharSeq& label, Widget* pHeaderValue, Widget* pContent)
 	{
-		auto pDrawer = WGCREATE(DrawerPanel, _ = m_pHolder->blueprint().theme->treeListDrawer(), _.skin = m_pIndentationSkin, _.buttonOfs.x -= 16);
+		auto pDrawer = WGCREATE(dbgkit::TreeListDrawer, _.skin = m_pIndentationSkin, _.buttonOfs.x -= 16);
 
 		auto pHeaderPanel = WGCREATE(TwoSlotPanel, _.axis = Axis::X);
 		pHeaderPanel->slots[0] = WGCREATE(TextDisplay, _ = m_pHolder->blueprint().listEntryLabel, _.display.text = label);
@@ -304,7 +304,7 @@ namespace wg
 
 		auto pDisplay = TextDisplay::create(WGBP(TextDisplay,
 			_.display.text = pObject->typeInfo().className,
-			_.display.style = m_pHolder->blueprint().theme->heading5Style()
+			_.display.style = dbgkit::TextStyles::Heading5
 		));
 
 		char temp[64];
@@ -312,7 +312,7 @@ namespace wg
 
 		CharBuffer buf(64);
 		buf.pushBack(temp);
-		buf.setStyle(m_pHolder->blueprint().theme->defaultStyle());
+		buf.setStyle(dbgkit::TextStyles::Default);
 		
 		pDisplay->display.append(&buf);
 		return pDisplay;
@@ -437,7 +437,7 @@ namespace wg
 		if (pPointer)
 		{
 			buff.pushBack(pPointer->typeInfo().className);
-			buff.setStyle(m_pHolder->blueprint().theme->finePrintStyle(), 0, 1000);
+			buff.setStyle(dbgkit::TextStyles::FinePrint, 0, 1000);
 
 			int ofs = buff.nbChars();
 
@@ -656,7 +656,7 @@ namespace wg
 		if (pPointer)
 		{
 			buff.pushBack(pPointer->typeInfo().className);
-			buff.setStyle(m_pHolder->blueprint().theme->finePrintStyle(), 0, 1000);
+			buff.setStyle(dbgkit::TextStyles::FinePrint, 0, 1000);
 
 			int ofs = buff.nbChars();
 
