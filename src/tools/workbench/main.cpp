@@ -5025,7 +5025,7 @@ bool nodePanelTest(ComponentPtr<DynamicSlot> pEntry)
 
 	auto pNodePanel = NodePanel::create({ .skin = BoxSkin::create({ .color = Color::Transparent, .outlineColor = Color::Black, .padding = 4 }) });
 
-	auto pNodeWires = Nodewires::create({ .skin = BoxSkin::create({ .color = Color::White, .outlineColor = Color::Black, .padding = 4 }) });
+	auto pNodeWires = NodeWires::create({ .skin = BoxSkin::create({ .color = Color::White, .outlineColor = Color::Black, .padding = 4 }) });
 
 	pNodeWires->attachTo(pNodePanel);
 
@@ -5042,7 +5042,7 @@ bool nodePanelTest(ComponentPtr<DynamicSlot> pEntry)
 	pNodeWires->addWire(1, Placement::South, 2, Placement::North );
 	pNodeWires->addWire(2, Placement::South, 3, Placement::North );
 /*
-	pNodePanel->setNodePosModifier([](const NodePanel * pPanel, NodeVector::const_iterator it, Coord coord){
+	pNodePanel->setNodePosModifier([](const NodePanel * pPanel, NodePanel::NodeVector::const_iterator it, Coord coord){
 
 		if( it != pPanel->nodes.begin() )
 		{

@@ -26,11 +26,11 @@ namespace wg
 {
 	using namespace Util;
 
-	const TypeInfo Nodewires::TYPEINFO = { "Nodewires", &Widget::TYPEINFO };
+	const TypeInfo NodeWires::TYPEINFO = { "NodeWires", &Widget::TYPEINFO };
 
 	//____ destructor ____________________________________________________________
 
-	Nodewires::~Nodewires()
+	NodeWires::~NodeWires()
 	{
 		if( m_pObserved )
 			m_pObserved->_removeObserver(this);
@@ -38,14 +38,14 @@ namespace wg
 
 	//____ typeInfo() _________________________________________________________
 
-	const TypeInfo& Nodewires::typeInfo(void) const
+	const TypeInfo& NodeWires::typeInfo(void) const
 	{
 		return TYPEINFO;
 	}
 
 	//____ attachTo() ____________________________________________________________
 
-	bool Nodewires::attachTo( NodePanel * pNodeSource )
+	bool NodeWires::attachTo( NodePanel * pNodeSource )
 	{
 		if( m_pObserved )
 		{
@@ -67,7 +67,7 @@ namespace wg
 
 	//____ detach() ______________________________________________________________
 
-	void Nodewires::detach()
+	void NodeWires::detach()
 	{
 		if( m_pObserved )
 		{
@@ -79,7 +79,7 @@ namespace wg
 
 	//____ addWire() _____________________________________________________________
 
-	bool Nodewires::addWire( int fromNode, Placement fromPos, int toNode, Placement toPos )
+	bool NodeWires::addWire( int fromNode, Placement fromPos, int toNode, Placement toPos )
 	{
 		if( !m_pObserved )
 		{
@@ -112,7 +112,7 @@ namespace wg
 
 	//____ removeWire() __________________________________________________________
 
-	bool Nodewires::removeWire( int fromNode, int toNode )
+	bool NodeWires::removeWire( int fromNode, int toNode )
 	{
 		auto it = std::find_if(m_wires.begin(), m_wires.end(), [fromNode,toNode](const Wire& wire) { return wire.fromNode == fromNode && wire.toNode == toNode; });
 
@@ -126,9 +126,47 @@ namespace wg
 		return true;
 	}
 
+	//____ setWireColor() ________________________________________________________
+
+	bool NodeWires::setWireColor( HiColor color )
+	{
+		if( !color.isValid() )
+		{
+			Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Color is invalid.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			return false;
+		}
+
+		m_wireColor = color;
+		_requestRender();
+		return true;
+	}
+
+	//____ setWireThickness() ____________________________________________________
+
+	void NodeWires::setWireThickness( pts thickness )
+	{
+		if( thickness < 0.1 || thickness > 100 )
+		{
+			Base::throwError(ErrorLevel::Warning, ErrorCode::InvalidParam, "Wire thickness capped to be between 0.1 and 100.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+
+			limit( thickness, 0.1, 100 );
+		}
+
+		m_wireThickness = thickness;
+		_refreshRenderMargin();
+		_requestRender();
+	}
+
+	//____ _refreshRenderMargin() ___________________________________________________
+
+	void NodeWires::_refreshRenderMargin()
+	{
+		m_renderMargin = alignUp((ptsToSpx(m_wireThickness, m_scale) / 2) + 128);
+	}
+
 	//____ _defaultSize() ________________________________________________________
 
-	SizeSPX Nodewires::_defaultSize(int scale) const
+	SizeSPX NodeWires::_defaultSize(int scale) const
 	{
 		if( m_pObserved )
 			return m_pObserved->_defaultSize(scale);
@@ -138,30 +176,37 @@ namespace wg
 
 	//____ _render() _____________________________________________________________
 
-	void Nodewires::_render(GfxDevice* pDevice, const RectSPX& _canvas, const RectSPX& _window)
+	void NodeWires::_render(GfxDevice* pDevice, const RectSPX& _canvas, const RectSPX& _window)
 	{
 		Widget::_render( pDevice, _canvas, _window );
 
+		spx wireThickness = ptsToSpx(m_wireThickness, m_scale);
 
 		for( auto& wire : m_wires )
 		{
 			if( wire.bVisible )
-				pDevice->drawLine(wire.fromPos + _canvas.pos(), wire.toPos + _canvas.pos(), m_wireColor, m_wireThickness );
+				pDevice->drawLine(wire.fromPos + _canvas.pos(), wire.toPos + _canvas.pos(), m_wireColor, wireThickness );
 		}
+	}
 
+	//____ _resize() _____________________________________________________________
 
+	void NodeWires::_resize(const SizeSPX& size, int scale)
+	{
+		Widget::_resize(size, scale);
+		_refreshRenderMargin();
 	}
 
 	//____ _nodeCanvasResized() __________________________________________________
 
-	void Nodewires::_nodeCanvasResized(SizeSPX oldSize, SizeSPX newSize)
+	void NodeWires::_nodeCanvasResized(SizeSPX oldSize, SizeSPX newSize)
 	{
 		_requestResize();
 	}
 
 	//____ _nodeCanvasDestroyed() ________________________________________________
 
-	void Nodewires::_nodeCanvasDestroyed()
+	void NodeWires::_nodeCanvasDestroyed()
 	{
 		m_pObserved = nullptr;
 		m_wires.clear();
@@ -169,7 +214,7 @@ namespace wg
 
 	//____ _nodeMovedOrResized() _________________________________________________
 
-	void Nodewires::_nodeMovedOrResized(int nodeId, const RectSPX& oldGeo, const RectSPX& newGeo)
+	void NodeWires::_nodeMovedOrResized(int nodeId, const RectSPX& oldGeo, const RectSPX& newGeo)
 	{
 		for( auto& wire : m_wires )
 		{
@@ -184,14 +229,14 @@ namespace wg
 
 	//____ _nodeAdded() __________________________________________________________
 
-	void Nodewires::_nodeAdded(int nodeId, const RectSPX& geo, bool bVisible )
+	void NodeWires::_nodeAdded(int nodeId, const RectSPX& geo, bool bVisible )
 	{
 		// Do nothing.
 	}
 
 	//____ _nodeRemoved() ________________________________________________________
 
-	void Nodewires::_nodeRemoved(int nodeId)
+	void NodeWires::_nodeRemoved(int nodeId)
 	{
 		//TODO: Only render what is needed for removed wires.
 
@@ -215,7 +260,7 @@ namespace wg
 
 	//____ _nodeHidden() _________________________________________________________
 
-	void Nodewires::_nodeHidden(int nodeId)
+	void NodeWires::_nodeHidden(int nodeId)
 	{
 		for( auto& wire : m_wires )
 		{
@@ -229,7 +274,7 @@ namespace wg
 
 	//____ _nodeUnhidden() _______________________________________________________
 
-	void Nodewires::_nodeUnhidden(int nodeId)
+	void NodeWires::_nodeUnhidden(int nodeId)
 	{
 		for( auto& wire : m_wires )
 		{
@@ -244,7 +289,7 @@ namespace wg
 
 	//____ _updateWirePositions() ________________________________________________
 
-	void Nodewires::_updateWirePositions( Wire& wire, NodePanel::Node * pFromNode, NodePanel::Node * pToNode )
+	void NodeWires::_updateWirePositions( Wire& wire, NodePanel::Node * pFromNode, NodePanel::Node * pToNode )
 	{
 		const auto& fromRect = pFromNode->slot()->_geo();
 		const auto& toRect = pToNode->slot()->_geo();
@@ -258,7 +303,7 @@ namespace wg
 
 	//____ _requestRenderWire() __________________________________________________
 
-	void Nodewires::_requestRenderWire( const Wire& wire )
+	void NodeWires::_requestRenderWire( const Wire& wire )
 	{
 		RectSPX area = { wire.fromPos, SizeSPX(wire.toPos - wire.fromPos) };
 
