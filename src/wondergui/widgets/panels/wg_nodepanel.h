@@ -101,7 +101,7 @@ namespace wg
 			void					setVisible(bool bVisible) { ((NodePanelSlot*) m_pWidget->_slot())->setVisible(bVisible); }
 			inline bool				isVisible() const { return ((NodePanelSlot*) m_pWidget->_slot())->m_bVisible; }
 
-			Coord					setCenter(Coord pos) { ((NodePanelSlot*) m_pWidget->_slot())->setCenter(pos); }
+			void					setCenter(Coord pos) { ((NodePanelSlot*) m_pWidget->_slot())->setCenter(pos); }
 			Coord					center() const { return ((NodePanelSlot*) m_pWidget->_slot())->center(); }
 
 			Rect					geo() const { auto pSlot = (NodePanelSlot*) m_pWidget->_slot(); Size sz = pSlot->size(); return { Rect(pSlot->center() - Coord(sz)/2), sz};  }
