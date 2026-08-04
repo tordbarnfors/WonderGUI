@@ -28,11 +28,11 @@
 
 namespace wg
 {
-class Nodewires;
-typedef StrongPtr<Nodewires>	Nodewires_p;
-typedef WeakPtr<Nodewires>		Nodewires_wp;
+class NodeWires;
+typedef StrongPtr<NodeWires>	NodeWires_p;
+typedef WeakPtr<NodeWires>		NodeWires_wp;
 
-class Nodewires : public Widget, public NodePanel::Observer
+class NodeWires : public Widget, public NodePanel::Observer
 {
 public:
 
@@ -53,12 +53,15 @@ public:
 		bool			stickyFocus = false;
 		bool			tabLock = false;
 		String			tooltip;
+
+		HiColor			wireColor = HiColor::Black;
+		pts				wireThickness = 1.f;
 	};
 
 	//.____ Creation __________________________________________
 
-	static Nodewires_p	create() { return Nodewires_p(new Nodewires()); }
-	static Nodewires_p	create( const Blueprint& blueprint ) { return Nodewires_p(new Nodewires(blueprint)); }
+	static NodeWires_p	create() { return NodeWires_p(new NodeWires()); }
+	static NodeWires_p	create( const Blueprint& blueprint ) { return NodeWires_p(new NodeWires(blueprint)); }
 
 	//.____ Identification __________________________________________
 
@@ -73,14 +76,23 @@ public:
 	bool	addWire( int fromNode, Placement fromPos, int toNode, Placement toPos );
 	bool	removeWire( int fromNode, int toNode );
 
+	bool	setWireColor( HiColor color );
+	HiColor	wireColor() const { return m_wireColor; }
+
+	void	setWireThickness( pts thickness );
+	pts		wireThickness() const { return m_wireThickness; }
+
 private:
-	Nodewires() {};
-	template< class BP> Nodewires( const BP& bp ) : Widget(bp)
+	NodeWires() {};
+	template< class BP> NodeWires( const BP& bp ) : Widget(bp)
 	{
+		m_wireColor = bp.wireColor;
+		m_wireThickness = bp.wireThickness;
+		_refreshRenderMargin();
 
 	}
 
-	virtual ~Nodewires();
+	virtual ~NodeWires();
 
 	struct Wire
 	{
@@ -97,9 +109,11 @@ private:
 
 	SizeSPX		_defaultSize(int scale) const override;
 	void		_render(GfxDevice* pDevice, const RectSPX& _canvas, const RectSPX& _window) override;
+	void		_resize(const SizeSPX& size, int scale) override;
 
 	void 		_requestRenderWire( const Wire& wire );
 	void		_updateWirePositions( Wire& wire, NodePanel::Node * pFromNode, NodePanel::Node * pToNode  );
+	void		_refreshRenderMargin();
 
 
 //	void 		_requestRenderAffectedWires( int nodeId );
@@ -122,7 +136,7 @@ private:
 
 	spx				m_renderMargin = 64+64; 			// Size of border around wire positions that needs to be rendered to be on the safe side.
 	HiColor			m_wireColor = HiColor::Black;
-	spx				m_wireThickness = 64;
+	pts				m_wireThickness = 1;
 };
 
 
