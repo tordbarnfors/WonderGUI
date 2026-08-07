@@ -42,9 +42,9 @@ namespace wg
 	const TypeInfo NodePanelSlot::TYPEINFO = { "NodePanelSlot", &PanelSlot::TYPEINFO };
 
 
-	//____ NodePanelSlot::_setCenter() ___________________________________________
+	//____ NodePanelSlot::setCenter() ___________________________________________
 
-	void NodePanelSlot::setCenter(Coord pos)
+	Coord NodePanelSlot::setCenter(Coord pos)
 	{
 		NodePanel * pHolder = static_cast<NodePanel*>(_holder());
 
@@ -52,15 +52,57 @@ namespace wg
 
 		CoordSPX posSPX = ptsToSpx(pos, scale) + pHolder->m_skin.contentOfs(pHolder->m_scale, pHolder->m_state);
 		pHolder->_updateNodeGeo(this,posSPX,true);
+
+		return m_center;
 	}
 
-	//____ NodePanelSlot::_setBlueprint()  __________________________________________________________
+	//____ NodePanelSlot::setCenterNormalized() __________________________________
+
+	CoordF NodePanelSlot::setCenterNormalized(CoordF pos)
+	{
+		NodePanel * pHolder = static_cast<NodePanel*>(_holder());
+
+		int scale = pHolder->_scale();
+		RectSPX rect = pHolder->_contentRect();
+
+
+		CoordSPX posSPX = {spx(rect.x + rect.w * pos.x), spx(rect.y + rect.h * pos.y) };
+		pHolder->_updateNodeGeo(this,posSPX,true);
+
+
+		Size size = spxToPts(rect.size(), scale);
+		return { m_center.x / float(size.w), m_center.y / float(size.h) };
+	}
+
+	//____ NodePanelSlot::centerNormalized() _____________________________________
+
+	CoordF NodePanelSlot::centerNormalized() const
+	{
+		auto pHolder = static_cast<const NodePanel*>(_holder());
+
+		Size size = spxToPts(pHolder->m_size, pHolder->m_scale);
+		return { m_center.x / float(size.w), m_center.y / float(size.h) };
+	}
+
+	//____ NodePanelSlot::_setBlueprint()  _______________________________________
 
 	bool NodePanelSlot::_setBlueprint(const Blueprint& bp)
 	{
 		m_bVisible = bp.visible;
 		m_nodeId = bp.nodeId;
-		m_center = bp.center;
+
+		if( bp.centerNormalized.x >= 0 && bp.centerNormalized.y >= 0 )
+		{
+			auto pNodePanel = static_cast<NodePanel*>(m_pHolder->_container());
+
+			SizeSPX sizeSPX = pNodePanel->_contentRect().size();
+			Size size = spxToPts(sizeSPX, pNodePanel->m_scale);
+
+			m_center = { bp.centerNormalized.x * size.w, bp.centerNormalized.y * size.h };
+		}
+		else
+			m_center = bp.center;
+
 		return true;
 	}
 
@@ -131,6 +173,20 @@ namespace wg
 	void NodePanel::setNodePosModifier( const std::function<Coord(const NodePanel * pPanel, NodeVector::const_iterator nodeIt, Coord pos)>& callback )
 	{
 		m_nodePosModifier = callback;
+	}
+
+	//____ setNodeConstraint() ___________________________________________________
+
+	void NodePanel::setNodeConstraint( NodeConstraint constraint )
+	{
+		if( constraint != m_nodeConstraint )
+		{
+			m_nodeConstraint = constraint;
+
+			//TODO: Update positions
+
+		}
+
 	}
 
 	//____ _addObserver() _________________________________________________________
@@ -286,7 +342,7 @@ namespace wg
 			if( bScaleChanged || pChild->_size() != newSize )
 				pChild->_resize(newSize, scale);
 
-			_updateNodeGeo( &slot, slot.m_geo.center() - _contentRect().pos(), false );
+			_updateNodeGeo( &slot, ptsToSpx( slot.m_center, m_scale) + _contentRect().pos(), false );
 		}
 
 		if( m_size != oldSize )
@@ -323,7 +379,7 @@ namespace wg
 		if( pChild->_size() != newSize )
 			pChild->_resize(newSize, m_scale);
 
-		_updateNodeGeo(pSlot, ptsToSpx( pSlot->m_center, m_scale), true );
+		_updateNodeGeo(pSlot, ptsToSpx( pSlot->m_center, m_scale) + _contentRect().pos(), true );
 	}
 
 	//____ _releaseChild() ____________________________________________________
@@ -353,7 +409,7 @@ namespace wg
 		if( pOldChild )
 			_requestRender( slot.m_geo + pOldChild->_overflow() );
 
-		_updateNodeGeo(&slot, slot.m_geo.center(), false);
+		_updateNodeGeo(&slot, ptsToSpx( slot.m_center, m_scale) + _contentRect().pos(), false);
 
 		_requestRender( slot.m_geo + pNewChild->_overflow() );
 	}
@@ -381,7 +437,10 @@ namespace wg
 
 			// Constrain to our content rect
 
-			pSlot->m_geo = contentRect.limit(RectSPX(pos, size));
+			RectSPX constrainer = m_nodeConstraint == NodeConstraint::Bounds ? contentRect
+													: align( contentRect + BorderSPX(size.w/2,size.h/2) );
+
+			pSlot->m_geo = constrainer.limit(RectSPX(pos, size));
 
 			pSlot->_widget()->_resize(size, m_scale);
 
@@ -519,7 +578,10 @@ namespace wg
 
 		// Constrain to our content rect
 
-		RectSPX newGeo = contentRect.limit(RectSPX(newPos, sizeSPX));
+		RectSPX constrainer = m_nodeConstraint == NodeConstraint::Bounds ? contentRect
+												: align( contentRect + BorderSPX(sizeSPX.w/2,sizeSPX.h/2) );
+
+		RectSPX newGeo = constrainer.limit(RectSPX(newPos, sizeSPX));
 		RectSPX oldGeo = pSlot->m_geo;
 
 		if( newGeo == oldGeo )

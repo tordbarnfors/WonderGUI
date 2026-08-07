@@ -44,6 +44,7 @@ public:
 		Finalizer_p		finalizer = nullptr;
 		int				id = 0;
 		MarkPolicy		markPolicy = MarkPolicy::Undefined;
+		bool			orthogonal = false;
 		bool			pickable = false;
 		uint8_t			pickCategory = 0;
 		bool			pickHandle = false;
@@ -82,12 +83,16 @@ public:
 	void	setWireThickness( pts thickness );
 	pts		wireThickness() const { return m_wireThickness; }
 
+	void	setOrthogonal( bool ortogonal );
+	bool	isOrthogonal() const { return m_bOrthogonal; }
+
 private:
 	NodeWires() {};
 	template< class BP> NodeWires( const BP& bp ) : Widget(bp)
 	{
 		m_wireColor = bp.wireColor;
 		m_wireThickness = bp.wireThickness;
+		m_bOrthogonal = bp.orthogonal;
 		_refreshRenderMargin();
 
 	}
@@ -96,14 +101,20 @@ private:
 
 	struct Wire
 	{
+		// These are set by application developer
+
 		int			fromNode;
 		Placement	fromPlacement;
 		int			toNode;
 		Placement	toPlacement;
-
 		bool		bVisible;
+
+		// These are calculated
+
 		CoordSPX	fromPos;
 		CoordSPX	toPos;
+		Direction	fromDirection;	// Derived from Placement and in the case of Placement::Center also relative positions.
+		Direction	toDirection;	// " -
 	};
 
 
@@ -112,8 +123,12 @@ private:
 	void		_resize(const SizeSPX& size, int scale) override;
 
 	void 		_requestRenderWire( const Wire& wire );
-	void		_updateWirePositions( Wire& wire, NodePanel::Node * pFromNode, NodePanel::Node * pToNode  );
+	void		_updateWirePositionDirection( Wire& wire, NodePanel::Node * pFromNode, NodePanel::Node * pToNode  );
 	void		_refreshRenderMargin();
+
+	int			_routeOrthogonal( CoordSPX beginPos, Direction beginDir, CoordSPX endPos, Direction endDir, CoordSPX route[6] );
+
+	Direction 	_placementToDirection( Placement placement, CoordSPX myPos, CoordSPX otherPos );
 
 
 //	void 		_requestRenderAffectedWires( int nodeId );
@@ -137,6 +152,7 @@ private:
 	spx				m_renderMargin = 64+64; 			// Size of border around wire positions that needs to be rendered to be on the safe side.
 	HiColor			m_wireColor = HiColor::Black;
 	pts				m_wireThickness = 1;
+	bool			m_bOrthogonal = false;
 };
 
 

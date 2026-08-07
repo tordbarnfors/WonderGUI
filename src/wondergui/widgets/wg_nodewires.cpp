@@ -22,6 +22,8 @@
 
 #include <wg_nodewires.h>
 
+#include <utility>
+
 namespace wg
 {
 	using namespace Util;
@@ -105,7 +107,7 @@ namespace wg
 
 		m_wires.push_back({fromNode, fromPos, toNode, toPos, itFrom->isVisible() && itTo->isVisible(), CoordSPX(), CoordSPX() });
 
-		_updateWirePositions( m_wires.back(), &(*itFrom), &(*itTo) );
+		_updateWirePositionDirection( m_wires.back(), &(*itFrom), &(*itTo) );
 
 		return true;
 	}
@@ -182,10 +184,28 @@ namespace wg
 
 		spx wireThickness = ptsToSpx(m_wireThickness, m_scale);
 
-		for( auto& wire : m_wires )
+		if( m_bOrthogonal )
 		{
-			if( wire.bVisible )
-				pDevice->drawLine(wire.fromPos + _canvas.pos(), wire.toPos + _canvas.pos(), m_wireColor, wireThickness );
+			CoordSPX coordList[8];
+
+			for( auto& wire : m_wires )
+			{
+				if( wire.bVisible )
+				{
+					int nCoords =  _routeOrthogonal( wire.fromPos + _canvas.pos(), wire.fromDirection, wire.toPos + _canvas.pos(), wire.toDirection, coordList );
+
+					for( int i = 0 ; i < nCoords -1 ; i++ )			// First and last is from/toPos, which we already have.
+						pDevice->drawLine(coordList[i], coordList[i+1], m_wireColor, wireThickness );
+				}
+			}
+		}
+		else
+		{
+			for( auto& wire : m_wires )
+			{
+				if( wire.bVisible )
+					pDevice->drawLine(wire.fromPos + _canvas.pos(), wire.toPos + _canvas.pos(), m_wireColor, wireThickness );
+			}
 		}
 	}
 
@@ -221,7 +241,7 @@ namespace wg
 			if( wire.bVisible && (wire.fromNode == nodeId || wire.toNode == nodeId) )
 			{
 				_requestRenderWire( wire );
-				_updateWirePositions( wire, &(*m_pObserved->nodes.find(wire.fromNode)), &(*m_pObserved->nodes.find(wire.toNode)) );
+				_updateWirePositionDirection( wire, &(*m_pObserved->nodes.find(wire.fromNode)), &(*m_pObserved->nodes.find(wire.toNode)) );
 				_requestRenderWire( wire );
 			}
 		}
@@ -287,10 +307,11 @@ namespace wg
 		}
 	}
 
-	//____ _updateWirePositions() ________________________________________________
+	//____ _updateWirePositionDirection() ________________________________________________
 
-	void NodeWires::_updateWirePositions( Wire& wire, NodePanel::Node * pFromNode, NodePanel::Node * pToNode )
+	void NodeWires::_updateWirePositionDirection( Wire& wire, NodePanel::Node * pFromNode, NodePanel::Node * pToNode )
 	{
+
 		const auto& fromRect = pFromNode->slot()->_geo();
 		const auto& toRect = pToNode->slot()->_geo();
 
@@ -299,30 +320,219 @@ namespace wg
 
 		wire.fromPos = fromPos;
 		wire.toPos = toPos;
+
+		wire.fromDirection = _placementToDirection(wire.fromPlacement, wire.fromPos, wire.toPos);
+		wire.toDirection = _placementToDirection(wire.toPlacement, wire.toPos, wire.fromPos);
 	}
+
+	//____ _placementToDirection() _______________________________________________
+
+	Direction NodeWires::_placementToDirection( Placement placement, CoordSPX myPos, CoordSPX otherPos )
+	{
+		switch( placement )
+		{
+			case Placement::Undefined:
+			case Placement::Center:
+			{
+				if( abs(myPos.x - otherPos.x) > abs(myPos.y - otherPos.y) )
+				{
+					if( myPos.x > otherPos.x )
+						return Direction::Left;
+					else
+						return Direction::Right;
+				}
+				else
+				{
+					if( myPos.y > otherPos.y )
+						return Direction::Up;
+					else
+						return Direction::Down;
+				}
+
+			}
+
+			case Placement::NorthWest:
+			case Placement::NorthEast:
+			case Placement::North:
+				return Direction::Up;
+			case Placement::East:
+				return Direction::Right;
+			case Placement::SouthEast:
+			case Placement::SouthWest:
+			case Placement::South:
+				return Direction::Down;
+			case Placement::West:
+				return Direction::Left;
+		}
+
+	}
+
 
 	//____ _requestRenderWire() __________________________________________________
 
 	void NodeWires::_requestRenderWire( const Wire& wire )
 	{
-		RectSPX area = { wire.fromPos, SizeSPX(wire.toPos - wire.fromPos) };
+		RectSPX area = { wire.fromPos, wire.toPos };
 
-		if( area.w < 0 )
+		if( m_bOrthogonal)
 		{
-			area.x += area.w;
-			area.w = -area.w;
-		}
+			CoordSPX coordList[6];
 
-		if( area.h < 0 )
-		{
-			area.y += area.h;
-			area.h = -area.h;
+			int nCoords =  _routeOrthogonal( wire.fromPos, wire.fromDirection, wire.toPos, wire.toDirection, coordList );
+
+			for( int i = 1 ; i < nCoords -1 ; i++ )			// First and last is from/toPos, which we already have.
+				area.growToContain(coordList[i]);
 		}
 
 		area += BorderSPX( m_renderMargin );
-
 		_requestRender(area);
-	}
+ 	}
 
+	//____ _routeOrthogonal() ____________________________________________________
+
+	int NodeWires::_routeOrthogonal( CoordSPX beginPos, Direction beginDir, CoordSPX endPos, Direction endDir, CoordSPX coordList[6] )
+	{
+
+		spx		stumpLength = m_scale * 10;
+
+		int			nCoords = 0;
+
+		if( int(beginDir) > int(endDir) )
+		{
+			std::swap(beginPos, endPos);
+			std::swap(beginDir, endDir);
+		}
+
+		coordList[nCoords++] = beginPos;
+
+		if( beginDir == Direction::Up )
+		{
+			if( endDir == Direction::Up )				// Up -> Up
+			{
+				spx yPos = std::min( beginPos.y, endPos.y ) - stumpLength;
+
+				coordList[nCoords++] = { beginPos.x, yPos };
+				coordList[nCoords++] = { endPos.x, yPos };
+			}
+			else if( endDir == Direction::Right )		// Up -> Right
+			{
+
+			}
+			else if( endDir == Direction::Down )		// Up -> Down
+			{
+				if( beginPos.x != endPos.x )
+				{
+					spx midY = (beginPos.y + endPos.y) / 2;
+
+					if( midY > beginPos.y - stumpLength && abs(beginPos.x -endPos.x) > stumpLength*2 )
+					{
+						CoordSPX beginStump = { beginPos.x, beginPos.y - stumpLength };
+						CoordSPX endStump = { endPos.x, endPos.y + stumpLength };
+
+						spx midX = (beginPos.x + endPos.x) / 2;
+
+						coordList[nCoords++] = beginStump;
+						coordList[nCoords++] = { midX, beginStump.y };
+						coordList[nCoords++] = { midX, endStump.y };
+						coordList[nCoords++] = endStump;
+					}
+					else
+					{
+						coordList[nCoords++] = { beginPos.x, midY };
+						coordList[nCoords++] = { endPos.x, midY };
+					}
+				}
+			}
+			else										// Up -> Left
+			{
+				if( endPos.x > beginPos.x - stumpLength )		// Line up and then to the right
+				{
+					if( endPos.y < beginPos.y - stumpLength && (endPos.x - beginPos.x) > stumpLength*2 )
+					{
+						CoordSPX beginStump = { beginPos.x, beginPos.y - stumpLength };
+
+						spx midX = endPos.x - beginPos.x;
+
+						coordList[nCoords++] = beginStump;
+						coordList[nCoords++] = { midX, beginStump.y };
+						coordList[nCoords++] = { midX, endPos.y };
+					}
+					else
+						coordList[nCoords++] = { beginPos.x, endPos.y };
+				}
+				else							// Line up and then to the left
+				{
+
+				}
+
+			}
+
+		}
+		else if( beginDir == Direction::Right )
+		{
+			if( endDir == Direction::Right )			// Right -> Right
+			{
+				spx xPos = std::min( beginPos.x, endPos.x ) + stumpLength;
+
+				coordList[nCoords++] = { xPos, beginPos.y };
+				coordList[nCoords++] = { xPos, endPos.y };
+			}
+			else if( endDir == Direction::Down )		// Right -> Down
+			{
+			}
+			else										// Right -> Left
+			{
+				if( beginPos.y != endPos.y )
+				{
+					spx midX = (beginPos.x + endPos.x) / 2;
+
+					if( midX > beginPos.x + stumpLength && abs(beginPos.y -endPos.y) > stumpLength*2 )
+					{
+						CoordSPX beginStump = { beginPos.x + stumpLength, beginPos.y };
+						CoordSPX endStump = { endPos.x - stumpLength, endPos.y };
+
+						spx midY = (beginPos.y + endPos.y) / 2;
+
+						coordList[nCoords++] = beginStump;
+						coordList[nCoords++] = { beginStump.x, midY };
+						coordList[nCoords++] = { endStump.x, midY };
+						coordList[nCoords++] = endStump;
+					}
+					else
+					{
+						coordList[nCoords++] = { midX, beginPos.y };
+						coordList[nCoords++] = { midX, endPos.y };
+					}
+				}
+
+			}
+
+		}
+		else if( beginDir == Direction::Down )
+		{
+			if( endDir == Direction::Down )			// Down -> Down
+			{
+				spx yPos = std::min( beginPos.y, endPos.y ) + stumpLength;
+
+				coordList[nCoords++] = { beginPos.x, yPos };
+				coordList[nCoords++] = { endPos.x, yPos };
+			}
+			else										// Down -> Left
+			{
+
+			}
+
+		}
+		else											// Left -> Left
+		{
+			spx xPos = std::min( beginPos.x, endPos.x ) - stumpLength;
+
+			coordList[nCoords++] = { xPos, beginPos.y };
+			coordList[nCoords++] = { xPos, endPos.y };
+		}
+
+		coordList[nCoords++] = endPos;
+		return nCoords;
+	}
 
 }

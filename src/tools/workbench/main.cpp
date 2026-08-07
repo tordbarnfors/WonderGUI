@@ -5023,9 +5023,11 @@ bool nodePanelTest(ComponentPtr<DynamicSlot> pEntry)
 	auto pBaseLayer = FlexPanel::create();
 	pBaseLayer->setSkin(ColorSkin::create(Color::PapayaWhip));
 
-	auto pNodePanel = NodePanel::create({ .skin = BoxSkin::create({ .color = Color::Transparent, .outlineColor = Color::Black, .padding = 4 }) });
+	auto pNodePanel = NodePanel::create({ 	.nodeConstraint = NodePanel::NodeConstraint::Center,
+											.skin = BoxSkin::create({ .color = Color::Transparent, .outlineColor = Color::Black, .padding = 4 })
+	});
 
-	auto pNodeWires = NodeWires::create({ .skin = BoxSkin::create({ .color = Color::White, .outlineColor = Color::Black, .padding = 4 }) });
+	auto pNodeWires = NodeWires::create({ .orthogonal = true, .skin = BoxSkin::create({ .color = Color::White, .outlineColor = Color::Black, .padding = 4 }) });
 
 	pNodeWires->attachTo(pNodePanel);
 
@@ -5035,9 +5037,10 @@ bool nodePanelTest(ComponentPtr<DynamicSlot> pEntry)
 	auto pNode2 = Filler::create({ .defaultSize = {50,50}, .skin = pNodeSkin });
 	auto pNode3 = Filler::create({ .defaultSize = {50,50}, .skin = pNodeSkin });
 
-	pNodePanel->slots.pushBack(pNode1, { .center = {100,60} });
-	pNodePanel->slots.pushBack(pNode2, { .center = {100,60*2} });
-	pNodePanel->slots.pushBack(pNode3, { .center = {100,60*3} });
+//	pNodePanel->slots.pushBack(pNode1, { .center = {100,60} });
+//	pNodePanel->slots.pushBack(pNode2, { .center = {100,60*2} });
+//	pNodePanel->slots.pushBack(pNode3, { .center = {100,60*3} });
+
 
 	pNodeWires->addWire(1, Placement::South, 2, Placement::North );
 	pNodeWires->addWire(2, Placement::South, 3, Placement::North );
@@ -5089,7 +5092,14 @@ bool nodePanelTest(ComponentPtr<DynamicSlot> pEntry)
 	pBaseLayer->slots.pushBack(pNodePanel, { .pos = {10,10}, .size = {300,300} });
 	pBaseLayer->slots.pushBack(pNodeWires, { .pos = {10,10}, .size = {300,300} });
 
+
+
 	*pEntry = pBaseLayer;
+
+	pNodePanel->slots.pushBack(pNode1, { .centerNormalized = {0.5,0.0} });
+	pNodePanel->slots.pushBack(pNode2, { .centerNormalized = {0.5,0.5} });
+	pNodePanel->slots.pushBack(pNode3, { .centerNormalized = {1.0,1.0} });
+
 	return true;
 }
 
