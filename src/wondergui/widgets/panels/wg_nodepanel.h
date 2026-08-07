@@ -48,6 +48,7 @@ namespace wg
 		struct Blueprint
 		{
 			Coord	center;
+			CoordF	centerNormalized = { -1.f, -1.f };
 			int		nodeId = 0;
 			bool	visible = true;
 		};
@@ -60,8 +61,12 @@ namespace wg
 
 		//.____ Geometry ______________________________________________________
 
-		void	setCenter(Coord pos);					// Note: center position is within parent contentRect, not canvas.
+		Coord	setCenter(Coord pos);					// Note: center position is within parent contentRect, not canvas.
 		Coord	center() const { return m_center; };	// "-
+
+		CoordF	setCenterNormalized(CoordF pos);		// Note: center position is within parent contentRect, not canvas.
+		CoordF	centerNormalized() const;				// "-
+
 
 	protected:
 
@@ -101,8 +106,11 @@ namespace wg
 			void					setVisible(bool bVisible) { ((NodePanelSlot*) m_pWidget->_slot())->setVisible(bVisible); }
 			inline bool				isVisible() const { return ((NodePanelSlot*) m_pWidget->_slot())->m_bVisible; }
 
-			void					setCenter(Coord pos) { ((NodePanelSlot*) m_pWidget->_slot())->setCenter(pos); }
+			Coord					setCenter(Coord pos) { return ((NodePanelSlot*) m_pWidget->_slot())->setCenter(pos); }
 			Coord					center() const { return ((NodePanelSlot*) m_pWidget->_slot())->center(); }
+
+			CoordF					setCenterNormalized(CoordF pos) { return ((NodePanelSlot*) m_pWidget->_slot())->setCenterNormalized(pos); }
+			CoordF					centerNormalized() const { return ((NodePanelSlot*) m_pWidget->_slot())->centerNormalized(); }
 
 			Rect					geo() const { auto pSlot = (NodePanelSlot*) m_pWidget->_slot(); Size sz = pSlot->size(); return { Rect(pSlot->center() - Coord(sz)/2), sz};  }
 
@@ -114,6 +122,14 @@ namespace wg
 			int			m_id;
 			Widget * 	m_pWidget;
 
+		};
+
+		//____ NodeConstraint _______________________________________________________
+
+		enum class NodeConstraint
+		{
+			Center,
+			Bounds
 		};
 
 		//____ NodeVector ____________________________________________________________
@@ -145,12 +161,15 @@ namespace wg
 		struct Blueprint
 		{
 			Object_p		baggage;
+			Size			defaultSize = {256,256};
 			bool			disabled = false;
 			bool			dropTarget = false;
 			Finalizer_p		finalizer = nullptr;
 			int				id = 0;
 			MarkPolicy		markPolicy = MarkPolicy::Undefined;
 			MaskOp			maskOp = MaskOp::Skip;
+			NodeConstraint	nodeConstraint = NodeConstraint::Bounds;
+			std::function<Coord(const NodePanel * pPanel, NodeVector::const_iterator nodeIt, Coord pos)> nodePosModifier;
 			bool			pickable = false;
 			uint8_t			pickCategory = 0;
 			bool			pickHandle = false;
@@ -186,6 +205,9 @@ namespace wg
 		void			clearNodePosModifier();
 		void			setNodePosModifier( const std::function<Coord(const NodePanel * pPanel, NodeVector::const_iterator nodeIt, Coord pos)>& callback );
 
+		void			setNodeConstraint( NodeConstraint constraint );
+		NodeConstraint	nodeConstraint() const { return m_nodeConstraint; }
+
 		//.____ Internal ______________________________________________________
 
 		SizeSPX			_defaultSize(int scale) const override;
@@ -197,6 +219,9 @@ namespace wg
 		NodePanel();
 		template<class BP> NodePanel(const BP& bp) : PanelTemplate(bp)
 		{
+			m_nodeConstraint	= bp.nodeConstraint;
+			m_defaultSize		= bp.defaultSize;
+			m_nodePosModifier	= bp.nodePosModifier;
 		}
 
 		~NodePanel();
@@ -233,6 +258,7 @@ namespace wg
 		Widget*		m_pDraggedChild = nullptr;
 		Coord		m_draggedChildStartPos;
 
+		NodeConstraint	m_nodeConstraint = NodeConstraint::Bounds;
 
 
 		std::vector<Observer*>	m_observers;
