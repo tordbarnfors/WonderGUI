@@ -56,6 +56,7 @@ public:
 		String			tooltip;
 
 		HiColor			wireColor = HiColor::Black;
+		pts				wireStub = 5;
 		pts				wireThickness = 1.f;
 	};
 
@@ -80,6 +81,9 @@ public:
 	bool	setWireColor( HiColor color );
 	HiColor	wireColor() const { return m_wireColor; }
 
+	void	setWireStub( pts length );
+	pts		wireStub() const { return m_wireStub; }
+
 	void	setWireThickness( pts thickness );
 	pts		wireThickness() const { return m_wireThickness; }
 
@@ -91,10 +95,10 @@ private:
 	template< class BP> NodeWires( const BP& bp ) : Widget(bp)
 	{
 		m_wireColor = bp.wireColor;
+		m_wireStub = bp.wireStub;
 		m_wireThickness = bp.wireThickness;
 		m_bOrthogonal = bp.orthogonal;
 		_refreshRenderMargin();
-
 	}
 
 	virtual ~NodeWires();
@@ -153,6 +157,7 @@ private:
 	HiColor			m_wireColor = HiColor::Black;
 	pts				m_wireThickness = 1;
 	bool			m_bOrthogonal = false;
+	pts				m_wireStub = 5;
 };
 
 

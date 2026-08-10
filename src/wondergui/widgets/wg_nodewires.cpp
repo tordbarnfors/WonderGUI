@@ -143,6 +143,22 @@ namespace wg
 		return true;
 	}
 
+	//____ setWireStub() ____________________________________________________
+
+	void NodeWires::setWireStub( pts length )
+	{
+		if( length < 0.0 || length > 100 )
+		{
+			Base::throwError(ErrorLevel::Warning, ErrorCode::InvalidParam, "WireStub capped to be between 0.0 and 100.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+
+			limit( length, 0.0, 100 );
+		}
+
+		m_wireStub = length;
+		_requestRender();
+	}
+
+
 	//____ setWireThickness() ____________________________________________________
 
 	void NodeWires::setWireThickness( pts thickness )
@@ -393,7 +409,7 @@ namespace wg
 	int NodeWires::_routeOrthogonal( CoordSPX beginPos, Direction beginDir, CoordSPX endPos, Direction endDir, CoordSPX coordList[6] )
 	{
 
-		spx		stumpLength = m_scale * 10;
+		spx		stubLength = ptsToSpx(m_wireStub, m_scale);
 
 		int			nCoords = 0;
 
@@ -409,62 +425,95 @@ namespace wg
 		{
 			if( endDir == Direction::Up )				// Up -> Up
 			{
-				spx yPos = std::min( beginPos.y, endPos.y ) - stumpLength;
+				spx yPos = std::min( beginPos.y, endPos.y ) - stubLength;
 
 				coordList[nCoords++] = { beginPos.x, yPos };
 				coordList[nCoords++] = { endPos.x, yPos };
 			}
 			else if( endDir == Direction::Right )		// Up -> Right
 			{
+				if( endPos.x + stubLength < beginPos.x || (endPos.x < beginPos.x && abs(beginPos.y -endPos.y) < stubLength*2) )		// Line up and then to the right
+				{
+					if( endPos.y <= beginPos.y - stubLength )
+						coordList[nCoords++] = { beginPos.x, endPos.y };
+					else
+					{
+						CoordSPX beginStub = { beginPos.x, beginPos.y - stubLength };
 
+						spx midX = (endPos.x + beginPos.x)/2;
+
+						coordList[nCoords++] = beginStub;
+						coordList[nCoords++] = { midX, beginStub.y };
+						coordList[nCoords++] = { midX, endPos.y };
+					}
+				}
+				else							// Line up and then to the left
+				{
+					CoordSPX beginStub = { beginPos.x, beginPos.y - stubLength };
+					CoordSPX endStub = { endPos.x + stubLength, endPos.y };
+
+					if( beginStub.y  > endPos.y )
+						beginStub.y = (endPos.y + beginPos.y)/2;	// Split in middle instead.
+
+					coordList[nCoords++] = beginStub;
+					coordList[nCoords++] = { endStub.x, beginStub.y };
+					coordList[nCoords++] = endStub;
+				}
 			}
 			else if( endDir == Direction::Down )		// Up -> Down
 			{
-				if( beginPos.x != endPos.x )
+				if( beginPos.x != endPos.x || beginPos.y < endPos.y )
 				{
-					spx midY = (beginPos.y + endPos.y) / 2;
-
-					if( midY > beginPos.y - stumpLength && abs(beginPos.x -endPos.x) > stumpLength*2 )
+					if( ( beginPos.y - stubLength * 2 >= endPos.y ) || (beginPos.y >= endPos.y && abs(beginPos.x -endPos.x) < stubLength*2) )
 					{
-						CoordSPX beginStump = { beginPos.x, beginPos.y - stumpLength };
-						CoordSPX endStump = { endPos.x, endPos.y + stumpLength };
+						spx midY = (beginPos.y + endPos.y) / 2;
 
-						spx midX = (beginPos.x + endPos.x) / 2;
-
-						coordList[nCoords++] = beginStump;
-						coordList[nCoords++] = { midX, beginStump.y };
-						coordList[nCoords++] = { midX, endStump.y };
-						coordList[nCoords++] = endStump;
+						coordList[nCoords++] = { beginPos.x, midY };
+						coordList[nCoords++] = { endPos.x, midY };
 					}
 					else
 					{
-						coordList[nCoords++] = { beginPos.x, midY };
-						coordList[nCoords++] = { endPos.x, midY };
+						CoordSPX beginStub = { beginPos.x, beginPos.y - stubLength };
+						CoordSPX endStub = { endPos.x, endPos.y + stubLength };
+
+						spx midX = (beginPos.x + endPos.x) / 2;
+
+						coordList[nCoords++] = beginStub;
+						coordList[nCoords++] = { midX, beginStub.y };
+						coordList[nCoords++] = { midX, endStub.y };
+						coordList[nCoords++] = endStub;
 					}
 				}
 			}
 			else										// Up -> Left
 			{
-				if( endPos.x > beginPos.x - stumpLength )		// Line up and then to the right
+				if( endPos.x - stubLength > beginPos.x || (endPos.x > beginPos.x && abs(beginPos.y -endPos.y) < stubLength*2) )		// Line up and then to the right
 				{
-					if( endPos.y < beginPos.y - stumpLength && (endPos.x - beginPos.x) > stumpLength*2 )
+					if( endPos.y <= beginPos.y - stubLength )
+						coordList[nCoords++] = { beginPos.x, endPos.y };
+					else
 					{
-						CoordSPX beginStump = { beginPos.x, beginPos.y - stumpLength };
+						CoordSPX beginStub = { beginPos.x, beginPos.y - stubLength };
 
-						spx midX = endPos.x - beginPos.x;
+						spx midX = (endPos.x + beginPos.x)/2;
 
-						coordList[nCoords++] = beginStump;
-						coordList[nCoords++] = { midX, beginStump.y };
+						coordList[nCoords++] = beginStub;
+						coordList[nCoords++] = { midX, beginStub.y };
 						coordList[nCoords++] = { midX, endPos.y };
 					}
-					else
-						coordList[nCoords++] = { beginPos.x, endPos.y };
 				}
 				else							// Line up and then to the left
 				{
+					CoordSPX beginStub = { beginPos.x, beginPos.y - stubLength };
+					CoordSPX endStub = { endPos.x - stubLength, endPos.y };
 
+					if( beginStub.y  > endPos.y )
+						beginStub.y = (endPos.y + beginPos.y)/2;	// Split in middle instead.
+
+					coordList[nCoords++] = beginStub;
+					coordList[nCoords++] = { endStub.x, beginStub.y };
+					coordList[nCoords++] = endStub;
 				}
-
 			}
 
 		}
@@ -472,36 +521,64 @@ namespace wg
 		{
 			if( endDir == Direction::Right )			// Right -> Right
 			{
-				spx xPos = std::min( beginPos.x, endPos.x ) + stumpLength;
+				spx xPos = std::max( beginPos.x, endPos.x ) + stubLength;
 
 				coordList[nCoords++] = { xPos, beginPos.y };
 				coordList[nCoords++] = { xPos, endPos.y };
 			}
 			else if( endDir == Direction::Down )		// Right -> Down
 			{
+				if( endPos.y + stubLength < beginPos.y || (endPos.y < beginPos.y && abs(beginPos.x -endPos.x) < stubLength*2) )
+				{
+					if( endPos.x >= beginPos.x + stubLength || (endPos.x > beginPos.x && (beginPos.y < endPos.y + stubLength*2)) )
+						coordList[nCoords++] = { endPos.x, beginPos.y };
+					else
+					{
+						CoordSPX beginStub = { beginPos.x + stubLength, beginPos.y };
+
+						spx midY = (endPos.y + beginPos.y)/2;
+
+						coordList[nCoords++] = beginStub;
+						coordList[nCoords++] = { beginStub.x, midY };
+						coordList[nCoords++] = { endPos.x, midY };
+					}
+				}
+				else
+				{
+					CoordSPX beginStub = { beginPos.x + stubLength, beginPos.y };
+					CoordSPX endStub = { endPos.x, endPos.y + stubLength };
+
+					if( beginStub.x  < endPos.x )
+						beginStub.x = (endPos.x + beginPos.x)/2;	// Split in middle instead.
+
+					coordList[nCoords++] = beginStub;
+					coordList[nCoords++] = { beginStub.x, endStub.y };
+					coordList[nCoords++] = endStub;
+				}
+
 			}
 			else										// Right -> Left
 			{
-				if( beginPos.y != endPos.y )
+				if( beginPos.y != endPos.y || beginPos.x > endPos.x )
 				{
-					spx midX = (beginPos.x + endPos.x) / 2;
-
-					if( midX > beginPos.x + stumpLength && abs(beginPos.y -endPos.y) > stumpLength*2 )
+					if( ( beginPos.x + stubLength * 2 <= endPos.x ) || (beginPos.x <= endPos.x && abs(beginPos.y -endPos.y) < stubLength*2) )
 					{
-						CoordSPX beginStump = { beginPos.x + stumpLength, beginPos.y };
-						CoordSPX endStump = { endPos.x - stumpLength, endPos.y };
+						spx midX = (beginPos.x + endPos.x) / 2;
 
-						spx midY = (beginPos.y + endPos.y) / 2;
-
-						coordList[nCoords++] = beginStump;
-						coordList[nCoords++] = { beginStump.x, midY };
-						coordList[nCoords++] = { endStump.x, midY };
-						coordList[nCoords++] = endStump;
+						coordList[nCoords++] = { midX, beginPos.y };
+						coordList[nCoords++] = { midX, endPos.y };
 					}
 					else
 					{
-						coordList[nCoords++] = { midX, beginPos.y };
-						coordList[nCoords++] = { midX, endPos.y };
+						CoordSPX beginStub = { beginPos.x + stubLength, beginPos.y };
+						CoordSPX endStub = { endPos.x - stubLength, endPos.y };
+
+						spx midY = (beginPos.y + endPos.y) / 2;
+
+						coordList[nCoords++] = beginStub;
+						coordList[nCoords++] = { beginStub.x, midY };
+						coordList[nCoords++] = { endStub.x, midY };
+						coordList[nCoords++] = endStub;
 					}
 				}
 
@@ -512,20 +589,47 @@ namespace wg
 		{
 			if( endDir == Direction::Down )			// Down -> Down
 			{
-				spx yPos = std::min( beginPos.y, endPos.y ) + stumpLength;
+				spx yPos = std::max( beginPos.y, endPos.y ) + stubLength;
 
 				coordList[nCoords++] = { beginPos.x, yPos };
 				coordList[nCoords++] = { endPos.x, yPos };
 			}
 			else										// Down -> Left
 			{
+				if( endPos.x - stubLength > beginPos.x || (endPos.x > beginPos.x && abs(beginPos.y - endPos.y) < stubLength*2) )		// Line down and then to the right
+				{
+					if( endPos.y >= beginPos.y + stubLength || (endPos.y >= beginPos.y && endPos.x < beginPos.x + stubLength*2)  )
+						coordList[nCoords++] = { beginPos.x, endPos.y };
+					else
+					{
+						CoordSPX beginStub = { beginPos.x, beginPos.y + stubLength };
+
+						spx midX = (endPos.x + beginPos.x)/2;
+
+						coordList[nCoords++] = beginStub;
+						coordList[nCoords++] = { midX, beginStub.y };
+						coordList[nCoords++] = { midX, endPos.y };
+					}
+				}
+				else							// Line down and then to the left
+				{
+					CoordSPX beginStub = { beginPos.x, beginPos.y + stubLength };
+					CoordSPX endStub = { endPos.x - stubLength, endPos.y };
+
+					if( beginStub.y < endPos.y )
+						beginStub.y = (endPos.y + beginPos.y)/2;	// Split in middle instead.
+
+					coordList[nCoords++] = beginStub;
+					coordList[nCoords++] = { endStub.x, beginStub.y };
+					coordList[nCoords++] = endStub;
+				}
 
 			}
 
 		}
 		else											// Left -> Left
 		{
-			spx xPos = std::min( beginPos.x, endPos.x ) - stumpLength;
+			spx xPos = std::min( beginPos.x, endPos.x ) - stubLength;
 
 			coordList[nCoords++] = { xPos, beginPos.y };
 			coordList[nCoords++] = { xPos, endPos.y };
