@@ -161,7 +161,6 @@ namespace wg
 
 	enum class Direction : uint8_t	//. autoExtras
 	{
-		Undefined,
 		Up,
 		Right,
 		Down,
