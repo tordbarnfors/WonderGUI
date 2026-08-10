@@ -1,7 +1,6 @@
 
 #include <cstdlib>
 #include <stdio.h>
-//#include <unistd.h>
 
 #ifdef WIN32
 #	include <SDL.h>
@@ -10,6 +9,8 @@
 #elif __APPLE__
 #	include <SDL2/SDL.h>
 #	include <SDL2_image/SDL_image.h>
+#	include <dlfcn.h>
+#	include <unistd.h>
 #else
 #	include <SDL2/SDL.h>
 #	include <SDL2/SDL_image.h>
@@ -192,7 +193,9 @@ void textStyleTest();
 int main(int argc, char** argv)
 {
 
-//	sleep(1);
+#ifdef __APPLE__
+	sleep(1);
+#endif
 
 /*	Base::init(nullptr);
 	unitTestMemHeap();
@@ -5033,17 +5036,46 @@ bool nodePanelTest(ComponentPtr<DynamicSlot> pEntry)
 
 	auto pNodeSkin = BoxSkin::create({ .color = Color::LightGray, .outlineColor = Color::Black });
 
+	Widget_p	nodes[10][2];
+
+	Placement	wirePlacements[10][2] = {
+
+		Placement::North, Placement::North,				// OK
+		Placement::North, Placement::East,				// OK
+		Placement::North, Placement::South,				// OK
+		Placement::North, Placement::West,				// OK
+		Placement::East,  Placement::East,				// OK
+		Placement::East,  Placement::South,				// OK
+		Placement::East,  Placement::West,				// OK
+		Placement::South,  Placement::South,			// OK
+		Placement::South,  Placement::West,				// OK
+		Placement::West,  Placement::West				// OK
+	};
+
+	for( int i = 1 ; i < 2; i++ )
+	{
+		nodes[i][0] = Filler::create({ .defaultSize = {50,50}, .skin = pNodeSkin });
+		nodes[i][1] = Filler::create({ .defaultSize = {50,50}, .skin = pNodeSkin });
+
+		pNodePanel->slots.pushBack(nodes[i][0], { .center = {100,60}, .nodeId = i*2+1 });
+		pNodePanel->slots.pushBack(nodes[i][1], { .center = {100,60*2}, .nodeId = i*2+2 });
+
+		pNodeWires->addWire(i*2+1, wirePlacements[i][0], i*2+2, wirePlacements[i][1] );
+	}
+
+/*
+
 	auto pNode1 = Filler::create({ .defaultSize = {50,50}, .skin = pNodeSkin });
 	auto pNode2 = Filler::create({ .defaultSize = {50,50}, .skin = pNodeSkin });
 	auto pNode3 = Filler::create({ .defaultSize = {50,50}, .skin = pNodeSkin });
-
+*/
 //	pNodePanel->slots.pushBack(pNode1, { .center = {100,60} });
 //	pNodePanel->slots.pushBack(pNode2, { .center = {100,60*2} });
 //	pNodePanel->slots.pushBack(pNode3, { .center = {100,60*3} });
 
 
-	pNodeWires->addWire(1, Placement::South, 2, Placement::North );
-	pNodeWires->addWire(2, Placement::South, 3, Placement::North );
+//	pNodeWires->addWire(1, Placement::South, 2, Placement::North );
+//	pNodeWires->addWire(2, Placement::South, 3, Placement::North );
 /*
 	pNodePanel->setNodePosModifier([](const NodePanel * pPanel, NodePanel::NodeVector::const_iterator it, Coord coord){
 
@@ -5064,7 +5096,7 @@ bool nodePanelTest(ComponentPtr<DynamicSlot> pEntry)
 		return coord;
 	} );
 */
-
+/*
 	pNodePanel->setNodePosModifier([](const NodePanel * pPanel, NodePanel::NodeVector::const_iterator it, Coord center){
 
 		Rect rect = it->geo();
@@ -5087,19 +5119,19 @@ bool nodePanelTest(ComponentPtr<DynamicSlot> pEntry)
 
 		return center;
 	} );
+*/
 
-
-	pBaseLayer->slots.pushBack(pNodePanel, { .pos = {10,10}, .size = {300,300} });
-	pBaseLayer->slots.pushBack(pNodeWires, { .pos = {10,10}, .size = {300,300} });
+	pBaseLayer->slots.pushBack(pNodePanel, { .pos = {10,10}, .size = {900,600} });
+	pBaseLayer->slots.pushBack(pNodeWires, { .pos = {10,10}, .size = {900,600} });
 
 
 
 	*pEntry = pBaseLayer;
-
+/*
 	pNodePanel->slots.pushBack(pNode1, { .centerNormalized = {0.5,0.0} });
 	pNodePanel->slots.pushBack(pNode2, { .centerNormalized = {0.5,0.5} });
 	pNodePanel->slots.pushBack(pNode3, { .centerNormalized = {1.0,1.0} });
-
+*/
 	return true;
 }
 
