@@ -400,7 +400,8 @@ namespace wg
 				area.growToContain(coordList[i]);
 		}
 
-		area += BorderSPX( m_renderMargin );
+		area = alignUp(area += BorderSPX( m_renderMargin ));
+
 		_requestRender(area);
  	}
 

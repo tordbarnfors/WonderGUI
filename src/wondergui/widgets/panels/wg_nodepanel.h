@@ -222,6 +222,8 @@ namespace wg
 			m_nodeConstraint	= bp.nodeConstraint;
 			m_defaultSize		= bp.defaultSize;
 			m_nodePosModifier	= bp.nodePosModifier;
+
+			m_size				= Util::ptsToSpx(m_defaultSize,64);
 		}
 
 		~NodePanel();

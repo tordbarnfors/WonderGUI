@@ -433,7 +433,7 @@ namespace wg
 			pos.x -= size.w/2;
 			pos.y -= size.h/2;
 
-			align(pos);
+			pos = align(pos);
 
 			// Constrain to our content rect
 
@@ -574,7 +574,7 @@ namespace wg
 		newPos.x -= sizeSPX.w/2;
 		newPos.y -= sizeSPX.h/2;
 
-		align(newPos);
+		newPos = align(newPos);
 
 		// Constrain to our content rect
 
