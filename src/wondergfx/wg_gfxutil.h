@@ -321,8 +321,10 @@ namespace wg
 			return out;
 		}
 
-
-
+		inline bool isAligned(const RectSPX& rect)
+		{
+			return ( ((rect.x | rect.y | rect.w | rect.h) & 63) == 0 );
+		}
 
 		double	squareRoot(double a);
 		double	powerOfTen(int num);

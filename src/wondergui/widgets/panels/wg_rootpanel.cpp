@@ -766,6 +766,8 @@ namespace wg
 
 	void RootPanel::_childRequestRender(StaticSlot* pSlot, const RectSPX& rect)
 	{
+		assert( isAligned(rect) );
+
 		if (m_bVisible)
 			addDirtyPatch(rect + m_geo.pos());
 	}
