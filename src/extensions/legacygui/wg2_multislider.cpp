@@ -1341,7 +1341,7 @@ void WgMultiSlider::_onEvent(const WgEvent::Event * pEvent, WgEventHandler * pHa
 		case WG_EVENT_MOUSEBUTTON_DOUBLE_CLICK:
 		case WG_EVENT_MOUSEBUTTON_REPEAT:
 		{
-			const WgEvent::MouseButtonDrag * pEv = static_cast<const WgEvent::MouseButtonDrag*>(pEvent);
+			const WgEvent::MouseButtonEvent * pEv = static_cast<const WgEvent::MouseButtonEvent*>(pEvent);
 			if( m_ignoredPresses[pEv->Button()] == true )
 				WgWidget::_onEvent(pEvent, pHandler);
 
