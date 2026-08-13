@@ -98,6 +98,7 @@ namespace wg
 			m_displayFloor = floor;
 		}
 
+		_requestRender();				// We need to re-render whole widget, not only chart area since labels might be outside.
 		_fullRefreshOfChart();
 		_repositionAllLabels();
 	}
@@ -136,6 +137,7 @@ namespace wg
 				m_displayCeiling = m_pRangeTransition->snapshot(timestamp, m_startDisplayCeiling, m_endDisplayCeiling);
 			}
 
+			_requestRender();				// We need to re-render whole widget, not only chart area since labels might be outside.
 			_fullRefreshOfChart();
 			_repositionAllLabels();
 		}
