@@ -64,7 +64,7 @@ namespace wg
 
 	protected:
 		StateSkin() { m_bIgnoresState = false; }
-		template<class BP> 
+		template<class BP>
 		StateSkin(const BP& bp) : Skin(bp)
 		{
 			m_bIgnoresState = false;
@@ -86,10 +86,10 @@ namespace wg
 		// Mask and shift values to apply to stateIndex in order to make m_pContentShiftIndexTab
 		// shorter when bits least or most significant bits of index can be ignored.
 
-		uint8_t			m_contentShiftIndexMask;		
-		uint8_t			m_contentShiftIndexShift;
+		uint8_t			m_contentShiftIndexMask = 0;
+		uint8_t			m_contentShiftIndexShift = 0;
 
-		// 
+		//
 
 		uint8_t*		m_pContentShiftIndexTab;		// Table with index values into m_pContentShiftTable for each mode (72) or less.
 		Coord*			m_pContentShiftTable;			// Contains content shift values used.

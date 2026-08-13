@@ -232,7 +232,7 @@ void WgCheckBox::_onEvent( const WgEvent::Event * pEvent, WgEventHandler * pHand
 
 		case WG_EVENT_MOUSEBUTTON_RELEASE:
 		{
-			int button = static_cast<const WgEvent::MouseButtonPress*>(pEvent)->Button();
+			int button = static_cast<const WgEvent::MouseButtonEvent*>(pEvent)->Button();
 			if( button == 1 )
 			{
 				if( m_bPressed )
