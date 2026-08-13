@@ -133,12 +133,13 @@ void MetalEdgemap::_samplesUpdated(int edgeBegin, int edgeEnd, int sampleBegin, 
 	int edgeStripPitch = m_nbSegments - 1;
 
 	const spx* pEdges = m_pSamples + edgeStripPitch * columnBegin;
+	int outColumnSkip = ((m_nbSegments - 1) - (edgeEnd - edgeBegin)) * 4;
 
-	auto pOut = m_pBuffer + columnBegin * edgeStripPitch * 4;
+	auto pOut = m_pBuffer + columnBegin * edgeStripPitch * 4 + edgeBegin * 4;
 
 	for (int i = 0; i < nPixelColumns; i++)
 	{
-		for (int j = 0; j < m_nbSegments - 1; j++)
+		for (int j = edgeBegin; j < edgeEnd; j++)
 		{
 			int edgeIn = pEdges[j];
 			int edgeOut = pEdges[edgeStripPitch + j];
@@ -175,6 +176,7 @@ void MetalEdgemap::_samplesUpdated(int edgeBegin, int edgeEnd, int sampleBegin, 
 		}
 
 		pEdges += edgeStripPitch;
+		pOut += outColumnSkip;
 	}
 }
 

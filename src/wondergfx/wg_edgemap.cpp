@@ -24,6 +24,7 @@
 
 #include <cstring>
 #include <climits>
+#include <algorithm>
 
 namespace wg
 {
@@ -130,6 +131,8 @@ namespace wg
 
 		m_pSamples = (spx*) pDest;
 		pDest += sampleArraySize;
+
+		std::fill(m_pSamples, (spx*) pDest, bp.size.h*64 );		// All edges start right below the map, making first segement fill the area.
 
 		// Fill in colorstrips
 
