@@ -50,38 +50,14 @@ namespace wg
 
 		int scale = pHolder->_scale();
 
-		CoordSPX posSPX = ptsToSpx(pos, scale) + pHolder->m_skin.contentOfs(pHolder->m_scale, pHolder->m_state);
-		pHolder->_updateNodeGeo(this,posSPX,true);
+		CoordSPX posSPX;
+
+		pHolder->_updateNodeGeo(this,pos,true);
+
+		if( pHolder->m_bNormalized )
+			m_center = Rect(0,0,1,1).limit(pos);
 
 		return m_center;
-	}
-
-	//____ NodePanelSlot::setCenterNormalized() __________________________________
-
-	CoordF NodePanelSlot::setCenterNormalized(CoordF pos)
-	{
-		NodePanel * pHolder = static_cast<NodePanel*>(_holder());
-
-		int scale = pHolder->_scale();
-		RectSPX rect = pHolder->_contentRect();
-
-
-		CoordSPX posSPX = {spx(rect.x + rect.w * pos.x), spx(rect.y + rect.h * pos.y) };
-		pHolder->_updateNodeGeo(this,posSPX,true);
-
-
-		Size size = spxToPts(rect.size(), scale);
-		return { m_center.x / float(size.w), m_center.y / float(size.h) };
-	}
-
-	//____ NodePanelSlot::centerNormalized() _____________________________________
-
-	CoordF NodePanelSlot::centerNormalized() const
-	{
-		auto pHolder = static_cast<const NodePanel*>(_holder());
-
-		Size size = spxToPts(pHolder->m_size, pHolder->m_scale);
-		return { m_center.x / float(size.w), m_center.y / float(size.h) };
 	}
 
 	//____ NodePanelSlot::_setBlueprint()  _______________________________________
@@ -91,19 +67,26 @@ namespace wg
 		m_bVisible = bp.visible;
 		m_nodeId = bp.nodeId;
 
-		if( bp.centerNormalized.x >= 0 && bp.centerNormalized.y >= 0 )
-		{
-			auto pNodePanel = static_cast<NodePanel*>(m_pHolder->_container());
-
-			SizeSPX sizeSPX = pNodePanel->_contentRect().size();
-			Size size = spxToPts(sizeSPX, pNodePanel->m_scale);
-
-			m_center = { bp.centerNormalized.x * size.w, bp.centerNormalized.y * size.h };
-		}
-		else
-			m_center = bp.center;
+		m_center = bp.center;
 
 		return true;
+	}
+
+	//____ Node::geo() ___________________________________________________________
+
+	Rect NodePanel::Node::geo() const
+	{
+		auto pSlot = (NodePanelSlot*) m_pWidget->_slot();
+
+		auto pParent = static_cast<NodePanel *>(pSlot->m_pHolder);
+
+		RectSPX contentRect = pParent->_contentRect();
+		RectSPX geo = pSlot->_geo() - contentRect.pos();
+
+		if( pParent->m_bNormalized )
+			return Rect( float(geo.x) / contentRect.w, float(geo.y) / contentRect.h, float(geo.w) / contentRect.w, float(geo.h) / contentRect.h );
+		else
+			return spxToPts( geo, pParent->m_scale );
 	}
 
 	//____ NodeVector::find() ____________________________________________________
@@ -295,14 +278,22 @@ namespace wg
 					auto pSlot = static_cast<NodePanelSlot*>(m_pDraggedChild->_slot());
 
 					auto pMsg = static_cast<MouseDragMsg*>(_pMsg);
-					Coord newPos = m_draggedChildStartPos + spxToPts(pMsg->_draggedTotal(), m_scale);
+					Coord newPos;
+
+					if( m_bNormalized )
+					{
+						CoordSPX draggedSPX = pMsg->_draggedTotal();
+
+						Coord draggedNormalized = { draggedSPX.x / float(m_size.w), draggedSPX.y / float(m_size.h) };
+						newPos = Rect(0,0,1,1).limit(m_draggedChildStartPos + draggedNormalized);
+					}
+					else
+						newPos = m_draggedChildStartPos + spxToPts(pMsg->_draggedTotal(), m_scale);
 
 					if( m_nodePosModifier )
 						newPos = m_nodePosModifier(this, nodes.find(pSlot->nodeId()), newPos );
 
-					CoordSPX newPosSPX = ptsToSpx(newPos,m_scale) + _contentRect().pos();
-
-					_updateNodeGeo(pSlot, newPosSPX, true );
+					_updateNodeGeo(pSlot, newPos, true );
 
 					pMsg->swallow();
 				}
@@ -342,7 +333,7 @@ namespace wg
 			if( bScaleChanged || pChild->_size() != newSize )
 				pChild->_resize(newSize, scale);
 
-			_updateNodeGeo( &slot, ptsToSpx( slot.m_center, m_scale) + _contentRect().pos(), false );
+			_updateNodeGeo( &slot, slot.m_center, false );
 		}
 
 		if( m_size != oldSize )
@@ -379,7 +370,7 @@ namespace wg
 		if( pChild->_size() != newSize )
 			pChild->_resize(newSize, m_scale);
 
-		_updateNodeGeo(pSlot, ptsToSpx( pSlot->m_center, m_scale) + _contentRect().pos(), true );
+		_updateNodeGeo(pSlot, pSlot->m_center, true );
 	}
 
 	//____ _releaseChild() ____________________________________________________
@@ -409,7 +400,7 @@ namespace wg
 		if( pOldChild )
 			_requestRender( slot.m_geo + pOldChild->_overflow() );
 
-		_updateNodeGeo(&slot, ptsToSpx( slot.m_center, m_scale) + _contentRect().pos(), false);
+		_updateNodeGeo(&slot, slot.m_center, false);
 
 		_requestRender( slot.m_geo + pNewChild->_overflow() );
 	}
@@ -427,7 +418,8 @@ namespace wg
 		{
 			// Add slot, resize widget and request render
 
-			CoordSPX pos = ptsToSpx(pSlot->m_center, m_scale) + contentRect.pos();
+			CoordSPX pos = m_bNormalized ? CoordSPX{ spx(pSlot->m_center.x * contentRect.w), spx(pSlot->m_center.y * contentRect.h) } : ptsToSpx( pSlot->m_center, m_scale);
+			pos += contentRect.pos();
 			SizeSPX size = pSlot->_widget()->_defaultSize(m_scale);
 
 			pos.x -= size.w/2;
@@ -444,7 +436,8 @@ namespace wg
 
 			pSlot->_widget()->_resize(size, m_scale);
 
-			pSlot->m_center = spxToPts( pSlot->m_geo.center() - contentRect.pos(), m_scale );
+			if( !m_bNormalized )
+				pSlot->m_center = spxToPts( pSlot->m_geo.center() - contentRect.pos(), m_scale );
 
 			// Set NodeId
 
@@ -561,14 +554,15 @@ namespace wg
 
 	//____ _updateNodeGeo() _________________________________________________________
 
-	void NodePanel::_updateNodeGeo( NodePanelSlot * pSlot, CoordSPX center, bool bRequestRender )
+	void NodePanel::_updateNodeGeo( NodePanelSlot * pSlot, Coord center, bool bRequestRender )
 	{
 		RectSPX contentRect = _contentRect();
 		Widget * pChild = pSlot->_widget();
 
+		CoordSPX newPos = m_bNormalized ? CoordSPX{ spx(center.x * contentRect.w), spx(center.y * contentRect.h) } : ptsToSpx( center, m_scale);
 
-		CoordSPX newPos = center;
-		
+		newPos += contentRect.pos();
+
 		SizeSPX sizeSPX = pChild->_defaultSize(m_scale);
 
 		newPos.x -= sizeSPX.w/2;
@@ -602,7 +596,10 @@ namespace wg
 
 		pSlot->m_geo = newGeo;
 
-		pSlot->m_center = spxToPts(newGeo.center() - _contentRect().pos(), m_scale);
+		if( m_bNormalized )
+			pSlot->m_center = Rect(0,0,1,1).limit(center);
+		else
+			pSlot->m_center = spxToPts(newGeo.center() - _contentRect().pos(), m_scale);
 
 		// Notify observers
 

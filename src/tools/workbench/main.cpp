@@ -5026,7 +5026,10 @@ bool nodePanelTest(ComponentPtr<DynamicSlot> pEntry)
 	auto pBaseLayer = FlexPanel::create();
 	pBaseLayer->setSkin(ColorSkin::create(Color::PapayaWhip));
 
-	auto pNodePanel = NodePanel::create({ 	.nodeConstraint = NodePanel::NodeConstraint::Center,
+	*pEntry = pBaseLayer;
+
+
+	auto pNodePanel = NodePanel::create({ 	.nodeConstraint = NodePanel::NodeConstraint::Center, .normalized = false,
 											.skin = BoxSkin::create({ .color = Color::Transparent, .outlineColor = Color::Black, .padding = 4 })
 	});
 
@@ -5059,6 +5062,10 @@ bool nodePanelTest(ComponentPtr<DynamicSlot> pEntry)
 
 		pNodePanel->slots.pushBack(nodes[i][0], { .center = {100,60}, .nodeId = i*2+1 });
 		pNodePanel->slots.pushBack(nodes[i][1], { .center = {100,60*2}, .nodeId = i*2+2 });
+
+//		pNodePanel->slots.pushBack(nodes[i][0], { .center = {0.5f,0.4f}, .nodeId = i*2+1 });
+//		pNodePanel->slots.pushBack(nodes[i][1], { .center = {0.5f,0.6f}, .nodeId = i*2+2 });
+
 
 		pNodeWires->addWire(i*2+1, wirePlacements[i][0], i*2+2, wirePlacements[i][1] );
 	}
@@ -5125,13 +5132,8 @@ bool nodePanelTest(ComponentPtr<DynamicSlot> pEntry)
 	pBaseLayer->slots.pushBack(pNodeWires, { .pos = {10,10}, .size = {900,600} });
 
 
+//	*pEntry = pBaseLayer;
 
-	*pEntry = pBaseLayer;
-/*
-	pNodePanel->slots.pushBack(pNode1, { .centerNormalized = {0.5,0.0} });
-	pNodePanel->slots.pushBack(pNode2, { .centerNormalized = {0.5,0.5} });
-	pNodePanel->slots.pushBack(pNode3, { .centerNormalized = {1.0,1.0} });
-*/
 	return true;
 }
 

@@ -48,7 +48,6 @@ namespace wg
 		struct Blueprint
 		{
 			Coord	center;
-			CoordF	centerNormalized = { -1.f, -1.f };
 			int		nodeId = 0;
 			bool	visible = true;
 		};
@@ -64,10 +63,6 @@ namespace wg
 		Coord	setCenter(Coord pos);					// Note: center position is within parent contentRect, not canvas.
 		Coord	center() const { return m_center; };	// "-
 
-		CoordF	setCenterNormalized(CoordF pos);		// Note: center position is within parent contentRect, not canvas.
-		CoordF	centerNormalized() const;				// "-
-
-
 	protected:
 
 		NodePanelSlot(SlotHolder* pHolder) : PanelSlot(pHolder) {}
@@ -79,7 +74,6 @@ namespace wg
 
 		int 	m_nodeId;
 		Coord 	m_center;
-
 	};
 
 
@@ -109,10 +103,7 @@ namespace wg
 			Coord					setCenter(Coord pos) { return ((NodePanelSlot*) m_pWidget->_slot())->setCenter(pos); }
 			Coord					center() const { return ((NodePanelSlot*) m_pWidget->_slot())->center(); }
 
-			CoordF					setCenterNormalized(CoordF pos) { return ((NodePanelSlot*) m_pWidget->_slot())->setCenterNormalized(pos); }
-			CoordF					centerNormalized() const { return ((NodePanelSlot*) m_pWidget->_slot())->centerNormalized(); }
-
-			Rect					geo() const { auto pSlot = (NodePanelSlot*) m_pWidget->_slot(); Size sz = pSlot->size(); return { Rect(pSlot->center() - Coord(sz)/2), sz};  }
+			Rect					geo() const;
 
 			inline	DynamicSlotVector<NodePanelSlot>::iterator	slot() const { return (NodePanelSlot*) m_pWidget->_slot(); }
 
@@ -170,6 +161,7 @@ namespace wg
 			MaskOp			maskOp = MaskOp::Skip;
 			NodeConstraint	nodeConstraint = NodeConstraint::Bounds;
 			std::function<Coord(const NodePanel * pPanel, NodeVector::const_iterator nodeIt, Coord pos)> nodePosModifier;
+			bool			normalized = false;					// True = Node positioning go from 0.0 to 1.0.
 			bool			pickable = false;
 			uint8_t			pickCategory = 0;
 			bool			pickHandle = false;
@@ -222,13 +214,14 @@ namespace wg
 			m_nodeConstraint	= bp.nodeConstraint;
 			m_defaultSize		= bp.defaultSize;
 			m_nodePosModifier	= bp.nodePosModifier;
+			m_bNormalized		= bp.normalized;
 
 			m_size				= Util::ptsToSpx(m_defaultSize,64);
 		}
 
 		~NodePanel();
 
-		void		_updateNodeGeo( NodePanelSlot * pSlot, CoordSPX center, bool bRequestRender );
+		void		_updateNodeGeo( NodePanelSlot * pSlot, Coord center, bool bRequestRender );
 
 
 		// Overloaded from Widget
@@ -262,6 +255,7 @@ namespace wg
 
 		NodeConstraint	m_nodeConstraint = NodeConstraint::Bounds;
 
+		bool			m_bNormalized = false;
 
 		std::vector<Observer*>	m_observers;
 		std::function<Coord(const NodePanel * pPanel, NodeVector::const_iterator nodeIt, Coord pos)> m_nodePosModifier;
