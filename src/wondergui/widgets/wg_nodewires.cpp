@@ -175,6 +175,17 @@ namespace wg
 		_requestRender();
 	}
 
+	//____ setOrthogonal() _______________________________________________________
+
+	void NodeWires::setOrthogonal( bool ortogonal )
+	{
+		if( ortogonal != m_bOrthogonal )
+		{
+			m_bOrthogonal = ortogonal;
+			_requestRender();
+		}
+	}
+
 	//____ _refreshRenderMargin() ___________________________________________________
 
 	void NodeWires::_refreshRenderMargin()
