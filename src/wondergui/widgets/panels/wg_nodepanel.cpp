@@ -230,7 +230,7 @@ namespace wg
 			{
 				auto pMsg = static_cast<MousePressMsg*>(_pMsg);
 
-				if (pMsg->button() != MouseButton::Left)
+				if (pMsg->button() != m_dragButton)
 					break;
 
 				CoordSPX pointerPos = _toLocal( pMsg->pointerSpxPos() );
@@ -243,9 +243,17 @@ namespace wg
 						m_draggedChildStartPos = slot.m_center;
 						slots.moveToFront(&slot);
 
-						State s = slot._widget()->state();
+						if( m_pSelectedChild && m_pSelectedChild != m_pDraggedChild )
+						{
+							State s = m_pSelectedChild->state();
+							s.setSelekted(false);
+							m_pSelectedChild->_setState(s);
+						}
+
+						State s = m_pDraggedChild->state();
 						s.setSelekted(true);
-						slot._widget()->_setState(s);
+						m_pDraggedChild->_setState(s);
+						m_pSelectedChild = m_pDraggedChild;
 
 						pMsg->swallow();
 						break;
@@ -257,19 +265,21 @@ namespace wg
 			case MsgType::MouseRepeat:
 			{
 				auto pMsg = static_cast<MousePressMsg*>(_pMsg);
-				if ( m_pDraggedChild && pMsg->button() == MouseButton::Left)
+				if ( m_pDraggedChild && pMsg->button() == m_dragButton)
 					pMsg->swallow();
 				break;
 			}
 
 			case MsgType::MouseRelease:
-
-				if( m_pDraggedChild )
+			{
+				auto pMsg = static_cast<MouseReleaseMsg*>(_pMsg);
+				if( m_pDraggedChild && pMsg->button() == m_dragButton )
 				{
 					m_pDraggedChild = nullptr;
 					_pMsg->swallow();
 				}
 				break;
+			}
 
 			case MsgType::MouseDrag:
 			{
@@ -283,8 +293,9 @@ namespace wg
 					if( m_bNormalized )
 					{
 						CoordSPX draggedSPX = pMsg->_draggedTotal();
+						RectSPX contentRect = _contentRect();
 
-						Coord draggedNormalized = { draggedSPX.x / float(m_size.w), draggedSPX.y / float(m_size.h) };
+						Coord draggedNormalized = { draggedSPX.x / float(contentRect.w), draggedSPX.y / float(contentRect.h) };
 						newPos = Rect(0,0,1,1).limit(m_draggedChildStartPos + draggedNormalized);
 					}
 					else
@@ -377,13 +388,24 @@ namespace wg
 
 	void NodePanel::_releaseChild(StaticSlot * pSlot)
 	{
+		if( pSlot->_widget() == m_pDraggedChild )
+			m_pDraggedChild = nullptr;
+
+		if( pSlot->_widget() == m_pSelectedChild )
+		{
+			State s = m_pSelectedChild->state();
+			s.setSelekted(false);
+			m_pSelectedChild->_setState(s);
+			m_pSelectedChild = nullptr;
+		}
+
 		slots.erase(static_cast<NodePanelSlot*>(pSlot));
 	}
 
 	//____ _replaceChild() _____________________________________________________
 
 	void NodePanel::_replaceChild(StaticSlot * _pSlot, Widget * pNewChild)
-	{
+{
 		if( pNewChild == nullptr )
 		{
 			Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Slot in NodePanel must contain pointer to widget and not nullptr.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
@@ -398,7 +420,21 @@ namespace wg
 		slot._setWidget(pNewChild);
 
 		if( pOldChild )
+		{
 			_requestRender( slot.m_geo + pOldChild->_overflow() );
+
+			if( m_pDraggedChild == pOldChild )
+				m_pDraggedChild = nullptr;
+
+			if( m_pSelectedChild == pOldChild )
+			{
+				State s = m_pSelectedChild->state();
+				s.setSelekted(false);
+				m_pSelectedChild->_setState(s);
+				m_pSelectedChild = nullptr;
+			}
+
+		}
 
 		_updateNodeGeo(&slot, slot.m_center, false);
 
@@ -430,7 +466,7 @@ namespace wg
 			// Constrain to our content rect
 
 			RectSPX constrainer = m_nodeConstraint == NodeConstraint::Bounds ? contentRect
-													: align( contentRect + BorderSPX(size.w/2,size.h/2) );
+													: align( contentRect + BorderSPX(size.h/2, size.w/2) );
 
 			pSlot->m_geo = constrainer.limit(RectSPX(pos, size));
 
@@ -489,6 +525,19 @@ namespace wg
 		auto pSlot = static_cast<NodePanelSlot*>(_pSlot);
 		for (int i = 0; i < nb; i++)
 		{
+			// Check if we are dragging this or it is selected
+
+			if( pSlot->_widget() == m_pDraggedChild )
+				m_pDraggedChild = nullptr;
+
+			if( pSlot->_widget() == m_pSelectedChild )
+			{
+				State s = m_pSelectedChild->state();
+				s.setSelekted(false);
+				m_pSelectedChild->_setState(s);
+				m_pSelectedChild = nullptr;
+			}
+
 			// Clean up canvas
 
 			if( pSlot->m_bVisible )

@@ -154,6 +154,7 @@ namespace wg
 			Object_p		baggage;
 			Size			defaultSize = {256,256};
 			bool			disabled = false;
+			MouseButton		dragButton = MouseButton::Left;
 			bool			dropTarget = false;
 			Finalizer_p		finalizer = nullptr;
 			int				id = 0;
@@ -215,6 +216,7 @@ namespace wg
 			m_defaultSize		= bp.defaultSize;
 			m_nodePosModifier	= bp.nodePosModifier;
 			m_bNormalized		= bp.normalized;
+			m_dragButton		= bp.dragButton;
 
 			m_size				= Util::ptsToSpx(m_defaultSize,64);
 		}
@@ -250,12 +252,14 @@ namespace wg
 
 		Size		m_defaultSize = { 256, 256 };
 
+		Widget*		m_pSelectedChild = nullptr;
 		Widget*		m_pDraggedChild = nullptr;
 		Coord		m_draggedChildStartPos;
 
 		NodeConstraint	m_nodeConstraint = NodeConstraint::Bounds;
 
 		bool			m_bNormalized = false;
+		MouseButton		m_dragButton = MouseButton::Left;
 
 		std::vector<Observer*>	m_observers;
 		std::function<Coord(const NodePanel * pPanel, NodeVector::const_iterator nodeIt, Coord pos)> m_nodePosModifier;
