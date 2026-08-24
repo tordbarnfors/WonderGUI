@@ -81,7 +81,7 @@ namespace wg
 
 	//____ addWire() _____________________________________________________________
 
-	bool NodeWires::addWire( int fromNode, Placement fromPos, int toNode, Placement toPos )
+	bool NodeWires::addWire( int fromNode, Placement fromAnchor, int toNode, Placement toAnchor )
 	{
 		if( !m_pObserved )
 		{
@@ -105,7 +105,7 @@ namespace wg
 			return false;
 		}
 
-		m_wires.push_back({fromNode, fromPos, toNode, toPos, itFrom->isVisible() && itTo->isVisible(), CoordSPX(), CoordSPX() });
+		m_wires.push_back({fromNode, fromAnchor, toNode, toAnchor, itFrom->isVisible() && itTo->isVisible(), CoordSPX(), CoordSPX() });
 
 		_updateWirePositionDirection( m_wires.back(), &(*itFrom), &(*itTo) );
 
@@ -182,6 +182,44 @@ namespace wg
 		if( ortogonal != m_bOrthogonal )
 		{
 			m_bOrthogonal = ortogonal;
+			_requestRender();
+		}
+	}
+
+	//____ setDefaultAxis() ______________________________________________________
+
+	void NodeWires::setDefaultAxis( Axis axis )
+	{
+		if( axis != m_defaultAxis )
+		{
+			m_defaultAxis = axis;
+
+			for( auto& wire : m_wires )
+			{
+				auto itFrom = m_pObserved->nodes.find(wire.fromNode);
+				auto itTo = m_pObserved->nodes.find(wire.toNode);
+
+				_updateWirePositionDirection( wire, &(*itFrom), &(*itTo) );
+			}
+			_requestRender();
+		}
+	}
+
+	//____ setAnchorInset() ______________________________________________________
+
+	void NodeWires::setAnchorInset( const Border& inset )
+	{
+		if( inset != m_anchorInset )
+		{
+			m_anchorInset = inset;
+
+			for( auto& wire : m_wires )
+			{
+				auto itFrom = m_pObserved->nodes.find(wire.fromNode);
+				auto itTo = m_pObserved->nodes.find(wire.toNode);
+
+				_updateWirePositionDirection( wire, &(*itFrom), &(*itTo) );
+			}
 			_requestRender();
 		}
 	}
@@ -338,56 +376,106 @@ namespace wg
 
 	void NodeWires::_updateWirePositionDirection( Wire& wire, NodePanel::Node * pFromNode, NodePanel::Node * pToNode )
 	{
+		BorderSPX anchorInset = ptsToSpx( m_anchorInset, m_scale );
 
-		const auto& fromRect = pFromNode->slot()->_geo();
-		const auto& toRect = pToNode->slot()->_geo();
+		const auto& fromRect = pFromNode->slot()->_geo() - anchorInset;
+		const auto& toRect = pToNode->slot()->_geo() - anchorInset;
 
-		CoordSPX fromPos = Util::placementToOfs(wire.fromPlacement, fromRect);
-		CoordSPX toPos = Util::placementToOfs(wire.toPlacement, toRect);
+		CoordSPX fromPos = Util::placementToOfs(wire.fromAnchor, fromRect);
+		CoordSPX toPos = Util::placementToOfs(wire.toAnchor, toRect);
 
 		wire.fromPos = fromPos;
 		wire.toPos = toPos;
 
-		wire.fromDirection = _placementToDirection(wire.fromPlacement, wire.fromPos, wire.toPos);
-		wire.toDirection = _placementToDirection(wire.toPlacement, wire.toPos, wire.fromPos);
+		wire.fromDirection = _anchorToDirection(wire.fromAnchor, fromPos, toPos);
+		wire.toDirection = _anchorToDirection(wire.toAnchor, toPos, fromPos);
 	}
 
-	//____ _placementToDirection() _______________________________________________
+	//____ _anchorToDirection() _______________________________________________
 
-	Direction NodeWires::_placementToDirection( Placement placement, CoordSPX myPos, CoordSPX otherPos )
+	Direction NodeWires::_anchorToDirection( Placement anchor, CoordSPX myPos, CoordSPX otherPos )
 	{
-		switch( placement )
+		switch( anchor )
 		{
 			case Placement::Undefined:
 			case Placement::Center:
 			{
-				if( abs(myPos.x - otherPos.x) > abs(myPos.y - otherPos.y) )
-				{
-					if( myPos.x > otherPos.x )
-						return Direction::Left;
-					else
-						return Direction::Right;
-				}
-				else
-				{
-					if( myPos.y > otherPos.y )
-						return Direction::Up;
-					else
-						return Direction::Down;
-				}
+					Axis axis = m_defaultAxis;
+					if( axis == Axis::Undefined )
+					{
+						if( abs(myPos.x - otherPos.x) > abs(myPos.y - otherPos.y) )
+							axis = Axis::X;
+						else
+							axis = Axis::Y;
+					}
 
+					if( axis == Axis::X )
+						return myPos.x > otherPos.x ? Direction::Left : Direction::Right;
+					else
+						return myPos.y > otherPos.y ? Direction::Up : Direction::Down;
 			}
 
 			case Placement::NorthWest:
+			{
+				switch( m_defaultAxis )
+				{
+					case Axis::X:
+						return Direction::Left;
+					case Axis::Y:
+						return Direction::Up;
+					case Axis::Undefined:
+						return myPos.y > otherPos.y ? Direction::Up : Direction::Left;
+				}
+			}
+
 			case Placement::NorthEast:
+			{
+				switch( m_defaultAxis )
+				{
+					case Axis::X:
+						return Direction::Right;
+					case Axis::Y:
+						return Direction::Up;
+					case Axis::Undefined:
+						return myPos.y > otherPos.y ? Direction::Up : Direction::Right;
+				}
+			}
+
 			case Placement::North:
 				return Direction::Up;
+
 			case Placement::East:
 				return Direction::Right;
+
 			case Placement::SouthEast:
+			{
+				switch( m_defaultAxis )
+				{
+					case Axis::X:
+						return Direction::Right;
+					case Axis::Y:
+						return Direction::Down;
+					case Axis::Undefined:
+						return myPos.y > otherPos.y ? Direction::Down : Direction::Right;
+				}
+			}
+
 			case Placement::SouthWest:
+			{
+				switch( m_defaultAxis )
+				{
+					case Axis::X:
+						return Direction::Left;
+					case Axis::Y:
+						return Direction::Down;
+					case Axis::Undefined:
+						return myPos.y > otherPos.y ? Direction::Down : Direction::Left;
+				}
+			}
+
 			case Placement::South:
 				return Direction::Down;
+
 			case Placement::West:
 				return Direction::Left;
 		}

@@ -201,6 +201,9 @@ namespace wg
 		void			setNodeConstraint( NodeConstraint constraint );
 		NodeConstraint	nodeConstraint() const { return m_nodeConstraint; }
 
+		void			selectNode( int nodeId );
+		int				selectedNode() const { return m_pSelectedChild ? static_cast<NodePanelSlot*>(m_pSelectedChild->_slot())->m_nodeId : 0; }
+
 		//.____ Internal ______________________________________________________
 
 		SizeSPX			_defaultSize(int scale) const override;

@@ -172,6 +172,31 @@ namespace wg
 
 	}
 
+	//____ selectNode() __________________________________________________________
+
+	void NodePanel::selectNode( int nodeId )
+	{
+		if( m_pSelectedChild )
+		{
+			if( static_cast<NodePanelSlot*>(m_pSelectedChild->_slot())->m_nodeId == nodeId )
+				return;
+
+			auto state = m_pSelectedChild->state();
+			state.setSelekted(false);
+			m_pSelectedChild->_setState(state);
+		}
+
+		auto it = nodes.find(nodeId);
+		if( it != nodes.end() )
+		{
+			m_pSelectedChild = it->m_pWidget;
+
+			auto state = m_pSelectedChild->state();
+			state.setSelekted(true);
+			m_pSelectedChild->_setState(state);
+		}
+	}
+
 	//____ _addObserver() _________________________________________________________
 
 	bool NodePanel::_addObserver( Observer * pObserver )
@@ -390,14 +415,6 @@ namespace wg
 	{
 		if( pSlot->_widget() == m_pDraggedChild )
 			m_pDraggedChild = nullptr;
-
-		if( pSlot->_widget() == m_pSelectedChild )
-		{
-			State s = m_pSelectedChild->state();
-			s.setSelekted(false);
-			m_pSelectedChild->_setState(s);
-			m_pSelectedChild = nullptr;
-		}
 
 		slots.erase(static_cast<NodePanelSlot*>(pSlot));
 	}
@@ -622,7 +639,7 @@ namespace wg
 		// Constrain to our content rect
 
 		RectSPX constrainer = m_nodeConstraint == NodeConstraint::Bounds ? contentRect
-												: align( contentRect + BorderSPX(sizeSPX.w/2,sizeSPX.h/2) );
+												: align( contentRect + BorderSPX(sizeSPX.h/2,sizeSPX.w/2) );
 
 		RectSPX newGeo = constrainer.limit(RectSPX(newPos, sizeSPX));
 		RectSPX oldGeo = pSlot->m_geo;
