@@ -181,6 +181,7 @@ bool drawerPanelTest(ComponentPtr<DynamicSlot> pEntry);
 bool tintmapTest(ComponentPtr<DynamicSlot> pEntry);
 bool popupLayerFocusTest(ComponentPtr<DynamicSlot> pEntry);
 bool nodePanelTest(ComponentPtr<DynamicSlot> pEntry);
+bool nodePanelTest2(ComponentPtr<DynamicSlot> pEntry);
 bool elipsisWrapTextTest(ComponentPtr<DynamicSlot> pEntry);
 
 
@@ -844,7 +845,8 @@ int main(int argc, char** argv)
 		//	areaChartTestWithGlobalGradient(pSlot);
 		//	tintmapTest(pSlot);
 		//	popupLayerFocusTest(pSlot);
-			nodePanelTest(pSlot);
+		//	nodePanelTest(pSlot);
+			nodePanelTest2(pSlot);
 		//  elipsisWrapTextTest(pSlot);
 
 
@@ -5136,6 +5138,70 @@ bool nodePanelTest(ComponentPtr<DynamicSlot> pEntry)
 
 	return true;
 }
+
+bool nodePanelTest2(ComponentPtr<DynamicSlot> pEntry)
+{
+	auto pBaseLayer = FlexPanel::create();
+	pBaseLayer->setSkin(ColorSkin::create(Color::PapayaWhip));
+
+	*pEntry = pBaseLayer;
+
+
+	auto pNodePanel = NodePanel::create({ 	.nodeConstraint = NodePanel::NodeConstraint::Center, .normalized = false,
+											.skin = BoxSkin::create({ .color = Color::Transparent, .outlineColor = Color::Black, .padding = 4 })
+	});
+
+	auto pNodeWires = NodeWires::create({ .defaultAxis = Axis::X, .orthogonal = true, .skin = BoxSkin::create({ .color = Color::White, .outlineColor = Color::Black, .padding = 4 }), .wireStub = 0 });
+
+	pNodeWires->attachTo(pNodePanel);
+
+	pBaseLayer->slots.pushBack(pNodePanel, { .pos = {10,10}, .size = {900,600} });
+	pBaseLayer->slots.pushBack(pNodeWires, { .pos = {10,10}, .size = {900,600} });
+
+
+	auto pNodeSkin = BoxSkin::create({ .color = Color::LightGray, .outlineColor = Color::Black,
+			.states = { {State::Selekted, { .color = Color::White}},
+						{State::Hovered, { .outlineColor = Color::Red }}
+			},
+	});
+
+	for( int i = 0 ; i < 5; i++ )
+	{
+		auto pNode = Filler::create({ .defaultSize = {50,50}, .skin = pNodeSkin });
+
+		pNodePanel->slots.pushBack(pNode, { .center = {i * 100.f, 100}, .nodeId = i+1 });
+
+		if( i != 0 )
+			pNodeWires->addWire(i, Placement::Center, i+1, Placement::Center );
+	}
+
+
+
+	pNodePanel->setNodePosModifier([](NodePanel * pPanel, NodePanel::NodeVector::const_iterator it, Coord coord){
+
+		if( it != pPanel->nodes.begin() )
+		{
+			auto prev = it-1;
+			if( prev->center().x >= coord.x )
+				pPanel->swapNodes(prev->id(),it->id());
+		}
+
+		if( it != pPanel->nodes.end()-1 )
+		{
+			auto next = it+1;
+			if( next->center().x <= coord.x )
+				pPanel->swapNodes(next->id(),it->id());
+		}
+
+		return coord;
+	} );
+
+
+//	*pEntry = pBaseLayer;
+
+	return true;
+}
+
 
 
 bool elipsisWrapTextTest(ComponentPtr<DynamicSlot> pEntry)

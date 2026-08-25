@@ -22,6 +22,7 @@
 
 #include <wg_nodepanel.h>
 #include <wg_msg.h>
+#include <wg_inputhandler.h>
 
 #include <wg_dynamicslotvector.impl.h>
 #include <wg_panel.impl.h>
@@ -153,7 +154,7 @@ namespace wg
 
 	//____ setNodePosModifier() __________________________________________________
 
-	void NodePanel::setNodePosModifier( const std::function<Coord(const NodePanel * pPanel, NodeVector::const_iterator nodeIt, Coord pos)>& callback )
+	void NodePanel::setNodePosModifier( const std::function<Coord(NodePanel * pPanel, NodeVector::const_iterator nodeIt, Coord pos)>& callback )
 	{
 		m_nodePosModifier = callback;
 	}
@@ -196,6 +197,54 @@ namespace wg
 			m_pSelectedChild->_setState(state);
 		}
 	}
+
+	//____ swapNodes() ___________________________________________________________
+
+	void NodePanel::swapNodes( int nodeId1, int nodeId2 )
+	{
+		// Swap position of nodes along with their selected/dragged state.
+
+		Widget * pWidget1 = nodes.find(nodeId1)->m_pWidget;
+		Widget * pWidget2 = nodes.find(nodeId2)->m_pWidget;
+
+		// Swap selected state if one of them is the selected
+
+		if( m_pSelectedChild && (pWidget1 == m_pSelectedChild || pWidget2 == m_pSelectedChild ) )
+		{
+			State s = m_pSelectedChild->state();
+			s.setSelekted(false);
+			m_pSelectedChild->_setState(s);
+
+			m_pSelectedChild = pWidget1 == m_pSelectedChild ? pWidget2 : pWidget1;
+
+			s = m_pSelectedChild->state();
+			s.setSelekted(true);
+			m_pSelectedChild->_setState(s);
+
+
+			Base::inputHandler()->lockHovered(m_pSelectedChild);
+		}
+
+		// Swap positions
+
+		auto pSlot1 = static_cast<NodePanelSlot*>(pWidget1->_slot());
+		auto pSlot2 = static_cast<NodePanelSlot*>(pWidget2->_slot());
+
+		Coord center1 = pSlot1->m_center;
+		Coord center2 = pSlot2->m_center;
+
+		_updateNodeGeo(pSlot1, center2, true);
+		_updateNodeGeo(pSlot2, center1, true);
+
+		// Handle difference in visibility
+
+		if( pSlot1->m_bVisible != pSlot2->m_bVisible )
+		{
+			pSlot1->setVisible(!pSlot1->m_bVisible);
+			pSlot2->setVisible(!pSlot2->m_bVisible);
+		}
+	}
+
 
 	//____ _addObserver() _________________________________________________________
 
@@ -264,21 +313,24 @@ namespace wg
 				{
 					if( slot.isVisible() && slot._geo().contains(pointerPos) )
 					{
-						m_pDraggedChild = slot._widget();
+						auto pDraggedChild = slot._widget();
 						m_draggedChildStartPos = slot.m_center;
 						slots.moveToFront(&slot);
 
-						if( m_pSelectedChild && m_pSelectedChild != m_pDraggedChild )
+						if( m_pSelectedChild && m_pSelectedChild != pDraggedChild )
 						{
 							State s = m_pSelectedChild->state();
 							s.setSelekted(false);
 							m_pSelectedChild->_setState(s);
 						}
 
-						State s = m_pDraggedChild->state();
+						m_pSelectedChild = pDraggedChild;
+						State s = m_pSelectedChild->state();
 						s.setSelekted(true);
-						m_pDraggedChild->_setState(s);
-						m_pSelectedChild = m_pDraggedChild;
+						m_pSelectedChild->_setState(s);
+						m_bDragging = true;
+
+						Base::inputHandler()->lockHovered(m_pSelectedChild);
 
 						pMsg->swallow();
 						break;
@@ -290,7 +342,7 @@ namespace wg
 			case MsgType::MouseRepeat:
 			{
 				auto pMsg = static_cast<MousePressMsg*>(_pMsg);
-				if ( m_pDraggedChild && pMsg->button() == m_dragButton)
+				if ( m_bDragging && pMsg->button() == m_dragButton)
 					pMsg->swallow();
 				break;
 			}
@@ -298,9 +350,11 @@ namespace wg
 			case MsgType::MouseRelease:
 			{
 				auto pMsg = static_cast<MouseReleaseMsg*>(_pMsg);
-				if( m_pDraggedChild && pMsg->button() == m_dragButton )
+				if( m_bDragging && pMsg->button() == m_dragButton )
 				{
-					m_pDraggedChild = nullptr;
+					Base::inputHandler()->unlockHovered();
+
+					m_bDragging = false;
 					_pMsg->swallow();
 				}
 				break;
@@ -308,9 +362,9 @@ namespace wg
 
 			case MsgType::MouseDrag:
 			{
-				if (m_pDraggedChild)
+				if (m_bDragging)
 				{
-					auto pSlot = static_cast<NodePanelSlot*>(m_pDraggedChild->_slot());
+					auto pSlot = static_cast<NodePanelSlot*>(m_pSelectedChild->_slot());
 
 					auto pMsg = static_cast<MouseDragMsg*>(_pMsg);
 					Coord newPos;
@@ -327,8 +381,10 @@ namespace wg
 						newPos = m_draggedChildStartPos + spxToPts(pMsg->_draggedTotal(), m_scale);
 
 					if( m_nodePosModifier )
+					{
 						newPos = m_nodePosModifier(this, nodes.find(pSlot->nodeId()), newPos );
-
+						pSlot = static_cast<NodePanelSlot*>(m_pSelectedChild->_slot());				// m_pSelectedChild might have changed in callback.
+					}
 					_updateNodeGeo(pSlot, newPos, true );
 
 					pMsg->swallow();
@@ -413,8 +469,15 @@ namespace wg
 
 	void NodePanel::_releaseChild(StaticSlot * pSlot)
 	{
-		if( pSlot->_widget() == m_pDraggedChild )
-			m_pDraggedChild = nullptr;
+		if( pSlot->_widget() == m_pSelectedChild )
+		{
+			State s = m_pSelectedChild->state();
+			s.setSelekted(false);
+			m_pSelectedChild->_setState(s);
+
+			m_pSelectedChild = nullptr;
+			m_bDragging = false;
+		}
 
 		slots.erase(static_cast<NodePanelSlot*>(pSlot));
 	}
@@ -440,17 +503,18 @@ namespace wg
 		{
 			_requestRender( slot.m_geo + pOldChild->_overflow() );
 
-			if( m_pDraggedChild == pOldChild )
-				m_pDraggedChild = nullptr;
-
 			if( m_pSelectedChild == pOldChild )
 			{
 				State s = m_pSelectedChild->state();
 				s.setSelekted(false);
 				m_pSelectedChild->_setState(s);
-				m_pSelectedChild = nullptr;
-			}
 
+				m_pSelectedChild = pNewChild;
+
+				s = m_pSelectedChild->state();
+				s.setSelekted(true);
+				m_pSelectedChild->_setState(s);
+			}
 		}
 
 		_updateNodeGeo(&slot, slot.m_center, false);
@@ -544,15 +608,13 @@ namespace wg
 		{
 			// Check if we are dragging this or it is selected
 
-			if( pSlot->_widget() == m_pDraggedChild )
-				m_pDraggedChild = nullptr;
-
 			if( pSlot->_widget() == m_pSelectedChild )
 			{
 				State s = m_pSelectedChild->state();
 				s.setSelekted(false);
 				m_pSelectedChild->_setState(s);
 				m_pSelectedChild = nullptr;
+				m_bDragging = false;
 			}
 
 			// Clean up canvas
