@@ -96,14 +96,25 @@ namespace wg
 	const State State::Focused									= State(StateEnum::Focused);
 	const State State::Default									= State(StateEnum::Default);
 
+	//Weights table contains bitmasks for the different combined states in priority order
+	//
+	// Bit	State
+	// 0	Focused
+	// 1	Hoverd
+	// 2	Pressed
+	// 3	Selected
+	// 4	Checked
+	// 5	Flagged
+	// 6	Targeted
+	// 7	Disabled
 
 	const uint8_t State::s_weights[NbStates] = {
 		0, 32, 8, 40, 16, 48, 24, 56, 1, 33, 9, 41, 17, 49, 25, 57,
 		2, 34, 10, 42, 18, 50, 26, 58, 3, 35, 11, 43, 19, 51, 27, 59,
-		4, 36, 12, 44, 20, 52, 28, 60, 5, 37, 13, 45, 21, 53, 29, 61,
+		6, 38, 14, 46, 22, 54, 30, 62, 7, 39, 15, 47, 23, 55, 31, 63,
 		64, 96, 72, 104, 80, 112, 88, 120, 65, 97, 73, 105, 81, 113, 89, 121,
 		128, 160, 136, 168, 144, 176, 152, 184
-		};
+	};
 
 	//____ bestMatch() ________________________________________________________
 
