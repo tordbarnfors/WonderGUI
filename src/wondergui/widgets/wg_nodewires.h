@@ -38,7 +38,9 @@ public:
 
 	struct Blueprint
 	{
+		Border			anchorInset;
 		Object_p		baggage;
+		Axis			defaultAxis = Axis::Undefined;
 		bool			disabled = false;
 		bool			dropTarget = false;
 		Finalizer_p		finalizer = nullptr;
@@ -75,7 +77,7 @@ public:
 	bool	attachTo( NodePanel * pNodeSource );
 	void	detach();
 
-	bool	addWire( int fromNode, Placement fromPos, int toNode, Placement toPos );
+	bool	addWire( int fromNode, Placement fromAnchor, int toNode, Placement toAnchor );
 	bool	removeWire( int fromNode, int toNode );
 
 	bool	setWireColor( HiColor color );
@@ -90,6 +92,12 @@ public:
 	void	setOrthogonal( bool ortogonal );
 	bool	isOrthogonal() const { return m_bOrthogonal; }
 
+	void	setDefaultAxis( Axis axis );
+	Axis	defaultAxis() const { return m_defaultAxis; }
+
+	void	setAnchorInset( const Border& inset );
+	Border	anchorInset() const { return m_anchorInset; }
+
 private:
 	NodeWires() {};
 	template< class BP> NodeWires( const BP& bp ) : Widget(bp)
@@ -98,6 +106,9 @@ private:
 		m_wireStub = bp.wireStub;
 		m_wireThickness = bp.wireThickness;
 		m_bOrthogonal = bp.orthogonal;
+		m_defaultAxis = bp.defaultAxis;
+		m_anchorInset = bp.anchorInset;
+
 		_refreshRenderMargin();
 	}
 
@@ -108,9 +119,9 @@ private:
 		// These are set by application developer
 
 		int			fromNode;
-		Placement	fromPlacement;
+		Placement	fromAnchor;
 		int			toNode;
-		Placement	toPlacement;
+		Placement	toAnchor;
 		bool		bVisible;
 
 		// These are calculated
@@ -132,7 +143,7 @@ private:
 
 	int			_routeOrthogonal( CoordSPX beginPos, Direction beginDir, CoordSPX endPos, Direction endDir, CoordSPX route[6] );
 
-	Direction 	_placementToDirection( Placement placement, CoordSPX myPos, CoordSPX otherPos );
+	Direction 	_anchorToDirection( Placement anchor, CoordSPX myPos, CoordSPX otherPos );
 
 
 //	void 		_requestRenderAffectedWires( int nodeId );
@@ -158,6 +169,9 @@ private:
 	pts				m_wireThickness = 1;
 	bool			m_bOrthogonal = false;
 	pts				m_wireStub = 5;
+
+	Axis			m_defaultAxis = Axis::Undefined;
+	Border			m_anchorInset;
 };
 
 

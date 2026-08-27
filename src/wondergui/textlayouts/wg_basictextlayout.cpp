@@ -2176,7 +2176,7 @@ SizeSPX BasicTextLayout::_calcDefaultSize( const Char * pChars, const TextStyle 
 			case Placement::West:
 			case Placement::Center:
 			case Placement::East:
-				return (canvasHeight - pHeader->textSize.h) / 2;
+				return Util::align((canvasHeight - pHeader->textSize.h) / 2);
 			case Placement::SouthWest:
 			case Placement::South:
 			case Placement::SouthEast:

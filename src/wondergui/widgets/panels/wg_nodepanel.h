@@ -161,7 +161,7 @@ namespace wg
 			MarkPolicy		markPolicy = MarkPolicy::Undefined;
 			MaskOp			maskOp = MaskOp::Skip;
 			NodeConstraint	nodeConstraint = NodeConstraint::Bounds;
-			std::function<Coord(const NodePanel * pPanel, NodeVector::const_iterator nodeIt, Coord pos)> nodePosModifier;
+			std::function<Coord(NodePanel * pPanel, NodeVector::const_iterator nodeIt, Coord pos)> nodePosModifier;
 			bool			normalized = false;					// True = Node positioning go from 0.0 to 1.0.
 			bool			pickable = false;
 			uint8_t			pickCategory = 0;
@@ -196,10 +196,15 @@ namespace wg
 		//.____ Misc ________________________________________________________________
 
 		void			clearNodePosModifier();
-		void			setNodePosModifier( const std::function<Coord(const NodePanel * pPanel, NodeVector::const_iterator nodeIt, Coord pos)>& callback );
+		void			setNodePosModifier( const std::function<Coord(NodePanel * pPanel, NodeVector::const_iterator nodeIt, Coord pos)>& callback );
 
 		void			setNodeConstraint( NodeConstraint constraint );
 		NodeConstraint	nodeConstraint() const { return m_nodeConstraint; }
+
+		void			selectNode( int nodeId );
+		int				selectedNode() const { return m_pSelectedChild ? static_cast<NodePanelSlot*>(m_pSelectedChild->_slot())->m_nodeId : 0; }
+
+		void			swapNodes( int nodeId1, int nodeId2 );
 
 		//.____ Internal ______________________________________________________
 
@@ -253,7 +258,7 @@ namespace wg
 		Size		m_defaultSize = { 256, 256 };
 
 		Widget*		m_pSelectedChild = nullptr;
-		Widget*		m_pDraggedChild = nullptr;
+		bool		m_bDragging = false;
 		Coord		m_draggedChildStartPos;
 
 		NodeConstraint	m_nodeConstraint = NodeConstraint::Bounds;
@@ -262,7 +267,7 @@ namespace wg
 		MouseButton		m_dragButton = MouseButton::Left;
 
 		std::vector<Observer*>	m_observers;
-		std::function<Coord(const NodePanel * pPanel, NodeVector::const_iterator nodeIt, Coord pos)> m_nodePosModifier;
+		std::function<Coord(NodePanel * pPanel, NodeVector::const_iterator nodeIt, Coord pos)> m_nodePosModifier;
 	};
 }
 

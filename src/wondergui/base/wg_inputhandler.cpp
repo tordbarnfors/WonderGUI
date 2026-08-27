@@ -251,13 +251,6 @@ namespace wg
 		m_pMarkedRoot = pRoot;
 		m_pointerPosSPX = Util::ptsToSpx(pos, pRoot ? pRoot->scale() : 64);
 
-		Widget_p pNowMarked = 0;
-		Widget_p pWidgetTarget = 0;
-
-		if( pRoot && pRoot->geo().contains( pos ) )
-		{
-			pWidgetTarget = pRoot->findWidget( m_pointerPos, SearchMode::ActionTarget );
-		}
 
 		// Figure out which button of currently pressed has been pressed the longest.
 		// Mouse is only allowed to mark Widgets that were marked on press of that button.
@@ -269,11 +262,26 @@ namespace wg
 				button = i;
 		}
 
-		// We are only marking the Widget if no mouse button is pressed or the first pressed button
-		// was pressed on it.
+		Widget_p pNowMarked = 0;
 
-		if( button == 0 || pWidgetTarget.rawPtr() == m_latestPressWidgets[button].rawPtr() )
-			pNowMarked = pWidgetTarget;
+		if( m_pLockedHovered )
+			pNowMarked = m_pLockedHovered;
+		else
+		{
+			Widget_p pWidgetTarget = 0;
+
+			if( pRoot && pRoot->geo().contains( pos ) )
+			{
+				pWidgetTarget = pRoot->findWidget( m_pointerPos, SearchMode::ActionTarget );
+			}
+
+			// We are only marking the Widget if no mouse button is pressed or the first pressed button
+			// was pressed on it.
+
+			if( button == 0 || pWidgetTarget.rawPtr() == m_latestPressWidgets[button].rawPtr() )
+				pNowMarked = pWidgetTarget;
+		}
+
 
 		// Post Leave events for widgets no longer marked and
 		// post Enter events for new marked widgets.
@@ -687,6 +695,21 @@ namespace wg
 		if (m_bButtonPressed[(int)button] && m_latestPressWidgets[(int)button] == pFrom)
 			m_latestPressWidgets[(int)button] = pTo;
 	}
+
+	//____ lockHovered() _____________________________________________________
+
+	void InputHandler::lockHovered(Widget * pWidget)
+	{
+		m_pLockedHovered = pWidget;
+	}
+
+	//____ unlockHovered() _____________________________________________________
+
+	void InputHandler::unlockHovered()
+	{
+		m_pLockedHovered = nullptr;
+	}
+
 
 
 	//____ setKey() ________________________________________________________________

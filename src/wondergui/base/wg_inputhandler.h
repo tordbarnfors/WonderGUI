@@ -129,12 +129,15 @@ namespace wg
 
 		EditCmd		translateCommand( int native_keycode, ModKeys modKeys );
 
+		void		lockHovered(Widget * pWidget);
+		void		unlockHovered();
+
+
 		//.____ Internal ______________________________________________________
 
 		void		_yieldButtonEvents(MouseButton button, Widget* pFrom, Widget* pTo);
 
 		void 		_update(int64_t timestamp);
-
 
 	protected:
 		InputHandler();
@@ -176,6 +179,7 @@ namespace wg
 
 		std::vector<Widget_wp>	m_vEnteredWidgets;	// All widgets that pointer is considered to be inside (= markedWidget + its ancestors).
 
+		Widget_wp		m_pLockedHovered;
 
 		PointerStyle	m_pointerStyle;
 		ModKeys	m_modKeys;
