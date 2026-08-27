@@ -1194,10 +1194,10 @@ BorderSPX TablePanel::_calcOverflow()
 	BorderSPX 	overflow = m_skin.overflow(m_scale);
 
 	if (m_pRowSkins[0])
-		overflow.growToContain(m_pRowSkins[0]->_overflow(m_scale));
+		overflow.growToContain(m_pRowSkins[0]->_geoOverflow(m_scale));
 
 	if (m_pRowSkins[1])
-		overflow.growToContain(m_pRowSkins[1]->_overflow(m_scale));
+		overflow.growToContain(m_pRowSkins[1]->_geoOverflow(m_scale));
 
 	if (m_bChildrenWithOverflow)
 	{

@@ -58,9 +58,9 @@ namespace wg
 
 		m_skin.set(pNewSkin);
 
-		BorderSPX oldOverflow = pOldSkin ? pOldSkin->_overflow(m_scale) : BorderSPX();
-		BorderSPX newOverflow = pNewSkin ? pNewSkin->_overflow(m_scale) : BorderSPX();
-			
+		BorderSPX oldOverflow = pOldSkin ? pOldSkin->_geoOverflow(m_scale) : BorderSPX();
+		BorderSPX newOverflow = pNewSkin ? pNewSkin->_geoOverflow(m_scale) : BorderSPX();
+
 		if( oldOverflow != newOverflow )
 			_refreshOverflow();
 
