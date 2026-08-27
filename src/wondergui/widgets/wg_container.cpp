@@ -178,7 +178,10 @@ namespace wg
 
 	void Container::_childOverflowChanged( StaticSlot * pSlot, const BorderSPX& oldOverflow, const BorderSPX& newOverflow )
 	{
-		_overflowChanged( oldOverflow, newOverflow );
+		// This is a generic and slow way to handle this.
+		// Containers who can have many children should overload this method with an custom one.
+
+		_refreshOverflow();
 	}
 
 	//____ _childRequestFocus() ______________________________________________________
