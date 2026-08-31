@@ -143,7 +143,6 @@ namespace wg
 			Alpha_8
 		};
 
-
 		id<MTLRenderCommandEncoder> _setCanvas( MetalSurface * pCanvas, int width, int height );
 		void            _setBlendMode( id<MTLRenderCommandEncoder>, BlendMode mode);
 		void            _setMorphFactor( id<MTLRenderCommandEncoder>, float morphFactor);
@@ -155,7 +154,18 @@ namespace wg
 		void            _clearTintGradient( id<MTLRenderCommandEncoder> renderEncoder );
 
 		void    _initTables();
-		float    _scaleThickness(float thickeness, float slope);
+		float    _scaleThickness(float thickness, float slope);
+
+		PixelFormat	_canvasFormatToPixelFormat( DestFormat format );
+
+		id<MTLRenderPipelineState> _compileLinePipeline( BlendMode blendMode, DestFormat canvasFormat );
+		id<MTLRenderPipelineState> _compileFillPipeline( bool bTintmap, BlendMode blendMode, DestFormat canvasFormat );
+		id<MTLRenderPipelineState> _compileFillAAPipeline( bool bTintmap, BlendMode blendMode, DestFormat canvasFormat );
+		id<MTLRenderPipelineState> _compileBlurPipeline( bool bTintmap, BlendMode blendMode, DestFormat canvasFormat );
+		id<MTLRenderPipelineState> _compileBlitPipeline( BlitFragShader shader, bool bTintmap, BlendMode blendMode, DestFormat canvasFormat );
+		id<MTLRenderPipelineState> _compileSegmentsPipeline( int shaderIndex, bool bTintmap, BlendMode blendMode, DestFormat canvasFormat );
+
+
 		id<MTLRenderPipelineState> _compileRenderPipeline( NSString* label, NSString* vertexShader,
 									NSString* fragmentShader, BlendMode blendMode, PixelFormat destFormat );
 
@@ -305,19 +315,19 @@ namespace wg
 
 		id<MTLCommandBuffer>        m_metalCommandBuffer = nil;
 
-		std::atomic<int>            m_flushesInProgress;                // Number of buffer flushes to complete before metal is idle.
+		std::atomic<int>            m_flushesInProgress;                							// Number of buffer flushes to complete before metal is idle.
 
-		id<MTLRenderPipelineState>  m_linePipelines[BlendMode_size][5];    // [BlendMode][DestFormat]
-		id<MTLRenderPipelineState>  m_fillPipelines[2][BlendMode_size][5];       // [bTintmap][BlendMode][DestFormat]
-		id<MTLRenderPipelineState>  m_fillAAPipelines[2][BlendMode_size][5];     // [bTintmap][BlendMode][DestFormat]
+		id<MTLRenderPipelineState>  m_linePipelines[BlendMode_size][5] = {};    					// [BlendMode][DestFormat]
+		id<MTLRenderPipelineState>  m_fillPipelines[2][BlendMode_size][5] = {}; 					// [bTintmap][BlendMode][DestFormat]
+		id<MTLRenderPipelineState>  m_fillAAPipelines[2][BlendMode_size][5] = {}; 					// [bTintmap][BlendMode][DestFormat]
 
-		id<MTLRenderPipelineState>  m_blitPipelines[5][2][BlendMode_size][5];   // [BlitFragShader][bTintmap][BlendMode][DestFormat]
+		id<MTLRenderPipelineState>  m_blitPipelines[5][2][BlendMode_size][5] = {}; 					// [BlitFragShader][bTintmap][BlendMode][DestFormat]
 
-		id<MTLRenderPipelineState>  m_blurPipelines[2][BlendMode_size][5];   	// [bGradient][BlendMode][DestFormat]
+		id<MTLRenderPipelineState>  m_blurPipelines[2][BlendMode_size][5]  = {};   					// [bGradient][BlendMode][DestFormat]
 
-		id<MTLRenderPipelineState>  m_segmentsPipelines[c_maxSegments][2][BlendMode_size][5];   // [nbEdges][bTintmap][BlendMode][DestFormat]
+		id<MTLRenderPipelineState>  m_segmentsPipelines[c_maxSegments][2][BlendMode_size][5] = {};  // [nbEdges][bTintmap][BlendMode][DestFormat]
 
-		id<MTLSamplerState>         m_samplers[2][2][2];                        // [bMipMap][bInterpolate][bTile]
+		id<MTLSamplerState>         m_samplers[2][2][2] = {};                        					// [bMipMap][bInterpolate][bTile]
 
 		static const char shaders[];
 

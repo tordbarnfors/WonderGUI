@@ -110,198 +110,6 @@ MetalBackend::MetalBackend()
 	[error release];
 	[shaderString release];
 
-	// Create and init Line pipelines
-
-	for( int blendMode = 0 ; blendMode < BlendMode_size ; blendMode++ )
-	{
-		//            if( blendMode != int(BlendMode::Ignore) && blendMode != int(BlendMode::Undefined) )
-		{
-			m_linePipelines[blendMode][(int)DestFormat::BGRA8_linear] = _compileRenderPipeline( @"Line BGRA_8_linear Pipeline", @"lineVertexShader", @"lineFragmentShader", (BlendMode) blendMode, PixelFormat::BGRA_8_linear );
-			m_linePipelines[blendMode][(int)DestFormat::BGRX8_linear] = _compileRenderPipeline( @"Line BGRX_8_linear Pipeline", @"lineVertexShader", @"lineFragmentShader", (BlendMode) blendMode, PixelFormat::BGRX_8_linear );
-			m_linePipelines[blendMode][(int)DestFormat::BGRA8_sRGB] = _compileRenderPipeline( @"Line BGRA_8_sRGB Pipeline", @"lineVertexShader", @"lineFragmentShader", (BlendMode) blendMode, PixelFormat::BGRA_8_sRGB );
-			m_linePipelines[blendMode][(int)DestFormat::BGRX8_sRGB] = _compileRenderPipeline( @"Line BGRX_8_sRGB Pipeline", @"lineVertexShader", @"lineFragmentShader", (BlendMode) blendMode, PixelFormat::BGRX_8_sRGB );
-			m_linePipelines[blendMode][(int)DestFormat::Alpha_8] = _compileRenderPipeline( @"Line A_8 Pipeline", @"lineVertexShader", @"lineFragmentShader_A8", (BlendMode) blendMode, PixelFormat::Alpha_8 );
-		}
-	}
-
-	// Create and init Fill pipelines
-
-	for( int blendMode = 0 ; blendMode < BlendMode_size ; blendMode++ )
-	{
-		//            if( blendMode != int(BlendMode::Ignore) && blendMode != int(BlendMode::Undefined) )
-		{
-			m_fillPipelines[0][blendMode][(int)DestFormat::BGRA8_linear] = _compileRenderPipeline( @"Fill BGRA_8_linear Pipeline", @"fillVertexShader", @"fillFragmentShader", (BlendMode) blendMode, PixelFormat::BGRA_8_linear );
-			m_fillPipelines[0][blendMode][(int)DestFormat::BGRX8_linear] = _compileRenderPipeline( @"Fill BGRX_8_linear Pipeline", @"fillVertexShader", @"fillFragmentShader", (BlendMode) blendMode, PixelFormat::BGRX_8_linear );
-			m_fillPipelines[0][blendMode][(int)DestFormat::BGRA8_sRGB] = _compileRenderPipeline( @"Fill BGRA_8_sRGB Pipeline", @"fillVertexShader", @"fillFragmentShader", (BlendMode) blendMode, PixelFormat::BGRA_8_sRGB );
-			m_fillPipelines[0][blendMode][(int)DestFormat::BGRX8_sRGB] = _compileRenderPipeline( @"Fill BGRX_8_sRGB Pipeline", @"fillVertexShader", @"fillFragmentShader", (BlendMode) blendMode, PixelFormat::BGRX_8_sRGB );
-			m_fillPipelines[0][blendMode][(int)DestFormat::Alpha_8] = _compileRenderPipeline( @"Fill A_8 Pipeline", @"fillVertexShader", @"fillFragmentShader_A8", (BlendMode) blendMode, PixelFormat::Alpha_8 );
-
-			m_fillPipelines[1][blendMode][(int)DestFormat::BGRA8_linear] = _compileRenderPipeline( @"TintmapFill BGRA_8_linear Pipeline", @"fillTintmapVertexShader", @"fillTintmapFragmentShader", (BlendMode) blendMode, PixelFormat::BGRA_8_linear );
-			m_fillPipelines[1][blendMode][(int)DestFormat::BGRX8_linear] = _compileRenderPipeline( @"TintmapFill BGRX_8_linear Pipeline", @"fillTintmapVertexShader", @"fillTintmapFragmentShader", (BlendMode) blendMode, PixelFormat::BGRX_8_linear );
-			m_fillPipelines[1][blendMode][(int)DestFormat::BGRA8_sRGB] = _compileRenderPipeline( @"TintmapFill BGRA_8_sRGB Pipeline", @"fillTintmapVertexShader", @"fillTintmapFragmentShader", (BlendMode) blendMode, PixelFormat::BGRA_8_sRGB );
-			m_fillPipelines[1][blendMode][(int)DestFormat::BGRX8_sRGB] = _compileRenderPipeline( @"TintmapFill BGRX_8_sRGB Pipeline", @"fillTintmapVertexShader", @"fillTintmapFragmentShader", (BlendMode) blendMode, PixelFormat::BGRX_8_sRGB );
-			m_fillPipelines[1][blendMode][(int)DestFormat::Alpha_8] = _compileRenderPipeline( @"TintmapFill A_8 Pipeline", @"fillTintmapVertexShader", @"fillTintmapFragmentShader_A8", (BlendMode) blendMode, PixelFormat::Alpha_8 );
-
-			m_fillAAPipelines[0][blendMode][(int)DestFormat::BGRA8_linear] = _compileRenderPipeline( @"AAFill BGRA_8_linear Pipeline", @"fillAAVertexShader", @"fillAAFragmentShader", (BlendMode) blendMode, PixelFormat::BGRA_8_linear );
-			m_fillAAPipelines[0][blendMode][(int)DestFormat::BGRX8_linear] = _compileRenderPipeline( @"AAFill BGRX_8_linear Pipeline", @"fillAAVertexShader", @"fillAAFragmentShader", (BlendMode) blendMode, PixelFormat::BGRX_8_linear );
-			m_fillAAPipelines[0][blendMode][(int)DestFormat::BGRA8_sRGB] = _compileRenderPipeline( @"AAFill BGRA_8_sRGB Pipeline", @"fillAAVertexShader", @"fillAAFragmentShader", (BlendMode) blendMode, PixelFormat::BGRA_8_sRGB );
-			m_fillAAPipelines[0][blendMode][(int)DestFormat::BGRX8_sRGB] = _compileRenderPipeline( @"AAFill BGRX_8_sRGB Pipeline", @"fillAAVertexShader", @"fillAAFragmentShader", (BlendMode) blendMode, PixelFormat::BGRX_8_sRGB );
-			m_fillAAPipelines[0][blendMode][(int)DestFormat::Alpha_8] = _compileRenderPipeline( @"AAFill A_8 Pipeline", @"fillAAVertexShader", @"fillAAFragmentShader_A8", (BlendMode) blendMode, PixelFormat::Alpha_8 );
-
-			m_fillAAPipelines[1][blendMode][(int)DestFormat::BGRA8_linear] = _compileRenderPipeline( @"AATintmapFill BGRA_8_linear Pipeline", @"fillAATintmapVertexShader", @"fillAATintmapFragmentShader", (BlendMode) blendMode, PixelFormat::BGRA_8_linear );
-			m_fillAAPipelines[1][blendMode][(int)DestFormat::BGRX8_linear] = _compileRenderPipeline( @"AATintmapFill BGRX_8_linear Pipeline", @"fillAATintmapVertexShader", @"fillAATintmapFragmentShader", (BlendMode) blendMode, PixelFormat::BGRX_8_linear );
-			m_fillAAPipelines[1][blendMode][(int)DestFormat::BGRA8_sRGB] = _compileRenderPipeline( @"AATintmapFill BGRA_8_sRGB Pipeline", @"fillAATintmapVertexShader", @"fillAATintmapFragmentShader", (BlendMode) blendMode, PixelFormat::BGRA_8_sRGB );
-			m_fillAAPipelines[1][blendMode][(int)DestFormat::BGRX8_sRGB] = _compileRenderPipeline( @"AATintmapFill BGRX_8_sRGB Pipeline", @"fillAATintmapVertexShader", @"fillAATintmapFragmentShader", (BlendMode) blendMode, PixelFormat::BGRX_8_sRGB );
-			m_fillAAPipelines[1][blendMode][(int)DestFormat::Alpha_8] = _compileRenderPipeline( @"AATintmapFill A_8 Pipeline", @"fillAATintmapVertexShader", @"fillAATintmapFragmentShader_A8", (BlendMode) blendMode, PixelFormat::Alpha_8 );
-		}
-	}
-
-	// Create and init Blit pipelines
-
-	for( int blendMode = 0 ; blendMode < BlendMode_size ; blendMode++ )
-	{
-		//            if( blendMode != int(BlendMode::Ignore) && blendMode != int(BlendMode::Undefined) )
-		{
-
-			// [BlitFragShader][bGradient][BlendMode][DestFormat]
-
-			m_blitPipelines[(int)BlitFragShader::Normal][0][blendMode][(int)DestFormat::BGRA8_linear] = _compileRenderPipeline( @"Blit BGRA_8_linear Pipeline", @"blitVertexShader", @"blitFragmentShader", (BlendMode) blendMode, PixelFormat::BGRA_8_linear );
-			m_blitPipelines[(int)BlitFragShader::Normal][0][blendMode][(int)DestFormat::BGRX8_linear] = _compileRenderPipeline( @"Blit BGRX_8_linear Pipeline", @"blitVertexShader", @"blitFragmentShader", (BlendMode) blendMode, PixelFormat::BGRX_8_linear );
-			m_blitPipelines[(int)BlitFragShader::Normal][0][blendMode][(int)DestFormat::BGRA8_sRGB]   = _compileRenderPipeline( @"Blit BGRA_8_sRGB Pipeline", @"blitVertexShader", @"blitFragmentShader", (BlendMode) blendMode, PixelFormat::BGRA_8_sRGB );
-			m_blitPipelines[(int)BlitFragShader::Normal][0][blendMode][(int)DestFormat::BGRX8_sRGB]   = _compileRenderPipeline( @"Blit BGRX_8_sRGB Pipeline", @"blitVertexShader", @"blitFragmentShader", (BlendMode) blendMode, PixelFormat::BGRX_8_sRGB );
-			m_blitPipelines[(int)BlitFragShader::Normal][0][blendMode][(int)DestFormat::Alpha_8]          = _compileRenderPipeline( @"Blit A_8 Pipeline", @"blitVertexShader", @"blitFragmentShader_A8", (BlendMode) blendMode, PixelFormat::Alpha_8 );
-
-			m_blitPipelines[(int)BlitFragShader::Normal][1][blendMode][(int)DestFormat::BGRA8_linear] = _compileRenderPipeline( @"Blit BGRA_8_linear Tintmap Pipeline", @"blitTintmapVertexShader", @"blitTintmapFragmentShader", (BlendMode) blendMode, PixelFormat::BGRA_8_linear );
-			m_blitPipelines[(int)BlitFragShader::Normal][1][blendMode][(int)DestFormat::BGRX8_linear] = _compileRenderPipeline( @"Blit BGRX_8_linear Tintmap Pipeline", @"blitTintmapVertexShader", @"blitTintmapFragmentShader", (BlendMode) blendMode, PixelFormat::BGRX_8_linear );
-			m_blitPipelines[(int)BlitFragShader::Normal][1][blendMode][(int)DestFormat::BGRA8_sRGB]   = _compileRenderPipeline( @"Blit BGRA_8_sRGB Tintmap Pipeline", @"blitTintmapVertexShader", @"blitTintmapFragmentShader", (BlendMode) blendMode, PixelFormat::BGRA_8_sRGB );
-			m_blitPipelines[(int)BlitFragShader::Normal][1][blendMode][(int)DestFormat::BGRX8_sRGB]   = _compileRenderPipeline( @"Blit BGRX_8_sRGB Tintmap Pipeline", @"blitTintmapVertexShader", @"blitTintmapFragmentShader", (BlendMode) blendMode, PixelFormat::BGRX_8_sRGB );
-			m_blitPipelines[(int)BlitFragShader::Normal][1][blendMode][(int)DestFormat::Alpha_8]          = _compileRenderPipeline( @"Blit A_8 Tintmap Pipeline", @"blitTintmapVertexShader", @"blitTintmapFragmentShader_A8", (BlendMode) blendMode, PixelFormat::Alpha_8 );
-
-			m_blitPipelines[(int)BlitFragShader::PaletteNearest][0][blendMode][(int)DestFormat::BGRA8_linear] = _compileRenderPipeline( @"PaletteBlitNearest BGRA_8_linear Pipeline", @"blitVertexShader", @"paletteBlitNearestFragmentShader", (BlendMode) blendMode, PixelFormat::BGRA_8_linear );
-			m_blitPipelines[(int)BlitFragShader::PaletteNearest][0][blendMode][(int)DestFormat::BGRX8_linear] = _compileRenderPipeline( @"PaletteBlitNearest BGRX_8_linear Pipeline", @"blitVertexShader", @"paletteBlitNearestFragmentShader", (BlendMode) blendMode, PixelFormat::BGRX_8_linear );
-			m_blitPipelines[(int)BlitFragShader::PaletteNearest][0][blendMode][(int)DestFormat::BGRA8_sRGB]   = _compileRenderPipeline( @"PaletteBlitNearest BGRA_8_sRGB Pipeline", @"blitVertexShader", @"paletteBlitNearestFragmentShader", (BlendMode) blendMode, PixelFormat::BGRA_8_sRGB );
-			m_blitPipelines[(int)BlitFragShader::PaletteNearest][0][blendMode][(int)DestFormat::BGRX8_sRGB]   = _compileRenderPipeline( @"PaletteBlitNearest BGRX_8_sRGB Pipeline", @"blitVertexShader", @"paletteBlitNearestFragmentShader", (BlendMode) blendMode, PixelFormat::BGRX_8_sRGB );
-			m_blitPipelines[(int)BlitFragShader::PaletteNearest][0][blendMode][(int)DestFormat::Alpha_8]          = _compileRenderPipeline( @"PaletteBlitNearest A_8 Pipeline", @"blitVertexShader", @"paletteBlitNearestFragmentShader_A8", (BlendMode) blendMode, PixelFormat::Alpha_8 );
-
-			m_blitPipelines[(int)BlitFragShader::PaletteNearest][1][blendMode][(int)DestFormat::BGRA8_linear] = _compileRenderPipeline( @"PaletteBlitNearest BGRA_8_linear Tintmap Pipeline", @"blitTintmapVertexShader", @"paletteBlitNearestTintmapFragmentShader", (BlendMode) blendMode, PixelFormat::BGRA_8_linear );
-			m_blitPipelines[(int)BlitFragShader::PaletteNearest][1][blendMode][(int)DestFormat::BGRX8_linear] = _compileRenderPipeline( @"PaletteBlitNearest BGRX_8_linear Tintmap Pipeline", @"blitTintmapVertexShader", @"paletteBlitNearestTintmapFragmentShader", (BlendMode) blendMode, PixelFormat::BGRX_8_linear );
-			m_blitPipelines[(int)BlitFragShader::PaletteNearest][1][blendMode][(int)DestFormat::BGRA8_sRGB]   = _compileRenderPipeline( @"PaletteBlitNearest BGRA_8_sRGB Tintmap Pipeline", @"blitTintmapVertexShader", @"paletteBlitNearestTintmapFragmentShader", (BlendMode) blendMode, PixelFormat::BGRA_8_sRGB );
-			m_blitPipelines[(int)BlitFragShader::PaletteNearest][1][blendMode][(int)DestFormat::BGRX8_sRGB]   = _compileRenderPipeline( @"PaletteBlitNearest BGRX_8_sRGB Tintmap Pipeline", @"blitTintmapVertexShader", @"paletteBlitNearestTintmapFragmentShader", (BlendMode) blendMode, PixelFormat::BGRX_8_sRGB );
-			m_blitPipelines[(int)BlitFragShader::PaletteNearest][1][blendMode][(int)DestFormat::Alpha_8]          = _compileRenderPipeline( @"PaletteBlitNearest A_8 Tintmap Pipeline", @"blitTintmapVertexShader", @"paletteBlitNearestTintmapFragmentShader_A8", (BlendMode) blendMode, PixelFormat::Alpha_8 );
-
-			m_blitPipelines[(int)BlitFragShader::PaletteInterpolated][0][blendMode][(int)DestFormat::BGRA8_linear] = _compileRenderPipeline( @"PaletteBlitInterpolated BGRA_8_linear Pipeline", @"paletteBlitInterpolateVertexShader", @"paletteBlitInterpolateFragmentShader", (BlendMode) blendMode, PixelFormat::BGRA_8_linear );
-			m_blitPipelines[(int)BlitFragShader::PaletteInterpolated][0][blendMode][(int)DestFormat::BGRX8_linear] = _compileRenderPipeline( @"PaletteBlitInterpolated BGRX_8_linear Pipeline", @"paletteBlitInterpolateVertexShader", @"paletteBlitInterpolateFragmentShader", (BlendMode) blendMode, PixelFormat::BGRX_8_linear );
-			m_blitPipelines[(int)BlitFragShader::PaletteInterpolated][0][blendMode][(int)DestFormat::BGRA8_sRGB]   = _compileRenderPipeline( @"PaletteBlitInterpolated BGRA_8_sRGB Pipeline", @"paletteBlitInterpolateVertexShader", @"paletteBlitInterpolateFragmentShader", (BlendMode) blendMode, PixelFormat::BGRA_8_sRGB );
-			m_blitPipelines[(int)BlitFragShader::PaletteInterpolated][0][blendMode][(int)DestFormat::BGRX8_sRGB]   = _compileRenderPipeline( @"PaletteBlitInterpolated BGRX_8_sRGB Pipeline", @"paletteBlitInterpolateVertexShader", @"paletteBlitInterpolateFragmentShader", (BlendMode) blendMode, PixelFormat::BGRX_8_sRGB );
-			m_blitPipelines[(int)BlitFragShader::PaletteInterpolated][0][blendMode][(int)DestFormat::Alpha_8]          = _compileRenderPipeline( @"PaletteBlitInterpolated A_8 Pipeline", @"paletteBlitInterpolateVertexShader", @"paletteBlitInterpolateFragmentShader_A8", (BlendMode) blendMode, PixelFormat::Alpha_8 );
-
-			m_blitPipelines[(int)BlitFragShader::PaletteInterpolated][1][blendMode][(int)DestFormat::BGRA8_linear] = _compileRenderPipeline( @"PaletteBlitInterpolated BGRA_8_linear Tintmap Pipeline", @"paletteBlitInterpolateTintmapVertexShader", @"paletteBlitInterpolateTintmapFragmentShader", (BlendMode) blendMode, PixelFormat::BGRA_8_linear );
-			m_blitPipelines[(int)BlitFragShader::PaletteInterpolated][1][blendMode][(int)DestFormat::BGRX8_linear] = _compileRenderPipeline( @"PaletteBlitInterpolated BGRX_8_linear Tintmap Pipeline", @"paletteBlitInterpolateTintmapVertexShader", @"paletteBlitInterpolateTintmapFragmentShader", (BlendMode) blendMode, PixelFormat::BGRX_8_linear );
-			m_blitPipelines[(int)BlitFragShader::PaletteInterpolated][1][blendMode][(int)DestFormat::BGRA8_sRGB]   = _compileRenderPipeline( @"PaletteBlitInterpolated BGRA_8_sRGB Tintmap Pipeline", @"paletteBlitInterpolateTintmapVertexShader", @"paletteBlitInterpolateTintmapFragmentShader", (BlendMode) blendMode, PixelFormat::BGRA_8_sRGB );
-			m_blitPipelines[(int)BlitFragShader::PaletteInterpolated][1][blendMode][(int)DestFormat::BGRX8_sRGB]   = _compileRenderPipeline( @"PaletteBlitInterpolated BGRX_8_sRGB Tintmap Pipeline", @"paletteBlitInterpolateTintmapVertexShader", @"paletteBlitInterpolateTintmapFragmentShader", (BlendMode) blendMode, PixelFormat::BGRX_8_sRGB );
-			m_blitPipelines[(int)BlitFragShader::PaletteInterpolated][1][blendMode][(int)DestFormat::Alpha_8]          = _compileRenderPipeline( @"PaletteBlitInterpolated A_8 Tintmap Pipeline", @"paletteBlitInterpolateTintmapVertexShader", @"paletteBlitInterpolateTintmapFragmentShader_A8", (BlendMode) blendMode, PixelFormat::Alpha_8 );
-
-			m_blitPipelines[(int)BlitFragShader::A8Source][0][blendMode][(int)DestFormat::BGRA8_linear] = _compileRenderPipeline( @"A8SourceBlit BGRA_8_linear Pipeline", @"blitVertexShader", @"alphaBlitFragmentShader", (BlendMode) blendMode, PixelFormat::BGRA_8_linear );
-			m_blitPipelines[(int)BlitFragShader::A8Source][0][blendMode][(int)DestFormat::BGRX8_linear] = _compileRenderPipeline( @"A8SourceBlit BGRX_8_linear Pipeline", @"blitVertexShader", @"alphaBlitFragmentShader", (BlendMode) blendMode, PixelFormat::BGRX_8_linear );
-			m_blitPipelines[(int)BlitFragShader::A8Source][0][blendMode][(int)DestFormat::BGRA8_sRGB]   = _compileRenderPipeline( @"A8SourceBlit BGRA_8_sRGB Pipeline", @"blitVertexShader", @"alphaBlitFragmentShader", (BlendMode) blendMode, PixelFormat::BGRA_8_sRGB );
-			m_blitPipelines[(int)BlitFragShader::A8Source][0][blendMode][(int)DestFormat::BGRX8_sRGB]   = _compileRenderPipeline( @"A8SourceBlit BGRX_8_sRGB Pipeline", @"blitVertexShader", @"alphaBlitFragmentShader", (BlendMode) blendMode, PixelFormat::BGRX_8_sRGB );
-			m_blitPipelines[(int)BlitFragShader::A8Source][0][blendMode][(int)DestFormat::Alpha_8]          = _compileRenderPipeline( @"A8SourceBlit A_8 Pipeline", @"blitVertexShader", @"alphaBlitFragmentShader_A8", (BlendMode) blendMode, PixelFormat::Alpha_8 );
-
-			m_blitPipelines[(int)BlitFragShader::A8Source][1][blendMode][(int)DestFormat::BGRA8_linear] = _compileRenderPipeline( @"A8SourceBlit BGRA_8_linear Tintmap Pipeline", @"blitTintmapVertexShader", @"alphaBlitTintmapFragmentShader", (BlendMode) blendMode, PixelFormat::BGRA_8_linear );
-			m_blitPipelines[(int)BlitFragShader::A8Source][1][blendMode][(int)DestFormat::BGRX8_linear] = _compileRenderPipeline( @"A8SourceBlit BGRX_8_linear Tintmap Pipeline", @"blitTintmapVertexShader", @"alphaBlitTintmapFragmentShader", (BlendMode) blendMode, PixelFormat::BGRX_8_linear );
-			m_blitPipelines[(int)BlitFragShader::A8Source][1][blendMode][(int)DestFormat::BGRA8_sRGB]   = _compileRenderPipeline( @"A8SourceBlit BGRA_8_sRGB Tintmap Pipeline", @"blitTintmapVertexShader", @"alphaBlitTintmapFragmentShader", (BlendMode) blendMode, PixelFormat::BGRA_8_sRGB );
-			m_blitPipelines[(int)BlitFragShader::A8Source][1][blendMode][(int)DestFormat::BGRX8_sRGB]   = _compileRenderPipeline( @"A8SourceBlit BGRX_8_sRGB Tintmap Pipeline", @"blitTintmapVertexShader", @"alphaBlitTintmapFragmentShader", (BlendMode) blendMode, PixelFormat::BGRX_8_sRGB );
-			m_blitPipelines[(int)BlitFragShader::A8Source][1][blendMode][(int)DestFormat::Alpha_8]          = _compileRenderPipeline( @"A8SourceBlit A_8 Tintmap Pipeline", @"blitTintmapVertexShader", @"alphaBlitTintmapFragmentShader_A8", (BlendMode) blendMode, PixelFormat::Alpha_8 );
-
-			m_blitPipelines[(int)BlitFragShader::RGBXSource][0][blendMode][(int)DestFormat::BGRA8_linear] = _compileRenderPipeline( @"RGBXSourceBlit BGRA_8_linear Pipeline", @"blitVertexShader", @"rgbxBlitFragmentShader", (BlendMode) blendMode, PixelFormat::BGRA_8_linear );
-			m_blitPipelines[(int)BlitFragShader::RGBXSource][0][blendMode][(int)DestFormat::BGRX8_linear] = _compileRenderPipeline( @"RGBXSourceBlit BGRX_8_linear Pipeline", @"blitVertexShader", @"rgbxBlitFragmentShader", (BlendMode) blendMode, PixelFormat::BGRX_8_linear );
-			m_blitPipelines[(int)BlitFragShader::RGBXSource][0][blendMode][(int)DestFormat::BGRA8_sRGB]   = _compileRenderPipeline( @"RGBXSourceBlit BGRA_8_sRGB Pipeline", @"blitVertexShader", @"rgbxBlitFragmentShader", (BlendMode) blendMode, PixelFormat::BGRA_8_sRGB );
-			m_blitPipelines[(int)BlitFragShader::RGBXSource][0][blendMode][(int)DestFormat::BGRX8_sRGB]   = _compileRenderPipeline( @"RGBXSourceBlit BGRX_8_sRGB Pipeline", @"blitVertexShader", @"rgbxBlitFragmentShader", (BlendMode) blendMode, PixelFormat::BGRX_8_sRGB );
-			m_blitPipelines[(int)BlitFragShader::RGBXSource][0][blendMode][(int)DestFormat::Alpha_8]          = _compileRenderPipeline( @"RGBXSourceBlit A_8 Pipeline", @"blitVertexShader", @"rgbxBlitFragmentShader_A8", (BlendMode) blendMode, PixelFormat::Alpha_8 );
-
-			m_blitPipelines[(int)BlitFragShader::RGBXSource][1][blendMode][(int)DestFormat::BGRA8_linear] = _compileRenderPipeline( @"RGBXSourceBlit BGRA_8_linear Tintmap Pipeline", @"blitTintmapVertexShader", @"rgbxBlitTintmapFragmentShader", (BlendMode) blendMode, PixelFormat::BGRA_8_linear );
-			m_blitPipelines[(int)BlitFragShader::RGBXSource][1][blendMode][(int)DestFormat::BGRX8_linear] = _compileRenderPipeline( @"RGBXSourceBlit BGRX_8_linear Tintmap Pipeline", @"blitTintmapVertexShader", @"rgbxBlitTintmapFragmentShader", (BlendMode) blendMode, PixelFormat::BGRX_8_linear );
-			m_blitPipelines[(int)BlitFragShader::RGBXSource][1][blendMode][(int)DestFormat::BGRA8_sRGB]   = _compileRenderPipeline( @"RGBXSourceBlit BGRA_8_sRGB Tintmap Pipeline", @"blitTintmapVertexShader", @"rgbxBlitTintmapFragmentShader", (BlendMode) blendMode, PixelFormat::BGRA_8_sRGB );
-			m_blitPipelines[(int)BlitFragShader::RGBXSource][1][blendMode][(int)DestFormat::BGRX8_sRGB]   = _compileRenderPipeline( @"RGBXSourceBlit BGRX_8_sRGB Tintmap Pipeline", @"blitTintmapVertexShader", @"rgbxBlitTintmapFragmentShader", (BlendMode) blendMode, PixelFormat::BGRX_8_sRGB );
-			m_blitPipelines[(int)BlitFragShader::RGBXSource][1][blendMode][(int)DestFormat::Alpha_8]          = _compileRenderPipeline( @"RGBXSourceBlit A_8 Tintmap Pipeline", @"blitTintmapVertexShader", @"rgbxBlitTintmapFragmentShader_A8", (BlendMode) blendMode, PixelFormat::Alpha_8 );
-		}
-	}
-
-	// Create and init Blur pipelines
-
-	for( int blendMode = 0 ; blendMode < BlendMode_size ; blendMode++ )
-	{
-		//            if( blendMode != int(BlendMode::Ignore) && blendMode != int(BlendMode::Undefined) )
-		{
-
-			// [BlitFragShader][bGradient][BlendMode][DestFormat]
-
-			m_blurPipelines[0][blendMode][(int)DestFormat::BGRA8_linear] = _compileRenderPipeline( @"Blur BGRA_8_linear Pipeline", @"blitVertexShader", @"blurFragmentShader", (BlendMode) blendMode, PixelFormat::BGRA_8_linear );
-			m_blurPipelines[0][blendMode][(int)DestFormat::BGRX8_linear] = _compileRenderPipeline( @"Blur BGRX_8_linear Pipeline", @"blitVertexShader", @"blurFragmentShader", (BlendMode) blendMode, PixelFormat::BGRX_8_linear );
-			m_blurPipelines[0][blendMode][(int)DestFormat::BGRA8_sRGB]   = _compileRenderPipeline( @"Blur BGRA_8_sRGB Pipeline", @"blitVertexShader", @"blurFragmentShader", (BlendMode) blendMode, PixelFormat::BGRA_8_sRGB );
-			m_blurPipelines[0][blendMode][(int)DestFormat::BGRX8_sRGB]   = _compileRenderPipeline( @"Blur BGRX_8_sRGB Pipeline", @"blitVertexShader", @"blurFragmentShader", (BlendMode) blendMode, PixelFormat::BGRX_8_sRGB );
-			//			m_blurPipelines[0][blendMode][(int)DestFormat::Alpha_8]      = _compileRenderPipeline( @"Blit A_8 Pipeline", @"blitVertexShader", @"blurFragmentShader_A8", (BlendMode) blendMode, PixelFormat::Alpha_8 );
-
-			m_blurPipelines[1][blendMode][(int)DestFormat::BGRA8_linear] = _compileRenderPipeline( @"Blur BGRA_8_linear Tintmap Pipeline", @"blitTintmapVertexShader", @"blurTintmapFragmentShader", (BlendMode) blendMode, PixelFormat::BGRA_8_linear );
-			m_blurPipelines[1][blendMode][(int)DestFormat::BGRX8_linear] = _compileRenderPipeline( @"Blur BGRX_8_linear Tintmap Pipeline", @"blitTintmapVertexShader", @"blurTintmapFragmentShader", (BlendMode) blendMode, PixelFormat::BGRX_8_linear );
-			m_blurPipelines[1][blendMode][(int)DestFormat::BGRA8_sRGB]   = _compileRenderPipeline( @"Blur BGRA_8_sRGB Tintmap Pipeline", @"blitTintmapVertexShader", @"blurTintmapFragmentShader", (BlendMode) blendMode, PixelFormat::BGRA_8_sRGB );
-			m_blurPipelines[1][blendMode][(int)DestFormat::BGRX8_sRGB]   = _compileRenderPipeline( @"Blur BGRX_8_sRGB Tintmap Pipeline", @"blitTintmapVertexShader", @"blurTintmapFragmentShader", (BlendMode) blendMode, PixelFormat::BGRX_8_sRGB );
-			//			m_blitPipelines[1][blendMode][(int)DestFormat::Alpha_8]      = _compileRenderPipeline( @"Blit A_8 Gradient Pipeline", @"blitGradientVertexShader", @"blitFragmentShader_A8", (BlendMode) blendMode, PixelFormat::Alpha_8 );
-		}
-	}
-
-
-
-	// Create and init Segments pipelines
-
-
-	NSString * segFragShaders[16] = { nil, @"segmentsFragmentShader1", @"segmentsFragmentShader2", @"segmentsFragmentShader3",
-		@"segmentsFragmentShader4", @"segmentsFragmentShader5", @"segmentsFragmentShader6", @"segmentsFragmentShader7",
-		@"segmentsFragmentShader8", @"segmentsFragmentShader9", @"segmentsFragmentShader10", @"segmentsFragmentShader11",
-		@"segmentsFragmentShader12", @"segmentsFragmentShader13", @"segmentsFragmentShader14", @"segmentsFragmentShader15" };
-
-	NSString * segTintmapFragShaders[16] = { nil, @"segmentsTintmapFragmentShader1", @"segmentsTintmapFragmentShader2", @"segmentsTintmapFragmentShader3",
-		@"segmentsTintmapFragmentShader4", @"segmentsTintmapFragmentShader5", @"segmentsTintmapFragmentShader6", @"segmentsTintmapFragmentShader7",
-		@"segmentsFragmentShader8", @"segmentsFragmentShader9", @"segmentsFragmentShader10", @"segmentsFragmentShader11",
-		@"segmentsTintmapFragmentShader12", @"segmentsTintmapFragmentShader13", @"segmentsTintmapFragmentShader14", @"segmentsTintmapFragmentShader15" };
-
-
-	NSString * segFragShaders_A8[16] = { nil, @"segmentsFragmentShader1_A8", @"segmentsFragmentShader2_A8", @"segmentsFragmentShader3_A8",
-		@"segmentsFragmentShader4_A8", @"segmentsFragmentShader5_A8", @"segmentsFragmentShader6_A8", @"segmentsFragmentShader7_A8",
-		@"segmentsFragmentShader8_A8", @"segmentsFragmentShader9_A8", @"segmentsFragmentShader10_A8", @"segmentsFragmentShader11_A8",
-		@"segmentsFragmentShader12_A8", @"segmentsFragmentShader13_A8", @"segmentsFragmentShader14_A8", @"segmentsFragmentShader15_A8" };
-
-	NSString * segTintmapFragShaders_A8[16] = { nil, @"segmentsTintmapFragmentShader1_A8", @"segmentsTintmapFragmentShader2_A8", @"segmentsTintmapFragmentShader3_A8",
-		@"segmentsTintmapFragmentShader4_A8", @"segmentsTintmapFragmentShader5_A8", @"segmentsTintmapFragmentShader6_A8", @"segmentsTintmapFragmentShader7_A8",
-		@"segmentsTintmapFragmentShader8_A8", @"segmentsTintmapFragmentShader9_A8", @"segmentsTintmapFragmentShader10_A8", @"segmentsTintmapFragmentShader11_A8",
-		@"segmentsTintmapFragmentShader12_A8", @"segmentsTintmapFragmentShader13_A8", @"segmentsTintmapFragmentShader14_A8", @"segmentsTintmapFragmentShader15_A8" };
-
-
-	int maxSegments = c_maxSegments;				// std::min can't operate on static const only present in header. Does some introspection that fails then.
-	int nbShaders = std::min(maxSegments, 16);
-
-	for( int shader = 1 ; shader < nbShaders ; shader++ )
-	{
-		for( int blendMode = 0 ; blendMode < BlendMode_size ; blendMode++ )
-		{
-			m_segmentsPipelines[shader][0][blendMode][(int)DestFormat::BGRA8_linear] = _compileRenderPipeline( @"Segments BGRA_8_linear pipeline", @"segmentsVertexShader", segFragShaders[shader], (BlendMode) blendMode, PixelFormat::BGRA_8_linear );
-			m_segmentsPipelines[shader][0][blendMode][(int)DestFormat::BGRX8_linear] = _compileRenderPipeline( @"Segments BGRX_8_linear pipeline", @"segmentsVertexShader", segFragShaders[shader], (BlendMode) blendMode, PixelFormat::BGRX_8_linear );
-
-			m_segmentsPipelines[shader][0][blendMode][(int)DestFormat::BGRA8_sRGB] = _compileRenderPipeline( @"Segments BGRA_8_sRGB pipeline", @"segmentsVertexShader", segFragShaders[shader], (BlendMode) blendMode, PixelFormat::BGRA_8_sRGB );
-			m_segmentsPipelines[shader][0][blendMode][(int)DestFormat::BGRX8_sRGB] = _compileRenderPipeline( @"Segments BGRX_8_sRGB pipeline", @"segmentsVertexShader", segFragShaders[shader], (BlendMode) blendMode, PixelFormat::BGRX_8_sRGB );
-
-			m_segmentsPipelines[shader][0][blendMode][(int)DestFormat::Alpha_8] = _compileRenderPipeline( @"Segments A_8 pipeline", @"segmentsVertexShader", segFragShaders_A8[shader], (BlendMode) blendMode, PixelFormat::Alpha_8 );
-
-			m_segmentsPipelines[shader][1][blendMode][(int)DestFormat::BGRA8_linear] = _compileRenderPipeline( @"Segments BGRA_8_linear gradient pipeline", @"segmentsVertexShader", segTintmapFragShaders[shader], (BlendMode) blendMode, PixelFormat::BGRA_8_linear );
-			m_segmentsPipelines[shader][1][blendMode][(int)DestFormat::BGRX8_linear] = _compileRenderPipeline( @"Segments BGRX_8_linear gradient pipeline", @"segmentsVertexShader", segTintmapFragShaders[shader], (BlendMode) blendMode, PixelFormat::BGRX_8_linear );
-
-			m_segmentsPipelines[shader][1][blendMode][(int)DestFormat::BGRA8_sRGB] = _compileRenderPipeline( @"Segments BGRA_8_sRGB gradient pipeline", @"segmentsVertexShader", segTintmapFragShaders[shader], (BlendMode) blendMode, PixelFormat::BGRA_8_sRGB );
-			m_segmentsPipelines[shader][1][blendMode][(int)DestFormat::BGRX8_sRGB] = _compileRenderPipeline( @"Segments BGRX_8_sRGB gradient pipeline", @"segmentsVertexShader", segTintmapFragShaders[shader], (BlendMode) blendMode, PixelFormat::BGRX_8_sRGB );
-
-			m_segmentsPipelines[shader][1][blendMode][(int)DestFormat::Alpha_8] = _compileRenderPipeline( @"Segments A_8 gradient pipeline", @"segmentsVertexShader", segTintmapFragShaders_A8[shader], (BlendMode) blendMode, PixelFormat::Alpha_8 );
-		}
-	}
-
 	// Create samplers
 
 	MTLSamplerDescriptor *desc = [MTLSamplerDescriptor new];
@@ -405,7 +213,7 @@ MetalBackend::~MetalBackend()
 		[m_fillAAPipelines[1][blendMode][(int)DestFormat::Alpha_8] release];
 	}
 
-	// Create and init Blit pipelines
+	// Release Blit pipelines
 
 	for( int blendMode = 0 ; blendMode < BlendMode_size ; blendMode++ )
 	{
@@ -510,6 +318,166 @@ MetalBackend::~MetalBackend()
 
 	[m_library release];
 }
+
+//____ _canvasFormatToPixelFormat() ___________________________________________
+
+PixelFormat MetalBackend::_canvasFormatToPixelFormat( DestFormat format )
+{
+	switch( format )
+	{
+		case DestFormat::BGRX8_linear:
+			return PixelFormat::BGRX_8_linear;
+		case DestFormat::BGRA8_linear:
+			return PixelFormat::BGRA_8_linear;
+		case DestFormat::BGRX8_sRGB:
+			return PixelFormat::BGRX_8_sRGB;
+		case DestFormat::BGRA8_sRGB:
+			return PixelFormat::BGRA_8_sRGB;
+		case DestFormat::Alpha_8:
+			return PixelFormat::Alpha_8;
+	}
+}
+
+
+//____ _compileLinePipeline() _________________________________________________
+
+id<MTLRenderPipelineState> MetalBackend::_compileLinePipeline( BlendMode blendMode, DestFormat canvasFormat )
+{
+	PixelFormat pixelFormat = _canvasFormatToPixelFormat( canvasFormat );
+	bool        isAlpha8    = (canvasFormat == DestFormat::Alpha_8);
+
+	NSString* vertexShader   = @"lineVertexShader";
+	NSString* fragmentShader = isAlpha8 ? @"lineFragmentShader_A8" : @"lineFragmentShader";
+
+	NSString* label = [NSString stringWithFormat:@"Line Pipeline (format=%s, blendMode=%s)",
+						toString(pixelFormat), toString(blendMode)];
+
+	return _compileRenderPipeline( label, vertexShader, fragmentShader, blendMode, pixelFormat );
+}
+
+
+//____ _compileFillPipeline() _________________________________________________
+
+id<MTLRenderPipelineState> MetalBackend::_compileFillPipeline( bool bTintmap, BlendMode blendMode, DestFormat canvasFormat )
+{
+	PixelFormat pixelFormat = _canvasFormatToPixelFormat( canvasFormat );
+	bool        isAlpha8    = (canvasFormat == DestFormat::Alpha_8);
+
+	NSString* vertexShader   = bTintmap ? @"fillTintmapVertexShader" : @"fillVertexShader";
+	NSString* fragmentShader = bTintmap ? @"fillTintmapFragmentShader" : @"fillFragmentShader";
+	if( isAlpha8 )
+		fragmentShader = [fragmentShader stringByAppendingString:@"_A8"];
+
+	NSString* label = [NSString stringWithFormat:@"%@Fill Pipeline (format=%s, blendMode=%s, tintmap=%s)",
+						bTintmap ? @"Tintmap" : @"", toString(pixelFormat), toString(blendMode), bTintmap ? "true" : "false"];
+
+	return _compileRenderPipeline( label, vertexShader, fragmentShader, blendMode, pixelFormat );
+}
+
+//____ _compileFillAAPipeline() _______________________________________________
+
+id<MTLRenderPipelineState> MetalBackend::_compileFillAAPipeline( bool bTintmap, BlendMode blendMode, DestFormat canvasFormat )
+{
+	PixelFormat pixelFormat = _canvasFormatToPixelFormat( canvasFormat );
+	bool        isAlpha8    = (canvasFormat == DestFormat::Alpha_8);
+
+	NSString* vertexShader   = bTintmap ? @"fillAATintmapVertexShader" : @"fillAAVertexShader";
+	NSString* fragmentShader = bTintmap ? @"fillAATintmapFragmentShader" : @"fillAAFragmentShader";
+	if( isAlpha8 )
+		fragmentShader = [fragmentShader stringByAppendingString:@"_A8"];
+
+	NSString* label = [NSString stringWithFormat:@"AA%@Fill Pipeline (format=%s, blendMode=%s, tintmap=%s)",
+						bTintmap ? @"Tintmap" : @"", toString(pixelFormat), toString(blendMode), bTintmap ? "true" : "false"];
+
+	return _compileRenderPipeline( label, vertexShader, fragmentShader, blendMode, pixelFormat );
+}
+
+
+//____ _compileBlurPipeline() _________________________________________________
+
+id<MTLRenderPipelineState> MetalBackend::_compileBlurPipeline( bool bTintmap, BlendMode blendMode, DestFormat canvasFormat )
+{
+	assert( canvasFormat != DestFormat::Alpha_8 );		// Not supported (yet)!
+
+	NSString* vertexShader		= bTintmap ? @"blitTintmapVertexShader" : @"blitVertexShader";
+	NSString* fragmentShader	= bTintmap ? @"blurTintmapFragmentShader" : @"blurFragmentShader";
+
+	PixelFormat pixelFormat 	= _canvasFormatToPixelFormat(canvasFormat);
+
+	NSString* label 			= [@"Blur " stringByAppendingFormat:@"%s Pipeline (blendMode =%s, tintmap=%s)", toString(pixelFormat), toString(blendMode), bTintmap ? "true" : "false"];
+
+	return _compileRenderPipeline( label, vertexShader, fragmentShader, blendMode, pixelFormat );
+}
+
+//____ _compileBlitPipeline() _________________________________________________
+
+id<MTLRenderPipelineState> MetalBackend::_compileBlitPipeline( BlitFragShader shader, bool bTintmap, BlendMode blendMode, DestFormat canvasFormat )
+{
+	NSString* namePrefix         = nil;
+	NSString* vertexShader       = nil;
+	NSString* fragmentShaderBase = nil;
+
+	switch( shader )
+	{
+		case BlitFragShader::Normal:
+			namePrefix         = @"Blit";
+			vertexShader       = bTintmap ? @"blitTintmapVertexShader" : @"blitVertexShader";
+			fragmentShaderBase = bTintmap ? @"blitTintmapFragmentShader" : @"blitFragmentShader";
+			break;
+
+		case BlitFragShader::PaletteNearest:
+			namePrefix         = @"PaletteBlitNearest";
+			vertexShader       = bTintmap ? @"blitTintmapVertexShader" : @"blitVertexShader";
+			fragmentShaderBase = bTintmap ? @"paletteBlitNearestTintmapFragmentShader" : @"paletteBlitNearestFragmentShader";
+			break;
+
+		case BlitFragShader::PaletteInterpolated:
+			namePrefix         = @"PaletteBlitInterpolated";
+			vertexShader       = bTintmap ? @"paletteBlitInterpolateTintmapVertexShader" : @"paletteBlitInterpolateVertexShader";
+			fragmentShaderBase = bTintmap ? @"paletteBlitInterpolateTintmapFragmentShader" : @"paletteBlitInterpolateFragmentShader";
+			break;
+
+		case BlitFragShader::A8Source:
+			namePrefix         = @"A8SourceBlit";
+			vertexShader       = bTintmap ? @"blitTintmapVertexShader" : @"blitVertexShader";
+			fragmentShaderBase = bTintmap ? @"alphaBlitTintmapFragmentShader" : @"alphaBlitFragmentShader";
+			break;
+
+		case BlitFragShader::RGBXSource:
+			namePrefix         = @"RGBXSourceBlit";
+			vertexShader       = bTintmap ? @"blitTintmapVertexShader" : @"blitVertexShader";
+			fragmentShaderBase = bTintmap ? @"rgbxBlitTintmapFragmentShader" : @"rgbxBlitFragmentShader";
+			break;
+	}
+
+	PixelFormat pixelFormat  = _canvasFormatToPixelFormat( canvasFormat );
+	bool        isAlpha8     = (canvasFormat == DestFormat::Alpha_8);
+	NSString*   fragmentShader = isAlpha8 ? [fragmentShaderBase stringByAppendingString:@"_A8"] : fragmentShaderBase;
+
+	NSString* label = [namePrefix stringByAppendingFormat:@" Pipeline (format=%s, blendMode=%s, tintmap=%s)",
+						toString(pixelFormat), toString(blendMode), bTintmap ? "true" : "false"];
+
+	return _compileRenderPipeline( label, vertexShader, fragmentShader, blendMode, pixelFormat );
+}
+
+//____ _compileSegmentsPipeline() _____________________________________________
+
+id<MTLRenderPipelineState> MetalBackend::_compileSegmentsPipeline( int shaderIndex, bool bTintmap, BlendMode blendMode, DestFormat canvasFormat )
+{
+	PixelFormat pixelFormat = _canvasFormatToPixelFormat( canvasFormat );
+	bool        isAlpha8    = (canvasFormat == DestFormat::Alpha_8);
+
+	NSString* vertexShader = @"segmentsVertexShader";
+
+	NSString* fragmentShader = [NSString stringWithFormat:@"segments%@FragmentShader%d%@",
+								 bTintmap ? @"Tintmap" : @"", shaderIndex, isAlpha8 ? @"_A8" : @""];
+
+	NSString* label = [NSString stringWithFormat:@"Segments Pipeline (shader=%d, format=%s, blendMode=%s, tintmap=%s)",
+						shaderIndex, toString(pixelFormat), toString(blendMode), bTintmap ? "true" : "false"];
+
+	return _compileRenderPipeline( label, vertexShader, fragmentShader, blendMode, pixelFormat );
+}
+
 
 //____ typeInfo() _________________________________________________________
 
@@ -1146,6 +1114,9 @@ void MetalBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, i
 						{
 							if( nRectsWritten > 0 )
 							{
+								if( m_fillAAPipelines[m_bTintmap][(int)m_activeBlendMode][(int)m_activeCanvasFormat] == nil )
+									m_fillAAPipelines[m_bTintmap][(int)m_activeBlendMode][(int)m_activeCanvasFormat] = _compileFillAAPipeline(m_bTintmap, m_activeBlendMode, m_activeCanvasFormat);
+
 								[m_renderEncoder setRenderPipelineState:m_fillAAPipelines[m_bTintmap][(int)m_activeBlendMode][(int)m_activeCanvasFormat] ];
 								[m_renderEncoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:vertexOfs vertexCount:nRectsWritten*6];
 
@@ -1164,6 +1135,9 @@ void MetalBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, i
 						{
 							if (nRectsWritten > 0)
 							{
+								if( m_fillPipelines[m_bTintmap][(int)m_activeBlendMode][(int)m_activeCanvasFormat] == nil )
+									m_fillPipelines[m_bTintmap][(int)m_activeBlendMode][(int)m_activeCanvasFormat] = _compileFillPipeline(m_bTintmap, m_activeBlendMode, m_activeCanvasFormat);
+
 								[m_renderEncoder setRenderPipelineState:m_fillPipelines[m_bTintmap][(int)m_activeBlendMode][(int)m_activeCanvasFormat] ];
 								[m_renderEncoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:vertexOfs vertexCount:nRectsWritten*6];
 
@@ -1291,9 +1265,19 @@ void MetalBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, i
 				// Draw
 
 				if( bStraightFill )
+				{
+					if( m_fillPipelines[m_bTintmap][(int)m_activeBlendMode][(int)m_activeCanvasFormat] == nil )
+						m_fillPipelines[m_bTintmap][(int)m_activeBlendMode][(int)m_activeCanvasFormat] = _compileFillPipeline(m_bTintmap, m_activeBlendMode, m_activeCanvasFormat);
+
 					[m_renderEncoder setRenderPipelineState:m_fillPipelines[m_bTintmap][(int)m_activeBlendMode][(int)m_activeCanvasFormat] ];
+				}
 				else
+				{
+					if( m_fillAAPipelines[m_bTintmap][(int)m_activeBlendMode][(int)m_activeCanvasFormat] == nil )
+						m_fillAAPipelines[m_bTintmap][(int)m_activeBlendMode][(int)m_activeCanvasFormat] = _compileFillAAPipeline(m_bTintmap, m_activeBlendMode, m_activeCanvasFormat);
+
 					[m_renderEncoder setRenderPipelineState:m_fillAAPipelines[m_bTintmap][(int)m_activeBlendMode][(int)m_activeCanvasFormat] ];
+				}
 
 				[m_renderEncoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:vertexOfs vertexCount:nRectsWritten*6];
 				break;
@@ -1454,6 +1438,8 @@ void MetalBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, i
 
 				if (nLinesWritten > 0)
 				{
+					if( m_linePipelines[(int)m_activeBlendMode][(int)m_activeCanvasFormat] == nil )
+						m_linePipelines[(int)m_activeBlendMode][(int)m_activeCanvasFormat] = _compileLinePipeline(m_activeBlendMode, m_activeCanvasFormat);
 
 					[m_renderEncoder setRenderPipelineState:m_linePipelines[(int)m_activeBlendMode][(int)m_activeCanvasFormat] ];
 
@@ -1755,6 +1741,9 @@ void MetalBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, i
 
 				[m_renderEncoder setFragmentBuffer:pEdgemap->m_bufferId offset:0 atIndex:(unsigned) FragmentInputIndex::Edgemap];
 
+				if( m_segmentsPipelines[nSegments-1][m_bTintmap][(int)m_activeBlendMode][(int)m_activeCanvasFormat] == nil )
+					m_segmentsPipelines[nSegments-1][m_bTintmap][(int)m_activeBlendMode][(int)m_activeCanvasFormat] = _compileSegmentsPipeline(nSegments-1, m_bTintmap, m_activeBlendMode, m_activeCanvasFormat);
+
 				[m_renderEncoder setRenderPipelineState:m_segmentsPipelines[nSegments-1][m_bTintmap][(int)m_activeBlendMode][(int)m_activeCanvasFormat] ];
 				[m_renderEncoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:vertexOfs vertexCount:nRects*6];
 
@@ -1913,9 +1902,19 @@ void MetalBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, i
 						shader = BlitFragShader::RGBXSource;
 
 					if( cmd == Command::Blur )
+					{
+						if(m_blurPipelines[m_bTintmap][(int)m_activeBlendMode][(int)m_activeCanvasFormat] == nil )
+							m_blurPipelines[m_bTintmap][(int)m_activeBlendMode][(int)m_activeCanvasFormat] = _compileBlurPipeline( m_bTintmap, m_activeBlendMode, m_activeCanvasFormat );
+
 						[m_renderEncoder setRenderPipelineState:m_blurPipelines[m_bTintmap][(int)m_activeBlendMode][(int)m_activeCanvasFormat] ];
+					}
 					else
+					{
+						if(m_blitPipelines[(int)shader][m_bTintmap][(int)m_activeBlendMode][(int)m_activeCanvasFormat] == nil )
+							m_blitPipelines[(int)shader][m_bTintmap][(int)m_activeBlendMode][(int)m_activeCanvasFormat] = _compileBlitPipeline( shader, m_bTintmap, m_activeBlendMode, m_activeCanvasFormat );
+
 						[m_renderEncoder setRenderPipelineState:m_blitPipelines[(int)shader][m_bTintmap][(int)m_activeBlendMode][(int)m_activeCanvasFormat] ];
+					}
 
 					[m_renderEncoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:vertexOfs vertexCount:nRects*6];
 					vertexOfs += nRects*6;
@@ -1943,6 +1942,9 @@ void MetalBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, i
 	//		_executeBuffer();
 
 }
+
+
+
 
 //____ autopresent() ________________________________________________
 
