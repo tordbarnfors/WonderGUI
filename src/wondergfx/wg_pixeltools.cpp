@@ -222,12 +222,7 @@ static void createConv16toSRGBTab()
 
 static void readBGRA8( const uint8_t * pSrc, uint8_t * pDst, int nbPixels, const void * p1, const void * p2 )
 {
-	for( int i = 0 ; i < nbPixels ; i++ )
-	{
-		* (uint32_t*) pDst = *(uint32_t*) pSrc;
-		pSrc += 4;
-		pDst += 4;
-	}
+	memcpy( pDst, pSrc, (size_t) nbPixels * 4 );
 }
 
 static void readConvBGRA8( const uint8_t * pSrc, uint8_t * pDst, int nbPixels, const void * p1, const void * p2 )

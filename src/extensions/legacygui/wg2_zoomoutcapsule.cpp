@@ -602,6 +602,9 @@ bool WgZoomOutCapsule::_onAlphaTest( const WgCoord& ofs )
 
 void WgZoomOutCapsule::_setScale( int scale )
 {
+	if( m_scale == scale )
+		return;
+
 	WgCapsule::_setScale(scale);
 
 	if( m_pScreenshot || m_pSkin )

@@ -325,6 +325,9 @@ void WgContainer::_onDisable()
 
 void WgContainer::_setScale( int scale )
 {
+	if( m_scale == scale )
+		return;
+
 	WgWidget::_setScale( scale );
 
 	WgWidget * p = FirstWidget();

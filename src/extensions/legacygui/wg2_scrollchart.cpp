@@ -1459,6 +1459,9 @@ void WgScrollChart::_onNewSize(const WgSize& size)
 
 void WgScrollChart::_setScale(int scale)
 {
+	if( m_scale == scale )
+		return;
+
 	WgWidget::_setScale(scale);
 
 	SetCanvasPadding(m_pointPadding);		// Update m_pixelPadding and resample if needed.

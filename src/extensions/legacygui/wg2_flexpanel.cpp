@@ -1347,6 +1347,9 @@ void WgFlexPanel::_onNewSize( const WgSize& size )
 
 void WgFlexPanel::_setScale( int scale )
 {
+	if( m_scale == scale )
+		return;
+
 	WgPanel::_setScale( scale );
 
 	WgFlexHook * pHook = m_hooks.last();

@@ -281,6 +281,9 @@ int WgSizeCapsule::MatchingPixelWidth( int height ) const
 
 void WgSizeCapsule::_setScale( int scale )
 {
+	if( m_scale == scale )
+		return;
+
 	WgCapsule::_setScale(scale);
 
 	m_pixelsMin = WgSize(m_pointsMin.w*m_scale>>WG_SCALE_BINALS, m_pointsMin.h*m_scale>>WG_SCALE_BINALS);

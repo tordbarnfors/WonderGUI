@@ -650,6 +650,9 @@ void WgLineEditor::_onNewSize( const WgSize& size )
 
 void WgLineEditor::_setScale( int scale )
 {
+	if( m_scale == scale )
+		return;
+
 	WgWidget::_setScale(scale);
 
 	m_text.SetScale(scale);

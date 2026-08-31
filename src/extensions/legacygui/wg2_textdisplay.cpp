@@ -702,6 +702,9 @@ void WgTextDisplay::_onLostInputFocus()
 
 void WgTextDisplay::_setScale( int scale )
 {
+	if( m_scale == scale )
+		return;
+
 	WgWidget::_setScale(scale);
 
 	m_text.SetScale(scale);
