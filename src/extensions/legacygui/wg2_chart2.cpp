@@ -1096,6 +1096,9 @@ void WgChart2::_onNewSize(const WgSize& size)
 
 void WgChart2::_setScale(int scale)
 {
+	if( m_scale == scale )
+		return;
+
 	WgWidget::_setScale(scale);
 
 	SetCanvasPadding(m_pointPadding);		// Update m_pixelPadding and resample if needed.
