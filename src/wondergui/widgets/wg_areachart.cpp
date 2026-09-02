@@ -126,7 +126,7 @@ namespace wg
 	{
 		for (int i = 0; i < nb; i++)
 		{
-			pEntry->m_pDisplay = this;
+			pEntry[i].m_pDisplay = this;
 			_waveformNeedsRefresh(pEntry + i, true, true, true);
 		}
 	}
@@ -472,45 +472,49 @@ namespace wg
 
 			if( !bResampled )
 			{
-//				if( nSamples <= wfSamples )
+				float stepFactor = (wfSamples > 1) ? (nSamples - 1) / (float)(wfSamples - 1) : 0.f;
+
+				for (int i = 0; i < wfSamples; i++)
 				{
-					float stepFactor = (nSamples - 1) / (float) wfSamples;
+					float sample = stepFactor * i;
+					int ofs = (int)sample;
+					if( ofs > nSamples - 2 )
+						ofs = nSamples - 2;
 
-					for (int i = 0; i < wfSamples; i++)
+					float frac2 = sample - ofs;
+					float frac1 = 1.f - frac2;
+
+					float interpolated = pSamples[ofs] * frac1 + pSamples[ofs+1] * frac2;
+
+					pConverted[i] = int((interpolated - m_displayCeiling) * valueFactor);
+				}
+
+				if( m_bPreservePeaks )
+				{
+					for( int i = 1 ; i < nSamples-1 ; i++ )
 					{
-						float sample = stepFactor * i;
-						int ofs = (int)sample;
-						float frac2 = sample - ofs;
-						float frac1 = 1.f - frac2;
+						float sample = pSamples[i];
+						float neighbour1 = pSamples[i-1];
+						float neighbour2 = pSamples[i+1];
+						if( neighbour1 > neighbour2 )
+							std::swap( neighbour1, neighbour2 );
 
-						float interpolated = pSamples[ofs] * frac1 + pSamples[ofs+1] * frac2;
-
-						pConverted[i] = int((interpolated - m_displayCeiling) * valueFactor);
-					}
-
-					if( m_bPreservePeaks )
-					{
-						for( int i = 1 ; i < nSamples-1 ; i++ )
+						if( sample < neighbour1 || sample > neighbour2 )
 						{
-							float sample = pSamples[i];
-							float neighbour1 = pSamples[i-1];
-							float neighbour2 = pSamples[i+1];
-							if( neighbour1 > neighbour2 )
-								std::swap( neighbour1, neighbour2 );
+							int x = int( i * (float)(wfSamples-1) /(float)(nSamples-1) + 0.5f );
 
-							if( sample < neighbour1 || sample > neighbour2 )
-							{
-								int x = int((wfSamples*i/(float)(nSamples-1))+0.5f);
-								pConverted[x] = int((sample - m_displayCeiling) * valueFactor);
-							}
+							spx v = int((sample - m_displayCeiling) * valueFactor);
+
+							pConverted[x] = v;
+/*
+							if( bTopEdge )
+								pConverted[x] = std::min(pConverted[x], v);
+							else
+								pConverted[x] = std::max(pConverted[x], v);
+ */
 						}
 					}
 				}
-//				else
-//				{
-//
-//				}
-
 			}
 
 			//
@@ -587,21 +591,21 @@ namespace wg
 
 						for( int section = 0 ; section < nSections ; section++ )
 						{
-							if( pNew->topBeg < pNew->topEnd || pOld->topBeg < pOld->topEnd )
-							{
-								spx begin = std::min(pOld->topBeg, pNew->topBeg);
-								spx end = std::max(pOld->topEnd, pNew->topEnd);
+							// Add dirt for topEdge movement
 
+							spx begin = std::min(pOld->topBeg, pNew->topBeg);
+							spx end = std::max(pOld->topEnd, pNew->topEnd);
+
+							if( begin < end )
 								pSectionDirt[section].add( begin & ~63, (end + 63) & ~63 );
-							}
 
-							if( pNew->bottomBeg < pNew->bottomEnd || pOld->bottomBeg < pOld->bottomEnd )
-							{
-								spx begin = std::min(pOld->bottomBeg, pNew->bottomBeg);
-								spx end = std::max(pOld->bottomEnd, pNew->bottomEnd);
+							// Add dirt for bottomEdge movement
 
+							begin = std::min(pOld->bottomBeg, pNew->bottomBeg);
+							end = std::max(pOld->bottomEnd, pNew->bottomEnd);
+
+							if( begin < end )
 								pSectionDirt[section].add( begin & ~63, (end + 63) & ~63 );
-							}
 
 							* pOld++ = * pNew++;
 						}
