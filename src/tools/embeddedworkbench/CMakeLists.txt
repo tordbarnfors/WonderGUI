@@ -35,8 +35,8 @@ target_link_directories(embeddedworkbench PRIVATE
 
 target_link_libraries(embeddedworkbench PRIVATE
 
-	wondergfx
 	wgsoftgfx	
+	wondergfx
 	${SDL2_LIBS}
 )
 

@@ -28,7 +28,7 @@
 #include <wg_packpanel.h>
 #include <wg_textdisplay.h>
 
-
+#include <cinttypes>
 
 namespace wg
 {
@@ -308,7 +308,7 @@ namespace wg
 		));
 
 		char temp[64];
-		sprintf(temp, " 0x%llx", reinterpret_cast<std::uintptr_t>(pObject));
+		std::snprintf(temp, sizeof(temp), " 0x%" PRIxPTR, reinterpret_cast<std::uintptr_t>(pObject));
 
 		CharBuffer buf(64);
 		buf.pushBack(temp);
@@ -415,7 +415,7 @@ namespace wg
 
 		char temp[32] = "null";
 		if( pPointer )
-			sprintf(temp, " 0x%llx", reinterpret_cast<std::uintptr_t>(pPointer));
+			std::snprintf(temp, sizeof(temp), " 0x%" PRIxPTR, reinterpret_cast<std::uintptr_t>(pPointer));
 
 		pTable->slots[row][0] = TextDisplay::create(WGOVR(m_pHolder->blueprint().listEntryLabel, _.display.text = pLabel));
 		pTable->slots[row][1] = TextDisplay::create(WGOVR(m_pHolder->blueprint().listEntryText, _.display.text = temp));
@@ -443,7 +443,7 @@ namespace wg
 
 			char temp[32];
 			if(pPointer)
-				sprintf(temp, " 0x%llx", reinterpret_cast<std::uintptr_t>(pPointer));
+				std::snprintf(temp, sizeof(temp), " 0x%" PRIxPTR, reinterpret_cast<std::uintptr_t>(pPointer));
 			buff.pushBack(temp);
 
 			TextLink_p 	pLink = TextLink::create();
@@ -632,7 +632,7 @@ namespace wg
 
 		char temp[32] = "null";
 		if( pPointer )
-			sprintf(temp, " 0x%llx", reinterpret_cast<std::uintptr_t>(pPointer));
+			std::snprintf(temp, sizeof(temp), " 0x%" PRIxPTR, reinterpret_cast<std::uintptr_t>(pPointer));
 
 		static_cast<TextDisplay*>(pTable->slots[row][1]._widget())->display.setText(temp);
 	}
@@ -662,7 +662,7 @@ namespace wg
 
 			char temp[32];
 			if(pPointer)
-				sprintf(temp, " 0x%llx", reinterpret_cast<std::uintptr_t>(pPointer));
+				std::snprintf(temp, sizeof(temp), " 0x%" PRIxPTR, reinterpret_cast<std::uintptr_t>(pPointer));
 			buff.pushBack(temp);
 
 			TextLink_p 	pLink = TextLink::create();

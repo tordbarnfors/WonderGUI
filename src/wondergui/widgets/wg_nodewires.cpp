@@ -478,6 +478,9 @@ namespace wg
 
 			case Placement::West:
 				return Direction::Left;
+
+			default:
+				return Direction::Down;		// Should never happen.	
 		}
 
 	}
