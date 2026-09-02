@@ -152,7 +152,8 @@ namespace wg
 
 				// Output
 
-		bool				m_bSamplesChanged = false;
+		bool				m_bTopSamplesChanged = false;
+		bool				m_bBottomSamplesChanged = false;
 		bool				m_bColorsChanged = false;
 
 		std::vector<SectionBounds>	m_sectionBounds;
@@ -296,7 +297,7 @@ namespace wg
 		void		_requestRenderAreaChartEntry(AreaChartEntry* pAreaChartEntry, float leftmost, float rightmost);
 		void		_requestRenderSectionSpan(int section, spx beginY, spx endY);
 
-		void		_waveformNeedsRefresh(AreaChartEntry* pAreaChartEntry, bool bGeo, bool bSamples, bool bColor);
+		void		_waveformNeedsRefresh(AreaChartEntry* pAreaChartEntry, bool bGeo, bool bTopSamples, bool bBottomSamples, bool bColor);
 
 		void 		_importSegmentBounds(Edgemap * pEdgemap, SectionBounds * pDest, int nSections, int sectionWidth, int mapOffset);
 

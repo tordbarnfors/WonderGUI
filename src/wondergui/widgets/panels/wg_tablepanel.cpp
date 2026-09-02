@@ -247,13 +247,13 @@ void TablePanel::resize( int nRows, int nColumns )
 	int nOldRows = rows.size();
 
 	// Do the actual resize
-	
+
 	slots._resize(nRows, nColumns);
 	rows._resize(nRows);
 	columns._resize(nColumns);
 
 	// Count number of visible rows and columns
-	
+
 	int nVisibleRows = 0;
 	int nVisibleColumns = 0;
 
@@ -262,7 +262,7 @@ void TablePanel::resize( int nRows, int nColumns )
 		if( row.m_bVisible )
 			nVisibleRows++;
 	}
-	
+
 	for( auto& column : columns )
 	{
 		if( column.m_bVisible )
@@ -278,7 +278,7 @@ void TablePanel::resize( int nRows, int nColumns )
 		rows[i].m_pTable = this;
 
 	// Refresh column caches for existing columns if number of visible rows have changed
-	
+
 	if( nVisibleRows < m_nVisibleRows )
 	{
 		int end = std::min(nOldColumns, nColumns);
@@ -288,9 +288,9 @@ void TablePanel::resize( int nRows, int nColumns )
 				_refreshColumnCache(i, columns[i].m_cache, m_scale);
 		}
 	}
-	
+
 	// Refresh row caches for existing rows if number of visible columns have changed
-	
+
 	if( nVisibleColumns < m_nVisibleColumns )
 	{
 		int end = std::min(nOldRows, nRows);
@@ -300,12 +300,12 @@ void TablePanel::resize( int nRows, int nColumns )
 				_refreshRowCache(i, rows[i].m_cache, m_scale);
 		}
 	}
-	
+
 	//
-	
+
 	m_nVisibleRows = nVisibleRows;
 	m_nVisibleColumns = nVisibleColumns;
-	
+
 	_updateMinDefaultSize();
 	_requestRender();
 	_requestResize();
@@ -319,9 +319,9 @@ void TablePanel::setRowLayout(PackLayout* pLayout)
 	if (pLayout != m_pLayoutY)
 	{
 		m_pLayoutY = pLayout;
-				
+
 		bool bRowsChanged = _refreshRows();
-		
+
 		if( bRowsChanged )
 		{
 			_updateModifiedChildSizes();
@@ -337,19 +337,19 @@ void TablePanel::setColumnLayout(PackLayout* pLayout)
 	if (pLayout != m_pLayoutX)
 	{
 		m_pLayoutX = pLayout;
-		
+
 		bool bColumnsChanged = false;
 		bool matchingRowHeightChanged = false;
 
 		bColumnsChanged = _refreshColumns();
-		
+
 		if( bColumnsChanged )
 		{
 			matchingRowHeightChanged = _refreshRowHeightForColumnWidth();
-		
+
 			if( matchingRowHeightChanged )
 				_refreshRows();
-		
+
 			_updateModifiedChildSizes();
 			_requestRender();
 		}
@@ -362,13 +362,13 @@ void TablePanel::setRowSpacing( pts before, pts between, pts after )
 {
 	if( before == m_spacingY[0] && between == m_spacingY[1] && after == m_spacingY[2] )
 		return;
-	
+
 	SizeSPX oldPadding = _sumOfPadding(m_scale);
-	
+
 	m_spacingY[0] = before;
 	m_spacingY[1] = between;
 	m_spacingY[2] = after;
-	
+
 	SizeSPX newPadding = _sumOfPadding(m_scale);
 
 	m_defaultSize += newPadding - oldPadding;
@@ -384,13 +384,13 @@ void TablePanel::setColumnSpacing( pts before, pts between, pts after )
 {
 	if( before == m_spacingX[0] && between == m_spacingX[1] && after == m_spacingX[2] )
 		return;
-	
+
 	SizeSPX oldPadding = _sumOfPadding(m_scale);
-	
+
 	m_spacingX[0] = before;
 	m_spacingX[1] = between;
 	m_spacingX[2] = after;
-	
+
 	SizeSPX newPadding = _sumOfPadding(m_scale);
 
 	m_defaultSize += newPadding - oldPadding;
@@ -401,14 +401,14 @@ void TablePanel::setColumnSpacing( pts before, pts between, pts after )
 	if( m_size != oldSize )
 	{
 		bool bColumnsChanged = _refreshColumns();
-		
+
 		if( bColumnsChanged )
 		{
 			bool matchingRowHeightChanged = _refreshRowHeightForColumnWidth();
-			
+
 			if( matchingRowHeightChanged )
 				_refreshRows();
-			
+
 			_updateModifiedChildSizes();
 		}
 		_requestRender();
@@ -428,7 +428,7 @@ bool TablePanel::setRowSkins( Skin * pSkin1, Skin * pSkin2 )
 
 	if( pSkin2 == nullptr )
 		pSkin2 = pSkin1;
-	
+
 	if( pSkin1 == m_pRowSkins[0] && pSkin2 == m_pRowSkins[1] )
 		return true;
 
@@ -437,27 +437,27 @@ bool TablePanel::setRowSkins( Skin * pSkin1, Skin * pSkin2 )
 		if( pSkin1->margin() + pSkin1->padding() != pSkin2->margin() + pSkin2->padding() )
 		{
 			Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "When setting different skins for odd and even rows, their combined margin+padding must be equal.",
-				this, &TYPEINFO, __func__, __FILE__, __LINE__);			
+				this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return false;
 		}
 	}
-		
+
 	bool bGeoChanged = false;
-	
+
 	if( pSkin1 == nullptr && (m_pRowSkins[0]->_hasPadding() || m_pRowSkins[0]->_hasMargin()) )
 		bGeoChanged = true;
 	else if( m_pRowSkins[0] == nullptr && (pSkin1->_hasPadding() || pSkin1->_hasMargin()) )
 		bGeoChanged = true;
 	else
 		bGeoChanged = pSkin1->_contentBorder(m_scale, m_state) != m_pRowSkins[0]->_contentBorder(m_scale, m_state);
-	
+
 	m_pRowSkins[0] = pSkin1;
 	m_pRowSkins[1] = pSkin2;
-	
+
 	if( bGeoChanged )
 	{
 		// This can be optimized in many ways if needed in the future.
-		
+
 		_updateMinDefaultSize();
 		_refreshColumns();
 		_refreshRows();
@@ -470,7 +470,7 @@ bool TablePanel::setRowSkins( Skin * pSkin1, Skin * pSkin2 )
 	return true;
 }
 
- 
+
 //____ _matchingHeight() ______________________________________________________
 
 spx TablePanel::_matchingHeight(spx width, int scale) const
@@ -789,12 +789,12 @@ Widget * TablePanel::_findWidget( const CoordSPX& ofs, SearchMode mode )
 		CoordSPX pos= geo.pos();
 		pos.x += rowBorder.left;
 		pos.y += rowBorder.top;
-		
+
 		int row = 0;
 		int column = 0;
-		
+
 		// Find right row
-		
+
 		while( row < rows.size() )
 		{
 			if( rows[row].m_bVisible )
@@ -802,11 +802,11 @@ Widget * TablePanel::_findWidget( const CoordSPX& ofs, SearchMode mode )
 				if( pos.y > ofs.y )
 				{
 					// Fell between the cracks.
-					
+
 					row = rows.size();
 					break;											// Found right row
 				}
-				
+
 				if( pos.y + rows[row].m_height > ofs.y )
 					break;
 
@@ -816,7 +816,7 @@ Widget * TablePanel::_findWidget( const CoordSPX& ofs, SearchMode mode )
 		}
 
 		// Find right column
-		
+
 		while( column < columns.size() )
 		{
 			if( columns[column].m_bVisible )
@@ -824,11 +824,11 @@ Widget * TablePanel::_findWidget( const CoordSPX& ofs, SearchMode mode )
 				if( pos.x > ofs.x )
 				{
 					// Fell between the cracks.
-					
+
 					column = columns.size();
 					break;
 				}
-				
+
 				if( pos.x + columns[column].m_width > ofs.x )
 					break;											// Found right column
 
@@ -838,11 +838,11 @@ Widget * TablePanel::_findWidget( const CoordSPX& ofs, SearchMode mode )
 		}
 
 		// If we have a row and column and the slot contains a widget we test against that
-		
+
 		if( row < rows.size() && column < columns.size() && !slots[row][column].isEmpty() )
 		{
 			Widget * pWidget = slots[row][column]._widget();
-			
+
 			if (pWidget->isContainer())
 			{
 				Widget * pRes = static_cast<Container*>(pWidget)->_findWidget(ofs - pos, mode);
@@ -853,7 +853,7 @@ Widget * TablePanel::_findWidget( const CoordSPX& ofs, SearchMode mode )
 				return pWidget;
 		}
 	}
-	
+
 	// Check against ourselves
 
 	if( mode == SearchMode::Geometry || _markTest(ofs) )
@@ -886,7 +886,7 @@ RectSPX TablePanel::_slotGeo(const StaticSlot* pSlot) const
 		if (columns[i].m_bVisible)
 			geo.x += columns[i].m_width + align(ptsToSpx(m_spacingX[1], m_scale));
 	}
-		
+
 	for (int i = 0; i < row; i++)
 	{
 		if (rows[i].m_bVisible)
@@ -944,7 +944,7 @@ void TablePanel::_childRequestResize(StaticSlot * pSlot)
 Widget * TablePanel::_prevChild(const StaticSlot * _pSlot) const
 {
 	auto pSlot = static_cast<const DynamicSlot*>(_pSlot);
-	
+
 	auto pFirstSlot = slots.data();
 
 	pSlot--;
@@ -1087,14 +1087,14 @@ void TablePanel::_render(GfxDevice* pDevice, const RectSPX& _canvas, const RectS
 	RectSPX canvas = m_skin.contentRect( _canvas, m_scale, m_state );
 
 	BorderSPX rowBorder = m_pRowSkins[0] != nullptr ? m_pRowSkins[0]->_contentBorder(m_scale, m_state) : BorderSPX();
-	
+
 	spx rowOfs = 0;
 
 	Skin * rowSkin1 = m_pRowSkins[0];
 	Skin * rowSkin2 = m_pRowSkins[1] != nullptr ? m_pRowSkins[1] : m_pRowSkins[0];
 
 	auto slotIt = slots.begin();
-	
+
 	for( auto& row : rows )
 	{
 		RectSPX rowGeo = { canvas.x, canvas.y + align(ptsToSpx(m_spacingY[0], m_scale)) + rowOfs, canvas.w, row.m_height + rowBorder.height() };
@@ -1102,20 +1102,20 @@ void TablePanel::_render(GfxDevice* pDevice, const RectSPX& _canvas, const RectS
 		if( row.m_bVisible )
 		{
 			// Render row skin
-			
+
 			if( rowSkin1 != nullptr )
 			{
 				rowSkin1->_render(pDevice, rowGeo, m_scale, m_state);
 				std::swap(rowSkin1, rowSkin2);
 			}
-			
+
 			// Render widgets in row
-			
+
 			CoordSPX widgetPos;
 			widgetPos.x = rowGeo.x + rowBorder.left + align(ptsToSpx(m_spacingX[0], m_scale));
 			widgetPos.y = rowGeo.y + rowBorder.top;
 
-			
+
 			for( auto& column : columns )
 			{
 				if( column.m_bVisible )
@@ -1134,9 +1134,9 @@ void TablePanel::_render(GfxDevice* pDevice, const RectSPX& _canvas, const RectS
 		{
 			slotIt += columns.size();
 		}
-		
+
 		// Finish up
-		
+
 		rowOfs += rowGeo.h + align(ptsToSpx(m_spacingY[1], m_scale));
 	}
 }
@@ -1147,9 +1147,9 @@ void TablePanel::_resize( const SizeSPX& size, int scale )
 {
 	SizeSPX oldSize = m_size;
 	bool bScaleChanged = scale != m_scale;
-	
+
 	Container::_resize(size, scale);
-	
+
 	if( bScaleChanged )
 	{
 
@@ -1165,6 +1165,8 @@ void TablePanel::_resize( const SizeSPX& size, int scale )
 
 		_refreshRows();
 
+		_updateMinDefaultSize();
+
 		_updateAllChildSizes();
 	}
 	else
@@ -1175,13 +1177,13 @@ void TablePanel::_resize( const SizeSPX& size, int scale )
 
 		if( oldSize.w != size.w )
 			bColumnsChanged = _refreshColumns();
-		
+
 		if( bColumnsChanged )
 			matchingRowHeightChanged = _refreshRowHeightForColumnWidth();
-		
+
 		if( oldSize.h != size.h || matchingRowHeightChanged )
 			bRowsChanged = _refreshRows();
-		
+
 		if( bRowsChanged || bColumnsChanged )
 			_updateModifiedChildSizes();
 	}
@@ -1229,7 +1231,7 @@ BorderSPX TablePanel::_calcOverflow()
 		else
 			m_bChildrenWithOverflow = false;
 	}
-	
+
 	return overflow;
 }
 
@@ -1315,20 +1317,20 @@ bool TablePanel::_refreshColumns()
 	if( m_pLayoutX )
 	{
 		auto pLayout = m_pLayoutX;
-				
+
 		// Get column widths from our PackLayout
-		
+
 		spx totalPadding = m_skin.contentBorderSize(m_scale).w + align(ptsToSpx(m_spacingX[0], m_scale)) + align(ptsToSpx(m_spacingX[1], m_scale)) * std::max(0, m_nVisibleColumns-1) + align(ptsToSpx(m_spacingX[2], m_scale));
 
 		if( m_pRowSkins[0] != nullptr )
 			totalPadding += m_pRowSkins[0]->_contentBorderSize(m_scale).w;
-		
+
 		spx availableWidth = m_size.w - totalPadding;
-		
+
 		int arrayBytes = (sizeof(PackLayout::Item)+sizeof(spx)) * m_nVisibleColumns;
 		PackLayout::Item* pItems = reinterpret_cast<PackLayout::Item*>(Base::memStackAlloc(arrayBytes));
 		spx* pOutput = (spx*) &pItems[m_nVisibleColumns];
-		
+
 		auto p = pItems;
 		for( auto& column : columns )
 		{
@@ -1341,17 +1343,17 @@ bool TablePanel::_refreshColumns()
 				p++;
 			}
 		}
-		
+
 		pLayout->getItemSizes(pOutput, availableWidth, m_scale, m_nVisibleColumns, pItems);
-		
+
 		// Update column widths and flag changes
-				
+
 		for( auto& column : columns )
 		{
 			if( column.m_bVisible )
 			{
 				spx newWidth = * pOutput++;
-				
+
 				if( column.m_width != newWidth )
 				{
 					column.m_width = newWidth;
@@ -1360,7 +1362,7 @@ bool TablePanel::_refreshColumns()
 				}
 			}
 		}
-		
+
 		// Release temporary memory area
 
 		Base::memStackFree(arrayBytes);
@@ -1380,7 +1382,7 @@ bool TablePanel::_refreshColumns()
 			}
 		}
 	}
-		
+
 	return bLayoutChanged;
 }
 
@@ -1389,21 +1391,21 @@ bool TablePanel::_refreshColumns()
 bool TablePanel::_refreshRows()
 {
 	bool bLayoutChanged = false;
-	
+
 	if( m_pLayoutY )
 	{
 		// Get out row height from our PackLayout
-		
+
 		spx totalPadding = m_skin.contentBorderSize(m_scale).h + align(ptsToSpx(m_spacingY[0], m_scale)) + align(ptsToSpx(m_spacingY[1], m_scale)) * std::max(0, m_nVisibleRows-1) + align(ptsToSpx(m_spacingY[2], m_scale));
 		if( m_pRowSkins[0] != nullptr )
 			totalPadding += m_pRowSkins[0]->_contentBorderSize(m_scale).h * m_nVisibleRows;
-		
+
 		spx availableHeight = m_size.h - totalPadding;
-		
+
 		int arrayBytes = (sizeof(PackLayout::Item)+sizeof(spx)) * m_nVisibleRows;
 		PackLayout::Item* pItems = reinterpret_cast<PackLayout::Item*>(Base::memStackAlloc(arrayBytes));
 		spx* pOutput = (spx*) &pItems[m_nVisibleRows];
-		
+
 		auto p = pItems;
 		for( auto& row : rows )
 		{
@@ -1416,17 +1418,17 @@ bool TablePanel::_refreshRows()
 				p++;
 			}
 		}
-		
+
 		m_pLayoutY->getItemSizes(pOutput, availableHeight, m_scale, m_nVisibleRows, pItems);
-		
+
 		// Update row widths and flag changes
-		
+
 		for( auto& row : rows )
 		{
 			if( row.m_bVisible )
 			{
 				spx newHeight = * pOutput++;
-				
+
 				if( row.m_height != newHeight )
 				{
 					row.m_height = newHeight;
@@ -1435,9 +1437,9 @@ bool TablePanel::_refreshRows()
 				}
 			}
 		}
-		
+
 		// Release temporary memory area
-		
+
 		Base::memStackFree(arrayBytes);
 	}
 	else
@@ -1455,7 +1457,7 @@ bool TablePanel::_refreshRows()
 			}
 		}
 	}
-	
+
 	return bLayoutChanged;
 }
 
@@ -1466,13 +1468,13 @@ bool TablePanel::_refreshRowHeightForColumnWidth()
 	bool bLayoutChanged = false;
 
 	auto slotIt = slots.begin();
-	
+
 	for( auto& row : rows )
 	{
 		if( row.m_bVisible )
 		{
 			spx height = 0;
-			
+
 			for( auto& column : columns )
 			{
 				if( column.m_bVisible && !slotIt->isEmpty() )
@@ -1481,7 +1483,7 @@ bool TablePanel::_refreshRowHeightForColumnWidth()
 					if( h > height )
 						height = h;
 				}
-				
+
 				slotIt++;
 			}
 
@@ -1494,7 +1496,7 @@ bool TablePanel::_refreshRowHeightForColumnWidth()
 		else
 			slotIt += columns.size();
 	}
-	
+
 	return bLayoutChanged;
 }
 
@@ -1503,18 +1505,18 @@ bool TablePanel::_refreshRowHeightForColumnWidth()
 void TablePanel::_updateModifiedChildSizes()
 {
 	auto slotIt = slots.begin();
-	
+
 	for( auto& row : rows )
-	{		
+	{
 		if( row.m_bVisible )
 		{
 			for( auto& column : columns )
 			{
 				Widget * p = slotIt->_widget();
-				
+
 				if( p && column.m_bVisible && p->_size() != SizeSPX{column.m_width,row.m_height} )
 					p->_resize({column.m_width,row.m_height}, m_scale);
-				
+
 				slotIt++;
 			}
 			row.m_bModified = false;
@@ -1562,7 +1564,7 @@ bool TablePanel::_refreshRowCache( int row, TablePanelRow::Cache& cache, int sca
 
 	spx	defaultHeight = 0;
 	spx heightForWidth = 0;
-	
+
 	for( auto& column : columns )
 	{
 		Widget * p = slotIt->_widget();
@@ -1570,13 +1572,13 @@ bool TablePanel::_refreshRowCache( int row, TablePanelRow::Cache& cache, int sca
 		{
 			spx myDefaultHeight = p->_defaultSize(scale).h;
 			spx myHeightForWidth = p->_matchingHeight(column.m_width, scale);
-			
+
 			if( myDefaultHeight > defaultHeight )
 				defaultHeight = myDefaultHeight;
-						
+
 			if( myHeightForWidth > heightForWidth )
 				heightForWidth = myHeightForWidth;
-		}	
+		}
 		slotIt++;
 	}
 
@@ -1797,7 +1799,7 @@ void TablePanel::_refreshSlots(int ofs, Axis axis, int nSlots)
 
 	if( bCellsModified )
 		_updateModifiedChildSizes();
-	
+
 	if (bRefreshGeo  || bColumnCacheChanged || bRowCacheChanged )
 	{
 		_requestResize();
@@ -1949,9 +1951,9 @@ void TablePanel::_rowVisibilityChanged( int change )
 {
 	if(change == 0)
 		return;
-	
+
 	m_nVisibleRows += change;
-	
+
 	_updateMinDefaultSize();
 
 	_requestRender();
@@ -1964,9 +1966,9 @@ void TablePanel::_columnVisibilityChanged( int change )
 {
 	if(change == 0)
 		return;
-	
+
 	m_nVisibleColumns += change;
-	
+
 	_updateMinDefaultSize();
 
 	_requestRender();

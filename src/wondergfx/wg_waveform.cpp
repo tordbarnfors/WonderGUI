@@ -54,8 +54,8 @@ namespace wg
 
 		m_bHasOutlines = bp.topOutlineThickness > 0 || bp.bottomOutlineThickness > 0;
 
-		m_topBrush.thickness = bp.topOutlineThickness;
-		m_bottomBrush.thickness = bp.bottomOutlineThickness;
+		m_topBrush.thickness = std::clamp(bp.topOutlineThickness, 0, 64*64);
+		m_bottomBrush.thickness = std::clamp(bp.bottomOutlineThickness, 0, 64*64);
 
 		// Generate brush slope
 

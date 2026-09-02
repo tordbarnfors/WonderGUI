@@ -24,6 +24,7 @@
 #include	<wg_base.h>
 
 #include	<cstring>
+#include 	<algorithm>
 
 namespace wg
 {
@@ -101,8 +102,9 @@ namespace wg
 		// If we turned visible we might have a waveform that needs refresh.
 		// (we don't perform refresh while hidden)
 
-		if (pAreaChartEntry->m_bVisible && (pAreaChartEntry->m_bSamplesChanged || pAreaChartEntry->m_bColorsChanged))
-			_waveformNeedsRefresh(pAreaChartEntry, false, pAreaChartEntry->m_bSamplesChanged, pAreaChartEntry->m_bColorsChanged);
+		if (pAreaChartEntry->m_bVisible && (pAreaChartEntry->m_bTopSamplesChanged || pAreaChartEntry->m_bBottomSamplesChanged || pAreaChartEntry->m_bColorsChanged))
+			_waveformNeedsRefresh(pAreaChartEntry, false, pAreaChartEntry->m_bTopSamplesChanged,
+								  pAreaChartEntry->m_bBottomSamplesChanged, pAreaChartEntry->m_bColorsChanged);
 	}
 
 
@@ -117,7 +119,7 @@ namespace wg
 		pAreaChartEntry->m_end = end;
 
 		_requestRenderAreaChartEntry( pAreaChartEntry, leftmost, rightmost );
-		_waveformNeedsRefresh(pAreaChartEntry, true, false, false);
+		_waveformNeedsRefresh(pAreaChartEntry, true, false, false, false);
 	}
 
 	//____ _didAddEntries() ___________________________________________________
@@ -126,8 +128,8 @@ namespace wg
 	{
 		for (int i = 0; i < nb; i++)
 		{
-			pEntry->m_pDisplay = this;
-			_waveformNeedsRefresh(pEntry + i, true, true, true);
+			pEntry[i].m_pDisplay = this;
+			_waveformNeedsRefresh(pEntry + i, true, true, true, true);
 		}
 	}
 
@@ -188,7 +190,7 @@ namespace wg
 
 	//____ _waveformNeedsRefresh() ____________________________________________
 
-	void AreaChart::_waveformNeedsRefresh(AreaChartEntry * pAreaChartEntry, bool bGeo, bool bSamples, bool bColors)
+	void AreaChart::_waveformNeedsRefresh(AreaChartEntry * pAreaChartEntry, bool bGeo, bool bTopSamples, bool bBottomSamples, bool bColors)
 	{
 		if (bGeo)
 		{
@@ -196,8 +198,11 @@ namespace wg
 		}
 		else
 		{
-			if (bSamples)
-				pAreaChartEntry->m_bSamplesChanged = true;
+			if (bTopSamples)
+				pAreaChartEntry->m_bTopSamplesChanged = true;
+
+			if (bBottomSamples)
+				pAreaChartEntry->m_bBottomSamplesChanged = true;
 
 			if (bColors)
 				pAreaChartEntry->m_bColorsChanged = true;
@@ -252,6 +257,8 @@ namespace wg
 		{
 			if (graph.m_pSampleTransition)
 			{
+				// TODO: Always transitions & refreshes both bottom and top, which might be unnecessary
+
 				int timestamp = graph.m_sampleTransitionProgress + microPassed;
 
 				if( timestamp >= graph.m_pSampleTransition->duration() )
@@ -278,7 +285,7 @@ namespace wg
 					transitionsActive = true;
 				}
 
-				_waveformNeedsRefresh(&graph, false, true, false);
+				_waveformNeedsRefresh(&graph, false, true, true, false);
 			}
 
 			if (graph.m_pColorTransition)
@@ -322,7 +329,7 @@ namespace wg
 					transitionsActive = true;
 				}
 
-				_waveformNeedsRefresh(&graph, false, false, true);
+				_waveformNeedsRefresh(&graph, false, false, false, true);
 			}
 		}
 
@@ -375,7 +382,8 @@ namespace wg
 						_updateWaveformEdge(entry, graph.m_pWaveform, false, (int) graph.m_bottomSamples.size(), graph.m_bottomSamples.data(), m_bAxisSwapped );
 
 						graph.m_pEdgemap = graph.m_pWaveform->refresh();
-						graph.m_bSamplesChanged = true;						// So _preRender() will understand.
+						graph.m_bTopSamplesChanged = true;						// So _preRender() will understand.
+						graph.m_bBottomSamplesChanged = true;					// So _preRender() will understand.
 
 						bSamplesChanged = true;
 						bNeedsFullRendering = true;
@@ -405,13 +413,17 @@ namespace wg
 						bNeedsFullRendering = true;
 					}
 
-					if (graph.m_bSamplesChanged)
+					if (graph.m_bTopSamplesChanged)
 					{
 						_updateWaveformEdge(entry, graph.m_pWaveform, true, (int) graph.m_topSamples.size(), graph.m_topSamples.data(), m_bAxisSwapped );
-						_updateWaveformEdge(entry, graph.m_pWaveform, false, (int) graph.m_bottomSamples.size(), graph.m_bottomSamples.data(), m_bAxisSwapped );
-
 						bSamplesChanged = true;
 					}
+					if (graph.m_bBottomSamplesChanged)
+					{
+						_updateWaveformEdge(entry, graph.m_pWaveform, false, (int) graph.m_bottomSamples.size(), graph.m_bottomSamples.data(), m_bAxisSwapped );
+						bSamplesChanged = true;
+					}
+
 				}
 				if (bNeedsFullRendering )
 					_requestRenderAreaChartEntry(&graph, graph.m_begin, graph.m_end);
@@ -472,45 +484,49 @@ namespace wg
 
 			if( !bResampled )
 			{
-//				if( nSamples <= wfSamples )
+				float stepFactor = (wfSamples > 1) ? (nSamples - 1) / (float)(wfSamples - 1) : 0.f;
+
+				for (int i = 0; i < wfSamples; i++)
 				{
-					float stepFactor = (nSamples - 1) / (float) wfSamples;
+					float sample = stepFactor * i;
+					int ofs = (int)sample;
+					if( ofs > nSamples - 2 )
+						ofs = nSamples - 2;
 
-					for (int i = 0; i < wfSamples; i++)
+					float frac2 = sample - ofs;
+					float frac1 = 1.f - frac2;
+
+					float interpolated = pSamples[ofs] * frac1 + pSamples[ofs+1] * frac2;
+
+					pConverted[i] = int((interpolated - m_displayCeiling) * valueFactor);
+				}
+
+				if( m_bPreservePeaks )
+				{
+					for( int i = 1 ; i < nSamples-1 ; i++ )
 					{
-						float sample = stepFactor * i;
-						int ofs = (int)sample;
-						float frac2 = sample - ofs;
-						float frac1 = 1.f - frac2;
+						float sample = pSamples[i];
+						float neighbour1 = pSamples[i-1];
+						float neighbour2 = pSamples[i+1];
+						if( neighbour1 > neighbour2 )
+							std::swap( neighbour1, neighbour2 );
 
-						float interpolated = pSamples[ofs] * frac1 + pSamples[ofs+1] * frac2;
-
-						pConverted[i] = int((interpolated - m_displayCeiling) * valueFactor);
-					}
-
-					if( m_bPreservePeaks )
-					{
-						for( int i = 1 ; i < nSamples-1 ; i++ )
+						if( sample < neighbour1 || sample > neighbour2 )
 						{
-							float sample = pSamples[i];
-							float neighbour1 = pSamples[i-1];
-							float neighbour2 = pSamples[i+1];
-							if( neighbour1 > neighbour2 )
-								std::swap( neighbour1, neighbour2 );
+							int x = int( i * (float)(wfSamples-1) /(float)(nSamples-1) + 0.5f );
 
-							if( sample < neighbour1 || sample > neighbour2 )
-							{
-								int x = int((wfSamples*i/(float)(nSamples-1))+0.5f);
-								pConverted[x] = int((sample - m_displayCeiling) * valueFactor);
-							}
+							spx v = int((sample - m_displayCeiling) * valueFactor);
+
+							pConverted[x] = v;
+/*
+							if( bTopEdge )
+								pConverted[x] = std::min(pConverted[x], v);
+							else
+								pConverted[x] = std::max(pConverted[x], v);
+ */
 						}
 					}
 				}
-//				else
-//				{
-//
-//				}
-
 			}
 
 			//
@@ -571,7 +587,7 @@ namespace wg
 
 			for (auto& entry : entries)
 			{
-				if (entry.m_bSamplesChanged && entry.m_bVisible && entry.m_pWaveform )
+				if ((entry.m_bTopSamplesChanged || entry.m_bBottomSamplesChanged) && entry.m_bVisible && entry.m_pWaveform )
 				{
 					auto pEdgemap = entry.m_pWaveform->refresh();
 					entry.m_pEdgemap = pEdgemap;
@@ -587,21 +603,21 @@ namespace wg
 
 						for( int section = 0 ; section < nSections ; section++ )
 						{
-							if( pNew->topBeg < pNew->topEnd || pOld->topBeg < pOld->topEnd )
-							{
-								spx begin = std::min(pOld->topBeg, pNew->topBeg);
-								spx end = std::max(pOld->topEnd, pNew->topEnd);
+							// Add dirt for topEdge movement
 
+							spx begin = std::min(pOld->topBeg, pNew->topBeg);
+							spx end = std::max(pOld->topEnd, pNew->topEnd);
+
+							if( begin < end )
 								pSectionDirt[section].add( begin & ~63, (end + 63) & ~63 );
-							}
 
-							if( pNew->bottomBeg < pNew->bottomEnd || pOld->bottomBeg < pOld->bottomEnd )
-							{
-								spx begin = std::min(pOld->bottomBeg, pNew->bottomBeg);
-								spx end = std::max(pOld->bottomEnd, pNew->bottomEnd);
+							// Add dirt for bottomEdge movement
 
+							begin = std::min(pOld->bottomBeg, pNew->bottomBeg);
+							end = std::max(pOld->bottomEnd, pNew->bottomEnd);
+
+							if( begin < end )
 								pSectionDirt[section].add( begin & ~63, (end + 63) & ~63 );
-							}
 
 							* pOld++ = * pNew++;
 						}
@@ -618,7 +634,8 @@ namespace wg
 //							_requestRenderEntrySection(&entry, section, pBounds[section].topBeg, pBounds[section].bottomEnd);
 					}
 
-					entry.m_bSamplesChanged = false;
+					entry.m_bTopSamplesChanged = false;
+					entry.m_bBottomSamplesChanged = false;
 				}
 			}
 
@@ -731,7 +748,7 @@ namespace wg
 			m_fillGradient = Gradient::Undefined;
 			m_outlineGradient = Gradient::Undefined;
 
-			m_pDisplay->_waveformNeedsRefresh(this, false, false, true);
+			m_pDisplay->_waveformNeedsRefresh(this, false, false, false, true);
 		}
 		else if( pTransition && pTransition == m_pColorTransition && fill == m_endFillColor && outline == m_endOutlineColor )
 			return false;	// We ignore re-setting of same transition. Return false since result will differ form request.
@@ -760,7 +777,7 @@ namespace wg
 			m_fillColor = fill;
 			m_outlineColor = outline;
 
-			m_pDisplay->_waveformNeedsRefresh(this, false, false, true);
+			m_pDisplay->_waveformNeedsRefresh(this, false, false, false, true);
 		}
 
 		return true;
@@ -800,7 +817,7 @@ namespace wg
 			m_fillGradient = fill;
 			m_outlineGradient = outline;
 
-			m_pDisplay->_waveformNeedsRefresh(this, false, false, true);
+			m_pDisplay->_waveformNeedsRefresh(this, false, false, false, true);
 		}
 
 		return true;
@@ -813,11 +830,12 @@ namespace wg
 		if( topOutline == m_topOutlineThickness && bottomOutline == m_bottomOutlineThickness )
 			return true;
 
-		m_topOutlineThickness = topOutline;
-		m_bottomOutlineThickness = bottomOutline;
 
-		m_pDisplay->_waveformNeedsRefresh(this, true, false, false );
-		return true;
+		m_topOutlineThickness = std::clamp(topOutline, 0.f, 64.f);
+		m_bottomOutlineThickness = std::clamp(bottomOutline, 0.f, 64.f);
+
+		m_pDisplay->_waveformNeedsRefresh(this, true, false, false, false );		// Must refresh whole waveform so we set geo to true.
+		return (topOutline >= 0) && (bottomOutline >= 0);							// Returning false, but setting clamped values anyway.
 	}
 
 	//____ setRange() _________________________________________________________
@@ -850,7 +868,7 @@ namespace wg
 
 		_endSampleTransition();
 
-		m_pDisplay->_waveformNeedsRefresh(this, false, true, false);
+		m_pDisplay->_waveformNeedsRefresh(this, false, true, false, false);
 	}
 
 	//____ setBottomSamples() _________________________________________________
@@ -869,7 +887,7 @@ namespace wg
 		}
 
 		_endSampleTransition();
-		m_pDisplay->_waveformNeedsRefresh(this, false, true, false);
+		m_pDisplay->_waveformNeedsRefresh(this, false, false, true, false);
 	}
 
 	//____ transitionSamples() ________________________________________________
