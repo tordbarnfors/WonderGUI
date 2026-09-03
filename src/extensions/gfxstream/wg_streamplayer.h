@@ -98,7 +98,27 @@ namespace wg
 
 		struct DataBuffer
 		{
+			DataBuffer() = default;
+			DataBuffer(const DataBuffer&) = delete;
+			DataBuffer& operator=(const DataBuffer&) = delete;
+
+			DataBuffer(DataBuffer&& o) noexcept
+				: pBuffer(o.pBuffer), capacity(o.capacity), size(o.size)
+			{
+				o.pBuffer = nullptr; o.capacity = 0; o.size = 0;
+			}
+
 			~DataBuffer() { delete [] pBuffer; }
+
+			DataBuffer& operator=(DataBuffer&& o) noexcept
+			{
+				if (this != &o) {
+					delete[] pBuffer;
+					pBuffer = o.pBuffer; capacity = o.capacity; size = o.size;
+					o.pBuffer = nullptr; o.capacity = 0; o.size = 0;
+				}
+				return *this;
+			}
 
 			void release() { delete [] pBuffer; pBuffer = nullptr; capacity = 0; size = 0; }
 
@@ -137,8 +157,8 @@ namespace wg
 		DataBuffer				m_colorsDataBuffer;
 		DataBuffer				m_commandsDataBuffer;
 
-		uint16_t				m_updateObject = 0;			// ObjectID from latest SurfaceUpdate, SurfaceUpdate2 and EdgemapUpdate. Needed for pixels when stream has old-format DataInfo.
-
+		uint16_t				m_updateObject = 0;						// ObjectID from latest SurfaceUpdate, SurfaceUpdate2 and EdgemapUpdate. Needed for pixels when stream has old-format DataInfo.
+		CanvasRef				m_updateCanvasRef = CanvasRef::None;	// Used when doing SurfaceUpdate against a canvasRef.
 
 		struct SurfaceDataBuffer
 		{

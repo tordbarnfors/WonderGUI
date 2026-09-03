@@ -99,6 +99,12 @@ namespace wg
 
 		m_surfaceDataBuffers.clear();
 		m_edgemapDataBuffers.clear();
+
+		m_updateObject = 0;
+		m_updateCanvasRef = CanvasRef::None;
+
+		m_streamMajorVersion = 0;
+		m_streamMinorVersion = 0;
 	}
 
 	//____ clearDirtyRects() _____________________________________________________
@@ -141,6 +147,16 @@ namespace wg
 		auto& decoder = * m_pDecoder;
 
 		decoder >> header;
+
+		if (m_streamMajorVersion == 0 && header.type != GfxStream::ChunkId::ProtocolVersion && header.type != GfxStream::ChunkId::OutOfData)
+		{
+			char msg[128];
+			snprintf(msg, sizeof(msg), "Skipping %s chunk received before ProtocolVersion.", toString(header.type));
+
+			GfxBase::throwError(ErrorLevel::Warning, ErrorCode::FailedPrerequisite, msg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			m_pDecoder->skip(header.size);
+			return true;
+		}
 
 		switch (header.type)
 		{
@@ -312,7 +328,7 @@ namespace wg
 				if (m_bStoreDirtyRects)
 				{
 					RectSPX * p = (RectSPX*) m_updateRectsDataBuffer.pBuffer;
-					RectSPX * pEnd = (RectSPX*) m_updateRectsDataBuffer.pBuffer + m_updateRectsDataBuffer.size;
+					RectSPX * pEnd = (RectSPX*) m_updateRectsDataBuffer.pBuffer + m_updateRectsDataBuffer.size / sizeof(RectSPX);
 
 					if (m_dirtyRects[(int)canvasRef].isEmpty())
 					{
@@ -482,7 +498,7 @@ namespace wg
 				bp.palette = pPalette;
 			}
 
-			if (m_vObjects.size() <= objectId)
+			if (objectId >= m_vObjects.size() )
 				m_vObjects.resize(objectId + 16, nullptr);
 			else if( m_vObjects[objectId] != nullptr )
 			{
@@ -505,7 +521,7 @@ namespace wg
 			decoder >> objectId;
 			decoder >> rect;
 
-			if( objectId > m_vObjects.size() || m_vObjects[objectId] == nullptr )
+			if( objectId >= m_vObjects.size() || m_vObjects[objectId] == nullptr )
 			{
 				GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "SurfaceUpdate with invalid objectId", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 				break;
@@ -515,6 +531,11 @@ namespace wg
 
 			buffer.rects.resize(1);
 			buffer.rects[0] = rect;
+
+			if (m_updateCanvasRef != CanvasRef::None)
+			{
+				GfxBase::throwError(ErrorLevel::Critical, ErrorCode::IllegalCall, "Received old-style SurfaceUpdate chunk while CanvasRef-based SurfaceUpdate in progress. These can not be processed in parallel, system is now unstable!", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			}
 
 			m_updateObject = objectId;
 			break;
@@ -541,18 +562,30 @@ namespace wg
 			for( int i = 0 ; i < nRects ; i++ )
 				decoder >> buffer.rects[i];
 
-			m_updateObject = surfaceId;
+			m_updateCanvasRef = canvasRef;
 			break;
 		}
-
 
 		case GfxStream::ChunkId::SurfacePixels:
 		{
 			GfxStream::DataInfo dataInfo;
 			decoder >> dataInfo;
 
-			int objectId = dataInfo.objectId > 0 ? dataInfo.objectId : m_updateObject;
-			auto pSurface = wg_static_cast<Surface_p>(m_vObjects[objectId]);
+			Surface_p pSurface;
+
+			if (dataInfo.objectId > 0)
+				pSurface = wg_static_cast<Surface_p>(m_vObjects[dataInfo.objectId]);
+			else
+			{
+				if( m_updateCanvasRef != CanvasRef::None )
+					pSurface = m_pBackend->canvasInfo(m_updateCanvasRef)->pSurface;
+				else if( m_updateObject > 0 )
+					pSurface = wg_static_cast<Surface_p>(m_vObjects[m_updateObject]);
+				else
+				{
+					//TODO: Error handling!
+				}
+			}
 
 			auto it = m_surfaceDataBuffers.begin();
 			while( it->pSurface != pSurface )
@@ -593,6 +626,8 @@ namespace wg
 				pSurface->freePixelBuffer(pixelBuffer);
 
 				m_surfaceDataBuffers.erase(it);
+				m_updateObject = 0;
+				m_updateCanvasRef = CanvasRef::None;
 			}
 
 			break;
@@ -608,7 +643,7 @@ namespace wg
 			decoder >> region;
 			decoder >> col;
 
-			if( objectId > m_vObjects.size() || m_vObjects[objectId] == nullptr )
+			if( objectId >= m_vObjects.size() || m_vObjects[objectId] == nullptr )
 			{
 				GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "FillSurface with invalid objectId", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 				break;
@@ -643,7 +678,7 @@ namespace wg
 
 			decoder >> objectId;
 
-			if( objectId > m_vObjects.size() || m_vObjects[objectId] == nullptr || !m_vObjects[objectId]->isInstanceOf(Surface::TYPEINFO) )
+			if( objectId >= m_vObjects.size() || m_vObjects[objectId] == nullptr || !m_vObjects[objectId]->isInstanceOf(Surface::TYPEINFO) )
 			{
 				GfxBase::throwError(ErrorLevel::Warning, ErrorCode::InvalidParam, "DeleteSurface with invalid objectId", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 				break;
@@ -666,7 +701,7 @@ namespace wg
 			decoder >> nbSegments;
 			decoder >> paletteType;
 
-			if (m_vObjects.size() <= objectId)
+			if (objectId >= m_vObjects.size() )
 				m_vObjects.resize(objectId + 16, nullptr);
 			else if( m_vObjects[objectId] != nullptr )
 			{
@@ -708,7 +743,7 @@ namespace wg
 
 			int nColors = end - begin;
 
-			if( objectId > m_vObjects.size() || m_vObjects[objectId] == nullptr )
+			if( objectId >= m_vObjects.size() || m_vObjects[objectId] == nullptr )
 			{
 				GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "SetEdgemapColors with invalid objectId", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 
@@ -744,7 +779,7 @@ namespace wg
 
 			int nSamples = sampleEnd - sampleBegin;
 
-			if( objectId > m_vObjects.size() || m_vObjects[objectId] == nullptr )
+			if( objectId >= m_vObjects.size() || m_vObjects[objectId] == nullptr )
 			{
 				GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "EdgemapUpdate with invalid objectId", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 //				break;
@@ -785,7 +820,7 @@ namespace wg
 
 			decoder >> objectId;
 
-			if( objectId > m_vObjects.size() || m_vObjects[objectId] == nullptr || !m_vObjects[objectId]->isInstanceOf(Edgemap::TYPEINFO) )
+			if( objectId >= m_vObjects.size() || m_vObjects[objectId] == nullptr || !m_vObjects[objectId]->isInstanceOf(Edgemap::TYPEINFO) )
 			{
 				GfxBase::throwError(ErrorLevel::Warning, ErrorCode::InvalidParam, "DeleteEdgemap with invalid objectId", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 				break;
