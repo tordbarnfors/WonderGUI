@@ -1143,8 +1143,8 @@ void MyApp::updateGUIAfterReload()
 
 		// Fill in toggles
 
-		char label[6];
-		snprintf(label, 6, " %d ", toggleNb);
+		char label[14];
+		snprintf(label, sizeof(label), " %d ", toggleNb);
 
 		auto pToggle = ToggleButton::create( WGBP(ToggleButton,
 												_.skin = m_pToggleButtonSkin,

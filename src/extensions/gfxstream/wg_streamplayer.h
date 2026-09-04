@@ -98,7 +98,27 @@ namespace wg
 
 		struct DataBuffer
 		{
+			DataBuffer() = default;
+			DataBuffer(const DataBuffer&) = delete;
+			DataBuffer& operator=(const DataBuffer&) = delete;
+
+			DataBuffer(DataBuffer&& o) noexcept
+				: pBuffer(o.pBuffer), capacity(o.capacity), size(o.size)
+			{
+				o.pBuffer = nullptr; o.capacity = 0; o.size = 0;
+			}
+
 			~DataBuffer() { delete [] pBuffer; }
+
+			DataBuffer& operator=(DataBuffer&& o) noexcept
+			{
+				if (this != &o) {
+					delete[] pBuffer;
+					pBuffer = o.pBuffer; capacity = o.capacity; size = o.size;
+					o.pBuffer = nullptr; o.capacity = 0; o.size = 0;
+				}
+				return *this;
+			}
 
 			void release() { delete [] pBuffer; pBuffer = nullptr; capacity = 0; size = 0; }
 
@@ -137,8 +157,8 @@ namespace wg
 		DataBuffer				m_colorsDataBuffer;
 		DataBuffer				m_commandsDataBuffer;
 
-		uint16_t				m_updateObject = 0;			// ObjectID from latest SurfaceUpdate, SurfaceUpdate2 and EdgemapUpdate. Needed for pixels when stream has old-format DataInfo.
-
+		uint16_t				m_updateObject = 0;						// ObjectID from latest SurfaceUpdate, SurfaceUpdate2 and EdgemapUpdate. Needed for pixels when stream has old-format DataInfo.
+		CanvasRef				m_updateCanvasRef = CanvasRef::None;	// Used when doing SurfaceUpdate against a canvasRef.
 
 		struct SurfaceDataBuffer
 		{
@@ -178,7 +198,13 @@ namespace wg
 		CanvasRef			m_baseCanvasRef;
 		Surface_p			m_baseCanvasSurface;
 
-		
+		// Handling of skipping
+
+		bool				m_bSkip = false;								// Set if chunks should be skipped (for error handling)
+		bool				m_bSkipEndInclusive = false;					// True = skipp chunk with m_skipEndId.
+		GfxStream::ChunkId	m_skipEndId = GfxStream::ChunkId::OutOfData;
+
+
 		// For multi-chunk drawing operations (DrawSegments, FlipDrawSegments, DrawWave and FlipDrawWave), telling which one we are receiving edge samples for.
 		
 		GfxStream::ChunkId			m_drawTypeInProgress = GfxStream::ChunkId::OutOfData;

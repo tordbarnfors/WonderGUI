@@ -71,6 +71,7 @@ namespace wg
 		{
 			delete [] m_pBuffer;
 			m_pBuffer = new char[newBufferSize + c_bufferMargin];
+			m_bufferSize = newBufferSize;
 		}
 
 		m_readOfs = 0;

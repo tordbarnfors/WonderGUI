@@ -29,7 +29,7 @@ WonderGUI however currently limits the placement of widgets to pixel boundaries 
 
 ### Subpixels (spx)
 
-Subpixels is a high-precision integer measurement unit that measures everything in 1/64th of a pixel. This is used extensively inside WonderGUI but is rarely seen through the API with one exception - the graphics subsystem. All calls to GfxDevice including setting of clip-rectangles, drawing of lines an blitting of graphics use subpixels.
+Subpixels is a high-precision integer measurement unit that measures everything in 1/64th of a pixel. This is used extensively inside WonderGUI but is rarely seen through the API with one exception - the graphics subsystem. All calls to GfxDevice including setting of clip-rectangles, drawing of lines and blitting of graphics use subpixels.
 
 Any look inside a widget will reveal that nearly all internal methods uses spx as their format and proper understanding of spx is needed for writing your own widgets.
 

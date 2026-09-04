@@ -301,9 +301,6 @@ void WgTextDisplay::_onRender( wg::GfxDevice * pDevice, const WgRect& _canvas, c
 		m_textAnimPos = -1;
 	}
 
-	if( pText != &m_text )
-		delete pText;
-
 	wg::Util::popClipList(pDevice, popData);
 
 }
