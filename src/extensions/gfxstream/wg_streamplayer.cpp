@@ -105,6 +105,10 @@ namespace wg
 
 		m_streamMajorVersion = 0;
 		m_streamMinorVersion = 0;
+
+		m_bSkip = true;
+		m_bSkipEndInclusive = false;
+		m_skipEndId = GfxStream::ChunkId::ProtocolVersion;
 	}
 
 	//____ clearDirtyRects() _____________________________________________________
@@ -148,14 +152,31 @@ namespace wg
 
 		decoder >> header;
 
-		if (m_streamMajorVersion == 0 && header.type != GfxStream::ChunkId::ProtocolVersion && header.type != GfxStream::ChunkId::OutOfData)
+		if( m_bSkip && header.type != GfxStream::ChunkId::OutOfData )
 		{
-			char msg[128];
-			snprintf(msg, sizeof(msg), "Skipping %s chunk received before ProtocolVersion.", toString(header.type));
+			if( m_skipEndId == header.type )
+			{
+				m_bSkip = false;
 
-			GfxBase::throwError(ErrorLevel::Warning, ErrorCode::FailedPrerequisite, msg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
-			m_pDecoder->skip(header.size);
-			return true;
+				if( m_bSkipEndInclusive )
+				{
+					char msg[128];
+					snprintf(msg, sizeof(msg), "Skipping %s chunk, next chunk will be processed.", toString(header.type) );
+
+					GfxBase::throwError(ErrorLevel::Warning, ErrorCode::SystemIntegrity, msg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+					m_pDecoder->skip(header.size);
+					return true;
+				}
+			}
+			else
+			{
+				char msg[128];
+				snprintf(msg, sizeof(msg), "Skipping %s chunk, continue processing %s next %s.", toString(header.type), m_bSkipEndInclusive ? "after" : "on", toString(m_skipEndId) );
+
+				GfxBase::throwError(ErrorLevel::Warning, ErrorCode::SystemIntegrity, msg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				m_pDecoder->skip(header.size);
+				return true;
+			}
 		}
 
 		switch (header.type)
@@ -233,7 +254,7 @@ namespace wg
 
 			// Temporary storage for variables that is stored in smaller uints than in SessionInfo
 
-			uint16_t	objectId;
+			uint16_t	canvasId;
 			CanvasRef	canvasRef;
 			uint8_t		dummy;
 			uint16_t	nUpdateRects;
@@ -249,7 +270,7 @@ namespace wg
 			uint16_t	nObjects;
 
 
-			decoder >> objectId;
+			decoder >> canvasId;
 			decoder >> canvasRef;
 			decoder >> dummy;
 
@@ -270,6 +291,16 @@ namespace wg
 			decoder >> nTransforms;
 			decoder >> nObjects;
 
+			if( canvasId > 0 && ( canvasId >= m_vObjects.size() || m_vObjects[canvasId] == nullptr ))
+			{
+				GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "BeginSession with invalid canvasId, will skip this session.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+
+				m_bSkip = true;
+				m_bSkipEndInclusive = true;
+				m_skipEndId = GfxStream::ChunkId::EndSession;
+				break;
+			}
+
 			m_sessionInfo.nSetCanvas = nSetCanvas;
 			m_sessionInfo.nStateChanges = nStateChanges;
 			m_sessionInfo.nLines = nLines;
@@ -280,10 +311,8 @@ namespace wg
 			m_sessionInfo.nTransforms = nTransforms;
 			m_sessionInfo.nObjects = nObjects;
 
-
 			m_baseCanvasRef = canvasRef;
-			m_baseCanvasSurface = objectId > 0 ? static_cast<Surface*>(m_vObjects[objectId].rawPtr()) : nullptr;
-
+			m_baseCanvasSurface = canvasId > 0 ? static_cast<Surface*>(m_vObjects[canvasId].rawPtr()) : nullptr;
 
 			if (nUpdateRects == 0)
 			{
@@ -343,7 +372,15 @@ namespace wg
 				}
 			}
 			else
+			{
+				if( objectId >= m_vObjects.size() || m_vObjects[objectId] == nullptr )
+				{
+					GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "SetCanvas with invalid objectId, ignored.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+					break;
+				}
+
 				m_pBackend->setCanvas( static_cast<Surface*>(m_vObjects[objectId].rawPtr()) );
+			}
 
 			break;
 		}
@@ -368,6 +405,17 @@ namespace wg
 				while(pSrc < pEnd)
 				{
 					uint16_t id = * pSrc++;
+
+					if( id >= m_vObjects.size() || m_vObjects[id] == nullptr )
+					{
+						GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Invalid objectId in Objects chunk, will skip session.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+
+						m_bSkip = true;
+						m_bSkipEndInclusive = true;
+						m_skipEndId = GfxStream::ChunkId::EndSession;
+						break;
+					}
+
 					* it++ = m_vObjects[id].rawPtr();
 				}
 

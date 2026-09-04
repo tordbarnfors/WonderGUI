@@ -198,7 +198,13 @@ namespace wg
 		CanvasRef			m_baseCanvasRef;
 		Surface_p			m_baseCanvasSurface;
 
-		
+		// Handling of skipping
+
+		bool				m_bSkip = false;								// Set if chunks should be skipped (for error handling)
+		bool				m_bSkipEndInclusive = false;					// True = skipp chunk with m_skipEndId.
+		GfxStream::ChunkId	m_skipEndId = GfxStream::ChunkId::OutOfData;
+
+
 		// For multi-chunk drawing operations (DrawSegments, FlipDrawSegments, DrawWave and FlipDrawWave), telling which one we are receiving edge samples for.
 		
 		GfxStream::ChunkId			m_drawTypeInProgress = GfxStream::ChunkId::OutOfData;
