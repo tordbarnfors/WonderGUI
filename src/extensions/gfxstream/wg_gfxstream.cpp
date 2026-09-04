@@ -58,6 +58,9 @@ const char * toString(GfxStream::ChunkId i)
 		"Fence"
 	};
 
+    if( (unsigned)i >= sizeof(names)/sizeof(names[0]) )
+        return "<unknown>";
+			
 	return names[(int)i];
 }
 

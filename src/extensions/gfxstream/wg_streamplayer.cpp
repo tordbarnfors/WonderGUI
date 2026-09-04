@@ -103,6 +103,10 @@ namespace wg
 		m_updateObject = 0;
 		m_updateCanvasRef = CanvasRef::None;
 
+		m_baseCanvasRef     = CanvasRef::None;
+		m_baseCanvasSurface = nullptr;
+		m_vActionObjects.clear();
+
 		m_streamMajorVersion = 0;
 		m_streamMinorVersion = 0;
 
@@ -402,6 +406,7 @@ namespace wg
 				auto pSrc = (uint16_t*) m_objectsDataBuffer.pBuffer;
 				auto pEnd = pSrc + nEntries;
 
+				bool bValid = true;
 				while(pSrc < pEnd)
 				{
 					uint16_t id = * pSrc++;
@@ -411,15 +416,19 @@ namespace wg
 						GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Invalid objectId in Objects chunk, will skip session.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 
 						m_bSkip = true;
-						m_bSkipEndInclusive = true;
+						m_bSkipEndInclusive = false;
 						m_skipEndId = GfxStream::ChunkId::EndSession;
+						bValid = false;
 						break;
 					}
 
 					* it++ = m_vObjects[id].rawPtr();
 				}
 
-				m_pBackend->setObjects(m_vActionObjects.data(), m_vActionObjects.data() + m_vActionObjects.size() );
+				if( bValid )
+					m_pBackend->setObjects(m_vActionObjects.data(), m_vActionObjects.data() + m_vActionObjects.size() );
+				else 
+					m_vActionObjects.clear();
 			}
 
 			m_pDecoder->align();
@@ -602,8 +611,18 @@ namespace wg
 			decoder >> nRects;
 
 
-			Surface_p pSurf = (canvasRef != CanvasRef::None ) ? m_pBackend->canvasInfo(canvasRef)->pSurface : wg_static_cast<Surface_p>(m_vObjects[surfaceId]);
-
+			Surface_p pSurf;
+			if( canvasRef != CanvasRef::None )
+				pSurf = m_pBackend->canvasInfo(canvasRef)->pSurface;
+			else if( surfaceId < m_vObjects.size() && m_vObjects[surfaceId] != nullptr )
+				pSurf = wg_static_cast<Surface_p>(m_vObjects[surfaceId]);
+			else
+			{
+				GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "SurfaceUpdate2 with invalid surfaceId", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				m_pDecoder->skip(nRects * 16);	// Skip rects
+				break;
+			}
+	
 			auto& buffer = m_surfaceDataBuffers.emplace_back(pSurf);
 
 			buffer.rects.resize(nRects);
@@ -622,7 +641,16 @@ namespace wg
 			Surface_p pSurface;
 
 			if (dataInfo.objectId > 0)
+			{
+				if( dataInfo.objectId >= m_vObjects.size() || m_vObjects[dataInfo.objectId] == nullptr )
+				{
+					GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "SurfacePixel with invalid objectId", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+					m_pDecoder->skip(header.size - dataInfo.encodedSize);
+					break;
+				}
+
 				pSurface = wg_static_cast<Surface_p>(m_vObjects[dataInfo.objectId]);
+			}
 			else
 			{
 				if( m_updateCanvasRef != CanvasRef::None )
@@ -631,13 +659,22 @@ namespace wg
 					pSurface = wg_static_cast<Surface_p>(m_vObjects[m_updateObject]);
 				else
 				{
-					//TODO: Error handling!
+					GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "SurfacePixel chunk with no valid surface reference", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+					m_pDecoder->skip(header.size - dataInfo.encodedSize);
+					break;
 				}
 			}
 
 			auto it = m_surfaceDataBuffers.begin();
-			while( it->pSurface != pSurface )
+			while( it != m_surfaceDataBuffers.end() && it->pSurface != pSurface )
 				it++;
+
+			if( it == m_surfaceDataBuffers.end() )
+			{
+				GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "SurfacePixel chunk, but surface has not been prepared by preceeding SurfaceUpdate chunk", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				m_pDecoder->skip(header.size - dataInfo.encodedSize);
+				break;
+			}
 
 			_loadIntoDataBuffer( dataInfo, it->buffer, header.size - dataInfo.encodedSize);
 
@@ -774,8 +811,13 @@ namespace wg
 			decoder >> objectId;
 			decoder >> nbSegments;
 
-			static_cast<Edgemap*>(m_vObjects[objectId].rawPtr())->setRenderSegments(nbSegments);
+			if( objectId >= m_vObjects.size() || m_vObjects[objectId] == nullptr )
+			{
+				GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "SetEdgemapRenderSegments with invalid objectId", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				break;
+			}
 
+			static_cast<Edgemap*>(m_vObjects[objectId].rawPtr())->setRenderSegments(nbSegments);
 			break;
 		}
 
@@ -830,7 +872,7 @@ namespace wg
 			if( objectId >= m_vObjects.size() || m_vObjects[objectId] == nullptr )
 			{
 				GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "EdgemapUpdate with invalid objectId", this, &TYPEINFO, __func__, __FILE__, __LINE__);
-//				break;
+				break;
 			}
 
 			m_edgemapDataBuffers.emplace_back(wg_static_cast<Edgemap_p>(m_vObjects[objectId]), edgeBegin, edgeEnd, sampleBegin, sampleEnd);
@@ -845,11 +887,26 @@ namespace wg
 			decoder >> dataInfo;
 
 			int objectId = dataInfo.objectId > 0 ? dataInfo.objectId : m_updateObject;
+
+			if( objectId >= m_vObjects.size() || m_vObjects[objectId] == nullptr )
+			{
+				GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "EdgemapSamples with invalid objectId", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				m_pDecoder->skip(header.size - dataInfo.encodedSize);
+				break;
+			}
+
 			auto pEdgemap = wg_static_cast<Edgemap_p>(m_vObjects[objectId]);
 
 			auto it = m_edgemapDataBuffers.begin();
-			while( it->pEdgemap != pEdgemap )
+			while( it != m_edgemapDataBuffers.end() && it->pEdgemap != pEdgemap )
 				it++;
+
+			if( it == m_edgemapDataBuffers.end() )
+			{
+				GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "EdgemapSamples chunk, but edgemap has not been prepared by preceeding EdgemapUpdate chunk", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				m_pDecoder->skip(header.size - dataInfo.encodedSize);
+				break;
+			}
 
 			_loadIntoDataBuffer( dataInfo, it->buffer, header.size - dataInfo.encodedSize);
 
