@@ -100,7 +100,7 @@ namespace wg
 	//
 	// Bit	State
 	// 0	Focused
-	// 1	Hoverd
+	// 1	Hovered
 	// 2	Pressed
 	// 3	Selected
 	// 4	Checked

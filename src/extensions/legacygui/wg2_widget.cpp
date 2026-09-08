@@ -721,7 +721,8 @@ void WgWidget::_onEvent( const WgEvent::Event * _pEvent, WgEventHandler * pHandl
         case WG_EVENT_MOUSE_LEAVE:
             if( m_bFullStateSupport )
                 state.setHovered(false);
-            
+			break;
+
 		default:
 			break;
 	}
