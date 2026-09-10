@@ -288,13 +288,13 @@ namespace wg
 				const Widget_p* pWidgets = pMsg->selected();
 				for (int i = 0; i < nbToPrint; i++)
 				{
-					int ofs = strlen(params);
+					int ofs = (int) strlen(params);
 					snprintf(params + ofs, c_paramLen - ofs, " %p", pWidgets[i].rawPtr() );
 				}
 
 				if( nbToPrint < pMsg->nbSelected() )
 				{
-					int ofs = strlen(params);
+					int ofs = (int) strlen(params);
 					snprintf(params + ofs, c_paramLen - ofs, " ..." );
 				}
 
@@ -312,13 +312,13 @@ namespace wg
 				const Widget_p* pWidgets = pMsg->unselected();
 				for (int i = 0; i < nbToPrint; i++)
 				{
-					int ofs = strlen(params);
+					int ofs = (int) strlen(params);
 					snprintf(params + ofs, c_paramLen - ofs, " %p", pWidgets[i].rawPtr());
 				}
 
 				if (nbToPrint < pMsg->nbUnselected())
 				{
-					int ofs = strlen(params);
+					int ofs = (int) strlen(params);
 					snprintf(params + ofs, c_paramLen - ofs, " ...");
 				}				break;
 			}

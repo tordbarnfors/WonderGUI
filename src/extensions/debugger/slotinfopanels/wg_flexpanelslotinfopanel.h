@@ -57,7 +57,7 @@ namespace wg
 		FlexPanelSlotInfoPanel(const Blueprint& blueprint, IDebugger* pHolder, StaticSlot * pStaticSlot );
 		~FlexPanelSlotInfoPanel() {}
 
-		void	flexPosToString(FlexPos pos, char * pString);
+		void	flexPosToString(FlexPos pos, char * pString, int maxLength);
 
 		TablePanel_p	m_pTable;
 	};

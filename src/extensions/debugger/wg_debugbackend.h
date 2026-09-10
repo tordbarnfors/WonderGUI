@@ -82,7 +82,7 @@ namespace wg
 		DebugBackend();
 		~DebugBackend() {}
 
-		void			objectSelected(Object* pSelected, Object* pCaller);
+		void			objectSelected(Object* pSelected, Object* pCaller) override;
 
 		IDebugger::Blueprint	m_blueprint;
 

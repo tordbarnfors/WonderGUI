@@ -1138,7 +1138,7 @@ public:
 
 		//.____ Content __________________________________________________
 
-		int				nbSelected() const { return m_list.size(); }
+		int				nbSelected() const { return (int) m_list.size(); }
 		const Widget_p* selected() const { return m_list.data(); }
 
 
@@ -1165,7 +1165,7 @@ public:
 
 		//.____ Content __________________________________________________
 
-		int				nbUnselected() const { return m_list.size(); }
+		int				nbUnselected() const { return (int) m_list.size(); }
 		const Widget_p* unselected() const { return m_list.data(); }
 
 	protected:

@@ -161,7 +161,7 @@ namespace wg
 		int sizeBytes		= sizeof(pts) * nbSizeStates;
 		int decorationBytes	= sizeof(TextDecoration) * nbDecorationStates;
 
-		int	uniqueStateBytes = sizeof(State) * bp.states.size();
+		int	uniqueStateBytes = sizeof(State) * (int) bp.states.size();
 
 		int indexBytes		= sizeIndexEntries+colorIndexEntries+backColorIndexEntries+decorationIndexEntries;
 
@@ -219,10 +219,10 @@ namespace wg
 
 		// Add list of unique states
 
-		m_nUniqueStates = bp.states.size();
+		m_nUniqueStates = (int) bp.states.size();
 		m_pUniqueStates = (State*) pDest;
 
-		for( int i = 0; i < bp.states.size() ; i++ )
+		for( size_t i = 0; i < bp.states.size() ; i++ )
 			m_pUniqueStates[i] = bp.states[i].state;
 
 		//

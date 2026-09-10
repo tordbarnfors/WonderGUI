@@ -60,9 +60,9 @@ namespace wg
 
 	//____ flexPosToString() __________________________________________________
 
-	void FlexPanelSlotInfoPanel::flexPosToString(FlexPos pos, char * pString)
+	void FlexPanelSlotInfoPanel::flexPosToString(FlexPos pos, char * pString, int maxLength )
 	{
-		sprintf(pString, "Relative (%f,%f) + (%f,%f) pts", pos.origo.x, pos.origo.y, pos.offset.x, pos.offset.y);
+		snprintf(pString, maxLength, "Relative (%f,%f) + (%f,%f) pts", pos.origo.x, pos.origo.y, pos.offset.x, pos.offset.y);
 	}
 
 	//____ refresh() _____________________________________________________________
@@ -78,10 +78,10 @@ namespace wg
 
 		_refreshTextEntry(m_pTable, row++, bPinned ? "Pinned" : "Movable");
 
-		flexPosToString(pInspected->origo(), temp);
+		flexPosToString(pInspected->origo(), temp, 256);
 		_refreshTextEntry(m_pTable, row++, temp);
 
-		flexPosToString(pInspected->hotspot(), temp);
+		flexPosToString(pInspected->hotspot(), temp, 256);
 		_refreshTextEntry(m_pTable, row++, temp);
 
 		Coord ofs = pInspected->offset();
@@ -89,10 +89,10 @@ namespace wg
 		_refreshPtsEntry(m_pTable, row++, ofs.x);
 		_refreshPtsEntry(m_pTable, row++, ofs.y);
 
-		flexPosToString(pInspected->topLeftPin(), temp);
+		flexPosToString(pInspected->topLeftPin(), temp, 256);
 		_refreshTextEntry(m_pTable, row++, temp);
 
-		flexPosToString(pInspected->bottomRightPin(), temp);
+		flexPosToString(pInspected->bottomRightPin(), temp, 256);
 		_refreshTextEntry(m_pTable, row++, temp);
 
 		m_pTable->rows[1].setVisible(bPinned);

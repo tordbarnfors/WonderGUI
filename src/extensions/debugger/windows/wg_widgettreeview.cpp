@@ -113,7 +113,7 @@ namespace wg
 			auto it = std::find(m_realWidgets.begin(), m_realWidgets.end(), pWidget);
 			if (it != m_realWidgets.end())
 			{
-				int id = std::distance(m_realWidgets.begin(), it);
+				int id = (int) std::distance(m_realWidgets.begin(), it);
 
 				auto pFound = _findWidgetRecursively(id, slot.widget());
 
@@ -236,7 +236,7 @@ namespace wg
 			pDrawer->slots[0] = pEntry;
 			pDrawer->slots[1] = pContent;
 
-			pEntry->setId(m_realWidgets.size());
+			pEntry->setId( (int) m_realWidgets.size());
 			m_realWidgets.push_back(pWidget);
 
 			auto pChild = static_cast<Container*>(pWidget)->firstChild();
@@ -259,7 +259,7 @@ namespace wg
 				_.child = pNameDisplay
 			));
 
-			pEntry->setId(m_realWidgets.size());
+			pEntry->setId( (int) m_realWidgets.size());
 			m_realWidgets.push_back(pWidget);
 
 

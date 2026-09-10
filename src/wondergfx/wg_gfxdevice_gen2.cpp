@@ -885,7 +885,7 @@ void GfxDeviceGen2::clearLayers()
 
 		if (layer.pLayerCanvas)
 		{
-			setRenderLayer(i);
+			setRenderLayer((int)i);
 
 			if (info.clearFunc)
 			{
@@ -960,7 +960,7 @@ void GfxDeviceGen2::_doFlattenLayers()
 
 		if (layer.pLayerCanvas)
 		{
-			setRenderLayer(i);
+			setRenderLayer((int)i);
 
 			// Encode preBlend call if any.
 
@@ -1011,7 +1011,7 @@ void GfxDeviceGen2::_doFlattenLayers()
 
 			if (info.preBlendCanvasFunc)
 			{
-				setRenderLayer(i);		// Write our commands to buffer to be processed
+				setRenderLayer((int)i);		// Write our commands to buffer to be processed
 				setBlendMode(BlendMode::Blend);
 				clearTintmap();
 				clearTintColor();
@@ -1102,7 +1102,7 @@ void GfxDeviceGen2::_doFlattenLayers()
 
 		if (layer.pLayerCanvas )
 		{
-			setRenderLayer(i);
+			setRenderLayer((int)i);
 
 			// Set layerCanvas as output destination
 

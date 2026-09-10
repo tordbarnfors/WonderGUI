@@ -77,7 +77,7 @@ bool TextBuffer::saveToFile(const std::string& path)
 	if (!fp)
 		return false;
 
-	int elementsWritten = fwrite(basket.ptr, basket.length, 1, fp);
+	size_t elementsWritten = fwrite(basket.ptr, basket.length, 1, fp);
 	fclose(fp);
 
 	if (elementsWritten != 1)

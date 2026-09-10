@@ -96,7 +96,7 @@ namespace wg
 
 		void	_skinRequestRender(const SkinSlot* pSlot, const RectSPX& rect) override;
 
-		int		_scale() const { return Component::_scale(); }
+		int		_scale() const override { return Component::_scale(); }
 
 
 	private:
