@@ -76,7 +76,8 @@ namespace wg
 		void		setFlowControl( uint16_t fenceId, int startCredits, int bytesPerCredit );
 		void		restartFlowControl(int bytesPerCredit);				// Reset fence values, fences in flight and bytes until next fence.
 		void		addCredits(int credits);
-
+		int			creditsLeft() const { return m_credits; }
+		
 	protected:
 
 		StreamPump(const StreamSource_p& pInput, const StreamSink_p& pOutput);
