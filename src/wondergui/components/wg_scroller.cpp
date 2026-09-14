@@ -472,7 +472,7 @@ namespace wg
 				m_states[i].setDisabled(bDisabled);
 				m_states[i].setFocused(bFocused);
 				m_states[i].setChecked(bChecked);
-				m_states[i].setFlagged(bChecked);
+				m_states[i].setFlagged(bFlagged);
 			}
 
 			_requestRender();

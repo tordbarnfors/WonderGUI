@@ -544,18 +544,17 @@ namespace wg
 				break;
 			case FoldState::OPENING:
 			{
-				maxWindowSize.h = m_pTransition->snapshot(m_transitionProgress, 0, backSize.h);
-				maxWindowSize.w = m_pTransition->snapshot(m_transitionProgress, 0, backSize.w);
+				maxWindowSize.h = align(m_pTransition->snapshot(m_transitionProgress, 0, backSize.h));
+				maxWindowSize.w = align(m_pTransition->snapshot(m_transitionProgress, 0, backSize.w));
 				break;
 			}
 			case FoldState::CLOSING:
 			{
-				maxWindowSize.h = m_pTransition->snapshot(m_transitionProgress, backSize.h, 0);
-				maxWindowSize.w = m_pTransition->snapshot(m_transitionProgress, backSize.w, 0);
+				maxWindowSize.h = align(m_pTransition->snapshot(m_transitionProgress, backSize.h, 0));
+				maxWindowSize.w = align(m_pTransition->snapshot(m_transitionProgress, backSize.w, 0));
 				break;
 			}
 		}
-
 
 		// Calc frontGeo, backWindow & backCanvas.
 

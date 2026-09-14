@@ -106,7 +106,8 @@ namespace wg
 		RectSPX		_slotGeo(const StaticSlot* pSlot) const override;
 
 		void		_firstSlotWithGeo(SlotWithGeo& package) const override;
-
+		void		_childRequestRender( StaticSlot * pSlot, const RectSPX& rect ) override;
+		void		_replaceChild( StaticSlot * pSlot, Widget * pWidget ) override;
 
 		Border		m_padding;
 	};

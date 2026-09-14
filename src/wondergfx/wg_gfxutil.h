@@ -321,6 +321,22 @@ namespace wg
 			return out;
 		}
 
+		inline bool isAligned(spx value)
+		{
+			return ( (value & 63) == 0 );
+		}
+
+		inline bool isAligned(const CoordSPX& coord)
+		{
+			return ( ((coord.x | coord.y) & 63) == 0 );
+		}
+
+		inline bool isAligned(const SizeSPX& size)
+		{
+			return ( (( size.w | size.h) & 63) == 0 );
+		}
+
+
 		inline bool isAligned(const RectSPX& rect)
 		{
 			return ( ((rect.x | rect.y | rect.w | rect.h) & 63) == 0 );

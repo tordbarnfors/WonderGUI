@@ -70,6 +70,8 @@ namespace wg
 			_requestRender();
 			if( padding.size() != oldPadding.size() )
 				_requestResize();
+			else if( slot._widget() && slot._widget()->_hasOverflow() )
+				_refreshOverflow();			// Distribution of overflow has likely changed.
 		}
 	}
 
@@ -145,11 +147,7 @@ namespace wg
 			return;										// No need to loop through children, skins coverage contains them all.
 
 		if (slot._widget())
-		{
-			SizeSPX padding = m_skin.contentBorderSize(m_scale) + align(ptsToSpx(m_padding, m_scale));
-
-			slot._widget()->_maskPatches(patches, geo - padding, clip);
-		}
+			slot._widget()->_maskPatches( patches, _contentRect(geo) - align(ptsToSpx(m_padding, m_scale)), clip );
 	}
 
 	//____ _resize() __________________________________________________________
@@ -167,7 +165,10 @@ namespace wg
 			if (sz.h < 0)
 				sz.h = 0;
 			slot._widget()->_resize(sz, scale);
+
+			_refreshOverflow();			// Child geo has changed, our overflow may have too.
 		}
+
 	}
 
 	//____ _slotGeo() _________________________________________________________
@@ -191,5 +192,38 @@ namespace wg
 			package.geo = m_skin.contentRect(RectSPX(0, 0, m_size), m_scale, m_state) - align(ptsToSpx(m_padding, m_scale));
 		}
 	}
+
+	//____ _childRequestRender() _________________________________________________
+
+	void PaddingCapsule::_childRequestRender( StaticSlot * pSlot, const RectSPX& rect )
+	{
+		_requestRender( rect + _slotGeo(pSlot).pos() );
+	}
+
+	//____ _replaceChild() ____________________________________________________
+
+	void PaddingCapsule::_replaceChild( StaticSlot * pSlot, Widget * pWidget )
+	{
+		slot._setWidget( pWidget );
+
+		if( pWidget )
+		{
+			SizeSPX sz = _slotGeo(pSlot).size();
+
+			// Make sure size isn't negative
+
+			if( sz.w < 0 )
+				sz.w = 0;
+			if( sz.h < 0 )
+				sz.h = 0;
+
+			pWidget->_resize( sz, m_scale );
+		}
+
+		_refreshOverflow();
+		_requestRender();
+		_requestResize();
+	}
+
 
 } // namespace wg
