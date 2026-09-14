@@ -216,7 +216,7 @@ namespace wg
 				int16_t		oldAlpha = layer.tintColor[i].a;
 
 				int fallbackIndex = State( (StateEnum) i).bestMatch(nStates, stateList);
-				layer.tintColor[i] = layer.tintColor[fallbackIndex];
+				layer.tintColor[i] = stateColors.begin()[fallbackIndex].second;
 
 				if (oldAlpha != layer.tintColor[i].a )
 					_updateStateOpacity(i);

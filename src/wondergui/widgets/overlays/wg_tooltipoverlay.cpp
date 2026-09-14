@@ -182,7 +182,7 @@ namespace wg
 			}
 
 			m_tooltipSlot._setWidget(nullptr);
-			m_hoverCountdown = m_hoverMillisec;			
+			m_hoverCountdown = m_hoverMillisec;
 		}
 	}
 
@@ -203,7 +203,7 @@ namespace wg
 			CoordSPX mousePos = _toLocal(static_cast<InputMsg*>(_pMsg)->pointerSpxPos());
 			Widget* pHovered = _findWidget(mousePos, SearchMode::ActionTarget);
 
-			if (pHovered->tooltip().isEmpty())
+			if (pHovered == nullptr || pHovered->tooltip().isEmpty())
 				pHovered = nullptr;
 
 			if (!m_tooltipSlot.isEmpty())
@@ -288,7 +288,7 @@ namespace wg
 			{
 				//TODO: Take padding into account
 
-				Widget* pChild = mainSlot._widget();			
+				Widget* pChild = mainSlot._widget();
 				if (pChild->isContainer())
 					return static_cast<Container*>(pChild)->_findWidget(ofs, mode);
 				else if (pChild->_markTest(ofs))
