@@ -530,13 +530,20 @@ namespace wg
 
 	void ScrollCapsule::_setState(State state)
 	{
-		Widget::_setState(state);
+		Container::_setState(state);
 
+		_updateScrollbarStates();
+	}
+
+	//____ _updateScrollbarStates() ______________________________________________
+
+	void ScrollCapsule::_updateScrollbarStates()
+	{
 		// Hovered, pressed etc is filtered away by scrollbars _setState(), so we don't need to
 		// deal with them. However, we need to make sure scrollbars are disabled when view is same as canvas.
 
-		State scrollbarXState = state;
-		State scrollbarYState = state;
+		State scrollbarXState = m_state;
+		State scrollbarYState = m_state;
 
 		if( m_viewRegion.w == m_childCanvas.w )
 			scrollbarXState.setDisabled(true);
@@ -984,11 +991,6 @@ namespace wg
 
 			if( newViewOfs != oldViewOfs || newViewLen != oldViewLen || newContentLen != oldContentLen )
 				scrollbarX._update(newViewOfs, oldViewOfs, newViewLen, oldViewLen, newContentLen, oldContentLen);
-
-			if (newViewLen == newContentLen && oldViewLen != oldContentLen)
-				scrollbarX._setState(State::Disabled);
-			else if (newViewLen != newContentLen && oldViewLen == oldContentLen && !m_state.isDisabled() )
-				scrollbarX._setState(State::Default);
 		}
 
 		if (scrollbarY.isDisplayable() )
@@ -1003,12 +1005,12 @@ namespace wg
 
 			if( newViewOfs != oldViewOfs || newViewLen != oldViewLen || newContentLen != oldContentLen )
 				scrollbarY._update(newViewOfs, oldViewOfs, newViewLen, oldViewLen, newContentLen, oldContentLen);
-
-			if (newViewLen == newContentLen && oldViewLen != oldContentLen)
-				scrollbarY._setState(State::Disabled);
-			else if (newViewLen != newContentLen && oldViewLen == oldContentLen && !m_state.isDisabled() )
-				scrollbarY._setState(State::Default);
 		}
+
+		// Scrollbars might have become enabled/disabled by the change in geometry.
+		// Scroller::_setState() ignores the call if nothing relevant has changed.
+
+		_updateScrollbarStates();
 	}
 
 	//____ _scrollbarStep() ______________________________________________________

@@ -176,6 +176,7 @@ namespace wg
 		bool 		_setViewTransition( CoordSPX offset, CoordTransition * pTransition );
 		void		_childCanvasCorrection();
 		void		_updateScrollbars( const RectSPX& oldCanvas, const RectSPX& oldView );
+		void		_updateScrollbarStates();
 
 		// Overloaded from Container
 
