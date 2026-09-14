@@ -18,6 +18,7 @@ add_subdirectory(streamplayer)
 add_subdirectory(streamgendll)
 add_subdirectory(unittester)
 add_subdirectory(workbench)
+add_subdirectory(widgetbench)
 add_subdirectory(legacyworkbench)
 add_subdirectory(lineargfxworkbench)
 add_subdirectory(embeddedworkbench)
@@ -49,6 +50,7 @@ set_target_properties(
 	surfviewer
 	unittester
 	workbench
+	widgetbench
 	legacyrunner
 	layerworkbench
 	PROPERTIES FOLDER "Tools" )
