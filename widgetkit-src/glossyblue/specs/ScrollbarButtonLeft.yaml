@@ -1,11 +1,12 @@
 recipe: raised_control
 shape: rect
-# Size is set by the arrow plus a uniform 3pt margin. The 16pt dimension is
-# fixed by the scrollbar's thickness -- it must match ScrollbarHandleX's
-# height -- so only the base-to-tip axis shrank (was [14, 16]).
-# The arrow box is the same 10x5 as the select box's, transposed for the
-# horizontal directions, so all five arrows in the kit are one shape.
-size_pts: [11, 16]
+# Square, matching the scrollbar's thickness on both axes -- ScrollbarHandleX's height
+# fixes the 16. It was [11, 16], which looked squashed next to the handle.
+# The arrow is unchanged (5x10, the same shape as the select box's,
+# transposed for the horizontal directions); add_arrow_glyph centres it in
+# whatever block it is given via centered_span(), so growing the block just
+# gives it more room rather than moving it off centre.
+size_pts: [16, 16]
 radius_pts: 2
 axis: x
 spacing_pts: 1

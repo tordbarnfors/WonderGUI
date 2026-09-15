@@ -1,0 +1,22 @@
+{
+  "name": "PlateNoBevel",
+  "axis": "single",
+  "spacing_pts": 0,
+  "size_pts": [
+    4,
+    14
+  ],
+  "states": [
+    "Default"
+  ],
+  "frame_pts": [
+    5,
+    1,
+    5,
+    1
+  ],
+  "padding_pts": 4,
+  "rigid_part": null,
+  "stretch_axis": null,
+  "density": 2
+}

@@ -1,39 +1,53 @@
 recipe: raised_control
+palette_family: plate
 shape: rect
 # The VERTICAL bar, used by SplitPanelX (children side by side, dragged
 # left/right). SplitPanel takes the bar's thickness from this skin's WIDTH
-# when axis == Axis::X (wg_splitpanel.cpp, _handleThickness), so 12pts wide
+# when axis == Axis::X (wg_splitpanel.cpp, _handleThickness), so 8pts wide
 # is the bar thickness; the height is only a starting size -- the bar is
 # stretched to the panel's full height.
-size_pts: [12, 32]
-radius_pts: 3
+#
+# palette_family: plate gives it Plate's grey rather than the blue accent, so
+# it reads as furniture, while still picking up the normal hover/pressed/
+# disabled treatment from STATE_STYLE.
+#
+# Thickness narrowed 12 -> 8. Everything on the cross axis had to come down
+# with it (see below): at 12pts the 3pt corner radius, 3pt frames and 2.5pt
+# dots all had room to spare; at 8 they are what sets the proportions.
+size_pts: [8, 44]
+radius_pts: 2
 axis: x
 spacing_pts: 1
 states: [Default, Hovered, Pressed, Disabled]
-# Left/right stay at 3 (= radius_pts): any wider and the middle COLUMN is
-# too narrow to hold a rigid run with stretch on both sides. Top/bottom are
-# 8, and the block grew 24 -> 32pts to afford them, so the eased gradient
-# below has somewhere to put the colour change -- at 3pts the caps were too
-# thin to absorb it and the body still banded.
-frame_pts: [8, 3, 8, 3]
-padding_pts: 3
-# The bar normally grows along its length, but the app can also set a
-# different handleThickness, which stretches it across. So BOTH axes are
-# pinned -- blitNinePatch nests them, splitting the centre cell by
-# rigidPartY and applying rigidPartX within each resulting band.
-#   x: middle band 3..9,  rigid 4..8  (1pt of stretch each side)
-#   y: middle band 8..24, rigid 10..22 (2pts of stretch each side)
-# Dots span 2.5pts across (x 4.75..7.25) and 10.5pts along (y 10.75..21.25),
-# both inside their rigid run.
-rigid_part:
-  - {axis: x, begin_pts: 4, length_pts: 4,  sections: All}
-  - {axis: y, begin_pts: 10, length_pts: 12, sections: All}
-# Which axis the preview stretches first -- the bar's length, i.e. normal use.
-stretch_axis: y
-glyph: {type: dots, direction: vertical, count: 3, dot_pts: 2.5, gap_pts: 4}
+frame_pts: [8, 2, 8, 2]
+padding_pts: 2
 
-# See ScrollbarHandleY: stretched along its length the body must stay a
-# near-uniform mid-blue, so the gradient is eased out into the 8pt caps and
-# the gloss is confined to the top one.
+# Geometry, in block coords. The mid (rigid) section is 24pts, which sets the
+# block height: frames 8+8, plus 2pts of stretchable flank above and below the
+# rigid run.
+#   y: middle band 8..36, rigid 10..34 (2pts of stretch above and below)
+#   x: middle band 2..6,  rigid 3..5   (1pt of stretch each side)
+#
+# The x rigid run is what keeps the dots round if the app overrides
+# handleThickness to something wider than the natural 8pts. It only just fits
+# now -- a 4pt band cannot hold a rigid run wider than 2pts and still leave
+# stretchable material on both flanks (the engine divides by lead+trail).
+# Narrow the bar any further and this rigid part has to go; the bar would then
+# only be safe at its natural thickness.
+rigid_part:
+  - {axis: x, begin_pts: 3, length_pts: 2,  sections: All}
+  - {axis: y, begin_pts: 10, length_pts: 24, sections: All}
+
+# Eased, with the gloss confined to the top frame (8/44): the flanks stretch
+# from 2pt slices, so a linear gradient would leave the grey above the dots
+# visibly lighter than below.
 gradient_ease: 3.0
-gloss_frac: 0.25
+gloss_frac: 0.18
+
+stretch_axis: y
+# Dots 2.5 -> 2pts, so the run fits inside the narrower x rigid part (3..5)
+# and keeps a proper margin inside an 8pt bar. Gap stays at 8: the mid section
+# is as long as before, and the spacing was set deliberately.
+# Span is 2*8 + 2 = 18pts centred at y 22, i.e. 13..31 -- inside the 10..34
+# rigid run, so they stay put however long the bar is drawn.
+glyph: {type: dots, direction: vertical, count: 3, dot_pts: 2, gap_pts: 8}

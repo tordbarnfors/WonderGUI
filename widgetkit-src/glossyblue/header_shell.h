@@ -23,9 +23,11 @@
 #define	WG_THEME_GLOSSYBLUE_DOT_H
 #pragma once
 
-// GENERATED FILE -- do not hand-edit the marked "generated skins" block
-// further down (search for "GENERATED SKINS"); it is overwritten by
-// `widgetkit-src/common/build.py pack glossyblue`.
+// GENERATED FILE -- do not hand-edit the two marked generated blocks (the
+// colours in namespace Colors, and the skins further down); both are
+// overwritten by `widgetkit-src/common/build.py pack glossyblue`. The colours
+// come from the exported_colors section of palette.yaml -- some are measured
+// straight off the rendered bitmaps, so they cannot drift from the art.
 // Everything else in this file is hand-maintained; edit it directly.
 //
 // Source of truth: widgetkit-src/glossyblue/ (specs/, parts/, palette.yaml,
@@ -62,24 +64,8 @@ namespace wg::glossyblue
 {
 	namespace Colors
 	{
-		inline const Color	Plate = Color(222,228,236);
-		inline const Color	Border = Color(140,148,160);
-		inline const Color	Canvas = Color::White;
-
-		inline const Color	Titlebar = Color(196,214,236);
-		inline const Color	TitlebarBorder = Color(110,140,175);
-
-		inline const Color	TitlebarSelected = Color(99,168,235);
-		inline const Color	TitlebarBorderSelected = Color(20,62,110);
-
-		inline const Color	Accent = Color(33,100,173);			// The theme's blue accent, for app code that wants to match it.
-		inline const Color	AccentHovered = Color(48,124,200);
-
-		// Selected text: white on a saturated theme blue (between Accent and
-		// AccentHovered). 5.6:1 contrast, and both colours are painted with
-		// BlendMode::Replace so they do not depend on the widget's tint.
-		inline const Color	TextSelection = Color(40,105,180);
-		inline const Color	TextSelectionText = Color::White;
+		// >>> BEGIN GENERATED COLORS <<<
+		// >>> END GENERATED COLORS <<<
 	}
 
 	namespace TextSizes
@@ -268,10 +254,6 @@ namespace wg::glossyblue
 		// --- hand-maintained skins: not block-based, so not part of the
 		//     generated atlas/pipeline. Edit these directly. -----------------
 
-		Skins::PlateNoBevel = ColorSkin::create(WGBP(ColorSkin,
-			_.color = Colors::Plate,
-			_.padding = 4));
-
 		Skins::Titlebar = BoxSkin::create(WGBP(BoxSkin,
 			_.color = Colors::Titlebar,
 			_.outlineColor = Colors::TitlebarBorder,
@@ -316,9 +298,15 @@ namespace wg::glossyblue
 			}
 		));
 
+		// Colors::ScrollbarTrack sits between Plate and the old hardcoded
+		// Color(150,156,166), which had a near-black outline and read as a
+		// dark trench rather than part of the panel it sits in. The outline is
+		// Colors::Border like the other hand-written skins here -- this was
+		// the only one not using the named constants, so it never followed the
+		// theme as the palette changed.
 		Skins::ScrollbarTrack = BoxSkin::create(WGBP(BoxSkin,
-			_.color = Color(150,156,166),
-			_.outlineColor = Color(58,64,74),
+			_.color = Colors::ScrollbarTrack,
+			_.outlineColor = Colors::Border,
 			_.outlineThickness = 1,
 			_.padding = 0));
 

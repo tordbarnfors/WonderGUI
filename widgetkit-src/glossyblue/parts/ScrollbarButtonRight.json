@@ -3,7 +3,7 @@
   "axis": "x",
   "spacing_pts": 1,
   "size_pts": [
-    11,
+    16,
     16
   ],
   "states": [
@@ -15,5 +15,6 @@
   "frame_pts": null,
   "padding_pts": null,
   "rigid_part": null,
+  "stretch_axis": null,
   "density": 2
 }

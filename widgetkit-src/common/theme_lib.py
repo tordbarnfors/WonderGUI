@@ -131,12 +131,12 @@ def recessed_diagonal(w, h, radius, dark, light, border_color, border=1.2):
     return Image.composite(grad, canvas, inner)
 
 
-def flat_bevel_panel(w, h, radius, top_rgb, bottom_rgb, border_color, border=1.2):
+def flat_bevel_panel(w, h, radius, top_rgb, bottom_rgb, border_color, border=1.2, ease=1.0):
     outer = rounded_rect_mask((w, h), radius)
     inner = rounded_rect_mask((w, h), radius, inset=border)
     canvas = Image.new("RGBA", (w, h), (0, 0, 0, 0))
     canvas.paste(Image.new("RGBA", (w, h), tuple(border_color)), (0, 0), outer)
-    grad = vgrad((w, h), top_rgb, bottom_rgb)
+    grad = vgrad((w, h), top_rgb, bottom_rgb, ease=ease)
     return Image.composite(grad, canvas, inner)
 
 

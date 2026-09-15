@@ -23,9 +23,11 @@
 #define	WG_THEME_GLOSSYBLUE_DOT_H
 #pragma once
 
-// GENERATED FILE -- do not hand-edit the marked "generated skins" block
-// further down (search for "GENERATED SKINS"); it is overwritten by
-// `widgetkit-src/common/build.py pack glossyblue`.
+// GENERATED FILE -- do not hand-edit the two marked generated blocks (the
+// colours in namespace Colors, and the skins further down); both are
+// overwritten by `widgetkit-src/common/build.py pack glossyblue`. The colours
+// come from the exported_colors section of palette.yaml -- some are measured
+// straight off the rendered bitmaps, so they cannot drift from the art.
 // Everything else in this file is hand-maintained; edit it directly.
 //
 // Source of truth: widgetkit-src/glossyblue/ (specs/, parts/, palette.yaml,
@@ -62,24 +64,34 @@ namespace wg::glossyblue
 {
 	namespace Colors
 	{
-		inline const Color	Plate = Color(222,228,236);
-		inline const Color	Border = Color(140,148,160);
-		inline const Color	Canvas = Color::White;
+		// >>> BEGIN GENERATED COLORS <<<
+		// Mid-tones of the corresponding gradient bitmaps, measured at pack time,
+		// so a flat surface (the capsule label skins, app code) sits flush against
+		// a real Plate or Canvas. Border needs no such treatment: a bitmap's
+		// outline is a flat colour already.
+		inline const Color	Plate = Color(208,215,224);		// measured: centre pixel of parts/Plate.png
+		inline const Color	Border = Color(140,148,160);		// palette: panel.border
+		inline const Color	Canvas = Color(241,244,247);		// measured: centre pixel of parts/Canvas.png
 
+		// The channel a scrollbar handle runs in: midway between Plate and the old
+		// hardcoded Color(150,156,166). Plate alone made the track vanish into the
+		// panel; the old value read as a dark trench cut into it.
+		inline const Color	ScrollbarTrack = Color(186,192,201);
 		inline const Color	Titlebar = Color(196,214,236);
 		inline const Color	TitlebarBorder = Color(110,140,175);
+		inline const Color	TitlebarSelected = Color(99,168,235);		// palette: raised.top
+		inline const Color	TitlebarBorderSelected = Color(20,62,110);		// palette: raised.border
 
-		inline const Color	TitlebarSelected = Color(99,168,235);
-		inline const Color	TitlebarBorderSelected = Color(20,62,110);
-
-		inline const Color	Accent = Color(33,100,173);			// The theme's blue accent, for app code that wants to match it.
-		inline const Color	AccentHovered = Color(48,124,200);
+		// The theme's blue accent, for app code that wants to match it.
+		inline const Color	Accent = Color(33,100,173);		// palette: raised.bottom
+		inline const Color	AccentHovered = Color(48,124,200);		// palette: hover.bottom
 
 		// Selected text: white on a saturated theme blue (between Accent and
 		// AccentHovered). 5.6:1 contrast, and both colours are painted with
 		// BlendMode::Replace so they do not depend on the widget's tint.
 		inline const Color	TextSelection = Color(40,105,180);
-		inline const Color	TextSelectionText = Color::White;
+		inline const Color	TextSelectionText = Color(255,255,255);
+		// >>> END GENERATED COLORS <<<
 	}
 
 	namespace TextSizes
@@ -268,10 +280,6 @@ namespace wg::glossyblue
 		// --- hand-maintained skins: not block-based, so not part of the
 		//     generated atlas/pipeline. Edit these directly. -----------------
 
-		Skins::PlateNoBevel = ColorSkin::create(WGBP(ColorSkin,
-			_.color = Colors::Plate,
-			_.padding = 4));
-
 		Skins::Titlebar = BoxSkin::create(WGBP(BoxSkin,
 			_.color = Colors::Titlebar,
 			_.outlineColor = Colors::TitlebarBorder,
@@ -316,9 +324,15 @@ namespace wg::glossyblue
 			}
 		));
 
+		// Colors::ScrollbarTrack sits between Plate and the old hardcoded
+		// Color(150,156,166), which had a near-black outline and read as a
+		// dark trench rather than part of the panel it sits in. The outline is
+		// Colors::Border like the other hand-written skins here -- this was
+		// the only one not using the named constants, so it never followed the
+		// theme as the palette changed.
 		Skins::ScrollbarTrack = BoxSkin::create(WGBP(BoxSkin,
-			_.color = Color(150,156,166),
-			_.outlineColor = Color(58,64,74),
+			_.color = Colors::ScrollbarTrack,
+			_.outlineColor = Colors::Border,
 			_.outlineThickness = 1,
 			_.padding = 0));
 
@@ -327,7 +341,7 @@ namespace wg::glossyblue
 		//     below this point until the END marker -- change the spec in
 		//     specs/, or hand-touch-up the rendered part in parts/, instead. ---
 
-// >>> BEGIN GENERATED SKINS <<<
+		// >>> BEGIN GENERATED SKINS <<<
 		Skins::Button = BlockSkin::create(WGBP(BlockSkin,
 			_.surface = pSkinBlocks,
 			_.firstBlock = { 1,1,14,20 },
@@ -360,9 +374,16 @@ namespace wg::glossyblue
 			_.padding = 5
 		));
 
+		Skins::PlateNoBevel = BlockSkin::create(WGBP(BlockSkin,
+			_.surface = pSkinBlocks,
+			_.firstBlock = { 149,1,4,14 },
+			_.frame = { 5,1,5,1 },
+			_.padding = 4
+		));
+
 		_pPlusMinusToggleSkin = BlockSkin::create(WGBP(BlockSkin,
 			_.surface = pSkinBlocks,
-			_.firstBlock = { 149,1,12,12 },
+			_.firstBlock = { 154,1,12,12 },
 			_.axis = Axis::X,
 			_.blockSpacing = 2,
 			_.states = { State::Default, State::Hovered, State::Pressed, State::Checked, State::CheckedHovered, State::CheckedPressed }
@@ -370,7 +391,7 @@ namespace wg::glossyblue
 
 		Skins::RadioButton = BlockSkin::create(WGBP(BlockSkin,
 			_.surface = pSkinBlocks,
-			_.firstBlock = { 232,1,14,14 },
+			_.firstBlock = { 237,1,14,14 },
 			_.axis = Axis::X,
 			_.blockSpacing = 1,
 			_.states = { State::Default, State::Checked, State::Disabled }
@@ -378,7 +399,7 @@ namespace wg::glossyblue
 
 		Skins::ScrollbarButtonDown = BlockSkin::create(WGBP(BlockSkin,
 			_.surface = pSkinBlocks,
-			_.firstBlock = { 277,1,16,11 },
+			_.firstBlock = { 282,1,16,16 },
 			_.axis = Axis::Y,
 			_.blockSpacing = 1,
 			_.states = { State::Default, State::Hovered, State::Pressed, State::Disabled }
@@ -386,7 +407,7 @@ namespace wg::glossyblue
 
 		Skins::ScrollbarButtonLeft = BlockSkin::create(WGBP(BlockSkin,
 			_.surface = pSkinBlocks,
-			_.firstBlock = { 1,49,11,16 },
+			_.firstBlock = { 1,69,16,16 },
 			_.axis = Axis::X,
 			_.blockSpacing = 1,
 			_.states = { State::Default, State::Hovered, State::Pressed, State::Disabled }
@@ -394,7 +415,7 @@ namespace wg::glossyblue
 
 		Skins::ScrollbarButtonRight = BlockSkin::create(WGBP(BlockSkin,
 			_.surface = pSkinBlocks,
-			_.firstBlock = { 49,49,11,16 },
+			_.firstBlock = { 69,69,16,16 },
 			_.axis = Axis::X,
 			_.blockSpacing = 1,
 			_.states = { State::Default, State::Hovered, State::Pressed, State::Disabled }
@@ -402,7 +423,7 @@ namespace wg::glossyblue
 
 		Skins::ScrollbarButtonUp = BlockSkin::create(WGBP(BlockSkin,
 			_.surface = pSkinBlocks,
-			_.firstBlock = { 97,49,16,11 },
+			_.firstBlock = { 137,69,16,16 },
 			_.axis = Axis::Y,
 			_.blockSpacing = 1,
 			_.states = { State::Default, State::Hovered, State::Pressed, State::Disabled }
@@ -410,7 +431,7 @@ namespace wg::glossyblue
 
 		Skins::ScrollbarHandleX = BlockSkin::create(WGBP(BlockSkin,
 			_.surface = pSkinBlocks,
-			_.firstBlock = { 114,49,28,16 },
+			_.firstBlock = { 154,69,28,16 },
 			_.axis = Axis::X,
 			_.blockSpacing = 1,
 			_.frame = { 8,7,8,7 },
@@ -421,7 +442,7 @@ namespace wg::glossyblue
 
 		Skins::ScrollbarHandleY = BlockSkin::create(WGBP(BlockSkin,
 			_.surface = pSkinBlocks,
-			_.firstBlock = { 230,49,16,28 },
+			_.firstBlock = { 270,69,16,28 },
 			_.axis = Axis::Y,
 			_.blockSpacing = 1,
 			_.frame = { 7,8,7,8 },
@@ -432,7 +453,7 @@ namespace wg::glossyblue
 
 		Skins::SelectBox = BlockSkin::create(WGBP(BlockSkin,
 			_.surface = pSkinBlocks,
-			_.firstBlock = { 247,49,26,20 },
+			_.firstBlock = { 287,69,26,20 },
 			_.axis = Axis::Y,
 			_.blockSpacing = 1,
 			_.frame = { 5,18,5,5 },
@@ -443,31 +464,31 @@ namespace wg::glossyblue
 
 		Skins::SplitHandleX = BlockSkin::create(WGBP(BlockSkin,
 			_.surface = pSkinBlocks,
-			_.firstBlock = { 1,165,12,32 },
+			_.firstBlock = { 1,185,8,44 },
 			_.axis = Axis::X,
 			_.blockSpacing = 1,
-			_.frame = { 8,3,8,3 },
-			_.padding = 3,
-			_.rigidPartX = {4,4,YSections::All},
-			_.rigidPartY = {10,12,XSections::All},
+			_.frame = { 8,2,8,2 },
+			_.padding = 2,
+			_.rigidPartX = {3,2,YSections::All},
+			_.rigidPartY = {10,24,XSections::All},
 			_.states = { State::Default, State::Hovered, State::Pressed, State::Disabled }
 		));
 
 		Skins::SplitHandleY = BlockSkin::create(WGBP(BlockSkin,
 			_.surface = pSkinBlocks,
-			_.firstBlock = { 53,165,24,12 },
+			_.firstBlock = { 37,185,44,8 },
 			_.axis = Axis::X,
 			_.blockSpacing = 1,
-			_.frame = 3,
-			_.padding = 3,
-			_.rigidPartY = {4,4,XSections::All},
-			_.rigidPartX = {6,12,YSections::All},
+			_.frame = { 2,8,2,8 },
+			_.padding = 2,
+			_.rigidPartY = {3,2,XSections::All},
+			_.rigidPartX = {10,24,YSections::All},
 			_.states = { State::Default, State::Hovered, State::Pressed, State::Disabled }
 		));
 
 		Skins::ToggleButton = BlockSkin::create(WGBP(BlockSkin,
 			_.surface = pSkinBlocks,
-			_.firstBlock = { 153,165,14,20 },
+			_.firstBlock = { 217,185,14,20 },
 			_.axis = Axis::X,
 			_.blockSpacing = 1,
 			_.frame = 6,
@@ -477,7 +498,7 @@ namespace wg::glossyblue
 
 		Skins::Window = BlockSkin::create(WGBP(BlockSkin,
 			_.surface = pSkinBlocks,
-			_.firstBlock = { 228,165,14,14 },
+			_.firstBlock = { 292,185,14,14 },
 			_.frame = 5,
 			_.padding = 6
 		));

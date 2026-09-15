@@ -14,6 +14,18 @@ disabled:      { top: [170,178,188], bottom: [140,148,158], border: [110,116,124
 checked:       { top: [40,88,148],   bottom: [68,128,195],  border: [12,40,78,255] }
 checked_hover: { top: [58,112,175],  bottom: [90,150,215],  border: [18,55,100,255] }
 
+# A second control family in plate grey, for controls that should be
+# furniture rather than accents (the split handles). Same STATE_STYLE
+# treatment as the blue set -- a spec opts in with `palette_family: plate`
+# and the state names are looked up as plate_<state>. plate_raised is
+# deliberately identical to `panel` so the bar matches a Plate exactly;
+# pressed inverts the gradient (top darker than bottom) just as the blue
+# pressed does.
+plate_raised:   { top: [222,228,236], bottom: [196,204,214], border: [140,148,160,255] }
+plate_hover:    { top: [236,240,246], bottom: [212,219,228], border: [140,148,160,255] }
+plate_pressed:  { top: [188,195,205], bottom: [212,219,228], border: [118,126,138,255] }
+plate_disabled: { top: [222,226,232], bottom: [206,211,218], border: [168,174,183,255] }
+
 # Passive container surfaces, brightest to darkest. The hierarchy is
 # deliberate: Canvas is the brightest because it carries black text
 # (TextEditor, LineEditor, the SelectBox list), Plate sits on top of the
@@ -44,3 +56,61 @@ grip_lo: [10,35,65,100]
 # rather than a smudge.
 dot_hi: [255,255,255,150]
 dot_lo: [10,35,65,190]
+
+# ---------------------------------------------------------------------------
+# Colours exported to the header's Colors:: namespace. These used to be
+# hand-written C++ with nothing tying them to this file, so a palette edit
+# silently invalidated them -- Colors::Plate had drifted to the gradient's TOP
+# colour while the bitmap's middle was 14 levels darker, and anything using it
+# to sit flush against a real Plate read too light. `pack` now regenerates the
+# whole namespace from here.
+#
+# Forms:
+#   center_of: <Part>   MEASURE the centre pixel of parts/<Part>.png. Use this
+#                       for any colour that must match a rendered surface: it
+#                       is whatever the bitmap actually is, whatever the recipe
+#                       did to get there.
+#   border_of: <entry>  the `border` of a palette entry above.
+#   top_of / bottom_of: <entry>   a gradient endpoint.
+#   rgb: [r,g,b]        a literal, for colours no bitmap defines.
+# Optional `comment` (block, above the constant) and `note` (trailing).
+exported_colors:
+  Plate:
+    center_of: Plate
+    comment: |
+      Mid-tones of the corresponding gradient bitmaps, measured at pack time,
+      so a flat surface (the capsule label skins, app code) sits flush against
+      a real Plate or Canvas. Border needs no such treatment: a bitmap's
+      outline is a flat colour already.
+  Border:
+    border_of: panel
+  Canvas:
+    center_of: Canvas
+
+  ScrollbarTrack:
+    rgb: [186, 192, 201]
+    comment: |
+      The channel a scrollbar handle runs in: midway between Plate and the old
+      hardcoded Color(150,156,166). Plate alone made the track vanish into the
+      panel; the old value read as a dark trench cut into it.
+
+  Titlebar:       { rgb: [196, 214, 236] }
+  TitlebarBorder: { rgb: [110, 140, 175] }
+
+  TitlebarSelected:       { top_of: raised }
+  TitlebarBorderSelected: { border_of: raised }
+
+  Accent:
+    bottom_of: raised
+    comment: The theme's blue accent, for app code that wants to match it.
+  AccentHovered:
+    bottom_of: hover
+
+  TextSelection:
+    rgb: [40, 105, 180]
+    comment: |
+      Selected text: white on a saturated theme blue (between Accent and
+      AccentHovered). 5.6:1 contrast, and both colours are painted with
+      BlendMode::Replace so they do not depend on the widget's tint.
+  TextSelectionText:
+    rgb: [255, 255, 255]

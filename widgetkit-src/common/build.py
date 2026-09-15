@@ -11,7 +11,8 @@ Usage:
 
   python3 build.py pack <kit>
       Read every parts/*.png + .json pair, pack them into the atlas,
-      regenerate the header's generated Skins:: section, rebuild
+      regenerate the header's two generated sections (the Colors:: constants,
+      from palette.yaml's exported_colors, and the Skins::), rebuild
       preview.html, and copy the atlas + header to their real repo
       locations (resources/, src/widgetkits/).
 
@@ -64,7 +65,12 @@ def render_state_block(spec, palette, state, w_px, h_px, density):
     border_px = max(T.px(1.2, density), 1)
 
     style = STATE_STYLE[state]
-    pal = palette[style["pal"]]
+    # STATE_STYLE names a palette entry per state ("raised", "hover", ...).
+    # `palette_family` prefixes those, so a kit can carry more than one family
+    # of control colours -- e.g. `plate` for controls that should read as
+    # furniture rather than accents -- without duplicating the state table.
+    family = spec.get("palette_family")
+    pal = palette[f"{family}_{style['pal']}" if family else style["pal"]]
     img = T.raised_panel(w_px, h_px, radius_px, pal, border=border_px,
                           gloss_alpha=style["gloss"], shape=shape,
                           gloss_frac=spec.get("gloss_frac", 0.5),
@@ -135,13 +141,19 @@ def render_state_block(spec, palette, state, w_px, h_px, density):
 def render_single_panel(spec, palette, w_px, h_px, density):
     recipe = spec["recipe"]
     radius_px = T.px(spec.get("radius_pts", 0), density)
-    border_px = max(T.px(1.2, density), 1)
+    # border_pts: 0 drops the outline entirely (the gradient then fills the
+    # whole block), which with radius_pts: 0 gives the same surface as its
+    # bevelled sibling but with no edge or corners.
+    border_px = (max(T.px(spec["border_pts"], density), 0) if "border_pts" in spec
+                 else max(T.px(1.2, density), 1))
     if recipe == "recessed_diagonal_panel":
         pal = palette[spec.get("palette", "recessed")]
-        return T.recessed_diagonal(w_px, h_px, radius_px, pal["dark"], pal["light"], pal["border"], border=border_px)
+        return T.recessed_diagonal(w_px, h_px, radius_px, pal["dark"], pal["light"], pal["border"],
+                                   border=border_px)
     elif recipe == "flat_bevel_panel":
         pal = palette[spec.get("palette", "panel")]
-        return T.flat_bevel_panel(w_px, h_px, radius_px, pal["top"], pal["bottom"], pal["border"], border=border_px)
+        return T.flat_bevel_panel(w_px, h_px, radius_px, pal["top"], pal["bottom"], pal["border"],
+                                  border=border_px, ease=spec.get("gradient_ease", 1.0))
     raise ValueError(f"Unknown single-block recipe: {recipe}")
 
 
@@ -361,6 +373,9 @@ def gen_skin_block(entry):
 BEGIN_MARKER = "// >>> BEGIN GENERATED SKINS <<<"
 END_MARKER = "// >>> END GENERATED SKINS <<<"
 
+COLORS_BEGIN = "// >>> BEGIN GENERATED COLORS <<<"
+COLORS_END = "// >>> END GENERATED COLORS <<<"
+
 
 def _marker_line_matches(marker, shell):
     """Find occurrences of `marker` appearing as its OWN line (only leading/
@@ -374,30 +389,89 @@ def _marker_line_matches(marker, shell):
     return list(pattern.finditer(shell))
 
 
-def generate_header(kit, manifest):
-    kit_dir = KIT_ROOT / kit
-    shell = (kit_dir / "header_shell.h").read_text()
+def gen_colors(kit, palette, density):
+    """Emit the Colors:: constants declared under `exported_colors` in
+    palette.yaml.
 
-    begin_matches = _marker_line_matches(BEGIN_MARKER, shell)
-    end_matches = _marker_line_matches(END_MARKER, shell)
+    These were hand-written C++ while the gradients lived in YAML, with
+    nothing tying the two together -- so every palette change silently
+    invalidated them, and Colors::Plate drifted to the gradient's TOP colour
+    while the bitmap's middle was 14 levels darker. Anything using it to sit
+    flush against a Plate was visibly off.
+
+    `center_of` is the important form: it MEASURES the centre pixel of a
+    rendered part, so the constant is whatever the bitmap actually is, however
+    the recipe draws it. The others are conveniences for colours a bitmap
+    doesn't define.
+    """
+    parts_dir = KIT_ROOT / kit / "parts"
+    lines = []
+    for name, src in (palette.get("exported_colors") or {}).items():
+        if "center_of" in src:
+            part = src["center_of"]
+            meta = json.loads((parts_dir / f"{part}.json").read_text())
+            img = Image.open(parts_dir / f"{part}.png").convert("RGBA")
+            d = meta.get("density", density)
+            w, h = (round(v * d) for v in meta["size_pts"])
+            rgb = img.crop((0, 0, w, h)).getpixel((w // 2, h // 2))[:3]
+            auto = f"measured: centre pixel of parts/{part}.png"
+        elif "border_of" in src:
+            rgb = tuple(palette[src["border_of"]]["border"][:3])
+            auto = f"palette: {src['border_of']}.border"
+        elif "top_of" in src or "bottom_of" in src:
+            key = "top_of" if "top_of" in src else "bottom_of"
+            rgb = tuple(palette[src[key]][key[:-3]][:3])
+            auto = f"palette: {src[key]}.{key[:-3]}"
+        elif "rgb" in src:
+            rgb = tuple(src["rgb"])
+            auto = ""
+        else:
+            raise SystemExit(f"exported_colors[{name}]: need one of "
+                             f"center_of / border_of / top_of / bottom_of / rgb")
+        note = src.get("note", auto)
+        if src.get("comment"):
+            if lines:
+                lines.append("")
+            for cl in src["comment"].rstrip("\n").split("\n"):
+                lines.append(f"\t\t// {cl}".rstrip())
+        decl = f"\t\tinline const Color\t{name} = Color({rgb[0]},{rgb[1]},{rgb[2]});"
+        lines.append(f"{decl}\t\t// {note}" if note else decl)
+    return "\n".join(lines)
+
+
+def _splice(shell, begin, end, body):
+    """Replace the region between the `begin` and `end` marker lines with
+    `body`, keeping the marker lines themselves."""
+    begin_matches = _marker_line_matches(begin, shell)
+    end_matches = _marker_line_matches(end, shell)
 
     if len(begin_matches) != 1 or len(end_matches) != 1:
         raise SystemExit(
-            f"header_shell.h must contain exactly one {BEGIN_MARKER!r} line "
-            f"and one {END_MARKER!r} line (found {len(begin_matches)} / "
+            f"header_shell.h must contain exactly one {begin!r} line "
+            f"and one {end!r} line (found {len(begin_matches)} / "
             f"{len(end_matches)}). If these strings appear elsewhere too "
             f"(e.g. in an explanatory comment), reword that mention so it "
             f"isn't a standalone line matching the marker exactly."
         )
     if begin_matches[0].start() >= end_matches[0].start():
-        raise SystemExit("header_shell.h: BEGIN marker must come before END marker")
+        raise SystemExit(f"header_shell.h: {begin!r} must come before {end!r}")
 
-    body = "\n\n".join(gen_skin_block(e) for e in manifest)
-    generated = f"{BEGIN_MARKER}\n{body}\n\t\t{END_MARKER}"
+    # post starts at the END marker's own line start (the match includes that
+    # line's leading whitespace), so its original indentation is preserved and
+    # nothing is added in front of it.
+    pre = shell[: begin_matches[0].end()]
+    post = shell[end_matches[0].start() :]
+    return f"{pre}\n{body}\n{post}"
 
-    pre = shell[: begin_matches[0].start()]
-    post = shell[end_matches[0].end() :]
-    return pre + generated + post
+
+def generate_header(kit, manifest, palette, density):
+    kit_dir = KIT_ROOT / kit
+    shell = (kit_dir / "header_shell.h").read_text()
+
+    shell = _splice(shell, COLORS_BEGIN, COLORS_END, gen_colors(kit, palette, density))
+    shell = _splice(shell, BEGIN_MARKER, END_MARKER,
+                    "\n\n".join(gen_skin_block(e) for e in manifest))
+    return shell
 
 
 # ---------------------------------------------------------------------------
@@ -642,7 +716,8 @@ def cmd_pack(kit):
     header_name = f"wg_{kit}.h"
 
     atlas.save(kit_dir / atlas_name)
-    (kit_dir / header_name).write_text(generate_header(kit, manifest))
+    palette = yaml.safe_load((kit_dir / "palette.yaml").read_text())
+    (kit_dir / header_name).write_text(generate_header(kit, manifest, palette, density))
     (kit_dir / "preview.html").write_text(build_preview_html(kit, atlas, manifest, density))
 
     (REPO_ROOT / "resources").mkdir(parents=True, exist_ok=True)

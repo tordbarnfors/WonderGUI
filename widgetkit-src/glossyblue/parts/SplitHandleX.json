@@ -3,8 +3,8 @@
   "axis": "x",
   "spacing_pts": 1,
   "size_pts": [
-    12,
-    32
+    8,
+    44
   ],
   "states": [
     "Default",
@@ -14,22 +14,22 @@
   ],
   "frame_pts": [
     8,
-    3,
+    2,
     8,
-    3
+    2
   ],
-  "padding_pts": 3,
+  "padding_pts": 2,
   "rigid_part": [
     {
       "axis": "x",
-      "begin_pts": 4,
-      "length_pts": 4,
+      "begin_pts": 3,
+      "length_pts": 2,
       "sections": "All"
     },
     {
       "axis": "y",
       "begin_pts": 10,
-      "length_pts": 12,
+      "length_pts": 24,
       "sections": "All"
     }
   ],

@@ -1,0 +1,28 @@
+recipe: flat_bevel_panel
+palette: panel
+
+# Plate's surface with the edge taken off: same `panel` gradient, same recipe,
+# but border_pts 0 and radius_pts 0, so there is no outline and no rounded
+# corners -- the gradient fills the block edge to edge. Was a flat
+# ColorSkin(Colors::Plate), which could only ever be one tone and so never
+# quite matched the Plate it butts against (it is used as the corner skin
+# where a table's row and column headers meet). As a BlockSkin off the same
+# palette entry it matches by construction.
+size_pts: [4, 14]
+radius_pts: 0
+border_pts: 0
+axis: single
+states: [Default]
+
+# Vertically identical to Plate (14pts, frame 5/5) so the gradient is
+# distributed across a stretched surface exactly as Plate's is, and the two
+# line up when placed side by side. Horizontally the block is only 4pts: the
+# gradient is vertical and there is no border, so every interior column is
+# bit-identical and the 9-patch reproduces any width by repeating the 2pt
+# middle. The 1pt left/right frame keeps a real frame on all four sides.
+frame_pts: [5, 1, 5, 1]
+
+# 4, not Plate's 5: Plate's extra point is its 1pt outline. Same content
+# inset, and the value the old ColorSkin used, so existing layouts are
+# unchanged.
+padding_pts: 4

@@ -4,7 +4,7 @@
   "spacing_pts": 1,
   "size_pts": [
     16,
-    11
+    16
   ],
   "states": [
     "Default",
@@ -15,5 +15,6 @@
   "frame_pts": null,
   "padding_pts": null,
   "rigid_part": null,
+  "stretch_axis": null,
   "density": 2
 }
