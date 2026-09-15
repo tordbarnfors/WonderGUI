@@ -1,0 +1,19 @@
+{
+  "name": "ScrollbarButtonLeft",
+  "axis": "x",
+  "spacing_pts": 1,
+  "size_pts": [
+    11,
+    16
+  ],
+  "states": [
+    "Default",
+    "Hovered",
+    "Pressed",
+    "Disabled"
+  ],
+  "frame_pts": null,
+  "padding_pts": null,
+  "rigid_part": null,
+  "density": 2
+}

@@ -1,0 +1,32 @@
+recipe: raised_control
+shape: rect
+# The VERTICAL bar, used by SplitPanelX (children side by side, dragged
+# left/right). SplitPanel takes the bar's thickness from this skin's WIDTH
+# when axis == Axis::X (wg_splitpanel.cpp, _handleThickness), so 12pts wide
+# is the bar thickness; the height is only a starting size -- the bar is
+# stretched to the panel's full height.
+size_pts: [12, 24]
+radius_pts: 3
+axis: x
+spacing_pts: 1
+states: [Default, Hovered, Pressed, Disabled]
+# frame 3 matches radius_pts, the minimum that keeps the corner arcs inside
+# the non-stretching corner cells. Going wider (it was 4) would leave the
+# middle COLUMN only 4pts across -- too narrow to hold a rigid run with
+# stretchable material on both sides of it.
+frame_pts: 3
+padding_pts: 3
+# The bar normally grows along its length, but the app can also set a
+# different handleThickness, which stretches it across. So BOTH axes are
+# pinned -- blitNinePatch nests them, splitting the centre cell by
+# rigidPartY and applying rigidPartX within each resulting band.
+#   x: middle band 3..9,  rigid 4..8  (1pt of stretch each side)
+#   y: middle band 3..21, rigid 6..18 (3pts of stretch each side)
+# Dots span 2.5pts across (x 4.75..7.25) and 10.5pts along (y 6.75..17.25),
+# both inside their rigid run.
+rigid_part:
+  - {axis: x, begin_pts: 4, length_pts: 4,  sections: All}
+  - {axis: y, begin_pts: 6, length_pts: 12, sections: All}
+# Which axis the preview stretches first -- the bar's length, i.e. normal use.
+stretch_axis: y
+glyph: {type: dots, direction: vertical, count: 3, dot_pts: 2.5, gap_pts: 4}

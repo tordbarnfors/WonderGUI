@@ -1,0 +1,17 @@
+{
+  "name": "Window",
+  "axis": "single",
+  "spacing_pts": 0,
+  "size_pts": [
+    14,
+    14
+  ],
+  "states": [
+    "Default"
+  ],
+  "frame_pts": 5,
+  "padding_pts": 6,
+  "rigid_part": null,
+  "stretch_axis": null,
+  "density": 2
+}

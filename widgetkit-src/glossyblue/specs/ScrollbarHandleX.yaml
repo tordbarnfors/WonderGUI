@@ -1,0 +1,19 @@
+recipe: raised_control
+shape: rect
+size_pts: [28, 16]
+radius_pts: 3
+axis: x
+spacing_pts: 1
+states: [Default, Hovered, Pressed, Disabled]
+frame_pts: [8, 7, 8, 7]
+padding_pts: 6
+# sections: All, not Center -- the frame spans this handle's full
+# height, so the Center Y section is zero-sized and never renders;
+# a rigid part masked to Center alone was dead code and the grip
+# smeared. All also survives a later change to the frame.
+# Grip ridges run ACROSS the drag axis, hence direction: vertical.
+# What must fit inside the rigid run 8..20pts is the lines' SPREAD
+# (2 * spacing, ~6pts), not len_pts -- len_pts is their length along
+# the cross axis, which never stretches.
+rigid_part: {axis: x, begin_pts: 8, length_pts: 12, sections: All}
+glyph: {type: grip, direction: vertical, len_pts: 10}

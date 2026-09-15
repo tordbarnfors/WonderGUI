@@ -1,0 +1,21 @@
+{
+  "name": "PlusMinusToggle",
+  "axis": "x",
+  "spacing_pts": 2,
+  "size_pts": [
+    12,
+    12
+  ],
+  "states": [
+    "Default",
+    "Hovered",
+    "Pressed",
+    "Checked",
+    "CheckedHovered",
+    "CheckedPressed"
+  ],
+  "frame_pts": null,
+  "padding_pts": null,
+  "rigid_part": null,
+  "density": 2
+}

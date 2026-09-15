@@ -1,0 +1,14 @@
+recipe: raised_control
+shape: rect
+# Narrowed from 30pts. raised_panel's fill, gloss and inset shading are all
+# VERTICAL gradients, so every interior column of the block is bit-identical --
+# the old width was 16pts of pure repetition that the 9-patch reproduces
+# exactly by stretching. Width is now frame(6+6) + a 2pt middle.
+# The HEIGHT must stay: the gradient is defined across it.
+size_pts: [14, 20]
+radius_pts: 4
+axis: x
+spacing_pts: 1
+states: [Default, Hovered, Checked, CheckedHovered, Disabled]
+frame_pts: 6
+padding_pts: 6

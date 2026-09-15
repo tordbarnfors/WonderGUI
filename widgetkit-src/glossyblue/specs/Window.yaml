@@ -1,0 +1,19 @@
+# Swapped with Canvas: the window backdrop is the darkest of the three
+# passive surfaces so plates and canvases read as sitting on top of it.
+# Palette 'recessed' is brighter and much flatter than the old 'track'
+# (range 32 vs 76) to keep 9-patch banding down at large sizes.
+recipe: recessed_diagonal_panel
+palette: recessed
+size_pts: [14, 14]
+radius_pts: 4
+axis: single
+states: [Default]
+
+# Was frameless, so a stretched panel smeared its 1px border and rounded
+# corners into a wide blur -- the whole block was being scaled. frame 5
+# is >= radius_pts (4), which keeps the corner arcs inside the fixed
+# corner cells; only the 4pt middle stretches. The body gradient is
+# subtle enough that splitting it across frame/middle shows no banding.
+# Size is now frame*2 + middle rather than 22pts of mostly-repeated pixels.
+frame_pts: 5
+padding_pts: 6      # window content background

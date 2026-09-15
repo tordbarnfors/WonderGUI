@@ -1,0 +1,26 @@
+recipe: raised_control
+shape: rect
+# Narrowed from 46pts. raised_panel's fill, gloss and inset shading are all
+# VERTICAL gradients, so every interior column of the block is bit-identical --
+# the old width was 20pts of pure repetition that the 9-patch reproduces
+# exactly by stretching. Width is now frame(5+18) + a 3pt middle.
+# The HEIGHT must stay: the gradient is defined across it.
+size_pts: [26, 20]
+radius_pts: 4
+axis: y
+spacing_pts: 1
+states: [Default, Hovered, Pressed, Disabled]
+frame_pts: [5, 18, 5, 5]
+padding_pts: [3, 18, 3, 5]
+
+# The arrow lives in the right frame column (frame right = 18pts), which
+# stretches vertically when the box grows. rigidPartY pins it at its natural
+# height. Geometry, in block coordinates: the stretchable middle band runs
+# y 5..15 (frame top 5, frame bottom 5, of a 20pt block), and the rigid run
+# below is centred inside it at 7..13 -- leaving an equal 2pts of stretchable
+# material above and below, so WonderGUI's proportional split keeps the arrow
+# centred as the widget grows. Keep the arrow (5pts tall, centred at y=10,
+# so 7.5..12.5) inside that 7..13 window if you resize it.
+rigid_part: {axis: y, begin_pts: 7, length_pts: 6, sections: Right}
+
+glyph: {type: select_arrow, arrow_zone_pts: 16, arrow_w_pts: 10, arrow_h_pts: 5}

@@ -1,0 +1,19 @@
+{
+  "name": "Checkbox",
+  "axis": "x",
+  "spacing_pts": 1,
+  "size_pts": [
+    14,
+    14
+  ],
+  "states": [
+    "Default",
+    "Checked",
+    "Disabled",
+    "DisabledChecked"
+  ],
+  "frame_pts": null,
+  "padding_pts": null,
+  "rigid_part": null,
+  "density": 2
+}

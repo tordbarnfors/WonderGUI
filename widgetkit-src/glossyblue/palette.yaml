@@ -1,0 +1,46 @@
+# Color tokens for the glossyblue theme. Recolor the whole kit by editing
+# this file and running `build.py render <widget...> --force` for whichever
+# widgets use the changed entries (or --force with no names to redo all).
+#
+# raised/hover/pressed/disabled/checked/checked_hover are used by every
+# "raised_control" widget (buttons, toggles, checkboxes, radio buttons,
+# scrollbar parts, select box) -- see common/build.py STATE_STYLE for which
+# state uses which entry.
+
+raised:        { top: [99,168,235],  bottom: [33,100,173],  border: [20,62,110,255] }
+hover:         { top: [130,192,247], bottom: [48,124,200],  border: [26,80,140,255] }
+pressed:       { top: [45,95,155],   bottom: [75,135,200],  border: [15,45,85,255] }
+disabled:      { top: [170,178,188], bottom: [140,148,158], border: [110,116,124,255] }
+checked:       { top: [40,88,148],   bottom: [68,128,195],  border: [12,40,78,255] }
+checked_hover: { top: [58,112,175],  bottom: [90,150,215],  border: [18,55,100,255] }
+
+# Passive container surfaces, brightest to darkest. The hierarchy is
+# deliberate: Canvas is the brightest because it carries black text
+# (TextEditor, LineEditor, the SelectBox list), Plate sits on top of the
+# window, and the window backdrop is the darkest so plates read as raised.
+#
+#   canvas   mean ~244   flat bevel, brightest -- black text sits on this
+#   panel    mean ~209   flat bevel, Plate / group boxes
+#   recessed mean ~168   diagonal bevel, window backdrop
+#
+# Keep these gradients narrow. A panel block is small and gets 9-patched to
+# a large area, so the frame keeps its slice of the gradient while the middle
+# stretches -- a wide range turns that into visible banding at the edges.
+canvas:   { top: [247,249,251], bottom: [237,240,244], border: [150,158,170,255] }
+panel:    { top: [222,228,236], bottom: [196,204,214], border: [140,148,160,255] }
+recessed: { dark: [152,158,168], light: [184,190,198], border: [104,112,124,255] }
+
+glyph_white:    [255,255,255,235]
+glyph_outline:  [15,45,85,140]
+glyph_disabled: [255,255,255,130]
+
+# Scrollbar grip ridges. Lines carry more ink than dots, so these read fine
+# at low alpha.
+grip_hi: [255,255,255,80]
+grip_lo: [10,35,65,100]
+
+# Split-handle dots. Stronger than grip_*: a small disc with a 1px highlight
+# offset needs more contrast than a line to resolve as an engraved hole
+# rather than a smudge.
+dot_hi: [255,255,255,150]
+dot_lo: [10,35,65,190]

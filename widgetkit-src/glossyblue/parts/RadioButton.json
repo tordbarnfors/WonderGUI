@@ -1,0 +1,19 @@
+{
+  "name": "RadioButton",
+  "axis": "x",
+  "spacing_pts": 1,
+  "size_pts": [
+    14,
+    14
+  ],
+  "states": [
+    "Default",
+    "Checked",
+    "Disabled"
+  ],
+  "frame_pts": null,
+  "padding_pts": null,
+  "rigid_part": null,
+  "stretch_axis": null,
+  "density": 2
+}

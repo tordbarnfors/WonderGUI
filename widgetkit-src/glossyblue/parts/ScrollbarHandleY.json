@@ -1,0 +1,29 @@
+{
+  "name": "ScrollbarHandleY",
+  "axis": "y",
+  "spacing_pts": 1,
+  "size_pts": [
+    16,
+    28
+  ],
+  "states": [
+    "Default",
+    "Hovered",
+    "Pressed",
+    "Disabled"
+  ],
+  "frame_pts": [
+    7,
+    8,
+    7,
+    8
+  ],
+  "padding_pts": 6,
+  "rigid_part": {
+    "axis": "y",
+    "begin_pts": 8,
+    "length_pts": 12,
+    "sections": "All"
+  },
+  "density": 2
+}

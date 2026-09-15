@@ -1,0 +1,29 @@
+{
+  "name": "ScrollbarHandleX",
+  "axis": "x",
+  "spacing_pts": 1,
+  "size_pts": [
+    28,
+    16
+  ],
+  "states": [
+    "Default",
+    "Hovered",
+    "Pressed",
+    "Disabled"
+  ],
+  "frame_pts": [
+    8,
+    7,
+    8,
+    7
+  ],
+  "padding_pts": 6,
+  "rigid_part": {
+    "axis": "x",
+    "begin_pts": 8,
+    "length_pts": 12,
+    "sections": "All"
+  },
+  "density": 2
+}

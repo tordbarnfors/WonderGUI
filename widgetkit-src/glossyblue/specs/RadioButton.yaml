@@ -1,0 +1,11 @@
+recipe: raised_control
+shape: ellipse
+size_pts: [14, 14]
+radius_pts: 7
+axis: x
+spacing_pts: 1
+states: [Default, Checked, Disabled]
+# 7pts is exactly half the button's 14pt diameter -- a step up from the old
+# 6pt dot for legibility at small sizes. An even pixel diameter (14px at 2x)
+# in an even-width block centres exactly; odd sizes land on a half pixel.
+glyph: {type: dot, dot_pts: 7}

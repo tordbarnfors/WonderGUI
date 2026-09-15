@@ -1,0 +1,33 @@
+{
+  "name": "SplitHandleY",
+  "axis": "x",
+  "spacing_pts": 1,
+  "size_pts": [
+    24,
+    12
+  ],
+  "states": [
+    "Default",
+    "Hovered",
+    "Pressed",
+    "Disabled"
+  ],
+  "frame_pts": 3,
+  "padding_pts": 3,
+  "rigid_part": [
+    {
+      "axis": "y",
+      "begin_pts": 4,
+      "length_pts": 4,
+      "sections": "All"
+    },
+    {
+      "axis": "x",
+      "begin_pts": 6,
+      "length_pts": 12,
+      "sections": "All"
+    }
+  ],
+  "stretch_axis": "x",
+  "density": 2
+}

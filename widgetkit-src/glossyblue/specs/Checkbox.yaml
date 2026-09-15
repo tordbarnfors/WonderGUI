@@ -1,0 +1,12 @@
+recipe: raised_control
+shape: rect
+size_pts: [14, 14]
+radius_pts: 2
+axis: x
+spacing_pts: 1
+states: [Default, Checked, Disabled, DisabledChecked]
+# Checkmark geometry is explicit so both strokes land on exact 45 degree
+# runs -- check_points() requires h < w < 2h for that, and w = 1.5h gives the
+# long arm twice the short. 9x6 with a 2.5pt stroke reproduces the previous
+# glyph's footprint, but centred and with a uniform stroke width.
+glyph: {type: check, check_w_pts: 9, check_h_pts: 6, stroke_pts: 2.5}

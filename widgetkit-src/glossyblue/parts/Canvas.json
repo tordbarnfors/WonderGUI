@@ -1,0 +1,17 @@
+{
+  "name": "Canvas",
+  "axis": "single",
+  "spacing_pts": 0,
+  "size_pts": [
+    12,
+    12
+  ],
+  "states": [
+    "Default"
+  ],
+  "frame_pts": 4,
+  "padding_pts": 2,
+  "rigid_part": null,
+  "stretch_axis": null,
+  "density": 2
+}

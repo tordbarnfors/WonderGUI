@@ -1,0 +1,20 @@
+# Swapped with Window: Canvas carries black text (TextEditor, LineEditor,
+# SelectBox list) so it must be the brightest surface -- Colors::Canvas
+# has always been Color::White, the dark skin contradicted it. The flat
+# vertical bevel also stretches without the banding the diagonal showed
+# over the large areas a canvas usually covers.
+recipe: flat_bevel_panel
+palette: canvas
+size_pts: [12, 12]
+radius_pts: 3
+axis: single
+states: [Default]
+
+# Was also frameless, so a stretched panel smeared its 1px border and rounded
+# corners into a wide blur -- the whole block was being scaled. frame 4
+# is >= radius_pts (3), which keeps the corner arcs inside the fixed
+# corner cells; only the 4pt middle stretches. The body gradient is
+# subtle enough that splitting it across frame/middle shows no banding.
+# Size is now frame*2 + middle rather than 16pts of mostly-repeated pixels.
+frame_pts: 4
+padding_pts: 2      # text/drawing surface -- minimal inset, like oldskool's 1

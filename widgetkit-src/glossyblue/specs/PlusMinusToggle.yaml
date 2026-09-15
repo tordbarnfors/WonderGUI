@@ -1,0 +1,8 @@
+recipe: raised_control
+shape: rect
+size_pts: [12, 12]
+radius_pts: 2
+axis: x
+spacing_pts: 2
+states: [Default, Hovered, Pressed, Checked, CheckedHovered, CheckedPressed]
+glyph: {type: plusminus}

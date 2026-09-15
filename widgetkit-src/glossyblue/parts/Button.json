@@ -1,0 +1,20 @@
+{
+  "name": "Button",
+  "axis": "x",
+  "spacing_pts": 1,
+  "size_pts": [
+    14,
+    20
+  ],
+  "states": [
+    "Default",
+    "Hovered",
+    "Pressed",
+    "Disabled"
+  ],
+  "frame_pts": 6,
+  "padding_pts": 6,
+  "rigid_part": null,
+  "stretch_axis": null,
+  "density": 2
+}
