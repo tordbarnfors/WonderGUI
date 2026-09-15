@@ -66,7 +66,9 @@ def render_state_block(spec, palette, state, w_px, h_px, density):
     style = STATE_STYLE[state]
     pal = palette[style["pal"]]
     img = T.raised_panel(w_px, h_px, radius_px, pal, border=border_px,
-                          gloss_alpha=style["gloss"], shape=shape)
+                          gloss_alpha=style["gloss"], shape=shape,
+                          gloss_frac=spec.get("gloss_frac", 0.5),
+                          ease=spec.get("gradient_ease", 1.0))
     if style["inset"] > 0:
         img = T.inset_shade(img, w_px, h_px, radius_px, amount=style["inset"], shape=shape, border=border_px)
     if style["alpha"] < 1.0:

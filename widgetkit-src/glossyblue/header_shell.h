@@ -75,11 +75,11 @@ namespace wg::glossyblue
 		inline const Color	Accent = Color(33,100,173);			// The theme's blue accent, for app code that wants to match it.
 		inline const Color	AccentHovered = Color(48,124,200);
 
-		// Background behind selected text. Same hue family as Accent but light
-		// enough to keep BLACK text on it -- the selection leaves the glyph
-		// colour alone (see TextLayouts below), so this must carry the
-		// contrast on its own. ~10.6:1 against black.
-		inline const Color	TextSelection = Color(137,190,238);
+		// Selected text: white on a saturated theme blue (between Accent and
+		// AccentHovered). 5.6:1 contrast, and both colours are painted with
+		// BlendMode::Replace so they do not depend on the widget's tint.
+		inline const Color	TextSelection = Color(40,105,180);
+		inline const Color	TextSelectionText = Color::White;
 	}
 
 	namespace TextSizes
@@ -235,24 +235,32 @@ namespace wg::glossyblue
 		// BasicTextLayout's selection defaults are selectionBackBlend =
 		// BlendMode::Invert and selectionCharBlend = BlendMode::Invert, which
 		// literally inverts whatever is behind the selection -- on a light
-		// canvas that comes out a muddy dark grey. Paint a theme blue instead
-		// and leave the glyph colour alone: BlendMode::Ignore returns the
-		// text's own tint unchanged (HiColor::blend returns baseColor for it),
-		// so black text stays black on TextSelection.
+		// canvas that comes out a muddy dark grey.
+		//
+		// Both are Replace, deliberately. Replace is "completely opaque,
+		// ignoring alpha of source and TINT-COLOR", so the selection fill
+		// lands as exactly TextSelection and the glyphs as exactly
+		// TextSelectionText, whatever tint the editor happens to have set.
+		// BlendMode::Blend would modulate the fill by that tint, and
+		// BlendMode::Ignore on the chars would hand back the text's own
+		// colour (HiColor::blend returns baseColor for it) -- leaving
+		// selected glyphs rendered identically to unselected ones.
 		TextLayouts::LeftNoWrap = BasicTextLayout::create(WGBP(BasicTextLayout,
 			_.autoEllipsis = true,
 			_.placement = Placement::West,
-			_.selectionBackBlend = BlendMode::Blend,
+			_.selectionBackBlend = BlendMode::Replace,
 			_.selectionBackColor = Colors::TextSelection,
-			_.selectionCharBlend = BlendMode::Ignore,
+			_.selectionCharBlend = BlendMode::Replace,
+			_.selectionCharColor = Colors::TextSelectionText,
 			_.wrap = false));
 
 		TextLayouts::CenteredNoWrap = BasicTextLayout::create(WGBP(BasicTextLayout,
 			_.autoEllipsis = true,
 			_.placement = Placement::Center,
-			_.selectionBackBlend = BlendMode::Blend,
+			_.selectionBackBlend = BlendMode::Replace,
 			_.selectionBackColor = Colors::TextSelection,
-			_.selectionCharBlend = BlendMode::Ignore,
+			_.selectionCharBlend = BlendMode::Replace,
+			_.selectionCharColor = Colors::TextSelectionText,
 			_.wrap = false));
 
 		Transitions::openClose = ValueTransition::create(250000);

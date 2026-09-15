@@ -4,7 +4,7 @@
   "spacing_pts": 1,
   "size_pts": [
     12,
-    24
+    32
   ],
   "states": [
     "Default",
@@ -12,7 +12,12 @@
     "Pressed",
     "Disabled"
   ],
-  "frame_pts": 3,
+  "frame_pts": [
+    8,
+    3,
+    8,
+    3
+  ],
   "padding_pts": 3,
   "rigid_part": [
     {
@@ -23,7 +28,7 @@
     },
     {
       "axis": "y",
-      "begin_pts": 6,
+      "begin_pts": 10,
       "length_pts": 12,
       "sections": "All"
     }

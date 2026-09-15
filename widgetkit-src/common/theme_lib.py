@@ -52,9 +52,26 @@ def ellipse_mask(size, inset=0.0):
     return img.resize((w, h), Image.BOX)
 
 
-def vgrad(size, top_rgb, bottom_rgb, top_a=255, bottom_a=255):
+def vgrad(size, top_rgb, bottom_rgb, top_a=255, bottom_a=255, ease=1.0):
+    """Vertical gradient. `ease` > 1 concentrates the colour change at the TOP
+    and BOTTOM edges and flattens the middle.
+
+    This matters for any block that is stretched along the gradient with a
+    rigidPart in the middle. There the middle band is cut into a rigid run
+    plus two thin flanks, and each flank stretches from a 1-2pt source slice
+    -- so a linear gradient renders as a flat bright region, a rapid
+    transition across the rigid run, and a flat dark region. Pushing the
+    change into the frames (which never stretch) leaves the middle nearly
+    uniform, so stretching it is invisible.
+
+    The remap is 0.5 + 0.5*sign(u)*|u|^ease for u = 2t-1: it fixes t at 0,
+    0.5 and 1, and its slope at the midpoint is zero for ease > 1.
+    """
     w, h = size
     t = np.linspace(0, 1, h).reshape(h, 1)
+    if ease != 1.0:
+        u = 2.0 * t - 1.0
+        t = 0.5 + 0.5 * np.sign(u) * np.abs(u) ** ease
     top = np.array(top_rgb, dtype=np.float32)
     bot = np.array(bottom_rgb, dtype=np.float32)
     rgb = (top * (1 - t) + bot * t).astype(np.uint8)
@@ -75,14 +92,15 @@ def diag_grad(size, dark_rgb, light_rgb):
     return Image.fromarray(np.concatenate([rgb, alpha], axis=2), mode="RGBA")
 
 
-def raised_panel(w, h, radius, palette, border=1.4, gloss_alpha=150, gloss_frac=0.5, shape="rect"):
+def raised_panel(w, h, radius, palette, border=1.4, gloss_alpha=150, gloss_frac=0.5,
+                 shape="rect", ease=1.0):
     mask_fn = ellipse_mask if shape == "ellipse" else (lambda sz, inset=0.0: rounded_rect_mask(sz, radius, inset))
     outer = mask_fn((w, h))
     inner = mask_fn((w, h), inset=border)
 
     body = Image.new("RGBA", (w, h), (0, 0, 0, 0))
     body.paste(Image.new("RGBA", (w, h), tuple(palette["border"])), (0, 0), outer)
-    grad = vgrad((w, h), palette["top"], palette["bottom"])
+    grad = vgrad((w, h), palette["top"], palette["bottom"], ease=ease)
     body = Image.composite(grad, body, inner)
 
     if gloss_alpha > 0:

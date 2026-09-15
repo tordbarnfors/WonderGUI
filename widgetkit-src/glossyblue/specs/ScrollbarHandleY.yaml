@@ -17,3 +17,14 @@ padding_pts: 6
 # the cross axis, which never stretches.
 rigid_part: {axis: y, begin_pts: 8, length_pts: 12, sections: All}
 glyph: {type: grip, direction: horizontal, len_pts: 10}
+
+# Stretched along its length, the middle band is cut into the rigid run plus
+# two ~1pt flanks -- each flank stretches from a sliver, so a LINEAR gradient
+# rendered as a flat bright region, a fast transition across the rigid run,
+# and a flat dark region. gradient_ease pushes the colour change out to the
+# top and bottom edges (which live in the frame and never stretch), leaving
+# the body a near-uniform mid-blue: middle-band spread drops from 62 to ~8
+# luminance. gloss_frac 0.25 puts the gloss exactly inside the top frame so
+# it does not fade across the stretched body either.
+gradient_ease: 3.0
+gloss_frac: 0.25
