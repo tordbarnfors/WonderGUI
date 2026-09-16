@@ -1651,8 +1651,8 @@ void WgMultiSlider::_updateHandlePos(Slider& slider)
 	wg::Skin_p pBgSkin = slider.pBgSkin ? slider.pBgSkin : m_pDefaultBgSkin;
 	if (pBgSkin)
 	{
-        wg::RectI dirty = _skinDirtyRect(pBgSkin, _sliderSkinGeo(slider, sliderGeo), m_scale, slider.handleState, slider.handleState + WgStateEnum::Selekted);
-        if( !dirty.isEmpty() )
+		wg::RectI dirty = _sliderSkinGeo(slider, sliderGeo);
+		if( !dirty.isEmpty() )
             _requestRender( dirty );
 	}
 
