@@ -177,7 +177,7 @@ namespace wg
 
 				if (blocksToMove > 0)
 				{
-					memmove(pBeg, pEnd, sizeof(SlotType) * blocksToMove);
+					memmove((void*)pBeg, pEnd, sizeof(SlotType) * blocksToMove);
 					_reallocBlock(pBeg, pBeg + blocksToMove);
 				}
 			}
@@ -198,7 +198,7 @@ namespace wg
 				{
 					_killBlock(pBeg, pEnd);
 
-					memmove(pEnd - blocksToMove, pBeg - blocksToMove, sizeof(SlotType) * blocksToMove);
+					memmove((void*)(pEnd - blocksToMove), pBeg - blocksToMove, sizeof(SlotType) * blocksToMove);
 					_reallocBlock(pEnd - blocksToMove, pEnd);
 				}
 				else
@@ -264,7 +264,7 @@ namespace wg
 				{
 					if (SlotType::safe_to_relocate)
 					{
-						memmove(m_pArray - entries, m_pArray, sizeof(SlotType) * nToMove);
+						memmove((void*)(m_pArray - entries), m_pArray, sizeof(SlotType) * nToMove);
 						_reallocBlock(m_pArray - entries, m_pArray - entries + nToMove);
 					}
 					else
