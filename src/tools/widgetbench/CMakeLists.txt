@@ -8,6 +8,8 @@ set( TEST_SOURCES
 
 	tests/text_test.cpp
 	tests/buttons_test.cpp
+	tests/checkbox_test.cpp
+	tests/gallery_test.cpp
 	tests/scroll_list_test.cpp
 )
 

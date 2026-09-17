@@ -117,6 +117,7 @@
 #include <wg_sidecanvas.h>
 #include <wg_sizecapsule.h>
 #include <wg_skin.h>
+#include <wg_skindisplay.h>
 #include <wg_skinslot.h>
 #include <wg_skinslotmanager.h>
 #include <wg_skinslotmi.h>

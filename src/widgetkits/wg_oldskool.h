@@ -1192,6 +1192,8 @@ namespace wg::oldskool
 		{
 			Object_p		baggage;
 			bool			disabled = false;
+			DynamicText::Blueprint display = WGBP( DynamicText, _.layout = TextLayouts::LeftNoWrap, 
+																_.style = TextStyles::NormalDark );
 			bool			dropTarget = false;
 			Skin_p			entrySkin = Skins::SelectBoxEntry;
 			TextStyle_p		entryTextStyle = TextStyles::NormalDark;
@@ -1203,7 +1205,7 @@ namespace wg::oldskool
 			bool			pickable = false;
 			uint8_t			pickCategory = 0;
 			bool			pickHandle = false;
-			PointerStyle	pointer = PointerStyle::Undefined;
+	    	PointerStyle	pointer = PointerStyle::Undefined;
 			bool			selectable = false;
 			Skin_p			skin = Skins::SelectBox;
 			bool			stickyFocus = false;
