@@ -11,12 +11,15 @@ set(SOURCES
     ../common/wappwindow.h
     ../common/wappwindow.cpp
 
-	main.cpp
-    win32api.h
-    win32api.cpp
-    win32window.h
+    ../win32-common/win32gfxbackend.h
+    ../win32-common/main.cpp
+    ../win32-common/win32api.h
+    ../win32-common/win32api.cpp
+    ../win32-common/stb_image.h
+
+	win32window.h
     win32window.cpp
-    stb_image.h
+    win32gfxbackend.cpp
 
     dx12_wrapper.h
     dx12_wrapper.cpp
@@ -28,6 +31,7 @@ set(INCDIRS
 	${WGFREETYPEFONT_INCDIRS}
 	${WGDEBUGGER_INCDIRS}
 	${PROJECT_SOURCE_DIR}/wonderapp/common
+	${PROJECT_SOURCE_DIR}/wonderapp/win32-common
 	${PROJECT_SOURCE_DIR}
 )
 
@@ -41,15 +45,11 @@ add_library(wappwin32dx12 STATIC
 target_include_directories(wappwin32dx12 PRIVATE
     ${INCDIRS}
     ${DX12GFX_INCDIRS}
-    ${SDL2_INCDIR}
-    ${SDL2IMAGE_INCDIR}
 )
 
 set_target_properties(wappwin32dx12 PROPERTIES FOLDER "WonderApp" )
 
 target_link_directories(wappwin32dx12 PUBLIC
-    ${SDL2_LIBDIR}
-    ${SDL2IMAGE_LIBDIR}
     ${FREETYPE2_LIBDIR}
 )
 
@@ -58,10 +58,7 @@ target_link_libraries(wappwin32dx12 PRIVATE
     wgfreetypefont
     wondergui
     wgdebugger
-    wg_theme_simplistic
     ${FREETYPE2_LIB}
-    ${SDL2_LIBS}
-    ${SDL2IMAGE_LIBS}
 )
 
 

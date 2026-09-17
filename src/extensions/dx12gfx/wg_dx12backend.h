@@ -71,7 +71,7 @@ namespace wg
 		void	setColors(const HiColor* pBeg, const HiColor* pEnd) override;
 		void	setTransforms(const Transform* pBeg, const Transform* pEnd) override;
 
-		void	processCommands(const uint16_t* pBeg, const uint16_t* pEnd) override;
+		void	processCommands(const uint16_t* pBeg, const uint16_t* pEnd, int version = 2) override;
 
 
 		//.____ Misc _________________________________________________________
@@ -100,7 +100,7 @@ namespace wg
 
 		void _createBuffer(Microsoft::WRL::ComPtr<ID3D12Resource>& pointer, int nbBytes, D3D12_HEAP_TYPE heapType, D3D12_RESOURCE_STATES initialState, LPCWSTR name);
 
-		void _createFillPipeline();
+		bool _createFillPipeline();
 
 		bool _compileVertexShader(Microsoft::WRL::ComPtr<ID3DBlob>& shaderBlob, LPCVOID pSrc );
 		bool _compilePixelShader(Microsoft::WRL::ComPtr<ID3DBlob>& shaderBlob, LPCVOID pSrc);
@@ -162,7 +162,7 @@ namespace wg
 		Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList>	m_commandList;
 		Microsoft::WRL::ComPtr<ID3D12Fence>					m_commandFence;
 		UINT64												m_fenceValue = 0;
-		HANDLE 												m_fenceEvent;
+		HANDLE 												m_fenceEvent = nullptr;
 
 
 		//

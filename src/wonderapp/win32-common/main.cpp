@@ -1,49 +1,44 @@
 /*=========================================================================
 
-						 >>> WonderGUI <<<
+                             >>> WonderGUI <<<
 
-  This file is part of Tord Jansson's WonderGUI Graphics Toolkit
-  and copyright (c) Tord Jansson, Sweden [tord.jansson@gmail.com].
+  This file is part of Tord Bärnfors' WonderGUI UI Toolkit and copyright
+  Tord Bärnfors, Sweden [mail: first name AT barnfors DOT c_o_m].
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is free software; you can redistribute
+  The WonderGUI UI Toolkit is free software; you can redistribute
   this file and/or modify it under the terms of the GNU General Public
   License as published by the Free Software Foundation; either
   version 2 of the License, or (at your option) any later version.
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is also available for use in commercial
-  closed-source projects under a separate license. Interested parties
-  should contact Tord Jansson [tord.jansson@gmail.com] for details.
+  The WonderGUI UI Toolkit is also available for use in commercial
+  closed source projects under a separate license. Interested parties
+  should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
 
 #include <wondergui.h>
 #include <windows.h>
 
-#include <wg_dx12surfacefactory.h>
-#include <wg_dx12backend.h>
-
 #include <win32window.h>
 #include <win32api.h>
+#include <win32gfxbackend.h>
+
+#include <wg_debugger.h>
 
 #include <vector>
-
-#include <dx12_wrapper.h>
-
-
 
 using namespace wg;
 using namespace wapp;
 using namespace std;
 
 WonderApp_p					g_pApp;
-Theme_p						g_pDefaultTheme;
 
 std::vector<Win32Window*>	g_win32Windows;
-float						g_ticksToMicroseconds;		
+float						g_ticksToMicroseconds;
 
 wchar_t						g_highSurrogate = 0;
 
@@ -51,11 +46,20 @@ POINT						g_mouseLockPos = { -1, -1 };
 
 PointerStyle				g_currentPointerStyle = PointerStyle::Undefined;
 
-DX12Wrapper*				g_pDX12Wrapper = nullptr;
+int							g_mouseCaptureRefCount = 0;
 
-static void _setMouseButton(MouseButton button, bool bPressed);
+DebugFrontend_p				g_pDebugFrontend;
+DebugBackend_p				g_pDebugBackend;
+
+Window_p					g_pDebugWindow;
+
+std::wstring _stringToWString(const std::string& str);
+
+static void _setMouseButton(HWND hwnd, MouseButton button, bool bPressed);
 static void _setPointer();
 
+bool		init_debugger(Win32API* pAPI);
+void		exit_debugger();
 
 
 //____ Win32HostBridge ___________________________________________________________
@@ -107,7 +111,16 @@ LRESULT CALLBACK windowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 			bool bClose = pointer->userWindow()->onClose();
 
 			if (bClose)
-				g_pApp->closeWindow(pointer->userWindow());
+			{
+				if (pointer->userWindow() == g_pDebugWindow)
+				{
+					g_pDebugWindow = nullptr;
+					g_pDebugFrontend->deactivate();
+				}
+				else
+					g_pApp->closeWindow(pointer->userWindow());
+
+			}
 			return 0;
 		}
 
@@ -127,42 +140,26 @@ LRESULT CALLBACK windowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 
 		case WM_PAINT:
 		{
+			// Backend-specific: software blits the offscreen bitmap, DX12 presents
+			// the swap chain. Either way, the window itself knows what to do.
+
 			Win32Window* pointer = reinterpret_cast<Win32Window*>(GetWindowLongPtr(hwnd, GWLP_USERDATA));
 			pointer->paint();
-
-			/*
-			PAINTSTRUCT ps;
-			HDC hdc = BeginPaint(hwnd, &ps);
-			HDC hdcMem = CreateCompatibleDC(hdc);
-			HBITMAP oldBitmap = (HBITMAP)SelectObject(hdcMem, pointer->canvasBitmap() );
-			BitBlt(hdc, ps.rcPaint.left, ps.rcPaint.top,
-				ps.rcPaint.right - ps.rcPaint.left,
-				ps.rcPaint.bottom - ps.rcPaint.top,
-				hdcMem,
-				ps.rcPaint.left, ps.rcPaint.top,
-				SRCCOPY);
-			SelectObject(hdcMem, oldBitmap);
-			DeleteDC(hdcMem);
-			EndPaint(hwnd, &ps);
-*/
-			
-
-
 			return 0;
 		}
 
 		case WM_SIZE:
 		{
 			Win32Window* pointer = reinterpret_cast<Win32Window*>(GetWindowLongPtr(hwnd, GWLP_USERDATA));
-	
+
 			RECT rect;
 			GetClientRect(hwnd, &rect);
 			UINT width = rect.right - rect.left;
 			UINT height = rect.bottom - rect.top;
-			
+
 			pointer->onResize( width, height );
 			pointer->render();
-			break;
+			return 0;		// Returning 0 here is according to Win32 docs.
 		}
 
 		case WM_DPICHANGED:
@@ -176,10 +173,15 @@ LRESULT CALLBACK windowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 				prcNewWindow->right - prcNewWindow->left,
 				prcNewWindow->bottom - prcNewWindow->top,
 				SWP_NOZORDER | SWP_NOACTIVATE);
-			pointer->onResize(prcNewWindow->right - prcNewWindow->left,
-				prcNewWindow->bottom - prcNewWindow->top);
+
+			// prcNewWindow includes borders and title bar, onResize() wants the client area.
+			// Called even if SetWindowPos() already caused a WM_SIZE, since the scale has changed.
+
+			RECT rect;
+			GetClientRect(hwnd, &rect);
+			pointer->onResize(rect.right - rect.left, rect.bottom - rect.top);
 			pointer->render();
-			break;
+			return 0;
 		}
 
 		case WM_MOUSEMOVE:
@@ -202,7 +204,7 @@ LRESULT CALLBACK windowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 				SetCursorPos(g_mouseLockPos.x, g_mouseLockPos.y);
 			}
 			else
-				pos = { LOWORD(lparam)*scaleFactor, HIWORD(lparam)*scaleFactor };
+				pos = { (int16_t)LOWORD(lparam)*scaleFactor, (int16_t)HIWORD(lparam)*scaleFactor };
 
 			LARGE_INTEGER counter;
 			QueryPerformanceCounter(&counter);
@@ -224,37 +226,52 @@ LRESULT CALLBACK windowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 
 		case WM_LBUTTONDOWN:
 		{
-			_setMouseButton(MouseButton::Left, true);
+			_setMouseButton(hwnd, MouseButton::Left, true);
 			break;
 		}
 
 		case WM_LBUTTONUP:
 		{
-			_setMouseButton(MouseButton::Left, false);
+			_setMouseButton(hwnd, MouseButton::Left, false);
 			break;
-		}	
+		}
 
 		case WM_RBUTTONDOWN:
 		{
-			_setMouseButton(MouseButton::Right, true);
+			_setMouseButton(hwnd, MouseButton::Right, true);
 			break;
 		}
 
 		case WM_RBUTTONUP:
 		{
-			_setMouseButton(MouseButton::Right, false);
+			_setMouseButton(hwnd, MouseButton::Right, false);
 			break;
 		}
 
 		case WM_MBUTTONDOWN:
 		{
-			_setMouseButton(MouseButton::Middle, true);
+			_setMouseButton(hwnd, MouseButton::Middle, true);
 			break;
 		}
 
 		case WM_MBUTTONUP:
 		{
-			_setMouseButton(MouseButton::Middle, false);
+			_setMouseButton(hwnd, MouseButton::Middle, false);
+			break;
+		}
+
+		case WM_CAPTURECHANGED:
+		{
+			//Set mouse button up for all pressed buttons.
+
+			auto p = Base::inputHandler();
+			for (int i = (int)MouseButton_min; i < (int)MouseButton_max; i++)
+			{
+				if (p->isButtonPressed(MouseButton(i)))
+					p->setButton(MouseButton(i), false);
+			}
+
+			g_mouseCaptureRefCount = 0;
 			break;
 		}
 
@@ -262,7 +279,7 @@ LRESULT CALLBACK windowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 		{
 			Win32Window* pointer = reinterpret_cast<Win32Window*>(GetWindowLongPtr(hwnd, GWLP_USERDATA));
 			Base::inputHandler()->setFocusedWindow(pointer->rootPanel());
-			break;
+			return 0;
 		}
 
 		case WM_KILLFOCUS:
@@ -271,7 +288,7 @@ LRESULT CALLBACK windowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 
 			if (Base::inputHandler()->focusedWindow() == pointer->rootPanel())
 				Base::inputHandler()->setFocusedWindow(nullptr);
-			break;
+			return 0;
 		}
 
 		case WM_SETCURSOR:
@@ -284,24 +301,27 @@ LRESULT CALLBACK windowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 			break;
 		}
 
-
-
+		case WM_SYSKEYDOWN:
 		case WM_KEYDOWN:
 		{
+			if (HIWORD(lparam) & KF_REPEAT)
+				break;				// This is a key repeat message. Input handler generates our own key repeats, so ignore these.
+
 			LARGE_INTEGER counter;
 			QueryPerformanceCounter(&counter);
 			int64_t timestamp = int64_t(counter.QuadPart * g_ticksToMicroseconds);
 			Base::inputHandler()->setKey(static_cast<int>(wparam), true, timestamp);
-			return 0;
+			break;
 		}
 
 		case WM_KEYUP:
+		case WM_SYSKEYUP:
 		{
 			LARGE_INTEGER counter;
 			QueryPerformanceCounter(&counter);
 			int64_t timestamp = int64_t(counter.QuadPart * g_ticksToMicroseconds);
 			Base::inputHandler()->setKey(static_cast<int>(wparam), false, timestamp);
-			return 0;
+			break;
 		}
 
 		case WM_CHAR:
@@ -375,22 +395,13 @@ void initWin32()
 	LARGE_INTEGER	frequency;
 	QueryPerformanceFrequency((LARGE_INTEGER*)&frequency);
 	g_ticksToMicroseconds = 1000000.f / float(frequency.QuadPart);
-
-
-	DX12Wrapper::initDebugger();
-
-	g_pDX12Wrapper = new DX12Wrapper();
-}	
+}
 
 //____ exitWin32() ____________________________________________________________
 
 void exitWin32()
 {
-	delete g_pDX12Wrapper;
-	g_pDX12Wrapper = nullptr;
 
-	DX12Wrapper::reportLiveObjects();
-	DX12Wrapper::exitDebugger();
 }
 
 //____ initInputDevices() ______________________________________________________
@@ -470,7 +481,6 @@ void initInputDevices()
 	pIH->setKeyRepeat(250000 + repeatDelay * 250000, (int)(1000000.0 / (2.5 + (repeatSpeed * 27.5 / 31.0))));	// Approx conversion from characters per second to milliseconds
 }
 
-
 //____ main() _________________________________________________________________
 
 int main(int arch, char * argv[] ) {
@@ -485,21 +495,19 @@ int main(int arch, char * argv[] ) {
 
 	initInputDevices();
 
-	// Setup WonderGUI default factories and devices
+	// Setup WonderGUI default factories and devices. Backend-specific (soft/DX12/...),
+	// see win32gfxbackend.h.
 
-	auto pFactory = wg::DX12SurfaceFactory::create();
-	Base::setDefaultSurfaceFactory(pFactory);
-
-	auto pBackend = wg::DX12Backend::create(g_pDX12Wrapper->dx12Device(), g_pDX12Wrapper->renderCommandQueue() );
-
-	auto pGfxDevice = wg::GfxDeviceGen2::create(pBackend);
-	Base::setDefaultGfxDevice(pGfxDevice);
-
+	initGfxBackend();
 
 	// Create app and API visitor, make any app-specific initialization
 
 	g_pApp = WonderApp::create();
 	auto pAPI = new Win32API();
+
+	// Create and initialize debugger
+
+	init_debugger(pAPI);
 
 	// Initialize the app
 
@@ -543,12 +551,14 @@ int main(int arch, char * argv[] ) {
 		Sleep(1);
 	}
 
+	exit_debugger();
+
 	g_pApp->exit();
 	g_pApp = nullptr;
-	g_pDefaultTheme = nullptr;
 
 	Base::exit();
 
+	exitGfxBackend();
 	exitWin32();
 	return 0;
 }
@@ -607,12 +617,26 @@ std::string	Win32HostBridge::getClipboardText()
 	std::string clipboardText;
 
 	if (OpenClipboard(NULL)) {
-		HANDLE hData = GetClipboardData(CF_TEXT);
+		HANDLE hData = GetClipboardData(CF_UNICODETEXT);
 		if (hData != NULL) {
-			char* pszText = static_cast<char*>(GlobalLock(hData));
-			if (pszText != NULL) {
-				clipboardText = pszText;
+			const wchar_t* pWide = static_cast<const wchar_t*>(GlobalLock(hData));
+			if (pWide != NULL) {
+
+				int len = WideCharToMultiByte(CP_UTF8, 0, pWide, -1, nullptr, 0, nullptr, nullptr);
+
+				if (len > 0)
+				{
+					clipboardText.resize(len - 1);
+					WideCharToMultiByte(CP_UTF8, 0, pWide, -1, clipboardText.data(), len, nullptr, nullptr);
+				}
+
 				GlobalUnlock(hData);
+
+				// Remove any carriage return characters
+
+				clipboardText.erase(
+					std::remove(clipboardText.begin(), clipboardText.end(), '\r'),
+					clipboardText.end());
 			}
 		}
 		CloseClipboard();
@@ -630,15 +654,24 @@ bool Win32HostBridge::setClipboardText(const std::string& text)
 	if (OpenClipboard(NULL)) {
 		EmptyClipboard();
 
-		size_t len = text.size();
+		int len = MultiByteToWideChar(CP_UTF8, 0, text.data(), (int)text.size(),
+			nullptr, 0);
+
 		if (len > 0)
 		{
-			HGLOBAL hMem = GlobalAlloc(GMEM_MOVEABLE, len);
+			HGLOBAL hMem = GlobalAlloc(GMEM_MOVEABLE, (len+1) * sizeof(wchar_t) );
 			if (hMem) {
-				memcpy(GlobalLock(hMem), text.c_str(), len);
-				GlobalUnlock(hMem);
-				SetClipboardData(CF_TEXT, hMem);
-				success = true;
+				wchar_t* pWide = static_cast<wchar_t*>(GlobalLock(hMem));
+				if (pWide)
+				{
+					MultiByteToWideChar(CP_UTF8, 0, text.data(), (int)text.size(), pWide, len);
+					pWide[len] = L'\0';
+					GlobalUnlock(hMem);
+					SetClipboardData(CF_UNICODETEXT, hMem);
+					success = true;
+				}
+				else
+					GlobalFree(hMem);
 			}
 		}
 		CloseClipboard();
@@ -665,8 +698,21 @@ bool Win32HostBridge::yieldFocus(uintptr_t windowRef)
 
 //____ _setMouseButton() _______________________________________________________
 
-static void _setMouseButton(MouseButton button, bool bPressed)
+static void _setMouseButton(HWND hwdn, MouseButton button, bool bPressed)
 {
+	if (bPressed)
+	{
+		if (g_mouseCaptureRefCount == 0)
+			SetCapture( hwdn );
+		g_mouseCaptureRefCount++;
+	}
+	else
+	{
+		g_mouseCaptureRefCount--;
+		if(g_mouseCaptureRefCount == 0)
+			ReleaseCapture();
+	}
+
 	LARGE_INTEGER counter;
 	QueryPerformanceCounter(&counter);
 	int64_t timestamp = int64_t(counter.QuadPart * g_ticksToMicroseconds);
@@ -724,4 +770,78 @@ static void _setPointer()
 			SetCursor(LoadCursor(NULL, IDC_ARROW));
 			break;
 	}
+}
+
+//____ _stringToWString() _____________________________________________________
+
+std::wstring _stringToWString(const std::string& str)
+{
+	if (str.empty())
+		return std::wstring();
+
+	// Get the required buffer size
+	int sizeNeeded = MultiByteToWideChar(CP_UTF8, 0, str.c_str(), -1,
+		nullptr, 0);
+	if (sizeNeeded <= 0)
+		return std::wstring();
+
+	// Convert
+	std::wstring result(sizeNeeded - 1, 0); // -1 to exclude null terminator
+	MultiByteToWideChar(CP_UTF8, 0, str.c_str(), -1,
+		&result[0], sizeNeeded);
+
+	return result;
+}
+
+//____ init_debugger() ________________________________________________________
+
+bool init_debugger(Win32API* pAPI)
+{
+	pAPI->initDefaultWidgetKit();
+
+	auto pIconSurface = pAPI->loadSurface("resources/debugger_gfx.png");
+	auto pTransparencyGrid = pAPI->loadSurface("resources/checkboardtile.png", nullptr, { .tiling = true });
+
+	if (!pIconSurface || !pTransparencyGrid)
+		return false;
+
+	g_pDebugBackend = DebugBackend::create();
+
+	g_pDebugFrontend = WGCREATE(DebugFrontend, _.backend = g_pDebugBackend, _.icons = pIconSurface, _.transparencyGrid = pTransparencyGrid);
+
+	Base::msgRouter()->addRoute(MsgType::KeyPress, [pAPI](Msg* _pMsg) {
+
+		KeyPressMsg* pMsg = static_cast<KeyPressMsg*>(_pMsg);
+
+		if (pMsg->translatedKeyCode() == Key::F12 && (pMsg->modKeys() == ModKeys::MacCtrlShift || pMsg->modKeys() == ModKeys::StdCtrlShift))
+		{
+			if (!g_pDebugWindow)
+			{
+				SizeI size = g_pDebugFrontend->spxSize() / 64;
+
+				auto pWindow = wapp::Window::create(pAPI, { .debug = false, .size = Size(size), .title = "Debugger" });
+				g_pDebugWindow = pWindow;
+
+				pWindow->mainCapsule()->slot = g_pDebugFrontend;
+				g_pDebugFrontend->activate();
+			}
+			else
+			{
+				g_pDebugWindow = nullptr;
+				g_pDebugFrontend->deactivate();
+			}
+		}
+
+		});
+
+	return true;
+}
+
+//____ exitDebugger() _________________________________________________________
+
+void exit_debugger()
+{
+	g_pDebugWindow = nullptr;
+	g_pDebugFrontend = nullptr;
+	g_pDebugBackend = nullptr;
 }

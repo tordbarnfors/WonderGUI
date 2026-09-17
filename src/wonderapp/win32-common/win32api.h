@@ -1,22 +1,22 @@
 /*=========================================================================
 
-						 >>> WonderGUI <<<
+                             >>> WonderGUI <<<
 
-  This file is part of Tord Jansson's WonderGUI Graphics Toolkit
-  and copyright (c) Tord Jansson, Sweden [tord.jansson@gmail.com].
+  This file is part of Tord Bärnfors' WonderGUI UI Toolkit and copyright
+  Tord Bärnfors, Sweden [mail: first name AT barnfors DOT c_o_m].
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is free software; you can redistribute
+  The WonderGUI UI Toolkit is free software; you can redistribute
   this file and/or modify it under the terms of the GNU General Public
   License as published by the Free Software Foundation; either
   version 2 of the License, or (at your option) any later version.
 
-							-----------
+                                -----------
 
-  The WonderGUI Graphics Toolkit is also available for use in commercial
-  closed-source projects under a separate license. Interested parties
-  should contact Tord Jansson [tord.jansson@gmail.com] for details.
+  The WonderGUI UI Toolkit is also available for use in commercial
+  closed source projects under a separate license. Interested parties
+  should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
 #pragma once
@@ -35,11 +35,12 @@ public:
 
 	int64_t						time() override;
 
-	wg::Blob_p 					loadBlob(const std::string& path) override;
-	wg::Surface_p 				loadSurface(const std::string& path, wg::SurfaceFactory* pFactory = nullptr, 
+	wg::Blob_p 					loadBlob(const std::string& path, bool bNullTerminate = false) override;
+	wg::Surface_p 				loadSurface(const std::string& path, wg::SurfaceFactory* pFactory = nullptr,
 											const wg::Surface::Blueprint& bp = wg::Surface::Blueprint()) override;
 
-	wg::Theme_p					initDefaultTheme() override;
+	bool						initDefaultWidgetKit() override;
+
 
 	bool						notifyPopup(const std::string& title, const std::string& message, wapp::IconType iconType) override;
 
@@ -48,15 +49,15 @@ public:
 
 	std::string					inputBox(const std::string& title, const std::string& message, const std::string& defaultInput) override;
 
-	std::string					saveFileDialog( const std::string& title, const std::string& defaultPathAndFile,
+	std::string					saveFileDialog( const std::string& title, const std::string& defaultPath, const std::string& defaultFilename,
 												const std::vector<std::string>& filterPatterns,
 												const std::string& singleFilterDescription) override;
 
-	std::string					openFileDialog( const std::string& title, const std::string& defaultPathAndFile,
+	std::string					openFileDialog( const std::string& title, const std::string& defaultPath, const std::string& defaultFilename,
 												const std::vector<std::string>& filterPatterns,
 												const std::string& singleFilterDescription) override;
 
-	std::vector<std::string>	openMultiFileDialog(const std::string& title, const std::string& defaultPathAndFile,
+	std::vector<std::string>	openMultiFileDialog(const std::string& title, const std::string& defaultPath, const std::string& defaultFilename,
 												const std::vector<std::string>& filterPatterns,
 												const std::string& singleFilterDescription) override;
 
@@ -73,5 +74,8 @@ public:
 
 private:
 
+	void _openFileDialog(std::vector<std::string>* pMultiOutput, std::string* pSingleOutput, const std::string& title,
+		const std::string& defaultPath, const std::string& defaultFilename,
+		const std::vector<std::string>& filterPatterns, const std::string& singleFilterDescription);
 
 };

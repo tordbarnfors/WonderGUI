@@ -38,7 +38,7 @@ Win32Window::Win32Window(wapp::Window* pUserWindow, wg::Placement origin, wg::Co
 
 
 
-	m_windowHandle = CreateWindow("WappWindowClass", title.c_str(), WS_OVERLAPPEDWINDOW, geo.x, geo.h, geo.w, geo.h, 0, 0, 0, this);
+	m_windowHandle = CreateWindow("WappWindowClass", title.c_str(), WS_OVERLAPPEDWINDOW, geo.x, geo.y, geo.w, geo.h, 0, 0, 0, this);
 
 	if (!m_windowHandle)
 	{
@@ -95,6 +95,9 @@ Win32Window::~Win32Window()
 
 void Win32Window::render()
 {
+	if (!m_pRootPanel)
+		return;					// WM_SIZE can arrive before the constructor is done.
+
 	m_pRootPanel->render();
 
 	int nRects = m_pRootPanel->nbUpdatedRects();
@@ -111,10 +114,38 @@ void Win32Window::render()
 	}
 }
 
+//____ paint() ________________________________________________________________
+//
+// Called in response to WM_PAINT. Blits the offscreen DIB section that
+// render() has been drawing into onto the window's own DC.
+
+void Win32Window::paint()
+{
+	PAINTSTRUCT ps;
+	HDC hdc = BeginPaint(m_windowHandle, &ps);
+	HDC hdcMem = CreateCompatibleDC(hdc);
+	HBITMAP oldBitmap = (HBITMAP)SelectObject(hdcMem, m_hBitmap);
+	BitBlt(hdc, ps.rcPaint.left, ps.rcPaint.top,
+		ps.rcPaint.right - ps.rcPaint.left,
+		ps.rcPaint.bottom - ps.rcPaint.top,
+		hdcMem,
+		ps.rcPaint.left, ps.rcPaint.top,
+		SRCCOPY);
+	SelectObject(hdcMem, oldBitmap);
+	DeleteDC(hdcMem);
+	EndPaint(m_windowHandle, &ps);
+}
+
 //____ onResize() ____________________________________________________________
 
 void Win32Window::onResize(int widthInPixels, int heightInPixels)
 {
+	// Nothing to do before the constructor is done, or for a minimized window
+	// (zero-sized client area). Keep the old bitmap until we get a real size.
+
+	if (!m_pRootPanel || widthInPixels == 0 || heightInPixels == 0)
+		return;
+
 	// Resize bitmap
 
 	BITMAPINFO bmi = { 0 };
@@ -236,5 +267,3 @@ std::string Win32Window::title()
 	return std::string();
 }
 
-
- 

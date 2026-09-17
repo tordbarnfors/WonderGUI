@@ -26,6 +26,7 @@
 #include <wrl.h>
 
 #include <d3d12.h>
+#include <d3d12sdklayers.h>
 #include <dxgi1_6.h>
 #include <dxgidebug.h>
 
@@ -46,11 +47,16 @@ public:
 	static void reportLiveObjects();
 	static void exitDebugger();
 
-	IDXGIFactory* dxgiFactory() const { return m_pDXGIFactory.Get(); }
-	IDXGIAdapter* dxgiAdapter() const { return m_pAdapter.Get(); }
-	ID3D12Device* dx12Device() const { return m_pDX12Device.Get(); }
-	ID3D12CommandQueue* renderCommandQueue() const { return m_pRenderCommandQueue.Get(); }
+	IDXGIFactory2*		dxgiFactory() const { return m_pDXGIFactory.Get(); }
+	IDXGIAdapter*		dxgiAdapter() const { return m_pAdapter.Get(); }
+	ID3D12Device*		dx12Device() const { return m_pDX12Device.Get(); }
+	ID3D12CommandQueue*	renderCommandQueue() const { return m_pRenderCommandQueue.Get(); }
 
+	// Blocks until the GPU has finished everything submitted to the render queue,
+	// including work DXGI submits there itself when presenting. Call before
+	// releasing anything the GPU might still be using (e.g. swap chain buffers).
+
+	void				flushRenderQueue();
 
 protected:
 
@@ -65,7 +71,10 @@ protected:
 
 	Microsoft::WRL::ComPtr<ID3D12CommandQueue>	m_pRenderCommandQueue;
 	Microsoft::WRL::ComPtr<ID3D12Fence>			m_renderQueueFence;
+	UINT64										m_renderQueueFenceValue = 0;
+	HANDLE										m_renderQueueFenceEvent = nullptr;
 
 	static Microsoft::WRL::ComPtr<IDXGIDebug>	g_pDebugger;
+	static Microsoft::WRL::ComPtr<ID3D12Debug>	g_pD3D12DebugLayer;		// Set if the D3D12 validation layer was enabled.
 
 };

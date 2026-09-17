@@ -27,7 +27,6 @@
 #include <fstream>
 #include <iostream>
 
-#include <wg_softsurface.h>
 #include <wg_freetypefont.h>
 
 
@@ -105,6 +104,11 @@ cleanup:
 }
 
 //____ loadSurface() __________________________________________________________
+//
+// NOTE: Surfaces are created through the SurfaceFactory (the one passed in,
+// or Base::defaultSurfaceFactory() otherwise) rather than a hardcoded surface
+// class, so this works correctly regardless of which rendering backend
+// (software, DX12, ...) is currently active.
 
 wg::Surface_p Win32API::loadSurface(const std::string& path, wg::SurfaceFactory* pFactory, const wg::Surface::Blueprint& _bp)
 {
@@ -114,47 +118,11 @@ wg::Surface_p Win32API::loadSurface(const std::string& path, wg::SurfaceFactory*
 		if (!input.good())
 			return nullptr;
 
-		auto pReader = SurfaceReader::create({ .factory = Base::defaultSurfaceFactory() });
+		auto pReader = SurfaceReader::create({ .factory = pFactory ? pFactory : Base::defaultSurfaceFactory().rawPtr() });
 		Surface_p pSurface = pReader->readSurfaceFromStream(input, _bp);
 		input.close();
 		return pSurface;
 	}
-/*	else if (path.rfind(".bmp") == path.size() - 4)
-	{
-		HBITMAP hBitmap = (HBITMAP)LoadImage(NULL, path.c_str(), IMAGE_BITMAP,
-			0, 0, LR_LOADFROMFILE);
-
-		if (hBitmap) {
-			BITMAP bm;
-			GetObject(hBitmap, sizeof(BITMAP), &bm);
-
-			PixelFormat pixelFormat;
-			switch (bm.bmBitsPixel)
-			{
-				case 24:
-					pixelFormat = PixelFormat::BGR_8;
-					break;
-				case 32:
-					pixelFormat = PixelFormat::BGRA_8;
-					break;
-				default:
-					DeleteObject(hBitmap);
-					return nullptr;
-			}
-
-			Surface_p pSurface = wg::SoftSurface::create({
-				.canvas = false,
-				.format = pixelFormat,
-				.size = { (int)bm.bmWidth, (int)bm.bmHeight }
-				}, 
-				(uint8_t*)bm.bmBits,
-				pixelFormat,
-				0, nullptr, 0);
-
-			DeleteObject(hBitmap);
-			return pSurface;
-		}
-	} */
 	else
 	{
 		int width, height, channels;
@@ -198,7 +166,8 @@ wg::Surface_p Win32API::loadSurface(const std::string& path, wg::SurfaceFactory*
 			bp.format = destFormat;
 			bp.size = { width, height };
 
-			Surface_p pSurface = wg::SoftSurface::create( bp, (uint8_t*)data, pixelDesc, 0, nullptr, 0);
+			auto pUseFactory = pFactory ? pFactory : Base::defaultSurfaceFactory().rawPtr();
+			Surface_p pSurface = pUseFactory->createSurface(bp, (uint8_t*)data, pixelDesc, 0, nullptr, 0);
 
 			stbi_image_free(data);
 			return pSurface;
@@ -314,8 +283,8 @@ std::string Win32API::inputBox(const std::string& title, const std::string& mess
 
 //____ saveFileDialog() _______________________________________________________
 
-std::string Win32API::saveFileDialog(const std::string& title, const std::string& defaultPath, 
-	const std::string& defaultFilename, const std::vector<std::string>& filterPatterns, 
+std::string Win32API::saveFileDialog(const std::string& title, const std::string& defaultPath,
+	const std::string& defaultFilename, const std::vector<std::string>& filterPatterns,
 	const std::string& singleFilterDescription)
 {
 	std::string result;
@@ -404,8 +373,8 @@ cleanup:
 
 //____ openFileDialog() _______________________________________________________
 
-std::string Win32API::openFileDialog(const std::string& title, const std::string& defaultPath, 
-	const std::string& defaultFilename, const std::vector<std::string>& filterPatterns, 
+std::string Win32API::openFileDialog(const std::string& title, const std::string& defaultPath,
+	const std::string& defaultFilename, const std::vector<std::string>& filterPatterns,
 	const std::string& singleFilterDescription)
 {
 	std::string result;
@@ -415,8 +384,8 @@ std::string Win32API::openFileDialog(const std::string& title, const std::string
 
 //____ openMultiFileDialog() __________________________________________________
 
-std::vector<std::string> Win32API::openMultiFileDialog(const std::string& title, 
-	const std::string& defaultPath, const std::string& defaultFilename,	
+std::vector<std::string> Win32API::openMultiFileDialog(const std::string& title,
+	const std::string& defaultPath, const std::string& defaultFilename,
 	const std::vector<std::string>& filterPatterns, const std::string& singleFilterDescription)
 {
 	std::vector<std::string> result;

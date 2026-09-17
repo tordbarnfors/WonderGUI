@@ -22,16 +22,26 @@
 
 #include <win32window.h>
 #include <windows.h>
-#include <wg_dx12backend.h>
 #include <dx12_wrapper.h>
 
 #include <wg_gfxdevice.h>
 #include <wg_dx12backend.h>
 
+#include <cstdio>
+#include <vector>
+
 
 using namespace wg;
 
 extern DX12Wrapper* g_pDX12Wrapper;
+extern std::wstring _stringToWString(const std::string& str);
+
+//____ _backend() _____________________________________________________
+
+static DX12Backend_p _backend()
+{
+	return wg_static_cast<DX12Backend_p>(wg_static_cast<GfxDeviceGen2_p>(Base::defaultGfxDevice())->backend());
+}
 
 
 //____ constructor ___________________________________________________
@@ -42,10 +52,6 @@ Win32Window::Win32Window(wapp::Window* pUserWindow, wg::Placement origin, wg::Co
 
 	RectI pixelGeo = { int(pos.x), int(pos.y), int(size.w), int(size.h) };
 
-	m_width = pixelGeo.w;
-	m_height = pixelGeo.h;
-
-
 	m_windowHandle = CreateWindow("WappWindowClass", title.c_str(), WS_OVERLAPPEDWINDOW, pixelGeo.x, pixelGeo.y, pixelGeo.w, pixelGeo.h, 0, 0, 0, this);
 
 	if (!m_windowHandle)
@@ -55,16 +61,24 @@ Win32Window::Win32Window(wapp::Window* pUserWindow, wg::Placement origin, wg::Co
 	}
 	else
 	{
+		// The size passed to CreateWindow() includes borders and title bar, the
+		// swap chain should match the client area.
+
+		RECT clientRect;
+		GetClientRect(m_windowHandle, &clientRect);
+		m_width = clientRect.right - clientRect.left;
+		m_height = clientRect.bottom - clientRect.top;
+
 		_createSwapChain(g_pDX12Wrapper, m_windowHandle, m_width, m_height);
+		m_currentBuffer = m_pSwapChain->GetCurrentBackBufferIndex();
 
 		UINT dpi = GetDpiForWindow(m_windowHandle);
 		int scale = dpi * 64 / 96; // 96 DPI is 100% scaling
-	
-		auto pBackend = wg_static_cast<DX12Backend_p>(wg_static_cast<GfxDeviceGen2_p>(Base::defaultGfxDevice())->backend());
-		pBackend->setDefaultCanvas(m_rtvHandles[m_currentBuffer], m_renderBuffers[m_currentBuffer].Get(), { spx(pixelGeo.w * 64), spx(pixelGeo.h * 64) },scale);
+
+		_backend()->setDefaultCanvas(m_rtvHandles[m_currentBuffer], m_renderBuffers[m_currentBuffer].Get(), { spx(m_width * 64), spx(m_height * 64) },scale);
 		m_pRootPanel = RootPanel::create(CanvasRef::Default, Base::defaultGfxDevice());
 		assert(m_pRootPanel);
-		
+
 
 		// Show window if open is true
 
@@ -80,6 +94,10 @@ Win32Window::Win32Window(wapp::Window* pUserWindow, wg::Placement origin, wg::Co
 
 Win32Window::~Win32Window()
 {
+	// The GPU might still be working on (or presenting) our swap chain buffers.
+
+	if (g_pDX12Wrapper)
+		g_pDX12Wrapper->flushRenderQueue();
 }
 
 
@@ -87,15 +105,17 @@ Win32Window::~Win32Window()
 
 void Win32Window::render()
 {
-	if (m_bHidden)
+	if (m_bHidden || !m_pRootPanel)
 		return;
 
-	GfxDeviceGen2_p pGfxDevice = wg_static_cast<GfxDeviceGen2_p>(Base::defaultGfxDevice());
+	// A flip-model swap chain decides which buffer is the back buffer. Ask it
+	// every frame instead of keeping our own count, which drifts out of sync as
+	// soon as a Present() isn't paired with exactly one render.
 
-	auto pBackend = wg_static_cast<DX12Backend_p>(pGfxDevice->backend());
+	m_currentBuffer = m_pSwapChain->GetCurrentBackBufferIndex();
+	m_bRendered = true;
 
-
-	pBackend->setDefaultCanvas(m_rtvHandles[m_currentBuffer], m_renderBuffers[m_currentBuffer].Get(), {spx(m_width * 64), spx(m_height * 64)}, m_pRootPanel->scale());
+	_backend()->setDefaultCanvas(m_rtvHandles[m_currentBuffer], m_renderBuffers[m_currentBuffer].Get(), {spx(m_width * 64), spx(m_height * 64)}, m_pRootPanel->scale());
 
 //	m_pRootPanel->addDirtyPatch({ 0,0, spx(m_width * 64), spx(m_height * 64) });
 
@@ -119,6 +139,15 @@ void Win32Window::render()
 
 void Win32Window::paint()
 {
+	// UpdateWindow() in the constructor sends WM_PAINT before anything has been
+	// rendered. Don't present an undefined buffer.
+
+	if (!m_bRendered)
+	{
+		ValidateRect(m_windowHandle, nullptr);
+		return;
+	}
+
 	HRGN updateRegion = CreateRectRgn(0, 0, 0, 0);
 
 	if (GetUpdateRgn(m_windowHandle, updateRegion, FALSE) != NULLREGION)
@@ -140,12 +169,18 @@ void Win32Window::paint()
 		std::vector<RECT> dirtyRects(rects, rects + rectCount);
 
 		DXGI_PRESENT_PARAMETERS presentParams = {};
-		presentParams.DirtyRectsCount = dirtyRects.size();
+		presentParams.DirtyRectsCount = (UINT) dirtyRects.size();
 		presentParams.pDirtyRects = dirtyRects.data();
 
-//		m_pSwapChain->Present(0, 0);
-		m_pSwapChain->Present1(0, 0, &presentParams);
-		m_currentBuffer = (m_currentBuffer + 1) % c_nbBuffers;
+		HRESULT hr = m_pSwapChain->Present1(0, 0, &presentParams);
+
+		if (hr == DXGI_ERROR_DEVICE_REMOVED || hr == DXGI_ERROR_DEVICE_RESET)
+		{
+			char msg[128];
+			sprintf_s(msg, "Win32Window: device lost on Present1(), GetDeviceRemovedReason() = 0x%08lX\n",
+				(unsigned long)m_pDX12Device->GetDeviceRemovedReason());
+			OutputDebugStringA(msg);
+		}
 	}
 
 	DeleteObject(updateRegion);
@@ -157,24 +192,33 @@ void Win32Window::paint()
 
 void Win32Window::onResize(int widthInPixels, int heightInPixels)
 {
-	m_width = widthInPixels;
-	m_height = heightInPixels;
+	if (!m_pSwapChain)
+		return;					// WM_SIZE can arrive before the constructor is done.
 
-	auto pBackend = wg_static_cast<DX12Backend_p>(wg_static_cast<GfxDeviceGen2_p>(Base::defaultGfxDevice())->backend());
-	pBackend->waitForCompletion();
-
-	_dropSwapChainBuffers();
-	auto retVal = m_pSwapChain->ResizeBuffers(0, widthInPixels, heightInPixels, DXGI_FORMAT_UNKNOWN, DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING  /* | DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH*/);
-	assert(retVal == S_OK);
-	_createSwapChainBuffers();
-
-	m_currentBuffer = 0;
+	// A minimized window has a zero-sized client area, which ResizeBuffers()
+	// doesn't accept. Keep the old buffers until we get a real size again.
 
 	if (widthInPixels == 0 || heightInPixels == 0)
 	{
 		m_bHidden = true;
 		return;
 	}
+
+	m_width = widthInPixels;
+	m_height = heightInPixels;
+
+	// All references to the buffers must be gone and the GPU done with them
+	// before ResizeBuffers(). Waiting for DX12Backend alone is not enough,
+	// DXGI queues its own present work on the same command queue.
+
+	g_pDX12Wrapper->flushRenderQueue();
+
+	_dropSwapChainBuffers();
+	auto retVal = m_pSwapChain->ResizeBuffers(0, widthInPixels, heightInPixels, DXGI_FORMAT_UNKNOWN, 0);	// Flags must match those used at creation.
+	assert(retVal == S_OK);
+	_createSwapChainBuffers();
+
+	m_currentBuffer = m_pSwapChain->GetCurrentBackBufferIndex();
 
 	m_bHidden = false;
 
@@ -183,7 +227,7 @@ void Win32Window::onResize(int widthInPixels, int heightInPixels)
 
 	// Update root panel
 
-	pBackend->setDefaultCanvas(m_rtvHandles[m_currentBuffer], m_renderBuffers[m_currentBuffer].Get(), { widthInPixels * 64, heightInPixels * 64 }, scale);
+	_backend()->setDefaultCanvas(m_rtvHandles[m_currentBuffer], m_renderBuffers[m_currentBuffer].Get(), { widthInPixels * 64, heightInPixels * 64 }, scale);
 	m_pRootPanel->setCanvas(CanvasRef::Default);
 
 	//
@@ -242,14 +286,35 @@ bool Win32Window::restore()
 
 bool Win32Window::setTitle(std::string& title)
 {
-	return false;
+	auto wTitle = _stringToWString(title);
+	SetWindowTextW(m_windowHandle, wTitle.c_str());
+	return true;
 }
 
 //____ title() ________________________________________________________________
 
 std::string Win32Window::title()
 {
-	return "";
+	int length = GetWindowTextLengthW(m_windowHandle);
+
+	if (length == 0)
+		return std::string();
+
+	// Get the wide string
+	std::vector<wchar_t> wideString(length + 1);
+	GetWindowTextW(m_windowHandle, wideString.data(), length + 1);
+
+	// Convert to UTF-8
+	int utf8Size = WideCharToMultiByte(CP_UTF8, 0, wideString.data(), -1, nullptr, 0, nullptr, nullptr);
+
+	if (utf8Size > 0)
+	{
+		std::string utf8String(utf8Size - 1, 0); // -1 to exclude null terminator
+		WideCharToMultiByte(CP_UTF8, 0, wideString.data(), -1, &utf8String[0], utf8Size, nullptr, nullptr);
+		return utf8String;
+	}
+
+	return std::string();
 }
 
 //____ _createSwapChain() ______________________________________________________
@@ -257,9 +322,7 @@ std::string Win32Window::title()
 void Win32Window::_createSwapChain(DX12Wrapper* pDX12Wrapper, const HWND hwnd, UINT width, UINT height)
 {
 	ID3D12Device* pDevice = pDX12Wrapper->dx12Device();
-
-	IDXGIFactory2* pFactory = static_cast<IDXGIFactory3*>(pDX12Wrapper->dxgiFactory());
-
+	IDXGIFactory2* pFactory = pDX12Wrapper->dxgiFactory();
 	ID3D12CommandQueue* pCommandQueue = pDX12Wrapper->renderCommandQueue();
 
 	D3D12_DESCRIPTOR_HEAP_DESC rtvHeapDesc = {};
@@ -284,10 +347,24 @@ void Win32Window::_createSwapChain(DX12Wrapper* pDX12Wrapper, const HWND hwnd, U
 	description.Scaling = DXGI_SCALING_NONE;
 	description.SwapEffect = DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL;
 	description.AlphaMode = DXGI_ALPHA_MODE_IGNORE;
-	description.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING; /* | DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH; */
 
-	if (S_OK != pFactory->CreateSwapChainForHwnd(pCommandQueue, hwnd, &description, nullptr, nullptr, &m_pSwapChain))
+	// DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING would need a check with
+	// IDXGIFactory5::CheckFeatureSupport() first, and Present1() doesn't ask for
+	// tearing anyway. If it's added back, ResizeBuffers() must use the same flags.
+
+	description.Flags = 0;
+
+	Microsoft::WRL::ComPtr<IDXGISwapChain1> pSwapChain1;
+	if (S_OK != pFactory->CreateSwapChainForHwnd(pCommandQueue, hwnd, &description, nullptr, nullptr, &pSwapChain1))
 		assert(false);
+
+	if (S_OK != pSwapChain1.As(&m_pSwapChain))		// IDXGISwapChain3 needed for GetCurrentBackBufferIndex().
+		assert(false);
+
+	// We handle resizing ourselves and have no fullscreen support, so keep DXGI
+	// from acting on Alt+Enter or changing the window.
+
+	pFactory->MakeWindowAssociation(hwnd, DXGI_MWA_NO_WINDOW_CHANGES | DXGI_MWA_NO_ALT_ENTER);
 
 	m_pDX12Device = pDevice;
 
@@ -319,4 +396,3 @@ void Win32Window::_dropSwapChainBuffers()
 	for (UINT i = 0; i < c_nbBuffers; i++)
 		m_renderBuffers[i].Reset();
 }
- 
