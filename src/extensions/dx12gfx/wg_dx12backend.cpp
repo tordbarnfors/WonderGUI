@@ -25,6 +25,7 @@
 #include <wg_dx12edgemapfactory.h>
 #include <d3dcompiler.h>
 
+#include <cstdio>
 
 #include <wg_gfxbase.h>
 
@@ -34,6 +35,24 @@ namespace wg
 {
 
 	const TypeInfo DX12Backend::TYPEINFO = { "DX12Backend", &GfxBackend::TYPEINFO };
+
+	//____ _checkHR() __________________________________________________________
+	//
+	// Logs failed HRESULTs to the debug output. The logging stays in release
+	// builds, where the assert is compiled out.
+
+	static bool _checkHR(HRESULT hr, const char* what)
+	{
+		if (FAILED(hr))
+		{
+			char msg[256];
+			sprintf_s(msg, "DX12Backend: %s failed, HRESULT = 0x%08lX\n", what, (unsigned long)hr);
+			OutputDebugStringA(msg);
+			assert(false);
+			return false;
+		}
+		return true;
+	}
 
 	//____ create() ______________________________________________________________
 
@@ -85,7 +104,8 @@ namespace wg
 			m_pVertexBuffer->Unmap(0, 0);
 		*/
 
-		_createFillPipeline();
+		if (!_createFillPipeline())
+			OutputDebugStringA("DX12Backend: failed to create fill pipeline, nothing will render.\n");
 
 	}
 
@@ -93,6 +113,12 @@ namespace wg
 
 	DX12Backend::~DX12Backend()
 	{
+		// Our resources must not be released while the GPU still uses them.
+
+		waitForCompletion();
+
+		if (m_fenceEvent)
+			CloseHandle(m_fenceEvent);
 	}
 
 	//____ typeInfo() _________________________________________________________
@@ -119,7 +145,11 @@ namespace wg
 
 	void DX12Backend::endRender()
 	{
-		assert( S_OK == m_commandList->Close() );
+		// Close() must not be inside the assert, or it is never called in release builds.
+
+		HRESULT hr = m_commandList->Close();
+		if (!_checkHR(hr, "ID3D12GraphicsCommandList::Close"))
+			return;
 
 		// Execute the command list.
 		ID3D12CommandList* ppCommandLists[] = { m_commandList.Get() };
@@ -166,13 +196,16 @@ namespace wg
 
 		m_commandList->OMSetRenderTargets(1, &m_defaultCanvasRTV, FALSE, nullptr);
 
-		// Set viewport and scissor
+		// Set viewport and scissor. Canvas size is in spx, D3D12 wants pixels.
+
+		int canvasWidth = m_defaultCanvas.size.w / 64;
+		int canvasHeight = m_defaultCanvas.size.h / 64;
 
 		D3D12_VIEWPORT viewport = {};
 		viewport.TopLeftX = 0;
 		viewport.TopLeftY = 0;
-		viewport.Width = (FLOAT)m_defaultCanvas.size.w;
-		viewport.Height = (FLOAT)m_defaultCanvas.size.h;
+		viewport.Width = (FLOAT)canvasWidth;
+		viewport.Height = (FLOAT)canvasHeight;
 		viewport.MinDepth = 0.0f;
 		viewport.MaxDepth = 1.0f;
 		m_commandList->RSSetViewports(1, &viewport);
@@ -180,8 +213,8 @@ namespace wg
 		D3D12_RECT scissorRect = {};
 		scissorRect.left = 0;
 		scissorRect.top = 0;
-		scissorRect.right = (FLOAT)m_defaultCanvas.size.w;
-		scissorRect.bottom = (FLOAT)m_defaultCanvas.size.h;
+		scissorRect.right = (LONG)canvasWidth;
+		scissorRect.bottom = (LONG)canvasHeight;
 		m_commandList->RSSetScissorRects(1, &scissorRect);
 
 		// Set pipeline
@@ -269,7 +302,7 @@ namespace wg
 
 	//____ processCommands() ___________________________________________________
 
-	void DX12Backend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd)
+	void DX12Backend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, int version )
 	{
 		m_pVertexPtr->x = 0.0f;
 		m_pVertexPtr->y = 0.0f;
@@ -371,14 +404,17 @@ namespace wg
 
 	void DX12Backend::waitForCompletion()
 	{
-		_waitForFence(m_frameResources[m_currentFrameIndex].fenceValue);
+		// Wait for the last value signaled, not just the current frame slot's,
+		// so work from both in-flight frames is done.
+
+		_waitForFence(m_fenceValue);
 	}
 
 	//____ _waitForFence() _____________________________________________________
 
 	void DX12Backend::_waitForFence(UINT64 fenceValue)
 	{
-		if (m_commandFence->GetCompletedValue() < fenceValue)
+		if (m_commandFence && m_commandFence->GetCompletedValue() < fenceValue)
 		{
 			m_commandFence->SetEventOnCompletion(fenceValue, m_fenceEvent);
 			WaitForSingleObject(m_fenceEvent, INFINITE);
@@ -420,7 +456,7 @@ namespace wg
 
 	//____ _createFillPipeline() ______________________________________________
 
-	void DX12Backend::_createFillPipeline()
+	bool DX12Backend::_createFillPipeline()
 	{
 		// First we create the root signature.
 
@@ -438,31 +474,30 @@ namespace wg
 		rsDesc.Desc_1_0.pStaticSamplers = 0;
 		rsDesc.Desc_1_0.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
 
-		ID3DBlob* pSerializedRS = nullptr;
-		ID3DBlob* pErrorBlob = nullptr;
+		Microsoft::WRL::ComPtr<ID3DBlob> pSerializedRS;
+		Microsoft::WRL::ComPtr<ID3DBlob> pErrorBlob;
 
-		if( S_OK != D3D12SerializeVersionedRootSignature(&rsDesc, &pSerializedRS, &pErrorBlob))
+		HRESULT hr = D3D12SerializeVersionedRootSignature(&rsDesc, pSerializedRS.GetAddressOf(), pErrorBlob.GetAddressOf());
+		if (FAILED(hr))
 		{
-			const char* pErrorMsg = pErrorBlob->GetBufferPointer() ? (const char*)pErrorBlob->GetBufferPointer() : "Unknown error";
+			const char* pErrorMsg = pErrorBlob ? (const char*)pErrorBlob->GetBufferPointer() : "Unknown error";
+			char msg[512];
+			sprintf_s(msg, "DX12Backend: D3D12SerializeVersionedRootSignature failed, HRESULT = 0x%08lX: %s\n", (unsigned long)hr, pErrorMsg);
+			OutputDebugStringA(msg);
 			assert(false);
+			return false;
 		}
 
-		if( S_OK != m_pDX12Device->CreateRootSignature(0, pSerializedRS->GetBufferPointer(), pSerializedRS->GetBufferSize(), IID_PPV_ARGS(m_pFillRootSignature.GetAddressOf())))
-		{
-			assert(false);
-		}
+		if (!_checkHR(m_pDX12Device->CreateRootSignature(0, pSerializedRS->GetBufferPointer(), pSerializedRS->GetBufferSize(), IID_PPV_ARGS(m_pFillRootSignature.GetAddressOf())), "CreateRootSignature"))
+			return false;
 
 		// Next we compile the shaders.
 
-		if( false == _compileVertexShader(m_fillVertexShaderBlob, g_fillVS) )
-		{
-			assert(false);
-		}
+		if (!_compileVertexShader(m_fillVertexShaderBlob, g_fillVS))
+			return false;
 
-		if( false == _compilePixelShader(m_fillPixelShaderBlob, g_fillPS) )
-		{
-			assert(false);
-		}
+		if (!_compilePixelShader(m_fillPixelShaderBlob, g_fillPS))
+			return false;
 
 		// Setup the graphics pipeline state.
 
@@ -514,11 +549,10 @@ namespace wg
 		desc.NodeMask = 0;
 		desc.Flags = D3D12_PIPELINE_STATE_FLAG_NONE;
 
-		if (S_OK != m_pDX12Device->CreateGraphicsPipelineState(&desc, IID_PPV_ARGS(m_pFillPipeline.GetAddressOf())) )
-		{
-			assert(false);
-		}
+		if (!_checkHR(m_pDX12Device->CreateGraphicsPipelineState(&desc, IID_PPV_ARGS(m_pFillPipeline.GetAddressOf())), "CreateGraphicsPipelineState"))
+			return false;
 
+		return true;
 	}
 
 	//____ _compileVertexShader() _____________________________________________
@@ -527,11 +561,15 @@ namespace wg
 	{ 
 		UINT compileFlags = D3DCOMPILE_ENABLE_STRICTNESS | D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION | D3DCOMPILE_WARNINGS_ARE_ERRORS | D3DCOMPILE_ALL_RESOURCES_BOUND;
 
-		ID3DBlob* errorMsg = nullptr;
+		Microsoft::WRL::ComPtr<ID3DBlob> errorMsg;
 
-		if (S_OK != D3DCompile(pSrc, strlen((const char*)pSrc), nullptr, nullptr, nullptr, "main", "vs_5_0", compileFlags, 0, shaderBlob.GetAddressOf(), &errorMsg) )
+		HRESULT hr = D3DCompile(pSrc, strlen((const char*)pSrc), nullptr, nullptr, nullptr, "main", "vs_5_0", compileFlags, 0, shaderBlob.GetAddressOf(), errorMsg.GetAddressOf());
+		if (FAILED(hr))
 		{
-			const char* pError = errorMsg ? (const char*)errorMsg->GetBufferPointer() : nullptr;
+			const char* pError = errorMsg ? (const char*)errorMsg->GetBufferPointer() : "Unknown error";
+			char msg[1024];
+			sprintf_s(msg, "DX12Backend: vertex shader compile failed, HRESULT = 0x%08lX: %s\n", (unsigned long)hr, pError);
+			OutputDebugStringA(msg);
 			assert(false);
 			return false;
 		}
@@ -545,11 +583,15 @@ namespace wg
 	{
 		UINT compileFlags = D3DCOMPILE_ENABLE_STRICTNESS | D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION | D3DCOMPILE_WARNINGS_ARE_ERRORS | D3DCOMPILE_ALL_RESOURCES_BOUND;
 
-		ID3DBlob* errorMsg = nullptr;
+		Microsoft::WRL::ComPtr<ID3DBlob> errorMsg;
 
-		if (S_OK != D3DCompile(pSrc, strlen((const char*)pSrc), nullptr, nullptr, nullptr, "main", "ps_5_0", compileFlags, 0, shaderBlob.GetAddressOf(), &errorMsg))
+		HRESULT hr = D3DCompile(pSrc, strlen((const char*)pSrc), nullptr, nullptr, nullptr, "main", "ps_5_0", compileFlags, 0, shaderBlob.GetAddressOf(), errorMsg.GetAddressOf());
+		if (FAILED(hr))
 		{
-			const char* pError = errorMsg ? (const char*)errorMsg->GetBufferPointer() : nullptr;
+			const char* pError = errorMsg ? (const char*)errorMsg->GetBufferPointer() : "Unknown error";
+			char msg[1024];
+			sprintf_s(msg, "DX12Backend: pixel shader compile failed, HRESULT = 0x%08lX: %s\n", (unsigned long)hr, pError);
+			OutputDebugStringA(msg);
 			assert(false);
 			return false;
 		}

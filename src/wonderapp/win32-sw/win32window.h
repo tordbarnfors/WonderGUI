@@ -43,9 +43,9 @@ public:
     //.____ Misc ____________________________________________________
 
     void				render();
+	void				paint();
 	wapp::Window*		userWindow() const { return m_pUserWindow; }
 	wg::RootPanel_p		rootPanel() const { return m_pRootPanel; }
-	HBITMAP				canvasBitmap() const { return m_hBitmap; }
 
 	void				onResize(int width, int height);
 

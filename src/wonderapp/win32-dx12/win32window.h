@@ -85,18 +85,19 @@ protected:
 	wg::RootPanel_p		m_pRootPanel;
 
 	bool				m_bHidden = false;
+	bool				m_bRendered = false;		// Nothing is presented until we have rendered at least once.
 
 	//
 
 	static const UINT								c_nbBuffers = 2;
 
 	Microsoft::WRL::ComPtr<ID3D12Device>			m_pDX12Device;
-	Microsoft::WRL::ComPtr<IDXGISwapChain1>			m_pSwapChain;
+	Microsoft::WRL::ComPtr<IDXGISwapChain3>			m_pSwapChain;
 	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>	m_RTVHeap;
 	Microsoft::WRL::ComPtr<ID3D12Resource>			m_renderBuffers[c_nbBuffers];
 	D3D12_CPU_DESCRIPTOR_HANDLE						m_rtvHandles[c_nbBuffers];
 
-	UINT m_currentBuffer = 0;
+	UINT m_currentBuffer = 0;		// Always read from GetCurrentBackBufferIndex(), never advanced by hand.
 
 	UINT m_width = 0, m_height = 0;
 	UINT m_heapIncrement = 0;

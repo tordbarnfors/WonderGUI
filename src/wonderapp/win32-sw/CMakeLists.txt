@@ -11,12 +11,15 @@ set(SOURCES
     ../common/wappwindow.h
     ../common/wappwindow.cpp
 
-	main.cpp
-    win32api.h
-    win32api.cpp
-    win32window.h
+    ../win32-common/win32gfxbackend.h
+    ../win32-common/main.cpp
+    ../win32-common/win32api.h
+    ../win32-common/win32api.cpp
+    ../win32-common/stb_image.h
+
+	win32window.h
     win32window.cpp
-    stb_image.h
+    win32gfxbackend.cpp
 )
 
 set(INCDIRS
@@ -25,6 +28,7 @@ set(INCDIRS
 	${WGFREETYPEFONT_INCDIRS}
 	${WGDEBUGGER_INCDIRS}
 	${PROJECT_SOURCE_DIR}/wonderapp/common
+	${PROJECT_SOURCE_DIR}/wonderapp/win32-common
 	${PROJECT_SOURCE_DIR}
 )
 
