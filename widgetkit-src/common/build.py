@@ -25,6 +25,7 @@ Directory layout expected (kit_dir = widgetkit-src/<kit>/):
 """
 import argparse
 import json
+import math
 import re
 import sys
 from pathlib import Path
@@ -56,7 +57,18 @@ STATE_STYLE = {
 
 
 def glyph_color(palette, state):
-    return palette["glyph_disabled"] if state in ("Disabled", "DisabledChecked") else palette["glyph_white"]
+    return palette["glyph_disabled"] if state.startswith("Disabled") else palette["glyph_white"]
+
+
+def is_checked(state):
+    """Does this state show the widget's "on" glyph?
+
+    Substring, not startswith: the checked family is Checked / CheckedHovered /
+    CheckedPressed *and* DisabledChecked, and that last one does not start with
+    "Checked". A startswith test silently drops the tick from a disabled ticked
+    box.
+    """
+    return "Checked" in state
 
 
 def render_state_block(spec, palette, state, w_px, h_px, density):
@@ -64,7 +76,15 @@ def render_state_block(spec, palette, state, w_px, h_px, density):
     shape = spec.get("shape", "rect")
     border_px = max(T.px(1.2, density), 1)
 
-    style = STATE_STYLE[state]
+    # `state_style_as` renders one state with another's STATE_STYLE entry. A
+    # checkbox wants its background to say hovered/pressed and nothing else --
+    # ticking it must not also recolour it, or the tick and the surface are
+    # both saying "on" and neither is left to say what the pointer is doing.
+    # So Checked is drawn exactly like Default, CheckedHovered like Hovered,
+    # and the only difference between the two families is the glyph. The glyph
+    # still follows the real state.
+    style_state = (spec.get("state_style_as") or {}).get(state, state)
+    style = STATE_STYLE[style_state]
     # STATE_STYLE names a palette entry per state ("raised", "hover", ...).
     # `palette_family` prefixes those, so a kit can carry more than one family
     # of control colours -- e.g. `plate` for controls that should read as
@@ -84,57 +104,112 @@ def render_state_block(spec, palette, state, w_px, h_px, density):
 
     glyph = spec.get("glyph")
     if glyph:
-        gtype = glyph["type"]
-        gcolor = glyph_color(palette, state)
-        outline = palette["glyph_outline"]
-        if gtype == "arrow":
-            # Default proportions match the select box's arrow (base twice the
-            # base-to-tip depth), transposed for the horizontal directions.
-            dw, dh = (10, 5) if glyph["direction"] in ("up", "down") else (5, 10)
-            img = T.add_arrow_glyph(img, glyph["direction"], gcolor, outline,
-                                    T.px(glyph.get("arrow_w_pts", dw), density),
-                                    T.px(glyph.get("arrow_h_pts", dh), density))
-        elif gtype == "plusminus":
-            mode = "minus" if state.startswith("Checked") else "plus"
-            img = T.add_plusminus_glyph(img, mode, gcolor)
-        elif gtype == "check":
-            if state in ("Checked", "DisabledChecked"):
-                img = T.add_check_glyph(
-                    img, gcolor,
-                    check_w_px=T.px(glyph["check_w_pts"], density) if "check_w_pts" in glyph else None,
-                    check_h_px=T.px(glyph["check_h_pts"], density) if "check_h_pts" in glyph else None,
-                    stroke_px=T.px(glyph["stroke_pts"], density) if "stroke_pts" in glyph else None,
-                    outline=outline if glyph.get("outline", False) else None)
-        elif gtype == "dot":
-            if state == "Checked":
-                img = T.add_dot_glyph(
-                    img, gcolor,
-                    dot_px=T.px(glyph["dot_pts"], density) if "dot_pts" in glyph else None,
-                    outline=outline if glyph.get("outline", False) else None)
-        elif gtype == "grip":
-            # Ridges run ACROSS the axis the handle is dragged along, so a wide
-            # handle gets vertical lines -- the opposite of what the block's
-            # aspect ratio suggests, which is how this got reversed before.
-            # Stated per-spec; the fallback follows the same rule.
-            direction = glyph.get("direction") or ("vertical" if w_px >= h_px else "horizontal")
-            img = T.add_grip_lines(img, f"{direction}_lines", palette["grip_hi"], palette["grip_lo"],
-                                   T.px(glyph["len_pts"], density) if "len_pts" in glyph else None)
-        elif gtype == "dotgrid":
-            img = T.add_dot_grid(img, palette["grip_hi"], palette["grip_lo"])
-        elif gtype == "dots":
-            # Dots line up ALONG the bar, which is the split panel convention
-            # (unlike scrollbar grip ridges, which run across the drag axis).
-            img = T.add_dot_line(img, glyph["direction"], glyph.get("count", 3),
-                                 T.px(glyph.get("dot_pts", 2.5), density),
-                                 T.px(glyph.get("gap_pts", 4), density),
-                                 palette.get("dot_hi", palette["grip_hi"]),
-                                 palette.get("dot_lo", palette["grip_lo"]))
-        elif gtype == "select_arrow":
-            zone_px = T.px(glyph["arrow_zone_pts"], density)
-            img = T.add_select_arrow(
-                img, zone_px, gcolor, outline, pal["border"],
-                arrow_w_px=T.px(glyph["arrow_w_pts"], density) if "arrow_w_pts" in glyph else None,
-                arrow_h_px=T.px(glyph["arrow_h_pts"], density) if "arrow_h_pts" in glyph else None)
+        shift = (spec.get("glyph_shift") or {}).get(state)
+        if shift:
+            # Draw the glyph on its own transparent layer and paste it offset.
+            # This is the bitmap equivalent of BlockSkin's contentShift, for a
+            # glyph that lives in the ARTWORK rather than being widget content:
+            # a checkbox's tick is drawn into the block, and Skins::Checkbox is
+            # an icon skin whose content is nothing, so nothing at runtime can
+            # move it.
+            #
+            # Unshifted glyphs keep drawing straight onto the panel. Routing
+            # those through a layer too would be the same picture in theory,
+            # but PIL composites in 8-bit and A-over-(B-over-C) can round a
+            # level differently from (A-over-B)-over-C -- which would rewrite
+            # every part in the atlas for no visible gain.
+            layer = _draw_glyph(Image.new("RGBA", img.size, (0, 0, 0, 0)),
+                                glyph, palette, pal, state, w_px, h_px, density)
+            img.alpha_composite(layer, (T.px(shift[0], density), T.px(shift[1], density)))
+            return img
+        return _draw_glyph(img, glyph, palette, pal, state, w_px, h_px, density)
+    return img
+
+
+def _draw_glyph(img, glyph, palette, pal, state, w_px, h_px, density):
+    """Composite a glyph onto `img`. Split out of render_state_block so the
+    same drawing can go either straight onto the panel or onto a transparent
+    layer that is then pasted at an offset."""
+    gtype = glyph["type"]
+    gcolor = glyph_color(palette, state)
+    outline = palette["glyph_outline"]
+    if gtype == "arrow":
+        # Default proportions match the select box's arrow (base twice the
+        # base-to-tip depth), transposed for the horizontal directions.
+        dw, dh = (10, 5) if glyph["direction"] in ("up", "down") else (5, 10)
+        img = T.add_arrow_glyph(img, glyph["direction"], gcolor, outline,
+                                T.px(glyph.get("arrow_w_pts", dw), density),
+                                T.px(glyph.get("arrow_h_pts", dh), density))
+    elif gtype == "plusminus":
+        mode = "minus" if is_checked(state) else "plus"
+        img = T.add_plusminus_glyph(img, mode, gcolor)
+    elif gtype == "check":
+        if is_checked(state):
+            img = T.add_check_glyph(
+                img, gcolor,
+                check_w_px=T.px(glyph["check_w_pts"], density) if "check_w_pts" in glyph else None,
+                check_h_px=T.px(glyph["check_h_pts"], density) if "check_h_pts" in glyph else None,
+                stroke_px=T.px(glyph["stroke_pts"], density) if "stroke_pts" in glyph else None,
+                outline=outline if glyph.get("outline", False) else None)
+    elif gtype == "dot":
+        if is_checked(state):
+            img = T.add_dot_glyph(
+                img, gcolor,
+                dot_px=T.px(glyph["dot_pts"], density) if "dot_pts" in glyph else None,
+                outline=outline if glyph.get("outline", False) else None)
+    elif gtype == "grip":
+        # Ridges run ACROSS the axis the handle is dragged along, so a wide
+        # handle gets vertical lines -- the opposite of what the block's
+        # aspect ratio suggests, which is how this got reversed before.
+        # Stated per-spec; the fallback follows the same rule.
+        direction = glyph.get("direction") or ("vertical" if w_px >= h_px else "horizontal")
+        img = T.add_grip_lines(img, f"{direction}_lines", palette["grip_hi"], palette["grip_lo"],
+                               T.px(glyph["len_pts"], density) if "len_pts" in glyph else None)
+    elif gtype == "dotgrid":
+        img = T.add_dot_grid(img, palette["grip_hi"], palette["grip_lo"])
+    elif gtype == "dots":
+        # Dots line up ALONG the bar, which is the split panel convention
+        # (unlike scrollbar grip ridges, which run across the drag axis).
+        img = T.add_dot_line(img, glyph["direction"], glyph.get("count", 3),
+                             T.px(glyph.get("dot_pts", 2.5), density),
+                             T.px(glyph.get("gap_pts", 4), density),
+                             palette.get("dot_hi", palette["grip_hi"]),
+                             palette.get("dot_lo", palette["grip_lo"]))
+    elif gtype == "select_arrow":
+        zone_px = T.px(glyph["arrow_zone_pts"], density)
+        img = T.add_select_arrow(
+            img, zone_px, gcolor, outline, pal["border"],
+            arrow_w_px=T.px(glyph["arrow_w_pts"], density) if "arrow_w_pts" in glyph else None,
+            arrow_h_px=T.px(glyph["arrow_h_pts"], density) if "arrow_h_pts" in glyph else None)
+    return img
+
+
+def render_dot_overlay(spec, palette, state, w_px, h_px, density):
+    """A fully transparent block carrying nothing but the engraved dot run.
+
+    This is the front layer of a DoubleSkin whose back layer is the plain grey
+    bar. Splitting them is what lets the dots grow: on a single block the dots
+    had to fit inside a rigid part carved out of the bar's own middle band, and
+    that band is only as wide as the bar minus its frame -- on an 8pt bar,
+    4pts, which caps the dots at about 2pts. The overlay has no border and no
+    corners, so it needs no frame at all: the whole block is the centre section
+    and the rigid part can be almost as wide as the bar.
+
+    Only the per-state ALPHA from STATE_STYLE is applied (so the dots fade with
+    a disabled bar); colour, gloss and inset shading all belong to the layer
+    underneath.
+    """
+    glyph = spec["glyph"]
+    img = Image.new("RGBA", (w_px, h_px), (0, 0, 0, 0))
+    img = T.add_dot_line(img, glyph["direction"], glyph.get("count", 3),
+                         T.px(glyph.get("dot_pts", 2.5), density),
+                         T.px(glyph.get("gap_pts", 4), density),
+                         palette.get("dot_hi", palette["grip_hi"]),
+                         palette.get("dot_lo", palette["grip_lo"]))
+    alpha = STATE_STYLE[state]["alpha"]
+    if alpha < 1.0:
+        r, g, b, a = img.split()
+        img = Image.merge("RGBA", (r, g, b, a.point(lambda v: int(v * alpha))))
     return img
 
 
@@ -161,14 +236,23 @@ def render_widget(name, spec, palette, density):
     w_pts, h_pts = spec["size_pts"]
     w_px, h_px = T.px(w_pts, density), T.px(h_pts, density)
     axis = spec.get("axis", "single")
-    spacing_pts = spec.get("spacing_pts", 0)
-    spacing_px = T.px(spacing_pts, density)
+    # NOTE two different spacings, matching BlockSkin's own two fields:
+    #   block_spacing_pts -> _.blockSpacing, the gap between state blocks
+    #                        INSIDE the atlas strip. A packing detail.
+    #   spacing_pts       -> _.spacing, an outer MARGIN around the whole
+    #                        widget, which is what separates it from its
+    #                        neighbours in a panel. Nothing to do with the
+    #                        bitmap; see the per-spec comments for who gets it.
+    block_spacing_pts = spec.get("block_spacing_pts", 0)
+    spacing_px = T.px(block_spacing_pts, density)
     states = spec.get("states", ["Default"])
 
     blocks = []
     for state in states:
         if spec["recipe"] == "raised_control":
             blocks.append(render_state_block(spec, palette, state, w_px, h_px, density))
+        elif spec["recipe"] == "dot_overlay":
+            blocks.append(render_dot_overlay(spec, palette, state, w_px, h_px, density))
         else:
             blocks.append(render_single_panel(spec, palette, w_px, h_px, density))
 
@@ -189,13 +273,17 @@ def render_widget(name, spec, palette, density):
     meta = {
         "name": name,
         "axis": axis,
-        "spacing_pts": spacing_pts,
+        "block_spacing_pts": block_spacing_pts,
+        "spacing_pts": spec.get("spacing_pts"),
         "size_pts": [w_pts, h_pts],
         "states": states,
         "frame_pts": spec.get("frame_pts"),
         "padding_pts": spec.get("padding_pts"),
         "rigid_part": spec.get("rigid_part"),
         "stretch_axis": spec.get("stretch_axis"),
+        "preview_over": spec.get("preview_over"),
+        "blocks_from": spec.get("blocks_from"),
+        "content_shift": spec.get("content_shift"),
         "density": density,
     }
     return strip, meta
@@ -226,11 +314,41 @@ def cmd_render(kit, names, force, density):
     skipped = []
     rendered = []
     for name in targets:
+        spec = all_specs[name]
+
+        # `blocks_from: <Other>` means "the same bitmap as <Other>, wrapped in a
+        # second skin with its own padding / spacing". It renders no pixels and
+        # takes no atlas space: `pack` copies the source's block coordinates.
+        # Two skins over one block, rather than two copies of the art that can
+        # drift apart -- Skins::Field is Skins::Canvas plus an outer margin, and
+        # saying so is clearer than a near-duplicate spec.
+        if "blocks_from" in spec:
+            src = spec["blocks_from"]
+            if src not in all_specs:
+                raise SystemExit(f"{name}: blocks_from names {src!r}, which has no spec")
+            if "blocks_from" in all_specs[src]:
+                raise SystemExit(f"{name}: blocks_from must name a real part, "
+                                 f"but {src!r} is itself a blocks_from alias")
+            json_path = parts_dir / f"{name}.json"
+            if json_path.exists() and not force:
+                skipped.append(name)
+                continue
+            meta = dict(name=name, blocks_from=src, density=density,
+                        frame_pts=spec.get("frame_pts"),
+                        padding_pts=spec.get("padding_pts"),
+                        spacing_pts=spec.get("spacing_pts"),
+                        rigid_part=spec.get("rigid_part"),
+                        stretch_axis=spec.get("stretch_axis"),
+                        preview_over=spec.get("preview_over"),
+                        content_shift=spec.get("content_shift"))
+            json_path.write_text(json.dumps(meta, indent=2))
+            rendered.append(name)
+            continue
+
         png_path = parts_dir / f"{name}.png"
         if png_path.exists() and not force:
             skipped.append(name)
             continue
-        spec = all_specs[name]
         img, meta = render_widget(name, spec, palette, density)
         img.save(png_path)
         (parts_dir / f"{name}.json").write_text(json.dumps(meta, indent=2))
@@ -253,12 +371,187 @@ def border_tuple(v):
     return tuple(v)
 
 
+# ---------------------------------------------------------------------------
+# Atlas packing
+#
+# A MaxRects packer, plus a search over bin widths and over the packer's own
+# tuning knobs. This replaced a shelf packer (fill a row left to right at a
+# fixed 640px width, start a new row when the next part does not fit) which
+# packed the kit at 27.5% occupancy: the widest part is 358px, so every row
+# containing only small parts wasted most of 640px, and the fixed width meant
+# a part growing by one pixel could push a whole row down.
+#
+# Nothing here knows anything about widgets. It takes rectangles and gives
+# back positions, so it keeps packing tightly when a part changes size, which
+# a hand-tuned layout would not.
+# ---------------------------------------------------------------------------
+
+def _rect_contains(outer, inner):
+    ox, oy, ow, oh = outer
+    ix, iy, iw, ih = inner
+    return ix >= ox and iy >= oy and ix + iw <= ox + ow and iy + ih <= oy + oh
+
+
+def _split_free(free, used):
+    """MaxRects' core step: replace every free rectangle that overlaps `used`
+    with the (up to four) maximal rectangles of what is left of it, then drop
+    any that another one already contains.
+
+    The pruning is what keeps the list from exploding, and it is safe only
+    because duplicates are removed first: two identical rectangles each
+    contain the other, so without the dedupe both would be dropped.
+    """
+    ux, uy, uw, uh = used
+    out = []
+    for f in free:
+        fx, fy, fw, fh = f
+        if ux >= fx + fw or ux + uw <= fx or uy >= fy + fh or uy + uh <= fy:
+            out.append(f)
+            continue
+        if ux > fx:
+            out.append((fx, fy, ux - fx, fh))
+        if ux + uw < fx + fw:
+            out.append((ux + uw, fy, fx + fw - (ux + uw), fh))
+        if uy > fy:
+            out.append((fx, fy, fw, uy - fy))
+        if uy + uh < fy + fh:
+            out.append((fx, uy + uh, fw, fy + fh - (uy + uh)))
+    uniq = list(dict.fromkeys(out))
+    return [a for i, a in enumerate(uniq)
+            if not any(_rect_contains(b, a) for j, b in enumerate(uniq) if j != i)]
+
+
+# How to score a candidate free rectangle for the piece being placed. Each
+# returns a sort key; lowest wins. The trailing (fy, fx) in every key is what
+# makes the result deterministic when several spots score the same.
+PACK_HEURISTICS = {
+    # Best short side fit: leave the smallest sliver on the tighter axis.
+    "bssf":  lambda w, h, fx, fy, fw, fh: (min(fw - w, fh - h), max(fw - w, fh - h), fy, fx),
+    # Best area fit: waste the least area, tie-broken like bssf.
+    "baf":   lambda w, h, fx, fy, fw, fh: (fw * fh - w * h, min(fw - w, fh - h), fy, fx),
+    # Bottom left: keep the skyline as low as possible.
+    "bl":    lambda w, h, fx, fy, fw, fh: (fy + h, fx, fy),
+}
+
+# The order pieces are offered in. Big-first is the usual rule, but which
+# measure of "big" wins depends on the shape mix, so all of them are tried.
+PACK_ORDERS = {
+    "maxside": lambda s, i: (-max(s), -s[0] * s[1], i),
+    "area":    lambda s, i: (-s[0] * s[1], -max(s), i),
+    "height":  lambda s, i: (-s[1], -s[0], i),
+    "width":   lambda s, i: (-s[0], -s[1], i),
+    "perim":   lambda s, i: (-(s[0] + s[1]), -s[0] * s[1], i),
+}
+
+
+def _maxrects(sizes, bin_w, bin_h, score, order_key):
+    """Place every (w, h) in `sizes` inside bin_w x bin_h. Returns positions in
+    the order of `sizes`, or None if something did not fit."""
+    free = [(0, 0, bin_w, bin_h)]
+    placed = [None] * len(sizes)
+    for i in sorted(range(len(sizes)), key=lambda i: order_key(sizes[i], i)):
+        w, h = sizes[i]
+        best = None
+        for (fx, fy, fw, fh) in free:
+            if fw < w or fh < h:
+                continue
+            key = score(w, h, fx, fy, fw, fh)
+            if best is None or key < best[0]:
+                best = (key, fx, fy)
+        if best is None:
+            return None
+        _, x, y = best
+        placed[i] = (x, y)
+        free = _split_free(free, (x, y, w, h))
+    return placed
+
+
+def pack_rects(sizes, gutter, grid, size_align=4, max_width=4096):
+    """Lay out `sizes` (a list of (w, h) in pixels) as tightly as this can
+    manage. Returns (atlas_w, atlas_h, positions).
+
+    `gutter` px is kept between every pair of parts and around the outside, so
+    bilinear sampling at a block's edge cannot pull in its neighbour.
+
+    `grid` is the alignment every POSITION must land on. The manifest stores
+    atlas coordinates in pts, as round(px / density), so a part placed off the
+    density grid would be recorded at a position it is not actually at, and
+    every block in it would be sampled half a pixel out. Each part's footprint
+    is rounded up to that grid and the origin sits on it, so every position
+    derived from them does too. `size_align` is only cosmetic: it rounds the
+    finished atlas dimensions, and does not have to divide `grid`.
+
+    The width is not fixed. Every width from "just wide enough for the widest
+    part" upwards is tried against every heuristic/order pair, each packed
+    into an unbounded-height bin, and whichever combination yields the least
+    area wins. Trying them all costs about a second and is worth it: on this
+    kit the best pairing beats the worst by a factor of four, and which one
+    wins changes as parts change size -- so picking one by hand today would
+    quietly stop being the right choice later.
+    """
+    def up(v, a):
+        return -(-v // a) * a
+
+    # Each part reserves its own size plus one gutter; the matching gutter on
+    # the left and top comes from the origin offset at the end.
+    footprints = [(up(w + gutter, grid), up(h + gutter, grid)) for w, h in sizes]
+    widest = max(w for w, _ in footprints)
+    if widest + gutter > max_width:
+        raise SystemExit(f"A part is {widest}px wide, wider than the {max_width}px atlas limit.")
+
+    total = sum(w * h for w, h in footprints)
+    # Past ~2.2x the square-root width the atlas is all but guaranteed to be
+    # wider than it needs to be; below `widest` nothing fits at all.
+    hi_w = min(max_width, max(widest, up(int(2.2 * math.sqrt(total)), grid)))
+
+    best = None
+    for hname, score in PACK_HEURISTICS.items():
+        for oname, order_key in PACK_ORDERS.items():
+            w = up(widest, grid)
+            while w <= hi_w:
+                placed = _maxrects(footprints, w, 1 << 24, score, order_key)
+                if placed:
+                    used_w = max(x + fw for (x, _), (fw, _f) in zip(placed, footprints))
+                    used_h = max(y + fh for (_, y), (_f, fh) in zip(placed, footprints))
+                    atlas_w = up(used_w + gutter, size_align)
+                    atlas_h = up(used_h + gutter, size_align)
+                    key = (atlas_w * atlas_h, max(atlas_w, atlas_h), atlas_w, hname, oname)
+                    if best is None or key < best[0]:
+                        best = (key, atlas_w, atlas_h,
+                                [(x + gutter, y + gutter) for x, y in placed])
+                w += grid
+
+    if best is None:
+        raise SystemExit("Could not pack the atlas -- no bin width fitted every part.")
+
+    _, atlas_w, atlas_h, positions = best
+
+    # The invariants the rest of the pipeline relies on. Cheap, and a silent
+    # breach here would show up as blurred or shifted artwork, not a crash.
+    for (x, y), (w, h) in zip(positions, sizes):
+        assert x % grid == 0 and y % grid == 0, "part placed off the density grid"
+        assert x + w <= atlas_w and y + h <= atlas_h, "part placed outside the atlas"
+    for i in range(len(positions)):
+        for j in range(i + 1, len(positions)):
+            (ax, ay), (aw, ah) = positions[i], sizes[i]
+            (bx, by), (bw, bh) = positions[j], sizes[j]
+            assert (ax >= bx + bw + gutter or bx >= ax + aw + gutter or
+                    ay >= by + bh + gutter or by >= ay + ah + gutter), \
+                "parts overlap or are closer than the gutter"
+
+    return atlas_w, atlas_h, positions
+
+
 def pack_atlas(kit):
     kit_dir = KIT_ROOT / kit
     parts_dir = kit_dir / "parts"
     parts = []
+    aliases = []
     for json_path in sorted(parts_dir.glob("*.json")):
         meta = json.loads(json_path.read_text())
+        if meta.get("blocks_from"):
+            aliases.append(meta)
+            continue
         png_path = parts_dir / f"{meta['name']}.png"
         img = Image.open(png_path)
         parts.append((meta, img))
@@ -271,7 +564,8 @@ def pack_atlas(kit):
     # header that refers to a member nobody declares any more. Hand-authored
     # parts with no spec are legitimate, so warn rather than fail.
     spec_names = {p.stem for p in (kit_dir / "specs").glob("*.yaml")}
-    orphans = [m["name"] for m, _ in parts if m["name"] not in spec_names]
+    orphans = [m["name"] for m in [mm for mm, _ in parts] + aliases
+               if m["name"] not in spec_names]
     if orphans:
         print(f"warning: parts with no spec in specs/: {', '.join(sorted(orphans))}\n"
               f"         they are still packed and still generate Skins:: entries -- "
@@ -284,27 +578,41 @@ def pack_atlas(kit):
             raise SystemExit(f"Density mismatch: {meta['name']} was rendered at {meta['density']}x, "
                               f"expected {density}x. Re-render everything at one consistent density.")
 
-    ATLAS_WIDTH = 640
+    # 1pt of clear space around every part, and positions on the density grid
+    # so the pts coordinates in the manifest are exact rather than rounded.
     GUTTER = T.px(1, density)
-    cursor_x, row_y, row_h = GUTTER, GUTTER, 0
-    positions = []
+    atlas_w, atlas_h, positions = pack_rects([img.size for _, img in parts],
+                                             gutter=GUTTER, grid=density)
 
-    for meta, img in parts:
-        w, h = img.size
-        if cursor_x + w + GUTTER > ATLAS_WIDTH:
-            row_y += row_h + GUTTER
-            cursor_x = GUTTER
-            row_h = 0
-        positions.append((cursor_x, row_y))
-        cursor_x += w + GUTTER
-        row_h = max(row_h, h)
+    used = sum(w * h for w, h in (img.size for _, img in parts))
+    print(f"Atlas {atlas_w}x{atlas_h} = {atlas_w * atlas_h} px, "
+          f"{used * 100 / (atlas_w * atlas_h):.1f}% occupied by artwork")
 
-    atlas_h = row_y + row_h + GUTTER
-    atlas = Image.new("RGBA", (ATLAS_WIDTH, atlas_h), (0, 0, 0, 0))
+    atlas = Image.new("RGBA", (atlas_w, atlas_h), (0, 0, 0, 0))
     manifest = []
     for (meta, img), (x, y) in zip(parts, positions):
         atlas.alpha_composite(img, (x, y))
         manifest.append(dict(meta, atlas_x_pts=round(x / density), atlas_y_pts=round(y / density)))
+
+    # Aliases take the source's block geometry (position, size, strip layout,
+    # states) and keep their own blueprint fields. They are appended in name
+    # order after the real parts, which keeps the generated header stable.
+    by_name = {m["name"]: m for m in manifest}
+    for alias in sorted(aliases, key=lambda m: m["name"]):
+        src = by_name.get(alias["blocks_from"])
+        if src is None:
+            raise SystemExit(f"{alias['name']}: blocks_from names {alias['blocks_from']!r}, "
+                             f"which has no part -- render it first.")
+        entry = dict(alias)
+        for k in ("atlas_x_pts", "atlas_y_pts", "size_pts", "axis",
+                  "block_spacing_pts", "states"):
+            entry[k] = src[k]
+        # A frame the alias does not state is the source's: an alias usually
+        # differs only in padding/spacing, and silently losing the frame would
+        # smear its borders when stretched.
+        if entry.get("frame_pts") is None:
+            entry["frame_pts"] = src["frame_pts"]
+        manifest.append(entry)
 
     return atlas, manifest, density
 
@@ -312,7 +620,27 @@ def pack_atlas(kit):
 # Widgets whose skin pointer isn't Skins::<Name> -- everything else defaults to that.
 CPP_TARGET_OVERRIDES = {
     "PlusMinusToggle": "_pPlusMinusToggleSkin",
+    # The split handles are DoubleSkins: a grey bar with a transparent
+    # dot overlay on top. Both layers are generated here as private
+    # BlockSkins; header_shell.h combines each pair into Skins::SplitHandleX /
+    # Skins::SplitHandleY just after the generated block.
+    "SplitHandleX":     "_pSplitHandleXBarSkin",
+    "SplitHandleXDots": "_pSplitHandleXDotsSkin",
+    "SplitHandleY":     "_pSplitHandleYBarSkin",
+    "SplitHandleYDots": "_pSplitHandleYDotsSkin",
 }
+
+
+def fmt_pts(v):
+    """Format a pts value for C++. WonderGUI's `pts` is a float (see
+    `typedef float pts` in wg_gfxtypes.h), so a half-point offset is legal and
+    sometimes necessary -- an overlay whose glyph has to sit inside a rigid run
+    may not land on the integer grid. int() here silently truncated such a
+    value (2.5 -> 2), moving the run by half a point with nothing to show for
+    it, so integral values print as integers and the rest keep their decimals.
+    """
+    f = float(v)
+    return str(int(f)) if f == int(f) else repr(round(f, 4))
 
 
 def fmt_border(v):
@@ -320,8 +648,8 @@ def fmt_border(v):
         return None
     t, r, b, l = border_tuple(v)
     if t == r == b == l:
-        return str(int(t))
-    return f"{{ {int(t)},{int(r)},{int(b)},{int(l)} }}"
+        return fmt_pts(t)
+    return f"{{ {fmt_pts(t)},{fmt_pts(r)},{fmt_pts(b)},{fmt_pts(l)} }}"
 
 
 AXIS_CPP = {"x": "Axis::X", "y": "Axis::Y"}
@@ -333,11 +661,11 @@ def gen_skin_block(entry):
     w, h = entry["size_pts"]
     lines = [f"\t\t{target} = BlockSkin::create(WGBP(BlockSkin,",
              f"\t\t\t_.surface = pSkinBlocks,",
-             f"\t\t\t_.firstBlock = {{ {int(x)},{int(y)},{int(w)},{int(h)} }},"]
+             f"\t\t\t_.firstBlock = {{ {fmt_pts(x)},{fmt_pts(y)},{fmt_pts(w)},{fmt_pts(h)} }},"]
 
     if entry["axis"] in ("x", "y"):
         lines.append(f"\t\t\t_.axis = {AXIS_CPP[entry['axis']]},")
-        lines.append(f"\t\t\t_.blockSpacing = {int(entry['spacing_pts'])},")
+        lines.append(f"\t\t\t_.blockSpacing = {fmt_pts(entry['block_spacing_pts'])},")
 
     frame = fmt_border(entry["frame_pts"])
     if frame is not None:
@@ -345,6 +673,14 @@ def gen_skin_block(entry):
     padding = fmt_border(entry["padding_pts"])
     if padding is not None:
         lines.append(f"\t\t\t_.padding = {padding},")
+    # Skin::spacing is an outer margin (Skin::margin() returns it): it shrinks
+    # the rect the skin draws into and grows the widget's default size, so a
+    # widget carries its own separation from its neighbours instead of every
+    # caller remembering to set panel spacing. Each side gets the full value,
+    # so two adjacent widgets end up 2 x spacing apart.
+    spacing = fmt_border(entry.get("spacing_pts"))
+    if spacing is not None:
+        lines.append(f"\t\t\t_.spacing = {spacing},")
 
     for rp in rigid_parts(entry):
         field = "rigidPartX" if rp["axis"] == "x" else "rigidPartY"
@@ -353,11 +689,38 @@ def gen_skin_block(entry):
         # "YSections::Top|Bottom" is not valid C++, and both enums define
         # operator| (plus an All) in wg_gfxtypes.h.
         sections = " | ".join(f"{enum}::{s.strip()}" for s in str(rp["sections"]).split("|"))
-        lines.append(f"\t\t\t_.{field} = {{{int(rp['begin_pts'])},{int(rp['length_pts'])},{sections}}},")
+        lines.append(f"\t\t\t_.{field} = {{{fmt_pts(rp['begin_pts'])},{fmt_pts(rp['length_pts'])},{sections}}},")
+
+    # content_shift moves the widget's CONTENT (label, icon) for a state,
+    # without touching the artwork: the classic push-button effect where the
+    # caption sinks down-right with the surface. BlockSkin adds it to
+    # _contentOfs (wg_stateskin.cpp), in pts, so it costs no atlas space.
+    #
+    # It must not disturb the block order. wg_blockskin.cpp assigns block
+    # positions as `blockOfs + pitch * index` where index counts only the
+    # non-blockless entries, and the shift is tracked by a separate counter --
+    # so annotating a state that already has a block is safe, and a state
+    # WITHOUT one would need `blockless = true` as a third argument or it would
+    # silently steal the next block in the strip. Only states listed in the
+    # spec's `states` are annotated here, so that case cannot arise.
+    shifts = entry.get("content_shift") or {}
+    unknown = [k for k in shifts if k not in entry["states"]]
+    if unknown:
+        raise SystemExit(
+            f"{entry['name']}: content_shift names {', '.join(unknown)}, which "
+            f"{'is' if len(unknown) == 1 else 'are'} not in states: "
+            f"{entry['states']}. A state with no block of its own needs a "
+            f"blockless StateBP, which this generator does not emit.")
+
+    def state_cpp(st):
+        if st not in shifts:
+            return f"State::{st}"
+        x, y = shifts[st]
+        return f"{{State::{st}, Coord({fmt_pts(x)},{fmt_pts(y)})}}"
 
     states = entry["states"]
     if not (len(states) == 1 and states[0] == "Default"):
-        states_cpp = ", ".join(f"State::{s}" for s in states)
+        states_cpp = ", ".join(state_cpp(s) for s in states)
         lines.append(f"\t\t\t_.states = {{ {states_cpp} }}")
     else:
         lines[-1] = lines[-1].rstrip(",")  # drop trailing comma on last real field
@@ -598,14 +961,55 @@ def build_preview_html(kit, atlas, manifest, density):
     import base64
     import io
 
+    by_name = {m["name"]: m for m in manifest}
+
+    def block_of(meta, state_index=0):
+        """The `state_index`-th state block of a part, cropped from the atlas."""
+        w, h = (round(v * density) for v in meta["size_pts"])
+        x = round(meta["atlas_x_pts"] * density)
+        y = round(meta["atlas_y_pts"] * density)
+        sp = round(meta["block_spacing_pts"] * density)
+        if meta["axis"] == "x":
+            x += state_index * (w + sp)
+        elif meta["axis"] == "y":
+            y += state_index * (h + sp)
+        return atlas.crop((x, y, x + w, y + h))
+
+    def stretched(meta, target_px, state_index=0):
+        frame_px = tuple(round(v * density) for v in border_tuple(meta["frame_pts"] or 0))
+        block = block_of(meta, state_index)
+        rigids = [rebase_rigid(rp, frame_px, block.size, density)
+                  for rp in rigid_parts(meta)]
+        return simulate_stretch(block, frame_px, target_px, rigids)
+
+    def compose(meta, target_px, state_index=0):
+        """An overlay part rendered the way the widget will actually look: its
+        `preview_over` part underneath, both nine-patched to the same size.
+        Without this a DoubleSkin's front layer shows up in the preview as a
+        few dots on a checkerboard, which says nothing about whether the
+        finished widget is right."""
+        img = stretched(meta, target_px, state_index)
+        back_name = meta.get("preview_over")
+        if not back_name or back_name not in by_name:
+            return img
+        back_meta = by_name[back_name]
+        # States are matched by NAME, not index: the overlay carries fewer
+        # states than the bar (Default/Disabled vs four), so index 1 means
+        # Hovered on one and Disabled on the other.
+        want = meta["states"][state_index]
+        bi = back_meta["states"].index(want) if want in back_meta["states"] else 0
+        out = stretched(back_meta, target_px, bi)
+        out.alpha_composite(img)
+        return out
+
     def b64_crop(meta):
         x, y = round(meta["atlas_x_pts"] * density), round(meta["atlas_y_pts"] * density)
         w, h = round(meta["size_pts"][0] * density), round(meta["size_pts"][1] * density)
         n = len(meta["states"])
         if meta["axis"] == "x":
-            full = atlas.crop((x, y, x + n * w + (n - 1) * round(meta["spacing_pts"] * density), y + h))
+            full = atlas.crop((x, y, x + n * w + (n - 1) * round(meta["block_spacing_pts"] * density), y + h))
         elif meta["axis"] == "y":
-            full = atlas.crop((x, y, x + w, y + n * h + (n - 1) * round(meta["spacing_pts"] * density)))
+            full = atlas.crop((x, y, x + w, y + n * h + (n - 1) * round(meta["block_spacing_pts"] * density)))
         else:
             full = atlas.crop((x, y, x + w, y + h))
         buf = io.BytesIO()
@@ -639,9 +1043,19 @@ def build_preview_html(kit, atlas, manifest, density):
             rigid_note += (f" &middot; <span class='ok'>rigidPart{rp['axis'].upper()} "
                            f"{rp['begin_pts']}..{rp['begin_pts'] + rp['length_pts']}pts "
                            f"({rp['sections']}) held rigid below</span>")
+        # Spacing is an outer margin, so it is not in the bitmap and cannot be
+        # drawn here -- but it changes how the widget sits next to its
+        # neighbours, so at least say it out loud.
+        spacing_note = (f" &middot; <span class='ok'>spacing_pts: {meta['spacing_pts']} "
+                        f"(outer margin, not in the bitmap)</span>"
+                        if meta.get("spacing_pts") else "")
+        shift_note = "".join(
+            f" &middot; <span class='ok'>{st} shifts content {sh[0]},{sh[1]}pts</span>"
+            for st, sh in (meta.get("content_shift") or {}).items())
+        spacing_note += shift_note
         html.append(f"<div class='meta'>states: {', '.join(meta['states'])} &middot; "
                      f"size_pts: {meta['size_pts']} &middot; frame_pts: {meta['frame_pts']} &middot; "
-                     f"padding_pts: {meta['padding_pts']}{rigid_note}</div>")
+                     f"padding_pts: {meta['padding_pts']}{spacing_note}{rigid_note}</div>")
         html.append("<div class='row'>")
         html.append(f"<img class='chip' style='width:auto;height:{meta['size_pts'][1]*zoom if meta['axis']!='y' else meta['size_pts'][1]*len(meta['states'])*zoom}px' "
                      f"src='data:image/png;base64,{b64}'>")
@@ -654,13 +1068,6 @@ def build_preview_html(kit, atlas, manifest, density):
             t, r, b, l = border_tuple(meta["frame_pts"])
             w_pts, h_pts = meta["size_pts"]
             frame_px = tuple(round(v * density) for v in (t, r, b, l))
-
-            block = atlas.crop((round(meta["atlas_x_pts"] * density),
-                                round(meta["atlas_y_pts"] * density),
-                                round((meta["atlas_x_pts"] + w_pts) * density),
-                                round((meta["atlas_y_pts"] + h_pts) * density)))
-            rigids = [rebase_rigid(rp, frame_px, block.size, density)
-                      for rp in rigid_parts(meta)]
 
             # Only demo an axis that has stretchable material left over. A
             # horizontal scrollbar handle's frame spans its full height by
@@ -687,8 +1094,7 @@ def build_preview_html(kit, atlas, manifest, density):
 
             pt, pr, pb, pl = border_tuple(meta["padding_pts"]) or (0, 0, 0, 0)
             for w, h in sizes:
-                img = simulate_stretch(block, frame_px,
-                                       (round(w * density), round(h * density)), rigids)
+                img = compose(meta, (round(w * density), round(h * density)))
                 buf = io.BytesIO()
                 img.save(buf, "PNG")
                 d64 = base64.b64encode(buf.getvalue()).decode()

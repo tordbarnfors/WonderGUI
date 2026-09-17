@@ -1,0 +1,47 @@
+recipe: dot_overlay
+# FRONT LAYER of Skins::SplitHandleX: a fully transparent block carrying only
+# the three engraved dots, blitted over the grey bar by a DoubleSkin (with
+# skinInSkin false, so both layers get the whole canvas).
+#
+# The point of the split: on a single block the dots had to live inside a rigid
+# part carved out of the BAR's middle band, and that band is the bar minus its
+# frame -- on an 8pt bar with a 2pt frame each side, 4pts, of which a rigid run
+# may use at most 2 (the engine splits the leftover between the flanks, so a
+# run that fills the band leaves nothing to divide by). That capped the dots at
+# 2pts. This block has no border and no corners to protect, so it needs no
+# frame: the whole thing is the centre section and the rigid run can be 6 of
+# the 8 points, which leaves room for 4pt dots -- twice the size, and still
+# pinned on BOTH axes, so nothing smears whatever thickness the bar is drawn
+# at.
+size_pts: [8, 25]
+frame_pts: 0
+padding_pts: 0
+axis: x
+block_spacing_pts: 1
+
+# Default and Disabled only. Hovered and Pressed fall back to the Default
+# block; the state feedback is the bar's job, and the only thing that changes
+# here is the disabled fade (STATE_STYLE alpha), so a four-block strip would be
+# two identical copies.
+states: [Default, Disabled]
+
+# Both axes pinned, generously: the run has 1pt of stretchable transparent
+# material on every side, which is all the engine needs to have something to
+# divide the leftover between.
+#   x: rigid 1..7 of 8
+#   y: rigid 1..24 of 25
+rigid_part:
+  - {axis: x, begin_pts: 1, length_pts: 6,  sections: All}
+  - {axis: y, begin_pts: 1, length_pts: 23, sections: All}
+
+# Dots 2 -> 3.5pts. Gap stays at 8 centre-to-centre, so the run spans
+# 2*8 + 3.5 = 19.5pts (plus the 1px bevel offset), centred in the 25pt block
+# at 2.5..22.5 -- inside the 1..24 rigid run with room to spare. 4pts also
+# fits the rigid run, but leaves only 1px of grey each side at 1x scale.
+glyph: {type: dots, direction: vertical, count: 3, dot_pts: 3.5, gap_pts: 8}
+
+# Show this composited over the bar in preview.html rather than as dots on a
+# checkerboard, which is what the widget actually looks like.
+preview_over: SplitHandleX
+
+stretch_axis: y

@@ -3,7 +3,7 @@ shape: rect
 size_pts: [16, 28]
 radius_pts: 3
 axis: y
-spacing_pts: 1
+block_spacing_pts: 1
 states: [Default, Hovered, Pressed, Disabled]
 frame_pts: [7, 8, 7, 8]
 padding_pts: 6
@@ -28,3 +28,9 @@ glyph: {type: grip, direction: horizontal, len_pts: 10}
 # it does not fade across the stretched body either.
 gradient_ease: 3.0
 gloss_frac: 0.25
+
+# The grip sinks 1pt down-right while the handle is dragged -- see
+# specs/ScrollbarHandleX.yaml. Transposed: here only the y axis stretches, and
+# the grip's 6pt spread is centred at y 14 inside the rigid run 8..20.
+glyph_shift:
+  Pressed: [1, 1]

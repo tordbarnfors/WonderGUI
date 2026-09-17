@@ -1,7 +1,8 @@
 {
   "name": "ScrollbarHandleX",
   "axis": "x",
-  "spacing_pts": 1,
+  "block_spacing_pts": 1,
+  "spacing_pts": null,
   "size_pts": [
     28,
     16
@@ -25,5 +26,9 @@
     "length_pts": 12,
     "sections": "All"
   },
+  "stretch_axis": null,
+  "preview_over": null,
+  "blocks_from": null,
+  "content_shift": null,
   "density": 2
 }

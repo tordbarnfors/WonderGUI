@@ -1,7 +1,8 @@
 {
   "name": "ScrollbarButtonDown",
   "axis": "y",
-  "spacing_pts": 1,
+  "block_spacing_pts": 1,
+  "spacing_pts": null,
   "size_pts": [
     16,
     16
@@ -16,5 +17,8 @@
   "padding_pts": null,
   "rigid_part": null,
   "stretch_axis": null,
+  "preview_over": null,
+  "blocks_from": null,
+  "content_shift": null,
   "density": 2
 }

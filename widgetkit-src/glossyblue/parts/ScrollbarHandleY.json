@@ -1,7 +1,8 @@
 {
   "name": "ScrollbarHandleY",
   "axis": "y",
-  "spacing_pts": 1,
+  "block_spacing_pts": 1,
+  "spacing_pts": null,
   "size_pts": [
     16,
     28
@@ -26,5 +27,8 @@
     "sections": "All"
   },
   "stretch_axis": null,
+  "preview_over": null,
+  "blocks_from": null,
+  "content_shift": null,
   "density": 2
 }

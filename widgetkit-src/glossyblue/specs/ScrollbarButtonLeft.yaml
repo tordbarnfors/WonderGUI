@@ -9,6 +9,13 @@ shape: rect
 size_pts: [16, 16]
 radius_pts: 2
 axis: x
-spacing_pts: 1
+block_spacing_pts: 1
 states: [Default, Hovered, Pressed, Disabled]
 glyph: {type: arrow, direction: left, arrow_w_pts: 5, arrow_h_pts: 10}
+
+# The arrow sinks 1pt down-right while the button is held, matching the rest of
+# the kit. glyph_shift, not BlockSkin's contentShift: the arrow is part of the
+# block, and a scrollbar button has no content of its own. Pressed is the only
+# state that needs it -- it is the only one that looks pushed in.
+glyph_shift:
+  Pressed: [1, 1]

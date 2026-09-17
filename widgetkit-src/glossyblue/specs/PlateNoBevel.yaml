@@ -22,7 +22,6 @@ states: [Default]
 # middle. The 1pt left/right frame keeps a real frame on all four sides.
 frame_pts: [5, 1, 5, 1]
 
-# 4, not Plate's 5: Plate's extra point is its 1pt outline. Same content
-# inset, and the value the old ColorSkin used, so existing layouts are
-# unchanged.
-padding_pts: 4
+# 3, not Plate's 4: Plate's extra point is its 1pt outline. Tracks Plate, which
+# came down from 5 to 4 to make room for the 1pt spacing its children now carry.
+padding_pts: 3

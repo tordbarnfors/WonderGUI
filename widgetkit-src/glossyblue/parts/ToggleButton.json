@@ -1,6 +1,7 @@
 {
   "name": "ToggleButton",
   "axis": "x",
+  "block_spacing_pts": 1,
   "spacing_pts": 1,
   "size_pts": [
     14,
@@ -17,5 +18,17 @@
   "padding_pts": 6,
   "rigid_part": null,
   "stretch_axis": null,
+  "preview_over": null,
+  "blocks_from": null,
+  "content_shift": {
+    "Checked": [
+      1,
+      1
+    ],
+    "CheckedHovered": [
+      1,
+      1
+    ]
+  },
   "density": 2
 }

@@ -46,10 +46,17 @@ glyph_white:    [255,255,255,235]
 glyph_outline:  [15,45,85,140]
 glyph_disabled: [255,255,255,130]
 
-# Scrollbar grip ridges. Lines carry more ink than dots, so these read fine
-# at low alpha.
-grip_hi: [255,255,255,80]
-grip_lo: [10,35,65,100]
+# Scrollbar grip ridges. Raised from 80/100: at that strength the groove read
+# as a single white line rather than an engraved recess. Measured on the
+# handle's mid-tone, the highlight was +60 levels but the dark ridge only -21,
+# because grip_lo's colour is already close to the handle's own dark blue --
+# the ridge had no room, so the pair looked lit rather than cut.
+#
+# These now sit where dot_hi/dot_lo do. Keeping them as separate entries is
+# still right: the grip sits on blue, the dots on plate grey, so the two will
+# want to diverge again the moment either background changes.
+grip_hi: [255,255,255,140]
+grip_lo: [10,35,65,190]
 
 # Split-handle dots. Stronger than grip_*: a small disc with a 1px highlight
 # offset needs more contrast than a line to resolve as an engraved hole

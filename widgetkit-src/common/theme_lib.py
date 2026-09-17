@@ -447,9 +447,18 @@ def dot_line_mask(size, direction, count, dot_px, gap_px, shift=(0.0, 0.0)):
 
 def add_dot_line(canvas, direction, count, dot_px, gap_px, color_hi, color_lo):
     """A row/column of engraved dots: a light copy offset down-right with the
-    dark dot over it, the same bevel language the grip lines use."""
-    lo = dot_line_mask(canvas.size, direction, count, dot_px, gap_px)
-    hi = dot_line_mask(canvas.size, direction, count, dot_px, gap_px, shift=(1.0, 1.0))
+    dark dot over it, the same bevel language the grip lines use.
+
+    The two copies are offset by half a pixel each way rather than the dark one
+    sitting on the canvas centre with the highlight a whole pixel down-right.
+    Same 1px bevel, but the PAIR is now centred, so the glyph's real bounding
+    box is symmetrical about the block centre. That matters when the run has to
+    sit inside a rigid part: with the old offsets the highlight overhung the
+    run's far edge by a pixel and that sliver was left in stretchable
+    material, which is exactly the smear the rigid part exists to prevent.
+    """
+    lo = dot_line_mask(canvas.size, direction, count, dot_px, gap_px, shift=(-0.5, -0.5))
+    hi = dot_line_mask(canvas.size, direction, count, dot_px, gap_px, shift=(0.5, 0.5))
     out = canvas.copy()
     out.alpha_composite(tint_mask(canvas.size, color_hi, hi))
     out.alpha_composite(tint_mask(canvas.size, color_lo, lo))

@@ -1,7 +1,8 @@
 {
   "name": "SplitHandleY",
   "axis": "x",
-  "spacing_pts": 1,
+  "block_spacing_pts": 1,
+  "spacing_pts": null,
   "size_pts": [
     44,
     8
@@ -19,20 +20,10 @@
     8
   ],
   "padding_pts": 2,
-  "rigid_part": [
-    {
-      "axis": "y",
-      "begin_pts": 3,
-      "length_pts": 2,
-      "sections": "All"
-    },
-    {
-      "axis": "x",
-      "begin_pts": 10,
-      "length_pts": 24,
-      "sections": "All"
-    }
-  ],
+  "rigid_part": null,
   "stretch_axis": "x",
+  "preview_over": null,
+  "blocks_from": null,
+  "content_shift": null,
   "density": 2
 }

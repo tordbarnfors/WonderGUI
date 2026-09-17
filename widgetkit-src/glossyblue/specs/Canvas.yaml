@@ -17,4 +17,10 @@ states: [Default]
 # subtle enough that splitting it across frame/middle shows no banding.
 # Size is now frame*2 + middle rather than 16pts of mostly-repeated pixels.
 frame_pts: 4
-padding_pts: 2      # text/drawing surface -- minimal inset, like oldskool's 1
+# 2 -> 1. Canvas is now only the bare surface: the SelectBox drop-down's
+# background, and whatever app code paints on it. Its children there are
+# SelectBoxEntry rows, whose selection highlight wants to reach the edge, so a
+# 1pt inset is right for it. The editors moved to Skins::Field, which keeps the
+# old 2 because text does want to clear the border -- that divergence is the
+# whole reason the two were split.
+padding_pts: 1

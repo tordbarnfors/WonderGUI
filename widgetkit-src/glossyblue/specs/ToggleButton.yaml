@@ -8,7 +8,25 @@ shape: rect
 size_pts: [14, 20]
 radius_pts: 4
 axis: x
-spacing_pts: 1
+block_spacing_pts: 1
 states: [Default, Hovered, Checked, CheckedHovered, Disabled]
 frame_pts: 6
 padding_pts: 6
+
+# Outer margin, same 1pt as Button -- see specs/Button.yaml for why. State
+# buttons lined up in a PackPanel are exactly the case this is for: without it
+# the checked one has no visible edge against its neighbours.
+spacing_pts: 1
+
+# Content-shifting -- see specs/Button.yaml. A toggle button has no Pressed
+# block; the states that LOOK pushed in are the checked ones (STATE_STYLE gives
+# both an inset shade), so those are the ones whose label should sit low and
+# right. Without this the surface sinks while the caption stays put, which is
+# the mismatch content-shifting exists to fix.
+#
+# CheckedPressed and Pressed are not listed: neither has a block here, so they
+# would need blockless StateBPs. Worth adding if the momentary push should move
+# the label too.
+content_shift:
+  Checked: [1, 1]
+  CheckedHovered: [1, 1]

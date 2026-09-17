@@ -3,8 +3,42 @@ shape: rect
 size_pts: [14, 14]
 radius_pts: 2
 axis: x
-spacing_pts: 1
-states: [Default, Checked, Disabled, DisabledChecked]
+block_spacing_pts: 1
+
+# Eight states, the full matrix: the box gets hover and press feedback whether
+# it is ticked or not. It used to have only Default/Checked/Disabled/
+# DisabledChecked, so a checkbox was the one control in the kit that did not
+# react to the pointer at all -- it went straight from resting to ticked with
+# nothing in between, which is why it never felt like a button.
+#
+# Order is the strip order in the atlas, and must stay in step with
+# state_style_as below. Same layout as PlusMinusToggle, plus the disabled pair.
+states: [Default, Hovered, Pressed, Checked, CheckedHovered, CheckedPressed, Disabled, DisabledChecked]
+
+# The checked family is drawn with the UNCHECKED family's background. Ticking a
+# box must not also recolour it: the tick already says "on", and a second
+# signal saying the same thing leaves the surface with no spare meaning for
+# hover and press. So the background says exactly one thing -- what the pointer
+# is doing -- and the tick says the other.
+#
+# Without this, STATE_STYLE would give Checked its own `checked` palette entry
+# and a 55-unit inset shade, i.e. a darker, sunken box, and hovering a ticked
+# box would look much like pressing an unticked one.
+state_style_as:
+  Checked: Default
+  CheckedHovered: Hovered
+  CheckedPressed: Pressed
+  DisabledChecked: Disabled
+
+# The tick sinks 1pt down-right while the box is held, matching the content
+# shift Button and ToggleButton got. It cannot be BlockSkin's contentShift:
+# Skins::Checkbox is an ICON skin, whose content is nothing -- the tick is
+# drawn into the block, so the offset has to be baked in here. Only
+# CheckedPressed needs it; Pressed has no tick to move (with flipOnRelease
+# false, clicking an unticked box makes it CheckedPressed immediately).
+glyph_shift:
+  CheckedPressed: [1, 1]
+
 # Checkmark geometry is explicit so both strokes land on exact 45 degree
 # runs -- check_points() requires h < w < 2h for that, and w = 1.5h gives the
 # long arm twice the short. 9x6 with a 2.5pt stroke reproduces the previous

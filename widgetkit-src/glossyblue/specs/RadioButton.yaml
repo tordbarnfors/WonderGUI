@@ -3,9 +3,57 @@ shape: ellipse
 size_pts: [14, 14]
 radius_pts: 7
 axis: x
-spacing_pts: 1
-states: [Default, Checked, Disabled]
-# 7pts is exactly half the button's 14pt diameter -- a step up from the old
-# 6pt dot for legibility at small sizes. An even pixel diameter (14px at 2x)
-# in an even-width block centres exactly; odd sizes land on a half pixel.
+block_spacing_pts: 1
+
+# Seven states. Checkbox's layout minus `Pressed`, because a radio button is
+# already checked by the time it is held: with flipOnRelease false (the kit's
+# default) ToggleButton::_receive flips `checked` on the press itself, so
+# pressing an unchecked button goes straight to CheckedPressed, and pressing a
+# checked one is restored to checked by its ToggleGroup. Unchecked-and-pressed
+# is off the normal path entirely -- it needs either flipOnRelease true, or a
+# radio button with no ToggleGroup, where it behaves like a plain toggle.
+# BlockSkin's bestMatch sends it to Hovered, which is a fine stand-in mid-gesture.
+#
+# CheckedPressed stays, and is NOT the same kind of spare block: it is what you
+# see during every selection click, from press until release. Dropping it sends
+# CheckedPressed to CheckedHovered, which measures +13 against Checked's -9 --
+# so a selected button would appear to RISE as you clicked it. Exactly backwards.
+states: [Default, Hovered, Checked, CheckedHovered, CheckedPressed, Disabled, DisabledChecked]
+
+# Checked borrows Pressed's styling: a real radio button LATCHES DOWN when
+# selected, so the selected one should sit lower than its neighbours, with the
+# dot on top of a depressed surface rather than a flat one.
+#
+# This is the opposite of what Checkbox does, and deliberately so. A checkbox
+# is an independent switch, so its surface is free to say only what the pointer
+# is doing; a radio button is one of a set where exactly one is down, and the
+# depression is what makes the set read as a set, at a glance, without
+# comparing dots.
+#
+# Measured as (mean of the top third) - (mean of the bottom third) of the
+# block, with the dot removed so it does not skew the read. A raised control
+# is strongly positive; a pressed one is flat or negative:
+#
+#   Default          +95    Hovered          +105     raised
+#   Disabled         +22    DisabledChecked    +7      raised / down, in grey
+#   CheckedHovered   +13                               down, and lit
+#   Checked           -9                               down
+#   CheckedPressed   -18                               down, and held
+#
+# STATE_STYLE's own `Checked` entry measures +4.5 -- flat, neither raised nor
+# pressed, which is why the old checked state just looked dull. Borrowing
+# `Pressed` (-9) is what tips it over into reading as pushed in, helped as much
+# by the stronger inset rim (70 vs 55) as by the gradient.
+#
+# The other checked states stay on their own STATE_STYLE entries and already
+# line up with this, which is why only the one mapping is needed. Note
+# CheckedHovered is +13: still far below the +95 of a genuinely raised block,
+# so hovering a selected button lights it without letting it pop back up.
+# (A first probe sampled two rows of the centre column instead and appeared to
+# say otherwise -- it was reading the gloss band. Use the thirds measure.)
+
+# Deliberately no glyph_shift. Checkbox sinks its tick 1pt on CheckedPressed,
+# but the dot sits centred inside a ring: moved off-centre it reads as
+# misaligned rather than pressed, and the background already carries the push
+# here. Rendered both ways before deciding.
 glyph: {type: dot, dot_pts: 7}

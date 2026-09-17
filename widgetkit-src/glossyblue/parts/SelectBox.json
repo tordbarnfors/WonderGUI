@@ -1,6 +1,7 @@
 {
   "name": "SelectBox",
   "axis": "y",
+  "block_spacing_pts": 1,
   "spacing_pts": 1,
   "size_pts": [
     26,
@@ -26,10 +27,18 @@
   ],
   "rigid_part": {
     "axis": "y",
-    "begin_pts": 7,
-    "length_pts": 6,
+    "begin_pts": 5.5,
+    "length_pts": 9,
     "sections": "Right"
   },
   "stretch_axis": null,
+  "preview_over": null,
+  "blocks_from": null,
+  "content_shift": {
+    "Pressed": [
+      1,
+      1
+    ]
+  },
   "density": 2
 }

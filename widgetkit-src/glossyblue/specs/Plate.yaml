@@ -12,4 +12,7 @@ states: [Default]
 # subtle enough that splitting it across frame/middle shows no banding.
 # Size is now frame*2 + middle rather than 24pts of mostly-repeated pixels.
 frame_pts: 5
-padding_pts: 5      # general group/container panel
+# 5 -> 4: a Plate holds controls that now carry 1pt of their own spacing, and
+# the two stack. 4 + 1 puts a button back at the 5pts from the edge it had
+# before spacing existed.
+padding_pts: 4      # general group/container panel

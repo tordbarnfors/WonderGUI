@@ -16,4 +16,6 @@ states: [Default]
 # subtle enough that splitting it across frame/middle shows no banding.
 # Size is now frame*2 + middle rather than 22pts of mostly-repeated pixels.
 frame_pts: 5
-padding_pts: 6      # window content background
+# 6 -> 5, for the same reason as Plate: controls placed straight on the window
+# backdrop add their own 1pt, so 5 + 1 keeps the old 6.
+padding_pts: 5      # window content background

@@ -1,7 +1,8 @@
 {
   "name": "PlateNoBevel",
   "axis": "single",
-  "spacing_pts": 0,
+  "block_spacing_pts": 0,
+  "spacing_pts": null,
   "size_pts": [
     4,
     14
@@ -15,8 +16,11 @@
     5,
     1
   ],
-  "padding_pts": 4,
+  "padding_pts": 3,
   "rigid_part": null,
   "stretch_axis": null,
+  "preview_over": null,
+  "blocks_from": null,
+  "content_shift": null,
   "density": 2
 }
