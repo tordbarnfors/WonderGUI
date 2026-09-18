@@ -23,6 +23,7 @@
 #include <wg_dx12backend.h>
 #include <wg_dx12surface.h>
 #include <wg_dx12surfacefactory.h>
+#include <wg_dx12edgemap.h>
 #include <wg_dx12edgemapfactory.h>
 #include <d3dcompiler.h>
 
@@ -43,6 +44,21 @@ namespace wg
 {
 
 	const TypeInfo DX12Backend::TYPEINFO = { "DX12Backend", &GfxBackend::TYPEINFO };
+
+	const int DX12Backend::s_flipCornerOrder[GfxFlip_size][4] = {
+		{ 0,1,2,3 },			// Normal
+		{ 1,0,3,2 },			// FlipX
+		{ 3,2,1,0 },			// FlipY
+		{ 3,0,1,2 },			// Rot90
+		{ 0,3,2,1 },			// Rot90FlipX
+		{ 2,1,0,3 },			// Rot90FlipY
+		{ 2,3,0,1 },			// Rot180
+		{ 3,2,1,0 },			// Rot180FlipX
+		{ 1,0,3,2 },			// Rot180FlipY
+		{ 1,2,3,0 },			// Rot270
+		{ 2,1,0,3 },			// Rot270FlipX
+		{ 0,3,2,1 }				// Rot270FlipY
+	};
 
 	// Debug aid: clear each update rect before drawing it, so it is obvious which
 	// parts of the canvas are redrawn and whether anything is left unpainted. The
@@ -101,6 +117,7 @@ namespace wg
 		// Surfaces create their own textures and need the device for it.
 
 		DX12Surface::setDevice(pDX12Device, this);
+		DX12Edgemap::setDevice(pDX12Device);
 
 		m_srvDescriptorSize = pDX12Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 		m_samplerDescriptorSize = pDX12Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
@@ -168,6 +185,7 @@ namespace wg
 		waitForCompletion();
 
 		DX12Surface::exitDevice();
+		DX12Edgemap::exitDevice();
 
 		if (m_fenceEvent)
 			CloseHandle(m_fenceEvent);
@@ -212,9 +230,11 @@ namespace wg
 		m_frameResources[frame].nSRVDescriptors = 0;
 
 		// The fence says the GPU is done with the command list that mentioned
-		// these, so we can let go of them.
+		// these, so we can let go of them. Edgemaps are in here too: a command list
+		// keeps no references of its own, and GfxDeviceGen2 lets go of an edgemap
+		// at the end of the session that drew it.
 
-		m_frameResources[frame].surfaceRefs.clear();
+		m_frameResources[frame].objectRefs.clear();
 
 		// Sessions un-park what they parked, so this should already be empty.
 
@@ -425,7 +445,7 @@ namespace wg
 			// A command list holds no references of its own, so we keep one until
 			// the GPU is done with it.
 
-			frame.surfaceRefs.push_back(pSurface);
+			frame.objectRefs.push_back(pSurface);
 		}
 
 		m_blitSourceCanvases.clear();
@@ -436,15 +456,20 @@ namespace wg
 	// TypeInfo compares by address, so a plain == would turn away anything derived
 	// from DX12Surface. Walk the chain instead.
 
-	bool DX12Backend::_isDX12SurfaceType(const TypeInfo& type)
+	bool DX12Backend::_isOfType(const TypeInfo& type, const TypeInfo& base)
 	{
 		for (const TypeInfo* pType = &type; pType; pType = pType->pSuperClass)
 		{
-			if (pType == &DX12Surface::TYPEINFO)
+			if (pType == &base)
 				return true;
 		}
 
 		return false;
+	}
+
+	bool DX12Backend::_isDX12SurfaceType(const TypeInfo& type)
+	{
+		return _isOfType(type, DX12Surface::TYPEINFO);
 	}
 
 	bool DX12Backend::_isDX12Surface(const Object* pObject) const
@@ -895,25 +920,9 @@ namespace wg
 
 				case Command::DrawEdgemap:
 				{
-					// Not implemented yet, stepped over the same way.
-
-					pObjects++;							// The edgemap.
-
 					int32_t nRects = *p++;
-					p++;								// flip
-					p++;								// padding
-					p += 4;								// Destination, two spx.
 
-					pRects += nRects;
-
-					static bool bReported = false;
-					if (!bReported)
-					{
-						GfxBase::throwError(ErrorLevel::Warning, ErrorCode::Other, "Command::DrawEdgemap is not implemented, edgemaps are skipped.",
-							this, &TYPEINFO, __func__, __FILE__, __LINE__);
-						bReported = true;
-					}
-
+					_drawEdgemap(p, pRects, pObjects, nRects);
 					break;
 				}
 
@@ -1611,6 +1620,288 @@ namespace wg
 			m_commandList->DrawInstanced(nRectsDrawn * 6, 1, firstVertex, 0);
 	}
 
+	//____ _drawEdgemap() ______________________________________________________
+	//
+	// An edgemap is drawn as one quad per patch, with the work done in the pixel
+	// shader: it walks down a column of edges and works out how much of the pixel
+	// each segment covers. The vertices carry where in the edgemap each corner
+	// sits, which is what lets the same quad be flipped or rotated.
+
+	void DX12Backend::_drawEdgemap(const uint16_t*& pCmd, const RectSPX*& pRects, Object* const*& pObjects, int nRects)
+	{
+		Object * pObject = *pObjects++;
+
+		int32_t flip = *pCmd++;
+		pCmd++;								// padding
+
+		auto p32 = (const spx*) pCmd;
+
+		spx destX = *p32++;
+		spx destY = *p32++;
+
+		pCmd = (const uint16_t*) p32;
+
+		DX12Edgemap * pEdgemap = (pObject && _isOfType(pObject->typeInfo(), DX12Edgemap::TYPEINFO)) ?
+								 static_cast<DX12Edgemap*>(pObject) : nullptr;
+
+		if (!pEdgemap || pEdgemap->_gpuAddress() == 0 || !m_pVertexPtr || flip < 0 || flip >= GfxFlip_size)
+		{
+			static bool bReported = false;
+			if (!bReported)
+			{
+				const char * pReason = !pEdgemap ? "it is not a DX12Edgemap" :
+									   pEdgemap->_gpuAddress() == 0 ? "it has no buffer" :
+									   !m_pVertexPtr ? "there is no vertex buffer" : "the flip value is out of range";
+
+				char buffer[256];
+				sprintf_s(buffer, "Can't draw edgemap, %s.", pReason);
+				GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, buffer, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				bReported = true;
+			}
+
+			pRects += nRects;
+			return;
+		}
+
+		int nSegments = pEdgemap->m_nbRenderSegments;
+
+		if (nSegments < 1 || nRects <= 0)
+		{
+			pRects += nRects;
+			return;
+		}
+
+		auto& mtx = s_standardTransforms[flip];
+
+		// Where the edgemap lands, before any patch is taken out of it.
+
+		RectSPX destIn = {
+			destX,
+			destY,
+			pEdgemap->m_size.w * 64 * int(std::abs(mtx.xx)) + pEdgemap->m_size.h * 64 * int(std::abs(mtx.yx)),
+			pEdgemap->m_size.w * 64 * int(std::abs(mtx.xy)) + pEdgemap->m_size.h * 64 * int(std::abs(mtx.yy))
+		};
+
+		RectI dest = Util::roundToPixels(destIn);
+
+		int uIncX = int(mtx.xx);
+		int vIncX = int(mtx.xy);
+		int uIncY = int(mtx.yx);
+		int vIncY = int(mtx.yy);
+
+		// We may have been given room for more columns than the edgemap has.
+
+		int maxCol = pEdgemap->m_size.w;
+
+		if (uIncX != 0)								// Columns run horizontally.
+		{
+			if (dest.w > maxCol)
+			{
+				if (uIncX < 0)
+					dest.x += dest.w - maxCol;
+
+				dest.w = maxCol;
+			}
+		}
+		else										// Columns run vertically.
+		{
+			if (dest.h > maxCol)
+			{
+				if (uIncY < 0)
+					dest.y += dest.h - maxCol;
+
+				dest.h = maxCol;
+			}
+		}
+
+		// Where the top left corner sits in the edgemap, once it has been flipped.
+
+		int uTopLeft = 0;
+		int vTopLeft = 0;
+
+		if (uIncX + uIncY < 0)
+			uTopLeft = maxCol;
+
+		if (vIncX < 0)
+			vTopLeft = dest.w;
+		else if (vIncY < 0)
+			vTopLeft = dest.h;
+
+		// The colorstrips. A segment's color is its horizontal strip times its
+		// vertical one, and the axis without a strip reads the edgemap's white.
+
+		float colorstripPitchX;
+		float colorstripPitchY;
+
+		float colorstripBeginX, colorstripEndX;
+		float colorstripBeginY, colorstripEndY;
+
+		// _addColor() multiplies by the tint, so white is what gets the tint applied
+		// exactly once. Passing the tint itself would square it.
+
+		int colorOfs = _addColor(HiColor::White);
+		int extrasOfs = _addExtras({ 0.f, 0.f, 0.f, 0.f });		// Filled in below, once we know the pitches.
+
+		if (colorOfs < 0 || extrasOfs < 0)
+		{
+			pRects += nRects;
+			return;
+		}
+
+		if (m_pVertexEnd - m_pVertexPtr < nRects * 6)
+		{
+			static bool bReported = false;
+			if (!bReported)
+			{
+				GfxBase::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, "Vertex buffer full, edgemaps dropped. Increase c_vertexBufferSize.",
+					this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				bReported = true;
+			}
+
+			pRects += nRects;
+			return;
+		}
+
+		int firstVertex = int(m_pVertexPtr - m_pVertexBeg);
+
+		for (int i = 0; i < nRects; i++)
+		{
+			const RectSPX& patchSpx = *pRects++;
+
+			RectI patch;
+			patch.x = patchSpx.x / 64;
+			patch.y = patchSpx.y / 64;
+			patch.w = patchSpx.w / 64;
+			patch.h = patchSpx.h / 64;
+
+			int dx1 = patch.x;
+			int dy1 = patch.y;
+			int dx2 = patch.x + patch.w;
+			int dy2 = patch.y + patch.h;
+
+			int ofsX = patch.x - dest.x;
+			int ofsY = patch.y - dest.y;
+
+			if (pEdgemap->m_pFlatColors)
+			{
+				colorstripBeginX = float(pEdgemap->_flatColorsOfs());
+				colorstripEndX = colorstripBeginX;
+
+				colorstripBeginY = float(pEdgemap->_whiteColorOfs());
+				colorstripEndY = colorstripBeginY;
+
+				colorstripPitchX = 1.f;
+				colorstripPitchY = 0.f;
+			}
+			else
+			{
+				if (pEdgemap->m_pColorstripsX)
+				{
+					colorstripBeginX = float(pEdgemap->_colorstripXOfs() + ofsX);
+					colorstripEndX = colorstripBeginX + patch.w;
+
+					colorstripPitchX = float(pEdgemap->m_size.w);
+				}
+				else
+				{
+					colorstripBeginX = float(pEdgemap->_whiteColorOfs());
+					colorstripEndX = colorstripBeginX;
+
+					colorstripPitchX = 0.f;
+				}
+
+				if (pEdgemap->m_pColorstripsY)
+				{
+					colorstripBeginY = float(pEdgemap->_colorstripYOfs() + ofsY);
+					colorstripEndY = colorstripBeginY + patch.h;
+
+					colorstripPitchY = float(pEdgemap->m_size.h);
+				}
+				else
+				{
+					colorstripBeginY = float(pEdgemap->_whiteColorOfs());
+					colorstripEndY = colorstripBeginY;
+
+					colorstripPitchY = 0.f;
+				}
+			}
+
+			// U is which column of the edgemap, V how far down that column. Half a
+			// pixel back, so that the shader works from pixel centers.
+
+			float u1 = float(uTopLeft + (patch.x - dest.x) * mtx.xx + (patch.y - dest.y) * mtx.yx);
+			float v1 = float(vTopLeft + (patch.x - dest.x) * mtx.xy + (patch.y - dest.y) * mtx.yy);
+
+			float u2 = float(uTopLeft + (patch.x + patch.w - dest.x) * mtx.xx + (patch.y - dest.y) * mtx.yx);
+			float v2 = float(vTopLeft + (patch.x + patch.w - dest.x) * mtx.xy + (patch.y - dest.y) * mtx.yy);
+
+			float u3 = float(uTopLeft + (patch.x + patch.w - dest.x) * mtx.xx + (patch.y + patch.h - dest.y) * mtx.yx);
+			float v3 = float(vTopLeft + (patch.x + patch.w - dest.x) * mtx.xy + (patch.y + patch.h - dest.y) * mtx.yy);
+
+			float u4 = float(uTopLeft + (patch.x - dest.x) * mtx.xx + (patch.y + patch.h - dest.y) * mtx.yx);
+			float v4 = float(vTopLeft + (patch.x - dest.x) * mtx.xy + (patch.y + patch.h - dest.y) * mtx.yy);
+
+			const float uv[4][2] = { { u1, v1 - 0.5f }, { u2, v2 - 0.5f }, { u3, v3 - 0.5f }, { u4, v4 - 0.5f } };
+
+			// Which corner of the edgemap each corner of the patch reads from.
+
+			const float colorstripIn[4][2] = {
+				{ colorstripBeginX, colorstripBeginY },
+				{ colorstripEndX,   colorstripBeginY },
+				{ colorstripEndX,   colorstripEndY },
+				{ colorstripBeginX, colorstripEndY } };
+
+			const int* pOrder = s_flipCornerOrder[flip];
+
+			const float coords[4][2] = { { float(dx1), float(dy1) }, { float(dx2), float(dy1) },
+										 { float(dx2), float(dy2) }, { float(dx1), float(dy2) } };
+
+			const int corners[6] = { 0, 1, 2, 0, 2, 3 };
+
+			for (int vertex = 0; vertex < 6; vertex++)
+			{
+				int corner = corners[vertex];
+
+				m_pVertexPtr->x = coords[corner][0];
+				m_pVertexPtr->y = coords[corner][1];
+				m_pVertexPtr->colorOfs = (uint32_t) colorOfs;
+				m_pVertexPtr->extrasOfs = (uint32_t) extrasOfs;
+				m_pVertexPtr->u = uv[corner][0];
+				m_pVertexPtr->v = uv[corner][1];
+				m_pVertexPtr->colorstripX = colorstripIn[pOrder[corner]][0];
+				m_pVertexPtr->colorstripY = colorstripIn[pOrder[corner]][1];
+
+				m_pVertexPtr++;
+			}
+		}
+
+		// Now that the pitches are known, fill in the entry we reserved.
+
+		m_pExtrasBeg[extrasOfs].x = colorstripPitchX;
+		m_pExtrasBeg[extrasOfs].y = colorstripPitchY;
+
+		if (!_setPipeline(_pipeline(m_activeBlendMode, PipelineKind::Segments)) || !m_bCommandListOpen)
+			return;
+
+		// The edgemap's own buffer, and how to walk it. The number of edges we draw
+		// and the number stored per column are not always the same, so the shader
+		// is told both rather than assuming, as GlBackend and MetalBackend do.
+
+		// The command list mentions the edgemap's buffer but keeps no reference to
+		// it, and GfxDeviceGen2 lets go of the edgemap when the session ends. A
+		// waveform drawn from a temporary would otherwise be freed while the GPU
+		// still had work referring to it.
+
+		m_frameResources[m_currentFrameIndex].objectRefs.push_back(pEdgemap);
+
+		m_commandList->SetGraphicsRootShaderResourceView(5, pEdgemap->_gpuAddress());
+
+		uint32_t edgeCounts[2] = { uint32_t(nSegments - 1), uint32_t(pEdgemap->m_nbSegments - 1) };
+		m_commandList->SetGraphicsRoot32BitConstants(0, 2, edgeCounts, 6);
+
+		m_commandList->DrawInstanced(nRects * 6, 1, firstVertex, 0);
+	}
+
 	//____ _setPipeline() ______________________________________________________
 
 	bool DX12Backend::_setPipeline(ID3D12PipelineState* pPipeline)
@@ -1776,7 +2067,7 @@ namespace wg
 
 	int DX12Backend::maxEdges() const
 	{
-		return 0;
+		return c_maxSegments - 1;
 	}
 
 	//____ canBeBlitSource() __________________________________________________
@@ -1881,6 +2172,7 @@ namespace wg
 			{ PipelineKind::Blit,	g_blitVS,	g_blitPS },
 			{ PipelineKind::Blur,	g_blitVS,	g_blurPS },		// Same geometry, so the same vertex shader.
 			{ PipelineKind::Line,	g_lineVS,	g_linePS },
+			{ PipelineKind::Segments, g_segmentsVS, g_segmentsPS },
 		};
 
 		for (auto& shader : shaders)
@@ -1945,15 +2237,15 @@ namespace wg
 		samplerRange.RegisterSpace = 0;
 		samplerRange.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
 
-		D3D12_ROOT_PARAMETER rootParameter[5] = {};
+		D3D12_ROOT_PARAMETER rootParameter[6] = {};
 
 		rootParameter[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS;
 		rootParameter[0].Constants.ShaderRegister = 0;			// b0.
 		rootParameter[0].Constants.RegisterSpace = 0;
-		// Eight rather than the six we use: HLSL rounds a constant buffer up to
-		// whole 16 byte registers, and the root signature has to cover all of it.
+		// Eight is also what HLSL rounds the constant buffer up to, whole 16 byte
+		// registers, and the root signature has to cover all of it.
 
-		rootParameter[0].Constants.Num32BitValues = 8;			// canvasScale, textureSize, flags, blurOfs.
+		rootParameter[0].Constants.Num32BitValues = 8;			// canvasScale, textureSize, flags, blurOfs, edgemapEdges, edgemapPitch.
 		rootParameter[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
 
 		rootParameter[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_SRV;
@@ -1976,10 +2268,15 @@ namespace wg
 		rootParameter[4].DescriptorTable.pDescriptorRanges = &samplerRange;
 		rootParameter[4].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
 
+		rootParameter[5].ParameterType = D3D12_ROOT_PARAMETER_TYPE_SRV;
+		rootParameter[5].Descriptor.ShaderRegister = 3;			// t3, the edgemap being drawn.
+		rootParameter[5].Descriptor.RegisterSpace = 0;
+		rootParameter[5].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+
 		D3D12_VERSIONED_ROOT_SIGNATURE_DESC rsDesc = { };
 		rsDesc.Version = D3D_ROOT_SIGNATURE_VERSION_1_0;
 		rsDesc.Desc_1_0.pParameters = rootParameter;
-		rsDesc.Desc_1_0.NumParameters = 5;
+		rsDesc.Desc_1_0.NumParameters = 6;
 		rsDesc.Desc_1_0.NumStaticSamplers = 0;
 		rsDesc.Desc_1_0.pStaticSamplers = 0;
 		rsDesc.Desc_1_0.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
@@ -2273,12 +2570,16 @@ namespace wg
 			{ "COLOROFS", 0, DXGI_FORMAT_R32_UINT, 0, 8,
 			D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
 			{ "EXTRASOFS", 0, DXGI_FORMAT_R32_UINT, 0, 12,
+			D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+			{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 16,
+			D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+			{ "COLORSTRIP", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 24,
 			D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
 		};
 
 		D3D12_INPUT_LAYOUT_DESC inputLayout = {};
 
-		inputLayout.NumElements = 3;
+		inputLayout.NumElements = 5;
 		inputLayout.pInputElementDescs = elements;
 
 
