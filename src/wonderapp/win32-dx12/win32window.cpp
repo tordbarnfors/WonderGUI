@@ -25,6 +25,7 @@
 #include <dx12_wrapper.h>
 
 #include <wg_gfxdevice.h>
+#include <wg_gfxbase.h>
 #include <wg_dx12backend.h>
 
 #include <cstdio>
@@ -81,7 +82,7 @@ Win32Window::Win32Window(wapp::Window* pUserWindow, wg::Placement origin, wg::Co
 		UINT dpi = GetDpiForWindow(m_windowHandle);
 		int scale = dpi * 64 / 96; // 96 DPI is 100% scaling
 
-		_backend()->setDefaultCanvas(m_rtvHandles[m_currentBuffer], m_renderBuffers[m_currentBuffer].Get(), { spx(m_width * 64), spx(m_height * 64) },scale);
+		_backend()->setDefaultCanvas(m_rtvHandles[m_currentBuffer], m_renderBuffers[m_currentBuffer].Get(), m_rtvFormat, { spx(m_width * 64), spx(m_height * 64) }, scale);
 		m_pRootPanel = RootPanel::create(CanvasRef::Default, Base::defaultGfxDevice());
 		assert(m_pRootPanel);
 
@@ -120,7 +121,7 @@ void Win32Window::render()
 
 	m_currentBuffer = m_pSwapChain->GetCurrentBackBufferIndex();
 
-	_backend()->setDefaultCanvas(m_rtvHandles[m_currentBuffer], m_renderBuffers[m_currentBuffer].Get(), {spx(m_width * 64), spx(m_height * 64)}, m_pRootPanel->scale());
+	_backend()->setDefaultCanvas(m_rtvHandles[m_currentBuffer], m_renderBuffers[m_currentBuffer].Get(), m_rtvFormat, {spx(m_width * 64), spx(m_height * 64)}, m_pRootPanel->scale());
 
 //	m_pRootPanel->addDirtyPatch({ 0,0, spx(m_width * 64), spx(m_height * 64) });
 
@@ -316,7 +317,7 @@ void Win32Window::onResize(int widthInPixels, int heightInPixels)
 
 	// Update root panel
 
-	_backend()->setDefaultCanvas(m_rtvHandles[m_currentBuffer], m_renderBuffers[m_currentBuffer].Get(), { widthInPixels * 64, heightInPixels * 64 }, scale);
+	_backend()->setDefaultCanvas(m_rtvHandles[m_currentBuffer], m_renderBuffers[m_currentBuffer].Get(), m_rtvFormat, { widthInPixels * 64, heightInPixels * 64 }, scale);
 	m_pRootPanel->setCanvas(CanvasRef::Default);
 
 	//
@@ -464,6 +465,20 @@ void Win32Window::_createSwapChain(DX12Wrapper* pDX12Wrapper, const HWND hwnd, U
 
 void Win32Window::_createSwapChainBuffers()
 {
+	// HiColor is linear and so is everything the shaders work in, so the hardware
+	// has to encode to sRGB on the way into the buffer. Without that, linear values
+	// end up in a buffer that is displayed as if it already held sRGB, and
+	// everything comes out far too dark.
+	//
+	// A flip model swap chain can't have an sRGB format of its own, but a view with
+	// one over a plain buffer is allowed, and is the usual way of arranging this.
+
+	m_rtvFormat = GfxBase::defaultToSRGB() ? DXGI_FORMAT_R8G8B8A8_UNORM_SRGB : DXGI_FORMAT_R8G8B8A8_UNORM;
+
+	D3D12_RENDER_TARGET_VIEW_DESC rtvDesc = {};
+	rtvDesc.Format = m_rtvFormat;
+	rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
+
 	D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = m_RTVHeap->GetCPUDescriptorHandleForHeapStart();
 	for (UINT i = 0; i < c_nbBuffers; i++)
 	{
@@ -473,7 +488,7 @@ void Win32Window::_createSwapChainBuffers()
 
 		if (S_OK != m_pSwapChain->GetBuffer(i, IID_PPV_ARGS(&m_renderBuffers[i])))
 			assert(false);
-		m_pDX12Device->CreateRenderTargetView(m_renderBuffers[i].Get(), nullptr, rtvHandle);
+		m_pDX12Device->CreateRenderTargetView(m_renderBuffers[i].Get(), &rtvDesc, rtvHandle);
 		rtvHandle.ptr += m_heapIncrement;
 	}
 }

@@ -143,8 +143,14 @@ namespace wg
 	// BGRX_8, and the odd small formats are widened the same way MetalSurface
 	// widens them. PixelTools does the conversion when the pixels are copied in.
 	//
-	// sRGB formats are mapped to their linear counterparts for now, since nothing
-	// else in the DX12 backend does sRGB conversion yet.
+	// An sRGB surface gets an _SRGB texture format, as MetalSurface gives one a
+	// _sRGB Metal format. HiColor is linear and so is everything our shaders work
+	// in, so the hardware has to convert on the way in and on the way out:
+	// sRGB to linear when a texel is sampled, linear to sRGB when a pixel is
+	// written. Without that, linear values land in a buffer that is displayed as
+	// if it were sRGB, and everything comes out far too dark.
+	//
+	// Alpha is linear in every format WonderGUI has, so Alpha_8 stays plain.
 
 	bool DX12Surface::_setPixelDetails( PixelFormat format )
 	{
@@ -152,38 +158,90 @@ namespace wg
 
 		switch( format )
 		{
-			// BGRX goes in a texture with an alpha channel, the way MetalSurface
-			// does it: B8G8R8A8_UNORM is supported everywhere, B8G8R8X8_UNORM is
-			// not, and PixelTools fills the unused byte for us.
+			// BGRX gets a format with no alpha channel rather than being put in a
+			// BGRA texture the way MetalSurface has to. Sampling one reads alpha as
+			// 1.0 whatever the unused byte holds, which keeps such a surface opaque
+			// without anyone having to fill that byte, and it lets DX12Backend tell
+			// a BGRX canvas from a BGRA one, since the pipelines are keyed on this.
+
+			// The color space free formats only turn up if something bypassed
+			// Util::clarifyPixelFormat(). We settle them the same way it would, and
+			// say so in m_pixelFormat, or everyone reading our pixels afterwards
+			// would be left guessing which space they are in.
 
 			case PixelFormat::BGR_8:
-				format = PixelFormat::BGRX_8;
 			case PixelFormat::BGRX_8:
-			case PixelFormat::BGRA_8:
-				m_dxgiFormat = DXGI_FORMAT_B8G8R8A8_UNORM;
+				if( GfxBase::defaultToSRGB() )
+				{
+					format = PixelFormat::BGRX_8_sRGB;
+					m_dxgiFormat = DXGI_FORMAT_B8G8R8X8_UNORM_SRGB;
+				}
+				else
+				{
+					format = PixelFormat::BGRX_8_linear;
+					m_dxgiFormat = DXGI_FORMAT_B8G8R8X8_UNORM;
+				}
 				break;
 
 			case PixelFormat::BGR_8_sRGB:
 				format = PixelFormat::BGRX_8_sRGB;
 			case PixelFormat::BGRX_8_sRGB:
-			case PixelFormat::BGRA_8_sRGB:
-				m_dxgiFormat = DXGI_FORMAT_B8G8R8A8_UNORM;
+				m_dxgiFormat = DXGI_FORMAT_B8G8R8X8_UNORM_SRGB;
 				break;
 
 			case PixelFormat::BGR_8_linear:
 				format = PixelFormat::BGRX_8_linear;
 			case PixelFormat::BGRX_8_linear:
+				m_dxgiFormat = DXGI_FORMAT_B8G8R8X8_UNORM;
+				break;
+
+			case PixelFormat::BGRA_8:
+				if( GfxBase::defaultToSRGB() )
+				{
+					format = PixelFormat::BGRA_8_sRGB;
+					m_dxgiFormat = DXGI_FORMAT_B8G8R8A8_UNORM_SRGB;
+				}
+				else
+				{
+					format = PixelFormat::BGRA_8_linear;
+					m_dxgiFormat = DXGI_FORMAT_B8G8R8A8_UNORM;
+				}
+				break;
+
+			case PixelFormat::BGRA_8_sRGB:
+				m_dxgiFormat = DXGI_FORMAT_B8G8R8A8_UNORM_SRGB;
+				break;
+
 			case PixelFormat::BGRA_8_linear:
 				m_dxgiFormat = DXGI_FORMAT_B8G8R8A8_UNORM;
 				break;
 
+			// Widened to 8 bits per channel, keeping the color space they had. The
+			// big endian 565 formats are defined as linear.
+
 			case PixelFormat::BGR_565:
+				if( GfxBase::defaultToSRGB() )
+				{
+					format = PixelFormat::BGRX_8_sRGB;
+					m_dxgiFormat = DXGI_FORMAT_B8G8R8X8_UNORM_SRGB;
+				}
+				else
+				{
+					format = PixelFormat::BGRX_8_linear;
+					m_dxgiFormat = DXGI_FORMAT_B8G8R8X8_UNORM;
+				}
+				break;
+
 			case PixelFormat::BGR_565_sRGB:
+				format = PixelFormat::BGRX_8_sRGB;
+				m_dxgiFormat = DXGI_FORMAT_B8G8R8X8_UNORM_SRGB;
+				break;
+
 			case PixelFormat::BGR_565_linear:
 			case PixelFormat::RGB_565_bigendian:
 			case PixelFormat::RGB_555_bigendian:
 				format = PixelFormat::BGRX_8_linear;
-				m_dxgiFormat = DXGI_FORMAT_B8G8R8A8_UNORM;
+				m_dxgiFormat = DXGI_FORMAT_B8G8R8X8_UNORM;
 				break;
 
 			case PixelFormat::BGRA_4_linear:

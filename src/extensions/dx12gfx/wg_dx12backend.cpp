@@ -330,6 +330,8 @@ namespace wg
 			m_commandList->IASetVertexBuffers(0, 1, &vertexBufferView );
 		}
 
+		_setBlendFactor();
+
 		// Setting the root signature dropped the pipeline and whatever the blit
 		// source had bound.
 
@@ -473,13 +475,19 @@ namespace wg
 
 		m_bInSession = true;
 
-		_bindSessionState();
-
 		// Sessions start with default state, changes arrive as StateChange commands.
+		// This has to happen before the command list is set up, since some of it -
+		// the morph factor - is recorded into the list rather than kept in a
+		// pipeline. GfxDeviceGen2 encodes a state change only when a value differs
+		// from these defaults, so getting them out of step means a whole session
+		// draws with the previous one's value.
 
 		m_tintColor = HiColor::White;
 		m_activeBlendMode = BlendMode::Blend;
+		m_morphFactor = 0.5f;
 		_setBlitSource(nullptr);
+
+		_bindSessionState();
 
 		// Sets render target, viewport and the canvas scale our shaders need.
 
@@ -769,10 +777,24 @@ namespace wg
 						m_activeBlendMode = BlendMode(*p++);
 
 					if (statesChanged & uint8_t(StateChange::MorphFactor))
-						p++;									// Only used by BlendMode::Morph.
+					{
+						float morphFactor = (*p++) / 4096.f;
+
+						if (morphFactor != m_morphFactor)
+						{
+							m_morphFactor = morphFactor;
+							_setBlendFactor();
+						}
+					}
 
 					if (statesChanged & uint8_t(StateChange::FixedBlendColor))
-						pColors++;								// Only used by BlendMode::BlendFixedColor.
+					{
+						// Blending against a known background is an optimization for
+						// software rendering. We render it as an ordinary Blend, which
+						// gives the same result, so the color is of no use to us.
+
+						pColors++;
+					}
 
 					if (statesChanged & uint8_t(StateChange::Blur))
 						p += 28;								// Blur not supported yet.
@@ -798,10 +820,27 @@ namespace wg
 				case Command::Blit:
 				case Command::ClipBlit:
 				case Command::Tile:
+				case Command::Blur:
 				{
-					// All three are the same draw for us. Whether the source is clamped
-					// or tiled is a property of the surface, and the rects have already
-					// been clipped by GfxDeviceGen2.
+					// The first three are the same draw for us. Whether the source is
+					// clamped or tiled is a property of the surface, and the rects have
+					// already been clipped by GfxDeviceGen2.
+					//
+					// Blur carries exactly the same payload, so it draws as a plain
+					// blit until we have the blur shader. Sharp instead of blurred is
+					// wrong, but it keeps the rest of the frame intact and exercises
+					// the same geometry.
+
+					if (cmd == Command::Blur)
+					{
+						static bool bReported = false;
+						if (!bReported)
+						{
+							GfxBase::throwError(ErrorLevel::Warning, ErrorCode::Other, "Blur is not implemented, drawing an unblurred blit instead.",
+								this, &TYPEINFO, __func__, __FILE__, __LINE__);
+							bReported = true;
+						}
+					}
 
 					int32_t nRects = *p++;
 
@@ -809,18 +848,66 @@ namespace wg
 					break;
 				}
 
+				case Command::Line:
+				{
+					// Not implemented yet. We still have to step over the payload
+					// exactly, or everything after it in the session is lost.
+
+					int32_t nClipRects = *p++;
+					int32_t nLines = *p++;
+					p++;								// padding
+
+					p += nLines * 10;					// Per line: from and to as spx, thickness, padding.
+					pColors += nLines;					// One color each.
+					pRects += nClipRects;
+
+					static bool bReported = false;
+					if (!bReported)
+					{
+						GfxBase::throwError(ErrorLevel::Warning, ErrorCode::Other, "Command::Line is not implemented, lines are skipped.",
+							this, &TYPEINFO, __func__, __FILE__, __LINE__);
+						bReported = true;
+					}
+
+					break;
+				}
+
+				case Command::DrawEdgemap:
+				{
+					// Not implemented yet, stepped over the same way.
+
+					pObjects++;							// The edgemap.
+
+					int32_t nRects = *p++;
+					p++;								// flip
+					p++;								// padding
+					p += 4;								// Destination, two spx.
+
+					pRects += nRects;
+
+					static bool bReported = false;
+					if (!bReported)
+					{
+						GfxBase::throwError(ErrorLevel::Warning, ErrorCode::Other, "Command::DrawEdgemap is not implemented, edgemaps are skipped.",
+							this, &TYPEINFO, __func__, __FILE__, __LINE__);
+						bReported = true;
+					}
+
+					break;
+				}
+
 				default:
 				{
-					// We don't know the size of the payload of a command we don't
-					// handle, so there is no way to find the next one. Text and
-					// images are blits, so expect them to be missing until those
-					// are implemented.
+					// Every command we know of is either drawn or stepped over above,
+					// so this is a command that didn't exist when this was written. We
+					// don't know how big its payload is, so there is no way to find the
+					// next one and the rest of the session has to go.
 
 					static bool bReported = false;
 					if (!bReported)
 					{
 						char buffer[128];
-						sprintf_s(buffer, "Command %d not implemented, rest of session dropped.", (int)cmd);
+						sprintf_s(buffer, "Command %d is unknown, rest of session dropped.", (int)cmd);
 						GfxBase::throwError(ErrorLevel::Error, ErrorCode::Other, buffer, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 						bReported = true;
 					}
@@ -1082,7 +1169,10 @@ namespace wg
 
 		bool bDraw = _bindBlitSource() && _setPipeline(_pipeline(m_activeBlendMode, true)) && m_pVertexPtr != nullptr;
 
-		int colorOfs = bDraw ? _addColor(m_tintColor) : -1;
+		// _addColor() multiplies by the tint, so what a blit wants here is white.
+		// Passing the tint would apply it twice.
+
+		int colorOfs = bDraw ? _addColor(HiColor::White) : -1;
 
 		if (colorOfs < 0)
 			bDraw = false;
@@ -1181,34 +1271,40 @@ namespace wg
 		return true;
 	}
 
-	//____ _supportedBlendMode() _______________________________________________
+	//____ _normalizeBlendMode() _______________________________________________
 
-	BlendMode DX12Backend::_supportedBlendMode(BlendMode blendMode)
+	BlendMode DX12Backend::_normalizeBlendMode(BlendMode blendMode)
 	{
 		switch (blendMode)
 		{
-			case BlendMode::Replace:
-				return BlendMode::Replace;
-
 			case BlendMode::Undefined:
-			case BlendMode::Blend:
-			case BlendMode::BlendFixedColor:		// Defaults to Blend, like GlBackend does.
+				return BlendMode::Blend;
+
+			case BlendMode::BlendFixedColor:
+				// Blending against a known background is an optimization for software
+				// rendering, and an ordinary Blend is an allowed stand-in. Keeping them
+				// as one mode also keeps one pipeline instead of two identical ones.
+
 				return BlendMode::Blend;
 
 			default:
-			{
-				static bool bReported = false;
-				if (!bReported)
-				{
-					char buffer[128];
-					sprintf_s(buffer, "BlendMode %d not supported, using Blend.", (int)blendMode);
-					GfxBase::throwError(ErrorLevel::Warning, ErrorCode::Other, buffer, this, &TYPEINFO, __func__, __FILE__, __LINE__);
-					bReported = true;
-				}
-
-				return BlendMode::Blend;
-			}
+				return blendMode;
 		}
+	}
+
+	//____ _setBlendFactor() ___________________________________________________
+	//
+	// The constant BlendMode::Morph blends against. D3D12 keeps this on the command
+	// list, not in the pipeline, so it survives a pipeline change but not a reset.
+
+	void DX12Backend::_setBlendFactor()
+	{
+		if (!m_bCommandListOpen)
+			return;
+
+		const float blendFactor[4] = { m_morphFactor, m_morphFactor, m_morphFactor, m_morphFactor };
+
+		m_commandList->OMSetBlendFactor(blendFactor);
 	}
 
 	//____ _pipeline() _________________________________________________________
@@ -1225,10 +1321,10 @@ namespace wg
 		if (m_activeCanvasFormat == DXGI_FORMAT_UNKNOWN)
 			return nullptr;							// No canvas set.
 
-		BlendMode mode = _supportedBlendMode(blendMode);
+		BlendMode mode = _normalizeBlendMode(blendMode);
 
-		uint64_t key = (uint64_t(m_activeCanvasFormat) << 8) |
-					   (uint64_t(mode == BlendMode::Replace ? 1 : 0) << 1) |
+		uint64_t key = (uint64_t(m_activeCanvasFormat) << 16) |
+					   (uint64_t(mode) << 1) |
 					   (bBlit ? 1 : 0);
 
 		auto it = m_pipelines.find(key);
@@ -1247,39 +1343,47 @@ namespace wg
 
 	//____ setDefaultCanvas() ___________________________________________
 
-	bool DX12Backend::setDefaultCanvas(D3D12_CPU_DESCRIPTOR_HANDLE renderTargetView, ID3D12Resource* renderTargetBuffer, SizeSPX size, int scale)
+	bool DX12Backend::setDefaultCanvas(D3D12_CPU_DESCRIPTOR_HANDLE renderTargetView, ID3D12Resource* renderTargetBuffer,
+									   DXGI_FORMAT renderTargetFormat, SizeSPX size, int scale)
 	{
 		m_defaultCanvasRTV = renderTargetView;
 		m_defaultCanvasBuffer = renderTargetBuffer;
+		m_defaultCanvasFormat = renderTargetFormat;
 		m_defaultCanvas.ref = CanvasRef::Default;		// Starts as Undefined until this method is called.
 		m_defaultCanvas.size = size;
 		m_defaultCanvas.scale = scale;
 
-		// The window decides the swap chain's format, and our pipelines have to
-		// match it, so take it from the buffer rather than assuming.
+		// WonderGUI has no name for R8G8B8A8, the usual swap chain format, so it is
+		// reported as its BGRA counterpart. Byte order is the one thing about the
+		// default canvas nobody can ask us, and the color space, which they can, is
+		// then right.
 
-		if (renderTargetBuffer)
+		switch (renderTargetFormat)
 		{
-			D3D12_RESOURCE_DESC desc = renderTargetBuffer->GetDesc();
-			m_defaultCanvasFormat = desc.Format;
+			case DXGI_FORMAT_R8G8B8A8_UNORM:
+			case DXGI_FORMAT_B8G8R8A8_UNORM:
+				m_defaultCanvas.format = PixelFormat::BGRA_8_linear;
+				break;
 
-			// WonderGUI has no name for R8G8B8A8, which is the usual swap chain
-			// format, so that one is left Undefined.
+			case DXGI_FORMAT_R8G8B8A8_UNORM_SRGB:
+				m_defaultCanvas.format = PixelFormat::BGRA_8_sRGB;
+				break;
 
-			switch (m_defaultCanvasFormat)
-			{
-				case DXGI_FORMAT_B8G8R8A8_UNORM:
-					m_defaultCanvas.format = PixelFormat::BGRA_8;
-					break;
+			case DXGI_FORMAT_B8G8R8A8_UNORM_SRGB:
+				m_defaultCanvas.format = PixelFormat::BGRA_8_sRGB;
+				break;
 
-				case DXGI_FORMAT_B8G8R8X8_UNORM:
-					m_defaultCanvas.format = PixelFormat::BGRX_8;
-					break;
+			case DXGI_FORMAT_B8G8R8X8_UNORM:
+				m_defaultCanvas.format = PixelFormat::BGRX_8_linear;
+				break;
 
-				default:
-					m_defaultCanvas.format = PixelFormat::Undefined;
-					break;
-			}
+			case DXGI_FORMAT_B8G8R8X8_UNORM_SRGB:
+				m_defaultCanvas.format = PixelFormat::BGRX_8_sRGB;
+				break;
+
+			default:
+				m_defaultCanvas.format = PixelFormat::Undefined;
+				break;
 		}
 
 		return true;
@@ -1570,35 +1674,188 @@ namespace wg
 		desc.PS.pShaderBytecode = pixelShaderBlob->GetBufferPointer();
 		desc.PS.BytecodeLength = pixelShaderBlob->GetBufferSize();
 
+		// Blend state, following MetalBackend's mapping. An alpha only canvas keeps
+		// its value in the alpha channel here, where Metal keeps it in red, so what
+		// Metal does to the color channels we do to alpha.
+		//
+		// A BGRX canvas has no alpha channel to write to, so the mask below just
+		// says so. Blits from it read alpha as 1.0 regardless, which is the point
+		// of giving it an X format in the first place.
+
+		bool bAlphaOnly = (rtvFormat == DXGI_FORMAT_A8_UNORM);
+		bool bNoAlpha = (rtvFormat == DXGI_FORMAT_B8G8R8X8_UNORM || rtvFormat == DXGI_FORMAT_B8G8R8X8_UNORM_SRGB);
+
 		desc.BlendState.AlphaToCoverageEnable = false;
 		desc.BlendState.IndependentBlendEnable = false;
-		desc.BlendState.RenderTarget[0].BlendEnable = (blendMode == BlendMode::Blend);
-		desc.BlendState.RenderTarget[0].LogicOpEnable = false;
-		desc.BlendState.RenderTarget[0].RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
+
+		// We only ever have one render target, but zero is not a valid blend value
+		// and the rest of the array would keep the zeroes from desc = {}.
+
+		for (int i = 1; i < D3D12_SIMULTANEOUS_RENDER_TARGET_COUNT; i++)
+		{
+			auto& unused = desc.BlendState.RenderTarget[i];
+
+			unused.SrcBlend = D3D12_BLEND_ONE;
+			unused.DestBlend = D3D12_BLEND_ZERO;
+			unused.BlendOp = D3D12_BLEND_OP_ADD;
+			unused.SrcBlendAlpha = D3D12_BLEND_ONE;
+			unused.DestBlendAlpha = D3D12_BLEND_ZERO;
+			unused.BlendOpAlpha = D3D12_BLEND_OP_ADD;
+			unused.LogicOp = D3D12_LOGIC_OP_NOOP;
+		}
+
+		auto& rt = desc.BlendState.RenderTarget[0];
+
+		rt.BlendEnable = (blendMode != BlendMode::Replace);
+		rt.LogicOpEnable = false;
+		rt.LogicOp = D3D12_LOGIC_OP_NOOP;
+		rt.RenderTargetWriteMask = bNoAlpha ? (D3D12_COLOR_WRITE_ENABLE_RED | D3D12_COLOR_WRITE_ENABLE_GREEN | D3D12_COLOR_WRITE_ENABLE_BLUE)
+											: D3D12_COLOR_WRITE_ENABLE_ALL;
 
 		// Zero is not a valid value for any of these, so they are filled in even
-		// for Replace, where blending is off and they are never used.
+		// where blending is off and they are never used.
 
-		desc.BlendState.RenderTarget[0].SrcBlend = D3D12_BLEND_ONE;
-		desc.BlendState.RenderTarget[0].DestBlend = D3D12_BLEND_ZERO;
-		desc.BlendState.RenderTarget[0].BlendOp = D3D12_BLEND_OP_ADD;
-		desc.BlendState.RenderTarget[0].SrcBlendAlpha = D3D12_BLEND_ONE;
-		desc.BlendState.RenderTarget[0].DestBlendAlpha = D3D12_BLEND_ZERO;
-		desc.BlendState.RenderTarget[0].BlendOpAlpha = D3D12_BLEND_OP_ADD;
-		desc.BlendState.RenderTarget[0].LogicOp = D3D12_LOGIC_OP_NOOP;
+		rt.SrcBlend = D3D12_BLEND_ONE;
+		rt.DestBlend = D3D12_BLEND_ZERO;
+		rt.BlendOp = D3D12_BLEND_OP_ADD;
+		rt.SrcBlendAlpha = D3D12_BLEND_ONE;
+		rt.DestBlendAlpha = D3D12_BLEND_ZERO;
+		rt.BlendOpAlpha = D3D12_BLEND_OP_ADD;
 
-		if (blendMode == BlendMode::Blend)
+		switch (blendMode)
 		{
-			// Same as GlBackend uses for a canvas that isn't alpha only. An
-			// alpha only canvas keeps only the alpha channel, and those factors
-			// already give it the ordinary over operator.
+			case BlendMode::Replace:
+				break;								// Blending is off, the defaults above are never used.
 
-			desc.BlendState.RenderTarget[0].SrcBlend = D3D12_BLEND_SRC_ALPHA;
-			desc.BlendState.RenderTarget[0].DestBlend = D3D12_BLEND_INV_SRC_ALPHA;
-			desc.BlendState.RenderTarget[0].BlendOp = D3D12_BLEND_OP_ADD;
-			desc.BlendState.RenderTarget[0].SrcBlendAlpha = D3D12_BLEND_ONE;
-			desc.BlendState.RenderTarget[0].DestBlendAlpha = D3D12_BLEND_INV_SRC_ALPHA;
-			desc.BlendState.RenderTarget[0].BlendOpAlpha = D3D12_BLEND_OP_ADD;
+			case BlendMode::Blend:
+				rt.SrcBlend = D3D12_BLEND_SRC_ALPHA;
+				rt.DestBlend = D3D12_BLEND_INV_SRC_ALPHA;
+				rt.SrcBlendAlpha = D3D12_BLEND_ONE;
+				rt.DestBlendAlpha = D3D12_BLEND_INV_SRC_ALPHA;
+				break;
+
+			case BlendMode::Add:
+				rt.SrcBlend = D3D12_BLEND_SRC_ALPHA;
+				rt.DestBlend = D3D12_BLEND_ONE;
+
+				if (bAlphaOnly)
+				{
+					rt.SrcBlendAlpha = D3D12_BLEND_ONE;
+					rt.DestBlendAlpha = D3D12_BLEND_ONE;
+				}
+				else
+				{
+					rt.SrcBlendAlpha = D3D12_BLEND_ZERO;
+					rt.DestBlendAlpha = D3D12_BLEND_ONE;
+				}
+				break;
+
+			case BlendMode::Subtract:
+				rt.SrcBlend = D3D12_BLEND_SRC_ALPHA;
+				rt.DestBlend = D3D12_BLEND_ONE;
+				rt.BlendOp = D3D12_BLEND_OP_REV_SUBTRACT;
+
+				if (bAlphaOnly)
+				{
+					rt.SrcBlendAlpha = D3D12_BLEND_ONE;
+					rt.DestBlendAlpha = D3D12_BLEND_ONE;
+					rt.BlendOpAlpha = D3D12_BLEND_OP_REV_SUBTRACT;
+				}
+				else
+				{
+					rt.SrcBlendAlpha = D3D12_BLEND_ZERO;
+					rt.DestBlendAlpha = D3D12_BLEND_ONE;
+				}
+				break;
+
+			case BlendMode::Multiply:
+				rt.SrcBlend = D3D12_BLEND_DEST_COLOR;
+				rt.DestBlend = D3D12_BLEND_ZERO;
+
+				if (bAlphaOnly)
+				{
+					rt.SrcBlendAlpha = D3D12_BLEND_DEST_ALPHA;
+					rt.DestBlendAlpha = D3D12_BLEND_ZERO;
+				}
+				else
+				{
+					rt.SrcBlendAlpha = D3D12_BLEND_ZERO;
+					rt.DestBlendAlpha = D3D12_BLEND_ONE;
+				}
+				break;
+
+			case BlendMode::Invert:
+				rt.SrcBlend = D3D12_BLEND_INV_DEST_COLOR;
+				rt.DestBlend = D3D12_BLEND_INV_SRC_COLOR;
+
+				if (bAlphaOnly)
+				{
+					rt.SrcBlendAlpha = D3D12_BLEND_INV_DEST_ALPHA;
+					rt.DestBlendAlpha = D3D12_BLEND_INV_SRC_ALPHA;
+				}
+				else
+				{
+					rt.SrcBlendAlpha = D3D12_BLEND_ZERO;
+					rt.DestBlendAlpha = D3D12_BLEND_ONE;
+				}
+				break;
+
+			case BlendMode::Min:
+			case BlendMode::Max:
+			{
+				D3D12_BLEND_OP op = (blendMode == BlendMode::Min) ? D3D12_BLEND_OP_MIN : D3D12_BLEND_OP_MAX;
+
+				rt.SrcBlend = D3D12_BLEND_ONE;
+				rt.DestBlend = D3D12_BLEND_ONE;
+				rt.BlendOp = op;
+
+				if (bAlphaOnly)
+				{
+					rt.SrcBlendAlpha = D3D12_BLEND_ONE;
+					rt.DestBlendAlpha = D3D12_BLEND_ONE;
+					rt.BlendOpAlpha = op;
+				}
+				else
+				{
+					rt.SrcBlendAlpha = D3D12_BLEND_ZERO;
+					rt.DestBlendAlpha = D3D12_BLEND_ONE;
+				}
+				break;
+			}
+
+			case BlendMode::Morph:
+				// Metal uses the blend color's alpha for every channel. We set all
+				// four components of the blend factor to the morph factor, which
+				// comes to the same thing, see _setBlendFactor().
+
+				rt.SrcBlend = D3D12_BLEND_BLEND_FACTOR;
+				rt.DestBlend = D3D12_BLEND_INV_BLEND_FACTOR;
+				rt.SrcBlendAlpha = D3D12_BLEND_BLEND_FACTOR;
+				rt.DestBlendAlpha = D3D12_BLEND_INV_BLEND_FACTOR;
+				break;
+
+			case BlendMode::Ignore:
+				// Nothing should be drawn. _pipeline() returns null for this, so we
+				// only get here if that ever changes.
+
+				rt.SrcBlend = D3D12_BLEND_ZERO;
+				rt.DestBlend = D3D12_BLEND_ONE;
+				rt.SrcBlendAlpha = D3D12_BLEND_ZERO;
+				rt.DestBlendAlpha = D3D12_BLEND_ONE;
+				break;
+
+			default:
+			{
+				char buffer[128];
+				sprintf_s(buffer, "BlendMode %d is unknown, using Blend.", (int) blendMode);
+				GfxBase::throwError(ErrorLevel::Warning, ErrorCode::Other, buffer, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+
+				rt.SrcBlend = D3D12_BLEND_SRC_ALPHA;
+				rt.DestBlend = D3D12_BLEND_INV_SRC_ALPHA;
+				rt.SrcBlendAlpha = D3D12_BLEND_ONE;
+				rt.DestBlendAlpha = D3D12_BLEND_INV_SRC_ALPHA;
+				break;
+			}
 		}
 
 		desc.SampleMask = 0xFFFFFFFF;
