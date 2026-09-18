@@ -3,6 +3,7 @@
 add_subdirectory(compressbench)
 add_subdirectory(editera)
 add_subdirectory(fontgenerator)
+add_subdirectory(gfxbench)
 add_subdirectory(gfxdevicetester)
 add_subdirectory(gfxworkbench)
 add_subdirectory(gfxworkbench-gen2)
@@ -35,6 +36,7 @@ set_target_properties(
 	lineargfxworkbench
 	testplugin
 	fontgenerator
+	gfxbench
 	gfxworkbench
 	gfxworkbench-gen2
 	helloworld

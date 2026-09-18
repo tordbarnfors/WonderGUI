@@ -30,6 +30,8 @@
 
 #include <dx12_wrapper.h>
 
+#include <vector>
+
 
 //____ Win32Window _______________________________________________________________
 
@@ -73,6 +75,8 @@ protected:
 	void				_createSwapChainBuffers();
 	void				_dropSwapChainBuffers();
 
+	bool				_dirtyRectsCoverRegion(HRGN updateRegion) const;
+
 
 	//
 
@@ -86,6 +90,14 @@ protected:
 
 	bool				m_bHidden = false;
 	bool				m_bRendered = false;		// Nothing is presented until we have rendered at least once.
+
+	// Areas rendered since the last present, in pixels, presented as the swap
+	// chain's dirty rects. DXGI copies everything outside them from the
+	// previously presented buffer, which is what makes partial redraws work.
+	// A full frame is presented instead whenever they can't be trusted.
+
+	std::vector<RECT>	m_dirtyRects;
+	bool				m_bPresentFullFrame = true;
 
 	//
 

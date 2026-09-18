@@ -29,12 +29,18 @@
 
 #include <cstdio>
 #include <vector>
+#include <algorithm>
 
 
 using namespace wg;
 
 extern DX12Wrapper* g_pDX12Wrapper;
 extern std::wstring _stringToWString(const std::string& str);
+
+// Set to true together with DX12Backend's c_bDebugClearUpdateRects: that clear
+// paints the whole update rect, which a partial present isn't allowed to do.
+
+static constexpr bool c_bPresentFullFrames = false;
 
 //____ _backend() _____________________________________________________
 
@@ -121,6 +127,10 @@ void Win32Window::render()
 
 	m_pRootPanel->render();
 
+	// Collect what was rendered, both to get a WM_PAINT and to present the areas
+	// as the swap chain's dirty rects. They accumulate until we present, since
+	// several render() calls can share a back buffer.
+
 	int nRects = m_pRootPanel->nbUpdatedRects();
 	auto pRects = m_pRootPanel->firstUpdatedRect();
 	for (int i = 0; i < nRects; i++)
@@ -131,8 +141,39 @@ void Win32Window::render()
 		rc.top = rect.y;
 		rc.right = rect.x + rect.w;
 		rc.bottom = rect.y + rect.h;
+
+		m_dirtyRects.push_back(rc);
 		InvalidateRect(m_windowHandle, &rc, FALSE);
 	}
+}
+
+//____ _dirtyRectsCoverRegion() _______________________________________________
+//
+// True if the rects we have rendered cover everything Windows wants repainted.
+// If they don't, we would be telling DXGI that areas are up to date when they
+// are not, and it would keep whatever the previously presented buffer had there.
+
+bool Win32Window::_dirtyRectsCoverRegion(HRGN updateRegion) const
+{
+	if (m_dirtyRects.empty())
+		return false;
+
+	HRGN rendered = CreateRectRgn(0, 0, 0, 0);
+
+	for (auto& rect : m_dirtyRects)
+	{
+		HRGN rectRegion = CreateRectRgn(rect.left, rect.top, rect.right, rect.bottom);
+		CombineRgn(rendered, rendered, rectRegion, RGN_OR);
+		DeleteObject(rectRegion);
+	}
+
+	HRGN notRendered = CreateRectRgn(0, 0, 0, 0);
+	int result = CombineRgn(notRendered, updateRegion, rendered, RGN_DIFF);
+
+	DeleteObject(rendered);
+	DeleteObject(notRendered);
+
+	return result == NULLREGION;
 }
 
 //____ paint() ________________________________________________________________
@@ -152,27 +193,49 @@ void Win32Window::paint()
 
 	if (GetUpdateRgn(m_windowHandle, updateRegion, FALSE) != NULLREGION)
 	{
-		// First call to get required buffer size
-		DWORD size = GetRegionData(updateRegion, 0, nullptr);
+		// Dirty rects must be the areas we have actually rendered, and every pixel
+		// in them must be up to date - DXGI keeps the rest of the previously
+		// presented frame. Present the whole frame if we can't promise that, which
+		// is the case for the first frame on a new set of buffers (after creation
+		// or a resize), or if Windows wants an area repainted that WonderGUI
+		// didn't render.
 
-		// Allocate buffer
-		std::vector<BYTE> buffer(size);
-		RGNDATA* regionData = reinterpret_cast<RGNDATA*>(buffer.data());
+		bool bFullFrame = m_bPresentFullFrame || c_bPresentFullFrames || !_dirtyRectsCoverRegion(updateRegion);
 
-		// Get the actual data
-		GetRegionData(updateRegion, size, regionData);
+		// Dirty rects have to be inside the back buffer. Not using std::min/max
+		// here, windows.h has them as macros.
 
-		// Extract rectangles
-		RECT* rects = reinterpret_cast<RECT*>(regionData->Buffer);
-		DWORD rectCount = regionData->rdh.nCount;
+		for (auto& rect : m_dirtyRects)
+		{
+			if (rect.left < 0)
+				rect.left = 0;
+			if (rect.top < 0)
+				rect.top = 0;
+			if (rect.right > (LONG)m_width)
+				rect.right = (LONG)m_width;
+			if (rect.bottom > (LONG)m_height)
+				rect.bottom = (LONG)m_height;
+		}
 
-		std::vector<RECT> dirtyRects(rects, rects + rectCount);
+		m_dirtyRects.erase(std::remove_if(m_dirtyRects.begin(), m_dirtyRects.end(),
+			[](const RECT& rect) { return rect.right <= rect.left || rect.bottom <= rect.top; }),
+			m_dirtyRects.end());
+
+		if (m_dirtyRects.empty())
+			bFullFrame = true;
 
 		DXGI_PRESENT_PARAMETERS presentParams = {};
-		presentParams.DirtyRectsCount = (UINT) dirtyRects.size();
-		presentParams.pDirtyRects = dirtyRects.data();
+
+		if (!bFullFrame)
+		{
+			presentParams.DirtyRectsCount = (UINT) m_dirtyRects.size();
+			presentParams.pDirtyRects = m_dirtyRects.data();
+		}
 
 		HRESULT hr = m_pSwapChain->Present1(0, 0, &presentParams);
+
+		m_dirtyRects.clear();
+		m_bPresentFullFrame = false;
 
 		if (hr == DXGI_ERROR_DEVICE_REMOVED || hr == DXGI_ERROR_DEVICE_RESET)
 		{
@@ -206,6 +269,12 @@ void Win32Window::onResize(int widthInPixels, int heightInPixels)
 
 	m_width = widthInPixels;
 	m_height = heightInPixels;
+
+	// The new buffers hold nothing, and the old rects belong to a canvas that no
+	// longer exists, so the next present has to be a full frame.
+
+	m_dirtyRects.clear();
+	m_bPresentFullFrame = true;
 
 	// All references to the buffers must be gone and the GPU done with them
 	// before ResizeBuffers(). Waiting for DX12Backend alone is not enough,
