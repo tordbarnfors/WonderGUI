@@ -21,6 +21,8 @@ set(SHADERS
 
 	shaders/vs_fill.hlsl
 	shaders/ps_fill.hlsl
+	shaders/vs_blit.hlsl
+	shaders/ps_blit.hlsl
 )
 
 

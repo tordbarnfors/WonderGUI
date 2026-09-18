@@ -21,11 +21,14 @@
 =========================================================================*/
 
 #include <wg_dx12backend.h>
+#include <wg_dx12surface.h>
 #include <wg_dx12surfacefactory.h>
 #include <wg_dx12edgemapfactory.h>
 #include <d3dcompiler.h>
 
 #include <cstdio>
+#include <cassert>
+#include <vector>
 
 #include <wg_gfxbase.h>
 
@@ -44,21 +47,23 @@ namespace wg
 
 	//____ _checkHR() __________________________________________________________
 	//
-	// Logs failed HRESULTs to the debug output. The logging stays in release
-	// builds, where the assert is compiled out.
+	// Reports failed HRESULTs through the error handler. Use the CHECK_HR macro,
+	// which passes on the call site.
 
-	static bool _checkHR(HRESULT hr, const char* what)
+	static bool _checkHR(HRESULT hr, const char* what, const Object* pObject, const TypeInfo* pClassType, const char* func, const char* file, int line)
 	{
 		if (FAILED(hr))
 		{
-			char msg[256];
-			sprintf_s(msg, "DX12Backend: %s failed, HRESULT = 0x%08lX\n", what, (unsigned long)hr);
-			OutputDebugStringA(msg);
+			char buffer[256];
+			sprintf_s(buffer, "%s failed, HRESULT = 0x%08lX", what, (unsigned long)hr);
+			GfxBase::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, buffer, pObject, pClassType, func, file, line);
 			assert(false);
 			return false;
 		}
 		return true;
 	}
+
+	#define CHECK_HR(call, what) _checkHR(call, what, this, &TYPEINFO, __func__, __FILE__, __LINE__)
 
 	//____ create() ______________________________________________________________
 
@@ -77,6 +82,13 @@ namespace wg
 		m_pDX12CommandQueue = pDX12CommandQueue;
 		m_pDX12Device = pDX12Device;
 
+		// Surfaces create their own textures and need the device for it.
+
+		DX12Surface::setDevice(pDX12Device);
+
+		m_srvDescriptorSize = pDX12Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+		m_samplerDescriptorSize = pDX12Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
+
 		pDX12Device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&m_commandFence));
 		m_fenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
 
@@ -92,14 +104,30 @@ namespace wg
 			m_frameResources[i].fenceValue = 0;
 
 			_createBuffer(m_frameResources[i].vertexBuffer, c_vertexBufferSize, D3D12_HEAP_TYPE_UPLOAD, D3D12_RESOURCE_STATE_GENERIC_READ, L"WonderGUI Vertex Buffer");
+			_createBuffer(m_frameResources[i].colorBuffer, c_colorBufferSize, D3D12_HEAP_TYPE_UPLOAD, D3D12_RESOURCE_STATE_GENERIC_READ, L"WonderGUI Color Buffer");
+			_createBuffer(m_frameResources[i].extrasBuffer, c_extrasBufferSize, D3D12_HEAP_TYPE_UPLOAD, D3D12_RESOURCE_STATE_GENERIC_READ, L"WonderGUI Extras Buffer");
+
+			// Upload heaps can stay mapped for their entire lifetime.
+
+			D3D12_RANGE readRange = { 0, 0 };		// We only write.
 
 			if (m_frameResources[i].vertexBuffer)
-			{
-				// Upload heaps can stay mapped for their entire lifetime.
+				CHECK_HR(m_frameResources[i].vertexBuffer->Map(0, &readRange, (void**)&m_frameResources[i].pVertexBufferData), "ID3D12Resource::Map");
 
-				D3D12_RANGE readRange = { 0, 0 };		// We only write.
-				_checkHR(m_frameResources[i].vertexBuffer->Map(0, &readRange, (void**)&m_frameResources[i].pVertexBufferData), "ID3D12Resource::Map");
-			}
+			if (m_frameResources[i].colorBuffer)
+				CHECK_HR(m_frameResources[i].colorBuffer->Map(0, &readRange, (void**)&m_frameResources[i].pColorBufferData), "ID3D12Resource::Map");
+
+			if (m_frameResources[i].extrasBuffer)
+				CHECK_HR(m_frameResources[i].extrasBuffer->Map(0, &readRange, (void**)&m_frameResources[i].pExtrasBufferData), "ID3D12Resource::Map");
+
+			// Shader visible descriptors for blit sources, refilled every frame.
+
+			D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc = {};
+			srvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+			srvHeapDesc.NumDescriptors = c_nbSRVDescriptors;
+			srvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+
+			CHECK_HR(pDX12Device->CreateDescriptorHeap(&srvHeapDesc, IID_PPV_ARGS(m_frameResources[i].srvHeap.GetAddressOf())), "CreateDescriptorHeap");
 		}
 
 		// Create one command list for all frames (will be reset for each frame)
@@ -108,8 +136,9 @@ namespace wg
 
 		m_commandList->Close();
 
-		if (!_createFillPipelines())
-			OutputDebugStringA("DX12Backend: failed to create fill pipelines, nothing will render.\n");
+		if (!_createPipelines())
+			GfxBase::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to create pipelines, nothing will render.",
+				this, &TYPEINFO, __func__, __FILE__, __LINE__);
 
 	}
 
@@ -120,6 +149,8 @@ namespace wg
 		// Our resources must not be released while the GPU still uses them.
 
 		waitForCompletion();
+
+		DX12Surface::exitDevice();
 
 		if (m_fenceEvent)
 			CloseHandle(m_fenceEvent);
@@ -144,14 +175,26 @@ namespace wg
 		m_frameResources[frame].commandAllocator->Reset();
 		m_commandList->Reset(m_frameResources[frame].commandAllocator.Get(), nullptr);
 
-		// Vertices are written for the whole frame, not per session, since the
-		// GPU doesn't run any of it until the command list has been executed.
+		// Vertices and colors are written for the whole frame, not per session,
+		// since the GPU doesn't run any of it until the command list has been
+		// executed.
 
 		m_pVertexBeg = m_frameResources[frame].pVertexBufferData;
 		m_pVertexEnd = m_pVertexBeg ? m_pVertexBeg + c_vertexBufferSize / sizeof(Vertex) : nullptr;
 		m_pVertexPtr = m_pVertexBeg;
 
+		m_pColorBeg = m_frameResources[frame].pColorBufferData;
+		m_pColorEnd = m_pColorBeg ? m_pColorBeg + c_colorBufferSize / sizeof(ColorDX12) : nullptr;
+		m_pColorPtr = m_pColorBeg;
+
+		m_pExtrasBeg = m_frameResources[frame].pExtrasBufferData;
+		m_pExtrasEnd = m_pExtrasBeg ? m_pExtrasBeg + c_extrasBufferSize / sizeof(ExtrasDX12) : nullptr;
+		m_pExtrasPtr = m_pExtrasBeg;
+
+		m_frameResources[frame].nSRVDescriptors = 0;
+
 		m_pActivePipeline = nullptr;		// Resetting the command list cleared its state.
+		m_bBlitSourceBound = false;
 	}
 
 	//____ endRender() _________________________________________________________
@@ -161,7 +204,7 @@ namespace wg
 		// Close() must not be inside the assert, or it is never called in release builds.
 
 		HRESULT hr = m_commandList->Close();
-		if (!_checkHR(hr, "ID3D12GraphicsCommandList::Close"))
+		if (!CHECK_HR(hr, "ID3D12GraphicsCommandList::Close"))
 			return;
 
 		// Execute the command list.
@@ -255,12 +298,35 @@ namespace wg
 		// Set pipeline state. Vertex positions are in canvas pixels, the vertex
 		// shader needs the canvas size to bring them into clip space.
 
-		m_commandList->SetGraphicsRootSignature(m_pFillRootSignature.Get());
+		auto& frame = m_frameResources[m_currentFrameIndex];
+
+		// Descriptor heaps must be set before any descriptor table is bound.
+
+		if (frame.srvHeap && m_pSamplerHeap)
+		{
+			ID3D12DescriptorHeap* pHeaps[] = { frame.srvHeap.Get(), m_pSamplerHeap.Get() };
+			m_commandList->SetDescriptorHeaps(2, pHeaps);
+		}
+
+		m_commandList->SetGraphicsRootSignature(m_pRootSignature.Get());
 
 		float canvasScale[2] = { canvasWidth > 0 ? 2.f / canvasWidth : 0.f,
 								 canvasHeight > 0 ? 2.f / canvasHeight : 0.f };
 
 		m_commandList->SetGraphicsRoot32BitConstants(0, 2, canvasScale, 0);
+
+		// Colors and extras live in buffers the vertex shader indexes into, like
+		// MetalBackend does. Root SRVs take the address directly.
+
+		if (frame.colorBuffer)
+			m_commandList->SetGraphicsRootShaderResourceView(1, frame.colorBuffer->GetGPUVirtualAddress());
+
+		if (frame.extrasBuffer)
+			m_commandList->SetGraphicsRootShaderResourceView(2, frame.extrasBuffer->GetGPUVirtualAddress());
+
+		// Setting the root signature dropped whatever the blit source had bound.
+
+		m_bBlitSourceBound = false;
 
 		m_commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
@@ -278,6 +344,7 @@ namespace wg
 
 		m_tintColor = HiColor::White;
 		m_activeBlendMode = BlendMode::Blend;
+		_setBlitSource(nullptr);
 	}
 
 	//____ endSession() _______________________________________________________
@@ -367,7 +434,12 @@ namespace wg
 					int32_t statesChanged = *p++;
 
 					if (statesChanged & uint8_t(StateChange::BlitSource))
-						pObjects++;								// Blits not supported yet.
+					{
+						Object * pObject = *pObjects++;
+
+						_setBlitSource( (pObject && pObject->typeInfo() == DX12Surface::TYPEINFO) ?
+										static_cast<DX12Surface*>(pObject) : nullptr );
+					}
 
 					if (statesChanged & uint8_t(StateChange::TintColor))
 						m_tintColor = *pColors++;
@@ -417,6 +489,20 @@ namespace wg
 					break;
 				}
 
+				case Command::Blit:
+				case Command::ClipBlit:
+				case Command::Tile:
+				{
+					// All three are the same draw for us. Whether the source is clamped
+					// or tiled is a property of the surface, and the rects have already
+					// been clipped by GfxDeviceGen2.
+
+					int32_t nRects = *p++;
+
+					_drawBlitRects(p, pRects, nRects, version);
+					break;
+				}
+
 				default:
 				{
 					// We don't know the size of the payload of a command we don't
@@ -427,9 +513,9 @@ namespace wg
 					static bool bReported = false;
 					if (!bReported)
 					{
-						char msg[128];
-						sprintf_s(msg, "DX12Backend: command %d not implemented, rest of session dropped.\n", (int)cmd);
-						OutputDebugStringA(msg);
+						char buffer[128];
+						sprintf_s(buffer, "Command %d not implemented, rest of session dropped.", (int)cmd);
+						GfxBase::throwError(ErrorLevel::Error, ErrorCode::Other, buffer, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 						bReported = true;
 					}
 
@@ -451,22 +537,14 @@ namespace wg
 		if (nRects <= 0 || !m_pVertexPtr)
 			return;
 
-		auto pPipeline = _fillPipeline(m_activeBlendMode);
-		if (!pPipeline)
+		if (!_setPipeline(_fillPipeline(m_activeBlendMode)))
 			return;
 
-		if (pPipeline != m_pActivePipeline)
-		{
-			m_commandList->SetPipelineState(pPipeline);
-			m_pActivePipeline = pPipeline;
-		}
+		// One color for the whole command, the vertices only carry its offset.
 
-		// HiColor components are 13 bit fixed point, tint is a plain multiplication.
-
-		float r = (color.r / 4096.f) * (m_tintColor.r / 4096.f);
-		float g = (color.g / 4096.f) * (m_tintColor.g / 4096.f);
-		float b = (color.b / 4096.f) * (m_tintColor.b / 4096.f);
-		float a = (color.a / 4096.f) * (m_tintColor.a / 4096.f);
+		int colorOfs = _addColor(color);
+		if (colorOfs < 0)
+			return;
 
 		int nVerticesLeft = int(m_pVertexEnd - m_pVertexPtr);
 
@@ -477,7 +555,8 @@ namespace wg
 			static bool bReported = false;
 			if (!bReported)
 			{
-				OutputDebugStringA("DX12Backend: vertex buffer full, fills dropped. Increase c_vertexBufferSize.\n");
+				GfxBase::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, "Vertex buffer full, fills dropped. Increase c_vertexBufferSize.",
+					this, &TYPEINFO, __func__, __FILE__, __LINE__);
 				bReported = true;
 			}
 
@@ -509,17 +588,287 @@ namespace wg
 			{
 				m_pVertexPtr->x = coords[vertex][0];
 				m_pVertexPtr->y = coords[vertex][1];
-
-				m_pVertexPtr->r = r;
-				m_pVertexPtr->g = g;
-				m_pVertexPtr->b = b;
-				m_pVertexPtr->a = a;
+				m_pVertexPtr->colorOfs = (uint32_t) colorOfs;
+				m_pVertexPtr->extrasOfs = 0;
 
 				m_pVertexPtr++;
 			}
 		}
 
 		m_commandList->DrawInstanced(nRects * 6, 1, firstVertex, 0);
+	}
+
+	//____ _addColor() _________________________________________________________
+
+	int DX12Backend::_addColor(HiColor color)
+	{
+		if (!m_pColorPtr)
+			return -1;
+
+		if (m_pColorPtr == m_pColorEnd)
+		{
+			static bool bReported = false;
+			if (!bReported)
+			{
+				GfxBase::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, "Color buffer full, draws dropped. Increase c_colorBufferSize.",
+					this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				bReported = true;
+			}
+
+			return -1;
+		}
+
+		// HiColor components are 13 bit fixed point, tint is a plain multiplication.
+
+		m_pColorPtr->r = (color.r / 4096.f) * (m_tintColor.r / 4096.f);
+		m_pColorPtr->g = (color.g / 4096.f) * (m_tintColor.g / 4096.f);
+		m_pColorPtr->b = (color.b / 4096.f) * (m_tintColor.b / 4096.f);
+		m_pColorPtr->a = (color.a / 4096.f) * (m_tintColor.a / 4096.f);
+
+		return int(m_pColorPtr++ - m_pColorBeg);
+	}
+
+	//____ _addExtras() ________________________________________________________
+
+	int DX12Backend::_addExtras(const ExtrasDX12& first, const ExtrasDX12& second)
+	{
+		if (!m_pExtrasPtr)
+			return -1;
+
+		if (m_pExtrasEnd - m_pExtrasPtr < 2)
+		{
+			static bool bReported = false;
+			if (!bReported)
+			{
+				GfxBase::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, "Extras buffer full, blits dropped. Increase c_extrasBufferSize.",
+					this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				bReported = true;
+			}
+
+			return -1;
+		}
+
+		int ofs = int(m_pExtrasPtr - m_pExtrasBeg);
+
+		*m_pExtrasPtr++ = first;
+		*m_pExtrasPtr++ = second;
+
+		return ofs;
+	}
+
+	//____ _setBlitSource() ____________________________________________________
+
+	void DX12Backend::_setBlitSource(DX12Surface* pSurface)
+	{
+		m_pBlitSource = pSurface;
+		m_bBlitSourceBound = false;
+
+		if (!pSurface)
+			return;
+
+		// Make sure the texture holds everything written to the surface.
+
+		pSurface->syncTexture();
+
+		m_blitSourceSize = pSurface->pixelSize();
+		m_bBlitSourceAlphaOnly = pSurface->isAlphaOnly();
+
+		// Samplers are ordered nearest/bilinear, then clamp/tile.
+
+		m_blitSourceSampler = (pSurface->isTiling() ? 2 : 0) + (pSurface->sampleMethod() == SampleMethod::Bilinear ? 1 : 0);
+	}
+
+	//____ _bindBlitSource() ___________________________________________________
+	//
+	// Copies the source's descriptor into this frame's shader visible heap and
+	// points the root descriptor tables at it. Only needed when the source has
+	// changed or our bindings have been invalidated.
+
+	bool DX12Backend::_bindBlitSource()
+	{
+		if (!m_pBlitSource || !m_pBlitSource->texture())
+			return false;
+
+		if (m_bBlitSourceBound)
+			return true;
+
+		auto& frame = m_frameResources[m_currentFrameIndex];
+
+		if (!frame.srvHeap || !m_pSamplerHeap)
+			return false;
+
+		if (frame.nSRVDescriptors >= c_nbSRVDescriptors)
+		{
+			static bool bReported = false;
+			if (!bReported)
+			{
+				GfxBase::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, "Out of blit source descriptors for this frame. Increase c_nbSRVDescriptors.",
+					this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				bReported = true;
+			}
+
+			return false;
+		}
+
+		D3D12_CPU_DESCRIPTOR_HANDLE dest = frame.srvHeap->GetCPUDescriptorHandleForHeapStart();
+		dest.ptr += SIZE_T(frame.nSRVDescriptors) * m_srvDescriptorSize;
+
+		m_pDX12Device->CopyDescriptorsSimple(1, dest, m_pBlitSource->textureSRV(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+
+		D3D12_GPU_DESCRIPTOR_HANDLE srvHandle = frame.srvHeap->GetGPUDescriptorHandleForHeapStart();
+		srvHandle.ptr += UINT64(frame.nSRVDescriptors) * m_srvDescriptorSize;
+
+		frame.nSRVDescriptors++;
+
+		m_commandList->SetGraphicsRootDescriptorTable(3, srvHandle);
+
+		D3D12_GPU_DESCRIPTOR_HANDLE samplerHandle = m_pSamplerHeap->GetGPUDescriptorHandleForHeapStart();
+		samplerHandle.ptr += UINT64(m_blitSourceSampler) * m_samplerDescriptorSize;
+
+		m_commandList->SetGraphicsRootDescriptorTable(4, samplerHandle);
+
+		// The shaders need the source size to get from pixels to texture coordinates.
+
+		float textureSize[2] = { (float) m_blitSourceSize.w, (float) m_blitSourceSize.h };
+		m_commandList->SetGraphicsRoot32BitConstants(0, 2, textureSize, 2);
+
+		uint32_t flags = m_bBlitSourceAlphaOnly ? 1 : 0;
+		m_commandList->SetGraphicsRoot32BitConstants(0, 1, &flags, 4);
+
+		m_bBlitSourceBound = true;
+		return true;
+	}
+
+	//____ _drawBlitRects() ____________________________________________________
+
+	void DX12Backend::_drawBlitRects(const uint16_t*& pCmd, const RectSPX*& pRects, int nRects, int version)
+	{
+		// Transforms below this index are the standard ones, the rest were handed
+		// to us through setTransforms().
+
+		int customTransformStart = (version == 1) ? GfxFlip_size : NbStandardTransforms;
+
+		bool bBilinear = (m_pBlitSource && m_pBlitSource->sampleMethod() == SampleMethod::Bilinear);
+
+		// Even when we can't draw we have to step through the command's data, or
+		// we lose track of where we are in the stream.
+
+		bool bDraw = _bindBlitSource() && _setPipeline(_blitPipeline(m_activeBlendMode)) && m_pVertexPtr != nullptr;
+
+		int colorOfs = bDraw ? _addColor(m_tintColor) : -1;
+
+		if (colorOfs < 0)
+			bDraw = false;
+
+		int firstVertex = bDraw ? int(m_pVertexPtr - m_pVertexBeg) : 0;
+		int nRectsDrawn = 0;
+
+		for (int i = 0; i < nRects; i++)
+		{
+			auto p32 = (const spx*) pCmd;
+
+			int		srcX = *p32++;			// Source coordinates are in 1/1024 pixels.
+			int		srcY = *p32++;
+			spx		dstX = *p32++;
+			spx		dstY = *p32++;
+
+			pCmd = (const uint16_t*) p32;
+
+			int32_t transform = *pCmd++;
+			pCmd++;							// padding
+
+			const RectSPX& dest = *pRects++;
+
+			if (!bDraw)
+				continue;
+
+			if (m_pVertexEnd - m_pVertexPtr < 6)
+			{
+				static bool bReported = false;
+				if (!bReported)
+				{
+					GfxBase::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, "Vertex buffer full, blits dropped. Increase c_vertexBufferSize.",
+						this, &TYPEINFO, __func__, __FILE__, __LINE__);
+					bReported = true;
+				}
+
+				continue;
+			}
+
+			// Source and destination origin plus the transform is all the vertex
+			// shader needs to work out texture coordinates for each corner.
+
+			ExtrasDX12 srcDst;
+
+			srcDst.x = srcX / 1024.f + (bBilinear ? 0.5f : 0.f);
+			srcDst.y = srcY / 1024.f + (bBilinear ? 0.5f : 0.f);
+			srcDst.z = float(dstX >> 6) + 0.5f;
+			srcDst.w = float(dstY >> 6) + 0.5f;
+
+			auto& mtx = (transform < customTransformStart) ? s_standardTransforms[transform] : m_pTransformsBeg[transform - customTransformStart];
+
+			ExtrasDX12 matrix = { mtx.xx, mtx.xy, mtx.yx, mtx.yy };
+
+			int extrasOfs = _addExtras(srcDst, matrix);
+			if (extrasOfs < 0)
+				continue;
+
+			float x1 = float(dest.x >> 6);
+			float y1 = float(dest.y >> 6);
+			float x2 = x1 + float(dest.w >> 6);
+			float y2 = y1 + float(dest.h >> 6);
+
+			const float coords[6][2] = { {x1,y1}, {x2,y1}, {x2,y2},
+										 {x1,y1}, {x2,y2}, {x1,y2} };
+
+			for (int vertex = 0; vertex < 6; vertex++)
+			{
+				m_pVertexPtr->x = coords[vertex][0];
+				m_pVertexPtr->y = coords[vertex][1];
+				m_pVertexPtr->colorOfs = (uint32_t) colorOfs;
+				m_pVertexPtr->extrasOfs = (uint32_t) extrasOfs;
+
+				m_pVertexPtr++;
+			}
+
+			nRectsDrawn++;
+		}
+
+		if (nRectsDrawn > 0)
+			m_commandList->DrawInstanced(nRectsDrawn * 6, 1, firstVertex, 0);
+	}
+
+	//____ _setPipeline() ______________________________________________________
+
+	bool DX12Backend::_setPipeline(ID3D12PipelineState* pPipeline)
+	{
+		if (!pPipeline)
+			return false;
+
+		if (pPipeline != m_pActivePipeline)
+		{
+			m_commandList->SetPipelineState(pPipeline);
+			m_pActivePipeline = pPipeline;
+		}
+
+		return true;
+	}
+
+	//____ _blitPipeline() _____________________________________________________
+
+	ID3D12PipelineState* DX12Backend::_blitPipeline(BlendMode blendMode)
+	{
+		switch (blendMode)
+		{
+			case BlendMode::Ignore:
+				return nullptr;							// Nothing should be drawn.
+
+			case BlendMode::Replace:
+				return m_pBlitPipelines[c_fillPipelineReplace].Get();
+
+			default:
+				return m_pBlitPipelines[c_fillPipelineBlend].Get();
+		}
 	}
 
 	//____ _fillPipeline() _____________________________________________________
@@ -544,9 +893,9 @@ namespace wg
 				static bool bReported = false;
 				if (!bReported)
 				{
-					char msg[128];
-					sprintf_s(msg, "DX12Backend: BlendMode %d not supported, using Blend.\n", (int)blendMode);
-					OutputDebugStringA(msg);
+					char buffer[128];
+					sprintf_s(buffer, "BlendMode %d not supported, using Blend.", (int)blendMode);
+					GfxBase::throwError(ErrorLevel::Warning, ErrorCode::Other, buffer, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 					bReported = true;
 				}
 
@@ -612,7 +961,9 @@ namespace wg
 
 	bool DX12Backend::canBeCanvas(const TypeInfo& type) const
 	{
-		return true;
+		// Rendering into a surface is not supported yet, only into the window.
+
+		return false;
 	}
 
 	//____ waitForCompletion() __________________________________________________
@@ -660,18 +1011,21 @@ namespace wg
 		resourceDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
 
 
-		if (!_checkHR(m_pDX12Device->CreateCommittedResource(&heapProp, D3D12_HEAP_FLAG_NONE, &resourceDesc, initialState, 0, IID_PPV_ARGS(pointer.GetAddressOf())), "CreateCommittedResource"))
+		if (!CHECK_HR(m_pDX12Device->CreateCommittedResource(&heapProp, D3D12_HEAP_FLAG_NONE, &resourceDesc, initialState, 0, IID_PPV_ARGS(pointer.GetAddressOf())), "CreateCommittedResource"))
 			return;
 
 		pointer->SetName(name);
 	}
 
 
-	//____ _createFillPipelines() _____________________________________________
+	//____ _createPipelines() _________________________________________________
 
-	bool DX12Backend::_createFillPipelines()
+	bool DX12Backend::_createPipelines()
 	{
-		if (!_createFillRootSignature())
+		if (!_createRootSignature())
+			return false;
+
+		if (!_createSamplers())
 			return false;
 
 		if (!_compileVertexShader(m_fillVertexShaderBlob, g_fillVS))
@@ -680,34 +1034,93 @@ namespace wg
 		if (!_compilePixelShader(m_fillPixelShaderBlob, g_fillPS))
 			return false;
 
-		if (!_createFillPipeline(BlendMode::Blend, m_pFillPipelines[c_fillPipelineBlend]))
+		if (!_compileVertexShader(m_blitVertexShaderBlob, g_blitVS))
 			return false;
 
-		if (!_createFillPipeline(BlendMode::Replace, m_pFillPipelines[c_fillPipelineReplace]))
+		if (!_compilePixelShader(m_blitPixelShaderBlob, g_blitPS))
+			return false;
+
+		if (!_createPipeline(BlendMode::Blend, false, m_pFillPipelines[c_fillPipelineBlend]))
+			return false;
+
+		if (!_createPipeline(BlendMode::Replace, false, m_pFillPipelines[c_fillPipelineReplace]))
+			return false;
+
+		if (!_createPipeline(BlendMode::Blend, true, m_pBlitPipelines[c_fillPipelineBlend]))
+			return false;
+
+		if (!_createPipeline(BlendMode::Replace, true, m_pBlitPipelines[c_fillPipelineReplace]))
 			return false;
 
 		return true;
 	}
 
-	//____ _createFillRootSignature() _________________________________________
+	//____ _createRootSignature() _____________________________________________
 
-	bool DX12Backend::_createFillRootSignature()
+	bool DX12Backend::_createRootSignature()
 	{
-		// Two root constants holding the canvas scale for the vertex shader. Root
-		// constants instead of a constant buffer, since it is just two floats that
-		// only change when the canvas does.
+		// One root signature shared by all our pipelines. Switching pipelines is
+		// cheaper when they agree on the signature, and the differences between
+		// fill and blit are small enough that there is no reason to have two.
+		//
+		// Root parameter 0 holds the handful of values that change with canvas and
+		// blit source: canvas scale for the vertex shader, source size and flags
+		// for the pixel shader. Root constants instead of a constant buffer since
+		// there are so few of them and they change often.
+		//
+		// The color (t0) and extras (t1) buffers are root SRVs, which only need
+		// the buffer's address. The blit source texture (t2) and its sampler have
+		// to go through descriptor tables, there is no root descriptor for those.
 
-		D3D12_ROOT_PARAMETER rootParameter[1] = {};
+		D3D12_DESCRIPTOR_RANGE srvRange = {};
+		srvRange.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
+		srvRange.NumDescriptors = 1;
+		srvRange.BaseShaderRegister = 2;						// t2, the blit source.
+		srvRange.RegisterSpace = 0;
+		srvRange.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
+
+		D3D12_DESCRIPTOR_RANGE samplerRange = {};
+		samplerRange.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER;
+		samplerRange.NumDescriptors = 1;
+		samplerRange.BaseShaderRegister = 0;					// s0.
+		samplerRange.RegisterSpace = 0;
+		samplerRange.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
+
+		D3D12_ROOT_PARAMETER rootParameter[5] = {};
+
 		rootParameter[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS;
-		rootParameter[0].Constants.ShaderRegister = 0;
+		rootParameter[0].Constants.ShaderRegister = 0;			// b0.
 		rootParameter[0].Constants.RegisterSpace = 0;
-		rootParameter[0].Constants.Num32BitValues = 2;
-		rootParameter[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
+		// Eight rather than the five we use: HLSL rounds a constant buffer up to
+		// whole 16 byte registers, and the root signature has to cover all of it.
+
+		rootParameter[0].Constants.Num32BitValues = 8;			// canvasScale, textureSize, flags + padding.
+		rootParameter[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+
+		rootParameter[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_SRV;
+		rootParameter[1].Descriptor.ShaderRegister = 0;			// t0, colors.
+		rootParameter[1].Descriptor.RegisterSpace = 0;
+		rootParameter[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
+
+		rootParameter[2].ParameterType = D3D12_ROOT_PARAMETER_TYPE_SRV;
+		rootParameter[2].Descriptor.ShaderRegister = 1;			// t1, extras.
+		rootParameter[2].Descriptor.RegisterSpace = 0;
+		rootParameter[2].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
+
+		rootParameter[3].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+		rootParameter[3].DescriptorTable.NumDescriptorRanges = 1;
+		rootParameter[3].DescriptorTable.pDescriptorRanges = &srvRange;
+		rootParameter[3].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+
+		rootParameter[4].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+		rootParameter[4].DescriptorTable.NumDescriptorRanges = 1;
+		rootParameter[4].DescriptorTable.pDescriptorRanges = &samplerRange;
+		rootParameter[4].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
 
 		D3D12_VERSIONED_ROOT_SIGNATURE_DESC rsDesc = { };
 		rsDesc.Version = D3D_ROOT_SIGNATURE_VERSION_1_0;
 		rsDesc.Desc_1_0.pParameters = rootParameter;
-		rsDesc.Desc_1_0.NumParameters = 1;
+		rsDesc.Desc_1_0.NumParameters = 5;
 		rsDesc.Desc_1_0.NumStaticSamplers = 0;
 		rsDesc.Desc_1_0.pStaticSamplers = 0;
 		rsDesc.Desc_1_0.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
@@ -719,31 +1132,80 @@ namespace wg
 		if (FAILED(hr))
 		{
 			const char* pErrorMsg = pErrorBlob ? (const char*)pErrorBlob->GetBufferPointer() : "Unknown error";
-			char msg[512];
-			sprintf_s(msg, "DX12Backend: D3D12SerializeVersionedRootSignature failed, HRESULT = 0x%08lX: %s\n", (unsigned long)hr, pErrorMsg);
-			OutputDebugStringA(msg);
+			char buffer[512];
+			sprintf_s(buffer, "D3D12SerializeVersionedRootSignature failed, HRESULT = 0x%08lX: %s", (unsigned long)hr, pErrorMsg);
+			GfxBase::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, buffer, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			assert(false);
 			return false;
 		}
 
-		if (!_checkHR(m_pDX12Device->CreateRootSignature(0, pSerializedRS->GetBufferPointer(), pSerializedRS->GetBufferSize(), IID_PPV_ARGS(m_pFillRootSignature.GetAddressOf())), "CreateRootSignature"))
+		if (!CHECK_HR(m_pDX12Device->CreateRootSignature(0, pSerializedRS->GetBufferPointer(), pSerializedRS->GetBufferSize(), IID_PPV_ARGS(m_pRootSignature.GetAddressOf())), "CreateRootSignature"))
 			return false;
 
 		return true;
 	}
 
-	//____ _createFillPipeline() ______________________________________________
+	//____ _createSamplers() __________________________________________________
 
-	bool DX12Backend::_createFillPipeline(BlendMode blendMode, Microsoft::WRL::ComPtr<ID3D12PipelineState>& pPipeline)
+	bool DX12Backend::_createSamplers()
+	{
+		// Four samplers, covering the combinations a surface can ask for. The
+		// index is (tiling ? 2 : 0) + (bilinear ? 1 : 0), see _setBlitSource().
+
+		D3D12_DESCRIPTOR_HEAP_DESC heapDesc = {};
+		heapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER;
+		heapDesc.NumDescriptors = 4;
+		heapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+
+		if (!CHECK_HR(m_pDX12Device->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(m_pSamplerHeap.GetAddressOf())), "CreateDescriptorHeap"))
+			return false;
+
+		D3D12_CPU_DESCRIPTOR_HANDLE handle = m_pSamplerHeap->GetCPUDescriptorHandleForHeapStart();
+
+		for (int i = 0; i < 4; i++)
+		{
+			bool bTiling = (i & 2) != 0;
+			bool bBilinear = (i & 1) != 0;
+
+			D3D12_TEXTURE_ADDRESS_MODE addressMode = bTiling ? D3D12_TEXTURE_ADDRESS_MODE_WRAP : D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
+
+			D3D12_SAMPLER_DESC desc = {};
+			desc.Filter = bBilinear ? D3D12_FILTER_MIN_MAG_MIP_LINEAR : D3D12_FILTER_MIN_MAG_MIP_POINT;
+			desc.AddressU = addressMode;
+			desc.AddressV = addressMode;
+			desc.AddressW = addressMode;
+			desc.MipLODBias = 0.f;
+			desc.MaxAnisotropy = 1;
+			desc.ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER;
+			desc.MinLOD = 0.f;
+			desc.MaxLOD = D3D12_FLOAT32_MAX;
+
+			m_pDX12Device->CreateSampler(&desc, handle);
+
+			handle.ptr += m_samplerDescriptorSize;
+		}
+
+		return true;
+	}
+
+	//____ _createPipeline() __________________________________________________
+
+	bool DX12Backend::_createPipeline(BlendMode blendMode, bool bBlit, Microsoft::WRL::ComPtr<ID3D12PipelineState>& pPipeline)
 	{
 		// Setup the graphics pipeline state.
 
+		auto& vertexShaderBlob = bBlit ? m_blitVertexShaderBlob : m_fillVertexShaderBlob;
+		auto& pixelShaderBlob = bBlit ? m_blitPixelShaderBlob : m_fillPixelShaderBlob;
+
+		if (!vertexShaderBlob || !pixelShaderBlob)
+			return false;
+
 		D3D12_GRAPHICS_PIPELINE_STATE_DESC desc = {};
-		desc.pRootSignature = m_pFillRootSignature.Get();
-		desc.VS.pShaderBytecode = m_fillVertexShaderBlob->GetBufferPointer();
-		desc.VS.BytecodeLength = m_fillVertexShaderBlob->GetBufferSize();
-		desc.PS.pShaderBytecode = m_fillPixelShaderBlob->GetBufferPointer();
-		desc.PS.BytecodeLength = m_fillPixelShaderBlob->GetBufferSize();
+		desc.pRootSignature = m_pRootSignature.Get();
+		desc.VS.pShaderBytecode = vertexShaderBlob->GetBufferPointer();
+		desc.VS.BytecodeLength = vertexShaderBlob->GetBufferSize();
+		desc.PS.pShaderBytecode = pixelShaderBlob->GetBufferPointer();
+		desc.PS.BytecodeLength = pixelShaderBlob->GetBufferSize();
 
 		desc.BlendState.AlphaToCoverageEnable = false;
 		desc.BlendState.IndependentBlendEnable = false;
@@ -776,16 +1238,21 @@ namespace wg
 		desc.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_LESS;
 		desc.DepthStencilState.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
 
+		// One vertex layout for both. The fill shaders ignore EXTRASOFS, which is
+		// fine, the input layout is allowed to offer more than a shader reads.
+
 		D3D12_INPUT_ELEMENT_DESC elements[] = {
 			{ "POSITION", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 0,
 			D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA , 0 },
-			{ "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 8,
+			{ "COLOROFS", 0, DXGI_FORMAT_R32_UINT, 0, 8,
+			D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+			{ "EXTRASOFS", 0, DXGI_FORMAT_R32_UINT, 0, 12,
 			D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
 		};
 
 		D3D12_INPUT_LAYOUT_DESC inputLayout = {};
 
-		inputLayout.NumElements = 2;
+		inputLayout.NumElements = 3;
 		inputLayout.pInputElementDescs = elements;
 
 
@@ -798,7 +1265,7 @@ namespace wg
 		desc.NodeMask = 0;
 		desc.Flags = D3D12_PIPELINE_STATE_FLAG_NONE;
 
-		if (!_checkHR(m_pDX12Device->CreateGraphicsPipelineState(&desc, IID_PPV_ARGS(pPipeline.GetAddressOf())), "CreateGraphicsPipelineState"))
+		if (!CHECK_HR(m_pDX12Device->CreateGraphicsPipelineState(&desc, IID_PPV_ARGS(pPipeline.GetAddressOf())), "CreateGraphicsPipelineState"))
 			return false;
 
 		return true;
@@ -816,9 +1283,9 @@ namespace wg
 		if (FAILED(hr))
 		{
 			const char* pError = errorMsg ? (const char*)errorMsg->GetBufferPointer() : "Unknown error";
-			char msg[1024];
-			sprintf_s(msg, "DX12Backend: vertex shader compile failed, HRESULT = 0x%08lX: %s\n", (unsigned long)hr, pError);
-			OutputDebugStringA(msg);
+			char buffer[1024];
+			sprintf_s(buffer, "Vertex shader compile failed, HRESULT = 0x%08lX: %s", (unsigned long)hr, pError);
+			GfxBase::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, buffer, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			assert(false);
 			return false;
 		}
@@ -838,9 +1305,9 @@ namespace wg
 		if (FAILED(hr))
 		{
 			const char* pError = errorMsg ? (const char*)errorMsg->GetBufferPointer() : "Unknown error";
-			char msg[1024];
-			sprintf_s(msg, "DX12Backend: pixel shader compile failed, HRESULT = 0x%08lX: %s\n", (unsigned long)hr, pError);
-			OutputDebugStringA(msg);
+			char buffer[1024];
+			sprintf_s(buffer, "Pixel shader compile failed, HRESULT = 0x%08lX: %s", (unsigned long)hr, pError);
+			GfxBase::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, buffer, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			assert(false);
 			return false;
 		}
