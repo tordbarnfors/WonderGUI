@@ -82,7 +82,12 @@ namespace wg
 
 		// ID3D12Resource
 
-		bool	setDefaultCanvas(D3D12_CPU_DESCRIPTOR_HANDLE renderTargetView, ID3D12Resource * renderTargetBuffer, SizeSPX size, int scale);
+		// renderTargetFormat is the format of the view, not of the buffer. They
+		// differ when the window wants an sRGB view over a plain swap chain buffer,
+		// and it is the view's format the pipelines have to match.
+
+		bool	setDefaultCanvas(D3D12_CPU_DESCRIPTOR_HANDLE renderTargetView, ID3D12Resource * renderTargetBuffer,
+								 DXGI_FORMAT renderTargetFormat, SizeSPX size, int scale);
 
 		const CanvasInfo* canvasInfo(CanvasRef ref) const override;
 
@@ -129,8 +134,9 @@ namespace wg
 		bool _createSamplers();
 		bool _createPipeline(BlendMode blendMode, bool bBlit, DXGI_FORMAT rtvFormat, Microsoft::WRL::ComPtr<ID3D12PipelineState>& pPipeline);
 
-		BlendMode _supportedBlendMode(BlendMode blendMode);
+		BlendMode _normalizeBlendMode(BlendMode blendMode);
 		ID3D12PipelineState* _pipeline(BlendMode blendMode, bool bBlit);
+		void _setBlendFactor();					// Morph needs a constant blend factor.
 		bool _setPipeline(ID3D12PipelineState* pPipeline);
 
 		void _setCanvas(DX12Surface* pCanvas);
@@ -157,7 +163,7 @@ namespace wg
 
 		D3D12_CPU_DESCRIPTOR_HANDLE	m_defaultCanvasRTV = {};
 		ID3D12Resource*		m_defaultCanvasBuffer = nullptr;
-		DXGI_FORMAT			m_defaultCanvasFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
+		DXGI_FORMAT			m_defaultCanvasFormat = DXGI_FORMAT_UNKNOWN;		// Until setDefaultCanvas() says otherwise.
 		CanvasInfo			m_defaultCanvas;
 		CanvasInfo			m_dummyCanvas;
 
@@ -207,6 +213,7 @@ namespace wg
 
 		HiColor					m_tintColor = HiColor::White;
 		BlendMode				m_activeBlendMode = BlendMode::Blend;
+		float					m_morphFactor = 0.5f;			// Only used by BlendMode::Morph.
 		ID3D12PipelineState*	m_pActivePipeline = nullptr;
 
 		// Blit source, set through StateChange commands.

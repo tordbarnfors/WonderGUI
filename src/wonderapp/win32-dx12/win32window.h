@@ -113,6 +113,11 @@ protected:
 	Microsoft::WRL::ComPtr<ID3D12Resource>			m_renderBuffers[c_nbBuffers];
 	D3D12_CPU_DESCRIPTOR_HANDLE						m_rtvHandles[c_nbBuffers];
 
+	// The format of the views, which is not the format of the swap chain buffers
+	// when we ask for sRGB. See _createSwapChainBuffers().
+
+	DXGI_FORMAT										m_rtvFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
+
 	UINT m_currentBuffer = 0;		// Always read from GetCurrentBackBufferIndex(), never advanced by hand.
 
 	UINT m_width = 0, m_height = 0;
