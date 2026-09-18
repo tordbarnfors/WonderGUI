@@ -33,5 +33,15 @@ const char DX12Backend::g_fillPS[] =
 @INSERTLINEQUOTED <shaders/ps_fill.hlsl>
 ;
 
+const char DX12Backend::g_blitVS[] =
+
+@INSERTLINEQUOTED <shaders/vs_blit.hlsl>
+;
+
+const char DX12Backend::g_blitPS[] =
+
+@INSERTLINEQUOTED <shaders/ps_blit.hlsl>
+;
+
 
 }

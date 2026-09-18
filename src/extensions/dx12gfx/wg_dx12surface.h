@@ -25,6 +25,10 @@
 
 #include <wg_surface.h>
 
+#include <wrl.h>
+#include <d3d12.h>
+#include <dxgi1_6.h>
+
 #include <vector>
 
 namespace wg
@@ -78,6 +82,22 @@ namespace wg
 		void					pullPixels(const PixelBuffer& buffer, const RectI& bufferRect, bool bAutoNotify = true) override;
 		void					freePixelBuffer(const PixelBuffer& buffer) override;
 
+		//.____ Misc __________________________________________________________
+
+		// Set by DX12Backend before any surface is created. All surfaces share
+		// one copy queue for their uploads.
+
+		static bool				setDevice( ID3D12Device * pDevice );
+		static void				exitDevice();
+
+		// Used by DX12Backend when the surface is set as blit source.
+
+		ID3D12Resource*				texture() const { return m_texture.Get(); }
+		D3D12_CPU_DESCRIPTOR_HANDLE	textureSRV() const { return m_srvHandle; }
+		bool						isAlphaOnly() const { return m_bAlphaOnly; }
+
+		void					syncTexture();			// Uploads pending pixel changes, if any.
+
 
 	protected:
 		DX12Surface(const Blueprint& blueprint);
@@ -87,6 +107,38 @@ namespace wg
 
 		~DX12Surface();
 
+		void			_setupTexture( const void * pPixels, int pitch, PixelFormat srcFormat, const PixelDescription * pSrcPixelDesc,
+									   const Color8 * pSrcPalette, const Color8 * pDstPalette, int srcPaletteSize );
+
+		void			_addDirtyRect( const RectI& rect );
+
+		static DXGI_FORMAT	_dxgiFormat( PixelFormat format );
+		static bool			_initCopyResources();
+
+
+		Microsoft::WRL::ComPtr<ID3D12Resource>			m_texture;			// Lives in COMMON state, promoted on use.
+		Microsoft::WRL::ComPtr<ID3D12Resource>			m_uploadBuffer;		// Holds our pixels, readable and writable by the CPU.
+		Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>	m_srvHeap;			// Holds this surface's SRV, not shader visible.
+
+		D3D12_CPU_DESCRIPTOR_HANDLE	m_srvHandle = {};
+
+		uint8_t *		m_pUploadData = nullptr;		// Permanently mapped content of m_uploadBuffer.
+		int				m_uploadPitch = 0;				// Bytes per line, aligned as D3D12 requires for texture copies.
+		int				m_pixelSize = 0;				// Bytes per pixel.
+		bool			m_bAlphaOnly = false;			// Alpha_8, no color channels.
+
+		RectI			m_dirtyRect;					// Area not yet uploaded to the texture. Empty when in sync.
+
+		//
+
+		static ID3D12Device *									s_pDevice;
+
+		static Microsoft::WRL::ComPtr<ID3D12CommandQueue>		s_copyQueue;
+		static Microsoft::WRL::ComPtr<ID3D12CommandAllocator>	s_copyAllocator;
+		static Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList>s_copyList;
+		static Microsoft::WRL::ComPtr<ID3D12Fence>				s_copyFence;
+		static HANDLE											s_copyFenceEvent;
+		static UINT64											s_copyFenceValue;
 	};
 
 

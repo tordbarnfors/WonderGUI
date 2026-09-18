@@ -239,10 +239,11 @@ void Win32Window::paint()
 
 		if (hr == DXGI_ERROR_DEVICE_REMOVED || hr == DXGI_ERROR_DEVICE_RESET)
 		{
-			char msg[128];
-			sprintf_s(msg, "Win32Window: device lost on Present1(), GetDeviceRemovedReason() = 0x%08lX\n",
+			char buffer[128];
+			sprintf_s(buffer, "Device lost on Present1(), GetDeviceRemovedReason() = 0x%08lX",
 				(unsigned long)m_pDX12Device->GetDeviceRemovedReason());
-			OutputDebugStringA(msg);
+
+			Base::throwError(ErrorLevel::Critical, ErrorCode::RenderFailure, buffer, nullptr, nullptr, __func__, __FILE__, __LINE__);
 		}
 	}
 

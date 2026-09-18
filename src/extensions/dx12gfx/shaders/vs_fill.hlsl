@@ -3,11 +3,13 @@ cbuffer CanvasInfo : register(b0)
     float2 canvasScale;     // 2/canvasWidth, 2/canvasHeight, in pixels.
 };
 
+StructuredBuffer<float4> colors : register(t0);
+
 
 struct VS_INPUT
 {
     float2 position : POSITION;     // Canvas pixels, origin top left.
-    float4 color : COLOR;
+    uint colorOfs : COLOROFS;       // Offset into the color buffer.
 };
 
 
@@ -28,7 +30,7 @@ VS_OUTPUT main(VS_INPUT input)
                              1.0f - input.position.y * canvasScale.y,
                              0.0f, 1.0f);
 
-    output.color = input.color;
+    output.color = colors[input.colorOfs];
 
     return output;
 }

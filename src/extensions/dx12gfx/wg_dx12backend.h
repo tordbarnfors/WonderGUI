@@ -34,6 +34,8 @@ namespace wg
 {
 
 
+	class DX12Surface;
+
 	class DX12Backend;
 	typedef	StrongPtr<DX12Backend>	DX12Backend_p;
 	typedef	WeakPtr<DX12Backend>	DX12Backend_wp;
@@ -93,6 +95,21 @@ namespace wg
 		void	waitForCompletion() override;
 
 	protected:
+
+		struct Vertex {
+			float		x, y;		// Canvas pixels, origin top left. Subpixel positions allowed.
+			uint32_t	colorOfs;	// Offset into the color buffer.
+			uint32_t	extrasOfs;	// Offset into the extras buffer. Only used by blits.
+		};
+
+		struct ColorDX12 {
+			float	r, g, b, a;
+		};
+
+		struct ExtrasDX12 {
+			float	x, y, z, w;
+		};
+
 		DX12Backend(ID3D12Device* pDX12Device, ID3D12CommandQueue* pDX12CommandQueue);
 		~DX12Backend();
 
@@ -100,12 +117,23 @@ namespace wg
 
 		void _createBuffer(Microsoft::WRL::ComPtr<ID3D12Resource>& pointer, int nbBytes, D3D12_HEAP_TYPE heapType, D3D12_RESOURCE_STATES initialState, LPCWSTR name);
 
-		bool _createFillPipelines();
-		bool _createFillRootSignature();
-		bool _createFillPipeline(BlendMode blendMode, Microsoft::WRL::ComPtr<ID3D12PipelineState>& pPipeline);
+		bool _createPipelines();
+		bool _createRootSignature();
+		bool _createSamplers();
+		bool _createPipeline(BlendMode blendMode, bool bBlit, Microsoft::WRL::ComPtr<ID3D12PipelineState>& pPipeline);
 
 		ID3D12PipelineState* _fillPipeline(BlendMode blendMode);
+		ID3D12PipelineState* _blitPipeline(BlendMode blendMode);
+		bool _setPipeline(ID3D12PipelineState* pPipeline);
+
 		void _drawFillRects(const RectSPX* pRects, int nRects, HiColor color);
+		void _drawBlitRects(const uint16_t*& pCmd, const RectSPX*& pRects, int nRects, int version);
+
+		void _setBlitSource(DX12Surface* pSurface);
+		bool _bindBlitSource();					// Puts source and sampler in place for the coming draw.
+
+		int _addColor(HiColor color);			// Returns offset into color buffer, -1 if full.
+		int _addExtras(const ExtrasDX12& first, const ExtrasDX12& second);	// Returns offset, -1 if full.
 
 		bool _compileVertexShader(Microsoft::WRL::ComPtr<ID3DBlob>& shaderBlob, LPCVOID pSrc );
 		bool _compilePixelShader(Microsoft::WRL::ComPtr<ID3DBlob>& shaderBlob, LPCVOID pSrc);
@@ -134,22 +162,36 @@ namespace wg
 		const Transform* m_pTransformsBeg = nullptr;
 		const Transform* m_pTransformsEnd = nullptr;
 
-		struct Vertex {
-			float	x, y;			// Canvas pixels, origin top left. Subpixel positions allowed.
-			float	r, g, b, a;
-		};
-
-		const static int	c_vertexBufferSize = 512*1024;		// Per frame resource. 144 bytes per fill rect.
+		const static int	c_vertexBufferSize = 512*1024;		// Per frame resource. 96 bytes per rect.
+		const static int	c_colorBufferSize = 64*1024;		// Per frame resource. 16 bytes per color.
+		const static int	c_extrasBufferSize = 64*1024;		// Per frame resource. 32 bytes per blit rect.
+		const static int	c_nbSRVDescriptors = 1024;			// Per frame resource. One per blit source change.
 
 		Vertex*	m_pVertexBeg = nullptr;		// Start of the current frame's vertex buffer.
 		Vertex* m_pVertexEnd = nullptr;
 		Vertex* m_pVertexPtr = nullptr;
+
+		ColorDX12* m_pColorBeg = nullptr;	// Start of the current frame's color buffer.
+		ColorDX12* m_pColorEnd = nullptr;
+		ColorDX12* m_pColorPtr = nullptr;
+
+		ExtrasDX12* m_pExtrasBeg = nullptr;	// Start of the current frame's extras buffer.
+		ExtrasDX12* m_pExtrasEnd = nullptr;
+		ExtrasDX12* m_pExtrasPtr = nullptr;
 
 		// State tracked while processing commands.
 
 		HiColor					m_tintColor = HiColor::White;
 		BlendMode				m_activeBlendMode = BlendMode::Blend;
 		ID3D12PipelineState*	m_pActivePipeline = nullptr;
+
+		// Blit source, set through StateChange commands.
+
+		DX12Surface *			m_pBlitSource = nullptr;
+		SizeI					m_blitSourceSize;
+		bool					m_bBlitSourceAlphaOnly = false;
+		int						m_blitSourceSampler = 0;			// Index into the sampler heap.
+		bool					m_bBlitSourceBound = false;			// Cleared when source or session changes.
 
 
 		Microsoft::WRL::ComPtr<ID3D12Device>		m_pDX12Device;
@@ -159,7 +201,13 @@ namespace wg
 		{
 			Microsoft::WRL::ComPtr<ID3D12CommandAllocator>	commandAllocator;
 			Microsoft::WRL::ComPtr<ID3D12Resource>			vertexBuffer;
+			Microsoft::WRL::ComPtr<ID3D12Resource>			colorBuffer;
+			Microsoft::WRL::ComPtr<ID3D12Resource>			extrasBuffer;
+			Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>	srvHeap;						// Shader visible, holds blit source descriptors.
 			Vertex*											pVertexBufferData = nullptr;	// Permanently mapped.
+			ColorDX12*										pColorBufferData = nullptr;		// Permanently mapped.
+			ExtrasDX12*										pExtrasBufferData = nullptr;	// Permanently mapped.
+			int												nSRVDescriptors = 0;			// Used so far this frame.
 			UINT64											fenceValue;
 		};
 
@@ -183,18 +231,29 @@ namespace wg
 		const static int									c_nbFillPipelines = 2;
 
 		Microsoft::WRL::ComPtr<ID3D12PipelineState>			m_pFillPipelines[c_nbFillPipelines];
-		Microsoft::WRL::ComPtr<ID3D12RootSignature>			m_pFillRootSignature;
+		Microsoft::WRL::ComPtr<ID3D12PipelineState>			m_pBlitPipelines[c_nbFillPipelines];
+		Microsoft::WRL::ComPtr<ID3D12RootSignature>			m_pRootSignature;				// Shared by fill and blit pipelines.
+
+		// Samplers, in the order nearest/bilinear and clamp/tile.
+
+		Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>		m_pSamplerHeap;
+		UINT												m_srvDescriptorSize = 0;
+		UINT												m_samplerDescriptorSize = 0;
 
 
 		//
 
 		Microsoft::WRL::ComPtr<ID3DBlob>					m_fillVertexShaderBlob;
 		Microsoft::WRL::ComPtr<ID3DBlob>					m_fillPixelShaderBlob;
+		Microsoft::WRL::ComPtr<ID3DBlob>					m_blitVertexShaderBlob;
+		Microsoft::WRL::ComPtr<ID3DBlob>					m_blitPixelShaderBlob;
 
 		// Source code for shaders:
 
 		static const char g_fillVS[];
 		static const char g_fillPS[];
+		static const char g_blitVS[];
+		static const char g_blitPS[];
 
 	};
 
