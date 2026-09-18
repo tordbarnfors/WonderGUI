@@ -117,6 +117,20 @@ namespace wg
 			float	x, y, z, w;
 		};
 
+		// What a pipeline draws. Together with blend mode and canvas format this
+		// is what tells one pipeline from another.
+
+		enum class PipelineKind
+		{
+			Fill,			// Rectangles on whole pixels.
+			FillAA,			// Rectangles that aren't, with coverage worked out per pixel.
+			Blit,
+			Blur,			// Same geometry as a blit, nine taps instead of one.
+			Line,
+
+			Size
+		};
+
 		DX12Backend(ID3D12Device* pDX12Device, ID3D12CommandQueue* pDX12CommandQueue);
 		~DX12Backend();
 
@@ -132,18 +146,22 @@ namespace wg
 		bool _createPipelineResources();
 		bool _createRootSignature();
 		bool _createSamplers();
-		bool _createPipeline(BlendMode blendMode, bool bBlit, DXGI_FORMAT rtvFormat, Microsoft::WRL::ComPtr<ID3D12PipelineState>& pPipeline);
+		bool _createPipeline(BlendMode blendMode, PipelineKind kind, DXGI_FORMAT rtvFormat, Microsoft::WRL::ComPtr<ID3D12PipelineState>& pPipeline);
 
 		BlendMode _normalizeBlendMode(BlendMode blendMode);
-		ID3D12PipelineState* _pipeline(BlendMode blendMode, bool bBlit);
+		ID3D12PipelineState* _pipeline(BlendMode blendMode, PipelineKind kind);
 		void _setBlendFactor();					// Morph needs a constant blend factor.
+
+		float _scaleThickness(float thickness, float slope);
 		bool _setPipeline(ID3D12PipelineState* pPipeline);
 
 		void _setCanvas(DX12Surface* pCanvas);
 		void _transitionCanvas(DX12Surface* pCanvas, D3D12_RESOURCE_STATES state);
 
 		void _drawFillRects(const RectSPX* pRects, int nRects, HiColor color);
-		void _drawBlitRects(const uint16_t*& pCmd, const RectSPX*& pRects, int nRects, int version);
+		void _drawFillRun(PipelineKind kind, int firstVertex, int nRects);
+		void _drawBlitRects(const uint16_t*& pCmd, const RectSPX*& pRects, int nRects, int version, PipelineKind kind);
+		void _drawLines(const uint16_t*& pCmd, const RectSPX*& pRects, const HiColor*& pColors, int nClipRects, int nLines);
 
 		bool _isDX12Surface(const Object* pObject) const;
 		static bool _isDX12SurfaceType(const TypeInfo& type);
@@ -152,6 +170,8 @@ namespace wg
 		bool _bindBlitSource();					// Puts source and sampler in place for the coming draw.
 
 		int _addColor(HiColor color);			// Returns offset into color buffer, -1 if full.
+		int _addExtras(const ExtrasDX12& extras);							// Returns offset, -1 if full.
+		int _addBlurExtras();												// Returns offset to 18 entries, -1 if full.
 		int _addExtras(const ExtrasDX12& first, const ExtrasDX12& second);	// Returns offset, -1 if full.
 
 		bool _compileVertexShader(Microsoft::WRL::ComPtr<ID3DBlob>& shaderBlob, LPCVOID pSrc );
@@ -192,9 +212,20 @@ namespace wg
 		const Transform* m_pTransformsBeg = nullptr;
 		const Transform* m_pTransformsEnd = nullptr;
 
-		const static int	c_vertexBufferSize = 512*1024;		// Per frame resource. 96 bytes per rect.
-		const static int	c_colorBufferSize = 64*1024;		// Per frame resource. 16 bytes per color.
-		const static int	c_extrasBufferSize = 64*1024;		// Per frame resource. 32 bytes per blit rect.
+		// All three are per frame resource, and a frame draws from them until
+		// beginRender() rewinds. A rect costs 96 bytes of vertices; it also costs
+		// 16 bytes of extras if it is a blit (32, it needs two), a subpixel fill or
+		// a line, and colors go one per fill command but one per line. So these are
+		// sized against what the vertex buffer can hold rather than against each
+		// other, with room for every rect in it to be one that needs extras.
+		//
+		// A blur command spends 18 entries of its own on its brush, which comes out
+		// of the same slack. A frame of nothing but blurs would run out after a few
+		// hundred of them, long before the vertex buffer is full.
+
+		const static int	c_vertexBufferSize = 512*1024;		// ~5400 rects.
+		const static int	c_colorBufferSize = 128*1024;		// 16 bytes per color.
+		const static int	c_extrasBufferSize = 256*1024;		// 16 bytes each, two per blit rect.
 		const static int	c_nbSRVDescriptors = 1024;			// Per frame resource. One per blit source change.
 
 		Vertex*	m_pVertexBeg = nullptr;		// Start of the current frame's vertex buffer.
@@ -214,6 +245,13 @@ namespace wg
 		HiColor					m_tintColor = HiColor::White;
 		BlendMode				m_activeBlendMode = BlendMode::Blend;
 		float					m_morphFactor = 0.5f;			// Only used by BlendMode::Morph.
+
+		// The blurbrush, set through StateChange commands. The radius is in spx,
+		// turned into texture coordinates at draw time, when we know what we are
+		// reading from.
+
+		int						m_blurRadius = 0;
+		float					m_blurColorMtx[9][4] = {};
 		ID3D12PipelineState*	m_pActivePipeline = nullptr;
 
 		// Blit source, set through StateChange commands.
@@ -282,17 +320,25 @@ namespace wg
 
 		//
 
-		Microsoft::WRL::ComPtr<ID3DBlob>					m_fillVertexShaderBlob;
-		Microsoft::WRL::ComPtr<ID3DBlob>					m_fillPixelShaderBlob;
-		Microsoft::WRL::ComPtr<ID3DBlob>					m_blitVertexShaderBlob;
-		Microsoft::WRL::ComPtr<ID3DBlob>					m_blitPixelShaderBlob;
+		Microsoft::WRL::ComPtr<ID3DBlob>					m_vertexShaderBlobs[int(PipelineKind::Size)];
+		Microsoft::WRL::ComPtr<ID3DBlob>					m_pixelShaderBlobs[int(PipelineKind::Size)];
+
+		// Widths a line of a given slope needs to keep an even thickness. Indexed
+		// by slope * 16, interpolated in between. See _scaleThickness().
+
+		float												m_lineThicknessTable[17];
 
 		// Source code for shaders:
 
 		static const char g_fillVS[];
 		static const char g_fillPS[];
+		static const char g_fillAAVS[];
+		static const char g_fillAAPS[];
 		static const char g_blitVS[];
 		static const char g_blitPS[];
+		static const char g_blurPS[];
+		static const char g_lineVS[];
+		static const char g_linePS[];
 
 	};
 

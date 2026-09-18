@@ -28,10 +28,14 @@
 
 #include <cstdio>
 #include <cstring>
+#include <cstdlib>
+#include <cmath>
 #include <cassert>
 #include <vector>
+#include <utility>
 
 #include <wg_gfxbase.h>
+#include <wg_gfxutil.h>
 
 
 
@@ -45,6 +49,17 @@ namespace wg
 	// window must present full frames while this is on, see beginSession().
 
 	static constexpr bool c_bDebugClearUpdateRects = false;
+
+	// Shaders were compiled unoptimized whatever the build, which the blur shader
+	// with its nine taps is the first one to really feel.
+
+#ifdef _DEBUG
+	static constexpr UINT c_shaderCompileFlags = D3DCOMPILE_ENABLE_STRICTNESS | D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION
+												| D3DCOMPILE_WARNINGS_ARE_ERRORS | D3DCOMPILE_ALL_RESOURCES_BOUND;
+#else
+	static constexpr UINT c_shaderCompileFlags = D3DCOMPILE_ENABLE_STRICTNESS | D3DCOMPILE_OPTIMIZATION_LEVEL3
+												| D3DCOMPILE_WARNINGS_ARE_ERRORS | D3DCOMPILE_ALL_RESOURCES_BOUND;
+#endif
 
 	//____ _checkHR() __________________________________________________________
 	//
@@ -485,6 +500,22 @@ namespace wg
 		m_tintColor = HiColor::White;
 		m_activeBlendMode = BlendMode::Blend;
 		m_morphFactor = 0.5f;
+
+		// No brush until a StateChange says otherwise. Should one ever be missing,
+		// this makes a blur come out as a plain blit rather than as something built
+		// from whatever the previous session left behind.
+
+		m_blurRadius = 0;
+
+		for (int i = 0; i < 9; i++)
+			for (int j = 0; j < 4; j++)
+				m_blurColorMtx[i][j] = 0.f;
+
+		m_blurColorMtx[4][0] = 1.f;
+		m_blurColorMtx[4][1] = 1.f;
+		m_blurColorMtx[4][2] = 1.f;
+		m_blurColorMtx[4][3] = 1.f;
+
 		_setBlitSource(nullptr);
 
 		_bindSessionState();
@@ -797,7 +828,24 @@ namespace wg
 					}
 
 					if (statesChanged & uint8_t(StateChange::Blur))
-						p += 28;								// Blur not supported yet.
+					{
+						m_blurRadius = *p++;
+
+						// Nine taps, each with its own weight per color channel. The
+						// values are 15 bit fixed point, so they can go above one.
+
+						for (int i = 0; i < 9; i++)
+						{
+							m_blurColorMtx[i][0] = p[i] / 32768.f;
+							m_blurColorMtx[i][1] = p[9+i] / 32768.f;
+							m_blurColorMtx[i][2] = p[18+i] / 32768.f;
+							m_blurColorMtx[i][3] = 0.f;
+						}
+
+						m_blurColorMtx[4][3] = 1.f;
+
+						p += 27;
+					}
 
 					// Take care of alignment
 
@@ -822,53 +870,26 @@ namespace wg
 				case Command::Tile:
 				case Command::Blur:
 				{
-					// The first three are the same draw for us. Whether the source is
-					// clamped or tiled is a property of the surface, and the rects have
-					// already been clipped by GfxDeviceGen2.
-					//
-					// Blur carries exactly the same payload, so it draws as a plain
-					// blit until we have the blur shader. Sharp instead of blurred is
-					// wrong, but it keeps the rest of the frame intact and exercises
-					// the same geometry.
-
-					if (cmd == Command::Blur)
-					{
-						static bool bReported = false;
-						if (!bReported)
-						{
-							GfxBase::throwError(ErrorLevel::Warning, ErrorCode::Other, "Blur is not implemented, drawing an unblurred blit instead.",
-								this, &TYPEINFO, __func__, __FILE__, __LINE__);
-							bReported = true;
-						}
-					}
+					// All four carry the same payload and cover the same geometry.
+					// Whether the source is clamped or tiled is a property of the
+					// surface, and the rects have already been clipped by
+					// GfxDeviceGen2, so only a blur draws differently - it reads nine
+					// texels per pixel instead of one.
 
 					int32_t nRects = *p++;
 
-					_drawBlitRects(p, pRects, nRects, version);
+					_drawBlitRects(p, pRects, nRects, version,
+								   cmd == Command::Blur ? PipelineKind::Blur : PipelineKind::Blit);
 					break;
 				}
 
 				case Command::Line:
 				{
-					// Not implemented yet. We still have to step over the payload
-					// exactly, or everything after it in the session is lost.
-
 					int32_t nClipRects = *p++;
 					int32_t nLines = *p++;
 					p++;								// padding
 
-					p += nLines * 10;					// Per line: from and to as spx, thickness, padding.
-					pColors += nLines;					// One color each.
-					pRects += nClipRects;
-
-					static bool bReported = false;
-					if (!bReported)
-					{
-						GfxBase::throwError(ErrorLevel::Warning, ErrorCode::Other, "Command::Line is not implemented, lines are skipped.",
-							this, &TYPEINFO, __func__, __FILE__, __LINE__);
-						bReported = true;
-					}
-
+					_drawLines(p, pRects, pColors, nClipRects, nLines);
 					break;
 				}
 
@@ -924,32 +945,16 @@ namespace wg
 	}
 
 	//____ _drawFillRects() ____________________________________________________
+	//
+	// A rectangle that lands on whole pixels is just a quad. One that doesn't needs
+	// the coverage of the pixels along its edges worked out, which is a different
+	// pipeline and an entry in the extras buffer. A single command can hold both
+	// kinds, so runs are drawn as the kind changes, the way MetalBackend does it.
 
 	void DX12Backend::_drawFillRects(const RectSPX* pRects, int nRects, HiColor color)
 	{
 		if (nRects <= 0 || !m_pVertexPtr)
 			return;
-
-		if (!_setPipeline(_pipeline(m_activeBlendMode, false)))
-			return;
-
-		int nVerticesLeft = int(m_pVertexEnd - m_pVertexPtr);
-
-		if (nRects * 6 > nVerticesLeft)
-		{
-			nRects = nVerticesLeft / 6;
-
-			static bool bReported = false;
-			if (!bReported)
-			{
-				GfxBase::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, "Vertex buffer full, fills dropped. Increase c_vertexBufferSize.",
-					this, &TYPEINFO, __func__, __FILE__, __LINE__);
-				bReported = true;
-			}
-
-			if (nRects == 0)
-				return;
-		}
 
 		// One color for the whole command, the vertices only carry its offset.
 
@@ -957,22 +962,74 @@ namespace wg
 		if (colorOfs < 0)
 			return;
 
+		PipelineKind kind = PipelineKind::Fill;
+
 		int firstVertex = int(m_pVertexPtr - m_pVertexBeg);
+		int nRectsInRun = 0;
 
 		for (int i = 0; i < nRects; i++)
 		{
 			const RectSPX& rect = pRects[i];
 
-			// spx to pixels, rounded to the nearest pixel edge. Rects that are
-			// already pixel aligned (the common case) are unaffected.
-			//
-			// TODO: subpixel precision needs coverage calculated in the pixel
-			// shader, the way GlBackend does it.
+			spx x2spx = rect.x + rect.w;
+			spx y2spx = rect.y + rect.h;
 
-			float x1 = float((rect.x + 32) >> 6);
-			float y1 = float((rect.y + 32) >> 6);
-			float x2 = float((rect.x + rect.w + 32) >> 6);
-			float y2 = float((rect.y + rect.h + 32) >> 6);
+			PipelineKind rectKind = (((rect.x | rect.y | x2spx | y2spx) & 63) == 0) ? PipelineKind::Fill : PipelineKind::FillAA;
+
+			if (rectKind != kind)
+			{
+				_drawFillRun(kind, firstVertex, nRectsInRun);
+
+				kind = rectKind;
+				firstVertex = int(m_pVertexPtr - m_pVertexBeg);
+				nRectsInRun = 0;
+			}
+
+			if (m_pVertexEnd - m_pVertexPtr < 6)
+			{
+				static bool bReported = false;
+				if (!bReported)
+				{
+					GfxBase::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, "Vertex buffer full, fills dropped. Increase c_vertexBufferSize.",
+						this, &TYPEINFO, __func__, __FILE__, __LINE__);
+					bReported = true;
+				}
+
+				break;
+			}
+
+			int extrasOfs = 0;
+
+			float x1, y1, x2, y2;
+
+			if (kind == PipelineKind::Fill)
+			{
+				x1 = float(rect.x >> 6);
+				y1 = float(rect.y >> 6);
+				x2 = float(x2spx >> 6);
+				y2 = float(y2spx >> 6);
+			}
+			else
+			{
+				// Center and radius of the rectangle, in pixels, for the shader.
+
+				float radiusX = rect.w / 128.f;
+				float radiusY = rect.h / 128.f;
+
+				ExtrasDX12 centerAndRadius = { rect.x / 64.f + radiusX, rect.y / 64.f + radiusY, radiusX, radiusY };
+
+				extrasOfs = _addExtras(centerAndRadius);
+				if (extrasOfs < 0)
+					break;
+
+				// The quad has to cover every pixel the rectangle touches, so it
+				// reaches out to whole pixels in both directions.
+
+				x1 = float(rect.x >> 6);
+				y1 = float(rect.y >> 6);
+				x2 = float((x2spx + 63) >> 6);
+				y2 = float((y2spx + 63) >> 6);
+			}
 
 			const float coords[6][2] = { {x1,y1}, {x2,y1}, {x2,y2},
 										 {x1,y1}, {x2,y2}, {x1,y2} };
@@ -982,13 +1039,211 @@ namespace wg
 				m_pVertexPtr->x = coords[vertex][0];
 				m_pVertexPtr->y = coords[vertex][1];
 				m_pVertexPtr->colorOfs = (uint32_t) colorOfs;
-				m_pVertexPtr->extrasOfs = 0;
+				m_pVertexPtr->extrasOfs = (uint32_t) extrasOfs;
 
 				m_pVertexPtr++;
 			}
+
+			nRectsInRun++;
 		}
 
+		_drawFillRun(kind, firstVertex, nRectsInRun);
+	}
+
+	//____ _drawFillRun() ______________________________________________________
+
+	void DX12Backend::_drawFillRun(PipelineKind kind, int firstVertex, int nRects)
+	{
+		if (nRects <= 0)
+			return;
+
+		if (!_setPipeline(_pipeline(m_activeBlendMode, kind)))
+			return;
+
 		m_commandList->DrawInstanced(nRects * 6, 1, firstVertex, 0);
+	}
+
+	//____ _drawLines() ________________________________________________________
+	//
+	// Lines are quads that cover everything the line might touch, with the line
+	// itself handed to the pixel shader as an offset, a half width and a slope. It
+	// works out the coverage of each pixel from those, which is what antialiases
+	// the edges. The geometry follows MetalBackend, except that we never flip Y.
+
+	void DX12Backend::_drawLines(const uint16_t*& pCmd, const RectSPX*& pRects, const HiColor*& pColors, int nClipRects, int nLines)
+	{
+		bool bDraw = _setPipeline(_pipeline(m_activeBlendMode, PipelineKind::Line)) && m_pVertexPtr != nullptr;
+
+		int firstVertex = bDraw ? int(m_pVertexPtr - m_pVertexBeg) : 0;
+		int nLinesDrawn = 0;
+
+		for (int i = 0; i < nLines; i++)
+		{
+			// Even when we can't draw we have to step through the command's data,
+			// or we lose track of where we are in the command stream.
+
+			HiColor col = *pColors++;
+
+			auto p32 = (const spx*) pCmd;
+
+			CoordSPX beginSpx, endSpx;
+
+			beginSpx.x = *p32++;
+			beginSpx.y = *p32++;
+			endSpx.x = *p32++;
+			endSpx.y = *p32++;
+
+			pCmd = (const uint16_t*) p32;
+
+			float thickness = *pCmd++ / 64.f;
+			pCmd++;								// padding
+
+			if (!bDraw)
+				continue;
+
+			if (m_pVertexEnd - m_pVertexPtr < 6)
+			{
+				static bool bReported = false;
+				if (!bReported)
+				{
+					GfxBase::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, "Vertex buffer full, lines dropped. Increase c_vertexBufferSize.",
+						this, &TYPEINFO, __func__, __FILE__, __LINE__);
+					bReported = true;
+				}
+
+				continue;
+			}
+
+			CoordI begin = Util::roundToPixels(beginSpx);
+			CoordI end = Util::roundToPixels(endSpx);
+
+			float	width;
+			float	slope;
+			float	s, w;
+			bool	bSteep;
+
+			CoordI	c1, c2, c3, c4;
+
+			if (std::abs(begin.x - end.x) > std::abs(begin.y - end.y))
+			{
+				// Mainly horizontal, so it is measured along X.
+
+				if (begin.x > end.x)
+					std::swap(begin, end);
+
+				int length = end.x - begin.x;
+				if (length == 0)
+					continue;						//TODO: Should still draw the caps!
+
+				slope = ((float)(end.y - begin.y)) / length;
+				width = _scaleThickness(thickness, slope);
+				bSteep = false;
+
+				s = (begin.y + 0.5f) - (begin.x + 0.5f) * slope;
+				w = width / 2 + 0.5f;
+
+				float y1 = begin.y - width / 2;
+				float y2 = end.y - width / 2;
+
+				c1.x = begin.x;
+				c1.y = int(y1) - 1;
+				c2.x = end.x;
+				c2.y = int(y2) - 1;
+				c3.x = end.x;
+				c3.y = int(y2 + width) + 2;
+				c4.x = begin.x;
+				c4.y = int(y1 + width) + 2;
+			}
+			else
+			{
+				// Mainly vertical, so X and Y swap roles.
+
+				if (begin.y > end.y)
+					std::swap(begin, end);
+
+				int length = end.y - begin.y;
+				if (length == 0)
+					continue;						//TODO: Should still draw the caps!
+
+				slope = ((float)(end.x - begin.x)) / length;
+				width = _scaleThickness(thickness, slope);
+				bSteep = true;
+
+				s = (begin.x + 0.5f) - (begin.y + 0.5f) * slope;
+				w = width / 2 + 0.5f;
+
+				float x1 = begin.x - width / 2;
+				float x2 = end.x - width / 2;
+
+				c1.x = int(x1) - 1;
+				c1.y = begin.y;
+				c2.x = int(x1 + width) + 2;
+				c2.y = begin.y;
+				c3.x = int(x2 + width) + 2;
+				c3.y = end.y;
+				c4.x = int(x2) - 1;
+				c4.y = end.y;
+			}
+
+			ExtrasDX12 lineInfo = { s, w, slope, bSteep ? 1.f : 0.f };
+
+			int extrasOfs = _addExtras(lineInfo);
+			if (extrasOfs < 0)
+				continue;
+
+			int colorOfs = _addColor(col);
+			if (colorOfs < 0)
+				continue;
+
+			const CoordI coords[6] = { c1, c2, c3, c1, c3, c4 };
+
+			for (int vertex = 0; vertex < 6; vertex++)
+			{
+				m_pVertexPtr->x = float(coords[vertex].x);
+				m_pVertexPtr->y = float(coords[vertex].y);
+				m_pVertexPtr->colorOfs = (uint32_t) colorOfs;
+				m_pVertexPtr->extrasOfs = (uint32_t) extrasOfs;
+
+				m_pVertexPtr++;
+			}
+
+			nLinesDrawn++;
+		}
+
+		// The clip rects are ours to apply. Unlike fills and blits, the rects of a
+		// line command are not the geometry, they are what it may be drawn inside,
+		// so the same lines are drawn once per rect with the scissor set to it.
+		//
+		// Nothing in this loop may flush the command list: a flush rebinds the
+		// canvas, which puts the scissor back to the whole canvas and would quietly
+		// unclip every rect after it.
+
+		if (nLinesDrawn > 0 && m_bCommandListOpen)
+		{
+			for (int i = 0; i < nClipRects; i++)
+			{
+				const RectSPX& clip = *pRects++;
+
+				D3D12_RECT scissorRect;
+				scissorRect.left = clip.x >> 6;
+				scissorRect.top = clip.y >> 6;
+				scissorRect.right = (clip.x + clip.w) >> 6;
+				scissorRect.bottom = (clip.y + clip.h) >> 6;
+
+				m_commandList->RSSetScissorRects(1, &scissorRect);
+				m_commandList->DrawInstanced(nLinesDrawn * 6, 1, firstVertex, 0);
+			}
+
+			// Back to the whole canvas, which is what everything else expects.
+
+			D3D12_RECT fullRect = {};
+			fullRect.right = (LONG) m_activeCanvasSize.w;
+			fullRect.bottom = (LONG) m_activeCanvasSize.h;
+
+			m_commandList->RSSetScissorRects(1, &fullRect);
+		}
+		else
+			pRects += nClipRects;
 	}
 
 	//____ _addColor() _________________________________________________________
@@ -1022,6 +1277,83 @@ namespace wg
 	}
 
 	//____ _addExtras() ________________________________________________________
+
+	int DX12Backend::_addExtras(const ExtrasDX12& extras)
+	{
+		if (!m_pExtrasPtr || m_pExtrasPtr == m_pExtrasEnd)
+		{
+			static bool bReported = false;
+			if (!bReported && m_pExtrasPtr)
+			{
+				GfxBase::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, "Extras buffer full, draws dropped. Increase c_extrasBufferSize.",
+					this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				bReported = true;
+			}
+
+			return -1;
+		}
+
+		int ofs = int(m_pExtrasPtr - m_pExtrasBeg);
+
+		*m_pExtrasPtr++ = extras;
+
+		return ofs;
+	}
+
+	int DX12Backend::_addBlurExtras()
+	{
+		const int nEntries = 18;			// Nine color matrices, then nine offsets.
+
+		if (!m_pExtrasPtr || m_pExtrasEnd - m_pExtrasPtr < nEntries)
+		{
+			static bool bReported = false;
+			if (!bReported && m_pExtrasPtr)
+			{
+				GfxBase::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, "Extras buffer full, blurs dropped. Increase c_extrasBufferSize.",
+					this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				bReported = true;
+			}
+
+			return -1;
+		}
+
+		int ofs = int(m_pExtrasPtr - m_pExtrasBeg);
+
+		for (int i = 0; i < 9; i++)
+		{
+			m_pExtrasPtr->x = m_blurColorMtx[i][0];
+			m_pExtrasPtr->y = m_blurColorMtx[i][1];
+			m_pExtrasPtr->z = m_blurColorMtx[i][2];
+			m_pExtrasPtr->w = m_blurColorMtx[i][3];
+
+			m_pExtrasPtr++;
+		}
+
+		// The offsets are in texture coordinates, so the radius is measured against
+		// the source we are reading from. GlBackend does the same; MetalBackend
+		// measures against the canvas, which only comes to the same thing when the
+		// two are the same size.
+
+		float radiusX = m_blitSourceSize.w > 0 ? m_blurRadius / float(m_blitSourceSize.w * 64) : 0.f;
+		float radiusY = m_blitSourceSize.h > 0 ? m_blurRadius / float(m_blitSourceSize.h * 64) : 0.f;
+
+		const float offsets[9][2] = {
+			{ -radiusX * 0.7f,	-radiusY * 0.7f },	{ 0.f, -radiusY },	{ radiusX * 0.7f,	-radiusY * 0.7f },
+			{ -radiusX,			0.f },				{ 0.f, 0.f },		{ radiusX,			0.f },
+			{ -radiusX * 0.7f,	radiusY * 0.7f },	{ 0.f, radiusY },	{ radiusX * 0.7f,	radiusY * 0.7f } };
+
+		for (int i = 0; i < 9; i++)
+		{
+			m_pExtrasPtr->x = offsets[i][0];
+			m_pExtrasPtr->y = offsets[i][1];
+			m_pExtrasPtr->z = 0.f;
+			m_pExtrasPtr->w = 0.f;
+
+			m_pExtrasPtr++;
+		}
+
+		return ofs;
+	}
 
 	int DX12Backend::_addExtras(const ExtrasDX12& first, const ExtrasDX12& second)
 	{
@@ -1155,7 +1487,7 @@ namespace wg
 
 	//____ _drawBlitRects() ____________________________________________________
 
-	void DX12Backend::_drawBlitRects(const uint16_t*& pCmd, const RectSPX*& pRects, int nRects, int version)
+	void DX12Backend::_drawBlitRects(const uint16_t*& pCmd, const RectSPX*& pRects, int nRects, int version, PipelineKind kind)
 	{
 		// Transforms below this index are the standard ones, the rest were handed
 		// to us through setTransforms().
@@ -1167,7 +1499,31 @@ namespace wg
 		// Even when we can't draw we have to step through the command's data, or
 		// we lose track of where we are in the stream.
 
-		bool bDraw = _bindBlitSource() && _setPipeline(_pipeline(m_activeBlendMode, true)) && m_pVertexPtr != nullptr;
+		bool bDraw = _bindBlitSource() && m_pVertexPtr != nullptr;
+
+		// A blur needs its brush where the pixel shader can reach it. It goes in the
+		// extras buffer, which the shader indexes into from a root constant.
+		//
+		// That constant is written again for every blur draw, which is what keeps
+		// it right: a mid-session flush sets the root signature again and drops
+		// every root argument with it. Skipping this when the brush hasn't changed
+		// would need a flag cleared alongside m_bBlitSourceBound.
+
+		if (bDraw && kind == PipelineKind::Blur)
+		{
+			int blurOfs = _addBlurExtras();
+
+			if (blurOfs < 0)
+				bDraw = false;
+			else
+			{
+				uint32_t ofs = (uint32_t) blurOfs;
+				m_commandList->SetGraphicsRoot32BitConstants(0, 1, &ofs, 5);
+			}
+		}
+
+		if (bDraw)
+			bDraw = _setPipeline(_pipeline(m_activeBlendMode, kind));
 
 		// _addColor() multiplies by the tint, so what a blit wants here is white.
 		// Passing the tint would apply it twice.
@@ -1313,7 +1669,7 @@ namespace wg
 	// rendering into. Created the first time a combination shows up, since the
 	// canvas formats in use are not known until canvases are set.
 
-	ID3D12PipelineState* DX12Backend::_pipeline(BlendMode blendMode, bool bBlit)
+	ID3D12PipelineState* DX12Backend::_pipeline(BlendMode blendMode, PipelineKind kind)
 	{
 		if (blendMode == BlendMode::Ignore)
 			return nullptr;							// Nothing should be drawn.
@@ -1324,8 +1680,8 @@ namespace wg
 		BlendMode mode = _normalizeBlendMode(blendMode);
 
 		uint64_t key = (uint64_t(m_activeCanvasFormat) << 16) |
-					   (uint64_t(mode) << 1) |
-					   (bBlit ? 1 : 0);
+					   (uint64_t(kind) << 8) |
+					   uint64_t(mode);
 
 		auto it = m_pipelines.find(key);
 		if (it != m_pipelines.end())
@@ -1333,7 +1689,7 @@ namespace wg
 
 		Microsoft::WRL::ComPtr<ID3D12PipelineState> pPipeline;
 
-		if (!_createPipeline(mode, bBlit, m_activeCanvasFormat, pPipeline))
+		if (!_createPipeline(mode, kind, m_activeCanvasFormat, pPipeline))
 			pPipeline = nullptr;					// Remembered as a failure, so we don't try again every draw.
 
 		m_pipelines[key] = pPipeline;
@@ -1507,19 +1863,53 @@ namespace wg
 		if (!_createSamplers())
 			return false;
 
-		if (!_compileVertexShader(m_fillVertexShaderBlob, g_fillVS))
-			return false;
+		// A line of a given thickness has to be drawn wider the steeper it runs, or
+		// it comes out thinner than asked for. The table holds that widening for
+		// slopes from 0 to 1, which is all we need since a steeper line is measured
+		// against the other axis.
 
-		if (!_compilePixelShader(m_fillPixelShaderBlob, g_fillPS))
-			return false;
+		for (int i = 0; i < 17; i++)
+		{
+			double b = i / 16.0;
+			m_lineThicknessTable[i] = (float) Util::squareRoot(1.0 + b * b);
+		}
 
-		if (!_compileVertexShader(m_blitVertexShaderBlob, g_blitVS))
-			return false;
+		struct { PipelineKind kind; const char * pVS; const char * pPS; } shaders[] =
+		{
+			{ PipelineKind::Fill,	g_fillVS,	g_fillPS },
+			{ PipelineKind::FillAA,	g_fillAAVS,	g_fillAAPS },
+			{ PipelineKind::Blit,	g_blitVS,	g_blitPS },
+			{ PipelineKind::Blur,	g_blitVS,	g_blurPS },		// Same geometry, so the same vertex shader.
+			{ PipelineKind::Line,	g_lineVS,	g_linePS },
+		};
 
-		if (!_compilePixelShader(m_blitPixelShaderBlob, g_blitPS))
-			return false;
+		for (auto& shader : shaders)
+		{
+			if (!_compileVertexShader(m_vertexShaderBlobs[int(shader.kind)], shader.pVS))
+				return false;
+
+			if (!_compilePixelShader(m_pixelShaderBlobs[int(shader.kind)], shader.pPS))
+				return false;
+		}
 
 		return true;
+	}
+
+	//____ _scaleThickness() ___________________________________________________
+
+	float DX12Backend::_scaleThickness(float thickness, float slope)
+	{
+		slope = std::abs(slope);
+
+		float scale = m_lineThicknessTable[(int)(slope * 16)];
+
+		if (slope < 1.f)
+		{
+			float scale2 = m_lineThicknessTable[(int)(slope * 16) + 1];
+			scale += (scale2 - scale) * ((slope * 16) - ((int)(slope * 16)));
+		}
+
+		return thickness * scale;
 	}
 
 	//____ _createRootSignature() _____________________________________________
@@ -1531,13 +1921,15 @@ namespace wg
 		// fill and blit are small enough that there is no reason to have two.
 		//
 		// Root parameter 0 holds the handful of values that change with canvas and
-		// blit source: canvas scale for the vertex shader, source size and flags
-		// for the pixel shader. Root constants instead of a constant buffer since
-		// there are so few of them and they change often.
+		// blit source: canvas scale for the vertex shader, and source size, flags
+		// and the blur brush's place in the extras buffer for the pixel shader.
+		// Root constants instead of a constant buffer since there are so few of
+		// them and they change often.
 		//
-		// The color (t0) and extras (t1) buffers are root SRVs, which only need
-		// the buffer's address. The blit source texture (t2) and its sampler have
-		// to go through descriptor tables, there is no root descriptor for those.
+		// The color (t0) and extras (t1) buffers are root SRVs, which only need the
+		// buffer's address. Extras are read by the vertex shaders and, for a blur,
+		// by the pixel shader. The blit source texture (t2) and its sampler have to
+		// go through descriptor tables, there is no root descriptor for those.
 
 		D3D12_DESCRIPTOR_RANGE srvRange = {};
 		srvRange.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
@@ -1558,10 +1950,10 @@ namespace wg
 		rootParameter[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS;
 		rootParameter[0].Constants.ShaderRegister = 0;			// b0.
 		rootParameter[0].Constants.RegisterSpace = 0;
-		// Eight rather than the five we use: HLSL rounds a constant buffer up to
+		// Eight rather than the six we use: HLSL rounds a constant buffer up to
 		// whole 16 byte registers, and the root signature has to cover all of it.
 
-		rootParameter[0].Constants.Num32BitValues = 8;			// canvasScale, textureSize, flags + padding.
+		rootParameter[0].Constants.Num32BitValues = 8;			// canvasScale, textureSize, flags, blurOfs.
 		rootParameter[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
 
 		rootParameter[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_SRV;
@@ -1572,7 +1964,7 @@ namespace wg
 		rootParameter[2].ParameterType = D3D12_ROOT_PARAMETER_TYPE_SRV;
 		rootParameter[2].Descriptor.ShaderRegister = 1;			// t1, extras.
 		rootParameter[2].Descriptor.RegisterSpace = 0;
-		rootParameter[2].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
+		rootParameter[2].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;	// The blur shader reads it too.
 
 		rootParameter[3].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
 		rootParameter[3].DescriptorTable.NumDescriptorRanges = 1;
@@ -1657,12 +2049,12 @@ namespace wg
 
 	//____ _createPipeline() __________________________________________________
 
-	bool DX12Backend::_createPipeline(BlendMode blendMode, bool bBlit, DXGI_FORMAT rtvFormat, Microsoft::WRL::ComPtr<ID3D12PipelineState>& pPipeline)
+	bool DX12Backend::_createPipeline(BlendMode blendMode, PipelineKind kind, DXGI_FORMAT rtvFormat, Microsoft::WRL::ComPtr<ID3D12PipelineState>& pPipeline)
 	{
 		// Setup the graphics pipeline state.
 
-		auto& vertexShaderBlob = bBlit ? m_blitVertexShaderBlob : m_fillVertexShaderBlob;
-		auto& pixelShaderBlob = bBlit ? m_blitPixelShaderBlob : m_fillPixelShaderBlob;
+		auto& vertexShaderBlob = m_vertexShaderBlobs[int(kind)];
+		auto& pixelShaderBlob = m_pixelShaderBlobs[int(kind)];
 
 		if (!vertexShaderBlob || !pixelShaderBlob)
 			return false;
@@ -1871,8 +2263,9 @@ namespace wg
 		desc.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_LESS;
 		desc.DepthStencilState.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
 
-		// One vertex layout for both. The fill shaders ignore EXTRASOFS, which is
-		// fine, the input layout is allowed to offer more than a shader reads.
+		// One vertex layout for all of them. The plain fill shader ignores
+		// EXTRASOFS, which is fine - the input layout is allowed to offer more
+		// than a shader reads.
 
 		D3D12_INPUT_ELEMENT_DESC elements[] = {
 			{ "POSITION", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 0,
@@ -1908,7 +2301,7 @@ namespace wg
 
 	bool DX12Backend::_compileVertexShader(Microsoft::WRL::ComPtr<ID3DBlob>& shaderBlob, LPCVOID pSrc)
 	{ 
-		UINT compileFlags = D3DCOMPILE_ENABLE_STRICTNESS | D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION | D3DCOMPILE_WARNINGS_ARE_ERRORS | D3DCOMPILE_ALL_RESOURCES_BOUND;
+		UINT compileFlags = c_shaderCompileFlags;
 
 		Microsoft::WRL::ComPtr<ID3DBlob> errorMsg;
 
@@ -1930,7 +2323,7 @@ namespace wg
 
 	bool DX12Backend::_compilePixelShader(Microsoft::WRL::ComPtr<ID3DBlob>& shaderBlob, LPCVOID pSrc)
 	{
-		UINT compileFlags = D3DCOMPILE_ENABLE_STRICTNESS | D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION | D3DCOMPILE_WARNINGS_ARE_ERRORS | D3DCOMPILE_ALL_RESOURCES_BOUND;
+		UINT compileFlags = c_shaderCompileFlags;
 
 		Microsoft::WRL::ComPtr<ID3DBlob> errorMsg;
 
