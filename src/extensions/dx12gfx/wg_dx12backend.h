@@ -30,6 +30,8 @@
 
 #include <d3d12.h>
 
+#include <map>
+
 namespace wg
 {
 
@@ -114,20 +116,31 @@ namespace wg
 		~DX12Backend();
 
 		void _waitForFence(UINT64 fenceValue);
+		void _flushCommandList();				// Submits what we have recorded so far and reopens the list.
+		void _restoreBlitSourceCanvases();		// Returns canvas surfaces we read from to COMMON state.
+
+		void _bindSessionState();				// Everything a session needs on a freshly reset command list.
+		void _bindCanvasState();				// Render target, viewport and canvas scale for the active canvas.
 
 		void _createBuffer(Microsoft::WRL::ComPtr<ID3D12Resource>& pointer, int nbBytes, D3D12_HEAP_TYPE heapType, D3D12_RESOURCE_STATES initialState, LPCWSTR name);
 
-		bool _createPipelines();
+		bool _createPipelineResources();
 		bool _createRootSignature();
 		bool _createSamplers();
-		bool _createPipeline(BlendMode blendMode, bool bBlit, Microsoft::WRL::ComPtr<ID3D12PipelineState>& pPipeline);
+		bool _createPipeline(BlendMode blendMode, bool bBlit, DXGI_FORMAT rtvFormat, Microsoft::WRL::ComPtr<ID3D12PipelineState>& pPipeline);
 
-		ID3D12PipelineState* _fillPipeline(BlendMode blendMode);
-		ID3D12PipelineState* _blitPipeline(BlendMode blendMode);
+		BlendMode _supportedBlendMode(BlendMode blendMode);
+		ID3D12PipelineState* _pipeline(BlendMode blendMode, bool bBlit);
 		bool _setPipeline(ID3D12PipelineState* pPipeline);
+
+		void _setCanvas(DX12Surface* pCanvas);
+		void _transitionCanvas(DX12Surface* pCanvas, D3D12_RESOURCE_STATES state);
 
 		void _drawFillRects(const RectSPX* pRects, int nRects, HiColor color);
 		void _drawBlitRects(const uint16_t*& pCmd, const RectSPX*& pRects, int nRects, int version);
+
+		bool _isDX12Surface(const Object* pObject) const;
+		static bool _isDX12SurfaceType(const TypeInfo& type);
 
 		void _setBlitSource(DX12Surface* pSurface);
 		bool _bindBlitSource();					// Puts source and sampler in place for the coming draw.
@@ -142,10 +155,21 @@ namespace wg
 		SurfaceFactory_p	m_pSurfaceFactory;	
 		EdgemapFactory_p	m_pEdgemapFactory;
 
-		D3D12_CPU_DESCRIPTOR_HANDLE	m_defaultCanvasRTV;
+		D3D12_CPU_DESCRIPTOR_HANDLE	m_defaultCanvasRTV = {};
 		ID3D12Resource*		m_defaultCanvasBuffer = nullptr;
+		DXGI_FORMAT			m_defaultCanvasFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
 		CanvasInfo			m_defaultCanvas;
 		CanvasInfo			m_dummyCanvas;
+
+		// The canvas we are rendering into right now. Null means the default one.
+		// It can change between processCommands() calls, for render layers.
+
+		DX12Surface*				m_pActiveCanvas = nullptr;
+		D3D12_CPU_DESCRIPTOR_HANDLE	m_activeCanvasRTV = {};
+		DXGI_FORMAT					m_activeCanvasFormat = DXGI_FORMAT_UNKNOWN;
+		SizeI						m_activeCanvasSize;
+		bool						m_bSessionOnDefaultCanvas = false;
+		bool						m_bInSession = false;			// Between beginSession() and endSession().
 
 		Object* const* m_pObjectsBeg = nullptr;
 		Object* const* m_pObjectsEnd = nullptr;
@@ -208,6 +232,7 @@ namespace wg
 			ColorDX12*										pColorBufferData = nullptr;		// Permanently mapped.
 			ExtrasDX12*										pExtrasBufferData = nullptr;	// Permanently mapped.
 			int												nSRVDescriptors = 0;			// Used so far this frame.
+			std::vector<Surface_p>							surfaceRefs;					// Surfaces this frame's command list mentions.
 			UINT64											fenceValue;
 		};
 
@@ -220,19 +245,26 @@ namespace wg
 		Microsoft::WRL::ComPtr<ID3D12Fence>					m_commandFence;
 		UINT64												m_fenceValue = 0;
 		HANDLE 												m_fenceEvent = nullptr;
+		bool												m_bCommandListOpen = false;
+
+		// Canvas surfaces we have barriered out of COMMON to read as blit source.
+		// They go back before the session ends or the command list is closed, so
+		// everything rests in COMMON between sessions and the copy queue can touch
+		// it. The references then move to the frame, which holds them until the
+		// GPU is done with the command list that mentions them.
+
+		std::vector<Surface_p>								m_blitSourceCanvases;
 
 
 		//
 
-		// One pipeline per supported blend mode.
+		// Pipelines vary with blend mode, fill or blit, and the format of the canvas
+		// we render into, which we only learn as canvases are set. So they are
+		// created on demand and kept, keyed on those three.
 
-		const static int									c_fillPipelineBlend = 0;
-		const static int									c_fillPipelineReplace = 1;
-		const static int									c_nbFillPipelines = 2;
+		std::map<uint64_t, Microsoft::WRL::ComPtr<ID3D12PipelineState>>	m_pipelines;
 
-		Microsoft::WRL::ComPtr<ID3D12PipelineState>			m_pFillPipelines[c_nbFillPipelines];
-		Microsoft::WRL::ComPtr<ID3D12PipelineState>			m_pBlitPipelines[c_nbFillPipelines];
-		Microsoft::WRL::ComPtr<ID3D12RootSignature>			m_pRootSignature;				// Shared by fill and blit pipelines.
+		Microsoft::WRL::ComPtr<ID3D12RootSignature>			m_pRootSignature;				// Shared by all pipelines.
 
 		// Samplers, in the order nearest/bilinear and clamp/tile.
 

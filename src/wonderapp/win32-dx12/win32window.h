@@ -89,7 +89,11 @@ protected:
 	wg::RootPanel_p		m_pRootPanel;
 
 	bool				m_bHidden = false;
-	bool				m_bRendered = false;		// Nothing is presented until we have rendered at least once.
+	// Set by render() when there is something new in the back buffer, cleared
+	// when it has been presented. Presenting without it would put an older frame
+	// on screen and cost us a wait on the flip queue for nothing.
+
+	bool				m_bPendingPresent = false;
 
 	// Areas rendered since the last present, in pixels, presented as the swap
 	// chain's dirty rects. DXGI copies everything outside them from the
