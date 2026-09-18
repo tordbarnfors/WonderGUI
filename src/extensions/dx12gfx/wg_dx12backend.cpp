@@ -27,6 +27,7 @@
 #include <d3dcompiler.h>
 
 #include <cstdio>
+#include <cstring>
 #include <cassert>
 #include <vector>
 
@@ -84,7 +85,7 @@ namespace wg
 
 		// Surfaces create their own textures and need the device for it.
 
-		DX12Surface::setDevice(pDX12Device);
+		DX12Surface::setDevice(pDX12Device, this);
 
 		m_srvDescriptorSize = pDX12Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 		m_samplerDescriptorSize = pDX12Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
@@ -135,9 +136,10 @@ namespace wg
 		pDX12Device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_frameResources[0].commandAllocator.Get(), nullptr, IID_PPV_ARGS(&m_commandList));
 
 		m_commandList->Close();
+		m_bCommandListOpen = false;
 
-		if (!_createPipelines())
-			GfxBase::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to create pipelines, nothing will render.",
+		if (!_createPipelineResources())
+			GfxBase::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to create pipeline resources, nothing will render.",
 				this, &TYPEINFO, __func__, __FILE__, __LINE__);
 
 	}
@@ -174,6 +176,7 @@ namespace wg
 
 		m_frameResources[frame].commandAllocator->Reset();
 		m_commandList->Reset(m_frameResources[frame].commandAllocator.Get(), nullptr);
+		m_bCommandListOpen = true;
 
 		// Vertices and colors are written for the whole frame, not per session,
 		// since the GPU doesn't run any of it until the command list has been
@@ -193,6 +196,15 @@ namespace wg
 
 		m_frameResources[frame].nSRVDescriptors = 0;
 
+		// The fence says the GPU is done with the command list that mentioned
+		// these, so we can let go of them.
+
+		m_frameResources[frame].surfaceRefs.clear();
+
+		// Sessions un-park what they parked, so this should already be empty.
+
+		m_blitSourceCanvases.clear();
+
 		m_pActivePipeline = nullptr;		// Resetting the command list cleared its state.
 		m_bBlitSourceBound = false;
 	}
@@ -201,9 +213,17 @@ namespace wg
 
 	void DX12Backend::endRender()
 	{
+		if (!m_bCommandListOpen)
+			return;
+
+		_restoreBlitSourceCanvases();
+
 		// Close() must not be inside the assert, or it is never called in release builds.
 
 		HRESULT hr = m_commandList->Close();
+
+		m_bCommandListOpen = false;
+
 		if (!CHECK_HR(hr, "ID3D12GraphicsCommandList::Close"))
 			return;
 
@@ -221,36 +241,121 @@ namespace wg
 
 	}
 
-	//____ beginSession() _____________________________________________________
+	//____ _flushCommandList() _________________________________________________
+	//
+	// Submits what we have recorded so far, so that waiting for it means anything,
+	// then reopens the list. Resetting the list throws away all its state, so this
+	// must only happen between sessions - beginSession() sets up everything again.
 
-	void DX12Backend::beginSession(CanvasRef canvasRef, Surface* pCanvas, int nUpdateRects, const RectSPX* pUpdateRects, const SessionInfo* pInfo)
+	void DX12Backend::_flushCommandList()
 	{
-		// Barrier
+		if (!m_bCommandListOpen)
+			return;
 
-		D3D12_RESOURCE_BARRIER barrier = {};
-		barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-		barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-		barrier.Transition.pResource = m_defaultCanvasBuffer;
-		barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_PRESENT;
-		barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
-		barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+		_restoreBlitSourceCanvases();
 
-		m_commandList->ResourceBarrier(1, &barrier);
+		HRESULT hr = m_commandList->Close();
 
-		// Set render target
+		if (!CHECK_HR(hr, "ID3D12GraphicsCommandList::Close"))
+		{
+			m_bCommandListOpen = false;
+			return;
+		}
 
-		m_commandList->OMSetRenderTargets(1, &m_defaultCanvasRTV, FALSE, nullptr);
+		ID3D12CommandList* pCommandLists[] = { m_commandList.Get() };
+		m_pDX12CommandQueue->ExecuteCommandLists(1, pCommandLists);
 
-		// Set viewport and scissor. Canvas size is in spx, D3D12 wants pixels.
+		m_fenceValue++;
 
-		int canvasWidth = m_defaultCanvas.size.w / 64;
-		int canvasHeight = m_defaultCanvas.size.h / 64;
+		m_pDX12CommandQueue->Signal(m_commandFence.Get(), m_fenceValue);
+		m_frameResources[m_currentFrameIndex].fenceValue = m_fenceValue;
+
+		// The allocator keeps the memory of what we just submitted, it is only
+		// reset in beginRender() once the fence says the GPU is done with it.
+
+		m_commandList->Reset(m_frameResources[m_currentFrameIndex].commandAllocator.Get(), nullptr);
+
+		m_pActivePipeline = nullptr;
+		m_bBlitSourceBound = false;
+
+		// A flush can happen in the middle of a session, when a surface needs the
+		// GPU to catch up, so put back everything the reset threw away.
+
+		if (m_bInSession)
+		{
+			_bindSessionState();
+			_bindCanvasState();
+		}
+	}
+
+	//____ _bindSessionState() _________________________________________________
+	//
+	// Everything a session needs that a freshly reset command list doesn't have.
+
+	void DX12Backend::_bindSessionState()
+	{
+		if (!m_bCommandListOpen)
+			return;
+
+		auto& frame = m_frameResources[m_currentFrameIndex];
+
+		// Descriptor heaps must be set before any descriptor table is bound.
+
+		if (frame.srvHeap && m_pSamplerHeap)
+		{
+			ID3D12DescriptorHeap* pHeaps[] = { frame.srvHeap.Get(), m_pSamplerHeap.Get() };
+			m_commandList->SetDescriptorHeaps(2, pHeaps);
+		}
+
+		m_commandList->SetGraphicsRootSignature(m_pRootSignature.Get());
+
+		// Colors and extras live in buffers the vertex shader indexes into, like
+		// MetalBackend does. Root SRVs take the address directly.
+
+		if (frame.colorBuffer)
+			m_commandList->SetGraphicsRootShaderResourceView(1, frame.colorBuffer->GetGPUVirtualAddress());
+
+		if (frame.extrasBuffer)
+			m_commandList->SetGraphicsRootShaderResourceView(2, frame.extrasBuffer->GetGPUVirtualAddress());
+
+		m_commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+		if (frame.vertexBuffer)
+		{
+			D3D12_VERTEX_BUFFER_VIEW vertexBufferView = {};
+			vertexBufferView.BufferLocation = frame.vertexBuffer->GetGPUVirtualAddress();
+			vertexBufferView.StrideInBytes = sizeof(Vertex);
+			vertexBufferView.SizeInBytes = c_vertexBufferSize;
+
+			m_commandList->IASetVertexBuffers(0, 1, &vertexBufferView );
+		}
+
+		// Setting the root signature dropped the pipeline and whatever the blit
+		// source had bound.
+
+		m_pActivePipeline = nullptr;
+		m_bBlitSourceBound = false;
+	}
+
+	//____ _bindCanvasState() __________________________________________________
+	//
+	// Points the command list at the canvas _setCanvas() picked out.
+
+	void DX12Backend::_bindCanvasState()
+	{
+		if (!m_bCommandListOpen || m_activeCanvasRTV.ptr == 0)
+			return;								// Nothing to bind, or nowhere to bind it.
+
+		m_commandList->OMSetRenderTargets(1, &m_activeCanvasRTV, FALSE, nullptr);
+
+		// Viewport and scissor are in pixels. Canvas size is in spx for the default
+		// canvas, so _setCanvas() divided it by 64.
 
 		D3D12_VIEWPORT viewport = {};
 		viewport.TopLeftX = 0;
 		viewport.TopLeftY = 0;
-		viewport.Width = (FLOAT)canvasWidth;
-		viewport.Height = (FLOAT)canvasHeight;
+		viewport.Width = (FLOAT) m_activeCanvasSize.w;
+		viewport.Height = (FLOAT) m_activeCanvasSize.h;
 		viewport.MinDepth = 0.0f;
 		viewport.MaxDepth = 1.0f;
 		m_commandList->RSSetViewports(1, &viewport);
@@ -258,9 +363,128 @@ namespace wg
 		D3D12_RECT scissorRect = {};
 		scissorRect.left = 0;
 		scissorRect.top = 0;
-		scissorRect.right = (LONG)canvasWidth;
-		scissorRect.bottom = (LONG)canvasHeight;
+		scissorRect.right = (LONG) m_activeCanvasSize.w;
+		scissorRect.bottom = (LONG) m_activeCanvasSize.h;
 		m_commandList->RSSetScissorRects(1, &scissorRect);
+
+		// Vertex positions are in canvas pixels, the vertex shader needs the canvas
+		// size to bring them into clip space.
+
+		float canvasScale[2] = { m_activeCanvasSize.w > 0 ? 2.f / m_activeCanvasSize.w : 0.f,
+								 m_activeCanvasSize.h > 0 ? 2.f / m_activeCanvasSize.h : 0.f };
+
+		m_commandList->SetGraphicsRoot32BitConstants(0, 2, canvasScale, 0);
+
+		// Pipelines are tied to the render target format, so the one we had is no
+		// longer the one to use.
+
+		m_pActivePipeline = nullptr;
+	}
+
+	//____ _restoreBlitSourceCanvases() ________________________________________
+	//
+	// Canvas surfaces we read as blit source were barriered into
+	// PIXEL_SHADER_RESOURCE. They go back to COMMON before the list is closed, so
+	// everything rests in COMMON between frames, which is what the copy queue and
+	// D3D12's own promotion rules expect.
+
+	void DX12Backend::_restoreBlitSourceCanvases()
+	{
+		if (!m_bCommandListOpen)
+			return;
+
+		auto& frame = m_frameResources[m_currentFrameIndex];
+
+		for (auto& pSurface : m_blitSourceCanvases)
+		{
+			auto pCanvas = static_cast<DX12Surface*>(pSurface.rawPtr());
+
+			// The one we are rendering into belongs in RENDER_TARGET until the
+			// session lets go of it, so leave that one alone.
+
+			if (pCanvas != m_pActiveCanvas)
+				_transitionCanvas(pCanvas, D3D12_RESOURCE_STATE_COMMON);
+
+			// A command list holds no references of its own, so we keep one until
+			// the GPU is done with it.
+
+			frame.surfaceRefs.push_back(pSurface);
+		}
+
+		m_blitSourceCanvases.clear();
+	}
+
+	//____ _isDX12Surface() ____________________________________________________
+	//
+	// TypeInfo compares by address, so a plain == would turn away anything derived
+	// from DX12Surface. Walk the chain instead.
+
+	bool DX12Backend::_isDX12SurfaceType(const TypeInfo& type)
+	{
+		for (const TypeInfo* pType = &type; pType; pType = pType->pSuperClass)
+		{
+			if (pType == &DX12Surface::TYPEINFO)
+				return true;
+		}
+
+		return false;
+	}
+
+	bool DX12Backend::_isDX12Surface(const Object* pObject) const
+	{
+		return pObject ? _isDX12SurfaceType(pObject->typeInfo()) : false;
+	}
+
+	//____ beginSession() _____________________________________________________
+
+	void DX12Backend::beginSession(CanvasRef canvasRef, Surface* pCanvas, int nUpdateRects, const RectSPX* pUpdateRects, const SessionInfo* pInfo)
+	{
+		DX12Surface * pCanvasSurface = nullptr;
+
+		if (pCanvas)
+		{
+			if (_isDX12Surface(pCanvas))
+				pCanvasSurface = static_cast<DX12Surface*>(pCanvas);
+			else
+				GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Canvas is not a DX12Surface, rendering to default canvas instead.",
+					this, &TYPEINFO, __func__, __FILE__, __LINE__);
+		}
+
+		// The swap chain buffer is only ours while we render into it, and only if
+		// this session renders into it at all.
+
+		m_bSessionOnDefaultCanvas = (pCanvasSurface == nullptr);
+
+		if (!m_bCommandListOpen)
+			return;					// Nothing can be recorded, beginRender() was never called or the list broke.
+
+		if (m_bSessionOnDefaultCanvas && m_defaultCanvasBuffer)
+		{
+			D3D12_RESOURCE_BARRIER barrier = {};
+			barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+			barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+			barrier.Transition.pResource = m_defaultCanvasBuffer;
+			barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_PRESENT;
+			barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
+			barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+
+			m_commandList->ResourceBarrier(1, &barrier);
+		}
+
+		m_bInSession = true;
+
+		_bindSessionState();
+
+		// Sessions start with default state, changes arrive as StateChange commands.
+
+		m_tintColor = HiColor::White;
+		m_activeBlendMode = BlendMode::Blend;
+		_setBlitSource(nullptr);
+
+		// Sets render target, viewport and the canvas scale our shaders need.
+
+		m_pActiveCanvas = nullptr;
+		_setCanvas(pCanvasSurface);
 
 		// We must not touch a single pixel outside the update rects: the swap chain
 		// is presented with them as dirty rects, and DXGI copies everything else
@@ -274,7 +498,7 @@ namespace wg
 		// paints the whole update rect, which breaks the rule above, so the window
 		// must present full frames while it is on.
 
-		if (c_bDebugClearUpdateRects && nUpdateRects > 0)
+		if (c_bDebugClearUpdateRects && nUpdateRects > 0 && m_bCommandListOpen && m_activeCanvasRTV.ptr != 0)
 		{
 			std::vector<D3D12_RECT> rects;
 			rects.reserve(nUpdateRects);
@@ -292,86 +516,169 @@ namespace wg
 			}
 
 			float clearColor[4] = { 1.0f, 0.0f, 1.0f, 1.0f };
-			m_commandList->ClearRenderTargetView(m_defaultCanvasRTV, clearColor, (UINT) rects.size(), rects.data());
+			m_commandList->ClearRenderTargetView(m_activeCanvasRTV, clearColor, (UINT) rects.size(), rects.data());
 		}
-
-		// Set pipeline state. Vertex positions are in canvas pixels, the vertex
-		// shader needs the canvas size to bring them into clip space.
-
-		auto& frame = m_frameResources[m_currentFrameIndex];
-
-		// Descriptor heaps must be set before any descriptor table is bound.
-
-		if (frame.srvHeap && m_pSamplerHeap)
-		{
-			ID3D12DescriptorHeap* pHeaps[] = { frame.srvHeap.Get(), m_pSamplerHeap.Get() };
-			m_commandList->SetDescriptorHeaps(2, pHeaps);
-		}
-
-		m_commandList->SetGraphicsRootSignature(m_pRootSignature.Get());
-
-		float canvasScale[2] = { canvasWidth > 0 ? 2.f / canvasWidth : 0.f,
-								 canvasHeight > 0 ? 2.f / canvasHeight : 0.f };
-
-		m_commandList->SetGraphicsRoot32BitConstants(0, 2, canvasScale, 0);
-
-		// Colors and extras live in buffers the vertex shader indexes into, like
-		// MetalBackend does. Root SRVs take the address directly.
-
-		if (frame.colorBuffer)
-			m_commandList->SetGraphicsRootShaderResourceView(1, frame.colorBuffer->GetGPUVirtualAddress());
-
-		if (frame.extrasBuffer)
-			m_commandList->SetGraphicsRootShaderResourceView(2, frame.extrasBuffer->GetGPUVirtualAddress());
-
-		// Setting the root signature dropped whatever the blit source had bound.
-
-		m_bBlitSourceBound = false;
-
-		m_commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-
-		if (m_frameResources[m_currentFrameIndex].vertexBuffer)
-		{
-			D3D12_VERTEX_BUFFER_VIEW vertexBufferView = {};
-			vertexBufferView.BufferLocation = m_frameResources[m_currentFrameIndex].vertexBuffer->GetGPUVirtualAddress();
-			vertexBufferView.StrideInBytes = sizeof(Vertex);
-			vertexBufferView.SizeInBytes = c_vertexBufferSize;
-
-			m_commandList->IASetVertexBuffers(0, 1, &vertexBufferView );
-		}
-
-		// Sessions start with default state, changes arrive as StateChange commands.
-
-		m_tintColor = HiColor::White;
-		m_activeBlendMode = BlendMode::Blend;
-		_setBlitSource(nullptr);
 	}
 
 	//____ endSession() _______________________________________________________
 
 	void DX12Backend::endSession()
 	{
-		// Barrier
+		// A canvas surface goes back to COMMON, where D3D12 promotes it on its own
+		// when it is read as a blit source or copied from.
 
-		D3D12_RESOURCE_BARRIER barrier = {};
-		barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-		barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-		barrier.Transition.pResource = m_defaultCanvasBuffer;
-		barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
-		barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
-		barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+		if (m_pActiveCanvas)
+		{
+			_transitionCanvas(m_pActiveCanvas, D3D12_RESOURCE_STATE_COMMON);
+			m_pActiveCanvas = nullptr;
+		}
 
-		m_commandList->ResourceBarrier(1, &barrier);
+		// Nothing stays parked between sessions, or the next one would find a
+		// surface in a state it doesn't expect.
+
+		_restoreBlitSourceCanvases();
+
+		if (m_bSessionOnDefaultCanvas && m_defaultCanvasBuffer && m_bCommandListOpen)
+		{
+			D3D12_RESOURCE_BARRIER barrier = {};
+			barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+			barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+			barrier.Transition.pResource = m_defaultCanvasBuffer;
+			barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
+			barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
+			barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+
+			m_commandList->ResourceBarrier(1, &barrier);
+
+			m_bSessionOnDefaultCanvas = false;
+		}
+
+		m_bInSession = false;
 	}
 
 	//____ setCanvas() ________________________________________________________
+	//
+	// Called between processCommands() within a session, when a render layer has
+	// a canvas of its own.
 
 	void DX12Backend::setCanvas(Surface* pSurface)
 	{
+		if (pSurface && !_isDX12Surface(pSurface))
+		{
+			GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Canvas is not a DX12Surface.",
+				this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			return;
+		}
+
+		_setCanvas(static_cast<DX12Surface*>(pSurface));
 	}
 
 	void DX12Backend::setCanvas(CanvasRef ref)
 	{
+		if (ref == CanvasRef::Default)
+			_setCanvas(nullptr);
+		else
+			GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Only CanvasRef::Default is supported.",
+				this, &TYPEINFO, __func__, __FILE__, __LINE__);
+	}
+
+	//____ _transitionCanvas() ________________________________________________
+
+	void DX12Backend::_transitionCanvas(DX12Surface* pCanvas, D3D12_RESOURCE_STATES state)
+	{
+		if (!m_bCommandListOpen || !pCanvas || !pCanvas->texture() || pCanvas->resourceState() == state)
+			return;
+
+		D3D12_RESOURCE_BARRIER barrier = {};
+		barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+		barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+		barrier.Transition.pResource = pCanvas->texture();
+		barrier.Transition.StateBefore = pCanvas->resourceState();
+		barrier.Transition.StateAfter = state;
+		barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+
+		m_commandList->ResourceBarrier(1, &barrier);
+
+		pCanvas->setResourceState(state);
+	}
+
+	//____ _setCanvas() _______________________________________________________
+	//
+	// Points the command list at the canvas we should render into from here on.
+	// A null surface means the default canvas, which the window owns.
+
+	void DX12Backend::_setCanvas(DX12Surface* pCanvas)
+	{
+		if (pCanvas && (!pCanvas->texture() || !pCanvas->canBeCanvas()))
+		{
+			GfxBase::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "Surface can not be used as canvas.",
+				this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			pCanvas = nullptr;
+		}
+
+		// Getting here can flush the command list, and a flush rebinds the canvas.
+		// Make sure that finds nothing to bind rather than the old canvas, which
+		// may be on its way out of existence.
+
+		m_activeCanvasRTV.ptr = 0;
+		m_activeCanvasFormat = DXGI_FORMAT_UNKNOWN;
+
+		// Whatever we rendered into before is done now.
+
+		if (m_pActiveCanvas && m_pActiveCanvas != pCanvas)
+			_transitionCanvas(m_pActiveCanvas, D3D12_RESOURCE_STATE_COMMON);
+
+		// We can't read from what we paint into.
+
+		if (pCanvas && pCanvas == m_pBlitSource)
+			_setBlitSource(nullptr);
+
+		m_pActiveCanvas = pCanvas;
+
+		if (pCanvas)
+		{
+			// Gets any pixels the CPU wrote into the texture before we render over
+			// it, and marks our copy of them as the older one from here on. That
+			// upload runs on the copy queue, which can only reach a texture that
+			// rests in COMMON, so the surface goes back there first. It usually
+			// already is, in which case the call below records nothing.
+
+			_transitionCanvas(pCanvas, D3D12_RESOURCE_STATE_COMMON);
+
+			pCanvas->notifyRendered();
+
+			_transitionCanvas(pCanvas, D3D12_RESOURCE_STATE_RENDER_TARGET);
+
+			m_activeCanvasRTV = pCanvas->renderTargetView();
+			m_activeCanvasSize = pCanvas->pixelSize();
+			m_activeCanvasFormat = pCanvas->dxgiFormat();
+		}
+		else
+		{
+			// A session that started on a surface canvas has not claimed the swap
+			// chain buffer yet. endSession() hands it back.
+
+			if (!m_bSessionOnDefaultCanvas && m_defaultCanvasBuffer && m_bCommandListOpen)
+			{
+				D3D12_RESOURCE_BARRIER barrier = {};
+				barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+				barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+				barrier.Transition.pResource = m_defaultCanvasBuffer;
+				barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_PRESENT;
+				barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
+				barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+
+				m_commandList->ResourceBarrier(1, &barrier);
+
+				m_bSessionOnDefaultCanvas = true;
+			}
+
+			m_activeCanvasRTV = m_defaultCanvasRTV;
+			m_activeCanvasSize = { m_defaultCanvas.size.w / 64, m_defaultCanvas.size.h / 64 };
+			m_activeCanvasFormat = m_defaultCanvasFormat;
+		}
+
+		_bindCanvasState();
 	}
 
 	//____ setObjects() ________________________________________________________
@@ -437,8 +744,7 @@ namespace wg
 					{
 						Object * pObject = *pObjects++;
 
-						_setBlitSource( (pObject && pObject->typeInfo() == DX12Surface::TYPEINFO) ?
-										static_cast<DX12Surface*>(pObject) : nullptr );
+						_setBlitSource( _isDX12Surface(pObject) ? static_cast<DX12Surface*>(pObject) : nullptr );
 					}
 
 					if (statesChanged & uint8_t(StateChange::TintColor))
@@ -537,13 +843,7 @@ namespace wg
 		if (nRects <= 0 || !m_pVertexPtr)
 			return;
 
-		if (!_setPipeline(_fillPipeline(m_activeBlendMode)))
-			return;
-
-		// One color for the whole command, the vertices only carry its offset.
-
-		int colorOfs = _addColor(color);
-		if (colorOfs < 0)
+		if (!_setPipeline(_pipeline(m_activeBlendMode, false)))
 			return;
 
 		int nVerticesLeft = int(m_pVertexEnd - m_pVertexPtr);
@@ -563,6 +863,12 @@ namespace wg
 			if (nRects == 0)
 				return;
 		}
+
+		// One color for the whole command, the vertices only carry its offset.
+
+		int colorOfs = _addColor(color);
+		if (colorOfs < 0)
+			return;
 
 		int firstVertex = int(m_pVertexPtr - m_pVertexBeg);
 
@@ -666,6 +972,17 @@ namespace wg
 		if (!pSurface)
 			return;
 
+		// Reading from the surface we are painting into can't work, the texture
+		// can't be render target and shader resource at the same time.
+
+		if (pSurface == m_pActiveCanvas)
+		{
+			GfxBase::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite,
+				"Can't blit from the surface we are rendering into.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			m_pBlitSource = nullptr;
+			return;
+		}
+
 		// Make sure the texture holds everything written to the surface.
 
 		pSurface->syncTexture();
@@ -686,11 +1003,21 @@ namespace wg
 
 	bool DX12Backend::_bindBlitSource()
 	{
-		if (!m_pBlitSource || !m_pBlitSource->texture())
+		if (!m_bCommandListOpen || !m_pBlitSource || !m_pBlitSource->texture())
 			return false;
 
 		if (m_bBlitSourceBound)
 			return true;
+
+		// D3D12 would promote a texture resting in COMMON to a shader resource on
+		// its own, but a canvas surface's state is one we track, so we do it with
+		// a barrier and put it back before the command list closes.
+
+		if (m_pBlitSource->canBeCanvas() && m_pBlitSource->resourceState() == D3D12_RESOURCE_STATE_COMMON)
+		{
+			_transitionCanvas(m_pBlitSource, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+			m_blitSourceCanvases.push_back(m_pBlitSource);
+		}
 
 		auto& frame = m_frameResources[m_currentFrameIndex];
 
@@ -753,7 +1080,7 @@ namespace wg
 		// Even when we can't draw we have to step through the command's data, or
 		// we lose track of where we are in the stream.
 
-		bool bDraw = _bindBlitSource() && _setPipeline(_blitPipeline(m_activeBlendMode)) && m_pVertexPtr != nullptr;
+		bool bDraw = _bindBlitSource() && _setPipeline(_pipeline(m_activeBlendMode, true)) && m_pVertexPtr != nullptr;
 
 		int colorOfs = bDraw ? _addColor(m_tintColor) : -1;
 
@@ -842,7 +1169,7 @@ namespace wg
 
 	bool DX12Backend::_setPipeline(ID3D12PipelineState* pPipeline)
 	{
-		if (!pPipeline)
+		if (!pPipeline || !m_bCommandListOpen)
 			return false;
 
 		if (pPipeline != m_pActivePipeline)
@@ -854,39 +1181,19 @@ namespace wg
 		return true;
 	}
 
-	//____ _blitPipeline() _____________________________________________________
+	//____ _supportedBlendMode() _______________________________________________
 
-	ID3D12PipelineState* DX12Backend::_blitPipeline(BlendMode blendMode)
+	BlendMode DX12Backend::_supportedBlendMode(BlendMode blendMode)
 	{
 		switch (blendMode)
 		{
-			case BlendMode::Ignore:
-				return nullptr;							// Nothing should be drawn.
-
 			case BlendMode::Replace:
-				return m_pBlitPipelines[c_fillPipelineReplace].Get();
-
-			default:
-				return m_pBlitPipelines[c_fillPipelineBlend].Get();
-		}
-	}
-
-	//____ _fillPipeline() _____________________________________________________
-
-	ID3D12PipelineState* DX12Backend::_fillPipeline(BlendMode blendMode)
-	{
-		switch (blendMode)
-		{
-			case BlendMode::Ignore:
-				return nullptr;							// Nothing should be drawn.
-
-			case BlendMode::Replace:
-				return m_pFillPipelines[c_fillPipelineReplace].Get();
+				return BlendMode::Replace;
 
 			case BlendMode::Undefined:
 			case BlendMode::Blend:
 			case BlendMode::BlendFixedColor:		// Defaults to Blend, like GlBackend does.
-				return m_pFillPipelines[c_fillPipelineBlend].Get();
+				return BlendMode::Blend;
 
 			default:
 			{
@@ -899,9 +1206,43 @@ namespace wg
 					bReported = true;
 				}
 
-				return m_pFillPipelines[c_fillPipelineBlend].Get();
+				return BlendMode::Blend;
 			}
 		}
+	}
+
+	//____ _pipeline() _________________________________________________________
+	//
+	// The pipeline for the given blend mode and draw kind, on the canvas we are
+	// rendering into. Created the first time a combination shows up, since the
+	// canvas formats in use are not known until canvases are set.
+
+	ID3D12PipelineState* DX12Backend::_pipeline(BlendMode blendMode, bool bBlit)
+	{
+		if (blendMode == BlendMode::Ignore)
+			return nullptr;							// Nothing should be drawn.
+
+		if (m_activeCanvasFormat == DXGI_FORMAT_UNKNOWN)
+			return nullptr;							// No canvas set.
+
+		BlendMode mode = _supportedBlendMode(blendMode);
+
+		uint64_t key = (uint64_t(m_activeCanvasFormat) << 8) |
+					   (uint64_t(mode == BlendMode::Replace ? 1 : 0) << 1) |
+					   (bBlit ? 1 : 0);
+
+		auto it = m_pipelines.find(key);
+		if (it != m_pipelines.end())
+			return it->second.Get();				// May be null, if creation failed before.
+
+		Microsoft::WRL::ComPtr<ID3D12PipelineState> pPipeline;
+
+		if (!_createPipeline(mode, bBlit, m_activeCanvasFormat, pPipeline))
+			pPipeline = nullptr;					// Remembered as a failure, so we don't try again every draw.
+
+		m_pipelines[key] = pPipeline;
+
+		return pPipeline.Get();
 	}
 
 	//____ setDefaultCanvas() ___________________________________________
@@ -913,6 +1254,34 @@ namespace wg
 		m_defaultCanvas.ref = CanvasRef::Default;		// Starts as Undefined until this method is called.
 		m_defaultCanvas.size = size;
 		m_defaultCanvas.scale = scale;
+
+		// The window decides the swap chain's format, and our pipelines have to
+		// match it, so take it from the buffer rather than assuming.
+
+		if (renderTargetBuffer)
+		{
+			D3D12_RESOURCE_DESC desc = renderTargetBuffer->GetDesc();
+			m_defaultCanvasFormat = desc.Format;
+
+			// WonderGUI has no name for R8G8B8A8, which is the usual swap chain
+			// format, so that one is left Undefined.
+
+			switch (m_defaultCanvasFormat)
+			{
+				case DXGI_FORMAT_B8G8R8A8_UNORM:
+					m_defaultCanvas.format = PixelFormat::BGRA_8;
+					break;
+
+				case DXGI_FORMAT_B8G8R8X8_UNORM:
+					m_defaultCanvas.format = PixelFormat::BGRX_8;
+					break;
+
+				default:
+					m_defaultCanvas.format = PixelFormat::Undefined;
+					break;
+			}
+		}
+
 		return true;
 	}
 
@@ -954,22 +1323,25 @@ namespace wg
 
 	bool DX12Backend::canBeBlitSource(const TypeInfo& type) const
 	{
-		return true;
+		return _isDX12SurfaceType(type);
 	}
 
 	//____ canBeCanvas() ________________________________________________________
 
 	bool DX12Backend::canBeCanvas(const TypeInfo& type) const
 	{
-		// Rendering into a surface is not supported yet, only into the window.
-
-		return false;
+		return _isDX12SurfaceType(type);
 	}
 
 	//____ waitForCompletion() __________________________________________________
 
 	void DX12Backend::waitForCompletion()
 	{
+		// Waiting for work that is still being recorded would return at once and
+		// mean nothing, so what we have goes to the GPU first.
+
+		_flushCommandList();
+
 		// Wait for the last value signaled, not just the current frame slot's,
 		// so work from both in-flight frames is done.
 
@@ -1018,9 +1390,12 @@ namespace wg
 	}
 
 
-	//____ _createPipelines() _________________________________________________
+	//____ _createPipelineResources() _________________________________________
+	//
+	// Everything the pipelines are built from. The pipelines themselves are
+	// created on demand by _pipeline(), since they depend on the canvas format.
 
-	bool DX12Backend::_createPipelines()
+	bool DX12Backend::_createPipelineResources()
 	{
 		if (!_createRootSignature())
 			return false;
@@ -1038,18 +1413,6 @@ namespace wg
 			return false;
 
 		if (!_compilePixelShader(m_blitPixelShaderBlob, g_blitPS))
-			return false;
-
-		if (!_createPipeline(BlendMode::Blend, false, m_pFillPipelines[c_fillPipelineBlend]))
-			return false;
-
-		if (!_createPipeline(BlendMode::Replace, false, m_pFillPipelines[c_fillPipelineReplace]))
-			return false;
-
-		if (!_createPipeline(BlendMode::Blend, true, m_pBlitPipelines[c_fillPipelineBlend]))
-			return false;
-
-		if (!_createPipeline(BlendMode::Replace, true, m_pBlitPipelines[c_fillPipelineReplace]))
 			return false;
 
 		return true;
@@ -1190,7 +1553,7 @@ namespace wg
 
 	//____ _createPipeline() __________________________________________________
 
-	bool DX12Backend::_createPipeline(BlendMode blendMode, bool bBlit, Microsoft::WRL::ComPtr<ID3D12PipelineState>& pPipeline)
+	bool DX12Backend::_createPipeline(BlendMode blendMode, bool bBlit, DXGI_FORMAT rtvFormat, Microsoft::WRL::ComPtr<ID3D12PipelineState>& pPipeline)
 	{
 		// Setup the graphics pipeline state.
 
@@ -1213,9 +1576,22 @@ namespace wg
 		desc.BlendState.RenderTarget[0].LogicOpEnable = false;
 		desc.BlendState.RenderTarget[0].RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
 
+		// Zero is not a valid value for any of these, so they are filled in even
+		// for Replace, where blending is off and they are never used.
+
+		desc.BlendState.RenderTarget[0].SrcBlend = D3D12_BLEND_ONE;
+		desc.BlendState.RenderTarget[0].DestBlend = D3D12_BLEND_ZERO;
+		desc.BlendState.RenderTarget[0].BlendOp = D3D12_BLEND_OP_ADD;
+		desc.BlendState.RenderTarget[0].SrcBlendAlpha = D3D12_BLEND_ONE;
+		desc.BlendState.RenderTarget[0].DestBlendAlpha = D3D12_BLEND_ZERO;
+		desc.BlendState.RenderTarget[0].BlendOpAlpha = D3D12_BLEND_OP_ADD;
+		desc.BlendState.RenderTarget[0].LogicOp = D3D12_LOGIC_OP_NOOP;
+
 		if (blendMode == BlendMode::Blend)
 		{
-			// Same as GlBackend uses for a canvas that isn't alpha only.
+			// Same as GlBackend uses for a canvas that isn't alpha only. An
+			// alpha only canvas keeps only the alpha channel, and those factors
+			// already give it the ordinary over operator.
 
 			desc.BlendState.RenderTarget[0].SrcBlend = D3D12_BLEND_SRC_ALPHA;
 			desc.BlendState.RenderTarget[0].DestBlend = D3D12_BLEND_INV_SRC_ALPHA;
@@ -1261,7 +1637,7 @@ namespace wg
 
 
 		desc.NumRenderTargets = 1;
-		desc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
+		desc.RTVFormats[0] = rtvFormat;
 		desc.NodeMask = 0;
 		desc.Flags = D3D12_PIPELINE_STATE_FLAG_NONE;
 

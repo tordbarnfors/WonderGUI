@@ -34,6 +34,8 @@
 namespace wg
 {
 
+	class DX12Backend;
+
 	class DX12Surface;
 	typedef	StrongPtr<DX12Surface>	DX12Surface_p;
 	typedef	WeakPtr<DX12Surface>	DX12Surface_wp;
@@ -84,19 +86,29 @@ namespace wg
 
 		//.____ Misc __________________________________________________________
 
-		// Set by DX12Backend before any surface is created. All surfaces share
-		// one copy queue for their uploads.
+		// Set by DX12Backend before any surface is created. All surfaces share one
+		// copy queue for their uploads, and need the backend to tell them when its
+		// rendering has finished.
 
-		static bool				setDevice( ID3D12Device * pDevice );
+		static bool				setDevice( ID3D12Device * pDevice, DX12Backend * pBackend );
 		static void				exitDevice();
 
-		// Used by DX12Backend when the surface is set as blit source.
+		// Used by DX12Backend when the surface is set as blit source or canvas.
 
 		ID3D12Resource*				texture() const { return m_texture.Get(); }
 		D3D12_CPU_DESCRIPTOR_HANDLE	textureSRV() const { return m_srvHandle; }
+		D3D12_CPU_DESCRIPTOR_HANDLE	renderTargetView() const { return m_rtvHandle; }
+		DXGI_FORMAT					dxgiFormat() const { return m_dxgiFormat; }
 		bool						isAlphaOnly() const { return m_bAlphaOnly; }
 
+		// Resource state of the texture at the end of the command list DX12Backend
+		// is recording. Only canvas surfaces ever leave D3D12_RESOURCE_STATE_COMMON.
+
+		D3D12_RESOURCE_STATES	resourceState() const { return m_resourceState; }
+		void					setResourceState( D3D12_RESOURCE_STATES state ) { m_resourceState = state; }
+
 		void					syncTexture();			// Uploads pending pixel changes, if any.
+		void					notifyRendered();		// Called by DX12Backend before it renders into us.
 
 
 	protected:
@@ -112,26 +124,44 @@ namespace wg
 
 		void			_addDirtyRect( const RectI& rect );
 
-		static DXGI_FORMAT	_dxgiFormat( PixelFormat format );
+		void			_copyInPixels( const void * pPixels, int pitch, PixelFormat srcFormat, const PixelDescription * pSrcPixelDesc,
+									   const Color8 * pSrcPalette, int srcPaletteSize );
+
+		void			_syncBufferAndWait();			// Brings anything rendered into us back to our pixels.
+		bool			_initReadbackBuffer();
+
+		bool			_setPixelDetails( PixelFormat format );		// Settles on a format D3D12 can hold.
+		bool			_allocFallbackPixels();						// Plain memory, for when D3D12 wouldn't play along.
+
 		static bool			_initCopyResources();
+		static void			_waitForCopyFence();
 
 
-		Microsoft::WRL::ComPtr<ID3D12Resource>			m_texture;			// Lives in COMMON state, promoted on use.
+		Microsoft::WRL::ComPtr<ID3D12Resource>			m_texture;			// Rests in COMMON state, promoted on use.
 		Microsoft::WRL::ComPtr<ID3D12Resource>			m_uploadBuffer;		// Holds our pixels, readable and writable by the CPU.
+		Microsoft::WRL::ComPtr<ID3D12Resource>			m_readbackBuffer;	// Created on first read back from a canvas surface.
 		Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>	m_srvHeap;			// Holds this surface's SRV, not shader visible.
+		Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>	m_rtvHeap;			// Holds this surface's RTV. Canvas surfaces only.
 
 		D3D12_CPU_DESCRIPTOR_HANDLE	m_srvHandle = {};
+		D3D12_CPU_DESCRIPTOR_HANDLE	m_rtvHandle = {};
 
-		uint8_t *		m_pUploadData = nullptr;		// Permanently mapped content of m_uploadBuffer.
+		DXGI_FORMAT		m_dxgiFormat = DXGI_FORMAT_UNKNOWN;
+		D3D12_RESOURCE_STATES m_resourceState = D3D12_RESOURCE_STATE_COMMON;
+
+		uint8_t *		m_pUploadData = nullptr;		// Our pixels: the mapped upload buffer, or m_pFallbackData.
+		uint8_t *		m_pFallbackData = nullptr;		// Plain memory, only used when we have no upload buffer.
 		int				m_uploadPitch = 0;				// Bytes per line, aligned as D3D12 requires for texture copies.
 		int				m_pixelSize = 0;				// Bytes per pixel.
 		bool			m_bAlphaOnly = false;			// Alpha_8, no color channels.
 
 		RectI			m_dirtyRect;					// Area not yet uploaded to the texture. Empty when in sync.
+		bool			m_bBufferNeedsSync = false;		// Texture has changes our pixels don't have yet.
 
 		//
 
 		static ID3D12Device *									s_pDevice;
+		static DX12Backend *									s_pBackend;			// Not a strong pointer, it owns us indirectly.
 
 		static Microsoft::WRL::ComPtr<ID3D12CommandQueue>		s_copyQueue;
 		static Microsoft::WRL::ComPtr<ID3D12CommandAllocator>	s_copyAllocator;

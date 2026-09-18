@@ -119,7 +119,6 @@ void Win32Window::render()
 	// soon as a Present() isn't paired with exactly one render.
 
 	m_currentBuffer = m_pSwapChain->GetCurrentBackBufferIndex();
-	m_bRendered = true;
 
 	_backend()->setDefaultCanvas(m_rtvHandles[m_currentBuffer], m_renderBuffers[m_currentBuffer].Get(), {spx(m_width * 64), spx(m_height * 64)}, m_pRootPanel->scale());
 
@@ -133,6 +132,10 @@ void Win32Window::render()
 
 	int nRects = m_pRootPanel->nbUpdatedRects();
 	auto pRects = m_pRootPanel->firstUpdatedRect();
+
+	if (nRects > 0)
+		m_bPendingPresent = true;
+
 	for (int i = 0; i < nRects; i++)
 	{
 		RectI rect = * pRects++ / 64;
@@ -180,10 +183,23 @@ bool Win32Window::_dirtyRectsCoverRegion(HRGN updateRegion) const
 
 void Win32Window::paint()
 {
-	// UpdateWindow() in the constructor sends WM_PAINT before anything has been
-	// rendered. Don't present an undefined buffer.
+	// Windows asks for a repaint whenever part of the window is uncovered, which
+	// happens a lot while a window is dragged back in from off screen. There is
+	// nothing for us to do about that: the flip model hands our front buffer to
+	// the desktop compositor, which recomposes the newly visible part from it
+	// by itself.
+	//
+	// Presenting anyway would be actively wrong. FLIP_SEQUENTIAL gives us back
+	// the buffer from two presents ago, so we would put an older frame on screen,
+	// and each present waits for the compositor to retire the previous flip -
+	// with two buffers that is a wait per repaint, which is what turned dragging
+	// a window back up into second-long freezes.
+	//
+	// This also covers the WM_PAINT that UpdateWindow() sends from the
+	// constructor, and the one after a resize, where the new buffers hold
+	// nothing at all yet.
 
-	if (!m_bRendered)
+	if (!m_bPendingPresent)
 	{
 		ValidateRect(m_windowHandle, nullptr);
 		return;
@@ -236,6 +252,7 @@ void Win32Window::paint()
 
 		m_dirtyRects.clear();
 		m_bPresentFullFrame = false;
+		m_bPendingPresent = false;
 
 		if (hr == DXGI_ERROR_DEVICE_REMOVED || hr == DXGI_ERROR_DEVICE_RESET)
 		{
@@ -272,9 +289,11 @@ void Win32Window::onResize(int widthInPixels, int heightInPixels)
 	m_height = heightInPixels;
 
 	// The new buffers hold nothing, and the old rects belong to a canvas that no
-	// longer exists, so the next present has to be a full frame.
+	// longer exists, so there is nothing to present until we have rendered again,
+	// and the next present has to be a full frame.
 
 	m_dirtyRects.clear();
+	m_bPendingPresent = false;
 	m_bPresentFullFrame = true;
 
 	// All references to the buffers must be gone and the GPU done with them
