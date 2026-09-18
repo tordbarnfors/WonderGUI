@@ -36,6 +36,12 @@ namespace wg
 
 	const TypeInfo DX12Backend::TYPEINFO = { "DX12Backend", &GfxBackend::TYPEINFO };
 
+	// Debug aid: clear each update rect before drawing it, so it is obvious which
+	// parts of the canvas are redrawn and whether anything is left unpainted. The
+	// window must present full frames while this is on, see beginSession().
+
+	static constexpr bool c_bDebugClearUpdateRects = false;
+
 	//____ _checkHR() __________________________________________________________
 	//
 	// Logs failed HRESULTs to the debug output. The logging stays in release
@@ -74,12 +80,26 @@ namespace wg
 		pDX12Device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&m_commandFence));
 		m_fenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
 
-		// Create command allocators for each frame resource
+		// Create command allocator and vertex buffer for each frame resource.
+		//
+		// The vertex buffers can't be shared between frame resources since the GPU
+		// may still be reading one of them. beginRender() waits for the fence of
+		// the frame resource it picks, so one buffer each is enough.
 
 		for (int i = 0; i < c_nbFrameResources; ++i)
 		{
 			pDX12Device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&m_frameResources[i].commandAllocator));
 			m_frameResources[i].fenceValue = 0;
+
+			_createBuffer(m_frameResources[i].vertexBuffer, c_vertexBufferSize, D3D12_HEAP_TYPE_UPLOAD, D3D12_RESOURCE_STATE_GENERIC_READ, L"WonderGUI Vertex Buffer");
+
+			if (m_frameResources[i].vertexBuffer)
+			{
+				// Upload heaps can stay mapped for their entire lifetime.
+
+				D3D12_RANGE readRange = { 0, 0 };		// We only write.
+				_checkHR(m_frameResources[i].vertexBuffer->Map(0, &readRange, (void**)&m_frameResources[i].pVertexBufferData), "ID3D12Resource::Map");
+			}
 		}
 
 		// Create one command list for all frames (will be reset for each frame)
@@ -88,24 +108,8 @@ namespace wg
 
 		m_commandList->Close();
 
-		// Create vertex buffer
-
-		_createBuffer(m_pVertexBuffer, c_vertexBufferSize, D3D12_HEAP_TYPE_UPLOAD, D3D12_RESOURCE_STATE_GENERIC_READ, L"WonderGUI Vertex Buffer");
-
-//		m_pVertexBuffer->SetName(L"WonderGUI Vertex Buffer");
-
-		/*
-			void* destination = nullptr;
-			
-			m_pVertexBuffer->Map(0, 0, &destination);
-
-			memcpy(destination, &vertexData, sizeof(Vertex));
-
-			m_pVertexBuffer->Unmap(0, 0);
-		*/
-
-		if (!_createFillPipeline())
-			OutputDebugStringA("DX12Backend: failed to create fill pipeline, nothing will render.\n");
+		if (!_createFillPipelines())
+			OutputDebugStringA("DX12Backend: failed to create fill pipelines, nothing will render.\n");
 
 	}
 
@@ -139,6 +143,15 @@ namespace wg
 
 		m_frameResources[frame].commandAllocator->Reset();
 		m_commandList->Reset(m_frameResources[frame].commandAllocator.Get(), nullptr);
+
+		// Vertices are written for the whole frame, not per session, since the
+		// GPU doesn't run any of it until the command list has been executed.
+
+		m_pVertexBeg = m_frameResources[frame].pVertexBufferData;
+		m_pVertexEnd = m_pVertexBeg ? m_pVertexBeg + c_vertexBufferSize / sizeof(Vertex) : nullptr;
+		m_pVertexPtr = m_pVertexBeg;
+
+		m_pActivePipeline = nullptr;		// Resetting the command list cleared its state.
 	}
 
 	//____ endRender() _________________________________________________________
@@ -181,17 +194,6 @@ namespace wg
 
 		m_commandList->ResourceBarrier(1, &barrier);
 
-		// Prepare vertex buffer
-
-		m_pVertexBuffer->Map(0, 0, (void**)&m_pVertexBeg);
-		m_pVertexEnd = m_pVertexBeg + c_vertexBufferSize / sizeof(Vertex);
-		m_pVertexPtr = m_pVertexBeg;
-
-		// Clear render target
-
-		float clearColor[4] = { 0.2f, 0.3f, 0.4f, 1.0f };
-		m_commandList->ClearRenderTargetView(m_defaultCanvasRTV, clearColor, 0, nullptr);
-
 		// Set render target
 
 		m_commandList->OMSetRenderTargets(1, &m_defaultCanvasRTV, FALSE, nullptr);
@@ -217,31 +219,71 @@ namespace wg
 		scissorRect.bottom = (LONG)canvasHeight;
 		m_commandList->RSSetScissorRects(1, &scissorRect);
 
-		// Set pipeline
+		// We must not touch a single pixel outside the update rects: the swap chain
+		// is presented with them as dirty rects, and DXGI copies everything else
+		// from the previously presented buffer. Hence no clear of the canvas.
+		//
+		// The rects we get for the draw commands are already clipped against the
+		// update rects by GfxDeviceGen2, so no extra clipping is needed here.
+		//
+		// Set c_bDebugClearUpdateRects to make the updated areas stand out, which
+		// also shows which parts of the canvas are being redrawn. Note that this
+		// paints the whole update rect, which breaks the rule above, so the window
+		// must present full frames while it is on.
+
+		if (c_bDebugClearUpdateRects && nUpdateRects > 0)
+		{
+			std::vector<D3D12_RECT> rects;
+			rects.reserve(nUpdateRects);
+
+			for (int i = 0; i < nUpdateRects; i++)
+			{
+				const RectSPX& rect = pUpdateRects[i];
+
+				D3D12_RECT r;
+				r.left = rect.x / 64;
+				r.top = rect.y / 64;
+				r.right = (rect.x + rect.w) / 64;
+				r.bottom = (rect.y + rect.h) / 64;
+				rects.push_back(r);
+			}
+
+			float clearColor[4] = { 1.0f, 0.0f, 1.0f, 1.0f };
+			m_commandList->ClearRenderTargetView(m_defaultCanvasRTV, clearColor, (UINT) rects.size(), rects.data());
+		}
+
+		// Set pipeline state. Vertex positions are in canvas pixels, the vertex
+		// shader needs the canvas size to bring them into clip space.
 
 		m_commandList->SetGraphicsRootSignature(m_pFillRootSignature.Get());
-		m_commandList->SetPipelineState(m_pFillPipeline.Get());
+
+		float canvasScale[2] = { canvasWidth > 0 ? 2.f / canvasWidth : 0.f,
+								 canvasHeight > 0 ? 2.f / canvasHeight : 0.f };
+
+		m_commandList->SetGraphicsRoot32BitConstants(0, 2, canvasScale, 0);
+
 		m_commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
+		if (m_frameResources[m_currentFrameIndex].vertexBuffer)
+		{
+			D3D12_VERTEX_BUFFER_VIEW vertexBufferView = {};
+			vertexBufferView.BufferLocation = m_frameResources[m_currentFrameIndex].vertexBuffer->GetGPUVirtualAddress();
+			vertexBufferView.StrideInBytes = sizeof(Vertex);
+			vertexBufferView.SizeInBytes = c_vertexBufferSize;
 
-		D3D12_VERTEX_BUFFER_VIEW vertexBufferView = {};
-		vertexBufferView.BufferLocation = m_pVertexBuffer->GetGPUVirtualAddress();
-		vertexBufferView.StrideInBytes = sizeof(Vertex);
-		vertexBufferView.SizeInBytes = c_vertexBufferSize;
+			m_commandList->IASetVertexBuffers(0, 1, &vertexBufferView );
+		}
 
-		m_commandList->IASetVertexBuffers(0, 1, &vertexBufferView );
+		// Sessions start with default state, changes arrive as StateChange commands.
+
+		m_tintColor = HiColor::White;
+		m_activeBlendMode = BlendMode::Blend;
 	}
 
 	//____ endSession() _______________________________________________________
 
 	void DX12Backend::endSession()
 	{
-		// Unmap vertex buffer
-
-		m_pVertexBuffer->Unmap(0, 0);
-
-
-
 		// Barrier
 
 		D3D12_RESOURCE_BARRIER barrier = {};
@@ -304,40 +346,213 @@ namespace wg
 
 	void DX12Backend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, int version )
 	{
-		m_pVertexPtr->x = 0.0f;
-		m_pVertexPtr->y = 0.0f;
-		m_pVertexPtr->z = 0.0f;
+		const RectSPX*	pRects = m_pRectsPtr;
+		const HiColor*	pColors = m_pColorsPtr;
+		Object* const*	pObjects = m_pObjectsPtr;
 
-		m_pVertexPtr->a = 1.0f;
-		m_pVertexPtr->r = 1.0f;
-		m_pVertexPtr->g = 1.0f;
-		m_pVertexPtr->b = 1.0f;
+		auto p = pBeg;
+		while (p < pEnd)
+		{
+			auto cmd = Command(*p++);
+			switch (cmd)
+			{
+				case Command::None:
+					break;
 
-		m_pVertexPtr++;
+				case Command::StateChange:
+				{
+					// Every payload has to be stepped past even when we ignore it,
+					// or we lose track of where we are in the command stream.
 
-		m_pVertexPtr->x = 20.f;
-		m_pVertexPtr->y = 0.0f;
-		m_pVertexPtr->z = 0.0f;
+					int32_t statesChanged = *p++;
 
-		m_pVertexPtr->a = 1.0f;
-		m_pVertexPtr->r = 1.0f;
-		m_pVertexPtr->g = 1.0f;
-		m_pVertexPtr->b = 1.0f;
+					if (statesChanged & uint8_t(StateChange::BlitSource))
+						pObjects++;								// Blits not supported yet.
 
-		m_pVertexPtr++;
+					if (statesChanged & uint8_t(StateChange::TintColor))
+						m_tintColor = *pColors++;
 
-		m_pVertexPtr->x = 20.f;
-		m_pVertexPtr->y = 20.f;
-		m_pVertexPtr->z = 0.0f;
+					if (statesChanged & uint8_t(StateChange::TintMap))
+					{
+						auto p32 = (const spx*) p;
 
-		m_pVertexPtr->a = 1.0f;
-		m_pVertexPtr->r = 1.0f;
-		m_pVertexPtr->g = 1.0f;
-		m_pVertexPtr->b = 1.0f;
+						p32 += 4;								// Tintmap rectangle.
 
-		m_pVertexPtr++;
-	
-		m_commandList->DrawInstanced(3, 1, 0, 0);
+						int32_t	nHorrColors = *p32++;
+						int32_t	nVertColors = *p32++;
+
+						p = (const uint16_t*) p32;
+
+						pColors += nHorrColors + nVertColors;	// Tintmaps not supported yet.
+						m_tintColor = HiColor::White;
+					}
+
+					if (statesChanged & uint8_t(StateChange::BlendMode))
+						m_activeBlendMode = BlendMode(*p++);
+
+					if (statesChanged & uint8_t(StateChange::MorphFactor))
+						p++;									// Only used by BlendMode::Morph.
+
+					if (statesChanged & uint8_t(StateChange::FixedBlendColor))
+						pColors++;								// Only used by BlendMode::BlendFixedColor.
+
+					if (statesChanged & uint8_t(StateChange::Blur))
+						p += 28;								// Blur not supported yet.
+
+					// Take care of alignment
+
+					if( (uintptr_t(p) & 0x2) == 2 )
+						p++;
+
+					break;
+				}
+
+				case Command::Fill:
+				{
+					int32_t nRects = *p++;
+					HiColor col = *pColors++;
+
+					_drawFillRects(pRects, nRects, col);
+					pRects += nRects;
+					break;
+				}
+
+				default:
+				{
+					// We don't know the size of the payload of a command we don't
+					// handle, so there is no way to find the next one. Text and
+					// images are blits, so expect them to be missing until those
+					// are implemented.
+
+					static bool bReported = false;
+					if (!bReported)
+					{
+						char msg[128];
+						sprintf_s(msg, "DX12Backend: command %d not implemented, rest of session dropped.\n", (int)cmd);
+						OutputDebugStringA(msg);
+						bReported = true;
+					}
+
+					p = pEnd;
+					break;
+				}
+			}
+		}
+
+		m_pRectsPtr = pRects;
+		m_pColorsPtr = pColors;
+		m_pObjectsPtr = pObjects;
+	}
+
+	//____ _drawFillRects() ____________________________________________________
+
+	void DX12Backend::_drawFillRects(const RectSPX* pRects, int nRects, HiColor color)
+	{
+		if (nRects <= 0 || !m_pVertexPtr)
+			return;
+
+		auto pPipeline = _fillPipeline(m_activeBlendMode);
+		if (!pPipeline)
+			return;
+
+		if (pPipeline != m_pActivePipeline)
+		{
+			m_commandList->SetPipelineState(pPipeline);
+			m_pActivePipeline = pPipeline;
+		}
+
+		// HiColor components are 13 bit fixed point, tint is a plain multiplication.
+
+		float r = (color.r / 4096.f) * (m_tintColor.r / 4096.f);
+		float g = (color.g / 4096.f) * (m_tintColor.g / 4096.f);
+		float b = (color.b / 4096.f) * (m_tintColor.b / 4096.f);
+		float a = (color.a / 4096.f) * (m_tintColor.a / 4096.f);
+
+		int nVerticesLeft = int(m_pVertexEnd - m_pVertexPtr);
+
+		if (nRects * 6 > nVerticesLeft)
+		{
+			nRects = nVerticesLeft / 6;
+
+			static bool bReported = false;
+			if (!bReported)
+			{
+				OutputDebugStringA("DX12Backend: vertex buffer full, fills dropped. Increase c_vertexBufferSize.\n");
+				bReported = true;
+			}
+
+			if (nRects == 0)
+				return;
+		}
+
+		int firstVertex = int(m_pVertexPtr - m_pVertexBeg);
+
+		for (int i = 0; i < nRects; i++)
+		{
+			const RectSPX& rect = pRects[i];
+
+			// spx to pixels, rounded to the nearest pixel edge. Rects that are
+			// already pixel aligned (the common case) are unaffected.
+			//
+			// TODO: subpixel precision needs coverage calculated in the pixel
+			// shader, the way GlBackend does it.
+
+			float x1 = float((rect.x + 32) >> 6);
+			float y1 = float((rect.y + 32) >> 6);
+			float x2 = float((rect.x + rect.w + 32) >> 6);
+			float y2 = float((rect.y + rect.h + 32) >> 6);
+
+			const float coords[6][2] = { {x1,y1}, {x2,y1}, {x2,y2},
+										 {x1,y1}, {x2,y2}, {x1,y2} };
+
+			for (int vertex = 0; vertex < 6; vertex++)
+			{
+				m_pVertexPtr->x = coords[vertex][0];
+				m_pVertexPtr->y = coords[vertex][1];
+
+				m_pVertexPtr->r = r;
+				m_pVertexPtr->g = g;
+				m_pVertexPtr->b = b;
+				m_pVertexPtr->a = a;
+
+				m_pVertexPtr++;
+			}
+		}
+
+		m_commandList->DrawInstanced(nRects * 6, 1, firstVertex, 0);
+	}
+
+	//____ _fillPipeline() _____________________________________________________
+
+	ID3D12PipelineState* DX12Backend::_fillPipeline(BlendMode blendMode)
+	{
+		switch (blendMode)
+		{
+			case BlendMode::Ignore:
+				return nullptr;							// Nothing should be drawn.
+
+			case BlendMode::Replace:
+				return m_pFillPipelines[c_fillPipelineReplace].Get();
+
+			case BlendMode::Undefined:
+			case BlendMode::Blend:
+			case BlendMode::BlendFixedColor:		// Defaults to Blend, like GlBackend does.
+				return m_pFillPipelines[c_fillPipelineBlend].Get();
+
+			default:
+			{
+				static bool bReported = false;
+				if (!bReported)
+				{
+					char msg[128];
+					sprintf_s(msg, "DX12Backend: BlendMode %d not supported, using Blend.\n", (int)blendMode);
+					OutputDebugStringA(msg);
+					bReported = true;
+				}
+
+				return m_pFillPipelines[c_fillPipelineBlend].Get();
+			}
+		}
 	}
 
 	//____ setDefaultCanvas() ___________________________________________
@@ -445,25 +660,48 @@ namespace wg
 		resourceDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
 
 
-		if (S_OK != m_pDX12Device->CreateCommittedResource(&heapProp, D3D12_HEAP_FLAG_NONE, &resourceDesc, initialState, 0, IID_PPV_ARGS(pointer.GetAddressOf())))
-		{
-			assert(false);
-		}
+		if (!_checkHR(m_pDX12Device->CreateCommittedResource(&heapProp, D3D12_HEAP_FLAG_NONE, &resourceDesc, initialState, 0, IID_PPV_ARGS(pointer.GetAddressOf())), "CreateCommittedResource"))
+			return;
 
 		pointer->SetName(name);
 	}
 
 
-	//____ _createFillPipeline() ______________________________________________
+	//____ _createFillPipelines() _____________________________________________
 
-	bool DX12Backend::_createFillPipeline()
+	bool DX12Backend::_createFillPipelines()
 	{
-		// First we create the root signature.
+		if (!_createFillRootSignature())
+			return false;
 
-		D3D12_ROOT_PARAMETER rootParameter[1];
-		rootParameter[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
-		rootParameter[0].Descriptor.ShaderRegister = 0;
-		rootParameter[0].Descriptor.RegisterSpace = 0;
+		if (!_compileVertexShader(m_fillVertexShaderBlob, g_fillVS))
+			return false;
+
+		if (!_compilePixelShader(m_fillPixelShaderBlob, g_fillPS))
+			return false;
+
+		if (!_createFillPipeline(BlendMode::Blend, m_pFillPipelines[c_fillPipelineBlend]))
+			return false;
+
+		if (!_createFillPipeline(BlendMode::Replace, m_pFillPipelines[c_fillPipelineReplace]))
+			return false;
+
+		return true;
+	}
+
+	//____ _createFillRootSignature() _________________________________________
+
+	bool DX12Backend::_createFillRootSignature()
+	{
+		// Two root constants holding the canvas scale for the vertex shader. Root
+		// constants instead of a constant buffer, since it is just two floats that
+		// only change when the canvas does.
+
+		D3D12_ROOT_PARAMETER rootParameter[1] = {};
+		rootParameter[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS;
+		rootParameter[0].Constants.ShaderRegister = 0;
+		rootParameter[0].Constants.RegisterSpace = 0;
+		rootParameter[0].Constants.Num32BitValues = 2;
 		rootParameter[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
 
 		D3D12_VERSIONED_ROOT_SIGNATURE_DESC rsDesc = { };
@@ -491,14 +729,13 @@ namespace wg
 		if (!_checkHR(m_pDX12Device->CreateRootSignature(0, pSerializedRS->GetBufferPointer(), pSerializedRS->GetBufferSize(), IID_PPV_ARGS(m_pFillRootSignature.GetAddressOf())), "CreateRootSignature"))
 			return false;
 
-		// Next we compile the shaders.
+		return true;
+	}
 
-		if (!_compileVertexShader(m_fillVertexShaderBlob, g_fillVS))
-			return false;
+	//____ _createFillPipeline() ______________________________________________
 
-		if (!_compilePixelShader(m_fillPixelShaderBlob, g_fillPS))
-			return false;
-
+	bool DX12Backend::_createFillPipeline(BlendMode blendMode, Microsoft::WRL::ComPtr<ID3D12PipelineState>& pPipeline)
+	{
 		// Setup the graphics pipeline state.
 
 		D3D12_GRAPHICS_PIPELINE_STATE_DESC desc = {};
@@ -510,9 +747,21 @@ namespace wg
 
 		desc.BlendState.AlphaToCoverageEnable = false;
 		desc.BlendState.IndependentBlendEnable = false;
-		desc.BlendState.RenderTarget[0].BlendEnable = false;
+		desc.BlendState.RenderTarget[0].BlendEnable = (blendMode == BlendMode::Blend);
 		desc.BlendState.RenderTarget[0].LogicOpEnable = false;
 		desc.BlendState.RenderTarget[0].RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
+
+		if (blendMode == BlendMode::Blend)
+		{
+			// Same as GlBackend uses for a canvas that isn't alpha only.
+
+			desc.BlendState.RenderTarget[0].SrcBlend = D3D12_BLEND_SRC_ALPHA;
+			desc.BlendState.RenderTarget[0].DestBlend = D3D12_BLEND_INV_SRC_ALPHA;
+			desc.BlendState.RenderTarget[0].BlendOp = D3D12_BLEND_OP_ADD;
+			desc.BlendState.RenderTarget[0].SrcBlendAlpha = D3D12_BLEND_ONE;
+			desc.BlendState.RenderTarget[0].DestBlendAlpha = D3D12_BLEND_INV_SRC_ALPHA;
+			desc.BlendState.RenderTarget[0].BlendOpAlpha = D3D12_BLEND_OP_ADD;
+		}
 
 		desc.SampleMask = 0xFFFFFFFF;
 		desc.SampleDesc = { 1,0 };
@@ -528,9 +777,9 @@ namespace wg
 		desc.DepthStencilState.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
 
 		D3D12_INPUT_ELEMENT_DESC elements[] = {
-			{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0,
+			{ "POSITION", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 0,
 			D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA , 0 },
-			{ "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12,
+			{ "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 8,
 			D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
 		};
 
@@ -549,7 +798,7 @@ namespace wg
 		desc.NodeMask = 0;
 		desc.Flags = D3D12_PIPELINE_STATE_FLAG_NONE;
 
-		if (!_checkHR(m_pDX12Device->CreateGraphicsPipelineState(&desc, IID_PPV_ARGS(m_pFillPipeline.GetAddressOf())), "CreateGraphicsPipelineState"))
+		if (!_checkHR(m_pDX12Device->CreateGraphicsPipelineState(&desc, IID_PPV_ARGS(pPipeline.GetAddressOf())), "CreateGraphicsPipelineState"))
 			return false;
 
 		return true;

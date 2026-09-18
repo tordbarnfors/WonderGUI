@@ -100,7 +100,12 @@ namespace wg
 
 		void _createBuffer(Microsoft::WRL::ComPtr<ID3D12Resource>& pointer, int nbBytes, D3D12_HEAP_TYPE heapType, D3D12_RESOURCE_STATES initialState, LPCWSTR name);
 
-		bool _createFillPipeline();
+		bool _createFillPipelines();
+		bool _createFillRootSignature();
+		bool _createFillPipeline(BlendMode blendMode, Microsoft::WRL::ComPtr<ID3D12PipelineState>& pPipeline);
+
+		ID3D12PipelineState* _fillPipeline(BlendMode blendMode);
+		void _drawFillRects(const RectSPX* pRects, int nRects, HiColor color);
 
 		bool _compileVertexShader(Microsoft::WRL::ComPtr<ID3DBlob>& shaderBlob, LPCVOID pSrc );
 		bool _compilePixelShader(Microsoft::WRL::ComPtr<ID3DBlob>& shaderBlob, LPCVOID pSrc);
@@ -130,27 +135,31 @@ namespace wg
 		const Transform* m_pTransformsEnd = nullptr;
 
 		struct Vertex {
-			float	x, y, z;
+			float	x, y;			// Canvas pixels, origin top left. Subpixel positions allowed.
 			float	r, g, b, a;
 		};
 
-		const static int	c_vertexBufferSize = 16384;
+		const static int	c_vertexBufferSize = 512*1024;		// Per frame resource. 144 bytes per fill rect.
 
-		Vertex*	m_pVertexBeg = nullptr;
+		Vertex*	m_pVertexBeg = nullptr;		// Start of the current frame's vertex buffer.
 		Vertex* m_pVertexEnd = nullptr;
 		Vertex* m_pVertexPtr = nullptr;
 
+		// State tracked while processing commands.
 
+		HiColor					m_tintColor = HiColor::White;
+		BlendMode				m_activeBlendMode = BlendMode::Blend;
+		ID3D12PipelineState*	m_pActivePipeline = nullptr;
 
 
 		Microsoft::WRL::ComPtr<ID3D12Device>		m_pDX12Device;
 		Microsoft::WRL::ComPtr<ID3D12CommandQueue>	m_pDX12CommandQueue;
 
-		Microsoft::WRL::ComPtr<ID3D12Resource>		m_pVertexBuffer;
-
 		struct FrameResources
 		{
 			Microsoft::WRL::ComPtr<ID3D12CommandAllocator>	commandAllocator;
+			Microsoft::WRL::ComPtr<ID3D12Resource>			vertexBuffer;
+			Vertex*											pVertexBufferData = nullptr;	// Permanently mapped.
 			UINT64											fenceValue;
 		};
 
@@ -167,7 +176,13 @@ namespace wg
 
 		//
 
-		Microsoft::WRL::ComPtr < ID3D12PipelineState>		m_pFillPipeline;
+		// One pipeline per supported blend mode.
+
+		const static int									c_fillPipelineBlend = 0;
+		const static int									c_fillPipelineReplace = 1;
+		const static int									c_nbFillPipelines = 2;
+
+		Microsoft::WRL::ComPtr<ID3D12PipelineState>			m_pFillPipelines[c_nbFillPipelines];
 		Microsoft::WRL::ComPtr<ID3D12RootSignature>			m_pFillRootSignature;
 
 
