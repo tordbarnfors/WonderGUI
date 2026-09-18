@@ -106,7 +106,14 @@ namespace wg
 		struct Vertex {
 			float		x, y;		// Canvas pixels, origin top left. Subpixel positions allowed.
 			uint32_t	colorOfs;	// Offset into the color buffer.
-			uint32_t	extrasOfs;	// Offset into the extras buffer. Only used by blits.
+			uint32_t	extrasOfs;	// Offset into the extras buffer. Not used by plain fills.
+
+			// Only edgemaps use these. They cost every other primitive eight bytes
+			// a vertex, which is what MetalBackend pays too - the alternative is a
+			// second vertex format and a second buffer to keep in step with it.
+
+			float		u, v;					// Column, and distance down the column.
+			float		colorstripX, colorstripY;	// Where this corner's colors start.
 		};
 
 		struct ColorDX12 {
@@ -127,6 +134,7 @@ namespace wg
 			Blit,
 			Blur,			// Same geometry as a blit, nine taps instead of one.
 			Line,
+			Segments,		// Edgemaps.
 
 			Size
 		};
@@ -162,9 +170,11 @@ namespace wg
 		void _drawFillRun(PipelineKind kind, int firstVertex, int nRects);
 		void _drawBlitRects(const uint16_t*& pCmd, const RectSPX*& pRects, int nRects, int version, PipelineKind kind);
 		void _drawLines(const uint16_t*& pCmd, const RectSPX*& pRects, const HiColor*& pColors, int nClipRects, int nLines);
+		void _drawEdgemap(const uint16_t*& pCmd, const RectSPX*& pRects, Object* const*& pObjects, int nRects);
 
 		bool _isDX12Surface(const Object* pObject) const;
 		static bool _isDX12SurfaceType(const TypeInfo& type);
+		static bool _isOfType(const TypeInfo& type, const TypeInfo& base);
 
 		void _setBlitSource(DX12Surface* pSurface);
 		bool _bindBlitSource();					// Puts source and sampler in place for the coming draw.
@@ -213,7 +223,7 @@ namespace wg
 		const Transform* m_pTransformsEnd = nullptr;
 
 		// All three are per frame resource, and a frame draws from them until
-		// beginRender() rewinds. A rect costs 96 bytes of vertices; it also costs
+		// beginRender() rewinds. A rect costs 192 bytes of vertices; it also costs
 		// 16 bytes of extras if it is a blit (32, it needs two), a subpixel fill or
 		// a line, and colors go one per fill command but one per line. So these are
 		// sized against what the vertex buffer can hold rather than against each
@@ -223,7 +233,8 @@ namespace wg
 		// of the same slack. A frame of nothing but blurs would run out after a few
 		// hundred of them, long before the vertex buffer is full.
 
-		const static int	c_vertexBufferSize = 512*1024;		// ~5400 rects.
+		const static int	c_vertexBufferSize = 1024*1024;		// ~5400 rects.
+		const static int	c_maxSegments = 16;					// As many as MetalBackend and GlBackend handle.
 		const static int	c_colorBufferSize = 128*1024;		// 16 bytes per color.
 		const static int	c_extrasBufferSize = 256*1024;		// 16 bytes each, two per blit rect.
 		const static int	c_nbSRVDescriptors = 1024;			// Per frame resource. One per blit source change.
@@ -277,7 +288,7 @@ namespace wg
 			ColorDX12*										pColorBufferData = nullptr;		// Permanently mapped.
 			ExtrasDX12*										pExtrasBufferData = nullptr;	// Permanently mapped.
 			int												nSRVDescriptors = 0;			// Used so far this frame.
-			std::vector<Surface_p>							surfaceRefs;					// Surfaces this frame's command list mentions.
+			std::vector<Object_p>							objectRefs;						// What this frame's command list mentions but doesn't own.
 			UINT64											fenceValue;
 		};
 
@@ -339,6 +350,13 @@ namespace wg
 		static const char g_blurPS[];
 		static const char g_lineVS[];
 		static const char g_linePS[];
+		static const char g_segmentsVS[];
+		static const char g_segmentsPS[];
+
+		// Which corner of a patch each vertex takes its colorstrip from, once the
+		// edgemap has been flipped or rotated.
+
+		static const int s_flipCornerOrder[GfxFlip_size][4];
 
 	};
 

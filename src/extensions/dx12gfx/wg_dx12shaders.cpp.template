@@ -68,5 +68,15 @@ const char DX12Backend::g_linePS[] =
 @INSERTLINEQUOTED <shaders/ps_line.hlsl>
 ;
 
+const char DX12Backend::g_segmentsVS[] =
+
+@INSERTLINEQUOTED <shaders/vs_segments.hlsl>
+;
+
+const char DX12Backend::g_segmentsPS[] =
+
+@INSERTLINEQUOTED <shaders/ps_segments.hlsl>
+;
+
 
 }

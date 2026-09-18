@@ -28,6 +28,8 @@ set(SHADERS
 	shaders/ps_blur.hlsl
 	shaders/vs_line.hlsl
 	shaders/ps_line.hlsl
+	shaders/vs_segments.hlsl
+	shaders/ps_segments.hlsl
 )
 
 
