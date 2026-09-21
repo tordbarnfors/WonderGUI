@@ -1965,7 +1965,7 @@ void GlBackend::endSession()
 
 				if (statesChanged & uint8_t(StateChange::Blur))
 				{
-					spx radius = *pCmd++;
+					m_activeBlurRadius = *pCmd++;
 
 					const int* pRed = pCmd;
 					const int* pGreen = pCmd+9;
@@ -1982,37 +1982,8 @@ void GlBackend::endSession()
 
 					m_activeBlurInfo.colorMtx[4][3] = 1.f;
 
-					auto size = m_pActiveBlitSource->pixelSize();
-
-					float radiusX = radius / float(size.w * 64);
-					float radiusY = radius / float(size.h * 64);
-
-					m_activeBlurInfo.offset[0][0] = -radiusX * 0.7f;
-					m_activeBlurInfo.offset[0][1] = -radiusY * 0.7f;
-
-					m_activeBlurInfo.offset[1][0] = 0;
-					m_activeBlurInfo.offset[1][1] = -radiusY;
-
-					m_activeBlurInfo.offset[2][0] = radiusX * 0.7f;
-					m_activeBlurInfo.offset[2][1] = -radiusY * 0.7f;
-
-					m_activeBlurInfo.offset[3][0] = -radiusX;
-					m_activeBlurInfo.offset[3][1] = 0;
-
-					m_activeBlurInfo.offset[4][0] = 0;
-					m_activeBlurInfo.offset[4][1] = 0;
-
-					m_activeBlurInfo.offset[5][0] = radiusX;
-					m_activeBlurInfo.offset[5][1] = 0;
-
-					m_activeBlurInfo.offset[6][0] = -radiusX * 0.7f;
-					m_activeBlurInfo.offset[6][1] = radiusY * 0.7f;
-
-					m_activeBlurInfo.offset[7][0] = 0;
-					m_activeBlurInfo.offset[7][1] = radiusY;
-
-					m_activeBlurInfo.offset[8][0] = radiusX * 0.7f;
-					m_activeBlurInfo.offset[8][1] = radiusY * 0.7f;
+					// The offsets are in texture coordinates of the blit source, so they are
+					// calculated at draw time, from whatever blit source is active then.
 				}
 
 				// We postpone setting blend mode after having retrieved active morphFactor and fixedBlendColor
@@ -2096,6 +2067,41 @@ void GlBackend::endSession()
 				int nVertices = *pCmd++;
 
 				glUseProgram(m_blurProg[m_bTintmapIsActive]);
+
+				// Blur offsets are added to texture coordinates normalized against the blit
+				// source, so they are normalized against the blit source size as well.
+
+				auto size = m_pActiveBlitSource->pixelSize();
+
+				float radiusX = m_activeBlurRadius / float(size.w * 64);
+				float radiusY = m_activeBlurRadius / float(size.h * 64);
+
+				m_activeBlurInfo.offset[0][0] = -radiusX * 0.7f;
+				m_activeBlurInfo.offset[0][1] = -radiusY * 0.7f;
+
+				m_activeBlurInfo.offset[1][0] = 0;
+				m_activeBlurInfo.offset[1][1] = -radiusY;
+
+				m_activeBlurInfo.offset[2][0] = radiusX * 0.7f;
+				m_activeBlurInfo.offset[2][1] = -radiusY * 0.7f;
+
+				m_activeBlurInfo.offset[3][0] = -radiusX;
+				m_activeBlurInfo.offset[3][1] = 0;
+
+				m_activeBlurInfo.offset[4][0] = 0;
+				m_activeBlurInfo.offset[4][1] = 0;
+
+				m_activeBlurInfo.offset[5][0] = radiusX;
+				m_activeBlurInfo.offset[5][1] = 0;
+
+				m_activeBlurInfo.offset[6][0] = -radiusX * 0.7f;
+				m_activeBlurInfo.offset[6][1] = radiusY * 0.7f;
+
+				m_activeBlurInfo.offset[7][0] = 0;
+				m_activeBlurInfo.offset[7][1] = radiusY;
+
+				m_activeBlurInfo.offset[8][0] = radiusX * 0.7f;
+				m_activeBlurInfo.offset[8][1] = radiusY * 0.7f;
 
 				glUniform2fv(m_blurUniformLocation[m_bTintmapIsActive][1], 9, (GLfloat*)m_activeBlurInfo.offset);
 				glUniform4fv(m_blurUniformLocation[m_bTintmapIsActive][0], 9, (GLfloat*)m_activeBlurInfo.colorMtx);
