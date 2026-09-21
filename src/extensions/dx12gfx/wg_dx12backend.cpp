@@ -125,33 +125,17 @@ namespace wg
 		pDX12Device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&m_commandFence));
 		m_fenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
 
-		// Create command allocator and vertex buffer for each frame resource.
+		// Create a command allocator for each frame resource.
 		//
-		// The vertex buffers can't be shared between frame resources since the GPU
-		// may still be reading one of them. beginRender() waits for the fence of
-		// the frame resource it picks, so one buffer each is enough.
+		// Each frame resource also has its own vertex, color and extras buffers,
+		// since the GPU may still be reading the other frame's. They are created
+		// by beginSession(), sized by what the sessions say they need, see
+		// _reserveBuffers().
 
 		for (int i = 0; i < c_nbFrameResources; ++i)
 		{
 			pDX12Device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&m_frameResources[i].commandAllocator));
 			m_frameResources[i].fenceValue = 0;
-
-			_createBuffer(m_frameResources[i].vertexBuffer, c_vertexBufferSize, D3D12_HEAP_TYPE_UPLOAD, D3D12_RESOURCE_STATE_GENERIC_READ, L"WonderGUI Vertex Buffer");
-			_createBuffer(m_frameResources[i].colorBuffer, c_colorBufferSize, D3D12_HEAP_TYPE_UPLOAD, D3D12_RESOURCE_STATE_GENERIC_READ, L"WonderGUI Color Buffer");
-			_createBuffer(m_frameResources[i].extrasBuffer, c_extrasBufferSize, D3D12_HEAP_TYPE_UPLOAD, D3D12_RESOURCE_STATE_GENERIC_READ, L"WonderGUI Extras Buffer");
-
-			// Upload heaps can stay mapped for their entire lifetime.
-
-			D3D12_RANGE readRange = { 0, 0 };		// We only write.
-
-			if (m_frameResources[i].vertexBuffer)
-				CHECK_HR(m_frameResources[i].vertexBuffer->Map(0, &readRange, (void**)&m_frameResources[i].pVertexBufferData), "ID3D12Resource::Map");
-
-			if (m_frameResources[i].colorBuffer)
-				CHECK_HR(m_frameResources[i].colorBuffer->Map(0, &readRange, (void**)&m_frameResources[i].pColorBufferData), "ID3D12Resource::Map");
-
-			if (m_frameResources[i].extrasBuffer)
-				CHECK_HR(m_frameResources[i].extrasBuffer->Map(0, &readRange, (void**)&m_frameResources[i].pExtrasBufferData), "ID3D12Resource::Map");
 
 			// Shader visible descriptors for blit sources, refilled every frame.
 
@@ -211,20 +195,26 @@ namespace wg
 		m_commandList->Reset(m_frameResources[frame].commandAllocator.Get(), nullptr);
 		m_bCommandListOpen = true;
 
+		// Buffers this frame resource outgrew last time it was used. The fence
+		// says the GPU is done with them.
+
+		m_frameResources[frame].retiredBuffers.clear();
+
 		// Vertices and colors are written for the whole frame, not per session,
 		// since the GPU doesn't run any of it until the command list has been
-		// executed.
+		// executed. The buffers may not exist yet, beginSession() creates or grows
+		// them as needed.
 
 		m_pVertexBeg = m_frameResources[frame].pVertexBufferData;
-		m_pVertexEnd = m_pVertexBeg ? m_pVertexBeg + c_vertexBufferSize / sizeof(Vertex) : nullptr;
+		m_pVertexEnd = m_pVertexBeg ? m_pVertexBeg + m_frameResources[frame].vertexCapacity : nullptr;
 		m_pVertexPtr = m_pVertexBeg;
 
 		m_pColorBeg = m_frameResources[frame].pColorBufferData;
-		m_pColorEnd = m_pColorBeg ? m_pColorBeg + c_colorBufferSize / sizeof(ColorDX12) : nullptr;
+		m_pColorEnd = m_pColorBeg ? m_pColorBeg + m_frameResources[frame].colorCapacity : nullptr;
 		m_pColorPtr = m_pColorBeg;
 
 		m_pExtrasBeg = m_frameResources[frame].pExtrasBufferData;
-		m_pExtrasEnd = m_pExtrasBeg ? m_pExtrasBeg + c_extrasBufferSize / sizeof(ExtrasDX12) : nullptr;
+		m_pExtrasEnd = m_pExtrasBeg ? m_pExtrasBeg + m_frameResources[frame].extrasCapacity : nullptr;
 		m_pExtrasPtr = m_pExtrasBeg;
 
 		m_frameResources[frame].nSRVDescriptors = 0;
@@ -360,7 +350,7 @@ namespace wg
 			D3D12_VERTEX_BUFFER_VIEW vertexBufferView = {};
 			vertexBufferView.BufferLocation = frame.vertexBuffer->GetGPUVirtualAddress();
 			vertexBufferView.StrideInBytes = sizeof(Vertex);
-			vertexBufferView.SizeInBytes = c_vertexBufferSize;
+			vertexBufferView.SizeInBytes = UINT(frame.vertexCapacity * sizeof(Vertex));
 
 			m_commandList->IASetVertexBuffers(0, 1, &vertexBufferView );
 		}
@@ -544,6 +534,11 @@ namespace wg
 		m_blurColorMtx[4][3] = 1.f;
 
 		_setBlitSource(nullptr);
+
+		// Room for everything the session may write, in buffers the session state
+		// then points at.
+
+		_reserveBuffers(pInfo);
 
 		_bindSessionState();
 
@@ -1011,7 +1006,7 @@ namespace wg
 				static bool bReported = false;
 				if (!bReported)
 				{
-					GfxBase::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, "Vertex buffer full, fills dropped. Increase c_vertexBufferSize.",
+					GfxBase::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, "Vertex buffer full, fills dropped. SessionInfo underestimated what the session needs.",
 						this, &TYPEINFO, __func__, __FILE__, __LINE__);
 					bReported = true;
 				}
@@ -1127,7 +1122,7 @@ namespace wg
 				static bool bReported = false;
 				if (!bReported)
 				{
-					GfxBase::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, "Vertex buffer full, lines dropped. Increase c_vertexBufferSize.",
+					GfxBase::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, "Vertex buffer full, lines dropped. SessionInfo underestimated what the session needs.",
 						this, &TYPEINFO, __func__, __FILE__, __LINE__);
 					bReported = true;
 				}
@@ -1279,7 +1274,7 @@ namespace wg
 			static bool bReported = false;
 			if (!bReported)
 			{
-				GfxBase::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, "Color buffer full, draws dropped. Increase c_colorBufferSize.",
+				GfxBase::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, "Color buffer full, draws dropped. SessionInfo underestimated what the session needs.",
 					this, &TYPEINFO, __func__, __FILE__, __LINE__);
 				bReported = true;
 			}
@@ -1315,7 +1310,7 @@ namespace wg
 			static bool bReported = false;
 			if (!bReported)
 			{
-				GfxBase::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, "Color buffer full, tintmap ignored. Increase c_colorBufferSize.",
+				GfxBase::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, "Color buffer full, tintmap ignored. SessionInfo underestimated what the session needs.",
 					this, &TYPEINFO, __func__, __FILE__, __LINE__);
 				bReported = true;
 			}
@@ -1394,7 +1389,7 @@ namespace wg
 			static bool bReported = false;
 			if (!bReported && m_pExtrasPtr)
 			{
-				GfxBase::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, "Extras buffer full, draws dropped. Increase c_extrasBufferSize.",
+				GfxBase::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, "Extras buffer full, draws dropped. SessionInfo underestimated what the session needs.",
 					this, &TYPEINFO, __func__, __FILE__, __LINE__);
 				bReported = true;
 			}
@@ -1418,7 +1413,7 @@ namespace wg
 			static bool bReported = false;
 			if (!bReported && m_pExtrasPtr)
 			{
-				GfxBase::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, "Extras buffer full, blurs dropped. Increase c_extrasBufferSize.",
+				GfxBase::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, "Extras buffer full, blurs dropped. SessionInfo underestimated what the session needs.",
 					this, &TYPEINFO, __func__, __FILE__, __LINE__);
 				bReported = true;
 			}
@@ -1474,7 +1469,7 @@ namespace wg
 			static bool bReported = false;
 			if (!bReported)
 			{
-				GfxBase::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, "Extras buffer full, blits dropped. Increase c_extrasBufferSize.",
+				GfxBase::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, "Extras buffer full, blits dropped. SessionInfo underestimated what the session needs.",
 					this, &TYPEINFO, __func__, __FILE__, __LINE__);
 				bReported = true;
 			}
@@ -1696,7 +1691,7 @@ namespace wg
 				static bool bReported = false;
 				if (!bReported)
 				{
-					GfxBase::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, "Vertex buffer full, blits dropped. Increase c_vertexBufferSize.",
+					GfxBase::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, "Vertex buffer full, blits dropped. SessionInfo underestimated what the session needs.",
 						this, &TYPEINFO, __func__, __FILE__, __LINE__);
 					bReported = true;
 				}
@@ -1880,7 +1875,7 @@ namespace wg
 			static bool bReported = false;
 			if (!bReported)
 			{
-				GfxBase::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, "Vertex buffer full, edgemaps dropped. Increase c_vertexBufferSize.",
+				GfxBase::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, "Vertex buffer full, edgemaps dropped. SessionInfo underestimated what the session needs.",
 					this, &TYPEINFO, __func__, __FILE__, __LINE__);
 				bReported = true;
 			}
@@ -2268,6 +2263,104 @@ namespace wg
 		pointer->SetName(name);
 	}
 
+
+	//____ _reserveBuffers() __________________________________________________
+	//
+	// Makes sure what is left of this frame's vertex, color and extras buffers
+	// can hold everything the session may write, going by its SessionInfo. The
+	// counts are upper bounds: we can't tell ahead how many fills are subpixel
+	// or which rects are blits, so we assume the worst.
+	//
+	// Per session it can use at most:
+	//
+	//   Vertices: six per rect of any kind, six per line.
+	//   Colors:   those in the color stream - fills, lines and tintmaps copy
+	//             theirs in - plus a white one per blit, blur and edgemap draw.
+	//   Extras:   two per rect (blits need two, subpixel fills and patches
+	//             fewer), one per line, 18 per blur for its brush and one per
+	//             edgemap draw.
+
+	void DX12Backend::_reserveBuffers(const SessionInfo* pInfo)
+	{
+		int nVertices, nColors, nExtras;
+
+		if (pInfo)
+		{
+			int nLines = pInfo->nLineCoords / 2;
+
+			nVertices = pInfo->nRects * 6 + nLines * 6;
+			nColors = pInfo->nColors + pInfo->nBlit + pInfo->nBlur + pInfo->nEdgemapDraws;
+			nExtras = pInfo->nRects * 2 + nLines + pInfo->nBlur * 18 + pInfo->nEdgemapDraws;
+		}
+		else
+		{
+			nVertices = c_defaultVertices;
+			nColors = c_defaultColors;
+			nExtras = c_defaultExtras;
+		}
+
+		auto& frame = m_frameResources[m_currentFrameIndex];
+
+		_reserveBuffer(frame.vertexBuffer, frame.pVertexBufferData, frame.vertexCapacity,
+					   m_pVertexBeg, m_pVertexPtr, m_pVertexEnd, nVertices, L"WonderGUI Vertex Buffer");
+
+		_reserveBuffer(frame.colorBuffer, frame.pColorBufferData, frame.colorCapacity,
+					   m_pColorBeg, m_pColorPtr, m_pColorEnd, nColors, L"WonderGUI Color Buffer");
+
+		_reserveBuffer(frame.extrasBuffer, frame.pExtrasBufferData, frame.extrasCapacity,
+					   m_pExtrasBeg, m_pExtrasPtr, m_pExtrasEnd, nExtras, L"WonderGUI Extras Buffer");
+	}
+
+	//____ _reserveBuffer() ____________________________________________________
+	//
+	// If what is left of the buffer is too little, it is replaced by a bigger one
+	// and writing starts over at its beginning. The old buffer may already be used
+	// by draws recorded this frame, so it is kept in retiredBuffers until the
+	// fence says the GPU is done with it. Offsets into it recorded so far stay
+	// valid, since they go with the root arguments and vertex buffer view that
+	// were set when they were recorded, and _bindSessionState() points the coming
+	// ones at the new buffer.
+	//
+	// Buffers at least double when they grow, so a frame settles on a size after
+	// a few frames rather than growing a little every session.
+
+	template<typename T>
+	bool DX12Backend::_reserveBuffer(Microsoft::WRL::ComPtr<ID3D12Resource>& buffer, T*& pData, int& capacity,
+									 T*& pBeg, T*& pPtr, T*& pEnd, int needed, LPCWSTR name)
+	{
+		if (needed < 1)
+			needed = 1;
+
+		if (pPtr && pEnd - pPtr >= needed)
+			return true;
+
+		int newCapacity = capacity * 2;
+		if (newCapacity < needed)
+			newCapacity = needed;
+
+		Microsoft::WRL::ComPtr<ID3D12Resource> newBuffer;
+		T* pNewData = nullptr;
+
+		_createBuffer(newBuffer, int(newCapacity * sizeof(T)), D3D12_HEAP_TYPE_UPLOAD, D3D12_RESOURCE_STATE_GENERIC_READ, name);
+
+		D3D12_RANGE readRange = { 0, 0 };		// We only write. Upload heaps can stay mapped for their entire lifetime.
+
+		if (!newBuffer || !CHECK_HR(newBuffer->Map(0, &readRange, (void**)&pNewData), "ID3D12Resource::Map"))
+			return false;						// Keep what we have. Draws that don't fit are dropped and reported.
+
+		if (buffer)
+			m_frameResources[m_currentFrameIndex].retiredBuffers.push_back(buffer);
+
+		buffer = newBuffer;
+		pData = pNewData;
+		capacity = newCapacity;
+
+		pBeg = pNewData;
+		pPtr = pNewData;
+		pEnd = pNewData + newCapacity;
+
+		return true;
+	}
 
 	//____ _createPipelineResources() _________________________________________
 	//

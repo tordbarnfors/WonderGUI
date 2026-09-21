@@ -152,6 +152,11 @@ namespace wg
 		void _bindCanvasState();				// Render target, viewport and canvas scale for the active canvas.
 
 		void _createBuffer(Microsoft::WRL::ComPtr<ID3D12Resource>& pointer, int nbBytes, D3D12_HEAP_TYPE heapType, D3D12_RESOURCE_STATES initialState, LPCWSTR name);
+		void _reserveBuffers(const SessionInfo* pInfo);	// Makes sure the frame's buffers have room for the session.
+
+		template<typename T>
+		bool _reserveBuffer(Microsoft::WRL::ComPtr<ID3D12Resource>& buffer, T*& pData, int& capacity,
+							T*& pBeg, T*& pPtr, T*& pEnd, int needed, LPCWSTR name);
 
 		bool _createPipelineResources();
 		bool _createRootSignature();
@@ -227,21 +232,19 @@ namespace wg
 		const Transform* m_pTransformsBeg = nullptr;
 		const Transform* m_pTransformsEnd = nullptr;
 
-		// All three are per frame resource, and a frame draws from them until
-		// beginRender() rewinds. A rect costs 192 bytes of vertices; it also costs
-		// 16 bytes of extras if it is a blit (32, it needs two), a subpixel fill or
-		// a line, and colors go one per fill command but one per line. So these are
-		// sized against what the vertex buffer can hold rather than against each
-		// other, with room for every rect in it to be one that needs extras.
+		// Vertex, color and extras buffers are per frame resource, and all sessions
+		// of a frame draw from them until beginRender() rewinds. beginSession() works
+		// out from the SessionInfo how much the session can use at most and grows
+		// the buffers when what is left isn't enough, see _reserveBuffers(). They
+		// never shrink.
 		//
-		// A blur command spends 18 entries of its own on its brush, which comes out
-		// of the same slack. A frame of nothing but blurs would run out after a few
-		// hundred of them, long before the vertex buffer is full.
+		// Without a SessionInfo we have nothing to go on, so we make sure there is
+		// at least this much room.
 
-		const static int	c_vertexBufferSize = 1024*1024;		// ~5400 rects.
+		const static int	c_defaultVertices = 32*1024;		// ~5400 rects.
+		const static int	c_defaultColors = 8*1024;
+		const static int	c_defaultExtras = 16*1024;
 		const static int	c_maxSegments = 16;					// As many as MetalBackend and GlBackend handle.
-		const static int	c_colorBufferSize = 512*1024;		// 16 bytes per color. Tintmaps take one per pixel of width and height.
-		const static int	c_extrasBufferSize = 256*1024;		// 16 bytes each, two per blit rect.
 		const static int	c_nbSRVDescriptors = 1024;			// Per frame resource. One per blit source change.
 
 		Vertex*	m_pVertexBeg = nullptr;		// Start of the current frame's vertex buffer.
@@ -312,6 +315,10 @@ namespace wg
 			Vertex*											pVertexBufferData = nullptr;	// Permanently mapped.
 			ColorDX12*										pColorBufferData = nullptr;		// Permanently mapped.
 			ExtrasDX12*										pExtrasBufferData = nullptr;	// Permanently mapped.
+			int												vertexCapacity = 0;				// In entries, not bytes.
+			int												colorCapacity = 0;
+			int												extrasCapacity = 0;
+			std::vector<Microsoft::WRL::ComPtr<ID3D12Resource>>	retiredBuffers;			// Outgrown this frame, still used by its command list.
 			int												nSRVDescriptors = 0;			// Used so far this frame.
 			std::vector<Object_p>							objectRefs;						// What this frame's command list mentions but doesn't own.
 			UINT64											fenceValue;
