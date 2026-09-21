@@ -180,6 +180,9 @@ namespace wg
 		bool _bindBlitSource();					// Puts source and sampler in place for the coming draw.
 
 		int _addColor(HiColor color);			// Returns offset into color buffer, -1 if full.
+		void _setTintmap(const HiColor*& pColors, int nHorrColors, int nVertColors, const RectI& rect);
+		void _clearTintmap();
+		void _bindTintmap();					// Records the tintmap root constants into the command list.
 		int _addExtras(const ExtrasDX12& extras);							// Returns offset, -1 if full.
 		int _addBlurExtras();												// Returns offset to 18 entries, -1 if full.
 		int _addExtras(const ExtrasDX12& first, const ExtrasDX12& second);	// Returns offset, -1 if full.
@@ -235,7 +238,7 @@ namespace wg
 
 		const static int	c_vertexBufferSize = 1024*1024;		// ~5400 rects.
 		const static int	c_maxSegments = 16;					// As many as MetalBackend and GlBackend handle.
-		const static int	c_colorBufferSize = 128*1024;		// 16 bytes per color.
+		const static int	c_colorBufferSize = 512*1024;		// 16 bytes per color. Tintmaps take one per pixel of width and height.
 		const static int	c_extrasBufferSize = 256*1024;		// 16 bytes each, two per blit rect.
 		const static int	c_nbSRVDescriptors = 1024;			// Per frame resource. One per blit source change.
 
@@ -254,6 +257,25 @@ namespace wg
 		// State tracked while processing commands.
 
 		HiColor					m_tintColor = HiColor::White;
+
+		// The tintmap, as root constants for the pixel shaders: where the horizontal
+		// and vertical colors start in the color buffer, the canvas pixel the first
+		// color of each axis belongs to, and how many colors there are per axis.
+		// Zero colors means that axis has none. A tintmap and a tint color are never
+		// in use at the same time, GfxDeviceGen2 folds one into the other.
+		//
+		// Eight values since HLSL rounds the constant buffer up to whole registers,
+		// and the root constants have to cover all of it.
+
+		struct TintmapInfo
+		{
+			int32_t		beginX, beginY;
+			int32_t		originX, originY;
+			int32_t		countX, countY;
+			int32_t		padding[2];
+		};
+
+		TintmapInfo				m_tintmap = {};
 		BlendMode				m_activeBlendMode = BlendMode::Blend;
 		float					m_morphFactor = 0.5f;			// Only used by BlendMode::Morph.
 
