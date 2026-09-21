@@ -26,6 +26,8 @@ set(SHADERS
 	shaders/vs_blit.hlsl
 	shaders/ps_blit.hlsl
 	shaders/ps_blur.hlsl
+	shaders/ps_blit_palette.hlsl
+	shaders/ps_blur_palette.hlsl
 	shaders/vs_line.hlsl
 	shaders/ps_line.hlsl
 	shaders/vs_segments.hlsl

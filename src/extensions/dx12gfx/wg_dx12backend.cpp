@@ -675,7 +675,7 @@ namespace wg
 
 	void DX12Backend::_setCanvas(DX12Surface* pCanvas)
 	{
-		if (pCanvas && (!pCanvas->texture() || !pCanvas->canBeCanvas()))
+		if (pCanvas && (!pCanvas->texture() || !pCanvas->canBeCanvas() || pCanvas->renderTargetView().ptr == 0))
 		{
 			GfxBase::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "Surface can not be used as canvas.",
 				this, &TYPEINFO, __func__, __FILE__, __LINE__);
@@ -1496,6 +1496,7 @@ namespace wg
 	{
 		m_pBlitSource = pSurface;
 		m_bBlitSourceBound = false;
+		m_bBlitSourceIndexed = false;
 
 		if (!pSurface)
 			return;
@@ -1517,6 +1518,7 @@ namespace wg
 
 		m_blitSourceSize = pSurface->pixelSize();
 		m_bBlitSourceAlphaOnly = pSurface->isAlphaOnly();
+		m_bBlitSourceIndexed = pSurface->isIndexed();
 
 		// Samplers are ordered nearest/bilinear, then clamp/tile.
 
@@ -1587,8 +1589,28 @@ namespace wg
 		float textureSize[2] = { (float) m_blitSourceSize.w, (float) m_blitSourceSize.h };
 		m_commandList->SetGraphicsRoot32BitConstants(0, 2, textureSize, 2);
 
-		uint32_t flags = m_bBlitSourceAlphaOnly ? 1 : 0;
+		// Bit 0 is for the ordinary shaders. The palette shaders fetch texels
+		// themselves, so they need to know what the sampler would have done.
+
+		uint32_t flags = (m_bBlitSourceAlphaOnly ? 1 : 0) |
+						 (m_pBlitSource->sampleMethod() == SampleMethod::Bilinear ? 2 : 0) |
+						 (m_pBlitSource->isTiling() ? 4 : 0);
+
 		m_commandList->SetGraphicsRoot32BitConstants(0, 1, &flags, 4);
+
+		// A palette based source has its palette in the slot edgemaps use, which is
+		// free while we blit. _drawEdgemap() clears m_bBlitSourceBound, so we come
+		// back here and put it back afterwards.
+
+		if (m_bBlitSourceIndexed)
+		{
+			D3D12_GPU_VIRTUAL_ADDRESS palette = m_pBlitSource->paletteGPUAddress();
+
+			if (palette == 0)
+				return false;
+
+			m_commandList->SetGraphicsRootShaderResourceView(5, palette);
+		}
 
 		m_bBlitSourceBound = true;
 		return true;
@@ -1610,6 +1632,11 @@ namespace wg
 
 		bool bDraw = _bindBlitSource() && m_pVertexPtr != nullptr;
 
+		// A palette based source has shaders of its own.
+
+		if (m_bBlitSourceIndexed)
+			kind = (kind == PipelineKind::Blur) ? PipelineKind::PaletteBlur : PipelineKind::PaletteBlit;
+
 		// A blur needs its brush where the pixel shader can reach it. It goes in the
 		// extras buffer, which the shader indexes into from a root constant.
 		//
@@ -1618,7 +1645,7 @@ namespace wg
 		// every root argument with it. Skipping this when the brush hasn't changed
 		// would need a flag cleared alongside m_bBlitSourceBound.
 
-		if (bDraw && kind == PipelineKind::Blur)
+		if (bDraw && (kind == PipelineKind::Blur || kind == PipelineKind::PaletteBlur))
 		{
 			int blurOfs = _addBlurExtras();
 
@@ -1995,6 +2022,7 @@ namespace wg
 		m_frameResources[m_currentFrameIndex].objectRefs.push_back(pEdgemap);
 
 		m_commandList->SetGraphicsRootShaderResourceView(5, pEdgemap->_gpuAddress());
+		m_bBlitSourceBound = false;			// A palette based blit source keeps its palette here too.
 
 		uint32_t edgeCounts[2] = { uint32_t(nSegments - 1), uint32_t(pEdgemap->m_nbSegments - 1) };
 		m_commandList->SetGraphicsRoot32BitConstants(0, 2, edgeCounts, 6);
@@ -2271,6 +2299,8 @@ namespace wg
 			{ PipelineKind::FillAA,	g_fillAAVS,	g_fillAAPS },
 			{ PipelineKind::Blit,	g_blitVS,	g_blitPS },
 			{ PipelineKind::Blur,	g_blitVS,	g_blurPS },		// Same geometry, so the same vertex shader.
+			{ PipelineKind::PaletteBlit, g_blitVS, g_paletteBlitPS },
+			{ PipelineKind::PaletteBlur, g_blitVS, g_paletteBlurPS },
 			{ PipelineKind::Line,	g_lineVS,	g_linePS },
 			{ PipelineKind::Segments, g_segmentsVS, g_segmentsPS },
 		};
@@ -2369,7 +2399,7 @@ namespace wg
 		rootParameter[4].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
 
 		rootParameter[5].ParameterType = D3D12_ROOT_PARAMETER_TYPE_SRV;
-		rootParameter[5].Descriptor.ShaderRegister = 3;			// t3, the edgemap being drawn.
+		rootParameter[5].Descriptor.ShaderRegister = 3;			// t3, the edgemap being drawn, or the palette of a palette based blit source.
 		rootParameter[5].Descriptor.RegisterSpace = 0;
 		rootParameter[5].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
 
@@ -2729,7 +2759,7 @@ namespace wg
 		return true;
 	}
 
-	//____ _compilePixeShader() _______________________________________________
+	//____ _compilePixelShader() _______________________________________________
 
 	bool DX12Backend::_compilePixelShader(Microsoft::WRL::ComPtr<ID3DBlob>& shaderBlob, LPCVOID pSrc)
 	{
@@ -2741,6 +2771,7 @@ namespace wg
 		if (FAILED(hr))
 		{
 			const char* pError = errorMsg ? (const char*)errorMsg->GetBufferPointer() : "Unknown error";
+
 			char buffer[1024];
 			sprintf_s(buffer, "Pixel shader compile failed, HRESULT = 0x%08lX: %s", (unsigned long)hr, pError);
 			GfxBase::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, buffer, this, &TYPEINFO, __func__, __FILE__, __LINE__);

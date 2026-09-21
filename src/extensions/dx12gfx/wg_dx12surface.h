@@ -101,6 +101,12 @@ namespace wg
 		DXGI_FORMAT					dxgiFormat() const { return m_dxgiFormat; }
 		bool						isAlphaOnly() const { return m_bAlphaOnly; }
 
+		// Palette based surfaces hold 8 or 16 bit indexes in the texture and their
+		// palette, converted to linear, in a buffer of float4 the pixel shader reads.
+		// The first entry holds the palette's capacity, the colors follow.
+		bool						isIndexed() const { return m_bIndexed; }
+		D3D12_GPU_VIRTUAL_ADDRESS	paletteGPUAddress() const { return m_paletteBuffer ? m_paletteBuffer->GetGPUVirtualAddress() : 0; }
+
 		// Resource state of the texture at the end of the command list DX12Backend
 		// is recording. Only canvas surfaces ever leave D3D12_RESOURCE_STATE_COMMON.
 
@@ -132,6 +138,8 @@ namespace wg
 
 		bool			_setPixelDetails( PixelFormat format );		// Settles on a format D3D12 can hold.
 		bool			_allocFallbackPixels();						// Plain memory, for when D3D12 wouldn't play along.
+		bool			_createPaletteBuffer();
+		void			_updatePaletteBuffer();						// Converts m_pPalette into the palette buffer.
 
 		static bool			_initCopyResources();
 		static void			_waitForCopyFence();
@@ -140,6 +148,7 @@ namespace wg
 		Microsoft::WRL::ComPtr<ID3D12Resource>			m_texture;			// Rests in COMMON state, promoted on use.
 		Microsoft::WRL::ComPtr<ID3D12Resource>			m_uploadBuffer;		// Holds our pixels, readable and writable by the CPU.
 		Microsoft::WRL::ComPtr<ID3D12Resource>			m_readbackBuffer;	// Created on first read back from a canvas surface.
+		Microsoft::WRL::ComPtr<ID3D12Resource>			m_paletteBuffer;	// Palette based surfaces only. Upload heap, permanently mapped.
 		Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>	m_srvHeap;			// Holds this surface's SRV, not shader visible.
 		Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>	m_rtvHeap;			// Holds this surface's RTV. Canvas surfaces only.
 
@@ -154,6 +163,8 @@ namespace wg
 		int				m_uploadPitch = 0;				// Bytes per line, aligned as D3D12 requires for texture copies.
 		int				m_pixelSize = 0;				// Bytes per pixel.
 		bool			m_bAlphaOnly = false;			// Alpha_8, no color channels.
+		bool			m_bIndexed = false;				// Index_8 or Index_16, colors come from the palette.
+		float *			m_pPaletteData = nullptr;		// Mapped palette buffer, see paletteGPUAddress().
 
 		RectI			m_dirtyRect;					// Area not yet uploaded to the texture. Empty when in sync.
 		bool			m_bBufferNeedsSync = false;		// Texture has changes our pixels don't have yet.
