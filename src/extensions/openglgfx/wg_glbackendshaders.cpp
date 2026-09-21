@@ -986,7 +986,7 @@ const char GlBackend::segmentsVertexShader[] =
 "layout(location = 4) in vec2 tintmapOfs;               "
 "layout(location = 5) in vec2 colorstripOfs;            "
 "out vec2 texUV;										"
-"flat out int segments;									"
+"flat out int edgemapPitch;								"
 "flat out int colorstripPitchX;							"
 "flat out int colorstripPitchY;							"
 "out vec2 tintmapUU;"
@@ -1000,7 +1000,7 @@ const char GlBackend::segmentsVertexShader[] =
 "   gl_Position.w = 1.0;                                    "
 
 "   vec4 extras = texelFetch(extrasBufferId, extrasOfs);		"
-"   segments = int(extras.x);							"
+"   edgemapPitch = int(extras.x);						"
 "   colorstripPitchX = int(extras.z);						"
 "   colorstripPitchY = int(extras.w);						"
 "   texUV = uv;											"
@@ -1015,7 +1015,7 @@ const char GlBackend::segmentsFragmentShader[] =
 "uniform samplerBuffer tintmapBufferId;			"
 "uniform samplerBuffer edgemapId;				"
 "in vec2 texUV;									"
-"flat in int segments;							"
+"flat in int edgemapPitch;						"
 "flat in int colorstripPitchX;					"
 "flat in int colorstripPitchY;					"
 "in vec2 tintmapUU;"
@@ -1041,7 +1041,7 @@ const char GlBackend::segmentsFragmentShader[] =
 "		colorstripX += colorstripPitchX; "
 "		colorstripY += colorstripPitchY; "
 
-"		vec4 edge = texelFetch(edgemapId, int(texUV.x)*(segments-1)+i );"
+"		vec4 edge = texelFetch(edgemapId, int(texUV.x)*edgemapPitch+i );"
 
 "		float x = (texUV.y - edge.r) * edge.g;"
 "		float adder = edge.g / 2.f;"
@@ -1081,7 +1081,7 @@ const char GlBackend::segmentsFragmentShader_A8[] =
 "uniform samplerBuffer tintmapBufferId;	"
 "uniform samplerBuffer edgemapId;				"
 "in vec2 texUV;									"
-"flat in int segments;							"
+"flat in int edgemapPitch;						"
 "flat in int colorstripPitchX;					"
 "flat in int colorstripPitchY;					"
 "in vec2 tintmapUU;"
@@ -1106,7 +1106,7 @@ const char GlBackend::segmentsFragmentShader_A8[] =
 "		colorstripX += colorstripPitchX; "
 "		colorstripY += colorstripPitchY; "
 
-"		vec4 edge = texelFetch(edgemapId, int(texUV.x)*(segments-1)+i );"
+"		vec4 edge = texelFetch(edgemapId, int(texUV.x)*edgemapPitch+i );"
 
 "		float x = (texUV.y - edge.r) * edge.g;"
 "		float adder = edge.g / 2.f;"
