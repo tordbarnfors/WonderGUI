@@ -58,6 +58,16 @@ const char DX12Backend::g_blurPS[] =
 @INSERTLINEQUOTED <shaders/ps_blur.hlsl>
 ;
 
+const char DX12Backend::g_paletteBlitPS[] =
+
+@INSERTLINEQUOTED <shaders/ps_blit_palette.hlsl>
+;
+
+const char DX12Backend::g_paletteBlurPS[] =
+
+@INSERTLINEQUOTED <shaders/ps_blur_palette.hlsl>
+;
+
 const char DX12Backend::g_lineVS[] =
 
 @INSERTLINEQUOTED <shaders/vs_line.hlsl>

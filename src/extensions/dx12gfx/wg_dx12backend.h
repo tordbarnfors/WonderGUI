@@ -133,6 +133,8 @@ namespace wg
 			FillAA,			// Rectangles that aren't, with coverage worked out per pixel.
 			Blit,
 			Blur,			// Same geometry as a blit, nine taps instead of one.
+			PaletteBlit,	// Blit and blur from a palette based source,
+			PaletteBlur,	// which has to be looked up before it is filtered.
 			Line,
 			Segments,		// Edgemaps.
 
@@ -292,6 +294,7 @@ namespace wg
 		DX12Surface *			m_pBlitSource = nullptr;
 		SizeI					m_blitSourceSize;
 		bool					m_bBlitSourceAlphaOnly = false;
+		bool					m_bBlitSourceIndexed = false;		// Palette based, see PipelineKind::PaletteBlit.
 		int						m_blitSourceSampler = 0;			// Index into the sampler heap.
 		bool					m_bBlitSourceBound = false;			// Cleared when source or session changes.
 
@@ -370,6 +373,8 @@ namespace wg
 		static const char g_blitVS[];
 		static const char g_blitPS[];
 		static const char g_blurPS[];
+		static const char g_paletteBlitPS[];
+		static const char g_paletteBlurPS[];
 		static const char g_lineVS[];
 		static const char g_linePS[];
 		static const char g_segmentsVS[];

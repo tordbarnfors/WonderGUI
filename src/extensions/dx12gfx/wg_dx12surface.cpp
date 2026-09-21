@@ -253,11 +253,32 @@ namespace wg
 				m_dxgiFormat = DXGI_FORMAT_A8_UNORM;
 				break;
 
+			// The texture holds the indexes, as integers the pixel shader looks up
+			// in the palette. The color space is the palette's, and is dealt with
+			// when the palette is converted, see _updatePaletteBuffer().
+
+			case PixelFormat::Index_8:
+				format = GfxBase::defaultToSRGB() ? PixelFormat::Index_8_sRGB : PixelFormat::Index_8_linear;
+				m_dxgiFormat = DXGI_FORMAT_R8_UINT;
+				break;
+
+			case PixelFormat::Index_8_sRGB:
+			case PixelFormat::Index_8_linear:
+				m_dxgiFormat = DXGI_FORMAT_R8_UINT;
+				break;
+
+			case PixelFormat::Index_16:
+				format = GfxBase::defaultToSRGB() ? PixelFormat::Index_16_sRGB : PixelFormat::Index_16_linear;
+				m_dxgiFormat = DXGI_FORMAT_R16_UINT;
+				break;
+
+			case PixelFormat::Index_16_sRGB:
+			case PixelFormat::Index_16_linear:
+				m_dxgiFormat = DXGI_FORMAT_R16_UINT;
+				break;
+
 			default:
 			{
-				//TODO: Indexed formats need the palette lookup done in the shader,
-				// the way MetalSurface does it.
-
 				char buffer[256];
 				sprintf_s(buffer, "Pixel format %d is not supported by DX12Backend yet. The surface will have no texture.", (int) format);
 				GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, buffer, this, &TYPEINFO, __func__, __FILE__, __LINE__);
@@ -276,6 +297,7 @@ namespace wg
 		m_pPixelDescription = &Util::pixelFormatToDescription(format);
 		m_pixelSize = m_pPixelDescription->bits / 8;
 		m_bAlphaOnly = (m_dxgiFormat == DXGI_FORMAT_A8_UNORM);
+		m_bIndexed = (m_dxgiFormat == DXGI_FORMAT_R8_UINT || m_dxgiFormat == DXGI_FORMAT_R16_UINT);
 
 		return bSupported;
 	}
@@ -374,6 +396,20 @@ namespace wg
 	{
 		bool bFormatSupported = _setPixelDetails(m_pixelFormat);
 
+		// Surface leaves the palette to us. It has to exist before any pixels are
+		// copied in, since converting to a palette based format fills it in. It
+		// holds as many entries as the blueprint's palette capacity, which Surface
+		// has already worked out.
+
+		if( m_pPixelDescription->type == PixelType::Index && m_paletteCapacity > 0 )
+		{
+			m_pPalette = new Color8[m_paletteCapacity];
+			memset( m_pPalette, 0, sizeof(Color8) * m_paletteCapacity );
+
+			if( pDstPalette && m_paletteSize > 0 )
+				memcpy( m_pPalette, pDstPalette, sizeof(Color8) * m_paletteSize );
+		}
+
 		if( m_pixelSize <= 0 || m_size.w <= 0 || m_size.h <= 0 )
 		{
 			// Nothing sensible to hand out, not even a pixel buffer.
@@ -425,7 +461,7 @@ namespace wg
 		texDesc.Format = dxgiFormat;
 		texDesc.SampleDesc = { 1, 0 };
 		texDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
-		texDesc.Flags = m_bCanvas ? D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET : D3D12_RESOURCE_FLAG_NONE;
+		texDesc.Flags = (m_bCanvas && !m_bIndexed) ? D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET : D3D12_RESOURCE_FLAG_NONE;
 
 		// Kept in COMMON state: D3D12 promotes it to PIXEL_SHADER_RESOURCE when the
 		// render queue uses it and to COPY_DEST when we upload, then decays it back
@@ -520,7 +556,7 @@ namespace wg
 		// straight to OMSetRenderTargets(), so this heap is not shader visible
 		// either.
 
-		if( m_bCanvas )
+		if( m_bCanvas && !m_bIndexed )			// We can't render palette lookups in reverse.
 		{
 			D3D12_DESCRIPTOR_HEAP_DESC rtvHeapDesc = {};
 			rtvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
@@ -546,7 +582,83 @@ namespace wg
 			s_pDevice->CreateRenderTargetView(m_texture.Get(), &rtvDesc, m_rtvHandle);
 		}
 
+		if( m_bIndexed && (!m_pPalette || !_createPaletteBuffer()) )
+		{
+			m_texture = nullptr;
+			_copyInPixels( pPixels, pitch, srcFormat, pSrcPixelDesc, pSrcPalette, srcPaletteSize );
+			return;
+		}
+
 		_copyInPixels( pPixels, pitch, srcFormat, pSrcPixelDesc, pSrcPalette, srcPaletteSize );
+		_updatePaletteBuffer();
+	}
+
+	//____ _createPaletteBuffer() ______________________________________________
+	//
+	// One float4 per palette entry, plus one in front holding the capacity. A root
+	// SRV has no size the shader could ask for, and an index past the end of the
+	// palette - there is nothing stopping one - must not read past the buffer.
+
+	bool DX12Surface::_createPaletteBuffer()
+	{
+		D3D12_HEAP_PROPERTIES uploadProps = {};
+		uploadProps.Type = D3D12_HEAP_TYPE_UPLOAD;
+
+		D3D12_RESOURCE_DESC bufDesc = {};
+		bufDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+		bufDesc.Width = UINT64(m_paletteCapacity + 1) * 4 * sizeof(float);
+		bufDesc.Height = 1;
+		bufDesc.DepthOrArraySize = 1;
+		bufDesc.MipLevels = 1;
+		bufDesc.Format = DXGI_FORMAT_UNKNOWN;
+		bufDesc.SampleDesc = { 1, 0 };
+		bufDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+
+		if( FAILED(s_pDevice->CreateCommittedResource(&uploadProps, D3D12_HEAP_FLAG_NONE, &bufDesc,
+													  D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(m_paletteBuffer.GetAddressOf()))) ||
+			FAILED(m_paletteBuffer->Map(0, nullptr, (void**) &m_pPaletteData)) )
+		{
+			m_paletteBuffer = nullptr;
+			m_pPaletteData = nullptr;
+			GfxBase::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to create palette buffer for surface.",
+				this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			return false;
+		}
+
+		memset( m_pPaletteData, 0, size_t(m_paletteCapacity + 1) * 4 * sizeof(float) );
+
+		m_pPaletteData[0] = float(m_paletteCapacity);		// Exact, far below where floats lose integers.
+		return true;
+	}
+
+	//____ _updatePaletteBuffer() ______________________________________________
+	//
+	// The palette goes to the GPU converted to linear, the same way SoftSurface
+	// unpacks it, so the shader can use the colors as they are and interpolate
+	// between them. An sRGB texture would have had the hardware do it, but only
+	// for colors read from the texture, and ours are indexes.
+	//
+	// The buffer is read by the GPU where it is. Should the palette change while
+	// a frame using it is still in flight, that frame may see the new colors.
+
+	void DX12Surface::_updatePaletteBuffer()
+	{
+		if( !m_pPaletteData || !m_pPalette )
+			return;
+
+		const int16_t* pUnpackTab = (m_pPixelDescription->colorSpace == ColorSpace::Linear) ? HiColor::unpackLinearTab : HiColor::unpackSRGBTab;
+
+		float * p = m_pPaletteData + 4;			// Past the capacity.
+
+		for( int i = 0; i < m_paletteCapacity; i++ )
+		{
+			const Color8& col = m_pPalette[i];
+
+			*p++ = pUnpackTab[col.r] / 4096.f;
+			*p++ = pUnpackTab[col.g] / 4096.f;
+			*p++ = pUnpackTab[col.b] / 4096.f;
+			*p++ = HiColor::unpackLinearTab[col.a] / 4096.f;
+		}
 	}
 
 	//____ _copyInPixels() _____________________________________________________
@@ -597,6 +709,11 @@ namespace wg
 			m_uploadBuffer->Unmap(0, nullptr);
 
 		delete [] m_pFallbackData;
+
+		if( m_paletteBuffer && m_pPaletteData )
+			m_paletteBuffer->Unmap(0, nullptr);
+
+		delete [] m_pPalette;
 	}
 
 	//____ typeInfo() _________________________________________________________
@@ -874,6 +991,15 @@ namespace wg
 	void DX12Surface::pullPixels(const PixelBuffer& buffer, const RectI& bufferRect, bool bAutoNotify)
 	{
 		_addDirtyRect( bufferRect + buffer.rect.pos() );
+
+		// KLUDGE: Surface::copy() into a palette based surface can append colors to
+		// the palette through PixelTools::copyPixels(), then calls pullPixels(), so
+		// we reconvert the whole palette on every pullPixels() to catch that. The
+		// intended solution is Surface methods for updating (parts of) the palette,
+		// API not yet designed. Replace this once they exist.
+
+		if( m_bIndexed )
+			_updatePaletteBuffer();
 
 		Surface::pullPixels(buffer, bufferRect, bAutoNotify);
 	}

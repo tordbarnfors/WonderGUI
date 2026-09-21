@@ -20,11 +20,11 @@ public:
 
 	bool init(GfxDevice * pDevice, const RectI& canvas, wapp::API * pAppAPI)
 	{
-		m_pLeaves = pAppAPI->loadSurface("resources/blaetter.gif", pDevice->surfaceFactory(), { .sampleMethod = SampleMethod::Nearest } );
+		m_pLeaves = pAppAPI->loadSurface("resources/blaetter.surf", pDevice->surfaceFactory(), { .sampleMethod = SampleMethod::Nearest } );
 		if (!m_pLeaves)
 			return false;
 
-		m_pLeavesInterpolated = pAppAPI->loadSurface("resources/blaetter.gif", pDevice->surfaceFactory(), { .sampleMethod = SampleMethod::Bilinear } );
+		m_pLeavesInterpolated = pAppAPI->loadSurface("resources/blaetter.surf", pDevice->surfaceFactory(), { .sampleMethod = SampleMethod::Bilinear } );
 		if (!m_pLeavesInterpolated)
 			return false;
 
