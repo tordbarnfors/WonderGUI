@@ -366,6 +366,7 @@ namespace wg
 		}
 
 		_setBlendFactor();
+		_bindTintmap();
 
 		// Setting the root signature dropped the pipeline and whatever the blit
 		// source had bound.
@@ -523,6 +524,7 @@ namespace wg
 		// draws with the previous one's value.
 
 		m_tintColor = HiColor::White;
+		m_tintmap = {};
 		m_activeBlendMode = BlendMode::Blend;
 		m_morphFactor = 0.5f;
 
@@ -811,22 +813,32 @@ namespace wg
 						_setBlitSource( _isDX12Surface(pObject) ? static_cast<DX12Surface*>(pObject) : nullptr );
 					}
 
+					// A tint color replaces any tintmap and a tintmap replaces the tint
+					// color. GfxDeviceGen2 has already folded one into the other when
+					// both are in use, so we never have to combine them.
+
 					if (statesChanged & uint8_t(StateChange::TintColor))
+					{
 						m_tintColor = *pColors++;
+						_clearTintmap();
+					}
 
 					if (statesChanged & uint8_t(StateChange::TintMap))
 					{
 						auto p32 = (const spx*) p;
 
-						p32 += 4;								// Tintmap rectangle.
+						int32_t	x = *p32++;
+						int32_t	y = *p32++;
+						int32_t	w = *p32++;
+						int32_t	h = *p32++;
 
 						int32_t	nHorrColors = *p32++;
 						int32_t	nVertColors = *p32++;
 
 						p = (const uint16_t*) p32;
 
-						pColors += nHorrColors + nVertColors;	// Tintmaps not supported yet.
 						m_tintColor = HiColor::White;
+						_setTintmap(pColors, nHorrColors, nVertColors, RectI(x, y, w, h) / 64);
 					}
 
 					if (statesChanged & uint8_t(StateChange::BlendMode))
@@ -1283,6 +1295,94 @@ namespace wg
 		m_pColorPtr->a = (color.a / 4096.f) * (m_tintColor.a / 4096.f);
 
 		return int(m_pColorPtr++ - m_pColorBeg);
+	}
+
+	//____ _setTintmap() _______________________________________________________
+	//
+	// Copies the tintmap's colors, horizontal ones first, into the color buffer
+	// and points the pixel shaders at them. The colors are consumed from the
+	// color stream whether or not there is room for them.
+
+	void DX12Backend::_setTintmap(const HiColor*& pColors, int nHorrColors, int nVertColors, const RectI& rect)
+	{
+		const HiColor* pSource = pColors;
+		pColors += nHorrColors + nVertColors;
+
+		int nColors = nHorrColors + nVertColors;
+
+		if (!m_pColorPtr || m_pColorEnd - m_pColorPtr < nColors)
+		{
+			static bool bReported = false;
+			if (!bReported)
+			{
+				GfxBase::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, "Color buffer full, tintmap ignored. Increase c_colorBufferSize.",
+					this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				bReported = true;
+			}
+
+			_clearTintmap();
+			return;
+		}
+
+		TintmapInfo info = {};
+
+		int beginOfs = int(m_pColorPtr - m_pColorBeg);
+
+		// Unlike _addColor() these are not tinted. With a tintmap in use the tint
+		// color is white.
+
+		for (int i = 0; i < nColors; i++)
+		{
+			const HiColor& color = pSource[i];
+
+			m_pColorPtr->r = color.r / 4096.f;
+			m_pColorPtr->g = color.g / 4096.f;
+			m_pColorPtr->b = color.b / 4096.f;
+			m_pColorPtr->a = color.a / 4096.f;
+			m_pColorPtr++;
+		}
+
+		if (nHorrColors > 0)
+		{
+			info.beginX = beginOfs;
+			info.originX = rect.x;
+			info.countX = nHorrColors;
+		}
+
+		if (nVertColors > 0)
+		{
+			info.beginY = beginOfs + nHorrColors;
+			info.originY = rect.y;
+			info.countY = nVertColors;
+		}
+
+		m_tintmap = info;
+		_bindTintmap();
+	}
+
+	//____ _clearTintmap() _____________________________________________________
+
+	void DX12Backend::_clearTintmap()
+	{
+		if (m_tintmap.countX == 0 && m_tintmap.countY == 0)
+			return;
+
+		m_tintmap = {};
+		_bindTintmap();
+	}
+
+	//____ _bindTintmap() ______________________________________________________
+	//
+	// Root constants are recorded into the command list, so every draw after this
+	// sees the new tintmap and none before it does. A reset list has lost them,
+	// which is why _bindSessionState() calls this too.
+
+	void DX12Backend::_bindTintmap()
+	{
+		if (!m_bCommandListOpen)
+			return;
+
+		m_commandList->SetGraphicsRoot32BitConstants(6, 8, &m_tintmap, 0);
 	}
 
 	//____ _addExtras() ________________________________________________________
@@ -2237,7 +2337,7 @@ namespace wg
 		samplerRange.RegisterSpace = 0;
 		samplerRange.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
 
-		D3D12_ROOT_PARAMETER rootParameter[6] = {};
+		D3D12_ROOT_PARAMETER rootParameter[7] = {};
 
 		rootParameter[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS;
 		rootParameter[0].Constants.ShaderRegister = 0;			// b0.
@@ -2251,7 +2351,7 @@ namespace wg
 		rootParameter[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_SRV;
 		rootParameter[1].Descriptor.ShaderRegister = 0;			// t0, colors.
 		rootParameter[1].Descriptor.RegisterSpace = 0;
-		rootParameter[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
+		rootParameter[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;	// Pixel shaders read tintmaps from it.
 
 		rootParameter[2].ParameterType = D3D12_ROOT_PARAMETER_TYPE_SRV;
 		rootParameter[2].Descriptor.ShaderRegister = 1;			// t1, extras.
@@ -2273,10 +2373,19 @@ namespace wg
 		rootParameter[5].Descriptor.RegisterSpace = 0;
 		rootParameter[5].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
 
+		// The tintmap, where its colors are in the color buffer and which pixels
+		// they belong to. Only the pixel shaders use it. See TintmapInfo.
+
+		rootParameter[6].ParameterType = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS;
+		rootParameter[6].Constants.ShaderRegister = 1;			// b1.
+		rootParameter[6].Constants.RegisterSpace = 0;
+		rootParameter[6].Constants.Num32BitValues = sizeof(TintmapInfo) / 4;
+		rootParameter[6].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+
 		D3D12_VERSIONED_ROOT_SIGNATURE_DESC rsDesc = { };
 		rsDesc.Version = D3D_ROOT_SIGNATURE_VERSION_1_0;
 		rsDesc.Desc_1_0.pParameters = rootParameter;
-		rsDesc.Desc_1_0.NumParameters = 6;
+		rsDesc.Desc_1_0.NumParameters = 7;
 		rsDesc.Desc_1_0.NumStaticSamplers = 0;
 		rsDesc.Desc_1_0.pStaticSamplers = 0;
 		rsDesc.Desc_1_0.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
