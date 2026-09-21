@@ -1033,24 +1033,10 @@ void MetalBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, i
 
 				if (statesChanged & uint8_t(StateChange::Blur))
 				{
-					uint16_t	radius = * p++;
+					// Only the radius is stored here. The offsets are in texture coordinates of the
+					// blit source, so they are calculated at draw time from whatever source is active then.
 
-					auto size = m_activeCanvasSize;
-
-					float radiusX = radius / float(size.w*64);
-					float radiusY = radius / float(size.h*64);
-
-					m_blurUniform.offset[0] = { -radiusX * 0.7f, -radiusY * 0.7f };
-					m_blurUniform.offset[1] = { 0, -radiusY };
-					m_blurUniform.offset[2] = { radiusX * 0.7f, -radiusY * 0.7f };
-
-					m_blurUniform.offset[3] = { -radiusX, 0 };
-					m_blurUniform.offset[4] = { 0, 0 };
-					m_blurUniform.offset[5] = { radiusX, 0 };
-
-					m_blurUniform.offset[6] = { -radiusX * 0.7f, radiusY * 0.7f };
-					m_blurUniform.offset[7] = { 0, radiusY };
-					m_blurUniform.offset[8] = { radiusX * 0.7f, radiusY * 0.7f };
+					m_activeBlurRadius = * p++;
 
 					for( int i = 0 ; i < 9 ; i++ )
 					{
@@ -1063,8 +1049,6 @@ void MetalBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, i
 					m_blurUniform.colorMtx[4][3] = 1.f;
 
 					p += 27;
-
-					[m_renderEncoder setFragmentBytes:&m_blurUniform length:sizeof(BlurUniform) atIndex: (unsigned) FragmentInputIndex::BlurUniform];
 				}
 
 				// Update uniform if changed
@@ -1903,6 +1887,28 @@ void MetalBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, i
 
 					if( cmd == Command::Blur )
 					{
+						// Blur offsets are added to texture coordinates that are normalized against the
+						// blit source, so they must be normalized against the blit source size as well.
+
+						SizeI size = pSurf->pixelSize();
+
+						float radiusX = m_activeBlurRadius / float(size.w*64);
+						float radiusY = m_activeBlurRadius / float(size.h*64);
+
+						m_blurUniform.offset[0] = { -radiusX * 0.7f, -radiusY * 0.7f };
+						m_blurUniform.offset[1] = { 0, -radiusY };
+						m_blurUniform.offset[2] = { radiusX * 0.7f, -radiusY * 0.7f };
+
+						m_blurUniform.offset[3] = { -radiusX, 0 };
+						m_blurUniform.offset[4] = { 0, 0 };
+						m_blurUniform.offset[5] = { radiusX, 0 };
+
+						m_blurUniform.offset[6] = { -radiusX * 0.7f, radiusY * 0.7f };
+						m_blurUniform.offset[7] = { 0, radiusY };
+						m_blurUniform.offset[8] = { radiusX * 0.7f, radiusY * 0.7f };
+
+						[m_renderEncoder setFragmentBytes:&m_blurUniform length:sizeof(BlurUniform) atIndex: (unsigned) FragmentInputIndex::BlurUniform];
+
 						if(m_blurPipelines[m_bTintmap][(int)m_activeBlendMode][(int)m_activeCanvasFormat] == nil )
 							m_blurPipelines[m_bTintmap][(int)m_activeBlendMode][(int)m_activeCanvasFormat] = _compileBlurPipeline( m_bTintmap, m_activeBlendMode, m_activeCanvasFormat );
 

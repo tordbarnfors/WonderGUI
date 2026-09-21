@@ -280,6 +280,7 @@ namespace wg
 
 
 		BlurUniform	m_activeBlurInfo;
+		spx			m_activeBlurRadius = 64;
 		Blurbrush_p	m_pActiveBlurbrush;
 
 		GLint		m_blurUniformLocation[2][2];
