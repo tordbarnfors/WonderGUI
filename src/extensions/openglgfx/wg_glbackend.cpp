@@ -1111,7 +1111,7 @@ void GlBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, int 
 
 			// Setup extras data
 
-			*pExtrasGL++ = (GLfloat)nSegments;
+			*pExtrasGL++ = (GLfloat)(pEdgemap->m_nbSegments - 1);	// Edgemap pitch (edges stored per column)
 			*pExtrasGL++ = 0;			// Dummy;
 			*pExtrasGL++ = colorstripPitchX;
 			*pExtrasGL++ = colorstripPitchY;

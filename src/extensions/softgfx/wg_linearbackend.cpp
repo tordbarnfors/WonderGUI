@@ -745,7 +745,7 @@ namespace wg
 
 				pRects += nRects;
 
-				int32_t nSegments = pEdgemap->segments();
+				int32_t nSegments = pEdgemap->renderSegments();		// Segments to draw. Last one extends to the end.
 				const HiColor * pSegmentColors = pEdgemap->m_pFlatColors;
 				
 				int nEdgeStrips = pEdgemap->m_size.w + 1;

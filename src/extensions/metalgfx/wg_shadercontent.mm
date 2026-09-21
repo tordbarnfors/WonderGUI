@@ -148,6 +148,7 @@ typedef struct
 	float4 color;
     float2 texUV;
 	int2 	colorstripPitch;
+	int 		edgemapPitch;
 	float2	tintmapUV;
 	float2	colorstripUV;
 } SegmentsFragInput;
@@ -1003,6 +1004,7 @@ segmentsVertexShader(uint vertexID [[vertex_id]],
 
     out.colorstripPitch.x = int(extras.x);
 	out.colorstripPitch.y = int(extras.y);
+	out.edgemapPitch = int(extras.z);
     out.texUV = pVertices[vertexID].uv;
 	out.tintmapUV = pVertices[vertexID].tintmapOfs;
 	out.colorstripUV = pVertices[vertexID].colorstripOfs;
@@ -1028,7 +1030,7 @@ inline float4 segFragShaderCore(SegmentsFragInput in,
 
         colorOfs += in.colorstripPitch;
 
-        float4 edge = pEdgemap[int(in.texUV.x)*EDGES+i];
+        float4 edge = pEdgemap[int(in.texUV.x)*in.edgemapPitch+i];
 
         float x = (in.texUV.y - edge.r) * edge.g;
         float adder = edge.g / 2.f;
@@ -1271,7 +1273,7 @@ inline float4 segFragShaderCore_A8(SegmentsFragInput in,
 
 		colorOfs += in.colorstripPitch;
 
-		float4 edge = pEdgemap[int(in.texUV.x)*EDGES+i];
+		float4 edge = pEdgemap[int(in.texUV.x)*in.edgemapPitch+i];
 
 		float x = (in.texUV.y - edge.r) * edge.g;
 		float adder = edge.g / 2.f;

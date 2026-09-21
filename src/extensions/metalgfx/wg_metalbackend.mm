@@ -1732,7 +1732,7 @@ void MetalBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, i
 
 				*pExtrasMTL++ = colorstripPitchX;
 				*pExtrasMTL++ = colorstripPitchY;
-				*pExtrasMTL++ = 0;			// Dummy
+				*pExtrasMTL++ = float(pEdgemap->m_nbSegments - 1);	// Edgemap pitch (edges stored per column)
 				*pExtrasMTL++ = 0;			// Dummy
 
 
