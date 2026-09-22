@@ -20,17 +20,12 @@
 
 =========================================================================*/
 #include <wg_debugwindow.h>
-#include <wg_debugcapsule.h>
 #include <wg_msgrouter.h>
 #include <wg_base.h>
 
 #include <wg_packpanel.h>
-#include <wg_button.h>
 #include <wg_renderlayercapsule.h>
 
-
-#include <wg_blockskin.h>
-#include <wg_colorskin.h>
 
 namespace wg
 {

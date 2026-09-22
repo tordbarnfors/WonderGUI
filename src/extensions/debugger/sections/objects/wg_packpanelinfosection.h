@@ -24,7 +24,7 @@
 #pragma once
 
 #include <wg_tablepanel.h>
-#include <wg_infosection.h>
+#include <wg_typedinfosection.h>
 #include <wg_packpanel.h>
 
 namespace wg
@@ -35,13 +35,13 @@ namespace wg
 
 
 
-	class PackPanelInfoSection : public InfoSection
+	class PackPanelInfoSection : public TypedInfoSection<PackPanel>
 	{
 	public:
 
 		//.____ Creation __________________________________________
 
-		static PackPanelInfoSection_p		create( const DebugTheme& theme, IDebugContext* pContext, PackPanel * pPanel) { return PackPanelInfoSection_p(new PackPanelInfoSection(theme, pContext, pPanel) ); }
+		static PackPanelInfoSection_p		create( const DebugTheme& theme, IDebugContext* pContext, PackPanel * pInspected) { return PackPanelInfoSection_p(new PackPanelInfoSection(theme, pContext, pInspected) ); }
 
 		//.____ Identification __________________________________________
 
@@ -50,20 +50,15 @@ namespace wg
 
 		//.____ Control ____________________________________________________
 
-		void 					refresh() override;
+		void refresh() override;
+
 
 	protected:
-		PackPanelInfoSection(const DebugTheme& theme, IDebugContext* pContext, PackPanel * pPanel );
+		PackPanelInfoSection(const DebugTheme& theme, IDebugContext* pContext, PackPanel * pInspected );
 		~PackPanelInfoSection() {}
 
-		PackPanel *		m_pInspected;
-		TablePanel_p	m_pTable;
-
 		DrawerPanel_p	m_pSlotsDrawer;
-		Object_p		m_displayedLayoutPointer;
-
 	};
 
 } // namespace wg
 #endif //WG_PACKPANELINFOSECTION_DOT_H
-

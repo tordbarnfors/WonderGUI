@@ -31,14 +31,13 @@ namespace wg
 
 	//____ constructor _____________________________________________________________
 
-	PackPanelSlotInfoSection::PackPanelSlotInfoSection(const DebugTheme& theme, IDebugContext* pContext, StaticSlot * pStaticSlot) : InfoSection( theme, pContext, PackPanelSlot::TYPEINFO.className )
+	PackPanelSlotInfoSection::PackPanelSlotInfoSection(const DebugTheme& theme, IDebugContext* pContext, PackPanelSlot * pInspected)
+		: TypedInfoSection<PackPanelSlot>( theme, pContext, PackPanelSlot::TYPEINFO.className, pInspected )
 	{
-		m_pTable = _createTable(2,2);
-		_initDecimalEntry(m_pTable, 0, "Weight: ");
-		_initDecimalEntry(m_pTable, 1, "Baseline: ");
-		refresh(pStaticSlot);
-
-		this->slot = m_pTable;
+		this->slot = _createRows({
+			decimalRow( "Weight: ",   [](PackPanelSlot* s) { return s->weight(); } ),
+			decimalRow( "Baseline: ", [](PackPanelSlot* s) { return s->baseline(); } )
+		});
 	}
 
 	//____ typeInfo() _________________________________________________________
@@ -48,18 +47,4 @@ namespace wg
 		return TYPEINFO;
 	}
 
-	//____ refresh() _____________________________________________________________
-
-	void PackPanelSlotInfoSection::refresh(StaticSlot * pStaticSlot)
-	{
-		auto pInspected = static_cast<PackPanelSlot*>(pStaticSlot);
-
-		_refreshDecimalEntry(m_pTable, 0, pInspected->weight());
-		_refreshDecimalEntry(m_pTable, 1, pInspected->baseline());
-	}
-
-
 } // namespace wg
-
-
-

@@ -21,8 +21,6 @@
 =========================================================================*/
 #include "wg_buttoninfosection.h"
 #include <wg_button.h>
-#include <wg_numberdisplay.h>
-#include <wg_basicnumberlayout.h>
 
 
 namespace wg
@@ -33,22 +31,20 @@ namespace wg
 
 	//____ constructor _____________________________________________________________
 
-	ButtonInfoSection::ButtonInfoSection(const DebugTheme& theme, IDebugContext* pContext, Button * pButton) : InfoSection( theme, pContext, Button::TYPEINFO.className )
+	ButtonInfoSection::ButtonInfoSection(const DebugTheme& theme, IDebugContext* pContext, Button * pInspected)
+		: TypedInfoSection<Button>( theme, pContext, Button::TYPEINFO.className, pInspected )
 	{
-		m_pInspected = pButton;
-
 		auto pPanel = WGCREATE(PackPanel, _.axis = Axis::Y);
 
-		m_pTable = _createTable(1, 2);
+		auto pTable = _createRows({
+			boolRow( "Select on press: ", [](Button* b) { return b->selectOnPress(); } )
+		});
 
-		_setBoolEntry(m_pTable, 0, "Select on press: ", m_pInspected->selectOnPress() );
+		m_pLabelDrawer = _createComponentDrawer("Label", &pInspected->label);
+		m_pIconDrawer = _createComponentDrawer("Icon", &pInspected->icon);
 
-		m_pLabelDrawer = _createComponentDrawer("Label", &pButton->label);
-		m_pIconDrawer = _createComponentDrawer("Icon", &pButton->icon);
-
-		pPanel->slots.pushBack({ m_pTable, m_pLabelDrawer, m_pIconDrawer });
-
-		slot = pPanel;
+		pPanel->slots.pushBack({ pTable, m_pLabelDrawer, m_pIconDrawer });
+		this->slot = pPanel;
 	}
 
 	//____ typeInfo() _________________________________________________________
@@ -62,13 +58,10 @@ namespace wg
 
 	void ButtonInfoSection::refresh()
 	{
-		_refreshBoolEntry(m_pTable, 0, m_pInspected->selectOnPress());
+		TypedInfoSection<Button>::refresh();
 
-		_refreshComponentDrawer( static_cast<DrawerPanel*>(m_pLabelDrawer) );
-		_refreshComponentDrawer(static_cast<DrawerPanel*>(m_pIconDrawer) );
+		_refreshComponentDrawer(m_pLabelDrawer);
+		_refreshComponentDrawer(m_pIconDrawer);
 	}
 
-
 } // namespace wg
-
-

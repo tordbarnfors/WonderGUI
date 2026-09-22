@@ -24,7 +24,7 @@
 #pragma once
 
 #include <wg_tablepanel.h>
-#include <wg_infosection.h>
+#include <wg_typedinfosection.h>
 #include <wg_scrollpanel.h>
 
 namespace wg
@@ -35,13 +35,13 @@ namespace wg
 
 
 
-	class ScrollPanelInfoSection : public InfoSection
+	class ScrollPanelInfoSection : public TypedInfoSection<ScrollPanel>
 	{
 	public:
 
 		//.____ Creation __________________________________________
 
-		static ScrollPanelInfoSection_p		create( const DebugTheme& theme, IDebugContext* pContext, ScrollPanel * pPanel) { return ScrollPanelInfoSection_p(new ScrollPanelInfoSection(theme, pContext, pPanel) ); }
+		static ScrollPanelInfoSection_p		create( const DebugTheme& theme, IDebugContext* pContext, ScrollPanel * pInspected) { return ScrollPanelInfoSection_p(new ScrollPanelInfoSection(theme, pContext, pInspected) ); }
 
 		//.____ Identification __________________________________________
 
@@ -52,19 +52,15 @@ namespace wg
 
 		void refresh() override;
 
+
 	protected:
-		ScrollPanelInfoSection(const DebugTheme& theme, IDebugContext* pContext, ScrollPanel * pPanel );
+		ScrollPanelInfoSection(const DebugTheme& theme, IDebugContext* pContext, ScrollPanel * pInspected );
 		~ScrollPanelInfoSection() {}
 
-		ScrollPanel *	m_pInspected;
-		TablePanel_p	m_pTable;
 		DrawerPanel_p	m_pScrollbarXDrawer;
 		DrawerPanel_p	m_pScrollbarYDrawer;
 		DrawerPanel_p	m_pSlotDrawer;
-		Object_p		m_displayedTransitionPtr;
-
 	};
 
 } // namespace wg
 #endif //WG_SCROLLPANELINFOSECTION_DOT_H
-

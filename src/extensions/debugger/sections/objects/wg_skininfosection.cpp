@@ -20,13 +20,7 @@
 
 =========================================================================*/
 #include "wg_skininfosection.h"
-#include <wg_textdisplay.h>
-#include <wg_numberdisplay.h>
-#include <wg_basicnumberlayout.h>
 #include <wg_packpanel.h>
-#include <wg_skindisplay.h>
-#include <wg_tileskin.h>
-#include <wg_boxskin.h>
 
 
 namespace wg
@@ -37,24 +31,33 @@ namespace wg
 
 	//____ constructor _____________________________________________________________
 
-	SkinInfoSection::SkinInfoSection(const DebugTheme& theme, IDebugContext* pContext, Skin * pSkin) : InfoSection( theme, pContext, Skin::TYPEINFO.className )
+	SkinInfoSection::SkinInfoSection(const DebugTheme& theme, IDebugContext* pContext, Skin * pSkin)
+		: TypedInfoSection<Skin>( theme, pContext, Skin::TYPEINFO.className, pSkin )
 	{
 		auto pBasePanel = WGCREATE( PackPanel, _.axis = Axis::Y );
 
-		auto pTable = _createTable(7, 2);
+		pBasePanel->slots << _createRows({
+			boolRow( "Opaque:",           [](Skin* s) { return s->isOpaque(); } ),
+			boolRow( "Content shifting:", [](Skin* s) { return s->isContentShifting(); } ),
+			boolRow( "Ignores value:",    [](Skin* s) { return s->_ignoresValue(); } ),
+			boolRow( "Ignores state:",    [](Skin* s) { return s->_ignoresState(); } ),
+			boolRow( "Overflows:",        [](Skin* s) { return s->_hasOverflow(); } ),
+			intRow ( "Layer:",            [](Skin* s) { return s->layer(); } ),
+			intRow ( "Mark alpha:",       [](Skin* s) { return s->markAlpha(); } )
+		});
 
-		_setBoolEntry(pTable, 0, "Opaque:", pSkin->isOpaque());
-		_setBoolEntry(pTable, 1, "Content shifting:", pSkin->isContentShifting());
-		_setBoolEntry(pTable, 2, "Ignores value:", pSkin->_ignoresValue());
-		_setBoolEntry(pTable, 3, "Ignores state:", pSkin->_ignoresState());
-		_setBoolEntry(pTable, 4, "Overflows:", pSkin->_hasOverflow());
-		_setIntegerEntry(pTable, 5, "Layer:", pSkin->layer());
-		_setIntegerEntry(pTable, 6, "Mark alpha:", pSkin->markAlpha());
-		pBasePanel->slots << pTable;
+		m_displayedMargin	= pSkin->margin();
+		m_displayedPadding	= pSkin->padding();
+		m_displayedOverflow	= pSkin->overflow();
 
-		pBasePanel->slots << _createBorderDrawer("Margin", pSkin->margin());
-		pBasePanel->slots << _createBorderDrawer("Padding", pSkin->padding());
-		pBasePanel->slots << _createBorderDrawer("Overflow", pSkin->overflow());
+		m_pMarginDrawer		= _createBorderDrawer("Margin", m_displayedMargin);
+		m_pPaddingDrawer	= _createBorderDrawer("Padding", m_displayedPadding);
+		m_pOverflowDrawer	= _createBorderDrawer("Overflow", m_displayedOverflow);
+
+		pBasePanel->slots << m_pMarginDrawer;
+		pBasePanel->slots << m_pPaddingDrawer;
+		pBasePanel->slots << m_pOverflowDrawer;
+
 		this->slot = pBasePanel;
 	}
 
@@ -65,7 +68,17 @@ namespace wg
 		return TYPEINFO;
 	}
 
+	//____ refresh() _____________________________________________________________
+
+	void SkinInfoSection::refresh()
+	{
+		TypedInfoSection<Skin>::refresh();
+
+		auto pSkin = inspected();
+
+		_refreshBorderDrawer(m_pMarginDrawer, pSkin->margin(), m_displayedMargin);
+		_refreshBorderDrawer(m_pPaddingDrawer, pSkin->padding(), m_displayedPadding);
+		_refreshBorderDrawer(m_pOverflowDrawer, pSkin->overflow(), m_displayedOverflow);
+	}
 
 } // namespace wg
-
-

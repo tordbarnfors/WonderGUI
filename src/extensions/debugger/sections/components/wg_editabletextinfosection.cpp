@@ -20,11 +20,7 @@
 
 =========================================================================*/
 #include "wg_editabletextinfosection.h"
-#include <wg_textdisplay.h>
-#include <wg_numberdisplay.h>
-#include <wg_basicnumberlayout.h>
 #include <wg_enumextras.h>
-#include <wg_packpanel.h>
 
 namespace wg
 {
@@ -34,18 +30,14 @@ namespace wg
 
 	//____ constructor _____________________________________________________________
 
-	EditableTextInfoSection::EditableTextInfoSection(const DebugTheme& theme, IDebugContext* pContext, EditableText* pEditableText) : InfoSection(theme, pContext, EditableText::TYPEINFO.className)
+	EditableTextInfoSection::EditableTextInfoSection(const DebugTheme& theme, IDebugContext* pContext, EditableText * pInspected)
+		: TypedInfoSection<EditableText>( theme, pContext, EditableText::TYPEINFO.className, pInspected )
 	{
-		m_pInspected = pEditableText;
-		m_pTable = _createTable(3, 2);
-
-		_initTextEntry(m_pTable, 0, "Edit mode: ");
-		_initIntegerEntry(m_pTable, 1, "Max lines: ");
-		_initIntegerEntry(m_pTable, 2, "Max chars: ");
-
-		this->slot = m_pTable;
-
-		refresh();
+		this->slot = _createRows({
+			textRow( "Edit mode: ", [](EditableText* t) { return toString(t->editMode()); } ),
+			intRow ( "Max lines: ", [](EditableText* t) { return t->maxLines(); } ),
+			intRow ( "Max chars: ", [](EditableText* t) { return t->maxChars(); } )
+		});
 	}
 
 	//____ typeInfo() _________________________________________________________
@@ -55,17 +47,4 @@ namespace wg
 		return TYPEINFO;
 	}
 
-	//____ refresh() _____________________________________________________________
-
-	void EditableTextInfoSection::refresh()
-	{
-		_refreshTextEntry(m_pTable, 0, toString(m_pInspected->editMode()) );
-		_refreshIntegerEntry(m_pTable, 1, m_pInspected->maxLines());
-		_refreshIntegerEntry(m_pTable, 2, m_pInspected->maxChars());
-	}
-
-
-
 } // namespace wg
-
-

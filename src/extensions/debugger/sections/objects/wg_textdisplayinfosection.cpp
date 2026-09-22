@@ -21,8 +21,6 @@
 =========================================================================*/
 #include "wg_textdisplayinfosection.h"
 #include <wg_textdisplay.h>
-#include <wg_numberdisplay.h>
-#include <wg_basicnumberlayout.h>
 
 
 namespace wg
@@ -33,9 +31,11 @@ namespace wg
 
 	//____ constructor _____________________________________________________________
 
-	TextDisplayInfoSection::TextDisplayInfoSection(const DebugTheme& theme, IDebugContext* pContext, TextDisplay * pTextDisplay) : InfoSection( theme, pContext, TextDisplay::TYPEINFO.className )
+	TextDisplayInfoSection::TextDisplayInfoSection(const DebugTheme& theme, IDebugContext* pContext, TextDisplay * pInspected)
+		: TypedInfoSection<TextDisplay>( theme, pContext, TextDisplay::TYPEINFO.className, pInspected )
 	{
-		this->slot = _createComponentDrawer("Display", &pTextDisplay->display);
+		m_pDisplayDrawer = _createComponentDrawer("Display", &pInspected->display);
+		this->slot = m_pDisplayDrawer;
 	}
 
 	//____ typeInfo() _________________________________________________________
@@ -49,10 +49,9 @@ namespace wg
 
 	void TextDisplayInfoSection::refresh()
 	{
-		_refreshComponentDrawer( static_cast<DrawerPanel*>(slot._widget()) );
+		TypedInfoSection<TextDisplay>::refresh();
+
+		_refreshComponentDrawer(m_pDisplayDrawer);
 	}
 
-
 } // namespace wg
-
-

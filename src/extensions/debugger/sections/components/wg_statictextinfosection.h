@@ -24,7 +24,7 @@
 #pragma once
 
 #include <wg_tablepanel.h>
-#include <wg_infosection.h>
+#include <wg_typedinfosection.h>
 #include <wg_statictext.h>
 
 namespace wg
@@ -35,36 +35,30 @@ namespace wg
 
 
 
-	class StaticTextInfoSection : public InfoSection
+	class StaticTextInfoSection : public TypedInfoSection<StaticText>
 	{
 	public:
 
 		//.____ Creation __________________________________________
 
-		static StaticTextInfoSection_p		create(const DebugTheme& theme, IDebugContext* pContext, StaticText* pStaticText) { return StaticTextInfoSection_p(new StaticTextInfoSection(theme, pContext, pStaticText)); }
+		static StaticTextInfoSection_p		create( const DebugTheme& theme, IDebugContext* pContext, StaticText * pInspected) { return StaticTextInfoSection_p(new StaticTextInfoSection(theme, pContext, pInspected) ); }
 
 		//.____ Identification __________________________________________
 
-		const TypeInfo& typeInfo(void) const override;
+		const TypeInfo&			typeInfo(void) const override;
 		const static TypeInfo	TYPEINFO;
 
 		//.____ Control ____________________________________________________
 
 		void refresh() override;
 
+
 	protected:
-		StaticTextInfoSection(const DebugTheme& theme, IDebugContext* pContext, StaticText* pStaticText);
+		StaticTextInfoSection(const DebugTheme& theme, IDebugContext* pContext, StaticText * pInspected );
 		~StaticTextInfoSection() {}
 
-		TablePanel_p	m_pTable;
-		StaticText *	m_pInspected;
 		TextDisplay_p	m_pTextDisplay;
-
-		Object_p		m_displayedStylePtr;
-		Object_p		m_displayedLayoutPtr;
-
 	};
 
 } // namespace wg
-#endif //WG_StaticTextINFOSECTION_DOT_H
-
+#endif //WG_STATICTEXTINFOSECTION_DOT_H

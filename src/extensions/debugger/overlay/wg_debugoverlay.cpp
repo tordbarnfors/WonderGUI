@@ -21,10 +21,8 @@
 =========================================================================*/
 #include <wg_debugoverlay.h>
 #include <wg_util.h>
-#include <wg_patches.h>
 #include <wg_msgrouter.h>
 #include <wg_base.h>
-#include <wg_inputhandler.h>
 #include <wg_colorskin.h>
 #include <wg_boxskin.h>
 #include <wg_blockskin.h>
@@ -33,9 +31,7 @@
 #include <wg_numberdisplay.h>
 #include <wg_textdisplay.h>
 #include <wg_gfxdevice.h>
-#include <wg_togglebutton.h>
 #include <wg_togglegroup.h>
-#include <wg_scrollpanel.h>
 #include <wg_basictextlayout.h>
 #include <wg_basicnumberlayout.h>
 
@@ -43,7 +39,6 @@
 
 #include <wg_widgettreeview.h>
 
-#include <string>
 
 namespace wg
 {

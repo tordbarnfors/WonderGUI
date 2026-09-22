@@ -23,7 +23,6 @@
 #define WG_DUMMYINFOSECTION_DOT_H
 #pragma once
 
-#include <wg_tablepanel.h>
 #include <wg_infosection.h>
 
 namespace wg

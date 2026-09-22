@@ -24,9 +24,8 @@
 #pragma once
 
 #include <wg_tablepanel.h>
-#include <wg_infosection.h>
-#include <wg_textdisplay.h>
-
+#include <wg_typedinfosection.h>
+#include <wg_button.h>
 
 namespace wg
 {
@@ -36,13 +35,13 @@ namespace wg
 
 
 
-	class ButtonInfoSection : public InfoSection
+	class ButtonInfoSection : public TypedInfoSection<Button>
 	{
 	public:
 
 		//.____ Creation __________________________________________
 
-		static ButtonInfoSection_p		create( const DebugTheme& theme, IDebugContext* pContext, Button * pButton) { return ButtonInfoSection_p(new ButtonInfoSection(theme, pContext, pButton) ); }
+		static ButtonInfoSection_p		create( const DebugTheme& theme, IDebugContext* pContext, Button * pInspected) { return ButtonInfoSection_p(new ButtonInfoSection(theme, pContext, pInspected) ); }
 
 		//.____ Identification __________________________________________
 
@@ -53,12 +52,10 @@ namespace wg
 
 		void refresh() override;
 
-	protected:
-		ButtonInfoSection(const DebugTheme& theme, IDebugContext* pContext, Button * pButton );
-		~ButtonInfoSection() {}
 
-		Button *		m_pInspected;
-		TablePanel_p	m_pTable;
+	protected:
+		ButtonInfoSection(const DebugTheme& theme, IDebugContext* pContext, Button * pInspected );
+		~ButtonInfoSection() {}
 
 		DrawerPanel_p	m_pLabelDrawer;
 		DrawerPanel_p	m_pIconDrawer;
@@ -66,4 +63,3 @@ namespace wg
 
 } // namespace wg
 #endif //WG_BUTTONINFOSECTION_DOT_H
-

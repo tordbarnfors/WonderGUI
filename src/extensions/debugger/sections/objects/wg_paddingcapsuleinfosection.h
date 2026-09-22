@@ -24,7 +24,7 @@
 #pragma once
 
 #include <wg_tablepanel.h>
-#include <wg_infosection.h>
+#include <wg_typedinfosection.h>
 #include <wg_paddingcapsule.h>
 
 namespace wg
@@ -35,13 +35,13 @@ namespace wg
 
 
 
-	class PaddingCapsuleInfoSection : public InfoSection
+	class PaddingCapsuleInfoSection : public TypedInfoSection<PaddingCapsule>
 	{
 	public:
 
 		//.____ Creation __________________________________________
 
-		static PaddingCapsuleInfoSection_p		create( const DebugTheme& theme, IDebugContext* pContext, PaddingCapsule * pPanel) { return PaddingCapsuleInfoSection_p(new PaddingCapsuleInfoSection(theme, pContext, pPanel) ); }
+		static PaddingCapsuleInfoSection_p		create( const DebugTheme& theme, IDebugContext* pContext, PaddingCapsule * pInspected) { return PaddingCapsuleInfoSection_p(new PaddingCapsuleInfoSection(theme, pContext, pInspected) ); }
 
 		//.____ Identification __________________________________________
 
@@ -52,16 +52,14 @@ namespace wg
 
 		void refresh() override;
 
+
 	protected:
-		PaddingCapsuleInfoSection(const DebugTheme& theme, IDebugContext* pContext, PaddingCapsule * pPanel );
+		PaddingCapsuleInfoSection(const DebugTheme& theme, IDebugContext* pContext, PaddingCapsule * pInspected );
 		~PaddingCapsuleInfoSection() {}
 
-		PaddingCapsule *	m_pInspected;
-		DrawerPanel_p		m_pPaddingDrawer;
-
-		Border				m_displayedPadding;
+		DrawerPanel_p	m_pPaddingDrawer;
+		Border			m_displayedPadding;
 	};
 
 } // namespace wg
 #endif //WG_PADDINGCAPSULEINFOSECTION_DOT_H
-

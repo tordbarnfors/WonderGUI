@@ -20,9 +20,7 @@
 
 =========================================================================*/
 #include "wg_skininspector.h"
-#include <wg_textdisplay.h>
 #include <wg_skindisplay.h>
-#include <wg_boxskin.h>
 #include <wg_packpanel.h>
 #include <wg_tileskin.h>
 #include <wg_sizecapsule.h>

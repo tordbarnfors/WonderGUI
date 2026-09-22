@@ -24,7 +24,7 @@
 #pragma once
 
 #include <wg_tablepanel.h>
-#include <wg_infosection.h>
+#include <wg_typedinfosection.h>
 #include <wg_glow.h>
 
 namespace wg
@@ -35,43 +35,34 @@ namespace wg
 
 
 
-	class GlowInfoSection : public InfoSection
+	class GlowInfoSection : public TypedInfoSection<Glow>
 	{
 	public:
 
 		//.____ Creation __________________________________________
 
-		static GlowInfoSection_p		create(const DebugTheme& theme, IDebugContext* pContext, Glow* pGlow) { return GlowInfoSection_p(new GlowInfoSection(theme, pContext, pGlow)); }
+		static GlowInfoSection_p		create( const DebugTheme& theme, IDebugContext* pContext, Glow * pInspected) { return GlowInfoSection_p(new GlowInfoSection(theme, pContext, pInspected) ); }
 
 		//.____ Identification __________________________________________
 
-		const TypeInfo& typeInfo(void) const override;
+		const TypeInfo&			typeInfo(void) const override;
 		const static TypeInfo	TYPEINFO;
 
 		//.____ Control ____________________________________________________
 
 		void refresh() override;
 
+
 	protected:
-		GlowInfoSection(const DebugTheme& theme, IDebugContext* pContext, Glow* pGlow);
+		GlowInfoSection(const DebugTheme& theme, IDebugContext* pContext, Glow * pInspected );
 		~GlowInfoSection() {}
 
-		TablePanel_p	m_pTable;
-		Glow*			m_pInspected;
-
-		DrawerPanel_p	m_pSeedTintDrawer;
 		DrawerPanel_p	m_pGlowTintDrawer;
+		DrawerPanel_p	m_pSeedTintDrawer;
 
-
-		Object_p		m_displayedSkinPtr;
-		Object_p		m_displayedBrushPtr;
-		Object_p		m_displayedSurface1Ptr;
-		Object_p		m_displayedSurface2Ptr;
-
-		HiColor			m_displayedSeedTint;
 		HiColor			m_displayedGlowTint;
+		HiColor			m_displayedSeedTint;
 	};
 
 } // namespace wg
 #endif //WG_GLOWINFOSECTION_DOT_H
-

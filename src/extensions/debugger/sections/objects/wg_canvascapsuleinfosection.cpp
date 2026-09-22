@@ -20,9 +20,6 @@
 
 =========================================================================*/
 #include "wg_canvascapsuleinfosection.h"
-#include <wg_textdisplay.h>
-#include <wg_numberdisplay.h>
-#include <wg_basicnumberlayout.h>
 #include <wg_packpanel.h>
 
 
@@ -34,47 +31,40 @@ namespace wg
 
 	//____ constructor _____________________________________________________________
 
-	CanvasCapsuleInfoSection::CanvasCapsuleInfoSection(const DebugTheme& theme, IDebugContext* pContext, CanvasCapsule* pCapsule) : InfoSection(theme, pContext, CanvasCapsule::TYPEINFO.className)
+	CanvasCapsuleInfoSection::CanvasCapsuleInfoSection(const DebugTheme& theme, IDebugContext* pContext, CanvasCapsule * pInspected)
+		: TypedInfoSection<CanvasCapsule>( theme, pContext, CanvasCapsule::TYPEINFO.className, pInspected )
 	{
 		//TODO: Drawer with side display pointers
 		//TODO: Transitions
 		//TODO: Canvas geo
 
-		m_pInspected = pCapsule;
+		auto pPanel = WGCREATE(PackPanel, _.axis = Axis::Y);
 
-		auto pPanel = PackPanel::create(WGBP(PackPanel, _.axis = Axis::Y));
-			
-		m_pTable = _createTable(12, 2);
+		auto pTable = _createRows({
+			objectRow( "Canvas: ",                  [](CanvasCapsule* c) -> Object* { return c->canvas(); } ),
+			objectRow( "Glow canvas: ",             [](CanvasCapsule* c) -> Object* { return c->glowCanvas(); } ),
+			objectRow( "Layers: ",                  [](CanvasCapsule* c) -> Object* { return c->canvasLayers(); } ),
+			objectRow( "Surface factory: ",         [](CanvasCapsule* c) -> Object* { return c->surfaceFactory(); } ),
+			textRow  ( "Pixel format: ",            [](CanvasCapsule* c) { return toString(c->format()); } ),
+			intRow   ( "Render layer: ",            [](CanvasCapsule* c) { return c->renderLayer(); } ),
+			objectRow( "Tintmap: ",                 [](CanvasCapsule* c) -> Object* { return c->tintmap(); } ),
+			textRow  ( "Blend mode: ",              [](CanvasCapsule* c) { return toString(c->blendMode()); } ),
+			boolRow  ( "Scale canvas: ",            [](CanvasCapsule* c) { return c->isCanvasScaling(); } ),
+			boolRow  ( "Skin around canvas: ",      [](CanvasCapsule* c) { return c->isSkinAroundCanvas(); } ),
+			textRow  ( "Placement: ",               [](CanvasCapsule* c) { return toString(c->placement()); } ),
+			intRow   ( "Number of side displays: ", [](CanvasCapsule* c) { return c->nbSideDisplays(); } )
+		});
 
-		int row = 0;
-		_initObjectPointerEntry(m_pTable, row++, "Canvas: ");
-		_initObjectPointerEntry(m_pTable, row++, "Glow canvas: ");
-		_initObjectPointerEntry(m_pTable, row++, "Layers: ");
-		_initObjectPointerEntry(m_pTable, row++, "Surface factory: ");
-		_initTextEntry(m_pTable, row++, "Pixel format: ");
-		_initIntegerEntry(m_pTable, row++, "Render layer: ");
-		_initObjectPointerEntry(m_pTable, row++, "Tintmap: ");
-		_initTextEntry(m_pTable, row++, "Blend mode: ");
-		_initBoolEntry(m_pTable, row++, "Scale canvas: ");
-		_initBoolEntry(m_pTable, row++, "Skin around canvas: ");
-		_initTextEntry(m_pTable, row++, "Placement: ");
-		_initIntegerEntry(m_pTable, row++, "Number of side displays: ");
-
-		m_displayedClearColor = m_pInspected->clearColor();
-		m_displayedTintColor = m_pInspected->tintColor();
+		m_displayedClearColor = pInspected->clearColor();
+		m_displayedTintColor = pInspected->tintColor();
 
 		m_pClearColorDrawer = _createColorDrawer("Clear color: ", m_displayedClearColor);
 		m_pTintColorDrawer = _createColorDrawer("Tint color: ", m_displayedTintColor);
+		m_pGlowDrawer = _createComponentDrawer("Glow", &pInspected->glow);
 
-		m_pGlowDrawer = _createComponentDrawer("Glow", &pCapsule->glow);
-
-		pPanel->slots.pushBack({ m_pTable, m_pClearColorDrawer, m_pTintColorDrawer, m_pGlowDrawer });
-
-		refresh();
-
+		pPanel->slots.pushBack({ pTable, m_pClearColorDrawer, m_pTintColorDrawer, m_pGlowDrawer });
 		this->slot = pPanel;
 	}
-
 
 	//____ typeInfo() _________________________________________________________
 
@@ -87,29 +77,11 @@ namespace wg
 
 	void CanvasCapsuleInfoSection::refresh()
 	{
-		int row = 0;
-		_refreshObjectPointerEntry(m_pTable, row++, m_pInspected->canvas(), m_displayedCanvasPtr );
-		_refreshObjectPointerEntry(m_pTable, row++, m_pInspected->glowCanvas(), m_displayedGlowCanvasPtr);
-		_refreshObjectPointerEntry(m_pTable, row++, m_pInspected->canvasLayers(), m_displayedLayersPtr);
-		_refreshObjectPointerEntry(m_pTable, row++, m_pInspected->surfaceFactory(), m_displayedFactoryPtr);
-		_refreshTextEntry(m_pTable, row++, toString(m_pInspected->format()));
-		_refreshIntegerEntry(m_pTable, row++, m_pInspected->renderLayer());
-		_refreshObjectPointerEntry(m_pTable, row++, m_pInspected->tintmap(), m_displayedTintmapPtr);
-		_refreshTextEntry(m_pTable, row++, toString(m_pInspected->blendMode()));
-		_refreshBoolEntry(m_pTable, row++, m_pInspected->isCanvasScaling());
-		_refreshBoolEntry(m_pTable, row++, m_pInspected->isSkinAroundCanvas());
-		_refreshTextEntry(m_pTable, row++, toString(m_pInspected->placement()) );
-		_refreshIntegerEntry(m_pTable, row++, m_pInspected->nbSideDisplays() );
+		TypedInfoSection<CanvasCapsule>::refresh();
 
-		m_displayedClearColor = m_pInspected->clearColor();
-		m_displayedTintColor = m_pInspected->tintColor();
-
-		m_pClearColorDrawer = _createColorDrawer("Clear color: ", m_displayedClearColor);
-		m_pTintColorDrawer = _createColorDrawer("Tint color: ", m_displayedTintColor);
-
+		_refreshColorDrawer(m_pClearColorDrawer, inspected()->clearColor(), m_displayedClearColor);
+		_refreshColorDrawer(m_pTintColorDrawer, inspected()->tintColor(), m_displayedTintColor);
 		_refreshComponentDrawer(m_pGlowDrawer);
 	}
 
 } // namespace wg
-
-

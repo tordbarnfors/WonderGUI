@@ -20,9 +20,6 @@
 
 =========================================================================*/
 #include "wg_textstyleinspector.h"
-#include <wg_textdisplay.h>
-#include <wg_skindisplay.h>
-#include <wg_boxskin.h>
 #include <wg_packpanel.h>
 
 

@@ -20,10 +20,6 @@
 
 =========================================================================*/
 #include "wg_capsuleinfosection.h"
-#include <wg_textdisplay.h>
-#include <wg_numberdisplay.h>
-#include <wg_basicnumberlayout.h>
-#include <wg_packpanel.h>
 
 
 namespace wg
@@ -34,10 +30,10 @@ namespace wg
 
 	//____ constructor _____________________________________________________________
 
-	CapsuleInfoSection::CapsuleInfoSection(const DebugTheme& theme, IDebugContext* pContext, Capsule * pCapsule) : InfoSection( theme, pContext, Capsule::TYPEINFO.className )
+	CapsuleInfoSection::CapsuleInfoSection(const DebugTheme& theme, IDebugContext* pContext, Capsule * pInspected)
+		: TypedInfoSection<Capsule>( theme, pContext, Capsule::TYPEINFO.className, pInspected )
 	{
-		m_pInspected = pCapsule;
-		m_pSlotDrawer = _createSingleSlotDrawer("Slot", &m_pInspected->slot);
+		m_pSlotDrawer = _createSingleSlotDrawer("Slot", &pInspected->slot);
 		this->slot = m_pSlotDrawer;
 	}
 
@@ -52,9 +48,9 @@ namespace wg
 
 	void CapsuleInfoSection::refresh()
 	{
-		_refreshSingleSlotDrawer(m_pSlotDrawer, &m_pInspected->slot);
+		TypedInfoSection<Capsule>::refresh();
+
+		_refreshSingleSlotDrawer(m_pSlotDrawer, &inspected()->slot);
 	}
 
 } // namespace wg
-
-

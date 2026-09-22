@@ -24,7 +24,7 @@
 #pragma once
 
 #include <wg_tablepanel.h>
-#include <wg_infosection.h>
+#include <wg_typedinfosection.h>
 #include <wg_texteditor.h>
 
 namespace wg
@@ -35,13 +35,13 @@ namespace wg
 
 
 
-	class TextEditorInfoSection : public InfoSection
+	class TextEditorInfoSection : public TypedInfoSection<TextEditor>
 	{
 	public:
 
 		//.____ Creation __________________________________________
 
-		static TextEditorInfoSection_p		create( const DebugTheme& theme, IDebugContext* pContext, TextEditor * pTextEditor) { return TextEditorInfoSection_p(new TextEditorInfoSection(theme, pContext, pTextEditor) ); }
+		static TextEditorInfoSection_p		create( const DebugTheme& theme, IDebugContext* pContext, TextEditor * pInspected) { return TextEditorInfoSection_p(new TextEditorInfoSection(theme, pContext, pInspected) ); }
 
 		//.____ Identification __________________________________________
 
@@ -52,16 +52,13 @@ namespace wg
 
 		void refresh() override;
 
-	protected:
-		TextEditorInfoSection(const DebugTheme& theme, IDebugContext* pContext, TextEditor * pTextEditor );
-		~TextEditorInfoSection() {}
 
-		TextEditor *	m_pInspected;
-		TablePanel_p	m_pTable;
+	protected:
+		TextEditorInfoSection(const DebugTheme& theme, IDebugContext* pContext, TextEditor * pInspected );
+		~TextEditorInfoSection() {}
 
 		DrawerPanel_p	m_pEditorDrawer;
 	};
 
 } // namespace wg
 #endif //WG_TEXTEDITORINFOSECTION_DOT_H
-

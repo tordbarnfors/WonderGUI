@@ -25,7 +25,6 @@
 
 #include <wg_inspectorview.h>
 #include <wg_packpanel.h>
-#include <wg_texteditor.h>
 #include <wg_msglogger.h>
 #include <wg_scrollcapsule.h>
 

@@ -20,9 +20,6 @@
 
 =========================================================================*/
 #include "wg_flexpanelinfosection.h"
-#include <wg_textdisplay.h>
-#include <wg_numberdisplay.h>
-#include <wg_basicnumberlayout.h>
 #include <wg_flexpanel.h>
 #include <wg_packpanel.h>
 
@@ -36,22 +33,20 @@ namespace wg
 
 	//____ constructor _____________________________________________________________
 
-	FlexPanelInfoSection::FlexPanelInfoSection(const DebugTheme& theme, IDebugContext* pContext, FlexPanel * pPanel) : InfoSection( theme, pContext, FlexPanel::TYPEINFO.className )
+	FlexPanelInfoSection::FlexPanelInfoSection(const DebugTheme& theme, IDebugContext* pContext, FlexPanel * pInspected)
+		: TypedInfoSection<FlexPanel>( theme, pContext, FlexPanel::TYPEINFO.className, pInspected )
 	{
-		m_pInspected = pPanel;
-
 		auto pBasePanel = WGCREATE(PackPanel, _.axis = Axis::Y);
 
-		m_pTable = _createTable(3,2);
+		auto pTable = _createRows({
+			textRow( "Edge policy: ",           [](FlexPanel* p) { return toString(p->edgePolicy()); } ),
+			ptsRow ( "Default width (pts): ",   [](FlexPanel* p) { return p->defaultSize().w; } ),
+			ptsRow ( "Default height (pts): ",  [](FlexPanel* p) { return p->defaultSize().h; } )
+		});
 
-		_setTextEntry(m_pTable, 0, "Edge policy: ", toString(pPanel->edgePolicy()));
-		_setPtsEntry(m_pTable, 1, "Default width (pts): ", pPanel->defaultSize().w);
-		_setPtsEntry(m_pTable, 2, "Default height (pts): ", pPanel->defaultSize().h);
+		m_pSlotsDrawer = _createSlotsDrawer("Slots", pInspected->slots.begin(), pInspected->slots.end());
 
-		m_pSlotsDrawer = _createSlotsDrawer("Slots", pPanel->slots.begin(), pPanel->slots.end());
-
-		pBasePanel->slots.pushBack({m_pTable,m_pSlotsDrawer});
-
+		pBasePanel->slots.pushBack({ pTable, m_pSlotsDrawer });
 		this->slot = pBasePanel;
 	}
 
@@ -66,13 +61,9 @@ namespace wg
 
 	void FlexPanelInfoSection::refresh()
 	{
-		_refreshTextEntry(m_pTable, 0, toString(m_pInspected->edgePolicy()));
-		_refreshPtsEntry(m_pTable, 1, m_pInspected->defaultSize().w);
-		_refreshPtsEntry(m_pTable, 2, m_pInspected->defaultSize().h);
+		TypedInfoSection<FlexPanel>::refresh();
 
-		_refreshSlotsDrawer(m_pSlotsDrawer, m_pInspected->slots.begin(), m_pInspected->slots.end());
+		_refreshSlotsDrawer(m_pSlotsDrawer, inspected()->slots.begin(), inspected()->slots.end());
 	}
 
 } // namespace wg
-
-

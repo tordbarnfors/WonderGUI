@@ -24,7 +24,7 @@
 #pragma once
 
 #include <wg_tablepanel.h>
-#include <wg_infosection.h>
+#include <wg_typedinfosection.h>
 #include <wg_icon.h>
 
 namespace wg
@@ -35,33 +35,24 @@ namespace wg
 
 
 
-	class IconInfoSection : public InfoSection
+	class IconInfoSection : public TypedInfoSection<Icon>
 	{
 	public:
 
 		//.____ Creation __________________________________________
 
-		static IconInfoSection_p		create(const DebugTheme& theme, IDebugContext* pContext, Icon* pIcon) { return IconInfoSection_p(new IconInfoSection(theme, pContext, pIcon)); }
+		static IconInfoSection_p		create( const DebugTheme& theme, IDebugContext* pContext, Icon * pInspected) { return IconInfoSection_p(new IconInfoSection(theme, pContext, pInspected) ); }
 
 		//.____ Identification __________________________________________
 
-		const TypeInfo& typeInfo(void) const override;
+		const TypeInfo&			typeInfo(void) const override;
 		const static TypeInfo	TYPEINFO;
 
-		//.____ Control ____________________________________________________
-
-		void refresh() override;
 
 	protected:
-		IconInfoSection(const DebugTheme& theme, IDebugContext* pContext, Icon* pIcon);
+		IconInfoSection(const DebugTheme& theme, IDebugContext* pContext, Icon * pInspected );
 		~IconInfoSection() {}
-
-		TablePanel_p	m_pTable;
-		Icon *			m_pInspected;
-
-		Object_p		m_displayedSkinPtr;
 	};
 
 } // namespace wg
 #endif //WG_ICONINFOSECTION_DOT_H
-

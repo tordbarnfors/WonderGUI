@@ -24,7 +24,7 @@
 #pragma once
 
 #include <wg_tablepanel.h>
-#include <wg_infosection.h>
+#include <wg_typedinfosection.h>
 #include <wg_editabletext.h>
 
 namespace wg
@@ -35,32 +35,24 @@ namespace wg
 
 
 
-	class EditableTextInfoSection : public InfoSection
+	class EditableTextInfoSection : public TypedInfoSection<EditableText>
 	{
 	public:
 
 		//.____ Creation __________________________________________
 
-		static EditableTextInfoSection_p		create(const DebugTheme& theme, IDebugContext* pContext, EditableText* pEditableText) { return EditableTextInfoSection_p(new EditableTextInfoSection(theme, pContext, pEditableText)); }
+		static EditableTextInfoSection_p		create( const DebugTheme& theme, IDebugContext* pContext, EditableText * pInspected) { return EditableTextInfoSection_p(new EditableTextInfoSection(theme, pContext, pInspected) ); }
 
 		//.____ Identification __________________________________________
 
-		const TypeInfo& typeInfo(void) const override;
+		const TypeInfo&			typeInfo(void) const override;
 		const static TypeInfo	TYPEINFO;
 
-		//.____ Control ____________________________________________________
-
-		void refresh() override;
 
 	protected:
-		EditableTextInfoSection(const DebugTheme& theme, IDebugContext* pContext, EditableText* pEditableText);
+		EditableTextInfoSection(const DebugTheme& theme, IDebugContext* pContext, EditableText * pInspected );
 		~EditableTextInfoSection() {}
-
-		TablePanel_p	m_pTable;
-		EditableText *	m_pInspected;
-
 	};
 
 } // namespace wg
 #endif //WG_EDITABLETEXTINFOSECTION_DOT_H
-

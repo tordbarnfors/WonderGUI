@@ -31,13 +31,12 @@ namespace wg
 
 	//____ constructor _____________________________________________________________
 
-	TwoSlotPanelSlotInfoSection::TwoSlotPanelSlotInfoSection(const DebugTheme& theme, IDebugContext* pContext, StaticSlot * pStaticSlot) : InfoSection( theme, pContext, TwoSlotPanel::Slot::TYPEINFO.className )
+	TwoSlotPanelSlotInfoSection::TwoSlotPanelSlotInfoSection(const DebugTheme& theme, IDebugContext* pContext, TwoSlotPanel::Slot * pInspected)
+		: TypedInfoSection<TwoSlotPanel::Slot>( theme, pContext, TwoSlotPanel::Slot::TYPEINFO.className, pInspected )
 	{
-		auto pInspected = static_cast<TwoSlotPanel::Slot*>(pStaticSlot);
-
-		m_pTable = _createTable(2,2);
-		_setDecimalEntry(m_pTable, 0, "Weight: ", pInspected->weight());
-		this->slot = m_pTable;
+		this->slot = _createRows({
+			decimalRow( "Weight: ", [](TwoSlotPanel::Slot* s) { return s->weight(); } )
+		});
 	}
 
 	//____ typeInfo() _________________________________________________________
@@ -47,16 +46,4 @@ namespace wg
 		return TYPEINFO;
 	}
 
-	//____ refresh() _____________________________________________________________
-
-	void TwoSlotPanelSlotInfoSection::refresh(StaticSlot * pStaticSlot)
-	{
-		auto pInspected = static_cast<TwoSlotPanel::Slot*>(pStaticSlot);
-
-		_refreshDecimalEntry(m_pTable, 0, pInspected->weight());
-	}
-
 } // namespace wg
-
-
-

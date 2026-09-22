@@ -20,10 +20,6 @@
 
 =========================================================================*/
 #include "wg_scalecapsuleinfosection.h"
-#include <wg_textdisplay.h>
-#include <wg_numberdisplay.h>
-#include <wg_basicnumberlayout.h>
-#include <wg_packpanel.h>
 
 
 namespace wg
@@ -34,16 +30,12 @@ namespace wg
 
 	//____ constructor _____________________________________________________________
 
-	ScaleCapsuleInfoSection::ScaleCapsuleInfoSection(const DebugTheme& theme, IDebugContext* pContext, ScaleCapsule * pCapsule) : InfoSection( theme, pContext, ScaleCapsule::TYPEINFO.className )
+	ScaleCapsuleInfoSection::ScaleCapsuleInfoSection(const DebugTheme& theme, IDebugContext* pContext, ScaleCapsule * pInspected)
+		: TypedInfoSection<ScaleCapsule>( theme, pContext, ScaleCapsule::TYPEINFO.className, pInspected )
 	{
-		m_pInspected = pCapsule;
-		m_pTable = _createTable(1,2);
-
-		_initIntegerEntry(m_pTable, 0, "Scale set: ");
-
-		refresh();
-
-		this->slot = m_pTable;
+		this->slot = _createRows({
+			intRow( "Scale set: ", [](ScaleCapsule* c) { return c->isScaleSet() ? c->scale() : 0; } )
+		});
 	}
 
 	//____ typeInfo() _________________________________________________________
@@ -53,15 +45,4 @@ namespace wg
 		return TYPEINFO;
 	}
 
-	//____ refresh() _____________________________________________________________
-
-	void ScaleCapsuleInfoSection::refresh()
-	{
-		int scale = m_pInspected->isScaleSet() ? m_pInspected->scale() : 0;
-
-		_refreshIntegerEntry(m_pTable, 0, scale);
-	}
-
 } // namespace wg
-
-

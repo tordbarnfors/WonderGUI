@@ -24,7 +24,7 @@
 #pragma once
 
 #include <wg_tablepanel.h>
-#include <wg_infosection.h>
+#include <wg_typedinfosection.h>
 #include <wg_textdisplay.h>
 
 namespace wg
@@ -35,13 +35,13 @@ namespace wg
 
 
 
-	class TextDisplayInfoSection : public InfoSection
+	class TextDisplayInfoSection : public TypedInfoSection<TextDisplay>
 	{
 	public:
 
 		//.____ Creation __________________________________________
 
-		static TextDisplayInfoSection_p		create( const DebugTheme& theme, IDebugContext* pContext, TextDisplay * pTextDisplay) { return TextDisplayInfoSection_p(new TextDisplayInfoSection(theme, pContext, pTextDisplay) ); }
+		static TextDisplayInfoSection_p		create( const DebugTheme& theme, IDebugContext* pContext, TextDisplay * pInspected) { return TextDisplayInfoSection_p(new TextDisplayInfoSection(theme, pContext, pInspected) ); }
 
 		//.____ Identification __________________________________________
 
@@ -52,12 +52,13 @@ namespace wg
 
 		void refresh() override;
 
+
 	protected:
-		TextDisplayInfoSection(const DebugTheme& theme, IDebugContext* pContext, TextDisplay * pTextDisplay );
+		TextDisplayInfoSection(const DebugTheme& theme, IDebugContext* pContext, TextDisplay * pInspected );
 		~TextDisplayInfoSection() {}
 
+		DrawerPanel_p	m_pDisplayDrawer;
 	};
 
 } // namespace wg
 #endif //WG_TEXTDISPLAYINFOSECTION_DOT_H
-

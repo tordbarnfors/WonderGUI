@@ -24,7 +24,7 @@
 #pragma once
 
 #include <wg_tablepanel.h>
-#include <wg_infosection.h>
+#include <wg_typedinfosection.h>
 #include <wg_renderlayercapsule.h>
 
 namespace wg
@@ -35,31 +35,24 @@ namespace wg
 
 
 
-	class RenderLayerCapsuleInfoSection : public InfoSection
+	class RenderLayerCapsuleInfoSection : public TypedInfoSection<RenderLayerCapsule>
 	{
 	public:
 
 		//.____ Creation __________________________________________
 
-		static RenderLayerCapsuleInfoSection_p		create( const DebugTheme& theme, IDebugContext* pContext, RenderLayerCapsule * pPanel) { return RenderLayerCapsuleInfoSection_p(new RenderLayerCapsuleInfoSection(theme, pContext, pPanel) ); }
+		static RenderLayerCapsuleInfoSection_p		create( const DebugTheme& theme, IDebugContext* pContext, RenderLayerCapsule * pInspected) { return RenderLayerCapsuleInfoSection_p(new RenderLayerCapsuleInfoSection(theme, pContext, pInspected) ); }
 
 		//.____ Identification __________________________________________
 
 		const TypeInfo&			typeInfo(void) const override;
 		const static TypeInfo	TYPEINFO;
 
-		//.____ Control ____________________________________________________
-
-		void refresh() override;
 
 	protected:
-		RenderLayerCapsuleInfoSection(const DebugTheme& theme, IDebugContext* pContext, RenderLayerCapsule * pPanel );
+		RenderLayerCapsuleInfoSection(const DebugTheme& theme, IDebugContext* pContext, RenderLayerCapsule * pInspected );
 		~RenderLayerCapsuleInfoSection() {}
-
-		RenderLayerCapsule *	m_pInspected;
-		TablePanel_p			m_pTable;
 	};
 
 } // namespace wg
 #endif //WG_RENDERLAYERCAPSULEINFOSECTION_DOT_H
-

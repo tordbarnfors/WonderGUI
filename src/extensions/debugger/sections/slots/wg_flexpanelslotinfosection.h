@@ -24,7 +24,7 @@
 #pragma once
 
 #include <wg_tablepanel.h>
-#include <wg_infosection.h>
+#include <wg_typedinfosection.h>
 #include <wg_flexpanel.h>
 
 namespace wg
@@ -35,13 +35,13 @@ namespace wg
 
 
 
-	class FlexPanelSlotInfoSection : public InfoSection
+	class FlexPanelSlotInfoSection : public TypedInfoSection<FlexPanelSlot>
 	{
 	public:
 
 		//.____ Creation __________________________________________
 
-		static FlexPanelSlotInfoSection_p		create( const DebugTheme& theme, IDebugContext* pContext, StaticSlot * pStaticSlot) { return FlexPanelSlotInfoSection_p(new FlexPanelSlotInfoSection(theme, pContext, pStaticSlot) ); }
+		static FlexPanelSlotInfoSection_p		create( const DebugTheme& theme, IDebugContext* pContext, FlexPanelSlot * pInspected) { return FlexPanelSlotInfoSection_p(new FlexPanelSlotInfoSection(theme, pContext, pInspected) ); }
 
 		//.____ Identification __________________________________________
 
@@ -50,19 +50,15 @@ namespace wg
 
 		//.____ Control ____________________________________________________
 
-		void refresh(StaticSlot * pStaticSlot) override;
+		void refresh() override;
 
 
 	protected:
-		FlexPanelSlotInfoSection(const DebugTheme& theme, IDebugContext* pContext, StaticSlot * pStaticSlot );
+		FlexPanelSlotInfoSection(const DebugTheme& theme, IDebugContext* pContext, FlexPanelSlot * pInspected );
 		~FlexPanelSlotInfoSection() {}
 
-		void	flexPosToString(FlexPos pos, char * pString, int maxLength);
-
-		TablePanel_p	m_pTable;
+		void			_updateRowVisibility();
 	};
 
 } // namespace wg
 #endif //WG_FLEXPANELSLOTINFOSECTION_DOT_H
-
-

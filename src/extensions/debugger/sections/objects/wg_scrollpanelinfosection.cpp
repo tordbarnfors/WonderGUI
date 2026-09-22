@@ -20,9 +20,6 @@
 
 =========================================================================*/
 #include "wg_scrollpanelinfosection.h"
-#include <wg_textdisplay.h>
-#include <wg_numberdisplay.h>
-#include <wg_basicnumberlayout.h>
 #include <wg_packpanel.h>
 
 
@@ -34,54 +31,45 @@ namespace wg
 
 	//____ constructor _____________________________________________________________
 
-	ScrollPanelInfoSection::ScrollPanelInfoSection(const DebugTheme& theme, IDebugContext* pContext, ScrollPanel * pPanel) : InfoSection( theme, pContext, ScrollPanel::TYPEINFO.className )
+	ScrollPanelInfoSection::ScrollPanelInfoSection(const DebugTheme& theme, IDebugContext* pContext, ScrollPanel * pInspected)
+		: TypedInfoSection<ScrollPanel>( theme, pContext, ScrollPanel::TYPEINFO.className, pInspected )
 	{
-		m_pInspected = pPanel;
-		m_pTable = _createTable(26,2);
-
 		auto pContainer = WGCREATE(PackPanel, _.axis = Axis::Y);
 
-		_initTextEntry(m_pTable, 0, "Child placement: ");
-		_initTextEntry(m_pTable, 1, "Width constraint: ");
-		_initTextEntry(m_pTable, 2, "Height constraint: ");
-		_initBoolEntry(m_pTable, 3, "Overlay scrollbar X: ");
-		_initBoolEntry(m_pTable, 4, "Overlay scrollbar Y: ");
-		_initBoolEntry(m_pTable, 5, "Autohide scrollbar X: ");
-		_initBoolEntry(m_pTable, 6, "Autohide scrollbar Y: ");
-		_initPtsEntry(m_pTable, 7, "View X offset (pts): ");
-		_initPtsEntry(m_pTable, 8, "View Y offset (pts): ");
-		_initPtsEntry(m_pTable, 9, "View width (pts): ");
-		_initPtsEntry(m_pTable, 10, "View height (pts): ");
-		_initPtsEntry(m_pTable, 11, "Content width (pts): ");
-		_initPtsEntry(m_pTable, 12, "Content height (pts): ");
-		_initPtsEntry(m_pTable, 13, "Step size X (pts): ");
-		_initPtsEntry(m_pTable, 14, "Step size Y (pts): ");
-		_initPtsEntry(m_pTable, 15, "Wheel step size X (pts): ");
-		_initPtsEntry(m_pTable, 16, "Wheel step size Y (pts): ");
-		_initPtsEntry(m_pTable, 17, "Page overlap X (pts): ");
-		_initPtsEntry(m_pTable, 18, "Page overlap Y (pts): ");
-		_initTextEntry(m_pTable, 19, "Wheel one axis: ");
-		_initTextEntry(m_pTable, 20, "Wheel two axis: ");
-		_initTextEntry(m_pTable, 21, "Wheel axis shift combo: ");
-		_initBoolEntry(m_pTable, 22, "Steal wheel from scrollbars: ");
-		_initBoolEntry(m_pTable, 23, "Auto scroll X: ");
-		_initBoolEntry(m_pTable, 24, "Auto scroll Y: ");
-		_initObjectPointerEntry(m_pTable, 25, "Default transition: ");
+		auto pTable = _createRows({
+			textRow  ( "Child placement: ",              [](ScrollPanel* p) { return toString(p->childPlacement()); } ),
+			textRow  ( "Width constraint: ",             [](ScrollPanel* p) { return toString(p->widthConstraint()); } ),
+			textRow  ( "Height constraint: ",            [](ScrollPanel* p) { return toString(p->heightConstraint()); } ),
+			boolRow  ( "Overlay scrollbar X: ",          [](ScrollPanel* p) { return p->overlayScrollbarX(); } ),
+			boolRow  ( "Overlay scrollbar Y: ",          [](ScrollPanel* p) { return p->overlayScrollbarY(); } ),
+			boolRow  ( "Autohide scrollbar X: ",         [](ScrollPanel* p) { return p->autohideScrollbarX(); } ),
+			boolRow  ( "Autohide scrollbar Y: ",         [](ScrollPanel* p) { return p->autohideScrollbarY(); } ),
+			ptsRow   ( "View X offset (pts): ",          [](ScrollPanel* p) { return p->viewOffset().x; } ),
+			ptsRow   ( "View Y offset (pts): ",          [](ScrollPanel* p) { return p->viewOffset().y; } ),
+			ptsRow   ( "View width (pts): ",             [](ScrollPanel* p) { return p->viewSize().w; } ),
+			ptsRow   ( "View height (pts): ",            [](ScrollPanel* p) { return p->viewSize().h; } ),
+			ptsRow   ( "Content width (pts): ",          [](ScrollPanel* p) { return p->contentSize().w; } ),
+			ptsRow   ( "Content height (pts): ",         [](ScrollPanel* p) { return p->contentSize().h; } ),
+			ptsRow   ( "Step size X (pts): ",            [](ScrollPanel* p) { return p->stepSizeX(); } ),
+			ptsRow   ( "Step size Y (pts): ",            [](ScrollPanel* p) { return p->stepSizeY(); } ),
+			ptsRow   ( "Wheel step size X (pts): ",      [](ScrollPanel* p) { return p->wheelStepSizeX(); } ),
+			ptsRow   ( "Wheel step size Y (pts): ",      [](ScrollPanel* p) { return p->wheelStepSizeY(); } ),
+			ptsRow   ( "Page overlap X (pts): ",         [](ScrollPanel* p) { return p->pageOverlapX(); } ),
+			ptsRow   ( "Page overlap Y (pts): ",         [](ScrollPanel* p) { return p->pageOverlapY(); } ),
+			textRow  ( "Wheel one axis: ",               [](ScrollPanel* p) { return toString(p->wheelOneAxis()); } ),
+			textRow  ( "Wheel two axis: ",               [](ScrollPanel* p) { return toString(p->wheelTwoAxis()); } ),
+			textRow  ( "Wheel axis shift combo: ",       [](ScrollPanel* p) { return toString(p->wheelAxisShift()); } ),
+			boolRow  ( "Steal wheel from scrollbars: ",  [](ScrollPanel* p) { return p->stealWheelFromScrollbars(); } ),
+			boolRow  ( "Auto scroll X: ",                [](ScrollPanel* p) { return p->autoscrollX(); } ),
+			boolRow  ( "Auto scroll Y: ",                [](ScrollPanel* p) { return p->autoscrollY(); } ),
+			objectRow( "Default transition: ",           [](ScrollPanel* p) -> Object* { return p->transition(); } )
+		});
 
-		m_pScrollbarXDrawer = _createComponentDrawer("Scrollbar X", &m_pInspected->scrollbarX);
-		m_pScrollbarYDrawer = _createComponentDrawer("Scrollbar Y", &m_pInspected->scrollbarY);
+		m_pScrollbarXDrawer = _createComponentDrawer("Scrollbar X", &pInspected->scrollbarX);
+		m_pScrollbarYDrawer = _createComponentDrawer("Scrollbar Y", &pInspected->scrollbarY);
+		m_pSlotDrawer = _createSingleSlotDrawer("Slot", &pInspected->slot);
 
-		m_pSlotDrawer = _createSingleSlotDrawer("Slot", &m_pInspected->slot);
-
-		pContainer->slots.pushBack( {
-			m_pTable,
-			m_pScrollbarXDrawer,
-			m_pScrollbarYDrawer,
-			m_pSlotDrawer
-			});
-
-		refresh();
-
+		pContainer->slots.pushBack({ pTable, m_pScrollbarXDrawer, m_pScrollbarYDrawer, m_pSlotDrawer });
 		this->slot = pContainer;
 	}
 
@@ -96,44 +84,11 @@ namespace wg
 
 	void ScrollPanelInfoSection::refresh()
 	{
-		_refreshTextEntry(m_pTable, 0, toString(m_pInspected->childPlacement() ));
-		_refreshTextEntry(m_pTable, 1, toString(m_pInspected->heightConstraint() ));
-		_refreshTextEntry(m_pTable, 2, toString(m_pInspected->widthConstraint()));
-		_refreshBoolEntry(m_pTable, 3, m_pInspected->overlayScrollbarX());
-		_refreshBoolEntry(m_pTable, 4, m_pInspected->overlayScrollbarY());
-		_refreshBoolEntry(m_pTable, 5, m_pInspected->autohideScrollbarX());
-		_refreshBoolEntry(m_pTable, 6, m_pInspected->autohideScrollbarY());
-
-		Coord	viewOffset = m_pInspected->viewOffset();
-		Size	viewSize = m_pInspected->viewSize();
-		Size	contentSize = m_pInspected->contentSize();
-
-		_refreshPtsEntry(m_pTable, 7, viewOffset.x);
-		_refreshPtsEntry(m_pTable, 8, viewOffset.y);
-		_refreshPtsEntry(m_pTable, 9, viewSize.w);
-		_refreshPtsEntry(m_pTable, 10, viewSize.h);
-		_refreshPtsEntry(m_pTable, 11, contentSize.w);
-		_refreshPtsEntry(m_pTable, 12, contentSize.h);
-		_refreshPtsEntry(m_pTable, 13, m_pInspected->stepSizeX());
-		_refreshPtsEntry(m_pTable, 14, m_pInspected->stepSizeY());
-		_refreshPtsEntry(m_pTable, 15, m_pInspected->wheelStepSizeX());
-		_refreshPtsEntry(m_pTable, 16, m_pInspected->wheelStepSizeY());
-		_refreshPtsEntry(m_pTable, 17, m_pInspected->pageOverlapX());
-		_refreshPtsEntry(m_pTable, 18, m_pInspected->pageOverlapY());
-		_refreshTextEntry(m_pTable, 19, toString(m_pInspected->wheelOneAxis()) );
-		_refreshTextEntry(m_pTable, 20, toString(m_pInspected->wheelTwoAxis()));
-		_refreshTextEntry(m_pTable, 21, toString(m_pInspected->wheelAxisShift()));
-		_refreshBoolEntry(m_pTable, 22, m_pInspected->stealWheelFromScrollbars());
-		_refreshBoolEntry(m_pTable, 23, m_pInspected->autoscrollX());
-		_refreshBoolEntry(m_pTable, 24, m_pInspected->autoscrollY());
-		_refreshObjectPointerEntry(m_pTable, 25, m_pInspected->transition(), m_displayedTransitionPtr );
+		TypedInfoSection<ScrollPanel>::refresh();
 
 		_refreshComponentDrawer(m_pScrollbarXDrawer);
 		_refreshComponentDrawer(m_pScrollbarYDrawer);
-
-		_refreshSingleSlotDrawer(m_pSlotDrawer, &m_pInspected->slot);
+		_refreshSingleSlotDrawer(m_pSlotDrawer, &inspected()->slot);
 	}
 
 } // namespace wg
-
-

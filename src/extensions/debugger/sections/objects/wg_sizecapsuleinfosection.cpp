@@ -20,10 +20,6 @@
 
 =========================================================================*/
 #include "wg_sizecapsuleinfosection.h"
-#include <wg_textdisplay.h>
-#include <wg_numberdisplay.h>
-#include <wg_basicnumberlayout.h>
-#include <wg_packpanel.h>
 
 
 namespace wg
@@ -34,21 +30,17 @@ namespace wg
 
 	//____ constructor _____________________________________________________________
 
-	SizeCapsuleInfoSection::SizeCapsuleInfoSection(const DebugTheme& theme, IDebugContext* pContext, SizeCapsule * pCapsule) : InfoSection( theme, pContext, SizeCapsule::TYPEINFO.className )
+	SizeCapsuleInfoSection::SizeCapsuleInfoSection(const DebugTheme& theme, IDebugContext* pContext, SizeCapsule * pInspected)
+		: TypedInfoSection<SizeCapsule>( theme, pContext, SizeCapsule::TYPEINFO.className, pInspected )
 	{
-		m_pInspected = pCapsule;
-		m_pTable = _createTable(6,2);
-
-		_initPtsEntry(m_pTable, 0, "Default width: ");
-		_initPtsEntry(m_pTable, 1, "Default height: ");
-		_initPtsEntry(m_pTable, 2, "Min width: ");
-		_initPtsEntry(m_pTable, 3, "Min height: ");
-		_initPtsEntry(m_pTable, 4, "Max width: ");
-		_initPtsEntry(m_pTable, 5, "Max height: ");
-
-		refresh();
-
-		this->slot = m_pTable;
+		this->slot = _createRows({
+			ptsRow( "Default width: ",  [](SizeCapsule* c) { return c->defaultSize().w; } ),
+			ptsRow( "Default height: ", [](SizeCapsule* c) { return c->defaultSize().h; } ),
+			ptsRow( "Min width: ",      [](SizeCapsule* c) { return c->minSize().w; } ),
+			ptsRow( "Min height: ",     [](SizeCapsule* c) { return c->minSize().h; } ),
+			ptsRow( "Max width: ",      [](SizeCapsule* c) { return c->maxSize().w; } ),
+			ptsRow( "Max height: ",     [](SizeCapsule* c) { return c->maxSize().h; } )
+		});
 	}
 
 	//____ typeInfo() _________________________________________________________
@@ -58,22 +50,4 @@ namespace wg
 		return TYPEINFO;
 	}
 
-	//____ refresh() _____________________________________________________________
-
-	void SizeCapsuleInfoSection::refresh()
-	{
-		Size	def = m_pInspected->defaultSize();
-		Size	min = m_pInspected->minSize();
-		Size	max = m_pInspected->maxSize();
-
-		_refreshPtsEntry(m_pTable, 0, def.w);
-		_refreshPtsEntry(m_pTable, 1, def.h);
-		_refreshPtsEntry(m_pTable, 2, min.w);
-		_refreshPtsEntry(m_pTable, 3, min.h);
-		_refreshPtsEntry(m_pTable, 4, max.w);
-		_refreshPtsEntry(m_pTable, 5, max.h);
-	}
-
 } // namespace wg
-
-

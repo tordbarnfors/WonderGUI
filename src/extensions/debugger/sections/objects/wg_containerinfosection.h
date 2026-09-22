@@ -23,8 +23,8 @@
 #define WG_CONTAINERINFOSECTION_DOT_H
 #pragma once
 
-#include <wg_tablepanel.h>
-#include <wg_infosection.h>
+#include <wg_typedinfosection.h>
+#include <wg_container.h>
 
 namespace wg
 {
@@ -34,32 +34,24 @@ namespace wg
 
 
 
-	class ContainerInfoSection : public InfoSection
+	class ContainerInfoSection : public TypedInfoSection<Container>
 	{
 	public:
 
 		//.____ Creation __________________________________________
 
-		static ContainerInfoSection_p		create( const DebugTheme& theme, IDebugContext* pContext, Container * pContainer) { return ContainerInfoSection_p(new ContainerInfoSection(theme, pContext, pContainer) ); }
+		static ContainerInfoSection_p		create( const DebugTheme& theme, IDebugContext* pContext, Container * pInspected) { return ContainerInfoSection_p(new ContainerInfoSection(theme, pContext, pInspected) ); }
 
 		//.____ Identification __________________________________________
 
 		const TypeInfo&			typeInfo(void) const override;
 		const static TypeInfo	TYPEINFO;
 
-		//.____ Control ____________________________________________________
-
-		void refresh() override;
-
 
 	protected:
-		ContainerInfoSection(const DebugTheme& theme, IDebugContext* pContext, Container * pContainer );
+		ContainerInfoSection(const DebugTheme& theme, IDebugContext* pContext, Container * pInspected );
 		~ContainerInfoSection() {}
-
-		Container *		m_pInspected;
-		TablePanel_p	m_pTable;
 	};
 
 } // namespace wg
 #endif //WG_CONTAINERINFOSECTION_DOT_H
-

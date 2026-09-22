@@ -20,10 +20,6 @@
 
 =========================================================================*/
 #include "wg_renderlayercapsuleinfosection.h"
-#include <wg_textdisplay.h>
-#include <wg_numberdisplay.h>
-#include <wg_basicnumberlayout.h>
-#include <wg_packpanel.h>
 
 
 namespace wg
@@ -34,16 +30,12 @@ namespace wg
 
 	//____ constructor _____________________________________________________________
 
-	RenderLayerCapsuleInfoSection::RenderLayerCapsuleInfoSection(const DebugTheme& theme, IDebugContext* pContext, RenderLayerCapsule * pCapsule) : InfoSection( theme, pContext, RenderLayerCapsule::TYPEINFO.className )
+	RenderLayerCapsuleInfoSection::RenderLayerCapsuleInfoSection(const DebugTheme& theme, IDebugContext* pContext, RenderLayerCapsule * pInspected)
+		: TypedInfoSection<RenderLayerCapsule>( theme, pContext, RenderLayerCapsule::TYPEINFO.className, pInspected )
 	{
-		m_pInspected = pCapsule;
-		m_pTable = _createTable(1,2);
-
-		_initIntegerEntry(m_pTable, 0, "Render layer: ");
-
-		refresh();
-
-		this->slot = m_pTable;
+		this->slot = _createRows({
+			intRow( "Render layer: ", [](RenderLayerCapsule* c) { return c->renderLayer(); } )
+		});
 	}
 
 	//____ typeInfo() _________________________________________________________
@@ -53,13 +45,4 @@ namespace wg
 		return TYPEINFO;
 	}
 
-	//____ refresh() _____________________________________________________________
-
-	void RenderLayerCapsuleInfoSection::refresh()
-	{
-		_refreshIntegerEntry(m_pTable, 0, m_pInspected->renderLayer());
-	}
-
 } // namespace wg
-
-

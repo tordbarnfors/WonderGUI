@@ -20,9 +20,6 @@
 
 =========================================================================*/
 #include "wg_packpanelinfosection.h"
-#include <wg_textdisplay.h>
-#include <wg_numberdisplay.h>
-#include <wg_basicnumberlayout.h>
 #include <wg_packpanel.h>
 
 
@@ -34,26 +31,23 @@ namespace wg
 
 	//____ constructor _____________________________________________________________
 
-	PackPanelInfoSection::PackPanelInfoSection(const DebugTheme& theme, IDebugContext* pContext, PackPanel * pPanel) : InfoSection( theme, pContext, PackPanel::TYPEINFO.className )
+	PackPanelInfoSection::PackPanelInfoSection(const DebugTheme& theme, IDebugContext* pContext, PackPanel * pInspected)
+		: TypedInfoSection<PackPanel>( theme, pContext, PackPanel::TYPEINFO.className, pInspected )
 	{
-		m_pInspected = pPanel;
-
 		auto pBasePanel = WGCREATE(PackPanel, _.axis = Axis::Y);
 
-		m_pTable = _createTable(6,2);
-		int row = 0;
+		auto pTable = _createRows({
+			textRow  ( "Axis: ",                   [](PackPanel* p) { return toString(p->axis()); } ),
+			objectRow( "Layout: ",                 [](PackPanel* p) -> Object* { return p->layout(); } ),
+			ptsRow   ( "Spacing before (pts): ",   [](PackPanel* p) { return p->spacingBefore(); } ),
+			ptsRow   ( "Spacing between (pts): ",  [](PackPanel* p) { return p->spacingBetween(); } ),
+			ptsRow   ( "Spacing after (pts): ",    [](PackPanel* p) { return p->spacingAfter(); } ),
+			textRow  ( "Slot alignment: ",         [](PackPanel* p) { return toString(p->slotAlignment()); } )
+		});
 
-		_initTextEntry(m_pTable, row++, "Axis: ");
-		_initObjectPointerEntry(m_pTable, row++, "Layout: ");
-		_initPtsEntry(m_pTable, row++, "Spacing before (pts): ");
-		_initPtsEntry(m_pTable, row++, "Spacing between (pts): ");
-		_initPtsEntry(m_pTable, row++, "Spacing after (pts): ");
-		_initTextEntry(m_pTable, row++, "Slot alignment: ");
+		m_pSlotsDrawer = _createSlotsDrawer("Slots", pInspected->slots.begin(), pInspected->slots.end());
 
-		m_pSlotsDrawer = _createSlotsDrawer("Slots", pPanel->slots.begin(), pPanel->slots.end());
-
-		pBasePanel->slots.pushBack({m_pTable, m_pSlotsDrawer});
-
+		pBasePanel->slots.pushBack({ pTable, m_pSlotsDrawer });
 		this->slot = pBasePanel;
 	}
 
@@ -68,18 +62,9 @@ namespace wg
 
 	void PackPanelInfoSection::refresh()
 	{
-		int row = 0;
-		_refreshTextEntry(m_pTable, row++, toString(m_pInspected->axis()));
-		_refreshObjectPointerEntry(m_pTable, row++, m_pInspected->layout(),m_displayedLayoutPointer);
-		_refreshPtsEntry(m_pTable, row++, m_pInspected->spacingBefore());
-		_refreshPtsEntry(m_pTable, row++, m_pInspected->spacingBetween());
-		_refreshPtsEntry(m_pTable, row++, m_pInspected->spacingAfter());
-		_refreshTextEntry(m_pTable, row++, toString(m_pInspected->slotAlignment()));
+		TypedInfoSection<PackPanel>::refresh();
 
-		_refreshSlotsDrawer(m_pSlotsDrawer, m_pInspected->slots.begin(), m_pInspected->slots.end());
+		_refreshSlotsDrawer(m_pSlotsDrawer, inspected()->slots.begin(), inspected()->slots.end());
 	}
 
-
 } // namespace wg
-
-

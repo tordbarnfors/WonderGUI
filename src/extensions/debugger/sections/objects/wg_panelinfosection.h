@@ -24,7 +24,7 @@
 #pragma once
 
 #include <wg_tablepanel.h>
-#include <wg_infosection.h>
+#include <wg_typedinfosection.h>
 #include <wg_panel.h>
 
 namespace wg
@@ -35,32 +35,24 @@ namespace wg
 
 
 
-	class PanelInfoSection : public InfoSection
+	class PanelInfoSection : public TypedInfoSection<Panel>
 	{
 	public:
 
 		//.____ Creation __________________________________________
 
-		static PanelInfoSection_p		create( const DebugTheme& theme, IDebugContext* pContext, Panel * pPanel) { return PanelInfoSection_p(new PanelInfoSection(theme, pContext, pPanel) ); }
+		static PanelInfoSection_p		create( const DebugTheme& theme, IDebugContext* pContext, Panel * pInspected) { return PanelInfoSection_p(new PanelInfoSection(theme, pContext, pInspected) ); }
 
 		//.____ Identification __________________________________________
 
 		const TypeInfo&			typeInfo(void) const override;
 		const static TypeInfo	TYPEINFO;
 
-		//.____ Control ____________________________________________________
-
-		void refresh() override;
 
 	protected:
-		PanelInfoSection(const DebugTheme& theme, IDebugContext* pContext, Panel * pPanel );
+		PanelInfoSection(const DebugTheme& theme, IDebugContext* pContext, Panel * pInspected );
 		~PanelInfoSection() {}
-
-		TablePanel_p	m_pTable;
-		Panel *			m_pInspected;
-
 	};
 
 } // namespace wg
 #endif //WG_PANELINFOSECTION_DOT_H
-

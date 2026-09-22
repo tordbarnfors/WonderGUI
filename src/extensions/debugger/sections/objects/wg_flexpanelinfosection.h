@@ -23,8 +23,7 @@
 #define WG_FLEXPANELINFOSECTION_DOT_H
 #pragma once
 
-#include <wg_tablepanel.h>
-#include <wg_infosection.h>
+#include <wg_typedinfosection.h>
 #include <wg_flexpanel.h>
 
 namespace wg
@@ -35,13 +34,13 @@ namespace wg
 
 
 
-	class FlexPanelInfoSection : public InfoSection
+	class FlexPanelInfoSection : public TypedInfoSection<FlexPanel>
 	{
 	public:
 
 		//.____ Creation __________________________________________
 
-		static FlexPanelInfoSection_p		create( const DebugTheme& theme, IDebugContext* pContext, FlexPanel * pPanel) { return FlexPanelInfoSection_p(new FlexPanelInfoSection(theme, pContext, pPanel) ); }
+		static FlexPanelInfoSection_p		create( const DebugTheme& theme, IDebugContext* pContext, FlexPanel * pInspected) { return FlexPanelInfoSection_p(new FlexPanelInfoSection(theme, pContext, pInspected) ); }
 
 		//.____ Identification __________________________________________
 
@@ -54,15 +53,11 @@ namespace wg
 
 
 	protected:
-		FlexPanelInfoSection(const DebugTheme& theme, IDebugContext* pContext, FlexPanel * pPanel );
+		FlexPanelInfoSection(const DebugTheme& theme, IDebugContext* pContext, FlexPanel * pInspected );
 		~FlexPanelInfoSection() {}
 
-		FlexPanel *		m_pInspected;
-		TablePanel_p	m_pTable;
 		DrawerPanel_p	m_pSlotsDrawer;
-
 	};
 
 } // namespace wg
 #endif //WG_FLEXPANELINFOSECTION_DOT_H
-

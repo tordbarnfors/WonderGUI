@@ -22,7 +22,6 @@
 #include "wg_widgetinfosection.h"
 #include <wg_textdisplay.h>
 #include <wg_packpanel.h>
-#include <wg_twoslotpanel.h>
 #include <wg_enumextras.h>
 
 namespace wg
@@ -33,58 +32,46 @@ namespace wg
 
 	//____ constructor _____________________________________________________________
 
-	WidgetInfoSection::WidgetInfoSection(const DebugTheme& theme, IDebugContext* pContext, Widget * pWidget) : InfoSection( theme, pContext, Widget::TYPEINFO.className )
+	WidgetInfoSection::WidgetInfoSection(const DebugTheme& theme, IDebugContext* pContext, Widget * pWidget)
+		: TypedInfoSection<Widget>( theme, pContext, Widget::TYPEINFO.className, pWidget )
 	{
-		m_pInspected = pWidget;
-
-		m_pInspectedsBaggage = pWidget->baggage().rawPtr();
-		m_pInspectedsParent = pWidget->parent().rawPtr();
-		m_pInspectedsSkin = pWidget->skin().rawPtr();
-
 		auto pPanel = WGCREATE(PackPanel, _.axis = Axis::Y);
 
-		auto pTable = _createTable(19, 2);
-
-		int row = 0;
-
-		_setIntegerEntry		(pTable, row++, "Id: ", pWidget->id());
-		_setPtsEntry			(pTable, row++, "Width (pts): ", pWidget->size().w);
-		_setPtsEntry			(pTable, row++, "Height (pts): ", pWidget->size().h);
-		_setIntegerEntry		(pTable, row++, "Scale: ", pWidget->scale());
-		_setTextEntry			(pTable, row++, "State: ", toString(pWidget->state().value()) );
-		_setObjectPointerEntry	(pTable, row++, "Baggage: ", pWidget->baggage().rawPtr(), pWidget);
-		_setObjectPointerEntry	(pTable, row++, "Parent: ", pWidget->parent().rawPtr(), pWidget);
-		_setObjectPointerEntry	(pTable, row++, "Skin: ", pWidget->skin().rawPtr(), pWidget);
-		_setTextEntry			(pTable, row++, "Tooltip: ", pWidget->tooltip());
-		_setTextEntry			(pTable, row++, "Pointer style: ", toString(pWidget->pointerStyle()));
-		_setTextEntry			(pTable, row++, "Mark policy: ", toString(pWidget->markPolicy()));
-		_setBoolEntry			(pTable, row++, "Pickable: ", pWidget->isPickable());
-		_setBoolEntry			(pTable, row++, "PickHandle: ", pWidget->isPickHandle());
-		_setIntegerEntry		(pTable, row++, "Pick category: ", pWidget->pickCategory());
-		_setBoolEntry			(pTable, row++, "DropTarget: ", pWidget->isDropTarget());
-		_setBoolEntry			(pTable, row++, "TabLocked: ", pWidget->isTabLocked());
-		_setBoolEntry			(pTable, row++, "Selectable: ", pWidget->isSelectable());
-		_setIntegerEntry		(pTable, row++, "Receiving updates: ", pWidget->m_receivingUpdateCounter);
-		_setBoolEntry			(pTable, row++, "Sticky focus: ", pWidget->hasStickyFocus());
-
-		pPanel->slots << pTable;
-		m_pTable = pTable;
+		pPanel->slots << _createRows({
+			intRow   ( "Id: ",                [](Widget* w) { return w->id(); } ),
+			ptsRow   ( "Width (pts): ",       [](Widget* w) { return w->size().w; } ),
+			ptsRow   ( "Height (pts): ",      [](Widget* w) { return w->size().h; } ),
+			intRow   ( "Scale: ",             [](Widget* w) { return w->scale(); } ),
+			textRow  ( "State: ",             [](Widget* w) { return toString(w->state().value()); } ),
+			objectRow( "Baggage: ",           [](Widget* w) -> Object* { return w->baggage().rawPtr(); } ),
+			objectRow( "Parent: ",            [](Widget* w) -> Object* { return w->parent().rawPtr(); } ),
+			objectRow( "Skin: ",              [](Widget* w) -> Object* { return w->skin().rawPtr(); } ),
+			textRow  ( "Tooltip: ",           [](Widget* w) { return w->tooltip(); } ),
+			textRow  ( "Pointer style: ",     [](Widget* w) { return toString(w->pointerStyle()); } ),
+			textRow  ( "Mark policy: ",       [](Widget* w) { return toString(w->markPolicy()); } ),
+			boolRow  ( "Pickable: ",          [](Widget* w) { return w->isPickable(); } ),
+			boolRow  ( "PickHandle: ",        [](Widget* w) { return w->isPickHandle(); } ),
+			intRow   ( "Pick category: ",     [](Widget* w) { return w->pickCategory(); } ),
+			boolRow  ( "DropTarget: ",        [](Widget* w) { return w->isDropTarget(); } ),
+			boolRow  ( "TabLocked: ",         [](Widget* w) { return w->isTabLocked(); } ),
+			boolRow  ( "Selectable: ",        [](Widget* w) { return w->isSelectable(); } ),
+			intRow   ( "Receiving updates: ", [](Widget* w) { return w->m_receivingUpdateCounter; } ),
+			boolRow  ( "Sticky focus: ",      [](Widget* w) { return w->hasStickyFocus(); } )
+		});
 
 		{
-			bool bOverflow = pWidget->_hasOverflow();
-
-			auto pHeaderValue = WGCREATE(TextDisplay, _ = theme.listEntryText, _.display.text = bOverflow ? "true" : "false");
+			m_pOverflowHeaderValue = WGCREATE(TextDisplay, _ = theme.listEntryText);
 
 			m_pOverflowTable = _createTable(4,2);
 
-			BorderSPX overflow = pWidget->_overflow();
+			_initSpxEntry(m_pOverflowTable, 0, "Top (spx): ");
+			_initSpxEntry(m_pOverflowTable, 1, "Right (spx): ");
+			_initSpxEntry(m_pOverflowTable, 2, "Bottom (spx): ");
+			_initSpxEntry(m_pOverflowTable, 3, "Left (spx): ");
 
-			_setSpxEntry(m_pOverflowTable, 0, "Top (spx): ", overflow.top);
-			_setSpxEntry(m_pOverflowTable, 1, "Right (spx): ", overflow.right);
-			_setSpxEntry(m_pOverflowTable, 2, "Bottom (spx): ", overflow.bottom);
-			_setSpxEntry(m_pOverflowTable, 3, "Left (spx): ", overflow.left);
+			_refreshOverflow();
 
-			pPanel->slots << _createDrawer("Has overflow", pHeaderValue, m_pOverflowTable);
+			pPanel->slots << _createDrawer("Has overflow", m_pOverflowHeaderValue, m_pOverflowTable);
 		}
 
 		auto pSlot = pWidget->_slot();
@@ -102,9 +89,7 @@ namespace wg
 			pPanel->slots << pSlotDrawer;
 
 			m_pSlotInfoSectionsContainer = pContentPanel;
-
 		}
-
 
 		this->slot = pPanel;
 	}
@@ -120,30 +105,33 @@ namespace wg
 
 	void WidgetInfoSection::refresh()
 	{
+		TypedInfoSection<Widget>::refresh();
+		_refreshOverflow();
 
-		int row = 0;
-		auto pWidget = m_pInspected;
+		auto pWidget = inspected();
 
-		_refreshIntegerEntry		(m_pTable, row++, pWidget->id());
-		_refreshPtsEntry			(m_pTable, row++, pWidget->size().w);
-		_refreshPtsEntry			(m_pTable, row++, pWidget->size().h);
-		_refreshIntegerEntry		(m_pTable, row++, pWidget->scale());
-		_refreshTextEntry			(m_pTable, row++, toString(pWidget->state().value()) );
-		_refreshObjectPointerEntry	(m_pTable, row++, pWidget->baggage().rawPtr(), m_pInspectedsBaggage);
-		_refreshObjectPointerEntry	(m_pTable, row++, pWidget->parent().rawPtr(), m_pInspectedsParent);
-		_refreshObjectPointerEntry	(m_pTable, row++, pWidget->skin().rawPtr(), m_pInspectedsSkin);
-		_refreshTextEntry			(m_pTable, row++, pWidget->tooltip());
-		_refreshTextEntry			(m_pTable, row++, toString(pWidget->pointerStyle()));
-		_refreshTextEntry			(m_pTable, row++, toString(pWidget->markPolicy()));
-		_refreshBoolEntry			(m_pTable, row++, pWidget->isPickable());
-		_refreshBoolEntry			(m_pTable, row++, pWidget->isPickHandle());
-		_refreshIntegerEntry		(m_pTable, row++, pWidget->pickCategory());
-		_refreshBoolEntry			(m_pTable, row++, pWidget->isDropTarget());
-		_refreshBoolEntry			(m_pTable, row++, pWidget->isTabLocked());
-		_refreshBoolEntry			(m_pTable, row++, pWidget->isSelectable());
-		_refreshIntegerEntry		(m_pTable, row++, pWidget->m_receivingUpdateCounter);
-		_refreshBoolEntry			(m_pTable, row++, pWidget->hasStickyFocus());
+		if( m_pSlotInfoSectionsContainer )
+		{
+			for( auto& slot : m_pSlotInfoSectionsContainer->slots )
+			{
+				auto pInfoSection = dynamic_cast<InfoSection*>(slot._widget());
+				if( pInfoSection )
+				{
+					pInfoSection->setInspectedSlot( pWidget->_slot() );
+					pInfoSection->refresh();
+				}
+			}
+		}
+	}
 
+
+	//____ _refreshOverflow() ____________________________________________________
+
+	void WidgetInfoSection::_refreshOverflow()
+	{
+		auto pWidget = inspected();
+
+		m_pOverflowHeaderValue->display.setText(pWidget->_hasOverflow() ? "true" : "false");
 
 		BorderSPX overflow = pWidget->_overflow();
 
@@ -151,16 +139,6 @@ namespace wg
 		_refreshSpxEntry(m_pOverflowTable, 1, overflow.right);
 		_refreshSpxEntry(m_pOverflowTable, 2, overflow.bottom);
 		_refreshSpxEntry(m_pOverflowTable, 3, overflow.left);
-
-		for( auto& slot : m_pSlotInfoSectionsContainer->slots )
-		{
-			auto pInfoSection = dynamic_cast<InfoSection*>(slot._widget());
-			if( pInfoSection )
-				pInfoSection->refresh( pWidget->_slot());
-		}
 	}
 
-
 } // namespace wg
-
-

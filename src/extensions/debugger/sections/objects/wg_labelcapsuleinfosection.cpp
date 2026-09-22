@@ -20,9 +20,6 @@
 
 =========================================================================*/
 #include "wg_labelcapsuleinfosection.h"
-#include <wg_textdisplay.h>
-#include <wg_numberdisplay.h>
-#include <wg_basicnumberlayout.h>
 #include <wg_packpanel.h>
 
 
@@ -34,22 +31,19 @@ namespace wg
 
 	//____ constructor _____________________________________________________________
 
-	LabelCapsuleInfoSection::LabelCapsuleInfoSection(const DebugTheme& theme, IDebugContext* pContext, LabelCapsule * pCapsule) : InfoSection( theme, pContext, LabelCapsule::TYPEINFO.className )
+	LabelCapsuleInfoSection::LabelCapsuleInfoSection(const DebugTheme& theme, IDebugContext* pContext, LabelCapsule * pInspected)
+		: TypedInfoSection<LabelCapsule>( theme, pContext, LabelCapsule::TYPEINFO.className, pInspected )
 	{
 		auto pPanel = WGCREATE(PackPanel, _.axis = Axis::Y);
 
-		m_pInspected = pCapsule;
-		m_pTable = _createTable(2,2);
+		auto pTable = _createRows({
+			textRow  ( "Label placement: ", [](LabelCapsule* c) { return toString(c->labelPlacement()); } ),
+			objectRow( "Label skin: ",      [](LabelCapsule* c) -> Object* { return c->labelSkin(); } )
+		});
 
-		_initTextEntry(m_pTable, 0, "Label placement: ");
-		_initObjectPointerEntry(m_pTable, 1, "Label skin: ");
+		m_pLabelDrawer = _createComponentDrawer("Label", &pInspected->label);
 
-		m_pLabelDrawer = _createComponentDrawer("Label", &pCapsule->label);
-
-		pPanel->slots.pushBack({ m_pTable, m_pLabelDrawer });
-
-		refresh();
-
+		pPanel->slots.pushBack({ pTable, m_pLabelDrawer });
 		this->slot = pPanel;
 	}
 
@@ -64,12 +58,9 @@ namespace wg
 
 	void LabelCapsuleInfoSection::refresh()
 	{
-		_refreshTextEntry(m_pTable, 0, toString(m_pInspected->labelPlacement()));
-		_refreshObjectPointerEntry(m_pTable, 1, m_pInspected->labelSkin(), m_pDisplayedLabelSkin );
+		TypedInfoSection<LabelCapsule>::refresh();
 
 		_refreshComponentDrawer(m_pLabelDrawer);
 	}
 
 } // namespace wg
-
-

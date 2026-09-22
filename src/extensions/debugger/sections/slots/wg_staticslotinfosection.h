@@ -24,7 +24,7 @@
 #pragma once
 
 #include <wg_tablepanel.h>
-#include <wg_infosection.h>
+#include <wg_typedinfosection.h>
 
 namespace wg
 {
@@ -34,34 +34,24 @@ namespace wg
 
 
 
-	class StaticSlotInfoSection : public InfoSection
+	class StaticSlotInfoSection : public TypedInfoSection<StaticSlot>
 	{
 	public:
 
 		//.____ Creation __________________________________________
 
-		static StaticSlotInfoSection_p		create( const DebugTheme& theme, IDebugContext * pContext, StaticSlot * pStaticSlot) { return StaticSlotInfoSection_p(new StaticSlotInfoSection(theme, pContext, pStaticSlot) ); }
+		static StaticSlotInfoSection_p		create( const DebugTheme& theme, IDebugContext* pContext, StaticSlot * pInspected) { return StaticSlotInfoSection_p(new StaticSlotInfoSection(theme, pContext, pInspected) ); }
 
 		//.____ Identification __________________________________________
 
 		const TypeInfo&			typeInfo(void) const override;
 		const static TypeInfo	TYPEINFO;
 
-		//.____ Control ____________________________________________________
-
-		void refresh(StaticSlot * pStaticSlot) override;
-
 
 	protected:
-		StaticSlotInfoSection(const DebugTheme& theme, IDebugContext * pContext, StaticSlot * pStaticSlot );
+		StaticSlotInfoSection(const DebugTheme& theme, IDebugContext* pContext, StaticSlot * pInspected );
 		~StaticSlotInfoSection() {}
-
-		TablePanel_p	m_pTable;
-
-		Object_p		m_pDisplayedChild;
 	};
 
 } // namespace wg
 #endif //WG_STATICSLOTINFOSECTION_DOT_H
-
-

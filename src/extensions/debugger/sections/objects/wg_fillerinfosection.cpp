@@ -20,9 +20,6 @@
 
 =========================================================================*/
 #include "wg_fillerinfosection.h"
-#include <wg_textdisplay.h>
-#include <wg_numberdisplay.h>
-#include <wg_basicnumberlayout.h>
 
 
 namespace wg
@@ -33,14 +30,13 @@ namespace wg
 
 	//____ constructor _____________________________________________________________
 
-	FillerInfoSection::FillerInfoSection(const DebugTheme& theme, IDebugContext* pContext, Filler * pFiller) : InfoSection( theme, pContext, Filler::TYPEINFO.className )
+	FillerInfoSection::FillerInfoSection(const DebugTheme& theme, IDebugContext* pContext, Filler * pInspected)
+		: TypedInfoSection<Filler>( theme, pContext, Filler::TYPEINFO.className, pInspected )
 	{
-		m_pInspected = pFiller;
-
-		m_pTable = _createTable(2,2);
-		_setPtsEntry(m_pTable, 0, "Default width (pts): ", pFiller->defaultSize().w);
-		_setPtsEntry(m_pTable, 1, "Default height (pts): ", pFiller->defaultSize().h);
-		this->slot = m_pTable;
+		this->slot = _createRows({
+			ptsRow( "Default width (pts): ",  [](Filler* f) { return f->defaultSize().w; } ),
+			ptsRow( "Default height (pts): ", [](Filler* f) { return f->defaultSize().h; } )
+		});
 	}
 
 	//____ typeInfo() _________________________________________________________
@@ -50,14 +46,4 @@ namespace wg
 		return TYPEINFO;
 	}
 
-	//____ refresh() _____________________________________________________________
-
-	void FillerInfoSection::refresh()
-	{
-		_refreshPtsEntry(m_pTable, 0, m_pInspected->defaultSize().w);
-		_refreshPtsEntry(m_pTable, 1, m_pInspected->defaultSize().h);
-	}
-
 } // namespace wg
-
-

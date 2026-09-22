@@ -31,14 +31,12 @@ namespace wg
 
 	//____ constructor _____________________________________________________________
 
-	PanelSlotInfoSection::PanelSlotInfoSection(const DebugTheme& theme, IDebugContext* pContext, StaticSlot * pStaticSlot) : InfoSection( theme, pContext, PanelSlot::TYPEINFO.className )
+	PanelSlotInfoSection::PanelSlotInfoSection(const DebugTheme& theme, IDebugContext* pContext, PanelSlot * pInspected)
+		: TypedInfoSection<PanelSlot>( theme, pContext, PanelSlot::TYPEINFO.className, pInspected )
 	{
-		m_pTable = _createTable(1,2);
-		_initBoolEntry(m_pTable, 0, "Visible: ");
-
-		refresh(pStaticSlot);
-
-		this->slot = m_pTable;
+		this->slot = _createRows({
+			boolRow( "Visible: ", [](PanelSlot* s) { return s->isVisible(); } )
+		});
 	}
 
 	//____ typeInfo() _________________________________________________________
@@ -48,16 +46,4 @@ namespace wg
 		return TYPEINFO;
 	}
 
-	//____ refresh() _____________________________________________________________
-
-	void PanelSlotInfoSection::refresh(StaticSlot * pStaticSlot)
-	{
-		auto pInspected = static_cast<PanelSlot*>(pStaticSlot);
-		_refreshBoolEntry(m_pTable, 0, pInspected->isVisible());
-	}
-
-
 } // namespace wg
-
-
-

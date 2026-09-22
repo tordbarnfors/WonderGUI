@@ -24,7 +24,7 @@
 #pragma once
 
 #include <wg_tablepanel.h>
-#include <wg_infosection.h>
+#include <wg_typedinfosection.h>
 #include <wg_twoslotpanel.h>
 
 namespace wg
@@ -35,32 +35,24 @@ namespace wg
 
 
 
-	class TwoSlotPanelSlotInfoSection : public InfoSection
+	class TwoSlotPanelSlotInfoSection : public TypedInfoSection<TwoSlotPanel::Slot>
 	{
 	public:
 
 		//.____ Creation __________________________________________
 
-		static TwoSlotPanelSlotInfoSection_p		create( const DebugTheme& theme, IDebugContext* pContext, StaticSlot * pStaticSlot) { return TwoSlotPanelSlotInfoSection_p(new TwoSlotPanelSlotInfoSection(theme, pContext, pStaticSlot) ); }
+		static TwoSlotPanelSlotInfoSection_p		create( const DebugTheme& theme, IDebugContext* pContext, TwoSlotPanel::Slot * pInspected) { return TwoSlotPanelSlotInfoSection_p(new TwoSlotPanelSlotInfoSection(theme, pContext, pInspected) ); }
 
 		//.____ Identification __________________________________________
 
 		const TypeInfo&			typeInfo(void) const override;
 		const static TypeInfo	TYPEINFO;
 
-		//.____ Control ____________________________________________________
-
-		void refresh(StaticSlot * pStaticSlot) override;
-
 
 	protected:
-		TwoSlotPanelSlotInfoSection(const DebugTheme& theme, IDebugContext* pContext, StaticSlot * pStaticSlot );
+		TwoSlotPanelSlotInfoSection(const DebugTheme& theme, IDebugContext* pContext, TwoSlotPanel::Slot * pInspected );
 		~TwoSlotPanelSlotInfoSection() {}
-
-		TablePanel_p			m_pTable;
 	};
 
 } // namespace wg
 #endif //WG_TWOSLOTPANELSLOTINFOSECTION_DOT_H
-
-

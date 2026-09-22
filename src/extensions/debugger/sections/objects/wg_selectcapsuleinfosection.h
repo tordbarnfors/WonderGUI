@@ -24,7 +24,7 @@
 #pragma once
 
 #include <wg_tablepanel.h>
-#include <wg_infosection.h>
+#include <wg_typedinfosection.h>
 #include <wg_selectcapsule.h>
 
 namespace wg
@@ -35,31 +35,24 @@ namespace wg
 
 
 
-	class SelectCapsuleInfoSection : public InfoSection
+	class SelectCapsuleInfoSection : public TypedInfoSection<SelectCapsule>
 	{
 	public:
 
 		//.____ Creation __________________________________________
 
-		static SelectCapsuleInfoSection_p		create( const DebugTheme& theme, IDebugContext* pContext, SelectCapsule * pPanel) { return SelectCapsuleInfoSection_p(new SelectCapsuleInfoSection(theme, pContext, pPanel) ); }
+		static SelectCapsuleInfoSection_p		create( const DebugTheme& theme, IDebugContext* pContext, SelectCapsule * pInspected) { return SelectCapsuleInfoSection_p(new SelectCapsuleInfoSection(theme, pContext, pInspected) ); }
 
 		//.____ Identification __________________________________________
 
 		const TypeInfo&			typeInfo(void) const override;
 		const static TypeInfo	TYPEINFO;
 
-		//.____ Control ____________________________________________________
-
-		void refresh() override;
 
 	protected:
-		SelectCapsuleInfoSection(const DebugTheme& theme, IDebugContext* pContext, SelectCapsule * pPanel );
+		SelectCapsuleInfoSection(const DebugTheme& theme, IDebugContext* pContext, SelectCapsule * pInspected );
 		~SelectCapsuleInfoSection() {}
-
-		SelectCapsule *	m_pInspected;
-		TablePanel_p	m_pTable;
 	};
 
 } // namespace wg
 #endif //WG_SELECTCAPSULEINFOSECTION_DOT_H
-

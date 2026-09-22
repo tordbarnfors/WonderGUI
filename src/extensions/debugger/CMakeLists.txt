@@ -7,6 +7,7 @@ set(SOURCES
     core/wg_idebugcontext.h
     core/wg_infosection.h
     core/wg_infosection.cpp
+    core/wg_typedinfosection.h
     core/wg_inspectorview.h
     core/wg_inspectorview.cpp
 

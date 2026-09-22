@@ -20,9 +20,6 @@
 
 =========================================================================*/
 #include "wg_panelinfosection.h"
-#include <wg_textdisplay.h>
-#include <wg_numberdisplay.h>
-#include <wg_basicnumberlayout.h>
 
 
 namespace wg
@@ -33,12 +30,12 @@ namespace wg
 
 	//____ constructor _____________________________________________________________
 
-	PanelInfoSection::PanelInfoSection(const DebugTheme& theme, IDebugContext* pContext, Panel * pPanel) : InfoSection( theme, pContext, Panel::TYPEINFO.className )
+	PanelInfoSection::PanelInfoSection(const DebugTheme& theme, IDebugContext* pContext, Panel * pInspected)
+		: TypedInfoSection<Panel>( theme, pContext, Panel::TYPEINFO.className, pInspected )
 	{
-		m_pInspected = pPanel;
-		m_pTable = _createTable(1,2);
-		_setTextEntry(m_pTable, 0, "Mask op: ", toString(pPanel->maskOp()));
-		this->slot = m_pTable;
+		this->slot = _createRows({
+			textRow( "Mask op: ", [](Panel* p) { return toString(p->maskOp()); } )
+		});
 	}
 
 	//____ typeInfo() _________________________________________________________
@@ -48,13 +45,4 @@ namespace wg
 		return TYPEINFO;
 	}
 
-	//____ refresh() _____________________________________________________________
-
-	void PanelInfoSection::refresh()
-	{
-		_refreshTextEntry(m_pTable, 0, toString(m_pInspected->maskOp()));
-	}
-
 } // namespace wg
-
-

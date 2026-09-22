@@ -20,9 +20,6 @@
 
 =========================================================================*/
 #include "wg_objectinfosection.h"
-#include <wg_textdisplay.h>
-#include <wg_numberdisplay.h>
-#include <wg_basicnumberlayout.h>
 
 
 namespace wg
@@ -33,17 +30,14 @@ namespace wg
 
 	//____ constructor _____________________________________________________________
 
-	ObjectInfoSection::ObjectInfoSection(const DebugTheme& theme, IDebugContext* pContext, Object * pObject) : InfoSection( theme, pContext, Object::TYPEINFO.className )
+	ObjectInfoSection::ObjectInfoSection(const DebugTheme& theme, IDebugContext* pContext, Object * pInspected)
+		: TypedInfoSection<Object>( theme, pContext, Object::TYPEINFO.className, pInspected )
 	{
-		m_pInspected = pObject;
-
-		m_pTable = _createTable(3,2);
-		_initIntegerEntry(m_pTable, 0, "Refcount: ");
-		_initIntegerEntry(m_pTable, 1, "Weak pointers: ");
-		_initPointerEntry(m_pTable, 2, "Finalizer: ");
-
-		refresh();
-		this->slot = m_pTable;
+		this->slot = _createRows({
+			intRow    ( "Refcount: ",      [](Object* o) { return o->refcount(); } ),
+			intRow    ( "Weak pointers: ", [](Object* o) { return o->weakPointers(); } ),
+			pointerRow( "Finalizer: ",     [](Object* o) { return (void*) o->finalizer().rawPtr(); } )
+		});
 	}
 
 	//____ typeInfo() _________________________________________________________
@@ -53,17 +47,4 @@ namespace wg
 		return TYPEINFO;
 	}
 
-	//____ refresh() _____________________________________________________________
-
-	void ObjectInfoSection::refresh()
-	{
-		_refreshIntegerEntry(m_pTable, 0, m_pInspected->refcount());
-		_refreshIntegerEntry(m_pTable, 1, m_pInspected->weakPointers());
-		_refreshPointerEntry(m_pTable, 2, (void *) m_pInspected->finalizer().rawPtr(), m_pFinalizer );
-
-	}
-
-
 } // namespace wg
-
-

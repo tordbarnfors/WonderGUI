@@ -20,15 +20,8 @@
 
 =========================================================================*/
 #include "wg_widgetinspector.h"
-#include <wg_infosection.h>
 
-#include <wg_scrollpanel.h>
-#include <wg_textdisplay.h>
-#include <wg_skindisplay.h>
-#include <wg_boxskin.h>
-#include <wg_blockskin.h>
 #include <wg_packpanel.h>
-#include <wg_msgrouter.h>
 
 
 

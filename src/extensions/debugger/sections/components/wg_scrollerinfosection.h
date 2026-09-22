@@ -24,7 +24,7 @@
 #pragma once
 
 #include <wg_tablepanel.h>
-#include <wg_infosection.h>
+#include <wg_typedinfosection.h>
 #include <wg_scroller.h>
 
 namespace wg
@@ -35,36 +35,24 @@ namespace wg
 
 
 
-	class ScrollerInfoSection : public InfoSection
+	class ScrollerInfoSection : public TypedInfoSection<Scroller>
 	{
 	public:
 
 		//.____ Creation __________________________________________
 
-		static ScrollerInfoSection_p		create(const DebugTheme& theme, IDebugContext* pContext, Scroller* pScroller) { return ScrollerInfoSection_p(new ScrollerInfoSection(theme, pContext, pScroller)); }
+		static ScrollerInfoSection_p		create( const DebugTheme& theme, IDebugContext* pContext, Scroller * pInspected) { return ScrollerInfoSection_p(new ScrollerInfoSection(theme, pContext, pInspected) ); }
 
 		//.____ Identification __________________________________________
 
-		const TypeInfo& typeInfo(void) const override;
+		const TypeInfo&			typeInfo(void) const override;
 		const static TypeInfo	TYPEINFO;
 
-		//.____ Control ____________________________________________________
-
-		void refresh() override;
 
 	protected:
-		ScrollerInfoSection(const DebugTheme& theme, IDebugContext* pContext, Scroller* pScroller);
+		ScrollerInfoSection(const DebugTheme& theme, IDebugContext* pContext, Scroller * pInspected );
 		~ScrollerInfoSection() {}
-
-		TablePanel_p	m_pTable;
-		Scroller *		m_pInspected;
-
-		Object_p		m_displayedBackgroundSkinPtr;
-		Object_p		m_displayedBarSkinPtr;
-		Object_p		m_displayedForwardButtonSkinPtr;
-		Object_p		m_displayedBackwardButtonSkinPtr;
 	};
 
 } // namespace wg
 #endif //WG_SCROLLERINFOSECTION_DOT_H
-

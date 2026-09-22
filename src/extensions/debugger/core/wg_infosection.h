@@ -33,6 +33,7 @@
 #include <wg_drawerpanel.h>
 #include <wg_paddingcapsule.h>
 #include <wg_packpanel.h>
+#include <wg_msgrouter.h>
 
 
 namespace wg
@@ -55,17 +56,19 @@ namespace wg
 
 		//.____ Control _____________________________________________________
 
-		void					setAutoRefresh(bool bAutoRefresh);
 
-		virtual void			refresh();					// For all InfoSections except slots.
-		virtual void			refresh(StaticSlot* pSlot);	// Specifically for slot-InfoSection.
+		virtual void			refresh();
+
+		// Slot sections are shown in a drawer that is reused when the slot list
+		// changes, so the owner points them at the current slot before each
+		// refresh(). Ignored by all other sections.
+
+		virtual void			setInspectedSlot(StaticSlot* pSlot) {}
 
 
 	protected:
 		InfoSection(const DebugTheme& theme, IDebugContext * pContext, const char * pLabel );
 		~InfoSection() {}
-
-		void				_update(int microPassed, int64_t microsecTimestamp) override;
 
 
 		TablePanel_p		_createTable(int rows, int columns);
@@ -84,8 +87,6 @@ namespace wg
 		DrawerPanel_p		_createComponentDrawer(const CharSeq& label, Component* pComponent);
 		void				_refreshComponentDrawer(DrawerPanel * pComponentDrawer );
 
-		Widget_p			_createObjectHeader(Object* pObject);
-
 		template<typename Iterator>
 		DrawerPanel_p		_createSlotsDrawer(const CharSeq& label, Iterator slotsBegin, Iterator slotsEnd);
 		template<typename Iterator>
@@ -97,16 +98,11 @@ namespace wg
 		void				_refreshSingleSlotDrawer(DrawerPanel* pDrawer, StaticSlot * pSlot);
 
 
+		// Table rows are made in two steps: _init*Entry() puts the label and an
+		// empty value widget in the row, _refresh*Entry() sets the value.
+		// TypedInfoSection's row helpers are built on these.
 
-
-		void _setTextEntry(TablePanel* pTable, int row, const char* pLabel, const CharSeq& string);
-		void _setIntegerEntry(TablePanel * pTable, int row, const char * pLabel, int value);
-		void _setDecimalEntry(TablePanel* pTable, int row, const char* pLabel, float value);
-		void _setPtsEntry(TablePanel* pTable, int row, const char* pLabel, pts value);
-		void _setSpxEntry(TablePanel* pTable, int row, const char* pLabel, spx value);
-		void _setBoolEntry(TablePanel* pTable, int row, const char* pLabel, bool value);
-		void _setPointerEntry(TablePanel* pTable, int row, const char* pLabel, void* pPointer);
-		void _setObjectPointerEntry(TablePanel* pTable, int row, const char* pLabel, Object * pPointer, Object * pSource);
+		void _initEntry(TablePanel* pTable, int row, const char* pLabel, Widget* pValue);
 
 		void _initTextEntry(TablePanel* pTable, int row, const char* pLabel);
 		void _initIntegerEntry(TablePanel * pTable, int row, const char * pLabel);
@@ -124,13 +120,11 @@ namespace wg
 		void _refreshSpxEntry(TablePanel* pTable, int row, spx value);
 		void _refreshBoolEntry(TablePanel* pTable, int row, bool value);
 		void _refreshPointerEntry(TablePanel* pTable, int row, void* pPointer, void*& pDisplayedPointer );
-		void _refreshObjectPointerEntry(TablePanel* pTable, int row, Object * pPointer, Object_p& pDisplayedPointer);
+		void _refreshObjectPointerEntry(TablePanel* pTable, int row, Object * pPointer, Object_p& pDisplayedPointer, RouteId& linkRoute);
 
 		IDebugContext*	m_pContext = nullptr;
 
 		Skin_p		m_pIndentationSkin;
-
-		bool		m_bAutoRefresh = false;
 	};
 
 	//____ createSlotsDrawer() ___________________________________________________
@@ -146,7 +140,7 @@ namespace wg
 									 _ = m_pContext->theme().listEntryInteger,
 									 _.display.value = std::distance(slotsBegin,slotsEnd ));
 
-		auto pDrawer = _createDrawer("Slots", pNumberSlots, pSlotList);
+		auto pDrawer = _createDrawer(label, pNumberSlots, pSlotList);
 		return pDrawer;
 	}
 
@@ -174,7 +168,14 @@ void InfoSection::_refreshSlotsDrawer(DrawerPanel * pDrawer, Iterator slotsBegin
 			auto pInfoSectionContainer = dynamic_cast<PackPanel*>(pSlotDrawer->slots[1]._widget());
 
 			for( auto& slot : pInfoSectionContainer->slots )
-				dynamic_cast<InfoSection*>(slot._widget())->refresh(it);
+			{
+				auto pInfoSection = dynamic_cast<InfoSection*>(slot._widget());
+				if( pInfoSection )
+				{
+					pInfoSection->setInspectedSlot(it);
+					pInfoSection->refresh();
+				}
+			}
 		}
 
 		it++;
@@ -185,7 +186,15 @@ void InfoSection::_refreshSlotsDrawer(DrawerPanel * pDrawer, Iterator slotsBegin
 	if( nSlotsNow < nSlotsBefore )
 		pContainer->slots.erase(nSlotsNow, nSlotsBefore - nSlotsNow );
 	else if( nSlotsNow > nSlotsBefore )
-		_addSlotInfoSections(pContainer, nSlotsNow, it, slotsEnd);
+		_addSlotInfoSections(pContainer, nSlotsBefore, it, slotsEnd);
+
+	if( nSlotsNow != nSlotsBefore )
+	{
+		auto pNumberSlots = WGCREATE(NumberDisplay,
+									 _ = m_pContext->theme().listEntryInteger,
+									 _.display.value = nSlotsNow);
+		_setDrawerHeaderValue(pDrawer, pNumberSlots);
+	}
 
 }
 
@@ -216,5 +225,5 @@ void InfoSection::_addSlotInfoSections(PackPanel * pPanel, int numberingStart, I
 
 
 } // namespace wg
-#endif //WG_OBJECTINFOSECTION_DOT_H
+#endif //WG_INFOSECTION_DOT_H
 

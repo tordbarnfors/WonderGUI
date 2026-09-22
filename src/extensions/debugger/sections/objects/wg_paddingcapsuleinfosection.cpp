@@ -20,10 +20,6 @@
 
 =========================================================================*/
 #include "wg_paddingcapsuleinfosection.h"
-#include <wg_textdisplay.h>
-#include <wg_numberdisplay.h>
-#include <wg_basicnumberlayout.h>
-#include <wg_packpanel.h>
 
 
 namespace wg
@@ -34,14 +30,11 @@ namespace wg
 
 	//____ constructor _____________________________________________________________
 
-	PaddingCapsuleInfoSection::PaddingCapsuleInfoSection(const DebugTheme& theme, IDebugContext* pContext, PaddingCapsule * pCapsule) : InfoSection( theme, pContext, PaddingCapsule::TYPEINFO.className )
+	PaddingCapsuleInfoSection::PaddingCapsuleInfoSection(const DebugTheme& theme, IDebugContext* pContext, PaddingCapsule * pInspected)
+		: TypedInfoSection<PaddingCapsule>( theme, pContext, PaddingCapsule::TYPEINFO.className, pInspected )
 	{
-		m_pInspected = pCapsule;
-		m_displayedPadding = pCapsule->padding();
-
-		m_pPaddingDrawer =_createBorderDrawer("Padding: ", m_displayedPadding);
-
-
+		m_displayedPadding = pInspected->padding();
+		m_pPaddingDrawer = _createBorderDrawer("Padding: ", m_displayedPadding);
 		this->slot = m_pPaddingDrawer;
 	}
 
@@ -56,9 +49,9 @@ namespace wg
 
 	void PaddingCapsuleInfoSection::refresh()
 	{
-		_refreshBorderDrawer(m_pPaddingDrawer, m_pInspected->padding(), m_displayedPadding);
+		TypedInfoSection<PaddingCapsule>::refresh();
+
+		_refreshBorderDrawer(m_pPaddingDrawer, inspected()->padding(), m_displayedPadding);
 	}
 
 } // namespace wg
-
-

@@ -102,10 +102,10 @@ namespace wg
 		}
 
 		template<class Inspected, class Section>
-		void _registerSlot()			// Slot sections still take a StaticSlot* and cast internally.
+		void _registerSlot()
 		{
 			m_slotInfoFactories[&Inspected::TYPEINFO] = [](const DebugTheme& theme, IDebugContext* pContext, StaticSlot* p)
-				{ return Widget_p(Section::create(theme, pContext, p)); };
+				{ return Widget_p(Section::create(theme, pContext, static_cast<Inspected*>(p))); };
 		}
 
 		template<class Inspected, class Section>

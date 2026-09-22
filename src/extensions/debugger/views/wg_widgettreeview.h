@@ -26,7 +26,6 @@
 #include <wg_tablepanel.h>
 #include <wg_inspectorview.h>
 #include <wg_selectcapsule.h>
-#include <wg_transitions.h>
 
 namespace wg
 {

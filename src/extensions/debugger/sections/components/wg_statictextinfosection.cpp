@@ -21,8 +21,6 @@
 =========================================================================*/
 #include "wg_statictextinfosection.h"
 #include <wg_textdisplay.h>
-#include <wg_numberdisplay.h>
-#include <wg_basicnumberlayout.h>
 #include <wg_enumextras.h>
 #include <wg_packpanel.h>
 
@@ -34,23 +32,22 @@ namespace wg
 
 	//____ constructor _____________________________________________________________
 
-	StaticTextInfoSection::StaticTextInfoSection(const DebugTheme& theme, IDebugContext* pContext, StaticText* pStaticText) : InfoSection(theme, pContext, StaticText::TYPEINFO.className)
+	StaticTextInfoSection::StaticTextInfoSection(const DebugTheme& theme, IDebugContext* pContext, StaticText * pInspected)
+		: TypedInfoSection<StaticText>( theme, pContext, StaticText::TYPEINFO.className, pInspected )
 	{
-		m_pInspected = pStaticText;
+		auto pPanel = WGCREATE(PackPanel, _.axis = Axis::Y);
 
-		auto pPanel = WGCREATE(PackPanel, _.axis = Axis::Y );
+		auto pTable = _createRows({
+			textRow  ( "State: ",  [](StaticText* t) { return toString(t->state().value()); } ),
+			objectRow( "Style: ",  [](StaticText* t) -> Object* { return t->style(); } ),
+			objectRow( "Layout: ", [](StaticText* t) -> Object* { return t->layout(); } ),
+			intRow   ( "Length: ", [](StaticText* t) { return t->length(); } )
+		});
 
-		m_pTable = _createTable(4, 2);
-
-		_setTextEntry(m_pTable, 0, "State: ", toString(pStaticText->state().value()) );
-		_setObjectPointerEntry(m_pTable, 1, "Style: ", pStaticText->style(), this );
-		_setObjectPointerEntry(m_pTable, 2, "Layout: ", pStaticText->layout(), this);
-		_setIntegerEntry(m_pTable, 3, "Length: ", pStaticText->length());
-
-		m_pTextDisplay = WGCREATE(TextDisplay, _ = theme.textField, _.display.text = pStaticText->text());
+		m_pTextDisplay = WGCREATE(TextDisplay, _ = theme.textField, _.display.text = pInspected->text());
 		auto pPadding = WGCREATE(PaddingCapsule, _.padding = { 0,0,0,16 }, _.child = m_pTextDisplay );
 
-		pPanel->slots.pushBack({m_pTable, pPadding});
+		pPanel->slots.pushBack({ pTable, pPadding });
 		this->slot = pPanel;
 	}
 
@@ -65,16 +62,9 @@ namespace wg
 
 	void StaticTextInfoSection::refresh()
 	{
-		_refreshTextEntry(m_pTable, 0, toString(m_pInspected->state().value()) );
-		_refreshObjectPointerEntry(m_pTable, 1, m_pInspected->style(), m_displayedStylePtr );
-		_refreshObjectPointerEntry(m_pTable, 2, m_pInspected->layout(), m_displayedLayoutPtr );
-		_refreshIntegerEntry(m_pTable, 3, m_pInspected->length());
+		TypedInfoSection<StaticText>::refresh();
 
-		m_pTextDisplay->display.setText(m_pInspected->text());
+		m_pTextDisplay->display.setText(inspected()->text());
 	}
 
-
-
 } // namespace wg
-
-

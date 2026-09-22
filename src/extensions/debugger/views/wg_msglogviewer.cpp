@@ -22,14 +22,11 @@
 #include "wg_msglogviewer.h"
 #include <wg_textdisplay.h>
 #include <wg_packpanel.h>
-#include <wg_togglebutton.h>
-#include <wg_button.h>
 #include <wg_filler.h>
-#include <wg_root.h>
 
-#include <wg_boxskin.h>
 #include <wg_colorskin.h>
 #include <wg_blockskin.h>
+#include <wg_rootpanel.h>
 
 #include <wg_msgrouter.h>
 #include <wg_msg.h>

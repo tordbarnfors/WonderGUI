@@ -24,6 +24,7 @@
 #include <wg_colorskin.h>
 #include <wg_twoslotpanel.h>
 #include <wg_msgrouter.h>
+#include <wg_base.h>
 #include <wg_msg.h>
 #include <wg_packpanel.h>
 #include <wg_textdisplay.h>
@@ -54,36 +55,10 @@ namespace wg
 		return TYPEINFO;
 	}
 
-	//____ setAutoRefresh() ______________________________________________________
-
-	void InfoSection::setAutoRefresh(bool bAutoRefresh)
-	{
-		if( bAutoRefresh != m_bAutoRefresh )
-		{
-			if( bAutoRefresh )
-				_startReceiveUpdates();
-			else
-				_stopReceiveUpdates();
-
-			m_bAutoRefresh = bAutoRefresh;
-		}
-	}
-
 	//____ refresh() _____________________________________________________________
 
 	void InfoSection::refresh()
 	{
-	}
-
-	void InfoSection::refresh(StaticSlot * pSlot)
-	{
-	}
-
-	//____ _update() _____________________________________________________________
-
-	void InfoSection::_update(int microPassed, int64_t microsecTimestamp)
-	{
-		refresh();
 	}
 
 	//____ _createTable() ________________________________________________________
@@ -126,17 +101,17 @@ namespace wg
 
 		auto pHeaderValue = WGCREATE(TextDisplay, _ = m_pContext->theme().listEntryText, _.display.text = bValid ? "" : (bUndefined ? "undefined" : "invalid"));
 
-		TablePanel_p pContentTable;
+		auto pContentTable = _createTable(4, 2);
 
-		if (true)
-		{
-			pContentTable = _createTable(4, 2);
+		_initIntegerEntry(pContentTable, 0, "Red: ");
+		_initIntegerEntry(pContentTable, 1, "Green: ");
+		_initIntegerEntry(pContentTable, 2, "Blue: ");
+		_initIntegerEntry(pContentTable, 3, "Alpha: ");
 
-			_setIntegerEntry(pContentTable, 0, "Red: ", color.r);
-			_setIntegerEntry(pContentTable, 1, "Green: ", color.g);
-			_setIntegerEntry(pContentTable, 2, "Blue: ",  color.b);
-			_setIntegerEntry(pContentTable, 3, "Alpha: ", color.a);
-		}
+		_refreshIntegerEntry(pContentTable, 0, color.r);
+		_refreshIntegerEntry(pContentTable, 1, color.g);
+		_refreshIntegerEntry(pContentTable, 2, color.b);
+		_refreshIntegerEntry(pContentTable, 3, color.a);
 
 		return _createDrawer(label, pHeaderValue, pContentTable);
 	}
@@ -174,17 +149,17 @@ namespace wg
 
 		auto pHeaderValue = WGCREATE(TextDisplay, _ = m_pContext->theme().listEntryText, _.display.text = bValid ? (bEmpty ? "empty" : "") : "invalid" );
 
-		TablePanel_p pContentTable;
+		auto pContentTable = _createTable(4, 2);
 
-		if (true)
-		{
-			pContentTable = _createTable(4, 2);
+		_initPtsEntry(pContentTable, 0, "X (pts): ");
+		_initPtsEntry(pContentTable, 1, "Y (pts): ");
+		_initPtsEntry(pContentTable, 2, "W (pts): ");
+		_initPtsEntry(pContentTable, 3, "H (pts): ");
 
-			_setPtsEntry(pContentTable, 0, "X (pts): ", rect.x);
-			_setPtsEntry(pContentTable, 1, "Y (pts): ", rect.y);
-			_setPtsEntry(pContentTable, 2, "W (pts): ", rect.w);
-			_setPtsEntry(pContentTable, 3, "H (pts): ", rect.h);
-		}
+		_refreshPtsEntry(pContentTable, 0, rect.x);
+		_refreshPtsEntry(pContentTable, 1, rect.y);
+		_refreshPtsEntry(pContentTable, 2, rect.w);
+		_refreshPtsEntry(pContentTable, 3, rect.h);
 
 		return _createDrawer(label, pHeaderValue, pContentTable);
 	}
@@ -199,7 +174,7 @@ namespace wg
 		bool bEmpty = rect.isEmpty();
 		bool bValid = rect.isValid();
 
-		if (bEmpty != displayedRect.isEmpty())
+		if (bEmpty != displayedRect.isEmpty() || bValid != displayedRect.isValid())
 		{
 			auto pHeaderValue = WGCREATE(TextDisplay, _ = m_pContext->theme().listEntryText, _.display.text = bValid ? (bEmpty ? "empty" : "") : "invalid");
 			_setDrawerHeaderValue(pRectDrawer, pHeaderValue);
@@ -222,17 +197,17 @@ namespace wg
 	{
 		auto pHeaderValue = WGCREATE(TextDisplay, _ = m_pContext->theme().listEntryText, _.display.text = border.isEmpty() ? "none" : "");
 
-		TablePanel_p pContentTable;
+		auto pContentTable = _createTable(4, 2);
 
-		if (true)
-		{
-			pContentTable = _createTable(4, 2);
+		_initPtsEntry(pContentTable, 0, "Top (pts): ");
+		_initPtsEntry(pContentTable, 1, "Right (pts): ");
+		_initPtsEntry(pContentTable, 2, "Bottom (pts): ");
+		_initPtsEntry(pContentTable, 3, "Left (pts): ");
 
-			_setPtsEntry(pContentTable, 0, "Top (pts): ", border.top);
-			_setPtsEntry(pContentTable, 1, "Right (pts): ", border.right);
-			_setPtsEntry(pContentTable, 2, "Bottom (pts): ", border.bottom);
-			_setPtsEntry(pContentTable, 3, "Left (pts): ", border.left);
-		}
+		_refreshPtsEntry(pContentTable, 0, border.top);
+		_refreshPtsEntry(pContentTable, 1, border.right);
+		_refreshPtsEntry(pContentTable, 2, border.bottom);
+		_refreshPtsEntry(pContentTable, 3, border.left);
 
 		return _createDrawer(label, pHeaderValue, pContentTable);
 	}
@@ -282,31 +257,12 @@ namespace wg
 		}
 	}
 
-	//____ _createObjectHeader() ______________________________________________
+	//____ _initEntry() _________________________________________________________
+	//
+	// Puts a label and a value widget in a two-column table row. The typed
+	// _init*Entry() functions below only choose the value widget.
 
-	Widget_p InfoSection::_createObjectHeader(Object* pObject)
-	{
-
-		auto pDisplay = TextDisplay::create(WGBP(TextDisplay,
-			_.display.text = pObject->typeInfo().className,
-			_.display.style = dbgkit::TextStyles::Heading5
-		));
-
-		char temp[64];
-		std::snprintf(temp, sizeof(temp), " 0x%" PRIxPTR, reinterpret_cast<std::uintptr_t>(pObject));
-
-		CharBuffer buf(64);
-		buf.pushBack(temp);
-		buf.setStyle(dbgkit::TextStyles::Default);
-		
-		pDisplay->display.append(&buf);
-		return pDisplay;
-	}
-
-
-	//___ _setTextEntry() _________________________________________________
-
-	void InfoSection::_setTextEntry(TablePanel* pTable, int row, const char* pLabel, const CharSeq& string)
+	void InfoSection::_initEntry(TablePanel* pTable, int row, const char* pLabel, Widget* pValue)
 	{
 		if (row < 0 || row >= pTable->rows.size())
 			return;
@@ -315,253 +271,49 @@ namespace wg
 			return;
 
 		pTable->slots[row][0] = TextDisplay::create(WGOVR(m_pContext->theme().listEntryLabel, _.display.text = pLabel));
-		pTable->slots[row][1] = TextDisplay::create(WGOVR(m_pContext->theme().listEntryText, _.display.text = string));
+		pTable->slots[row][1] = pValue;
 	}
 
-	//___ _setIntegerEntry() _________________________________________________
-
-	void InfoSection::_setIntegerEntry(TablePanel* pTable, int row, const char* pLabel, int value)
-	{
-		if (row < 0 || row >= pTable->rows.size())
-			return;
-
-		if (pTable->columns.size() < 2)
-			return;
-
-		pTable->slots[row][0] = TextDisplay::create(WGOVR(m_pContext->theme().listEntryLabel, _.display.text = pLabel));
-		pTable->slots[row][1] = NumberDisplay::create(WGOVR(m_pContext->theme().listEntryInteger, _.display.value = value));
-	}
-
-	//___ _setDecimalEntry() _________________________________________________
-
-	void InfoSection::_setDecimalEntry(TablePanel* pTable, int row, const char* pLabel, float value)
-	{
-		if (row < 0 || row >= pTable->rows.size())
-			return;
-
-		if (pTable->columns.size() < 2)
-			return;
-
-		pTable->slots[row][0] = TextDisplay::create(WGOVR(m_pContext->theme().listEntryLabel, _.display.text = pLabel));
-		pTable->slots[row][1] = NumberDisplay::create(WGOVR(m_pContext->theme().listEntryDecimal, _.display.value = value));
-	}
-
-	//___ _setPtsEntry() _________________________________________________
-
-	void InfoSection::_setPtsEntry(TablePanel* pTable, int row, const char* pLabel, pts value)
-	{
-		if (row < 0 || row >= pTable->rows.size())
-			return;
-
-		if (pTable->columns.size() < 2)
-			return;
-
-		pTable->slots[row][0] = TextDisplay::create(WGOVR(m_pContext->theme().listEntryLabel, _.display.text = pLabel));
-		pTable->slots[row][1] = NumberDisplay::create(WGOVR(m_pContext->theme().listEntryPts, _.display.value = value));
-	}
-
-	//___ _setSpxEntry() _________________________________________________
-
-	void InfoSection::_setSpxEntry(TablePanel* pTable, int row, const char* pLabel, spx value)
-	{
-		if (row < 0 || row >= pTable->rows.size())
-			return;
-
-		if (pTable->columns.size() < 2)
-			return;
-
-		pTable->slots[row][0] = TextDisplay::create(WGOVR(m_pContext->theme().listEntryLabel, _.display.text = pLabel));
-		pTable->slots[row][1] = NumberDisplay::create(WGOVR(m_pContext->theme().listEntrySPX, _.display.value = value));
-	}
-
-	//___ _setBoolEntry() _________________________________________________
-
-	void InfoSection::_setBoolEntry(TablePanel* pTable, int row, const char* pLabel, bool value)
-	{
-		if (row < 0 || row >= pTable->rows.size())
-			return;
-
-		if (pTable->columns.size() < 2)
-			return;
-
-		pTable->slots[row][0] = TextDisplay::create(WGOVR(m_pContext->theme().listEntryLabel, _.display.text = pLabel));
-		pTable->slots[row][1] = TextDisplay::create(WGOVR(m_pContext->theme().listEntryText, _.display.text = value ? "true" : "false"));
-	}
-
-	//___ _setPointerEntry() _________________________________________________
-
-	void InfoSection::_setPointerEntry(TablePanel* pTable, int row, const char* pLabel, void* pPointer)
-	{
-		if (row < 0 || row >= pTable->rows.size())
-			return;
-
-		if (pTable->columns.size() < 2)
-			return;
-
-		char temp[32] = "null";
-		if( pPointer )
-			std::snprintf(temp, sizeof(temp), " 0x%" PRIxPTR, reinterpret_cast<std::uintptr_t>(pPointer));
-
-		pTable->slots[row][0] = TextDisplay::create(WGOVR(m_pContext->theme().listEntryLabel, _.display.text = pLabel));
-		pTable->slots[row][1] = TextDisplay::create(WGOVR(m_pContext->theme().listEntryText, _.display.text = temp));
-	}
-
-	//___ _setObjectPointerEntry() _________________________________________________
-
-	void InfoSection::_setObjectPointerEntry(TablePanel* pTable, int row, const char* pLabel, Object* pPointer, Object * pSource)
-	{
-		if( row < 0 || row >= pTable->rows.size())
-			return;
-
-		if (pTable->columns.size() < 2)
-			return;
-
-
-		CharBuffer	buff(128);
-
-		if (pPointer)
-		{
-			buff.pushBack(pPointer->typeInfo().className);
-			buff.setStyle(dbgkit::TextStyles::FinePrint, 0, 1000);
-
-			int ofs = buff.nbChars();
-
-			char temp[32];
-			if(pPointer)
-				std::snprintf(temp, sizeof(temp), " 0x%" PRIxPTR, reinterpret_cast<std::uintptr_t>(pPointer));
-			buff.pushBack(temp);
-
-			TextLink_p 	pLink = TextLink::create();
-			IDebugContext*		pContext = m_pContext;
-
-			Base::msgRouter()->addRoute(pLink, MsgType::MouseClick, [pPointer, pContext](Msg* pMsg) {
-				pContext->objectSelected(pPointer, nullptr);
-			});
-
-			TextStyle_p pStyle = WGCREATE(TextStyle, _.link = pLink, _.color = Color::DarkRed, _.decoration = TextDecoration::Underline);
-
-			buff.setStyle(pStyle, ofs, 1000);
-		}
-		else
-			buff.pushBack("null");
-
-		pTable->slots[row][0] = TextDisplay::create(WGOVR(m_pContext->theme().listEntryLabel, _.display.text = pLabel ));
-		pTable->slots[row][1] = TextDisplay::create(WGOVR(m_pContext->theme().listEntryText, _.display.text = &buff, _.markPolicy = MarkPolicy::Geometry));
-	}
-
-
-
-
-	//___ _initTextEntry() _________________________________________________
+	//____ _init*Entry() ________________________________________________________
 
 	void InfoSection::_initTextEntry(TablePanel* pTable, int row, const char* pLabel)
 	{
-		if (row < 0 || row >= pTable->rows.size())
-			return;
-
-		if (pTable->columns.size() < 2)
-			return;
-
-		pTable->slots[row][0] = TextDisplay::create(WGOVR(m_pContext->theme().listEntryLabel, _.display.text = pLabel));
-		pTable->slots[row][1] = TextDisplay::create(m_pContext->theme().listEntryText);
+		_initEntry(pTable, row, pLabel, TextDisplay::create(m_pContext->theme().listEntryText));
 	}
-
-	//___ _initIntegerEntry() _________________________________________________
 
 	void InfoSection::_initIntegerEntry(TablePanel* pTable, int row, const char* pLabel)
 	{
-		if (row < 0 || row >= pTable->rows.size())
-			return;
-
-		if (pTable->columns.size() < 2)
-			return;
-
-		pTable->slots[row][0] = TextDisplay::create(WGOVR(m_pContext->theme().listEntryLabel, _.display.text = pLabel));
-		pTable->slots[row][1] = NumberDisplay::create(m_pContext->theme().listEntryInteger);
+		_initEntry(pTable, row, pLabel, NumberDisplay::create(m_pContext->theme().listEntryInteger));
 	}
-
-	//___ _initDecimalEntry() _________________________________________________
 
 	void InfoSection::_initDecimalEntry(TablePanel* pTable, int row, const char* pLabel)
 	{
-		if (row < 0 || row >= pTable->rows.size())
-			return;
-
-		if (pTable->columns.size() < 2)
-			return;
-
-		pTable->slots[row][0] = TextDisplay::create(WGOVR(m_pContext->theme().listEntryLabel, _.display.text = pLabel));
-		pTable->slots[row][1] = NumberDisplay::create(m_pContext->theme().listEntryDecimal);
+		_initEntry(pTable, row, pLabel, NumberDisplay::create(m_pContext->theme().listEntryDecimal));
 	}
-
-	//___ _initPtsEntry() _________________________________________________
 
 	void InfoSection::_initPtsEntry(TablePanel* pTable, int row, const char* pLabel)
 	{
-		if (row < 0 || row >= pTable->rows.size())
-			return;
-
-		if (pTable->columns.size() < 2)
-			return;
-
-		pTable->slots[row][0] = TextDisplay::create(WGOVR(m_pContext->theme().listEntryLabel, _.display.text = pLabel));
-		pTable->slots[row][1] = NumberDisplay::create(m_pContext->theme().listEntryPts);
+		_initEntry(pTable, row, pLabel, NumberDisplay::create(m_pContext->theme().listEntryPts));
 	}
-
-	//___ _initSpxEntry() _________________________________________________
 
 	void InfoSection::_initSpxEntry(TablePanel* pTable, int row, const char* pLabel)
 	{
-		if (row < 0 || row >= pTable->rows.size())
-			return;
-
-		if (pTable->columns.size() < 2)
-			return;
-
-		pTable->slots[row][0] = TextDisplay::create(WGOVR(m_pContext->theme().listEntryLabel, _.display.text = pLabel));
-		pTable->slots[row][1] = NumberDisplay::create(m_pContext->theme().listEntrySPX);
+		_initEntry(pTable, row, pLabel, NumberDisplay::create(m_pContext->theme().listEntrySPX));
 	}
-
-	//___ _initBoolEntry() _________________________________________________
 
 	void InfoSection::_initBoolEntry(TablePanel* pTable, int row, const char* pLabel)
 	{
-		if (row < 0 || row >= pTable->rows.size())
-			return;
-
-		if (pTable->columns.size() < 2)
-			return;
-
-		pTable->slots[row][0] = TextDisplay::create(WGOVR(m_pContext->theme().listEntryLabel, _.display.text = pLabel));
-		pTable->slots[row][1] = TextDisplay::create(WGOVR(m_pContext->theme().listEntryText, _.display.text = "false" ));
+		_initEntry(pTable, row, pLabel, TextDisplay::create(WGOVR(m_pContext->theme().listEntryText, _.display.text = "false")));
 	}
-
-	//___ _initPointerEntry() _________________________________________________
 
 	void InfoSection::_initPointerEntry(TablePanel* pTable, int row, const char* pLabel)
 	{
-		if (row < 0 || row >= pTable->rows.size())
-			return;
-
-		if (pTable->columns.size() < 2)
-			return;
-
-		pTable->slots[row][0] = TextDisplay::create(WGOVR(m_pContext->theme().listEntryLabel, _.display.text = pLabel));
-		pTable->slots[row][1] = TextDisplay::create(WGOVR(m_pContext->theme().listEntryText, _.display.text = "null" ));
+		_initEntry(pTable, row, pLabel, TextDisplay::create(WGOVR(m_pContext->theme().listEntryText, _.display.text = "null")));
 	}
-
-	//___ _initObjectPointerEntry() _________________________________________________
 
 	void InfoSection::_initObjectPointerEntry(TablePanel* pTable, int row, const char* pLabel)
 	{
-		if( row < 0 || row >= pTable->rows.size())
-			return;
-
-		if (pTable->columns.size() < 2)
-			return;
-
-		pTable->slots[row][0] = TextDisplay::create(WGOVR(m_pContext->theme().listEntryLabel, _.display.text = pLabel ));
-		pTable->slots[row][1] = TextDisplay::create(WGOVR(m_pContext->theme().listEntryText, _.display.text = "null", _.markPolicy = MarkPolicy::Geometry));
+		_initEntry(pTable, row, pLabel, TextDisplay::create(WGOVR(m_pContext->theme().listEntryText, _.display.text = "null", _.markPolicy = MarkPolicy::Geometry)));
 	}
 
 	//____ _refreshTextEntry() ___________________________________________________
@@ -624,14 +376,17 @@ namespace wg
 
 	//____ _refreshObjectPointerEntry() __________________________________________
 
-	void InfoSection::_refreshObjectPointerEntry(TablePanel* pTable, int row, Object * pPointer, Object_p& pSavedPointer)
+	void InfoSection::_refreshObjectPointerEntry(TablePanel* pTable, int row, Object * pPointer, Object_p& pSavedPointer, RouteId& linkRoute)
 	{
 		if( pPointer == pSavedPointer )
 			return;
 
-		if( pSavedPointer )
+		// Remove the route for the link we are replacing.
+
+		if( linkRoute != 0 )
 		{
-			//TODO: We need to remove the route somehow.
+			Base::msgRouter()->deleteRoute(linkRoute);
+			linkRoute = 0;
 		}
 
 		pSavedPointer = pPointer;
@@ -646,14 +401,13 @@ namespace wg
 			int ofs = buff.nbChars();
 
 			char temp[32];
-			if(pPointer)
-				std::snprintf(temp, sizeof(temp), " 0x%" PRIxPTR, reinterpret_cast<std::uintptr_t>(pPointer));
+			std::snprintf(temp, sizeof(temp), " 0x%" PRIxPTR, reinterpret_cast<std::uintptr_t>(pPointer));
 			buff.pushBack(temp);
 
 			TextLink_p 	pLink = TextLink::create();
 			IDebugContext*	pContext = m_pContext;
 
-			Base::msgRouter()->addRoute(pLink, MsgType::MouseClick, [pPointer, pContext](Msg* pMsg) {
+			linkRoute = Base::msgRouter()->addRoute(pLink, MsgType::MouseClick, [pPointer, pContext](Msg* pMsg) {
 				pContext->objectSelected(pPointer, nullptr);
 			});
 
@@ -687,7 +441,10 @@ namespace wg
 		{
 			auto pInfoSection = dynamic_cast<InfoSection*>(slot._widget());
 			if (pInfoSection)
-				pInfoSection->refresh(pSlot);
+			{
+				pInfoSection->setInspectedSlot(pSlot);
+				pInfoSection->refresh();
+			}
 		}
 	}
 

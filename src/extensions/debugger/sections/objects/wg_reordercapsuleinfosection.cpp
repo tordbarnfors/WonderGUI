@@ -20,10 +20,6 @@
 
 =========================================================================*/
 #include "wg_reordercapsuleinfosection.h"
-#include <wg_textdisplay.h>
-#include <wg_numberdisplay.h>
-#include <wg_basicnumberlayout.h>
-#include <wg_packpanel.h>
 
 
 namespace wg
@@ -34,19 +30,15 @@ namespace wg
 
 	//____ constructor _____________________________________________________________
 
-	ReorderCapsuleInfoSection::ReorderCapsuleInfoSection(const DebugTheme& theme, IDebugContext* pContext, ReorderCapsule * pCapsule) : InfoSection( theme, pContext, ReorderCapsule::TYPEINFO.className )
+	ReorderCapsuleInfoSection::ReorderCapsuleInfoSection(const DebugTheme& theme, IDebugContext* pContext, ReorderCapsule * pInspected)
+		: TypedInfoSection<ReorderCapsule>( theme, pContext, ReorderCapsule::TYPEINFO.className, pInspected )
 	{
-		m_pInspected = pCapsule;
-		m_pTable = _createTable(4,2);
-
-		_initBoolEntry(m_pTable, 0, "Drag outside: ");
-		_initObjectPointerEntry(m_pTable, 1, "Transition: ");
-		_initIntegerEntry(m_pTable, 2, "Transition delay (microsec): ");
-		_initObjectPointerEntry(m_pTable, 3, "Transition skin: ");
-
-		refresh();
-
-		this->slot = m_pTable;
+		this->slot = _createRows({
+			boolRow  ( "Drag outside: ",                 [](ReorderCapsule* c) { return c->dragOutside(); } ),
+			objectRow( "Transition: ",                   [](ReorderCapsule* c) -> Object* { return c->transition(); } ),
+			intRow   ( "Transition delay (microsec): ",  [](ReorderCapsule* c) { return c->transitionDelay(); } ),
+			objectRow( "Transition skin: ",              [](ReorderCapsule* c) -> Object* { return c->transitionSkin(); } )
+		});
 	}
 
 	//____ typeInfo() _________________________________________________________
@@ -56,16 +48,4 @@ namespace wg
 		return TYPEINFO;
 	}
 
-	//____ refresh() _____________________________________________________________
-
-	void ReorderCapsuleInfoSection::refresh()
-	{
-		_refreshBoolEntry(m_pTable, 0, m_pInspected->dragOutside());
-		_refreshObjectPointerEntry(m_pTable, 1, m_pInspected->transition(), m_displayedTransitionPtr);
-		_refreshIntegerEntry(m_pTable, 2, m_pInspected->transitionDelay());
-		_refreshObjectPointerEntry(m_pTable, 3, m_pInspected->transitionSkin(), m_displayedTransitionSkinPtr);
-	}
-
 } // namespace wg
-
-

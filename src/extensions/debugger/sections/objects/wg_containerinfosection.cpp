@@ -20,9 +20,6 @@
 
 =========================================================================*/
 #include "wg_containerinfosection.h"
-#include <wg_textdisplay.h>
-#include <wg_numberdisplay.h>
-#include <wg_basicnumberlayout.h>
 
 
 namespace wg
@@ -33,14 +30,12 @@ namespace wg
 
 	//____ constructor _____________________________________________________________
 
-	ContainerInfoSection::ContainerInfoSection(const DebugTheme& theme, IDebugContext* pContext, Container * pContainer) : InfoSection( theme, pContext, Container::TYPEINFO.className )
+	ContainerInfoSection::ContainerInfoSection(const DebugTheme& theme, IDebugContext* pContext, Container * pInspected)
+		: TypedInfoSection<Container>( theme, pContext, Container::TYPEINFO.className, pInspected )
 	{
-		m_pInspected = pContainer;
-
-		m_pTable = _createTable(1,2);
-
-		_setBoolEntry(m_pTable, 0, "Use pick handles: ", pContainer->usePickHandles());
-		this->slot = m_pTable;
+		this->slot = _createRows({
+			boolRow( "Use pick handles: ", [](Container* c) { return c->usePickHandles(); } )
+		});
 	}
 
 	//____ typeInfo() _________________________________________________________
@@ -50,13 +45,4 @@ namespace wg
 		return TYPEINFO;
 	}
 
-	//____ refresh() _____________________________________________________________
-
-	void ContainerInfoSection::refresh()
-	{
-		_refreshBoolEntry(m_pTable, 0, m_pInspected->usePickHandles());
-	}
-
 } // namespace wg
-
-

@@ -23,8 +23,7 @@
 #define WG_CAPSULEINFOSECTION_DOT_H
 #pragma once
 
-#include <wg_tablepanel.h>
-#include <wg_infosection.h>
+#include <wg_typedinfosection.h>
 #include <wg_capsule.h>
 
 namespace wg
@@ -35,13 +34,13 @@ namespace wg
 
 
 
-	class CapsuleInfoSection : public InfoSection
+	class CapsuleInfoSection : public TypedInfoSection<Capsule>
 	{
 	public:
 
 		//.____ Creation __________________________________________
 
-		static CapsuleInfoSection_p		create( const DebugTheme& theme, IDebugContext* pContext, Capsule * pPanel) { return CapsuleInfoSection_p(new CapsuleInfoSection(theme, pContext, pPanel) ); }
+		static CapsuleInfoSection_p		create( const DebugTheme& theme, IDebugContext* pContext, Capsule * pInspected) { return CapsuleInfoSection_p(new CapsuleInfoSection(theme, pContext, pInspected) ); }
 
 		//.____ Identification __________________________________________
 
@@ -52,15 +51,13 @@ namespace wg
 
 		void refresh() override;
 
+
 	protected:
-		CapsuleInfoSection(const DebugTheme& theme, IDebugContext* pContext, Capsule * pPanel );
+		CapsuleInfoSection(const DebugTheme& theme, IDebugContext* pContext, Capsule * pInspected );
 		~CapsuleInfoSection() {}
 
-		Capsule *		m_pInspected;
 		DrawerPanel_p	m_pSlotDrawer;
-
 	};
 
 } // namespace wg
 #endif //WG_CAPSULEINFOSECTION_DOT_H
-

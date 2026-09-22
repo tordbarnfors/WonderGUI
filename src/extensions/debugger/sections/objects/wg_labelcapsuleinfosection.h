@@ -23,8 +23,7 @@
 #define WG_LABELCAPSULEINFOSECTION_DOT_H
 #pragma once
 
-#include <wg_tablepanel.h>
-#include <wg_infosection.h>
+#include <wg_typedinfosection.h>
 #include <wg_labelcapsule.h>
 
 namespace wg
@@ -35,13 +34,13 @@ namespace wg
 
 
 
-	class LabelCapsuleInfoSection : public InfoSection
+	class LabelCapsuleInfoSection : public TypedInfoSection<LabelCapsule>
 	{
 	public:
 
 		//.____ Creation __________________________________________
 
-		static LabelCapsuleInfoSection_p		create( const DebugTheme& theme, IDebugContext* pContext, LabelCapsule * pPanel) { return LabelCapsuleInfoSection_p(new LabelCapsuleInfoSection(theme, pContext, pPanel) ); }
+		static LabelCapsuleInfoSection_p		create( const DebugTheme& theme, IDebugContext* pContext, LabelCapsule * pInspected) { return LabelCapsuleInfoSection_p(new LabelCapsuleInfoSection(theme, pContext, pInspected) ); }
 
 		//.____ Identification __________________________________________
 
@@ -52,17 +51,13 @@ namespace wg
 
 		void refresh() override;
 
+
 	protected:
-		LabelCapsuleInfoSection(const DebugTheme& theme, IDebugContext* pContext, LabelCapsule * pPanel );
+		LabelCapsuleInfoSection(const DebugTheme& theme, IDebugContext* pContext, LabelCapsule * pInspected );
 		~LabelCapsuleInfoSection() {}
 
-		LabelCapsule *	m_pInspected;
-		TablePanel_p	m_pTable;
 		DrawerPanel_p	m_pLabelDrawer;
-
-		Object_p			m_pDisplayedLabelSkin;
 	};
 
 } // namespace wg
 #endif //WG_LABELCAPSULEINFOSECTION_DOT_H
-

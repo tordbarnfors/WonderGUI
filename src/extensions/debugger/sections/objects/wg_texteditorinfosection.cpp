@@ -21,8 +21,6 @@
 =========================================================================*/
 #include "wg_texteditorinfosection.h"
 #include <wg_texteditor.h>
-#include <wg_numberdisplay.h>
-#include <wg_basicnumberlayout.h>
 
 
 namespace wg
@@ -33,23 +31,20 @@ namespace wg
 
 	//____ constructor _____________________________________________________________
 
-	TextEditorInfoSection::TextEditorInfoSection(const DebugTheme& theme, IDebugContext* pContext, TextEditor * pTextEditor) : InfoSection( theme, pContext, TextEditor::TYPEINFO.className )
+	TextEditorInfoSection::TextEditorInfoSection(const DebugTheme& theme, IDebugContext* pContext, TextEditor * pInspected)
+		: TypedInfoSection<TextEditor>( theme, pContext, TextEditor::TYPEINFO.className, pInspected )
 	{
-		m_pInspected = pTextEditor;
-
 		auto pPanel = WGCREATE(PackPanel, _.axis = Axis::Y);
 
-		m_pTable = _createTable(2, 2);
-		_initTextEntry(m_pTable, 0, "Return action: ");
-		_initTextEntry(m_pTable, 1, "Tab action: ");
+		auto pTable = _createRows({
+			textRow( "Return action: ", [](TextEditor* e) { return toString(e->returnKeyAction()); } ),
+			textRow( "Tab action: ",    [](TextEditor* e) { return toString(e->tabKeyAction()); } )
+		});
 
+		m_pEditorDrawer = _createComponentDrawer("Editor", &pInspected->editor);
 
-		m_pEditorDrawer = _createComponentDrawer("Editor", &pTextEditor->editor);
-
-		pPanel->slots.pushBack({ m_pTable, m_pEditorDrawer });
+		pPanel->slots.pushBack({ pTable, m_pEditorDrawer });
 		this->slot = pPanel;
-
-		refresh();
 	}
 
 	//____ typeInfo() _________________________________________________________
@@ -63,13 +58,9 @@ namespace wg
 
 	void TextEditorInfoSection::refresh()
 	{
-		_refreshTextEntry(m_pTable, 0, toString(m_pInspected->returnKeyAction()));
-		_refreshTextEntry(m_pTable, 1, toString(m_pInspected->tabKeyAction()));
+		TypedInfoSection<TextEditor>::refresh();
 
-		_refreshComponentDrawer( m_pEditorDrawer );
+		_refreshComponentDrawer(m_pEditorDrawer);
 	}
 
-
 } // namespace wg
-
-

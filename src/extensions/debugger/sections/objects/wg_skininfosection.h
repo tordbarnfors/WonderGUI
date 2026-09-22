@@ -24,7 +24,7 @@
 #pragma once
 
 #include <wg_tablepanel.h>
-#include <wg_infosection.h>
+#include <wg_typedinfosection.h>
 
 namespace wg
 {
@@ -34,7 +34,7 @@ namespace wg
 
 
 
-	class SkinInfoSection : public InfoSection
+	class SkinInfoSection : public TypedInfoSection<Skin>
 	{
 	public:
 
@@ -47,12 +47,22 @@ namespace wg
 		const TypeInfo&			typeInfo(void) const override;
 		const static TypeInfo	TYPEINFO;
 
+		//.____ Control ____________________________________________________
+
+		void refresh() override;
 
 	protected:
 		SkinInfoSection(const DebugTheme& theme, IDebugContext* pContext, Skin * pSkin );
 		~SkinInfoSection() {}
+
+		DrawerPanel_p	m_pMarginDrawer;
+		DrawerPanel_p	m_pPaddingDrawer;
+		DrawerPanel_p	m_pOverflowDrawer;
+
+		Border			m_displayedMargin;
+		Border			m_displayedPadding;
+		Border			m_displayedOverflow;
 	};
 
 } // namespace wg
 #endif //WG_SKININFOSECTION_DOT_H
-

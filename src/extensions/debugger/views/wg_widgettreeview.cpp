@@ -22,14 +22,10 @@
 #include "wg_widgettreeview.h"
 #include <wg_textdisplay.h>
 #include <wg_packpanel.h>
-#include <wg_paddingcapsule.h>
 #include <wg_drawerpanel.h>
 #include <wg_selectcapsule.h>
 #include <wg_filler.h>
 #include <wg_debugcapsule.h>
-
-#include <wg_boxskin.h>
-#include <wg_colorskin.h>
 
 #include <wg_msgrouter.h>
 

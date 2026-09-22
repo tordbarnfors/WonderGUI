@@ -20,10 +20,6 @@
 
 =========================================================================*/
 #include "wg_selectcapsuleinfosection.h"
-#include <wg_textdisplay.h>
-#include <wg_numberdisplay.h>
-#include <wg_basicnumberlayout.h>
-#include <wg_packpanel.h>
 
 
 namespace wg
@@ -34,17 +30,13 @@ namespace wg
 
 	//____ constructor _____________________________________________________________
 
-	SelectCapsuleInfoSection::SelectCapsuleInfoSection(const DebugTheme& theme, IDebugContext* pContext, SelectCapsule * pCapsule) : InfoSection( theme, pContext, SelectCapsule::TYPEINFO.className )
+	SelectCapsuleInfoSection::SelectCapsuleInfoSection(const DebugTheme& theme, IDebugContext* pContext, SelectCapsule * pInspected)
+		: TypedInfoSection<SelectCapsule>( theme, pContext, SelectCapsule::TYPEINFO.className, pInspected )
 	{
-		m_pInspected = pCapsule;
-		m_pTable = _createTable(2,2);
-
-		_initTextEntry(m_pTable, 0, "Select mode: ");
-		_initBoolEntry(m_pTable, 1, "Recursive: ");
-
-		refresh();
-
-		this->slot = m_pTable;
+		this->slot = _createRows({
+			textRow( "Select mode: ", [](SelectCapsule* c) { return toString(c->selectMode()); } ),
+			boolRow( "Recursive: ",   [](SelectCapsule* c) { return c->isRecursive(); } )
+		});
 	}
 
 	//____ typeInfo() _________________________________________________________
@@ -54,14 +46,4 @@ namespace wg
 		return TYPEINFO;
 	}
 
-	//____ refresh() _____________________________________________________________
-
-	void SelectCapsuleInfoSection::refresh()
-	{
-		_refreshTextEntry(m_pTable, 0, toString(m_pInspected->selectMode()));
-		_refreshBoolEntry(m_pTable, 1, m_pInspected->isRecursive());
-	}
-
 } // namespace wg
-
-

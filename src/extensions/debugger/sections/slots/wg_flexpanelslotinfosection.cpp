@@ -26,29 +26,35 @@
 namespace wg
 {
 
+	//____ flexPosToString() __________________________________________________
+
+	static String flexPosToString(const FlexPos& pos)
+	{
+		char temp[256];
+		snprintf(temp, sizeof(temp), "Relative (%f,%f) + (%f,%f) pts", pos.origo.x, pos.origo.y, pos.offset.x, pos.offset.y);
+		return String(temp);
+	}
+
+
 	const TypeInfo FlexPanelSlotInfoSection::TYPEINFO = { "FlexPanelSlotInfoSection", &InfoSection::TYPEINFO };
 
 
 	//____ constructor _____________________________________________________________
 
-	FlexPanelSlotInfoSection::FlexPanelSlotInfoSection(const DebugTheme& theme, IDebugContext* pContext, StaticSlot * pStaticSlot) : InfoSection( theme, pContext, FlexPanelSlot::TYPEINFO.className )
+	FlexPanelSlotInfoSection::FlexPanelSlotInfoSection(const DebugTheme& theme, IDebugContext* pContext, FlexPanelSlot * pInspected)
+		: TypedInfoSection<FlexPanelSlot>( theme, pContext, FlexPanelSlot::TYPEINFO.className, pInspected )
 	{
-		m_pTable = _createTable( 7, 2 );
+		this->slot = _createRows({
+			textRow( "Mode: ",             [](FlexPanelSlot* s) { return s->isPinned() ? "Pinned" : "Movable"; } ),
+			textRow( "Origo: ",            [](FlexPanelSlot* s) { return flexPosToString(s->origo()); } ),
+			textRow( "Hotspot: ",          [](FlexPanelSlot* s) { return flexPosToString(s->hotspot()); } ),
+			ptsRow ( "Offset X (pts): ",   [](FlexPanelSlot* s) { return s->offset().x; } ),
+			ptsRow ( "Offset Y (pts): ",   [](FlexPanelSlot* s) { return s->offset().y; } ),
+			textRow( "TopLeft pin: ",      [](FlexPanelSlot* s) { return flexPosToString(s->topLeftPin()); } ),
+			textRow( "BottomRight pin: ",  [](FlexPanelSlot* s) { return flexPosToString(s->bottomRightPin()); } )
+		});
 
-		int row = 0;
-
-		_initTextEntry(m_pTable, row++, "Mode: ");
-		_initTextEntry(m_pTable, row++, "Origo: ");
-		_initTextEntry(m_pTable, row++, "Hotspot: ");
-
-		_initPtsEntry(m_pTable, row++, "Offset X (pts): ");
-		_initPtsEntry(m_pTable, row++, "Offset Y (pts): ");
-		_initTextEntry(m_pTable, row++, "TopLeft pin: ");
-		_initTextEntry(m_pTable, row++, "BottomRight pin: ");
-
-		refresh(pStaticSlot);
-
-		this->slot = m_pTable;
+		_updateRowVisibility();
 	}
 
 	//____ typeInfo() _________________________________________________________
@@ -58,53 +64,30 @@ namespace wg
 		return TYPEINFO;
 	}
 
-	//____ flexPosToString() __________________________________________________
-
-	void FlexPanelSlotInfoSection::flexPosToString(FlexPos pos, char * pString, int maxLength )
-	{
-		snprintf(pString, maxLength, "Relative (%f,%f) + (%f,%f) pts", pos.origo.x, pos.origo.y, pos.offset.x, pos.offset.y);
-	}
-
 	//____ refresh() _____________________________________________________________
 
-	void FlexPanelSlotInfoSection::refresh(StaticSlot * pStaticSlot)
+	void FlexPanelSlotInfoSection::refresh()
 	{
-		auto pInspected = static_cast<FlexPanelSlot*>(pStaticSlot);
+		TypedInfoSection<FlexPanelSlot>::refresh();
 
-		bool bPinned = pInspected->isPinned();
+		_updateRowVisibility();
+	}
 
-		char temp[256];
-		int row = 0;
+	//____ _updateRowVisibility() _____________________________________________
+	//
+	// Movable slots are placed by origo, hotspot and offset, pinned ones by
+	// their two pins. Only show the rows that apply.
 
-		_refreshTextEntry(m_pTable, row++, bPinned ? "Pinned" : "Movable");
+	void FlexPanelSlotInfoSection::_updateRowVisibility()
+	{
+		bool bPinned = inspected()->isPinned();
 
-		flexPosToString(pInspected->origo(), temp, 256);
-		_refreshTextEntry(m_pTable, row++, temp);
-
-		flexPosToString(pInspected->hotspot(), temp, 256);
-		_refreshTextEntry(m_pTable, row++, temp);
-
-		Coord ofs = pInspected->offset();
-
-		_refreshPtsEntry(m_pTable, row++, ofs.x);
-		_refreshPtsEntry(m_pTable, row++, ofs.y);
-
-		flexPosToString(pInspected->topLeftPin(), temp, 256);
-		_refreshTextEntry(m_pTable, row++, temp);
-
-		flexPosToString(pInspected->bottomRightPin(), temp, 256);
-		_refreshTextEntry(m_pTable, row++, temp);
-
-		m_pTable->rows[1].setVisible(bPinned);
-		m_pTable->rows[2].setVisible(bPinned);
-		m_pTable->rows[3].setVisible(!bPinned);
-		m_pTable->rows[4].setVisible(!bPinned);
-		m_pTable->rows[5].setVisible(!bPinned);
-		m_pTable->rows[6].setVisible(!bPinned);
-
+		m_pRowTable->rows[1].setVisible(!bPinned);
+		m_pRowTable->rows[2].setVisible(!bPinned);
+		m_pRowTable->rows[3].setVisible(!bPinned);
+		m_pRowTable->rows[4].setVisible(!bPinned);
+		m_pRowTable->rows[5].setVisible(bPinned);
+		m_pRowTable->rows[6].setVisible(bPinned);
 	}
 
 } // namespace wg
-
-
-

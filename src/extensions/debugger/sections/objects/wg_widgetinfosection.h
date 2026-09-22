@@ -24,7 +24,7 @@
 #pragma once
 
 #include <wg_tablepanel.h>
-#include <wg_infosection.h>
+#include <wg_typedinfosection.h>
 
 namespace wg
 {
@@ -34,7 +34,7 @@ namespace wg
 
 
 
-	class WidgetInfoSection : public InfoSection
+	class WidgetInfoSection : public TypedInfoSection<Widget>
 	{
 	public:
 
@@ -56,23 +56,12 @@ namespace wg
 		WidgetInfoSection(const DebugTheme& theme, IDebugContext* pContext, Widget * pWidget );
 		~WidgetInfoSection() {}
 
-		// Things we need so we can do refresh.
+		void			_refreshOverflow();
 
-		TablePanel_p	m_pTable;
+		TextDisplay_p	m_pOverflowHeaderValue;
 		TablePanel_p	m_pOverflowTable;
-		PackPanel *		m_pSlotInfoSectionsContainer;
-
-		Widget *		m_pInspected;
-
-		Object_p		m_pInspectedsBaggage;
-		Object_p		m_pInspectedsParent;
-		Object_p		m_pInspectedsSkin;
-
-		//
-
+		PackPanel *		m_pSlotInfoSectionsContainer = nullptr;
 	};
 
 } // namespace wg
-#endif //WG_WIDGETTINFOSECTION_DOT_H
-
-
+#endif //WG_WIDGETINFOSECTION_DOT_H

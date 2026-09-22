@@ -20,9 +20,6 @@
 
 =========================================================================*/
 #include "wg_twoslotpanelinfosection.h"
-#include <wg_textdisplay.h>
-#include <wg_numberdisplay.h>
-#include <wg_basicnumberlayout.h>
 #include <wg_twoslotpanel.h>
 #include <wg_packpanel.h>
 
@@ -30,27 +27,24 @@
 namespace wg
 {
 
-	const TypeInfo TwoSlotPanelInfoSection::TYPEINFO = { "TwoSlotPanelPanelInfoSection", &InfoSection::TYPEINFO };
+	const TypeInfo TwoSlotPanelInfoSection::TYPEINFO = { "TwoSlotPanelInfoSection", &InfoSection::TYPEINFO };
 
 
 	//____ constructor _____________________________________________________________
 
-	TwoSlotPanelInfoSection::TwoSlotPanelInfoSection(const DebugTheme& theme, IDebugContext* pContext, TwoSlotPanel * pPanel) : InfoSection( theme, pContext, TwoSlotPanel::TYPEINFO.className )
+	TwoSlotPanelInfoSection::TwoSlotPanelInfoSection(const DebugTheme& theme, IDebugContext* pContext, TwoSlotPanel * pInspected)
+		: TypedInfoSection<TwoSlotPanel>( theme, pContext, TwoSlotPanel::TYPEINFO.className, pInspected )
 	{
-		m_pInspected = pPanel;
-
 		auto pBasePanel = WGCREATE(PackPanel, _.axis = Axis::Y);
 
-		m_pTable = _createTable(2,2);
+		auto pTable = _createRows({
+			textRow  ( "Axis: ",   [](TwoSlotPanel* p) { return toString(p->axis()); } ),
+			objectRow( "Layout: ", [](TwoSlotPanel* p) -> Object* { return p->layout(); } )
+		});
 
-		_initTextEntry(m_pTable, 0, "Axis: ");
-		_initObjectPointerEntry(m_pTable, 1, "Layout: ");
+		m_pSlotsDrawer = _createSlotsDrawer("Slots", pInspected->slots.begin(), pInspected->slots.end());
 
-		m_pSlotsDrawer = _createSlotsDrawer("Slots", pPanel->slots.begin(), pPanel->slots.end());
-
-		refresh();
-
-		pBasePanel->slots.pushBack({m_pTable, m_pSlotsDrawer});
+		pBasePanel->slots.pushBack({ pTable, m_pSlotsDrawer });
 		this->slot = pBasePanel;
 	}
 
@@ -65,13 +59,9 @@ namespace wg
 
 	void TwoSlotPanelInfoSection::refresh()
 	{
-		_refreshTextEntry(m_pTable, 0, toString(m_pInspected->axis()));
-		_refreshObjectPointerEntry(m_pTable, 1, m_pInspected->layout(),m_displayedLayoutPointer);
+		TypedInfoSection<TwoSlotPanel>::refresh();
 
-		_refreshSlotsDrawer(m_pSlotsDrawer, m_pInspected->slots.begin(), m_pInspected->slots.end());
+		_refreshSlotsDrawer(m_pSlotsDrawer, inspected()->slots.begin(), inspected()->slots.end());
 	}
 
-
 } // namespace wg
-
-

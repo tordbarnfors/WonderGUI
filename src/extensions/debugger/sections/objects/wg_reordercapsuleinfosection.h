@@ -24,7 +24,7 @@
 #pragma once
 
 #include <wg_tablepanel.h>
-#include <wg_infosection.h>
+#include <wg_typedinfosection.h>
 #include <wg_reordercapsule.h>
 
 namespace wg
@@ -35,34 +35,24 @@ namespace wg
 
 
 
-	class ReorderCapsuleInfoSection : public InfoSection
+	class ReorderCapsuleInfoSection : public TypedInfoSection<ReorderCapsule>
 	{
 	public:
 
 		//.____ Creation __________________________________________
 
-		static ReorderCapsuleInfoSection_p		create( const DebugTheme& theme, IDebugContext* pContext, ReorderCapsule * pPanel) { return ReorderCapsuleInfoSection_p(new ReorderCapsuleInfoSection(theme, pContext, pPanel) ); }
+		static ReorderCapsuleInfoSection_p		create( const DebugTheme& theme, IDebugContext* pContext, ReorderCapsule * pInspected) { return ReorderCapsuleInfoSection_p(new ReorderCapsuleInfoSection(theme, pContext, pInspected) ); }
 
 		//.____ Identification __________________________________________
 
 		const TypeInfo&			typeInfo(void) const override;
 		const static TypeInfo	TYPEINFO;
 
-		//.____ Control ____________________________________________________
-
-		void refresh() override;
 
 	protected:
-		ReorderCapsuleInfoSection(const DebugTheme& theme, IDebugContext* pContext, ReorderCapsule * pPanel );
+		ReorderCapsuleInfoSection(const DebugTheme& theme, IDebugContext* pContext, ReorderCapsule * pInspected );
 		~ReorderCapsuleInfoSection() {}
-
-		ReorderCapsule *	m_pInspected;
-		TablePanel_p		m_pTable;
-
-		Object_p			m_displayedTransitionPtr;
-		Object_p			m_displayedTransitionSkinPtr;
 	};
 
 } // namespace wg
 #endif //WG_REORDERCAPSULEINFOSECTION_DOT_H
-

@@ -23,8 +23,7 @@
 #define WG_FILLERINFOSECTION_DOT_H
 #pragma once
 
-#include <wg_tablepanel.h>
-#include <wg_infosection.h>
+#include <wg_typedinfosection.h>
 #include <wg_filler.h>
 
 namespace wg
@@ -35,33 +34,24 @@ namespace wg
 
 
 
-	class FillerInfoSection : public InfoSection
+	class FillerInfoSection : public TypedInfoSection<Filler>
 	{
 	public:
 
 		//.____ Creation __________________________________________
 
-		static FillerInfoSection_p		create( const DebugTheme& theme, IDebugContext* pContext, Filler * pFiller) { return FillerInfoSection_p(new FillerInfoSection(theme, pContext, pFiller) ); }
+		static FillerInfoSection_p		create( const DebugTheme& theme, IDebugContext* pContext, Filler * pInspected) { return FillerInfoSection_p(new FillerInfoSection(theme, pContext, pInspected) ); }
 
 		//.____ Identification __________________________________________
 
 		const TypeInfo&			typeInfo(void) const override;
 		const static TypeInfo	TYPEINFO;
 
-		//.____ Control ____________________________________________________
-
-		void refresh() override;
-
 
 	protected:
-		FillerInfoSection(const DebugTheme& theme, IDebugContext* pContext, Filler * pFiller );
+		FillerInfoSection(const DebugTheme& theme, IDebugContext* pContext, Filler * pInspected );
 		~FillerInfoSection() {}
-
-		Filler *		m_pInspected;
-		TablePanel_p	m_pTable;
-
 	};
 
 } // namespace wg
 #endif //WG_FILLERINFOSECTION_DOT_H
-

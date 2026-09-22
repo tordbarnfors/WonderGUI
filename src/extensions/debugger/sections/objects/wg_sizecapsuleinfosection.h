@@ -24,7 +24,7 @@
 #pragma once
 
 #include <wg_tablepanel.h>
-#include <wg_infosection.h>
+#include <wg_typedinfosection.h>
 #include <wg_sizecapsule.h>
 
 namespace wg
@@ -35,31 +35,24 @@ namespace wg
 
 
 
-	class SizeCapsuleInfoSection : public InfoSection
+	class SizeCapsuleInfoSection : public TypedInfoSection<SizeCapsule>
 	{
 	public:
 
 		//.____ Creation __________________________________________
 
-		static SizeCapsuleInfoSection_p		create( const DebugTheme& theme, IDebugContext* pContext, SizeCapsule * pPanel) { return SizeCapsuleInfoSection_p(new SizeCapsuleInfoSection(theme, pContext, pPanel) ); }
+		static SizeCapsuleInfoSection_p		create( const DebugTheme& theme, IDebugContext* pContext, SizeCapsule * pInspected) { return SizeCapsuleInfoSection_p(new SizeCapsuleInfoSection(theme, pContext, pInspected) ); }
 
 		//.____ Identification __________________________________________
 
 		const TypeInfo&			typeInfo(void) const override;
 		const static TypeInfo	TYPEINFO;
 
-		//.____ Control ____________________________________________________
-
-		void refresh() override;
 
 	protected:
-		SizeCapsuleInfoSection(const DebugTheme& theme, IDebugContext* pContext, SizeCapsule * pPanel );
+		SizeCapsuleInfoSection(const DebugTheme& theme, IDebugContext* pContext, SizeCapsule * pInspected );
 		~SizeCapsuleInfoSection() {}
-
-		SizeCapsule *	m_pInspected;
-		TablePanel_p	m_pTable;
 	};
 
 } // namespace wg
 #endif //WG_SIZECAPSULEINFOSECTION_DOT_H
-
