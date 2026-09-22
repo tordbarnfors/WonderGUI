@@ -279,17 +279,20 @@ MetalBackend::~MetalBackend()
 	}
 
 
-	for( int blendMode = 0 ; blendMode < BlendMode_size ; blendMode++ )
+	for( int palette = 0 ; palette < 2 ; palette++ )
 	{
-		[m_blurPipelines[0][blendMode][(int)DestFormat::BGRA8_linear] release];
-		[m_blurPipelines[0][blendMode][(int)DestFormat::BGRX8_linear] release];
-		[m_blurPipelines[0][blendMode][(int)DestFormat::BGRA8_sRGB] release];
-		[m_blurPipelines[0][blendMode][(int)DestFormat::BGRX8_sRGB]  release];
+		for( int blendMode = 0 ; blendMode < BlendMode_size ; blendMode++ )
+		{
+			[m_blurPipelines[palette][0][blendMode][(int)DestFormat::BGRA8_linear] release];
+			[m_blurPipelines[palette][0][blendMode][(int)DestFormat::BGRX8_linear] release];
+			[m_blurPipelines[palette][0][blendMode][(int)DestFormat::BGRA8_sRGB] release];
+			[m_blurPipelines[palette][0][blendMode][(int)DestFormat::BGRX8_sRGB]  release];
 
-		[m_blurPipelines[1][blendMode][(int)DestFormat::BGRA8_linear] release];
-		[m_blurPipelines[1][blendMode][(int)DestFormat::BGRX8_linear]  release];
-		[m_blurPipelines[1][blendMode][(int)DestFormat::BGRA8_sRGB] release];
-		[m_blurPipelines[1][blendMode][(int)DestFormat::BGRX8_sRGB] release];
+			[m_blurPipelines[palette][1][blendMode][(int)DestFormat::BGRA8_linear] release];
+			[m_blurPipelines[palette][1][blendMode][(int)DestFormat::BGRX8_linear]  release];
+			[m_blurPipelines[palette][1][blendMode][(int)DestFormat::BGRA8_sRGB] release];
+			[m_blurPipelines[palette][1][blendMode][(int)DestFormat::BGRX8_sRGB] release];
+		}
 	}
 
 	int maxSegments = c_maxSegments;                // std::min can't operate on static const only present in header. Does some introspection that fails then.
@@ -395,16 +398,21 @@ id<MTLRenderPipelineState> MetalBackend::_compileFillAAPipeline( bool bTintmap, 
 
 //____ _compileBlurPipeline() _________________________________________________
 
-id<MTLRenderPipelineState> MetalBackend::_compileBlurPipeline( bool bTintmap, BlendMode blendMode, DestFormat canvasFormat )
+id<MTLRenderPipelineState> MetalBackend::_compileBlurPipeline( bool bPaletteSource, bool bTintmap, BlendMode blendMode, DestFormat canvasFormat )
 {
 	assert( canvasFormat != DestFormat::Alpha_8 );		// Not supported (yet)!
 
 	NSString* vertexShader		= bTintmap ? @"blitTintmapVertexShader" : @"blitVertexShader";
-	NSString* fragmentShader	= bTintmap ? @"blurTintmapFragmentShader" : @"blurFragmentShader";
+	NSString* fragmentShader;
+
+	if( bPaletteSource )
+		fragmentShader = bTintmap ? @"paletteBlurTintmapFragmentShader" : @"paletteBlurFragmentShader";
+	else
+		fragmentShader = bTintmap ? @"blurTintmapFragmentShader" : @"blurFragmentShader";
 
 	PixelFormat pixelFormat 	= _canvasFormatToPixelFormat(canvasFormat);
 
-	NSString* label 			= [@"Blur " stringByAppendingFormat:@"%s Pipeline (blendMode =%s, tintmap=%s)", toString(pixelFormat), toString(blendMode), bTintmap ? "true" : "false"];
+	NSString* label 			= [(bPaletteSource ? @"PaletteBlur " : @"Blur ") stringByAppendingFormat:@"%s Pipeline (blendMode =%s, tintmap=%s)", toString(pixelFormat), toString(blendMode), bTintmap ? "true" : "false"];
 
 	return _compileRenderPipeline( label, vertexShader, fragmentShader, blendMode, pixelFormat );
 }
@@ -1909,10 +1917,14 @@ void MetalBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, i
 
 						[m_renderEncoder setFragmentBytes:&m_blurUniform length:sizeof(BlurUniform) atIndex: (unsigned) FragmentInputIndex::BlurUniform];
 
-						if(m_blurPipelines[m_bTintmap][(int)m_activeBlendMode][(int)m_activeCanvasFormat] == nil )
-							m_blurPipelines[m_bTintmap][(int)m_activeBlendMode][(int)m_activeCanvasFormat] = _compileBlurPipeline( m_bTintmap, m_activeBlendMode, m_activeCanvasFormat );
+						// A palette based source must be looked up in its palette tap by tap.
 
-						[m_renderEncoder setRenderPipelineState:m_blurPipelines[m_bTintmap][(int)m_activeBlendMode][(int)m_activeCanvasFormat] ];
+						int bPalette = (pSurf->m_pPixelDescription->type == PixelType::Index) ? 1 : 0;
+
+						if(m_blurPipelines[bPalette][m_bTintmap][(int)m_activeBlendMode][(int)m_activeCanvasFormat] == nil )
+							m_blurPipelines[bPalette][m_bTintmap][(int)m_activeBlendMode][(int)m_activeCanvasFormat] = _compileBlurPipeline( bPalette != 0, m_bTintmap, m_activeBlendMode, m_activeCanvasFormat );
+
+						[m_renderEncoder setRenderPipelineState:m_blurPipelines[bPalette][m_bTintmap][(int)m_activeBlendMode][(int)m_activeCanvasFormat] ];
 					}
 					else
 					{
