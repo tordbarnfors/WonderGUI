@@ -679,11 +679,11 @@ SizeSPX TablePanel::_defaultSize(int scale) const
 
 		// Calc default height for each row and add them together
 
-		for (int row = 0; row < m_nVisibleColumns; row++)
+		for (int row = 0; row < m_nVisibleRows; row++)
 		{
 			spx rowDef = 0;
 
-			for (int col = 0; col < m_nVisibleRows; col++)
+			for (int col = 0; col < m_nVisibleColumns; col++)
 				rowDef = std::max(rowDef, pDefaultSizes[row * m_nVisibleColumns + col].h);
 
 			defSize.h += rowDef;
@@ -751,11 +751,11 @@ SizeSPX TablePanel::_minSize(int scale) const
 
 		// Calc default height for each row and add them together
 
-		for (int row = 0; row < m_nVisibleColumns; row++)
+		for (int row = 0; row < m_nVisibleRows; row++)
 		{
 			spx rowDef = 0;
 
-			for (int col = 0; col < m_nVisibleRows; col++)
+			for (int col = 0; col < m_nVisibleColumns; col++)
 				rowDef = std::max(rowDef, pDefaultSizes[row * m_nVisibleColumns + col].h);
 
 			minSize.h += rowDef;
