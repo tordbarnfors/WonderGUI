@@ -92,16 +92,7 @@ namespace wg
 		{
 			auto pContentPanel = PackPanel::create(WGBP(PackPanel, _.axis = Axis::Y, _.spacingBefore = 4, _.spacingAfter = 4));
 
-			const TypeInfo* pTypeInfo = &pSlot->typeInfo();
-
-			while( pTypeInfo != nullptr )
-			{
-				auto pInfoSection = m_pContext->createSlotInfoSection(pTypeInfo, pSlot);
-				if( pInfoSection )
-					pContentPanel->slots << pInfoSection;
-
-				pTypeInfo = pTypeInfo->pSuperClass;
-			}
+			m_pContext->addSlotInfoSections(pContentPanel, pSlot);
 
 			char temp[64];
 			snprintf(temp, 64, "0x%p", pSlot);

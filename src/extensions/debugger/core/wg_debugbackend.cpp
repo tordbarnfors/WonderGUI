@@ -81,60 +81,53 @@ namespace wg
 	const TypeInfo DebugBackend::TYPEINFO = { "DebugBackend", &Object::TYPEINFO };
 
 
-	Widget_p factory( Object *)
-	{
-		return Widget_p();
-	}
-
 	//____ constructor _____________________________________________________________
 
 	DebugBackend::DebugBackend()
 	{
+		_registerObject<Object, ObjectInfoSection>();
+		_registerObject<Widget, WidgetInfoSection>();
+		_registerObject<Filler, FillerInfoSection>();
+		_registerObject<TextDisplay, TextDisplayInfoSection>();
+		_registerObject<TextEditor, TextEditorInfoSection>();
+		_registerObject<Button, ButtonInfoSection>();
 
-		m_objectInfoFactories[&Object::TYPEINFO] = [](const DebugTheme& theme, IDebugContext* pContext, Object* pObject) { return (Widget_p) ObjectInfoSection::create(theme, pContext, pObject); };
-		m_objectInfoFactories[&Widget::TYPEINFO] = [](const DebugTheme& theme, IDebugContext* pContext, Object* pObject) { return (Widget_p) WidgetInfoSection::create(theme, pContext, (Widget*) pObject); };
-		m_objectInfoFactories[&Filler::TYPEINFO] = [](const DebugTheme& theme, IDebugContext* pContext, Object* pObject) { return (Widget_p) FillerInfoSection::create(theme, pContext, (Filler*)pObject); };
-		m_objectInfoFactories[&TextDisplay::TYPEINFO] = [](const DebugTheme& theme, IDebugContext* pContext, Object* pObject) { return (Widget_p)TextDisplayInfoSection::create(theme, pContext, (TextDisplay*)pObject); };
-		m_objectInfoFactories[&TextEditor::TYPEINFO] = [](const DebugTheme& theme, IDebugContext* pContext, Object* pObject) { return (Widget_p)TextEditorInfoSection::create(theme, pContext, (TextEditor*)pObject); };
-		m_objectInfoFactories[&Button::TYPEINFO] = [](const DebugTheme& theme, IDebugContext* pContext, Object* pObject) { return (Widget_p)ButtonInfoSection::create(theme, pContext, (Button*)pObject); };
+		_registerObject<Container, ContainerInfoSection>();
+		_registerObject<Panel, PanelInfoSection>();
+		_registerObject<PackPanel, PackPanelInfoSection>();
+		_registerObject<FlexPanel, FlexPanelInfoSection>();
+		_registerObject<TwoSlotPanel, TwoSlotPanelInfoSection>();
+		_registerObject<ScrollPanel, ScrollPanelInfoSection>();
 
-		m_objectInfoFactories[&Container::TYPEINFO] = [](const DebugTheme& theme, IDebugContext* pContext, Object* pObject) { return (Widget_p)ContainerInfoSection::create(theme, pContext, (Container*)pObject); };
-		m_objectInfoFactories[&Panel::TYPEINFO] = [](const DebugTheme& theme, IDebugContext* pContext, Object* pObject) { return (Widget_p)PanelInfoSection::create(theme, pContext, (Panel*)pObject); };
-		m_objectInfoFactories[&PackPanel::TYPEINFO] = [](const DebugTheme& theme, IDebugContext* pContext, Object* pObject) { return (Widget_p)PackPanelInfoSection::create(theme, pContext, (PackPanel*)pObject); };
-		m_objectInfoFactories[&FlexPanel::TYPEINFO] = [](const DebugTheme& theme, IDebugContext* pContext, Object* pObject) { return (Widget_p)FlexPanelInfoSection::create(theme, pContext, (FlexPanel*)pObject); };
-		m_objectInfoFactories[&TwoSlotPanel::TYPEINFO] = [](const DebugTheme& theme, IDebugContext* pContext, Object* pObject) { return (Widget_p)TwoSlotPanelInfoSection::create(theme, pContext, (TwoSlotPanel*)pObject); };
-		m_objectInfoFactories[&ScrollPanel::TYPEINFO] = [](const DebugTheme& theme, IDebugContext* pContext, Object* pObject) { return (Widget_p)ScrollPanelInfoSection::create(theme, pContext, (ScrollPanel*)pObject); };
+		_registerObject<Capsule, CapsuleInfoSection>();
+		_registerObject<SizeCapsule, SizeCapsuleInfoSection>();
+		_registerObject<ReorderCapsule, ReorderCapsuleInfoSection>();
+		_registerObject<SelectCapsule, SelectCapsuleInfoSection>();
+		_registerObject<LabelCapsule, LabelCapsuleInfoSection>();
+		_registerObject<PaddingCapsule, PaddingCapsuleInfoSection>();
+		_registerObject<RenderLayerCapsule, RenderLayerCapsuleInfoSection>();
+		_registerObject<ScaleCapsule, ScaleCapsuleInfoSection>();
+		_registerObject<CanvasCapsule, CanvasCapsuleInfoSection>();
 
-		m_objectInfoFactories[&Capsule::TYPEINFO] = [](const DebugTheme& theme, IDebugContext* pContext, Object* pObject) { return (Widget_p)CapsuleInfoSection::create(theme, pContext, (Capsule*)pObject); };
-		m_objectInfoFactories[&SizeCapsule::TYPEINFO] = [](const DebugTheme& theme, IDebugContext* pContext, Object* pObject) { return (Widget_p)SizeCapsuleInfoSection::create(theme, pContext, (SizeCapsule*)pObject); };
-		m_objectInfoFactories[&ReorderCapsule::TYPEINFO] = [](const DebugTheme& theme, IDebugContext* pContext, Object* pObject) { return (Widget_p)ReorderCapsuleInfoSection::create(theme, pContext, (ReorderCapsule*)pObject); };
-		m_objectInfoFactories[&SelectCapsule::TYPEINFO] = [](const DebugTheme& theme, IDebugContext* pContext, Object* pObject) { return (Widget_p)SelectCapsuleInfoSection::create(theme, pContext, (SelectCapsule*)pObject); };
-		m_objectInfoFactories[&LabelCapsule::TYPEINFO] = [](const DebugTheme& theme, IDebugContext* pContext, Object* pObject) { return (Widget_p)LabelCapsuleInfoSection::create(theme, pContext, (LabelCapsule*)pObject); };
-		m_objectInfoFactories[&PaddingCapsule::TYPEINFO] = [](const DebugTheme& theme, IDebugContext* pContext, Object* pObject) { return (Widget_p)PaddingCapsuleInfoSection::create(theme, pContext, (PaddingCapsule*)pObject); };
-		m_objectInfoFactories[&RenderLayerCapsule::TYPEINFO] = [](const DebugTheme& theme, IDebugContext* pContext, Object* pObject) { return (Widget_p)RenderLayerCapsuleInfoSection::create(theme, pContext, (RenderLayerCapsule*)pObject); };
-		m_objectInfoFactories[&ScaleCapsule::TYPEINFO] = [](const DebugTheme& theme, IDebugContext* pContext, Object* pObject) { return (Widget_p)ScaleCapsuleInfoSection::create(theme, pContext, (ScaleCapsule*)pObject); };
-		m_objectInfoFactories[&CanvasCapsule::TYPEINFO] = [](const DebugTheme& theme, IDebugContext* pContext, Object* pObject) { return (Widget_p)CanvasCapsuleInfoSection::create(theme, pContext, (CanvasCapsule*)pObject); };
+		_registerObject<Skin, SkinInfoSection>();
 
+		_registerSlot<StaticSlot, StaticSlotInfoSection>();
+		_registerSlot<PanelSlot, PanelSlotInfoSection>();
+		_registerSlot<PackPanelSlot, PackPanelSlotInfoSection>();
+		_registerSlot<FlexPanelSlot, FlexPanelSlotInfoSection>();
+		_registerSlot<TwoSlotPanel::Slot, TwoSlotPanelSlotInfoSection>();
 
-		m_objectInfoFactories[&Skin::TYPEINFO] = [](const DebugTheme& theme, IDebugContext* pContext, Object* pObject) { return (Widget_p)SkinInfoSection::create(theme, pContext, (Skin*)pObject); };
+		_registerComponent<StaticText, StaticTextInfoSection>();
+		_registerComponent<EditableText, EditableTextInfoSection>();
+		_registerComponent<Icon, IconInfoSection>();
+		_registerComponent<Scroller, ScrollerInfoSection>();
+		_registerComponent<Glow, GlowInfoSection>();
 
-		m_slotInfoFactories[&StaticSlot::TYPEINFO] = [](const DebugTheme& theme, IDebugContext* pContext, StaticSlot* pSlot) { return (Widget_p) StaticSlotInfoSection::create(theme, pContext, pSlot); };
-		m_slotInfoFactories[&PanelSlot::TYPEINFO] = [](const DebugTheme& theme, IDebugContext* pContext, StaticSlot* pSlot) { return (Widget_p)PanelSlotInfoSection::create(theme, pContext, pSlot); };
-		m_slotInfoFactories[&PackPanelSlot::TYPEINFO] = [](const DebugTheme& theme, IDebugContext* pContext, StaticSlot* pSlot) { return (Widget_p)PackPanelSlotInfoSection::create(theme, pContext, pSlot); };
-		m_slotInfoFactories[&FlexPanelSlot::TYPEINFO] = [](const DebugTheme& theme, IDebugContext* pContext, StaticSlot* pSlot) { return (Widget_p)FlexPanelSlotInfoSection::create(theme, pContext, pSlot); };
-		m_slotInfoFactories[&TwoSlotPanel::Slot::TYPEINFO] = [](const DebugTheme& theme, IDebugContext* pContext, StaticSlot* pSlot) { return (Widget_p)TwoSlotPanelSlotInfoSection::create(theme, pContext, pSlot); };
-
-		m_componentInfoFactories[&StaticText::TYPEINFO] = [](const DebugTheme& theme, IDebugContext* pContext, Component* pComponent) { return (Widget_p)StaticTextInfoSection::create(theme, pContext, (StaticText*)pComponent); };
-		m_componentInfoFactories[&EditableText::TYPEINFO] = [](const DebugTheme& theme, IDebugContext* pContext, Component* pComponent) { return (Widget_p)EditableTextInfoSection::create(theme, pContext, (EditableText*)pComponent); };
-		m_componentInfoFactories[&Icon::TYPEINFO] = [](const DebugTheme& theme, IDebugContext* pContext, Component* pComponent) { return (Widget_p)IconInfoSection::create(theme, pContext, (Icon*)pComponent); };
-		m_componentInfoFactories[&Scroller::TYPEINFO] = [](const DebugTheme& theme, IDebugContext* pContext, Component* pComponent) { return (Widget_p)ScrollerInfoSection::create(theme, pContext, (Scroller*)pComponent); };
-		m_componentInfoFactories[&Glow::TYPEINFO] = [](const DebugTheme& theme, IDebugContext* pContext, Component* pComponent) { return (Widget_p)GlowInfoSection::create(theme, pContext, (Glow*)pComponent); };
-
-		m_ignoreClasses.push_back(&DynamicSlot::TYPEINFO);
-		m_ignoreClasses.push_back(&Receiver::TYPEINFO);
-		m_ignoreClasses.push_back(&Component::TYPEINFO);
-		m_ignoreClasses.push_back(&DynamicText::TYPEINFO);
-		m_ignoreClasses.push_back(&StateSkin::TYPEINFO);
+		_ignore<DynamicSlot>();
+		_ignore<Receiver>();
+		_ignore<Component>();
+		_ignore<DynamicText>();
+		_ignore<StateSkin>();
 	}
 
 	//____ typeInfo() _________________________________________________________
@@ -159,67 +152,57 @@ namespace wg
 		return m_theme;
 	}
 
-	//____ createObjectInfoSection() ____________________________________________________
+	//____ _addInfoSections() __________________________________________________
+	//
+	// Walks the class chain of pInspected from most derived to Object and adds
+	// one info section per class to pPanel. Classes on the ignore list are
+	// skipped, classes without a registered section get a DummyInfoSection.
 
-	Widget_p DebugBackend::createObjectInfoSection(const TypeInfo * pType, Object * pObject )
+	template<class T>
+	void DebugBackend::_addInfoSections(PackPanel* pPanel, T* pInspected, const std::map<const TypeInfo*, InfoSectionFactory<T>>& factories)
 	{
-
-		auto it = m_objectInfoFactories.find( pType );
-		if( it == m_objectInfoFactories.end() )
+		for( const TypeInfo * pType = &pInspected->typeInfo() ; pType != nullptr ; pType = pType->pSuperClass )
 		{
-			// Check known classes we should ignore.
-
-			if (std::find(m_ignoreClasses.begin(), m_ignoreClasses.end(), pType) != m_ignoreClasses.end())
-				return nullptr;
-
-			// Unknown class
-
-			return DummyInfoSection::create(m_theme,this, pType->className,pObject);
+			auto pSection = _createInfoSection(pType, pInspected, factories);
+			if( pSection )
+				pPanel->slots << pSection;
 		}
-
-		return it->second(m_theme,this,pObject);
 	}
 
-	//____ createSlotInfoSection() ____________________________________________________
+	//____ _createInfoSection() ________________________________________________
 
-	Widget_p DebugBackend::createSlotInfoSection(const TypeInfo * pType, StaticSlot * pSlot )
+	template<class T>
+	Widget_p DebugBackend::_createInfoSection(const TypeInfo* pType, T* pInspected, const std::map<const TypeInfo*, InfoSectionFactory<T>>& factories)
 	{
+		auto it = factories.find(pType);
+		if( it != factories.end() )
+			return it->second(m_theme, this, pInspected);
 
-		auto it = m_slotInfoFactories.find( pType );
-		if( it == m_slotInfoFactories.end() )
-		{
-			// Check known classes we should ignore.
+		if (std::find(m_ignoreClasses.begin(), m_ignoreClasses.end(), pType) != m_ignoreClasses.end())
+			return nullptr;
 
-			if (std::find(m_ignoreClasses.begin(), m_ignoreClasses.end(), pType) != m_ignoreClasses.end())
-				return nullptr;
-
-			// Unknown class
-
-			return DummyInfoSection::create(m_theme,this, pType->className,pSlot);
-		}
-
-		return it->second(m_theme,this,pSlot);
+		return DummyInfoSection::create(m_theme, this, pType->className, pInspected);
 	}
 
-	//____ createComponentInfoSection() ____________________________________________________
+	//____ addObjectInfoSections() _____________________________________________
 
-	Widget_p DebugBackend::createComponentInfoSection(const TypeInfo* pType, Component* pComponent)
+	void DebugBackend::addObjectInfoSections(PackPanel* pPanel, Object* pObject)
 	{
+		_addInfoSections(pPanel, pObject, m_objectInfoFactories);
+	}
 
-		auto it = m_componentInfoFactories.find(pType);
-		if (it == m_componentInfoFactories.end())
-		{
-			// Check known classes we should ignore.
+	//____ addSlotInfoSections() _______________________________________________
 
-			if (std::find(m_ignoreClasses.begin(), m_ignoreClasses.end(), pType) != m_ignoreClasses.end())
-				return nullptr;
+	void DebugBackend::addSlotInfoSections(PackPanel* pPanel, StaticSlot* pSlot)
+	{
+		_addInfoSections(pPanel, pSlot, m_slotInfoFactories);
+	}
 
-			// Unknown class
+	//____ addComponentInfoSections() __________________________________________
 
-			return DummyInfoSection::create(m_theme,this, pType->className,pComponent);
-		}
-
-		return it->second(m_theme, this, pComponent);
+	void DebugBackend::addComponentInfoSections(PackPanel* pPanel, Component* pComponent)
+	{
+		_addInfoSections(pPanel, pComponent, m_componentInfoFactories);
 	}
 
 	//____ createObjectInspector() ________________________________________________

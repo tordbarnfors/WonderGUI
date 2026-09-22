@@ -25,6 +25,7 @@
 
 #include <map>
 #include <functional>
+#include <vector>
 
 #include <wg_object.h>
 #include <wg_pointers.h>
@@ -64,9 +65,9 @@ namespace wg
 		void			setTheme(const DebugTheme& theme);
 		const DebugTheme& theme() override;
 
-		Widget_p		createObjectInfoSection( const TypeInfo * pType, Object * pObject ) override;
-		Widget_p		createSlotInfoSection( const TypeInfo * pType, StaticSlot * pSlot ) override;
-		Widget_p		createComponentInfoSection( const TypeInfo* pType, Component* pComponent ) override;
+		void			addObjectInfoSections( PackPanel * pPanel, Object * pObject ) override;
+		void			addSlotInfoSections( PackPanel * pPanel, StaticSlot * pSlot ) override;
+		void			addComponentInfoSections( PackPanel * pPanel, Component * pComponent ) override;
 
 		ObjectInspector_p	createObjectInspector(Object* pObject);
 		WidgetInspector_p	createWidgetInspector(Widget* pWidget);
@@ -87,9 +88,45 @@ namespace wg
 		DebugTheme	m_theme;
 
 
-		std::map<const TypeInfo*,Widget_p(*)(const DebugTheme&, IDebugContext *, Object *)>	m_objectInfoFactories;
-		std::map<const TypeInfo*,Widget_p(*)(const DebugTheme&, IDebugContext *, StaticSlot *)>	m_slotInfoFactories;
-	 	std::map<const TypeInfo*, Widget_p(*)(const DebugTheme&, IDebugContext *, Component*)>	m_componentInfoFactories;
+		template<class T>
+		using InfoSectionFactory = Widget_p(*)(const DebugTheme&, IDebugContext*, T*);
+
+		// Registration. Key and cast come from the same template parameter,
+		// so a section can't be registered under the wrong class.
+
+		template<class Inspected, class Section>
+		void _registerObject()
+		{
+			m_objectInfoFactories[&Inspected::TYPEINFO] = [](const DebugTheme& theme, IDebugContext* pContext, Object* p)
+				{ return Widget_p(Section::create(theme, pContext, static_cast<Inspected*>(p))); };
+		}
+
+		template<class Inspected, class Section>
+		void _registerSlot()			// Slot sections still take a StaticSlot* and cast internally.
+		{
+			m_slotInfoFactories[&Inspected::TYPEINFO] = [](const DebugTheme& theme, IDebugContext* pContext, StaticSlot* p)
+				{ return Widget_p(Section::create(theme, pContext, p)); };
+		}
+
+		template<class Inspected, class Section>
+		void _registerComponent()
+		{
+			m_componentInfoFactories[&Inspected::TYPEINFO] = [](const DebugTheme& theme, IDebugContext* pContext, Component* p)
+				{ return Widget_p(Section::create(theme, pContext, static_cast<Inspected*>(p))); };
+		}
+
+		template<class Ignored>
+		void _ignore() { m_ignoreClasses.push_back(&Ignored::TYPEINFO); }
+
+		template<class T>
+		void		_addInfoSections(PackPanel* pPanel, T* pInspected, const std::map<const TypeInfo*, InfoSectionFactory<T>>& factories);
+
+		template<class T>
+		Widget_p	_createInfoSection(const TypeInfo* pType, T* pInspected, const std::map<const TypeInfo*, InfoSectionFactory<T>>& factories);
+
+		std::map<const TypeInfo*, InfoSectionFactory<Object>>		m_objectInfoFactories;
+		std::map<const TypeInfo*, InfoSectionFactory<StaticSlot>>	m_slotInfoFactories;
+		std::map<const TypeInfo*, InfoSectionFactory<Component>>	m_componentInfoFactories;
 
 		std::vector<const TypeInfo*>	m_ignoreClasses;
 

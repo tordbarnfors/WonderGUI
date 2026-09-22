@@ -32,12 +32,14 @@
 
 namespace wg
 {
+	class PackPanel;
+
 	//____ IDebugContext ________________________________________________________
 	//
 	// What an InfoSection or InspectorView needs from its surroundings: the
-	// shared theme, a way to report that the user picked an object, and
-	// factories for the info sections of other classes. Implemented by
-	// DebugBackend.
+	// shared theme, a way to report that the user picked an object, and a way
+	// to build the stack of info sections for an object, slot or component.
+	// Implemented by DebugBackend.
 
 	class IDebugContext
 	{
@@ -47,9 +49,12 @@ namespace wg
 
 		virtual void	objectSelected(Object * pSelected, Object * pCaller) = 0;
 
-		virtual Widget_p createObjectInfoSection(const TypeInfo* pType, Object* pObject) = 0;
-		virtual Widget_p createSlotInfoSection(const TypeInfo* pType, StaticSlot* pSlot) = 0;
-		virtual Widget_p createComponentInfoSection(const TypeInfo* pType, Component* pComponent) = 0;
+		// Add one info section per class in the inspected object's class chain
+		// (most derived first) to the end of pPanel.
+
+		virtual void	addObjectInfoSections(PackPanel* pPanel, Object* pObject) = 0;
+		virtual void	addSlotInfoSections(PackPanel* pPanel, StaticSlot* pSlot) = 0;
+		virtual void	addComponentInfoSections(PackPanel* pPanel, Component* pComponent) = 0;
 	};
 
 } // namespace wg

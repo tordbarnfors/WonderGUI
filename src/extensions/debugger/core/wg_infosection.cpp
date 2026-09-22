@@ -263,21 +263,9 @@ namespace wg
 	DrawerPanel_p InfoSection::_createComponentDrawer(const CharSeq& label, Component* pComponent)
 	{
 		auto pComponentParts = WGCREATE(PackPanel, _.axis = Axis::Y);
+		m_pContext->addComponentInfoSections(pComponentParts, pComponent);
 
-		auto pTypeInfo = &pComponent->typeInfo();
-
-		while (pTypeInfo != nullptr)
-		{
-			auto pInfoSection = m_pContext->createComponentInfoSection(pTypeInfo, pComponent);
-
-			if (pInfoSection)
-				pComponentParts->slots << pInfoSection;
-
-			pTypeInfo = pTypeInfo->pSuperClass;
-		}
-
-		auto pDrawer = _createDrawer(label, nullptr, pComponentParts);
-		return pDrawer;
+		return _createDrawer(label, nullptr, pComponentParts);
 	}
 
 	//____ _refreshComponentDrawer() _____________________________________________
@@ -685,18 +673,9 @@ namespace wg
 	DrawerPanel_p InfoSection::_createSingleSlotDrawer(const CharSeq& label, StaticSlot* pSlot)
 	{
 		auto pSlotContent = WGCREATE(PackPanel, _.axis = Axis::Y);
+		m_pContext->addSlotInfoSections(pSlotContent, pSlot);
 
-		auto pTypeInfo = &pSlot->typeInfo();
-
-		while (pTypeInfo != nullptr)
-		{
-			auto pInfoSection = m_pContext->createSlotInfoSection(pTypeInfo, pSlot);
-			if (pInfoSection)
-				pSlotContent->slots << pInfoSection;
-			pTypeInfo = pTypeInfo->pSuperClass;
-		}
-
-		return _createDrawer("Slot", nullptr, pSlotContent);
+		return _createDrawer(label, nullptr, pSlotContent);
 	}
 
 	//____ refreshSingleSlotDrawer() ___________________________________________________

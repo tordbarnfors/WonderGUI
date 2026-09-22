@@ -187,14 +187,7 @@ namespace wg
 
 		pInnerPanel->slots << _createObjectHeader(pObject);
 
-		auto pTypeInfo = &pObject->typeInfo();
-		while (pTypeInfo != nullptr)
-		{
-			auto pInfoSection = m_pContext->createObjectInfoSection(pTypeInfo, pObject);
-			if( pInfoSection )
-				pInnerPanel->slots << pInfoSection;
-			pTypeInfo = pTypeInfo->pSuperClass;
-		}
+		m_pContext->addObjectInfoSections(pInnerPanel, pObject);
 
 		pScrollPanel->slot = pInnerPanel;
 

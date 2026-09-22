@@ -204,16 +204,7 @@ void InfoSection::_addSlotInfoSections(PackPanel * pPanel, int numberingStart, I
 		auto pSlot = it;
 
 		auto pSlotContent = WGCREATE(PackPanel, _.axis = Axis::Y);
-
-		auto pTypeInfo = &it->typeInfo();
-
-		while (pTypeInfo != nullptr)
-		{
-			auto pInfoSection = m_pContext->createSlotInfoSection(pTypeInfo, pSlot);
-			if (pInfoSection)
-				pSlotContent->slots << pInfoSection;
-			pTypeInfo = pTypeInfo->pSuperClass;
-		}
+		m_pContext->addSlotInfoSections(pSlotContent, pSlot);
 
 		auto pSlotDrawer = _createDrawer(buf, nullptr, pSlotContent);
 
