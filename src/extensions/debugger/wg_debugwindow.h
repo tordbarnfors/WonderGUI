@@ -72,40 +72,13 @@ namespace wg
 
 		PackPanel_p			_createButtonRow( bool bAutoRefresh = false, bool bRefresh = false );
 
-		TablePanel_p		_createTable(int rows, int columns);
-		DrawerPanel_p		_createDrawer(const CharSeq& label, Widget * pHeaderValue, Widget * pContent );
-
-		DrawerPanel_p		_createBorderDrawer(const CharSeq& label, const Border& border);
-
-		DrawerPanel_p		_createComponentDrawer(const CharSeq& label, Component* pComponent);
-
 		Widget_p			_createObjectHeader(Object* pObject) const;
 		String				_createObjectTitle(Object* pObject) const;
 
 		Widget_p			_createClassInfoPanels(const Blueprint& bp, Object* pObject) const;
 
 
-		void _setTextEntry(TablePanel* pTable, int row, const char* pLabel, const CharSeq& string);
-		void _setIntegerEntry(TablePanel * pTable, int row, const char * pLabel, int value);
-		void _setDecimalEntry(TablePanel* pTable, int row, const char* pLabel, float value);
-		void _setPtsEntry(TablePanel* pTable, int row, const char* pLabel, pts value);
-		void _setSpxEntry(TablePanel* pTable, int row, const char* pLabel, spx value);
-		void _setBoolEntry(TablePanel* pTable, int row, const char* pLabel, bool value);
-		void _setPointerEntry(TablePanel* pTable, int row, const char* pLabel, void* pPointer);
-		void _setObjectPointerEntry(TablePanel* pTable, int row, const char* pLabel, Object * pPointer, Object * pSource);
-
-		void _refreshTextEntry(TablePanel* pTable, int row, const CharSeq& string);
-		void _refreshIntegerEntry(TablePanel * pTable, int row, int value);
-		void _refreshDecimalEntry(TablePanel* pTable, int row, float value);
-		void _refreshPtsEntry(TablePanel* pTable, int row, pts value);
-		void _refreshSpxEntry(TablePanel* pTable, int row, spx value);
-		void _refreshBoolEntry(TablePanel* pTable, int row, bool value);
-		void _refreshPointerEntry(TablePanel* pTable, int row, void* pPointer, void*& pDisplayedPointer );
-		void _refreshObjectPointerEntry(TablePanel* pTable, int row, Object * pPointer, Object_p& pDisplayedPointer);
-
 		IDebugger*	m_pHolder = nullptr;
-
-		Skin_p		m_pIndentationSkin;
 
 		bool		m_bAutoRefresh = false;
 

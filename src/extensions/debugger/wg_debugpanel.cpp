@@ -262,15 +262,12 @@ namespace wg
 
 	DrawerPanel_p DebugPanel::_createComponentDrawer(const CharSeq& label, Component* pComponent)
 	{
-		auto bp = m_pHolder->blueprint();
-
 		auto pComponentParts = WGCREATE(PackPanel, _.axis = Axis::Y);
 
 		auto pTypeInfo = &pComponent->typeInfo();
 
 		while (pTypeInfo != nullptr)
 		{
-			bp.classCapsule.label.text = pTypeInfo->className;
 			auto pInfoPanel = m_pHolder->createComponentInfoPanel(pTypeInfo, pComponent);
 
 			if (pInfoPanel)
