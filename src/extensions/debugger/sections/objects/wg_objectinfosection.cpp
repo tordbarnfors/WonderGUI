@@ -1,0 +1,69 @@
+/*=========================================================================
+
+                             >>> WonderGUI <<<
+
+  This file is part of Tord Bärnfors' WonderGUI UI Toolkit and copyright
+  Tord Bärnfors, Sweden [mail: first name AT barnfors DOT c_o_m].
+
+                                -----------
+
+  The WonderGUI UI Toolkit is free software; you can redistribute
+  this file and/or modify it under the terms of the GNU General Public
+  License as published by the Free Software Foundation; either
+  version 2 of the License, or (at your option) any later version.
+
+                                -----------
+
+  The WonderGUI UI Toolkit is also available for use in commercial
+  closed source projects under a separate license. Interested parties
+  should contact Bärnfors Technology AB [www.barnfors.com] for details.
+
+=========================================================================*/
+#include "wg_objectinfosection.h"
+#include <wg_textdisplay.h>
+#include <wg_numberdisplay.h>
+#include <wg_basicnumberlayout.h>
+
+
+namespace wg
+{
+
+	const TypeInfo ObjectInfoSection::TYPEINFO = { "ObjectInfoSection", &InfoSection::TYPEINFO };
+
+
+	//____ constructor _____________________________________________________________
+
+	ObjectInfoSection::ObjectInfoSection(const DebugTheme& theme, IDebugContext* pContext, Object * pObject) : InfoSection( theme, pContext, Object::TYPEINFO.className )
+	{
+		m_pInspected = pObject;
+
+		m_pTable = _createTable(3,2);
+		_initIntegerEntry(m_pTable, 0, "Refcount: ");
+		_initIntegerEntry(m_pTable, 1, "Weak pointers: ");
+		_initPointerEntry(m_pTable, 2, "Finalizer: ");
+
+		refresh();
+		this->slot = m_pTable;
+	}
+
+	//____ typeInfo() _________________________________________________________
+
+	const TypeInfo& ObjectInfoSection::typeInfo(void) const
+	{
+		return TYPEINFO;
+	}
+
+	//____ refresh() _____________________________________________________________
+
+	void ObjectInfoSection::refresh()
+	{
+		_refreshIntegerEntry(m_pTable, 0, m_pInspected->refcount());
+		_refreshIntegerEntry(m_pTable, 1, m_pInspected->weakPointers());
+		_refreshPointerEntry(m_pTable, 2, (void *) m_pInspected->finalizer().rawPtr(), m_pFinalizer );
+
+	}
+
+
+} // namespace wg
+
+

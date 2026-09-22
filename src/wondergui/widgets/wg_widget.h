@@ -75,7 +75,7 @@ namespace wg
 		friend class DynamicSlot;
 		friend class Base;
 		friend class InputHandler;
-		friend class WidgetInfoPanel;
+		friend class WidgetInfoSection;
 
 		template<class S> friend class StaticSlotVector;
 		template<class S> friend class DynamicSlotVector;
