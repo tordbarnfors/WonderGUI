@@ -979,6 +979,59 @@ fragment float4 blurTintmapFragmentShader(BlitTintmapFragInput in [[stage_in]],
 
 
 
+//____ paletteBlurFragmentShader() ____________________________________________
+//
+// Blur from a palette based source. Each tap is looked up in the palette before
+// it is weighted, the way paletteBlitNearestFragmentShader() does it. A palette
+// source is always read through a nearest sampler, so the taps don't blend
+// indexes.
+
+inline float4 paletteBlurCore(float2 texUV, texture2d<float> colorTexture, texture2d<half> paletteTexture,
+							  sampler textureSampler, constant BlurUniform* pBlurInfo)
+{
+	constexpr sampler paletteSampler (mag_filter::nearest,
+									  min_filter::nearest);
+
+	float4 color = float4(0,0,0,0);
+
+	for( int i = 0 ; i < 9 ; i++ )
+	{
+		float colorIndex = colorTexture.sample(textureSampler, texUV + pBlurInfo->offset[i] ).r;
+		color += float4(paletteTexture.sample(paletteSampler, {colorIndex,0.5f} )) * pBlurInfo->colorMtx[i];
+	}
+
+	color.a = 1.f;
+	return color;
+}
+
+fragment float4 paletteBlurFragmentShader(BlitFragInput in [[stage_in]],
+									texture2d<float> colorTexture [[ texture(0) ]],
+									texture2d<half> paletteTexture [[ texture(1) ]],
+									sampler textureSampler [[ sampler(0) ]],
+									constant BlurUniform  *pBlurInfo [[buffer(2)]])
+{
+	return paletteBlurCore(in.texUV, colorTexture, paletteTexture, textureSampler, pBlurInfo) * in.color;
+};
+
+//____ paletteBlurTintmapFragmentShader() _____________________________________
+
+fragment float4 paletteBlurTintmapFragmentShader(BlitTintmapFragInput in [[stage_in]],
+									texture2d<float> colorTexture [[ texture(0) ]],
+									texture2d<half> paletteTexture [[ texture(1) ]],
+									sampler textureSampler [[ sampler(0) ]],
+									constant float4  *pColor [[buffer(0)]],
+									constant BlurUniform  *pBlurInfo [[buffer(2)]])
+{
+	float4 color = paletteBlurCore(in.texUV, colorTexture, paletteTexture, textureSampler, pBlurInfo);
+
+	float4 colorFromColorstripX = pColor[(int)in.tintmapUV.x];
+	float4 colorFromColorstripY = pColor[(int)in.tintmapUV.y];
+
+	return color * colorFromColorstripX * colorFromColorstripY;
+};
+
+
+
 //____ segmentsVertexShader() _______________________________________________
 
 vertex SegmentsFragInput
@@ -1054,7 +1107,7 @@ inline float4 segFragShaderCore(SegmentsFragInput in,
 
     float4 out;
 	out.a = totalAlpha; // * in.color.a;
-	out.rgb = (rgbAcc/totalAlpha); // * in.color.rgb;
+	out.rgb = totalAlpha > 0.f ? rgbAcc/totalAlpha : float3(0,0,0);	// Fully transparent would be 0/0.
 	return out;
 };
 

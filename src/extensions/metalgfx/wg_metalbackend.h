@@ -161,7 +161,7 @@ namespace wg
 		id<MTLRenderPipelineState> _compileLinePipeline( BlendMode blendMode, DestFormat canvasFormat );
 		id<MTLRenderPipelineState> _compileFillPipeline( bool bTintmap, BlendMode blendMode, DestFormat canvasFormat );
 		id<MTLRenderPipelineState> _compileFillAAPipeline( bool bTintmap, BlendMode blendMode, DestFormat canvasFormat );
-		id<MTLRenderPipelineState> _compileBlurPipeline( bool bTintmap, BlendMode blendMode, DestFormat canvasFormat );
+		id<MTLRenderPipelineState> _compileBlurPipeline( bool bPaletteSource, bool bTintmap, BlendMode blendMode, DestFormat canvasFormat );
 		id<MTLRenderPipelineState> _compileBlitPipeline( BlitFragShader shader, bool bTintmap, BlendMode blendMode, DestFormat canvasFormat );
 		id<MTLRenderPipelineState> _compileSegmentsPipeline( int shaderIndex, bool bTintmap, BlendMode blendMode, DestFormat canvasFormat );
 
@@ -323,7 +323,7 @@ namespace wg
 
 		id<MTLRenderPipelineState>  m_blitPipelines[5][2][BlendMode_size][5] = {}; 					// [BlitFragShader][bTintmap][BlendMode][DestFormat]
 
-		id<MTLRenderPipelineState>  m_blurPipelines[2][BlendMode_size][5]  = {};   					// [bGradient][BlendMode][DestFormat]
+		id<MTLRenderPipelineState>  m_blurPipelines[2][2][BlendMode_size][5]  = {};   				// [bPaletteSource][bGradient][BlendMode][DestFormat]
 
 		id<MTLRenderPipelineState>  m_segmentsPipelines[c_maxSegments][2][BlendMode_size][5] = {};  // [nbEdges][bTintmap][BlendMode][DestFormat]
 
