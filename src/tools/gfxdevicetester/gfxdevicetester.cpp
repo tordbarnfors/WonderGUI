@@ -917,7 +917,7 @@ bool GfxDeviceTester::setup_chrome()
 	for (TestEntry& test : g_tests)
 	{
 		auto pEntry = TextDisplay::create( {
-			.display = {.text = test.name.c_str() },
+			.display = {.style = wkit::TextStyles::Default, .text = test.name.c_str() },
 			.id = id++,
 			.selectable = true,
 			.skin = pEntrySkin });
