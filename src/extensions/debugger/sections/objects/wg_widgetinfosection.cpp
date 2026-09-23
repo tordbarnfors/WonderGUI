@@ -30,6 +30,19 @@ namespace wg
 	const TypeInfo WidgetInfoSection::TYPEINFO = { "WidgetInfoSection", &InfoSection::TYPEINFO };
 
 
+	//____ slotAddressString() ___________________________________________________
+
+	static String slotAddressString(StaticSlot* pSlot)
+	{
+		if( !pSlot )
+			return String("null");
+
+		char temp[64];
+		snprintf(temp, sizeof(temp), "0x%p", (void*) pSlot);
+		return String(temp);
+	}
+
+
 	//____ constructor _____________________________________________________________
 
 	WidgetInfoSection::WidgetInfoSection(const DebugTheme& theme, IDebugContext* pContext, Widget * pWidget)
@@ -74,21 +87,17 @@ namespace wg
 			pPanel->slots << _createDrawer("Has overflow", m_pOverflowHeaderValue, m_pOverflowTable);
 		}
 
-		auto pSlot = pWidget->_slot();
-		if (pSlot)
 		{
-			auto pContentPanel = PackPanel::create(WGBP(PackPanel, _.axis = Axis::Y, _.spacingBefore = 4, _.spacingAfter = 4));
+			// The widget can be moved to another slot (or lose its slot) while we
+			// are showing it, so the sections in here are rebuilt whenever the
+			// slot pointer changes.
 
-			m_pContext->addSlotInfoSections(pContentPanel, pSlot);
+			m_pSlotInfoSectionsContainer = PackPanel::create(WGBP(PackPanel, _.axis = Axis::Y, _.spacingBefore = 4, _.spacingAfter = 4));
+			m_pSlotHeaderValue = WGCREATE(TextDisplay, _ = theme.listEntryText, _.display.text = "null");
 
-			char temp[64];
-			snprintf(temp, 64, "0x%p", pSlot);
+			_refreshSlotDrawer();
 
-			auto pHeaderValue = WGCREATE(TextDisplay, _ = theme.listEntryText, _.display.text = temp);
-			auto pSlotDrawer = _createDrawer("Slot", pHeaderValue, pContentPanel);
-			pPanel->slots << pSlotDrawer;
-
-			m_pSlotInfoSectionsContainer = pContentPanel;
+			pPanel->slots << _createDrawer("Slot", m_pSlotHeaderValue, m_pSlotInfoSectionsContainer);
 		}
 
 		this->slot = pPanel;
@@ -107,19 +116,38 @@ namespace wg
 	{
 		TypedInfoSection<Widget>::refresh();
 		_refreshOverflow();
+		_refreshSlotDrawer();
+	}
 
-		auto pWidget = inspected();
+	//____ _refreshSlotDrawer() __________________________________________________
 
-		if( m_pSlotInfoSectionsContainer )
+	void WidgetInfoSection::_refreshSlotDrawer()
+	{
+		auto pSlot = inspected()->_slot();
+
+		// A new slot (or no slot at all) needs a new set of sections, since it
+		// might not even be of the same slot class as the previous one.
+
+		if( pSlot != m_pDisplayedSlot )
 		{
-			for( auto& slot : m_pSlotInfoSectionsContainer->slots )
+			m_pDisplayedSlot = pSlot;
+			m_pSlotHeaderValue->display.setText(slotAddressString(pSlot));
+
+			m_pSlotInfoSectionsContainer->slots.clear();
+
+			if( pSlot )
+				m_pContext->addSlotInfoSections(m_pSlotInfoSectionsContainer, pSlot);
+
+			return;										// Sections are up to date, they were just created.
+		}
+
+		for( auto& slot : m_pSlotInfoSectionsContainer->slots )
+		{
+			auto pInfoSection = dynamic_cast<InfoSection*>(slot._widget());
+			if( pInfoSection )
 			{
-				auto pInfoSection = dynamic_cast<InfoSection*>(slot._widget());
-				if( pInfoSection )
-				{
-					pInfoSection->setInspectedSlot( pWidget->_slot() );
-					pInfoSection->refresh();
-				}
+				pInfoSection->setInspectedSlot(pSlot);
+				pInfoSection->refresh();
 			}
 		}
 	}

@@ -57,10 +57,14 @@ namespace wg
 		~WidgetInfoSection() {}
 
 		void			_refreshOverflow();
+		void			_refreshSlotDrawer();
 
 		TextDisplay_p	m_pOverflowHeaderValue;
 		TablePanel_p	m_pOverflowTable;
-		PackPanel *		m_pSlotInfoSectionsContainer = nullptr;
+
+		TextDisplay_p	m_pSlotHeaderValue;
+		PackPanel_p		m_pSlotInfoSectionsContainer;
+		StaticSlot *	m_pDisplayedSlot = nullptr;
 	};
 
 } // namespace wg
