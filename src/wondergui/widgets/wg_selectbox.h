@@ -100,10 +100,11 @@ namespace wg
 		{
 			Object_p		baggage;
 			bool			disabled = false;
+			DynamicText::Blueprint	display;
 			bool			dropTarget = false;
 			Skin_p			entrySkin;
-			TextStyle_p		entryTextStyle;
 			TextLayout_p	entryTextLayout;
+			TextStyle_p		entryTextStyle;
 			Finalizer_p		finalizer = nullptr;
 			int				id = 0;
 			Skin_p			listSkin;
@@ -126,7 +127,7 @@ namespace wg
 
 		//.____ Components __________________________________________________________
 
-		DynamicText			text;
+		DynamicText			display;
 		DynamicVector<SelectBoxEntry>	entries;
 		
 		//.____ Identification ______________________________________________________
@@ -164,10 +165,12 @@ namespace wg
 
 	protected:
 		SelectBox();
-		template<class BP> SelectBox(const BP& bp) : text(this), entries(this), Widget(bp)
+		template<class BP> SelectBox(const BP& bp) : display(this), entries(this), Widget(bp)
 		{
 			m_pListCanvas = new MySideCanvas(this);
 
+			display._initFromBlueprint(bp.display);
+		
 			m_pEntryStyle 		= bp.entryTextStyle;
 			m_pEntryTextLayout 	= bp.entryTextLayout;
 

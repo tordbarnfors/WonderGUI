@@ -278,6 +278,82 @@ const char GlBackend::blurFragmentShaderTintmap[] =
 
 
 
+// Blur from a palette based source. Each tap is looked up in the palette
+// before it is weighted, as paletteBlitNearestFragmentShader does it. The index
+// texture is read with nearest sampling, so taps never blend indexes.
+
+const char GlBackend::paletteBlurFragmentShader[] =
+
+"#version 330 core\n"
+
+"struct BlurInfo"
+"{"
+"	vec4   colorMtx[9];"
+"	vec2   offset[9];"
+"};"
+
+"uniform BlurInfo blurInfo;                     "
+"uniform sampler2D texId;						"
+"uniform sampler2D paletteId;					"
+"in vec2 texUV;									"
+"in vec4 fragColor;								"
+"out vec4 color;								"
+
+"void main()									"
+"{												"
+"	color = texture(paletteId, vec2(texture(texId, texUV + blurInfo.offset[0]).r,0.5f)) * blurInfo.colorMtx[0];"
+"	color += texture(paletteId, vec2(texture(texId, texUV + blurInfo.offset[1]).r,0.5f)) * blurInfo.colorMtx[1];"
+"	color += texture(paletteId, vec2(texture(texId, texUV + blurInfo.offset[2]).r,0.5f)) * blurInfo.colorMtx[2];"
+"	color += texture(paletteId, vec2(texture(texId, texUV + blurInfo.offset[3]).r,0.5f)) * blurInfo.colorMtx[3];"
+"   color += texture(paletteId, vec2(texture(texId, texUV + blurInfo.offset[4]).r,0.5f)) * blurInfo.colorMtx[4];  "
+"	color += texture(paletteId, vec2(texture(texId, texUV + blurInfo.offset[5]).r,0.5f)) * blurInfo.colorMtx[5];"
+"	color += texture(paletteId, vec2(texture(texId, texUV + blurInfo.offset[6]).r,0.5f)) * blurInfo.colorMtx[6];"
+"	color += texture(paletteId, vec2(texture(texId, texUV + blurInfo.offset[7]).r,0.5f)) * blurInfo.colorMtx[7];"
+"	color += texture(paletteId, vec2(texture(texId, texUV + blurInfo.offset[8]).r,0.5f)) * blurInfo.colorMtx[8];"
+
+"   color *= fragColor;"
+"}												";
+
+
+const char GlBackend::paletteBlurFragmentShaderTintmap[] =
+
+"#version 330 core\n"
+
+"struct BlurInfo"
+"{"
+"	vec4   colorMtx[9];"
+"	vec2   offset[9];"
+"};"
+
+"uniform BlurInfo blurInfo;                     "
+"uniform sampler2D texId;						"
+"uniform sampler2D paletteId;					"
+"uniform samplerBuffer tintmapBufferId;			"
+"in vec2 texUV;									"
+"in vec2 tintmapUU;								"
+"out vec4 color;								"
+
+"void main()									"
+"{												"
+"	color = texture(paletteId, vec2(texture(texId, texUV + blurInfo.offset[0]).r,0.5f)) * blurInfo.colorMtx[0];"
+"	color += texture(paletteId, vec2(texture(texId, texUV + blurInfo.offset[1]).r,0.5f)) * blurInfo.colorMtx[1];"
+"	color += texture(paletteId, vec2(texture(texId, texUV + blurInfo.offset[2]).r,0.5f)) * blurInfo.colorMtx[2];"
+"	color += texture(paletteId, vec2(texture(texId, texUV + blurInfo.offset[3]).r,0.5f)) * blurInfo.colorMtx[3];"
+"   color += texture(paletteId, vec2(texture(texId, texUV + blurInfo.offset[4]).r,0.5f)) * blurInfo.colorMtx[4];  "
+"	color += texture(paletteId, vec2(texture(texId, texUV + blurInfo.offset[5]).r,0.5f)) * blurInfo.colorMtx[5];"
+"	color += texture(paletteId, vec2(texture(texId, texUV + blurInfo.offset[6]).r,0.5f)) * blurInfo.colorMtx[6];"
+"	color += texture(paletteId, vec2(texture(texId, texUV + blurInfo.offset[7]).r,0.5f)) * blurInfo.colorMtx[7];"
+"	color += texture(paletteId, vec2(texture(texId, texUV + blurInfo.offset[8]).r,0.5f)) * blurInfo.colorMtx[8];"
+
+"   vec4 fragColor = texelFetch(tintmapBufferId, int(tintmapUU.x) )"
+"               * texelFetch(tintmapBufferId, int(tintmapUU.y) ); "
+
+"   color *= fragColor;"
+"}												";
+
+
+
+
 const char GlBackend::blitFragmentShader[] =
 
 "#version 330 core\n"
@@ -986,7 +1062,7 @@ const char GlBackend::segmentsVertexShader[] =
 "layout(location = 4) in vec2 tintmapOfs;               "
 "layout(location = 5) in vec2 colorstripOfs;            "
 "out vec2 texUV;										"
-"flat out int segments;									"
+"flat out int edgemapPitch;								"
 "flat out int colorstripPitchX;							"
 "flat out int colorstripPitchY;							"
 "out vec2 tintmapUU;"
@@ -1000,7 +1076,7 @@ const char GlBackend::segmentsVertexShader[] =
 "   gl_Position.w = 1.0;                                    "
 
 "   vec4 extras = texelFetch(extrasBufferId, extrasOfs);		"
-"   segments = int(extras.x);							"
+"   edgemapPitch = int(extras.x);						"
 "   colorstripPitchX = int(extras.z);						"
 "   colorstripPitchY = int(extras.w);						"
 "   texUV = uv;											"
@@ -1015,7 +1091,7 @@ const char GlBackend::segmentsFragmentShader[] =
 "uniform samplerBuffer tintmapBufferId;			"
 "uniform samplerBuffer edgemapId;				"
 "in vec2 texUV;									"
-"flat in int segments;							"
+"flat in int edgemapPitch;						"
 "flat in int colorstripPitchX;					"
 "flat in int colorstripPitchY;					"
 "in vec2 tintmapUU;"
@@ -1041,7 +1117,7 @@ const char GlBackend::segmentsFragmentShader[] =
 "		colorstripX += colorstripPitchX; "
 "		colorstripY += colorstripPitchY; "
 
-"		vec4 edge = texelFetch(edgemapId, int(texUV.x)*(segments-1)+i );"
+"		vec4 edge = texelFetch(edgemapId, int(texUV.x)*edgemapPitch+i );"
 
 "		float x = (texUV.y - edge.r) * edge.g;"
 "		float adder = edge.g / 2.f;"
@@ -1066,7 +1142,7 @@ const char GlBackend::segmentsFragmentShader[] =
 "	rgbAcc += col.rgb * useFactor;"
 
 "   col.a = totalAlpha; "
-"   col.rgb = (rgbAcc/totalAlpha);"
+"   col.rgb = totalAlpha > 0.0 ? rgbAcc/totalAlpha : vec3(0.0);"
 
 "    color = texelFetch(tintmapBufferId, int(tintmapUU.x) )"
 "              * texelFetch(tintmapBufferId, int(tintmapUU.y) )"
@@ -1081,7 +1157,7 @@ const char GlBackend::segmentsFragmentShader_A8[] =
 "uniform samplerBuffer tintmapBufferId;	"
 "uniform samplerBuffer edgemapId;				"
 "in vec2 texUV;									"
-"flat in int segments;							"
+"flat in int edgemapPitch;						"
 "flat in int colorstripPitchX;					"
 "flat in int colorstripPitchY;					"
 "in vec2 tintmapUU;"
@@ -1106,7 +1182,7 @@ const char GlBackend::segmentsFragmentShader_A8[] =
 "		colorstripX += colorstripPitchX; "
 "		colorstripY += colorstripPitchY; "
 
-"		vec4 edge = texelFetch(edgemapId, int(texUV.x)*(segments-1)+i );"
+"		vec4 edge = texelFetch(edgemapId, int(texUV.x)*edgemapPitch+i );"
 
 "		float x = (texUV.y - edge.r) * edge.g;"
 "		float adder = edge.g / 2.f;"

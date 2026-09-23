@@ -1,0 +1,24 @@
+{
+  "name": "ScrollbarButtonUp",
+  "axis": "y",
+  "block_spacing_pts": 1,
+  "spacing_pts": null,
+  "size_pts": [
+    16,
+    16
+  ],
+  "states": [
+    "Default",
+    "Hovered",
+    "Pressed",
+    "Disabled"
+  ],
+  "frame_pts": null,
+  "padding_pts": null,
+  "rigid_part": null,
+  "stretch_axis": null,
+  "preview_over": null,
+  "blocks_from": null,
+  "content_shift": null,
+  "density": 2
+}

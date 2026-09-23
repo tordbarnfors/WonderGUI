@@ -97,15 +97,9 @@ endif()
 #
 #------------------------------------------------------------------------------
 
-if(WIN32)
-	set(WAPPLIB wappwin32)				# WonderApp framework for Win32, using software rendering.
-elseif(APPLE)
-	set(WAPPLIB wappsdl2metal)			# WonderApp framework based on SDL2, using Metal rendering.
-else()
-	set(WAPPLIB wappsdl2sw)				# WonderApp framework based on SDL2, using software rendering.
-endif()
+#set(WAPPLIB wappwin32sw)			# WonderApp framework for Win32, using software rendering.
+set(WAPPLIB wappwin32dx12)			# WonderApp framework for Win32, using software rendering.
 
-#set(WAPPLIB wappwin32)				# WonderApp framework for Win32, using software rendering.
 #set(WAPPLIB wappsdl2sw)			# WonderApp framework based on SDL2, using software rendering.
 									# Works on Windows, Mac and Linux.
 #set(WAPPLIB wappsdl2gl)			# WonderApp framework based on SDL2, using OpenGL rendering.
@@ -158,6 +152,10 @@ if(APPLE)
 	add_subdirectory(extensions/metalgfx)
 endif()
 
+if(WIN32)
+	add_subdirectory(extensions/dx12gfx)
+endif()
+
 add_subdirectory(extensions/openglgfx)
 add_subdirectory(extensions/gfxstream)
 add_subdirectory(extensions/softgfx)
@@ -168,8 +166,10 @@ add_subdirectory(extensions/freetypefont)
 
 #add_subdirectory(extensions/plugin)
 
-if( WAPPLIB STREQUAL "wappwin32" )
-	add_subdirectory(wonderapp/win32)
+if( WAPPLIB STREQUAL "wappwin32sw" )
+	add_subdirectory(wonderapp/win32-sw)
+elseif( WAPPLIB STREQUAL "wappwin32dx12" )
+	add_subdirectory(wonderapp/win32-dx12)
 elseif( WAPPLIB STREQUAL "wappsdl2sw" OR WAPPLIB STREQUAL "wappsdl2gl" OR WAPPLIB STREQUAL "wappsdl2metal" )
 	add_subdirectory(wonderapp/wappsdl2)
 else()

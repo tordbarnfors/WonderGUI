@@ -1,0 +1,36 @@
+recipe: raised_control
+shape: rect
+size_pts: [16, 28]
+radius_pts: 3
+axis: y
+block_spacing_pts: 1
+states: [Default, Hovered, Pressed, Disabled]
+frame_pts: [7, 8, 7, 8]
+padding_pts: 6
+# sections: All, not Center -- the frame spans this handle's full
+# width, so the Center X section is zero-sized and never renders;
+# a rigid part masked to Center alone was dead code and the grip
+# smeared. All also survives a later change to the frame.
+# Grip ridges run ACROSS the drag axis, hence direction: horizontal.
+# What must fit inside the rigid run 8..20pts is the lines' SPREAD
+# (2 * spacing, ~6pts), not len_pts -- len_pts is their length along
+# the cross axis, which never stretches.
+rigid_part: {axis: y, begin_pts: 8, length_pts: 12, sections: All}
+glyph: {type: grip, direction: horizontal, len_pts: 10}
+
+# Stretched along its length, the middle band is cut into the rigid run plus
+# two ~1pt flanks -- each flank stretches from a sliver, so a LINEAR gradient
+# rendered as a flat bright region, a fast transition across the rigid run,
+# and a flat dark region. gradient_ease pushes the colour change out to the
+# top and bottom edges (which live in the frame and never stretch), leaving
+# the body a near-uniform mid-blue: middle-band spread drops from 62 to ~8
+# luminance. gloss_frac 0.25 puts the gloss exactly inside the top frame so
+# it does not fade across the stretched body either.
+gradient_ease: 3.0
+gloss_frac: 0.25
+
+# The grip sinks 1pt down-right while the handle is dragged -- see
+# specs/ScrollbarHandleX.yaml. Transposed: here only the y axis stretches, and
+# the grip's 6pt spread is centred at y 14 inside the rigid run 8..20.
+glyph_shift:
+  Pressed: [1, 1]

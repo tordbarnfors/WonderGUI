@@ -1,0 +1,269 @@
+/*=========================================================================
+
+                             >>> WonderGUI <<<
+
+  This file is part of Tord Bärnfors' WonderGUI UI Toolkit and copyright
+  Tord Bärnfors, Sweden [mail: first name AT barnfors DOT c_o_m].
+
+                                -----------
+
+  The WonderGUI UI Toolkit is free software; you can redistribute
+  this file and/or modify it under the terms of the GNU General Public
+  License as published by the Free Software Foundation; either
+  version 2 of the License, or (at your option) any later version.
+
+                                -----------
+
+  The WonderGUI UI Toolkit is also available for use in commercial
+  closed source projects under a separate license. Interested parties
+  should contact Bärnfors Technology AB [www.barnfors.com] for details.
+
+=========================================================================*/
+#include <win32window.h>
+#include <windows.h>
+#include <wg_softsurface.h>
+
+extern std::wstring _stringToWString(const std::string& str);
+
+
+using namespace wg;
+
+//____ constructor ___________________________________________________
+
+Win32Window::Win32Window(wapp::Window* pUserWindow, wg::Placement origin, wg::Coord pos, wg::Size size, const std::string& title, bool resizable, bool open)
+{
+	m_pUserWindow = pUserWindow;
+
+	Rect geo = { pos, size };
+
+
+
+	m_windowHandle = CreateWindow("WappWindowClass", title.c_str(), WS_OVERLAPPEDWINDOW, geo.x, geo.y, geo.w, geo.h, 0, 0, 0, this);
+
+	if (!m_windowHandle)
+	{
+		// Error handling!
+	}
+	else
+	{
+		BITMAPINFO bmi = { 0 };
+		bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+		bmi.bmiHeader.biWidth = geo.w;
+		bmi.bmiHeader.biHeight = -geo.h; // Negativt = top-down
+		bmi.bmiHeader.biPlanes = 1;
+		bmi.bmiHeader.biBitCount = 32;
+		bmi.bmiHeader.biCompression = BI_RGB;
+
+		HDC hdcScreen = GetDC(NULL);
+		m_hBitmap = CreateDIBSection(hdcScreen, &bmi, DIB_RGB_COLORS,
+			(void**)&m_pCanvasPixels, NULL, 0);
+		ReleaseDC(NULL, hdcScreen);
+
+		UINT dpi = GetDpiForWindow(m_windowHandle);
+		int scale = dpi * 64 / 96; // 96 DPI is 100% scaling
+
+
+		auto pCanvas = wg::SoftSurface::createInPlace({
+			.canvas = true,
+			.format = PixelFormat::BGRA_8,
+			.scale = scale,
+			.size = { (int) size.w, (int) size.h}
+			}, (uint8_t*) m_pCanvasPixels);
+
+
+		m_pRootPanel = RootPanel::create(pCanvas, Base::defaultGfxDevice());
+
+		// Show window if open is true
+
+		if (open)
+		{
+			ShowWindow(m_windowHandle, SW_SHOW);
+			UpdateWindow(m_windowHandle);
+		}
+	}
+}
+
+//____ destructor _____________________________________________________
+
+Win32Window::~Win32Window()
+{
+	DeleteObject(m_hBitmap);
+}
+
+
+//____ render() _______________________________________________________________
+
+void Win32Window::render()
+{
+	if (!m_pRootPanel)
+		return;					// WM_SIZE can arrive before the constructor is done.
+
+	m_pRootPanel->render();
+
+	int nRects = m_pRootPanel->nbUpdatedRects();
+	auto pRects = m_pRootPanel->firstUpdatedRect();
+	for (int i = 0; i < nRects; i++)
+	{
+		RectI rect = * pRects++ / 64;
+		RECT rc;
+		rc.left = rect.x;
+		rc.top = rect.y;
+		rc.right = rect.x + rect.w;
+		rc.bottom = rect.y + rect.h;
+		InvalidateRect(m_windowHandle, &rc, FALSE);
+	}
+}
+
+//____ paint() ________________________________________________________________
+//
+// Called in response to WM_PAINT. Blits the offscreen DIB section that
+// render() has been drawing into onto the window's own DC.
+
+void Win32Window::paint()
+{
+	PAINTSTRUCT ps;
+	HDC hdc = BeginPaint(m_windowHandle, &ps);
+	HDC hdcMem = CreateCompatibleDC(hdc);
+	HBITMAP oldBitmap = (HBITMAP)SelectObject(hdcMem, m_hBitmap);
+	BitBlt(hdc, ps.rcPaint.left, ps.rcPaint.top,
+		ps.rcPaint.right - ps.rcPaint.left,
+		ps.rcPaint.bottom - ps.rcPaint.top,
+		hdcMem,
+		ps.rcPaint.left, ps.rcPaint.top,
+		SRCCOPY);
+	SelectObject(hdcMem, oldBitmap);
+	DeleteDC(hdcMem);
+	EndPaint(m_windowHandle, &ps);
+}
+
+//____ onResize() ____________________________________________________________
+
+void Win32Window::onResize(int widthInPixels, int heightInPixels)
+{
+	// Nothing to do before the constructor is done, or for a minimized window
+	// (zero-sized client area). Keep the old bitmap until we get a real size.
+
+	if (!m_pRootPanel || widthInPixels == 0 || heightInPixels == 0)
+		return;
+
+	// Resize bitmap
+
+	BITMAPINFO bmi = { 0 };
+	bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+	bmi.bmiHeader.biWidth = widthInPixels;
+	bmi.bmiHeader.biHeight = -heightInPixels; // Negativt = top-down
+	bmi.bmiHeader.biPlanes = 1;
+	bmi.bmiHeader.biBitCount = 32;
+	bmi.bmiHeader.biCompression = BI_RGB;
+
+	// Delete old bitmap
+
+	DeleteObject(m_hBitmap);
+
+	// Create new bitmap
+
+	HDC hdcScreen = GetDC(NULL);
+	m_hBitmap = CreateDIBSection(hdcScreen, &bmi, DIB_RGB_COLORS,
+		(void**)&m_pCanvasPixels, NULL, 0);
+	ReleaseDC(NULL, hdcScreen);
+
+
+
+	UINT dpi = GetDpiForWindow(m_windowHandle);
+	int scale = dpi * 64 / 96; // 96 DPI is 100% scaling
+
+	// Update root panel's surface
+
+	auto pCanvas = wg::SoftSurface::createInPlace({
+		.canvas = true,
+		.format = PixelFormat::BGRA_8,
+		.scale = scale,
+		.size = { widthInPixels, heightInPixels }
+		}, (uint8_t*)m_pCanvasPixels);
+
+	m_pRootPanel->setCanvas(pCanvas);
+	m_pUserWindow->onResize({ pts(widthInPixels*scale/64), pts(heightInPixels*scale/64) });
+}
+
+//____ destroy() _____________________________________________________________
+
+void Win32Window::destroy()
+{
+	DestroyWindow(m_windowHandle);
+}
+
+//____ setGeo() ______________________________________________________________
+
+Rect Win32Window::setGeo(const wg::Rect& geo)
+{
+	//TODO: Implement!!!
+	return geo;
+}
+
+//____ requestFocus() ________________________________________________________
+
+bool Win32Window::requestFocus()
+{
+	//TODO: Implement!!!
+	return false;
+}
+
+//____ releaseFocus() ________________________________________________________
+
+bool Win32Window::releaseFocus()
+{
+	//TODO: Implement!!!
+	return false;
+}
+
+//____ minimize() ____________________________________________________________
+
+bool Win32Window::minimize()
+{
+	//TODO: Implement!!!
+	return false;
+}
+
+//____ restore() _____________________________________________________________
+
+bool Win32Window::restore()
+{
+	//TODO: Implement!!!
+	return false;
+}
+
+//____ setTitle() _____________________________________________________________
+
+bool Win32Window::setTitle(std::string& title)
+{
+	auto wTitle = _stringToWString(title);
+	SetWindowTextW(m_windowHandle, wTitle.c_str());
+	return true;
+}
+
+//____ title() ________________________________________________________________
+
+std::string Win32Window::title()
+{
+	int length = GetWindowTextLengthW(m_windowHandle);
+
+	if (length == 0)
+		return std::string();
+
+	// Get the wide string
+	std::vector<wchar_t> wideString(length + 1);
+	GetWindowTextW(m_windowHandle, wideString.data(), length + 1);
+
+	// Convert to UTF-8
+	int utf8Size = WideCharToMultiByte(CP_UTF8, 0, wideString.data(), -1, nullptr, 0, nullptr, nullptr);
+
+	if (utf8Size > 0)
+	{
+		std::string utf8String(utf8Size - 1, 0); // -1 to exclude null terminator
+		WideCharToMultiByte(CP_UTF8, 0, wideString.data(), -1, &utf8String[0], utf8Size, nullptr, nullptr);
+		return utf8String;
+	}
+
+	return std::string();
+}
+

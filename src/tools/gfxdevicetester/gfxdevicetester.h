@@ -121,7 +121,7 @@ protected:
 	wapp::API*			m_pAPI = nullptr;
 	wapp::Window_p		m_pWindow;
 
-	ScrollPanel_p		g_pViewPanel = nullptr;
+	ScrollCapsule_p		g_pViewScroller = nullptr;
 
 	Device_p            g_pTesteeDevice = nullptr;
 	Device_p            g_pReferenceDevice = nullptr;

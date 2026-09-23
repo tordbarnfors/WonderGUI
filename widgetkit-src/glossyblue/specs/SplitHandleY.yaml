@@ -1,0 +1,38 @@
+recipe: raised_control
+palette_family: plate
+shape: rect
+# BACK LAYER of Skins::SplitHandleY, which is a DoubleSkin: this grey bar with
+# _pSplitHandleYDotsSkin (specs/SplitHandleYDots.yaml) laid over it. Generated
+# into _pSplitHandleYBarSkin; header_shell.h combines the pair just after the
+# generated block.
+#
+# The HORIZONTAL bar, used by SplitPanelY (children stacked, dragged up/down).
+# SplitPanel takes the bar's thickness from this skin's HEIGHT when
+# axis == Axis::Y (wg_splitpanel.cpp, _handleThickness), so 8pts tall is the
+# bar thickness; the width is only a starting size -- the bar is stretched to
+# the panel's full width.
+#
+# palette_family: plate gives it Plate's grey rather than the blue accent, so
+# it reads as furniture, while still picking up the normal hover/pressed/
+# disabled treatment from STATE_STYLE.
+size_pts: [44, 8]
+radius_pts: 2
+axis: x
+block_spacing_pts: 1
+states: [Default, Hovered, Pressed, Disabled]
+frame_pts: [2, 8, 2, 8]
+padding_pts: 2
+
+# No rigid parts: both existed only to protect the dots, which now live on the
+# overlay. The x one is simply unnecessary here (this bar stretches across the
+# grain of the vertical gradient, so every column is identical anyway), and
+# without the y one a thicker-than-natural bar just gets more gradient, which
+# is the right answer for a bevelled bar.
+#
+# Nothing on this layer constrains the bar's thickness any more, so 8pts can
+# come down further if you want a thinner splitter.
+
+# No ease needed: this bar stretches across the grain of the vertical
+# gradient, so the grey keeps Plate's own tone exactly.
+
+stretch_axis: x

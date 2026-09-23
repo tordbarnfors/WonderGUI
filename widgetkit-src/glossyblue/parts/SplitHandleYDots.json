@@ -1,0 +1,35 @@
+{
+  "name": "SplitHandleYDots",
+  "axis": "x",
+  "block_spacing_pts": 1,
+  "spacing_pts": null,
+  "size_pts": [
+    25,
+    8
+  ],
+  "states": [
+    "Default",
+    "Disabled"
+  ],
+  "frame_pts": 0,
+  "padding_pts": 0,
+  "rigid_part": [
+    {
+      "axis": "y",
+      "begin_pts": 1,
+      "length_pts": 6,
+      "sections": "All"
+    },
+    {
+      "axis": "x",
+      "begin_pts": 1,
+      "length_pts": 23,
+      "sections": "All"
+    }
+  ],
+  "stretch_axis": "x",
+  "preview_over": "SplitHandleY",
+  "blocks_from": null,
+  "content_shift": null,
+  "density": 2
+}

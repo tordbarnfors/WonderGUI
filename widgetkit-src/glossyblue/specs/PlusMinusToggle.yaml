@@ -1,0 +1,20 @@
+recipe: raised_control
+shape: rect
+size_pts: [12, 12]
+radius_pts: 2
+axis: x
+block_spacing_pts: 2
+states: [Default, Hovered, Pressed, Checked, CheckedHovered, CheckedPressed]
+glyph: {type: plusminus}
+
+# The plus/minus sinks 1pt down-right while the button is held, matching
+# Button, ToggleButton and Checkbox. It has to be glyph_shift rather than
+# BlockSkin's contentShift: the sign is drawn into the block, and this skin is
+# used as a DrawerPanel's buttonSkin, whose content is nothing -- there is
+# nothing at runtime for contentShift to move.
+#
+# Both pressed states get it. This toggle has a full six-state strip, so the
+# sign moves whether the drawer is being opened or closed.
+glyph_shift:
+  Pressed: [1, 1]
+  CheckedPressed: [1, 1]

@@ -1,0 +1,42 @@
+recipe: raised_control
+shape: rect
+# Narrowed from 30pts. raised_panel's fill, gloss and inset shading are all
+# VERTICAL gradients, so every interior column of the block is bit-identical --
+# the old width was 16pts of pure repetition that the 9-patch reproduces
+# exactly by stretching. Width is now frame(6+6) + a 2pt middle.
+# The HEIGHT must stay: the gradient is defined across it.
+size_pts: [14, 20]
+radius_pts: 4
+axis: x
+block_spacing_pts: 1
+states: [Default, Hovered, Pressed, Disabled]
+frame_pts: 6
+padding_pts: 6
+
+# Outer margin (BlockSkin _.spacing), applied on every side, so two adjacent
+# buttons in a PackPanel end up 2 x 1 = 2pts apart instead of touching. It is
+# carried by the skin rather than set as panel spacing at every call site, so a
+# row of buttons is separated by default and a caller who wants them welded
+# into a segmented strip can still say so.
+#
+# Started at 2 and came down to 1: spacing STACKS with the padding of whatever
+# panel the button sits in, so at 2 a button on a Plate sat 5 + 2 = 7pts from
+# the panel edge but only 4pts from the next button -- the outer margin read as
+# larger than the gap it was there to create. The container paddings dropped by
+# 1 at the same time (Plate 5 -> 4, Window 6 -> 5), so a button is now 5pts
+# from the panel edge and 2pts from its neighbour. Spacing also grows the
+# widget's default size by 2 x 1pts.
+spacing_pts: 1
+
+# Content-shifting: the label moves down-right with the surface when the button
+# is pushed in, which is what sells the 3D. 1pt, settled by testing in a real
+# build -- 2 looked right in a static side-by-side mock-up, but in use the jump
+# is what you notice rather than the sink. BlockSkin adds this to the content
+# offset at render time (wg_stateskin.cpp `_contentOfs`), so it is pure
+# blueprint -- no extra blocks, no atlas cost.
+#
+# Only states that have their own block in the strip may be listed. A state
+# without one needs a `blockless` StateBP, or it would take the next block in
+# the strip; `pack` refuses rather than generating that silently.
+content_shift:
+  Pressed: [1, 1]

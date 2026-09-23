@@ -1,0 +1,44 @@
+recipe: raised_control
+palette_family: plate
+shape: rect
+# BACK LAYER of Skins::SplitHandleX, which is a DoubleSkin: this grey bar with
+# _pSplitHandleXDotsSkin (specs/SplitHandleXDots.yaml) laid over it. Generated
+# into _pSplitHandleXBarSkin; header_shell.h combines the pair just after the
+# generated block. The dots used to be baked into this bitmap, which capped
+# their size at what the bar's own middle band could hold -- see the overlay
+# spec for why that is so tight on a thin bar.
+#
+# The VERTICAL bar, used by SplitPanelX (children side by side, dragged
+# left/right). SplitPanel takes the bar's thickness from this skin's WIDTH
+# when axis == Axis::X (wg_splitpanel.cpp, _handleThickness), so 8pts wide
+# is the bar thickness; the height is only a starting size -- the bar is
+# stretched to the panel's full height.
+#
+# palette_family: plate gives it Plate's grey rather than the blue accent, so
+# it reads as furniture, while still picking up the normal hover/pressed/
+# disabled treatment from STATE_STYLE.
+size_pts: [8, 44]
+radius_pts: 2
+axis: x
+block_spacing_pts: 1
+states: [Default, Hovered, Pressed, Disabled]
+frame_pts: [8, 2, 8, 2]
+padding_pts: 2
+
+# No rigid parts at all. Both of the old ones were there to protect the dots,
+# and the dots have moved to the overlay. Measured at 200pts tall, dropping the
+# y rigid also makes the bar FLATTER, not worse: with it, the 2pt flanks either
+# side of the rigid run were blown up into two visibly different tones (only
+# 41% of the length within 2 levels of the mid grey); without it the whole
+# eased middle band stretches as one and 82% of the length is within 2 levels.
+# The ease below is what keeps it flat -- not the rigid part.
+#
+# This also means nothing on this layer constrains the bar's thickness any
+# more, so 8pts can come down further if you want a thinner splitter.
+
+# Eased, with the gloss confined to the top frame (8/44), so the gradient stays
+# near the ends of a long bar instead of spreading over its whole length.
+gradient_ease: 3.0
+gloss_frac: 0.18
+
+stretch_axis: y

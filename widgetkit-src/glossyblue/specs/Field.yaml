@@ -1,0 +1,19 @@
+# The editable text surface: LineEditor and TextEditor. Pixel-for-pixel the
+# same block as Canvas -- `blocks_from` reuses Canvas's atlas entry rather than
+# rendering a second copy, so the two can never drift apart and the atlas grows
+# by nothing.
+#
+# It exists only so the editors can carry an outer margin. Canvas is also the
+# SelectBox drop-down's background, where a margin would inset the list inside
+# the popup; a single skin could not be both.
+blocks_from: Canvas
+
+# Unchanged from Canvas's 2. Padding is the inset of the TEXT from the field's
+# own border, inside the skin -- spacing sits outside it, so unlike a container
+# holding spaced children, these two do not stack and there is nothing to
+# compensate for here.
+padding_pts: 2
+
+# 1pt on every side, matching Button/ToggleButton/SelectBox, so an editor lined
+# up in a form row keeps the same distance from its neighbours that they do.
+spacing_pts: 1

@@ -1,0 +1,126 @@
+/*=========================================================================
+
+						 >>> WonderGUI <<<
+
+  This file is part of Tord Jansson's WonderGUI Graphics Toolkit
+  and copyright (c) Tord Jansson, Sweden [tord.jansson@gmail.com].
+
+							-----------
+
+  The WonderGUI Graphics Toolkit is free software; you can redistribute
+  this file and/or modify it under the terms of the GNU General Public
+  License as published by the Free Software Foundation; either
+  version 2 of the License, or (at your option) any later version.
+
+							-----------
+
+  The WonderGUI Graphics Toolkit is also available for use in commercial
+  closed-source projects under a separate license. Interested parties
+  should contact Tord Jansson [tord.jansson@gmail.com] for details.
+
+=========================================================================*/
+#pragma once
+
+
+#include <wonderapp.h>
+#include <wondergui.h>
+
+#include <wappwindow.h>
+#include <windows.h>
+
+#include <dx12_wrapper.h>
+
+#include <vector>
+
+
+//____ Win32Window _______________________________________________________________
+
+
+class Win32Window : public wapp::WindowAPI::SysCalls
+{
+public:
+
+	Win32Window(wapp::Window* pUserWindow, wg::Placement origin, wg::Coord pos, wg::Size size, const std::string& title, bool resizable, bool open);
+	virtual ~Win32Window();
+
+
+    //.____ Misc ____________________________________________________
+
+    void				render();
+	void				paint();
+	wapp::Window*		userWindow() const { return m_pUserWindow; }
+	wg::RootPanel_p		rootPanel() const { return m_pRootPanel; }
+
+	void				onResize(int width, int height);
+
+protected:
+
+	// SysCalls interface
+
+	void			destroy() override;
+	wg::Rect		setGeo(const wg::Rect& geo) override;
+	bool			requestFocus() override;
+	bool			releaseFocus() override;
+	bool			minimize() override;
+	bool			restore() override;
+
+	bool 			setTitle(std::string& title) override;
+	std::string 	title() override;
+
+
+	//
+
+	void				_createSwapChain(DX12Wrapper* pDX12Wrapper, const HWND hwnd, UINT width, UINT height);
+
+	void				_createSwapChainBuffers();
+	void				_dropSwapChainBuffers();
+
+	bool				_dirtyRectsCoverRegion(HRGN updateRegion) const;
+
+
+	//
+
+    HWND				m_windowHandle;
+
+//	HBITMAP				m_hBitmap;
+//	DWORD *				m_pCanvasPixels;
+
+	wapp::Window *		m_pUserWindow;
+	wg::RootPanel_p		m_pRootPanel;
+
+	bool				m_bHidden = false;
+	// Set by render() when there is something new in the back buffer, cleared
+	// when it has been presented. Presenting without it would put an older frame
+	// on screen and cost us a wait on the flip queue for nothing.
+
+	bool				m_bPendingPresent = false;
+
+	// Areas rendered since the last present, in pixels, presented as the swap
+	// chain's dirty rects. DXGI copies everything outside them from the
+	// previously presented buffer, which is what makes partial redraws work.
+	// A full frame is presented instead whenever they can't be trusted.
+
+	std::vector<RECT>	m_dirtyRects;
+	bool				m_bPresentFullFrame = true;
+
+	//
+
+	static const UINT								c_nbBuffers = 2;
+
+	Microsoft::WRL::ComPtr<ID3D12Device>			m_pDX12Device;
+	Microsoft::WRL::ComPtr<IDXGISwapChain3>			m_pSwapChain;
+	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>	m_RTVHeap;
+	Microsoft::WRL::ComPtr<ID3D12Resource>			m_renderBuffers[c_nbBuffers];
+	D3D12_CPU_DESCRIPTOR_HANDLE						m_rtvHandles[c_nbBuffers];
+
+	// The format of the views, which is not the format of the swap chain buffers
+	// when we ask for sRGB. See _createSwapChainBuffers().
+
+	DXGI_FORMAT										m_rtvFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
+
+	UINT m_currentBuffer = 0;		// Always read from GetCurrentBackBufferIndex(), never advanced by hand.
+
+	UINT m_width = 0, m_height = 0;
+	UINT m_heapIncrement = 0;
+
+};

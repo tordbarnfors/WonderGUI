@@ -1,0 +1,18 @@
+recipe: flat_bevel_panel
+palette: panel
+size_pts: [14, 14]
+radius_pts: 4
+axis: single
+states: [Default]
+
+# Was frameless, so a stretched panel smeared its 1px border and rounded
+# corners into a wide blur -- the whole block was being scaled. frame 5
+# is >= radius_pts (4), which keeps the corner arcs inside the fixed
+# corner cells; only the 4pt middle stretches. The body gradient is
+# subtle enough that splitting it across frame/middle shows no banding.
+# Size is now frame*2 + middle rather than 24pts of mostly-repeated pixels.
+frame_pts: 5
+# 5 -> 4: a Plate holds controls that now carry 1pt of their own spacing, and
+# the two stack. 4 + 1 puts a button back at the 5pts from the edge it had
+# before spacing existed.
+padding_pts: 4      # general group/container panel

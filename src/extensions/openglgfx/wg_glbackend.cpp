@@ -282,7 +282,6 @@ void GlBackend::setTransforms(const Transform* pBeg, const Transform* pEnd)
 {
 	m_pTransformsBeg = pBeg;
 	m_pTransformsEnd = pEnd;
-
 }
 
 //____ processCommands() _________________________________________________
@@ -1112,7 +1111,7 @@ void GlBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, int 
 
 			// Setup extras data
 
-			*pExtrasGL++ = (GLfloat)nSegments;
+			*pExtrasGL++ = (GLfloat)(pEdgemap->m_nbSegments - 1);	// Edgemap pitch (edges stored per column)
 			*pExtrasGL++ = 0;			// Dummy;
 			*pExtrasGL++ = colorstripPitchX;
 			*pExtrasGL++ = colorstripPitchY;
@@ -1589,6 +1588,8 @@ GlBackend::~GlBackend()
 	glDeleteProgram(m_paletteBlitInterpolateProg[1]);
 	glDeleteProgram(m_paletteBlitInterpolateTintmapProg[0]);
 	glDeleteProgram(m_paletteBlitInterpolateTintmapProg[1]);
+	glDeleteProgram(m_paletteBlurProg[0]);
+	glDeleteProgram(m_paletteBlurProg[1]);
 
 	glDeleteProgram(m_lineFromToProg[0]);
 	glDeleteProgram(m_lineFromToProg[1]);
@@ -1966,7 +1967,7 @@ void GlBackend::endSession()
 
 				if (statesChanged & uint8_t(StateChange::Blur))
 				{
-					spx radius = *pCmd++;
+					m_activeBlurRadius = *pCmd++;
 
 					const int* pRed = pCmd;
 					const int* pGreen = pCmd+9;
@@ -1983,37 +1984,8 @@ void GlBackend::endSession()
 
 					m_activeBlurInfo.colorMtx[4][3] = 1.f;
 
-					auto size = m_pActiveBlitSource->pixelSize();
-
-					float radiusX = radius / float(size.w * 64);
-					float radiusY = radius / float(size.h * 64);
-
-					m_activeBlurInfo.offset[0][0] = -radiusX * 0.7f;
-					m_activeBlurInfo.offset[0][1] = -radiusY * 0.7f;
-
-					m_activeBlurInfo.offset[1][0] = 0;
-					m_activeBlurInfo.offset[1][1] = -radiusY;
-
-					m_activeBlurInfo.offset[2][0] = radiusX * 0.7f;
-					m_activeBlurInfo.offset[2][1] = -radiusY * 0.7f;
-
-					m_activeBlurInfo.offset[3][0] = -radiusX;
-					m_activeBlurInfo.offset[3][1] = 0;
-
-					m_activeBlurInfo.offset[4][0] = 0;
-					m_activeBlurInfo.offset[4][1] = 0;
-
-					m_activeBlurInfo.offset[5][0] = radiusX;
-					m_activeBlurInfo.offset[5][1] = 0;
-
-					m_activeBlurInfo.offset[6][0] = -radiusX * 0.7f;
-					m_activeBlurInfo.offset[6][1] = radiusY * 0.7f;
-
-					m_activeBlurInfo.offset[7][0] = 0;
-					m_activeBlurInfo.offset[7][1] = radiusY;
-
-					m_activeBlurInfo.offset[8][0] = radiusX * 0.7f;
-					m_activeBlurInfo.offset[8][1] = radiusY * 0.7f;
+					// The offsets are in texture coordinates of the blit source, so they are
+					// calculated at draw time, from whatever blit source is active then.
 				}
 
 				// We postpone setting blend mode after having retrieved active morphFactor and fixedBlendColor
@@ -2096,10 +2068,51 @@ void GlBackend::endSession()
 			{
 				int nVertices = *pCmd++;
 
-				glUseProgram(m_blurProg[m_bTintmapIsActive]);
+				// A palette based source must be looked up in its palette tap by tap.
 
-				glUniform2fv(m_blurUniformLocation[m_bTintmapIsActive][1], 9, (GLfloat*)m_activeBlurInfo.offset);
-				glUniform4fv(m_blurUniformLocation[m_bTintmapIsActive][0], 9, (GLfloat*)m_activeBlurInfo.colorMtx);
+				bool bPalette = m_pActiveBlitSource->pixelDescription()->type == PixelType::Index;
+
+				glUseProgram(bPalette ? m_paletteBlurProg[m_bTintmapIsActive] : m_blurProg[m_bTintmapIsActive]);
+
+				// Blur offsets are added to texture coordinates normalized against the blit
+				// source, so they are normalized against the blit source size as well.
+
+				auto size = m_pActiveBlitSource->pixelSize();
+
+				float radiusX = m_activeBlurRadius / float(size.w * 64);
+				float radiusY = m_activeBlurRadius / float(size.h * 64);
+
+				m_activeBlurInfo.offset[0][0] = -radiusX * 0.7f;
+				m_activeBlurInfo.offset[0][1] = -radiusY * 0.7f;
+
+				m_activeBlurInfo.offset[1][0] = 0;
+				m_activeBlurInfo.offset[1][1] = -radiusY;
+
+				m_activeBlurInfo.offset[2][0] = radiusX * 0.7f;
+				m_activeBlurInfo.offset[2][1] = -radiusY * 0.7f;
+
+				m_activeBlurInfo.offset[3][0] = -radiusX;
+				m_activeBlurInfo.offset[3][1] = 0;
+
+				m_activeBlurInfo.offset[4][0] = 0;
+				m_activeBlurInfo.offset[4][1] = 0;
+
+				m_activeBlurInfo.offset[5][0] = radiusX;
+				m_activeBlurInfo.offset[5][1] = 0;
+
+				m_activeBlurInfo.offset[6][0] = -radiusX * 0.7f;
+				m_activeBlurInfo.offset[6][1] = radiusY * 0.7f;
+
+				m_activeBlurInfo.offset[7][0] = 0;
+				m_activeBlurInfo.offset[7][1] = radiusY;
+
+				m_activeBlurInfo.offset[8][0] = radiusX * 0.7f;
+				m_activeBlurInfo.offset[8][1] = radiusY * 0.7f;
+
+				auto& uniformLocation = bPalette ? m_paletteBlurUniformLocation[m_bTintmapIsActive] : m_blurUniformLocation[m_bTintmapIsActive];
+
+				glUniform2fv(uniformLocation[1], 9, (GLfloat*)m_activeBlurInfo.offset);
+				glUniform4fv(uniformLocation[0], 9, (GLfloat*)m_activeBlurInfo.colorMtx);
 
 				glDrawArrays(GL_TRIANGLES, vertexOfs, nVertices);
 
@@ -2478,6 +2491,21 @@ void GlBackend::_loadPrograms(int uboBindingPoint)
 		}
 	}
 
+	// Create and init blur shaders for palette based sources. Last, so the
+	// program numbers of those before stay the same.
+
+	for (int i = 0; i < 2; i++)
+	{
+		GLuint progId = _loadOrCompileProgram(programNb++, i == 0 ? blitVertexShader : blitTintmapVertexShader, i == 0 ? paletteBlurFragmentShader : paletteBlurFragmentShaderTintmap );
+		_setUniforms(progId, uboBindingPoint);
+
+		m_paletteBlurUniformLocation[i][0] = glGetUniformLocation(progId, "blurInfo.colorMtx");
+		m_paletteBlurUniformLocation[i][1] = glGetUniformLocation(progId, "blurInfo.offset");
+
+		m_paletteBlurProg[i] = progId;
+		LOG_INIT_GLERROR(glGetError());
+	}
+
 	LOG_INIT_GLERROR(glGetError());
 }
 
@@ -2615,6 +2643,9 @@ Blob_p GlBackend::_generateProgramBlob()
 			programs[prg++] = m_segmentsProg[i][canvType];
 		}
 	}
+
+	programs[prg++] = m_paletteBlurProg[0];
+	programs[prg++] = m_paletteBlurProg[1];
 
 	assert(prg == c_nbPrograms);
 

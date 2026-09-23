@@ -37,7 +37,7 @@ namespace wg
 
 	class Glow : public Component
 	{
-		friend class GlowInfoPanel;
+		friend class GlowInfoSection;
 
 	public:
 		Glow(Widget* pWidget);

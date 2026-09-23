@@ -201,6 +201,7 @@ namespace wg
 		GLuint  m_aaFillTintmapProg[2];							// [RGB/A_8 dest]
 
 		GLuint  m_blurProg[2];									// [tintmap]
+		GLuint  m_paletteBlurProg[2];							// [tintmap] Blur from a palette based source.
 		GLuint  m_blitProg[2];									// [RGB/A_8 dest]
 		GLuint  m_blitTintmapProg[2];							// [RGB/A_8 dest]
 
@@ -221,8 +222,8 @@ namespace wg
 
 		//
 
-		const static int c_nbPrograms = 28 + (c_maxSegments-1) * 2;
-		const static int c_versionNb = 102;					//
+		const static int c_nbPrograms = 30 + (c_maxSegments-1) * 2;
+		const static int c_versionNb = 103;					//
 
 		struct ProgramBlobEntry
 		{
@@ -280,9 +281,11 @@ namespace wg
 
 
 		BlurUniform	m_activeBlurInfo;
+		spx			m_activeBlurRadius = 64;
 		Blurbrush_p	m_pActiveBlurbrush;
 
 		GLint		m_blurUniformLocation[2][2];
+		GLint		m_paletteBlurUniformLocation[2][2];
 
 
 
@@ -339,6 +342,8 @@ namespace wg
 		static const char blitFragmentShaderTintmap_A8[];
 		static const char blurFragmentShader[];
 		static const char blurFragmentShaderTintmap[];
+		static const char paletteBlurFragmentShader[];
+		static const char paletteBlurFragmentShaderTintmap[];
 		static const char lineFromToVertexShader[];
 		static const char lineFromToFragmentShader[];
 		static const char lineFromToFragmentShader_A8[];

@@ -142,7 +142,7 @@ void GfxDeviceTester::exit()
 
 	destroy_tests();
 
-	g_pViewPanel = nullptr;
+	g_pViewScroller = nullptr;
 }
 
 //____ closeWindow() __________________________________________________________
@@ -168,14 +168,14 @@ void GfxDeviceTester::setup_testdevices()
 		auto pSoftBackend = SoftBackend::create();
 		addDefaultSoftKernels(pSoftBackend);
 
-		auto pBackendLogger = BackendLogger::create( &std::cout, pSoftBackend );
+//		auto pBackendLogger = BackendLogger::create( &std::cout, pSoftBackend );
 	
-		auto pGen2GfxDevice = GfxDeviceGen2::create( pBackendLogger );
+		auto pGen2GfxDevice = GfxDeviceGen2::create( pSoftBackend );
 
 		auto pGen2CanvasSurface = SoftSurface::create(canvasBP);
 		auto pGen2SoftDevice = Device::create("Gen2 Software (SoftBackend)", pGen2GfxDevice, CanvasRef::None, pGen2CanvasSurface );
 
-//		g_testdevices.push_back(pGen2SoftDevice);
+		g_testdevices.push_back(pGen2SoftDevice);
 
 	}
 
@@ -246,7 +246,7 @@ void GfxDeviceTester::setup_testdevices()
 
 		m_pLinearBackendSurface = pLinearDevice->displaySurface();
 
-		g_testdevices.push_back(pLinearDevice);
+//		g_testdevices.push_back(pLinearDevice);
 	}
 
 
@@ -257,7 +257,7 @@ void GfxDeviceTester::setup_testdevices()
 	
 	auto pNativeDevice = Device::create(nativeDeviceName, pNativeGfxDevice, CanvasRef::None, Base::defaultSurfaceFactory()->createSurface(canvasBP));
 	
-//	g_testdevices.push_back(pNativeDevice);
+	g_testdevices.push_back(pNativeDevice);
 
 
 	// Gen2 Software BGR_565_sRGB
@@ -306,7 +306,7 @@ void GfxDeviceTester::setup_testdevices()
 
 		auto pStreamDevice = Device::create("Stream to Gen 2 Software", pStreamGfxDevice, CanvasRef::Default, pGen2CanvasSurface);
 
-		g_testdevices.push_back(pStreamDevice);
+//		g_testdevices.push_back(pStreamDevice);
 	}
 
 	// Gen2 Metal
@@ -341,6 +341,7 @@ void GfxDeviceTester::update_displaymode()
 
 	// Setup view panel
 
+	Widget_p pContent;
 
 	switch (g_displayMode)
 	{
@@ -352,19 +353,25 @@ void GfxDeviceTester::update_displaymode()
 			for( auto pDevice : g_testdevices )
 				pPack->slots << pDevice;
 
-			g_pViewPanel->slot = pPack;
-
+			pContent = pPack;
 			break;
 		}
 		case DisplayMode::Diff:
+
+			pContent = Filler::create();		// Not implemented, just avoid a crash.
 			break;
 		case DisplayMode::Time:
 			refresh_performance_display();
-			g_pViewPanel->slot = g_pPerformanceDisplay;
+			g_pViewScroller->slot = g_pPerformanceDisplay;
+			pContent = g_pPerformanceDisplay;
 			break;
 	}
 
+	auto pFlex = FlexPanel::create();
+	pFlex->slots.pushBack(pContent);
+	pFlex->setDefaultSize(pContent->defaultSize());
 
+	g_pViewScroller->slot = pFlex;
 }
 
 //____ refresh_performance_display() __________________________________________
@@ -375,9 +382,9 @@ void GfxDeviceTester::refresh_performance_display()
 
 	g_pPerformanceTable->resize( 1, 3 );
 
-	g_pPerformanceTable->slots[0][0] = TextDisplay::create( { .display = { .layout = g_pPerformanceValueMapper, .text = "TEST" }});
-	g_pPerformanceTable->slots[0][1] = TextDisplay::create( { .display = { .layout = g_pPerformanceValueMapper, .text = "REFERENCE" }});
-	g_pPerformanceTable->slots[0][2] = TextDisplay::create( { .display = { .layout = g_pPerformanceValueMapper, .text = "TESTEE" }});
+	g_pPerformanceTable->slots[0][0] = TextDisplay::create( { .display = { .layout = g_pPerformanceValueMapper, .style = wkit::TextStyles::Heading6, .text = "TEST" }});
+	g_pPerformanceTable->slots[0][1] = TextDisplay::create( { .display = { .layout = g_pPerformanceValueMapper, .style = wkit::TextStyles::Heading6, .text = "REFERENCE" }});
+	g_pPerformanceTable->slots[0][2] = TextDisplay::create( { .display = { .layout = g_pPerformanceValueMapper, .style = wkit::TextStyles::Heading6, .text = "TESTEE" }});
 
 
 	for (TestEntry t : g_tests)
@@ -385,23 +392,18 @@ void GfxDeviceTester::refresh_performance_display()
 		if (t.bActive)
 		{
 
-			auto pLabel = TextDisplay::create();
+			auto pLabel = TextDisplay::create({ .display = {.style = wkit::TextStyles::Default } });
 			pLabel->display.setText(t.name);
 
 			char value[128];
+			snprintf(value, 128, " %.1f + %.1f = %.1f ms", t.devices[TESTEE].render_time * 1000, t.devices[TESTEE].stalling_time * 1000, (t.devices[TESTEE].render_time + t.devices[TESTEE].stalling_time) * 1000);
 
-			auto pValueTestee = TextDisplay::create();
+			auto pValueTestee = TextDisplay::create({ .display = {.layout = g_pPerformanceValueMapper, .style = wkit::TextStyles::Default, .text = value } });
 
-			snprintf(value, 128, " %.1f + %.1f = %.1f ms", t.devices[TESTEE].render_time * 1000, t.devices[TESTEE].stalling_time * 1000, (t.devices[TESTEE].render_time + t.devices[TESTEE].stalling_time) * 1000 );
-
-			pValueTestee->display.setText(value);
-			pValueTestee->display.setLayout(g_pPerformanceValueMapper);
-
-			auto pValueRef = TextDisplay::create();
 
 			snprintf(value, 128, " %.1f + %.1f = %.1f ms", t.devices[REFERENCE].render_time * 1000, t.devices[REFERENCE].stalling_time * 1000, (t.devices[REFERENCE].render_time + t.devices[REFERENCE].stalling_time) * 1000 );
-			pValueRef->display.setText(value);
-			pValueRef->display.setLayout(g_pPerformanceValueMapper);
+
+			auto pValueRef = TextDisplay::create({ .display = {.layout = g_pPerformanceValueMapper, .style = wkit::TextStyles::Default, .text = value } });
 
 			auto it = g_pPerformanceTable->rows.pushBack();
 
@@ -729,9 +731,8 @@ bool GfxDeviceTester::setup_chrome()
 	pViewNav->setLayout(pUniformLayout);
 	pViewNav->setSkin(wkit::Skins::Plate );
 
-	auto pViewPanel = ScrollPanel::create();
-	pViewPanel->setSkin( ColorSkin::create(Color8::SlateGrey) );
-	g_pViewPanel = pViewPanel;
+	auto pViewScroller = wkit::ScrollCapsuleXY::create();
+	g_pViewScroller = pViewScroller;
 
 	pMidSection->slots << pCanvasPanel;
 	pMidSection->slots << pSidebar;
@@ -741,7 +742,7 @@ bool GfxDeviceTester::setup_chrome()
 
 
 	pCanvasPanel->slots << pViewNav;
-	pCanvasPanel->slots << pViewPanel;
+	pCanvasPanel->slots << pViewScroller;
 
 	pCanvasPanel->slots[0].setWeight(0.f);
 	pCanvasPanel->slots[1].setWeight(1.f);
@@ -917,7 +918,7 @@ bool GfxDeviceTester::setup_chrome()
 	for (TestEntry& test : g_tests)
 	{
 		auto pEntry = TextDisplay::create( {
-			.display = {.text = test.name.c_str() },
+			.display = {.style = wkit::TextStyles::Default, .text = test.name.c_str() },
 			.id = id++,
 			.selectable = true,
 			.skin = pEntrySkin });

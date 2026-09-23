@@ -1,0 +1,93 @@
+/*=========================================================================
+
+                             >>> WonderGUI <<<
+
+  This file is part of Tord Bärnfors' WonderGUI UI Toolkit and copyright
+  Tord Bärnfors, Sweden [mail: first name AT barnfors DOT c_o_m].
+
+                                -----------
+
+  The WonderGUI UI Toolkit is free software; you can redistribute
+  this file and/or modify it under the terms of the GNU General Public
+  License as published by the Free Software Foundation; either
+  version 2 of the License, or (at your option) any later version.
+
+                                -----------
+
+  The WonderGUI UI Toolkit is also available for use in commercial
+  closed source projects under a separate license. Interested parties
+  should contact Bärnfors Technology AB [www.barnfors.com] for details.
+
+=========================================================================*/
+
+#include <wg_dx12backend.h>
+
+namespace wg {
+
+const char DX12Backend::g_fillVS[] =
+
+@INSERTLINEQUOTED <shaders/vs_fill.hlsl>
+;
+
+const char DX12Backend::g_fillPS[] =
+
+@INSERTLINEQUOTED <shaders/ps_fill.hlsl>
+;
+
+const char DX12Backend::g_fillAAVS[] =
+
+@INSERTLINEQUOTED <shaders/vs_fill_aa.hlsl>
+;
+
+const char DX12Backend::g_fillAAPS[] =
+
+@INSERTLINEQUOTED <shaders/ps_fill_aa.hlsl>
+;
+
+const char DX12Backend::g_blitVS[] =
+
+@INSERTLINEQUOTED <shaders/vs_blit.hlsl>
+;
+
+const char DX12Backend::g_blitPS[] =
+
+@INSERTLINEQUOTED <shaders/ps_blit.hlsl>
+;
+
+const char DX12Backend::g_blurPS[] =
+
+@INSERTLINEQUOTED <shaders/ps_blur.hlsl>
+;
+
+const char DX12Backend::g_paletteBlitPS[] =
+
+@INSERTLINEQUOTED <shaders/ps_blit_palette.hlsl>
+;
+
+const char DX12Backend::g_paletteBlurPS[] =
+
+@INSERTLINEQUOTED <shaders/ps_blur_palette.hlsl>
+;
+
+const char DX12Backend::g_lineVS[] =
+
+@INSERTLINEQUOTED <shaders/vs_line.hlsl>
+;
+
+const char DX12Backend::g_linePS[] =
+
+@INSERTLINEQUOTED <shaders/ps_line.hlsl>
+;
+
+const char DX12Backend::g_segmentsVS[] =
+
+@INSERTLINEQUOTED <shaders/vs_segments.hlsl>
+;
+
+const char DX12Backend::g_segmentsPS[] =
+
+@INSERTLINEQUOTED <shaders/ps_segments.hlsl>
+;
+
+
+}

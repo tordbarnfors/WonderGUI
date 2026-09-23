@@ -1,0 +1,86 @@
+recipe: raised_control
+shape: rect
+# Narrowed from 46pts. raised_panel's fill, gloss and inset shading are all
+# VERTICAL gradients, so every interior column of the block is bit-identical --
+# the old width was 20pts of pure repetition that the 9-patch reproduces
+# exactly by stretching. Width is now frame(5+18) + a 3pt middle.
+# The HEIGHT must stay: the gradient is defined across it.
+size_pts: [26, 20]
+radius_pts: 4
+axis: y
+block_spacing_pts: 1
+states: [Default, Hovered, Pressed, Disabled]
+frame_pts: [5, 18, 5, 5]
+padding_pts: [3, 18, 3, 5]
+
+# The arrow lives in the right frame column (frame right = 18pts), which
+# stretches vertically when the box grows. rigidPartY pins it at its natural
+# height. Geometry, in block coordinates: the stretchable middle band runs
+# y 5..15 (frame top 5, frame bottom 5, of a 20pt block), and the rigid run
+# is centred inside it, so WonderGUI's proportional split (which divides the
+# leftover height between the two flanks in proportion to their SOURCE
+# lengths) keeps the arrow centred as the widget grows. The run MUST stay
+# centred: an off-centre run drifts badly. Measured at a 40pt-tall box, a
+# 6.5..13.5 run puts the arrow's centre at 23.5pt instead of 21.
+#
+# Widened from 7..13 to 5.5..14.5. Two reasons, and the first one is a bug
+# that predates the glyph_shift below.
+#
+# The old run was written from the arrow's NOMINAL geometry -- 5pts tall,
+# centred at y=10, so 7.5..12.5 -- but the drawn arrow is bigger than that:
+# it carries an outline and antialiasing, and measured against a no-glyph
+# render of the same block it actually covers y 7.0..13.5. The bottom half
+# point fell outside the 7..13 run, in the stretchable trail flank, so it was
+# blown up along with the gradient. Measured: at a 40pt-tall box the arrow
+# rendered 10.5pts tall instead of 6.5, and at 100pt it rendered 21.5pts --
+# a soft smear hanging off the arrow's chin. The run has to hold the arrow's
+# DRAWN footprint, not its nominal one.
+#
+# Second, glyph_shift moves that footprint to 8.0..14.5 when pressed, so the
+# run must hold the union of both positions, 7.0..14.5. And it must stay
+# CENTRED on the band: WonderGUI divides the leftover height between the two
+# flanks in proportion to their source lengths, so an off-centre run drifts.
+# Centred and containing 7.0..14.5 means 5.5..14.5 -- it has to grow at both
+# ends to gain one at the bottom. Verified from 20 to 200pts tall, in both
+# states: arrow height exactly 6.5pts, centre error 0.00pts.
+#
+# The cost is the flanks: 0.5pt of stretchable material either side instead
+# of 2pts, so the arrow column's gradient is reconstructed from a quarter as
+# much source. Measured against the box's own centre column (which stretches
+# with no rigid part at all), mean deviation goes from 8.9 to 13.3 levels at
+# 40pt and 11.9 to 17.6 at 100pt. That only shows at all if something forces
+# the box taller than its natural 20pts, which a form control rarely is --
+# and the alternative was a visibly smeared arrow when it does. If select
+# boxes ever do get stretched hard, the fix is the split-handle treatment:
+# move the arrow and divider to a transparent overlay block and layer the two
+# with a DoubleSkin, which lets the panel underneath stretch with no rigid
+# part at all. Check first whether DoubleSkin forwards contentShift, since
+# the text shift below depends on it.
+rigid_part: {axis: y, begin_pts: 5.5, length_pts: 9, sections: Right}
+
+glyph: {type: select_arrow, arrow_zone_pts: 16, arrow_w_pts: 10, arrow_h_pts: 5}
+
+# Pressed == the drop-down is OPEN: SelectBox::_setState forces Pressed for as
+# long as the popup is up (wg_selectbox.cpp), so this is the open-box look
+# rather than a click flash.
+#
+# The arrow and the divider line are ARTWORK, baked into the block, so
+# contentShift cannot reach them -- glyph_shift moves them in the bitmap
+# instead. Both are drawn by the same add_select_arrow() call and so travel
+# together, which is what we want: the whole right-hand furniture sinks with
+# the surface. The divider ends up 1pt lower and 1pt further right; both ends
+# terminate inside the fixed frame rows, so nothing is clipped, and the
+# 1pt-wide line is solid colour all the way through the stretched band, which
+# makes the rigid split above invisible on it.
+glyph_shift: {Pressed: [1, 1]}
+
+# ...and the text is real widget content, so it moves the ordinary way, by the
+# same 1pt as every other control in the kit. SelectBox::_render() takes its
+# text canvas from m_skin.contentRect(), so BlockSkin's contentShift applies.
+content_shift: {Pressed: [1, 1]}
+
+# Outer margin, same 1pt as Button: a select box is a free-standing form
+# control that gets lined up next to buttons and other select boxes, so it
+# should keep the same distance from its neighbours that they do. Only the
+# closed box is affected -- the drop-down list uses Skins::Canvas.
+spacing_pts: 1

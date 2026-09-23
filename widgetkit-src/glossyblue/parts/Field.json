@@ -1,0 +1,12 @@
+{
+  "name": "Field",
+  "blocks_from": "Canvas",
+  "density": 2,
+  "frame_pts": null,
+  "padding_pts": 2,
+  "spacing_pts": 1,
+  "rigid_part": null,
+  "stretch_axis": null,
+  "preview_over": null,
+  "content_shift": null
+}

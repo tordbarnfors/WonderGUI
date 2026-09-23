@@ -1,0 +1,34 @@
+{
+  "name": "ScrollbarHandleY",
+  "axis": "y",
+  "block_spacing_pts": 1,
+  "spacing_pts": null,
+  "size_pts": [
+    16,
+    28
+  ],
+  "states": [
+    "Default",
+    "Hovered",
+    "Pressed",
+    "Disabled"
+  ],
+  "frame_pts": [
+    7,
+    8,
+    7,
+    8
+  ],
+  "padding_pts": 6,
+  "rigid_part": {
+    "axis": "y",
+    "begin_pts": 8,
+    "length_pts": 12,
+    "sections": "All"
+  },
+  "stretch_axis": null,
+  "preview_over": null,
+  "blocks_from": null,
+  "content_shift": null,
+  "density": 2
+}

@@ -1,0 +1,29 @@
+recipe: dot_overlay
+# FRONT LAYER of Skins::SplitHandleY: a fully transparent block carrying only
+# the three engraved dots, blitted over the grey bar by a DoubleSkin (with
+# skinInSkin false, so both layers get the whole canvas). SplitHandleXDots has
+# the full explanation of why the dots are a separate layer; this is the same
+# block transposed.
+size_pts: [25, 8]
+frame_pts: 0
+padding_pts: 0
+axis: x
+block_spacing_pts: 1
+
+# Default and Disabled only -- see SplitHandleXDots.
+states: [Default, Disabled]
+
+# Both axes pinned, with 1pt of stretchable transparent material on every side.
+#   x: rigid 1..24 of 25
+#   y: rigid 1..7 of 8
+rigid_part:
+  - {axis: y, begin_pts: 1, length_pts: 6,  sections: All}
+  - {axis: x, begin_pts: 1, length_pts: 23, sections: All}
+
+# Dots 2 -> 3.5pts; gap 8 centre-to-centre, so the run spans 19.5pts
+# centred in the 25pt block at 2.5..22.5 -- inside the 1..24 rigid run.
+glyph: {type: dots, direction: horizontal, count: 3, dot_pts: 3.5, gap_pts: 8}
+
+preview_over: SplitHandleY
+
+stretch_axis: x

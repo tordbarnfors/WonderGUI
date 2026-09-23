@@ -1,0 +1,29 @@
+{
+  "name": "SplitHandleX",
+  "axis": "x",
+  "block_spacing_pts": 1,
+  "spacing_pts": null,
+  "size_pts": [
+    8,
+    44
+  ],
+  "states": [
+    "Default",
+    "Hovered",
+    "Pressed",
+    "Disabled"
+  ],
+  "frame_pts": [
+    8,
+    2,
+    8,
+    2
+  ],
+  "padding_pts": 2,
+  "rigid_part": null,
+  "stretch_axis": "y",
+  "preview_over": null,
+  "blocks_from": null,
+  "content_shift": null,
+  "density": 2
+}

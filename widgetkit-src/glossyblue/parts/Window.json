@@ -1,0 +1,21 @@
+{
+  "name": "Window",
+  "axis": "single",
+  "block_spacing_pts": 0,
+  "spacing_pts": null,
+  "size_pts": [
+    14,
+    14
+  ],
+  "states": [
+    "Default"
+  ],
+  "frame_pts": 5,
+  "padding_pts": 5,
+  "rigid_part": null,
+  "stretch_axis": null,
+  "preview_over": null,
+  "blocks_from": null,
+  "content_shift": null,
+  "density": 2
+}

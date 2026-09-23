@@ -668,7 +668,7 @@ namespace wg
 				sz.w += childSize.w;
 
 			if (m_bScrollY && scrollbarY.isDisplayable())
-				sz.h += std::max(childSize.h, scrollbarXSize.h);
+				sz.h += std::max(childSize.h, scrollbarYSize.h);
 			else
 				sz.h += childSize.h;
 
@@ -677,10 +677,10 @@ namespace wg
 			if (!m_bOverlayScrollbars && !m_bAutoHideScrollbars)
 			{
 				if( m_bScrollX && scrollbarX.isDisplayable() )
-					childSize.h += scrollbarXSize.h;
+					sz.h += scrollbarXSize.h;
 
 				if (m_bScrollY && scrollbarY.isDisplayable())
-					childSize.w += scrollbarYSize.w;
+					sz.w += scrollbarYSize.w;
 			}
 		}
 
@@ -711,7 +711,7 @@ namespace wg
 				sz.w += childSize.w;
 
 			if (m_bScrollY && scrollbarY.isDisplayable())
-				sz.h += std::max(childSize.h, scrollbarXSize.h);
+				sz.h += std::max(childSize.h, scrollbarYSize.h);
 			else
 				sz.h += childSize.h;
 
@@ -720,10 +720,10 @@ namespace wg
 			if (!m_bOverlayScrollbars)
 			{
 				if (m_bScrollX && scrollbarX.isDisplayable())
-					childSize.h += scrollbarXSize.h;
+					sz.h += scrollbarXSize.h;
 
 				if (m_bScrollY && scrollbarY.isDisplayable())
-					childSize.w += scrollbarYSize.w;
+					sz.w += scrollbarYSize.w;
 			}
 		}
 
@@ -758,7 +758,7 @@ namespace wg
 			sz.w += childSize.w;
 
 		if (m_bScrollY && scrollbarY.isDisplayable())
-			sz.h += std::max(childSize.h, scrollbarXSize.h);
+			sz.h += std::max(childSize.h, scrollbarYSize.h);
 		else
 			sz.h += childSize.h;
 
@@ -767,10 +767,10 @@ namespace wg
 		if (!m_bOverlayScrollbars)
 		{
 			if (m_bScrollX && scrollbarX.isDisplayable())
-				childSize.h += scrollbarXSize.h;
+				sz.h += scrollbarXSize.h;
 
 			if (m_bScrollY && scrollbarY.isDisplayable())
-				childSize.w += scrollbarYSize.w;
+				sz.w += scrollbarYSize.w;
 		}
 
 		// Make sure we don't return a size larger than the maximum allowed.

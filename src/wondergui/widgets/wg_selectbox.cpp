@@ -38,7 +38,7 @@ namespace wg
 
 	//____ constructor ____________________________________________________________
 
-	SelectBox::SelectBox() : text(this), entries(this)
+	SelectBox::SelectBox() : display(this), entries(this)
 	{
 		m_pListCanvas = new MySideCanvas(this);
 	}
@@ -253,7 +253,7 @@ namespace wg
 
 		RectSPX canvas = m_skin.contentRect(_canvas, m_scale, m_state);
 
-		text._render(pDevice, canvas);
+		display._render(pDevice, canvas);
 	}
 
 	//____ _resize() _______________________________________________________________
@@ -277,8 +277,8 @@ namespace wg
 			state.setPressed(true);			// Force pressed state when popup is open.
 		}
 		Widget::_setState(state);
-		text._setState(state);
-		_requestRender(); //TODO: Only requestRender if text appearance has changed (let text._setState() return if rendering is needed)
+		display._setState(state);
+		_requestRender(); //TODO: Only requestRender if text appearance has changed (let display._setState() return if rendering is needed)
 	}
 
 	//____ _open() ____________________________________________________________
@@ -370,7 +370,7 @@ namespace wg
 		_requestRenderEntry(&entries[index]);
 		m_selectedEntryIndex = index;
 
-		text.setText(entries[index].m_string);
+		display.setText(entries[index].m_string);
 		_requestRender();
 
 		Base::msgRouter()->post(SelectMsg::create(this));

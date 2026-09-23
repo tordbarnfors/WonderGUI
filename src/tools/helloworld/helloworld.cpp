@@ -94,5 +94,6 @@ bool MyApp::_setupGUI(API* pAPI)
 	});
 
 	m_pWindow->mainCapsule()->slot = pTextDisplay;
+
 	return true;
 }
