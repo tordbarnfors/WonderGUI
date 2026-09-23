@@ -39,7 +39,6 @@ namespace wg
 	const TypeInfo DX12Surface::TYPEINFO = { "DX12Surface", &Surface::TYPEINFO };
 
 	ID3D12Device *										DX12Surface::s_pDevice = nullptr;
-	DX12Backend *										DX12Surface::s_pBackend = nullptr;
 
 	Microsoft::WRL::ComPtr<ID3D12CommandQueue>			DX12Surface::s_copyQueue;
 	Microsoft::WRL::ComPtr<ID3D12CommandAllocator>		DX12Surface::s_copyAllocator;
@@ -57,11 +56,10 @@ namespace wg
 
 	//____ setDevice() _____________________________________________________________
 
-	bool DX12Surface::setDevice( ID3D12Device * pDevice, DX12Backend * pBackend )
+	bool DX12Surface::setDevice( ID3D12Device * pDevice )
 	{
 		exitDevice();
 		s_pDevice = pDevice;
-		s_pBackend = pBackend;
 		return true;
 	}
 
@@ -82,7 +80,6 @@ namespace wg
 
 		s_copyFenceValue = 0;
 		s_pDevice = nullptr;
-		s_pBackend = nullptr;
 	}
 
 	//____ _waitForCopyFence() _____________________________________________________
@@ -110,7 +107,7 @@ namespace wg
 		if( !s_pDevice )
 		{
 			GfxBase::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite,
-				"No D3D12 device set. DX12Backend must be created before any surface.",
+				"No D3D12 device set. Call DX12Backend::setDevice() before creating any surface.",
 				nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return false;
 		}
@@ -784,15 +781,15 @@ namespace wg
 
 		s_copyList->Close();
 
-		// DX12Backend may still have work for this texture recorded or in flight,
-		// and our copy must not land in the middle of it.
+		// A DX12Backend may still have work for this texture recorded or in flight,
+		// and our copy must not land in the middle of it. Any of them might, since
+		// surfaces are shared between backends.
 		//
 		//TODO: This stalls the GPU. Fine for surfaces filled while loading, which
 		// is the normal case, but a surface updated every frame wants something
 		// better - a second texture, or a wait on the copy queue instead.
 
-		if( s_pBackend )
-			s_pBackend->waitForCompletion();
+		DX12Backend::waitForCompletionOfAll();
 
 		ID3D12CommandList* pLists[] = { s_copyList.Get() };
 		s_copyQueue->ExecuteCommandLists(1, pLists);
@@ -875,7 +872,7 @@ namespace wg
 			return;
 		}
 
-		// Rendering into us may still be sitting in DX12Backend's command list,
+		// Rendering into us may still be sitting in a DX12Backend's command list,
 		// unsubmitted. It has to be on its way and finished before we look.
 		//
 		// syncTexture() does that itself when it has something to upload, and its
@@ -883,8 +880,7 @@ namespace wg
 
 		if( m_dirtyRect.isEmpty() )
 		{
-			if( s_pBackend )
-				s_pBackend->waitForCompletion();
+			DX12Backend::waitForCompletionOfAll();
 		}
 		else
 			syncTexture();

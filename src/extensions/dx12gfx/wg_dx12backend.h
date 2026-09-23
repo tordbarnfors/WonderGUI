@@ -31,6 +31,7 @@
 #include <d3d12.h>
 
 #include <map>
+#include <vector>
 
 namespace wg
 {
@@ -50,6 +51,17 @@ namespace wg
 	public:
 
 		//.____ Creation __________________________________________
+
+		// Any number of backends can exist at the same time, e.g. one per window,
+		// but they all share one device and one command queue, set with setDevice()
+		// before the first backend or surface is created. Sharing the queue is what
+		// lets surfaces move freely between backends without cross-queue syncing.
+
+		static DX12Backend_p	create();
+
+		// Convenience for when there is only ever one backend: sets device and queue
+		// if none are set (they must match if they are) and releases them again when
+		// the last backend is destroyed.
 
 		static DX12Backend_p	create(ID3D12Device * pDX12Device, ID3D12CommandQueue * pDX12CommandQueue );
 
@@ -77,6 +89,23 @@ namespace wg
 
 		void	processCommands(const uint16_t* pBeg, const uint16_t* pEnd, int version = 2) override;
 
+
+		//.____ Device _______________________________________________________
+
+		// Sets the device and render queue shared by all backends, surfaces and
+		// edgemaps, holding a reference to both. Can't be changed while any backend
+		// exists. setDevice(nullptr, nullptr) releases them, which should be done
+		// once all backends, surfaces and edgemaps are gone.
+
+		static bool					setDevice(ID3D12Device * pDX12Device, ID3D12CommandQueue * pDX12CommandQueue);
+		static ID3D12Device *		device() { return s_pDevice.Get(); }
+		static ID3D12CommandQueue *	commandQueue() { return s_pCommandQueue.Get(); }
+
+		// Submits what every backend has recorded and waits for the GPU to finish
+		// all of it. Used by surfaces before they touch a texture any backend might
+		// be using.
+
+		static void				waitForCompletionOfAll();
 
 		//.____ Misc _________________________________________________________
 
@@ -363,8 +392,15 @@ namespace wg
 
 		//
 
-		Microsoft::WRL::ComPtr<ID3DBlob>					m_vertexShaderBlobs[int(PipelineKind::Size)];
-		Microsoft::WRL::ComPtr<ID3DBlob>					m_pixelShaderBlobs[int(PipelineKind::Size)];
+		// Compiled once, shared by all backends. Released by setDevice(nullptr, nullptr).
+
+		static Microsoft::WRL::ComPtr<ID3DBlob>				s_vertexShaderBlobs[int(PipelineKind::Size)];
+		static Microsoft::WRL::ComPtr<ID3DBlob>				s_pixelShaderBlobs[int(PipelineKind::Size)];
+
+		static Microsoft::WRL::ComPtr<ID3D12Device>			s_pDevice;
+		static Microsoft::WRL::ComPtr<ID3D12CommandQueue>	s_pCommandQueue;
+		static bool											s_bImplicitDevice;		// Set by create(device, queue), released with the last backend.
+		static std::vector<DX12Backend*>					s_backends;				// All that exist. Not thread safe, like the rest of the backend.
 
 		// Widths a line of a given slope needs to keep an even thickness. Indexed
 		// by slope * 16, interpolated in between. See _scaleThickness().

@@ -87,11 +87,11 @@ namespace wg
 
 		//.____ Misc __________________________________________________________
 
-		// Set by DX12Backend before any surface is created. All surfaces share one
-		// copy queue for their uploads, and need the backend to tell them when its
-		// rendering has finished.
+		// Set by DX12Backend::setDevice() before any surface is created. All
+		// surfaces share one copy queue for their uploads. Before touching a
+		// texture they wait for every DX12Backend, since any of them may use it.
 
-		static bool				setDevice( ID3D12Device * pDevice, DX12Backend * pBackend );
+		static bool				setDevice( ID3D12Device * pDevice );
 		static void				exitDevice();
 
 		// Used by DX12Backend when the surface is set as blit source or canvas.
@@ -173,7 +173,6 @@ namespace wg
 		//
 
 		static ID3D12Device *									s_pDevice;
-		static DX12Backend *									s_pBackend;			// Not a strong pointer, it owns us indirectly.
 
 		static Microsoft::WRL::ComPtr<ID3D12CommandQueue>		s_copyQueue;
 		static Microsoft::WRL::ComPtr<ID3D12CommandAllocator>	s_copyAllocator;

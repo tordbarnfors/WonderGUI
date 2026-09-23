@@ -34,6 +34,7 @@
 #include <cassert>
 #include <vector>
 #include <utility>
+#include <algorithm>
 
 #include <wg_gfxbase.h>
 #include <wg_gfxutil.h>
@@ -97,11 +98,99 @@ namespace wg
 
 	#define CHECK_HR(call, what) _checkHR(call, what, this, &TYPEINFO, __func__, __FILE__, __LINE__)
 
+	Microsoft::WRL::ComPtr<ID3DBlob>			DX12Backend::s_vertexShaderBlobs[int(PipelineKind::Size)];
+	Microsoft::WRL::ComPtr<ID3DBlob>			DX12Backend::s_pixelShaderBlobs[int(PipelineKind::Size)];
+	Microsoft::WRL::ComPtr<ID3D12Device>		DX12Backend::s_pDevice;
+	Microsoft::WRL::ComPtr<ID3D12CommandQueue>	DX12Backend::s_pCommandQueue;
+	bool										DX12Backend::s_bImplicitDevice = false;
+	std::vector<DX12Backend*>					DX12Backend::s_backends;
+
 	//____ create() ______________________________________________________________
+
+	DX12Backend_p DX12Backend::create()
+	{
+		if (!s_pDevice || !s_pCommandQueue)
+		{
+			GfxBase::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite,
+				"No D3D12 device set. Call DX12Backend::setDevice() before creating a backend.",
+				nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
+			return nullptr;
+		}
+
+		return DX12Backend_p(new DX12Backend(s_pDevice.Get(), s_pCommandQueue.Get()));
+	}
 
 	DX12Backend_p DX12Backend::create(ID3D12Device* pDX12Device, ID3D12CommandQueue* pDX12CommandQueue)
 	{
-		return DX12Backend_p(new DX12Backend(pDX12Device, pDX12CommandQueue));
+		if (!s_pDevice)
+		{
+			if (!setDevice(pDX12Device, pDX12CommandQueue))
+				return nullptr;
+			s_bImplicitDevice = true;
+		}
+		else if (s_pDevice.Get() != pDX12Device || s_pCommandQueue.Get() != pDX12CommandQueue)
+		{
+			GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam,
+				"All backends must share the device and command queue set by DX12Backend::setDevice().",
+				nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
+			return nullptr;
+		}
+
+		return create();
+	}
+
+	//____ setDevice() ___________________________________________________________
+
+	bool DX12Backend::setDevice(ID3D12Device* pDX12Device, ID3D12CommandQueue* pDX12CommandQueue)
+	{
+		if (!s_backends.empty())
+		{
+			GfxBase::throwError(ErrorLevel::Error, ErrorCode::IllegalCall,
+				"Can't change D3D12 device while DX12Backends exist.",
+				nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
+			return false;
+		}
+
+		if ((pDX12Device == nullptr) != (pDX12CommandQueue == nullptr))
+		{
+			GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam,
+				"Device and command queue must both be set or both be null.",
+				nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
+			return false;
+		}
+
+		if (s_pDevice)
+		{
+			DX12Surface::exitDevice();
+			DX12Edgemap::exitDevice();
+
+			for (auto& blob : s_vertexShaderBlobs)
+				blob.Reset();
+			for (auto& blob : s_pixelShaderBlobs)
+				blob.Reset();
+		}
+
+		s_pDevice = pDX12Device;
+		s_pCommandQueue = pDX12CommandQueue;
+		s_bImplicitDevice = false;
+
+		if (pDX12Device)
+		{
+			// Surfaces and edgemaps create their own resources and need the device for it.
+
+			DX12Surface::setDevice(pDX12Device);
+			DX12Edgemap::setDevice(pDX12Device);
+		}
+
+		return true;
+	}
+
+	//____ waitForCompletionOfAll() ______________________________________________
+
+	void DX12Backend::waitForCompletionOfAll()
+	{
+		for (auto pBackend : s_backends)
+			pBackend->waitForCompletion();
 	}
 
 	//____ Constructor ___________________________________________________________
@@ -114,10 +203,7 @@ namespace wg
 		m_pDX12CommandQueue = pDX12CommandQueue;
 		m_pDX12Device = pDX12Device;
 
-		// Surfaces create their own textures and need the device for it.
-
-		DX12Surface::setDevice(pDX12Device, this);
-		DX12Edgemap::setDevice(pDX12Device);
+		s_backends.push_back(this);
 
 		m_srvDescriptorSize = pDX12Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 		m_samplerDescriptorSize = pDX12Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
@@ -168,8 +254,12 @@ namespace wg
 
 		waitForCompletion();
 
-		DX12Surface::exitDevice();
-		DX12Edgemap::exitDevice();
+		s_backends.erase(std::remove(s_backends.begin(), s_backends.end(), this), s_backends.end());
+
+		// Release the device if create(device, queue) set it for us.
+
+		if (s_backends.empty() && s_bImplicitDevice)
+			setDevice(nullptr, nullptr);
 
 		if (m_fenceEvent)
 			CloseHandle(m_fenceEvent);
@@ -2398,12 +2488,15 @@ namespace wg
 			{ PipelineKind::Segments, g_segmentsVS, g_segmentsPS },
 		};
 
+		// Compiled by the first backend, reused by the rest. Opening a window
+		// shouldn't cost a round of D3DCompile each time.
+
 		for (auto& shader : shaders)
 		{
-			if (!_compileVertexShader(m_vertexShaderBlobs[int(shader.kind)], shader.pVS))
+			if (!s_vertexShaderBlobs[int(shader.kind)] && !_compileVertexShader(s_vertexShaderBlobs[int(shader.kind)], shader.pVS))
 				return false;
 
-			if (!_compilePixelShader(m_pixelShaderBlobs[int(shader.kind)], shader.pPS))
+			if (!s_pixelShaderBlobs[int(shader.kind)] && !_compilePixelShader(s_pixelShaderBlobs[int(shader.kind)], shader.pPS))
 				return false;
 		}
 
@@ -2582,8 +2675,8 @@ namespace wg
 	{
 		// Setup the graphics pipeline state.
 
-		auto& vertexShaderBlob = m_vertexShaderBlobs[int(kind)];
-		auto& pixelShaderBlob = m_pixelShaderBlobs[int(kind)];
+		auto& vertexShaderBlob = s_vertexShaderBlobs[int(kind)];
+		auto& pixelShaderBlob = s_pixelShaderBlobs[int(kind)];
 
 		if (!vertexShaderBlob || !pixelShaderBlob)
 			return false;
