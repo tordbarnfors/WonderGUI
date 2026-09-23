@@ -4,6 +4,9 @@ set(SOURCES
     core/wg_debugbackend.h
     core/wg_debugbackend.cpp
     core/wg_debugtheme.h
+    core/wg_debugtheme.cpp
+    core/wg_debugwindow.h
+    core/wg_debugwindow.cpp
     core/wg_idebugcontext.h
     core/wg_infosection.h
     core/wg_infosection.cpp
@@ -98,8 +101,6 @@ set(SOURCES
     frontend/wg_debugcapsule.cpp
     frontend/wg_debugfrontend.h
     frontend/wg_debugfrontend.cpp
-    frontend/wg_debugwindow.h
-    frontend/wg_debugwindow.cpp
 
     overlay/wg_debugoverlay.h
     overlay/wg_debugoverlay.cpp

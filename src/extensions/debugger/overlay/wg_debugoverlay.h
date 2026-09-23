@@ -28,6 +28,7 @@
 #include <wg_packpanel.h>
 #include <wg_togglebutton.h>
 #include <wg_debugbackend.h>
+#include <wg_debugwindow.h>
 
 #include <wg_scrollcapsule.h>
 
@@ -72,6 +73,8 @@ namespace wg
 			Placement	m_placement = Placement::NorthWest;
 			CoordSPX	m_placementPos;			// Widgets pos relative placement.
 			SizeSPX		m_chosenSize;
+			int			m_windowNumber = 0;		// Our windows in creation order, F1 shows/hides number 0.
+												// Slot order changes as windows are raised, this doesn't.
 		};
 
 
@@ -180,7 +183,7 @@ namespace wg
 
 		// Window creators
 
-		std::tuple<Widget_p, PackPanel_p> _createWindow( const char * pTitle );
+		std::tuple<DebugWindow_p, PackPanel_p> _createWindow( const char * pTitle );
 
 		void			_createToolboxWindow();
 		void			_createWidgetInfoWindow();
@@ -194,7 +197,9 @@ namespace wg
 		void			_createResources();
 
 		Placement		_windowFrameSection( CoordSPX pos, int windowIndex );
-		int				_windowIndex(Widget* pWidget);						// Lookup which window the widget is part of.
+		int				_windowIndex(Widget* pWidget);						// Which of our windows the widget is part of, -1 if none.
+		DebugWindow *	_window(int windowIndex) const { return static_cast<DebugWindow*>(windows[windowIndex]._widget()); }
+		void			_setWindowVisible(int windowIndex, bool bVisible);
 
 
 		RectSPX			_selectionGeo() const;
@@ -242,15 +247,7 @@ namespace wg
 		Surface_p		m_pIcons;
 		Surface_p		m_pTransparencyGrid;
 
-		Skin_p			m_pSelectIcon;
-
-		Skin_p			m_pRefreshIcon;
-		Skin_p			m_pExpandIcon;
-		Skin_p			m_pCondenseIcon;
-
-		TextLayout_p	m_pHeaderLayout;
-
-		DebugTheme	m_theme;
+		DebugTheme		m_theme;					// Icons and blueprints, see DebugTheme::create().
 
 	};
 

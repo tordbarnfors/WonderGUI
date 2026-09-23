@@ -58,8 +58,10 @@ namespace wg
 		m_pIcons	= bp.icons;
 		m_pTransparencyGrid = bp.transparencyGrid;
 
-		_createResources();
+		m_theme = DebugTheme::create(m_pIcons, m_pTransparencyGrid);
 		m_pBackend->setTheme(m_theme);
+
+		_createResources();
 
 		// Create default skins
 
@@ -485,18 +487,21 @@ namespace wg
 					break;
 				}
 
-				int id = pWidget->id();
+				int	windowIndex = _windowIndex(pWidget);
 
-				if( id < 10000 )
+				if( windowIndex < 0 )
 				{
 					m_generatedPointerStyle = PointerStyle::Undefined;
 					break;
 				}
 
-				int	windowIndex = _windowIndex(pWidget);
-				int meaning = id % 1000;
+				auto pWindow = _window(windowIndex);
 
-				if( meaning == 1 )
+				if( pWidget == pWindow->_titleBar() )
+				{
+					m_generatedPointerStyle = m_movingWindow >= 0 ? PointerStyle::ClosedHand : PointerStyle::OpenHand;
+				}
+				else if( pWindow->_isFrame(pWidget) )
 				{
 					CoordSPX mousePos = _toLocal(pMsg->pointerSpxPos());
 
@@ -528,10 +533,8 @@ namespace wg
 							break;
 					}
 				}
-				else if( meaning == 2 )
-				{
-					m_generatedPointerStyle = m_movingWindow >= 0 ? PointerStyle::ClosedHand : PointerStyle::OpenHand;
-				}
+				else
+					m_generatedPointerStyle = PointerStyle::Undefined;		// Pointer is over our content, not our frame.
 
 				break;
 			}
@@ -566,34 +569,30 @@ namespace wg
 					{
 						// Check for press on Window
 
-						int id = pWidget->id();
+						int windowIndex = _windowIndex(pWidget);
 
-						if( id < 10000 )
+						if( windowIndex < 0 )
 							break;								// Not any press to bother about.
 
-						int windowIndex = _windowIndex(pWidget);
-						int meaning = id % 1000;
+						auto pWindow = _window(windowIndex);
 
-
-
-						switch( meaning )
+						if( pWidget == pWindow->_titleBar() )
 						{
-							case 1:					// Resize
-							{
-								m_resizingWindow = windowIndex;
-								m_resizingWindowDirection = _windowFrameSection( mousePos, windowIndex );
-								m_resizingWindowStartGeo = windows[windowIndex].m_geo;
-								break;
-							}
-							case 2:					// Raise and move
+							// Raise and move
 
-								windows._move(windowIndex, 0);
-								m_movingWindow = 0; // windowIndex;
-								m_movingWindowStartOfs = windows[0].m_placementPos;
+							windows._move(windowIndex, 0);
+							m_movingWindow = 0;
+							m_movingWindowStartOfs = windows[0].m_placementPos;
 
-								_childRequestRender(windows.begin(), windows[0].m_geo.size());
-								break;
+							_childRequestRender(windows.begin(), windows[0].m_geo.size());
+						}
+						else if( pWindow->_isFrame(pWidget) )
+						{
+							// Resize
 
+							m_resizingWindow = windowIndex;
+							m_resizingWindowDirection = _windowFrameSection( mousePos, windowIndex );
+							m_resizingWindowStartGeo = windows[windowIndex].m_geo;
 						}
 					}
 
@@ -723,22 +722,13 @@ namespace wg
 					case Key::F9:
 					case Key::F10:
 					{
-						int WindowIdx = int(key) - int(Key::F1);
+						int windowNumber = int(key) - int(Key::F1);
 
-						for( auto& Window : windows )
+						for( int i = 0 ; i < windows.size() ; i++ )
 						{
-
-							if( (Window.widget()->id() - 10000) / 1000 == WindowIdx )
+							if( windows[i].m_windowNumber == windowNumber )
 							{
-								Window.m_bVisible = !Window.m_bVisible;
-								_requestRender(Window.m_geo);
-
-								windows._move(&Window, windows.begin());
-
-								// Make sure we don't keep dragging around an invisible window.
-
-								m_movingWindow = -1;
-								m_resizingWindow = -1;
+								_setWindowVisible(i, !windows[i].m_bVisible);
 								break;
 							}
 						}
@@ -763,12 +753,41 @@ namespace wg
 
 	int DebugOverlay::_windowIndex(Widget* pWidget)
 	{
-		auto pChild = pWidget;
-		while (pChild->parent() != this)
-			pChild = pChild->parent();
+		while( pWidget != nullptr && pWidget != this && pWidget->parent() != this )
+			pWidget = pWidget->parent();
 
-		auto it = windows._find(pChild);
-		return windows._index(it);
+		if( pWidget == nullptr || pWidget == this )
+			return -1;
+
+		auto pSlot = windows._find(pWidget);
+		if( pSlot == nullptr )
+			return -1;							// A child of our mainSlot, not one of our windows.
+
+		return windows._index(pSlot);
+	}
+
+	//____ _setWindowVisible() ______________________________________________________
+
+	void DebugOverlay::_setWindowVisible(int windowIndex, bool bVisible)
+	{
+		if( windowIndex < 0 || windowIndex >= windows.size() )
+			return;
+
+		auto& window = windows[windowIndex];
+
+		if( bVisible == window.m_bVisible )
+			return;
+
+		window.m_bVisible = bVisible;
+		_requestRender(window.m_geo);
+
+		if( bVisible )
+			windows._move(windowIndex, 0);		// Raise it, so it isn't shown behind the others.
+
+		// Make sure we don't keep dragging around a window that was just hidden.
+
+		m_movingWindow = -1;
+		m_resizingWindow = -1;
 	}
 
 	//____ _windowFrameSection() _________________________________________________________
@@ -816,39 +835,30 @@ namespace wg
 
 	//____ _createWindow() ________________________________________
 
-	std::tuple<Widget_p, PackPanel_p> DebugOverlay::_createWindow( const char * pTitle )
+	std::tuple<DebugWindow_p, PackPanel_p> DebugOverlay::_createWindow( const char * pTitle )
 	{
-		auto pPanelSkin = dbgkit::Skins::Window;
-
-
-		int idOfs = 10000 + 1000 * windows.size();
-
-		auto pMain = PackPanel::create( WGBP(PackPanel, _.id = idOfs + 1, _.axis = Axis::Y, _.skin = pPanelSkin) );
-
-		auto pTitleDisplay = WGCREATE( dbgkit::WindowTitleBar, _.id = idOfs + 2, _.display.text = pTitle );
-/*
-		auto pTitleDisplay = TextDisplay::create( WGBP(TextDisplay,
-													   _.id = idOfs + 2,
-													   _.display.text = pTitle,
-													   _.markPolicy = MarkPolicy::Geometry,
-													   _.skin = pTitleBarSkin ));
-*/
 		auto pContent = PackPanel::create( WGBP(PackPanel, _.axis = Axis::Y ));
 
+		// Our windows are never released, closing one just hides it. It is
+		// brought back with the function key in its title.
 
-		pMain->slots.pushBack( pTitleDisplay, WGBP(PackPanelSlot, _.weight = 0.f ));
-		pMain->slots.pushBack( pContent, WGBP(PackPanelSlot, _.weight = 1.f ));
+		auto pWindow = WGCREATE( DebugWindow,
+			_.label = pTitle,
+			_.onClose = [this](DebugWindow * pWindow) { _setWindowVisible( _windowIndex(pWindow), false ); }
+		);
 
+		pWindow->setContent(pContent);
+
+		int windowNumber = windows.size();
 
 		auto it = windows._pushBackEmpty(1);
 
-
-
-		it->_setWidget(pMain);
+		it->_setWidget(pWindow);
 		it->m_bVisible = true;
 		it->m_placement = Placement::NorthWest;
+		it->m_windowNumber = windowNumber;
 
-		return std::make_tuple(pMain,pContent);
+		return std::make_tuple(pWindow,pContent);
 	}
 
 	//____ _createToolboxWindow() ____________________________________________
@@ -857,8 +867,8 @@ namespace wg
 	{
 		// Create our window
 
-		Widget_p	pWindow;
-		PackPanel_p	pContent;
+		DebugWindow_p	pWindow;
+		PackPanel_p		pContent;
 
 		std::tie(pWindow, pContent) = _createWindow("F1 - Toolbox");
 
@@ -866,7 +876,7 @@ namespace wg
 
 		auto pButtonPalette = PackPanel::create(WGBP(PackPanel, _.axis = Axis::X));
 
-		auto pPickButton = WGCREATE(dbgkit::ToggleButton, _.icon.skin = m_pSelectIcon, _.icon.placement = Placement::Center);
+		auto pPickButton = WGCREATE(dbgkit::ToggleButton, _.icon.skin = m_theme.selectIcon, _.icon.placement = Placement::Center);
 
 		m_pPickWidgetButton = pPickButton;
 
@@ -890,8 +900,8 @@ namespace wg
 	{
 		// Add our windows
 
-		Widget_p	pWindow;
-		PackPanel_p	pContent;
+		DebugWindow_p	pWindow;
+		PackPanel_p		pContent;
 
 		std::tie(pWindow, pContent) = _createWindow("F2 - Widget Tree");
 
@@ -899,7 +909,7 @@ namespace wg
 
 		auto pButtonPalette = PackPanel::create(WGBP(PackPanel, _.axis = Axis::X));
 
-		auto pRefreshButton = WGCREATE( dbgkit::Button, _.icon.skin = m_pRefreshIcon, _.icon.placement = Placement::Center );
+		auto pRefreshButton = WGCREATE( dbgkit::Button, _.icon.skin = m_theme.refreshIcon, _.icon.placement = Placement::Center );
 
 		Base::msgRouter()->addRoute(pRefreshButton, MsgType::Select, [this](Msg* pMsg) {
 
@@ -909,7 +919,7 @@ namespace wg
 				this->m_pWidgetTreeContainer->slot = nullptr;
 		});
 
-		auto pCollapseAllButton = WGCREATE( dbgkit::Button, _.icon.skin = m_pCondenseIcon, _.icon.placement = Placement::Center);
+		auto pCollapseAllButton = WGCREATE( dbgkit::Button, _.icon.skin = m_theme.condenseIcon, _.icon.placement = Placement::Center);
 
 		Base::msgRouter()->addRoute(pCollapseAllButton, MsgType::Select, [this](Msg* pMsg) {
 
@@ -917,7 +927,7 @@ namespace wg
 				static_cast<WidgetTreeView*>(m_pWidgetTreeContainer->slot._widget())->collapseAll();
 		});
 
-		auto pExpandAllButton = WGCREATE( dbgkit::Button, _.icon.skin = m_pExpandIcon, _.icon.placement = Placement::Center);
+		auto pExpandAllButton = WGCREATE( dbgkit::Button, _.icon.skin = m_theme.expandIcon, _.icon.placement = Placement::Center);
 
 		Base::msgRouter()->addRoute(pExpandAllButton, MsgType::Select, [this](Msg* pMsg) {
 
@@ -957,8 +967,8 @@ namespace wg
 	{
 		// Create our window
 
-		Widget_p	pWindow;
-		PackPanel_p	pContent;
+		DebugWindow_p	pWindow;
+		PackPanel_p		pContent;
 
 		std::tie(pWindow, pContent) = _createWindow("F3 - Widget Inspector");
 
@@ -997,8 +1007,8 @@ namespace wg
 	{
 		// Add our windows
 
-		Widget_p	pWindow;
-		PackPanel_p	pContent;
+		DebugWindow_p	pWindow;
+		PackPanel_p		pContent;
 
 		std::tie(pWindow, pContent) = _createWindow("F4 - Skin Inspector");
 
@@ -1038,8 +1048,8 @@ namespace wg
 	{
 		// Add our windows
 
-		Widget_p	pWindow;
-		PackPanel_p	pContent;
+		DebugWindow_p	pWindow;
+		PackPanel_p		pContent;
 
 		std::tie(pWindow, pContent) = _createWindow("F5 - Object Inspector");
 
@@ -1080,8 +1090,8 @@ namespace wg
 	{
 		// Add our windows
 
-		Widget_p	pWindow;
-		PackPanel_p	pContent;
+		DebugWindow_p	pWindow;
+		PackPanel_p		pContent;
 
 		std::tie(pWindow, pContent) = _createWindow("F6 - Message Log");
 
@@ -1101,116 +1111,6 @@ namespace wg
 	void DebugOverlay::_createResources()
 	{
 		m_pPackLayoutForScrollingContent = PackLayout::create({});
-
-		m_pRefreshIcon = BlockSkin::create(WGBP(BlockSkin,
-			_.surface = m_pIcons,
-			_.firstBlock = Rect(0, 0, 16, 16);
-			));
-
-		m_pSelectIcon = BlockSkin::create(WGBP(BlockSkin,
-			_.surface = m_pIcons,
-			_.firstBlock = Rect(16, 0, 16, 16);
-		));
-
-		m_pExpandIcon = BlockSkin::create(WGBP(BlockSkin,
-			_.surface = m_pIcons,
-			_.firstBlock = Rect(32, 0, 16, 16);
-		));
-
-		m_pCondenseIcon = BlockSkin::create(WGBP(BlockSkin,
-			_.surface = m_pIcons,
-			_.firstBlock = Rect(48, 0, 16, 16);
-		));
-
-		auto pListTextLayout = BasicTextLayout::create( WGBP(BasicTextLayout,
-														  _.placement = Placement::East ));
-
-		auto pInfoLayout = BasicTextLayout::create( WGBP(BasicTextLayout,
-														  _.wrap = true,
-														  _.placement = Placement::Center ));
-
-		auto pWrapTextLayout = BasicTextLayout::create(WGBP(BasicTextLayout,
-			_.wrap = true,
-			_.placement = Placement::NorthWest));
-
-		m_pHeaderLayout = BasicTextLayout::create(WGBP(BasicTextLayout,
-			_.placement = Placement::Center));
-
-		auto pValueLayout = BasicNumberLayout::create( WGBP(BasicNumberLayout,
-			_.style = dbgkit::TextStyles::Default,
-			_.decimalMin = 2
-		));
-
-		auto pIntegerLayout = BasicNumberLayout::create(WGBP(BasicNumberLayout,
-			_.style = dbgkit::TextStyles::Default,
-			_.decimalMin = 0
-		));
-
-
-		CharBuffer chrBuff;
-		chrBuff.pushBack("0x");
-		chrBuff.setStyle(dbgkit::TextStyles::Default);
-
-		auto pPointerLayout = BasicNumberLayout::create(WGBP(BasicNumberLayout,
-			_.style = dbgkit::TextStyles::Default,
-			_.base = 16,
-			_.integerGrouping = 0,
-			_.prefix = String(&chrBuff)
-			));
-
-		auto pPtsLayout = BasicNumberLayout::create(WGBP(BasicNumberLayout,
-			_.style = dbgkit::TextStyles::Default,
-			_.decimalMin = 2
-		));
-
-		m_theme.icons = m_pIcons;
-		m_theme.transparencyGrid = m_pTransparencyGrid;
-
-		m_theme.classCapsule = WGBP(LabelCapsule,
-			_.skin = ColorSkin::create(HiColor::Transparent, { 10,0,0,8 }),
-			_.label.style = dbgkit::TextStyles::FinePrint
-		);
-
-
-		m_theme.listEntryLabel = WGBP(TextDisplay,
-											 _.display.style = dbgkit::TextStyles::Strong );
-
-		m_theme.listEntryText = WGBP(TextDisplay,
-											 _.display.style = dbgkit::TextStyles::Default,
-											 _.display.layout = pListTextLayout );
-
-		m_theme.listEntryInteger = WGBP(NumberDisplay,
-											 _.display.layout = pIntegerLayout );
-
-		m_theme.listEntryBool = WGBP(NumberDisplay,
-											_.display.layout = pValueLayout);
-
-		m_theme.listEntrySPX = WGBP(NumberDisplay,
-											 _.display.layout = pIntegerLayout );
-
-		m_theme.listEntryPts = WGBP(NumberDisplay,
-											 _.display.layout = pPtsLayout );
-
-		m_theme.listEntryDecimal = WGBP(NumberDisplay,
-											 _.display.layout = pValueLayout );
-
-//		m_theme.listEntryPointer = WGBP(NumberDisplay,
-//											 _.display.layout = pPointerLayout );
-
-		m_theme.listEntryDrawer = dbgkit::TreeListDrawer::Blueprint();
-		m_theme.selectableListEntryCapsule = WGOVR( dbgkit::TreeListEntry::Blueprint(), _.selectable = true );
-
-		m_theme.textField = WGBP(TextDisplay,
-			_.display.style = dbgkit::TextStyles::Default,
-			_.display.layout = pWrapTextLayout,
-			_.skin = dbgkit::Skins::Canvas );
-
-		m_theme.infoDisplay = WGBP(TextDisplay,
-											 _.display.style = dbgkit::TextStyles::Emphasis,
-											 _.display.layout = pInfoLayout );
-
-		m_theme.table = WGBP(TablePanel,
-									_.columnLayout = Base::defaultPackLayout());
 	}
 
 

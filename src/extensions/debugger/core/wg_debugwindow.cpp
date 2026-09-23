@@ -38,21 +38,29 @@ namespace wg
 
 	DebugWindow::DebugWindow(const Blueprint& bp) : Capsule(bp)
 	{
+		m_onClose = bp.onClose;
+
 		auto pMainPanel = WGCREATE(PackPanel, _.axis = Axis::Y, _.skin = dbgkit::Skins::Window );
 
 		auto pLabelRow = WGCREATE(PackPanel, _.axis = Axis::X );
 
-		m_pLabel = WGCREATE(dbgkit::WindowTitleBar, _.pickHandle = true );
+		m_pLabel = WGCREATE(dbgkit::WindowTitleBar, _.pickHandle = true, _.display.text = bp.label );
 
 		auto pCloseButton = WGCREATE(dbgkit::Button, _.label.text = " X " );
 
 		Base::msgRouter()->addRoute(pCloseButton, MsgType::Select, [this](Msg* pMsg){
-			this->releaseFromParent();
+
+			if( m_onClose )
+				m_onClose(this);
+			else
+				this->releaseFromParent();
 		});
 
 
 		pLabelRow->slots.pushBack( m_pLabel, WGBP(PackPanelSlot, _.weight = 1.f));
 		pLabelRow->slots.pushBack( pCloseButton, WGBP(PackPanelSlot, _.weight = 0.f));
+
+		m_pLabelRow = pLabelRow;
 
 		m_pContentHolder = WGCREATE(RenderLayerCapsule, _.skin = dbgkit::Skins::Canvas );
 
@@ -60,6 +68,9 @@ namespace wg
 		pMainPanel->slots.pushBack( m_pContentHolder, WGBP(PackPanelSlot, _.weight = 1.f));
 
 		this->slot = pMainPanel;
+
+		if( bp.inspected )
+			m_pInspected = bp.inspected;
 	}
 
 	//____ Destructor _____________________________________________________________
@@ -96,7 +107,20 @@ namespace wg
 		m_pLabel->display.setText(label);
 	}
 
+	//____ _isFrame() ____________________________________________________________
+
+	bool DebugWindow::_isFrame( Widget * pWidget ) const
+	{
+		while( pWidget != nullptr && pWidget != this )
+		{
+			if( pWidget == m_pContentHolder.rawPtr() || pWidget == m_pLabelRow.rawPtr() )
+				return false;							// Our content or our title row, not the frame around them.
+
+			pWidget = pWidget->parent();
+		}
+
+		return pWidget == this;
+	}
 
 
 } // namespace wg
-

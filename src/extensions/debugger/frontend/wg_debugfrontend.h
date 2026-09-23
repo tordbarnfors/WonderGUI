@@ -111,8 +111,6 @@ namespace wg
 		Widget_p	_createToolbox();
 		Widget_p	_createWidgetTreeView();
 
-		void 		_createTheme();
-
 		void		_createResources();
 		void		_setupGUI();
 
@@ -145,13 +143,7 @@ namespace wg
 		Surface_p		m_pIcons;
 		Surface_p		m_pTransparencyGrid;
 
-		Skin_p			m_pRefreshIcon;
-		Skin_p			m_pUnselectIcon;
-		Skin_p			m_pSelectIcon;
-		Skin_p			m_pExpandIcon;
-		Skin_p			m_pCondenseIcon;
-
-		DebugTheme	m_theme;
+		DebugTheme		m_theme;					// Icons and blueprints, see DebugTheme::create().
 	};
 
 

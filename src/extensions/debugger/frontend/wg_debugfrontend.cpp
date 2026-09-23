@@ -45,7 +45,7 @@ namespace wg
 		m_pIcons	= bp.icons;
 		m_pTransparencyGrid = bp.transparencyGrid;
 
-		_createTheme();
+		m_theme = DebugTheme::create(m_pIcons, m_pTransparencyGrid);
 		m_pBackend->setTheme(m_theme);
 
 		m_pBackend->setObjectSelectedCallback([this](Object* pSelected,Object* pSelectedFrom) {
@@ -267,33 +267,6 @@ namespace wg
 	void DebugFrontend::_createResources()
 	{
 		m_pDummyPackLayout = PackLayout::create({});
-
-		m_pRefreshIcon = BlockSkin::create(WGBP(BlockSkin,
-			_.surface = m_pIcons,
-			_.firstBlock = Rect(0, 0, 16, 16);
-			));
-
-		m_pUnselectIcon = BlockSkin::create(WGBP(BlockSkin,
-			_.surface = m_pIcons,
-			_.firstBlock = Rect(0, 64, 16, 16);
-		));
-
-		m_pSelectIcon = BlockSkin::create(WGBP(BlockSkin,
-			_.surface = m_pIcons,
-			_.firstBlock = Rect(16, 0, 16, 16);
-		));
-
-		m_pExpandIcon = BlockSkin::create(WGBP(BlockSkin,
-			_.surface = m_pIcons,
-			_.firstBlock = Rect(32, 0, 16, 16);
-		));
-
-		m_pCondenseIcon = BlockSkin::create(WGBP(BlockSkin,
-			_.surface = m_pIcons,
-			_.firstBlock = Rect(48, 0, 16, 16);
-		));
-
-
 	}
 
 	//____ _setupGUI() ___________________________________________________________
@@ -340,7 +313,7 @@ namespace wg
 	{
 		auto pToolbox = PackPanel::create(WGBP(PackPanel, _.axis = Axis::X));
 
-		auto pPickButton = WGCREATE( dbgkit::ToggleButton, _.icon.skin = m_pSelectIcon, _.icon.placement = Placement::Center);
+		auto pPickButton = WGCREATE( dbgkit::ToggleButton, _.icon.skin = m_theme.selectIcon, _.icon.placement = Placement::Center);
 
 //		m_pPickWidgetButton = pPickButton;
 
@@ -350,7 +323,7 @@ namespace wg
 			setSelectMode(pButton->isChecked());
 		});
 
-		auto pUnselectButton = WGCREATE( dbgkit::Button, _.icon.skin = m_pUnselectIcon, _.icon.placement = Placement::Center);
+		auto pUnselectButton = WGCREATE( dbgkit::Button, _.icon.skin = m_theme.unselectIcon, _.icon.placement = Placement::Center);
 
 		Base::msgRouter()->addRoute(pUnselectButton, MsgType::Select, [this](Msg* pMsg) {
 
@@ -395,13 +368,13 @@ namespace wg
 
 		auto pButtonRow = PackPanel::create(WGBP(PackPanel, _.axis = Axis::X, _.skin = dbgkit::Skins::Plate ));
 
-		auto pRefreshButton = WGCREATE( dbgkit::Button, _.icon.skin = m_pRefreshIcon, _.icon.placement = Placement::Center);
+		auto pRefreshButton = WGCREATE( dbgkit::Button, _.icon.skin = m_theme.refreshIcon, _.icon.placement = Placement::Center);
 
 		Base::msgRouter()->addRoute(pRefreshButton, MsgType::Select, [this](Msg* pMsg) {
 			_refreshWidgetTree();
 		});
 
-		auto pCollapseAllButton = WGCREATE( dbgkit::Button, _.icon.skin = m_pCondenseIcon, _.icon.placement = Placement::Center);
+		auto pCollapseAllButton = WGCREATE( dbgkit::Button, _.icon.skin = m_theme.condenseIcon, _.icon.placement = Placement::Center);
 
 		Base::msgRouter()->addRoute(pCollapseAllButton, MsgType::Select, [this](Msg* pMsg) {
 
@@ -413,7 +386,7 @@ namespace wg
 			}
 		});
 
-		auto pExpandAllButton = WGCREATE( dbgkit::Button, _.icon.skin = m_pExpandIcon, _.icon.placement = Placement::Center);
+		auto pExpandAllButton = WGCREATE( dbgkit::Button, _.icon.skin = m_theme.expandIcon, _.icon.placement = Placement::Center);
 
 		Base::msgRouter()->addRoute(pExpandAllButton, MsgType::Select, [this](Msg* pMsg) {
 
@@ -438,102 +411,6 @@ namespace wg
 
 		return pTreePanel;
 	}
-
-	//____ _createTheme() ___________________________________________________
-
-	void DebugFrontend::_createTheme()
-	{
-		m_theme.icons = m_pIcons;
-		m_theme.transparencyGrid = m_pTransparencyGrid;
-
-		auto pListTextLayout = BasicTextLayout::create( WGBP(BasicTextLayout,
-														  _.placement = Placement::East ));
-
-		auto pInfoLayout = BasicTextLayout::create( WGBP(BasicTextLayout,
-														  _.wrap = true,
-														  _.placement = Placement::Center ));
-
-		auto pWrapTextLayout = BasicTextLayout::create(WGBP(BasicTextLayout,
-			_.wrap = true,
-			_.placement = Placement::NorthWest));
-
-		auto pValueLayout = BasicNumberLayout::create( WGBP(BasicNumberLayout,
-			_.style = dbgkit::TextStyles::Default,
-			_.decimalMin = 2
-		));
-
-		auto pIntegerLayout = BasicNumberLayout::create(WGBP(BasicNumberLayout,
-			_.style = dbgkit::TextStyles::Default,
-			_.decimalMin = 0
-		));
-
-
-		CharBuffer chrBuff;
-		chrBuff.pushBack("0x");
-		chrBuff.setStyle(dbgkit::TextStyles::Default);
-
-		auto pPointerLayout = BasicNumberLayout::create(WGBP(BasicNumberLayout,
-			_.style = dbgkit::TextStyles::Default,
-			_.base = 16,
-			_.integerGrouping = 0,
-			_.prefix = String(&chrBuff)
-			));
-
-		auto pPtsLayout = BasicNumberLayout::create(WGBP(BasicNumberLayout,
-			_.style = dbgkit::TextStyles::Default,
-			_.decimalMin = 2
-		));
-
-
-
-		m_theme.classCapsule = WGBP(LabelCapsule,
-			_.skin = ColorSkin::create(HiColor::Transparent, { 10,0,0,8 }),
-			_.label.style = dbgkit::TextStyles::FinePrint
-		);
-
-
-		m_theme.listEntryLabel = WGBP(TextDisplay,
-											 _.display.style = dbgkit::TextStyles::Strong);
-
-		m_theme.listEntryText = WGBP(TextDisplay,
-											 _.display.style = dbgkit::TextStyles::Default,
-											 _.display.layout = pListTextLayout );
-
-		m_theme.listEntryInteger = WGBP(NumberDisplay,
-											 _.display.layout = pIntegerLayout );
-
-		m_theme.listEntryBool = WGBP(NumberDisplay,
-											_.display.layout = pValueLayout);
-
-		m_theme.listEntrySPX = WGBP(NumberDisplay,
-											 _.display.layout = pIntegerLayout );
-
-		m_theme.listEntryPts = WGBP(NumberDisplay,
-											 _.display.layout = pPtsLayout );
-
-		m_theme.listEntryDecimal = WGBP(NumberDisplay,
-											 _.display.layout = pValueLayout );
-
-//		m_theme.listEntryPointer = WGBP(NumberDisplay,
-//											 _.display.layout = pPointerLayout );
-
-		m_theme.listEntryDrawer = dbgkit::TreeListDrawer::Blueprint();
-		m_theme.selectableListEntryCapsule = WGOVR( dbgkit::TreeListEntry::Blueprint(), _.selectable = true);
-
-		m_theme.textField = WGBP(TextDisplay,
-			_.display.style = dbgkit::TextStyles::Default,
-			_.display.layout = pWrapTextLayout,
-			_.skin = dbgkit::Skins::Canvas );
-
-		m_theme.infoDisplay = WGBP(TextDisplay,
-											 _.display.style = dbgkit::TextStyles::Emphasis,
-											 _.display.layout = pInfoLayout );
-
-		m_theme.table = WGBP(TablePanel,
-									_.columnLayout = Base::defaultPackLayout());
-
-	}
-
 
 } // namespace wg
 

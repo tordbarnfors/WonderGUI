@@ -40,15 +40,38 @@ namespace wg
 	//____ DebugTheme ___________________________________________________________
 	//
 	// Shared look for everything the debugger builds: icons, text styles, layouts
-	// and prototype blueprints for the recurring widgets. Built once by the
-	// frontend (DebugFrontend or DebugOverlay) and handed to DebugBackend,
-	// which passes it on to every InfoSection and InspectorView it creates.
+	// and prototype blueprints for the recurring widgets. Built once with
+	// DebugTheme::create() by the frontend (DebugFrontend or DebugOverlay) and
+	// handed to DebugBackend, which passes it on to every InfoSection and
+	// InspectorView it creates.
 
 	struct DebugTheme
 	{
+		//.____ Creation __________________________________________
+		//
+		// Both frontends get their look from here, so that they can't drift apart.
+		// The icons surface holds 16x16 icons, the transparency grid is a
+		// chessboard pattern or similar, shown behind partly transparent surfaces.
+
+		static DebugTheme			create( Surface * pIcons, Surface * pTransparencyGrid );
+
+		//.____ Resources _________________________________________
+
 		Surface_p					icons;
 
 		Surface_p					transparencyGrid;
+
+		//.____ Icon skins ________________________________________
+		//
+		// Blocks picked out of the icons surface.
+
+		Skin_p						refreshIcon;
+		Skin_p						selectIcon;
+		Skin_p						unselectIcon;
+		Skin_p						expandIcon;
+		Skin_p						condenseIcon;
+
+		//.____ Widget blueprints _________________________________
 
 		Capsule::Blueprint			mainCapsule;
 		LabelCapsule::Blueprint		classCapsule;
@@ -62,7 +85,7 @@ namespace wg
 		TextDisplay::Blueprint		textField;
 		TextDisplay::Blueprint		infoDisplay;
 		TablePanel::Blueprint		table;
-		dbgkit::TreeListDrawer::Blueprint		listEntryDrawer;
+		dbgkit::TreeListDrawer::Blueprint	listEntryDrawer;
 		dbgkit::TreeListEntry::Blueprint	selectableListEntryCapsule;
 	};
 
