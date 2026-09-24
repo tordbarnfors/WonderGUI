@@ -1,6 +1,6 @@
 #include "testsuite.h"
 #include <wg_blurbrush.h>
-#include <wg_gradyent.h>
+#include <wg_tint.h>
 
 class BlurTests : public TestSuite
 {
@@ -24,7 +24,7 @@ public:
 		m_pBlurSurface[0] = pDevice->surfaceFactory()->createSurface( { .canvas = true, .format = PixelFormat::BGRX_8, .size = canvas.size() / 64 } );
 		m_pBlurSurface[1] = pDevice->surfaceFactory()->createSurface( { .canvas = true, .format = PixelFormat::BGRX_8, .size = canvas.size() / 64 } );
 
-		m_pGradient = Gradyent::create(Color::White, Color::White, Color::Red, Color::Blue, ColorSpace::sRGB );
+		m_pGradient = Tint::create(Color::Red, Color::Blue, {0,0}, {1,0}, ColorSpace::sRGB);
 
 		return true;
 	}
@@ -45,7 +45,7 @@ public:
 	bool clearTint(GfxDevice* pDevice, const RectI& canvas)
 	{
 		pDevice->clearTintColor();
-		pDevice->clearTintmap();
+		pDevice->clearTint();
 		return true;
 	}
 
@@ -59,7 +59,7 @@ public:
 
 	bool setGradientAndBlurbrush(GfxDevice* pDevice, const RectI& canvas)
 	{
-		pDevice->setTintmap(RectSPX(0, 0, 512, 512) * 64, m_pGradient );
+		pDevice->setTint(RectSPX(0, 0, 512, 512) * 64, m_pGradient );
 		setBlurbrush(pDevice, canvas);
 		return true;
 	}
@@ -130,5 +130,5 @@ private:
 	Surface_p	m_pBlurSurface[2];
 
 	Blurbrush_p	m_pBrush;
-	Tintmap_p	m_pGradient;
+	Tint_p	m_pGradient;
 };

@@ -57,35 +57,35 @@ public:
 												 SampleOrigo::Top, sampleBuffer[0], 7 );
 		
 		
-		Tintmap_p tintmapsX[8];
-		Tintmap_p tintmapsY[8];
-		Tintmap_p tintmapsXY[8];
+		Tint_p tintsX[8];
+		Tint_p tintsY[8];
+		Tint_p tintsXY[8];
 
 		for( int i = 0 ; i < 8 ; i++ )
 		{
-			tintmapsX[i] = Gradyent::create(Color::White, Color::White, m_rainbowColors[i], Color::Black);
-			tintmapsY[i] = Gradyent::create(m_rainbowColors[i], Color::Black, Color::White, Color::White);
-			tintmapsXY[i] = Gradyent::create(m_rainbowColors[i], Color::Black, Color::Red, Color::Green);
+			tintsX[i] = Tint::create(m_rainbowColors[i], Color::Black, {0,0}, {1,0});
+			tintsY[i] = Tint::create(m_rainbowColors[i], Color::Black, {0,0}, {0,1});
+			tintsXY[i] = Tint::create(m_rainbowColors[i], Color::Black, {0,0}, {1,1});
 
 		}
 		
 		
-		m_pEdgemapSPXGradientX = pFactory->createEdgemap( WGBP(Edgemap, _.size = canvas.size()/64, _.segments = 8, _.tintmaps = tintmapsX ),
+		m_pEdgemapSPXGradientX = pFactory->createEdgemap( WGBP(Edgemap, _.size = canvas.size()/64, _.segments = 8, _.tints = tintsX ),
 												  SampleOrigo::Top, sampleBuffer[0], 7 );
 
-		m_pEdgemapSPXGradientY = pFactory->createEdgemap( WGBP(Edgemap, _.size = canvas.size()/64, _.segments = 8, _.tintmaps = tintmapsY ),
+		m_pEdgemapSPXGradientY = pFactory->createEdgemap( WGBP(Edgemap, _.size = canvas.size()/64, _.segments = 8, _.tints = tintsY ),
 												  SampleOrigo::Top, sampleBuffer[0], 7 );
 
-		m_pEdgemapSPXGradientXY = pFactory->createEdgemap( WGBP(Edgemap, _.size = canvas.size()/64, _.segments = 8, _.tintmaps = tintmapsXY ),
+		m_pEdgemapSPXGradientXY = pFactory->createEdgemap( WGBP(Edgemap, _.size = canvas.size()/64, _.segments = 8, _.tints = tintsXY ),
 												  SampleOrigo::Top, sampleBuffer[0], 7 );
 
-//		m_pSmallEdgemap = pFactory->createEdgemap(WGBP(Edgemap, _.size = { 100, 50 }, _.segments = 4, _.tintmaps = tintmapsXY),
+//		m_pSmallEdgemap = pFactory->createEdgemap(WGBP(Edgemap, _.size = { 100, 50 }, _.segments = 4, _.tints = tintsXY),
 //			SampleOrigo::Top, sampleBuffer[0], 3, 513 );
 
 		m_pSmallEdgemap = pFactory->createEdgemap(WGBP(Edgemap, _.colors = m_rainbowColors, _.size = {100, 50}, _.segments = 4),
 			SampleOrigo::Top, sampleBuffer[0], 3, 513 );
 
-		m_pGlobalTintmap = Gradyent::create(HiColor::TransparentWhite, HiColor::White, HiColor::White, HiColor::White);
+		m_pGlobalTint = Tint::create(HiColor::TransparentWhite, HiColor::White, {0,0}, {0,1});
 
 		return true;
 	}
@@ -101,10 +101,10 @@ public:
 
 	bool globalTint(GfxDevice* pDevice, const RectI& canvas)
 	{
-		pDevice->setTintmap(RectSPX(100, 50, 250, 100)*64, m_pGlobalTintmap );
+		pDevice->setTint(RectSPX(100, 50, 250, 100)*64, m_pGlobalTint );
 		pDevice->flipDrawEdgemap(CoordSPX(100, 50) * 64, m_pSmallEdgemap, GfxFlip::Rot270);
 
-		pDevice->clearTintmap();
+		pDevice->clearTint();
 		return true;
 	}
 
@@ -195,7 +195,7 @@ public:
 
 private:
 
-	Tintmap_p	m_pGlobalTintmap;
+	Tint_p	m_pGlobalTint;
 
 	Edgemap_p	m_pEdgemapSPX1;
 	Edgemap_p	m_pEdgemapSPXGradientX;

@@ -34,7 +34,7 @@
 #include <wg_softbackend.h>
 #include <wg_softkernels_default.h>
 
-#include <wg_gradyent.h>
+#include <wg_tint.h>
 
 
 using namespace wg;
@@ -189,7 +189,7 @@ int main ( int argc, char** argv )
 	// Program Main Loop
 	//------------------------------------------------------
 
-	auto pGradient = Gradyent::create(Color::Black, Color::White, Color::White, Color::Red );
+	auto pGradient = Tint::create(Color::Black, Color::White );
 
 	auto p16bitCanvas = SoftSurface::create({ .canvas = true, .format = PixelFormat::RGB_555_bigendian, .size = {240,240} });
 
@@ -224,7 +224,7 @@ int main ( int argc, char** argv )
 		pGfxDevice->setBlendMode(BlendMode::Replace);
 		pGfxDevice->fill(HiColor::Transparent);
 		pGfxDevice->setBlendMode(BlendMode::Blend);
-		pGfxDevice->setTintmap({0,0,240*64,240*64}, Gradyent::create(Color::White, Color::White, Color::Black, Color::White, ColorSpace::sRGB));
+		pGfxDevice->setTint({0,0,240*64,240*64}, Tint::create(Color::Black, Color::White, {0,0}, {1,0}, ColorSpace::sRGB));
 		pGfxDevice->drawElipse({0,0,240*64,240*64}, 100*64, HiColor(0,0,2048));
 
 		pGfxDevice->setClipList(2, clippedRects);

@@ -178,7 +178,7 @@ bool packPanelSpacingBugTest(ComponentPtr<DynamicSlot> pEntry);
 bool bracketSkinTest(ComponentPtr<DynamicSlot> pEntry);
 bool selectCapsuleTest(ComponentPtr<DynamicSlot> pEntry);
 bool drawerPanelTest(ComponentPtr<DynamicSlot> pEntry);
-bool tintmapTest(ComponentPtr<DynamicSlot> pEntry);
+bool tintTest(ComponentPtr<DynamicSlot> pEntry);
 bool popupLayerFocusTest(ComponentPtr<DynamicSlot> pEntry);
 bool nodePanelTest(ComponentPtr<DynamicSlot> pEntry);
 bool nodePanelTest2(ComponentPtr<DynamicSlot> pEntry);
@@ -843,7 +843,7 @@ int main(int argc, char** argv)
 		//	selectCapsuleTest(pSlot);
 		//	drawerPanelTest(pSlot);
 		//	areaChartTestWithGlobalGradient(pSlot);
-		//	tintmapTest(pSlot);
+		//	tintTest(pSlot);
 		//	popupLayerFocusTest(pSlot);
 		//	nodePanelTest(pSlot);
 			nodePanelTest2(pSlot);
@@ -3966,8 +3966,10 @@ bool canvasCapsuleGlowTest(ComponentPtr<DynamicSlot> pEntry)
 	Base::msgRouter()->addRoute(pTintWhite, MsgType::Select, [pGlowCapsule,pTransition](Msg* pMsg) {pGlowCapsule->setTintColor(Color::White, pTransition); });
 	Base::msgRouter()->addRoute(pTintBlack, MsgType::Select, [pGlowCapsule, pTransition](Msg* pMsg) {pGlowCapsule->setTintColor(Color::Black, pTransition); });
 
-	Base::msgRouter()->addRoute(pGradientWhite, MsgType::Select, [pGlowCapsule, pTransition](Msg* pMsg) {pGlowCapsule->setTintmap( Gradyent::create(HiColor::White, HiColor::Black, Color::Green, Color::Green), pTransition); });
-	Base::msgRouter()->addRoute(pGradientBlack, MsgType::Select, [pGlowCapsule, pTransition](Msg* pMsg) {pGlowCapsule->setTintmap( Gradyent::create(HiColor::Black, HiColor::White, Color::Red, Color::Red), pTransition); });
+	auto pTintTransition = ValueTransition::create(1000*1000, TransitionCurve::EaseOut);
+
+	Base::msgRouter()->addRoute(pGradientWhite, MsgType::Select, [pGlowCapsule, pTintTransition](Msg* pMsg) {pGlowCapsule->setTint( Tint::create(Color::Green, HiColor::Black), pTintTransition); });
+	Base::msgRouter()->addRoute(pGradientBlack, MsgType::Select, [pGlowCapsule, pTintTransition](Msg* pMsg) {pGlowCapsule->setTint( Tint::create(HiColor::Black, Color::Red), pTintTransition); });
 
 
 	auto pButtons = PackPanel::create({ .axis = Axis::X });
@@ -4967,26 +4969,29 @@ bool drawerPanelTest(ComponentPtr<DynamicSlot> pEntry)
 }
 
 
-bool tintmapTest(ComponentPtr<DynamicSlot> pEntry)
+bool tintTest(ComponentPtr<DynamicSlot> pEntry)
 {
 	auto pBasePanel = PackPanel::create( { .axis = Axis::Y });
 
-	auto pLinearGradient = Gradyent::create( Color::White, Color::White, Color::Black, Color::White );
-	auto pSRGBGradient = Gradyent::create( Color::White, Color::White, Color::Black, Color::White, ColorSpace::sRGB );
+	auto pLinearGradient = Tint::create( Color::Black, Color::White, {0,0}, {1,0} );
+	auto pSRGBGradient = Tint::create( Color::Black, Color::White, {0,0}, {1,0}, ColorSpace::sRGB );
 
-	auto pLinearGradientSkin = TintmapSkin::create( pLinearGradient );
-	auto pSRGBGradientSkin = TintmapSkin::create( pSRGBGradient );
+	auto pLinearGradientSkin = TintSkin::create( pLinearGradient );
+	auto pSRGBGradientSkin = TintSkin::create( pSRGBGradient );
 
-	auto pColorbandSkin = TintmapSkin::create(Colorbands::create( Axis::X, { {Color::Red, 0.33f}, {Color::Green, 0.66f}, {Color::Blue, 1.f} }));
+	// Color bands are stops with same positions.
 
+	auto pColorbandSkin = TintSkin::create( Tint::create( { {0.f, Color::Red}, {0.33f, Color::Red}, {0.33f, Color::Green}, {0.66f, Color::Green}, {0.66f, Color::Blue}, {1.f, Color::Blue} }, {0,0}, {1,0} ) );
+
+	auto pRadialSkin = TintSkin::create( Tint::create( WGBP(Tint, _.shape = TintShape::Radial, _.spread = TintSpread::Reflect, _.radius = {0.25f,0.25f}, _.radiusMode = TintRadius::Circle,
+															_.stops = { {0.f, Color::White}, {1.f, Color::DarkBlue} } ) ) );
 
 	auto pFiller1 = Filler::create( { .defaultSize = {50,50}, .skin = pLinearGradientSkin } );
 	auto pFiller2 = Filler::create( { .defaultSize = {50,50}, .skin = pSRGBGradientSkin } );
 	auto pFiller3 = Filler::create({ .defaultSize = {50,50}, .skin = pColorbandSkin });
+	auto pFiller4 = Filler::create({ .defaultSize = {50,50}, .skin = pRadialSkin });
 
-
-
-	pBasePanel->slots.pushBack( { pFiller1, pFiller2, pFiller3 });
+	pBasePanel->slots.pushBack( { pFiller1, pFiller2, pFiller3, pFiller4 });
 
 	*pEntry = pBasePanel;
 

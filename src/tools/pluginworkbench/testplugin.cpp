@@ -331,8 +331,10 @@ bool canvasCapsuleGlowTest(ComponentPtr<DynamicSlot> pEntry)
 	Base::msgRouter()->addRoute(pTintWhite, MsgType::Select, [pGlowCapsule,pTransition](Msg* pMsg) {pGlowCapsule->setTintColor(Color::White, pTransition); });
 	Base::msgRouter()->addRoute(pTintBlack, MsgType::Select, [pGlowCapsule, pTransition](Msg* pMsg) {pGlowCapsule->setTintColor(Color::Black, pTransition); });
 
-	Base::msgRouter()->addRoute(pGradientWhite, MsgType::Select, [pGlowCapsule, pTransition](Msg* pMsg) {pGlowCapsule->setTintmap(Gradyent::create(Gradient(Placement::NorthWest, HiColor::White, HiColor::Black)), pTransition); });
-	Base::msgRouter()->addRoute(pGradientBlack, MsgType::Select, [pGlowCapsule, pTransition](Msg* pMsg) {pGlowCapsule->setTintmap(Gradyent::create(Gradient(Placement::SouthEast, HiColor::White, HiColor::Black)), pTransition); });
+	auto pTintTransition = ValueTransition::create(1000*1000, TransitionCurve::EaseOut);
+
+	Base::msgRouter()->addRoute(pGradientWhite, MsgType::Select, [pGlowCapsule, pTintTransition](Msg* pMsg) {pGlowCapsule->setTint(Tint::create(HiColor::White, HiColor::Black, {0,0}, {1,1}), pTintTransition); });
+	Base::msgRouter()->addRoute(pGradientBlack, MsgType::Select, [pGlowCapsule, pTintTransition](Msg* pMsg) {pGlowCapsule->setTint(Tint::create(HiColor::White, HiColor::Black, {1,1}, {0,0}), pTintTransition); });
 
 
 	auto pButtons = PackPanel::create({ .axis = Axis::X });
