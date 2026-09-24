@@ -173,27 +173,29 @@ namespace wg
 
 		//____ GPU tint blocks ______________________________________________________
 		/**
-		 * Decoded tints prepared for evaluation in shaders, as an array of float4
-		 * (r,g,b,a order for colors). Same lookup tables and indexing as the software
-		 * renderer, so results match.
+		 * Decoded tints prepared for evaluation in shaders, as an array of float4.
+		 * Stops are evaluated directly, so the size is small and bounded by the
+		 * number of stops, which lets GPU backends reserve room per frame.
 		 *
 		 *   [0]					nLayers, 0, 0, 0
 		 *   per layer:
-		 *     [+0]				shape, spread, N (LUT has N+1 entries, N is 0 for a flat layer), weight (0.0 -> 1.0)
+		 *     [+0]				shape, spread, nStops, weight (0.0 -> 1.0)
 		 *     [+1]				geometry (see CanvasGeometry)
-		 *     [+2]				color for positions below 0.0 with Pad spread, or the flat color
-		 *     [+3 -> +3+N]		LUT. Entry i covers positions i/N -> (i+1)/N.
+		 *     [+2]				colorSpace (1.0 if sRGB, else 0.0), 0, 0, 0
+		 *     [+3 ...]			stop positions, four per float4, ceil(nStops/4) entries
+		 *     [...]			stop colors (r,g,b,a), nStops entries. For sRGB the rgb values are sRGB encoded.
 		 *
 		 * Evaluation of a layer at pixel center p:
 		 *   t = shape == 0 ? dot(geo.xy, p) + geo.z : length((p - geo.xy) * geo.zw)
-		 *   i = floor(t * N)
-		 *   Pad:		i < 0 ? padLow : lut[min(i, N)]
-		 *   Repeat:	lut[i mod N]
-		 *   Reflect:	r = i mod 2N, lut[r >= N ? 2N-1-r : r]
-		 * Result is the weighted sum of all layers. Colors are multiplied with multiplier.
+		 *   spread:	Pad: clamp(t, 0, 1)   Repeat: t - floor(t)   Reflect: r = t - 2*floor(t/2), r > 1 ? 2 - r : r
+		 *   k = last stop with pos <= t (right limit at hard edges)
+		 *   color = t < pos[0] ? col[0] : k == nStops-1 ? col[k] : mix(col[k], col[k+1], (t - pos[k]) / (pos[k+1] - pos[k]))
+		 *   sRGB: rgb decoded to linear after interpolation.
+		 * Result is the weighted sum of all layers, multiplied with multiplier.
 		 */
 
 		int				gpuTintBlockSize(const DecodedTint& tint);		// In float4 units.
+		int				gpuTintBlockMaxSize(int nLayers, int nStops);	// Upper bound for a tint with given total layers and stops, in float4 units.
 		void			writeGpuTintBlock(const DecodedTint& tint, float* pOutput, HiColor multiplier = HiColor::White);
 
 

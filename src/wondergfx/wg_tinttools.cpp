@@ -350,10 +350,19 @@ namespace TintTools
 
 		for (int l = 0; l < tint.nLayers; l++)
 		{
-			int bits = lutBitsForLayer(tint.layers[l]);
-			size += 3 + (bits < 0 ? 0 : (1 << bits) + 1);
+			int nStops = tint.layers[l].nStops;
+			size += 3 + (nStops + 3) / 4 + nStops;
 		}
 		return size;
+	}
+
+	//____ gpuTintBlockMaxSize() ______________________________________________
+
+	int gpuTintBlockMaxSize(int nLayers, int nStops)
+	{
+		// Each layer adds 3 entries plus positions (at most one entry per started group of four stops).
+
+		return 1 + nLayers * 4 + nStops + (nStops + 3) / 4;
 	}
 
 	//____ writeGpuTintBlock() ________________________________________________
@@ -362,30 +371,18 @@ namespace TintTools
 	{
 		float* p = pOutput;
 
-		auto putColor = [&](HiColor c)
-		{
-			p[0] = c.r / 4096.f;
-			p[1] = c.g / 4096.f;
-			p[2] = c.b / 4096.f;
-			p[3] = c.a / 4096.f;
-			p += 4;
-		};
-
 		p[0] = float(tint.nLayers); p[1] = 0.f; p[2] = 0.f; p[3] = 0.f;
 		p += 4;
-
-		const int c_maxEntries = (1 << 11) + 1;
-		HiColor lut[c_maxEntries];
 
 		for (int l = 0; l < tint.nLayers; l++)
 		{
 			const TintLayer& layer = tint.layers[l];
-			int bits = lutBitsForLayer(layer);
-			int N = bits < 0 ? 0 : (1 << bits);
+			int nStops = layer.nStops;
+			bool bSRGB = (layer.colorSpace == ColorSpace::sRGB);
 
 			p[0] = float(int(layer.shape));
 			p[1] = float(int(layer.spread));
-			p[2] = float(N);
+			p[2] = float(nStops);
 			p[3] = layer.weight / 4096.f;
 			p += 4;
 
@@ -393,18 +390,32 @@ namespace TintTools
 				p[i] = layer.geo[i];
 			p += 4;
 
-			if (N == 0)
-			{
-				HiColor col = layer.nStops > 0 ? layer.stopColors[0] * multiplier : multiplier;
-				putColor(col);
-			}
-			else
-			{
-				putColor(layerColorAt(layer, 0.f, multiplier));
+			p[0] = bSRGB ? 1.f : 0.f; p[1] = 0.f; p[2] = 0.f; p[3] = 0.f;
+			p += 4;
 
-				buildLUT(layer, N + 1, lut, multiplier);
-				for (int i = 0; i <= N; i++)
-					putColor(lut[i]);
+			int posEntries = (nStops + 3) / 4;
+			for (int i = 0; i < posEntries * 4; i++)
+				p[i] = i < nStops ? layer.stopPos[i] : 2.f;
+			p += posEntries * 4;
+
+			for (int i = 0; i < nStops; i++)
+			{
+				HiColor c = layer.stopColors[i] * multiplier;
+
+				if (bSRGB)
+				{
+					p[0] = _linearToSRGB(c.r) / 4096.f;
+					p[1] = _linearToSRGB(c.g) / 4096.f;
+					p[2] = _linearToSRGB(c.b) / 4096.f;
+				}
+				else
+				{
+					p[0] = c.r / 4096.f;
+					p[1] = c.g / 4096.f;
+					p[2] = c.b / 4096.f;
+				}
+				p[3] = c.a / 4096.f;
+				p += 4;
 			}
 		}
 	}

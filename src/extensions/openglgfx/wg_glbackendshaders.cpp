@@ -37,29 +37,50 @@
 "	{																				" \
 "		vec4 info = texelFetch(buf, p);												" \
 "		vec4 geo = texelFetch(buf, p + 1);											" \
-"		vec4 c = texelFetch(buf, p + 2);											" \
-"		int N = int(info.z);														" \
-"		if (N > 0)																	" \
+"		float srgb = texelFetch(buf, p + 2).x;										" \
+"		int nStops = int(info.z);													" \
+"		int posOfs = p + 3;															" \
+"		int colOfs = posOfs + (nStops + 3) / 4;										" \
+"		if (nStops > 0)																" \
 "		{																			" \
 "			float t = info.x < 0.5 ? geo.x * pos.x + geo.y * pos.y + geo.z : length((pos - geo.xy) * geo.zw);	" \
-"			float fN = float(N);													" \
-"			float fi = floor(clamp(t, -1e7, 1e7) * fN);								" \
+"			t = clamp(t, -1e7, 1e7);												" \
 "			int spread = int(info.y);												" \
 "			if (spread == 0)														" \
-"			{																		" \
-"				if (fi >= 0.0)														" \
-"					c = texelFetch(buf, p + 3 + int(min(fi, fN)));					" \
-"			}																		" \
+"				t = clamp(t, 0.0, 1.0);												" \
 "			else if (spread == 1)													" \
-"				c = texelFetch(buf, p + 3 + int(fi - fN * floor(fi / fN)));		" \
+"				t = t - floor(t);													" \
 "			else																	" \
 "			{																		" \
-"				float r = fi - 2.0 * fN * floor(fi / (2.0 * fN));					" \
-"				c = texelFetch(buf, p + 3 + int(r >= fN ? 2.0 * fN - 1.0 - r : r));	" \
+"				float r = t - 2.0 * floor(t * 0.5);									" \
+"				t = r > 1.0 ? 2.0 - r : r;											" \
 "			}																		" \
+"			int k = -1;																" \
+"			for (int i = 0; i < nStops; i++)										" \
+"			{																		" \
+"				if (texelFetch(buf, posOfs + i / 4)[i % 4] <= t)					" \
+"					k = i;															" \
+"			}																		" \
+"			vec4 c;																	" \
+"			if (k < 0)																" \
+"				c = texelFetch(buf, colOfs);										" \
+"			else if (k == nStops - 1)												" \
+"				c = texelFetch(buf, colOfs + k);									" \
+"			else																	" \
+"			{																		" \
+"				float p0 = texelFetch(buf, posOfs + k / 4)[k % 4];					" \
+"				float p1 = texelFetch(buf, posOfs + (k + 1) / 4)[(k + 1) % 4];		" \
+"				c = mix(texelFetch(buf, colOfs + k), texelFetch(buf, colOfs + k + 1), (t - p0) / (p1 - p0));	" \
+"			}																		" \
+"			if (srgb > 0.5)															" \
+"			{																		" \
+"				vec3 lo = c.rgb / 12.92;											" \
+"				vec3 hi = pow((c.rgb + 0.055) / 1.055, vec3(2.4));					" \
+"				c.rgb = mix(hi, lo, vec3(lessThanEqual(c.rgb, vec3(0.04045))));		" \
+"			}																		" \
+"			result += c * info.w;													" \
 "		}																			" \
-"		result += c * info.w;														" \
-"		p += 3 + (N > 0 ? N + 1 : 0);												" \
+"		p = colOfs + nStops;														" \
 "	}																				" \
 "	return result;																	" \
 "}																					"
