@@ -32,7 +32,6 @@
 #include <wg_pointers.h>
 #include <wg_gfxtypes.h>
 #include <wg_color.h>
-#include <wg_gradient.h>
 #include <wg_edgemap.h>
 #include <wg_tint.h>
 
@@ -207,8 +206,6 @@ namespace wg
 
 		//.____ Deprecated _______________________________________________________________
 
-		void		setTintGradient(const RectSPX& rect, const Gradient& gradient) override;
-		void		clearTintGradient() override;
 
 		void		drawWave(const RectSPX& dest, const WaveLine* pTopBorder, const WaveLine* pBottomBorder, HiColor fill) override;
 		void		flipDrawWave(const RectSPX& dest, const WaveLine* pTopBorder, const WaveLine* pBottomBorder, HiColor fill, GfxFlip flip) override;

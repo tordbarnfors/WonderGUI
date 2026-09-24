@@ -30,7 +30,6 @@
 #include <wg_pointers.h>
 #include <wg_gfxtypes.h>
 #include <wg_color.h>
-#include <wg_gradient.h>
 #include <wg_edgemap.h>
 
 
@@ -103,8 +102,6 @@ namespace wg
 		Tint_p		tint() const override;
 		RectSPX		tintRect() const override;
 
-		void		setTintGradient(const RectSPX& rect, const Gradient& gradient) override;
-		void		clearTintGradient() override;
 
 		bool		setBlendMode( BlendMode blendMode ) override;
 		BlendMode 	blendMode() const override { return m_blendMode; }
@@ -255,9 +252,6 @@ namespace wg
 			int				renderLayer;
 			Bitmask<int>	layersInitialized;
 			HiColor			tintColor;
-			Gradient		tintGradient;
-			RectSPX			tintGradientRect;
-			bool			bTintGradient;
 			BlendMode		blendMode;
 			float			morphFactor;
 			HiColor			fixedBlendColor;
@@ -299,9 +293,6 @@ namespace wg
 
 		HiColor		m_fixedBlendColor = HiColor::Undefined;
 		
-		Gradient	m_tintGradient;
-		RectSPX		m_tintGradientRect = { 0,0,0,0 };
-		bool		m_bTintGradient = false;
 
 		bool        m_bRendering = false;
 		

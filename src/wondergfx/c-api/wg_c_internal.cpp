@@ -43,23 +43,19 @@ void convertSurfaceBlueprint(Surface::Blueprint* pDest, const wg_surfaceBP* pSou
 	pDest->tiling = pSource->tiling;
 }
 
-void convertEdgemapBlueprint(Edgemap::Blueprint* pDest, const wg_edgemapBP* pSource, Tintmap_p * pSpaceForTintmaps )
+void convertEdgemapBlueprint(Edgemap::Blueprint* pDest, const wg_edgemapBP* pSource, Tint_p * pSpaceForTints )
 {
-	pDest->colors = (HiColor*) pSource->colors;
-	pDest->colorstripsX = (HiColor*) pSource->colorstripsX;
-	pDest->colorstripsY = (HiColor*) pSource->colorstripsY;
-	pDest->paletteType	= (EdgemapPalette) pSource->paletteType;
-
+	pDest->colors		= (HiColor*) pSource->colors;
 	pDest->segments		= pSource->segments;
 	pDest->size			= { pSource->size.w, pSource->size.h };
 
-	if( pSource->tintmaps != nullptr )
+	if( pSource->tints != nullptr )
 	{
 		for( int i = 0 ; i < pSource->segments ; i++ )
-			pSpaceForTintmaps[i] = static_cast<Tintmap*>(reinterpret_cast<Object*>(pSource->tintmaps[i]));
+			pSpaceForTints[i] = static_cast<Tint*>(reinterpret_cast<Object*>(pSource->tints[i]));
 
-		pDest->tintmaps = pSpaceForTintmaps;
+		pDest->tints = pSpaceForTints;
 	}
 	else
-		pDest->tintmaps		= nullptr;
+		pDest->tints		= nullptr;
 }

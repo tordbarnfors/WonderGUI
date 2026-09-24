@@ -13,8 +13,6 @@ set( SOURCES
 	wg_canvaslayers.h
 	wg_color.cpp
 	wg_color.h
-	wg_colorbands.cpp
-	wg_colorbands.h
 	wg_compression.cpp
 	wg_compression.h
 	wg_dummyfont.cpp
@@ -46,10 +44,6 @@ set( SOURCES
 	wg_gfxtypes.h
 	wg_gfxutil.cpp
 	wg_gfxutil.h
-	wg_gradient.cpp
-	wg_gradient.h
-	wg_gradyent.cpp
-	wg_gradyent.h
 	wg_gridwalker.cpp
 	wg_gridwalker.h
 	wg_lzcompression.cpp
@@ -65,13 +59,9 @@ set( SOURCES
 	wg_q565compression.h
 	wg_rlecompression.cpp
 	wg_rlecompression.h
-	wg_snapshottintmap.cpp
-	wg_snapshottintmap.h
 	wg_spans.h
 	wg_spxcompression.cpp
 	wg_spxcompression.h
-	wg_statictintmap.cpp
-	wg_statictintmap.h
 	wg_surface.cpp
 	wg_surface.h
 	wg_surfacefactory.cpp
@@ -89,8 +79,6 @@ set( SOURCES
 	wg_tint.h
 	wg_tinttools.cpp
 	wg_tinttools.h
-	wg_tintmap.cpp
-	wg_tintmap.h
 	wg_transitions.cpp
 	wg_transitions.h
 	wg_waveform.cpp
@@ -124,18 +112,12 @@ set( SOURCES
 	c-api/wg_c_gfxtypes.h
 	c-api/wg_c_gfxutil.cpp
 	c-api/wg_c_gfxutil.h
-	c-api/wg_c_gradient.cpp
-	c-api/wg_c_gradient.h
-	c-api/wg_c_gradyent.cpp
-	c-api/wg_c_gradyent.h
 	c-api/wg_c_internal.cpp
 	c-api/wg_c_internal.h
 	c-api/wg_c_patches.cpp
 	c-api/wg_c_patches.h
 	c-api/wg_c_printer.cpp
 	c-api/wg_c_printer.h
-	c-api/wg_c_statictintmap.cpp
-	c-api/wg_c_statictintmap.h
 	c-api/wg_c_surface.cpp
 	c-api/wg_c_surface.h
 	c-api/wg_c_surfacefactory.cpp
@@ -145,9 +127,9 @@ set( SOURCES
 	c-api/wg_c_surfacewriter.cpp
 	c-api/wg_c_surfacewriter.h
 	c-api/wg_c_sysfont.cpp
+	c-api/wg_c_tint.cpp
+	c-api/wg_c_tint.h
 	c-api/wg_c_sysfont.h
-	c-api/wg_c_tintmap.h
-	c-api/wg_c_tintmap.cpp
 	c-api/wondergfx_c.h
 )
 

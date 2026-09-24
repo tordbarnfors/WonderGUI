@@ -141,6 +141,8 @@ namespace wg
 
 		void			buildLUT(const TintLayer& layer, int entries, HiColor* pOutput, HiColor multiplier = HiColor::White);
 
+		HiColor			layerColorAt(const TintLayer& layer, float position, HiColor multiplier = HiColor::White);		// No spread applied (e.g. Pad).
+
 
 		//____ applySpread() __________________________________________________
 

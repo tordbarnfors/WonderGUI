@@ -30,23 +30,17 @@ inline EdgemapFactory* getPtr(wg_obj obj) {
 }
 
 
-static void convertBP(const wg_edgemapBP* pSrc, Edgemap::Blueprint& dest)
+static void convertBP(const wg_edgemapBP* pSrc, Edgemap::Blueprint& dest, Tint_p * pSpaceForTints)
 {
-	dest.colors			= (const HiColor*) pSrc->colors;
-	dest.colorstripsX	= (const HiColor*) pSrc->colorstripsX;
-	dest.colorstripsY	= (const HiColor*) pSrc->colorstripsY;
-	dest.paletteType	= (EdgemapPalette) pSrc->paletteType;
-	dest.tintmaps		= (const Tintmap_p *) pSrc->tintmaps;		 // IS THIS INDIRECT CONVERSION SAFE?
-	dest.segments 		= pSrc->segments;
-	dest.size.w			= pSrc->size.w;
-	dest.size.h			= pSrc->size.h;
+	convertEdgemapBlueprint(&dest, pSrc, pSpaceForTints);
 }
 
 
 wg_obj wg_createEdgemap(wg_obj factory, const wg_edgemapBP* pCBP)
 {
 	Edgemap::Blueprint	cppBP;
-	convertBP(pCBP,cppBP);
+	Tint_p tints[Edgemap::maxSegments];
+	convertBP(pCBP,cppBP,tints);
 
 	auto p = getPtr(factory)->createEdgemap(cppBP);
 	p->retain();
@@ -57,7 +51,8 @@ wg_obj wg_createEdgemapFromFloats(wg_obj factory, const wg_edgemapBP* pCBP, wg_s
 	const float* pSamples, int edges, int edgePitch, int samplePitch)
 {
 	Edgemap::Blueprint	cppBP;
-	convertBP(pCBP,cppBP);
+	Tint_p tints[Edgemap::maxSegments];
+	convertBP(pCBP,cppBP,tints);
 
 	auto p = getPtr(factory)->createEdgemap(cppBP, (SampleOrigo) origo, pSamples, edges, edgePitch, samplePitch);
 	p->retain();
@@ -68,7 +63,8 @@ wg_obj wg_createEdgemapFromSpx(wg_obj factory, const wg_edgemapBP* pCBP, wg_samp
 	const wg_spx* pSamples, int edges, int edgePitch, int samplePitch)
 {
 	Edgemap::Blueprint	cppBP;
-	convertBP(pCBP,cppBP);
+	Tint_p tints[Edgemap::maxSegments];
+	convertBP(pCBP,cppBP,tints);
 
 	auto p = getPtr(factory)->createEdgemap(cppBP, (SampleOrigo)origo, (const spx*) pSamples, edges, edgePitch, samplePitch);
 	p->retain();

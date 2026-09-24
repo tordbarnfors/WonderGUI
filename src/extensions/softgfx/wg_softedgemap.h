@@ -24,6 +24,7 @@
 #pragma once
 
 #include <wg_edgemap.h>
+#include <wg_softtint.h>
 
 namespace wg
 {
@@ -58,7 +59,10 @@ protected:
 	~SoftEdgemap();
 	
 	void	_samplesUpdated(int edgeBegin, int edgeEnd, int sampleBegin, int sampleEnd) override;
-	void	_colorsUpdated(int beginColor, int endColor) override;
+	void	_colorsUpdated(int beginSegment, int endSegment) override;
+
+	SoftTint					m_segmentTints[maxSegments];	// Prepared tints (or flat colors) for segments.
+
 	
 		
 	std::bitset<maxSegments>	m_opaqueSegments;

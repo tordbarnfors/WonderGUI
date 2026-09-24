@@ -21,7 +21,6 @@
 =========================================================================*/
 #include <wg_waveform.h>
 #include <wg_gfxbase.h>
-#include <wg_gradyent.h>
 
 #include <algorithm>
 #include <cstring>
@@ -43,9 +42,9 @@ namespace wg
 	Waveform::Waveform( const Blueprint& bp , EdgemapFactory * pFactory )
 	: 	m_color(bp.color),
 		m_outlineColor(bp.outlineColor),
-		m_gradient(bp.gradient),
+		m_pTint(bp.tint),
 		m_bOptimizeDirtRange(bp.optimize),
-		m_outlineGradient(bp.outlineGradient),
+		m_pOutlineTint(bp.outlineTint),
 		m_origo(bp.origo),
 		m_nbSamples(bp.size.w+1),
 		m_pFactory(pFactory),
@@ -156,23 +155,16 @@ namespace wg
 	}
 
 
-	//____ setGradient() _________________________________________________________
+	//____ setTint() ___________________________________________________________
+	/**
+	 * @brief Set a Tint for the fill, overriding the fill color.
+	 *
+	 * The Tint is placed in the rectangle of the waveform.
+	 */
 
-	bool Waveform::setGradient( const Gradient& gradient )
+	void Waveform::setTint( Tint * pTint )
 	{
-		if( !gradient.isValid() )
-			return false;
-
-		m_gradient = gradient;
-		_updateEdgemapColors();
-		return true;
-	}
-
-	//____ clearGradient() _________________________________________________________
-
-	void Waveform::clearGradient()
-	{
-		m_gradient = Gradient();
+		m_pTint = pTint;
 		_updateEdgemapColors();
 	}
 
@@ -188,23 +180,16 @@ namespace wg
 		return true;
 	}
 
-	//____ setOutlineGradient() __________________________________________________
+	//____ setOutlineTint() ____________________________________________________
+	/**
+	 * @brief Set a Tint for the outlines, overriding the outline color.
+	 *
+	 * The Tint is placed in the rectangle of the waveform.
+	 */
 
-	bool Waveform::setOutlineGradient( const Gradient& gradient )
+	void Waveform::setOutlineTint( Tint * pTint )
 	{
-		if( !gradient.isValid() )
-			return false;
-
-		m_outlineGradient = gradient;
-		_updateEdgemapColors();
-		return true;
-	}
-
-	//____ clearOutlineGradient() _________________________________________________________
-
-	void Waveform::clearOutlineGradient()
-	{
-		m_outlineGradient = Gradient();
+		m_pOutlineTint = pTint;
 		_updateEdgemapColors();
 	}
 
@@ -612,29 +597,21 @@ namespace wg
 
 	void Waveform::_updateEdgemapColors()
 	{
-		EdgemapFactory_p pFactory = m_pFactory ? m_pFactory : GfxBase::defaultEdgemapFactory();
-
-		bool bUseGradient = !m_gradient.isUndefined() || !m_outlineGradient.isUndefined();
-
-		if( bUseGradient )
+		if( m_pEdgemap == nullptr )
 		{
-			Gradient	gradients[5];
-			int nSegments = _generateGradientPalette(gradients);
-
-			if( m_pEdgemap == nullptr )
-				m_pEdgemap = pFactory->createEdgemap( WGBP(Edgemap, _.gradients = gradients, _.size = m_size, _.segments = nSegments ) );
-			else
-				m_pEdgemap->setColors( 0, nSegments, gradients );
+			_regenEdgemap();
+			return;
 		}
-		else
-		{
-			HiColor	colors[5];
-			int nSegments = _generateColorPalette(colors);
 
-			if( m_pEdgemap == nullptr )
-				m_pEdgemap = pFactory->createEdgemap( WGBP(Edgemap, _.colors = colors, _.size = m_size, _.segments = nSegments ) );
-			else
-				m_pEdgemap->setColors( 0, nSegments, colors );
+		HiColor	colors[5];
+		int nSegments = _generateColorPalette(colors);
+		m_pEdgemap->setColors( 0, nSegments, colors );
+
+		if( m_pTint || m_pOutlineTint )
+		{
+			Tint_p	tints[5];
+			_generateTintPalette(tints);
+			m_pEdgemap->setColors( 0, nSegments, tints );
 		}
 	}
 
@@ -644,27 +621,15 @@ namespace wg
 	{
 		EdgemapFactory_p pFactory = m_pFactory ? m_pFactory : GfxBase::defaultEdgemapFactory();
 
-		bool bUseGradient = !m_gradient.isUndefined() || !m_outlineGradient.isUndefined();
+		HiColor	colors[5];
+		Tint_p	tints[5];
 
-		if( bUseGradient )
-		{
-			Gradient	gradients[5];
-			int nSegments = _generateGradientPalette( gradients );
+		int nSegments = _generateColorPalette( colors );
+		_generateTintPalette( tints );
 
-			 Tintmap_p	tintmaps[5];
+		bool bTints = m_pTint || m_pOutlineTint;
 
-			 for( int i = 0 ; i < nSegments ; i++ )
-				 tintmaps[i] = Gradyent::create(gradients[i]);
-
-			m_pEdgemap = pFactory->createEdgemap( WGBP(Edgemap, _.tintmaps = tintmaps, _.size = m_size, _.segments = nSegments ) );
-		}
-		else
-		{
-			HiColor	colors[5];
-			int nSegments = _generateColorPalette( colors );
-
-			m_pEdgemap = pFactory->createEdgemap( WGBP(Edgemap, _.colors = colors, _.size = m_size, _.segments = nSegments ) );
-		}
+		m_pEdgemap = pFactory->createEdgemap( WGBP(Edgemap, _.colors = colors, _.tints = bTints ? tints : nullptr, _.size = m_size, _.segments = nSegments ) );
 	}
 
 	//____ _generateColorPalette() _______________________________________________
@@ -683,44 +648,18 @@ namespace wg
 		return int(p - pDest);
 	}
 
-	//____ _generateGradientPalette() ____________________________________________
+	//____ _generateTintPalette() ______________________________________________
 
-	int Waveform::_generateGradientPalette( Gradient * pDest )
+	int Waveform::_generateTintPalette( Tint_p * pDest )
 	{
-		Gradient transparent(Color::Transparent);
-		Gradient outline = m_outlineGradient.isUndefined() ? Gradient(m_outlineColor) : m_outlineGradient;
-		Gradient fill;
-
-		if( m_gradient.isUndefined() )
-			fill = Gradient(m_color);
-		else
-		{
-			fill = m_gradient;
-			fill.topLeft *= m_color;
-			fill.topRight *= m_color;
-			fill.bottomLeft *= m_color;
-			fill.bottomRight *= m_color;
-		}
-
-		if( m_outlineGradient.isUndefined() )
-			outline = Gradient(m_outlineColor);
-		else
-		{
-			outline = m_outlineGradient;
-			outline.topLeft *= m_outlineColor;
-			outline.topRight *= m_outlineColor;
-			outline.bottomLeft *= m_outlineColor;
-			outline.bottomRight *= m_outlineColor;
-		}
-
-		Gradient * p = pDest;
-		* p++ = transparent;
+		Tint_p * p = pDest;
+		* p++ = nullptr;
 		if( m_bHasOutlines )
-			* p++ = outline;
-		* p++ = fill;
+			* p++ = m_pOutlineTint;
+		* p++ = m_pTint;
 		if( m_bHasOutlines )
-			* p++ = outline;
-		* p++ = transparent;
+			* p++ = m_pOutlineTint;
+		* p++ = nullptr;
 
 		return int( p - pDest );
 	}

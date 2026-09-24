@@ -442,36 +442,6 @@ RectSPX GfxDeviceGen2::tintRect() const
 	return m_renderState.tintRect;
 }
 
-//____ setTintGradient() __________________________________________________
-
-void GfxDeviceGen2::setTintGradient(const RectSPX& rect, const Gradient& gradient)
-{
-	// DEPRECATED. Approximates the 4-corner gradient with a linear Tint along
-	// the axis with largest color difference, like Gradyent did.
-
-	HiColor top = HiColor::mix(gradient.topLeft, gradient.topRight, 2048);
-	HiColor bottom = HiColor::mix(gradient.bottomLeft, gradient.bottomRight, 2048);
-	HiColor left = HiColor::mix(gradient.topLeft, gradient.bottomLeft, 2048);
-	HiColor right = HiColor::mix(gradient.topRight, gradient.bottomRight, 2048);
-
-	auto diff = [](HiColor a, HiColor b) { return (a.r - b.r) * (a.r - b.r) + (a.g - b.g) * (a.g - b.g) + (a.b - b.b) * (a.b - b.b) + (a.a - b.a) * (a.a - b.a); };
-
-	Tint_p pTint;
-	if (diff(left, right) > diff(top, bottom))
-		pTint = Tint::create(left, right, { 0.f, 0.f }, { 1.f, 0.f });
-	else
-		pTint = Tint::create(top, bottom, { 0.f, 0.f }, { 0.f, 1.f });
-
-	setTint(rect, pTint);
-}
-
-//____ clearTintGradient() ________________________________________________
-
-void GfxDeviceGen2::clearTintGradient()
-{
-	clearTint();
-}
-
 //____ setBlendMode() _____________________________________________________
 
 bool GfxDeviceGen2::setBlendMode(BlendMode blendMode)

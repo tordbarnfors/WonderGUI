@@ -243,22 +243,6 @@ namespace wg
 		m_tintColor = HiColor::White;
 	}
 
-	//____ setTintGradient() __________________________________________________
-
-	void GfxDeviceGen1::setTintGradient(const RectSPX& rect, const Gradient& gradient)
-	{
-		m_tintGradientRect = rect;
-		m_tintGradient = gradient;
-		m_bTintGradient = true;
-	}
-
-	//____ clearTintGradient() ________________________________________________
-
-	void GfxDeviceGen1::clearTintGradient()
-	{
-		m_bTintGradient = false;
-	}
-
 	//____ setBlendMode() __________________________________________________________
 
 	bool GfxDeviceGen1::setBlendMode( BlendMode blendMode )
@@ -351,7 +335,6 @@ namespace wg
 			HiColor		savedTintColor = m_tintColor;
 
 			setTintColor(Color::White);
-			clearTintGradient();
 
 			if( m_pCanvasLayers->_layerClearFunc(m_renderLayer) != nullptr )
 			{
@@ -525,9 +508,6 @@ namespace wg
 		back.clipRects.clipBounds = m_clipBounds;
 		back.renderLayer = m_renderLayer;
 		back.tintColor = m_tintColor;
-		back.tintGradient = m_tintGradient;
-		back.tintGradientRect = m_tintGradientRect;
-		back.bTintGradient = m_bTintGradient;
 		back.blendMode = m_blendMode;
 		back.morphFactor = m_morphFactor;
 		back.fixedBlendColor = m_fixedBlendColor;
@@ -560,9 +540,6 @@ namespace wg
 
 		m_renderLayer = layer;
 		m_tintColor = HiColor::White;
-		m_tintGradient.clear();
-		m_tintGradientRect = sz;
-		m_bTintGradient = false;
 		m_blendMode = BlendMode::Blend;
 		m_morphFactor = 0.5f;
 		m_fixedBlendColor = HiColor::Black;
@@ -616,7 +593,6 @@ namespace wg
 						setClipList(m_nCanvasUpdateRects, m_pCanvasUpdateRects);
 						setBlendMode(BlendMode::Blend);
 						setTintColor(Color::White);
-						clearTintGradient();
 						setRenderLayer(0);
 						bFirst = false;
 					}
@@ -633,7 +609,6 @@ namespace wg
 						setClipList(m_nCanvasUpdateRects, m_pCanvasUpdateRects);
 						setBlendMode(BlendMode::Blend);
 						setTintColor(Color::White);
-						clearTintGradient();
 						setRenderLayer(0);
 						bFirst = false;
 					}
@@ -685,9 +660,6 @@ namespace wg
 			m_clipBounds = back.clipRects.clipBounds;
 			m_renderLayer = back.renderLayer;
 			m_tintColor = back.tintColor;
-			m_tintGradient = back.tintGradient;
-			m_tintGradientRect = back.tintGradientRect;
-			m_bTintGradient = back.bTintGradient;
 			m_blendMode = back.blendMode;
 			m_morphFactor = back.morphFactor;
 			m_fixedBlendColor = back.fixedBlendColor;

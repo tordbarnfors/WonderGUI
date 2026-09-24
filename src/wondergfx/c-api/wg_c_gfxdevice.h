@@ -26,7 +26,6 @@
 #include <wg_c_gfxtypes.h>
 #include <wg_c_geo.h>
 #include <wg_c_color.h>
-#include <wg_c_gradient.h>
 #include <wg_c_surface.h>
 #include <wg_c_gfxbackend.h>
 
@@ -189,8 +188,6 @@ extern "C" {
 	WG_DEPRECATED void		wg_drawSegments(wg_obj device, const wg_rectSPX* dest, int nSegments, const wg_color* pSegmentColors, int nEdgeStrips, const int* pEdgeStrips, int edgeStripPitch, wg_tintMode tintMode);
 	WG_DEPRECATED void		wg_flipDrawSegments(wg_obj device, const wg_rectSPX* dest, int nSegments, const wg_color* pSegmentColors, int nEdgeStrips, const int* pEdgeStrips, int edgeStripPitch, wg_gfxFlip flip, wg_tintMode tintMode);
 
-	WG_DEPRECATED void		wg_setTintGradient(wg_obj device, const wg_rectSPX* rect, const wg_gradient * pGradient);
-	WG_DEPRECATED void		wg_clearTintGradient(wg_obj device);
 
 	WG_DEPRECATED void		wg_setBlurMatrices(wg_obj device, wg_spx radius, const float red[9], const float green[9], const float blue[9] );
 

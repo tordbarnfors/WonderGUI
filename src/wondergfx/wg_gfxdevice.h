@@ -28,7 +28,6 @@
 #include <wg_pointers.h>
 #include <wg_gfxtypes.h>
 #include <wg_color.h>
-#include <wg_gradient.h>
 #include <wg_edgemap.h>
 #include <wg_tint.h>
 #include <wg_blurbrush.h>
@@ -236,8 +235,6 @@ namespace wg
 
 		// Deprecated
 
-		virtual void		setTintGradient(const RectSPX& rect, const Gradient& gradient) = 0;
-		virtual void		clearTintGradient() = 0;
 
 
 	protected:

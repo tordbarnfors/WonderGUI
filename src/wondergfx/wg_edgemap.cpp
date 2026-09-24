@@ -20,7 +20,6 @@
 
 =========================================================================*/
 #include <wg_edgemap.h>
-#include <wg_gradyent.h>
 
 #include <cstring>
 #include <climits>
@@ -36,200 +35,40 @@ namespace wg
 		if (bp.finalizer)
 			setFinalizer(bp.finalizer);
 
-		// Check what kind of color storage we should have.
-
-		bool bStripX = false; 
-		bool bStripY = false;
-
-		if( bp.paletteType != EdgemapPalette::Undefined )
-		{
-			switch(bp.paletteType)
-			{
-				default:
-				case EdgemapPalette::Flat:
-					break;
-					
-				case EdgemapPalette::ColorstripX:
-					bStripX = true;
-					break;
-					
-				case EdgemapPalette::ColorstripY:
-					bStripY = true;
-					break;
-					
-				case EdgemapPalette::ColorstripXY:
-					bStripX = true;
-					bStripY = true;
-					break;
-			}
-		}
-		else if (bp.colorstripsX || bp.colorstripsY)
-		{
-			bStripX = bp.colorstripsX;
-			bStripY = bp.colorstripsY;
-		}
-		else if (bp.tintmaps)
-		{
-			for (int i = 0; i < bp.segments; i++)
-			{
-				if (bp.tintmaps[i] && bp.tintmaps[i]->isHorizontal() )
-					bStripX = true;
-
-				if (bp.tintmaps[i] && bp.tintmaps[i]->isVertical())
-					bStripY = true;
-			}
-		}
-
-		if( bp.paletteType == EdgemapPalette::Undefined )
-		{
-			if( bStripX && bStripY )
-				m_paletteType = EdgemapPalette::ColorstripXY;
-			else if( bStripX )
-				m_paletteType = EdgemapPalette::ColorstripX;
-			else if( bStripY )
-				m_paletteType = EdgemapPalette::ColorstripY;
-			else
-				m_paletteType = EdgemapPalette::Flat;
-		}
-		else
-			m_paletteType = bp.paletteType;
-		
-				
 		// Setup buffers
 
 		int sampleArraySize = (bp.size.w + 1) * bp.segments * sizeof(spx);
+		int flatColorsSize = bp.segments * sizeof(HiColor);
 
-		int stripSizeX = bStripX ? (bp.size.w) * bp.segments * sizeof(HiColor) : 0;
-		int stripSizeY = bStripY ? (bp.size.h) * bp.segments * sizeof(HiColor) : 0;
-		int flatColorsSize = (bStripX == false && bStripY == false) ? bp.segments * sizeof(HiColor) : 0;
-
-		int bytes = sampleArraySize + stripSizeX + stripSizeY + flatColorsSize;
-
-		m_pBuffer = new char[bytes];
+		m_pBuffer = new char[sampleArraySize + flatColorsSize];
 		char* pDest = m_pBuffer;
 
-		m_pPalette = (HiColor*) pDest;
-		m_paletteSize = (stripSizeX + stripSizeY + flatColorsSize) / sizeof(HiColor);
-
-		if (stripSizeX > 0)
-		{
-			m_pColorstripsX = (HiColor *) pDest;
-			pDest += stripSizeX;
-		}
-
-		if (stripSizeY > 0)
-		{
-			m_pColorstripsY = (HiColor*)pDest;
-			pDest += stripSizeY;
-		}
-
-		if (flatColorsSize)
-		{
-			m_pFlatColors = (HiColor*)pDest;
-			pDest += flatColorsSize;
-		}
+		m_pFlatColors = (HiColor*)pDest;
+		pDest += flatColorsSize;
 
 		m_pSamples = (spx*) pDest;
 		pDest += sampleArraySize;
 
 		std::fill(m_pSamples, (spx*) pDest, bp.size.h*64 );		// All edges start right below the map, making first segement fill the area.
 
-		// Fill in colorstrips
+		m_pTints = new Tint_p[bp.segments];
 
-		if( m_pColorstripsX || m_pColorstripsY)
-		{
-			// We need to fill in colorstrips
+		// Fill in colors
 
-			if (bp.colorstripsX || bp.colorstripsY)
-			{
-				// We have colorstrips defined. This overrides everything else, so we ignore tintmaps, gradients and colors.
+		for (int i = 0; i < bp.segments; i++)
+			m_pFlatColors[i] = bp.colors ? bp.colors[i] : HiColor::Transparent;
 
-				if (bp.colorstripsX)
-					memcpy(m_pColorstripsX, bp.colorstripsX, bp.size.w * sizeof(HiColor) * bp.segments );
-
-				if (bp.colorstripsY)
-					memcpy(m_pColorstripsY, bp.colorstripsY, bp.size.h * sizeof(HiColor) * bp.segments );
-			}
-			else if( bp.tintmaps )
-			{
-				// We need to fill in colorstrips from tintmaps and possibly colors.
-
-				for (int seg = 0; seg < bp.segments; seg++)
-				{
-					if (bp.tintmaps[seg])
-					{
-						auto pTintmap = bp.tintmaps[seg];
-
-						HiColor * pColorstripsX = m_pColorstripsX ? m_pColorstripsX + seg * m_size.w : nullptr;
-						HiColor * pColorstripsY = m_pColorstripsY ? m_pColorstripsY + seg * m_size.h : nullptr;
-
-						pTintmap->exportColors(bp.size, pColorstripsX, pColorstripsY);
-					}
-					else if (bp.colors)
-					{
-						if (m_pColorstripsX)
-						{
-							auto pOutput = m_pColorstripsX + seg * m_size.w;
-							for (int i = 0; i < bp.size.w; i++)
-								*pOutput++ = bp.colors[seg];
-
-
-							if (m_pColorstripsY)
-							{
-								auto pOutput = m_pColorstripsY + seg * m_size.h;
-
-								for (int i = 0; i < bp.size.h; i++)
-									*pOutput++ = HiColor::White;
-							}
-						}
-						else
-						{
-							auto pOutput = m_pColorstripsY + seg * m_size.h;
-							for (int i = 0; i < bp.size.h; i++)
-								*pOutput++ = bp.colors[seg];
-
-						}
-					}
-					else
-					{
-						if (m_pColorstripsX)
-						{
-							auto pOutput = m_pColorstripsX + seg * m_size.w;
-							for (int i = 0; i < bp.size.w; i++)
-								*pOutput++ = HiColor::Transparent;
-						}
-
-						if (m_pColorstripsY)
-						{
-							auto pOutput = m_pColorstripsY + seg * m_size.h;
-							for (int i = 0; i < bp.size.h; i++)
-								*pOutput++ = HiColor::Transparent;
-						}
-					}
-				}
-
-			}
-			else if( bp.gradients )
-			{
-				// We have gradients so we fill in our colorstrips from them.
-
-				setColors(0, bp.segments, bp.gradients);
-			}
-		}
-		else if( bp.colors )
-		{
-			// Flat colors
-			
-			setColors(0, bp.segments, bp.colors);
-		}
+		if (bp.tints)
+			setColors(0, bp.segments, bp.tints);
 
 		m_bConstructed = true;
 	}
-	
+
 	//____ destructor ________________________________________________________
 
 	Edgemap::~Edgemap()
 	{
+		delete[] m_pTints;
 		delete[] m_pBuffer;
 	}
 
@@ -251,227 +90,73 @@ namespace wg
 		m_nbRenderSegments = segments;
 		return true;
 	}
+
 	//____ setColors() ____________________________________________________________
+	/**
+	 * @brief Set flat colors for a range of segments.
+	 *
+	 * Any Tints of these segments are removed.
+	 */
 
 	bool Edgemap::setColors(int begin, int end, const HiColor* pColors)
 	{
-		if (m_pFlatColors)
-		{
-			for (int i = begin; i < end; i++)
-				m_pFlatColors[i] = *pColors++;
-
-			if( m_bConstructed )
-				_colorsUpdated(begin, end);
-		}
-		else if (m_pColorstripsX)
-		{
-			// Set whole horizontal colorstrips to our color.
-
-			HiColor* pDest = m_pColorstripsX + begin * m_size.w;
-			for (int seg = begin; seg < end; seg++)
-			{
-				for (int i = 0; i < m_size.w; i++)
-					*pDest++ = *pColors;
-				pColors++;
-			}
-
-			if( m_bConstructed )
-				_colorsUpdated(int(m_pColorstripsX - m_pPalette) + begin * m_size.w, int(m_pColorstripsX - m_pPalette) + end * m_size.w);
-
-			// If we also have vertical colorstrip, we need to set its colors to White.
-
-			if (m_pColorstripsY)
-			{
-				HiColor* pDest = m_pColorstripsY + begin * m_size.h;
-
-				for (int seg = begin; seg < end; seg++)
-				{
-					for (int i = 0; i < m_size.h; i++)
-						*pDest++ = HiColor::White;
-				}
-
-				if( m_bConstructed )
-					_colorsUpdated(int(m_pColorstripsY - m_pPalette) + begin * m_size.h, int(m_pColorstripsY - m_pPalette) + end * m_size.h);
-			}
-		}
-		else
-		{
-			// We only have vertical colorstrips, so we set our new colors in them.
-
-			HiColor* pDest = m_pColorstripsY + begin * m_size.h;
-			for (int seg = begin; seg < end; seg++)
-			{
-				for (int i = 0; i < m_size.h; i++)
-					*pDest++ = *pColors;
-				pColors++;
-			}
-
-			if( m_bConstructed )
-				_colorsUpdated(int(m_pColorstripsY - m_pPalette) + begin * m_size.h, int(m_pColorstripsY - m_pPalette) + end * m_size.h);
-		}
-
-		return true;
-	}
-
-
-	bool Edgemap::setColors(int begin, int end, const Gradient* pGradients)
-	{
-		if (m_pFlatColors)
+		if (begin < 0 || end > m_nbSegments || begin > end || !pColors)
 			return false;
 
-		for (int seg = begin; seg < end; seg++)
+		for (int i = begin; i < end; i++)
 		{
-			auto pGradyent = Gradyent::create(*pGradients++);
+			m_pFlatColors[i] = *pColors++;
 
-			HiColor * pColorstripsX = m_pColorstripsX ? m_pColorstripsX + seg * m_size.w : nullptr;
-			HiColor * pColorstripsY = m_pColorstripsY ? m_pColorstripsY + seg * m_size.h : nullptr;
-
-			pGradyent->exportColors(m_size, pColorstripsX, pColorstripsY);
+			if (m_pTints[i])
+			{
+				m_pTints[i] = nullptr;
+				m_nbTints--;
+			}
 		}
 
-		if( m_pColorstripsX && m_bConstructed )
-			_colorsUpdated(int(m_pColorstripsX - m_pPalette) + begin * m_size.w, int(m_pColorstripsX - m_pPalette) + end * m_size.w);
-
-		if (m_pColorstripsY && m_bConstructed )
-			_colorsUpdated(int(m_pColorstripsY - m_pPalette) + begin * m_size.h, int(m_pColorstripsY - m_pPalette) + end * m_size.h);
+		if( m_bConstructed )
+			_colorsUpdated(begin, end);
 
 		return true;
 	}
 
-	bool Edgemap::setColors(int begin, int end, const Tintmap_p* pTintmaps)
+	/**
+	 * @brief Set Tints for a range of segments.
+	 *
+	 * A Tint is placed in the rectangle of the Edgemap (before any flip or rotation).
+	 * Entries that are nullptr leave the segment with its flat color. Flat Tints
+	 * (single color, not a mix) are stored as flat colors.
+	 */
+
+	bool Edgemap::setColors(int begin, int end, const Tint_p* pTints)
 	{
-		if (m_pFlatColors)
+		if (begin < 0 || end > m_nbSegments || begin > end || !pTints)
 			return false;
 
-		//TODO: Also check so that the tintmaps don't tint a direction we don't have colorstrips for.
-
-		auto pMaps = pTintmaps;
-
-		int incX = m_pColorstripsX ? m_size.w : 0;
-		int incY = m_pColorstripsY ? m_size.h : 0;
-
-		HiColor * pColorstripsX = m_pColorstripsX + begin * incX;	// Any nullptr remains nullptr...
-		HiColor * pColorstripsY = m_pColorstripsY + begin * incY;
-
-		for (int seg = begin; seg < end; seg++)
+		for (int i = begin; i < end; i++)
 		{
-			Tintmap* pMap = *pMaps++;
-			pMap->exportColors(m_size, pColorstripsX, pColorstripsY);
+			Tint* pTint = pTints[i - begin];
 
-			pColorstripsX += incX;
-			pColorstripsY += incY;
+			if (m_pTints[i])
+				m_nbTints--;
+
+			if (pTint && pTint->isFlat() && !pTint->isMix())
+			{
+				m_pFlatColors[i] = pTint->stops()[0].color;
+				m_pTints[i] = nullptr;
+			}
+			else
+			{
+				m_pTints[i] = pTint;
+				if (pTint)
+					m_nbTints++;
+			}
 		}
 
-		if( m_pColorstripsX )
-			_colorsUpdated(int(m_pColorstripsX - m_pPalette) + begin * m_size.w, int(m_pColorstripsX - m_pPalette) + end * m_size.w);
-
-		if( m_pColorstripsY )
-			_colorsUpdated(int(m_pColorstripsY - m_pPalette) + begin * m_size.h, int(m_pColorstripsY - m_pPalette) + end * m_size.h);
+		if( m_bConstructed )
+			_colorsUpdated(begin, end);
 
 		return true;
-	}
-
-	bool Edgemap::setColors(int begin, int end, const HiColor* pColorstripsX, const HiColor* pColorstripsY)
-	{
-		if ((pColorstripsX && !m_pColorstripsX) || (pColorstripsY && !m_pColorstripsY))
-			return false;
-
-		if (pColorstripsX)
-		{
-			int nColors = (end - begin) * m_size.w;
-
-			HiColor* pDest = m_pColorstripsX + begin * m_size.w;
-			for (int i = 0; i < nColors; i++)
-					*pDest++ = *pColorstripsX++;
-
-			_colorsUpdated(int(m_pColorstripsX-m_pPalette) + begin * m_size.w, int(m_pColorstripsX - m_pPalette) + end * m_size.w);
-		}
-
-		if (pColorstripsY)
-		{
-			int nColors = (end - begin) * m_size.h;
-
-			HiColor* pDest = m_pColorstripsY + begin * m_size.h;
-			for (int i = 0; i < nColors; i++)
-				*pDest++ = *pColorstripsY++;
-
-			_colorsUpdated(int(m_pColorstripsY - m_pPalette) + begin * m_size.h, int(m_pColorstripsY - m_pPalette) + end * m_size.h);
-		}
-
-		return true;
-	}
-
-	//____ importPaletteEntries() ________________________________________________
-
-	bool Edgemap::importPaletteEntries( int begin, int end, const HiColor * pColors )
-	{
-		memcpy( m_pPalette + begin, pColors, (end - begin)*sizeof(HiColor) );
-		_colorsUpdated(begin, end);
-		
-		return true;
-	}
-
-	//____ exportLegacyPalette() ______________________________________________
-
-	void Edgemap::exportLegacyPalette(HiColor* pDest) const
-	{
-		switch (m_paletteType)
-		{
-		case EdgemapPalette::Flat:
-			memcpy(pDest, m_pFlatColors, m_paletteSize * sizeof(HiColor));
-			break;
-		case EdgemapPalette::ColorstripX:
-		{
-			HiColor* pSrc = m_pColorstripsX;
-
-			for (int i = 0; i < m_nbSegments; i++)
-			{
-				*pDest++ = pSrc[0];
-				*pDest++ = pSrc[m_size.w - 1];
-				pSrc += m_size.w;
-			}
-			break;
-		}
-
-		case EdgemapPalette::ColorstripY:
-		{
-			HiColor* pSrc = m_pColorstripsY;
-
-			for (int i = 0; i < m_nbSegments; i++)
-			{
-				*pDest++ = pSrc[0];
-				*pDest++ = pSrc[m_size.h - 1];
-				pSrc += m_size.h;
-			}
-			break;
-		}
-
-		case EdgemapPalette::ColorstripXY:
-		{
-			HiColor* pSrcX = m_pColorstripsX;
-			HiColor* pSrcY = m_pColorstripsY;
-
-			for (int i = 0; i < m_nbSegments; i++)
-			{
-				HiColor& startX = pSrcX[0];
-				HiColor& endX = pSrcX[m_size.w - 1];
-				HiColor& startY = pSrcY[0];
-				HiColor& endY = pSrcY[m_size.h - 1];
-
-				*pDest++ = startX * startY;			// topLeft 
-				*pDest++ = endX * startY;			// topRight
-				*pDest++ = endX * endY;				// bottomRight
-				*pDest++ = startX * endY;			// bottomLeft
-
-				pSrcX += m_size.w;
-				pSrcY += m_size.h;
-			}
-			break;
-		}
-
-			default:
-				assert(false);			// Should never get here!
-		}
 	}
 
 	//____ importSamples() _________________________________________________________
@@ -679,24 +364,6 @@ namespace wg
 		_samplesUpdated(edgeBegin, edgeEnd, sampleBegin, sampleEnd);
 	}
 
-	//____ blueprint() ___________________________________________________________
-/*
-	Blueprint Edgemap::blueprint() const
-	{
-		Blueprint bp;
-
-		bp.colors = m_pFlatColors;
-		bp.colorstripsX = m_pColorstripsX;
-		bp.colorstripsY = m_pColorstripsY;
-		bp.finalizer = finalizer();
-		bp.size = m_size;
-		bp.segments = m_nbSegments;
-		bp.paletteType = m_paletteType;
-
-		return bp;
-	}
-*/
-
 	//____ _validateBlueprint() __________________________________________________
 
 	bool Edgemap::_validateBlueprint(const Blueprint& bp)
@@ -708,24 +375,6 @@ namespace wg
 
 		if( bp.segments <= 0 || bp.segments > maxSegments )
 			return false;
-
-		if (bp.paletteType == EdgemapPalette::Flat && (bp.gradients || bp.tintmaps || bp.colorstripsX || bp.colorstripsY))
-			return false;
-
-		if (bp.paletteType == EdgemapPalette::ColorstripX && bp.colorstripsY)
-			return false;
-
-		if (bp.paletteType == EdgemapPalette::ColorstripY && bp.colorstripsX)
-			return false;
-
-		if (bp.paletteType == EdgemapPalette::Undefined)
-		{
-			if (bp.tintmaps && (bp.colorstripsX || bp.colorstripsY || bp.gradients))
-				return false;
-
-			if (bp.colors && (bp.gradients || bp.colorstripsX || bp.colorstripsY))
-				return false;
-		}
 
 		return true;
 	}

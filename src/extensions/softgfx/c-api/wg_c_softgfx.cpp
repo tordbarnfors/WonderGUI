@@ -100,9 +100,9 @@ wg_obj wg_createSoftEdgemap( const wg_edgemapBP* blueprint )
 	Edgemap::Blueprint	bp;
 
 	assert(blueprint->segments <= 32);
-	Tintmap_p	tintmapArea[32];
+	Tint_p	tintArea[32];
 
-	convertEdgemapBlueprint(&bp, blueprint, tintmapArea);
+	convertEdgemapBlueprint(&bp, blueprint, tintArea);
 
 	auto p = SoftEdgemap::create(bp);
 	p->retain();
@@ -114,9 +114,9 @@ wg_obj wg_createSoftEdgemapFromFloats( const wg_edgemapBP* blueprint, wg_sampleO
 	Edgemap::Blueprint	bp;
 
 	assert(blueprint->segments <= 32);
-	Tintmap_p	tintmapArea[32];
+	Tint_p	tintArea[32];
 
-	convertEdgemapBlueprint(&bp, blueprint, tintmapArea);
+	convertEdgemapBlueprint(&bp, blueprint, tintArea);
 
 	auto p = SoftEdgemap::create(bp, (SampleOrigo) origo, pSamples, edges, edgePitch, samplePitch);
 	p->retain();
@@ -128,9 +128,9 @@ wg_obj wg_createSoftEdgemapFromSpx( const wg_edgemapBP* blueprint, wg_sampleOrig
 	Edgemap::Blueprint	bp;
 
 	assert(blueprint->segments <= 32);
-	Tintmap_p	tintmapArea[32];
+	Tint_p	tintArea[32];
 
-	convertEdgemapBlueprint(&bp, blueprint, tintmapArea);
+	convertEdgemapBlueprint(&bp, blueprint, tintArea);
 
 	auto p = SoftEdgemap::create(bp, (SampleOrigo) origo, pSamples, edges, edgePitch, samplePitch);
 	p->retain();

@@ -20,7 +20,6 @@
 
 =========================================================================*/
 #include <wg_softedgemap.h>
-#include <wg_gradyent.h>
 
 #include <cstring>
 
@@ -101,52 +100,28 @@ void SoftEdgemap::_samplesUpdated(int edgeBegin, int edgeEnd, int sampleBegin, i
 
 //____ _colorsUpdated() ________________________________________________________
 
-void SoftEdgemap::_colorsUpdated(int beginColor, int endColor)
+void SoftEdgemap::_colorsUpdated(int beginSegment, int endSegment)
 {
-	// Update m_transparentSegments and m_opaqueSegments
+	RectSPX rect(0, 0, m_size.w * 64, m_size.h * 64);
 
-	if (m_pFlatColors)
+	for (int seg = beginSegment; seg < endSegment; seg++)
 	{
-		for (int seg = beginColor; seg < endColor; seg++)
+		if (m_pTints[seg])
 		{
-			int alpha = m_pPalette[seg].a;
+			m_segmentTints[seg].set(m_pTints[seg], rect);
+			m_transparentSegments[seg] = m_segmentTints[seg].isTransparent();
+			m_opaqueSegments[seg] = m_segmentTints[seg].isOpaque();
+		}
+		else
+		{
+			m_segmentTints[seg].setFlat(m_pFlatColors[seg]);
+
+			int alpha = m_pFlatColors[seg].a;
 			m_transparentSegments[seg] = (alpha == 0);
 			m_opaqueSegments[seg] = (alpha == 4096);
 		}
 	}
-	else
-	{
-		// To keep it simple we go through the whole palette on each update.
-
-		for (int seg = 0; seg < m_nbSegments; seg++)
-		{
-			int totalAlpha = 0;
-			int totalColors = 0;
-
-			if (m_pColorstripsX)
-			{
-				HiColor* pColor = m_pColorstripsX + m_size.w * seg;
-				for (int i = 0; i < m_size.w; i++)
-					totalAlpha += pColor[i].a;
-
-				totalColors += m_size.w;
-			}
-
-			if (m_pColorstripsY)
-			{
-				HiColor* pColor = m_pColorstripsY + m_size.h * seg;
-				for (int i = 0; i < m_size.h; i++)
-					totalAlpha += pColor[i].a;
-
-				totalColors += m_size.h;
-			}
-
-			m_transparentSegments[seg] = (totalAlpha == 0);
-			m_opaqueSegments[seg] = (totalAlpha == 4096 * totalColors);
-		}
-	}
 }
-
 
 } // namespace wg
 

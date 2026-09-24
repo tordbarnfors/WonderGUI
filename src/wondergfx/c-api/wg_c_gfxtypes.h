@@ -60,16 +60,30 @@ typedef enum
 	WG_TINT_GRADIENT_XY
 } wg_tintMode;
 
-//____ wg_edgemapPalette ___________________________________________________________
+//____ wg_tintShape ___________________________________________________________
 
 typedef enum
 {
-	WG_EDGEMAP_PALETTE_UNDEFINED = 0,
-	WG_EDGEMAP_PALETTE_FLAT,
-	WG_EDGEMAP_PALETTE_COLORSTRIP_X,
-	WG_EDGEMAP_PALETTE_COLORSTRIP_Y,
-	WG_EDGEMAP_PALETTE_COLORSTRIP_XY
-} wg_edgemapPalette;
+	WG_TINTSHAPE_LINEAR = 0,
+	WG_TINTSHAPE_RADIAL
+} wg_tintShape;
+
+//____ wg_tintSpread ___________________________________________________________
+
+typedef enum
+{
+	WG_TINTSPREAD_PAD = 0,
+	WG_TINTSPREAD_REPEAT,
+	WG_TINTSPREAD_REFLECT
+} wg_tintSpread;
+
+//____ wg_tintRadius ___________________________________________________________
+
+typedef enum
+{
+	WG_TINTRADIUS_FIT = 0,
+	WG_TINTRADIUS_CIRCLE
+} wg_tintRadius;
 
 
 //____ wg_blendMode ____________________________________________________________

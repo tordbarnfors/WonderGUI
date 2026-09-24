@@ -166,9 +166,9 @@ wg_obj wg_createStreamEdgemap(wg_obj streamEncoder, const wg_edgemapBP* blueprin
 	Edgemap::Blueprint	bp;
 
 	assert(blueprint->segments <= 32);
-	Tintmap_p	tintmapArea[32];
+	Tint_p	tintArea[32];
 
-	convertEdgemapBlueprint(&bp, blueprint, tintmapArea);
+	convertEdgemapBlueprint(&bp, blueprint, tintArea);
 
 	auto pEncoder = static_cast<StreamEncoder*>(reinterpret_cast<Object*>(streamEncoder));
 	auto p = StreamEdgemap::create(pEncoder, bp);
@@ -181,9 +181,9 @@ wg_obj wg_createStreamEdgemapFromFloats(wg_obj streamEncoder, const wg_edgemapBP
 	Edgemap::Blueprint	bp;
 
 	assert(blueprint->segments <= 32);
-	Tintmap_p	tintmapArea[32];
+	Tint_p	tintArea[32];
 
-	convertEdgemapBlueprint(&bp, blueprint, tintmapArea);
+	convertEdgemapBlueprint(&bp, blueprint, tintArea);
 
 	auto pEncoder = static_cast<StreamEncoder*>(reinterpret_cast<Object*>(streamEncoder));
 	auto p = StreamEdgemap::create(pEncoder, bp, (SampleOrigo) origo, pSamples, edges, edgePitch, samplePitch);
@@ -196,9 +196,9 @@ wg_obj wg_createStreamEdgemapFromSpx(wg_obj streamEncoder, const wg_edgemapBP* b
 	Edgemap::Blueprint	bp;
 
 	assert(blueprint->segments <= 32);
-	Tintmap_p	tintmapArea[32];
+	Tint_p	tintArea[32];
 
-	convertEdgemapBlueprint(&bp, blueprint, tintmapArea);
+	convertEdgemapBlueprint(&bp, blueprint, tintArea);
 
 	auto pEncoder = static_cast<StreamEncoder*>(reinterpret_cast<Object*>(streamEncoder));
 	auto p = StreamEdgemap::create(pEncoder, bp, (SampleOrigo) origo, pSamples, edges, edgePitch, samplePitch);

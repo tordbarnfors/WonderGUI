@@ -23,6 +23,7 @@
 #include <wg_softsurfacefactory.h>
 #include <wg_softedgemapfactory.h>
 #include <wg_softedgemap.h>
+#include <algorithm>
 #include <wg_gfxbase.h>
 #include <cstring>
 
@@ -799,7 +800,6 @@ namespace wg
 				pRects += nRects;
 
 				int32_t nSegments = pEdgemap->renderSegments();		// Segments to draw. Last one extends to the end.
-				const HiColor * pSegmentColors = pEdgemap->m_pFlatColors;
 				
 				int nEdgeStrips = pEdgemap->m_size.w + 1;
 
@@ -886,251 +886,11 @@ namespace wg
 
 				// Apply tinting
 
-				int16_t	colors[c_maxSegments * 4][4];				// BGRA order of elements
-				bool	transparentSegments[c_maxSegments];
-				bool	opaqueSegments[c_maxSegments];
+				EdgemapTinting tinting;
+				_beginEdgemapTinting(pEdgemap, nSegments, tinting);
 
-
-				// Determine combined tint-mode, start with global m_colTrans...
-
-				bool	bTintX = false;
-				bool	bTintY = false;
-
-				if (m_colTrans.mode != TintMode::None)
-				{
-					if (m_colTrans.mode == TintMode::GradientXY)
-					{
-						bTintX = bTintY = true;
-					}
-					else
-					{
-						if (m_colTrans.mode == TintMode::GradientY)
-						{
-							if (mtx.xy == 0 && mtx.yx == 0)
-								bTintY = true;
-							else
-								bTintX = true;
-						}
-						if (m_colTrans.mode == TintMode::GradientX)
-						{
-							if (mtx.xy == 0 && mtx.yx == 0)
-								bTintX = true;
-							else
-								bTintY = true;
-						}
-
-					}
-				}
-
-				// ... add in tintmaps for segments
-								
-				if( pEdgemap->colorstripsX() )
-					bTintX = true;
-				
-				if( pEdgemap->colorstripsY() )
-					bTintY = true;				
-
-				// Unpack input colors and fill in transparentSegments
-
-				if (!bTintX && !bTintY)
-				{
-					// If we just use flat tinting (or no tint at all), we tint our segment colors right away
-
-					auto pColor = pSegmentColors;
-					
-					for (int i = 0; i < nSegments; i++)
-					{
-						colors[i][0] = (pSegmentColors[i].b * m_colTrans.flatTintColor.b) >> 12;
-						colors[i][1] = (pSegmentColors[i].g * m_colTrans.flatTintColor.g) >> 12;
-						colors[i][2] = (pSegmentColors[i].r * m_colTrans.flatTintColor.r) >> 12;
-						colors[i][3] = (pSegmentColors[i].a * m_colTrans.flatTintColor.a) >> 12;
-
-						transparentSegments[i] = (colors[i][3] == 0);
-						opaqueSegments[i] = (colors[i][3] == 4096);						
-					}
-				}
-
-
-				HiColor * pTintColorsX = nullptr;
-				HiColor * pTintColorsY = nullptr;
-
-				int		tintBufferSizeX = 0;
-				int		tintBufferSizeY = 0;
-				
-				int		segmentPitchTintmapY = 0;
-				int		segmentPitchTintmapX = 0;
-
-				
-				// If we instead have gradients we have things to take care of...
-
-				if (bTintX || bTintY)
-				{
-					if (bTintX)
-					{
-						int length = pEdgemap->m_size.w;
-
-						segmentPitchTintmapX = length;
-
-						// Generate the buffer that we will need
-
-						tintBufferSizeX = sizeof(HiColor) * nSegments * length;
-						pTintColorsX = (HiColor*)GfxBase::memStackAlloc(tintBufferSizeX);
-						
-						// export segment colorstrip or flat colors into our buffer
-						
-						if (pEdgemap->m_pColorstripsX)
-							memcpy(pTintColorsX, pEdgemap->m_pColorstripsX, tintBufferSizeX);
-						else if (pEdgemap->m_pFlatColors)
-						{
-							HiColor* pOutput = pTintColorsX;
-							HiColor* pInput = pEdgemap->m_pFlatColors;
-
-							for (int seg = 0; seg < nSegments; seg++)
-							{
-								for (int i = 0; i < length; i++)
-									*pOutput++ = *pInput;
-
-								pInput++;
-							}
-						}
-					}
-					
-					if (bTintY)
-					{
-						int length = pEdgemap->m_size.h;
-
-						segmentPitchTintmapY = length;
-						
-						// Generate the buffer that we will need
-
-						tintBufferSizeY = sizeof(HiColor) * nSegments * length;
-						pTintColorsY = (HiColor*)GfxBase::memStackAlloc(tintBufferSizeY);
-						
-						// Export segment colorstrip into our buffer if we have them.
-						// Otherwise, if we haven't already exported our flat colors we do it now.
-						// If flat colors already have been exported, we just fill with white.
-
-						if (pEdgemap->m_pColorstripsY)
-							memcpy(pTintColorsY, pEdgemap->m_pColorstripsY, tintBufferSizeY);
-						else if (pEdgemap->m_pFlatColors && !bTintX)
-						{
-							HiColor* pOutput = pTintColorsY;
-							HiColor* pInput = pEdgemap->m_pFlatColors;
-
-							for (int seg = 0; seg < nSegments; seg++)
-							{
-								for (int i = 0; i < length; i++)
-									*pOutput++ = *pInput;
-
-								pInput++;
-							}
-						}
-						else
-						{
-							for (int i = 0; i < tintBufferSizeY; i++)
-								pTintColorsY[i] = HiColor::White;
-						}
-					}
-
-					// Possibly add in global tint, which might need to be rotated, offset and reversed
-
-					if (m_colTrans.mode == TintMode::Flat)
-					{
-						if (m_colTrans.flatTintColor != HiColor::White)
-						{
-							// We only apply tintColor once, so we only modify one of the color lists.
-
-							if (pTintColorsX)
-							{
-								for (int i = 0; i < nSegments * pEdgemap->m_size.w; i++)
-									pTintColorsX[i] *= m_colTrans.flatTintColor;
-							}
-							else if (pTintColorsY)
-							{
-								for (int i = 0; i < nSegments * pEdgemap->m_size.h; i++)
-									pTintColorsY[i] *= m_colTrans.flatTintColor;
-							}
-						}
-					}
-					else if (m_colTrans.mode == TintMode::GradientX || m_colTrans.mode == TintMode::GradientY || m_colTrans.mode == TintMode::GradientXY)
-					{
-						const HiColor* pGlobalsX = m_colTrans.pTintAxisX ? m_colTrans.pTintAxisX + _dest.x - m_colTrans.tintRect.x : nullptr;
-						const HiColor* pGlobalsY = m_colTrans.pTintAxisY ? m_colTrans.pTintAxisY + _dest.y - m_colTrans.tintRect.y : nullptr;
-
-						int width = _dest.w;
-						int height = _dest.h;
-
-						int pitchX = mtx.xx + mtx.xy;
-						int pitchY = mtx.yx + mtx.yy;
-
-						if (mtx.xy != 0 || mtx.yx != 0)
-						{
-							std::swap(pGlobalsX, pGlobalsY);
-							std::swap(width, height);
-							std::swap(pitchX, pitchY);
-						}
-
-
-						if (pitchX < 0 && pGlobalsX)
-							pGlobalsX += width - 1;
-
-						if (pitchY < 0 && pGlobalsY)
-							pGlobalsY += height - 1;
-
-
-						if (pGlobalsX)
-						{
-							HiColor* pDest = pTintColorsX;
-							for (int seg = 0; seg < nSegments; seg++)
-							{
-								const HiColor* pSrc = pGlobalsX;
-
-								for (int i = 0; i < width; i++)
-								{
-									*pDest++ *= *pSrc;
-									pSrc += pitchX;
-								}
-							}
-						}
-
-						if (pGlobalsY)
-						{
-							HiColor* pDest = pTintColorsY;
-							for (int seg = 0; seg < nSegments; seg++)
-							{
-								const HiColor* pSrc = pGlobalsY;
-
-								for (int i = 0; i < height; i++)
-								{
-									*pDest++ *= *pSrc;
-									pSrc += pitchY;
-								}
-							}
-						}
-					}
-
-
-					// Mark transparent and opaque segments
-					
-					if (m_colTrans.bTintOpaque)
-					{
-						for (int i = 0; i < nSegments; i++)
-						{
-							opaqueSegments[i] = pEdgemap->m_opaqueSegments.test(i);
-							transparentSegments[i] = pEdgemap->m_transparentSegments.test(i);
-						}
-
-					}
-					else
-					{
-						for (int i = 0; i < nSegments; i++)
-						{
-							opaqueSegments[i] = false;
-							transparentSegments[i] = pEdgemap->m_transparentSegments.test(i);
-						}
-					}
-				}
-
+				bool* transparentSegments = tinting.transparent;
+				bool* opaqueSegments = tinting.opaque;
 
 				// Modify opaqueSegments if our state isn't blend
 
@@ -1155,15 +915,8 @@ namespace wg
 				uint8_t* pOrigo = m_pCanvasPixels + start.y * yPitch + start.x * xPitch;
 
 				
-				StripSource stripSource = StripSource::Colors;
-				if( bTintY )
-				{
-					if(bTintX)
-						stripSource = StripSource::ColorsAndTintmaps;
-					else
-						stripSource = StripSource::Tintmaps;
-				}
-				
+				StripSource stripSource = tinting.bPerPixel ? StripSource::Tintmaps : StripSource::Colors;
+
 				SegmentOp_p	pOp = nullptr;
 				auto pKernels = m_pKernels[(int)m_pCanvas->pixelFormat()];
 				if (pKernels)
@@ -1171,18 +924,20 @@ namespace wg
 
 				if (pOp == nullptr)
 				{
+					_endEdgemapTinting(tinting);
+
 					if (m_blendMode == BlendMode::Ignore)
-						return;
+						break;
 
 					char errorMsg[1024];
 
-					snprintf(errorMsg, 1024, "Failed draw segments operation. SoftBackend is missing segments kernel %s Y-tint for BlendMode::%s onto surface of PixelFormat:%s.",
-						bTintY ? "with" : "without",
+					snprintf(errorMsg, 1024, "Failed draw segments operation. SoftBackend is missing segments kernel %s tint for BlendMode::%s onto surface of PixelFormat:%s.",
+						tinting.bPerPixel ? "with" : "without",
 						toString(m_blendMode),
 						toString(m_pCanvas->pixelFormat()));
 
 					GfxBase::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, errorMsg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
-					return;
+					break;
 				}
 
 				// Loop through patches
@@ -1271,39 +1026,24 @@ namespace wg
 								skippedSegments++;
 						}
 
-						// Update tinting if we have X-gradient
+						// Generate colors for column if tint varies over edgemap
 
-						if (bTintX)
-						{
-							for( int i = skippedSegments ; i < nSegments ; i++ )
-							{
-								HiColor& col = pTintColorsX[i*segmentPitchTintmapX+columnOfs];
+						_tintEdgemapColumn(pEdgemap, nSegments, tinting, columnOfs, rowOfs, rowOfs + rows, pEdgeStrips, start, simpleTransform);
 
-								colors[i][0] = col.b;
-								colors[i][1] = col.g;
-								colors[i][2] = col.r;
-								colors[i][3] = col.a;
-							}
-						}
-
-						const int16_t* pColors = &colors[skippedSegments][0];
+						const int16_t* pColors = &tinting.colors[skippedSegments][0];
 
 						//
 
- 						pOp(clipBeg, clipEnd, pStripStart, rowPitch, nEdges, edges, pColors, pTintColorsY + skippedSegments * segmentPitchTintmapY, segmentPitchTintmapY , transparentSegments + skippedSegments, opaqueSegments + skippedSegments, m_colTrans);
+						pOp(clipBeg, clipEnd, pStripStart, rowPitch, nEdges, edges, pColors, tinting.pColumns + skippedSegments * tinting.pitch, tinting.pitch, transparentSegments + skippedSegments, opaqueSegments + skippedSegments, m_colTrans);
 						pEdgeStrips += edgeStripPitch;
 						pStripStart += colPitch;
 						columnOfs++;
 					}
 				}
 
-				// Free what we have reservhed on the memStack.
+				// Free what we have reserved on the memStack.
 
-				if (tintBufferSizeY > 0)
-					GfxBase::memStackFree(tintBufferSizeY);
-
-				if (tintBufferSizeX > 0)
-					GfxBase::memStackFree(tintBufferSizeX);
+				_endEdgemapTinting(tinting);
 
 				break;
 			}
@@ -2095,124 +1835,16 @@ namespace wg
 
 	void SoftBackend::_updateTint()
 	{
-		TintMode	oldMode = m_colTrans.mode;
+		m_softTint.set(m_tint, m_tintColor);
 
-		m_nTintLayers = 0;
 		m_colTrans.pTintAxisX = nullptr;
 		m_colTrans.pTintAxisY = nullptr;
 		m_colTrans.tintRect.clear();
+		m_colTrans.bTintOpaque = m_softTint.isOpaque();
 
-		bool	bOpaque = (m_tintColor.a == 4096);
-		bool	bAllFlat = true;
-		bool	bVertical = true;			// Only varies vertically.
-		bool	bHorizontal = true;			// Only varies horizontally.
-
-		int		lutEntries = 0;
-
-		for (int l = 0; l < m_tint.nLayers; l++)
+		if (m_softTint.isFlat())
 		{
-			const TintTools::TintLayer& src = m_tint.layers[l];
-
-			if (src.weight == 0 || src.nStops == 0)
-				continue;
-
-			TintLayerState& layer = m_tintLayers[m_nTintLayers++];
-
-			layer.geo = TintTools::layerGeometry(src);
-			layer.spread = src.spread;
-			layer.weight = src.weight;
-			layer.bFlat = TintTools::isLayerFlat(src);
-			layer.lutBits = 0;
-			layer.lutOfs = 0;
-
-			for (int i = 0; i < src.nStops; i++)
-				if (src.stopColors[i].a != 4096)
-					bOpaque = false;
-
-			if (layer.bFlat)
-			{
-				layer.flatColor = src.stopColors[0] * m_tintColor;
-				continue;
-			}
-
-			bAllFlat = false;
-
-			// Classify and decide LUT size from length of gradient in pixels.
-
-			float length;
-
-			if (layer.geo.shape == TintShape::Linear)
-			{
-				if (layer.geo.a != 0.f)
-					bVertical = false;
-				if (layer.geo.b != 0.f)
-					bHorizontal = false;
-
-				float grad = std::sqrt(layer.geo.a * layer.geo.a + layer.geo.b * layer.geo.b);
-				length = grad > 0.f ? 1.f / grad : 1.f;
-			}
-			else
-			{
-				bVertical = false;
-				bHorizontal = false;
-
-				float invRadius = std::max(layer.geo.invRadiusX, layer.geo.invRadiusY);		// Shortest radius gives steepest gradient.
-				length = invRadius > 0.f ? 1.f / invRadius : 1.f;
-			}
-
-			// Two entries per pixel of gradient length keeps quantization well below a pixel.
-
-			int bits = 1;
-			while (bits < 11 && (1 << bits) < length * 2)
-				bits++;
-
-			layer.lutBits = bits;
-			layer.lutOfs = lutEntries;
-			lutEntries += (1 << bits) + 1;
-		}
-
-		// Build lookup tables
-
-		if (lutEntries > 0)
-		{
-			if ((int)m_tintLUTs.size() < lutEntries)
-				m_tintLUTs.resize(lutEntries);
-
-			int layerIdx = 0;
-			for (int l = 0; l < m_tint.nLayers; l++)
-			{
-				const TintTools::TintLayer& src = m_tint.layers[l];
-				if (src.weight == 0 || src.nStops == 0)
-					continue;
-
-				TintLayerState& layer = m_tintLayers[layerIdx++];
-				if (!layer.bFlat)
-					TintTools::buildLUT(src, (1 << layer.lutBits) + 1, m_tintLUTs.data() + layer.lutOfs, m_tintColor);
-			}
-		}
-
-		// Decide layout and TintMode
-
-		m_colTrans.bTintOpaque = bOpaque;
-
-		if (m_nTintLayers == 0 || bAllFlat)
-		{
-			HiColor color = m_tintColor;
-
-			if (m_nTintLayers > 0)
-			{
-				int r = 0, g = 0, b = 0, a = 0;
-				for (int l = 0; l < m_nTintLayers; l++)
-				{
-					const HiColor& c = m_tintLayers[l].flatColor;
-					int w = m_tintLayers[l].weight;
-					r += c.r * w;
-					g += c.g * w;
-					b += c.b * w;
-					a += c.a * w;
-				}
-				color = HiColor(r >> 12, g >> 12, b >> 12, a >> 12);
-			}
+			HiColor color = m_softTint.flatColor();
 
 			m_tintLayout = TintLayout::None;
 			m_colTrans.flatTintColor = color;
@@ -2222,12 +1854,12 @@ namespace wg
 		{
 			m_colTrans.flatTintColor = m_tintColor;			// Overwritten per span in Vertical layout.
 
-			if (bVertical)
+			if (!m_softTint.variesAlongX())
 			{
 				m_tintLayout = TintLayout::Vertical;
 				m_colTrans.mode = TintMode::Flat;
 			}
-			else if (bHorizontal)
+			else if (!m_softTint.variesAlongY())
 			{
 				m_tintLayout = TintLayout::Horizontal;
 				m_colTrans.mode = TintMode::GradientX;
@@ -2241,8 +1873,175 @@ namespace wg
 
 		// Blit functions depend on tint mode and opacity.
 
-		(void) oldMode;
 		m_bBlitFunctionNeedsUpdate = true;
+	}
+
+	//____ _beginEdgemapTinting() _____________________________________________
+	/*
+		Prepares colors for drawing an edgemap: flat colors per segment if neither segments
+		nor device tint vary over the edgemap, otherwise a buffer for colors per pixel that is
+		filled in column by column by _tintEdgemapColumn().
+	*/
+
+	void SoftBackend::_beginEdgemapTinting(SoftEdgemap* pEdgemap, int nSegments, EdgemapTinting& t)
+	{
+		const SoftTint& global = m_softTint;
+
+		t.bPerPixel = pEdgemap->hasTints() || !global.isFlat();
+		t.pColumns = nullptr;
+		t.pGlobal = nullptr;
+		t.pitch = 0;
+		t.bufferBytes = 0;
+
+		for (int seg = 0; seg < nSegments; seg++)
+		{
+			const SoftTint& segTint = pEdgemap->m_segmentTints[seg];
+
+			t.transparent[seg] = segTint.isTransparent() || global.isTransparent();
+			t.opaque[seg] = segTint.isOpaque() && global.isOpaque();
+
+			if (!t.bPerPixel)
+			{
+				HiColor col = pEdgemap->m_pFlatColors[seg] * global.flatColor();
+
+				t.colors[seg][0] = col.b;
+				t.colors[seg][1] = col.g;
+				t.colors[seg][2] = col.r;
+				t.colors[seg][3] = col.a;
+			}
+			else
+			{
+				t.colors[seg][0] = 4096;
+				t.colors[seg][1] = 4096;
+				t.colors[seg][2] = 4096;
+				t.colors[seg][3] = 4096;
+			}
+		}
+
+		if (t.bPerPixel)
+		{
+			int length = pEdgemap->m_size.h;
+
+			t.pitch = length;
+			t.bufferBytes = sizeof(HiColor) * (nSegments + 1) * length;
+			t.pColumns = (HiColor*)GfxBase::memStackAlloc(t.bufferBytes);
+			t.pGlobal = t.pColumns + nSegments * length;
+		}
+	}
+
+	//____ _tintEdgemapColumn() ________________________________________________
+	/*
+		Generates colors for rows rowBeg -> rowEnd of one column of the edgemap, for the
+		segments visible there. Segment tints are evaluated in edgemap space, the device
+		tint in canvas space.
+
+		canvasStart and simpleTransform give canvas pixel of column c, row r as:
+		canvasStart + c * (simpleTransform[0][0], simpleTransform[0][1]) + r * (simpleTransform[1][0], simpleTransform[1][1])
+	*/
+
+	void SoftBackend::_tintEdgemapColumn(SoftEdgemap* pEdgemap, int nSegments, EdgemapTinting& t, int column, int rowBeg, int rowEnd,
+										 const int* pEdgeStrips, CoordI canvasStart, const int simpleTransform[2][2])
+	{
+		if (!t.bPerPixel || rowEnd <= rowBeg)
+			return;
+
+		const SoftTint& global = m_softTint;
+		int edgeStripPitch = pEdgemap->m_nbSegments - 1;
+
+		// Device tint along the column
+
+		bool bGlobalFlat = global.isFlat();
+		HiColor globalFlat = global.flatColor();
+
+		if (!bGlobalFlat)
+		{
+			int dx = simpleTransform[1][0];
+			int dy = simpleTransform[1][1];
+			int x = canvasStart.x + column * simpleTransform[0][0] + rowBeg * dx;
+			int y = canvasStart.y + column * simpleTransform[0][1] + rowBeg * dy;
+
+			global.generate(x, y, dx, dy, rowEnd - rowBeg, t.pGlobal + rowBeg);
+		}
+
+		// Segments
+
+		for (int seg = 0; seg < nSegments; seg++)
+		{
+			if (t.transparent[seg])
+				continue;
+
+			// Rows covered by segment in this column, from edge above (if any) to edge below (if any),
+			// sampled at both sides of the column. Edges are in spx, e.g. 26.6.
+
+			int top = rowBeg;
+			int bottom = rowEnd;
+
+			if (seg > 0)
+			{
+				int e1 = pEdgeStrips[seg - 1];
+				int e2 = pEdgeStrips[seg - 1 + edgeStripPitch];
+				top = std::max(top, (std::min(e1, e2) >> 6) - 1);
+			}
+
+			if (seg < nSegments - 1)
+			{
+				int e1 = pEdgeStrips[seg];
+				int e2 = pEdgeStrips[seg + edgeStripPitch];
+				bottom = std::min(bottom, (std::max(e1, e2) >> 6) + 2);
+			}
+
+			if (top >= bottom)
+				continue;
+
+			HiColor* pOut = t.pColumns + seg * t.pitch + top;
+			int length = bottom - top;
+
+			const SoftTint& segTint = pEdgemap->m_segmentTints[seg];
+
+			if (segTint.isFlat())
+			{
+				HiColor col = segTint.flatColor();
+
+				if (bGlobalFlat)
+				{
+					col = col * globalFlat;
+					for (int i = 0; i < length; i++)
+						pOut[i] = col;
+				}
+				else
+				{
+					const HiColor* pGlobal = t.pGlobal + top;
+					for (int i = 0; i < length; i++)
+						pOut[i] = pGlobal[i] * col;
+				}
+			}
+			else
+			{
+				segTint.generate(column, top, 0, 1, length, pOut);
+
+				if (!bGlobalFlat)
+				{
+					const HiColor* pGlobal = t.pGlobal + top;
+					for (int i = 0; i < length; i++)
+						pOut[i] = pOut[i] * pGlobal[i];
+				}
+				else if (globalFlat != HiColor::White)
+				{
+					for (int i = 0; i < length; i++)
+						pOut[i] = pOut[i] * globalFlat;
+				}
+			}
+		}
+	}
+
+	//____ _endEdgemapTinting() ________________________________________________
+
+	void SoftBackend::_endEdgemapTinting(EdgemapTinting& t)
+	{
+		if (t.bufferBytes > 0)
+			GfxBase::memStackFree(t.bufferBytes);
+
+		t.bufferBytes = 0;
 	}
 
 	//____ _tintRowBuffer() ____________________________________________________
@@ -2253,129 +2052,6 @@ namespace wg
 			m_tintRow.resize(length);
 
 		return m_tintRow.data();
-	}
-
-	//____ _generateTintRow() __________________________________________________
-	/*
-		Generates tint colors for pixels (x, y) -> (x + length - 1, y) in canvas pixels.
-	*/
-
-	void SoftBackend::_generateTintRow(int x, int y, int length, HiColor* pOutput)
-	{
-		if (m_nTintLayers == 1)
-		{
-			_generateTintLayerRow(m_tintLayers[0], x, y, length, pOutput);
-			return;
-		}
-
-		// Mix, accumulate weighted layers.
-
-		if ((int)m_tintAccumulator.size() < length * 4)
-			m_tintAccumulator.resize(length * 4);
-
-		int* pAcc = m_tintAccumulator.data();
-		std::memset(pAcc, 0, length * 4 * sizeof(int));
-
-		for (int l = 0; l < m_nTintLayers; l++)
-		{
-			const TintLayerState& layer = m_tintLayers[l];
-			int w = layer.weight;
-
-			_generateTintLayerRow(layer, x, y, length, pOutput);
-
-			int* p = pAcc;
-			for (int i = 0; i < length; i++)
-			{
-				const HiColor& c = pOutput[i];
-				p[0] += c.r * w;
-				p[1] += c.g * w;
-				p[2] += c.b * w;
-				p[3] += c.a * w;
-				p += 4;
-			}
-		}
-
-		int* p = pAcc;
-		for (int i = 0; i < length; i++)
-		{
-			HiColor& c = pOutput[i];
-			c.r = int16_t(p[0] >> 12);
-			c.g = int16_t(p[1] >> 12);
-			c.b = int16_t(p[2] >> 12);
-			c.a = int16_t(p[3] >> 12);
-			p += 4;
-		}
-	}
-
-	//____ _generateTintLayerRow() _____________________________________________
-
-	void SoftBackend::_generateTintLayerRow(const TintLayerState& layer, int x, int y, int length, HiColor* pOutput)
-	{
-		if (layer.bFlat)
-		{
-			for (int i = 0; i < length; i++)
-				pOutput[i] = layer.flatColor;
-			return;
-		}
-
-		const HiColor* pLUT = m_tintLUTs.data() + layer.lutOfs;
-		const int64_t N = int64_t(1) << layer.lutBits;
-
-		// Index into LUT with spread applied. LUT has N+1 entries, entry i covers positions i/N -> (i+1)/N.
-
-		auto lookup = [&](int64_t idx) -> const HiColor&
-		{
-			switch (layer.spread)
-			{
-				default:
-				case TintSpread::Pad:
-					return pLUT[idx < 0 ? 0 : idx > N ? N : idx];
-				case TintSpread::Repeat:
-					return pLUT[idx & (N - 1)];
-				case TintSpread::Reflect:
-				{
-					int64_t r = idx & (2 * N - 1);
-					return pLUT[r >= N ? 2 * N - 1 - r : r];		// Span r >= N mirrors span 2N-1-r.
-				}
-			}
-		};
-
-		const TintTools::CanvasGeometry& geo = layer.geo;
-
-		if (geo.shape == TintShape::Linear)
-		{
-			// Step position in LUT index space, 16 binals. 64-bit to handle positions far outside the gradient.
-
-			double scale = double(N) * 65536.0;
-			double t = double(geo.a) * (x + 0.5) + double(geo.b) * (y + 0.5) + double(geo.c);
-
-			int64_t idx = int64_t(std::floor(t * scale));
-			int64_t step = int64_t(std::llround(double(geo.a) * scale));
-
-			for (int i = 0; i < length; i++)
-			{
-				pOutput[i] = lookup(idx >> 16);
-				idx += step;
-			}
-		}
-		else
-		{
-			float v = (y + 0.5f - geo.centerY) * geo.invRadiusY;
-			float v2 = v * v;
-			float u = (x + 0.5f - geo.centerX) * geo.invRadiusX;
-			float du = geo.invRadiusX;
-			float n = float(N);
-
-			for (int i = 0; i < length; i++)
-			{
-				float t = std::sqrt(u * u + v2);
-				if (t > 1e9f)
-					t = 1e9f;
-
-				pOutput[i] = lookup(int64_t(t * n));
-				u += du;
-			}
-		}
 	}
 
 	//____ _updateBlurRadius() _____________________________________________________

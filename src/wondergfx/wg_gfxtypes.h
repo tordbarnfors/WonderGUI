@@ -107,18 +107,6 @@ namespace wg
 		Circle			// radius.w is relative to the shorter side of the rect and used for both axes, giving a circle. radius.h is ignored.
 	};
 
-	//____ EdgemapPalette ___________________________________________________________
-
-	enum class EdgemapPalette : uint8_t //.autoExtras
-	{
-		Undefined = 0,
-		Flat,
-		ColorstripX,
-		ColorstripY,
-		ColorstripXY
-	};
-
-
 	//____ BlendMode ____________________________________________________________
 
 	// BlendModes control how blits and fills are blended against their backgrounds and how colors are blended against each other.

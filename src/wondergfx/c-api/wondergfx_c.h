@@ -39,13 +39,13 @@
 #include <wg_c_gfxdevice.h>
 #include <wg_c_gfxtypes.h>
 #include <wg_c_gfxutil.h>
-#include <wg_c_gradient.h>
 #include <wg_c_patches.h>
 #include <wg_c_printer.h>
 #include <wg_c_surface.h>
 #include <wg_c_surfacefactory.h>
 #include <wg_c_surfacereader.h>
 #include <wg_c_surfacewriter.h>
+#include <wg_c_tint.h>
 
 
 #endif //WONDERGFX_C_DOT_H

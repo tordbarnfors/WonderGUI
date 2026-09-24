@@ -50,40 +50,22 @@ int wg_getRenderSegments(wg_obj edgemap)
 	return getPtr(edgemap)->renderSegments();
 }
 
-wg_edgemapPalette wg_edgemapPaletteType(wg_obj edgemap)
-{
-	return (wg_edgemapPalette) getPtr(edgemap)->paletteType();
-}
-
-
 int wg_setEdgemapColors(wg_obj edgemap, int begin, int end, const wg_color * pColors)
 {
 	return getPtr(edgemap)->setColors(begin, end, reinterpret_cast<const HiColor *>(pColors) );
 }
 
-int wg_setEdgemapColorsFromGradients(wg_obj edgemap, int begin, int end, const wg_gradient * pGradients )
+int wg_setEdgemapTints(wg_obj edgemap, int begin, int end, const wg_obj * pTints )
 {
-	return getPtr(edgemap)->setColors(begin, end, reinterpret_cast<const Gradient*>(pGradients) );
-}
+	if( end - begin > Edgemap::maxSegments || end < begin )
+		return 0;
 
-int wg_setEdgemapColorsFromTintmaps(wg_obj edgemap, int begin, int end, wg_obj * pTintmaps )
-{
-	Tintmap_p	pointers[Edgemap::maxSegments];
-	
+	Tint_p	pointers[Edgemap::maxSegments];
+
 	for( int i = 0 ; i < end - begin ; i++ )
-		pointers[i] = static_cast<Tintmap*>(reinterpret_cast<Object*>(pTintmaps[i]));
-	
+		pointers[i] = static_cast<Tint*>(reinterpret_cast<Object*>(pTints[i]));
+
 	return getPtr(edgemap)->setColors(begin, end, pointers);
-}
-
-int wg_setEdgemapColorsFromStrips(wg_obj edgemap, int begin, int end, const wg_color * pColorstripX, const wg_color * pColorstripY )
-{
-	return getPtr(edgemap)->setColors(begin, end, (const HiColor*) pColorstripX, (const HiColor*) pColorstripY);
-}
-
-int wg_importEdgemapPaletteEntries(wg_obj edgemap, int begin, int end, const wg_color * pColors )
-{
-	return getPtr(edgemap)->importPaletteEntries(begin, end, (const HiColor*) pColors);
 }
 
 const wg_color * wg_edgemapFlatColors(wg_obj edgemap)
@@ -91,14 +73,13 @@ const wg_color * wg_edgemapFlatColors(wg_obj edgemap)
 	return (const wg_color *) getPtr(edgemap)->flatColors();
 }
 
-const wg_color * wg_edgemapColorstripsX(wg_obj edgemap)
+wg_obj wg_edgemapTint(wg_obj edgemap, int segment)
 {
-	return (const wg_color *) getPtr(edgemap)->colorstripsX();
-}
+	auto pEdgemap = getPtr(edgemap);
+	if( segment < 0 || segment >= pEdgemap->segments() )
+		return nullptr;
 
-const wg_color * wg_edgemapColorstripsY(wg_obj edgemap)
-{
-	return (const wg_color *) getPtr(edgemap)->colorstripsY();
+	return static_cast<Object*>(pEdgemap->tints()[segment].rawPtr());
 }
 
 int wg_edgemapSegments(wg_obj edgemap)

@@ -25,6 +25,7 @@
 
 #include <wg_gfxbackend.h>
 #include <wg_tinttools.h>
+#include <wg_softtint.h>
 #include <wg_softsurface.h>
 
 namespace wg
@@ -41,6 +42,7 @@ namespace wg
 #endif
 
 	class SoftBackend;
+	class SoftEdgemap;
 	typedef	StrongPtr<SoftBackend>	SoftBackend_p;
 	typedef	WeakPtr<SoftBackend>	SoftBackend_wp;
 
@@ -224,23 +226,30 @@ namespace wg
 			General			// Tint varies in both directions. Drawn row by row with TintMode::GradientX.
 		};
 
-		struct TintLayerState
-		{
-			TintTools::CanvasGeometry	geo;
-			TintSpread		spread;
-			int				weight;			// 0 -> 4096.
-			bool			bFlat;
-			HiColor			flatColor;		// Only if bFlat, tint color included.
-			int				lutBits;		// LUT has (1 << lutBits) + 1 entries.
-			int				lutOfs;			// Offset into m_tintLUTs.
-		};
-
 		void	_setTintColor(HiColor color);
 		const uint16_t* _setTint(const uint16_t* p, const HiColor*& pColors);
 		void	_updateTint();
-		void	_generateTintRow(int x, int y, int length, HiColor* pOutput);
-		void	_generateTintLayerRow(const TintLayerState& layer, int x, int y, int length, HiColor* pOutput);
+		inline void	_generateTintRow(int x, int y, int length, HiColor* pOutput) { m_softTint.generate(x, y, 1, 0, length, pOutput); }
 		HiColor* _tintRowBuffer(int length);
+
+		// Edgemap tinting, shared with LinearBackend.
+
+		struct EdgemapTinting
+		{
+			bool		bPerPixel;					// Colors per pixel (StripSource::Tintmaps), otherwise flat colors per segment (StripSource::Colors).
+			HiColor*	pColumns;					// Per segment: one column of colors, indexed by edgemap row.
+			HiColor*	pGlobal;					// One column of device tint colors.
+			int			pitch;						// Colors between segments in pColumns.
+			int			bufferBytes;				// Allocated from memStack.
+			int16_t		colors[c_maxSegments][4];	// Flat colors, BGRA, tint included.
+			bool		transparent[c_maxSegments];
+			bool		opaque[c_maxSegments];
+		};
+
+		void	_beginEdgemapTinting(SoftEdgemap* pEdgemap, int nSegments, EdgemapTinting& tinting);
+		void	_tintEdgemapColumn(SoftEdgemap* pEdgemap, int nSegments, EdgemapTinting& tinting, int column, int rowBeg, int rowEnd,
+								   const int* pEdgeStrips, CoordI canvasStart, const int simpleTransform[2][2]);
+		void	_endEdgemapTinting(EdgemapTinting& tinting);
 
 		/**
 		 * Calls draw(const RectI& subRect) for subrectangles of rect as needed for the current tint,
@@ -299,12 +308,9 @@ namespace wg
 
 		HiColor				m_tintColor = HiColor::White;		// Flat tint color (StateChange::TintColor).
 		TintTools::DecodedTint	m_tint;							// Current Tint (StateChange::Tint), nLayers == 0 if none.
+		SoftTint			m_softTint;							// Tint and tint color combined, prepared for rendering.
 		TintLayout			m_tintLayout = TintLayout::None;
-		int					m_nTintLayers = 0;
-		TintLayerState		m_tintLayers[Tint::c_maxMixComponents];
-		std::vector<HiColor>	m_tintLUTs;
 		std::vector<HiColor>	m_tintRow;
-		std::vector<int>		m_tintAccumulator;
 		bool				m_bBlitTintRuns = false;			// Blits need to use runs with Flat kernels, GradientX kernels missing.
 
 

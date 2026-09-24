@@ -679,7 +679,6 @@ namespace wg
 				pRects += nRects;
 
 				int32_t nSegments = pEdgemap->renderSegments();		// Segments to draw. Last one extends to the end.
-				const HiColor * pSegmentColors = pEdgemap->m_pFlatColors;
 				
 				int nEdgeStrips = pEdgemap->m_size.w + 1;
 
@@ -762,251 +761,11 @@ namespace wg
 
 				// Apply tinting
 
-				int16_t	colors[c_maxSegments * 4][4];				// BGRA order of elements
-				bool	transparentSegments[c_maxSegments];
-				bool	opaqueSegments[c_maxSegments];
+				EdgemapTinting tinting;
+				_beginEdgemapTinting(pEdgemap, nSegments, tinting);
 
-
-				// Determine combined tint-mode, start with global m_colTrans...
-
-				bool	bTintX = false;
-				bool	bTintY = false;
-
-				if (m_colTrans.mode != TintMode::None)
-				{
-					if (m_colTrans.mode == TintMode::GradientXY)
-					{
-						bTintX = bTintY = true;
-					}
-					else
-					{
-						if (m_colTrans.mode == TintMode::GradientY)
-						{
-							if (mtx.xy == 0 && mtx.yx == 0)
-								bTintY = true;
-							else
-								bTintX = true;
-						}
-						if (m_colTrans.mode == TintMode::GradientX)
-						{
-							if (mtx.xy == 0 && mtx.yx == 0)
-								bTintX = true;
-							else
-								bTintY = true;
-						}
-
-					}
-				}
-
-				// ... add in tintmaps for segments
-								
-				if( pEdgemap->colorstripsX() )
-					bTintX = true;
-				
-				if( pEdgemap->colorstripsY() )
-					bTintY = true;				
-
-				// Unpack input colors and fill in transparentSegments
-
-				if (!bTintX && !bTintY)
-				{
-					// If we just use flat tinting (or no tint at all), we tint our segment colors right away
-
-					auto pColor = pSegmentColors;
-					
-					for (int i = 0; i < nSegments; i++)
-					{
-						colors[i][0] = (pSegmentColors[i].b * m_colTrans.flatTintColor.b) >> 12;
-						colors[i][1] = (pSegmentColors[i].g * m_colTrans.flatTintColor.g) >> 12;
-						colors[i][2] = (pSegmentColors[i].r * m_colTrans.flatTintColor.r) >> 12;
-						colors[i][3] = (pSegmentColors[i].a * m_colTrans.flatTintColor.a) >> 12;
-						
-						transparentSegments[i] = (colors[i][3] == 0);
-						opaqueSegments[i] = (colors[i][3] == 4096);						
-					}
-				}
-
-
-				HiColor * pTintColorsX = nullptr;
-				HiColor * pTintColorsY = nullptr;
-
-				int		tintBufferSizeX = 0;
-				int		tintBufferSizeY = 0;
-				
-				int		segmentPitchTintmapY = 0;
-				int		segmentPitchTintmapX = 0;
-
-				
-				// If we instead have gradients we have things to take care of...
-
-				if (bTintX || bTintY)
-				{
-					if (bTintX)
-					{
-						int length = pEdgemap->m_size.w;
-
-						segmentPitchTintmapX = length;
-
-						// Generate the buffer that we will need
-
-						tintBufferSizeX = sizeof(HiColor) * nSegments * length;
-						pTintColorsX = (HiColor*)GfxBase::memStackAlloc(tintBufferSizeX);
-						
-						// export segment colorstrip or flat colors into our buffer
-						
-						if (pEdgemap->m_pColorstripsX)
-							memcpy(pTintColorsX, pEdgemap->m_pColorstripsX, tintBufferSizeX);
-						else if (pEdgemap->m_pFlatColors)
-						{
-							HiColor* pOutput = pTintColorsX;
-							HiColor* pInput = pEdgemap->m_pFlatColors;
-
-							for (int seg = 0; seg < nSegments; seg++)
-							{
-								for (int i = 0; i < length; i++)
-									*pOutput++ = *pInput;
-
-								pInput++;
-							}
-						}
-					}
-					
-					if (bTintY)
-					{
-						int length = pEdgemap->m_size.h;
-
-						segmentPitchTintmapY = length;
-						
-						// Generate the buffer that we will need
-
-						tintBufferSizeY = sizeof(HiColor) * nSegments * length;
-						pTintColorsY = (HiColor*)GfxBase::memStackAlloc(tintBufferSizeY);
-						
-						// Export segment colorstrip into our buffer if we have them.
-						// Otherwise, if we haven't already exported our flat colors we do it now.
-						// If flat colors already have been exported, we just fill with white.
-
-						if (pEdgemap->m_pColorstripsY)
-							memcpy(pTintColorsY, pEdgemap->m_pColorstripsY, tintBufferSizeY);
-						else if (pEdgemap->m_pFlatColors && !bTintX)
-						{
-							HiColor* pOutput = pTintColorsY;
-							HiColor* pInput = pEdgemap->m_pFlatColors;
-
-							for (int seg = 0; seg < nSegments; seg++)
-							{
-								for (int i = 0; i < length; i++)
-									*pOutput++ = *pInput;
-
-								pInput++;
-							}
-						}
-						else
-						{
-							for (int i = 0; i < tintBufferSizeY; i++)
-								pTintColorsY[i] = HiColor::White;
-						}
-					}
-
-					// Possibly add in global tint, which might need to be rotated, offset and reversed
-
-					if (m_colTrans.mode == TintMode::Flat)
-					{
-						if (m_colTrans.flatTintColor != HiColor::White)
-						{
-							// We only apply tintColor once, so we only modify one of the color lists.
-
-							if (pTintColorsX)
-							{
-								for (int i = 0; i < nSegments * pEdgemap->m_size.w; i++)
-									pTintColorsX[i] *= m_colTrans.flatTintColor;
-							}
-							else if (pTintColorsY)
-							{
-								for (int i = 0; i < nSegments * pEdgemap->m_size.h; i++)
-									pTintColorsY[i] *= m_colTrans.flatTintColor;
-							}
-						}
-					}
-					else if (m_colTrans.mode == TintMode::GradientX || m_colTrans.mode == TintMode::GradientY || m_colTrans.mode == TintMode::GradientXY)
-					{
-						const HiColor* pGlobalsX = m_colTrans.pTintAxisX ? m_colTrans.pTintAxisX + _dest.x - m_colTrans.tintRect.x : nullptr;
-						const HiColor* pGlobalsY = m_colTrans.pTintAxisY ? m_colTrans.pTintAxisY + _dest.y - m_colTrans.tintRect.y : nullptr;
-
-						int width = _dest.w;
-						int height = _dest.h;
-
-						int pitchX = mtx.xx + mtx.xy;
-						int pitchY = mtx.yx + mtx.yy;
-
-						if (mtx.xy != 0 || mtx.yx != 0)
-						{
-							std::swap(pGlobalsX, pGlobalsY);
-							std::swap(width, height);
-							std::swap(pitchX, pitchY);
-						}
-
-
-						if (pitchX < 0 && pGlobalsX)
-							pGlobalsX += width - 1;
-
-						if (pitchY < 0 && pGlobalsY)
-							pGlobalsY += height - 1;
-
-
-						if (pGlobalsX)
-						{
-							HiColor* pDest = pTintColorsX;
-							for (int seg = 0; seg < nSegments; seg++)
-							{
-								const HiColor* pSrc = pGlobalsX;
-
-								for (int i = 0; i < width; i++)
-								{
-									*pDest++ *= *pSrc;
-									pSrc += pitchX;
-								}
-							}
-						}
-
-						if (pGlobalsY)
-						{
-							HiColor* pDest = pTintColorsY;
-							for (int seg = 0; seg < nSegments; seg++)
-							{
-								const HiColor* pSrc = pGlobalsY;
-
-								for (int i = 0; i < height; i++)
-								{
-									*pDest++ *= *pSrc;
-									pSrc += pitchY;
-								}
-							}
-						}
-					}
-
-
-					// Mark transparent and opaque segments
-					
-					if (m_colTrans.bTintOpaque)
-					{
-						for (int i = 0; i < nSegments; i++)
-						{
-							opaqueSegments[i] = pEdgemap->m_opaqueSegments.test(i);
-							transparentSegments[i] = pEdgemap->m_transparentSegments.test(i);
-						}
-
-					}
-					else
-					{
-						for (int i = 0; i < nSegments; i++)
-						{
-							opaqueSegments[i] = false;
-							transparentSegments[i] = pEdgemap->m_transparentSegments.test(i);
-						}
-					}
-				}
-
+				bool* transparentSegments = tinting.transparent;
+				bool* opaqueSegments = tinting.opaque;
 
 				// Modify opaqueSegments if our state isn't blend
 
@@ -1028,15 +787,8 @@ namespace wg
 
 				//
 				
-				StripSource stripSource = StripSource::Colors;
-				if( bTintY )
-				{
-					if(bTintX)
-						stripSource = StripSource::ColorsAndTintmaps;
-					else
-						stripSource = StripSource::Tintmaps;
-				}
-				
+				StripSource stripSource = tinting.bPerPixel ? StripSource::Tintmaps : StripSource::Colors;
+
 				SegmentOp_p	pOp = nullptr;
 				auto pKernels = m_pKernels[(int)m_canvasPixelFormat];
 				if (pKernels)
@@ -1044,18 +796,20 @@ namespace wg
 
 				if (pOp == nullptr)
 				{
+					_endEdgemapTinting(tinting);
+
 					if (m_blendMode == BlendMode::Ignore)
-						return;
+						break;
 
 					char errorMsg[1024];
 
-					snprintf(errorMsg, 1024, "Failed draw segments operation. LinearBackend is missing segments kernel %s Y-tint for BlendMode::%s onto surface of PixelFormat:%s.",
-						bTintY ? "with" : "without",
+					snprintf(errorMsg, 1024, "Failed draw segments operation. LinearBackend is missing segments kernel %s tint for BlendMode::%s onto surface of PixelFormat:%s.",
+						tinting.bPerPixel ? "with" : "without",
 						toString(m_blendMode),
 						toString(m_canvasPixelFormat));
 
 					GfxBase::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, errorMsg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
-					return;
+					break;
 				}
 
 				// Loop through patches
@@ -1167,26 +921,15 @@ namespace wg
 								skippedSegments++;
 						}
 
-						// Update tinting if we have X-gradient
+						// Generate colors for column if tint varies over edgemap
 
-						if (bTintX)
-						{
-							for( int i = skippedSegments; i < nSegments ; i++ )
-							{
-								HiColor& col = pTintColorsX[i*segmentPitchTintmapX+columnOfs];
+						_tintEdgemapColumn(pEdgemap, nSegments, tinting, columnOfs, rowOfs, rowOfs + rows, pEdgeStrips, start, simpleTransform);
 
-								colors[i][0] = col.b;
-								colors[i][1] = col.g;
-								colors[i][2] = col.r;
-								colors[i][3] = col.a;
-							}
-						}
-
-						const int16_t* pColors = &colors[skippedSegments][0];
+						const int16_t* pColors = &tinting.colors[skippedSegments][0];
 
 						//
 
- 						pOp(clipBeg, clipEnd, pStripStart, rowPitch, nEdges, edges, pColors, pTintColorsY + skippedSegments * segmentPitchTintmapY, segmentPitchTintmapY , transparentSegments + skippedSegments, opaqueSegments + skippedSegments, m_colTrans);
+						pOp(clipBeg, clipEnd, pStripStart, rowPitch, nEdges, edges, pColors, tinting.pColumns + skippedSegments * tinting.pitch, tinting.pitch, transparentSegments + skippedSegments, opaqueSegments + skippedSegments, m_colTrans);
 						pEdgeStrips += edgeStripPitch;
 						pStripStart += colPitch;
 						columnOfs++;
@@ -1195,11 +938,7 @@ namespace wg
 
 				// Free what we have reserved on the memStack.
 
-				if (tintBufferSizeY > 0)
-					GfxBase::memStackFree(tintBufferSizeY);
-
-				if (tintBufferSizeX > 0)
-					GfxBase::memStackFree(tintBufferSizeX);
+				_endEdgemapTinting(tinting);
 
 				break;
 			}

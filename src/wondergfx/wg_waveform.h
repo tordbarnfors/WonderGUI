@@ -45,11 +45,11 @@ namespace wg
 			spx					bottomOutlineThickness = 64;
 			HiColor				color = Color8::LightGrey;
 			Finalizer_p			finalizer = nullptr;
-			Gradient			gradient;								// Overrides color when set.
+			Tint_p				tint;									// Overrides color when set. Placed in the rect of the waveform.
 			bool				optimize = true;						// Check for re-setting of same values to minimize updated regions.
 			SampleOrigo			origo = SampleOrigo::Top;
 			HiColor				outlineColor = Color8::DarkGrey;
-			Gradient			outlineGradient;						// Overrides outlineColor when set.
+			Tint_p				outlineTint;							// Overrides outlineColor when set.
 			SizeI				size;									// Mandatory
 			spx					topOutlineThickness = 64;
 		};
@@ -74,16 +74,16 @@ namespace wg
 		bool		setColor( HiColor col );
 		HiColor		color() const { return m_color; }
 		
-		bool		setGradient( const Gradient& gradient );
-		void		clearGradient();
-		Gradient	gradient() const { return m_gradient; }
+		void		setTint( Tint * pTint );
+		void		clearTint() { setTint(nullptr); }
+		Tint_p		tint() const { return m_pTint; }
 
 		bool		setOutlineColor( HiColor col );
 		HiColor		outlineColor() const { return m_outlineColor; }
 
-		bool		setOutlineGradient( const Gradient& gradient );
-		void		clearOutlineGradient();
-		Gradient	outlineGradient() const { return m_outlineGradient; }
+		void		setOutlineTint( Tint * pTint );
+		void		clearOutlineTint() { setOutlineTint(nullptr); }
+		Tint_p		outlineTint() const { return m_pOutlineTint; }
 
 		//.____ Content __________________________________________________
 		
@@ -123,7 +123,7 @@ namespace wg
 		void		_optimizeRangeSetSamples( spx * pDestBegin, spx * pDestEnd, const float * pSource, spx * pSampleStart );
 
 		int			_generateColorPalette( HiColor * pDest );
-		int			_generateGradientPalette( Gradient * pDest );
+		int			_generateTintPalette( Tint_p * pDest );
 
 		void		_setupBuffer(int nbSamples, bool bClearSamples);
 
@@ -139,8 +139,8 @@ namespace wg
 		HiColor		m_color = HiColor::Undefined;
 		HiColor		m_outlineColor = HiColor::Undefined;
 
-		Gradient	m_gradient;
-		Gradient	m_outlineGradient;
+		Tint_p		m_pTint;
+		Tint_p		m_pOutlineTint;
 
 		Brush		m_topBrush;
 		Brush		m_bottomBrush;

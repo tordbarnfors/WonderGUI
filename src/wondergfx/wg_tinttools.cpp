@@ -303,6 +303,15 @@ namespace TintTools
 		_buildLUT(layer.nStops, layer.stopPos, layer.stopColors, layer.colorSpace, TintSpread::Pad, entries, pOutput, halfEntry, 1.f + halfEntry, false, multiplier);
 	}
 
+	//____ layerColorAt() _____________________________________________________
+
+	HiColor layerColorAt(const TintLayer& layer, float position, HiColor multiplier)
+	{
+		HiColor color;
+		_buildLUT(layer.nStops, layer.stopPos, layer.stopColors, layer.colorSpace, TintSpread::Pad, 1, &color, position, position, false, multiplier);
+		return color;
+	}
+
 	//____ encodeTint() _______________________________________________________
 
 	int encodeTint(const Tint* pTint, const RectSPX& rect, uint16_t* pWords, HiColor* pColors, int& nColors)

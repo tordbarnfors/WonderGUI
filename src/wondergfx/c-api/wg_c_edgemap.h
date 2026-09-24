@@ -26,7 +26,6 @@
 #include <wg_c_gfxtypes.h>
 #include <wg_c_geo.h>
 #include <wg_c_color.h>
-#include <wg_c_gradient.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -39,14 +38,9 @@ extern "C" {
 	typedef struct wg_edgemapBP_struct			// NOT BINARY EQUIVALENT!
 	{
 		const wg_color*		colors;					// Flat colors, one color for each segment.
-		const wg_color*		colorstripsX;			// One color for each pixel along width for each segment.
-		const wg_color*		colorstripsY;			// One color for each pixel along height for each segment.
-
-		wg_edgemapPalette	paletteType;
-
-		const wg_obj * 		tintmaps;				// Needs to have one tintmap per segement if any.
 		int					segments;
 		wg_sizeI			size;
+		const wg_obj * 		tints;					// One Tint per segment if any. Null entries use colors.
 
 	} wg_edgemapBP;
 
@@ -60,19 +54,11 @@ extern "C" {
 	WG_EXPORT int		wg_setRenderSegments(wg_obj edgemap, int nSegments);
 	WG_EXPORT int		wg_getRenderSegments(wg_obj edgemap);
 
-	WG_EXPORT wg_edgemapPalette	wg_edgemapPaletteType(wg_obj edgemap);
-
 	WG_EXPORT int		wg_setEdgemapColors(wg_obj edgemap, int begin, int end, const wg_color * pColors);
-	WG_EXPORT int		wg_setEdgemapColorsFromGradients(wg_obj edgemap, int begin, int end, const wg_gradient * pGradients );
-	WG_EXPORT int		wg_setEdgemapColorsFromTintmaps(wg_obj edgemap, int begin, int end, wg_obj * pTintmaps );
-	WG_EXPORT int		wg_setEdgemapColorsFromStrips(wg_obj edgemap, int begin, int end, const wg_color * pColorstripX, const wg_color * pColorstripY );
-
-	WG_EXPORT int		wg_importEdgemapPaletteEntries(wg_obj edgemap, int begin, int end, const wg_color * pColors );
+	WG_EXPORT int		wg_setEdgemapTints(wg_obj edgemap, int begin, int end, const wg_obj * pTints );
 
 	WG_EXPORT const wg_color *  wg_edgemapFlatColors(wg_obj edgemap);
-	WG_EXPORT const wg_color *  wg_edgemapColorstripsX(wg_obj edgemap);
-	WG_EXPORT const wg_color *  wg_edgemapColorstripsY(wg_obj edgemap);
-
+	WG_EXPORT wg_obj	wg_edgemapTint(wg_obj edgemap, int segment);		// Null if segment has flat color.
 
 	//.____ Content _______________________________________________________
 
