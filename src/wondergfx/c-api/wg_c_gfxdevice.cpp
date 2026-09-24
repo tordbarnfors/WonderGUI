@@ -174,34 +174,34 @@ int	wg_hasTintColor(wg_obj device)
 }
 
 
-void wg_setTintmap(wg_obj device, const wg_rectSPX* rect, const wg_obj tintmap)
+void wg_setTint(wg_obj device, const wg_rectSPX* rect, const wg_obj tint)
 {
-	getPtr(device)->setTintmap( *(const RectSPX*)rect, static_cast<Tintmap*>(reinterpret_cast<Object*>(tintmap)) );
+	getPtr(device)->setTint( *(const RectSPX*)rect, static_cast<Tint*>(reinterpret_cast<Object*>(tint)) );
 }
 
 
-wg_obj wg_getTintmap(wg_obj device)
+wg_obj wg_getTint(wg_obj device)
 {
-	return static_cast<Object*>(getPtr(device)->tintmap().rawPtr());
+	return static_cast<Object*>(getPtr(device)->tint().rawPtr());
 }
 
 
-wg_rectSPX wg_getTintmapRect(wg_obj device)
+wg_rectSPX wg_getTintRect(wg_obj device)
 {
-	RectSPX rect = getPtr(device)->tintmapRect();
+	RectSPX rect = getPtr(device)->tintRect();
 	return { rect.x, rect.y, rect.w, rect.h };
 }
 
 
-void wg_clearTintmap(wg_obj device)
+void wg_clearTint(wg_obj device)
 {
-	getPtr(device)->clearTintmap();
+	getPtr(device)->clearTint();
 }
 
 
-int wg_hasTintmap(wg_obj device)
+int wg_hasTint(wg_obj device)
 {
-	return getPtr(device)->hasTintmap();
+	return getPtr(device)->hasTint();
 }
 
 

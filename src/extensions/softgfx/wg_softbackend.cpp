@@ -298,6 +298,10 @@ namespace wg
 		m_colTrans.pTintAxisX = nullptr;
 		m_colTrans.pTintAxisY = nullptr;
 		m_colTrans.morphFactor = 2048;
+
+		m_tintColor = HiColor::White;
+		m_tint.nLayers = 0;
+		_updateTint();
 		m_colTrans.fixedBlendColor = HiColor::White;
 
 		_updateBlurRadius(s_defaultBlurRadius);
@@ -383,59 +387,13 @@ namespace wg
 
 				if (statesChanged & uint8_t(StateChange::TintColor))
 				{
-					m_colTrans.flatTintColor = *pColors++;
-					m_colTrans.pTintAxisX = nullptr;
-					m_colTrans.pTintAxisY = nullptr;
-
-					m_colTrans.bTintOpaque = (m_colTrans.flatTintColor.a == 4096);
-					_updateTintMode();
+					m_tintColor = *pColors++;
+					if (!(statesChanged & uint8_t(StateChange::Tint)))
+						_updateTint();
 				}
 
-				if (statesChanged & uint8_t(StateChange::TintMap))
-				{
-					auto p32 = (const spx *) p;
-					int32_t	x = *p32++ / 64;
-					int32_t	y = *p32++ / 64;
-					int32_t	w = *p32++ / 64;
-					int32_t	h = *p32++ / 64;
-
-					m_colTrans.tintRect = RectI(x, y, w, h);
-					
-					int32_t nHorrColors = *p32++;
-					int32_t nVertColors = *p32++;
-					p = (const uint16_t*) p32;
-
-					auto pOurColors = pColors;
-					
-					if( nHorrColors > 0 )
-					{
-						m_colTrans.pTintAxisX = pColors;
-						pColors += nHorrColors;
-					}
-					else
-						m_colTrans.pTintAxisX = nullptr;
-
-					if( nVertColors > 0 )
-					{
-						m_colTrans.pTintAxisY = pColors;
-						pColors += nVertColors;
-					}
-					else
-						m_colTrans.pTintAxisY = nullptr;
-
-					// Check if whole tint is opaque.
-					
-					int totalAlpha = 0;
-					while( pOurColors < pColors )
-					{
-						totalAlpha += pOurColors->a;
-						pOurColors++;
-					}
-					
-					m_colTrans.bTintOpaque = (totalAlpha == 4096 * (nHorrColors + nVertColors));
-
-					_updateTintMode();
-				}
+				if (statesChanged & uint8_t(StateChange::Tint))
+					p = _setTint(p, pColors);
 
 				if (statesChanged & uint8_t(StateChange::BlendMode))
 				{
@@ -487,19 +445,58 @@ namespace wg
 
 				const HiColor&  col = * pColors++;
 
-				FillOp_p pFunc = nullptr;
-
 				// Optimize calls
 
 				BlendMode blendMode = m_blendMode;
-				if (blendMode == BlendMode::Blend && col.a == 4096 && (m_colTrans.mode == TintMode::None || (m_colTrans.mode == TintMode::Flat && m_colTrans.flatTintColor.a == 4096)) )
+				if (blendMode == BlendMode::Blend && col.a == 4096 && m_colTrans.bTintOpaque )
 				{
 					blendMode = BlendMode::Replace;
 				}
 
 				auto pKernels = m_pKernels[(int)m_pCanvas->pixelFormat()];
-				if (pKernels)
-					pFunc = pKernels->pFillKernels[(int)m_colTrans.mode][(int)blendMode];
+
+				// Get kernel, fall back to Flat kernels drawn in runs if GradientX kernels are missing.
+
+				auto getKernel = [&](BlendMode mode, bool& bRuns) -> FillOp_p
+				{
+					bRuns = false;
+					if (!pKernels)
+						return nullptr;
+
+					FillOp_p pKernel = pKernels->pFillKernels[(int)m_colTrans.mode][(int)mode];
+					if (!pKernel && m_colTrans.mode == TintMode::GradientX)
+					{
+						pKernel = pKernels->pFillKernels[(int)TintMode::Flat][(int)mode];
+						bRuns = (pKernel != nullptr);
+					}
+					return pKernel;
+				};
+
+				auto reportMissingKernel = [&](BlendMode mode)
+				{
+					char errorMsg[1024];
+
+					snprintf(errorMsg, 1024, "Failed fill operation. SoftBackend is missing fill kernel for TintMode::%s, BlendMode::%s onto surface of PixelFormat:%s.",
+						toString(m_colTrans.mode),
+						toString(mode),
+						toString(m_pCanvas->pixelFormat()));
+
+					GfxBase::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, errorMsg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				};
+
+				// Fills a rectangle of whole pixels with given kernel, taking tint into account.
+
+				auto fillPixels = [&](FillOp_p pOp, bool bRuns, const RectI& rect, HiColor color)
+				{
+					_forTintSpans(rect, bRuns, [&](const RectI& sub)
+					{
+						uint8_t* pDst = m_pCanvasPixels + sub.y * m_canvasPitch + sub.x * m_canvasPixelBytes;
+						pOp(pDst, m_canvasPixelBytes, m_canvasPitch - sub.w * m_canvasPixelBytes, sub.h, sub.w, color, m_colTrans, sub.pos());
+					});
+				};
+
+				bool bRuns;
+				FillOp_p pFunc = getKernel(blendMode, bRuns);
 
 				if (!pFunc)
 				{
@@ -508,14 +505,7 @@ namespace wg
 					if (blendMode == BlendMode::Ignore)
 						break;
 
-					char errorMsg[1024];
-
-					snprintf(errorMsg, 1024, "Failed fill operation. SoftBackend is missing fill kernel for TintMode::%s, BlendMode::%s onto surface of PixelFormat:%s.",
-						toString(m_colTrans.mode),
-						toString(blendMode),
-						toString(m_pCanvas->pixelFormat()));
-
-					GfxBase::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, errorMsg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+					reportMissingKernel(blendMode);
 					break;
 				}
 
@@ -527,10 +517,7 @@ namespace wg
 					{
 						// Pixel aligned fill
 
-						patch /= 64;
-
-						uint8_t* pDst = m_pCanvasPixels + patch.y * m_canvasPitch + patch.x * m_canvasPixelBytes;
-						pFunc(pDst, m_canvasPixelBytes, m_canvasPitch - patch.w * m_canvasPixelBytes, patch.h, patch.w, col, m_colTrans, patch.pos());
+						fillPixels(pFunc, bRuns, patch / 64, col);
 					}
 					else
 					{
@@ -544,14 +531,14 @@ namespace wg
 						int x2 = ((patch.x + patch.w) >> 6);
 						int y2 = ((patch.y + patch.h) >> 6);
 
-						uint8_t* pDst = m_pCanvasPixels + y1 * m_canvasPitch + x1 * m_canvasPixelBytes;
-						pFunc(pDst, m_canvasPixelBytes, m_canvasPitch - (x2 - x1) * m_canvasPixelBytes, y2 - y1, x2 - x1, col, m_colTrans, { x1,y1 });
+						fillPixels(pFunc, bRuns, RectI(x1, y1, x2 - x1, y2 - y1), col);
 
 						//
 
 						BlendMode	edgeBlendMode = (blendMode == BlendMode::Replace) ? BlendMode::Blend : blendMode; // Need to blend edges and corners even if fill is replace
 
-						FillOp_p pEdgeFunc = pKernels->pFillKernels[(int)m_colTrans.mode][(int)edgeBlendMode];
+						bool bEdgeRuns;
+						FillOp_p pEdgeFunc = getKernel(edgeBlendMode, bEdgeRuns);
 
 						if (pEdgeFunc == nullptr)
 						{
@@ -560,14 +547,7 @@ namespace wg
 							if (blendMode == BlendMode::Ignore)
 								break;
 
-							char errorMsg[1024];
-
-							snprintf(errorMsg, 1024, "Failed fill operation. SoftBackend is missing fill kernel for TintMode::%s, BlendMode::%s onto surface of PixelFormat:%s.",
-								toString(m_colTrans.mode),
-								toString(blendMode),
-								toString(m_pCanvas->pixelFormat()));
-
-							GfxBase::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, errorMsg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+							reportMissingKernel(edgeBlendMode);
 							break;
 						}
 
@@ -600,71 +580,28 @@ namespace wg
 						}
 
 						RectI pixelPatch = patch / 64;
-						HiColor color = col;
 
-						if (aaTop != 0)
+						auto edge = [&](int alpha, const RectI& rect)
 						{
-							uint8_t* pDst = m_pCanvasPixels + pixelPatch.y * m_canvasPitch + x1 * m_canvasPixelBytes;
-							int length = x2 - x1;
-							color.a = aaTop;
-							pEdgeFunc(pDst, m_canvasPixelBytes, 0, 1, length, color, m_colTrans, { x1,pixelPatch.y });
-						}
+							if (alpha != 0)
+							{
+								HiColor color = col;
+								color.a = alpha;
+								fillPixels(pEdgeFunc, bEdgeRuns, rect, color);
+							}
+						};
 
-						if (aaBottom != 0)
-						{
-							uint8_t* pDst = m_pCanvasPixels + y2 * m_canvasPitch + x1 * m_canvasPixelBytes;
-							int length = x2 - x1;
-							color.a = aaBottom;
-							pEdgeFunc(pDst, m_canvasPixelBytes, 0, 1, length, color, m_colTrans, { x1,y2 });
-						}
-
-						if (aaLeft != 0)
-						{
-							uint8_t* pDst = m_pCanvasPixels + y1 * m_canvasPitch + pixelPatch.x * m_canvasPixelBytes;
-							int length = y2 - y1;
-							color.a = aaLeft;
-							pEdgeFunc(pDst, m_canvasPitch, 0, 1, length, color, m_colTrans, { pixelPatch.x, y1 });
-						}
-
-						if (aaRight != 0)
-						{
-							uint8_t* pDst = m_pCanvasPixels + y1 * m_canvasPitch + x2 * m_canvasPixelBytes;
-							int length = y2 - y1;
-							color.a = aaRight;
-							pEdgeFunc(pDst, m_canvasPitch, 0, 1, length, color, m_colTrans, { x2, y1 });
-						}
+						edge(aaTop, RectI(x1, pixelPatch.y, x2 - x1, 1));
+						edge(aaBottom, RectI(x1, y2, x2 - x1, 1));
+						edge(aaLeft, RectI(pixelPatch.x, y1, 1, y2 - y1));
+						edge(aaRight, RectI(x2, y1, 1, y2 - y1));
 
 						// Draw corner pieces
 
-
-						if (aaTopLeft != 0)
-						{
-							uint8_t* pDst = m_pCanvasPixels + pixelPatch.y * m_canvasPitch + pixelPatch.x * m_canvasPixelBytes;
-							color.a = aaTopLeft;
-							pEdgeFunc(pDst, 0, 0, 1, 1, color, m_colTrans, { pixelPatch.x, pixelPatch.y });
-						}
-
-						if (aaTopRight != 0)
-						{
-							uint8_t* pDst = m_pCanvasPixels + pixelPatch.y * m_canvasPitch + x2 * m_canvasPixelBytes;
-							color.a = aaTopRight;
-							pEdgeFunc(pDst, 0, 0, 1, 1, color, m_colTrans, { x2, pixelPatch.y });
-						}
-
-						if (aaBottomLeft != 0)
-						{
-							uint8_t* pDst = m_pCanvasPixels + y2 * m_canvasPitch + pixelPatch.x * m_canvasPixelBytes;
-							color.a = aaBottomLeft;
-							pEdgeFunc(pDst, 0, 0, 1, 1, color, m_colTrans, { pixelPatch.x, y2 });
-						}
-
-						if (aaBottomRight != 0)
-						{
-							uint8_t* pDst = m_pCanvasPixels + y2 * m_canvasPitch + x2 * m_canvasPixelBytes;
-							color.a = aaBottomRight;
-							pEdgeFunc(pDst, 0, 0, 1, 1, color, m_colTrans, { x2, y2 });
-						}
-
+						edge(aaTopLeft, RectI(pixelPatch.x, pixelPatch.y, 1, 1));
+						edge(aaTopRight, RectI(x2, pixelPatch.y, 1, 1));
+						edge(aaBottomLeft, RectI(pixelPatch.x, y2, 1, 1));
+						edge(aaBottomRight, RectI(x2, y2, 1, 1));
 					}
 				}
 				break;
@@ -715,8 +652,10 @@ namespace wg
 
 					HiColor fillColor = color;
 
-					if( m_colTrans.mode == TintMode::Flat )
-					fillColor = fillColor * m_colTrans.flatTintColor;
+					// Lines are only tinted by the flat tint color, not by Tints.
+
+					if( m_tintColor != HiColor::White )
+						fillColor = fillColor * m_tintColor;
 
 					CoordSPX beg, end;
 
@@ -1408,23 +1347,24 @@ namespace wg
 
 						//
 
-						CoordI src = { srcX / 1024, srcY / 1024 };
+						CoordI src0 = { srcX / 1024, srcY / 1024 };
 						CoordI dest = { dstX / 64, dstY / 64 };
 
-						CoordI	patchOfs = patch.pos() - dest;
+						_forTintSpans(patch, m_bBlitTintRuns, [&](const RectI& sub)
+						{
+							CoordI	patchOfs = sub.pos() - dest;
+							CoordI	src = src0;
 
+							src.x += patchOfs.x * mtx.xx + patchOfs.y * mtx.yx;
+							src.y += patchOfs.x * mtx.xy + patchOfs.y * mtx.yy;
 
-						//
-
-						src.x += patchOfs.x * mtx.xx + patchOfs.y * mtx.yx;
-						src.y += patchOfs.x * mtx.xy + patchOfs.y * mtx.yy;
-
-						if (cmd == Command::Blit)
-							(this->*m_pStraightBlitOp)(patch, src, mtx, patch.pos(), m_pStraightBlitFirstPassOp);
-						else if (cmd == Command::Tile)
-							(this->*m_pStraightTileOp)(patch, src, mtx, patch.pos(), m_pStraightTileFirstPassOp);
-						else
-							(this->*m_pStraightBlurOp)(patch, src, mtx, patch.pos(), m_pStraightBlurFirstPassOp);
+							if (cmd == Command::Blit)
+								(this->*m_pStraightBlitOp)(sub, src, mtx, sub.pos(), m_pStraightBlitFirstPassOp);
+							else if (cmd == Command::Tile)
+								(this->*m_pStraightTileOp)(sub, src, mtx, sub.pos(), m_pStraightTileFirstPassOp);
+							else
+								(this->*m_pStraightBlurOp)(sub, src, mtx, sub.pos(), m_pStraightBlurFirstPassOp);
+						});
 					}
 					else
 					{
@@ -1439,27 +1379,26 @@ namespace wg
 
 						//
 
-						BinalCoord src = { srcX * (BINAL_MUL / 1024), srcY * (BINAL_MUL / 1024) };
+						BinalCoord src0 = { srcX * (BINAL_MUL / 1024), srcY * (BINAL_MUL / 1024) };
 						CoordI dest = { dstX / 64, dstY / 64 };
 
-						CoordI	patchOfs = patch.pos() - dest;
+						_forTintSpans(patch, m_bBlitTintRuns, [&](const RectI& sub)
+						{
+							CoordI	patchOfs = sub.pos() - dest;
+							BinalCoord src = src0;
 
-						//
+							src.x += patchOfs.x * mtx[0][0] + patchOfs.y * mtx[1][0];
+							src.y += patchOfs.x * mtx[0][1] + patchOfs.y * mtx[1][1];
 
-						src.x += patchOfs.x * mtx[0][0] + patchOfs.y * mtx[1][0];
-						src.y += patchOfs.x * mtx[0][1] + patchOfs.y * mtx[1][1];
-
-						//
-
-
-						if( cmd == Command::Blit)
-							(this->*m_pTransformBlitOp)(patch, src, mtx, patch.pos(), m_pTransformBlitFirstPassOp, cmd);
-						else if (cmd == Command::ClipBlit)
-							(this->*m_pTransformClipBlitOp)(patch, src, mtx, patch.pos(), m_pTransformClipBlitFirstPassOp, cmd);
-						else if (cmd == Command::Tile)
-							(this->*m_pTransformTileOp)(patch, src, mtx, patch.pos(), m_pTransformTileFirstPassOp, cmd);
-						else
-							(this->*m_pTransformBlurOp)(patch, src, mtx, patch.pos(), m_pTransformBlurFirstPassOp, cmd);
+							if( cmd == Command::Blit)
+								(this->*m_pTransformBlitOp)(sub, src, mtx, sub.pos(), m_pTransformBlitFirstPassOp, cmd);
+							else if (cmd == Command::ClipBlit)
+								(this->*m_pTransformClipBlitOp)(sub, src, mtx, sub.pos(), m_pTransformClipBlitFirstPassOp, cmd);
+							else if (cmd == Command::Tile)
+								(this->*m_pTransformTileOp)(sub, src, mtx, sub.pos(), m_pTransformTileFirstPassOp, cmd);
+							else
+								(this->*m_pTransformBlurOp)(sub, src, mtx, sub.pos(), m_pTransformBlurFirstPassOp, cmd);
+						});
 					}
 				}
 				break;
@@ -1925,6 +1864,26 @@ namespace wg
 
 	void SoftBackend::_updateBlitFunctions()
 	{
+		m_bBlitTintRuns = false;
+		_selectBlitFunctions(m_colTrans.mode);
+
+		// Kernel sets without GradientX kernels: use Flat kernels and draw tint in runs of same color.
+
+		if (m_colTrans.mode == TintMode::GradientX && m_pStraightBlitOp == &SoftBackend::_dummyStraightBlit &&
+			m_pBlitSource && m_pBlitSource->m_pData && m_blendMode != BlendMode::Ignore )
+		{
+			_selectBlitFunctions(TintMode::Flat);
+			m_bBlitTintRuns = (m_pStraightBlitOp != &SoftBackend::_dummyStraightBlit);
+
+			if (!m_bBlitTintRuns)
+				_selectBlitFunctions(m_colTrans.mode);		// So that error messages report the right tint mode.
+		}
+	}
+
+	//____ _selectBlitFunctions() _____________________________________________
+
+	void SoftBackend::_selectBlitFunctions(TintMode tintMode)
+	{
 		// Start with dummy kernels.
 
 		m_pStraightBlitOp = &SoftBackend::_dummyStraightBlit;
@@ -1956,7 +1915,7 @@ namespace wg
 
 		// TODO: Optimize by having flag for alpha in m_colTrans, which also is calculated on gradient tints.
 
-		if (m_colTrans.mode == TintMode::None || (m_colTrans.mode == TintMode::Flat && m_colTrans.flatTintColor.a == 4096))
+		if (m_colTrans.bTintOpaque && (tintMode == TintMode::None || tintMode == TintMode::Flat))
 		{
 			// TODO: Optimize by using a lookup table.
 
@@ -1989,7 +1948,7 @@ namespace wg
 			m_pTransformClipBlitFirstPassOp = m_pTransformMoveToBGRA8Kernels[(int)srcFormat][(int)sampleMethod][int(ReadOp::Clip)];
 			m_pTransformBlurFirstPassOp = m_pTransformMoveToBGRA8Kernels[(int)srcFormat][(int)sampleMethod][int(ReadOp::Blur)];
 
-			m_pBlitSecondPassOp = m_pKernels[(int)dstFormat]->pStraightBlitFromBGRA8Kernels[(int)m_colTrans.mode][(int)blendMode];
+			m_pBlitSecondPassOp = m_pKernels[(int)dstFormat]->pStraightBlitFromBGRA8Kernels[(int)tintMode][(int)blendMode];
 		}
 		else
 		{
@@ -2001,7 +1960,7 @@ namespace wg
 			m_pTransformClipBlitFirstPassOp = m_pTransformMoveToHiColorKernels[(int)srcFormat][(int)sampleMethod][int(ReadOp::Clip)];
 			m_pTransformBlurFirstPassOp = m_pTransformMoveToHiColorKernels[(int)srcFormat][(int)sampleMethod][int(ReadOp::Blur)];
 
-			m_pBlitSecondPassOp = m_pKernels[(int)dstFormat]->pStraightBlitFromHiColorKernels[(int)m_colTrans.mode][(int)blendMode];
+			m_pBlitSecondPassOp = m_pKernels[(int)dstFormat]->pStraightBlitFromHiColorKernels[(int)tintMode][(int)blendMode];
 		}
 
 
@@ -2028,19 +1987,19 @@ namespace wg
 			{
 				auto pStraightBlitKernels = m_singlePassStraightBlitKernels[straightBlitKernelsIdx - 1].pKernels;
 
-				pStraightBlitSinglePassKernel = pStraightBlitKernels[int(ReadOp::Normal)][int(m_colTrans.mode)];
-				pStraightTileSinglePassKernel = pStraightBlitKernels[int(ReadOp::Tile)][int(m_colTrans.mode)];
-				pStraightBlurSinglePassKernel = pStraightBlitKernels[int(ReadOp::Blur)][int(m_colTrans.mode)];
+				pStraightBlitSinglePassKernel = pStraightBlitKernels[int(ReadOp::Normal)][int(tintMode)];
+				pStraightTileSinglePassKernel = pStraightBlitKernels[int(ReadOp::Tile)][int(tintMode)];
+				pStraightBlurSinglePassKernel = pStraightBlitKernels[int(ReadOp::Blur)][int(tintMode)];
 			}
 
 			if (transformBlitKernelsIdx > 0)
 			{
 				auto pTransformBlitKernels = m_singlePassTransformBlitKernels[transformBlitKernelsIdx - 1].pKernels;
 
-				pTransformBlitSinglePassKernel = pTransformBlitKernels[(int)sampleMethod][int(ReadOp::Normal)][int(m_colTrans.mode)];
-				pTransformTileSinglePassKernel = pTransformBlitKernels[(int)sampleMethod][int(ReadOp::Tile)][int(m_colTrans.mode)];
-				pTransformClipBlitSinglePassKernel = pTransformBlitKernels[(int)sampleMethod][int(ReadOp::Clip)][int(m_colTrans.mode)];
-				pTransformBlurSinglePassKernel = pTransformBlitKernels[(int)sampleMethod][int(ReadOp::Blur)][int(m_colTrans.mode)];
+				pTransformBlitSinglePassKernel = pTransformBlitKernels[(int)sampleMethod][int(ReadOp::Normal)][int(tintMode)];
+				pTransformTileSinglePassKernel = pTransformBlitKernels[(int)sampleMethod][int(ReadOp::Tile)][int(tintMode)];
+				pTransformClipBlitSinglePassKernel = pTransformBlitKernels[(int)sampleMethod][int(ReadOp::Clip)][int(tintMode)];
+				pTransformBlurSinglePassKernel = pTransformBlitKernels[(int)sampleMethod][int(ReadOp::Blur)][int(tintMode)];
 			}
 		}
 
@@ -2111,25 +2070,311 @@ namespace wg
 		return;
 	}
 
-	//____ _updateTintMode() ___________________________________________________
+	//____ _setTintColor() ___________________________________________________
 
-	void SoftBackend::_updateTintMode()
+	void SoftBackend::_setTintColor(HiColor color)
 	{
-		TintMode mode;
+		m_tintColor = color;
+		_updateTint();
+	}
 
-		if (!m_colTrans.pTintAxisX && !m_colTrans.pTintAxisY)
-			mode = m_colTrans.flatTintColor.isOpaqueWhite() ? TintMode::None : TintMode::Flat;
-		else if (m_colTrans.pTintAxisX && m_colTrans.pTintAxisY)
-			mode = TintMode::GradientXY;
-		else if (m_colTrans.pTintAxisX)
-			mode = TintMode::GradientX;
-		else
-			mode = TintMode::GradientY;
+	//____ _setTint() __________________________________________________________
 
-		if (mode != m_colTrans.mode)
+	const uint16_t* SoftBackend::_setTint(const uint16_t* p, const HiColor*& pColors)
+	{
+		p = TintTools::decodeTint(p, pColors, m_tint);
+		_updateTint();
+		return p;
+	}
+
+	//____ _updateTint() _______________________________________________________
+	/*
+		Recalculates everything derived from m_tintColor and m_tint: layout, TintMode,
+		opacity and lookup tables. The tint color is included in the lookup tables.
+	*/
+
+	void SoftBackend::_updateTint()
+	{
+		TintMode	oldMode = m_colTrans.mode;
+
+		m_nTintLayers = 0;
+		m_colTrans.pTintAxisX = nullptr;
+		m_colTrans.pTintAxisY = nullptr;
+		m_colTrans.tintRect.clear();
+
+		bool	bOpaque = (m_tintColor.a == 4096);
+		bool	bAllFlat = true;
+		bool	bVertical = true;			// Only varies vertically.
+		bool	bHorizontal = true;			// Only varies horizontally.
+
+		int		lutEntries = 0;
+
+		for (int l = 0; l < m_tint.nLayers; l++)
 		{
-			m_colTrans.mode = mode;
-			m_bBlitFunctionNeedsUpdate = true;
+			const TintTools::TintLayer& src = m_tint.layers[l];
+
+			if (src.weight == 0 || src.nStops == 0)
+				continue;
+
+			TintLayerState& layer = m_tintLayers[m_nTintLayers++];
+
+			layer.geo = TintTools::layerGeometry(src);
+			layer.spread = src.spread;
+			layer.weight = src.weight;
+			layer.bFlat = TintTools::isLayerFlat(src);
+			layer.lutBits = 0;
+			layer.lutOfs = 0;
+
+			for (int i = 0; i < src.nStops; i++)
+				if (src.stopColors[i].a != 4096)
+					bOpaque = false;
+
+			if (layer.bFlat)
+			{
+				layer.flatColor = src.stopColors[0] * m_tintColor;
+				continue;
+			}
+
+			bAllFlat = false;
+
+			// Classify and decide LUT size from length of gradient in pixels.
+
+			float length;
+
+			if (layer.geo.shape == TintShape::Linear)
+			{
+				if (layer.geo.a != 0.f)
+					bVertical = false;
+				if (layer.geo.b != 0.f)
+					bHorizontal = false;
+
+				float grad = std::sqrt(layer.geo.a * layer.geo.a + layer.geo.b * layer.geo.b);
+				length = grad > 0.f ? 1.f / grad : 1.f;
+			}
+			else
+			{
+				bVertical = false;
+				bHorizontal = false;
+
+				float invRadius = std::max(layer.geo.invRadiusX, layer.geo.invRadiusY);		// Shortest radius gives steepest gradient.
+				length = invRadius > 0.f ? 1.f / invRadius : 1.f;
+			}
+
+			// Two entries per pixel of gradient length keeps quantization well below a pixel.
+
+			int bits = 1;
+			while (bits < 11 && (1 << bits) < length * 2)
+				bits++;
+
+			layer.lutBits = bits;
+			layer.lutOfs = lutEntries;
+			lutEntries += (1 << bits) + 1;
+		}
+
+		// Build lookup tables
+
+		if (lutEntries > 0)
+		{
+			if ((int)m_tintLUTs.size() < lutEntries)
+				m_tintLUTs.resize(lutEntries);
+
+			int layerIdx = 0;
+			for (int l = 0; l < m_tint.nLayers; l++)
+			{
+				const TintTools::TintLayer& src = m_tint.layers[l];
+				if (src.weight == 0 || src.nStops == 0)
+					continue;
+
+				TintLayerState& layer = m_tintLayers[layerIdx++];
+				if (!layer.bFlat)
+					TintTools::buildLUT(src, (1 << layer.lutBits) + 1, m_tintLUTs.data() + layer.lutOfs, m_tintColor);
+			}
+		}
+
+		// Decide layout and TintMode
+
+		m_colTrans.bTintOpaque = bOpaque;
+
+		if (m_nTintLayers == 0 || bAllFlat)
+		{
+			HiColor color = m_tintColor;
+
+			if (m_nTintLayers > 0)
+			{
+				int r = 0, g = 0, b = 0, a = 0;
+				for (int l = 0; l < m_nTintLayers; l++)
+				{
+					const HiColor& c = m_tintLayers[l].flatColor;
+					int w = m_tintLayers[l].weight;
+					r += c.r * w;
+					g += c.g * w;
+					b += c.b * w;
+					a += c.a * w;
+				}
+				color = HiColor(r >> 12, g >> 12, b >> 12, a >> 12);
+			}
+
+			m_tintLayout = TintLayout::None;
+			m_colTrans.flatTintColor = color;
+			m_colTrans.mode = color.isOpaqueWhite() ? TintMode::None : TintMode::Flat;
+		}
+		else
+		{
+			m_colTrans.flatTintColor = m_tintColor;			// Overwritten per span in Vertical layout.
+
+			if (bVertical)
+			{
+				m_tintLayout = TintLayout::Vertical;
+				m_colTrans.mode = TintMode::Flat;
+			}
+			else if (bHorizontal)
+			{
+				m_tintLayout = TintLayout::Horizontal;
+				m_colTrans.mode = TintMode::GradientX;
+			}
+			else
+			{
+				m_tintLayout = TintLayout::General;
+				m_colTrans.mode = TintMode::GradientX;
+			}
+		}
+
+		// Blit functions depend on tint mode and opacity.
+
+		(void) oldMode;
+		m_bBlitFunctionNeedsUpdate = true;
+	}
+
+	//____ _tintRowBuffer() ____________________________________________________
+
+	HiColor* SoftBackend::_tintRowBuffer(int length)
+	{
+		if ((int)m_tintRow.size() < length)
+			m_tintRow.resize(length);
+
+		return m_tintRow.data();
+	}
+
+	//____ _generateTintRow() __________________________________________________
+	/*
+		Generates tint colors for pixels (x, y) -> (x + length - 1, y) in canvas pixels.
+	*/
+
+	void SoftBackend::_generateTintRow(int x, int y, int length, HiColor* pOutput)
+	{
+		if (m_nTintLayers == 1)
+		{
+			_generateTintLayerRow(m_tintLayers[0], x, y, length, pOutput);
+			return;
+		}
+
+		// Mix, accumulate weighted layers.
+
+		if ((int)m_tintAccumulator.size() < length * 4)
+			m_tintAccumulator.resize(length * 4);
+
+		int* pAcc = m_tintAccumulator.data();
+		std::memset(pAcc, 0, length * 4 * sizeof(int));
+
+		for (int l = 0; l < m_nTintLayers; l++)
+		{
+			const TintLayerState& layer = m_tintLayers[l];
+			int w = layer.weight;
+
+			_generateTintLayerRow(layer, x, y, length, pOutput);
+
+			int* p = pAcc;
+			for (int i = 0; i < length; i++)
+			{
+				const HiColor& c = pOutput[i];
+				p[0] += c.r * w;
+				p[1] += c.g * w;
+				p[2] += c.b * w;
+				p[3] += c.a * w;
+				p += 4;
+			}
+		}
+
+		int* p = pAcc;
+		for (int i = 0; i < length; i++)
+		{
+			HiColor& c = pOutput[i];
+			c.r = int16_t(p[0] >> 12);
+			c.g = int16_t(p[1] >> 12);
+			c.b = int16_t(p[2] >> 12);
+			c.a = int16_t(p[3] >> 12);
+			p += 4;
+		}
+	}
+
+	//____ _generateTintLayerRow() _____________________________________________
+
+	void SoftBackend::_generateTintLayerRow(const TintLayerState& layer, int x, int y, int length, HiColor* pOutput)
+	{
+		if (layer.bFlat)
+		{
+			for (int i = 0; i < length; i++)
+				pOutput[i] = layer.flatColor;
+			return;
+		}
+
+		const HiColor* pLUT = m_tintLUTs.data() + layer.lutOfs;
+		const int64_t N = int64_t(1) << layer.lutBits;
+
+		// Index into LUT with spread applied. LUT has N+1 entries, entry i covers positions i/N -> (i+1)/N.
+
+		auto lookup = [&](int64_t idx) -> const HiColor&
+		{
+			switch (layer.spread)
+			{
+				default:
+				case TintSpread::Pad:
+					return pLUT[idx < 0 ? 0 : idx > N ? N : idx];
+				case TintSpread::Repeat:
+					return pLUT[idx & (N - 1)];
+				case TintSpread::Reflect:
+				{
+					int64_t r = idx & (2 * N - 1);
+					return pLUT[r >= N ? 2 * N - 1 - r : r];		// Span r >= N mirrors span 2N-1-r.
+				}
+			}
+		};
+
+		const TintTools::CanvasGeometry& geo = layer.geo;
+
+		if (geo.shape == TintShape::Linear)
+		{
+			// Step position in LUT index space, 16 binals. 64-bit to handle positions far outside the gradient.
+
+			double scale = double(N) * 65536.0;
+			double t = double(geo.a) * (x + 0.5) + double(geo.b) * (y + 0.5) + double(geo.c);
+
+			int64_t idx = int64_t(std::floor(t * scale));
+			int64_t step = int64_t(std::llround(double(geo.a) * scale));
+
+			for (int i = 0; i < length; i++)
+			{
+				pOutput[i] = lookup(idx >> 16);
+				idx += step;
+			}
+		}
+		else
+		{
+			float v = (y + 0.5f - geo.centerY) * geo.invRadiusY;
+			float v2 = v * v;
+			float u = (x + 0.5f - geo.centerX) * geo.invRadiusX;
+			float du = geo.invRadiusX;
+			float n = float(N);
+
+			for (int i = 0; i < length; i++)
+			{
+				float t = std::sqrt(u * u + v2);
+				if (t > 1e9f)
+					t = 1e9f;
+
+				pOutput[i] = lookup(int64_t(t * n));
+				u += du;
+			}
 		}
 	}
 

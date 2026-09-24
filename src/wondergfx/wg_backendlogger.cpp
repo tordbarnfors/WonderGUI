@@ -20,6 +20,7 @@
 
 =========================================================================*/
 #include <wg_backendlogger.h>
+#include <wg_tinttools.h>
 
 namespace wg
 {
@@ -287,19 +288,30 @@ namespace wg
 						*m_pOStream << "        TintColor: " << col.r << ", " << col.g << ", " << col.b << ", " << col.a << std::endl;
 					}
 
-					if (statesChanged & uint8_t(StateChange::TintMap))
+					if (statesChanged & uint8_t(StateChange::Tint))
 					{
-						auto p32 = (const spx *) p;
-						int32_t	x = *p32++;
-						int32_t	y = *p32++;
-						int32_t	w = *p32++;
-						int32_t	h = *p32++;
+						TintTools::DecodedTint tint;
+						p = TintTools::decodeTint(p, pColors, tint);
 
-						int32_t	nHorrColors = *p32++;
-						int32_t	nVertColors = *p32++;
-						p = (const uint16_t*) p32;
+						if (tint.nLayers == 0)
+							*m_pOStream << "        Tint: none" << std::endl;
+						else
+						{
+							*m_pOStream << "        Tint: " << tint.nLayers << " layer(s)" << std::endl;
 
-						*m_pOStream << "        TintMap: rect: " << x << ", " << y << ", " << w << ", " << h << " horr colors: " << nHorrColors << " vert colors: , " << nVertColors << std::endl;
+							for (int l = 0; l < tint.nLayers; l++)
+							{
+								auto& layer = tint.layers[l];
+								*m_pOStream << "            weight: " << layer.weight << " shape: " << toString(layer.shape) << " spread: " << toString(layer.spread)
+									<< " colorSpace: " << toString(layer.colorSpace) << " geometry: " << layer.geo[0] << ", " << layer.geo[1] << ", " << layer.geo[2] << ", " << layer.geo[3] << std::endl;
+
+								for (int i = 0; i < layer.nStops; i++)
+								{
+									const HiColor& col = layer.stopColors[i];
+									*m_pOStream << "              stop " << layer.stopPos[i] << ": " << col.r << ", " << col.g << ", " << col.b << ", " << col.a << std::endl;
+								}
+							}
+						}
 					}
 
 					if (statesChanged & uint8_t(StateChange::BlendMode))

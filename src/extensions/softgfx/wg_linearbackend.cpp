@@ -229,59 +229,13 @@ namespace wg
 
 				if (statesChanged & uint8_t(StateChange::TintColor))
 				{
-					m_colTrans.flatTintColor = *pColors++;
-					m_colTrans.pTintAxisX = nullptr;
-					m_colTrans.pTintAxisY = nullptr;
-
-					m_colTrans.bTintOpaque = (m_colTrans.flatTintColor.a == 4096);
-					_updateTintMode();
+					m_tintColor = *pColors++;
+					if (!(statesChanged & uint8_t(StateChange::Tint)))
+						_updateTint();
 				}
 
-				if (statesChanged & uint8_t(StateChange::TintMap))
-				{
-					auto p32 = (const spx *) p;
-					int32_t	x = *p32++ / 64;
-					int32_t	y = *p32++ / 64;
-					int32_t	w = *p32++ / 64;
-					int32_t	h = *p32++ / 64;
-
-					m_colTrans.tintRect = RectI(x, y, w, h);
-
-					int32_t nHorrColors = *p32++;
-					int32_t nVertColors = *p32++;
-					p = (const uint16_t*) p32;
-
-					auto pOurColors = pColors;
-					
-					if( nHorrColors > 0 )
-					{
-						m_colTrans.pTintAxisX = pColors;
-						pColors += nHorrColors;
-					}
-					else
-						m_colTrans.pTintAxisX = nullptr;
-
-					if( nVertColors > 0 )
-					{
-						m_colTrans.pTintAxisY = pColors;
-						pColors += nVertColors;
-					}
-					else
-						m_colTrans.pTintAxisY = nullptr;
-
-					// Check if whole tint is opaque.
-					
-					int totalAlpha = 0;
-					while( pOurColors < pColors )
-					{
-						totalAlpha += pOurColors->a;
-						pOurColors++;
-					}
-					
-					m_colTrans.bTintOpaque = (totalAlpha == 4096 * (nHorrColors + nVertColors));
-
-					_updateTintMode();
-				}
+				if (statesChanged & uint8_t(StateChange::Tint))
+					p = _setTint(p, pColors);
 
 				if (statesChanged & uint8_t(StateChange::BlendMode))
 				{
@@ -333,19 +287,47 @@ namespace wg
 
 				const HiColor&  col = * pColors++;
 
-				FillOp_p pFunc = nullptr;
-
 				// Optimize calls
 
 				BlendMode blendMode = m_blendMode;
-				if (blendMode == BlendMode::Blend && col.a == 4096 && (m_colTrans.mode == TintMode::None || (m_colTrans.mode == TintMode::Flat && m_colTrans.flatTintColor.a == 4096)) )
+				if (blendMode == BlendMode::Blend && col.a == 4096 && m_colTrans.bTintOpaque )
 				{
 					blendMode = BlendMode::Replace;
 				}
 
 				auto pKernels = m_pKernels[(int)m_canvasPixelFormat];
-				if (pKernels)
-					pFunc = pKernels->pFillKernels[(int)m_colTrans.mode][(int)blendMode];
+
+				// Get kernel, fall back to Flat kernels drawn in runs if GradientX kernels are missing.
+
+				auto getKernel = [&](BlendMode mode, bool& bRuns) -> FillOp_p
+				{
+					bRuns = false;
+					if (!pKernels)
+						return nullptr;
+
+					FillOp_p pKernel = pKernels->pFillKernels[(int)m_colTrans.mode][(int)mode];
+					if (!pKernel && m_colTrans.mode == TintMode::GradientX)
+					{
+						pKernel = pKernels->pFillKernels[(int)TintMode::Flat][(int)mode];
+						bRuns = (pKernel != nullptr);
+					}
+					return pKernel;
+				};
+
+				auto reportMissingKernel = [&](BlendMode mode)
+				{
+					char errorMsg[1024];
+
+					snprintf(errorMsg, 1024, "Failed fill operation. LinearBackend is missing fill kernel for TintMode::%s, BlendMode::%s onto surface of PixelFormat:%s.",
+						toString(m_colTrans.mode),
+						toString(mode),
+						toString(m_canvasPixelFormat));
+
+					GfxBase::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, errorMsg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				};
+
+				bool bRuns;
+				FillOp_p pFunc = getKernel(blendMode, bRuns);
 
 				if (!pFunc)
 				{
@@ -354,14 +336,7 @@ namespace wg
 					if (blendMode == BlendMode::Ignore)
 						break;
 
-					char errorMsg[1024];
-
-					snprintf(errorMsg, 1024, "Failed fill operation. LinearBackend is missing fill kernel for TintMode::%s, BlendMode::%s onto surface of PixelFormat:%s.",
-						toString(m_colTrans.mode),
-						toString(blendMode),
-						toString(m_canvasPixelFormat));
-
-					GfxBase::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, errorMsg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+					reportMissingKernel(blendMode);
 					break;
 				}
 
@@ -384,14 +359,22 @@ namespace wg
 
 					Segment& seg = * pSegment;
 
+					// Fills a rectangle of whole pixels with given kernel, taking tint into account.
+
+					auto fillPixels = [&](FillOp_p pOp, bool bRunsForOp, const RectI& rect, HiColor color)
+					{
+						_forTintSpans(rect, bRunsForOp, [&](const RectI& sub)
+						{
+							uint8_t* pDst = seg.pBuffer + (sub.y - seg.rect.y) * seg.pitch + (sub.x - seg.rect.x) * m_canvasPixelBytes;
+							pOp(pDst, m_canvasPixelBytes, seg.pitch - sub.w * m_canvasPixelBytes, sub.h, sub.w, color, m_colTrans, sub.pos());
+						});
+					};
 
 					if (((spxPatch.x | spxPatch.y | spxPatch.w | spxPatch.h) & 63) == 0)
 					{
 						// Pixel aligned fill
 
-						uint8_t * pDst = seg.pBuffer + (pixelPatch.y - seg.rect.y)*seg.pitch + (pixelPatch.x - seg.rect.x)*m_canvasPixelBytes;
-
-						pFunc(pDst, m_canvasPixelBytes, seg.pitch - pixelPatch.w*m_canvasPixelBytes, pixelPatch.h, pixelPatch.w, col, m_colTrans, pixelPatch.pos());
+						fillPixels(pFunc, bRuns, pixelPatch, col);
 					}
 					else
 					{
@@ -405,15 +388,14 @@ namespace wg
 						int x2 = ((spxPatch.x + spxPatch.w) >> 6);
 						int y2 = ((spxPatch.y + spxPatch.h) >> 6);
 
-						uint8_t * pDst = seg.pBuffer + (y1 - seg.rect.y)*seg.pitch + (x1 - seg.rect.x)*m_canvasPixelBytes;
-
-						pFunc(pDst, m_canvasPixelBytes, seg.pitch - (x2 - x1) * m_canvasPixelBytes, y2 - y1, x2 - x1, col, m_colTrans, {x1, y1} );
+						fillPixels(pFunc, bRuns, RectI(x1, y1, x2 - x1, y2 - y1), col);
 
 						//
 
 						BlendMode	edgeBlendMode = (blendMode == BlendMode::Replace) ? BlendMode::Blend : blendMode; // Need to blend edges and corners even if fill is replace
 
-						FillOp_p pEdgeFunc = pKernels->pFillKernels[(int)m_colTrans.mode][(int)edgeBlendMode];
+						bool bEdgeRuns;
+						FillOp_p pEdgeFunc = getKernel(edgeBlendMode, bEdgeRuns);
 
 						if (pEdgeFunc == nullptr)
 						{
@@ -422,14 +404,7 @@ namespace wg
 							if (blendMode == BlendMode::Ignore)
 								break;
 
-							char errorMsg[1024];
-
-							snprintf(errorMsg, 1024, "Failed fill operation. LinearBackend is missing fill kernel for TintMode::%s, BlendMode::%s onto surface of PixelFormat:%s.",
-								toString(m_colTrans.mode),
-								toString(blendMode),
-								toString(m_canvasPixelFormat));
-
-							GfxBase::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, errorMsg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+							reportMissingKernel(edgeBlendMode);
 							break;
 						}
 
@@ -461,71 +436,27 @@ namespace wg
 							aaBottomRight = aaBottomRight * alpha >> 12;
 						}
 
-						HiColor color = col;
-
-						if (aaTop != 0)
+						auto edge = [&](int alpha, const RectI& rect)
 						{
-							uint8_t * pDst = seg.pBuffer + (pixelPatch.y - seg.rect.y)*seg.pitch + (x1 - seg.rect.x)*m_canvasPixelBytes;
-							int length = x2 - x1;
-							color.a = aaTop;
-							pEdgeFunc(pDst, m_canvasPixelBytes, 0, 1, length, color, m_colTrans, { x1,pixelPatch.y });
-						}
+							if (alpha != 0)
+							{
+								HiColor color = col;
+								color.a = alpha;
+								fillPixels(pEdgeFunc, bEdgeRuns, rect, color);
+							}
+						};
 
-						if (aaBottom != 0)
-						{
-							uint8_t * pDst = seg.pBuffer + (y2 - seg.rect.y)*seg.pitch + (x1 - seg.rect.x)*m_canvasPixelBytes;
-							int length = x2 - x1;
-							color.a = aaBottom;
-							pEdgeFunc(pDst, m_canvasPixelBytes, 0, 1, length, color, m_colTrans, { x1,y2 });
-						}
-
-						if (aaLeft != 0)
-						{
-							uint8_t * pDst = seg.pBuffer + (y1 - seg.rect.y)*seg.pitch + (pixelPatch.x - seg.rect.x)*m_canvasPixelBytes;
-							int length = y2 - y1;
-							color.a = aaLeft;
-							pEdgeFunc(pDst, seg.pitch, 0, 1, length, color, m_colTrans, { pixelPatch.x, y1 });
-						}
-
-						if (aaRight != 0)
-						{
-							uint8_t * pDst = seg.pBuffer + (y1 - seg.rect.y)*seg.pitch + (x2 - seg.rect.x)*m_canvasPixelBytes;
-							int length = y2 - y1;
-							color.a = aaRight;
-							pEdgeFunc(pDst, seg.pitch, 0, 1, length, color, m_colTrans, { x2, y1 });
-						}
+						edge(aaTop, RectI(x1, pixelPatch.y, x2 - x1, 1));
+						edge(aaBottom, RectI(x1, y2, x2 - x1, 1));
+						edge(aaLeft, RectI(pixelPatch.x, y1, 1, y2 - y1));
+						edge(aaRight, RectI(x2, y1, 1, y2 - y1));
 
 						// Draw corner pieces
 
-
-						if (aaTopLeft != 0)
-						{
-							uint8_t * pDst = seg.pBuffer + (pixelPatch.y - seg.rect.y)*seg.pitch + (pixelPatch.x - seg.rect.x)*m_canvasPixelBytes;
-							color.a = aaTopLeft;
-							pEdgeFunc(pDst, 0, 0, 1, 1, color, m_colTrans, { pixelPatch.x, pixelPatch.y });
-						}
-
-						if (aaTopRight != 0)
-						{
-							uint8_t * pDst = seg.pBuffer + (pixelPatch.y - seg.rect.y)*seg.pitch + (x2 - seg.rect.x)*m_canvasPixelBytes;
-							color.a = aaTopRight;
-							pEdgeFunc(pDst, 0, 0, 1, 1, color, m_colTrans, { x2, pixelPatch.y });
-						}
-
-						if (aaBottomLeft != 0)
-						{
-							uint8_t * pDst = seg.pBuffer + (y2 - seg.rect.y)*seg.pitch + (pixelPatch.x - seg.rect.x)*m_canvasPixelBytes;
-							color.a = aaBottomLeft;
-							pEdgeFunc(pDst, 0, 0, 1, 1, color, m_colTrans, { pixelPatch.x, y2 });
-						}
-
-						if (aaBottomRight != 0)
-						{
-							uint8_t * pDst = seg.pBuffer + (y2 - seg.rect.y)*seg.pitch + (x2 - seg.rect.x)*m_canvasPixelBytes;
-							color.a = aaBottomRight;
-							pEdgeFunc(pDst, 0, 0, 1, 1, color, m_colTrans, { x2, y2 });
-						}
-
+						edge(aaTopLeft, RectI(pixelPatch.x, pixelPatch.y, 1, 1));
+						edge(aaTopRight, RectI(x2, pixelPatch.y, 1, 1));
+						edge(aaBottomLeft, RectI(pixelPatch.x, y2, 1, 1));
+						edge(aaBottomRight, RectI(x2, y2, 1, 1));
 					}
 				}
 				break;
@@ -575,8 +506,10 @@ namespace wg
 					HiColor color = *pColors++;
 					HiColor fillColor = color;
 
-					if( m_colTrans.mode == TintMode::Flat )
-					fillColor = fillColor * m_colTrans.flatTintColor;
+					// Lines are only tinted by the flat tint color, not by Tints.
+
+					if( m_tintColor != HiColor::White )
+						fillColor = fillColor * m_tintColor;
 
 					CoordSPX beg, end;
 
@@ -1322,28 +1255,26 @@ namespace wg
 
 						//
 
-
-						CoordI src = { srcX / 1024, srcY / 1024 };
+						CoordI src0 = { srcX / 1024, srcY / 1024 };
 						CoordI dest = { dstX / 64, dstY / 64 };
 
-						CoordI	patchOfs = patch.pos() - dest;
+						_forTintSpans(patch, m_bBlitTintRuns, [&](const RectI& sub)
+						{
+							CoordI	patchOfs = sub.pos() - dest;
+							CoordI	src = src0;
 
+							src.x += patchOfs.x * mtx.xx + patchOfs.y * mtx.yx;
+							src.y += patchOfs.x * mtx.xy + patchOfs.y * mtx.yy;
 
-						//
+							uint8_t * pDst = seg.pBuffer + (sub.y-seg.rect.y) * seg.pitch + (sub.x - seg.rect.x) * m_canvasPixelBytes;
 
-						src.x += patchOfs.x * mtx.xx + patchOfs.y * mtx.yx;
-						src.y += patchOfs.x * mtx.xy + patchOfs.y * mtx.yy;
-
-
-						uint8_t * pDst = seg.pBuffer + (patch.y-seg.rect.y) * seg.pitch + (patch.x - seg.rect.x) * m_canvasPixelBytes;
-
-
-						if (cmd == Command::Blit)
-							(this->*m_pLinearStraightBlitOp)(pDst, seg.pitch, patch.w, patch.h, src, mtx, patch.pos(), m_pStraightBlitFirstPassOp);
-						else if (cmd == Command::Tile)
-							(this->*m_pLinearStraightTileOp)(pDst, seg.pitch, patch.w, patch.h, src, mtx, patch.pos(), m_pStraightTileFirstPassOp);
-						else
-							(this->*m_pLinearStraightBlurOp)(pDst, seg.pitch, patch.w, patch.h, src, mtx, patch.pos(), m_pStraightBlurFirstPassOp);
+							if (cmd == Command::Blit)
+								(this->*m_pLinearStraightBlitOp)(pDst, seg.pitch, sub.w, sub.h, src, mtx, sub.pos(), m_pStraightBlitFirstPassOp);
+							else if (cmd == Command::Tile)
+								(this->*m_pLinearStraightTileOp)(pDst, seg.pitch, sub.w, sub.h, src, mtx, sub.pos(), m_pStraightTileFirstPassOp);
+							else
+								(this->*m_pLinearStraightBlurOp)(pDst, seg.pitch, sub.w, sub.h, src, mtx, sub.pos(), m_pStraightBlurFirstPassOp);
+						});
 					}
 					else
 					{
@@ -1358,29 +1289,28 @@ namespace wg
 
 						//
 
-						BinalCoord src = { srcX * (BINAL_MUL / 1024), srcY * (BINAL_MUL / 1024) };
+						BinalCoord src0 = { srcX * (BINAL_MUL / 1024), srcY * (BINAL_MUL / 1024) };
 						CoordI dest = { dstX / 64, dstY / 64 };
 
-						CoordI	patchOfs = patch.pos() - dest;
+						_forTintSpans(patch, m_bBlitTintRuns, [&](const RectI& sub)
+						{
+							CoordI	patchOfs = sub.pos() - dest;
+							BinalCoord src = src0;
 
-						//
+							src.x += patchOfs.x * mtx[0][0] + patchOfs.y * mtx[1][0];
+							src.y += patchOfs.x * mtx[0][1] + patchOfs.y * mtx[1][1];
 
-						src.x += patchOfs.x * mtx[0][0] + patchOfs.y * mtx[1][0];
-						src.y += patchOfs.x * mtx[0][1] + patchOfs.y * mtx[1][1];
+							uint8_t * pDst = seg.pBuffer + (sub.y-seg.rect.y) * seg.pitch + (sub.x - seg.rect.x) * m_canvasPixelBytes;
 
-						//
-
-						uint8_t * pDst = seg.pBuffer + (patch.y-seg.rect.y) * seg.pitch + (patch.x - seg.rect.x) * m_canvasPixelBytes;
-
-
-						if( cmd == Command::Blit)
-							(this->*m_pLinearTransformBlitOp)(pDst, seg.pitch, patch.w, patch.h, src, mtx,patch.pos(), m_pTransformBlitFirstPassOp);
-						else if (cmd == Command::ClipBlit)
-							(this->*m_pLinearTransformClipBlitOp)(pDst, seg.pitch, patch.w, patch.h, src, mtx, patch.pos(), m_pTransformClipBlitFirstPassOp);
-						else if (cmd == Command::Tile)
-							(this->*m_pLinearTransformTileOp)(pDst, seg.pitch, patch.w, patch.h, src, mtx, patch.pos(), m_pTransformTileFirstPassOp);
-						else
-							(this->*m_pLinearTransformBlurOp)(pDst, seg.pitch, patch.w, patch.h, src, mtx, patch.pos(), m_pTransformBlurFirstPassOp);
+							if( cmd == Command::Blit)
+								(this->*m_pLinearTransformBlitOp)(pDst, seg.pitch, sub.w, sub.h, src, mtx, sub.pos(), m_pTransformBlitFirstPassOp);
+							else if (cmd == Command::ClipBlit)
+								(this->*m_pLinearTransformClipBlitOp)(pDst, seg.pitch, sub.w, sub.h, src, mtx, sub.pos(), m_pTransformClipBlitFirstPassOp);
+							else if (cmd == Command::Tile)
+								(this->*m_pLinearTransformTileOp)(pDst, seg.pitch, sub.w, sub.h, src, mtx, sub.pos(), m_pTransformTileFirstPassOp);
+							else
+								(this->*m_pLinearTransformBlurOp)(pDst, seg.pitch, sub.w, sub.h, src, mtx, sub.pos(), m_pTransformBlurFirstPassOp);
+						});
 					}
 				}
 

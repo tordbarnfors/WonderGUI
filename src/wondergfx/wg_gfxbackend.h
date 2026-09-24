@@ -98,8 +98,8 @@ namespace wg
 		enum class StateChange : uint8_t
 		{
 			BlitSource		= 1,
-			TintColor		= 1 << 1,		// In GfxDevice this is used to mark any change in tint
-			TintMap			= 1 << 2,		// Not used in GfxDevice.
+			TintColor		= 1 << 1,		// Flat tint color. Multiplied with Tint if both are set.
+			Tint			= 1 << 2,		// Tint (gradient), encoded as described in TintTools.
 			BlendMode		= 1 << 3,
 			MorphFactor		= 1 << 4,
 			FixedBlendColor	= 1 << 5,

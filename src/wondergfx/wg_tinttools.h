@@ -85,6 +85,62 @@ namespace wg
 
 		void			buildLUT(const Tint* pTint, int entries, HiColor* pOutput, float begin = 0.f, float end = 1.f, bool bSquared = false);
 
+		//____ Encoding _______________________________________________________
+		/**
+		 * Tints are passed to backends (and through streams) in encoded form:
+		 * a sequence of 16-bit words plus colors, one color per stop.
+		 *
+		 * Layout, all counts in 16-bit words, always a multiple of two so that
+		 * 32-bit alignment is kept:
+		 *
+		 *   uint16	nLayers				0 = no tint, 1 = simple tint, 2-4 = mix.
+		 *   uint16	padding
+		 *   per layer:
+		 *     uint16	weight				0 -> 4096, weights of all layers sum to 4096.
+		 *     uint16	shape | spread << 4 | colorSpace << 8
+		 *     uint16	nStops				1 -> Tint::c_maxStops
+		 *     uint16	padding
+		 *     float	geometry[4]			CanvasGeometry. Linear: a, b, c, 0. Radial: centerX, centerY, invRadiusX, invRadiusY.
+		 *     uint16	stopPos[nStops]		0 -> 65535 for 0.0 -> 1.0.
+		 *     uint16	padding				Only if nStops is odd.
+		 *
+		 * Colors: nStops colors per layer, in layer order.
+		 */
+
+		const int c_maxEncodedTintWords = 2 + Tint::c_maxMixComponents * (4 + 8 + Tint::c_maxStops);
+		const int c_maxEncodedTintColors = Tint::c_maxMixComponents * Tint::c_maxStops;
+
+		struct TintLayer
+		{
+			int			weight;					// 0 -> 4096
+			TintShape	shape;
+			TintSpread	spread;
+			ColorSpace	colorSpace;
+			int			nStops;
+			float		geo[4];					// See CanvasGeometry.
+			float		stopPos[Tint::c_maxStops];
+			HiColor		stopColors[Tint::c_maxStops];
+		};
+
+		struct DecodedTint
+		{
+			int			nLayers;				// 0 = no tint.
+			TintLayer	layers[Tint::c_maxMixComponents];
+		};
+
+		int				encodeTint(const Tint* pTint, const RectSPX& rect, uint16_t* pWords, HiColor* pColors, int& nColors);	// Returns number of words. pTint may be null.
+		const uint16_t*	decodeTint(const uint16_t* pWords, const HiColor*& pColors, DecodedTint& output);						// Returns pointer to word after the tint.
+		int				encodedTintSize(const uint16_t* pWords, int& nColors);													// Number of words, for skipping.
+
+		CanvasGeometry	layerGeometry(const TintLayer& layer);
+		bool			isLayerFlat(const TintLayer& layer);
+
+		// Build LUT for a decoded layer, entry i covering positions i/(entries-1) -> (i+1)/(entries-1) and sampled
+		// in the middle of that span, so it should be indexed with floor(position * (entries - 1)).
+		// Spread is not applied, entries - 1 is expected to be a power of two so the renderer can apply it.
+
+		void			buildLUT(const TintLayer& layer, int entries, HiColor* pOutput, HiColor multiplier = HiColor::White);
+
 
 		//____ applySpread() __________________________________________________
 

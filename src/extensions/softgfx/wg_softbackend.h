@@ -24,6 +24,7 @@
 #pragma once
 
 #include <wg_gfxbackend.h>
+#include <wg_tinttools.h>
 #include <wg_softsurface.h>
 
 namespace wg
@@ -211,7 +212,42 @@ namespace wg
 
 		void	_resetStates();
 		void	_updateBlitFunctions();
-		void	_updateTintMode();
+		void	_selectBlitFunctions(TintMode tintMode);
+
+		// Tint handling, shared with LinearBackend.
+
+		enum class TintLayout
+		{
+			None,			// No tint or flat tint, use m_colTrans.flatTintColor (TintMode None or Flat).
+			Vertical,		// Tint only varies vertically. Drawn row by row with TintMode::Flat.
+			Horizontal,		// Tint only varies horizontally. One row of tint colors, TintMode::GradientX.
+			General			// Tint varies in both directions. Drawn row by row with TintMode::GradientX.
+		};
+
+		struct TintLayerState
+		{
+			TintTools::CanvasGeometry	geo;
+			TintSpread		spread;
+			int				weight;			// 0 -> 4096.
+			bool			bFlat;
+			HiColor			flatColor;		// Only if bFlat, tint color included.
+			int				lutBits;		// LUT has (1 << lutBits) + 1 entries.
+			int				lutOfs;			// Offset into m_tintLUTs.
+		};
+
+		void	_setTintColor(HiColor color);
+		const uint16_t* _setTint(const uint16_t* p, const HiColor*& pColors);
+		void	_updateTint();
+		void	_generateTintRow(int x, int y, int length, HiColor* pOutput);
+		void	_generateTintLayerRow(const TintLayerState& layer, int x, int y, int length, HiColor* pOutput);
+		HiColor* _tintRowBuffer(int length);
+
+		/**
+		 * Calls draw(const RectI& subRect) for subrectangles of rect as needed for the current tint,
+		 * with m_colTrans prepared for each call. bRuns: use Flat kernels, split into runs of same color
+		 * (fallback for kernel sets without GradientX kernels).
+		 */
+		template<class DrawFunc> void _forTintSpans(const RectI& rect, bool bRuns, DrawFunc&& draw);
 		void	_updateBlurRadius(spx radius);
 
 		int		_scaleLineThickness(float thickness, int slope);
@@ -259,10 +295,17 @@ namespace wg
 
 		bool				m_bBlitFunctionNeedsUpdate = true;
 
-		// Tintmap buffer
+		// Tint
 
-		int					m_tintmapXofs = -1;
-		int					m_tintmapYofs = -1;
+		HiColor				m_tintColor = HiColor::White;		// Flat tint color (StateChange::TintColor).
+		TintTools::DecodedTint	m_tint;							// Current Tint (StateChange::Tint), nLayers == 0 if none.
+		TintLayout			m_tintLayout = TintLayout::None;
+		int					m_nTintLayers = 0;
+		TintLayerState		m_tintLayers[Tint::c_maxMixComponents];
+		std::vector<HiColor>	m_tintLUTs;
+		std::vector<HiColor>	m_tintRow;
+		std::vector<int>		m_tintAccumulator;
+		bool				m_bBlitTintRuns = false;			// Blits need to use runs with Flat kernels, GradientX kernels missing.
 
 
 //		PixelBuffer		m_canvasPixelBuffer;
@@ -369,6 +412,98 @@ namespace wg
 
 
 	};
+
+
+	//____ _forTintSpans() ____________________________________________________
+
+	template<class DrawFunc>
+	void SoftBackend::_forTintSpans(const RectI& rect, bool bRuns, DrawFunc&& draw)
+	{
+		if (rect.w <= 0 || rect.h <= 0)
+			return;
+
+		// Draws one row of tint colors (already in buffer) as runs of same color with Flat kernels.
+
+		auto drawRuns = [&](const HiColor* pRow, int y, int h)
+		{
+			int i = 0;
+			while (i < rect.w)
+			{
+				int j = i + 1;
+				while (j < rect.w && pRow[j] == pRow[i])
+					j++;
+
+				m_colTrans.flatTintColor = pRow[i];
+				draw(RectI(rect.x + i, y, j - i, h));
+				i = j;
+			}
+		};
+
+		switch (m_tintLayout)
+		{
+			case TintLayout::None:
+				draw(rect);
+				break;
+
+			case TintLayout::Horizontal:
+			{
+				HiColor* pRow = _tintRowBuffer(rect.w);
+				_generateTintRow(rect.x, rect.y, rect.w, pRow);
+
+				if (bRuns)
+					drawRuns(pRow, rect.y, rect.h);
+				else
+				{
+					m_colTrans.pTintAxisX = pRow;
+					m_colTrans.tintRect.x = rect.x;
+					draw(rect);
+				}
+				break;
+			}
+
+			case TintLayout::Vertical:
+			{
+				// Rows with same color are drawn together.
+
+				HiColor* pCol = _tintRowBuffer(rect.h);
+				for (int i = 0; i < rect.h; i++)
+					_generateTintRow(rect.x, rect.y + i, 1, pCol + i);
+
+				int i = 0;
+				while (i < rect.h)
+				{
+					int j = i + 1;
+					while (j < rect.h && pCol[j] == pCol[i])
+						j++;
+
+					m_colTrans.flatTintColor = pCol[i];
+					draw(RectI(rect.x, rect.y + i, rect.w, j - i));
+					i = j;
+				}
+				break;
+			}
+
+			case TintLayout::General:
+			{
+				HiColor* pRow = _tintRowBuffer(rect.w);
+
+				for (int y = rect.y; y < rect.y + rect.h; y++)
+				{
+					_generateTintRow(rect.x, y, rect.w, pRow);
+
+					if (bRuns)
+						drawRuns(pRow, y, 1);
+					else
+					{
+						m_colTrans.pTintAxisX = pRow;
+						m_colTrans.tintRect.x = rect.x;
+						draw(RectI(rect.x, y, rect.w, 1));
+					}
+				}
+				break;
+			}
+		}
+	}
 
 } // namespace wg
 #endif	// WG_SOFTBACKEND_DOT_H

@@ -34,7 +34,7 @@
 #include <wg_color.h>
 #include <wg_gradient.h>
 #include <wg_edgemap.h>
-#include <wg_tintmap.h>
+#include <wg_tint.h>
 
 
 #include <wg_geo.h>
@@ -111,11 +111,11 @@ namespace wg
 		HiColor		tintColor() const override;
 
 
-		void		setTintmap(const RectSPX& rect, Tintmap* pTintmap) override;
-		void		clearTintmap() override;
-		bool		hasTintmap() const override;
-		Tintmap_p	tintmap() const override;
-		RectSPX		tintmapRect() const override;
+		void		setTint(const RectSPX& rect, Tint* pTint) override;
+		void		clearTint() override;
+		bool		hasTint() const override;
+		Tint_p		tint() const override;
+		RectSPX		tintRect() const override;
 
 		bool		setBlendMode(BlendMode blendMode) override;
 		BlendMode 	blendMode() const override;
@@ -238,13 +238,13 @@ namespace wg
 		struct RenderState
 		{
 			Surface_p		blitSource;
-			Tintmap_p		pTintmap;
+			Tint_p			pTint;
 			Blurbrush_p		pBlurbrush;
 
 			HiColor			tintColor = HiColor::Undefined;
 			HiColor			fixedBlendColor = HiColor::White;
 
-			RectSPX			tintmapRect;
+			RectSPX			tintRect;
 			BlendMode		blendMode = BlendMode::Blend;
 			float			morphFactor = 0.5f;
 		};

@@ -30,7 +30,7 @@
 #include <wg_color.h>
 #include <wg_gradient.h>
 #include <wg_edgemap.h>
-#include <wg_tintmap.h>
+#include <wg_tint.h>
 #include <wg_blurbrush.h>
 
 
@@ -132,11 +132,11 @@ namespace wg
 		virtual bool		hasTintColor() const = 0;
 		virtual HiColor		tintColor() const = 0;
 
-		virtual void		setTintmap(const RectSPX& rect, Tintmap* pTintmap) = 0;
-		virtual void		clearTintmap() = 0;
-		virtual bool		hasTintmap() const = 0;
-		virtual Tintmap_p	tintmap() const = 0;
-		virtual RectSPX		tintmapRect() const = 0;
+		virtual void		setTint(const RectSPX& rect, Tint* pTint) = 0;
+		virtual void		clearTint() = 0;
+		virtual bool		hasTint() const = 0;
+		virtual Tint_p		tint() const = 0;
+		virtual RectSPX		tintRect() const = 0;
 
 		virtual bool		setBlendMode( BlendMode blendMode ) = 0;
 		virtual BlendMode 	blendMode() const = 0;

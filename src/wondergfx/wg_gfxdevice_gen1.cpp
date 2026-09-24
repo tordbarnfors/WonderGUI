@@ -197,34 +197,34 @@ namespace wg
 		return true;
 	}
 
-	//____ setTintmap() ___________________________________________________________
+	//____ setTint() ___________________________________________________________
 
-	void GfxDeviceGen1::setTintmap(const RectSPX& rect, Tintmap* pTintmap)
+	void GfxDeviceGen1::setTint(const RectSPX& rect, Tint* pTint)
 	{
 		// Do nothing. Not supported in Gen1
 	}
 
-	//____ clearTintmap() _________________________________________________________
+	//____ clearTint() _________________________________________________________
 
-	void GfxDeviceGen1::clearTintmap()
+	void GfxDeviceGen1::clearTint()
 	{
 		// Do nothing. Not supported in Gen1
 	}
 
-	//____ tintmap() ___________________________________________________________
+	//____ tint() ______________________________________________________________
 
-	Tintmap_p	GfxDeviceGen1::tintmap() const
+	Tint_p	GfxDeviceGen1::tint() const
 	{
-		//Tintmaps not supportd in Gen1
+		// Tints not supported in Gen1
 
 		return nullptr;
 	}
 
-	//____ tintmapRect() _____________________________________________________
+	//____ tintRect() __________________________________________________________
 
-	RectSPX		GfxDeviceGen1::tintmapRect() const
+	RectSPX		GfxDeviceGen1::tintRect() const
 	{
-		//Tintmaps not supportd in Gen1
+		// Tints not supported in Gen1
 
 		return RectSPX();
 	}

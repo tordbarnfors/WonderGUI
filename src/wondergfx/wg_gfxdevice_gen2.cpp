@@ -24,11 +24,11 @@
 #include <cstring>
 
 #include <wg_gfxdevice_gen2.h>
+#include <wg_tinttools.h>
 #include <wg_geo.h>
 #include <wg_gfxutil.h>
 #include <wg_gfxbase.h>
 
-#include <wg_gradyent.h>
 #include <wg_waveform.h>
 
 using namespace std;
@@ -379,65 +379,97 @@ HiColor GfxDeviceGen2::tintColor() const
 }
 
 
-//____ setTintmap() ___________________________________________________________
+//____ setTint() ______________________________________________________________
+/**
+ * @brief Set a Tint (gradient) that everything drawn is multiplied with.
+ *
+ * The Tint is placed in given rectangle, e.g. its geometry, which is relative
+ * to the rectangle, is mapped onto it. Drawing outside the rectangle is still
+ * tinted, following the Tint's spread.
+ *
+ * The Tint is multiplied with the tint color, if any.
+ *
+ * @param rect	Rectangle to place the Tint in, in canvas spx.
+ * @param pTint	The Tint. Nullptr clears the Tint.
+ */
 
-void GfxDeviceGen2::setTintmap(const RectSPX& rect, Tintmap* pTintmap)
+void GfxDeviceGen2::setTint(const RectSPX& rect, Tint* pTint)
 {
-	assert(pTintmap);
-
-	if (pTintmap != m_renderState.pTintmap || rect != m_renderState.tintmapRect )
+	if (!pTint)
 	{
-		m_renderState.pTintmap = pTintmap;
-		m_renderState.tintmapRect = rect;
+		clearTint();
+		return;
+	}
 
-		m_stateChanges |= int(StateChange::TintMap);
+	if (pTint != m_renderState.pTint || rect != m_renderState.tintRect )
+	{
+		m_renderState.pTint = pTint;
+		m_renderState.tintRect = rect;
+
+		m_stateChanges |= int(StateChange::Tint);
 	}
 }
 
-//____ clearTintmap() _____________________________________________________________
+//____ clearTint() ____________________________________________________________
 
-void GfxDeviceGen2::clearTintmap()
+void GfxDeviceGen2::clearTint()
 {
-	if (m_renderState.pTintmap)
-		m_stateChanges |= int(StateChange::TintMap);
+	if (m_renderState.pTint)
+		m_stateChanges |= int(StateChange::Tint);
 
-	m_renderState.pTintmap = nullptr;
-	m_renderState.tintmapRect.clear();
+	m_renderState.pTint = nullptr;
+	m_renderState.tintRect.clear();
 }
 
-//____ hasTintmap() _________________________________________________________
+//____ hasTint() ______________________________________________________________
 
-bool GfxDeviceGen2::hasTintmap() const
+bool GfxDeviceGen2::hasTint() const
 {
-	return m_renderState.pTintmap != nullptr;
+	return m_renderState.pTint != nullptr;
 }
 
-//____ tintmap() _______________________________________________________________
+//____ tint() _________________________________________________________________
 
-Tintmap_p GfxDeviceGen2::tintmap() const
+Tint_p GfxDeviceGen2::tint() const
 {
-	return m_renderState.pTintmap;
+	return m_renderState.pTint;
 }
 
-//____ tintmapRect() _________________________________________________________
+//____ tintRect() _____________________________________________________________
 
-RectSPX GfxDeviceGen2::tintmapRect() const
+RectSPX GfxDeviceGen2::tintRect() const
 {
-	return m_renderState.tintmapRect;
+	return m_renderState.tintRect;
 }
 
 //____ setTintGradient() __________________________________________________
 
 void GfxDeviceGen2::setTintGradient(const RectSPX& rect, const Gradient& gradient)
 {
-	setTintmap(rect, Gradyent::create( gradient ));
+	// DEPRECATED. Approximates the 4-corner gradient with a linear Tint along
+	// the axis with largest color difference, like Gradyent did.
+
+	HiColor top = HiColor::mix(gradient.topLeft, gradient.topRight, 2048);
+	HiColor bottom = HiColor::mix(gradient.bottomLeft, gradient.bottomRight, 2048);
+	HiColor left = HiColor::mix(gradient.topLeft, gradient.bottomLeft, 2048);
+	HiColor right = HiColor::mix(gradient.topRight, gradient.bottomRight, 2048);
+
+	auto diff = [](HiColor a, HiColor b) { return (a.r - b.r) * (a.r - b.r) + (a.g - b.g) * (a.g - b.g) + (a.b - b.b) * (a.b - b.b) + (a.a - b.a) * (a.a - b.a); };
+
+	Tint_p pTint;
+	if (diff(left, right) > diff(top, bottom))
+		pTint = Tint::create(left, right, { 0.f, 0.f }, { 1.f, 0.f });
+	else
+		pTint = Tint::create(top, bottom, { 0.f, 0.f }, { 0.f, 1.f });
+
+	setTint(rect, pTint);
 }
 
 //____ clearTintGradient() ________________________________________________
 
 void GfxDeviceGen2::clearTintGradient()
 {
-	clearTintmap();
+	clearTint();
 }
 
 //____ setBlendMode() _____________________________________________________
@@ -875,7 +907,7 @@ void GfxDeviceGen2::clearLayers()
 	auto& canvasEntry = m_canvasStack.back();
 
 	setBlendMode(BlendMode::Blend);
-	clearTintmap();
+	clearTint();
 	clearTintColor();
 
 	for (size_t i = 1; i < canvasEntry.layers.size(); i++)
@@ -967,7 +999,7 @@ void GfxDeviceGen2::_doFlattenLayers()
 			if (info.preBlendFunc)
 			{
 				setBlendMode(BlendMode::Blend);
-				clearTintmap();
+				clearTint();
 				clearTintColor();
 				info.preBlendFunc(this);
 			}
@@ -986,7 +1018,7 @@ void GfxDeviceGen2::_doFlattenLayers()
 			if (info.preBlendCanvasFunc)
 			{
 				setBlendMode(BlendMode::Blend);
-				clearTintmap();
+				clearTint();
 				clearTintColor();
 				info.preBlendCanvasFunc(this);
 			}
@@ -994,7 +1026,7 @@ void GfxDeviceGen2::_doFlattenLayers()
 			// Encode blendFunc if present, otherwise encode default blit.
 
 			setBlendMode(BlendMode::Blend);
-			clearTintmap();
+			clearTint();
 			clearTintColor();
 			setBlitSource(layer.pLayerCanvas);
 
@@ -1013,7 +1045,7 @@ void GfxDeviceGen2::_doFlattenLayers()
 			{
 				setRenderLayer((int)i);		// Write our commands to buffer to be processed
 				setBlendMode(BlendMode::Blend);
-				clearTintmap();
+				clearTint();
 				clearTintColor();
 
 				info.preBlendCanvasFunc(this);
@@ -1028,7 +1060,7 @@ void GfxDeviceGen2::_doFlattenLayers()
 	{
 		setRenderLayer(int(canvasData.layers.size())-1);					// Write to buffer to be processed
 		setBlendMode(BlendMode::Blend);
-		clearTintmap();
+		clearTint();
 		clearTintColor();
 
 		canvasData.pLayerInfo->m_finalizeCanvasFunc(this);
@@ -3391,8 +3423,8 @@ void GfxDeviceGen2::_resetState(RenderState& state)
 {
 	state.blitSource = nullptr;
 	state.tintColor = HiColor::Undefined;
-	state.tintmapRect.clear();
-	state.pTintmap = nullptr;
+	state.tintRect.clear();
+	state.pTint = nullptr;
 	state.blendMode = BlendMode::Blend;
 	state.morphFactor = 0.5f;
 	state.fixedBlendColor = HiColor::White;
@@ -3452,97 +3484,39 @@ void GfxDeviceGen2::_encodeStateChanges()
 		}
 	}
 
-	if ((m_stateChanges & uint8_t(StateChange::TintColor)) || (m_stateChanges & uint8_t(StateChange::TintMap)))
+	if (m_stateChanges & uint8_t(StateChange::TintColor))
 	{
-		// Backend uses either TintColor or Tintmap while frontend can combine both.
-		// If frontend uses both, one of the colorstrips needs to be tinted with TintColor.
+		auto tintColor = newState.tintColor.isUndefined() ? HiColor::White : newState.tintColor;
 
-		if (bForceSetStates ||
-			(newState.tintColor != encodedState.tintColor) ||
-			(newState.pTintmap != encodedState.pTintmap) ||
-			(newState.tintmapRect != encodedState.tintmapRect) )
+		if (tintColor != encodedState.tintColor)
 		{
-			if( newState.pTintmap )
-			{
-				assert(!bForceSetStates);
+			colorBuffer.push_back(tintColor);
+			encodedState.tintColor = tintColor;
 
-				Tintmap* pTintmap = newState.pTintmap.rawPtr();
+			statesChanged |= int(StateChange::TintColor);
+		}
+	}
 
-				assert(pTintmap);
+	if (m_stateChanges & uint8_t(StateChange::Tint))
+	{
+		if (newState.pTint != encodedState.pTint || newState.tintRect != encodedState.tintRect)
+		{
+			uint16_t	words[TintTools::c_maxEncodedTintWords];
+			HiColor		colors[TintTools::c_maxEncodedTintColors];
+			int			nColors;
 
-				int tintmapStartOfs = (int) colorBuffer.size();
-				int nHorrColors = pTintmap->isHorizontal() ? newState.tintmapRect.w/64 : 0;
-				int nVertColors = pTintmap->isVertical() ? newState.tintmapRect.h/64 : 0;
+			int nWords = TintTools::encodeTint(newState.pTint, newState.tintRect, words, colors, nColors);
 
-				if(nHorrColors == 0 && nVertColors == 0)
-                {
-					// Convert Tintmap to plain tint colors.
+			cmdBuffer.secureSpace(nWords * 2);
+			for (int i = 0; i < nWords; i++)
+				cmdBuffer.pushUnchecked(words[i]);
 
-					HiColor tempX, tempY;
-                    pTintmap->exportColors({1, 1}, &tempX, &tempY);
+			colorBuffer.insert(colorBuffer.end(), colors, colors + nColors);
 
-                    auto tintColor = tempX * tempY;
+			encodedState.pTint = newState.pTint;
+			encodedState.tintRect = newState.tintRect;
 
-					if(newState.tintColor != HiColor::Undefined)
-						tintColor *= newState.tintColor;
-
-                    colorBuffer.push_back(tintColor);
-                    encodedState.tintColor = tintColor;
-
-					encodedState.pTintmap = newState.pTintmap;			// Set this for future comparisons
-                    encodedState.tintmapRect = newState.tintmapRect;	// " -
-
-                    statesChanged |= int(StateChange::TintColor);
-                }
-				else
-				{
-                    colorBuffer.resize(tintmapStartOfs + nHorrColors + nVertColors);
-
-                    HiColor* pOutX = nHorrColors ? &colorBuffer[tintmapStartOfs] : nullptr;
-                    HiColor* pOutY = nVertColors ? &colorBuffer[tintmapStartOfs + nHorrColors] : nullptr;
-
-                    pTintmap->exportColors(newState.tintmapRect.size() / 64, pOutX, pOutY);
-
-                    if(newState.tintColor != HiColor::Undefined)
-                    {
-                        // We need to tint either the horizontal or vertical colors
-
-                        HiColor* pBeg = &colorBuffer[tintmapStartOfs];
-                        HiColor* pEnd = nHorrColors > 0 ? pBeg + nHorrColors : pBeg + nVertColors;
-
-                        if(nVertColors > 0 && nVertColors < nHorrColors)
-                        {
-                            pBeg = pEnd;
-                            pEnd += nVertColors;
-                        }
-
-                        for(auto p = pBeg; p < pEnd; p++)
-                        {
-                            *p *= newState.tintColor;
-                        }
-                    }
-
-                    cmdBuffer.secureSpace(sizeof(newState.tintmapRect) + 2 * 4);
-
-                    cmdBuffer.pushUnchecked(newState.tintmapRect);
-                    cmdBuffer.pushUnchecked(nHorrColors);
-                    cmdBuffer.pushUnchecked(nVertColors);
-
-                    encodedState.pTintmap = newState.pTintmap;
-                    encodedState.tintmapRect = newState.tintmapRect;
-
-                    statesChanged |= int(StateChange::TintMap);
-				}
-
-			}
-			else
-			{
-				auto tintColor = newState.tintColor.isUndefined() ? HiColor::White : newState.tintColor;
-				colorBuffer.push_back(tintColor);
-				encodedState.tintColor = tintColor;
-
-				statesChanged |= int(StateChange::TintColor);
-			}
+			statesChanged |= int(StateChange::Tint);
 		}
 	}
 

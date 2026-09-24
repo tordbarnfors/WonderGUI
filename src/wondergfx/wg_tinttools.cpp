@@ -24,6 +24,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstring>
 
 namespace wg
 {
@@ -168,39 +169,25 @@ namespace TintTools
 		}
 	}
 
-	//____ buildLUT() _________________________________________________________
+	//____ _buildLUT() ________________________________________________________
 
-	void buildLUT(const Tint* pTint, int entries, HiColor* pOutput, float begin, float end, bool bSquared)
+	static void _buildLUT(int nStops, const float* pStopPos, const HiColor* pStopColors, ColorSpace colorSpace, TintSpread spread,
+						  int entries, HiColor* pOutput, float begin, float end, bool bSquared, HiColor multiplier)
 	{
 		if (entries <= 0)
 			return;
 
-		if (pTint->isMix())
-		{
-			for (int i = 0; i < entries; i++)
-				pOutput[i] = HiColor::White;
-			return;
-		}
-
-		int nStops = pTint->nbStops();
-		const ColorStop* pStops = pTint->stops();
-
-		if (pTint->isFlat() || nStops == 1)
-		{
-			for (int i = 0; i < entries; i++)
-				pOutput[i] = pStops[0].color;
-			return;
-		}
+		bool bMultiply = (multiplier != HiColor::White);
 
 		// Convert stop colors to the space we interpolate in.
 
-		bool bSRGB = (pTint->colorSpace() == ColorSpace::sRGB);
+		bool bSRGB = (colorSpace == ColorSpace::sRGB);
 
 		float	stopColors[Tint::c_maxStops][4];
 
 		for (int i = 0; i < nStops; i++)
 		{
-			const HiColor& c = pStops[i].color;
+			const HiColor& c = pStopColors[i];
 
 			if (bSRGB)
 			{
@@ -219,9 +206,8 @@ namespace TintTools
 
 		const int16_t* pToLinear = bSRGB ? _srgbToLinearTab() : nullptr;
 
-		TintSpread spread = pTint->spread();
-		float firstPos = pStops[0].pos;
-		float lastPos = pStops[nStops - 1].pos;
+		float firstPos = pStopPos[0];
+		float lastPos = pStopPos[nStops - 1];
 
 		for (int i = 0; i < entries; i++)
 		{
@@ -233,7 +219,7 @@ namespace TintTools
 
 			float col[4];
 
-			if (t <= firstPos && !(t == firstPos && nStops > 1 && pStops[1].pos == firstPos))
+			if (nStops == 1 || (t <= firstPos && !(t == firstPos && pStopPos[1] == firstPos)))
 			{
 				for (int c = 0; c < 4; c++)
 					col[c] = stopColors[0][c];
@@ -246,11 +232,11 @@ namespace TintTools
 			else
 			{
 				int idx = nStops - 1;
-				while (pStops[idx].pos > t)
+				while (pStopPos[idx] > t)
 					idx--;
 
-				float span = pStops[idx + 1].pos - pStops[idx].pos;
-				float frac = span > 0.f ? (t - pStops[idx].pos) / span : 1.f;
+				float span = pStopPos[idx + 1] - pStopPos[idx];
+				float frac = span > 0.f ? (t - pStopPos[idx]) / span : 1.f;
 
 				for (int c = 0; c < 4; c++)
 					col[c] = stopColors[idx][c] + (stopColors[idx + 1][c] - stopColors[idx][c]) * frac;
@@ -273,7 +259,247 @@ namespace TintTools
 				out.b = (int16_t) toInt(col[2]);
 			}
 			out.a = (int16_t) toInt(col[3]);
+
+			if (bMultiply)
+				out = out * multiplier;
 		}
+	}
+
+	//____ buildLUT() _________________________________________________________
+
+	void buildLUT(const Tint* pTint, int entries, HiColor* pOutput, float begin, float end, bool bSquared)
+	{
+		if (entries <= 0)
+			return;
+
+		if (pTint->isMix())
+		{
+			for (int i = 0; i < entries; i++)
+				pOutput[i] = HiColor::White;
+			return;
+		}
+
+		int nStops = pTint->nbStops();
+		const ColorStop* pStops = pTint->stops();
+
+		float	pos[Tint::c_maxStops];
+		HiColor	colors[Tint::c_maxStops];
+
+		for (int i = 0; i < nStops; i++)
+		{
+			pos[i] = pStops[i].pos;
+			colors[i] = pStops[i].color;
+		}
+
+		_buildLUT(nStops, pos, colors, pTint->colorSpace(), pTint->spread(), entries, pOutput, begin, end, bSquared, HiColor::White);
+	}
+
+	void buildLUT(const TintLayer& layer, int entries, HiColor* pOutput, HiColor multiplier)
+	{
+		// Entry i is sampled at (i + 0.5) / (entries - 1), so that a renderer that looks up floor(position * (entries - 1))
+		// gets the color of the middle of the span the entry covers and hard edges end up exactly on entry boundaries.
+
+		float halfEntry = entries > 1 ? 0.5f / (entries - 1) : 0.f;
+		_buildLUT(layer.nStops, layer.stopPos, layer.stopColors, layer.colorSpace, TintSpread::Pad, entries, pOutput, halfEntry, 1.f + halfEntry, false, multiplier);
+	}
+
+	//____ encodeTint() _______________________________________________________
+
+	int encodeTint(const Tint* pTint, const RectSPX& rect, uint16_t* pWords, HiColor* pColors, int& nColors)
+	{
+		uint16_t* p = pWords;
+		nColors = 0;
+
+		if (!pTint)
+		{
+			*p++ = 0;
+			*p++ = 0;
+			return 2;
+		}
+
+		const Tint*	layers[Tint::c_maxMixComponents];
+		float		weights[Tint::c_maxMixComponents];
+		int			nLayers;
+
+		if (pTint->isMix())
+		{
+			nLayers = pTint->nbMixComponents();
+			for (int i = 0; i < nLayers; i++)
+			{
+				layers[i] = pTint->mixComponent(i);
+				weights[i] = pTint->mixWeight(i);
+			}
+		}
+		else
+		{
+			nLayers = 1;
+			layers[0] = pTint;
+			weights[0] = 1.f;
+		}
+
+		*p++ = uint16_t(nLayers);
+		*p++ = 0;
+
+		int weightLeft = 4096;
+
+		for (int l = 0; l < nLayers; l++)
+		{
+			const Tint* pLayer = layers[l];
+
+			int weight = (l == nLayers - 1) ? weightLeft : std::min(weightLeft, (int) std::lround(weights[l] * 4096));
+			weightLeft -= weight;
+
+			int nStops = pLayer->nbStops();
+
+			*p++ = uint16_t(weight);
+			*p++ = uint16_t(int(pLayer->shape()) | (int(pLayer->spread()) << 4) | (int(pLayer->colorSpace()) << 8));
+			*p++ = uint16_t(nStops);
+			*p++ = 0;
+
+			CanvasGeometry g = canvasGeometry(pLayer, rect);
+
+			float geo[4];
+			if (g.shape == TintShape::Linear)
+			{
+				geo[0] = g.a;
+				geo[1] = g.b;
+				geo[2] = g.c;
+				geo[3] = 0.f;
+			}
+			else
+			{
+				geo[0] = g.centerX;
+				geo[1] = g.centerY;
+				geo[2] = g.invRadiusX;
+				geo[3] = g.invRadiusY;
+			}
+
+			std::memcpy(p, geo, sizeof(geo));
+			p += 8;
+
+			const ColorStop* pStops = pLayer->stops();
+			for (int i = 0; i < nStops; i++)
+			{
+				*p++ = uint16_t(std::lround(std::clamp(pStops[i].pos, 0.f, 1.f) * 65535.f));
+				pColors[nColors++] = pStops[i].color;
+			}
+
+			if (nStops & 1)
+				*p++ = 0;
+		}
+
+		return int(p - pWords);
+	}
+
+	//____ decodeTint() _______________________________________________________
+
+	const uint16_t* decodeTint(const uint16_t* pWords, const HiColor*& pColors, DecodedTint& output)
+	{
+		const uint16_t* p = pWords;
+
+		int nLayers = *p++;
+		p++;
+
+		if (nLayers > Tint::c_maxMixComponents)
+			nLayers = Tint::c_maxMixComponents;			// Corrupt data, shouldn't happen.
+
+		output.nLayers = nLayers;
+
+		for (int l = 0; l < nLayers; l++)
+		{
+			TintLayer& layer = output.layers[l];
+
+			layer.weight = *p++;
+
+			uint16_t packed = *p++;
+			layer.shape = TintShape(packed & 0xF);
+			layer.spread = TintSpread((packed >> 4) & 0xF);
+			layer.colorSpace = ColorSpace((packed >> 8) & 0xF);
+
+			int nStops = *p++;
+			p++;
+
+			std::memcpy(layer.geo, p, sizeof(layer.geo));
+			p += 8;
+
+			int nStored = std::min(nStops, Tint::c_maxStops);
+			layer.nStops = nStored;
+
+			for (int i = 0; i < nStops; i++)
+			{
+				uint16_t pos = *p++;
+				HiColor color = *pColors++;
+
+				if (i < nStored)
+				{
+					layer.stopPos[i] = pos / 65535.f;
+					layer.stopColors[i] = color;
+				}
+			}
+
+			if (nStops & 1)
+				p++;
+		}
+
+		return p;
+	}
+
+	//____ encodedTintSize() __________________________________________________
+
+	int encodedTintSize(const uint16_t* pWords, int& nColors)
+	{
+		const uint16_t* p = pWords;
+
+		int nLayers = *p++;
+		p++;
+
+		nColors = 0;
+
+		for (int l = 0; l < nLayers; l++)
+		{
+			p += 2;
+			int nStops = *p++;
+			p++;
+			p += 8;
+			p += nStops + (nStops & 1);
+			nColors += nStops;
+		}
+
+		return int(p - pWords);
+	}
+
+	//____ layerGeometry() ____________________________________________________
+
+	CanvasGeometry layerGeometry(const TintLayer& layer)
+	{
+		CanvasGeometry g = {};
+		g.shape = layer.shape;
+
+		if (layer.shape == TintShape::Linear)
+		{
+			g.a = layer.geo[0];
+			g.b = layer.geo[1];
+			g.c = layer.geo[2];
+		}
+		else
+		{
+			g.centerX = layer.geo[0];
+			g.centerY = layer.geo[1];
+			g.invRadiusX = layer.geo[2];
+			g.invRadiusY = layer.geo[3];
+		}
+		return g;
+	}
+
+	//____ isLayerFlat() ______________________________________________________
+
+	bool isLayerFlat(const TintLayer& layer)
+	{
+		for (int i = 1; i < layer.nStops; i++)
+			if (layer.stopColors[i] != layer.stopColors[0])
+				return false;
+
+		return true;
 	}
 
 }
