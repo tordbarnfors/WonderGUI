@@ -2221,9 +2221,9 @@ void _draw_segment_strip(int colBeg, int colEnd, uint8_t* WG_RESTRICT pStripStar
 						if constexpr( SOURCE == SoftBackend::StripSource::Colors)
 							alpha = pSegmentColors[i * 4 + 3];
 						if constexpr( SOURCE == SoftBackend::StripSource::Tintmaps )
-							alpha = pSegmentTintmap[offset >> 8].a;
+							alpha = (pSegmentTintmap + i * segmentTintmapPitch)[offset >> 8].a;
 						if constexpr( SOURCE == SoftBackend::StripSource::ColorsAndTintmaps )
-							alpha = pSegmentColors[i * 4 + 3] * pSegmentTintmap[offset >> 8].a / 4096;
+							alpha = pSegmentColors[i * 4 + 3] * (pSegmentTintmap + i * segmentTintmapPitch)[offset >> 8].a / 4096;
 
 						
 						int blendFraction = ((segmentFractions[i] * alpha) / 4096);
@@ -2247,9 +2247,9 @@ void _draw_segment_strip(int colBeg, int colEnd, uint8_t* WG_RESTRICT pStripStar
 						if constexpr(SOURCE == SoftBackend::StripSource::Colors)
 							alpha = pSegmentColors[i * 4 + 3];
 						if constexpr( SOURCE == SoftBackend::StripSource::Tintmaps )
-							alpha = pSegmentTintmap[offset >> 8].a;
+							alpha = (pSegmentTintmap + i * segmentTintmapPitch)[offset >> 8].a;
 						if constexpr( SOURCE == SoftBackend::StripSource::ColorsAndTintmaps )
-							alpha = pSegmentColors[i * 4 + 3] * pSegmentTintmap[offset >> 8].a / 4096;
+							alpha = pSegmentColors[i * 4 + 3] * (pSegmentTintmap + i * segmentTintmapPitch)[offset >> 8].a / 4096;
 
 						int blendFraction = ((segmentFractions[i] * alpha) / 4096);
 						backFraction -= blendFraction;
@@ -2270,9 +2270,9 @@ void _draw_segment_strip(int colBeg, int colEnd, uint8_t* WG_RESTRICT pStripStar
 						if constexpr( SOURCE == SoftBackend::StripSource::Colors)
 							alpha = pSegmentColors[i * 4 + 3];
 						if constexpr( SOURCE == SoftBackend::StripSource::Tintmaps )
-							alpha = pSegmentTintmap[offset >> 8].a;
+							alpha = (pSegmentTintmap + i * segmentTintmapPitch)[offset >> 8].a;
 						if constexpr( SOURCE == SoftBackend::StripSource::ColorsAndTintmaps )
-							alpha = pSegmentColors[i * 4 + 3] * pSegmentTintmap[offset >> 8].a / 4096;
+							alpha = pSegmentColors[i * 4 + 3] * (pSegmentTintmap + i * segmentTintmapPitch)[offset >> 8].a / 4096;
 
 						int blendFraction = ((segmentFractions[i] * alpha) / 4096);
 						_add_segment_color<SOURCE>(blendFraction, offset >> 8, &pSegmentColors[i * 4], pSegmentTintmap + i * segmentTintmapPitch, accB, accG, accR, accA);
@@ -2292,9 +2292,9 @@ void _draw_segment_strip(int colBeg, int colEnd, uint8_t* WG_RESTRICT pStripStar
 						if constexpr( SOURCE == SoftBackend::StripSource::Colors)
 							alpha = pSegmentColors[i * 4 + 3];
 						if constexpr( SOURCE == SoftBackend::StripSource::Tintmaps )
-							alpha = pSegmentTintmap[offset >> 8].a;
+							alpha = (pSegmentTintmap + i * segmentTintmapPitch)[offset >> 8].a;
 						if constexpr( SOURCE == SoftBackend::StripSource::ColorsAndTintmaps )
-							alpha = pSegmentColors[i * 4 + 3] * pSegmentTintmap[offset >> 8].a / 4096;
+							alpha = pSegmentColors[i * 4 + 3] * (pSegmentTintmap + i * segmentTintmapPitch)[offset >> 8].a / 4096;
 
 						int blendFraction = ((segmentFractions[i] * alpha) / 4096);
 						_add_segment_color<SOURCE>(blendFraction, offset >> 8, &pSegmentColors[i * 4], pSegmentTintmap + i * segmentTintmapPitch, accB, accG, accR, accA);
@@ -2346,9 +2346,9 @@ void _draw_segment_strip(int colBeg, int colEnd, uint8_t* WG_RESTRICT pStripStar
 						if constexpr( SOURCE == SoftBackend::StripSource::Colors)
 							alpha = pSegmentColors[i * 4 + 3];
 						if constexpr( SOURCE == SoftBackend::StripSource::Tintmaps )
-							alpha = pSegmentTintmap[offset >> 8].a;
+							alpha = (pSegmentTintmap + i * segmentTintmapPitch)[offset >> 8].a;
 						if constexpr( SOURCE == SoftBackend::StripSource::ColorsAndTintmaps )
-							alpha = pSegmentColors[i * 4 + 3] * pSegmentTintmap[offset >> 8].a / 4096;
+							alpha = pSegmentColors[i * 4 + 3] * (pSegmentTintmap + i * segmentTintmapPitch)[offset >> 8].a / 4096;
 
 						int blendFraction = ((segmentFractions[i] * alpha) / 4096);
 						backFraction -= blendFraction;
@@ -2374,9 +2374,9 @@ void _draw_segment_strip(int colBeg, int colEnd, uint8_t* WG_RESTRICT pStripStar
 						if constexpr( SOURCE == SoftBackend::StripSource::Colors)
 							alpha = pSegmentColors[i * 4 + 3];
 						else if constexpr( SOURCE == SoftBackend::StripSource::Tintmaps )
-							alpha = pSegmentTintmap[offset >> 8].a;
+							alpha = (pSegmentTintmap + i * segmentTintmapPitch)[offset >> 8].a;
 						else if constexpr( SOURCE == SoftBackend::StripSource::ColorsAndTintmaps )
-							alpha = pSegmentColors[i * 4 + 3] * pSegmentTintmap[offset >> 8].a / 4096;
+							alpha = pSegmentColors[i * 4 + 3] * (pSegmentTintmap + i * segmentTintmapPitch)[offset >> 8].a / 4096;
 
 						int blendFraction = ((segmentFractions[i] * alpha) / 4096);
 						backFraction -= blendFraction;
@@ -2402,9 +2402,9 @@ void _draw_segment_strip(int colBeg, int colEnd, uint8_t* WG_RESTRICT pStripStar
 						if constexpr( SOURCE == SoftBackend::StripSource::Colors)
 							alpha = pSegmentColors[i * 4 + 3];
 						if constexpr(SOURCE == SoftBackend::StripSource::Tintmaps)
-							alpha = pSegmentTintmap[offset >> 8].a;
+							alpha = (pSegmentTintmap + i * segmentTintmapPitch)[offset >> 8].a;
 						if constexpr( SOURCE == SoftBackend::StripSource::ColorsAndTintmaps )
-							alpha = pSegmentColors[i * 4 + 3] * pSegmentTintmap[offset >> 8].a / 4096;
+							alpha = pSegmentColors[i * 4 + 3] * (pSegmentTintmap + i * segmentTintmapPitch)[offset >> 8].a / 4096;
 
 						int blendFraction = ((segmentFractions[i] * alpha) / 4096);
 						backFraction -= blendFraction;

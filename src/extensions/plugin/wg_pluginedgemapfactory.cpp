@@ -107,57 +107,31 @@ namespace wg
 
 	PluginEdgemapFactory::bpTranslator::bpTranslator( const Edgemap::Blueprint& cppBP )
 	{
-		m_memReserved = 0;
-
-		m_cBP.colors = (wg_color*) cppBP.colors;
-		m_cBP.colorstripsX = (wg_color*) cppBP.colorstripsX;
-		m_cBP.colorstripsY = (wg_color*) cppBP.colorstripsY;
-		m_cBP.paletteType = (wg_edgemapPalette) cppBP.paletteType;
-		m_cBP.tintmaps = nullptr;
+		m_cBP.colors = (const wg_color*) cppBP.colors;
 		m_cBP.segments = cppBP.segments;
 		m_cBP.size.w = cppBP.size.w;
 		m_cBP.size.h = cppBP.size.h;
+		m_cBP.tints = nullptr;
 
-		if( cppBP.tintmaps != nullptr )
+		for( int i = 0 ; i < Edgemap::maxSegments ; i++ )
+			m_hostTints[i] = nullptr;
+
+		if( cppBP.tints != nullptr && cppBP.segments <= Edgemap::maxSegments )
 		{
-			bool bHorr = false;
-			bool bVert = false;
-
 			for( int i = 0 ; i < cppBP.segments ; i++ )
-			{
-				if( cppBP.tintmaps[i]->isHorizontal() )
-					bHorr = true;
+				m_hostTints[i] = PluginCalls::_hostTint( cppBP.tints[i] );
 
-				if( cppBP.tintmaps[i]->isVertical() )
-					bVert = true;
-			}
-
-			m_memReserved = (int(bHorr) * cppBP.size.w + int(bVert) * cppBP.size.h) * cppBP.segments * sizeof(HiColor);
-
-			auto pColorstrips = (HiColor*) GfxBase::memStackAlloc(m_memReserved);
-
-			HiColor * pColorstripsX = bHorr ? pColorstrips : nullptr;
-			int incX = bHorr ? cppBP.size.w : 0;
-
-			HiColor * pColorstripsY = bVert ? pColorstrips + incX * cppBP.segments : nullptr;
-			int incY = bVert ? cppBP.size.h : 0;
-
-			m_cBP.colorstripsX = (wg_color*) pColorstripsX;
-			m_cBP.colorstripsY = (wg_color*) pColorstripsY;
-
-			for( int i = 0 ; i < cppBP.segments ; i++ )
-			{
-				cppBP.tintmaps[i]->exportColors(cppBP.size, pColorstripsX, pColorstripsY);
-				pColorstripsX += incX;
-				pColorstripsY += incY;
-			}
+			m_cBP.tints = m_hostTints;
 		}
 	}
 
 	PluginEdgemapFactory::bpTranslator::~bpTranslator()
 	{
-		if( m_memReserved > 0 )
-			GfxBase::memStackFree(m_memReserved);
+		for( int i = 0 ; i < Edgemap::maxSegments ; i++ )
+		{
+			if( m_hostTints[i] )
+				PluginCalls::object->release( m_hostTints[i] );
+		}
 	}
 
 

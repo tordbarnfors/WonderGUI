@@ -33,6 +33,7 @@ set( SOURCES
 	testsuites/tiletests.h
 	testsuites/tintblittests.h
 	testsuites/tintsegmenttests.h
+	testsuites/tinttests.h
 	testsuites/wavetests.h
 	testsuites/waveformtests.h
 )

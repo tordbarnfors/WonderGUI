@@ -39,22 +39,6 @@ const TypeInfo MetalBackend::TYPEINFO = { "MetalBackend", &GfxBackend::TYPEINFO 
 id<MTLDevice>       MetalBackend::s_metalDevice = nil;
 id<MTLCommandQueue> MetalBackend::s_metalCommandQueue = nil;
 
-const int MetalBackend::s_flipCornerOrder[GfxFlip_size][4] = {
-	{ 0,1,2,3 },			// Normal
-	{ 1,0,3,2 },			// FlipX
-	{ 3,2,1,0 },			// FlipY
-	{ 3,0,1,2 },			// Rot90
-	{ 0,3,2,1 },			// Rot90FlipX
-	{ 2,1,0,3 },			// Rot90FlipY
-	{ 2,3,0,1 },			// Rot180
-	{ 3,2,1,0 },			// Rot180FlipX
-	{ 1,0,3,2 },			// Rot180FlipY
-	{ 1,2,3,0 },			// Rot270
-	{ 2,1,0,3 },			// Rot270FlipX
-	{ 0,3,2,1 }				// Rot270FlipY
-};
-
-
 //____ setMetalDevice() ______________________________________________________
 
 void MetalBackend::setMetalDevice( id<MTLDevice> device )
@@ -80,8 +64,6 @@ MetalBackend_p MetalBackend::create()
 
 MetalBackend::MetalBackend()
 {
-	assert(sizeof(Gradient) % 4 == 0);		// Buffering will fail if not!
-
 	m_defaultCanvas.ref = CanvasRef::Default;
 
 	m_bFullyInitialized = true;
@@ -623,7 +605,13 @@ void MetalBackend::beginSession( CanvasRef canvasRef, Surface * pCanvasSurface, 
 
 	// Reserve buffer for colors
 
-	int nColors = pInfo->nColors+1;
+	// Tint blocks need a header, geometry and stop positions on top of their
+	// colors, which are counted in nColors. Any state change may carry a tint.
+
+	const int maxTintStops = Tint::c_maxMixComponents * Tint::c_maxStops;
+	const int tintBlockOverhead = TintTools::gpuTintBlockMaxSize(Tint::c_maxMixComponents, maxTintStops) - maxTintStops;
+
+	int nColors = pInfo->nColors + 1 + pInfo->nStateChanges * tintBlockOverhead;
 
 	m_colorBufferId = [s_metalDevice newBufferWithLength:nColors*sizeof(ColorMTL) options:MTLResourceStorageModeShared];
 	m_pColorBuffer = (ColorMTL *)[m_colorBufferId contents];
@@ -665,7 +653,7 @@ void MetalBackend::beginSession( CanvasRef canvasRef, Surface * pCanvasSurface, 
 	// Reset states to start values
 
 	m_tintColorOfs 			= -1;
-	m_bTintmap 				= false;
+	m_tintOfs 				= -1;
 
 	m_pActiveBlitSource		= nullptr;
 	m_activeBlendMode		= BlendMode::Blend;
@@ -897,79 +885,25 @@ void MetalBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, i
 					m_uniform.flatTint[2] = color.b / 4096.f;
 					m_uniform.flatTint[3] = color.a / 4096.f;
 
-					m_bTintmap = false;
-
 					bUniformChanged = true;
 				}
 
-				if (statesChanged & uint8_t(StateChange::TintMap))
+				if (statesChanged & uint8_t(StateChange::Tint))
 				{
+					// Tint block is written to color buffer, its offset stored in vertex data.
+					// Tint color (flatTint in uniform) is applied on top of it.
 
-					auto p32 = (const spx *) p;
+					TintTools::DecodedTint tint;
+					p = TintTools::decodeTint(p, pColors, tint);
 
-					int32_t	x = *p32++;
-					int32_t	y = *p32++;
-					int32_t	w = *p32++;
-					int32_t	h = *p32++;
-
-					int32_t	nHorrColors = *p32++;
-					int32_t	nVertColors = *p32++;
-
-					p = (const uint16_t*) p32;
-
-					//					pColors += nHorrColors + nVertColors;
-
-					m_bTintmap = true;
-					m_tintmapRect = RectI(x, y, w, h) / 64;
-
-					if (nHorrColors > 0)
-					{
-						m_tintmapBeginX = int(pColorMTL - m_pColorBuffer);
-						m_tintmapEndX = int(pColorMTL - m_pColorBuffer + nHorrColors);
-
-						for (int i = 0; i < nHorrColors; i++)
-						{
-							pColorMTL->r = pColors->r / 4096.f;
-							pColorMTL->g = pColors->g / 4096.f;
-							pColorMTL->b = pColors->b / 4096.f;
-							pColorMTL->a = pColors->a / 4096.f;
-							pColorMTL++;
-							pColors++;
-						}
-					}
+					if (tint.nLayers == 0)
+						m_tintOfs = -1;
 					else
 					{
-						// Default to use white
-
-						m_tintmapBeginX = 0;
-						m_tintmapEndX = 0;
+						m_tintOfs = int(pColorMTL - m_pColorBuffer);
+						TintTools::writeGpuTintBlock(tint, (float*) pColorMTL);
+						pColorMTL += TintTools::gpuTintBlockSize(tint);
 					}
-
-					if (nVertColors > 0)
-					{
-
-						m_tintmapBeginY = int(pColorMTL - m_pColorBuffer);
-						m_tintmapEndY = int(pColorMTL - m_pColorBuffer + nVertColors);
-
-						for (int i = 0; i < nVertColors; i++)
-						{
-							pColorMTL->r = pColors->r / 4096.f;
-							pColorMTL->g = pColors->g / 4096.f;
-							pColorMTL->b = pColors->b / 4096.f;
-							pColorMTL->a = pColors->a / 4096.f;
-							pColorMTL++;
-							pColors++;
-						}
-					}
-					else
-					{
-						// Default to use white
-
-						m_tintmapBeginY = 0;
-						m_tintmapEndY = 0;
-					}
-
-					m_tintColorOfs = -1;
 				}
 
 				if (statesChanged & uint8_t(StateChange::BlendMode))
@@ -1106,10 +1040,10 @@ void MetalBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, i
 						{
 							if( nRectsWritten > 0 )
 							{
-								if( m_fillAAPipelines[m_bTintmap][(int)m_activeBlendMode][(int)m_activeCanvasFormat] == nil )
-									m_fillAAPipelines[m_bTintmap][(int)m_activeBlendMode][(int)m_activeCanvasFormat] = _compileFillAAPipeline(m_bTintmap, m_activeBlendMode, m_activeCanvasFormat);
+								if( m_fillAAPipelines[m_tintOfs >= 0][(int)m_activeBlendMode][(int)m_activeCanvasFormat] == nil )
+									m_fillAAPipelines[m_tintOfs >= 0][(int)m_activeBlendMode][(int)m_activeCanvasFormat] = _compileFillAAPipeline(m_tintOfs >= 0, m_activeBlendMode, m_activeCanvasFormat);
 
-								[m_renderEncoder setRenderPipelineState:m_fillAAPipelines[m_bTintmap][(int)m_activeBlendMode][(int)m_activeCanvasFormat] ];
+								[m_renderEncoder setRenderPipelineState:m_fillAAPipelines[m_tintOfs >= 0][(int)m_activeBlendMode][(int)m_activeCanvasFormat] ];
 								[m_renderEncoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:vertexOfs vertexCount:nRectsWritten*6];
 
 								vertexOfs = int(pVertexMTL - m_pVertexBuffer);
@@ -1127,10 +1061,10 @@ void MetalBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, i
 						{
 							if (nRectsWritten > 0)
 							{
-								if( m_fillPipelines[m_bTintmap][(int)m_activeBlendMode][(int)m_activeCanvasFormat] == nil )
-									m_fillPipelines[m_bTintmap][(int)m_activeBlendMode][(int)m_activeCanvasFormat] = _compileFillPipeline(m_bTintmap, m_activeBlendMode, m_activeCanvasFormat);
+								if( m_fillPipelines[m_tintOfs >= 0][(int)m_activeBlendMode][(int)m_activeCanvasFormat] == nil )
+									m_fillPipelines[m_tintOfs >= 0][(int)m_activeBlendMode][(int)m_activeCanvasFormat] = _compileFillPipeline(m_tintOfs >= 0, m_activeBlendMode, m_activeCanvasFormat);
 
-								[m_renderEncoder setRenderPipelineState:m_fillPipelines[m_bTintmap][(int)m_activeBlendMode][(int)m_activeCanvasFormat] ];
+								[m_renderEncoder setRenderPipelineState:m_fillPipelines[m_tintOfs >= 0][(int)m_activeBlendMode][(int)m_activeCanvasFormat] ];
 								[m_renderEncoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:vertexOfs vertexCount:nRectsWritten*6];
 
 								vertexOfs = int(pVertexMTL - m_pVertexBuffer);
@@ -1163,40 +1097,6 @@ void MetalBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, i
 					dy2 >>= 6;
 
 
-					float tintmapBeginX, tintmapBeginY, tintmapEndX, tintmapEndY;
-
-					if (m_bTintmap)
-					{
-						if (m_tintmapBeginX == 0)
-						{
-							tintmapBeginX = 0.f;
-							tintmapEndX = 0.f;
-						}
-						else
-						{
-							tintmapBeginX = m_tintmapBeginX + (dx1 - m_tintmapRect.x) + 0.f;
-							tintmapEndX = tintmapBeginX + (dx2 - dx1) + 0.f;
-						}
-
-						if (m_tintmapBeginY == 0)
-						{
-							tintmapBeginY = 0.f;
-							tintmapEndY = 0.f;
-						}
-						else
-						{
-							tintmapBeginY = m_tintmapBeginY + (dy1 - m_tintmapRect.y) + 0.f;
-							tintmapEndY = tintmapBeginY + (dy2 - dy1) + 0.f;
-						}
-
-					}
-					else
-					{
-						tintmapBeginX = 0.f;
-						tintmapBeginY = 0.f;
-						tintmapEndX = 0.f;
-						tintmapEndY = 0.f;
-					}
 
 					int colOfs = int(pColorMTL - m_pColorBuffer);
 
@@ -1204,42 +1104,42 @@ void MetalBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, i
 					pVertexMTL->coord.y = dy1;
 					pVertexMTL->colorsOfs = colOfs;
 					pVertexMTL->extrasOfs = extrasOfs;
-					pVertexMTL->tintmapOfs = { tintmapBeginX,tintmapBeginY };
+					pVertexMTL->tintOfs = m_tintOfs;
 					pVertexMTL++;
 
 					pVertexMTL->coord.x = dx2;
 					pVertexMTL->coord.y = dy1;
 					pVertexMTL->colorsOfs = colOfs;
 					pVertexMTL->extrasOfs = extrasOfs;
-					pVertexMTL->tintmapOfs = { tintmapEndX,tintmapBeginY };
+					pVertexMTL->tintOfs = m_tintOfs;
 					pVertexMTL++;
 
 					pVertexMTL->coord.x = dx2;
 					pVertexMTL->coord.y = dy2;
 					pVertexMTL->colorsOfs = colOfs;
 					pVertexMTL->extrasOfs = extrasOfs;
-					pVertexMTL->tintmapOfs = { tintmapEndX,tintmapEndY };
+					pVertexMTL->tintOfs = m_tintOfs;
 					pVertexMTL++;
 
 					pVertexMTL->coord.x = dx1;
 					pVertexMTL->coord.y = dy1;
 					pVertexMTL->colorsOfs = colOfs;
 					pVertexMTL->extrasOfs = extrasOfs;
-					pVertexMTL->tintmapOfs = { tintmapBeginX,tintmapBeginY };
+					pVertexMTL->tintOfs = m_tintOfs;
 					pVertexMTL++;
 
 					pVertexMTL->coord.x = dx2;
 					pVertexMTL->coord.y = dy2;
 					pVertexMTL->colorsOfs = colOfs;
 					pVertexMTL->extrasOfs = extrasOfs;
-					pVertexMTL->tintmapOfs = { tintmapEndX,tintmapEndY };
+					pVertexMTL->tintOfs = m_tintOfs;
 					pVertexMTL++;
 
 					pVertexMTL->coord.x = dx1;
 					pVertexMTL->coord.y = dy2;
 					pVertexMTL->colorsOfs = colOfs;
 					pVertexMTL->extrasOfs = extrasOfs;
-					pVertexMTL->tintmapOfs = { tintmapBeginX,tintmapEndY };
+					pVertexMTL->tintOfs = m_tintOfs;
 					pVertexMTL++;
 
 					pRects++;
@@ -1258,17 +1158,17 @@ void MetalBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, i
 
 				if( bStraightFill )
 				{
-					if( m_fillPipelines[m_bTintmap][(int)m_activeBlendMode][(int)m_activeCanvasFormat] == nil )
-						m_fillPipelines[m_bTintmap][(int)m_activeBlendMode][(int)m_activeCanvasFormat] = _compileFillPipeline(m_bTintmap, m_activeBlendMode, m_activeCanvasFormat);
+					if( m_fillPipelines[m_tintOfs >= 0][(int)m_activeBlendMode][(int)m_activeCanvasFormat] == nil )
+						m_fillPipelines[m_tintOfs >= 0][(int)m_activeBlendMode][(int)m_activeCanvasFormat] = _compileFillPipeline(m_tintOfs >= 0, m_activeBlendMode, m_activeCanvasFormat);
 
-					[m_renderEncoder setRenderPipelineState:m_fillPipelines[m_bTintmap][(int)m_activeBlendMode][(int)m_activeCanvasFormat] ];
+					[m_renderEncoder setRenderPipelineState:m_fillPipelines[m_tintOfs >= 0][(int)m_activeBlendMode][(int)m_activeCanvasFormat] ];
 				}
 				else
 				{
-					if( m_fillAAPipelines[m_bTintmap][(int)m_activeBlendMode][(int)m_activeCanvasFormat] == nil )
-						m_fillAAPipelines[m_bTintmap][(int)m_activeBlendMode][(int)m_activeCanvasFormat] = _compileFillAAPipeline(m_bTintmap, m_activeBlendMode, m_activeCanvasFormat);
+					if( m_fillAAPipelines[m_tintOfs >= 0][(int)m_activeBlendMode][(int)m_activeCanvasFormat] == nil )
+						m_fillAAPipelines[m_tintOfs >= 0][(int)m_activeBlendMode][(int)m_activeCanvasFormat] = _compileFillAAPipeline(m_tintOfs >= 0, m_activeBlendMode, m_activeCanvasFormat);
 
-					[m_renderEncoder setRenderPipelineState:m_fillAAPipelines[m_bTintmap][(int)m_activeBlendMode][(int)m_activeCanvasFormat] ];
+					[m_renderEncoder setRenderPipelineState:m_fillAAPipelines[m_tintOfs >= 0][(int)m_activeBlendMode][(int)m_activeCanvasFormat] ];
 				}
 
 				[m_renderEncoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:vertexOfs vertexCount:nRectsWritten*6];
@@ -1529,9 +1429,6 @@ void MetalBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, i
 
 				int extrasOfs = int(pExtrasMTL - m_pExtrasBuffer) / 4;
 
-				float colorstripPitchX;
-				float colorstripPitchY;
-
 				int vertexOfs = int(pVertexMTL - m_pVertexBuffer);
 
 				// Setup vertices
@@ -1547,97 +1444,8 @@ void MetalBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, i
 
 					//
 
-					float tintmapBeginX, tintmapBeginY, tintmapEndX, tintmapEndY;
-
-
-					if (m_bTintmap)
-					{
-						if (m_tintmapBeginX == 0)
-						{
-							tintmapBeginX = 0.f;
-							tintmapEndX = 0.f;
-						}
-						else
-						{
-							tintmapBeginX = m_tintmapBeginX + (dx1 - m_tintmapRect.x) + 0.f;
-							tintmapEndX = tintmapBeginX + (dx2 - dx1) + 0.f;
-						}
-
-						if (m_tintmapBeginY == 0)
-						{
-							tintmapBeginY = 0.f;
-							tintmapEndY = 0.f;
-						}
-						else
-						{
-							tintmapBeginY = m_tintmapBeginY + (dy1 - m_tintmapRect.y) + 0.f;
-							tintmapEndY = tintmapBeginY + (dy2 - dy1) + 0.f;
-						}
-					}
-					else
-					{
-						tintmapBeginX = 0.f;
-						tintmapBeginY = 0.f;
-						tintmapEndX = 0.f;
-						tintmapEndY = 0.f;
-					}
 
 					//
-
-					int ofsX = patch.x - dest.x;
-					int ofsY = patch.y - dest.y;
-
-					float colorstripBeginX;
-					float colorstripEndX;
-
-					float colorstripBeginY;
-					float colorstripEndY;
-
-					if (pEdgemap->m_pFlatColors)
-					{
-						colorstripBeginX = pEdgemap->_flatColorsOfs();
-						colorstripEndX = colorstripBeginX;
-
-						colorstripBeginY = pEdgemap->_whiteColorOfs();
-						colorstripEndY = colorstripBeginY;
-
-						colorstripPitchX = 1;
-						colorstripPitchY = 0;
-
-					}
-					else
-					{
-						if (pEdgemap->m_pColorstripsX)
-						{
-							colorstripBeginX = pEdgemap->_colorstripXOfs() + ofsX;
-							colorstripEndX = colorstripBeginX + patch.w;
-
-							colorstripPitchX = pEdgemap->m_size.w;
-						}
-						else
-						{
-							colorstripBeginX = pEdgemap->_whiteColorOfs();
-							colorstripEndX = colorstripBeginX;
-
-							colorstripPitchX = 0;
-						}
-
-						if (pEdgemap->m_pColorstripsY)
-						{
-							colorstripBeginY = pEdgemap->_colorstripYOfs() + ofsY;
-							colorstripEndY = colorstripBeginY + patch.h;
-
-							colorstripPitchY = pEdgemap->m_size.h;
-						}
-						else
-						{
-							colorstripBeginY = pEdgemap->_whiteColorOfs();
-							colorstripEndY = colorstripBeginY;
-
-							colorstripPitchY = 0;
-						}
-					}
-
 
 					// Calc UV-coordinates. U is edge offset, V is pixel offset from begin in column.
 
@@ -1660,70 +1468,55 @@ void MetalBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, i
 
 					//
 
-					CoordF	colorstripUV[4];
-
-					CoordF	colorstripUVin[4] = { { colorstripBeginX, colorstripBeginY }, { colorstripEndX, colorstripBeginY }, { colorstripEndX, colorstripEndY }, { colorstripBeginX, colorstripEndY } };
-
-					colorstripUV[0] = colorstripUVin[s_flipCornerOrder[flip][0]];
-					colorstripUV[1] = colorstripUVin[s_flipCornerOrder[flip][1]];
-					colorstripUV[2] = colorstripUVin[s_flipCornerOrder[flip][2]];
-					colorstripUV[3] = colorstripUVin[s_flipCornerOrder[flip][3]];
-
 					//
 
 					pVertexMTL->coord.x = dx1;
 					pVertexMTL->coord.y = dy1;
 					pVertexMTL->extrasOfs = extrasOfs;
 					pVertexMTL->uv = uv1;
-					pVertexMTL->tintmapOfs = { tintmapBeginX, tintmapBeginY };
-					pVertexMTL->colorstripOfs = colorstripUV[0];
+					pVertexMTL->tintOfs = m_tintOfs;
 					pVertexMTL++;
 
 					pVertexMTL->coord.x = dx2;
 					pVertexMTL->coord.y = dy1;
 					pVertexMTL->extrasOfs = extrasOfs;
 					pVertexMTL->uv = uv2;
-					pVertexMTL->tintmapOfs = { tintmapEndX, tintmapBeginY };
-					pVertexMTL->colorstripOfs = colorstripUV[1];
+					pVertexMTL->tintOfs = m_tintOfs;
 					pVertexMTL++;
 
 					pVertexMTL->coord.x = dx2;
 					pVertexMTL->coord.y = dy2;
 					pVertexMTL->extrasOfs = extrasOfs;
 					pVertexMTL->uv = uv3;
-					pVertexMTL->tintmapOfs = { tintmapEndX, tintmapEndY };
-					pVertexMTL->colorstripOfs = colorstripUV[2];
+					pVertexMTL->tintOfs = m_tintOfs;
 					pVertexMTL++;
 
 					pVertexMTL->coord.x = dx1;
 					pVertexMTL->coord.y = dy1;
 					pVertexMTL->extrasOfs = extrasOfs;
 					pVertexMTL->uv = uv1;
-					pVertexMTL->tintmapOfs = { tintmapBeginX, tintmapBeginY };
-					pVertexMTL->colorstripOfs = colorstripUV[0];
+					pVertexMTL->tintOfs = m_tintOfs;
 					pVertexMTL++;
 
 					pVertexMTL->coord.x = dx2;
 					pVertexMTL->coord.y = dy2;
 					pVertexMTL->extrasOfs = extrasOfs;
 					pVertexMTL->uv = uv3;
-					pVertexMTL->tintmapOfs = { tintmapEndX, tintmapEndY };
-					pVertexMTL->colorstripOfs = colorstripUV[2];
+					pVertexMTL->tintOfs = m_tintOfs;
 					pVertexMTL++;
 
 					pVertexMTL->coord.x = dx1;
 					pVertexMTL->coord.y = dy2;
 					pVertexMTL->extrasOfs = extrasOfs;
 					pVertexMTL->uv = uv4;
-					pVertexMTL->tintmapOfs = { tintmapBeginX, tintmapEndY };
-					pVertexMTL->colorstripOfs = colorstripUV[3];
+					pVertexMTL->tintOfs = m_tintOfs;
 					pVertexMTL++;
 				}
 
 				// Setup extras data
 
-				*pExtrasMTL++ = colorstripPitchX;
-				*pExtrasMTL++ = colorstripPitchY;
+				*pExtrasMTL++ = float(pEdgemap->_flatColorsOfs());		// Flat segment colors in edgemap buffer.
+				*pExtrasMTL++ = float(pEdgemap->_tintTableOfs());		// Table of segment tint block offsets in edgemap buffer.
 				*pExtrasMTL++ = float(pEdgemap->m_nbSegments - 1);	// Edgemap pitch (edges stored per column)
 				*pExtrasMTL++ = 0;			// Dummy
 
@@ -1733,10 +1526,10 @@ void MetalBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, i
 
 				[m_renderEncoder setFragmentBuffer:pEdgemap->m_bufferId offset:0 atIndex:(unsigned) FragmentInputIndex::Edgemap];
 
-				if( m_segmentsPipelines[nSegments-1][m_bTintmap][(int)m_activeBlendMode][(int)m_activeCanvasFormat] == nil )
-					m_segmentsPipelines[nSegments-1][m_bTintmap][(int)m_activeBlendMode][(int)m_activeCanvasFormat] = _compileSegmentsPipeline(nSegments-1, m_bTintmap, m_activeBlendMode, m_activeCanvasFormat);
+				if( m_segmentsPipelines[nSegments-1][m_tintOfs >= 0][(int)m_activeBlendMode][(int)m_activeCanvasFormat] == nil )
+					m_segmentsPipelines[nSegments-1][m_tintOfs >= 0][(int)m_activeBlendMode][(int)m_activeCanvasFormat] = _compileSegmentsPipeline(nSegments-1, m_tintOfs >= 0, m_activeBlendMode, m_activeCanvasFormat);
 
-				[m_renderEncoder setRenderPipelineState:m_segmentsPipelines[nSegments-1][m_bTintmap][(int)m_activeBlendMode][(int)m_activeCanvasFormat] ];
+				[m_renderEncoder setRenderPipelineState:m_segmentsPipelines[nSegments-1][m_tintOfs >= 0][(int)m_activeBlendMode][(int)m_activeCanvasFormat] ];
 				[m_renderEncoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:vertexOfs vertexCount:nRects*6];
 
 				break;
@@ -1754,11 +1547,6 @@ void MetalBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, i
 				int tintColorOfs = m_tintColorOfs >= 0 ? m_tintColorOfs : 0;
 				int vertexOfs = int(pVertexMTL - m_pVertexBuffer);
 
-				float tintmapBeginX = 0.f;
-				float tintmapBeginY = 0.f;
-				float tintmapEndX = 0.f;
-				float tintmapEndY = 0.f;
-
 				for (int i = 0; i < nRects; i++)
 				{
 					int	dx1 = (pRects->x) >> 6;
@@ -1767,30 +1555,6 @@ void MetalBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, i
 					int dy2 = dy1 + ((pRects->h) >> 6);
 					pRects++;
 
-					if (m_bTintmap)
-					{
-						if (m_tintmapBeginX == 0)
-						{
-							tintmapBeginX = 0.f;
-							tintmapEndX = 0.f;
-						}
-						else
-						{
-							tintmapBeginX = m_tintmapBeginX + (dx1 - m_tintmapRect.x) + 0.f;
-							tintmapEndX = tintmapBeginX + (dx2 - dx1) + 0.f;
-						}
-
-						if (m_tintmapBeginY == 0)
-						{
-							tintmapBeginY = 0.f;
-							tintmapEndY = 0.f;
-						}
-						else
-						{
-							tintmapBeginY = m_tintmapBeginY + (dy1 - m_tintmapRect.y) + 0.f;
-							tintmapEndY = tintmapBeginY + (dy2 - dy1) + 0.f;
-						}
-					}
 
 					int extrasOfs = int(pExtrasMTL - m_pExtrasBuffer) / 4;
 
@@ -1798,42 +1562,42 @@ void MetalBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, i
 					pVertexMTL->coord.y = dy1;
 					pVertexMTL->colorsOfs = tintColorOfs;
 					pVertexMTL->extrasOfs = extrasOfs;
-					pVertexMTL->tintmapOfs = { tintmapBeginX,tintmapBeginY };
+					pVertexMTL->tintOfs = m_tintOfs;
 					pVertexMTL++;
 
 					pVertexMTL->coord.x = dx2;
 					pVertexMTL->coord.y = dy1;
 					pVertexMTL->colorsOfs = tintColorOfs;
 					pVertexMTL->extrasOfs = extrasOfs;
-					pVertexMTL->tintmapOfs = { tintmapEndX,tintmapBeginY };
+					pVertexMTL->tintOfs = m_tintOfs;
 					pVertexMTL++;
 
 					pVertexMTL->coord.x = dx2;
 					pVertexMTL->coord.y = dy2;
 					pVertexMTL->colorsOfs = tintColorOfs;
 					pVertexMTL->extrasOfs = extrasOfs;
-					pVertexMTL->tintmapOfs = { tintmapEndX,tintmapEndY };
+					pVertexMTL->tintOfs = m_tintOfs;
 					pVertexMTL++;
 
 					pVertexMTL->coord.x = dx1;
 					pVertexMTL->coord.y = dy1;
 					pVertexMTL->colorsOfs = tintColorOfs;
 					pVertexMTL->extrasOfs = extrasOfs;
-					pVertexMTL->tintmapOfs = { tintmapBeginX,tintmapBeginY };
+					pVertexMTL->tintOfs = m_tintOfs;
 					pVertexMTL++;
 
 					pVertexMTL->coord.x = dx2;
 					pVertexMTL->coord.y = dy2;
 					pVertexMTL->colorsOfs = tintColorOfs;
 					pVertexMTL->extrasOfs = extrasOfs;
-					pVertexMTL->tintmapOfs = { tintmapEndX,tintmapEndY };
+					pVertexMTL->tintOfs = m_tintOfs;
 					pVertexMTL++;
 
 					pVertexMTL->coord.x = dx1;
 					pVertexMTL->coord.y = dy2;
 					pVertexMTL->colorsOfs = tintColorOfs;
 					pVertexMTL->extrasOfs = extrasOfs;
-					pVertexMTL->tintmapOfs = { tintmapBeginX,tintmapEndY };
+					pVertexMTL->tintOfs = m_tintOfs;
 					pVertexMTL++;
 
 					//
@@ -1921,17 +1685,17 @@ void MetalBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, i
 
 						int bPalette = (pSurf->m_pPixelDescription->type == PixelType::Index) ? 1 : 0;
 
-						if(m_blurPipelines[bPalette][m_bTintmap][(int)m_activeBlendMode][(int)m_activeCanvasFormat] == nil )
-							m_blurPipelines[bPalette][m_bTintmap][(int)m_activeBlendMode][(int)m_activeCanvasFormat] = _compileBlurPipeline( bPalette != 0, m_bTintmap, m_activeBlendMode, m_activeCanvasFormat );
+						if(m_blurPipelines[bPalette][m_tintOfs >= 0][(int)m_activeBlendMode][(int)m_activeCanvasFormat] == nil )
+							m_blurPipelines[bPalette][m_tintOfs >= 0][(int)m_activeBlendMode][(int)m_activeCanvasFormat] = _compileBlurPipeline( bPalette != 0, m_tintOfs >= 0, m_activeBlendMode, m_activeCanvasFormat );
 
-						[m_renderEncoder setRenderPipelineState:m_blurPipelines[bPalette][m_bTintmap][(int)m_activeBlendMode][(int)m_activeCanvasFormat] ];
+						[m_renderEncoder setRenderPipelineState:m_blurPipelines[bPalette][m_tintOfs >= 0][(int)m_activeBlendMode][(int)m_activeCanvasFormat] ];
 					}
 					else
 					{
-						if(m_blitPipelines[(int)shader][m_bTintmap][(int)m_activeBlendMode][(int)m_activeCanvasFormat] == nil )
-							m_blitPipelines[(int)shader][m_bTintmap][(int)m_activeBlendMode][(int)m_activeCanvasFormat] = _compileBlitPipeline( shader, m_bTintmap, m_activeBlendMode, m_activeCanvasFormat );
+						if(m_blitPipelines[(int)shader][m_tintOfs >= 0][(int)m_activeBlendMode][(int)m_activeCanvasFormat] == nil )
+							m_blitPipelines[(int)shader][m_tintOfs >= 0][(int)m_activeBlendMode][(int)m_activeCanvasFormat] = _compileBlitPipeline( shader, m_tintOfs >= 0, m_activeBlendMode, m_activeCanvasFormat );
 
-						[m_renderEncoder setRenderPipelineState:m_blitPipelines[(int)shader][m_bTintmap][(int)m_activeBlendMode][(int)m_activeCanvasFormat] ];
+						[m_renderEncoder setRenderPipelineState:m_blitPipelines[(int)shader][m_tintOfs >= 0][(int)m_activeBlendMode][(int)m_activeCanvasFormat] ];
 					}
 
 					[m_renderEncoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:vertexOfs vertexCount:nRects*6];

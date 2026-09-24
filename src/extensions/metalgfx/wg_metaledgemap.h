@@ -61,19 +61,31 @@ namespace wg
 		void	_samplesUpdated(int edgeBegin, int edgeEnd, int sampleBegin, int sampleEnd) override;
 		void	_colorsUpdated(int beginColor, int endColor) override;
 
-		int		_whiteColorOfs() const { return m_whiteColorOfs/4; }
-		int		_flatColorsOfs() const { return m_paletteOfs/4;  }
-		int		_colorstripXOfs() const { return m_paletteOfs / 4 + int(m_pColorstripsX - m_pPalette); }
-		int		_colorstripYOfs() const { return m_paletteOfs / 4 + int(m_pColorstripsY - m_pPalette); }
+		// Buffer layout, in float4 entries:
+		//
+		//   Edge strips, one per pixel column.
+		//   Flat colors, one per segment.
+		//   Tint table, one per segment. X is the offset of the segment's tint
+		//   block, -1 for a flat colored segment.
+		//   Tint blocks, a slot per segment big enough for any tint. Only there
+		//   once a segment has had a tint, most edgemaps never do.
 
+		int		_flatColorsOfs() const { return m_samplesSize; }
+		int		_tintTableOfs() const { return m_samplesSize + m_nbSegments; }
+		int		_tintSlotOfs(int segment) const { return m_samplesSize + m_nbSegments * 2 + segment * c_tintSlotSize; }
+
+		void	_createBuffer(bool bWithTintSlots);
+		void	_writeColors(int beginSegment, int endSegment);
+
+		static const int c_tintSlotSize;		// In float4 entries.
 
 	protected:
 
 		id<MTLBuffer>   m_bufferId = nil;
 		float *      	m_pBuffer = nullptr;
 
-		int			m_paletteOfs;			// Offset to palette in buffer, measured in floats.
-		int			m_whiteColorOfs;		// Offset to a white, default color, measured in floats.
+		int			m_samplesSize = 0;			// Size of the edge strips, in float4 entries.
+		bool		m_bHasTintSlots = false;
 
 	};
 

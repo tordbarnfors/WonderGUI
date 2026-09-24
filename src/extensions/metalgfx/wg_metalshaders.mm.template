@@ -27,5 +27,5 @@ namespace wg {
 
 const char MetalBackend::shaders[] =
 
-@INSERTLINEQUOTED <wg_backendshadercontent.mm>
+@INSERTLINEQUOTED <wg_shadercontent.mm>
 ;}

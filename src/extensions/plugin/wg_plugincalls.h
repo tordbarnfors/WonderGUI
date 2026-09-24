@@ -24,6 +24,7 @@
 #pragma once
 
 #include <wg_plugininterface.h>
+#include <wg_tint.h>
 
 namespace wg
 {
@@ -51,11 +52,15 @@ namespace wg
 		static wg_hostbridge_calls*		hostBridge;
 		static wg_plugincapsule_calls*	pluginCapsule;
 		static wg_blurbrush_calls*		blurbrush;
-		static wg_tintmap_calls*		tintmap;
-		static wg_gradyent_calls*		gradyent;
-		static wg_statictintmap_calls*	staticTintmap;
+		static wg_tint_calls*			tint;
 
 		static bool _init(wg_plugin_interface* pCallsCollection);
+
+		// Tints are objects on both sides. These make a host copy of a plugin Tint
+		// and the other way around, through TintTools serialization.
+
+		static wg_obj	_hostTint(Tint* pTint);				// Returns retained object, null for null.
+		static Tint_p	_localTint(wg_obj hostTint);		// Null for null.
 	};
 
 

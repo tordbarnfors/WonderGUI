@@ -22,6 +22,7 @@
 
 #include <wg_metaledgemap.h>
 #include <wg_metalbackend.h>
+#include <wg_tinttools.h>
 
 #include <cstring>
 
@@ -29,6 +30,8 @@ namespace wg
 {
 
 const TypeInfo MetalEdgemap::TYPEINFO = { "MetalEdgemap", &Edgemap::TYPEINFO };
+
+const int MetalEdgemap::c_tintSlotSize = TintTools::gpuTintBlockMaxSize(Tint::c_maxMixComponents, Tint::c_maxMixComponents * Tint::c_maxStops);
 
 
 //____ create() ______________________________________________________________
@@ -77,31 +80,10 @@ MetalEdgemap_p MetalEdgemap::create( const Edgemap::Blueprint& blueprint, Sample
 
 MetalEdgemap::MetalEdgemap(const Blueprint& bp) : Edgemap(bp)
 {
-	// Create Metal buffer
+	m_samplesSize = bp.size.w * (bp.segments - 1);
 
-	int samplesSize = bp.size.w * (bp.segments - 1) * 4;
-	int paletteSize = m_paletteSize * 4;
-
-	m_paletteOfs = samplesSize;
-	m_whiteColorOfs = samplesSize + paletteSize;
-
-	int bufferSize = samplesSize + paletteSize + 4;		// +4 for white color
-
-	m_bufferId = [MetalBackend::s_metalDevice newBufferWithLength:bufferSize*sizeof(float) options:MTLResourceStorageModeShared];
-	m_pBuffer = (float *)[m_bufferId contents];
-
-	// Convert and upload colorstrips
-
-	_colorsUpdated(0, m_paletteSize);
-
-	// Add and upload default white color
-
-	auto pOut = &m_pBuffer[m_whiteColorOfs];
-
-	* pOut++ = 1.f;
-	* pOut++ = 1.f;
-	* pOut++ = 1.f;
-	* pOut++ = 1.f;
+	_createBuffer(m_nbTints > 0);
+	_writeColors(0, m_nbSegments);
 }
 
 //____ destructor ____________________________________________________________
@@ -183,19 +165,95 @@ void MetalEdgemap::_samplesUpdated(int edgeBegin, int edgeEnd, int sampleBegin, 
 
 //____ _colorsUpdated() ____________________________________________________
 
-void MetalEdgemap::_colorsUpdated(int beginColor, int endColor)
+void MetalEdgemap::_colorsUpdated(int beginSegment, int endSegment)
 {
-	int nColors = endColor - beginColor;
+	// First tint on an edgemap that had none needs a bigger buffer. Command
+	// buffers already encoded keep the old one alive until they are done.
 
-	auto pIn = m_pPalette + beginColor;
-	auto pOut = m_pBuffer + m_paletteOfs + beginColor * 4;
-	for (int i = 0; i < nColors; i++)
+	if( m_nbTints > 0 && !m_bHasTintSlots )
 	{
-		*pOut++ = pIn->r / 4096.f;
-		*pOut++ = pIn->g / 4096.f;
-		*pOut++ = pIn->b / 4096.f;
-		*pOut++ = pIn->a / 4096.f;
-		pIn++;
+		_createBuffer(true);
+		beginSegment = 0;
+		endSegment = m_nbSegments;
+	}
+
+	_writeColors(beginSegment, endSegment);
+}
+
+//____ _createBuffer() _____________________________________________________
+//
+// Creates the buffer, with or without room for tint blocks, and carries over
+// the edge strips of the one it replaces. Colors are left for _writeColors().
+
+void MetalEdgemap::_createBuffer(bool bWithTintSlots)
+{
+	int entries = m_samplesSize + m_nbSegments * 2;
+
+	if( bWithTintSlots )
+		entries += m_nbSegments * c_tintSlotSize;
+
+	size_t bytes = size_t(entries) * 4 * sizeof(float);
+
+	id<MTLBuffer> bufferId = [MetalBackend::s_metalDevice newBufferWithLength:bytes options:MTLResourceStorageModeShared];
+	float * pBuffer = (float *)[bufferId contents];
+
+	std::memset( pBuffer, 0, bytes );
+
+	if( m_pBuffer )
+		std::memcpy( pBuffer, m_pBuffer, size_t(m_samplesSize) * 4 * sizeof(float) );
+
+	[m_bufferId release];
+
+	m_bufferId = bufferId;
+	m_pBuffer = pBuffer;
+	m_bHasTintSlots = bWithTintSlots;
+}
+
+//____ _writeColors() ______________________________________________________
+//
+// Flat colors, tint table entries and tint blocks of the given segments.
+
+void MetalEdgemap::_writeColors(int beginSegment, int endSegment)
+{
+	RectSPX rect(0, 0, m_size.w * 64, m_size.h * 64);
+
+	for (int seg = beginSegment; seg < endSegment; seg++)
+	{
+		float * pFlat = m_pBuffer + (_flatColorsOfs() + seg) * 4;
+		float * pTable = m_pBuffer + (_tintTableOfs() + seg) * 4;
+
+		const HiColor& col = m_pFlatColors[seg];
+
+		pFlat[0] = col.r / 4096.f;
+		pFlat[1] = col.g / 4096.f;
+		pFlat[2] = col.b / 4096.f;
+		pFlat[3] = col.a / 4096.f;
+
+		int blockOfs = -1;
+
+		if( m_pTints[seg] && m_bHasTintSlots )
+		{
+			uint16_t	words[TintTools::c_maxEncodedTintWords];
+			HiColor		colors[TintTools::c_maxEncodedTintColors];
+			int			nColors;
+
+			TintTools::encodeTint(m_pTints[seg], rect, words, colors, nColors);
+
+			const HiColor* pColors = colors;
+			TintTools::DecodedTint decoded;
+			TintTools::decodeTint(words, pColors, decoded);
+
+			if( decoded.nLayers > 0 )
+			{
+				blockOfs = _tintSlotOfs(seg);
+				TintTools::writeGpuTintBlock(decoded, m_pBuffer + blockOfs * 4);
+			}
+		}
+
+		pTable[0] = float(blockOfs);
+		pTable[1] = 0.f;
+		pTable[2] = 0.f;
+		pTable[3] = 0.f;
 	}
 }
 

@@ -67,6 +67,14 @@ WG_EXPORT int			wg_isTintMix( wg_obj tint );
 
 WG_EXPORT wg_color		wg_tintColorAt( wg_obj tint, wg_coordSPX pos, const wg_rectSPX* pRect );
 
+// Tints as bytes, e.g. for passing them between plugin and host. See TintTools::serializeTint()
+// for the format. A mix survives this, which it doesn't through a blueprint.
+
+#define WG_MAX_TINT_DATA_BYTES	(4 + 4 * (44 + 16 * 12))
+
+WG_EXPORT int			wg_exportTintData( wg_obj tint, void* pDest, int maxBytes );	// Returns bytes written, 0 if it doesn't fit. tint may be null.
+WG_EXPORT wg_obj		wg_createTintFromData( const void* pData, int bytes );			// Returns retained object or null.
+
 #ifdef __cplusplus
 }
 #endif

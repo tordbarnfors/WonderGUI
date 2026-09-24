@@ -28,6 +28,7 @@
 
 #include <wg_gfxtypes.h>
 #include <wg_gfxbackend.h>
+#include <wg_tinttools.h>
 #include <wg_metalsurface.h>
 
 
@@ -99,7 +100,6 @@ namespace wg
 		~MetalBackend();
 
 		const static int	c_maxSegments = 16;
-		static const int 	s_flipCornerOrder[GfxFlip_size][4];
 
 
 		enum class VertexInputIndex
@@ -149,9 +149,6 @@ namespace wg
 		void            _setFixedBlendColor( id<MTLRenderCommandEncoder>, HiColor color);
 		void 			_setBlurMatrices( id<MTLRenderCommandEncoder> renderEncoder, spx radius, const float red[9], const float green[9], const float blue[9] );
 		void            _setBlitSource( id<MTLRenderCommandEncoder>, MetalSurface * pSurf);
-		void            _setTintColor( id<MTLRenderCommandEncoder>, HiColor color);
-		void            _setTintGradient( id<MTLRenderCommandEncoder>, const RectI& rect, const Gradient& gradient);
-		void            _clearTintGradient( id<MTLRenderCommandEncoder> renderEncoder );
 
 		void    _initTables();
 		float    _scaleThickness(float thickness, float slope);
@@ -209,14 +206,7 @@ namespace wg
 			int        canvasYOfs;
 			int        canvasYMul;
 
-			simd_float4 flatTint;
-
-			RectI    tintRect;
-
-			simd_float4   topLeftTint;
-			simd_float4   topRightTint;
-			simd_float4   bottomRightTint;
-			simd_float4   bottomLeftTint;
+			simd_float4 flatTint;					// Tint color, applied on top of any Tint.
 
 			SizeI    textureSize;
 		};
@@ -233,9 +223,8 @@ namespace wg
 			int		colorsOfs;						// Offset into colorBuffer for color incl flat tint.
 			int		extrasOfs;						// Offset into extrasBuffer for extra data needed by shader.
 			simd_float2   uv;						// Actually contains blitSourceSize in most cases.
-			CoordF	tintmapOfs;
-			CoordF	colorstripOfs;					// For Edgemaps only.
-
+			int		tintOfs;						// Offset into colorBuffer for tint block (see TintTools), -1 for none.
+			int		padding;
 
 		};
 
@@ -281,12 +270,7 @@ namespace wg
 
 		int			m_tintColorOfs = -1;		// Offset in m_pColorBuffer for tintColor if flat tint active.
 
-		bool		m_bTintmap = false;
-		RectI		m_tintmapRect;				// Measured in pixels.
-		int			m_tintmapBeginX	= -1;		// Offset in m_pColorBuffer
-		int			m_tintmapEndX	= -1;		// " -
-		int			m_tintmapBeginY = -1;
-		int			m_tintmapEndY	= -1;
+		int			m_tintOfs = -1;				// Offset in m_pColorBuffer for tint block if a Tint is active.
 
 
 
@@ -318,12 +302,12 @@ namespace wg
 		std::atomic<int>            m_flushesInProgress;                							// Number of buffer flushes to complete before metal is idle.
 
 		id<MTLRenderPipelineState>  m_linePipelines[BlendMode_size][5] = {};    					// [BlendMode][DestFormat]
-		id<MTLRenderPipelineState>  m_fillPipelines[2][BlendMode_size][5] = {}; 					// [bTintmap][BlendMode][DestFormat]
-		id<MTLRenderPipelineState>  m_fillAAPipelines[2][BlendMode_size][5] = {}; 					// [bTintmap][BlendMode][DestFormat]
+		id<MTLRenderPipelineState>  m_fillPipelines[2][BlendMode_size][5] = {}; 					// [bTint][BlendMode][DestFormat]
+		id<MTLRenderPipelineState>  m_fillAAPipelines[2][BlendMode_size][5] = {}; 					// [bTint][BlendMode][DestFormat]
 
 		id<MTLRenderPipelineState>  m_blitPipelines[5][2][BlendMode_size][5] = {}; 					// [BlitFragShader][bTintmap][BlendMode][DestFormat]
 
-		id<MTLRenderPipelineState>  m_blurPipelines[2][2][BlendMode_size][5]  = {};   				// [bPaletteSource][bGradient][BlendMode][DestFormat]
+		id<MTLRenderPipelineState>  m_blurPipelines[2][2][BlendMode_size][5]  = {};   				// [bPaletteSource][bTint][BlendMode][DestFormat]
 
 		id<MTLRenderPipelineState>  m_segmentsPipelines[c_maxSegments][2][BlendMode_size][5] = {};  // [nbEdges][bTintmap][BlendMode][DestFormat]
 

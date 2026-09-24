@@ -49,7 +49,24 @@ namespace wg
 		m_size				= *(SizeI*)&pixSize;
 		m_nbSegments		= PluginCalls::edgemap->edgemapSegments(object);
 		m_nbRenderSegments  = PluginCalls::edgemap->getRenderSegments(object);
-		m_paletteType		= (EdgemapPalette) PluginCalls::edgemap->edgemapPaletteType(object);
+
+		// Our copies of flat colors and tints. The Edgemap destructor frees them.
+
+		m_pBuffer			= new char[m_nbSegments * sizeof(HiColor)];
+		m_pFlatColors		= (HiColor*) m_pBuffer;
+		m_pTints			= new Tint_p[m_nbSegments];
+
+		const wg_color * pFlatColors = PluginCalls::edgemap->edgemapFlatColors(object);
+
+		for( int i = 0 ; i < m_nbSegments ; i++ )
+		{
+			m_pFlatColors[i] = pFlatColors ? reinterpret_cast<const HiColor*>(pFlatColors)[i] : HiColor::Transparent;
+			m_pTints[i] = PluginCalls::_localTint( PluginCalls::edgemap->edgemapTint(object, i) );
+			if( m_pTints[i] )
+				m_nbTints++;
+		}
+
+		m_bConstructed = true;
 	}
 
 	//____ Destructor ______________________________________________________________
@@ -81,104 +98,33 @@ namespace wg
 
 	bool PluginEdgemap::setColors( int begin, int end, const HiColor * pColors )
 	{
+		if( !Edgemap::setColors(begin, end, pColors) )
+			return false;
+
 		return (bool) PluginCalls::edgemap->setEdgemapColors( m_cEdgemap, begin, end, reinterpret_cast<const wg_color *>(pColors));
 	}
 
-	bool PluginEdgemap::setColors( int begin, int end, const Gradient * pGradients)
+	bool PluginEdgemap::setColors( int begin, int end, const Tint_p * pTints )
 	{
-		return (bool) PluginCalls::edgemap->setEdgemapColorsFromGradients( m_cEdgemap, begin, end, reinterpret_cast<const wg_gradient *>(pGradients));
-
-	}
-
-	bool PluginEdgemap::setColors( int begin, int end, const Tintmap_p * pTintmaps )
-{
-		if (m_paletteType == EdgemapPalette::Flat)
+		if( !Edgemap::setColors(begin, end, pTints) )
 			return false;
 
-		//TODO: Also check so that the tintmaps don't tint a direction we don't have colorstrips for.
+		// Host copies of the tints, released once the host has its own references.
 
-		int entries = end - begin;
-		int nHorr = m_paletteType == EdgemapPalette::ColorstripX || m_paletteType == EdgemapPalette::ColorstripXY ? m_size.w * entries: 0;
-		int nVert = m_paletteType == EdgemapPalette::ColorstripY || m_paletteType == EdgemapPalette::ColorstripXY ? m_size.h * entries: 0;
+		wg_obj	hostTints[Edgemap::maxSegments];
 
-		int mem = (nHorr + nVert) * sizeof(HiColor);
-		auto pBuffer = (HiColor *) Base::memStackAlloc( mem );
+		for( int i = begin ; i < end ; i++ )
+			hostTints[i-begin] = PluginCalls::_hostTint( pTints[i-begin] );
 
-		int incX = 0, incY = 0;
+		bool retVal = (bool) PluginCalls::edgemap->setEdgemapTints( m_cEdgemap, begin, end, hostTints );
 
-		HiColor * pColorstripsX = nullptr;
-		HiColor * pColorstripsY = nullptr;
-
-		if( nHorr > 0 )
+		for( int i = begin ; i < end ; i++ )
 		{
-			pColorstripsX = pBuffer;
-			incX = m_size.w;
+			if( hostTints[i-begin] )
+				PluginCalls::object->release( hostTints[i-begin] );
 		}
 
-		if( nVert > 0 )
-		{
-			pColorstripsY = pBuffer + nHorr;
-			incY = m_size.h;
-		}
-
-		for (int seg = begin; seg < end; seg++)
-		{
-			Tintmap* pMap = *pTintmaps++;
-			pMap->exportColors(m_size, pColorstripsX, pColorstripsY);
-
-			pColorstripsX += incX;
-			pColorstripsY += incY;
-		}
-
-		bool retVal = (bool) PluginCalls::edgemap->setEdgemapColorsFromStrips( m_cEdgemap, begin, end, reinterpret_cast<const wg_color *>(pBuffer), reinterpret_cast<const wg_color *>(pBuffer+nHorr) );
-		Base::memStackFree( mem );
 		return retVal;
-	}
-
-	bool PluginEdgemap::setColors( int begin, int end, const HiColor * pColorstripsX, const HiColor * pColorstripsY)
-	{
-		return (bool) PluginCalls::edgemap->setEdgemapColorsFromStrips( m_cEdgemap, begin, end,
-					reinterpret_cast<const wg_color *>(pColorstripsX), reinterpret_cast<const wg_color *>(pColorstripsY));
-	}
-
-	//____ importPaletteEntries() ________________________________________________
-
-	bool PluginEdgemap::importPaletteEntries( int begin, int end, const HiColor * pColors )
-	{
-		return (bool) PluginCalls::edgemap->importPaletteEntries( m_cEdgemap, begin, end, reinterpret_cast<const wg_color *>(pColors) );
-	}
-
-	//____ flatColors() __________________________________________________________
-
-	const HiColor*  PluginEdgemap::flatColors() const
-	{
-		const wg_color * pColors = PluginCalls::edgemap->edgemapFlatColors( m_cEdgemap );
-		return reinterpret_cast<const HiColor *>(pColors);
-	}
-
-	//____ colorstripsX() ________________________________________________________
-
-	const HiColor*  PluginEdgemap::colorstripsX() const
-	{
-		const wg_color * pColors = PluginCalls::edgemap->edgemapColorstripsX( m_cEdgemap );
-		return reinterpret_cast<const HiColor *>(pColors);
-	}
-
-	//____ colorstripsY() ________________________________________________________
-
-	const HiColor*  PluginEdgemap::colorstripsY() const
-	{
-		const wg_color * pColors = PluginCalls::edgemap->edgemapColorstripsY( m_cEdgemap );
-		return reinterpret_cast<const HiColor *>(pColors);
-	}
-
-	//____ exportLegacyPalette() _________________________________________________
-
-	void PluginEdgemap::exportLegacyPalette( HiColor * pDest ) const
-	{
-		// Deprecated method!
-
-		assert(false);
 	}
 
 	//____ exportBounds() ________________________________________________________
@@ -226,17 +172,9 @@ namespace wg
 
 	//____ _colorsUpdated() ______________________________________________________
 
-	void PluginEdgemap::_colorsUpdated(int beginColor, int endColor)
+	void PluginEdgemap::_colorsUpdated(int beginSegment, int endSegment)
 	{
-		// Should never get here!
-
-		assert(false);
-
-/*
-		HiColor * pColors = m_pPalette + beginColor;
-
-		PluginCalls::edgemap->importPaletteEntries( m_cEdgemap, beginColor, endColor, (const wg_color*) pColors);
- */
+		// Nothing to do, setColors() passes changes on to the host.
 	}
 
 

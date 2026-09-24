@@ -26,7 +26,7 @@
 #include <wg_c_types.h>
 #include <wg_c_geo.h>
 #include <wg_c_color.h>
-#include <wg_c_gradient.h>
+#include <wg_c_tint.h>
 
 
 #include <wg_c_bitmapcache.h>
@@ -196,15 +196,12 @@ typedef struct wg_gfxdevice_calls_struct
 	void				(*setTintColor)(wg_obj device, wg_color color);
 	wg_color			(*getTintColor)(wg_obj device);
 
-	void				(*setTintmap)(wg_obj device, const wg_rectSPX* rect, const wg_obj tintmap);
-	wg_obj				(*getTintmap)(wg_obj device);
-	wg_rectSPX			(*getTintmapRect)(wg_obj device);
-	void				(*clearTintmap)(wg_obj device);
-	int					(*hasTintmap)(wg_obj device);
+	void				(*setTint)(wg_obj device, const wg_rectSPX* rect, const wg_obj tint);
+	wg_obj				(*getTint)(wg_obj device);
+	wg_rectSPX			(*getTintRect)(wg_obj device);
+	void				(*clearTint)(wg_obj device);
+	int					(*hasTint)(wg_obj device);
 
-
-	void				(*setTintGradient)(wg_obj device, const wg_rectSPX* rect, const wg_gradient* gradient);
-	void				(*clearTintGradient)(wg_obj device);
 	int					(*setBlendMode)(wg_obj device, wg_blendMode blendMode);
 	wg_blendMode 		(*getBlendMode)(wg_obj device);
 	int					(*setBlitSource)(wg_obj device, wg_obj surface);
@@ -426,17 +423,11 @@ typedef struct wg_edgemap_calls_struct
 	int					(*setRenderSegments)(wg_obj edgemap, int nSegments);
 	int					(*getRenderSegments)(wg_obj edgemap);
 
-	wg_edgemapPalette	(*edgemapPaletteType)(wg_obj edgemap);
 	int					(*setEdgemapColors)(wg_obj edgemap, int begin, int end, const wg_color * pColors);
-	int					(*setEdgemapColorsFromGradients)(wg_obj edgemap, int begin, int end, const wg_gradient * pGradients );
-	int					(*setEdgemapColorsFromTintmaps)(wg_obj edgemap, int begin, int end, wg_obj * pTintmaps );
-	int					(*setEdgemapColorsFromStrips)(wg_obj edgemap, int begin, int end, const wg_color * pColorstripX, const wg_color * pColorstripY );
-
-	int					(*importEdgemapPaletteEntries)(wg_obj edgemap, int begin, int end, const wg_color * pColors );
+	int					(*setEdgemapTints)(wg_obj edgemap, int begin, int end, const wg_obj * pTints );
 
 	const wg_color *  	(*edgemapFlatColors)(wg_obj edgemap);
-	const wg_color *  	(*edgemapColorstripsX)(wg_obj edgemap);
-	const wg_color *  	(*edgemapColorstripsY)(wg_obj edgemap);
+	wg_obj				(*edgemapTint)(wg_obj edgemap, int segment);
 
 	int					(*edgemapSegments)(wg_obj edgemap);
 	int					(*edgemapSamples)(wg_obj edgemap);
@@ -444,8 +435,6 @@ typedef struct wg_edgemap_calls_struct
 	int 				(*importFloatSamples)(wg_obj edgemap, wg_sampleOrigo origo, const float* pSource, int edgeBegin, int edgeEnd, int sampleBegin, int sampleEnd, int edgePitch, int samplePitch);
 	int 				(*exportSpxSamples)(wg_obj edgemap, wg_sampleOrigo origo, wg_spx* pDestination, int edgeBegin, int edgeEnd, int sampleBegin, int sampleEnd, int edgePitch, int samplePitch);
 	int 				(*exportFloatSamples)(wg_obj edgemap, wg_sampleOrigo origo, float* pDestination, int edgeBegin, int edgeEnd, int sampleBegin, int sampleEnd, int edgePitch, int samplePitch);
-	int					(*importPaletteEntries)(wg_obj edgemap, int begin, int end, const wg_color * pColors );
-
 	void				(*exportBounds)( wg_obj edgemap, wg_spx * pMinMaxOutput, int nSections, int sectionWidth, int topEdge, int bottomEdge, int mapOffset, int minMaxPitch );
 } wg_edgemap_calls;
 
@@ -503,39 +492,24 @@ typedef struct wg_blurbrush_calls_struct
 } wg_blurbrush_calls;
 
 
-//____ wg_tintmap_calls_struct _____________________________________________
+//____ wg_tint_calls_struct _____________________________________________
 
-typedef struct wg_tintmap_calls_struct
+typedef struct wg_tint_calls_struct
 {
 	int				structSize;
 
-	int	(*isTintmapOpaque)( wg_obj tintmap );
-	int	(*isTintmapVertical)( wg_obj tintmap );
-	int	(*isTintmapHorizontal)( wg_obj tintmap );
+	wg_obj		(*createTint)( const wg_tintBP* pBlueprint );
+	wg_obj		(*createTintFromData)( const void* pData, int bytes );		// See wg_exportTintData().
+	wg_obj		(*blendTints)( wg_obj fromTint, wg_obj toTint, float progress );
 
-	void (*exportTintmapColors)( wg_obj tintmap, wg_sizeI tintmapSize, wg_color* pOutputX, wg_color* pOutputY);
+	int			(*isTintOpaque)( wg_obj tint );
+	int			(*isTintFlat)( wg_obj tint );
+	int			(*isTintMix)( wg_obj tint );
 
-} wg_tintmap_calls;
+	wg_color	(*tintColorAt)( wg_obj tint, wg_coordSPX pos, const wg_rectSPX* pRect );
+	int			(*exportTintData)( wg_obj tint, void* pDest, int maxBytes );
 
-//____ wg_gradyent_calls_struct _____________________________________________
-
-typedef struct wg_gradyent_calls_struct
-{
-	int				structSize;
-
-	wg_obj	(*createGradyent)(wg_color top, wg_color bottom, wg_color left, wg_color right);
-
-} wg_gradyent_calls;
-
-//____ wg_statictintmap_calls_struct _____________________________________________
-
-typedef struct wg_statictintmap_calls_struct
-{
-	int				structSize;
-
-	wg_obj	(*createStaticTintmap)( wg_sizeI size, const wg_color * pColorstripX, const wg_color * pColorstripY );
-
-} wg_statictintmap_calls;
+} wg_tint_calls;
 
 
 
@@ -564,9 +538,7 @@ typedef struct wg_plugin_interface_struct
 	wg_hostbridge_calls *		pHostBridge;
 	wg_plugincapsule_calls *	pPluginCapsule;
 	wg_blurbrush_calls *		pBlurbrush;
-	wg_tintmap_calls *			pTintmap;
-	wg_gradyent_calls *			pGradyent;
-	wg_statictintmap_calls *	pStaticTintmap;
+	wg_tint_calls *				pTint;
 
 } wg_plugin_interface;
 

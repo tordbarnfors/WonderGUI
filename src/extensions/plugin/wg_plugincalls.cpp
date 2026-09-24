@@ -20,6 +20,7 @@
 
 =========================================================================*/
 #include <wg_plugincalls.h>
+#include <wg_tinttools.h>
 
 namespace wg
 {
@@ -41,9 +42,7 @@ namespace wg
 	wg_hostbridge_calls*		PluginCalls::hostBridge		= nullptr;
 	wg_plugincapsule_calls*		PluginCalls::pluginCapsule	= nullptr;
 	wg_blurbrush_calls*			PluginCalls::blurbrush		= nullptr;
-	wg_tintmap_calls*			PluginCalls::tintmap		= nullptr;
-	wg_gradyent_calls*			PluginCalls::gradyent		= nullptr;
-	wg_statictintmap_calls*		PluginCalls::staticTintmap	= nullptr;
+	wg_tint_calls*				PluginCalls::tint			= nullptr;
 
 
 	//___ _init() ______________________________________________________________
@@ -107,13 +106,7 @@ namespace wg
 		if (pCallsCollection->pBlurbrush->structSize < sizeof(wg_blurbrush_calls))
 			goto	error_too_old_abi;
 
-		if (pCallsCollection->pTintmap->structSize < sizeof(wg_tintmap_calls))
-			goto	error_too_old_abi;
-
-		if (pCallsCollection->pGradyent->structSize < sizeof(wg_gradyent_calls))
-			goto	error_too_old_abi;
-
-		if (pCallsCollection->pStaticTintmap->structSize < sizeof(wg_statictintmap_calls))
+		if (pCallsCollection->pTint->structSize < sizeof(wg_tint_calls))
 			goto	error_too_old_abi;
 
 
@@ -133,9 +126,7 @@ namespace wg
 		hostBridge		= pCallsCollection->pHostBridge;
 		pluginCapsule	= pCallsCollection->pPluginCapsule;
 		blurbrush		= pCallsCollection->pBlurbrush;
-		tintmap			= pCallsCollection->pTintmap;
-		gradyent		= pCallsCollection->pGradyent;
-		staticTintmap	= pCallsCollection->pStaticTintmap;
+		tint			= pCallsCollection->pTint;
 
 		return true;
 
@@ -143,6 +134,34 @@ namespace wg
 		return false;
 	}
 
+
+	//____ _hostTint() ________________________________________________________
+
+	wg_obj PluginCalls::_hostTint(Tint* pTint)
+	{
+		if( !pTint )
+			return nullptr;
+
+		uint8_t	buffer[TintTools::c_maxSerializedTintBytes];
+		int bytes = TintTools::serializeTint(pTint, buffer);
+
+		return tint->createTintFromData(buffer, bytes);
+	}
+
+	//____ _localTint() _______________________________________________________
+
+	Tint_p PluginCalls::_localTint(wg_obj hostTint)
+	{
+		if( !hostTint )
+			return nullptr;
+
+		uint8_t	buffer[TintTools::c_maxSerializedTintBytes];
+		int bytes = tint->exportTintData(hostTint, buffer, TintTools::c_maxSerializedTintBytes);
+		if( bytes <= 0 )
+			return nullptr;
+
+		int bytesRead = 0;
+		return TintTools::deserializeTint(buffer, bytesRead);
+	}
+
 }
-
-

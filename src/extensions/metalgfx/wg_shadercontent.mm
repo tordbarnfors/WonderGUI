@@ -11,8 +11,8 @@ typedef struct
     int             colorOfs;              // Offset into color buffer.
     int             extrasOfs;              // Offset into extras buffer.
     vector_float2   uv;
-    vector_float2   tintmapOfs;
-    vector_float2   colorstripOfs;
+    int             tintOfs;               // Offset of tint block in color buffer, -1 for none.
+    int             padding;
 } Vertex;
 
 //____ Uniform ______________________________________________
@@ -24,14 +24,6 @@ typedef struct             // Uniform buffer object for canvas information.
     int        canvasYMul;
 
     vector_float4 flatTint;
-
-    vector_int2     tintRectPos;
-    vector_int2     tintRectSize;
-
-    vector_float4   topLeftTint;
-    vector_float4   topRightTint;
-    vector_float4   bottomRightTint;
-    vector_float4   bottomLeftTint;
 
     vector_int2     texSize;
 } Uniform;
@@ -74,7 +66,7 @@ typedef struct
 {
     float4 position [[position]];
     float4 color;
-    float2 tintmapUV;
+    int tintOfs [[flat]];
 } FillTintmapFragInput;
 
 //____ FillAAFragInput ______________________________________________
@@ -93,7 +85,7 @@ typedef struct
     float4 position [[position]];
     float4 color;
     float4 rect;
-    float2 tintmapUV;
+    int tintOfs [[flat]];
 } FillAATintmapFragInput;
 
 
@@ -113,7 +105,7 @@ typedef struct
     float4 position [[position]];
     float4 color;
     float2 texUV;
-    float2 tintmapUV;
+    int tintOfs [[flat]];
 } BlitTintmapFragInput;
 
 //____ PaletteBlitInterpolateFragInput ______________________________________________
@@ -136,7 +128,7 @@ typedef struct
     float2 texUV00;
     float2 texUV11;
     float2 uvFrac;
-    float2 tintmapUV;
+    int tintOfs [[flat]];
  } PaletteBlitInterpolateTintmapFragInput;
 
 
@@ -147,11 +139,99 @@ typedef struct
     float4 position [[position]];
 	float4 color;
     float2 texUV;
-	int2 	colorstripPitch;
-	int 		edgemapPitch;
-	float2	tintmapUV;
-	float2	colorstripUV;
+	int		edgemapPitch [[flat]];
+	int		flatColorsOfs [[flat]];		// Flat segment colors in edgemap buffer.
+	int		tintTableOfs [[flat]];		// Table of segment tint block offsets in edgemap buffer, -1 for flat.
+	int		tintOfs [[flat]];			// Device tint block in color buffer, -1 for none.
 } SegmentsFragInput;
+
+
+//____ Tint ______________________________________________________________
+//
+// Evaluates a tint block (see TintTools::writeGpuTintBlock()) at a position,
+// canvas pixels for the device tint, edgemap pixels for segment tints.
+//
+//   [0]            (nLayers, 0, 0, 0)
+//   per layer:
+//     [+0]         (shape, spread, nStops, weight)
+//     [+1]         geometry. Linear: t = x*a + y*b + c. Radial: (centerX, centerY, invRadiusX, invRadiusY).
+//     [+2]         (1 if stop colors are sRGB encoded else 0, 0, 0, 0)
+//     [+3]...      stop positions, four per entry, unused ones 2.0.
+//     then         one color per stop.
+
+template <typename BUF>
+inline float tintStopPos(BUF pBuf, int posOfs, int i)
+{
+    return pBuf[posOfs + (i >> 2)][i & 3];
+}
+
+template <typename BUF>
+float4 evalTint(BUF pBuf, int ofs, float2 pos)
+{
+    int nLayers = int(pBuf[ofs].x);
+    int p = ofs + 1;
+    float4 result = float4(0.0);
+
+    for( int l = 0 ; l < nLayers ; l++ )
+    {
+        float4 info = pBuf[p];
+        float4 geo = pBuf[p + 1];
+        float srgb = pBuf[p + 2].x;
+
+        int nStops = int(info.z);
+        int posOfs = p + 3;
+        int colOfs = posOfs + (nStops + 3) / 4;
+
+        if( nStops > 0 )
+        {
+            float t = info.x < 0.5f ? geo.x * pos.x + geo.y * pos.y + geo.z : length((pos - geo.xy) * geo.zw);
+            t = clamp(t, -1e7f, 1e7f);
+
+            int spread = int(info.y);
+            if( spread == 0 )
+                t = clamp(t, 0.f, 1.f);
+            else if( spread == 1 )
+                t = t - floor(t);
+            else
+            {
+                float r = t - 2.f * floor(t * 0.5f);
+                t = r > 1.f ? 2.f - r : r;
+            }
+
+            int k = -1;
+            for( int i = 0 ; i < nStops ; i++ )
+            {
+                if( tintStopPos(pBuf, posOfs, i) <= t )
+                    k = i;
+            }
+
+            float4 c;
+            if( k < 0 )
+                c = pBuf[colOfs];
+            else if( k == nStops - 1 )
+                c = pBuf[colOfs + k];
+            else
+            {
+                float p0 = tintStopPos(pBuf, posOfs, k);
+                float p1 = tintStopPos(pBuf, posOfs, k + 1);
+                c = mix(pBuf[colOfs + k], pBuf[colOfs + k + 1], float4((t - p0) / (p1 - p0)));
+            }
+
+            if( srgb > 0.5f )
+            {
+                float3 lo = c.rgb / 12.92f;
+                float3 hi = pow((c.rgb + 0.055f) / 1.055f, float3(2.4f));
+                c.rgb = select(hi, lo, c.rgb <= float3(0.04045f));
+            }
+
+            result += c * info.w;
+        }
+
+        p = colOfs + nStops;
+    }
+
+    return result;
+}
 
 
 //____ lineVertexShader() ____________________________________________
@@ -274,8 +354,8 @@ fillTintmapVertexShader(uint vertexID [[vertex_id]],
 
 	
     int     colOfs = pVertices[vertexID].colorOfs;
-    out.color = pColor[colOfs];
-    out.tintmapUV = pVertices[vertexID].tintmapOfs;
+    out.color = pUniform->flatTint * pColor[colOfs];
+    out.tintOfs = pVertices[vertexID].tintOfs;
 
     return out;
 }
@@ -285,10 +365,9 @@ fillTintmapVertexShader(uint vertexID [[vertex_id]],
 fragment float4 fillTintmapFragmentShader(FillTintmapFragInput in [[stage_in]],
                                     constant float4  *pColor [[buffer(0)]])
 {
-    float4 colorFromColorstripX = pColor[(int)in.tintmapUV.x];
-    float4 colorFromColorstripY = pColor[(int)in.tintmapUV.y];
+    float4 tintColor = evalTint(pColor, in.tintOfs, in.position.xy);
 
-    return colorFromColorstripX * colorFromColorstripY * in.color;
+    return tintColor * in.color;
 };
 
 //____ fillTintmapFragmentShader_A8() ____________________________________________
@@ -296,10 +375,9 @@ fragment float4 fillTintmapFragmentShader(FillTintmapFragInput in [[stage_in]],
 fragment float4 fillTintmapFragmentShader_A8(FillTintmapFragInput in [[stage_in]],
                                     constant float4  *pColor [[buffer(0)]])
 {
-    float alphaFromColorstripX = pColor[(int)in.tintmapUV.x].a;
-    float alphaFromColorstripY = pColor[(int)in.tintmapUV.y].a;
+    float tintAlpha = evalTint(pColor, in.tintOfs, in.position.xy).a;
 
-    return {alphaFromColorstripX * alphaFromColorstripY * in.color.a,0.0,0.0,0.0};
+    return {tintAlpha * in.color.a,0.0,0.0,0.0};
 };
 
 //____ fillAAVertexShader() ____________________________________________
@@ -376,8 +454,8 @@ fillAATintmapVertexShader(uint vertexID [[vertex_id]],
     out.position.y = (pUniform->canvasYOfs + pUniform->canvasYMul*pos.y)*2 / canvasSize.y - 1.0;
 
     int     colOfs = pVertices[vertexID].colorOfs;
-    out.color = pColor[colOfs];
-    out.tintmapUV = pVertices[vertexID].tintmapOfs;
+    out.color = pUniform->flatTint * pColor[colOfs];
+    out.tintOfs = pVertices[vertexID].tintOfs;
 
     int     eOfs = pVertices[vertexID].extrasOfs;
     out.rect = pExtras[eOfs];
@@ -391,10 +469,9 @@ fillAATintmapVertexShader(uint vertexID [[vertex_id]],
 fragment float4 fillAATintmapFragmentShader(FillAATintmapFragInput in [[stage_in]],
                                     constant float4  *pColor [[buffer(0)]])
 {
-    float4 colorFromColorstripX = pColor[(int)in.tintmapUV.x];
-    float4 colorFromColorstripY = pColor[(int)in.tintmapUV.y];
+    float4 tintColor = evalTint(pColor, in.tintOfs, in.position.xy);
 
-    float4 color = colorFromColorstripX * colorFromColorstripY * in.color;
+    float4 color = tintColor * in.color;
 
     float2 middleofs = abs(in.position.xy - in.rect.xy);
     float2 alphas = clamp(in.rect.zw  - middleofs, 0.f, 1.f);
@@ -408,10 +485,9 @@ fragment float4 fillAATintmapFragmentShader(FillAATintmapFragInput in [[stage_in
 fragment float4 fillAATintmapFragmentShader_A8(FillAATintmapFragInput in [[stage_in]],
                                         constant float4  *pColor [[buffer(0)]])
 {
-    float alphaFromColorstripX = pColor[(int)in.tintmapUV.x].a;
-    float alphaFromColorstripY = pColor[(int)in.tintmapUV.y].a;
+    float tintAlpha = evalTint(pColor, in.tintOfs, in.position.xy).a;
 
-    float alpha = alphaFromColorstripX * alphaFromColorstripY * in.color.a;
+    float alpha = tintAlpha * in.color.a;
 
     float2 middleofs = abs(in.position.xy - in.rect.xy);
     float2 alphas = clamp(in.rect.zw  - middleofs, 0.f, 1.f);
@@ -554,8 +630,8 @@ blitTintmapVertexShader(uint vertexID [[vertex_id]],
     out.texUV.x = (src.x + 0.0001f + (pos.x - dst.x) * transform.x + (pos.y - dst.y) * transform.z) / pUniform->texSize.x;      //TODO: Replace this ugly +0.02f fix with whatever is correct.
     out.texUV.y = (src.y + 0.0001f + (pos.x - dst.x) * transform.y + (pos.y - dst.y) * transform.w) / pUniform->texSize.y;      //TODO: Replace this ugly +0.02f fix with whatever is correct.
 
-    out.tintmapUV = pVertices[vertexID].tintmapOfs;
-//    out.color = pUniform->flatTint;
+    out.tintOfs = pVertices[vertexID].tintOfs;
+    out.color = pUniform->flatTint;
 
     return out;
 }
@@ -570,10 +646,9 @@ fragment float4 blitTintmapFragmentShader(BlitTintmapFragInput in [[stage_in]],
 {
     const half4 colorSample = colorTexture.sample(textureSampler, in.texUV);
 
-    float4 colorFromColorstripX = pColor[(int)in.tintmapUV.x];
-    float4 colorFromColorstripY = pColor[(int)in.tintmapUV.y];
+    float4 tintColor = evalTint(pColor, in.tintOfs, in.position.xy);
 
-    return float4(colorSample) * colorFromColorstripX * colorFromColorstripY;
+    return float4(colorSample) * tintColor * in.color;
 };
 
 //____ blitTintmapFragmentShader_A8() ____________________________________________
@@ -585,10 +660,9 @@ fragment float4 blitTintmapFragmentShader_A8(BlitTintmapFragInput in [[stage_in]
 {
     const float colorSample = float(colorTexture.sample(textureSampler, in.texUV).a);
 
-    float alphaFromColorstripX = pColor[(int)in.tintmapUV.x].a;
-    float alphaFromColorstripY = pColor[(int)in.tintmapUV.y].a;
+    float tintAlpha = evalTint(pColor, in.tintOfs, in.position.xy).a;
 
-    return { colorSample * alphaFromColorstripX * alphaFromColorstripY, 0.0, 0.0, 0.0 };
+    return { colorSample * tintAlpha * in.color.a, 0.0, 0.0, 0.0 };
 };
 
 //____ rgbxBlitTintmapFragmentShader() ____________________________________________
@@ -601,10 +675,9 @@ fragment float4 rgbxBlitTintmapFragmentShader(BlitTintmapFragInput in [[stage_in
     half4 colorSample = colorTexture.sample(textureSampler, in.texUV);
     colorSample.a = (half) 1.0;
 
-    float4 colorFromColorstripX = pColor[(int)in.tintmapUV.x];
-    float4 colorFromColorstripY = pColor[(int)in.tintmapUV.y];
+    float4 tintColor = evalTint(pColor, in.tintOfs, in.position.xy);
 
-    return float4(colorSample) * colorFromColorstripX * colorFromColorstripY;
+    return float4(colorSample) * tintColor * in.color;
 };
 
 //____ rgbxBlitTintmapFragmentShader_A8() ____________________________________________
@@ -614,10 +687,9 @@ fragment float4 rgbxBlitTintmapFragmentShader_A8(BlitTintmapFragInput in [[stage
                                     sampler textureSampler [[ sampler(0) ]],
                                     constant float4  *pColor [[buffer(0)]])
 {
-    float alphaFromColorstripX = pColor[(int)in.tintmapUV.x].a;
-    float alphaFromColorstripY = pColor[(int)in.tintmapUV.y].a;
+    float tintAlpha = evalTint(pColor, in.tintOfs, in.position.xy).a;
 
-    return { alphaFromColorstripX * alphaFromColorstripY, 0.0, 0.0, 0.0 };
+    return { tintAlpha * in.color.a, 0.0, 0.0, 0.0 };
 };
 
 
@@ -628,10 +700,9 @@ fragment float4 alphaBlitTintmapFragmentShader(BlitTintmapFragInput in [[stage_i
                                     sampler textureSampler [[ sampler(0) ]],
                                     constant float4  *pColor [[buffer(0)]])
 {
-    float4 colorFromColorstripX = pColor[(int)in.tintmapUV.x];
-    float4 colorFromColorstripY = pColor[(int)in.tintmapUV.y];
+    float4 tintColor = evalTint(pColor, in.tintOfs, in.position.xy);
 
-    float4 color = colorFromColorstripX * colorFromColorstripY;
+    float4 color = tintColor * in.color;
 
     color.a *= colorTexture.sample(textureSampler, in.texUV).r;
 
@@ -647,10 +718,9 @@ fragment float4 alphaBlitTintmapFragmentShader_A8(BlitTintmapFragInput in [[stag
 {
     const float colorSample = float(colorTexture.sample(textureSampler, in.texUV).r);
 
-    float alphaFromColorstripX = pColor[(int)in.tintmapUV.x].a;
-    float alphaFromColorstripY = pColor[(int)in.tintmapUV.y].a;
+    float tintAlpha = evalTint(pColor, in.tintOfs, in.position.xy).a;
 
-    return { colorSample * alphaFromColorstripX * alphaFromColorstripY, 0.0, 0.0, 0.0 };
+    return { colorSample * tintAlpha * in.color.a, 0.0, 0.0, 0.0 };
 };
 
 
@@ -704,10 +774,9 @@ fragment float4 paletteBlitNearestTintmapFragmentShader(BlitTintmapFragInput in 
     const float colorIndex = colorTexture.sample(textureSampler, in.texUV).r;
     const half4 colorSample = paletteTexture.sample(paletteSampler, {colorIndex,0.5f} );
 
-    float4 colorFromColorstripX = pColor[(int)in.tintmapUV.x];
-    float4 colorFromColorstripY = pColor[(int)in.tintmapUV.y];
+    float4 tintColor = evalTint(pColor, in.tintOfs, in.position.xy);
 
-    return float4(colorSample) * colorFromColorstripX * colorFromColorstripY;
+    return float4(colorSample) * tintColor * in.color;
 };
 
 //____ paletteBlitNearestTintmapFragmentShader_A8() ____________________________________________
@@ -724,10 +793,9 @@ fragment float4 paletteBlitNearestTintmapFragmentShader_A8(BlitTintmapFragInput 
     const float colorIndex = colorTexture.sample(textureSampler, in.texUV).r;
     const float colorSample = paletteTexture.sample(paletteSampler, {colorIndex,0.5f} ).a;
 
-    float alphaFromColorstripX = pColor[(int)in.tintmapUV.x].a;
-    float alphaFromColorstripY = pColor[(int)in.tintmapUV.y].a;
+    float tintAlpha = evalTint(pColor, in.tintOfs, in.position.xy).a;
 
-    return { colorSample * alphaFromColorstripX * alphaFromColorstripY, 0.0, 0.0, 0.0 };
+    return { colorSample * tintAlpha * in.color.a, 0.0, 0.0, 0.0 };
 };
 
 
@@ -737,8 +805,9 @@ fragment float4 paletteBlitNearestTintmapFragmentShader_A8(BlitTintmapFragInput 
 vertex PaletteBlitInterpolateFragInput
 paletteBlitInterpolateVertexShader(uint vertexID [[vertex_id]],
              constant Vertex *pVertices [[buffer(0)]],
-             constant vector_float4  *pExtras [[buffer(1)]],
-             constant Uniform * pUniform[[buffer(2)]])
+             constant vector_float4  *pColor [[buffer(1)]],
+             constant vector_float4  *pExtras [[buffer(2)]],
+             constant Uniform * pUniform[[buffer(3)]])
 {
     PaletteBlitInterpolateFragInput out;
 
@@ -827,8 +896,9 @@ fragment float4 paletteBlitInterpolateFragmentShader_A8(PaletteBlitInterpolateFr
 vertex PaletteBlitInterpolateTintmapFragInput
 paletteBlitInterpolateTintmapVertexShader(uint vertexID [[vertex_id]],
              constant Vertex *pVertices [[buffer(0)]],
-             constant vector_float4  *pExtras [[buffer(1)]],
-             constant Uniform * pUniform[[buffer(2)]])
+             constant vector_float4  *pColor [[buffer(1)]],
+             constant vector_float4  *pExtras [[buffer(2)]],
+             constant Uniform * pUniform[[buffer(3)]])
 {
     PaletteBlitInterpolateTintmapFragInput out;
 
@@ -855,8 +925,8 @@ paletteBlitInterpolateTintmapVertexShader(uint vertexID [[vertex_id]],
     out.texUV00 = texUV/ (float2) pUniform->texSize;
     out.texUV11 = (texUV+1)/ (float2) pUniform->texSize;
 
-    out.tintmapUV = pVertices[vertexID].tintmapOfs;
-//    out.color = pUniform->flatTint * gradientTint;
+    out.tintOfs = pVertices[vertexID].tintOfs;
+    out.color = pUniform->flatTint;
 
     return out;
 }
@@ -885,10 +955,9 @@ fragment float4 paletteBlitInterpolateTintmapFragmentShader(PaletteBlitInterpola
    half4 out1 = color10 * (1-fract(in.uvFrac.x)) + color11 * fract(in.uvFrac.x);
    half4 colorSample = (out0 * (1-fract(in.uvFrac.y)) + out1 * fract(in.uvFrac.y));
 
-   float4 colorFromColorstripX = pColor[(int)in.tintmapUV.x];
-   float4 colorFromColorstripY = pColor[(int)in.tintmapUV.y];
+   float4 tintColor = evalTint(pColor, in.tintOfs, in.position.xy);
 
-   return float4(colorSample) * colorFromColorstripX * colorFromColorstripY;
+   return float4(colorSample) * tintColor * in.color;
 };
 
 //____ paletteBlitInterpolateTintmapFragmentShader_A8() ____________________________________________
@@ -915,10 +984,9 @@ fragment float4 paletteBlitInterpolateTintmapFragmentShader_A8(PaletteBlitInterp
    float out1 = color10 * (1-fract(in.uvFrac.x)) + color11 * fract(in.uvFrac.x);
    float colorSample = (out0 * (1-fract(in.uvFrac.y)) + out1 * fract(in.uvFrac.y));
 
-   float alphaFromColorstripX = pColor[(int)in.tintmapUV.x].a;
-   float alphaFromColorstripY = pColor[(int)in.tintmapUV.y].a;
+   float tintAlpha = evalTint(pColor, in.tintOfs, in.position.xy).a;
 
-   return { colorSample * alphaFromColorstripX * alphaFromColorstripY, 0.0, 0.0, 0.0 };
+   return { colorSample * tintAlpha * in.color.a, 0.0, 0.0, 0.0 };
 };
 
 
@@ -971,10 +1039,9 @@ fragment float4 blurTintmapFragmentShader(BlitTintmapFragInput in [[stage_in]],
 
    color.a = 1.f;
 
-   float4 colorFromColorstripX = pColor[(int)in.tintmapUV.x];
-   float4 colorFromColorstripY = pColor[(int)in.tintmapUV.y];
+   float4 tintColor = evalTint(pColor, in.tintOfs, in.position.xy);
 
-    return color * colorFromColorstripX * colorFromColorstripY;
+    return color * tintColor * in.color;
 };
 
 
@@ -1024,10 +1091,9 @@ fragment float4 paletteBlurTintmapFragmentShader(BlitTintmapFragInput in [[stage
 {
 	float4 color = paletteBlurCore(in.texUV, colorTexture, paletteTexture, textureSampler, pBlurInfo);
 
-	float4 colorFromColorstripX = pColor[(int)in.tintmapUV.x];
-	float4 colorFromColorstripY = pColor[(int)in.tintmapUV.y];
+	float4 tintColor = evalTint(pColor, in.tintOfs, in.position.xy);
 
-	return color * colorFromColorstripX * colorFromColorstripY;
+	return color * tintColor * in.color;
 };
 
 
@@ -1055,14 +1121,25 @@ segmentsVertexShader(uint vertexID [[vertex_id]],
 
     vector_float4 extras = pExtras[eOfs];
 
-    out.colorstripPitch.x = int(extras.x);
-	out.colorstripPitch.y = int(extras.y);
+	out.flatColorsOfs = int(extras.x);
+	out.tintTableOfs = int(extras.y);
 	out.edgemapPitch = int(extras.z);
     out.texUV = pVertices[vertexID].uv;
-	out.tintmapUV = pVertices[vertexID].tintmapOfs;
-	out.colorstripUV = pVertices[vertexID].colorstripOfs;
+	out.tintOfs = pVertices[vertexID].tintOfs;
 	out.color = pUniform->flatTint;
 	return out;
+}
+
+//____ segColor() __________________________________________________________
+//
+// A segment is colored by a flat color or by a tint placed in the edgemap's own
+// rectangle. The edgemap buffer has a table with the offset of each segment's
+// tint block, -1 for flat colored segments.
+
+inline float4 segColor(int seg, SegmentsFragInput in, constant float4 * pEdgemap, float2 epos)
+{
+	int tofs = int(pEdgemap[in.tintTableOfs + seg].x);
+	return tofs < 0 ? pEdgemap[in.flatColorsOfs + seg] : evalTint(pEdgemap, tofs, epos);
 }
 
 //____ segmentsFragmentShader() ____________________________________________
@@ -1076,12 +1153,10 @@ inline float4 segFragShaderCore(SegmentsFragInput in,
 
 
     float factor = 1.f;
-    int2 colorOfs = (int2) in.colorstripUV;
+	float2 epos = float2(floor(in.texUV.x) + 0.5f, in.texUV.y + 0.5f);	// Pixel center in edgemap space.
     for( int i = 0 ; i < EDGES ; i++ )
     {
-		float4 col = pEdgemap[colorOfs.x] * pEdgemap[colorOfs.y];
-
-        colorOfs += in.colorstripPitch;
+		float4 col = segColor(i, in, pEdgemap, epos);
 
         float4 edge = pEdgemap[int(in.texUV.x)*in.edgemapPitch+i];
 
@@ -1099,7 +1174,7 @@ inline float4 segFragShaderCore(SegmentsFragInput in,
         factor = factor2;
     }
 
-	float4 col = pEdgemap[colorOfs.x] * pEdgemap[colorOfs.y];
+	float4 col = segColor(EDGES, in, pEdgemap, epos);
 
 	float useFactor = factor*col.a;
     totalAlpha += useFactor;
@@ -1207,105 +1282,105 @@ fragment float4 segmentsTintmapFragmentShader1(SegmentsFragInput in [[stage_in]]
 											   constant float4  *pColor [[buffer(0)]],
 											   constant float4  *pEdgemap [[buffer(3)]])
 {
-	return segFragShaderCore<1>(in,pEdgemap) * pColor[(int)in.tintmapUV.x] * pColor[(int)in.tintmapUV.y];
+	return segFragShaderCore<1>(in,pEdgemap) * evalTint(pColor, in.tintOfs, in.position.xy) * in.color;
 };
 
 fragment float4 segmentsTintmapFragmentShader2(SegmentsFragInput in [[stage_in]],
 											   constant float4  *pColor [[buffer(0)]],
 											   constant float4  *pEdgemap [[buffer(3)]])
 {
-	return segFragShaderCore<2>(in,pEdgemap) * pColor[(int)in.tintmapUV.x] * pColor[(int)in.tintmapUV.y];
+	return segFragShaderCore<2>(in,pEdgemap) * evalTint(pColor, in.tintOfs, in.position.xy) * in.color;
 };
 
 fragment float4 segmentsTintmapFragmentShader3(SegmentsFragInput in [[stage_in]],
 											   constant float4  *pColor [[buffer(0)]],
 											   constant float4  *pEdgemap [[buffer(3)]])
 {
-	return segFragShaderCore<3>(in,pEdgemap) * pColor[(int)in.tintmapUV.x] * pColor[(int)in.tintmapUV.y];
+	return segFragShaderCore<3>(in,pEdgemap) * evalTint(pColor, in.tintOfs, in.position.xy) * in.color;
 };
 
 fragment float4 segmentsTintmapFragmentShader4(SegmentsFragInput in [[stage_in]],
 											   constant float4  *pColor [[buffer(0)]],
 											   constant float4  *pEdgemap [[buffer(3)]])
 {
-	return segFragShaderCore<4>(in,pEdgemap) * pColor[(int)in.tintmapUV.x] * pColor[(int)in.tintmapUV.y];
+	return segFragShaderCore<4>(in,pEdgemap) * evalTint(pColor, in.tintOfs, in.position.xy) * in.color;
 };
 
 fragment float4 segmentsTintmapFragmentShader5(SegmentsFragInput in [[stage_in]],
 											   constant float4  *pColor [[buffer(0)]],
 											   constant float4  *pEdgemap [[buffer(3)]])
 {
-	return segFragShaderCore<5>(in,pEdgemap) * pColor[(int)in.tintmapUV.x] * pColor[(int)in.tintmapUV.y];
+	return segFragShaderCore<5>(in,pEdgemap) * evalTint(pColor, in.tintOfs, in.position.xy) * in.color;
 };
 
 fragment float4 segmentsTintmapFragmentShader6(SegmentsFragInput in [[stage_in]],
 											   constant float4  *pColor [[buffer(0)]],
 											   constant float4  *pEdgemap [[buffer(3)]])
 {
-	return segFragShaderCore<6>(in,pEdgemap) * pColor[(int)in.tintmapUV.x] * pColor[(int)in.tintmapUV.y];
+	return segFragShaderCore<6>(in,pEdgemap) * evalTint(pColor, in.tintOfs, in.position.xy) * in.color;
 };
 
 fragment float4 segmentsTintmapFragmentShader7(SegmentsFragInput in [[stage_in]],
 											   constant float4  *pColor [[buffer(0)]],
 											   constant float4  *pEdgemap [[buffer(3)]])
 {
-	return segFragShaderCore<7>(in,pEdgemap) * pColor[(int)in.tintmapUV.x] * pColor[(int)in.tintmapUV.y];
+	return segFragShaderCore<7>(in,pEdgemap) * evalTint(pColor, in.tintOfs, in.position.xy) * in.color;
 };
 
 fragment float4 segmentsTintmapFragmentShader8(SegmentsFragInput in [[stage_in]],
 											   constant float4  *pColor [[buffer(0)]],
 											   constant float4  *pEdgemap [[buffer(3)]])
 {
-	return segFragShaderCore<8>(in,pEdgemap) * pColor[(int)in.tintmapUV.x] * pColor[(int)in.tintmapUV.y];
+	return segFragShaderCore<8>(in,pEdgemap) * evalTint(pColor, in.tintOfs, in.position.xy) * in.color;
 };
 
 fragment float4 segmentsTintmapFragmentShader9(SegmentsFragInput in [[stage_in]],
 											   constant float4  *pColor [[buffer(0)]],
 											   constant float4  *pEdgemap [[buffer(3)]])
 {
-	return segFragShaderCore<9>(in,pEdgemap) * pColor[(int)in.tintmapUV.x] * pColor[(int)in.tintmapUV.y];
+	return segFragShaderCore<9>(in,pEdgemap) * evalTint(pColor, in.tintOfs, in.position.xy) * in.color;
 };
 
 fragment float4 segmentsTintmapFragmentShader10(SegmentsFragInput in [[stage_in]],
 												constant float4  *pColor [[buffer(0)]],
 												constant float4  *pEdgemap [[buffer(3)]])
 {
-	return segFragShaderCore<10>(in,pEdgemap) * pColor[(int)in.tintmapUV.x] * pColor[(int)in.tintmapUV.y];
+	return segFragShaderCore<10>(in,pEdgemap) * evalTint(pColor, in.tintOfs, in.position.xy) * in.color;
 };
 
 fragment float4 segmentsTintmapFragmentShader11(SegmentsFragInput in [[stage_in]],
 												constant float4  *pColor [[buffer(0)]],
 												constant float4  *pEdgemap [[buffer(3)]])
 {
-	return segFragShaderCore<11>(in,pEdgemap) * pColor[(int)in.tintmapUV.x] * pColor[(int)in.tintmapUV.y];
+	return segFragShaderCore<11>(in,pEdgemap) * evalTint(pColor, in.tintOfs, in.position.xy) * in.color;
 };
 
 fragment float4 segmentsTintmapFragmentShader12(SegmentsFragInput in [[stage_in]],
 												constant float4  *pColor [[buffer(0)]],
 												constant float4  *pEdgemap [[buffer(3)]])
 {
-	return segFragShaderCore<12>(in,pEdgemap) * pColor[(int)in.tintmapUV.x] * pColor[(int)in.tintmapUV.y];
+	return segFragShaderCore<12>(in,pEdgemap) * evalTint(pColor, in.tintOfs, in.position.xy) * in.color;
 };
 
 fragment float4 segmentsTintmapFragmentShader13(SegmentsFragInput in [[stage_in]],
 												constant float4  *pColor [[buffer(0)]],
 												constant float4  *pEdgemap [[buffer(3)]])
 {
-	return segFragShaderCore<13>(in,pEdgemap) * pColor[(int)in.tintmapUV.x] * pColor[(int)in.tintmapUV.y];
+	return segFragShaderCore<13>(in,pEdgemap) * evalTint(pColor, in.tintOfs, in.position.xy) * in.color;
 };
 
 fragment float4 segmentsTintmapFragmentShader14(SegmentsFragInput in [[stage_in]],
 												constant float4  *pColor [[buffer(0)]],
 												constant float4  *pEdgemap [[buffer(3)]])
 {
-	return segFragShaderCore<14>(in,pEdgemap) * pColor[(int)in.tintmapUV.x] * pColor[(int)in.tintmapUV.y];
+	return segFragShaderCore<14>(in,pEdgemap) * evalTint(pColor, in.tintOfs, in.position.xy) * in.color;
 };
 
 fragment float4 segmentsTintmapFragmentShader15(SegmentsFragInput in [[stage_in]],
 												constant float4  *pColor [[buffer(0)]],
 												constant float4  *pEdgemap [[buffer(3)]])
 {
-	return segFragShaderCore<15>(in,pEdgemap) * pColor[(int)in.tintmapUV.x] * pColor[(int)in.tintmapUV.y];
+	return segFragShaderCore<15>(in,pEdgemap) * evalTint(pColor, in.tintOfs, in.position.xy) * in.color;
 };
 
 
@@ -1319,12 +1394,10 @@ inline float4 segFragShaderCore_A8(SegmentsFragInput in,
 	float totalAlpha = 0.f;
 
 	float factor = 1.f;
-	int2 colorOfs = (int2) in.colorstripUV;
+	float2 epos = float2(floor(in.texUV.x) + 0.5f, in.texUV.y + 0.5f);	// Pixel center in edgemap space.
 	for( int i = 0 ; i < EDGES ; i++ )
 	{
-		float alpha = pEdgemap[colorOfs.x].a * pEdgemap[colorOfs.y].a;
-
-		colorOfs += in.colorstripPitch;
+		float alpha = segColor(i, in, pEdgemap, epos).a;
 
 		float4 edge = pEdgemap[int(in.texUV.x)*in.edgemapPitch+i];
 
@@ -1341,7 +1414,7 @@ inline float4 segFragShaderCore_A8(SegmentsFragInput in,
 		factor = factor2;
 	}
 
-	float alpha = pEdgemap[colorOfs.x].a * pEdgemap[colorOfs.y].a;
+	float alpha = segColor(EDGES, in, pEdgemap, epos).a;
 	totalAlpha += factor*alpha;
 
 	return { totalAlpha, 0.f, 0.f, 0.f };
@@ -1352,195 +1425,195 @@ inline float4 segFragShaderCore_A8(SegmentsFragInput in,
 fragment float4 segmentsFragmentShader1_A8(SegmentsFragInput in [[stage_in]],
                                     constant float4  *pEdgemap [[buffer(3)]])
 {
-    return segFragShaderCore_A8<1>(in,pEdgemap) * in.color;
+    return segFragShaderCore_A8<1>(in,pEdgemap) * in.color.a;
 };
 
 fragment float4 segmentsFragmentShader2_A8(SegmentsFragInput in [[stage_in]],
                                     constant float4  *pEdgemap [[buffer(3)]])
 {
-    return segFragShaderCore_A8<2>(in,pEdgemap) * in.color;
+    return segFragShaderCore_A8<2>(in,pEdgemap) * in.color.a;
 };
 
 fragment float4 segmentsFragmentShader3_A8(SegmentsFragInput in [[stage_in]],
 								   constant float4  *pEdgemap [[buffer(3)]])
 {
-    return segFragShaderCore_A8<3>(in,pEdgemap) * in.color;
+    return segFragShaderCore_A8<3>(in,pEdgemap) * in.color.a;
 };
 
 fragment float4 segmentsFragmentShader4_A8(SegmentsFragInput in [[stage_in]],
 								   constant float4  *pEdgemap [[buffer(3)]])
 {
-    return segFragShaderCore_A8<4>(in,pEdgemap) * in.color;
+    return segFragShaderCore_A8<4>(in,pEdgemap) * in.color.a;
 };
 
 fragment float4 segmentsFragmentShader5_A8(SegmentsFragInput in [[stage_in]],
 								   constant float4  *pEdgemap [[buffer(3)]])
 {
-    return segFragShaderCore_A8<5>(in,pEdgemap) * in.color;
+    return segFragShaderCore_A8<5>(in,pEdgemap) * in.color.a;
 };
 
 fragment float4 segmentsFragmentShader6_A8(SegmentsFragInput in [[stage_in]],
 								   constant float4  *pEdgemap [[buffer(3)]])
 {
-    return segFragShaderCore_A8<6>(in,pEdgemap) * in.color;
+    return segFragShaderCore_A8<6>(in,pEdgemap) * in.color.a;
 };
 
 fragment float4 segmentsFragmentShader7_A8(SegmentsFragInput in [[stage_in]],
 								   constant float4  *pEdgemap [[buffer(3)]])
 {
-    return segFragShaderCore_A8<7>(in,pEdgemap) * in.color;
+    return segFragShaderCore_A8<7>(in,pEdgemap) * in.color.a;
 };
 
 fragment float4 segmentsFragmentShader8_A8(SegmentsFragInput in [[stage_in]],
 								   constant float4  *pEdgemap [[buffer(3)]])
 {
-    return segFragShaderCore_A8<8>(in,pEdgemap) * in.color;
+    return segFragShaderCore_A8<8>(in,pEdgemap) * in.color.a;
 };
 
 fragment float4 segmentsFragmentShader9_A8(SegmentsFragInput in [[stage_in]],
 								   constant float4  *pEdgemap [[buffer(3)]])
 {
-    return segFragShaderCore_A8<9>(in,pEdgemap) * in.color;
+    return segFragShaderCore_A8<9>(in,pEdgemap) * in.color.a;
 };
 
 fragment float4 segmentsFragmentShader10_A8(SegmentsFragInput in [[stage_in]],
 									constant float4  *pEdgemap [[buffer(3)]])
 {
-    return segFragShaderCore_A8<10>(in,pEdgemap) * in.color;
+    return segFragShaderCore_A8<10>(in,pEdgemap) * in.color.a;
 };
 
 fragment float4 segmentsFragmentShader11_A8(SegmentsFragInput in [[stage_in]],
 									constant float4  *pEdgemap [[buffer(3)]])
 {
-    return segFragShaderCore_A8<11>(in,pEdgemap) * in.color;
+    return segFragShaderCore_A8<11>(in,pEdgemap) * in.color.a;
 };
 
 fragment float4 segmentsFragmentShader12_A8(SegmentsFragInput in [[stage_in]],
 									constant float4  *pEdgemap [[buffer(3)]])
 {
-    return segFragShaderCore_A8<12>(in,pEdgemap) * in.color;
+    return segFragShaderCore_A8<12>(in,pEdgemap) * in.color.a;
 };
 
 fragment float4 segmentsFragmentShader13_A8(SegmentsFragInput in [[stage_in]],
 									constant float4  *pEdgemap [[buffer(3)]])
 {
-    return segFragShaderCore_A8<13>(in,pEdgemap) * in.color;
+    return segFragShaderCore_A8<13>(in,pEdgemap) * in.color.a;
 };
 
 fragment float4 segmentsFragmentShader14_A8(SegmentsFragInput in [[stage_in]],
 									constant float4  *pEdgemap [[buffer(3)]])
 {
-    return segFragShaderCore_A8<14>(in,pEdgemap) * in.color;
+    return segFragShaderCore_A8<14>(in,pEdgemap) * in.color.a;
 };
 
 fragment float4 segmentsFragmentShader15_A8(SegmentsFragInput in [[stage_in]],
 									constant float4  *pEdgemap [[buffer(3)]])
 {
-    return segFragShaderCore_A8<15>(in,pEdgemap) * in.color;
+    return segFragShaderCore_A8<15>(in,pEdgemap) * in.color.a;
 };
 
 fragment float4 segmentsTintmapFragmentShader1_A8(SegmentsFragInput in [[stage_in]],
 												  constant float4  *pColor [[buffer(0)]],
 												  constant float4  *pEdgemap [[buffer(3)]])
 {
-	return segFragShaderCore_A8<1>(in,pEdgemap) * pColor[(int)in.tintmapUV.x] * pColor[(int)in.tintmapUV.y];;
+	return segFragShaderCore_A8<1>(in,pEdgemap) * (evalTint(pColor, in.tintOfs, in.position.xy).a * in.color.a);
 };
 
 fragment float4 segmentsTintmapFragmentShader2_A8(SegmentsFragInput in [[stage_in]],
 												  constant float4  *pColor [[buffer(0)]],
 												  constant float4  *pEdgemap [[buffer(3)]])
 {
-	return segFragShaderCore_A8<2>(in,pEdgemap) * pColor[(int)in.tintmapUV.x] * pColor[(int)in.tintmapUV.y];;
+	return segFragShaderCore_A8<2>(in,pEdgemap) * (evalTint(pColor, in.tintOfs, in.position.xy).a * in.color.a);
 };
 
 fragment float4 segmentsTintmapFragmentShader3_A8(SegmentsFragInput in [[stage_in]],
 												  constant float4  *pColor [[buffer(0)]],
 												  constant float4  *pEdgemap [[buffer(3)]])
 {
-	return segFragShaderCore_A8<3>(in,pEdgemap) * pColor[(int)in.tintmapUV.x] * pColor[(int)in.tintmapUV.y];;
+	return segFragShaderCore_A8<3>(in,pEdgemap) * (evalTint(pColor, in.tintOfs, in.position.xy).a * in.color.a);
 };
 
 fragment float4 segmentsTintmapFragmentShader4_A8(SegmentsFragInput in [[stage_in]],
 												  constant float4  *pColor [[buffer(0)]],
 												  constant float4  *pEdgemap [[buffer(3)]])
 {
-	return segFragShaderCore_A8<4>(in,pEdgemap) * pColor[(int)in.tintmapUV.x] * pColor[(int)in.tintmapUV.y];;
+	return segFragShaderCore_A8<4>(in,pEdgemap) * (evalTint(pColor, in.tintOfs, in.position.xy).a * in.color.a);
 };
 
 fragment float4 segmentsTintmapFragmentShader5_A8(SegmentsFragInput in [[stage_in]],
 												  constant float4  *pColor [[buffer(0)]],
 												  constant float4  *pEdgemap [[buffer(3)]])
 {
-	return segFragShaderCore_A8<5>(in,pEdgemap) * pColor[(int)in.tintmapUV.x] * pColor[(int)in.tintmapUV.y];;
+	return segFragShaderCore_A8<5>(in,pEdgemap) * (evalTint(pColor, in.tintOfs, in.position.xy).a * in.color.a);
 };
 
 fragment float4 segmentsTintmapFragmentShader6_A8(SegmentsFragInput in [[stage_in]],
 												  constant float4  *pColor [[buffer(0)]],
 												  constant float4  *pEdgemap [[buffer(3)]])
 {
-	return segFragShaderCore_A8<6>(in,pEdgemap) * pColor[(int)in.tintmapUV.x] * pColor[(int)in.tintmapUV.y];;
+	return segFragShaderCore_A8<6>(in,pEdgemap) * (evalTint(pColor, in.tintOfs, in.position.xy).a * in.color.a);
 };
 
 fragment float4 segmentsTintmapFragmentShader7_A8(SegmentsFragInput in [[stage_in]],
 												  constant float4  *pColor [[buffer(0)]],
 												  constant float4  *pEdgemap [[buffer(3)]])
 {
-	return segFragShaderCore_A8<7>(in,pEdgemap) * pColor[(int)in.tintmapUV.x] * pColor[(int)in.tintmapUV.y];;
+	return segFragShaderCore_A8<7>(in,pEdgemap) * (evalTint(pColor, in.tintOfs, in.position.xy).a * in.color.a);
 };
 
 fragment float4 segmentsTintmapFragmentShader8_A8(SegmentsFragInput in [[stage_in]],
 												  constant float4  *pColor [[buffer(0)]],
 												  constant float4  *pEdgemap [[buffer(3)]])
 {
-	return segFragShaderCore_A8<8>(in,pEdgemap) * pColor[(int)in.tintmapUV.x] * pColor[(int)in.tintmapUV.y];;
+	return segFragShaderCore_A8<8>(in,pEdgemap) * (evalTint(pColor, in.tintOfs, in.position.xy).a * in.color.a);
 };
 
 fragment float4 segmentsTintmapFragmentShader9_A8(SegmentsFragInput in [[stage_in]],
 												  constant float4  *pColor [[buffer(0)]],
 												  constant float4  *pEdgemap [[buffer(3)]])
 {
-	return segFragShaderCore_A8<9>(in,pEdgemap) * pColor[(int)in.tintmapUV.x] * pColor[(int)in.tintmapUV.y];;
+	return segFragShaderCore_A8<9>(in,pEdgemap) * (evalTint(pColor, in.tintOfs, in.position.xy).a * in.color.a);
 };
 
 fragment float4 segmentsTintmapFragmentShader10_A8(SegmentsFragInput in [[stage_in]],
 												   constant float4  *pColor [[buffer(0)]],
 												   constant float4  *pEdgemap [[buffer(3)]])
 {
-	return segFragShaderCore_A8<10>(in,pEdgemap) * pColor[(int)in.tintmapUV.x] * pColor[(int)in.tintmapUV.y];;
+	return segFragShaderCore_A8<10>(in,pEdgemap) * (evalTint(pColor, in.tintOfs, in.position.xy).a * in.color.a);
 };
 
 fragment float4 segmentsTintmapFragmentShader11_A8(SegmentsFragInput in [[stage_in]],
 												   constant float4  *pColor [[buffer(0)]],
 												   constant float4  *pEdgemap [[buffer(3)]])
 {
-	return segFragShaderCore_A8<11>(in,pEdgemap) * pColor[(int)in.tintmapUV.x] * pColor[(int)in.tintmapUV.y];;
+	return segFragShaderCore_A8<11>(in,pEdgemap) * (evalTint(pColor, in.tintOfs, in.position.xy).a * in.color.a);
 };
 
 fragment float4 segmentsTintmapFragmentShader12_A8(SegmentsFragInput in [[stage_in]],
 												   constant float4  *pColor [[buffer(0)]],
 												   constant float4  *pEdgemap [[buffer(3)]])
 {
-	return segFragShaderCore_A8<12>(in,pEdgemap) * pColor[(int)in.tintmapUV.x] * pColor[(int)in.tintmapUV.y];;
+	return segFragShaderCore_A8<12>(in,pEdgemap) * (evalTint(pColor, in.tintOfs, in.position.xy).a * in.color.a);
 };
 
 fragment float4 segmentsTintmapFragmentShader13_A8(SegmentsFragInput in [[stage_in]],
 												   constant float4  *pColor [[buffer(0)]],
 												   constant float4  *pEdgemap [[buffer(3)]])
 {
-	return segFragShaderCore_A8<13>(in,pEdgemap) * pColor[(int)in.tintmapUV.x] * pColor[(int)in.tintmapUV.y];;
+	return segFragShaderCore_A8<13>(in,pEdgemap) * (evalTint(pColor, in.tintOfs, in.position.xy).a * in.color.a);
 };
 
 fragment float4 segmentsTintmapFragmentShader14_A8(SegmentsFragInput in [[stage_in]],
 												   constant float4  *pColor [[buffer(0)]],
 												   constant float4  *pEdgemap [[buffer(3)]])
 {
-	return segFragShaderCore_A8<14>(in,pEdgemap) * pColor[(int)in.tintmapUV.x] * pColor[(int)in.tintmapUV.y];;
+	return segFragShaderCore_A8<14>(in,pEdgemap) * (evalTint(pColor, in.tintOfs, in.position.xy).a * in.color.a);
 };
 
 fragment float4 segmentsTintmapFragmentShader15_A8(SegmentsFragInput in [[stage_in]],
 												   constant float4  *pColor [[buffer(0)]],
 												   constant float4  *pEdgemap [[buffer(3)]])
 {
-	return segFragShaderCore_A8<15>(in,pEdgemap) * pColor[(int)in.tintmapUV.x] * pColor[(int)in.tintmapUV.y];;
+	return segFragShaderCore_A8<15>(in,pEdgemap) * (evalTint(pColor, in.tintOfs, in.position.xy).a * in.color.a);
 };
 

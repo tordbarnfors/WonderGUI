@@ -72,7 +72,7 @@ namespace wg
 		private:
 			wg_edgemapBP	m_cBP;
 
-			int		m_memReserved;
+			wg_obj			m_hostTints[Edgemap::maxSegments];		// Host copies of blueprint tints, released by destructor.
 		};
 
 

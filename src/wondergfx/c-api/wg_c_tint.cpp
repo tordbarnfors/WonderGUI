@@ -22,6 +22,9 @@
 
 #include <wg_c_tint.h>
 #include <wg_tint.h>
+#include <wg_tinttools.h>
+
+#include <cstring>
 
 using namespace wg;
 
@@ -99,4 +102,32 @@ wg_color wg_tintColorAt( wg_obj tint, wg_coordSPX pos, const wg_rectSPX* pRect )
 {
 	HiColor col = getPtr(tint)->colorAt( { pos.x, pos.y }, * reinterpret_cast<const RectSPX*>(pRect) );
 	return * reinterpret_cast<wg_color*>(&col);
+}
+
+int wg_exportTintData( wg_obj tint, void* pDest, int maxBytes )
+{
+	static_assert( WG_MAX_TINT_DATA_BYTES == TintTools::c_maxSerializedTintBytes, "WG_MAX_TINT_DATA_BYTES out of sync with TintTools." );
+
+	uint8_t	buffer[TintTools::c_maxSerializedTintBytes];
+
+	int bytes = TintTools::serializeTint( tint ? getPtr(tint) : nullptr, buffer );
+	if( bytes > maxBytes )
+		return 0;
+
+	memcpy( pDest, buffer, bytes );
+	return bytes;
+}
+
+wg_obj wg_createTintFromData( const void* pData, int bytes )
+{
+	if( !pData || bytes <= 0 )
+		return nullptr;
+
+	int bytesRead = 0;
+	auto pTint = TintTools::deserializeTint( (const uint8_t*) pData, bytesRead );
+	if( !pTint || bytesRead > bytes )
+		return nullptr;
+
+	pTint->retain();
+	return static_cast<Object*>(pTint.rawPtr());
 }

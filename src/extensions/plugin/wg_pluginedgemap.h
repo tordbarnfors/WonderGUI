@@ -57,18 +57,11 @@ namespace wg
 
 		bool			setRenderSegments(int nSegments) override;
 
+		// Flat colors and tints are kept on both sides, the host's for rendering
+		// and ours for flatColors() and tints().
+
 		bool			setColors( int begin, int end, const HiColor * pColors ) override;
-		bool			setColors( int begin, int end, const Gradient * pGradients) override;
-		bool			setColors( int begin, int end, const Tintmap_p * pTintmaps ) override;
-		bool			setColors( int begin, int end, const HiColor * pColorstripsX, const HiColor * pColorstripsY) override;
-
-		bool			importPaletteEntries( int begin, int end, const HiColor * pColors ) override;
-
-		const HiColor*	flatColors() const override;
-		const HiColor*	colorstripsX() const override;
-		const HiColor*	colorstripsY() const override;
-
-		void			exportLegacyPalette( HiColor * pDest ) const override;
+		bool			setColors( int begin, int end, const Tint_p * pTints ) override;
 
 		void			exportBounds( spx * pMinMaxOutput, int nSections, int sectionWidth,
 						 int topEdge, int bottomEdge, int mapOffset = 0, int minMaxPitch = 2 ) override;
@@ -89,7 +82,7 @@ namespace wg
 							   int sampleBegin, int sampleEnd, int edgePitch, int samplePitch) override;
 
 		void	_samplesUpdated(int edgeBegin, int edgeEnd, int sampleBegin, int sampleEnd) override;
-		void	_colorsUpdated(int beginColor, int endColor) override;
+		void	_colorsUpdated(int beginSegment, int endSegment) override;
 
 		wg_obj	m_cEdgemap;
 	};

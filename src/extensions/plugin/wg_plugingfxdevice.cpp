@@ -25,7 +25,6 @@
 #include <wg_pluginedgemap.h>
 #include <wg_pluginsurfacefactory.h>
 #include <wg_plugincanvaslayers.h>
-#include <wg_statictintmap.h>
 
 #include <wg_base.h>
 #include <assert.h>
@@ -191,81 +190,55 @@ namespace wg
         return *(HiColor*)&col;
     }
 
-	//____ setTintmap() __________________________________________________________
+	//____ setTint() ___________________________________________________________
+	//
+	// The host gets its own copy of the Tint.
 
-	void PluginGfxDevice::setTintmap(const RectSPX& rect, Tintmap* pTintmap)
+	void PluginGfxDevice::setTint(const RectSPX& rect, Tint* pTint)
 	{
-		int colorsX = pTintmap->isHorizontal() ? rect.w/64 : 0;
-		int colorsY = pTintmap->isVertical() ? rect.h/64 : 0;
+		if( !pTint )
+		{
+			clearTint();
+			return;
+		}
 
-		if( colorsX == 0 && colorsY == 0 )
-			colorsY = 1;						// We need to transfer at least one color.
+		wg_obj hostTint = PluginCalls::_hostTint(pTint);
 
-		int allocSize = (colorsX + colorsY) * sizeof(HiColor);
-
-		auto pColors = (wg_color*) GfxBase::memStackAlloc(allocSize);
-
-		wg_color * pColorsX = colorsX > 0 ? pColors : nullptr;
-		wg_color * pColorsY = colorsY > 0 ? pColors + colorsX : nullptr;
-
-		pTintmap->exportColors({colorsX,colorsY}, (HiColor*) pColorsX, (HiColor*) pColorsY);
-
-		wg_obj replacementTintmap = PluginCalls::staticTintmap->createStaticTintmap( {colorsX,colorsY}, pColorsX, pColorsY );
-
-		PluginCalls::gfxDevice->setTintmap( m_cDevice, (wg_rectSPX*)&rect, replacementTintmap );
-
-		GfxBase::memStackFree(allocSize);
+		PluginCalls::gfxDevice->setTint( m_cDevice, (const wg_rectSPX*)&rect, hostTint );
+		PluginCalls::object->release(hostTint);
 	}
 
-	//____ clearTintmap() ________________________________________________________
+	//____ clearTint() ___________________________________________________________
 
-	void PluginGfxDevice::clearTintmap()
+	void PluginGfxDevice::clearTint()
 	{
-		PluginCalls::gfxDevice->clearTintmap(m_cDevice);
+		PluginCalls::gfxDevice->clearTint(m_cDevice);
 	}
 
-	//____ hasTintmap() __________________________________________________________
+	//____ hasTint() _____________________________________________________________
 
-	bool PluginGfxDevice::hasTintmap() const
+	bool PluginGfxDevice::hasTint() const
 	{
-		return (PluginCalls::gfxDevice->hasTintmap(m_cDevice) == 1);
+		return (PluginCalls::gfxDevice->hasTint(m_cDevice) == 1);
 	}
 
-	//____ tintmap() _____________________________________________________________
+	//____ tint() ________________________________________________________________
 
-	Tintmap_p PluginGfxDevice::tintmap() const
+	Tint_p PluginGfxDevice::tint() const
 	{
-		//TODO: Handle this in some better way.
+		// A plugin side copy of the host's tint, equal but not the same object as
+		// the one given to setTint().
 
-		return nullptr;
+		return PluginCalls::_localTint( PluginCalls::gfxDevice->getTint(m_cDevice) );
 	}
 
-	//____ tintmapRect() _________________________________________________________
+	//____ tintRect() ____________________________________________________________
 
-	RectSPX PluginGfxDevice::tintmapRect() const
+	RectSPX PluginGfxDevice::tintRect() const
 	{
-		auto rect = (PluginCalls::gfxDevice->getTintmapRect(m_cDevice) );
+		auto rect = PluginCalls::gfxDevice->getTintRect(m_cDevice);
 		return { rect.x, rect.y, rect.w, rect.h };
 	}
-
-
-    //____ setTintGradient() __________________________________________________
-
-    void PluginGfxDevice::setTintGradient(const RectSPX& rect, const Gradient& gradient)
-    {
-        GfxDeviceGen1::setTintGradient(rect, gradient);
-        
-        PluginCalls::gfxDevice->setTintGradient(m_cDevice, (const wg_rectSPX*)&rect, (const wg_gradient*)&gradient);
-    }
-
-    //____ clearTintGradient() ________________________________________________
-
-    void PluginGfxDevice::clearTintGradient()
-    {
-        GfxDeviceGen1::clearTintGradient();
-
-        PluginCalls::gfxDevice->clearTintGradient(m_cDevice);
-    }
 
     //____ setBlendMode() __________________________________________________________
 

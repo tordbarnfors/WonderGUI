@@ -844,8 +844,7 @@ void GlBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, int 
 
 			int extrasOfs = int(pExtrasGL - m_pExtrasBuffer) / 4;
 
-
-
+			int segTintColorOfs = m_tintColorOfs >= 0 ? m_tintColorOfs : 0;		// Entry 0 is white.
 
 			// Setup vertices
 
@@ -894,6 +893,7 @@ void GlBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, int 
 				pVertexGL->uv = uv1;
 				pVertexGL->tintmapOfs = { float(m_tintOfs), 0.f };
 				pVertexGL->colorstripOfs = { 0.f, 0.f };
+				pVertexGL->colorsOfs = segTintColorOfs;
 				pVertexGL++;
 
 				pVertexGL->coord.x = dx2;
@@ -902,6 +902,7 @@ void GlBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, int 
 				pVertexGL->uv = uv2;
 				pVertexGL->tintmapOfs = { float(m_tintOfs), 0.f };
 				pVertexGL->colorstripOfs = { 0.f, 0.f };
+				pVertexGL->colorsOfs = segTintColorOfs;
 				pVertexGL++;
 
 				pVertexGL->coord.x = dx2;
@@ -910,6 +911,7 @@ void GlBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, int 
 				pVertexGL->uv = uv3;
 				pVertexGL->tintmapOfs = { float(m_tintOfs), 0.f };
 				pVertexGL->colorstripOfs = { 0.f, 0.f };
+				pVertexGL->colorsOfs = segTintColorOfs;
 				pVertexGL++;
 
 				pVertexGL->coord.x = dx1;
@@ -918,6 +920,7 @@ void GlBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, int 
 				pVertexGL->uv = uv1;
 				pVertexGL->tintmapOfs = { float(m_tintOfs), 0.f };
 				pVertexGL->colorstripOfs = { 0.f, 0.f };
+				pVertexGL->colorsOfs = segTintColorOfs;
 				pVertexGL++;
 
 				pVertexGL->coord.x = dx2;
@@ -926,6 +929,7 @@ void GlBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, int 
 				pVertexGL->uv = uv3;
 				pVertexGL->tintmapOfs = { float(m_tintOfs), 0.f };
 				pVertexGL->colorstripOfs = { 0.f, 0.f };
+				pVertexGL->colorsOfs = segTintColorOfs;
 				pVertexGL++;
 
 				pVertexGL->coord.x = dx1;
@@ -934,6 +938,7 @@ void GlBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, int 
 				pVertexGL->uv = uv4;
 				pVertexGL->tintmapOfs = { float(m_tintOfs), 0.f };
 				pVertexGL->colorstripOfs = { 0.f, 0.f };
+				pVertexGL->colorsOfs = segTintColorOfs;
 				pVertexGL++;
 			}
 
@@ -2298,9 +2303,11 @@ void GlBackend::_loadPrograms(int uboBindingPoint)
 			GLint extrasIdLoc = glGetUniformLocation(prog, "extrasBufferId");
 			GLint edgemapIdLoc = glGetUniformLocation(prog, "edgemapId");
 			GLint tintmapIdLoc = glGetUniformLocation(prog, "tintmapBufferId");
+			GLint colorIdLoc = glGetUniformLocation(prog, "colorBufferId");
 
 			glUseProgram(prog);
 			glUniform1i(tintmapIdLoc, 1);		// Needs to be set. Texture unit 1 is used for colors buffer.
+			glUniform1i(colorIdLoc, 1);			// Same buffer, for the tint color.
 			glUniform1i(extrasIdLoc, 2);		// Needs to be set. Texture unit 2 is used for extras buffer.
 			glUniform1i(edgemapIdLoc, 4);		// Needs to be set. Texture unit 4 is used for segment stripes buffer.
 		}

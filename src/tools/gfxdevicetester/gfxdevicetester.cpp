@@ -37,6 +37,7 @@
 #include "testsuites/tiletests.h"
 #include "testsuites/tintblittests.h"
 #include "testsuites/tintsegmenttests.h"
+#include "testsuites/tinttests.h"
 #include "testsuites/wavetests.h"
 #include "testsuites/edgemaptests.h"
 #include "testsuites/edgemaptoolstests.h"
@@ -581,6 +582,7 @@ void GfxDeviceTester::setup_tests()
 	add_testsuite([](){ return new MipmapTests();});
 	add_testsuite([](){ return new PieChartTests();});
 	add_testsuite([](){ return new TintBlitTests();});
+	add_testsuite([](){ return new TintTests();});
 	add_testsuite([](){ return new BlitBlendTests();});
 	add_testsuite([](){ return new A8Tests();});
 	add_testsuite([](){ return new TileTests();});

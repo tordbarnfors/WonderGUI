@@ -74,14 +74,11 @@ namespace wg
         void        setTintColor( HiColor color ) override;
         HiColor		tintColor() const override;
 
-		void		setTintmap(const RectSPX& rect, Tintmap* pTintmap) override;
-		void		clearTintmap() override;
-		bool		hasTintmap() const override;
-		Tintmap_p	tintmap() const override;
-		RectSPX		tintmapRect() const override;
-
-        void        setTintGradient(const RectSPX& rect, const Gradient& gradient) override;
-        void        clearTintGradient() override;
+		void		setTint(const RectSPX& rect, Tint* pTint) override;
+		void		clearTint() override;
+		bool		hasTint() const override;
+		Tint_p		tint() const override;
+		RectSPX		tintRect() const override;
 
         bool        setBlendMode( BlendMode blendMode ) override;
         BlendMode 	blendMode() const override;
@@ -189,7 +186,6 @@ namespace wg
         wg_obj  m_cDevice;
 		
 		wg_obj	m_hostBlurbrush = nullptr;
-
 		PluginSurfaceFactory_p	m_pSurfaceFactory;
         PluginEdgemapFactory_p	m_pEdgemapFactory;
 
