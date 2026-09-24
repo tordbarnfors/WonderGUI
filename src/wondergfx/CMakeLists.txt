@@ -85,6 +85,10 @@ set( SOURCES
 	wg_surfacewriter.h
 	wg_sysfont.cpp
 	wg_sysfont.h
+	wg_tint.cpp
+	wg_tint.h
+	wg_tinttools.cpp
+	wg_tinttools.h
 	wg_tintmap.cpp
 	wg_tintmap.h
 	wg_transitions.cpp

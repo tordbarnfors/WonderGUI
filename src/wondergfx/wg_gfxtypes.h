@@ -76,6 +76,37 @@ namespace wg
 		GradientXY
 	};
 
+	//____ TintShape ___________________________________________________________
+
+	// Shape of a Tint, e.g. how the position along the gradient is calculated for each pixel.
+
+	enum class TintShape : uint8_t //.autoExtras
+	{
+		Linear = 0,		// Straight gradient from 'begin' to 'end', at any angle.
+		Radial			// Round or elliptical gradient from 'center' out to 'radius'.
+	};
+
+	//____ TintSpread ___________________________________________________________
+
+	// What a Tint does outside its 0.0 -> 1.0 range.
+
+	enum class TintSpread : uint8_t //.autoExtras
+	{
+		Pad = 0,		// Continue with the color of the first/last stop.
+		Repeat,			// Start over from the first stop.
+		Reflect			// Go back and forth.
+	};
+
+	//____ TintRadius ___________________________________________________________
+
+	// How the radius of a radial Tint relates to the rectangle it is placed in.
+
+	enum class TintRadius : uint8_t //.autoExtras
+	{
+		Fit = 0,		// radius.w is relative to rect width and radius.h to rect height, giving an ellipse that follows the rect.
+		Circle			// radius.w is relative to the shorter side of the rect and used for both axes, giving a circle. radius.h is ignored.
+	};
+
 	//____ EdgemapPalette ___________________________________________________________
 
 	enum class EdgemapPalette : uint8_t //.autoExtras

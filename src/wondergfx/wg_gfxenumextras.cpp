@@ -45,6 +45,34 @@ namespace wg
 		return names[(int)i];
 	}
 
+	const char * toString(TintShape i)
+	{
+		static const char * names[] = { 
+			"Linear",
+			"Radial" };
+
+		return names[(int)i];
+	}
+
+	const char * toString(TintSpread i)
+	{
+		static const char * names[] = { 
+			"Pad",
+			"Repeat",
+			"Reflect" };
+
+		return names[(int)i];
+	}
+
+	const char * toString(TintRadius i)
+	{
+		static const char * names[] = { 
+			"Fit",
+			"Circle" };
+
+		return names[(int)i];
+	}
+
 	const char * toString(EdgemapPalette i)
 	{
 		static const char * names[] = { 

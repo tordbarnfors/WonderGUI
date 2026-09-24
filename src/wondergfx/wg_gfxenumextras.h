@@ -38,6 +38,9 @@ namespace wg
 =========================================================================*/
 
 	const static TintMode        TintMode_min        = TintMode::None;
+	const static TintShape       TintShape_min       = TintShape::Linear;
+	const static TintSpread      TintSpread_min      = TintSpread::Pad;
+	const static TintRadius      TintRadius_min      = TintRadius::Fit;
 	const static EdgemapPalette  EdgemapPalette_min  = EdgemapPalette::Undefined;
 	const static BlendMode       BlendMode_min       = BlendMode::Undefined;
 	const static Alignment       Alignment_min       = Alignment::Begin;
@@ -56,6 +59,9 @@ namespace wg
 	const static Compression     Compression_min     = Compression::None;
 
 	const static TintMode        TintMode_max        = TintMode::GradientXY;
+	const static TintShape       TintShape_max       = TintShape::Radial;
+	const static TintSpread      TintSpread_max      = TintSpread::Reflect;
+	const static TintRadius      TintRadius_max      = TintRadius::Circle;
 	const static EdgemapPalette  EdgemapPalette_max  = EdgemapPalette::ColorstripXY;
 	const static BlendMode       BlendMode_max       = BlendMode::BlendFixedColor;
 	const static Alignment       Alignment_max       = Alignment::Justify;
@@ -74,6 +80,9 @@ namespace wg
 	const static Compression     Compression_max     = Compression::Spx16I;
 
 	const static int             TintMode_size       = (int)TintMode::GradientXY + 1;
+	const static int             TintShape_size      = (int)TintShape::Radial + 1;
+	const static int             TintSpread_size     = (int)TintSpread::Reflect + 1;
+	const static int             TintRadius_size     = (int)TintRadius::Circle + 1;
 	const static int             EdgemapPalette_size = (int)EdgemapPalette::ColorstripXY + 1;
 	const static int             BlendMode_size      = (int)BlendMode::BlendFixedColor + 1;
 	const static int             Alignment_size      = (int)Alignment::Justify + 1;
@@ -92,6 +101,9 @@ namespace wg
 	const static int             Compression_size    = (int)Compression::Spx16I + 1;
 
 	const char * toString(TintMode);
+	const char * toString(TintShape);
+	const char * toString(TintSpread);
+	const char * toString(TintRadius);
 	const char * toString(EdgemapPalette);
 	const char * toString(BlendMode);
 	const char * toString(Alignment);
