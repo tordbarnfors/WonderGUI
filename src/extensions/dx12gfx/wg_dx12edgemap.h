@@ -72,23 +72,31 @@ namespace wg
 		void	_colorsUpdated(int beginColor, int endColor) override;
 
 		// Where DX12Backend finds us. Everything the segments shader reads lives in
-		// one buffer: the edge strips first, then the palette, then a white color
-		// for the axis that has no colorstrip. Offsets are in float4 entries, which
-		// is how the shader indexes it.
+		// one buffer, in float4 entries, which is how the shader indexes it:
+		//
+		//   Edge strips, one per pixel column.
+		//   Flat colors, one per segment.
+		//   Tint table, one per segment. X is the offset of the segment's tint
+		//   block, -1 for a flat colored segment.
+		//   Tint blocks, a slot per segment big enough for any tint. Only there
+		//   once a segment has had a tint, most edgemaps never do.
 
 		D3D12_GPU_VIRTUAL_ADDRESS	_gpuAddress() const { return m_buffer ? m_buffer->GetGPUVirtualAddress() : 0; }
 
-		int		_whiteColorOfs() const { return m_whiteColorOfs / 4; }
-		int		_flatColorsOfs() const { return m_paletteOfs / 4; }
-		int		_colorstripXOfs() const { return m_paletteOfs / 4 + int(m_pColorstripsX - m_pPalette); }
-		int		_colorstripYOfs() const { return m_paletteOfs / 4 + int(m_pColorstripsY - m_pPalette); }
+		int		_flatColorsOfs() const { return m_samplesSize; }
+		int		_tintTableOfs() const { return m_samplesSize + m_nbSegments; }
+		int		_tintSlotOfs(int segment) const { return m_samplesSize + m_nbSegments * 2 + segment * c_tintSlotSize; }
 
+		bool	_createBuffer(bool bWithTintSlots);
+		void	_writeColors(int beginSegment, int endSegment);
+
+		static const int c_tintSlotSize;		// In float4 entries.
 
 		Microsoft::WRL::ComPtr<ID3D12Resource>	m_buffer;
 		float *	m_pBuffer = nullptr;			// Permanently mapped content of m_buffer.
 
-		int		m_paletteOfs = 0;				// Offset to the palette, in floats.
-		int		m_whiteColorOfs = 0;			// Offset to the white color, in floats.
+		int		m_samplesSize = 0;				// Size of the edge strips, in float4 entries.
+		bool	m_bHasTintSlots = false;
 
 		static ID3D12Device *	s_pDevice;
 	};

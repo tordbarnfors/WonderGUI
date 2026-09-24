@@ -25,6 +25,7 @@
 #pragma once
 
 #include <wg_gfxbackend.h>
+#include <wg_tinttools.h>
 
 #include <wrl.h>
 
@@ -142,7 +143,6 @@ namespace wg
 			// second vertex format and a second buffer to keep in step with it.
 
 			float		u, v;					// Column, and distance down the column.
-			float		colorstripX, colorstripY;	// Where this corner's colors start.
 		};
 
 		struct ColorDX12 {
@@ -216,9 +216,9 @@ namespace wg
 		bool _bindBlitSource();					// Puts source and sampler in place for the coming draw.
 
 		int _addColor(HiColor color);			// Returns offset into color buffer, -1 if full.
-		void _setTintmap(const HiColor*& pColors, int nHorrColors, int nVertColors, const RectI& rect);
-		void _clearTintmap();
-		void _bindTintmap();					// Records the tintmap root constants into the command list.
+		void _setTint(const TintTools::DecodedTint& tint);
+		void _clearTint();
+		void _bindTint();						// Records the tint root constants into the command list.
 		int _addExtras(const ExtrasDX12& extras);							// Returns offset, -1 if full.
 		int _addBlurExtras();												// Returns offset to 18 entries, -1 if full.
 		int _addExtras(const ExtrasDX12& first, const ExtrasDX12& second);	// Returns offset, -1 if full.
@@ -292,24 +292,21 @@ namespace wg
 
 		HiColor					m_tintColor = HiColor::White;
 
-		// The tintmap, as root constants for the pixel shaders: where the horizontal
-		// and vertical colors start in the color buffer, the canvas pixel the first
-		// color of each axis belongs to, and how many colors there are per axis.
-		// Zero colors means that axis has none. A tintmap and a tint color are never
-		// in use at the same time, GfxDeviceGen2 folds one into the other.
+		// The tint, as root constants for the pixel shaders: where its block is in
+		// the color buffer, -1 for none. See TintTools::writeGpuTintBlock() for
+		// what the block holds. The tint color is independent of it and multiplied
+		// into every color _addColor() writes, so the shaders only see the tint.
 		//
-		// Eight values since HLSL rounds the constant buffer up to whole registers,
+		// Four values since HLSL rounds the constant buffer up to a whole register,
 		// and the root constants have to cover all of it.
 
-		struct TintmapInfo
+		struct TintInfo
 		{
-			int32_t		beginX, beginY;
-			int32_t		originX, originY;
-			int32_t		countX, countY;
-			int32_t		padding[2];
+			int32_t		ofs;
+			int32_t		padding[3];
 		};
 
-		TintmapInfo				m_tintmap = {};
+		TintInfo				m_tint = { -1, { 0, 0, 0 } };
 		BlendMode				m_activeBlendMode = BlendMode::Blend;
 		float					m_morphFactor = 0.5f;			// Only used by BlendMode::Morph.
 
@@ -422,11 +419,6 @@ namespace wg
 		static const char g_linePS[];
 		static const char g_segmentsVS[];
 		static const char g_segmentsPS[];
-
-		// Which corner of a patch each vertex takes its colorstrip from, once the
-		// edgemap has been flipped or rotated.
-
-		static const int s_flipCornerOrder[GfxFlip_size][4];
 
 	};
 

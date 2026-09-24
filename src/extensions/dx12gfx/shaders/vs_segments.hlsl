@@ -18,7 +18,6 @@ struct VS_INPUT
     uint colorOfs : COLOROFS;           // Offset into the color buffer.
     uint extrasOfs : EXTRASOFS;         // Offset into the extras buffer.
     float2 texUV : TEXCOORD0;           // Column in x, distance down the column in y.
-    float2 colorstripUV : COLORSTRIP;   // Where in the edgemap this corner's colors start.
 };
 
 
@@ -27,8 +26,7 @@ struct VS_OUTPUT
     float4 position : SV_POSITION;
     float4 color : COLOR;
     float2 texUV : TEXCOORD0;
-    float2 colorstripUV : TEXCOORD1;
-    nointerpolation float2 colorstripPitch : TEXCOORD2;
+    nointerpolation uint2 segColorsOfs : TEXCOORD1;    // Flat colors and tint table in the edgemap buffer.
 };
 
 
@@ -45,12 +43,11 @@ VS_OUTPUT main(VS_INPUT input)
     output.color = colors[input.colorOfs];
 
     output.texUV = input.texUV;
-    output.colorstripUV = input.colorstripUV;
 
-    // How far to step through the palette for each segment. Zero on an axis with
-    // no colorstrip, which then keeps reading the same color.
+    // Where the edgemap's flat segment colors and tint table are, the same for
+    // the whole edgemap.
 
-    output.colorstripPitch = extras[input.extrasOfs].xy;
+    output.segColorsOfs = uint2(extras[input.extrasOfs].xy);
 
     return output;
 }

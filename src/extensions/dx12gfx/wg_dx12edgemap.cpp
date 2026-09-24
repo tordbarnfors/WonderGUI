@@ -22,7 +22,8 @@
 
 
 #include <wg_dx12edgemap.h>
-#include <wg_gradyent.h>
+#include <wg_dx12backend.h>
+#include <wg_tinttools.h>
 #include <wg_gfxbase.h>
 
 #include <cstring>
@@ -35,6 +36,8 @@ namespace wg
 	const TypeInfo DX12Edgemap::TYPEINFO = { "DX12Edgemap", &Edgemap::TYPEINFO };
 
 	ID3D12Device * DX12Edgemap::s_pDevice = nullptr;
+
+	const int DX12Edgemap::c_tintSlotSize = TintTools::gpuTintBlockMaxSize(Tint::c_maxMixComponents, Tint::c_maxMixComponents * Tint::c_maxStops);
 
 	//____ setDevice() _________________________________________________________
 
@@ -98,17 +101,7 @@ namespace wg
 
 	DX12Edgemap::DX12Edgemap(const Blueprint& bp) : Edgemap(bp)
 	{
-		// One buffer holds everything the segments shader reads: an edge strip per
-		// pixel column, then the palette, then a white color. Laid out as floats
-		// here, read as float4 entries by the shader.
-
-		int samplesSize = bp.size.w * (bp.segments - 1) * 4;
-		int paletteSize = m_paletteSize * 4;
-
-		m_paletteOfs = samplesSize;
-		m_whiteColorOfs = samplesSize + paletteSize;
-
-		int bufferSize = samplesSize + paletteSize + 4;			// The last 4 are the white color.
+		m_samplesSize = bp.size.w * (bp.segments - 1);
 
 		if( !s_pDevice )
 		{
@@ -118,56 +111,8 @@ namespace wg
 			return;
 		}
 
-		D3D12_HEAP_PROPERTIES heapProps = {};
-		heapProps.Type = D3D12_HEAP_TYPE_UPLOAD;
-
-		D3D12_RESOURCE_DESC bufDesc = {};
-		bufDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
-		bufDesc.Width = UINT64(bufferSize) * sizeof(float);
-		bufDesc.Height = 1;
-		bufDesc.DepthOrArraySize = 1;
-		bufDesc.MipLevels = 1;
-		bufDesc.Format = DXGI_FORMAT_UNKNOWN;
-		bufDesc.SampleDesc = { 1, 0 };
-		bufDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
-
-		if( FAILED(s_pDevice->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &bufDesc,
-													  D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(m_buffer.GetAddressOf()))) )
-		{
-			GfxBase::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to create buffer for edgemap.",
-				this, &TYPEINFO, __func__, __FILE__, __LINE__);
-			return;
-		}
-
-		D3D12_RANGE readRange = { 0, 0 };			// We only write.
-
-		if( FAILED(m_buffer->Map(0, &readRange, (void**) &m_pBuffer)) )
-		{
-			m_buffer = nullptr;
-			GfxBase::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to map buffer for edgemap.",
-				this, &TYPEINFO, __func__, __FILE__, __LINE__);
-			return;
-		}
-
-		// A D3D12 upload buffer comes with whatever was in that memory, unlike an
-		// MTLBuffer. Columns nothing has written to yet would otherwise be noise.
-		//
-		//TODO: There is one buffer and two frames in flight, so updating samples
-		// can change what the GPU is still reading for the previous frame. Metal
-		// has the same, but our own per-frame buffers show what the fix looks like.
-
-		memset( m_pBuffer, 0, size_t(bufferSize) * sizeof(float) );
-
-		_colorsUpdated(0, m_paletteSize);
-
-		// The white color, for the axis that has no colorstrip of its own.
-
-		float * pOut = &m_pBuffer[m_whiteColorOfs];
-
-		*pOut++ = 1.f;
-		*pOut++ = 1.f;
-		*pOut++ = 1.f;
-		*pOut++ = 1.f;
+		if( _createBuffer(m_nbTints > 0) )
+			_writeColors(0, m_nbSegments);
 	}
 
 	//____ destructor ____________________________________________________________
@@ -249,26 +194,145 @@ namespace wg
 		}
 	}
 
-	//____ _colorsUpdated() ________________________________________________________
+	//____ _colorsUpdated() ______________________________________________________
 
-	void DX12Edgemap::_colorsUpdated(int beginColor, int endColor)
+	void DX12Edgemap::_colorsUpdated(int beginSegment, int endSegment)
 	{
 		if( !m_pBuffer )
 			return;
 
-		int nColors = endColor - beginColor;
+		// First tint on an edgemap that had none, it needs a bigger buffer. The
+		// GPU may still be reading the one we have, so wait for it before letting
+		// go. Happens once per edgemap at most.
 
-		const HiColor * pIn = m_pPalette + beginColor;
-		float * pOut = m_pBuffer + m_paletteOfs + beginColor * 4;
-
-		for (int i = 0; i < nColors; i++)
+		if( m_nbTints > 0 && !m_bHasTintSlots )
 		{
-			*pOut++ = pIn->r / 4096.f;
-			*pOut++ = pIn->g / 4096.f;
-			*pOut++ = pIn->b / 4096.f;
-			*pOut++ = pIn->a / 4096.f;
+			DX12Backend::waitForCompletionOfAll();
 
-			pIn++;
+			if( !_createBuffer(true) )
+				return;
+
+			beginSegment = 0;
+			endSegment = m_nbSegments;
+		}
+
+		_writeColors(beginSegment, endSegment);
+	}
+
+	//____ _createBuffer() _________________________________________________________
+	//
+	// Creates the buffer, with or without room for tint blocks, and carries over
+	// the edge strips of the one it replaces. Colors are left for _writeColors().
+
+	bool DX12Edgemap::_createBuffer(bool bWithTintSlots)
+	{
+		int entries = m_samplesSize + m_nbSegments * 2;
+
+		if( bWithTintSlots )
+			entries += m_nbSegments * c_tintSlotSize;
+
+		size_t bytes = size_t(entries) * 4 * sizeof(float);
+
+		D3D12_HEAP_PROPERTIES heapProps = {};
+		heapProps.Type = D3D12_HEAP_TYPE_UPLOAD;
+
+		D3D12_RESOURCE_DESC bufDesc = {};
+		bufDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+		bufDesc.Width = UINT64(bytes);
+		bufDesc.Height = 1;
+		bufDesc.DepthOrArraySize = 1;
+		bufDesc.MipLevels = 1;
+		bufDesc.Format = DXGI_FORMAT_UNKNOWN;
+		bufDesc.SampleDesc = { 1, 0 };
+		bufDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+
+		Microsoft::WRL::ComPtr<ID3D12Resource>	buffer;
+		float * pBuffer = nullptr;
+
+		if( FAILED(s_pDevice->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &bufDesc,
+													  D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(buffer.GetAddressOf()))) )
+		{
+			GfxBase::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to create buffer for edgemap.",
+				this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			return false;
+		}
+
+		D3D12_RANGE readRange = { 0, 0 };			// We only write.
+
+		if( FAILED(buffer->Map(0, &readRange, (void**) &pBuffer)) )
+		{
+			GfxBase::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to map buffer for edgemap.",
+				this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			return false;
+		}
+
+		// A D3D12 upload buffer comes with whatever was in that memory, unlike an
+		// MTLBuffer. Columns nothing has written to yet would otherwise be noise.
+		//
+		//TODO: There is one buffer and two frames in flight, so updating samples
+		// can change what the GPU is still reading for the previous frame. Metal
+		// has the same, but our own per-frame buffers show what the fix looks like.
+
+		memset( pBuffer, 0, bytes );
+
+		if( m_pBuffer )
+		{
+			memcpy( pBuffer, m_pBuffer, size_t(m_samplesSize) * 4 * sizeof(float) );
+			m_buffer->Unmap(0, nullptr);
+		}
+
+		m_buffer = buffer;
+		m_pBuffer = pBuffer;
+		m_bHasTintSlots = bWithTintSlots;
+		return true;
+	}
+
+	//____ _writeColors() __________________________________________________________
+	//
+	// Flat colors, tint table entries and tint blocks of the given segments. A
+	// segment with a tint gets its block written to its own slot.
+
+	void DX12Edgemap::_writeColors(int beginSegment, int endSegment)
+	{
+		RectSPX rect(0, 0, m_size.w * 64, m_size.h * 64);
+
+		for (int seg = beginSegment; seg < endSegment; seg++)
+		{
+			float * pFlat = m_pBuffer + (_flatColorsOfs() + seg) * 4;
+			float * pTable = m_pBuffer + (_tintTableOfs() + seg) * 4;
+
+			const HiColor& col = m_pFlatColors[seg];
+
+			pFlat[0] = col.r / 4096.f;
+			pFlat[1] = col.g / 4096.f;
+			pFlat[2] = col.b / 4096.f;
+			pFlat[3] = col.a / 4096.f;
+
+			int blockOfs = -1;
+
+			if( m_pTints[seg] && m_bHasTintSlots )
+			{
+				uint16_t	words[TintTools::c_maxEncodedTintWords];
+				HiColor		colors[TintTools::c_maxEncodedTintColors];
+				int			nColors;
+
+				TintTools::encodeTint(m_pTints[seg], rect, words, colors, nColors);
+
+				const HiColor* pColors = colors;
+				TintTools::DecodedTint decoded;
+				TintTools::decodeTint(words, pColors, decoded);
+
+				if( decoded.nLayers > 0 )
+				{
+					blockOfs = _tintSlotOfs(seg);
+					TintTools::writeGpuTintBlock(decoded, m_pBuffer + blockOfs * 4);
+				}
+			}
+
+			pTable[0] = float(blockOfs);
+			pTable[1] = 0.f;
+			pTable[2] = 0.f;
+			pTable[3] = 0.f;
 		}
 	}
 

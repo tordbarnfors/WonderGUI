@@ -46,20 +46,6 @@ namespace wg
 
 	const TypeInfo DX12Backend::TYPEINFO = { "DX12Backend", &GfxBackend::TYPEINFO };
 
-	const int DX12Backend::s_flipCornerOrder[GfxFlip_size][4] = {
-		{ 0,1,2,3 },			// Normal
-		{ 1,0,3,2 },			// FlipX
-		{ 3,2,1,0 },			// FlipY
-		{ 3,0,1,2 },			// Rot90
-		{ 0,3,2,1 },			// Rot90FlipX
-		{ 2,1,0,3 },			// Rot90FlipY
-		{ 2,3,0,1 },			// Rot180
-		{ 3,2,1,0 },			// Rot180FlipX
-		{ 1,0,3,2 },			// Rot180FlipY
-		{ 1,2,3,0 },			// Rot270
-		{ 2,1,0,3 },			// Rot270FlipX
-		{ 0,3,2,1 }				// Rot270FlipY
-	};
 
 	// Debug aid: clear each update rect before drawing it, so it is obvious which
 	// parts of the canvas are redrawn and whether anything is left unpainted. The
@@ -446,7 +432,7 @@ namespace wg
 		}
 
 		_setBlendFactor();
-		_bindTintmap();
+		_bindTint();
 
 		// Setting the root signature dropped the pipeline and whatever the blit
 		// source had bound.
@@ -604,7 +590,7 @@ namespace wg
 		// draws with the previous one's value.
 
 		m_tintColor = HiColor::White;
-		m_tintmap = {};
+		m_tint.ofs = -1;
 		m_activeBlendMode = BlendMode::Blend;
 		m_morphFactor = 0.5f;
 
@@ -898,32 +884,22 @@ namespace wg
 						_setBlitSource( _isDX12Surface(pObject) ? static_cast<DX12Surface*>(pObject) : nullptr );
 					}
 
-					// A tint color replaces any tintmap and a tintmap replaces the tint
-					// color. GfxDeviceGen2 has already folded one into the other when
-					// both are in use, so we never have to combine them.
+					// Tint color and tint are independent. The tint color goes into
+					// every color _addColor() writes, the tint is evaluated per pixel
+					// by the pixel shaders and multiplied on top.
 
 					if (statesChanged & uint8_t(StateChange::TintColor))
-					{
 						m_tintColor = *pColors++;
-						_clearTintmap();
-					}
 
-					if (statesChanged & uint8_t(StateChange::TintMap))
+					if (statesChanged & uint8_t(StateChange::Tint))
 					{
-						auto p32 = (const spx*) p;
+						TintTools::DecodedTint tint;
+						p = TintTools::decodeTint(p, pColors, tint);
 
-						int32_t	x = *p32++;
-						int32_t	y = *p32++;
-						int32_t	w = *p32++;
-						int32_t	h = *p32++;
-
-						int32_t	nHorrColors = *p32++;
-						int32_t	nVertColors = *p32++;
-
-						p = (const uint16_t*) p32;
-
-						m_tintColor = HiColor::White;
-						_setTintmap(pColors, nHorrColors, nVertColors, RectI(x, y, w, h) / 64);
+						if (tint.nLayers == 0)
+							_clearTint();
+						else
+							_setTint(tint);
 					}
 
 					if (statesChanged & uint8_t(StateChange::BlendMode))
@@ -1382,92 +1358,62 @@ namespace wg
 		return int(m_pColorPtr++ - m_pColorBeg);
 	}
 
-	//____ _setTintmap() _______________________________________________________
+	//____ _setTint() __________________________________________________________
 	//
-	// Copies the tintmap's colors, horizontal ones first, into the color buffer
-	// and points the pixel shaders at them. The colors are consumed from the
-	// color stream whether or not there is room for them.
+	// Writes the tint block into the color buffer and points the pixel shaders
+	// at it. Its stop colors are not multiplied by the tint color, _addColor()
+	// has already put that into the colors the tint is multiplied with.
 
-	void DX12Backend::_setTintmap(const HiColor*& pColors, int nHorrColors, int nVertColors, const RectI& rect)
+	void DX12Backend::_setTint(const TintTools::DecodedTint& tint)
 	{
-		const HiColor* pSource = pColors;
-		pColors += nHorrColors + nVertColors;
+		int blockSize = TintTools::gpuTintBlockSize(tint);
 
-		int nColors = nHorrColors + nVertColors;
-
-		if (!m_pColorPtr || m_pColorEnd - m_pColorPtr < nColors)
+		if (!m_pColorPtr || m_pColorEnd - m_pColorPtr < blockSize)
 		{
 			static bool bReported = false;
 			if (!bReported)
 			{
-				GfxBase::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, "Color buffer full, tintmap ignored. SessionInfo underestimated what the session needs.",
+				GfxBase::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, "Color buffer full, tint ignored. SessionInfo underestimated what the session needs.",
 					this, &TYPEINFO, __func__, __FILE__, __LINE__);
 				bReported = true;
 			}
 
-			_clearTintmap();
+			_clearTint();
 			return;
 		}
 
-		TintmapInfo info = {};
+		static_assert(sizeof(ColorDX12) == 4 * sizeof(float), "Tint blocks are written as float4 entries.");
 
-		int beginOfs = int(m_pColorPtr - m_pColorBeg);
+		m_tint.ofs = int32_t(m_pColorPtr - m_pColorBeg);
+		TintTools::writeGpuTintBlock(tint, (float*) m_pColorPtr);
+		m_pColorPtr += blockSize;
 
-		// Unlike _addColor() these are not tinted. With a tintmap in use the tint
-		// color is white.
-
-		for (int i = 0; i < nColors; i++)
-		{
-			const HiColor& color = pSource[i];
-
-			m_pColorPtr->r = color.r / 4096.f;
-			m_pColorPtr->g = color.g / 4096.f;
-			m_pColorPtr->b = color.b / 4096.f;
-			m_pColorPtr->a = color.a / 4096.f;
-			m_pColorPtr++;
-		}
-
-		if (nHorrColors > 0)
-		{
-			info.beginX = beginOfs;
-			info.originX = rect.x;
-			info.countX = nHorrColors;
-		}
-
-		if (nVertColors > 0)
-		{
-			info.beginY = beginOfs + nHorrColors;
-			info.originY = rect.y;
-			info.countY = nVertColors;
-		}
-
-		m_tintmap = info;
-		_bindTintmap();
+		_bindTint();
 	}
 
-	//____ _clearTintmap() _____________________________________________________
+	//____ _clearTint() ________________________________________________________
 
-	void DX12Backend::_clearTintmap()
+	void DX12Backend::_clearTint()
 	{
-		if (m_tintmap.countX == 0 && m_tintmap.countY == 0)
+		if (m_tint.ofs < 0)
 			return;
 
-		m_tintmap = {};
-		_bindTintmap();
+		m_tint.ofs = -1;
+		_bindTint();
 	}
 
-	//____ _bindTintmap() ______________________________________________________
+	//____ _bindTint() _________________________________________________________
 	//
 	// Root constants are recorded into the command list, so every draw after this
-	// sees the new tintmap and none before it does. A reset list has lost them,
+	// sees the new tint and none before it does. A reset list has lost them,
 	// which is why _bindSessionState() calls this too.
 
-	void DX12Backend::_bindTintmap()
+	void DX12Backend::_bindTint()
 	{
 		if (!m_bCommandListOpen)
 			return;
 
-		m_commandList->SetGraphicsRoot32BitConstants(6, 8, &m_tintmap, 0);
+		m_commandList->SetGraphicsRoot32BitConstants(6, sizeof(TintInfo) / 4, &m_tint, 0);
 	}
 
 	//____ _addExtras() ________________________________________________________
@@ -1939,20 +1885,15 @@ namespace wg
 		else if (vIncY < 0)
 			vTopLeft = dest.h;
 
-		// The colorstrips. A segment's color is its horizontal strip times its
-		// vertical one, and the axis without a strip reads the edgemap's white.
-
-		float colorstripPitchX;
-		float colorstripPitchY;
-
-		float colorstripBeginX, colorstripEndX;
-		float colorstripBeginY, colorstripEndY;
-
 		// _addColor() multiplies by the tint, so white is what gets the tint applied
 		// exactly once. Passing the tint itself would square it.
 
 		int colorOfs = _addColor(HiColor::White);
-		int extrasOfs = _addExtras({ 0.f, 0.f, 0.f, 0.f });		// Filled in below, once we know the pitches.
+
+		// Where the segment colors are in the edgemap's buffer: flat colors and the
+		// table of tint blocks, see DX12Edgemap.
+
+		int extrasOfs = _addExtras({ float(pEdgemap->_flatColorsOfs()), float(pEdgemap->_tintTableOfs()), 0.f, 0.f });
 
 		if (colorOfs < 0 || extrasOfs < 0)
 		{
@@ -1991,53 +1932,6 @@ namespace wg
 			int dx2 = patch.x + patch.w;
 			int dy2 = patch.y + patch.h;
 
-			int ofsX = patch.x - dest.x;
-			int ofsY = patch.y - dest.y;
-
-			if (pEdgemap->m_pFlatColors)
-			{
-				colorstripBeginX = float(pEdgemap->_flatColorsOfs());
-				colorstripEndX = colorstripBeginX;
-
-				colorstripBeginY = float(pEdgemap->_whiteColorOfs());
-				colorstripEndY = colorstripBeginY;
-
-				colorstripPitchX = 1.f;
-				colorstripPitchY = 0.f;
-			}
-			else
-			{
-				if (pEdgemap->m_pColorstripsX)
-				{
-					colorstripBeginX = float(pEdgemap->_colorstripXOfs() + ofsX);
-					colorstripEndX = colorstripBeginX + patch.w;
-
-					colorstripPitchX = float(pEdgemap->m_size.w);
-				}
-				else
-				{
-					colorstripBeginX = float(pEdgemap->_whiteColorOfs());
-					colorstripEndX = colorstripBeginX;
-
-					colorstripPitchX = 0.f;
-				}
-
-				if (pEdgemap->m_pColorstripsY)
-				{
-					colorstripBeginY = float(pEdgemap->_colorstripYOfs() + ofsY);
-					colorstripEndY = colorstripBeginY + patch.h;
-
-					colorstripPitchY = float(pEdgemap->m_size.h);
-				}
-				else
-				{
-					colorstripBeginY = float(pEdgemap->_whiteColorOfs());
-					colorstripEndY = colorstripBeginY;
-
-					colorstripPitchY = 0.f;
-				}
-			}
-
 			// U is which column of the edgemap, V how far down that column. Half a
 			// pixel back, so that the shader works from pixel centers.
 
@@ -2055,16 +1949,6 @@ namespace wg
 
 			const float uv[4][2] = { { u1, v1 - 0.5f }, { u2, v2 - 0.5f }, { u3, v3 - 0.5f }, { u4, v4 - 0.5f } };
 
-			// Which corner of the edgemap each corner of the patch reads from.
-
-			const float colorstripIn[4][2] = {
-				{ colorstripBeginX, colorstripBeginY },
-				{ colorstripEndX,   colorstripBeginY },
-				{ colorstripEndX,   colorstripEndY },
-				{ colorstripBeginX, colorstripEndY } };
-
-			const int* pOrder = s_flipCornerOrder[flip];
-
 			const float coords[4][2] = { { float(dx1), float(dy1) }, { float(dx2), float(dy1) },
 										 { float(dx2), float(dy2) }, { float(dx1), float(dy2) } };
 
@@ -2080,17 +1964,10 @@ namespace wg
 				m_pVertexPtr->extrasOfs = (uint32_t) extrasOfs;
 				m_pVertexPtr->u = uv[corner][0];
 				m_pVertexPtr->v = uv[corner][1];
-				m_pVertexPtr->colorstripX = colorstripIn[pOrder[corner]][0];
-				m_pVertexPtr->colorstripY = colorstripIn[pOrder[corner]][1];
 
 				m_pVertexPtr++;
 			}
 		}
-
-		// Now that the pitches are known, fill in the entry we reserved.
-
-		m_pExtrasBeg[extrasOfs].x = colorstripPitchX;
-		m_pExtrasBeg[extrasOfs].y = colorstripPitchY;
 
 		if (!_setPipeline(_pipeline(m_activeBlendMode, PipelineKind::Segments)) || !m_bCommandListOpen)
 			return;
@@ -2364,8 +2241,11 @@ namespace wg
 	// Per session it can use at most:
 	//
 	//   Vertices: six per rect of any kind, six per line.
-	//   Colors:   those in the color stream - fills, lines and tintmaps copy
+	//   Colors:   those in the color stream - fills, lines and tints copy
 	//             theirs in - plus a white one per blit, blur and edgemap draw.
+	//             A tint block also has a header, geometry and stop positions
+	//             besides its colors, at most c_tintBlockOverhead entries, and
+	//             any state change may carry a tint.
 	//   Extras:   two per rect (blits need two, subpixel fills and patches
 	//             fewer), one per line, 18 per blur for its brush and one per
 	//             edgemap draw.
@@ -2379,7 +2259,13 @@ namespace wg
 			int nLines = pInfo->nLineCoords / 2;
 
 			nVertices = pInfo->nRects * 6 + nLines * 6;
-			nColors = pInfo->nColors + pInfo->nBlit + pInfo->nBlur + pInfo->nEdgemapDraws;
+			// Overhead of a tint block besides the stop colors, which are in nColors.
+
+			const int c_maxTintStops = Tint::c_maxMixComponents * Tint::c_maxStops;
+			const int c_tintBlockOverhead = TintTools::gpuTintBlockMaxSize(Tint::c_maxMixComponents, c_maxTintStops) - c_maxTintStops;
+
+			nColors = pInfo->nColors + pInfo->nBlit + pInfo->nBlur + pInfo->nEdgemapDraws
+					+ pInfo->nStateChanges * c_tintBlockOverhead;
 			nExtras = pInfo->nRects * 2 + nLines + pInfo->nBlur * 18 + pInfo->nEdgemapDraws;
 		}
 		else
@@ -2567,7 +2453,7 @@ namespace wg
 		rootParameter[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_SRV;
 		rootParameter[1].Descriptor.ShaderRegister = 0;			// t0, colors.
 		rootParameter[1].Descriptor.RegisterSpace = 0;
-		rootParameter[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;	// Pixel shaders read tintmaps from it.
+		rootParameter[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;	// Pixel shaders read the tint from it.
 
 		rootParameter[2].ParameterType = D3D12_ROOT_PARAMETER_TYPE_SRV;
 		rootParameter[2].Descriptor.ShaderRegister = 1;			// t1, extras.
@@ -2589,13 +2475,13 @@ namespace wg
 		rootParameter[5].Descriptor.RegisterSpace = 0;
 		rootParameter[5].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
 
-		// The tintmap, where its colors are in the color buffer and which pixels
-		// they belong to. Only the pixel shaders use it. See TintmapInfo.
+		// The tint, where its block is in the color buffer. Only the pixel shaders
+		// use it. See TintInfo.
 
 		rootParameter[6].ParameterType = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS;
 		rootParameter[6].Constants.ShaderRegister = 1;			// b1.
 		rootParameter[6].Constants.RegisterSpace = 0;
-		rootParameter[6].Constants.Num32BitValues = sizeof(TintmapInfo) / 4;
+		rootParameter[6].Constants.Num32BitValues = sizeof(TintInfo) / 4;
 		rootParameter[6].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
 
 		D3D12_VERSIONED_ROOT_SIGNATURE_DESC rsDesc = { };
@@ -2897,14 +2783,12 @@ namespace wg
 			{ "EXTRASOFS", 0, DXGI_FORMAT_R32_UINT, 0, 12,
 			D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
 			{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 16,
-			D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-			{ "COLORSTRIP", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 24,
 			D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
 		};
 
 		D3D12_INPUT_LAYOUT_DESC inputLayout = {};
 
-		inputLayout.NumElements = 5;
+		inputLayout.NumElements = 4;
 		inputLayout.pInputElementDescs = elements;
 
 

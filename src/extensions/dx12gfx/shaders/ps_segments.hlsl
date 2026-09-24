@@ -8,35 +8,8 @@ cbuffer CanvasInfo : register(b0)
     uint edgemapPitch;      // Edges per column in the edgemap's buffer.
 };
 
-// The tintmap, if one is set: a color per pixel column and one per pixel row,
-// multiplied together. They live in the color buffer, and the root constants
-// say where they start, which pixel the first of them belongs to and how many
-// there are. An axis with no colors has a count of zero and is left out.
-
-cbuffer TintmapInfo : register(b1)
-{
-    int2 tintmapBegin;      // Where the horizontal and vertical colors start in the color buffer.
-    int2 tintmapOrigin;     // Canvas pixel the first color of each axis belongs to.
-    int2 tintmapCount;      // Number of colors on each axis, zero for none.
-};
-
-StructuredBuffer<float4> colors : register(t0);
-
-
-float4 tintmapColor(float2 pixelPos)
-{
-    float4 tint = float4(1.0f, 1.0f, 1.0f, 1.0f);
-
-    int2 ofs = int2(floor(pixelPos)) - tintmapOrigin;
-
-    if (tintmapCount.x > 0)
-        tint *= colors[tintmapBegin.x + clamp(ofs.x, 0, tintmapCount.x - 1)];
-
-    if (tintmapCount.y > 0)
-        tint *= colors[tintmapBegin.y + clamp(ofs.y, 0, tintmapCount.y - 1)];
-
-    return tint;
-}
+// The tint, tintColor() and the colors buffer come from tint.hlsl, which is put
+// in front of this file.
 
 
 StructuredBuffer<float4> edgemap : register(t3);
@@ -47,9 +20,28 @@ struct PS_INPUT
     float4 position : SV_POSITION;
     float4 color : COLOR;
     float2 texUV : TEXCOORD0;
-    float2 colorstripUV : TEXCOORD1;
-    nointerpolation float2 colorstripPitch : TEXCOORD2;
+    nointerpolation uint2 segColorsOfs : TEXCOORD1;    // Flat colors and tint table in the edgemap buffer.
 };
+
+
+// A segment is colored either by a flat color or by a tint placed in the
+// edgemap's own rectangle. The edgemap buffer has a table with the offset of
+// each segment's tint block, -1 for a flat colored segment.
+
+float4 segmentColor(uint seg, uint2 segColorsOfs, float2 epos)
+{
+    float4 col;
+
+    int blockOfs = int(edgemap[segColorsOfs.y + seg].x);
+
+    [branch]
+    if (blockOfs < 0)
+        col = edgemap[segColorsOfs.x + seg];
+    else
+        col = evalTintBlock(edgemap, uint(blockOfs), epos);
+
+    return col;
+}
 
 
 float4 main(PS_INPUT input) : SV_TARGET
@@ -59,27 +51,25 @@ float4 main(PS_INPUT input) : SV_TARGET
     // of this pixel falls above it. The difference between one edge's coverage
     // and the next is how much of the pixel belongs to the segment between them.
 
-    int nEdges = int(edgemapEdges);
-    int pitch = int(edgemapPitch);
+    uint nEdges = edgemapEdges;
+    uint pitch = edgemapPitch;
 
-    int column = int(input.texUV.x) * pitch;
+    uint column = uint(input.texUV.x) * pitch;
 
-    int2 colorOfs = (int2) input.colorstripUV;
-    int2 colorstripPitch = (int2) input.colorstripPitch;
+    // Pixel center in edgemap space, which is where segment tints are placed.
+    // V is half a pixel back already, see DX12Backend::_drawEdgemap().
+
+    float2 epos = float2(floor(input.texUV.x) + 0.5f, input.texUV.y + 0.5f);
 
     float totalAlpha = 0.0f;
     float3 rgbAcc = float3(0.0f, 0.0f, 0.0f);
 
     float factor = 1.0f;
 
-    for (int i = 0; i < nEdges; i++)
+    [loop]
+    for (uint i = 0; i < nEdges; i++)
     {
-        // A segment's color is its horizontal colorstrip times its vertical one.
-        // One of the two is white when only the other has a strip.
-
-        float4 col = edgemap[colorOfs.x] * edgemap[colorOfs.y];
-
-        colorOfs += colorstripPitch;
+        float4 col = segmentColor(i, input.segColorsOfs, epos);
 
         float4 edge = edgemap[column + i];
 
@@ -104,7 +94,7 @@ float4 main(PS_INPUT input) : SV_TARGET
 
     // Whatever is left below the last edge belongs to the last segment.
 
-    float4 lastCol = edgemap[colorOfs.x] * edgemap[colorOfs.y];
+    float4 lastCol = segmentColor(nEdges, input.segColorsOfs, epos);
 
     float lastFactor = factor * lastCol.a;
 
@@ -116,5 +106,5 @@ float4 main(PS_INPUT input) : SV_TARGET
     outColor.a = totalAlpha;
     outColor.rgb = totalAlpha > 0.0f ? rgbAcc / totalAlpha : float3(0.0f, 0.0f, 0.0f);
 
-    return outColor * input.color * tintmapColor(input.position.xy);
+    return outColor * input.color * tintColor(input.position.xy);
 }
