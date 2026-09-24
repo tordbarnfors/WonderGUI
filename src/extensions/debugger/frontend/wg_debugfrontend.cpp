@@ -330,7 +330,23 @@ namespace wg
 			selectObject(nullptr, nullptr);
 		});
 
-		pToolbox->slots.pushBack({ pPickButton, pUnselectButton });
+		auto pDirtyRectsToggle = WGCREATE(dbgkit::ToggleButton, _.icon.skin = m_theme.dirtyRectsIcon, _.icon.placement = Placement::Center);
+
+		Base::msgRouter()->addRoute(pDirtyRectsToggle, MsgType::Toggle, [this](Msg* pMsg) {
+
+			bool bChecked = wg_static_cast<ToggleButton_p>(pMsg->source())->isChecked();
+
+			for (auto capsule : m_capsules)
+			{
+				auto pRoot = wg_dynamic_cast<RootPanel_p>(capsule->root());
+				if( pRoot )
+					pRoot->setDebugMode(bChecked);
+			}
+		});
+
+
+
+		pToolbox->slots.pushBack({ pPickButton, pUnselectButton, pDirtyRectsToggle });
 
 		return pToolbox;
 	}

@@ -67,6 +67,12 @@ namespace wg
 			_.firstBlock = Rect(0, 64, 16, 16);
 		));
 
+		theme.dirtyRectsIcon = BlockSkin::create(WGBP(BlockSkin,
+			_.surface = pIcons,
+			_.firstBlock = Rect(16, 64, 16, 16);
+		));
+
+
 		// Text and number layouts.
 
 		auto pListTextLayout = BasicTextLayout::create( WGBP(BasicTextLayout,

@@ -70,6 +70,7 @@ namespace wg
 		Skin_p						unselectIcon;
 		Skin_p						expandIcon;
 		Skin_p						condenseIcon;
+		Skin_p						dirtyRectsIcon;
 
 		//.____ Widget blueprints _________________________________
 
