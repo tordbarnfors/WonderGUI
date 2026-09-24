@@ -24,6 +24,7 @@
 #pragma once
 
 #include <wg_edgemap.h>
+#include <wg_tinttools.h>
 
 #ifdef WIN32
 #	include <GL/glew.h>
@@ -68,22 +69,18 @@ namespace wg
 		~GlEdgemap();
 
 		void	_samplesUpdated(int edgeBegin, int edgeEnd, int sampleBegin, int sampleEnd) override;
-		void	_colorsUpdated(int beginColor, int endColor) override;
+		void	_colorsUpdated(int beginSegment, int endSegment) override;
 
-		// 
+		// Buffer layout, in float4 entries: samples, flat colors (one per segment),
+		// tint table (x is offset of tint block for segment, -1 if flat) and tint blocks.
 
-		int		_whiteColorOfs() const { return m_whiteColorOfs/16; }
-		int		_flatColorsOfs() const { return m_paletteOfs/16;  }
-		int		_colorstripXOfs() const { return m_paletteOfs / 16 + int(m_pColorstripsX - m_pPalette); }
-		int		_colorstripYOfs() const { return m_paletteOfs / 16 + int(m_pColorstripsY - m_pPalette); }
-
-
+		int		_flatColorsOfs() const { return m_paletteOfs / 16; }
+		int		_tintTableOfs() const { return m_paletteOfs / 16 + m_nbSegments; }
 
 		GLuint		m_bufferId;
 		GLuint		m_textureId;
-
-		int			m_paletteOfs;			// Offset to palette in buffer, measured in bytes.
-		int			m_whiteColorOfs;		// Offset to a white, default color, measured in bytes.
+		int			m_paletteOfs;			// Offset to flat colors in buffer, measured in bytes.
+		int			m_bufferSize = 0;		// Size of buffer in bytes.
    };
 
 

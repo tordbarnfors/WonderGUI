@@ -166,6 +166,36 @@ namespace wg
 
 		HiColor			layerColorAt(const TintLayer& layer, float position, HiColor multiplier = HiColor::White);		// No spread applied (e.g. Pad).
 
+		// Size of lookup table for a layer, as (1 << bits) + 1 entries. Based on the length of the gradient
+		// in pixels, two entries per pixel, 2 to 2048+1 entries. 0 for a flat layer.
+
+		int				lutBitsForLayer(const TintLayer& layer);
+
+		//____ GPU tint blocks ______________________________________________________
+		/**
+		 * Decoded tints prepared for evaluation in shaders, as an array of float4
+		 * (r,g,b,a order for colors). Same lookup tables and indexing as the software
+		 * renderer, so results match.
+		 *
+		 *   [0]					nLayers, 0, 0, 0
+		 *   per layer:
+		 *     [+0]				shape, spread, N (LUT has N+1 entries, N is 0 for a flat layer), weight (0.0 -> 1.0)
+		 *     [+1]				geometry (see CanvasGeometry)
+		 *     [+2]				color for positions below 0.0 with Pad spread, or the flat color
+		 *     [+3 -> +3+N]		LUT. Entry i covers positions i/N -> (i+1)/N.
+		 *
+		 * Evaluation of a layer at pixel center p:
+		 *   t = shape == 0 ? dot(geo.xy, p) + geo.z : length((p - geo.xy) * geo.zw)
+		 *   i = floor(t * N)
+		 *   Pad:		i < 0 ? padLow : lut[min(i, N)]
+		 *   Repeat:	lut[i mod N]
+		 *   Reflect:	r = i mod 2N, lut[r >= N ? 2N-1-r : r]
+		 * Result is the weighted sum of all layers. Colors are multiplied with multiplier.
+		 */
+
+		int				gpuTintBlockSize(const DecodedTint& tint);		// In float4 units.
+		void			writeGpuTintBlock(const DecodedTint& tint, float* pOutput, HiColor multiplier = HiColor::White);
+
 
 		//____ applySpread() __________________________________________________
 

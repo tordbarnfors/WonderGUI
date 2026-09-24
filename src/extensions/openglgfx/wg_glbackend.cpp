@@ -23,6 +23,7 @@
 #include <cstdlib>
 #include <cstdio>
 #include <cstring>
+#include <algorithm>
 
 #include <wg_glbackend.h>
 #include <wg_glsurface.h>
@@ -229,10 +230,10 @@ void GlBackend::_setCanvas(Surface* pSurface)
 	m_activeBlendMode = BlendMode::Blend;
 	_setBlendMode(m_activeBlendMode);
 
-	m_bTintmap = false;
+	m_tintOfs = -1;
 
 	m_activeMorphFactor = 0.5f;
-	m_bTintmapIsActive = false;
+	m_bTintIsActive = false;
 	m_tintColorOfs = -1;
 
 /*
@@ -350,76 +351,33 @@ void GlBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, int 
 					pColorGL->a = tintColor.a / 4096.f;
 					pColorGL++;
 	 			}
-				m_bTintmap = false;
 			}
 
-			if (statesChanged & uint8_t(StateChange::TintMap))
+			if (statesChanged & uint8_t(StateChange::Tint))
 			{
-				
-				auto p32 = (const spx *) p;
+				// Tint block is written to color buffer, its offset stored in vertex data.
 
-				int32_t	x = *p32++;
-				int32_t	y = *p32++;
-				int32_t	w = *p32++;
-				int32_t	h = *p32++;
+				TintTools::DecodedTint tint;
+				p = TintTools::decodeTint(p, pColors, tint);
 
-				int32_t	nHorrColors = *p32++;
-				int32_t	nVertColors = *p32++;
-
-				p = (const uint16_t*) p32;
-
-				m_bTintmap = true;
-				m_tintmapRect = RectI(x, y, w, h) / 64;
-
-				if (nHorrColors > 0)
-				{
-
-					m_tintmapBeginX = int(pColorGL - m_pColorBuffer);
-					m_tintmapEndX = int(pColorGL - m_pColorBuffer + nHorrColors);
-
-					for (int i = 0; i < nHorrColors; i++)
-					{
-						pColorGL->r = pColors->r / 4096.f;
-						pColorGL->g = pColors->g / 4096.f;
-						pColorGL->b = pColors->b / 4096.f;
-						pColorGL->a = pColors->a / 4096.f;
-						pColorGL++;
-						pColors++;
-					}
-				}
+				if (tint.nLayers == 0)
+					m_tintOfs = -1;
 				else
 				{
-					// Default to use white
+					int blockSize = TintTools::gpuTintBlockSize(tint);
 
-					m_tintmapBeginX = 0;
-					m_tintmapEndX = 0;
+					int used = int(pColorGL - m_pColorBuffer);
+					_reserveColors(used, blockSize);
+					pColorGL = m_pColorBuffer + used;
+
+					m_tintOfs = used;
+					TintTools::writeGpuTintBlock(tint, (float*) pColorGL);
+					pColorGL += blockSize;
 				}
 
-				if (nVertColors > 0)
-				{
+				// Tell execution if tint programs are needed.
 
-					m_tintmapBeginY = int(pColorGL - m_pColorBuffer);
-					m_tintmapEndY = int(pColorGL - m_pColorBuffer + nVertColors);
-
-					for (int i = 0; i < nVertColors; i++)
-					{
-						pColorGL->r = pColors->r / 4096.f;
-						pColorGL->g = pColors->g / 4096.f;
-						pColorGL->b = pColors->b / 4096.f;
-						pColorGL->a = pColors->a / 4096.f;
-						pColorGL++;
-						pColors++;
-					}
-				}
-				else
-				{
-					// Default to use white
-
-					m_tintmapBeginY = 0;
-					m_tintmapEndY = 0;
-				}
-
-				m_tintColorOfs = -1;
+				*pCommandGL++ = (m_tintOfs >= 0) ? 1 : 0;
 			}
 
 			if (statesChanged & uint8_t(StateChange::BlendMode))
@@ -538,40 +496,7 @@ void GlBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, int 
 				dy2 >>= 6;
 
 
-				float tintmapBeginX, tintmapBeginY, tintmapEndX, tintmapEndY;
 
-				if (m_bTintmap)
-				{
-					if (m_tintmapBeginX == 0)
-					{
-						tintmapBeginX = 0.f;
-						tintmapEndX = 0.f;
-					}
-					else
-					{
-						tintmapBeginX = m_tintmapBeginX + (dx1 - m_tintmapRect.x) + 0.f;
-						tintmapEndX = tintmapBeginX + (dx2 - dx1) + 0.f;
-					}
-
-					if (m_tintmapBeginY == 0)
-					{
-						tintmapBeginY = 0.f;
-						tintmapEndY = 0.f;
-					}
-					else
-					{
-						tintmapBeginY = m_tintmapBeginY + (dy1 - m_tintmapRect.y) + 0.f;
-						tintmapEndY = tintmapBeginY + (dy2 - dy1) + 0.f;
-					}
-
-				}
-				else
-				{
-					tintmapBeginX = 0.f;
-					tintmapBeginY = 0.f; 
-					tintmapEndX = 0.f;
-					tintmapEndY = 0.f;
-				}
 
 				int colOfs = int(pColorGL - m_pColorBuffer);
 				
@@ -579,42 +504,42 @@ void GlBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, int 
 				pVertexGL->coord.y = dy1;
 				pVertexGL->colorsOfs = colOfs;
 				pVertexGL->extrasOfs = extrasOfs;
-				pVertexGL->tintmapOfs = { tintmapBeginX,tintmapBeginY };
+				pVertexGL->tintmapOfs = { float(m_tintOfs), 0.f };
 				pVertexGL++;
 
 				pVertexGL->coord.x = dx2;
 				pVertexGL->coord.y = dy1;
 				pVertexGL->colorsOfs = colOfs;
 				pVertexGL->extrasOfs = extrasOfs;
-				pVertexGL->tintmapOfs = { tintmapEndX,tintmapBeginY };
+				pVertexGL->tintmapOfs = { float(m_tintOfs), 0.f };
 				pVertexGL++;
 
 				pVertexGL->coord.x = dx2;
 				pVertexGL->coord.y = dy2;
 				pVertexGL->colorsOfs = colOfs;
 				pVertexGL->extrasOfs = extrasOfs;
-				pVertexGL->tintmapOfs = { tintmapEndX,tintmapEndY };
+				pVertexGL->tintmapOfs = { float(m_tintOfs), 0.f };
 				pVertexGL++;
 
 				pVertexGL->coord.x = dx1;
 				pVertexGL->coord.y = dy1;
 				pVertexGL->colorsOfs = colOfs;
 				pVertexGL->extrasOfs = extrasOfs;
-				pVertexGL->tintmapOfs = { tintmapBeginX,tintmapBeginY };
+				pVertexGL->tintmapOfs = { float(m_tintOfs), 0.f };
 				pVertexGL++;
 
 				pVertexGL->coord.x = dx2;
 				pVertexGL->coord.y = dy2;
 				pVertexGL->colorsOfs = colOfs;
 				pVertexGL->extrasOfs = extrasOfs;
-				pVertexGL->tintmapOfs = { tintmapEndX,tintmapEndY };
+				pVertexGL->tintmapOfs = { float(m_tintOfs), 0.f };
 				pVertexGL++;
 
 				pVertexGL->coord.x = dx1;
 				pVertexGL->coord.y = dy2;
 				pVertexGL->colorsOfs = colOfs;
 				pVertexGL->extrasOfs = extrasOfs;
-				pVertexGL->tintmapOfs = { tintmapBeginX,tintmapEndY };
+				pVertexGL->tintmapOfs = { float(m_tintOfs), 0.f };
 				pVertexGL++;
 
 				nRectsWritten++;
@@ -919,8 +844,7 @@ void GlBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, int 
 
 			int extrasOfs = int(pExtrasGL - m_pExtrasBuffer) / 4;
 
-			float colorstripPitchX;
-			float colorstripPitchY;
+
 
 
 			// Setup vertices
@@ -936,96 +860,9 @@ void GlBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, int 
 
 				//
 
-				float tintmapBeginX, tintmapBeginY, tintmapEndX, tintmapEndY;
 
-
-				if (m_bTintmap)
-				{
-					if (m_tintmapBeginX == 0)
-					{
-						tintmapBeginX = 0.f;
-						tintmapEndX = 0.f;
-					}
-					else
-					{
-						tintmapBeginX = m_tintmapBeginX + (dx1 - m_tintmapRect.x) + 0.f;
-						tintmapEndX = tintmapBeginX + (dx2 - dx1) + 0.f;
-					}
-
-					if (m_tintmapBeginY == 0)
-					{
-						tintmapBeginY = 0.f;
-						tintmapEndY = 0.f;
-					}
-					else
-					{
-						tintmapBeginY = m_tintmapBeginY + (dy1 - m_tintmapRect.y) + 0.f;
-						tintmapEndY = tintmapBeginY + (dy2 - dy1) + 0.f;
-					}
-				}
-				else
-				{
-					tintmapBeginX = 0.f;
-					tintmapBeginY = 0.f;
-					tintmapEndX = 0.f;
-					tintmapEndY = 0.f;
-				}
 
 				//
-
-				int ofsX = patch.x - dest.x;
-				int ofsY = patch.y - dest.y;
-
-				float colorstripBeginX;
-				float colorstripEndX;
-
-				float colorstripBeginY;
-				float colorstripEndY;
-
-				if (pEdgemap->m_pFlatColors)
-				{
-					colorstripBeginX = pEdgemap->_flatColorsOfs();
-					colorstripEndX = colorstripBeginX;
-
-					colorstripBeginY = pEdgemap->_whiteColorOfs();
-					colorstripEndY = colorstripBeginY;
-
-					colorstripPitchX = 1;
-					colorstripPitchY = 0;
-
-				}
-				else
-				{
-					if (pEdgemap->m_pColorstripsX)
-					{
-						colorstripBeginX = pEdgemap->_colorstripXOfs() + ofsX;
-						colorstripEndX = colorstripBeginX + patch.w;
-
-						colorstripPitchX = pEdgemap->m_size.w;
-					}
-					else
-					{
-						colorstripBeginX = pEdgemap->_whiteColorOfs();
-						colorstripEndX = colorstripBeginX;
-
-						colorstripPitchX = 0;
-					}
-
-					if (pEdgemap->m_pColorstripsY)
-					{
-						colorstripBeginY = pEdgemap->_colorstripYOfs() + ofsY;
-						colorstripEndY = colorstripBeginY + patch.h;
-
-						colorstripPitchY = pEdgemap->m_size.h;
-					}
-					else
-					{
-						colorstripBeginY = pEdgemap->_whiteColorOfs();
-						colorstripEndY = colorstripBeginY;
-
-						colorstripPitchY = 0;
-					}
-				}
 
 
 				// Calc UV-coordinates. U is edge offset, V is pixel offset from begin in column.
@@ -1049,72 +886,63 @@ void GlBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, int 
 
 				//
 
-				CoordF	colorstripUV[4];
-
-				CoordF	colorstripUVin[4] = { { colorstripBeginX, colorstripBeginY }, { colorstripEndX, colorstripBeginY }, { colorstripEndX, colorstripEndY }, { colorstripBeginX, colorstripEndY } };
-				
-				colorstripUV[0] = colorstripUVin[s_flipCornerOrder[flip][0]];
-				colorstripUV[1] = colorstripUVin[s_flipCornerOrder[flip][1]];
-				colorstripUV[2] = colorstripUVin[s_flipCornerOrder[flip][2]];
-				colorstripUV[3] = colorstripUVin[s_flipCornerOrder[flip][3]];
-
 				//
 
 				pVertexGL->coord.x = dx1;
 				pVertexGL->coord.y = dy1;
 				pVertexGL->extrasOfs = extrasOfs;
 				pVertexGL->uv = uv1;
-				pVertexGL->tintmapOfs = { tintmapBeginX, tintmapBeginY };
-				pVertexGL->colorstripOfs = colorstripUV[0];
+				pVertexGL->tintmapOfs = { float(m_tintOfs), 0.f };
+				pVertexGL->colorstripOfs = { 0.f, 0.f };
 				pVertexGL++;
 
 				pVertexGL->coord.x = dx2;
 				pVertexGL->coord.y = dy1;
 				pVertexGL->extrasOfs = extrasOfs;
 				pVertexGL->uv = uv2;
-				pVertexGL->tintmapOfs = { tintmapEndX, tintmapBeginY };
-				pVertexGL->colorstripOfs = colorstripUV[1];
+				pVertexGL->tintmapOfs = { float(m_tintOfs), 0.f };
+				pVertexGL->colorstripOfs = { 0.f, 0.f };
 				pVertexGL++;
 
 				pVertexGL->coord.x = dx2;
 				pVertexGL->coord.y = dy2;
 				pVertexGL->extrasOfs = extrasOfs;
 				pVertexGL->uv = uv3;
-				pVertexGL->tintmapOfs = { tintmapEndX, tintmapEndY };
-				pVertexGL->colorstripOfs = colorstripUV[2];
+				pVertexGL->tintmapOfs = { float(m_tintOfs), 0.f };
+				pVertexGL->colorstripOfs = { 0.f, 0.f };
 				pVertexGL++;
 
 				pVertexGL->coord.x = dx1;
 				pVertexGL->coord.y = dy1;
 				pVertexGL->extrasOfs = extrasOfs;
 				pVertexGL->uv = uv1;
-				pVertexGL->tintmapOfs = { tintmapBeginX, tintmapBeginY };
-				pVertexGL->colorstripOfs = colorstripUV[0];
+				pVertexGL->tintmapOfs = { float(m_tintOfs), 0.f };
+				pVertexGL->colorstripOfs = { 0.f, 0.f };
 				pVertexGL++;
 
 				pVertexGL->coord.x = dx2;
 				pVertexGL->coord.y = dy2;
 				pVertexGL->extrasOfs = extrasOfs;
 				pVertexGL->uv = uv3;
-				pVertexGL->tintmapOfs = { tintmapEndX, tintmapEndY };
-				pVertexGL->colorstripOfs = colorstripUV[2];
+				pVertexGL->tintmapOfs = { float(m_tintOfs), 0.f };
+				pVertexGL->colorstripOfs = { 0.f, 0.f };
 				pVertexGL++;
 
 				pVertexGL->coord.x = dx1;
 				pVertexGL->coord.y = dy2;
 				pVertexGL->extrasOfs = extrasOfs;
 				pVertexGL->uv = uv4;
-				pVertexGL->tintmapOfs = { tintmapBeginX, tintmapEndY };
-				pVertexGL->colorstripOfs = colorstripUV[3];
+				pVertexGL->tintmapOfs = { float(m_tintOfs), 0.f };
+				pVertexGL->colorstripOfs = { 0.f, 0.f };
 				pVertexGL++;
 			}
 
 			// Setup extras data
 
 			*pExtrasGL++ = (GLfloat)(pEdgemap->m_nbSegments - 1);	// Edgemap pitch (edges stored per column)
-			*pExtrasGL++ = 0;			// Dummy;
-			*pExtrasGL++ = colorstripPitchX;
-			*pExtrasGL++ = colorstripPitchY;
+			*pExtrasGL++ = (GLfloat) pEdgemap->_flatColorsOfs();		// Offset of flat colors in edgemap buffer.
+			*pExtrasGL++ = (GLfloat) pEdgemap->_tintTableOfs();		// Offset of table with offsets of tint blocks for segments.
+			*pExtrasGL++ = 0;										// Unused.
 
 			//
 
@@ -1160,39 +988,7 @@ void GlBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, int 
 				int dy2 = dy1 + ((pRects->h) >> 6);
 				pRects++;
 
-				float tintmapBeginX, tintmapBeginY, tintmapEndX, tintmapEndY;
 
-				if (m_bTintmap)
-				{
-					if (m_tintmapBeginX == 0)
-					{
-						tintmapBeginX = 0.f;
-						tintmapEndX = 0.f;
-					}
-					else
-					{
-						tintmapBeginX = m_tintmapBeginX + (dx1 - m_tintmapRect.x) + 0.f;
-						tintmapEndX = tintmapBeginX + (dx2 - dx1) + 0.f;
-					}
-
-					if (m_tintmapBeginY == 0)
-					{
-						tintmapBeginY = 0.f;
-						tintmapEndY = 0.f;
-					}
-					else
-					{
-						tintmapBeginY = m_tintmapBeginY + (dy1 - m_tintmapRect.y) + 0.f;
-						tintmapEndY = tintmapBeginY + (dy2 - dy1) + 0.f;
-					}
-				}
-				else
-				{
-					tintmapBeginX = 0.f;
-					tintmapBeginY = 0.f;
-					tintmapEndX = 0.f;
-					tintmapEndY = 0.f;
-				}
 
 
 				pVertexGL->coord.x = dx1;
@@ -1200,7 +996,7 @@ void GlBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, int 
 				pVertexGL->uv = m_blitSourceSize;
 				pVertexGL->colorsOfs = tintColorOfs;
 				pVertexGL->extrasOfs = extrasOfs;
-				pVertexGL->tintmapOfs = { tintmapBeginX,tintmapBeginY };
+				pVertexGL->tintmapOfs = { float(m_tintOfs), 0.f };
 				pVertexGL++;
 
 				pVertexGL->coord.x = dx2;
@@ -1208,7 +1004,7 @@ void GlBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, int 
 				pVertexGL->uv = m_blitSourceSize;
 				pVertexGL->colorsOfs = tintColorOfs;
 				pVertexGL->extrasOfs = extrasOfs;
-				pVertexGL->tintmapOfs = { tintmapEndX,tintmapBeginY };
+				pVertexGL->tintmapOfs = { float(m_tintOfs), 0.f };
 				pVertexGL++;
 
 				pVertexGL->coord.x = dx2;
@@ -1216,7 +1012,7 @@ void GlBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, int 
 				pVertexGL->uv = m_blitSourceSize;
 				pVertexGL->colorsOfs = tintColorOfs;
 				pVertexGL->extrasOfs = extrasOfs;
-				pVertexGL->tintmapOfs = { tintmapEndX,tintmapEndY };
+				pVertexGL->tintmapOfs = { float(m_tintOfs), 0.f };
 				pVertexGL++;
 
 				pVertexGL->coord.x = dx1;
@@ -1224,7 +1020,7 @@ void GlBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, int 
 				pVertexGL->uv = m_blitSourceSize;
 				pVertexGL->colorsOfs = tintColorOfs;
 				pVertexGL->extrasOfs = extrasOfs;
-				pVertexGL->tintmapOfs = { tintmapBeginX,tintmapBeginY };
+				pVertexGL->tintmapOfs = { float(m_tintOfs), 0.f };
 				pVertexGL++;
 
 				pVertexGL->coord.x = dx2;
@@ -1232,7 +1028,7 @@ void GlBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, int 
 				pVertexGL->uv = m_blitSourceSize;
 				pVertexGL->colorsOfs = tintColorOfs;
 				pVertexGL->extrasOfs = extrasOfs;
-				pVertexGL->tintmapOfs = { tintmapEndX,tintmapEndY };
+				pVertexGL->tintmapOfs = { float(m_tintOfs), 0.f };
 				pVertexGL++;
 
 				pVertexGL->coord.x = dx1;
@@ -1240,7 +1036,7 @@ void GlBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, int 
 				pVertexGL->uv = m_blitSourceSize;
 				pVertexGL->colorsOfs = tintColorOfs;
 				pVertexGL->extrasOfs = extrasOfs;
-				pVertexGL->tintmapOfs = { tintmapBeginX,tintmapEndY };
+				pVertexGL->tintmapOfs = { float(m_tintOfs), 0.f };
 				pVertexGL++;
 
 				if (m_blitSourceSampleMethod == SampleMethod::Bilinear)
@@ -1296,6 +1092,30 @@ void GlBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, int 
 	m_commandQueueSize	= int(pCommandGL- m_pCommandQueue);
 }
 
+
+//____ _reserveColors() ______________________________________________________
+/*
+	Makes sure there is room for extra entries in color buffer on top of the ones used,
+	and still room for all colors in session. Tint blocks need more room than the
+	colors they are made from.
+*/
+
+void GlBackend::_reserveColors(int used, int extra)
+{
+	int needed = used + extra + m_sessionColors;
+
+	if (needed <= m_colorBufferCapacity)
+		return;
+
+	int newCapacity = std::max(needed, m_colorBufferCapacity * 2);
+
+	auto pNew = new ColorGL[newCapacity];
+	std::memcpy(pNew, m_pColorBuffer, used * sizeof(ColorGL));
+	delete[] m_pColorBuffer;
+
+	m_pColorBuffer = pNew;
+	m_colorBufferCapacity = newCapacity;
+}
 
 //____ _setUniforms() __________________________________________________
 
@@ -1832,9 +1652,9 @@ void GlBackend::beginSession( CanvasRef canvasRef, Surface * pCanvasSurface, int
 
 	// Reserve buffer for colors
 
-	m_pColorBuffer = new ColorGL[
-		pInfo->nColors+1
-	];
+	m_sessionColors = pInfo->nColors + 1;
+	m_colorBufferCapacity = m_sessionColors;
+	m_pColorBuffer = new ColorGL[m_colorBufferCapacity];
 
 	// Always present white color used as default tint for blits.
 
@@ -1941,19 +1761,14 @@ void GlBackend::endSession()
 					_setBlitSource(static_cast<GlSurface*>(m_objects[objectOfs++]));
 				}
 
+				if (statesChanged & uint8_t(StateChange::Tint))
+				{
+					m_bTintIsActive = (*pCmd++ != 0);
+				}
+
 				if (statesChanged & uint8_t(StateChange::BlendMode))
 				{
 					m_activeBlendMode = (BlendMode)*pCmd++;
-				}
-
-				if (statesChanged & uint8_t(StateChange::TintColor))
-				{
-					m_bTintmapIsActive = false;
-				}
-
-				if (statesChanged & uint8_t(StateChange::TintMap))
-				{
-					m_bTintmapIsActive = true;
 				}
 
 				if (statesChanged & uint8_t(StateChange::MorphFactor))
@@ -2004,7 +1819,7 @@ void GlBackend::endSession()
 			{
 				int nVertices = *pCmd++;
 
-				if (m_bTintmapIsActive)
+				if (m_bTintIsActive)
 					glUseProgram(m_fillTintmapProg[m_bActiveCanvasIsA8]);
 				else
 					glUseProgram(m_fillProg[m_bActiveCanvasIsA8]);
@@ -2018,7 +1833,7 @@ void GlBackend::endSession()
 			{
 				int nVertices = *pCmd++;
 
-				if (m_bTintmapIsActive)
+				if (m_bTintIsActive)
 					glUseProgram(m_aaFillTintmapProg[m_bActiveCanvasIsA8]);
 				else
 					glUseProgram(m_aaFillProg[m_bActiveCanvasIsA8]);
@@ -2057,7 +1872,7 @@ void GlBackend::endSession()
 				int nVertices = *pCmd++;
 
 				GlSurface* pSurf = m_pActiveBlitSource;
-				glUseProgram(m_blitProgMatrix[(int)pSurf->m_pixelFormat][(int)pSurf->sampleMethod()][m_bTintmapIsActive][m_bActiveCanvasIsA8]);
+				glUseProgram(m_blitProgMatrix[(int)pSurf->m_pixelFormat][(int)pSurf->sampleMethod()][m_bTintIsActive][m_bActiveCanvasIsA8]);
 
 				glDrawArrays(GL_TRIANGLES, vertexOfs, nVertices);
 				vertexOfs += nVertices;
@@ -2072,7 +1887,7 @@ void GlBackend::endSession()
 
 				bool bPalette = m_pActiveBlitSource->pixelDescription()->type == PixelType::Index;
 
-				glUseProgram(bPalette ? m_paletteBlurProg[m_bTintmapIsActive] : m_blurProg[m_bTintmapIsActive]);
+				glUseProgram(bPalette ? m_paletteBlurProg[m_bTintIsActive] : m_blurProg[m_bTintIsActive]);
 
 				// Blur offsets are added to texture coordinates normalized against the blit
 				// source, so they are normalized against the blit source size as well.
@@ -2109,7 +1924,7 @@ void GlBackend::endSession()
 				m_activeBlurInfo.offset[8][0] = radiusX * 0.7f;
 				m_activeBlurInfo.offset[8][1] = radiusY * 0.7f;
 
-				auto& uniformLocation = bPalette ? m_paletteBlurUniformLocation[m_bTintmapIsActive] : m_blurUniformLocation[m_bTintmapIsActive];
+				auto& uniformLocation = bPalette ? m_paletteBlurUniformLocation[m_bTintIsActive] : m_blurUniformLocation[m_bTintIsActive];
 
 				glUniform2fv(uniformLocation[1], 9, (GLfloat*)m_activeBlurInfo.offset);
 				glUniform4fv(uniformLocation[0], 9, (GLfloat*)m_activeBlurInfo.colorMtx);
@@ -2474,8 +2289,8 @@ void GlBackend::_loadPrograms(int uboBindingPoint)
 		for (int canvType = 0; canvType < 2; canvType++)
 		{
 			std::string fragShader = canvType == 0 ? segmentsFragmentShader : segmentsFragmentShader_A8;
-			auto edgesPos = fragShader.find("$EDGES");
-			fragShader.replace(edgesPos, 6, std::to_string(i));
+			for (auto edgesPos = fragShader.find("$EDGES"); edgesPos != std::string::npos; edgesPos = fragShader.find("$EDGES"))
+				fragShader.replace(edgesPos, 6, std::to_string(i));
 
 			GLuint prog = _loadOrCompileProgram(programNb++, segmentsVertexShader, fragShader.c_str());
 			m_segmentsProg[i][canvType] = prog;

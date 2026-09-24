@@ -20,7 +20,6 @@
 
 =========================================================================*/
 #include <wg_gledgemap.h>
-#include <wg_gradyent.h>
 #include <wg_gfxbase.h>
 
 #include <cstring>
@@ -80,38 +79,19 @@ namespace wg
 		// Create OpenGL buffer
 
 		int samplesSize = bp.size.w * (bp.segments - 1) * 4 * sizeof(GLfloat);
-		int paletteSize = m_paletteSize * 4 * sizeof(GLfloat);
 
 		m_paletteOfs = samplesSize;
-		m_whiteColorOfs = samplesSize + paletteSize;
-
-		int bufferSize = samplesSize + paletteSize + 16;		// +16 for white color
 
 		glGenBuffers(1, &m_bufferId);
 		glBindBuffer(GL_TEXTURE_BUFFER, m_bufferId);
 
 		glGenTextures(1, &m_textureId);
-//		glActiveTexture(GL_TEXTURE2);
 		glBindTexture(GL_TEXTURE_BUFFER, m_textureId);
 		glTexBuffer(GL_TEXTURE_BUFFER, GL_RGBA32F, m_bufferId);
-//		glActiveTexture(GL_TEXTURE0);
 
-//		glBindBuffer(GL_TEXTURE_BUFFER, m_extrasBufferId);
-		glBufferData(GL_TEXTURE_BUFFER, bufferSize, nullptr, GL_DYNAMIC_DRAW);
-//		glBindBuffer(GL_TEXTURE_BUFFER, 0);
+		// Buffer is allocated when colors are uploaded, since tints decide its size.
 
-		// Convert and upload colorstrips
-
-		_colorsUpdated(0, m_paletteSize);
-
-		// Add and upload default white color
-
-		GLfloat white[4] = { 1.f, 1.f, 1.f, 1.f };
-
-		glBindBuffer(GL_TEXTURE_BUFFER, m_bufferId);
-		glBufferSubData(GL_TEXTURE_BUFFER, m_whiteColorOfs, 16, white);
-		glBindBuffer(GL_TEXTURE_BUFFER, 0);
-
+		_colorsUpdated(0, m_nbSegments);
 	}
 
 	//____ destructor ____________________________________________________________
@@ -204,33 +184,89 @@ namespace wg
 	}
 
 	//____ _colorsUpdated() ____________________________________________________
+	/*
+		Rebuilds and uploads flat colors, tint table and tint blocks for all segments,
+		since tint blocks can change size. Grows the buffer if needed.
+	*/
 
-	void GlEdgemap::_colorsUpdated(int beginColor, int endColor)
+	void GlEdgemap::_colorsUpdated(int beginSegment, int endSegment)
 	{
+		RectSPX rect(0, 0, m_size.w * 64, m_size.h * 64);
 
-		int nColors = endColor - beginColor;
-		int tempBuffSize = nColors * sizeof(GLfloat) * 4;
+		TintTools::DecodedTint	decoded[maxSegments];
+		int						blockOfs[maxSegments];
 
-		auto pTempBuffer = (GLfloat*)GfxBase::memStackAlloc(tempBuffSize);
+		int nEntries = m_nbSegments * 2;					// Flat colors and tint table.
 
-		auto pIn = m_pPalette + beginColor;
-		auto pOut = pTempBuffer;
-		for (int i = 0; i < nColors; i++)
+		for (int seg = 0; seg < m_nbSegments; seg++)
 		{
-			*pOut++ = pIn->r / 4096.f;
-			*pOut++ = pIn->g / 4096.f;
-			*pOut++ = pIn->b / 4096.f;
-			*pOut++ = pIn->a / 4096.f;
-			pIn++;
+			if (m_pTints[seg])
+			{
+				uint16_t	words[TintTools::c_maxEncodedTintWords];
+				HiColor		colors[TintTools::c_maxEncodedTintColors];
+				int			nColors;
+
+				TintTools::encodeTint(m_pTints[seg], rect, words, colors, nColors);
+				const HiColor* pColors = colors;
+				TintTools::decodeTint(words, pColors, decoded[seg]);
+
+				blockOfs[seg] = m_paletteOfs / 16 + nEntries;
+				nEntries += TintTools::gpuTintBlockSize(decoded[seg]);
+			}
+			else
+				blockOfs[seg] = -1;
 		}
 
-		int bufferOffset = m_paletteOfs + (beginColor * 4 * sizeof(GLfloat));
+		int paletteBytes = nEntries * 4 * sizeof(GLfloat);
+
+		auto pBuffer = (GLfloat*)GfxBase::memStackAlloc(paletteBytes);
+		auto pOut = pBuffer;
+
+		for (int seg = 0; seg < m_nbSegments; seg++)
+		{
+			const HiColor& col = m_pFlatColors[seg];
+			*pOut++ = col.r / 4096.f;
+			*pOut++ = col.g / 4096.f;
+			*pOut++ = col.b / 4096.f;
+			*pOut++ = col.a / 4096.f;
+		}
+
+		for (int seg = 0; seg < m_nbSegments; seg++)
+		{
+			*pOut++ = float(blockOfs[seg]);
+			*pOut++ = 0.f;
+			*pOut++ = 0.f;
+			*pOut++ = 0.f;
+		}
+
+		for (int seg = 0; seg < m_nbSegments; seg++)
+		{
+			if (blockOfs[seg] >= 0)
+			{
+				TintTools::writeGpuTintBlock(decoded[seg], pOut);
+				pOut += TintTools::gpuTintBlockSize(decoded[seg]) * 4;
+			}
+		}
 
 		glBindBuffer(GL_TEXTURE_BUFFER, m_bufferId);
-		glBufferSubData(GL_TEXTURE_BUFFER, bufferOffset, tempBuffSize, pTempBuffer);
+
+		bool bReallocated = false;
+		if (m_paletteOfs + paletteBytes > m_bufferSize)
+		{
+			m_bufferSize = m_paletteOfs + paletteBytes;
+			glBufferData(GL_TEXTURE_BUFFER, m_bufferSize, nullptr, GL_DYNAMIC_DRAW);
+			bReallocated = true;
+		}
+
+		glBufferSubData(GL_TEXTURE_BUFFER, m_paletteOfs, paletteBytes, pBuffer);
 		glBindBuffer(GL_TEXTURE_BUFFER, 0);
 
-		GfxBase::memStackFree(tempBuffSize);
+		GfxBase::memStackFree(paletteBytes);
+
+		// A reallocated buffer has lost its samples.
+
+		if (bReallocated && m_nbSegments > 1)
+			_samplesUpdated(0, m_nbSegments - 1, 0, m_size.w + 1);
 	}
 
 } // namespace wg

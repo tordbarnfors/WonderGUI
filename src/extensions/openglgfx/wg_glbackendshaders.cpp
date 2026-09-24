@@ -24,6 +24,46 @@
 
 #include <wg_glbackend.h>  
 
+
+// GLSL function evaluating a tint block (see TintTools::writeGpuTintBlock()) at a pixel center.
+
+#define WG_GL_TINT_FUNC \
+"vec4 evalTint(samplerBuffer buf, int ofs, vec2 pos)								" \
+"{																					" \
+"	int nLayers = int(texelFetch(buf, ofs).x);										" \
+"	int p = ofs + 1;																" \
+"	vec4 result = vec4(0.0);														" \
+"	for (int l = 0; l < nLayers; l++)												" \
+"	{																				" \
+"		vec4 info = texelFetch(buf, p);												" \
+"		vec4 geo = texelFetch(buf, p + 1);											" \
+"		vec4 c = texelFetch(buf, p + 2);											" \
+"		int N = int(info.z);														" \
+"		if (N > 0)																	" \
+"		{																			" \
+"			float t = info.x < 0.5 ? geo.x * pos.x + geo.y * pos.y + geo.z : length((pos - geo.xy) * geo.zw);	" \
+"			float fN = float(N);													" \
+"			float fi = floor(clamp(t, -1e7, 1e7) * fN);								" \
+"			int spread = int(info.y);												" \
+"			if (spread == 0)														" \
+"			{																		" \
+"				if (fi >= 0.0)														" \
+"					c = texelFetch(buf, p + 3 + int(min(fi, fN)));					" \
+"			}																		" \
+"			else if (spread == 1)													" \
+"				c = texelFetch(buf, p + 3 + int(fi - fN * floor(fi / fN)));		" \
+"			else																	" \
+"			{																		" \
+"				float r = fi - 2.0 * fN * floor(fi / (2.0 * fN));					" \
+"				c = texelFetch(buf, p + 3 + int(r >= fN ? 2.0 * fN - 1.0 - r : r));	" \
+"			}																		" \
+"		}																			" \
+"		result += c * info.w;														" \
+"		p += 3 + (N > 0 ? N + 1 : 0);												" \
+"	}																				" \
+"	return result;																	" \
+"}																					"
+
 namespace wg {
 
 
@@ -70,7 +110,7 @@ const char GlBackend::fillTintmapVertexShader[] =
 "layout(location = 2) in int colorOfs;                     "
 "layout(location = 4) in vec2 tintmapOfs;                  "
 "out vec4 fragColor;                                       "
-"out vec2 tintmapUU;                                      "
+"flat out int tintOfs;  out vec2 tintPos;  "
 "void main()                                               "
 "{                                                         "
 "   gl_Position.x = pos.x*2/canvasWidth - 1.0;             "
@@ -78,7 +118,7 @@ const char GlBackend::fillTintmapVertexShader[] =
 "   gl_Position.z = 0.0;                                   "
 "   gl_Position.w = 1.0;                                   "
 "   fragColor = texelFetch(colorBufferId, colorOfs);	   "
-"   tintmapUU  =  tintmapOfs;						  "
+"   tintOfs = int(tintmapOfs.x);  tintPos = vec2(pos);  "
 "}                                                         ";
 
 
@@ -108,12 +148,11 @@ const char GlBackend::fillFragmentShaderTintmap[] =
 "#version 330 core\n"
 "uniform samplerBuffer tintmapBufferId;	"
 "in vec4 fragColor;                     "
-"in vec2 tintmapUU;                     "
+"flat in int tintOfs;  in vec2 tintPos;  " WG_GL_TINT_FUNC
 "out vec4 outColor;                     "
 "void main()                            "
 "{                                      "
-"   outColor = texelFetch(tintmapBufferId, int(tintmapUU.x) )"
-"               * texelFetch(tintmapBufferId, int(tintmapUU.y) )"
+"   outColor = evalTint(tintmapBufferId, tintOfs, tintPos)"
 "	           * fragColor;           "
 "}                                      ";
 
@@ -123,12 +162,11 @@ const char GlBackend::fillFragmentShaderTintmap_A8[] =
 "#version 330 core\n"
 "uniform samplerBuffer tintmapBufferId;	"
 "in vec4 fragColor;                     "
-"in vec2 tintmapUU;                     "
+"flat in int tintOfs;  in vec2 tintPos;  " WG_GL_TINT_FUNC
 "out vec4 outColor;                     "
 "void main()                            "
 "{                                      "
-"   outColor.r = texelFetch(tintmapBufferId, int(tintmapUU.x) ).a"
-"               * texelFetch(tintmapBufferId, int(tintmapUU.y) ).a"
+"   outColor.r = evalTint(tintmapBufferId, tintOfs, tintPos).a"
 "	           * fragColor.a;           "
 "}                                      ";
 
@@ -188,7 +226,7 @@ const char GlBackend::blitTintmapVertexShader[] =
 "layout(location = 3) in int extrasOfs;				       "
 "layout(location = 4) in vec2 tintmapOfs;                  "
 "out vec2 texUV;                                           "
-"out vec2 tintmapUU;                                      "
+"flat out int tintOfs;  out vec2 tintPos;  "
 "void main()                                               "
 "{                                                         "
 "   gl_Position.x = pos.x*2/canvasWidth - 1.0;            "
@@ -201,7 +239,7 @@ const char GlBackend::blitTintmapVertexShader[] =
 "   vec2 dst = srcDst.zw;                                  "
 "   texUV.x = (src.x + 0.0001f + (pos.x - dst.x) * transform.x + (pos.y - dst.y) * transform.z) / texSize.x; "      //TODO: Replace this ugly +0.02f fix with whatever is correct.
 "   texUV.y = (src.y + 0.0001f + (pos.x - dst.x) * transform.y + (pos.y - dst.y) * transform.w) / texSize.y; "      //TODO: Replace this ugly +0.02f fix with whatever is correct.
-"   tintmapUU  =  tintmapOfs;						  "
+"   tintOfs = int(tintmapOfs.x);  tintPos = vec2(pos);  "
 "}                                                         ";
 
 
@@ -254,7 +292,7 @@ const char GlBackend::blurFragmentShaderTintmap[] =
 "uniform sampler2D texId;						"
 "uniform samplerBuffer tintmapBufferId;			"
 "in vec2 texUV;									"
-"in vec2 tintmapUU;								"
+"flat in int tintOfs;  in vec2 tintPos;  " WG_GL_TINT_FUNC
 "out vec4 color;								"
 
 "void main()									"
@@ -269,8 +307,7 @@ const char GlBackend::blurFragmentShaderTintmap[] =
 "	color += texture(texId, texUV + blurInfo.offset[7]) * blurInfo.colorMtx[7];"
 "	color += texture(texId, texUV + blurInfo.offset[8]) * blurInfo.colorMtx[8];"
 
-"   vec4 fragColor = texelFetch(tintmapBufferId, int(tintmapUU.x) )"
-"               * texelFetch(tintmapBufferId, int(tintmapUU.y) ); "
+"   vec4 fragColor = evalTint(tintmapBufferId, tintOfs, tintPos); "
 
 "   color *= fragColor;"
 "}												";
@@ -330,7 +367,7 @@ const char GlBackend::paletteBlurFragmentShaderTintmap[] =
 "uniform sampler2D paletteId;					"
 "uniform samplerBuffer tintmapBufferId;			"
 "in vec2 texUV;									"
-"in vec2 tintmapUU;								"
+"flat in int tintOfs;  in vec2 tintPos;  " WG_GL_TINT_FUNC
 "out vec4 color;								"
 
 "void main()									"
@@ -345,8 +382,7 @@ const char GlBackend::paletteBlurFragmentShaderTintmap[] =
 "	color += texture(paletteId, vec2(texture(texId, texUV + blurInfo.offset[7]).r,0.5f)) * blurInfo.colorMtx[7];"
 "	color += texture(paletteId, vec2(texture(texId, texUV + blurInfo.offset[8]).r,0.5f)) * blurInfo.colorMtx[8];"
 
-"   vec4 fragColor = texelFetch(tintmapBufferId, int(tintmapUU.x) )"
-"               * texelFetch(tintmapBufferId, int(tintmapUU.y) ); "
+"   vec4 fragColor = evalTint(tintmapBufferId, tintOfs, tintPos); "
 
 "   color *= fragColor;"
 "}												";
@@ -416,12 +452,11 @@ const char GlBackend::blitFragmentShaderTintmap[] =
 "uniform sampler2D texId;						"
 "uniform samplerBuffer tintmapBufferId;			"
 "in vec2 texUV;									"
-"in vec2 tintmapUU;								"
+"flat in int tintOfs;  in vec2 tintPos;  " WG_GL_TINT_FUNC
 "out vec4 color;								"
 "void main()									"
 "{												"
-"   vec4 fragColor = texelFetch(tintmapBufferId, int(tintmapUU.x) )"
-"               * texelFetch(tintmapBufferId, int(tintmapUU.y) ); "
+"   vec4 fragColor = evalTint(tintmapBufferId, tintOfs, tintPos); "
 "   color = texture(texId, texUV) * fragColor;  "
 "}												";
 
@@ -432,12 +467,11 @@ const char GlBackend::blitFragmentShaderTintmap_A8[] =
 "uniform sampler2D texId;						"
 "uniform samplerBuffer tintmapBufferId;			"
 "in vec2 texUV;									"
-"in vec2 tintmapUU;								"
+"flat in int tintOfs;  in vec2 tintPos;  " WG_GL_TINT_FUNC
 "out vec4 color;								"
 "void main()									"
 "{												"
-"   float fragA = texelFetch(tintmapBufferId, int(tintmapUU.x) ).a"
-"               * texelFetch(tintmapBufferId, int(tintmapUU.y) ).a; "
+"   float fragA = evalTint(tintmapBufferId, tintOfs, tintPos).a; "
 "   color.r = texture(texId, texUV).a * fragA;  "
 "}												";
 
@@ -448,12 +482,11 @@ const char GlBackend::alphaBlitFragmentShaderTintmap[] =
 "uniform sampler2D texId;						"
 "uniform samplerBuffer tintmapBufferId;			"
 "in vec2 texUV;									"
-"in vec2 tintmapUU;								"
+"flat in int tintOfs;  in vec2 tintPos;  " WG_GL_TINT_FUNC
 "out vec4 color;								"
 "void main()									"
 "{												"
-"   color = texelFetch(tintmapBufferId, int(tintmapUU.x) )"
-"           * texelFetch(tintmapBufferId, int(tintmapUU.y) ); "
+"   color = evalTint(tintmapBufferId, tintOfs, tintPos); "
 "   color.a *= texture(texId, texUV).r;         "
 "}												";
 
@@ -464,12 +497,11 @@ const char GlBackend::alphaBlitFragmentShaderTintmap_A8[] =
 "uniform sampler2D texId;						"
 "uniform samplerBuffer tintmapBufferId;			"
 "in vec2 texUV;									"
-"in vec2 tintmapUU;								"
+"flat in int tintOfs;  in vec2 tintPos;  " WG_GL_TINT_FUNC
 "out vec4 color;								"
 "void main()									"
 "{												"
-"   float fragA = texelFetch(tintmapBufferId, int(tintmapUU.x) ).a"
-"               * texelFetch(tintmapBufferId, int(tintmapUU.y) ).a; "
+"   float fragA = evalTint(tintmapBufferId, tintOfs, tintPos).a; "
 
 "   color.r = fragA * texture(texId, texUV).r;  "
 "}												";
@@ -529,7 +561,7 @@ const char GlBackend::paletteBlitNearestTintmapVertexShader[] =
 "layout(location = 3) in int extrasOfs;                    "
 "layout(location = 4) in vec2 tintmapOfs;                  "
 "out vec2 texUV;                                           "
-"out vec2 tintmapUU;                                      "
+"flat out int tintOfs;  out vec2 tintPos;  "
 "void main()                                               "
 "{                                                         "
 "   gl_Position.x = pos.x*2/canvasWidth - 1.0;            "
@@ -542,7 +574,7 @@ const char GlBackend::paletteBlitNearestTintmapVertexShader[] =
 "   vec2 dst = srcDst.zw;                                  "
 "   texUV.x = (src.x + 0.0001f + (pos.x - dst.x) * transform.x + (pos.y - dst.y) * transform.z) / texSize.x; "      //TODO: Replace this ugly +0.02f fix with whatever is correct.
 "   texUV.y = (src.y + 0.0001f + (pos.x - dst.x) * transform.y + (pos.y - dst.y) * transform.w) / texSize.y; "      //TODO: Replace this ugly +0.02f fix with whatever is correct.
-"   tintmapUU  =  tintmapOfs;						  "
+"   tintOfs = int(tintmapOfs.x);  tintPos = vec2(pos);  "
 "}														";
 
 
@@ -583,12 +615,11 @@ const char GlBackend::paletteBlitNearestFragmentShaderTintmap[] =
 "uniform samplerBuffer tintmapBufferId;			"
 "uniform sampler2D paletteId;					"
 "in vec2 texUV;									"
-"in vec2 tintmapUU;								"
+"flat in int tintOfs;  in vec2 tintPos;  " WG_GL_TINT_FUNC
 "out vec4 color;								"
 "void main()									"
 "{												"
-"   vec4 fragColor = texelFetch(tintmapBufferId, int(tintmapUU.x) )"
-"               * texelFetch(tintmapBufferId, int(tintmapUU.y) ); "
+"   vec4 fragColor = evalTint(tintmapBufferId, tintOfs, tintPos); "
 
 "   color = texture(paletteId, vec2(texture(texId, texUV).r,0.5f)) * fragColor;	"
 "}												";
@@ -601,12 +632,11 @@ const char GlBackend::paletteBlitNearestFragmentShaderTintmap_A8[] =
 "uniform samplerBuffer tintmapBufferId;			"
 "uniform sampler2D paletteId;						"
 "in vec2 texUV;									"
-"in vec2 tintmapUU;								"
+"flat in int tintOfs;  in vec2 tintPos;  " WG_GL_TINT_FUNC
 "out vec4 color;								"
 "void main()									"
 "{												"
-"   float fragA = texelFetch(tintmapBufferId, int(tintmapUU.x) ).a"
-"               * texelFetch(tintmapBufferId, int(tintmapUU.y) ).a; "
+"   float fragA = evalTint(tintmapBufferId, tintOfs, tintPos).a; "
 "   color.r = texture(paletteId, vec2(texture(texId, texUV).r,0.5f)).a * fragA;	"
 "}												";
 
@@ -680,7 +710,7 @@ const char GlBackend::paletteBlitInterpolateTintmapVertexShader[] =
 "out vec2 texUV00;                                         "
 "out vec2 texUV11;                                         "
 "out vec2 uvFrac;                                         "
-"out vec2 tintmapUU;                                      "
+"flat out int tintOfs;  out vec2 tintPos;  "
 "void main()                                               "
 "{                                                         "
 "   gl_Position.x = pos.x*2/canvasWidth - 1.0;            "
@@ -703,7 +733,7 @@ const char GlBackend::paletteBlitInterpolateTintmapVertexShader[] =
 "   uvFrac = texUV;"
 "   texUV00 = texUV/texSize;				"
 "   texUV11 = (texUV+1)/texSize;			"
-"   tintmapUU  =  tintmapOfs;						  "
+"   tintOfs = int(tintmapOfs.x);  tintPos = vec2(pos);  "
 "}                                                         ";
 
 
@@ -777,7 +807,7 @@ const char GlBackend::paletteBlitInterpolateFragmentShaderTintmap[] =
 "in vec2 texUV00;								"
 "in vec2 texUV11;								"
 "in vec2 uvFrac;								"
-"in vec2 tintmapUU;								"
+"flat in int tintOfs;  in vec2 tintPos;  " WG_GL_TINT_FUNC
 "out vec4 color;								"
 "void main()									"
 "{												"
@@ -793,8 +823,7 @@ const char GlBackend::paletteBlitInterpolateFragmentShaderTintmap[] =
 "   vec4 out0 = color00 * (1-fract(uvFrac.x)) + color01 * fract(uvFrac.x);	"
 "   vec4 out1 = color10 * (1-fract(uvFrac.x)) + color11 * fract(uvFrac.x);	"
 
-"   vec4 fragColor = texelFetch(tintmapBufferId, int(tintmapUU.x) )"
-"               * texelFetch(tintmapBufferId, int(tintmapUU.y) ); "
+"   vec4 fragColor = evalTint(tintmapBufferId, tintOfs, tintPos); "
 
 "   color = (out0 * (1-fract(uvFrac.y)) + out1 * fract(uvFrac.y)) * fragColor;	"
 "}												";
@@ -809,7 +838,7 @@ const char GlBackend::paletteBlitInterpolateFragmentShaderTintmap_A8[] =
 "in vec2 texUV00;								"
 "in vec2 texUV11;								"
 "in vec2 uvFrac;								"
-"in vec2 tintmapUU;								"
+"flat in int tintOfs;  in vec2 tintPos;  " WG_GL_TINT_FUNC
 "out vec4 color;								"
 "void main()									"
 "{												"
@@ -825,8 +854,7 @@ const char GlBackend::paletteBlitInterpolateFragmentShaderTintmap_A8[] =
 "   float out0 = color00 * (1-fract(uvFrac.x)) + color01 * fract(uvFrac.x);	"
 "   float out1 = color10 * (1-fract(uvFrac.x)) + color11 * fract(uvFrac.x);	"
 
-"   float fragA = texelFetch(tintmapBufferId, int(tintmapUU.x) ).a"
-"               * texelFetch(tintmapBufferId, int(tintmapUU.y) ).a; "
+"   float fragA = evalTint(tintmapBufferId, tintOfs, tintPos).a; "
 
 "   color.r = (out0 * (1-fract(uvFrac.y)) + out1 * fract(uvFrac.y)) * fragA;	"
 "}												";
@@ -959,7 +987,7 @@ const char GlBackend::aaFillTintmapVertexShader[] =
 "layout(location = 4) in vec2 tintmapOfs;                   "
 "out vec4 fragColor;                                        "
 "flat out vec4 rect;										"
-"out vec2 tintmapUU;                                        "
+"flat out int tintOfs;  out vec2 tintPos;  "
 "void main()                                                "
 "{                                                          "
 "   gl_Position.x = pos.x*2/canvasWidth - 1.0;              "
@@ -970,7 +998,7 @@ const char GlBackend::aaFillTintmapVertexShader[] =
 "   rect = texelFetch(extrasBufferId, extrasOfs);			"
 "   rect.y = canvasYOfs + canvasYMul*rect.y;				"
 "   rect.zw += vec2(0.5f,0.5f);								"		// Adding offset here so we don't have to do it in pixel shader.
-"   tintmapUU  =  tintmapOfs;						        "
+"   tintOfs = int(tintmapOfs.x);  tintPos = vec2(pos);  "
 "}                                                          ";
 
 
@@ -1010,13 +1038,12 @@ const char GlBackend::aaFillFragmentShaderTintmap[] =
 "#version 330 core\n"
 "uniform samplerBuffer tintmapBufferId;	"
 "in vec4 fragColor;						"
-"in vec2 tintmapUU;                     "
+"flat in int tintOfs;  in vec2 tintPos;  " WG_GL_TINT_FUNC
 "flat in vec4 rect;						"
 "out vec4 outColor;                     "
 "void main()                            "
 "{										"
-"   vec4 inColor = texelFetch(tintmapBufferId, int(tintmapUU.x) )"
-"               * texelFetch(tintmapBufferId, int(tintmapUU.y) )"
+"   vec4 inColor = evalTint(tintmapBufferId, tintOfs, tintPos)"
 "	           * fragColor;           "
 "   outColor.rgb = inColor.rgb;             "
 "	vec2 middleofs = abs(gl_FragCoord.xy - rect.xy);   "
@@ -1029,13 +1056,12 @@ const char GlBackend::aaFillFragmentShaderTintmap_A8[] =
 "#version 330 core\n"
 "uniform samplerBuffer tintmapBufferId;	"
 "in vec4 fragColor;						"
-"in vec2 tintmapUU;                     "
+"flat in int tintOfs;  in vec2 tintPos;  " WG_GL_TINT_FUNC
 "flat in vec4 rect;						"
 "out vec4 outColor;                     "
 "void main()                            "
 "{										"
-"   float inAlpha = texelFetch(tintmapBufferId, int(tintmapUU.x) ).a"
-"               * texelFetch(tintmapBufferId, int(tintmapUU.y) ).a"
+"   float inAlpha = evalTint(tintmapBufferId, tintOfs, tintPos).a"
 "	           * fragColor.a;           "
 "	vec2 middleofs = abs(gl_FragCoord.xy - rect.xy);   "
 "	vec2 alphas = clamp(rect.zw  - middleofs, 0.f, 1.f);  "
@@ -1060,13 +1086,12 @@ const char GlBackend::segmentsVertexShader[] =
 "layout(location = 1) in vec2 uv;					    "
 "layout(location = 3) in int extrasOfs;                 "
 "layout(location = 4) in vec2 tintmapOfs;               "
-"layout(location = 5) in vec2 colorstripOfs;            "
 "out vec2 texUV;										"
 "flat out int edgemapPitch;								"
-"flat out int colorstripPitchX;							"
-"flat out int colorstripPitchY;							"
-"out vec2 tintmapUU;"
-"out vec2 colorstripUU;"
+"flat out int flatColorsOfs;							"
+"flat out int tintTableOfs;								"
+"flat out int tintOfs;									"
+"out vec2 tintPos;										"
 
 "void main()											"
 "{                                                      "
@@ -1077,13 +1102,22 @@ const char GlBackend::segmentsVertexShader[] =
 
 "   vec4 extras = texelFetch(extrasBufferId, extrasOfs);		"
 "   edgemapPitch = int(extras.x);						"
-"   colorstripPitchX = int(extras.z);						"
-"   colorstripPitchY = int(extras.w);						"
+"   flatColorsOfs = int(extras.y);						"
+"   tintTableOfs = int(extras.z);						"
 "   texUV = uv;											"
-"   tintmapUU = tintmapOfs;"
-"   colorstripUU = colorstripOfs;"
+"   tintOfs = int(tintmapOfs.x);"
+"   tintPos = vec2(pos);"
 "}                                                      ";
 
+// Segment colors are either flat or a tint in edgemap space. The edgemap buffer holds a
+// table with the offset of each segment's tint block, -1 for flat colored segments.
+
+#define WG_GL_SEGCOLOR_FUNC \
+"vec4 segColor(int seg, int flatColorsOfs, int tintTableOfs, vec2 epos)			" \
+"{																				" \
+"	int tofs = int(texelFetch(edgemapId, tintTableOfs + seg).x);					" \
+"	return tofs < 0 ? texelFetch(edgemapId, flatColorsOfs + seg) : evalTint(edgemapId, tofs, epos);	" \
+"}																				"
 
 const char GlBackend::segmentsFragmentShader[] =
 
@@ -1092,10 +1126,12 @@ const char GlBackend::segmentsFragmentShader[] =
 "uniform samplerBuffer edgemapId;				"
 "in vec2 texUV;									"
 "flat in int edgemapPitch;						"
-"flat in int colorstripPitchX;					"
-"flat in int colorstripPitchY;					"
-"in vec2 tintmapUU;"
-"in vec2 colorstripUU;"
+"flat in int flatColorsOfs;						"
+"flat in int tintTableOfs;						"
+"flat in int tintOfs;							"
+"in vec2 tintPos;								"
+WG_GL_TINT_FUNC
+WG_GL_SEGCOLOR_FUNC
 
 "out vec4 color;								"
 "void main()									"
@@ -1105,17 +1141,12 @@ const char GlBackend::segmentsFragmentShader[] =
 
 "	float factor = 1.f;"
 
-"   int colorstripX = int(colorstripUU.x);"
-"   int colorstripY = int(colorstripUU.y);"
+"	vec2 epos = vec2(floor(texUV.x) + 0.5, texUV.y + 0.5);"		// Pixel center in edgemap space.
 
 "	for( int i = 0 ; i < $EDGES ; i++ )"
 "	{"
 
-"		vec4 col = texelFetch(edgemapId, colorstripX )"
-"			        * texelFetch(edgemapId, colorstripY );"
-
-"		colorstripX += colorstripPitchX; "
-"		colorstripY += colorstripPitchY; "
+"		vec4 col = segColor(i, flatColorsOfs, tintTableOfs, epos);"
 
 "		vec4 edge = texelFetch(edgemapId, int(texUV.x)*edgemapPitch+i );"
 
@@ -1134,8 +1165,7 @@ const char GlBackend::segmentsFragmentShader[] =
 "		factor = factor2;"
 "	}"
 
-"		vec4 col = texelFetch(edgemapId, colorstripX )"
-"			        * texelFetch(edgemapId, colorstripY );"
+"	vec4 col = segColor($EDGES, flatColorsOfs, tintTableOfs, epos);"
 
 "	float useFactor = factor*col.a;"
 "	totalAlpha += useFactor;"
@@ -1144,10 +1174,7 @@ const char GlBackend::segmentsFragmentShader[] =
 "   col.a = totalAlpha; "
 "   col.rgb = totalAlpha > 0.0 ? rgbAcc/totalAlpha : vec3(0.0);"
 
-"    color = texelFetch(tintmapBufferId, int(tintmapUU.x) )"
-"              * texelFetch(tintmapBufferId, int(tintmapUU.y) )"
-"	           * col;           "
-
+"   color = tintOfs >= 0 ? evalTint(tintmapBufferId, tintOfs, tintPos) * col : col;"
 "}";
 
 
@@ -1158,10 +1185,12 @@ const char GlBackend::segmentsFragmentShader_A8[] =
 "uniform samplerBuffer edgemapId;				"
 "in vec2 texUV;									"
 "flat in int edgemapPitch;						"
-"flat in int colorstripPitchX;					"
-"flat in int colorstripPitchY;					"
-"in vec2 tintmapUU;"
-"in vec2 colorstripUU;"
+"flat in int flatColorsOfs;						"
+"flat in int tintTableOfs;						"
+"flat in int tintOfs;							"
+"in vec2 tintPos;								"
+WG_GL_TINT_FUNC
+WG_GL_SEGCOLOR_FUNC
 
 "out vec4 color;								"
 "void main()									"
@@ -1170,17 +1199,12 @@ const char GlBackend::segmentsFragmentShader_A8[] =
 
 "	float factor = 1.f;"
 
-"   int colorstripX = int(colorstripUU.x);"
-"   int colorstripY = int(colorstripUU.y);"
+"	vec2 epos = vec2(floor(texUV.x) + 0.5, texUV.y + 0.5);"
 
 "	for( int i = 0 ; i < $EDGES ; i++ )"
 "	{"
 
-"		vec4 col = texelFetch(edgemapId, colorstripX )"
-"			        * texelFetch(edgemapId, colorstripY );"
-
-"		colorstripX += colorstripPitchX; "
-"		colorstripY += colorstripPitchY; "
+"		vec4 col = segColor(i, flatColorsOfs, tintTableOfs, epos);"
 
 "		vec4 edge = texelFetch(edgemapId, int(texUV.x)*edgemapPitch+i );"
 
@@ -1198,16 +1222,11 @@ const char GlBackend::segmentsFragmentShader_A8[] =
 "		factor = factor2;"
 "	}"
 
-"		vec4 col = texelFetch(edgemapId, colorstripX )"
-"			        * texelFetch(edgemapId, colorstripY );"
+"	vec4 col = segColor($EDGES, flatColorsOfs, tintTableOfs, epos);"
 "	float useFactor = factor*col.a;"
 "	totalAlpha += useFactor;"
 
-"    color.r = texelFetch(tintmapBufferId, int(tintmapUU.x) ).a"
-"              * texelFetch(tintmapBufferId, int(tintmapUU.y) ).a"
-"	           * totalAlpha;           "
-
-
+"   color.r = (tintOfs >= 0 ? evalTint(tintmapBufferId, tintOfs, tintPos).a : 1.0) * totalAlpha;"
 "}";
 
 

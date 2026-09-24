@@ -38,6 +38,7 @@
 #endif
 
 #include <wg_gfxbackend.h>
+#include <wg_tinttools.h>
 #include <wg_glsurface.h>
 
 namespace wg
@@ -188,7 +189,7 @@ namespace wg
 		BlendMode		m_activeBlendMode = BlendMode::Blend;
 
 		GlSurface_p		m_pActiveBlitSource = nullptr;									// Currently active blit source in OpenGL, not to confuse with m_pBlitSource which might not be active yet.
-		bool			m_bTintmapIsActive = false;
+		bool			m_bTintIsActive = false;
 
 		GLfloat			m_activeMorphFactor = 0.5f;
 
@@ -223,7 +224,7 @@ namespace wg
 		//
 
 		const static int c_nbPrograms = 30 + (c_maxSegments-1) * 2;
-		const static int c_versionNb = 103;					//
+		const static int c_versionNb = 104;		// 104: Tints replaced Tintmaps.					//
 
 		struct ProgramBlobEntry
 		{
@@ -248,8 +249,8 @@ namespace wg
 			CoordF	uv;								// Actually contains blitSourceSize in most cases.
 			int		colorsOfs;						// Offset into colorBuffer for color incl flat tint.
 			int		extrasOfs;						// Offset into extrasBuffer for extra data needed by shader.
-			CoordF	tintmapOfs;
-			CoordF	colorstripOfs;					// For Edgemaps only.
+			CoordF	tintmapOfs;						// x is offset of tint block in colorBuffer, -1 for none.
+			CoordF	colorstripOfs;					// Not used.
 		};
 
 		struct ColorGL
@@ -405,12 +406,12 @@ namespace wg
 
 		int			m_tintColorOfs = -1;		// Offset in m_pColorBuffer for tintColor if flat tint active.
 
-		bool		m_bTintmap = false;
-		RectI		m_tintmapRect;				// Measured in pixels.
-		int			m_tintmapBeginX	= -1;		// Offset in m_pColorBuffer
-		int			m_tintmapEndX	= -1;		// " -
-		int			m_tintmapBeginY = -1;
-		int			m_tintmapEndY	= -1;
+		int			m_tintOfs = -1;				// Offset in m_pColorBuffer for tint block (see TintTools) if Tint is active.
+
+		int			m_colorBufferCapacity = 0;	// Entries allocated in m_pColorBuffer.
+		int			m_sessionColors = 0;		// Colors in session according to SessionInfo, reserve for tint blocks growing the buffer.
+
+		void		_reserveColors(int used, int extra);
 
 
 	};

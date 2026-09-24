@@ -312,6 +312,103 @@ namespace TintTools
 		return color;
 	}
 
+	//____ lutBitsForLayer() __________________________________________________
+
+	int lutBitsForLayer(const TintLayer& layer)
+	{
+		if (isLayerFlat(layer))
+			return -1;
+
+		CanvasGeometry geo = layerGeometry(layer);
+		float length;
+
+		if (geo.shape == TintShape::Linear)
+		{
+			float grad = std::sqrt(geo.a * geo.a + geo.b * geo.b);
+			length = grad > 0.f ? 1.f / grad : 1.f;
+		}
+		else
+		{
+			float invRadius = std::max(geo.invRadiusX, geo.invRadiusY);		// Shortest radius gives steepest gradient.
+			length = invRadius > 0.f ? 1.f / invRadius : 1.f;
+		}
+
+		// Two entries per pixel of gradient length keeps quantization well below a pixel.
+
+		int bits = 1;
+		while (bits < 11 && (1 << bits) < length * 2)
+			bits++;
+
+		return bits;
+	}
+
+	//____ gpuTintBlockSize() _________________________________________________
+
+	int gpuTintBlockSize(const DecodedTint& tint)
+	{
+		int size = 1;
+
+		for (int l = 0; l < tint.nLayers; l++)
+		{
+			int bits = lutBitsForLayer(tint.layers[l]);
+			size += 3 + (bits < 0 ? 0 : (1 << bits) + 1);
+		}
+		return size;
+	}
+
+	//____ writeGpuTintBlock() ________________________________________________
+
+	void writeGpuTintBlock(const DecodedTint& tint, float* pOutput, HiColor multiplier)
+	{
+		float* p = pOutput;
+
+		auto putColor = [&](HiColor c)
+		{
+			p[0] = c.r / 4096.f;
+			p[1] = c.g / 4096.f;
+			p[2] = c.b / 4096.f;
+			p[3] = c.a / 4096.f;
+			p += 4;
+		};
+
+		p[0] = float(tint.nLayers); p[1] = 0.f; p[2] = 0.f; p[3] = 0.f;
+		p += 4;
+
+		const int c_maxEntries = (1 << 11) + 1;
+		HiColor lut[c_maxEntries];
+
+		for (int l = 0; l < tint.nLayers; l++)
+		{
+			const TintLayer& layer = tint.layers[l];
+			int bits = lutBitsForLayer(layer);
+			int N = bits < 0 ? 0 : (1 << bits);
+
+			p[0] = float(int(layer.shape));
+			p[1] = float(int(layer.spread));
+			p[2] = float(N);
+			p[3] = layer.weight / 4096.f;
+			p += 4;
+
+			for (int i = 0; i < 4; i++)
+				p[i] = layer.geo[i];
+			p += 4;
+
+			if (N == 0)
+			{
+				HiColor col = layer.nStops > 0 ? layer.stopColors[0] * multiplier : multiplier;
+				putColor(col);
+			}
+			else
+			{
+				putColor(layerColorAt(layer, 0.f, multiplier));
+
+				buildLUT(layer, N + 1, lut, multiplier);
+				for (int i = 0; i <= N; i++)
+					putColor(lut[i]);
+			}
+		}
+	}
+
 	//____ encodeTint() _______________________________________________________
 
 	int encodeTint(const Tint* pTint, const RectSPX& rect, uint16_t* pWords, HiColor* pColors, int& nColors)

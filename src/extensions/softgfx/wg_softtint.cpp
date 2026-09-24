@@ -92,32 +92,20 @@ namespace wg
 
 			// Classify and decide LUT size from length of gradient in pixels.
 
-			float length;
-
 			if (layer.geo.shape == TintShape::Linear)
 			{
 				if (layer.geo.a != 0.f)
 					bVariesX = true;
 				if (layer.geo.b != 0.f)
 					bVariesY = true;
-
-				float grad = std::sqrt(layer.geo.a * layer.geo.a + layer.geo.b * layer.geo.b);
-				length = grad > 0.f ? 1.f / grad : 1.f;
 			}
 			else
 			{
 				bVariesX = true;
 				bVariesY = true;
-
-				float invRadius = std::max(layer.geo.invRadiusX, layer.geo.invRadiusY);		// Shortest radius gives steepest gradient.
-				length = invRadius > 0.f ? 1.f / invRadius : 1.f;
 			}
 
-			// Two entries per pixel of gradient length keeps quantization well below a pixel.
-
-			int bits = 1;
-			while (bits < 11 && (1 << bits) < length * 2)
-				bits++;
+			int bits = TintTools::lutBitsForLayer(src);
 
 			layer.lutBits = bits;
 			layer.lutOfs = lutEntries;
