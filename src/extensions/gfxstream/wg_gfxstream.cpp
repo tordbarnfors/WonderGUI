@@ -55,7 +55,8 @@ const char * toString(GfxStream::ChunkId i)
 		"EdgemapSamples",
 		"DeleteEdgemap",
 		"SurfaceUpdate2",
-		"Fence"
+		"Fence",
+		"SetEdgemapTint"
 	};
 
     if( (unsigned)i >= sizeof(names)/sizeof(names[0]) )

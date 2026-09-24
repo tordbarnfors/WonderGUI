@@ -22,7 +22,7 @@
 #include <wg_streamedgemap.h>
 #include <wg_streambackend.h>
 #include <wg_gfxbase.h>
-#include <wg_gradyent.h>
+#include <wg_tinttools.h>
 
 #include <cstring>
 
@@ -188,26 +188,39 @@ void StreamEdgemap::_samplesUpdated(int edgeBegin, int edgeEnd, int sampleBegin,
 
 //____ _colorsUpdated() ________________________________________________________
 
-void StreamEdgemap::_colorsUpdated(int beginColor, int endColor)
+void StreamEdgemap::_colorsUpdated(int beginSegment, int endSegment)
 {
 	auto& encoder = * m_pEncoder;
-	
-	int maxColorsPerBlock = (GfxStream::c_maxBlockSize - 10) / sizeof(HiColor);
-	
-	while( beginColor < endColor )
-	{
-		int nColorsInBlock = std::min(maxColorsPerBlock, endColor - beginColor );
 
-		int blockSize = 10 + nColorsInBlock * sizeof(HiColor);
-		
+	// Flat colors for all segments in range. This also clears any tints on the receiving side.
+
+	if( endSegment > beginSegment )
+	{
+		int nColors = endSegment - beginSegment;
+		int blockSize = 10 + nColors * sizeof(HiColor);
+
 		encoder << GfxStream::Header{ GfxStream::ChunkId::SetEdgemapColors, 0, blockSize };
 		encoder << m_inStreamId;
-		encoder << beginColor;
-		encoder << beginColor + nColorsInBlock;
+		encoder << beginSegment;
+		encoder << endSegment;
 
-		encoder << GfxStream::WriteBytes{ int(nColorsInBlock*sizeof(HiColor)), m_pPalette + beginColor };
-		
-		beginColor += nColorsInBlock;
+		encoder << GfxStream::WriteBytes{ int(nColors*sizeof(HiColor)), m_pFlatColors + beginSegment };
+	}
+
+	// Tints, one chunk per segment that has one.
+
+	for( int seg = beginSegment ; seg < endSegment ; seg++ )
+	{
+		if( !m_pTints[seg] )
+			continue;
+
+		uint8_t	buffer[TintTools::c_maxSerializedTintBytes];
+		int nBytes = TintTools::serializeTint(m_pTints[seg], buffer);
+
+		encoder << GfxStream::Header{ GfxStream::ChunkId::SetEdgemapTint, 0, 4 + nBytes };
+		encoder << m_inStreamId;
+		encoder << (uint16_t) seg;
+		encoder << GfxStream::WriteBytes{ nBytes, buffer };
 	}
 }
 
@@ -215,7 +228,7 @@ void StreamEdgemap::_colorsUpdated(int beginColor, int endColor)
 
 void StreamEdgemap::_sendCreateEdgemap( StreamEncoder* pEncoder )
 {
-	int blockSize = 14;
+	int blockSize = 12;
 	
 	auto& encoder = * m_pEncoder;
 	
@@ -223,9 +236,8 @@ void StreamEdgemap::_sendCreateEdgemap( StreamEncoder* pEncoder )
 	encoder << m_inStreamId;
 	encoder << m_size;
 	encoder << (uint16_t) m_nbSegments;
-	encoder << (uint16_t) m_paletteType;
 	
-	_colorsUpdated(0, m_paletteSize);
+	_colorsUpdated(0, m_nbSegments);
 }
 
 //____ _findBestPackFormat() _________________________________________________

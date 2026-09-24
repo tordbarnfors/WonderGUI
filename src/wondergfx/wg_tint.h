@@ -99,6 +99,7 @@ namespace wg
 		static Tint_p	create(std::initializer_list<ColorStop> stops, CoordF begin = { 0.f, 0.f }, CoordF end = { 0.f, 1.f }, ColorSpace colorSpace = ColorSpace::Linear);
 
 		static Tint_p	blend(Tint* pFrom, Tint* pTo, float progress);
+		static Tint_p	createMix(int nComponents, Tint* const * pComponents, const float* pWeights);	// Components must be simple Tints, weights are normalized.
 
 		//.____ Identification __________________________________________
 

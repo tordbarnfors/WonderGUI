@@ -224,6 +224,69 @@ namespace wg
 		return p;
 	}
 
+	//____ createMix() ______________________________________________________
+	/**
+	 * @brief Create a mix of simple Tints directly.
+	 *
+	 * Normally mixes are created by blend(). This is mainly for recreating a
+	 * serialized mix. Mixes among the components are flattened, zero weights
+	 * dropped and weights normalized. At most c_maxMixComponents components.
+	 */
+
+	Tint_p Tint::createMix(int nComponents, Tint* const* pComponents, const float* pWeights)
+	{
+		if (nComponents < 1 || nComponents > c_maxMixComponents || !pComponents || !pWeights)
+		{
+			GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Invalid number of mix components.",
+				nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
+			return nullptr;
+		}
+
+		float	total = 0.f;
+		int		nValid = 0;
+
+		for (int i = 0; i < nComponents; i++)
+		{
+			if (!pComponents[i] || pComponents[i]->isMix() || !(pWeights[i] >= 0.f))
+			{
+				GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Mix components must be simple Tints with non-negative weights.",
+					nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
+				return nullptr;
+			}
+
+			if (pWeights[i] > 0.f)
+			{
+				total += pWeights[i];
+				nValid++;
+			}
+		}
+
+		if (nValid == 0)
+			return pComponents[0];
+
+		if (nValid == 1)
+		{
+			for (int i = 0; i < nComponents; i++)
+				if (pWeights[i] > 0.f)
+					return pComponents[i];
+		}
+
+		Tint_p p = new Tint();
+
+		for (int i = 0; i < nComponents; i++)
+		{
+			if (pWeights[i] > 0.f)
+			{
+				p->m_mixComponents[p->m_nMixComponents] = pComponents[i];
+				p->m_mixWeights[p->m_nMixComponents] = pWeights[i] / total;
+				p->m_nMixComponents++;
+			}
+		}
+
+		p->_updateFlags();
+		return p;
+	}
+
 	//____ constructor ________________________________________________________
 
 	Tint::Tint()

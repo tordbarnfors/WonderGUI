@@ -20,6 +20,7 @@
 
 =========================================================================*/
 #include <wg_streamplayer.h>
+#include <wg_tinttools.h>
 #include <wg_gfxbase.h>
 #include <assert.h>
 
@@ -779,12 +780,10 @@ namespace wg
 			uint16_t	objectId;
 			SizeI		size;
 			uint16_t	nbSegments;
-			uint16_t	paletteType;
 
 			decoder >> objectId;
 			decoder >> size;
 			decoder >> nbSegments;
-			decoder >> paletteType;
 
 			if (objectId >= m_vObjects.size() )
 				m_vObjects.resize(objectId + 16, nullptr);
@@ -797,7 +796,6 @@ namespace wg
 			
 			bp.size = size;
 			bp.segments = nbSegments;
-			bp.paletteType = (EdgemapPalette) paletteType;
 			
 			m_vObjects[objectId] = m_pEdgemapFactory->createEdgemap(bp);
 			break;
@@ -847,9 +845,40 @@ namespace wg
 			for( int i = 0 ; i < nColors ; i++ )
 				decoder >> pColors[i];
 
-			static_cast<Edgemap*>(m_vObjects[objectId].rawPtr())->importPaletteEntries(begin, end, pColors);
+			static_cast<Edgemap*>(m_vObjects[objectId].rawPtr())->setColors(begin, end, pColors);
 
 			GfxBase::memStackFree(memAllocated);
+			break;
+		}
+
+		case GfxStream::ChunkId::SetEdgemapTint:
+		{
+			uint16_t	objectId;
+			uint16_t	segment;
+
+			decoder >> objectId;
+			decoder >> segment;
+
+			int nBytes = header.size - 4;
+
+			if( objectId >= m_vObjects.size() || m_vObjects[objectId] == nullptr || nBytes <= 0 || nBytes > TintTools::c_maxSerializedTintBytes )
+			{
+				GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "SetEdgemapTint with invalid objectId or size", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+
+				if( nBytes > 0 )
+					m_pDecoder->skip(nBytes);
+				break;
+			}
+
+			uint8_t buffer[TintTools::c_maxSerializedTintBytes];
+			decoder >> GfxStream::ReadBytes{ nBytes, buffer };
+
+			int bytesRead;
+			Tint_p pTint = TintTools::deserializeTint(buffer, bytesRead);
+
+			auto pEdgemap = static_cast<Edgemap*>(m_vObjects[objectId].rawPtr());
+			if( segment < pEdgemap->segments() )
+				pEdgemap->setColors(segment, segment+1, &pTint);
 			break;
 		}
 				

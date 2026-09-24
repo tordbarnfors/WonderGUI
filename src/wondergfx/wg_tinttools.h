@@ -132,6 +132,29 @@ namespace wg
 		const uint16_t*	decodeTint(const uint16_t* pWords, const HiColor*& pColors, DecodedTint& output);						// Returns pointer to word after the tint.
 		int				encodedTintSize(const uint16_t* pWords, int& nColors);													// Number of words, for skipping.
 
+		//____ Serialization ______________________________________________________
+		/**
+		 * Tint objects (not placed in any rect) serialized to bytes, e.g. for streams
+		 * and plugins. Native byte order.
+		 *
+		 *   uint8	nComponents			0 = no tint (nullptr), 1 = simple tint, 2-4 = mix.
+		 *   uint8	padding[3]
+		 *   per component:
+		 *     float	weight
+		 *     uint8	shape, spread, colorSpace, radiusMode
+		 *     float	begin.x, begin.y, end.x, end.y, center.x, center.y, radius.w, radius.h
+		 *     uint8	nStops
+		 *     uint8	padding[3]
+		 *     per stop:
+		 *       float		pos
+		 *       int16		b, g, r, a
+		 */
+
+		const int c_maxSerializedTintBytes = 4 + Tint::c_maxMixComponents * (44 + Tint::c_maxStops * 12);
+
+		int				serializeTint(const Tint* pTint, uint8_t* pDest);			// Returns bytes written. pTint may be nullptr.
+		Tint_p			deserializeTint(const uint8_t* pSource, int& bytesRead);	// Returns nullptr if no tint was serialized (or on error).
+
 		CanvasGeometry	layerGeometry(const TintLayer& layer);
 		bool			isLayerFlat(const TintLayer& layer);
 

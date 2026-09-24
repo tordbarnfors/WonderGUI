@@ -20,6 +20,7 @@
 
 =========================================================================*/
 #include <wg_streamlogger.h>
+#include <wg_tinttools.h>
 #include <wg_gfxbackend.h>
 
 #include <assert.h>
@@ -427,19 +428,14 @@ namespace wg
 				uint16_t	edgemapId;
 				SizeI		size;
 				uint16_t	nbSegments;
-				uint16_t	paletteType;
 
 				decoder >> edgemapId;
 				decoder >> size;
 				decoder >> nbSegments;
-				decoder >> paletteType;
-
-				
 
 				m_charStream << "    edgemapId   = " << edgemapId << std::endl;
 				m_charStream << "    size        = " << size.w << ", " << size.h << std::endl;
 				m_charStream << "    segments    = " << nbSegments << std::endl;
-				m_charStream << "    paletteType = " << toString((EdgemapPalette) paletteType) << std::endl;
 				break;
 			}
 
@@ -484,7 +480,64 @@ namespace wg
 				break;
 			}
 
-				
+			case GfxStream::ChunkId::SetEdgemapTint:
+			{
+				uint16_t	edgemapId;
+				uint16_t	segment;
+
+				decoder >> edgemapId;
+				decoder >> segment;
+
+				int nBytes = header.size - 4;
+
+				m_charStream << "    edgemapId  = " << edgemapId << std::endl;
+				m_charStream << "    segment    = " << segment << std::endl;
+
+				if( nBytes <= 0 || nBytes > TintTools::c_maxSerializedTintBytes )
+				{
+					m_charStream << "    ERROR: Invalid size of tint data: " << nBytes << " bytes." << std::endl;
+					if( nBytes > 0 )
+						decoder.skip(nBytes);
+					break;
+				}
+
+				uint8_t buffer[TintTools::c_maxSerializedTintBytes];
+				decoder >> GfxStream::ReadBytes{ nBytes, buffer };
+
+				int bytesRead;
+				Tint_p pTint = TintTools::deserializeTint(buffer, bytesRead);
+
+				auto printTint = [&](Tint* p, const char* indent)
+				{
+					m_charStream << indent << "shape = " << toString(p->shape()) << ", spread = " << toString(p->spread())
+						<< ", colorSpace = " << toString(p->colorSpace()) << ", radiusMode = " << toString(p->radiusMode()) << std::endl;
+					m_charStream << indent << "begin = " << p->begin().x << ", " << p->begin().y << "  end = " << p->end().x << ", " << p->end().y
+						<< "  center = " << p->center().x << ", " << p->center().y << "  radius = " << p->radius().w << ", " << p->radius().h << std::endl;
+
+					for( int i = 0 ; i < p->nbStops() ; i++ )
+					{
+						char tmp[64];
+						snprintf(tmp, 64, "%sstop %f", indent, p->stops()[i].pos);
+						_printColor(tmp, p->stops()[i].color);
+					}
+				};
+
+				if( !pTint )
+					m_charStream << "    tint       = none" << std::endl;
+				else if( pTint->isMix() )
+				{
+					m_charStream << "    tint       = mix of " << pTint->nbMixComponents() << std::endl;
+					for( int i = 0 ; i < pTint->nbMixComponents() ; i++ )
+					{
+						m_charStream << "      weight " << pTint->mixWeight(i) << ":" << std::endl;
+						printTint(pTint->mixComponent(i), "        ");
+					}
+				}
+				else
+					printTint(pTint, "    ");
+				break;
+			}
+
 			case GfxStream::ChunkId::EdgemapUpdate:
 			{
 				uint16_t	edgemapId;

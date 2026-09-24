@@ -59,7 +59,7 @@ namespace wg
 		m_maxEdges = maxEdges;
 
 		(*m_pEncoder) << GfxStream::Header{ GfxStream::ChunkId::ProtocolVersion, 0, 2 };
-		(*m_pEncoder) << (uint16_t) 0x0300;
+		(*m_pEncoder) << (uint16_t) 0x0301;		// 3.1: Tints replace Tintmaps and edgemap colorstrips.
 	}
 
 	StreamBackend::StreamBackend(const Blueprint& bp)
@@ -74,7 +74,7 @@ namespace wg
 		m_pColorCompressor		= bp.colorCompressor;
 
 		(*m_pEncoder) << GfxStream::Header{ GfxStream::ChunkId::ProtocolVersion, 0, 2 };
-		(*m_pEncoder) << (uint16_t) 0x0300;
+		(*m_pEncoder) << (uint16_t) 0x0301;		// 3.1: Tints replace Tintmaps and edgemap colorstrips.
 	}
 
 

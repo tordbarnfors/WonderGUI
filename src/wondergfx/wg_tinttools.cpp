@@ -477,6 +477,136 @@ namespace TintTools
 		return int(p - pWords);
 	}
 
+	//____ serializeTint() ____________________________________________________
+
+	int serializeTint(const Tint* pTint, uint8_t* pDest)
+	{
+		uint8_t* p = pDest;
+
+		auto putF = [&](float f) { std::memcpy(p, &f, 4); p += 4; };
+		auto putU8 = [&](int v) { *p++ = uint8_t(v); };
+
+		if (!pTint)
+		{
+			putU8(0); putU8(0); putU8(0); putU8(0);
+			return 4;
+		}
+
+		const Tint*	components[Tint::c_maxMixComponents];
+		float		weights[Tint::c_maxMixComponents];
+		int			nComponents;
+
+		if (pTint->isMix())
+		{
+			nComponents = pTint->nbMixComponents();
+			for (int i = 0; i < nComponents; i++)
+			{
+				components[i] = pTint->mixComponent(i);
+				weights[i] = pTint->mixWeight(i);
+			}
+		}
+		else
+		{
+			nComponents = 1;
+			components[0] = pTint;
+			weights[0] = 1.f;
+		}
+
+		putU8(nComponents); putU8(0); putU8(0); putU8(0);
+
+		for (int c = 0; c < nComponents; c++)
+		{
+			const Tint* t = components[c];
+
+			putF(weights[c]);
+			putU8(int(t->shape())); putU8(int(t->spread())); putU8(int(t->colorSpace())); putU8(int(t->radiusMode()));
+			putF(t->begin().x); putF(t->begin().y);
+			putF(t->end().x); putF(t->end().y);
+			putF(t->center().x); putF(t->center().y);
+			putF(t->radius().w); putF(t->radius().h);
+			putU8(t->nbStops()); putU8(0); putU8(0); putU8(0);
+
+			for (int i = 0; i < t->nbStops(); i++)
+			{
+				const ColorStop& stop = t->stops()[i];
+				putF(stop.pos);
+				std::memcpy(p, &stop.color, 8);
+				p += 8;
+			}
+		}
+
+		return int(p - pDest);
+	}
+
+	//____ deserializeTint() __________________________________________________
+
+	Tint_p deserializeTint(const uint8_t* pSource, int& bytesRead)
+	{
+		const uint8_t* p = pSource;
+
+		auto getF = [&]() { float f; std::memcpy(&f, p, 4); p += 4; return f; };
+		auto getU8 = [&]() { return int(*p++); };
+
+		int nComponents = getU8();
+		p += 3;
+
+		Tint_p	components[Tint::c_maxMixComponents];
+		float	weights[Tint::c_maxMixComponents];
+
+		bool bOk = (nComponents <= Tint::c_maxMixComponents);
+
+		for (int c = 0; c < nComponents; c++)
+		{
+			Tint::Blueprint bp;
+
+			float weight = getF();
+			if (c < Tint::c_maxMixComponents)
+				weights[c] = weight;
+
+			bp.shape = TintShape(getU8());
+			bp.spread = TintSpread(getU8());
+			bp.colorSpace = ColorSpace(getU8());
+			bp.radiusMode = TintRadius(getU8());
+			bp.begin.x = getF(); bp.begin.y = getF();
+			bp.end.x = getF(); bp.end.y = getF();
+			bp.center.x = getF(); bp.center.y = getF();
+			bp.radius.w = getF(); bp.radius.h = getF();
+
+			int nStops = getU8();
+			p += 3;
+
+			for (int i = 0; i < nStops; i++)
+			{
+				ColorStop stop;
+				stop.pos = getF();
+				std::memcpy(&stop.color, p, 8);
+				p += 8;
+				bp.stops.push_back(stop);
+			}
+
+			if (bOk && c < Tint::c_maxMixComponents)
+			{
+				components[c] = Tint::create(bp);
+				if (!components[c])
+					bOk = false;
+			}
+		}
+
+		bytesRead = int(p - pSource);
+
+		if (!bOk || nComponents == 0)
+			return nullptr;
+
+		if (nComponents == 1)
+			return components[0];
+
+		Tint* raw[Tint::c_maxMixComponents];
+		for (int c = 0; c < nComponents; c++)
+			raw[c] = components[c];
+
+		return Tint::createMix(nComponents, raw, weights);
+	}
+
 	//____ layerGeometry() ____________________________________________________
 
 	CanvasGeometry layerGeometry(const TintLayer& layer)

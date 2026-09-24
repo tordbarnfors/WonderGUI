@@ -87,12 +87,13 @@ namespace wg
 			DeleteEdgemap = 26,
 
 			SurfaceUpdate2 = 27,
-			Fence = 28
+			Fence = 28,
+			SetEdgemapTint = 29
 		};
 
 		const static ChunkId      ChunkId_min      = ChunkId::OutOfData;
-		const static ChunkId      ChunkId_max      = ChunkId::Fence;
-		const static int          ChunkId_size     = (int)ChunkId::Fence + 1;
+		const static ChunkId      ChunkId_max      = ChunkId::SetEdgemapTint;
+		const static int          ChunkId_size     = (int)ChunkId::SetEdgemapTint + 1;
 
 		struct SPX
 		{
