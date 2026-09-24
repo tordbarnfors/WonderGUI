@@ -79,16 +79,16 @@ namespace wg
 		bool		m_bTintChanged = false;
 	};
 
-	//____ RenderSettingsWithTintmap _____________________________________________________
+	//____ RenderSettingsWithTint _____________________________________________________
 	/*
-	* Simple class for quickly and easily set layer, blend mode and tint color/map for
-	* rendering and then revert back automatically when deleted.
+	* Sets layer, blend mode, tint color and Tint of device for the scope, if needed, and restores
+	* them when destroyed.
 	*/
 
-	class RenderSettingsWithTintmap
+	class RenderSettingsWithTint
 	{
 	public:
-		RenderSettingsWithTintmap(GfxDevice* pDevice, int layer, BlendMode blendMode, HiColor tintColor, const RectSPX& rect, Tintmap * pTintmap )
+		RenderSettingsWithTint(GfxDevice* pDevice, int layer, BlendMode blendMode, HiColor tintColor, const RectSPX& rect, Tint * pTint )
 		{
 			m_pDevice = pDevice;
 
@@ -104,10 +104,12 @@ namespace wg
 				pDevice->setBlendMode(blendMode);
 			}
 
-			if (pTintmap)
+			if (pTint)
 			{
-				pDevice->setTintmap(rect, pTintmap);
-				m_bTintmap = true;
+				m_pPrevTint = pDevice->tint();
+				m_prevTintRect = pDevice->tintRect();
+				pDevice->setTint(rect, pTint);
+				m_bTint = true;
 			}
 
 			if (tintColor != HiColor::Undefined && tintColor != HiColor::White )
@@ -121,7 +123,7 @@ namespace wg
 			}
 		}
 
-		~RenderSettingsWithTintmap()
+		~RenderSettingsWithTint()
 		{
 			if (m_prevLayer != -1)
 				m_pDevice->setRenderLayer(m_prevLayer);
@@ -129,8 +131,13 @@ namespace wg
 				m_pDevice->setBlendMode(m_prevBlendMode);
 			if (m_bTintChanged)
 				m_pDevice->setTintColor(m_prevTintColor);
-			if (m_bTintmap)
-				m_pDevice->clearTintmap();
+			if (m_bTint)
+			{
+				if (m_pPrevTint)
+					m_pDevice->setTint(m_prevTintRect, m_pPrevTint);
+				else
+					m_pDevice->clearTint();
+			}
 		}
 
 		GfxDevice* m_pDevice;
@@ -138,7 +145,9 @@ namespace wg
 		BlendMode	m_prevBlendMode = BlendMode::Undefined;
 		HiColor		m_prevTintColor;
 		bool		m_bTintChanged = false;
-		bool		m_bTintmap = false;
+		bool		m_bTint = false;
+		Tint_p		m_pPrevTint;
+		RectSPX		m_prevTintRect;
 	};
 
 }

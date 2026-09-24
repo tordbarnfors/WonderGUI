@@ -42,10 +42,10 @@ namespace wg
 			float				defaultBottomSample = 0.f;
 			float				defaultTopSample = 0.f;
 			std::function<void(int64_t latestTimestamp, int64_t firstNeededTimestamp, int64_t lastNeededTimestamp, int64_t currentTimestamp)> fetcher;
-			Gradient			gradient;								// Overrides color when set.
+			Tint_p				tint;									// Overrides color when set. Placed in the rect of the waveform.
 			int					id;
 			HiColor				outlineColor = Color8::DarkGrey;
-			Gradient			outlineGradient;						// Overrides outlineColor when set.
+			Tint_p				outlineTint;							// Overrides outlineColor when set.
 			pts					topOutlineThickness = 1;
 			bool				visible = true;
 		};
@@ -65,7 +65,7 @@ namespace wg
 		void	clearSamples();
 
 		bool	setColors(HiColor fill, HiColor outline, ColorTransition* pTransition = nullptr);
-		bool	setGradients(Gradient fill, Gradient outline, ColorTransition* pTransition = nullptr);
+		bool	setTints(Tint * pFill, Tint * pOutline, ValueTransition* pTransition = nullptr);
 
 		bool	setOutlineThickness( pts topOutline, pts bottomOutline );
 		pts		topOutlineThickness() const { return m_topOutlineThickness; }
@@ -77,6 +77,7 @@ namespace wg
 		bool	isVisible() const { return m_bVisible; }
 
 		bool	isTransitioningColors() const { return m_pColorTransition; }
+		bool	isTransitioningTints() const { return m_pTintTransition; }
 
 		HiColor	color() const { return m_fillColor; }
 		HiColor	outlineColor() const { return m_outlineColor; }
@@ -100,6 +101,7 @@ namespace wg
 
 
 		void			_endColorTransition();
+		void				_endTintTransition();
 
 		AreaScrollChart* m_pDisplay = nullptr;
 
@@ -111,8 +113,8 @@ namespace wg
 
 		HiColor				m_fillColor = Color::LightGray;
 		HiColor				m_outlineColor = Color::Black;
-		Gradient			m_fillGradient;
-		Gradient			m_outlineGradient;
+		Tint_p				m_pFillTint;
+		Tint_p				m_pOutlineTint;
 
 		pts					m_topOutlineThickness = 1;
 		pts					m_bottomOutlineThickness = 1;
@@ -128,11 +130,14 @@ namespace wg
 		HiColor				m_startOutlineColor;
 		HiColor				m_endOutlineColor;
 
-		Gradient			m_startFillGradient;
-		Gradient			m_endFillGradient;
+		ValueTransition_p	m_pTintTransition;
+		int					m_tintTransitionProgress = 0;
 
-		Gradient			m_startOutlineGradient;
-		Gradient			m_endOutlineGradient;
+		Tint_p				m_pStartFillTint;
+		Tint_p				m_pEndFillTint;
+
+		Tint_p				m_pStartOutlineTint;
+		Tint_p				m_pEndOutlineTint;
 
 
         // PID Constants

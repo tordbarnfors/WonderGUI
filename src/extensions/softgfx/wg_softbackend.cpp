@@ -920,7 +920,15 @@ namespace wg
 				SegmentOp_p	pOp = nullptr;
 				auto pKernels = m_pKernels[(int)m_pCanvas->pixelFormat()];
 				if (pKernels)
+				{
 					pOp = pKernels->pSegmentKernels[(int)stripSource][(int)m_blendMode];
+
+					if (!pOp && stripSource == StripSource::Tintmaps && pKernels->pSegmentKernels[(int)StripSource::Colors][(int)m_blendMode])
+					{
+						_flattenEdgemapTinting(pEdgemap, nSegments, tinting, { _dest.x + _dest.w / 2, _dest.y + _dest.h / 2 });
+						pOp = pKernels->pSegmentKernels[(int)StripSource::Colors][(int)m_blendMode];
+					}
+				}
 
 				if (pOp == nullptr)
 				{
@@ -2031,6 +2039,46 @@ namespace wg
 						pOut[i] = pOut[i] * globalFlat;
 				}
 			}
+		}
+	}
+
+	//____ _flattenEdgemapTinting() ____________________________________________
+	/*
+		Fallback for kernel sets without per pixel segment kernels: each segment gets one color,
+		its tint sampled at the center of the edgemap times the device tint at the center of
+		where the edgemap is drawn.
+	*/
+
+	void SoftBackend::_flattenEdgemapTinting(SoftEdgemap* pEdgemap, int nSegments, EdgemapTinting& t, CoordI canvasCenter)
+	{
+		if (!t.bPerPixel)
+			return;
+
+		HiColor global;
+		m_softTint.generate(canvasCenter.x, canvasCenter.y, 0, 0, 1, &global);
+
+		for (int seg = 0; seg < nSegments; seg++)
+		{
+			HiColor col;
+			pEdgemap->m_segmentTints[seg].generate(pEdgemap->m_size.w / 2, pEdgemap->m_size.h / 2, 0, 0, 1, &col);
+			col = col * global;
+
+			t.colors[seg][0] = col.b;
+			t.colors[seg][1] = col.g;
+			t.colors[seg][2] = col.r;
+			t.colors[seg][3] = col.a;
+		}
+
+		_endEdgemapTinting(t);
+		t.bPerPixel = false;
+		t.pColumns = nullptr;
+		t.pGlobal = nullptr;
+
+		static bool bWarned = false;
+		if (!bWarned)
+		{
+			GfxBase::throwError(ErrorLevel::Warning, ErrorCode::RenderFailure, "Kernels for tinted edgemaps missing, tints on edgemaps are approximated with flat colors.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			bWarned = true;
 		}
 	}
 

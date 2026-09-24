@@ -250,6 +250,7 @@ namespace wg
 		void	_tintEdgemapColumn(SoftEdgemap* pEdgemap, int nSegments, EdgemapTinting& tinting, int column, int rowBeg, int rowEnd,
 								   const int* pEdgeStrips, CoordI canvasStart, const int simpleTransform[2][2]);
 		void	_endEdgemapTinting(EdgemapTinting& tinting);
+		void	_flattenEdgemapTinting(SoftEdgemap* pEdgemap, int nSegments, EdgemapTinting& tinting, CoordI canvasCenter);
 
 		/**
 		 * Calls draw(const RectI& subRect) for subrectangles of rect as needed for the current tint,

@@ -19,7 +19,7 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#include <wg_tintmapskin.h>
+#include <wg_tintskin.h>
 #include <wg_gfxdevice.h>
 #include <wg_geo.h>
 #include <wg_util.h>
@@ -32,27 +32,27 @@ namespace wg
 
 	using namespace Util;
 
-	const TypeInfo TintmapSkin::TYPEINFO = { "TintmapSkin", &StateSkin::TYPEINFO };
+	const TypeInfo TintSkin::TYPEINFO = { "TintSkin", &StateSkin::TYPEINFO };
 
 	//____ create() _______________________________________________________________
 
-	TintmapSkin_p TintmapSkin::create( const Blueprint& blueprint )
+	TintSkin_p TintSkin::create( const Blueprint& blueprint )
 	{
-		return TintmapSkin_p(new TintmapSkin(blueprint));
+		return TintSkin_p(new TintSkin(blueprint));
 	}
 
-	TintmapSkin_p TintmapSkin::create(Tintmap * pTintmap, Border padding )
+	TintSkin_p TintSkin::create(Tint * pTint, Border padding )
 	{
 		Blueprint bp;
-		bp.tintmap = pTintmap;
+		bp.tint = pTint;
 		bp.padding = padding;
 
-		return TintmapSkin_p(new TintmapSkin(bp));
+		return TintSkin_p(new TintSkin(bp));
 	}
 
 	//____ constructor ____________________________________________________________
 
-	TintmapSkin::TintmapSkin(const Blueprint& bp) : StateSkin(bp)
+	TintSkin::TintSkin(const Blueprint& bp) : StateSkin(bp)
 	{
 		m_blendMode		= bp.blendMode;
 
@@ -61,17 +61,17 @@ namespace wg
 		State	shiftingStates[State::NbStates];
 		Coord	stateShifts[State::NbStates];
 
-		State	tintmapStates[State::NbStates];
-		Tintmap_p stateTintmaps[State::NbStates];
+		State	tintStates[State::NbStates];
+		Tint_p stateTints[State::NbStates];
 
 		int 	nbShiftingStates = 1;
-		int		nbTintmapStates = 1;
+		int		nbTintStates = 1;
 
 		shiftingStates[0] = State::Default;
-		tintmapStates[0] = State::Default;
+		tintStates[0] = State::Default;
 
 		stateShifts[0] = {0,0};
-		stateTintmaps[0] = bp.tintmap;
+		stateTints[0] = bp.tint;
 
 		for (auto& stateInfo : bp.states)
 		{
@@ -85,29 +85,29 @@ namespace wg
 				m_bContentShifting = true;
 			}
 
-			if(stateInfo.data.tintmap )
+			if(stateInfo.data.tint )
 			{
-				int index = stateInfo.state == State::Default ? 0 : nbTintmapStates++;
-				tintmapStates[index] = stateInfo.state;
-				stateTintmaps[index] = stateInfo.data.tintmap;
+				int index = stateInfo.state == State::Default ? 0 : nbTintStates++;
+				tintStates[index] = stateInfo.state;
+				stateTints[index] = stateInfo.data.tint;
 			}
 		}
 
 		// Calc size of index table for color, get its index masks & shifts.
 
-		int	tintmapIndexEntries;
+		int	tintIndexEntries;
 
-		std::tie(tintmapIndexEntries,m_stateTintmapIndexMask,m_stateTintmapIndexShift) = calcStateToIndexParam(nbTintmapStates, tintmapStates);
+		std::tie(tintIndexEntries,m_stateTintIndexMask,m_stateTintIndexShift) = calcStateToIndexParam(nbTintStates, tintStates);
 
 		// Calculate memory needed for all state data
 
 		int shiftBytes 		= _bytesNeededForContentShiftData(nbShiftingStates, shiftingStates);
-		int tintmapBytes	= sizeof(Tintmap_p) * nbTintmapStates;
-		int indexBytes		= tintmapIndexEntries;
+		int tintBytes	= sizeof(Tint_p) * nbTintStates;
+		int indexBytes		= tintIndexEntries;
 
 		// Allocate and populate memory for state data
 
-		m_pStateData = malloc(shiftBytes + tintmapBytes + indexBytes);
+		m_pStateData = malloc(shiftBytes + tintBytes + indexBytes);
 
 		auto pDest = (uint8_t*) m_pStateData;
 
@@ -117,30 +117,30 @@ namespace wg
 
 		pDest += shiftBytes;
 
-		memset(pDest,0,tintmapBytes);				// Need to clear what will become tintmap pointers.
+		memset(pDest,0,tintBytes);				// Need to clear what will become tint pointers.
 
-		auto pTintmaps = (Tintmap_p*) pDest;
-		for( int i = 0 ; i < nbTintmapStates ; i++ )
-			pTintmaps[i] = stateTintmaps[i];
+		auto pTints = (Tint_p*) pDest;
+		for( int i = 0 ; i < nbTintStates ; i++ )
+			pTints[i] = stateTints[i];
 
-		m_pStateTintmaps = pTintmaps;
-		m_nbStateTintmaps = nbTintmapStates;
+		m_pStateTints = pTints;
+		m_nbStateTints = nbTintStates;
 
-		pDest += tintmapBytes;
+		pDest += tintBytes;
 
-		m_pStateTintmapIndexTab = pDest;
+		m_pStateTintIndexTab = pDest;
 
-		generateStateToIndexTab(m_pStateTintmapIndexTab, nbTintmapStates, tintmapStates);
+		generateStateToIndexTab(m_pStateTintIndexTab, nbTintStates, tintStates);
 	}
 
 	//____ destructor ____________________________________________________________
 
-	TintmapSkin::~TintmapSkin()
+	TintSkin::~TintSkin()
 	{
-		// Need to dereference Tintmaps before we release the memory
+		// Need to dereference Tints before we release the memory
 
-		for( int i = 0 ; i < m_nbStateTintmaps ; i++ )
-			m_pStateTintmaps[i] = nullptr;
+		for( int i = 0 ; i < m_nbStateTints ; i++ )
+			m_pStateTints[i] = nullptr;
 
 		free( m_pStateData );
 	}
@@ -148,16 +148,16 @@ namespace wg
 
 	//____ typeInfo() _________________________________________________________
 
-	const TypeInfo& TintmapSkin::typeInfo(void) const
+	const TypeInfo& TintSkin::typeInfo(void) const
 	{
 		return TYPEINFO;
 	}
 
 	//____ _coverage() ___________________________________________________________
 
-	RectSPX TintmapSkin::_coverage(const RectSPX& geo, int scale, State state) const
+	RectSPX TintSkin::_coverage(const RectSPX& geo, int scale, State state) const
 	{
-		if( (_getTintmap(state)->isOpaque() && m_blendMode == BlendMode::Blend) || m_blendMode == BlendMode::Replace )
+		if( (_getTint(state)->isOpaque() && m_blendMode == BlendMode::Blend) || m_blendMode == BlendMode::Replace )
 			return geo - align(ptsToSpx(m_spacing,scale)) + align(ptsToSpx(m_overflow,scale));
 		else
 			return RectSPX();
@@ -165,19 +165,19 @@ namespace wg
 
 	//____ _render() _______________________________________________________________
 
-	void TintmapSkin::_render( GfxDevice * pDevice, const RectSPX& canvas, int scale, State state, float value, float value2, int animPos, float* pStateFractions) const
+	void TintSkin::_render( GfxDevice * pDevice, const RectSPX& canvas, int scale, State state, float value, float value2, int animPos, float* pStateFractions) const
 	{
 		RectSPX rect = canvas - align(ptsToSpx(m_spacing, scale)) + align(ptsToSpx(m_overflow, scale));
-		auto pTintmap = _getTintmap(state);
+		auto pTint = _getTint(state);
 
-		RenderSettingsWithTintmap settings(pDevice, m_layer, m_blendMode, HiColor::Undefined, rect, pTintmap);
+		RenderSettingsWithTint settings(pDevice, m_layer, m_blendMode, HiColor::Undefined, rect, pTint);
 
 		pDevice->fill( rect, HiColor::White );
 	}
 
 	//____ _markTest() _____________________________________________________________
 
-	bool TintmapSkin::_markTest( const CoordSPX& ofs, const RectSPX& _canvas, int scale, State state, float value, float value2, int alphaOverride) const
+	bool TintSkin::_markTest( const CoordSPX& ofs, const RectSPX& _canvas, int scale, State state, float value, float value2, int alphaOverride) const
 	{
 		RectSPX canvas = _canvas - align(ptsToSpx(m_spacing, scale));
 
@@ -188,12 +188,12 @@ namespace wg
 		
 		int alpha = alphaOverride == -1 ? m_markAlpha : alphaOverride;
 
-		return (_getTintmap(state)->alpha(ofs, canvas) >= alpha);		//TODO: Add method to Tintmap for markTesting.
+		return (_getTint(state)->alpha(ofs, canvas) >= alpha);		
 	}
 
 	//____ _dirtyRect() ______________________________________________________
 
-	RectSPX TintmapSkin::_dirtyRect(const RectSPX& _canvas, int scale, State newState, State oldState,
+	RectSPX TintSkin::_dirtyRect(const RectSPX& _canvas, int scale, State newState, State oldState,
 		float newValue, float oldValue, float newValue2, float oldValue2, int newAnimPos, int oldAnimPos,
 		float* pNewStateFractions, float* pOldStateFractions) const
 	{
@@ -205,7 +205,7 @@ namespace wg
 
 		RectSPX canvas = _canvas - align(ptsToSpx(m_spacing, scale)) + align(ptsToSpx(m_overflow, scale));
 		
-		if (_getTintmap(newState) != _getTintmap(oldState))
+		if (_getTint(newState) != _getTint(oldState))
 			return canvas;
 
 		return StateSkin::_dirtyRect(canvas, scale, newState, oldState, newValue, oldValue, newValue2, oldValue2,

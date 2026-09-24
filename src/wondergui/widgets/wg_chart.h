@@ -26,7 +26,6 @@
 #include <wg_widget.h>
 #include <wg_dynamicvector.h>
 #include <wg_transitions.h>
-#include <wg_gradient.h>
 #include <wg_dynamictext.h>
 #include <wg_glow.h>
 

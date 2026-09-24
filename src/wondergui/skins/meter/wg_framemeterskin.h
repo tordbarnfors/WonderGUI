@@ -24,7 +24,7 @@
 #pragma once
 
 #include <wg_skin.h>
-#include <wg_tintmap.h>
+#include <wg_tint.h>
 #include <wg_surface.h>
 #include <vector>
 
@@ -63,7 +63,7 @@ namespace wg
 			Size					size;			// Mandatory
 			Border					spacing;
 			Surface_p				surface;		// Mandatory
-			Tintmap_p				tintmap;
+			Tint_p				tint;
 		};
 
 		//.____ Creation __________________________________________
@@ -121,7 +121,7 @@ namespace wg
 
 		BlendMode		m_blendMode;
 		HiColor			m_color;
-		Tintmap_p		m_pTintmap;
+		Tint_p		m_pTint;
 
 		int					m_duration;		// Millisec
 		Size				m_size;

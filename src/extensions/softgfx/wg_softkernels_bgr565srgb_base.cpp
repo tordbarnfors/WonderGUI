@@ -21,9 +21,7 @@ SUPPORTED MODES AND FORMATS
 Tint modes:            None
                        Flat
                        GradientX
-                       GradientY
-                       GradientXY
-                       (unsupported: none)
+                       (GradientY and GradientXY removed, not used since Tints replaced Tintmaps)
 
 Blend modes:           Replace
                        Blend
@@ -175,39 +173,7 @@ pBackend->setFillKernel( TintMode::GradientX, BlendMode::BlendFixedColor, PixelF
 pBackend->setFillKernel( TintMode::GradientX, BlendMode::BlendFixedColor, PixelFormat::BGRA_8_sRGB, _fill<TintMode::GradientX,BlendMode::BlendFixedColor, PixelFormat::BGRA_8_sRGB> );
 pBackend->setFillKernel( TintMode::GradientX, BlendMode::BlendFixedColor, PixelFormat::BGR_565_sRGB, _fill<TintMode::GradientX,BlendMode::BlendFixedColor, PixelFormat::BGR_565_sRGB> );
 
-pBackend->setFillKernel( TintMode::GradientY, BlendMode::Replace, PixelFormat::BGR_8_sRGB, _fill<TintMode::GradientY,BlendMode::Replace, PixelFormat::BGR_8_sRGB> );
-pBackend->setFillKernel( TintMode::GradientY, BlendMode::Replace, PixelFormat::BGRX_8_sRGB, _fill<TintMode::GradientY,BlendMode::Replace, PixelFormat::BGRX_8_sRGB> );
-pBackend->setFillKernel( TintMode::GradientY, BlendMode::Replace, PixelFormat::BGRA_8_sRGB, _fill<TintMode::GradientY,BlendMode::Replace, PixelFormat::BGRA_8_sRGB> );
-pBackend->setFillKernel( TintMode::GradientY, BlendMode::Replace, PixelFormat::BGR_565_sRGB, _fill<TintMode::GradientY,BlendMode::Replace, PixelFormat::BGR_565_sRGB> );
-pBackend->setFillKernel( TintMode::GradientY, BlendMode::Blend, PixelFormat::BGR_8_sRGB, _fill<TintMode::GradientY,BlendMode::Blend, PixelFormat::BGR_8_sRGB> );
-pBackend->setFillKernel( TintMode::GradientY, BlendMode::Blend, PixelFormat::BGRX_8_sRGB, _fill<TintMode::GradientY,BlendMode::Blend, PixelFormat::BGRX_8_sRGB> );
-pBackend->setFillKernel( TintMode::GradientY, BlendMode::Blend, PixelFormat::BGRA_8_sRGB, _fill<TintMode::GradientY,BlendMode::Blend, PixelFormat::BGRA_8_sRGB> );
-pBackend->setFillKernel( TintMode::GradientY, BlendMode::Blend, PixelFormat::BGR_565_sRGB, _fill<TintMode::GradientY,BlendMode::Blend, PixelFormat::BGR_565_sRGB> );
-pBackend->setFillKernel( TintMode::GradientY, BlendMode::Add, PixelFormat::BGR_8_sRGB, _fill<TintMode::GradientY,BlendMode::Add, PixelFormat::BGR_8_sRGB> );
-pBackend->setFillKernel( TintMode::GradientY, BlendMode::Add, PixelFormat::BGRX_8_sRGB, _fill<TintMode::GradientY,BlendMode::Add, PixelFormat::BGRX_8_sRGB> );
-pBackend->setFillKernel( TintMode::GradientY, BlendMode::Add, PixelFormat::BGRA_8_sRGB, _fill<TintMode::GradientY,BlendMode::Add, PixelFormat::BGRA_8_sRGB> );
-pBackend->setFillKernel( TintMode::GradientY, BlendMode::Add, PixelFormat::BGR_565_sRGB, _fill<TintMode::GradientY,BlendMode::Add, PixelFormat::BGR_565_sRGB> );
-pBackend->setFillKernel( TintMode::GradientY, BlendMode::BlendFixedColor, PixelFormat::BGR_8_sRGB, _fill<TintMode::GradientY,BlendMode::BlendFixedColor, PixelFormat::BGR_8_sRGB> );
-pBackend->setFillKernel( TintMode::GradientY, BlendMode::BlendFixedColor, PixelFormat::BGRX_8_sRGB, _fill<TintMode::GradientY,BlendMode::BlendFixedColor, PixelFormat::BGRX_8_sRGB> );
-pBackend->setFillKernel( TintMode::GradientY, BlendMode::BlendFixedColor, PixelFormat::BGRA_8_sRGB, _fill<TintMode::GradientY,BlendMode::BlendFixedColor, PixelFormat::BGRA_8_sRGB> );
-pBackend->setFillKernel( TintMode::GradientY, BlendMode::BlendFixedColor, PixelFormat::BGR_565_sRGB, _fill<TintMode::GradientY,BlendMode::BlendFixedColor, PixelFormat::BGR_565_sRGB> );
 
-pBackend->setFillKernel( TintMode::GradientXY, BlendMode::Replace, PixelFormat::BGR_8_sRGB, _fill<TintMode::GradientXY,BlendMode::Replace, PixelFormat::BGR_8_sRGB> );
-pBackend->setFillKernel( TintMode::GradientXY, BlendMode::Replace, PixelFormat::BGRX_8_sRGB, _fill<TintMode::GradientXY,BlendMode::Replace, PixelFormat::BGRX_8_sRGB> );
-pBackend->setFillKernel( TintMode::GradientXY, BlendMode::Replace, PixelFormat::BGRA_8_sRGB, _fill<TintMode::GradientXY,BlendMode::Replace, PixelFormat::BGRA_8_sRGB> );
-pBackend->setFillKernel( TintMode::GradientXY, BlendMode::Replace, PixelFormat::BGR_565_sRGB, _fill<TintMode::GradientXY,BlendMode::Replace, PixelFormat::BGR_565_sRGB> );
-pBackend->setFillKernel( TintMode::GradientXY, BlendMode::Blend, PixelFormat::BGR_8_sRGB, _fill<TintMode::GradientXY,BlendMode::Blend, PixelFormat::BGR_8_sRGB> );
-pBackend->setFillKernel( TintMode::GradientXY, BlendMode::Blend, PixelFormat::BGRX_8_sRGB, _fill<TintMode::GradientXY,BlendMode::Blend, PixelFormat::BGRX_8_sRGB> );
-pBackend->setFillKernel( TintMode::GradientXY, BlendMode::Blend, PixelFormat::BGRA_8_sRGB, _fill<TintMode::GradientXY,BlendMode::Blend, PixelFormat::BGRA_8_sRGB> );
-pBackend->setFillKernel( TintMode::GradientXY, BlendMode::Blend, PixelFormat::BGR_565_sRGB, _fill<TintMode::GradientXY,BlendMode::Blend, PixelFormat::BGR_565_sRGB> );
-pBackend->setFillKernel( TintMode::GradientXY, BlendMode::Add, PixelFormat::BGR_8_sRGB, _fill<TintMode::GradientXY,BlendMode::Add, PixelFormat::BGR_8_sRGB> );
-pBackend->setFillKernel( TintMode::GradientXY, BlendMode::Add, PixelFormat::BGRX_8_sRGB, _fill<TintMode::GradientXY,BlendMode::Add, PixelFormat::BGRX_8_sRGB> );
-pBackend->setFillKernel( TintMode::GradientXY, BlendMode::Add, PixelFormat::BGRA_8_sRGB, _fill<TintMode::GradientXY,BlendMode::Add, PixelFormat::BGRA_8_sRGB> );
-pBackend->setFillKernel( TintMode::GradientXY, BlendMode::Add, PixelFormat::BGR_565_sRGB, _fill<TintMode::GradientXY,BlendMode::Add, PixelFormat::BGR_565_sRGB> );
-pBackend->setFillKernel( TintMode::GradientXY, BlendMode::BlendFixedColor, PixelFormat::BGR_8_sRGB, _fill<TintMode::GradientXY,BlendMode::BlendFixedColor, PixelFormat::BGR_8_sRGB> );
-pBackend->setFillKernel( TintMode::GradientXY, BlendMode::BlendFixedColor, PixelFormat::BGRX_8_sRGB, _fill<TintMode::GradientXY,BlendMode::BlendFixedColor, PixelFormat::BGRX_8_sRGB> );
-pBackend->setFillKernel( TintMode::GradientXY, BlendMode::BlendFixedColor, PixelFormat::BGRA_8_sRGB, _fill<TintMode::GradientXY,BlendMode::BlendFixedColor, PixelFormat::BGRA_8_sRGB> );
-pBackend->setFillKernel( TintMode::GradientXY, BlendMode::BlendFixedColor, PixelFormat::BGR_565_sRGB, _fill<TintMode::GradientXY,BlendMode::BlendFixedColor, PixelFormat::BGR_565_sRGB> );
 
 pBackend->setLineKernel( BlendMode::Replace, PixelFormat::BGR_8_sRGB, _draw_line<BlendMode::Replace, TintMode::None, PixelFormat::BGR_8_sRGB> );
 pBackend->setLineKernel( BlendMode::Replace, PixelFormat::BGRX_8_sRGB, _draw_line<BlendMode::Replace, TintMode::None, PixelFormat::BGRX_8_sRGB> );
@@ -251,55 +217,39 @@ pBackend->setClipLineKernel( BlendMode::BlendFixedColor, PixelFormat::BGR_565_sR
 
 pBackend->setSegmentStripKernel( SoftBackend::StripSource::Colors, BlendMode::Replace, PixelFormat::BGR_8_sRGB,  _draw_segment_strip<SoftBackend::StripSource::Colors, BlendMode::Replace, PixelFormat::BGR_8_sRGB> );
 pBackend->setSegmentStripKernel( SoftBackend::StripSource::Tintmaps, BlendMode::Replace, PixelFormat::BGR_8_sRGB, _draw_segment_strip<SoftBackend::StripSource::Tintmaps, BlendMode::Replace, PixelFormat::BGR_8_sRGB> );
-pBackend->setSegmentStripKernel( SoftBackend::StripSource::ColorsAndTintmaps, BlendMode::Replace, PixelFormat::BGR_8_sRGB, _draw_segment_strip<SoftBackend::StripSource::ColorsAndTintmaps, BlendMode::Replace, PixelFormat::BGR_8_sRGB> );
 pBackend->setSegmentStripKernel( SoftBackend::StripSource::Colors, BlendMode::Replace, PixelFormat::BGRX_8_sRGB,  _draw_segment_strip<SoftBackend::StripSource::Colors, BlendMode::Replace, PixelFormat::BGRX_8_sRGB> );
 pBackend->setSegmentStripKernel( SoftBackend::StripSource::Tintmaps, BlendMode::Replace, PixelFormat::BGRX_8_sRGB, _draw_segment_strip<SoftBackend::StripSource::Tintmaps, BlendMode::Replace, PixelFormat::BGRX_8_sRGB> );
-pBackend->setSegmentStripKernel( SoftBackend::StripSource::ColorsAndTintmaps, BlendMode::Replace, PixelFormat::BGRX_8_sRGB, _draw_segment_strip<SoftBackend::StripSource::ColorsAndTintmaps, BlendMode::Replace, PixelFormat::BGRX_8_sRGB> );
 pBackend->setSegmentStripKernel( SoftBackend::StripSource::Colors, BlendMode::Replace, PixelFormat::BGRA_8_sRGB,  _draw_segment_strip<SoftBackend::StripSource::Colors, BlendMode::Replace, PixelFormat::BGRA_8_sRGB> );
 pBackend->setSegmentStripKernel( SoftBackend::StripSource::Tintmaps, BlendMode::Replace, PixelFormat::BGRA_8_sRGB, _draw_segment_strip<SoftBackend::StripSource::Tintmaps, BlendMode::Replace, PixelFormat::BGRA_8_sRGB> );
-pBackend->setSegmentStripKernel( SoftBackend::StripSource::ColorsAndTintmaps, BlendMode::Replace, PixelFormat::BGRA_8_sRGB, _draw_segment_strip<SoftBackend::StripSource::ColorsAndTintmaps, BlendMode::Replace, PixelFormat::BGRA_8_sRGB> );
 pBackend->setSegmentStripKernel( SoftBackend::StripSource::Colors, BlendMode::Replace, PixelFormat::BGR_565_sRGB,  _draw_segment_strip<SoftBackend::StripSource::Colors, BlendMode::Replace, PixelFormat::BGR_565_sRGB> );
 pBackend->setSegmentStripKernel( SoftBackend::StripSource::Tintmaps, BlendMode::Replace, PixelFormat::BGR_565_sRGB, _draw_segment_strip<SoftBackend::StripSource::Tintmaps, BlendMode::Replace, PixelFormat::BGR_565_sRGB> );
-pBackend->setSegmentStripKernel( SoftBackend::StripSource::ColorsAndTintmaps, BlendMode::Replace, PixelFormat::BGR_565_sRGB, _draw_segment_strip<SoftBackend::StripSource::ColorsAndTintmaps, BlendMode::Replace, PixelFormat::BGR_565_sRGB> );
 
 pBackend->setSegmentStripKernel( SoftBackend::StripSource::Colors, BlendMode::Blend, PixelFormat::BGR_8_sRGB,  _draw_segment_strip<SoftBackend::StripSource::Colors, BlendMode::Blend, PixelFormat::BGR_8_sRGB> );
 pBackend->setSegmentStripKernel( SoftBackend::StripSource::Tintmaps, BlendMode::Blend, PixelFormat::BGR_8_sRGB, _draw_segment_strip<SoftBackend::StripSource::Tintmaps, BlendMode::Blend, PixelFormat::BGR_8_sRGB> );
-pBackend->setSegmentStripKernel( SoftBackend::StripSource::ColorsAndTintmaps, BlendMode::Blend, PixelFormat::BGR_8_sRGB, _draw_segment_strip<SoftBackend::StripSource::ColorsAndTintmaps, BlendMode::Blend, PixelFormat::BGR_8_sRGB> );
 pBackend->setSegmentStripKernel( SoftBackend::StripSource::Colors, BlendMode::Blend, PixelFormat::BGRX_8_sRGB,  _draw_segment_strip<SoftBackend::StripSource::Colors, BlendMode::Blend, PixelFormat::BGRX_8_sRGB> );
 pBackend->setSegmentStripKernel( SoftBackend::StripSource::Tintmaps, BlendMode::Blend, PixelFormat::BGRX_8_sRGB, _draw_segment_strip<SoftBackend::StripSource::Tintmaps, BlendMode::Blend, PixelFormat::BGRX_8_sRGB> );
-pBackend->setSegmentStripKernel( SoftBackend::StripSource::ColorsAndTintmaps, BlendMode::Blend, PixelFormat::BGRX_8_sRGB, _draw_segment_strip<SoftBackend::StripSource::ColorsAndTintmaps, BlendMode::Blend, PixelFormat::BGRX_8_sRGB> );
 pBackend->setSegmentStripKernel( SoftBackend::StripSource::Colors, BlendMode::Blend, PixelFormat::BGRA_8_sRGB,  _draw_segment_strip<SoftBackend::StripSource::Colors, BlendMode::Blend, PixelFormat::BGRA_8_sRGB> );
 pBackend->setSegmentStripKernel( SoftBackend::StripSource::Tintmaps, BlendMode::Blend, PixelFormat::BGRA_8_sRGB, _draw_segment_strip<SoftBackend::StripSource::Tintmaps, BlendMode::Blend, PixelFormat::BGRA_8_sRGB> );
-pBackend->setSegmentStripKernel( SoftBackend::StripSource::ColorsAndTintmaps, BlendMode::Blend, PixelFormat::BGRA_8_sRGB, _draw_segment_strip<SoftBackend::StripSource::ColorsAndTintmaps, BlendMode::Blend, PixelFormat::BGRA_8_sRGB> );
 pBackend->setSegmentStripKernel( SoftBackend::StripSource::Colors, BlendMode::Blend, PixelFormat::BGR_565_sRGB,  _draw_segment_strip<SoftBackend::StripSource::Colors, BlendMode::Blend, PixelFormat::BGR_565_sRGB> );
 pBackend->setSegmentStripKernel( SoftBackend::StripSource::Tintmaps, BlendMode::Blend, PixelFormat::BGR_565_sRGB, _draw_segment_strip<SoftBackend::StripSource::Tintmaps, BlendMode::Blend, PixelFormat::BGR_565_sRGB> );
-pBackend->setSegmentStripKernel( SoftBackend::StripSource::ColorsAndTintmaps, BlendMode::Blend, PixelFormat::BGR_565_sRGB, _draw_segment_strip<SoftBackend::StripSource::ColorsAndTintmaps, BlendMode::Blend, PixelFormat::BGR_565_sRGB> );
 
 pBackend->setSegmentStripKernel( SoftBackend::StripSource::Colors, BlendMode::Add, PixelFormat::BGR_8_sRGB,  _draw_segment_strip<SoftBackend::StripSource::Colors, BlendMode::Add, PixelFormat::BGR_8_sRGB> );
 pBackend->setSegmentStripKernel( SoftBackend::StripSource::Tintmaps, BlendMode::Add, PixelFormat::BGR_8_sRGB, _draw_segment_strip<SoftBackend::StripSource::Tintmaps, BlendMode::Add, PixelFormat::BGR_8_sRGB> );
-pBackend->setSegmentStripKernel( SoftBackend::StripSource::ColorsAndTintmaps, BlendMode::Add, PixelFormat::BGR_8_sRGB, _draw_segment_strip<SoftBackend::StripSource::ColorsAndTintmaps, BlendMode::Add, PixelFormat::BGR_8_sRGB> );
 pBackend->setSegmentStripKernel( SoftBackend::StripSource::Colors, BlendMode::Add, PixelFormat::BGRX_8_sRGB,  _draw_segment_strip<SoftBackend::StripSource::Colors, BlendMode::Add, PixelFormat::BGRX_8_sRGB> );
 pBackend->setSegmentStripKernel( SoftBackend::StripSource::Tintmaps, BlendMode::Add, PixelFormat::BGRX_8_sRGB, _draw_segment_strip<SoftBackend::StripSource::Tintmaps, BlendMode::Add, PixelFormat::BGRX_8_sRGB> );
-pBackend->setSegmentStripKernel( SoftBackend::StripSource::ColorsAndTintmaps, BlendMode::Add, PixelFormat::BGRX_8_sRGB, _draw_segment_strip<SoftBackend::StripSource::ColorsAndTintmaps, BlendMode::Add, PixelFormat::BGRX_8_sRGB> );
 pBackend->setSegmentStripKernel( SoftBackend::StripSource::Colors, BlendMode::Add, PixelFormat::BGRA_8_sRGB,  _draw_segment_strip<SoftBackend::StripSource::Colors, BlendMode::Add, PixelFormat::BGRA_8_sRGB> );
 pBackend->setSegmentStripKernel( SoftBackend::StripSource::Tintmaps, BlendMode::Add, PixelFormat::BGRA_8_sRGB, _draw_segment_strip<SoftBackend::StripSource::Tintmaps, BlendMode::Add, PixelFormat::BGRA_8_sRGB> );
-pBackend->setSegmentStripKernel( SoftBackend::StripSource::ColorsAndTintmaps, BlendMode::Add, PixelFormat::BGRA_8_sRGB, _draw_segment_strip<SoftBackend::StripSource::ColorsAndTintmaps, BlendMode::Add, PixelFormat::BGRA_8_sRGB> );
 pBackend->setSegmentStripKernel( SoftBackend::StripSource::Colors, BlendMode::Add, PixelFormat::BGR_565_sRGB,  _draw_segment_strip<SoftBackend::StripSource::Colors, BlendMode::Add, PixelFormat::BGR_565_sRGB> );
 pBackend->setSegmentStripKernel( SoftBackend::StripSource::Tintmaps, BlendMode::Add, PixelFormat::BGR_565_sRGB, _draw_segment_strip<SoftBackend::StripSource::Tintmaps, BlendMode::Add, PixelFormat::BGR_565_sRGB> );
-pBackend->setSegmentStripKernel( SoftBackend::StripSource::ColorsAndTintmaps, BlendMode::Add, PixelFormat::BGR_565_sRGB, _draw_segment_strip<SoftBackend::StripSource::ColorsAndTintmaps, BlendMode::Add, PixelFormat::BGR_565_sRGB> );
 
 pBackend->setSegmentStripKernel( SoftBackend::StripSource::Colors, BlendMode::BlendFixedColor, PixelFormat::BGR_8_sRGB,  _draw_segment_strip<SoftBackend::StripSource::Colors, BlendMode::BlendFixedColor, PixelFormat::BGR_8_sRGB> );
 pBackend->setSegmentStripKernel( SoftBackend::StripSource::Tintmaps, BlendMode::BlendFixedColor, PixelFormat::BGR_8_sRGB, _draw_segment_strip<SoftBackend::StripSource::Tintmaps, BlendMode::BlendFixedColor, PixelFormat::BGR_8_sRGB> );
-pBackend->setSegmentStripKernel( SoftBackend::StripSource::ColorsAndTintmaps, BlendMode::BlendFixedColor, PixelFormat::BGR_8_sRGB, _draw_segment_strip<SoftBackend::StripSource::ColorsAndTintmaps, BlendMode::BlendFixedColor, PixelFormat::BGR_8_sRGB> );
 pBackend->setSegmentStripKernel( SoftBackend::StripSource::Colors, BlendMode::BlendFixedColor, PixelFormat::BGRX_8_sRGB,  _draw_segment_strip<SoftBackend::StripSource::Colors, BlendMode::BlendFixedColor, PixelFormat::BGRX_8_sRGB> );
 pBackend->setSegmentStripKernel( SoftBackend::StripSource::Tintmaps, BlendMode::BlendFixedColor, PixelFormat::BGRX_8_sRGB, _draw_segment_strip<SoftBackend::StripSource::Tintmaps, BlendMode::BlendFixedColor, PixelFormat::BGRX_8_sRGB> );
-pBackend->setSegmentStripKernel( SoftBackend::StripSource::ColorsAndTintmaps, BlendMode::BlendFixedColor, PixelFormat::BGRX_8_sRGB, _draw_segment_strip<SoftBackend::StripSource::ColorsAndTintmaps, BlendMode::BlendFixedColor, PixelFormat::BGRX_8_sRGB> );
 pBackend->setSegmentStripKernel( SoftBackend::StripSource::Colors, BlendMode::BlendFixedColor, PixelFormat::BGRA_8_sRGB,  _draw_segment_strip<SoftBackend::StripSource::Colors, BlendMode::BlendFixedColor, PixelFormat::BGRA_8_sRGB> );
 pBackend->setSegmentStripKernel( SoftBackend::StripSource::Tintmaps, BlendMode::BlendFixedColor, PixelFormat::BGRA_8_sRGB, _draw_segment_strip<SoftBackend::StripSource::Tintmaps, BlendMode::BlendFixedColor, PixelFormat::BGRA_8_sRGB> );
-pBackend->setSegmentStripKernel( SoftBackend::StripSource::ColorsAndTintmaps, BlendMode::BlendFixedColor, PixelFormat::BGRA_8_sRGB, _draw_segment_strip<SoftBackend::StripSource::ColorsAndTintmaps, BlendMode::BlendFixedColor, PixelFormat::BGRA_8_sRGB> );
 pBackend->setSegmentStripKernel( SoftBackend::StripSource::Colors, BlendMode::BlendFixedColor, PixelFormat::BGR_565_sRGB,  _draw_segment_strip<SoftBackend::StripSource::Colors, BlendMode::BlendFixedColor, PixelFormat::BGR_565_sRGB> );
 pBackend->setSegmentStripKernel( SoftBackend::StripSource::Tintmaps, BlendMode::BlendFixedColor, PixelFormat::BGR_565_sRGB, _draw_segment_strip<SoftBackend::StripSource::Tintmaps, BlendMode::BlendFixedColor, PixelFormat::BGR_565_sRGB> );
-pBackend->setSegmentStripKernel( SoftBackend::StripSource::ColorsAndTintmaps, BlendMode::BlendFixedColor, PixelFormat::BGR_565_sRGB, _draw_segment_strip<SoftBackend::StripSource::ColorsAndTintmaps, BlendMode::BlendFixedColor, PixelFormat::BGR_565_sRGB> );
 
 pBackend->setStraightBlitKernel( PixelFormat::Undefined, SoftBackend::ReadOp::Normal, TintMode::None, BlendMode::Replace, PixelFormat::BGR_8_sRGB, _straight_blit<PixelFormat::Undefined, TintMode::None, BlendMode::Replace, PixelFormat::BGR_8_sRGB, SoftBackend::ReadOp::Normal> );
 pBackend->setStraightBlitKernel( PixelFormat::Undefined, SoftBackend::ReadOp::Normal, TintMode::None, BlendMode::Replace, PixelFormat::BGRX_8_sRGB, _straight_blit<PixelFormat::Undefined, TintMode::None, BlendMode::Replace, PixelFormat::BGRX_8_sRGB, SoftBackend::ReadOp::Normal> );
@@ -352,39 +302,7 @@ pBackend->setStraightBlitKernel( PixelFormat::Undefined, SoftBackend::ReadOp::No
 pBackend->setStraightBlitKernel( PixelFormat::Undefined, SoftBackend::ReadOp::Normal, TintMode::GradientX, BlendMode::BlendFixedColor, PixelFormat::BGRA_8_sRGB, _straight_blit<PixelFormat::Undefined, TintMode::GradientX, BlendMode::BlendFixedColor, PixelFormat::BGRA_8_sRGB, SoftBackend::ReadOp::Normal> );
 pBackend->setStraightBlitKernel( PixelFormat::Undefined, SoftBackend::ReadOp::Normal, TintMode::GradientX, BlendMode::BlendFixedColor, PixelFormat::BGR_565_sRGB, _straight_blit<PixelFormat::Undefined, TintMode::GradientX, BlendMode::BlendFixedColor, PixelFormat::BGR_565_sRGB, SoftBackend::ReadOp::Normal> );
 
-pBackend->setStraightBlitKernel( PixelFormat::Undefined, SoftBackend::ReadOp::Normal, TintMode::GradientY, BlendMode::Replace, PixelFormat::BGR_8_sRGB, _straight_blit<PixelFormat::Undefined, TintMode::GradientY, BlendMode::Replace, PixelFormat::BGR_8_sRGB, SoftBackend::ReadOp::Normal> );
-pBackend->setStraightBlitKernel( PixelFormat::Undefined, SoftBackend::ReadOp::Normal, TintMode::GradientY, BlendMode::Replace, PixelFormat::BGRX_8_sRGB, _straight_blit<PixelFormat::Undefined, TintMode::GradientY, BlendMode::Replace, PixelFormat::BGRX_8_sRGB, SoftBackend::ReadOp::Normal> );
-pBackend->setStraightBlitKernel( PixelFormat::Undefined, SoftBackend::ReadOp::Normal, TintMode::GradientY, BlendMode::Replace, PixelFormat::BGRA_8_sRGB, _straight_blit<PixelFormat::Undefined, TintMode::GradientY, BlendMode::Replace, PixelFormat::BGRA_8_sRGB, SoftBackend::ReadOp::Normal> );
-pBackend->setStraightBlitKernel( PixelFormat::Undefined, SoftBackend::ReadOp::Normal, TintMode::GradientY, BlendMode::Replace, PixelFormat::BGR_565_sRGB, _straight_blit<PixelFormat::Undefined, TintMode::GradientY, BlendMode::Replace, PixelFormat::BGR_565_sRGB, SoftBackend::ReadOp::Normal> );
-pBackend->setStraightBlitKernel( PixelFormat::Undefined, SoftBackend::ReadOp::Normal, TintMode::GradientY, BlendMode::Blend, PixelFormat::BGR_8_sRGB, _straight_blit<PixelFormat::Undefined, TintMode::GradientY, BlendMode::Blend, PixelFormat::BGR_8_sRGB, SoftBackend::ReadOp::Normal> );
-pBackend->setStraightBlitKernel( PixelFormat::Undefined, SoftBackend::ReadOp::Normal, TintMode::GradientY, BlendMode::Blend, PixelFormat::BGRX_8_sRGB, _straight_blit<PixelFormat::Undefined, TintMode::GradientY, BlendMode::Blend, PixelFormat::BGRX_8_sRGB, SoftBackend::ReadOp::Normal> );
-pBackend->setStraightBlitKernel( PixelFormat::Undefined, SoftBackend::ReadOp::Normal, TintMode::GradientY, BlendMode::Blend, PixelFormat::BGRA_8_sRGB, _straight_blit<PixelFormat::Undefined, TintMode::GradientY, BlendMode::Blend, PixelFormat::BGRA_8_sRGB, SoftBackend::ReadOp::Normal> );
-pBackend->setStraightBlitKernel( PixelFormat::Undefined, SoftBackend::ReadOp::Normal, TintMode::GradientY, BlendMode::Blend, PixelFormat::BGR_565_sRGB, _straight_blit<PixelFormat::Undefined, TintMode::GradientY, BlendMode::Blend, PixelFormat::BGR_565_sRGB, SoftBackend::ReadOp::Normal> );
-pBackend->setStraightBlitKernel( PixelFormat::Undefined, SoftBackend::ReadOp::Normal, TintMode::GradientY, BlendMode::Add, PixelFormat::BGR_8_sRGB, _straight_blit<PixelFormat::Undefined, TintMode::GradientY, BlendMode::Add, PixelFormat::BGR_8_sRGB, SoftBackend::ReadOp::Normal> );
-pBackend->setStraightBlitKernel( PixelFormat::Undefined, SoftBackend::ReadOp::Normal, TintMode::GradientY, BlendMode::Add, PixelFormat::BGRX_8_sRGB, _straight_blit<PixelFormat::Undefined, TintMode::GradientY, BlendMode::Add, PixelFormat::BGRX_8_sRGB, SoftBackend::ReadOp::Normal> );
-pBackend->setStraightBlitKernel( PixelFormat::Undefined, SoftBackend::ReadOp::Normal, TintMode::GradientY, BlendMode::Add, PixelFormat::BGRA_8_sRGB, _straight_blit<PixelFormat::Undefined, TintMode::GradientY, BlendMode::Add, PixelFormat::BGRA_8_sRGB, SoftBackend::ReadOp::Normal> );
-pBackend->setStraightBlitKernel( PixelFormat::Undefined, SoftBackend::ReadOp::Normal, TintMode::GradientY, BlendMode::Add, PixelFormat::BGR_565_sRGB, _straight_blit<PixelFormat::Undefined, TintMode::GradientY, BlendMode::Add, PixelFormat::BGR_565_sRGB, SoftBackend::ReadOp::Normal> );
-pBackend->setStraightBlitKernel( PixelFormat::Undefined, SoftBackend::ReadOp::Normal, TintMode::GradientY, BlendMode::BlendFixedColor, PixelFormat::BGR_8_sRGB, _straight_blit<PixelFormat::Undefined, TintMode::GradientY, BlendMode::BlendFixedColor, PixelFormat::BGR_8_sRGB, SoftBackend::ReadOp::Normal> );
-pBackend->setStraightBlitKernel( PixelFormat::Undefined, SoftBackend::ReadOp::Normal, TintMode::GradientY, BlendMode::BlendFixedColor, PixelFormat::BGRX_8_sRGB, _straight_blit<PixelFormat::Undefined, TintMode::GradientY, BlendMode::BlendFixedColor, PixelFormat::BGRX_8_sRGB, SoftBackend::ReadOp::Normal> );
-pBackend->setStraightBlitKernel( PixelFormat::Undefined, SoftBackend::ReadOp::Normal, TintMode::GradientY, BlendMode::BlendFixedColor, PixelFormat::BGRA_8_sRGB, _straight_blit<PixelFormat::Undefined, TintMode::GradientY, BlendMode::BlendFixedColor, PixelFormat::BGRA_8_sRGB, SoftBackend::ReadOp::Normal> );
-pBackend->setStraightBlitKernel( PixelFormat::Undefined, SoftBackend::ReadOp::Normal, TintMode::GradientY, BlendMode::BlendFixedColor, PixelFormat::BGR_565_sRGB, _straight_blit<PixelFormat::Undefined, TintMode::GradientY, BlendMode::BlendFixedColor, PixelFormat::BGR_565_sRGB, SoftBackend::ReadOp::Normal> );
 
-pBackend->setStraightBlitKernel( PixelFormat::Undefined, SoftBackend::ReadOp::Normal, TintMode::GradientXY, BlendMode::Replace, PixelFormat::BGR_8_sRGB, _straight_blit<PixelFormat::Undefined, TintMode::GradientXY, BlendMode::Replace, PixelFormat::BGR_8_sRGB, SoftBackend::ReadOp::Normal> );
-pBackend->setStraightBlitKernel( PixelFormat::Undefined, SoftBackend::ReadOp::Normal, TintMode::GradientXY, BlendMode::Replace, PixelFormat::BGRX_8_sRGB, _straight_blit<PixelFormat::Undefined, TintMode::GradientXY, BlendMode::Replace, PixelFormat::BGRX_8_sRGB, SoftBackend::ReadOp::Normal> );
-pBackend->setStraightBlitKernel( PixelFormat::Undefined, SoftBackend::ReadOp::Normal, TintMode::GradientXY, BlendMode::Replace, PixelFormat::BGRA_8_sRGB, _straight_blit<PixelFormat::Undefined, TintMode::GradientXY, BlendMode::Replace, PixelFormat::BGRA_8_sRGB, SoftBackend::ReadOp::Normal> );
-pBackend->setStraightBlitKernel( PixelFormat::Undefined, SoftBackend::ReadOp::Normal, TintMode::GradientXY, BlendMode::Replace, PixelFormat::BGR_565_sRGB, _straight_blit<PixelFormat::Undefined, TintMode::GradientXY, BlendMode::Replace, PixelFormat::BGR_565_sRGB, SoftBackend::ReadOp::Normal> );
-pBackend->setStraightBlitKernel( PixelFormat::Undefined, SoftBackend::ReadOp::Normal, TintMode::GradientXY, BlendMode::Blend, PixelFormat::BGR_8_sRGB, _straight_blit<PixelFormat::Undefined, TintMode::GradientXY, BlendMode::Blend, PixelFormat::BGR_8_sRGB, SoftBackend::ReadOp::Normal> );
-pBackend->setStraightBlitKernel( PixelFormat::Undefined, SoftBackend::ReadOp::Normal, TintMode::GradientXY, BlendMode::Blend, PixelFormat::BGRX_8_sRGB, _straight_blit<PixelFormat::Undefined, TintMode::GradientXY, BlendMode::Blend, PixelFormat::BGRX_8_sRGB, SoftBackend::ReadOp::Normal> );
-pBackend->setStraightBlitKernel( PixelFormat::Undefined, SoftBackend::ReadOp::Normal, TintMode::GradientXY, BlendMode::Blend, PixelFormat::BGRA_8_sRGB, _straight_blit<PixelFormat::Undefined, TintMode::GradientXY, BlendMode::Blend, PixelFormat::BGRA_8_sRGB, SoftBackend::ReadOp::Normal> );
-pBackend->setStraightBlitKernel( PixelFormat::Undefined, SoftBackend::ReadOp::Normal, TintMode::GradientXY, BlendMode::Blend, PixelFormat::BGR_565_sRGB, _straight_blit<PixelFormat::Undefined, TintMode::GradientXY, BlendMode::Blend, PixelFormat::BGR_565_sRGB, SoftBackend::ReadOp::Normal> );
-pBackend->setStraightBlitKernel( PixelFormat::Undefined, SoftBackend::ReadOp::Normal, TintMode::GradientXY, BlendMode::Add, PixelFormat::BGR_8_sRGB, _straight_blit<PixelFormat::Undefined, TintMode::GradientXY, BlendMode::Add, PixelFormat::BGR_8_sRGB, SoftBackend::ReadOp::Normal> );
-pBackend->setStraightBlitKernel( PixelFormat::Undefined, SoftBackend::ReadOp::Normal, TintMode::GradientXY, BlendMode::Add, PixelFormat::BGRX_8_sRGB, _straight_blit<PixelFormat::Undefined, TintMode::GradientXY, BlendMode::Add, PixelFormat::BGRX_8_sRGB, SoftBackend::ReadOp::Normal> );
-pBackend->setStraightBlitKernel( PixelFormat::Undefined, SoftBackend::ReadOp::Normal, TintMode::GradientXY, BlendMode::Add, PixelFormat::BGRA_8_sRGB, _straight_blit<PixelFormat::Undefined, TintMode::GradientXY, BlendMode::Add, PixelFormat::BGRA_8_sRGB, SoftBackend::ReadOp::Normal> );
-pBackend->setStraightBlitKernel( PixelFormat::Undefined, SoftBackend::ReadOp::Normal, TintMode::GradientXY, BlendMode::Add, PixelFormat::BGR_565_sRGB, _straight_blit<PixelFormat::Undefined, TintMode::GradientXY, BlendMode::Add, PixelFormat::BGR_565_sRGB, SoftBackend::ReadOp::Normal> );
-pBackend->setStraightBlitKernel( PixelFormat::Undefined, SoftBackend::ReadOp::Normal, TintMode::GradientXY, BlendMode::BlendFixedColor, PixelFormat::BGR_8_sRGB, _straight_blit<PixelFormat::Undefined, TintMode::GradientXY, BlendMode::BlendFixedColor, PixelFormat::BGR_8_sRGB, SoftBackend::ReadOp::Normal> );
-pBackend->setStraightBlitKernel( PixelFormat::Undefined, SoftBackend::ReadOp::Normal, TintMode::GradientXY, BlendMode::BlendFixedColor, PixelFormat::BGRX_8_sRGB, _straight_blit<PixelFormat::Undefined, TintMode::GradientXY, BlendMode::BlendFixedColor, PixelFormat::BGRX_8_sRGB, SoftBackend::ReadOp::Normal> );
-pBackend->setStraightBlitKernel( PixelFormat::Undefined, SoftBackend::ReadOp::Normal, TintMode::GradientXY, BlendMode::BlendFixedColor, PixelFormat::BGRA_8_sRGB, _straight_blit<PixelFormat::Undefined, TintMode::GradientXY, BlendMode::BlendFixedColor, PixelFormat::BGRA_8_sRGB, SoftBackend::ReadOp::Normal> );
-pBackend->setStraightBlitKernel( PixelFormat::Undefined, SoftBackend::ReadOp::Normal, TintMode::GradientXY, BlendMode::BlendFixedColor, PixelFormat::BGR_565_sRGB, _straight_blit<PixelFormat::Undefined, TintMode::GradientXY, BlendMode::BlendFixedColor, PixelFormat::BGR_565_sRGB, SoftBackend::ReadOp::Normal> );
 
 pBackend->setStraightBlitKernel( PixelFormat::BGRA_8_linear, SoftBackend::ReadOp::Normal, TintMode::None, BlendMode::Replace, PixelFormat::BGR_8_sRGB, _straight_blit<PixelFormat::BGRA_8_linear, TintMode::None, BlendMode::Replace, PixelFormat::BGR_8_sRGB, SoftBackend::ReadOp::Normal> );
 pBackend->setStraightBlitKernel( PixelFormat::BGRA_8_linear, SoftBackend::ReadOp::Normal, TintMode::None, BlendMode::Replace, PixelFormat::BGRX_8_sRGB, _straight_blit<PixelFormat::BGRA_8_linear, TintMode::None, BlendMode::Replace, PixelFormat::BGRX_8_sRGB, SoftBackend::ReadOp::Normal> );

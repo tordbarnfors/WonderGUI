@@ -38,7 +38,9 @@ KernelDB::CustomBlitSpec::CustomBlitSpec()
 
 void KernelDB::setTintMode(TintMode mode, bool bOn)
 {
-	if (mode >= TintMode_min && mode <= TintMode_max && mode != TintMode::None)
+	// GradientY and GradientXY are not used by SoftBackend since Tints replaced Tintmaps.
+
+	if (mode >= TintMode_min && mode <= TintMode_max && mode != TintMode::None && mode != TintMode::GradientY && mode != TintMode::GradientXY)
 		m_tintModes[int(mode)] = bOn;
 }
 
@@ -121,10 +123,8 @@ KernelDB::KernelCount KernelDB::countKernels()
 	count.clipLine = nBlendModes * nDestFormats;
 
 	int nSegmentKernelTypes = 1;
-	if( m_tintModes[int(TintMode::GradientY)])
-		nSegmentKernelTypes++;
-	if( m_tintModes[int(TintMode::GradientXY)])
-		nSegmentKernelTypes++;
+	if( m_tintModes[int(TintMode::GradientX)])
+		nSegmentKernelTypes++;							// Per pixel colors (StripSource::Tintmaps), needed for tinted edgemaps.
 
 	count.segment = nBlendModes * nDestFormats * nSegmentKernelTypes;
 
@@ -573,7 +573,7 @@ bool KernelDB::generateSource(std::ostream& out, const std::string& kernelLabel 
 					}
 
 
-					if (m_tintModes[(int)TintMode::GradientY])
+					if (m_tintModes[(int)TintMode::GradientX])
 					{
 						snprintf(temp, 4096, "pBackend->setSegmentStripKernel( SoftBackend::StripSource::Tintmaps, BlendMode::%s, PixelFormat::%s, _draw_segment_strip<SoftBackend::StripSource::Tintmaps, BlendMode::%s, PixelFormat::%s> );\n",
 							pBlend, pFormat, pBlend, pFormat);
@@ -582,13 +582,6 @@ bool KernelDB::generateSource(std::ostream& out, const std::string& kernelLabel 
 					}
 
 
-					if (m_tintModes[(int)TintMode::GradientXY])
-					{
-						snprintf(temp, 4096, "pBackend->setSegmentStripKernel( SoftBackend::StripSource::ColorsAndTintmaps, BlendMode::%s, PixelFormat::%s, _draw_segment_strip<SoftBackend::StripSource::ColorsAndTintmaps, BlendMode::%s, PixelFormat::%s> );\n",
-							pBlend, pFormat, pBlend, pFormat);
-
-						out << temp;
-					}
 				}
 			}
 			out << endl;

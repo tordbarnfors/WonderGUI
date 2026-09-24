@@ -243,7 +243,7 @@ namespace wg
 		m_pSurface = bp.surface;
 		m_ninePatch.frame = bp.frame;
 		m_blendMode = bp.blendMode;
-		m_pTintmap = bp.tintmap;
+		m_pTint = bp.tint;
 
 		// Make sure we have a correct block
 
@@ -447,7 +447,7 @@ namespace wg
 
 		RectSPX canvas = _canvas - align(ptsToSpx(m_spacing, scale)) + align(ptsToSpx(m_overflow, scale));
 		
-		RenderSettingsWithTintmap settings(pDevice, m_layer, m_blendMode, _getColor(state), canvas, m_pTintmap);
+		RenderSettingsWithTint settings(pDevice, m_layer, m_blendMode, _getColor(state), canvas, m_pTint);
 
 		pDevice->setBlitSource(m_pSurface);
 
@@ -551,7 +551,7 @@ namespace wg
 			bOpaque = false;
 		else if (m_blendMode == BlendMode::Replace)
 			bOpaque = true;
-		else if (m_pTintmap && !m_pTintmap->isOpaque())
+		else if (m_pTint && !m_pTint->isOpaque())
 			bOpaque = false;
 		else if (m_blendMode == BlendMode::Blend)
 		{

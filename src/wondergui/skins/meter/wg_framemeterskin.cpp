@@ -48,7 +48,7 @@ namespace wg
 		m_blendMode			= bp.blendMode;
 		m_color				= bp.color;
 		m_gfxPadding		= bp.gfxPadding;
-		m_pTintmap			= bp.tintmap;
+		m_pTint			= bp.tint;
 		m_size				= bp.size;
 		m_pSurface			= bp.surface;
 
@@ -101,7 +101,7 @@ namespace wg
 		{
 			RectSPX canvas = _canvas - align(ptsToSpx(m_spacing, scale)) + align(ptsToSpx(m_overflow, scale));
 			
-			RenderSettingsWithTintmap settings(pDevice, m_layer, m_blendMode, m_color, canvas, m_pTintmap);
+			RenderSettingsWithTint settings(pDevice, m_layer, m_blendMode, m_color, canvas, m_pTint);
 
 			pDevice->setBlitSource(m_pSurface);
 
@@ -177,7 +177,7 @@ namespace wg
 			m_bOpaque = true;
 		else if (m_blendMode == BlendMode::Blend)
 		{
-			if ((m_pTintmap && !m_pTintmap->isOpaque()) || m_color.a != 4096)
+			if ((m_pTint && !m_pTint->isOpaque()) || m_color.a != 4096)
 				m_bOpaque = false;
 			else
 				m_bOpaque = m_pSurface->isOpaque();

@@ -54,7 +54,7 @@ namespace wg
 		m_zoom(bp.zoom),
 		m_gfxPadding(bp.gfxPadding),
 		m_color(bp.color),
-		m_pTintmap(bp.tintmap),
+		m_pTint(bp.tint),
 		m_blendMode(bp.blendMode)
 	{
 		//TODO: Also take frame opacity into account.
@@ -111,7 +111,7 @@ namespace wg
 		else if (degrees >= 360.f)
 			degrees = (float)fmod(degrees, 360.f);
 
-		RenderSettingsWithTintmap settings(pDevice, m_layer, m_blendMode, m_color, canvas, m_pTintmap);
+		RenderSettingsWithTint settings(pDevice, m_layer, m_blendMode, m_color, canvas, m_pTint);
 
 		pDevice->setBlitSource(m_pSurface);
 		pDevice->rotScaleBlit(canvas, degrees, zoom, m_pivot, m_placement);

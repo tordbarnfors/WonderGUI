@@ -50,10 +50,10 @@ namespace wg
 		{
 			pts					bottomOutlineThickness = 1;
 			HiColor				color = Color8::LightGrey;
-			Gradient			gradient;								// Overrides color when set.
+			Tint_p				tint;									// Overrides color when set. Placed in the rect of the waveform.
 			int					id = 0;
 			HiColor				outlineColor = Color8::DarkGrey;
-			Gradient			outlineGradient;						// Overrides outlineColor when set.
+			Tint_p				outlineTint;							// Overrides outlineColor when set.
 			float				rangeBegin = 0.f;
 			float				rangeEnd = 1.f;
 			pts					topOutlineThickness = 1;
@@ -67,7 +67,7 @@ namespace wg
 		int		id() const { return m_id; }
 
 		bool	setColors(HiColor fill, HiColor outline, ColorTransition* pTransition = nullptr);
-		bool	setGradients(Gradient fill, Gradient outline, ColorTransition* pTransition = nullptr);
+		bool	setTints(Tint * pFill, Tint * pOutline, ValueTransition* pTransition = nullptr);
 
 		bool	setOutlineThickness( pts topOutline, pts bottomOutline );
 		pts		topOutlineThickness() const { return m_topOutlineThickness; }
@@ -85,6 +85,7 @@ namespace wg
 		bool	isVisible() const { return m_bVisible; }
 
 		bool	isTransitioningColors() const { return m_pColorTransition; }
+		bool	isTransitioningTints() const { return m_pTintTransition; }
 		bool	isTransitioningSamples() const { return m_pSampleTransition; }
 
 		HiColor	color() const { return m_fillColor; }
@@ -97,6 +98,7 @@ namespace wg
 
 		void				_endSampleTransition();
 		void				_endColorTransition();
+		void				_endTintTransition();
 
 		AreaChart*			m_pDisplay = nullptr;
 
@@ -108,8 +110,8 @@ namespace wg
 
 		HiColor				m_fillColor = Color::LightGray;
 		HiColor				m_outlineColor = Color::Black;
-		Gradient			m_fillGradient;
-		Gradient			m_outlineGradient;
+		Tint_p				m_pFillTint;
+		Tint_p				m_pOutlineTint;
 
 		pts					m_topOutlineThickness = 1;
 		pts					m_bottomOutlineThickness = 1;
@@ -125,11 +127,14 @@ namespace wg
 		HiColor				m_startOutlineColor;
 		HiColor				m_endOutlineColor;
 
-		Gradient			m_startFillGradient;
-		Gradient			m_endFillGradient;
+		ValueTransition_p	m_pTintTransition;
+		int					m_tintTransitionProgress = 0;
 
-		Gradient			m_startOutlineGradient;
-		Gradient			m_endOutlineGradient;
+		Tint_p				m_pStartFillTint;
+		Tint_p				m_pEndFillTint;
+
+		Tint_p				m_pStartOutlineTint;
+		Tint_p				m_pEndOutlineTint;
 
 		ValueTransition_p	m_pSampleTransition;
 		int					m_sampleTransitionProgress = 0;	// In microseconds

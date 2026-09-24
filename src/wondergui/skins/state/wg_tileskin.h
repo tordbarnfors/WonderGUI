@@ -25,7 +25,7 @@
 
 #include <wg_stateskin.h>
 #include <wg_surface.h>
-#include <wg_tintmap.h>
+#include <wg_tint.h>
 
 #include <vector>
 
@@ -93,7 +93,7 @@ namespace wg
 
 			std::vector<StateBP>	states;
 			Surface_p		surface;
-			Tintmap_p		tintmap;
+			Tint_p		tint;
 		};
 
 		//.____ Creation __________________________________________
@@ -144,7 +144,7 @@ namespace wg
 
 
 		BlendMode		m_blendMode;
-		Tintmap_p		m_pTintmap;
+		Tint_p		m_pTint;
 
 		void *			m_pStateData;				// Pointer at memory block with state data.
 

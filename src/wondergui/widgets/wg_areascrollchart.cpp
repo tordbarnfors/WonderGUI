@@ -85,9 +85,6 @@ namespace wg
 
 					graph.m_fillColor = graph.m_endFillColor;
 					graph.m_outlineColor = graph.m_endOutlineColor;
-
-					graph.m_fillGradient = graph.m_endFillGradient;
-					graph.m_outlineGradient = graph.m_endOutlineGradient;
 				}
 				else
 				{
@@ -96,18 +93,36 @@ namespace wg
 					graph.m_fillColor = graph.m_pColorTransition->snapshot(timestamp, graph.m_startFillColor, graph.m_endFillColor);
 					graph.m_outlineColor = graph.m_pColorTransition->snapshot(timestamp, graph.m_startOutlineColor, graph.m_endOutlineColor);
 
-					if (!graph.m_fillGradient.isUndefined())
-					{
-						graph.m_fillGradient.topLeft = graph.m_pColorTransition->snapshot(timestamp, graph.m_startFillGradient.topLeft, graph.m_endFillGradient.topLeft);
-						graph.m_fillGradient.topRight = graph.m_pColorTransition->snapshot(timestamp, graph.m_startFillGradient.topRight, graph.m_endFillGradient.topRight);
-						graph.m_fillGradient.bottomLeft = graph.m_pColorTransition->snapshot(timestamp, graph.m_startFillGradient.bottomLeft, graph.m_endFillGradient.bottomLeft);
-						graph.m_fillGradient.bottomRight = graph.m_pColorTransition->snapshot(timestamp, graph.m_startFillGradient.bottomRight, graph.m_endFillGradient.bottomRight);
+					transitionsActive = true;
+				}
 
-						graph.m_outlineGradient.topLeft = graph.m_pColorTransition->snapshot(timestamp, graph.m_startOutlineGradient.topLeft, graph.m_endOutlineGradient.topLeft);
-						graph.m_outlineGradient.topRight = graph.m_pColorTransition->snapshot(timestamp, graph.m_startOutlineGradient.topRight, graph.m_endOutlineGradient.topRight);
-						graph.m_outlineGradient.bottomLeft = graph.m_pColorTransition->snapshot(timestamp, graph.m_startOutlineGradient.bottomLeft, graph.m_endOutlineGradient.bottomLeft);
-						graph.m_outlineGradient.bottomRight = graph.m_pColorTransition->snapshot(timestamp, graph.m_startOutlineGradient.bottomRight, graph.m_endOutlineGradient.bottomRight);
-					}
+				_requestFullRedraw();
+			}
+
+			if (graph.m_pTintTransition)
+			{
+				int timestamp = graph.m_tintTransitionProgress + microPassed;
+
+				if (timestamp >= graph.m_pTintTransition->duration())
+				{
+					graph.m_pFillTint = graph.m_pEndFillTint;
+					graph.m_pOutlineTint = graph.m_pEndOutlineTint;
+
+					graph.m_tintTransitionProgress = 0;
+					graph.m_pTintTransition = nullptr;
+					graph.m_pStartFillTint = nullptr;
+					graph.m_pEndFillTint = nullptr;
+					graph.m_pStartOutlineTint = nullptr;
+					graph.m_pEndOutlineTint = nullptr;
+				}
+				else
+				{
+					graph.m_tintTransitionProgress = timestamp;
+
+					float progress = graph.m_pTintTransition->snapshot(timestamp, 0.f, 1.f);
+
+					graph.m_pFillTint = Tint::blend(graph.m_pStartFillTint, graph.m_pEndFillTint, progress);
+					graph.m_pOutlineTint = Tint::blend(graph.m_pStartOutlineTint, graph.m_pEndOutlineTint, progress);
 
 					transitionsActive = true;
 				}
@@ -253,10 +268,10 @@ namespace wg
 				_.size = waveformSize,
 				_.bottomOutlineThickness = entry.m_bottomOutlineThickness*m_scale,
 				_.color = entry.m_fillColor,
-				_.gradient = entry.m_fillGradient,
+				_.tint = entry.m_pFillTint,
 				_.origo = SampleOrigo::Top,
 				_.outlineColor = entry.m_outlineColor,
-				_.outlineGradient = entry.m_outlineGradient,
+				_.outlineTint = entry.m_pOutlineTint,
 				_.topOutlineThickness = entry.m_topOutlineThickness*m_scale
 			), m_pEdgemapFactory);
 
@@ -306,7 +321,7 @@ namespace wg
 
 		for (auto& entry : entries)
 		{
-			if( entry.m_pColorTransition)
+			if( entry.m_pColorTransition || entry.m_pTintTransition)
 			{
 				bTransitioning = true;
 				break;
@@ -397,9 +412,9 @@ namespace wg
 		m_id						= bp.id;
 		m_bottomOutlineThickness 	= bp.bottomOutlineThickness;
 		m_fillColor					= bp.color;
-		m_fillGradient				= bp.gradient;
+		m_pFillTint				= bp.tint;
 		m_outlineColor				= bp.outlineColor;
-		m_outlineGradient			= bp.outlineGradient;
+		m_pOutlineTint			= bp.outlineTint;
 		m_topOutlineThickness		= bp.topOutlineThickness;
 		m_bVisible					= bp.visible;
 
@@ -546,10 +561,13 @@ namespace wg
 		if (!fill.isValid() || !outline.isValid())
 			return false;
 
-		if (!m_fillGradient.isUndefined() || !m_outlineGradient.isUndefined())
+		if (m_pFillTint || m_pOutlineTint || m_pTintTransition)
 		{
-			m_fillGradient = Gradient::Undefined;
-			m_outlineGradient = Gradient::Undefined;
+			if (m_pTintTransition)
+				_endTintTransition();
+
+			m_pFillTint = nullptr;
+			m_pOutlineTint = nullptr;
 
 			m_pDisplay->_requestFullRedraw();
 		}
@@ -586,41 +604,61 @@ namespace wg
 		return true;
 	}
 
-	//____ AreaScrollChartEntry::setGradients() _________________________________
+	//____ AreaScrollChartEntry::setTints() _____________________________________________________
+	/**
+	 * @brief Set Tints for fill and outline, overriding their colors.
+	 *
+	 * The Tints are placed in the rectangle of the waveform. Nullptr removes a Tint.
+	 * Transitions between Tints morph or crossfade as described in Tint::blend().
+	 */
 
-	bool AreaScrollChartEntry::setGradients(Gradient fill, Gradient outline, ColorTransition* pTransition)
+	bool AreaScrollChartEntry::setTints(Tint * pFill, Tint * pOutline, ValueTransition* pTransition)
 	{
-		// Gradients in scroll chart may only be vertical, not the least horizontal.
+		// Tints in scroll chart may only vary vertically, since the waveform is regenerated in sections.
 
-		if (!fill.isValid() || !outline.isValid() || fill.isHorizontal() || outline.isHorizontal() )
+		auto isVerticalOnly = [](Tint* p)
+		{
+			if (!p)
+				return true;
+
+			for (int i = 0; i < (p->isMix() ? p->nbMixComponents() : 1); i++)
+			{
+				Tint* c = p->isMix() ? p->mixComponent(i) : p;
+				if (!c->isFlat() && (c->shape() != TintShape::Linear || c->begin().x != c->end().x))
+					return false;
+			}
+			return true;
+		};
+
+		if (!isVerticalOnly(pFill) || !isVerticalOnly(pOutline))
 			return false;
 
-		if (fill == m_fillGradient && outline == m_outlineGradient)
+		if (pFill == m_pFillTint && pOutline == m_pOutlineTint && !m_pTintTransition)
 			return true;
 
 		if (pTransition)
 		{
-			if( pTransition == m_pColorTransition && fill == m_endFillGradient && outline == m_endOutlineGradient )
+			if( pTransition == m_pTintTransition && pFill == m_pEndFillTint && pOutline == m_pEndOutlineTint )
 				return false;	// We ignore re-setting of same transition. Return false since result will differ form request.
 
-			m_pColorTransition = pTransition;
-			m_colorTransitionProgress = 0;
+			m_pTintTransition = pTransition;
+			m_tintTransitionProgress = 0;
 
-			m_endFillGradient = fill;
-			m_endOutlineGradient = outline;
+			m_pStartFillTint = m_pFillTint;
+			m_pStartOutlineTint = m_pOutlineTint;
 
-			m_startFillGradient = m_fillGradient;
-			m_startOutlineGradient = m_outlineGradient;
+			m_pEndFillTint = pFill;
+			m_pEndOutlineTint = pOutline;
 
 			m_pDisplay->_startedOrEndedTransition();
 		}
 		else
 		{
-			if( m_pColorTransition )
-				_endColorTransition();
+			if( m_pTintTransition )
+				_endTintTransition();
 
-			m_fillGradient = fill;
-			m_outlineGradient = outline;
+			m_pFillTint = pFill;
+			m_pOutlineTint = pOutline;
 
 			m_pDisplay->_requestFullRedraw();
 		}
@@ -674,6 +712,21 @@ namespace wg
 
 		m_startOutlineColor = m_outlineColor;
 		m_endOutlineColor = m_outlineColor;
+
+		m_pDisplay->_startedOrEndedTransition();
+	}
+
+	//____ AreaScrollChartEntry::_endTintTransition() ______________________________________________
+
+	void AreaScrollChartEntry::_endTintTransition()
+	{
+		m_pTintTransition = nullptr;
+		m_tintTransitionProgress = 0;
+
+		m_pStartFillTint = nullptr;
+		m_pEndFillTint = nullptr;
+		m_pStartOutlineTint = nullptr;
+		m_pEndOutlineTint = nullptr;
 
 		m_pDisplay->_startedOrEndedTransition();
 	}

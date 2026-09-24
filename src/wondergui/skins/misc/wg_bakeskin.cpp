@@ -53,7 +53,7 @@ namespace wg
 
 		m_blendMode = blueprint.blendMode;
 		m_tintColor = blueprint.color;
-		m_pTintmap = blueprint.tintmap;
+		m_pTint = blueprint.tint;
 		m_bSkinInSkin = blueprint.skinInSkin;
 		m_layer = blueprint.layer;
 
@@ -282,7 +282,7 @@ namespace wg
 
 		// Blit baked graphics to canvas.
 
-		RenderSettingsWithTintmap settings(pDevice, m_layer, m_blendMode, m_tintColor, canvas, m_pTintmap);
+		RenderSettingsWithTint settings(pDevice, m_layer, m_blendMode, m_tintColor, canvas, m_pTint);
 
 		pDevice->setBlitSource(m_pBakeSurface);
 		pDevice->blit(canvas.pos(), { 0,0,canvas.size()});

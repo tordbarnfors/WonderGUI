@@ -26,7 +26,7 @@
 #include <wg_surface.h>
 #include <wg_skin.h>
 #include <wg_color.h>
-#include <wg_tintmap.h>
+#include <wg_tint.h>
 
 #include <initializer_list>
 #include <utility>
@@ -55,7 +55,7 @@ namespace wg
 			std::vector<Skin_p>	skins;
 
 			Surface_p	surface;
-			Tintmap_p	tintmap;
+			Tint_p	tint;
 		};
 
 		//.____ Creation __________________________________________
@@ -113,7 +113,7 @@ namespace wg
 		Surface_p			m_pBakeSurface;
 		BlendMode			m_blendMode = BlendMode::Undefined;
 		HiColor				m_tintColor = HiColor::White;
-		Tintmap_p			m_pTintmap;
+		Tint_p			m_pTint;
 		bool				m_bContentPaddingSet = false;
 		bool				m_bSkinInSkin = false;
 

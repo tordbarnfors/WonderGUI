@@ -130,8 +130,8 @@ set( SOURCES
 	skins/state/wg_multiblockskin.h
 	skins/state/wg_tileskin.cpp
 	skins/state/wg_tileskin.h
-	skins/state/wg_tintmapskin.cpp
-	skins/state/wg_tintmapskin.h
+	skins/state/wg_tintskin.cpp
+	skins/state/wg_tintskin.h
 
 
 	slots/wg_slot.cpp

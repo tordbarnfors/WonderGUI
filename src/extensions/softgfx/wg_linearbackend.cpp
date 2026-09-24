@@ -792,7 +792,15 @@ namespace wg
 				SegmentOp_p	pOp = nullptr;
 				auto pKernels = m_pKernels[(int)m_canvasPixelFormat];
 				if (pKernels)
+				{
 					pOp = pKernels->pSegmentKernels[(int)stripSource][(int)m_blendMode];
+
+					if (!pOp && stripSource == StripSource::Tintmaps && pKernels->pSegmentKernels[(int)StripSource::Colors][(int)m_blendMode])
+					{
+						_flattenEdgemapTinting(pEdgemap, nSegments, tinting, { _dest.x + _dest.w / 2, _dest.y + _dest.h / 2 });
+						pOp = pKernels->pSegmentKernels[(int)StripSource::Colors][(int)m_blendMode];
+					}
+				}
 
 				if (pOp == nullptr)
 				{

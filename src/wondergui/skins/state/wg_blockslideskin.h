@@ -25,7 +25,7 @@
 
 #include <wg_stateskin.h>
 #include <wg_surface.h>
-#include <wg_tintmap.h>
+#include <wg_tint.h>
 
 #include <vector>
 
@@ -89,7 +89,7 @@ namespace wg
 			Border			spacing;
 			std::vector<StateBP> states;
 			Surface_p		surface;
-			Tintmap_p		tintmap;
+			Tint_p		tint;
 		};
 
 		//.____ Creation __________________________________________
@@ -154,7 +154,7 @@ namespace wg
 		int			m_slideDuration = 250;						// Millisec
 		PrimState	m_slideState = PrimState::Selected;
 
-		Tintmap_p	m_pTintmap;
+		Tint_p	m_pTint;
 
 		BlendMode	m_blendMode;
 

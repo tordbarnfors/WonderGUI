@@ -147,7 +147,7 @@
 #include <wg_textstylemanager.h>
 #include <wg_texttool.h>
 #include <wg_tileskin.h>
-#include <wg_tintmapskin.h>
+#include <wg_tintskin.h>
 #include <wg_timer.h>
 #include <wg_togglebutton.h>
 #include <wg_togglegroup.h>

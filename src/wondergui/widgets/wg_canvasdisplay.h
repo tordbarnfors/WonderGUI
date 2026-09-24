@@ -26,7 +26,7 @@
 
 #include <wg_widget.h>
 #include <wg_skin.h>
-#include <wg_tintmap.h>
+#include <wg_tint.h>
 #include <wg_transitions.h>
 
 namespace wg
@@ -78,7 +78,7 @@ namespace wg
 			bool			stickyFocus = false;
 			bool			tabLock = false;
 			HiColor			tintColor		= HiColor::Undefined;
-			Tintmap_p		tintmap;
+			Tint_p		tint;
 			String			tooltip;
 		};
 
@@ -102,7 +102,7 @@ namespace wg
 		Placement	placement() const { return m_placement; }
 
 		void		setTintColor(HiColor color, ColorTransition* pTransition = nullptr);
-		void		setTintmap(Tintmap * pTintmap, ColorTransition* pTransition = nullptr);
+		void		setTint(Tint * pTint, ValueTransition* pTransition = nullptr);
 		void		setBlendMode(BlendMode mode);
 
 
@@ -118,7 +118,7 @@ namespace wg
 			m_defaultSize		= bp.defaultSize;
 			m_placement			= bp.placement;
 			m_blendMode			= bp.blendMode;
-			m_pTintmap			= bp.tintmap;
+			m_pTint			= bp.tint;
 			m_bSkinAroundCanvas = bp.skinAroundCanvas;
 			
 			if( bp.tintColor != HiColor::Undefined )
@@ -154,7 +154,7 @@ namespace wg
 		bool				m_bSkinAroundCanvas = false;
 
 		HiColor				m_tintColor = HiColor::White;
-		Tintmap_p			m_pTintmap;
+		Tint_p			m_pTint;
 		BlendMode			m_blendMode = BlendMode::Blend;
 
 		// Transitions
@@ -162,14 +162,14 @@ namespace wg
 		HiColor				m_startTintColor;
 		HiColor				m_endTintColor;
 
-		Tintmap_p			m_pStartTintmap;
-		Tintmap_p			m_pEndTintmap;
+		Tint_p			m_pStartTint;
+		Tint_p			m_pEndTint;
 
 		ColorTransition_p	m_pTintColorTransition;
-		ColorTransition_p	m_pTintmapTransition;
+		ValueTransition_p	m_pTintTransition;
 
 		int					m_tintColorTransitionProgress = 0;
-		int					m_tintmapTransitionProgress = 0;
+		int					m_tintTransitionProgress = 0;
 	};
 
 

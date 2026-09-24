@@ -25,7 +25,7 @@
 
 #include <wg_animskin.h>
 #include <wg_color.h>
-#include <wg_tintmap.h>
+#include <wg_tint.h>
 #include <wg_surface.h>
 #include <wg_transitions.h>
 
@@ -63,7 +63,7 @@ namespace wg
 			Border				spacing;
 			Surface_p			surface;								// Mandatory
 			ValueTransition_p	transition;
-			Tintmap_p			tintmap;
+			Tint_p			tint;
 			float				zoom = 1.f;
 		};
 
@@ -112,7 +112,7 @@ namespace wg
 
 		BlendMode		m_blendMode = BlendMode::Blend;
 		HiColor			m_color = HiColor::White;
-		Tintmap_p		m_pTintmap;
+		Tint_p		m_pTint;
 		
 		ValueTransition_p	m_pTransition;
 		ValueTransition_p	m_pReturnTransition;

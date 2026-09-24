@@ -25,7 +25,7 @@
 
 #include <wg_skin.h>
 #include <wg_color.h>
-#include <wg_tintmap.h>
+#include <wg_tint.h>
 
 namespace wg
 {
@@ -64,7 +64,7 @@ namespace wg
 			bool		startFromCenter = false;
 			pts			startLength = 0;
 
-			Tintmap_p	tintmap;
+			Tint_p	tint;
 		};
 
 		//.____ Creation __________________________________________
@@ -110,7 +110,7 @@ namespace wg
         bool        m_bCenteredBarOrigin = false;
 		Border		m_gfxPadding;
 		
-		Tintmap_p	m_pTintmap;
+		Tint_p	m_pTint;
 		bool		m_bGradient = false;
 		bool		m_bOpaque;
 	};

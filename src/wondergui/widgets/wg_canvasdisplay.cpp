@@ -22,7 +22,6 @@
 #include <wg_canvasdisplay.h>
 #include <wg_canvascapsule.h>
 #include <wg_gfxdevice.h>
-#include <wg_snapshottintmap.h>
 
 namespace wg
 {
@@ -132,29 +131,29 @@ namespace wg
 		}
 	}
 
-	//____ setTintmap() _______________________________________________
+	//____ setTint() _______________________________________________
 
-	void CanvasDisplay::setTintmap(Tintmap * pTintmap, ColorTransition* pTransition)
+	void CanvasDisplay::setTint(Tint * pTint, ValueTransition* pTransition)
 	{
-		if (pTintmap != m_pTintmap)
+		if (pTint != m_pTint)
 		{
 			if (pTransition)
 			{
-				if (!m_pTintmapTransition)
+				if (!m_pTintTransition)
 					_startReceiveUpdates();
 
-				m_pTintmapTransition = pTransition;
-				m_tintmapTransitionProgress = 0;
-				m_pStartTintmap = m_pTintmap;
-				m_pEndTintmap = pTintmap;
+				m_pTintTransition = pTransition;
+				m_tintTransitionProgress = 0;
+				m_pStartTint = m_pTint;
+				m_pEndTint = pTint;
 			}
 			else
 			{
-				if (m_pTintmapTransition)
+				if (m_pTintTransition)
 					_stopReceiveUpdates();
 
-				m_pTintmapTransition = nullptr;
-				m_pTintmap = pTintmap;
+				m_pTintTransition = nullptr;
+				m_pTint = pTint;
 				_requestRender();
 			}
 			
@@ -279,27 +278,27 @@ namespace wg
 			}
 		}
 
-		if (m_pTintmapTransition)
+		if (m_pTintTransition)
 		{
-			int timestamp = m_tintmapTransitionProgress + microPassed;
+			int timestamp = m_tintTransitionProgress + microPassed;
 
-			if (timestamp >= m_pTintmapTransition->duration())
+			if (timestamp >= m_pTintTransition->duration())
 			{
-				m_tintmapTransitionProgress = 0;
-				m_pTintmapTransition = nullptr;
+				m_tintTransitionProgress = 0;
+				m_pTintTransition = nullptr;
 
-				m_pTintmap = m_pEndTintmap;
-				m_pEndTintmap = nullptr;
-				m_pStartTintmap = nullptr;
+				m_pTint = m_pEndTint;
+				m_pEndTint = nullptr;
+				m_pStartTint = nullptr;
 				_requestRender();
 
 				_stopReceiveUpdates();
 			}
 			else
 			{
-				m_tintmapTransitionProgress = timestamp;
+				m_tintTransitionProgress = timestamp;
 
-				m_pTintmap = SnapshotTintmap::create(m_pStartTintmap, m_pEndTintmap, m_pTintmapTransition, timestamp);
+				m_pTint = Tint::blend(m_pStartTint, m_pEndTint, m_pTintTransition->snapshot(timestamp, 0.f, 1.f));
 				_requestRender();
 			}
 		}
@@ -338,14 +337,14 @@ namespace wg
 
 				pDevice->setTintColor(m_tintColor);
 
-				if (m_pTintmap )
-					pDevice->setTintmap(canvasArea, m_pTintmap);
+				if (m_pTint )
+					pDevice->setTint(canvasArea, m_pTint);
 
 				pDevice->setBlitSource(pSurface);
 				pDevice->stretchBlit(canvasArea);
 
-				if (m_pTintmap)
-					pDevice->clearTintmap();
+				if (m_pTint)
+					pDevice->clearTint();
 
 				pDevice->setTintColor(c);
 				pDevice->setBlendMode(bm);

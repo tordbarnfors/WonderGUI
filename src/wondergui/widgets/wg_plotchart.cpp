@@ -22,7 +22,6 @@
 #include	<wg_plotchart.h>
 #include	<wg_gfxdevice.h>
 #include	<wg_base.h>
-#include	<wg_snapshottintmap.h>
 
 #include	<cstring>
 
@@ -59,7 +58,7 @@ namespace wg
 
 		for(auto& graph : entries)
 		{
-			if (graph.m_pSampleTransition || graph.m_pColorTransition || graph.m_pTintmapTransition)
+			if (graph.m_pSampleTransition || graph.m_pColorTransition || graph.m_pTintTransition)
 			{
 				bTransitioning = true;
 				break;
@@ -141,8 +140,8 @@ namespace wg
 
 				pDevice->setBlitSource(entry.m_sprite);
 
-				if (entry.m_pTintmap)
-					pDevice->setTintmap(canvas, entry.m_pTintmap);
+				if (entry.m_pTint)
+					pDevice->setTint(canvas, entry.m_pTint);
 
 				for (auto coord : entry.m_samples)
 				{
@@ -153,8 +152,8 @@ namespace wg
 					pDevice->blit(spxCoord);
 				}
 
-				if (entry.m_pTintmap)
-					pDevice->clearTintmap();
+				if (entry.m_pTint)
+					pDevice->clearTint();
 			}
 		}
 
@@ -222,26 +221,26 @@ namespace wg
 				}
 			}
 
-			if (graph.m_pTintmapTransition)
+			if (graph.m_pTintTransition)
 			{
-				int timestamp = graph.m_tintmapTransitionProgress + microPassed;
+				int timestamp = graph.m_tintTransitionProgress + microPassed;
 
-				if (timestamp >= graph.m_pTintmapTransition->duration())
+				if (timestamp >= graph.m_pTintTransition->duration())
 				{
-					graph.m_tintmapTransitionProgress = 0;
-					graph.m_pTintmapTransition = nullptr;
+					graph.m_tintTransitionProgress = 0;
+					graph.m_pTintTransition = nullptr;
 
-					graph.m_pTintmap = graph.m_pEndTintmap;
-					graph.m_pEndTintmap = nullptr;
-					graph.m_pStartTintmap = nullptr;
+					graph.m_pTint = graph.m_pEndTint;
+					graph.m_pEndTint = nullptr;
+					graph.m_pStartTint = nullptr;
 					_requestRender();
 					_stopReceiveUpdates();
 				}
 				else
 				{
-					graph.m_tintmapTransitionProgress = timestamp;
+					graph.m_tintTransitionProgress = timestamp;
 
-					graph.m_pTintmap = SnapshotTintmap::create(graph.m_pStartTintmap, graph.m_pEndTintmap, graph.m_pTintmapTransition, timestamp);
+					graph.m_pTint = Tint::blend(graph.m_pStartTint, graph.m_pEndTint, graph.m_pTintTransition->snapshot(timestamp, 0.f, 1.f));
 					_requestRender();
 
 					transitionsActive = true;
@@ -263,7 +262,7 @@ namespace wg
 	PlotChartEntry::PlotChartEntry(const Blueprint& bp)
 	{
 		m_fillColor = bp.color;
-		m_pTintmap = bp.tintmap;
+		m_pTint = bp.tint;
 		m_outlineColor = bp.outlineColor;
 		m_outlineThickness = bp.outlineThickness;
 		m_radius = bp.radius;
@@ -342,31 +341,31 @@ namespace wg
 
 
 
-	//____ setTintmap() _____________________________________________________
+	//____ setTint() _____________________________________________________
 
-	bool PlotChartEntry::setTintmap(Tintmap * pTintmap, ColorTransition* pTransition)
+	bool PlotChartEntry::setTint(Tint * pTint, ValueTransition* pTransition)
 	{
-		if( !pTintmap )
+		if( !pTint )
 			return false;
 
-		if (pTintmap == m_pTintmap)
+		if (pTint == m_pTint)
 			return true;
 
 		if (pTransition)
 		{
-			m_pTintmapTransition = pTransition;
-			m_tintmapTransitionProgress = 0;
+			m_pTintTransition = pTransition;
+			m_tintTransitionProgress = 0;
 
-			m_pEndTintmap = pTintmap;
-			m_pStartTintmap = m_pTintmap;
+			m_pEndTint = pTint;
+			m_pStartTint = m_pTint;
 
 			m_pDisplay->_startedOrEndedTransition();
 		}
 		else
 		{
-			m_pTintmap = pTintmap;
+			m_pTint = pTint;
 
-			_endTintmapTransition();
+			_endTintTransition();
 			m_pDisplay->_requestRenderChartArea();
 		}
 
@@ -482,16 +481,16 @@ namespace wg
 		}
 	}
 
-	//____ _endTintmapTransition() _______________________________________________
+	//____ _endTintTransition() _______________________________________________
 
-	void PlotChartEntry::_endTintmapTransition()
+	void PlotChartEntry::_endTintTransition()
 	{
-		if (m_pTintmapTransition)
+		if (m_pTintTransition)
 		{
-			m_tintmapTransitionProgress = 0;
-			m_pTintmapTransition = nullptr;
-			m_pStartTintmap = nullptr;
-			m_pEndTintmap = nullptr;
+			m_tintTransitionProgress = 0;
+			m_pTintTransition = nullptr;
+			m_pStartTint = nullptr;
+			m_pEndTint = nullptr;
 
 			m_pDisplay->_startedOrEndedTransition();
 		}

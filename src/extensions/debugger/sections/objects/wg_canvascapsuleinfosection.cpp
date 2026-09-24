@@ -47,7 +47,7 @@ namespace wg
 			objectRow( "Surface factory: ",         [](CanvasCapsule* c) -> Object* { return c->surfaceFactory(); } ),
 			textRow  ( "Pixel format: ",            [](CanvasCapsule* c) { return toString(c->format()); } ),
 			intRow   ( "Render layer: ",            [](CanvasCapsule* c) { return c->renderLayer(); } ),
-			objectRow( "Tintmap: ",                 [](CanvasCapsule* c) -> Object* { return c->tintmap(); } ),
+			objectRow( "Tint: ",                    [](CanvasCapsule* c) -> Object* { return c->tint(); } ),
 			textRow  ( "Blend mode: ",              [](CanvasCapsule* c) { return toString(c->blendMode()); } ),
 			boolRow  ( "Scale canvas: ",            [](CanvasCapsule* c) { return c->isCanvasScaling(); } ),
 			boolRow  ( "Skin around canvas: ",      [](CanvasCapsule* c) { return c->isSkinAroundCanvas(); } ),

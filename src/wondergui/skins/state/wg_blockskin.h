@@ -25,7 +25,7 @@
 
 #include <wg_stateskin.h>
 #include <wg_surface.h>
-#include <wg_tintmap.h>
+#include <wg_tint.h>
 
 #include <vector>
 
@@ -105,7 +105,7 @@ namespace wg
 			std::vector<StateBP>	states;
 			
 			Surface_p	surface;					// Mandatory!
-			Tintmap_p	tintmap;
+			Tint_p	tint;
 		};
 
 
@@ -177,7 +177,7 @@ namespace wg
 
 		NinePatch		m_ninePatch;		// Block offset is undefined.
 		Surface_p		m_pSurface;
-		Tintmap_p		m_pTintmap;
+		Tint_p		m_pTint;
 
 		BlendMode		m_blendMode = BlendMode::Blend;
 

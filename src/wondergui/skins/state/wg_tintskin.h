@@ -19,23 +19,23 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef WG_TINTMAPSKIN_DOT_H
-#define WG_TINTMAPSKIN_DOT_H
+#ifndef WG_TINTSKIN_DOT_H
+#define WG_TINTSKIN_DOT_H
 #pragma once
 
 #include <wg_stateskin.h>
-#include <wg_tintmap.h>
+#include <wg_tint.h>
 
 #include <vector>
 
 namespace wg
 {
 
-	class TintmapSkin;
-	typedef	StrongPtr<TintmapSkin>	TintmapSkin_p;
-	typedef	WeakPtr<TintmapSkin>		TintmapSkin_wp;
+	class TintSkin;
+	typedef	StrongPtr<TintSkin>	TintSkin_p;
+	typedef	WeakPtr<TintSkin>		TintSkin_wp;
 
-	class TintmapSkin : public StateSkin
+	class TintSkin : public StateSkin
 	{
 	public:
 
@@ -43,7 +43,7 @@ namespace wg
 
 		struct StateData
 		{
-			Tintmap_p		tintmap;
+			Tint_p		tint;
 			Coord			contentShift;
 		};
 
@@ -51,7 +51,7 @@ namespace wg
 		{
 			StateBP() {}
 			StateBP( State state, StateData data ) : state(state), data(data) {}
-			StateBP( State state, Tintmap * pTintmap ) : state(state) { data.tintmap = pTintmap; }
+			StateBP( State state, Tint * pTint ) : state(state) { data.tint = pTint; }
 			StateBP( State state, Coord contentShift ) : state(state)	{ data.contentShift = contentShift; }
 			
 			State			state = State::Default;
@@ -62,7 +62,7 @@ namespace wg
 		{
 			BlendMode		blendMode = BlendMode::Blend;
 
-			Tintmap_p		tintmap;
+			Tint_p		tint;
 			Finalizer_p		finalizer = nullptr;
 
 			int				layer = -1;
@@ -77,8 +77,8 @@ namespace wg
 
 		//.____ Creation __________________________________________
 
-		static TintmapSkin_p	create( const Blueprint& blueprint );
-		static TintmapSkin_p	create( Tintmap * pTintmap, Border padding = Border() );
+		static TintSkin_p	create( const Blueprint& blueprint );
+		static TintSkin_p	create( Tint * pTint, Border padding = Border() );
 
 		//.____ Identification __________________________________________
 
@@ -101,29 +101,29 @@ namespace wg
 		RectSPX	_coverage(const RectSPX& geo, int scale, State state) const override;
 
 	protected:
-		TintmapSkin(const Blueprint& blueprint );
-		~TintmapSkin();
+		TintSkin(const Blueprint& blueprint );
+		~TintSkin();
 
-		const Tintmap_p	_getTintmap(State state) const
+		const Tint_p	_getTint(State state) const
 		{
-						int idxTabEntry = (state.index() & m_stateTintmapIndexMask) >> m_stateTintmapIndexShift;
-						int entry = m_pStateTintmapIndexTab[idxTabEntry];
-						return m_pStateTintmaps[entry];
+						int idxTabEntry = (state.index() & m_stateTintIndexMask) >> m_stateTintIndexShift;
+						int entry = m_pStateTintIndexTab[idxTabEntry];
+						return m_pStateTints[entry];
 		}
 
 		void *			m_pStateData;
 
 		BlendMode		m_blendMode = BlendMode::Blend;
 
-		uint8_t			m_stateTintmapIndexMask;
-		uint8_t			m_stateTintmapIndexShift;
-		uint8_t*		m_pStateTintmapIndexTab;		// Table with index values into m_pStateTintmaps for each mode (72) or less.
-		Tintmap_p*		m_pStateTintmaps;				// Contains tintmaps for states.
-		int				m_nbStateTintmaps;				// Needs to know amount to dereference.
+		uint8_t			m_stateTintIndexMask;
+		uint8_t			m_stateTintIndexShift;
+		uint8_t*		m_pStateTintIndexTab;		// Table with index values into m_pStateTints for each mode (72) or less.
+		Tint_p*		m_pStateTints;				// Contains tints for states.
+		int				m_nbStateTints;				// Needs to know amount to dereference.
 	};
 
 
 } // namespace wg
-#endif //WG_TINTMAPSKIN_DOT_H
+#endif //WG_TINTSKIN_DOT_H
 
 

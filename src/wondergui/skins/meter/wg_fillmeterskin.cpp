@@ -58,7 +58,7 @@ namespace wg
 		m_backColor			= bp.backColor;
 		m_blendMode			= bp.blendMode;
 		m_direction			= bp.direction;
-		m_pTintmap			= bp.tintmap;
+		m_pTint			= bp.tint;
 
 		m_minBarLength		= bp.startLength;
 		m_bCenteredBarOrigin = bp.startFromCenter;
@@ -96,7 +96,7 @@ namespace wg
 	{
 		RectSPX canvas = _canvas - align(ptsToSpx(m_spacing, scale)) - align(ptsToSpx(m_gfxPadding, scale)) + align(ptsToSpx(m_overflow, scale));
 		
-		RenderSettingsWithTintmap settings(pDevice, m_layer, m_blendMode, HiColor::White, canvas, m_pTintmap );
+		RenderSettingsWithTint settings(pDevice, m_layer, m_blendMode, HiColor::White, canvas, m_pTint );
 
 		HiColor barColor = HiColor::mix(m_barColorEmpty, m_barColorFull, int(4096 * value));
 

@@ -63,7 +63,7 @@ namespace wg
 	TileSkin::TileSkin(const Blueprint& bp) : StateSkin(bp)
 	{
 		m_blendMode		= bp.blendMode;
-		m_pTintmap		= bp.tintmap;
+		m_pTint		= bp.tint;
 
 		// Generate lists of states that affects shift, color and surface.
 
@@ -202,7 +202,7 @@ namespace wg
 
 		RectSPX canvas = _canvas - align(ptsToSpx(m_spacing, scale)) + align(ptsToSpx(m_overflow, scale));
 
-		RenderSettingsWithTintmap settings(pDevice, m_layer, m_blendMode, _getColor(state), canvas, m_pTintmap);
+		RenderSettingsWithTint settings(pDevice, m_layer, m_blendMode, _getColor(state), canvas, m_pTint);
 
 		pDevice->setBlitSource(pSurf);
 		pDevice->scaleTile(canvas,scale/64.f);

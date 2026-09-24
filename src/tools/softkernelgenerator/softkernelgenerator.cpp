@@ -470,7 +470,7 @@ Widget_p MyApp::_buildGlobalSettingsSection()
 
 	// Togglebuttons for TintModes
 
-	auto pColumn = _buildToggleButtonRow("Tint Modes", { TintMode::None, TintMode::Flat, TintMode::GradientX, TintMode::GradientY, TintMode::GradientXY },
+	auto pColumn = _buildToggleButtonRow("Tint Modes", { TintMode::None, TintMode::Flat, TintMode::GradientX },
 		m_pDB->tintModes(), [this](Msg* pMsg) {this->tintModeToggled(pMsg); });
 
 	for (auto& p : pColumn->slots)

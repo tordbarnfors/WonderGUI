@@ -113,22 +113,33 @@ namespace wg
 	 * holds at most c_maxMixComponents Tints, the ones with the smallest weights
 	 * are dropped if needed.
 	 *
-	 * @param pFrom		Tint at progress 0.0.
-	 * @param pTo		Tint at progress 1.0.
+	 * @param pFrom		Tint at progress 0.0. Nullptr is treated as no tint (white).
+	 * @param pTo		Tint at progress 1.0. Nullptr is treated as no tint (white).
 	 * @param progress	0.0 -> 1.0.
 	 */
 
 	Tint_p Tint::blend(Tint* pFrom, Tint* pTo, float progress)
 	{
-		if (!pFrom)
-			return pTo;
-		if (!pTo || pFrom == pTo)
+		if (pFrom == pTo)
 			return pFrom;
 
 		if (!(progress > 0.f))						// Also catches NaN.
 			return pFrom;
 		if (progress >= 1.f)
 			return pTo;
+
+		// No tint is the same as a white tint.
+
+		Tint_p pWhite;
+
+		if (!pFrom || !pTo)
+		{
+			pWhite = create(HiColor::White);
+			if (!pFrom)
+				pFrom = pWhite;
+			else
+				pTo = pWhite;
+		}
 
 		// Morph if possible
 

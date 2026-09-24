@@ -49,7 +49,7 @@ namespace wg
 		m_slideDuration = bp.slideDuration;
 		m_slideState = bp.slideState;
 
-		m_pTintmap	= bp.tintmap;
+		m_pTint	= bp.tint;
 		m_blendMode = bp.blendMode;
 
 		m_transitionTimes[int(m_slideState)] = m_slideDuration;
@@ -233,7 +233,7 @@ namespace wg
 
 		RectSPX canvas = _canvas - align(ptsToSpx(m_spacing, scale)) + align(ptsToSpx(m_overflow, scale));
 
-		RenderSettingsWithTintmap settings(pDevice, m_layer, m_blendMode, _getColor(state), canvas, m_pTintmap);
+		RenderSettingsWithTint settings(pDevice, m_layer, m_blendMode, _getColor(state), canvas, m_pTint);
 
 		pDevice->setBlitSource(m_pSurface);
 
@@ -392,7 +392,7 @@ namespace wg
 			bOpaque = false;
 		else if (m_blendMode == BlendMode::Replace)
 			bOpaque = true;
-		else if (m_pTintmap && !m_pTintmap->isOpaque())
+		else if (m_pTint && !m_pTint->isOpaque())
 			bOpaque = false;
 		else if (m_blendMode == BlendMode::Blend)
 		{
