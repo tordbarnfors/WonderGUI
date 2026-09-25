@@ -345,13 +345,18 @@ namespace wg
 	}
 
 	//____ constructor ________________________________________________________________
+	//
+	// Default sample method is Bilinear, same as GlSurface and MetalSurface. Code
+	// that creates surfaces without specifying one expects that, and Nearest
+	// samples on texel corners for 1:1 blits, which float precision in tall
+	// textures makes land on the texel above every now and then.
 
-	DX12Surface::DX12Surface(const Blueprint& bp) : Surface(bp, PixelFormat::BGRA_8, SampleMethod::Nearest)
+	DX12Surface::DX12Surface(const Blueprint& bp) : Surface(bp, PixelFormat::BGRA_8, SampleMethod::Bilinear)
 	{
 		_setupTexture( nullptr, 0, PixelFormat::Undefined, nullptr, nullptr, bp.palette, 0 );
 	}
 
-	DX12Surface::DX12Surface(const Blueprint& bp, Blob* pBlob, int pitch) : Surface(bp, PixelFormat::BGRA_8, SampleMethod::Nearest)
+	DX12Surface::DX12Surface(const Blueprint& bp, Blob* pBlob, int pitch) : Surface(bp, PixelFormat::BGRA_8, SampleMethod::Bilinear)
 	{
 		// The blob holds the format that was asked for, which is not always the one
 		// we end up with, so take note of it before _setupTexture() settles that.
@@ -365,7 +370,7 @@ namespace wg
 	}
 
 	DX12Surface::DX12Surface(const Blueprint& bp, const uint8_t* pPixels,
-		PixelFormat format, int pitch, const Color8* pPalette, int paletteSize) : Surface(bp, PixelFormat::BGRA_8, SampleMethod::Nearest)
+		PixelFormat format, int pitch, const Color8* pPalette, int paletteSize) : Surface(bp, PixelFormat::BGRA_8, SampleMethod::Bilinear)
 	{
 		auto& srcDesc = Util::pixelFormatToDescription(format);
 
@@ -378,7 +383,7 @@ namespace wg
 
 
 	DX12Surface::DX12Surface(const Blueprint& bp, const uint8_t* pPixels,
-		const PixelDescription& pixelDescription, int pitch, const Color8* pPalette, int paletteSize) : Surface(bp, PixelFormat::BGRA_8, SampleMethod::Nearest)
+		const PixelDescription& pixelDescription, int pitch, const Color8* pPalette, int paletteSize) : Surface(bp, PixelFormat::BGRA_8, SampleMethod::Bilinear)
 	{
 		if( pitch == 0 )
 			pitch = bp.size.w * pixelDescription.bits/8;
