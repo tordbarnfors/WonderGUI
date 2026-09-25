@@ -72,8 +72,8 @@ namespace wg
 	{
 	public:
 
-		static const int	c_maxStops = 16;
-		static const int	c_maxMixComponents = 4;
+		static constexpr int	c_maxStops = 16;
+		static constexpr int	c_maxMixComponents = 4;
 
 		//.____ Blueprint _________________________________________________________
 
