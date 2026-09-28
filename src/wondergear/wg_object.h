@@ -87,10 +87,10 @@ namespace wg
 		virtual ~Object() {};
 
 		inline void _incRefCount() { m_refCount++; }
-		inline void _decRefCount() { m_refCount--; if( m_refCount == 0 ) _destroy(); }
+		inline void _decRefCount() { if( m_refCount.fetch_sub(1) == 1 ) _destroy(); }	// Test the value we decremented, not a reload: two threads releasing the last refs must not both destroy.
 
 		inline void _incRefCount(int amount) { m_refCount.fetch_add(amount); }
-		inline void _decRefCount(int amount) { m_refCount.fetch_sub(amount); if( m_refCount == 0 ) _destroy(); }
+		inline void _decRefCount(int amount) { if( m_refCount.fetch_sub(amount) == amount ) _destroy(); }
 
 		WeakPtrHub *	m_pWeakPtrHub = nullptr;
 
