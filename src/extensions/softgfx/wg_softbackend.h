@@ -241,6 +241,9 @@ namespace wg
 			HiColor*	pGlobal;					// One column of device tint colors.
 			int			pitch;						// Colors between segments in pColumns.
 			int			bufferBytes;				// Allocated from memStack.
+			bool		bInvarianceChecked;			// bColumnInvariant has been set.
+			bool		bColumnInvariant;			// Colors are the same for every column, pColumns only needs to be generated once.
+			bool		bColumnsDone;				// pColumns generated for all rows, if bColumnInvariant.
 			int16_t		colors[c_maxSegments][4];	// Flat colors, BGRA, tint included.
 			bool		transparent[c_maxSegments];
 			bool		opaque[c_maxSegments];
@@ -249,6 +252,8 @@ namespace wg
 		void	_beginEdgemapTinting(SoftEdgemap* pEdgemap, int nSegments, EdgemapTinting& tinting);
 		void	_tintEdgemapColumn(SoftEdgemap* pEdgemap, int nSegments, EdgemapTinting& tinting, int column, int rowBeg, int rowEnd,
 								   const int* pEdgeStrips, CoordI canvasStart, const int simpleTransform[2][2]);
+		void	_tintEdgemapRows(SoftEdgemap* pEdgemap, int nSegments, EdgemapTinting& tinting, int column, int rowBeg, int rowEnd,
+								 const int* pEdgeStrips, CoordI canvasStart, const int simpleTransform[2][2]);
 		void	_endEdgemapTinting(EdgemapTinting& tinting);
 		void	_flattenEdgemapTinting(SoftEdgemap* pEdgemap, int nSegments, EdgemapTinting& tinting, CoordI canvasCenter);
 

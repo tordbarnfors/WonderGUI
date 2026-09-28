@@ -1900,6 +1900,9 @@ namespace wg
 		t.pGlobal = nullptr;
 		t.pitch = 0;
 		t.bufferBytes = 0;
+		t.bInvarianceChecked = false;
+		t.bColumnInvariant = false;
+		t.bColumnsDone = false;
 
 		for (int seg = 0; seg < nSegments; seg++)
 		{
@@ -1953,6 +1956,56 @@ namespace wg
 		if (!t.bPerPixel || rowEnd <= rowBeg)
 			return;
 
+		// If no tint varies from column to column, which is the case for vertical tints on an
+		// edgemap that isn't rotated, all rows of all segments are generated once and reused
+		// for every column.
+
+		if (!t.bInvarianceChecked)
+		{
+			const SoftTint& global = m_softTint;
+
+			// Segment tints are placed in edgemap space, where columns run along x.
+
+			bool bInvariant = true;
+
+			for (int seg = 0; seg < nSegments; seg++)
+			{
+				if (!t.transparent[seg] && pEdgemap->m_segmentTints[seg].variesAlongX())
+					bInvariant = false;
+			}
+
+			// The device tint is placed in canvas space, where the next column is one step
+			// along simpleTransform[0].
+
+			if ((simpleTransform[0][0] != 0 && global.variesAlongX()) || (simpleTransform[0][1] != 0 && global.variesAlongY()))
+				bInvariant = false;
+
+			t.bColumnInvariant = bInvariant;
+			t.bInvarianceChecked = true;
+		}
+
+		if (t.bColumnInvariant)
+		{
+			if (!t.bColumnsDone)
+			{
+				_tintEdgemapRows(pEdgemap, nSegments, t, column, 0, pEdgemap->m_size.h, nullptr, canvasStart, simpleTransform);
+				t.bColumnsDone = true;
+			}
+			return;
+		}
+
+		_tintEdgemapRows(pEdgemap, nSegments, t, column, rowBeg, rowEnd, pEdgeStrips, canvasStart, simpleTransform);
+	}
+
+	//____ _tintEdgemapRows() __________________________________________________
+	/*
+		Generates colors for rows rowBeg -> rowEnd of one column, for each segment only the rows
+		it covers in the column given by pEdgeStrips, or all rows if pEdgeStrips is nullptr.
+	*/
+
+	void SoftBackend::_tintEdgemapRows(SoftEdgemap* pEdgemap, int nSegments, EdgemapTinting& t, int column, int rowBeg, int rowEnd,
+									   const int* pEdgeStrips, CoordI canvasStart, const int simpleTransform[2][2])
+	{
 		const SoftTint& global = m_softTint;
 		int edgeStripPitch = pEdgemap->m_nbSegments - 1;
 
@@ -1984,14 +2037,14 @@ namespace wg
 			int top = rowBeg;
 			int bottom = rowEnd;
 
-			if (seg > 0)
+			if (pEdgeStrips && seg > 0)
 			{
 				int e1 = pEdgeStrips[seg - 1];
 				int e2 = pEdgeStrips[seg - 1 + edgeStripPitch];
 				top = std::max(top, (std::min(e1, e2) >> 6) - 1);
 			}
 
-			if (seg < nSegments - 1)
+			if (pEdgeStrips && seg < nSegments - 1)
 			{
 				int e1 = pEdgeStrips[seg];
 				int e2 = pEdgeStrips[seg + edgeStripPitch];
