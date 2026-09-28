@@ -324,7 +324,12 @@ namespace wg
 		m_pPalette4096 = new HiColor[m_paletteCapacity];
 
 		HiColor * p = m_pPalette4096;
-		const int16_t* pUnpackTab = GfxBase::defaultToSRGB() ? HiColor::unpackSRGBTab : HiColor::unpackLinearTab;
+		// Palette entries are in the color space of the surface, not the default one.
+
+		ColorSpace colorSpace = m_pPixelDescription->colorSpace;
+		bool bSRGB = colorSpace == ColorSpace::sRGB || (colorSpace == ColorSpace::Undefined && GfxBase::defaultToSRGB());
+
+		const int16_t* pUnpackTab = bSRGB ? HiColor::unpackSRGBTab : HiColor::unpackLinearTab;
 
 		for (int i = 0; i < m_paletteSize; i++)
 		{
