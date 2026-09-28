@@ -250,8 +250,8 @@ the widget's coincide — but they are inset by different routes:
     closed box  = Skins::SelectBox spacing (1) + padding-left (5)  = 6pts
     entry       = Skins::Canvas padding-left (1) + entry skin (0)  = 1pt
 
-`Skins::SelectBoxEntry` now carries `_.padding = { 0, 5, 0, 5 }`, putting the
-entry text at 1 + 5 = 6. Three things that made this the right lever rather
+`Skins::SelectBoxEntry` now carries `_.padding = { 0, 6, 0, 6 }`, putting the
+entry text at 1 + 6 = 7 — one more than the resting box, see below. Three things that made this the right lever rather
 than shrinking the closed box's padding (which exists to clear its outline and
 rounded corners):
 
@@ -265,12 +265,13 @@ rounded corners):
 - Top and bottom stay **0** on purpose: the engine adds vertical entry padding
   to every `m_height`, so any value there changes row height.
 
-Measured in a real build at scale 64, the entry text lands exactly on
-widget-left + 6pt. One wrinkle: while the popup is open the closed box is in
-`Pressed`, whose `content_shift` moves its text 1pt right — so whenever both
-texts are actually on screen together they are 1pt apart. Entry padding-left 6
-would trade that for a 1pt misalignment against the resting box, which is never
-seen next to the list. Undecided; left at 5.
+Why 7 and not 6: the two texts are only ever on screen together while the
+popup is open, and then the closed box is in `Pressed`, whose `content_shift`
+moves its text 1pt right (1 + 5 + 1 = 7). Padding 5 matched the *resting* box,
+which is never seen next to the list, and measured 1pt short in a real build.
+At 6, closed text and entries start on the same pixel column with the list
+open (verified in widgetbench at scale 64). Aim at the state the comparison
+actually happens in, not the one the arithmetic starts from.
 
 A related engine bug, now fixed: `SelectBox::_recalcListCanvasSize()` (called
 from every `_resize()`) rebuilt the popup's default height as the bare sum of
