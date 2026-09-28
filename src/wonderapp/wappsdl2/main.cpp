@@ -792,13 +792,16 @@ Blob_p MyAppAPI::loadBlob(const std::string& path, bool bNullTerminate)
 
 Surface_p MyAppAPI::loadSurface(const std::string& path, SurfaceFactory* pFactory, const Surface::Blueprint& _bp)
 {
+	if (!pFactory)
+		pFactory = Base::defaultSurfaceFactory();
+
 	if (path.rfind(".surf") == path.size() - 5 || path.rfind(".srf") == path.size() - 4)
 	{
 		std::ifstream input(path, std::ios::binary);
 		if (!input.good())
 			return nullptr;
 
-		auto pReader = SurfaceReader::create({ .factory = Base::defaultSurfaceFactory() });
+		auto pReader = SurfaceReader::create({ .factory = pFactory });
 		Surface_p pSurface = pReader->readSurfaceFromStream(input, _bp);
 		input.close();
 		return pSurface;
@@ -833,9 +836,6 @@ Surface_p MyAppAPI::loadSurface(const std::string& path, SurfaceFactory* pFactor
 			pPalette = palette;
 
 			// Special copying of indexed pixels until copyPixels() supports indexed source.
-
-			if (!pFactory)
-				pFactory = Base::defaultSurfaceFactory();
 
 			bp.format = px;
 			bp.palette = pPalette;
