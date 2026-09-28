@@ -4,8 +4,8 @@ Written 2026-09-28, at the end of a long Cowork session, to hand the work to a
 Claude Code session. Everything below is either in the repo now or was verified
 by measurement during that session.
 
-**Companion document:** `claude/glossyblue-widgetkit-pipeline.md` in this same
-project is the deep reference — the build pipeline, every WonderGUI internal
+**Companion document:** `PIPELINE.md` in this same directory is the deep
+reference — the build pipeline, every WonderGUI internal
 that was verified against engine source, and the traps. Read it before touching
 `widgetkit-src/`. This document is the *state of play* and does not repeat it.
 
@@ -80,13 +80,41 @@ headers. There is no separate step.
    two compile breaks it left — see below). He confirmed: *"It builds and works
    fine now."*
 
-### Done but NOT yet confirmed by Tord
+### Done, checked in a real build (Claude Code session, 2026-09-28)
 
 5. **SelectBox entry indent.** `Skins::SelectBoxEntry` gained
    `_.padding = { 0, 5, 0, 5 }` so drop-down entries line up with the closed
-   box's text. Delivered and committed to the repo, kit repacked, but he has not
-   reported back on how it looks. **Start by checking this.** The arithmetic is
-   in the pipeline doc under "Two paddings, one apparent indent".
+   box's text. Measured in widgetbench at scale 64: entry text starts exactly
+   at widget-left + 6pt, as designed. **One open question for Tord:** while the
+   popup is open the closed box is `Pressed`, and its `content_shift` puts its
+   text 1pt further right — so in the only moment both texts are on screen they
+   are 1pt apart. Entry padding-left 6 would align them in that moment (and
+   misalign by 1pt a state that is never seen next to the list). Not changed.
+   The arithmetic is in the pipeline doc under "Two paddings, one apparent
+   indent".
+
+6. **Engine fix: SelectBox popup was too short.** The last entry was clipped
+   by exactly the list skin's vertical padding (2pt on `Skins::Canvas`, 8pt on
+   widgetbench's own Plate-backed picker). `SelectBox::_resize()` calls
+   `_recalcListCanvasSize()`, which rebuilt the list's default height from zero
+   as the sum of entries and dropped the list skin's padding — the width, the
+   constructor, `setListSkin()` and `_sideCanvasResize()` all counted it.
+   Fixed in `wg_selectbox.cpp`/`.h` (the matching height is now seeded with the
+   padding in the constructor and tracked by `setListSkin()` too). Verified by
+   screenshot and by the popup's spx sizes: 5 × 17px entries + 2px = 87px.
+
+7. **Everything builds** on Linux (gcc, SDL2 software wapp), glossyblue and
+   oldskool SelectBox wrappers both instantiated. `render --force` + `pack`
+   reproduce the committed parts, atlas and header byte-identically with
+   Linux Pillow/numpy as well.
+
+**Build note:** the committed `src/wonderapp/common/wonderapp.h` still aliases
+`wkit` to `wg::oldskool`, and the wapp loaders load
+`oldskool_skinblocks.png`. `gallery_test.cpp` uses `wkit::Skins::Field`, which
+only glossyblue has, so **widgetbench does not compile from a clean checkout**
+until the alias is switched (plus the loader to `glossyblue_skinblocks.png`
+with `.scale = 128`). Presumably a local change on Tord's machine that was
+never committed.
 
 ---
 

@@ -265,6 +265,19 @@ rounded corners):
 - Top and bottom stay **0** on purpose: the engine adds vertical entry padding
   to every `m_height`, so any value there changes row height.
 
+Measured in a real build at scale 64, the entry text lands exactly on
+widget-left + 6pt. One wrinkle: while the popup is open the closed box is in
+`Pressed`, whose `content_shift` moves its text 1pt right — so whenever both
+texts are actually on screen together they are 1pt apart. Entry padding-left 6
+would trade that for a 1pt misalignment against the resting box, which is never
+seen next to the list. Undecided; left at 5.
+
+A related engine bug, now fixed: `SelectBox::_recalcListCanvasSize()` (called
+from every `_resize()`) rebuilt the popup's default height as the bare sum of
+entries, dropping the list skin's top+bottom padding, so the last entry was
+clipped by exactly that much. It now seeds both the default and the matching
+height with `listPadding.h`, like the constructor and `_sideCanvasResize()`.
+
 Still unaligned by 1pt and left alone: the popup's left edge sits 1pt left of
 the *visible* box, because the popup attaches to the widget geo while
 `Skins::SelectBox`'s 1pt spacing insets the drawn box. Fixing that means the

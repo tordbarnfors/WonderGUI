@@ -177,6 +177,7 @@ namespace wg
 			if( bp.listSkin )
 			{
 				m_listCanvasDefaultSize = bp.listSkin->_contentBorderSize(m_scale);
+				m_listCanvasMatchingHeight = m_listCanvasDefaultSize.h;
 				m_pListCanvas->m_skin.set(bp.listSkin);
 			}
 			
