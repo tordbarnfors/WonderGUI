@@ -1789,6 +1789,13 @@ bool copyPixels(int width, int height, const uint8_t* pSrc, const PixelDescripti
 	}
 	else if(srcDesc.type == PixelType::Index)
 	{
+		// Palette indexes are only handled by the PixelFormat version.
+
+		PixelFormat srcFmt = Util::pixelDescriptionToFormat(srcDesc);
+		if (srcFmt != PixelFormat::Undefined)
+			return copyPixels(width, height, pSrc, srcFmt, srcPitchAdd, pDst, dstFmt, dstPitchAdd, pSrcPalette,
+							  pDstPalette, srcPaletteEntries, dstPaletteEntries, maxDstPaletteEntries);
+
 		GfxBase::throwError(ErrorLevel::Error, ErrorCode::IllegalCall, "Conversion from palette indexes not supported yet", nullptr, nullptr, __func__, __FILE__, __LINE__);
 		return false;
 	}
