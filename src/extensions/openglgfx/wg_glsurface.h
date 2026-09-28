@@ -125,7 +125,7 @@ namespace wg
 		bool		m_bBackingBufferStale = false;				// Set when there are modifications (in texture or queued GL commands) for this surface.
 		bool        m_bMipmapStale = false;
 
-		void		_readBackTexture( void * pDest);
+		void		_readBackTexture( void * pDest, int pitch );
 
 
 		GLuint 		m_paletteTexture = 0;	// GL palette texture handle.

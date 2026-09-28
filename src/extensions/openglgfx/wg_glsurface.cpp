@@ -577,7 +577,7 @@ namespace wg
 		if (m_pBlob)
 		{
 			if (m_bBackingBufferStale)
-				_readBackTexture(m_pBlob->data());
+				_readBackTexture(m_pBlob->data(), m_pitch);
 
 			return true;
 		}
@@ -585,7 +585,7 @@ namespace wg
 		{
             // This is OpenGL pre 4.5, we can only read back a whole texture :(
             
-            _readBackTexture(buffer.pixels);
+            _readBackTexture(buffer.pixels, buffer.pitch);
 			return false;
 		}
         else
@@ -638,11 +638,11 @@ namespace wg
 
 	int GlSurface::alpha( CoordSPX _coord )
 	{
-//		if (m_bBackingBufferStale)
-//			_refreshBackingBuffer();
-
 		if( m_pBlob )
 		{
+			if (m_bBackingBufferStale)
+				_readBackTexture(m_pBlob->data(), m_pitch);
+
 			PixelBuffer buf;
 			buf.rect = m_size;
 			buf.palette = m_pPalette;
@@ -772,7 +772,7 @@ namespace wg
 
 	//____ _readBackTexture() ____________________________________________
 
-	void GlSurface::_readBackTexture(void * pDest)
+	void GlSurface::_readBackTexture(void * pDest, int pitch)
 	{
 		HANDLE_GLERROR(glGetError());
 
@@ -815,10 +815,29 @@ namespace wg
 		GLint oldBinding;
 		glGetIntegerv(GL_TEXTURE_BINDING_2D, &oldBinding);
 
+		// Rows are pitch bytes apart. Byte alignment and a row length in pixels covers every pitch
+		// that is a whole number of pixels. Other pitches are padded rows of 3 byte pixels, which
+		// the pack alignment covers when they are padded to 4 bytes (which is how we allocate them).
+
+		GLint oldAlignment;
+		glGetIntegerv(GL_PACK_ALIGNMENT, &oldAlignment);
+
+		if (pitch % m_pixelSize == 0)
+		{
+			glPixelStorei(GL_PACK_ALIGNMENT, 1);
+			glPixelStorei(GL_PACK_ROW_LENGTH, pitch / m_pixelSize);
+		}
+		else
+		{
+			assert(pitch == ((m_size.w * m_pixelSize + 3) & ~3));
+			glPixelStorei(GL_PACK_ALIGNMENT, 4);
+			glPixelStorei(GL_PACK_ROW_LENGTH, 0);
+		}
+
 		glBindTexture(GL_TEXTURE_2D, m_texture);
-		glPixelStorei(GL_PACK_ROW_LENGTH, m_size.w);
 		glGetTexImage(GL_TEXTURE_2D, 0, m_accessFormat, type, pDest);
 		glPixelStorei(GL_PACK_ROW_LENGTH, 0);
+		glPixelStorei(GL_PACK_ALIGNMENT, oldAlignment);
 		glBindTexture(GL_TEXTURE_2D, oldBinding);
 
 		HANDLE_GLERROR(glGetError());

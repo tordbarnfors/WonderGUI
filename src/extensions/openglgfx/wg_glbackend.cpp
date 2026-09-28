@@ -216,6 +216,11 @@ void GlBackend::_setCanvas(Surface* pSurface)
 
 	LOG_GLERROR(glGetError());
 
+	// A canvas with a backing buffer gets it refreshed from the texture next time it is read.
+
+	if (pCanvas && pCanvas->m_pBlob)
+		pCanvas->m_bBackingBufferStale = true;
+
 	m_pActiveCanvas = pCanvas;
 	m_activeCanvasSize = { size.w, size.h };
 	m_bMipmappedActiveCanvas = m_pActiveCanvas ? m_pActiveCanvas->m_bMipmapped : false;
