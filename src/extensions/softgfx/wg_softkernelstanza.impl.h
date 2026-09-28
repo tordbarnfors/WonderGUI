@@ -1688,12 +1688,24 @@ void _transform_blit(const SoftSurface* WG_RESTRICT pSrcSurf, BinalCoord pos, co
 				{
 					if (ofsX > srcMax_w || ofsY > srcMax_h || ofsX < -BINAL_MUL || ofsY < -BINAL_MUL)
 					{
-						// Totally outside, no need to process pixel
+						// Totally outside. Blending transparent black leaves the pixel as is, so
+						// we can skip it. Other blend modes (Replace for the first pass of a
+						// two-pass blit, which writes to a scratch buffer) must still write it.
 
-						ofsX += pixelIncX;
-						ofsY += pixelIncY;
-						pDst += dstPitchX;
-						continue;
+						if constexpr(BLEND == BlendMode::Blend)
+						{
+							ofsX += pixelIncX;
+							ofsY += pixelIncY;
+							pDst += dstPitchX;
+							continue;
+						}
+						else
+						{
+							src11_b = src11_g = src11_r = src11_a = 0;
+							src12_b = src12_g = src12_r = src12_a = 0;
+							src21_b = src21_g = src21_r = src21_a = 0;
+							src22_b = src22_g = src22_r = src22_a = 0;
+						}
 					}
 					else
 					{
