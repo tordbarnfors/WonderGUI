@@ -645,6 +645,74 @@ static inline void	_blend_pixels(int morphFactor,
 }
 
 
+//____ _transparent_op() __________________________________________________
+//
+// What blending a transparent black source pixel (which a tint can't change) does
+// to the destination in each blend mode. Used for pixels outside the source of a
+// ClipBlit, where the result can often be had without reading the destination.
+
+enum class TransparentOp
+{
+	Skip,		// Destination is left as is.
+	Write,		// Destination gets a constant, see _write_transparent().
+	Process		// Result depends on the destination, pixel must be blended as usual.
+};
+
+template<PixelFormat format>
+constexpr bool _has_alpha_channel()
+{
+	return !(format == PixelFormat::BGR_8_sRGB || format == PixelFormat::BGR_8_linear ||
+			 format == PixelFormat::BGRX_8_sRGB || format == PixelFormat::BGRX_8_linear ||
+			 format == PixelFormat::BGR_565_sRGB || format == PixelFormat::BGR_565_linear ||
+			 format == PixelFormat::RGB_565_bigendian || format == PixelFormat::RGB_555_bigendian);
+}
+
+template<BlendMode mode, PixelFormat destFormat>
+constexpr TransparentOp _transparent_op()
+{
+	if constexpr (mode == BlendMode::Blend || mode == BlendMode::Add || mode == BlendMode::Subtract ||
+				  mode == BlendMode::Max || mode == BlendMode::Invert)
+		return TransparentOp::Skip;
+	else if constexpr (mode == BlendMode::Replace || mode == BlendMode::BlendFixedColor)
+		return TransparentOp::Write;
+	else if constexpr (mode == BlendMode::Multiply || mode == BlendMode::Min)
+	{
+		// Color channels become black, alpha is kept. Constant when there is no alpha
+		// to keep, or when alpha is all there is (it becomes 0).
+
+		if constexpr (destFormat == PixelFormat::Alpha_8 || !_has_alpha_channel<destFormat>())
+			return TransparentOp::Write;
+		else
+			return TransparentOp::Process;
+	}
+	else
+		return TransparentOp::Process;			// Morph
+}
+
+//____ _write_transparent() _______________________________________________
+//
+// Writes the result of blending a transparent black source pixel, for blend modes
+// where _transparent_op() returns Write.
+
+template<BlendMode mode, PixelFormat destFormat, bool bFast8>
+static inline void _write_transparent(uint8_t* pDst, int16_t fixedB, int16_t fixedG, int16_t fixedR, int16_t fixedA)
+{
+	int16_t b = 0, g = 0, r = 0, a = 0;
+
+	if constexpr (mode == BlendMode::BlendFixedColor)
+	{
+		b = fixedB;
+		g = fixedG;
+		r = fixedR;
+		a = fixedA;
+	}
+
+	if constexpr (bFast8)
+		_write_pixel_fast8<destFormat>(pDst, b, g, r, a);
+	else
+		_write_pixel<destFormat>(pDst, b, g, r, a);
+}
+
 //____ _color_tint_init() _________________________________________________
 template<TintMode tintMode>
 static inline void _color_tint_init(const SoftBackend::ColTrans& tint, int bits, int16_t inB, int16_t inG, int16_t inR, int16_t inA,
@@ -1376,6 +1444,12 @@ void _straight_blit(const uint8_t* WG_RESTRICT pSrc, uint8_t* WG_RESTRICT pDst, 
 
 	constexpr int bits = bFast8 ? 8 : 12;
 
+	// Fast track for transparent black pixels in the buffer formats of two-pass blits.
+
+	constexpr TransparentOp transparentOp = _transparent_op<BLEND, DSTFORMAT>();
+	constexpr bool bFastTransparent = (SRCFORMAT == PixelFormat::Undefined || SRCFORMAT == PixelFormat::BGRA_8_linear) &&
+										READOP == SoftBackend::ReadOp::Normal && transparentOp != TransparentOp::Process;
+
 	// Preapare tiling and blurring
 
 	int srcX, srcY;
@@ -1544,26 +1618,49 @@ void _straight_blit(const uint8_t* WG_RESTRICT pSrc, uint8_t* WG_RESTRICT pDst, 
 									lineB, lineG, lineR, lineA,
 									tintB, tintG, tintR, tintA, pTintmapX);
 
-			// Step 6: Get color components of background pixel blending into backX
-			// Step 7: Blend srcX and backX into outX
-			// Step 8: Write resulting pixel to destination
+			// Transparent black pixels are skipped or written directly when the blend mode
+			// allows it. They are common in the buffers blitted by the second pass of a
+			// two-pass ClipBlit, where everything outside the source is transparent black.
+			// The raw source pixel is tested, which is cheaper than testing the channels.
 
-			int16_t backB, backG, backR, backA;
-			int16_t outB, outG, outR, outA;
+			bool bTransparent = false;
 
-			if constexpr(bFast8)
+			if constexpr(bFastTransparent)
 			{
-				_read_pixel_fast8<DSTFORMAT>(pDst, nullptr, nullptr, backB, backG, backR, backA);
-				_blend_pixels_fast8<BLEND, DSTFORMAT>(tint.morphFactor, srcB, srcG, srcR, srcA, backB, backG, backR, backA,
-															  outB, outG, outR, outA, fixedB, fixedG, fixedR, fixedA);
-				_write_pixel_fast8<DSTFORMAT>(pDst, outB, outG, outR, outA);
+				if constexpr(SRCFORMAT == PixelFormat::Undefined)
+					bTransparent = *(const uint64_t*)pSrc == 0;
+				else
+					bTransparent = *(const uint32_t*)pSrc == 0;
+			}
+
+			if (bTransparent)
+			{
+				if constexpr(transparentOp == TransparentOp::Write)
+					_write_transparent<BLEND, DSTFORMAT, bFast8>(pDst, fixedB, fixedG, fixedR, fixedA);
 			}
 			else
 			{
-				_read_pixel<DSTFORMAT>(pDst, nullptr, nullptr, backB, backG, backR, backA);
-				_blend_pixels<BLEND, DSTFORMAT>(tint.morphFactor, srcB, srcG, srcR, srcA, backB, backG, backR, backA,
-														outB, outG, outR, outA, fixedB, fixedG, fixedR, fixedA);
-				_write_pixel<DSTFORMAT>(pDst, outB, outG, outR, outA);
+				// Step 6: Get color components of background pixel blending into backX
+				// Step 7: Blend srcX and backX into outX
+				// Step 8: Write resulting pixel to destination
+
+				int16_t backB, backG, backR, backA;
+				int16_t outB, outG, outR, outA;
+
+				if constexpr(bFast8)
+				{
+					_read_pixel_fast8<DSTFORMAT>(pDst, nullptr, nullptr, backB, backG, backR, backA);
+					_blend_pixels_fast8<BLEND, DSTFORMAT>(tint.morphFactor, srcB, srcG, srcR, srcA, backB, backG, backR, backA,
+																  outB, outG, outR, outA, fixedB, fixedG, fixedR, fixedA);
+					_write_pixel_fast8<DSTFORMAT>(pDst, outB, outG, outR, outA);
+				}
+				else
+				{
+					_read_pixel<DSTFORMAT>(pDst, nullptr, nullptr, backB, backG, backR, backA);
+					_blend_pixels<BLEND, DSTFORMAT>(tint.morphFactor, srcB, srcG, srcR, srcA, backB, backG, backR, backA,
+															outB, outG, outR, outA, fixedB, fixedG, fixedR, fixedA);
+					_write_pixel<DSTFORMAT>(pDst, outB, outG, outR, outA);
+				}
 			}
 
 			// Step 9: Increment source and destination pointers
@@ -1688,24 +1785,15 @@ void _transform_blit(const SoftSurface* WG_RESTRICT pSrcSurf, BinalCoord pos, co
 				{
 					if (ofsX > srcMax_w || ofsY > srcMax_h || ofsX < -BINAL_MUL || ofsY < -BINAL_MUL)
 					{
-						// Totally outside. Blending transparent black leaves the pixel as is, so
-						// we can skip it. Replace (used by the first pass of a two-pass blit, which
-						// writes to a scratch buffer) writes transparent black. Other blend modes
-						// depend on the destination, so they blend transparent black.
+						// Totally outside, so the source is transparent black. Skip or write the
+						// pixel when the blend mode allows it, otherwise blend it as usual.
 
-						if constexpr(BLEND == BlendMode::Blend)
+						constexpr TransparentOp op = _transparent_op<BLEND, DSTFORMAT>();
+
+						if constexpr(op != TransparentOp::Process)
 						{
-							ofsX += pixelIncX;
-							ofsY += pixelIncY;
-							pDst += dstPitchX;
-							continue;
-						}
-						else if constexpr(BLEND == BlendMode::Replace)
-						{
-							if constexpr(bFast8)
-								_write_pixel_fast8<DSTFORMAT>(pDst, 0, 0, 0, 0);
-							else
-								_write_pixel<DSTFORMAT>(pDst, 0, 0, 0, 0);
+							if constexpr(op == TransparentOp::Write)
+								_write_transparent<BLEND, DSTFORMAT, bFast8>(pDst, fixedB, fixedG, fixedR, fixedA);
 
 							ofsX += pixelIncX;
 							ofsY += pixelIncY;
@@ -1898,19 +1986,15 @@ void _transform_blit(const SoftSurface* WG_RESTRICT pSrcSurf, BinalCoord pos, co
 				}
 				else if (READOP == SoftBackend::ReadOp::Clip && ((ofsX | ofsY | (srcMax_w - 1 - ofsX) | (srcMax_h - 1 - ofsY)) < 0))
 				{
-					if constexpr(BLEND == BlendMode::Blend)
+					// Outside, so the source is transparent black. Skip or write the pixel
+					// when the blend mode allows it, otherwise blend it as usual.
+
+					constexpr TransparentOp op = _transparent_op<BLEND, DSTFORMAT>();
+
+					if constexpr(op != TransparentOp::Process)
 					{
-						ofsX += pixelIncX;
-						ofsY += pixelIncY;
-						pDst += dstPitchX;
-						continue;
-					}
-					else if constexpr(BLEND == BlendMode::Replace)
-					{
-						if constexpr(bFast8)
-							_write_pixel_fast8<DSTFORMAT>(pDst, 0, 0, 0, 0);
-						else
-							_write_pixel<DSTFORMAT>(pDst, 0, 0, 0, 0);
+						if constexpr(op == TransparentOp::Write)
+							_write_transparent<BLEND, DSTFORMAT, bFast8>(pDst, fixedB, fixedG, fixedR, fixedA);
 
 						ofsX += pixelIncX;
 						ofsY += pixelIncY;
