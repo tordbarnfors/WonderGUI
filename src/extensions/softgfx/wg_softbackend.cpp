@@ -887,7 +887,7 @@ namespace wg
 				// Apply tinting
 
 				EdgemapTinting tinting;
-				_beginEdgemapTinting(pEdgemap, nSegments, tinting);
+				_beginEdgemapTinting(pEdgemap, nSegments, tinting, simpleTransform);
 
 				bool* transparentSegments = tinting.transparent;
 				bool* opaqueSegments = tinting.opaque;
@@ -1886,12 +1886,18 @@ namespace wg
 
 	//____ _beginEdgemapTinting() _____________________________________________
 	/*
-		Prepares colors for drawing an edgemap: flat colors per segment if neither segments
-		nor device tint vary over the edgemap, otherwise a buffer for colors per pixel that is
-		filled in column by column by _tintEdgemapColumn().
+		Prepares colors for drawing an edgemap. Flat colors per segment if neither segments
+		nor device tint vary over the edgemap. Also flat colors, but updated for each column
+		by _tintEdgemapColumn(), if no tint varies along the columns (e.g. horizontal tints on
+		an edgemap that isn't rotated). Otherwise a buffer for colors per pixel, filled in by
+		_tintEdgemapColumn() for every column, or just once if no tint varies from column to
+		column (e.g. vertical tints on an edgemap that isn't rotated).
+
+		simpleTransform gives the canvas step from one column to the next (simpleTransform[0])
+		and from one row to the next (simpleTransform[1]).
 	*/
 
-	void SoftBackend::_beginEdgemapTinting(SoftEdgemap* pEdgemap, int nSegments, EdgemapTinting& t)
+	void SoftBackend::_beginEdgemapTinting(SoftEdgemap* pEdgemap, int nSegments, EdgemapTinting& t, const int simpleTransform[2][2])
 	{
 		const SoftTint& global = m_softTint;
 
@@ -1900,9 +1906,9 @@ namespace wg
 		t.pGlobal = nullptr;
 		t.pitch = 0;
 		t.bufferBytes = 0;
-		t.bInvarianceChecked = false;
 		t.bColumnInvariant = false;
 		t.bColumnsDone = false;
+		t.bColorPerColumn = false;
 
 		for (int seg = 0; seg < nSegments; seg++)
 		{
@@ -1910,8 +1916,42 @@ namespace wg
 
 			t.transparent[seg] = segTint.isTransparent() || global.isTransparent();
 			t.opaque[seg] = segTint.isOpaque() && global.isOpaque();
+		}
 
-			if (!t.bPerPixel)
+		if (t.bPerPixel)
+		{
+			// Check which way the tints vary. Segment tints are placed in edgemap space, where
+			// columns run along x and rows along y. The device tint is placed in canvas space.
+
+			bool bVariesAlongColumns = false;		// From one column to the next.
+			bool bVariesAlongRows = false;			// From one row to the next.
+
+			for (int seg = 0; seg < nSegments; seg++)
+			{
+				if (t.transparent[seg])
+					continue;
+
+				const SoftTint& segTint = pEdgemap->m_segmentTints[seg];
+
+				bVariesAlongColumns |= segTint.variesAlongX();
+				bVariesAlongRows |= segTint.variesAlongY();
+			}
+
+			bVariesAlongColumns |= (simpleTransform[0][0] != 0 && global.variesAlongX()) || (simpleTransform[0][1] != 0 && global.variesAlongY());
+			bVariesAlongRows |= (simpleTransform[1][0] != 0 && global.variesAlongX()) || (simpleTransform[1][1] != 0 && global.variesAlongY());
+
+			if (!bVariesAlongRows)
+			{
+				t.bPerPixel = false;
+				t.bColorPerColumn = true;
+			}
+			else
+				t.bColumnInvariant = !bVariesAlongColumns;
+		}
+
+		for (int seg = 0; seg < nSegments; seg++)
+		{
+			if (!t.bPerPixel && !t.bColorPerColumn)
 			{
 				HiColor col = pEdgemap->m_pFlatColors[seg] * global.flatColor();
 
@@ -1953,36 +1993,41 @@ namespace wg
 	void SoftBackend::_tintEdgemapColumn(SoftEdgemap* pEdgemap, int nSegments, EdgemapTinting& t, int column, int rowBeg, int rowEnd,
 										 const int* pEdgeStrips, CoordI canvasStart, const int simpleTransform[2][2])
 	{
-		if (!t.bPerPixel || rowEnd <= rowBeg)
-			return;
+		// One color per segment for the whole column.
 
-		// If no tint varies from column to column, which is the case for vertical tints on an
-		// edgemap that isn't rotated, all rows of all segments are generated once and reused
-		// for every column.
-
-		if (!t.bInvarianceChecked)
+		if (t.bColorPerColumn)
 		{
 			const SoftTint& global = m_softTint;
 
-			// Segment tints are placed in edgemap space, where columns run along x.
+			HiColor globalColor = global.flatColor();
+			if (!global.isFlat())
+				global.generate(canvasStart.x + column * simpleTransform[0][0], canvasStart.y + column * simpleTransform[0][1], 0, 0, 1, &globalColor);
 
-			bool bInvariant = true;
+			// Transparent segments too, the kernels blend their color at edges.
 
 			for (int seg = 0; seg < nSegments; seg++)
 			{
-				if (!t.transparent[seg] && pEdgemap->m_segmentTints[seg].variesAlongX())
-					bInvariant = false;
+				const SoftTint& segTint = pEdgemap->m_segmentTints[seg];
+
+				HiColor col = segTint.flatColor();
+				if (!segTint.isFlat())
+					segTint.generate(column, 0, 0, 0, 1, &col);
+
+				col = col * globalColor;
+
+				t.colors[seg][0] = col.b;
+				t.colors[seg][1] = col.g;
+				t.colors[seg][2] = col.r;
+				t.colors[seg][3] = col.a;
 			}
-
-			// The device tint is placed in canvas space, where the next column is one step
-			// along simpleTransform[0].
-
-			if ((simpleTransform[0][0] != 0 && global.variesAlongX()) || (simpleTransform[0][1] != 0 && global.variesAlongY()))
-				bInvariant = false;
-
-			t.bColumnInvariant = bInvariant;
-			t.bInvarianceChecked = true;
+			return;
 		}
+
+		if (!t.bPerPixel || rowEnd <= rowBeg)
+			return;
+
+		// If no tint varies from column to column, all rows of all segments are generated
+		// once and reused for every column.
 
 		if (t.bColumnInvariant)
 		{

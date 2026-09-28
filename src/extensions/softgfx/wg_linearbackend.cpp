@@ -762,7 +762,7 @@ namespace wg
 				// Apply tinting
 
 				EdgemapTinting tinting;
-				_beginEdgemapTinting(pEdgemap, nSegments, tinting);
+				_beginEdgemapTinting(pEdgemap, nSegments, tinting, simpleTransform);
 
 				bool* transparentSegments = tinting.transparent;
 				bool* opaqueSegments = tinting.opaque;
