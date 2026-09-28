@@ -283,146 +283,64 @@ const char GlBackend::blitTintmapVertexShader[] =
 
 
 
-const char GlBackend::blurFragmentShader[] =
+// Blur shaders, one per [source kind][tint][canvas]. Source kinds are ordinary sources,
+// Alpha_8 sources (their R8 texture is read as white with alpha, like the alpha blits do) and
+// palette based sources (each tap is looked up in the palette before it is weighted, the index
+// texture is read with nearest sampling so taps never blend indexes). On an Alpha_8 canvas
+// the resulting alpha is written to the red channel, like the other _A8 shaders do.
 
-"#version 330 core\n"
+#define WG_GL_BLUR_HEAD \
+"#version 330 core\n" \
+"struct BlurInfo { vec4 colorMtx[9]; vec2 offset[9]; };							" \
+"uniform BlurInfo blurInfo;															" \
+"uniform sampler2D texId;															" \
+"in vec2 texUV;																		" \
+"out vec4 color;																	"
 
-"struct BlurInfo"
-"{"
-"	vec4   colorMtx[9];"
-"	vec2   offset[9];"
-"};"
+#define WG_GL_BLUR_TAP \
+"vec4 tap(vec2 uv) { return texture(texId, uv); }									"
 
-"uniform BlurInfo blurInfo;                     "
-"uniform sampler2D texId;						"
-"in vec2 texUV;									"
-"in vec4 fragColor;								"
-"out vec4 color;								"
+#define WG_GL_BLUR_TAP_ALPHA \
+"vec4 tap(vec2 uv) { return vec4(1.0, 1.0, 1.0, texture(texId, uv).r); }			"
 
-"void main()									"
-"{												"
-"	color = texture(texId, texUV + blurInfo.offset[0]) * blurInfo.colorMtx[0];"
-"	color += texture(texId, texUV + blurInfo.offset[1]) * blurInfo.colorMtx[1];"
-"	color += texture(texId, texUV + blurInfo.offset[2]) * blurInfo.colorMtx[2];"
-"	color += texture(texId, texUV + blurInfo.offset[3]) * blurInfo.colorMtx[3];"
-"   color += texture(texId, texUV + blurInfo.offset[4]) * blurInfo.colorMtx[4];  "
-"	color += texture(texId, texUV + blurInfo.offset[5]) * blurInfo.colorMtx[5];"
-"	color += texture(texId, texUV + blurInfo.offset[6]) * blurInfo.colorMtx[6];"
-"	color += texture(texId, texUV + blurInfo.offset[7]) * blurInfo.colorMtx[7];"
-"	color += texture(texId, texUV + blurInfo.offset[8]) * blurInfo.colorMtx[8];"
+#define WG_GL_BLUR_TAP_PALETTE \
+"uniform sampler2D paletteId;														" WG_GL_PALETTE_FUNC \
+"vec4 tap(vec2 uv) { return paletteLookup(texture(texId, uv).r); }					"
 
-"   color *= fragColor;"
-"}												";
+#define WG_GL_BLUR_FLAT \
+"in vec4 fragColor;																	" \
+"vec4 tintColor() { return fragColor; }												"
 
+#define WG_GL_BLUR_TINT \
+"uniform samplerBuffer tintmapBufferId;												" \
+"flat in int tintOfs;  in vec2 tintPos;  flat in vec4 flatTint;						" WG_GL_TINT_FUNC \
+"vec4 tintColor() { return evalTint(tintmapBufferId, tintOfs, tintPos) * flatTint; }"
 
-const char GlBackend::blurFragmentShaderTintmap[] =
+#define WG_GL_BLUR_SUM \
+"vec4 blurred()																		" \
+"{																					" \
+"	vec4 c = vec4(0.0);																" \
+"	for (int i = 0; i < 9; i++)														" \
+"		c += tap(texUV + blurInfo.offset[i]) * blurInfo.colorMtx[i];				" \
+"	return c;																		" \
+"}																					"
 
-"#version 330 core\n"
+#define WG_GL_BLUR_OUT \
+"void main() { color = blurred() * tintColor(); }									"
 
-"struct BlurInfo"
-"{"
-"	vec4   colorMtx[9];"
-"	vec2   offset[9];"
-"};"
+#define WG_GL_BLUR_OUT_A8 \
+"void main() { color.r = blurred().a * tintColor().a; }								"
 
-"uniform BlurInfo blurInfo;                     "
-"uniform sampler2D texId;						"
-"uniform samplerBuffer tintmapBufferId;			"
-"in vec2 texUV;									"
-"flat in int tintOfs;  in vec2 tintPos;  " "flat in vec4 flatTint;  " WG_GL_TINT_FUNC
-"out vec4 color;								"
+#define WG_GL_BLUR_SHADERS(TAP) \
+	{ { WG_GL_BLUR_HEAD TAP WG_GL_BLUR_FLAT WG_GL_BLUR_SUM WG_GL_BLUR_OUT, WG_GL_BLUR_HEAD TAP WG_GL_BLUR_FLAT WG_GL_BLUR_SUM WG_GL_BLUR_OUT_A8 }, \
+	  { WG_GL_BLUR_HEAD TAP WG_GL_BLUR_TINT WG_GL_BLUR_SUM WG_GL_BLUR_OUT, WG_GL_BLUR_HEAD TAP WG_GL_BLUR_TINT WG_GL_BLUR_SUM WG_GL_BLUR_OUT_A8 } }
 
-"void main()									"
-"{												"
-"	color = texture(texId, texUV + blurInfo.offset[0]) * blurInfo.colorMtx[0];"
-"	color += texture(texId, texUV + blurInfo.offset[1]) * blurInfo.colorMtx[1];"
-"	color += texture(texId, texUV + blurInfo.offset[2]) * blurInfo.colorMtx[2];"
-"	color += texture(texId, texUV + blurInfo.offset[3]) * blurInfo.colorMtx[3];"
-"   color += texture(texId, texUV + blurInfo.offset[4]) * blurInfo.colorMtx[4];  "
-"	color += texture(texId, texUV + blurInfo.offset[5]) * blurInfo.colorMtx[5];"
-"	color += texture(texId, texUV + blurInfo.offset[6]) * blurInfo.colorMtx[6];"
-"	color += texture(texId, texUV + blurInfo.offset[7]) * blurInfo.colorMtx[7];"
-"	color += texture(texId, texUV + blurInfo.offset[8]) * blurInfo.colorMtx[8];"
-
-"   vec4 fragColor = (evalTint(tintmapBufferId, tintOfs, tintPos) * flatTint); "
-
-"   color *= fragColor;"
-"}												";
-
-
-
-
-// Blur from a palette based source. Each tap is looked up in the palette
-// before it is weighted, as paletteBlitNearestFragmentShader does it. The index
-// texture is read with nearest sampling, so taps never blend indexes.
-
-const char GlBackend::paletteBlurFragmentShader[] =
-
-"#version 330 core\n"
-
-"struct BlurInfo"
-"{"
-"	vec4   colorMtx[9];"
-"	vec2   offset[9];"
-"};"
-
-"uniform BlurInfo blurInfo;                     "
-"uniform sampler2D texId;						"
-"uniform sampler2D paletteId;					" WG_GL_PALETTE_FUNC
-"in vec2 texUV;									"
-"in vec4 fragColor;								"
-"out vec4 color;								"
-
-"void main()									"
-"{												"
-"	color = paletteLookup(texture(texId, texUV + blurInfo.offset[0]).r) * blurInfo.colorMtx[0];"
-"	color += paletteLookup(texture(texId, texUV + blurInfo.offset[1]).r) * blurInfo.colorMtx[1];"
-"	color += paletteLookup(texture(texId, texUV + blurInfo.offset[2]).r) * blurInfo.colorMtx[2];"
-"	color += paletteLookup(texture(texId, texUV + blurInfo.offset[3]).r) * blurInfo.colorMtx[3];"
-"   color += paletteLookup(texture(texId, texUV + blurInfo.offset[4]).r) * blurInfo.colorMtx[4];  "
-"	color += paletteLookup(texture(texId, texUV + blurInfo.offset[5]).r) * blurInfo.colorMtx[5];"
-"	color += paletteLookup(texture(texId, texUV + blurInfo.offset[6]).r) * blurInfo.colorMtx[6];"
-"	color += paletteLookup(texture(texId, texUV + blurInfo.offset[7]).r) * blurInfo.colorMtx[7];"
-"	color += paletteLookup(texture(texId, texUV + blurInfo.offset[8]).r) * blurInfo.colorMtx[8];"
-
-"   color *= fragColor;"
-"}												";
-
-
-const char GlBackend::paletteBlurFragmentShaderTintmap[] =
-
-"#version 330 core\n"
-
-"struct BlurInfo"
-"{"
-"	vec4   colorMtx[9];"
-"	vec2   offset[9];"
-"};"
-
-"uniform BlurInfo blurInfo;                     "
-"uniform sampler2D texId;						"
-"uniform sampler2D paletteId;					" WG_GL_PALETTE_FUNC
-"uniform samplerBuffer tintmapBufferId;			"
-"in vec2 texUV;									"
-"flat in int tintOfs;  in vec2 tintPos;  " "flat in vec4 flatTint;  " WG_GL_TINT_FUNC
-"out vec4 color;								"
-
-"void main()									"
-"{												"
-"	color = paletteLookup(texture(texId, texUV + blurInfo.offset[0]).r) * blurInfo.colorMtx[0];"
-"	color += paletteLookup(texture(texId, texUV + blurInfo.offset[1]).r) * blurInfo.colorMtx[1];"
-"	color += paletteLookup(texture(texId, texUV + blurInfo.offset[2]).r) * blurInfo.colorMtx[2];"
-"	color += paletteLookup(texture(texId, texUV + blurInfo.offset[3]).r) * blurInfo.colorMtx[3];"
-"   color += paletteLookup(texture(texId, texUV + blurInfo.offset[4]).r) * blurInfo.colorMtx[4];  "
-"	color += paletteLookup(texture(texId, texUV + blurInfo.offset[5]).r) * blurInfo.colorMtx[5];"
-"	color += paletteLookup(texture(texId, texUV + blurInfo.offset[6]).r) * blurInfo.colorMtx[6];"
-"	color += paletteLookup(texture(texId, texUV + blurInfo.offset[7]).r) * blurInfo.colorMtx[7];"
-"	color += paletteLookup(texture(texId, texUV + blurInfo.offset[8]).r) * blurInfo.colorMtx[8];"
-
-"   vec4 fragColor = (evalTint(tintmapBufferId, tintOfs, tintPos) * flatTint); "
-
-"   color *= fragColor;"
-"}												";
+const char * const GlBackend::blurFragmentShaders[3][2][2] =
+{
+	WG_GL_BLUR_SHADERS(WG_GL_BLUR_TAP),
+	WG_GL_BLUR_SHADERS(WG_GL_BLUR_TAP_ALPHA),
+	WG_GL_BLUR_SHADERS(WG_GL_BLUR_TAP_PALETTE)
+};
 
 
 

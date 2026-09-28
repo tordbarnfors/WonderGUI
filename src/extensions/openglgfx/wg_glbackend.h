@@ -140,6 +140,13 @@ namespace wg
 
 		};
 
+		enum BlurSource			// Kind of blit source, selects the blur shader.
+		{
+			Normal,
+			Alpha,				// Alpha_8, read as white with alpha.
+			Palette				// Palette based, each tap looked up in the palette.
+		};
+
 
 		SurfaceFactory_p	m_pSurfaceFactory = nullptr;
 		EdgemapFactory_p	m_pEdgemapFactory = nullptr;
@@ -202,8 +209,7 @@ namespace wg
 		GLuint  m_aaFillProg[2];								// [RGB/A_8 dest]
 		GLuint  m_aaFillTintmapProg[2];							// [RGB/A_8 dest]
 
-		GLuint  m_blurProg[2];									// [tintmap]
-		GLuint  m_paletteBlurProg[2];							// [tintmap] Blur from a palette based source.
+		GLuint  m_blurProg[3][2][2];							// [BlurSource][tint][RGB/A_8 dest]
 		GLuint  m_blitProg[2];									// [RGB/A_8 dest]
 		GLuint  m_blitTintmapProg[2];							// [RGB/A_8 dest]
 
@@ -224,8 +230,8 @@ namespace wg
 
 		//
 
-		const static int c_nbPrograms = 30 + (c_maxSegments-1) * 2;
-		const static int c_versionNb = 107;		// 104: Tints replaced Tintmaps. 105: Tint color applied together with tint. 106: Palette ClipBlit clipping. 107: Palette read by index, capacity wide.
+		const static int c_nbPrograms = 38 + (c_maxSegments-1) * 2;
+		const static int c_versionNb = 108;		// 104: Tints replaced Tintmaps. 105: Tint color applied together with tint. 106: Palette ClipBlit clipping. 107: Palette read by index, capacity wide. 108: Blur for Alpha_8 sources and canvases.
 
 		struct ProgramBlobEntry
 		{
@@ -286,8 +292,7 @@ namespace wg
 		spx			m_activeBlurRadius = 64;
 		Blurbrush_p	m_pActiveBlurbrush;
 
-		GLint		m_blurUniformLocation[2][2];
-		GLint		m_paletteBlurUniformLocation[2][2];
+		GLint		m_blurUniformLocation[3][2][2][2];				// [BlurSource][tint][RGB/A_8 dest][colorMtx/offset]
 
 
 
@@ -342,10 +347,7 @@ namespace wg
 		static const char blitFragmentShader_A8[];
 		static const char blitFragmentShaderTintmap[];
 		static const char blitFragmentShaderTintmap_A8[];
-		static const char blurFragmentShader[];
-		static const char blurFragmentShaderTintmap[];
-		static const char paletteBlurFragmentShader[];
-		static const char paletteBlurFragmentShaderTintmap[];
+		static const char * const blurFragmentShaders[3][2][2];		// [BlurSource][tint][RGB/A_8 dest]
 		static const char lineFromToVertexShader[];
 		static const char lineFromToFragmentShader[];
 		static const char lineFromToFragmentShader_A8[];

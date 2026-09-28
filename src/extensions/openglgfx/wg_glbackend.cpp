@@ -1399,8 +1399,10 @@ GlBackend::~GlBackend()
 	glDeleteProgram(m_aaFillTintmapProg[0]);
 	glDeleteProgram(m_aaFillTintmapProg[1]);
 
-	glDeleteProgram(m_blurProg[0]);
-	glDeleteProgram(m_blurProg[1]);
+	for (int src = 0; src < 3; src++)
+		for (int tint = 0; tint < 2; tint++)
+			for (int canvas = 0; canvas < 2; canvas++)
+				glDeleteProgram(m_blurProg[src][tint][canvas]);
 
 	glDeleteProgram(m_blitProg[0]);
 	glDeleteProgram(m_blitProg[1]);
@@ -1418,8 +1420,6 @@ GlBackend::~GlBackend()
 	glDeleteProgram(m_paletteBlitInterpolateProg[1]);
 	glDeleteProgram(m_paletteBlitInterpolateTintmapProg[0]);
 	glDeleteProgram(m_paletteBlitInterpolateTintmapProg[1]);
-	glDeleteProgram(m_paletteBlurProg[0]);
-	glDeleteProgram(m_paletteBlurProg[1]);
 
 	glDeleteProgram(m_lineFromToProg[0]);
 	glDeleteProgram(m_lineFromToProg[1]);
@@ -1939,11 +1939,15 @@ void GlBackend::endSession()
 			{
 				int nVertices = *pCmd++;
 
-				// A palette based source must be looked up in its palette tap by tap.
+				// Palette based and Alpha_8 sources need their own shaders, as does an Alpha_8 canvas.
 
-				bool bPalette = m_pActiveBlitSource->pixelDescription()->type == PixelType::Index;
+				BlurSource blurSource = BlurSource::Normal;
+				if (m_pActiveBlitSource->pixelDescription()->type == PixelType::Index)
+					blurSource = BlurSource::Palette;
+				else if (m_pActiveBlitSource->pixelFormat() == PixelFormat::Alpha_8)
+					blurSource = BlurSource::Alpha;
 
-				glUseProgram(bPalette ? m_paletteBlurProg[m_bTintIsActive] : m_blurProg[m_bTintIsActive]);
+				glUseProgram(m_blurProg[blurSource][m_bTintIsActive][m_bActiveCanvasIsA8]);
 
 				// Blur offsets are added to texture coordinates normalized against the blit
 				// source, so they are normalized against the blit source size as well.
@@ -1980,7 +1984,7 @@ void GlBackend::endSession()
 				m_activeBlurInfo.offset[8][0] = radiusX * 0.7f;
 				m_activeBlurInfo.offset[8][1] = radiusY * 0.7f;
 
-				auto& uniformLocation = bPalette ? m_paletteBlurUniformLocation[m_bTintIsActive] : m_blurUniformLocation[m_bTintIsActive];
+				auto& uniformLocation = m_blurUniformLocation[blurSource][m_bTintIsActive][m_bActiveCanvasIsA8];
 
 				glUniform2fv(uniformLocation[1], 9, (GLfloat*)m_activeBlurInfo.offset);
 				glUniform4fv(uniformLocation[0], 9, (GLfloat*)m_activeBlurInfo.colorMtx);
@@ -2239,16 +2243,22 @@ void GlBackend::_loadPrograms(int uboBindingPoint)
 
 	// Create and init Blur shader
 
-	for (int i = 0; i < 2; i++)
+	for (int src = 0; src < 3; src++)
 	{
-		GLuint progId = _loadOrCompileProgram(programNb++, i == 0 ? blitVertexShader : blitTintmapVertexShader, i == 0 ? blurFragmentShader : blurFragmentShaderTintmap );
-		_setUniforms(progId, uboBindingPoint);
+		for (int tint = 0; tint < 2; tint++)
+		{
+			for (int canvas = 0; canvas < 2; canvas++)
+			{
+				GLuint progId = _loadOrCompileProgram(programNb++, tint == 0 ? blitVertexShader : blitTintmapVertexShader, blurFragmentShaders[src][tint][canvas]);
+				_setUniforms(progId, uboBindingPoint);
 
-		m_blurUniformLocation[i][0] = glGetUniformLocation(progId, "blurInfo.colorMtx");
-		m_blurUniformLocation[i][1] = glGetUniformLocation(progId, "blurInfo.offset");
+				m_blurUniformLocation[src][tint][canvas][0] = glGetUniformLocation(progId, "blurInfo.colorMtx");
+				m_blurUniformLocation[src][tint][canvas][1] = glGetUniformLocation(progId, "blurInfo.offset");
 
-		m_blurProg[i] = progId;
-		LOG_INIT_GLERROR(glGetError());
+				m_blurProg[src][tint][canvas] = progId;
+				LOG_INIT_GLERROR(glGetError());
+			}
+		}
 	}
 
 
@@ -2364,21 +2374,6 @@ void GlBackend::_loadPrograms(int uboBindingPoint)
 		}
 	}
 
-	// Create and init blur shaders for palette based sources. Last, so the
-	// program numbers of those before stay the same.
-
-	for (int i = 0; i < 2; i++)
-	{
-		GLuint progId = _loadOrCompileProgram(programNb++, i == 0 ? blitVertexShader : blitTintmapVertexShader, i == 0 ? paletteBlurFragmentShader : paletteBlurFragmentShaderTintmap );
-		_setUniforms(progId, uboBindingPoint);
-
-		m_paletteBlurUniformLocation[i][0] = glGetUniformLocation(progId, "blurInfo.colorMtx");
-		m_paletteBlurUniformLocation[i][1] = glGetUniformLocation(progId, "blurInfo.offset");
-
-		m_paletteBlurProg[i] = progId;
-		LOG_INIT_GLERROR(glGetError());
-	}
-
 	LOG_INIT_GLERROR(glGetError());
 }
 
@@ -2479,8 +2474,10 @@ Blob_p GlBackend::_generateProgramBlob()
 	programs[prg++] = m_aaFillTintmapProg[0];
 	programs[prg++] = m_aaFillTintmapProg[1];
 
-	programs[prg++] = m_blurProg[0];
-	programs[prg++] = m_blurProg[1];
+	for (int src = 0; src < 3; src++)
+		for (int tint = 0; tint < 2; tint++)
+			for (int canvas = 0; canvas < 2; canvas++)
+				programs[prg++] = m_blurProg[src][tint][canvas];
 
 	programs[prg++] = m_blitProg[0];
 	programs[prg++] = m_blitProg[1];
@@ -2516,9 +2513,6 @@ Blob_p GlBackend::_generateProgramBlob()
 			programs[prg++] = m_segmentsProg[i][canvType];
 		}
 	}
-
-	programs[prg++] = m_paletteBlurProg[0];
-	programs[prg++] = m_paletteBlurProg[1];
 
 	assert(prg == c_nbPrograms);
 
