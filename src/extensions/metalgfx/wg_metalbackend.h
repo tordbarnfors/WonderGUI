@@ -116,6 +116,7 @@ namespace wg
 			ExtrasBuffer = 1,
 			BlurUniform = 2,
 			Edgemap = 3,
+			ClipToSource = 4,		// Palette blits: set for a ClipBlit, see insideSource() in the shaders.
 		};
 
 

@@ -1692,6 +1692,16 @@ void MetalBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, i
 					}
 					else
 					{
+						// The sampler returns zero outside a non-tiling source, which clips a
+						// ClipBlit, but for a palette based source zero is palette index 0.
+						// The palette shaders clip their taps themselves when told to.
+
+						if( shader == BlitFragShader::PaletteNearest || shader == BlitFragShader::PaletteInterpolated )
+						{
+							int clipToSource = (cmd == Command::ClipBlit && !pSurf->isTiling()) ? 1 : 0;
+							[m_renderEncoder setFragmentBytes:&clipToSource length:sizeof(int) atIndex: (unsigned) FragmentInputIndex::ClipToSource];
+						}
+
 						if(m_blitPipelines[(int)shader][m_tintOfs >= 0][(int)m_activeBlendMode][(int)m_activeCanvasFormat] == nil )
 							m_blitPipelines[(int)shader][m_tintOfs >= 0][(int)m_activeBlendMode][(int)m_activeCanvasFormat] = _compileBlitPipeline( shader, m_tintOfs >= 0, m_activeBlendMode, m_activeCanvasFormat );
 
