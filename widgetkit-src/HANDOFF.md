@@ -82,15 +82,15 @@ headers. There is no separate step.
 
 ### Done, checked in a real build (Claude Code session, 2026-09-28)
 
-5. **SelectBox entry indent.** `Skins::SelectBoxEntry` gained
-   `_.padding = { 0, 5, 0, 5 }` so drop-down entries line up with the closed
-   box's text. Measured in widgetbench at scale 64: entry text starts exactly
-   at widget-left + 6pt, as designed. **One open question for Tord:** while the
-   popup is open the closed box is `Pressed`, and its `content_shift` puts its
-   text 1pt further right — so in the only moment both texts are on screen they
-   are 1pt apart. Entry padding-left 6 would align them in that moment (and
-   misalign by 1pt a state that is never seen next to the list). Not changed.
-   The arithmetic is in the pipeline doc under "Two paddings, one apparent
+5. **SelectBox entry indent.** `Skins::SelectBoxEntry` carries
+   `_.padding = { 0, 6, 0, 6 }` so drop-down entries line up with the closed
+   box's text *while the list is open* — the only time the two are on screen
+   together. Then the box is `Pressed` and its `content_shift` adds 1pt, so
+   the target is 1 + 5 + 1 = 7, not 6. Measured in widgetbench at scale 64
+   with the list open: closed text and every entry start on the same pixel
+   column. (First delivered as 5, which aligned with the resting box and left
+   the list 1pt left in practice; changed to 6 at Tord's request.) The
+   arithmetic is in the pipeline doc under "Two paddings, one apparent
    indent".
 
 6. **Engine fix: SelectBox popup was too short.** The last entry was clipped
