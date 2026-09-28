@@ -612,13 +612,20 @@ const char GlBackend::paletteBlitNearestFragmentShader[] =
 "#version 330 core\n"
 
 "uniform sampler2D texId;						"
+"uniform int clipToSource;					"	// Set for a ClipBlit: nothing outside the source is read.
 "uniform sampler2D paletteId;					"
 "in vec2 texUV;									"
 "in vec4 fragColor;								"
 "out vec4 color;								"
+"float inside(vec2 uv)							"
+"{												"
+"   return (clipToSource != 0 && (any(lessThan(uv, vec2(0.0))) || any(greaterThanEqual(uv, vec2(1.0))))) ? 0.0 : 1.0;	"
+"}												"
+
 "void main()									"
 "{												"
 "   color = texture(paletteId, vec2(texture(texId, texUV).r,0.5f)) * fragColor;	"
+"   color *= inside(texUV);	"
 "}												";
 
 const char GlBackend::paletteBlitNearestFragmentShader_A8[] =
@@ -626,13 +633,20 @@ const char GlBackend::paletteBlitNearestFragmentShader_A8[] =
 "#version 330 core\n"
 
 "uniform sampler2D texId;						"
+"uniform int clipToSource;					"	// Set for a ClipBlit: nothing outside the source is read.
 "uniform sampler2D paletteId;						"
 "in vec2 texUV;									"
 "in vec4 fragColor;								"
 "out vec4 color;								"
+"float inside(vec2 uv)							"
+"{												"
+"   return (clipToSource != 0 && (any(lessThan(uv, vec2(0.0))) || any(greaterThanEqual(uv, vec2(1.0))))) ? 0.0 : 1.0;	"
+"}												"
+
 "void main()									"
 "{												"
-"   color.r = texture(paletteId, vec2(texture(texId, texUV).r,0.5f)).a * fragColor.a;	"
+"   color.r = texture(paletteId, vec2(texture(texId, texUV).r,0.5f)).a * fragColor.a;"
+"   color.r *= inside(texUV);	"
 "}												";
 
 
@@ -642,15 +656,22 @@ const char GlBackend::paletteBlitNearestFragmentShaderTintmap[] =
 
 "uniform sampler2D texId;						"
 "uniform samplerBuffer tintmapBufferId;			"
+"uniform int clipToSource;					"	// Set for a ClipBlit: nothing outside the source is read.
 "uniform sampler2D paletteId;					"
 "in vec2 texUV;									"
 "flat in int tintOfs;  in vec2 tintPos;  " "flat in vec4 flatTint;  " WG_GL_TINT_FUNC
 "out vec4 color;								"
+"float inside(vec2 uv)							"
+"{												"
+"   return (clipToSource != 0 && (any(lessThan(uv, vec2(0.0))) || any(greaterThanEqual(uv, vec2(1.0))))) ? 0.0 : 1.0;	"
+"}												"
+
 "void main()									"
 "{												"
 "   vec4 fragColor = (evalTint(tintmapBufferId, tintOfs, tintPos) * flatTint); "
 
 "   color = texture(paletteId, vec2(texture(texId, texUV).r,0.5f)) * fragColor;	"
+"   color *= inside(texUV);	"
 "}												";
 
 const char GlBackend::paletteBlitNearestFragmentShaderTintmap_A8[] =
@@ -659,14 +680,21 @@ const char GlBackend::paletteBlitNearestFragmentShaderTintmap_A8[] =
 
 "uniform sampler2D texId;						"
 "uniform samplerBuffer tintmapBufferId;			"
+"uniform int clipToSource;					"	// Set for a ClipBlit: nothing outside the source is read.
 "uniform sampler2D paletteId;						"
 "in vec2 texUV;									"
 "flat in int tintOfs;  in vec2 tintPos;  " "flat in vec4 flatTint;  " WG_GL_TINT_FUNC
 "out vec4 color;								"
+"float inside(vec2 uv)							"
+"{												"
+"   return (clipToSource != 0 && (any(lessThan(uv, vec2(0.0))) || any(greaterThanEqual(uv, vec2(1.0))))) ? 0.0 : 1.0;	"
+"}												"
+
 "void main()									"
 "{												"
 "   float fragA = (evalTint(tintmapBufferId, tintOfs, tintPos) * flatTint).a; "
-"   color.r = texture(paletteId, vec2(texture(texId, texUV).r,0.5f)).a * fragA;	"
+"   color.r = texture(paletteId, vec2(texture(texId, texUV).r,0.5f)).a * fragA;"
+"   color.r *= inside(texUV);	"
 "}												";
 
 
@@ -780,22 +808,28 @@ const char GlBackend::paletteBlitInterpolateFragmentShader[] =
 "#version 330 core\n"
 
 "uniform sampler2D texId;						"
+"uniform int clipToSource;					"	// Set for a ClipBlit: nothing outside the source is read.
 "uniform sampler2D paletteId;						"
 "in vec2 texUV00;								"
 "in vec2 texUV11;								"
 "in vec2 uvFrac;								"
 "in vec4 fragColor;								"
 "out vec4 color;								"
+"float inside(vec2 uv)							"
+"{												"
+"   return (clipToSource != 0 && (any(lessThan(uv, vec2(0.0))) || any(greaterThanEqual(uv, vec2(1.0))))) ? 0.0 : 1.0;	"
+"}												"
+
 "void main()									"
 "{												"
 "   float index00 = texture(texId, texUV00).r;		"
 "   float index01 = texture(texId, vec2(texUV11.x,texUV00.y) ).r;		"
 "   float index10 = texture(texId, vec2(texUV00.x,texUV11.y) ).r;		"
 "   float index11 = texture(texId, texUV11).r;		"
-"   vec4 color00 = texture(paletteId, vec2(index00,0.5f));	"
-"   vec4 color01 = texture(paletteId, vec2(index01,0.5f));	"
-"   vec4 color10 = texture(paletteId, vec2(index10,0.5f));	"
-"   vec4 color11 = texture(paletteId, vec2(index11,0.5f));	"
+"   vec4 color00 = texture(paletteId, vec2(index00,0.5f)) * inside(texUV00);	"
+"   vec4 color01 = texture(paletteId, vec2(index01,0.5f)) * inside(vec2(texUV11.x,texUV00.y));	"
+"   vec4 color10 = texture(paletteId, vec2(index10,0.5f)) * inside(vec2(texUV00.x,texUV11.y));	"
+"   vec4 color11 = texture(paletteId, vec2(index11,0.5f)) * inside(texUV11);	"
 
 "   vec4 out0 = color00 * (1-fract(uvFrac.x)) + color01 * fract(uvFrac.x);	"
 "   vec4 out1 = color10 * (1-fract(uvFrac.x)) + color11 * fract(uvFrac.x);	"
@@ -807,22 +841,28 @@ const char GlBackend::paletteBlitInterpolateFragmentShader_A8[] =
 "#version 330 core\n"
 
 "uniform sampler2D texId;						"
+"uniform int clipToSource;					"	// Set for a ClipBlit: nothing outside the source is read.
 "uniform sampler2D paletteId;						"
 "in vec2 texUV00;								"
 "in vec2 texUV11;								"
 "in vec2 uvFrac;								"
 "in vec4 fragColor;								"
 "out vec4 color;								"
+"float inside(vec2 uv)							"
+"{												"
+"   return (clipToSource != 0 && (any(lessThan(uv, vec2(0.0))) || any(greaterThanEqual(uv, vec2(1.0))))) ? 0.0 : 1.0;	"
+"}												"
+
 "void main()									"
 "{												"
 "   float index00 = texture(texId, texUV00).r;		"
 "   float index01 = texture(texId, vec2(texUV11.x,texUV00.y) ).r;		"
 "   float index10 = texture(texId, vec2(texUV00.x,texUV11.y) ).r;		"
 "   float index11 = texture(texId, texUV11).r;		"
-"   float color00 = texture(paletteId, vec2(index00,0.5f)).a;	"
-"   float color01 = texture(paletteId, vec2(index01,0.5f)).a;	"
-"   float color10 = texture(paletteId, vec2(index10,0.5f)).a;	"
-"   float color11 = texture(paletteId, vec2(index11,0.5f)).a;	"
+"   float color00 = texture(paletteId, vec2(index00,0.5f)).a * inside(texUV00);	"
+"   float color01 = texture(paletteId, vec2(index01,0.5f)).a * inside(vec2(texUV11.x,texUV00.y));	"
+"   float color10 = texture(paletteId, vec2(index10,0.5f)).a * inside(vec2(texUV00.x,texUV11.y));	"
+"   float color11 = texture(paletteId, vec2(index11,0.5f)).a * inside(texUV11);	"
 
 "   float out0 = color00 * (1-fract(uvFrac.x)) + color01 * fract(uvFrac.x);	"
 "   float out1 = color10 * (1-fract(uvFrac.x)) + color11 * fract(uvFrac.x);	"
@@ -836,22 +876,28 @@ const char GlBackend::paletteBlitInterpolateFragmentShaderTintmap[] =
 
 "uniform sampler2D texId;						"
 "uniform samplerBuffer tintmapBufferId;			"
+"uniform int clipToSource;					"	// Set for a ClipBlit: nothing outside the source is read.
 "uniform sampler2D paletteId;						"
 "in vec2 texUV00;								"
 "in vec2 texUV11;								"
 "in vec2 uvFrac;								"
 "flat in int tintOfs;  in vec2 tintPos;  " "flat in vec4 flatTint;  " WG_GL_TINT_FUNC
 "out vec4 color;								"
+"float inside(vec2 uv)							"
+"{												"
+"   return (clipToSource != 0 && (any(lessThan(uv, vec2(0.0))) || any(greaterThanEqual(uv, vec2(1.0))))) ? 0.0 : 1.0;	"
+"}												"
+
 "void main()									"
 "{												"
 "   float index00 = texture(texId, texUV00).r;		"
 "   float index01 = texture(texId, vec2(texUV11.x,texUV00.y) ).r;		"
 "   float index10 = texture(texId, vec2(texUV00.x,texUV11.y) ).r;		"
 "   float index11 = texture(texId, texUV11).r;		"
-"   vec4 color00 = texture(paletteId, vec2(index00,0.5f));	"
-"   vec4 color01 = texture(paletteId, vec2(index01,0.5f));	"
-"   vec4 color10 = texture(paletteId, vec2(index10,0.5f));	"
-"   vec4 color11 = texture(paletteId, vec2(index11,0.5f));	"
+"   vec4 color00 = texture(paletteId, vec2(index00,0.5f)) * inside(texUV00);	"
+"   vec4 color01 = texture(paletteId, vec2(index01,0.5f)) * inside(vec2(texUV11.x,texUV00.y));	"
+"   vec4 color10 = texture(paletteId, vec2(index10,0.5f)) * inside(vec2(texUV00.x,texUV11.y));	"
+"   vec4 color11 = texture(paletteId, vec2(index11,0.5f)) * inside(texUV11);	"
 
 "   vec4 out0 = color00 * (1-fract(uvFrac.x)) + color01 * fract(uvFrac.x);	"
 "   vec4 out1 = color10 * (1-fract(uvFrac.x)) + color11 * fract(uvFrac.x);	"
@@ -867,22 +913,28 @@ const char GlBackend::paletteBlitInterpolateFragmentShaderTintmap_A8[] =
 
 "uniform sampler2D texId;						"
 "uniform samplerBuffer tintmapBufferId;			"
+"uniform int clipToSource;					"	// Set for a ClipBlit: nothing outside the source is read.
 "uniform sampler2D paletteId;						"
 "in vec2 texUV00;								"
 "in vec2 texUV11;								"
 "in vec2 uvFrac;								"
 "flat in int tintOfs;  in vec2 tintPos;  " "flat in vec4 flatTint;  " WG_GL_TINT_FUNC
 "out vec4 color;								"
+"float inside(vec2 uv)							"
+"{												"
+"   return (clipToSource != 0 && (any(lessThan(uv, vec2(0.0))) || any(greaterThanEqual(uv, vec2(1.0))))) ? 0.0 : 1.0;	"
+"}												"
+
 "void main()									"
 "{												"
 "   float index00 = texture(texId, texUV00).r;		"
 "   float index01 = texture(texId, vec2(texUV11.x,texUV00.y) ).r;		"
 "   float index10 = texture(texId, vec2(texUV00.x,texUV11.y) ).r;		"
 "   float index11 = texture(texId, texUV11).r;		"
-"   float color00 = texture(paletteId, vec2(index00,0.5f)).a;	"
-"   float color01 = texture(paletteId, vec2(index01,0.5f)).a;	"
-"   float color10 = texture(paletteId, vec2(index10,0.5f)).a;	"
-"   float color11 = texture(paletteId, vec2(index11,0.5f)).a;	"
+"   float color00 = texture(paletteId, vec2(index00,0.5f)).a * inside(texUV00);	"
+"   float color01 = texture(paletteId, vec2(index01,0.5f)).a * inside(vec2(texUV11.x,texUV00.y));	"
+"   float color10 = texture(paletteId, vec2(index10,0.5f)).a * inside(vec2(texUV00.x,texUV11.y));	"
+"   float color11 = texture(paletteId, vec2(index11,0.5f)).a * inside(texUV11);	"
 
 "   float out0 = color00 * (1-fract(uvFrac.x)) + color01 * fract(uvFrac.x);	"
 "   float out1 = color10 * (1-fract(uvFrac.x)) + color11 * fract(uvFrac.x);	"
