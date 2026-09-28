@@ -204,7 +204,7 @@ namespace wg
 
 		void _drawFillRects(const RectSPX* pRects, int nRects, HiColor color);
 		void _drawFillRun(PipelineKind kind, int firstVertex, int nRects);
-		void _drawBlitRects(const uint16_t*& pCmd, const RectSPX*& pRects, int nRects, int version, PipelineKind kind);
+		void _drawBlitRects(const uint16_t*& pCmd, const RectSPX*& pRects, int nRects, int version, PipelineKind kind, bool bClip);
 		void _drawLines(const uint16_t*& pCmd, const RectSPX*& pRects, const HiColor*& pColors, int nClipRects, int nLines);
 		void _drawEdgemap(const uint16_t*& pCmd, const RectSPX*& pRects, Object* const*& pObjects, int nRects);
 
@@ -214,6 +214,7 @@ namespace wg
 
 		void _setBlitSource(DX12Surface* pSurface);
 		bool _bindBlitSource();					// Puts source and sampler in place for the coming draw.
+		void _bindBlitSamplerAndFlags();		// Sampler and shader flags for the source, depending on m_bBlitClip.
 
 		int _addColor(HiColor color);			// Returns offset into color buffer, -1 if full.
 		void _setTint(const TintTools::DecodedTint& tint);
@@ -324,7 +325,9 @@ namespace wg
 		SizeI					m_blitSourceSize;
 		bool					m_bBlitSourceAlphaOnly = false;
 		bool					m_bBlitSourceIndexed = false;		// Palette based, see PipelineKind::PaletteBlit.
-		int						m_blitSourceSampler = 0;			// Index into the sampler heap.
+		int						m_blitSourceSampler = 0;			// Index into the sampler heap, without the clip offset.
+		bool					m_bBlitClip = false;				// Coming draw is a ClipBlit: nothing outside the source is read.
+		bool					m_bBoundBlitClip = false;			// What the bound sampler and flags were set up for.
 		bool					m_bBlitSourceBound = false;			// Cleared when source or session changes.
 
 

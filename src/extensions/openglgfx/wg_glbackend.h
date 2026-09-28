@@ -134,6 +134,7 @@ namespace wg
 			StraightFill,
 			SubpixelFill,
 			Blit,
+			ClipBlit,		// A Blit that leaves everything outside the source alone.
 			Blur,
 			Edgemap
 

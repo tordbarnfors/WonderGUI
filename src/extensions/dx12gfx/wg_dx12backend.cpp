@@ -977,7 +977,7 @@ namespace wg
 					int32_t nRects = *p++;
 
 					_drawBlitRects(p, pRects, nRects, version,
-								   cmd == Command::Blur ? PipelineKind::Blur : PipelineKind::Blit);
+								   cmd == Command::Blur ? PipelineKind::Blur : PipelineKind::Blit, cmd == Command::ClipBlit);
 					break;
 				}
 
@@ -1610,24 +1610,12 @@ namespace wg
 
 		m_commandList->SetGraphicsRootDescriptorTable(3, srvHandle);
 
-		D3D12_GPU_DESCRIPTOR_HANDLE samplerHandle = m_pSamplerHeap->GetGPUDescriptorHandleForHeapStart();
-		samplerHandle.ptr += UINT64(m_blitSourceSampler) * m_samplerDescriptorSize;
-
-		m_commandList->SetGraphicsRootDescriptorTable(4, samplerHandle);
-
 		// The shaders need the source size to get from pixels to texture coordinates.
 
 		float textureSize[2] = { (float) m_blitSourceSize.w, (float) m_blitSourceSize.h };
 		m_commandList->SetGraphicsRoot32BitConstants(0, 2, textureSize, 2);
 
-		// Bit 0 is for the ordinary shaders. The palette shaders fetch texels
-		// themselves, so they need to know what the sampler would have done.
-
-		uint32_t flags = (m_bBlitSourceAlphaOnly ? 1 : 0) |
-						 (m_pBlitSource->sampleMethod() == SampleMethod::Bilinear ? 2 : 0) |
-						 (m_pBlitSource->isTiling() ? 4 : 0);
-
-		m_commandList->SetGraphicsRoot32BitConstants(0, 1, &flags, 4);
+		_bindBlitSamplerAndFlags();
 
 		// A palette based source has its palette in the slot edgemaps use, which is
 		// free while we blit. _drawEdgemap() clears m_bBlitSourceBound, so we come
@@ -1647,10 +1635,43 @@ namespace wg
 		return true;
 	}
 
+	//____ _bindBlitSamplerAndFlags() __________________________________________
+	//
+	// A ClipBlit must not read outside the source: the transform can put parts of
+	// the destination beyond the source's edges, and those should be left alone,
+	// not filled with the edge texels a clamping sampler gives. So a clipping
+	// draw of a non-tiling source uses a sampler that returns transparent black
+	// outside, the same as MetalBackend's ClampToZero. Tiling sources wrap either
+	// way.
+
+	void DX12Backend::_bindBlitSamplerAndFlags()
+	{
+		bool bClip = m_bBlitClip && !m_pBlitSource->isTiling();
+
+		D3D12_GPU_DESCRIPTOR_HANDLE samplerHandle = m_pSamplerHeap->GetGPUDescriptorHandleForHeapStart();
+		samplerHandle.ptr += UINT64(m_blitSourceSampler + (bClip ? 4 : 0)) * m_samplerDescriptorSize;
+
+		m_commandList->SetGraphicsRootDescriptorTable(4, samplerHandle);
+
+		// Bit 0 is for the ordinary shaders. The palette shaders fetch texels
+		// themselves, so they need to know what the sampler would have done.
+
+		uint32_t flags = (m_bBlitSourceAlphaOnly ? 1 : 0) |
+						 (m_pBlitSource->sampleMethod() == SampleMethod::Bilinear ? 2 : 0) |
+						 (m_pBlitSource->isTiling() ? 4 : 0) |
+						 (bClip ? 8 : 0);
+
+		m_commandList->SetGraphicsRoot32BitConstants(0, 1, &flags, 4);
+
+		m_bBoundBlitClip = m_bBlitClip;
+	}
+
 	//____ _drawBlitRects() ____________________________________________________
 
-	void DX12Backend::_drawBlitRects(const uint16_t*& pCmd, const RectSPX*& pRects, int nRects, int version, PipelineKind kind)
+	void DX12Backend::_drawBlitRects(const uint16_t*& pCmd, const RectSPX*& pRects, int nRects, int version, PipelineKind kind, bool bClip)
 	{
+		m_bBlitClip = bClip;
+
 		// Transforms below this index are the standard ones, the rest were handed
 		// to us through setTransforms().
 
@@ -1662,6 +1683,11 @@ namespace wg
 		// we lose track of where we are in the stream.
 
 		bool bDraw = _bindBlitSource() && m_pVertexPtr != nullptr;
+
+		// The source may be bound for a different kind of blit.
+
+		if (bDraw && m_bBoundBlitClip != m_bBlitClip)
+			_bindBlitSamplerAndFlags();
 
 		// A palette based source has shaders of its own.
 
@@ -2516,12 +2542,14 @@ namespace wg
 
 	bool DX12Backend::_createSamplers()
 	{
-		// Four samplers, covering the combinations a surface can ask for. The
-		// index is (tiling ? 2 : 0) + (bilinear ? 1 : 0), see _setBlitSource().
+		// Eight samplers, covering the combinations a surface can ask for. The
+		// index is (clip ? 4 : 0) + (tiling ? 2 : 0) + (bilinear ? 1 : 0), see
+		// _setBlitSource() and _bindBlitSamplerAndFlags(). The clip ones return
+		// transparent black outside the texture, a tiling source never uses them.
 
 		D3D12_DESCRIPTOR_HEAP_DESC heapDesc = {};
 		heapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER;
-		heapDesc.NumDescriptors = 4;
+		heapDesc.NumDescriptors = 8;
 		heapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 
 		if (!CHECK_HR(m_pDX12Device->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(m_pSamplerHeap.GetAddressOf())), "CreateDescriptorHeap"))
@@ -2529,12 +2557,14 @@ namespace wg
 
 		D3D12_CPU_DESCRIPTOR_HANDLE handle = m_pSamplerHeap->GetCPUDescriptorHandleForHeapStart();
 
-		for (int i = 0; i < 4; i++)
+		for (int i = 0; i < 8; i++)
 		{
+			bool bClip = (i & 4) != 0;
 			bool bTiling = (i & 2) != 0;
 			bool bBilinear = (i & 1) != 0;
 
-			D3D12_TEXTURE_ADDRESS_MODE addressMode = bTiling ? D3D12_TEXTURE_ADDRESS_MODE_WRAP : D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
+			D3D12_TEXTURE_ADDRESS_MODE addressMode = bTiling ? D3D12_TEXTURE_ADDRESS_MODE_WRAP
+												   : bClip ? D3D12_TEXTURE_ADDRESS_MODE_BORDER : D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
 
 			D3D12_SAMPLER_DESC desc = {};
 			desc.Filter = bBilinear ? D3D12_FILTER_MIN_MAG_MIP_LINEAR : D3D12_FILTER_MIN_MAG_MIP_POINT;
@@ -2546,6 +2576,9 @@ namespace wg
 			desc.ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER;
 			desc.MinLOD = 0.f;
 			desc.MaxLOD = D3D12_FLOAT32_MAX;
+
+			for (int c = 0; c < 4; c++)
+				desc.BorderColor[c] = 0.f;			// Transparent black, only used by the clip samplers.
 
 			m_pDX12Device->CreateSampler(&desc, handle);
 

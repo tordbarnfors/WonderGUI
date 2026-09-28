@@ -1071,7 +1071,7 @@ void GlBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, int 
 
 			// Store command
 
-			CommandGL commandGL = cmd == Command::Blur ? CommandGL::Blur : CommandGL::Blit;
+			CommandGL commandGL = cmd == Command::Blur ? CommandGL::Blur : cmd == Command::ClipBlit ? CommandGL::ClipBlit : CommandGL::Blit;
 
 			*pCommandGL++ = (int) commandGL;
 			*pCommandGL++ = nRects * 6;
@@ -1873,14 +1873,41 @@ void GlBackend::endSession()
 			}
 
 			case CommandGL::Blit:
+			case CommandGL::ClipBlit:
 			{
 				int nVertices = *pCmd++;
 
 				GlSurface* pSurf = m_pActiveBlitSource;
 				glUseProgram(m_blitProgMatrix[(int)pSurf->m_pixelFormat][(int)pSurf->sampleMethod()][m_bTintIsActive][m_bActiveCanvasIsA8]);
 
+				// A ClipBlit's destination can reach outside the source, e.g. for a
+				// rotScaleBlit, and those pixels should be left alone. Clamping to the
+				// edge would smear the edge texels over them, so for the duration of
+				// the draw the texture returns transparent black outside instead.
+				//
+				//TODO: Palette based sources look up index 0 outside the texture, the
+				// palette shaders would need to do the clipping themselves.
+
+				bool bClip = (cmd == CommandGL::ClipBlit) && !pSurf->isTiling();
+
+				if (bClip)
+				{
+					static const GLfloat transparent[4] = { 0.f, 0.f, 0.f, 0.f };
+
+					glActiveTexture(GL_TEXTURE0);
+					glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, transparent);
+					glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+					glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+				}
+
 				glDrawArrays(GL_TRIANGLES, vertexOfs, nVertices);
 				vertexOfs += nVertices;
+
+				if (bClip)
+				{
+					glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+					glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+				}
 				break;
 			}
 
