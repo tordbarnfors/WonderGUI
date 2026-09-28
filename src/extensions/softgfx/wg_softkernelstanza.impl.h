@@ -1689,11 +1689,24 @@ void _transform_blit(const SoftSurface* WG_RESTRICT pSrcSurf, BinalCoord pos, co
 					if (ofsX > srcMax_w || ofsY > srcMax_h || ofsX < -BINAL_MUL || ofsY < -BINAL_MUL)
 					{
 						// Totally outside. Blending transparent black leaves the pixel as is, so
-						// we can skip it. Other blend modes (Replace for the first pass of a
-						// two-pass blit, which writes to a scratch buffer) must still write it.
+						// we can skip it. Replace (used by the first pass of a two-pass blit, which
+						// writes to a scratch buffer) writes transparent black. Other blend modes
+						// depend on the destination, so they blend transparent black.
 
 						if constexpr(BLEND == BlendMode::Blend)
 						{
+							ofsX += pixelIncX;
+							ofsY += pixelIncY;
+							pDst += dstPitchX;
+							continue;
+						}
+						else if constexpr(BLEND == BlendMode::Replace)
+						{
+							if constexpr(bFast8)
+								_write_pixel_fast8<DSTFORMAT>(pDst, 0, 0, 0, 0);
+							else
+								_write_pixel<DSTFORMAT>(pDst, 0, 0, 0, 0);
+
 							ofsX += pixelIncX;
 							ofsY += pixelIncY;
 							pDst += dstPitchX;
@@ -1887,6 +1900,18 @@ void _transform_blit(const SoftSurface* WG_RESTRICT pSrcSurf, BinalCoord pos, co
 				{
 					if constexpr(BLEND == BlendMode::Blend)
 					{
+						ofsX += pixelIncX;
+						ofsY += pixelIncY;
+						pDst += dstPitchX;
+						continue;
+					}
+					else if constexpr(BLEND == BlendMode::Replace)
+					{
+						if constexpr(bFast8)
+							_write_pixel_fast8<DSTFORMAT>(pDst, 0, 0, 0, 0);
+						else
+							_write_pixel<DSTFORMAT>(pDst, 0, 0, 0, 0);
+
 						ofsX += pixelIncX;
 						ofsY += pixelIncY;
 						pDst += dstPitchX;
