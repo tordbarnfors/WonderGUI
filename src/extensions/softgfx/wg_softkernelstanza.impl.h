@@ -1444,10 +1444,12 @@ void _straight_blit(const uint8_t* WG_RESTRICT pSrc, uint8_t* WG_RESTRICT pDst, 
 
 	constexpr int bits = bFast8 ? 8 : 12;
 
-	// Fast track for transparent black pixels in the buffer formats of two-pass blits.
+	// Fast track for transparent black pixels in the HiColor buffers of two-pass blits.
+	// Not done for other source formats (like the BGRA_8_linear buffers), since those
+	// kernels are also used for blits from ordinary surfaces, which should stay fast.
 
 	constexpr TransparentOp transparentOp = _transparent_op<BLEND, DSTFORMAT>();
-	constexpr bool bFastTransparent = (SRCFORMAT == PixelFormat::Undefined || SRCFORMAT == PixelFormat::BGRA_8_linear) &&
+	constexpr bool bFastTransparent = SRCFORMAT == PixelFormat::Undefined &&
 										READOP == SoftBackend::ReadOp::Normal && transparentOp != TransparentOp::Process;
 
 	// Preapare tiling and blurring
@@ -1623,44 +1625,39 @@ void _straight_blit(const uint8_t* WG_RESTRICT pSrc, uint8_t* WG_RESTRICT pDst, 
 			// two-pass ClipBlit, where everything outside the source is transparent black.
 			// The raw source pixel is tested, which is cheaper than testing the channels.
 
-			bool bTransparent = false;
-
 			if constexpr(bFastTransparent)
 			{
-				if constexpr(SRCFORMAT == PixelFormat::Undefined)
-					bTransparent = *(const uint64_t*)pSrc == 0;
-				else
-					bTransparent = *(const uint32_t*)pSrc == 0;
+				if (*(const uint64_t*)pSrc == 0)
+				{
+					if constexpr(transparentOp == TransparentOp::Write)
+						_write_transparent<BLEND, DSTFORMAT, bFast8>(pDst, fixedB, fixedG, fixedR, fixedA);
+
+					pSrc += pitches.srcX;
+					pDst += pitches.dstX;
+					continue;
+				}
 			}
 
-			if (bTransparent)
+			// Step 6: Get color components of background pixel blending into backX
+			// Step 7: Blend srcX and backX into outX
+			// Step 8: Write resulting pixel to destination
+
+			int16_t backB, backG, backR, backA;
+			int16_t outB, outG, outR, outA;
+
+			if constexpr(bFast8)
 			{
-				if constexpr(transparentOp == TransparentOp::Write)
-					_write_transparent<BLEND, DSTFORMAT, bFast8>(pDst, fixedB, fixedG, fixedR, fixedA);
+				_read_pixel_fast8<DSTFORMAT>(pDst, nullptr, nullptr, backB, backG, backR, backA);
+				_blend_pixels_fast8<BLEND, DSTFORMAT>(tint.morphFactor, srcB, srcG, srcR, srcA, backB, backG, backR, backA,
+															  outB, outG, outR, outA, fixedB, fixedG, fixedR, fixedA);
+				_write_pixel_fast8<DSTFORMAT>(pDst, outB, outG, outR, outA);
 			}
 			else
 			{
-				// Step 6: Get color components of background pixel blending into backX
-				// Step 7: Blend srcX and backX into outX
-				// Step 8: Write resulting pixel to destination
-
-				int16_t backB, backG, backR, backA;
-				int16_t outB, outG, outR, outA;
-
-				if constexpr(bFast8)
-				{
-					_read_pixel_fast8<DSTFORMAT>(pDst, nullptr, nullptr, backB, backG, backR, backA);
-					_blend_pixels_fast8<BLEND, DSTFORMAT>(tint.morphFactor, srcB, srcG, srcR, srcA, backB, backG, backR, backA,
-																  outB, outG, outR, outA, fixedB, fixedG, fixedR, fixedA);
-					_write_pixel_fast8<DSTFORMAT>(pDst, outB, outG, outR, outA);
-				}
-				else
-				{
-					_read_pixel<DSTFORMAT>(pDst, nullptr, nullptr, backB, backG, backR, backA);
-					_blend_pixels<BLEND, DSTFORMAT>(tint.morphFactor, srcB, srcG, srcR, srcA, backB, backG, backR, backA,
-															outB, outG, outR, outA, fixedB, fixedG, fixedR, fixedA);
-					_write_pixel<DSTFORMAT>(pDst, outB, outG, outR, outA);
-				}
+				_read_pixel<DSTFORMAT>(pDst, nullptr, nullptr, backB, backG, backR, backA);
+				_blend_pixels<BLEND, DSTFORMAT>(tint.morphFactor, srcB, srcG, srcR, srcA, backB, backG, backR, backA,
+														outB, outG, outR, outA, fixedB, fixedG, fixedR, fixedA);
+				_write_pixel<DSTFORMAT>(pDst, outB, outG, outR, outA);
 			}
 
 			// Step 9: Increment source and destination pointers
