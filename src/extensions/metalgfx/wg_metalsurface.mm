@@ -168,8 +168,12 @@ namespace wg
 		{
 			// Create the palette buffer and copy data
 
-			m_paletteBuffer = [MetalBackend::s_metalDevice newBufferWithBytes:pDstPalette length:m_paletteCapacity*4 options:MTLResourceStorageModeShared];
+			// The source palette only has m_paletteSize entries, the rest of the capacity is cleared.
+
+			m_paletteBuffer = [MetalBackend::s_metalDevice newBufferWithLength:m_paletteCapacity*4 options:MTLResourceStorageModeShared];
 			m_pPalette = (Color*) [m_paletteBuffer contents];
+			memset(m_pPalette, 0, m_paletteCapacity*4);
+			memcpy(m_pPalette, pDstPalette, m_paletteSize*4);
 		}
 		
 		//
