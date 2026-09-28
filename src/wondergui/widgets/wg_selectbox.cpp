@@ -111,7 +111,10 @@ namespace wg
 		SizeSPX newPadding = pSkin ? pSkin->_contentBorderSize(m_scale) : SizeSPX();
 
 		if (oldPadding != newPadding)
+		{
 			m_listCanvasDefaultSize += newPadding - oldPadding;
+			m_listCanvasMatchingHeight += newPadding.h - oldPadding.h;
+		}
 
 		m_pListCanvas->m_skin.set(pSkin);
 	}
@@ -494,8 +497,8 @@ namespace wg
 		SizeSPX defaultSize;
 		spx 	matchingHeight = 0;
 
-		SizeSPX listCanvasDefaultSize;
-		spx 	listCanvasMatchingHeight = 0;
+		SizeSPX listCanvasDefaultSize = { 0, listPadding.h };
+		spx 	listCanvasMatchingHeight = listPadding.h;
 
 
 		for ( auto& entry : entries)
