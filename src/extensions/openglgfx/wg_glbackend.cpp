@@ -1873,6 +1873,26 @@ void GlBackend::endSession()
 			}
 
 			case CommandGL::Blit:
+			{
+				int nVertices = *pCmd++;
+
+				GlSurface* pSurf = m_pActiveBlitSource;
+				GLuint prog = m_blitProgMatrix[(int)pSurf->m_pixelFormat][(int)pSurf->sampleMethod()][m_bTintIsActive][m_bActiveCanvasIsA8];
+				glUseProgram(prog);
+
+				if (pSurf->pixelDescription()->type == PixelType::Index)
+				{
+					GLint clipLoc = glGetUniformLocation(prog, "clipToSource");
+					if (clipLoc != -1)
+						glUniform1i(clipLoc, 0);
+				}
+
+				glDrawArrays(GL_TRIANGLES, vertexOfs, nVertices);
+				vertexOfs += nVertices;
+
+				break;
+			}
+
 			case CommandGL::ClipBlit:
 			{
 				int nVertices = *pCmd++;
@@ -1881,24 +1901,14 @@ void GlBackend::endSession()
 				GLuint prog = m_blitProgMatrix[(int)pSurf->m_pixelFormat][(int)pSurf->sampleMethod()][m_bTintIsActive][m_bActiveCanvasIsA8];
 				glUseProgram(prog);
 
-				// A ClipBlit's destination can reach outside the source, e.g. for a
-				// rotScaleBlit, and those pixels should be left alone. Clamping to the
-				// edge would smear the edge texels over them, so for the duration of
-				// the draw the texture returns transparent black outside instead.
-				//
-				// A palette based source would look up index 0 there, so its shaders
-				// do the clipping themselves and just need to be told. The uniform
-				// stays with the program, so it's set for every palette blit.
-
-				bool bClip = (cmd == CommandGL::ClipBlit) && !pSurf->isTiling();
 
 				if (pSurf->pixelDescription()->type == PixelType::Index)
 				{
 					GLint clipLoc = glGetUniformLocation(prog, "clipToSource");
 					if (clipLoc != -1)
-						glUniform1i(clipLoc, bClip ? 1 : 0);
+						glUniform1i(clipLoc, 1);
 				}
-				else if (bClip)
+				else
 				{
 					static const GLfloat transparent[4] = { 0.f, 0.f, 0.f, 0.f };
 
@@ -1911,13 +1921,14 @@ void GlBackend::endSession()
 				glDrawArrays(GL_TRIANGLES, vertexOfs, nVertices);
 				vertexOfs += nVertices;
 
-				if (bClip && pSurf->pixelDescription()->type != PixelType::Index)
+				if (pSurf->pixelDescription()->type != PixelType::Index)
 				{
 					glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 					glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 				}
 				break;
 			}
+
 
 			case CommandGL::Blur:
 			{
