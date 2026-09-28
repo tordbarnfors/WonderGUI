@@ -28,6 +28,7 @@
 #include <wg_blob.h>
 #include <wg_gfxbase.h>
 #include <assert.h>
+#include <vector>
 
 
 #define GL_SILENCE_DEPRECATION
@@ -131,7 +132,7 @@ namespace wg
 			if (m_paletteCapacity > 0)
 			{
 				m_pPalette = new Color8[m_paletteCapacity];
-				memcpy(m_pPalette, bp.palette, m_paletteSize);
+				memcpy(m_pPalette, bp.palette, m_paletteSize*sizeof(Color8));
 			}
 
 			if (m_pPixelDescription->A_mask > 0 && bp.canvas == false)
@@ -363,7 +364,13 @@ namespace wg
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
 
-			glTexImage2D(GL_TEXTURE_2D, 0, m_pPixelDescription->colorSpace == ColorSpace::Linear ? GL_RGBA8 : GL_SRGB8_ALPHA8, 256, 1, 0, GL_BGRA, GL_UNSIGNED_BYTE, m_pPalette);
+			// The palette texture is paletteCapacity() texels wide. Only the first m_paletteSize entries
+			// are defined, the rest of the capacity is cleared.
+
+			std::vector<Color8> palette(m_paletteCapacity);
+			memcpy(palette.data(), m_pPalette, m_paletteSize*sizeof(Color8));
+
+			glTexImage2D(GL_TEXTURE_2D, 0, m_pPixelDescription->colorSpace == ColorSpace::Linear ? GL_RGBA8 : GL_SRGB8_ALPHA8, m_paletteCapacity, 1, 0, GL_BGRA, GL_UNSIGNED_BYTE, palette.data());
 
 			HANDLE_GLERROR(glGetError());
 		}

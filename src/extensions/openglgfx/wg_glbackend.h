@@ -225,7 +225,7 @@ namespace wg
 		//
 
 		const static int c_nbPrograms = 30 + (c_maxSegments-1) * 2;
-		const static int c_versionNb = 106;		// 104: Tints replaced Tintmaps. 105: Tint color applied together with tint. 106: Palette ClipBlit clipping.
+		const static int c_versionNb = 107;		// 104: Tints replaced Tintmaps. 105: Tint color applied together with tint. 106: Palette ClipBlit clipping. 107: Palette read by index, capacity wide.
 
 		struct ProgramBlobEntry
 		{

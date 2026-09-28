@@ -85,6 +85,18 @@
 "	return result;																	" \
 "}																					"
 
+// GLSL function looking up the palette entry for an index read from an R8 index texture.
+// The palette texture is only paletteCapacity() texels wide, so the normalized index can't
+// be used as a texture coordinate (it would only be right for 256 entries). Indexes beyond
+// the palette get its last entry, like DX12 and Metal do. Needs uniform paletteId declared first.
+
+#define WG_GL_PALETTE_FUNC \
+"vec4 paletteLookup(float normIndex)												" \
+"{																					" \
+"	int index = min(int(normIndex * 255.0 + 0.5), textureSize(paletteId, 0).x - 1);	" \
+"	return texelFetch(paletteId, ivec2(index, 0), 0);								" \
+"}																					"
+
 namespace wg {
 
 
@@ -356,22 +368,22 @@ const char GlBackend::paletteBlurFragmentShader[] =
 
 "uniform BlurInfo blurInfo;                     "
 "uniform sampler2D texId;						"
-"uniform sampler2D paletteId;					"
+"uniform sampler2D paletteId;					" WG_GL_PALETTE_FUNC
 "in vec2 texUV;									"
 "in vec4 fragColor;								"
 "out vec4 color;								"
 
 "void main()									"
 "{												"
-"	color = texture(paletteId, vec2(texture(texId, texUV + blurInfo.offset[0]).r,0.5f)) * blurInfo.colorMtx[0];"
-"	color += texture(paletteId, vec2(texture(texId, texUV + blurInfo.offset[1]).r,0.5f)) * blurInfo.colorMtx[1];"
-"	color += texture(paletteId, vec2(texture(texId, texUV + blurInfo.offset[2]).r,0.5f)) * blurInfo.colorMtx[2];"
-"	color += texture(paletteId, vec2(texture(texId, texUV + blurInfo.offset[3]).r,0.5f)) * blurInfo.colorMtx[3];"
-"   color += texture(paletteId, vec2(texture(texId, texUV + blurInfo.offset[4]).r,0.5f)) * blurInfo.colorMtx[4];  "
-"	color += texture(paletteId, vec2(texture(texId, texUV + blurInfo.offset[5]).r,0.5f)) * blurInfo.colorMtx[5];"
-"	color += texture(paletteId, vec2(texture(texId, texUV + blurInfo.offset[6]).r,0.5f)) * blurInfo.colorMtx[6];"
-"	color += texture(paletteId, vec2(texture(texId, texUV + blurInfo.offset[7]).r,0.5f)) * blurInfo.colorMtx[7];"
-"	color += texture(paletteId, vec2(texture(texId, texUV + blurInfo.offset[8]).r,0.5f)) * blurInfo.colorMtx[8];"
+"	color = paletteLookup(texture(texId, texUV + blurInfo.offset[0]).r) * blurInfo.colorMtx[0];"
+"	color += paletteLookup(texture(texId, texUV + blurInfo.offset[1]).r) * blurInfo.colorMtx[1];"
+"	color += paletteLookup(texture(texId, texUV + blurInfo.offset[2]).r) * blurInfo.colorMtx[2];"
+"	color += paletteLookup(texture(texId, texUV + blurInfo.offset[3]).r) * blurInfo.colorMtx[3];"
+"   color += paletteLookup(texture(texId, texUV + blurInfo.offset[4]).r) * blurInfo.colorMtx[4];  "
+"	color += paletteLookup(texture(texId, texUV + blurInfo.offset[5]).r) * blurInfo.colorMtx[5];"
+"	color += paletteLookup(texture(texId, texUV + blurInfo.offset[6]).r) * blurInfo.colorMtx[6];"
+"	color += paletteLookup(texture(texId, texUV + blurInfo.offset[7]).r) * blurInfo.colorMtx[7];"
+"	color += paletteLookup(texture(texId, texUV + blurInfo.offset[8]).r) * blurInfo.colorMtx[8];"
 
 "   color *= fragColor;"
 "}												";
@@ -389,7 +401,7 @@ const char GlBackend::paletteBlurFragmentShaderTintmap[] =
 
 "uniform BlurInfo blurInfo;                     "
 "uniform sampler2D texId;						"
-"uniform sampler2D paletteId;					"
+"uniform sampler2D paletteId;					" WG_GL_PALETTE_FUNC
 "uniform samplerBuffer tintmapBufferId;			"
 "in vec2 texUV;									"
 "flat in int tintOfs;  in vec2 tintPos;  " "flat in vec4 flatTint;  " WG_GL_TINT_FUNC
@@ -397,15 +409,15 @@ const char GlBackend::paletteBlurFragmentShaderTintmap[] =
 
 "void main()									"
 "{												"
-"	color = texture(paletteId, vec2(texture(texId, texUV + blurInfo.offset[0]).r,0.5f)) * blurInfo.colorMtx[0];"
-"	color += texture(paletteId, vec2(texture(texId, texUV + blurInfo.offset[1]).r,0.5f)) * blurInfo.colorMtx[1];"
-"	color += texture(paletteId, vec2(texture(texId, texUV + blurInfo.offset[2]).r,0.5f)) * blurInfo.colorMtx[2];"
-"	color += texture(paletteId, vec2(texture(texId, texUV + blurInfo.offset[3]).r,0.5f)) * blurInfo.colorMtx[3];"
-"   color += texture(paletteId, vec2(texture(texId, texUV + blurInfo.offset[4]).r,0.5f)) * blurInfo.colorMtx[4];  "
-"	color += texture(paletteId, vec2(texture(texId, texUV + blurInfo.offset[5]).r,0.5f)) * blurInfo.colorMtx[5];"
-"	color += texture(paletteId, vec2(texture(texId, texUV + blurInfo.offset[6]).r,0.5f)) * blurInfo.colorMtx[6];"
-"	color += texture(paletteId, vec2(texture(texId, texUV + blurInfo.offset[7]).r,0.5f)) * blurInfo.colorMtx[7];"
-"	color += texture(paletteId, vec2(texture(texId, texUV + blurInfo.offset[8]).r,0.5f)) * blurInfo.colorMtx[8];"
+"	color = paletteLookup(texture(texId, texUV + blurInfo.offset[0]).r) * blurInfo.colorMtx[0];"
+"	color += paletteLookup(texture(texId, texUV + blurInfo.offset[1]).r) * blurInfo.colorMtx[1];"
+"	color += paletteLookup(texture(texId, texUV + blurInfo.offset[2]).r) * blurInfo.colorMtx[2];"
+"	color += paletteLookup(texture(texId, texUV + blurInfo.offset[3]).r) * blurInfo.colorMtx[3];"
+"   color += paletteLookup(texture(texId, texUV + blurInfo.offset[4]).r) * blurInfo.colorMtx[4];  "
+"	color += paletteLookup(texture(texId, texUV + blurInfo.offset[5]).r) * blurInfo.colorMtx[5];"
+"	color += paletteLookup(texture(texId, texUV + blurInfo.offset[6]).r) * blurInfo.colorMtx[6];"
+"	color += paletteLookup(texture(texId, texUV + blurInfo.offset[7]).r) * blurInfo.colorMtx[7];"
+"	color += paletteLookup(texture(texId, texUV + blurInfo.offset[8]).r) * blurInfo.colorMtx[8];"
 
 "   vec4 fragColor = (evalTint(tintmapBufferId, tintOfs, tintPos) * flatTint); "
 
@@ -613,7 +625,7 @@ const char GlBackend::paletteBlitNearestFragmentShader[] =
 
 "uniform sampler2D texId;						"
 "uniform int clipToSource;					"	// Set for a ClipBlit: nothing outside the source is read.
-"uniform sampler2D paletteId;					"
+"uniform sampler2D paletteId;					" WG_GL_PALETTE_FUNC
 "in vec2 texUV;									"
 "in vec4 fragColor;								"
 "out vec4 color;								"
@@ -624,7 +636,7 @@ const char GlBackend::paletteBlitNearestFragmentShader[] =
 
 "void main()									"
 "{												"
-"   color = texture(paletteId, vec2(texture(texId, texUV).r,0.5f)) * fragColor;	"
+"   color = paletteLookup(texture(texId, texUV).r) * fragColor;	"
 "   color *= inside(texUV);	"
 "}												";
 
@@ -634,7 +646,7 @@ const char GlBackend::paletteBlitNearestFragmentShader_A8[] =
 
 "uniform sampler2D texId;						"
 "uniform int clipToSource;					"	// Set for a ClipBlit: nothing outside the source is read.
-"uniform sampler2D paletteId;						"
+"uniform sampler2D paletteId;						" WG_GL_PALETTE_FUNC
 "in vec2 texUV;									"
 "in vec4 fragColor;								"
 "out vec4 color;								"
@@ -645,7 +657,7 @@ const char GlBackend::paletteBlitNearestFragmentShader_A8[] =
 
 "void main()									"
 "{												"
-"   color.r = texture(paletteId, vec2(texture(texId, texUV).r,0.5f)).a * fragColor.a;"
+"   color.r = paletteLookup(texture(texId, texUV).r).a * fragColor.a;"
 "   color.r *= inside(texUV);	"
 "}												";
 
@@ -657,7 +669,7 @@ const char GlBackend::paletteBlitNearestFragmentShaderTintmap[] =
 "uniform sampler2D texId;						"
 "uniform samplerBuffer tintmapBufferId;			"
 "uniform int clipToSource;					"	// Set for a ClipBlit: nothing outside the source is read.
-"uniform sampler2D paletteId;					"
+"uniform sampler2D paletteId;					" WG_GL_PALETTE_FUNC
 "in vec2 texUV;									"
 "flat in int tintOfs;  in vec2 tintPos;  " "flat in vec4 flatTint;  " WG_GL_TINT_FUNC
 "out vec4 color;								"
@@ -670,7 +682,7 @@ const char GlBackend::paletteBlitNearestFragmentShaderTintmap[] =
 "{												"
 "   vec4 fragColor = (evalTint(tintmapBufferId, tintOfs, tintPos) * flatTint); "
 
-"   color = texture(paletteId, vec2(texture(texId, texUV).r,0.5f)) * fragColor;	"
+"   color = paletteLookup(texture(texId, texUV).r) * fragColor;	"
 "   color *= inside(texUV);	"
 "}												";
 
@@ -681,7 +693,7 @@ const char GlBackend::paletteBlitNearestFragmentShaderTintmap_A8[] =
 "uniform sampler2D texId;						"
 "uniform samplerBuffer tintmapBufferId;			"
 "uniform int clipToSource;					"	// Set for a ClipBlit: nothing outside the source is read.
-"uniform sampler2D paletteId;						"
+"uniform sampler2D paletteId;						" WG_GL_PALETTE_FUNC
 "in vec2 texUV;									"
 "flat in int tintOfs;  in vec2 tintPos;  " "flat in vec4 flatTint;  " WG_GL_TINT_FUNC
 "out vec4 color;								"
@@ -693,7 +705,7 @@ const char GlBackend::paletteBlitNearestFragmentShaderTintmap_A8[] =
 "void main()									"
 "{												"
 "   float fragA = (evalTint(tintmapBufferId, tintOfs, tintPos) * flatTint).a; "
-"   color.r = texture(paletteId, vec2(texture(texId, texUV).r,0.5f)).a * fragA;"
+"   color.r = paletteLookup(texture(texId, texUV).r).a * fragA;"
 "   color.r *= inside(texUV);	"
 "}												";
 
@@ -809,7 +821,7 @@ const char GlBackend::paletteBlitInterpolateFragmentShader[] =
 
 "uniform sampler2D texId;						"
 "uniform int clipToSource;					"	// Set for a ClipBlit: nothing outside the source is read.
-"uniform sampler2D paletteId;						"
+"uniform sampler2D paletteId;						" WG_GL_PALETTE_FUNC
 "in vec2 texUV00;								"
 "in vec2 texUV11;								"
 "in vec2 uvFrac;								"
@@ -826,10 +838,10 @@ const char GlBackend::paletteBlitInterpolateFragmentShader[] =
 "   float index01 = texture(texId, vec2(texUV11.x,texUV00.y) ).r;		"
 "   float index10 = texture(texId, vec2(texUV00.x,texUV11.y) ).r;		"
 "   float index11 = texture(texId, texUV11).r;		"
-"   vec4 color00 = texture(paletteId, vec2(index00,0.5f)) * inside(texUV00);	"
-"   vec4 color01 = texture(paletteId, vec2(index01,0.5f)) * inside(vec2(texUV11.x,texUV00.y));	"
-"   vec4 color10 = texture(paletteId, vec2(index10,0.5f)) * inside(vec2(texUV00.x,texUV11.y));	"
-"   vec4 color11 = texture(paletteId, vec2(index11,0.5f)) * inside(texUV11);	"
+"   vec4 color00 = paletteLookup(index00) * inside(texUV00);	"
+"   vec4 color01 = paletteLookup(index01) * inside(vec2(texUV11.x,texUV00.y));	"
+"   vec4 color10 = paletteLookup(index10) * inside(vec2(texUV00.x,texUV11.y));	"
+"   vec4 color11 = paletteLookup(index11) * inside(texUV11);	"
 
 "   vec4 out0 = color00 * (1-fract(uvFrac.x)) + color01 * fract(uvFrac.x);	"
 "   vec4 out1 = color10 * (1-fract(uvFrac.x)) + color11 * fract(uvFrac.x);	"
@@ -842,7 +854,7 @@ const char GlBackend::paletteBlitInterpolateFragmentShader_A8[] =
 
 "uniform sampler2D texId;						"
 "uniform int clipToSource;					"	// Set for a ClipBlit: nothing outside the source is read.
-"uniform sampler2D paletteId;						"
+"uniform sampler2D paletteId;						" WG_GL_PALETTE_FUNC
 "in vec2 texUV00;								"
 "in vec2 texUV11;								"
 "in vec2 uvFrac;								"
@@ -859,10 +871,10 @@ const char GlBackend::paletteBlitInterpolateFragmentShader_A8[] =
 "   float index01 = texture(texId, vec2(texUV11.x,texUV00.y) ).r;		"
 "   float index10 = texture(texId, vec2(texUV00.x,texUV11.y) ).r;		"
 "   float index11 = texture(texId, texUV11).r;		"
-"   float color00 = texture(paletteId, vec2(index00,0.5f)).a * inside(texUV00);	"
-"   float color01 = texture(paletteId, vec2(index01,0.5f)).a * inside(vec2(texUV11.x,texUV00.y));	"
-"   float color10 = texture(paletteId, vec2(index10,0.5f)).a * inside(vec2(texUV00.x,texUV11.y));	"
-"   float color11 = texture(paletteId, vec2(index11,0.5f)).a * inside(texUV11);	"
+"   float color00 = paletteLookup(index00).a * inside(texUV00);	"
+"   float color01 = paletteLookup(index01).a * inside(vec2(texUV11.x,texUV00.y));	"
+"   float color10 = paletteLookup(index10).a * inside(vec2(texUV00.x,texUV11.y));	"
+"   float color11 = paletteLookup(index11).a * inside(texUV11);	"
 
 "   float out0 = color00 * (1-fract(uvFrac.x)) + color01 * fract(uvFrac.x);	"
 "   float out1 = color10 * (1-fract(uvFrac.x)) + color11 * fract(uvFrac.x);	"
@@ -877,7 +889,7 @@ const char GlBackend::paletteBlitInterpolateFragmentShaderTintmap[] =
 "uniform sampler2D texId;						"
 "uniform samplerBuffer tintmapBufferId;			"
 "uniform int clipToSource;					"	// Set for a ClipBlit: nothing outside the source is read.
-"uniform sampler2D paletteId;						"
+"uniform sampler2D paletteId;						" WG_GL_PALETTE_FUNC
 "in vec2 texUV00;								"
 "in vec2 texUV11;								"
 "in vec2 uvFrac;								"
@@ -894,10 +906,10 @@ const char GlBackend::paletteBlitInterpolateFragmentShaderTintmap[] =
 "   float index01 = texture(texId, vec2(texUV11.x,texUV00.y) ).r;		"
 "   float index10 = texture(texId, vec2(texUV00.x,texUV11.y) ).r;		"
 "   float index11 = texture(texId, texUV11).r;		"
-"   vec4 color00 = texture(paletteId, vec2(index00,0.5f)) * inside(texUV00);	"
-"   vec4 color01 = texture(paletteId, vec2(index01,0.5f)) * inside(vec2(texUV11.x,texUV00.y));	"
-"   vec4 color10 = texture(paletteId, vec2(index10,0.5f)) * inside(vec2(texUV00.x,texUV11.y));	"
-"   vec4 color11 = texture(paletteId, vec2(index11,0.5f)) * inside(texUV11);	"
+"   vec4 color00 = paletteLookup(index00) * inside(texUV00);	"
+"   vec4 color01 = paletteLookup(index01) * inside(vec2(texUV11.x,texUV00.y));	"
+"   vec4 color10 = paletteLookup(index10) * inside(vec2(texUV00.x,texUV11.y));	"
+"   vec4 color11 = paletteLookup(index11) * inside(texUV11);	"
 
 "   vec4 out0 = color00 * (1-fract(uvFrac.x)) + color01 * fract(uvFrac.x);	"
 "   vec4 out1 = color10 * (1-fract(uvFrac.x)) + color11 * fract(uvFrac.x);	"
@@ -914,7 +926,7 @@ const char GlBackend::paletteBlitInterpolateFragmentShaderTintmap_A8[] =
 "uniform sampler2D texId;						"
 "uniform samplerBuffer tintmapBufferId;			"
 "uniform int clipToSource;					"	// Set for a ClipBlit: nothing outside the source is read.
-"uniform sampler2D paletteId;						"
+"uniform sampler2D paletteId;						" WG_GL_PALETTE_FUNC
 "in vec2 texUV00;								"
 "in vec2 texUV11;								"
 "in vec2 uvFrac;								"
@@ -931,10 +943,10 @@ const char GlBackend::paletteBlitInterpolateFragmentShaderTintmap_A8[] =
 "   float index01 = texture(texId, vec2(texUV11.x,texUV00.y) ).r;		"
 "   float index10 = texture(texId, vec2(texUV00.x,texUV11.y) ).r;		"
 "   float index11 = texture(texId, texUV11).r;		"
-"   float color00 = texture(paletteId, vec2(index00,0.5f)).a * inside(texUV00);	"
-"   float color01 = texture(paletteId, vec2(index01,0.5f)).a * inside(vec2(texUV11.x,texUV00.y));	"
-"   float color10 = texture(paletteId, vec2(index10,0.5f)).a * inside(vec2(texUV00.x,texUV11.y));	"
-"   float color11 = texture(paletteId, vec2(index11,0.5f)).a * inside(texUV11);	"
+"   float color00 = paletteLookup(index00).a * inside(texUV00);	"
+"   float color01 = paletteLookup(index01).a * inside(vec2(texUV11.x,texUV00.y));	"
+"   float color10 = paletteLookup(index10).a * inside(vec2(texUV00.x,texUV11.y));	"
+"   float color11 = paletteLookup(index11).a * inside(texUV11);	"
 
 "   float out0 = color00 * (1-fract(uvFrac.x)) + color01 * fract(uvFrac.x);	"
 "   float out1 = color10 * (1-fract(uvFrac.x)) + color11 * fract(uvFrac.x);	"
