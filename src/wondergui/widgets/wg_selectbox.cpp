@@ -497,7 +497,7 @@ namespace wg
 		SizeSPX defaultSize;
 		spx 	matchingHeight = 0;
 
-		SizeSPX listCanvasDefaultSize = { 0, listPadding.h };
+		SizeSPX listCanvasDefaultSize = listPadding;
 		spx 	listCanvasMatchingHeight = listPadding.h;
 
 
