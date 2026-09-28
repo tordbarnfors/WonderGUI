@@ -2024,35 +2024,12 @@ namespace wg
 			global.generate(x, y, dx, dy, rowEnd - rowBeg, t.pGlobal + rowBeg);
 		}
 
-		// Segments
+		// Generates colors for rows top -> bottom of a segment.
 
-		for (int seg = 0; seg < nSegments; seg++)
+		auto generateRows = [&](int seg, int top, int bottom)
 		{
-			if (t.transparent[seg])
-				continue;
-
-			// Rows covered by segment in this column, from edge above (if any) to edge below (if any),
-			// sampled at both sides of the column. Edges are in spx, e.g. 26.6.
-
-			int top = rowBeg;
-			int bottom = rowEnd;
-
-			if (pEdgeStrips && seg > 0)
-			{
-				int e1 = pEdgeStrips[seg - 1];
-				int e2 = pEdgeStrips[seg - 1 + edgeStripPitch];
-				top = std::max(top, (std::min(e1, e2) >> 6) - 1);
-			}
-
-			if (pEdgeStrips && seg < nSegments - 1)
-			{
-				int e1 = pEdgeStrips[seg];
-				int e2 = pEdgeStrips[seg + edgeStripPitch];
-				bottom = std::min(bottom, (std::max(e1, e2) >> 6) + 2);
-			}
-
 			if (top >= bottom)
-				continue;
+				return;
 
 			HiColor* pOut = t.pColumns + seg * t.pitch + top;
 			int length = bottom - top;
@@ -2092,6 +2069,50 @@ namespace wg
 						pOut[i] = pOut[i] * globalFlat;
 				}
 			}
+		};
+
+		// Segments
+
+		for (int seg = 0; seg < nSegments; seg++)
+		{
+			// Rows covered by segment in this column, from edge above (if any) to edge below (if any),
+			// sampled at both sides of the column. Edges are in spx, e.g. 26.6.
+
+			int top = rowBeg;
+			int bottom = rowEnd;
+
+			int topEdgeEnd = rowBeg;			// End of rows the edge above passes through.
+			int bottomEdgeBeg = rowEnd;			// Beginning of rows the edge below passes through.
+
+			if (pEdgeStrips && seg > 0)
+			{
+				int e1 = pEdgeStrips[seg - 1];
+				int e2 = pEdgeStrips[seg - 1 + edgeStripPitch];
+				top = std::max(top, (std::min(e1, e2) >> 6) - 1);
+				topEdgeEnd = std::min(rowEnd, (std::max(e1, e2) >> 6) + 2);
+			}
+
+			if (pEdgeStrips && seg < nSegments - 1)
+			{
+				int e1 = pEdgeStrips[seg];
+				int e2 = pEdgeStrips[seg + edgeStripPitch];
+				bottom = std::min(bottom, (std::max(e1, e2) >> 6) + 2);
+				bottomEdgeBeg = std::max(rowBeg, (std::min(e1, e2) >> 6) - 1);
+			}
+
+			// The kernels skip the inside of transparent segments, but blend their color into
+			// pixels that edges pass through, so only rows around the edges are needed.
+
+			if (t.transparent[seg] && pEdgeStrips)
+			{
+				if (seg > 0)
+					generateRows(seg, top, std::min(bottom, topEdgeEnd));
+
+				if (seg < nSegments - 1)
+					generateRows(seg, std::max(top, bottomEdgeBeg), bottom);
+			}
+			else
+				generateRows(seg, top, bottom);
 		}
 	}
 
