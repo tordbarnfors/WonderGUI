@@ -999,67 +999,43 @@ fragment float4 paletteBlitInterpolateTintmapFragmentShader_A8(PaletteBlitInterp
 
 
 
-//____ blurFragmentShader() ____________________________________________
-
-fragment float4 blurFragmentShader(BlitFragInput in [[stage_in]],
-                                    texture2d<float> colorTexture [[ texture(0) ]],
-                                    sampler textureSampler [[ sampler(0) ]],
-                                    constant BlurUniform  *pBlurInfo [[buffer(2)]])
-{
-
-   float4 color = colorTexture.sample(textureSampler, in.texUV + pBlurInfo->offset[0] ) * pBlurInfo->colorMtx[0];
-   color += colorTexture.sample(textureSampler, in.texUV + pBlurInfo->offset[1] ) * pBlurInfo->colorMtx[1];
-   color += colorTexture.sample(textureSampler, in.texUV + pBlurInfo->offset[2] ) * pBlurInfo->colorMtx[2];
-
-   color += colorTexture.sample(textureSampler, in.texUV + pBlurInfo->offset[3] ) * pBlurInfo->colorMtx[3];
-   color += colorTexture.sample(textureSampler, in.texUV + pBlurInfo->offset[4] ) * pBlurInfo->colorMtx[4];
-   color += colorTexture.sample(textureSampler, in.texUV + pBlurInfo->offset[5] ) * pBlurInfo->colorMtx[5];
-
-   color += colorTexture.sample(textureSampler, in.texUV + pBlurInfo->offset[6] ) * pBlurInfo->colorMtx[6];
-   color += colorTexture.sample(textureSampler, in.texUV + pBlurInfo->offset[7] ) * pBlurInfo->colorMtx[7];
-   color += colorTexture.sample(textureSampler, in.texUV + pBlurInfo->offset[8] ) * pBlurInfo->colorMtx[8];
-
-   color.a = 1.f;
-    return color * in.color;
-};
-
-
-//____ blurTintmapFragmentShader() ____________________________________________
-
-fragment float4 blurTintmapFragmentShader(BlitTintmapFragInput in [[stage_in]],
-                                    texture2d<float> colorTexture [[ texture(0) ]],
-                                    sampler textureSampler [[ sampler(0) ]],
-                                    constant float4  *pColor [[buffer(0)]],
-                                    constant BlurUniform  *pBlurInfo [[buffer(2)]])
-{
-
-   float4 color = colorTexture.sample(textureSampler, in.texUV + pBlurInfo->offset[0] ) * pBlurInfo->colorMtx[0];
-   color += colorTexture.sample(textureSampler, in.texUV + pBlurInfo->offset[1] ) * pBlurInfo->colorMtx[1];
-   color += colorTexture.sample(textureSampler, in.texUV + pBlurInfo->offset[2] ) * pBlurInfo->colorMtx[2];
-
-   color += colorTexture.sample(textureSampler, in.texUV + pBlurInfo->offset[3] ) * pBlurInfo->colorMtx[3];
-   color += colorTexture.sample(textureSampler, in.texUV + pBlurInfo->offset[4] ) * pBlurInfo->colorMtx[4];
-   color += colorTexture.sample(textureSampler, in.texUV + pBlurInfo->offset[5] ) * pBlurInfo->colorMtx[5];
-
-   color += colorTexture.sample(textureSampler, in.texUV + pBlurInfo->offset[6] ) * pBlurInfo->colorMtx[6];
-   color += colorTexture.sample(textureSampler, in.texUV + pBlurInfo->offset[7] ) * pBlurInfo->colorMtx[7];
-   color += colorTexture.sample(textureSampler, in.texUV + pBlurInfo->offset[8] ) * pBlurInfo->colorMtx[8];
-
-   color.a = 1.f;
-
-   float4 tintColor = evalTint(pColor, in.tintOfs, in.position.xy);
-
-    return color * tintColor * in.color;
-};
-
-
-
-//____ paletteBlurFragmentShader() ____________________________________________
+//____ blurCore() ____________________________________________________________
 //
-// Blur from a palette based source. Each tap is looked up in the palette before
-// it is weighted, the way paletteBlitNearestFragmentShader() does it. A palette
-// source is always read through a nearest sampler, so the taps don't blend
-// indexes.
+// Nine taps around texUV, each weighted per channel by its own row of the brush's
+// color matrix. The alpha row only weights the center tap, so the source's own
+// alpha is kept and only the colors are blurred.
+//
+// An Alpha_8 source (R8Unorm texture) reads as white with alpha, the way it does
+// in blits. An RGBX source has undefined alpha bytes, so its alpha is 1.
+
+enum class BlurSource { Normal, Alpha, RGBX };
+
+inline float4 blurCore(float2 texUV, texture2d<float> colorTexture, sampler textureSampler,
+					   constant BlurUniform* pBlurInfo, BlurSource source)
+{
+	float4 color = float4(0,0,0,0);
+
+	for( int i = 0 ; i < 9 ; i++ )
+	{
+		float4 tap = colorTexture.sample(textureSampler, texUV + pBlurInfo->offset[i]);
+
+		if( source == BlurSource::Alpha )
+			tap = float4(1.0, 1.0, 1.0, tap.r);
+		else if( source == BlurSource::RGBX )
+			tap.a = 1.0;
+
+		color += tap * pBlurInfo->colorMtx[i];
+	}
+
+	return color;
+}
+
+//____ paletteBlurCore() _____________________________________________________
+//
+// As blurCore(), but for a palette based source. Each tap is looked up in the
+// palette before it is weighted, the way paletteBlitNearestFragmentShader() does it.
+// A palette source is always read through a nearest sampler, so the taps don't
+// blend indexes.
 
 inline float4 paletteBlurCore(float2 texUV, texture2d<float> colorTexture, texture2d<half> paletteTexture,
 							  sampler textureSampler, constant BlurUniform* pBlurInfo)
@@ -1072,9 +1048,154 @@ inline float4 paletteBlurCore(float2 texUV, texture2d<float> colorTexture, textu
 		color += float4(paletteLookup(paletteTexture, colorIndex)) * pBlurInfo->colorMtx[i];
 	}
 
-	color.a = 1.f;
 	return color;
 }
+
+//____ blurFragmentShader() __________________________________________
+
+fragment float4 blurFragmentShader(BlitFragInput in [[stage_in]],
+									texture2d<float> colorTexture [[ texture(0) ]],
+									sampler textureSampler [[ sampler(0) ]],
+									constant BlurUniform  *pBlurInfo [[buffer(2)]])
+{
+	float4 color = blurCore(in.texUV, colorTexture, textureSampler, pBlurInfo, BlurSource::Normal);
+	return color * in.color;
+};
+
+//____ blurFragmentShader_A8() _______________________________________
+
+fragment float4 blurFragmentShader_A8(BlitFragInput in [[stage_in]],
+									texture2d<float> colorTexture [[ texture(0) ]],
+									sampler textureSampler [[ sampler(0) ]],
+									constant BlurUniform  *pBlurInfo [[buffer(2)]])
+{
+	float4 color = blurCore(in.texUV, colorTexture, textureSampler, pBlurInfo, BlurSource::Normal);
+	return { color.a * in.color.a, 0.0, 0.0, 0.0 };
+};
+
+//____ blurTintmapFragmentShader() ___________________________________
+
+fragment float4 blurTintmapFragmentShader(BlitTintmapFragInput in [[stage_in]],
+									texture2d<float> colorTexture [[ texture(0) ]],
+									sampler textureSampler [[ sampler(0) ]],
+									constant float4  *pColor [[buffer(0)]],
+									constant BlurUniform  *pBlurInfo [[buffer(2)]])
+{
+	float4 color = blurCore(in.texUV, colorTexture, textureSampler, pBlurInfo, BlurSource::Normal);
+	float4 tintColor = evalTint(pColor, in.tintOfs, in.position.xy);
+	return color * tintColor * in.color;
+};
+
+//____ blurTintmapFragmentShader_A8() ________________________________
+
+fragment float4 blurTintmapFragmentShader_A8(BlitTintmapFragInput in [[stage_in]],
+									texture2d<float> colorTexture [[ texture(0) ]],
+									sampler textureSampler [[ sampler(0) ]],
+									constant float4  *pColor [[buffer(0)]],
+									constant BlurUniform  *pBlurInfo [[buffer(2)]])
+{
+	float4 color = blurCore(in.texUV, colorTexture, textureSampler, pBlurInfo, BlurSource::Normal);
+	float4 tintColor = evalTint(pColor, in.tintOfs, in.position.xy);
+	return { color.a * tintColor.a * in.color.a, 0.0, 0.0, 0.0 };
+};
+
+//____ alphaBlurFragmentShader() _____________________________________
+
+fragment float4 alphaBlurFragmentShader(BlitFragInput in [[stage_in]],
+									texture2d<float> colorTexture [[ texture(0) ]],
+									sampler textureSampler [[ sampler(0) ]],
+									constant BlurUniform  *pBlurInfo [[buffer(2)]])
+{
+	float4 color = blurCore(in.texUV, colorTexture, textureSampler, pBlurInfo, BlurSource::Alpha);
+	return color * in.color;
+};
+
+//____ alphaBlurFragmentShader_A8() __________________________________
+
+fragment float4 alphaBlurFragmentShader_A8(BlitFragInput in [[stage_in]],
+									texture2d<float> colorTexture [[ texture(0) ]],
+									sampler textureSampler [[ sampler(0) ]],
+									constant BlurUniform  *pBlurInfo [[buffer(2)]])
+{
+	float4 color = blurCore(in.texUV, colorTexture, textureSampler, pBlurInfo, BlurSource::Alpha);
+	return { color.a * in.color.a, 0.0, 0.0, 0.0 };
+};
+
+//____ alphaBlurTintmapFragmentShader() ______________________________
+
+fragment float4 alphaBlurTintmapFragmentShader(BlitTintmapFragInput in [[stage_in]],
+									texture2d<float> colorTexture [[ texture(0) ]],
+									sampler textureSampler [[ sampler(0) ]],
+									constant float4  *pColor [[buffer(0)]],
+									constant BlurUniform  *pBlurInfo [[buffer(2)]])
+{
+	float4 color = blurCore(in.texUV, colorTexture, textureSampler, pBlurInfo, BlurSource::Alpha);
+	float4 tintColor = evalTint(pColor, in.tintOfs, in.position.xy);
+	return color * tintColor * in.color;
+};
+
+//____ alphaBlurTintmapFragmentShader_A8() ___________________________
+
+fragment float4 alphaBlurTintmapFragmentShader_A8(BlitTintmapFragInput in [[stage_in]],
+									texture2d<float> colorTexture [[ texture(0) ]],
+									sampler textureSampler [[ sampler(0) ]],
+									constant float4  *pColor [[buffer(0)]],
+									constant BlurUniform  *pBlurInfo [[buffer(2)]])
+{
+	float4 color = blurCore(in.texUV, colorTexture, textureSampler, pBlurInfo, BlurSource::Alpha);
+	float4 tintColor = evalTint(pColor, in.tintOfs, in.position.xy);
+	return { color.a * tintColor.a * in.color.a, 0.0, 0.0, 0.0 };
+};
+
+//____ rgbxBlurFragmentShader() ______________________________________
+
+fragment float4 rgbxBlurFragmentShader(BlitFragInput in [[stage_in]],
+									texture2d<float> colorTexture [[ texture(0) ]],
+									sampler textureSampler [[ sampler(0) ]],
+									constant BlurUniform  *pBlurInfo [[buffer(2)]])
+{
+	float4 color = blurCore(in.texUV, colorTexture, textureSampler, pBlurInfo, BlurSource::RGBX);
+	return color * in.color;
+};
+
+//____ rgbxBlurFragmentShader_A8() ___________________________________
+
+fragment float4 rgbxBlurFragmentShader_A8(BlitFragInput in [[stage_in]],
+									texture2d<float> colorTexture [[ texture(0) ]],
+									sampler textureSampler [[ sampler(0) ]],
+									constant BlurUniform  *pBlurInfo [[buffer(2)]])
+{
+	float4 color = blurCore(in.texUV, colorTexture, textureSampler, pBlurInfo, BlurSource::RGBX);
+	return { color.a * in.color.a, 0.0, 0.0, 0.0 };
+};
+
+//____ rgbxBlurTintmapFragmentShader() _______________________________
+
+fragment float4 rgbxBlurTintmapFragmentShader(BlitTintmapFragInput in [[stage_in]],
+									texture2d<float> colorTexture [[ texture(0) ]],
+									sampler textureSampler [[ sampler(0) ]],
+									constant float4  *pColor [[buffer(0)]],
+									constant BlurUniform  *pBlurInfo [[buffer(2)]])
+{
+	float4 color = blurCore(in.texUV, colorTexture, textureSampler, pBlurInfo, BlurSource::RGBX);
+	float4 tintColor = evalTint(pColor, in.tintOfs, in.position.xy);
+	return color * tintColor * in.color;
+};
+
+//____ rgbxBlurTintmapFragmentShader_A8() ____________________________
+
+fragment float4 rgbxBlurTintmapFragmentShader_A8(BlitTintmapFragInput in [[stage_in]],
+									texture2d<float> colorTexture [[ texture(0) ]],
+									sampler textureSampler [[ sampler(0) ]],
+									constant float4  *pColor [[buffer(0)]],
+									constant BlurUniform  *pBlurInfo [[buffer(2)]])
+{
+	float4 color = blurCore(in.texUV, colorTexture, textureSampler, pBlurInfo, BlurSource::RGBX);
+	float4 tintColor = evalTint(pColor, in.tintOfs, in.position.xy);
+	return { color.a * tintColor.a * in.color.a, 0.0, 0.0, 0.0 };
+};
+
+//____ paletteBlurFragmentShader() ___________________________________
 
 fragment float4 paletteBlurFragmentShader(BlitFragInput in [[stage_in]],
 									texture2d<float> colorTexture [[ texture(0) ]],
@@ -1082,10 +1203,23 @@ fragment float4 paletteBlurFragmentShader(BlitFragInput in [[stage_in]],
 									sampler textureSampler [[ sampler(0) ]],
 									constant BlurUniform  *pBlurInfo [[buffer(2)]])
 {
-	return paletteBlurCore(in.texUV, colorTexture, paletteTexture, textureSampler, pBlurInfo) * in.color;
+	float4 color = paletteBlurCore(in.texUV, colorTexture, paletteTexture, textureSampler, pBlurInfo);
+	return color * in.color;
 };
 
-//____ paletteBlurTintmapFragmentShader() _____________________________________
+//____ paletteBlurFragmentShader_A8() ________________________________
+
+fragment float4 paletteBlurFragmentShader_A8(BlitFragInput in [[stage_in]],
+									texture2d<float> colorTexture [[ texture(0) ]],
+									texture2d<half> paletteTexture [[ texture(1) ]],
+									sampler textureSampler [[ sampler(0) ]],
+									constant BlurUniform  *pBlurInfo [[buffer(2)]])
+{
+	float4 color = paletteBlurCore(in.texUV, colorTexture, paletteTexture, textureSampler, pBlurInfo);
+	return { color.a * in.color.a, 0.0, 0.0, 0.0 };
+};
+
+//____ paletteBlurTintmapFragmentShader() ____________________________
 
 fragment float4 paletteBlurTintmapFragmentShader(BlitTintmapFragInput in [[stage_in]],
 									texture2d<float> colorTexture [[ texture(0) ]],
@@ -1095,10 +1229,22 @@ fragment float4 paletteBlurTintmapFragmentShader(BlitTintmapFragInput in [[stage
 									constant BlurUniform  *pBlurInfo [[buffer(2)]])
 {
 	float4 color = paletteBlurCore(in.texUV, colorTexture, paletteTexture, textureSampler, pBlurInfo);
-
 	float4 tintColor = evalTint(pColor, in.tintOfs, in.position.xy);
-
 	return color * tintColor * in.color;
+};
+
+//____ paletteBlurTintmapFragmentShader_A8() _________________________
+
+fragment float4 paletteBlurTintmapFragmentShader_A8(BlitTintmapFragInput in [[stage_in]],
+									texture2d<float> colorTexture [[ texture(0) ]],
+									texture2d<half> paletteTexture [[ texture(1) ]],
+									sampler textureSampler [[ sampler(0) ]],
+									constant float4  *pColor [[buffer(0)]],
+									constant BlurUniform  *pBlurInfo [[buffer(2)]])
+{
+	float4 color = paletteBlurCore(in.texUV, colorTexture, paletteTexture, textureSampler, pBlurInfo);
+	float4 tintColor = evalTint(pColor, in.tintOfs, in.position.xy);
+	return { color.a * tintColor.a * in.color.a, 0.0, 0.0, 0.0 };
 };
 
 

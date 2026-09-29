@@ -261,19 +261,15 @@ MetalBackend::~MetalBackend()
 	}
 
 
-	for( int palette = 0 ; palette < 2 ; palette++ )
+	for( int shader = 0 ; shader < 4 ; shader++ )
 	{
-		for( int blendMode = 0 ; blendMode < BlendMode_size ; blendMode++ )
+		for( int tint = 0 ; tint < 2 ; tint++ )
 		{
-			[m_blurPipelines[palette][0][blendMode][(int)DestFormat::BGRA8_linear] release];
-			[m_blurPipelines[palette][0][blendMode][(int)DestFormat::BGRX8_linear] release];
-			[m_blurPipelines[palette][0][blendMode][(int)DestFormat::BGRA8_sRGB] release];
-			[m_blurPipelines[palette][0][blendMode][(int)DestFormat::BGRX8_sRGB]  release];
-
-			[m_blurPipelines[palette][1][blendMode][(int)DestFormat::BGRA8_linear] release];
-			[m_blurPipelines[palette][1][blendMode][(int)DestFormat::BGRX8_linear]  release];
-			[m_blurPipelines[palette][1][blendMode][(int)DestFormat::BGRA8_sRGB] release];
-			[m_blurPipelines[palette][1][blendMode][(int)DestFormat::BGRX8_sRGB] release];
+			for( int blendMode = 0 ; blendMode < BlendMode_size ; blendMode++ )
+			{
+				for( int format = 0 ; format < 5 ; format++ )
+					[m_blurPipelines[shader][tint][blendMode][format] release];
+			}
 		}
 	}
 
@@ -380,21 +376,41 @@ id<MTLRenderPipelineState> MetalBackend::_compileFillAAPipeline( bool bTintmap, 
 
 //____ _compileBlurPipeline() _________________________________________________
 
-id<MTLRenderPipelineState> MetalBackend::_compileBlurPipeline( bool bPaletteSource, bool bTintmap, BlendMode blendMode, DestFormat canvasFormat )
+id<MTLRenderPipelineState> MetalBackend::_compileBlurPipeline( BlurFragShader shader, bool bTintmap, BlendMode blendMode, DestFormat canvasFormat )
 {
-	assert( canvasFormat != DestFormat::Alpha_8 );		// Not supported (yet)!
+	NSString* namePrefix         = nil;
+	NSString* fragmentShaderBase = nil;
+
+	switch( shader )
+	{
+		case BlurFragShader::Normal:
+			namePrefix         = @"Blur";
+			fragmentShaderBase = bTintmap ? @"blurTintmapFragmentShader" : @"blurFragmentShader";
+			break;
+
+		case BlurFragShader::Palette:
+			namePrefix         = @"PaletteBlur";
+			fragmentShaderBase = bTintmap ? @"paletteBlurTintmapFragmentShader" : @"paletteBlurFragmentShader";
+			break;
+
+		case BlurFragShader::A8Source:
+			namePrefix         = @"A8SourceBlur";
+			fragmentShaderBase = bTintmap ? @"alphaBlurTintmapFragmentShader" : @"alphaBlurFragmentShader";
+			break;
+
+		case BlurFragShader::RGBXSource:
+			namePrefix         = @"RGBXSourceBlur";
+			fragmentShaderBase = bTintmap ? @"rgbxBlurTintmapFragmentShader" : @"rgbxBlurFragmentShader";
+			break;
+	}
 
 	NSString* vertexShader		= bTintmap ? @"blitTintmapVertexShader" : @"blitVertexShader";
-	NSString* fragmentShader;
-
-	if( bPaletteSource )
-		fragmentShader = bTintmap ? @"paletteBlurTintmapFragmentShader" : @"paletteBlurFragmentShader";
-	else
-		fragmentShader = bTintmap ? @"blurTintmapFragmentShader" : @"blurFragmentShader";
 
 	PixelFormat pixelFormat 	= _canvasFormatToPixelFormat(canvasFormat);
+	bool        isAlpha8        = (canvasFormat == DestFormat::Alpha_8);
+	NSString*   fragmentShader  = isAlpha8 ? [fragmentShaderBase stringByAppendingString:@"_A8"] : fragmentShaderBase;
 
-	NSString* label 			= [(bPaletteSource ? @"PaletteBlur " : @"Blur ") stringByAppendingFormat:@"%s Pipeline (blendMode =%s, tintmap=%s)", toString(pixelFormat), toString(blendMode), bTintmap ? "true" : "false"];
+	NSString* label 			= [namePrefix stringByAppendingFormat:@" Pipeline (format=%s, blendMode=%s, tintmap=%s)", toString(pixelFormat), toString(blendMode), bTintmap ? "true" : "false"];
 
 	return _compileRenderPipeline( label, vertexShader, fragmentShader, blendMode, pixelFormat );
 }
@@ -1681,14 +1697,24 @@ void MetalBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, i
 
 						[m_renderEncoder setFragmentBytes:&m_blurUniform length:sizeof(BlurUniform) atIndex: (unsigned) FragmentInputIndex::BlurUniform];
 
-						// A palette based source must be looked up in its palette tap by tap.
+						// Same source kinds as for blits, except that a palette based source always
+						// is looked up tap by tap.
 
-						int bPalette = (pSurf->m_pPixelDescription->type == PixelType::Index) ? 1 : 0;
+						BlurFragShader blurShader = BlurFragShader::Normal;
 
-						if(m_blurPipelines[bPalette][m_tintOfs >= 0][(int)m_activeBlendMode][(int)m_activeCanvasFormat] == nil )
-							m_blurPipelines[bPalette][m_tintOfs >= 0][(int)m_activeBlendMode][(int)m_activeCanvasFormat] = _compileBlurPipeline( bPalette != 0, m_tintOfs >= 0, m_activeBlendMode, m_activeCanvasFormat );
+						if( shader == BlitFragShader::PaletteNearest || shader == BlitFragShader::PaletteInterpolated )
+							blurShader = BlurFragShader::Palette;
+						else if( shader == BlitFragShader::A8Source )
+							blurShader = BlurFragShader::A8Source;
+						else if( shader == BlitFragShader::RGBXSource )
+							blurShader = BlurFragShader::RGBXSource;
 
-						[m_renderEncoder setRenderPipelineState:m_blurPipelines[bPalette][m_tintOfs >= 0][(int)m_activeBlendMode][(int)m_activeCanvasFormat] ];
+						auto& pipeline = m_blurPipelines[(int)blurShader][m_tintOfs >= 0][(int)m_activeBlendMode][(int)m_activeCanvasFormat];
+
+						if( pipeline == nil )
+							pipeline = _compileBlurPipeline( blurShader, m_tintOfs >= 0, m_activeBlendMode, m_activeCanvasFormat );
+
+						[m_renderEncoder setRenderPipelineState:pipeline ];
 					}
 					else
 					{
