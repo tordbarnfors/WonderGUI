@@ -1653,13 +1653,19 @@ namespace wg
 
 		m_commandList->SetGraphicsRootDescriptorTable(4, samplerHandle);
 
-		// Bit 0 is for the ordinary shaders. The palette shaders fetch texels
-		// themselves, so they need to know what the sampler would have done.
+		// Bits 0 and 4 are for the ordinary shaders. The palette shaders fetch texels
+		// themselves, so they need to know what the sampler would have done. A source
+		// without alpha (bit 4) reads alpha 1 also from the transparent border, so the
+		// ordinary blit shader works out its alpha itself when clipping.
+
+		auto pDesc = m_pBlitSource->pixelDescription();
+		bool bNoAlpha = pDesc->type != PixelType::Index && pDesc->A_mask == 0 && !m_bBlitSourceAlphaOnly;
 
 		uint32_t flags = (m_bBlitSourceAlphaOnly ? 1 : 0) |
 						 (m_pBlitSource->sampleMethod() == SampleMethod::Bilinear ? 2 : 0) |
 						 (m_pBlitSource->isTiling() ? 4 : 0) |
-						 (bClip ? 8 : 0);
+						 (bClip ? 8 : 0) |
+						 (bNoAlpha ? 16 : 0);
 
 		m_commandList->SetGraphicsRoot32BitConstants(0, 1, &flags, 4);
 
