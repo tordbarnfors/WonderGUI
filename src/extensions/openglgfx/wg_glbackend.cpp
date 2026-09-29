@@ -152,6 +152,29 @@ void GlBackend::setCanvas(Surface* pSurface)
 }
 
 
+//____ _setRgbxClip() _________________________________________________________
+/*
+	Tells the generic blit shaders whether to work out the alpha of a source without alpha
+	from the position, which they need to do for a ClipBlit (see WG_GL_SOURCE_SAMPLE).
+	The uniform stays with the program, so it's set for every blit.
+*/
+
+void GlBackend::_setRgbxClip(GLuint prog, GlSurface* pSurf, bool bClipBlit)
+{
+	GLint loc = glGetUniformLocation(prog, "rgbxClip");
+	if (loc == -1)
+		return;
+
+	auto pDesc = pSurf->pixelDescription();
+	bool bNoAlpha = pDesc->type != PixelType::Index && pDesc->A_mask == 0 && pSurf->pixelFormat() != PixelFormat::Alpha_8;
+
+	int flags = 0;
+	if (bClipBlit && bNoAlpha && !pSurf->isTiling())
+		flags = pSurf->sampleMethod() == SampleMethod::Bilinear ? 3 : 1;
+
+	glUniform1i(loc, flags);
+}
+
 void GlBackend::_setCanvas(Surface* pSurface)
 {
 	GlSurface* pCanvas = static_cast<GlSurface*>(pSurface);
@@ -1892,6 +1915,8 @@ void GlBackend::endSession()
 						glUniform1i(clipLoc, 0);
 				}
 
+				_setRgbxClip(prog, pSurf, false);
+
 				glDrawArrays(GL_TRIANGLES, vertexOfs, nVertices);
 				vertexOfs += nVertices;
 
@@ -1921,6 +1946,8 @@ void GlBackend::endSession()
 					glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, transparent);
 					glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
 					glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+
+					_setRgbxClip(prog, pSurf, true);
 				}
 
 				glDrawArrays(GL_TRIANGLES, vertexOfs, nVertices);

@@ -85,6 +85,33 @@
 "	return result;																	" \
 "}																					"
 
+// GLSL function reading a blit source. A source without alpha (RGB8 texture) reads as opaque
+// also outside the source, where the transparent border of a ClipBlit should make it
+// transparent. So when told to (rgbxClip bit 0), the alpha is worked out from the position:
+// 1 inside and 0 outside with nearest sampling, and the part of the bilinear footprint that
+// lies inside with bilinear sampling (bit 1), which is what the sampler does with the colors.
+// Needs uniform texId declared first.
+
+#define WG_GL_SOURCE_SAMPLE \
+"uniform int rgbxClip;																" \
+"vec4 sampleSource(vec2 uv)															" \
+"{																					" \
+"	vec4 c = texture(texId, uv);													" \
+"	if ((rgbxClip & 1) != 0)														" \
+"	{																				" \
+"		if ((rgbxClip & 2) == 0)													" \
+"			c.a = (any(lessThan(uv, vec2(0.0))) || any(greaterThanEqual(uv, vec2(1.0)))) ? 0.0 : 1.0;	" \
+"		else																		" \
+"		{																			" \
+"			vec2 size = vec2(textureSize(texId, 0));								" \
+"			vec2 p = uv * size;														" \
+"			vec2 coverage = clamp(min(p + 0.5, size - p + 0.5), 0.0, 1.0);			" \
+"			c.a = coverage.x * coverage.y;											" \
+"		}																			" \
+"	}																				" \
+"	return c;																		" \
+"}																					"
+
 // GLSL function looking up the palette entry for an index read from an R8 index texture.
 // The palette texture is only paletteCapacity() texels wide, so the normalized index can't
 // be used as a texture coordinate (it would only be right for 256 entries). Indexes beyond
@@ -349,26 +376,26 @@ const char GlBackend::blitFragmentShader[] =
 
 "#version 330 core\n"
 
-"uniform sampler2D texId;						"
+"uniform sampler2D texId;						" WG_GL_SOURCE_SAMPLE
 "in vec2 texUV;									"
 "in vec4 fragColor;								"
 "out vec4 color;								"
 "void main()									"
 "{												"
-"   color = texture(texId, texUV) * fragColor;  "
+"   color = sampleSource(texUV) * fragColor;  "
 "}												";
 
 const char GlBackend::blitFragmentShader_A8[] =
 
 "#version 330 core\n"
 
-"uniform sampler2D texId;						"
+"uniform sampler2D texId;						" WG_GL_SOURCE_SAMPLE
 "in vec2 texUV;									"
 "in vec4 fragColor;								"
 "out vec4 color;								"
 "void main()									"
 "{												"
-"   color.r = texture(texId, texUV).a * fragColor.a;  "
+"   color.r = sampleSource(texUV).a * fragColor.a;  "
 "}												";
 
 
@@ -404,7 +431,7 @@ const char GlBackend::blitFragmentShaderTintmap[] =
 
 "#version 330 core\n"
 
-"uniform sampler2D texId;						"
+"uniform sampler2D texId;						" WG_GL_SOURCE_SAMPLE
 "uniform samplerBuffer tintmapBufferId;			"
 "in vec2 texUV;									"
 "flat in int tintOfs;  in vec2 tintPos;  " "flat in vec4 flatTint;  " WG_GL_TINT_FUNC
@@ -412,14 +439,14 @@ const char GlBackend::blitFragmentShaderTintmap[] =
 "void main()									"
 "{												"
 "   vec4 fragColor = (evalTint(tintmapBufferId, tintOfs, tintPos) * flatTint); "
-"   color = texture(texId, texUV) * fragColor;  "
+"   color = sampleSource(texUV) * fragColor;  "
 "}												";
 
 const char GlBackend::blitFragmentShaderTintmap_A8[] =
 
 "#version 330 core\n"
 
-"uniform sampler2D texId;						"
+"uniform sampler2D texId;						" WG_GL_SOURCE_SAMPLE
 "uniform samplerBuffer tintmapBufferId;			"
 "in vec2 texUV;									"
 "flat in int tintOfs;  in vec2 tintPos;  " "flat in vec4 flatTint;  " WG_GL_TINT_FUNC
@@ -427,7 +454,7 @@ const char GlBackend::blitFragmentShaderTintmap_A8[] =
 "void main()									"
 "{												"
 "   float fragA = (evalTint(tintmapBufferId, tintOfs, tintPos) * flatTint).a; "
-"   color.r = texture(texId, texUV).a * fragA;  "
+"   color.r = sampleSource(texUV).a * fragA;  "
 "}												";
 
 const char GlBackend::alphaBlitFragmentShaderTintmap[] =

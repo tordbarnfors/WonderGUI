@@ -125,6 +125,7 @@ namespace wg
 		float	_scaleThickness(float thickeness, float slope);
 
 		void	_setCanvas(Surface* pSurface);
+		void	_setRgbxClip(GLuint prog, GlSurface* pSurf, bool bClipBlit);
 
 		enum CommandGL
 		{
@@ -231,7 +232,7 @@ namespace wg
 		//
 
 		const static int c_nbPrograms = 38 + (c_maxSegments-1) * 2;
-		const static int c_versionNb = 108;		// 104: Tints replaced Tintmaps. 105: Tint color applied together with tint. 106: Palette ClipBlit clipping. 107: Palette read by index, capacity wide. 108: Blur for Alpha_8 sources and canvases.
+		const static int c_versionNb = 109;		// 104: Tints replaced Tintmaps. 105: Tint color applied together with tint. 106: Palette ClipBlit clipping. 107: Palette read by index, capacity wide. 108: Blur for Alpha_8 sources and canvases. 109: Alpha of sources without alpha in ClipBlits.
 
 		struct ProgramBlobEntry
 		{
