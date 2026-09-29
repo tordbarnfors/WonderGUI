@@ -558,10 +558,11 @@ fragment float4 blitFragmentShader_A8(BlitFragInput in [[stage_in]],
 
 fragment float4 rgbxBlitFragmentShader(BlitFragInput in [[stage_in]],
                                     texture2d<half> colorTexture [[ texture(0) ]],
-                                    sampler textureSampler [[ sampler(0) ]])
+                                    sampler textureSampler [[ sampler(0) ]],
+                                    constant int & clipFlags [[buffer(4)]])
 {
     half4 colorSample = colorTexture.sample(textureSampler, in.texUV);
-    colorSample.a = (half) 1.0;
+    colorSample.a = (half) rgbxCoverage(in.texUV, float2(colorTexture.get_width(), colorTexture.get_height()), clipFlags);
 
     return float4(colorSample) * in.color;
 };
@@ -570,9 +571,12 @@ fragment float4 rgbxBlitFragmentShader(BlitFragInput in [[stage_in]],
 
 fragment float4 rgbxBlitFragmentShader_A8(BlitFragInput in [[stage_in]],
                                     texture2d<half> colorTexture [[ texture(0) ]],
-                                    sampler textureSampler [[ sampler(0) ]])
+                                    sampler textureSampler [[ sampler(0) ]],
+                                    constant int & clipFlags [[buffer(4)]])
 {
-    return { in.color.a, 0.0, 0.0, 0.0 };
+    float alpha = rgbxCoverage(in.texUV, float2(colorTexture.get_width(), colorTexture.get_height()), clipFlags);
+
+    return { alpha * in.color.a, 0.0, 0.0, 0.0 };
 };
 
 
@@ -670,10 +674,11 @@ fragment float4 blitTintmapFragmentShader_A8(BlitTintmapFragInput in [[stage_in]
 fragment float4 rgbxBlitTintmapFragmentShader(BlitTintmapFragInput in [[stage_in]],
                                     texture2d<half> colorTexture [[ texture(0) ]],
                                     sampler textureSampler [[ sampler(0) ]],
-                                    constant float4  *pColor [[buffer(0)]])
+                                    constant float4  *pColor [[buffer(0)]],
+                                    constant int & clipFlags [[buffer(4)]])
 {
     half4 colorSample = colorTexture.sample(textureSampler, in.texUV);
-    colorSample.a = (half) 1.0;
+    colorSample.a = (half) rgbxCoverage(in.texUV, float2(colorTexture.get_width(), colorTexture.get_height()), clipFlags);
 
     float4 tintColor = evalTint(pColor, in.tintOfs, in.position.xy);
 
@@ -685,11 +690,13 @@ fragment float4 rgbxBlitTintmapFragmentShader(BlitTintmapFragInput in [[stage_in
 fragment float4 rgbxBlitTintmapFragmentShader_A8(BlitTintmapFragInput in [[stage_in]],
                                     texture2d<half> colorTexture [[ texture(0) ]],
                                     sampler textureSampler [[ sampler(0) ]],
-                                    constant float4  *pColor [[buffer(0)]])
+                                    constant float4  *pColor [[buffer(0)]],
+                                    constant int & clipFlags [[buffer(4)]])
 {
     float tintAlpha = evalTint(pColor, in.tintOfs, in.position.xy).a;
+    float alpha = rgbxCoverage(in.texUV, float2(colorTexture.get_width(), colorTexture.get_height()), clipFlags);
 
-    return { tintAlpha * in.color.a, 0.0, 0.0, 0.0 };
+    return { alpha * tintAlpha * in.color.a, 0.0, 0.0, 0.0 };
 };
 
 
@@ -735,6 +742,30 @@ fragment float4 alphaBlitTintmapFragmentShader_A8(BlitTintmapFragInput in [[stag
 inline float insideSource(float2 uv, int clipToSource)
 {
     return (clipToSource != 0 && (any(uv < float2(0.0)) || any(uv >= float2(1.0)))) ? 0.0 : 1.0;
+}
+
+//____ rgbxCoverage() ________________________________________________________
+//
+// Alpha for a source without alpha (RGBX), which is opaque inside but must be
+// transparent outside the source in a ClipBlit. The sampler returns zero there,
+// but RGBX shaders can't use the sampled alpha, since the X bytes are undefined.
+// So the alpha is worked out from the position instead: 1 inside and 0 outside
+// for nearest sampling, and the part of the bilinear footprint that is inside for
+// bilinear sampling, which is what the sampler does with the colors.
+//
+// clipFlags: bit 0 = clip to source (ClipBlit of a non-tiling source), bit 1 = bilinear.
+
+inline float rgbxCoverage(float2 uv, float2 size, int clipFlags)
+{
+    if( (clipFlags & 1) == 0 )
+        return 1.0;
+
+    if( (clipFlags & 2) == 0 )
+        return insideSource(uv, 1);
+
+    float2 p = uv * size;
+    float2 coverage = clamp(min(p + 0.5, size - p + 0.5), 0.0, 1.0);
+    return coverage.x * coverage.y;
 }
 
 //____ paletteLookup() ________________________________________________________

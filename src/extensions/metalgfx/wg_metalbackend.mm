@@ -1728,6 +1728,17 @@ void MetalBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, i
 							[m_renderEncoder setFragmentBytes:&clipToSource length:sizeof(int) atIndex: (unsigned) FragmentInputIndex::ClipToSource];
 						}
 
+						// A source without alpha (RGBX) reads as opaque also where the sampler returns
+						// zero, so the RGBX shaders work out the alpha themselves when clipping.
+
+						if( shader == BlitFragShader::RGBXSource )
+						{
+							int clipFlags = (cmd == Command::ClipBlit && !pSurf->isTiling()) ? 1 : 0;
+							if( pSurf->sampleMethod() == SampleMethod::Bilinear )
+								clipFlags |= 2;
+							[m_renderEncoder setFragmentBytes:&clipFlags length:sizeof(int) atIndex: (unsigned) FragmentInputIndex::ClipToSource];
+						}
+
 						if(m_blitPipelines[(int)shader][m_tintOfs >= 0][(int)m_activeBlendMode][(int)m_activeCanvasFormat] == nil )
 							m_blitPipelines[(int)shader][m_tintOfs >= 0][(int)m_activeBlendMode][(int)m_activeCanvasFormat] = _compileBlitPipeline( shader, m_tintOfs >= 0, m_activeBlendMode, m_activeCanvasFormat );
 
