@@ -1113,7 +1113,7 @@ namespace wg
 		if( m_pTransformClipBlitOp == &SoftBackend::_onePassTransformBlit )
 			m_pLinearTransformClipBlitOp = &LinearBackend::_onePassLinearTransformBlit;
 		else if( m_pTransformClipBlitOp == &SoftBackend::_twoPassTransformBlit )
-			m_pLinearTransformClipBlitOp = &LinearBackend::_twoPassLinearTransformBlit;
+			m_pLinearTransformClipBlitOp = &LinearBackend::_twoPassLinearTransformClipBlit;
 		else
 			m_pLinearTransformClipBlitOp = &LinearBackend::_dummyLinearTransformBlit;
 
@@ -1228,6 +1228,20 @@ namespace wg
 
 	void LinearBackend::_twoPassLinearTransformBlit(	uint8_t * pDst, int destPitch, int destWidth, int destHeight, BinalCoord pos, const binalInt transformMatrix[2][2],	CoordI patchPos, TransformBlitOp_p pPassOneOp)
 	{
+		_twoPassLinearTransform(pDst, destPitch, destWidth, destHeight, pos, transformMatrix, patchPos, pPassOneOp, m_pBlitSecondPassOp);
+	}
+
+	//____ _twoPassLinearTransformClipBlit() ________________________________________
+
+	void LinearBackend::_twoPassLinearTransformClipBlit(	uint8_t * pDst, int destPitch, int destWidth, int destHeight, BinalCoord pos, const binalInt transformMatrix[2][2],	CoordI patchPos, TransformBlitOp_p pPassOneOp)
+	{
+		_twoPassLinearTransform(pDst, destPitch, destWidth, destHeight, pos, transformMatrix, patchPos, pPassOneOp, m_pClipBlitSecondPassOp);
+	}
+
+	//____ _twoPassLinearTransform() ________________________________________________
+
+	void LinearBackend::_twoPassLinearTransform(	uint8_t * pDst, int destPitch, int destWidth, int destHeight, BinalCoord pos, const binalInt transformMatrix[2][2],	CoordI patchPos, TransformBlitOp_p pPassOneOp, StraightBlitOp_p pPassTwoOp)
+	{
 		const SoftSurface * pSource = m_pBlitSource;
 
 		int dstPixelBytes = m_canvasPixelBytes;
@@ -1261,7 +1275,7 @@ namespace wg
 	//		uint8_t * pDst = m_pCanvasPixels + (dest.y + line) * m_canvasPitch + dest.x * dstPixelBytes;
 
 			pPassOneOp(pSource, pos, transformMatrix, pChunkBuffer, 8, 0, thisChunkLines, destWidth, m_colTrans, { 0,0 });
-			m_pBlitSecondPassOp(pChunkBuffer, pDst, pSource, pitchesPass2, thisChunkLines, destWidth, m_colTrans, patchPos, nullptr);
+			pPassTwoOp(pChunkBuffer, pDst, pSource, pitchesPass2, thisChunkLines, destWidth, m_colTrans, patchPos, nullptr);
 
 			pos.x += transformMatrix[1][0] * thisChunkLines;
 			pos.y += transformMatrix[1][1] * thisChunkLines;

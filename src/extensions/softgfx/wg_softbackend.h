@@ -416,6 +416,7 @@ namespace wg
 		TransformBlitOp_p		m_pTransformBlurFirstPassOp = nullptr;
 
 		StraightBlitOp_p		m_pBlitSecondPassOp = nullptr;		// Second pass is same for straight and transform blits and tiles (always a simple blit).
+		StraightBlitOp_p		m_pClipBlitSecondPassOp = nullptr;	// Same for transform clip blits, but without BlendMode optimized for opaque sources.
 
 
 

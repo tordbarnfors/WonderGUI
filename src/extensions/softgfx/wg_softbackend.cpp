@@ -1496,6 +1496,7 @@ namespace wg
 		CoordI patchPos, TransformBlitOp_p pPassOneOp, Command cmd)
 	{
 		const SoftSurface* pSource = m_pBlitSource;
+		StraightBlitOp_p pPassTwoOp = (cmd == Command::ClipBlit) ? m_pClipBlitSecondPassOp : m_pBlitSecondPassOp;
 
 		int dstPixelBytes = m_canvasPixelBytes;
 
@@ -1528,7 +1529,7 @@ namespace wg
 			uint8_t* pDst = m_pCanvasPixels + (dest.y + line) * m_canvasPitch + dest.x * dstPixelBytes;
 
 			pPassOneOp(pSource, pos, transformMatrix, pChunkBuffer, 8, 0, thisChunkLines, dest.w, m_colTrans, { 0,0 });
-			m_pBlitSecondPassOp(pChunkBuffer, pDst, pSource, pitchesPass2, thisChunkLines, dest.w, m_colTrans, patchPos, nullptr);
+			pPassTwoOp(pChunkBuffer, pDst, pSource, pitchesPass2, thisChunkLines, dest.w, m_colTrans, patchPos, nullptr);
 
 			pos.x += transformMatrix[1][0] * thisChunkLines;
 			pos.y += transformMatrix[1][1] * thisChunkLines;
@@ -1655,6 +1656,7 @@ namespace wg
 		PixelFormat		dstFormat = m_canvasPixelFormat;
 
 		BlendMode		blendMode = m_blendMode;
+		BlendMode		clipBlendMode = m_blendMode;		// ClipBlits leave pixels outside the source alone, so not optimized below.
 
 		if (m_pKernels[(int)dstFormat] == nullptr)
 			return;
@@ -1697,6 +1699,7 @@ namespace wg
 			m_pTransformBlurFirstPassOp = m_pTransformMoveToBGRA8Kernels[(int)srcFormat][(int)sampleMethod][int(ReadOp::Blur)];
 
 			m_pBlitSecondPassOp = m_pKernels[(int)dstFormat]->pStraightBlitFromBGRA8Kernels[(int)tintMode][(int)blendMode];
+			m_pClipBlitSecondPassOp = m_pKernels[(int)dstFormat]->pStraightBlitFromBGRA8Kernels[(int)tintMode][(int)clipBlendMode];
 		}
 		else
 		{
@@ -1709,6 +1712,7 @@ namespace wg
 			m_pTransformBlurFirstPassOp = m_pTransformMoveToHiColorKernels[(int)srcFormat][(int)sampleMethod][int(ReadOp::Blur)];
 
 			m_pBlitSecondPassOp = m_pKernels[(int)dstFormat]->pStraightBlitFromHiColorKernels[(int)tintMode][(int)blendMode];
+			m_pClipBlitSecondPassOp = m_pKernels[(int)dstFormat]->pStraightBlitFromHiColorKernels[(int)tintMode][(int)clipBlendMode];
 		}
 
 
@@ -1746,8 +1750,16 @@ namespace wg
 
 				pTransformBlitSinglePassKernel = pTransformBlitKernels[(int)sampleMethod][int(ReadOp::Normal)][int(tintMode)];
 				pTransformTileSinglePassKernel = pTransformBlitKernels[(int)sampleMethod][int(ReadOp::Tile)][int(tintMode)];
-				pTransformClipBlitSinglePassKernel = pTransformBlitKernels[(int)sampleMethod][int(ReadOp::Clip)][int(tintMode)];
 				pTransformBlurSinglePassKernel = pTransformBlitKernels[(int)sampleMethod][int(ReadOp::Blur)][int(tintMode)];
+			}
+
+			int clipBlitKernelsIdx = pSingleBlitKernels->transformBlitKernels[(int)clipBlendMode];
+
+			if (clipBlitKernelsIdx > 0)
+			{
+				auto pTransformBlitKernels = m_singlePassTransformBlitKernels[clipBlitKernelsIdx - 1].pKernels;
+
+				pTransformClipBlitSinglePassKernel = pTransformBlitKernels[(int)sampleMethod][int(ReadOp::Clip)][int(tintMode)];
 			}
 		}
 
@@ -1794,7 +1806,7 @@ namespace wg
 			m_pTransformClipBlitOp = &SoftBackend::_onePassTransformBlit;
 			m_pTransformClipBlitFirstPassOp = pTransformClipBlitSinglePassKernel;
 		}
-		else if (m_pTransformClipBlitFirstPassOp && m_pBlitSecondPassOp)
+		else if (m_pTransformClipBlitFirstPassOp && m_pClipBlitSecondPassOp)
 			m_pTransformClipBlitOp = &SoftBackend::_twoPassTransformBlit;
 
 
