@@ -102,7 +102,9 @@ struct PS_INPUT
 
 float4 main(PS_INPUT input) : SV_TARGET
 {
-    // As ps_blur, but with each tap looked up in the palette.
+    // As ps_blur, but with each tap looked up in the palette. The alpha row of
+    // the matrix only weights the center tap, so the palette entry's alpha there
+    // is kept.
 
     float4 color = float4(0.0f, 0.0f, 0.0f, 0.0f);
 
@@ -113,8 +115,6 @@ float4 main(PS_INPUT input) : SV_TARGET
 
         color += samplePalette(input.texUV + ofs) * extras[blurOfs + i];
     }
-
-    color.a = 1.0f;
 
     return color * input.color * tintColor(input.position.xy);
 }
