@@ -2317,16 +2317,38 @@ void _draw_segment_strip(int colBeg, int colEnd, uint8_t* WG_RESTRICT pStripStar
 
 				if constexpr(BLEND == BlendMode::Replace)
 				{
+					// Segments are weighted by both coverage and alpha, giving us a premultiplied
+					// color which we then convert back to straight alpha.
+
 					for (int i = 0; i <= edge; i++)
 					{
-						int blendFraction = segmentFractions[i];
+						int alpha;
+
+						if constexpr( SOURCE == SoftBackend::StripSource::Colors)
+							alpha = pSegmentColors[i * 4 + 3];
+						if constexpr( SOURCE == SoftBackend::StripSource::Tintmaps )
+							alpha = (pSegmentTintmap + i * segmentTintmapPitch)[offset >> 8].a;
+						if constexpr( SOURCE == SoftBackend::StripSource::ColorsAndTintmaps )
+							alpha = pSegmentColors[i * 4 + 3] * (pSegmentTintmap + i * segmentTintmapPitch)[offset >> 8].a / 4096;
+
+						int blendFraction = ((segmentFractions[i] * alpha) / 4096);
 						_add_segment_color<SOURCE>(blendFraction, offset >> 8, &pSegmentColors[i * 4], pSegmentTintmap + i * segmentTintmapPitch, accB, accG, accR, accA);
 					}
 
-					outB = accB >> 12;
-					outG = accG >> 12;
-					outR = accR >> 12;
 					outA = accA >> 12;
+
+					if (accA == 65536 << 8)
+					{
+						outB = accB >> 12;
+						outG = accG >> 12;
+						outR = accR >> 12;
+					}
+					else if (accA > 0)
+					{
+						outB = std::min(4096, int((int64_t(accB) << 12) / accA));
+						outG = std::min(4096, int((int64_t(accG) << 12) / accA));
+						outR = std::min(4096, int((int64_t(accR) << 12) / accA));
+					}
 				}
 				else if constexpr(BLEND == BlendMode::Blend)
 				{
