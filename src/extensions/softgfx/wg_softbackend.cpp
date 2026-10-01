@@ -902,14 +902,6 @@ namespace wg
 						opaqueSegments[seg] = val;
 				}
 
-				// Modify transparentSegments if our state is BlendFixedColor
-
-				if (m_blendMode == BlendMode::BlendFixedColor)
-				{
-					for (int seg = 0; seg < nSegments; seg++)
-						transparentSegments[seg] = false;
-				}
-
 				// Set start position and clip dest
 
 				uint8_t* pOrigo = m_pCanvasPixels + start.y * yPitch + start.x * xPitch;
@@ -1922,11 +1914,15 @@ namespace wg
 		t.bColumnsDone = false;
 		t.bColorPerColumn = false;
 
+		// Transparent segments are skipped, except in blend modes where they still affect the canvas.
+
+		bool bSkipTransparent = (m_blendMode != BlendMode::Replace && m_blendMode != BlendMode::BlendFixedColor);
+
 		for (int seg = 0; seg < nSegments; seg++)
 		{
 			const SoftTint& segTint = pEdgemap->m_segmentTints[seg];
 
-			t.transparent[seg] = segTint.isTransparent() || global.isTransparent();
+			t.transparent[seg] = bSkipTransparent && (segTint.isTransparent() || global.isTransparent());
 			t.opaque[seg] = segTint.isOpaque() && global.isOpaque();
 		}
 

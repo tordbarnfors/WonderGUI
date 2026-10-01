@@ -777,14 +777,6 @@ namespace wg
 						opaqueSegments[seg] = val;
 				}
 
-				// Modify transparentSegments if our state is BlendFixedColor
-
-				if (m_blendMode == BlendMode::BlendFixedColor)
-				{
-					for (int seg = 0; seg < nSegments; seg++)
-						transparentSegments[seg] = false;
-				}
-
 				//
 				
 				StripSource stripSource = tinting.bPerPixel ? StripSource::Tintmaps : StripSource::Colors;
