@@ -30,6 +30,7 @@
 
 #include <cstring>
 #include <cstdio>
+#include <cwchar>
 
 namespace wg
 {
@@ -46,6 +47,22 @@ namespace wg
 	Microsoft::WRL::ComPtr<ID3D12Fence>					DX12Surface::s_copyFence;
 	HANDLE												DX12Surface::s_copyFenceEvent = nullptr;
 	UINT64												DX12Surface::s_copyFenceValue = 0;
+
+	//____ setObjectName() _________________________________________________________
+	//
+	// Names a D3D12 object after the surface owning it, so the debug layer's live
+	// object report (ID3D12DebugDevice::ReportLiveDeviceObjects) and tools like
+	// PIX show which surface it belongs to.
+
+	static void setObjectName( ID3D12Object * pObject, const wchar_t * pWhat, const void * pSurface, SizeI size )
+	{
+		if( !pObject )
+			return;
+
+		wchar_t name[128];
+		swprintf( name, 128, L"WonderGUI DX12Surface %p %dx%d: %ls", pSurface, size.w, size.h, pWhat );
+		pObject->SetName( name );
+	}
 
 	//____ maxSize() _______________________________________________________________
 
@@ -128,6 +145,11 @@ namespace wg
 		}
 
 		s_copyList->Close();
+
+		s_copyQueue->SetName(L"WonderGUI DX12Surface: copy queue");
+		s_copyAllocator->SetName(L"WonderGUI DX12Surface: copy allocator");
+		s_copyList->SetName(L"WonderGUI DX12Surface: copy list");
+		s_copyFence->SetName(L"WonderGUI DX12Surface: copy fence");
 
 		s_copyFenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
 
@@ -482,6 +504,8 @@ namespace wg
 			return;
 		}
 
+		setObjectName( m_texture.Get(), m_bCanvas ? L"texture (canvas)" : L"texture", this, m_size );
+
 		// Create the buffer holding our pixels
 
 		D3D12_HEAP_PROPERTIES uploadProps = {};
@@ -510,6 +534,8 @@ namespace wg
 
 			return;
 		}
+
+		setObjectName( m_uploadBuffer.Get(), L"upload buffer", this, m_size );
 
 		if( FAILED(m_uploadBuffer->Map(0, nullptr, (void**) &m_pUploadData)) )
 		{
@@ -545,6 +571,8 @@ namespace wg
 			return;
 		}
 
+		setObjectName( m_srvHeap.Get(), L"SRV heap", this, m_size );
+
 		m_srvHandle = m_srvHeap->GetCPUDescriptorHandleForHeapStart();
 
 		D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
@@ -575,6 +603,8 @@ namespace wg
 				_copyInPixels( pPixels, pitch, srcFormat, pSrcPixelDesc, pSrcPalette, srcPaletteSize );
 				return;
 			}
+
+			setObjectName( m_rtvHeap.Get(), L"RTV heap", this, m_size );
 
 			m_rtvHandle = m_rtvHeap->GetCPUDescriptorHandleForHeapStart();
 
@@ -627,6 +657,8 @@ namespace wg
 				this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return false;
 		}
+
+		setObjectName( m_paletteBuffer.Get(), L"palette buffer", this, m_size );
 
 		memset( m_pPaletteData, 0, size_t(m_paletteCapacity + 1) * 4 * sizeof(float) );
 
@@ -850,6 +882,8 @@ namespace wg
 				this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return false;
 		}
+
+		setObjectName( m_readbackBuffer.Get(), L"readback buffer", this, m_size );
 
 		return true;
 	}

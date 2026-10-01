@@ -26,6 +26,7 @@
 #include <wg_gfxbase.h>
 
 #include <cstring>
+#include <cwchar>
 #include <algorithm>
 #include <utility>
 
@@ -137,6 +138,13 @@ namespace wg
 			GfxBase::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to create buffer for edgemap.",
 				this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return;
+		}
+
+		// Named after us, so the debug layer's live object report shows where it comes from.
+		{
+			wchar_t name[96];
+			swprintf( name, 96, L"WonderGUI DX12Edgemap %p: buffer", (const void*) this );
+			m_buffer->SetName( name );
 		}
 
 		D3D12_RANGE readRange = { 0, 0 };			// We only write.

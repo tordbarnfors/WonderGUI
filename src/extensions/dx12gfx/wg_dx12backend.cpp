@@ -29,6 +29,7 @@
 
 #include <cstdio>
 #include <cstring>
+#include <cwchar>
 #include <cstdlib>
 #include <cmath>
 #include <cassert>
@@ -43,6 +44,22 @@
 
 namespace wg
 {
+
+	//____ setObjectName() _________________________________________________________
+	//
+	// Names a D3D12 object after the backend owning it, so the debug layer's live
+	// object report (ID3D12DebugDevice::ReportLiveDeviceObjects) and tools like
+	// PIX show which backend it belongs to.
+
+	static void setObjectName( const void * pBackend, ID3D12Object * pObject, const wchar_t * pWhat )
+	{
+		if( !pObject )
+			return;
+
+		wchar_t name[128];
+		swprintf( name, 128, L"WonderGUI DX12Backend %p: %ls", pBackend, pWhat );
+		pObject->SetName( name );
+	}
 
 	const TypeInfo DX12Backend::TYPEINFO = { "DX12Backend", &GfxBackend::TYPEINFO };
 
@@ -238,6 +255,17 @@ namespace wg
 		pDX12Device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_frameResources[0].commandAllocator.Get(), nullptr, IID_PPV_ARGS(&m_commandList));
 
 		m_commandList->Close();
+
+		// Named after us, so the debug layer's live object report shows where they come from.
+
+		setObjectName(this, m_commandFence.Get(), L"command fence");
+		setObjectName(this, m_commandList.Get(), L"command list");
+
+		for (int i = 0; i < c_nbFrameResources; ++i)
+		{
+			setObjectName(this, m_frameResources[i].commandAllocator.Get(), L"command allocator");
+			setObjectName(this, m_frameResources[i].srvHeap.Get(), L"SRV heap");
+		}
 		m_bCommandListOpen = false;
 
 		if (!_createPipelineResources())
@@ -2623,6 +2651,8 @@ namespace wg
 		if (!CHECK_HR(m_pDX12Device->CreateRootSignature(0, pSerializedRS->GetBufferPointer(), pSerializedRS->GetBufferSize(), IID_PPV_ARGS(m_pRootSignature.GetAddressOf())), "CreateRootSignature"))
 			return false;
 
+		setObjectName(this, m_pRootSignature.Get(), L"root signature");
+
 		return true;
 	}
 
@@ -2640,6 +2670,8 @@ namespace wg
 
 		if (!CHECK_HR(m_pDX12Device->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(m_pSamplerHeap.GetAddressOf())), "CreateDescriptorHeap"))
 			return false;
+
+		setObjectName(this, m_pSamplerHeap.Get(), L"sampler heap");
 
 		D3D12_CPU_DESCRIPTOR_HANDLE handle = m_pSamplerHeap->GetCPUDescriptorHandleForHeapStart();
 
@@ -2919,6 +2951,8 @@ namespace wg
 
 		if (!CHECK_HR(m_pDX12Device->CreateGraphicsPipelineState(&desc, IID_PPV_ARGS(pPipeline.GetAddressOf())), "CreateGraphicsPipelineState"))
 			return false;
+
+		setObjectName(this, pPipeline.Get(), L"pipeline state");
 
 		return true;
 	}
