@@ -15,6 +15,10 @@ source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${SOURCES})
 add_library( wgfreetypefont STATIC ${SOURCES} )
 generate_export_header(wgfreetypefont BASE_NAME wg)
 
+target_link_libraries( wgfreetypefont 
+    Freetype::Freetype
+)
+
 target_include_directories(wgfreetypefont PRIVATE
     ${INCDIRS}
     ${WONDERGFX_INCDIRS}
