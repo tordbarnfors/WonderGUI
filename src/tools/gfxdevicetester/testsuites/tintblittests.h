@@ -25,7 +25,7 @@ public:
 
 	bool init(GfxDevice * pDevice, const RectI& canvas, wapp::API * pAppAPI)
 	{
-		m_pImg = pAppAPI->loadSurface("resources/mipmaptest.png", pDevice->surfaceFactory());
+		m_pImg = pAppAPI->loadSurface("resources/mipmaptest.png", pDevice->surfaceFactory(), { .sampleMethod = SampleMethod::Bilinear });
 		if (!m_pImg)
 			return false;
 
