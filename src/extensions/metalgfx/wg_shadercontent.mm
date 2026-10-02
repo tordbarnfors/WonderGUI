@@ -554,6 +554,41 @@ fragment float4 blitFragmentShader_A8(BlitFragInput in [[stage_in]],
     return { colorSample * in.color.a, 0.0, 0.0, 0.0 };
 };
 
+//____ insideSource() ________________________________________________________
+//
+// For a ClipBlit from a palette based source. Transparent black outside the
+// index texture would read as palette index 0, so the palette shaders clip
+// their taps themselves: 0.0 outside the source when clipping, else 1.0.
+
+inline float insideSource(float2 uv, int clipToSource)
+{
+    return (clipToSource != 0 && (any(uv < float2(0.0)) || any(uv >= float2(1.0)))) ? 0.0 : 1.0;
+}
+
+//____ rgbxCoverage() ________________________________________________________
+//
+// Alpha for a source without alpha (RGBX), which is opaque inside but must be
+// transparent outside the source in a ClipBlit. The sampler returns zero there,
+// but RGBX shaders can't use the sampled alpha, since the X bytes are undefined.
+// So the alpha is worked out from the position instead: 1 inside and 0 outside
+// for nearest sampling, and the part of the bilinear footprint that is inside for
+// bilinear sampling, which is what the sampler does with the colors.
+//
+// clipFlags: bit 0 = clip to source (ClipBlit of a non-tiling source), bit 1 = bilinear.
+
+inline float rgbxCoverage(float2 uv, float2 size, int clipFlags)
+{
+    if( (clipFlags & 1) == 0 )
+        return 1.0;
+
+    if( (clipFlags & 2) == 0 )
+        return insideSource(uv, 1);
+
+    float2 p = uv * size;
+    float2 coverage = saturate(min(p + 0.5, size - p + 0.5));
+    return coverage.x * coverage.y;
+}
+
 //____ rgbxBlitFragmentShader() ____________________________________________
 
 fragment float4 rgbxBlitFragmentShader(BlitFragInput in [[stage_in]],
@@ -732,41 +767,6 @@ fragment float4 alphaBlitTintmapFragmentShader_A8(BlitTintmapFragInput in [[stag
 
 
 
-
-//____ insideSource() ________________________________________________________
-//
-// For a ClipBlit from a palette based source. Transparent black outside the
-// index texture would read as palette index 0, so the palette shaders clip
-// their taps themselves: 0.0 outside the source when clipping, else 1.0.
-
-inline float insideSource(float2 uv, int clipToSource)
-{
-    return (clipToSource != 0 && (any(uv < float2(0.0)) || any(uv >= float2(1.0)))) ? 0.0 : 1.0;
-}
-
-//____ rgbxCoverage() ________________________________________________________
-//
-// Alpha for a source without alpha (RGBX), which is opaque inside but must be
-// transparent outside the source in a ClipBlit. The sampler returns zero there,
-// but RGBX shaders can't use the sampled alpha, since the X bytes are undefined.
-// So the alpha is worked out from the position instead: 1 inside and 0 outside
-// for nearest sampling, and the part of the bilinear footprint that is inside for
-// bilinear sampling, which is what the sampler does with the colors.
-//
-// clipFlags: bit 0 = clip to source (ClipBlit of a non-tiling source), bit 1 = bilinear.
-
-inline float rgbxCoverage(float2 uv, float2 size, int clipFlags)
-{
-    if( (clipFlags & 1) == 0 )
-        return 1.0;
-
-    if( (clipFlags & 2) == 0 )
-        return insideSource(uv, 1);
-
-    float2 p = uv * size;
-    float2 coverage = clamp(min(p + 0.5, size - p + 0.5), 0.0, 1.0);
-    return coverage.x * coverage.y;
-}
 
 //____ paletteLookup() ________________________________________________________
 //
