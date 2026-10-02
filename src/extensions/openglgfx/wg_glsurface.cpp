@@ -586,7 +586,7 @@ namespace wg
             // This is OpenGL pre 4.5, we can only read back a whole texture :(
             
             _readBackTexture(buffer.pixels, buffer.pitch);
-			return false;
+			return true;
 		}
         else
             return false;
