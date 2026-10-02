@@ -72,12 +72,7 @@ bool MyApp::_setupGUI(API* pAPI)
 
 	// Picker, sits at the top of the window.
 
-	m_pPicker = SelectBox::create({
-		.entrySkin = wkit::Skins::SelectBoxEntry,
-		.entryTextStyle = wkit::TextStyles::Default,
-		.listSkin = wkit::Skins::Plate,
-		.skin = wkit::Skins::SelectBox
-	});
+	m_pPicker = wkit::SelectBox::create();
 
 	int id = 0;
 	for (auto pTest : m_sortedTests)
