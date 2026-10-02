@@ -2599,16 +2599,6 @@ void GlBackend::_initTables()
 		double b = i / 16.0;
 		m_lineThicknessTable[i] = (float)Util::squareRoot(1.0 + b * b);
 	}
-
-	// Init sRGBtoLinearTable
-
-	float max = powf(255, 2.2f);
-
-	for (int i = 0; i < 256; i++)
-	{
-		m_sRGBtoLinearTable[i] = powf(float(i), 2.2f)/max;
-		m_linearToLinearTable[i] = i / 255.f;
-	}
 }
 
 

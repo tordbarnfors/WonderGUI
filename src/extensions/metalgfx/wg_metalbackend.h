@@ -157,7 +157,6 @@ namespace wg
 		id<MTLRenderCommandEncoder> _setCanvas( MetalSurface * pCanvas, int width, int height );
 		void            _setBlendMode( id<MTLRenderCommandEncoder>, BlendMode mode);
 		void            _setMorphFactor( id<MTLRenderCommandEncoder>, float morphFactor);
-		void            _setFixedBlendColor( id<MTLRenderCommandEncoder>, HiColor color);
 		void 			_setBlurMatrices( id<MTLRenderCommandEncoder> renderEncoder, spx radius, const float red[9], const float green[9], const float blue[9] );
 		void            _setBlitSource( id<MTLRenderCommandEncoder>, MetalSurface * pSurf);
 
@@ -200,9 +199,6 @@ namespace wg
 		const Transform* m_pTransformsEnd = nullptr;
 
 		float    m_lineThicknessTable[17];
-
-		float    m_sRGBtoLinearTable[256];
-		float    m_linearToLinearTable[256];
 
 
 		//
