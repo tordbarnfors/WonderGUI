@@ -1093,7 +1093,8 @@ namespace wg::glossyblue
 			Object_p			baggage;
 			Coord				buttonOfs;
 			Placement			buttonPlacement = Placement::West;
-			Size				buttonSize = Size{ 14, 14 };
+			Size				buttonSize = Size{ 12, 12 };			// Must match PlusMinusToggle's size_pts. The skin is drawn
+																	// into this rect and has no frame, so any extra is a stretch.
 			Skin_p				buttonSkin = _pPlusMinusToggleSkin;
 			bool				disabled = false;
 			Direction			direction = Direction::Down;
