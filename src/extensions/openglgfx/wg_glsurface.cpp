@@ -110,6 +110,7 @@ namespace wg
 	{
 		HANDLE_GLERROR(glGetError());
 
+		m_bMipmapped = bp.mipmap;
 		_setPixelDetails(m_pixelFormat);
 		m_pPalette = nullptr;
 
@@ -150,6 +151,7 @@ namespace wg
 		// Set general information
 
 
+		m_bMipmapped = bp.mipmap;
 		_setPixelDetails(m_pixelFormat);
 		m_pPalette = const_cast<Color8*>(bp.palette);
 
@@ -205,6 +207,7 @@ namespace wg
 	{
 		//TODO: Not just default to BGRA_8 if PixelFormat not specified in Blueprint. Instead we should take the most suitable PixelFormat based on pPixelDescription (same for SoftSurface, MetalSurface etc.)
 		
+		m_bMipmapped = bp.mipmap;
 		_setPixelDetails(m_pixelFormat);
 		m_pPalette = nullptr;
 		
