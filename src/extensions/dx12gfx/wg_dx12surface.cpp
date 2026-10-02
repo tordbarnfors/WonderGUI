@@ -353,11 +353,14 @@ namespace wg
 
 	DX12Surface::DX12Surface(const Blueprint& bp) : Surface(bp, PixelFormat::BGRA_8, SampleMethod::Bilinear)
 	{
+		m_bMipmapped = bp.mipmap;
 		_setupTexture( nullptr, 0, PixelFormat::Undefined, nullptr, nullptr, bp.palette, 0 );
 	}
 
 	DX12Surface::DX12Surface(const Blueprint& bp, Blob* pBlob, int pitch) : Surface(bp, PixelFormat::BGRA_8, SampleMethod::Bilinear)
 	{
+		m_bMipmapped = bp.mipmap;
+
 		// The blob holds the format that was asked for, which is not always the one
 		// we end up with, so take note of it before _setupTexture() settles that.
 
@@ -372,6 +375,8 @@ namespace wg
 	DX12Surface::DX12Surface(const Blueprint& bp, const uint8_t* pPixels,
 		PixelFormat format, int pitch, const Color8* pPalette, int paletteSize) : Surface(bp, PixelFormat::BGRA_8, SampleMethod::Bilinear)
 	{
+		m_bMipmapped = bp.mipmap;
+
 		auto& srcDesc = Util::pixelFormatToDescription(format);
 
 		if( pitch == 0 )
@@ -385,6 +390,8 @@ namespace wg
 	DX12Surface::DX12Surface(const Blueprint& bp, const uint8_t* pPixels,
 		const PixelDescription& pixelDescription, int pitch, const Color8* pPalette, int paletteSize) : Surface(bp, PixelFormat::BGRA_8, SampleMethod::Bilinear)
 	{
+		m_bMipmapped = bp.mipmap;
+
 		if( pitch == 0 )
 			pitch = bp.size.w * pixelDescription.bits/8;
 
@@ -450,6 +457,21 @@ namespace wg
 			return;
 		}
 
+		// A mipmapped surface gets levels all the way down to 1x1. They are drawn
+		// by DX12Backend, so the texture has to be a render target even when the
+		// surface is no canvas. Palette based surfaces can't be mipmapped, Surface
+		// turns such a blueprint away, and an average of indexes means nothing.
+
+		m_mipLevels = 1;
+
+		if( m_bMipmapped && !m_bIndexed )
+		{
+			for( int size = m_size.w > m_size.h ? m_size.w : m_size.h; size > 1; size >>= 1 )
+				m_mipLevels++;
+		}
+
+		bool bRenderTarget = (m_bCanvas && !m_bIndexed) || m_mipLevels > 1;
+
 		// Create the texture
 
 		D3D12_HEAP_PROPERTIES heapProps = {};
@@ -460,11 +482,11 @@ namespace wg
 		texDesc.Width = m_size.w;
 		texDesc.Height = m_size.h;
 		texDesc.DepthOrArraySize = 1;
-		texDesc.MipLevels = 1;
+		texDesc.MipLevels = UINT16(m_mipLevels);
 		texDesc.Format = dxgiFormat;
 		texDesc.SampleDesc = { 1, 0 };
 		texDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
-		texDesc.Flags = (m_bCanvas && !m_bIndexed) ? D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET : D3D12_RESOURCE_FLAG_NONE;
+		texDesc.Flags = bRenderTarget ? D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET : D3D12_RESOURCE_FLAG_NONE;
 
 		// Kept in COMMON state: D3D12 promotes it to PIXEL_SHADER_RESOURCE when the
 		// render queue uses it and to COPY_DEST when we upload, then decays it back
@@ -528,11 +550,13 @@ namespace wg
 		memset( m_pUploadData, 0, size_t(m_uploadPitch) * m_size.h );
 
 		// Create the descriptor for the texture. It lives in a heap of its own and
-		// is copied into the shader visible heap by DX12Backend when used.
+		// is copied into the shader visible heap by DX12Backend when used. Each mip
+		// level but the last also gets one of its own, for drawing the next level
+		// from it, see mipSourceSRV().
 
 		D3D12_DESCRIPTOR_HEAP_DESC heapDesc = {};
 		heapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-		heapDesc.NumDescriptors = 1;
+		heapDesc.NumDescriptors = m_mipLevels;
 		heapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
 
 		if( FAILED(s_pDevice->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(m_srvHeap.GetAddressOf()))) )
@@ -551,38 +575,54 @@ namespace wg
 		srvDesc.Format = dxgiFormat;
 		srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
 		srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-		srvDesc.Texture2D.MipLevels = 1;
+		srvDesc.Texture2D.MipLevels = m_mipLevels;
 
 		s_pDevice->CreateShaderResourceView(m_texture.Get(), &srvDesc, m_srvHandle);
 
+		for( int level = 1; level < m_mipLevels; level++ )
+		{
+			srvDesc.Texture2D.MostDetailedMip = level - 1;
+			srvDesc.Texture2D.MipLevels = 1;
+
+			s_pDevice->CreateShaderResourceView(m_texture.Get(), &srvDesc, mipSourceSRV(level));
+		}
+
 		// A canvas surface also needs a render target view. DX12Backend hands it
 		// straight to OMSetRenderTargets(), so this heap is not shader visible
-		// either.
+		// either. A mipmapped surface gets one per level, for drawing them.
 
-		if( m_bCanvas && !m_bIndexed )			// We can't render palette lookups in reverse.
+		if( bRenderTarget )			// Never palette based, we can't render palette lookups in reverse.
 		{
 			D3D12_DESCRIPTOR_HEAP_DESC rtvHeapDesc = {};
 			rtvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
-			rtvHeapDesc.NumDescriptors = 1;
+			rtvHeapDesc.NumDescriptors = m_mipLevels;
 			rtvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
 
 			if( FAILED(s_pDevice->CreateDescriptorHeap(&rtvHeapDesc, IID_PPV_ARGS(m_rtvHeap.GetAddressOf()))) )
 			{
 				m_texture = nullptr;
-				GfxBase::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to create render target heap for canvas surface.",
+				GfxBase::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to create render target heap for surface.",
 					this, &TYPEINFO, __func__, __FILE__, __LINE__);
 
 				_copyInPixels( pPixels, pitch, srcFormat, pSrcPixelDesc, pSrcPalette, srcPaletteSize );
 				return;
 			}
 
-			m_rtvHandle = m_rtvHeap->GetCPUDescriptorHandleForHeapStart();
-
 			D3D12_RENDER_TARGET_VIEW_DESC rtvDesc = {};
 			rtvDesc.Format = dxgiFormat;
 			rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
 
-			s_pDevice->CreateRenderTargetView(m_texture.Get(), &rtvDesc, m_rtvHandle);
+			for( int level = 0; level < m_mipLevels; level++ )
+			{
+				rtvDesc.Texture2D.MipSlice = level;
+				s_pDevice->CreateRenderTargetView(m_texture.Get(), &rtvDesc, mipRTV(level));
+			}
+
+			// Only a canvas hands out level 0. DX12Backend takes a surface without a
+			// render target view as one that can't be a canvas.
+
+			if( m_bCanvas )
+				m_rtvHandle = mipRTV(0);
 		}
 
 		if( m_bIndexed && (!m_pPalette || !_createPaletteBuffer()) )
@@ -806,6 +846,9 @@ namespace wg
 		_waitForCopyFence();
 
 		m_dirtyRect = RectI();
+
+		if( m_mipLevels > 1 )
+			m_bMipmapStale = true;
 	}
 
 	//____ notifyRendered() ____________________________________________________
@@ -818,6 +861,27 @@ namespace wg
 		syncTexture();			// Anything the CPU wrote goes in before we render over it.
 
 		m_bBufferNeedsSync = true;
+
+		if( m_mipLevels > 1 )
+			m_bMipmapStale = true;
+	}
+
+	//____ mipSourceSRV() ______________________________________________________
+
+	D3D12_CPU_DESCRIPTOR_HANDLE DX12Surface::mipSourceSRV( int level ) const
+	{
+		D3D12_CPU_DESCRIPTOR_HANDLE handle = m_srvHeap->GetCPUDescriptorHandleForHeapStart();
+		handle.ptr += SIZE_T(level) * s_pDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+		return handle;
+	}
+
+	//____ mipRTV() ____________________________________________________________
+
+	D3D12_CPU_DESCRIPTOR_HANDLE DX12Surface::mipRTV( int level ) const
+	{
+		D3D12_CPU_DESCRIPTOR_HANDLE handle = m_rtvHeap->GetCPUDescriptorHandleForHeapStart();
+		handle.ptr += SIZE_T(level) * s_pDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+		return handle;
 	}
 
 	//____ _initReadbackBuffer() _______________________________________________

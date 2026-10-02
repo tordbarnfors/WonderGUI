@@ -1425,6 +1425,53 @@ const char DX12Backend::g_paletteBlurPS[] =
 "}\n"
 ;
 
+const char DX12Backend::g_mipmapVS[] =
+
+"// One triangle covering the whole mip level being drawn, no vertex buffer\n"
+"// needed. Texture coordinates run 0 to 1 over the visible part.\n"
+"\n"
+"struct VS_OUTPUT\n"
+"{\n"
+"    float4 position : SV_POSITION;\n"
+"    float2 texUV : TEXCOORD;\n"
+"};\n"
+"\n"
+"\n"
+"VS_OUTPUT main(uint vertexId : SV_VertexID)\n"
+"{\n"
+"    VS_OUTPUT output;\n"
+"\n"
+"    output.texUV = float2((vertexId << 1) & 2, vertexId & 2);\n"
+"    output.position = float4(output.texUV.x * 2.0f - 1.0f, 1.0f - output.texUV.y * 2.0f, 0.0f, 1.0f);\n"
+"\n"
+"    return output;\n"
+"}\n"
+;
+
+const char DX12Backend::g_mipmapPS[] =
+
+"// Draws a mip level from the one above it. The source view holds that level\n"
+"// only, and a pixel's centre lands between four of its texels, so the bilinear\n"
+"// sampler averages them. An sRGB view converts to linear on the way in and the\n"
+"// render target back on the way out, so the average is taken in linear space.\n"
+"\n"
+"Texture2D source : register(t2);\n"
+"SamplerState linearSampler : register(s0);\n"
+"\n"
+"\n"
+"struct PS_INPUT\n"
+"{\n"
+"    float4 position : SV_POSITION;\n"
+"    float2 texUV : TEXCOORD;\n"
+"};\n"
+"\n"
+"\n"
+"float4 main(PS_INPUT input) : SV_TARGET\n"
+"{\n"
+"    return source.SampleLevel(linearSampler, input.texUV, 0);\n"
+"}\n"
+;
+
 const char DX12Backend::g_lineVS[] =
 
 "cbuffer CanvasInfo : register(b0)\n"

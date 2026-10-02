@@ -114,6 +114,17 @@ namespace wg
 		D3D12_RESOURCE_STATES	resourceState() const { return m_resourceState; }
 		void					setResourceState( D3D12_RESOURCE_STATES state ) { m_resourceState = state; }
 
+		// A mipmapped surface has a full chain of mip levels, which DX12Backend
+		// draws from level 0 before the surface is read with stale ones, see
+		// DX12Backend::_generateMipmaps(). D3D12 has nothing that does it for us.
+		// mipSourceSRV(level) views level - 1 alone, mipRTV(level) level alone.
+
+		int							mipLevels() const { return m_mipLevels; }
+		bool						isMipmapStale() const { return m_bMipmapStale; }
+		void						clearMipmapStale() { m_bMipmapStale = false; }
+		D3D12_CPU_DESCRIPTOR_HANDLE	mipSourceSRV( int level ) const;
+		D3D12_CPU_DESCRIPTOR_HANDLE	mipRTV( int level ) const;
+
 		void					syncTexture();			// Uploads pending pixel changes, if any.
 		void					notifyRendered();		// Called by DX12Backend before it renders into us.
 
@@ -150,8 +161,8 @@ namespace wg
 		Microsoft::WRL::ComPtr<ID3D12Resource>			m_uploadBuffer;		// Holds our pixels, readable and writable by the CPU.
 		Microsoft::WRL::ComPtr<ID3D12Resource>			m_readbackBuffer;	// Created on first read back from a canvas surface.
 		Microsoft::WRL::ComPtr<ID3D12Resource>			m_paletteBuffer;	// Palette based surfaces only. Upload heap, permanently mapped.
-		Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>	m_srvHeap;			// Holds this surface's SRV, not shader visible.
-		Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>	m_rtvHeap;			// Holds this surface's RTV. Canvas surfaces only.
+		Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>	m_srvHeap;			// Holds this surface's SRV, then one per mip level but the last. Not shader visible.
+		Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>	m_rtvHeap;			// Holds one RTV per mip level. Canvas and mipmapped surfaces only.
 
 		D3D12_CPU_DESCRIPTOR_HANDLE	m_srvHandle = {};
 		D3D12_CPU_DESCRIPTOR_HANDLE	m_rtvHandle = {};
@@ -169,6 +180,9 @@ namespace wg
 
 		RectI			m_dirtyRect;					// Area not yet uploaded to the texture. Empty when in sync.
 		bool			m_bBufferNeedsSync = false;		// Texture has changes our pixels don't have yet.
+
+		int				m_mipLevels = 1;
+		bool			m_bMipmapStale = false;			// Level 0 has changed since the others were drawn from it.
 
 		//
 

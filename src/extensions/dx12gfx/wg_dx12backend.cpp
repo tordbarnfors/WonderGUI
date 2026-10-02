@@ -86,6 +86,8 @@ namespace wg
 
 	Microsoft::WRL::ComPtr<ID3DBlob>			DX12Backend::s_vertexShaderBlobs[int(PipelineKind::Size)];
 	Microsoft::WRL::ComPtr<ID3DBlob>			DX12Backend::s_pixelShaderBlobs[int(PipelineKind::Size)];
+	Microsoft::WRL::ComPtr<ID3DBlob>			DX12Backend::s_mipmapVertexShaderBlob;
+	Microsoft::WRL::ComPtr<ID3DBlob>			DX12Backend::s_mipmapPixelShaderBlob;
 	Microsoft::WRL::ComPtr<ID3D12Device>		DX12Backend::s_pDevice;
 	Microsoft::WRL::ComPtr<ID3D12CommandQueue>	DX12Backend::s_pCommandQueue;
 	bool										DX12Backend::s_bImplicitDevice = false;
@@ -154,6 +156,9 @@ namespace wg
 				blob.Reset();
 			for (auto& blob : s_pixelShaderBlobs)
 				blob.Reset();
+
+			s_mipmapVertexShaderBlob.Reset();
+			s_mipmapPixelShaderBlob.Reset();
 		}
 
 		s_pDevice = pDX12Device;
@@ -1574,6 +1579,12 @@ namespace wg
 		if (m_bBlitSourceBound)
 			return true;
 
+		// Mip levels that no longer match level 0 are drawn anew before anything
+		// reads them.
+
+		if (m_pBlitSource->isMipmapStale())
+			_generateMipmaps(m_pBlitSource);
+
 		// D3D12 would promote a texture resting in COMMON to a shader resource on
 		// its own, but a canvas surface's state is one we track, so we do it with
 		// a barrier and put it back before the command list closes.
@@ -1637,6 +1648,189 @@ namespace wg
 
 		m_bBlitSourceBound = true;
 		return true;
+	}
+
+	//____ _generateMipmaps() __________________________________________________
+	//
+	// Draws each mip level of the surface from the one above it, the way
+	// MetalBackend has Metal do it and GlBackend has OpenGL. D3D12 has no such
+	// call, so we draw them ourselves, see ps_mipmap.hlsl.
+	//
+	// We get here from _bindBlitSource() when level 0 has changed since the
+	// levels were drawn: after an upload, which flushed the command list, or
+	// after rendering into the surface, which ended with it back in COMMON.
+	// Either way every level rests in COMMON and this command list hasn't
+	// promoted it, so we can barrier it ourselves. We leave it in COMMON, where
+	// _bindBlitSource() expects it.
+
+	void DX12Backend::_generateMipmaps(DX12Surface* pSurface)
+	{
+		auto& frame = m_frameResources[m_currentFrameIndex];
+
+		int nLevels = pSurface->mipLevels();
+		ID3D12Resource* pTexture = pSurface->texture();
+
+		if (!m_bCommandListOpen || !pTexture || nLevels < 2 || !frame.srvHeap || !m_pSamplerHeap)
+			return;
+
+		ID3D12PipelineState* pPipeline = _mipmapPipeline(pSurface->dxgiFormat());
+
+		if (!pPipeline)
+		{
+			pSurface->clearMipmapStale();		// No use trying again, level 0 alone is what we have.
+			return;
+		}
+
+		if (frame.nSRVDescriptors + nLevels - 1 > c_nbSRVDescriptors)
+			return;								// Stays stale, so the next frame tries again.
+
+		D3D12_RESOURCE_BARRIER barrier = {};
+		barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+		barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+		barrier.Transition.pResource = pTexture;
+		barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COMMON;
+		barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+		barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+
+		m_commandList->ResourceBarrier(1, &barrier);
+
+		m_commandList->SetPipelineState(pPipeline);
+
+		// Bilinear and clamped, see _createSamplers().
+
+		D3D12_GPU_DESCRIPTOR_HANDLE samplerHandle = m_pSamplerHeap->GetGPUDescriptorHandleForHeapStart();
+		samplerHandle.ptr += UINT64(1) * m_samplerDescriptorSize;
+
+		m_commandList->SetGraphicsRootDescriptorTable(4, samplerHandle);
+
+		SizeI size = pSurface->pixelSize();
+
+		for (int level = 1; level < nLevels; level++)
+		{
+			// Subresource index is the mip level, since there is one array slice and one plane.
+
+			barrier.Transition.Subresource = level;
+			barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+			barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
+			m_commandList->ResourceBarrier(1, &barrier);
+
+			D3D12_CPU_DESCRIPTOR_HANDLE dest = frame.srvHeap->GetCPUDescriptorHandleForHeapStart();
+			dest.ptr += SIZE_T(frame.nSRVDescriptors) * m_srvDescriptorSize;
+
+			m_pDX12Device->CopyDescriptorsSimple(1, dest, pSurface->mipSourceSRV(level), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+
+			D3D12_GPU_DESCRIPTOR_HANDLE srvHandle = frame.srvHeap->GetGPUDescriptorHandleForHeapStart();
+			srvHandle.ptr += UINT64(frame.nSRVDescriptors) * m_srvDescriptorSize;
+
+			frame.nSRVDescriptors++;
+
+			m_commandList->SetGraphicsRootDescriptorTable(3, srvHandle);
+
+			D3D12_CPU_DESCRIPTOR_HANDLE rtv = pSurface->mipRTV(level);
+			m_commandList->OMSetRenderTargets(1, &rtv, FALSE, nullptr);
+
+			LONG w = (size.w >> level) > 0 ? (size.w >> level) : 1;
+			LONG h = (size.h >> level) > 0 ? (size.h >> level) : 1;
+
+			D3D12_VIEWPORT viewport = { 0.f, 0.f, (FLOAT) w, (FLOAT) h, 0.f, 1.f };
+			D3D12_RECT scissorRect = { 0, 0, w, h };
+
+			m_commandList->RSSetViewports(1, &viewport);
+			m_commandList->RSSetScissorRects(1, &scissorRect);
+
+			m_commandList->DrawInstanced(3, 1, 0, 0);
+
+			barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
+			barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+			m_commandList->ResourceBarrier(1, &barrier);
+		}
+
+		barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+		barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+		barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_COMMON;
+		m_commandList->ResourceBarrier(1, &barrier);
+
+		pSurface->clearMipmapStale();
+
+		// Put back the canvas, and have pipeline and blit source bound anew.
+
+		m_pActivePipeline = nullptr;
+		m_bBlitSourceBound = false;
+
+		if (m_activeCanvasRTV.ptr != 0)
+			_bindCanvasState();
+		else
+			m_commandList->OMSetRenderTargets(0, nullptr, FALSE, nullptr);
+	}
+
+	//____ _mipmapPipeline() ___________________________________________________
+	//
+	// Created on first use for each format and kept, like the other pipelines.
+	// No blending, no vertex input: the vertex shader makes its triangle from
+	// SV_VertexID.
+
+	ID3D12PipelineState* DX12Backend::_mipmapPipeline(DXGI_FORMAT format)
+	{
+		auto it = m_mipmapPipelines.find(format);
+		if (it != m_mipmapPipelines.end())
+			return it->second.Get();
+
+		Microsoft::WRL::ComPtr<ID3D12PipelineState> pPipeline;
+
+		if (s_mipmapVertexShaderBlob && s_mipmapPixelShaderBlob)
+		{
+			D3D12_GRAPHICS_PIPELINE_STATE_DESC desc = {};
+			desc.pRootSignature = m_pRootSignature.Get();
+			desc.VS.pShaderBytecode = s_mipmapVertexShaderBlob->GetBufferPointer();
+			desc.VS.BytecodeLength = s_mipmapVertexShaderBlob->GetBufferSize();
+			desc.PS.pShaderBytecode = s_mipmapPixelShaderBlob->GetBufferPointer();
+			desc.PS.BytecodeLength = s_mipmapPixelShaderBlob->GetBufferSize();
+
+			// Zero is not a valid blend value, even with blending off.
+
+			for (int i = 0; i < D3D12_SIMULTANEOUS_RENDER_TARGET_COUNT; i++)
+			{
+				auto& rt = desc.BlendState.RenderTarget[i];
+
+				rt.BlendEnable = false;
+				rt.LogicOpEnable = false;
+				rt.SrcBlend = D3D12_BLEND_ONE;
+				rt.DestBlend = D3D12_BLEND_ZERO;
+				rt.BlendOp = D3D12_BLEND_OP_ADD;
+				rt.SrcBlendAlpha = D3D12_BLEND_ONE;
+				rt.DestBlendAlpha = D3D12_BLEND_ZERO;
+				rt.BlendOpAlpha = D3D12_BLEND_OP_ADD;
+				rt.LogicOp = D3D12_LOGIC_OP_NOOP;
+				rt.RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
+			}
+
+			desc.SampleMask = 0xFFFFFFFF;
+			desc.SampleDesc = { 1, 0 };
+
+			desc.RasterizerState.FillMode = D3D12_FILL_MODE_SOLID;
+			desc.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
+			desc.RasterizerState.FrontCounterClockwise = false;
+			desc.RasterizerState.DepthClipEnable = true;
+			desc.RasterizerState.ConservativeRaster = D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF;
+
+			desc.DepthStencilState.DepthEnable = false;
+			desc.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_LESS;
+			desc.DepthStencilState.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
+
+			desc.InputLayout = { nullptr, 0 };
+			desc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+
+			desc.NumRenderTargets = 1;
+			desc.RTVFormats[0] = format;
+			desc.NodeMask = 0;
+			desc.Flags = D3D12_PIPELINE_STATE_FLAG_NONE;
+
+			if (!CHECK_HR(m_pDX12Device->CreateGraphicsPipelineState(&desc, IID_PPV_ARGS(pPipeline.GetAddressOf())), "CreateGraphicsPipelineState"))
+				pPipeline = nullptr;
+		}
+
+		m_mipmapPipelines[format] = pPipeline;			// Kept also when null, so a failure is only reported once.
+		return pPipeline.Get();
 	}
 
 	//____ _bindBlitSamplerAndFlags() __________________________________________
@@ -2451,6 +2645,12 @@ namespace wg
 			if (!s_pixelShaderBlobs[int(shader.kind)] && !_compilePixelShader(s_pixelShaderBlobs[int(shader.kind)], shader.pPS))
 				return false;
 		}
+
+		if (!s_mipmapVertexShaderBlob && !_compileVertexShader(s_mipmapVertexShaderBlob, g_mipmapVS))
+			return false;
+
+		if (!s_mipmapPixelShaderBlob && !_compilePixelShader(s_mipmapPixelShaderBlob, g_mipmapPS))
+			return false;
 
 		return true;
 	}

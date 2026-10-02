@@ -214,6 +214,8 @@ namespace wg
 
 		void _setBlitSource(DX12Surface* pSurface);
 		bool _bindBlitSource();					// Puts source and sampler in place for the coming draw.
+		void _generateMipmaps(DX12Surface* pSurface);			// Draws every mip level from level 0.
+		ID3D12PipelineState* _mipmapPipeline(DXGI_FORMAT format);
 		void _bindBlitSamplerAndFlags();		// Sampler and shader flags for the source, depending on m_bBlitClip.
 
 		int _addColor(HiColor color);			// Returns offset into color buffer, -1 if full.
@@ -383,6 +385,11 @@ namespace wg
 
 		Microsoft::WRL::ComPtr<ID3D12RootSignature>			m_pRootSignature;				// Shared by all pipelines.
 
+		// Pipelines drawing a mip level from the one above, one per texture format.
+		// See _generateMipmaps(). They take the same root signature as the rest.
+
+		std::map<DXGI_FORMAT, Microsoft::WRL::ComPtr<ID3D12PipelineState>>	m_mipmapPipelines;
+
 		// Samplers, in the order nearest/bilinear and clamp/tile.
 
 		Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>		m_pSamplerHeap;
@@ -396,6 +403,8 @@ namespace wg
 
 		static Microsoft::WRL::ComPtr<ID3DBlob>				s_vertexShaderBlobs[int(PipelineKind::Size)];
 		static Microsoft::WRL::ComPtr<ID3DBlob>				s_pixelShaderBlobs[int(PipelineKind::Size)];
+		static Microsoft::WRL::ComPtr<ID3DBlob>				s_mipmapVertexShaderBlob;
+		static Microsoft::WRL::ComPtr<ID3DBlob>				s_mipmapPixelShaderBlob;
 
 		static Microsoft::WRL::ComPtr<ID3D12Device>			s_pDevice;
 		static Microsoft::WRL::ComPtr<ID3D12CommandQueue>	s_pCommandQueue;
@@ -418,6 +427,8 @@ namespace wg
 		static const char g_blurPS[];
 		static const char g_paletteBlitPS[];
 		static const char g_paletteBlurPS[];
+		static const char g_mipmapVS[];
+		static const char g_mipmapPS[];
 		static const char g_lineVS[];
 		static const char g_linePS[];
 		static const char g_segmentsVS[];
