@@ -494,6 +494,8 @@ static void shiftReadConv_64bit(const uint8_t* _pSrc, uint8_t* pDst, int nbPixel
 
 	uint64_t* pSrc = (uint64_t*)_pSrc;
 
+	int shiftA = t.shiftA + 8;						// Alpha isn't color converted, just reduced to 8 bits.
+
 	for (int i = 0; i < nbPixels; i++)
 	{
 		uint64_t rgba = * pSrc++;
@@ -501,7 +503,7 @@ static void shiftReadConv_64bit(const uint8_t* _pSrc, uint8_t* pDst, int nbPixel
 		*pDst++ = t.pConvB[(rgba & t.maskB64) >> t.shiftB];
 		*pDst++ = t.pConvG[(rgba & t.maskG64) >> t.shiftG];
 		*pDst++ = t.pConvR[(rgba & t.maskR64) >> t.shiftR];
-		*pDst++ = t.pConvA[(rgba & t.maskA64) >> t.shiftA];
+		*pDst++ = uint8_t((rgba & t.maskA64) >> shiftA);
 	}
 }
 
@@ -1828,13 +1830,13 @@ bool copyPixels(int width, int height, const uint8_t* pSrc, const PixelDescripti
 		{
 			if (dstDesc.colorSpace == ColorSpace::sRGB)
 			{
-				if (pConv_16_linear_to_8_sRGB)
+				if (!pConv_16_linear_to_8_sRGB)
 					createConv16toSRGBTab();
 
 				convTab.pConvR = pConv_16_linear_to_8_sRGB;
 				convTab.pConvG = pConv_16_linear_to_8_sRGB;
 				convTab.pConvB = pConv_16_linear_to_8_sRGB;
-				convTab.pConvA = pConv_16_linear_to_8_sRGB;
+				convTab.pConvA = nullptr;
 			}
 			else
 			{
@@ -2058,7 +2060,7 @@ static std::tuple<PixelReadFunc, const void *, const void *, int> getReadFuncFor
 				break;
 
 			case PixelFormat::BGRA_16_linear:
-				if (srcDesc.colorSpace == ColorSpace::Linear)
+				if (bLinearDest)
 					pReadFunc = readBGRA16;
 				else
 				{
