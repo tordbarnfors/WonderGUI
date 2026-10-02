@@ -474,14 +474,14 @@ namespace wg
 			case PixelFormat::BGR_565_linear:
 				m_internalFormat = GL_RGB565;					// NOTE: We lose one bit of precision on green here...
 				m_accessFormat = GL_RGB;
-				m_pixelDataType = GL_UNSIGNED_SHORT_5_6_5_REV;		// or should we use GL_UNSIGNED_SHORT_5_6_5_REV?
+				m_pixelDataType = GL_UNSIGNED_SHORT_5_6_5;			// Red in the high bits, blue in the low.
 				m_pixelSize = 2;
 				break;
 
 			case PixelFormat::BGRA_4_linear:
 				m_internalFormat = GL_RGBA4;
 				m_accessFormat = GL_BGRA;
-				m_pixelDataType = GL_UNSIGNED_SHORT_4_4_4_4;	// or should we use GL_UNSIGNED_SHORT_4_4_4_4_REV?
+				m_pixelDataType = GL_UNSIGNED_SHORT_4_4_4_4_REV;	// Blue in the low bits, alpha in the high.
 				m_pixelSize = 2;
 				break;
 
@@ -797,7 +797,7 @@ namespace wg
 			type = GL_UNSIGNED_SHORT_4_4_4_4_REV;
 			break;
 		case PixelFormat::BGR_565_linear:
-			type = GL_UNSIGNED_SHORT_5_6_5_REV;
+			type = GL_UNSIGNED_SHORT_5_6_5;
 			break;
 		case PixelFormat::Alpha_8:
 			type = GL_UNSIGNED_BYTE;
