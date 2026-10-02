@@ -2237,7 +2237,7 @@ namespace wg
 
 	void SoftBackend::_updateBlurRadius(spx radius)
 	{
-		spx cornerRadius = radius * 724 / 1024;
+		spx cornerRadius = radius * 7 / 10;			// Same as the GPU backends.
 
 		m_colTrans.blurOfsSPX[0] = { -cornerRadius, -cornerRadius };
 		m_colTrans.blurOfsSPX[1] = { 0, -radius };
@@ -2249,10 +2249,13 @@ namespace wg
 		m_colTrans.blurOfsSPX[7] = { 0, radius };
 		m_colTrans.blurOfsSPX[8] = { cornerRadius, cornerRadius };
 
+		// Rounded to nearest pixel, which is what the GPU backends get by sampling at
+		// the center of the destination pixel plus the offset.
+
 		for (int i = 0; i < 9; i++)
 		{
-			m_colTrans.blurOfsPixel[i].x = (m_colTrans.blurOfsSPX[i].x) / 64;
-			m_colTrans.blurOfsPixel[i].y = (m_colTrans.blurOfsSPX[i].y) / 64;
+			m_colTrans.blurOfsPixel[i].x = (m_colTrans.blurOfsSPX[i].x + 32) >> 6;
+			m_colTrans.blurOfsPixel[i].y = (m_colTrans.blurOfsSPX[i].y + 32) >> 6;
 		}
 	}
 

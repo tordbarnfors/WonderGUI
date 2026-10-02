@@ -1072,7 +1072,11 @@ void GlBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, int 
 				pVertexGL->tintmapOfs = { float(m_tintOfs), 0.f };
 				pVertexGL++;
 
-				if (m_blitSourceSampleMethod == SampleMethod::Bilinear)
+				// Nearest sampling normally starts at the corner of the source pixel, so that
+				// stretched pixels are evenly distributed. Blur starts at the center, so that
+				// its fractional sample offsets round to the nearest pixel in both directions.
+
+				if (m_blitSourceSampleMethod == SampleMethod::Bilinear || cmd == Command::Blur)
 				{
 					*pExtrasGL++ = srcX / 1024.f + 0.5f;
 					*pExtrasGL++ = srcY / 1024.f + 0.5f;
