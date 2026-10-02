@@ -1626,7 +1626,11 @@ void MetalBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, i
 					p = (const uint16_t*) p32;
 
 
-					if (m_pActiveBlitSource->sampleMethod() == SampleMethod::Bilinear)
+					// Nearest sampling normally starts at the corner of the source pixel, so that
+					// stretched pixels are evenly distributed. Blur starts at the center, so that
+					// its fractional sample offsets round to the nearest pixel in both directions.
+
+					if (m_pActiveBlitSource->sampleMethod() == SampleMethod::Bilinear || cmd == Command::Blur)
 					{
 						* pExtrasMTL++ = srcX / 1024.f + 0.5f;
 						* pExtrasMTL++ = srcY / 1024.f + 0.5f;

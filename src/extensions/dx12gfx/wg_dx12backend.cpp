@@ -1685,6 +1685,12 @@ namespace wg
 
 		bool bBilinear = (m_pBlitSource && m_pBlitSource->sampleMethod() == SampleMethod::Bilinear);
 
+		// Nearest sampling normally starts at the corner of the source pixel, so that
+		// stretched pixels are evenly distributed. Blur starts at the center, so that
+		// its fractional sample offsets round to the nearest pixel in both directions.
+
+		bool bCenter = bBilinear || kind == PipelineKind::Blur;
+
 		// Even when we can't draw we have to step through the command's data, or
 		// we lose track of where we are in the stream.
 
@@ -1772,8 +1778,8 @@ namespace wg
 
 			ExtrasDX12 srcDst;
 
-			srcDst.x = srcX / 1024.f + (bBilinear ? 0.5f : 0.f);
-			srcDst.y = srcY / 1024.f + (bBilinear ? 0.5f : 0.f);
+			srcDst.x = srcX / 1024.f + (bCenter ? 0.5f : 0.f);
+			srcDst.y = srcY / 1024.f + (bCenter ? 0.5f : 0.f);
 			srcDst.z = float(dstX >> 6) + 0.5f;
 			srcDst.w = float(dstY >> 6) + 0.5f;
 
