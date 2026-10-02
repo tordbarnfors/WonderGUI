@@ -1626,29 +1626,35 @@ void MetalBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, i
 					p = (const uint16_t*) p32;
 
 
-					// Nearest sampling normally starts at the corner of the source pixel, so that
-					// stretched pixels are evenly distributed. Blur starts at the center, so that
-					// its fractional sample offsets round to the nearest pixel in both directions.
-
-					if (m_pActiveBlitSource->sampleMethod() == SampleMethod::Bilinear || cmd == Command::Blur)
-					{
-						* pExtrasMTL++ = srcX / 1024.f + 0.5f;
-						* pExtrasMTL++ = srcY / 1024.f + 0.5f;
-						* pExtrasMTL++ = float(dstX >> 6) + 0.5f;
-						* pExtrasMTL++ = float(dstY >> 6) + 0.5f;
-					}
-					else
-					{
-						*pExtrasMTL++ = srcX / 1024.f;
-						*pExtrasMTL++ = srcY / 1024.f;
-						*pExtrasMTL++ = float(dstX >> 6) + 0.5f;
-						*pExtrasMTL++ = float(dstY >> 6) + 0.5f;
-					}
-
 					int32_t transform = *p++;
 					p++;						// padding
 
 					auto& mtx = transform < customTransformStart ? s_standardTransforms[transform] : m_pTransformsBeg[transform - customTransformStart];
+
+					// The source coordinate is where the corner of the first destination pixel lands.
+					// Standard transforms (blits, tiles and blurs, possibly flipped) map pixels 1:1,
+					// so they sample the center of each source pixel, half a pixel along the
+					// transformed axes, whichever way those point. Other transforms sample bilinear
+					// sources at the center of the texel, but nearest ones at the corner, so that
+					// stretched pixels are evenly distributed. Blurs always sample the center, so
+					// their fractional sample offsets round to the nearest pixel either way.
+
+					float srcOfsX, srcOfsY;
+
+					if (transform < customTransformStart)
+					{
+						srcOfsX = (mtx.xx + mtx.yx) * 0.5f;
+						srcOfsY = (mtx.xy + mtx.yy) * 0.5f;
+					}
+					else if (m_pActiveBlitSource->sampleMethod() == SampleMethod::Bilinear || cmd == Command::Blur)
+						srcOfsX = srcOfsY = 0.5f;
+					else
+						srcOfsX = srcOfsY = 0.f;
+
+					*pExtrasMTL++ = srcX / 1024.f + srcOfsX;
+					*pExtrasMTL++ = srcY / 1024.f + srcOfsY;
+					*pExtrasMTL++ = float(dstX >> 6) + 0.5f;
+					*pExtrasMTL++ = float(dstY >> 6) + 0.5f;
 
 					*pExtrasMTL++ = mtx.xx;
 					*pExtrasMTL++ = mtx.xy;
