@@ -453,18 +453,29 @@ namespace wg
 
 	//____ _initTables() ______________________________________________________
 
+	// The sRGB transfer functions, as used by GPUs for sRGB textures and framebuffers.
+	// A plain 2.2 power curve differs noticeably in dark tones.
+
+	static double _sRGBToLinear(double c)
+	{
+		return c <= 0.04045 ? c / 12.92 : pow((c + 0.055) / 1.055, 2.4);
+	}
+
+	static double _linearToSRGB(double l)
+	{
+		return l <= 0.0031308 ? l * 12.92 : 1.055 * pow(l, 1 / 2.4) - 0.055;
+	}
+
 	void HiColor::_initTables()
 	{
-		float max = powf(255, 2.2f);
-
 		for (int i = 0; i < 256; i++)
-			HiColor::unpackSRGBTab[i] = int((powf(float(i), 2.2f) / max) * 4096 + 0.5f);
+			HiColor::unpackSRGBTab[i] = int16_t(_sRGBToLinear(i / 255.0) * 4096 + 0.5);
 
 		for (int i = 0; i < 256; i++)
 			HiColor::unpackLinearTab[i] = int(i / 255.f * 4096 + 0.5f);
 
 		for (int i = 0; i <= 4096; i++)
-			HiColor::packSRGBTab[i] = uint8_t(powf(i * max / 4096, 1 / 2.2f) + 0.5f);
+			HiColor::packSRGBTab[i] = uint8_t(_linearToSRGB(i / 4096.0) * 255 + 0.5);
 
 		for (int i = 0; i <= 4096; i++)
 			HiColor::packLinearTab[i] = uint8_t(i / 4096.f * 255.f + 0.5f);
