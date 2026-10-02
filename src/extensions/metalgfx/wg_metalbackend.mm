@@ -674,11 +674,9 @@ void MetalBackend::beginSession( CanvasRef canvasRef, Surface * pCanvasSurface, 
 	m_pActiveBlitSource		= nullptr;
 	m_activeBlendMode		= BlendMode::Blend;
 	m_activeMorphFactor		= 0.5f;
-	m_activeFixedBlendColor = HiColor::White;
 	m_activeBlurRadius		= 64;
 
 	m_morphFactorInUse		= -1;
-	m_fixedBlendColorInUse	= HiColor::Undefined;
 
 	// Reset uniform to start state
 
@@ -928,7 +926,7 @@ void MetalBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, i
 
 					m_activeBlendMode = mode;
 
-					// If BlendMode is Morph or BlendFixedColor we must make sure Metal's blendColor is set accordingly
+					// If BlendMode is Morph we must make sure Metal's blendColor is set accordingly
 
 					if( mode == BlendMode::Morph )
 					{
@@ -937,20 +935,6 @@ void MetalBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, i
 							[m_renderEncoder setBlendColorRed:1.f green:1.f blue:1.f alpha:m_activeMorphFactor];
 
 							m_morphFactorInUse = m_activeMorphFactor;
-							m_fixedBlendColorInUse = HiColor::Undefined;
-						}
-					}
-					else if( mode == BlendMode::BlendFixedColor )
-					{
-						if( m_fixedBlendColorInUse != m_activeFixedBlendColor )
-						{
-							[m_renderEncoder setBlendColorRed:(m_activeFixedBlendColor.r/4096.f)
-														green:(m_activeFixedBlendColor.g/4096.f)
-														 blue:(m_activeFixedBlendColor.b/4096.f)
-														alpha:(m_activeFixedBlendColor.a/4096.f)];
-
-							m_morphFactorInUse = -1;
-							m_fixedBlendColorInUse = m_activeFixedBlendColor;
 						}
 					}
 				}
@@ -974,19 +958,7 @@ void MetalBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, i
 					// Just retrieve the value but do nothing. We use BlendMode::Blend
 					// in place of BlendMode::BlendFixedColor.
 
-					HiColor color = *pColors++;
-
-					m_activeFixedBlendColor = color;
-
-					if( m_activeBlendMode == BlendMode::BlendFixedColor && m_fixedBlendColorInUse != color )
-					{
-						[m_renderEncoder setBlendColorRed:(color.r/4096.f)
-													green:(color.g/4096.f)
-													 blue:(color.b/4096.f)
-													alpha:(color.a/4096.f)];
-
-						m_fixedBlendColorInUse = color;
-					}
+					pColors++;
 				}
 
 				if (statesChanged & uint8_t(StateChange::Blur))
@@ -1992,6 +1964,7 @@ id<MTLRenderPipelineState> MetalBackend::_compileRenderPipeline( NSString* label
 
 		case BlendMode::Undefined:
 		case BlendMode::Blend:
+		case BlendMode::BlendFixedColor:		// Blending normally is an allowed stand-in, as in GL and DX12.
 			descriptor.colorAttachments[0].blendingEnabled = YES;
 			descriptor.colorAttachments[0].rgbBlendOperation = MTLBlendOperationAdd;
 			descriptor.colorAttachments[0].alphaBlendOperation = MTLBlendOperationAdd;
@@ -2116,27 +2089,6 @@ id<MTLRenderPipelineState> MetalBackend::_compileRenderPipeline( NSString* label
 			descriptor.colorAttachments[0].destinationRGBBlendFactor = MTLBlendFactorOne;
 			descriptor.colorAttachments[0].sourceAlphaBlendFactor = MTLBlendFactorZero;
 			descriptor.colorAttachments[0].destinationAlphaBlendFactor = MTLBlendFactorOne;
-			break;
-
-		case BlendMode::BlendFixedColor:
-
-			descriptor.colorAttachments[0].blendingEnabled = YES;
-			descriptor.colorAttachments[0].rgbBlendOperation = MTLBlendOperationAdd;
-			descriptor.colorAttachments[0].alphaBlendOperation = MTLBlendOperationAdd;
-			descriptor.colorAttachments[0].sourceAlphaBlendFactor = MTLBlendFactorOne;
-			descriptor.colorAttachments[0].destinationAlphaBlendFactor = MTLBlendFactorOneMinusBlendAlpha;
-
-			if(bAlphaOnly)
-			{
-				descriptor.colorAttachments[0].sourceRGBBlendFactor = MTLBlendFactorOne;
-				descriptor.colorAttachments[0].destinationRGBBlendFactor = MTLBlendFactorOneMinusBlendColor;
-			}
-			else
-			{
-				descriptor.colorAttachments[0].sourceRGBBlendFactor = MTLBlendFactorBlendAlpha;
-				descriptor.colorAttachments[0].destinationRGBBlendFactor = MTLBlendFactorOneMinusBlendAlpha;
-			}
-
 			break;
 
 		default:

@@ -291,11 +291,9 @@ namespace wg
 		DestFormat      m_activeCanvasFormat;
 		BlendMode       m_activeBlendMode   = BlendMode::Blend;
 		float           m_activeMorphFactor = 0.5f;
-		HiColor         m_activeFixedBlendColor = HiColor::White;
 		spx				m_activeBlurRadius = 64;
 
 		float           m_morphFactorInUse = -1;
-		HiColor         m_fixedBlendColorInUse = HiColor::Undefined;
 
 
 
