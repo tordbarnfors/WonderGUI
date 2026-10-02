@@ -33,10 +33,11 @@ public:
 	{
 		auto oldBlendMode = pDevice->blendMode();
 
-		pDevice->setBlendMode(BlendMode::BlendFixedColor);
 		pDevice->setBlitSource(m_pSplash);
 		
 		HiColor bg[6] = { Color8::Black, Color8::White, Color8::Red, Color8::Green, Color8::Blue, Color8::Yellow };
+		_background(pDevice, canvas, bg);
+		pDevice->setBlendMode(BlendMode::BlendFixedColor);
 		
 		for( int y = 0 ; y < 6 ; y++ )
 		{
@@ -60,10 +61,11 @@ public:
 	{
 		auto oldBlendMode = pDevice->blendMode();
 
-		pDevice->setBlendMode(BlendMode::BlendFixedColor);
 		pDevice->setBlitSource(m_pSplash);
 		
 		HiColor bg[6] = { Color8::Black, Color8::White, Color8::Red, Color8::Green, Color8::Blue, Color8::Yellow };
+		_background(pDevice, canvas, bg);
+		pDevice->setBlendMode(BlendMode::BlendFixedColor);
 		
 		for( int y = 0 ; y < 6 ; y++ )
 		{
@@ -87,9 +89,10 @@ public:
 	{
 		auto oldBlendMode = pDevice->blendMode();
 
-		pDevice->setBlendMode(BlendMode::BlendFixedColor);
 	
 		HiColor bg[6] = { Color8::Black, Color8::White, Color8::Red, Color8::Green, Color8::Blue, Color8::Yellow };
+		_background(pDevice, canvas, bg);
+		pDevice->setBlendMode(BlendMode::BlendFixedColor);
 		
 
 		for( int y = 0 ; y < 6 ; y++ )
@@ -113,9 +116,10 @@ public:
 	{
 		auto oldBlendMode = pDevice->blendMode();
 
-		pDevice->setBlendMode(BlendMode::BlendFixedColor);
 	
 		HiColor bg[6] = { Color8::Black, Color8::White, Color8::Red, Color8::Green, Color8::Blue, Color8::Yellow };
+		_background(pDevice, canvas, bg);
+		pDevice->setBlendMode(BlendMode::BlendFixedColor);
 		
 
 		for( int y = 0 ; y < 6 ; y++ )
@@ -144,6 +148,19 @@ public:
 	
 
 private:
+
+	// BlendFixedColor is a promise that what we draw onto has the fixed blend color, which
+	// lets backends that support it skip reading the canvas. Backends are free to blend
+	// normally instead, so the rows are filled with their fixed blend colors to make the
+	// results the same either way.
+
+	void _background(GfxDevice * pDevice, const RectSPX& canvas, const HiColor * pColors)
+	{
+		pDevice->setBlendMode(BlendMode::Replace);
+
+		for( int y = 0 ; y < 6 ; y++ )
+			pDevice->fill( RectSPX(0, y*32*64, canvas.w, 32*64), pColors[y] );
+	}
 
 	Surface_p	m_pSplash;
 
