@@ -1415,7 +1415,8 @@ void _straight_blit(const uint8_t* WG_RESTRICT pSrc, uint8_t* WG_RESTRICT pDst, 
 	constexpr bool srcIsLinear = (SRCFORMAT == PixelFormat::Alpha_8 || SRCFORMAT == PixelFormat::BGRA_4_linear ||
 		SRCFORMAT == PixelFormat::BGRA_8_linear || SRCFORMAT == PixelFormat::BGRX_8_linear ||
 		SRCFORMAT == PixelFormat::BGR_565_linear || SRCFORMAT == PixelFormat::RGB_565_bigendian ||
-		SRCFORMAT == PixelFormat::RGB_555_bigendian || SRCFORMAT == PixelFormat::BGR_8_linear);
+		SRCFORMAT == PixelFormat::RGB_555_bigendian || SRCFORMAT == PixelFormat::BGR_8_linear ||
+		SRCFORMAT == PixelFormat::Index_8_linear);
 
 	constexpr bool dstIsLinear = (DSTFORMAT == PixelFormat::Alpha_8 || DSTFORMAT == PixelFormat::BGRA_4_linear ||
 		DSTFORMAT == PixelFormat::BGRA_8_linear || DSTFORMAT == PixelFormat::BGRX_8_linear ||
@@ -1685,7 +1686,8 @@ void _transform_blit(const SoftSurface* WG_RESTRICT pSrcSurf, BinalCoord pos, co
 						SRCFORMAT == PixelFormat::BGR_565_linear ||
 						SRCFORMAT == PixelFormat::RGB_565_bigendian ||
 						SRCFORMAT == PixelFormat::RGB_555_bigendian ||
-						SRCFORMAT == PixelFormat::BGR_8_linear);
+						SRCFORMAT == PixelFormat::BGR_8_linear ||
+						SRCFORMAT == PixelFormat::Index_8_linear);
 
 	constexpr bool dstIsLinear = (DSTFORMAT == PixelFormat::Alpha_8 || DSTFORMAT == PixelFormat::BGRA_4_linear ||
 		DSTFORMAT == PixelFormat::BGRA_8_linear || DSTFORMAT == PixelFormat::BGRX_8_linear ||
