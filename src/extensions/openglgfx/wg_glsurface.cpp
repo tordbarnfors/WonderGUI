@@ -320,8 +320,6 @@ namespace wg
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, mode);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, mode);
 
-		m_bTiling = m_bTiling;
-
 		// Push pixels
 
 		HANDLE_GLERROR(glGetError());
@@ -737,27 +735,53 @@ namespace wg
 		glGenTextures( 1, &m_texture );
 		glBindTexture( GL_TEXTURE_2D, m_texture );
 
-		switch (m_sampleMethod)
-		{
-		case SampleMethod::Bilinear:
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-			break;
+		// Same settings as _setupGlTexture() gives a new texture.
 
-		case SampleMethod::Nearest:
-		default:
+		GLint wrapMode = m_bTiling ? GL_REPEAT : GL_CLAMP_TO_EDGE;
+
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrapMode);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrapMode);
+
+		if (m_pPalette)
+		{
+			// Indexes are looked up in the shader and must not be interpolated.
+
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-			break;
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
+		}
+		else if (m_sampleMethod == SampleMethod::Bilinear)
+		{
+			// A mipmap filter on a texture without mipmaps leaves it incomplete, and it samples as black.
+
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, m_bMipmapped ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		}
+		else
+		{
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 		}
 
-		glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_CLAMP_TO_EDGE);
-		glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_T,GL_CLAMP_TO_EDGE);
-
+		glPixelStorei(GL_UNPACK_ROW_LENGTH, m_pitch/m_pixelSize);
 		glTexImage2D( GL_TEXTURE_2D, 0, m_internalFormat, m_size.w, m_size.h, 0,
 					 m_accessFormat, m_pixelDataType, m_pBlob->data() );
+		glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
 
 		glBindTexture( GL_TEXTURE_2D, oldBinding );
+
+		// A canvas reads back through a framebuffer that still points at the texture we deleted.
+
+		if( m_bCanvas )
+		{
+			GLint oldFrameBuffer;
+			glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING, &oldFrameBuffer);
+
+			glBindFramebuffer(GL_READ_FRAMEBUFFER, m_framebufferId);
+			glFramebufferTexture(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, m_texture, 0);
+
+			glBindFramebuffer(GL_READ_FRAMEBUFFER, oldFrameBuffer);
+		}
 
 		m_bMipmapStale = m_bMipmapped;
 
