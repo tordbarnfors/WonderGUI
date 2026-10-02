@@ -1704,7 +1704,10 @@ void _transform_blit(const SoftSurface* WG_RESTRICT pSrcSurf, BinalCoord pos, co
 		DSTFORMAT == PixelFormat::BGR_565_linear || DSTFORMAT == PixelFormat::RGB_565_bigendian ||
 		DSTFORMAT == PixelFormat::RGB_555_bigendian || DSTFORMAT == PixelFormat::BGR_8_linear);
 
-	constexpr bool bFast8 = ((srcIsLinear && dstIsLinear) || (!srcIsLinear && !dstIsLinear && TINT == TintMode::None && BLEND == BlendMode::Replace)) &&
+	// sRGB pixels can be copied as they are, but not interpolated, since that must be
+	// done on linear values.
+
+	constexpr bool bFast8 = ((srcIsLinear && dstIsLinear) || (!srcIsLinear && !dstIsLinear && TINT == TintMode::None && BLEND == BlendMode::Replace && SAMPLEMETHOD == SampleMethod::Nearest)) &&
 							(SRCFORMAT != PixelFormat::Undefined && DSTFORMAT != PixelFormat::Undefined && READOP != SoftBackend::ReadOp::Blur);
 
 	constexpr int bits = bFast8 ? 8 : 12;
