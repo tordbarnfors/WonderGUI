@@ -119,7 +119,14 @@ bool GfxDeviceTester::update()
 		g_bRefreshPerformance = false;
 	}
 
-	if (g_displayMode != DisplayMode::Time)
+	if (g_bRunComparison)
+	{
+		run_comparison();
+		refresh_compare_display();
+		g_bRunComparison = false;
+	}
+
+	if (g_displayMode != DisplayMode::Time && g_displayMode != DisplayMode::Compare)
 	{
 		if( g_pReferenceDevice->needsRedraw() )
 			run_tests(g_pReferenceDevice, REFERENCE );
@@ -371,6 +378,11 @@ void GfxDeviceTester::update_displaymode()
 			g_pViewScroller->slot = g_pPerformanceDisplay;
 			pContent = g_pPerformanceDisplay;
 			break;
+		case DisplayMode::Compare:
+			refresh_compare_display();
+			g_pViewScroller->slot = g_pCompareDisplay;
+			pContent = g_pCompareDisplay;
+			break;
 	}
 
 	auto pFlex = FlexPanel::create();
@@ -499,19 +511,24 @@ void GfxDeviceTester::run_tests(Device* pDevice, DeviceEnum device)
 	for (auto& test : g_tests)
 	{
 		if (test.bActive)
-		{
-			if (test.devices[device].pTest->init != nullptr)
-				test.devices[device].pTest->init(pGfxDevice, g_canvasSize*64);
-
-			test.devices[device].pTest->run(pGfxDevice, g_canvasSize*64);
-
-			if (test.devices[device].pTest->exit != nullptr)
-				test.devices[device].pTest->exit(pGfxDevice, g_canvasSize*64);
-		}
+			run_test(pGfxDevice, test.devices[device].pTest);
 	}
 
 	pGfxDevice->resetClipList();
 	pDevice->endRender();
+}
+
+//____ run_test() _____________________________________________________________
+
+void GfxDeviceTester::run_test(GfxDevice* pGfxDevice, Test* pTest)
+{
+	if (pTest->init != nullptr)
+		pTest->init(pGfxDevice, g_canvasSize*64);
+
+	pTest->run(pGfxDevice, g_canvasSize*64);
+
+	if (pTest->exit != nullptr)
+		pTest->exit(pGfxDevice, g_canvasSize*64);
 }
 
 
@@ -566,6 +583,209 @@ void GfxDeviceTester::clock_test(DeviceTest* pDeviceTest, int rounds, Device* pD
 
 	pDeviceTest->render_time = (end - start)/1000000.0;
 	pDeviceTest->stalling_time = (stallEnd - stallBegin)/1000000.0;
+}
+
+//____ run_comparison() _______________________________________________________
+/*
+	Renders every test on its own on both devices, reads back the results and
+	compares them. Both are converted to 8 bits per channel in the color space of
+	the reference canvas, so devices with different canvas formats can be compared.
+*/
+
+void GfxDeviceTester::run_comparison()
+{
+	Surface_p pRefSurface = g_pReferenceDevice->canvas() ? g_pReferenceDevice->canvas() : g_pReferenceDevice->displaySurface();
+	PixelFormat format = Util::pixelFormatToDescription(pRefSurface->pixelFormat()).colorSpace == ColorSpace::Linear ? PixelFormat::BGRA_8_linear : PixelFormat::BGRA_8_sRGB;
+
+	vector<uint8_t> pixels[2];
+
+	for (auto& test : g_tests)
+	{
+		CompareResult& result = test.compare;
+		result = CompareResult();
+
+		bool bOk = true;
+		for (int device = 0; device < 2; device++)
+		{
+			Device* pDevice = device == REFERENCE ? g_pReferenceDevice : g_pTesteeDevice;
+
+			auto pGfxDevice = pDevice->beginRender();
+			pGfxDevice->fill(g_canvasSize*64, HiColor::Black);
+			pGfxDevice->setClipList((int)g_clipList.size(), &g_clipList[0]);
+			run_test(pGfxDevice, test.devices[device].pTest);
+			pGfxDevice->resetClipList();
+			pDevice->endRender();
+
+			bOk &= read_canvas(pDevice, format, pixels[device]);
+		}
+
+		if (!bOk)
+			continue;
+
+		const uint8_t* pRef = pixels[REFERENCE].data();
+		const uint8_t* pTestee = pixels[TESTEE].data();
+		size_t nbValues = pixels[REFERENCE].size();
+		int64_t sum = 0;
+
+		for (size_t i = 0; i < nbValues; i++)
+		{
+			int diff = std::abs(int(pRef[i]) - int(pTestee[i]));
+			sum += diff;
+
+			if (diff > c_diffThreshold)
+				result.nbOverThreshold++;
+
+			if (diff > result.maxDiff)
+			{
+				result.maxDiff = diff;
+				int pixel = int(i / 4);
+				result.worst = { pixel % g_canvasSize.w, pixel / g_canvasSize.w };
+			}
+		}
+
+		result.meanDiff = double(sum) / nbValues;
+		result.bDone = true;
+	}
+
+	// The canvases now show the last test, so get them back to what is selected.
+
+	g_pReferenceDevice->setNeedsRedraw();
+	g_pTesteeDevice->setNeedsRedraw();
+}
+
+//____ read_canvas() __________________________________________________________
+
+bool GfxDeviceTester::read_canvas(Device* pDevice, PixelFormat format, vector<uint8_t>& pixels)
+{
+	Surface_p pSurface = pDevice->canvas() ? pDevice->canvas() : pDevice->displaySurface();
+	if (!pSurface || pSurface->pixelSize() != g_canvasSize)
+		return false;
+
+	pixels.resize(g_canvasSize.w * g_canvasSize.h * 4);
+
+	auto buffer = pSurface->allocPixelBuffer();
+	pSurface->pushPixels(buffer);
+
+	int srcPitchAdd = buffer.pitch - g_canvasSize.w * Util::pixelFormatToDescription(buffer.format).bits / 8;
+	int dstPaletteEntries = 0;
+
+	bool bOk = PixelTools::copyPixels(g_canvasSize.w, g_canvasSize.h, buffer.pixels, buffer.format, srcPitchAdd,
+									  pixels.data(), format, 0, buffer.palette, nullptr, 256, dstPaletteEntries, 0);
+
+	pSurface->freePixelBuffer(buffer);
+	return bOk;
+}
+
+//____ refresh_compare_display() ______________________________________________
+
+void GfxDeviceTester::refresh_compare_display()
+{
+	for (auto route : g_compareRoutes)
+		Base::msgRouter()->deleteRoute(route);
+	g_compareRoutes.clear();
+
+	g_pCompareTable->resize(1, 6);
+
+	const char* headings[6] = { "TEST", "MAX", "MEAN", "OVER", "WORST AT", "RESULT" };
+	for (int col = 0; col < 6; col++)
+		g_pCompareTable->slots[0][col] = TextDisplay::create({ .display = {.layout = col == 0 ? nullptr : g_pPerformanceValueMapper, .style = wkit::TextStyles::Heading6, .text = headings[col] } });
+
+	// Worst first, so what needs looking at is at the top.
+
+	vector<TestEntry*> sorted;
+	for (auto& test : g_tests)
+	{
+		if (test.compare.bDone)
+			sorted.push_back(&test);
+	}
+
+	std::stable_sort(sorted.begin(), sorted.end(), [](const TestEntry* a, const TestEntry* b) {
+		if (a->compare.nbOverThreshold != b->compare.nbOverThreshold)
+			return a->compare.nbOverThreshold > b->compare.nbOverThreshold;
+		return a->compare.maxDiff > b->compare.maxDiff;
+	});
+
+	int nbOk = 0, nbSpecks = 0, nbDiff = 0;
+
+	for (TestEntry* pTest : sorted)
+	{
+		const CompareResult& r = pTest->compare;
+
+		const char* pVerdict;
+		TextStyle_p pStyle;
+
+		if (r.nbOverThreshold == 0)
+		{
+			pVerdict = "OK";
+			pStyle = g_pOkStyle;
+			nbOk++;
+		}
+		else if (r.nbOverThreshold <= c_maxSpecks)
+		{
+			pVerdict = "SPECKS";
+			pStyle = g_pSpecksStyle;
+			nbSpecks++;
+		}
+		else
+		{
+			pVerdict = "DIFF";
+			pStyle = g_pDiffStyle;
+			nbDiff++;
+		}
+
+		char values[5][32];
+		snprintf(values[0], 32, "%d", r.maxDiff);
+		snprintf(values[1], 32, "%.2f", r.meanDiff);
+		snprintf(values[2], 32, "%d", r.nbOverThreshold);
+		if (r.maxDiff > 0)
+			snprintf(values[3], 32, "%d, %d", r.worst.x, r.worst.y);
+		else
+			values[3][0] = 0;
+		snprintf(values[4], 32, "%s", pVerdict);
+
+		g_pCompareTable->rows.pushBack();
+		int row = g_pCompareTable->rows.size() - 1;
+
+		// The test name is a button that shows the test on its own.
+
+		auto pButton = WGCREATE(wkit::Button, _.label.text = pTest->name.c_str());
+		int index = int(pTest - &g_tests[0]);
+		g_compareRoutes.push_back(Base::msgRouter()->addRoute(pButton, MsgType::Select, [this, index](Msg* pMsg) { show_test(index); }));
+		g_pCompareTable->slots[row][0] = pButton;
+		for (int col = 1; col < 6; col++)
+			g_pCompareTable->slots[row][col] = TextDisplay::create({ .display = {.layout = g_pPerformanceValueMapper,
+				.style = col == 5 ? pStyle : wkit::TextStyles::Default, .text = values[col - 1] } });
+	}
+
+	char summary[128];
+	if (sorted.empty())
+		snprintf(summary, 128, "Press RUN ALL to render every test on both devices and compare.");
+	else
+		snprintf(summary, 128, "%d tests: %d OK, %d with specks, %d differ. Click a test to view it.", (int)sorted.size(), nbOk, nbSpecks, nbDiff);
+	g_pCompareSummary->display.setText(summary);
+}
+
+//____ show_test() ____________________________________________________________
+/*
+	Makes the test the only one selected and shows both devices rendering it.
+	Selecting from code doesn't post a message for the selected entry, so the
+	test entries are updated here.
+*/
+
+void GfxDeviceTester::show_test(int index)
+{
+	g_pTestSelector->unselectAll();
+	g_pTestSelector->select(g_testListEntries[index]);
+
+	for (auto& test : g_tests)
+		test.bActive = false;
+	g_tests[index].bActive = true;
+
+	g_pReferenceDevice->setNeedsRedraw();
+	g_pTesteeDevice->setNeedsRedraw();
+
+	g_displayMode = DisplayMode::Both;
+	update_displaymode();
 }
 
 //____ setup_tests() ____________________________________________________
@@ -814,12 +1034,14 @@ bool GfxDeviceTester::setup_chrome()
 	auto pBothButton = WGCREATE(wkit::Button, _.label.text = "Both");
 	auto pDiffButton = WGCREATE(wkit::Button, _.label.text = "Diff");
 	auto pTimeButton = WGCREATE(wkit::Button, _.label.text = "Time");
+	auto pCompareButton = WGCREATE(wkit::Button, _.label.text = "Compare");
 
 	pDispModeSection->slots << pTesteeButton;
 	pDispModeSection->slots << pRefButton;
 	pDispModeSection->slots << pBothButton;
 	pDispModeSection->slots << pDiffButton;
 	pDispModeSection->slots << pTimeButton;
+	pDispModeSection->slots << pCompareButton;
 
 	Base::msgRouter()->addRoute(pTesteeButton, MsgType::Select, [this](Msg* pMsg) {
 		g_displayMode = DisplayMode::Testee;
@@ -843,6 +1065,11 @@ bool GfxDeviceTester::setup_chrome()
 
 	Base::msgRouter()->addRoute(pTimeButton, MsgType::Select, [this](Msg* pMsg) {
 		g_displayMode = DisplayMode::Time;
+		update_displaymode();
+	});
+
+	Base::msgRouter()->addRoute(pCompareButton, MsgType::Select, [this](Msg* pMsg) {
+		g_displayMode = DisplayMode::Compare;
 		update_displaymode();
 	});
 
@@ -886,6 +1113,7 @@ bool GfxDeviceTester::setup_chrome()
 	auto pTestList = PackPanel::create({ .axis = Axis::Y });
 
 	auto pSelectCapsule = SelectCapsule::create({ .child = pTestList, .selectMode = SelectMode::MultiEntries });
+	g_pTestSelector = pSelectCapsule;
 
 
 
@@ -935,6 +1163,7 @@ bool GfxDeviceTester::setup_chrome()
 			.selectable = true,
 			.skin = pEntrySkin });
 		pTestList->slots.pushBack(pEntry);
+		g_testListEntries.push_back(pEntry);
 	}
 
 	auto pTestScrollPanel = wkit::ScrollCapsuleY::create();
@@ -989,6 +1218,52 @@ bool GfxDeviceTester::setup_chrome()
 
 		g_pPerformanceDisplay = pBase;
 		g_pPerformanceTable = pTable;
+	}
+
+	// Setup compare display
+
+	{
+		auto verdictStyle = [](HiColor color) {
+			auto bp = wkit::TextStyles::Strong->blueprint();
+			bp.color = color;
+			return TextStyle::create(bp);
+		};
+
+		g_pOkStyle = verdictStyle(Color::DarkGreen);
+		g_pSpecksStyle = verdictStyle(Color::DarkOrange);
+		g_pDiffStyle = verdictStyle(Color::Red);
+
+		auto pBase = PackPanel::create();
+		pBase->setAxis(Axis::Y);
+
+		auto pTable = TablePanel::create( { .columnSpacing = 10, .rowSpacing = 4, .skin = ColorSkin::create( { .color = Color::White, .padding = 4 }) });
+
+		pTable->setRowSkins(BoxSkin::create(0, Color::White, Color::White), BoxSkin::create(0, Color::PapayaWhip, Color::PapayaWhip));
+
+		auto pBottom = PackPanel::create();
+		pBottom->setSkin(wkit::Skins::Plate);
+		pBottom->setAxis(Axis::X);
+		pBottom->setLayout(pUniformLayout);
+
+		auto pSummary = TextDisplay::create({ .display = {.style = wkit::TextStyles::Default } });
+
+		auto pRunAll = WGCREATE( wkit::Button, _.label.text = "RUN ALL");
+
+		Base::msgRouter()->addRoute(pRunAll, MsgType::Select, [this](Msg* pMsg) {
+			g_bRunComparison = true;
+		});
+
+		pBottom->slots << pSummary;
+		pBottom->slots << pRunAll;
+		pBottom->slots[0].setWeight(1.f);
+		pBottom->slots[1].setWeight(0.f);
+
+		pBase->slots << pTable;
+		pBase->slots << pBottom;
+
+		g_pCompareDisplay = pBase;
+		g_pCompareTable = pTable;
+		g_pCompareSummary = pSummary;
 	}
 
 	return true;

@@ -46,7 +46,8 @@ protected:
 		Reference,
 		Both,
 		Diff,
-		Time
+		Time,
+		Compare
 	};
 
 	enum DeviceEnum
@@ -82,6 +83,15 @@ protected:
 		double	stalling_time = 0;						// Seconds for endRender() call afterwards. OpenGL stalls here. 
 	};
 
+	struct CompareResult
+	{
+		bool	bDone = false;
+		int		maxDiff = 0;							// Largest difference in any channel, 0-255.
+		double	meanDiff = 0;							// Mean difference over all channels of all pixels.
+		int		nbOverThreshold = 0;					// Channel values differing by more than c_diffThreshold.
+		CoordI	worst;									// First pixel with the largest difference.
+	};
+
 	struct TestEntry
 	{
 		string	name;
@@ -89,7 +99,15 @@ protected:
 		bool	bWorking;
 
 		DeviceTest devices[2];							// Testee, followed by Reference
+		CompareResult compare;
 	};
+
+	// A test differs if any channel value differs by more than c_diffThreshold. If no more
+	// than c_maxSpecks values do, the difference is reported as specks: isolated pixels
+	// where backends may legitimately round differently, like samples right on a pixel edge.
+
+	static const int	c_diffThreshold = 16;
+	static const int	c_maxSpecks = 64;
 
 
 	bool		setup_chrome();
@@ -103,6 +121,7 @@ protected:
 	
 	bool 		set_devices( Device_p pReference, Device_p pTestee );
 	void		run_tests(Device* pDevice, DeviceEnum device);
+	void		run_test(GfxDevice* pGfxDevice, Test* pTest);
 	void		clock_test(DeviceTest* pDeviceTest, int rounds, Device* pDevice);
 	void		destroy_tests();
 
@@ -114,6 +133,11 @@ protected:
 	SurfaceDisplay_p	create_canvas();
 	void		refresh_performance_display();
 	void		refresh_performance_measurements();
+
+	void		run_comparison();
+	bool		read_canvas(Device* pDevice, PixelFormat format, vector<uint8_t>& pixels);
+	void		refresh_compare_display();
+	void		show_test(int index);
 
 
 	const SizeI			g_canvasSize = { 512, 512 };
@@ -141,6 +165,18 @@ protected:
 	float				g_zoomFactor = 1.f;
 
 	bool				g_bRefreshPerformance = false;
+
+	Widget_p			g_pCompareDisplay = nullptr;
+	TablePanel_p		g_pCompareTable = nullptr;
+	TextDisplay_p		g_pCompareSummary = nullptr;
+	TextStyle_p			g_pOkStyle = nullptr;
+	TextStyle_p			g_pSpecksStyle = nullptr;
+	TextStyle_p			g_pDiffStyle = nullptr;
+	bool				g_bRunComparison = false;
+	vector<RouteId>		g_compareRoutes;
+
+	SelectCapsule_p		g_pTestSelector = nullptr;
+	vector<Widget_p>	g_testListEntries;
 
 
 	Surface_p			m_pLinearDeviceSurface;
