@@ -1692,9 +1692,11 @@ namespace wg
 		// Custom transforms sample bilinear sources at the center of the texel, but nearest
 		// ones at the corner, so that stretched pixels are evenly distributed. A corner on a
 		// texel edge belongs to the texel after it, but rounding could tip it into the one
-		// before, so nearest samples are nudged forward by a fraction of a texel. Blurs
-		// always sample the center, so their fractional sample offsets round to the nearest
-		// pixel either way. Standard transforms are dealt with per rectangle below.
+		// before. Corners land exactly on texel edges when an axis aligned stretch has a
+		// simple ratio, so those are nudged forward by a fraction of a texel. Rotated ones
+		// practically never do, and a nudge would only move samples that weren't on an edge.
+		// Blurs always sample the center, so their fractional sample offsets round to the
+		// nearest pixel either way. Standard transforms are dealt with per rectangle below.
 
 		bool bCenter = bBilinear || kind == PipelineKind::Blur;
 
@@ -1797,8 +1799,12 @@ namespace wg
 				srcOfsX = (mtx.xx + mtx.yx) * 0.5f;
 				srcOfsY = (mtx.xy + mtx.yy) * 0.5f;
 			}
+			else if (bCenter)
+				srcOfsX = srcOfsY = 0.5f;
+			else if ((mtx.xy == 0.f && mtx.yx == 0.f) || (mtx.xx == 0.f && mtx.yy == 0.f))
+				srcOfsX = srcOfsY = 1.f / 4096;
 			else
-				srcOfsX = srcOfsY = bCenter ? 0.5f : 1.f / 256;
+				srcOfsX = srcOfsY = 0.f;
 
 			ExtrasDX12 srcDst;
 
