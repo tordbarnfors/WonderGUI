@@ -579,4 +579,9 @@ State of the kit as of the last pass, all of it measured rather than assumed:
   can come down further if a thinner splitter is wanted.
 - RadioButton used to set `Skins::RadioButton` as the widget's `skin` rather
   than its `icon`, stretching a 14x14 frameless ellipse across the whole widget.
-  Fixed to match Checkbox. Worth checking the other wrappers for the same slip.
+  Fixed to match Checkbox. **All wrappers audited since** for a skin put in a
+  slot that draws it at the wrong size: one more found and fixed —
+  `TreeListDrawer`'s `buttonSize` was 14x14 while `PlusMinusToggle` is drawn
+  at 12x12 and has no frame, so the whole sign was resampled 17% larger. It is
+  now 12x12; keep it equal to the spec's `size_pts`. Scroller skins
+  (backward = Left/Up, forward = Right/Down) and everything else were correct.

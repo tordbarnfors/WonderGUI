@@ -203,6 +203,21 @@ not a compiler. A code session with a working `ninja` should just build first.
 
 ---
 
+## Done in the follow-up session (2026-10-02)
+
+- `SelectBox::_sideCanvasMatchingHeight()` measured entry padding at `m_scale`
+  instead of the `scale` it is asked about, and returned the cached height for
+  any scale as long as the width matched. Both fixed.
+- Wrapper audit (see PIPELINE.md, "Known open items"): `TreeListDrawer`
+  `buttonSize` 14 -> 12 to stop stretching the PlusMinusToggle artwork.
+- widgetbench's test picker is now a `wkit::SelectBox` instead of a bare
+  `wg::SelectBox` with no `display` style (its closed text was dark on blue).
+
+**New finding, not fixed:** clicking an entry in an open SelectBox selects it
+but leaves the popup open — `_sideCanvasReceive` calls `_selectEntry()` on
+MouseRelease and nothing calls `_close()`. Engine behaviour; needs a decision
+on press-drag-release vs. click semantics.
+
 ## Open items, in the order I would rank them
 
 1. **A 1x atlas for windows below scale 128.** The only open item that affects
