@@ -554,12 +554,12 @@ namespace wg
 
 	spx SelectBox::_sideCanvasMatchingHeight(const SideCanvas * pCanvas, spx width, int scale) const
 	{
-		if (width == m_pListCanvas->m_size.w)
+		if (width == m_pListCanvas->m_size.w && scale == m_pListCanvas->m_scale)
 			return m_listCanvasMatchingHeight;
 		else
 		{
 			SizeSPX canvasPadding = m_pListCanvas->_contentBorderSize(scale);
-			SizeSPX entryPadding = m_pEntrySkin ? m_pEntrySkin->_contentBorderSize(m_scale) : SizeSPX();
+			SizeSPX entryPadding = m_pEntrySkin ? m_pEntrySkin->_contentBorderSize(scale) : SizeSPX();
 
 			spx contentWidth = width - canvasPadding.w - entryPadding.w;
 
