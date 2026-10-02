@@ -1947,21 +1947,32 @@ void GlBackend::endSession()
 				GLuint prog = m_blitProgMatrix[(int)pSurf->m_pixelFormat][(int)pSurf->sampleMethod()][m_bTintIsActive][m_bActiveCanvasIsA8];
 				glUseProgram(prog);
 
+				// Nothing outside the source may be read, so a non-tiling source has
+				// its texture clamped to a transparent border for the draw, then put
+				// back to clamping to its edge. A tiling source wraps either way, as
+				// in the other backends, and its wrap mode must be left alone, or it
+				// would stop tiling for every blit after this one.
 
-				if (pSurf->pixelDescription()->type == PixelType::Index)
+				bool bClip = !pSurf->isTiling();
+				bool bIndexed = pSurf->pixelDescription()->type == PixelType::Index;
+
+				if (bIndexed)
 				{
 					GLint clipLoc = glGetUniformLocation(prog, "clipToSource");
 					if (clipLoc != -1)
-						glUniform1i(clipLoc, 1);
+						glUniform1i(clipLoc, bClip ? 1 : 0);
 				}
 				else
 				{
-					static const GLfloat transparent[4] = { 0.f, 0.f, 0.f, 0.f };
+					if (bClip)
+					{
+						static const GLfloat transparent[4] = { 0.f, 0.f, 0.f, 0.f };
 
-					glActiveTexture(GL_TEXTURE0);
-					glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, transparent);
-					glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-					glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+						glActiveTexture(GL_TEXTURE0);
+						glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, transparent);
+						glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+						glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+					}
 
 					_setRgbxClip(prog, pSurf, true);
 				}
@@ -1969,7 +1980,7 @@ void GlBackend::endSession()
 				glDrawArrays(GL_TRIANGLES, vertexOfs, nVertices);
 				vertexOfs += nVertices;
 
-				if (pSurf->pixelDescription()->type != PixelType::Index)
+				if (bClip && !bIndexed)
 				{
 					glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 					glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
