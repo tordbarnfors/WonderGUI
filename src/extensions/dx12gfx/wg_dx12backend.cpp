@@ -1686,9 +1686,11 @@ namespace wg
 		bool bBilinear = (m_pBlitSource && m_pBlitSource->sampleMethod() == SampleMethod::Bilinear);
 
 		// Custom transforms sample bilinear sources at the center of the texel, but nearest
-		// ones at the corner, so that stretched pixels are evenly distributed. Blurs always
-		// sample the center, so their fractional sample offsets round to the nearest pixel
-		// either way. Standard transforms are dealt with per rectangle below.
+		// ones at the corner, so that stretched pixels are evenly distributed. A corner on a
+		// texel edge belongs to the texel after it, but rounding could tip it into the one
+		// before, so nearest samples are nudged forward by a fraction of a texel. Blurs
+		// always sample the center, so their fractional sample offsets round to the nearest
+		// pixel either way. Standard transforms are dealt with per rectangle below.
 
 		bool bCenter = bBilinear || kind == PipelineKind::Blur;
 
@@ -1792,7 +1794,7 @@ namespace wg
 				srcOfsY = (mtx.xy + mtx.yy) * 0.5f;
 			}
 			else
-				srcOfsX = srcOfsY = bCenter ? 0.5f : 0.f;
+				srcOfsX = srcOfsY = bCenter ? 0.5f : 1.f / 256;
 
 			ExtrasDX12 srcDst;
 

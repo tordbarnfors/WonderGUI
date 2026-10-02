@@ -1079,8 +1079,10 @@ void GlBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, int 
 				// so they sample the center of each source pixel, half a pixel along the
 				// transformed axes, whichever way those point. Other transforms sample bilinear
 				// sources at the center of the texel, but nearest ones at the corner, so that
-				// stretched pixels are evenly distributed. Blurs always sample the center, so
-				// their fractional sample offsets round to the nearest pixel either way.
+				// stretched pixels are evenly distributed. A corner on a texel edge belongs to
+				// the texel after it, but rounding could tip it into the one before, so nearest
+				// samples are nudged forward by a fraction of a texel. Blurs always sample the
+				// center, so their fractional sample offsets round to the nearest pixel either way.
 
 				float srcOfsX, srcOfsY;
 
@@ -1092,7 +1094,7 @@ void GlBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, int 
 				else if (m_blitSourceSampleMethod == SampleMethod::Bilinear || cmd == Command::Blur)
 					srcOfsX = srcOfsY = 0.5f;
 				else
-					srcOfsX = srcOfsY = 0.f;
+					srcOfsX = srcOfsY = 1.f / 256;
 
 				*pExtrasGL++ = srcX / 1024.f + srcOfsX;
 				*pExtrasGL++ = srcY / 1024.f + srcOfsY;

@@ -85,12 +85,10 @@ float4 samplePalette(float2 uv)
     }
     else
     {
-        // Nearest. A pixel lined up with the source lands exactly on a texel
-        // edge, where rounding could tip it into the texel before. The sampler
-        // snaps to a fraction of a texel for the same reason, so we nudge by as
-        // much.
+        // Nearest. Samples that could land on a texel edge are already nudged
+        // forward by the backend.
 
-        color = paletteTexel(int2(floor(pos + 1.0f / 256.0f)));
+        color = paletteTexel(int2(floor(pos)));
     }
 
     return color;
