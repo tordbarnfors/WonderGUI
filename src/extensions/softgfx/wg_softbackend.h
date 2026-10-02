@@ -182,6 +182,13 @@ namespace wg
 		alignas(kCacheLineSize) static const uint8_t s_fast8_channel_5[32];
 		alignas(kCacheLineSize) static const uint8_t s_fast8_channel_6[64];
 
+		// 8-bit channel values rounded to 4, 5 and 6 bits, left in the high bits so that
+		// the bits to pack can be shifted and masked out as from the 8-bit value.
+
+		alignas(kCacheLineSize) static uint8_t s_round_channel_4[256];
+		alignas(kCacheLineSize) static uint8_t s_round_channel_5[256];
+		alignas(kCacheLineSize) static uint8_t s_round_channel_6[256];
+
 		alignas(kCacheLineSize) static int s_mulTab[256];
 		alignas(kCacheLineSize) static int16_t s_limit4096Tab[4097 * 3];
 

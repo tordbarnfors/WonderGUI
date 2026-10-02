@@ -33,6 +33,27 @@ typedef	void(*PixelReadFunc)(const uint8_t*, uint8_t*, int, const void*, const v
 typedef	void(*PixelWriteFunc)(const uint8_t*, uint8_t*, int);
 
 
+// 8-bit channel values rounded to 4, 5 and 6 bits, left in the high bits so that the
+// bits to pack can be shifted and masked out as from the 8-bit value. Fewer bits are
+// expanded as value * 255 / max, so packing rounds value * max / 255.
+
+template<int BITS>
+struct RoundTab
+{
+	uint8_t v[256];
+
+	constexpr RoundTab() : v()
+	{
+		const int max = (1 << BITS) - 1;
+		for (int i = 0; i < 256; i++)
+			v[i] = uint8_t(((i * max + 127) / 255) << (8 - BITS));
+	}
+};
+
+static constexpr RoundTab<4> round_4;
+static constexpr RoundTab<5> round_5;
+static constexpr RoundTab<6> round_6;
+
 const uint8_t conv_2_linear_to_8_sRGB[4] 	= {0, 156, 213, 255 };
 
 const uint8_t conv_3_linear_to_8_sRGB[8] 	= {0, 106, 146, 175, 199, 220, 238, 255};
@@ -1249,14 +1270,21 @@ static void copy_BGRA_8_to_BGRA_4(const uint8_t* pSrc, uint8_t* pDst, int amount
 {
 	for (int i = 0; i < amount; i++)
 	{
-		uint8_t dst = ((*pSrc++) >> 4);
-		dst |= ((*pSrc++) & 0xF0);
+		uint8_t dst = (round_4.v[*pSrc++] >> 4);
+		dst |= round_4.v[*pSrc++];
 		*pDst++ = dst;
 
-		dst = ((*pSrc++) >> 4);
-		dst |= ((*pSrc++) & 0xF0);
+		dst = (round_4.v[*pSrc++] >> 4);
+		dst |= round_4.v[*pSrc++];
 		*pDst++ = dst;
 	}
+}
+
+//____ pack565() ______________________________________________________________
+
+static inline uint16_t pack565(uint32_t lowChannel, uint32_t g, uint32_t highChannel)
+{
+	return (round_5.v[lowChannel] >> 3) | (uint16_t(round_6.v[g]) << 3) | (uint16_t(round_5.v[highChannel]) << 8);
 }
 
 static void copy_BGRA_8_to_BGR_565(const uint8_t* _pSrc, uint8_t* _pDst, int amount)
@@ -1267,7 +1295,7 @@ static void copy_BGRA_8_to_BGR_565(const uint8_t* _pSrc, uint8_t* _pDst, int amo
 	for (int i = 0; i < amount; i++)
 	{
 		uint32_t col = * pSrc++;
-		* pDst++ = ((col >> 3) & 0x1F) | ((col >> 5) & 0x7E0) | ((col & 0xF80000) >> 8);
+		* pDst++ = pack565(col & 0xFF, (col >> 8) & 0xFF, (col >> 16) & 0xFF);
 	}
 }
 
@@ -1279,7 +1307,7 @@ static void copy_BGRA_8_to_RGB_565BE(const uint8_t* _pSrc, uint8_t* _pDst, int a
 	for (int i = 0; i < amount; i++)
 	{
 		uint32_t col = * pSrc++;
-		uint16_t out = ((col >> 19) & 0x1F) | ((col >> 5) & 0x7E0) | ((col & 0xF8) << 8);
+		uint16_t out = pack565((col >> 16) & 0xFF, (col >> 8) & 0xFF, col & 0xFF);
 		out = (out >> 8 | out << 8);
 		* pDst++ = out;
 	}
@@ -1293,7 +1321,7 @@ static void copy_BGRA_8_to_RGB_555BE(const uint8_t* _pSrc, uint8_t* _pDst, int a
 	for (int i = 0; i < amount; i++)
 	{
 		uint32_t col = *pSrc++;
-		uint16_t out = ((col >> 19) & 0x1F) | ((col >> 5) & 0x7C0) | ((col & 0xF8) << 8);
+		uint16_t out = (round_5.v[(col >> 16) & 0xFF] >> 3) | (uint16_t(round_5.v[(col >> 8) & 0xFF]) << 3) | (uint16_t(round_5.v[col & 0xFF]) << 8);
 		out = (out >> 8 | out << 8);
 		*pDst++ = out;
 	}
@@ -1447,12 +1475,12 @@ static bool convertPixelsToKnownType( int width, int height, const uint8_t * pSr
 					uint8_t * p = buffer;
 					for( int i = 0 ; i < 64 ; i++ )
 					{
-						uint8_t dst = ((* p++) >> 4);
-						dst |= ((* p++) & 0xF0);
+						uint8_t dst = (round_4.v[* p++] >> 4);
+						dst |= round_4.v[* p++];
 						* pDst++ = dst;
 
-						dst = ((* p++) >> 4);
-						dst |= ((* p++) & 0xF0);
+						dst = (round_4.v[* p++] >> 4);
+						dst |= round_4.v[* p++];
 						* pDst++ = dst;
 					}
 					widthLeft -= 64;
@@ -1466,12 +1494,12 @@ static bool convertPixelsToKnownType( int width, int height, const uint8_t * pSr
 					uint8_t * p = buffer;
 					for( int i = 0 ; i < widthLeft ; i++ )
 					{
-						uint8_t dst = ((* p++) >> 4);
-						dst |= ((* p++) & 0xF0);
+						uint8_t dst = (round_4.v[* p++] >> 4);
+						dst |= round_4.v[* p++];
 						* pDst++ = dst;
 
-						dst = ((* p++) >> 4);
-						dst |= ((* p++) & 0xF0);
+						dst = (round_4.v[* p++] >> 4);
+						dst |= round_4.v[* p++];
 						* pDst++ = dst;
 					}
 				}
@@ -1497,7 +1525,7 @@ static bool convertPixelsToKnownType( int width, int height, const uint8_t * pSr
 					for( int i = 0 ; i < 64 ; i++ )
 					{
 						uint32_t col = buffer[i];
-						* (uint16_t*)pDst = ((col >> 3) & 0x1F) | ((col >> 5) & 0x7E0) | ((col & 0xF80000) >> 8);
+						* (uint16_t*)pDst = pack565(col & 0xFF, (col >> 8) & 0xFF, (col >> 16) & 0xFF);
 						pDst+= 2;
 					}
 
@@ -1512,7 +1540,7 @@ static bool convertPixelsToKnownType( int width, int height, const uint8_t * pSr
 					for( int i = 0 ; i < widthLeft ; i++ )
 					{
 						uint32_t col = buffer[i];
-						* (uint16_t*)pDst = ((col >> 3) & 0x1F) | ((col >> 5) & 0x7E0) | ((col & 0xF80000) >> 8);
+						* (uint16_t*)pDst = pack565(col & 0xFF, (col >> 8) & 0xFF, (col >> 16) & 0xFF);
 						pDst+= 2;
 					}
 				}
@@ -2912,8 +2940,8 @@ int colorToPixelBytes( HiColor color, PixelFormat format, uint8_t pixelArea[18],
 			int r = pConvTab[color.r];
 			int a = pConvTab[color.a];
 
-			pixelArea[0] = (b >> 4) | (g & 0xF0);
-			pixelArea[1] = (r >> 4) | (a & 0xF0);
+			pixelArea[0] = (round_4.v[b] >> 4) | round_4.v[g];
+			pixelArea[1] = (round_4.v[r] >> 4) | round_4.v[a];
 			return 2;
 		}
 
@@ -2925,8 +2953,7 @@ int colorToPixelBytes( HiColor color, PixelFormat format, uint8_t pixelArea[18],
 			int g = pConvTab[color.g];
 			int r = pConvTab[color.r];
 
-			uint16_t pixel = (b >> 3) | ((g & 0xFC) << 3) | ((r & 0xF8) << 8);
-			*(uint16_t*)pixelArea = pixel;
+			*(uint16_t*)pixelArea = pack565(b, g, r);
 			return 2;
 		}
 
@@ -2952,8 +2979,7 @@ int colorToPixelBytes( HiColor color, PixelFormat format, uint8_t pixelArea[18],
 			int g = pConvTab[color.g];
 			int r = pConvTab[color.r];
 
-			uint16_t pixel = (r >> 3) | ((g & 0xFC) << 3) | ((b & 0xF8) << 8);
-			*(uint16_t*)pixelArea = Util::endianSwap(pixel);
+			*(uint16_t*)pixelArea = Util::endianSwap(pack565(r, g, b));
 			return 2;
 		}
 
@@ -2963,7 +2989,7 @@ int colorToPixelBytes( HiColor color, PixelFormat format, uint8_t pixelArea[18],
 			int g = pConvTab[color.g];
 			int r = pConvTab[color.r];
 
-			uint16_t pixel = (r >> 3) | ((g & 0xF8) << 3) | ((b & 0xF8) << 8);
+			uint16_t pixel = (round_5.v[r] >> 3) | (uint16_t(round_5.v[g]) << 3) | (uint16_t(round_5.v[b]) << 8);
 			*(uint16_t*)pixelArea = Util::endianSwap(pixel);
 			return 2;
 		}

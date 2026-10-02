@@ -40,6 +40,9 @@ namespace wg
 	alignas(kCacheLineSize) int SoftBackend::s_mulTab[256];
 
 	alignas(kCacheLineSize) int16_t SoftBackend::s_limit4096Tab[4097 * 3];
+	alignas(kCacheLineSize) uint8_t SoftBackend::s_round_channel_4[256];
+	alignas(kCacheLineSize) uint8_t SoftBackend::s_round_channel_5[256];
+	alignas(kCacheLineSize) uint8_t SoftBackend::s_round_channel_6[256];
 
 	bool SoftBackend::s_bTablesInitialized = false;
 
@@ -2296,6 +2299,16 @@ namespace wg
 
 			for (int i = 0; i <= 4096; i++)
 				s_limit4096Tab[4097 * 2 + i] = 4096;
+
+			// Init tables for rounding channels to fewer bits. Fewer bits are expanded as
+			// value * 255 / max, so packing rounds value * max / 255.
+
+			for (int i = 0; i < 256; i++)
+			{
+				s_round_channel_4[i] = uint8_t(((i * 15 + 127) / 255) << 4);
+				s_round_channel_5[i] = uint8_t(((i * 31 + 127) / 255) << 3);
+				s_round_channel_6[i] = uint8_t(((i * 63 + 127) / 255) << 2);
+			}
 
 			// Init mulTab
 

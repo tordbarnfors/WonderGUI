@@ -25,6 +25,14 @@
 
 using namespace wg;
 
+//____ _pack565() _____________________________________________________________
+// Packs 8-bit channels into a BGR_565 pixel, rounding each to the nearest step.
+
+static inline uint16_t _pack565(int b, int g, int r)
+{
+	return (SoftBackend::s_round_channel_5[b] >> 3) | (uint16_t(SoftBackend::s_round_channel_6[g]) << 3) | (uint16_t(SoftBackend::s_round_channel_5[r]) << 8);
+}
+
 //____ _fill_bgr565srgb_noblend_notint() ____________________________________________________________
 
 static void _fill_bgr565srgb_noblend_notint(uint8_t* pDst, int pitchX, int pitchY, int nLines, int lineLength, HiColor col, const SoftBackend::ColTrans& tint, CoordI patchPos)
@@ -38,8 +46,10 @@ static void _fill_bgr565srgb_noblend_notint(uint8_t* pDst, int pitchX, int pitch
 	int16_t r = pPackTab[col.r];
 
 
-	uint8_t higherByte = (r & 0xF8) | (g >> 5);
-	uint8_t lowerByte = ((g & 0x1C) << 3) | (b >> 3);
+	uint16_t pixel = _pack565(b, g, r);
+
+	uint8_t higherByte = uint8_t(pixel >> 8);
+	uint8_t lowerByte = uint8_t(pixel);
 
 	uint32_t doublePixel = lowerByte | (uint32_t(higherByte) << 8);
 	doublePixel |= doublePixel << 16;
@@ -181,7 +191,7 @@ static void _straight_blit_index8srgb_to_bgr565srgb_notint_noblend(const uint8_t
 		{
 			uint32_t col = ((uint32_t*)pPalette)[*pSrc];
 
-			uint16_t out = ((col >> 3) & 0x001F) | ((col >> 5) & 0x07E0) | ((col >> 8 ) & 0xF800);
+			uint16_t out = _pack565(col & 0xFF, (col >> 8) & 0xFF, (col >> 16) & 0xFF);
 			* (uint16_t*)pDst = out;
 			pSrc += pitches.srcX;
 			pDst += pitches.dstX;
@@ -325,7 +335,7 @@ static void _straight_blit_bgrxa8srgb_to_bgr565srgb_notint_noblend(const uint8_t
 		{
 			uint32_t col = *((uint32_t*)pSrc);
 
-			uint16_t out = ((col >> 3) & 0x001F) | ((col >> 5) & 0x07E0) | ((col >> 8 ) & 0xF800);
+			uint16_t out = _pack565(col & 0xFF, (col >> 8) & 0xFF, (col >> 16) & 0xFF);
 			* (uint16_t*)pDst = out;
 
 			pSrc += pitches.srcX;
@@ -400,11 +410,9 @@ static void updateFixedBlendCache( HiColor bgCol, HiColor fgCol )
 		int alpha = (fgCol.a * i) / 255;
 		int invAlpha = 4096 - alpha;
 
-		int outB = HiColor::packSRGBTab[(backB * invAlpha + frontB * alpha)/4096] >> 3;
-		int outG = HiColor::packSRGBTab[(backG * invAlpha + frontG * alpha)/4096] >> 2;
-		int outR = HiColor::packSRGBTab[(backR * invAlpha + frontR * alpha)/4096] >> 3;
-
-		uint16_t out = outB | (outG << 5) | (outR << 11 );
+		uint16_t out = _pack565(HiColor::packSRGBTab[(backB * invAlpha + frontB * alpha)/4096],
+								HiColor::packSRGBTab[(backG * invAlpha + frontG * alpha)/4096],
+								HiColor::packSRGBTab[(backR * invAlpha + frontR * alpha)/4096]);
 		s_fixedBlendCache[i] = out;
 	}
 }
@@ -472,8 +480,7 @@ void _draw_segment_strip_blend_to_bgr565srgb(int colBeg, int colEnd, uint8_t* pS
 
 				if (*pOpaqueSegments)
 				{
-					uint16_t	out = (HiColor::packSRGBTab[inB] >> 3) | ((HiColor::packSRGBTab[inG] & 0xFC) << 3) |
-									  (((HiColor::packSRGBTab[inG] >> 5) | (HiColor::packSRGBTab[inR] & 0xF8)) << 8) ;
+					uint16_t	out = _pack565(HiColor::packSRGBTab[inB], HiColor::packSRGBTab[inG], HiColor::packSRGBTab[inR]);
 
 					while (offset + 255 < end)
 					{
@@ -515,8 +522,7 @@ void _draw_segment_strip_blend_to_bgr565srgb(int colBeg, int colEnd, uint8_t* pS
 							outG = (backG * invAlpha + modG) >> 12;
 							outR = (backR * invAlpha + modR) >> 12;
 
-							out = (HiColor::packSRGBTab[outB] >> 3) | ((HiColor::packSRGBTab[outG] & 0xFC) << 3) |
-								(((HiColor::packSRGBTab[outG] >> 5) | (HiColor::packSRGBTab[outR] & 0xF8)) << 8);
+							out = _pack565(HiColor::packSRGBTab[outB], HiColor::packSRGBTab[outG], HiColor::packSRGBTab[outR]);
 						}
 
 						*((uint16_t*)pDst) = out;
@@ -600,8 +606,7 @@ void _draw_segment_strip_blend_to_bgr565srgb(int colBeg, int colEnd, uint8_t* pS
 				outG = (accG + (backG * backFraction)) >> 16;
 				outR = (accR + (backR * backFraction)) >> 16;
 
-				pDst[0] = (HiColor::packSRGBTab[outB] >> 3) | ((HiColor::packSRGBTab[outG] & 0xFC) << 3);
-				pDst[1] = (HiColor::packSRGBTab[outG] >> 5) | (HiColor::packSRGBTab[outR] & 0xF8);
+				*((uint16_t*)pDst) = _pack565(HiColor::packSRGBTab[outB], HiColor::packSRGBTab[outG], HiColor::packSRGBTab[outR]);
 			}
 			pDst += pixelPitch;
 			offset += 256;

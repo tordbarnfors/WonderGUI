@@ -239,23 +239,29 @@ static inline void _write_pixel_fast8(uint8_t* pPixel, int16_t b, int16_t g, int
 	}
 	else if constexpr(format == PixelFormat::BGR_565_linear || format == PixelFormat::BGR_565_sRGB)
 	{
-		pPixel[0] = (b >> 3) | ((g & 0xFC) << 3);
-		pPixel[1] = (g >> 5) | (r & 0xF8);
+		uint8_t b5 = SoftBackend::s_round_channel_5[b], g6 = SoftBackend::s_round_channel_6[g], r5 = SoftBackend::s_round_channel_5[r];
+
+		pPixel[0] = (b5 >> 3) | ((g6 & 0xFC) << 3);
+		pPixel[1] = (g6 >> 5) | (r5 & 0xF8);
 	}
 	else if constexpr(format == PixelFormat::RGB_565_bigendian)
 	{
-		pPixel[0] = (b & 0xF8) | (g >> 5);
-		pPixel[1] = ((g & 0x1C) << 3) | (r >> 3);
+		uint8_t b5 = SoftBackend::s_round_channel_5[b], g6 = SoftBackend::s_round_channel_6[g], r5 = SoftBackend::s_round_channel_5[r];
+
+		pPixel[0] = (b5 & 0xF8) | (g6 >> 5);
+		pPixel[1] = ((g6 & 0x1C) << 3) | (r5 >> 3);
 	}
 	else if constexpr(format == PixelFormat::RGB_555_bigendian)
 	{
-		pPixel[0] = (b & 0xF8) | (g >> 5);
-		pPixel[1] = ((g & 0x18) << 3) | (r >> 3);
+		uint8_t b5 = SoftBackend::s_round_channel_5[b], g5 = SoftBackend::s_round_channel_5[g], r5 = SoftBackend::s_round_channel_5[r];
+
+		pPixel[0] = (b5 & 0xF8) | (g5 >> 5);
+		pPixel[1] = ((g5 & 0x18) << 3) | (r5 >> 3);
 	}
 	else if constexpr(format == PixelFormat::BGRA_4_linear)
 	{
-		pPixel[0] = (b >> 4) | (g & 0xF0);
-		pPixel[1] = (r >> 4) | (a & 0xF0);
+		pPixel[0] = (SoftBackend::s_round_channel_4[b] >> 4) | SoftBackend::s_round_channel_4[g];
+		pPixel[1] = (SoftBackend::s_round_channel_4[r] >> 4) | SoftBackend::s_round_channel_4[a];
 	}
 	else if constexpr(format == PixelFormat::Alpha_8)
 	{
@@ -305,30 +311,12 @@ static inline void _write_pixel(uint8_t* pPixel, int16_t b, int16_t g, int16_t r
 		pPixel[1] = HiColor::packSRGBTab[g];
 		pPixel[2] = HiColor::packSRGBTab[r];
 	}
-	else if constexpr(format == PixelFormat::BGR_565_sRGB)
+	else if constexpr(format == PixelFormat::BGR_565_sRGB || format == PixelFormat::BGR_565_linear ||
+					  format == PixelFormat::RGB_565_bigendian || format == PixelFormat::RGB_555_bigendian || format == PixelFormat::BGRA_4_linear)
 	{
-		pPixel[0] = (HiColor::packSRGBTab[b] >> 3) | ((HiColor::packSRGBTab[g] & 0xFC) << 3);
-		pPixel[1] = (HiColor::packSRGBTab[g] >> 5) | (HiColor::packSRGBTab[r] & 0xF8);
-	}
-	else if constexpr(format == PixelFormat::BGR_565_linear)
-	{
-		pPixel[0] = (HiColor::packLinearTab[b] >> 3) | ((HiColor::packLinearTab[g] & 0xFC) << 3);
-		pPixel[1] = (HiColor::packLinearTab[g] >> 5) | (HiColor::packLinearTab[r] & 0xF8);
-	}
-	else if constexpr(format == PixelFormat::RGB_565_bigendian)
-	{
-		pPixel[0] = (HiColor::packLinearTab[b] & 0xF8) | (HiColor::packLinearTab[g] >> 5);
-		pPixel[1] = ((HiColor::packLinearTab[g] & 0x1C) << 3) | (HiColor::packLinearTab[r] >> 3);
-	}
-	else if constexpr(format == PixelFormat::RGB_555_bigendian)
-	{
-		pPixel[0] = (HiColor::packLinearTab[b] & 0xF8) | (HiColor::packLinearTab[g] >> 5);
-		pPixel[1] = ((HiColor::packLinearTab[g] & 0x18) << 3) | (HiColor::packLinearTab[r] >> 3);
-	}
-	else if constexpr(format == PixelFormat::BGRA_4_linear)
-	{
-		pPixel[0] = (HiColor::packLinearTab[b] >> 4) | (HiColor::packLinearTab[g] & 0xF0);
-		pPixel[1] = (HiColor::packLinearTab[r] >> 4) | (HiColor::packLinearTab[a] & 0xF0);
+		const uint8_t* pPackTab = format == PixelFormat::BGR_565_sRGB ? HiColor::packSRGBTab : HiColor::packLinearTab;
+
+		_write_pixel_fast8<format>(pPixel, pPackTab[b], pPackTab[g], pPackTab[r], HiColor::packLinearTab[a]);
 	}
 	else if constexpr(format == PixelFormat::Alpha_8)
 	{
