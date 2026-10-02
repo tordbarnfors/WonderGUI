@@ -64,11 +64,13 @@ public:
 			}
 
 			// Copy what we read back into a new surface.
+			// The buffer's format can differ from the one we asked for, since a backend
+			// may store a format it lacks in a wider one, like BGR_8 as BGRX_8 on DX12.
 
 			auto buffer = pCanvas->allocPixelBuffer({ 0, 0, c.w, c.h });
 			pCanvas->pushPixels(buffer, { 0, 0, c.w, c.h });
 			m_pCopies[i] = pFactory->createSurface(WGBP(Surface, _.size = { c.w, c.h }, _.format = c.format, _.sampleMethod = SampleMethod::Nearest),
-												   buffer.pixels, c.format, buffer.pitch);
+												   buffer.pixels, buffer.format, buffer.pitch);
 			pCanvas->freePixelBuffer(buffer);
 
 			// Pixel (2,1) is inside the second fill of the second round.
