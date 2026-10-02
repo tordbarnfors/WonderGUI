@@ -31,6 +31,8 @@
 #include <wg_tinttools.h>
 #include <wg_metalsurface.h>
 
+#include <map>
+
 
 namespace wg
 {
@@ -174,6 +176,9 @@ namespace wg
 
 		id<MTLRenderPipelineState> _compileRenderPipeline( NSString* label, NSString* vertexShader,
 									NSString* fragmentShader, BlendMode blendMode, PixelFormat destFormat );
+
+		void						_generateMipmaps( MetalSurface * pSurface );		// Draws every mip level from level 0.
+		id<MTLRenderPipelineState>	_mipmapPipeline( MTLPixelFormat format );
 
 
 		SurfaceFactory_p    m_pSurfaceFactory = nullptr;
@@ -319,6 +324,8 @@ namespace wg
 		id<MTLRenderPipelineState>  m_segmentsPipelines[c_maxSegments][2][BlendMode_size][5] = {};  // [nbEdges][bTintmap][BlendMode][DestFormat]
 
 		id<MTLSamplerState>         m_samplers[2][2][2] = {};                        					// [bMipMap][bInterpolate][bTile]
+
+		std::map<MTLPixelFormat, id<MTLRenderPipelineState>>	m_mipmapPipelines;					// Created on first use, see _mipmapPipeline().
 
 		static const char shaders[];
 

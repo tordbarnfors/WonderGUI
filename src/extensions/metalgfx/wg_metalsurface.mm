@@ -223,13 +223,18 @@ namespace wg
         textureDescriptor.storageMode   = MTLStorageModePrivate;
         textureDescriptor.usage         = m_bCanvas ? (MTLTextureUsageRenderTarget | MTLTextureUsageShaderRead) : MTLTextureUsageShaderRead;
         
+        // A mipmapped texture gets levels all the way down to 1x1. MetalBackend
+        // draws them, so it has to be a render target even when not a canvas.
+
         if(m_bMipmapped)
         {
-            int heightLevels = ceil(log2(m_size.h));
-            int widthLevels = ceil(log2(m_size.w));
-            int mipCount = (heightLevels > widthLevels) ? heightLevels : widthLevels;
-            
+            int mipCount = 1;
+
+            for( int size = (m_size.w > m_size.h) ? m_size.w : m_size.h ; size > 1 ; size >>= 1 )
+                mipCount++;
+
             textureDescriptor.mipmapLevelCount = mipCount;
+            textureDescriptor.usage = MTLTextureUsageRenderTarget | MTLTextureUsageShaderRead;
         }
 
         m_texture = [MetalBackend::s_metalDevice newTextureWithDescriptor:textureDescriptor];
@@ -292,8 +297,11 @@ namespace wg
 									destinationOrigin:  paletteOrigin];
 			}
 
+			// MetalBackend draws the mip levels before the texture is first read,
+			// see MetalBackend::_generateMipmaps().
+
 			if(m_bMipmapped)
-				[blitCommandEncoder generateMipmapsForTexture:m_texture];
+				m_bMipmapStale = true;
 			
 			[blitCommandEncoder endEncoding];
 			blitCommandEncoder = nil;

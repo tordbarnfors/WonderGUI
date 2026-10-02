@@ -297,6 +297,9 @@ MetalBackend::~MetalBackend()
 		}
 	}
 
+	for( auto& entry : m_mipmapPipelines )
+		[entry.second release];
+
 	[m_library release];
 }
 
@@ -851,11 +854,7 @@ void MetalBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, i
 						{
 							[m_renderEncoder endEncoding];
 
-							id<MTLBlitCommandEncoder> blitCommandEncoder = [m_metalCommandBuffer blitCommandEncoder];
-
-							[blitCommandEncoder generateMipmapsForTexture:pSurf->m_texture];
-							[blitCommandEncoder endEncoding];
-							blitCommandEncoder = nil;
+							_generateMipmaps(pSurf);
 
 							m_renderEncoder = _setCanvas( m_pActiveCanvas, m_activeCanvasSize.w, m_activeCanvasSize.h );
 
@@ -1906,6 +1905,82 @@ float MetalBackend::_scaleThickness(float thickness, float slope)
 	}
 
 	return thickness * scale;
+}
+
+//____ _generateMipmaps() _____________________________________________________
+//
+// Draws each mip level of the surface from the one above it, in render passes
+// of their own on our command buffer. Metal's generateMipmapsForTexture would
+// do it for us, but makes no promise to filter an _sRGB texture in linear
+// space, and on some GPUs doesn't: a fine black and white pattern came out a
+// darker grey than on GL and DX12. Called between render passes.
+
+void MetalBackend::_generateMipmaps( MetalSurface * pSurface )
+{
+	id<MTLTexture> texture = pSurface->m_texture;
+	int nLevels = (int) texture.mipmapLevelCount;
+
+	id<MTLRenderPipelineState> pipeline = _mipmapPipeline(texture.pixelFormat);
+
+	if( pipeline == nil )
+		return;
+
+	for( int level = 1 ; level < nLevels ; level++ )
+	{
+		id<MTLTexture> source = [texture newTextureViewWithPixelFormat:texture.pixelFormat
+														   textureType:MTLTextureType2D
+																levels:NSMakeRange(level - 1, 1)
+																slices:NSMakeRange(0, 1)];
+
+		MTLRenderPassDescriptor* pDescriptor = [MTLRenderPassDescriptor new];
+
+		pDescriptor.colorAttachments[0].texture = texture;
+		pDescriptor.colorAttachments[0].level = level;
+		pDescriptor.colorAttachments[0].loadAction = MTLLoadActionDontCare;
+		pDescriptor.colorAttachments[0].storeAction = MTLStoreActionStore;
+
+		id<MTLRenderCommandEncoder> renderEncoder = [m_metalCommandBuffer renderCommandEncoderWithDescriptor:pDescriptor];
+		renderEncoder.label = @"MetalBackend Mipmap Pass";
+		[pDescriptor release];
+
+		[renderEncoder setRenderPipelineState:pipeline];
+		[renderEncoder setFragmentTexture:source atIndex:0];
+		[renderEncoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:0 vertexCount:3];
+		[renderEncoder endEncoding];
+
+		[source release];			// The command buffer keeps its own reference until it is done.
+	}
+}
+
+//____ _mipmapPipeline() ______________________________________________________
+//
+// One per texture format, created on first use and kept. No blending, no
+// vertex buffer, the vertex shader makes its triangle from the vertex ID.
+
+id<MTLRenderPipelineState> MetalBackend::_mipmapPipeline( MTLPixelFormat format )
+{
+	auto it = m_mipmapPipelines.find(format);
+	if( it != m_mipmapPipelines.end() )
+		return it->second;
+
+	NSError *error = nil;
+	MTLRenderPipelineDescriptor *descriptor = [[MTLRenderPipelineDescriptor alloc] init];
+
+	descriptor.label = @"Mipmap Pipeline";
+	descriptor.vertexFunction = [m_library newFunctionWithName:@"mipmapVertexShader"];
+	descriptor.fragmentFunction = [m_library newFunctionWithName:@"mipmapFragmentShader"];
+	descriptor.colorAttachments[0].pixelFormat = format;
+	descriptor.colorAttachments[0].blendingEnabled = NO;
+
+	id<MTLRenderPipelineState> pipelineState = [s_metalDevice newRenderPipelineStateWithDescriptor:descriptor error:&error];
+	[error release];
+
+	[descriptor.vertexFunction release];
+	[descriptor.fragmentFunction release];
+	[descriptor release];
+
+	m_mipmapPipelines[format] = pipelineState;		// Kept also when nil, so we don't try again and again.
+	return pipelineState;
 }
 
 //____ _compileRenderPipeline() _______________________________________________

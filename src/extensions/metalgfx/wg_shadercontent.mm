@@ -1817,3 +1817,34 @@ fragment float4 segmentsTintmapFragmentShader15_A8(SegmentsFragInput in [[stage_
 	return segFragShaderCore_A8<15>(in,pEdgemap) * (evalTint(pColor, in.tintOfs, in.position.xy).a * in.color.a);
 };
 
+//____ Mipmap generation ______________________________________________________
+//
+// Draws a mip level from the one above it, see MetalBackend::_generateMipmaps().
+// One triangle covers the whole level. The source view holds the level above
+// only, and a pixel's centre lands between four of its texels, so the bilinear
+// sampler averages them. An _sRGB view converts to linear on the way in and the
+// render target back on the way out, so the average is taken in linear space.
+
+typedef struct
+{
+	float4 position [[position]];
+	float2 texUV;
+} MipmapFragInput;
+
+vertex MipmapFragInput mipmapVertexShader(uint vertexID [[vertex_id]])
+{
+	MipmapFragInput out;
+
+	out.texUV = float2(float((vertexID << 1) & 2), float(vertexID & 2));
+	out.position = float4(out.texUV.x * 2.0 - 1.0, 1.0 - out.texUV.y * 2.0, 0.0, 1.0);
+
+	return out;
+}
+
+fragment float4 mipmapFragmentShader(MipmapFragInput in [[stage_in]],
+									 texture2d<float> source [[texture(0)]])
+{
+	constexpr sampler linearSampler(filter::linear, address::clamp_to_edge);
+
+	return source.sample(linearSampler, in.texUV, level(0));
+}
