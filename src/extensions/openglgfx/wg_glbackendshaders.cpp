@@ -674,8 +674,6 @@ const char GlBackend::paletteBlitInterpolateVertexShader[] =
 "layout(location = 1) in vec2 texSize;					   "
 "layout(location = 2) in int colorOfs;                    "
 "layout(location = 3) in int extrasOfs;                    "
-"out vec2 texUV00;                                         "
-"out vec2 texUV11;                                         "
 "out vec2 uvFrac;                                         "
 "out vec4 fragColor;                                       "
 "void main()                                               "
@@ -698,8 +696,6 @@ const char GlBackend::paletteBlitInterpolateVertexShader[] =
 "   texUV -= 0.5f;"
 
 "   uvFrac = texUV;"
-"   texUV00 = texUV/texSize;				"
-"   texUV11 = (texUV+1)/texSize;			"
 "   fragColor = texelFetch(colorBufferId, colorOfs);				"
 "}                                                         ";
 
@@ -723,8 +719,6 @@ const char GlBackend::paletteBlitInterpolateTintmapVertexShader[] =
 "layout(location = 1) in vec2 texSize;					   "
 "layout(location = 3) in int extrasOfs;                    "
 "layout(location = 4) in vec2 tintmapOfs;                  "
-"out vec2 texUV00;                                         "
-"out vec2 texUV11;                                         "
 "out vec2 uvFrac;                                         "
 "flat out int tintOfs;  out vec2 tintPos;  "
 "flat out vec4 flatTint;                                   "
@@ -748,8 +742,6 @@ const char GlBackend::paletteBlitInterpolateTintmapVertexShader[] =
 "   texUV -= 0.5f;"
 
 "   uvFrac = texUV;"
-"   texUV00 = texUV/texSize;				"
-"   texUV11 = (texUV+1)/texSize;			"
 "   tintOfs = int(tintmapOfs.x);  tintPos = vec2(pos);  "
 "   flatTint = texelFetch(colorBufferId, colorOfs);        "
 "}                                                         ";
@@ -767,8 +759,6 @@ const char GlBackend::paletteBlitInterpolateFragmentShader[] =
 "uniform sampler2D texId;						"
 "uniform int clipToSource;					"	// Set for a ClipBlit: nothing outside the source is read.
 "uniform sampler2D paletteId;						" WG_GL_PALETTE_FUNC
-"in vec2 texUV00;								"
-"in vec2 texUV11;								"
 "in vec2 uvFrac;								"
 "in vec4 fragColor;								"
 "out vec4 color;								"
@@ -779,6 +769,11 @@ const char GlBackend::paletteBlitInterpolateFragmentShader[] =
 
 "void main()									"
 "{												"
+"   vec2 uvBase = floor(uvFrac);	"		// Texels and weights from the same value, so they always agree.
+"   vec2 uvf = uvFrac - uvBase;	"
+"   vec2 texSize = vec2(textureSize(texId, 0));	"
+"   vec2 texUV00 = (uvBase + 0.5) / texSize;	"		// Centers of the texels, which no rounding error can move.
+"   vec2 texUV11 = (uvBase + 1.5) / texSize;	"
 "   float index00 = texture(texId, texUV00).r;		"
 "   float index01 = texture(texId, vec2(texUV11.x,texUV00.y) ).r;		"
 "   float index10 = texture(texId, vec2(texUV00.x,texUV11.y) ).r;		"
@@ -788,9 +783,9 @@ const char GlBackend::paletteBlitInterpolateFragmentShader[] =
 "   vec4 color10 = paletteLookup(index10) * inside(vec2(texUV00.x,texUV11.y));	"
 "   vec4 color11 = paletteLookup(index11) * inside(texUV11);	"
 
-"   vec4 out0 = color00 * (1-fract(uvFrac.x)) + color01 * fract(uvFrac.x);	"
-"   vec4 out1 = color10 * (1-fract(uvFrac.x)) + color11 * fract(uvFrac.x);	"
-"   color = (out0 * (1-fract(uvFrac.y)) + out1 * fract(uvFrac.y)) * fragColor;	"
+"   vec4 out0 = color00 * (1-uvf.x) + color01 * uvf.x;	"
+"   vec4 out1 = color10 * (1-uvf.x) + color11 * uvf.x;	"
+"   color = (out0 * (1-uvf.y) + out1 * uvf.y) * fragColor;	"
 "}												";
 
 const char GlBackend::paletteBlitInterpolateFragmentShader_A8[] =
@@ -800,8 +795,6 @@ const char GlBackend::paletteBlitInterpolateFragmentShader_A8[] =
 "uniform sampler2D texId;						"
 "uniform int clipToSource;					"	// Set for a ClipBlit: nothing outside the source is read.
 "uniform sampler2D paletteId;						" WG_GL_PALETTE_FUNC
-"in vec2 texUV00;								"
-"in vec2 texUV11;								"
 "in vec2 uvFrac;								"
 "in vec4 fragColor;								"
 "out vec4 color;								"
@@ -812,6 +805,11 @@ const char GlBackend::paletteBlitInterpolateFragmentShader_A8[] =
 
 "void main()									"
 "{												"
+"   vec2 uvBase = floor(uvFrac);	"		// Texels and weights from the same value, so they always agree.
+"   vec2 uvf = uvFrac - uvBase;	"
+"   vec2 texSize = vec2(textureSize(texId, 0));	"
+"   vec2 texUV00 = (uvBase + 0.5) / texSize;	"		// Centers of the texels, which no rounding error can move.
+"   vec2 texUV11 = (uvBase + 1.5) / texSize;	"
 "   float index00 = texture(texId, texUV00).r;		"
 "   float index01 = texture(texId, vec2(texUV11.x,texUV00.y) ).r;		"
 "   float index10 = texture(texId, vec2(texUV00.x,texUV11.y) ).r;		"
@@ -821,9 +819,9 @@ const char GlBackend::paletteBlitInterpolateFragmentShader_A8[] =
 "   float color10 = paletteLookup(index10).a * inside(vec2(texUV00.x,texUV11.y));	"
 "   float color11 = paletteLookup(index11).a * inside(texUV11);	"
 
-"   float out0 = color00 * (1-fract(uvFrac.x)) + color01 * fract(uvFrac.x);	"
-"   float out1 = color10 * (1-fract(uvFrac.x)) + color11 * fract(uvFrac.x);	"
-"   color.r = (out0 * (1-fract(uvFrac.y)) + out1 * fract(uvFrac.y)) * fragColor.a;	"
+"   float out0 = color00 * (1-uvf.x) + color01 * uvf.x;	"
+"   float out1 = color10 * (1-uvf.x) + color11 * uvf.x;	"
+"   color.r = (out0 * (1-uvf.y) + out1 * uvf.y) * fragColor.a;	"
 "}												";
 
 
@@ -835,8 +833,6 @@ const char GlBackend::paletteBlitInterpolateFragmentShaderTintmap[] =
 "uniform samplerBuffer tintmapBufferId;			"
 "uniform int clipToSource;					"	// Set for a ClipBlit: nothing outside the source is read.
 "uniform sampler2D paletteId;						" WG_GL_PALETTE_FUNC
-"in vec2 texUV00;								"
-"in vec2 texUV11;								"
 "in vec2 uvFrac;								"
 "flat in int tintOfs;  in vec2 tintPos;  " "flat in vec4 flatTint;  " WG_GL_TINT_FUNC
 "out vec4 color;								"
@@ -847,6 +843,11 @@ const char GlBackend::paletteBlitInterpolateFragmentShaderTintmap[] =
 
 "void main()									"
 "{												"
+"   vec2 uvBase = floor(uvFrac);	"		// Texels and weights from the same value, so they always agree.
+"   vec2 uvf = uvFrac - uvBase;	"
+"   vec2 texSize = vec2(textureSize(texId, 0));	"
+"   vec2 texUV00 = (uvBase + 0.5) / texSize;	"		// Centers of the texels, which no rounding error can move.
+"   vec2 texUV11 = (uvBase + 1.5) / texSize;	"
 "   float index00 = texture(texId, texUV00).r;		"
 "   float index01 = texture(texId, vec2(texUV11.x,texUV00.y) ).r;		"
 "   float index10 = texture(texId, vec2(texUV00.x,texUV11.y) ).r;		"
@@ -856,12 +857,12 @@ const char GlBackend::paletteBlitInterpolateFragmentShaderTintmap[] =
 "   vec4 color10 = paletteLookup(index10) * inside(vec2(texUV00.x,texUV11.y));	"
 "   vec4 color11 = paletteLookup(index11) * inside(texUV11);	"
 
-"   vec4 out0 = color00 * (1-fract(uvFrac.x)) + color01 * fract(uvFrac.x);	"
-"   vec4 out1 = color10 * (1-fract(uvFrac.x)) + color11 * fract(uvFrac.x);	"
+"   vec4 out0 = color00 * (1-uvf.x) + color01 * uvf.x;	"
+"   vec4 out1 = color10 * (1-uvf.x) + color11 * uvf.x;	"
 
 "   vec4 fragColor = (evalTint(tintmapBufferId, tintOfs, tintPos) * flatTint); "
 
-"   color = (out0 * (1-fract(uvFrac.y)) + out1 * fract(uvFrac.y)) * fragColor;	"
+"   color = (out0 * (1-uvf.y) + out1 * uvf.y) * fragColor;	"
 "}												";
 
 const char GlBackend::paletteBlitInterpolateFragmentShaderTintmap_A8[] =
@@ -872,8 +873,6 @@ const char GlBackend::paletteBlitInterpolateFragmentShaderTintmap_A8[] =
 "uniform samplerBuffer tintmapBufferId;			"
 "uniform int clipToSource;					"	// Set for a ClipBlit: nothing outside the source is read.
 "uniform sampler2D paletteId;						" WG_GL_PALETTE_FUNC
-"in vec2 texUV00;								"
-"in vec2 texUV11;								"
 "in vec2 uvFrac;								"
 "flat in int tintOfs;  in vec2 tintPos;  " "flat in vec4 flatTint;  " WG_GL_TINT_FUNC
 "out vec4 color;								"
@@ -884,6 +883,11 @@ const char GlBackend::paletteBlitInterpolateFragmentShaderTintmap_A8[] =
 
 "void main()									"
 "{												"
+"   vec2 uvBase = floor(uvFrac);	"		// Texels and weights from the same value, so they always agree.
+"   vec2 uvf = uvFrac - uvBase;	"
+"   vec2 texSize = vec2(textureSize(texId, 0));	"
+"   vec2 texUV00 = (uvBase + 0.5) / texSize;	"		// Centers of the texels, which no rounding error can move.
+"   vec2 texUV11 = (uvBase + 1.5) / texSize;	"
 "   float index00 = texture(texId, texUV00).r;		"
 "   float index01 = texture(texId, vec2(texUV11.x,texUV00.y) ).r;		"
 "   float index10 = texture(texId, vec2(texUV00.x,texUV11.y) ).r;		"
@@ -893,12 +897,12 @@ const char GlBackend::paletteBlitInterpolateFragmentShaderTintmap_A8[] =
 "   float color10 = paletteLookup(index10).a * inside(vec2(texUV00.x,texUV11.y));	"
 "   float color11 = paletteLookup(index11).a * inside(texUV11);	"
 
-"   float out0 = color00 * (1-fract(uvFrac.x)) + color01 * fract(uvFrac.x);	"
-"   float out1 = color10 * (1-fract(uvFrac.x)) + color11 * fract(uvFrac.x);	"
+"   float out0 = color00 * (1-uvf.x) + color01 * uvf.x;	"
+"   float out1 = color10 * (1-uvf.x) + color11 * uvf.x;	"
 
 "   float fragA = (evalTint(tintmapBufferId, tintOfs, tintPos) * flatTint).a; "
 
-"   color.r = (out0 * (1-fract(uvFrac.y)) + out1 * fract(uvFrac.y)) * fragA;	"
+"   color.r = (out0 * (1-uvf.y) + out1 * uvf.y) * fragA;	"
 "}												";
 
 
