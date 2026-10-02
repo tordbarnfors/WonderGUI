@@ -19,6 +19,7 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
+#include <cmath>
 #include <wg_softbackend.h>
 #include <wg_softsurfacefactory.h>
 #include <wg_softedgemapfactory.h>
@@ -1112,10 +1113,13 @@ namespace wg
 
 						const Transform* pTransform = &m_pTransformsBeg[transform - customTransformStart];
 
-						mtx[0][0] = binalInt(pTransform->xx * BINAL_MUL);
-						mtx[0][1] = binalInt(pTransform->xy * BINAL_MUL);
-						mtx[1][0] = binalInt(pTransform->yx * BINAL_MUL);
-						mtx[1][1] = binalInt(pTransform->yy * BINAL_MUL);
+						// Rounded up, so that stepping n pixels with a step of 1/n reaches the next source
+						// pixel instead of stopping just short of it (e.g. a 3x nearest stretch).
+
+						mtx[0][0] = binalInt(std::ceil(pTransform->xx * double(BINAL_MUL)));
+						mtx[0][1] = binalInt(std::ceil(pTransform->xy * double(BINAL_MUL)));
+						mtx[1][0] = binalInt(std::ceil(pTransform->yx * double(BINAL_MUL)));
+						mtx[1][1] = binalInt(std::ceil(pTransform->yy * double(BINAL_MUL)));
 
 						//
 
