@@ -354,14 +354,14 @@ static inline void _blend_pixels_fast8(int morphFactor,
 			int alpha = SoftBackend::s_mulTab[srcA];
 			int invAlpha = 65536 - alpha;
 
-			outA = (backA * invAlpha + 255 * alpha) >> 16;
+			outA = (backA * invAlpha + 255 * alpha + 0x8000) >> 16;
 		}
 		else if constexpr(mode == BlendMode::BlendFixedColor)
 		{
 			int alpha = SoftBackend::s_mulTab[srcA];
 			int invAlpha = 65536 - alpha;
 
-			outA = (fixedA * invAlpha + 255 * alpha) >> 16;
+			outA = (fixedA * invAlpha + 255 * alpha + 0x8000) >> 16;
 		}
 		else if constexpr(mode == BlendMode::Add)
 		{
@@ -373,7 +373,7 @@ static inline void _blend_pixels_fast8(int morphFactor,
 		}
 		else if constexpr(mode == BlendMode::Multiply)
 		{
-			outA = (SoftBackend::s_mulTab[backA] * srcA) >> 16;
+			outA = (SoftBackend::s_mulTab[backA] * srcA + 0x8000) >> 16;
 		}
 		else if constexpr(mode == BlendMode::Min)
 		{
@@ -386,7 +386,7 @@ static inline void _blend_pixels_fast8(int morphFactor,
 		else if constexpr(mode == BlendMode::Invert)
 		{
 			int srcA2 = SoftBackend::s_mulTab[srcA];
-			outA = (srcA2 * (255 - backA) + backA * (65536 - srcA2)) >> 16;
+			outA = (srcA2 * (255 - backA) + backA * (65536 - srcA2) + 0x8000) >> 16;
 		}
 	}
 	else
@@ -412,44 +412,44 @@ static inline void _blend_pixels_fast8(int morphFactor,
 			int alpha = SoftBackend::s_mulTab[srcA];
 			int invAlpha = 65536 - alpha;
 
-			outB = (backB * invAlpha + srcB * alpha) >> 16;
-			outG = (backG * invAlpha + srcG * alpha) >> 16;
-			outR = (backR * invAlpha + srcR * alpha) >> 16;
-			outA = (backA * invAlpha + 255 * alpha) >> 16;
+			outB = (backB * invAlpha + srcB * alpha + 0x8000) >> 16;
+			outG = (backG * invAlpha + srcG * alpha + 0x8000) >> 16;
+			outR = (backR * invAlpha + srcR * alpha + 0x8000) >> 16;
+			outA = (backA * invAlpha + 255 * alpha + 0x8000) >> 16;
 		}
 		else if constexpr(mode == BlendMode::BlendFixedColor)
 		{
 			int alpha = SoftBackend::s_mulTab[srcA];
 			int invAlpha = 65536 - alpha;
 
-			outB = (fixedB * invAlpha + srcB * alpha) >> 16;
-			outG = (fixedG * invAlpha + srcG * alpha) >> 16;
-			outR = (fixedR * invAlpha + srcR * alpha) >> 16;
-			outA = (fixedA * invAlpha + 255 * alpha) >> 16;
+			outB = (fixedB * invAlpha + srcB * alpha + 0x8000) >> 16;
+			outG = (fixedG * invAlpha + srcG * alpha + 0x8000) >> 16;
+			outR = (fixedR * invAlpha + srcR * alpha + 0x8000) >> 16;
+			outA = (fixedA * invAlpha + 255 * alpha + 0x8000) >> 16;
 		}
 		else if constexpr(mode == BlendMode::Add)
 		{
 			int alpha = SoftBackend::s_mulTab[srcA];
 
-			outB = limitUint8(backB + (srcB * alpha >> 16));
-			outG = limitUint8(backG + (srcG * alpha >> 16));
-			outR = limitUint8(backR + (srcR * alpha >> 16));
+			outB = limitUint8(backB + ((srcB * alpha + 0x8000) >> 16));
+			outG = limitUint8(backG + ((srcG * alpha + 0x8000) >> 16));
+			outR = limitUint8(backR + ((srcR * alpha + 0x8000) >> 16));
 			outA = backA;
 		}
 		else if constexpr(mode == BlendMode::Subtract)
 		{
 			int alpha = SoftBackend::s_mulTab[srcA];
 
-			outB = limitUint8(backB - (srcB * alpha >> 16));
-			outG = limitUint8(backG - (srcG * alpha >> 16));
-			outR = limitUint8(backR - (srcR * alpha >> 16));
+			outB = limitUint8(backB - ((srcB * alpha + 0x8000) >> 16));
+			outG = limitUint8(backG - ((srcG * alpha + 0x8000) >> 16));
+			outR = limitUint8(backR - ((srcR * alpha + 0x8000) >> 16));
 			outA = backA;
 		}
 		else if constexpr(mode == BlendMode::Multiply)
 		{
-			outB = (SoftBackend::s_mulTab[backB] * srcB) >> 16;
-			outG = (SoftBackend::s_mulTab[backG] * srcG) >> 16;
-			outR = (SoftBackend::s_mulTab[backR] * srcR) >> 16;
+			outB = (SoftBackend::s_mulTab[backB] * srcB + 0x8000) >> 16;
+			outG = (SoftBackend::s_mulTab[backG] * srcG + 0x8000) >> 16;
+			outR = (SoftBackend::s_mulTab[backR] * srcR + 0x8000) >> 16;
 			outA = backA;
 		}
 		else if constexpr(mode == BlendMode::Min)
@@ -472,9 +472,9 @@ static inline void _blend_pixels_fast8(int morphFactor,
 			int srcG2 = SoftBackend::s_mulTab[srcG];
 			int srcR2 = SoftBackend::s_mulTab[srcR];
 
-			outB = (srcB2 * (255 - backB) + backB * (65536 - srcB2)) >> 16;
-			outG = (srcG2 * (255 - backG) + backG * (65536 - srcG2)) >> 16;
-			outR = (srcR2 * (255 - backR) + backR * (65536 - srcR2)) >> 16;
+			outB = (srcB2 * (255 - backB) + backB * (65536 - srcB2) + 0x8000) >> 16;
+			outG = (srcG2 * (255 - backG) + backG * (65536 - srcG2) + 0x8000) >> 16;
+			outR = (srcR2 * (255 - backR) + backR * (65536 - srcR2) + 0x8000) >> 16;
 			outA = backA;
 		}
 	}
@@ -1899,10 +1899,10 @@ void _transform_blit(const SoftSurface* WG_RESTRICT pSrcSurf, BinalCoord pos, co
 				binalInt mul21 = fracX1 * fracY2 >> BINAL_SHIFT;
 				binalInt mul22 = fracX2 * fracY2 >> BINAL_SHIFT;
 
-				srcB = (src11_b * mul11 + src12_b * mul12 + src21_b * mul21 + src22_b * mul22) >> BINAL_SHIFT;
-				srcG = (src11_g * mul11 + src12_g * mul12 + src21_g * mul21 + src22_g * mul22) >> BINAL_SHIFT;
-				srcR = (src11_r * mul11 + src12_r * mul12 + src21_r * mul21 + src22_r * mul22) >> BINAL_SHIFT;
-				srcA = (src11_a * mul11 + src12_a * mul12 + src21_a * mul21 + src22_a * mul22) >> BINAL_SHIFT;
+				srcB = (src11_b * mul11 + src12_b * mul12 + src21_b * mul21 + src22_b * mul22 + (BINAL_MUL >> 1)) >> BINAL_SHIFT;
+				srcG = (src11_g * mul11 + src12_g * mul12 + src21_g * mul21 + src22_g * mul22 + (BINAL_MUL >> 1)) >> BINAL_SHIFT;
+				srcR = (src11_r * mul11 + src12_r * mul12 + src21_r * mul21 + src22_r * mul22 + (BINAL_MUL >> 1)) >> BINAL_SHIFT;
+				srcA = (src11_a * mul11 + src12_a * mul12 + src21_a * mul21 + src22_a * mul22 + (BINAL_MUL >> 1)) >> BINAL_SHIFT;
 
 			}
 			else
