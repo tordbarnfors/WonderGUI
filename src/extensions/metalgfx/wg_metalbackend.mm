@@ -1687,25 +1687,29 @@ void MetalBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, i
 
 					if( cmd == Command::Blur )
 					{
-						// Blur offsets are added to texture coordinates that are normalized against the
-						// blit source, so they must be normalized against the blit source size as well.
+						// Blur taps are whole pixels, rounded the way the software backend does it, so
+						// they land on texel centers and read the same texels whatever the sample method.
+						// Offsets are added to texture coordinates that are normalized against the blit
+						// source, so they are normalized against its size as well.
 
 						SizeI size = pSurf->pixelSize();
 
-						float radiusX = m_activeBlurRadius / float(size.w*64);
-						float radiusY = m_activeBlurRadius / float(size.h*64);
+						int corner = m_activeBlurRadius * 7 / 10;
 
-						m_blurUniform.offset[0] = { -radiusX * 0.7f, -radiusY * 0.7f };
-						m_blurUniform.offset[1] = { 0, -radiusY };
-						m_blurUniform.offset[2] = { radiusX * 0.7f, -radiusY * 0.7f };
+						float posX = float((m_activeBlurRadius + 32) >> 6) / size.w, negX = float((-m_activeBlurRadius + 32) >> 6) / size.w;
+						float posY = float((m_activeBlurRadius + 32) >> 6) / size.h, negY = float((-m_activeBlurRadius + 32) >> 6) / size.h;
+						float cPosX = float((corner + 32) >> 6) / size.w, cNegX = float((-corner + 32) >> 6) / size.w;
+						float cPosY = float((corner + 32) >> 6) / size.h, cNegY = float((-corner + 32) >> 6) / size.h;
 
-						m_blurUniform.offset[3] = { -radiusX, 0 };
+						m_blurUniform.offset[0] = { cNegX, cNegY };
+						m_blurUniform.offset[1] = { 0, negY };
+						m_blurUniform.offset[2] = { cPosX, cNegY };
+						m_blurUniform.offset[3] = { negX, 0 };
 						m_blurUniform.offset[4] = { 0, 0 };
-						m_blurUniform.offset[5] = { radiusX, 0 };
-
-						m_blurUniform.offset[6] = { -radiusX * 0.7f, radiusY * 0.7f };
-						m_blurUniform.offset[7] = { 0, radiusY };
-						m_blurUniform.offset[8] = { radiusX * 0.7f, radiusY * 0.7f };
+						m_blurUniform.offset[5] = { posX, 0 };
+						m_blurUniform.offset[6] = { cNegX, cPosY };
+						m_blurUniform.offset[7] = { 0, posY };
+						m_blurUniform.offset[8] = { cPosX, cPosY };
 
 						[m_renderEncoder setFragmentBytes:&m_blurUniform length:sizeof(BlurUniform) atIndex: (unsigned) FragmentInputIndex::BlurUniform];
 

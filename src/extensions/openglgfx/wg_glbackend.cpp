@@ -1988,40 +1988,29 @@ void GlBackend::endSession()
 
 				glUseProgram(m_blurProg[blurSource][m_bTintIsActive][m_bActiveCanvasIsA8]);
 
-				// Blur offsets are added to texture coordinates normalized against the blit
-				// source, so they are normalized against the blit source size as well.
-
 				auto size = m_pActiveBlitSource->pixelSize();
 
-				float radiusX = m_activeBlurRadius / float(size.w * 64);
-				float radiusY = m_activeBlurRadius / float(size.h * 64);
+				// Blur taps are whole pixels, rounded the way the software backend does it, so
+				// they land on texel centers and read the same texels whatever the sample method.
+				// Offsets are added to texture coordinates normalized against the blit source,
+				// so they are normalized against its size as well.
 
-				m_activeBlurInfo.offset[0][0] = -radiusX * 0.7f;
-				m_activeBlurInfo.offset[0][1] = -radiusY * 0.7f;
+				int corner = m_activeBlurRadius * 7 / 10;
 
-				m_activeBlurInfo.offset[1][0] = 0;
-				m_activeBlurInfo.offset[1][1] = -radiusY;
+				float posX = float((m_activeBlurRadius + 32) >> 6) / size.w, negX = float((-m_activeBlurRadius + 32) >> 6) / size.w;
+				float posY = float((m_activeBlurRadius + 32) >> 6) / size.h, negY = float((-m_activeBlurRadius + 32) >> 6) / size.h;
+				float cPosX = float((corner + 32) >> 6) / size.w, cNegX = float((-corner + 32) >> 6) / size.w;
+				float cPosY = float((corner + 32) >> 6) / size.h, cNegY = float((-corner + 32) >> 6) / size.h;
 
-				m_activeBlurInfo.offset[2][0] = radiusX * 0.7f;
-				m_activeBlurInfo.offset[2][1] = -radiusY * 0.7f;
+				const float offsets[9][2] = { { cNegX, cNegY }, { 0.f, negY }, { cPosX, cNegY },
+											  { negX, 0.f },   { 0.f, 0.f },  { posX, 0.f },
+											  { cNegX, cPosY }, { 0.f, posY }, { cPosX, cPosY } };
 
-				m_activeBlurInfo.offset[3][0] = -radiusX;
-				m_activeBlurInfo.offset[3][1] = 0;
-
-				m_activeBlurInfo.offset[4][0] = 0;
-				m_activeBlurInfo.offset[4][1] = 0;
-
-				m_activeBlurInfo.offset[5][0] = radiusX;
-				m_activeBlurInfo.offset[5][1] = 0;
-
-				m_activeBlurInfo.offset[6][0] = -radiusX * 0.7f;
-				m_activeBlurInfo.offset[6][1] = radiusY * 0.7f;
-
-				m_activeBlurInfo.offset[7][0] = 0;
-				m_activeBlurInfo.offset[7][1] = radiusY;
-
-				m_activeBlurInfo.offset[8][0] = radiusX * 0.7f;
-				m_activeBlurInfo.offset[8][1] = radiusY * 0.7f;
+				for (int i = 0; i < 9; i++)
+				{
+					m_activeBlurInfo.offset[i][0] = offsets[i][0];
+					m_activeBlurInfo.offset[i][1] = offsets[i][1];
+				}
 
 				auto& uniformLocation = m_blurUniformLocation[blurSource][m_bTintIsActive][m_bActiveCanvasIsA8];
 

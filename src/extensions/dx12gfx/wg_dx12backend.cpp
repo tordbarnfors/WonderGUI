@@ -1469,18 +1469,22 @@ namespace wg
 			m_pExtrasPtr++;
 		}
 
-		// The offsets are in texture coordinates, so the radius is measured against
-		// the source we are reading from. GlBackend does the same; MetalBackend
-		// measures against the canvas, which only comes to the same thing when the
-		// two are the same size.
+		// Blur taps are whole pixels, rounded the way the software backend does it, so they
+		// land on texel centers and read the same texels whatever the sample method. The
+		// offsets are in texture coordinates, so they are measured against the source.
 
-		float radiusX = m_blitSourceSize.w > 0 ? m_blurRadius / float(m_blitSourceSize.w * 64) : 0.f;
-		float radiusY = m_blitSourceSize.h > 0 ? m_blurRadius / float(m_blitSourceSize.h * 64) : 0.f;
+		float w = float(std::max(m_blitSourceSize.w, 1)), h = float(std::max(m_blitSourceSize.h, 1));
+		int corner = m_blurRadius * 7 / 10;
+
+		float posX = float((m_blurRadius + 32) >> 6) / w, negX = float((-m_blurRadius + 32) >> 6) / w;
+		float posY = float((m_blurRadius + 32) >> 6) / h, negY = float((-m_blurRadius + 32) >> 6) / h;
+		float cPosX = float((corner + 32) >> 6) / w, cNegX = float((-corner + 32) >> 6) / w;
+		float cPosY = float((corner + 32) >> 6) / h, cNegY = float((-corner + 32) >> 6) / h;
 
 		const float offsets[9][2] = {
-			{ -radiusX * 0.7f,	-radiusY * 0.7f },	{ 0.f, -radiusY },	{ radiusX * 0.7f,	-radiusY * 0.7f },
-			{ -radiusX,			0.f },				{ 0.f, 0.f },		{ radiusX,			0.f },
-			{ -radiusX * 0.7f,	radiusY * 0.7f },	{ 0.f, radiusY },	{ radiusX * 0.7f,	radiusY * 0.7f } };
+			{ cNegX, cNegY },	{ 0.f, negY },	{ cPosX, cNegY },
+			{ negX, 0.f },		{ 0.f, 0.f },	{ posX, 0.f },
+			{ cNegX, cPosY },	{ 0.f, posY },	{ cPosX, cPosY } };
 
 		for (int i = 0; i < 9; i++)
 		{
