@@ -1497,7 +1497,7 @@ static bool convertPixelsToKnownType( int width, int height, const uint8_t * pSr
 					for( int i = 0 ; i < 64 ; i++ )
 					{
 						uint32_t col = buffer[i];
-						* (uint16_t*)pDst = ((col >> 19) & 0x1F) | ((col >> 5) & 0x7E0) | ((col & 0xF8) << 8);
+						* (uint16_t*)pDst = ((col >> 3) & 0x1F) | ((col >> 5) & 0x7E0) | ((col & 0xF80000) >> 8);
 						pDst+= 2;
 					}
 
@@ -1512,7 +1512,7 @@ static bool convertPixelsToKnownType( int width, int height, const uint8_t * pSr
 					for( int i = 0 ; i < widthLeft ; i++ )
 					{
 						uint32_t col = buffer[i];
-						* (uint16_t*)pDst = ((col >> 19) & 0x1F) | ((col >> 5) & 0x7E0) | ((col & 0xF8) << 8);
+						* (uint16_t*)pDst = ((col >> 3) & 0x1F) | ((col >> 5) & 0x7E0) | ((col & 0xF80000) >> 8);
 						pDst+= 2;
 					}
 				}
@@ -2912,8 +2912,8 @@ int colorToPixelBytes( HiColor color, PixelFormat format, uint8_t pixelArea[18],
 			int r = pConvTab[color.r];
 			int a = pConvTab[color.a];
 
-			uint16_t pixel = ((b & 0xF0) << 8) | ((g & 0xF0) << 4) | (r & 0xF0) | (a >> 4);
-			*(uint16_t*)pixelArea = pixel;
+			pixelArea[0] = (b >> 4) | (g & 0xF0);
+			pixelArea[1] = (r >> 4) | (a & 0xF0);
 			return 2;
 		}
 
@@ -2925,7 +2925,7 @@ int colorToPixelBytes( HiColor color, PixelFormat format, uint8_t pixelArea[18],
 			int g = pConvTab[color.g];
 			int r = pConvTab[color.r];
 
-			uint16_t pixel = ((b & 0xF8) << 8) | ((g & 0xFC) << 3) | (r >> 3);
+			uint16_t pixel = (b >> 3) | ((g & 0xFC) << 3) | ((r & 0xF8) << 8);
 			*(uint16_t*)pixelArea = pixel;
 			return 2;
 		}
@@ -2952,7 +2952,7 @@ int colorToPixelBytes( HiColor color, PixelFormat format, uint8_t pixelArea[18],
 			int g = pConvTab[color.g];
 			int r = pConvTab[color.r];
 
-			uint16_t pixel = ((r & 0xF8) << 8) | ((g & 0xFC) << 3) | (b >> 3);
+			uint16_t pixel = (r >> 3) | ((g & 0xFC) << 3) | ((b & 0xF8) << 8);
 			*(uint16_t*)pixelArea = Util::endianSwap(pixel);
 			return 2;
 		}
@@ -2963,7 +2963,7 @@ int colorToPixelBytes( HiColor color, PixelFormat format, uint8_t pixelArea[18],
 			int g = pConvTab[color.g];
 			int r = pConvTab[color.r];
 
-			uint16_t pixel = ((r & 0xF8) << 8) | ((g & 0xF8) << 3) | (b >> 3);
+			uint16_t pixel = (r >> 3) | ((g & 0xF8) << 3) | ((b & 0xF8) << 8);
 			*(uint16_t*)pixelArea = Util::endianSwap(pixel);
 			return 2;
 		}
