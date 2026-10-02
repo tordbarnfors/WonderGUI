@@ -12,6 +12,7 @@ set( SOURCES
 	
 	testsuites/a8tests.h
 	testsuites/blurtests.h
+	testsuites/blursourcetests.h
 	testsuites/blendfixedcolortests.h
 	testsuites/blendtests.h
 	testsuites/blitblendtests.h
@@ -21,13 +22,17 @@ set( SOURCES
 	testsuites/canvaslayertests.h
 	testsuites/colortests.h
 	testsuites/edgemaptests.h
+	testsuites/edgemaptinttests.h
 	testsuites/edgemaptoolstests.h
 	testsuites/filltests.h
 	testsuites/linetests.h
 	testsuites/mipmaptests.h
 	testsuites/paletteblittests.h
+	testsuites/palettecapacitytests.h
 	testsuites/piecharttests.h
+	testsuites/readbacktests.h
 	testsuites/rgb565bigendiantests.h	
+	testsuites/samplingtests.h
 	testsuites/segmenttests.h
 	testsuites/testsuite.h
 	testsuites/tiletests.h

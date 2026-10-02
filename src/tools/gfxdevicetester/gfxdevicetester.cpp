@@ -42,6 +42,11 @@
 #include "testsuites/edgemaptests.h"
 #include "testsuites/edgemaptoolstests.h"
 #include "testsuites/waveformtests.h"
+#include "testsuites/samplingtests.h"
+#include "testsuites/palettecapacitytests.h"
+#include "testsuites/blursourcetests.h"
+#include "testsuites/readbacktests.h"
+#include "testsuites/edgemaptinttests.h"
 
 #include <wg_softkernels_bgr565srgb_extras.h>
 
@@ -593,6 +598,11 @@ void GfxDeviceTester::setup_tests()
 	add_testsuite([](){ return new EdgemapToolsTests();});
 	add_testsuite([](){ return new WaveformTests();});
 	add_testsuite([]() { return new ColorTests(); });
+	add_testsuite([]() { return new SamplingTests(); });
+	add_testsuite([]() { return new PaletteCapacityTests(); });
+	add_testsuite([]() { return new BlurSourceTests(); });
+	add_testsuite([]() { return new ReadbackTests(); });
+	add_testsuite([]() { return new EdgemapTintTests(); });
 
 	regen_testentries();
 }
