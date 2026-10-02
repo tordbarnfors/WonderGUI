@@ -132,15 +132,14 @@ add_subdirectory(wondergui)
 
 add_subdirectory(extensions/debugger)
 
-if(APPLE)
+if( WAPPLIB STREQUAL "wappsdl2metal")
 	add_subdirectory(extensions/metalgfx)
-endif()
-
-if(WIN32)
+elseif( WAPPLIB STREQUAL "wappwin32dx12" )
 	add_subdirectory(extensions/dx12gfx)
+elseif( WAPPLIB STREQUAL "wappsdl2gl" )
+	add_subdirectory(extensions/openglgfx)
 endif()
 
-add_subdirectory(extensions/openglgfx)
 add_subdirectory(extensions/gfxstream)
 add_subdirectory(extensions/softgfx)
 

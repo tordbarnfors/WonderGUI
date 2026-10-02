@@ -62,8 +62,6 @@ target_working_directory(gfxdevicetester ${WG_ROOT} )
 target_link_libraries(gfxdevicetester PRIVATE
 	${WAPPLIB}
 	wgsoftgfx
-	wgopenglgfx
-#	wgmetalgfx
 	wggfxstream
 )
 
