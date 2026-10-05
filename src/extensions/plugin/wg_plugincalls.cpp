@@ -53,6 +53,12 @@ namespace wg
 		if (pCallsCollection->structSize < sizeof(wg_plugin_interface))
 			goto	error_too_old_abi;
 
+		// A host with another version has structs laid out differently, whatever
+		// their sizes.
+
+		if (pCallsCollection->version != WG_PLUGIN_INTERFACE_VERSION)
+			goto	error_too_old_abi;
+
 		if (pCallsCollection->pBitmapCache->structSize < sizeof(wg_bitmapcache_calls))
 			goto	error_too_old_abi;
 
@@ -134,6 +140,16 @@ namespace wg
 		return false;
 	}
 
+
+	//____ wg_pluginInterfaceVersion() ________________________________________
+	//
+	// Lets the host check that we were built for its interface before it gives
+	// it to us, see wg_plugininterface.h.
+
+	extern "C" WG_PLUGIN_EXPORT int wg_pluginInterfaceVersion(void)
+	{
+		return WG_PLUGIN_INTERFACE_VERSION;
+	}
 
 	//____ _hostTint() ________________________________________________________
 

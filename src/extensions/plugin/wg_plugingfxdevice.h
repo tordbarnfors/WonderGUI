@@ -73,6 +73,8 @@ namespace wg
 
         void        setTintColor( HiColor color ) override;
         HiColor		tintColor() const override;
+        void        clearTintColor() override;
+        bool        hasTintColor() const override;
 
 		void		setTint(const RectSPX& rect, Tint* pTint) override;
 		void		clearTint() override;

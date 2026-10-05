@@ -41,6 +41,32 @@
 extern "C" {
 #endif
 
+//____ Interface version ______________________________________________________
+//
+// Changed whenever the interface changes in a way plugins built for an earlier
+// one can't cope with. The host puts it in wg_plugin_interface::version and a
+// plugin refuses a host with another one.
+//
+// Plugins built before there was a version can't check it, so the host has to:
+// every plugin exports wg_pluginInterfaceVersion() (implemented in
+// wg_plugincalls.cpp, which every plugin includes), and before passing a plugin
+// the interface the host should look it up and refuse the plugin if it is
+// missing or returns another version than WG_PLUGIN_INTERFACE_VERSION.
+//
+// 1: Tints replaced Tintmaps, Gradyent and Gradient. First versioned interface.
+
+#define WG_PLUGIN_INTERFACE_VERSION		1
+
+#ifdef _WIN32
+#	define WG_PLUGIN_EXPORT	__declspec(dllexport)
+#else
+#	define WG_PLUGIN_EXPORT	__attribute__((visibility("default")))
+#endif
+
+WG_PLUGIN_EXPORT int	wg_pluginInterfaceVersion(void);		// Exported by every plugin.
+
+typedef int (*wg_pluginInterfaceVersionFunc)(void);				// For hosts looking it up.
+
 //____ wg_pluginroot_calls ____________________________________________________
 
 typedef struct wg_pluginroot_calls_struct
@@ -195,6 +221,8 @@ typedef struct wg_gfxdevice_calls_struct
 	const wg_rectSPX*	(*clipBounds)(wg_obj device);
 	void				(*setTintColor)(wg_obj device, wg_color color);
 	wg_color			(*getTintColor)(wg_obj device);
+	void				(*clearTintColor)(wg_obj device);
+	int					(*hasTintColor)(wg_obj device);
 
 	void				(*setTint)(wg_obj device, const wg_rectSPX* rect, const wg_obj tint);
 	wg_obj				(*getTint)(wg_obj device);
@@ -498,15 +526,23 @@ typedef struct wg_tint_calls_struct
 {
 	int				structSize;
 
+	wg_tintBP	(*defaultTintBP)( void );
 	wg_obj		(*createTint)( const wg_tintBP* pBlueprint );
 	wg_obj		(*createTintFromData)( const void* pData, int bytes );		// See wg_exportTintData().
+	wg_obj		(*createTintMix)( int nbComponents, const wg_obj* pComponents, const float* pWeights );
 	wg_obj		(*mixTints)( wg_obj fromTint, wg_obj toTint, float progress );
 
 	int			(*isTintOpaque)( wg_obj tint );
 	int			(*isTintFlat)( wg_obj tint );
 	int			(*isTintMix)( wg_obj tint );
 
+	wg_tintBP	(*getTintBlueprint)( wg_obj tint );
+	int			(*tintMixComponents)( wg_obj tint );
+	wg_obj		(*tintMixComponent)( wg_obj tint, int index );
+	float		(*tintMixWeight)( wg_obj tint, int index );
+
 	wg_color	(*tintColorAt)( wg_obj tint, wg_coordSPX pos, const wg_rectSPX* pRect );
+	int			(*tintAlphaAt)( wg_obj tint, wg_coordSPX pos, const wg_rectSPX* pRect );
 	int			(*exportTintData)( wg_obj tint, void* pDest, int maxBytes );
 
 } wg_tint_calls;
@@ -520,6 +556,7 @@ typedef struct wg_tint_calls_struct
 typedef struct wg_plugin_interface_struct
 {
 	int							structSize;
+	int							version;			// WG_PLUGIN_INTERFACE_VERSION of the host.
 
 	wg_bitmapcache_calls *		pBitmapCache;
 	wg_bitmapfont_calls *		pBitmapFont;

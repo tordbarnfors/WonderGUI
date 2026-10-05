@@ -190,6 +190,22 @@ namespace wg
         return *(HiColor*)&col;
     }
 
+    //____ clearTintColor() ___________________________________________________
+
+    void PluginGfxDevice::clearTintColor()
+    {
+        GfxDeviceGen1::clearTintColor();
+
+        PluginCalls::gfxDevice->clearTintColor(m_cDevice);
+    }
+
+    //____ hasTintColor() _____________________________________________________
+
+    bool PluginGfxDevice::hasTintColor() const
+    {
+        return PluginCalls::gfxDevice->hasTintColor(m_cDevice) != 0;
+    }
+
 	//____ setTint() ___________________________________________________________
 	//
 	// The host gets its own copy of the Tint.

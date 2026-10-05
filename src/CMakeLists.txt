@@ -230,7 +230,7 @@ add_subdirectory(extensions/freetypefont)
 
 add_subdirectory(extensions/legacygui)
 
-#add_subdirectory(extensions/plugin)
+add_subdirectory(extensions/plugin)
 
 if( WAPPLIB STREQUAL "wappwin32sw" )
 	add_subdirectory(wonderapp/win32-sw)

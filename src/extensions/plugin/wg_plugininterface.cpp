@@ -138,6 +138,8 @@ void wg_populatePluginInterface(wg_plugin_interface * pHeader)
 	pBody->gfxDevice.clipListSize			= &wg_clipListSize;
 	pBody->gfxDevice.clipBounds				= &wg_clipBounds;
 	pBody->gfxDevice.setTintColor			= &wg_setTintColor;
+	pBody->gfxDevice.clearTintColor			= &wg_clearTintColor;
+	pBody->gfxDevice.hasTintColor			= &wg_hasTintColor;
 	pBody->gfxDevice.getTintColor			= &wg_getTintColor;
 
 	pBody->gfxDevice.setTint				= &wg_setTint;
@@ -358,16 +360,24 @@ void wg_populatePluginInterface(wg_plugin_interface * pHeader)
 	pBody->blurbrush.red					= &wg_blurbrushRed;
 
 	pBody->tint.structSize					= sizeof(wg_tint_calls);
+	pBody->tint.defaultTintBP				= &wg_defaultTintBP;
 	pBody->tint.createTint					= &wg_createTint;
 	pBody->tint.createTintFromData			= &wg_createTintFromData;
+	pBody->tint.createTintMix				= &wg_createTintMix;
 	pBody->tint.mixTints					= &wg_mixTints;
 	pBody->tint.isTintOpaque				= &wg_isTintOpaque;
 	pBody->tint.isTintFlat					= &wg_isTintFlat;
 	pBody->tint.isTintMix					= &wg_isTintMix;
+	pBody->tint.getTintBlueprint			= &wg_getTintBlueprint;
+	pBody->tint.tintMixComponents			= &wg_tintMixComponents;
+	pBody->tint.tintMixComponent			= &wg_tintMixComponent;
+	pBody->tint.tintMixWeight				= &wg_tintMixWeight;
 	pBody->tint.tintColorAt					= &wg_tintColorAt;
+	pBody->tint.tintAlphaAt					= &wg_tintAlphaAt;
 	pBody->tint.exportTintData				= &wg_exportTintData;
 
 	pHeader->structSize			= sizeof(wg_plugin_interface);
+	pHeader->version			= WG_PLUGIN_INTERFACE_VERSION;
 	pHeader->pBitmapCache		= &pBody->bitmapCache;
 	pHeader->pBitmapFont		= &pBody->bitmapFont;
 	pHeader->pCanvasLayers		= &pBody->canvasLayers;
