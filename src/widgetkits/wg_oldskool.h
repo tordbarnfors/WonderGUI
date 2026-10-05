@@ -110,6 +110,7 @@ namespace wg::oldskool
 		inline Skin_p		Plate;
 		inline Skin_p		PlateNoBevel;
 		inline Skin_p		Canvas;
+		inline Skin_p		Field;		// Canvas with an outer margin, for LineEditor/TextEditor
 		inline Skin_p		Window;
 		inline Skin_p		Titlebar;
 		inline Skin_p		Button;
@@ -384,6 +385,13 @@ namespace wg::oldskool
 			_.blockSpacing = 1,
 			_.states = { State::Default, State::Hovered, State::Pressed, State::Disabled }
 		));
+
+		Skins::Field = BlockSkin::create(WGBP(BlockSkin,
+			_.surface = pSkinBlocks,
+			_.firstBlock = { 24,60,10,10 },
+			_.padding = 1,
+			_.frame = 1,
+			_.spacing = 1 ));
 
 
 /*
