@@ -26,7 +26,12 @@ set(INCDIRS
 	${PROJECT_SOURCE_DIR}
 )
 
+# Only the selected framework gets a target, so nothing here needs OpenGL or
+# Metal unless that is what was asked for.
+
 ### Software rendering version
+
+if(WAPPLIB STREQUAL "wappsdl2sw")
 
 add_library(wappsdl2sw STATIC
     ${SOURCES}
@@ -59,7 +64,11 @@ target_link_libraries(wappsdl2sw PRIVATE
     ${SDL2IMAGE_LIBS}
 )
 
+endif()
+
 ### OpenGL-version
+
+if(WAPPLIB STREQUAL "wappsdl2gl")
 
 add_library(wappsdl2gl STATIC
     ${SOURCES}
@@ -96,10 +105,11 @@ target_link_libraries(wappsdl2gl PRIVATE
     ${OPENGL_LIBS}
 )
 
+endif()
 
 ### Metal-version
 
-if(APPLE)
+if(WAPPLIB STREQUAL "wappsdl2metal")
 
     add_library(wappsdl2metal STATIC
         ${SOURCES}

@@ -33,6 +33,7 @@ target_link_directories(streamgendll PUBLIC
 )
 
 target_link_libraries(streamgendll
+	PRIVATE Freetype::Freetype		# Builds the FreeType font extension from source, so needs FreeType itself.
 	PRIVATE ${FREETYPE2_LIB}
 )
 
