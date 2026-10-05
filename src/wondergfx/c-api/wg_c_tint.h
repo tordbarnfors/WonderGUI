@@ -59,13 +59,24 @@ typedef struct wg_tintBP_struct			// NOT BINARY EQUIVALENT!
 WG_EXPORT wg_tintBP		wg_defaultTintBP();								// Blueprint with default values.
 
 WG_EXPORT wg_obj		wg_createTint( const wg_tintBP* pBlueprint );		// Returns retained object or null.
+WG_EXPORT wg_obj		wg_createTintMix( int nbComponents, const wg_obj* pComponents, const float* pWeights );	// Returns retained object or null. 1 -> 4 simple tints.
 WG_EXPORT wg_obj		wg_mixTints( wg_obj fromTint, wg_obj toTint, float progress );	// Returns retained object.
 
 WG_EXPORT int			wg_isTintOpaque( wg_obj tint );
 WG_EXPORT int			wg_isTintFlat( wg_obj tint );
 WG_EXPORT int			wg_isTintMix( wg_obj tint );
 
+// Blueprint of a simple tint. Its stops point into the tint and stay valid as long as it does.
+// A mix has no blueprint of its own, get its components instead.
+
+WG_EXPORT wg_tintBP		wg_getTintBlueprint( wg_obj tint );
+
+WG_EXPORT int			wg_tintMixComponents( wg_obj tint );				// 0 for a simple tint.
+WG_EXPORT wg_obj		wg_tintMixComponent( wg_obj tint, int index );		// Not retained.
+WG_EXPORT float			wg_tintMixWeight( wg_obj tint, int index );
+
 WG_EXPORT wg_color		wg_tintColorAt( wg_obj tint, wg_coordSPX pos, const wg_rectSPX* pRect );
+WG_EXPORT int			wg_tintAlphaAt( wg_obj tint, wg_coordSPX pos, const wg_rectSPX* pRect );	// 0 -> 4096.
 
 // Tints as bytes, e.g. for passing them between plugin and host. See TintTools::serializeTint()
 // for the format. A mix survives this, which it doesn't through a blueprint.

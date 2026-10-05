@@ -25,12 +25,19 @@
 #include <wg_tinttools.h>
 
 #include <cstring>
+#include <cstddef>
 
 using namespace wg;
 
 inline Tint* getPtr(wg_obj obj) {
 	return static_cast<Tint*>(reinterpret_cast<Object*>(obj));
 }
+
+// wg_getTintBlueprint() hands out the tint's own stops.
+
+static_assert( sizeof(wg_colorStop) == sizeof(ColorStop) && offsetof(wg_colorStop, color) == offsetof(ColorStop, color),
+			   "wg_colorStop must be binary equivalent to ColorStop." );
+static_assert( sizeof(wg_color) == sizeof(HiColor), "wg_color must be binary equivalent to HiColor." );
 
 wg_tintBP wg_defaultTintBP()
 {
@@ -73,6 +80,23 @@ wg_obj wg_createTint( const wg_tintBP* pBP )
 	return static_cast<Object*>(pTint.rawPtr());
 }
 
+wg_obj wg_createTintMix( int nbComponents, const wg_obj* pComponents, const float* pWeights )
+{
+	if( nbComponents < 1 || nbComponents > Tint::c_maxMixComponents || !pComponents || !pWeights )
+		return nullptr;
+
+	Tint* components[Tint::c_maxMixComponents];
+	for( int i = 0 ; i < nbComponents ; i++ )
+		components[i] = getPtr(pComponents[i]);
+
+	auto pTint = Tint::createMix( nbComponents, components, pWeights );
+	if( !pTint )
+		return nullptr;
+
+	pTint->retain();
+	return static_cast<Object*>(pTint.rawPtr());
+}
+
 wg_obj wg_mixTints( wg_obj fromTint, wg_obj toTint, float progress )
 {
 	auto pTint = Tint::mix( getPtr(fromTint), getPtr(toTint), progress );
@@ -98,10 +122,57 @@ int wg_isTintMix( wg_obj tint )
 	return getPtr(tint)->isMix();
 }
 
+wg_tintBP wg_getTintBlueprint( wg_obj tint )
+{
+	auto pTint = getPtr(tint);
+
+	wg_tintBP bp;
+
+	bp.begin = { pTint->begin().x, pTint->begin().y };
+	bp.center = { pTint->center().x, pTint->center().y };
+	bp.colorSpace = (wg_colorSpace) pTint->colorSpace();
+	bp.end = { pTint->end().x, pTint->end().y };
+	bp.radius = { pTint->radius().w, pTint->radius().h };
+	bp.radiusMode = (wg_tintRadius) pTint->radiusMode();
+	bp.shape = (wg_tintShape) pTint->shape();
+	bp.spread = (wg_tintSpread) pTint->spread();
+	bp.nbStops = pTint->isMix() ? 0 : pTint->nbStops();
+	bp.stops = pTint->isMix() ? nullptr : reinterpret_cast<const wg_colorStop*>(pTint->stops());
+	return bp;
+}
+
+int wg_tintMixComponents( wg_obj tint )
+{
+	return getPtr(tint)->nbMixComponents();
+}
+
+wg_obj wg_tintMixComponent( wg_obj tint, int index )
+{
+	auto pTint = getPtr(tint);
+	if( index < 0 || index >= pTint->nbMixComponents() )
+		return nullptr;
+
+	return static_cast<Object*>(pTint->mixComponent(index));
+}
+
+float wg_tintMixWeight( wg_obj tint, int index )
+{
+	auto pTint = getPtr(tint);
+	if( index < 0 || index >= pTint->nbMixComponents() )
+		return 0.f;
+
+	return pTint->mixWeight(index);
+}
+
 wg_color wg_tintColorAt( wg_obj tint, wg_coordSPX pos, const wg_rectSPX* pRect )
 {
 	HiColor col = getPtr(tint)->colorAt( { pos.x, pos.y }, * reinterpret_cast<const RectSPX*>(pRect) );
 	return * reinterpret_cast<wg_color*>(&col);
+}
+
+int wg_tintAlphaAt( wg_obj tint, wg_coordSPX pos, const wg_rectSPX* pRect )
+{
+	return getPtr(tint)->alpha( { pos.x, pos.y }, * reinterpret_cast<const RectSPX*>(pRect) );
 }
 
 int wg_exportTintData( wg_obj tint, void* pDest, int maxBytes )
@@ -122,6 +193,17 @@ wg_obj wg_createTintFromData( const void* pData, int bytes )
 {
 	if( !pData || bytes <= 0 )
 		return nullptr;
+
+	// The deserializer only learns how much it needs as it reads, so data shorter
+	// than the largest tint is copied into a buffer that is, rather than read past.
+
+	uint8_t	buffer[TintTools::c_maxSerializedTintBytes] = {};
+
+	if( bytes < TintTools::c_maxSerializedTintBytes )
+	{
+		memcpy( buffer, pData, bytes );
+		pData = buffer;
+	}
 
 	int bytesRead = 0;
 	auto pTint = TintTools::deserializeTint( (const uint8_t*) pData, bytesRead );
