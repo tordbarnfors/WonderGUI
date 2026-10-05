@@ -49,9 +49,12 @@ extern "C" {
 // smaller than its own (see PluginCalls::_init()).
 //
 // So new calls are only ever added at the end of their struct, never inserted
-// or reordered, and existing calls keep their signatures. A change that can't
-// be done that way breaks every plugin. Versioning those is up to the
-// application hosting the plugins, which checks a version of its own.
+// or reordered, and existing calls keep their signatures. A call whose feature
+// is removed keeps its slot, marked RETIRED, and the host fills it with a stub
+// that does nothing and returns 0 or null. A change that can't be done that way
+// breaks every plugin. Versioning those is up to the application hosting the
+// plugins, which checks a version of its own, and they are a good time to clear
+// out retired slots.
 
 //____ wg_pluginroot_calls ____________________________________________________
 
@@ -208,11 +211,15 @@ typedef struct wg_gfxdevice_calls_struct
 	void				(*setTintColor)(wg_obj device, wg_color color);
 	wg_color			(*getTintColor)(wg_obj device);
 
-	void				(*setTint)(wg_obj device, const wg_rectSPX* rect, const wg_obj tint);
-	wg_obj				(*getTint)(wg_obj device);
-	wg_rectSPX			(*getTintRect)(wg_obj device);
-	void				(*clearTint)(wg_obj device);
-	int					(*hasTint)(wg_obj device);
+	// RETIRED: Tintmaps and tint gradients were replaced by Tints, see setTint() below.
+
+	void				(*setTintmap)(wg_obj device, const wg_rectSPX* rect, const wg_obj tintmap);
+	wg_obj				(*getTintmap)(wg_obj device);
+	wg_rectSPX			(*getTintmapRect)(wg_obj device);
+	void				(*clearTintmap)(wg_obj device);
+	int					(*hasTintmap)(wg_obj device);
+	void				(*setTintGradient)(wg_obj device, const wg_rectSPX* rect, const void* gradient);
+	void				(*clearTintGradient)(wg_obj device);
 
 	int					(*setBlendMode)(wg_obj device, wg_blendMode blendMode);
 	wg_blendMode 		(*getBlendMode)(wg_obj device);
@@ -275,6 +282,11 @@ typedef struct wg_gfxdevice_calls_struct
 
 	void				(*setBlurbrush)(wg_obj device, wg_obj brush );
 
+	void				(*setTint)(wg_obj device, const wg_rectSPX* rect, const wg_obj tint);
+	wg_obj				(*getTint)(wg_obj device);
+	wg_rectSPX			(*getTintRect)(wg_obj device);
+	void				(*clearTint)(wg_obj device);
+	int					(*hasTint)(wg_obj device);
 	void				(*clearTintColor)(wg_obj device);
 	int					(*hasTintColor)(wg_obj device);
 
@@ -437,11 +449,17 @@ typedef struct wg_edgemap_calls_struct
 	int					(*setRenderSegments)(wg_obj edgemap, int nSegments);
 	int					(*getRenderSegments)(wg_obj edgemap);
 
+	int					(*edgemapPaletteType)(wg_obj edgemap);		// RETIRED, there are no palette types anymore.
 	int					(*setEdgemapColors)(wg_obj edgemap, int begin, int end, const wg_color * pColors);
-	int					(*setEdgemapTints)(wg_obj edgemap, int begin, int end, const wg_obj * pTints );
+	int					(*setEdgemapColorsFromGradients)(wg_obj edgemap, int begin, int end, const void * pGradients );		// RETIRED
+	int					(*setEdgemapColorsFromTintmaps)(wg_obj edgemap, int begin, int end, wg_obj * pTintmaps );			// RETIRED
+	int					(*setEdgemapColorsFromStrips)(wg_obj edgemap, int begin, int end, const wg_color * pColorstripX, const wg_color * pColorstripY );	// RETIRED
+
+	int					(*importEdgemapPaletteEntries)(wg_obj edgemap, int begin, int end, const wg_color * pColors );		// RETIRED
 
 	const wg_color *  	(*edgemapFlatColors)(wg_obj edgemap);
-	wg_obj				(*edgemapTint)(wg_obj edgemap, int segment);
+	const wg_color *  	(*edgemapColorstripsX)(wg_obj edgemap);		// RETIRED
+	const wg_color *  	(*edgemapColorstripsY)(wg_obj edgemap);		// RETIRED
 
 	int					(*edgemapSegments)(wg_obj edgemap);
 	int					(*edgemapSamples)(wg_obj edgemap);
@@ -449,7 +467,12 @@ typedef struct wg_edgemap_calls_struct
 	int 				(*importFloatSamples)(wg_obj edgemap, wg_sampleOrigo origo, const float* pSource, int edgeBegin, int edgeEnd, int sampleBegin, int sampleEnd, int edgePitch, int samplePitch);
 	int 				(*exportSpxSamples)(wg_obj edgemap, wg_sampleOrigo origo, wg_spx* pDestination, int edgeBegin, int edgeEnd, int sampleBegin, int sampleEnd, int edgePitch, int samplePitch);
 	int 				(*exportFloatSamples)(wg_obj edgemap, wg_sampleOrigo origo, float* pDestination, int edgeBegin, int edgeEnd, int sampleBegin, int sampleEnd, int edgePitch, int samplePitch);
+	int					(*importPaletteEntries)(wg_obj edgemap, int begin, int end, const wg_color * pColors );		// RETIRED
+
 	void				(*exportBounds)( wg_obj edgemap, wg_spx * pMinMaxOutput, int nSections, int sectionWidth, int topEdge, int bottomEdge, int mapOffset, int minMaxPitch );
+
+	int					(*setEdgemapTints)(wg_obj edgemap, int begin, int end, const wg_obj * pTints );
+	wg_obj				(*edgemapTint)(wg_obj edgemap, int segment);
 } wg_edgemap_calls;
 
 
@@ -506,6 +529,39 @@ typedef struct wg_blurbrush_calls_struct
 } wg_blurbrush_calls;
 
 
+//____ Retired call structs ___________________________________________________
+//
+// Tintmap, Gradyent and StaticTintmap were replaced by Tint. The structs keep
+// their place and size in wg_plugin_interface, and all calls are stubs.
+
+typedef struct wg_tintmap_calls_struct
+{
+	int				structSize;
+
+	int		(*isTintmapOpaque)( wg_obj tintmap );
+	int		(*isTintmapVertical)( wg_obj tintmap );
+	int		(*isTintmapHorizontal)( wg_obj tintmap );
+
+	void	(*exportTintmapColors)( wg_obj tintmap, wg_sizeI tintmapSize, wg_color* pOutputX, wg_color* pOutputY);
+
+} wg_tintmap_calls;
+
+typedef struct wg_gradyent_calls_struct
+{
+	int				structSize;
+
+	wg_obj	(*createGradyent)(wg_color top, wg_color bottom, wg_color left, wg_color right);
+
+} wg_gradyent_calls;
+
+typedef struct wg_statictintmap_calls_struct
+{
+	int				structSize;
+
+	wg_obj	(*createStaticTintmap)( wg_sizeI size, const wg_color * pColorstripX, const wg_color * pColorstripY );
+
+} wg_statictintmap_calls;
+
 //____ wg_tint_calls_struct _____________________________________________
 
 typedef struct wg_tint_calls_struct
@@ -560,6 +616,9 @@ typedef struct wg_plugin_interface_struct
 	wg_hostbridge_calls *		pHostBridge;
 	wg_plugincapsule_calls *	pPluginCapsule;
 	wg_blurbrush_calls *		pBlurbrush;
+	wg_tintmap_calls *			pTintmap;			// RETIRED
+	wg_gradyent_calls *			pGradyent;			// RETIRED
+	wg_statictintmap_calls *	pStaticTintmap;		// RETIRED
 	wg_tint_calls *				pTint;
 
 } wg_plugin_interface;
