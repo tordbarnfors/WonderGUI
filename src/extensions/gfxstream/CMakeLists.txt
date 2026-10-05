@@ -95,7 +95,7 @@ generate_export_header(wggfxstream BASE_NAME wg)
 target_include_directories(wggfxstream PRIVATE ${INCDIRS} 
 	"${CMAKE_CURRENT_BINARY_DIR}"  # For generated header
 )
-target_link_libraries(wggfxstream PUBLIC wondergear )
+target_link_libraries(wggfxstream PUBLIC wondergfx )		# Which brings wondergear.
 
 set_target_properties( wggfxstream PROPERTIES FOLDER "Extensions" )
 set_target_properties( wggfxstream PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS TRUE)

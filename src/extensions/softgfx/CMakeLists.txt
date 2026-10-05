@@ -63,6 +63,10 @@ set(INCDIRS
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${SOURCES})
 
 add_library( wgsoftgfx STATIC ${SOURCES} )
+
+# Declared so the linker gets the libraries in the right order. GNU ld needs that,
+# MSVC and Apple's linker don't care.
+target_link_libraries( wgsoftgfx PUBLIC wondergfx )
 generate_export_header(wgsoftgfx BASE_NAME wg)
 
 target_include_directories(wgsoftgfx PRIVATE 

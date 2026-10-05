@@ -45,6 +45,10 @@ source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${SOURCES})
 
 add_library( wgdx12gfx STATIC ${SOURCES} ${SHADERS} )
 
+# Declared so the linker gets the libraries in the right order. GNU ld needs that,
+# MSVC and Apple's linker don't care.
+target_link_libraries( wgdx12gfx PUBLIC wondergfx )
+
 target_include_directories(wgdx12gfx PRIVATE 
 	${WONDERGFX_INCDIRS}
 	${INCDIRS}

@@ -16,6 +16,7 @@ add_library( wgfreetypefont STATIC ${SOURCES} )
 generate_export_header(wgfreetypefont BASE_NAME wg)
 
 target_link_libraries( wgfreetypefont 
+    wondergfx
     Freetype::Freetype
 )
 
