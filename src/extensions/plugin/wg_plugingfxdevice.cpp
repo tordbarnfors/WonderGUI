@@ -308,9 +308,15 @@ namespace wg
 
 	void PluginGfxDevice::setBlurbrush( Blurbrush * pBrush )
 	{
-		if( pBrush == m_pBlurbrush )
+		// The host device forgets its brush when a canvas update begins, which we
+		// don't, so the brush is always passed on. The host's copy of it is reused.
+
+		if( pBrush == m_pBlurbrush && (m_hostBlurbrush || !pBrush) )
+		{
+			PluginCalls::gfxDevice->setBlurbrush(m_cDevice, m_hostBlurbrush);
 			return;
-		
+		}
+
 		GfxDeviceGen1::setBlurbrush(pBrush);
 
 		if( m_hostBlurbrush )
