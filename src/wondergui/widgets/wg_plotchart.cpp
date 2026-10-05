@@ -240,7 +240,7 @@ namespace wg
 				{
 					graph.m_tintTransitionProgress = timestamp;
 
-					graph.m_pTint = Tint::blend(graph.m_pStartTint, graph.m_pEndTint, graph.m_pTintTransition->snapshot(timestamp, 0.f, 1.f));
+					graph.m_pTint = Tint::mix(graph.m_pStartTint, graph.m_pEndTint, graph.m_pTintTransition->snapshot(timestamp, 0.f, 1.f));
 					_requestRender();
 
 					transitionsActive = true;

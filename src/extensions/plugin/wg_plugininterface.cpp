@@ -360,7 +360,7 @@ void wg_populatePluginInterface(wg_plugin_interface * pHeader)
 	pBody->tint.structSize					= sizeof(wg_tint_calls);
 	pBody->tint.createTint					= &wg_createTint;
 	pBody->tint.createTintFromData			= &wg_createTintFromData;
-	pBody->tint.blendTints					= &wg_blendTints;
+	pBody->tint.mixTints					= &wg_mixTints;
 	pBody->tint.isTintOpaque				= &wg_isTintOpaque;
 	pBody->tint.isTintFlat					= &wg_isTintFlat;
 	pBody->tint.isTintMix					= &wg_isTintMix;

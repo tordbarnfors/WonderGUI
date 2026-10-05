@@ -121,8 +121,8 @@ namespace wg
 
 					float progress = graph.m_pTintTransition->snapshot(timestamp, 0.f, 1.f);
 
-					graph.m_pFillTint = Tint::blend(graph.m_pStartFillTint, graph.m_pEndFillTint, progress);
-					graph.m_pOutlineTint = Tint::blend(graph.m_pStartOutlineTint, graph.m_pEndOutlineTint, progress);
+					graph.m_pFillTint = Tint::mix(graph.m_pStartFillTint, graph.m_pEndFillTint, progress);
+					graph.m_pOutlineTint = Tint::mix(graph.m_pStartOutlineTint, graph.m_pEndOutlineTint, progress);
 
 					transitionsActive = true;
 				}
@@ -609,7 +609,7 @@ namespace wg
 	 * @brief Set Tints for fill and outline, overriding their colors.
 	 *
 	 * The Tints are placed in the rectangle of the waveform. Nullptr removes a Tint.
-	 * Transitions between Tints morph or crossfade as described in Tint::blend().
+	 * Transitions between Tints morph or crossfade as described in Tint::mix().
 	 */
 
 	bool AreaScrollChartEntry::setTints(Tint * pFill, Tint * pOutline, ValueTransition* pTransition)

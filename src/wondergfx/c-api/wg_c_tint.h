@@ -59,7 +59,7 @@ typedef struct wg_tintBP_struct			// NOT BINARY EQUIVALENT!
 WG_EXPORT wg_tintBP		wg_defaultTintBP();								// Blueprint with default values.
 
 WG_EXPORT wg_obj		wg_createTint( const wg_tintBP* pBlueprint );		// Returns retained object or null.
-WG_EXPORT wg_obj		wg_blendTints( wg_obj fromTint, wg_obj toTint, float progress );	// Returns retained object.
+WG_EXPORT wg_obj		wg_mixTints( wg_obj fromTint, wg_obj toTint, float progress );	// Returns retained object.
 
 WG_EXPORT int			wg_isTintOpaque( wg_obj tint );
 WG_EXPORT int			wg_isTintFlat( wg_obj tint );

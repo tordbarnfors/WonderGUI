@@ -64,7 +64,7 @@ namespace wg
 	 * a flat color.
 	 *
 	 * A Tint can also be a mix of up to four simple Tints with individual
-	 * weights, which is what Tint::blend() returns when two Tints can't be
+	 * weights, which is what Tint::mix() returns when two Tints can't be
 	 * morphed into each other. A mix is accepted everywhere a Tint is.
 	 */
 
@@ -98,7 +98,7 @@ namespace wg
 		static Tint_p	create(HiColor from, HiColor to, CoordF begin = { 0.f, 0.f }, CoordF end = { 0.f, 1.f }, ColorSpace colorSpace = ColorSpace::Linear);
 		static Tint_p	create(std::initializer_list<ColorStop> stops, CoordF begin = { 0.f, 0.f }, CoordF end = { 0.f, 1.f }, ColorSpace colorSpace = ColorSpace::Linear);
 
-		static Tint_p	blend(Tint* pFrom, Tint* pTo, float progress);
+		static Tint_p	mix(Tint* pFrom, Tint* pTo, float progress);
 		static Tint_p	createMix(int nComponents, Tint* const * pComponents, const float* pWeights);	// Components must be simple Tints, weights are normalized.
 
 		//.____ Identification __________________________________________

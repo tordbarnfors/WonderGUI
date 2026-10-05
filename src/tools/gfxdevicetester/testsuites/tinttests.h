@@ -75,7 +75,7 @@ public:
 
 		// Linear to radial can't morph, so this is a mix of the two.
 
-		m_pMix = Tint::blend( Tint::create(red, blue, {0,0}, {1,0}), m_pRadialFit, 0.4f );
+		m_pMix = Tint::mix( Tint::create(red, blue, {0,0}, {1,0}), m_pRadialFit, 0.4f );
 
 		// Segment tints, placed in the edgemap's own rectangle.
 
@@ -88,7 +88,7 @@ public:
 			bp.stops = { {0.f, white}, {1.f, m_segmentColors[i]} };
 			m_segmentTints[i] = Tint::create(bp);
 
-			m_segmentMixTints[i] = Tint::blend( Tint::create(m_segmentColors[i], HiColor::Black, {0,0}, {1,1}), m_segmentTints[i], 0.5f );
+			m_segmentMixTints[i] = Tint::mix( Tint::create(m_segmentColors[i], HiColor::Black, {0,0}, {1,1}), m_segmentTints[i], 0.5f );
 		}
 
 		spx samples[c_segments-1][512+1];

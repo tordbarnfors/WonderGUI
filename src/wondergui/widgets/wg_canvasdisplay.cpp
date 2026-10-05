@@ -298,7 +298,7 @@ namespace wg
 			{
 				m_tintTransitionProgress = timestamp;
 
-				m_pTint = Tint::blend(m_pStartTint, m_pEndTint, m_pTintTransition->snapshot(timestamp, 0.f, 1.f));
+				m_pTint = Tint::mix(m_pStartTint, m_pEndTint, m_pTintTransition->snapshot(timestamp, 0.f, 1.f));
 				_requestRender();
 			}
 		}

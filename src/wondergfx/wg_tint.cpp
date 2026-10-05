@@ -101,15 +101,17 @@ namespace wg
 		return create(bp);
 	}
 
-	//____ blend() ____________________________________________________________
+	//____ mix() ______________________________________________________________
 	/**
-	 * @brief Get a Tint that is a blend between two Tints.
+	 * @brief Get a Tint in between two Tints.
+	 *
+	 * Named after HiColor::mix(), which does the same for two colors.
 	 *
 	 * If the Tints are morphable into each other (same shape, spread, color space
 	 * and radius mode) the result is a simple Tint with interpolated geometry
 	 * and colors. Otherwise the result is a mix of both, crossfaded per pixel.
 	 *
-	 * Blending from or to a mix flattens the mix instead of nesting it. A mix
+	 * Mixing from or to a mix flattens the mix instead of nesting it. A mix
 	 * holds at most c_maxMixComponents Tints, the ones with the smallest weights
 	 * are dropped if needed.
 	 *
@@ -118,7 +120,7 @@ namespace wg
 	 * @param progress	0.0 -> 1.0.
 	 */
 
-	Tint_p Tint::blend(Tint* pFrom, Tint* pTo, float progress)
+	Tint_p Tint::mix(Tint* pFrom, Tint* pTo, float progress)
 	{
 		if (pFrom == pTo)
 			return pFrom;
@@ -239,7 +241,7 @@ namespace wg
 	/**
 	 * @brief Create a mix of simple Tints directly.
 	 *
-	 * Normally mixes are created by blend(). This is mainly for recreating a
+	 * Normally mixes are created by mix(). This is mainly for recreating a
 	 * serialized mix. Mixes among the components are flattened, zero weights
 	 * dropped and weights normalized. At most c_maxMixComponents components.
 	 */
@@ -465,7 +467,7 @@ namespace wg
 
 	//____ isMorphableTo() ____________________________________________________
 	/**
-	 * @brief Check if blend() between this and another Tint would morph rather than crossfade.
+	 * @brief Check if mix() between this and another Tint would morph rather than crossfade.
 	 *
 	 * Note that a morph can still fall back to crossfade if the Tints together have too many
 	 * distinct stop positions.

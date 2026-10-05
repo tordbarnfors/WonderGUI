@@ -73,9 +73,9 @@ wg_obj wg_createTint( const wg_tintBP* pBP )
 	return static_cast<Object*>(pTint.rawPtr());
 }
 
-wg_obj wg_blendTints( wg_obj fromTint, wg_obj toTint, float progress )
+wg_obj wg_mixTints( wg_obj fromTint, wg_obj toTint, float progress )
 {
-	auto pTint = Tint::blend( getPtr(fromTint), getPtr(toTint), progress );
+	auto pTint = Tint::mix( getPtr(fromTint), getPtr(toTint), progress );
 	if( !pTint )
 		return nullptr;
 

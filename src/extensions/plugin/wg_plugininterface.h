@@ -500,7 +500,7 @@ typedef struct wg_tint_calls_struct
 
 	wg_obj		(*createTint)( const wg_tintBP* pBlueprint );
 	wg_obj		(*createTintFromData)( const void* pData, int bytes );		// See wg_exportTintData().
-	wg_obj		(*blendTints)( wg_obj fromTint, wg_obj toTint, float progress );
+	wg_obj		(*mixTints)( wg_obj fromTint, wg_obj toTint, float progress );
 
 	int			(*isTintOpaque)( wg_obj tint );
 	int			(*isTintFlat)( wg_obj tint );
