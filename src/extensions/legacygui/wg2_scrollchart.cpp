@@ -28,7 +28,7 @@
 #include <wg2_util.h>
 #include <wg2_eventhandler.h>
 
-#include <wg_gradient.h>
+#include <wg_tint.h>
 
 #include <algorithm>
 #include <limits>
@@ -685,11 +685,11 @@ void WgScrollChart::SetStaticModeFadeOutLength( int length )
 	_requestRender();
 }
 
-//____ SetStaticModeGradient() ________________________________________________
+//____ SetStaticModeTint() ____________________________________________________
 
-void WgScrollChart::SetStaticModeGradient( const wg::Gradient& gradient )
+void WgScrollChart::SetStaticModeTint( wg::Tint * pTint )
 {
-	m_fadeTailGradient = gradient;
+	m_pFadeTailTint = pTint;
 	_requestRender();
 }
 
@@ -1252,8 +1252,8 @@ void WgScrollChart::_onRender(wg::GfxDevice * pDevice, const WgRect& _canvas, co
 		auto oldTintColor = pDevice->tintColor();
 		auto oldBlendMode = pDevice->blendMode();
 
-		if( m_combinedWavesTintGradient.isValid() )
-			pDevice->setTintGradient(scrollCanvas*64, m_combinedWavesTintGradient );
+		if( m_pCombinedWavesTint )
+			pDevice->setTint(scrollCanvas*64, m_pCombinedWavesTint );
 
 		pDevice->setBlitSource(m_pCanvas);
 		pDevice->setTintColor(m_combinedWavesTintColor);
@@ -1272,21 +1272,21 @@ void WgScrollChart::_onRender(wg::GfxDevice * pDevice, const WgRect& _canvas, co
 				if( tailEnd > tailBegin )
 				{
 					pDevice->blit(WgCoord(scrollCanvas.x, scrollCanvas.y)*64, WgRect( 0, 0, tailBegin, scrollCanvas.h )*64 );
-					pDevice->setTintGradient( WgRect(scrollCanvas.x + tailBegin, scrollCanvas.y, tailLength, scrollCanvas.h)*64, m_fadeTailGradient );
+					pDevice->setTint( WgRect(scrollCanvas.x + tailBegin, scrollCanvas.y, tailLength, scrollCanvas.h)*64, m_pFadeTailTint );
 					pDevice->blit(WgCoord(scrollCanvas.x + tailBegin, scrollCanvas.y)*64, WgRect( tailBegin, 0, tailLength, scrollCanvas.h )*64 );
-					pDevice->clearTintGradient();
+					pDevice->clearTint();
 					pDevice->blit(WgCoord(scrollCanvas.x + tailEnd, scrollCanvas.y)*64, WgRect( tailEnd, 0, canvasLen - tailEnd, scrollCanvas.h )*64 );
 				}
 				else
 				{
 					pDevice->blit(WgCoord(scrollCanvas.x + tailEnd, scrollCanvas.y)*64, WgRect( tailEnd, 0, tailBegin - tailEnd, scrollCanvas.h )*64 );
 
-					pDevice->setTintGradient( WgRect(scrollCanvas.x + tailBegin, scrollCanvas.y, tailLength, scrollCanvas.h)*64, m_fadeTailGradient );
+					pDevice->setTint( WgRect(scrollCanvas.x + tailBegin, scrollCanvas.y, tailLength, scrollCanvas.h)*64, m_pFadeTailTint );
 					pDevice->blit(WgCoord(scrollCanvas.x + tailBegin, scrollCanvas.y)*64, WgRect( tailBegin, 0, tailLength, scrollCanvas.h )*64 );
 
-					pDevice->setTintGradient( WgRect(scrollCanvas.x - (tailLength - tailEnd), scrollCanvas.y, tailLength, scrollCanvas.h)*64, m_fadeTailGradient );
+					pDevice->setTint( WgRect(scrollCanvas.x - (tailLength - tailEnd), scrollCanvas.y, tailLength, scrollCanvas.h)*64, m_pFadeTailTint );
 					pDevice->blit(WgCoord(scrollCanvas.x, scrollCanvas.y)*64, WgRect( 0, 0, tailEnd, scrollCanvas.h )*64 );
-					pDevice->clearTintGradient();
+					pDevice->clearTint();
 				}
 			}
 			else
@@ -1309,8 +1309,8 @@ void WgScrollChart::_onRender(wg::GfxDevice * pDevice, const WgRect& _canvas, co
 		pDevice->setTintColor(oldTintColor);
 		pDevice->setBlendMode(oldBlendMode);
 
-		if( m_combinedWavesTintGradient.isValid() )
-			pDevice->clearTintGradient();
+		if( m_pCombinedWavesTint )
+			pDevice->clearTint();
 	}
 	else if (m_chartColor.a != 0)
 	{

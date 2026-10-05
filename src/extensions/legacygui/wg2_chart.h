@@ -40,7 +40,7 @@
 
 #include <wg_surfacefactory.h>
 #include <wg_skin.h>
-#include <wg_gradient.h>
+#include <wg_tint.h>
 #include <wg_waveform.h>
 
 
@@ -77,7 +77,7 @@ public:
 
     bool	SetWaveStyle(int waveId, WgColor fillColor, float topLineThickness = 0.f, WgColor topLineColor = WgColor::Black, float bottomLineThickness = 0.f, WgColor bottomLineColor = WgColor::Black, int transitionMs = 0);
 
-    bool    SetWaveGradient(int waveId, wg::Gradient gradient);
+    bool    SetWaveTint(int waveId, wg::Tint * pTint);		// Placed in the rect of the wave. Nullptr for none.
 
 	bool	SetWaveSamples(int waveId, int firstSample, int nSamples, float * pTopBorderSamples, float * pBottomBorderSamples);
 	bool	SetWaveSamples(int waveId, int firstSample, int nSamples, const float * pSamples, float floor = 0.f);
@@ -184,7 +184,7 @@ protected:
 
         bool                ignoreDynamicScaling = false;
 
-        wg::Gradient        m_waveGradient;
+        wg::Tint_p          m_pWaveTint;
 		wg::Waveform_p		m_pWaveform;
 	};
 

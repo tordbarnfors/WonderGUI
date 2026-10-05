@@ -561,7 +561,7 @@ bool scrollChartTest(WgRootPanel* pRoot)
 	/*
 	 pChart->SetStaticMode(true);
 	 pChart->SetStaticModeFadeOutLength(16);
-	 pChart->SetStaticModeGradient( wg::Gradient( wg::Color::Black, wg::Color::White, wg::Color::White, wg::Color::Black ) );
+	 pChart->SetStaticModeTint( wg::Tint::create( wg::Color::Black, wg::Color::White, {0,0}, {1,0} ) );
 	 */
 	pChart->SetGridToForeground(true);
 

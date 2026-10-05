@@ -311,22 +311,22 @@ bool WgChart::SetWaveStyle(int waveId, WgColor fillColor, float topLineThickness
 	return true;
 }
 
-//____ SetWaveGradient() _________________________________________________________
+//____ SetWaveTint() _____________________________________________________________
 
-bool WgChart::SetWaveGradient(int waveId, wg::Gradient gradient)
+bool WgChart::SetWaveTint(int waveId, wg::Tint * pTint)
 {
     Wave * p = _getWave(waveId);
     if (!p)
         return false;
 
-	if( gradient != p->m_waveGradient )
+	if( pTint != p->m_pWaveTint )
 	{
-		p->m_waveGradient = gradient;
+		p->m_pWaveTint = pTint;
 
 		if( p->m_pWaveform )
 		{
-			p->m_pWaveform->setGradient(gradient);
-			p->m_pWaveform->setOutlineGradient(gradient);
+			p->m_pWaveform->setTint(pTint);
+			p->m_pWaveform->setOutlineTint(pTint);
 		}
 	}
 
@@ -1075,8 +1075,8 @@ void WgChart::_renderWave( Wave& wave, wg::GfxDevice * pDevice, const WgRect& wa
 
 	int length = std::max(top.length, bottom.length)-1;
 
-    // Check if gradient is set by SetWaveGradient
-    bool useGradient = wave.m_waveGradient.isValid();
+    // Check if a tint is set by SetWaveTint
+    bool useGradient = wave.m_pWaveTint != nullptr;
 
 	// Don't use gradient on "slow" devices
 	if( pDevice->typeInfo() == wg::GfxDeviceGen2::TYPEINFO )
@@ -1101,8 +1101,8 @@ void WgChart::_renderWave( Wave& wave, wg::GfxDevice * pDevice, const WgRect& wa
 
 			if( useGradient )
 			{
-				bp.gradient = wave.m_waveGradient;
-				bp.outlineGradient = wave.m_waveGradient;
+				bp.tint = wave.m_pWaveTint;
+				bp.outlineTint = wave.m_pWaveTint;
 			}
 
 			wave.m_pWaveform = wg::Waveform::create(bp, pDevice->edgemapFactory());
@@ -1123,14 +1123,14 @@ void WgChart::_renderWave( Wave& wave, wg::GfxDevice * pDevice, const WgRect& wa
 /*
 		if(useGradient)
         {
-            pDevice->setTintGradient(WgRect(waveCanvas.x + xOfs, waveCanvas.y, length, waveCanvas.h)*64, wave.m_waveGradient);
+            pDevice->setTint(WgRect(waveCanvas.x + xOfs, waveCanvas.y, length, waveCanvas.h)*64, wave.m_pWaveTint);
         }
 
 		pDevice->drawWave(WgRect(waveCanvas.x + xOfs, waveCanvas.y, length, waveCanvas.h)*64, &top, &bottom, wave.fillColor);
 
         if(useGradient)
         {
-            pDevice->clearTintGradient();
+            pDevice->clearTint();
         }
  */
 	}

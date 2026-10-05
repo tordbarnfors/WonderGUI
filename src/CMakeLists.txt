@@ -228,7 +228,7 @@ add_subdirectory(extensions/softgfx)
 
 add_subdirectory(extensions/freetypefont)
 
-#add_subdirectory(extensions/legacygui)
+add_subdirectory(extensions/legacygui)
 
 #add_subdirectory(extensions/plugin)
 

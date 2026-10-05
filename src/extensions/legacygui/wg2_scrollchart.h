@@ -40,7 +40,7 @@
 #include <deque>
 
 #include <wg_surfacefactory.h>
-#include <wg_gradient.h>
+#include <wg_tint.h>
 
 //____ WgScrollChart ____________________________________________________________
 
@@ -137,12 +137,12 @@ public:
 
 	void	SetCombinedWavesBlend(WgBlendMode blendMode) { m_combinedWavesBlendMode = blendMode; _requestRender(); };
 	void	SetCombinedWavesTint(WgColor tintColor) { m_combinedWavesTintColor = tintColor; _requestRender(); };
-	void	SetCombinedWavesGradient(wg::Gradient gradient) { m_combinedWavesTintGradient = gradient; _requestRender(); };
+	void	SetCombinedWavesTint(wg::Tint * pTint) { m_pCombinedWavesTint = pTint; _requestRender(); };	// Placed in the rect of the chart. Nullptr for none.
 
 	void	SetStaticMode( bool bStatic );
 	
 	void	SetStaticModeFadeOutLength( int length );
-	void	SetStaticModeGradient( const wg::Gradient& gradient );
+	void	SetStaticModeTint( wg::Tint * pTint );		// Fades the tail in static mode, placed in the rect of the tail.
 	
 	bool	ClearWave(int waveId, float topSample, float bottomSample);
 
@@ -245,7 +245,7 @@ private:
 
 	WgColor			m_combinedWavesTintColor = WgColor::White;
 	WgBlendMode		m_combinedWavesBlendMode = WgBlendMode::Blend;
-	wg::Gradient	m_combinedWavesTintGradient;
+	wg::Tint_p		m_pCombinedWavesTint;
 	
 	WgBorders		m_pointPadding;			// Padding for the canvas in points. To allow thick lines to fully stay inside widget. Grid is allowed outside.
 	WgBorders		m_pixelPadding;			// Same, but in pixels.
@@ -257,7 +257,7 @@ private:
 	bool			m_bStaticMode = false;
 	int				m_fadeTailLength = 16;		// Pixels of "fade out tail" if m_bScrolling == false.
 	
-	wg::Gradient 	m_fadeTailGradient = wg::Gradient( wg::HiColor(4096, 4096, 4096, 0), wg::HiColor::White, wg::HiColor::White, wg::HiColor(4096, 4096, 4096, 0) );
+	wg::Tint_p		m_pFadeTailTint = wg::Tint::create( wg::HiColor(4096, 4096, 4096, 0), wg::HiColor::White, { 0.f, 0.f }, { 1.f, 0.f } );	// Transparent to opaque, left to right.
 
 	
 	std::vector<Wave>		m_waves;
