@@ -1168,7 +1168,11 @@ wapp::LibId MyAppAPI::openLibrary(const std::string& path)
 #ifdef WIN32
 	return (void*)LoadLibraryA(path.c_str());
 #else														// Apple and Linux
+#	ifdef __APPLE__
 	std::string fullPath = "lib" + path + ".dylib";
+#	else
+	std::string fullPath = "lib" + path + ".so";
+#	endif
 	return dlopen(fullPath.c_str(), RTLD_LAZY | RTLD_LOCAL);
 #endif
 }

@@ -44,7 +44,20 @@ bool MyApp::init(wapp::API* pAPI)
 //	m_libId = pAPI->openLibrary("legacytestplugin");
 	m_libId = pAPI->openLibrary("testplugin");
 	if( m_libId == 0 )
+	{
+		printf("ERROR: Failed to open plugin library!\n");
 		return false;
+	}
+
+	// A plugin built for another version of the interface would call the wrong
+	// functions. Plugins built before the interface had a version don't have this.
+
+	auto pVersionFunc = (wg_pluginInterfaceVersionFunc) pAPI->loadSymbol(m_libId, "wg_pluginInterfaceVersion" );
+	if( pVersionFunc == nullptr || pVersionFunc() != WG_PLUGIN_INTERFACE_VERSION )
+	{
+		printf("ERROR: Plugin is built for plugin interface version %d, we have version %d.\n", pVersionFunc ? pVersionFunc() : 0, WG_PLUGIN_INTERFACE_VERSION);
+		return false;
+	}
 	
 	
 	 
@@ -58,8 +71,12 @@ bool MyApp::init(wapp::API* pAPI)
 	wg_plugin_interface	c_calls;
 	wg_populatePluginInterface(&c_calls);
 
-	m_pInitClient(&c_calls, Base::hostBridge(), m_pPluginCapsule,
-				  Base::defaultGfxDevice(), Base::defaultSurfaceFactory(), Base::defaultEdgemapFactory());
+	if( !m_pInitClient(&c_calls, Base::hostBridge(), m_pPluginCapsule,
+				  Base::defaultGfxDevice(), Base::defaultSurfaceFactory(), Base::defaultEdgemapFactory()) )
+	{
+		printf("ERROR: Plugin failed to initialize!\n");
+		return false;
+	}
 	
 	// Map keys and commands
 	

@@ -32,7 +32,7 @@ set_target_properties(testplugin PROPERTIES
 
 target_include_directories(testplugin PRIVATE ${FREETYPE2_INCDIR} )
 target_link_directories(testplugin PRIVATE ${FREETYPE2_LIBDIR} )
-target_link_libraries(testplugin PRIVATE ${FREETYPE2_LIB} )
+target_link_libraries(testplugin PRIVATE Freetype::Freetype ${FREETYPE2_LIB} )
 
 #======================================================================
 
@@ -44,6 +44,8 @@ add_library(legacytestplugin SHARED
 	${WGLEGACYGUI_SOURCES}
 	${WGFREETYPEFONT_SOURCES}
 	${WGLEGACYPLUGIN_SOURCES}
+	${WGSOFTGFX_SOURCES}				# Compiled in like the rest, not linked: static libraries
+	${WGGFXSTREAM_SOURCES}				# aren't position independent, which a shared library needs on Linux.
 )
 generate_export_header(legacytestplugin BASE_NAME wg)
 
@@ -51,6 +53,8 @@ target_include_directories(legacytestplugin PRIVATE
 	${WGPLUGIN_INCDIRS}
 	${WGLEGACYGUI_INCDIRS}
 	${WGFREETYPEFONT_INCDIR}
+	${WGSOFTGFX_INCDIRS}
+	${WGGFXSTREAM_INCDIRS}
 	"${CMAKE_CURRENT_BINARY_DIR}"  # For generated header
 )
 
@@ -62,7 +66,7 @@ set_target_properties(legacytestplugin PROPERTIES
 
 target_include_directories(legacytestplugin PRIVATE ${FREETYPE2_INCDIR} )
 target_link_directories(legacytestplugin PRIVATE ${FREETYPE2_LIBDIR} )
-target_link_libraries(legacytestplugin PRIVATE ${FREETYPE2_LIB} wggfxstream wgsoftgfx )
+target_link_libraries(legacytestplugin PRIVATE Freetype::Freetype ${FREETYPE2_LIB} )
 
 #========================================================================
 
