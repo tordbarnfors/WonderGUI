@@ -39,7 +39,7 @@ WgPluginRoot * 	g_pPluginRoot;
 DLLEXPORTPREFIX int init( wg_plugin_interface * pInterface, void * pRealHostBridge, wg_obj hPluginCapsule, wg_obj hGfxDevice, wg_obj hSurfaceFactory, wg_obj hEdgemapFactory )
 {
 	if( !WgPluginBase::init(pInterface, pRealHostBridge) )
-		return 0;								// Host has another plugin interface version.
+		return 0;								// Host's plugin interface is older than ours.
 	
 	auto pSurfaceFactory 	= PluginSurfaceFactory::create(hSurfaceFactory);
 	auto pEdgemapFactory	= PluginEdgemapFactory::create(hEdgemapFactory);

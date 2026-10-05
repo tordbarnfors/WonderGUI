@@ -48,16 +48,6 @@ bool MyApp::init(wapp::API* pAPI)
 		printf("ERROR: Failed to open plugin library!\n");
 		return false;
 	}
-
-	// A plugin built for another version of the interface would call the wrong
-	// functions. Plugins built before the interface had a version don't have this.
-
-	auto pVersionFunc = (wg_pluginInterfaceVersionFunc) pAPI->loadSymbol(m_libId, "wg_pluginInterfaceVersion" );
-	if( pVersionFunc == nullptr || pVersionFunc() != WG_PLUGIN_INTERFACE_VERSION )
-	{
-		printf("ERROR: Plugin is built for plugin interface version %d, we have version %d.\n", pVersionFunc ? pVersionFunc() : 0, WG_PLUGIN_INTERFACE_VERSION);
-		return false;
-	}
 	
 	
 	 

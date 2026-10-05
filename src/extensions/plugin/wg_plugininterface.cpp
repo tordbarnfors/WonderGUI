@@ -377,7 +377,6 @@ void wg_populatePluginInterface(wg_plugin_interface * pHeader)
 	pBody->tint.exportTintData				= &wg_exportTintData;
 
 	pHeader->structSize			= sizeof(wg_plugin_interface);
-	pHeader->version			= WG_PLUGIN_INTERFACE_VERSION;
 	pHeader->pBitmapCache		= &pBody->bitmapCache;
 	pHeader->pBitmapFont		= &pBody->bitmapFont;
 	pHeader->pCanvasLayers		= &pBody->canvasLayers;
