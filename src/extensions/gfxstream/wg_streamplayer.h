@@ -202,6 +202,7 @@ namespace wg
 
 		bool				m_bSkip = false;								// Set if chunks should be skipped (for error handling)
 		bool				m_bSkipEndInclusive = false;					// True = skipp chunk with m_skipEndId.
+		bool				m_bSkipQuietly = false;							// Don't warn about each chunk skipped, the reason was reported once.
 		GfxStream::ChunkId	m_skipEndId = GfxStream::ChunkId::OutOfData;
 
 
@@ -214,6 +215,8 @@ namespace wg
 		int		m_bufferSize;
 		int		m_streamMajorVersion = 0;
 		int		m_streamMinorVersion = 0;
+
+		static const int	c_minProtocolVersion = 0x0301;				// 3.1: Tints replaced Tintmaps. Older streams are refused.
 
 		bool				m_bStoreDirtyRects = false;
 		int					m_maxDirtyRects = 64;

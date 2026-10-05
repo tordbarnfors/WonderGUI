@@ -113,6 +113,7 @@ namespace wg
 
 		m_bSkip = true;
 		m_bSkipEndInclusive = false;
+		m_bSkipQuietly = false;
 		m_skipEndId = GfxStream::ChunkId::ProtocolVersion;
 	}
 
@@ -162,6 +163,7 @@ namespace wg
 			if( m_skipEndId == header.type )
 			{
 				m_bSkip = false;
+				m_bSkipQuietly = false;
 
 				if( m_bSkipEndInclusive )
 				{
@@ -175,10 +177,13 @@ namespace wg
 			}
 			else
 			{
-				char msg[128];
-				snprintf(msg, sizeof(msg), "Skipping %s chunk, continue processing %s next %s.", toString(header.type), m_bSkipEndInclusive ? "after" : "on", toString(m_skipEndId) );
+				if( !m_bSkipQuietly )
+				{
+					char msg[128];
+					snprintf(msg, sizeof(msg), "Skipping %s chunk, continue processing %s next %s.", toString(header.type), m_bSkipEndInclusive ? "after" : "on", toString(m_skipEndId) );
 
-				GfxBase::throwError(ErrorLevel::Warning, ErrorCode::SystemIntegrity, msg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+					GfxBase::throwError(ErrorLevel::Warning, ErrorCode::SystemIntegrity, msg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				}
 				m_pDecoder->skip(header.size);
 				return true;
 			}
@@ -197,6 +202,23 @@ namespace wg
 
 			m_streamMajorVersion = version/256;
 			m_streamMinorVersion = version & 0xFF;
+
+			// Before 3.1 the state change Tint now uses held a Tintmap, in an encoding
+			// we can't read or even reliably skip, so such streams are refused. Everything
+			// up to the next ProtocolVersion is skipped, reported once rather than per chunk.
+
+			if( version < c_minProtocolVersion )
+			{
+				char msg[160];
+				snprintf(msg, sizeof(msg), "Stream protocol version %d.%d is not supported, %d.%d or later is needed. Skipping stream up to next ProtocolVersion.",
+						 m_streamMajorVersion, m_streamMinorVersion, c_minProtocolVersion/256, c_minProtocolVersion & 0xFF );
+				GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, msg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+
+				m_bSkip = true;
+				m_bSkipEndInclusive = false;
+				m_bSkipQuietly = true;
+				m_skipEndId = GfxStream::ChunkId::ProtocolVersion;
+			}
 			break;
 		}
 
