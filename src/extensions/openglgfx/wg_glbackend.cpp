@@ -159,6 +159,15 @@ void GlBackend::setCanvas(Surface* pSurface)
 	The uniform stays with the program, so it's set for every blit.
 */
 
+void GlBackend::_setPaletteWidth(GLuint prog, GlSurface* pSurf)
+{
+	// The palette texture is paletteCapacity() texels wide, see WG_GL_PALETTE_FUNC.
+
+	GLint loc = glGetUniformLocation(prog, "paletteWidth");
+	if (loc != -1)
+		glUniform1f(loc, float(pSurf->paletteCapacity()));
+}
+
 void GlBackend::_setRgbxClip(GLuint prog, GlSurface* pSurf, bool bClipBlit)
 {
 	GLint loc = glGetUniformLocation(prog, "rgbxClip");
@@ -1929,6 +1938,8 @@ void GlBackend::endSession()
 					GLint clipLoc = glGetUniformLocation(prog, "clipToSource");
 					if (clipLoc != -1)
 						glUniform1i(clipLoc, 0);
+
+					_setPaletteWidth(prog, pSurf);
 				}
 
 				_setRgbxClip(prog, pSurf, false);
@@ -1961,6 +1972,8 @@ void GlBackend::endSession()
 					GLint clipLoc = glGetUniformLocation(prog, "clipToSource");
 					if (clipLoc != -1)
 						glUniform1i(clipLoc, bClip ? 1 : 0);
+
+					_setPaletteWidth(prog, pSurf);
 				}
 				else
 				{
@@ -2001,7 +2014,11 @@ void GlBackend::endSession()
 				else if (m_pActiveBlitSource->pixelFormat() == PixelFormat::Alpha_8)
 					blurSource = BlurSource::Alpha;
 
-				glUseProgram(m_blurProg[blurSource][m_bTintIsActive][m_bActiveCanvasIsA8]);
+				GLuint blurProg = m_blurProg[blurSource][m_bTintIsActive][m_bActiveCanvasIsA8];
+				glUseProgram(blurProg);
+
+				if (blurSource == BlurSource::Palette)
+					_setPaletteWidth(blurProg, m_pActiveBlitSource);
 
 				auto size = m_pActiveBlitSource->pixelSize();
 

@@ -114,14 +114,20 @@
 
 // GLSL function looking up the palette entry for an index read from an R8 index texture.
 // The palette texture is only paletteCapacity() texels wide, so the normalized index can't
-// be used as a texture coordinate (it would only be right for 256 entries). Indexes beyond
+// be used as a texture coordinate (it would only be right for 256 entries). Instead the
+// index is turned into the coordinate of its texel's center, with paletteWidth set by
+// GlBackend::_setPaletteWidth(). The palette texture clamps to its edge, so indexes beyond
 // the palette get its last entry, like DX12 and Metal do. Needs uniform paletteId declared first.
+//
+// This samples with texture() rather than texelFetch() and textureSize(), which on a 2013
+// Mac Pro (AMD, macOS OpenGL 4.1) gave random groups of black pixels.
 
 #define WG_GL_PALETTE_FUNC \
+"uniform float paletteWidth;															" \
 "vec4 paletteLookup(float normIndex)												" \
 "{																					" \
-"	int index = min(int(normIndex * 255.0 + 0.5), textureSize(paletteId, 0).x - 1);	" \
-"	return texelFetch(paletteId, ivec2(index, 0), 0);								" \
+"	float index = floor(normIndex * 255.0 + 0.5);									" \
+"	return texture(paletteId, vec2((index + 0.5) / paletteWidth, 0.5));				" \
 "}																					"
 
 namespace wg {
