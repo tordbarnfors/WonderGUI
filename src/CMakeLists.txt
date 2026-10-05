@@ -54,6 +54,21 @@ message(STATUS "WonderApp framework: ${WAPPLIB}")
 
 
 #------------------------------------------------------------------------------
+# OUTPUT DIRECTORY
+#
+# Executables and shared libraries all go into bin/ (bin/<Config>/ with Visual
+# Studio and Xcode), including SDL2 and SDL2_image when they are downloaded and
+# built here. Windows has no RPATH, so that is where they have to be for the
+# executables to find them. Static libraries stay in their own directories.
+#
+# Set before the dependencies below, so they are built there too.
+#------------------------------------------------------------------------------
+
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+
+
+#------------------------------------------------------------------------------
 # DIRECTORIES
 #
 # SDL2, SDL2_image and FreeType libraries are needed by several compile targets,
