@@ -273,21 +273,6 @@ public class GfxDevice : Objekt
     [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
     private static extern int wg_hasTintColor(IntPtr device);
 
-    //[DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-    //private static extern void wg_setTintmap(IntPtr device, const wg_rectSPX* rect, const IntPtr tintmap);
-
-    [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-    private static extern IntPtr wg_getTintmap(IntPtr device);
-
-    //[DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-    //private static extern wg_rectSPX wg_getTintmapRect(IntPtr device);
-
-    [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-    private static extern void wg_clearTintmap(IntPtr device);
-
-    [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-    private static extern int wg_hasTintmap(IntPtr device);
-
     [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
     private static extern int wg_setBlendMode(IntPtr device, BlendMode blendMode);
 
