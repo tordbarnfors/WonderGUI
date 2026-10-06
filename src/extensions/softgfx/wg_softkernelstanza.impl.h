@@ -13,11 +13,44 @@ using namespace wg::Util;
 #define WG_RESTRICT __restrict__
 #endif
 
+//____ Pixel layout helpers _______________________________________________________
+
+// Loads and stores of 16-bit pixels, swapped if the byte order of the format differs from the system.
+
+template<SoftFormat format>
+static inline uint16_t _load16(const uint8_t* WG_RESTRICT pPixel)
+{
+	uint16_t pixel = *(const uint16_t*)pPixel;
+	if constexpr (SoftFormatInfo::needsSwap(format))
+		pixel = Util::endianSwap(pixel);
+	return pixel;
+}
+
+template<SoftFormat format>
+static inline void _store16(uint8_t* WG_RESTRICT pPixel, uint16_t pixel)
+{
+	if constexpr (SoftFormatInfo::needsSwap(format))
+		pixel = Util::endianSwap(pixel);
+	*(uint16_t*)pPixel = pixel;
+}
+
+// Byte offsets of the channels of 32-bit pixels.
+
+template<SoftFormat format> constexpr int _ofsB() { return SoftFormatInfo::isBigEndian(format) ? 3 : 0; }
+template<SoftFormat format> constexpr int _ofsG() { return SoftFormatInfo::isBigEndian(format) ? 2 : 1; }
+template<SoftFormat format> constexpr int _ofsR() { return SoftFormatInfo::isBigEndian(format) ? 1 : 2; }
+template<SoftFormat format> constexpr int _ofsA() { return SoftFormatInfo::isBigEndian(format) ? 0 : 3; }
+
 //____ read_pixel_fast8() _______________________________________________________
-template<PixelFormat format>
+//
+// Reads a pixel with 8 bits per channel, without color space conversion.
+
+template<SoftFormat format>
 static inline void _read_pixel_fast8(const uint8_t* WG_RESTRICT pPixel, const Color8* WG_RESTRICT pPalette, const HiColor* WG_RESTRICT pPalette4096, int16_t& outB, int16_t& outG, int16_t& outR, int16_t& outA)
 {
-	if constexpr(format == PixelFormat::Undefined)
+	constexpr PixelFormat layout = SoftFormatInfo::pixelFormat(format);
+
+	if constexpr(format == SoftFormat::Undefined)
 	{
 		const int16_t* p = (const int16_t*)pPixel;
 
@@ -26,63 +59,42 @@ static inline void _read_pixel_fast8(const uint8_t* WG_RESTRICT pPixel, const Co
 		outR = HiColor::packLinearTab[p[2]];
 		outA = HiColor::packLinearTab[p[3]];
 	}
-	else if constexpr(format == PixelFormat::BGRA_8_linear || format == PixelFormat::BGRA_8_sRGB)
+	else if constexpr(layout == PixelFormat::ARGB_8)
 	{
-		outB = pPixel[0];
-		outG = pPixel[1];
-		outR = pPixel[2];
-		outA = pPixel[3];
+		outB = pPixel[_ofsB<format>()];
+		outG = pPixel[_ofsG<format>()];
+		outR = pPixel[_ofsR<format>()];
+		outA = pPixel[_ofsA<format>()];
 	}
-	else if constexpr(format == PixelFormat::BGR_8_linear || format == PixelFormat::BGR_8_sRGB || format == PixelFormat::BGRX_8_linear || format == PixelFormat::BGRX_8_sRGB)
+	else if constexpr(layout == PixelFormat::XRGB_8)
 	{
-		outB = pPixel[0];
-		outG = pPixel[1];
-		outR = pPixel[2];
+		outB = pPixel[_ofsB<format>()];
+		outG = pPixel[_ofsG<format>()];
+		outR = pPixel[_ofsR<format>()];
 		outA = 255;
 	}
-	else if constexpr(format == PixelFormat::BGR_565_linear || format == PixelFormat::BGR_565_sRGB)
+	else if constexpr(layout == PixelFormat::RGB_565 || layout == PixelFormat::BGR_565)
 	{
-		uint16_t pixel = *(uint16_t*)pPixel;
-#if WG_IS_BIG_ENDIAN
-		pixel = Util::endianSwap(pixel);
-#endif
-		outB = SoftBackend::s_fast8_channel_5[pixel & 0x1F];
+		uint16_t pixel = _load16<format>(pPixel);
+
+		int16_t high = SoftBackend::s_fast8_channel_5[pixel >> 11];
+		int16_t low = SoftBackend::s_fast8_channel_5[pixel & 0x1F];
+
 		outG = SoftBackend::s_fast8_channel_6[(pixel >> 5) & 0x3F];
-		outR = SoftBackend::s_fast8_channel_5[pixel >> 11];
+		outR = layout == PixelFormat::RGB_565 ? high : low;
+		outB = layout == PixelFormat::RGB_565 ? low : high;
 		outA = 255;
 	}
-	else if constexpr(format == PixelFormat::RGB_565_bigendian)
-	{
-		uint16_t pixel = *(uint16_t*)pPixel;
-#if WG_IS_LITTLE_ENDIAN
-		pixel = Util::endianSwap(pixel);
-#endif
-		outR = SoftBackend::s_fast8_channel_5[pixel & 0x1F];
-		outG = SoftBackend::s_fast8_channel_6[(pixel >> 5) & 0x3F];
-		outB = SoftBackend::s_fast8_channel_5[pixel >> 11];
-		outA = 255;
-	}
-	else if constexpr(format == PixelFormat::RGB_555_bigendian)
-	{
-		uint16_t pixel = *(uint16_t*)pPixel;
-#if WG_IS_LITTLE_ENDIAN
-		pixel = Util::endianSwap(pixel);
-#endif
-		outR = SoftBackend::s_fast8_channel_5[pixel & 0x1F];
-		outG = SoftBackend::s_fast8_channel_5[(pixel >> 6) & 0x1F];
-		outB = SoftBackend::s_fast8_channel_5[pixel >> 11];
-		outA = 255;
-	}
-	else if constexpr(format == PixelFormat::Alpha_8)
+	else if constexpr(layout == PixelFormat::Alpha_8)
 	{
 		outB = 255;
 		outG = 255;
 		outR = 255;
 		outA = *pPixel;
 	}
-	else if constexpr(format == PixelFormat::Index_8_sRGB || format == PixelFormat::Index_8_linear)
+	else if constexpr(layout == PixelFormat::Index_8 || layout == PixelFormat::Index_16)
 	{
-		Color8 c = pPalette[*pPixel];
+		Color8 c = pPalette[layout == PixelFormat::Index_8 ? *pPixel : _load16<format>(pPixel)];
 		outB = c.b;
 		outG = c.g;
 		outR = c.r;
@@ -92,11 +104,15 @@ static inline void _read_pixel_fast8(const uint8_t* WG_RESTRICT pPixel, const Co
 
 
 //____ read_pixel() _______________________________________________________
+//
+// Reads a pixel with 12 bits per channel (0 -> 4096), converted to linear.
 
-template<PixelFormat format>
+template<SoftFormat format>
 static inline void _read_pixel(const uint8_t* WG_RESTRICT pPixel, const Color8* WG_RESTRICT pPalette, const HiColor* WG_RESTRICT pPalette4096, int16_t& outB, int16_t& outG, int16_t& outR, int16_t& outA)
 {
-	if constexpr(format == PixelFormat::Undefined)
+	constexpr PixelFormat layout = SoftFormatInfo::pixelFormat(format);
+
+	if constexpr(format == SoftFormat::Undefined)
 	{
 		const int16_t* p = (const int16_t*)pPixel;
 
@@ -105,88 +121,40 @@ static inline void _read_pixel(const uint8_t* WG_RESTRICT pPixel, const Color8* 
 		outR = p[2];
 		outA = p[3];
 	}
-	else if constexpr(format == PixelFormat::BGRA_8_linear)
+	else if constexpr(layout == PixelFormat::ARGB_8 || layout == PixelFormat::XRGB_8)
 	{
-		outB = HiColor::unpackLinearTab[pPixel[0]];
-		outG = HiColor::unpackLinearTab[pPixel[1]];
-		outR = HiColor::unpackLinearTab[pPixel[2]];
-		outA = HiColor::unpackLinearTab[pPixel[3]];
+		const int16_t* pUnpack = SoftFormatInfo::isLinear(format) ? HiColor::unpackLinearTab : HiColor::unpackSRGBTab;
+
+		outB = pUnpack[pPixel[_ofsB<format>()]];
+		outG = pUnpack[pPixel[_ofsG<format>()]];
+		outR = pUnpack[pPixel[_ofsR<format>()]];
+		outA = layout == PixelFormat::ARGB_8 ? HiColor::unpackLinearTab[pPixel[_ofsA<format>()]] : 4096;
 	}
-	else if constexpr(format == PixelFormat::BGRA_8_sRGB)
+	else if constexpr(layout == PixelFormat::RGB_565 || layout == PixelFormat::BGR_565)
 	{
-		outB = HiColor::unpackSRGBTab[pPixel[0]];
-		outG = HiColor::unpackSRGBTab[pPixel[1]];
-		outR = HiColor::unpackSRGBTab[pPixel[2]];
-		outA = HiColor::unpackLinearTab[pPixel[3]];
-	}
-	else if constexpr(format == PixelFormat::BGR_8_linear || format == PixelFormat::BGRX_8_linear)
-	{
-		outB = HiColor::unpackLinearTab[pPixel[0]];
-		outG = HiColor::unpackLinearTab[pPixel[1]];
-		outR = HiColor::unpackLinearTab[pPixel[2]];
+		uint16_t pixel = _load16<format>(pPixel);
+
+		const int16_t* pChannel5 = SoftFormatInfo::isLinear(format) ? SoftBackend::s_channel_5_linear : SoftBackend::s_channel_5_sRGB;
+		const int16_t* pChannel6 = SoftFormatInfo::isLinear(format) ? SoftBackend::s_channel_6_linear : SoftBackend::s_channel_6_sRGB;
+
+		int16_t high = pChannel5[pixel >> 11];
+		int16_t low = pChannel5[pixel & 0x1F];
+
+		outG = pChannel6[(pixel >> 5) & 0x3F];
+		outR = layout == PixelFormat::RGB_565 ? high : low;
+		outB = layout == PixelFormat::RGB_565 ? low : high;
 		outA = 4096;
 	}
-	else if constexpr(format == PixelFormat::BGR_8_sRGB || format == PixelFormat::BGRX_8_sRGB)
-	{
-		outB = HiColor::unpackSRGBTab[pPixel[0]];
-		outG = HiColor::unpackSRGBTab[pPixel[1]];
-		outR = HiColor::unpackSRGBTab[pPixel[2]];
-		outA = 4096;
-	}
-	else if constexpr(format == PixelFormat::BGR_565_sRGB)
-	{
-		uint16_t pixel = *(uint16_t*)pPixel;
-#if WG_IS_BIG_ENDIAN
-		pixel = Util::endianSwap(pixel);
-#endif
-		outB = SoftBackend::s_channel_5_sRGB[pixel & 0x1F];
-		outG = SoftBackend::s_channel_6_sRGB[(pixel >> 5) & 0x3F];
-		outR = SoftBackend::s_channel_5_sRGB[pixel >> 11];
-		outA = 4096;
-	}
-	else if constexpr(format == PixelFormat::BGR_565_linear)
-	{
-		uint16_t pixel = *(uint16_t*)pPixel;
-#if WG_IS_BIG_ENDIAN
-		pixel = Util::endianSwap(pixel);
-#endif
-		outB = SoftBackend::s_channel_5_linear[pixel & 0x1F];
-		outG = SoftBackend::s_channel_6_linear[(pixel >> 5) & 0x3F];
-		outR = SoftBackend::s_channel_5_linear[pixel >> 11];
-		outA = 4096;
-	}
-	else if constexpr(format == PixelFormat::RGB_565_bigendian)
-	{
-		uint16_t pixel = *(uint16_t*)pPixel;
-#if WG_IS_LITTLE_ENDIAN
-		pixel = Util::endianSwap(pixel);
-#endif
-		outR = SoftBackend::s_channel_5_linear[pixel & 0x1F];
-		outG = SoftBackend::s_channel_6_linear[(pixel >> 5) & 0x3F];
-		outB = SoftBackend::s_channel_5_linear[pixel >> 11];
-		outA = 4096;
-	}
-	else if constexpr(format == PixelFormat::RGB_555_bigendian)
-	{
-		uint16_t pixel = *(uint16_t*)pPixel;
-#if WG_IS_LITTLE_ENDIAN
-		pixel = Util::endianSwap(pixel);
-#endif
-		outR = SoftBackend::s_channel_5_linear[pixel & 0x1F];
-		outG = SoftBackend::s_channel_5_linear[(pixel >> 6) & 0x1F];
-		outB = SoftBackend::s_channel_5_linear[pixel >> 11];
-		outA = 4096;
-	}
-	else if constexpr(format == PixelFormat::Alpha_8)
+	else if constexpr(layout == PixelFormat::Alpha_8)
 	{
 		outB = 4096;
 		outG = 4096;
 		outR = 4096;
 		outA = HiColor::unpackLinearTab[*pPixel];
 	}
-	else if constexpr(format == PixelFormat::Index_8_sRGB || format == PixelFormat::Index_8_linear)
+	else if constexpr(layout == PixelFormat::Index_8 || layout == PixelFormat::Index_16)
 	{
-		const HiColor* p = &pPalette4096[(*pPixel)];
+		const HiColor* p = &pPalette4096[layout == PixelFormat::Index_8 ? *pPixel : _load16<format>(pPixel)];
 		outB = p->b;
 		outG = p->g;
 		outR = p->r;
@@ -195,13 +163,15 @@ static inline void _read_pixel(const uint8_t* WG_RESTRICT pPixel, const Color8* 
 }
 
 //____ write_pixel_fast8() _______________________________________________________
+//
+// Writes a pixel from 8 bits per channel, without color space conversion.
 
-template<PixelFormat format>
+template<SoftFormat format>
 static inline void _write_pixel_fast8(uint8_t* pPixel, int16_t b, int16_t g, int16_t r, int16_t a)
 {
-	//TODO: support BigEndian systems!
+	constexpr PixelFormat layout = SoftFormatInfo::pixelFormat(format);
 
-	if constexpr(format == PixelFormat::Undefined)
+	if constexpr(format == SoftFormat::Undefined)
 	{
 		int16_t* p = (int16_t*)pPixel;
 
@@ -210,41 +180,34 @@ static inline void _write_pixel_fast8(uint8_t* pPixel, int16_t b, int16_t g, int
 		p[2] = HiColor::unpackLinearTab[r];
 		p[3] = HiColor::unpackLinearTab[a];
 	}
-	else if constexpr(format == PixelFormat::BGRA_8_linear || format == PixelFormat::BGRA_8_sRGB)
+	else if constexpr(layout == PixelFormat::ARGB_8)
 	{
-		pPixel[0] = (uint8_t)b;
-		pPixel[1] = (uint8_t)g;
-		pPixel[2] = (uint8_t)r;
-		pPixel[3] = (uint8_t)a;
+		pPixel[_ofsB<format>()] = (uint8_t)b;
+		pPixel[_ofsG<format>()] = (uint8_t)g;
+		pPixel[_ofsR<format>()] = (uint8_t)r;
+		pPixel[_ofsA<format>()] = (uint8_t)a;
 	}
-	else if constexpr(format == PixelFormat::BGR_8_linear || format == PixelFormat::BGR_8_sRGB || format == PixelFormat::BGRX_8_linear || format == PixelFormat::BGRX_8_sRGB)
+	else if constexpr(layout == PixelFormat::XRGB_8)
 	{
-		pPixel[0] = (uint8_t)b;
-		pPixel[1] = (uint8_t)g;
-		pPixel[2] = (uint8_t)r;
+		pPixel[_ofsB<format>()] = (uint8_t)b;
+		pPixel[_ofsG<format>()] = (uint8_t)g;
+		pPixel[_ofsR<format>()] = (uint8_t)r;
 	}
-	else if constexpr(format == PixelFormat::BGR_565_linear || format == PixelFormat::BGR_565_sRGB)
+	else if constexpr(layout == PixelFormat::RGB_565 || layout == PixelFormat::BGR_565)
 	{
-		uint8_t b5 = SoftBackend::s_round_channel_5[b], g6 = SoftBackend::s_round_channel_6[g], r5 = SoftBackend::s_round_channel_5[r];
+		uint16_t r5 = SoftBackend::s_round_channel_5[r] >> 3;
+		uint16_t b5 = SoftBackend::s_round_channel_5[b] >> 3;
 
-		pPixel[0] = (b5 >> 3) | ((g6 & 0xFC) << 3);
-		pPixel[1] = (g6 >> 5) | (r5 & 0xF8);
-	}
-	else if constexpr(format == PixelFormat::RGB_565_bigendian)
-	{
-		uint8_t b5 = SoftBackend::s_round_channel_5[b], g6 = SoftBackend::s_round_channel_6[g], r5 = SoftBackend::s_round_channel_5[r];
+		// G5 variant rounds green to 5 bits and never sets its lowest bit.
 
-		pPixel[0] = (b5 & 0xF8) | (g6 >> 5);
-		pPixel[1] = ((g6 & 0x1C) << 3) | (r5 >> 3);
-	}
-	else if constexpr(format == PixelFormat::RGB_555_bigendian)
-	{
-		uint8_t b5 = SoftBackend::s_round_channel_5[b], g5 = SoftBackend::s_round_channel_5[g], r5 = SoftBackend::s_round_channel_5[r];
+		uint16_t g6 = format == SoftFormat::BGR_565_BE_linear_G5 ? SoftBackend::s_round_channel_5[g] >> 2 : SoftBackend::s_round_channel_6[g] >> 2;
 
-		pPixel[0] = (b5 & 0xF8) | (g5 >> 5);
-		pPixel[1] = ((g5 & 0x18) << 3) | (r5 >> 3);
+		uint16_t high = layout == PixelFormat::RGB_565 ? r5 : b5;
+		uint16_t low = layout == PixelFormat::RGB_565 ? b5 : r5;
+
+		_store16<format>(pPixel, uint16_t((high << 11) | (g6 << 5) | low));
 	}
-	else if constexpr(format == PixelFormat::Alpha_8)
+	else if constexpr(layout == PixelFormat::Alpha_8)
 	{
 		pPixel[0] = (uint8_t)a;
 	}
@@ -252,12 +215,15 @@ static inline void _write_pixel_fast8(uint8_t* pPixel, int16_t b, int16_t g, int
 
 
 //____ write_pixel() _______________________________________________________
-template<PixelFormat format>
+//
+// Writes a pixel from 12 bits per channel (0 -> 4096) in linear color space.
+
+template<SoftFormat format>
 static inline void _write_pixel(uint8_t* pPixel, int16_t b, int16_t g, int16_t r, int16_t a)
 {
-	//TODO: support BigEndian systems!
+	constexpr PixelFormat layout = SoftFormatInfo::pixelFormat(format);
 
-	if constexpr(format == PixelFormat::Undefined)
+	if constexpr(format == SoftFormat::Undefined)
 	{
 		int16_t* p = (int16_t*)pPixel;
 
@@ -266,47 +232,20 @@ static inline void _write_pixel(uint8_t* pPixel, int16_t b, int16_t g, int16_t r
 		p[2] = r;
 		p[3] = a;
 	}
-	else if constexpr(format == PixelFormat::BGRA_8_linear)
-	{
-		pPixel[0] = HiColor::packLinearTab[b];
-		pPixel[1] = HiColor::packLinearTab[g];
-		pPixel[2] = HiColor::packLinearTab[r];
-		pPixel[3] = HiColor::packLinearTab[a];
-	}
-	else if constexpr(format == PixelFormat::BGRA_8_sRGB)
-	{
-		pPixel[0] = HiColor::packSRGBTab[b];
-		pPixel[1] = HiColor::packSRGBTab[g];
-		pPixel[2] = HiColor::packSRGBTab[r];
-		pPixel[3] = HiColor::packLinearTab[a];
-	}
-	else if constexpr(format == PixelFormat::BGR_8_linear || format == PixelFormat::BGRX_8_linear)
-	{
-		pPixel[0] = HiColor::packLinearTab[b];
-		pPixel[1] = HiColor::packLinearTab[g];
-		pPixel[2] = HiColor::packLinearTab[r];
-	}
-	else if constexpr(format == PixelFormat::BGR_8_sRGB || format == PixelFormat::BGRX_8_sRGB)
-	{
-		pPixel[0] = HiColor::packSRGBTab[b];
-		pPixel[1] = HiColor::packSRGBTab[g];
-		pPixel[2] = HiColor::packSRGBTab[r];
-	}
-	else if constexpr(format == PixelFormat::BGR_565_sRGB || format == PixelFormat::BGR_565_linear ||
-					  format == PixelFormat::RGB_565_bigendian || format == PixelFormat::RGB_555_bigendian)
-	{
-		const uint8_t* pPackTab = format == PixelFormat::BGR_565_sRGB ? HiColor::packSRGBTab : HiColor::packLinearTab;
-
-		_write_pixel_fast8<format>(pPixel, pPackTab[b], pPackTab[g], pPackTab[r], HiColor::packLinearTab[a]);
-	}
-	else if constexpr(format == PixelFormat::Alpha_8)
+	else if constexpr(layout == PixelFormat::Alpha_8)
 	{
 		pPixel[0] = HiColor::packLinearTab[a];
+	}
+	else
+	{
+		const uint8_t* pPackTab = SoftFormatInfo::isLinear(format) ? HiColor::packLinearTab : HiColor::packSRGBTab;
+
+		_write_pixel_fast8<format>(pPixel, pPackTab[b], pPackTab[g], pPackTab[r], HiColor::packLinearTab[a]);
 	}
 }
 
 //____ _blend_pixels_fast8() ____________________________________________________
-template<BlendMode mode, PixelFormat destFormat>
+template<BlendMode mode, SoftFormat destFormat>
 static inline void _blend_pixels_fast8(int morphFactor,
 	int16_t srcB, int16_t srcG, int16_t srcR, int16_t srcA,
 	int16_t backB, int16_t backG, int16_t backR, int16_t backA,
@@ -318,7 +257,7 @@ static inline void _blend_pixels_fast8(int morphFactor,
 	// into templates where only one BlendMode is possible. With if-statements,
 	// the statements are properly detected as never occuring and completely removed.
 
-	if constexpr(destFormat == PixelFormat::Alpha_8)
+	if constexpr(destFormat == SoftFormat::Alpha_8)
 	{
 		// Alpha only destination. We treat alpha differently when there is no other channel.
 
@@ -463,7 +402,7 @@ static inline void _blend_pixels_fast8(int morphFactor,
 
 
 //____ _blend_pixels() ____________________________________________________
-template<BlendMode mode, PixelFormat destFormat>
+template<BlendMode mode, SoftFormat destFormat>
 static inline void	_blend_pixels(int morphFactor,
 	int16_t srcB, int16_t srcG, int16_t srcR, int16_t srcA,
 	int16_t backB, int16_t backG, int16_t backR, int16_t backA,
@@ -475,7 +414,7 @@ static inline void	_blend_pixels(int morphFactor,
 	// into templates where only one BlendMode is possible. With if-statements,
 	// the statements are properly detected as never occuring and completely removed.
 
-	if constexpr(destFormat == PixelFormat::Alpha_8)
+	if constexpr(destFormat == SoftFormat::Alpha_8)
 	{
 		// Alpha only destination. We treat alpha differently when there is no other channel.
 		if constexpr(mode == BlendMode::Replace)
@@ -627,16 +566,13 @@ enum class TransparentOp
 	Process		// Result depends on the destination, pixel must be blended as usual.
 };
 
-template<PixelFormat format>
+template<SoftFormat format>
 constexpr bool _has_alpha_channel()
 {
-	return !(format == PixelFormat::BGR_8_sRGB || format == PixelFormat::BGR_8_linear ||
-			 format == PixelFormat::BGRX_8_sRGB || format == PixelFormat::BGRX_8_linear ||
-			 format == PixelFormat::BGR_565_sRGB || format == PixelFormat::BGR_565_linear ||
-			 format == PixelFormat::RGB_565_bigendian || format == PixelFormat::RGB_555_bigendian);
+	return SoftFormatInfo::hasAlpha(format);
 }
 
-template<BlendMode mode, PixelFormat destFormat>
+template<BlendMode mode, SoftFormat destFormat>
 constexpr TransparentOp _transparent_op()
 {
 	if constexpr (mode == BlendMode::Blend || mode == BlendMode::Add || mode == BlendMode::Subtract ||
@@ -649,7 +585,7 @@ constexpr TransparentOp _transparent_op()
 		// Color channels become black, alpha is kept. Constant when there is no alpha
 		// to keep, or when alpha is all there is (it becomes 0).
 
-		if constexpr (destFormat == PixelFormat::Alpha_8 || !_has_alpha_channel<destFormat>())
+		if constexpr (destFormat == SoftFormat::Alpha_8 || !_has_alpha_channel<destFormat>())
 			return TransparentOp::Write;
 		else
 			return TransparentOp::Process;
@@ -663,7 +599,7 @@ constexpr TransparentOp _transparent_op()
 // Writes the result of blending a transparent black source pixel, for blend modes
 // where _transparent_op() returns Write.
 
-template<BlendMode mode, PixelFormat destFormat, bool bFast8>
+template<BlendMode mode, SoftFormat destFormat, bool bFast8>
 static inline void _write_transparent(uint8_t* pDst, int16_t fixedB, int16_t fixedG, int16_t fixedR, int16_t fixedA)
 {
 	int16_t b = 0, g = 0, r = 0, a = 0;
@@ -867,13 +803,10 @@ inline void _texel_tint_pixel(int bits, int16_t& pixelB, int16_t& pixelG, int16_
 
 //____ _draw_line() _______________________________________________________
 
-template<BlendMode BLEND, TintMode TINT, PixelFormat DSTFORMAT>
+template<BlendMode BLEND, TintMode TINT, SoftFormat DSTFORMAT>
 void _draw_line(uint8_t* WG_RESTRICT pRow, int rowInc, int pixelInc, int length, int width, int pos, int slope, HiColor color, const SoftBackend::ColTrans& tint, CoordI patchPos)
 {
-	constexpr bool bFast8 = (DSTFORMAT == PixelFormat::Alpha_8 ||
-							 DSTFORMAT == PixelFormat::BGRA_8_linear || DSTFORMAT == PixelFormat::BGRX_8_linear ||
-							 DSTFORMAT == PixelFormat::BGR_565_linear || DSTFORMAT == PixelFormat::RGB_565_bigendian ||
-							 DSTFORMAT == PixelFormat::RGB_555_bigendian || DSTFORMAT == PixelFormat::BGR_8_linear);
+	constexpr bool bFast8 = SoftFormatInfo::isLinear(DSTFORMAT);
 
 	constexpr BlendMode EdgeBlendMode = BLEND == BlendMode::Replace ? BlendMode::Blend : BLEND;
 
@@ -1058,7 +991,7 @@ void _draw_line(uint8_t* WG_RESTRICT pRow, int rowInc, int pixelInc, int length,
 
 //____ _clip_draw_line() __________________________________________________
 
-template<BlendMode BLEND, TintMode TINT, PixelFormat DSTFORMAT>
+template<BlendMode BLEND, TintMode TINT, SoftFormat DSTFORMAT>
 void _clip_draw_line(int clipStart, int clipEnd, uint8_t* WG_RESTRICT pRow, int rowInc, int pixelInc, int length, int width, int pos, int slope, HiColor color, const SoftBackend::ColTrans& tint, CoordI patchPos)
 {
 	constexpr bool bFast8 = false;
@@ -1273,15 +1206,12 @@ void _clip_draw_line(int clipStart, int clipEnd, uint8_t* WG_RESTRICT pRow, int 
 
 //____ _fill() ____________________________________________________________
 
-template<TintMode TINT, BlendMode BLEND, PixelFormat DSTFORMAT>
+template<TintMode TINT, BlendMode BLEND, SoftFormat DSTFORMAT>
 void _fill(uint8_t* WG_RESTRICT pDst, int pitchX, int pitchY, int nLines, int lineLength, HiColor col, const SoftBackend::ColTrans& tint, CoordI patchPos)
 {
 //	if( TINT == TintMode::None || TINT == TintMode::Flat )
 
-	constexpr bool bFast8 = (DSTFORMAT == PixelFormat::Alpha_8 ||
-							 DSTFORMAT == PixelFormat::BGRA_8_linear || DSTFORMAT == PixelFormat::BGRX_8_linear ||
-							 DSTFORMAT == PixelFormat::BGR_565_linear || DSTFORMAT == PixelFormat::RGB_565_bigendian ||
-							 DSTFORMAT == PixelFormat::RGB_555_bigendian || DSTFORMAT == PixelFormat::BGR_8_linear);
+	constexpr bool bFast8 = SoftFormatInfo::isLinear(DSTFORMAT);
 
 	constexpr int bits = bFast8 ? 8 : 12;
 
@@ -1390,22 +1320,15 @@ void _fill(uint8_t* WG_RESTRICT pDst, int pitchX, int pitchY, int nLines, int li
 
 //_____ _straight_blit() ____________________________________________________________
 
-template<PixelFormat SRCFORMAT, TintMode TINT, BlendMode BLEND, PixelFormat DSTFORMAT, SoftBackend::ReadOp READOP>
+template<SoftFormat SRCFORMAT, TintMode TINT, BlendMode BLEND, SoftFormat DSTFORMAT, SoftBackend::ReadOp READOP>
 void _straight_blit(const uint8_t* WG_RESTRICT pSrc, uint8_t* WG_RESTRICT pDst, const SoftSurface* WG_RESTRICT pSrcSurf, const SoftBackend::Pitches& pitches, int nLines, int lineLength, const SoftBackend::ColTrans& tint, CoordI patchPos, const Transform* WG_RESTRICT pMatrix)
 {
-	constexpr bool srcIsLinear = (SRCFORMAT == PixelFormat::Alpha_8 ||
-		SRCFORMAT == PixelFormat::BGRA_8_linear || SRCFORMAT == PixelFormat::BGRX_8_linear ||
-		SRCFORMAT == PixelFormat::BGR_565_linear || SRCFORMAT == PixelFormat::RGB_565_bigendian ||
-		SRCFORMAT == PixelFormat::RGB_555_bigendian || SRCFORMAT == PixelFormat::BGR_8_linear ||
-		SRCFORMAT == PixelFormat::Index_8_linear);
+	constexpr bool srcIsLinear = SoftFormatInfo::isLinear(SRCFORMAT);
 
-	constexpr bool dstIsLinear = (DSTFORMAT == PixelFormat::Alpha_8 ||
-		DSTFORMAT == PixelFormat::BGRA_8_linear || DSTFORMAT == PixelFormat::BGRX_8_linear ||
-		DSTFORMAT == PixelFormat::BGR_565_linear || DSTFORMAT == PixelFormat::RGB_565_bigendian ||
-		DSTFORMAT == PixelFormat::RGB_555_bigendian || DSTFORMAT == PixelFormat::BGR_8_linear);
+	constexpr bool dstIsLinear = SoftFormatInfo::isLinear(DSTFORMAT);
 
-	constexpr bool bFast8 = (SRCFORMAT != PixelFormat::Undefined &&
-							 DSTFORMAT != PixelFormat::Undefined &&
+	constexpr bool bFast8 = (SRCFORMAT != SoftFormat::Undefined &&
+							 DSTFORMAT != SoftFormat::Undefined &&
 							 READOP != SoftBackend::ReadOp::Blur) &&
 							((srcIsLinear && dstIsLinear) ||
 							 (!srcIsLinear && !dstIsLinear &&
@@ -1415,11 +1338,11 @@ void _straight_blit(const uint8_t* WG_RESTRICT pSrc, uint8_t* WG_RESTRICT pDst, 
 	constexpr int bits = bFast8 ? 8 : 12;
 
 	// Fast track for transparent black pixels in the HiColor buffers of two-pass blits.
-	// Not done for other source formats (like the BGRA_8_linear buffers), since those
+	// Not done for other source formats (like the ARGB_8_linear buffers), since those
 	// kernels are also used for blits from ordinary surfaces, which should stay fast.
 
 	constexpr TransparentOp transparentOp = _transparent_op<BLEND, DSTFORMAT>();
-	constexpr bool bFastTransparent = SRCFORMAT == PixelFormat::Undefined &&
+	constexpr bool bFastTransparent = SRCFORMAT == SoftFormat::Undefined &&
 										READOP == SoftBackend::ReadOp::Normal && transparentOp != TransparentOp::Process;
 
 	// Preapare tiling and blurring
@@ -1657,28 +1580,18 @@ void _straight_blit(const uint8_t* WG_RESTRICT pSrc, uint8_t* WG_RESTRICT pDst, 
 
 //____ _transform_blit __________________________________________
 
-template<PixelFormat SRCFORMAT, SampleMethod SAMPLEMETHOD, TintMode TINT, BlendMode BLEND, PixelFormat DSTFORMAT, SoftBackend::ReadOp READOP>
+template<SoftFormat SRCFORMAT, SampleMethod SAMPLEMETHOD, TintMode TINT, BlendMode BLEND, SoftFormat DSTFORMAT, SoftBackend::ReadOp READOP>
 void _transform_blit(const SoftSurface* WG_RESTRICT pSrcSurf, BinalCoord pos, const binalInt matrix[2][2], uint8_t* WG_RESTRICT pDst, int dstPitchX, int dstPitchY, int nLines, int lineLength, const SoftBackend::ColTrans& tint, CoordI patchPos)
 {
-	constexpr bool srcIsLinear = (SRCFORMAT == PixelFormat::Alpha_8 ||
-						SRCFORMAT == PixelFormat::BGRA_8_linear ||
-						SRCFORMAT == PixelFormat::BGRX_8_linear ||
-						SRCFORMAT == PixelFormat::BGR_565_linear ||
-						SRCFORMAT == PixelFormat::RGB_565_bigendian ||
-						SRCFORMAT == PixelFormat::RGB_555_bigendian ||
-						SRCFORMAT == PixelFormat::BGR_8_linear ||
-						SRCFORMAT == PixelFormat::Index_8_linear);
+	constexpr bool srcIsLinear = SoftFormatInfo::isLinear(SRCFORMAT);
 
-	constexpr bool dstIsLinear = (DSTFORMAT == PixelFormat::Alpha_8 ||
-		DSTFORMAT == PixelFormat::BGRA_8_linear || DSTFORMAT == PixelFormat::BGRX_8_linear ||
-		DSTFORMAT == PixelFormat::BGR_565_linear || DSTFORMAT == PixelFormat::RGB_565_bigendian ||
-		DSTFORMAT == PixelFormat::RGB_555_bigendian || DSTFORMAT == PixelFormat::BGR_8_linear);
+	constexpr bool dstIsLinear = SoftFormatInfo::isLinear(DSTFORMAT);
 
 	// sRGB pixels can be copied as they are, but not interpolated, since that must be
 	// done on linear values.
 
 	constexpr bool bFast8 = ((srcIsLinear && dstIsLinear) || (!srcIsLinear && !dstIsLinear && TINT == TintMode::None && BLEND == BlendMode::Replace && SAMPLEMETHOD == SampleMethod::Nearest)) &&
-							(SRCFORMAT != PixelFormat::Undefined && DSTFORMAT != PixelFormat::Undefined && READOP != SoftBackend::ReadOp::Blur);
+							(SRCFORMAT != SoftFormat::Undefined && DSTFORMAT != SoftFormat::Undefined && READOP != SoftBackend::ReadOp::Blur);
 
 	constexpr int bits = bFast8 ? 8 : 12;
 
@@ -2051,13 +1964,10 @@ static inline void _add_segment_color(int blendFraction, int offset, const int16
 }
 
 //____ _draw_segment_strip() _______________________________________________
-template<SoftBackend::StripSource SOURCE, BlendMode BLEND, PixelFormat DSTFORMAT>
+template<SoftBackend::StripSource SOURCE, BlendMode BLEND, SoftFormat DSTFORMAT>
 void _draw_segment_strip(int colBeg, int colEnd, uint8_t* WG_RESTRICT pStripStart, int pixelPitch, int nEdges, SoftBackend::SegmentEdge* WG_RESTRICT pEdges, const int16_t* WG_RESTRICT pSegmentColors, const HiColor* WG_RESTRICT pSegmentTintmap, int segmentTintmapPitch, const bool* WG_RESTRICT pTransparentSegments, const bool* WG_RESTRICT pOpaqueSegments, const SoftBackend::ColTrans& tint)
 {
-	constexpr bool bFast8 = (DSTFORMAT == PixelFormat::Alpha_8 ||
-							DSTFORMAT == PixelFormat::BGRA_8_linear || DSTFORMAT == PixelFormat::BGRX_8_linear ||
-							DSTFORMAT == PixelFormat::BGR_565_linear || DSTFORMAT == PixelFormat::RGB_565_bigendian ||
-							DSTFORMAT == PixelFormat::RGB_555_bigendian || DSTFORMAT == PixelFormat::BGR_8_linear);
+	constexpr bool bFast8 = SoftFormatInfo::isLinear(DSTFORMAT);
 
 	constexpr int bits = bFast8 ? 8 : 12;
 

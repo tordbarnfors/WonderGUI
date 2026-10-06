@@ -27,6 +27,7 @@
 #include <wg_tinttools.h>
 #include <wg_softtint.h>
 #include <wg_softsurface.h>
+#include <wg_softformat.h>
 
 namespace wg
 {
@@ -192,18 +193,20 @@ namespace wg
 
 		//.____ Control ______________________________________________________
 
-		bool	setFillKernel( TintMode tintMode, BlendMode blendMode, PixelFormat destFormat, FillOp_p pKernel);
+		// Kernels are set for SoftFormats, which combine pixel format, color space and byte order.
 
-		bool	setStraightBlitKernel(	PixelFormat sourceFormat, ReadOp readOp, TintMode tintMode,
-										BlendMode blendMode, PixelFormat destFormat, StraightBlitOp_p pKernel);
+		bool	setFillKernel( TintMode tintMode, BlendMode blendMode, SoftFormat destFormat, FillOp_p pKernel);
 
-		bool	setLineKernel(BlendMode blendMode, PixelFormat destFormat, LineOp_p pKernel);
-		bool	setClipLineKernel(BlendMode blendMode, PixelFormat destFormat, ClipLineOp_p pKernel);
+		bool	setStraightBlitKernel(	SoftFormat sourceFormat, ReadOp readOp, TintMode tintMode,
+										BlendMode blendMode, SoftFormat destFormat, StraightBlitOp_p pKernel);
 
-		bool	setSegmentStripKernel(SoftBackend::StripSource, BlendMode blendMode, PixelFormat destFormat, SegmentOp_p pKernel);
+		bool	setLineKernel(BlendMode blendMode, SoftFormat destFormat, LineOp_p pKernel);
+		bool	setClipLineKernel(BlendMode blendMode, SoftFormat destFormat, ClipLineOp_p pKernel);
 
-		bool	setTransformBlitKernel(PixelFormat sourceFormat, SampleMethod sampleMethod, ReadOp readOp,
-			TintMode tintMode, BlendMode blendMode, PixelFormat destFormat, TransformBlitOp_p pKernel);
+		bool	setSegmentStripKernel(SoftBackend::StripSource, BlendMode blendMode, SoftFormat destFormat, SegmentOp_p pKernel);
+
+		bool	setTransformBlitKernel(SoftFormat sourceFormat, SampleMethod sampleMethod, ReadOp readOp,
+			TintMode tintMode, BlendMode blendMode, SoftFormat destFormat, TransformBlitOp_p pKernel);
 
 
 
@@ -212,7 +215,7 @@ namespace wg
 		virtual ~SoftBackend();
 
 		void _initTables();
-		bool _setupDestFormatKernels(PixelFormat format);
+		bool _setupDestFormatKernels(SoftFormat format);
 
 		void	_resetStates();
 		void	_updateBlitFunctions();
@@ -298,7 +301,7 @@ namespace wg
 		PixelBuffer			m_buffer;
 		uint8_t*			m_pCanvasPixels;	// Pixels of render layer surface
 		int					m_canvasPixelBytes = 0;			// Bytes per pixel of render layer surface
-		PixelFormat			m_canvasPixelFormat = PixelFormat::Undefined;
+		SoftFormat			m_canvasSoftFormat = SoftFormat::Undefined;
 		int					m_canvasPitch = 0;
 
 		// Current state
@@ -380,16 +383,16 @@ namespace wg
 			StraightBlitOp_p		pStraightBlitFromHiColorKernels[TintMode_size][BlendMode_size];
 			StraightBlitOp_p		pStraightBlitFromBGRA8Kernels[TintMode_size][BlendMode_size];
 
-			uint16_t				singlePassBlitKernels[PixelFormat_size];		// PixelFormat of blit source. Offset into m_singlePassBlitKernels +1.
+			uint16_t				singlePassBlitKernels[SoftFormat_size];		// SoftFormat of blit source. Offset into m_singlePassBlitKernels +1.
 		};
 
-		StraightBlitOp_p	m_pStraightMoveToBGRA8Kernels[PixelFormat_size][ReadOp_size];
-		StraightBlitOp_p	m_pStraightMoveToHiColorKernels[PixelFormat_size][ReadOp_size];
+		StraightBlitOp_p	m_pStraightMoveToBGRA8Kernels[SoftFormat_size][ReadOp_size];
+		StraightBlitOp_p	m_pStraightMoveToHiColorKernels[SoftFormat_size][ReadOp_size];
 
-		TransformBlitOp_p	m_pTransformMoveToBGRA8Kernels[PixelFormat_size][SampleMethod_size][ReadOp_size];
-		TransformBlitOp_p	m_pTransformMoveToHiColorKernels[PixelFormat_size][SampleMethod_size][ReadOp_size];
+		TransformBlitOp_p	m_pTransformMoveToBGRA8Kernels[SoftFormat_size][SampleMethod_size][ReadOp_size];
+		TransformBlitOp_p	m_pTransformMoveToHiColorKernels[SoftFormat_size][SampleMethod_size][ReadOp_size];
 
-		DestFormatKernels* m_pKernels[PixelFormat_size];
+		DestFormatKernels* m_pKernels[SoftFormat_size];
 
 		std::vector<SinglePassBlitKernels>			m_singlePassBlitKernels;
 		std::vector<SinglePassStraightBlitKernels>	m_singlePassStraightBlitKernels;

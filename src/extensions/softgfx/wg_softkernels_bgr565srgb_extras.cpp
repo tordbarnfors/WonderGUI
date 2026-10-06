@@ -646,34 +646,34 @@ WG_EXPORT int	wg_addExtraSoftKernelsForBGR565sRGBCanvas( wg_obj backend )
 
 bool wg::addExtraSoftKernelsForBGR565sRGBCanvas( SoftBackend * pBackend )
 {
-	pBackend->setFillKernel( TintMode::None, BlendMode::Replace, PixelFormat::BGR_565_sRGB, &_fill_bgr565srgb_noblend_notint );
+	pBackend->setFillKernel( TintMode::None, BlendMode::Replace, SoftFormat::RGB_565_sRGB, &_fill_bgr565srgb_noblend_notint );
 
-	pBackend->setStraightBlitKernel( PixelFormat::BGR_565_sRGB, SoftBackend::ReadOp::Normal, TintMode::None, BlendMode::Replace, PixelFormat::BGR_565_sRGB, _straight_blit_bgr565srgb_to_same_notint_noblend );
+	pBackend->setStraightBlitKernel( SoftFormat::RGB_565_sRGB, SoftBackend::ReadOp::Normal, TintMode::None, BlendMode::Replace, SoftFormat::RGB_565_sRGB, _straight_blit_bgr565srgb_to_same_notint_noblend );
 
 
-	pBackend->setStraightBlitKernel( PixelFormat::Index_8_sRGB, SoftBackend::ReadOp::Normal, TintMode::None, BlendMode::Replace, PixelFormat::BGR_565_sRGB, _straight_blit_index8srgb_to_bgr565srgb_notint_noblend );
+	pBackend->setStraightBlitKernel( SoftFormat::Index_8_sRGB, SoftBackend::ReadOp::Normal, TintMode::None, BlendMode::Replace, SoftFormat::RGB_565_sRGB, _straight_blit_index8srgb_to_bgr565srgb_notint_noblend );
 /*
-	pBackend->setStraightBlitKernel( PixelFormat::Index_8_sRGB, SoftBackend::ReadOp::Normal, TintMode::None, BlendMode::Blend, PixelFormat::BGR_565_sRGB, _straight_blit_index8sRGB_to_bgr565srgb_notint_blend );
+	pBackend->setStraightBlitKernel( SoftFormat::Index_8_sRGB, SoftBackend::ReadOp::Normal, TintMode::None, BlendMode::Blend, SoftFormat::RGB_565_sRGB, _straight_blit_index8sRGB_to_bgr565srgb_notint_blend );
 
 
-	pBackend->setStraightBlitKernel( PixelFormat::Alpha_8, SoftBackend::ReadOp::Normal, TintMode::None, BlendMode::Blend, PixelFormat::BGR_565_sRGB, _straight_blit_alpha8_to_bgr565srgb_notint_blend );
+	pBackend->setStraightBlitKernel( SoftFormat::Alpha_8, SoftBackend::ReadOp::Normal, TintMode::None, BlendMode::Blend, SoftFormat::RGB_565_sRGB, _straight_blit_alpha8_to_bgr565srgb_notint_blend );
 
-	pBackend->setStraightBlitKernel( PixelFormat::Alpha_8, SoftBackend::ReadOp::Normal, TintMode::Flat, BlendMode::Blend, PixelFormat::BGR_565_sRGB, _straight_blit_alpha8_to_bgr565srgb_flattint_blend );
+	pBackend->setStraightBlitKernel( SoftFormat::Alpha_8, SoftBackend::ReadOp::Normal, TintMode::Flat, BlendMode::Blend, SoftFormat::RGB_565_sRGB, _straight_blit_alpha8_to_bgr565srgb_flattint_blend );
  */
 
-	pBackend->setStraightBlitKernel( PixelFormat::Alpha_8, SoftBackend::ReadOp::Normal, TintMode::None, BlendMode::BlendFixedColor, PixelFormat::BGR_565_sRGB, _straight_blit_alpha8_to_bgr565srgb_no_or_flat_tint_fixedblend );
+	pBackend->setStraightBlitKernel( SoftFormat::Alpha_8, SoftBackend::ReadOp::Normal, TintMode::None, BlendMode::BlendFixedColor, SoftFormat::RGB_565_sRGB, _straight_blit_alpha8_to_bgr565srgb_no_or_flat_tint_fixedblend );
 
-	pBackend->setStraightBlitKernel( PixelFormat::Alpha_8, SoftBackend::ReadOp::Normal, TintMode::Flat, BlendMode::BlendFixedColor, PixelFormat::BGR_565_sRGB, _straight_blit_alpha8_to_bgr565srgb_no_or_flat_tint_fixedblend );
+	pBackend->setStraightBlitKernel( SoftFormat::Alpha_8, SoftBackend::ReadOp::Normal, TintMode::Flat, BlendMode::BlendFixedColor, SoftFormat::RGB_565_sRGB, _straight_blit_alpha8_to_bgr565srgb_no_or_flat_tint_fixedblend );
 
 
-	pBackend->setStraightBlitKernel( PixelFormat::BGRA_8_sRGB, SoftBackend::ReadOp::Normal, TintMode::None, BlendMode::Replace, PixelFormat::BGR_565_sRGB, _straight_blit_bgrxa8srgb_to_bgr565srgb_notint_noblend );
+	pBackend->setStraightBlitKernel( SoftFormat::ARGB_8_sRGB, SoftBackend::ReadOp::Normal, TintMode::None, BlendMode::Replace, SoftFormat::RGB_565_sRGB, _straight_blit_bgrxa8srgb_to_bgr565srgb_notint_noblend );
 /*
-	pBackend->setStraightBlitKernel( PixelFormat::BGRX_8_sRGB, SoftBackend::ReadOp::Normal, TintMode::None, BlendMode::Replace, PixelFormat::BGR_565_sRGB, _straight_blit_bgrxa8srgb_to_bgr565srgb_notint_noblend );
+	pBackend->setStraightBlitKernel( SoftFormat::XRGB_8_sRGB, SoftBackend::ReadOp::Normal, TintMode::None, BlendMode::Replace, SoftFormat::RGB_565_sRGB, _straight_blit_bgrxa8srgb_to_bgr565srgb_notint_noblend );
 
-	pBackend->setStraightBlitKernel( PixelFormat::BGRA_8_sRGB, SoftBackend::ReadOp::Normal, TintMode::None, BlendMode::Blend, PixelFormat::BGR_565_sRGB, _straight_blit_bgra8srgb_to_bgr565srgb_notint_blend );
+	pBackend->setStraightBlitKernel( SoftFormat::ARGB_8_sRGB, SoftBackend::ReadOp::Normal, TintMode::None, BlendMode::Blend, SoftFormat::RGB_565_sRGB, _straight_blit_bgra8srgb_to_bgr565srgb_notint_blend );
 */
 
-	pBackend->setSegmentStripKernel(SoftBackend::StripSource::Colors, BlendMode::Blend, PixelFormat::BGR_565_sRGB, _draw_segment_strip_blend_to_bgr565srgb);
+	pBackend->setSegmentStripKernel(SoftBackend::StripSource::Colors, BlendMode::Blend, SoftFormat::RGB_565_sRGB, _draw_segment_strip_blend_to_bgr565srgb);
 
 	return true;
 };

@@ -59,7 +59,8 @@ namespace wg
 
 		//.____ Misc _____________________________________________________
 
-		bool		defineCanvas( CanvasRef ref, const SizeSPX size, PixelFormat pixelFormat, int scale = 64 );
+		bool		defineCanvas( CanvasRef ref, const SizeSPX size, PixelFormat pixelFormat, int scale = 64,
+								  ColorSpace colorSpace = ColorSpace::sRGB, bool bBigEndian = (WG_IS_BIG_ENDIAN == 1) );
 
 		const CanvasInfo *	canvasInfo(CanvasRef ref) const override;
 

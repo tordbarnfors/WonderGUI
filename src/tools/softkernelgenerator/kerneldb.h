@@ -2,6 +2,7 @@
 #include <vector>
 
 #include <wg_types.h>
+#include <wg_softformat.h>
 
 
 class KernelDB
@@ -37,8 +38,8 @@ public:
 		bool			blitTypes[BlitType_size];
 		bool			tintModes[wg::TintMode_size];
 		bool			blendModes[wg::BlendMode_size];
-		bool			sourceFormats[wg::PixelFormat_size];
-		bool			destFormats[wg::PixelFormat_size];
+		bool			sourceFormats[wg::SoftFormat_size];
+		bool			destFormats[wg::SoftFormat_size];
 	};
 
 	struct KernelCount
@@ -65,18 +66,23 @@ public:
 	void	clear();
 
 	bool	generateSource( std::ostream& filename, const std::string& kernelLabel );
+
+protected:
+	bool	_generateSource( std::ostream& out, const std::string& kernelLabel );
+
+public:
 	KernelCount	countKernels();
 	int		countEntryKernels(int entry);
 
 	void	setTintMode(wg::TintMode mode, bool bOn);
 	void	setBlendMode(wg::BlendMode mode, bool bOn);
-	void	setSrcFormat(wg::PixelFormat format, bool bOn);
-	void	setDestFormat(wg::PixelFormat format, bool bOn);
+	void	setSrcFormat(wg::SoftFormat format, bool bOn);
+	void	setDestFormat(wg::SoftFormat format, bool bOn);
 
 	bool	tintMode(wg::TintMode mode) { return m_tintModes[int(mode)]; }
 	bool	blendMode(wg::BlendMode mode) { return m_blendModes[int(mode)]; }
-	bool	srcFormat(wg::PixelFormat format) { return m_srcFormats[int(format)]; }
-	bool	destFormat(wg::PixelFormat format) { return m_destFormats[int(format)]; }
+	bool	srcFormat(wg::SoftFormat format) { return m_srcFormats[int(format)]; }
+	bool	destFormat(wg::SoftFormat format) { return m_destFormats[int(format)]; }
 
 	const bool*	tintModes() { return m_tintModes; }
 	const bool* blendModes() { return m_blendModes; }
@@ -97,8 +103,8 @@ private:
 
 	bool	m_tintModes[wg::TintMode_size];
 	bool	m_blendModes[wg::BlendMode_size];
-	bool	m_srcFormats[wg::PixelFormat_size];
-	bool	m_destFormats[wg::PixelFormat_size];
+	bool	m_srcFormats[wg::SoftFormat_size];
+	bool	m_destFormats[wg::SoftFormat_size];
 
 	std::vector<CustomBlitSpec>	m_customBlits;
 
@@ -107,11 +113,11 @@ private:
 /*
 	// TintMode, BlendMode, SourceFormat, DestFormat, bTile
 
-	bool	m_simpleBlitMap[wg::TintMode_size][wg::BlendMode_size][wg::PixelFormat_size][wg::PixelFormat_size][2];
+	bool	m_simpleBlitMap[wg::TintMode_size][wg::BlendMode_size][wg::SoftFormat_size][wg::SoftFormat_size][2];
 
 	// TintMode, BlendMode, SourceFormat, DestFormat, SampleMethod, Normal/Clip/Tile
 
-	bool	m_complexBlitMap[wg::TintMode_size][wg::BlendMode_size][wg::PixelFormat_size][wg::PixelFormat_size][2][3];
+	bool	m_complexBlitMap[wg::TintMode_size][wg::BlendMode_size][wg::SoftFormat_size][wg::SoftFormat_size][2][3];
 */
 
 

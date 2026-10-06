@@ -84,7 +84,7 @@ namespace wg
 
 			if (layer.bFlat)
 			{
-				layer.flatColor = src.stopColors[0] * multiplier;
+				layer.flatColor = src.stopColors[0].toLinear() * multiplier;
 				continue;
 			}
 
@@ -129,8 +129,17 @@ namespace wg
 				Layer& layer = m_layers[layerIdx++];
 				if (!layer.bFlat)
 				{
-					TintTools::buildLUT(src, (1 << layer.lutBits) + 1, m_lut.data() + layer.lutOfs, multiplier);
-					layer.padLowColor = TintTools::layerColorAt(src, 0.f, multiplier);
+					// LUT is built in sRGB, then converted to linear and multiplied.
+
+					int entries = (1 << layer.lutBits) + 1;
+					HiColor* pLUT = m_lut.data() + layer.lutOfs;
+
+					TintTools::buildLUT(src, entries, pLUT);
+
+					for (int i = 0; i < entries; i++)
+						pLUT[i] = pLUT[i].toLinear() * multiplier;
+
+					layer.padLowColor = TintTools::layerColorAt(src, 0.f).toLinear() * multiplier;
 				}
 			}
 		}

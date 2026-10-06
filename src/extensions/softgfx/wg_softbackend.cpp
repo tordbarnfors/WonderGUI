@@ -89,35 +89,21 @@ namespace wg
 
 		// clear kernel tables
 
-		for (int i = 0; i < PixelFormat_size; i++)
+		for (int i = 0; i < SoftFormat_size; i++)
 		{
 			m_pKernels[i] = nullptr;
 
-			m_pStraightMoveToBGRA8Kernels[i][0] = nullptr;
-			m_pStraightMoveToBGRA8Kernels[i][1] = nullptr;
+			for (int op = 0; op < ReadOp_size; op++)
+			{
+				m_pStraightMoveToBGRA8Kernels[i][op] = nullptr;
+				m_pStraightMoveToHiColorKernels[i][op] = nullptr;
 
-			m_pTransformMoveToBGRA8Kernels[i][0][0] = nullptr;
-			m_pTransformMoveToBGRA8Kernels[i][0][1] = nullptr;
-			m_pTransformMoveToBGRA8Kernels[i][0][2] = nullptr;
-			m_pTransformMoveToBGRA8Kernels[i][1][0] = nullptr;
-			m_pTransformMoveToBGRA8Kernels[i][1][1] = nullptr;
-			m_pTransformMoveToBGRA8Kernels[i][1][2] = nullptr;
-			m_pTransformMoveToBGRA8Kernels[i][2][0] = nullptr;
-			m_pTransformMoveToBGRA8Kernels[i][2][1] = nullptr;
-			m_pTransformMoveToBGRA8Kernels[i][2][2] = nullptr;
-
-
-			m_pStraightMoveToHiColorKernels[i][0] = nullptr;
-			m_pStraightMoveToHiColorKernels[i][1] = nullptr;
-			m_pTransformMoveToHiColorKernels[i][0][0] = nullptr;
-			m_pTransformMoveToHiColorKernels[i][0][1] = nullptr;
-			m_pTransformMoveToHiColorKernels[i][0][2] = nullptr;
-			m_pTransformMoveToHiColorKernels[i][1][0] = nullptr;
-			m_pTransformMoveToHiColorKernels[i][1][1] = nullptr;
-			m_pTransformMoveToHiColorKernels[i][1][2] = nullptr;
-			m_pTransformMoveToHiColorKernels[i][2][0] = nullptr;
-			m_pTransformMoveToHiColorKernels[i][2][1] = nullptr;
-			m_pTransformMoveToHiColorKernels[i][2][2] = nullptr;
+				for (int sm = 0; sm < SampleMethod_size; sm++)
+				{
+					m_pTransformMoveToBGRA8Kernels[i][sm][op] = nullptr;
+					m_pTransformMoveToHiColorKernels[i][sm][op] = nullptr;
+				}
+			}
 		}
 
 	}
@@ -126,7 +112,7 @@ namespace wg
 
 	SoftBackend::~SoftBackend()
 	{
-		for (int i = 0; i < PixelFormat_size; i++)
+		for (int i = 0; i < SoftFormat_size; i++)
 		{
 			if (m_pKernels[i])
 			{
@@ -210,7 +196,7 @@ namespace wg
 
 		m_buffer = m_pCanvas->allocPixelBuffer();
 		m_pCanvasPixels		= m_buffer.pixels;
-		m_canvasPixelFormat = m_buffer.format;
+		m_canvasSoftFormat	= SoftFormatInfo::softFormat(m_buffer.format, m_buffer.colorSpace, m_buffer.bigEndian);
 		m_canvasPitch		= m_buffer.pitch;
 		m_canvasPixelBytes	= m_pCanvas->pixelDescription()->bits/8;
 
@@ -314,7 +300,7 @@ namespace wg
 				{
 					auto pBlitSource = static_cast<SoftSurface*>(*pObjects++);
 
-					if (!pBlitSource || !m_pBlitSource || pBlitSource->pixelFormat() != m_pBlitSource->pixelFormat() ||
+					if (!pBlitSource || !m_pBlitSource || pBlitSource->softFormat() != m_pBlitSource->softFormat() ||
 						pBlitSource->sampleMethod() != m_pBlitSource->sampleMethod())
 						m_bBlitFunctionNeedsUpdate = true;
 
@@ -323,7 +309,7 @@ namespace wg
 
 				if (statesChanged & uint8_t(StateChange::TintColor))
 				{
-					m_tintColor = *pColors++;
+					m_tintColor = (*pColors++).toLinear();
 					if (!(statesChanged & uint8_t(StateChange::Tint)))
 						_updateTint();
 				}
@@ -345,7 +331,7 @@ namespace wg
 
 				if (statesChanged & uint8_t(StateChange::FixedBlendColor))
 				{
-					m_colTrans.fixedBlendColor = *pColors++;
+					m_colTrans.fixedBlendColor = (*pColors++).toLinear();
 				}
 
 				if (statesChanged & uint8_t(StateChange::Blur))
@@ -379,7 +365,7 @@ namespace wg
 			{
 				int32_t nRects = *p++;
 
-				const HiColor&  col = * pColors++;
+				HiColor col = (*pColors++).toLinear();
 
 				// Optimize calls
 
@@ -389,7 +375,7 @@ namespace wg
 					blendMode = BlendMode::Replace;
 				}
 
-				auto pKernels = m_pKernels[(int)m_pCanvas->pixelFormat()];
+				auto pKernels = m_pKernels[(int)m_canvasSoftFormat];
 
 				// Get kernel, fall back to Flat kernels drawn in runs if GradientX kernels are missing.
 
@@ -412,10 +398,10 @@ namespace wg
 				{
 					char errorMsg[1024];
 
-					snprintf(errorMsg, 1024, "Failed fill operation. SoftBackend is missing fill kernel for TintMode::%s, BlendMode::%s onto surface of PixelFormat:%s.",
+					snprintf(errorMsg, 1024, "Failed fill operation. SoftBackend is missing fill kernel for TintMode::%s, BlendMode::%s onto surface of format %s.",
 						toString(m_colTrans.mode),
 						toString(mode),
-						toString(m_pCanvas->pixelFormat()));
+						toString(m_canvasSoftFormat));
 
 					GfxBase::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, errorMsg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 				};
@@ -556,7 +542,7 @@ namespace wg
 
 				ClipLineOp_p pOp = nullptr;
 
-				auto pKernels = m_pKernels[(int)m_pCanvas->pixelFormat()];
+				auto pKernels = m_pKernels[(int)m_canvasSoftFormat];
 				if (pKernels)
 					pOp = pKernels->pClipLineKernels[(int)m_blendMode];
 
@@ -567,9 +553,9 @@ namespace wg
 
 					char errorMsg[1024];
 
-					snprintf(errorMsg, 1024, "Failed drawLine operation. SoftBackend is missing clipLine kernel for BlendMode::%s onto surface of PixelFormat:%s.",
+					snprintf(errorMsg, 1024, "Failed drawLine operation. SoftBackend is missing clipLine kernel for BlendMode::%s onto surface of format %s.",
 						toString(m_blendMode),
-						toString(m_pCanvas->pixelFormat()));
+						toString(m_canvasSoftFormat));
 
 					GfxBase::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, errorMsg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 					return;
@@ -584,9 +570,7 @@ namespace wg
 
 				for (int line = 0; line < nLines; line++)
 				{
-					HiColor color = *pColors++;
-
-					HiColor fillColor = color;
+					HiColor fillColor = (*pColors++).toLinear();
 
 					// Lines are only tinted by the flat tint color, not by Tints.
 
@@ -845,7 +829,7 @@ namespace wg
 				StripSource stripSource = tinting.bPerPixel ? StripSource::Tintmaps : StripSource::Colors;
 
 				SegmentOp_p	pOp = nullptr;
-				auto pKernels = m_pKernels[(int)m_pCanvas->pixelFormat()];
+				auto pKernels = m_pKernels[(int)m_canvasSoftFormat];
 				if (pKernels)
 				{
 					pOp = pKernels->pSegmentKernels[(int)stripSource][(int)m_blendMode];
@@ -866,10 +850,10 @@ namespace wg
 
 					char errorMsg[1024];
 
-					snprintf(errorMsg, 1024, "Failed draw segments operation. SoftBackend is missing segments kernel %s tint for BlendMode::%s onto surface of PixelFormat:%s.",
+					snprintf(errorMsg, 1024, "Failed draw segments operation. SoftBackend is missing segments kernel %s tint for BlendMode::%s onto surface of format %s.",
 						tinting.bPerPixel ? "with" : "without",
 						toString(m_blendMode),
-						toString(m_pCanvas->pixelFormat()));
+						toString(m_canvasSoftFormat));
 
 					GfxBase::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, errorMsg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 					break;
@@ -1105,7 +1089,8 @@ namespace wg
 		if (it == m_definedCanvases.end())
 		{
 			if (pSurface)
-				m_definedCanvases.push_back(CanvasInfo(ref, pSurface, pSurface->pixelSize() * 64, pSurface->pixelFormat(), pSurface->scale()));
+				m_definedCanvases.push_back(CanvasInfo(ref, pSurface, pSurface->pixelSize() * 64, pSurface->pixelFormat(), pSurface->scale(),
+													   pSurface->colorSpace(), pSurface->isBigEndian()));
 		}
 		else
 		{
@@ -1115,6 +1100,8 @@ namespace wg
 				it->size = pSurface->pixelSize() * 64;
 				it->scale = pSurface->scale();
 				it->format = pSurface->pixelFormat();
+				it->colorSpace = pSurface->colorSpace();
+				it->bigEndian = pSurface->isBigEndian();
 			}
 			else
 			{
@@ -1192,7 +1179,7 @@ namespace wg
 
 	//____ setLineKernel() ____________________________________________________
 
-	bool SoftBackend::setLineKernel(BlendMode blendMode, PixelFormat destFormat, LineOp_p pKernel)
+	bool SoftBackend::setLineKernel(BlendMode blendMode, SoftFormat destFormat, LineOp_p pKernel)
 	{
 		if (!_setupDestFormatKernels(destFormat))
 			return false;
@@ -1203,7 +1190,7 @@ namespace wg
 
 	//____ setClipLineKernel() ________________________________________________
 
-	bool SoftBackend::setClipLineKernel(BlendMode blendMode, PixelFormat destFormat, ClipLineOp_p pKernel)
+	bool SoftBackend::setClipLineKernel(BlendMode blendMode, SoftFormat destFormat, ClipLineOp_p pKernel)
 	{
 		if (!_setupDestFormatKernels(destFormat))
 			return false;
@@ -1214,7 +1201,7 @@ namespace wg
 
 	//____ setFillKernel() ____________________________________________________
 
-	bool SoftBackend::setFillKernel(TintMode tintMode, BlendMode blendMode, PixelFormat destFormat, FillOp_p pKernel)
+	bool SoftBackend::setFillKernel(TintMode tintMode, BlendMode blendMode, SoftFormat destFormat, FillOp_p pKernel)
 	{
 		if (!_setupDestFormatKernels(destFormat))
 			return false;
@@ -1225,7 +1212,7 @@ namespace wg
 
 	//____ setStraightBlitKernel() ____________________________________________
 
-	bool SoftBackend::setStraightBlitKernel(PixelFormat sourceFormat, SoftBackend::ReadOp readOp, TintMode tintMode, BlendMode blendMode, PixelFormat destFormat, StraightBlitOp_p pKernel)
+	bool SoftBackend::setStraightBlitKernel(SoftFormat sourceFormat, SoftBackend::ReadOp readOp, TintMode tintMode, BlendMode blendMode, SoftFormat destFormat, StraightBlitOp_p pKernel)
 	{
 		bool success = false;
 
@@ -1252,20 +1239,20 @@ namespace wg
 			m_singlePassStraightBlitKernels[straightBlitKernelsIdx].pKernels[(int)readOp][(int)tintMode] = pKernel;
 			success = true;
 
-			if (sourceFormat == PixelFormat::Undefined && readOp == ReadOp::Normal)
+			if (sourceFormat == SoftFormat::Undefined && readOp == ReadOp::Normal)
 				m_pKernels[(int)destFormat]->pStraightBlitFromHiColorKernels[(int)tintMode][(int)blendMode] = pKernel;
 
-			if (sourceFormat == PixelFormat::BGRA_8_linear && readOp == ReadOp::Normal)
+			if (sourceFormat == SoftFormat::ARGB_8_linear && readOp == ReadOp::Normal)
 				m_pKernels[(int)destFormat]->pStraightBlitFromBGRA8Kernels[(int)tintMode][(int)blendMode] = pKernel;
 		}
 
-		if (destFormat == PixelFormat::Undefined && blendMode == BlendMode::Replace && tintMode == TintMode::None)			// Special case for HiColor destination.
+		if (destFormat == SoftFormat::Undefined && blendMode == BlendMode::Replace && tintMode == TintMode::None)			// Special case for HiColor destination.
 		{
 			m_pStraightMoveToHiColorKernels[(int)sourceFormat][(int)readOp] = pKernel;
 			success = true;
 		}
 
-		if (destFormat == PixelFormat::BGRA_8_linear && blendMode == BlendMode::Replace && tintMode == TintMode::None)		// Special case for HiColor destination.
+		if (destFormat == SoftFormat::ARGB_8_linear && blendMode == BlendMode::Replace && tintMode == TintMode::None)		// Special case for 8-bit linear destination.
 		{
 			m_pStraightMoveToBGRA8Kernels[(int)sourceFormat][(int)readOp] = pKernel;
 			success = true;
@@ -1276,7 +1263,7 @@ namespace wg
 
 	//____ setTransformBlitKernel() ___________________________________________
 
-	bool SoftBackend::setTransformBlitKernel(PixelFormat sourceFormat, SampleMethod sampleMethod, SoftBackend::ReadOp edgeOp, TintMode tintMode, BlendMode blendMode, PixelFormat destFormat, TransformBlitOp_p pKernel)
+	bool SoftBackend::setTransformBlitKernel(SoftFormat sourceFormat, SampleMethod sampleMethod, SoftBackend::ReadOp edgeOp, TintMode tintMode, BlendMode blendMode, SoftFormat destFormat, TransformBlitOp_p pKernel)
 	{
 		bool success = false;
 		
@@ -1304,13 +1291,13 @@ namespace wg
 			success = true;
 		}
 		
-		if( destFormat == PixelFormat::Undefined && blendMode == BlendMode::Replace && tintMode == TintMode::None )			// Special case for HiColor destination.
+		if( destFormat == SoftFormat::Undefined && blendMode == BlendMode::Replace && tintMode == TintMode::None )			// Special case for HiColor destination.
 		{
 			m_pTransformMoveToHiColorKernels[(int)sourceFormat][(int)sampleMethod][(int)edgeOp] = pKernel;
 			success = true;
 		}
 			
-		if( destFormat == PixelFormat::BGRA_8_linear && blendMode == BlendMode::Replace && tintMode == TintMode::None )		// Special case for HiColor destination.
+		if( destFormat == SoftFormat::ARGB_8_linear && blendMode == BlendMode::Replace && tintMode == TintMode::None )		// Special case for 8-bit linear destination.
 		{
 			m_pTransformMoveToBGRA8Kernels[(int)sourceFormat][(int)sampleMethod][(int)edgeOp] = pKernel;
 			success = true;
@@ -1321,7 +1308,7 @@ namespace wg
 
 	//____ setSegmentStripKernel() ____________________________________________
 
-	bool SoftBackend::setSegmentStripKernel(SoftBackend::StripSource stripSource, BlendMode blendMode, PixelFormat destFormat, SegmentOp_p pKernel)
+	bool SoftBackend::setSegmentStripKernel(SoftBackend::StripSource stripSource, BlendMode blendMode, SoftFormat destFormat, SegmentOp_p pKernel)
 	{
 		if (!_setupDestFormatKernels(destFormat))
 			return false;
@@ -1486,11 +1473,11 @@ namespace wg
 		}
 		else
 		{
-			snprintf(errorMsg, 1024, "Failed blit operation. SoftBackend is missing straight blit kernel for:\n source format = %s\n tile = %s\n tint mode = %s\n blend mode = %s\n, dest format = %s\n", toString(m_pBlitSource->pixelFormat()),
+			snprintf(errorMsg, 1024, "Failed blit operation. SoftBackend is missing straight blit kernel for:\n source format = %s\n tile = %s\n tint mode = %s\n blend mode = %s\n, dest format = %s\n", toString(m_pBlitSource->softFormat()),
 				m_pBlitSource->isTiling() ? "true" : "false",
 				toString(m_colTrans.mode),
 				toString(m_blendMode),
-				toString(m_canvasPixelFormat));
+				toString(m_canvasSoftFormat));
 		}
 
 		GfxBase::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, errorMsg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
@@ -1529,11 +1516,11 @@ namespace wg
 		char errorMsg[1024];
 		snprintf(errorMsg, 1024, "Failed %s operation. SoftBackend is missing transform blit kernel for:\n source format = %s\n sample method = %s\n tint mode = %s\n blend mode = %s\n, dest format = %s\n",
 		    pCmd,
-			toString(m_pBlitSource->pixelFormat()),
+			toString(m_pBlitSource->softFormat()),
 			toString(m_pBlitSource->sampleMethod()),
 			toString(m_colTrans.mode),
 			toString(m_blendMode),
-			toString(m_canvasPixelFormat));
+			toString(m_canvasSoftFormat));
 
 		GfxBase::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, errorMsg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 
@@ -1582,13 +1569,16 @@ namespace wg
 		//
 
 		SampleMethod	sampleMethod = m_pBlitSource->sampleMethod();
-		PixelFormat		srcFormat = m_pBlitSource->m_pixelFormat;
-		PixelFormat		dstFormat = m_canvasPixelFormat;
+		SoftFormat		srcFormat = m_pBlitSource->softFormat();
+		SoftFormat		dstFormat = m_canvasSoftFormat;
 
 		BlendMode		blendMode = m_blendMode;
 		BlendMode		clipBlendMode = m_blendMode;		// ClipBlits leave pixels outside the source alone, so not optimized below.
 
-		if (m_pKernels[(int)dstFormat] == nullptr)
+		// Sources of formats no kernels can be made for are Undefined, which is the
+		// key of kernels for our own HiColor buffers, so we need to stop here.
+
+		if (srcFormat == SoftFormat::Undefined || m_pKernels[(int)dstFormat] == nullptr)
 			return;
 
 		// Optimize BlendMode
@@ -1599,15 +1589,7 @@ namespace wg
 		{
 			// TODO: Optimize by using a lookup table.
 
-			if (blendMode == BlendMode::Blend &&
-                (srcFormat == PixelFormat::RGB_565_bigendian ||
-				 srcFormat == PixelFormat::RGB_555_bigendian ||
-                 srcFormat == PixelFormat::BGR_8_sRGB ||
-				 srcFormat == PixelFormat::BGR_8_linear ||
-                 srcFormat == PixelFormat::BGR_565_linear ||
-                 srcFormat == PixelFormat::BGR_565_sRGB ||
-				 srcFormat == PixelFormat::BGRX_8_sRGB ||
-                 srcFormat == PixelFormat::BGRX_8_linear))
+			if (blendMode == BlendMode::Blend && !SoftFormatInfo::hasAlpha(srcFormat))
 			{
 				blendMode = BlendMode::Replace;
 			}
@@ -1615,10 +1597,7 @@ namespace wg
         
 		// Add two-pass rendering fallback.
 
-		auto pixelDescSource = Util::pixelFormatToDescription(srcFormat);
-		auto pixelDescDest = Util::pixelFormatToDescription(dstFormat);
-
-		if ((pixelDescDest.colorSpace == ColorSpace::Linear || dstFormat == PixelFormat::Alpha_8) && (pixelDescSource.colorSpace == ColorSpace::Linear || srcFormat == PixelFormat::Alpha_8))
+		if (SoftFormatInfo::isLinear(dstFormat) && SoftFormatInfo::isLinear(srcFormat))
 		{
 			m_pStraightBlitFirstPassOp = m_pStraightMoveToBGRA8Kernels[(int)srcFormat][int(ReadOp::Normal)];
 			m_pStraightTileFirstPassOp = m_pStraightMoveToBGRA8Kernels[(int)srcFormat][int(ReadOp::Tile)];
@@ -1899,7 +1878,7 @@ namespace wg
 		{
 			if (!t.bPerPixel && !t.bColorPerColumn)
 			{
-				HiColor col = pEdgemap->m_pFlatColors[seg] * global.flatColor();
+				HiColor col = pEdgemap->m_segmentTints[seg].flatColor() * global.flatColor();
 
 				t.colors[seg][0] = col.b;
 				t.colors[seg][1] = col.g;
@@ -2196,17 +2175,10 @@ namespace wg
 
 	//____ _setupDestFormatKernels() _____________________________________________
 
-	bool SoftBackend::_setupDestFormatKernels(PixelFormat format)
+	bool SoftBackend::_setupDestFormatKernels(SoftFormat format)
 	{
-		if (format != PixelFormat::BGR_8_sRGB && format != PixelFormat::BGR_8_linear &&
-			format != PixelFormat::BGRX_8_sRGB && format != PixelFormat::BGRX_8_linear &&
-			format != PixelFormat::BGRA_8_sRGB && format != PixelFormat::BGRA_8_linear &&
-			format != PixelFormat::BGR_565_sRGB && format != PixelFormat::BGR_565_linear &&
-			format != PixelFormat::Alpha_8 &&
-			format != PixelFormat::RGB_565_bigendian && format != PixelFormat::RGB_555_bigendian)
-		{
+		if (!SoftFormatInfo::isDestination(format))
 			return false;
-		}
 
 		if (!m_pKernels[(int)format])
 			m_pKernels[(int)format] = new DestFormatKernels();

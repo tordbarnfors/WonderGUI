@@ -24,6 +24,7 @@
 #pragma once
 
 #include <wg_surface.h>
+#include <wg_softformat.h>
 
 #include <vector>
 
@@ -89,7 +90,8 @@ namespace wg
 		inline uint8_t *	pixels() const { return m_pData; }
 		inline int			tileMaskX() const { return m_srcPosMaskX; }
 		inline int			tileMaskY() const { return m_srcPosMaskY; }
-		inline const HiColor * palette4096() const { return m_pPalette4096; }
+		inline const HiColor * palette4096() const { return m_pPalette4096; }		// Palette in linear 0 -> 4096.
+		inline SoftFormat	softFormat() const { return m_softFormat; }			// Undefined if no kernels can be made for the pixels.
 		
 		//.____ Deprecated ____________________________________________________
 
@@ -105,8 +107,12 @@ namespace wg
 
 		~SoftSurface();
 
+		void		_init();
 		void		_makePalette4096();
 		void		_initTiling();
+		int			_defaultPitch() const;
+
+		SoftFormat	m_softFormat = SoftFormat::Undefined;
 
 		int			m_srcPosMaskX = 0;
 		int			m_srcPosMaskY = 0;

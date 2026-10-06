@@ -42,6 +42,9 @@ namespace wg
 	{
 	public:
 
+		// Colors of Tints are sRGB and interpolated in sRGB, while everything SoftTint
+		// gives out is linear, ready for blending. Multipliers are linear.
+
 		// Set from a decoded tint. All colors are multiplied with multiplier.
 
 		void		set(const TintTools::DecodedTint& tint, HiColor multiplier = HiColor::White);
@@ -50,7 +53,7 @@ namespace wg
 
 		void		set(const Tint* pTint, const RectSPX& rect, HiColor multiplier = HiColor::White);
 
-		// Set to a flat color.
+		// Set to a flat color, which is linear.
 
 		void		setFlat(HiColor color);
 

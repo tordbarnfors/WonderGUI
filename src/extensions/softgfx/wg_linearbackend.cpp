@@ -65,7 +65,7 @@ namespace wg
 
 	//____ defineCanvas() _________________________________________________________
 
-	bool LinearBackend::defineCanvas( CanvasRef ref, const SizeSPX size, PixelFormat pixelFormat, int scale )
+	bool LinearBackend::defineCanvas( CanvasRef ref, const SizeSPX size, PixelFormat pixelFormat, int scale, ColorSpace colorSpace, bool bBigEndian )
 	{
 		auto& def = m_canvasDefinitions[int(ref)];
 		def.size = size;
@@ -73,6 +73,8 @@ namespace wg
 		def.ref = ref;
 		def.pSurface = nullptr;
 		def.format = pixelFormat;
+		def.colorSpace = colorSpace == ColorSpace::Undefined ? ColorSpace::sRGB : colorSpace;
+		def.bigEndian = bBigEndian;
 		return true;
 	}
 
@@ -158,7 +160,7 @@ namespace wg
 		m_pCanvas = nullptr;
 
 		m_pCanvasPixels		= nullptr;
-		m_canvasPixelFormat = pInfo->format;
+		m_canvasSoftFormat	= SoftFormatInfo::softFormat(pInfo->format, pInfo->colorSpace, pInfo->bigEndian);
 		m_canvasPitch		= 0;
 		m_canvasPixelBytes	= Util::pixelFormatToDescription(pInfo->format).bits/8;
 
@@ -221,7 +223,7 @@ namespace wg
 				{
 					auto pBlitSource = static_cast<SoftSurface*>(* pObjects++);
 
-					if (!pBlitSource || !m_pBlitSource || pBlitSource->pixelFormat() != m_pBlitSource->pixelFormat() ||
+					if (!pBlitSource || !m_pBlitSource || pBlitSource->softFormat() != m_pBlitSource->softFormat() ||
 						pBlitSource->sampleMethod() != m_pBlitSource->sampleMethod())
 						m_bBlitFunctionNeedsUpdate = true;
 
@@ -230,7 +232,7 @@ namespace wg
 
 				if (statesChanged & uint8_t(StateChange::TintColor))
 				{
-					m_tintColor = *pColors++;
+					m_tintColor = (*pColors++).toLinear();
 					if (!(statesChanged & uint8_t(StateChange::Tint)))
 						_updateTint();
 				}
@@ -252,7 +254,7 @@ namespace wg
 
 				if (statesChanged & uint8_t(StateChange::FixedBlendColor))
 				{
-					m_colTrans.fixedBlendColor = *pColors++;
+					m_colTrans.fixedBlendColor = (*pColors++).toLinear();
 				}
 
 				if (statesChanged & uint8_t(StateChange::Blur))
@@ -286,7 +288,7 @@ namespace wg
 			{
 				int32_t nRects = *p++;
 
-				const HiColor&  col = * pColors++;
+				HiColor col = (*pColors++).toLinear();
 
 				// Optimize calls
 
@@ -296,7 +298,7 @@ namespace wg
 					blendMode = BlendMode::Replace;
 				}
 
-				auto pKernels = m_pKernels[(int)m_canvasPixelFormat];
+				auto pKernels = m_pKernels[(int)m_canvasSoftFormat];
 
 				// Get kernel, fall back to Flat kernels drawn in runs if GradientX kernels are missing.
 
@@ -319,10 +321,10 @@ namespace wg
 				{
 					char errorMsg[1024];
 
-					snprintf(errorMsg, 1024, "Failed fill operation. LinearBackend is missing fill kernel for TintMode::%s, BlendMode::%s onto surface of PixelFormat:%s.",
+					snprintf(errorMsg, 1024, "Failed fill operation. LinearBackend is missing fill kernel for TintMode::%s, BlendMode::%s onto surface of format %s.",
 						toString(m_colTrans.mode),
 						toString(mode),
-						toString(m_canvasPixelFormat));
+						toString(m_canvasSoftFormat));
 
 					GfxBase::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, errorMsg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 				};
@@ -477,7 +479,7 @@ namespace wg
 
 				ClipLineOp_p pOp = nullptr;
 
-				auto pKernels = m_pKernels[(int)m_canvasPixelFormat];
+				auto pKernels = m_pKernels[(int)m_canvasSoftFormat];
 				if (pKernels)
 					pOp = pKernels->pClipLineKernels[(int)m_blendMode];
 
@@ -488,9 +490,9 @@ namespace wg
 
 					char errorMsg[1024];
 
-					snprintf(errorMsg, 1024, "Failed drawLine operation. LinearBackend is missing clipLine kernel for BlendMode::%s onto surface of PixelFormat:%s.",
+					snprintf(errorMsg, 1024, "Failed drawLine operation. LinearBackend is missing clipLine kernel for BlendMode::%s onto surface of format %s.",
 						toString(m_blendMode),
-						toString(m_canvasPixelFormat));
+						toString(m_canvasSoftFormat));
 
 					GfxBase::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, errorMsg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 					return;
@@ -504,8 +506,7 @@ namespace wg
 
 				for (int line = 0; line < nLines; line++)
 				{
-					HiColor color = *pColors++;
-					HiColor fillColor = color;
+					HiColor fillColor = (*pColors++).toLinear();
 
 					// Lines are only tinted by the flat tint color, not by Tints.
 
@@ -783,7 +784,7 @@ namespace wg
 				StripSource stripSource = tinting.bPerPixel ? StripSource::Tintmaps : StripSource::Colors;
 
 				SegmentOp_p	pOp = nullptr;
-				auto pKernels = m_pKernels[(int)m_canvasPixelFormat];
+				auto pKernels = m_pKernels[(int)m_canvasSoftFormat];
 				if (pKernels)
 				{
 					pOp = pKernels->pSegmentKernels[(int)stripSource][(int)m_blendMode];
@@ -804,10 +805,10 @@ namespace wg
 
 					char errorMsg[1024];
 
-					snprintf(errorMsg, 1024, "Failed draw segments operation. LinearBackend is missing segments kernel %s tint for BlendMode::%s onto surface of PixelFormat:%s.",
+					snprintf(errorMsg, 1024, "Failed draw segments operation. LinearBackend is missing segments kernel %s tint for BlendMode::%s onto surface of format %s.",
 						tinting.bPerPixel ? "with" : "without",
 						toString(m_blendMode),
-						toString(m_canvasPixelFormat));
+						toString(m_canvasSoftFormat));
 
 					GfxBase::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, errorMsg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 					break;

@@ -66,7 +66,7 @@ namespace wg
 			int				faceIndex = 0;
 			Finalizer_p		finalizer = nullptr;
 			RenderMode		renderMode = RenderMode::BestShapes;
-			bool			stemDarkening = GfxBase::defaultToSRGB();
+			bool			stemDarkening = true;					// Compensates for text looking thin when blended in linear space.
 			int				xDPI = 72;
 			int				yDPI = 72;
 		};

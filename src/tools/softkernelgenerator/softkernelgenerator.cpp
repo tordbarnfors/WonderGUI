@@ -124,7 +124,7 @@ void MyApp::sourceFormatToggled(Msg* _pMsg)
 	auto pMsg = static_cast<ToggleMsg*>(_pMsg);
 	auto pWidget = static_cast<Widget*>(pMsg->sourceRawPtr());
 
-	m_pDB->setSrcFormat((PixelFormat)pWidget->id(), pMsg->isChecked());
+	m_pDB->setSrcFormat((SoftFormat)pWidget->id(), pMsg->isChecked());
 	_refreshSummary();
 }
 
@@ -135,7 +135,7 @@ void MyApp::destFormatToggled(Msg* _pMsg)
 	auto pMsg = static_cast<ToggleMsg*>(_pMsg);
 	auto pWidget = static_cast<Widget*>(pMsg->sourceRawPtr());
 
-	m_pDB->setDestFormat((PixelFormat)pWidget->id(), pMsg->isChecked());
+	m_pDB->setDestFormat((SoftFormat)pWidget->id(), pMsg->isChecked());
 	_refreshSummary();
 }
 
@@ -438,7 +438,7 @@ PackPanel_p MyApp::_buildToggleButtonRow(string title, std::vector<TintMode> tin
 	return pColumn;
 }
 
-PackPanel_p MyApp::_buildToggleButtonRow(string title, std::vector<PixelFormat> formats, const bool selected[], function<void(Msg*)> pressCallback)
+PackPanel_p MyApp::_buildToggleButtonRow(string title, std::vector<SoftFormat> formats, const bool selected[], function<void(Msg*)> pressCallback)
 {
 	auto pColumn = PackPanel::create({ .axis = Axis::Y, .layout = m_pNoExpandLayout });
 	pColumn->slots << TextDisplay::create(WGBP(TextDisplay,
@@ -494,30 +494,27 @@ Widget_p MyApp::_buildGlobalSettingsSection()
 
 	
 	
-	pColumn = _buildToggleButtonRow("Source Formats", { PixelFormat::BGR_8_linear, PixelFormat::BGR_8_sRGB,
-														PixelFormat::BGRX_8_linear, PixelFormat::BGRX_8_sRGB,
-														PixelFormat::BGRA_8_linear, PixelFormat::BGRA_8_sRGB,
-														PixelFormat::Index_8_linear, PixelFormat::Index_8_sRGB,
-														PixelFormat::Index_16_linear, PixelFormat::Index_16_sRGB,
-														PixelFormat::BGR_565_linear,
-														PixelFormat::BGR_565_sRGB,
-														PixelFormat::RGB_565_bigendian,
-														PixelFormat::RGB_555_bigendian,
-														PixelFormat::Alpha_8 },
+	pColumn = _buildToggleButtonRow("Source Formats", { SoftFormat::XRGB_8_linear, SoftFormat::XRGB_8_sRGB,
+														SoftFormat::ARGB_8_linear, SoftFormat::ARGB_8_sRGB,
+														SoftFormat::Index_8_linear, SoftFormat::Index_8_sRGB,
+														SoftFormat::Index_16_linear, SoftFormat::Index_16_sRGB,
+														SoftFormat::RGB_565_linear,
+														SoftFormat::RGB_565_sRGB,
+														SoftFormat::BGR_565_BE_linear,
+														SoftFormat::Alpha_8 },
 		m_pDB->srcFormats(), [this](Msg* pMsg) {this->sourceFormatToggled(pMsg); });
 
 	pTopSection->slots << pColumn;
 
 	// Togglebuttons for Dest Format
 
-	pColumn = _buildToggleButtonRow("Dest Formats", { 	PixelFormat::BGR_8_linear, PixelFormat::BGR_8_sRGB,
-														PixelFormat::BGRX_8_linear, PixelFormat::BGRX_8_sRGB,
-														PixelFormat::BGRA_8_linear, PixelFormat::BGRA_8_sRGB,
-														PixelFormat::BGR_565_linear,
-														PixelFormat::BGR_565_sRGB,
-														PixelFormat::RGB_565_bigendian,
-														PixelFormat::RGB_555_bigendian,
-														PixelFormat::Alpha_8 },
+	pColumn = _buildToggleButtonRow("Dest Formats", { 	SoftFormat::XRGB_8_linear, SoftFormat::XRGB_8_sRGB,
+														SoftFormat::ARGB_8_linear, SoftFormat::ARGB_8_sRGB,
+														SoftFormat::RGB_565_linear,
+														SoftFormat::RGB_565_sRGB,
+														SoftFormat::BGR_565_BE_linear,
+														SoftFormat::BGR_565_BE_linear_G5,
+														SoftFormat::Alpha_8 },
 		m_pDB->destFormats(), [this](Msg* pMsg) {this->destFormatToggled(pMsg); });
 
 	pTopSection->slots << pColumn;
@@ -565,8 +562,8 @@ Widget_p MyApp::_buildOptimizedBlitsSection()
 
 	vector<TintMode>	activeTintModes;
 	vector<BlendMode>	activeBlendModes;
-	vector<PixelFormat>	activeSourceFormats;
-	vector<PixelFormat>	activeDestFormats;
+	vector<SoftFormat>	activeSourceFormats;
+	vector<SoftFormat>	activeDestFormats;
 
 	for (int i = 0; i < TintMode_size; i++)
 		if (m_pDB->tintMode(TintMode(i)))
@@ -576,13 +573,13 @@ Widget_p MyApp::_buildOptimizedBlitsSection()
 		if (m_pDB->blendMode(BlendMode(i)))
 			activeBlendModes.push_back(BlendMode(i));
 
-	for (int i = 0; i < PixelFormat_size; i++)
-		if (m_pDB->srcFormat(PixelFormat(i)))
-			activeSourceFormats.push_back(PixelFormat(i));
+	for (int i = 0; i < SoftFormat_size; i++)
+		if (m_pDB->srcFormat(SoftFormat(i)))
+			activeSourceFormats.push_back(SoftFormat(i));
 
-	for (int i = 0; i < PixelFormat_size; i++)
-		if (m_pDB->destFormat(PixelFormat(i)))
-			activeDestFormats.push_back(PixelFormat(i));
+	for (int i = 0; i < SoftFormat_size; i++)
+		if (m_pDB->destFormat(SoftFormat(i)))
+			activeDestFormats.push_back(SoftFormat(i));
 
 	// CUSTOM BLITS
 

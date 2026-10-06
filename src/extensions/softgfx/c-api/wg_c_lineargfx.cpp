@@ -44,11 +44,14 @@ wg_obj wg_createLinearBackend(void*(*beginCanvasRenderFunc)(wg_canvasRef ref, in
 }
 
 
-int wg_defineLinearBackendCanvas( wg_obj backend, wg_canvasRef ref, wg_sizeSPX size, wg_pixelFormat format, int scale )
+int wg_defineLinearBackendCanvas( wg_obj backend, wg_canvasRef ref, wg_sizeSPX size, wg_pixelFormat format, int scale,
+								  wg_colorSpace colorSpace, wg_byteOrder byteOrder )
 {
 	auto pBackend = static_cast<LinearBackend*>(reinterpret_cast<Object*>(backend));
 
-	return pBackend->defineCanvas((CanvasRef) ref, {size.w,size.h}, (PixelFormat) format, scale);
+	bool bBigEndian = byteOrder == WG_BYTEORDER_NATIVE ? (WG_IS_BIG_ENDIAN == 1) : (byteOrder == WG_BYTEORDER_BIG_ENDIAN);
+
+	return pBackend->defineCanvas((CanvasRef) ref, {size.w,size.h}, (PixelFormat) format, scale, (ColorSpace) colorSpace, bBigEndian);
 }
 
 

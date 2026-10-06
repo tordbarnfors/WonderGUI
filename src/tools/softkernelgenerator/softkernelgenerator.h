@@ -57,7 +57,7 @@ private:
 	wg::PackPanel_p	_buildToggleButtonRow(std::string title, std::vector<KernelDB::BlitType> blitTypes, const bool selected[], std::function<void(wg::Msg*)> pressCallback);
 	wg::PackPanel_p	_buildToggleButtonRow(std::string title, std::vector<wg::BlendMode> blendModes, const bool selected[], std::function<void(wg::Msg*)> pressCallback);
 	wg::PackPanel_p	_buildToggleButtonRow(std::string title, std::vector<wg::TintMode> tintModes, const bool selected[], std::function<void(wg::Msg*)> pressCallback);
-	wg::PackPanel_p	_buildToggleButtonRow(std::string title, std::vector<wg::PixelFormat> pixelFormats, const bool selected[], std::function<void(wg::Msg*)> pressCallback);
+	wg::PackPanel_p	_buildToggleButtonRow(std::string title, std::vector<wg::SoftFormat> pixelFormats, const bool selected[], std::function<void(wg::Msg*)> pressCallback);
 	wg::Widget_p	_buildHeaderWithCloseButton(std::string title, std::function<void(wg::Msg*)> pressCallback);
 
 	void			_refreshSummary();

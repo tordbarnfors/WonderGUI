@@ -75,9 +75,9 @@ namespace wg
 
 	//____ constructor ________________________________________________________________
 
-	SoftSurface::SoftSurface( const Blueprint& bp ) : Surface(bp, PixelFormat::BGRA_8, SampleMethod::Nearest )
+	SoftSurface::SoftSurface( const Blueprint& bp ) : Surface(bp, PixelFormat::ARGB_8, SampleMethod::Nearest )
 	{
-		m_pitch = ((bp.size.w+3)&0xFFFFFFFC)*m_pPixelDescription->bits/8;
+		m_pitch = _defaultPitch();
 		m_pBlob = Blob::create( m_pitch*bp.size.h + m_paletteCapacity*sizeof(Color8) );
 		m_pData = (uint8_t*) m_pBlob->data();
 
@@ -90,27 +90,27 @@ namespace wg
 		else
 			m_pPalette = nullptr;
 
-		_initTiling();
+		_init();
 	}
 
-	SoftSurface::SoftSurface(const Blueprint& bp, Blob * pBlob, int pitch ) : Surface(bp, PixelFormat::BGRA_8, SampleMethod::Nearest)
+	SoftSurface::SoftSurface(const Blueprint& bp, Blob * pBlob, int pitch ) : Surface(bp, PixelFormat::ARGB_8, SampleMethod::Nearest)
 	{
-		m_pitch = pitch > 0 ? pitch : bp.size.w * m_pPixelDescription->bits/8;
+		m_pitch = pitch > 0 ? pitch : PixelTools::bytesPerLine(*m_pPixelDescription, bp.size.w);
 		m_pBlob = pBlob;
 		m_pData = (uint8_t*) m_pBlob->data();
 		m_pPalette = const_cast<Color8*>(bp.palette);
 		if( m_pPalette )
 			_makePalette4096();
 
-		_initTiling();
+		_init();
 	}
 
-	SoftSurface::SoftSurface(const Blueprint& bp, uint8_t * pPixels, int pitch) : Surface(bp, PixelFormat::BGRA_8, SampleMethod::Nearest)
+	SoftSurface::SoftSurface(const Blueprint& bp, uint8_t * pPixels, int pitch) : Surface(bp, PixelFormat::ARGB_8, SampleMethod::Nearest)
 	{
 		// This constructor creates the surface in place, using the pixels (and palette if present in BP) where they are.
 		
 		if( pitch == 0 )
-			pitch = bp.size.w * m_pPixelDescription->bits/8;
+			pitch = PixelTools::bytesPerLine(*m_pPixelDescription, bp.size.w);
 		
 		m_pitch = pitch;
 		m_pBlob = nullptr;
@@ -124,14 +124,14 @@ namespace wg
 		else
 			m_pPalette = nullptr;
 
-		_initTiling();
+		_init();
 	}
 
 	SoftSurface::SoftSurface(const Blueprint& bp, const uint8_t * pPixels,
-							 PixelFormat format, int pitch, const Color8 * pPalette, int paletteSize ) : Surface(bp, PixelFormat::BGRA_8, SampleMethod::Nearest)
+							 PixelFormat format, int pitch, const Color8 * pPalette, int paletteSize ) : Surface(bp, PixelFormat::ARGB_8, SampleMethod::Nearest)
 	{
 				
-		m_pitch = ((bp.size.w + 3) & 0xFFFFFFFC)*m_pPixelDescription->bits / 8;
+		m_pitch = _defaultPitch();
 		m_pBlob = Blob::create(m_pitch*m_size.h + m_paletteCapacity*sizeof(Color8) );
 		m_pData = (uint8_t*)m_pBlob->data();
 
@@ -144,26 +144,30 @@ namespace wg
 		else
 			m_pPalette = nullptr;
 
-		_initTiling();
+		_init();
 		
 		// Copy pixels
 
 		_fixSrcParam(format, pPalette, paletteSize);
+
+		auto srcDesc = Util::pixelFormatToDescription(format, m_bBigEndian);
+		int srcPitchAdd = (pitch == 0) ? 0 : pitch - PixelTools::bytesPerLine(srcDesc, m_size.w);
 		
-		int srcPitchAdd = (pitch == 0) ? 0 : pitch - Util::pixelFormatToDescription(format).bits/8 * m_size.w;
-		
-		PixelTools::copyPixels(m_size.w, m_size.h, pPixels, format, srcPitchAdd,
-							   m_pData, m_pixelFormat, m_pitch - m_pPixelDescription->bits/8 * m_size.w, pPalette,
-							   m_pPalette, paletteSize, m_paletteSize, m_paletteCapacity);
+		PixelTools::copyPixels(m_size.w, m_size.h, pPixels, srcDesc, m_colorSpace, srcPitchAdd, pPalette, paletteSize,
+							   m_pData, m_pixelFormat, m_colorSpace, m_bBigEndian, m_pitch - PixelTools::bytesPerLine(*m_pPixelDescription, m_size.w),
+							   m_pPalette, m_paletteSize, m_paletteCapacity);
+
+		if( m_pPalette )
+			_makePalette4096();
 	}
 
 
 	SoftSurface::SoftSurface(const Blueprint& bp, const uint8_t * pPixels,
-							 const PixelDescription& pixelDescription, int pitch, const Color8 * pPalette, int paletteSize ) : Surface(bp, PixelFormat::BGRA_8, SampleMethod::Nearest)
+							 const PixelDescription& pixelDescription, int pitch, const Color8 * pPalette, int paletteSize ) : Surface(bp, PixelFormat::ARGB_8, SampleMethod::Nearest)
 	{
 		
 		
-		m_pitch = ((bp.size.w + 3) & 0xFFFFFFFC)*m_pPixelDescription->bits / 8;
+		m_pitch = _defaultPitch();
 		m_pBlob = Blob::create(m_pitch*m_size.h + m_paletteCapacity*sizeof(Color8) );
 		m_pData = (uint8_t*)m_pBlob->data();
 
@@ -176,17 +180,20 @@ namespace wg
 		else
 			m_pPalette = nullptr;
 
-		_initTiling();
+		_init();
 		
 		// Copy pixels
 		
 		_fixSrcParam(pixelDescription, pPalette, paletteSize);
 
-		int srcPitchAdd = pitch == 0 ? 0 : pitch - pixelDescription.bits/8 * m_size.w;
+		int srcPitchAdd = pitch == 0 ? 0 : pitch - PixelTools::bytesPerLine(pixelDescription, m_size.w);
 		
-		PixelTools::copyPixels(m_size.w, m_size.h, pPixels, pixelDescription, srcPitchAdd,
-							   m_pData, m_pixelFormat, m_pitch - m_pPixelDescription->bits/8 * m_size.w, pPalette,
-							   m_pPalette, paletteSize, m_paletteSize, m_paletteCapacity);
+		PixelTools::copyPixels(m_size.w, m_size.h, pPixels, pixelDescription, m_colorSpace, srcPitchAdd, pPalette, paletteSize,
+							   m_pData, m_pixelFormat, m_colorSpace, m_bBigEndian, m_pitch - PixelTools::bytesPerLine(*m_pPixelDescription, m_size.w),
+							   m_pPalette, m_paletteSize, m_paletteCapacity);
+
+		if( m_pPalette )
+			_makePalette4096();
 	}
 
 	//____ Destructor ______________________________________________________________
@@ -207,14 +214,24 @@ namespace wg
 
 	int SoftSurface::alpha( CoordSPX coord )
 	{
-		PixelBuffer	buffer;
-		buffer.format = m_pixelFormat;
-		buffer.palette = m_pPalette;
-		buffer.pitch = m_pitch;
-		buffer.pixels = m_pData;
-		buffer.rect = { 0,0,m_size };
+		return _alpha(coord, allocPixelBuffer());
+	}
 
-		return _alpha(coord, buffer);
+	//____ _init() ______________________________________________________________
+
+	void SoftSurface::_init()
+	{
+		m_softFormat = SoftFormatInfo::softFormat(m_pixelFormat, m_colorSpace, m_bBigEndian);
+		_initTiling();
+	}
+
+	//____ _defaultPitch() ______________________________________________________
+
+	int SoftSurface::_defaultPitch() const
+	{
+		// Lines are padded to a multiple of four pixels.
+
+		return PixelTools::bytesPerLine(*m_pPixelDescription, (m_size.w + 3) & 0xFFFFFFFC);
 	}
 
 	//____ _initTiling() ________________________________________________________
@@ -249,6 +266,8 @@ namespace wg
 		buf.pixels = m_pData + m_pitch*rect.y + rect.x*m_pPixelDescription->bits/8;
 		buf.palette = m_pPalette;
 		buf.format = m_pixelFormat;
+		buf.colorSpace = m_colorSpace;
+		buf.bigEndian = m_bBigEndian;
 		buf.rect = rect;
 		buf.pitch = m_pitch;
 		return buf;
@@ -265,7 +284,10 @@ namespace wg
 
 	void SoftSurface::pullPixels(const PixelBuffer& buffer, const RectI& bufferRect, bool bAutoNotify)
 	{
-		// Nothing to do here.
+		// Pixels are already in place, but colors might have been added to the palette.
+
+		if( m_pPalette )
+			_makePalette4096();
 
 		Surface::pullPixels(buffer, bufferRect, bAutoNotify);
 	}
@@ -289,9 +311,7 @@ namespace wg
 
 		switch(m_pixelFormat)
 		{
-			case PixelFormat::BGR_8:
-				break;
-			case PixelFormat::BGRA_8:
+			case PixelFormat::ARGB_8:
 				for(int n=0; n<length; n++)
 				{
 				  ind = y[n]*m_pitch + x[n]*4;
@@ -321,11 +341,12 @@ namespace wg
 
 	void SoftSurface::_makePalette4096()
 	{
-		m_pPalette4096 = new HiColor[m_paletteCapacity];
+		if( !m_pPalette4096 )
+			m_pPalette4096 = new HiColor[m_paletteCapacity];
 
 		HiColor * p = m_pPalette4096;
 
-		const int16_t* pUnpackTab = m_pPixelDescription->colorSpace == ColorSpace::sRGB ? HiColor::unpackSRGBTab : HiColor::unpackLinearTab;
+		const int16_t* pUnpackTab = m_colorSpace == ColorSpace::Linear ? HiColor::unpackLinearTab : HiColor::unpackSRGBTab;
 
 		for (int i = 0; i < m_paletteSize; i++)
 		{

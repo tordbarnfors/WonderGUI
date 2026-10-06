@@ -114,7 +114,7 @@ void SoftEdgemap::_colorsUpdated(int beginSegment, int endSegment)
 		}
 		else
 		{
-			m_segmentTints[seg].setFlat(m_pFlatColors[seg]);
+			m_segmentTints[seg].setFlat(m_pFlatColors[seg].toLinear());
 
 			int alpha = m_pFlatColors[seg].a;
 			m_transparentSegments[seg] = (alpha == 0);
