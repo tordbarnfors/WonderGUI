@@ -136,110 +136,44 @@ namespace wg
 
 	//____ _setPixelDetails() ______________________________________________________
 	//
-	// Settles on a pixel format D3D12 can actually hold, which is not always the
-	// one that was asked for. D3D12 has no 24 bit format at all, so BGR_8 becomes
-	// BGRX_8, and the odd small formats are widened the same way MetalSurface
-	// widens them. PixelTools does the conversion when the pixels are copied in.
+	// Settles on a pixel layout D3D12 can actually hold, which is not always the
+	// one that was asked for. The 565 formats are widened to XRGB_8, as MetalSurface
+	// does, and pixels are kept in native byte order. PixelTools does the conversion
+	// when the pixels are copied in. The color space stays.
 	//
 	// An sRGB surface gets an _SRGB texture format, as MetalSurface gives one a
-	// _sRGB Metal format. HiColor is linear and so is everything our shaders work
-	// in, so the hardware has to convert on the way in and on the way out:
-	// sRGB to linear when a texel is sampled, linear to sRGB when a pixel is
-	// written. Without that, linear values land in a buffer that is displayed as
-	// if it were sRGB, and everything comes out far too dark.
+	// _sRGB Metal format. Our shaders work in linear, so the hardware has to convert
+	// on the way in and on the way out: sRGB to linear when a texel is sampled,
+	// linear to sRGB when a pixel is written.
 	//
 	// Alpha is linear in every format WonderGUI has, so Alpha_8 stays plain.
 
-	bool DX12Surface::_setPixelDetails( PixelFormat format )
+	bool DX12Surface::_setPixelDetails()
 	{
 		bool bSupported = true;
+		bool bSRGB = (m_colorSpace == ColorSpace::sRGB);
+
+		PixelFormat format = m_pixelFormat;
 
 		switch( format )
 		{
-			// BGRX gets a format with no alpha channel rather than being put in a
+			// XRGB gets a format with no alpha channel rather than being put in a
 			// BGRA texture the way MetalSurface has to. Sampling one reads alpha as
 			// 1.0 whatever the unused byte holds, which keeps such a surface opaque
 			// without anyone having to fill that byte, and it lets DX12Backend tell
-			// a BGRX canvas from a BGRA one, since the pipelines are keyed on this.
+			// an XRGB canvas from an ARGB one, since the pipelines are keyed on this.
 
-			// The color space free formats only turn up if something bypassed
-			// Util::clarifyPixelFormat(). We settle them the same way it would, and
-			// say so in m_pixelFormat, or everyone reading our pixels afterwards
-			// would be left guessing which space they are in.
-
-			case PixelFormat::BGR_8:
-			case PixelFormat::BGRX_8:
-				if( GfxBase::defaultToSRGB() )
-				{
-					format = PixelFormat::BGRX_8_sRGB;
-					m_dxgiFormat = DXGI_FORMAT_B8G8R8X8_UNORM_SRGB;
-				}
-				else
-				{
-					format = PixelFormat::BGRX_8_linear;
-					m_dxgiFormat = DXGI_FORMAT_B8G8R8X8_UNORM;
-				}
-				break;
-
-			case PixelFormat::BGR_8_sRGB:
-				format = PixelFormat::BGRX_8_sRGB;
-			case PixelFormat::BGRX_8_sRGB:
-				m_dxgiFormat = DXGI_FORMAT_B8G8R8X8_UNORM_SRGB;
-				break;
-
-			case PixelFormat::BGR_8_linear:
-				format = PixelFormat::BGRX_8_linear;
-			case PixelFormat::BGRX_8_linear:
-				m_dxgiFormat = DXGI_FORMAT_B8G8R8X8_UNORM;
-				break;
-
-			case PixelFormat::BGRA_8:
-				if( GfxBase::defaultToSRGB() )
-				{
-					format = PixelFormat::BGRA_8_sRGB;
-					m_dxgiFormat = DXGI_FORMAT_B8G8R8A8_UNORM_SRGB;
-				}
-				else
-				{
-					format = PixelFormat::BGRA_8_linear;
-					m_dxgiFormat = DXGI_FORMAT_B8G8R8A8_UNORM;
-				}
-				break;
-
-			case PixelFormat::BGRA_8_sRGB:
-				m_dxgiFormat = DXGI_FORMAT_B8G8R8A8_UNORM_SRGB;
-				break;
-
-			case PixelFormat::BGRA_8_linear:
-				m_dxgiFormat = DXGI_FORMAT_B8G8R8A8_UNORM;
-				break;
-
-			// Widened to 8 bits per channel, keeping the color space they had. The
-			// big endian 565 formats are defined as linear.
-
+			case PixelFormat::RGB_565:
 			case PixelFormat::BGR_565:
-				if( GfxBase::defaultToSRGB() )
-				{
-					format = PixelFormat::BGRX_8_sRGB;
-					m_dxgiFormat = DXGI_FORMAT_B8G8R8X8_UNORM_SRGB;
-				}
-				else
-				{
-					format = PixelFormat::BGRX_8_linear;
-					m_dxgiFormat = DXGI_FORMAT_B8G8R8X8_UNORM;
-				}
+				format = PixelFormat::XRGB_8;
+				[[fallthrough]];
+
+			case PixelFormat::XRGB_8:
+				m_dxgiFormat = bSRGB ? DXGI_FORMAT_B8G8R8X8_UNORM_SRGB : DXGI_FORMAT_B8G8R8X8_UNORM;
 				break;
 
-			case PixelFormat::BGR_565_sRGB:
-				format = PixelFormat::BGRX_8_sRGB;
-				m_dxgiFormat = DXGI_FORMAT_B8G8R8X8_UNORM_SRGB;
-				break;
-
-			case PixelFormat::BGR_565_linear:
-			case PixelFormat::RGB_565_bigendian:
-			case PixelFormat::RGB_555_bigendian:
-				format = PixelFormat::BGRX_8_linear;
-				m_dxgiFormat = DXGI_FORMAT_B8G8R8X8_UNORM;
+			case PixelFormat::ARGB_8:
+				m_dxgiFormat = bSRGB ? DXGI_FORMAT_B8G8R8A8_UNORM_SRGB : DXGI_FORMAT_B8G8R8A8_UNORM;
 				break;
 
 			case PixelFormat::Alpha_8:
@@ -251,29 +185,17 @@ namespace wg
 			// when the palette is converted, see _updatePaletteBuffer().
 
 			case PixelFormat::Index_8:
-				format = GfxBase::defaultToSRGB() ? PixelFormat::Index_8_sRGB : PixelFormat::Index_8_linear;
-				m_dxgiFormat = DXGI_FORMAT_R8_UINT;
-				break;
-
-			case PixelFormat::Index_8_sRGB:
-			case PixelFormat::Index_8_linear:
 				m_dxgiFormat = DXGI_FORMAT_R8_UINT;
 				break;
 
 			case PixelFormat::Index_16:
-				format = GfxBase::defaultToSRGB() ? PixelFormat::Index_16_sRGB : PixelFormat::Index_16_linear;
-				m_dxgiFormat = DXGI_FORMAT_R16_UINT;
-				break;
-
-			case PixelFormat::Index_16_sRGB:
-			case PixelFormat::Index_16_linear:
 				m_dxgiFormat = DXGI_FORMAT_R16_UINT;
 				break;
 
 			default:
 			{
 				char buffer[256];
-				sprintf_s(buffer, "Pixel format %d is not supported by DX12Backend yet. The surface will have no texture.", (int) format);
+				sprintf_s(buffer, "Pixel format %s is not supported by DX12Backend. The surface will have no texture.", toString(format));
 				GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, buffer, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 
 				m_dxgiFormat = DXGI_FORMAT_UNKNOWN;
@@ -282,12 +204,13 @@ namespace wg
 			}
 		}
 
-		// We may have picked a different format than we were given, so the size and
+		// We may have picked a different layout than we were given, so the size and
 		// description have to follow along. This is filled in even for a format we
 		// can't hold, so that the surface can still hand out pixels.
 
 		m_pixelFormat = format;
-		m_pPixelDescription = &Util::pixelFormatToDescription(format);
+		m_bBigEndian = (WG_IS_BIG_ENDIAN == 1);
+		m_pixelDescription = Util::pixelFormatToDescription(format, m_bBigEndian);
 		m_pixelSize = m_pPixelDescription->bits / 8;
 		m_bAlphaOnly = (m_dxgiFormat == DXGI_FORMAT_A8_UNORM);
 		m_bIndexed = (m_dxgiFormat == DXGI_FORMAT_R8_UINT || m_dxgiFormat == DXGI_FORMAT_R16_UINT);
@@ -346,60 +269,65 @@ namespace wg
 	// samples on texel corners for 1:1 blits, which float precision in tall
 	// textures makes land on the texel above every now and then.
 
-	DX12Surface::DX12Surface(const Blueprint& bp) : Surface(bp, PixelFormat::BGRA_8, SampleMethod::Bilinear)
+	DX12Surface::DX12Surface(const Blueprint& bp) : Surface(bp, PixelFormat::ARGB_8, SampleMethod::Bilinear)
 	{
 		m_bMipmapped = bp.mipmap;
-		_setupTexture( nullptr, 0, PixelFormat::Undefined, nullptr, nullptr, bp.palette, 0 );
+		_setupTexture( nullptr, 0, nullptr, nullptr, bp.palette, 0 );
 	}
 
-	DX12Surface::DX12Surface(const Blueprint& bp, Blob* pBlob, int pitch) : Surface(bp, PixelFormat::BGRA_8, SampleMethod::Bilinear)
+	DX12Surface::DX12Surface(const Blueprint& bp, Blob* pBlob, int pitch) : Surface(bp, PixelFormat::ARGB_8, SampleMethod::Bilinear)
 	{
 		m_bMipmapped = bp.mipmap;
 
-		// The blob holds the format that was asked for, which is not always the one
+		// The blob holds the layout that was asked for, which is not always the one
 		// we end up with, so take note of it before _setupTexture() settles that.
 
-		PixelFormat srcFormat = m_pixelFormat;
+		PixelDescription srcDesc = m_pixelDescription;
 
 		if( pitch == 0 )
-			pitch = bp.size.w * m_pPixelDescription->bits/8;
+			pitch = PixelTools::bytesPerLine(srcDesc, m_size.w);
 
-		_setupTexture( pBlob ? pBlob->data() : nullptr, pitch, srcFormat, nullptr, bp.palette, bp.palette, 0 );
+		_setupTexture( pBlob ? pBlob->data() : nullptr, pitch, &srcDesc, bp.palette, bp.palette, 0 );
 	}
 
 	DX12Surface::DX12Surface(const Blueprint& bp, const uint8_t* pPixels,
-		PixelFormat format, int pitch, const Color8* pPalette, int paletteSize) : Surface(bp, PixelFormat::BGRA_8, SampleMethod::Bilinear)
+		PixelFormat format, int pitch, const Color8* pPalette, int paletteSize) : Surface(bp, PixelFormat::ARGB_8, SampleMethod::Bilinear)
 	{
 		m_bMipmapped = bp.mipmap;
 
-		auto& srcDesc = Util::pixelFormatToDescription(format);
+		// Source pixels are in the byte order and color space of the blueprint.
+
+		if( format == PixelFormat::Undefined )
+			format = m_pixelFormat;
+
+		auto srcDesc = Util::pixelFormatToDescription(format, bp.bigEndian);
 
 		if( pitch == 0 )
-			pitch = bp.size.w * srcDesc.bits/8;
+			pitch = PixelTools::bytesPerLine(srcDesc, m_size.w);
 
-		_fixSrcParam(format, pPalette, paletteSize);
-		_setupTexture( pPixels, pitch, format, nullptr, pPalette, bp.palette, paletteSize );
+		_fixSrcParam(srcDesc, pPalette, paletteSize);
+		_setupTexture( pPixels, pitch, &srcDesc, pPalette, bp.palette, paletteSize );
 	}
 
 
 	DX12Surface::DX12Surface(const Blueprint& bp, const uint8_t* pPixels,
-		const PixelDescription& pixelDescription, int pitch, const Color8* pPalette, int paletteSize) : Surface(bp, PixelFormat::BGRA_8, SampleMethod::Bilinear)
+		const PixelDescription& pixelDescription, int pitch, const Color8* pPalette, int paletteSize) : Surface(bp, PixelFormat::ARGB_8, SampleMethod::Bilinear)
 	{
 		m_bMipmapped = bp.mipmap;
 
 		if( pitch == 0 )
-			pitch = bp.size.w * pixelDescription.bits/8;
+			pitch = PixelTools::bytesPerLine(pixelDescription, m_size.w);
 
 		_fixSrcParam(pixelDescription, pPalette, paletteSize);
-		_setupTexture( pPixels, pitch, PixelFormat::Undefined, &pixelDescription, pPalette, bp.palette, paletteSize );
+		_setupTexture( pPixels, pitch, &pixelDescription, pPalette, bp.palette, paletteSize );
 	}
 
 	//____ _setupTexture() _____________________________________________________
 
-	void DX12Surface::_setupTexture( const void * pPixels, int pitch, PixelFormat srcFormat, const PixelDescription * pSrcPixelDesc,
+	void DX12Surface::_setupTexture( const void * pPixels, int pitch, const PixelDescription * pSrcPixelDesc,
 									 const Color8 * pSrcPalette, const Color8 * pDstPalette, int srcPaletteSize )
 	{
-		bool bFormatSupported = _setPixelDetails(m_pixelFormat);
+		bool bFormatSupported = _setPixelDetails();
 
 		// Surface leaves the palette to us. It has to exist before any pixels are
 		// copied in, since converting to a palette based format fills it in. It
@@ -448,7 +376,7 @@ namespace wg
 			if( !_allocFallbackPixels() )
 				return;
 
-			_copyInPixels( pPixels, pitch, srcFormat, pSrcPixelDesc, pSrcPalette, srcPaletteSize );
+			_copyInPixels( pPixels, pitch, pSrcPixelDesc, pSrcPalette, srcPaletteSize );
 			return;
 		}
 
@@ -494,7 +422,7 @@ namespace wg
 				this, &TYPEINFO, __func__, __FILE__, __LINE__);
 
 			if( _allocFallbackPixels() )
-				_copyInPixels( pPixels, pitch, srcFormat, pSrcPixelDesc, pSrcPalette, srcPaletteSize );
+				_copyInPixels( pPixels, pitch, pSrcPixelDesc, pSrcPalette, srcPaletteSize );
 
 			return;
 		}
@@ -523,7 +451,7 @@ namespace wg
 				this, &TYPEINFO, __func__, __FILE__, __LINE__);
 
 			if( _allocFallbackPixels() )
-				_copyInPixels( pPixels, pitch, srcFormat, pSrcPixelDesc, pSrcPalette, srcPaletteSize );
+				_copyInPixels( pPixels, pitch, pSrcPixelDesc, pSrcPalette, srcPaletteSize );
 
 			return;
 		}
@@ -537,7 +465,7 @@ namespace wg
 				this, &TYPEINFO, __func__, __FILE__, __LINE__);
 
 			if( _allocFallbackPixels() )
-				_copyInPixels( pPixels, pitch, srcFormat, pSrcPixelDesc, pSrcPalette, srcPaletteSize );
+				_copyInPixels( pPixels, pitch, pSrcPixelDesc, pSrcPalette, srcPaletteSize );
 
 			return;
 		}
@@ -560,7 +488,7 @@ namespace wg
 			GfxBase::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to create descriptor heap for surface.",
 				this, &TYPEINFO, __func__, __FILE__, __LINE__);
 
-			_copyInPixels( pPixels, pitch, srcFormat, pSrcPixelDesc, pSrcPalette, srcPaletteSize );
+			_copyInPixels( pPixels, pitch, pSrcPixelDesc, pSrcPalette, srcPaletteSize );
 			return;
 		}
 
@@ -599,7 +527,7 @@ namespace wg
 				GfxBase::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to create render target heap for surface.",
 					this, &TYPEINFO, __func__, __FILE__, __LINE__);
 
-				_copyInPixels( pPixels, pitch, srcFormat, pSrcPixelDesc, pSrcPalette, srcPaletteSize );
+				_copyInPixels( pPixels, pitch, pSrcPixelDesc, pSrcPalette, srcPaletteSize );
 				return;
 			}
 
@@ -623,11 +551,11 @@ namespace wg
 		if( m_bIndexed && (!m_pPalette || !_createPaletteBuffer()) )
 		{
 			m_texture = nullptr;
-			_copyInPixels( pPixels, pitch, srcFormat, pSrcPixelDesc, pSrcPalette, srcPaletteSize );
+			_copyInPixels( pPixels, pitch, pSrcPixelDesc, pSrcPalette, srcPaletteSize );
 			return;
 		}
 
-		_copyInPixels( pPixels, pitch, srcFormat, pSrcPixelDesc, pSrcPalette, srcPaletteSize );
+		_copyInPixels( pPixels, pitch, pSrcPixelDesc, pSrcPalette, srcPaletteSize );
 		_updatePaletteBuffer();
 	}
 
@@ -684,18 +612,28 @@ namespace wg
 		if( !m_pPaletteData || !m_pPalette )
 			return;
 
-		const int16_t* pUnpackTab = (m_pPixelDescription->colorSpace == ColorSpace::Linear) ? HiColor::unpackLinearTab : HiColor::unpackSRGBTab;
+		// Palette entries are in the color space of the surface.
+
+		bool bLinear = (m_colorSpace == ColorSpace::Linear);
 
 		float * p = m_pPaletteData + 4;			// Past the capacity.
 
 		for( int i = 0; i < m_paletteCapacity; i++ )
 		{
-			const Color8& col = m_pPalette[i];
+			HiColor col = m_pPalette[i];		// Same color space, just more bits.
 
-			*p++ = pUnpackTab[col.r] / 4096.f;
-			*p++ = pUnpackTab[col.g] / 4096.f;
-			*p++ = pUnpackTab[col.b] / 4096.f;
-			*p++ = HiColor::unpackLinearTab[col.a] / 4096.f;
+			if( bLinear )
+			{
+				*p++ = col.r / 4096.f;
+				*p++ = col.g / 4096.f;
+				*p++ = col.b / 4096.f;
+				*p++ = col.a / 4096.f;
+			}
+			else
+			{
+				col.toLinearFloat(p);
+				p += 4;
+			}
 		}
 	}
 
@@ -705,33 +643,23 @@ namespace wg
 	// them to our format on the way. Our format is not always the one that was
 	// asked for, see _setPixelDetails().
 
-	void DX12Surface::_copyInPixels( const void * pPixels, int pitch, PixelFormat srcFormat, const PixelDescription * pSrcPixelDesc,
+	void DX12Surface::_copyInPixels( const void * pPixels, int pitch, const PixelDescription * pSrcPixelDesc,
 									 const Color8 * pSrcPalette, int srcPaletteSize )
 	{
 		if( !m_pUploadData )
 			return;
 
-		if( pPixels )
+		if( pPixels && pSrcPixelDesc )
 		{
 			if( srcPaletteSize == 0 )
 				srcPaletteSize = m_paletteSize;
 
 			int dstLineMargin = m_uploadPitch - m_size.w * m_pixelSize;
 
-			if( srcFormat != PixelFormat::Undefined )
-			{
-				auto& srcDesc = Util::pixelFormatToDescription(srcFormat);
-
-				PixelTools::copyPixels(m_size.w, m_size.h, (const uint8_t*) pPixels, srcFormat, pitch - m_size.w * srcDesc.bits/8,
-									   m_pUploadData, m_pixelFormat, dstLineMargin, pSrcPalette,
-									   m_pPalette, srcPaletteSize, m_paletteSize, m_paletteCapacity);
-			}
-			else if( pSrcPixelDesc )
-			{
-				PixelTools::copyPixels(m_size.w, m_size.h, (const uint8_t*) pPixels, * pSrcPixelDesc, pitch - m_size.w * pSrcPixelDesc->bits/8,
-									   m_pUploadData, m_pixelFormat, dstLineMargin, pSrcPalette,
-									   m_pPalette, srcPaletteSize, m_paletteSize, m_paletteCapacity);
-			}
+			PixelTools::copyPixels(m_size.w, m_size.h, (const uint8_t*) pPixels, * pSrcPixelDesc, m_colorSpace, pitch - PixelTools::bytesPerLine(*pSrcPixelDesc, m_size.w),
+								   pSrcPalette, srcPaletteSize,
+								   m_pUploadData, m_pixelFormat, m_colorSpace, m_bBigEndian, dstLineMargin,
+								   m_pPalette, m_paletteSize, m_paletteCapacity);
 		}
 
 		// Everything we have goes to the texture on first use.
@@ -1024,6 +952,8 @@ namespace wg
 		PixelBuffer	buf;
 
 		buf.format = m_pixelFormat;
+		buf.colorSpace = m_colorSpace;
+		buf.bigEndian = m_bBigEndian;
 		buf.palette = m_pPalette;
 		buf.pitch = m_uploadPitch;
 		buf.pixels = m_pUploadData ? m_pUploadData + rect.y * m_uploadPitch + rect.x * m_pixelSize : nullptr;

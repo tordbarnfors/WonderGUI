@@ -137,18 +137,18 @@ namespace wg
 
 		~DX12Surface();
 
-		void			_setupTexture( const void * pPixels, int pitch, PixelFormat srcFormat, const PixelDescription * pSrcPixelDesc,
+		void			_setupTexture( const void * pPixels, int pitch, const PixelDescription * pSrcPixelDesc,
 									   const Color8 * pSrcPalette, const Color8 * pDstPalette, int srcPaletteSize );
 
 		void			_addDirtyRect( const RectI& rect );
 
-		void			_copyInPixels( const void * pPixels, int pitch, PixelFormat srcFormat, const PixelDescription * pSrcPixelDesc,
+		void			_copyInPixels( const void * pPixels, int pitch, const PixelDescription * pSrcPixelDesc,
 									   const Color8 * pSrcPalette, int srcPaletteSize );
 
 		void			_syncBufferAndWait();			// Brings anything rendered into us back to our pixels.
 		bool			_initReadbackBuffer();
 
-		bool			_setPixelDetails( PixelFormat format );		// Settles on a format D3D12 can hold.
+		bool			_setPixelDetails();		// Settles on a layout D3D12 can hold.
 		bool			_allocFallbackPixels();						// Plain memory, for when D3D12 wouldn't play along.
 		bool			_createPaletteBuffer();
 		void			_updatePaletteBuffer();						// Converts m_pPalette into the palette buffer.

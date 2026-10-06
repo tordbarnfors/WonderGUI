@@ -1355,12 +1355,16 @@ namespace wg
 			return -1;
 		}
 
-		// HiColor components are 13 bit fixed point, tint is a plain multiplication.
+		// Colors are sRGB, but we blend in linear. Tint is a plain multiplication, in linear.
 
-		m_pColorPtr->r = (color.r / 4096.f) * (m_tintColor.r / 4096.f);
-		m_pColorPtr->g = (color.g / 4096.f) * (m_tintColor.g / 4096.f);
-		m_pColorPtr->b = (color.b / 4096.f) * (m_tintColor.b / 4096.f);
-		m_pColorPtr->a = (color.a / 4096.f) * (m_tintColor.a / 4096.f);
+		float col[4], tint[4];
+		color.toLinearFloat(col);
+		m_tintColor.toLinearFloat(tint);
+
+		m_pColorPtr->r = col[0] * tint[0];
+		m_pColorPtr->g = col[1] * tint[1];
+		m_pColorPtr->b = col[2] * tint[2];
+		m_pColorPtr->a = col[3] * tint[3];
 
 		return int(m_pColorPtr++ - m_pColorBeg);
 	}
@@ -2353,31 +2357,31 @@ namespace wg
 		m_defaultCanvas.scale = scale;
 
 		// WonderGUI has no name for R8G8B8A8, the usual swap chain format, so it is
-		// reported as its BGRA counterpart. Byte order is the one thing about the
-		// default canvas nobody can ask us, and the color space, which they can, is
-		// then right.
+		// reported as ARGB_8. Channel order is the one thing about the default canvas
+		// nobody can ask us, and the color space, which they can, is then right.
 
 		switch (renderTargetFormat)
 		{
 			case DXGI_FORMAT_R8G8B8A8_UNORM:
 			case DXGI_FORMAT_B8G8R8A8_UNORM:
-				m_defaultCanvas.format = PixelFormat::BGRA_8_linear;
+				m_defaultCanvas.format = PixelFormat::ARGB_8;
+				m_defaultCanvas.colorSpace = ColorSpace::Linear;
 				break;
 
 			case DXGI_FORMAT_R8G8B8A8_UNORM_SRGB:
-				m_defaultCanvas.format = PixelFormat::BGRA_8_sRGB;
-				break;
-
 			case DXGI_FORMAT_B8G8R8A8_UNORM_SRGB:
-				m_defaultCanvas.format = PixelFormat::BGRA_8_sRGB;
+				m_defaultCanvas.format = PixelFormat::ARGB_8;
+				m_defaultCanvas.colorSpace = ColorSpace::sRGB;
 				break;
 
 			case DXGI_FORMAT_B8G8R8X8_UNORM:
-				m_defaultCanvas.format = PixelFormat::BGRX_8_linear;
+				m_defaultCanvas.format = PixelFormat::XRGB_8;
+				m_defaultCanvas.colorSpace = ColorSpace::Linear;
 				break;
 
 			case DXGI_FORMAT_B8G8R8X8_UNORM_SRGB:
-				m_defaultCanvas.format = PixelFormat::BGRX_8_sRGB;
+				m_defaultCanvas.format = PixelFormat::XRGB_8;
+				m_defaultCanvas.colorSpace = ColorSpace::sRGB;
 				break;
 
 			default:
