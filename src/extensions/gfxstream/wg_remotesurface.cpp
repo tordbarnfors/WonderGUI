@@ -108,21 +108,31 @@ namespace wg
 
 		_sendCreateSurface(pEncoder);
 
+		// Source pixels are in the byte order and color space of the blueprint, which are ours.
+
+		if (srcFormat == PixelFormat::Undefined)
+			srcFormat = m_pixelFormat;
+
+		auto srcDesc = Util::pixelFormatToDescription(srcFormat, m_bBigEndian);
+
+		if( pitch == 0 )
+			pitch = PixelTools::bytesPerLine(srcDesc, m_size.w);
+
 		if (srcFormat == m_pixelFormat)
 		{
 			_sendPixels(m_pEncoder, m_size, pPixels, pitch);
 		}
 		else
 		{
-			int srcPitchAdd = pitch == 0 ? 0 : pitch - Util::pixelFormatToDescription(srcFormat).bits / 8 * m_size.w;
+			int srcPitchAdd = pitch - PixelTools::bytesPerLine(srcDesc, m_size.w);
 
-			int dstPitch = m_size.w * m_pPixelDescription->bits / 8;
+			int dstPitch = PixelTools::bytesPerLine(*m_pPixelDescription, m_size.w);
 
 			auto pBlob = Blob::create(dstPitch * m_size.h);
 
-			PixelTools::copyPixels(m_size.w, m_size.h, pPixels, srcFormat, srcPitchAdd,
-				(uint8_t*)pBlob->data(), m_pixelFormat, 0, pPalette,
-				m_pPalette, paletteSize, m_paletteSize, m_paletteCapacity);
+			PixelTools::copyPixels(m_size.w, m_size.h, pPixels, srcDesc, m_colorSpace, srcPitchAdd, pPalette, paletteSize,
+				(uint8_t*)pBlob->data(), m_pixelFormat, m_colorSpace, m_bBigEndian, 0,
+				m_pPalette, m_paletteSize, m_paletteCapacity);
 
 			_sendPixels(m_pEncoder, m_size, (uint8_t*)pBlob->data(), dstPitch);
 		}
@@ -144,14 +154,14 @@ namespace wg
 		// We always convert the data for streaming.
 		// (but we could optimize and skip conversion if format already is correct)
 
-		int srcPitchAdd = pitch == 0 ? 0 : pitch - pixelDescription.bits / 8 * m_size.w;
-		int dstPitch = m_size.w * m_pPixelDescription->bits / 8;
+		int srcPitchAdd = pitch == 0 ? 0 : pitch - PixelTools::bytesPerLine(pixelDescription, m_size.w);
+		int dstPitch = PixelTools::bytesPerLine(*m_pPixelDescription, m_size.w);
 
 		auto pBlob = Blob::create(dstPitch*m_size.h);
 
-		PixelTools::copyPixels(m_size.w, m_size.h, pPixels, pixelDescription, srcPitchAdd,
-							 (uint8_t*) pBlob->data(), m_pixelFormat, 0, pPalette,
-							 m_pPalette, paletteSize, m_paletteSize, m_paletteCapacity);
+		PixelTools::copyPixels(m_size.w, m_size.h, pPixels, pixelDescription, m_colorSpace, srcPitchAdd, pPalette, paletteSize,
+							 (uint8_t*) pBlob->data(), m_pixelFormat, m_colorSpace, m_bBigEndian, 0,
+							 m_pPalette, m_paletteSize, m_paletteCapacity);
 		
 		_sendPixels(m_pEncoder, m_size, (uint8_t*) pBlob->data(), dstPitch);
 		m_pEncoder->flush();
@@ -184,6 +194,8 @@ namespace wg
 		buf.pixels = new uint8_t[buf.pitch*rect.h];
 		buf.palette = m_pPalette;
 		buf.format = m_pixelFormat;
+		buf.colorSpace = m_colorSpace;
+		buf.bigEndian = m_bBigEndian;
 		buf.rect = rect;
 
 		return buf;
@@ -252,13 +264,20 @@ namespace wg
 
 	void RemoteSurface::_sendCreateSurface(StreamEncoder* pEncoder)
 	{
-		uint16_t blockSize = 38 + m_paletteSize*4;
+		int paletteSize = std::min(m_paletteSize, GfxStream::c_maxPaletteEntriesInCreateSurface);
+
+		if( paletteSize < m_paletteSize )
+			GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Palette too large for the stream, only the first entries are streamed.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+
+		uint16_t blockSize = 40 + paletteSize*4;
 
 		*pEncoder << GfxStream::Header{ GfxStream::ChunkId::CreateSurface, 0, blockSize };
 		*pEncoder << m_inStreamId;
 		*pEncoder << m_bCanvas;
 		*pEncoder << m_bDynamic;
 		*pEncoder << m_pixelFormat;
+		*pEncoder << m_colorSpace;
+		*pEncoder << (uint8_t) m_bBigEndian;
 		*pEncoder << m_id;
 		*pEncoder << m_bMipmapped;
 		*pEncoder << m_sampleMethod;
@@ -266,10 +285,10 @@ namespace wg
 		*pEncoder << m_size;
 		*pEncoder << m_bTiling;
 		*pEncoder << m_paletteCapacity;
-		*pEncoder << m_paletteSize;
+		*pEncoder << paletteSize;
 
-		if (m_pPalette)
-			* pEncoder << GfxStream::WriteBytes{ m_paletteSize*4, m_pPalette };
+		if (m_pPalette && paletteSize > 0)
+			* pEncoder << GfxStream::WriteBytes{ paletteSize*4, m_pPalette };
 	}
 
 	//____ _sendPixels() _________________________________________________________
@@ -296,8 +315,14 @@ namespace wg
 			pDest += lineLength;
 		}
 
-		*pEncoder << GfxStream::Header{ GfxStream::ChunkId::SurfaceUpdate, 0, 18 };
+		*pEncoder << GfxStream::Header{ GfxStream::ChunkId::SurfaceUpdate2, 0, 10 + 16 };
+		*pEncoder << CanvasRef::None;
+		*pEncoder << uint8_t(0);
 		*pEncoder << m_inStreamId;
+		*pEncoder << (uint16_t) 1;
+		*pEncoder << m_pixelFormat;				// Layout of the pixels that follow.
+		*pEncoder << m_colorSpace;
+		*pEncoder << (uint8_t) m_bBigEndian;
 		*pEncoder << rect;
 
 		StreamBackend::_compressSplitAndEncode(pEncoder, GfxStream::ChunkId::SurfacePixels, m_inStreamId, nullptr, pBuffer, pBuffer + dataSize);

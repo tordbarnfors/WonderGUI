@@ -101,6 +101,7 @@ namespace wg
 		inline StreamDecoder& operator>> (TintMode&);
 		inline StreamDecoder& operator>> (Axis&);
 		inline StreamDecoder& operator>> (PixelFormat&);
+		inline StreamDecoder& operator>> (ColorSpace&);
 		inline StreamDecoder& operator>> (SampleMethod&);
 		inline StreamDecoder& operator>> (GfxFlip&);
 		inline StreamDecoder& operator>> (XSections&);
@@ -323,6 +324,12 @@ namespace wg
 	StreamDecoder& StreamDecoder::operator>> (PixelFormat& t)
 	{
 		t = (PixelFormat)_pullShort();
+		return *this;
+	}
+
+	StreamDecoder& StreamDecoder::operator>> (ColorSpace& cs)
+	{
+		cs = (ColorSpace)_pullChar();
 		return *this;
 	}
 

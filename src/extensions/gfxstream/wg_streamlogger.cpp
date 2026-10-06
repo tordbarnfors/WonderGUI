@@ -137,13 +137,18 @@ namespace wg
 					SizeSPX		size;
 					uint16_t	scale;
 					PixelFormat	format;
+					ColorSpace	colorSpace;
+					uint8_t		bigEndian;
 
 					decoder >> ref;
 					decoder >> size;
 					decoder >> scale;
 					decoder >> format;
+					decoder >> colorSpace;
+					decoder >> bigEndian;
 
-					m_charStream << "    " << toString((CanvasRef) ref) << ": size = (" << size.w << "," << size.h << "), scale = " << scale << ", format = " << toString(format) << std::endl;
+					m_charStream << "    " << toString((CanvasRef) ref) << ": size = (" << size.w << "," << size.h << "), scale = " << scale << ", format = " << toString(format)
+								 << ", colorSpace = " << toString(colorSpace) << ", bigEndian = " << (bigEndian != 0) << std::endl;
 				}
 				break;
 			}
@@ -307,10 +312,14 @@ namespace wg
 				uint16_t	surfaceId;
 				Surface::Blueprint	bp;
 
+				uint8_t		bigEndian;
+
 				decoder >> surfaceId;
 				decoder >> bp.canvas;
 				decoder >> bp.dynamic;
 				decoder >> bp.format;
+				decoder >> bp.colorSpace;
+				decoder >> bigEndian;
 				decoder >> bp.identity;
 				decoder >> bp.mipmap;
 				decoder >> bp.sampleMethod;
@@ -327,6 +336,8 @@ namespace wg
 				m_charStream << "    canvas      = " << bp.canvas << std::endl;
 				m_charStream << "    dynamic     = " << bp.dynamic << std::endl;
 				m_charStream << "    format      = " << toString(bp.format) << std::endl;
+				m_charStream << "    colorSpace  = " << toString(bp.colorSpace) << std::endl;
+				m_charStream << "    bigEndian   = " << (bigEndian != 0) << std::endl;
 				m_charStream << "    identity    = " << bp.identity << std::endl;
 				m_charStream << "    mipmap      = " << bp.mipmap << std::endl;
 				m_charStream << "    sampling    = " << toString(bp.sampleMethod) << std::endl;
@@ -357,15 +368,22 @@ namespace wg
 				uint8_t		dummy;
 				uint16_t	surfaceId;
 				uint16_t	nRects;
+				PixelFormat	format;
+				ColorSpace	colorSpace;
+				uint8_t		bigEndian;
 
 				decoder >> canvasRef;
 				decoder >> dummy;
 				decoder >> surfaceId;
 				decoder >> nRects;
+				decoder >> format;
+				decoder >> colorSpace;
+				decoder >> bigEndian;
 
 				m_charStream << "    canvasRef = " << toString(canvasRef) << std::endl;
 				m_charStream << "    surfaceId = " << surfaceId << std::endl;
 				m_charStream << "    nbRects   = " << nRects << std::endl;
+				m_charStream << "    format    = " << toString(format) << ", " << toString(colorSpace) << (bigEndian ? ", big endian" : "") << std::endl;
 
 				_readPrintRects("    rects", nRects);
 				break;
@@ -510,7 +528,7 @@ namespace wg
 				auto printTint = [&](Tint* p, const char* indent)
 				{
 					m_charStream << indent << "shape = " << toString(p->shape()) << ", spread = " << toString(p->spread())
-						<< ", colorSpace = " << toString(p->colorSpace()) << ", radiusMode = " << toString(p->radiusMode()) << std::endl;
+						<< ", radiusMode = " << toString(p->radiusMode()) << std::endl;
 					m_charStream << indent << "begin = " << p->begin().x << ", " << p->begin().y << "  end = " << p->end().x << ", " << p->end().y
 						<< "  center = " << p->center().x << ", " << p->center().y << "  radius = " << p->radius().w << ", " << p->radius().h << std::endl;
 

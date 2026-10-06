@@ -167,6 +167,13 @@ namespace wg
 			Surface_p			pSurface;
 			std::vector<RectI>	rects;
 			DataBuffer			buffer;
+
+			// Layout of the streamed pixels, which might differ from the surface they go into.
+			// Undefined format means same as the surface (old style SurfaceUpdate).
+
+			PixelFormat			format = PixelFormat::Undefined;
+			ColorSpace			colorSpace = ColorSpace::Undefined;
+			bool				bigEndian = false;
 		};
 
 		struct EdgemapDataBuffer
@@ -216,7 +223,7 @@ namespace wg
 		int		m_streamMajorVersion = 0;
 		int		m_streamMinorVersion = 0;
 
-		static const int	c_minProtocolVersion = 0x0301;				// 3.1: Tints replaced Tintmaps. Older streams are refused.
+		static const int	c_minProtocolVersion = 0x0302;				// 3.2: Color space and byte order separate from PixelFormat. Older streams are refused.
 
 		bool				m_bStoreDirtyRects = false;
 		int					m_maxDirtyRects = 64;

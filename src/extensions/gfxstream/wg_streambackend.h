@@ -92,7 +92,8 @@ namespace wg
 		//.____ Misc ________________________________________________________________
 
 		bool	defineCanvas( CanvasRef ref, RemoteSurface * pSurface );
-		bool	defineCanvas( CanvasRef ref, const SizeI& pixelSize, PixelFormat pixelFormat, int scale = 64 );
+		bool	defineCanvas( CanvasRef ref, const SizeI& pixelSize, PixelFormat pixelFormat, int scale = 64,
+							  ColorSpace colorSpace = ColorSpace::sRGB, bool bBigEndian = (WG_IS_BIG_ENDIAN == 1) );
 
 		void	encodeCanvasList();
 		void	encodeTick(int32_t microsecPassed);		// Microsec since last tick (or beginning of stream if first tick)

@@ -50,9 +50,13 @@ int wg_defineStreamBackendCanvasWithSurface( wg_obj streamBackend, wg_canvasRef 
 	return getPtr(streamBackend)->defineCanvas( (CanvasRef) ref, static_cast<RemoteSurface*>(reinterpret_cast<Object*>(surface)) );
 }
 
-int wg_defineStreamBackendCanvas( wg_obj streamBackend, wg_canvasRef ref, wg_sizeI pixelSize, wg_pixelFormat pixelFormat, int scale )
+int wg_defineStreamBackendCanvas( wg_obj streamBackend, wg_canvasRef ref, wg_sizeI pixelSize, wg_pixelFormat pixelFormat, int scale,
+								  wg_colorSpace colorSpace, wg_byteOrder byteOrder )
 {
-	return getPtr(streamBackend)->defineCanvas( (CanvasRef) ref, {pixelSize.w, pixelSize.h}, (PixelFormat) pixelFormat, scale );
+	bool bBigEndian = byteOrder == WG_BYTEORDER_NATIVE ? (WG_IS_BIG_ENDIAN == 1) : (byteOrder == WG_BYTEORDER_BIG_ENDIAN);
+
+	return getPtr(streamBackend)->defineCanvas( (CanvasRef) ref, {pixelSize.w, pixelSize.h}, (PixelFormat) pixelFormat, scale,
+												(ColorSpace) colorSpace, bBigEndian );
 }
 
 void wg_encodeCanvasList(wg_obj streamBackend)

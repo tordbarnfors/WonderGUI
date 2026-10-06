@@ -169,15 +169,20 @@ namespace wg
 	{
 		StreamEncoder& encoder = * m_pEncoder;
 
-		int paletteSize = m_pSurface->paletteSize();
+		int paletteSize = std::min(m_pSurface->paletteSize(), GfxStream::c_maxPaletteEntriesInCreateSurface);
 
-		uint16_t blockSize = 38 + paletteSize * sizeof(Color8);
+		if( paletteSize < m_pSurface->paletteSize() )
+			GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Palette too large for the stream, only the first entries are streamed.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+
+		uint16_t blockSize = 40 + paletteSize * sizeof(Color8);
 
 		encoder << GfxStream::Header{ GfxStream::ChunkId::CreateSurface, 0, blockSize };
 		encoder << m_surfaceId;
 		encoder << false;						// CanBeCanvas-flag. We never want the remote end to use a MirrorSurface as canvas.
 		encoder << m_pSurface->isDynamic();
 		encoder << m_pSurface->pixelFormat();
+		encoder << m_pSurface->colorSpace();
+		encoder << (uint8_t) m_pSurface->isBigEndian();
 		encoder << m_pSurface->identity();
 		encoder << m_pSurface->isMipmapped();
 		encoder << m_pSurface->sampleMethod();
@@ -185,7 +190,7 @@ namespace wg
 		encoder << m_pSurface->pixelSize();
 		encoder << m_pSurface->isTiling();
 		encoder << m_pSurface->paletteCapacity();
-		encoder << m_pSurface->paletteSize();
+		encoder << paletteSize;
 
 		if (paletteSize > 0 )
 			encoder << GfxStream::WriteBytes{ paletteSize * int(sizeof(Color8)), m_pSurface->palette() };
@@ -204,7 +209,7 @@ namespace wg
 
 		// We can't have more dirty rects than will fit in the block.
 
-		int maxRects = (GfxStream::c_maxBlockSize - GfxStream::HeaderSize - 6) / 16;
+		int maxRects = (GfxStream::c_maxBlockSize - GfxStream::HeaderSize - 10) / 16;
 		if( nRects > maxRects )
 		{
 			nRects = 1;
@@ -215,7 +220,7 @@ namespace wg
 
 		auto pixelBuffer = m_pSurface->allocPixelBuffer(bounds);
 
-		auto pixelDescription = Util::pixelFormatToDescription(pixelBuffer.format);
+		auto pixelDescription = Util::pixelFormatToDescription(pixelBuffer.format, pixelBuffer.bigEndian);
 
 		int allocSize = 0;
 		for( int i = 0 ; i < nRects ; i++ )
@@ -246,11 +251,14 @@ namespace wg
 
 		StreamEncoder& encoder = *m_pEncoder;
 
-		encoder << GfxStream::Header{ GfxStream::ChunkId::SurfaceUpdate2, 0, 6 + nRects * 16 };
+		encoder << GfxStream::Header{ GfxStream::ChunkId::SurfaceUpdate2, 0, 10 + nRects * 16 };
 		encoder << m_canvasRef;
 		encoder << uint8_t(0);
 		encoder << m_surfaceId;
 		encoder << (uint16_t)nRects;
+		encoder << pixelBuffer.format;				// Layout of the pixels that follow.
+		encoder << pixelBuffer.colorSpace;
+		encoder << (uint8_t) pixelBuffer.bigEndian;
 
 		for (int i = 0; i < nRects; i++)
 			encoder << pRects[i];

@@ -38,6 +38,7 @@ namespace wg
 	{
 	public:
 		static constexpr int	c_maxBlockSize = 1024+256;		// Includes the block headers!	Must be at least 4096+14+block_header_size due to palette possibly included in CreateSurface-chunks.
+		static constexpr int	c_maxPaletteEntriesInCreateSurface = 256;	// More doesn't fit in a block. Larger palettes (Index_16) are not streamed in full yet.
 
 		static constexpr int	c_maxClipRects = 256;		// Largest number of patches allowed for a drawing primitive.
 

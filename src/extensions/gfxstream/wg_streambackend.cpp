@@ -59,7 +59,7 @@ namespace wg
 		m_maxEdges = maxEdges;
 
 		(*m_pEncoder) << GfxStream::Header{ GfxStream::ChunkId::ProtocolVersion, 0, 2 };
-		(*m_pEncoder) << (uint16_t) 0x0301;		// 3.1: Tints replace Tintmaps and edgemap colorstrips.
+		(*m_pEncoder) << (uint16_t) 0x0302;		// 3.2: Color space and byte order separate from PixelFormat.
 	}
 
 	StreamBackend::StreamBackend(const Blueprint& bp)
@@ -74,7 +74,7 @@ namespace wg
 		m_pColorCompressor		= bp.colorCompressor;
 
 		(*m_pEncoder) << GfxStream::Header{ GfxStream::ChunkId::ProtocolVersion, 0, 2 };
-		(*m_pEncoder) << (uint16_t) 0x0301;		// 3.1: Tints replace Tintmaps and edgemap colorstrips.
+		(*m_pEncoder) << (uint16_t) 0x0302;		// 3.2: Color space and byte order separate from PixelFormat.
 	}
 
 
@@ -234,7 +234,8 @@ namespace wg
 		if (it == m_definedCanvases.end())
 		{
 			if (pSurface)
-				m_definedCanvases.push_back(CanvasInfo(ref, pSurface, pSurface->pixelSize() * 64, pSurface->pixelFormat(), pSurface->scale()));
+				m_definedCanvases.push_back(CanvasInfo(ref, pSurface, pSurface->pixelSize() * 64, pSurface->pixelFormat(), pSurface->scale(),
+													   pSurface->colorSpace(), pSurface->isBigEndian()));
 		}
 		else
 		{
@@ -243,6 +244,9 @@ namespace wg
 				it->pSurface = pSurface;
 				it->size = pSurface->pixelSize() * 64;
 				it->scale = pSurface->scale();
+				it->format = pSurface->pixelFormat();
+				it->colorSpace = pSurface->colorSpace();
+				it->bigEndian = pSurface->isBigEndian();
 			}
 			else
 			{
@@ -253,14 +257,15 @@ namespace wg
 		return true;
 	}
 
-	bool StreamBackend::defineCanvas( CanvasRef ref, const SizeI& pixelSize, PixelFormat pixelFormat, int scale )
+	bool StreamBackend::defineCanvas( CanvasRef ref, const SizeI& pixelSize, PixelFormat pixelFormat, int scale, ColorSpace colorSpace, bool bBigEndian )
 	{
 		auto it = std::find_if( m_definedCanvases.begin(), m_definedCanvases.end(), [ref] (CanvasInfo& entry) { return (ref == entry.ref); } );
 
 		if( it == m_definedCanvases.end() )
 		{
 			if( !pixelSize.isEmpty() )
-				m_definedCanvases.push_back( CanvasInfo( ref, nullptr, pixelSize * 64, pixelFormat, scale ) );
+				m_definedCanvases.push_back( CanvasInfo( ref, nullptr, pixelSize * 64, pixelFormat, scale,
+														 colorSpace == ColorSpace::Undefined ? ColorSpace::sRGB : colorSpace, bBigEndian ) );
 		}
 		else
 		{
@@ -269,6 +274,9 @@ namespace wg
 				it->pSurface = nullptr;
 				it->size = pixelSize * 64;
 				it->scale = scale;
+				it->format = pixelFormat;
+				it->colorSpace = colorSpace == ColorSpace::Undefined ? ColorSpace::sRGB : colorSpace;
+				it->bigEndian = bBigEndian;
 			}
 			else
 			{
@@ -295,7 +303,7 @@ namespace wg
 
 	void StreamBackend::encodeCanvasList()
 	{
-		(*m_pEncoder) << GfxStream::Header{ GfxStream::ChunkId::CanvasList, 0, (uint16_t)(m_definedCanvases.size()*14)+2 };
+		(*m_pEncoder) << GfxStream::Header{ GfxStream::ChunkId::CanvasList, 0, (uint16_t)(m_definedCanvases.size()*16)+2 };
 
 		(*m_pEncoder) << (uint16_t) m_definedCanvases.size();
 
@@ -305,6 +313,8 @@ namespace wg
 			(*m_pEncoder) << canvas.size;
 			(*m_pEncoder) << (uint16_t) canvas.scale;
 			(*m_pEncoder) << canvas.format;
+			(*m_pEncoder) << canvas.colorSpace;
+			(*m_pEncoder) << (uint8_t) canvas.bigEndian;
 		}
 	}
 

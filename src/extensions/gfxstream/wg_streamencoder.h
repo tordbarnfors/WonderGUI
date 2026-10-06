@@ -50,7 +50,7 @@ namespace wg
 			int				bufferBytes		= GfxStream::c_maxBlockSize * 2;
 			Finalizer_p		finalizer;
 			uint16_t		objectIdStart	= 0;
-			PixelFormat		pixelFormat		= PixelFormat::BGRA_8;
+			PixelFormat		pixelFormat		= PixelFormat::ARGB_8;
 			SampleMethod	sampleMethod	= SampleMethod::Nearest;
 			StreamSink_p	sink;
 		};
@@ -104,6 +104,7 @@ namespace wg
 
 		inline StreamEncoder& operator<< (HiColor);
 		inline StreamEncoder& operator<< (PixelFormat);
+		inline StreamEncoder& operator<< (ColorSpace);
 		inline StreamEncoder& operator<< (SampleMethod);
 		inline StreamEncoder& operator<< (CanvasRef);
 
@@ -140,7 +141,7 @@ namespace wg
 		
 		short		m_idCounter = 1;
 
-		PixelFormat	m_defaultPixelFormat = PixelFormat::BGRA_8;
+		PixelFormat	m_defaultPixelFormat = PixelFormat::ARGB_8;
 		SampleMethod m_defaultSampleMethod = SampleMethod::Nearest;
 
 		uint16_t*	m_pFreeIdStack = nullptr;
@@ -325,6 +326,12 @@ namespace wg
 	StreamEncoder& StreamEncoder::operator<< (PixelFormat t)
 	{
 		_pushShort((short)t);
+		return *this;
+	}
+
+	StreamEncoder& StreamEncoder::operator<< (ColorSpace cs)
+	{
+		_pushChar((char)cs);
 		return *this;
 	}
 

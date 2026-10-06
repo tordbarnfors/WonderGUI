@@ -45,7 +45,8 @@ extern "C" {
 
 	WG_EXPORT wg_obj	wg_createStreamBackend(wg_obj streamEncoder, int maxEdges );
 	WG_EXPORT int		wg_defineStreamBackendCanvasWithSurface( wg_obj streamBackend, wg_canvasRef ref, wg_obj surface );
-	WG_EXPORT int		wg_defineStreamBackendCanvas( wg_obj streamBackend, wg_canvasRef ref, wg_sizeI pixelSize, wg_pixelFormat pixelFormat, int scale );
+	WG_EXPORT int		wg_defineStreamBackendCanvas( wg_obj streamBackend, wg_canvasRef ref, wg_sizeI pixelSize, wg_pixelFormat pixelFormat, int scale,
+													  wg_colorSpace colorSpace, wg_byteOrder byteOrder );
 
     WG_EXPORT void      wg_encodeCanvasList(wg_obj streamBackend);
     WG_EXPORT void      wg_encodeTick(wg_obj streamBackend, int32_t microsecPassed);        // Microsec since last tick (or beginning of stream if first

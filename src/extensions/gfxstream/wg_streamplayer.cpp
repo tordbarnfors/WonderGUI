@@ -22,6 +22,8 @@
 #include <wg_streamplayer.h>
 #include <wg_tinttools.h>
 #include <wg_gfxbase.h>
+#include <wg_gfxutil.h>
+#include <wg_pixeltools.h>
 #include <assert.h>
 
 namespace wg
@@ -236,16 +238,22 @@ namespace wg
 				SizeSPX		size;
 				uint16_t	scale;
 				PixelFormat	format;
+				ColorSpace	colorSpace;
+				uint8_t		bigEndian;
 
 				decoder >> ref;
 				decoder >> size;
 				decoder >> scale;
 				decoder >> format;
+				decoder >> colorSpace;
+				decoder >> bigEndian;
 
 				canvas[i].ref = (CanvasRef) ref;
 				canvas[i].size = size;
 				canvas[i].scale = scale;
 				canvas[i].format = format;
+				canvas[i].colorSpace = colorSpace;
+				canvas[i].bigEndian = (bigEndian != 0);
 			}
 
 			if( m_canvasInfoCallback )
@@ -555,10 +563,14 @@ namespace wg
 			uint16_t	objectId;
 			Surface::Blueprint	bp;
 
+			uint8_t		bigEndian;
+
 			decoder >> objectId;
 			decoder >> bp.canvas;
 			decoder >> bp.dynamic;
 			decoder >> bp.format;
+			decoder >> bp.colorSpace;
+			decoder >> bigEndian;
 			decoder >> bp.identity;
 			decoder >> bp.mipmap;
 			decoder >> bp.sampleMethod;
@@ -568,6 +580,7 @@ namespace wg
 			decoder >> bp.paletteCapacity;
 			decoder >> bp.paletteSize;
 
+			bp.bigEndian = (bigEndian != 0);
 			bp.buffered = false;
 			bp.palette = nullptr;
 			
@@ -627,11 +640,17 @@ namespace wg
 			uint8_t		dummy;
 			uint16_t	surfaceId;
 			uint16_t	nRects;
+			PixelFormat	format;
+			ColorSpace	colorSpace;
+			uint8_t		bigEndian;
 
 			decoder >> canvasRef;
 			decoder >> dummy;
 			decoder >> surfaceId;
 			decoder >> nRects;
+			decoder >> format;
+			decoder >> colorSpace;
+			decoder >> bigEndian;
 
 
 			Surface_p pSurf;
@@ -647,6 +666,10 @@ namespace wg
 			}
 	
 			auto& buffer = m_surfaceDataBuffers.emplace_back(pSurf);
+
+			buffer.format = format;
+			buffer.colorSpace = colorSpace;
+			buffer.bigEndian = (bigEndian != 0);
 
 			buffer.rects.resize(nRects);
 			for( int i = 0 ; i < nRects ; i++ )
@@ -712,25 +735,47 @@ namespace wg
 				auto pixelBuffer = pSurface->allocPixelBuffer(bounds);
 				int pixelBits = pSurface->pixelBits();
 
+				// The surface might hold its pixels in another layout than the one streamed,
+				// like when a backend doesn't support the format. Then we convert.
+
+				bool bSameLayout = it->format == PixelFormat::Undefined ||
+								   (it->format == pixelBuffer.format && it->colorSpace == pixelBuffer.colorSpace &&
+									(it->bigEndian == pixelBuffer.bigEndian || pixelBits <= 8));
+
+				auto srcDesc = Util::pixelFormatToDescription(bSameLayout ? pixelBuffer.format : it->format, bSameLayout ? pixelBuffer.bigEndian : it->bigEndian);
+
 				// Go through rects and copy pixels
 
 				uint8_t * pSource = it->buffer.pBuffer;
 				for( RectI& rect : it->rects )
 				{
 					uint8_t * pDest = pixelBuffer.pixels + (rect.y - pixelBuffer.rect.y) * pixelBuffer.pitch + (rect.x - pixelBuffer.rect.x) * pixelBits/8;
-					int span = rect.w * pixelBits/8;
+					int srcSpan = PixelTools::bytesPerLine(srcDesc, rect.w);
 
-					for( int i = 0 ; i < rect.h ; i++ )
+					if( bSameLayout )
 					{
-						memcpy(pDest, pSource, span );
-						pSource += span;
-						pDest += pixelBuffer.pitch;
+						for( int i = 0 ; i < rect.h ; i++ )
+						{
+							memcpy(pDest, pSource, srcSpan );
+							pSource += srcSpan;
+							pDest += pixelBuffer.pitch;
+						}
+					}
+					else
+					{
+						int dstPaletteSize = pSurface->paletteSize();
+
+						PixelTools::copyPixels(rect.w, rect.h, pSource, srcDesc, it->colorSpace, 0, pixelBuffer.palette, pSurface->paletteSize(),
+											   pDest, pixelBuffer.format, pixelBuffer.colorSpace, pixelBuffer.bigEndian,
+											   pixelBuffer.pitch - PixelTools::bytesPerLine(*pSurface->pixelDescription(), rect.w),
+											   const_cast<Color8*>(pixelBuffer.palette), dstPaletteSize, pSurface->paletteCapacity());
+						pSource += srcSpan * rect.h;
 					}
 				}
 
-				// Clean up
+				// Copy pixels into surface and clean up
 
-				pSurface->pushPixels(pixelBuffer);
+				pSurface->pullPixels(pixelBuffer);
 				pSurface->freePixelBuffer(pixelBuffer);
 
 				m_surfaceDataBuffers.erase(it);
