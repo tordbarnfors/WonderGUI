@@ -295,7 +295,7 @@ private:
 	std::function<void(WgScrollChart * pWidget, WgSize newSize)>	m_resizeResponder;
 	std::function<void(WgScrollChart * pWidget, float topValue, float bottomValue)> m_valueRangeResponder;
     
-    WgPixelType m_pixelType = WgPixelType::BGRX_8;
+    WgPixelType m_pixelType = WgPixelType::XRGB_8;
 	bool		m_bForegroundGrid = false;
 };
 

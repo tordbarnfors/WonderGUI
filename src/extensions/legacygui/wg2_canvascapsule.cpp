@@ -393,7 +393,7 @@ void WgCanvasCapsule::_renderPatches( wg::GfxDevice * pDevice, const WgRect& _ca
 		
 		m_pCanvas = pFactory->createSurface( WGBP(Surface,
 												  _.size = canvasSize,
-												  _.format = WgPixelType::BGRA_8,
+												  _.format = WgPixelType::ARGB_8,
 												  _.canvas = true) );
 		m_dirtyPatches.clear();
 		m_dirtyPatches.add(canvasSize);

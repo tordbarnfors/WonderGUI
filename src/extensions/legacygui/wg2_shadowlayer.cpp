@@ -604,7 +604,7 @@ void WgShadowLayer::_renderPatches(wg::GfxDevice * pDevice, const WgRect& _canva
 			{
 				m_pShadowSurface = pSurfaceFactory->createSurface( WGBP(Surface,
 																		_.size = _canvas.size(),
-																		_.format = WgPixelType::BGRA_8,
+																		_.format = WgPixelType::ARGB_8,
 																		_.canvas = true ));
 				m_pShadowSurface->fill(WgColor::Transparent);
 			}

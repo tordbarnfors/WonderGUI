@@ -782,7 +782,7 @@ void WgChart2::_renderPatches( wg::GfxDevice * pDevice, const WgRect& _canvas, c
 		{
 			m_pCacheBitmap = m_pSurfaceFactory->createSurface( WGBP(Surface,
 																_.size = _canvas.size(), 
-																_.format = wg::PixelFormat::BGRA_8) );
+																_.format = wg::PixelFormat::ARGB_8) );
 			m_cacheDirt.add( _canvas.size()*64 );
 		}
 

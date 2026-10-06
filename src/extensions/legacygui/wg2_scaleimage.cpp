@@ -173,7 +173,7 @@ void WgScaleImage::_regenerateSurface()
 	{
 		m_pGenSurface = m_pSurfaceFactory->createSurface( WGBP(Surface,
 															_.size = m_imgRect.size(), 
-												 			_.format = WgPixelType::BGRA_8 ));
+												 			_.format = WgPixelType::ARGB_8 ));
 
 		// Insert code here to stretch-copy content from m_pOrgSurface to m_pGenSurface
 		resample(m_pOrgSurface, m_pGenSurface);
