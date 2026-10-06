@@ -100,9 +100,14 @@ namespace wg
 
 		~MetalSurface();
 
-		void		    _setPixelDetails( PixelFormat format );
-		void 			_setupMetalTexture(const void * pPixels, int pitch, PixelFormat srcFormat, const PixelDescription * pSrcPixelDesc,
-										   const Color * pSrcPalette, const Color * pDstPalette, int srcPaletteSize );
+		static bool		_isFormatSupported( PixelFormat format );
+		void		    _setPixelDetails();
+		void 			_setupMetalTexture(const void * pPixels, int pitch, const PixelDescription * pSrcPixelDesc,
+										   const Color8 * pSrcPalette, int srcPaletteSize, const Color8 * pDstPalette );
+
+		int				_paletteTextureWidth() const;
+		int				_paletteTextureHeight() const;
+		void			_syncPalette();
 
         void            _createAndSyncTextures( bool bHasTextureData );
         

@@ -766,15 +766,21 @@ fragment float4 alphaBlitTintmapFragmentShader_A8(BlitTintmapFragInput in [[stag
 
 //____ paletteLookup() ________________________________________________________
 //
-// Palette entry for an index read from an R8Unorm index texture. The palette
-// texture is only paletteCapacity() texels wide, so the normalized index can't
-// be used as a texture coordinate (it would only be right for 256 entries).
-// Indexes beyond the palette get its last entry, like DX12 does.
+// Palette entry for an index read from an index texture. Index_8 has an R8Unorm
+// texture, Index_16 an RG8Unorm one with the low byte in red and the high byte in
+// green (an R16Unorm index would lose precision as half). Green reads as zero
+// from R8Unorm, so both work the same.
+//
+// The palette texture is up to 256 texels wide with as many rows as needed for
+// paletteCapacity() entries, see MetalSurface::_createAndSyncTextures(). Indexes
+// beyond the palette texture get its last entry, like DX12 does.
 
-inline half4 paletteLookup(texture2d<half> paletteTexture, float normIndex)
+inline half4 paletteLookup(texture2d<half> paletteTexture, float2 normIndex)
 {
-    uint index = uint(normIndex * 255.0f + 0.5f);
-    return paletteTexture.read(uint2(min(index, paletteTexture.get_width() - 1), 0));
+    uint index = uint(normIndex.r * 255.0f + 0.5f) + uint(normIndex.g * 255.0f + 0.5f) * 256;
+    uint width = paletteTexture.get_width();
+    index = min(index, width * paletteTexture.get_height() - 1);
+    return paletteTexture.read(uint2(index % width, index / width));
 }
 
 //____ paletteBlitNearestFragmentShader() ____________________________________________
@@ -785,7 +791,7 @@ fragment float4 paletteBlitNearestFragmentShader(BlitFragInput in [[stage_in]],
                                     sampler textureSampler [[ sampler(0) ]],
                                     constant int & clipToSource [[buffer(4)]])
 {
-    const float colorIndex = colorTexture.sample(textureSampler, in.texUV).r;
+    const float2 colorIndex = float2(colorTexture.sample(textureSampler, in.texUV).rg);
     const half4 colorSample = paletteLookup(paletteTexture, colorIndex) * half(insideSource(in.texUV, clipToSource));
 
 //    return in.color;
@@ -800,7 +806,7 @@ fragment float4 paletteBlitNearestFragmentShader_A8(BlitFragInput in [[stage_in]
                                     sampler textureSampler [[ sampler(0) ]],
                                     constant int & clipToSource [[buffer(4)]])
 {
-    const float colorIndex = colorTexture.sample(textureSampler, in.texUV).r;
+    const float2 colorIndex = float2(colorTexture.sample(textureSampler, in.texUV).rg);
     const float colorSample = paletteLookup(paletteTexture, colorIndex).a * insideSource(in.texUV, clipToSource);
 
     return { colorSample * in.color.a, 0.0, 0.0, 0.0 };
@@ -816,7 +822,7 @@ fragment float4 paletteBlitNearestTintmapFragmentShader(BlitTintmapFragInput in 
                                     constant int & clipToSource [[buffer(4)]],
                                     constant float4  *pColor [[buffer(0)]])
 {
-    const float colorIndex = colorTexture.sample(textureSampler, in.texUV).r;
+    const float2 colorIndex = float2(colorTexture.sample(textureSampler, in.texUV).rg);
     const half4 colorSample = paletteLookup(paletteTexture, colorIndex) * half(insideSource(in.texUV, clipToSource));
 
     float4 tintColor = evalTint(pColor, in.tintOfs, in.position.xy);
@@ -833,7 +839,7 @@ fragment float4 paletteBlitNearestTintmapFragmentShader_A8(BlitTintmapFragInput 
                                     constant int & clipToSource [[buffer(4)]],
                                     constant float4  *pColor [[buffer(0)]])
 {
-    const float colorIndex = colorTexture.sample(textureSampler, in.texUV).r;
+    const float2 colorIndex = float2(colorTexture.sample(textureSampler, in.texUV).rg);
     const float colorSample = paletteLookup(paletteTexture, colorIndex).a * insideSource(in.texUV, clipToSource);
 
     float tintAlpha = evalTint(pColor, in.tintOfs, in.position.xy).a;
@@ -905,10 +911,10 @@ fragment float4 paletteBlitInterpolateFragmentShader(PaletteBlitInterpolateFragI
    float2 texUV00, texUV11, uvf;
    paletteTaps(in.uvFrac, float2(colorTexture.get_width(), colorTexture.get_height()), texUV00, texUV11, uvf);
 
-   float index00 = colorTexture.sample(textureSampler, texUV00).r;
-   float index01 = colorTexture.sample(textureSampler, float2(texUV11.x,texUV00.y) ).r;
-   float index10 = colorTexture.sample(textureSampler, float2(texUV00.x,texUV11.y) ).r;
-   float index11 = colorTexture.sample(textureSampler, texUV11).r;
+   float2 index00 = float2(colorTexture.sample(textureSampler, texUV00).rg);
+   float2 index01 = float2(colorTexture.sample(textureSampler, float2(texUV11.x,texUV00.y) ).rg);
+   float2 index10 = float2(colorTexture.sample(textureSampler, float2(texUV00.x,texUV11.y) ).rg);
+   float2 index11 = float2(colorTexture.sample(textureSampler, texUV11).rg);
    half4 color00 = paletteLookup(paletteTexture, index00) * half(insideSource(texUV00, clipToSource));
    half4 color01 = paletteLookup(paletteTexture, index01) * half(insideSource(float2(texUV11.x,texUV00.y), clipToSource));
    half4 color10 = paletteLookup(paletteTexture, index10) * half(insideSource(float2(texUV00.x,texUV11.y), clipToSource));
@@ -932,10 +938,10 @@ fragment float4 paletteBlitInterpolateFragmentShader_A8(PaletteBlitInterpolateFr
    float2 texUV00, texUV11, uvf;
    paletteTaps(in.uvFrac, float2(colorTexture.get_width(), colorTexture.get_height()), texUV00, texUV11, uvf);
 
-   float index00 = colorTexture.sample(textureSampler, texUV00).r;
-   float index01 = colorTexture.sample(textureSampler, float2(texUV11.x,texUV00.y) ).r;
-   float index10 = colorTexture.sample(textureSampler, float2(texUV00.x,texUV11.y) ).r;
-   float index11 = colorTexture.sample(textureSampler, texUV11).r;
+   float2 index00 = float2(colorTexture.sample(textureSampler, texUV00).rg);
+   float2 index01 = float2(colorTexture.sample(textureSampler, float2(texUV11.x,texUV00.y) ).rg);
+   float2 index10 = float2(colorTexture.sample(textureSampler, float2(texUV00.x,texUV11.y) ).rg);
+   float2 index11 = float2(colorTexture.sample(textureSampler, texUV11).rg);
    float color00 = paletteLookup(paletteTexture, index00).a * insideSource(texUV00, clipToSource);
    float color01 = paletteLookup(paletteTexture, index01).a * insideSource(float2(texUV11.x,texUV00.y), clipToSource);
    float color10 = paletteLookup(paletteTexture, index10).a * insideSource(float2(texUV00.x,texUV11.y), clipToSource);
@@ -998,10 +1004,10 @@ fragment float4 paletteBlitInterpolateTintmapFragmentShader(PaletteBlitInterpola
    float2 texUV00, texUV11, uvf;
    paletteTaps(in.uvFrac, float2(colorTexture.get_width(), colorTexture.get_height()), texUV00, texUV11, uvf);
 
-   float index00 = colorTexture.sample(textureSampler, texUV00).r;
-   float index01 = colorTexture.sample(textureSampler, float2(texUV11.x,texUV00.y) ).r;
-   float index10 = colorTexture.sample(textureSampler, float2(texUV00.x,texUV11.y) ).r;
-   float index11 = colorTexture.sample(textureSampler, texUV11).r;
+   float2 index00 = float2(colorTexture.sample(textureSampler, texUV00).rg);
+   float2 index01 = float2(colorTexture.sample(textureSampler, float2(texUV11.x,texUV00.y) ).rg);
+   float2 index10 = float2(colorTexture.sample(textureSampler, float2(texUV00.x,texUV11.y) ).rg);
+   float2 index11 = float2(colorTexture.sample(textureSampler, texUV11).rg);
    half4 color00 = paletteLookup(paletteTexture, index00) * half(insideSource(texUV00, clipToSource));
    half4 color01 = paletteLookup(paletteTexture, index01) * half(insideSource(float2(texUV11.x,texUV00.y), clipToSource));
    half4 color10 = paletteLookup(paletteTexture, index10) * half(insideSource(float2(texUV00.x,texUV11.y), clipToSource));
@@ -1028,10 +1034,10 @@ fragment float4 paletteBlitInterpolateTintmapFragmentShader_A8(PaletteBlitInterp
    float2 texUV00, texUV11, uvf;
    paletteTaps(in.uvFrac, float2(colorTexture.get_width(), colorTexture.get_height()), texUV00, texUV11, uvf);
 
-   float index00 = colorTexture.sample(textureSampler, texUV00).r;
-   float index01 = colorTexture.sample(textureSampler, float2(texUV11.x,texUV00.y) ).r;
-   float index10 = colorTexture.sample(textureSampler, float2(texUV00.x,texUV11.y) ).r;
-   float index11 = colorTexture.sample(textureSampler, texUV11).r;
+   float2 index00 = float2(colorTexture.sample(textureSampler, texUV00).rg);
+   float2 index01 = float2(colorTexture.sample(textureSampler, float2(texUV11.x,texUV00.y) ).rg);
+   float2 index10 = float2(colorTexture.sample(textureSampler, float2(texUV00.x,texUV11.y) ).rg);
+   float2 index11 = float2(colorTexture.sample(textureSampler, texUV11).rg);
    float color00 = paletteLookup(paletteTexture, index00).a * insideSource(texUV00, clipToSource);
    float color01 = paletteLookup(paletteTexture, index01).a * insideSource(float2(texUV11.x,texUV00.y), clipToSource);
    float color10 = paletteLookup(paletteTexture, index10).a * insideSource(float2(texUV00.x,texUV11.y), clipToSource);
@@ -1093,7 +1099,7 @@ inline float4 paletteBlurCore(float2 texUV, texture2d<float> colorTexture, textu
 
 	for( int i = 0 ; i < 9 ; i++ )
 	{
-		float colorIndex = colorTexture.sample(textureSampler, texUV + pBlurInfo->offset[i] ).r;
+		float2 colorIndex = float2(colorTexture.sample(textureSampler, texUV + pBlurInfo->offset[i] ).rg);
 		color += float4(paletteLookup(paletteTexture, colorIndex)) * pBlurInfo->colorMtx[i];
 	}
 

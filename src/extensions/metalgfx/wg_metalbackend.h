@@ -83,7 +83,7 @@ namespace wg
 
 		//.____ Misc _________________________________________________________
 
-		bool    setDefaultCanvas( MTLRenderPassDescriptor* renderPassDesc, SizeI pixelSize, PixelFormat pixelFormat, int scale = 64 );
+		bool    setDefaultCanvas( MTLRenderPassDescriptor* renderPassDesc, SizeI pixelSize, PixelFormat pixelFormat, int scale = 64, ColorSpace colorSpace = ColorSpace::sRGB );
 
 		const CanvasInfo* canvasInfo(CanvasRef ref) const override;
 
@@ -163,7 +163,8 @@ namespace wg
 		void    _initTables();
 		float    _scaleThickness(float thickness, float slope);
 
-		PixelFormat	_canvasFormatToPixelFormat( DestFormat format );
+		const char *	_destFormatName( DestFormat format );
+		bool			_toDestFormat( PixelFormat format, ColorSpace colorSpace, DestFormat& destFormat );
 
 		id<MTLRenderPipelineState> _compileLinePipeline( BlendMode blendMode, DestFormat canvasFormat );
 		id<MTLRenderPipelineState> _compileFillPipeline( bool bTintmap, BlendMode blendMode, DestFormat canvasFormat );
@@ -174,7 +175,7 @@ namespace wg
 
 
 		id<MTLRenderPipelineState> _compileRenderPipeline( NSString* label, NSString* vertexShader,
-									NSString* fragmentShader, BlendMode blendMode, PixelFormat destFormat );
+									NSString* fragmentShader, BlendMode blendMode, DestFormat destFormat );
 
 		void						_generateMipmaps( MetalSurface * pSurface );		// Draws every mip level from level 0.
 		id<MTLRenderPipelineState>	_mipmapPipeline( MTLPixelFormat format );
@@ -302,7 +303,7 @@ namespace wg
 		id<MTLLibrary>              m_library = nil;
 		id<MTLDrawable>             m_drawableToAutoPresent = nil;
 		MTLRenderPassDescriptor*    m_defaultCanvasRenderPassDesc = nil;
-		PixelFormat                 m_defaultCanvasPixelFormat;
+		DestFormat                  m_defaultCanvasDestFormat = DestFormat::BGRA8_sRGB;
 		CanvasInfo                  m_defaultCanvas;
 
 		id<MTLCommandBuffer>        m_metalCommandBuffer = nil;

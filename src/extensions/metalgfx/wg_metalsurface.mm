@@ -30,6 +30,7 @@
 #include <wg_pixeltools.h>
 
 #include <assert.h>
+#include <algorithm>
 
 
 
@@ -61,7 +62,7 @@ namespace wg
 
 	MetalSurface_p	MetalSurface::create( const Blueprint& bp )
 	{
-        if( !_isBlueprintValid(bp, maxSize()) )
+        if( !_isBlueprintValid(bp, maxSize()) || !_isFormatSupported(bp.format) )
             return MetalSurface_p();
 
 		return MetalSurface_p(new MetalSurface(bp));
@@ -69,7 +70,7 @@ namespace wg
 
 	MetalSurface_p	MetalSurface::create( const Blueprint& bp, Blob* pBlob, int pitch )
 	{
-        if (!_isBlueprintValid(bp, maxSize()) )
+        if (!_isBlueprintValid(bp, maxSize()) || !_isFormatSupported(bp.format) )
             return MetalSurface_p();
 
         if ( !pBlob || (pitch > 0 && pitch % 4 != 0))
@@ -81,7 +82,7 @@ namespace wg
 	MetalSurface_p	MetalSurface::create(const Blueprint& bp, const uint8_t* pPixels,
 										 PixelFormat format, int pitch, const Color8 * pPalette, int paletteSize)
 	{
-        if (!_isBlueprintValid(bp, maxSize()))
+        if (!_isBlueprintValid(bp, maxSize()) || !_isFormatSupported(bp.format))
             return MetalSurface_p();
 
 		return  MetalSurface_p(new MetalSurface(bp, pPixels, format, pitch, pPalette, paletteSize));
@@ -90,7 +91,7 @@ namespace wg
 	MetalSurface_p	MetalSurface::create(const Blueprint& bp, const uint8_t* pPixels,
 										 const PixelDescription& pixelDescription, int pitch, const Color8 * pPalette, int paletteSize)
 	{
-		if (!_isBlueprintValid(bp, maxSize()))
+		if (!_isBlueprintValid(bp, maxSize()) || !_isFormatSupported(bp.format))
 			return MetalSurface_p();
 
 		return  MetalSurface_p(new MetalSurface(bp, pPixels, pixelDescription, pitch, pPalette, paletteSize));
@@ -100,59 +101,88 @@ namespace wg
 
 
 
-    MetalSurface::MetalSurface(const Blueprint& bp) : Surface( bp, PixelFormat::BGRA_8, SampleMethod::Bilinear )
+    MetalSurface::MetalSurface(const Blueprint& bp) : Surface( bp, PixelFormat::ARGB_8, SampleMethod::Bilinear )
     {
-        _setPixelDetails(m_pixelFormat);
+        _setPixelDetails();
         m_bMipmapped = bp.mipmap;
-        _setupMetalTexture( nullptr, 0, PixelFormat::Undefined, nullptr, nullptr, bp.palette, 0 );
-
+        _setupMetalTexture( nullptr, 0, nullptr, nullptr, 0, bp.palette );
     }
 
-    MetalSurface::MetalSurface(const Blueprint& bp, Blob* pBlob, int pitch) : Surface( bp, PixelFormat::BGRA_8, SampleMethod::Bilinear )
+    MetalSurface::MetalSurface(const Blueprint& bp, Blob* pBlob, int pitch) : Surface( bp, PixelFormat::ARGB_8, SampleMethod::Bilinear )
     {
-        // Set general information
+        // The blob is in the layout specified by the blueprint, which might not be the one we end up with.
 
-        _setPixelDetails(m_pixelFormat);
+        PixelDescription srcDesc = m_pixelDescription;
+
+        _setPixelDetails();
         m_bMipmapped = bp.mipmap;
-        _setupMetalTexture(pBlob->data(), pitch, m_pixelFormat, nullptr, bp.palette, bp.palette, 0);
+
+        if( pitch == 0 )
+            pitch = PixelTools::bytesPerLine(srcDesc, m_size.w);
+
+        _setupMetalTexture(pBlob->data(), pitch, &srcDesc, bp.palette, m_paletteSize, bp.palette);
     }
 
 	MetalSurface::MetalSurface(const Blueprint& bp, const uint8_t* pPixels, PixelFormat format,
 							   int pitch, const Color8 * pPalette, int paletteSize)
-	: Surface(bp, PixelFormat::BGRA_8, SampleMethod::Bilinear)
+	: Surface(bp, PixelFormat::ARGB_8, SampleMethod::Bilinear)
 	{
-		_setPixelDetails(m_pixelFormat);
+		// Source pixels are in the byte order and color space of the blueprint.
+
+		if( format == PixelFormat::Undefined )
+			format = m_pixelFormat;
+
+		auto srcDesc = Util::pixelFormatToDescription(format, bp.bigEndian);
+
+		_setPixelDetails();
 		m_bMipmapped = bp.mipmap;
-		
-		auto srcDesc = Util::pixelFormatToDescription(format);
 
 		if( pitch == 0 )
-			pitch = bp.size.w * srcDesc.bits/8;
-		
-		_fixSrcParam(format, pPalette, paletteSize);
-		_setupMetalTexture( pPixels, pitch, format, nullptr, pPalette, bp.palette, paletteSize );
+			pitch = PixelTools::bytesPerLine(srcDesc, m_size.w);
+
+		_fixSrcParam(srcDesc, pPalette, paletteSize);
+		_setupMetalTexture( pPixels, pitch, &srcDesc, pPalette, paletteSize, bp.palette );
 	}
 
 
 	MetalSurface::MetalSurface(const Blueprint& bp, const uint8_t* pPixels, const PixelDescription& pixelDescription,
 							   int pitch, const Color8 * pPalette, int paletteSize)
-	: Surface(bp, PixelFormat::BGRA_8, SampleMethod::Bilinear)
+	: Surface(bp, PixelFormat::ARGB_8, SampleMethod::Bilinear)
     {
-        _setPixelDetails(m_pixelFormat);
+        _setPixelDetails();
         m_bMipmapped = bp.mipmap;
 		
 		if( pitch == 0 )
-			pitch = bp.size.w * pixelDescription.bits/8;
-
+			pitch = PixelTools::bytesPerLine(pixelDescription, m_size.w);
 
 		_fixSrcParam(pixelDescription, pPalette, paletteSize);
-		_setupMetalTexture( pPixels, pitch, PixelFormat::Undefined, &pixelDescription, pPalette, bp.palette, paletteSize );
+		_setupMetalTexture( pPixels, pitch, &pixelDescription, pPalette, paletteSize, bp.palette );
     }
 
+	//____ _isFormatSupported() __________________________________________________
+
+	bool MetalSurface::_isFormatSupported( PixelFormat format )
+	{
+		switch (format)
+		{
+			case PixelFormat::Undefined:			// Defaults to ARGB_8.
+			case PixelFormat::XRGB_8:
+			case PixelFormat::ARGB_8:
+			case PixelFormat::RGB_565:
+			case PixelFormat::BGR_565:
+			case PixelFormat::Index_8:
+			case PixelFormat::Index_16:
+			case PixelFormat::Alpha_8:
+				return true;
+
+			default:
+				return false;
+		}
+	}
 
 	//____ _setupMetalTexture() __________________________________________________________________
 
-	void MetalSurface::_setupMetalTexture(const void * pPixels, int pitch, PixelFormat srcFormat, const PixelDescription * pSrcPixelDesc, const Color * pSrcPalette, const Color * pDstPalette, int srcPaletteSize )
+	void MetalSurface::_setupMetalTexture(const void * pPixels, int pitch, const PixelDescription * pSrcPixelDesc, const Color8 * pSrcPalette, int srcPaletteSize, const Color8 * pDstPalette )
 	{
 		m_bTextureSyncInProgress = false;
 
@@ -164,21 +194,25 @@ namespace wg
 
 		// Setup the palette if present
 		
-		if( pDstPalette )
+		if( m_paletteCapacity > 0 )
 		{
-			// Create the palette buffer and copy data
+			// Create the palette buffer and copy data. It is laid out like the palette texture,
+			// which might have room for more entries than the capacity.
 
-			// The source palette only has m_paletteSize entries, the rest of the capacity is cleared.
+			// The source palette only has m_paletteSize entries, the rest is cleared.
 
-			m_paletteBuffer = [MetalBackend::s_metalDevice newBufferWithLength:m_paletteCapacity*4 options:MTLResourceStorageModeShared];
-			m_pPalette = (Color*) [m_paletteBuffer contents];
-			memset(m_pPalette, 0, m_paletteCapacity*4);
-			memcpy(m_pPalette, pDstPalette, m_paletteSize*4);
+			int paletteBufferLength = _paletteTextureWidth() * _paletteTextureHeight() * 4;
+
+			m_paletteBuffer = [MetalBackend::s_metalDevice newBufferWithLength:paletteBufferLength options:MTLResourceStorageModeShared];
+			m_pPalette = (Color8*) [m_paletteBuffer contents];
+			memset(m_pPalette, 0, paletteBufferLength);
+			if( pDstPalette )
+				memcpy(m_pPalette, pDstPalette, m_paletteSize*4);
 		}
 		
 		//
 		
-		// Copy pixel data to our shared buffer
+		// Copy pixel data to our shared buffer, converting it to our layout
 			  
 		if( pPixels )
 		{
@@ -187,26 +221,33 @@ namespace wg
 			
 			auto pDst = (uint8_t*)[m_textureBuffer contents];
 
-			if( srcFormat != PixelFormat::Undefined )
-			{
-				auto& srcDesc = Util::pixelFormatToDescription(srcFormat);
-
-				PixelTools::copyPixels(m_size.w, m_size.h, (const uint8_t*) pPixels, srcFormat, pitch - m_size.w * srcDesc.bits/8,
-									   pDst, m_pixelFormat, 0, pSrcPalette,
-									   m_pPalette, srcPaletteSize, m_paletteSize, m_paletteCapacity);
-			}
-			else
-			{
-				PixelTools::copyPixels(m_size.w, m_size.h, (const uint8_t*) pPixels, * pSrcPixelDesc, pitch - m_size.w * pSrcPixelDesc->bits/8,
-									   pDst, m_pixelFormat, 0, pSrcPalette,
-									   m_pPalette, srcPaletteSize, m_paletteSize, m_paletteCapacity);
-			}
+			PixelTools::copyPixels(m_size.w, m_size.h, (const uint8_t*) pPixels, * pSrcPixelDesc, m_colorSpace, pitch - PixelTools::bytesPerLine(*pSrcPixelDesc, m_size.w),
+								   pSrcPalette, srcPaletteSize,
+								   pDst, m_pixelFormat, m_colorSpace, m_bBigEndian, 0,
+								   m_pPalette, m_paletteSize, m_paletteCapacity);
 		}
 			   
 		
 		_createAndSyncTextures( pPixels != nullptr );
 		
 	//        setScaleMode(m_scaleMode);
+	}
+
+	//____ _paletteTextureWidth() ______________________________________________
+
+	int MetalSurface::_paletteTextureWidth() const
+	{
+		// Index_16 can have 65536 entries, which is more than the widest texture.
+
+		return std::min(m_paletteCapacity, 256);
+	}
+
+	//____ _paletteTextureHeight() _____________________________________________
+
+	int MetalSurface::_paletteTextureHeight() const
+	{
+		int width = _paletteTextureWidth();
+		return width == 0 ? 0 : (m_paletteCapacity + width - 1) / width;
 	}
 
     //____ _createAndSyncTextures() __________________________________________________
@@ -246,9 +287,11 @@ namespace wg
         {
             MTLTextureDescriptor *paletteDescriptor = [[MTLTextureDescriptor alloc] init];
 
-            paletteDescriptor.pixelFormat   = m_pPixelDescription->colorSpace == ColorSpace::Linear ? MTLPixelFormatBGRA8Unorm : MTLPixelFormatBGRA8Unorm_sRGB;
-            paletteDescriptor.width         = m_paletteCapacity;
-            paletteDescriptor.height        = 1;
+            // Palette entries are in the color space of the surface.
+
+            paletteDescriptor.pixelFormat   = m_colorSpace == ColorSpace::Linear ? MTLPixelFormatBGRA8Unorm : MTLPixelFormatBGRA8Unorm_sRGB;
+            paletteDescriptor.width         = _paletteTextureWidth();
+            paletteDescriptor.height        = _paletteTextureHeight();
             paletteDescriptor.storageMode   = MTLStorageModePrivate;
 
             m_paletteTexture = [MetalBackend::s_metalDevice newTextureWithDescriptor:paletteDescriptor];
@@ -283,12 +326,12 @@ namespace wg
 			
 			if( m_pPalette )
 			{
-				MTLSize paletteSize = { (unsigned long) m_paletteSize, 1, 1 };
+				MTLSize paletteSize = { (unsigned long) _paletteTextureWidth(), (unsigned long) _paletteTextureHeight(), 1 };
 				MTLOrigin paletteOrigin = {0,0,0};
 
 				[blitCommandEncoder copyFromBuffer:     m_paletteBuffer
 									sourceOffset:       0
-									sourceBytesPerRow:  m_paletteCapacity*4
+									sourceBytesPerRow:  _paletteTextureWidth()*4
 									sourceBytesPerImage:0
 									sourceSize:         paletteSize
 									toTexture:          m_paletteTexture
@@ -324,44 +367,44 @@ namespace wg
 
     //____ _setPixelDetails() __________________________________________________________
 
-	void MetalSurface::_setPixelDetails( PixelFormat format )
+	void MetalSurface::_setPixelDetails()
 	{
+		// Pixels are copied straight between our shared buffer and the texture, so we
+		// convert layouts that Metal has no texture format for to ones it has. The color
+		// space stays and picks between the normal and _sRGB texture formats.
+
+		bool bSRGB = (m_colorSpace == ColorSpace::sRGB);
+		[[maybe_unused]] bool bNativeByteOrder = (m_bBigEndian == (WG_IS_BIG_ENDIAN == 1));
+
+		PixelFormat format = m_pixelFormat;
+
 		switch (format)
 		{
-            case PixelFormat::BGR_8:
-                format = PixelFormat::BGRX_8;
-            case PixelFormat::BGRX_8:
-			case PixelFormat::BGRA_8:
-				m_internalFormat = GfxBase::defaultToSRGB() ? MTLPixelFormatBGRA8Unorm_sRGB : MTLPixelFormatBGRA8Unorm;
-				break;
-                
-            case PixelFormat::BGR_8_sRGB:
-                format = PixelFormat::BGRX_8_sRGB;
-            case PixelFormat::BGRX_8_sRGB:
-			case PixelFormat::BGRA_8_sRGB:
-				m_internalFormat = MTLPixelFormatBGRA8Unorm_sRGB;
-				break;
-
-            case PixelFormat::BGR_8_linear:
-                format = PixelFormat::BGRX_8_linear;
-            case PixelFormat::BGRX_8_linear:
-			case PixelFormat::BGRA_8_linear:
-				m_internalFormat = MTLPixelFormatBGRA8Unorm;
-				break;
-
-			case PixelFormat::BGR_565_linear:
+			case PixelFormat::RGB_565:
 #if TARGET_OS_IPHONE
-				m_internalFormat = MTLPixelFormatB5G6R5Unorm;
-#else
-                format = PixelFormat::BGRX_8_linear;
-                m_internalFormat = MTLPixelFormatBGRA8Unorm;
+				if( !bSRGB && bNativeByteOrder && !m_bCanvas )
+				{
+					m_internalFormat = MTLPixelFormatB5G6R5Unorm;		// Red in the high bits, blue in the low.
+					break;
+				}
 #endif
+				[[fallthrough]];
+
+			case PixelFormat::BGR_565:
+				format = PixelFormat::XRGB_8;
+				[[fallthrough]];
+
+			case PixelFormat::XRGB_8:
+			case PixelFormat::ARGB_8:
+				m_internalFormat = bSRGB ? MTLPixelFormatBGRA8Unorm_sRGB : MTLPixelFormatBGRA8Unorm;
 				break;
-                
+
 			case PixelFormat::Index_8:
-			case PixelFormat::Index_8_sRGB:
-			case PixelFormat::Index_8_linear:
 				m_internalFormat = MTLPixelFormatR8Unorm;
+				break;
+
+			case PixelFormat::Index_16:
+				m_internalFormat = MTLPixelFormatRG8Unorm;			// Low byte in red, high byte in green, see paletteLookup() in the shaders.
 				break;
 
 			case PixelFormat::Alpha_8:
@@ -374,8 +417,9 @@ namespace wg
 				break;
 		}
 
-		m_pPixelDescription = &Util::pixelFormatToDescription(format);
-		m_pixelFormat = format;											// We do convert form BGR to BGRX
+		m_pixelFormat = format;
+		m_bBigEndian = (WG_IS_BIG_ENDIAN == 1);
+		m_pixelDescription = Util::pixelFormatToDescription(format, m_bBigEndian);
         m_pixelSize = m_pPixelDescription->bits / 8;
 	}
 
@@ -406,6 +450,8 @@ namespace wg
         PixelBuffer pixbuf;
 
         pixbuf.format = m_pixelFormat;
+        pixbuf.colorSpace = m_colorSpace;
+        pixbuf.bigEndian = m_bBigEndian;
         pixbuf.palette = m_pPalette;
         pixbuf.pitch = m_size.w * m_pixelSize;
         pixbuf.pixels = ((uint8_t*)[m_textureBuffer contents]) + rect.y * pixbuf.pitch + rect.x * m_pixelSize;
@@ -438,6 +484,11 @@ namespace wg
     {
         if( m_texture && !bufferRect.isEmpty() )
             _syncTexture( bufferRect + buffer.rect.pos() );
+
+        // Colors might have been added to or changed in the palette.
+
+        if( m_paletteTexture )
+            _syncPalette();
 
 		Surface::pullPixels(buffer, bufferRect, bAutoNotify);
     }
@@ -568,6 +619,34 @@ namespace wg
 //        _waitForSyncedTexture();
     }
 
+
+    //____ _syncPalette() _______________________________________________
+
+    void MetalSurface::_syncPalette()
+    {
+        MTLSize paletteSize = { (unsigned long) _paletteTextureWidth(), (unsigned long) _paletteTextureHeight(), 1 };
+        MTLOrigin paletteOrigin = {0,0,0};
+
+        id<MTLCommandBuffer> commandBuffer = [MetalBackend::s_metalCommandQueue commandBuffer];
+        commandBuffer.label = @"_syncPalette Command Buffer";
+
+        id<MTLBlitCommandEncoder> blitCommandEncoder = [commandBuffer blitCommandEncoder];
+        [blitCommandEncoder copyFromBuffer:     m_paletteBuffer
+                            sourceOffset:       0
+                            sourceBytesPerRow:  _paletteTextureWidth()*4
+                            sourceBytesPerImage:0
+                            sourceSize:         paletteSize
+                            toTexture:          m_paletteTexture
+                            destinationSlice:   0
+                            destinationLevel:   0
+                            destinationOrigin:  paletteOrigin];
+        [blitCommandEncoder endEncoding];
+        blitCommandEncoder = nil;
+
+        [commandBuffer commit];
+        [commandBuffer waitUntilCompleted];
+        commandBuffer = nil;
+    }
 
     //____ _waitForSyncedTexture() _______________________________________________
 

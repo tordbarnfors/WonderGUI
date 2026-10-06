@@ -40,6 +40,7 @@ namespace wg
 		m_pDefaultCanvasRenderPassDesc	= bp.defaultCanvasRenderPassDesc;
 		m_defaultCanvasSize				= bp.defaultCanvasSize;
 		m_defaultCanvasPixelFormat		= bp.defaultCanvasPixelFormat;
+		m_defaultCanvasColorSpace		= bp.defaultCanvasColorSpace;
 		m_defaultCanvasScale			= bp.defaultCanvasScale;
 	}
 
@@ -56,7 +57,7 @@ namespace wg
 	GfxDevice_p MetalGfxDeviceFactory::createGfxDevice()
 	{
 		auto pBackend = MetalBackend::create();
-		pBackend->setDefaultCanvas( m_pDefaultCanvasRenderPassDesc, m_defaultCanvasSize, m_defaultCanvasPixelFormat, m_defaultCanvasScale );
+		pBackend->setDefaultCanvas( m_pDefaultCanvasRenderPassDesc, m_defaultCanvasSize, m_defaultCanvasPixelFormat, m_defaultCanvasScale, m_defaultCanvasColorSpace );
 
 		auto pDevice = GfxDeviceGen2::create(pBackend);
 		return pDevice;

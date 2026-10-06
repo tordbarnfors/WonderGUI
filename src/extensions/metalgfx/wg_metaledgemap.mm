@@ -222,12 +222,7 @@ void MetalEdgemap::_writeColors(int beginSegment, int endSegment)
 		float * pFlat = m_pBuffer + (_flatColorsOfs() + seg) * 4;
 		float * pTable = m_pBuffer + (_tintTableOfs() + seg) * 4;
 
-		const HiColor& col = m_pFlatColors[seg];
-
-		pFlat[0] = col.r / 4096.f;
-		pFlat[1] = col.g / 4096.f;
-		pFlat[2] = col.b / 4096.f;
-		pFlat[3] = col.a / 4096.f;
+		m_pFlatColors[seg].toLinearFloat(pFlat);		// Colors are sRGB, but we blend in linear.
 
 		int blockOfs = -1;
 

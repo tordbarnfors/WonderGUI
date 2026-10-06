@@ -303,22 +303,45 @@ MetalBackend::~MetalBackend()
 	[m_library release];
 }
 
-//____ _canvasFormatToPixelFormat() ___________________________________________
+//____ _destFormatName() _____________________________________________________
 
-PixelFormat MetalBackend::_canvasFormatToPixelFormat( DestFormat format )
+const char * MetalBackend::_destFormatName( DestFormat format )
 {
 	switch( format )
 	{
 		case DestFormat::BGRX8_linear:
-			return PixelFormat::BGRX_8_linear;
+			return "XRGB_8 linear";
 		case DestFormat::BGRA8_linear:
-			return PixelFormat::BGRA_8_linear;
+			return "ARGB_8 linear";
 		case DestFormat::BGRX8_sRGB:
-			return PixelFormat::BGRX_8_sRGB;
+			return "XRGB_8 sRGB";
 		case DestFormat::BGRA8_sRGB:
-			return PixelFormat::BGRA_8_sRGB;
+			return "ARGB_8 sRGB";
 		case DestFormat::Alpha_8:
-			return PixelFormat::Alpha_8;
+			return "Alpha_8";
+	}
+	return "Undefined";
+}
+
+//____ _toDestFormat() ________________________________________________________
+
+bool MetalBackend::_toDestFormat( PixelFormat format, ColorSpace colorSpace, DestFormat& destFormat )
+{
+	bool bLinear = (colorSpace == ColorSpace::Linear);
+
+	switch( format )
+	{
+		case PixelFormat::XRGB_8:
+			destFormat = bLinear ? DestFormat::BGRX8_linear : DestFormat::BGRX8_sRGB;
+			return true;
+		case PixelFormat::ARGB_8:
+			destFormat = bLinear ? DestFormat::BGRA8_linear : DestFormat::BGRA8_sRGB;
+			return true;
+		case PixelFormat::Alpha_8:
+			destFormat = DestFormat::Alpha_8;
+			return true;
+		default:
+			return false;
 	}
 }
 
@@ -327,16 +350,15 @@ PixelFormat MetalBackend::_canvasFormatToPixelFormat( DestFormat format )
 
 id<MTLRenderPipelineState> MetalBackend::_compileLinePipeline( BlendMode blendMode, DestFormat canvasFormat )
 {
-	PixelFormat pixelFormat = _canvasFormatToPixelFormat( canvasFormat );
 	bool        isAlpha8    = (canvasFormat == DestFormat::Alpha_8);
 
 	NSString* vertexShader   = @"lineVertexShader";
 	NSString* fragmentShader = isAlpha8 ? @"lineFragmentShader_A8" : @"lineFragmentShader";
 
 	NSString* label = [NSString stringWithFormat:@"Line Pipeline (format=%s, blendMode=%s)",
-						toString(pixelFormat), toString(blendMode)];
+						_destFormatName(canvasFormat), toString(blendMode)];
 
-	return _compileRenderPipeline( label, vertexShader, fragmentShader, blendMode, pixelFormat );
+	return _compileRenderPipeline( label, vertexShader, fragmentShader, blendMode, canvasFormat );
 }
 
 
@@ -344,7 +366,6 @@ id<MTLRenderPipelineState> MetalBackend::_compileLinePipeline( BlendMode blendMo
 
 id<MTLRenderPipelineState> MetalBackend::_compileFillPipeline( bool bTintmap, BlendMode blendMode, DestFormat canvasFormat )
 {
-	PixelFormat pixelFormat = _canvasFormatToPixelFormat( canvasFormat );
 	bool        isAlpha8    = (canvasFormat == DestFormat::Alpha_8);
 
 	NSString* vertexShader   = bTintmap ? @"fillTintmapVertexShader" : @"fillVertexShader";
@@ -353,16 +374,15 @@ id<MTLRenderPipelineState> MetalBackend::_compileFillPipeline( bool bTintmap, Bl
 		fragmentShader = [fragmentShader stringByAppendingString:@"_A8"];
 
 	NSString* label = [NSString stringWithFormat:@"%@Fill Pipeline (format=%s, blendMode=%s, tintmap=%s)",
-						bTintmap ? @"Tintmap" : @"", toString(pixelFormat), toString(blendMode), bTintmap ? "true" : "false"];
+						bTintmap ? @"Tintmap" : @"", _destFormatName(canvasFormat), toString(blendMode), bTintmap ? "true" : "false"];
 
-	return _compileRenderPipeline( label, vertexShader, fragmentShader, blendMode, pixelFormat );
+	return _compileRenderPipeline( label, vertexShader, fragmentShader, blendMode, canvasFormat );
 }
 
 //____ _compileFillAAPipeline() _______________________________________________
 
 id<MTLRenderPipelineState> MetalBackend::_compileFillAAPipeline( bool bTintmap, BlendMode blendMode, DestFormat canvasFormat )
 {
-	PixelFormat pixelFormat = _canvasFormatToPixelFormat( canvasFormat );
 	bool        isAlpha8    = (canvasFormat == DestFormat::Alpha_8);
 
 	NSString* vertexShader   = bTintmap ? @"fillAATintmapVertexShader" : @"fillAAVertexShader";
@@ -371,9 +391,9 @@ id<MTLRenderPipelineState> MetalBackend::_compileFillAAPipeline( bool bTintmap, 
 		fragmentShader = [fragmentShader stringByAppendingString:@"_A8"];
 
 	NSString* label = [NSString stringWithFormat:@"AA%@Fill Pipeline (format=%s, blendMode=%s, tintmap=%s)",
-						bTintmap ? @"Tintmap" : @"", toString(pixelFormat), toString(blendMode), bTintmap ? "true" : "false"];
+						bTintmap ? @"Tintmap" : @"", _destFormatName(canvasFormat), toString(blendMode), bTintmap ? "true" : "false"];
 
-	return _compileRenderPipeline( label, vertexShader, fragmentShader, blendMode, pixelFormat );
+	return _compileRenderPipeline( label, vertexShader, fragmentShader, blendMode, canvasFormat );
 }
 
 
@@ -409,13 +429,12 @@ id<MTLRenderPipelineState> MetalBackend::_compileBlurPipeline( BlurFragShader sh
 
 	NSString* vertexShader		= bTintmap ? @"blitTintmapVertexShader" : @"blitVertexShader";
 
-	PixelFormat pixelFormat 	= _canvasFormatToPixelFormat(canvasFormat);
 	bool        isAlpha8        = (canvasFormat == DestFormat::Alpha_8);
 	NSString*   fragmentShader  = isAlpha8 ? [fragmentShaderBase stringByAppendingString:@"_A8"] : fragmentShaderBase;
 
-	NSString* label 			= [namePrefix stringByAppendingFormat:@" Pipeline (format=%s, blendMode=%s, tintmap=%s)", toString(pixelFormat), toString(blendMode), bTintmap ? "true" : "false"];
+	NSString* label 			= [namePrefix stringByAppendingFormat:@" Pipeline (format=%s, blendMode=%s, tintmap=%s)", _destFormatName(canvasFormat), toString(blendMode), bTintmap ? "true" : "false"];
 
-	return _compileRenderPipeline( label, vertexShader, fragmentShader, blendMode, pixelFormat );
+	return _compileRenderPipeline( label, vertexShader, fragmentShader, blendMode, canvasFormat );
 }
 
 //____ _compileBlitPipeline() _________________________________________________
@@ -459,21 +478,19 @@ id<MTLRenderPipelineState> MetalBackend::_compileBlitPipeline( BlitFragShader sh
 			break;
 	}
 
-	PixelFormat pixelFormat  = _canvasFormatToPixelFormat( canvasFormat );
 	bool        isAlpha8     = (canvasFormat == DestFormat::Alpha_8);
 	NSString*   fragmentShader = isAlpha8 ? [fragmentShaderBase stringByAppendingString:@"_A8"] : fragmentShaderBase;
 
 	NSString* label = [namePrefix stringByAppendingFormat:@" Pipeline (format=%s, blendMode=%s, tintmap=%s)",
-						toString(pixelFormat), toString(blendMode), bTintmap ? "true" : "false"];
+						_destFormatName(canvasFormat), toString(blendMode), bTintmap ? "true" : "false"];
 
-	return _compileRenderPipeline( label, vertexShader, fragmentShader, blendMode, pixelFormat );
+	return _compileRenderPipeline( label, vertexShader, fragmentShader, blendMode, canvasFormat );
 }
 
 //____ _compileSegmentsPipeline() _____________________________________________
 
 id<MTLRenderPipelineState> MetalBackend::_compileSegmentsPipeline( int shaderIndex, bool bTintmap, BlendMode blendMode, DestFormat canvasFormat )
 {
-	PixelFormat pixelFormat = _canvasFormatToPixelFormat( canvasFormat );
 	bool        isAlpha8    = (canvasFormat == DestFormat::Alpha_8);
 
 	NSString* vertexShader = @"segmentsVertexShader";
@@ -482,9 +499,9 @@ id<MTLRenderPipelineState> MetalBackend::_compileSegmentsPipeline( int shaderInd
 								 bTintmap ? @"Tintmap" : @"", shaderIndex, isAlpha8 ? @"_A8" : @""];
 
 	NSString* label = [NSString stringWithFormat:@"Segments Pipeline (shader=%d, format=%s, blendMode=%s, tintmap=%s)",
-						shaderIndex, toString(pixelFormat), toString(blendMode), bTintmap ? "true" : "false"];
+						shaderIndex, _destFormatName(canvasFormat), toString(blendMode), bTintmap ? "true" : "false"];
 
-	return _compileRenderPipeline( label, vertexShader, fragmentShader, blendMode, pixelFormat );
+	return _compileRenderPipeline( label, vertexShader, fragmentShader, blendMode, canvasFormat );
 }
 
 
@@ -563,30 +580,30 @@ const CanvasInfo * MetalBackend::canvasInfo(CanvasRef ref) const
 
 //____ setDefaultCanvas() ___________________________________________________
 
-bool MetalBackend::setDefaultCanvas( MTLRenderPassDescriptor* renderPassDesc, SizeI pixelSize, PixelFormat pixelFormat, int scale )
+bool MetalBackend::setDefaultCanvas( MTLRenderPassDescriptor* renderPassDesc, SizeI pixelSize, PixelFormat pixelFormat, int scale, ColorSpace colorSpace )
 {
-	if( pixelFormat != PixelFormat::BGRA_8 && pixelFormat != PixelFormat::BGRA_8_linear && pixelFormat != PixelFormat::BGRA_8_sRGB && 
-	    pixelFormat != PixelFormat::BGRX_8 && pixelFormat != PixelFormat::BGRX_8_linear && pixelFormat != PixelFormat::BGRX_8_sRGB &&
-	    pixelFormat != PixelFormat::Alpha_8 )
+	if( pixelFormat == PixelFormat::Undefined )
+		pixelFormat = PixelFormat::ARGB_8;
+
+	if( colorSpace == ColorSpace::Undefined )
+		colorSpace = ColorSpace::sRGB;
+
+	DestFormat destFormat;
+	if( !_toDestFormat(pixelFormat, colorSpace, destFormat) )
 	{
-		GfxBase::throwError(ErrorLevel::SilentError, ErrorCode::InvalidParam, "pixelFormat must be BGRA_8, BGRA_8_linear, BGRA_8_sRGB, BGRX_8, BGRX_8_linear, BGRX_8_sRGB or A_8", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+		GfxBase::throwError(ErrorLevel::SilentError, ErrorCode::InvalidParam, "pixelFormat must be ARGB_8, XRGB_8 or Alpha_8", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 		return false;
 	}
-
-	if( pixelFormat == PixelFormat::BGRA_8 )
-		pixelFormat = GfxBase::defaultToSRGB() ? PixelFormat::BGRA_8_sRGB : PixelFormat::BGRA_8_linear;
-
-	if( pixelFormat == PixelFormat::BGRX_8 )
-		pixelFormat = GfxBase::defaultToSRGB() ? PixelFormat::BGRX_8_sRGB : PixelFormat::BGRX_8_linear;
-
 
 	if( m_defaultCanvasRenderPassDesc )
 		[m_defaultCanvasRenderPassDesc release];
 	m_defaultCanvasRenderPassDesc = renderPassDesc;
-	m_defaultCanvasPixelFormat = pixelFormat;
+	m_defaultCanvasDestFormat = destFormat;
 	[m_defaultCanvasRenderPassDesc retain];
 	m_defaultCanvas.size = pixelSize*64;
 	m_defaultCanvas.scale = scale;
+	m_defaultCanvas.format = pixelFormat;
+	m_defaultCanvas.colorSpace = colorSpace;
 
 	return true;
 }
@@ -893,10 +910,7 @@ void MetalBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, i
 				{
 					HiColor color = *pColors++;
 
-					m_uniform.flatTint[0] = color.r / 4096.f;
-					m_uniform.flatTint[1] = color.g / 4096.f;
-					m_uniform.flatTint[2] = color.b / 4096.f;
-					m_uniform.flatTint[3] = color.a / 4096.f;
+					color.toLinearFloat((float*) &m_uniform.flatTint);		// Colors are sRGB, but we blend in linear.
 
 					bUniformChanged = true;
 				}
@@ -1135,10 +1149,7 @@ void MetalBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, i
 
 				// Add colors to buffer
 
-				pColorMTL->r = col.r / 4096.f;
-				pColorMTL->g = col.g / 4096.f;
-				pColorMTL->b = col.b / 4096.f;
-				pColorMTL->a = col.a / 4096.f;
+				col.toLinearFloat(&pColorMTL->r);		// Colors are sRGB, but we blend in linear.
 				pColorMTL++;
 
 				// Draw
@@ -1304,10 +1315,7 @@ void MetalBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, i
 					*pExtrasMTL++ = slope;
 					*pExtrasMTL++ = bSteep;
 
-					pColorMTL->r = col.r / 4096.f;
-					pColorMTL->g = col.g / 4096.f;
-					pColorMTL->b = col.b / 4096.f;
-					pColorMTL->a = col.a / 4096.f;
+					col.toLinearFloat(&pColorMTL->r);		// Colors are sRGB, but we blend in linear.
 					pColorMTL++;
 
 					nLinesWritten++;
@@ -1780,7 +1788,8 @@ id<MTLRenderCommandEncoder> MetalBackend::_setCanvas( MetalSurface * pCanvas, in
 {
 	id<MTLRenderCommandEncoder> renderEncoder;
 
-	PixelFormat pixelFormat;
+	DestFormat destFormat = DestFormat::BGRA8_sRGB;
+	bool bValidFormat = true;
 
 	if (pCanvas)
 	{
@@ -1795,7 +1804,7 @@ id<MTLRenderCommandEncoder> MetalBackend::_setCanvas( MetalSurface * pCanvas, in
 		renderEncoder.label = @"MetalBackend Render to Surface Pass";
 		[pDescriptor release];
 
-		pixelFormat = pCanvas->pixelFormat();
+		bValidFormat = _toDestFormat(pCanvas->pixelFormat(), pCanvas->colorSpace(), destFormat);
 	}
 	else
 	{
@@ -1803,7 +1812,7 @@ id<MTLRenderCommandEncoder> MetalBackend::_setCanvas( MetalSurface * pCanvas, in
 		renderEncoder = [m_metalCommandBuffer renderCommandEncoderWithDescriptor:m_defaultCanvasRenderPassDesc];
 		renderEncoder.label = @"MetalBackend Render Pass";
 
-		pixelFormat = m_defaultCanvasPixelFormat;
+		destFormat = m_defaultCanvasDestFormat;
 	}
 
 	[renderEncoder setViewport:(MTLViewport){0.0, 0.0, (double) width, (double) height, 0.0, 1.0 }];
@@ -1835,32 +1844,10 @@ id<MTLRenderCommandEncoder> MetalBackend::_setCanvas( MetalSurface * pCanvas, in
 	m_pActiveCanvas = pCanvas;
 	m_activeCanvasSize = {width,height};
 
-	switch(pixelFormat)
-	{
-		case PixelFormat::BGRX_8_linear:
-			m_activeCanvasFormat = DestFormat::BGRX8_linear;
-			break;
+	m_activeCanvasFormat = destFormat;
 
-		case PixelFormat::BGRA_8_linear:
-			m_activeCanvasFormat = DestFormat::BGRA8_linear;
-			break;
-
-		case PixelFormat::BGRA_8_sRGB:
-			m_activeCanvasFormat = DestFormat::BGRA8_sRGB;
-			break;
-
-		case PixelFormat::BGRX_8_sRGB:
-			m_activeCanvasFormat = DestFormat::BGRX8_sRGB;
-			break;
-
-		case PixelFormat::Alpha_8:
-			m_activeCanvasFormat = DestFormat::Alpha_8;
-			break;
-
-		default:
-			GfxBase::throwError(ErrorLevel::Error, ErrorCode::Internal, "Canvas format is neither BGRA_8_linear, BGRA_8_sRGB or A_8", this, &TYPEINFO, __func__, __FILE__, __LINE__ );
-			break;
-	}
+	if( !bValidFormat )
+		GfxBase::throwError(ErrorLevel::Error, ErrorCode::Internal, "Canvas format is neither ARGB_8, XRGB_8 or Alpha_8", this, &TYPEINFO, __func__, __FILE__, __LINE__ );
 
 
 	return renderEncoder;
@@ -1976,7 +1963,7 @@ id<MTLRenderPipelineState> MetalBackend::_mipmapPipeline( MTLPixelFormat format 
 //____ _compileRenderPipeline() _______________________________________________
 
 id<MTLRenderPipelineState> MetalBackend::_compileRenderPipeline( NSString* label, NSString* vertexShader,
-																NSString* fragmentShader, BlendMode blendMode, PixelFormat destFormat )
+																NSString* fragmentShader, BlendMode blendMode, DestFormat destFormat )
 {
 	NSError *error = nil;
 	MTLRenderPipelineDescriptor *descriptor = [[MTLRenderPipelineDescriptor alloc] init];
@@ -1989,17 +1976,17 @@ id<MTLRenderPipelineState> MetalBackend::_compileRenderPipeline( NSString* label
 
 	switch(destFormat)
 	{
-		case PixelFormat::BGRA_8_linear:
-		case PixelFormat::BGRX_8_linear:
+		case DestFormat::BGRA8_linear:
+		case DestFormat::BGRX8_linear:
 			descriptor.colorAttachments[0].pixelFormat = MTLPixelFormatBGRA8Unorm;
 			break;
 
-		case PixelFormat::BGRA_8_sRGB:
-		case PixelFormat::BGRX_8_sRGB:
+		case DestFormat::BGRA8_sRGB:
+		case DestFormat::BGRX8_sRGB:
 			descriptor.colorAttachments[0].pixelFormat = MTLPixelFormatBGRA8Unorm_sRGB;
 			break;
 
-		case PixelFormat::Alpha_8:
+		case DestFormat::Alpha_8:
 			descriptor.colorAttachments[0].pixelFormat = MTLPixelFormatR8Unorm;
 			break;
 
@@ -2007,10 +1994,10 @@ id<MTLRenderPipelineState> MetalBackend::_compileRenderPipeline( NSString* label
 			assert(false);
 	}
 
-	bool bNoAlpha = ( destFormat == PixelFormat::BGRX_8_linear || destFormat == PixelFormat::BGRX_8_sRGB );
+	bool bNoAlpha = ( destFormat == DestFormat::BGRX8_linear || destFormat == DestFormat::BGRX8_sRGB );
 
 
-	bool bAlphaOnly = (destFormat == PixelFormat::Alpha_8);
+	bool bAlphaOnly = (destFormat == DestFormat::Alpha_8);
 
 	switch( blendMode )
 	{

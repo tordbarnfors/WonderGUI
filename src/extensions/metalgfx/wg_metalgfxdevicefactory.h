@@ -44,7 +44,8 @@ namespace wg
 
 		struct Blueprint
 		{
-			PixelFormat					defaultCanvasPixelFormat = PixelFormat::Undefined;
+			PixelFormat					defaultCanvasPixelFormat = PixelFormat::Undefined;	// ARGB_8, XRGB_8 or Alpha_8. Undefined means ARGB_8.
+			ColorSpace					defaultCanvasColorSpace = ColorSpace::sRGB;
 			MTLRenderPassDescriptor *	defaultCanvasRenderPassDesc = nullptr;
 			int 						defaultCanvasScale = 64;
 			SizeI						defaultCanvasSize;
@@ -73,6 +74,7 @@ namespace wg
 		MTLRenderPassDescriptor * 	m_pDefaultCanvasRenderPassDesc = nullptr;
 		SizeI						m_defaultCanvasSize;
 		PixelFormat					m_defaultCanvasPixelFormat = PixelFormat::Undefined;
+		ColorSpace					m_defaultCanvasColorSpace = ColorSpace::sRGB;
 		int							m_defaultCanvasScale = 64;
 
 	};
