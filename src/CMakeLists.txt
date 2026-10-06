@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.28)
+cmake_minimum_required(VERSION 4.4)
 
 include(GenerateExportHeader)
 
@@ -18,6 +18,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 set(WG_ROOT ${PROJECT_SOURCE_DIR}/..)
 
+option(WONDERGUI_FETCH_DEPS "Automatically download SDL2/FreeType if not found" ON)
+
 
 #------------------------------------------------------------------------------
 # DIRECTORIES
@@ -29,64 +31,46 @@ set(WG_ROOT ${PROJECT_SOURCE_DIR}/..)
 #
 #------------------------------------------------------------------------------
 
-if(WIN32)
-	set(SDL2_INCDIR ${WG_ROOT}/SDL2/include)
-	set(SDL2_LIBDIR ${WG_ROOT}/SDL2/lib/x64/)
-	set(SDL2_LIBS SDL2 SDL2main)
+# ---------- SDL2 ----------
+find_package(SDL2 CONFIG QUIET)
 
-	set(SDL2IMAGE_INCDIR ${WG_ROOT}/SDL2_image/include)
-	set(SDL2IMAGE_LIBDIR ${WG_ROOT}/SDL2_image/lib/x64/)
-	set(SDL2IMAGE_LIBS SDL2_image)
-
-	set(FREETYPE2_INCDIR ${WG_ROOT}/freetype/include)
-	set(FREETYPE2_LIBDIR ${WG_ROOT}/freetype/lib/x64/)
-    set(FREETYPE2_LIB freetype)
-
-	set(GLEW_INCDIR ${WG_ROOT}/glew/include)
-	set(GLEW_LIBDIR ${WG_ROOT}/glew/lib/Release/x64/)	
-	set(OPENGL_LIBS glew32 opengl32)
-
-elseif(APPLE)
-
-
-    set(FREETYPE2_LIB freetype)
-    # Use the stable 'opt' path and the freetype2 subfolder
-    set(FREETYPE2_INCDIR "/opt/homebrew/opt/freetype/include/freetype2;/opt/homebrew/include" CACHE STRING "Freetype include dirs (list)")
-	set(FREETYPE2_LIBDIR  /opt/homebrew/opt/freetype/lib            CACHE FILEPATH "Path to libfreetype")
-    # If you previously set FREETYPE2_LIB to 'freetype', keep it:
-    set(FREETYPE2_LIB freetype)
-
-    # Make sure the linker actually searches the lib dir:
-    # (CMake 3.13+)
-    add_link_options(-L${FREETYPE2_LIBDIR})
-    # or per-target:
-    # target_link_directories(streamgendll PRIVATE ${FREETYPE2_LIBDIR})
-
-    #--------------------
-    # Use local freetype instead of what is supplied by homebrew.
-    #--------------------
-	# set(FREETYPE2_INCDIR ${WG_ROOT}/freetype/include)
-	# set(FREETYPE2_LIBDIR ${WG_ROOT}/freetype/lib/)
-    # set(FREETYPE2_LIB freetype bz2 z brotlidec brotlicommon )
-
-    find_library(SDL2_LIBS SDL2)
-    find_library(SDL2IMAGE_LIBS SDL2_image)
-    find_library(OPENGL_LIBS OpenGL)
-    find_library(APPKIT_LIB AppKit)
-    find_library(METAL_LIB Metal)
-
-
-else()
-    set(FREETYPE2_LIB freetype)
-	set(FREETYPE2_INCDIR /usr/include/freetype2 CACHE STRING "Freetype include dirs (list)")
-	set(FREETYPE2_LIBDIR "" CACHE FILEPATH "Path to libfreetype.so or .a")
-
-	set(SDL2_LIBS SDL2)
-	set(SDL2IMAGE_LIBS SDL2_image)
-
-	set(OPENGL_LIBS GLEW GL)
-
+if(NOT SDL2_FOUND AND WONDERGUI_FETCH_DEPS)
+    include(FetchContent)
+    FetchContent_Declare(
+        SDL2
+        GIT_REPOSITORY https://github.com/libsdl-org/SDL.git
+        GIT_TAG        release-2.30.0
+    )
+    FetchContent_MakeAvailable(SDL2)
+    # SDL2 sets up SDL2::SDL2 / SDL2::SDL2main targets itself when built this way
 endif()
+
+# ---------- FreeType ----------
+find_package(Freetype QUIET)
+
+if(NOT Freetype_FOUND AND WONDERGUI_FETCH_DEPS)
+    include(FetchContent)
+    FetchContent_Declare(
+        freetype
+        GIT_REPOSITORY https://github.com/freetype/freetype.git
+        GIT_TAG        VER-2-14-3
+    )
+    FetchContent_MakeAvailable(freetype)
+    add_library(Freetype::Freetype ALIAS freetype)
+endif()
+
+
+
+
+
+
+
+#    find_library(SDL2_LIBS SDL2)
+#    find_library(SDL2IMAGE_LIBS SDL2_image)
+#    find_library(OPENGL_LIBS OpenGL)
+#    find_library(APPKIT_LIB AppKit)
+#    find_library(METAL_LIB Metal)
+
 
 
 #------------------------------------------------------------------------------
@@ -102,7 +86,7 @@ set(WAPPLIB wappwin32dx12)			# WonderApp framework for Win32, using software ren
 
 #set(WAPPLIB wappsdl2sw)			# WonderApp framework based on SDL2, using software rendering.
 									# Works on Windows, Mac and Linux.
-#set(WAPPLIB wappsdl2gl)			# WonderApp framework based on SDL2, using OpenGL rendering.
+set(WAPPLIB wappsdl2gl)			# WonderApp framework based on SDL2, using OpenGL rendering.
 									# Works on Windows, Mac and Linux, although deprecated on both Windows and Mac.
 #set(WAPPLIB wappsdl2metal)			# WonderApp framework based on SDL2, using Metal rendering.
 									# Works on Mac.

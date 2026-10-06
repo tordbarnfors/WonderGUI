@@ -23,14 +23,11 @@
 #define WG_DEBUGWINDOW_DOT_H
 #pragma once
 
+#include <functional>
+
 #include <wg_capsule.h>
-#include <wg_debugbackend.h>
-
-#include <wg_objectinspector.h>
-#include <wg_skininspector.h>
-#include <wg_widgettreeview.h>
-
-
+#include <wg_textdisplay.h>
+#include <wg_debugtheme.h>
 
 namespace wg
 {
@@ -40,6 +37,15 @@ namespace wg
 	typedef	WeakPtr<DebugWindow>	DebugWindow_wp;
 
 	//____ DebugWindow __________________________________________________________
+	//
+	// The window chrome of the debugger: a title bar with a close button and a
+	// holder for the content. Used by both frontends - DebugFrontend puts them
+	// in its workspace, DebugOverlay in its window slots - so that a debugger
+	// window looks and behaves the same wherever it is shown.
+	//
+	// The window doesn't position itself, that is up to whoever holds it.
+	// Pressing the close button releases the window from its parent unless an
+	// onClose callback is set, in which case that decides what closing means.
 
 	class DebugWindow : public Capsule
 	{
@@ -57,7 +63,9 @@ namespace wg
 			Finalizer_p		finalizer = nullptr;
 			int				id = 0;
 			Widget_p		inspected;
+			String			label;
 			MarkPolicy		markPolicy = MarkPolicy::Undefined;
+			std::function<void(DebugWindow*)>	onClose;
 			bool			pickable = false;
 			uint8_t			pickCategory = 0;
 			bool			pickHandle = false;
@@ -96,14 +104,26 @@ namespace wg
 				m_pLabel->setFlagged(focused);
 		}
 
+		//.____ Internal ________________________________________________
+
+		// Lets a holder that implements dragging and resizing tell what was hit:
+		// the title bar (drag the window), the frame around it (resize the
+		// window), or something in the title row or the content (leave it alone,
+		// it is a widget of its own).
+
+		Widget_p	_titleBar() const { return m_pLabel; }
+		bool		_isFrame( Widget * pWidget ) const;
+
 	protected:
 		DebugWindow(const Blueprint& blueprint);
 		virtual ~DebugWindow();
 
 		TextDisplay_p	m_pLabel;
+		Widget_p		m_pLabelRow;
 		Capsule_p		m_pContentHolder;
 		Object_p		m_pInspected;
 
+		std::function<void(DebugWindow*)>	m_onClose;
 	};
 
 

@@ -616,6 +616,9 @@ namespace wg
 
 			pLink = pNextLink;
 		}
+
+		m_pFirstLink = nullptr;
+		m_pLastLink = nullptr;
 	}
 
 	//____ _updateLinks() __________________________________________
@@ -697,6 +700,10 @@ namespace wg
 		{
 			if( pLink->m_index == oldIndex )
 				pLink->m_index = newIndex;
+			else if( oldIndex < newIndex && pLink->m_index > oldIndex && pLink->m_index <= newIndex )
+				pLink->m_index--;
+			else if( newIndex < oldIndex && pLink->m_index >= newIndex && pLink->m_index < oldIndex )
+				pLink->m_index++;
 
 			pLink->m_pSlot = m_pArray + pLink->m_index;
 
@@ -709,16 +716,27 @@ namespace wg
 	template < class SlotType>
 	void DynamicSlotVector<SlotType>::_reorderLinks(int order[])
 	{
+		if( !m_pFirstLink )
+			return;
+
+		// order[newIndex] = oldIndex, so we need the inverse mapping to find new index of a link.
+
+		int * pInverse = (int*) Base::memStackAlloc(int(sizeof(int))*m_size);
+
+		for( int i = 0 ; i < m_size ; i++ )
+			pInverse[order[i]] = i;
+
 		SlotLink * pLink = m_pFirstLink;
 
 		while( pLink )
 		{
-			pLink->m_index = order[pLink->m_index];
+			pLink->m_index = pInverse[pLink->m_index];
 			pLink->m_pSlot = m_pArray + pLink->m_index;
 
 			pLink = pLink->m_pNext;
 		}
 
+		Base::memStackFree(int(sizeof(int))*m_size);
 	}
 
 	//____ _reallocArray() ____________________________________________________

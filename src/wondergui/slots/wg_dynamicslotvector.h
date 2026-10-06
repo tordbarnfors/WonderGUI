@@ -353,6 +353,7 @@ namespace wg
 			m_size++;
 			m_pArray--;
 			_initBlock(m_pArray);
+			_updateLinksAfterInsertion(0, 1);
 			return m_pArray;
 		}
 
@@ -366,6 +367,7 @@ namespace wg
 			m_size += entries;
 			m_pArray -= entries;
 			_initBlock(m_pArray, m_pArray + entries);
+			_updateLinksAfterInsertion(0, entries);
 			return m_pArray;
 		}
 

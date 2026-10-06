@@ -62,6 +62,11 @@ namespace wg
 		//.____ Misc __________________________________________
 
 
+		// A backend serves exactly one frontend. The theme and the
+		// object-selected callback below belong to whoever owns it, so a
+		// DebugFrontend and a DebugOverlay sharing one backend means the one
+		// constructed last silently takes over both. Give each its own.
+
 		void			setTheme(const DebugTheme& theme);
 		const DebugTheme& theme() override;
 
