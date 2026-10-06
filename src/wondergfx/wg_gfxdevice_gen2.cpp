@@ -1556,7 +1556,7 @@ void GfxDeviceGen2::stretchBlit(const RectSPX& dest)
 	stretchBlit(dest, RectSPX(0, 0, m_renderState.blitSource->pixelSize() * 64));
 }
 
-void GfxDeviceGen2::stretchBlit(const RectSPX& dest, const RectSPX& src)
+void GfxDeviceGen2::stretchBlit(const RectSPX& _dest, const RectSPX& src)
 {
 	if (!m_pActiveCanvas)
 	{
@@ -1572,6 +1572,12 @@ void GfxDeviceGen2::stretchBlit(const RectSPX& dest, const RectSPX& src)
 			this, &TYPEINFO, __func__, __FILE__, __LINE__);
 		return;
 	}
+
+	// We draw whole pixels, so the scale is calculated from the destination aligned
+	// to them. Otherwise the scale doesn't match the pixels drawn and samples can end
+	// up outside the source.
+
+	RectSPX dest = align(_dest);
 
 	if (dest.w == 0 || dest.h == 0 || src.w == 0 || src.h == 0)
 		return;
@@ -1610,7 +1616,7 @@ void GfxDeviceGen2::stretchBlit(const RectSPX& dest, const RectSPX& src)
 			if (dest.w == 64)
 				mtx.xx = 0;
 			else
-				mtx.xx = ((src.w - 65) / 64.f) / ((dest.w / 64) - 1);
+				mtx.xx = (std::max(src.w - 65, 0) / 64.f) / ((dest.w / 64) - 1);
 
 			mtx.xy = 0;
 			mtx.yx = 0;
@@ -1618,7 +1624,7 @@ void GfxDeviceGen2::stretchBlit(const RectSPX& dest, const RectSPX& src)
 			if (dest.h == 64)
 				mtx.yy = 0;
 			else
-				mtx.yy = ((src.h - 65) / 64.f) / ((dest.h / 64) - 1);
+				mtx.yy = (std::max(src.h - 65, 0) / 64.f) / ((dest.h / 64) - 1);
 		}
 		else
 		{
@@ -1657,7 +1663,7 @@ void GfxDeviceGen2::stretchFlipBlit(const RectSPX& dest, GfxFlip flip)
 	stretchFlipBlit(dest, RectSPX(0, 0, m_renderState.blitSource->pixelSize() * 64), flip);
 }
 
-void GfxDeviceGen2::stretchFlipBlit(const RectSPX& dest, const RectSPX& src, GfxFlip flip)
+void GfxDeviceGen2::stretchFlipBlit(const RectSPX& _dest, const RectSPX& src, GfxFlip flip)
 {
 	if (!m_pActiveCanvas)
 	{
@@ -1674,37 +1680,51 @@ void GfxDeviceGen2::stretchFlipBlit(const RectSPX& dest, const RectSPX& src, Gfx
 		return;
 	}
 
+	// Scale is calculated from the destination aligned to whole pixels, see stretchBlit().
+
+	RectSPX dest = align(_dest);
+
+	if (dest.w == 0 || dest.h == 0 || src.w == 0 || src.h == 0)
+		return;
+
 	float scaleX, scaleY;
 	float ofsX, ofsY;
 
 	float srcW = src.w / 64.f;
 	float srcH = src.h / 64.f;
 
+	// Number of destination pixels along source x and y. Rotations swap them.
+
+	bool bRotated = (s_blitFlipTransforms[(int)flip][0][0] == 0);
+
+	int destAlongSrcX = (bRotated ? dest.h : dest.w) / 64;
+	int destAlongSrcY = (bRotated ? dest.w : dest.h) / 64;
+
 	if (m_renderState.blitSource->sampleMethod() == SampleMethod::Bilinear)
 	{
-		srcW -= 1.f;
-		srcH -= 1.f;
+		srcW = std::max(srcW - 1.f, 0.f);
+		srcH = std::max(srcH - 1.f, 0.f);
 
-		if (dest.w == 64)
+		if (destAlongSrcX == 1)
 			scaleX = 0;
 		else
-			scaleX = srcW / ((dest.w / 64) - 1);
+			scaleX = srcW / (destAlongSrcX - 1);
 
-		if (dest.h == 64)
+		if (destAlongSrcY == 1)
 			scaleY = 0;
 		else
-			scaleY = srcH / ((dest.h / 64) - 1);
+			scaleY = srcH / (destAlongSrcY - 1);
 
-		ofsX = src.x + (srcW * s_blitFlipOffsets[(int)flip][0]);
-		ofsY = src.y + (srcH * s_blitFlipOffsets[(int)flip][1]);
+		ofsX = (src.x / 64.f) + (srcW * s_blitFlipOffsets[(int)flip][0]);
+		ofsY = (src.y / 64.f) + (srcH * s_blitFlipOffsets[(int)flip][1]);
 	}
 	else
 	{
+		// Last sample is taken scale pixels from the end of the source, which is where a
+		// flipped axis starts.
 
-		//TODO: Not sure about this -1. Was -0.99 when dealing with spx and floats which looked suspicious.
-
-		scaleX = (srcW / (dest.w / 64)) - 1;
-		scaleY = (srcH / (dest.h / 64)) - 1;
+		scaleX = srcW / destAlongSrcX;
+		scaleY = srcH / destAlongSrcY;
 
 		ofsX = (src.x / 64.f) + (srcW - scaleX) * s_blitFlipOffsets[(int)flip][0];
 		ofsY = (src.y / 64.f) + (srcH - scaleY) * s_blitFlipOffsets[(int)flip][1];
@@ -1717,7 +1737,10 @@ void GfxDeviceGen2::stretchFlipBlit(const RectSPX& dest, const RectSPX& src, Gfx
 	mtx.yx = scaleX * s_blitFlipTransforms[(int)flip][1][0];
 	mtx.yy = scaleY * s_blitFlipTransforms[(int)flip][1][1];
 
-	_transformBlitComplex(dest, { int(ofsX*1024), int(ofsY*1024) }, mtx, Command::Blit);
+	// Source position is in 1/1024 pixels. Rounded up, since a flipped axis counts down
+	// from it and would end up just outside the source if it started a bit too low.
+
+	_transformBlitComplex(dest, { int(std::ceil(ofsX*1024)), int(std::ceil(ofsY*1024)) }, mtx, Command::Blit);
 }
 
 //____ precisionBlit() ____________________________________________________
@@ -2077,7 +2100,7 @@ void GfxDeviceGen2::stretchBlur(const RectSPX& dest)
 	stretchBlur(dest, RectSPX(0, 0, m_renderState.blitSource->pixelSize() * 64));
 }
 
-void GfxDeviceGen2::stretchBlur(const RectSPX& dest, const RectSPX& src)
+void GfxDeviceGen2::stretchBlur(const RectSPX& _dest, const RectSPX& src)
 {
 	if (!m_pActiveCanvas)
 	{
@@ -2102,6 +2125,10 @@ void GfxDeviceGen2::stretchBlur(const RectSPX& dest, const RectSPX& src)
 		return;
 	}
 
+	// Scale is calculated from the destination aligned to whole pixels, see stretchBlit().
+
+	RectSPX dest = align(_dest);
+
 	if (dest.w == 0 || dest.h == 0 || src.w == 0 || src.h == 0)
 		return;
 
@@ -2120,7 +2147,7 @@ void GfxDeviceGen2::stretchBlur(const RectSPX& dest, const RectSPX& src)
 			if (dest.w == 64)
 				mtx.xx = 0;
 			else
-				mtx.xx = ((src.w - 64) / 64.f) / ((dest.w / 64) - 1);
+				mtx.xx = (std::max(src.w - 64, 0) / 64.f) / ((dest.w / 64) - 1);
 
 			mtx.xy = 0;
 			mtx.yx = 0;
@@ -2128,17 +2155,17 @@ void GfxDeviceGen2::stretchBlur(const RectSPX& dest, const RectSPX& src)
 			if (dest.h == 64)
 				mtx.yy = 0;
 			else
-				mtx.yy = ((src.h - 64) / 64.f) / ((dest.h / 64) - 1);
+				mtx.yy = (std::max(src.h - 64, 0) / 64.f) / ((dest.h / 64) - 1);
 		}
 		else
 		{
 			// We want last src sample to be taken as close to the end of the source
 			// rectangle as possible in order to get a more balanced representation.
 
-			mtx.xx = src.w / 64 / (dest.w / 64);
+			mtx.xx = src.w / 64.f / (dest.w / 64);
 			mtx.xy = 0;
 			mtx.yx = 0;
-			mtx.yy = src.h / 64 / (dest.h / 64);
+			mtx.yy = src.h / 64.f / (dest.h / 64);
 		}
 
 		_transformBlitComplex(dest, { src.x*16, src.y*16 }, mtx, Command::Blur);
