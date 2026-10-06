@@ -332,6 +332,8 @@ void wg_populatePluginInterface(wg_plugin_interface * pHeader)
 	pBody->surface.addSurfaceObserver		= &wg_addSurfaceObserver;
 	pBody->surface.removeSurfaceObserver	= &wg_removeSurfaceObserver;
 	pBody->surface.getSurfaceBlueprint		= &wg_getSurfaceBlueprint;
+	pBody->surface.surfaceColorSpace		= &wg_surfaceColorSpace;
+	pBody->surface.surfaceIsBigEndian		= &wg_surfaceIsBigEndian;
 
 
 	pBody->surfaceFactory.structSize		= sizeof(wg_surfacefactory_calls);

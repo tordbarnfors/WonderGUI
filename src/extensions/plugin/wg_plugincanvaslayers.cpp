@@ -48,7 +48,9 @@ namespace wg
 		{
 			PixelFormat format = layer.format;
 
-			if (format == PixelFormat::Index_8 || format == PixelFormat::Index_8_sRGB || format == PixelFormat::Index_8_linear)
+			auto type = Util::pixelFormatToDescription(format).type;
+
+			if (type == PixelType::Index || type == PixelType::Bitplanes)
 			{
 				Base::throwError(ErrorLevel::SilentError, ErrorCode::InvalidParam, "Canvas layers can not be palette-based", nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
 				return nullptr;
@@ -97,6 +99,7 @@ namespace wg
 		for (int i = 0; i < nLayers; i++)
 		{
 			cBP.layers[i].format = (wg_pixelFormat) bp.layers[i].format;
+			cBP.layers[i].colorSpace = (wg_colorSpace) bp.layers[i].colorSpace;
 
 			if (bp.layers[i].preBlendCanvasFunc)
 			{

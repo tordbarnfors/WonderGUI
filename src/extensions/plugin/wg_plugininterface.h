@@ -420,6 +420,8 @@ typedef struct wg_surface_calls_struct
 	int					(*addSurfaceObserver)(wg_obj surface, wg_surfaceObserver_func, void* pData, int data);
 	int					(*removeSurfaceObserver)(wg_obj surface, int observerId);
 	wg_surfaceBP		(*getSurfaceBlueprint)(wg_obj surface);
+	wg_colorSpace		(*surfaceColorSpace)(wg_obj surface);
+	int					(*surfaceIsBigEndian)(wg_obj surface);
 
 } wg_surface_calls;
 

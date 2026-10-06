@@ -37,7 +37,7 @@ namespace wg
 
 	//____ constructor _____________________________________________________________
 
-	PluginSurface::PluginSurface(wg_obj object) : Surface( Blueprint(), PixelFormat::BGRA_8, SampleMethod::Bilinear )
+	PluginSurface::PluginSurface(wg_obj object) : Surface( Blueprint(), PixelFormat::ARGB_8, SampleMethod::Bilinear )
 	{
 		PluginCalls::object->retain(object);
 
@@ -48,7 +48,9 @@ namespace wg
 		m_id				= PluginCalls::surface->getSurfaceIdentity(object);
 		m_scale				= PluginCalls::surface->surfaceScale(object);
 		m_pixelFormat		= (PixelFormat)PluginCalls::surface->surfacePixelFormat(object);
-		m_pPixelDescription	= (PixelDescription*)PluginCalls::surface->surfacePixelDescription(object);
+		m_colorSpace		= (ColorSpace)PluginCalls::surface->surfaceColorSpace(object);
+		m_bBigEndian		= PluginCalls::surface->surfaceIsBigEndian(object) != 0;
+		m_pixelDescription	= * (const PixelDescription*)PluginCalls::surface->surfacePixelDescription(object);
 
 		wg_sizeI pixSize 	= PluginCalls::surface->surfacePixelSize(object);
 		m_size				= * (SizeI*) &pixSize;
@@ -92,14 +94,16 @@ namespace wg
 	{
 		auto pixbuf = PluginCalls::surface->allocPixelBufferFromRect(m_cSurface, (const wg_rectI*)&rect);
 
-		return { (PixelFormat) pixbuf.format, pixbuf.pixels, (Color8*) pixbuf.palette, * (RectI*) &pixbuf.rect, pixbuf.pitch };
+		return { (PixelFormat) pixbuf.format, pixbuf.pixels, (Color8*) pixbuf.palette, * (RectI*) &pixbuf.rect, pixbuf.pitch,
+				 (ColorSpace) pixbuf.colorSpace, pixbuf.bigEndian != 0 };
 	}
 
 	//____ pushPixels() _______________________________________________________
 
 	bool PluginSurface::pushPixels(const PixelBuffer& buffer, const RectI& bufferRect)
 	{
-		wg_pixelBuffer pixbuf = { (wg_pixelFormat)buffer.format, buffer.pixels, (wg_color8*)buffer.palette, *(wg_rectI*)&buffer.rect, buffer.pitch };
+		wg_pixelBuffer pixbuf = { (wg_pixelFormat)buffer.format, buffer.pixels, (wg_color8*)buffer.palette, *(wg_rectI*)&buffer.rect, buffer.pitch,
+								  (wg_colorSpace)buffer.colorSpace, (uint8_t) buffer.bigEndian };
 
 		return PluginCalls::surface->pushPixelsFromRect(m_cSurface, &pixbuf, (const wg_rectI*) &bufferRect);
 	}
@@ -110,7 +114,8 @@ namespace wg
 	{
 		//TODO: Support bAutoNotify when we are ready to change the C-API.
 
-		wg_pixelBuffer pixbuf = { (wg_pixelFormat)buffer.format, buffer.pixels, (wg_color8*)buffer.palette, *(wg_rectI*)&buffer.rect, buffer.pitch };
+		wg_pixelBuffer pixbuf = { (wg_pixelFormat)buffer.format, buffer.pixels, (wg_color8*)buffer.palette, *(wg_rectI*)&buffer.rect, buffer.pitch,
+								  (wg_colorSpace)buffer.colorSpace, (uint8_t) buffer.bigEndian };
 
 		PluginCalls::surface->pullPixelsFromRect(m_cSurface, &pixbuf, (const wg_rectI*)&bufferRect);
 
@@ -124,7 +129,8 @@ namespace wg
 
 	void PluginSurface::freePixelBuffer(const PixelBuffer& buffer)
 	{
-		wg_pixelBuffer pixbuf = { (wg_pixelFormat)buffer.format, buffer.pixels, (wg_color8*)buffer.palette, *(wg_rectI*)&buffer.rect, buffer.pitch };
+		wg_pixelBuffer pixbuf = { (wg_pixelFormat)buffer.format, buffer.pixels, (wg_color8*)buffer.palette, *(wg_rectI*)&buffer.rect, buffer.pitch,
+								  (wg_colorSpace)buffer.colorSpace, (uint8_t) buffer.bigEndian };
 
 		PluginCalls::surface->freePixelBuffer(m_cSurface, &pixbuf);
 	}

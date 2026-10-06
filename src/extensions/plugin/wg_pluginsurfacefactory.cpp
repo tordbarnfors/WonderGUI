@@ -131,8 +131,10 @@ namespace wg
 
 	void PluginSurfaceFactory::_convertBlueprint(wg_surfaceBP* pDest, const Surface::Blueprint* pSource)
 	{
+		pDest->byteOrder = pSource->bigEndian ? WG_BYTEORDER_BIG_ENDIAN : WG_BYTEORDER_LITTLE_ENDIAN;
 		pDest->buffered = pSource->buffered;
 		pDest->canvas = pSource->canvas;
+		pDest->colorSpace = (wg_colorSpace)pSource->colorSpace;
 		pDest->palette = (wg_color8*)pSource->palette;
 		pDest->paletteSize = pSource->paletteSize;
 		pDest->paletteCapacity = pSource->paletteCapacity;
