@@ -25,7 +25,7 @@ public:
 		for (int i = 0; i < c_nbCases; i++)
 		{
 			const Case& c = c_cases[i];
-			m_pCanvases[i] = pFactory->createSurface(WGBP(Surface, _.size = { c.w, c.h }, _.format = c.format, _.canvas = true,
+			m_pCanvases[i] = pFactory->createSurface(WGBP(Surface, _.size = { c.w, c.h }, _.format = c.format, _.colorSpace = c.colorSpace, _.canvas = true,
 														  _.buffered = c.bBuffered, _.sampleMethod = SampleMethod::Nearest));
 		}
 		return true;
@@ -65,12 +65,12 @@ public:
 
 			// Copy what we read back into a new surface.
 			// The buffer's format can differ from the one we asked for, since a backend
-			// may store a format it lacks in a wider one, like BGR_8 as BGRX_8 on DX12.
+			// may store a format it lacks in a wider one, like RGB_565 as XRGB_8 on DX12 and Metal.
 
 			auto buffer = pCanvas->allocPixelBuffer({ 0, 0, c.w, c.h });
 			pCanvas->pushPixels(buffer, { 0, 0, c.w, c.h });
-			m_pCopies[i] = pFactory->createSurface(WGBP(Surface, _.size = { c.w, c.h }, _.format = c.format, _.sampleMethod = SampleMethod::Nearest),
-												   buffer.pixels, buffer.format, buffer.pitch);
+			m_pCopies[i] = pFactory->createSurface(WGBP(Surface, _.size = { c.w, c.h }, _.format = c.format, _.colorSpace = buffer.colorSpace, _.sampleMethod = SampleMethod::Nearest),
+												   buffer.pixels, Util::pixelFormatToDescription(buffer.format, buffer.bigEndian), buffer.pitch);
 			pCanvas->freePixelBuffer(buffer);
 
 			// Pixel (2,1) is inside the second fill of the second round.
@@ -105,12 +105,12 @@ public:
 
 private:
 
-	struct Case { PixelFormat format; int w, h; bool bBuffered; };
+	struct Case { PixelFormat format; ColorSpace colorSpace; int w, h; bool bBuffered; };
 
 	static const int c_nbCases = 6;
-	static constexpr Case c_cases[c_nbCases] = { { PixelFormat::Alpha_8, 64, 32, false }, { PixelFormat::Alpha_8, 61, 37, false },
-												 { PixelFormat::Alpha_8, 3, 5, false }, { PixelFormat::BGRA_8_linear, 61, 15, true },
-												 { PixelFormat::BGR_8_linear, 61, 15, true }, { PixelFormat::BGRA_8_linear, 61, 15, false } };
+	static constexpr Case c_cases[c_nbCases] = { { PixelFormat::Alpha_8, ColorSpace::Linear, 64, 32, false }, { PixelFormat::Alpha_8, ColorSpace::Linear, 61, 37, false },
+												 { PixelFormat::Alpha_8, ColorSpace::Linear, 3, 5, false }, { PixelFormat::ARGB_8, ColorSpace::Linear, 61, 15, true },
+												 { PixelFormat::RGB_565, ColorSpace::Linear, 61, 15, true }, { PixelFormat::ARGB_8, ColorSpace::Linear, 61, 15, false } };
 
 	Surface_p	m_pCanvases[c_nbCases];
 	Surface_p	m_pCopies[c_nbCases];

@@ -82,9 +82,7 @@ int main ( int argc, char** argv )
 	PixelFormat format = PixelFormat::Undefined;
 
 	if( pWinSurf->format->BitsPerPixel == 32 )
-		format = PixelFormat::BGRA_8_sRGB;
-	else if( pWinSurf->format->BitsPerPixel == 24 )
-		format = PixelFormat::BGR_8_sRGB;
+		format = PixelFormat::ARGB_8;						// 24-bit window surfaces are not supported.
 
 	Blob_p pCanvasBlob = Blob::create( pWinSurf->pixels, 0);
 	SoftSurface_p pCanvas = SoftSurface::create({ .format = format, .size = SizeI(pWinSurf->w,pWinSurf->h) }, pCanvasBlob, pWinSurf->pitch);
@@ -103,7 +101,7 @@ int main ( int argc, char** argv )
 	// No error handling or such to keep this example short and simple.
 
 	SDL_Surface * pSDLSurf = SDL_LoadBMP( "resources/simple_button.bmp" );
-	SoftSurface_p pButtonSurface = SoftSurface::create({ .format = PixelFormat::BGR_8, .size = SizeI(pSDLSurf->w, pSDLSurf->h) }, (unsigned char*)pSDLSurf->pixels, PixelFormat::BGR_8, pSDLSurf->pitch, 0);
+	SoftSurface_p pButtonSurface = SoftSurface::create({ .format = PixelFormat::XRGB_8, .size = SizeI(pSDLSurf->w, pSDLSurf->h) }, (unsigned char*)pSDLSurf->pixels, PixelDescription(24, PixelType::Chunky, 0xFF0000, 0xFF00, 0xFF, 0, false), pSDLSurf->pitch, 0);
 	SDL_FreeSurface(pSDLSurf);
 
 
@@ -195,8 +193,8 @@ int main ( int argc, char** argv )
 	
 
 
-	auto pCanvas1 = SoftSurface::create({ .canvas = true, .format = PixelFormat::BGRX_8_sRGB, .size = {320,200} } );
-	auto pCanvas2 = SoftSurface::create({ .canvas = true, .format = PixelFormat::BGRX_8_sRGB, .size = {320,200} } );
+	auto pCanvas1 = SoftSurface::create({ .canvas = true, .format = PixelFormat::XRGB_8, .size = {320,200} } );
+	auto pCanvas2 = SoftSurface::create({ .canvas = true, .format = PixelFormat::XRGB_8, .size = {320,200} } );
 
 	pCanvas1->fill( Color::Black );
 	pCanvas2->fill( Color::Black );
@@ -237,7 +235,7 @@ int main ( int argc, char** argv )
 	
 		//
 
-		auto pSurf = pGfxDevice->surfaceFactory()->createSurface({ .format = PixelFormat::BGRA_8_sRGB, .size = {256,256} });
+		auto pSurf = pGfxDevice->surfaceFactory()->createSurface({ .format = PixelFormat::ARGB_8, .size = {256,256} });
 		pSurf->fill(Color::HotPink);
 
 		auto pixBuffer = pSurf->allocPixelBuffer();

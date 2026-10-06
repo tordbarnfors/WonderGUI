@@ -422,9 +422,7 @@ int main(int argc, char** argv)
 			PixelFormat type = PixelFormat::Undefined;
 
 			if (pScreen->format->BitsPerPixel == 32)
-				type = PixelFormat::BGRA_8;
-			else if (pScreen->format->BitsPerPixel == 24)
-				type = PixelFormat::BGR_8;
+				type = PixelFormat::ARGB_8;				// 24-bit window surfaces are not supported.
 
 			Blob_p pBlob = Blob::create(pScreen->pixels, nullptr);
 
@@ -525,9 +523,9 @@ int main(int argc, char** argv)
 			PixelFormat format = PixelFormat::Unknown;
 
 				if( pWinSurf->format->BitsPerPixel == 32 )
-					format = PixelFormat::BGRA_8;
+					format = PixelFormat::ARGB_8;
 				else if( pWinSurf->format->BitsPerPixel == 24 )
-					format = PixelFormat::BGR_8;
+					format = PixelFormat::XRGB_8;
 
 				Blob_p pCanvasBlob = Blob::create( pWinSurf->pixels, 0);
 				SoftSurface_p pCanvas = SoftSurface::create( SizeI(pWinSurf->w,pWinSurf->h), format, pCanvasBlob, pWinSurf->pitch );
@@ -539,12 +537,12 @@ int main(int argc, char** argv)
 		RootPanel_p pRoot = RootPanel::create(CanvasRef::Default, pDevice);
 		/*
 			auto pCanvasLayers = CanvasLayers::create( WGBP(CanvasLayers,
-				_.layers = { {.format = PixelFormat::Alpha_8 }, {.format = PixelFormat::BGRA_8}, {.format = PixelFormat::BGRA_8} }
+				_.layers = { {.format = PixelFormat::Alpha_8 }, {.format = PixelFormat::ARGB_8}, {.format = PixelFormat::ARGB_8} }
 													));
 		*/
 
 		auto pCanvasLayers = CanvasLayers::create(WGBP(CanvasLayers,
-			_.layers = { { PixelFormat::Alpha_8 }, { PixelFormat::BGRA_8 }, { PixelFormat::BGRA_8, nullptr } }
+			_.layers = { { PixelFormat::Alpha_8 }, { PixelFormat::ARGB_8 }, { PixelFormat::ARGB_8, nullptr } }
 		));
 
 
@@ -572,7 +570,7 @@ int main(int argc, char** argv)
 
 			SDL_Surface * pFontSurf = IMG_Load("resources/anuvverbubbla_8x8.png");
 			//	convertSDLFormat( &pixelDesc, pFontSurf->format );
-			Surface_p pFontImg = pSurfaceFactory->createSurface(SizeI(pFontSurf->w, pFontSurf->h), PixelFormat::BGRA_8, (unsigned char*)pFontSurf->pixels, pFontSurf->pitch);
+			Surface_p pFontImg = pSurfaceFactory->createSurface(SizeI(pFontSurf->w, pFontSurf->h), PixelFormat::ARGB_8, (unsigned char*)pFontSurf->pixels, pFontSurf->pitch);
 			SDL_FreeSurface(pFontSurf);
 
 			BitmapFont_p pBmpFont = BitmapFont::create(pFontImg, pFontSpec);
@@ -609,7 +607,7 @@ int main(int argc, char** argv)
 
 		SDL_Surface* pSDLSurf = IMG_Load("resources/simple_button.bmp");
 		convertSDLFormat(&pixelDesc, pSDLSurf->format);
-		Surface_p pButtonSurface = pSurfaceFactory->createSurface({ .format = PixelFormat::BGR_8, .size = SizeI(pSDLSurf->w, pSDLSurf->h) }, (unsigned char*)pSDLSurf->pixels, pixelDesc, pSDLSurf->pitch);
+		Surface_p pButtonSurface = pSurfaceFactory->createSurface({ .format = PixelFormat::XRGB_8, .size = SizeI(pSDLSurf->w, pSDLSurf->h) }, (unsigned char*)pSDLSurf->pixels, pixelDesc, pSDLSurf->pitch);
 		SDL_FreeSurface(pSDLSurf);
 		m_pSimpleButtonSkin = BlockSkin::create({
 			.axis = wg::Axis::X,
@@ -621,21 +619,21 @@ int main(int argc, char** argv)
 
 		pSDLSurf = IMG_Load("resources/simple_icon.png");
 		convertSDLFormat(&pixelDesc, pSDLSurf->format);
-		Surface_p pBackgroundSurface = pSurfaceFactory->createSurface({ .format = PixelFormat::BGR_8, .size = SizeI(pSDLSurf->w, pSDLSurf->h) }, (unsigned char*)pSDLSurf->pixels, pixelDesc, pSDLSurf->pitch);
+		Surface_p pBackgroundSurface = pSurfaceFactory->createSurface({ .format = PixelFormat::XRGB_8, .size = SizeI(pSDLSurf->w, pSDLSurf->h) }, (unsigned char*)pSDLSurf->pixels, pixelDesc, pSDLSurf->pitch);
 		SDL_FreeSurface(pSDLSurf);
 		BlockSkin_p pBackgroundSkin = BlockSkin::create(pBackgroundSurface);
 
 
 		pSDLSurf = IMG_Load("resources/splash.png");
 		convertSDLFormat(&pixelDesc, pSDLSurf->format);
-		Surface_p pSplashSurface = pSurfaceFactory->createSurface({ .format = PixelFormat::BGR_8, .size = SizeI(pSDLSurf->w, pSDLSurf->h) }, (unsigned char*)pSDLSurf->pixels, pixelDesc, pSDLSurf->pitch);
+		Surface_p pSplashSurface = pSurfaceFactory->createSurface({ .format = PixelFormat::XRGB_8, .size = SizeI(pSDLSurf->w, pSDLSurf->h) }, (unsigned char*)pSDLSurf->pixels, pixelDesc, pSDLSurf->pitch);
 		SDL_FreeSurface(pSDLSurf);
 		BlockSkin_p pSplashSkin = BlockSkin::create(pSplashSurface);
 
 
 		pSDLSurf = IMG_Load("resources/state_button.bmp");
 		convertSDLFormat(&pixelDesc, pSDLSurf->format);
-		Surface_p pStateButtonSurface = pSurfaceFactory->createSurface({ .format = PixelFormat::BGR_8, .size = SizeI(pSDLSurf->w, pSDLSurf->h) }, (unsigned char*)pSDLSurf->pixels, pixelDesc, pSDLSurf->pitch);
+		Surface_p pStateButtonSurface = pSurfaceFactory->createSurface({ .format = PixelFormat::XRGB_8, .size = SizeI(pSDLSurf->w, pSDLSurf->h) }, (unsigned char*)pSDLSurf->pixels, pixelDesc, pSDLSurf->pitch);
 		SDL_FreeSurface(pSDLSurf);
 		//	BlockSkin_p pStateButtonSkin = BlockSkin::create(pStateButtonSurface, { State::Default, State::Hovered, State::Checked, State::Checked + State::Hovered, State::Disabled }, Border(3), Axis::X);
 		auto pStateButtonSkin = BlockSkin::create(BlockSkin::Blueprint
@@ -652,7 +650,7 @@ int main(int argc, char** argv)
 
 		pSDLSurf = IMG_Load("resources/grey_pressable_plate.bmp");
 		convertSDLFormat(&pixelDesc, pSDLSurf->format);
-		Surface_p pPressablePlateSurface = pSurfaceFactory->createSurface({ .format = PixelFormat::BGR_8, .size = SizeI(pSDLSurf->w, pSDLSurf->h) }, (unsigned char*)pSDLSurf->pixels, pixelDesc, pSDLSurf->pitch);
+		Surface_p pPressablePlateSurface = pSurfaceFactory->createSurface({ .format = PixelFormat::XRGB_8, .size = SizeI(pSDLSurf->w, pSDLSurf->h) }, (unsigned char*)pSDLSurf->pixels, pixelDesc, pSDLSurf->pitch);
 		SDL_FreeSurface(pSDLSurf);
 		//	BlockSkin_p pPressablePlateSkin = BlockSkin::create(pPressablePlateSurface, { State::Default, State::Hovered, State::Pressed, State::Disabled }, Border(3), Axis::X);
 		m_pPressablePlateSkin = BlockSkin::create(BlockSkin::Blueprint
@@ -668,13 +666,13 @@ int main(int argc, char** argv)
 
 		pSDLSurf = IMG_Load("resources/list_entry.png");
 		convertSDLFormat(&pixelDesc, pSDLSurf->format);
-		Surface_p pListEntrySurface = pSurfaceFactory->createSurface({ .format = PixelFormat::BGRA_8, .size = SizeI(pSDLSurf->w, pSDLSurf->h) }, (unsigned char*)pSDLSurf->pixels, pixelDesc, pSDLSurf->pitch);
+		Surface_p pListEntrySurface = pSurfaceFactory->createSurface({ .format = PixelFormat::ARGB_8, .size = SizeI(pSDLSurf->w, pSDLSurf->h) }, (unsigned char*)pSDLSurf->pixels, pixelDesc, pSDLSurf->pitch);
 		SDL_FreeSurface(pSDLSurf);
 		Skin_p pListEntrySkin = BlockSkin::create(pListEntrySurface, { State::Default, State::Hovered, State::Selekted, State::Selekted + State::Hovered, State::Disabled }, Border(2), Axis::X);
 
 		pSDLSurf = IMG_Load("resources/splash.png");
 		convertSDLFormat(&pixelDesc, pSDLSurf->format);
-		Surface_p pImgSurface = pSurfaceFactory->createSurface({ .format = PixelFormat::BGR_8, .sampleMethod = SampleMethod::Bilinear, .size = SizeI(pSDLSurf->w, pSDLSurf->h) }, (unsigned char*)pSDLSurf->pixels, pixelDesc, pSDLSurf->pitch);
+		Surface_p pImgSurface = pSurfaceFactory->createSurface({ .format = PixelFormat::XRGB_8, .sampleMethod = SampleMethod::Bilinear, .size = SizeI(pSDLSurf->w, pSDLSurf->h) }, (unsigned char*)pSDLSurf->pixels, pixelDesc, pSDLSurf->pitch);
 		SDL_FreeSurface(pSDLSurf);
 		BlockSkin_p pImgSkin = BlockSkin::createStaticFromSurface(pImgSurface);
 
@@ -710,12 +708,12 @@ int main(int argc, char** argv)
 
 		pSDLSurf = IMG_Load("resources/debugger_gfx.png");
 		convertSDLFormat(&pixelDesc, pSDLSurf->format);
-		Surface_p pIconSurface = pSurfaceFactory->createSurface({ .format = PixelFormat::BGRA_8, .size = SizeI(pSDLSurf->w, pSDLSurf->h) }, (unsigned char*)pSDLSurf->pixels, pixelDesc, pSDLSurf->pitch);
+		Surface_p pIconSurface = pSurfaceFactory->createSurface({ .format = PixelFormat::ARGB_8, .size = SizeI(pSDLSurf->w, pSDLSurf->h) }, (unsigned char*)pSDLSurf->pixels, pixelDesc, pSDLSurf->pitch);
 		SDL_FreeSurface(pSDLSurf);
 
 		pSDLSurf = IMG_Load("resources/checkboardtile.png");
 		convertSDLFormat(&pixelDesc, pSDLSurf->format);
-		Surface_p pTransparencyGrid = pSurfaceFactory->createSurface({ .format = PixelFormat::BGRA_8, .size = SizeI(pSDLSurf->w, pSDLSurf->h), .tiling = true }, (unsigned char*)pSDLSurf->pixels, pixelDesc, pSDLSurf->pitch);
+		Surface_p pTransparencyGrid = pSurfaceFactory->createSurface({ .format = PixelFormat::ARGB_8, .size = SizeI(pSDLSurf->w, pSDLSurf->h), .tiling = true }, (unsigned char*)pSDLSurf->pixels, pixelDesc, pSDLSurf->pitch);
 		SDL_FreeSurface(pSDLSurf);
 
 
@@ -1178,6 +1176,7 @@ void convertSDLFormat( PixelDescription * pWGFormat, const SDL_PixelFormat * pSD
 {
 	pWGFormat->type = PixelType::Chunky;
 	pWGFormat->bits = pSDLFormat->BitsPerPixel;
+	pWGFormat->bigEndian = (WG_IS_BIG_ENDIAN == 1);		// SDL masks are for pixels read in native byte order.
 
 	pWGFormat->R_mask = pSDLFormat->Rmask;
 	pWGFormat->G_mask = pSDLFormat->Gmask;
@@ -1206,12 +1205,10 @@ Surface_p loadSurface(const std::string& path, const Surface::Blueprint& bluepri
 	bp.size.w = pSDLSurf->w;
 	bp.size.h = pSDLSurf->h;
 
-	if (pixelDesc.bits == 24)
-		bp.format = PixelFormat::BGR_8;
-	else if (pixelDesc.A_mask == 0)
-		bp.format = PixelFormat::BGRX_8;
+	if (pixelDesc.A_mask == 0)
+		bp.format = PixelFormat::XRGB_8;
 	else
-		bp.format = PixelFormat::BGRA_8;
+		bp.format = PixelFormat::ARGB_8;
 
 	Surface_p pImgSurface = Base::defaultSurfaceFactory()->createSurface( bp, (unsigned char*)pSDLSurf->pixels, pixelDesc, pSDLSurf->pitch);
 
@@ -1328,7 +1325,7 @@ bool shadowLayerTest(ComponentPtr<DynamicSlot> pEntry )
 
 bool stretchBlitTest(ComponentPtr<DynamicSlot> pEntry)
 {
-	Surface_p pImgSurface = loadSurface("resources/white_frame_256x256.png", { .format = PixelFormat::BGR_8, .sampleMethod = SampleMethod::Bilinear });
+	Surface_p pImgSurface = loadSurface("resources/white_frame_256x256.png", { .format = PixelFormat::XRGB_8, .sampleMethod = SampleMethod::Bilinear });
 
 	auto pBack = FlexPanel::create();
 	pBack->setSkin( ColorSkin::create(Color::Blue) );
@@ -1796,9 +1793,9 @@ bool pianoKeyboardTest(ComponentPtr<DynamicSlot> pSlot)
 	}
 /*
 	{
-		Surface_p pOddWhiteKeys = loadSurface("resources/NisOddWhite.png", PixelFormat::BGRA_8);
-		Surface_p pEvenWhiteKeys = loadSurface("resources/NisEvenWhite.png", PixelFormat::BGRA_8);
-		Surface_p pBlackKeys = loadSurface("resources/NisBlack.png", PixelFormat::BGRA_8);
+		Surface_p pOddWhiteKeys = loadSurface("resources/NisOddWhite.png", PixelFormat::ARGB_8);
+		Surface_p pEvenWhiteKeys = loadSurface("resources/NisEvenWhite.png", PixelFormat::ARGB_8);
+		Surface_p pBlackKeys = loadSurface("resources/NisBlack.png", PixelFormat::ARGB_8);
 
 		auto pNisPiano = PianoKeyboard::create();
 		pNisPiano->setSkin(ColorSkin::create(Color::Black, { 0,0,0,0 }));
@@ -2110,9 +2107,9 @@ bool canvasStackTest(ComponentPtr<DynamicSlot> pSlot)
 	pCanvasStack->setDefaultSize({ 1280, 1600 });
 	pCanvasStack->setCanvases(2);
 
-	Surface_p pBgSurf = loadSurface("resources/parallels/background0001.png", PixelFormat::BGR_8);
-	Surface_p pFgSurf = loadSurface("resources/parallels/panel0001.png", PixelFormat::BGRA_8);
-	Surface_p pLedMaskSurf = loadSurface("resources/parallels/led_mask0001.png", PixelFormat::BGRA_8);
+	Surface_p pBgSurf = loadSurface("resources/parallels/background0001.png", PixelFormat::XRGB_8);
+	Surface_p pFgSurf = loadSurface("resources/parallels/panel0001.png", PixelFormat::ARGB_8);
+	Surface_p pLedMaskSurf = loadSurface("resources/parallels/led_mask0001.png", PixelFormat::ARGB_8);
 
 	Surface_p pLedMixTempSurf = Base::activeContext()->surfaceFactory()->createSurface(pLedMaskSurf->size());
 	pLedMixTempSurf->fill(Color::Transparent);
@@ -2157,7 +2154,7 @@ bool canvasStackTest(ComponentPtr<DynamicSlot> pSlot)
 	pCanvasStack->slot.setWidget(pContent);
 
 
-	Surface_p pHandleSurf = loadSurface("resources/parallels/fader0001.png", PixelFormat::BGRA_8);
+	Surface_p pHandleSurf = loadSurface("resources/parallels/fader0001.png", PixelFormat::ARGB_8);
 	auto pHandleSkin = BlockSkin::create(pHandleSurf);
 
 	auto pSliderBgSkin = FillMeterSkin::create(Direction::Up, Color(144/2, 196/2, 235/2), Color(144, 196, 235),Color::Transparent, BorderI(36,0,40,0), BorderI(),true);
@@ -2243,7 +2240,7 @@ bool timerTest(ComponentPtr<DynamicSlot> pSlot)
 	auto pBaseLayer = FlexPanel::create();
 	pBaseLayer->setSkin( ColorSkin::create(Color::PapayaWhip) );
 
-//	Surface_p pSurfClockFace = loadSurface("resources/clockface.png", PixelFormat::BGRA_8);
+//	Surface_p pSurfClockFace = loadSurface("resources/clockface.png", PixelFormat::ARGB_8);
 //	pSurfClockFace->setSampleMethod(SampleMethod::Bilinear);
 //	auto pSkin = SpinMeterSkin::create(pSurfClockFace, { 419,419 } );
 
@@ -2756,7 +2753,7 @@ bool memHeapFragmentationTest(ComponentPtr<DynamicSlot> pSlot)
 	}
 	
 	
-	auto pSurface = Base::activeContext()->surfaceFactory()->createSurface( { .format = PixelFormat::RGB_555_bigendian, .size = SizeI(512,512) } );
+	auto pSurface = Base::activeContext()->surfaceFactory()->createSurface( { .bigEndian = true, .colorSpace = ColorSpace::Linear, .format = PixelFormat::BGR_565, .size = SizeI(512,512) } );
 	
 	uint16_t sectionTable[1024*4];
 	
@@ -2810,10 +2807,10 @@ bool glyphAsSurfaceTest(ComponentPtr<DynamicSlot> pSlot, Font_p pFont )
 void nisBlendTest()
 {
 /*
-	SoftSurface_p pCanvas = SoftSurface::create({ 256,256 }, PixelFormat::BGR_8);
+	SoftSurface_p pCanvas = SoftSurface::create({ 256,256 }, PixelFormat::XRGB_8);
 	SurfaceFactory_p pFactory = SoftSurfaceFactory::create();
-	Surface_p pBackImg = loadSurface("../alpha_blending_example_files/knob_background.png", PixelFormat::BGRA_8);
-	Surface_p pFrontImg = loadSurface("../alpha_blending_example_files/knob_foreground_linear.png", PixelFormat::BGRA_8);
+	Surface_p pBackImg = loadSurface("../alpha_blending_example_files/knob_background.png", PixelFormat::ARGB_8);
+	Surface_p pFrontImg = loadSurface("../alpha_blending_example_files/knob_foreground_linear.png", PixelFormat::ARGB_8);
 	GfxDevice_p pDevice = SoftGfxDevice::create(pCanvas);
 	pDevice->setBlendMode(BlendMode::Replace);
 	pDevice->beginRender();
@@ -2963,7 +2960,8 @@ void unitTestMemHeap()
 bool blendRGB565BigendianTest(ComponentPtr<DynamicSlot> pEntry)
 {
 	auto pCanvas = CanvasCapsule::create( WGBP(CanvasCapsule,
-															_.pixelFormat = PixelFormat::RGB_565_bigendian ) );
+															_.colorSpace = ColorSpace::Linear,
+															_.pixelFormat = PixelFormat::BGR_565 ) );		// CanvasCapsule has no byte order setting, so native, not big endian.
 
 	auto pHSplit = PackPanel::create();
 	pCanvas->slot = pHSplit;
@@ -4200,7 +4198,7 @@ bool packPanelStressTest(ComponentPtr<DynamicSlot> pEntry)
 	 });
 
 	
-	Surface_p pImg = Base::defaultSurfaceFactory()->createSurface({ .format = PixelFormat::BGR_8, .size = {1000,800} });
+	Surface_p pImg = Base::defaultSurfaceFactory()->createSurface({ .format = PixelFormat::XRGB_8, .size = {1000,800} });
 	pImg->fill( HiColor::White );
 	
 	
@@ -4974,7 +4972,7 @@ bool tintTest(ComponentPtr<DynamicSlot> pEntry)
 	auto pBasePanel = PackPanel::create( { .axis = Axis::Y });
 
 	auto pLinearGradient = Tint::create( Color::Black, Color::White, {0,0}, {1,0} );
-	auto pSRGBGradient = Tint::create( Color::Black, Color::White, {0,0}, {1,0}, ColorSpace::sRGB );
+	auto pSRGBGradient = Tint::create( Color::Black, Color::White, {0,0}, {1,0} );
 
 	auto pLinearGradientSkin = TintSkin::create( pLinearGradient );
 	auto pSRGBGradientSkin = TintSkin::create( pSRGBGradient );

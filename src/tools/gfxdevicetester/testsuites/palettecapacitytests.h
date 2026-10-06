@@ -25,9 +25,9 @@ public:
 
 	bool init(GfxDevice * pDevice, const RectSPX& canvas, wapp::API * pAppAPI)
 	{
-		struct Setup { int size; int capacity; PixelFormat format; };
-		Setup setups[c_nbSetups] = { { 8, 8, PixelFormat::Index_8_linear }, { 8, 16, PixelFormat::Index_8_linear },
-									 { 5, 5, PixelFormat::Index_8_sRGB }, { 256, 256, PixelFormat::Index_8_linear } };
+		struct Setup { int size; int capacity; ColorSpace colorSpace; };
+		Setup setups[c_nbSetups] = { { 8, 8, ColorSpace::Linear }, { 8, 16, ColorSpace::Linear },
+									 { 5, 5, ColorSpace::sRGB }, { 256, 256, ColorSpace::Linear } };
 
 		auto pFactory = pDevice->surfaceFactory();
 
@@ -52,18 +52,18 @@ public:
 				}
 			}
 
-			PixelFormat directFormat = setup.format == PixelFormat::Index_8_sRGB ? PixelFormat::BGRA_8_sRGB : PixelFormat::BGRA_8_linear;
 
 			for (int m = 0; m < 2; m++)
 			{
 				SampleMethod method = m == 0 ? SampleMethod::Nearest : SampleMethod::Bilinear;
 
-				m_pIndexed[s][m] = pFactory->createSurface(WGBP(Surface, _.size = { c_srcSize, c_srcSize }, _.format = setup.format, _.sampleMethod = method,
-																_.palette = palette, _.paletteSize = setup.size, _.paletteCapacity = setup.capacity),
-														   indices, setup.format, c_srcSize, palette, setup.size);
+				m_pIndexed[s][m] = pFactory->createSurface(WGBP(Surface, _.size = { c_srcSize, c_srcSize }, _.format = PixelFormat::Index_8, _.colorSpace = setup.colorSpace,
+																_.sampleMethod = method, _.palette = palette, _.paletteSize = setup.size, _.paletteCapacity = setup.capacity),
+														   indices, PixelFormat::Index_8, c_srcSize, palette, setup.size);
 
-				m_pDirect[s][m] = pFactory->createSurface(WGBP(Surface, _.size = { c_srcSize, c_srcSize }, _.format = directFormat, _.sampleMethod = method),
-														  (uint8_t*)pixels, directFormat, c_srcSize * 4);
+				m_pDirect[s][m] = pFactory->createSurface(WGBP(Surface, _.size = { c_srcSize, c_srcSize }, _.format = PixelFormat::ARGB_8, _.colorSpace = setup.colorSpace,
+																_.sampleMethod = method),
+														  (uint8_t*)pixels, PixelFormat::ARGB_8, c_srcSize * 4);
 			}
 		}
 

@@ -14,7 +14,9 @@ public:
 	{
 		m_pCanvas = pDevice->surfaceFactory()->createSurface( WGBP(Surface,
 																   _.size = canvas.size()/64,
-																   _.format = PixelFormat::RGB_565_bigendian,
+																   _.format = PixelFormat::BGR_565,
+																   _.colorSpace = ColorSpace::Linear,
+																   _.bigEndian = true,
 																   _.canvas = true ) );
 
 		m_pImg = pAppAPI->loadSurface("resources/splash.png", pDevice->surfaceFactory());

@@ -29,16 +29,16 @@ public:
 
 		m_pCanvas = pDevice->surfaceFactory()->createSurface( WGBP(Surface,
 																   _.size = canvas/64,
-																   _.format = PixelFormat::BGRA_8,
+																   _.format = PixelFormat::ARGB_8,
 																   _.canvas = true
 																   ));
 
 		CanvasLayers::Blueprint bp = WGBP(CanvasLayers,
 			_.baseLayer = 2,
 			_.layers = {{ .format = PixelFormat::Alpha_8, .blendFunc = [](GfxDevice* pDevice) { pDevice->setBlendMode(BlendMode::Subtract); pDevice->blit({0,0}); }},
-						{ .format = PixelFormat::BGRA_8,  .blendFunc = [](GfxDevice* pDevice) { pDevice->setBlendMode(BlendMode::Blend); pDevice->blit({0,0}); }},
+						{ .format = PixelFormat::ARGB_8,  .blendFunc = [](GfxDevice* pDevice) { pDevice->setBlendMode(BlendMode::Blend); pDevice->blit({0,0}); }},
 						{ .format = PixelFormat::Alpha_8, .blendFunc = [](GfxDevice* pDevice) { pDevice->setBlendMode(BlendMode::Add);  pDevice->blit({0,0}); }},
-						{ .format = PixelFormat::BGRA_8,  .blendFunc = [](GfxDevice* pDevice) { pDevice->setBlendMode(BlendMode::Blend);  pDevice->blit({0,0}); }}
+						{ .format = PixelFormat::ARGB_8,  .blendFunc = [](GfxDevice* pDevice) { pDevice->setBlendMode(BlendMode::Blend);  pDevice->blit({0,0}); }}
 			});
 
 /*		if (pDevice->isInstanceOf(PluginGfxDevice::TYPEINFO))

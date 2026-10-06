@@ -136,25 +136,25 @@ wg::Surface_p Win32API::loadSurface(const std::string& path, wg::SurfaceFactory*
 			{
 				pixelDesc.bits = 24;
 				pixelDesc.type = PixelType::Chunky;
-				pixelDesc.colorSpace = ColorSpace::sRGB;
+				pixelDesc.bigEndian = false;				// stb_image gives R, G, B in that order, which little endian masks describe.
 				pixelDesc.R_mask = 0x000000FF;
 				pixelDesc.G_mask = 0x0000FF00;
 				pixelDesc.B_mask = 0x00FF0000;
 				pixelDesc.A_mask = 0x00000000;
 
-				destFormat = PixelFormat::BGR_8;
+				destFormat = PixelFormat::XRGB_8;
 			}
 			else if (channels == 4)
 			{
 				pixelDesc.bits = 32;
 				pixelDesc.type = PixelType::Chunky;
-				pixelDesc.colorSpace = ColorSpace::sRGB;
+				pixelDesc.bigEndian = false;				// stb_image gives R, G, B, A in that order, which little endian masks describe.
 				pixelDesc.R_mask = 0x000000FF;
 				pixelDesc.G_mask = 0x0000FF00;
 				pixelDesc.B_mask = 0x00FF0000;
 				pixelDesc.A_mask = 0xFF000000;
 
-				destFormat = PixelFormat::BGRA_8;
+				destFormat = PixelFormat::ARGB_8;
 			}
 			else
 			{

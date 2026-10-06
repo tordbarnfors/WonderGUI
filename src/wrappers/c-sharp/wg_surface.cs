@@ -12,6 +12,8 @@ namespace WG;
 		public IntPtr palette;
 		public RectI rect;
 		public int pitch;
+		public ColorSpace colorSpace;
+		public byte bigEndian;
 	}
 
 //____ PixelBuffer _____________________________________________________________
@@ -22,6 +24,8 @@ public unsafe struct PixelBuffer
 		this._c_buffer = c_buffer;
 
 		this.Format = c_buffer.format;
+		this.ColorSpace = c_buffer.colorSpace;
+		this.BigEndian = c_buffer.bigEndian != 0;
 		this.Rect = c_buffer.rect;
 		this.Pitch = c_buffer.pitch;
 		this._sizeInBytes = sizeInBytes;
@@ -34,6 +38,8 @@ public unsafe struct PixelBuffer
 	}
 
 	public PixelFormat Format;
+	public ColorSpace ColorSpace;
+	public bool BigEndian;
 	public RectI Rect;
 	public int Pitch;
 
@@ -50,8 +56,10 @@ public class Surface : Objekt
 	{
 		public Blueprint() { }
 
+		public ByteOrder ByteOrder = ByteOrder.Native;
 		public bool Buffered = false;
 		public bool Canvas = false;
+		public ColorSpace ColorSpace = ColorSpace.Undefined;        // Defaults to sRGB.
 		//		public const wg_color8* palette;				HOW DO WE DO THIS?
 		public int PaletteSize = 0;
 		public int PaletteCapacity = 0;
@@ -114,6 +122,14 @@ public class Surface : Objekt
 
     public PixelFormat GetPixelFormat() => wg_surfacePixelFormat(_obj);
 
+    //____ GetColorSpace() ______________________________________________________
+
+    public ColorSpace GetColorSpace() => wg_surfaceColorSpace(_obj);
+
+    //____ IsBigEndian() ________________________________________________________
+
+    public bool IsBigEndian() => wg_surfaceIsBigEndian(_obj) == 1;
+
     //____ GetPixelBits() ________________________________________________________
     public int GetPixelBits() => wg_surfacePixelBits(_obj);
 
@@ -156,8 +172,10 @@ public class Surface : Objekt
 	[StructLayout(LayoutKind.Sequential)]
 	public struct C_Blueprint
 	{
+		public ByteOrder byteOrder;
 		public byte buffered;
 		public byte canvas;
+		public ColorSpace colorSpace;
 		public IntPtr palette;
 		public int paletteSize;
 		public int paletteCapacity;
@@ -174,8 +192,10 @@ public class Surface : Objekt
 	//____ ConvertBlueprint() _________________________________________________
 	static internal void ConvertBlueprint(in Blueprint org, out C_Blueprint converted)
 	{
+		converted.byteOrder = org.ByteOrder;
 		converted.buffered = (byte)(org.Buffered ? 1 : 0);
 		converted.canvas = (byte)(org.Canvas ? 1 : 0);
+		converted.colorSpace = org.ColorSpace;
 		converted.palette = 0;                                          //TODO: Need to solve this...
 		converted.paletteSize = 0;
 		converted.paletteCapacity = org.PaletteCapacity;
@@ -217,6 +237,12 @@ public class Surface : Objekt
 
 	[DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
 	private static extern PixelFormat wg_surfacePixelFormat(IntPtr surface);
+
+	[DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
+	private static extern ColorSpace wg_surfaceColorSpace(IntPtr surface);
+
+	[DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
+	private static extern int wg_surfaceIsBigEndian(IntPtr surface);
 
 	[DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
 	private static extern int wg_surfacePixelBits(IntPtr surface);

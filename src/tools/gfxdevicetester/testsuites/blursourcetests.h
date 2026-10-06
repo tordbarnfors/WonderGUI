@@ -1,8 +1,8 @@
 #include "testsuite.h"
 #include <wg_blurbrush.h>
 
-// Blur from every kind of source: BGRA (linear and sRGB), BGRX, Alpha_8 and palette based
-// (linear and sRGB). Alpha_8 sources behave like white BGRA. Blur keeps the alpha of the
+// Blur from every kind of source: ARGB (linear and sRGB), XRGB, Alpha_8 and palette based
+// (linear and sRGB). Alpha_8 sources behave like white ARGB. Blur keeps the alpha of the
 // center pixel.
 //
 // Top row shows the sources, the rows below are plain, gradient tinted and tint colored
@@ -44,26 +44,30 @@ public:
 			}
 		}
 
-		PixelFormat formats[c_nbSources] = { PixelFormat::BGRA_8_linear, PixelFormat::BGRA_8_sRGB, PixelFormat::BGRX_8_linear,
-											 PixelFormat::Alpha_8, PixelFormat::Index_8_linear, PixelFormat::Index_8_sRGB };
+		struct { PixelFormat format; ColorSpace colorSpace; } formats[c_nbSources] = {
+			{ PixelFormat::ARGB_8, ColorSpace::Linear }, { PixelFormat::ARGB_8, ColorSpace::sRGB }, { PixelFormat::XRGB_8, ColorSpace::Linear },
+			{ PixelFormat::Alpha_8, ColorSpace::Linear }, { PixelFormat::Index_8, ColorSpace::Linear }, { PixelFormat::Index_8, ColorSpace::sRGB } };
 
 		for (int s = 0; s < c_nbSources; s++)
 		{
-			PixelFormat format = formats[s];
+			PixelFormat format = formats[s].format;
+			ColorSpace colorSpace = formats[s].colorSpace;
 
-			if (format == PixelFormat::Index_8_linear || format == PixelFormat::Index_8_sRGB)
-				m_pSources[s] = pFactory->createSurface(WGBP(Surface, _.size = { c_srcSize, c_srcSize }, _.format = format, _.sampleMethod = SampleMethod::Nearest,
+			// Pixels are given in the color space of the surface, so they are used as they are.
+
+			if (format == PixelFormat::Index_8)
+				m_pSources[s] = pFactory->createSurface(WGBP(Surface, _.size = { c_srcSize, c_srcSize }, _.format = format, _.colorSpace = colorSpace, _.sampleMethod = SampleMethod::Nearest,
 															 _.palette = palette, _.paletteSize = 8), indices, format, c_srcSize, palette, 8);
 			else if (format == PixelFormat::Alpha_8)
 				m_pSources[s] = pFactory->createSurface(WGBP(Surface, _.size = { c_srcSize, c_srcSize }, _.format = format, _.sampleMethod = SampleMethod::Nearest),
 														alpha, format, c_srcSize);
 			else
-				m_pSources[s] = pFactory->createSurface(WGBP(Surface, _.size = { c_srcSize, c_srcSize }, _.format = format, _.sampleMethod = SampleMethod::Nearest),
-														(uint8_t*)pixels, format == PixelFormat::BGRA_8_sRGB ? PixelFormat::BGRA_8_sRGB : PixelFormat::BGRA_8_linear, c_srcSize * 4);
+				m_pSources[s] = pFactory->createSurface(WGBP(Surface, _.size = { c_srcSize, c_srcSize }, _.format = format, _.colorSpace = colorSpace, _.sampleMethod = SampleMethod::Nearest),
+														(uint8_t*)pixels, PixelFormat::ARGB_8, c_srcSize * 4);
 
 			for (int r = 0; r < c_nbRows; r++)
 			{
-				m_pCanvases[r][s] = pFactory->createSurface(WGBP(Surface, _.size = { c_srcSize, c_srcSize }, _.format = PixelFormat::BGRA_8, _.canvas = true, _.sampleMethod = SampleMethod::Nearest));
+				m_pCanvases[r][s] = pFactory->createSurface(WGBP(Surface, _.size = { c_srcSize, c_srcSize }, _.format = PixelFormat::ARGB_8, _.canvas = true, _.sampleMethod = SampleMethod::Nearest));
 				m_pA8Canvases[r][s] = pFactory->createSurface(WGBP(Surface, _.size = { c_srcSize, c_srcSize }, _.format = PixelFormat::Alpha_8, _.canvas = true, _.sampleMethod = SampleMethod::Nearest));
 			}
 		}

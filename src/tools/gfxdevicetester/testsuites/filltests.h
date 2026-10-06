@@ -84,7 +84,7 @@ public:
 
 	bool gradientYFill(GfxDevice * pDevice, const RectSPX& canvas)
 	{
-		pDevice->setTint(canvas, Tint::create(Color(255, 0, 0, 255), Color(0, 0, 255, 255), {0,0}, {0,1}, ColorSpace::sRGB));
+		pDevice->setTint(canvas, Tint::create(Color(255, 0, 0, 255), Color(0, 0, 255, 255), {0,0}, {0,1}));
 		pDevice->fill(RectSPX(0, 0, 64, 64) * 64 + canvas.pos(), Color::White);
 		pDevice->fill(RectSPX(64, 0, 256, 80) * 64 + canvas.pos(), Color::White);
 		pDevice->fill(RectSPX(canvas.w - 256 * 64, canvas.h - 256 * 64, 256 * 64, 256 * 64) + canvas.pos(), Color::White);
@@ -98,7 +98,7 @@ public:
 
 	bool gradientXYFill(GfxDevice * pDevice, const RectSPX& canvas)
 	{
-		pDevice->setTint(canvas, Tint::create(Color(255, 0, 0, 255), Color(0, 0, 255, 255), {0,0}, {1,1}, ColorSpace::sRGB));
+		pDevice->setTint(canvas, Tint::create(Color(255, 0, 0, 255), Color(0, 0, 255, 255), {0,0}, {1,1}));
 		pDevice->fill(RectSPX(0, 0, 64, 64) * 64 + canvas.pos(), Color::White);
 		pDevice->fill(RectSPX(64, 0, 256, 80) * 64 + canvas.pos(), Color::White);
 		pDevice->fill(RectSPX(canvas.w - 256 * 64, canvas.h - 256 * 64, 256 * 64, 256 * 64) + canvas.pos(), Color::White);

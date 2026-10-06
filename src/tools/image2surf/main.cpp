@@ -19,7 +19,9 @@ bool	bQuit = false;
 
 
 
-PixelFormat		g_format = PixelFormat::BGRA_8;
+PixelFormat		g_format = PixelFormat::ARGB_8;
+ColorSpace		g_colorSpace = ColorSpace::sRGB;
+bool			g_bBigEndian = (WG_IS_BIG_ENDIAN == 1);
 
 Compressor_p	g_pPixelCompressor;
 
@@ -51,6 +53,36 @@ int parseCommandLine( int argc, char** argv )
 			if( g_format == PixelFormat::Undefined )
 			{
 				printf( "ERROR: '%s' is not a valid pixelformat!\n", pValue );
+				return -1;
+			}
+		}
+		else if( strstr(pArg, "--colorspace=" ) == pArg )
+		{
+			char * pValue = pArg + 13;
+
+			if( strcmp(pValue, "sRGB") == 0 )
+				g_colorSpace = ColorSpace::sRGB;
+			else if( strcmp(pValue, "Linear") == 0 || strcmp(pValue, "linear") == 0 )
+				g_colorSpace = ColorSpace::Linear;
+			else
+			{
+				printf( "ERROR: '%s' is not a valid color space!\n", pValue );
+				return -1;
+			}
+		}
+		else if( strstr(pArg, "--byteorder=" ) == pArg )
+		{
+			char * pValue = pArg + 12;
+
+			if( strcmp(pValue, "native") == 0 )
+				g_bBigEndian = (WG_IS_BIG_ENDIAN == 1);
+			else if( strcmp(pValue, "little") == 0 )
+				g_bBigEndian = false;
+			else if( strcmp(pValue, "big") == 0 )
+				g_bBigEndian = true;
+			else
+			{
+				printf( "ERROR: '%s' is not a valid byte order!\n", pValue );
 				return -1;
 			}
 		}
@@ -116,7 +148,9 @@ void printUsage(char** argv)
 	printf( "%s [param] inputImage outputSurface\n\n", argv[0]);
 
 	printf( "Parameters:\n\n" );
-	printf( "--format=[format]          - Set format of output surface.\n" );
+	printf( "--format=[format]          - Set format of output surface. Default is ARGB_8.\n" );
+	printf( "--colorspace=[colorspace]  - sRGB (default) or Linear. Colors are converted to it.\n" );
+	printf( "--byteorder=[byteorder]    - native (default), little or big.\n" );
 	printf( "--pixelcomp=[compression]  - Set compression for pixel data.\n" );
 
 	
@@ -164,13 +198,16 @@ int main ( int argc, char** argv )
 
 	// Convert surface
 
-	PixelDescription desc = Util::pixelFormatToDescription(PixelFormat::BGRA_8_sRGB);
+	// stb_image gives us sRGB bytes in R, G, B, A order, which is ARGB_8 with red and blue
+	// swapped, read as little endian.
+
+	PixelDescription desc = Util::pixelFormatToDescription(PixelFormat::ARGB_8, false);
 	
 	swap( desc.B_mask, desc.R_mask);
 
-	auto pOrg = SoftSurface::create( { .format = PixelFormat::BGRA_8, .size = {width,height}}, pImage, desc, 0 );
+	auto pOrg = SoftSurface::create( { .format = PixelFormat::ARGB_8, .size = {width,height}}, pImage, desc, 0 );
 	
-	auto pConverted = pOrg->convert({ .format = g_format }, SoftSurfaceFactory::create());
+	auto pConverted = pOrg->convert({ .bigEndian = g_bBigEndian, .colorSpace = g_colorSpace, .format = g_format }, SoftSurfaceFactory::create());
 
 	if( pConverted == nullptr )
 	{

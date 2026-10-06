@@ -50,9 +50,7 @@ int main ( int argc, char** argv )
 	wg_pixelFormat format = WG_PIXFMT_UNDEFINED;
 
 	if( pWinSurf->format->BitsPerPixel == 32 )
-		format = WG_PIXFMT_BGRA_8;
-	else if( pWinSurf->format->BitsPerPixel == 24 )
-		format = WG_PIXFMT_BGR_8;
+		format = WG_PIXFMT_ARGB_8;					// 24-bit window surfaces are not supported.
 
 	wg_sizeI canvasSize;
 	canvasSize.w = pWinSurf->w;
@@ -86,7 +84,7 @@ int main ( int argc, char** argv )
 
 
 	hBlob = wg_createBlobFromData( pLogoSDLSurf->pixels, 0, NULL );
-	wg_obj hLogoSurface = wg_createSoftSurfaceFromBlob( &(wg_surfaceBP){ .size = imgSize, .format = WG_PIXFMT_BGRX_8 }, hBlob, pLogoSDLSurf->pitch );
+	wg_obj hLogoSurface = wg_createSoftSurfaceFromBlob( &(wg_surfaceBP){ .size = imgSize, .format = WG_PIXFMT_XRGB_8 }, hBlob, pLogoSDLSurf->pitch );
     wg_release(hBlob);
 
 
@@ -97,7 +95,7 @@ int main ( int argc, char** argv )
 	imgSize.h = pSymbolSDLSurf->h;
 
     hBlob = wg_createBlobFromData( pSymbolSDLSurf->pixels, 0, NULL );
-	wg_obj hSymbolSurface = wg_createSoftSurfaceFromBlob( &(wg_surfaceBP){ .size = imgSize, .format = WG_PIXFMT_BGRX_8 }, hBlob, pSymbolSDLSurf->pitch );
+	wg_obj hSymbolSurface = wg_createSoftSurfaceFromBlob( &(wg_surfaceBP){ .size = imgSize, .format = WG_PIXFMT_XRGB_8 }, hBlob, pSymbolSDLSurf->pitch );
     wg_release(hBlob);
 
 	//------------------------------------------------------

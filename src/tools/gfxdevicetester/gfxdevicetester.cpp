@@ -251,7 +251,7 @@ void GfxDeviceTester::setup_testdevices()
 			);
 
 		addDefaultSoftKernels( pLinearBackend );
-		pLinearBackend->defineCanvas(CanvasRef::Default, g_canvasSize*64, PixelFormat::BGRA_8_sRGB);
+		pLinearBackend->defineCanvas(CanvasRef::Default, g_canvasSize*64, PixelFormat::ARGB_8);
 
 		auto pGfxDevice = GfxDeviceGen2::create(pLinearBackend);
 
@@ -273,12 +273,13 @@ void GfxDeviceTester::setup_testdevices()
 	g_testdevices.push_back(pNativeDevice);
 
 
-	// Gen2 Software BGR_565_sRGB
+	// Gen2 Software BGR_565 sRGB
 
 	{
 		Surface::Blueprint canvasBP565srgbBP = WGBP(Surface,
 												  _.size = {512,512},
-												  _.format = PixelFormat::BGR_565_sRGB,
+												  _.format = PixelFormat::BGR_565,
+												  _.colorSpace = ColorSpace::sRGB,
 												  _.canvas = true );
 
 		auto pBackend = SoftBackend::create();
@@ -313,7 +314,7 @@ void GfxDeviceTester::setup_testdevices()
 		auto pStreamEncoder = StreamEncoder::create({ pStreamPlayer, pStreamPlayer->input });
 
 		auto pStreamBackend = StreamBackend::create(pStreamEncoder);
-		pStreamBackend->defineCanvas(CanvasRef::Default, { 512,512 }, PixelFormat::BGRA_8_sRGB);
+		pStreamBackend->defineCanvas(CanvasRef::Default, { 512,512 }, PixelFormat::ARGB_8);
 
 		auto pStreamGfxDevice = GfxDeviceGen2::create(pStreamBackend);
 
@@ -595,7 +596,7 @@ void GfxDeviceTester::clock_test(DeviceTest* pDeviceTest, int rounds, Device* pD
 void GfxDeviceTester::run_comparison()
 {
 	Surface_p pRefSurface = g_pReferenceDevice->canvas() ? g_pReferenceDevice->canvas() : g_pReferenceDevice->displaySurface();
-	PixelFormat format = Util::pixelFormatToDescription(pRefSurface->pixelFormat()).colorSpace == ColorSpace::Linear ? PixelFormat::BGRA_8_linear : PixelFormat::BGRA_8_sRGB;
+	ColorSpace colorSpace = pRefSurface->colorSpace();
 
 	vector<uint8_t> pixels[2];
 
@@ -616,7 +617,7 @@ void GfxDeviceTester::run_comparison()
 			pGfxDevice->resetClipList();
 			pDevice->endRender();
 
-			bOk &= read_canvas(pDevice, format, pixels[device]);
+			bOk &= read_canvas(pDevice, colorSpace, pixels[device]);
 		}
 
 		if (!bOk)
@@ -655,7 +656,7 @@ void GfxDeviceTester::run_comparison()
 
 //____ read_canvas() __________________________________________________________
 
-bool GfxDeviceTester::read_canvas(Device* pDevice, PixelFormat format, vector<uint8_t>& pixels)
+bool GfxDeviceTester::read_canvas(Device* pDevice, ColorSpace colorSpace, vector<uint8_t>& pixels)
 {
 	Surface_p pSurface = pDevice->canvas() ? pDevice->canvas() : pDevice->displaySurface();
 	if (!pSurface || pSurface->pixelSize() != g_canvasSize)
@@ -669,8 +670,11 @@ bool GfxDeviceTester::read_canvas(Device* pDevice, PixelFormat format, vector<ui
 	int srcPitchAdd = buffer.pitch - g_canvasSize.w * Util::pixelFormatToDescription(buffer.format).bits / 8;
 	int dstPaletteEntries = 0;
 
-	bool bOk = PixelTools::copyPixels(g_canvasSize.w, g_canvasSize.h, buffer.pixels, buffer.format, srcPitchAdd,
-									  pixels.data(), format, 0, buffer.palette, nullptr, 256, dstPaletteEntries, 0);
+	// Native ARGB_8 in the given color space.
+
+	bool bOk = PixelTools::copyPixels(g_canvasSize.w, g_canvasSize.h, buffer.pixels, buffer.format, buffer.colorSpace, buffer.bigEndian, srcPitchAdd,
+									  buffer.palette, pSurface->paletteSize(),
+									  pixels.data(), PixelFormat::ARGB_8, colorSpace, (WG_IS_BIG_ENDIAN == 1), 0, nullptr, dstPaletteEntries, 0);
 
 	pSurface->freePixelBuffer(buffer);
 	return bOk;

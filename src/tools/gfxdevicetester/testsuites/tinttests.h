@@ -41,7 +41,7 @@ public:
 		HiColor white = Color::White;
 		HiColor yellow = Color::Yellow;
 
-		m_pMultiStop = Tint::create( { {0.f, red}, {0.3f, yellow}, {0.6f, green}, {1.f, blue} }, {0.1f, 0.f}, {0.9f, 1.f}, ColorSpace::sRGB );
+		m_pMultiStop = Tint::create( { {0.f, red}, {0.3f, yellow}, {0.6f, green}, {1.f, blue} }, {0.1f, 0.f}, {0.9f, 1.f} );
 
 		{
 			Tint::Blueprint bp;
@@ -68,7 +68,6 @@ public:
 			bp.spread = TintSpread::Repeat;
 			bp.center = { 0.5f, 0.5f };
 			bp.radius = { 0.15f, 0.15f };
-			bp.colorSpace = ColorSpace::sRGB;
 			bp.stops = { {0.f, green}, {1.f, blue} };
 			m_pRadialCircleRepeat = Tint::create(bp);
 		}

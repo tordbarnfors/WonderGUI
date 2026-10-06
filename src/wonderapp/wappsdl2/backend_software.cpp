@@ -169,10 +169,7 @@ Surface_p SDLWindowSoftware::_generateWindowSurface(SDL_Window* pWindow, int wid
 	switch (pWinSurf->format->BitsPerPixel)
 	{
 		case 32:
-			format = PixelFormat::BGRX_8;
-			break;
-		case 24:
-			format = PixelFormat::BGR_8;
+			format = PixelFormat::XRGB_8;
 			break;
 		default:
 		{

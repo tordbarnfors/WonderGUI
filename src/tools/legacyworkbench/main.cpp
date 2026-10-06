@@ -253,9 +253,7 @@ int main ( int argc, char** argv )
 	WgPixelType type = WgPixelType::Undefined;
 
 	if (pScreen->format->BitsPerPixel == 32)
-		type = WgPixelType::BGRA_8;
-	else if (pScreen->format->BitsPerPixel == 24)
-		type = WgPixelType::BGR_8;
+		type = WgPixelType::ARGB_8;					// 24-bit window surfaces are not supported.
 
 	auto pCanvas = wg::SoftSurface::create( WGBP(Surface,
 												 _.size = WgSize(width,height),
@@ -556,7 +554,7 @@ bool scrollChartTest(WgRootPanel* pRoot)
 	pChart->SetSkin(wg::ColorSkin::create(WgColor::DarkGreen));
 
 	pChart->SetValueRange(100, -100);
-	pChart->SetPixelType(WgPixelType::BGRA_8);
+	pChart->SetPixelType(WgPixelType::ARGB_8);
 	pChart->SetChartColor(WgColor::Transparent);
 	/*
 	 pChart->SetStaticMode(true);

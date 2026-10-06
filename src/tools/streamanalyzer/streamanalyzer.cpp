@@ -1048,15 +1048,16 @@ void MyApp::setupScreens(const CanvasInfo* pBeg, const CanvasInfo* pEnd)
 
 	for( auto pCanvas = pBeg ; pCanvas < pEnd ; pCanvas++ )
 	{
-		auto format = pCanvas->format != PixelFormat::Undefined ? pCanvas->format : PixelFormat::BGRA_8_sRGB;
+		auto format = pCanvas->format != PixelFormat::Undefined ? pCanvas->format : PixelFormat::ARGB_8;
 
-		auto pSurf = pFactory->createSurface({ .format = format, .identity = int(pCanvas->ref), .scale = pCanvas->scale, .size = pCanvas->size/64 });
+		auto pSurf = pFactory->createSurface({ .bigEndian = pCanvas->bigEndian, .colorSpace = pCanvas->colorSpace, .format = format,
+											   .identity = int(pCanvas->ref), .scale = pCanvas->scale, .size = pCanvas->size/64 });
 		pSurf->fill(HiColor::Black);
 
 		m_screens.push_back(pSurf);
 
 		if( pLinearBackend )
-			pLinearBackend->defineCanvas(pCanvas->ref, pCanvas->size, format, pCanvas->scale );
+			pLinearBackend->defineCanvas(pCanvas->ref, pCanvas->size, format, pCanvas->scale, pCanvas->colorSpace, pCanvas->bigEndian );
 		else
 			pSoftBackend->defineCanvas(pCanvas->ref, wg_dynamic_cast<SoftSurface_p>(pSurf));
 	}
@@ -1076,13 +1077,13 @@ void MyApp::setupScreens()
 
 	for (int i = 0; i < 11; i++)
 	{
-		auto pSurf = pFactory->createSurface({ .format = PixelFormat::BGR_565_sRGB, .identity = int(CanvasRef::Default) + i, .size = {800,480}});
+		auto pSurf = pFactory->createSurface({ .colorSpace = ColorSpace::sRGB, .format = PixelFormat::RGB_565, .identity = int(CanvasRef::Default) + i, .size = {800,480}});
 		pSurf->fill(HiColor::Black);
 
 		m_screens.push_back(pSurf);
 
 		if( pLinearBackend )
-			pLinearBackend->defineCanvas(CanvasRef(int(CanvasRef::Default) + i), {800*64,480*64}, PixelFormat::BGR_565_sRGB, 64 );
+			pLinearBackend->defineCanvas(CanvasRef(int(CanvasRef::Default) + i), {800*64,480*64}, PixelFormat::RGB_565, 64, ColorSpace::sRGB );
 		else
 			pSoftBackend->defineCanvas(CanvasRef(int(CanvasRef::Default) + i), wg_dynamic_cast<SoftSurface_p>(pSurf));
 	}

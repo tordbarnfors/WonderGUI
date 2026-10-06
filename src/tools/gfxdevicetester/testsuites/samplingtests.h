@@ -50,16 +50,16 @@ public:
 		{
 			SampleMethod method = i == 0 ? SampleMethod::Nearest : SampleMethod::Bilinear;
 
-			m_pPattern[i] = pFactory->createSurface(WGBP(Surface, _.size = { c_srcSize, c_srcSize }, _.format = PixelFormat::BGRA_8_linear, _.sampleMethod = method),
-													(uint8_t*)pattern, PixelFormat::BGRA_8_linear);
-			m_pOpaque[i] = pFactory->createSurface(WGBP(Surface, _.size = { c_srcSize, c_srcSize }, _.format = PixelFormat::BGRX_8_linear, _.sampleMethod = method),
-												   (uint8_t*)opaque, PixelFormat::BGRA_8_linear);
+			m_pPattern[i] = pFactory->createSurface(WGBP(Surface, _.size = { c_srcSize, c_srcSize }, _.format = PixelFormat::ARGB_8, _.colorSpace = ColorSpace::Linear, _.sampleMethod = method),
+													(uint8_t*)pattern, PixelFormat::ARGB_8);
+			m_pOpaque[i] = pFactory->createSurface(WGBP(Surface, _.size = { c_srcSize, c_srcSize }, _.format = PixelFormat::XRGB_8, _.colorSpace = ColorSpace::Linear, _.sampleMethod = method),
+												   (uint8_t*)opaque, PixelFormat::ARGB_8);
 		}
 
-		m_pImpulse = pFactory->createSurface(WGBP(Surface, _.size = { c_srcSize, c_srcSize }, _.format = PixelFormat::BGRA_8_linear, _.sampleMethod = SampleMethod::Nearest),
-											 (uint8_t*)impulse, PixelFormat::BGRA_8_linear);
+		m_pImpulse = pFactory->createSurface(WGBP(Surface, _.size = { c_srcSize, c_srcSize }, _.format = PixelFormat::ARGB_8, _.colorSpace = ColorSpace::Linear, _.sampleMethod = SampleMethod::Nearest),
+											 (uint8_t*)impulse, PixelFormat::ARGB_8);
 
-		m_pBlurCanvas = pFactory->createSurface(WGBP(Surface, _.size = { c_srcSize, c_srcSize }, _.format = PixelFormat::BGRA_8, _.canvas = true, _.sampleMethod = SampleMethod::Nearest));
+		m_pBlurCanvas = pFactory->createSurface(WGBP(Surface, _.size = { c_srcSize, c_srcSize }, _.format = PixelFormat::ARGB_8, _.canvas = true, _.sampleMethod = SampleMethod::Nearest));
 
 		m_pBrush = Blurbrush::create();
 		return true;

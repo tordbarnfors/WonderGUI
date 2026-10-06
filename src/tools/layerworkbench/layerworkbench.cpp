@@ -85,8 +85,8 @@ bool MyApp::setupGUI(wapp::API* pAPI)
 					pDevice->setBlendMode(BlendMode::Blend);
 				}
 			},
-			{ .format = PixelFormat::BGRA_8 },
-			{ .format = PixelFormat::BGRA_8 }
+			{ .format = PixelFormat::ARGB_8 },
+			{ .format = PixelFormat::ARGB_8 }
 		}
 	});
 	

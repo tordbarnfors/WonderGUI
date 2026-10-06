@@ -299,8 +299,6 @@ bool init_wondergui()
 		std::cerr << "ERROR:" << e.message << std::endl;  
 	});
 
-	Base::setDefaultToSRGB(true);
-
 	InputHandler_p pInput = Base::inputHandler();
 	
 	pInput->mapKey(SDLK_LEFT, Key::Left);
@@ -740,6 +738,7 @@ void MyAppAPI::convertSDLFormat(PixelDescription* pWGFormat, const SDL_PixelForm
 		pWGFormat->type = PixelType::Chunky;
 
 	pWGFormat->bits = pSDLFormat->BitsPerPixel;
+	pWGFormat->bigEndian = (WG_IS_BIG_ENDIAN == 1);		// SDL masks are for pixels read in native byte order.
 	
 	pWGFormat->R_mask = pSDLFormat->Rmask;
 	pWGFormat->G_mask = pSDLFormat->Gmask;
@@ -863,9 +862,9 @@ Surface_p MyAppAPI::loadSurface(const std::string& path, SurfaceFactory* pFactor
 		}
 
 		else if (format.A_mask > 0)
-			px = PixelFormat::BGRA_8;
+			px = PixelFormat::ARGB_8;
 		else
-			px = PixelFormat::BGRX_8;
+			px = PixelFormat::XRGB_8;
 		
 		if (!pFactory)
 			pFactory = Base::defaultSurfaceFactory();

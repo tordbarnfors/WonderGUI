@@ -465,15 +465,14 @@ void Win32Window::_createSwapChain(DX12Wrapper* pDX12Wrapper, const HWND hwnd, U
 
 void Win32Window::_createSwapChainBuffers()
 {
-	// HiColor is linear and so is everything the shaders work in, so the hardware
-	// has to encode to sRGB on the way into the buffer. Without that, linear values
-	// end up in a buffer that is displayed as if it already held sRGB, and
-	// everything comes out far too dark.
+	// The shaders work in linear, so the hardware has to encode to sRGB on the way
+	// into the buffer. Without that, linear values end up in a buffer that is
+	// displayed as if it already held sRGB, and everything comes out far too dark.
 	//
 	// A flip model swap chain can't have an sRGB format of its own, but a view with
 	// one over a plain buffer is allowed, and is the usual way of arranging this.
 
-	m_rtvFormat = GfxBase::defaultToSRGB() ? DXGI_FORMAT_R8G8B8A8_UNORM_SRGB : DXGI_FORMAT_R8G8B8A8_UNORM;
+	m_rtvFormat = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
 
 	D3D12_RENDER_TARGET_VIEW_DESC rtvDesc = {};
 	rtvDesc.Format = m_rtvFormat;

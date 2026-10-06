@@ -93,19 +93,19 @@ public:
     
 	bool	setBaseGradientX(GfxDevice * pDevice, const RectI& canvas)
 	{
-		pDevice->setTint(canvas, Tint::create(Color::White, Color::Black, {0,0}, {1,0}, ColorSpace::sRGB) );
+		pDevice->setTint(canvas, Tint::create(Color::White, Color::Black, {0,0}, {1,0}) );
 		return true;
 	}
 
 	bool	setBaseGradientY(GfxDevice * pDevice, const RectI& canvas)
 	{
-		pDevice->setTint(canvas, Tint::create(Color::White, Color::Black, {0,0}, {0,1}, ColorSpace::sRGB));
+		pDevice->setTint(canvas, Tint::create(Color::White, Color::Black, {0,0}, {0,1}));
 		return true;
 	}
 
 	bool	setBaseGradientXY(GfxDevice * pDevice, const RectI& canvas)
 	{
-		pDevice->setTint(canvas, Tint::create(Color::White, Color::Black, {0,0}, {1,1}, ColorSpace::sRGB));
+		pDevice->setTint(canvas, Tint::create(Color::White, Color::Black, {0,0}, {1,1}));
 		return true;
 	}
 
@@ -118,7 +118,7 @@ public:
     bool    rot90SetBaseGradientXY(GfxDevice * pDevice, const RectI& canvas)
     {
         m_flip = GfxFlip::Rot90;
-		pDevice->setTint(canvas, Tint::create(Color::White, Color::Black, {0,0}, {1,1}, ColorSpace::sRGB));
+		pDevice->setTint(canvas, Tint::create(Color::White, Color::Black, {0,0}, {1,1}));
 		return true;
     }
 

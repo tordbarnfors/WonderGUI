@@ -24,7 +24,7 @@ public class FreeTypeFont : Font
 		public BitmapCache? Cache;
 		public int FaceIndex = 0;
 		public RenderMode RenderMode = RenderMode.BestShapes;
-		public bool StemDarkening = GfxBase.GetDefaultToSRGB();
+		public bool StemDarkening = true;
 		public int XDPI = 72;
 		public int YDPI = 72;
 	}

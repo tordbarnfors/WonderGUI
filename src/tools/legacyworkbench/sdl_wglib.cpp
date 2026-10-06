@@ -176,9 +176,9 @@ namespace sdl_wglib
 		WgPixelType type;
 		
 		if( bmp->format->Amask == 0 )
-            type = WgPixelType::BGR_8;
+            type = WgPixelType::XRGB_8;
 		else
-            type = WgPixelType::BGRA_8;
+            type = WgPixelType::ARGB_8;
 
 		WgSize dimensions( bmp->w, bmp->h );
 

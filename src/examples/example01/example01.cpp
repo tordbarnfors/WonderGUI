@@ -81,9 +81,7 @@ int main ( int argc, char** argv )
 	PixelFormat format = PixelFormat::Undefined;
 
 	if( pWinSurf->format->BitsPerPixel == 32 )
-		format = PixelFormat::BGRA_8;
-	else if( pWinSurf->format->BitsPerPixel == 24 )
-		format = PixelFormat::BGR_8;
+		format = PixelFormat::XRGB_8;			// 24-bit window surfaces are not supported.
 
 	Blob_p pCanvasBlob = Blob::create( pWinSurf->pixels, 0);
 	SoftSurface_p pCanvas = SoftSurface::create( WGBP(Surface,
@@ -121,11 +119,13 @@ int main ( int argc, char** argv )
 		// No error handling or such to keep this example short and simple.
 
 		SDL_Surface * pSDLSurf = SDL_LoadBMP( "simple_button.bmp" );
+		// Pixels in the bmp are 24-bit, blue in the first byte.
+
 		SoftSurface_p pButtonSurface = SoftSurface::create( WGBP(Surface,
 																 _.size = SizeI( pSDLSurf->w, pSDLSurf->h ),
-																 _.format = PixelFormat::BGR_8 ),
+																 _.format = PixelFormat::XRGB_8 ),
 															(unsigned char*) pSDLSurf->pixels,
-														   PixelFormat::BGR_8,
+														   PixelDescription(24, PixelType::Chunky, 0xFF0000, 0xFF00, 0xFF, 0, false),
 															pSDLSurf->pitch );
 		SDL_FreeSurface(pSDLSurf);
 

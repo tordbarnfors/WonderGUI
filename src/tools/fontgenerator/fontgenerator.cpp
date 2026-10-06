@@ -159,7 +159,7 @@ bool MyApp::saveBitmapFont()
 		{
 			case 0:				// 8-bit SURF (uncompressed)
 			{
-				auto pCopy = m_pBitmapFontSurface->convert( { .format = PixelFormat::BGRA_8 } );
+				auto pCopy = m_pBitmapFontSurface->convert( { .format = PixelFormat::ARGB_8 } );
 				
 				auto pixbuf = pCopy->allocPixelBuffer();
 				pCopy->pushPixels(pixbuf);
@@ -178,7 +178,7 @@ bool MyApp::saveBitmapFont()
 				pCopy->pullPixels(pixbuf);
 				pCopy->freePixelBuffer(pixbuf);
 				
-				auto pIndexedSurface = pCopy->convert( { .format = PixelFormat::Index_8_linear } );
+				auto pIndexedSurface = pCopy->convert( { .colorSpace = ColorSpace::Linear, .format = PixelFormat::Index_8 } );
 				if( pIndexedSurface )
 				{
 					std::string path = outputPath + ".surf";
@@ -321,7 +321,7 @@ bool MyApp::generateFontSurface( FreeTypeFont * pFont, String& chars )
 {
 	bool bUseSRGB = (m_pStemDarkeningSelector->selectedEntryId() == 1);
 		
-	PixelFormat	outputFormat = bUseSRGB ? PixelFormat::BGRA_8_sRGB : PixelFormat::BGRA_8_linear;
+	ColorSpace	outputColorSpace = bUseSRGB ? ColorSpace::sRGB : ColorSpace::Linear;
 
 	
 	// Calculate size of surface needed.
@@ -363,7 +363,7 @@ bool MyApp::generateFontSurface( FreeTypeFont * pFont, String& chars )
 	
 	// Generate and fill in surface
 	
-	auto pSurface = Base::defaultSurfaceFactory()->createSurface( { .canvas = true, .format = outputFormat, .size = surfaceSize });
+	auto pSurface = Base::defaultSurfaceFactory()->createSurface( { .canvas = true, .colorSpace = outputColorSpace, .format = PixelFormat::ARGB_8, .size = surfaceSize });
 	auto pDevice = Base::defaultGfxDevice();
 
 	HiColor lineColor(1024,0,0,4096);
@@ -423,7 +423,7 @@ bool MyApp::generateFontSurface( FreeTypeFont * pFont, String& chars )
 	
 	m_pBitmapFontSurface = pSurface;
 	
-	m_pFontDisplaySurface = Base::defaultSurfaceFactory()->createSurface( { .canvas = true, .format = PixelFormat::BGRA_8, .size = surfaceSize });
+	m_pFontDisplaySurface = Base::defaultSurfaceFactory()->createSurface( { .canvas = true, .format = PixelFormat::ARGB_8, .size = surfaceSize });
 
 	pDevice->beginRender();
 	pDevice->beginCanvasUpdate(m_pFontDisplaySurface);

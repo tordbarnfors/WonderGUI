@@ -331,10 +331,10 @@ bool init_system( Rect windowGeo, float scale )
 	switch (pWinSurf->format->BitsPerPixel)
 	{
 		case 32:
-			format = PixelFormat::BGRA_8;
+			format = PixelFormat::ARGB_8;
 			break;
 		case 24:
-			format = PixelFormat::BGR_8;
+			format = PixelFormat::XRGB_8;
 			break;
 		default:
 		{
@@ -566,9 +566,9 @@ Surface_p MyAppVisitor::loadSurface(const char* pPath, SurfaceFactory* pFactory,
 	}
 
 	else if (format.A_bits > 0)
-		px = PixelFormat::BGRA_8;
+		px = PixelFormat::ARGB_8;
 	else
-		px = PixelFormat::BGR_8;
+		px = PixelFormat::XRGB_8;
 
 	if (!pFactory)
 		pFactory = Base::activeContext()->surfaceFactory();

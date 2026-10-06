@@ -65,14 +65,14 @@ public:
 	bool setNearestPictureGradient(GfxDevice* pDevice, const RectI& canvas)
 	{
 		pDevice->setBlitSource(m_pLeaves);
-		pDevice->setTint(canvas, Tint::create(Color::Red, Color::Blue, {0,0}, {1,0}, ColorSpace::sRGB));
+		pDevice->setTint(canvas, Tint::create(Color::Red, Color::Blue, {0,0}, {1,0}));
 		return true;
 	}
 
 	bool setInterpolatedPictureGradient(GfxDevice* pDevice, const RectI& canvas)
 	{
 		pDevice->setBlitSource(m_pLeavesInterpolated);
-		pDevice->setTint(canvas, Tint::create(Color::Red, Color::Blue, {0,0}, {1,0}, ColorSpace::sRGB));
+		pDevice->setTint(canvas, Tint::create(Color::Red, Color::Blue, {0,0}, {1,0}));
 		return true;
 	}
 

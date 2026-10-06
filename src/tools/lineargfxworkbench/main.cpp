@@ -99,7 +99,7 @@ int main ( int argc, char** argv )
 	//	addBaseSoftKernelsForRGB565BECanvas(pBackend);
 	addBaseSoftKernelsForRGB555BECanvas(pBackend);
 
-	pBackend->defineCanvas(CanvasRef::Default, { 640 * 64,480 * 64 }, PixelFormat::BGRX_8_linear);
+	pBackend->defineCanvas(CanvasRef::Default, { 640 * 64,480 * 64 }, PixelFormat::XRGB_8, 64, ColorSpace::Linear);
 
 
 	auto pGfxDevice = GfxDeviceGen2::create(pBackend);

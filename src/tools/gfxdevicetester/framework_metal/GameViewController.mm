@@ -176,7 +176,7 @@ protected:
 
 	MTLRenderPassDescriptor * pDesc = _view.currentRenderPassDescriptor;
 	pDesc.colorAttachments[0].loadAction = MTLLoadActionLoad;
-    m_pDevice->setDefaultCanvas( pDesc, wg::SizeI(m_windowSize.w,m_windowSize.h), PixelFormat::BGRA_8_sRGB, int(m_WGScale*64) );
+    m_pDevice->setDefaultCanvas( pDesc, wg::SizeI(m_windowSize.w,m_windowSize.h), PixelFormat::ARGB_8, int(m_WGScale*64) );
 	
     m_pRoot = RootPanel::create( CanvasRef::Default, m_pDevice);
     
@@ -452,12 +452,12 @@ Surface_p MyAppVisitor::loadSurface(const char* pPath, SurfaceFactory* pFactory,
     
     PixelDescription output;
     
-    PixelFormat format = Base::activeContext()->gammaCorrection() ? PixelFormat::BGRA_8_sRGB : PixelFormat::BGRA_8_linear;
+    PixelFormat format = Base::activeContext()->gammaCorrection() ? PixelFormat::ARGB_8 : PixelFormat::ARGB_8;
 
     output.format = format;
     output.bits = 32;
     output.bIndexed = false;
-    output.bLinear = format == PixelFormat::BGRA_8_linear ? true : false;
+    output.bLinear = format == PixelFormat::ARGB_8 ? true : false;
 
     output.R_bits = 8;
     output.G_bits = 8;
@@ -483,9 +483,9 @@ Surface_p MyAppVisitor::loadSurface(const char* pPath, SurfaceFactory* pFactory,
     PixelFormat px;
 
     if (output.A_bits > 0)
-        px = PixelFormat::BGRA_8;
+        px = PixelFormat::ARGB_8;
     else
-        px = PixelFormat::BGR_8;
+        px = PixelFormat::XRGB_8;
 
     if (!pFactory)
         pFactory = Base::activeContext()->surfaceFactory();

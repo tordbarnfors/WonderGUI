@@ -126,9 +126,9 @@ SDLWindowMetal::SDLWindowMetal(wapp::Window* pUserWindow, wg::Placement origin, 
 		auto pDevice = Base::defaultGfxDevice();
 
 		m_pBackend = wg_static_cast<MetalBackend_p>(static_cast<GfxDeviceGen2*>(Base::defaultGfxDevice().rawPtr())->backend());
-		m_pBackend->setDefaultCanvas(nullptr, {int(geo.w),int(geo.h)}, PixelFormat::BGRA_8_sRGB);
+		m_pBackend->setDefaultCanvas(nullptr, {int(geo.w),int(geo.h)}, PixelFormat::ARGB_8);
 
-		m_pCanvas = MetalSurface::create({.canvas = true, .format = PixelFormat::BGRA_8_sRGB, .scale = int(scaleFactor)*64, .size = {int(geo.w*scaleFactor),int(geo.h*scaleFactor)} });
+		m_pCanvas = MetalSurface::create({.canvas = true, .format = PixelFormat::ARGB_8, .scale = int(scaleFactor)*64, .size = {int(geo.w*scaleFactor),int(geo.h*scaleFactor)} });
 
 	}
 
@@ -170,7 +170,7 @@ void SDLWindowMetal::render()
 		pass.colorAttachments[0].texture = surface.texture;
 
 		wg::SizeSPX size = m_pRootPanel->canvasSize();
-		m_pBackend->setDefaultCanvas(pass, size/64, wg::PixelFormat::BGRA_8_sRGB);
+		m_pBackend->setDefaultCanvas(pass, size/64, wg::PixelFormat::ARGB_8);
 
 		m_pBackend->autopresent(surface);
 
@@ -211,12 +211,12 @@ void SDLWindowMetal::onWindowSizeUpdated( int w, int h )
 		pass.colorAttachments[0].storeAction = MTLStoreActionStore;
 		pass.colorAttachments[0].texture = surface.texture;
 
-		m_pCanvas = MetalSurface::create({.canvas = true, .format = PixelFormat::BGRA_8_sRGB, .scale = int(scaleFactor*64), .size = {w,h} });
+		m_pCanvas = MetalSurface::create({.canvas = true, .format = PixelFormat::ARGB_8, .scale = int(scaleFactor*64), .size = {w,h} });
 		m_pRootPanel->setCanvas(m_pCanvas);
 		m_pRootPanel->render();
 
 		wg::SizeSPX size = m_pRootPanel->canvasSize();
-		m_pBackend->setDefaultCanvas(pass, size/64, wg::PixelFormat::BGRA_8_sRGB);
+		m_pBackend->setDefaultCanvas(pass, size/64, wg::PixelFormat::ARGB_8);
 		m_pBackend->autopresent(surface);
 
 		auto pDevice = Base::defaultGfxDevice();

@@ -18,9 +18,10 @@ public class StreamBackend : GfxBackend
         return (wg_defineStreamBackendCanvasWithSurface(_obj, reference, surface.CHandle()) == 1);
     }
 
-    public bool DefineCanvas(CanvasRef reference, SizeI pixelSize, PixelFormat pixelFormat, int scale = 64)
+    public bool DefineCanvas(CanvasRef reference, SizeI pixelSize, PixelFormat pixelFormat, int scale = 64,
+                             ColorSpace colorSpace = ColorSpace.sRGB, ByteOrder byteOrder = ByteOrder.Native)
     {
-        return (wg_defineStreamBackendCanvas(_obj, reference, pixelSize, pixelFormat, scale) == 1);
+        return (wg_defineStreamBackendCanvas(_obj, reference, pixelSize, pixelFormat, scale, colorSpace, byteOrder) == 1);
     }
 
     //____ EncodeCanvasList() _________________________________________________
@@ -40,7 +41,8 @@ public class StreamBackend : GfxBackend
     private static extern int wg_defineStreamBackendCanvasWithSurface(IntPtr streamBackend, CanvasRef canvas, IntPtr surface);
 
     [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-    private static extern int wg_defineStreamBackendCanvas(IntPtr streamBackend, CanvasRef canvas, SizeI pixelSize, PixelFormat pixelFormat, int scale);
+    private static extern int wg_defineStreamBackendCanvas(IntPtr streamBackend, CanvasRef canvas, SizeI pixelSize, PixelFormat pixelFormat, int scale,
+                                                           ColorSpace colorSpace, ByteOrder byteOrder);
 
     [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
     private static extern IntPtr wg_encodeCanvasList(IntPtr streamBackend);

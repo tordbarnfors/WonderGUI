@@ -135,7 +135,7 @@ protected:
 	void		refresh_performance_measurements();
 
 	void		run_comparison();
-	bool		read_canvas(Device* pDevice, PixelFormat format, vector<uint8_t>& pixels);
+	bool		read_canvas(Device* pDevice, ColorSpace colorSpace, vector<uint8_t>& pixels);
 	void		refresh_compare_display();
 	void		show_test(int index);
 

@@ -21,10 +21,10 @@ public:
 //			return false;
 
 		m_pCanvasSurface = pDevice->surfaceFactory()->createSurface( { .canvas = true, .size = canvas.size()/64  } );
-		m_pBlurSurface[0] = pDevice->surfaceFactory()->createSurface( { .canvas = true, .format = PixelFormat::BGRX_8, .size = canvas.size() / 64 } );
-		m_pBlurSurface[1] = pDevice->surfaceFactory()->createSurface( { .canvas = true, .format = PixelFormat::BGRX_8, .size = canvas.size() / 64 } );
+		m_pBlurSurface[0] = pDevice->surfaceFactory()->createSurface( { .canvas = true, .format = PixelFormat::XRGB_8, .size = canvas.size() / 64 } );
+		m_pBlurSurface[1] = pDevice->surfaceFactory()->createSurface( { .canvas = true, .format = PixelFormat::XRGB_8, .size = canvas.size() / 64 } );
 
-		m_pGradient = Tint::create(Color::Red, Color::Blue, {0,0}, {1,0}, ColorSpace::sRGB);
+		m_pGradient = Tint::create(Color::Red, Color::Blue, {0,0}, {1,0});
 
 		return true;
 	}

@@ -67,7 +67,7 @@ using namespace wg;
     
     pDevice->autopresent(view.currentDrawable);
 
-	pDevice->setDefaultCanvas( pDesc, {(int)_viewportSize.x,(int)_viewportSize.y}, PixelFormat::BGRA_8_sRGB, m_pRootPanel->scale() );
+	pDevice->setDefaultCanvas( pDesc, {(int)_viewportSize.x,(int)_viewportSize.y}, PixelFormat::ARGB_8, m_pRootPanel->scale() );
     
     m_pRootPanel->setCanvas( CanvasRef::Default );
     

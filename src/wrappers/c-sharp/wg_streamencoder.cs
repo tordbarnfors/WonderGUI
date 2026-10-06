@@ -10,7 +10,7 @@ public class StreamEncoder : Objekt
         public Blueprint() { }
         public int BufferBytes = 4096 * 2;
         public UInt16 ObjectIdStart = 0;
-        public PixelFormat PixelFormat = PixelFormat.BGRA_8;
+        public PixelFormat PixelFormat = PixelFormat.ARGB_8;
         public SampleMethod SampleMethod = SampleMethod.Nearest;
         public StreamSink Sink;
     }

@@ -65,7 +65,7 @@ Win32Window::Win32Window(wapp::Window* pUserWindow, wg::Placement origin, wg::Co
 
 		auto pCanvas = wg::SoftSurface::createInPlace({
 			.canvas = true,
-			.format = PixelFormat::BGRA_8,
+			.format = PixelFormat::ARGB_8,
 			.scale = scale,
 			.size = { (int) size.w, (int) size.h}
 			}, (uint8_t*) m_pCanvasPixels);
@@ -176,7 +176,7 @@ void Win32Window::onResize(int widthInPixels, int heightInPixels)
 
 	auto pCanvas = wg::SoftSurface::createInPlace({
 		.canvas = true,
-		.format = PixelFormat::BGRA_8,
+		.format = PixelFormat::ARGB_8,
 		.scale = scale,
 		.size = { widthInPixels, heightInPixels }
 		}, (uint8_t*)m_pCanvasPixels);

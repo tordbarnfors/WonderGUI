@@ -191,7 +191,7 @@ int main ( int argc, char** argv )
 
     
 	SDL_Surface * pFontSurf = IMG_Load( "../resources/anuvverbubbla_8x8.png" );
-	GlSurface_p pFontImg = GlSurface::create( SizeI(pFontSurf->w,pFontSurf->h), PixelFormat::BGRA_8, (uint8_t*) pFontSurf->pixels, pFontSurf->pitch );
+	GlSurface_p pFontImg = GlSurface::create( SizeI(pFontSurf->w,pFontSurf->h), PixelFormat::ARGB_8, (uint8_t*) pFontSurf->pixels, pFontSurf->pitch );
 	SDL_FreeSurface( pFontSurf );
     assert( glGetError() == 0 );
 	BitmapFont_p pBmpFont = BitmapFont::create( pFontImg, pFontSpec );
@@ -213,34 +213,34 @@ int main ( int argc, char** argv )
 
 	SDL_Surface * pSDLSurf = IMG_Load( "../resources/simple_button.bmp" );
 	convertSDLFormat( &pixelDesc, pSDLSurf->format );
-	GlSurface_p pButtonSurface = GlSurface::create( SizeI( pSDLSurf->w, pSDLSurf->h ), PixelFormat::BGR_8, (unsigned char*) pSDLSurf->pixels, pSDLSurf->pitch, &pixelDesc );
+	GlSurface_p pButtonSurface = GlSurface::create( SizeI( pSDLSurf->w, pSDLSurf->h ), PixelFormat::XRGB_8, (unsigned char*) pSDLSurf->pixels, pSDLSurf->pitch, &pixelDesc );
 	SDL_FreeSurface( pSDLSurf );
 	BlockSkin_p pSimpleButtonSkin = BlockSkin::createClickableFromSurface( pButtonSurface, 0, BorderI(3) );
 	pSimpleButtonSkin->setContentPadding( BorderI(5) );
 
 	pSDLSurf = IMG_Load( "../resources/state_button.bmp" );
     convertSDLFormat( &pixelDesc, pSDLSurf->format );
-	GlSurface_p pStateButtonSurface = GlSurface::create( SizeI( pSDLSurf->w, pSDLSurf->h ), PixelFormat::BGR_8, (unsigned char*) pSDLSurf->pixels, pSDLSurf->pitch, &pixelDesc );
+	GlSurface_p pStateButtonSurface = GlSurface::create( SizeI( pSDLSurf->w, pSDLSurf->h ), PixelFormat::XRGB_8, (unsigned char*) pSDLSurf->pixels, pSDLSurf->pitch, &pixelDesc );
 	SDL_FreeSurface( pSDLSurf );
 	BlockSkin_p pStateButtonSkin = BlockSkin::createClickSelectableFromSurface( pStateButtonSurface, 0, BorderI(3) );
 	pStateButtonSkin->setContentPadding( BorderI(5) );
     
 	pSDLSurf = IMG_Load( "../resources/grey_pressable_plate.bmp" );
 	convertSDLFormat( &pixelDesc, pSDLSurf->format );
-	GlSurface_p pPressablePlateSurface = GlSurface::create( SizeI( pSDLSurf->w, pSDLSurf->h ), PixelFormat::BGR_8, (unsigned char*) pSDLSurf->pixels, pSDLSurf->pitch, &pixelDesc );
+	GlSurface_p pPressablePlateSurface = GlSurface::create( SizeI( pSDLSurf->w, pSDLSurf->h ), PixelFormat::XRGB_8, (unsigned char*) pSDLSurf->pixels, pSDLSurf->pitch, &pixelDesc );
 	SDL_FreeSurface( pSDLSurf );
 	BlockSkin_p pPressablePlateSkin = BlockSkin::createClickableFromSurface( pPressablePlateSurface, 0, BorderI(3) );
 	pPressablePlateSkin->setContentPadding( BorderI(3) );
     
 	pSDLSurf = IMG_Load( "../resources/list_entry.png" );
 	convertSDLFormat( &pixelDesc, pSDLSurf->format );
-	GlSurface_p pListEntrySurface = GlSurface::create( SizeI( pSDLSurf->w, pSDLSurf->h ), PixelFormat::BGR_8, (unsigned char*) pSDLSurf->pixels, pSDLSurf->pitch, &pixelDesc );
+	GlSurface_p pListEntrySurface = GlSurface::create( SizeI( pSDLSurf->w, pSDLSurf->h ), PixelFormat::XRGB_8, (unsigned char*) pSDLSurf->pixels, pSDLSurf->pitch, &pixelDesc );
 	SDL_FreeSurface( pSDLSurf );
 	Skin_p pListEntrySkin = BlockSkin::createClickableFromSurface( pListEntrySurface, 0, BorderI(3) );
     
 	pSDLSurf = IMG_Load( "../resources/frog.jpg" );
 	convertSDLFormat( &pixelDesc, pSDLSurf->format );
-	GlSurface_p pImgSurface = GlSurface::create( SizeI( pSDLSurf->w, pSDLSurf->h ), PixelFormat::BGR_8, (unsigned char*) pSDLSurf->pixels, pSDLSurf->pitch, &pixelDesc );
+	GlSurface_p pImgSurface = GlSurface::create( SizeI( pSDLSurf->w, pSDLSurf->h ), PixelFormat::XRGB_8, (unsigned char*) pSDLSurf->pixels, pSDLSurf->pitch, &pixelDesc );
 	SDL_FreeSurface( pSDLSurf );
 	BlockSkin_p pImgSkin = BlockSkin::createStaticFromSurface( pImgSurface, BorderI(3) );
 
@@ -394,7 +394,7 @@ int main ( int argc, char** argv )
 	glClear( GL_COLOR_BUFFER_BIT );
 	glFlush();
 
-	auto pMyCanvas = GlSurface::create({ 400,400 }, PixelFormat::BGR_8);
+	auto pMyCanvas = GlSurface::create({ 400,400 }, PixelFormat::XRGB_8);
 //	pMyCanvas->setScaleMode(ScaleMode::Interpolate);
 	pMyCanvas->setScaleMode(ScaleMode::Nearest);
 
@@ -803,7 +803,7 @@ Surface_p generateTestSurface()
 								255,128,128, 128,255,128, 128,128,255,0,0,
 								255,128,0, 128,255,0, 0,128,255,0,0 };
 
-	Surface_p p = GlSurface::create( SizeI(3,3), PixelFormat::BGR_8, tex, 11 );
+	Surface_p p = GlSurface::create( SizeI(3,3), PixelFormat::XRGB_8, tex, 11 );
 	p->setScaleMode(ScaleMode::Interpolate);
 	return p;
 }

@@ -98,35 +98,17 @@ public enum SampleMethod
 
 public enum PixelFormat
 {
+	// Channels are named in register order, starting with the most significant bits.
+	// Byte order and color space are separate properties.
+
 	Undefined,          ///< Pixelformat is undefined.
-	BGR_8,              ///< One byte of blue, green and red in exactly that order in memory.
-	BGR_8_sRGB,         ///< One byte of blue, green and red in exactly that order in memory.
-	BGR_8_linear,       ///< One byte of blue, green and red in exactly that order in memory.
-
-	BGRX_8,             ///< One byte of blue, green, red and padding in exactly that order in memory.
-	BGRX_8_sRGB,        ///< One byte of blue, green, red and padding in exactly that order in memory.
-	BGRX_8_linear,      ///< One byte of blue, green, red and padding in exactly that order in memory.
-
-	BGRA_8,             ///< One byte of blue, green, red and alpha in exactly that order in memory.
-	BGRA_8_sRGB,        ///< One byte of blue, green, red and alpha in exactly that order in memory.
-	BGRA_8_linear,      ///< One byte of blue, green, red and alpha in exactly that order in memory.
-
+	XRGB_8,             ///< 8 bits each of padding, red, green and blue.
+	ARGB_8,             ///< 8 bits each of alpha, red, green and blue.
 	Index_8,            ///< 8 bits of index into the palette.
-	Index_8_sRGB,       ///< 8 bits of index into an sRGB palette.
-	Index_8_linear,     ///< 8 bits of index into a linear palette.
-
 	Index_16,           ///< 16 bits of index into the palette.
-	Index_16_sRGB,      ///< 16 bits of index into an sRGB palette.
-	Index_16_linear,    ///< 16 bits of index into a linear palette.
-
 	Alpha_8,            ///< 8 bits of alpha only.
-
-	BGR_565,
-	BGR_565_sRGB,       ///< 5 bits of blue, 6 bits of green and 5 bits of red in exactly that order in memory.
-	BGR_565_linear,     ///< 5 bits of blue, 6 bits of green and 5 bits of red in exactly that order in memory.
-
-	RGB_565_bigendian,  ///< 3 high bits of green, 5 bits of blue, 5 bits of red and 3 low bits of green in exactly that order in memory. Linear and big endian.
-	RGB_555_bigendian,  /// Same layout as RGB_565_bigendian, but lowest bit of green is always cleared. Avoids accidental tinting towards green of dark colors.
+	RGB_565,            ///< 5 bits of red, 6 bits of green and 5 bits of blue.
+	BGR_565,            ///< 5 bits of blue, 6 bits of green and 5 bits of red.
 
 	Bitplanes_1,
 	Bitplanes_2,
@@ -140,8 +122,8 @@ public enum PixelFormat
 	Bitplanes_A1_5,
 	Bitplanes_A1_8,
 
-	BGRX_16_linear,
-	BGRA_16_linear
+	XRGB_16,            ///< 16 bits each of padding, red, green and blue.
+	ARGB_16             ///< 16 bits each of alpha, red, green and blue.
 }
 
 //____ PixelType _________________________________________________________
@@ -149,7 +131,6 @@ public enum PixelFormat
 public enum PixelType      //. autoExtras
 {
 	Chunky,                     ///< Normal pixel. All bits for a pixel are packed into same sequence of bytes.
-	Chunky_BE,                  ///< Same as Chunky, but stored in big-endian format.
 	Index,                      ///< Pixels are color indexes into a palette.
 	Bitplanes                   ///< Pixels are color indexes into a palette, stored in 16-bit bitplanes. Starting with lowest bitplane.
 }
@@ -158,9 +139,18 @@ public enum PixelType      //. autoExtras
 
 public enum ColorSpace
 {
-	Undefined,
+	Undefined,                  ///< Only for blueprints, gives the default (sRGB).
 	Linear,
 	sRGB
+}
+
+//____ ByteOrder ________________________________________________________
+
+public enum ByteOrder
+{
+	Native,                     ///< Byte order of the system.
+	LittleEndian,
+	BigEndian
 }
 
 //____ PixelDescription _________________________________________________
@@ -172,7 +162,7 @@ public struct PixelDescription
 
 	public int bits = 0;           ///< Number of bits for the pixel, includes any non-used padding bits.
 	public PixelType type = PixelType.Chunky;
-	public ColorSpace colorSpace = ColorSpace.sRGB;
+	public byte bigEndian = BitConverter.IsLittleEndian ? (byte)0 : (byte)1;	///< Byte order of the pixels (of the 16-bit words for bitplanes).
 
 	public UInt64 R_mask = 0;          ///< bitmask for getting the red bits out of chunky pixel
 	public UInt64 G_mask = 0;          ///< bitmask for getting the green bits out of chunky pixel
