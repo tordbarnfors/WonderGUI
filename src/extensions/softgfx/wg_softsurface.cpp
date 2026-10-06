@@ -77,13 +77,13 @@ namespace wg
 
 	SoftSurface::SoftSurface( const Blueprint& bp ) : Surface(bp, PixelFormat::ARGB_8, SampleMethod::Nearest )
 	{
-		m_pitch = _defaultPitch();
-		m_pBlob = Blob::create( m_pitch*bp.size.h + m_paletteCapacity*sizeof(Color8) );
+		m_pitch = PixelTools::bytesPerLine(*m_pPixelDescription, m_size.w);
+		m_pBlob = Blob::create( _paletteOffset() + m_paletteCapacity*sizeof(Color8) );
 		m_pData = (uint8_t*) m_pBlob->data();
 
 		if (m_paletteCapacity > 0)
 		{
-			m_pPalette = (Color8*)(m_pData + m_pitch * bp.size.h);
+			m_pPalette = (Color8*)(m_pData + _paletteOffset());
 			memcpy(m_pPalette, bp.palette, m_paletteSize*sizeof(Color8) );
 			_makePalette4096();
 		}
@@ -131,13 +131,13 @@ namespace wg
 							 PixelFormat format, int pitch, const Color8 * pPalette, int paletteSize ) : Surface(bp, PixelFormat::ARGB_8, SampleMethod::Nearest)
 	{
 				
-		m_pitch = _defaultPitch();
-		m_pBlob = Blob::create(m_pitch*m_size.h + m_paletteCapacity*sizeof(Color8) );
+		m_pitch = PixelTools::bytesPerLine(*m_pPixelDescription, m_size.w);
+		m_pBlob = Blob::create( _paletteOffset() + m_paletteCapacity*sizeof(Color8) );
 		m_pData = (uint8_t*)m_pBlob->data();
 
 		if (m_paletteCapacity > 0)
 		{
-			m_pPalette = (Color8*)(m_pData + m_pitch * bp.size.h);
+			m_pPalette = (Color8*)(m_pData + _paletteOffset());
 			memcpy(m_pPalette, bp.palette, m_paletteSize*sizeof(Color8) );
 			_makePalette4096();
 		}
@@ -167,13 +167,13 @@ namespace wg
 	{
 		
 		
-		m_pitch = _defaultPitch();
-		m_pBlob = Blob::create(m_pitch*m_size.h + m_paletteCapacity*sizeof(Color8) );
+		m_pitch = PixelTools::bytesPerLine(*m_pPixelDescription, m_size.w);
+		m_pBlob = Blob::create( _paletteOffset() + m_paletteCapacity*sizeof(Color8) );
 		m_pData = (uint8_t*)m_pBlob->data();
 
 		if (m_paletteCapacity)
 		{
-			m_pPalette = (Color8*)(m_pData + m_pitch * bp.size.h);
+			m_pPalette = (Color8*)(m_pData + _paletteOffset());
 			memcpy(m_pPalette, bp.palette, m_paletteSize*sizeof(Color8) );
 			_makePalette4096();
 		}
@@ -225,13 +225,13 @@ namespace wg
 		_initTiling();
 	}
 
-	//____ _defaultPitch() ______________________________________________________
+	//____ _paletteOffset() _____________________________________________________
 
-	int SoftSurface::_defaultPitch() const
+	int SoftSurface::_paletteOffset() const
 	{
-		// Lines are padded to a multiple of four pixels.
+		// The palette follows the pixels in our blob, aligned for Color8.
 
-		return PixelTools::bytesPerLine(*m_pPixelDescription, (m_size.w + 3) & 0xFFFFFFFC);
+		return (m_pitch * m_size.h + 3) & ~3;
 	}
 
 	//____ _initTiling() ________________________________________________________

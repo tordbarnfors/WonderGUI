@@ -110,7 +110,7 @@ namespace wg
 		void		_init();
 		void		_makePalette4096();
 		void		_initTiling();
-		int			_defaultPitch() const;
+		int			_paletteOffset() const;
 
 		SoftFormat	m_softFormat = SoftFormat::Undefined;
 
