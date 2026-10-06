@@ -70,12 +70,15 @@ namespace wg
 	struct CanvasInfo
 	{
 		CanvasInfo() {};
-		CanvasInfo( CanvasRef _ref, Surface_p _pSurface, SizeI _size, PixelFormat _format, int _scale  ) :
+		CanvasInfo( CanvasRef _ref, Surface_p _pSurface, SizeI _size, PixelFormat _format, int _scale,
+					ColorSpace _colorSpace = ColorSpace::sRGB, bool _bigEndian = (WG_IS_BIG_ENDIAN == 1) ) :
 			ref(_ref),
 			pSurface(_pSurface),
 			size(_size),
 			scale(_scale),
-			format(_format) {}
+			format(_format),
+			colorSpace(_colorSpace),
+			bigEndian(_bigEndian) {}
 		
 		CanvasRef	ref = CanvasRef::None;
 		Surface_p	pSurface = nullptr;
@@ -83,6 +86,8 @@ namespace wg
 		int			scale = 64;
 
 		PixelFormat	format = PixelFormat::Undefined;
+		ColorSpace	colorSpace = ColorSpace::sRGB;
+		bool		bigEndian = (WG_IS_BIG_ENDIAN == 1);
 	};
 
 

@@ -39,6 +39,7 @@ extern "C" {
 	typedef struct wg_canvasLayersEntryBP_struct
 	{
 		wg_pixelFormat			format;
+		wg_colorSpace			colorSpace;		// WG_COLORSPACE_UNDEFINED gives the color space of the canvas.
 		wg_canvasLayers_func	blendFunc;
 		void*					blendPtr;
 		int						blendInt;

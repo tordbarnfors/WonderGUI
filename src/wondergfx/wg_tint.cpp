@@ -53,13 +53,6 @@ namespace wg
 			}
 		}
 
-		if (bp.colorSpace == ColorSpace::Undefined)
-		{
-			GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "ColorSpace can not be Undefined.",
-				nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
-			return nullptr;
-		}
-
 		if (!std::isfinite(bp.begin.x) || !std::isfinite(bp.begin.y) || !std::isfinite(bp.end.x) || !std::isfinite(bp.end.y) ||
 			!std::isfinite(bp.center.x) || !std::isfinite(bp.center.y) || !std::isfinite(bp.radius.w) || !std::isfinite(bp.radius.h))
 		{
@@ -81,22 +74,20 @@ namespace wg
 		return create(bp);
 	}
 
-	Tint_p Tint::create(HiColor from, HiColor to, CoordF begin, CoordF end, ColorSpace colorSpace)
+	Tint_p Tint::create(HiColor from, HiColor to, CoordF begin, CoordF end)
 	{
 		Blueprint bp;
 		bp.begin = begin;
 		bp.end = end;
-		bp.colorSpace = colorSpace;
 		bp.stops = { {0.f, from}, {1.f, to} };
 		return create(bp);
 	}
 
-	Tint_p Tint::create(std::initializer_list<ColorStop> stops, CoordF begin, CoordF end, ColorSpace colorSpace)
+	Tint_p Tint::create(std::initializer_list<ColorStop> stops, CoordF begin, CoordF end)
 	{
 		Blueprint bp;
 		bp.begin = begin;
 		bp.end = end;
-		bp.colorSpace = colorSpace;
 		bp.stops = stops;
 		return create(bp);
 	}
@@ -107,7 +98,7 @@ namespace wg
 	 *
 	 * Named after HiColor::mix(), which does the same for two colors.
 	 *
-	 * If the Tints are morphable into each other (same shape, spread, color space
+	 * If the Tints are morphable into each other (same shape, spread
 	 * and radius mode) the result is a simple Tint with interpolated geometry
 	 * and colors. Otherwise the result is a mix of both, crossfaded per pixel.
 	 *
@@ -158,7 +149,6 @@ namespace wg
 
 				p->m_shape = pFrom->m_shape;
 				p->m_spread = pFrom->m_spread;
-				p->m_colorSpace = pFrom->m_colorSpace;
 				p->m_radiusMode = pFrom->m_radiusMode;
 
 				p->m_begin = { lerp(pFrom->m_begin.x, pTo->m_begin.x), lerp(pFrom->m_begin.y, pTo->m_begin.y) };
@@ -310,7 +300,6 @@ namespace wg
 	{
 		m_shape = bp.shape;
 		m_spread = bp.spread;
-		m_colorSpace = bp.colorSpace;
 		m_radiusMode = bp.radiusMode;
 
 		m_begin = bp.begin;
@@ -478,7 +467,7 @@ namespace wg
 		if (!pOther || isMix() || pOther->isMix())
 			return false;
 
-		if (m_shape != pOther->m_shape || m_spread != pOther->m_spread || m_colorSpace != pOther->m_colorSpace)
+		if (m_shape != pOther->m_shape || m_spread != pOther->m_spread)
 			return false;
 
 		if (m_shape == TintShape::Radial && m_radiusMode != pOther->m_radiusMode)
@@ -507,7 +496,6 @@ namespace wg
 		std::sort(positions, positions + nPositions);
 		nPositions = int(std::unique(positions, positions + nPositions) - positions);
 
-		ColorSpace colorSpace = pFrom->m_colorSpace;
 		nOutput = 0;
 
 		for (int i = 0; i < nPositions; i++)
@@ -519,14 +507,14 @@ namespace wg
 			HiColor toLeft = pTo->_colorAtStops(pos, true);
 			HiColor toRight = pTo->_colorAtStops(pos, false);
 
-			HiColor right = _mixColors(fromRight, toRight, progress, colorSpace);
+			HiColor right = _mixColors(fromRight, toRight, progress);
 
 			if (fromLeft != fromRight || toLeft != toRight)
 			{
 				if (nOutput + 2 > c_maxStops)
 					return false;
 
-				pOutput[nOutput++] = { pos, _mixColors(fromLeft, toLeft, progress, colorSpace) };
+				pOutput[nOutput++] = { pos, _mixColors(fromLeft, toLeft, progress) };
 			}
 			else if (nOutput + 1 > c_maxStops)
 				return false;
@@ -539,9 +527,9 @@ namespace wg
 
 	//____ _mixColors() _______________________________________________________
 
-	HiColor Tint::_mixColors(HiColor from, HiColor to, float fraction, ColorSpace colorSpace)
+	HiColor Tint::_mixColors(HiColor from, HiColor to, float fraction)
 	{
-		return TintTools::mixColors(from, to, fraction, colorSpace);
+		return TintTools::mixColors(from, to, fraction);
 	}
 
 	//____ _colorAtStops() ____________________________________________________
@@ -592,7 +580,7 @@ namespace wg
 		float span = b.pos - a.pos;
 		float fraction = span > 0.f ? (position - a.pos) / span : 1.f;
 
-		return TintTools::mixColors(a.color, b.color, fraction, m_colorSpace);
+		return TintTools::mixColors(a.color, b.color, fraction);
 	}
 
 	//____ _updateFlags() _____________________________________________________

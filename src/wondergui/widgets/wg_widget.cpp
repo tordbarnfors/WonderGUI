@@ -466,7 +466,7 @@ namespace wg
 
 		wg::Surface::Blueprint bp = _bp;
 		bp.size = (rect.size()+63)/64;
-		bp.format = wg::PixelFormat::BGRA_8;
+		bp.format = wg::PixelFormat::ARGB_8;
 		bp.canvas = true;
 		bp.scale = m_scale;
 		

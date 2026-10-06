@@ -30,38 +30,8 @@ namespace wg
 {
 namespace TintTools
 {
-	// HiColor channels are linear, 0 -> 4096. When interpolating in sRGB we work
-	// with sRGB values on the same 0 -> 4096 scale.
-
-	static float _linearToSRGB(int linear)
-	{
-		float v = linear / 4096.f;
-		float s = v <= 0.0031308f ? v * 12.92f : 1.055f * std::pow(v, 1.f / 2.4f) - 0.055f;
-		return s * 4096.f;
-	}
-
-	static float _srgbToLinearExact(float srgb)
-	{
-		float s = srgb / 4096.f;
-		float v = s <= 0.04045f ? s / 12.92f : std::pow((s + 0.055f) / 1.055f, 2.4f);
-		return v * 4096.f;
-	}
-
-	// Table for converting sRGB on 0 -> 4096 scale back to linear, used when building
-	// lookup tables so we don't need a pow() per entry and channel.
-
-	static const int16_t* _srgbToLinearTab()
-	{
-		static int16_t	tab[4097];
-		static bool		bInitialized = [] {
-			for (int i = 0; i <= 4096; i++)
-				tab[i] = (int16_t) std::lround(_srgbToLinearExact((float) i));
-			return true;
-		}();
-
-		(void) bInitialized;
-		return tab;
-	}
+	// HiColor channels are sRGB, so Tints are interpolated directly on them. Renderers
+	// convert the resulting colors to linear before blending.
 
 	//____ canvasGeometry() ___________________________________________________
 
@@ -142,36 +112,21 @@ namespace TintTools
 
 	//____ mixColors() ________________________________________________________
 
-	HiColor mixColors(HiColor from, HiColor to, float fraction, ColorSpace colorSpace)
+	HiColor mixColors(HiColor from, HiColor to, float fraction)
 	{
 		if (fraction <= 0.f)
 			return from;
 		if (fraction >= 1.f)
 			return to;
 
-		auto lerp = [fraction](float a, float b) { return a + (b - a) * fraction; };
+		auto lerp = [fraction](float a, float b) { return (int) std::lround(a + (b - a) * fraction); };
 
-		int a = (int) std::lround(lerp(from.a, to.a));
-
-		if (colorSpace == ColorSpace::sRGB)
-		{
-			float r = lerp(_linearToSRGB(from.r), _linearToSRGB(to.r));
-			float g = lerp(_linearToSRGB(from.g), _linearToSRGB(to.g));
-			float b = lerp(_linearToSRGB(from.b), _linearToSRGB(to.b));
-
-			return HiColor((int) std::lround(_srgbToLinearExact(r)), (int) std::lround(_srgbToLinearExact(g)),
-							(int) std::lround(_srgbToLinearExact(b)), a);
-		}
-		else
-		{
-			return HiColor((int) std::lround(lerp(from.r, to.r)), (int) std::lround(lerp(from.g, to.g)),
-							(int) std::lround(lerp(from.b, to.b)), a);
-		}
+		return HiColor(lerp(from.r, to.r), lerp(from.g, to.g), lerp(from.b, to.b), lerp(from.a, to.a));
 	}
 
 	//____ _buildLUT() ________________________________________________________
 
-	static void _buildLUT(int nStops, const float* pStopPos, const HiColor* pStopColors, ColorSpace colorSpace, TintSpread spread,
+	static void _buildLUT(int nStops, const float* pStopPos, const HiColor* pStopColors, TintSpread spread,
 						  int entries, HiColor* pOutput, float begin, float end, bool bSquared, HiColor multiplier)
 	{
 		if (entries <= 0)
@@ -179,32 +134,17 @@ namespace TintTools
 
 		bool bMultiply = (multiplier != HiColor::White);
 
-		// Convert stop colors to the space we interpolate in.
-
-		bool bSRGB = (colorSpace == ColorSpace::sRGB);
-
 		float	stopColors[Tint::c_maxStops][4];
 
 		for (int i = 0; i < nStops; i++)
 		{
 			const HiColor& c = pStopColors[i];
 
-			if (bSRGB)
-			{
-				stopColors[i][0] = _linearToSRGB(c.r);
-				stopColors[i][1] = _linearToSRGB(c.g);
-				stopColors[i][2] = _linearToSRGB(c.b);
-			}
-			else
-			{
-				stopColors[i][0] = c.r;
-				stopColors[i][1] = c.g;
-				stopColors[i][2] = c.b;
-			}
+			stopColors[i][0] = c.r;
+			stopColors[i][1] = c.g;
+			stopColors[i][2] = c.b;
 			stopColors[i][3] = c.a;
 		}
-
-		const int16_t* pToLinear = bSRGB ? _srgbToLinearTab() : nullptr;
 
 		float firstPos = pStopPos[0];
 		float lastPos = pStopPos[nStops - 1];
@@ -246,18 +186,9 @@ namespace TintTools
 
 			HiColor& out = pOutput[i];
 
-			if (bSRGB)
-			{
-				out.r = pToLinear[toInt(col[0])];
-				out.g = pToLinear[toInt(col[1])];
-				out.b = pToLinear[toInt(col[2])];
-			}
-			else
-			{
-				out.r = (int16_t) toInt(col[0]);
-				out.g = (int16_t) toInt(col[1]);
-				out.b = (int16_t) toInt(col[2]);
-			}
+			out.r = (int16_t) toInt(col[0]);
+			out.g = (int16_t) toInt(col[1]);
+			out.b = (int16_t) toInt(col[2]);
 			out.a = (int16_t) toInt(col[3]);
 
 			if (bMultiply)
@@ -291,7 +222,7 @@ namespace TintTools
 			colors[i] = pStops[i].color;
 		}
 
-		_buildLUT(nStops, pos, colors, pTint->colorSpace(), pTint->spread(), entries, pOutput, begin, end, bSquared, HiColor::White);
+		_buildLUT(nStops, pos, colors, pTint->spread(), entries, pOutput, begin, end, bSquared, HiColor::White);
 	}
 
 	void buildLUT(const TintLayer& layer, int entries, HiColor* pOutput, HiColor multiplier)
@@ -300,7 +231,7 @@ namespace TintTools
 		// gets the color of the middle of the span the entry covers and hard edges end up exactly on entry boundaries.
 
 		float halfEntry = entries > 1 ? 0.5f / (entries - 1) : 0.f;
-		_buildLUT(layer.nStops, layer.stopPos, layer.stopColors, layer.colorSpace, TintSpread::Pad, entries, pOutput, halfEntry, 1.f + halfEntry, false, multiplier);
+		_buildLUT(layer.nStops, layer.stopPos, layer.stopColors, TintSpread::Pad, entries, pOutput, halfEntry, 1.f + halfEntry, false, multiplier);
 	}
 
 	//____ layerColorAt() _____________________________________________________
@@ -308,7 +239,7 @@ namespace TintTools
 	HiColor layerColorAt(const TintLayer& layer, float position, HiColor multiplier)
 	{
 		HiColor color;
-		_buildLUT(layer.nStops, layer.stopPos, layer.stopColors, layer.colorSpace, TintSpread::Pad, 1, &color, position, position, false, multiplier);
+		_buildLUT(layer.nStops, layer.stopPos, layer.stopColors, TintSpread::Pad, 1, &color, position, position, false, multiplier);
 		return color;
 	}
 
@@ -378,7 +309,6 @@ namespace TintTools
 		{
 			const TintLayer& layer = tint.layers[l];
 			int nStops = layer.nStops;
-			bool bSRGB = (layer.colorSpace == ColorSpace::sRGB);
 
 			p[0] = float(int(layer.shape));
 			p[1] = float(int(layer.spread));
@@ -390,7 +320,7 @@ namespace TintTools
 				p[i] = layer.geo[i];
 			p += 4;
 
-			p[0] = bSRGB ? 1.f : 0.f; p[1] = 0.f; p[2] = 0.f; p[3] = 0.f;
+			p[0] = 1.f; p[1] = 0.f; p[2] = 0.f; p[3] = 0.f;		// Stop colors are sRGB.
 			p += 4;
 
 			int posEntries = (nStops + 3) / 4;
@@ -402,18 +332,9 @@ namespace TintTools
 			{
 				HiColor c = layer.stopColors[i] * multiplier;
 
-				if (bSRGB)
-				{
-					p[0] = _linearToSRGB(c.r) / 4096.f;
-					p[1] = _linearToSRGB(c.g) / 4096.f;
-					p[2] = _linearToSRGB(c.b) / 4096.f;
-				}
-				else
-				{
-					p[0] = c.r / 4096.f;
-					p[1] = c.g / 4096.f;
-					p[2] = c.b / 4096.f;
-				}
+				p[0] = c.r / 4096.f;
+				p[1] = c.g / 4096.f;
+				p[2] = c.b / 4096.f;
 				p[3] = c.a / 4096.f;
 				p += 4;
 			}
@@ -469,7 +390,7 @@ namespace TintTools
 			int nStops = pLayer->nbStops();
 
 			*p++ = uint16_t(weight);
-			*p++ = uint16_t(int(pLayer->shape()) | (int(pLayer->spread()) << 4) | (int(pLayer->colorSpace()) << 8));
+			*p++ = uint16_t(int(pLayer->shape()) | (int(pLayer->spread()) << 4));
 			*p++ = uint16_t(nStops);
 			*p++ = 0;
 
@@ -531,7 +452,6 @@ namespace TintTools
 			uint16_t packed = *p++;
 			layer.shape = TintShape(packed & 0xF);
 			layer.spread = TintSpread((packed >> 4) & 0xF);
-			layer.colorSpace = ColorSpace((packed >> 8) & 0xF);
 
 			int nStops = *p++;
 			p++;
@@ -627,7 +547,7 @@ namespace TintTools
 			const Tint* t = components[c];
 
 			putF(weights[c]);
-			putU8(int(t->shape())); putU8(int(t->spread())); putU8(int(t->colorSpace())); putU8(int(t->radiusMode()));
+			putU8(int(t->shape())); putU8(int(t->spread())); putU8(0); putU8(int(t->radiusMode()));
 			putF(t->begin().x); putF(t->begin().y);
 			putF(t->end().x); putF(t->end().y);
 			putF(t->center().x); putF(t->center().y);
@@ -673,7 +593,7 @@ namespace TintTools
 
 			bp.shape = TintShape(getU8());
 			bp.spread = TintSpread(getU8());
-			bp.colorSpace = ColorSpace(getU8());
+			getU8();												// Reserved, used to be color space.
 			bp.radiusMode = TintRadius(getU8());
 			bp.begin.x = getF(); bp.begin.y = getF();
 			bp.end.x = getF(); bp.end.y = getF();

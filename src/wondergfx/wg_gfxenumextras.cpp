@@ -165,27 +165,13 @@ namespace wg
 	{
 		static const char * names[] = { 
 			"Undefined",
-			"BGR_8",
-			"BGR_8_sRGB",
-			"BGR_8_linear",
-			"BGRX_8",
-			"BGRX_8_sRGB",
-			"BGRX_8_linear",
-			"BGRA_8",
-			"BGRA_8_sRGB",
-			"BGRA_8_linear",
+			"XRGB_8",
+			"ARGB_8",
 			"Index_8",
-			"Index_8_sRGB",
-			"Index_8_linear",
 			"Index_16",
-			"Index_16_sRGB",
-			"Index_16_linear",
 			"Alpha_8",
+			"RGB_565",
 			"BGR_565",
-			"BGR_565_sRGB",
-			"BGR_565_linear",
-			"RGB_565_bigendian",
-			"RGB_555_bigendian",
 			"Bitplanes_1",
 			"Bitplanes_2",
 			"Bitplanes_4",
@@ -196,8 +182,8 @@ namespace wg
 			"Bitplanes_A1_4",
 			"Bitplanes_A1_5",
 			"Bitplanes_A1_8",
-			"BGRX_16_linear",
-			"BGRA_16_linear" };
+			"XRGB_16",
+			"ARGB_16" };
 
 		return names[(int)i];
 	}
@@ -206,7 +192,6 @@ namespace wg
 	{
 		static const char * names[] = { 
 			"Chunky",
-			"Chunky_BE",
 			"Index",
 			"Bitplanes" };
 

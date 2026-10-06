@@ -67,7 +67,7 @@ namespace wg
 			bool			pickable = false;
 			uint8_t			pickCategory = 0;
 			bool			pickHandle = false;
-			PixelFormat		pixelFormat = PixelFormat::BGRA_8;
+			PixelFormat		pixelFormat = PixelFormat::ARGB_8;
 			PointerStyle	pointer = PointerStyle::Undefined;
 			bool			selectable = false;
 
@@ -162,7 +162,7 @@ namespace wg
 		spx			m_rightEdgeOfs = 0;
 		spx			m_dirtLen = 0;
 
-		PixelFormat	m_scrollSurfaceFormat = PixelFormat::BGRA_8;
+		PixelFormat	m_scrollSurfaceFormat = PixelFormat::ARGB_8;
 		HiColor		m_scrollSurfaceBgColor = HiColor::Transparent;
 
 		GfxFlip		m_flip = GfxFlip::None;

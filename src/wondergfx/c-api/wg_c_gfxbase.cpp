@@ -82,12 +82,3 @@ wg_obj wg_defaultGfxDevice()
 	return (wg_obj) static_cast<Object*>(pDevice);
 }
 
-void wg_setDefaultToSRGB( int bSRGB )
-{
-	GfxBase::setDefaultToSRGB(bSRGB);
-}
-
-int wg_defaultToSRGB()
-{
-	return GfxBase::defaultToSRGB();
-}

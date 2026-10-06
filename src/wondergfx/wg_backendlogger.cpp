@@ -303,7 +303,7 @@ namespace wg
 							{
 								auto& layer = tint.layers[l];
 								*m_pOStream << "            weight: " << layer.weight << " shape: " << toString(layer.shape) << " spread: " << toString(layer.spread)
-									<< " colorSpace: " << toString(layer.colorSpace) << " geometry: " << layer.geo[0] << ", " << layer.geo[1] << ", " << layer.geo[2] << ", " << layer.geo[3] << std::endl;
+									<< " geometry: " << layer.geo[0] << ", " << layer.geo[1] << ", " << layer.geo[2] << ", " << layer.geo[3] << std::endl;
 
 								for (int i = 0; i < layer.nStops; i++)
 								{

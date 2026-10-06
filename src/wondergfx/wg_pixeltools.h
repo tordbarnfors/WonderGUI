@@ -29,31 +29,49 @@
 
 namespace wg
 {
+	/**
+	 * Tools for converting, filling and inspecting raw pixel data.
+	 *
+	 * Pixels are described by a PixelFormat (or PixelDescription), a ColorSpace and a byte order.
+	 * Conversion between any of them is supported. ColorSpace::Undefined is treated as sRGB.
+	 *
+	 * Colors (HiColor) given to these functions are sRGB, as everywhere else in WonderGUI.
+	 *
+	 * Palettes are in the color space of the pixels they belong to.
+	 *
+	 * Lines of bitplanes need to start at the first pixel of a 16-pixel word, except for
+	 * fillBitmap() and extractAlphaChannel(), which take a rectangle within the bitmap.
+	 */
+
 	namespace PixelTools
 	{
-		/* CURRENT LIMITATIONS
-		
-			Not more than 8 bits per channel.
-			Bitplanes not supported.		
-		*/
+		bool copyPixels(int width, int height,
+						const uint8_t* pSrc, PixelFormat srcFormat, ColorSpace srcColorSpace, bool srcBigEndian, int srcPitchAdd,
+						const Color8* pSrcPalette, int srcPaletteEntries,
+						uint8_t* pDst, PixelFormat dstFormat, ColorSpace dstColorSpace, bool dstBigEndian, int dstPitchAdd,
+						Color8* pDstPalette, int& dstPaletteEntries, int maxDstPaletteEntries);
 
+		bool copyPixels(int width, int height,
+						const uint8_t* pSrc, const PixelDescription& srcDescription, ColorSpace srcColorSpace, int srcPitchAdd,
+						const Color8* pSrcPalette, int srcPaletteEntries,
+						uint8_t* pDst, PixelFormat dstFormat, ColorSpace dstColorSpace, bool dstBigEndian, int dstPitchAdd,
+						Color8* pDstPalette, int& dstPaletteEntries, int maxDstPaletteEntries);
 
-		bool copyPixels(int width, int height, const uint8_t* pSrc, PixelFormat srcFmt, int srcPitchAdd,
-			uint8_t* pDst, PixelFormat dstFmt, int dstPitchAdd, const Color8* pSrcPalette,
-			Color8* pDstPalette, int srcPaletteEntries, int& dstPaletteEntries, int maxDstPaletteEntries);
+		void	fillBitmap(uint8_t* pBitmap, PixelFormat format, ColorSpace colorSpace, bool bigEndian, int pitch, const RectI& fillRect,
+						   HiColor color, const Color8* pPalette = nullptr, int paletteSize = 0);
 
-		bool copyPixels(int width, int height, const uint8_t* pSrc, const PixelDescription& srcFmt, int srcPitchAdd,
-			uint8_t* pDst, PixelFormat dstFmt, int dstPitchAdd, const Color8* pSrcPalette,
-			Color8* pDstPalette, int srcPaletteEntries, int& dstPaletteEntries, int maxDstPaletteEntries);
+		int		colorToPixelBytes(HiColor color, PixelFormat format, ColorSpace colorSpace, bool bigEndian, uint8_t pixelArea[18],
+								  const Color8* pPalette = nullptr, int paletteSize = 0);		// Bitplanes get one word per plane.
 
-		void fillBitmap(uint8_t* pBitmap, PixelFormat type, int pitch, RectI fillRect, HiColor color, Color8* pPalette = nullptr, int paletteSize = 0);
-	
-		int colorToPixelBytes( HiColor color, PixelFormat type, uint8_t pixelArea[18], Color8* pPalette = nullptr, int paletteSize = 0 );
-	
-		int findBestMatchInPalette( HiColor color, Color8* pPalette, int paletteSize = 256, ColorSpace paletteColorSpace = ColorSpace::Undefined );
-	
-		bool extractAlphaChannel(PixelFormat format, const uint8_t* pSrc, int srcPitch, RectI srcRect, uint8_t* pDst, int dstPitch, const Color8* pPalette);
+		int		findBestMatchInPalette(HiColor color, ColorSpace paletteColorSpace, const Color8* pPalette, int paletteSize);
 
+		bool	extractAlphaChannel(PixelFormat format, bool bigEndian, const uint8_t* pSrc, int srcPitch, const RectI& srcRect,
+									uint8_t* pDst, int dstPitch, const Color8* pPalette);
+
+		int		bytesPerLine(const PixelDescription& description, int width);
+
+		void	_initTables();
+		void	_releaseTables();
 	}
 }
 

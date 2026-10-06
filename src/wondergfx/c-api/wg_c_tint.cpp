@@ -45,7 +45,6 @@ wg_tintBP wg_defaultTintBP()
 
 	bp.begin = { 0.f, 0.f };
 	bp.center = { 0.5f, 0.5f };
-	bp.colorSpace = WG_COLORSPACE_LINEAR;
 	bp.end = { 0.f, 1.f };
 	bp.radius = { 0.5f, 0.5f };
 	bp.radiusMode = WG_TINTRADIUS_FIT;
@@ -62,7 +61,6 @@ wg_obj wg_createTint( const wg_tintBP* pBP )
 
 	bp.begin = { pBP->begin.x, pBP->begin.y };
 	bp.center = { pBP->center.x, pBP->center.y };
-	bp.colorSpace = (ColorSpace) pBP->colorSpace;
 	bp.end = { pBP->end.x, pBP->end.y };
 	bp.radius = { pBP->radius.w, pBP->radius.h };
 	bp.radiusMode = (TintRadius) pBP->radiusMode;
@@ -130,7 +128,6 @@ wg_tintBP wg_getTintBlueprint( wg_obj tint )
 
 	bp.begin = { pTint->begin().x, pTint->begin().y };
 	bp.center = { pTint->center().x, pTint->center().y };
-	bp.colorSpace = (wg_colorSpace) pTint->colorSpace();
 	bp.end = { pTint->end().x, pTint->end().y };
 	bp.radius = { pTint->radius().w, pTint->radius().h };
 	bp.radiusMode = (wg_tintRadius) pTint->radiusMode();

@@ -44,6 +44,8 @@ typedef struct	wg_pixelBuffer_struct		// NOT BINARY EQUIVALENT!
 	const wg_color8* palette;
 	wg_rectI		rect;
 	int				pitch;
+	wg_colorSpace	colorSpace;
+	uint8_t			bigEndian;
 } wg_pixelBuffer;
 
 
@@ -68,8 +70,10 @@ typedef struct wg_ninePatch_struct
 
 typedef struct wg_surfaceBP_struct			// NOT BINARY EQUIVALENT!
 {
+	wg_byteOrder		byteOrder;				// Defaults to native byte order.
 	uint8_t				buffered;
 	uint8_t				canvas;
+	wg_colorSpace		colorSpace;				// Defaults to sRGB.
 	const wg_color8* 	palette;
 	int					paletteSize;
 	int					paletteCapacity;
@@ -119,6 +123,8 @@ WG_EXPORT int 				wg_surfacePaletteCapacity(wg_obj surface);
 WG_EXPORT const wg_pixelDescription* wg_surfacePixelDescription(wg_obj surface); ///< @brief Get the pixel description for the surface.
 WG_EXPORT wg_pixelFormat	wg_surfacePixelFormat(wg_obj surface);
 WG_EXPORT int				wg_surfacePixelBits(wg_obj surface);
+WG_EXPORT wg_colorSpace		wg_surfaceColorSpace(wg_obj surface);
+WG_EXPORT int				wg_surfaceIsBigEndian(wg_obj surface);
 
 WG_EXPORT int				wg_surfaceIsOpaque(wg_obj surface);				///< @brief Check if surface is guaranteed to be entirely opaque.
 WG_EXPORT int				wg_surfaceCanBeCanvas(wg_obj surface);

@@ -150,6 +150,16 @@ int wg_surfacePixelBits(wg_obj surface)
 	return getPtr(surface)->pixelBits();
 }
 
+wg_colorSpace wg_surfaceColorSpace(wg_obj surface)
+{
+	return (wg_colorSpace) getPtr(surface)->colorSpace();
+}
+
+int wg_surfaceIsBigEndian(wg_obj surface)
+{
+	return getPtr(surface)->isBigEndian();
+}
+
 
 int wg_surfaceIsOpaque(wg_obj surface)
 {
@@ -166,44 +176,44 @@ int wg_surfaceCanBeCanvas(wg_obj surface)
 wg_pixelBuffer wg_allocPixelBuffer(wg_obj surface)
 {
 	auto pixbuf = getPtr(surface)->allocPixelBuffer();
-	return { (wg_pixelFormat)pixbuf.format, pixbuf.pixels, (wg_color8*)pixbuf.palette, *(wg_rectI*)&pixbuf.rect, pixbuf.pitch };
+	return { (wg_pixelFormat)pixbuf.format, pixbuf.pixels, (wg_color8*)pixbuf.palette, *(wg_rectI*)&pixbuf.rect, pixbuf.pitch, (wg_colorSpace)pixbuf.colorSpace, (uint8_t)pixbuf.bigEndian };
 }
 
 
 wg_pixelBuffer	wg_allocPixelBufferFromRect(wg_obj surface, const wg_rectI* rect)
 {
 	auto pixbuf = getPtr(surface)->allocPixelBuffer(* (RectI*) rect);
-	return { (wg_pixelFormat)pixbuf.format, pixbuf.pixels, (wg_color8*)pixbuf.palette, *(wg_rectI*)&pixbuf.rect, pixbuf.pitch };
+	return { (wg_pixelFormat)pixbuf.format, pixbuf.pixels, (wg_color8*)pixbuf.palette, *(wg_rectI*)&pixbuf.rect, pixbuf.pitch, (wg_colorSpace)pixbuf.colorSpace, (uint8_t)pixbuf.bigEndian };
 }
 
 
 int wg_pushPixels(wg_obj surface, const wg_pixelBuffer* buffer)
 {
-	return getPtr(surface)->pushPixels( { (PixelFormat)buffer->format, buffer->pixels, (Color8*)buffer->palette, * (RectI*)&buffer->rect, buffer->pitch });
+	return getPtr(surface)->pushPixels( { (PixelFormat)buffer->format, buffer->pixels, (Color8*)buffer->palette, *(RectI*)&buffer->rect, buffer->pitch, (ColorSpace)buffer->colorSpace, buffer->bigEndian != 0 });
 }
 
 
 int wg_pushPixelsFromRect(wg_obj surface, const wg_pixelBuffer* buffer, const wg_rectI* bufferRect)
 {
-	return getPtr(surface)->pushPixels( { (PixelFormat)buffer->format, buffer->pixels, (Color8*)buffer->palette, * (RectI*)&buffer->rect, buffer->pitch }, * (const RectI*) bufferRect );
+	return getPtr(surface)->pushPixels( { (PixelFormat)buffer->format, buffer->pixels, (Color8*)buffer->palette, *(RectI*)&buffer->rect, buffer->pitch, (ColorSpace)buffer->colorSpace, buffer->bigEndian != 0 }, * (const RectI*) bufferRect );
 }
 
 
 void wg_pullPixels(wg_obj surface, const wg_pixelBuffer* buffer)
 {
-	getPtr(surface)->pullPixels({ (PixelFormat)buffer->format, buffer->pixels, (Color8*)buffer->palette, *(RectI*)&buffer->rect, buffer->pitch });
+	getPtr(surface)->pullPixels({ (PixelFormat)buffer->format, buffer->pixels, (Color8*)buffer->palette, *(RectI*)&buffer->rect, buffer->pitch, (ColorSpace)buffer->colorSpace, buffer->bigEndian != 0 });
 }
 
 
 void wg_pullPixelsFromRect(wg_obj surface, const wg_pixelBuffer* buffer, const wg_rectI* bufferRect)
 {
-	getPtr(surface)->pullPixels({ (PixelFormat)buffer->format, buffer->pixels, (Color8*)buffer->palette, *(RectI*)&buffer->rect, buffer->pitch }, *(const RectI*)bufferRect);
+	getPtr(surface)->pullPixels({ (PixelFormat)buffer->format, buffer->pixels, (Color8*)buffer->palette, *(RectI*)&buffer->rect, buffer->pitch, (ColorSpace)buffer->colorSpace, buffer->bigEndian != 0 }, *(const RectI*)bufferRect);
 }
 
 
 void wg_freePixelBuffer(wg_obj surface, const wg_pixelBuffer* buffer)
 {
-	getPtr(surface)->freePixelBuffer( { (PixelFormat)buffer->format, buffer->pixels, (Color8*)buffer->palette, *(RectI*)&buffer->rect, buffer->pitch } );
+	getPtr(surface)->freePixelBuffer( { (PixelFormat)buffer->format, buffer->pixels, (Color8*)buffer->palette, *(RectI*)&buffer->rect, buffer->pitch, (ColorSpace)buffer->colorSpace, buffer->bigEndian != 0 } );
 }
 
 
@@ -263,8 +273,10 @@ wg_surfaceBP wg_getSurfaceBlueprint(wg_obj surface)
 
 	Surface::Blueprint src = getPtr(surface)->blueprint();
 
+	dest.byteOrder		= src.bigEndian ? WG_BYTEORDER_BIG_ENDIAN : WG_BYTEORDER_LITTLE_ENDIAN;
 	dest.buffered		= src.buffered;
 	dest.canvas			= src.canvas;
+	dest.colorSpace		= (wg_colorSpace) src.colorSpace;
 	dest.palette		= (wg_color8*)src.palette;
 	dest.paletteSize	= src.paletteSize;
 	dest.paletteCapacity= src.paletteCapacity;

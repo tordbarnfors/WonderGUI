@@ -49,9 +49,9 @@ When copying to an indexed surface, there is a lot of overhead which might make 
 
 This is when copying TO palette based surfaces. Copying from a palette based surface always works  and have no performance penalty.
 
-### sRGB and Linear formats
+### Color space and byte order
 
-This is unlikely to affect you since sRGB is so prevalent nowadays, but it might be worth mentioning that pixels are converted between sRGB and linear formats if not both surfaces use the same. So copying between BGRA_8_linear and BGRA_8_sRGB will modify the pixels although they have the same number of bits for each component.
+Besides the pixel format, each surface has a color space (sRGB or linear) and a byte order (little or big endian). Pixels are converted as needed when copying between surfaces that differ in any of them. So copying between two ARGB_8 surfaces, one sRGB and one linear, will modify the pixels although they have the same number of bits for each component.
 
 
 
@@ -60,16 +60,16 @@ This is unlikely to affect you since sRGB is so prevalent nowadays, but it might
 Converting a surface is just as easy as copying blocks of graphics between them. You need to specify a Blueprint for the new surface and the surface factory to use.  This example converts a surface to 16-bit from whatever format it was before:
 
 ```
-auto pNewSurface = pMySurface->convert( { .format = PixelFormat::BGR_565_linear }, pSurfaceFactory );
+auto pNewSurface = pMySurface->convert( { .format = PixelFormat::RGB_565 }, pSurfaceFactory );
 ```
 
-The size-property of the blueprint is ignored, the converted surface is always the same format as the original surface.
+The size-property of the blueprint is ignored, the converted surface is always the same size as the original surface. Format and color space default to the ones of the original surface if not specified.
 
 One thing to keep in mind is that the supplied blueprint has defaults that might differ from the original surface. Flags such as canvas or buffered might be set which are lost in the process. To avoid this you can copy the original surfaces blueprint and just modify the properties intended:
 
 ```c++
 auto pNewSurface = pMySurface->convert( WGOVR(pMySurface->blueprint(),
-	_.format = PixelFormat::BGR_565_linear
+	_.format = PixelFormat::RGB_565
 ));
 ```
 
@@ -147,7 +147,7 @@ We can now start to read and/or write the content of the buffer.
 
 Reading and writing pixels is simply a matter of reading and writing the data pointed to by the pixels-member of the PixelBuffer struct. Typically you do know the format of the pixels in the surface beforehand since you have allocated it, but the format member can be read if you don't. 
 
-In the example below we draw a red line across the 64x64 buffer allocated above. The pixel format is known to be BGRA_8_sRGB, meaning one byte each for blue, green, red and alpha in that order.
+In the example below we draw a red line across the 64x64 buffer allocated above. The pixel format is known to be ARGB_8 in little endian byte order, meaning one byte each for blue, green, red and alpha in that order in memory. Formats are named after the order of the channels in a register, starting with the most significant bits, so the byte order decides the order in memory.
 
 ```c++
 for( int y = 0 ; y < 64 ; y++ )

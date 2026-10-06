@@ -44,9 +44,8 @@ namespace wg
 		WonderGUI uses HiColor for all API calls and internal operations, so Color8 is only provided
 		for developer convenience since colors often are expressed in this range.
 
-		The gammaCorrection-flag or the active Context decides how WonderGUI understands the color ranges
-		in a Color8 object. If gammaCorrection is set, the range is believed to be in standard non-linear
-		sRGB-format, otherwise in linear color format. The alpha channel is always linear.
+		Color channels are sRGB, the alpha channel is linear. Color8 and HiColor only differ in
+		resolution, so converting between them doesn't change the color.
 
 		For convenience, the color class also provides static, predefined colors matching the standard web-palette.
 
@@ -249,14 +248,15 @@ namespace wg
 	//____ HiColor ____________________________________________________________
 
 	/**
-		@brief Color with RGBA components in linear range from 0 to 4096.
+		@brief Color with RGBA components in range from 0 to 4096.
 
 		Specifies a color in ARGB - format, where the alpha component controls transparency.
 		Range for the individual color components is 0 - 4096.
 		Setting alpha to 0 gives full transparency while 4096 gives full opacity.
 
-		Color range is linear, meaning that 2048 is half the maximum color intensity and
-		that mathematical operations on colors gives expected results.
+		Color channels are sRGB, just like Color8, but with higher resolution. The alpha channel
+		is linear. Mixing and interpolation of HiColors (HiColor::mix(), transitions, Tint gradients)
+		therefore happens in sRGB space, while blending of pixels when rendering happens in linear space.
 
 		The different components can be accessed individually through the r, g, b, and a members.
 
@@ -319,11 +319,23 @@ namespace wg
 
 		//.____ Internal ____________________________________________
 
+		inline HiColor		toLinear() const;		// RGB from sRGB to linear, for blending. Alpha is kept.
+		inline HiColor		toSRGB() const;			// RGB from linear to sRGB. Alpha is kept.
+
+		// Conversion between 8-bit and 12-bit (0-4096) channels. Names tell the color space of the
+		// 8-bit side, while the 12-bit side always is linear. unpackLinearTab and packLinearTab
+		// therefore just changes resolution and are also used for alpha and for Color8 <-> HiColor.
+
 		static int16_t		unpackSRGBTab[256];
 		static int16_t		unpackLinearTab[256];
 
 		static uint8_t		packSRGBTab[4097];
 		static uint8_t		packLinearTab[4097];
+
+		// Conversion of 12-bit (0-4096) channels between sRGB and linear.
+
+		static int16_t		sRGBToLinearTab[4097];
+		static int16_t		linearToSRGBTab[4097];
 
 		//.____ Properties __________________________________________
 
@@ -409,6 +421,32 @@ namespace wg
 	inline HiColor HiColor::withAlpha(int alpha)
 	{
 		return HiColor{ r,g,b,alpha };
+	}
+
+	//-------------------------------------------------------------------
+	inline HiColor HiColor::toLinear() const
+	{
+		auto clamp = [](int v) { return v < 0 ? 0 : v > 4096 ? 4096 : v; };
+
+		HiColor out;
+		out.r = sRGBToLinearTab[clamp(r)];
+		out.g = sRGBToLinearTab[clamp(g)];
+		out.b = sRGBToLinearTab[clamp(b)];
+		out.a = a;
+		return out;
+	}
+
+	//-------------------------------------------------------------------
+	inline HiColor HiColor::toSRGB() const
+	{
+		auto clamp = [](int v) { return v < 0 ? 0 : v > 4096 ? 4096 : v; };
+
+		HiColor out;
+		out.r = linearToSRGBTab[clamp(r)];
+		out.g = linearToSRGBTab[clamp(g)];
+		out.b = linearToSRGBTab[clamp(b)];
+		out.a = a;
+		return out;
 	}
 
 	//-------------------------------------------------------------------

@@ -46,7 +46,8 @@ namespace wg
 
 	namespace PixelTools
 	{
-		extern uint8_t* pConv_16_linear_to_8_sRGB;
+		void _initTables();
+		void _releaseTables();
 	}
 
 
@@ -64,6 +65,7 @@ namespace wg
 			s_pGfxContext->pGearContext = GearBase::context();
 			
 			HiColor::_initTables();
+			PixelTools::_initTables();
 			_genCurveTab();
 		}
 		
@@ -102,8 +104,7 @@ namespace wg
 		
 		s_pGfxContext = nullptr;
 		
-		delete [] PixelTools::pConv_16_linear_to_8_sRGB;
-		PixelTools::pConv_16_linear_to_8_sRGB = nullptr;
+		PixelTools::_releaseTables();
 
 		s_decompressors.clear();
 
@@ -163,13 +164,6 @@ namespace wg
 	void GfxBase::setDefaultGfxDevice( GfxDevice * pDevice )
 	{
 		s_pGfxContext->pDefaultGfxDevice = pDevice;
-	}
-
-	//____ setDefaultToSRGB() ____________________________________________________
-
-	void GfxBase::setDefaultToSRGB( bool bSRGB )
-	{
-		s_pGfxContext->bSRGB = bSRGB;
 	}
 
 	//____ getDecompressor() _______________________________________________________

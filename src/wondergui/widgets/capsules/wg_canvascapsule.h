@@ -74,7 +74,7 @@ namespace wg
 			bool			pickable		= false;
 			uint8_t			pickCategory	= 0;
 			bool			pickHandle		= false;
-			PixelFormat		pixelFormat		= PixelFormat::BGRA_8;
+			PixelFormat		pixelFormat		= PixelFormat::ARGB_8;
 			Placement		placement		= Placement::Center;
 			PointerStyle	pointer			= PointerStyle::Undefined;
 			int				renderLayer		= -1;
@@ -239,7 +239,7 @@ namespace wg
 		SizeSPX				m_canvasSize;
 		
 		SurfaceFactory_p	m_pFactory;
-		PixelFormat			m_canvasFormat = PixelFormat::BGRA_8;
+		PixelFormat			m_canvasFormat = PixelFormat::ARGB_8;
 		HiColor				m_clearColor = HiColor::Undefined;
 		int					m_renderLayer = -1;
 

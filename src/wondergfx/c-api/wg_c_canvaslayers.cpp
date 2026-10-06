@@ -61,6 +61,7 @@ wg_obj wg_createCanvasLayers(const wg_canvasLayersBP* pBP)
 		CanvasLayers::LayerBP layer;
 
 		layer.format = (PixelFormat) pBP->layers[i].format;
+		layer.colorSpace = (ColorSpace) pBP->layers[i].colorSpace;
 
 		func = pBP->layers[i].preBlendCanvasFunc;
 		pointer = pBP->layers[i].preBlendCanvasPtr;

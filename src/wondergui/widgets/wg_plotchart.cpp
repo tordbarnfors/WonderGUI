@@ -123,7 +123,7 @@ namespace wg
 					spx canvasSize = Util::alignUp(size);
 					spx offset = (canvasSize - size) / 2;
 
-					auto pSurface = pDevice->surfaceFactory()->createSurface(WGBP(Surface, _.format = PixelFormat::BGRA_8, _.size = { size / 64,size / 64 }, _.canvas = true));
+					auto pSurface = pDevice->surfaceFactory()->createSurface(WGBP(Surface, _.format = PixelFormat::ARGB_8, _.size = { size / 64,size / 64 }, _.canvas = true));
 
 					pDevice->beginCanvasUpdate(pSurface);
 					pDevice->setBlendMode(BlendMode::Replace);

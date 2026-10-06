@@ -61,6 +61,9 @@ namespace wg
 
 		//.____ Misc _______________________________________________________
 
+		// Pixels given to createSurface() are in the color space of the blueprint. Byte order is the
+		// one of the blueprint or, when a PixelDescription is given, of the PixelDescription.
+
 		virtual Surface_p	createSurface(const Surface::Blueprint& blueprint) = 0;
 		virtual Surface_p	createSurface(const Surface::Blueprint& blueprint, Blob* pBlob, int pitch = 0) = 0;
 		virtual Surface_p	createSurface(const Surface::Blueprint& blueprint, const uint8_t* pPixels,

@@ -26,14 +26,16 @@ You can get a callback when a surface is modified by adding an Observer.
 | Property        | Description                                                  |
 | --------------- | ------------------------------------------------------------ |
 | baggage         | Any object associated with the surface. Can be retrieved using baggage(). |
+| bigEndian       | Byte order of the pixels. Defaults to the byte order of the system. |
 | buffered        | Set to true if a copy in local system memory should be kept to allow for quick reading and writing of pixel data. Might affect performance depending on surface subtype. Defaults to false. |
 | canvas          | Must be set to true if surface might be used as canvas by the GfxDevice. This might affect performance. Defaults to false. |
+| colorSpace      | Color space of the pixels, sRGB or Linear. Defaults to sRGB. Colors given to WonderGUI are always sRGB, while blending always is done in linear space. |
 | finalizer       | A function that is called right before the Skin is destroyed. |
 | palette         | A pointer at an array of Color8 objects used as the palette if pixel format is indexed or bitplanes. Mandatory if pixel format is indexed or bitplanes. Defautls to nullptr. |
 | paletteCapacity | Allows for setting the size of the palette to a larger value than paletteSize for later adding of colors. No pixel index may have a larger value than paletteCapacity. Defaults to the value of paletteSize. |
 | paletteSize     | Number of color entries initially specified for the palette. Defaults to 0, in which case max for format (256 or 65536) is used. |
 | dynamic         | Optimization hint used by some Surface subtypes. A dynamic surface is one that is updated very often. Might speed up CPU access to the surface such as PixelBuffer operations and Surfaces own copy operations but slow down blit operatons. Defaults to false. |
-| format          | The pixel format for the surface. Default format is decided by the surface subtype but BGRA_8_sRGB is typical. |
+| format          | The pixel format for the surface. Default format is decided by the surface subtype but ARGB_8 is typical. |
 | identity        | An integer value that can be set to whatever and used to identify the surface at a later time. Defaults to 0. |
 | mipmap          | Set to true in order to enable mipmapping of the surface. Mipmapping allows for far better down-scaling but takes almost 50% more memory and slows down modifications of the surface. Defaults to false. |
 | sampleMethod    | Sample method used when scaling graphics. Set to Nearest or Bilinear. Nearest gives blocky scaling with no interpolation between pixels but is way faster when using software rendering. Defaults to Bilinear on graphics subsystems where this doesn't slow down operations. |
@@ -45,7 +47,9 @@ You can get a callback when a surface is modified by adding an Observer.
 
 ## Pixel formats
 
-Each surface has a specific pixel format and several different pixel formats are supported by WonderGUI. This includes common formats such as 32 bit BGRA but also 8 and 16 bit indexed palette formats as well as legacy bitplane formats as used on 16-bit computers from the 90's. 
+Each surface has a specific pixel format and several different pixel formats are supported by WonderGUI. This includes common formats such as 32 bit ARGB but also 8 and 16 bit indexed palette formats as well as legacy bitplane formats as used on 16-bit computers from the 90's.
+
+Pixel formats only describe how the channels are organized, named in register order starting with the most significant bits. Color space and byte order are separate properties of the surface.
 
 All graphics backends have limitations and therefore only supports surfaces of certain pixel formats. Only Surface subtype to support all pixel formats is SoftSurface. This so that all formats can be loaded and converted to appropriate format for the graphics subsystem in use. SoftGfxDevice does only support a subset of pixel formats.
 
@@ -69,14 +73,14 @@ Surfaces can be created either directly through their create() methods or by usi
 // Create a surface directly
 
 auto p1 = SoftGfxSurface::create({ 
-	.format = PixelFormat::BGRA_8, 
+	.format = PixelFormat::ARGB_8, 
 	.size = {640,480} 
 });
 
 // Create a surface using a factory
 
 auto p2 = pFactory->createSurface({ 
-	.format = PixelFormat::BGRA_8, 
+	.format = PixelFormat::ARGB_8, 
 	.size = {640,480} 
 });
 ```

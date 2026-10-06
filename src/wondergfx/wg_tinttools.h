@@ -67,7 +67,7 @@ namespace wg
 
 		//____ Colors _________________________________________________________
 
-		HiColor			mixColors(HiColor from, HiColor to, float fraction, ColorSpace colorSpace);
+		HiColor			mixColors(HiColor from, HiColor to, float fraction);		// Interpolates the sRGB values.
 
 		/**
 		 * Fill a lookup table with the colors of a simple Tint.
@@ -81,6 +81,8 @@ namespace wg
 		 *
 		 * Spread is applied, so a table covering more than 0.0 -> 1.0 repeats
 		 * or reflects as the Tint specifies.
+		 *
+		 * Colors are sRGB, like the stops they are interpolated from.
 		 */
 
 		void			buildLUT(const Tint* pTint, int entries, HiColor* pOutput, float begin = 0.f, float end = 1.f, bool bSquared = false);
@@ -97,7 +99,7 @@ namespace wg
 		 *   uint16	padding
 		 *   per layer:
 		 *     uint16	weight				0 -> 4096, weights of all layers sum to 4096.
-		 *     uint16	shape | spread << 4 | colorSpace << 8
+		 *     uint16	shape | spread << 4
 		 *     uint16	nStops				1 -> Tint::c_maxStops
 		 *     uint16	padding
 		 *     float	geometry[4]			CanvasGeometry. Linear: a, b, c, 0. Radial: centerX, centerY, invRadiusX, invRadiusY.
@@ -115,7 +117,6 @@ namespace wg
 			int			weight;					// 0 -> 4096
 			TintShape	shape;
 			TintSpread	spread;
-			ColorSpace	colorSpace;
 			int			nStops;
 			float		geo[4];					// See CanvasGeometry.
 			float		stopPos[Tint::c_maxStops];
@@ -141,7 +142,7 @@ namespace wg
 		 *   uint8	padding[3]
 		 *   per component:
 		 *     float	weight
-		 *     uint8	shape, spread, colorSpace, radiusMode
+		 *     uint8	shape, spread, reserved (0), radiusMode
 		 *     float	begin.x, begin.y, end.x, end.y, center.x, center.y, radius.w, radius.h
 		 *     uint8	nStops
 		 *     uint8	padding[3]
@@ -181,16 +182,16 @@ namespace wg
 		 *   per layer:
 		 *     [+0]				shape, spread, nStops, weight (0.0 -> 1.0)
 		 *     [+1]				geometry (see CanvasGeometry)
-		 *     [+2]				colorSpace (1.0 if sRGB, else 0.0), 0, 0, 0
+		 *     [+2]				1.0 (stop colors are sRGB), 0, 0, 0
 		 *     [+3 ...]			stop positions, four per float4, ceil(nStops/4) entries
-		 *     [...]			stop colors (r,g,b,a), nStops entries. For sRGB the rgb values are sRGB encoded.
+		 *     [...]			stop colors (r,g,b,a), nStops entries. The rgb values are sRGB encoded.
 		 *
 		 * Evaluation of a layer at pixel center p:
 		 *   t = shape == 0 ? dot(geo.xy, p) + geo.z : length((p - geo.xy) * geo.zw)
 		 *   spread:	Pad: clamp(t, 0, 1)   Repeat: t - floor(t)   Reflect: r = t - 2*floor(t/2), r > 1 ? 2 - r : r
 		 *   k = last stop with pos <= t (right limit at hard edges)
 		 *   color = t < pos[0] ? col[0] : k == nStops-1 ? col[k] : mix(col[k], col[k+1], (t - pos[k]) / (pos[k+1] - pos[k]))
-		 *   sRGB: rgb decoded to linear after interpolation.
+		 *   rgb is decoded from sRGB to linear after interpolation.
 		 * Result is the weighted sum of all layers, multiplied with multiplier.
 		 */
 

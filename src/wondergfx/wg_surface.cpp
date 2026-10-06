@@ -95,7 +95,8 @@ namespace wg
 	{
 		auto pixbuf = allocPixelBuffer(region);
 
-		PixelTools::fillBitmap(pixbuf.pixels, pixbuf.format, pixbuf.pitch, pixbuf.rect.size(), color);
+		PixelTools::fillBitmap(pixbuf.pixels, pixbuf.format, pixbuf.colorSpace, pixbuf.bigEndian, pixbuf.pitch, RectI(pixbuf.rect.size()), color,
+							   pixbuf.palette, m_paletteSize);
 		
 		pullPixels(pixbuf);
 		freePixelBuffer(pixbuf);
@@ -190,8 +191,10 @@ namespace wg
 		Blueprint bp;
 
 		bp.baggage = m_pBaggage;
+		bp.bigEndian = m_bBigEndian;
 		bp.buffered = m_bBuffered;
 		bp.canvas = m_bCanvas;
+		bp.colorSpace = m_colorSpace;
 		bp.palette = m_pPalette;
 		bp.dynamic = m_bDynamic;
 		bp.format = m_pixelFormat;
@@ -280,12 +283,14 @@ namespace wg
 		
 		//
 		
-		auto& srcDesc = Util::pixelFormatToDescription(srcbuf.format);
-		auto& dstDesc = Util::pixelFormatToDescription(m_pixelFormat);
+		auto srcDesc = Util::pixelFormatToDescription(srcbuf.format, srcbuf.bigEndian);
+		auto dstDesc = Util::pixelFormatToDescription(dstbuf.format, dstbuf.bigEndian);
 
-		bool retVal = PixelTools::copyPixels(srcbuf.rect.w, srcbuf.rect.h, srcbuf.pixels, srcbuf.format, srcbuf.pitch - srcbuf.rect.w*srcDesc.bits/8,
-								dstbuf.pixels, dstbuf.format, dstbuf.pitch - dstbuf.rect.w*dstDesc.bits/8, pSrcSurface->palette(),
-								m_pPalette, pSrcSurface->paletteSize(), m_paletteSize, m_paletteCapacity);
+		bool retVal = PixelTools::copyPixels(srcbuf.rect.w, srcbuf.rect.h,
+											 srcbuf.pixels, srcDesc, srcbuf.colorSpace, srcbuf.pitch - PixelTools::bytesPerLine(srcDesc, srcbuf.rect.w),
+											 srcbuf.palette, pSrcSurface->paletteSize(),
+											 dstbuf.pixels, dstbuf.format, dstbuf.colorSpace, dstbuf.bigEndian, dstbuf.pitch - PixelTools::bytesPerLine(dstDesc, dstbuf.rect.w),
+											 m_pPalette, m_paletteSize, m_paletteCapacity);
 
 
 		pullPixels(dstbuf);
@@ -322,6 +327,9 @@ namespace wg
 		
 		if( bp.format == PixelFormat::Undefined )
 			bp.format = m_pixelFormat;
+
+		if( bp.colorSpace == ColorSpace::Undefined )
+			bp.colorSpace = m_colorSpace;
 		
 		auto pSurface = pFactory->createSurface(bp);
 		if( pSurface->copy({ 0,0 }, this) )
@@ -335,33 +343,15 @@ namespace wg
 
 	int Surface::_alpha(CoordSPX _coord, const PixelBuffer& buffer)
 	{
-		//TODO: Take endianess into account.
 		//TODO: Take advantage of subpixel precision and interpolate alpha value if surface set to interpolate.
 
 		CoordI coord(((_coord.x + 32) / 64) % m_size.w, ((_coord.y + 32) / 64) % m_size.h);
 
-		switch (buffer.format)
-		{
-		case PixelFormat::Index_8_sRGB:
-		case PixelFormat::Index_8_linear:
-		{
-			uint8_t index = buffer.pixels[buffer.pitch * coord.y + coord.x];
-			return HiColor::unpackLinearTab[buffer.palette[index].a];
-		}
-		case PixelFormat::Alpha_8:
-		{
-			uint8_t* pPixel = buffer.pixels + buffer.pitch * coord.y + coord.x;
-			return HiColor::unpackLinearTab[pPixel[0]];
-		}
-		case PixelFormat::BGRA_8_sRGB:
-		case PixelFormat::BGRA_8_linear:
-		{
-			uint8_t* pPixel = buffer.pixels + buffer.pitch * coord.y + coord.x * 4;
-			return HiColor::unpackLinearTab[pPixel[3]];
-		}
-		default:
-			return 4096;
-		}
+		uint8_t alpha;
+		if( PixelTools::extractAlphaChannel(buffer.format, buffer.bigEndian, buffer.pixels, buffer.pitch, { coord, 1, 1 }, &alpha, 1, buffer.palette) )
+			return HiColor::unpackLinearTab[alpha];
+
+		return 4096;
 	}
 
     //____ _isBlueprintValid() ________________________________________________
@@ -372,7 +362,10 @@ namespace wg
 
         PixelFormat format = bp.format;
         if( format == PixelFormat::Undefined )
-            format = PixelFormat::BGRA_8;
+            format = PixelFormat::ARGB_8;
+
+		if( bp.colorSpace < ColorSpace_min || bp.colorSpace > ColorSpace_max )
+			return false;
 
 		PixelDescription desc = Util::pixelFormatToDescription(format);
 		

@@ -193,6 +193,9 @@ namespace wg
 	uint8_t		HiColor::packSRGBTab[4097];
 	uint8_t		HiColor::packLinearTab[4097];
 
+	int16_t		HiColor::sRGBToLinearTab[4097];
+	int16_t		HiColor::linearToSRGBTab[4097];
+
 
 	//-------------------------------------------------------------------
 	Color8 Color8::operator+(const Color8& k) const
@@ -270,11 +273,9 @@ namespace wg
 
 	HiColor::HiColor(Color8 lowColor)
 	{
-		const int16_t* pUnpackTab = GfxBase::defaultToSRGB() ? unpackSRGBTab : unpackLinearTab;
-
-		r = pUnpackTab[lowColor.r];
-		g = pUnpackTab[lowColor.g];
-		b = pUnpackTab[lowColor.b];
+		r = unpackLinearTab[lowColor.r];
+		g = unpackLinearTab[lowColor.g];
+		b = unpackLinearTab[lowColor.b];
 		a = unpackLinearTab[lowColor.a];
 	}
 
@@ -354,8 +355,7 @@ namespace wg
 
 	HiColor::operator Color8() const
 	{
-		const uint8_t* pPackTab = GfxBase::defaultToSRGB() ? packSRGBTab : packLinearTab;
-		return Color8(pPackTab[r], pPackTab[g], pPackTab[b], packLinearTab[a]);
+		return Color8(packLinearTab[r], packLinearTab[g], packLinearTab[b], packLinearTab[a]);
 	}
 
 	//-------------------------------------------------------------------
@@ -479,6 +479,12 @@ namespace wg
 
 		for (int i = 0; i <= 4096; i++)
 			HiColor::packLinearTab[i] = uint8_t(i / 4096.f * 255.f + 0.5f);
+
+		for (int i = 0; i <= 4096; i++)
+		{
+			HiColor::sRGBToLinearTab[i] = int16_t(_sRGBToLinear(i / 4096.0) * 4096 + 0.5);
+			HiColor::linearToSRGBTab[i] = int16_t(_linearToSRGB(i / 4096.0) * 4096 + 0.5);
+		}
 	}
 
 

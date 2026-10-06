@@ -347,10 +347,9 @@ namespace wg
 		int		gcd(int a, int b);
 
 
-		const PixelDescription& pixelFormatToDescription( PixelFormat format );
-		PixelFormat	pixelDescriptionToFormat(const PixelDescription& description);
-
-		PixelFormat clarifyPixelFormat( PixelFormat format);	// Translate pixel types without colorSpace info to ones with.
+		const PixelDescription& pixelFormatToDescription( PixelFormat format );						// Byte order of the system.
+		PixelDescription		pixelFormatToDescription( PixelFormat format, bool bBigEndian );
+		PixelFormat				pixelDescriptionToFormat(const PixelDescription& description);		// Byte order is ignored.
 	
 
 		uint32_t mostSignificantBit(uint32_t value);

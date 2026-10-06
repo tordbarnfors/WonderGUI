@@ -21,6 +21,8 @@
 =========================================================================*/
 #include <wg_surfacewriter.h>
 #include <wg_gfxbase.h>
+#include <wg_gfxutil.h>
+#include <wg_pixeltools.h>
 #include <cstring>
 
 namespace wg
@@ -208,6 +210,8 @@ namespace wg
 		pHeader->width = bp.size.w;
 		pHeader->height = bp.size.h;
 		pHeader->format = bp.format;
+		pHeader->bigEndian = bp.bigEndian;
+		pHeader->linear = (bp.colorSpace == ColorSpace::Linear);
 
 		if( m_saveInfo.sampleMethod )
 			pHeader->sampleMethod = bp.sampleMethod;
@@ -302,7 +306,7 @@ namespace wg
 
 	int SurfaceWriter::_safePixelBufferSize(Surface* pSurface)
 	{
-		int uncompressedSize = pSurface->pixelWidth() * pSurface->pixelHeight() * pSurface->pixelBits() / 8;
+		int uncompressedSize = PixelTools::bytesPerLine(*pSurface->pixelDescription(), pSurface->pixelWidth()) * pSurface->pixelHeight();
 
 		if( m_pPixelCompressor )
 			return m_pPixelCompressor->maxCompressedSize(uncompressedSize);
@@ -344,37 +348,64 @@ namespace wg
 		pSurface->pushPixels(pixbuf);
 
 		SizeI size = pSurface->pixelSize();
+		auto desc = pSurface->pixelDescription();
+		int lineBytes = PixelTools::bytesPerLine(*desc, size.w);
 
-		int lineBytes = size.w * (pSurface->pixelBits() / 8);
+		// Pixels are saved in the format, color space and byte order of the surface,
+		// which is not necessarily how the PixelBuffer has them.
+
+		const uint8_t * pPixels = pixbuf.pixels;
+		int pitch = pixbuf.pitch;
+		int convertedBytes = 0;
+
+		if( pixbuf.format != pSurface->pixelFormat() || pixbuf.colorSpace != pSurface->colorSpace() || pixbuf.bigEndian != pSurface->isBigEndian() )
+		{
+			convertedBytes = lineBytes * size.h;
+			uint8_t * pConverted = (uint8_t*) GfxBase::memStackAlloc(convertedBytes);
+
+			auto bufDesc = Util::pixelFormatToDescription(pixbuf.format, pixbuf.bigEndian);
+			int paletteEntries = pSurface->paletteSize();
+
+			PixelTools::copyPixels(size.w, size.h, pixbuf.pixels, bufDesc, pixbuf.colorSpace, pixbuf.pitch - PixelTools::bytesPerLine(bufDesc, size.w),
+								   pixbuf.palette, pSurface->paletteSize(), pConverted, pSurface->pixelFormat(), pSurface->colorSpace(), pSurface->isBigEndian(), 0,
+								   const_cast<Color8*>(pSurface->palette()), paletteEntries, pSurface->paletteCapacity());
+
+			pPixels = pConverted;
+			pitch = lineBytes;
+		}
 
 		if( m_pPixelCompressor )
 		{
-			int bytes = m_pPixelCompressor->compress(pWrite, pixbuf.pixels, pixbuf.pixels + lineBytes * size.h );
+			int bytes = m_pPixelCompressor->compress(pWrite, pPixels, pPixels + lineBytes * size.h );
 			pWrite += bytes;
 		}
 		else
 		{
-			if (pixbuf.pitch > lineBytes)
+			if (pitch > lineBytes)
 			{
 				// Pitch is involved, we need to write line by line
 
-				char* pPixels = (char*)pixbuf.pixels;
+				const uint8_t* p = pPixels;
 
 				for (int y = 0; y < size.h; y++)
 				{
-					std::memcpy(pWrite, pPixels, lineBytes);
+					std::memcpy(pWrite, p, lineBytes);
 					pWrite += lineBytes;
-					pPixels += pixbuf.pitch;
+					p += pitch;
 				}
 			}
 			else
 			{
-				std::memcpy(pWrite, pixbuf.pixels, lineBytes * size.h);
+				std::memcpy(pWrite, pPixels, lineBytes * size.h);
 				pWrite += lineBytes * size.h;
 			}
 		}
 
+		if( convertedBytes > 0 )
+			GfxBase::memStackFree(convertedBytes);
+
 		pSurface->freePixelBuffer(pixbuf);
+
 		return int(pWrite - (uint8_t*)pDest);
 	}
 

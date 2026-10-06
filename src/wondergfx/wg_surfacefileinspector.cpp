@@ -57,10 +57,14 @@ const TypeInfo& SurfaceFileInspector::typeInfo(void) const
 
 Surface::Blueprint SurfaceFileInspector::surfaceBlueprint()
 {
+	SurfaceFileLayout layout = surfaceFileLayout(m_header);
+
 	return WGBP(Surface,
 				_.size 			= {m_header.width, m_header.height},
 				_.scale 		= m_header.scale,
-				_.format 		= m_header.format,
+				_.format 		= layout.format,
+				_.colorSpace	= layout.colorSpace,
+				_.bigEndian		= layout.bigEndian,
 				_.buffered 		= m_header.buffered,
 				_.canvas 		= m_header.canvas,
 				_.dynamic 		= m_header.dynamic,

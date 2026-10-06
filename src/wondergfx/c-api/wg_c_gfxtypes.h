@@ -123,37 +123,19 @@ typedef enum
 
 //____ wg_pixelFormat _____________________________________________________________
 
+// Channels are named in register order, starting with the most significant bits.
+// Byte order and color space are separate properties.
+
 typedef enum
 {
 	WG_PIXFMT_UNDEFINED,
-	WG_PIXFMT_BGR_8,				///< One byte of blue, green and red in exactly that order in memory.
-	WG_PIXFMT_BGR_8_SRGB,			///< One byte of blue, green and red in exactly that order in memory.
-	WG_PIXFMT_BGR_8_LINEAR,			///< One byte of blue, green and red in exactly that order in memory.
-
-	WG_PIXFMT_BGRX_8,				///< One byte of blue, green, red and padding in exactly that order in memory.
-	WG_PIXFMT_BGRX_8_SRGB,			///< One byte of blue, green, red and padding in exactly that order in memory.
-	WG_PIXFMT_BGRX_8_LINEAR,		///< One byte of blue, green, red and padding in exactly that order in memory.
-
-	WG_PIXFMT_BGRA_8,				///< One byte of blue, green, red and alpha in exactly that order in memory.
-	WG_PIXFMT_BGRA_8_SRGB,			///< One byte of blue, green, red and alpha in exactly that order in memory.
-	WG_PIXFMT_BGRA_8_LINEAR,		///< One byte of blue, green, red and alpha in exactly that order in memory.
-
+	WG_PIXFMT_XRGB_8,				///< 8 bits each of padding, red, green and blue.
+	WG_PIXFMT_ARGB_8,				///< 8 bits each of alpha, red, green and blue.
 	WG_PIXFMT_INDEX_8,				///< 8 bits of index into the palette.
-	WG_PIXFMT_INDEX_8_SRGB,			///< 8 bits of index into the palette.
-	WG_PIXFMT_INDEX_8_LINEAR,		///< 8 bits of index into the palette.
-
-	WG_PIXFMT_INDEX_16,				///< 8 bits of index into the palette.
-	WG_PIXFMT_INDEX_16_SRGB,		///< 8 bits of index into the palette.
-	WG_PIXFMT_INDEX_16_LINEAR,		///< 8 bits of index into the palette.
-
-	WG_PIXFMT_ALPHA_8,
-
-	WG_PIXFMT_BGR_565,				///< 5 bits of blue, 6 bits of green and 5 bits of red in exactly that order in memory.
-	WG_PIXFMT_BGR_565_sRGB,			///< 5 bits of blue, 6 bits of green and 5 bits of red in exactly that order in memory.
-	WG_PIXFMT_BGR_565_LINEAR,		///< 5 bits of blue, 6 bits of green and 5 bits of red in exactly that order in memory.
-
-	WG_PIXFMT_RGB_565_BIGENDIAN,	///< 3 high bits of green, 5 bits of blue, 5 bits of red and 3 low bits of green in exactly that order in memory.
-	WG_PIXFMT_RGB_555_BIGENDIAN,	/// Same layout as RGB_565_bigendian, but lowest bit of green is always cleared. Avoids accidental tinting towards green of dark colors.
+	WG_PIXFMT_INDEX_16,				///< 16 bits of index into the palette.
+	WG_PIXFMT_ALPHA_8,				///< 8 bits of alpha only.
+	WG_PIXFMT_RGB_565,				///< 5 bits of red, 6 bits of green and 5 bits of blue.
+	WG_PIXFMT_BGR_565,				///< 5 bits of blue, 6 bits of green and 5 bits of red.
 
 	WG_PIXFMT_BITPLANES_1,
 	WG_PIXFMT_BITPLANES_2,
@@ -161,12 +143,14 @@ typedef enum
 	WG_PIXFMT_BITPLANES_5,
 	WG_PIXFMT_BITPLANES_8,
 
-	WG_PIXFMT_BITPLANES_1_A1,
-	WG_PIXFMT_BITPLANES_2_A1,
-	WG_PIXFMT_BITPLANES_4_A1,
-	WG_PIXFMT_BITPLANES_5_A1,
-	WG_PIXFMT_BITPLANES_8_A1
-	
+	WG_PIXFMT_BITPLANES_A1_1,
+	WG_PIXFMT_BITPLANES_A1_2,
+	WG_PIXFMT_BITPLANES_A1_4,
+	WG_PIXFMT_BITPLANES_A1_5,
+	WG_PIXFMT_BITPLANES_A1_8,
+
+	WG_PIXFMT_XRGB_16,				///< 16 bits each of padding, red, green and blue.
+	WG_PIXFMT_ARGB_16				///< 16 bits each of alpha, red, green and blue.
 } wg_pixelFormat;
 
 
@@ -175,7 +159,6 @@ typedef enum
 typedef enum
 {
 	WG_PIXTYPE_CHUNKY,			///< Normal pixel. All bits for a pixel are packed into same sequence of bytes.
-	WG_PIXTYPE_CHUNKY_BE,		///< Same as Chunky, but stored in big-endian format.
 	WG_PIXTYPE_INDEX,			///< Pixels are color indexes into a palette.
 	WG_PIXTYPE_BITPLANES		///< Pixels are color indexes into a palette, stored in 16-bit bitplanes. Starting with lowest bitplane.
 } wg_pixelType;
@@ -184,10 +167,19 @@ typedef enum
 
 typedef enum
 {
-	WG_COLORSPACE_UNDEFINED,
+	WG_COLORSPACE_UNDEFINED,	///< Only for blueprints, gives the default (sRGB).
 	WG_COLORSPACE_LINEAR,
 	WG_COLORSPACE_SRGB
 } wg_colorSpace;
+
+//____ wg_byteOrder ________________________________________________________
+
+typedef enum
+{
+	WG_BYTEORDER_NATIVE,		///< Byte order of the system.
+	WG_BYTEORDER_LITTLE_ENDIAN,
+	WG_BYTEORDER_BIG_ENDIAN
+} wg_byteOrder;
 
 //____ wg_pixelDescription _____________________________________________________
 
@@ -195,8 +187,8 @@ typedef struct wg_pixelDescription_struct
 {
 	int				bits;			///< Number of bits for the pixel, includes any non-used padding bits.
 	wg_pixelType	type;
-	wg_colorSpace	colorSpace;
-	
+	uint8_t			bigEndian;		///< Byte order of the pixels (of the 16-bit words for bitplanes).
+
 	uint64_t		R_mask;			///< bitmask for getting the red bits out of chunky pixel
 	uint64_t		G_mask;			///< bitmask for getting the green bits out of chunky pixel
 	uint64_t		B_mask;			///< bitmask for getting the blue bits out of chunky pixel

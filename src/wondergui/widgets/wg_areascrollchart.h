@@ -221,7 +221,7 @@ namespace wg
 			bool			pickable = false;
 			uint8_t			pickCategory = 0;
 			bool			pickHandle = false;
-			PixelFormat		pixelFormat = PixelFormat::BGRA_8;
+			PixelFormat		pixelFormat = PixelFormat::ARGB_8;
 			PointerStyle	pointer = PointerStyle::Undefined;
 
 			Placement		rightLabelPlacement = Placement::East;

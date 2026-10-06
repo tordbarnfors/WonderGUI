@@ -46,8 +46,6 @@ WG_EXPORT wg_obj	wg_defaultEdgemapFactory();
 WG_EXPORT void	wg_setDefaultGfxDevice( wg_obj device );
 WG_EXPORT wg_obj	wg_defaultGfxDevice();
 
-WG_EXPORT void	wg_setDefaultToSRGB( int bSRGB );
-WG_EXPORT int		wg_defaultToSRGB();
 
 
 #ifdef __cplusplus

@@ -56,6 +56,9 @@ namespace wg
 	 * a list of color stops. Everything drawn inside the Tint is multiplied
 	 * by that color.
 	 *
+	 * Colors are interpolated between the stops in sRGB, which gives more natural
+	 * looking ramps than interpolating in linear space.
+	 *
 	 * Geometry is specified relative to the rectangle the Tint is placed in,
 	 * (0,0) being the top-left corner and (1,1) the bottom-right, so a Tint
 	 * stretches with whatever it is used for.
@@ -81,7 +84,6 @@ namespace wg
 		{
 			CoordF					begin = { 0.f, 0.f };		// Linear: where the gradient starts (position 0.0), relative to rect.
 			CoordF					center = { 0.5f, 0.5f };	// Radial: center (position 0.0), relative to rect.
-			ColorSpace				colorSpace = ColorSpace::Linear;	// Color space stops are interpolated in.
 			CoordF					end = { 0.f, 1.f };			// Linear: where the gradient ends (position 1.0), relative to rect.
 			Finalizer_p				finalizer = nullptr;
 			SizeF					radius = { 0.5f, 0.5f };	// Radial: distance to position 1.0, see radiusMode.
@@ -95,8 +97,8 @@ namespace wg
 
 		static Tint_p	create(const Blueprint& blueprint);
 		static Tint_p	create(HiColor color);
-		static Tint_p	create(HiColor from, HiColor to, CoordF begin = { 0.f, 0.f }, CoordF end = { 0.f, 1.f }, ColorSpace colorSpace = ColorSpace::Linear);
-		static Tint_p	create(std::initializer_list<ColorStop> stops, CoordF begin = { 0.f, 0.f }, CoordF end = { 0.f, 1.f }, ColorSpace colorSpace = ColorSpace::Linear);
+		static Tint_p	create(HiColor from, HiColor to, CoordF begin = { 0.f, 0.f }, CoordF end = { 0.f, 1.f });
+		static Tint_p	create(std::initializer_list<ColorStop> stops, CoordF begin = { 0.f, 0.f }, CoordF end = { 0.f, 1.f });
 
 		static Tint_p	mix(Tint* pFrom, Tint* pTo, float progress);
 		static Tint_p	createMix(int nComponents, Tint* const * pComponents, const float* pWeights);	// Components must be simple Tints, weights are normalized.
@@ -114,7 +116,6 @@ namespace wg
 
 		inline TintShape	shape() const { return m_shape; }
 		inline TintSpread	spread() const { return m_spread; }
-		inline ColorSpace	colorSpace() const { return m_colorSpace; }
 
 		inline CoordF		begin() const { return m_begin; }
 		inline CoordF		end() const { return m_end; }
@@ -146,14 +147,13 @@ namespace wg
 		virtual ~Tint() {}
 
 		static bool		_morphStops(const Tint* pFrom, const Tint* pTo, float progress, ColorStop* pOutput, int& nOutput);
-		static HiColor	_mixColors(HiColor from, HiColor to, float fraction, ColorSpace colorSpace);
+		static HiColor	_mixColors(HiColor from, HiColor to, float fraction);
 		HiColor			_colorAtStops(float position, bool bLeftLimit) const;
 
 		void			_updateFlags();
 
 		TintShape		m_shape = TintShape::Linear;
 		TintSpread		m_spread = TintSpread::Pad;
-		ColorSpace		m_colorSpace = ColorSpace::Linear;
 		TintRadius		m_radiusMode = TintRadius::Fit;
 
 		CoordF			m_begin = { 0.f, 0.f };

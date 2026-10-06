@@ -45,7 +45,6 @@ typedef struct wg_tintBP_struct			// NOT BINARY EQUIVALENT!
 {
 	wg_coordF				begin;			// Linear: start, relative to rect. Default {0,0}.
 	wg_coordF				center;			// Radial: center, relative to rect. Default {0.5,0.5}.
-	wg_colorSpace			colorSpace;		// WG_COLORSPACE_LINEAR or WG_COLORSPACE_SRGB.
 	wg_coordF				end;			// Linear: end, relative to rect. Default {0,1}.
 	wg_sizeF				radius;			// Radial: radius. Default {0.5,0.5}.
 	wg_tintRadius			radiusMode;

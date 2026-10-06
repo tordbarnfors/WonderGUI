@@ -709,6 +709,8 @@ bool GfxDeviceGen2::_beginCanvasUpdate(CanvasRef ref, Surface* pCanvas, int nUpd
 		entry.info.ref = CanvasRef::None;
 		entry.info.pSurface = pCanvas;
 		entry.info.format = pCanvas->pixelFormat();
+		entry.info.colorSpace = pCanvas->colorSpace();
+		entry.info.bigEndian = pCanvas->isBigEndian();
 		entry.info.scale = pCanvas->scale();
 		entry.info.size = pCanvas->pixelSize() * 64;
 	}
@@ -779,6 +781,7 @@ bool GfxDeviceGen2::_beginCanvasUpdate(CanvasRef ref, Surface* pCanvas, int nUpd
 			layer.pLayerCanvas = m_pBackend->surfaceFactory()->createSurface(WGBP(Surface,
 				_.size = entry.info.size / 64,
 				_.format = info.format,
+				_.colorSpace = info.colorSpace == ColorSpace::Undefined ? entry.info.colorSpace : info.colorSpace,
 				_.canvas = true));
 
 			setRenderLayer(i);

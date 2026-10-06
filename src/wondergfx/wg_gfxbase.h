@@ -45,9 +45,7 @@ namespace wg
 	class GfxContext : public Object
 	{
 		friend class GfxBase;
-		
-		bool				bSRGB = true;
-		
+
 		SurfaceFactory_p	pDefaultSurfaceFactory;
 		EdgemapFactory_p	pDefaultEdgemapFactory;
 		GfxDeviceFactory_p	pDefaultGfxDeviceFactory;
@@ -94,9 +92,6 @@ namespace wg
 		static void					setDefaultGfxDevice( GfxDevice * pDevice );
 		static inline GfxDevice_p	defaultGfxDevice() { return s_pGfxContext->pDefaultGfxDevice; };
 
-		static void					setDefaultToSRGB( bool bSRGB );
-		static inline bool			defaultToSRGB() { return s_pGfxContext->bSRGB; }
-		
 		static constexpr int *		curveTab() { return s_curveTab; }
 		static constexpr int		curveTabSize() { return c_nCurveTabEntries; }
 

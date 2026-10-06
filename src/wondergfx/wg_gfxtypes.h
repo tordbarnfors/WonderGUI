@@ -255,70 +255,64 @@ namespace wg
 
 
 	//____ PixelFormat _____________________________________________________________
+	/**
+	 * Organization of the channels of a pixel.
+	 *
+	 * Chunky formats are named after the order of their channels in a register, starting with
+	 * the most significant bits. How that register is laid out in memory is decided by the byte
+	 * order of the Surface (or PixelBuffer), which by default is the byte order of the system.
+	 * ARGB_8 in little endian byte order therefore has its channels in the order B, G, R, A in memory.
+	 *
+	 * Formats say nothing about color space, that is decided separately by ColorSpace.
+	 *
+	 * Backends only need to support the formats up to and including BGR_565.
+	 */
 
 	enum class PixelFormat : uint8_t	//. autoExtras
 	{
 		Undefined,			///< Pixelformat is undefined.
-		BGR_8,				///< One byte of blue, green and red in exactly that order in memory.
-		BGR_8_sRGB,			///< One byte of blue, green and red in exactly that order in memory.
-		BGR_8_linear,		///< One byte of blue, green and red in exactly that order in memory.
-
-		BGRX_8,				///< One byte of blue, green, red and padding in exactly that order in memory.
-		BGRX_8_sRGB,		///< One byte of blue, green, red and padding in exactly that order in memory.
-		BGRX_8_linear,		///< One byte of blue, green, red and padding in exactly that order in memory.
-
-		BGRA_8,				///< One byte of blue, green, red and alpha in exactly that order in memory.
-		BGRA_8_sRGB,		///< One byte of blue, green, red and alpha in exactly that order in memory.
-		BGRA_8_linear,		///< One byte of blue, green, red and alpha in exactly that order in memory.
-
+		XRGB_8,				///< 8 bits each of padding, red, green and blue.
+		ARGB_8,				///< 8 bits each of alpha, red, green and blue.
 		Index_8,			///< 8 bits of index into the palette.
-		Index_8_sRGB,		///< 8 bits of index into an sRGB palette.
-		Index_8_linear,		///< 8 bits of index into a linear palette.
-
 		Index_16,			///< 16 bits of index into the palette.
-		Index_16_sRGB,		///< 16 bits of index into an sRGB palette.
-		Index_16_linear,	///< 16 bits of index into a linear palette.
-
 		Alpha_8,			///< 8 bits of alpha only.
+		RGB_565,			///< 5 bits of red, 6 bits of green and 5 bits of blue.
+		BGR_565,			///< 5 bits of blue, 6 bits of green and 5 bits of red.
 
-		BGR_565,
-		BGR_565_sRGB,		///< 5 bits of blue, 6 bits of green and 5 bits of red in exactly that order in memory.
-		BGR_565_linear,		///< 5 bits of blue, 6 bits of green and 5 bits of red in exactly that order in memory.
-
-		RGB_565_bigendian,	///< 3 high bits of green, 5 bits of blue, 5 bits of red and 3 low bits of green in exactly that order in memory. Linear and big endian.
-		RGB_555_bigendian,	/// Same layout as RGB_565_bigendian, but lowest bit of green is always cleared. Avoids accidental tinting towards green of dark colors.
-
-		Bitplanes_1,
+		Bitplanes_1,		///< Index into palette, stored as 16 pixels wide words for each bitplane, lowest bitplane first.
 		Bitplanes_2,
 		Bitplanes_4,
 		Bitplanes_5,
 		Bitplanes_8,
 
-		Bitplanes_A1_1,
+		Bitplanes_A1_1,		///< Same as Bitplanes_1, preceeded by a one bit alpha plane.
 		Bitplanes_A1_2,
 		Bitplanes_A1_4,
 		Bitplanes_A1_5,
 		Bitplanes_A1_8,
 
-		BGRX_16_linear,
-		BGRA_16_linear
+		XRGB_16,			///< 16 bits each of padding, red, green and blue.
+		ARGB_16				///< 16 bits each of alpha, red, green and blue.
 	};
-
-
 
 	//____ PixelType _________________________________________________________
 
 	enum class PixelType		//. autoExtras
 	{
 		Chunky,						///< Normal pixel. All bits for a pixel are packed into same sequence of bytes.
-		Chunky_BE,					///< Same as Chunky, but stored in big-endian format.
 		Index,						///< Pixels are color indexes into a palette.
 		Bitplanes					///< Pixels are color indexes into a palette, stored in 16-bit bitplanes. Starting with lowest bitplane.
 	};
 
 	//____ ColorSpace ________________________________________________________
+	/**
+	 * Color space of the color channels of a Surface. Alpha is always linear.
+	 *
+	 * Colors given to WonderGUI, as Color8 and HiColor, are always sRGB.
+	 * Undefined is only used in blueprints, where it gives the default (sRGB).
+	 */
 
-	enum class ColorSpace	//. autoExtras
+	enum class ColorSpace : uint8_t	//. autoExtras
 	{
 		Undefined,
 		Linear,
@@ -326,25 +320,35 @@ namespace wg
 	};
 
 	//____ PixelDescription _________________________________________________
+	/**
+	 * Layout of a pixel in memory.
+	 *
+	 * Describes pixels of any layout, also ones that don't match any PixelFormat,
+	 * such as pixels read from image files.
+	 *
+	 * Masks are applied to the pixel read as a register of the specified size,
+	 * with the specified byte order. For Bitplanes, bigEndian is the byte order of
+	 * the 16-bit bitplane words.
+	 */
 
 	struct PixelDescription
 	{
 		// These constructors are needed for Clang to compile GfxUtil::pixelDescTab in C++11 setting.
-		
+
 		PixelDescription() {}
-		constexpr PixelDescription(int _bits, PixelType _type, ColorSpace _colorSpace, uint64_t _R_mask, uint64_t _G_mask, uint64_t _B_mask, uint64_t _A_mask ) :
-		bits(_bits), type(_type), colorSpace(_colorSpace), R_mask(_R_mask), G_mask(_G_mask), B_mask(_B_mask), A_mask(_A_mask) {}
-		
+		constexpr PixelDescription(int _bits, PixelType _type, uint64_t _R_mask, uint64_t _G_mask, uint64_t _B_mask, uint64_t _A_mask, bool _bigEndian = (WG_IS_BIG_ENDIAN == 1) ) :
+		bits(_bits), type(_type), bigEndian(_bigEndian), R_mask(_R_mask), G_mask(_G_mask), B_mask(_B_mask), A_mask(_A_mask) {}
+
 		bool operator==( const PixelDescription& k ) const
 		{
-			return ( bits == k.bits && type == k.type && colorSpace == k.colorSpace && R_mask == k.R_mask && G_mask == k.G_mask && B_mask == k.B_mask && A_mask == k.A_mask );
+			return ( bits == k.bits && type == k.type && bigEndian == k.bigEndian && R_mask == k.R_mask && G_mask == k.G_mask && B_mask == k.B_mask && A_mask == k.A_mask );
 		}
-		
-		
+
+
 		int			bits = 0;			///< Number of bits for the pixel, includes any non-used padding bits.
 		PixelType	type = PixelType::Chunky;
-		ColorSpace	colorSpace = ColorSpace::sRGB;
-		
+		bool		bigEndian = (WG_IS_BIG_ENDIAN == 1);	///< Byte order of the pixels. Defaults to the byte order of the system.
+
 		uint64_t	R_mask = 0;			///< bitmask for getting the red bits out of chunky pixel
 		uint64_t	G_mask = 0;			///< bitmask for getting the green bits out of chunky pixel
 		uint64_t	B_mask = 0;			///< bitmask for getting the blue bits out of chunky pixel

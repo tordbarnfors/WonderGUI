@@ -22,6 +22,7 @@
 #include <wg_surfacereader.h>
 #include <wg_gfxbase.h>
 #include <wg_gfxutil.h>
+#include <wg_pixeltools.h>
 
 #include <wg_compression.h>
 #include <wg_lzcompression.h>
@@ -91,97 +92,16 @@ namespace wg
 
 		stream.read( ((char*)(&header))+8, header.headerBytes - 8);
 
-		// Prepare surface blueprint
+		// Read palette and pixels
 
-		Surface::Blueprint bp = _blueprintFromHeader(&header);
-		if (_addFlagsFromOtherBlueprint(bp, _bp) != 0)
-		{
-			GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Provided blueprint can not alter format, scale or palette of loaded surface but have one or more of these parameters set.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
-			return nullptr;
-		}
+		int dataBytes = header.paletteBytes + header.pixelBytes;
 
-		// Read and prepare palette
+		char * pData = GfxBase::memStackAlloc(dataBytes);
+		stream.read( pData, dataBytes );
 
-		int paletteBytes = header.paletteSize*sizeof(Color8) + header.paletteDecompressMargin;
-		Color8 * pPalette = nullptr;
-		if( paletteBytes > 0 )
-		{
-			pPalette = (Color8*) GfxBase::memStackAlloc(paletteBytes);
+		auto pSurface = _createSurface(header, pData, _bp);
 
-			// We only support uncompressed palette for the moment
-
-			stream.read( (char*) pPalette, paletteBytes );
-
-			bp.palette = pPalette;
-		}
-
-		// Create surface
-
-		auto pSurface = m_pFactory->createSurface(bp);
-
-		if( paletteBytes > 0 )
-			GfxBase::memStackFree(paletteBytes);
-
-		// Read pixels into PixelBuffer
-
-		auto pixbuf = pSurface->allocPixelBuffer();
-
-
-		int lineBytes = header.width * pSurface->pixelBits()/8;
-
-		if (*(uint32_t*)&header.pixelCompression == *(uint32_t*) "NONE" )
-		{
-			if (pixbuf.pitch > lineBytes)
-			{
-				// Pitch is involved, we need to read line by line
-
-				char* pPixels = (char*)pixbuf.pixels;
-
-				for (int y = 0; y < header.height; y++)
-				{
-					stream.read(pPixels, lineBytes);
-					pPixels += pixbuf.pitch;
-				}
-			}
-			else
-			{
-				stream.read((char*)pixbuf.pixels, lineBytes * header.height);
-			}
-		}
-		else
-		{
-			Decompressor * pDecompressor = GfxBase::getDecompressor(header.pixelCompression);
-
-			if( !pDecompressor )
-			{
-				char msg[] = "Don't know how to decompress 'XXXX'.";
-				* (uint32_t*)&msg[30] = header.pixelCompression;
-
-				GfxBase::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, msg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
-				pSurface->freePixelBuffer(pixbuf);
-				return nullptr;
-			}
-
-			auto pDesc = pSurface->pixelDescription();
-
-			if (pixbuf.pitch != lineBytes)
-			{
-				GfxBase::throwError(ErrorLevel::Error, ErrorCode::Other, "Can only decompress compressed pixels to surfaces that have no pitch.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
-				pSurface->freePixelBuffer(pixbuf);
-				return nullptr;
-			}
-
-			auto pData = GfxBase::memStackAlloc(header.pixelBytes);
-			stream.read(pData, header.pixelBytes);
-			pDecompressor->decompress(pixbuf.pixels, pData, ((const uint8_t*)pData) + header.pixelBytes);
-			GfxBase::memStackFree(header.pixelBytes);
-
-		}
-
-
-		pSurface->pullPixels(pixbuf);
-		pSurface->freePixelBuffer(pixbuf);
-
+		GfxBase::memStackFree(dataBytes);
 		return pSurface;
 	}
 
@@ -246,40 +166,69 @@ namespace wg
 
 		int headerSize = * (const int16_t*)&pData[6];
 		std::memcpy( &header, pData, headerSize);
-		pData+= headerSize;
+
+		return _createSurface(header, pData + headerSize, _bp);
+	}
+
+	//____ _createSurface() ____________________________________________________
+
+	Surface_p SurfaceReader::_createSurface(const SurfaceFileHeader& header, const char * pData, const Surface::Blueprint& _bp)
+	{
+		if( header.versionNumber < 1 || header.versionNumber > 2 )
+		{
+			GfxBase::throwError(ErrorLevel::Error, ErrorCode::Other, "Unsupported version of surface file.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			return nullptr;
+		}
+
+		SurfaceFileLayout layout = surfaceFileLayout(header);
+
+		if( layout.format == PixelFormat::Undefined )
+		{
+			GfxBase::throwError(ErrorLevel::Error, ErrorCode::Other, "Pixel format of surface file is not supported.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			return nullptr;
+		}
 
 		// Prepare surface blueprint
 
-		Surface::Blueprint bp = _blueprintFromHeader(&header);
+		Surface::Blueprint bp = _blueprintFromHeader(&header, layout);
 		if (_addFlagsFromOtherBlueprint(bp, _bp) != 0)
 		{
 			GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Provided blueprint can not alter size, format or palette of loaded surface but have one or more of these parameters set.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return nullptr;
 		}
 
-		// Prepare palette
+		// Prepare palette. We only support uncompressed palette for the moment.
 
-		int paletteBytes = header.paletteSize*sizeof(Color8);
-		if( paletteBytes > 0 )
+		const Color8 * pPalette = nullptr;
+		if( header.paletteSize > 0 )
 		{
-			bp.palette = (Color8*) pData;
-			pData += paletteBytes;
+			pPalette = (const Color8*) pData;
+			bp.palette = pPalette;
 		}
+
+		const char * pPixelData = pData + header.paletteBytes;
 
 		// Create surface
 
 		auto pSurface = m_pFactory->createSurface(bp);
-
-		// Read pixels into PixelBuffer
-		// We only support uncompressed pixels for the moment
+		if( !pSurface )
+			return nullptr;
 
 		auto pixbuf = pSurface->allocPixelBuffer();
 
-		int lineBytes = header.width * pSurface->pixelBits()/8;
+		int fileLineBytes = PixelTools::bytesPerLine(layout.description, header.width);
 
-		if (header.pixelCompression == *(uint32_t*)"NONE")
-			_copyUncompressedFromMemory(pixbuf.pixels, pData, lineBytes, pixbuf.pitch, pixbuf.rect.h);
-		else
+		// Pixels can be copied straight in if the surface keeps them the same way as the file.
+
+		bool bSameLayout = pixbuf.format == layout.format && pixbuf.colorSpace == layout.colorSpace &&
+							pixbuf.bigEndian == layout.bigEndian && layout.description.bits == pSurface->pixelBits();
+
+		// Decompress if needed.
+
+		const char *	pPixels = pPixelData;
+		int				decompressedBytes = 0;
+
+		if (header.pixelCompression != Util::makeEndianSpecificToken( 'N','O','N','E' ))
 		{
 			Decompressor * pDecompressor = GfxBase::getDecompressor(header.pixelCompression);
 
@@ -293,16 +242,49 @@ namespace wg
 				return nullptr;
 			}
 
-			auto pDesc = pSurface->pixelDescription();
+			const uint8_t * pBegin = (const uint8_t*) pPixelData;
+			const uint8_t * pEnd = pBegin + header.pixelBytes - header.pixelDataPadding;
 
-			if (pixbuf.pitch != lineBytes)
+			if( bSameLayout && pixbuf.pitch == fileLineBytes )
 			{
-				GfxBase::throwError(ErrorLevel::Error, ErrorCode::Other, "Can only decompress compressed pixels to surfaces that have no pitch.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				pDecompressor->decompress(pixbuf.pixels, pBegin, pEnd);
+
+				pSurface->pullPixels(pixbuf);
 				pSurface->freePixelBuffer(pixbuf);
-				return nullptr;
+				return pSurface;
 			}
 
-			pDecompressor->decompress(pixbuf.pixels, pData, ((const uint8_t*)pData) + header.pixelBytes);
+			decompressedBytes = fileLineBytes * header.height + header.pixelDecompressMargin;
+			char * pDecompressed = GfxBase::memStackAlloc(decompressedBytes);
+			pDecompressor->decompress(pDecompressed, pBegin, pEnd);
+			pPixels = pDecompressed;
+		}
+
+		// Copy or convert pixels into the surface.
+
+		bool bOk = true;
+
+		if( bSameLayout )
+			_copyUncompressedFromMemory(pixbuf.pixels, pPixels, fileLineBytes, pixbuf.pitch, header.height);
+		else
+		{
+			auto dstDesc = Util::pixelFormatToDescription(pixbuf.format, pixbuf.bigEndian);
+			int paletteEntries = pSurface->paletteSize();
+
+			bOk = PixelTools::copyPixels(header.width, header.height, (const uint8_t*) pPixels, layout.description, layout.colorSpace, 0,
+										 pPalette, header.paletteSize, pixbuf.pixels, pixbuf.format, pixbuf.colorSpace, pixbuf.bigEndian,
+										 pixbuf.pitch - PixelTools::bytesPerLine(dstDesc, header.width),
+										 const_cast<Color8*>(pixbuf.palette), paletteEntries, pSurface->paletteCapacity());
+		}
+
+		if( decompressedBytes > 0 )
+			GfxBase::memStackFree(decompressedBytes);
+
+		if( !bOk )
+		{
+			GfxBase::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "Failed to convert pixels of surface file to surface.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			pSurface->freePixelBuffer(pixbuf);
+			return nullptr;
 		}
 
 		pSurface->pullPixels(pixbuf);
@@ -314,12 +296,14 @@ namespace wg
 
 //____ _blueprintFromHeader() _________________________________________________
 
-Surface::Blueprint SurfaceReader::_blueprintFromHeader( const SurfaceFileHeader * pHeader )
+Surface::Blueprint SurfaceReader::_blueprintFromHeader( const SurfaceFileHeader * pHeader, const SurfaceFileLayout& layout )
 {
 	return WGBP(Surface,
 				_.size 			= {pHeader->width, pHeader->height},
 				_.scale 		= pHeader->scale,
-				_.format 		= pHeader->format,
+				_.format 		= layout.format,
+				_.colorSpace	= layout.colorSpace,
+				_.bigEndian		= layout.bigEndian,
 				_.buffered 		= pHeader->buffered,
 				_.canvas 		= pHeader->canvas,
 				_.dynamic 		= pHeader->dynamic,
@@ -348,7 +332,7 @@ int SurfaceReader::_addFlagsFromOtherBlueprint(Surface::Blueprint& dest, const S
 	if (extraFlags.dynamic)
 		dest.dynamic = true;
 
-	if (extraFlags.format != PixelFormat::Undefined)
+	if (extraFlags.format != PixelFormat::Undefined || extraFlags.colorSpace != ColorSpace::Undefined)
 		errorCode = 2;
 
 	if (extraFlags.identity != 0)

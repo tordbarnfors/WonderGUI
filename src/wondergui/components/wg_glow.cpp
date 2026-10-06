@@ -367,7 +367,7 @@ namespace wg
 
 		SizeI pixelSize = _glowResolution() + SizeI(2, 2);
 
-		return pFactory->createSurface(WGBP(Surface, _.size = pixelSize, _.format = PixelFormat::BGRX_8, _.canvas = true));
+		return pFactory->createSurface(WGBP(Surface, _.size = pixelSize, _.format = PixelFormat::XRGB_8, _.canvas = true));
 	}
 
 };

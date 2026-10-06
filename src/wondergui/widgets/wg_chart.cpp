@@ -189,7 +189,7 @@ namespace wg
 
 				m_pChartCanvas = pDevice->surfaceFactory()->createSurface(WGBP(Surface,
 					_.size = chartSize,
-					_.format = PixelFormat::BGRA_8,
+					_.format = PixelFormat::ARGB_8,
 					_.canvas = true));
 			}
 

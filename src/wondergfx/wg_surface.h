@@ -76,6 +76,9 @@ namespace wg
 	 * Failing to do so will leak memory since Surfaces don't keep track of their PixelBuffers and won't delete
 	 * them when destroyed.
 	 * 
+	 * The pixels of a PixelBuffer are not necessarily in the format, color space or byte order of the Surface
+	 * itself, so always check the format, colorSpace and bigEndian members of the PixelBuffer.
+	 *
 	 * A PixelBuffer is strongly tied to the Surface it was created from and may not be used in any call
 	 * to any other Surface. So you can not push pixels from one Surface into a PixelBuffer and then pull 
 	 * them into another as a way of copying content between them. Use Surface::copy() for that.
@@ -88,6 +91,8 @@ namespace wg
 		const Color8*	palette;
 		RectI			rect;
 		int				pitch;
+		ColorSpace		colorSpace;
+		bool			bigEndian;
 	};
 
 	//____ NinePatch ___________________________________________________________
@@ -175,8 +180,10 @@ namespace wg
 		struct Blueprint
 		{
 			Object_p			baggage;
+			bool				bigEndian = (WG_IS_BIG_ENDIAN == 1);	// Byte order of the pixels. Defaults to the byte order of the system.
 			bool				buffered = false;
 			bool				canvas = false;
+			ColorSpace			colorSpace = ColorSpace::Undefined;		// Color space of the pixels. Defaults to sRGB.
 			Finalizer_p			finalizer = nullptr;
 			const Color8* 		palette = nullptr;
 			int					paletteCapacity = 0;		// Default to paletteSize. Must be >= paletteSize if set.
@@ -229,6 +236,8 @@ namespace wg
 		inline const PixelDescription*	pixelDescription() const; ///< @brief Get the pixel description for the surface.
 		inline PixelFormat	pixelFormat() const;
 		inline int			pixelBits() const;
+		inline ColorSpace	colorSpace() const;
+		inline bool			isBigEndian() const;
 
 		inline bool			isOpaque() const;				///< @brief Check if surface is guaranteed to be entirely opaque.
 		inline bool			isDynamic() const;
@@ -278,10 +287,11 @@ namespace wg
 			PixelFormat format = bp.format == PixelFormat::Undefined ? defaultPixelFormat : bp.format;
 			SampleMethod method = bp.sampleMethod == SampleMethod::Undefined ? defaultSampleMethod : bp.sampleMethod;
 
-			format = Util::clarifyPixelFormat(format);
-
 			m_pixelFormat = format;
-			m_pPixelDescription = &Util::pixelFormatToDescription(format);
+			m_colorSpace = bp.colorSpace == ColorSpace::Undefined ? ColorSpace::sRGB : bp.colorSpace;
+			m_bBigEndian = bp.bigEndian;
+			m_pixelDescription = Util::pixelFormatToDescription(format, bp.bigEndian);
+			m_pPixelDescription = &m_pixelDescription;
 
 			m_size = bp.size;
 			m_scale = bp.scale == 0 ? 64 : bp.scale;
@@ -318,8 +328,6 @@ namespace wg
 			Observer* pNext = nullptr;
 		};
 
-		static const uint8_t *	s_pixelConvTabs[9];
-
 		int					_alpha(CoordSPX coord, const PixelBuffer& buffer);
 
         static bool         _isBlueprintValid( const Blueprint& bp, SizeI maxSize);
@@ -331,8 +339,11 @@ namespace wg
 
  		int					m_scale = 64;
 
-		const PixelDescription*	m_pPixelDescription;
+		const PixelDescription*	m_pPixelDescription;	// Points at m_pixelDescription.
+		PixelDescription	m_pixelDescription;
 		PixelFormat			m_pixelFormat;
+		ColorSpace			m_colorSpace = ColorSpace::sRGB;
+		bool				m_bBigEndian = (WG_IS_BIG_ENDIAN == 1);
 		SizeI				m_size;								// Width and height in pixels.
 
 		SampleMethod		m_sampleMethod = SampleMethod::Nearest;
@@ -474,8 +485,7 @@ namespace wg
 	{
 		//TODO: Indexed can also be opaque. Check their alpha on init instead?
 
-		return 	m_pPixelDescription->A_mask == 0 && (m_pPixelDescription->type == PixelType::Chunky ||
-		m_pPixelDescription->type == PixelType::Chunky_BE );
+		return 	m_pPixelDescription->A_mask == 0 && m_pPixelDescription->type == PixelType::Chunky;
 	}
 
 	//____ isDynamic() ___________________________________________________________
@@ -525,6 +535,20 @@ namespace wg
 	int Surface::pixelBits() const
 	{
 		return m_pPixelDescription->bits;
+	}
+
+	//____ colorSpace() ______________________________________________________
+
+	ColorSpace Surface::colorSpace() const
+	{
+		return m_colorSpace;
+	}
+
+	//____ isBigEndian() ______________________________________________________
+
+	bool Surface::isBigEndian() const
+	{
+		return m_bBigEndian;
 	}
 
 

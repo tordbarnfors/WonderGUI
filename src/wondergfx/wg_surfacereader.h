@@ -84,7 +84,8 @@ protected:
 
 	virtual ~SurfaceReader() {}
 	
-	Surface::Blueprint	_blueprintFromHeader( const SurfaceFileHeader * pHeader );
+	Surface::Blueprint	_blueprintFromHeader( const SurfaceFileHeader * pHeader, const SurfaceFileLayout& layout );
+	Surface_p		_createSurface( const SurfaceFileHeader& header, const char * pData, const Surface::Blueprint& extraFlags );
 	
 	int				_addFlagsFromOtherBlueprint(Surface::Blueprint& dest, const Surface::Blueprint& extraFlags);
 

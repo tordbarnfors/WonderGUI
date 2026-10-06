@@ -26,8 +26,11 @@ using namespace wg;
 
 void convertSurfaceBlueprint(Surface::Blueprint* pDest, const wg_surfaceBP* pSource)
 {
+	if( pSource->byteOrder != WG_BYTEORDER_NATIVE )
+		pDest->bigEndian = (pSource->byteOrder == WG_BYTEORDER_BIG_ENDIAN);
 	pDest->buffered = pSource->buffered;
 	pDest->canvas = pSource->canvas;
+	pDest->colorSpace = (ColorSpace)pSource->colorSpace;
 	pDest->palette = (Color8*)pSource->palette;
 	pDest->paletteCapacity = pSource->paletteCapacity;
 	pDest->paletteSize = pSource->paletteSize;

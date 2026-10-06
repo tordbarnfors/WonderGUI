@@ -103,6 +103,7 @@ namespace wg
 */
 
 			PixelFormat format = PixelFormat::Undefined;
+			ColorSpace	colorSpace = ColorSpace::Undefined;		// Defaults to the color space of the canvas.
 
 			std::function<void(GfxDevice* pDevice)> blendFunc = nullptr;
 			std::function<void(GfxDevice* pDevice)> clearFunc = nullptr;

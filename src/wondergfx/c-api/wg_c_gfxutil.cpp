@@ -22,7 +22,15 @@
 #include <wg_c_gfxutil.h>
 #include <wg_gfxutil.h>
 
+#include <cstddef>
+
 using namespace wg;
+
+static_assert( sizeof(wg_pixelDescription) == sizeof(PixelDescription) && offsetof(wg_pixelDescription, R_mask) == offsetof(PixelDescription, R_mask),
+			   "wg_pixelDescription out of sync with PixelDescription" );
+static_assert( (int) WG_PIXFMT_ARGB_16 == (int) PixelFormat::ARGB_16 && (int) WG_PIXFMT_BGR_565 == (int) PixelFormat::BGR_565,
+			   "wg_pixelFormat out of sync with PixelFormat" );
+static_assert( (int) WG_COLORSPACE_SRGB == (int) ColorSpace::sRGB, "wg_colorSpace out of sync with ColorSpace" );
 
 const wg_pixelDescription* wg_pixelFormatToDescription( wg_pixelFormat format )
 {
@@ -34,7 +42,3 @@ wg_pixelFormat wg_pixelDescriptionToFormat(const wg_pixelDescription * pDescript
 	return (wg_pixelFormat) Util::pixelDescriptionToFormat( * reinterpret_cast<const PixelDescription *>(pDescription));
 }
 
-wg_pixelFormat wg_clarifyPixelFormat( wg_pixelFormat format)
-{
-	return (wg_pixelFormat) Util::clarifyPixelFormat( (PixelFormat) format );
-}
