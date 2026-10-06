@@ -148,8 +148,6 @@ typedef enum
 
 	WG_PIXFMT_ALPHA_8,
 
-	WG_PIXFMT_BGRA_4_LINEAR,		///< 4 bits each of blue, green, red and alpha in exactly that order in memory.
-
 	WG_PIXFMT_BGR_565,				///< 5 bits of blue, 6 bits of green and 5 bits of red in exactly that order in memory.
 	WG_PIXFMT_BGR_565_sRGB,			///< 5 bits of blue, 6 bits of green and 5 bits of red in exactly that order in memory.
 	WG_PIXFMT_BGR_565_LINEAR,		///< 5 bits of blue, 6 bits of green and 5 bits of red in exactly that order in memory.

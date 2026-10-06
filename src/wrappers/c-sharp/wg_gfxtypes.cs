@@ -121,8 +121,6 @@ public enum PixelFormat
 
 	Alpha_8,            ///< 8 bits of alpha only.
 
-	BGRA_4_linear,      ///< 4 bits each of blue, green, red and alpha in exactly that order in memory.
-
 	BGR_565,
 	BGR_565_sRGB,       ///< 5 bits of blue, 6 bits of green and 5 bits of red in exactly that order in memory.
 	BGR_565_linear,     ///< 5 bits of blue, 6 bits of green and 5 bits of red in exactly that order in memory.

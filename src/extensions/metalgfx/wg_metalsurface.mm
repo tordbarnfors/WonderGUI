@@ -358,11 +358,6 @@ namespace wg
 #endif
 				break;
                 
-            case PixelFormat::BGRA_4_linear:
-                format = PixelFormat::BGRA_8_linear;
-                m_internalFormat = MTLPixelFormatBGRA8Unorm;
-                break;
-                
 			case PixelFormat::Index_8:
 			case PixelFormat::Index_8_sRGB:
 			case PixelFormat::Index_8_linear:

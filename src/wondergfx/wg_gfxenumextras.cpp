@@ -181,7 +181,6 @@ namespace wg
 			"Index_16_sRGB",
 			"Index_16_linear",
 			"Alpha_8",
-			"BGRA_4_linear",
 			"BGR_565",
 			"BGR_565_sRGB",
 			"BGR_565_linear",

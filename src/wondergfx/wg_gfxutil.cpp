@@ -176,8 +176,6 @@ const PixelDescription	pixelDescTab[PixelFormat_size] = {
 
 	{8, PixelType::Chunky, ColorSpace::Undefined, 0x0, 0x0, 0x0, 0xFF},						// Alpha_8
 
-	{16, PixelType::Chunky, ColorSpace::Linear, 0xF00, 0xF0, 0xF, 0xF000},					// BGRA_4_linear
-
 	{16, PixelType::Chunky, ColorSpace::Undefined, 0xF800, 0x07E0, 0x001F, 0},				// BGR_565
 	{16, PixelType::Chunky, ColorSpace::sRGB, 0xF800, 0x07E0, 0x001F, 0},					// BGR_565_sRGB
 	{16, PixelType::Chunky, ColorSpace::Linear, 0xF800, 0x07E0, 0x001F, 0},					// BGR_565_linear
@@ -224,8 +222,6 @@ PixelFormat	Util::pixelDescriptionToFormat(const PixelDescription& description)
 					break;
 
 				case 16:
-					if( description == pixelDescTab[int(PixelFormat::BGRA_4_linear)])
-					   return PixelFormat::BGRA_4_linear;
 					if( description == pixelDescTab[int(PixelFormat::BGR_565)])
 					   return PixelFormat::BGR_565;
 					if( description == pixelDescTab[int(PixelFormat::BGR_565_sRGB)])
@@ -248,8 +244,6 @@ PixelFormat	Util::pixelDescriptionToFormat(const PixelDescription& description)
 							return PixelFormat::BGR_8_linear;
 					}
 
-					if( description == pixelDescTab[int(PixelFormat::BGRA_4_linear)])
-					   return PixelFormat::BGRA_4_linear;
 					break;
 				}
 

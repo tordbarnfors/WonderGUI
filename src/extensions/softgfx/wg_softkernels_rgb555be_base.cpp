@@ -39,14 +39,14 @@ Source formats:        BGR_8_linear
                        Index_8_linear
                        Alpha_8
                        RGB_555_bigendian
-                       (unsupported: BGR_8_sRGB BGRX_8_sRGB BGRA_8_sRGB Index_8_sRGB Index_16 Index_16_sRGB Index_16_linear BGRA_4_linear BGR_565_sRGB BGR_565_linear RGB_565_bigendian Bitplanes_1 Bitplanes_2 Bitplanes_4 Bitplanes_5 Bitplanes_8 Bitplanes_A1_1 Bitplanes_A1_2 Bitplanes_A1_4 Bitplanes_A1_5 Bitplanes_A1_8 BGRX_16_linear BGRA_16_linear)
+                       (unsupported: BGR_8_sRGB BGRX_8_sRGB BGRA_8_sRGB Index_8_sRGB Index_16 Index_16_sRGB Index_16_linear BGR_565_sRGB BGR_565_linear RGB_565_bigendian Bitplanes_1 Bitplanes_2 Bitplanes_4 Bitplanes_5 Bitplanes_8 Bitplanes_A1_1 Bitplanes_A1_2 Bitplanes_A1_4 Bitplanes_A1_5 Bitplanes_A1_8 BGRX_16_linear BGRA_16_linear)
 
 Destination formats:   BGR_8_linear
                        BGRX_8_linear
                        BGRA_8_linear
                        Alpha_8
                        RGB_555_bigendian
-                       (unsupported: BGR_8_sRGB BGRX_8_sRGB BGRA_8_sRGB Index_16 Index_16_sRGB Index_16_linear BGRA_4_linear BGR_565_sRGB BGR_565_linear RGB_565_bigendian Bitplanes_1 Bitplanes_2 Bitplanes_4 Bitplanes_5 Bitplanes_8 Bitplanes_A1_1 Bitplanes_A1_2 Bitplanes_A1_4 Bitplanes_A1_5 Bitplanes_A1_8 BGRX_16_linear BGRA_16_linear)
+                       (unsupported: BGR_8_sRGB BGRX_8_sRGB BGRA_8_sRGB Index_16 Index_16_sRGB Index_16_linear BGR_565_sRGB BGR_565_linear RGB_565_bigendian Bitplanes_1 Bitplanes_2 Bitplanes_4 Bitplanes_5 Bitplanes_8 Bitplanes_A1_1 Bitplanes_A1_2 Bitplanes_A1_4 Bitplanes_A1_5 Bitplanes_A1_8 BGRX_16_linear BGRA_16_linear)
 
 
 CUSTOM BLIT KERNELS DEFINITION #1

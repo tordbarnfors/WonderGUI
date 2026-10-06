@@ -234,18 +234,6 @@ namespace test
 	};
 
 
-	class DrawToBGRA_4 : public DrawTest
-	{
-	public:
-		const string	name() const { return "DrawToBGRA_4"; }
-		bool			init(GfxDevice * pDevice, const RectI& canvas)
-		{
-			m_pMyCanvas = pDevice->surfaceFactory()->createSurface(canvas, PixelFormat::BGRA_4);
-
-			return(m_pMyCanvas != nullptr);
-		}
-	};
-
 	class DrawToBGR_565 : public DrawTest
 	{
 	public:

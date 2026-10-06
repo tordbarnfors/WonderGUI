@@ -73,13 +73,6 @@ static inline void _read_pixel_fast8(const uint8_t* WG_RESTRICT pPixel, const Co
 		outB = SoftBackend::s_fast8_channel_5[pixel >> 11];
 		outA = 255;
 	}
-	else if constexpr(format == PixelFormat::BGRA_4_linear)
-	{
-		outB = SoftBackend::s_fast8_channel_4_1[pPixel[0]];
-		outG = SoftBackend::s_fast8_channel_4_2[pPixel[0]];
-		outR = SoftBackend::s_fast8_channel_4_1[pPixel[1]];
-		outA = SoftBackend::s_fast8_channel_4_2[pPixel[1]];
-	}
 	else if constexpr(format == PixelFormat::Alpha_8)
 	{
 		outB = 255;
@@ -184,13 +177,6 @@ static inline void _read_pixel(const uint8_t* WG_RESTRICT pPixel, const Color8* 
 		outB = SoftBackend::s_channel_5_linear[pixel >> 11];
 		outA = 4096;
 	}
-	else if constexpr(format == PixelFormat::BGRA_4_linear)
-	{
-		outB = SoftBackend::s_channel_4_1[pPixel[0]];
-		outG = SoftBackend::s_channel_4_2[pPixel[0]];
-		outR = SoftBackend::s_channel_4_1[pPixel[1]];
-		outA = SoftBackend::s_channel_4_2[pPixel[1]];
-	}
 	else if constexpr(format == PixelFormat::Alpha_8)
 	{
 		outB = 4096;
@@ -258,11 +244,6 @@ static inline void _write_pixel_fast8(uint8_t* pPixel, int16_t b, int16_t g, int
 		pPixel[0] = (b5 & 0xF8) | (g5 >> 5);
 		pPixel[1] = ((g5 & 0x18) << 3) | (r5 >> 3);
 	}
-	else if constexpr(format == PixelFormat::BGRA_4_linear)
-	{
-		pPixel[0] = (SoftBackend::s_round_channel_4[b] >> 4) | SoftBackend::s_round_channel_4[g];
-		pPixel[1] = (SoftBackend::s_round_channel_4[r] >> 4) | SoftBackend::s_round_channel_4[a];
-	}
 	else if constexpr(format == PixelFormat::Alpha_8)
 	{
 		pPixel[0] = (uint8_t)a;
@@ -312,7 +293,7 @@ static inline void _write_pixel(uint8_t* pPixel, int16_t b, int16_t g, int16_t r
 		pPixel[2] = HiColor::packSRGBTab[r];
 	}
 	else if constexpr(format == PixelFormat::BGR_565_sRGB || format == PixelFormat::BGR_565_linear ||
-					  format == PixelFormat::RGB_565_bigendian || format == PixelFormat::RGB_555_bigendian || format == PixelFormat::BGRA_4_linear)
+					  format == PixelFormat::RGB_565_bigendian || format == PixelFormat::RGB_555_bigendian)
 	{
 		const uint8_t* pPackTab = format == PixelFormat::BGR_565_sRGB ? HiColor::packSRGBTab : HiColor::packLinearTab;
 
@@ -889,7 +870,7 @@ inline void _texel_tint_pixel(int bits, int16_t& pixelB, int16_t& pixelG, int16_
 template<BlendMode BLEND, TintMode TINT, PixelFormat DSTFORMAT>
 void _draw_line(uint8_t* WG_RESTRICT pRow, int rowInc, int pixelInc, int length, int width, int pos, int slope, HiColor color, const SoftBackend::ColTrans& tint, CoordI patchPos)
 {
-	constexpr bool bFast8 = (DSTFORMAT == PixelFormat::Alpha_8 || DSTFORMAT == PixelFormat::BGRA_4_linear ||
+	constexpr bool bFast8 = (DSTFORMAT == PixelFormat::Alpha_8 ||
 							 DSTFORMAT == PixelFormat::BGRA_8_linear || DSTFORMAT == PixelFormat::BGRX_8_linear ||
 							 DSTFORMAT == PixelFormat::BGR_565_linear || DSTFORMAT == PixelFormat::RGB_565_bigendian ||
 							 DSTFORMAT == PixelFormat::RGB_555_bigendian || DSTFORMAT == PixelFormat::BGR_8_linear);
@@ -1297,7 +1278,7 @@ void _fill(uint8_t* WG_RESTRICT pDst, int pitchX, int pitchY, int nLines, int li
 {
 //	if( TINT == TintMode::None || TINT == TintMode::Flat )
 
-	constexpr bool bFast8 = (DSTFORMAT == PixelFormat::Alpha_8 || DSTFORMAT == PixelFormat::BGRA_4_linear ||
+	constexpr bool bFast8 = (DSTFORMAT == PixelFormat::Alpha_8 ||
 							 DSTFORMAT == PixelFormat::BGRA_8_linear || DSTFORMAT == PixelFormat::BGRX_8_linear ||
 							 DSTFORMAT == PixelFormat::BGR_565_linear || DSTFORMAT == PixelFormat::RGB_565_bigendian ||
 							 DSTFORMAT == PixelFormat::RGB_555_bigendian || DSTFORMAT == PixelFormat::BGR_8_linear);
@@ -1412,13 +1393,13 @@ void _fill(uint8_t* WG_RESTRICT pDst, int pitchX, int pitchY, int nLines, int li
 template<PixelFormat SRCFORMAT, TintMode TINT, BlendMode BLEND, PixelFormat DSTFORMAT, SoftBackend::ReadOp READOP>
 void _straight_blit(const uint8_t* WG_RESTRICT pSrc, uint8_t* WG_RESTRICT pDst, const SoftSurface* WG_RESTRICT pSrcSurf, const SoftBackend::Pitches& pitches, int nLines, int lineLength, const SoftBackend::ColTrans& tint, CoordI patchPos, const Transform* WG_RESTRICT pMatrix)
 {
-	constexpr bool srcIsLinear = (SRCFORMAT == PixelFormat::Alpha_8 || SRCFORMAT == PixelFormat::BGRA_4_linear ||
+	constexpr bool srcIsLinear = (SRCFORMAT == PixelFormat::Alpha_8 ||
 		SRCFORMAT == PixelFormat::BGRA_8_linear || SRCFORMAT == PixelFormat::BGRX_8_linear ||
 		SRCFORMAT == PixelFormat::BGR_565_linear || SRCFORMAT == PixelFormat::RGB_565_bigendian ||
 		SRCFORMAT == PixelFormat::RGB_555_bigendian || SRCFORMAT == PixelFormat::BGR_8_linear ||
 		SRCFORMAT == PixelFormat::Index_8_linear);
 
-	constexpr bool dstIsLinear = (DSTFORMAT == PixelFormat::Alpha_8 || DSTFORMAT == PixelFormat::BGRA_4_linear ||
+	constexpr bool dstIsLinear = (DSTFORMAT == PixelFormat::Alpha_8 ||
 		DSTFORMAT == PixelFormat::BGRA_8_linear || DSTFORMAT == PixelFormat::BGRX_8_linear ||
 		DSTFORMAT == PixelFormat::BGR_565_linear || DSTFORMAT == PixelFormat::RGB_565_bigendian ||
 		DSTFORMAT == PixelFormat::RGB_555_bigendian || DSTFORMAT == PixelFormat::BGR_8_linear);
@@ -1680,7 +1661,6 @@ template<PixelFormat SRCFORMAT, SampleMethod SAMPLEMETHOD, TintMode TINT, BlendM
 void _transform_blit(const SoftSurface* WG_RESTRICT pSrcSurf, BinalCoord pos, const binalInt matrix[2][2], uint8_t* WG_RESTRICT pDst, int dstPitchX, int dstPitchY, int nLines, int lineLength, const SoftBackend::ColTrans& tint, CoordI patchPos)
 {
 	constexpr bool srcIsLinear = (SRCFORMAT == PixelFormat::Alpha_8 ||
-						SRCFORMAT == PixelFormat::BGRA_4_linear ||
 						SRCFORMAT == PixelFormat::BGRA_8_linear ||
 						SRCFORMAT == PixelFormat::BGRX_8_linear ||
 						SRCFORMAT == PixelFormat::BGR_565_linear ||
@@ -1689,7 +1669,7 @@ void _transform_blit(const SoftSurface* WG_RESTRICT pSrcSurf, BinalCoord pos, co
 						SRCFORMAT == PixelFormat::BGR_8_linear ||
 						SRCFORMAT == PixelFormat::Index_8_linear);
 
-	constexpr bool dstIsLinear = (DSTFORMAT == PixelFormat::Alpha_8 || DSTFORMAT == PixelFormat::BGRA_4_linear ||
+	constexpr bool dstIsLinear = (DSTFORMAT == PixelFormat::Alpha_8 ||
 		DSTFORMAT == PixelFormat::BGRA_8_linear || DSTFORMAT == PixelFormat::BGRX_8_linear ||
 		DSTFORMAT == PixelFormat::BGR_565_linear || DSTFORMAT == PixelFormat::RGB_565_bigendian ||
 		DSTFORMAT == PixelFormat::RGB_555_bigendian || DSTFORMAT == PixelFormat::BGR_8_linear);
@@ -2074,7 +2054,7 @@ static inline void _add_segment_color(int blendFraction, int offset, const int16
 template<SoftBackend::StripSource SOURCE, BlendMode BLEND, PixelFormat DSTFORMAT>
 void _draw_segment_strip(int colBeg, int colEnd, uint8_t* WG_RESTRICT pStripStart, int pixelPitch, int nEdges, SoftBackend::SegmentEdge* WG_RESTRICT pEdges, const int16_t* WG_RESTRICT pSegmentColors, const HiColor* WG_RESTRICT pSegmentTintmap, int segmentTintmapPitch, const bool* WG_RESTRICT pTransparentSegments, const bool* WG_RESTRICT pOpaqueSegments, const SoftBackend::ColTrans& tint)
 {
-	constexpr bool bFast8 = (DSTFORMAT == PixelFormat::Alpha_8 || DSTFORMAT == PixelFormat::BGRA_4_linear ||
+	constexpr bool bFast8 = (DSTFORMAT == PixelFormat::Alpha_8 ||
 							DSTFORMAT == PixelFormat::BGRA_8_linear || DSTFORMAT == PixelFormat::BGRX_8_linear ||
 							DSTFORMAT == PixelFormat::BGR_565_linear || DSTFORMAT == PixelFormat::RGB_565_bigendian ||
 							DSTFORMAT == PixelFormat::RGB_555_bigendian || DSTFORMAT == PixelFormat::BGR_8_linear);

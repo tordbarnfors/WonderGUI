@@ -50,7 +50,6 @@ struct RoundTab
 	}
 };
 
-static constexpr RoundTab<4> round_4;
 static constexpr RoundTab<5> round_5;
 static constexpr RoundTab<6> round_6;
 
@@ -372,23 +371,6 @@ static void readIndex16(const uint8_t* pSrc, uint8_t* pDst, int nbPixels, const 
 		*(uint32_t*)pDst = pPalette[*((uint16_t*)pSrc)];
 		pDst += 4;
 		pSrc += 2;
-	}
-}
-
-
-static void readBGRA_4( const uint8_t * pSrc, uint8_t * pDst, int nbPixels, const void * p1, const void * p2 )
-{
-	uint8_t * pConvTab = (uint8_t*) p1;
-
-	for( int i = 0 ; i < nbPixels ; i++ )
-	{
-		uint8_t bg = * pSrc++;
-		* pDst++ = pConvTab[bg&0xF];
-		* pDst++ = pConvTab[bg>>4];
-
-		uint8_t ra = * pSrc++;
-		* pDst++ = pConvTab[ra&0xF];
-		* pDst++ = conv_4_to_8_straight[ra>>4];
 	}
 }
 
@@ -1114,31 +1096,6 @@ static void read16_Index16(const uint8_t* pSrc, uint8_t* pDst, int nbPixels, con
 }
 
 
-static void read16_BGRA_4(const uint8_t* pSrc, uint8_t* pDst, int nbPixels, const void* p1, const void* p2)
-{
-	uint64_t* pOut = (uint64_t*) pDst;
-
-	for (int i = 0; i < nbPixels; i++)
-	{
-		uint64_t	acc = 0;
-
-		uint8_t bg = *pSrc++;
-		acc = conv_4_to_8_straight[bg & 0xF];
-		acc <<= 16;
-
-		acc |= conv_4_to_8_straight[bg >> 4];
-		acc <<= 16;
-
-		uint8_t ra = *pSrc++;
-		acc |= conv_4_to_8_straight[ra & 0xF];
-		acc <<= 16;
-
-		acc |= conv_4_to_8_straight[ra >> 4];
-
-		*pDst++ = acc | (acc << 8);
-	}
-}
-
 static void read16_BGR_565_sRGB(const uint8_t* pSrc, uint8_t* pDst, int nbPixels, const void* p1, const void* p2)
 {
 	uint64_t* pOut = (uint64_t*)pDst;
@@ -1266,20 +1223,6 @@ static void copy_BGRA_8_to_BGR_8(const uint8_t* pSrc, uint8_t* pDst, int amount)
 	}
 }
 
-static void copy_BGRA_8_to_BGRA_4(const uint8_t* pSrc, uint8_t* pDst, int amount)
-{
-	for (int i = 0; i < amount; i++)
-	{
-		uint8_t dst = (round_4.v[*pSrc++] >> 4);
-		dst |= round_4.v[*pSrc++];
-		*pDst++ = dst;
-
-		dst = (round_4.v[*pSrc++] >> 4);
-		dst |= round_4.v[*pSrc++];
-		*pDst++ = dst;
-	}
-}
-
 //____ pack565() ______________________________________________________________
 
 static inline uint16_t pack565(uint32_t lowChannel, uint32_t g, uint32_t highChannel)
@@ -1345,9 +1288,6 @@ static PixelWriteFunc getChunkyWriteFuncFromBGRA8(PixelFormat dstFmt)
 	case PixelFormat::BGR_8_sRGB:
 	case PixelFormat::BGR_8_linear:
 		return copy_BGRA_8_to_BGR_8;
-
-	case PixelFormat::BGRA_4_linear:
-		return copy_BGRA_8_to_BGRA_4;
 
 	case PixelFormat::BGR_565_sRGB:
 	case PixelFormat::BGR_565_linear:
@@ -1452,55 +1392,6 @@ static bool convertPixelsToKnownType( int width, int height, const uint8_t * pSr
 						* pDst++ = * p++;
 						* pDst++ = * p++;
 						p += 1;
-					}
-				}
-				pSrc += srcPitchAdd;
-				pDst += dstPitchAdd;
-			}
-			break;
-		}
-
-		case PixelFormat::BGRA_4_linear:
-		{
-			uint8_t	buffer[64*4];
-
-			for( int y = 0 ; y < height ; y++ )
-			{
-				int widthLeft = width;
-				while( widthLeft > 64 )
-				{
-					pReadFunc( pSrc, buffer, 64, pTab1, pTab2 );
-					pSrc += srcPixelBits * 8;
-
-					uint8_t * p = buffer;
-					for( int i = 0 ; i < 64 ; i++ )
-					{
-						uint8_t dst = (round_4.v[* p++] >> 4);
-						dst |= round_4.v[* p++];
-						* pDst++ = dst;
-
-						dst = (round_4.v[* p++] >> 4);
-						dst |= round_4.v[* p++];
-						* pDst++ = dst;
-					}
-					widthLeft -= 64;
-				}
-
-				if( widthLeft > 0 )
-				{
-					pReadFunc( pSrc, buffer, widthLeft, pTab1, pTab2 );
-					pSrc += srcPixelBits / 8 * widthLeft;
-
-					uint8_t * p = buffer;
-					for( int i = 0 ; i < widthLeft ; i++ )
-					{
-						uint8_t dst = (round_4.v[* p++] >> 4);
-						dst |= round_4.v[* p++];
-						* pDst++ = dst;
-
-						dst = (round_4.v[* p++] >> 4);
-						dst |= round_4.v[* p++];
-						* pDst++ = dst;
 					}
 				}
 				pSrc += srcPitchAdd;
@@ -2051,15 +1942,6 @@ static std::tuple<PixelReadFunc, const void *, const void *, int> getReadFuncFor
 				}
 				break;
 
-			case PixelFormat::BGRA_4_linear:
-				pReadFunc = readBGRA_4;
-				if (bLinearDest)
-					pTab1 = conv_4_to_8_straight;
-				else
-					pTab1 = conv_4_linear_to_8_sRGB;
-
-				break;
-
 			case PixelFormat::BGR_565_sRGB:
 			case PixelFormat::BGR_565_linear:
 				pReadFunc = readBGR_565;
@@ -2204,10 +2086,6 @@ static std::tuple<PixelReadFunc, const void*, const void*, int> getReadFuncFor64
 
 			case PixelFormat::BGRA_8_linear:
 				pReadFunc = read16_BGRA8_linear;
-				break;
-
-			case PixelFormat::BGRA_4_linear:
-				pReadFunc = read16_BGRA_4;
 				break;
 
 			case PixelFormat::BGR_565_sRGB:
@@ -2933,18 +2811,6 @@ int colorToPixelBytes( HiColor color, PixelFormat format, uint8_t pixelArea[18],
 			return 4;
 		}
 
-		case PixelFormat::BGRA_4_linear:
-		{
-			int b = pConvTab[color.b];
-			int g = pConvTab[color.g];
-			int r = pConvTab[color.r];
-			int a = pConvTab[color.a];
-
-			pixelArea[0] = (round_4.v[b] >> 4) | round_4.v[g];
-			pixelArea[1] = (round_4.v[r] >> 4) | round_4.v[a];
-			return 2;
-		}
-
 		case PixelFormat::BGR_565:
 		case PixelFormat::BGR_565_sRGB:
 		case PixelFormat::BGR_565_linear:
@@ -3286,22 +3152,8 @@ bool extractAlphaChannel(PixelFormat format, const uint8_t* pSrc, int srcPitch, 
 						pSrc += srcPitchAdd;
 						pDst += dstPitchAdd;
 					}
-
-				case 16:									// Only PixelFormat::BGRA_4 has this size and alpha.
-				{
-					for (int y = 0; y < srcRect.h; y++)
-					{
-						for (int x = 0; x < srcRect.w; x++)
-						{
-							uint16_t val = (* ((uint16_t*)pSrc)) >> 12;
-							*pDst++ = val | (val << 4);
-							pSrc += 2;
-						}
-						pSrc += srcPitchAdd;
-						pDst += dstPitchAdd;
-					}
 					break;
-				}
+
 				case 32:									// Only PixelFormat::BGRA_8 has this size and alpha
 				{
 					for (int y = 0; y < srcRect.h; y++)

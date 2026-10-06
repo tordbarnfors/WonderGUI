@@ -353,11 +353,6 @@ namespace wg
 			uint8_t* pPixel = buffer.pixels + buffer.pitch * coord.y + coord.x;
 			return HiColor::unpackLinearTab[pPixel[0]];
 		}
-		case PixelFormat::BGRA_4_linear:
-		{
-			uint16_t alpha = (*(uint16_t*)(buffer.pixels + buffer.pitch * coord.y + coord.x * 2)) >> 12;
-			return HiColor::unpackLinearTab[alpha | (alpha << 4)];
-		}
 		case PixelFormat::BGRA_8_sRGB:
 		case PixelFormat::BGRA_8_linear:
 		{

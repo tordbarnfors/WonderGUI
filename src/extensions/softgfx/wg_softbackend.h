@@ -171,21 +171,16 @@ namespace wg
 		typedef	void(*TransformBlitOp_p)(const SoftSurface* pSrcSurf, BinalCoord pos, const binalInt matrix[2][2], uint8_t* pDst, int dstPitchX, int dstPitchY, int nLines, int lineLength, const ColTrans& tint, CoordI patchPos);
 		typedef void(*SegmentOp_p)(int clipBeg, int clipEnd, uint8_t* pStripStart, int pixelPitch, int nEdges, SegmentEdge* pEdges, const int16_t* pSegmentColors, const HiColor * pSegmentTintmap, int segmentTintmapPitch, const bool* pTransparentSegments, const bool* pOpaqueSegments, const ColTrans& tint);
 
-		alignas(kCacheLineSize) static const int16_t s_channel_4_1[256];
-		alignas(kCacheLineSize) static const int16_t s_channel_4_2[256];
 		alignas(kCacheLineSize) static const int16_t s_channel_5_linear[32];
 		alignas(kCacheLineSize) static const int16_t s_channel_6_linear[64];
 		alignas(kCacheLineSize) static const int16_t s_channel_5_sRGB[32];
 		alignas(kCacheLineSize) static const int16_t s_channel_6_sRGB[64];
-		alignas(kCacheLineSize) static const uint8_t s_fast8_channel_4_1[256];
-		alignas(kCacheLineSize) static const uint8_t s_fast8_channel_4_2[256];
 		alignas(kCacheLineSize) static const uint8_t s_fast8_channel_5[32];
 		alignas(kCacheLineSize) static const uint8_t s_fast8_channel_6[64];
 
-		// 8-bit channel values rounded to 4, 5 and 6 bits, left in the high bits so that
+		// 8-bit channel values rounded to 5 and 6 bits, left in the high bits so that
 		// the bits to pack can be shifted and masked out as from the 8-bit value.
 
-		alignas(kCacheLineSize) static uint8_t s_round_channel_4[256];
 		alignas(kCacheLineSize) static uint8_t s_round_channel_5[256];
 		alignas(kCacheLineSize) static uint8_t s_round_channel_6[256];
 

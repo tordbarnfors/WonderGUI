@@ -10,7 +10,6 @@ public:
 		addTest("DrawToBGR_8", &CanvasFormatTests::init_BGR_8, &CanvasFormatTests::drawPrimitives, &CanvasFormatTests::exit_drawToSurface );
 		addTest("DrawToBGRA_8", &CanvasFormatTests::init_BGRA_8, &CanvasFormatTests::drawPrimitives, &CanvasFormatTests::exit_drawToSurface);
 		addTest("DrawToBGRX_8", &CanvasFormatTests::init_BGRX_8, &CanvasFormatTests::drawPrimitives, &CanvasFormatTests::exit_drawToSurface);
-		addTest("DrawToBGRA_4", &CanvasFormatTests::init_BGRA_4, &CanvasFormatTests::drawPrimitives, &CanvasFormatTests::exit_drawToSurface);
 		addTest("DrawToBGR_565", &CanvasFormatTests::init_BGR_565, &CanvasFormatTests::drawPrimitives, &CanvasFormatTests::exit_drawToSurface);
 	}
 
@@ -30,10 +29,6 @@ public:
 		m_pCanvasBGRX_8 = pDevice->surfaceFactory()->createSurface( WGBP(Surface,
 																		 _.size = canvas/64,
 																		 _.format = PixelFormat::BGRX_8,
-																		 _.canvas = true ));
-		m_pCanvasBGRA_4 = pDevice->surfaceFactory()->createSurface( WGBP(Surface,
-																		 _.size = canvas/64,
-																		 _.format = PixelFormat::BGRA_4_linear,
 																		 _.canvas = true ));
 		m_pCanvasBGR_565 = pDevice->surfaceFactory()->createSurface( WGBP(Surface,
 																		  _.size = canvas/64,
@@ -57,12 +52,6 @@ public:
 	bool	init_BGRX_8(GfxDevice * pDevice, const RectSPX& canvas)
 	{
 		m_pActiveCanvas = m_pCanvasBGRX_8;
-		return init_drawToSurface(pDevice, canvas);
-	}
-
-	bool	init_BGRA_4(GfxDevice * pDevice, const RectSPX& canvas)
-	{
-		m_pActiveCanvas = m_pCanvasBGRA_4;
 		return init_drawToSurface(pDevice, canvas);
 	}
 
@@ -121,6 +110,5 @@ private:
 	Surface_p		m_pCanvasBGR_8;
 	Surface_p		m_pCanvasBGRA_8;
 	Surface_p		m_pCanvasBGRX_8;
-	Surface_p		m_pCanvasBGRA_4;
 	Surface_p		m_pCanvasBGR_565;
 };

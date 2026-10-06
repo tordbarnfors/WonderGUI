@@ -242,11 +242,6 @@ namespace wg
 				m_dxgiFormat = DXGI_FORMAT_B8G8R8X8_UNORM;
 				break;
 
-			case PixelFormat::BGRA_4_linear:
-				format = PixelFormat::BGRA_8_linear;
-				m_dxgiFormat = DXGI_FORMAT_B8G8R8A8_UNORM;
-				break;
-
 			case PixelFormat::Alpha_8:
 				m_dxgiFormat = DXGI_FORMAT_A8_UNORM;
 				break;

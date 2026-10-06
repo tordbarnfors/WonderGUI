@@ -226,8 +226,7 @@ bool KernelDB::generateSource(std::ostream& out, const std::string& kernelLabel 
 	char temp[4096];
 
 
-	bool bHasLinearSource = m_srcFormats[(int)PixelFormat::BGRA_4_linear] ||
-							m_srcFormats[(int)PixelFormat::BGRA_8_linear] ||
+	bool bHasLinearSource = m_srcFormats[(int)PixelFormat::BGRA_8_linear] ||
 							m_srcFormats[(int)PixelFormat::BGRX_8_linear] ||
 							m_srcFormats[(int)PixelFormat::BGR_565_linear] ||
 							m_srcFormats[(int)PixelFormat::BGR_8_linear] ||
@@ -236,8 +235,7 @@ bool KernelDB::generateSource(std::ostream& out, const std::string& kernelLabel 
 							m_srcFormats[(int)PixelFormat::RGB_555_bigendian] ||
 							m_srcFormats[(int)PixelFormat::Alpha_8];
 
-	bool bHasLinearDest =   m_destFormats[(int)PixelFormat::BGRA_4_linear] ||
-							m_destFormats[(int)PixelFormat::BGRA_8_linear] ||
+	bool bHasLinearDest =   m_destFormats[(int)PixelFormat::BGRA_8_linear] ||
 							m_destFormats[(int)PixelFormat::BGRX_8_linear] ||
 							m_destFormats[(int)PixelFormat::BGR_565_linear] ||
 							m_destFormats[(int)PixelFormat::BGR_8_linear] ||
@@ -1104,7 +1102,6 @@ void KernelDB::reset()
 	m_srcFormats[int(PixelFormat::BGRX_8_linear)] = true;
 	m_srcFormats[int(PixelFormat::BGRA_8_sRGB)] = true;
 	m_srcFormats[int(PixelFormat::BGRA_8_linear)] = true;
-	m_srcFormats[int(PixelFormat::BGRA_4_linear)] = true;
 	m_srcFormats[int(PixelFormat::BGR_565_linear)] = true;
 	m_srcFormats[int(PixelFormat::BGR_565_sRGB)] = true;
 	m_srcFormats[int(PixelFormat::Index_8_sRGB)] = true;
@@ -1121,7 +1118,6 @@ void KernelDB::reset()
 	m_destFormats[int(PixelFormat::BGRX_8_linear)] = true;
 	m_destFormats[int(PixelFormat::BGRA_8_sRGB)] = true;
 	m_destFormats[int(PixelFormat::BGRA_8_linear)] = true;
-	m_destFormats[int(PixelFormat::BGRA_4_linear)] = true;
 	m_destFormats[int(PixelFormat::BGR_565_linear)] = true;
 	m_destFormats[int(PixelFormat::BGR_565_sRGB)] = true;
 	m_destFormats[int(PixelFormat::RGB_565_bigendian)] = true;

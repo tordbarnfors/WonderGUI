@@ -479,13 +479,6 @@ namespace wg
 				m_pixelSize = 2;
 				break;
 
-			case PixelFormat::BGRA_4_linear:
-				m_internalFormat = GL_RGBA4;
-				m_accessFormat = GL_BGRA;
-				m_pixelDataType = GL_UNSIGNED_SHORT_4_4_4_4_REV;	// Blue in the low bits, alpha in the high.
-				m_pixelSize = 2;
-				break;
-
 			case PixelFormat::Index_8:
 			case PixelFormat::Index_8_sRGB:
 			case PixelFormat::Index_8_linear:
@@ -819,9 +812,6 @@ namespace wg
 		case PixelFormat::BGRX_8_sRGB:
 		case PixelFormat::BGRX_8_linear:
 			type = GL_UNSIGNED_INT_8_8_8_8_REV;
-			break;
-		case PixelFormat::BGRA_4_linear:
-			type = GL_UNSIGNED_SHORT_4_4_4_4_REV;
 			break;
 		case PixelFormat::BGR_565_linear:
 			type = GL_UNSIGNED_SHORT_5_6_5;
