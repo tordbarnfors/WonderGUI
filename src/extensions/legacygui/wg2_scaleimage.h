@@ -495,6 +495,7 @@ protected:
 	bool	_onAlphaTest( const WgCoord& ofs ) override;
 
 	void	_regenerateSurface();
+	void	_generateSurface( wg::ColorSpace colorSpace );
 	void	_recalcImageRect( WgSize widgetSize, bool bRegenerate );
 
 	void    _preRender() override;

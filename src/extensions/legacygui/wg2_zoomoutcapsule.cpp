@@ -380,6 +380,7 @@ void WgZoomOutCapsule::_onEvent( const WgEvent::Event * pEvent, WgEventHandler *
 				auto pSurface = wg::GfxBase::defaultSurfaceFactory()->createSurface( WGBP(Surface,
 																						  _.size = m_pScreenshot->pixelSize(),
 																						  _.format = WgPixelType::ARGB_8,
+																						  _.colorSpace = m_pScreenshot->colorSpace(),
 																						  _.mipmap = true));
 				pSurface->copy( {0,0}, m_pScreenshot );
 

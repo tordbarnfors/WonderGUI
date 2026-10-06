@@ -374,7 +374,14 @@ void WgCanvasCapsule::_renderPatches( wg::GfxDevice * pDevice, const WgRect& _ca
 	
 	WgSize canvasSize = wg::Util::unflipSize(_canvas.size(), m_flip);
 
-	
+	// Our canvas has the color space of the canvas we are rendered onto, so blitting
+	// it there is a plain copy whenever possible.
+
+	wg::ColorSpace colorSpace = pDevice->canvas().colorSpace;
+
+	if (m_pCanvas && m_pCanvas->colorSpace() != colorSpace)
+		m_pCanvas = nullptr;
+
 	// Make sure we have a canvas
 
 	if (!m_pCanvas)
@@ -394,6 +401,7 @@ void WgCanvasCapsule::_renderPatches( wg::GfxDevice * pDevice, const WgRect& _ca
 		m_pCanvas = pFactory->createSurface( WGBP(Surface,
 												  _.size = canvasSize,
 												  _.format = WgPixelType::ARGB_8,
+												  _.colorSpace = colorSpace,
 												  _.canvas = true) );
 		m_dirtyPatches.clear();
 		m_dirtyPatches.add(canvasSize);

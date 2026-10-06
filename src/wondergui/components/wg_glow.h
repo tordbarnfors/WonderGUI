@@ -121,7 +121,7 @@ namespace wg
 	protected:
 
 		SizeI				_glowResolution();
-		Surface_p			_createGlowCanvas( SurfaceFactory * pFactory );
+		Surface_p			_createGlowCanvas( SurfaceFactory * pFactory, ColorSpace colorSpace );
 
 		Blurbrush_p			m_pBrush;
 

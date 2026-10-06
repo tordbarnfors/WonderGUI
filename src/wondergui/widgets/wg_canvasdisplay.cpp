@@ -320,7 +320,7 @@ namespace wg
 
 			if ( dest.w > 0 && dest.h > 0)
 			{
-				auto pSurface = m_pCanvas->_renderCanvas(pDevice);
+				auto pSurface = m_pCanvas->_renderCanvas(pDevice, false);
 
 				auto canvasArea = _canvasWindow(dest);
 				

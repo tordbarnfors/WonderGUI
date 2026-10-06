@@ -873,6 +873,18 @@ void WgScrollChart::_onCloneContent(const WgWidget * _pOrg)
 
 void WgScrollChart::_renderPatches(wg::GfxDevice * pDevice, const WgRect& _canvas, const WgRect& _window, WgPatches * _pPatches)
 {
+	// Our canvas has the color space of the canvas we are rendered onto. We can't wait
+	// until now to create it, since _onEvent() needs it, so it is created with the
+	// color space we last saw and recreated here if that was wrong.
+
+	wg::ColorSpace colorSpace = pDevice->canvas().colorSpace;
+
+	if (colorSpace != m_canvasColorSpace)
+	{
+		m_canvasColorSpace = colorSpace;
+		if (m_pCanvas && m_pCanvas->colorSpace() != colorSpace)
+			_regenCanvas();
+	}
 
 	if (m_pCanvas)
 	{
@@ -1482,9 +1494,20 @@ void WgScrollChart::_regenCanvas()
 		if (sz.w <= 0 && sz.h <= 0)
 			return;
 
+		// Until we have been rendered we guess on the color space of the default canvas.
+
+		wg::ColorSpace colorSpace = m_canvasColorSpace;
+
+		if (colorSpace == wg::ColorSpace::Undefined)
+		{
+			auto pDevice = wg::GfxBase::defaultGfxDevice();
+			colorSpace = pDevice ? pDevice->canvas(wg::CanvasRef::Default).colorSpace : wg::ColorSpace::sRGB;
+		}
+
 		m_pCanvas = m_pFactory->createSurface( WGBP(Surface,
 													_.size = sz,
 													_.format = m_pixelType,
+													_.colorSpace = colorSpace,
 													_.canvas = true ));
 //		m_pCanvas->Fill(m_chartColor);
 		m_canvasOfs = 0;

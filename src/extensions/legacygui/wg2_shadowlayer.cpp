@@ -592,7 +592,12 @@ void WgShadowLayer::_renderPatches(wg::GfxDevice * pDevice, const WgRect& _canva
 		if (m_baseHook.Widget() )
 			m_baseHook.Widget()->_renderPatches(pDevice, contentGeo, contentGeo, &patches);
 
-		// Update shadow layer
+		// Update shadow layer. It has the color space of the canvas we are rendered onto.
+
+		wg::ColorSpace colorSpace = pDevice->canvas().colorSpace;
+
+		if (m_pShadowSurface && m_pShadowSurface->colorSpace() != colorSpace)
+			m_pShadowSurface = nullptr;
 
 		bool bFullSurfaceUpdate = !m_pShadowSurface;
 
@@ -605,6 +610,7 @@ void WgShadowLayer::_renderPatches(wg::GfxDevice * pDevice, const WgRect& _canva
 				m_pShadowSurface = pSurfaceFactory->createSurface( WGBP(Surface,
 																		_.size = _canvas.size(),
 																		_.format = WgPixelType::ARGB_8,
+																		_.colorSpace = colorSpace,
 																		_.canvas = true ));
 				m_pShadowSurface->fill(WgColor::Transparent);
 			}

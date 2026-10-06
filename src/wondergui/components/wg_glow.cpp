@@ -223,12 +223,22 @@ namespace wg
 		if (!m_bActive)
 			return;
 
+		// Glow surfaces have the color space of the canvas we are rendered onto. If that
+		// has changed, we start over.
+
+		ColorSpace colorSpace = pDevice->canvas().colorSpace;
+
+		if (m_surface[0] && m_surface[0]->colorSpace() != colorSpace)
+		{
+			m_surface[0] = nullptr;
+			m_surface[1] = nullptr;
+		}
 
 		// Possibly regenerate the glow surfaces
 
 		if (m_surface[1] == nullptr)
 		{
-			m_surface[1] = _createGlowCanvas(pDevice->surfaceFactory());
+			m_surface[1] = _createGlowCanvas(pDevice->surfaceFactory(), colorSpace);
 			pDevice->beginCanvasUpdate(m_surface[1]);
 			pDevice->fill(HiColor::Black);
 			pDevice->endCanvasUpdate();
@@ -237,7 +247,7 @@ namespace wg
 			{
 				// Both are missing, we just recreate and clear them.
 
-				m_surface[0] = _createGlowCanvas(pDevice->surfaceFactory());
+				m_surface[0] = _createGlowCanvas(pDevice->surfaceFactory(), colorSpace);
 				m_bClear = true;
 			}
 			else
@@ -262,7 +272,7 @@ namespace wg
 
 				pDevice->endCanvasUpdate();
 
-				m_surface[0] = _createGlowCanvas(pDevice->surfaceFactory());
+				m_surface[0] = _createGlowCanvas(pDevice->surfaceFactory(), colorSpace);
 				pDevice->beginCanvasUpdate(m_surface[0]);
 				pDevice->fill(HiColor::Black);
 				pDevice->endCanvasUpdate();
@@ -360,14 +370,14 @@ namespace wg
 
 	//____ _createGlowCanvas() ________________________________________________
 
-	Surface_p Glow::_createGlowCanvas( SurfaceFactory * pFactory )
+	Surface_p Glow::_createGlowCanvas( SurfaceFactory * pFactory, ColorSpace colorSpace )
 	{
 		// Glow surfaces have a border that is not used to make sampling at corners
 		// work better.
 
 		SizeI pixelSize = _glowResolution() + SizeI(2, 2);
 
-		return pFactory->createSurface(WGBP(Surface, _.size = pixelSize, _.format = PixelFormat::XRGB_8, _.canvas = true));
+		return pFactory->createSurface(WGBP(Surface, _.size = pixelSize, _.format = PixelFormat::XRGB_8, _.colorSpace = colorSpace, _.canvas = true));
 	}
 
 };

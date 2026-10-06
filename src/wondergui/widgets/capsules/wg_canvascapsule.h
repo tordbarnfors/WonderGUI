@@ -64,6 +64,7 @@ namespace wg
 			BlendMode		blendMode		= BlendMode::Blend;
 			Widget_p		child;
 			HiColor			clearColor		= HiColor::Undefined;
+			ColorSpace		colorSpace		= ColorSpace::Undefined;	// Undefined: same as the canvas we are rendered onto.
 			bool			disabled		= false;
 			bool			dropTarget		= false;
 			Finalizer_p		finalizer		= nullptr;
@@ -137,6 +138,9 @@ namespace wg
 		
 		void				setFormat(PixelFormat format);
 		PixelFormat			format() const { return m_canvasFormat; }
+
+		void				setColorSpace(ColorSpace colorSpace);
+		ColorSpace			colorSpace() const { return m_canvasColorSpace; }
 		
 		void				setCanvasLayers(CanvasLayers * pLayers);
 		CanvasLayers_p	 	canvasLayers() const { return m_pCanvasLayers; }
@@ -169,6 +173,7 @@ namespace wg
 
 			m_pFactory		= bp.surfaceFactory;
 			m_canvasFormat	= bp.pixelFormat;
+			m_canvasColorSpace = bp.colorSpace;
 			m_pCanvasLayers = bp.layers;
 			m_renderLayer	= bp.renderLayer;
 
@@ -200,7 +205,7 @@ namespace wg
 
 		void				_update(int microPassed, int64_t microsecTimestamp) override;
 
-		Surface*			_renderCanvas(GfxDevice* pDevice);
+		Surface*			_renderCanvas(GfxDevice* pDevice, bool bFollowCanvas);
 		void				_render(GfxDevice* pDevice, const RectSPX& _canvas, const RectSPX& _window) override;
 		void				_resize(const SizeSPX& size, int scale) override;
 
@@ -240,6 +245,7 @@ namespace wg
 		
 		SurfaceFactory_p	m_pFactory;
 		PixelFormat			m_canvasFormat = PixelFormat::ARGB_8;
+		ColorSpace			m_canvasColorSpace = ColorSpace::Undefined;		// Undefined: same as the canvas we are rendered onto.
 		HiColor				m_clearColor = HiColor::Undefined;
 		int					m_renderLayer = -1;
 

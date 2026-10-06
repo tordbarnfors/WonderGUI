@@ -175,6 +175,24 @@ namespace wg
 		}
 	}
 
+	//____ setColorSpace() _____________________________________________________
+	/**
+	 * @brief Set color space of our canvas.
+	 *
+	 * Undefined (default) gives our canvas the color space of the canvas we are rendered onto,
+	 * so that blitting it there is a plain copy whenever possible.
+	 */
+
+	void CanvasCapsule::setColorSpace(ColorSpace colorSpace)
+	{
+		if (colorSpace != m_canvasColorSpace)
+		{
+			m_canvasColorSpace = colorSpace;
+			m_pCanvas = nullptr;
+			_requestRender();
+		}
+	}
+
 	//____ setCanvasLayers() ___________________________________________________
 
 	void CanvasCapsule::setCanvasLayers(CanvasLayers * pLayers)
@@ -311,8 +329,17 @@ namespace wg
 
 	//____ _renderCanvas() ____________________________________________________
 
-	Surface* CanvasCapsule::_renderCanvas(GfxDevice* pDevice)
+	Surface* CanvasCapsule::_renderCanvas(GfxDevice* pDevice, bool bFollowCanvas)
 	{
+		// Without a color space of our own we take the one of the canvas we are rendered onto.
+		// Side displays might be on canvases with other color spaces, so only our own rendering
+		// (bFollowCanvas) recreates our canvas when it differs. Otherwise we would go back and forth.
+
+		ColorSpace colorSpace = m_canvasColorSpace != ColorSpace::Undefined ? m_canvasColorSpace : pDevice->canvas().colorSpace;
+
+		if (m_pCanvas && bFollowCanvas && m_pCanvas->colorSpace() != colorSpace)
+			m_pCanvas = nullptr;
+
 		// Possibly regenerate the canvas
 
 		if (!m_pCanvas)
@@ -327,7 +354,7 @@ namespace wg
 
 			SizeI pixelSize = m_canvasSize / 64;
 			m_pCanvas = pFactory->createSurface(WGBP(Surface, _.size = pixelSize, _.format = m_canvasFormat,
-				_.canvas = true, _.scale = m_scale));
+				_.colorSpace = colorSpace, _.canvas = true, _.scale = m_scale));
 			m_patches.clear();
 			m_patches.add(m_canvasSize);
 		}
@@ -438,7 +465,7 @@ namespace wg
 	{
 		// Render our canvas content
 
-		_renderCanvas(pDevice);
+		_renderCanvas(pDevice, true);
 
 		//
 

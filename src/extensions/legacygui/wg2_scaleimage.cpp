@@ -167,28 +167,39 @@ void WgScaleImage::_regenerateSurface()
 	else
 		m_bOpaque = false;
 
-	//
+	// The surface is generated when we are rendered, since it gets the color space of
+	// the canvas we are rendered onto.
 
-	if( m_pSurfaceFactory )
-	{
-		m_pGenSurface = m_pSurfaceFactory->createSurface( WGBP(Surface,
-															_.size = m_imgRect.size(), 
-												 			_.format = WgPixelType::ARGB_8 ));
-
-		// Insert code here to stretch-copy content from m_pOrgSurface to m_pGenSurface
-		resample(m_pOrgSurface, m_pGenSurface);
-
-//		m_pGenSurface->Fill( WgColor::rosybrown );
-	}
-	else
-	{
-		m_pGenSurface = nullptr;
-		return;
-	}
-
-	// Force redraw
+	m_pGenSurface = nullptr;
 
 	_requestRender();
+}
+
+//____ _generateSurface() _____________________________________________________
+
+void WgScaleImage::_generateSurface( wg::ColorSpace colorSpace )
+{
+	m_pGenSurface = nullptr;
+
+	if( !m_pSurfaceFactory || !m_pOrgSurface || m_imgRect.isEmpty() )
+		return;
+
+	// resample() works on the pixel values as they are, so we resample in the color
+	// space of the source and convert afterwards if needed.
+
+	auto pSurface = m_pSurfaceFactory->createSurface( WGBP(Surface,
+														_.size = m_imgRect.size(),
+														_.format = WgPixelType::ARGB_8,
+														_.colorSpace = m_pOrgSurface->colorSpace() ));
+	if( !pSurface )
+		return;
+
+	resample(m_pOrgSurface, pSurface);
+
+	if( pSurface->colorSpace() != colorSpace )
+		pSurface = pSurface->convert( WGBP(Surface, _.colorSpace = colorSpace), m_pSurfaceFactory );
+
+	m_pGenSurface = pSurface;
 }
 
 
@@ -257,8 +268,10 @@ void WgScaleImage::_onCloneContent( const WgWidget * _pOrg )
 
 void WgScaleImage::_preRender()
 {
+	// Surface is generated in _onRender(), where we know the canvas.
+
 	if( !m_pGenSurface )
-		_regenerateSurface();
+		_requestRender();
 }
 
 
@@ -266,6 +279,14 @@ void WgScaleImage::_preRender()
 
 void WgScaleImage::_onRender( wg::GfxDevice * pDevice, const WgRect& _canvas, const WgRect& _window)
 {
+	// Our surface has the color space of the canvas we are rendered onto, so blitting
+	// it there is a plain copy whenever possible.
+
+	wg::ColorSpace colorSpace = pDevice->canvas().colorSpace;
+
+	if( !m_pGenSurface || m_pGenSurface->colorSpace() != colorSpace )
+		_generateSurface( colorSpace );
+
 	if( !m_pGenSurface )
 		return;
 
@@ -277,18 +298,23 @@ void WgScaleImage::_onRender( wg::GfxDevice * pDevice, const WgRect& _canvas, co
 
 bool WgScaleImage::_onAlphaTest( const WgCoord& ofs )
 {
-	if( !m_pGenSurface )
-		return	false;												// No visible pixel, so don't accept the mark...
-
-
 	if (m_imgRect.contains(ofs))
 	{
 		WgCoord ofs2 = ofs - m_imgRect.pos();
-		Uint8 opacity = m_pGenSurface->alpha(ofs2*64);
-		if (opacity > 0)
-			return true;
+
+		if( m_pGenSurface )
+			return m_pGenSurface->alpha(ofs2*64) > 0;
+
+		// Not generated yet, see _onRender(). We test the source instead.
+
+		if( m_pOrgSurface )
+		{
+			WgSize orgSize = m_pOrgSurface->pixelSize();
+			WgCoord orgOfs( ofs2.x * orgSize.w / m_imgRect.w, ofs2.y * orgSize.h / m_imgRect.h );
+			return m_pOrgSurface->alpha(orgOfs*64) > 0;
+		}
 	}
-	return false;
+	return false;												// No visible pixel, so don't accept the mark...
 }
 
 

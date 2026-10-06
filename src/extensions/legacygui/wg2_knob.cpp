@@ -382,14 +382,23 @@ void WgKnob::_renderPatches(wg::GfxDevice * pDevice, const WgRect& _canvas, cons
 {
 	if( _pPatches->isEmpty() )
 		return;
-	
+
+	// Our back buffer has the color space of the canvas we are rendered onto.
+
+	wg::ColorSpace colorSpace = pDevice->canvas().colorSpace;
+
+	if (m_pSurf && m_pSurf->colorSpace() != colorSpace)
+		m_pSurf = nullptr;
+
 	if (!m_pSurf)
 	{
 		if( !m_pSurfaceFactory )
 			return;
 		m_pSurf = m_pSurfaceFactory->createSurface( WGBP(Surface,
 													_.size = m_size*m_iOversampleX, 
-													_.format = WgPixelType::ARGB_8) );
+													_.format = WgPixelType::ARGB_8,
+													_.colorSpace = colorSpace) );
+		m_backBufferDirtyRect = { 0,0, 1000000, 1000000 };
 	}
 
 	if( !m_backBufferDirtyRect.isEmpty() )
@@ -472,6 +481,10 @@ void WgKnob::_redrawBackBuffer(WgRect region)
 
     auto pixbuf = m_pSurf->allocPixelBuffer(region);
     unsigned char* dest = (unsigned char*) pixbuf.pixels;
+
+	// Our colors are sRGB, a linear back buffer needs them converted.
+
+	const bool bLinear = (pixbuf.colorSpace == wg::ColorSpace::Linear);
 
 	float x = 0.0f, y = 0.0f;
 	float y_inv = 0.0f;
@@ -956,6 +969,13 @@ void WgKnob::_redrawBackBuffer(WgRect region)
 						col = Blend(set_col, m_kBackTransp, weight);
 					else
 						col = m_kBackTransp;
+				}
+
+				if (bLinear)
+				{
+					col.r = wg::HiColor::packLinearTab[wg::HiColor::unpackSRGBTab[col.r]];
+					col.g = wg::HiColor::packLinearTab[wg::HiColor::unpackSRGBTab[col.g]];
+					col.b = wg::HiColor::packLinearTab[wg::HiColor::unpackSRGBTab[col.b]];
 				}
 
 				color = (col.b) | ((col.g) << 8) | ((col.r) << 16) | ((col.a) << 24);

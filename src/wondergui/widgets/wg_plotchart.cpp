@@ -113,17 +113,24 @@ namespace wg
 	{
 		auto popData = Util::limitClipList(pDevice, canvas);
 
+		// Sprites have the color space of the canvas we are rendered onto.
+
+		ColorSpace colorSpace = pDevice->canvas().colorSpace;
+
 		for (auto& entry : entries)
 		{
 			if (entry.m_bVisible)
 			{
+				if (entry.m_sprite && entry.m_sprite->colorSpace() != colorSpace)
+					entry.m_sprite = nullptr;
+
 				if (!entry.m_sprite)
 				{
 					spx size = (entry.m_radius + entry.m_outlineThickness) * 2 * m_scale;
 					spx canvasSize = Util::alignUp(size);
 					spx offset = (canvasSize - size) / 2;
 
-					auto pSurface = pDevice->surfaceFactory()->createSurface(WGBP(Surface, _.format = PixelFormat::ARGB_8, _.size = { size / 64,size / 64 }, _.canvas = true));
+					auto pSurface = pDevice->surfaceFactory()->createSurface(WGBP(Surface, _.format = PixelFormat::ARGB_8, _.colorSpace = colorSpace, _.size = { size / 64,size / 64 }, _.canvas = true));
 
 					pDevice->beginCanvasUpdate(pSurface);
 					pDevice->setBlendMode(BlendMode::Replace);

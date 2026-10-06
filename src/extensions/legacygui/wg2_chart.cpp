@@ -829,11 +829,19 @@ void WgChart::_renderPatches( wg::GfxDevice * pDevice, const WgRect& _canvas, co
 {
 	if( m_cacheFirst > 0 )
 	{
+		// Our cache has the color space of the canvas we are rendered onto.
+
+		wg::ColorSpace colorSpace = pDevice->canvas().colorSpace;
+
+		if( m_pCacheBitmap && m_pCacheBitmap->colorSpace() != colorSpace )
+			m_pCacheBitmap = nullptr;
+
 		if( !m_pCacheBitmap )
 		{
 			m_pCacheBitmap = m_pSurfaceFactory->createSurface( WGBP(Surface,
 																_.size = _canvas.size(),
-																_.format = wg::PixelFormat::ARGB_8) );
+																_.format = wg::PixelFormat::ARGB_8,
+																_.colorSpace = colorSpace) );
 			m_cacheDirt.add( _canvas.size()*64 );
 		}
 

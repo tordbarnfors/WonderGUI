@@ -268,6 +268,12 @@ wg::Surface_p WgWidget::Screenshot( const WgRect& _rect, const wg::Surface::Blue
 	bp.size = rect.size();
 	bp.format = wg::PixelFormat::ARGB_8;
 	bp.canvas = true;
+
+	// Unless asked for something else, the screenshot gets the color space of the canvas
+	// being rendered, or the default canvas if none.
+
+	if( bp.colorSpace == wg::ColorSpace::Undefined )
+		bp.colorSpace = pDevice->isRendering() ? pDevice->canvas().colorSpace : pDevice->canvas(wg::CanvasRef::Default).colorSpace;
 	bp.scale = m_scale/4096.f*64;
 	
 	auto pCanvas = pFactory->createSurface( bp );

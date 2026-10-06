@@ -590,7 +590,8 @@ namespace wg
 			SizeSPX sz = m_pPicked->_size();
 
 			auto pFactory = pDevice->surfaceFactory();
-			auto pCanvas = pFactory->createSurface( WGBP(Surface, _.size = sz/64, _.format = PixelFormat::ARGB_8, _.canvas = true) );
+			auto pCanvas = pFactory->createSurface( WGBP(Surface, _.size = sz/64, _.format = PixelFormat::ARGB_8,
+														 _.colorSpace = pDevice->canvas().colorSpace, _.canvas = true) );
 			pCanvas->fill( HiColor::Transparent );
 
 			pDevice->beginCanvasUpdate(pCanvas);

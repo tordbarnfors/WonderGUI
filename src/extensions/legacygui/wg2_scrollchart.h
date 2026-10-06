@@ -296,6 +296,7 @@ private:
 	std::function<void(WgScrollChart * pWidget, float topValue, float bottomValue)> m_valueRangeResponder;
     
     WgPixelType m_pixelType = WgPixelType::XRGB_8;
+	wg::ColorSpace	m_canvasColorSpace = wg::ColorSpace::Undefined;	// Of the canvas we were last rendered onto.
 	bool		m_bForegroundGrid = false;
 };
 

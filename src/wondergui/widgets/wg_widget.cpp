@@ -449,7 +449,7 @@ namespace wg
 
 	Surface_p Widget::screenshot( const Surface::Blueprint& bp )
 	{
-		return screenshot( Rect() );
+		return screenshot( Rect(), bp );
 	}
 
 	Surface_p Widget::screenshot(const Rect& _rect, const Surface::Blueprint& _bp )
@@ -469,6 +469,12 @@ namespace wg
 		bp.format = wg::PixelFormat::ARGB_8;
 		bp.canvas = true;
 		bp.scale = m_scale;
+
+		// Unless asked for something else, the screenshot gets the color space of the canvas
+		// being rendered, or the default canvas if none.
+
+		if( bp.colorSpace == ColorSpace::Undefined )
+			bp.colorSpace = pDevice->isRendering() ? pDevice->canvas().colorSpace : pDevice->canvas(CanvasRef::Default).colorSpace;
 		
 		auto pCanvas = pFactory->createSurface( bp );
 		if(!pCanvas)

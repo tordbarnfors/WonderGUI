@@ -125,12 +125,18 @@ namespace wg
 		if( m_bAxisSwapped )
 			std::swap(surfaceSize.w,surfaceSize.h);
 
-		// Make sure we have a canvas
+		// Make sure we have a canvas, in the color space of the canvas we are rendered onto.
+
+		ColorSpace colorSpace = pDevice->canvas().colorSpace;
+
+		if (m_pScrollSurface && m_pScrollSurface->colorSpace() != colorSpace)
+			m_pScrollSurface = nullptr;
 
 		if (m_pScrollSurface == nullptr)
 		{
 			SurfaceFactory_p surfaceFactory = m_pSurfaceFactory ? m_pSurfaceFactory : pDevice->surfaceFactory();
-			m_pScrollSurface = surfaceFactory->createSurface(WGBP(Surface, _.size = surfaceSize / 64, _.format = m_scrollSurfaceFormat, _.canvas = true));
+			m_pScrollSurface = surfaceFactory->createSurface(WGBP(Surface, _.size = surfaceSize / 64, _.format = m_scrollSurfaceFormat,
+																  _.colorSpace = colorSpace, _.canvas = true));
 			m_rightEdgeOfs = surfaceSize.w;
 			m_dirtLen = surfaceSize.w;
 		}

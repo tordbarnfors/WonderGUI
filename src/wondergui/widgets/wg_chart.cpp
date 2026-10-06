@@ -183,6 +183,13 @@ namespace wg
 
 		if (glow.isActive())
 		{
+			// Chart canvas has the color space of the canvas we are rendered onto.
+
+			ColorSpace colorSpace = pDevice->canvas().colorSpace;
+
+			if (m_pChartCanvas && m_pChartCanvas->colorSpace() != colorSpace)
+				m_pChartCanvas = nullptr;
+
 			if (!m_pChartCanvas)
 			{
 				SizeI chartSize = graphCanvas.size() / 64;
@@ -190,6 +197,7 @@ namespace wg
 				m_pChartCanvas = pDevice->surfaceFactory()->createSurface(WGBP(Surface,
 					_.size = chartSize,
 					_.format = PixelFormat::ARGB_8,
+					_.colorSpace = colorSpace,
 					_.canvas = true));
 			}
 
