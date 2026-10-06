@@ -64,7 +64,7 @@ namespace wg
 
 	GlSurface_p GlSurface::create(const Blueprint& bp)
 	{
-		if( !_isBlueprintValid(bp, maxSize()) )
+		if( !_isBlueprintValid(bp, maxSize()) || !_isFormatSupported(bp.format) )
 			return GlSurface_p();
 
 		return GlSurface_p(new GlSurface(bp));
@@ -72,10 +72,10 @@ namespace wg
 
 	GlSurface_p GlSurface::create(const Blueprint& bp, Blob* pBlob, int pitch)
 	{
-		if (!_isBlueprintValid(bp, maxSize()) )
+		if (!_isBlueprintValid(bp, maxSize()) || !_isFormatSupported(bp.format) )
 			return GlSurface_p();
 
-        int realPitch = pitch > 0 ? pitch : bp.size.w * Util::pixelFormatToDescription( bp.format ).bits/8;
+        int realPitch = pitch > 0 ? pitch : bp.size.w * Util::pixelFormatToDescription( bp.format == PixelFormat::Undefined ? PixelFormat::ARGB_8 : bp.format ).bits/8;
         
 		if ( !pBlob || realPitch % 4 != 0 )
 			return GlSurface_p();
@@ -87,7 +87,7 @@ namespace wg
 	GlSurface_p	GlSurface::create(const Blueprint& bp, const uint8_t* pPixels,
 								  PixelFormat format, int pitch, const Color8 * pPalette, int paletteSize)
 	{
-		if (!_isBlueprintValid(bp, maxSize()))
+		if (!_isBlueprintValid(bp, maxSize()) || !_isFormatSupported(bp.format))
 			return GlSurface_p();
 
 		return  GlSurface_p(new GlSurface(bp, pPixels, format, pitch, pPalette, paletteSize));
@@ -96,7 +96,7 @@ namespace wg
 	GlSurface_p	GlSurface::create(const Blueprint& bp, const uint8_t* pPixels,
 								  const PixelDescription& pixelDescription, int pitch, const Color8 * pPalette, int paletteSize)
 	{
-		if (!_isBlueprintValid(bp, maxSize()))
+		if (!_isBlueprintValid(bp, maxSize()) || !_isFormatSupported(bp.format))
 			return GlSurface_p();
 
 		return  GlSurface_p(new GlSurface(bp, pPixels, pixelDescription, pitch, pPalette, paletteSize));
@@ -106,15 +106,15 @@ namespace wg
 	//____ constructor _____________________________________________________________
 
 
-	GlSurface::GlSurface( const Blueprint& bp ) : Surface(bp, PixelFormat::BGRA_8, SampleMethod::Bilinear)
+	GlSurface::GlSurface( const Blueprint& bp ) : Surface(bp, PixelFormat::ARGB_8, SampleMethod::Bilinear)
 	{
 		HANDLE_GLERROR(glGetError());
 
 		m_bMipmapped = bp.mipmap;
-		_setPixelDetails(m_pixelFormat);
+		_setPixelDetails();
 		m_pPalette = nullptr;
 
-		if (bp.buffered || m_pPixelDescription->bits <= 8)
+		if (bp.buffered || _needsBackingBuffer())
         {
             g_backingPixels += m_size.w*m_size.h;
             m_pitch = ((m_size.w * m_pPixelDescription->bits / 8) + 3) & 0xFFFFFFFC;
@@ -146,19 +146,19 @@ namespace wg
 	}
 
 
-	GlSurface::GlSurface(const Blueprint& bp, Blob* pBlob, int pitch) : Surface(bp, PixelFormat::BGRA_8, SampleMethod::Bilinear)
+	GlSurface::GlSurface(const Blueprint& bp, Blob* pBlob, int pitch) : Surface(bp, PixelFormat::ARGB_8, SampleMethod::Bilinear)
 	{
 		// Set general information
 
 
 		m_bMipmapped = bp.mipmap;
-		_setPixelDetails(m_pixelFormat);
+		_setPixelDetails();
 		m_pPalette = const_cast<Color8*>(bp.palette);
 
 		if (pitch == 0)
 			pitch = bp.size.w * m_pPixelDescription->bits / 8;
 
-        if ((bp.buffered) || m_pPixelDescription->bits <= 8)
+        if (bp.buffered || _needsBackingBuffer())
         {
             g_backingPixels += m_size.w*m_size.h;
             m_pitch = pitch;
@@ -181,6 +181,8 @@ namespace wg
 				// Setup a fake PixelBuffer for call to _updateAlphaMap
 				PixelBuffer buf;
 				buf.format = m_pixelFormat;
+				buf.colorSpace = m_colorSpace;
+				buf.bigEndian = m_bBigEndian;
 				buf.palette = m_pPalette;
 				buf.pitch = pitch;
 				buf.pixels = (uint8_t*) pBlob->data();
@@ -196,25 +198,26 @@ namespace wg
 	}
 
 	GlSurface::GlSurface(const Blueprint& bp, const uint8_t* pPixels, PixelFormat format, int pitch, const Color8 * pPalette, int paletteSize)
-	: GlSurface(bp, pPixels, format == PixelFormat::Undefined ? (bp.format == PixelFormat::Undefined ? Util::pixelFormatToDescription(PixelFormat::BGRA_8)
-																 : Util::pixelFormatToDescription(bp.format)) : Util::pixelFormatToDescription(format), pitch, pPalette, paletteSize)
+	: GlSurface(bp, pPixels, Util::pixelFormatToDescription(format != PixelFormat::Undefined ? format : bp.format != PixelFormat::Undefined ? bp.format : PixelFormat::ARGB_8, bp.bigEndian),
+				pitch, pPalette, paletteSize)
 	{
+		// Source pixels are in the byte order and color space of the blueprint.
 		// Calling constructor with PixelDescription could be slow (but should be ok, once we optimize copyPixels() to take fast route).
 	}
 
 	GlSurface::GlSurface(const Blueprint& bp, const uint8_t* pPixels, const PixelDescription& pixelDescription, int pitch, const Color8 * pPalette, int paletteSize)
-	: Surface(bp, PixelFormat::BGRA_8, SampleMethod::Bilinear)
+	: Surface(bp, PixelFormat::ARGB_8, SampleMethod::Bilinear)
 	{
-		//TODO: Not just default to BGRA_8 if PixelFormat not specified in Blueprint. Instead we should take the most suitable PixelFormat based on pPixelDescription (same for SoftSurface, MetalSurface etc.)
+		//TODO: Not just default to ARGB_8 if PixelFormat not specified in Blueprint. Instead we should take the most suitable PixelFormat based on pPixelDescription (same for SoftSurface, MetalSurface etc.)
 		
 		m_bMipmapped = bp.mipmap;
-		_setPixelDetails(m_pixelFormat);
+		_setPixelDetails();
 		m_pPalette = nullptr;
 		
 		if( pitch == 0 )
-			pitch = bp.size.w * pixelDescription.bits/8;
+			pitch = PixelTools::bytesPerLine(pixelDescription, m_size.w);
 		
-        if (bp.buffered || m_pPixelDescription->bits <= 8)
+        if (bp.buffered || _needsBackingBuffer())
         {
             g_backingPixels += m_size.w*m_size.h;
 
@@ -235,11 +238,11 @@ namespace wg
 			
 			_fixSrcParam(pixelDescription, pPalette, paletteSize);
 			
-			int srcPitchAdd = (pitch == 0) ? 0 : pitch - pixelDescription.bits/8 * m_size.w;
+			int srcPitchAdd = pitch - PixelTools::bytesPerLine(pixelDescription, m_size.w);
 			
-			PixelTools::copyPixels(m_size.w, m_size.h, pPixels, pixelDescription, srcPitchAdd,
-					   (uint8_t*) m_pBlob->data(), m_pixelFormat, m_pitch - m_size.w * m_pPixelDescription->bits / 8,
-					   pPalette, m_pPalette, paletteSize, m_paletteSize, m_paletteCapacity);
+			PixelTools::copyPixels(m_size.w, m_size.h, pPixels, pixelDescription, m_colorSpace, srcPitchAdd, pPalette, paletteSize,
+					   (uint8_t*) m_pBlob->data(), m_pixelFormat, m_colorSpace, m_bBigEndian, m_pitch - m_size.w * m_pPixelDescription->bits / 8,
+					   m_pPalette, m_paletteSize, m_paletteCapacity);
 
 			// Setup GL-texture
 			
@@ -259,6 +262,8 @@ namespace wg
 			
 			// Convert/copy pixels to temporary buffer.
 
+			_fixSrcParam(pixelDescription, pPalette, paletteSize);
+
 			//TODO: Skip temporary buffer and copy if source format is same as destination (and pitch/4 == 0).
 
 			int tempBufPitch = ((m_size.w * m_pPixelDescription->bits / 8)+3) & 0xFFFFFFFC;
@@ -266,9 +271,9 @@ namespace wg
 
 			// Copy pixels
 		
-			PixelTools::copyPixels(m_size.w, m_size.h, pPixels, pixelDescription, pitch - m_size.w * pixelDescription.bits/8,
-					   pTempPixelBuffer, m_pixelFormat, tempBufPitch - m_size.w * m_pPixelDescription->bits/8,
-					   pPalette, m_pPalette, paletteSize, m_paletteSize, m_paletteCapacity);
+			PixelTools::copyPixels(m_size.w, m_size.h, pPixels, pixelDescription, m_colorSpace, pitch - PixelTools::bytesPerLine(pixelDescription, m_size.w), pPalette, paletteSize,
+					   pTempPixelBuffer, m_pixelFormat, m_colorSpace, m_bBigEndian, tempBufPitch - m_size.w * m_pPixelDescription->bits/8,
+					   m_pPalette, m_paletteSize, m_paletteCapacity);
 
 			// Setup GL-texture
 
@@ -283,6 +288,8 @@ namespace wg
 				// Setup a fake PixelBuffer for call to _updateAlphaMap
 				PixelBuffer buf;
 				buf.format = m_pixelFormat;
+				buf.colorSpace = m_colorSpace;
+				buf.bigEndian = m_bBigEndian;
 				buf.palette = m_pPalette;
 				buf.pitch = tempBufPitch;
 				buf.pixels = pTempPixelBuffer;
@@ -324,7 +331,9 @@ namespace wg
 
 		HANDLE_GLERROR(glGetError());
         glPixelStorei(GL_UNPACK_ROW_LENGTH, pitch/m_pixelSize);
+        glPixelStorei(GL_UNPACK_SWAP_BYTES, m_bSwapBytes);
         glTexImage2D(GL_TEXTURE_2D, 0, m_internalFormat, m_size.w, m_size.h, 0, m_accessFormat, m_pixelDataType, pPixelsToUpload);
+        glPixelStorei(GL_UNPACK_SWAP_BYTES, GL_FALSE);
         glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
 		HANDLE_GLERROR(glGetError());
 
@@ -365,13 +374,7 @@ namespace wg
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
 
-			// The palette texture is paletteCapacity() texels wide. Only the first m_paletteSize entries
-			// are defined, the rest of the capacity is cleared.
-
-			std::vector<Color8> palette(m_paletteCapacity);
-			memcpy(palette.data(), m_pPalette, m_paletteSize*sizeof(Color8));
-
-			glTexImage2D(GL_TEXTURE_2D, 0, m_pPixelDescription->colorSpace == ColorSpace::Linear ? GL_RGBA8 : GL_SRGB8_ALPHA8, m_paletteCapacity, 1, 0, GL_BGRA, GL_UNSIGNED_BYTE, palette.data());
+			_uploadPalette();
 
 			HANDLE_GLERROR(glGetError());
 		}
@@ -402,90 +405,96 @@ namespace wg
 		HANDLE_GLERROR(glGetError());
 	}
 
-	//____ _setPixelDetails() ____________________________________________________
+	//____ _isFormatSupported() _________________________________________________
 
-	void GlSurface::_setPixelDetails( PixelFormat format )
+	bool GlSurface::_isFormatSupported( PixelFormat format )
 	{
 		switch (format)
 		{
-			case PixelFormat::BGR_8:
-				m_internalFormat = GfxBase::defaultToSRGB() ? GL_SRGB8 : GL_RGB8;
-				m_accessFormat = GL_BGR;
-				m_pixelDataType = GL_UNSIGNED_BYTE;
-				m_pixelSize = 3;
-				break;
+			case PixelFormat::Undefined:			// Defaults to ARGB_8.
+			case PixelFormat::XRGB_8:
+			case PixelFormat::ARGB_8:
+			case PixelFormat::RGB_565:
+			case PixelFormat::BGR_565:
+			case PixelFormat::Index_8:
+			case PixelFormat::Index_16:
+			case PixelFormat::Alpha_8:
+				return true;
 
-			case PixelFormat::BGR_8_sRGB:
-				m_internalFormat = GL_SRGB8;
-				m_accessFormat = GL_BGR;
-				m_pixelDataType = GL_UNSIGNED_BYTE;
-				m_pixelSize = 3;
-				break;
+			default:
+				return false;
+		}
+	}
 
-			case PixelFormat::BGR_8_linear:
-				m_internalFormat = GL_RGB8;
-				m_accessFormat = GL_BGR;
-				m_pixelDataType = GL_UNSIGNED_BYTE;
-				m_pixelSize = 3;
-				break;
+	//____ _needsBackingBuffer() __________________________________________________
 
-			case PixelFormat::BGRX_8:
-				m_internalFormat = GfxBase::defaultToSRGB() ? GL_SRGB8 : GL_RGB8;
+	bool GlSurface::_needsBackingBuffer() const
+	{
+		// Indexed and alpha-only surfaces always keep their pixels in memory.
+
+		return m_pPixelDescription->bits <= 8 || m_pPixelDescription->type == PixelType::Index;
+	}
+
+	//____ _setPixelDetails() ____________________________________________________
+	/*
+		Picks the GL texture format and the format of the pixels we upload and read back.
+
+		Pixels are always transferred in the format, color space and byte order of the surface
+		(which is also what the backing buffer holds). Packed pixel types describe a pixel as a
+		native word with the same register order as our PixelFormats, so the other byte order
+		is just a matter of GL_UNPACK_SWAP_BYTES/GL_PACK_SWAP_BYTES.
+
+		An sRGB surface gets an sRGB texture, which the GPU decodes to linear when sampling.
+		An sRGB 565 surface is stored as GL_SRGB8, since there is no sRGB 565 texture format.
+	*/
+
+	void GlSurface::_setPixelDetails()
+	{
+		bool bSRGB = (m_colorSpace == ColorSpace::sRGB);
+		m_bSwapBytes = (m_bBigEndian != (WG_IS_BIG_ENDIAN == 1));
+
+		switch (m_pixelFormat)
+		{
+			case PixelFormat::XRGB_8:
+				m_internalFormat = bSRGB ? GL_SRGB8 : GL_RGB8;
 				m_accessFormat = GL_BGRA;
-				m_pixelDataType = GL_UNSIGNED_BYTE;
+				m_pixelDataType = GL_UNSIGNED_INT_8_8_8_8_REV;		// Blue in the low bits, X in the high.
 				m_pixelSize = 4;
 				break;
 
-			case PixelFormat::BGRX_8_sRGB:
-				m_internalFormat = GL_SRGB8;
+			case PixelFormat::ARGB_8:
+				m_internalFormat = bSRGB ? GL_SRGB8_ALPHA8 : GL_RGBA8;
 				m_accessFormat = GL_BGRA;
-				m_pixelDataType = GL_UNSIGNED_BYTE;
+				m_pixelDataType = GL_UNSIGNED_INT_8_8_8_8_REV;		// Blue in the low bits, alpha in the high.
 				m_pixelSize = 4;
 				break;
 
-			case PixelFormat::BGRX_8_linear:
-				m_internalFormat = GL_RGB8;
-				m_accessFormat = GL_BGRA;
-				m_pixelDataType = GL_UNSIGNED_BYTE;
-				m_pixelSize = 4;
-				break;
-
-			case PixelFormat::BGRA_8:
-				m_internalFormat = GfxBase::defaultToSRGB() ? GL_SRGB8_ALPHA8 : GL_RGBA8;
-				m_accessFormat = GL_BGRA;
-				m_pixelDataType = GL_UNSIGNED_BYTE;
-				m_pixelSize = 4;
-				break;
-
-			case PixelFormat::BGRA_8_sRGB:
-				m_internalFormat = GL_SRGB8_ALPHA8;
-				m_accessFormat = GL_BGRA;
-				m_pixelDataType = GL_UNSIGNED_BYTE;
-				m_pixelSize = 4;
-				break;
-
-			case PixelFormat::BGRA_8_linear:
-				m_internalFormat = GL_RGBA8;
-				m_accessFormat = GL_BGRA;
-				m_pixelDataType = GL_UNSIGNED_BYTE;
-				m_pixelSize = 4;
-				break;
-
-
-			case PixelFormat::BGR_565_linear:
-				m_internalFormat = GL_RGB565;					// NOTE: We lose one bit of precision on green here...
+			case PixelFormat::RGB_565:
+				m_internalFormat = bSRGB ? GL_SRGB8 : GL_RGB565;
 				m_accessFormat = GL_RGB;
 				m_pixelDataType = GL_UNSIGNED_SHORT_5_6_5;			// Red in the high bits, blue in the low.
 				m_pixelSize = 2;
 				break;
 
+			case PixelFormat::BGR_565:
+				m_internalFormat = bSRGB ? GL_SRGB8 : GL_RGB565;
+				m_accessFormat = GL_RGB;
+				m_pixelDataType = GL_UNSIGNED_SHORT_5_6_5_REV;		// Red in the low bits, blue in the high.
+				m_pixelSize = 2;
+				break;
+
 			case PixelFormat::Index_8:
-			case PixelFormat::Index_8_sRGB:
-			case PixelFormat::Index_8_linear:
 				m_internalFormat = GL_R8;
 				m_accessFormat = GL_RED;
 				m_pixelDataType = GL_UNSIGNED_BYTE;
 				m_pixelSize = 1;
+				break;
+
+			case PixelFormat::Index_16:
+				m_internalFormat = GL_R16;
+				m_accessFormat = GL_RED;
+				m_pixelDataType = GL_UNSIGNED_SHORT;
+				m_pixelSize = 2;
 				break;
 
 			case PixelFormat::Alpha_8:
@@ -496,10 +505,49 @@ namespace wg
 				break;
 
 			default:
-				assert(false);           // Should never get here, just avoiding compiler warnings.
+				assert(false);           // Should never get here, create() rejects formats we don't support.
 				break;
-
 		}
+	}
+
+	//____ _uploadPalette() ______________________________________________________
+	/*
+		The palette texture is up to 256 texels wide with as many rows as needed for
+		paletteCapacity() entries, see WG_GL_PALETTE_FUNC. Entries beyond m_paletteSize are cleared.
+	*/
+
+	void GlSurface::_uploadPalette()
+	{
+		int width = paletteTextureWidth();
+		int height = paletteTextureHeight();
+
+		std::vector<Color8> palette(width*height);
+		memcpy(palette.data(), m_pPalette, m_paletteSize*sizeof(Color8));
+
+		GLint oldBinding;
+		glGetIntegerv(GL_TEXTURE_BINDING_2D, &oldBinding);
+		glBindTexture(GL_TEXTURE_2D, m_paletteTexture);
+
+		// Palette entries are in the color space of the surface.
+
+		glTexImage2D(GL_TEXTURE_2D, 0, m_colorSpace == ColorSpace::sRGB ? GL_SRGB8_ALPHA8 : GL_RGBA8, width, height, 0, GL_BGRA, GL_UNSIGNED_BYTE, palette.data());
+
+		glBindTexture(GL_TEXTURE_2D, oldBinding);
+	}
+
+	//____ paletteTextureWidth() _________________________________________________
+
+	int GlSurface::paletteTextureWidth() const
+	{
+		return std::min(m_paletteCapacity, 256);
+	}
+
+	//____ paletteTextureHeight() ________________________________________________
+
+	int GlSurface::paletteTextureHeight() const
+	{
+		int width = paletteTextureWidth();
+		return width == 0 ? 0 : (m_paletteCapacity + width - 1) / width;
 	}
 
 	//____ Destructor ______________________________________________________________
@@ -548,6 +596,8 @@ namespace wg
 		if (m_pBlob)
 		{
 			pixbuf.format = m_pixelFormat;
+			pixbuf.colorSpace = m_colorSpace;
+			pixbuf.bigEndian = m_bBigEndian;
 			pixbuf.palette = m_pPalette;
 			pixbuf.pitch = m_pitch;
 			pixbuf.pixels = ((uint8_t*)m_pBlob->data()) + rect.y * m_pitch + rect.x * m_pixelSize;
@@ -556,6 +606,8 @@ namespace wg
 		else
 		{
 			pixbuf.format = m_pixelFormat;
+			pixbuf.colorSpace = m_colorSpace;
+			pixbuf.bigEndian = m_bBigEndian;
 			pixbuf.palette = m_pPalette;
 			pixbuf.pitch = ((rect.w * m_pPixelDescription->bits / 8) + 3) & 0xFFFFFFFC;
             pixbuf.pixels = new uint8_t[rect.h * pixbuf.pitch];
@@ -606,11 +658,18 @@ namespace wg
 		uint8_t* pSrc = buffer.pixels + bufferRect.y * buffer.pitch + bufferRect.x * m_pixelSize;
 
 		glPixelStorei(GL_UNPACK_ROW_LENGTH, buffer.pitch/m_pixelSize);
+		glPixelStorei(GL_UNPACK_SWAP_BYTES, m_bSwapBytes);
 		glTexSubImage2D(GL_TEXTURE_2D, 0, texRect.x, texRect.y, texRect.w, texRect.h, m_accessFormat, m_pixelDataType, pSrc);
 
+		glPixelStorei(GL_UNPACK_SWAP_BYTES, GL_FALSE);
 		glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
 		glBindTexture(GL_TEXTURE_2D, oldBinding);
 		m_bMipmapStale = m_bMipmapped;
+
+		// Colors might have been added to or changed in the palette.
+
+		if (m_pPalette && m_paletteTexture != 0)
+			_uploadPalette();
 
 		HANDLE_GLERROR(glGetError());
 
@@ -642,6 +701,8 @@ namespace wg
 			buf.palette = m_pPalette;
 			buf.pitch = m_pitch;
 			buf.format = m_pixelFormat;
+			buf.colorSpace = m_colorSpace;
+			buf.bigEndian = m_bBigEndian;
 			buf.pixels = (uint8_t*) m_pBlob->data();
 			
 			return _alpha(_coord, buf);
@@ -757,8 +818,10 @@ namespace wg
 		}
 
 		glPixelStorei(GL_UNPACK_ROW_LENGTH, m_pitch/m_pixelSize);
+		glPixelStorei(GL_UNPACK_SWAP_BYTES, m_bSwapBytes);
 		glTexImage2D( GL_TEXTURE_2D, 0, m_internalFormat, m_size.w, m_size.h, 0,
 					 m_accessFormat, m_pixelDataType, m_pBlob->data() );
+		glPixelStorei(GL_UNPACK_SWAP_BYTES, GL_FALSE);
 		glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
 
 		glBindTexture( GL_TEXTURE_2D, oldBinding );
@@ -785,7 +848,7 @@ namespace wg
 
 	void GlSurface::_updateAlphaMap(const PixelBuffer& buffer, const RectI& bufferRect)
 	{
-		PixelTools::extractAlphaChannel(m_pixelFormat, buffer.pixels, buffer.pitch,
+		PixelTools::extractAlphaChannel(m_pixelFormat, m_bBigEndian, buffer.pixels, buffer.pitch,
 										{ bufferRect.x,bufferRect.y, bufferRect.w, bufferRect.h },
 										m_pAlphaMap + buffer.rect.y * m_size.w + buffer.rect.x, m_size.w, m_pPalette);
 	}
@@ -795,39 +858,6 @@ namespace wg
 	void GlSurface::_readBackTexture(void * pDest, int pitch)
 	{
 		HANDLE_GLERROR(glGetError());
-
-		GLenum	type;
-
-		switch (m_pixelFormat)
-		{
-		case PixelFormat::BGR_8:
-		case PixelFormat::BGR_8_sRGB:
-		case PixelFormat::BGR_8_linear:
-			type = GL_UNSIGNED_BYTE;
-			break;
-		case PixelFormat::BGRA_8:
-		case PixelFormat::BGRA_8_sRGB:
-		case PixelFormat::BGRA_8_linear:
-		case PixelFormat::BGRX_8:
-		case PixelFormat::BGRX_8_sRGB:
-		case PixelFormat::BGRX_8_linear:
-			type = GL_UNSIGNED_INT_8_8_8_8_REV;
-			break;
-		case PixelFormat::BGR_565_linear:
-			type = GL_UNSIGNED_SHORT_5_6_5;
-			break;
-		case PixelFormat::Alpha_8:
-			type = GL_UNSIGNED_BYTE;
-			break;
-		case PixelFormat::Index_8:
-		case PixelFormat::Index_8_sRGB:
-		case PixelFormat::Index_8_linear:
-			type = GL_UNSIGNED_BYTE;
-			break;
-		default:
-			assert(false);   // Should never get here! This code is just to avoid compiler warnings.
-			break;
-		}
 
 		GLint oldBinding;
 		glGetIntegerv(GL_TEXTURE_BINDING_2D, &oldBinding);
@@ -851,8 +881,10 @@ namespace wg
 			glPixelStorei(GL_PACK_ROW_LENGTH, 0);
 		}
 
+		glPixelStorei(GL_PACK_SWAP_BYTES, m_bSwapBytes);
 		glBindTexture(GL_TEXTURE_2D, m_texture);
-		glGetTexImage(GL_TEXTURE_2D, 0, m_accessFormat, type, pDest);
+		glGetTexImage(GL_TEXTURE_2D, 0, m_accessFormat, m_pixelDataType, pDest);
+		glPixelStorei(GL_PACK_SWAP_BYTES, GL_FALSE);
 		glPixelStorei(GL_PACK_ROW_LENGTH, 0);
 		glPixelStorei(GL_PACK_ALIGNMENT, oldAlignment);
 		glBindTexture(GL_TEXTURE_2D, oldBinding);

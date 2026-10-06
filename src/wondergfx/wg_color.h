@@ -321,6 +321,7 @@ namespace wg
 
 		inline HiColor		toLinear() const;		// RGB from sRGB to linear, for blending. Alpha is kept.
 		inline HiColor		toSRGB() const;			// RGB from linear to sRGB. Alpha is kept.
+		inline void			toLinearFloat(float* pOut) const;	// Linear RGBA as four floats (0.0-1.0), for GPU backends.
 
 		// Conversion between 8-bit and 12-bit (0-4096) channels. Names tell the color space of the
 		// 8-bit side, while the 12-bit side always is linear. unpackLinearTab and packLinearTab
@@ -336,6 +337,8 @@ namespace wg
 
 		static int16_t		sRGBToLinearTab[4097];
 		static int16_t		linearToSRGBTab[4097];
+
+		static float		sRGBToLinearFloatTab[4097];		// 12-bit sRGB to linear 0.0-1.0, without the loss of precision of sRGBToLinearTab.
 
 		//.____ Properties __________________________________________
 
@@ -434,6 +437,17 @@ namespace wg
 		out.b = sRGBToLinearTab[clamp(b)];
 		out.a = a;
 		return out;
+	}
+
+	//-------------------------------------------------------------------
+	inline void HiColor::toLinearFloat(float* pOut) const
+	{
+		auto clamp = [](int v) { return v < 0 ? 0 : v > 4096 ? 4096 : v; };
+
+		pOut[0] = sRGBToLinearFloatTab[clamp(r)];
+		pOut[1] = sRGBToLinearFloatTab[clamp(g)];
+		pOut[2] = sRGBToLinearFloatTab[clamp(b)];
+		pOut[3] = a / 4096.f;
 	}
 
 	//-------------------------------------------------------------------

@@ -36,6 +36,7 @@ namespace wg
 	{
 		m_defaultCanvasSize				= bp.defaultCanvasSize;
 		m_defaultCanvasScale			= bp.defaultCanvasScale;
+		m_defaultCanvasColorSpace		= bp.defaultCanvasColorSpace;
 		m_uboBindingPoint				= bp.uboBindingPoint;
 	}
 
@@ -52,7 +53,7 @@ namespace wg
 	GfxDevice_p GlGfxDeviceFactory::createGfxDevice()
 	{
 		auto pBackend = GlBackend::create(m_uboBindingPoint);
-		pBackend->setDefaultCanvas( m_defaultCanvasSize, m_defaultCanvasScale );
+		pBackend->setDefaultCanvas( m_defaultCanvasSize, m_defaultCanvasScale, m_defaultCanvasColorSpace );
 
 		auto pDevice = GfxDeviceGen2::create(pBackend);
 		return pDevice;

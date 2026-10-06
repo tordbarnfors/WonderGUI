@@ -159,13 +159,14 @@ void GlBackend::setCanvas(Surface* pSurface)
 	The uniform stays with the program, so it's set for every blit.
 */
 
-void GlBackend::_setPaletteWidth(GLuint prog, GlSurface* pSurf)
+void GlBackend::_setPaletteInfo(GLuint prog, GlSurface* pSurf)
 {
-	// The palette texture is paletteCapacity() texels wide, see WG_GL_PALETTE_FUNC.
+	// Tells WG_GL_PALETTE_FUNC how to find a palette entry, see GlSurface::_uploadPalette().
 
-	GLint loc = glGetUniformLocation(prog, "paletteWidth");
+	GLint loc = glGetUniformLocation(prog, "paletteInfo");
 	if (loc != -1)
-		glUniform1f(loc, float(pSurf->paletteCapacity()));
+		glUniform4f(loc, pSurf->pixelFormat() == PixelFormat::Index_16 ? 65535.f : 255.f,
+					float(pSurf->paletteTextureWidth()), float(pSurf->paletteTextureHeight()), float(pSurf->paletteCapacity()));
 }
 
 void GlBackend::_setRgbxClip(GLuint prog, GlSurface* pSurf, bool bClipBlit)
@@ -198,7 +199,12 @@ void GlBackend::_setCanvas(Surface* pSurface)
 	{
 		size = pCanvas->pixelSize();
 
-		glEnable(GL_FRAMEBUFFER_SRGB);		// Always use SRGB on Canvas that is SRGB.
+		// An sRGB canvas has an sRGB texture, which GL blends in linear and writes as sRGB.
+
+		if (pCanvas->colorSpace() == ColorSpace::sRGB)
+			glEnable(GL_FRAMEBUFFER_SRGB);
+		else
+			glDisable(GL_FRAMEBUFFER_SRGB);
 
 		glBindFramebuffer(GL_FRAMEBUFFER, m_framebufferId);
 		glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, pCanvas->getTexture(), 0);
@@ -222,7 +228,9 @@ void GlBackend::_setCanvas(Surface* pSurface)
 	{
 		size = m_defaultCanvas.size / 64;
 
-		if (GfxBase::defaultToSRGB())
+		// The default framebuffer needs to be sRGB-capable for this to have any effect.
+
+		if (m_defaultCanvas.colorSpace == ColorSpace::sRGB)
 			glEnable(GL_FRAMEBUFFER_SRGB);
 		else
 			glDisable(GL_FRAMEBUFFER_SRGB);
@@ -382,10 +390,7 @@ void GlBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, int 
 				{
 					m_tintColorOfs = int(pColorGL - m_pColorBuffer);
 
-					pColorGL->r = tintColor.r / 4096.f;
-					pColorGL->g = tintColor.g / 4096.f;
-					pColorGL->b = tintColor.b / 4096.f;
-					pColorGL->a = tintColor.a / 4096.f;
+					tintColor.toLinearFloat(&pColorGL->r);		// Colors are sRGB, but we blend in linear.
 					pColorGL++;
 	 			}
 			}
@@ -584,22 +589,16 @@ void GlBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, int 
 
 			// Add colors to buffer
 
+			col.toLinearFloat(&pColorGL->r);
+
 			if (m_tintColorOfs >= 0)
 			{
 				ColorGL& tint = m_pColorBuffer[m_tintColorOfs];
 
-				pColorGL->r = (col.r / 4096.f) * tint.r;
-				pColorGL->g = (col.g / 4096.f) * tint.g;
-				pColorGL->b = (col.b / 4096.f) * tint.b;
-				pColorGL->a = (col.a / 4096.f) * tint.a;
-
-			}
-			else
-			{
-				pColorGL->r = col.r / 4096.f;
-				pColorGL->g = col.g / 4096.f;
-				pColorGL->b = col.b / 4096.f;
-				pColorGL->a = col.a / 4096.f;
+				pColorGL->r *= tint.r;
+				pColorGL->g *= tint.g;
+				pColorGL->b *= tint.b;
+				pColorGL->a *= tint.a;
 			}
 
 			pColorGL++;
@@ -755,21 +754,16 @@ void GlBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, int 
 
 				// Add colors to buffer
 
+				col.toLinearFloat(&pColorGL->r);
+
 				if (m_tintColorOfs >= 0)
 				{
 					ColorGL& tint = m_pColorBuffer[m_tintColorOfs];
 
-					pColorGL->r = (col.r / 4096.f) * tint.r;
-					pColorGL->g = (col.g / 4096.f) * tint.g;
-					pColorGL->b = (col.b / 4096.f) * tint.b;
-					pColorGL->a = (col.a / 4096.f) * tint.a;
-				}
-				else
-				{
-					pColorGL->r = col.r / 4096.f;
-					pColorGL->g = col.g / 4096.f;
-					pColorGL->b = col.b / 4096.f;
-					pColorGL->a = col.a / 4096.f;
+					pColorGL->r *= tint.r;
+					pColorGL->g *= tint.g;
+					pColorGL->b *= tint.b;
+					pColorGL->a *= tint.a;
 				}
 
 				pColorGL++;
@@ -1283,42 +1277,23 @@ GlBackend::GlBackend( int uboBindingPoint )
 	}
 
 
-	m_blitProgMatrix[(int)PixelFormat::Alpha_8][0][0][0] = m_alphaBlitProg[0];
-	m_blitProgMatrix[(int)PixelFormat::Alpha_8][1][0][0] = m_alphaBlitProg[0];
+	for (int j = 0; j < 2; j++)
+	{
+		m_blitProgMatrix[(int)PixelFormat::Alpha_8][0][0][j] = m_alphaBlitProg[j];
+		m_blitProgMatrix[(int)PixelFormat::Alpha_8][1][0][j] = m_alphaBlitProg[j];
 
-	m_blitProgMatrix[(int)PixelFormat::Alpha_8][0][1][0] = m_alphaBlitTintmapProg[0];
-	m_blitProgMatrix[(int)PixelFormat::Alpha_8][1][1][0] = m_alphaBlitTintmapProg[0];
+		m_blitProgMatrix[(int)PixelFormat::Alpha_8][0][1][j] = m_alphaBlitTintmapProg[j];
+		m_blitProgMatrix[(int)PixelFormat::Alpha_8][1][1][j] = m_alphaBlitTintmapProg[j];
 
-	m_blitProgMatrix[(int)PixelFormat::Index_8_linear][0][0][0] = m_paletteBlitNearestProg[0];
-	m_blitProgMatrix[(int)PixelFormat::Index_8_linear][1][0][0] = m_paletteBlitInterpolateProg[0];
+		for (PixelFormat indexed : { PixelFormat::Index_8, PixelFormat::Index_16 })
+		{
+			m_blitProgMatrix[(int)indexed][0][0][j] = m_paletteBlitNearestProg[j];
+			m_blitProgMatrix[(int)indexed][1][0][j] = m_paletteBlitInterpolateProg[j];
 
-	m_blitProgMatrix[(int)PixelFormat::Index_8_linear][0][1][0] = m_paletteBlitNearestTintmapProg[0];
-	m_blitProgMatrix[(int)PixelFormat::Index_8_linear][1][1][0] = m_paletteBlitInterpolateTintmapProg[0];
-
-	m_blitProgMatrix[(int)PixelFormat::Index_8_sRGB][0][0][0] = m_paletteBlitNearestProg[0];
-	m_blitProgMatrix[(int)PixelFormat::Index_8_sRGB][1][0][0] = m_paletteBlitInterpolateProg[0];
-
-	m_blitProgMatrix[(int)PixelFormat::Index_8_sRGB][0][1][0] = m_paletteBlitNearestTintmapProg[0];
-	m_blitProgMatrix[(int)PixelFormat::Index_8_sRGB][1][1][0] = m_paletteBlitInterpolateTintmapProg[0];
-
-
-	m_blitProgMatrix[(int)PixelFormat::Alpha_8][0][0][1] = m_alphaBlitProg[1];
-	m_blitProgMatrix[(int)PixelFormat::Alpha_8][1][0][1] = m_alphaBlitProg[1];
-
-	m_blitProgMatrix[(int)PixelFormat::Alpha_8][0][1][1] = m_alphaBlitTintmapProg[1];
-	m_blitProgMatrix[(int)PixelFormat::Alpha_8][1][1][1] = m_alphaBlitTintmapProg[1];
-
-	m_blitProgMatrix[(int)PixelFormat::Index_8_linear][0][0][1] = m_paletteBlitNearestProg[1];
-	m_blitProgMatrix[(int)PixelFormat::Index_8_linear][1][0][1] = m_paletteBlitInterpolateProg[1];
-
-	m_blitProgMatrix[(int)PixelFormat::Index_8_linear][0][1][1] = m_paletteBlitNearestTintmapProg[1];
-	m_blitProgMatrix[(int)PixelFormat::Index_8_linear][1][1][1] = m_paletteBlitInterpolateTintmapProg[1];
-
-	m_blitProgMatrix[(int)PixelFormat::Index_8_sRGB][0][0][1] = m_paletteBlitNearestProg[1];
-	m_blitProgMatrix[(int)PixelFormat::Index_8_sRGB][1][0][1] = m_paletteBlitInterpolateProg[1];
-
-	m_blitProgMatrix[(int)PixelFormat::Index_8_sRGB][0][1][1] = m_paletteBlitNearestTintmapProg[1];
-	m_blitProgMatrix[(int)PixelFormat::Index_8_sRGB][1][1][1] = m_paletteBlitInterpolateTintmapProg[1];
+			m_blitProgMatrix[(int)indexed][0][1][j] = m_paletteBlitNearestTintmapProg[j];
+			m_blitProgMatrix[(int)indexed][1][1][j] = m_paletteBlitInterpolateTintmapProg[j];
+		}
+	}
 
 	LOG_INIT_GLERROR(glGetError());
 
@@ -1551,11 +1526,12 @@ EdgemapFactory_p GlBackend::edgemapFactory()
 
 //____ setDefaultCanvas() ___________________________________________
 
-bool GlBackend::setDefaultCanvas(SizeSPX size, int scale)
+bool GlBackend::setDefaultCanvas(SizeSPX size, int scale, ColorSpace colorSpace)
 {
 	m_defaultCanvas.ref = CanvasRef::Default;		// Starts as Undefined until this method is called.
 	m_defaultCanvas.size = size;
 	m_defaultCanvas.scale = scale;
+	m_defaultCanvas.colorSpace = colorSpace == ColorSpace::Undefined ? ColorSpace::sRGB : colorSpace;
 	return true;
 }
 
@@ -1939,7 +1915,7 @@ void GlBackend::endSession()
 					if (clipLoc != -1)
 						glUniform1i(clipLoc, 0);
 
-					_setPaletteWidth(prog, pSurf);
+					_setPaletteInfo(prog, pSurf);
 				}
 
 				_setRgbxClip(prog, pSurf, false);
@@ -1973,7 +1949,7 @@ void GlBackend::endSession()
 					if (clipLoc != -1)
 						glUniform1i(clipLoc, bClip ? 1 : 0);
 
-					_setPaletteWidth(prog, pSurf);
+					_setPaletteInfo(prog, pSurf);
 				}
 				else
 				{
@@ -2018,7 +1994,7 @@ void GlBackend::endSession()
 				glUseProgram(blurProg);
 
 				if (blurSource == BlurSource::Palette)
-					_setPaletteWidth(blurProg, m_pActiveBlitSource);
+					_setPaletteInfo(blurProg, m_pActiveBlitSource);
 
 				auto size = m_pActiveBlitSource->pixelSize();
 

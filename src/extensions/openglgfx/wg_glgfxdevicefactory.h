@@ -45,6 +45,7 @@ namespace wg
 		{
 			int		defaultCanvasScale = 64;
 			SizeSPX	defaultCanvasSize;
+			ColorSpace defaultCanvasColorSpace = ColorSpace::sRGB;	// sRGB needs an sRGB-capable default framebuffer.
 			int 	uboBindingPoint = 0;
 		};
 
@@ -68,6 +69,7 @@ namespace wg
 
 		int			m_defaultCanvasScale = 64;
 		SizeSPX		m_defaultCanvasSize;
+		ColorSpace	m_defaultCanvasColorSpace = ColorSpace::sRGB;
 		int			m_uboBindingPoint = 0;
 	};
 

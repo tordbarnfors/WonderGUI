@@ -112,22 +112,28 @@
 "	return c;																		" \
 "}																					"
 
-// GLSL function looking up the palette entry for an index read from an R8 index texture.
-// The palette texture is only paletteCapacity() texels wide, so the normalized index can't
-// be used as a texture coordinate (it would only be right for 256 entries). Instead the
-// index is turned into the coordinate of its texel's center, with paletteWidth set by
-// GlBackend::_setPaletteWidth(). The palette texture clamps to its edge, so indexes beyond
-// the palette get its last entry, like DX12 and Metal do. Needs uniform paletteId declared first.
+// GLSL function looking up the palette entry for an index read from an R8 (Index_8) or R16
+// (Index_16) index texture. The palette texture is up to 256 texels wide with as many rows as
+// needed for paletteCapacity() entries (see GlSurface::_uploadPalette()), so the normalized
+// index can't be used as a texture coordinate. Instead the index is turned into the coordinate
+// of its texel's center, with paletteInfo set by GlBackend::_setPaletteInfo():
+//
+//   x: largest index of the index texture (255 or 65535), y: width, z: height, w: entries.
+//
+// Indexes beyond the palette get its last entry, like DX12 and Metal do. Needs uniform
+// paletteId declared first.
 //
 // This samples with texture() rather than texelFetch() and textureSize(), which on a 2013
 // Mac Pro (AMD, macOS OpenGL 4.1) gave random groups of black pixels.
 
 #define WG_GL_PALETTE_FUNC \
-"uniform float paletteWidth;															" \
+"uniform vec4 paletteInfo;															" \
 "vec4 paletteLookup(float normIndex)												" \
 "{																					" \
-"	float index = floor(normIndex * 255.0 + 0.5);									" \
-"	return texture(paletteId, vec2((index + 0.5) / paletteWidth, 0.5));				" \
+"	float index = min(floor(normIndex * paletteInfo.x + 0.5), paletteInfo.w - 1.0);	" \
+"	float row = floor(index / paletteInfo.y);										" \
+"	float column = index - row * paletteInfo.y;										" \
+"	return texture(paletteId, vec2((column + 0.5) / paletteInfo.y, (row + 0.5) / paletteInfo.z));	" \
 "}																					"
 
 namespace wg {

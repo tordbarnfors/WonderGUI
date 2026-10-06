@@ -196,6 +196,8 @@ namespace wg
 	int16_t		HiColor::sRGBToLinearTab[4097];
 	int16_t		HiColor::linearToSRGBTab[4097];
 
+	float		HiColor::sRGBToLinearFloatTab[4097];
+
 
 	//-------------------------------------------------------------------
 	Color8 Color8::operator+(const Color8& k) const
@@ -484,6 +486,7 @@ namespace wg
 		{
 			HiColor::sRGBToLinearTab[i] = int16_t(_sRGBToLinear(i / 4096.0) * 4096 + 0.5);
 			HiColor::linearToSRGBTab[i] = int16_t(_linearToSRGB(i / 4096.0) * 4096 + 0.5);
+			HiColor::sRGBToLinearFloatTab[i] = float(_sRGBToLinear(i / 4096.0));
 		}
 	}
 

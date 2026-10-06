@@ -224,11 +224,8 @@ namespace wg
 
 		for (int seg = 0; seg < m_nbSegments; seg++)
 		{
-			const HiColor& col = m_pFlatColors[seg];
-			*pOut++ = col.r / 4096.f;
-			*pOut++ = col.g / 4096.f;
-			*pOut++ = col.b / 4096.f;
-			*pOut++ = col.a / 4096.f;
+			m_pFlatColors[seg].toLinearFloat(pOut);		// Colors are sRGB, but we blend in linear.
+			pOut += 4;
 		}
 
 		for (int seg = 0; seg < m_nbSegments; seg++)

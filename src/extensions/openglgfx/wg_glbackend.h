@@ -85,7 +85,7 @@ namespace wg
 
 		//.____ Misc _________________________________________________________
 
-		bool	setDefaultCanvas(SizeSPX size, int scale);
+		bool	setDefaultCanvas(SizeSPX size, int scale, ColorSpace colorSpace = ColorSpace::sRGB);
 
 		const CanvasInfo* canvasInfo(CanvasRef ref) const override;
 
@@ -125,7 +125,7 @@ namespace wg
 		float	_scaleThickness(float thickeness, float slope);
 
 		void	_setCanvas(Surface* pSurface);
-		void	_setPaletteWidth(GLuint prog, GlSurface* pSurf);
+		void	_setPaletteInfo(GLuint prog, GlSurface* pSurf);
 		void	_setRgbxClip(GLuint prog, GlSurface* pSurf, bool bClipBlit);
 
 		enum CommandGL

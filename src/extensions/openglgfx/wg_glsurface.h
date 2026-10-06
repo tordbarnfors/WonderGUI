@@ -104,6 +104,8 @@ namespace wg
 
 		inline	GLuint	getTexture() const { return m_texture; }
 		inline	GLuint	getPaletteTexture() const { return m_paletteTexture; }
+		int				paletteTextureWidth() const;
+		int				paletteTextureHeight() const;
 
         static unsigned int totalTexturePixels() { return g_texturePixels; }
         static unsigned int totalBackingPixels() { return g_backingPixels; }
@@ -117,7 +119,10 @@ namespace wg
 
 		~GlSurface();
 
-		void		_setPixelDetails( PixelFormat format );
+		static bool	_isFormatSupported( PixelFormat format );
+		bool		_needsBackingBuffer() const;
+		void		_setPixelDetails();
+		void		_uploadPalette();
 		void		_setupGlTexture(void * pPixelsToUpload, int pitch);
 		void		_updateAlphaMap(const PixelBuffer& buffer, const RectI& bufferRect);
 
@@ -133,8 +138,9 @@ namespace wg
 		GLuint		m_framebufferId;		// Initialized and used when m_bCanvas is set.
 
 		GLuint 		m_texture = 0;		// GL texture handle.
-		GLint       m_internalFormat;   // GL_RGB8 or GL_RGBA8.
-		GLenum		m_accessFormat;		// GL_BGR or GL_BGRA.
+		GLint       m_internalFormat;   // Format of the texture, like GL_SRGB8_ALPHA8 or GL_RGB565.
+		GLenum		m_accessFormat;		// Format of pixels we upload and read back, like GL_BGRA or GL_RGB.
+		bool		m_bSwapBytes = false;	// Pixels are not in native byte order.
 		Blob_p      m_pBlob;
 		int			m_pitch;
 
