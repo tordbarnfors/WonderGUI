@@ -99,11 +99,17 @@ namespace wg
 	//
 	// Reports failed HRESULTs through the error handler. Use the CHECK_HR macro,
 	// which passes on the call site.
+	//
+	// A lost device is reported once by DX12Backend instead. Every call fails from
+	// then on, and reporting each one, every frame, is what buried the reason.
 
 	static bool _checkHR(HRESULT hr, const char* what, const Object* pObject, const TypeInfo* pClassType, const char* func, const char* file, int line)
 	{
 		if (FAILED(hr))
 		{
+			if (DX12Backend::handleDeviceLoss(hr))
+				return false;
+
 			char buffer[256];
 			sprintf_s(buffer, "%s failed, HRESULT = 0x%08lX", what, (unsigned long)hr);
 			GfxBase::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, buffer, pObject, pClassType, func, file, line);
@@ -120,6 +126,11 @@ namespace wg
 	Microsoft::WRL::ComPtr<ID3D12Device>		DX12Backend::s_pDevice;
 	Microsoft::WRL::ComPtr<ID3D12CommandQueue>	DX12Backend::s_pCommandQueue;
 	bool										DX12Backend::s_bImplicitDevice = false;
+	bool										DX12Backend::s_bDeviceLost = false;
+	HRESULT										DX12Backend::s_deviceRemovedReason = S_OK;
+	TP_CALLBACK_ENVIRON							DX12Backend::s_releaserEnv;
+	bool										DX12Backend::s_bReleaserReady = false;
+	std::atomic<int>							DX12Backend::s_nPendingReleases(0);
 	std::vector<DX12Backend*>					DX12Backend::s_backends;
 
 	//____ create() ______________________________________________________________
@@ -191,6 +202,12 @@ namespace wg
 		s_pCommandQueue = pDX12CommandQueue;
 		s_bImplicitDevice = false;
 
+		// A new device starts out healthy. If it is the one we already had, the
+		// next call on it will tell us again.
+
+		s_bDeviceLost = false;
+		s_deviceRemovedReason = S_OK;
+
 		if (pDX12Device)
 		{
 			// Surfaces and edgemaps create their own resources and need the device for it.
@@ -210,6 +227,250 @@ namespace wg
 			pBackend->waitForCompletion();
 	}
 
+	//____ checkDeviceLost() _____________________________________________________
+
+	bool DX12Backend::checkDeviceLost()
+	{
+		if (s_bDeviceLost)
+			return true;
+
+		if (!s_pDevice)
+			return false;
+
+		HRESULT reason = s_pDevice->GetDeviceRemovedReason();
+		if (reason == S_OK)
+			return false;
+
+		_reportDeviceLost(reason);
+		return true;
+	}
+
+	//____ handleDeviceLoss() ____________________________________________________
+
+	bool DX12Backend::handleDeviceLoss(HRESULT hr)
+	{
+		// Once the device is gone, every call fails, whatever it says.
+
+		if (s_bDeviceLost)
+			return true;
+
+		switch (hr)
+		{
+			case DXGI_ERROR_DEVICE_REMOVED:
+			case DXGI_ERROR_DEVICE_RESET:
+			case DXGI_ERROR_DEVICE_HUNG:
+			case DXGI_ERROR_DRIVER_INTERNAL_ERROR:
+				_reportDeviceLost(hr);
+				return true;
+
+			default:
+				break;
+		}
+
+		// Some calls fail with something less telling, so ask the device itself.
+
+		return checkDeviceLost();
+	}
+
+	//____ _reportDeviceLost() ___________________________________________________
+
+	void DX12Backend::_reportDeviceLost(HRESULT hr)
+	{
+		if (s_bDeviceLost)
+			return;
+
+		s_bDeviceLost = true;
+
+		// What the failing call returned is usually just DEVICE_REMOVED. The device
+		// knows why.
+
+		HRESULT reason = s_pDevice ? s_pDevice->GetDeviceRemovedReason() : S_OK;
+		if (reason == S_OK)
+			reason = hr;
+
+		s_deviceRemovedReason = reason;
+
+		const char * pMeaning;
+		switch (reason)
+		{
+			case DXGI_ERROR_DEVICE_HUNG:
+				pMeaning = "DEVICE_HUNG, the GPU took too long on our commands and was reset (TDR)";
+				break;
+			case DXGI_ERROR_DEVICE_RESET:
+				pMeaning = "DEVICE_RESET, the GPU was reset, most likely by badly formed commands";
+				break;
+			case DXGI_ERROR_DEVICE_REMOVED:
+				pMeaning = "DEVICE_REMOVED, the GPU was removed or its driver updated or restarted";
+				break;
+			case DXGI_ERROR_DRIVER_INTERNAL_ERROR:
+				pMeaning = "DRIVER_INTERNAL_ERROR, the driver failed";
+				break;
+			case DXGI_ERROR_INVALID_CALL:
+				pMeaning = "INVALID_CALL, the device was given something invalid, run with the debug layer";
+				break;
+			case E_OUTOFMEMORY:
+				pMeaning = "E_OUTOFMEMORY";
+				break;
+			default:
+				pMeaning = "unknown reason";
+				break;
+		}
+
+		// The breadcrumbs go first. The error handler may well break into the
+		// debugger, and then they are already in the output window.
+
+		_dumpDRED();
+
+		char buffer[384];
+		sprintf_s(buffer, "D3D12 device lost: 0x%08lX, %s. DX12 rendering stops until a new device is set.",
+				  (unsigned long)reason, pMeaning);
+
+		GfxBase::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, buffer, nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
+	}
+
+	//____ _dumpDRED() ___________________________________________________________
+	//
+	// Device Removed Extended Data: which operation in which command list the GPU
+	// had got to when it died, and what a page fault hit. Only there if DRED was
+	// enabled through ID3D12DeviceRemovedExtendedDataSettings before the device
+	// was created, which is up to whoever creates it.
+	//
+	// Written to the debugger's output window, since it doesn't fit an error
+	// message. Our objects are named after their owners, see setObjectName(),
+	// so the command lists and allocations listed say whose they are.
+
+	void DX12Backend::_dumpDRED()
+	{
+#ifdef __ID3D12DeviceRemovedExtendedData_INTERFACE_DEFINED__
+
+		if (!s_pDevice)
+			return;
+
+		Microsoft::WRL::ComPtr<ID3D12DeviceRemovedExtendedData> pDred;
+
+		if (FAILED(s_pDevice->QueryInterface(IID_PPV_ARGS(pDred.GetAddressOf()))))
+		{
+			OutputDebugStringA("WonderGUI DX12Backend: No DRED data. Enable it with ID3D12DeviceRemovedExtendedDataSettings before the device is created.\n");
+			return;
+		}
+
+		static const char * s_opNames[] = {
+			"SetMarker", "BeginEvent", "EndEvent", "DrawInstanced", "DrawIndexedInstanced", "ExecuteIndirect",
+			"Dispatch", "CopyBufferRegion", "CopyTextureRegion", "CopyResource", "CopyTiles", "ResolveSubresource",
+			"ClearRenderTargetView", "ClearUnorderedAccessView", "ClearDepthStencilView", "ResourceBarrier",
+			"ExecuteBundle", "Present", "ResolveQueryData", "BeginSubmission", "EndSubmission" };
+
+		const int nOpNames = int(sizeof(s_opNames) / sizeof(s_opNames[0]));
+
+		char line[512];
+
+		// Breadcrumbs. A command list the GPU finished is not where it died, so
+		// only the unfinished ones are listed, with the operations around the
+		// first one that never completed.
+
+		// Both getters fail with DXGI_ERROR_NOT_CURRENTLY_AVAILABLE when DRED was
+		// not enabled for this device. The interface itself is always there on
+		// Windows 10 1903 and later, so getting it says nothing about that.
+
+		D3D12_DRED_AUTO_BREADCRUMBS_OUTPUT breadcrumbs = {};
+
+		HRESULT hrBreadcrumbs = pDred->GetAutoBreadcrumbsOutput(&breadcrumbs);
+		if (FAILED(hrBreadcrumbs))
+		{
+			sprintf_s(line, "WonderGUI DX12Backend: No DRED breadcrumbs (0x%08lX). Auto-breadcrumbs were not enabled when the device was created, "
+							"which has to happen before the first D3D12CreateDevice() in the process.\n", (unsigned long)hrBreadcrumbs);
+			OutputDebugStringA(line);
+		}
+		else
+		{
+			OutputDebugStringA("WonderGUI DX12Backend: DRED breadcrumbs, command lists the GPU had not finished:\n");
+
+			int nUnfinished = 0;
+
+			for (const D3D12_AUTO_BREADCRUMB_NODE* pNode = breadcrumbs.pHeadAutoBreadcrumbNode; pNode; pNode = pNode->pNext)
+			{
+				UINT32 nOps = pNode->BreadcrumbCount;
+				UINT32 nDone = pNode->pLastBreadcrumbValue ? *pNode->pLastBreadcrumbValue : 0;
+
+				if (nDone >= nOps)
+					continue;
+
+				nUnfinished++;
+
+				sprintf_s(line, "  %ls, on %ls: %u of %u operations done.\n",
+						  pNode->pCommandListDebugNameW ? pNode->pCommandListDebugNameW : L"(unnamed command list)",
+						  pNode->pCommandQueueDebugNameW ? pNode->pCommandQueueDebugNameW : L"(unnamed queue)",
+						  nDone, nOps);
+				OutputDebugStringA(line);
+
+				if (!pNode->pCommandHistory)
+					continue;
+
+				UINT32 first = nDone > 8 ? nDone - 8 : 0;
+				UINT32 last = std::min(nOps, nDone + 8);
+
+				for (UINT32 i = first; i < last; i++)
+				{
+					int op = int(pNode->pCommandHistory[i]);
+
+					if (op >= 0 && op < nOpNames)
+						sprintf_s(line, "    %s %u: %s\n", i == nDone ? "->" : "  ", i, s_opNames[op]);
+					else
+						sprintf_s(line, "    %s %u: operation %d\n", i == nDone ? "->" : "  ", i, op);
+
+					OutputDebugStringA(line);
+				}
+			}
+
+			if (nUnfinished == 0)
+				OutputDebugStringA("  None. Either all had finished or breadcrumbs were not enabled.\n");
+		}
+
+		// Page fault. A fault in a recently freed allocation means something was
+		// released while the GPU still used it.
+
+		D3D12_DRED_PAGE_FAULT_OUTPUT pageFault = {};
+
+		HRESULT hrPageFault = pDred->GetPageFaultAllocationOutput(&pageFault);
+		if (FAILED(hrPageFault))
+		{
+			sprintf_s(line, "WonderGUI DX12Backend: No DRED page fault data (0x%08lX), page fault reporting was not enabled.\n", (unsigned long)hrPageFault);
+			OutputDebugStringA(line);
+		}
+		else
+		{
+			if (pageFault.PageFaultVA == 0)
+				OutputDebugStringA("WonderGUI DX12Backend: DRED reports no page fault.\n");
+			else
+			{
+				sprintf_s(line, "WonderGUI DX12Backend: DRED page fault at GPU address 0x%llX.\n", (unsigned long long) pageFault.PageFaultVA);
+				OutputDebugStringA(line);
+
+				struct { const D3D12_DRED_ALLOCATION_NODE* pHead; const char* pWhat; } lists[] = {
+					{ pageFault.pHeadExistingAllocationNode, "  Live allocations at that address:\n" },
+					{ pageFault.pHeadRecentFreedAllocationNode, "  Recently freed allocations at that address:\n" } };
+
+				for (auto& list : lists)
+				{
+					OutputDebugStringA(list.pWhat);
+
+					if (!list.pHead)
+						OutputDebugStringA("    None.\n");
+
+					for (const D3D12_DRED_ALLOCATION_NODE* pNode = list.pHead; pNode; pNode = pNode->pNext)
+					{
+						sprintf_s(line, "    %ls (allocation type %d)\n",
+								  pNode->ObjectNameW ? pNode->ObjectNameW : L"(unnamed)", int(pNode->AllocationType));
+						OutputDebugStringA(line);
+					}
+				}
+			}
+		}
+#else
+		OutputDebugStringA("WonderGUI DX12Backend: Built with a Windows SDK too old for DRED (10.0.18362 or later needed).\n");
+#endif
+	}
+
 	//____ Constructor ___________________________________________________________
 
 	DX12Backend::DX12Backend(ID3D12Device* pDX12Device, ID3D12CommandQueue* pDX12CommandQueue)
@@ -222,10 +483,17 @@ namespace wg
 
 		s_backends.push_back(this);
 
+		if (s_backends.size() == 1)
+			_initReleaser();
+
 		m_srvDescriptorSize = pDX12Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 		m_samplerDescriptorSize = pDX12Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
 
-		pDX12Device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&m_commandFence));
+		// Anything failing here leaves us unable to record, and beginRender() then
+		// does nothing. That is what happens on a device that is already lost,
+		// which CHECK_HR reports once rather than for each call.
+
+		bool bOK = CHECK_HR(pDX12Device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&m_commandFence)), "CreateFence");
 		m_fenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
 
 		// Create a command allocator for each frame resource.
@@ -237,7 +505,7 @@ namespace wg
 
 		for (int i = 0; i < c_nbFrameResources; ++i)
 		{
-			pDX12Device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&m_frameResources[i].commandAllocator));
+			bOK = CHECK_HR(pDX12Device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&m_frameResources[i].commandAllocator)), "CreateCommandAllocator") && bOK;
 			m_frameResources[i].fenceValue = 0;
 
 			// Shader visible descriptors for blit sources, refilled every frame.
@@ -252,9 +520,13 @@ namespace wg
 
 		// Create one command list for all frames (will be reset for each frame)
 
-		pDX12Device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_frameResources[0].commandAllocator.Get(), nullptr, IID_PPV_ARGS(&m_commandList));
+		if (bOK)
+			bOK = CHECK_HR(pDX12Device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_frameResources[0].commandAllocator.Get(), nullptr, IID_PPV_ARGS(&m_commandList)), "CreateCommandList");
 
-		m_commandList->Close();
+		if (m_commandList)
+			m_commandList->Close();
+
+		m_bDeviceObjectsOK = bOK && m_fenceEvent != nullptr;
 
 		// Named after us, so the debug layer's live object report shows where they come from.
 
@@ -268,7 +540,7 @@ namespace wg
 		}
 		m_bCommandListOpen = false;
 
-		if (!_createPipelineResources())
+		if (!_createPipelineResources() && !s_bDeviceLost)
 			GfxBase::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to create pipeline resources, nothing will render.",
 				this, &TYPEINFO, __func__, __FILE__, __LINE__);
 
@@ -282,7 +554,18 @@ namespace wg
 
 		waitForCompletion();
 
+		// Anything recorded but never submitted. The GPU is done with the rest.
+
+		m_heldResources.clear();
+
 		s_backends.erase(std::remove(s_backends.begin(), s_backends.end(), this), s_backends.end());
+
+		// The last backend waits for the release callbacks still out, which the
+		// GPU work just waited for has released or is releasing, before anyone
+		// can let go of the device or unload our module.
+
+		if (s_backends.empty())
+			_exitReleaser();
 
 		// Release the device if create(device, queue) set it for us.
 
@@ -304,6 +587,23 @@ namespace wg
 
 	void DX12Backend::beginRender()
 	{
+		// With no device to render with, nothing gets recorded this frame. The
+		// command list stays closed, which every recording path checks, and the
+		// write pointers are cleared so nothing writes into last frame's buffers.
+		//
+		// Checking the device every frame is what catches a removal that no call
+		// of ours has run into yet.
+
+		if (!m_bDeviceObjectsOK || checkDeviceLost())
+		{
+			m_bCommandListOpen = false;
+
+			m_pVertexBeg = m_pVertexEnd = m_pVertexPtr = nullptr;
+			m_pColorBeg = m_pColorEnd = m_pColorPtr = nullptr;
+			m_pExtrasBeg = m_pExtrasEnd = m_pExtrasPtr = nullptr;
+			return;
+		}
+
 		m_currentFrameIndex = (m_currentFrameIndex + 1) % c_nbFrameResources;
 		int frame = m_currentFrameIndex;
 
@@ -312,11 +612,6 @@ namespace wg
 		m_frameResources[frame].commandAllocator->Reset();
 		m_commandList->Reset(m_frameResources[frame].commandAllocator.Get(), nullptr);
 		m_bCommandListOpen = true;
-
-		// Buffers this frame resource outgrew last time it was used. The fence
-		// says the GPU is done with them.
-
-		m_frameResources[frame].retiredBuffers.clear();
 
 		// Vertices and colors are written for the whole frame, not per session,
 		// since the GPU doesn't run any of it until the command list has been
@@ -336,13 +631,6 @@ namespace wg
 		m_pExtrasPtr = m_pExtrasBeg;
 
 		m_frameResources[frame].nSRVDescriptors = 0;
-
-		// The fence says the GPU is done with the command list that mentioned
-		// these, so we can let go of them. Edgemaps are in here too: a command list
-		// keeps no references of its own, and GfxDeviceGen2 lets go of an edgemap
-		// at the end of the session that drew it.
-
-		m_frameResources[frame].objectRefs.clear();
 
 		// Sessions un-park what they parked, so this should already be empty.
 
@@ -370,6 +658,12 @@ namespace wg
 		if (!CHECK_HR(hr, "ID3D12GraphicsCommandList::Close"))
 			return;
 
+		// Lost during the frame. Executing would do nothing, and signaling the
+		// fence would only fail.
+
+		if (s_bDeviceLost)
+			return;
+
 		// Execute the command list.
 		ID3D12CommandList* ppCommandLists[] = { m_commandList.Get() };
 
@@ -381,6 +675,8 @@ namespace wg
 
 		m_pDX12CommandQueue->Signal(m_commandFence.Get(), m_fenceValue);
 		m_frameResources[m_currentFrameIndex].fenceValue = m_fenceValue;
+
+		_releaseWhenDone(m_fenceValue);
 
 	}
 
@@ -399,7 +695,7 @@ namespace wg
 
 		HRESULT hr = m_commandList->Close();
 
-		if (!CHECK_HR(hr, "ID3D12GraphicsCommandList::Close"))
+		if (!CHECK_HR(hr, "ID3D12GraphicsCommandList::Close") || s_bDeviceLost)
 		{
 			m_bCommandListOpen = false;
 			return;
@@ -412,6 +708,8 @@ namespace wg
 
 		m_pDX12CommandQueue->Signal(m_commandFence.Get(), m_fenceValue);
 		m_frameResources[m_currentFrameIndex].fenceValue = m_fenceValue;
+
+		_releaseWhenDone(m_fenceValue);
 
 		// The allocator keeps the memory of what we just submitted, it is only
 		// reset in beginRender() once the fence says the GPU is done with it.
@@ -539,7 +837,7 @@ namespace wg
 		if (!m_bCommandListOpen)
 			return;
 
-		auto& frame = m_frameResources[m_currentFrameIndex];
+		// The textures were held by _bindBlitSource(), so the surfaces can go.
 
 		for (auto& pSurface : m_blitSourceCanvases)
 		{
@@ -550,11 +848,6 @@ namespace wg
 
 			if (pCanvas != m_pActiveCanvas)
 				_transitionCanvas(pCanvas, D3D12_RESOURCE_STATE_COMMON);
-
-			// A command list holds no references of its own, so we keep one until
-			// the GPU is done with it.
-
-			frame.objectRefs.push_back(pSurface);
 		}
 
 		m_blitSourceCanvases.clear();
@@ -606,8 +899,8 @@ namespace wg
 
 		m_bSessionOnDefaultCanvas = (pCanvasSurface == nullptr);
 
-		if (!m_bCommandListOpen)
-			return;					// Nothing can be recorded, beginRender() was never called or the list broke.
+		if (!m_bCommandListOpen || s_bDeviceLost)
+			return;					// Nothing can be recorded: device lost, beginRender() never called or the list broke.
 
 		if (m_bSessionOnDefaultCanvas && m_defaultCanvasBuffer)
 		{
@@ -703,6 +996,8 @@ namespace wg
 
 	void DX12Backend::endSession()
 	{
+		_checkSessionUsage();
+
 		// A canvas surface goes back to COMMON, where D3D12 promotes it on its own
 		// when it is read as a blit source or copied from.
 
@@ -749,13 +1044,19 @@ namespace wg
 			return;
 		}
 
+		if (!m_bCommandListOpen || s_bDeviceLost)
+			return;					// Nothing to render into it with, see processCommands().
+
 		_setCanvas(static_cast<DX12Surface*>(pSurface));
 	}
 
 	void DX12Backend::setCanvas(CanvasRef ref)
 	{
 		if (ref == CanvasRef::Default)
-			_setCanvas(nullptr);
+		{
+			if (m_bCommandListOpen && !s_bDeviceLost)
+				_setCanvas(nullptr);
+		}
 		else
 			GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Only CanvasRef::Default is supported.",
 				this, &TYPEINFO, __func__, __FILE__, __LINE__);
@@ -779,6 +1080,152 @@ namespace wg
 		m_commandList->ResourceBarrier(1, &barrier);
 
 		pCanvas->setResourceState(state);
+	}
+
+	//____ _holdUntilDone() ___________________________________________________
+	//
+	// A command list keeps no references to the resources it mentions, and D3D12
+	// must not have a resource released while work using it is pending. Surfaces
+	// and edgemaps are only retained by GfxDeviceGen2 until the session ends, which
+	// is long before the GPU has run the commands, so we hold on to their D3D12
+	// resources until the GPU is done, see _releaseWhenDone().
+
+	void DX12Backend::_holdUntilDone(ID3D12Resource* pResource)
+	{
+		if (!pResource)
+			return;
+
+		// The same canvas or blit source is often set many times per frame.
+
+		if (!m_heldResources.empty() && m_heldResources.back().Get() == pResource)
+			return;
+
+		m_heldResources.emplace_back(pResource);
+	}
+
+	//____ _releaseWhenDone() __________________________________________________
+	//
+	// Called right after a submission has been followed by Signal(fenceValue).
+	// Everything held so far goes to a thread pool wait that fires once, when
+	// the fence reaches that value, and releases it on a pool thread. No thread
+	// of our own, and nothing runs while the GPU is busy.
+	//
+	// Should any of that fail, we wait for the GPU here instead. Slower, but
+	// never wrong.
+
+	void DX12Backend::_releaseWhenDone(UINT64 fenceValue)
+	{
+		if (m_heldResources.empty())
+			return;
+
+		// A lost device runs nothing more, and if the GPU is already there we
+		// don't need to wait at all.
+
+		if (s_bDeviceLost || !m_commandFence || m_commandFence->GetCompletedValue() >= fenceValue)
+		{
+			m_heldResources.clear();
+			return;
+		}
+
+		if (s_bReleaserReady)
+		{
+			auto pEntry = new PendingRelease;
+			pEntry->hEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+
+			PTP_WAIT pWait = nullptr;
+
+			if (pEntry->hEvent && SUCCEEDED(m_commandFence->SetEventOnCompletion(fenceValue, pEntry->hEvent)))
+				pWait = CreateThreadpoolWait(_onSubmissionDone, pEntry, &s_releaserEnv);
+
+			if (pWait)
+			{
+				pEntry->resources.swap(m_heldResources);
+
+				// Counted before the callback can possibly run. If the GPU got there
+				// in the meantime the event is already set, and the wait fires at once.
+
+				s_nPendingReleases++;
+				SetThreadpoolWait(pWait, pEntry->hEvent, nullptr);
+				return;
+			}
+
+			if (pEntry->hEvent)
+				CloseHandle(pEntry->hEvent);
+			delete pEntry;
+		}
+
+		_waitForFence(fenceValue);
+		m_heldResources.clear();
+	}
+
+	//____ _onSubmissionDone() _________________________________________________
+	//
+	// Runs once on a thread pool thread when the GPU has finished a submission.
+	// Touches nothing but its own entry, so it needs no lock. Releasing D3D12
+	// resources is thread safe.
+
+	void CALLBACK DX12Backend::_onSubmissionDone(PTP_CALLBACK_INSTANCE pInstance, PVOID pContext, PTP_WAIT pWait, TP_WAIT_RESULT waitResult)
+	{
+		(void) pInstance;
+		(void) waitResult;					// Always signaled, we set no timeout.
+
+		auto pEntry = static_cast<PendingRelease*>(pContext);
+
+		pEntry->resources.clear();
+		CloseHandle(pEntry->hEvent);
+		delete pEntry;
+
+		CloseThreadpoolWait(pWait);			// Freed once this callback has returned.
+
+		s_nPendingReleases--;				// Last, _exitReleaser() goes by it.
+	}
+
+	//____ _initReleaser() _____________________________________________________
+	//
+	// The callbacks run on the process's default thread pool. The environment
+	// names our module as the callbacks' library, which keeps it loaded while one
+	// of them runs, so a host unloading us can't pull the code from under it.
+
+	bool DX12Backend::_initReleaser()
+	{
+		if (s_bReleaserReady)
+			return true;
+
+		InitializeThreadpoolEnvironment(&s_releaserEnv);
+
+		HMODULE hModule = nullptr;
+		if (GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
+							   reinterpret_cast<LPCWSTR>(&_onSubmissionDone), &hModule))
+		{
+			SetThreadpoolCallbackLibrary(&s_releaserEnv, hModule);
+		}
+
+		s_nPendingReleases = 0;
+		s_bReleaserReady = true;
+		return true;
+	}
+
+	//____ _exitReleaser() _____________________________________________________
+	//
+	// Called by the last backend's destructor, after it has waited for the GPU.
+	// Every submission is then done, so every callback has fired or is about
+	// to, and we only wait for them to finish. On a lost device the fence events
+	// may never come, so the wait is bounded: better to leave a few resources
+	// unreleased than to hang the host. The callback library keeps our module
+	// loaded for any callback still running.
+
+	void DX12Backend::_exitReleaser()
+	{
+		if (!s_bReleaserReady)
+			return;
+
+		ULONGLONG deadline = GetTickCount64() + 2000;
+
+		while (s_nPendingReleases > 0 && GetTickCount64() < deadline)
+			Sleep(1);
+
+		DestroyThreadpoolEnvironment(&s_releaserEnv);
+		s_bReleaserReady = false;
 	}
 
 	//____ _setCanvas() _______________________________________________________
@@ -827,6 +1274,12 @@ namespace wg
 			pCanvas->notifyRendered();
 
 			_transitionCanvas(pCanvas, D3D12_RESOURCE_STATE_RENDER_TARGET);
+
+			// Whoever owns the canvas may let go of it as soon as the session has
+			// ended - RootPanel does when the window is resized - while the GPU is
+			// still rendering into it.
+
+			_holdUntilDone(pCanvas->texture());
 
 			m_activeCanvasRTV = pCanvas->renderTargetView();
 			m_activeCanvasSize = pCanvas->pixelSize();
@@ -899,6 +1352,15 @@ namespace wg
 
 	void DX12Backend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, int version )
 	{
+		// Nothing can be recorded: the device is lost, beginRender() was never
+		// called, or the list broke. Every draw would fail on its own and many
+		// would say so, so the commands are dropped here, quietly. The streams
+		// are set again before the next call, so there is no need to step through
+		// them.
+
+		if (!m_bCommandListOpen || s_bDeviceLost)
+			return;
+
 		const RectSPX*	pRects = m_pRectsPtr;
 		const HiColor*	pColors = m_pColorsPtr;
 		Object* const*	pObjects = m_pObjectsPtr;
@@ -1122,7 +1584,7 @@ namespace wg
 			if (m_pVertexEnd - m_pVertexPtr < 6)
 			{
 				static bool bReported = false;
-				if (!bReported)
+				if (!bReported && _blameSessionInfo())
 				{
 					GfxBase::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, "Vertex buffer full, fills dropped. SessionInfo underestimated what the session needs.",
 						this, &TYPEINFO, __func__, __FILE__, __LINE__);
@@ -1238,7 +1700,7 @@ namespace wg
 			if (m_pVertexEnd - m_pVertexPtr < 6)
 			{
 				static bool bReported = false;
-				if (!bReported)
+				if (!bReported && _blameSessionInfo())
 				{
 					GfxBase::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, "Vertex buffer full, lines dropped. SessionInfo underestimated what the session needs.",
 						this, &TYPEINFO, __func__, __FILE__, __LINE__);
@@ -1390,7 +1852,7 @@ namespace wg
 		if (m_pColorPtr == m_pColorEnd)
 		{
 			static bool bReported = false;
-			if (!bReported)
+			if (!bReported && _blameSessionInfo())
 			{
 				GfxBase::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, "Color buffer full, draws dropped. SessionInfo underestimated what the session needs.",
 					this, &TYPEINFO, __func__, __FILE__, __LINE__);
@@ -1426,7 +1888,7 @@ namespace wg
 		if (!m_pColorPtr || m_pColorEnd - m_pColorPtr < nColors)
 		{
 			static bool bReported = false;
-			if (!bReported)
+			if (!bReported && _blameSessionInfo())
 			{
 				GfxBase::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, "Color buffer full, tintmap ignored. SessionInfo underestimated what the session needs.",
 					this, &TYPEINFO, __func__, __FILE__, __LINE__);
@@ -1505,7 +1967,7 @@ namespace wg
 		if (!m_pExtrasPtr || m_pExtrasPtr == m_pExtrasEnd)
 		{
 			static bool bReported = false;
-			if (!bReported && m_pExtrasPtr)
+			if (!bReported && _blameSessionInfo() && m_pExtrasPtr)
 			{
 				GfxBase::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, "Extras buffer full, draws dropped. SessionInfo underestimated what the session needs.",
 					this, &TYPEINFO, __func__, __FILE__, __LINE__);
@@ -1529,7 +1991,7 @@ namespace wg
 		if (!m_pExtrasPtr || m_pExtrasEnd - m_pExtrasPtr < nEntries)
 		{
 			static bool bReported = false;
-			if (!bReported && m_pExtrasPtr)
+			if (!bReported && _blameSessionInfo() && m_pExtrasPtr)
 			{
 				GfxBase::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, "Extras buffer full, blurs dropped. SessionInfo underestimated what the session needs.",
 					this, &TYPEINFO, __func__, __FILE__, __LINE__);
@@ -1585,7 +2047,7 @@ namespace wg
 		if (m_pExtrasEnd - m_pExtrasPtr < 2)
 		{
 			static bool bReported = false;
-			if (!bReported)
+			if (!bReported && _blameSessionInfo())
 			{
 				GfxBase::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, "Extras buffer full, blits dropped. SessionInfo underestimated what the session needs.",
 					this, &TYPEINFO, __func__, __FILE__, __LINE__);
@@ -1661,6 +2123,13 @@ namespace wg
 			_transitionCanvas(m_pBlitSource, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 			m_blitSourceCanvases.push_back(m_pBlitSource);
 		}
+
+		// Ordinary surfaces need it as much as canvases do: a temporary surface is
+		// released by GfxDeviceGen2 when the session ends. A palette based one is
+		// read through its palette buffer as well.
+
+		_holdUntilDone(m_pBlitSource->texture());
+		_holdUntilDone(m_pBlitSource->paletteBuffer());
 
 		auto& frame = m_frameResources[m_currentFrameIndex];
 
@@ -1807,7 +2276,7 @@ namespace wg
 			if (m_pVertexEnd - m_pVertexPtr < 6)
 			{
 				static bool bReported = false;
-				if (!bReported)
+				if (!bReported && _blameSessionInfo())
 				{
 					GfxBase::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, "Vertex buffer full, blits dropped. SessionInfo underestimated what the session needs.",
 						this, &TYPEINFO, __func__, __FILE__, __LINE__);
@@ -1991,7 +2460,7 @@ namespace wg
 		if (m_pVertexEnd - m_pVertexPtr < nRects * 6)
 		{
 			static bool bReported = false;
-			if (!bReported)
+			if (!bReported && _blameSessionInfo())
 			{
 				GfxBase::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, "Vertex buffer full, edgemaps dropped. SessionInfo underestimated what the session needs.",
 					this, &TYPEINFO, __func__, __FILE__, __LINE__);
@@ -2132,7 +2601,7 @@ namespace wg
 		// waveform drawn from a temporary would otherwise be freed while the GPU
 		// still had work referring to it.
 
-		m_frameResources[m_currentFrameIndex].objectRefs.push_back(pEdgemap);
+		_holdUntilDone(pEdgemap->m_buffer.Get());
 
 		m_commandList->SetGraphicsRootShaderResourceView(5, pEdgemap->_gpuAddress());
 		m_bBlitSourceBound = false;			// A palette based blit source keeps its palette here too.
@@ -2344,6 +2813,12 @@ namespace wg
 
 	void DX12Backend::_waitForFence(UINT64 fenceValue)
 	{
+		// A lost device runs nothing more. Its fences are meant to read as
+		// complete, but we don't bet an INFINITE wait on every driver doing so.
+
+		if (s_bDeviceLost)
+			return;
+
 		if (m_commandFence && m_commandFence->GetCompletedValue() < fenceValue)
 		{
 			m_commandFence->SetEventOnCompletion(fenceValue, m_fenceEvent);
@@ -2419,22 +2894,91 @@ namespace wg
 
 		auto& frame = m_frameResources[m_currentFrameIndex];
 
-		_reserveBuffer(frame.vertexBuffer, frame.pVertexBufferData, frame.vertexCapacity,
-					   m_pVertexBeg, m_pVertexPtr, m_pVertexEnd, nVertices, L"WonderGUI Vertex Buffer");
+		bool bOK = _reserveBuffer(frame.vertexBuffer, frame.pVertexBufferData, frame.vertexCapacity,
+								  m_pVertexBeg, m_pVertexPtr, m_pVertexEnd, nVertices, L"WonderGUI Vertex Buffer");
 
-		_reserveBuffer(frame.colorBuffer, frame.pColorBufferData, frame.colorCapacity,
-					   m_pColorBeg, m_pColorPtr, m_pColorEnd, nColors, L"WonderGUI Color Buffer");
+		bOK = _reserveBuffer(frame.colorBuffer, frame.pColorBufferData, frame.colorCapacity,
+							 m_pColorBeg, m_pColorPtr, m_pColorEnd, nColors, L"WonderGUI Color Buffer") && bOK;
 
-		_reserveBuffer(frame.extrasBuffer, frame.pExtrasBufferData, frame.extrasCapacity,
-					   m_pExtrasBeg, m_pExtrasPtr, m_pExtrasEnd, nExtras, L"WonderGUI Extras Buffer");
+		bOK = _reserveBuffer(frame.extrasBuffer, frame.pExtrasBufferData, frame.extrasCapacity,
+							 m_pExtrasBeg, m_pExtrasPtr, m_pExtrasEnd, nExtras, L"WonderGUI Extras Buffer") && bOK;
+
+		// If a buffer couldn't grow, the draws that don't fit are dropped, and the
+		// messages for that would blame SessionInfo. It is the buffer's fault, so
+		// say so, once. A lost device has been reported already.
+
+		m_bSessionBuffersShort = !bOK;
+
+		if (!bOK && !s_bDeviceLost)
+		{
+			static bool bReported = false;
+			if (!bReported)
+			{
+				char buffer[256];
+				sprintf_s(buffer, "Couldn't make room for %d vertices, %d colors and %d extras, draws that don't fit are dropped.",
+						  nVertices, nColors, nExtras);
+				GfxBase::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, buffer, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				bReported = true;
+			}
+		}
+
+		// What _checkSessionUsage() measures the session against.
+
+		m_bSessionInfoGiven = (pInfo != nullptr);
+		m_sessionVertices = nVertices;
+		m_sessionColors = nColors;
+		m_sessionExtras = nExtras;
+		m_pSessionVertexBeg = m_pVertexPtr;
+		m_pSessionColorBeg = m_pColorPtr;
+		m_pSessionExtrasBeg = m_pExtrasPtr;
+	}
+
+	//____ _checkSessionUsage() _______________________________________________
+	//
+	// Called by endSession(). _reserveBuffers() only makes sure there is room for
+	// what SessionInfo says, and the buffers have usually grown well beyond that,
+	// so a session that uses more mostly gets away with it - until the one time
+	// it doesn't, and draws go missing. This catches it every time, while it is
+	// still harmless.
+	//
+	// Only the vertices, colors and extras this backend writes are measured,
+	// against what _reserveBuffers() worked out from SessionInfo. Without a
+	// SessionInfo the defaults are a guess, not a promise, so there is nothing to
+	// check.
+
+	void DX12Backend::_checkSessionUsage()
+	{
+		if (!m_bSessionInfoGiven || s_bDeviceLost)
+			return;
+
+		struct { const char* pWhat; int used; int reserved; } usage[] = {
+			{ "vertices",	m_pSessionVertexBeg ? int(m_pVertexPtr - m_pSessionVertexBeg) : 0,		m_sessionVertices },
+			{ "colors",		m_pSessionColorBeg ? int(m_pColorPtr - m_pSessionColorBeg) : 0,		m_sessionColors },
+			{ "extras",		m_pSessionExtrasBeg ? int(m_pExtrasPtr - m_pSessionExtrasBeg) : 0,		m_sessionExtras } };
+
+		static bool bReported[3] = { false, false, false };
+
+		for (int i = 0; i < 3; i++)
+		{
+			if (usage[i].used > usage[i].reserved && !bReported[i])
+			{
+				char buffer[256];
+				sprintf_s(buffer, "SessionInfo underestimated what the session needs: room was made for %d %s, the session wrote %d.",
+						  usage[i].reserved, usage[i].pWhat, usage[i].used);
+				GfxBase::throwError(ErrorLevel::Warning, ErrorCode::Internal, buffer, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				bReported[i] = true;
+			}
+		}
+
+		m_bSessionInfoGiven = false;
 	}
 
 	//____ _reserveBuffer() ____________________________________________________
 	//
 	// If what is left of the buffer is too little, it is replaced by a bigger one
 	// and writing starts over at its beginning. The old buffer may already be used
-	// by draws recorded this frame, so it is kept in retiredBuffers until the
-	// fence says the GPU is done with it. Offsets into it recorded so far stay
+	// by draws recorded this frame, so it is held until the GPU is done with the
+	// next command list we submit, see _holdUntilDone(). Offsets into it recorded so far stay
 	// valid, since they go with the root arguments and vertex buffer view that
 	// were set when they were recorded, and _bindSessionState() points the coming
 	// ones at the new buffer.
@@ -2467,7 +3011,7 @@ namespace wg
 			return false;						// Keep what we have. Draws that don't fit are dropped and reported.
 
 		if (buffer)
-			m_frameResources[m_currentFrameIndex].retiredBuffers.push_back(buffer);
+			_holdUntilDone(buffer.Get());
 
 		buffer = newBuffer;
 		pData = pNewData;

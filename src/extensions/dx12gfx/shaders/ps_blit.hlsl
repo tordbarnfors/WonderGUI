@@ -27,10 +27,10 @@ float4 tintmapColor(float2 pixelPos)
     int2 ofs = int2(floor(pixelPos)) - tintmapOrigin;
 
     if (tintmapCount.x > 0)
-        tint *= colors[tintmapBegin.x + clamp(ofs.x, 0, tintmapCount.x - 1)];
+        tint *= colors[tintmapBegin.x + clamp(ofs.x, 0, max(tintmapCount.x - 1, 0))];
 
     if (tintmapCount.y > 0)
-        tint *= colors[tintmapBegin.y + clamp(ofs.y, 0, tintmapCount.y - 1)];
+        tint *= colors[tintmapBegin.y + clamp(ofs.y, 0, max(tintmapCount.y - 1, 0))];
 
     return tint;
 }

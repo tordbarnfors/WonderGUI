@@ -22,6 +22,7 @@
 
 
 #include <wg_dx12edgemap.h>
+#include <wg_dx12backend.h>
 #include <wg_gradyent.h>
 #include <wg_gfxbase.h>
 
@@ -119,6 +120,13 @@ namespace wg
 			return;
 		}
 
+		// Nothing can be created on a lost device, and trying costs an exception
+		// inside the D3D12 runtime. The edgemap is left without a buffer, as when
+		// creating one fails, and DX12Backend draws nothing for it.
+
+		if( DX12Backend::isDeviceLost() )
+			return;
+
 		D3D12_HEAP_PROPERTIES heapProps = {};
 		heapProps.Type = D3D12_HEAP_TYPE_UPLOAD;
 
@@ -135,8 +143,11 @@ namespace wg
 		if( FAILED(s_pDevice->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &bufDesc,
 													  D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(m_buffer.GetAddressOf()))) )
 		{
-			GfxBase::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to create buffer for edgemap.",
-				this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			// A lost device is reported once by DX12Backend, not by every edgemap.
+
+			if( !DX12Backend::checkDeviceLost() )
+				GfxBase::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to create buffer for edgemap.",
+					this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return;
 		}
 
@@ -152,8 +163,9 @@ namespace wg
 		if( FAILED(m_buffer->Map(0, &readRange, (void**) &m_pBuffer)) )
 		{
 			m_buffer = nullptr;
-			GfxBase::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to map buffer for edgemap.",
-				this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			if( !DX12Backend::checkDeviceLost() )
+				GfxBase::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to map buffer for edgemap.",
+					this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return;
 		}
 

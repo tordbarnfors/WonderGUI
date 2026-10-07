@@ -107,6 +107,7 @@ namespace wg
 		// The first entry holds the palette's capacity, the colors follow.
 		bool						isIndexed() const { return m_bIndexed; }
 		D3D12_GPU_VIRTUAL_ADDRESS	paletteGPUAddress() const { return m_paletteBuffer ? m_paletteBuffer->GetGPUVirtualAddress() : 0; }
+		ID3D12Resource*				paletteBuffer() const { return m_paletteBuffer.Get(); }		// So DX12Backend can hold it while the GPU reads it.
 
 		// Resource state of the texture at the end of the command list DX12Backend
 		// is recording. Only canvas surfaces ever leave D3D12_RESOURCE_STATE_COMMON.

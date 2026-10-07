@@ -103,6 +103,11 @@ namespace wg
 
 	void DX12Surface::_waitForCopyFence()
 	{
+		// Nothing more runs on a lost device. See DX12Backend::_waitForFence().
+
+		if( DX12Backend::isDeviceLost() )
+			return;
+
 		if( s_copyFence && s_copyFence->GetCompletedValue() < s_copyFenceValue && s_copyFenceEvent )
 		{
 			s_copyFence->SetEventOnCompletion(s_copyFenceValue, s_copyFenceEvent);
@@ -123,9 +128,13 @@ namespace wg
 
 		if( !s_pDevice )
 		{
-			GfxBase::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite,
-				"No D3D12 device set. Call DX12Backend::setDevice() before creating any surface.",
-				nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
+			// Failing below on a lost device lets go of it, see exitDevice(). That
+			// was reported then, and is no news to every surface created after.
+
+			if( !DX12Backend::isDeviceLost() )
+				GfxBase::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite,
+					"No D3D12 device set. Call DX12Backend::setDevice() before creating any surface.",
+					nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return false;
 		}
 
@@ -139,8 +148,12 @@ namespace wg
 			FAILED(s_pDevice->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(s_copyFence.GetAddressOf()))) )
 		{
 			exitDevice();
-			GfxBase::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to create resources for surface uploads.",
-				nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
+			// A lost device is reported once by DX12Backend, not by every surface.
+			// The same goes for the failures further down.
+
+			if( !DX12Backend::checkDeviceLost() )
+				GfxBase::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to create resources for surface uploads.",
+					nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return false;
 		}
 
@@ -463,7 +476,10 @@ namespace wg
 		// From here on the surface can always hand out pixels, whether or not D3D12
 		// gives us what we ask for below.
 
-		if( !bFormatSupported || !_initCopyResources() )
+		// On a lost device every call below would fail, and each failure costs an
+		// exception inside the D3D12 runtime. Go straight to plain pixels.
+
+		if( !bFormatSupported || DX12Backend::isDeviceLost() || !_initCopyResources() )
 		{
 			if( !_allocFallbackPixels() )
 				return;
@@ -495,8 +511,9 @@ namespace wg
 		if( FAILED(s_pDevice->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &texDesc,
 													  D3D12_RESOURCE_STATE_COMMON, nullptr, IID_PPV_ARGS(m_texture.GetAddressOf()))) )
 		{
-			GfxBase::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to create texture for surface.",
-				this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			if( !DX12Backend::checkDeviceLost() )
+				GfxBase::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to create texture for surface.",
+					this, &TYPEINFO, __func__, __FILE__, __LINE__);
 
 			if( _allocFallbackPixels() )
 				_copyInPixels( pPixels, pitch, srcFormat, pSrcPixelDesc, pSrcPalette, srcPaletteSize );
@@ -526,8 +543,9 @@ namespace wg
 		{
 			m_texture = nullptr;
 			m_uploadBuffer = nullptr;
-			GfxBase::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to create pixel buffer for surface.",
-				this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			if( !DX12Backend::checkDeviceLost() )
+				GfxBase::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to create pixel buffer for surface.",
+					this, &TYPEINFO, __func__, __FILE__, __LINE__);
 
 			if( _allocFallbackPixels() )
 				_copyInPixels( pPixels, pitch, srcFormat, pSrcPixelDesc, pSrcPalette, srcPaletteSize );
@@ -542,8 +560,9 @@ namespace wg
 			m_texture = nullptr;
 			m_uploadBuffer = nullptr;
 			m_pUploadData = nullptr;
-			GfxBase::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to map pixel buffer for surface.",
-				this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			if( !DX12Backend::checkDeviceLost() )
+				GfxBase::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to map pixel buffer for surface.",
+					this, &TYPEINFO, __func__, __FILE__, __LINE__);
 
 			if( _allocFallbackPixels() )
 				_copyInPixels( pPixels, pitch, srcFormat, pSrcPixelDesc, pSrcPalette, srcPaletteSize );
@@ -564,8 +583,9 @@ namespace wg
 		if( FAILED(s_pDevice->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(m_srvHeap.GetAddressOf()))) )
 		{
 			m_texture = nullptr;
-			GfxBase::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to create descriptor heap for surface.",
-				this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			if( !DX12Backend::checkDeviceLost() )
+				GfxBase::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to create descriptor heap for surface.",
+					this, &TYPEINFO, __func__, __FILE__, __LINE__);
 
 			_copyInPixels( pPixels, pitch, srcFormat, pSrcPixelDesc, pSrcPalette, srcPaletteSize );
 			return;
@@ -597,8 +617,9 @@ namespace wg
 			if( FAILED(s_pDevice->CreateDescriptorHeap(&rtvHeapDesc, IID_PPV_ARGS(m_rtvHeap.GetAddressOf()))) )
 			{
 				m_texture = nullptr;
-				GfxBase::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to create render target heap for canvas surface.",
-					this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				if( !DX12Backend::checkDeviceLost() )
+					GfxBase::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to create render target heap for canvas surface.",
+						this, &TYPEINFO, __func__, __FILE__, __LINE__);
 
 				_copyInPixels( pPixels, pitch, srcFormat, pSrcPixelDesc, pSrcPalette, srcPaletteSize );
 				return;
@@ -653,8 +674,9 @@ namespace wg
 		{
 			m_paletteBuffer = nullptr;
 			m_pPaletteData = nullptr;
-			GfxBase::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to create palette buffer for surface.",
-				this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			if( !DX12Backend::checkDeviceLost() )
+				GfxBase::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to create palette buffer for surface.",
+					this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return false;
 		}
 
@@ -780,6 +802,11 @@ namespace wg
 		if( m_dirtyRect.isEmpty() || !m_texture || !s_copyList )
 			return;
 
+		// The texture is gone with the device. Our pixels stay as they are.
+
+		if( DX12Backend::isDeviceLost() )
+			return;
+
 		// The copy queue can only touch a texture that rests in COMMON state.
 		// DX12Backend puts a surface back there when it stops rendering into it or
 		// reading from it, so this should never happen.
@@ -878,8 +905,9 @@ namespace wg
 		if( FAILED(s_pDevice->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &bufDesc,
 													  D3D12_RESOURCE_STATE_COPY_DEST, nullptr, IID_PPV_ARGS(m_readbackBuffer.GetAddressOf()))) )
 		{
-			GfxBase::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to create readback buffer for canvas surface.",
-				this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			if( !DX12Backend::checkDeviceLost() )
+				GfxBase::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to create readback buffer for canvas surface.",
+					this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return false;
 		}
 
@@ -897,6 +925,12 @@ namespace wg
 	void DX12Surface::_syncBufferAndWait()
 	{
 		if( !m_bBufferNeedsSync )
+			return;
+
+		// What was rendered went with the device. A readback would only fill our
+		// pixels with garbage, so the last ones we had will have to do.
+
+		if( DX12Backend::isDeviceLost() )
 			return;
 
 		if( !m_texture || !m_pUploadData || !s_copyList || !_initReadbackBuffer() )
