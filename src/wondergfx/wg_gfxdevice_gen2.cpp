@@ -1745,7 +1745,7 @@ void GfxDeviceGen2::stretchFlipBlit(const RectSPX& _dest, const RectSPX& src, Gf
 
 //____ precisionBlit() ____________________________________________________
 
-void GfxDeviceGen2::precisionBlit(const RectSPX& dest, const RectF& src)
+void GfxDeviceGen2::precisionBlit(const RectSPX& _dest, const RectF& src)
 {
 	if (!m_pActiveCanvas)
 	{
@@ -1762,24 +1762,51 @@ void GfxDeviceGen2::precisionBlit(const RectSPX& dest, const RectF& src)
 		return;
 	}
 
+	// Scale is calculated from the destination aligned to whole pixels, see stretchBlit().
+
+	RectSPX dest = align(_dest);
+
+	if (dest.w == 0 || dest.h == 0 || src.w <= 0 || src.h <= 0)
+		return;
+
 	Transform	mtx;
+	CoordF		srcPos = { src.x / 64.f, src.y / 64.f };		// In pixels.
+
+	mtx.xy = 0;
+	mtx.yx = 0;
 
 	if (m_renderState.blitSource->sampleMethod() == SampleMethod::Bilinear)
 	{
-		mtx.xx = src.w / dest.w;
-		mtx.xy = 0;
-		mtx.yx = 0;
-		mtx.yy = src.h / dest.h;
+		// A bilinear sample also reads the next pixel, so samples need to stay at least
+		// a little bit before the last pixel of the source surface. Like stretchBlit(),
+		// first and last pixel are sampled at the start of the source rectangle and just
+		// inside its last pixel, which keeps them inside a rectangle of whole pixels.
+		// A rectangle that starts partway into a pixel can still reach the edge, so the
+		// samples are also clamped to it.
+
+		SizeI surfSize = m_renderState.blitSource->pixelSize();
+
+		auto range = [](float begin, float end, int surfPixels, int destPixels, float& pos, float& scale)
+		{
+			float max = std::max(surfPixels - 1 - 1/64.f, 0.f);
+
+			begin = std::clamp(begin, 0.f, max);
+			end = std::clamp(end, begin, max);
+
+			pos = begin;
+			scale = destPixels == 1 ? 0.f : (end - begin) / (destPixels - 1);
+		};
+
+		range(srcPos.x, (src.x + src.w - 65.f) / 64.f, surfSize.w, dest.w / 64, srcPos.x, mtx.xx);
+		range(srcPos.y, (src.y + src.h - 65.f) / 64.f, surfSize.h, dest.h / 64, srcPos.y, mtx.yy);
 	}
 	else
 	{
 		mtx.xx = src.w / dest.w;
-		mtx.xy = 0;
-		mtx.yx = 0;
 		mtx.yy = src.h / dest.h;
 	}
 
-	_transformBlitComplex(dest, { int(src.x*16), int(src.y*16) }, mtx, Command::Blit);
+	_transformBlitComplex(dest, { int(srcPos.x*1024), int(srcPos.y*1024) }, mtx, Command::Blit);
 }
 
 //____ transformBlit() ________________________________________________
