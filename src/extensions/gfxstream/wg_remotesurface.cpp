@@ -78,6 +78,7 @@ namespace wg
 		m_pEncoder = pEncoder;
 		m_inStreamId = pEncoder->allocObjectId();
 		m_bDynamic = bp.dynamic;
+		_initPalette(bp);
 
 		_sendCreateSurface(pEncoder);
 		m_pEncoder->flush();
@@ -86,11 +87,10 @@ namespace wg
 	RemoteSurface::RemoteSurface( StreamEncoder * pEncoder, const Blueprint& bp, Blob* pBlob, int pitch )
 		: Surface(bp, pEncoder->defaultPixelFormat(), pEncoder->defaultSampleMethod())
 	{
-		//TODO: Support for palette!
-
 		m_pEncoder = pEncoder;
 		m_inStreamId = pEncoder->allocObjectId();
 		m_bDynamic = bp.dynamic;
+		_initPalette(bp);
 
 		_sendCreateSurface(pEncoder);
 		_sendPixels(m_pEncoder, bp.size, (uint8_t*) pBlob->data(), pitch);
@@ -100,13 +100,10 @@ namespace wg
 	RemoteSurface::RemoteSurface(StreamEncoder* pEncoder, const Blueprint& bp, const uint8_t* pPixels, PixelFormat srcFormat, int pitch, const Color8* pPalette, int paletteSize)
 		: Surface(bp, pEncoder->defaultPixelFormat(), pEncoder->defaultSampleMethod())
 	{
-		//TODO: Support for palette!
-
 		m_pEncoder = pEncoder;
 		m_inStreamId = pEncoder->allocObjectId();
 		m_bDynamic = bp.dynamic;
-
-		_sendCreateSurface(pEncoder);
+		_initPalette(bp);
 
 		// Source pixels are in the byte order and color space of the blueprint, which are ours.
 
@@ -120,6 +117,7 @@ namespace wg
 
 		if (srcFormat == m_pixelFormat)
 		{
+			_sendCreateSurface(pEncoder);
 			_sendPixels(m_pEncoder, m_size, pPixels, pitch);
 		}
 		else
@@ -134,6 +132,9 @@ namespace wg
 				(uint8_t*)pBlob->data(), m_pixelFormat, m_colorSpace, m_bBigEndian, 0,
 				m_pPalette, m_paletteSize, m_paletteCapacity);
 
+			// Conversion might have built our palette, so we create the surface first now.
+
+			_sendCreateSurface(pEncoder);
 			_sendPixels(m_pEncoder, m_size, (uint8_t*)pBlob->data(), dstPitch);
 		}
 
@@ -143,15 +144,13 @@ namespace wg
 	RemoteSurface::RemoteSurface( StreamEncoder * pEncoder, const Blueprint& bp, const uint8_t * pPixels, const PixelDescription& pixelDescription, int pitch, const Color8 * pPalette, int paletteSize )
 		: Surface(bp, pEncoder->defaultPixelFormat(), pEncoder->defaultSampleMethod())
 	{
-		//TODO: Support for palette!
-
 		m_pEncoder = pEncoder;
 		m_inStreamId = pEncoder->allocObjectId();
 		m_bDynamic = bp.dynamic;
-
-		_sendCreateSurface(pEncoder);
+		_initPalette(bp);
 
 		// We always convert the data for streaming.
+		// Conversion might build our palette, so the surface is created after it.
 		// (but we could optimize and skip conversion if format already is correct)
 
 		int srcPitchAdd = pitch == 0 ? 0 : pitch - PixelTools::bytesPerLine(pixelDescription, m_size.w);
@@ -162,7 +161,8 @@ namespace wg
 		PixelTools::copyPixels(m_size.w, m_size.h, pPixels, pixelDescription, m_colorSpace, srcPitchAdd, pPalette, paletteSize,
 							 (uint8_t*) pBlob->data(), m_pixelFormat, m_colorSpace, m_bBigEndian, 0,
 							 m_pPalette, m_paletteSize, m_paletteCapacity);
-		
+
+		_sendCreateSurface(pEncoder);
 		_sendPixels(m_pEncoder, m_size, (uint8_t*) pBlob->data(), dstPitch);
 		m_pEncoder->flush();
 	}
@@ -260,18 +260,24 @@ namespace wg
 	}
 
 
+	//____ _initPalette() _____________________________________________________
+
+	void RemoteSurface::_initPalette(const Blueprint& bp)
+	{
+		if (m_paletteCapacity == 0)
+			return;
+
+		m_palette.resize(m_paletteCapacity, Color8(0, 0, 0, 0));
+		if (bp.palette)
+			memcpy(m_palette.data(), bp.palette, m_paletteSize * sizeof(Color8));
+		m_pPalette = m_palette.data();
+	}
+
 	//____ _sendCreateSurface() _______________________________________________
 
 	void RemoteSurface::_sendCreateSurface(StreamEncoder* pEncoder)
 	{
-		int paletteSize = std::min(m_paletteSize, GfxStream::c_maxPaletteEntriesInCreateSurface);
-
-		if( paletteSize < m_paletteSize )
-			GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Palette too large for the stream, only the first entries are streamed.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
-
-		uint16_t blockSize = 40 + paletteSize*4;
-
-		*pEncoder << GfxStream::Header{ GfxStream::ChunkId::CreateSurface, 0, blockSize };
+		*pEncoder << GfxStream::Header{ GfxStream::ChunkId::CreateSurface, 0, 40 };
 		*pEncoder << m_inStreamId;
 		*pEncoder << m_bCanvas;
 		*pEncoder << m_bDynamic;
@@ -285,10 +291,13 @@ namespace wg
 		*pEncoder << m_size;
 		*pEncoder << m_bTiling;
 		*pEncoder << m_paletteCapacity;
-		*pEncoder << paletteSize;
+		*pEncoder << m_paletteSize;
 
-		if (m_pPalette && paletteSize > 0)
-			* pEncoder << GfxStream::WriteBytes{ paletteSize*4, m_pPalette };
+		// The palette follows in chunks of its own, since a large one doesn't fit in one.
+		// The surface is created on the other end once all of it has arrived.
+
+		if (m_pPalette && m_paletteSize > 0)
+			StreamBackend::_compressSplitAndEncode(pEncoder, GfxStream::ChunkId::SurfacePalette, m_inStreamId, nullptr, m_pPalette, m_pPalette + m_paletteSize);
 	}
 
 	//____ _sendPixels() _________________________________________________________

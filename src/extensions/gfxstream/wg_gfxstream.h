@@ -37,8 +37,7 @@ namespace wg
 	class GfxStream
 	{
 	public:
-		static constexpr int	c_maxBlockSize = 1024+256;		// Includes the block headers!	Must be at least 4096+14+block_header_size due to palette possibly included in CreateSurface-chunks.
-		static constexpr int	c_maxPaletteEntriesInCreateSurface = 256;	// More doesn't fit in a block. Larger palettes (Index_16) are not streamed in full yet.
+		static constexpr int	c_maxBlockSize = 1024+256;		// Includes the block headers! Palettes are sent in SurfacePalette chunks, split like pixels.
 
 		static constexpr int	c_maxClipRects = 256;		// Largest number of patches allowed for a drawing primitive.
 
@@ -89,12 +88,13 @@ namespace wg
 
 			SurfaceUpdate2 = 27,
 			Fence = 28,
-			SetEdgemapTint = 29
+			SetEdgemapTint = 29,
+			SurfacePalette = 30			// Palette of surface just created, split over chunks like SurfacePixels.
 		};
 
 		const static ChunkId      ChunkId_min      = ChunkId::OutOfData;
-		const static ChunkId      ChunkId_max      = ChunkId::SetEdgemapTint;
-		const static int          ChunkId_size     = (int)ChunkId::SetEdgemapTint + 1;
+		const static ChunkId      ChunkId_max      = ChunkId::SurfacePalette;
+		const static int          ChunkId_size     = (int)ChunkId::SurfacePalette + 1;
 
 		struct SPX
 		{

@@ -25,6 +25,7 @@
 #include <wg_gfxutil.h>
 #include <wg_pixeltools.h>
 #include <assert.h>
+#include <algorithm>
 
 namespace wg
 {
@@ -102,6 +103,7 @@ namespace wg
 
 		m_surfaceDataBuffers.clear();
 		m_edgemapDataBuffers.clear();
+		m_pendingSurfaces.clear();
 
 		m_updateObject = 0;
 		m_updateCanvasRef = CanvasRef::None;
@@ -583,13 +585,6 @@ namespace wg
 			bp.bigEndian = (bigEndian != 0);
 			bp.buffered = false;
 			bp.palette = nullptr;
-			
-			if (bp.paletteSize > 0)
-			{
-				auto pPalette = (Color8*) GfxBase::memStackAlloc(bp.paletteSize*4);
-				decoder >> GfxStream::ReadBytes{ bp.paletteSize*4, pPalette };
-				bp.palette = pPalette;
-			}
 
 			if (objectId >= m_vObjects.size() )
 				m_vObjects.resize(objectId + 16, nullptr);
@@ -597,11 +592,63 @@ namespace wg
 			{
 				GfxBase::throwError(ErrorLevel::Warning, ErrorCode::InvalidParam, "CreateSurface with objectId that already is in use. The old object will be replaced.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			}
-			
-			m_vObjects[objectId] = m_pSurfaceFactory->createSurface(bp);
 
-			if (bp.palette)
-				GfxBase::memStackFree(bp.paletteSize*4);
+			// A palette follows in SurfacePalette chunks. The surface is created once all of it
+			// has arrived, since a surface gets its palette when created.
+
+			if (bp.paletteSize > 0)
+			{
+				m_vObjects[objectId] = nullptr;
+
+				auto it = std::find_if(m_pendingSurfaces.begin(), m_pendingSurfaces.end(), [objectId](const PendingSurface& p) { return p.objectId == objectId; });
+				if (it != m_pendingSurfaces.end())
+					m_pendingSurfaces.erase(it);
+
+				m_pendingSurfaces.push_back({ objectId, bp, {} });
+			}
+			else
+				m_vObjects[objectId] = m_pSurfaceFactory->createSurface(bp);
+
+			break;
+		}
+
+		case GfxStream::ChunkId::SurfacePalette:
+		{
+			GfxStream::DataInfo dataInfo;
+			decoder >> dataInfo;
+
+			uint16_t objectId = uint16_t(dataInfo.objectId);
+
+			auto it = std::find_if(m_pendingSurfaces.begin(), m_pendingSurfaces.end(), [objectId](const PendingSurface& p) { return p.objectId == objectId; });
+			if (it == m_pendingSurfaces.end())
+			{
+				GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "SurfacePalette chunk for a surface that isn't waiting for its palette.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				m_pDecoder->skip(header.size - dataInfo.encodedSize);
+				break;
+			}
+
+			_loadIntoDataBuffer(dataInfo, it->palette, header.size - dataInfo.encodedSize);
+
+			if (it->palette.size > 0)
+			{
+				// All of the palette has arrived, create the surface.
+
+				Surface::Blueprint bp = it->blueprint;
+
+				if (it->palette.size == bp.paletteSize * int(sizeof(Color8)))
+				{
+					bp.palette = (const Color8*) it->palette.pBuffer;
+
+					if (objectId >= m_vObjects.size())
+						m_vObjects.resize(objectId + 16, nullptr);
+
+					m_vObjects[objectId] = m_pSurfaceFactory->createSurface(bp);
+				}
+				else
+					GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "SurfacePalette size doesn't match the palette size given in CreateSurface. Surface not created.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+
+				m_pendingSurfaces.erase(it);
+			}
 
 			break;
 		}
@@ -830,6 +877,15 @@ namespace wg
 			uint16_t	objectId;
 
 			decoder >> objectId;
+
+			// Might still be waiting for its palette.
+
+			auto itPending = std::find_if(m_pendingSurfaces.begin(), m_pendingSurfaces.end(), [objectId](const PendingSurface& p) { return p.objectId == objectId; });
+			if (itPending != m_pendingSurfaces.end())
+			{
+				m_pendingSurfaces.erase(itPending);
+				break;
+			}
 
 			if( objectId >= m_vObjects.size() || m_vObjects[objectId] == nullptr || !m_vObjects[objectId]->isInstanceOf(Surface::TYPEINFO) )
 			{

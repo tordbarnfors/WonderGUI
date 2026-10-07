@@ -196,6 +196,17 @@ namespace wg
 		};
 
 		std::vector<SurfaceDataBuffer>	m_surfaceDataBuffers;
+
+		// Surfaces with a palette are created once their SurfacePalette chunks have arrived.
+
+		struct PendingSurface
+		{
+			uint16_t			objectId;
+			Surface::Blueprint	blueprint;
+			DataBuffer			palette;
+		};
+
+		std::vector<PendingSurface>		m_pendingSurfaces;
 		std::vector<EdgemapDataBuffer>	m_edgemapDataBuffers;
 
 

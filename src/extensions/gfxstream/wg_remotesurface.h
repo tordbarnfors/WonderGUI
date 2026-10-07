@@ -27,6 +27,8 @@
 #include <wg_surface.h>
 #include <wg_streamencoder.h>
 
+#include <vector>
+
 namespace wg
 {
 
@@ -91,6 +93,7 @@ namespace wg
 
 		~RemoteSurface();
 
+		void		_initPalette(const Blueprint& blueprint);
 		void		_sendCreateSurface(StreamEncoder* pEncoder);
 		void		_sendPixels(StreamEncoder* pEncoder, RectI rect, const uint8_t * pSource, int pitch);
 		void		_sendDeleteSurface();
@@ -98,6 +101,7 @@ namespace wg
 		StreamEncoder_p	m_pEncoder;
 		uint16_t		m_inStreamId;		// Id of this surface in the stream.
 		bool			m_bDynamic;
+		std::vector<Color8>	m_palette;		// Our copy of the palette, which m_pPalette points into.
 	};
 } // namespace wg
 #endif //WG_REMOTESURFACE_DOT_H

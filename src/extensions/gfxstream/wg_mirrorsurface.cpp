@@ -169,14 +169,9 @@ namespace wg
 	{
 		StreamEncoder& encoder = * m_pEncoder;
 
-		int paletteSize = std::min(m_pSurface->paletteSize(), GfxStream::c_maxPaletteEntriesInCreateSurface);
+		int paletteSize = m_pSurface->paletteSize();
 
-		if( paletteSize < m_pSurface->paletteSize() )
-			GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Palette too large for the stream, only the first entries are streamed.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
-
-		uint16_t blockSize = 40 + paletteSize * sizeof(Color8);
-
-		encoder << GfxStream::Header{ GfxStream::ChunkId::CreateSurface, 0, blockSize };
+		encoder << GfxStream::Header{ GfxStream::ChunkId::CreateSurface, 0, 40 };
 		encoder << m_surfaceId;
 		encoder << false;						// CanBeCanvas-flag. We never want the remote end to use a MirrorSurface as canvas.
 		encoder << m_pSurface->isDynamic();
@@ -192,8 +187,12 @@ namespace wg
 		encoder << m_pSurface->paletteCapacity();
 		encoder << paletteSize;
 
+		// The palette follows in chunks of its own, since a large one doesn't fit in one.
+		// The surface is created on the other end once all of it has arrived.
+
 		if (paletteSize > 0 )
-			encoder << GfxStream::WriteBytes{ paletteSize * int(sizeof(Color8)), m_pSurface->palette() };
+			StreamBackend::_compressSplitAndEncode(m_pEncoder, GfxStream::ChunkId::SurfacePalette, m_surfaceId, m_pCompressor,
+												   m_pSurface->palette(), m_pSurface->palette() + paletteSize);
 	}
 
 	//____ _sendPixels() _________________________________________________________

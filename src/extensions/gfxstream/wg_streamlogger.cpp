@@ -329,8 +329,6 @@ namespace wg
 				decoder >> bp.paletteCapacity;
 				decoder >> bp.paletteSize;
 
-				decoder.skip(bp.paletteSize*4);
-
 
 				m_charStream << "    surfaceId   = " << surfaceId << std::endl;
 				m_charStream << "    canvas      = " << bp.canvas << std::endl;
@@ -390,6 +388,7 @@ namespace wg
 			}
 
 			case GfxStream::ChunkId::SurfacePixels:
+			case GfxStream::ChunkId::SurfacePalette:
 			{
 				int toSkip = _readPrintDataInfo(header.size);
 				decoder.skip(toSkip);
