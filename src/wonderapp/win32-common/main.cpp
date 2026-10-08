@@ -799,15 +799,9 @@ bool init_debugger(Win32API* pAPI)
 {
 	pAPI->initDefaultWidgetKit();
 
-	auto pIconSurface = pAPI->loadSurface("resources/debugger_gfx.png");
-	auto pTransparencyGrid = pAPI->loadSurface("resources/checkboardtile.png", nullptr, { .tiling = true });
-
-	if (!pIconSurface || !pTransparencyGrid)
-		return false;
-
 	g_pDebugBackend = DebugBackend::create();
 
-	g_pDebugFrontend = WGCREATE(DebugFrontend, _.backend = g_pDebugBackend, _.icons = pIconSurface, _.transparencyGrid = pTransparencyGrid);
+	g_pDebugFrontend = WGCREATE(DebugFrontend, _.backend = g_pDebugBackend);
 
 	Base::msgRouter()->addRoute(MsgType::KeyPress, [pAPI](Msg* _pMsg) {
 

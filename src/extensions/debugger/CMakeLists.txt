@@ -5,6 +5,7 @@ set(SOURCES
     core/wg_debugbackend.cpp
     core/wg_debugtheme.h
     core/wg_debugtheme.cpp
+    core/wg_debuggerresources.cpp
     core/wg_debugwindow.h
     core/wg_debugwindow.cpp
     core/wg_idebugcontext.h

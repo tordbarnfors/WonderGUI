@@ -42,10 +42,10 @@ namespace wg
 	DebugFrontend::DebugFrontend(const Blueprint& bp) : Capsule(bp)
 	{
 		m_pBackend = bp.backend;
-		m_pIcons	= bp.icons;
-		m_pTransparencyGrid = bp.transparencyGrid;
 
-		m_theme = DebugTheme::create(m_pIcons, m_pTransparencyGrid);
+		DebugTheme::acquireWidgetKit(bp.font, bp.fontBold, bp.fontItalic, bp.fontMono);
+
+		m_theme = DebugTheme::create(bp.icons, bp.transparencyGrid);
 		m_pBackend->setTheme(m_theme);
 
 		m_pBackend->setObjectSelectedCallback([this](Object* pSelected,Object* pSelectedFrom) {
@@ -61,6 +61,7 @@ namespace wg
 
 	DebugFrontend::~DebugFrontend()
 	{
+		DebugTheme::releaseWidgetKit();
 	}
 
 	//____ typeInfo() _________________________________________________________

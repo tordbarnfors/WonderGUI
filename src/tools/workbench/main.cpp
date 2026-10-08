@@ -706,18 +706,7 @@ int main(int argc, char** argv)
 		auto pDebugger = DebugBackend::create();
 
 
-		pSDLSurf = IMG_Load("resources/debugger_gfx.png");
-		convertSDLFormat(&pixelDesc, pSDLSurf->format);
-		Surface_p pIconSurface = pSurfaceFactory->createSurface({ .format = PixelFormat::BGRA_8, .size = SizeI(pSDLSurf->w, pSDLSurf->h) }, (unsigned char*)pSDLSurf->pixels, pixelDesc, pSDLSurf->pitch);
-		SDL_FreeSurface(pSDLSurf);
-
-		pSDLSurf = IMG_Load("resources/checkboardtile.png");
-		convertSDLFormat(&pixelDesc, pSDLSurf->format);
-		Surface_p pTransparencyGrid = pSurfaceFactory->createSurface({ .format = PixelFormat::BGRA_8, .size = SizeI(pSDLSurf->w, pSDLSurf->h), .tiling = true }, (unsigned char*)pSDLSurf->pixels, pixelDesc, pSDLSurf->pitch);
-		SDL_FreeSurface(pSDLSurf);
-
-
-		auto pDebugOverlay = DebugOverlay::create( { .backend = pDebugger, .icons = pIconSurface, .transparencyGrid = pTransparencyGrid } );
+		auto pDebugOverlay = DebugOverlay::create( { .backend = pDebugger } );
 
 
 //		pDebugOverlay->setActivated(true);
