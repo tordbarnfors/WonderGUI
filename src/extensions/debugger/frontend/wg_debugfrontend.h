@@ -62,6 +62,10 @@ namespace wg
 			bool			disabled = false;
 			bool			dropTarget = false;
 			Finalizer_p		finalizer = nullptr;
+			Font_p			font;										// Optional. Fonts initialize the oldskool widget kit,
+			Font_p			fontBold;									// unless something else already has. See
+			Font_p			fontItalic;									// DebugTheme::acquireWidgetKit().
+			Font_p			fontMono;
 			int				id = 0;
 			MarkPolicy		markPolicy = MarkPolicy::Undefined;
 			bool			pickable = false;
@@ -75,8 +79,8 @@ namespace wg
 			bool			takesFocusFromChild = true;
 			String			tooltip;
 			bool			usePickHandles = false;
-			Surface_p		icons;										// Mandatory!!!
-			Surface_p		transparencyGrid;							// Mandatory!!! Chessboard pattern or similar
+			Surface_p		icons;										// Optional, embedded default if not set.
+			Surface_p		transparencyGrid;							// Optional, embedded default if not set. Chessboard pattern or similar
 		};
 
 		//.____ Creation __________________________________________
@@ -139,9 +143,6 @@ namespace wg
 
 
 		// Resources
-
-		Surface_p		m_pIcons;
-		Surface_p		m_pTransparencyGrid;
 
 		DebugTheme		m_theme;					// Icons and blueprints, see DebugTheme::create().
 	};
