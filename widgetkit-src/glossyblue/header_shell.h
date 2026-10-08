@@ -364,24 +364,28 @@ namespace wg::glossyblue
 		));
 
 		Skins::SelectBoxEntry = BoxSkin::create(WGBP(BoxSkin,
-			// 5pts left, to line an entry's text up with the closed box's own.
+			// 6pts left, to line an entry's text up with the closed box's own.
 			// The two are measured from the same origin -- the popup attaches to
 			// the widget's geo, so its left edge and the widget's coincide -- but
 			// they were reached by different routes: the closed box insets its
 			// text by Skins::SelectBox's spacing (1) plus its padding (5) = 6pts,
-			// while an entry only had Skins::Canvas's padding (1). Hence 1 + 5 = 6
-			// here, and the text of the selected entry no longer jumps left by
-			// 5pts as the list opens.
+			// while an entry only had Skins::Canvas's padding (1).
+			//
+			// Plus one more point, because the two texts are only ever seen
+			// together while the list is open, and then the box is Pressed and
+			// its contentShift moves its text 1pt right: 1 + 5 + 1 = 7 = 1 + 6.
+			// Aligning with the resting box instead (5 here) left the list's
+			// text 1pt left of the box's in the one moment it can be compared.
 			//
 			// Padding moves the TEXT only: BoxSkin fills and outlines the rect it
 			// is given, and SelectBox gives it the list canvas's full content
 			// width, so the hover/selection highlight still reaches both edges.
-			// 5 on the right too, for symmetry -- the closed box's 18 is arrow
+			// Same on the right, for symmetry -- the closed box's 18 is arrow
 			// clearance, which the list has no use for. Top and bottom stay 0 so
 			// row height is unchanged; the engine folds this padding into the
 			// list's default width (entryDefault.w + listPadding.w), so nothing
 			// gets truncated.
-			_.padding = { 0, 5, 0, 5 },
+			_.padding = { 0, 6, 0, 6 },
 			_.states = { {State::Default, Color::Transparent, Color::Transparent},
 						 {State::Hovered, HiColor(Colors::Accent).withAlpha(700), HiColor(Colors::Accent).withAlpha(1400)},
 						 {State::Selekted, HiColor(Colors::Accent).withAlpha(1400),HiColor(Colors::Accent).withAlpha(2400) }
@@ -1089,7 +1093,8 @@ namespace wg::glossyblue
 			Object_p			baggage;
 			Coord				buttonOfs;
 			Placement			buttonPlacement = Placement::West;
-			Size				buttonSize = Size{ 14, 14 };
+			Size				buttonSize = Size{ 12, 12 };			// Must match PlusMinusToggle's size_pts. The skin is drawn
+																	// into this rect and has no frame, so any extra is a stretch.
 			Skin_p				buttonSkin = _pPlusMinusToggleSkin;
 			bool				disabled = false;
 			Direction			direction = Direction::Down;

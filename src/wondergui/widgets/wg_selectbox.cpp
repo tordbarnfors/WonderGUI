@@ -111,7 +111,10 @@ namespace wg
 		SizeSPX newPadding = pSkin ? pSkin->_contentBorderSize(m_scale) : SizeSPX();
 
 		if (oldPadding != newPadding)
+		{
 			m_listCanvasDefaultSize += newPadding - oldPadding;
+			m_listCanvasMatchingHeight += newPadding.h - oldPadding.h;
+		}
 
 		m_pListCanvas->m_skin.set(pSkin);
 	}
@@ -494,8 +497,8 @@ namespace wg
 		SizeSPX defaultSize;
 		spx 	matchingHeight = 0;
 
-		SizeSPX listCanvasDefaultSize;
-		spx 	listCanvasMatchingHeight = 0;
+		SizeSPX listCanvasDefaultSize = listPadding;
+		spx 	listCanvasMatchingHeight = listPadding.h;
 
 
 		for ( auto& entry : entries)
@@ -551,12 +554,12 @@ namespace wg
 
 	spx SelectBox::_sideCanvasMatchingHeight(const SideCanvas * pCanvas, spx width, int scale) const
 	{
-		if (width == m_pListCanvas->m_size.w)
+		if (width == m_pListCanvas->m_size.w && scale == m_pListCanvas->m_scale)
 			return m_listCanvasMatchingHeight;
 		else
 		{
 			SizeSPX canvasPadding = m_pListCanvas->_contentBorderSize(scale);
-			SizeSPX entryPadding = m_pEntrySkin ? m_pEntrySkin->_contentBorderSize(m_scale) : SizeSPX();
+			SizeSPX entryPadding = m_pEntrySkin ? m_pEntrySkin->_contentBorderSize(scale) : SizeSPX();
 
 			spx contentWidth = width - canvasPadding.w - entryPadding.w;
 
