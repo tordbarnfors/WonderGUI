@@ -126,6 +126,11 @@ float4 evalTintBlock(StructuredBuffer<float4> buf, uint ofs, float2 pos)
 
 
 // Color of the device tint at a canvas pixel. White when there is no tint.
+//
+// The offset is kept at zero or above even where no tint is read. A compiler may
+// move the first load out of the branch, colors is a root SRV with no bounds
+// checking, and uint(-1) would read just before the buffer: a GPU page fault
+// when that page isn't mapped, and a TDR on Intel Gen9.
 
 float4 tintColor(float2 pixelPos)
 {
@@ -133,7 +138,7 @@ float4 tintColor(float2 pixelPos)
 
     [branch]
     if (tintOfs >= 0)
-        tint = evalTintBlock(colors, uint(tintOfs), pixelPos);
+        tint = evalTintBlock(colors, uint(max(tintOfs, 0)), pixelPos);
 
     return tint;
 }

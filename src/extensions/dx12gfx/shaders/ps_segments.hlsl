@@ -26,7 +26,8 @@ struct PS_INPUT
 
 // A segment is colored either by a flat color or by a tint placed in the
 // edgemap's own rectangle. The edgemap buffer has a table with the offset of
-// each segment's tint block, -1 for a flat colored segment.
+// each segment's tint block, -1 for a flat colored segment. That one is kept
+// from being read as an offset for the same reason as in tintColor().
 
 float4 segmentColor(uint seg, uint2 segColorsOfs, float2 epos)
 {
@@ -38,7 +39,7 @@ float4 segmentColor(uint seg, uint2 segColorsOfs, float2 epos)
     if (blockOfs < 0)
         col = edgemap[segColorsOfs.x + seg];
     else
-        col = evalTintBlock(edgemap, uint(blockOfs), epos);
+        col = evalTintBlock(edgemap, uint(max(blockOfs, 0)), epos);
 
     return col;
 }
