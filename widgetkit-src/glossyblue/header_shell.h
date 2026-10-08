@@ -216,7 +216,7 @@ namespace wg::glossyblue
 	//     auto pSkinBlocks = SomeSurface::create( WGBP(Surface,
 	//         _.size  = atlasSize,        // whatever the PNG actually is
 	//         _.scale = 128,              // <-- REQUIRED, 2x density atlas
-	//         _.format = PixelFormat::BGRA_8 ), pPixels, ... );
+	//         _.format = PixelFormat::ARGB_8 ), pPixels, ... );
 	//
 	inline bool init(Font* pNormal, Font* pBold, Font* pItalic, Font* pMonospace, Surface* pSkinBlocks )
 	{
