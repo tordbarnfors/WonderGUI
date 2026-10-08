@@ -28,10 +28,60 @@ bool GfxStreamTest::init(std::ostream& output)
 	return true;
 }
 
+//____ _createTestStream() ____________________________________________________
+//
+// A stream of chunks in the current format, made here so it can't fall behind
+// the format the way a recorded one does. The tests below only pass chunks on,
+// so what they hold doesn't matter, only that they are well formed and come in
+// every size: each size from an empty chunk up to GfxStream::c_maxBlockSize
+// once, then a run of sizes in no particular order, so that chunks get split
+// at all sorts of places where a loop buffer wraps.
+
+Blob_p GfxStreamTest::_createTestStream()
+{
+	const int maxDataSize = GfxStream::c_maxBlockSize - GfxStream::HeaderSize;
+	const int nSizes = maxDataSize / 2 + 1;			// Data sizes are even.
+	const int nRandomChunks = 1000;
+
+	std::vector<int> dataSizes;
+
+	for( int i = 0 ; i < nSizes ; i++ )
+		dataSizes.push_back(i * 2);
+
+	uint32_t seed = 12345;
+	auto random = [&seed]() { seed = seed * 1664525 + 1013904223; return seed >> 8; };
+
+	for( int i = 0 ; i < nRandomChunks ; i++ )
+		dataSizes.push_back( int(random() % nSizes) * 2 );
+
+	int streamSize = 0;
+	for( int size : dataSizes )
+		streamSize += GfxStream::HeaderSize + size;
+
+	Blob_p pBlob = Blob::create(streamSize);
+
+	uint16_t data[GfxStream::c_maxBlockSize / 2];
+	uint8_t * pWrite = (uint8_t *) pBlob->data();
+	int chunkType = 1;
+
+	for( int size : dataSizes )
+	{
+		for( int i = 0 ; i < size / 2 ; i++ )
+			data[i] = uint16_t(random());
+
+		GfxStream::createChunk( pWrite, GfxStream::ChunkId(chunkType), size, data );
+		pWrite += GfxStream::HeaderSize + size;
+
+		chunkType = chunkType % int(GfxStream::ChunkId_max) + 1;		// Any but OutOfData.
+	}
+
+	return pBlob;
+}
+
 
 bool GfxStreamTest::streamLoopWrapperTest(std::ostream& output)
 {
-	Blob_p pBlob = loadBlob("resources/teststream.wax");
+	Blob_p pBlob = _createTestStream();
 
 	char * pOutputBuffer = new char[pBlob->size()+10000];			// Some bytes margin, just in case.
 	char * pOutputWrite = pOutputBuffer;
@@ -62,6 +112,12 @@ bool GfxStreamTest::streamLoopWrapperTest(std::ostream& output)
 	
 	while( pBlobRead < pBlobEnd )
 	{
+		// Neither writing nor reading getting anywhere would loop forever. That
+		// is what a chunk too big for the buffer, or a stream in a format we no
+		// longer read, comes down to.
+
+		const char * pBlobReadBefore = pBlobRead;
+		const char * pBufferReadBefore = pBufferRead;
 
 		int leftToRead = pBlobEnd - pBlobRead;
 
@@ -105,6 +161,8 @@ bool GfxStreamTest::streamLoopWrapperTest(std::ostream& output)
 */
 
 		pStreamPump->pumpAll();
+
+		TEST_ASSERT( pBlobRead != pBlobReadBefore || pBufferRead != pBufferReadBefore );
 	}
 
 	
@@ -127,7 +185,7 @@ bool GfxStreamTest::streamLoopWrapperTest(std::ostream& output)
 
 bool GfxStreamTest::streamReaderPumpWithOptimizationTest(std::ostream& output)
 {
-	Blob_p pBlob = loadBlob("resources/teststream.wax");
+	Blob_p pBlob = _createTestStream();
 
 //	Blob_p pBlob = loadBlob("softubehwstream-crash.dat");
 
@@ -167,7 +225,6 @@ bool GfxStreamTest::streamReaderPumpWithOptimizationTest(std::ostream& output)
 
 	}
 
-/*
 	int newSize = pOutputWrite - pOutputBuffer;
 
 	TEST_ASSERT(newSize == pBlob->size());
@@ -180,7 +237,6 @@ bool GfxStreamTest::streamReaderPumpWithOptimizationTest(std::ostream& output)
 		TEST_ASSERT(*pCopy++ == *pOrg++);
 	}
 
-*/
 
 	return true;
 }
