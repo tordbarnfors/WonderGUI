@@ -147,6 +147,10 @@ namespace wg
 
 		PackPanel_p			m_pWorkspace;
 		PackPanel_p			m_pListOfTreeViews;
+		MsgLogViewer_p		m_pMsgLogViewer;
+
+		DebugCapsule *		m_pLogFollowCapsule = nullptr;	// Capsule of the latest selection, whose log is shown.
+		int					m_nbCapsulesAdded = 0;			// For naming capsules that have no name.
 
 		PackLayout_p		m_pDummyPackLayout;
 
