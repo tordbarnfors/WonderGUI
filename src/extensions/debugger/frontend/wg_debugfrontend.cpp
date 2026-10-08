@@ -21,6 +21,8 @@
 =========================================================================*/
 #include <wg_debugfrontend.h>
 #include <wg_debugcapsule.h>
+#include <wg_debugcontextswitch.h>
+#include <wg_msglogviewer.h>
 #include <wg_msgrouter.h>
 
 #include <wondergui.h>
@@ -35,33 +37,6 @@ namespace wg
 	using namespace Util;
 
 	const TypeInfo DebugFrontend::TYPEINFO = { "DebugFrontend", &Capsule::TYPEINFO };
-
-	namespace
-	{
-		//____ ContextSwitch __________________________________________________
-		//
-		// Makes a GUI context current for as long as it lives, then restores the
-		// previous one. Does nothing if the context is gone or already current.
-
-		class ContextSwitch
-		{
-		public:
-			ContextSwitch( const GUIContext_p& pContext )
-			{
-				if( pContext && pContext != Base::context() )
-					m_pPrevious = Base::setContext(pContext);
-			}
-
-			~ContextSwitch()
-			{
-				if( m_pPrevious )
-					Base::setContext(m_pPrevious);
-			}
-
-		private:
-			GUIContext_p	m_pPrevious;
-		};
-	}
 
 
 	//____ constructor ____________________________________________________________
@@ -90,7 +65,10 @@ namespace wg
 	DebugFrontend::~DebugFrontend()
 	{
 		for( auto pCapsule : m_capsules )
+		{
+			m_pMsgLogViewer->closeSource(pCapsule);
 			pCapsule->_frontendDestroyed();
+		}
 		m_capsules.clear();
 
 		DebugTheme::releaseWidgetKit();
@@ -136,7 +114,23 @@ namespace wg
 		pCapsule->_setSelectMode(m_bSelectMode);
 		m_capsules.push_back(pCapsule);
 
-//		_refreshTreeSelector();
+		// Each capsule gets a message log of its own, logging from the router of
+		// its context the messages from widgets inside it, and those that don't
+		// come from a widget.
+
+		m_nbCapsulesAdded++;
+
+		std::string name = pCapsule->name();
+		if( name.empty() )
+			name = "Window " + std::to_string(m_nbCapsulesAdded);
+
+		DebugContextSwitch contextSwitch(_context());
+
+		m_pMsgLogViewer->addSource(pCapsule, name, pCapsule->_context(), [pCapsule](const Msg* pMsg) {
+
+			auto pWidget = dynamic_cast<Widget*>(pMsg->sourceRawPtr());
+			return !pWidget || pWidget == pCapsule || pWidget->isDescendantOf(pCapsule);
+		});
 	}
 
 	//____ _removeDebugCapsule() __________________________________________________
@@ -145,11 +139,14 @@ namespace wg
 	{
 		m_capsules.erase(std::remove(m_capsules.begin(), m_capsules.end(), pCapsule), m_capsules.end());
 
+		if( m_pLogFollowCapsule == pCapsule )
+			m_pLogFollowCapsule = nullptr;
+
 		// Let go of everything we hold inside the capsule, so that none of its
 		// widgets outlive the window they belong to. Inspected objects that aren't
 		// widgets can't be traced to a capsule and are kept.
 
-		ContextSwitch contextSwitch(_context());
+		DebugContextSwitch contextSwitch(_context());
 
 		auto isInside = [pCapsule](Object * pObject)
 		{
@@ -171,13 +168,15 @@ namespace wg
 
 		if( !m_pListOfTreeViews->slots.isEmpty() )
 			_refreshWidgetTree();
+
+		m_pMsgLogViewer->closeSource(pCapsule);
 	}
 
 	//____ _capsuleSelected() ____________________________________________________
 
 	void DebugFrontend::_capsuleSelected( Widget * pWidget, DebugCapsule * pCapsule, ModKeys modKeys )
 	{
-		ContextSwitch contextSwitch(_context());
+		DebugContextSwitch contextSwitch(_context());
 
 		_selectObject(pWidget, pCapsule, (modKeys & ModKeys::Shift) == 0);
 	}
@@ -208,6 +207,22 @@ namespace wg
 			}
 
 			m_pSelectedWidget = pWidget;
+
+			// Show the log of the window the selection is in, but only when that
+			// changes, so a log picked from the dropdown stays until then.
+
+			for( auto pCapsule : m_capsules )
+			{
+				if( pWidget && (pWidget == pCapsule || pWidget->isDescendantOf(pCapsule)) )
+				{
+					if( pCapsule != m_pLogFollowCapsule )
+					{
+						m_pLogFollowCapsule = pCapsule;
+						m_pMsgLogViewer->showSource(pCapsule);
+					}
+					break;
+				}
+			}
 		}
 
 		if (pSelected)
@@ -367,7 +382,8 @@ namespace wg
 		pTreeSplit->slots[1] = pWorkspaceScroller;
 
 		pLogSplit->slots[0] = pTreeSplit;
-		pLogSplit->slots[1] = m_pBackend->createMsgLogViewer();
+		m_pMsgLogViewer = m_pBackend->createMsgLogViewer();
+		pLogSplit->slots[1] = m_pMsgLogViewer;
 
 
 		pTopBar->slots.pushBack( _createToolbox(), WGBP(PackPanelSlot, _.weight = 0.f));

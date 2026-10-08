@@ -1099,7 +1099,25 @@ namespace wg
 		pContent->setLayout(nullptr);
 
 
-		pContent->slots << m_pBackend->createMsgLogViewer();
+		auto pLogViewer = m_pBackend->createMsgLogViewer();
+
+		// Everything shares our context, so log it all except what comes from
+		// our own windows.
+
+		pLogViewer->addSource(this, "Messages", Base::context(), [this](const Msg* pMsg) {
+
+			auto pWidget = dynamic_cast<Widget*>(pMsg->sourceRawPtr());
+			if( !pWidget )
+				return true;
+
+			auto pMain = mainSlot._widget();
+			if( pMain && (pWidget == pMain || pWidget->isDescendantOf(pMain)) )
+				return true;
+
+			return pWidget != this && !pWidget->isDescendantOf(this);
+		});
+
+		pContent->slots << pLogViewer;
 
 		_refreshRealGeo(windows._first() + windows.size() - 1);
 	}
