@@ -693,9 +693,7 @@ int main(int argc, char** argv)
 		auto pFont3 = FreeTypeFont::create(pFont3Blob);
 		auto pFont4 = FreeTypeFont::create(pFont4Blob);
 
-		auto pSkinBlocks = loadSurface("resources/oldskool_skinblocks.png");
-
-		if (!wg::oldskool::init(pFont1, pFont2, pFont3, pFont4, pSkinBlocks))
+		if (!wg::oldskool::init(pFont1, pFont2, pFont3, pFont4))
 		{
 			Base::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "Failed to init default widget kit", nullptr, nullptr, __func__, __FILE__, __LINE__);
 			return false;

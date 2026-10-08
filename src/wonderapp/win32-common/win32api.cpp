@@ -194,9 +194,7 @@ bool Win32API::initDefaultWidgetKit()
 		auto pFont3 = FreeTypeFont::create(pFont3Blob);
 		auto pFont4 = FreeTypeFont::create(pFont4Blob);
 
-		auto pSkinBlocks = loadSurface( "resources/oldskool_skinblocks.png");
-
-		if (!wkit::init(pFont1, pFont2, pFont3, pFont4, pSkinBlocks))
+		if (!wkit::init(pFont1, pFont2, pFont3, pFont4))
 		{
 			Base::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "Failed to init default widget kit", nullptr, nullptr, __func__, __FILE__, __LINE__);
 			return false;
