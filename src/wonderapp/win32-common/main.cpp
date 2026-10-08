@@ -811,9 +811,9 @@ bool init_debugger(Win32API* pAPI)
 		{
 			if (!g_pDebugWindow)
 			{
-				SizeI size = g_pDebugFrontend->spxSize() / 64;
+				Size size = g_pDebugFrontend->size();		// In points, its spx size depends on the scale of the window it was last in.
 
-				auto pWindow = wapp::Window::create(pAPI, { .debug = false, .size = Size(size), .title = "Debugger" });
+				auto pWindow = wapp::Window::create(pAPI, { .debug = false, .size = size, .title = "Debugger" });
 				g_pDebugWindow = pWindow;
 
 				pWindow->mainCapsule()->slot = g_pDebugFrontend;
