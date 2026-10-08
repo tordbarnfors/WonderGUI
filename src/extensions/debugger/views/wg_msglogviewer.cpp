@@ -444,6 +444,7 @@ namespace wg
 	void MsgLogViewer::_appendLine( const std::string& line, int64_t lineNb )
 	{
 		auto pDisplay = TextDisplay::create(WGBP(TextDisplay,
+			_.display.style = dbgkit::TextStyles::Mono,
 			_.display.text = line.c_str(),
 			_.skin = m_entrySkin[lineNb & 1]));
 
