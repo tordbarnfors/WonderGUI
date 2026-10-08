@@ -33,6 +33,7 @@
 
 #include <map>
 #include <vector>
+#include <atomic>
 
 namespace wg
 {
@@ -108,6 +109,35 @@ namespace wg
 
 		static void				waitForCompletionOfAll();
 
+		//.____ Device loss __________________________________________________
+
+		// A device can be removed under us: the GPU hung and was reset (TDR), the
+		// driver was updated or crashed, or we gave it something invalid. Every
+		// call on it then fails with DXGI_ERROR_DEVICE_REMOVED, and keeps failing,
+		// and nothing brings it back.
+		//
+		// The first failure that turns out to be device loss is reported once
+		// through the error handler, with the removal reason and, if DRED was
+		// enabled before the device was created, its breadcrumbs and page fault
+		// in the debugger's output window. From then on all backends, surfaces and
+		// edgemaps stop touching the device and drop their rendering without
+		// complaint, until setDevice() is given a new one. That takes releasing
+		// every backend, surface and edgemap made from the old device first.
+
+		static bool				isDeviceLost() { return s_bDeviceLost; }
+		static HRESULT			deviceRemovedReason() { return s_deviceRemovedReason; }
+
+		// Asks the device whether it is still there, and reports it if not. Cheap
+		// enough to call once a frame. Returns true if the device is lost.
+
+		static bool				checkDeviceLost();
+
+		// For when a D3D12 call has failed: returns true if it failed because the
+		// device is lost, which is then reported if it hasn't been already. The
+		// caller should skip its own error report in that case.
+
+		static bool				handleDeviceLoss(HRESULT hr);
+
 		//.____ Misc _________________________________________________________
 
 		// ID3D12Resource
@@ -180,8 +210,14 @@ namespace wg
 		void _bindSessionState();				// Everything a session needs on a freshly reset command list.
 		void _bindCanvasState();				// Render target, viewport and canvas scale for the active canvas.
 
+		static void _reportDeviceLost(HRESULT hr);		// Sets s_bDeviceLost and reports it, the first time only.
+		static void _dumpDRED();						// Breadcrumbs and page fault to the debugger, if DRED was on.
+
+
 		void _createBuffer(Microsoft::WRL::ComPtr<ID3D12Resource>& pointer, int nbBytes, D3D12_HEAP_TYPE heapType, D3D12_RESOURCE_STATES initialState, LPCWSTR name);
 		void _reserveBuffers(const SessionInfo* pInfo);	// Makes sure the frame's buffers have room for the session.
+		void _checkSessionUsage();						// Reports a session that used more than its SessionInfo said.
+		bool _blameSessionInfo() const { return !m_bSessionBuffersShort && !s_bDeviceLost; }
 
 		template<typename T>
 		bool _reserveBuffer(Microsoft::WRL::ComPtr<ID3D12Resource>& buffer, T*& pData, int& capacity,
@@ -201,6 +237,16 @@ namespace wg
 
 		void _setCanvas(DX12Surface* pCanvas);
 		void _transitionCanvas(DX12Surface* pCanvas, D3D12_RESOURCE_STATES state);
+
+		// Resources the command list being recorded uses, held until the GPU is
+		// done with it. See _holdUntilDone() and _releaseWhenDone().
+
+		void _holdUntilDone(ID3D12Resource* pResource);
+		void _releaseWhenDone(UINT64 fenceValue);		// Call right after Signal(): hands what is held to a one-shot callback.
+
+		static bool _initReleaser();					// With the first backend.
+		static void _exitReleaser();					// With the last one, once the GPU is done.
+		static void CALLBACK _onSubmissionDone(PTP_CALLBACK_INSTANCE pInstance, PVOID pContext, PTP_WAIT pWait, TP_WAIT_RESULT waitResult);
 
 		void _drawFillRects(const RectSPX* pRects, int nRects, HiColor color);
 		void _drawFillRun(PipelineKind kind, int firstVertex, int nRects);
@@ -291,6 +337,24 @@ namespace wg
 		ExtrasDX12* m_pExtrasEnd = nullptr;
 		ExtrasDX12* m_pExtrasPtr = nullptr;
 
+		// What _reserveBuffers() was asked to make room for this session, and where
+		// the session started writing, so that _checkSessionUsage() can tell when
+		// SessionInfo said too little. A buffer has usually grown well beyond the
+		// session's needs, so an underestimate rarely shows up as a dropped draw.
+		//
+		// m_bSessionBuffersShort is set when a buffer couldn't be grown, which
+		// makes the drops that follow ours rather than SessionInfo's.
+
+		int			m_sessionVertices = 0;
+		int			m_sessionColors = 0;
+		int			m_sessionExtras = 0;
+		Vertex*		m_pSessionVertexBeg = nullptr;
+		ColorDX12*	m_pSessionColorBeg = nullptr;
+		ExtrasDX12*	m_pSessionExtrasBeg = nullptr;
+		bool		m_bSessionInfoGiven = false;
+		bool		m_bSessionBuffersShort = false;
+
+
 		// State tracked while processing commands.
 
 		HiColor					m_tintColor = HiColor::White;
@@ -349,9 +413,7 @@ namespace wg
 			int												vertexCapacity = 0;				// In entries, not bytes.
 			int												colorCapacity = 0;
 			int												extrasCapacity = 0;
-			std::vector<Microsoft::WRL::ComPtr<ID3D12Resource>>	retiredBuffers;			// Outgrown this frame, still used by its command list.
 			int												nSRVDescriptors = 0;			// Used so far this frame.
-			std::vector<Object_p>							objectRefs;						// What this frame's command list mentions but doesn't own.
 			UINT64											fenceValue;
 		};
 
@@ -365,14 +427,35 @@ namespace wg
 		UINT64												m_fenceValue = 0;
 		HANDLE 												m_fenceEvent = nullptr;
 		bool												m_bCommandListOpen = false;
+		bool												m_bDeviceObjectsOK = false;		// Command list, allocators and fence were all created.
 
 		// Canvas surfaces we have barriered out of COMMON to read as blit source.
 		// They go back before the session ends or the command list is closed, so
 		// everything rests in COMMON between sessions and the copy queue can touch
-		// it. The references then move to the frame, which holds them until the
-		// GPU is done with the command list that mentions them.
+		// it.
 
 		std::vector<Surface_p>								m_blitSourceCanvases;
+
+		// A command list holds no references to what it uses, and D3D12 must not
+		// have a resource released while the GPU may still use it. So every
+		// texture and buffer a recorded command reads or writes is held here, as
+		// the D3D12 resource only - surfaces and edgemaps die when their owners
+		// let go, like with any other backend. On submit, _releaseWhenDone() hands
+		// the lot to a thread pool callback that fires once, when the GPU has
+		// passed the fence value signalled after it, and releases them there.
+		// Releasing a D3D12 resource is thread safe.
+
+		std::vector<Microsoft::WRL::ComPtr<ID3D12Resource>>	m_heldResources;
+
+		struct PendingRelease
+		{
+			HANDLE												hEvent = nullptr;
+			std::vector<Microsoft::WRL::ComPtr<ID3D12Resource>>	resources;
+		};
+
+		static TP_CALLBACK_ENVIRON							s_releaserEnv;			// Keeps our module loaded while a callback runs.
+		static bool											s_bReleaserReady;
+		static std::atomic<int>								s_nPendingReleases;		// Callbacks not yet finished.
 
 
 		//
@@ -409,6 +492,8 @@ namespace wg
 		static Microsoft::WRL::ComPtr<ID3D12Device>			s_pDevice;
 		static Microsoft::WRL::ComPtr<ID3D12CommandQueue>	s_pCommandQueue;
 		static bool											s_bImplicitDevice;		// Set by create(device, queue), released with the last backend.
+		static bool											s_bDeviceLost;			// Cleared by setDevice().
+		static HRESULT										s_deviceRemovedReason;
 		static std::vector<DX12Backend*>					s_backends;				// All that exist. Not thread safe, like the rest of the backend.
 
 		// Widths a line of a given slope needs to keep an even thickness. Indexed

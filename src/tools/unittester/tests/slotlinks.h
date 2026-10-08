@@ -15,4 +15,5 @@ public:
 private:
 
 	bool packPanelSlotLinksTest(std::ostream& output);
+	bool flexPanelSlotLinksTest(std::ostream& output);
 };

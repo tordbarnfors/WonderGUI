@@ -43,6 +43,25 @@
 
 #include <wg_c_tint.h>
 
+#include <mutex>
+
+
+inline std::recursive_mutex g_apiMutex;     // the "big lock", lives in the host
+
+template<auto Func> struct Locked;
+
+template<typename R, typename... Args, R (*Func)(Args...)>
+struct Locked<Func>
+{
+	static R call(Args... args)
+	{
+		std::lock_guard lock(g_apiMutex);
+		return Func(args...);
+	}
+};
+
+#define LOCKED(f) (&Locked<&f>::call)
+
 
 struct wg_c_calls_body
 {
@@ -73,6 +92,7 @@ struct wg_c_calls_body
 };
 
 static wg_c_calls_body	body;
+static std::once_flag	bodyPopulated;
 
 //____ Stubs for retired calls __________________________________________________
 //
@@ -103,74 +123,79 @@ static wg_obj	stub_createStaticTintmap(wg_sizeI, const wg_color*, const wg_color
 
 
 
-void wg_populatePluginInterface(wg_plugin_interface * pHeader)
-{
-	auto pBody = &body;
+// The body is shared by all headers and only ever holds the same constant function
+// pointers, so it is filled once. wg_populatePluginInterface() may be called from
+// several threads at once (plugins set up in parallel) while plugins read the body.
+//
+// Every call goes through the big lock, except the stubs for retired calls, which
+// touch nothing.
 
+static void populateBody(wg_c_calls_body * pBody)
+{
 	pBody->bitmapCache.structSize			= sizeof(wg_bitmapcache_calls);
-	pBody->bitmapCache.createBitmapCache	= &wg_createBitmapCache;
-	pBody->bitmapCache.setCacheLimit		= &wg_setCacheLimit;
-	pBody->bitmapCache.cacheLimit			= &wg_cacheLimit;
-	pBody->bitmapCache.cacheSize			= &wg_cacheSize;
-	pBody->bitmapCache.clearCache			= &wg_clearCache;
-	pBody->bitmapCache.addCacheListener		= &wg_addCacheListener;
-	pBody->bitmapCache.removeCacheListener	= &wg_removeCacheListener;
-	pBody->bitmapCache.getCacheSlot			= &wg_getCacheSlot;
-	pBody->bitmapCache.getNbCacheSurfaces	= &wg_getNbCacheSurfaces;
-	pBody->bitmapCache.getCacheSurfaces		= &wg_getCacheSurfaces;
+	pBody->bitmapCache.createBitmapCache	= LOCKED(wg_createBitmapCache);
+	pBody->bitmapCache.setCacheLimit		= LOCKED(wg_setCacheLimit);
+	pBody->bitmapCache.cacheLimit			= LOCKED(wg_cacheLimit);
+	pBody->bitmapCache.cacheSize			= LOCKED(wg_cacheSize);
+	pBody->bitmapCache.clearCache			= LOCKED(wg_clearCache);
+	pBody->bitmapCache.addCacheListener		= LOCKED(wg_addCacheListener);
+	pBody->bitmapCache.removeCacheListener	= LOCKED(wg_removeCacheListener);
+	pBody->bitmapCache.getCacheSlot			= LOCKED(wg_getCacheSlot);
+	pBody->bitmapCache.getNbCacheSurfaces	= LOCKED(wg_getNbCacheSurfaces);
+	pBody->bitmapCache.getCacheSurfaces		= LOCKED(wg_getCacheSurfaces);
 
 
 	pBody->bitmapFont.structSize			= sizeof(wg_bitmapfont_calls);
-	pBody->bitmapFont.createBitmapFont		= &wg_createBitmapFont;
-	pBody->bitmapFont.getBitmapFontSurface	= &wg_getBitmapFontSurface;
+	pBody->bitmapFont.createBitmapFont		= LOCKED(wg_createBitmapFont);
+	pBody->bitmapFont.getBitmapFontSurface	= LOCKED(wg_getBitmapFontSurface);
 
 
 	pBody->canvasLayers.structSize			= sizeof(wg_canvaslayers_calls);
-	pBody->canvasLayers.baseLayer			= &wg_baseLayer;
-	pBody->canvasLayers.canvasLayersSize	= &wg_canvasLayersSize;
-	pBody->canvasLayers.createCanvasLayers	= &wg_createCanvasLayers;
-	pBody->canvasLayers.layerFormat			= &wg_layerFormat;
+	pBody->canvasLayers.baseLayer			= LOCKED(wg_baseLayer);
+	pBody->canvasLayers.canvasLayersSize	= LOCKED(wg_canvasLayersSize);
+	pBody->canvasLayers.createCanvasLayers	= LOCKED(wg_createCanvasLayers);
+	pBody->canvasLayers.layerFormat			= LOCKED(wg_layerFormat);
 
 	pBody->font.structSize					= sizeof(wg_font_calls);
-	pBody->font.setFontSize					= &wg_setFontSize;
-	pBody->font.fontSize					= &wg_fontSize;
-	pBody->font.getGlyphWithoutBitmap		= &wg_getGlyphWithoutBitmap;
-	pBody->font.getGlyphWithBitmap			= &wg_getGlyphWithBitmap;
-	pBody->font.getKerning					= &wg_getKerning;
-	pBody->font.lineGap						= &wg_lineGap;
-	pBody->font.whitespaceAdvance			= &wg_whitespaceAdvance;
-	pBody->font.maxAdvance					= &wg_maxAdvance;
-	pBody->font.maxAscend					= &wg_maxAscend;
-	pBody->font.maxDescend					= &wg_maxDescend;
-	pBody->font.nbGlyphs					= &wg_nbGlyphs;
-	pBody->font.hasGlyphs					= &wg_hasGlyphs;
-	pBody->font.hasGlyph					= &wg_hasGlyph;
-	pBody->font.isMonospace					= &wg_isMonospace;
-	pBody->font.isMonochrome				= &wg_isMonochrome;
-	pBody->font.getBackupFont				= &wg_getBackupFont;
-	pBody->font.createSurfaceFromGlyph		= &wg_createSurfaceFromGlyph;
+	pBody->font.setFontSize					= LOCKED(wg_setFontSize);
+	pBody->font.fontSize					= LOCKED(wg_fontSize);
+	pBody->font.getGlyphWithoutBitmap		= LOCKED(wg_getGlyphWithoutBitmap);
+	pBody->font.getGlyphWithBitmap			= LOCKED(wg_getGlyphWithBitmap);
+	pBody->font.getKerning					= LOCKED(wg_getKerning);
+	pBody->font.lineGap						= LOCKED(wg_lineGap);
+	pBody->font.whitespaceAdvance			= LOCKED(wg_whitespaceAdvance);
+	pBody->font.maxAdvance					= LOCKED(wg_maxAdvance);
+	pBody->font.maxAscend					= LOCKED(wg_maxAscend);
+	pBody->font.maxDescend					= LOCKED(wg_maxDescend);
+	pBody->font.nbGlyphs					= LOCKED(wg_nbGlyphs);
+	pBody->font.hasGlyphs					= LOCKED(wg_hasGlyphs);
+	pBody->font.hasGlyph					= LOCKED(wg_hasGlyph);
+	pBody->font.isMonospace					= LOCKED(wg_isMonospace);
+	pBody->font.isMonochrome				= LOCKED(wg_isMonochrome);
+	pBody->font.getBackupFont				= LOCKED(wg_getBackupFont);
+	pBody->font.createSurfaceFromGlyph		= LOCKED(wg_createSurfaceFromGlyph);
 
 
 	pBody->gfxDevice.structSize				= sizeof(wg_gfxdevice_calls);
 	pBody->gfxDevice.deviceSurfaceType		= nullptr;						// Hopefully this is not used anymore.
-	pBody->gfxDevice.getCanvas				= &wg_getCanvas;
-	pBody->gfxDevice.getCanvasRef			= &wg_getCanvasRef;
-	pBody->gfxDevice.canvasLayers			= &wg_canvasLayers;
-	pBody->gfxDevice.surfaceFactory			= &wg_surfaceFactory;
-	pBody->gfxDevice.edgemapFactory			= &wg_edgemapFactory;
-	pBody->gfxDevice.maxSegments			= &wg_maxSegments;
-	pBody->gfxDevice.canvasSize				= &wg_canvasSize;
-	pBody->gfxDevice.setClipList			= &wg_setClipList;
-	pBody->gfxDevice.resetClipList			= &wg_resetClipList;
-	pBody->gfxDevice.pushClipList			= &wg_pushClipList;
-	pBody->gfxDevice.popClipList			= &wg_popClipList;
-	pBody->gfxDevice.getClipList			= &wg_getClipList;
-	pBody->gfxDevice.clipListSize			= &wg_clipListSize;
-	pBody->gfxDevice.clipBounds				= &wg_clipBounds;
-	pBody->gfxDevice.setTintColor			= &wg_setTintColor;
-	pBody->gfxDevice.clearTintColor			= &wg_clearTintColor;
-	pBody->gfxDevice.hasTintColor			= &wg_hasTintColor;
-	pBody->gfxDevice.getTintColor			= &wg_getTintColor;
+	pBody->gfxDevice.getCanvas				= LOCKED(wg_getCanvas);
+	pBody->gfxDevice.getCanvasRef			= LOCKED(wg_getCanvasRef);
+	pBody->gfxDevice.canvasLayers			= LOCKED(wg_canvasLayers);
+	pBody->gfxDevice.surfaceFactory			= LOCKED(wg_surfaceFactory);
+	pBody->gfxDevice.edgemapFactory			= LOCKED(wg_edgemapFactory);
+	pBody->gfxDevice.maxSegments			= LOCKED(wg_maxSegments);
+	pBody->gfxDevice.canvasSize				= LOCKED(wg_canvasSize);
+	pBody->gfxDevice.setClipList			= LOCKED(wg_setClipList);
+	pBody->gfxDevice.resetClipList			= LOCKED(wg_resetClipList);
+	pBody->gfxDevice.pushClipList			= LOCKED(wg_pushClipList);
+	pBody->gfxDevice.popClipList			= LOCKED(wg_popClipList);
+	pBody->gfxDevice.getClipList			= LOCKED(wg_getClipList);
+	pBody->gfxDevice.clipListSize			= LOCKED(wg_clipListSize);
+	pBody->gfxDevice.clipBounds				= LOCKED(wg_clipBounds);
+	pBody->gfxDevice.setTintColor			= LOCKED(wg_setTintColor);
+	pBody->gfxDevice.clearTintColor			= LOCKED(wg_clearTintColor);
+	pBody->gfxDevice.hasTintColor			= LOCKED(wg_hasTintColor);
+	pBody->gfxDevice.getTintColor			= LOCKED(wg_getTintColor);
 
 	pBody->gfxDevice.setTintmap				= &stub_setTintmap;
 	pBody->gfxDevice.getTintmap				= &stub_getTintmap;
@@ -179,174 +204,174 @@ void wg_populatePluginInterface(wg_plugin_interface * pHeader)
 	pBody->gfxDevice.hasTintmap				= &stub_hasTintmap;
 	pBody->gfxDevice.setTintGradient		= &stub_setTintGradient;
 	pBody->gfxDevice.clearTintGradient		= &stub_clearTintGradient;
-	pBody->gfxDevice.setTint				= &wg_setTint;
-	pBody->gfxDevice.getTint				= &wg_getTint;
-	pBody->gfxDevice.getTintRect			= &wg_getTintRect;
-	pBody->gfxDevice.clearTint				= &wg_clearTint;
-	pBody->gfxDevice.hasTint				= &wg_hasTint;
+	pBody->gfxDevice.setTint				= LOCKED(wg_setTint);
+	pBody->gfxDevice.getTint				= LOCKED(wg_getTint);
+	pBody->gfxDevice.getTintRect			= LOCKED(wg_getTintRect);
+	pBody->gfxDevice.clearTint				= LOCKED(wg_clearTint);
+	pBody->gfxDevice.hasTint				= LOCKED(wg_hasTint);
 
-	pBody->gfxDevice.setBlendMode			= &wg_setBlendMode;
-	pBody->gfxDevice.getBlendMode			= &wg_getBlendMode;
-	pBody->gfxDevice.setBlitSource			= &wg_setBlitSource;
-	pBody->gfxDevice.getBlitSource			= &wg_getBlitSource;
-	pBody->gfxDevice.setMorphFactor			= &wg_setMorphFactor;
-	pBody->gfxDevice.getMorphFactor			= &wg_getMorphFactor;
-	pBody->gfxDevice.setRenderLayer			= &wg_setRenderLayer;
-	pBody->gfxDevice.getRenderLayer			= &wg_getRenderLayer;
-	pBody->gfxDevice.beginRender			= &wg_beginRender;
-	pBody->gfxDevice.endRender				= &wg_endRender;
-	pBody->gfxDevice.isDeviceRendering		= &wg_isDeviceRendering;
-	pBody->gfxDevice.isDeviceIdle			= &wg_isDeviceIdle;
-	pBody->gfxDevice.flushDevice			= &wg_flushDevice;
-	pBody->gfxDevice.beginCanvasUpdateWithRef		= &wg_beginCanvasUpdateWithRef;
-	pBody->gfxDevice.beginCanvasUpdateWithSurface	= &wg_beginCanvasUpdateWithSurface;
-	pBody->gfxDevice.endCanvasUpdate		= &wg_endCanvasUpdate;
-	pBody->gfxDevice.fill					= &wg_fill;
-	pBody->gfxDevice.fillRect				= &wg_fillRect;
+	pBody->gfxDevice.setBlendMode			= LOCKED(wg_setBlendMode);
+	pBody->gfxDevice.getBlendMode			= LOCKED(wg_getBlendMode);
+	pBody->gfxDevice.setBlitSource			= LOCKED(wg_setBlitSource);
+	pBody->gfxDevice.getBlitSource			= LOCKED(wg_getBlitSource);
+	pBody->gfxDevice.setMorphFactor			= LOCKED(wg_setMorphFactor);
+	pBody->gfxDevice.getMorphFactor			= LOCKED(wg_getMorphFactor);
+	pBody->gfxDevice.setRenderLayer			= LOCKED(wg_setRenderLayer);
+	pBody->gfxDevice.getRenderLayer			= LOCKED(wg_getRenderLayer);
+	pBody->gfxDevice.beginRender			= LOCKED(wg_beginRender);
+	pBody->gfxDevice.endRender				= LOCKED(wg_endRender);
+	pBody->gfxDevice.isDeviceRendering		= LOCKED(wg_isDeviceRendering);
+	pBody->gfxDevice.isDeviceIdle			= LOCKED(wg_isDeviceIdle);
+	pBody->gfxDevice.flushDevice			= LOCKED(wg_flushDevice);
+	pBody->gfxDevice.beginCanvasUpdateWithRef		= LOCKED(wg_beginCanvasUpdateWithRef);
+	pBody->gfxDevice.beginCanvasUpdateWithSurface	= LOCKED(wg_beginCanvasUpdateWithSurface);
+	pBody->gfxDevice.endCanvasUpdate		= LOCKED(wg_endCanvasUpdate);
+	pBody->gfxDevice.fill					= LOCKED(wg_fill);
+	pBody->gfxDevice.fillRect				= LOCKED(wg_fillRect);
 	pBody->gfxDevice.plotPixels				= nullptr;				// Plot pixels has been deprecated.
-	pBody->gfxDevice.drawLine				= &wg_drawLine;
-	pBody->gfxDevice.drawStraightLine		= &wg_drawStraightLine;
-	pBody->gfxDevice.blit					= &wg_blit;
-	pBody->gfxDevice.blitRect				= &wg_blitRect;
-	pBody->gfxDevice.flipBlit				= &wg_flipBlit;
-	pBody->gfxDevice.flipBlitRect			= &wg_flipBlitRect;
-	pBody->gfxDevice.stretchBlit			= &wg_stretchBlit;
-	pBody->gfxDevice.stretchBlitRect		= &wg_stretchBlitRect;
-	pBody->gfxDevice.stretchFlipBlit		= &wg_stretchFlipBlit;
-	pBody->gfxDevice.stretchFlipBlitRect	= &wg_stretchFlipBlitRect;
-	pBody->gfxDevice.precisionBlit			= &wg_precisionBlit;
-	pBody->gfxDevice.transformBlit			= &wg_transformBlit;
-	pBody->gfxDevice.rotScaleBlit			= &wg_rotScaleBlit;
-	pBody->gfxDevice.tile					= &wg_tile;
-	pBody->gfxDevice.flipTile				= &wg_flipTile;
-	pBody->gfxDevice.scaleTile				= &wg_scaleTile;
-	pBody->gfxDevice.scaleFlipTile			= &wg_scaleFlipTile;
-	pBody->gfxDevice.drawWave				= &wg_drawWave;
-	pBody->gfxDevice.flipDrawWave			= &wg_flipDrawWave;
-	pBody->gfxDevice.drawElipse				= &wg_drawElipse;
-	pBody->gfxDevice.drawPieChart			= &wg_drawPieChart;
-	pBody->gfxDevice.drawSegments			= &wg_drawSegments;
-	pBody->gfxDevice.flipDrawSegments		= &wg_flipDrawSegments;
-	pBody->gfxDevice.drawEdgemap			= &wg_drawEdgemap;
-	pBody->gfxDevice.flipDrawEdgemap		= &wg_flipDrawEdgemap;
-	pBody->gfxDevice.blitNinePatch			= &wg_blitNinePatch;
+	pBody->gfxDevice.drawLine				= LOCKED(wg_drawLine);
+	pBody->gfxDevice.drawStraightLine		= LOCKED(wg_drawStraightLine);
+	pBody->gfxDevice.blit					= LOCKED(wg_blit);
+	pBody->gfxDevice.blitRect				= LOCKED(wg_blitRect);
+	pBody->gfxDevice.flipBlit				= LOCKED(wg_flipBlit);
+	pBody->gfxDevice.flipBlitRect			= LOCKED(wg_flipBlitRect);
+	pBody->gfxDevice.stretchBlit			= LOCKED(wg_stretchBlit);
+	pBody->gfxDevice.stretchBlitRect		= LOCKED(wg_stretchBlitRect);
+	pBody->gfxDevice.stretchFlipBlit		= LOCKED(wg_stretchFlipBlit);
+	pBody->gfxDevice.stretchFlipBlitRect	= LOCKED(wg_stretchFlipBlitRect);
+	pBody->gfxDevice.precisionBlit			= LOCKED(wg_precisionBlit);
+	pBody->gfxDevice.transformBlit			= LOCKED(wg_transformBlit);
+	pBody->gfxDevice.rotScaleBlit			= LOCKED(wg_rotScaleBlit);
+	pBody->gfxDevice.tile					= LOCKED(wg_tile);
+	pBody->gfxDevice.flipTile				= LOCKED(wg_flipTile);
+	pBody->gfxDevice.scaleTile				= LOCKED(wg_scaleTile);
+	pBody->gfxDevice.scaleFlipTile			= LOCKED(wg_scaleFlipTile);
+	pBody->gfxDevice.drawWave				= LOCKED(wg_drawWave);
+	pBody->gfxDevice.flipDrawWave			= LOCKED(wg_flipDrawWave);
+	pBody->gfxDevice.drawElipse				= LOCKED(wg_drawElipse);
+	pBody->gfxDevice.drawPieChart			= LOCKED(wg_drawPieChart);
+	pBody->gfxDevice.drawSegments			= LOCKED(wg_drawSegments);
+	pBody->gfxDevice.flipDrawSegments		= LOCKED(wg_flipDrawSegments);
+	pBody->gfxDevice.drawEdgemap			= LOCKED(wg_drawEdgemap);
+	pBody->gfxDevice.flipDrawEdgemap		= LOCKED(wg_flipDrawEdgemap);
+	pBody->gfxDevice.blitNinePatch			= LOCKED(wg_blitNinePatch);
 
-	pBody->gfxDevice.setBlurMatrices		= &wg_setBlurMatrices;
-	pBody->gfxDevice.setFixedBlendColor		= &wg_setFixedBlendColor;
-	pBody->gfxDevice.getFixedBlendColor		= &wg_getFixedBlendColor;
+	pBody->gfxDevice.setBlurMatrices		= LOCKED(wg_setBlurMatrices);
+	pBody->gfxDevice.setFixedBlendColor		= LOCKED(wg_setFixedBlendColor);
+	pBody->gfxDevice.getFixedBlendColor		= LOCKED(wg_getFixedBlendColor);
 	
-	pBody->gfxDevice.blur					= &wg_blur;
-	pBody->gfxDevice.blurRect				= &wg_blurRect;
-	pBody->gfxDevice.stretchBlur			= &wg_stretchBlur;
-	pBody->gfxDevice.stretchBlurRect		= &wg_stretchBlurRect;
-	pBody->gfxDevice.transformBlur			= &wg_transformBlur;
-	pBody->gfxDevice.rotScaleBlur			= &wg_rotScaleBlur;
+	pBody->gfxDevice.blur					= LOCKED(wg_blur);
+	pBody->gfxDevice.blurRect				= LOCKED(wg_blurRect);
+	pBody->gfxDevice.stretchBlur			= LOCKED(wg_stretchBlur);
+	pBody->gfxDevice.stretchBlurRect		= LOCKED(wg_stretchBlurRect);
+	pBody->gfxDevice.transformBlur			= LOCKED(wg_transformBlur);
+	pBody->gfxDevice.rotScaleBlur			= LOCKED(wg_rotScaleBlur);
 
-	pBody->gfxDevice.setBlurbrush			= &wg_setBlurbrush;
+	pBody->gfxDevice.setBlurbrush			= LOCKED(wg_setBlurbrush);
 
 /*
 	pBody->streamBuffer.structSize				= sizeof(wg_streambuffer_calls);
-	pBody->streamBuffer.createStreamBuffer		= &wg_createStreamBuffer;
-	pBody->streamBuffer.getStreamBufferOutput	= &wg_getStreamBufferOutput;
-	pBody->streamBuffer.getStreamBufferInput	= &wg_getStreamBufferInput;
-	pBody->streamBuffer.streamBufferCapacity	= &wg_streamBufferCapacity;
-	pBody->streamBuffer.streamBufferHasChunk	= &wg_streamBufferHasChunk;
-	pBody->streamBuffer.streamBufferBytes		= &wg_streamBufferBytes;
+	pBody->streamBuffer.createStreamBuffer		= LOCKED(wg_createStreamBuffer);
+	pBody->streamBuffer.getStreamBufferOutput	= LOCKED(wg_getStreamBufferOutput);
+	pBody->streamBuffer.getStreamBufferInput	= LOCKED(wg_getStreamBufferInput);
+	pBody->streamBuffer.streamBufferCapacity	= LOCKED(wg_streamBufferCapacity);
+	pBody->streamBuffer.streamBufferHasChunk	= LOCKED(wg_streamBufferHasChunk);
+	pBody->streamBuffer.streamBufferBytes		= LOCKED(wg_streamBufferBytes);
 
 
 	pBody->streamPlayer.structSize			= sizeof(wg_streamplayer_calls);
-	pBody->streamPlayer.createStreamPlayer	= &wg_createStreamPlayer;
-	pBody->streamPlayer.getStreamPlayerInput	= &wg_getStreamPlayerInput;
-	pBody->streamPlayer.setStreamPlayerStoreDirtyRects = &wg_setStreamPlayerStoreDirtyRects;
-	pBody->streamPlayer.setStreamPlayerMaxDirtyRects = &wg_setStreamPlayerMaxDirtyRects;
-	pBody->streamPlayer.getStreamPlayerDirtyRects = &wg_getStreamPlayerDirtyRects;
-	pBody->streamPlayer.clearStreamPlayerDirtyRects = &wg_clearStreamPlayerDirtyRects;
+	pBody->streamPlayer.createStreamPlayer	= LOCKED(wg_createStreamPlayer);
+	pBody->streamPlayer.getStreamPlayerInput	= LOCKED(wg_getStreamPlayerInput);
+	pBody->streamPlayer.setStreamPlayerStoreDirtyRects = LOCKED(wg_setStreamPlayerStoreDirtyRects);
+	pBody->streamPlayer.setStreamPlayerMaxDirtyRects = LOCKED(wg_setStreamPlayerMaxDirtyRects);
+	pBody->streamPlayer.getStreamPlayerDirtyRects = LOCKED(wg_getStreamPlayerDirtyRects);
+	pBody->streamPlayer.clearStreamPlayerDirtyRects = LOCKED(wg_clearStreamPlayerDirtyRects);
 
 
 	pBody->streamPump.structSize			= sizeof(wg_streampump_calls);
-	pBody->streamPump.createStreamPump		= &wg_createStreamPump;
-	pBody->streamPump.createStreamPumpWithInputOutput = &wg_createStreamPumpWithInputOutput;
-	pBody->streamPump.setStreamPumpInput	= &wg_setStreamPumpInput;
-	pBody->streamPump.setStreamPumpOutput	= &wg_setStreamPumpOutput;
-	pBody->streamPump.peekChunk				= &wg_peekChunk;
-	pBody->streamPump.pumpChunk				= &wg_pumpChunk;
-	pBody->streamPump.pumpUntilFrame		= &wg_pumpUntilFrame;
-	pBody->streamPump.pumpFrame				= &wg_pumpFrame;
-	pBody->streamPump.pumpAll				= &wg_pumpAll;
+	pBody->streamPump.createStreamPump		= LOCKED(wg_createStreamPump);
+	pBody->streamPump.createStreamPumpWithInputOutput = LOCKED(wg_createStreamPumpWithInputOutput);
+	pBody->streamPump.setStreamPumpInput	= LOCKED(wg_setStreamPumpInput);
+	pBody->streamPump.setStreamPumpOutput	= LOCKED(wg_setStreamPumpOutput);
+	pBody->streamPump.peekChunk				= LOCKED(wg_peekChunk);
+	pBody->streamPump.pumpChunk				= LOCKED(wg_pumpChunk);
+	pBody->streamPump.pumpUntilFrame		= LOCKED(wg_pumpUntilFrame);
+	pBody->streamPump.pumpFrame				= LOCKED(wg_pumpFrame);
+	pBody->streamPump.pumpAll				= LOCKED(wg_pumpAll);
 
 
 	pBody->streamReader.structSize				= sizeof(wg_streamreader_calls);
-	pBody->streamReader.createStreamReader		= &wg_createStreamReader;
-	pBody->streamReader.getStreamReaderOutput	= &wg_getStreamReaderOutput;
-	pBody->streamReader.streamReaderCapacity	= &wg_streamReaderCapacity;
-	pBody->streamReader.streamReaderHasChunk	= &wg_streamReaderHasChunk;
-	pBody->streamReader.streamReaderBytes		= &wg_streamReaderBytes;
+	pBody->streamReader.createStreamReader		= LOCKED(wg_createStreamReader);
+	pBody->streamReader.getStreamReaderOutput	= LOCKED(wg_getStreamReaderOutput);
+	pBody->streamReader.streamReaderCapacity	= LOCKED(wg_streamReaderCapacity);
+	pBody->streamReader.streamReaderHasChunk	= LOCKED(wg_streamReaderHasChunk);
+	pBody->streamReader.streamReaderBytes		= LOCKED(wg_streamReaderBytes);
 */
 
 
 	pBody->object.structSize				= sizeof(wg_object_calls);
-	pBody->object.finalizer					= &wg_finalizer;
-	pBody->object.getTypeInfo				= &wg_getTypeInfo;
-	pBody->object.isInstanceOf				= &wg_isInstanceOf;
-	pBody->object.refcount					= &wg_refcount;
-	pBody->object.release					= &wg_release;
-	pBody->object.retain					= &wg_retain;
-	pBody->object.setFinalizer				= &wg_setFinalizer;
+	pBody->object.finalizer					= LOCKED(wg_finalizer);
+	pBody->object.getTypeInfo				= LOCKED(wg_getTypeInfo);
+	pBody->object.isInstanceOf				= LOCKED(wg_isInstanceOf);
+	pBody->object.refcount					= LOCKED(wg_refcount);
+	pBody->object.release					= LOCKED(wg_release);
+	pBody->object.retain					= LOCKED(wg_retain);
+	pBody->object.setFinalizer				= LOCKED(wg_setFinalizer);
 
 
 	pBody->surface.structSize				= sizeof(wg_surface_calls);
-	pBody->surface.setSurfaceIdentity		= &wg_setSurfaceIdentity;
-	pBody->surface.getSurfaceIdentity		= &wg_getSurfaceIdentity;
-	pBody->surface.surfacePixelSize			= &wg_surfacePixelSize;
-	pBody->surface.surfacePixelWidth		= &wg_surfacePixelWidth;
-	pBody->surface.surfacePixelHeight		= &wg_surfacePixelHeight;
-	pBody->surface.surfacePointSize			= &wg_surfacePointSize;
-	pBody->surface.surfacePointWidth		= &wg_surfacePointWidth;
-	pBody->surface.surfacePointHeight		= &wg_surfacePointHeight;
-	pBody->surface.surfaceScale				= &wg_surfaceScale;
-	pBody->surface.surfaceSampleMethod		= &wg_surfaceSampleMethod;
-	pBody->surface.surfaceIsTiling			= &wg_surfaceIsTiling;
-	pBody->surface.surfaceIsMipmapped		= &wg_surfaceIsMipmapped;
-	pBody->surface.surfaceAlpha				= &wg_surfaceAlpha;
-	pBody->surface.surfacePalette			= &wg_surfacePalette;
-	pBody->surface.surfacePaletteSize		= &wg_surfacePaletteSize;
-	pBody->surface.surfacePaletteCapacity	= &wg_surfacePaletteCapacity;
-	pBody->surface.surfacePixelDescription	= &wg_surfacePixelDescription;
-	pBody->surface.surfacePixelFormat		= &wg_surfacePixelFormat;
-	pBody->surface.surfacePixelBits			= &wg_surfacePixelBits;
-	pBody->surface.surfaceIsOpaque			= &wg_surfaceIsOpaque;
-	pBody->surface.surfaceCanBeCanvas		= &wg_surfaceCanBeCanvas;
-	pBody->surface.allocPixelBuffer			= &wg_allocPixelBuffer;
-	pBody->surface.allocPixelBufferFromRect	= &wg_allocPixelBufferFromRect;
-	pBody->surface.pushPixels				= &wg_pushPixels;
-	pBody->surface.pushPixelsFromRect		= &wg_pushPixelsFromRect;
-	pBody->surface.pullPixels				= &wg_pullPixels;
-	pBody->surface.pullPixelsFromRect		= &wg_pullPixelsFromRect;
-	pBody->surface.freePixelBuffer			= &wg_freePixelBuffer;
-	pBody->surface.fillSurface				= &wg_fillSurface;
-	pBody->surface.fillSurfaceRect			= &wg_fillSurfaceRect;
-	pBody->surface.copySurface				= &wg_copySurface;
-	pBody->surface.copySurfaceRect			= &wg_copySurfaceRect;
-	pBody->surface.setSurfaceBaggage		= &wg_setSurfaceBaggage;
-	pBody->surface.getSurfaceBaggage		= &wg_getSurfaceBaggage;
-	pBody->surface.addSurfaceObserver		= &wg_addSurfaceObserver;
-	pBody->surface.removeSurfaceObserver	= &wg_removeSurfaceObserver;
-	pBody->surface.getSurfaceBlueprint		= &wg_getSurfaceBlueprint;
-	pBody->surface.surfaceColorSpace		= &wg_surfaceColorSpace;
-	pBody->surface.surfaceIsBigEndian		= &wg_surfaceIsBigEndian;
+	pBody->surface.setSurfaceIdentity		= LOCKED(wg_setSurfaceIdentity);
+	pBody->surface.getSurfaceIdentity		= LOCKED(wg_getSurfaceIdentity);
+	pBody->surface.surfacePixelSize			= LOCKED(wg_surfacePixelSize);
+	pBody->surface.surfacePixelWidth		= LOCKED(wg_surfacePixelWidth);
+	pBody->surface.surfacePixelHeight		= LOCKED(wg_surfacePixelHeight);
+	pBody->surface.surfacePointSize			= LOCKED(wg_surfacePointSize);
+	pBody->surface.surfacePointWidth		= LOCKED(wg_surfacePointWidth);
+	pBody->surface.surfacePointHeight		= LOCKED(wg_surfacePointHeight);
+	pBody->surface.surfaceScale				= LOCKED(wg_surfaceScale);
+	pBody->surface.surfaceSampleMethod		= LOCKED(wg_surfaceSampleMethod);
+	pBody->surface.surfaceIsTiling			= LOCKED(wg_surfaceIsTiling);
+	pBody->surface.surfaceIsMipmapped		= LOCKED(wg_surfaceIsMipmapped);
+	pBody->surface.surfaceAlpha				= LOCKED(wg_surfaceAlpha);
+	pBody->surface.surfacePalette			= LOCKED(wg_surfacePalette);
+	pBody->surface.surfacePaletteSize		= LOCKED(wg_surfacePaletteSize);
+	pBody->surface.surfacePaletteCapacity	= LOCKED(wg_surfacePaletteCapacity);
+	pBody->surface.surfacePixelDescription	= LOCKED(wg_surfacePixelDescription);
+	pBody->surface.surfacePixelFormat		= LOCKED(wg_surfacePixelFormat);
+	pBody->surface.surfacePixelBits			= LOCKED(wg_surfacePixelBits);
+	pBody->surface.surfaceIsOpaque			= LOCKED(wg_surfaceIsOpaque);
+	pBody->surface.surfaceCanBeCanvas		= LOCKED(wg_surfaceCanBeCanvas);
+	pBody->surface.allocPixelBuffer			= LOCKED(wg_allocPixelBuffer);
+	pBody->surface.allocPixelBufferFromRect	= LOCKED(wg_allocPixelBufferFromRect);
+	pBody->surface.pushPixels				= LOCKED(wg_pushPixels);
+	pBody->surface.pushPixelsFromRect		= LOCKED(wg_pushPixelsFromRect);
+	pBody->surface.pullPixels				= LOCKED(wg_pullPixels);
+	pBody->surface.pullPixelsFromRect		= LOCKED(wg_pullPixelsFromRect);
+	pBody->surface.freePixelBuffer			= LOCKED(wg_freePixelBuffer);
+	pBody->surface.fillSurface				= LOCKED(wg_fillSurface);
+	pBody->surface.fillSurfaceRect			= LOCKED(wg_fillSurfaceRect);
+	pBody->surface.copySurface				= LOCKED(wg_copySurface);
+	pBody->surface.copySurfaceRect			= LOCKED(wg_copySurfaceRect);
+	pBody->surface.setSurfaceBaggage		= LOCKED(wg_setSurfaceBaggage);
+	pBody->surface.getSurfaceBaggage		= LOCKED(wg_getSurfaceBaggage);
+	pBody->surface.addSurfaceObserver		= LOCKED(wg_addSurfaceObserver);
+	pBody->surface.removeSurfaceObserver	= LOCKED(wg_removeSurfaceObserver);
+	pBody->surface.getSurfaceBlueprint		= LOCKED(wg_getSurfaceBlueprint);
+	pBody->surface.surfaceColorSpace		= LOCKED(wg_surfaceColorSpace);
+	pBody->surface.surfaceIsBigEndian		= LOCKED(wg_surfaceIsBigEndian);
 
 
 	pBody->surfaceFactory.structSize		= sizeof(wg_surfacefactory_calls);
-	pBody->surfaceFactory.maxSurfaceSize	= &wg_maxSurfaceSize;
-	pBody->surfaceFactory.createSurface		= &wg_createSurface;
-	pBody->surfaceFactory.createSurfaceFromBlob = &wg_createSurfaceFromBlob;
-	pBody->surfaceFactory.createSurfaceFromBitmap = &wg_createSurfaceFromBitmap;
-	pBody->surfaceFactory.createSurfaceFromRawData = &wg_createSurfaceFromRawData;
+	pBody->surfaceFactory.maxSurfaceSize	= LOCKED(wg_maxSurfaceSize);
+	pBody->surfaceFactory.createSurface		= LOCKED(wg_createSurface);
+	pBody->surfaceFactory.createSurfaceFromBlob = LOCKED(wg_createSurfaceFromBlob);
+	pBody->surfaceFactory.createSurfaceFromBitmap = LOCKED(wg_createSurfaceFromBitmap);
+	pBody->surfaceFactory.createSurfaceFromRawData = LOCKED(wg_createSurfaceFromRawData);
 
 	pBody->edgemap.structSize				= sizeof(wg_edgemap_calls);
-	pBody->edgemap.edgemapPixelSize			= &wg_edgemapPixelSize;
-	pBody->edgemap.setRenderSegments		= &wg_setRenderSegments;
-	pBody->edgemap.getRenderSegments		= &wg_getRenderSegments;
+	pBody->edgemap.edgemapPixelSize			= LOCKED(wg_edgemapPixelSize);
+	pBody->edgemap.setRenderSegments		= LOCKED(wg_setRenderSegments);
+	pBody->edgemap.getRenderSegments		= LOCKED(wg_getRenderSegments);
 
 	pBody->edgemap.edgemapPaletteType		= &stub_edgemapPaletteType;
 	pBody->edgemap.setEdgemapColorsFromGradients = &stub_setEdgemapColorsFromGradients;
@@ -356,55 +381,55 @@ void wg_populatePluginInterface(wg_plugin_interface * pHeader)
 	pBody->edgemap.edgemapColorstripsX		= &stub_edgemapColorstrips;
 	pBody->edgemap.edgemapColorstripsY		= &stub_edgemapColorstrips;
 	pBody->edgemap.importPaletteEntries		= &stub_importPaletteEntries;
-	pBody->edgemap.setEdgemapColors			= &wg_setEdgemapColors;
-	pBody->edgemap.setEdgemapTints			= &wg_setEdgemapTints;
+	pBody->edgemap.setEdgemapColors			= LOCKED(wg_setEdgemapColors);
+	pBody->edgemap.setEdgemapTints			= LOCKED(wg_setEdgemapTints);
 
 
-	pBody->edgemap.edgemapFlatColors		= &wg_edgemapFlatColors;
-	pBody->edgemap.edgemapTint				= &wg_edgemapTint;
+	pBody->edgemap.edgemapFlatColors		= LOCKED(wg_edgemapFlatColors);
+	pBody->edgemap.edgemapTint				= LOCKED(wg_edgemapTint);
 
-	pBody->edgemap.edgemapSegments			= &wg_edgemapSegments;
-	pBody->edgemap.edgemapSamples			= &wg_edgemapSamples;
-	pBody->edgemap.importSpxSamples			= &wg_importSpxSamples;
-	pBody->edgemap.importFloatSamples		= &wg_importFloatSamples;
-	pBody->edgemap.exportSpxSamples			= &wg_exportSpxSamples;
-	pBody->edgemap.exportFloatSamples		= &wg_exportFloatSamples;
-	pBody->edgemap.exportBounds				= &wg_exportBounds;
+	pBody->edgemap.edgemapSegments			= LOCKED(wg_edgemapSegments);
+	pBody->edgemap.edgemapSamples			= LOCKED(wg_edgemapSamples);
+	pBody->edgemap.importSpxSamples			= LOCKED(wg_importSpxSamples);
+	pBody->edgemap.importFloatSamples		= LOCKED(wg_importFloatSamples);
+	pBody->edgemap.exportSpxSamples			= LOCKED(wg_exportSpxSamples);
+	pBody->edgemap.exportFloatSamples		= LOCKED(wg_exportFloatSamples);
+	pBody->edgemap.exportBounds				= LOCKED(wg_exportBounds);
 
 	pBody->edgemapFactory.structSize		= sizeof(wg_edgemapfactory_calls);
-	pBody->edgemapFactory.createEdgemap		= &wg_createEdgemap;
-	pBody->edgemapFactory.createEdgemapFromFloats = &wg_createEdgemapFromFloats;
-	pBody->edgemapFactory.createEdgemapFromSpx = &wg_createEdgemapFromSpx;
+	pBody->edgemapFactory.createEdgemap		= LOCKED(wg_createEdgemap);
+	pBody->edgemapFactory.createEdgemapFromFloats = LOCKED(wg_createEdgemapFromFloats);
+	pBody->edgemapFactory.createEdgemapFromSpx = LOCKED(wg_createEdgemapFromSpx);
 
 	pBody->hostBridge.structSize			= sizeof(wg_hostbridge_calls);
-	pBody->hostBridge.hidePointer			= &wg_hidePointer;
-	pBody->hostBridge.showPointer			= &wg_showPointer;
-	pBody->hostBridge.getClipboardText		= &wg_getClipboardText;
-	pBody->hostBridge.setClipboardText		= &wg_setClipboardText;
-	pBody->hostBridge.requestWindowFocus	= &wg_requestWindowFocus;
-	pBody->hostBridge.yieldWindowFocus		= &wg_yieldWindowFocus;
-	pBody->hostBridge.lockHidePointer		= &wg_lockHidePointer;
-	pBody->hostBridge.unlockShowPointer		= &wg_unlockShowPointer;
-	pBody->hostBridge.setPointerStyle		= &wg_setPointerStyle;
+	pBody->hostBridge.hidePointer			= LOCKED(wg_hidePointer);
+	pBody->hostBridge.showPointer			= LOCKED(wg_showPointer);
+	pBody->hostBridge.getClipboardText		= LOCKED(wg_getClipboardText);
+	pBody->hostBridge.setClipboardText		= LOCKED(wg_setClipboardText);
+	pBody->hostBridge.requestWindowFocus	= LOCKED(wg_requestWindowFocus);
+	pBody->hostBridge.yieldWindowFocus		= LOCKED(wg_yieldWindowFocus);
+	pBody->hostBridge.lockHidePointer		= LOCKED(wg_lockHidePointer);
+	pBody->hostBridge.unlockShowPointer		= LOCKED(wg_unlockShowPointer);
+	pBody->hostBridge.setPointerStyle		= LOCKED(wg_setPointerStyle);
 
 	pBody->pluginCapsule.structSize			= sizeof(wg_plugincapsule_calls);
-	pBody->pluginCapsule.requestRender 		= &wg_pluginRequestRender;
-	pBody->pluginCapsule.requestResize 		= &wg_pluginRequestResize;
-	pBody->pluginCapsule.isVisible 			= &wg_isPluginVisible;
-	pBody->pluginCapsule.windowSection 		= &wg_pluginWindowSection;
-	pBody->pluginCapsule.requestFocus 		= &wg_pluginRequestFocus;
-	pBody->pluginCapsule.releaseFocus 		= &wg_pluginReleaseFocus;
-	pBody->pluginCapsule.requestPreRenderCall = &wg_pluginRequestPreRenderCall;
-	pBody->pluginCapsule.requestInView		= &wg_pluginRequestInView;
-	pBody->pluginCapsule.connect			= &wg_connectPlugin;
-	pBody->pluginCapsule.disconnect			= &wg_disconnectPlugin;
+	pBody->pluginCapsule.requestRender 		= LOCKED(wg_pluginRequestRender);
+	pBody->pluginCapsule.requestResize 		= LOCKED(wg_pluginRequestResize);
+	pBody->pluginCapsule.isVisible 			= LOCKED(wg_isPluginVisible);
+	pBody->pluginCapsule.windowSection 		= LOCKED(wg_pluginWindowSection);
+	pBody->pluginCapsule.requestFocus 		= LOCKED(wg_pluginRequestFocus);
+	pBody->pluginCapsule.releaseFocus 		= LOCKED(wg_pluginReleaseFocus);
+	pBody->pluginCapsule.requestPreRenderCall = LOCKED(wg_pluginRequestPreRenderCall);
+	pBody->pluginCapsule.requestInView		= LOCKED(wg_pluginRequestInView);
+	pBody->pluginCapsule.connect			= LOCKED(wg_connectPlugin);
+	pBody->pluginCapsule.disconnect			= LOCKED(wg_disconnectPlugin);
 
 	pBody->blurbrush.structSize				= sizeof(wg_blurbrush_calls);
-	pBody->blurbrush.create					= &wg_createBlurbrush;
-	pBody->blurbrush.size					= &wg_blurbrushSize;
-	pBody->blurbrush.blue					= &wg_blurbrushBlue;
-	pBody->blurbrush.green					= &wg_blurbrushGreen;
-	pBody->blurbrush.red					= &wg_blurbrushRed;
+	pBody->blurbrush.create					= LOCKED(wg_createBlurbrush);
+	pBody->blurbrush.size					= LOCKED(wg_blurbrushSize);
+	pBody->blurbrush.blue					= LOCKED(wg_blurbrushBlue);
+	pBody->blurbrush.green					= LOCKED(wg_blurbrushGreen);
+	pBody->blurbrush.red					= LOCKED(wg_blurbrushRed);
 
 	pBody->tintmap.structSize				= sizeof(wg_tintmap_calls);
 	pBody->tintmap.isTintmapOpaque			= &stub_isTintmapFlag;
@@ -419,21 +444,29 @@ void wg_populatePluginInterface(wg_plugin_interface * pHeader)
 	pBody->staticTintmap.createStaticTintmap = &stub_createStaticTintmap;
 
 	pBody->tint.structSize					= sizeof(wg_tint_calls);
-	pBody->tint.defaultTintBP				= &wg_defaultTintBP;
-	pBody->tint.createTint					= &wg_createTint;
-	pBody->tint.createTintFromData			= &wg_createTintFromData;
-	pBody->tint.createTintMix				= &wg_createTintMix;
-	pBody->tint.mixTints					= &wg_mixTints;
-	pBody->tint.isTintOpaque				= &wg_isTintOpaque;
-	pBody->tint.isTintFlat					= &wg_isTintFlat;
-	pBody->tint.isTintMix					= &wg_isTintMix;
-	pBody->tint.getTintBlueprint			= &wg_getTintBlueprint;
-	pBody->tint.tintMixComponents			= &wg_tintMixComponents;
-	pBody->tint.tintMixComponent			= &wg_tintMixComponent;
-	pBody->tint.tintMixWeight				= &wg_tintMixWeight;
-	pBody->tint.tintColorAt					= &wg_tintColorAt;
-	pBody->tint.tintAlphaAt					= &wg_tintAlphaAt;
-	pBody->tint.exportTintData				= &wg_exportTintData;
+	pBody->tint.defaultTintBP				= LOCKED(wg_defaultTintBP);
+	pBody->tint.createTint					= LOCKED(wg_createTint);
+	pBody->tint.createTintFromData			= LOCKED(wg_createTintFromData);
+	pBody->tint.createTintMix				= LOCKED(wg_createTintMix);
+	pBody->tint.mixTints					= LOCKED(wg_mixTints);
+	pBody->tint.isTintOpaque				= LOCKED(wg_isTintOpaque);
+	pBody->tint.isTintFlat					= LOCKED(wg_isTintFlat);
+	pBody->tint.isTintMix					= LOCKED(wg_isTintMix);
+	pBody->tint.getTintBlueprint			= LOCKED(wg_getTintBlueprint);
+	pBody->tint.tintMixComponents			= LOCKED(wg_tintMixComponents);
+	pBody->tint.tintMixComponent			= LOCKED(wg_tintMixComponent);
+	pBody->tint.tintMixWeight				= LOCKED(wg_tintMixWeight);
+	pBody->tint.tintColorAt					= LOCKED(wg_tintColorAt);
+	pBody->tint.tintAlphaAt					= LOCKED(wg_tintAlphaAt);
+	pBody->tint.exportTintData				= LOCKED(wg_exportTintData);
+}
+
+
+void wg_populatePluginInterface(wg_plugin_interface * pHeader)
+{
+	std::call_once(bodyPopulated, populateBody, &body);
+
+	auto pBody = &body;
 
 	pHeader->structSize			= sizeof(wg_plugin_interface);
 	pHeader->pBitmapCache		= &pBody->bitmapCache;
