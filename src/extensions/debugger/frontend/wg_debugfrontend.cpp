@@ -36,12 +36,40 @@ namespace wg
 
 	const TypeInfo DebugFrontend::TYPEINFO = { "DebugFrontend", &Capsule::TYPEINFO };
 
+	namespace
+	{
+		//____ ContextSwitch __________________________________________________
+		//
+		// Makes a GUI context current for as long as it lives, then restores the
+		// previous one. Does nothing if the context is gone or already current.
+
+		class ContextSwitch
+		{
+		public:
+			ContextSwitch( const GUIContext_p& pContext )
+			{
+				if( pContext && pContext != Base::context() )
+					m_pPrevious = Base::setContext(pContext);
+			}
+
+			~ContextSwitch()
+			{
+				if( m_pPrevious )
+					Base::setContext(m_pPrevious);
+			}
+
+		private:
+			GUIContext_p	m_pPrevious;
+		};
+	}
+
 
 	//____ constructor ____________________________________________________________
 
 	DebugFrontend::DebugFrontend(const Blueprint& bp) : Capsule(bp)
 	{
 		m_pBackend = bp.backend;
+		m_pContext = Base::context();
 
 		DebugTheme::acquireWidgetKit(bp.font, bp.fontBold, bp.fontItalic, bp.fontMono);
 
@@ -61,6 +89,10 @@ namespace wg
 
 	DebugFrontend::~DebugFrontend()
 	{
+		for( auto pCapsule : m_capsules )
+			pCapsule->_frontendDestroyed();
+		m_capsules.clear();
+
 		DebugTheme::releaseWidgetKit();
 	}
 
@@ -113,12 +145,54 @@ namespace wg
 	{
 		m_capsules.erase(std::remove(m_capsules.begin(), m_capsules.end(), pCapsule), m_capsules.end());
 
-//		_refreshTreeSelector();
+		// Let go of everything we hold inside the capsule, so that none of its
+		// widgets outlive the window they belong to. Inspected objects that aren't
+		// widgets can't be traced to a capsule and are kept.
+
+		ContextSwitch contextSwitch(_context());
+
+		auto isInside = [pCapsule](Object * pObject)
+		{
+			auto pWidget = dynamic_cast<Widget*>(pObject);
+			return pWidget && (pWidget == pCapsule || pWidget->isDescendantOf(pCapsule));
+		};
+
+		if( isInside(m_pSelectedWidget.rawPtr()) )
+			_selectObject(nullptr, nullptr, true);
+
+		for( auto it = m_pWorkspace->slots.begin() ; it != m_pWorkspace->slots.end() ; )
+		{
+			auto pWindow = static_cast<DebugWindow*>(it->_widget());
+			if( isInside(pWindow->inspected().rawPtr()) )
+				it = m_pWorkspace->slots.erase(it);
+			else
+				it++;
+		}
+
+		if( !m_pListOfTreeViews->slots.isEmpty() )
+			_refreshWidgetTree();
+	}
+
+	//____ _capsuleSelected() ____________________________________________________
+
+	void DebugFrontend::_capsuleSelected( Widget * pWidget, DebugCapsule * pCapsule, ModKeys modKeys )
+	{
+		ContextSwitch contextSwitch(_context());
+
+		_selectObject(pWidget, pCapsule, (modKeys & ModKeys::Shift) == 0);
 	}
 
 	//____ selectObject() _______________________________________________________
 
 	void DebugFrontend::selectObject(Object* pSelected, Object * pSelectedFrom)
+	{
+		bool bReuseWindow = (Base::inputHandler()->modifierKeys() & ModKeys::Shift) == 0;
+		_selectObject(pSelected, pSelectedFrom, bReuseWindow);
+	}
+
+	//____ _selectObject() _______________________________________________________
+
+	void DebugFrontend::_selectObject(Object* pSelected, Object * pSelectedFrom, bool bReuseWindow)
 	{
 		auto pWidget = dynamic_cast<Widget*>(pSelected);
 		if(pWidget || pSelected == nullptr)
@@ -137,10 +211,7 @@ namespace wg
 		}
 
 		if (pSelected)
-		{
-			bool bReuseWindow = (Base::inputHandler()->modifierKeys() & ModKeys::Shift) == 0;
 			_addWorkspaceWindow(pSelected, bReuseWindow);
-		}
 		else
 			_focusWorkspaceWindow(nullptr);
 

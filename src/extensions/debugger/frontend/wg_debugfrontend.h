@@ -107,6 +107,17 @@ namespace wg
 		void		_addDebugCapsule( DebugCapsule * pCapsule );
 		void		_removeDebugCapsule( DebugCapsule * pCapsule );
 
+		// Called by DebugCapsule when a widget is picked in it. The capsule's GUI
+		// context is current, which needn't be ours, and the modifier keys are
+		// those of the capsule's window.
+
+		void		_capsuleSelected( Widget * pWidget, DebugCapsule * pCapsule, ModKeys modKeys );
+
+		// The GUI context this frontend was created in. Everything it builds lives
+		// there, so calls coming in from capsules in other contexts switch to it.
+
+		GUIContext_p	_context() const { return m_pContext.rawPtr(); }
+
 
 	protected:
 		DebugFrontend(const Blueprint& blueprint);
@@ -120,6 +131,8 @@ namespace wg
 
 		void		_refreshWidgetTree();
 
+		void		_selectObject(Object* pSelected, Object* pSelectedFrom, bool bReuseWindow);
+
 
 		void		_addWorkspaceWindow( Object * pObject, bool bReuse );
 		bool		_focusWorkspaceWindow(DebugWindow * pWindow);
@@ -128,6 +141,7 @@ namespace wg
 
 		DebugBackend_p		m_pBackend;
 		std::vector<DebugCapsule*>	m_capsules;
+		GUIContext_wp		m_pContext;
 
 		Widget_p			m_pSelectedWidget;
 
