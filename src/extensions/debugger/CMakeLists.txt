@@ -159,6 +159,8 @@ set(SOURCES
     sections/slots/wg_packpanelslotinfosection.cpp
     sections/slots/wg_panelslotinfosection.h
     sections/slots/wg_panelslotinfosection.cpp
+    sections/slots/wg_popupoverlayslotinfosection.h
+    sections/slots/wg_popupoverlayslotinfosection.cpp
     sections/slots/wg_splitpanelslotinfosection.h
     sections/slots/wg_splitpanelslotinfosection.cpp
     sections/slots/wg_stackpanelslotinfosection.h
