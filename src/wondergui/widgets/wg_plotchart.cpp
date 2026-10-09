@@ -29,7 +29,7 @@
 namespace wg
 {
 
-	const TypeInfo PlotChart::TYPEINFO = { "PlotChart", &Widget::TYPEINFO };
+	const TypeInfo PlotChart::TYPEINFO = { "PlotChart", &Chart::TYPEINFO };
 
 
 	//____ constructor ____________________________________________________________

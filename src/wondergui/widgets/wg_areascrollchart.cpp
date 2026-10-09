@@ -28,7 +28,7 @@
 namespace wg
 {
 
-	const TypeInfo AreaScrollChart::TYPEINFO = {"AreaScrollChart", &Widget::TYPEINFO};
+	const TypeInfo AreaScrollChart::TYPEINFO = {"AreaScrollChart", &ScrollChart::TYPEINFO};
 
 	//____ constructor ____________________________________________________________
 

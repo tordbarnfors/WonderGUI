@@ -29,7 +29,7 @@
 namespace wg
 {
 
-	const TypeInfo AreaChart::TYPEINFO = { "AreaChart", &Widget::TYPEINFO };
+	const TypeInfo AreaChart::TYPEINFO = { "AreaChart", &Chart::TYPEINFO };
 
 
 	//____ constructor ____________________________________________________________
