@@ -96,11 +96,11 @@ namespace wg
 		void			setDisplayState(State state);
 		State			displayState() const { return m_displayState; }
 
-		void			setDisplayValue(int value);
-		int				displayValue() const { return m_displayValue; }
+		void			setDisplayValue(float value);
+		float			displayValue() const { return m_displayValue; }
 
-		void			setDisplayValue2(int value2);
-		int				displayValue2() const { return m_displayValue2; }
+		void			setDisplayValue2(float value2);
+		float			displayValue2() const { return m_displayValue2; }
 
 		void			setDisplayScale(int scale);
 		int				displayScale() const { return m_displayScale; }

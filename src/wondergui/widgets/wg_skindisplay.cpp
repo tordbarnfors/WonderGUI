@@ -71,7 +71,7 @@ namespace wg
 
 	//____ setDisplayValue() _______________________________________________________
 
-	void SkinDisplay::setDisplayValue(int value)
+	void SkinDisplay::setDisplayValue(float value)
 	{
 		if (m_displayValue != value)
 		{
@@ -82,7 +82,7 @@ namespace wg
 
 	//____ setDisplayValue2() ______________________________________________________
 
-	void SkinDisplay::setDisplayValue2(int value2)
+	void SkinDisplay::setDisplayValue2(float value2)
 	{
 		if (m_displayValue2 != value2)
 		{
