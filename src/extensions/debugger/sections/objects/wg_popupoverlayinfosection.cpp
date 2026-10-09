@@ -1,0 +1,58 @@
+/*=========================================================================
+
+                             >>> WonderGUI <<<
+
+  This file is part of Tord Bärnfors' WonderGUI UI Toolkit and copyright
+  Tord Bärnfors, Sweden [mail: first name AT barnfors DOT c_o_m].
+
+                                -----------
+
+  The WonderGUI UI Toolkit is free software; you can redistribute
+  this file and/or modify it under the terms of the GNU General Public
+  License as published by the Free Software Foundation; either
+  version 2 of the License, or (at your option) any later version.
+
+                                -----------
+
+  The WonderGUI UI Toolkit is also available for use in commercial
+  closed source projects under a separate license. Interested parties
+  should contact Bärnfors Technology AB [www.barnfors.com] for details.
+
+=========================================================================*/
+#include "wg_popupoverlayinfosection.h"
+
+
+namespace wg
+{
+
+	const TypeInfo PopupOverlayInfoSection::TYPEINFO = { "PopupOverlayInfoSection", &InfoSection::TYPEINFO };
+
+
+	//____ constructor _____________________________________________________________
+
+	PopupOverlayInfoSection::PopupOverlayInfoSection(const DebugTheme& theme, IDebugContext* pContext, PopupOverlay * pInspected)
+		: TypedInfoSection<PopupOverlay>( theme, pContext, PopupOverlay::TYPEINFO.className, pInspected )
+	{
+		//TODO: Opening/closing delays and fades, block left mouse button
+
+		m_pPopupSlotsDrawer = _createSlotsDrawer("Popup slots", pInspected->popupSlots.begin(), pInspected->popupSlots.end());
+		this->slot = m_pPopupSlotsDrawer;
+	}
+
+	//____ typeInfo() _________________________________________________________
+
+	const TypeInfo& PopupOverlayInfoSection::typeInfo(void) const
+	{
+		return TYPEINFO;
+	}
+
+	//____ refresh() _____________________________________________________________
+
+	void PopupOverlayInfoSection::refresh()
+	{
+		TypedInfoSection<PopupOverlay>::refresh();
+
+		_refreshSlotsDrawer(m_pPopupSlotsDrawer, inspected()->popupSlots.begin(), inspected()->popupSlots.end());
+	}
+
+} // namespace wg
