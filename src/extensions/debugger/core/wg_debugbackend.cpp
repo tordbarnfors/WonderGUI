@@ -103,6 +103,12 @@
 #include <wg_packpanelslotinfosection.h>
 #include <wg_flexpanelslotinfosection.h>
 #include <wg_twoslotpanelslotinfosection.h>
+#include <wg_overlayslotinfosection.h>
+#include <wg_modaloverlayslotinfosection.h>
+#include <wg_splitpanelslotinfosection.h>
+#include <wg_nodepanelslotinfosection.h>
+#include <wg_lambdapanelslotinfosection.h>
+#include <wg_stackpanelslotinfosection.h>
 
 #include <wg_statictextinfosection.h>
 #include <wg_editabletextinfosection.h>
@@ -199,6 +205,12 @@ namespace wg
 		_registerSlot<PackPanelSlot, PackPanelSlotInfoSection>();
 		_registerSlot<FlexPanelSlot, FlexPanelSlotInfoSection>();
 		_registerSlot<TwoSlotPanel::Slot, TwoSlotPanelSlotInfoSection>();
+		_registerSlot<Overlay::Slot, OverlaySlotInfoSection>();
+		_registerSlot<ModalOverlay::Slot, ModalOverlaySlotInfoSection>();
+		_registerSlot<SplitPanel::Slot, SplitPanelSlotInfoSection>();
+		_registerSlot<NodePanelSlot, NodePanelSlotInfoSection>();
+		_registerSlot<LambdaPanelSlot, LambdaPanelSlotInfoSection>();
+		_registerSlot<StackPanelSlot, StackPanelSlotInfoSection>();
 
 		_registerComponent<StaticText, StaticTextInfoSection>();
 		_registerComponent<EditableText, EditableTextInfoSection>();
@@ -207,6 +219,7 @@ namespace wg
 		_registerComponent<Glow, GlowInfoSection>();
 
 		_ignore<DynamicSlot>();
+		_ignore<DragNDropOverlay::Slot>();
 		_ignore<Receiver>();
 		_ignore<Component>();
 		_ignore<DynamicText>();

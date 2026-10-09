@@ -147,10 +147,22 @@ set(SOURCES
 
     sections/slots/wg_flexpanelslotinfosection.h
     sections/slots/wg_flexpanelslotinfosection.cpp
+    sections/slots/wg_lambdapanelslotinfosection.h
+    sections/slots/wg_lambdapanelslotinfosection.cpp
+    sections/slots/wg_modaloverlayslotinfosection.h
+    sections/slots/wg_modaloverlayslotinfosection.cpp
+    sections/slots/wg_nodepanelslotinfosection.h
+    sections/slots/wg_nodepanelslotinfosection.cpp
+    sections/slots/wg_overlayslotinfosection.h
+    sections/slots/wg_overlayslotinfosection.cpp
     sections/slots/wg_packpanelslotinfosection.h
     sections/slots/wg_packpanelslotinfosection.cpp
     sections/slots/wg_panelslotinfosection.h
     sections/slots/wg_panelslotinfosection.cpp
+    sections/slots/wg_splitpanelslotinfosection.h
+    sections/slots/wg_splitpanelslotinfosection.cpp
+    sections/slots/wg_stackpanelslotinfosection.h
+    sections/slots/wg_stackpanelslotinfosection.cpp
     sections/slots/wg_staticslotinfosection.h
     sections/slots/wg_staticslotinfosection.cpp
     sections/slots/wg_twoslotpanelslotinfosection.h
