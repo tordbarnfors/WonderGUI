@@ -32,6 +32,19 @@ const TypeInfo Q565Decompressor::TYPEINFO = { "Q565Decompressor", &Decompressor:
 const uint32_t Q565Compressor::ID_TOKEN = Util::makeEndianSpecificToken('Q', '5', '6', '5');
 const uint32_t Q565Decompressor::ID_TOKEN = Util::makeEndianSpecificToken('Q', '5', '6', '5');
 
+static const uint8_t c_endOfStream = 0xD2;		// RGB-delta with no change, which is never used for anything else.
+
+//____ _setupPixelToIndexTable() ______________________________________________
+
+static void _setupPixelToIndexTable( uint8_t table[65536] )
+{
+	// Decides which of the 64 palette entries each pixel should go into.
+	// Must be identical to q16_setupStaticTable() in the Q16 library.
+
+	for (uint32_t i = 0; i < 65536; i++)
+		table[i] = (uint8_t)((i + (i >> 3) + (i >> 4) + (i >> 10)) & 63);
+}
+
 
 //____ create() _____________________________________________________________
 
@@ -44,13 +57,7 @@ Q565Compressor_p Q565Compressor::create()
 
 Q565Compressor::Q565Compressor()
 {
-	for (int i = 0; i < 65536; i++)
-	{
-		int r = i & 0x001F;
-		int g = (i >> 5) & 0x003F;
-		int b = (i >> 11) & 0x001F;
-		m_pixelToIndexTable[i] = (r * 3 + g * 5 + b * 7) % 64;
-	}
+	_setupPixelToIndexTable(m_pixelToIndexTable);
 }
 
 //____ destructor _____________________________________________________________
@@ -77,11 +84,11 @@ uint32_t Q565Compressor::idToken() const
 
 int Q565Compressor::maxCompressedSize( int uncompressedSize )
 {
-	// Worst case scenario is one extra byte per 32 16-bit pixels.
+	// Worst case scenario is one extra byte per 32 16-bit pixels plus end-of-stream.
 
 	int maxExtra = (uncompressedSize + 63) / 64;
 
-	return uncompressedSize + maxExtra;
+	return uncompressedSize + maxExtra + 1;
 }
 
 //____ compress() _____________________________________________________________
@@ -126,13 +133,13 @@ int Q565Compressor::compress( void * pDest, const void * pBegin, const void * pE
 				*pWrite++ = 0x40 | index;						// Store as index lookup
 			else
 			{
-				uint16_t prevR = prevValue & 0x001F;
+				uint16_t prevR = (prevValue >> 11) & 0x001F;
 				uint16_t prevG = (prevValue >> 5) & 0x003F;
-				uint16_t prevB = (prevValue >> 11) & 0x001F;
+				uint16_t prevB = prevValue & 0x001F;
 
-				uint16_t r = value & 0x001F;
+				uint16_t r = (value >> 11) & 0x001F;
 				uint16_t g = (value >> 5) & 0x003F;
-				uint16_t b = (value >> 11) & 0x001F;
+				uint16_t b = value & 0x001F;
 
 				uint16_t diffR = r - prevR + 2;
 				uint16_t diffG = g - prevG + 4;
@@ -166,9 +173,9 @@ int Q565Compressor::compress( void * pDest, const void * pBegin, const void * pE
 						if (palette[futureIndex] == futureValue)
 							break;				// Next pixel can be taken from index;
 
-						uint16_t futureR = futureValue & 0x001F;
+						uint16_t futureR = (futureValue >> 11) & 0x001F;
 						uint16_t futureG = (futureValue >> 5) & 0x003F;
-						uint16_t futureB = (futureValue >> 11) & 0x001F;
+						uint16_t futureB = futureValue & 0x001F;
 
 						uint16_t diffR = futureR - r + 2;
 						uint16_t diffG = futureG - g + 4;
@@ -200,6 +207,8 @@ int Q565Compressor::compress( void * pDest, const void * pBegin, const void * pE
 
 		prevValue = value;
 	}
+
+	*pWrite++ = c_endOfStream;
 	return int( pWrite - (uint8_t*)pDest);
 }
 
@@ -214,13 +223,7 @@ Q565Decompressor_p Q565Decompressor::create()
 
 Q565Decompressor::Q565Decompressor()
 {
-	for (int i = 0; i < 65536; i++)
-	{
-		int r = i & 0x001F;
-		int g = (i >> 5) & 0x003F;
-		int b = (i >> 11) & 0x001F;
-		m_pixelToIndexTable[i] = (r * 3 + g * 5 + b * 7) % 64;
-	}
+	_setupPixelToIndexTable(m_pixelToIndexTable);
 }
 
 //____ destructor _____________________________________________________________
@@ -293,15 +296,14 @@ int Q565Decompressor::decompress( void * _pDest, const void * pBegin, const void
 			}
 			else
 			{
-				uint8_t r = uint8_t(lastPixel & 0x001F);
-				uint8_t g = uint8_t((lastPixel >> 5) & 0x003F);
-				uint8_t b = uint8_t((lastPixel >> 11) & 0x001F);
+				if (v == c_endOfStream)
+					break;
 
-				r += ((v >> 5) & 0x3) - 2;
-				g += ((v >> 2) & 0x7) - 4;
-				b += (v & 0x3) - 2;
+				int deltaR = ((v >> 5) & 0x3) - 2;
+				int deltaG = ((v >> 2) & 0x7) - 4;
+				int deltaB = (v & 0x3) - 2;
 
-				lastPixel = (b << 11) | (g << 5) | r;
+				lastPixel = uint16_t(lastPixel + deltaR * 2048 + deltaG * 32 + deltaB);
 				*pDest++ = lastPixel;
 
 				palette[m_pixelToIndexTable[lastPixel]] = lastPixel;

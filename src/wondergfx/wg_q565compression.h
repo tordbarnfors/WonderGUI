@@ -31,10 +31,16 @@
 *
 *	Q565 compression format:
 *
-	00 0xxxxx		New pixels(1 - 32)
-	00 1xxxxx		Repeat previous pixel(1 - 32)
+	000 xxxxx		New pixels(1 - 32), followed by 16-bit little endian pixel values
+	001 xxxxx		Repeat previous pixel(1 - 32)
 	01 xxxxxx		Pixel from index
 	1 rrgggbb		Delta rgb values -2 > +1 for r and b, -4 > +3 for g
+	1 1010010		End of stream. This equals Delta with no change of r, g or b, which is forbidden.
+
+	r is the top 5 bits of the pixel and b the bottom 5 bits. The index of a pixel
+	is (p + (p >> 3) + (p >> 4) + (p >> 10)) & 63.
+
+	Streams are binary compatible with the Q16 library (github.com/tordbarnfors/q16).
 */
 
 
