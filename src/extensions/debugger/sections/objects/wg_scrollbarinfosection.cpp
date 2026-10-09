@@ -43,8 +43,8 @@ namespace wg
 			ptsRow    ( "View position (pts): ",      [](Scrollbar* s) { return s->viewPos(); } ),
 			ptsRow    ( "View length (pts): ",        [](Scrollbar* s) { return s->viewLength(); } ),
 			ptsRow    ( "Content length (pts): ",     [](Scrollbar* s) { return s->contentLength(); } ),
-			decimalRow( "Fractional view position: ", [](Scrollbar* s) { return s->contentLength() > s->viewLength() ? s->fracViewPos() : 0.f; } ),
-			decimalRow( "Fractional view length: ",   [](Scrollbar* s) { return s->contentLength() > 0 ? s->fracViewLength() : 1.f; } )
+			decimalRow( "Fractional view position: ", [](Scrollbar* s) { return s->fracViewPos(); } ),
+			decimalRow( "Fractional view length: ",   [](Scrollbar* s) { return s->fracViewLength(); } )
 		});
 
 		m_pScrollbarDrawer = _createComponentDrawer("Scrollbar", &pInspected->scrollbar);

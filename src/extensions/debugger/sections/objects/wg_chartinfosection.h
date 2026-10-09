@@ -25,6 +25,7 @@
 
 #include <wg_typedinfosection.h>
 #include <wg_chart.h>
+#include <wg_gridlineinfosection.h>
 
 namespace wg
 {
@@ -56,6 +57,15 @@ namespace wg
 		ChartInfoSection(const DebugTheme& theme, IDebugContext* pContext, Chart * pInspected );
 		~ChartInfoSection() {}
 
+		DrawerPanel_p	_createGridLinesDrawer(const CharSeq& label, DynamicVector<GridLine>& lines);
+		void			_refreshGridLinesDrawer(DrawerPanel* pDrawer, DynamicVector<GridLine>& lines);
+		void			_addGridLineDrawers(PackPanel* pList, DynamicVector<GridLine>& lines, int begin);
+
+		DrawerPanel_p	m_pGridColorDrawer;
+		HiColor			m_displayedGridColor;
+
+		DrawerPanel_p	m_pXLinesDrawer;
+		DrawerPanel_p	m_pYLinesDrawer;
 		DrawerPanel_p	m_pGlowDrawer;
 	};
 

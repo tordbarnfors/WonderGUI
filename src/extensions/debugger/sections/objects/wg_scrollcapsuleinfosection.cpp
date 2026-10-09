@@ -34,19 +34,34 @@ namespace wg
 	ScrollCapsuleInfoSection::ScrollCapsuleInfoSection(const DebugTheme& theme, IDebugContext* pContext, ScrollCapsule * pInspected)
 		: TypedInfoSection<ScrollCapsule>( theme, pContext, ScrollCapsule::TYPEINFO.className, pInspected )
 	{
-		//TODO: Scroll axes, scrollbar overlay/autohide, step sizes, page overlaps, wheel settings and corner skin
-
 		auto pPanel = WGCREATE(PackPanel, _.axis = Axis::Y);
 
 		auto pTable = _createRows({
-			ptsRow   ( "View X offset (pts): ",   [](ScrollCapsule* c) { return c->viewOffset().x; } ),
-			ptsRow   ( "View Y offset (pts): ",   [](ScrollCapsule* c) { return c->viewOffset().y; } ),
-			ptsRow   ( "View width (pts): ",      [](ScrollCapsule* c) { return c->viewSize().w; } ),
-			ptsRow   ( "View height (pts): ",     [](ScrollCapsule* c) { return c->viewSize().h; } ),
-			ptsRow   ( "Content width (pts): ",   [](ScrollCapsule* c) { return c->contentSize().w; } ),
-			ptsRow   ( "Content height (pts): ",  [](ScrollCapsule* c) { return c->contentSize().h; } ),
-			objectRow( "Default transition: ",    [](ScrollCapsule* c) -> Object* { return c->transition().rawPtr(); } ),
-			boolRow  ( "Transitioning: ",         [](ScrollCapsule* c) { return c->isTransitioning(); } )
+			ptsRow   ( "View X offset (pts): ",     [](ScrollCapsule* c) { return c->viewOffset().x; } ),
+			ptsRow   ( "View Y offset (pts): ",     [](ScrollCapsule* c) { return c->viewOffset().y; } ),
+			ptsRow   ( "View width (pts): ",        [](ScrollCapsule* c) { return c->viewSize().w; } ),
+			ptsRow   ( "View height (pts): ",       [](ScrollCapsule* c) { return c->viewSize().h; } ),
+			ptsRow   ( "Content width (pts): ",     [](ScrollCapsule* c) { return c->contentSize().w; } ),
+			ptsRow   ( "Content height (pts): ",    [](ScrollCapsule* c) { return c->contentSize().h; } ),
+			objectRow( "Default transition: ",      [](ScrollCapsule* c) -> Object* { return c->transition().rawPtr(); } ),
+			boolRow  ( "Transitioning: ",           [](ScrollCapsule* c) { return c->isTransitioning(); } ),
+			boolRow  ( "Scroll X: ",                [](ScrollCapsule* c) { return c->scrollX(); } ),
+			boolRow  ( "Scroll Y: ",                [](ScrollCapsule* c) { return c->scrollY(); } ),
+			boolRow  ( "Overlay scrollbars: ",      [](ScrollCapsule* c) { return c->overlayScrollbars(); } ),
+			boolRow  ( "Autohide scrollbars: ",     [](ScrollCapsule* c) { return c->autoHideScrollbars(); } ),
+			textRow  ( "Auto scroll axis: ",        [](ScrollCapsule* c) { return toString(c->autoScrollAxis()); } ),
+			ptsRow   ( "Step size X (pts): ",       [](ScrollCapsule* c) { return c->stepSizeX(); } ),
+			ptsRow   ( "Step size Y (pts): ",       [](ScrollCapsule* c) { return c->stepSizeY(); } ),
+			ptsRow   ( "Page overlap X (pts): ",    [](ScrollCapsule* c) { return c->pageOverlapX(); } ),
+			ptsRow   ( "Page overlap Y (pts): ",    [](ScrollCapsule* c) { return c->pageOverlapY(); } ),
+			ptsRow   ( "Wheel step size X (pts): ", [](ScrollCapsule* c) { return c->wheelStepSizeX(); } ),
+			ptsRow   ( "Wheel step size Y (pts): ", [](ScrollCapsule* c) { return c->wheelStepSizeY(); } ),
+			textRow  ( "Wheel axis: ",              [](ScrollCapsule* c) { return toString(c->wheelAxis()); } ),
+			textRow  ( "Wheel axis modifier: ",     [](ScrollCapsule* c) { return toString(c->wheelAxisModifier()); } ),
+			textRow  ( "Wheel accelerator: ",       [](ScrollCapsule* c) { return toString(c->wheelAccelerator()); } ),
+			intRow   ( "Wheel accel factor: ",      [](ScrollCapsule* c) { return c->wheelAccelFactor(); } ),
+			boolRow  ( "Wheel follows scrollbar: ", [](ScrollCapsule* c) { return c->wheelFollowsScrollbar(); } ),
+			objectRow( "Corner skin: ",             [](ScrollCapsule* c) -> Object* { return c->cornerSkin().rawPtr(); } )
 		});
 
 		m_pScrollbarXDrawer = _createComponentDrawer("Scrollbar X", &pInspected->scrollbarX);
