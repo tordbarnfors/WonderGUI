@@ -45,6 +45,7 @@
 #include <fstream>
 #include <iostream>
 #include <mutex>
+#include <atomic>
 
 #include "sdlwindow.h"
 #include "tinyfiledialogs.h"
@@ -169,6 +170,7 @@ static const char * dialogNames[4] = { "ok", "okcancel", "yesno", "yesnocancel" 
 
 
 std::mutex g_winResizeEventMutex;
+std::atomic<bool> g_bMainLoopHoldsResizeMutex = false;		// Set while the main loop updates, see eventWatcher().
 
 SDL_Window*	g_pFocusedWindow = nullptr;
 
@@ -232,6 +234,7 @@ int main(int argc, char *argv[] )
 			// Don't collide with eventWatcher.
 			
 			const std::lock_guard<std::mutex> lock(g_winResizeEventMutex);
+			g_bMainLoopHoldsResizeMutex = true;
 
 			// Uppdate the app
 
@@ -261,6 +264,8 @@ int main(int argc, char *argv[] )
 			// Sleep for a while
 
 			SDL_Delay(10);
+
+			g_bMainLoopHoldsResizeMutex = false;
 		}
 	}
 
@@ -385,15 +390,10 @@ bool init_debugger(MyAppAPI* pAPI)
 {
 
 	pAPI->initDefaultWidgetKit();
-	auto pIconSurface = pAPI->loadSurface("resources/debugger_gfx.png");
-	auto pTransparencyGrid = pAPI->loadSurface("resources/checkboardtile.png", nullptr, { .tiling = true } );
-
-	if( !pIconSurface || !pTransparencyGrid )
-		return false;
 
 	g_pDebugBackend = DebugBackend::create();
 
-	g_pDebugFrontend = WGCREATE(DebugFrontend, _.backend = g_pDebugBackend, _.icons = pIconSurface, _.transparencyGrid = pTransparencyGrid );
+	g_pDebugFrontend = WGCREATE(DebugFrontend, _.backend = g_pDebugBackend );
 
 	Base::msgRouter()->addRoute(MsgType::KeyPress, [pAPI](Msg * _pMsg) {
 
@@ -404,9 +404,9 @@ bool init_debugger(MyAppAPI* pAPI)
 			if( !g_pDebugWindow )
 			{
 				auto pFocusedWindow = g_pFocusedWindow;
-				SizeI size = g_pDebugFrontend->spxSize() / 64;
+				Size size = g_pDebugFrontend->size();		// In points, its spx size depends on the scale of the window it was last in.
 
-				auto pWindow = wapp::Window::create(pAPI, { .debug = false, .size = Size(size), .title = "Debugger"  });
+				auto pWindow = wapp::Window::create(pAPI, { .debug = false, .size = size, .title = "Debugger"  });
 				g_pDebugWindow = pWindow;
 
 				pWindow->mainCapsule()->slot = g_pDebugFrontend;
@@ -441,6 +441,14 @@ int eventWatcher(void * pNull, SDL_Event* pEvent)
 	
 	if (pEvent->type == SDL_WINDOWEVENT && pEvent->window.event == SDL_WINDOWEVENT_RESIZED)
 	{
+		// SDL also calls us synchronously from window calls the app makes while the
+		// main loop holds the mutex, such as SDL_CreateWindow() on a window too large
+		// for the screen. Locking would then deadlock. The event is queued as well
+		// and handled by process_system_events(), so it is safe to skip here.
+
+		if (g_bMainLoopHoldsResizeMutex)
+			return 0;
+
 		const std::lock_guard<std::mutex> lock(g_winResizeEventMutex);
 
 		for( int i = 0 ; i < g_windows.size() ; i++ )
@@ -900,9 +908,7 @@ bool MyAppAPI::initDefaultWidgetKit()
 		auto pFont3 = FreeTypeFont::create(pFont3Blob);
 		auto pFont4 = FreeTypeFont::create(pFont4Blob);
 
-		auto pSkinBlocks = loadSurface(path + "oldskool_skinblocks.png");
-
-		if (!wkit::init(pFont1, pFont2, pFont3, pFont4, pSkinBlocks))
+		if (!wkit::init(pFont1, pFont2, pFont3, pFont4))
 		{
 			Base::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "Failed to init default widget kit", nullptr, nullptr, __func__, __FILE__, __LINE__);
 			return false;

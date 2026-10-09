@@ -52,8 +52,23 @@ namespace wg
 		// Both frontends get their look from here, so that they can't drift apart.
 		// The icons surface holds 16x16 icons, the transparency grid is a
 		// chessboard pattern or similar, shown behind partly transparent surfaces.
+		// Either can be null, in which case the embedded default is created with
+		// the default surface factory.
+		//
+		// The oldskool widget kit must be initialized first, see acquireWidgetKit().
 
-		static DebugTheme			create( Surface * pIcons, Surface * pTransparencyGrid );
+		static DebugTheme			create( Surface * pIcons = nullptr, Surface * pTransparencyGrid = nullptr );
+
+		//.____ Widget kit ________________________________________
+		//
+		// The debugger is built with the oldskool widget kit. Each frontend calls
+		// acquireWidgetKit() before creating its theme and releaseWidgetKit() when
+		// destroyed. The kit is initialized with the given fonts (all optional) by
+		// the first acquire, unless something else already initialized it, and
+		// exited by the last release only if the debugger initialized it.
+
+		static bool					acquireWidgetKit( Font * pNormal, Font * pBold, Font * pItalic, Font * pMono );
+		static void					releaseWidgetKit();
 
 		//.____ Resources _________________________________________
 

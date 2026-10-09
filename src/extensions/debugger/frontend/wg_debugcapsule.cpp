@@ -40,8 +40,27 @@ namespace wg
 
 	DebugCapsule::~DebugCapsule()
 	{
-		m_pFrontend->_removeDebugCapsule(this);
+		if( m_pFrontend )
+			m_pFrontend->_removeDebugCapsule(this);
 		_stopReceiveUpdates();
+	}
+
+	//____ setFrontend() _________________________________________________________
+
+	void DebugCapsule::setFrontend( DebugFrontend * pFrontend )
+	{
+		if( pFrontend == m_pFrontend )
+			return;
+
+		if( m_pFrontend )
+			m_pFrontend->_removeDebugCapsule(this);
+
+		m_pFrontend = pFrontend;
+		m_bInSelectMode = false;
+		m_pSelectedWidget = nullptr;
+
+		if( m_pFrontend )
+			m_pFrontend->_addDebugCapsule(this);
 	}
 
 	//____ typeInfo() _________________________________________________________
@@ -79,7 +98,7 @@ namespace wg
 					{
 						Widget * pWidget = pContainer->_findWidget(mousePos, SearchMode::MarkPolicy);
 						if (pWidget && m_pFrontend )
-							m_pFrontend->selectObject(pWidget,this);
+							m_pFrontend->_capsuleSelected(pWidget, this, pMsg->modKeys());
 					}
 					break;									// Press on us is ignored
 				}
@@ -132,7 +151,7 @@ namespace wg
 
 	void DebugCapsule::_widgetSelected(Widget * pWidget)
 	{
-		if( pWidget->isDescendantOf(this))
+		if( pWidget && pWidget->isDescendantOf(this))
 			m_pSelectedWidget = pWidget;
 		else
 			m_pSelectedWidget = nullptr;
@@ -143,6 +162,15 @@ namespace wg
 	void DebugCapsule::_setSelectMode(bool bSelectMode)
 	{
 		m_bInSelectMode = bSelectMode;
+	}
+
+	//____ _frontendDestroyed() __________________________________________________
+
+	void DebugCapsule::_frontendDestroyed()
+	{
+		m_pFrontend = nullptr;
+		m_bInSelectMode = false;
+		m_pSelectedWidget = nullptr;
 	}
 
 	//____ _selectionArea() __________________________________________________________

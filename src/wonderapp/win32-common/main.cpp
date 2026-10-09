@@ -799,15 +799,9 @@ bool init_debugger(Win32API* pAPI)
 {
 	pAPI->initDefaultWidgetKit();
 
-	auto pIconSurface = pAPI->loadSurface("resources/debugger_gfx.png");
-	auto pTransparencyGrid = pAPI->loadSurface("resources/checkboardtile.png", nullptr, { .tiling = true });
-
-	if (!pIconSurface || !pTransparencyGrid)
-		return false;
-
 	g_pDebugBackend = DebugBackend::create();
 
-	g_pDebugFrontend = WGCREATE(DebugFrontend, _.backend = g_pDebugBackend, _.icons = pIconSurface, _.transparencyGrid = pTransparencyGrid);
+	g_pDebugFrontend = WGCREATE(DebugFrontend, _.backend = g_pDebugBackend);
 
 	Base::msgRouter()->addRoute(MsgType::KeyPress, [pAPI](Msg* _pMsg) {
 
@@ -817,9 +811,9 @@ bool init_debugger(Win32API* pAPI)
 		{
 			if (!g_pDebugWindow)
 			{
-				SizeI size = g_pDebugFrontend->spxSize() / 64;
+				Size size = g_pDebugFrontend->size();		// In points, its spx size depends on the scale of the window it was last in.
 
-				auto pWindow = wapp::Window::create(pAPI, { .debug = false, .size = Size(size), .title = "Debugger" });
+				auto pWindow = wapp::Window::create(pAPI, { .debug = false, .size = size, .title = "Debugger" });
 				g_pDebugWindow = pWindow;
 
 				pWindow->mainCapsule()->slot = g_pDebugFrontend;

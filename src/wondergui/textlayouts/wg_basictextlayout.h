@@ -141,6 +141,7 @@ namespace wg
 			int scaleUsed;				// Scale used for calculating defaultSize and textSize.
 			SizeSPX defaultSize;
 			SizeSPX textSize;
+			spx matchingHeight;			// Cached for non-wrapping text, which doesn't depend on width. -1 until calculated.
 			bool hasCharStyles;
 		};
 

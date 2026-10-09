@@ -87,14 +87,14 @@ namespace wg
 
 	void WidgetTreeView::collapseAll()
 	{
-		_expandOrCollapseRecursively(slot.widget(), false);
+		_expandOrCollapseAll(false);
 	}
 
 	//____ expandAll() __________________________________________________________
 
 	void WidgetTreeView::expandAll()
 	{
-		_expandOrCollapseRecursively(slot.widget(), true);
+		_expandOrCollapseAll(true);
 	}
 
 	//____ select() __________________________________________________________
@@ -165,6 +165,24 @@ namespace wg
 		return nullptr;
 	}
 
+	//____ _expandOrCollapseAll() _______________________________________________
+	//
+	// Every drawer that opens or closes resizes, and each resize has the whole
+	// tree laid out again, which for a large tree makes this quadratic. So the
+	// tree is taken out of the view meanwhile, letting the resizes go nowhere,
+	// and laid out once when put back. Transitions are skipped, since a drawer
+	// that animates requests a resize every frame, with the tree back in place.
+
+	void WidgetTreeView::_expandOrCollapseAll( bool bOpen )
+	{
+		Widget_p pTree = slot.widget();
+		slot = nullptr;
+
+		_expandOrCollapseRecursively(pTree, bOpen);
+
+		slot = pTree;
+	}
+
 	//____ _expandOrCollapseRecursively() _________________________________________________
 
 	void WidgetTreeView::_expandOrCollapseRecursively( Widget * pWidget, bool bOpen )
@@ -181,7 +199,10 @@ namespace wg
 			for (auto& slot : pPackPanel->slots)
 				_expandOrCollapseRecursively(slot._widget(), bOpen);
 
-			pDrawer->setOpen(bOpen);
+			if( bOpen )
+				pDrawer->openImmediately();
+			else
+				pDrawer->closeImmediately();
 		}
 		else if (pWidget->isContainer())
 		{

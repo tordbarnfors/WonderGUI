@@ -27,15 +27,78 @@
 #include <wg_charbuffer.h>
 #include <wg_basictextlayout.h>
 #include <wg_basicnumberlayout.h>
+#include <wg_surfacereader.h>
 
 namespace wg
 {
+	// Default icons and transparency grid as .surf, generated from
+	// resources/debugger_gfx.png and resources/checkboardtile.png into
+	// wg_debuggerresources.cpp. To regenerate, from the WonderGUI root:
+	//
+	//   scripts/embed_images.rb --image2surf=<path to image2surf> --output=src/extensions/debugger/core/wg_debuggerresources.cpp
+	//                           --namespace=wg _debuggerIconsSurf=resources/debugger_gfx.png
+	//                           _debuggerTransparencyGridSurf=resources/checkboardtile.png
+
+	extern const char	_debuggerIconsSurf[];
+	extern const char	_debuggerTransparencyGridSurf[];
+
+	static int		s_widgetKitUsers = 0;
+	static bool		s_bOwnsWidgetKit = false;
+
+	//____ acquireWidgetKit() ____________________________________________________
+
+	bool DebugTheme::acquireWidgetKit( Font * pNormal, Font * pBold, Font * pItalic, Font * pMono )
+	{
+		if( s_widgetKitUsers++ == 0 && !dbgkit::isInitialized() )
+		{
+			if( !dbgkit::init(pNormal, pBold, pItalic, pMono) )
+				return false;
+
+			s_bOwnsWidgetKit = true;
+		}
+
+		return dbgkit::isInitialized();
+	}
+
+	//____ releaseWidgetKit() ____________________________________________________
+
+	void DebugTheme::releaseWidgetKit()
+	{
+		if( s_widgetKitUsers == 0 )
+			return;
+
+		if( --s_widgetKitUsers == 0 && s_bOwnsWidgetKit )
+		{
+			dbgkit::exit();
+			s_bOwnsWidgetKit = false;
+		}
+	}
 
 	//____ create() ______________________________________________________________
 
 	DebugTheme DebugTheme::create( Surface * pIcons, Surface * pTransparencyGrid )
 	{
 		DebugTheme theme;
+
+		Surface_p pDefaultIcons;
+		Surface_p pDefaultTransparencyGrid;
+
+		if( !pIcons || !pTransparencyGrid )
+		{
+			auto pReader = SurfaceReader::create(WGBP(SurfaceReader, _.factory = Base::defaultSurfaceFactory()));
+
+			if( !pIcons )
+			{
+				pDefaultIcons = pReader->readSurfaceFromMemory(_debuggerIconsSurf);
+				pIcons = pDefaultIcons;
+			}
+
+			if( !pTransparencyGrid )
+			{
+				pDefaultTransparencyGrid = pReader->readSurfaceFromMemory(_debuggerTransparencyGridSurf, WGBP(Surface, _.tiling = true));
+				pTransparencyGrid = pDefaultTransparencyGrid;
+			}
+		}
 
 		theme.icons = pIcons;
 		theme.transparencyGrid = pTransparencyGrid;

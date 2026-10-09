@@ -279,6 +279,15 @@ set( SOURCES
 	wondergui.h
 )
 
+# The oldskool widget kit lives outside this directory, but needs compiling
+# since it embeds its skin blocks.
+
+set(WIDGETKIT_SOURCES
+	../widgetkits/wg_oldskool.h
+	../widgetkits/wg_oldskool.cpp
+	../widgetkits/wg_oldskool_resources.cpp
+)
+
 
 set(INCDIRS
 	${WONDERGFX_INCDIRS}
@@ -303,8 +312,9 @@ set(INCDIRS
 )
 
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${SOURCES})
+source_group(widgetkits FILES ${WIDGETKIT_SOURCES})
 
-add_library( wondergui STATIC ${SOURCES} )
+add_library( wondergui STATIC ${SOURCES} ${WIDGETKIT_SOURCES} )
 generate_export_header(wondergui BASE_NAME wg)
 
 target_include_directories(wondergui PRIVATE ${INCDIRS} 
@@ -313,6 +323,7 @@ target_include_directories(wondergui PRIVATE ${INCDIRS}
 
 target_link_libraries(wondergui PUBLIC wondergfx )
 
+list(APPEND SOURCES ${WIDGETKIT_SOURCES})
 list(TRANSFORM SOURCES PREPEND ${CMAKE_CURRENT_LIST_DIR}/ )
 set(WONDERGUI_SOURCES ${SOURCES} PARENT_SCOPE)
 set(WONDERGUI_INCDIRS ${INCDIRS} PARENT_SCOPE)
