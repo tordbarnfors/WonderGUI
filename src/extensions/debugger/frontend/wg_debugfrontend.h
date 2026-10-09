@@ -62,6 +62,10 @@ namespace wg
 			bool			disabled = false;
 			bool			dropTarget = false;
 			Finalizer_p		finalizer = nullptr;
+			Font_p			font;										// Optional. Fonts initialize the oldskool widget kit,
+			Font_p			fontBold;									// unless something else already has. See
+			Font_p			fontItalic;									// DebugTheme::acquireWidgetKit().
+			Font_p			fontMono;
 			int				id = 0;
 			MarkPolicy		markPolicy = MarkPolicy::Undefined;
 			bool			pickable = false;
@@ -75,8 +79,8 @@ namespace wg
 			bool			takesFocusFromChild = true;
 			String			tooltip;
 			bool			usePickHandles = false;
-			Surface_p		icons;										// Mandatory!!!
-			Surface_p		transparencyGrid;							// Mandatory!!! Chessboard pattern or similar
+			Surface_p		icons;										// Optional, embedded default if not set.
+			Surface_p		transparencyGrid;							// Optional, embedded default if not set. Chessboard pattern or similar
 		};
 
 		//.____ Creation __________________________________________
@@ -103,6 +107,17 @@ namespace wg
 		void		_addDebugCapsule( DebugCapsule * pCapsule );
 		void		_removeDebugCapsule( DebugCapsule * pCapsule );
 
+		// Called by DebugCapsule when a widget is picked in it. The capsule's GUI
+		// context is current, which needn't be ours, and the modifier keys are
+		// those of the capsule's window.
+
+		void		_capsuleSelected( Widget * pWidget, DebugCapsule * pCapsule, ModKeys modKeys );
+
+		// The GUI context this frontend was created in. Everything it builds lives
+		// there, so calls coming in from capsules in other contexts switch to it.
+
+		GUIContext_p	_context() const { return m_pContext.rawPtr(); }
+
 
 	protected:
 		DebugFrontend(const Blueprint& blueprint);
@@ -116,6 +131,8 @@ namespace wg
 
 		void		_refreshWidgetTree();
 
+		void		_selectObject(Object* pSelected, Object* pSelectedFrom, bool bReuseWindow);
+
 
 		void		_addWorkspaceWindow( Object * pObject, bool bReuse );
 		bool		_focusWorkspaceWindow(DebugWindow * pWindow);
@@ -124,11 +141,16 @@ namespace wg
 
 		DebugBackend_p		m_pBackend;
 		std::vector<DebugCapsule*>	m_capsules;
+		GUIContext_wp		m_pContext;
 
 		Widget_p			m_pSelectedWidget;
 
 		PackPanel_p			m_pWorkspace;
 		PackPanel_p			m_pListOfTreeViews;
+		MsgLogViewer_p		m_pMsgLogViewer;
+
+		DebugCapsule *		m_pLogFollowCapsule = nullptr;	// Capsule of the latest selection, whose log is shown.
+		int					m_nbCapsulesAdded = 0;			// For naming capsules that have no name.
 
 		PackLayout_p		m_pDummyPackLayout;
 
@@ -139,9 +161,6 @@ namespace wg
 
 
 		// Resources
-
-		Surface_p		m_pIcons;
-		Surface_p		m_pTransparencyGrid;
 
 		DebugTheme		m_theme;					// Icons and blueprints, see DebugTheme::create().
 	};

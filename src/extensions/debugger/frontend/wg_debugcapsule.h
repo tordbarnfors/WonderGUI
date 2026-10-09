@@ -54,7 +54,7 @@ namespace wg
 			bool			disabled		= false;
 			bool			dropTarget		= false;
 			Finalizer_p		finalizer		= nullptr;
-			DebugFrontend_p	frontend;									// Mandatory!!!
+			DebugFrontend_p	frontend;									// Optional, can be set later with setFrontend().
 			int				id				= 0;
 			MarkPolicy		markPolicy		= MarkPolicy::AlphaTest;
 			std::string		name;
@@ -85,6 +85,20 @@ namespace wg
 
 		const std::string& name() const { return m_name; }
 
+		//.____ Control _____________________________________________________________
+		//
+		// A capsule can be created before the frontend it reports to, and can move
+		// between frontends. The capsule only holds a plain pointer to its frontend;
+		// a frontend that is destroyed detaches its capsules.
+		//
+		// Detaching (setFrontend(nullptr)) makes the frontend let go of everything
+		// it holds inside this capsule. Do that while the capsule's window is still
+		// intact, before tearing it down. Destroying the capsule detaches it too, as
+		// a last resort.
+
+		void			setFrontend( DebugFrontend * pFrontend );
+		DebugFrontend_p	frontend() const { return m_pFrontend; }
+
 		//.____ Appearance __________________________________________________________
 
 		PointerStyle 	pointerStyle() const override;
@@ -93,6 +107,13 @@ namespace wg
 
 		void			_widgetSelected(Widget * pWidget);		// Called by DebugFrontend.
 		void			_setSelectMode(bool bSelectMode);		// Called by DebugFrontend.
+		void			_frontendDestroyed();					// Called by DebugFrontend.
+
+		// The GUI context this capsule was created in, i.e. the context of the
+		// window it sits in. Can differ from the frontend's context when the host
+		// gives each window its own.
+
+		GUIContext_p	_context() const { return m_pContext.rawPtr(); }
 
 
 	protected:
@@ -100,7 +121,8 @@ namespace wg
 
 		template<class BP> DebugCapsule( const BP& bp ) : Capsule(bp)
 		{
-			m_pFrontend = bp.frontend;
+			m_pFrontend = bp.frontend.rawPtr();
+			m_pContext = Base::context();
 
 			m_name = bp.name;
 
@@ -117,7 +139,8 @@ namespace wg
 													) );
 			_startReceiveUpdates();
 
-			m_pFrontend->_addDebugCapsule(this);
+			if( m_pFrontend )
+				m_pFrontend->_addDebugCapsule(this);
 		}
 
 		virtual ~DebugCapsule();
@@ -132,7 +155,8 @@ namespace wg
 		RectSPX		_selectionArea();
 
 
-		DebugFrontend_p		m_pFrontend;
+		DebugFrontend *		m_pFrontend = nullptr;
+		GUIContext_wp		m_pContext;
 
 		bool		m_bInSelectMode = false;
 

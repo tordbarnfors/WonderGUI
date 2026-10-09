@@ -71,4 +71,23 @@ namespace wg
 		return pSurface;
 	}
 
+	//____ setBackupFont() _______________________________________________________
+
+	void Font::setBackupFont(Font* pFont)
+	{
+		Font* p = pFont;
+		while(p != this && p != nullptr )
+			p = p->backupFont();
+
+		if (p == this)
+		{
+			GfxBase::throwError( ErrorLevel::Error, ErrorCode::InvalidParam, "Can't set backup font, would create cyclic fallback.", this, &TYPEINFO, __func__, __FILE__, __LINE__ );
+			return;
+		}
+
+		m_pBackupFont = pFont;
+	}
+
+
+
 } // namespace wg

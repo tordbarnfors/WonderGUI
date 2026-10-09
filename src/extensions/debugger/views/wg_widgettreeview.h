@@ -61,6 +61,7 @@ namespace wg
 		~WidgetTreeView();
 
 		Widget_p	_generateInfoTree( const DebugTheme& theme, Widget * pWidget, int indentation = 0);
+		void		_expandOrCollapseAll(bool bExpand);
 		void		_expandOrCollapseRecursively(Widget* pWidget, bool bExpand);
 		Widget_p	_findWidgetRecursively(int idToFind, Widget* pPos);
 

@@ -55,10 +55,10 @@ namespace wg
 	DebugOverlay::DebugOverlay(const Blueprint& bp) : Overlay(bp), windows(this)
 	{
 		m_pBackend = bp.backend;
-		m_pIcons	= bp.icons;
-		m_pTransparencyGrid = bp.transparencyGrid;
 
-		m_theme = DebugTheme::create(m_pIcons, m_pTransparencyGrid);
+		DebugTheme::acquireWidgetKit(bp.font, bp.fontBold, bp.fontItalic, bp.fontMono);
+
+		m_theme = DebugTheme::create(bp.icons, bp.transparencyGrid);
 		m_pBackend->setTheme(m_theme);
 
 		_createResources();
@@ -99,6 +99,7 @@ namespace wg
 
 	DebugOverlay::~DebugOverlay()
 	{
+		DebugTheme::releaseWidgetKit();
 	}
 
 	//____ typeInfo() _________________________________________________________
@@ -1098,7 +1099,25 @@ namespace wg
 		pContent->setLayout(nullptr);
 
 
-		pContent->slots << m_pBackend->createMsgLogViewer();
+		auto pLogViewer = m_pBackend->createMsgLogViewer();
+
+		// Everything shares our context, so log it all except what comes from
+		// our own windows.
+
+		pLogViewer->addSource(this, "Messages", Base::context(), [this](const Msg* pMsg) {
+
+			auto pWidget = dynamic_cast<Widget*>(pMsg->sourceRawPtr());
+			if( !pWidget )
+				return true;
+
+			auto pMain = mainSlot._widget();
+			if( pMain && (pWidget == pMain || pWidget->isDescendantOf(pMain)) )
+				return true;
+
+			return pWidget != this && !pWidget->isDescendantOf(this);
+		});
+
+		pContent->slots << pLogViewer;
 
 		_refreshRealGeo(windows._first() + windows.size() - 1);
 	}

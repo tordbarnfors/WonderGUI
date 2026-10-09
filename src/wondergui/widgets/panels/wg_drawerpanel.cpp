@@ -156,6 +156,9 @@ namespace wg
 		if( !slots[0].isEmpty() )
 			heightClosed += slots[0]._widget()->_matchingHeight(width,scale);
 
+		if( m_foldState == FoldState::CLOSED )
+			return heightClosed;				// Content doesn't matter, no need to measure it.
+
 		spx heightOpen = heightClosed;
 
 		if( !slots[1].isEmpty() )
@@ -509,7 +512,14 @@ namespace wg
 			frontSize.h = slots[0].isEmpty() ? 0 : std::min(slots[0]._widget()->_matchingHeight(content.w, m_scale ), content.h);
 
 			backSize.w = content.w;
-			backSize.h = slots[1].isEmpty() ? 0 : slots[1]._widget()->_matchingHeight(content.w, m_scale );
+
+			// The content of a closed drawer isn't shown, so measuring and laying it
+			// out would be wasted. Opening calls us again before it is shown.
+
+			if( m_foldState == FoldState::CLOSED && !slots[1].isEmpty() )
+				backSize = slots[1]._widget()->_size();
+			else
+				backSize.h = slots[1].isEmpty() ? 0 : slots[1]._widget()->_matchingHeight(content.w, m_scale );
 		}
 		else
 		{

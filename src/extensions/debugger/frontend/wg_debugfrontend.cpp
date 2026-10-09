@@ -21,6 +21,8 @@
 =========================================================================*/
 #include <wg_debugfrontend.h>
 #include <wg_debugcapsule.h>
+#include <wg_debugcontextswitch.h>
+#include <wg_msglogviewer.h>
 #include <wg_msgrouter.h>
 
 #include <wondergui.h>
@@ -42,10 +44,11 @@ namespace wg
 	DebugFrontend::DebugFrontend(const Blueprint& bp) : Capsule(bp)
 	{
 		m_pBackend = bp.backend;
-		m_pIcons	= bp.icons;
-		m_pTransparencyGrid = bp.transparencyGrid;
+		m_pContext = Base::context();
 
-		m_theme = DebugTheme::create(m_pIcons, m_pTransparencyGrid);
+		DebugTheme::acquireWidgetKit(bp.font, bp.fontBold, bp.fontItalic, bp.fontMono);
+
+		m_theme = DebugTheme::create(bp.icons, bp.transparencyGrid);
 		m_pBackend->setTheme(m_theme);
 
 		m_pBackend->setObjectSelectedCallback([this](Object* pSelected,Object* pSelectedFrom) {
@@ -61,6 +64,14 @@ namespace wg
 
 	DebugFrontend::~DebugFrontend()
 	{
+		for( auto pCapsule : m_capsules )
+		{
+			m_pMsgLogViewer->closeSource(pCapsule);
+			pCapsule->_frontendDestroyed();
+		}
+		m_capsules.clear();
+
+		DebugTheme::releaseWidgetKit();
 	}
 
 	//____ typeInfo() _________________________________________________________
@@ -103,7 +114,23 @@ namespace wg
 		pCapsule->_setSelectMode(m_bSelectMode);
 		m_capsules.push_back(pCapsule);
 
-//		_refreshTreeSelector();
+		// Each capsule gets a message log of its own, logging from the router of
+		// its context the messages from widgets inside it, and those that don't
+		// come from a widget.
+
+		m_nbCapsulesAdded++;
+
+		std::string name = pCapsule->name();
+		if( name.empty() )
+			name = "Window " + std::to_string(m_nbCapsulesAdded);
+
+		DebugContextSwitch contextSwitch(_context());
+
+		m_pMsgLogViewer->addSource(pCapsule, name, pCapsule->_context(), [pCapsule](const Msg* pMsg) {
+
+			auto pWidget = dynamic_cast<Widget*>(pMsg->sourceRawPtr());
+			return !pWidget || pWidget == pCapsule || pWidget->isDescendantOf(pCapsule);
+		});
 	}
 
 	//____ _removeDebugCapsule() __________________________________________________
@@ -112,12 +139,59 @@ namespace wg
 	{
 		m_capsules.erase(std::remove(m_capsules.begin(), m_capsules.end(), pCapsule), m_capsules.end());
 
-//		_refreshTreeSelector();
+		if( m_pLogFollowCapsule == pCapsule )
+			m_pLogFollowCapsule = nullptr;
+
+		// Let go of everything we hold inside the capsule, so that none of its
+		// widgets outlive the window they belong to. Inspected objects that aren't
+		// widgets can't be traced to a capsule and are kept.
+
+		DebugContextSwitch contextSwitch(_context());
+
+		auto isInside = [pCapsule](Object * pObject)
+		{
+			auto pWidget = dynamic_cast<Widget*>(pObject);
+			return pWidget && (pWidget == pCapsule || pWidget->isDescendantOf(pCapsule));
+		};
+
+		if( isInside(m_pSelectedWidget.rawPtr()) )
+			_selectObject(nullptr, nullptr, true);
+
+		for( auto it = m_pWorkspace->slots.begin() ; it != m_pWorkspace->slots.end() ; )
+		{
+			auto pWindow = static_cast<DebugWindow*>(it->_widget());
+			if( isInside(pWindow->inspected().rawPtr()) )
+				it = m_pWorkspace->slots.erase(it);
+			else
+				it++;
+		}
+
+		if( !m_pListOfTreeViews->slots.isEmpty() )
+			_refreshWidgetTree();
+
+		m_pMsgLogViewer->closeSource(pCapsule);
+	}
+
+	//____ _capsuleSelected() ____________________________________________________
+
+	void DebugFrontend::_capsuleSelected( Widget * pWidget, DebugCapsule * pCapsule, ModKeys modKeys )
+	{
+		DebugContextSwitch contextSwitch(_context());
+
+		_selectObject(pWidget, pCapsule, (modKeys & ModKeys::Shift) == 0);
 	}
 
 	//____ selectObject() _______________________________________________________
 
 	void DebugFrontend::selectObject(Object* pSelected, Object * pSelectedFrom)
+	{
+		bool bReuseWindow = (Base::inputHandler()->modifierKeys() & ModKeys::Shift) == 0;
+		_selectObject(pSelected, pSelectedFrom, bReuseWindow);
+	}
+
+	//____ _selectObject() _______________________________________________________
+
+	void DebugFrontend::_selectObject(Object* pSelected, Object * pSelectedFrom, bool bReuseWindow)
 	{
 		auto pWidget = dynamic_cast<Widget*>(pSelected);
 		if(pWidget || pSelected == nullptr)
@@ -133,13 +207,26 @@ namespace wg
 			}
 
 			m_pSelectedWidget = pWidget;
+
+			// Show the log of the window the selection is in, but only when that
+			// changes, so a log picked from the dropdown stays until then.
+
+			for( auto pCapsule : m_capsules )
+			{
+				if( pWidget && (pWidget == pCapsule || pWidget->isDescendantOf(pCapsule)) )
+				{
+					if( pCapsule != m_pLogFollowCapsule )
+					{
+						m_pLogFollowCapsule = pCapsule;
+						m_pMsgLogViewer->showSource(pCapsule);
+					}
+					break;
+				}
+			}
 		}
 
 		if (pSelected)
-		{
-			bool bReuseWindow = (Base::inputHandler()->modifierKeys() & ModKeys::Shift) == 0;
 			_addWorkspaceWindow(pSelected, bReuseWindow);
-		}
 		else
 			_focusWorkspaceWindow(nullptr);
 
@@ -295,7 +382,8 @@ namespace wg
 		pTreeSplit->slots[1] = pWorkspaceScroller;
 
 		pLogSplit->slots[0] = pTreeSplit;
-		pLogSplit->slots[1] = m_pBackend->createMsgLogViewer();
+		m_pMsgLogViewer = m_pBackend->createMsgLogViewer();
+		pLogSplit->slots[1] = m_pMsgLogViewer;
 
 
 		pTopBar->slots.pushBack( _createToolbox(), WGBP(PackPanelSlot, _.weight = 0.f));
