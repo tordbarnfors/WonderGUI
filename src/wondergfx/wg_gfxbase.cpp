@@ -183,7 +183,7 @@ namespace wg
 		else if( idToken == SPXDecompressor::ID_TOKEN )
 			pDecompressor = SPXDecompressor::create();
 		else if (idToken == RLEDecompressor::ID_TOKEN)
-			auto pDecompressor = RLEDecompressor::create();
+			pDecompressor = RLEDecompressor::create();
 
 		if( pDecompressor )
 			s_decompressors.push_back(pDecompressor);
