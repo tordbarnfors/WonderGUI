@@ -110,9 +110,9 @@ namespace wg
 
 		stream.write((char*)&header, headerBytes);
 
-		// Write compressed data
+		// Write compressed data, including padding
 
-		stream.write(pBuffer, bytesPixelData + bytesPaletteData + bytesExtrasData);
+		stream.write(pBuffer, pWrite - pBuffer);
 
 		// Release temp buffer
 
@@ -176,7 +176,8 @@ namespace wg
 
 		// Calculate size needed for blob and create blob
 
-		int size = headerBytes + bytesPixelData + bytesPaletteData + bytesExtrasData;
+		int dataBytes = int(pWrite - pBuffer);		// Includes padding
+		int size = headerBytes + dataBytes;
 
 		Blob_p pBlob = Blob::create(size);
 
@@ -189,7 +190,7 @@ namespace wg
 
 		// Write compressed data
 
-		std::memcpy(pWrite, pBuffer, bytesPixelData + bytesPaletteData + bytesExtrasData);
+		std::memcpy(pWrite, pBuffer, dataBytes);
 
 		// Release temp buffer
 
@@ -308,10 +309,12 @@ namespace wg
 	{
 		int uncompressedSize = PixelTools::bytesPerLine(*pSurface->pixelDescription(), pSurface->pixelWidth()) * pSurface->pixelHeight();
 
+		// Includes up to 3 bytes of padding for 32-bit alignment.
+
 		if( m_pPixelCompressor )
-			return m_pPixelCompressor->maxCompressedSize(uncompressedSize);
+			return m_pPixelCompressor->maxCompressedSize(uncompressedSize) + 3;
 		else
-			return uncompressedSize;
+			return uncompressedSize + 3;
 	}
 
 	//____ _safePaletteBufferSize() _________________________________________________
@@ -320,10 +323,12 @@ namespace wg
 	{
 		int uncompressedSize = pSurface->paletteSize() * sizeof(Color8);
 
+		// Includes up to 3 bytes of padding for 32-bit alignment.
+
 		if( m_pPaletteCompressor )
-			return m_pPaletteCompressor->maxCompressedSize(uncompressedSize);
+			return m_pPaletteCompressor->maxCompressedSize(uncompressedSize) + 3;
 		else
-			return uncompressedSize;
+			return uncompressedSize + 3;
 	}
 
 	//____ _safeExtrasBufferSize() _________________________________________________
