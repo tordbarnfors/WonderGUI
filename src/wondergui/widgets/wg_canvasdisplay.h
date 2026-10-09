@@ -25,6 +25,7 @@
 
 
 #include <wg_widget.h>
+#include <wg_canvascapsule.h>
 #include <wg_skin.h>
 #include <wg_tintmap.h>
 #include <wg_transitions.h>
@@ -35,10 +36,6 @@ namespace wg
 	class CanvasDisplay;
 	typedef	StrongPtr<CanvasDisplay>	CanvasDisplay_p;
 	typedef	WeakPtr<CanvasDisplay>		CanvasDisplay_wp;
-
-	class CanvasCapsule;
-	typedef	StrongPtr<CanvasCapsule>	CanvasCapsule_p;
-	typedef	WeakPtr<CanvasCapsule>		CanvasCapsule_wp;
 
 
 	//____ CanvasDisplay ____________________________________________________________

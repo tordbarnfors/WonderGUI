@@ -121,7 +121,9 @@ namespace wg
 		};
 
 		TablePanelColumn() {};
-		TablePanelColumn( const Blueprint& bp ) : m_bVisible(bp.visible), m_weight(bp.weight) {}
+		TablePanelColumn( const Blueprint& bp ) : 
+			m_minWidth(bp.minWidth), m_maxWidth(bp.maxWidth), 
+			m_bVisible(bp.visible), m_weight(bp.weight) {}
 		
 		inline void		hide();
 		inline void		unhide();

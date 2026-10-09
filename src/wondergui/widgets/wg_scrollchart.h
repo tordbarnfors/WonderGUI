@@ -58,10 +58,15 @@ namespace wg
 			Glow::Blueprint glow;
 
 			HiColor			gridColor = Color::DarkGray;
+			bool			gridOnTop = false;
 			pts				gridThickness = 1;
 
 			int				id = 0;
 			Skin_p			labelSkin;
+
+			Placement		leftLabelPlacement = Placement::West;
+			pts				leftLabelSpacing = 4;
+
 			MarkPolicy		markPolicy = MarkPolicy::AlphaTest;
 			int				maxDisplayTime = 0;    // microsec of samples saved for changes in displayTime. 0 = st to same as displayTime.
 			bool			pickable = false;
@@ -69,11 +74,11 @@ namespace wg
 			bool			pickHandle = false;
 			PixelFormat		pixelFormat = PixelFormat::BGRA_8;
 			PointerStyle	pointer = PointerStyle::Undefined;
+
+			Placement		rightLabelPlacement = Placement::East;
+			pts				rightLabelSpacing = 4;
+
 			bool			selectable = false;
-
-			Placement		sideLabelPlacement = Placement::West;
-			pts				sideLabelSpacing = 4;
-
 			Skin_p			skin;
 			bool			stickyFocus = false;
 			SurfaceFactory_p	surfaceFactory = nullptr;
@@ -83,6 +88,9 @@ namespace wg
 			TextStyle_p		textStyle;
 
 			String			tooltip;
+
+			Placement		topLabelPlacement = Placement::North;
+			pts				topLabelSpacing = 1;
 
 			int				displayTime = 4000000;    // microsec of samples displayed.
 			int				latency = 10000;

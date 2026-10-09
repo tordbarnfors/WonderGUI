@@ -165,4 +165,4 @@ namespace wg
 	};
 
 } // namespace wg
-#endif //WG_POPUPOVERLAY_DOT_H
+#endif //WG_TOOLTIPOVERLAY_DOT_H
