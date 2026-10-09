@@ -105,6 +105,7 @@
 #include <wg_twoslotpanelslotinfosection.h>
 #include <wg_overlayslotinfosection.h>
 #include <wg_modaloverlayslotinfosection.h>
+#include <wg_popupoverlayslotinfosection.h>
 #include <wg_splitpanelslotinfosection.h>
 #include <wg_nodepanelslotinfosection.h>
 #include <wg_lambdapanelslotinfosection.h>
@@ -207,6 +208,7 @@ namespace wg
 		_registerSlot<TwoSlotPanel::Slot, TwoSlotPanelSlotInfoSection>();
 		_registerSlot<Overlay::Slot, OverlaySlotInfoSection>();
 		_registerSlot<ModalOverlay::Slot, ModalOverlaySlotInfoSection>();
+		_registerSlot<PopupOverlay::Slot, PopupOverlaySlotInfoSection>();
 		_registerSlot<SplitPanel::Slot, SplitPanelSlotInfoSection>();
 		_registerSlot<NodePanelSlot, NodePanelSlotInfoSection>();
 		_registerSlot<LambdaPanelSlot, LambdaPanelSlotInfoSection>();
