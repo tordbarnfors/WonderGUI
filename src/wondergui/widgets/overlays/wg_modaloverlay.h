@@ -77,6 +77,7 @@ namespace wg
 			inline Coord	pos() const { return m_placementGeo.pos(); }
 
 			void			setSize(const Size& size);
+			inline Size		size() const { return m_placementGeo.size(); }
 
 			void			move(const Coord& ofs);
 

@@ -60,6 +60,13 @@ namespace wg
 
 			const static TypeInfo	TYPEINFO;
 
+			RectSPX		launcherGeo() const { return m_launcherGeo; }
+			Placement	attachPoint() const { return m_attachPoint; }
+			bool		peekMode() const { return m_bPeek; }
+			bool		closeOnSelect() const { return m_bCloseOnSelect; }
+			SizeSPX		maxSize() const { return m_maxSize; }
+			Widget_wp	opener() const { return m_pOpener; }
+
 		protected:
 
 			inline const RectSPX& _geo() const { return m_geo; }
