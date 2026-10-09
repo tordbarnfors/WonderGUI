@@ -35,6 +35,34 @@
 #include <wg_buttoninfosection.h>
 #include <wg_textdisplayinfosection.h>
 #include <wg_texteditorinfosection.h>
+#include <wg_togglebuttoninfosection.h>
+#include <wg_knobinfosection.h>
+#include <wg_sliderinfosection.h>
+#include <wg_rangesliderinfosection.h>
+#include <wg_meterinfosection.h>
+#include <wg_scrollbarinfosection.h>
+#include <wg_pianokeyboardinfosection.h>
+#include <wg_lineeditorinfosection.h>
+#include <wg_numberdisplayinfosection.h>
+#include <wg_fpsdisplayinfosection.h>
+#include <wg_animplayerinfosection.h>
+#include <wg_canvasdisplayinfosection.h>
+#include <wg_edgemapdisplayinfosection.h>
+#include <wg_imageinfosection.h>
+#include <wg_nodewiresinfosection.h>
+#include <wg_popupopenerinfosection.h>
+#include <wg_selectboxinfosection.h>
+#include <wg_sidecanvasinfosection.h>
+#include <wg_skindisplayinfosection.h>
+#include <wg_surfacedisplayinfosection.h>
+#include <wg_timerinfosection.h>
+
+#include <wg_chartinfosection.h>
+#include <wg_areachartinfosection.h>
+#include <wg_plotchartinfosection.h>
+#include <wg_scrollchartinfosection.h>
+#include <wg_areascrollchartinfosection.h>
+
 #include <wg_containerinfosection.h>
 
 #include <wg_panelinfosection.h>
@@ -42,6 +70,18 @@
 #include <wg_flexpanelinfosection.h>
 #include <wg_scrollpanelinfosection.h>
 #include <wg_twoslotpanelinfosection.h>
+#include <wg_drawerpanelinfosection.h>
+#include <wg_splitpanelinfosection.h>
+#include <wg_tablepanelinfosection.h>
+#include <wg_lambdapanelinfosection.h>
+#include <wg_nodepanelinfosection.h>
+#include <wg_stackpanelinfosection.h>
+
+#include <wg_overlayinfosection.h>
+#include <wg_dragndropoverlayinfosection.h>
+#include <wg_modaloverlayinfosection.h>
+#include <wg_popupoverlayinfosection.h>
+#include <wg_tooltipoverlayinfosection.h>
 
 #include <wg_capsuleinfosection.h>
 #include <wg_sizecapsuleinfosection.h>
@@ -52,6 +92,8 @@
 #include <wg_renderlayercapsuleinfosection.h>
 #include <wg_scalecapsuleinfosection.h>
 #include <wg_canvascapsuleinfosection.h>
+#include <wg_blockingcapsuleinfosection.h>
+#include <wg_scrollcapsuleinfosection.h>
 
 
 #include <wg_skininfosection.h>
@@ -91,6 +133,33 @@ namespace wg
 		_registerObject<TextDisplay, TextDisplayInfoSection>();
 		_registerObject<TextEditor, TextEditorInfoSection>();
 		_registerObject<Button, ButtonInfoSection>();
+		_registerObject<ToggleButton, ToggleButtonInfoSection>();
+		_registerObject<Knob, KnobInfoSection>();
+		_registerObject<Slider, SliderInfoSection>();
+		_registerObject<RangeSlider, RangeSliderInfoSection>();
+		_registerObject<Meter, MeterInfoSection>();
+		_registerObject<Scrollbar, ScrollbarInfoSection>();
+		_registerObject<PianoKeyboard, PianoKeyboardInfoSection>();
+		_registerObject<LineEditor, LineEditorInfoSection>();
+		_registerObject<NumberDisplay, NumberDisplayInfoSection>();
+		_registerObject<FpsDisplay, FpsDisplayInfoSection>();
+		_registerObject<AnimPlayer, AnimPlayerInfoSection>();
+		_registerObject<CanvasDisplay, CanvasDisplayInfoSection>();
+		_registerObject<EdgemapDisplay, EdgemapDisplayInfoSection>();
+		_registerObject<Image, ImageInfoSection>();
+		_registerObject<NodeWires, NodeWiresInfoSection>();
+		_registerObject<PopupOpener, PopupOpenerInfoSection>();
+		_registerObject<SelectBox, SelectBoxInfoSection>();
+		_registerObject<SideCanvas, SideCanvasInfoSection>();
+		_registerObject<SkinDisplay, SkinDisplayInfoSection>();
+		_registerObject<SurfaceDisplay, SurfaceDisplayInfoSection>();
+		_registerObject<Timer, TimerInfoSection>();
+
+		_registerObject<Chart, ChartInfoSection>();
+		_registerObject<AreaChart, AreaChartInfoSection>();
+		_registerObject<PlotChart, PlotChartInfoSection>();
+		_registerObject<ScrollChart, ScrollChartInfoSection>();
+		_registerObject<AreaScrollChart, AreaScrollChartInfoSection>();
 
 		_registerObject<Container, ContainerInfoSection>();
 		_registerObject<Panel, PanelInfoSection>();
@@ -98,6 +167,18 @@ namespace wg
 		_registerObject<FlexPanel, FlexPanelInfoSection>();
 		_registerObject<TwoSlotPanel, TwoSlotPanelInfoSection>();
 		_registerObject<ScrollPanel, ScrollPanelInfoSection>();
+		_registerObject<DrawerPanel, DrawerPanelInfoSection>();
+		_registerObject<SplitPanel, SplitPanelInfoSection>();
+		_registerObject<TablePanel, TablePanelInfoSection>();
+		_registerObject<LambdaPanel, LambdaPanelInfoSection>();
+		_registerObject<NodePanel, NodePanelInfoSection>();
+		_registerObject<StackPanel, StackPanelInfoSection>();
+
+		_registerObject<Overlay, OverlayInfoSection>();
+		_registerObject<DragNDropOverlay, DragNDropOverlayInfoSection>();
+		_registerObject<ModalOverlay, ModalOverlayInfoSection>();
+		_registerObject<PopupOverlay, PopupOverlayInfoSection>();
+		_registerObject<TooltipOverlay, TooltipOverlayInfoSection>();
 
 		_registerObject<Capsule, CapsuleInfoSection>();
 		_registerObject<SizeCapsule, SizeCapsuleInfoSection>();
@@ -108,6 +189,8 @@ namespace wg
 		_registerObject<RenderLayerCapsule, RenderLayerCapsuleInfoSection>();
 		_registerObject<ScaleCapsule, ScaleCapsuleInfoSection>();
 		_registerObject<CanvasCapsule, CanvasCapsuleInfoSection>();
+		_registerObject<BlockingCapsule, BlockingCapsuleInfoSection>();
+		_registerObject<ScrollCapsule, ScrollCapsuleInfoSection>();
 
 		_registerObject<Skin, SkinInfoSection>();
 
