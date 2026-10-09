@@ -103,17 +103,40 @@ namespace wg
 		const TypeInfo& typeInfo(void) const override;
 		const static TypeInfo	TYPEINFO;
 
-		//.____ Control _____________________________________________________________
+		//.____ Behavior _____________________________________________________________
+
+		void			setTransition(CoordTransition* pTransition);
+		CoordTransition_p	transition() const { return m_pDefaultTransition; }
+
+		bool			isTransitioning() const { return m_pTransitionInUse; }
+
+
+		bool			autoHideScrollbars() const { return m_bAutoHideScrollbars; }
+		bool			overlayScrollbars() const { return m_bOverlayScrollbars; }
+		bool			scrollX() const { return m_bScrollX; }
+		bool			scrollY() const { return m_bScrollY; }
+		Axis			autoScrollAxis() const { return m_autoScrollAxis; }
+		pts				stepSizeX() const { return m_stepSizeX; }
+		pts				stepSizeY() const { return m_stepSizeY; }
+		pts				pageOverlapX() const { return m_pageOverlapX; }
+		pts				pageOverlapY() const { return m_pageOverlapY; }
+		pts				wheelStepSizeX() const { return m_wheelStepSizeX; }
+		pts				wheelStepSizeY() const { return m_wheelStepSizeY; }
+		Axis			wheelAxis() const { return m_wheelAxis; }
+		ModKeys			wheelAxisModifier() const { return m_wheelAxisModifier; }
+		ModKeys			wheelAccelerator() const { return m_wheelAccelerator; }
+		int				wheelAccelFactor() const { return m_wheelAccelFactor; }
+		bool			wheelFollowsScrollbar() const { return m_bWheelFollowsScrollbar; }
+
+
+		//.____ Content _____________________________________________________________
 
 		bool			setViewOffset(Coord offset, CoordTransition* pTransition = nullptr);
 		inline Coord	viewOffset() const;
 		inline Size		viewSize() const;
 		inline Size		contentSize() const;
 
-		void			setTransition(CoordTransition* pTransition);
-		CoordTransition_p	transition() const { return m_pDefaultTransition; }
-
-		bool			isTransitioning() const { return m_pTransitionInUse; }
+		Skin_p			cornerSkin() const { return m_cornerSkin.get(); }
 
 	protected:
 		ScrollCapsule();

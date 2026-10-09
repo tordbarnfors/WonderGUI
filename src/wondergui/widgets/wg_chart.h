@@ -63,7 +63,7 @@ class Chart;
 
 		GridLine(const Blueprint& bp)
 			: m_labelSkin(this),
-			m_value(bp.pos),
+			m_pos(bp.pos),
 			m_color(bp.color),
 			m_thickness(bp.thickness),
 			m_bVisible(bp.visible),
@@ -86,6 +86,20 @@ class Chart;
 		};
 
 		virtual ~GridLine() = default;
+
+
+		float			pos() const { return m_pos; }
+		HiColor			color() const { return m_color; }
+		pts				thickness() const { return m_thickness; }
+		bool			isVisible() const { return m_bVisible; }
+		const String& label() const { return m_label; }
+		Coord			labelAdjustment() const { return m_labelAdjustment; }
+		bool			labelAtEnd() const { return m_bLabelAtEnd; }
+		Placement		labelPlacement() const { return m_labelPlacement; }
+		Skin_p			labelSkin() const { return m_labelSkin.get(); }
+		TextStyle_p		textStyle() const { return m_pTextStyle; }
+		TextLayout_p	textLayout() const { return m_pTextLayout; }
+
 
 	protected:
 
@@ -125,7 +139,7 @@ class Chart;
 
 		RectSPX			m_labelGeo;
 
-		float			m_value;
+		float			m_pos;
 		HiColor			m_color;
 		pts				m_thickness;
 
@@ -166,8 +180,29 @@ class Chart;
 
 		void	setDisplayRange(float ceiling, float floor, ValueTransition * pTransition = nullptr );
 
-		float	displayCeiling() const { return m_displayCeiling;  }
-		float	displayFloor() const { return m_displayFloor; }
+
+		HiColor		gridColor() const { return m_gridColor; }
+		pts			gridThickness() const { return m_gridThickness; }
+		bool		gridOnTop() const { return m_bGridLinesOnTop; }
+
+		float		displayCeiling() const { return m_displayCeiling; }
+		float		displayFloor() const { return m_displayFloor; }
+		Skin_p		displaySkin() const { return m_displaySkin.get(); }
+
+		TextStyle_p	textStyle() const { return m_pTextStyle; }
+		TextLayout_p textLayout() const { return m_pTextLayout; }
+
+		Skin_p		labelSkin() const { return m_labelSkin.get(); }
+
+		Placement	leftLabelPlacement() const { return m_leftLabelPlacement; }
+		Placement	rightLabelPlacement() const { return m_rightLabelPlacement; }
+		Placement	topLabelPlacement() const { return m_topLabelPlacement; }
+		Placement	bottomLabelPlacement() const { return m_bottomLabelPlacement; }
+
+		pts			leftLabelSpacing() const { return m_leftLabelSpacing; }
+		pts			rightLabelSpacing() const { return m_rightLabelSpacing; }
+		pts			topLabelSpacing() const { return m_topLabelSpacing; }
+		pts			bottomLabelSpacing() const { return m_bottomLabelSpacing; }
 
 
 		//.____ Internal _________________________________________________
@@ -185,6 +220,8 @@ class Chart;
 			m_gridColor		= bp.gridColor;
 			m_gridThickness = bp.gridThickness;
 			m_pTextStyle	= bp.textStyle;
+			m_pTextLayout	= bp.textLayout;
+
 			m_labelSkin.set(bp.labelSkin);
 
 			m_leftLabelPlacement = bp.leftLabelPlacement;

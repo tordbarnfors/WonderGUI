@@ -218,7 +218,7 @@ namespace wg
 
 		for (auto& line : xLines)
 		{
-			if (line.m_bVisible && line.m_value >= rangeMin && line.m_value <= rangeMax && !line.m_label.isEmpty())
+			if (line.m_bVisible && line.m_pos >= rangeMin && line.m_pos <= rangeMax && !line.m_label.isEmpty())
 			{
 				RectSPX geo = line.m_labelGeo + _canvas.pos();
 
@@ -226,7 +226,7 @@ namespace wg
 
 				if (!pSkin->isEmpty())
 				{
-					pSkin->render(pDevice, geo, m_scale, m_state, line.m_value);
+					pSkin->render(pDevice, geo, m_scale, m_state, line.m_pos);
 					geo = pSkin->contentRect(geo, m_scale, m_state);
 				}
 
@@ -246,7 +246,7 @@ namespace wg
 
 				if (!pSkin->isEmpty())
 				{
-					pSkin->render(pDevice, geo, m_scale, m_state, line.m_value);
+					pSkin->render(pDevice, geo, m_scale, m_state, line.m_pos);
 					geo = pSkin->contentRect(geo, m_scale, m_state);
 				}
 
@@ -269,12 +269,12 @@ namespace wg
 		{
 			for (auto& line : xLines)
 			{
-				if (line.m_bVisible && line.m_value >= rangeMin && line.m_value <= rangeMax)
+				if (line.m_bVisible && line.m_pos >= rangeMin && line.m_pos <= rangeMax)
 				{
 					float valueFactor = m_chartCanvas.h / (m_displayFloor - m_displayCeiling);
 
 					CoordSPX pos = canvas.pos();
-					pos.y += (line.m_value - m_displayCeiling) * valueFactor;
+					pos.y += (line.m_pos - m_displayCeiling) * valueFactor;
 
 					HiColor color = line.m_color == HiColor::Undefined ? m_gridColor : line.m_color;
 					pts thickness = line.m_thickness > 0 ? line.m_thickness : m_gridThickness;
@@ -292,7 +292,7 @@ namespace wg
 				if (line.m_bVisible)
 				{
 					CoordSPX pos = canvas.pos();
-					pos.x += line.m_value * canvas.w;
+					pos.x += line.m_pos * canvas.w;
 
 					HiColor color = line.m_color == HiColor::Undefined ? m_gridColor : line.m_color;
 					pts thickness = line.m_thickness > 0 ? line.m_thickness : m_gridThickness;
@@ -459,12 +459,12 @@ namespace wg
 
 			for (auto& line : xLines)
 			{
-				if (line.m_bVisible && !line.m_label.isEmpty() && line.m_value >= rangeMin && line.m_value <= rangeMax )
+				if (line.m_bVisible && !line.m_label.isEmpty() && line.m_pos >= rangeMin && line.m_pos <= rangeMax )
 				{
-					if (pTop == nullptr || line.m_value > pTop->m_value)
+					if (pTop == nullptr || line.m_pos > pTop->m_pos)
 						pTop = &line;
 
-					if (pBottom == nullptr || line.m_value < pBottom->m_value)
+					if (pBottom == nullptr || line.m_pos < pBottom->m_pos)
 						pBottom = &line;
 
 				}
@@ -485,14 +485,14 @@ namespace wg
 
 					spx canvasHeight = contentGeo.h - margin.top - margin.bottom;
 
-					spx topLineOfs = (pTop->m_value - m_displayCeiling) * (canvasHeight / (m_displayFloor - m_displayCeiling));
+					spx topLineOfs = (pTop->m_pos - m_displayCeiling) * (canvasHeight / (m_displayFloor - m_displayCeiling));
 					if (margin.top < -(topLineOfs + topLabelOfs) )
 					{
 						margin.top = -(topLineOfs + topLabelOfs);
 						bModified = true;
 					}
 
-					spx bottomLineOfs = (pBottom->m_value - m_displayCeiling) * (canvasHeight / (m_displayFloor - m_displayCeiling));
+					spx bottomLineOfs = (pBottom->m_pos - m_displayCeiling) * (canvasHeight / (m_displayFloor - m_displayCeiling));
 					if (margin.bottom < (bottomLineOfs + bottomLabelOfs ) - canvasHeight )
 					{
 						margin.bottom = (bottomLineOfs + bottomLabelOfs) - canvasHeight;
@@ -515,12 +515,12 @@ namespace wg
 
 			for (auto& line : yLines)
 			{
-				if (line.m_bVisible && !line.m_label.isEmpty() && line.m_value >= 0.f && line.m_value <= 1.f)
+				if (line.m_bVisible && !line.m_label.isEmpty() && line.m_pos >= 0.f && line.m_pos <= 1.f)
 				{
-					if (pLeftmost == nullptr || line.m_value < pLeftmost->m_value)
+					if (pLeftmost == nullptr || line.m_pos < pLeftmost->m_pos)
 						pLeftmost = &line;
 
-					if (pRightmost == nullptr || line.m_value > pRightmost->m_value)
+					if (pRightmost == nullptr || line.m_pos > pRightmost->m_pos)
 						pRightmost = &line;
 
 				}
@@ -537,14 +537,14 @@ namespace wg
 
 					spx canvasWidth = contentGeo.w - margin.left - margin.right;
 
-					spx leftLineOfs = pLeftmost->m_value * canvasWidth;
+					spx leftLineOfs = pLeftmost->m_pos * canvasWidth;
 					if (margin.left < -(leftLineOfs + leftLabelOfs))
 					{
 						margin.left = -(leftLineOfs + leftLabelOfs);
 						bModified = true;
 					}
 
-					spx rightLineOfs = pRightmost->m_value * canvasWidth;
+					spx rightLineOfs = pRightmost->m_pos * canvasWidth;
 					if (margin.right < (rightLineOfs + rightLabelOfs) - canvasWidth)
 					{
 						margin.right = (rightLineOfs + rightLabelOfs) - canvasWidth;
@@ -587,10 +587,10 @@ namespace wg
 
 		for (auto& line : xLines)
 		{
-			if (line.m_bVisible && line.m_value >= rangeMin && line.m_value <= rangeMax)
+			if (line.m_bVisible && line.m_pos >= rangeMin && line.m_pos <= rangeMax)
 			{
 				CoordSPX pos = line.m_bLabelAtEnd ? m_chartCanvas.topRight() : m_chartCanvas.topLeft();
-				pos.y += (line.m_value - m_displayCeiling) * valueFactor;
+				pos.y += (line.m_pos - m_displayCeiling) * valueFactor;
 
 				pos += _sideLabelOffset(&line);
 				line.m_labelGeo.setPos(Util::align(pos));
@@ -602,7 +602,7 @@ namespace wg
 			if (line.m_bVisible)
 			{
 				CoordSPX pos = line.m_bLabelAtEnd ? m_chartCanvas.topLeft() : m_chartCanvas.bottomLeft();
-				pos.x += line.m_value * m_chartCanvas.w;
+				pos.x += line.m_pos * m_chartCanvas.w;
 
 				pos += _topBottomLabelOffset(&line);
 				line.m_labelGeo.setPos(Util::align(pos));
