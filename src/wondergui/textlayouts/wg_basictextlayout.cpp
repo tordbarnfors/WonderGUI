@@ -842,6 +842,10 @@ namespace wg
 
 		auto bHasCharStyles = _header(_dataBlock(pText))->hasCharStyles;
 
+		// The style can differ between states, font size included.
+
+		_header(_dataBlock(pText))->matchingHeight = -1;
+
 		if( bHasCharStyles || !_baseStyle(pText)->isStateIdentical(newState, oldState) )
 			_setTextDirty(pText);
 	}
@@ -1157,6 +1161,22 @@ namespace wg
 
 	spx BasicTextLayout::matchingHeight( const TextItem * pText, spx width, int scale ) const
 	{
+		// Without line wrap the width doesn't matter, so the height only changes
+		// with the text, its styles or its state. Containers ask for it at every
+		// level of a layout, so we keep it until then.
+
+		if( !m_bLineWrap )
+		{
+			auto pHeader = const_cast<BlockHeader*>(_header(_dataBlock(pText)));
+			if( pHeader && scale == pHeader->scaleUsed )
+			{
+				if( pHeader->matchingHeight < 0 )
+					pHeader->matchingHeight = _calcMatchingHeight(_chars(pText), _baseStyle(pText), scale, _state(pText), width);
+
+				return pHeader->matchingHeight;
+			}
+		}
+
 		return _calcMatchingHeight(_chars(pText), _baseStyle(pText), scale, _state(pText), width);
 	}
 
@@ -1554,6 +1574,7 @@ namespace wg
 		((BlockHeader *)pBlock)->scaleUsed = scaleUsed;
 		((BlockHeader *)pBlock)->defaultSize = defaultSize;
 		((BlockHeader *)pBlock)->textSize = textSize;
+		((BlockHeader *)pBlock)->matchingHeight = -1;
 		((BlockHeader *)pBlock)->hasCharStyles = bHasCharStyles;
 
 		return pBlock;
@@ -1584,6 +1605,7 @@ namespace wg
 		}
 
 		pHeader->scaleUsed = scale;
+		pHeader->matchingHeight = -1;
 
 		if (defaultSize != pHeader->defaultSize || textSize != pHeader->textSize)
 		{
