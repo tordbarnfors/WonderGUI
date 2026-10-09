@@ -185,4 +185,4 @@ namespace wg
 
 
 } // namespace wg
-#endif //WG_IMAGE_DOT_H
+#endif //WG_PIANOKEYBOARD_DOT_H

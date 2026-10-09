@@ -24,7 +24,6 @@
 #pragma once
 
 #include <wg_typedinfosection.h>
-#include <wg_canvascapsule.h>
 #include <wg_canvasdisplay.h>
 
 namespace wg

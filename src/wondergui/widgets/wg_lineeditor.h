@@ -135,4 +135,4 @@ namespace wg
 
 
 } // namespace wg
-#endif // WG_TEXTDISPLAY_DOT_H
+#endif // WG_LINEEDITOR_DOT_H
