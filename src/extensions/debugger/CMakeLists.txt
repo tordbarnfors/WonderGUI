@@ -142,6 +142,9 @@ set(SOURCES
     sections/objects/wg_widgetinfosection.h
     sections/objects/wg_widgetinfosection.cpp
 
+    sections/entries/wg_gridlineinfosection.h
+    sections/entries/wg_gridlineinfosection.cpp
+
     sections/slots/wg_flexpanelslotinfosection.h
     sections/slots/wg_flexpanelslotinfosection.cpp
     sections/slots/wg_packpanelslotinfosection.h
@@ -195,6 +198,7 @@ set(INCDIRS
     ${CMAKE_CURRENT_LIST_DIR}/sections/objects
     ${CMAKE_CURRENT_LIST_DIR}/sections/slots
     ${CMAKE_CURRENT_LIST_DIR}/sections/components
+    ${CMAKE_CURRENT_LIST_DIR}/sections/entries
     ${CMAKE_CURRENT_LIST_DIR}/views
     ${CMAKE_CURRENT_LIST_DIR}/frontend
     ${CMAKE_CURRENT_LIST_DIR}/overlay

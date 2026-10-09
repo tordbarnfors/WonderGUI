@@ -34,11 +34,11 @@ namespace wg
 		: TypedInfoSection<SkinDisplay>( theme, pContext, SkinDisplay::TYPEINFO.className, pInspected )
 	{
 		this->slot = _createRows({
-			objectRow( "Display skin: ",    [](SkinDisplay* s) -> Object* { return s->displaySkin().rawPtr(); } ),
-			textRow  ( "Display state: ",   [](SkinDisplay* s) { return toString(s->displayState().value()); } ),
-			intRow   ( "Display value: ",   [](SkinDisplay* s) { return s->displayValue(); } ),
-			intRow   ( "Display value 2: ", [](SkinDisplay* s) { return s->displayValue2(); } ),
-			intRow   ( "Display scale: ",   [](SkinDisplay* s) { return s->displayScale(); } )
+			objectRow ( "Display skin: ",    [](SkinDisplay* s) -> Object* { return s->displaySkin().rawPtr(); } ),
+			textRow   ( "Display state: ",   [](SkinDisplay* s) { return toString(s->displayState().value()); } ),
+			decimalRow( "Display value: ",   [](SkinDisplay* s) { return s->displayValue(); } ),
+			decimalRow( "Display value 2: ", [](SkinDisplay* s) { return s->displayValue2(); } ),
+			intRow    ( "Display scale: ",   [](SkinDisplay* s) { return s->displayScale(); } )
 		});
 	}
 

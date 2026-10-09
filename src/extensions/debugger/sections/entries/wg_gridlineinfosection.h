@@ -19,29 +19,34 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef	WG_CHARTINFOSECTION_DOT_H
-#define WG_CHARTINFOSECTION_DOT_H
+#ifndef	WG_GRIDLINEINFOSECTION_DOT_H
+#define WG_GRIDLINEINFOSECTION_DOT_H
 #pragma once
 
 #include <wg_typedinfosection.h>
 #include <wg_chart.h>
-#include <wg_gridlineinfosection.h>
 
 namespace wg
 {
-	class ChartInfoSection;
-	typedef	StrongPtr<ChartInfoSection>	ChartInfoSection_p;
-	typedef	WeakPtr<ChartInfoSection>	ChartInfoSection_wp;
+	class GridLineInfoSection;
+	typedef	StrongPtr<GridLineInfoSection>	GridLineInfoSection_p;
+	typedef	WeakPtr<GridLineInfoSection>	GridLineInfoSection_wp;
 
 
+	//____ GridLineInfoSection ___________________________________________________
+	//
+	// GridLine is an entry in a Chart's xLines/yLines, not an Object, so this
+	// section isn't registered in the backend. ChartInfoSection creates one per
+	// line and points it at a new GridLine with setInspected() when the vector
+	// has changed.
 
-	class ChartInfoSection : public TypedInfoSection<Chart>
+	class GridLineInfoSection : public TypedInfoSection<GridLine>
 	{
 	public:
 
 		//.____ Creation __________________________________________
 
-		static ChartInfoSection_p		create( const DebugTheme& theme, IDebugContext* pContext, Chart * pInspected) { return ChartInfoSection_p(new ChartInfoSection(theme, pContext, pInspected) ); }
+		static GridLineInfoSection_p		create( const DebugTheme& theme, IDebugContext* pContext, GridLine * pInspected) { return GridLineInfoSection_p(new GridLineInfoSection(theme, pContext, pInspected) ); }
 
 		//.____ Identification __________________________________________
 
@@ -54,20 +59,12 @@ namespace wg
 
 
 	protected:
-		ChartInfoSection(const DebugTheme& theme, IDebugContext* pContext, Chart * pInspected );
-		~ChartInfoSection() {}
+		GridLineInfoSection(const DebugTheme& theme, IDebugContext* pContext, GridLine * pInspected );
+		~GridLineInfoSection() {}
 
-		DrawerPanel_p	_createGridLinesDrawer(const CharSeq& label, DynamicVector<GridLine>& lines);
-		void			_refreshGridLinesDrawer(DrawerPanel* pDrawer, DynamicVector<GridLine>& lines);
-		void			_addGridLineDrawers(PackPanel* pList, DynamicVector<GridLine>& lines, int begin);
-
-		DrawerPanel_p	m_pGridColorDrawer;
-		HiColor			m_displayedGridColor;
-
-		DrawerPanel_p	m_pXLinesDrawer;
-		DrawerPanel_p	m_pYLinesDrawer;
-		DrawerPanel_p	m_pGlowDrawer;
+		DrawerPanel_p	m_pColorDrawer;
+		HiColor			m_displayedColor;
 	};
 
 } // namespace wg
-#endif //WG_CHARTINFOSECTION_DOT_H
+#endif //WG_GRIDLINEINFOSECTION_DOT_H
