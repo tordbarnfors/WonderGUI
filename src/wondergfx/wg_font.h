@@ -102,7 +102,7 @@ namespace wg
 
 		//.____ Deprecated __________________________________________________________
 		
-		inline void				setBackupFont( Font * pFont ) { m_pBackupFont = pFont; }
+		void				setBackupFont(Font* pFont);
 
 		
 	protected:
