@@ -875,6 +875,9 @@ namespace wg
 
 	bool InputHandler::_isInStayEnteredList( Widget * pWidget ) const
 	{
+		if( _widgetPosInList( pWidget, m_releasedStayEntered ) >= 0 )
+			return true;
+
 		for( auto& vec : m_stayEnteredLists )
 		{
 			if( _widgetPosInList( pWidget, vec.second ) >= 0 )
@@ -928,6 +931,11 @@ namespace wg
 			}
 		}
 
+		// While a button is held the pointer can only mark the widget it was pressed on,
+		// so released stay-entered widgets wait until all buttons are up.
+
+		if( !m_releasedStayEntered.empty() && !isAnyButtonPressed() )
+			_resolveReleasedStayEntered( timestamp );
 	}
 
 	//____ _handleButtonRepeats() _________________________________________
@@ -1032,16 +1040,7 @@ namespace wg
 		if( it != m_stayEnteredLists.end() )
 		{
 			it->second.swap( vec );
-
-			for( auto& pWidget : vec )
-			{
-				if( pWidget != nullptr && !isEntered(pWidget) )
-				{
-					MouseLeaveMsg_p p = MouseLeaveMsg::create(m_inputId, pWidget, m_modKeys, m_pointerPos, m_pointerPosSPX, m_timestamp);
-					p->setCopyTo(pWidget);
-					Base::msgRouter()->post(p);
-				}
-			}
+			_releaseStayEntered( vec );
 		}
 		else
 		{
@@ -1061,14 +1060,50 @@ namespace wg
 			it->second.swap( vec );
 			m_stayEnteredLists.erase(it);
 
-			for( auto& pWidget : vec )
+			_releaseStayEntered( vec );
+		}
+	}
+
+	//____ _releaseStayEntered() _____________________________________________
+
+	void InputHandler::_releaseStayEntered( const std::vector<Widget_wp>& widgets )
+	{
+		// A released widget might still be under the pointer, so it stays entered until _update()
+		// has rechecked the pointer, instead of getting a MouseLeave and then a MouseEnter.
+		// The recheck can't be done here, since we can be called from the destructor of the
+		// widget that owned the list.
+
+		for( auto& pWidget : widgets )
+		{
+			if( pWidget != nullptr && !isEntered(pWidget) )
+				m_releasedStayEntered.push_back(pWidget);
+		}
+	}
+
+	//____ _resolveReleasedStayEntered() _____________________________________
+
+	void InputHandler::_resolveReleasedStayEntered( int64_t timestamp )
+	{
+		if( m_releasedStayEntered.empty() )
+			return;
+
+		// Recheck while the released widgets still count as entered, so the ones still
+		// under the pointer get no new MouseEnter.
+
+		Root * pRoot = m_pMarkedRoot.rawPtr();
+		if( pRoot )
+			setPointer( pRoot, m_pointerPos, timestamp );
+
+		std::vector<Widget_wp> vec;
+		vec.swap( m_releasedStayEntered );
+
+		for( auto& pWidget : vec )
+		{
+			if( pWidget != nullptr && !isEntered(pWidget) )
 			{
-				if( pWidget != nullptr && !isEntered(pWidget) )
-				{
-					MouseLeaveMsg_p p = MouseLeaveMsg::create(m_inputId, pWidget, m_modKeys, m_pointerPos, m_pointerPosSPX, m_timestamp);
-					p->setCopyTo(pWidget);
-					Base::msgRouter()->post(p);
-				}
+				MouseLeaveMsg_p p = MouseLeaveMsg::create(m_inputId, pWidget, m_modKeys, m_pointerPos, m_pointerPosSPX, timestamp);
+				p->setCopyTo(pWidget);
+				Base::msgRouter()->post(p);
 			}
 		}
 	}
