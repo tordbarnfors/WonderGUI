@@ -171,10 +171,15 @@ namespace wg
 				return nullptr;
 			}
 
-			auto pData = GfxBase::memStackAlloc(header.pixelBytes);
-			stream.read(pData, header.pixelBytes);
-			pDecompressor->decompress(pixbuf.pixels, pData, ((const uint8_t*)pData) + header.pixelBytes);
-			GfxBase::memStackFree(header.pixelBytes);
+			// pixelBytes includes the alignment padding, which must not be fed to the decompressor.
+
+			int dataBytes = header.pixelBytes - header.pixelDataPadding;
+
+			auto pData = GfxBase::memStackAlloc(dataBytes);
+			stream.read(pData, dataBytes);
+			stream.ignore(header.pixelDataPadding);
+			pDecompressor->decompress(pixbuf.pixels, pData, ((const uint8_t*)pData) + dataBytes);
+			GfxBase::memStackFree(dataBytes);
 
 		}
 
@@ -302,7 +307,9 @@ namespace wg
 				return nullptr;
 			}
 
-			pDecompressor->decompress(pixbuf.pixels, pData, ((const uint8_t*)pData) + header.pixelBytes);
+			// pixelBytes includes the alignment padding, which must not be fed to the decompressor.
+
+			pDecompressor->decompress(pixbuf.pixels, pData, ((const uint8_t*)pData) + header.pixelBytes - header.pixelDataPadding);
 		}
 
 		pSurface->pullPixels(pixbuf);
