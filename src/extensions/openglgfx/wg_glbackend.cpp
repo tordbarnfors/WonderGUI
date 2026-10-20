@@ -2109,7 +2109,7 @@ void GlBackend::endSession()
 				m_activeBlurInfo.offset[8][0] = radiusX * 0.7f;
 				m_activeBlurInfo.offset[8][1] = radiusY * 0.7f;
 
-				auto& uniformLocation = bPalette ? m_paletteBlurUniformLocation[m_bTintmapIsActive] : m_blurUniformLocation[m_bTintmapIsActive];
+				const GLint * uniformLocation = bPalette ? m_paletteBlurUniformLocation[m_bTintmapIsActive] : m_blurUniformLocation[m_bTintmapIsActive];
 
 				glUniform2fv(uniformLocation[1], 9, (GLfloat*)m_activeBlurInfo.offset);
 				glUniform4fv(uniformLocation[0], 9, (GLfloat*)m_activeBlurInfo.colorMtx);
