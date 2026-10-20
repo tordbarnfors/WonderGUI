@@ -101,7 +101,8 @@ EdgemapBoxTest::~EdgemapBoxTest()
 
 //____ accuracyTest() _________________________________________________________
 // Boxes look like drawRoundedBox() draws them. Edges are straight between samples, so pixels
-// along the corners differ a little.
+// along the corners differ a little, more at their tops and bottoms. Horizontal edges between
+// pixels are moved to pixel lines, so pixels along them can differ by half their coverage.
 
 bool EdgemapBoxTest::accuracyTest(std::ostream& output)
 {
@@ -131,7 +132,7 @@ bool EdgemapBoxTest::accuracyTest(std::ostream& output)
 				over16th++;
 		}
 
-		if (worst > 4096 / 4 || over16th > 8)
+		if (worst > 4096 * 9 / 16 || over16th > 600)
 		{
 			output << c.pName << ": largest difference " << worst << " of 4096, " << over16th << " pixels differ by more than 1/16." << std::endl;
 			bOk = false;

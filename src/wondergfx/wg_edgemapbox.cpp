@@ -30,11 +30,6 @@ namespace wg
 {
 	const TypeInfo EdgemapBox::TYPEINFO = { "EdgemapBox", &EdgemapShape::TYPEINFO };
 
-	// A corner runs along columns from its top or bottom to where it turns this far from horizontal,
-	// 26.6 degrees, where it rises two pixels per pixel along a row.
-
-	static const double c_capCos = 0.894427190999916;		// 2 / sqrt(5)
-
 	// Keys of regions: what part of the box and which side of its center.
 
 	enum BoxBand : uint32_t { Nothing = 0, Outline, Fill };
@@ -160,133 +155,39 @@ namespace wg
 		m_bFillDrawn = bInner && !spec.fillColor.isUndefined();
 		m_bOutlineDrawn = m_bOutline && !spec.outlineColor.isUndefined();
 
-		// Layout. Straight edges between pixels get a pixel row along columns or a pixel column
-		// along rows, those on pixels a barrier. Corners get caps along columns at top and bottom.
+		// Layout. Pieces running along rows, which can't have horizontal edges between them, so
+		// pieces are split at the horizontal edges, moved to the nearest pixel lines. A piece for
+		// the outline above and below the inside, if there is one, and one for the rest. Lines
+		// through a piece are kept within the edges it is between.
 
 		int left = int(std::floor(m_outer.left));
 		int right = int(std::ceil(m_outer.right));
-		int top = int(std::floor(m_outer.top));
-		int bottom = int(std::ceil(m_outer.bottom));
 
-		Grid grid;
-		grid.x = { left, right };
-		grid.y = { top, bottom };
-
-		m_areas.clear();
-
-		std::vector<const Box*> boxes = { &m_outer };
+		std::vector<double> edges = { m_outer.top, m_outer.bottom };
 		if (m_bOutline && m_inner.right > m_inner.left && m_inner.bottom > m_inner.top)
-			boxes.push_back(&m_inner);
+			edges = { m_outer.top, m_inner.top, m_inner.bottom, m_outer.bottom };
 
-		// Straight edges only run between the corners.
+		m_bands.clear();
+		std::vector<Layout> layout;
 
-		for (const Box* pBox : boxes)
+		for (size_t i = 0; i + 1 < edges.size(); i++)
 		{
-			for (int side : { 0, 1 })
+			int top = int(std::round(edges[i]));
+			int bottom = int(std::round(edges[i + 1]));
+
+			if (bottom > top)
 			{
-				double y = side == 0 ? pBox->top : pBox->bottom;
-				int row = int(std::floor(y));
-				if (row < top || row >= bottom)
-					continue;
-
-				int x0 = int(std::floor(side == 0 ? pBox->centerX(0) : pBox->centerX(3)));
-				int x1 = int(std::ceil(side == 0 ? pBox->centerX(1) : pBox->centerX(2)));
-
-				grid.x.insert(grid.x.end(), { x0, x1 });
-				grid.y.push_back(row);
-
-				if (row != y)
-				{
-					grid.y.push_back(row + 1);
-					m_areas.push_back({ x0, row, x1, row + 1, false });
-				}
-				else
-					grid.barrierRows.push_back({ row, x0, x1 });
+				m_bands.push_back({ top, bottom, edges[i], edges[i + 1] });
+				layout.push_back({ RectI(left, top, right - left, bottom - top) });
 			}
 		}
-
-		for (const Box* pBox : boxes)
-		{
-			for (int side : { 0, 1 })
-			{
-				double x = side == 0 ? pBox->left : pBox->right;
-				int column = int(std::floor(x));
-				if (column < left || column >= right)
-					continue;
-
-				int y0 = int(std::floor(side == 0 ? pBox->centerY(0) : pBox->centerY(1)));
-				int y1 = int(std::ceil(side == 0 ? pBox->centerY(3) : pBox->centerY(2)));
-
-				grid.y.insert(grid.y.end(), { y0, y1 });
-				grid.x.push_back(column);
-
-				if (column != x)
-				{
-					grid.x.push_back(column + 1);
-					m_areas.push_back({ column, y0, column + 1, y1, true });
-				}
-				else
-					grid.barrierColumns.push_back({ column, y0, y1 });
-			}
-		}
-
-		for (const Box* pBox : boxes)
-		{
-			for (int corner = 0; corner < 4; corner++)
-			{
-				double r = pBox->radius[corner];
-				if (r < 2.0)
-					continue;
-
-				double cx = pBox->centerX(corner);
-				double cy = pBox->centerY(corner);
-				bool bTop = corner < 2;
-				bool bLeft = corner == 0 || corner == 3;
-
-				int y0, y1;
-				if (bTop)
-				{
-					y0 = int(std::floor(cy - r));
-					y1 = std::max(int(std::lround(cy - r * c_capCos)), y0 + 1);
-				}
-				else
-				{
-					y1 = int(std::ceil(cy + r));
-					y0 = std::min(int(std::lround(cy + r * c_capCos)), y1 - 1);
-				}
-
-				double dy = bTop ? cy - y1 : y0 - cy;
-				double w = std::sqrt(std::max(r * r - dy * dy, 0.0));
-
-				int x0 = bLeft ? int(std::floor(cx - w)) : int(std::floor(cx));
-				int x1 = bLeft ? int(std::ceil(cx)) : int(std::ceil(cx + w));
-
-				m_areas.push_back({ x0, y0, x1, y1, false });
-				grid.x.insert(grid.x.end(), { x0, x1 });
-				grid.y.insert(grid.y.end(), { y0, y1 });
-			}
-		}
-
-		for (auto* p : { &grid.x, &grid.y })
-		{
-			int low = p == &grid.x ? left : top;
-			int high = p == &grid.x ? right : bottom;
-
-			for (int& v : *p)
-				v = std::clamp(v, low, high);
-
-			std::sort(p->begin(), p->end());
-			p->erase(std::unique(p->begin(), p->end()), p->end());
-		}
-
-		grid.orientation = [this](const RectI& cell) { return _orientation(cell); };
 
 		auto regions = [this](const RectI& piece, bool bRow, double pos, double begin, double end, std::vector<Region>& out)
 		{
 			_regions(piece, bRow, pos, begin, end, out);
 		};
 
-		if (!_buildPieces(grid, regions, m_colors, m_pFactory))
+		if (_buildPieces(layout, regions, m_colors, m_pFactory) != BuildResult::Ok)
 		{
 			GfxBase::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "Failed to create edgemap.",
 				this, &TYPEINFO, __func__, __FILE__, __LINE__);
@@ -296,25 +197,20 @@ namespace wg
 		return true;
 	}
 
-	//____ _orientation() ________________________________________________________
-
-	int EdgemapBox::_orientation( const RectI& cell ) const
-	{
-		for (auto& area : m_areas)
-		{
-			if (cell.x >= area.x0 && cell.x + cell.w <= area.x1 && cell.y >= area.y0 && cell.y + cell.h <= area.y1)
-				return area.bRows ? 1 : 0;
-		}
-
-		return 1;
-	}
-
 	//____ _regions() ____________________________________________________________
 	// Regions along a line, see EdgemapShape::RegionFunc. The line is cut where it crosses an
 	// edge of the box and each part classified at its middle.
 
 	void EdgemapBox::_regions( const RectI& piece, bool bRow, double pos, double begin, double end, std::vector<Region>& regions ) const
 	{
+		static const double c_nudge = 1.0 / 4096;			// How far within its edges a line is kept.
+
+		for (auto& band : m_bands)
+		{
+			if (bRow && piece.y == band.top)
+				pos = std::clamp(pos, band.topEdge + c_nudge, std::max(band.bottomEdge - c_nudge, band.topEdge + c_nudge));
+		}
+
 		double cuts[40];
 		int nCuts = 0;
 

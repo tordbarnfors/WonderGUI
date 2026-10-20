@@ -32,11 +32,6 @@ namespace wg
 
 	static const double c_pi = 3.14159265358979323846;
 
-	// A circle runs along columns from its top or bottom to where it turns this far from horizontal,
-	// 26.6 degrees, where it rises two pixels per pixel along a row.
-
-	static const double c_capCos = 0.894427190999916;		// 2 / sqrt(5)
-
 	// Keys of regions: what part of the ring, which side of the center and for slices which slice
 	// or gap in what turn around the center.
 
@@ -81,8 +76,8 @@ namespace wg
 	 * The edgemaps of the pieces are updated where they can, so that only what changed is
 	 * imported, which is all that is streamed through a StreamEdgemapFactory.
 	 *
-	 * @return False if the spec is invalid, in which case the ring is left as it was, or if
-	 * an edgemap couldn't be created.
+	 * @return False if the spec is invalid or has too many slices in a quarter, in which case
+	 * the ring is left as it was, or if an edgemap couldn't be created.
 	 */
 
 	bool EdgemapRing::update( const RingSpec& spec )
@@ -101,6 +96,40 @@ namespace wg
 			return false;
 		}
 
+		RingSpec oldSpec = m_spec;
+		std::vector<RingSlice> oldSlices = m_slices;
+		oldSpec.pSlices = oldSlices.data();
+
+		_prepare(spec);
+
+		auto regions = [this](const RectI& piece, bool bRow, double pos, double begin, double end, std::vector<Region>& out)
+		{
+			_regions(piece, bRow, pos, begin, end, out);
+		};
+
+		switch (_buildPieces(m_layout, regions, m_colors.data(), m_pFactory))
+		{
+			case BuildResult::Ok:
+				return true;
+
+			case BuildResult::TooManySegments:
+				_prepare(oldSpec);
+				GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Too many slices in a quarter of the ring.",
+					this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				return false;
+
+			default:
+				GfxBase::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "Failed to create edgemap.",
+					this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				return false;
+		}
+	}
+
+	//____ _prepare() ____________________________________________________________
+	// Takes the spec and works out the geometry of the ring.
+
+	void EdgemapRing::_prepare( const RingSpec& spec )
+	{
 		// Keep a copy, tints left out since they are not supported.
 
 		m_slices.assign(spec.pSlices, spec.pSlices + spec.nSlices);
@@ -192,238 +221,56 @@ namespace wg
 		if (end < 1.0)
 			m_intervals.push_back({ 1.0, backColor });
 
-		// Layout. Cells are split at the edges of rect and at the center if there are slices to
-		// line up. The center, if between pixels, gets a pixel column along rows and a pixel row
-		// along columns, for the lines through the center in those directions.
+		// Layout. Rows can't have a horizontal edge between them, only pieces can begin or end
+		// at one, so horizontal edges of rect, if a back color or square is drawn up to them,
+		// and of the inside of a square outline are moved to the nearest pixel line and pieces
+		// split there. A square outline gets a piece above and below the rest.
+
+		m_rowTop = std::round(m_top);
+		m_rowBottom = std::round(m_bottom);
+		m_rowInsetTop = std::round(m_insetTop);
+		m_rowInsetBottom = std::round(m_insetBottom);
+
+		bool bRectEdges = m_bSquare || backColor >= 0;
 
 		int left = int(std::floor(m_left));
 		int right = int(std::ceil(m_right));
-		int top = int(std::floor(m_top));
-		int bottom = int(std::ceil(m_bottom));
+		int top = bRectEdges ? int(m_rowTop) : int(std::floor(m_top));
+		int bottom = bRectEdges ? int(m_rowBottom) : int(std::ceil(m_bottom));
 
-		Grid grid;
-		grid.x = { left, right };
-		grid.y = { top, bottom };
+		m_middleTop = top;
+		m_middleBottom = bottom;
 
-		bool bLines = m_bSlices && m_intervals.size() > 1;
-
-		int centerLeft = int(std::floor(m_centerX)), centerRight = int(std::ceil(m_centerX));
-		int centerTop = int(std::floor(m_centerY)), centerBottom = int(std::ceil(m_centerY));
-
-		m_bCenterColumn = bLines && centerLeft != centerRight;
-		m_bCenterRow = bLines && centerTop != centerBottom;
-
-		if (bLines)
+		if (m_bSquare && outline > 0)
 		{
-			grid.x.insert(grid.x.end(), { centerLeft, centerRight });
-			grid.y.insert(grid.y.end(), { centerTop, centerBottom });
-
-			// Lines between slices pointing straight along a pixel line through the center.
-
-			if (centerLeft == centerRight)
-				grid.barrierColumns.push_back({ centerLeft });
-			if (centerTop == centerBottom)
-				grid.barrierRows.push_back({ centerTop });
+			m_middleTop = std::clamp(int(m_rowInsetTop), top, bottom);
+			m_middleBottom = std::clamp(int(m_rowInsetBottom), m_middleTop, bottom);
 		}
 
-		// Where the pixel column or row of the center meets the top, bottom or sides of a circle,
-		// the circle runs across it. Pieces in them begin and end at those pixels, since the first
-		// and last pixel of a piece one pixel wide get exactly the coverage of each segment.
+		// The middle is made of a piece for each quarter if there are slices to line up, split at
+		// the pixel lines nearest the center.
 
-		for (double r : m_radius)
+		m_bQuarters = m_bSlices && m_intervals.size() > 1;
+
+		m_splitX = std::clamp(int(std::lround(m_centerX)), left, right);
+		m_splitY = std::clamp(int(std::lround(m_centerY)), m_middleTop, m_middleBottom);
+
+		m_layout.clear();
+		m_layout.push_back({ RectI(left, top, right - left, m_middleTop - top) });
+
+		if (m_bQuarters)
 		{
-			if (r <= 0.0)
-				continue;
+			int x = m_splitX, y = m_splitY;
 
-			// The top and left of a circle begin a piece, the bottom and right end one.
-
-			if (m_bCenterColumn)
-			{
-				int row = int(std::floor(m_centerY - r));
-				grid.y.push_back(row);
-				grid.barrierRows.push_back({ row, centerLeft, centerRight });
-
-				row = int(std::floor(m_centerY + r)) + 1;
-				grid.y.push_back(row);
-				grid.barrierRows.push_back({ row, centerLeft, centerRight });
-			}
-
-			if (m_bCenterRow)
-			{
-				int column = int(std::floor(m_centerX - r));
-				grid.x.push_back(column);
-				grid.barrierColumns.push_back({ column, centerTop, centerBottom });
-
-				column = int(std::floor(m_centerX + r)) + 1;
-				grid.x.push_back(column);
-				grid.barrierColumns.push_back({ column, centerTop, centerBottom });
-			}
+			m_layout.push_back({ RectI(left, m_middleTop, x - left, y - m_middleTop) });
+			m_layout.push_back({ RectI(x, m_middleTop, right - x, y - m_middleTop) });
+			m_layout.push_back({ RectI(left, y, x - left, m_middleBottom - y) });
+			m_layout.push_back({ RectI(x, y, right - x, m_middleBottom - y) });
 		}
+		else
+			m_layout.push_back({ RectI(left, m_middleTop, right - left, m_middleBottom - m_middleTop) });
 
-		// Caps at the top and bottom of each circle, joined where they meet. A cap is as wide as
-		// its circles where they leave it, so they leave through its far edge.
-
-		m_caps.clear();
-
-		struct Rows { int y0, y1; double radius; };
-		std::vector<Rows> topRows, bottomRows;
-
-		for (int k = m_bSquare ? 2 : 0; k < 4; k++)
-		{
-			double r = m_radius[k];
-			if (r < 2.0)
-				continue;
-
-			int y0 = int(std::floor(m_centerY - r));
-			int y1 = std::clamp(int(std::lround(m_centerY - r * c_capCos)), y0 + 1, std::max(centerTop, y0 + 1));
-			topRows.push_back({ y0, y1, r });
-
-			y1 = int(std::ceil(m_centerY + r));
-			y0 = std::clamp(int(std::lround(m_centerY + r * c_capCos)), std::min(centerBottom, y1 - 1), y1 - 1);
-			bottomRows.push_back({ y0, y1, r });
-		}
-
-		auto addCaps = [&](std::vector<Rows>& rows, bool bTop)
-		{
-			std::sort(rows.begin(), rows.end(), [](const Rows& a, const Rows& b) { return a.y0 < b.y0; });
-
-			for (size_t i = 0; i < rows.size(); )
-			{
-				int y0 = rows[i].y0, y1 = rows[i].y1;
-				size_t first = i++;
-
-				while (i < rows.size() && rows[i].y0 <= y1)
-					y1 = std::max(y1, rows[i++].y1);
-
-				double w = 0.0;
-				for (size_t k = first; k < i; k++)
-				{
-					double dy = bTop ? m_centerY - y1 : y0 - m_centerY;
-					double r = rows[k].radius;
-					w = std::max(w, std::sqrt(std::max(r * r - dy * dy, 0.0)));
-				}
-
-				Cap cap = { std::max(int(std::floor(m_centerX - w)), left), std::max(y0, top),
-							std::min(int(std::ceil(m_centerX + w)), right), std::min(y1, bottom) };
-
-				if (cap.x0 < cap.x1 && cap.y0 < cap.y1)
-					m_caps.push_back(cap);
-			}
-		};
-
-		addCaps(topRows, true);
-		size_t nTopCaps = m_caps.size();
-		addCaps(bottomRows, false);
-
-		// A bottom cap could only meet a top cap if the circle is tiny, keep them apart then.
-
-		if (nTopCaps > 0 && m_caps.size() > nTopCaps && m_caps[nTopCaps].y0 < m_caps[nTopCaps - 1].y1)
-			m_caps[nTopCaps].y0 = m_caps[nTopCaps - 1].y1;
-
-		for (auto& cap : m_caps)
-		{
-			grid.x.insert(grid.x.end(), { cap.x0, cap.x1 });
-			grid.y.insert(grid.y.end(), { cap.y0, cap.y1 });
-		}
-
-		// Horizontal edges of rect and of the inside of a square outline matter if anything is
-		// drawn up to them. Between pixels they get a row running along columns, otherwise the
-		// cells are split there. Vertical ones are fine along rows, cells are split at them if on
-		// pixels.
-
-		m_strips.clear();
-
-		if (m_bSquare || backColor >= 0)
-		{
-			std::vector<double> horizontal = { m_top, m_bottom };
-			std::vector<double> vertical = { m_left, m_right };
-
-			if (m_bSquare && outline > 0)
-			{
-				horizontal.insert(horizontal.end(), { m_insetTop, m_insetBottom });
-				vertical.insert(vertical.end(), { m_insetLeft, m_insetRight });
-			}
-
-			for (double y : horizontal)
-			{
-				int row = int(std::floor(y));
-				if (row < top || row >= bottom)
-					continue;
-
-				grid.y.push_back(row);
-				if (row != y)
-				{
-					grid.y.push_back(row + 1);
-					m_strips.push_back({ left, row, right, row + 1 });
-				}
-				else
-					grid.barrierRows.push_back({ row });
-			}
-
-			for (double x : vertical)
-			{
-				if (x == std::floor(x) && x > left && x < right)
-				{
-					grid.x.push_back(int(x));
-					grid.barrierColumns.push_back({ int(x) });
-				}
-			}
-		}
-
-		for (auto* p : { &grid.x, &grid.y })
-		{
-			int low = p == &grid.x ? left : top;
-			int high = p == &grid.x ? right : bottom;
-
-			for (int& v : *p)
-				v = std::clamp(v, low, high);
-
-			std::sort(p->begin(), p->end());
-			p->erase(std::unique(p->begin(), p->end()), p->end());
-		}
-
-		grid.orientation = [this](const RectI& cell) { return _orientation(cell); };
-
-		auto regions = [this](const RectI& piece, bool bRow, double pos, double begin, double end, std::vector<Region>& out)
-		{
-			_regions(piece, bRow, pos, begin, end, out);
-		};
-
-		if (!_buildPieces(grid, regions, m_colors.data(), m_pFactory))
-		{
-			GfxBase::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "Failed to create edgemap.",
-				this, &TYPEINFO, __func__, __FILE__, __LINE__);
-			return false;
-		}
-
-		return true;
-	}
-
-	//____ _orientation() ________________________________________________________
-
-	int EdgemapRing::_orientation( const RectI& cell ) const
-	{
-		int centerLeft = int(std::floor(m_centerX));
-		int centerTop = int(std::floor(m_centerY));
-
-		bool bCenterColumn = m_bCenterColumn && cell.x == centerLeft && cell.w == 1;
-		bool bCenterRow = m_bCenterRow && cell.y == centerTop && cell.h == 1;
-
-		if (bCenterColumn)
-			return 1;
-
-		if (bCenterRow)
-			return 0;
-
-		for (auto& strip : m_strips)
-			if (cell.y >= strip.y0 && cell.y + cell.h <= strip.y1)
-				return 0;
-
-		for (auto& cap : m_caps)
-			if (cell.x >= cap.x0 && cell.x + cell.w <= cap.x1 && cell.y >= cap.y0 && cell.y + cell.h <= cap.y1)
-				return 0;
-
-		return 1;
+		m_layout.push_back({ RectI(left, m_middleBottom, right - left, bottom - m_middleBottom) });
 	}
 
 	//____ _regions() ____________________________________________________________
@@ -432,25 +279,58 @@ namespace wg
 
 	void EdgemapRing::_regions( const RectI& piece, bool bRow, double pos, double begin, double end, std::vector<Region>& regions ) const
 	{
+		static const double c_nudge = 1.0 / 4096;			// How far from the center a quarter ends.
+
+		double center = bRow ? m_centerX : m_centerY;		// Along the line.
+
+		// A quarter only holds what is on its side of the center. Where it reaches beyond the
+		// center, up to the pixel line it is split at, what is next to the center continues.
+
+		double from = begin, to = end;						// Part of the line classified.
+
+		if (m_bQuarters && piece.y >= m_middleTop && piece.y < m_middleBottom)
+		{
+			bool bLeft = piece.x < m_splitX;
+			bool bTop = piece.y < m_splitY;
+
+			double centerAcross = bRow ? m_centerY : m_centerX;
+			bool bLowAcross = bRow ? bTop : bLeft;
+			pos = bLowAcross ? std::min(pos, centerAcross - c_nudge) : std::max(pos, centerAcross + c_nudge);
+
+			if (bRow ? bLeft : bTop)
+				to = std::max(std::min(to, center - c_nudge), from);
+			else
+				from = std::min(std::max(from, center + c_nudge), to);
+		}
+
 		// Angles in the piece are counted from the opposite direction of its center, so they don't
 		// wrap around within it.
 
 		double reference = std::atan2(piece.x + piece.w / 2.0 - m_centerX, -(piece.y + piece.h / 2.0 - m_centerY)) / (2 * c_pi) + 0.5;
 
-		double center = bRow ? m_centerX : m_centerY;		// Along the line.
 		double across = pos - (bRow ? m_centerY : m_centerX);
+
+		regions.clear();
+
+		if (to - from < 1e-9)
+		{
+			int color;
+			uint32_t key = _classify(bRow ? from : pos, bRow ? pos : from, bRow, reference, color);
+			regions.push_back({ key, color, end - begin });
+			return;
+		}
 
 		double cuts[32];
 		int nCuts = 0;
 
 		auto cut = [&](double v)
 		{
-			if (v > begin && v < end && nCuts < 30)
+			if (v > from && v < to && nCuts < 30)
 				cuts[nCuts++] = v;
 		};
 
-		cuts[nCuts++] = begin;
-		cuts[nCuts++] = end;
+		cuts[nCuts++] = from;
+		cuts[nCuts++] = to;
 
 		cut(center);
 
@@ -490,7 +370,7 @@ namespace wg
 			if (std::abs(acrossDir) > 1e-12)
 			{
 				double v = center + across * along / acrossDir;
-				if (v > begin && v < end)
+				if (v > from && v < to)
 					lineCuts.push_back(v);
 			}
 		}
@@ -498,8 +378,6 @@ namespace wg
 		std::vector<double> all(cuts, cuts + nCuts);
 		all.insert(all.end(), lineCuts.begin(), lineCuts.end());
 		std::sort(all.begin(), all.end());
-
-		regions.clear();
 
 		for (size_t i = 0; i + 1 < all.size(); i++)
 		{
@@ -516,6 +394,9 @@ namespace wg
 			else
 				regions.push_back({ key, color, b - begin });
 		}
+
+		if (!regions.empty())
+			regions.back().end = end - begin;
 	}
 
 	//____ _classify() ___________________________________________________________
@@ -525,7 +406,7 @@ namespace wg
 	{
 		int side = (bRow ? x > m_centerX : y > m_centerY) ? 1 : 0;
 
-		if (x < m_left || x >= m_right || y < m_top || y >= m_bottom)
+		if (x < m_left || x >= m_right || y < m_rowTop || y >= m_rowBottom)
 		{
 			color = -1;
 			return regionKey(Nothing, side);
@@ -536,7 +417,7 @@ namespace wg
 		double distance = std::sqrt(dx * dx + dy * dy);
 
 		bool bInsideOuterEdge = m_bSquare || distance < m_radius[0];
-		bool bInsideOuterOutline = m_bSquare ? (x >= m_insetLeft && x < m_insetRight && y >= m_insetTop && y < m_insetBottom) : distance < m_radius[1];
+		bool bInsideOuterOutline = m_bSquare ? (x >= m_insetLeft && x < m_insetRight && y >= m_rowInsetTop && y < m_rowInsetBottom) : distance < m_radius[1];
 
 		auto drawn = [this](int index) { return m_colors[index].isUndefined() ? -1 : index; };
 
@@ -562,6 +443,12 @@ namespace wg
 		{
 			color = drawn(1);
 			return regionKey(InnerOutline, side);
+		}
+
+		if (m_intervals.size() == 1)
+		{
+			color = m_intervals[0].color;
+			return regionKey(Slices, side);
 		}
 
 		// Slice or gap. The angle is unrolled from the reference, so the same slice gets the same

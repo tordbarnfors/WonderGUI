@@ -39,10 +39,10 @@ namespace wg
 	 * The box is described by a RoundedBoxSpec, exactly as for GfxDevice::drawRoundedBox(),
 	 * and looks the same when drawn, apart from small differences along the corners.
 	 *
-	 * The box is made of several pieces. Most of them run along canvas rows, while short
-	 * pieces at the top and bottom of each corner run along columns, so that corners stay
-	 * round where they are nearly horizontal, as do rows with a horizontal edge between
-	 * pixels.
+	 * The box is made of one edgemap running along canvas rows, or up to three if it has an
+	 * outline: one for the outline above the inside, one for the rest and one for the
+	 * outline below. Since edges are straight between rows, pixels where a corner is nearly
+	 * horizontal are less exact. Horizontal edges are moved to the nearest pixel line.
 	 *
 	 * Tints are not supported yet. Tints of the spec are ignored and the colors used as they
 	 * are. Colors left undefined are not drawn, but are drawn as transparent in
@@ -89,15 +89,14 @@ namespace wg
 			bool	contains( double x, double y ) const;
 		};
 
-		struct Area							// Cells running along columns or rows.
+		struct Band							// Rows of a piece and the edges they are between.
 		{
-			int		x0, y0, x1, y1;
-			bool	bRows;
+			int		top, bottom;
+			double	topEdge, bottomEdge;
 		};
 
 		bool		_setSpec( const RoundedBoxSpec& spec );
 		void		_regions( const RectI& piece, bool bRow, double pos, double begin, double end, std::vector<Region>& regions ) const;
-		int			_orientation( const RectI& cell ) const;
 		uint32_t	_classify( double x, double y, bool bRow, int& color ) const;
 
 		EdgemapFactory_p	m_pFactory;
@@ -112,7 +111,7 @@ namespace wg
 		bool				m_bFillDrawn = false;
 		bool				m_bOutlineDrawn = false;
 
-		std::vector<Area>	m_areas;							// Ahead of others: strips first, then caps.
+		std::vector<Band>	m_bands;
 	};
 
 }

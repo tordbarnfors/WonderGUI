@@ -25,7 +25,6 @@
 
 #include <vector>
 #include <functional>
-#include <climits>
 
 #include <wg_object.h>
 #include <wg_edgemap.h>
@@ -96,13 +95,13 @@ namespace wg
 		//.____ Building pieces _____________________________________________
 		//
 		// A subclass can describe its shape by the regions met along lines through it and let
-		// _buildPieces() make the pieces. The shape is cut into cells along a grid. A cell becomes
-		// part of a piece whose edgemap either runs along canvas rows (drawn transposed) or along
-		// canvas columns. Samples are taken along the lines between its rows or columns, and the
-		// regions between them are the segments of the edgemap.
+		// _buildPieces() make the edgemaps of the pieces it lays out. The edgemap of a piece runs
+		// either along canvas rows (drawn transposed) or along canvas columns. Samples are taken
+		// along the lines between its rows or columns, and the regions between them become the
+		// segments of the edgemap.
 		//
-		// Since edges are straight between samples, the grid should keep curves within cells
-		// running mostly along the lines and boundaries across the lines on the grid.
+		// Since edges are straight between samples, pieces should be laid out so that curves run
+		// mostly along their lines.
 
 		struct Region
 		{
@@ -117,33 +116,24 @@ namespace wg
 
 		using RegionFunc = std::function<void( const RectI& piece, bool bRow, double pos, double begin, double end, std::vector<Region>& regions )>;
 
-		struct Grid
+		struct Layout
 		{
-			std::vector<int>	x;		// Pixel columns between cells, ascending.
-			std::vector<int>	y;		// Pixel rows between cells, ascending.
-
-			// Lines that pieces can't span, where a boundary runs exactly along a line between samples,
-			// or where a piece should begin or end: rows that pieces along rows can't span and columns
-			// that pieces along columns can't span, if the piece reaches between begin and end.
-
-			struct Barrier
-			{
-				int		line;
-				int		begin = INT_MIN;
-				int		end = INT_MAX;
-			};
-
-			std::vector<Barrier>	barrierRows;
-			std::vector<Barrier>	barrierColumns;
-
-			std::function<int( const RectI& cell )>	orientation;	// 1 for rows, 0 for columns, -1 for nothing.
+			RectI		rect;			// Pixels on canvas.
+			bool		bRows = true;	// Edgemap runs along canvas rows, otherwise along columns.
 		};
 
-		bool		_buildPieces( const Grid& grid, const RegionFunc& regions, const HiColor * pColors, EdgemapFactory * pFactory );
+		enum class BuildResult
+		{
+			Ok,
+			TooManySegments,			// Regions don't fit the segments of an edgemap. Nothing is changed.
+			Failed						// An edgemap couldn't be created.
+		};
+
+		BuildResult	_buildPieces( const std::vector<Layout>& layout, const RegionFunc& regions, const HiColor * pColors, EdgemapFactory * pFactory );
 
 		struct Build				// A piece built, before it is made into an edgemap.
 		{
-			RectI					rect;					// Pixels on canvas.
+			RectI					rect;
 			bool					bRows = true;
 			bool					bEmpty = true;			// Nothing is drawn.
 			std::vector<HiColor>	colors;					// Of the segments.
@@ -159,14 +149,7 @@ namespace wg
 			std::vector<spx>		samples;
 		};
 
-		struct Description
-		{
-			const RegionFunc&		regions;
-			const HiColor *			pColors;
-		};
-
-		bool		_buildPiece( const RectI& rect, bool bRows, const Description& shape, bool bForce, Build& out );
-		void		_buildCell( const RectI& rect, bool bRows, const Description& shape, std::vector<Build>& out );
+		bool		_buildPiece( const Layout& layout, const RegionFunc& regions, const HiColor * pColors, Build& out );
 		bool		_applyPieces( std::vector<Build>& builds, EdgemapFactory * pFactory );
 
 		std::vector<Piece>	m_pieces;

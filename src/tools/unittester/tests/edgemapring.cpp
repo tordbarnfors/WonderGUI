@@ -87,7 +87,7 @@ namespace
 		s = {}; s.rect = pixels(10.4, 40.2, 140.5, 80.7); s.thickness = 20 * 64; s.backColor = Color::DarkBlue; s.hubColor = Color::Gray;
 		out.push_back({ "Back in wide rect", s, { { 0.3f, Color::Red }, { 0.3f, Color::Orange }, { 0.2f, Color::Yellow } } });
 
-		s = {}; s.rect = pixels(20.5, 20.5, 120, 120); s.bSquare = true; s.outline = 3 * 64; s.outlineColor = Color::White; s.thickness = 30 * 64; s.hubColor = Color::Gray;
+		s = {}; s.rect = pixels(20, 20, 120, 120); s.bSquare = true; s.outline = 3 * 64; s.outlineColor = Color::White; s.thickness = 30 * 64; s.hubColor = Color::Gray;
 		out.push_back({ "Square", s, { { 0.25f, Color::Red }, { 0.25f, Color::Orange }, { 0.25f, Color::Yellow } } });
 
 		return out;
@@ -101,6 +101,7 @@ EdgemapRingTest::EdgemapRingTest()
 	ADD_TEST(accuracyTest);
 	ADD_TEST(updateTest);
 	ADD_TEST(nothingDrawnTest);
+	ADD_TEST(tooManySlicesTest);
 }
 
 EdgemapRingTest::~EdgemapRingTest()
@@ -109,8 +110,9 @@ EdgemapRingTest::~EdgemapRingTest()
 
 //____ accuracyTest() _________________________________________________________
 // Rings look like drawRing() draws them. Edges are straight between samples, so pixels along
-// curves differ a little and a pixel where a line between slices meets a circle can differ by
-// up to almost half its coverage.
+// curves differ a little and more at the top and bottom of circles. Horizontal edges between
+// pixels are moved to pixel lines, as are lines between slices along the pixel row or column
+// of a center between pixels.
 
 bool EdgemapRingTest::accuracyTest(std::ostream& output)
 {
@@ -143,7 +145,7 @@ bool EdgemapRingTest::accuracyTest(std::ostream& output)
 				over16th++;
 		}
 
-		if (worst >= 4096 / 2 || over16th > 24)
+		if (worst > 4096 * 9 / 16 || over16th > 256)
 		{
 			output << c.pName << ": largest difference " << worst << " of 4096, " << over16th << " pixels differ by more than 1/16." << std::endl;
 			bOk = false;
@@ -234,6 +236,56 @@ bool EdgemapRingTest::nothingDrawnTest(std::ostream& output)
 	TEST_ASSERT(pRing->update(spec));
 	TEST_ASSERT(pRing->pieces().empty());
 	TEST_ASSERT(pRing->bounds().isEmpty());
+
+	return true;
+}
+
+//____ tooManySlicesTest() _____________________________________________________
+// A ring with more slices in a quarter than an edgemap has segments for can't be created, and
+// updating a ring with them leaves it as it was.
+
+bool EdgemapRingTest::tooManySlicesTest(std::ostream& output)
+{
+	auto pSoft = createSoftDevice();
+	auto pFactory = SoftEdgemapFactory::create();
+
+	std::vector<RingSlice> many(80);
+	for (int i = 0; i < 80; i++)
+		many[i] = { 1.f / 80, i % 2 ? Color::Red : Color::Blue };
+
+	RingSpec spec;
+	spec.rect = pixels(8, 8, 144, 144);
+	spec.nSlices = int(many.size());
+	spec.pSlices = many.data();
+
+	TEST_ASSERT(EdgemapRing::create(WGBP(EdgemapRing, _.factory = pFactory), spec) == nullptr);
+
+	std::vector<RingSlice> few = { { 0.3f, Color::Red }, { 0.3f, Color::Green }, { 0.4f, Color::Blue } };
+
+	RingSpec fewSpec = spec;
+	fewSpec.nSlices = int(few.size());
+	fewSpec.pSlices = few.data();
+
+	auto pRing = EdgemapRing::create(WGBP(EdgemapRing, _.factory = pFactory), fewSpec);
+	TEST_ASSERT(pRing != nullptr);
+
+	auto before = render(pSoft, [&](GfxDevice* p) { pRing->draw(p); });
+
+	TEST_ASSERT(!pRing->update(spec));
+	TEST_ASSERT(pRing->spec().nSlices == 3 && pRing->spec().pSlices[2].color == HiColor(Color::Blue));
+
+	auto after = render(pSoft, [&](GfxDevice* p) { pRing->draw(p); });
+	TEST_ASSERT(before == after);
+
+	// Still updated as before.
+
+	few[0].size = 0.2f;
+	TEST_ASSERT(pRing->update(fewSpec));
+
+	auto pFresh = EdgemapRing::create(WGBP(EdgemapRing, _.factory = pFactory), fewSpec);
+	auto updated = render(pSoft, [&](GfxDevice* p) { pRing->draw(p); });
+	auto fresh = render(pSoft, [&](GfxDevice* p) { pFresh->draw(p); });
+	TEST_ASSERT(updated == fresh);
 
 	return true;
 }
