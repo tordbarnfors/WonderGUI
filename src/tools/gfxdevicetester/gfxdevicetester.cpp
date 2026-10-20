@@ -34,6 +34,7 @@
 #include "testsuites/tinttests.h"
 #include "testsuites/wavetests.h"
 #include "testsuites/edgemaptests.h"
+#include "testsuites/edgemapboxtests.h"
 #include "testsuites/edgemapringtests.h"
 #include "testsuites/edgemapwavetests.h"
 #include "testsuites/samplingtests.h"
@@ -229,6 +230,7 @@ void GfxDeviceTester::setup_tests()
 	add([]() { return new CanvasLayerTests(); });
 	add([]() { return new BlendFixedColorTests(); });
 	add([]() { return new EdgemapTests(); });
+	add([]() { return new EdgemapBoxTests(); });
 	add([]() { return new EdgemapRingTests(); });
 	add([]() { return new EdgemapWaveTests(); });
 	add([]() { return new ColorTests(); });

@@ -21,6 +21,8 @@ set( SOURCES
 	wg_edgemap.h
 	wg_edgemapfactory.cpp
 	wg_edgemapfactory.h
+	wg_edgemapbox.cpp
+	wg_edgemapbox.h
 	wg_edgemapring.cpp
 	wg_edgemapring.h
 	wg_edgemapshape.cpp
