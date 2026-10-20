@@ -387,8 +387,8 @@ namespace wg
 		if (edgePitch == 0)
 			edgePitch = samplePitch * (sampleEnd - sampleBegin);
 
-		convertSamples(m_pSamples + edgeBegin + sampleBegin * (m_nbSegments - 1), pSource + edgePitch * edgeBegin + samplePitch * sampleBegin,
-					   origo, m_size.h * 64, edgeEnd - edgeBegin, sampleEnd - sampleBegin, edgePitch, samplePitch, 1, m_nbSegments - 1);
+		convertSamples(m_pSamples + edgeBegin + sampleBegin * (m_nbSegments - 1), pSource, origo, m_size.h * 64,
+					   edgeEnd - edgeBegin, sampleEnd - sampleBegin, edgePitch, samplePitch, 1, m_nbSegments - 1);
 
 		_samplesUpdated(edgeBegin, edgeEnd, sampleBegin, sampleEnd);
 		_mirrorFirstColumn(edgeBegin, edgeEnd, sampleBegin);

@@ -97,6 +97,10 @@ namespace wg
 
 		inline int		samples() const { return m_bTiling ? m_size.w : m_size.w + 1; }		// Samples per edge.
 
+		// pSource points at the first sample to import, sample sampleBegin of edge edgeBegin. samplePitch
+		// is the step between samples of an edge (1 if 0) and edgePitch between edges (samplePitch
+		// times the number of samples if 0). Float samples are fractions of the height.
+
 		bool 			importSamples( SampleOrigo origo, const spx * pSource, int edgeBegin, int edgeEnd,
 									  int sampleBegin, int sampleEnd, int edgePitch = 0, int samplePitch = 0 );
 
