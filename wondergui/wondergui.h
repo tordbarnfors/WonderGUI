@@ -34,6 +34,7 @@
 #include <wg_base.h>
 #include <wg_basicnumberlayout.h>
 #include <wg_flowtextlayout.h>
+#include <wg_markdowntextlayout.h>
 #include <wg_plaintextlayout.h>
 #include <wg_blockingcapsule.h>
 #include <wg_blockskin.h>

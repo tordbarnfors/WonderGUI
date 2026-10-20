@@ -24,6 +24,11 @@ private:
 	bool renderTest(std::ostream& output);
 	bool componentEditTest(std::ostream& output);
 	bool numberLayoutTest(std::ostream& output);
+	bool markdownMarkersTest(std::ostream& output);
+	bool markdownBlocksTest(std::ostream& output);
+	bool markdownLinksTest(std::ostream& output);
+	bool markdownSourceModeTest(std::ostream& output);
+	bool markdownRenderTest(std::ostream& output);
 	bool sizeScaleTest(std::ostream& output);
 
 	wg::TextStyle_p		_createStyle( int size = 16 );		// Font and style are created per test, so nothing outlives Base::exit().

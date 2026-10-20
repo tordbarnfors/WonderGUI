@@ -93,6 +93,11 @@ TextSystemTest::TextSystemTest()
 	ADD_TEST(renderTest);
 	ADD_TEST(componentEditTest);
 	ADD_TEST(numberLayoutTest);
+	ADD_TEST(markdownMarkersTest);
+	ADD_TEST(markdownBlocksTest);
+	ADD_TEST(markdownLinksTest);
+	ADD_TEST(markdownSourceModeTest);
+	ADD_TEST(markdownRenderTest);
 	ADD_TEST(sizeScaleTest);
 }
 
@@ -532,6 +537,273 @@ bool TextSystemTest::numberLayoutTest(std::ostream& output)
 	return true;
 }
 
+//____ markdownMarkersTest() __________________________________________________
+
+bool TextSystemTest::markdownMarkersTest(std::ostream& output)
+{
+	auto pStyle = _createStyle();
+	TEST_ASSERT(pStyle != nullptr);
+
+	auto pPlain = PlainTextLayout::create();
+	auto pMarkdown = MarkdownTextLayout::create();
+
+	auto widthOf = [&]( TextLayout * pLayout, std::string_view str )
+	{
+		TestText text( pLayout, pStyle, str );
+		return pLayout->defaultSize(&text, 64).w;
+	};
+
+	// Hidden markers take no space.
+
+	TEST_ASSERT(widthOf(pMarkdown, "**ab**") == widthOf(pPlain, "ab"));
+	TEST_ASSERT(widthOf(pMarkdown, "*a* _b_ `c` ~~d~~") == widthOf(pPlain, "a b c d"));
+	TEST_ASSERT(widthOf(pMarkdown, "# Title") == widthOf(pPlain, "Title"));
+	TEST_ASSERT(widthOf(pMarkdown, "\\*not emphasis\\*") == widthOf(pPlain, "*not emphasis*"));
+
+	// Escaped text displays as it is.
+
+	std::string tricky = "1. *Stars*, _under_ [brackets] & <tags> # hash";
+	TEST_ASSERT(widthOf(pMarkdown, MarkdownTextLayout::escape(tricky)) == widthOf(pPlain, tricky));
+
+	// Caret steps over hidden markers, one visible character per step.
+
+	TestText text( pMarkdown, pStyle, "**ab**" );
+
+	std::vector<int> positions = { 0, 3, 6 };
+	spx wanted = -1;
+	int ofs = 0;
+	for( size_t i = 1 ; i < positions.size() ; i++ )
+	{
+		ofs = pMarkdown->caretRight(&text, ofs, wanted);
+		TEST_ASSERT(ofs == positions[i]);
+	}
+	for( int i = int(positions.size()) - 2 ; i >= 0 ; i-- )
+	{
+		ofs = pMarkdown->caretLeft(&text, ofs, wanted);
+		TEST_ASSERT(ofs == positions[i]);
+	}
+
+	TEST_ASSERT(pMarkdown->charRect(&text, 0).w == 0);
+	TEST_ASSERT(pMarkdown->charRect(&text, 2).w > 0);
+
+	// Entities are displayed as one character, caret steps over them.
+
+	text.setText("a&amp;b");
+	TEST_ASSERT(pMarkdown->caretRight(&text, 1, wanted) == 6);
+	TEST_ASSERT(pMarkdown->caretLeft(&text, 6, wanted) == 1);
+	TEST_ASSERT(widthOf(pMarkdown, "a&amp;b") == widthOf(pPlain, "a&b"));
+
+	// Single newlines in a paragraph are spaces, blank line separates paragraphs.
+
+	text.setText("a\nb");
+	TEST_ASSERT(text.nbLines() == 1);
+	TEST_ASSERT(widthOf(pMarkdown, "a\nb") == widthOf(pPlain, "a b"));
+
+	text.setText("a\n\nb");
+	TEST_ASSERT(text.nbLines() == 3);
+
+	text.setText("a  \nb");								// Hard line break.
+	TEST_ASSERT(text.nbLines() == 2);
+
+	return true;
+}
+
+//____ markdownBlocksTest() ___________________________________________________
+
+bool TextSystemTest::markdownBlocksTest(std::ostream& output)
+{
+	auto pStyle = _createStyle();
+	TEST_ASSERT(pStyle != nullptr);
+
+	auto pMarkdown = MarkdownTextLayout::create( WGBP(MarkdownTextLayout, _.indentation = 16) );
+	spx step = 16*64;
+
+	// Lists get bullets, nested lists are indented.
+
+	TestText text( pMarkdown, pStyle, "- a\n  - b\n- c" );
+	//  '-'0 ' '1 'a'2 '\n'3 ' '4 ' '5 '-'6 ' '7 'b'8 '\n'9 '-'10 ' '11 'c'12
+
+	TEST_ASSERT(text.nbLines() == 3);
+	TEST_ASSERT(pMarkdown->charRect(&text, 0).w > 0);			// Bullet is displayed.
+	TEST_ASSERT(pMarkdown->charPos(&text, 0).x == 0);
+	TEST_ASSERT(pMarkdown->charPos(&text, 6).x == step);
+	TEST_ASSERT(pMarkdown->charPos(&text, 10).x == 0);
+
+	spx wanted = -1;
+	TEST_ASSERT(pMarkdown->caretRight(&text, 3, wanted) == 6);	// Hidden indentation is skipped.
+
+	// Ordered lists keep their numbers.
+
+	text.setText("1. one\n2. two");
+	TEST_ASSERT(text.nbLines() == 2);
+	TEST_ASSERT(pMarkdown->charRect(&text, 0).w > 0);
+	TEST_ASSERT(pMarkdown->charRect(&text, 1).w > 0);
+
+	// Quotes are indented.
+
+	text.setText("> q");
+	TEST_ASSERT(pMarkdown->charPos(&text, 2).x == step);
+	TEST_ASSERT(pMarkdown->charRect(&text, 0).w == 0);
+
+	// Code blocks keep their indentation.
+
+	text.setText("```\n  x\n```");
+	TEST_ASSERT(pMarkdown->charRect(&text, 4).w > 0);
+	TEST_ASSERT(pMarkdown->charRect(&text, 0).w == 0);
+
+	// Wrapped lines of list items are indented to the text.
+
+	auto pWrapping = MarkdownTextLayout::create( WGBP(MarkdownTextLayout, _.indentation = 16, _.wrap = true) );
+	TestText wrapped( pWrapping, pStyle, "- aaaa bbbb cccc dddd" );
+	wrapped.setSize( { pWrapping->defaultSize(&wrapped, 64).w / 2, 1000*64 } );
+
+	TEST_ASSERT(wrapped.nbLines() >= 2);
+	int line1 = pWrapping->lineBegin(&wrapped, 1);
+	TEST_ASSERT(pWrapping->charPos(&wrapped, line1).x == step);
+
+	return true;
+}
+
+//____ markdownLinksTest() ____________________________________________________
+
+bool TextSystemTest::markdownLinksTest(std::ostream& output)
+{
+	auto pStyle = _createStyle();
+	TEST_ASSERT(pStyle != nullptr);
+
+	auto pLinkStyle = WGCREATE(TextStyle, _.color = Color::Blue, _.decoration = TextDecoration::Underline);
+	auto pMarkdown = MarkdownTextLayout::create( WGBP(MarkdownTextLayout, _.link = pLinkStyle) );
+
+	TestText text( pMarkdown, pStyle, "See [docs](https://example.com \"Tip\") now" );
+	//  'S'0 ... '['4 'd'5 'o'6 'c'7 's'8 ']'9 ...
+
+	TextLink_p pLink = pMarkdown->linkAt(&text, 6);
+	TEST_ASSERT(pLink != nullptr);
+	TEST_ASSERT(pLink->link() == "https://example.com");
+	TEST_ASSERT(pLink->tooltip() == "Tip");
+
+	TEST_ASSERT(pMarkdown->linkAt(&text, 1) == nullptr);
+	TEST_ASSERT(pMarkdown->linkAt(&text, 5) == pMarkdown->linkAt(&text, 8));
+
+	text.setText("<https://auto.link>");
+	pLink = pMarkdown->linkAt(&text, 5);
+	TEST_ASSERT(pLink != nullptr && pLink->link() == "https://auto.link");
+
+	return true;
+}
+
+//____ markdownSourceModeTest() _______________________________________________
+
+bool TextSystemTest::markdownSourceModeTest(std::ostream& output)
+{
+	auto pStyle = _createStyle();
+	TEST_ASSERT(pStyle != nullptr);
+
+	auto pMarkupStyle = WGCREATE(TextStyle, _.color = Color::Gray);
+	auto pPlain = PlainTextLayout::create();
+	auto pSource = MarkdownTextLayout::create( WGBP(MarkdownTextLayout, _.markup = pMarkupStyle, _.showMarkup = true) );
+
+	std::string md = "# Head\n\n- **bold** &amp; *em*\n> quote\nsoft\nbreak";
+
+	TestText plain( pPlain, pStyle, md );
+	TestText source( pSource, pStyle, md );
+
+	// Everything is displayed exactly as plain text, just styled.
+
+	TEST_ASSERT(pSource->defaultSize(&source, 64) == pPlain->defaultSize(&plain, 64));
+	TEST_ASSERT(source.nbLines() == plain.nbLines());
+
+	spx wanted = -1;
+	for( int ofs = 0 ; ofs < int(md.size()) ; ofs++ )
+	{
+		TEST_ASSERT(pSource->caretRight(&source, ofs, wanted) == pPlain->caretRight(&plain, ofs, wanted));
+		TEST_ASSERT(pSource->charRect(&source, ofs) == pPlain->charRect(&plain, ofs));
+	}
+
+	return true;
+}
+
+//____ markdownRenderTest() ___________________________________________________
+
+bool TextSystemTest::markdownRenderTest(std::ostream& output)
+{
+	Base::setDefaultSurfaceFactory( SoftSurfaceFactory::create() );
+
+	auto pStyle = _createStyle();
+	TEST_ASSERT(pStyle != nullptr);
+
+	auto pBigStyle = WGCREATE(TextStyle, _.sizeScale = 1.5f);
+	auto pCodeStyle = WGCREATE(TextStyle, _.backColor = HiColor(1024,1024,1024,4096));
+	auto pLinkStyle = WGCREATE(TextStyle, _.color = Color::Blue, _.decoration = TextDecoration::Underline);
+
+	auto pMarkdown = MarkdownTextLayout::create( WGBP(MarkdownTextLayout,
+		_.code = pCodeStyle,
+		_.codeBlock = pCodeStyle,
+		_.heading[0] = pBigStyle,
+		_.link = pLinkStyle,
+		_.wrap = true ) );
+
+	SizeI canvasSize(200, 300);
+
+	auto pBackend = SoftBackend::create();
+	addDefaultSoftKernels(pBackend);
+	auto pDevice = GfxDeviceGen2::create(pBackend);
+	auto pCanvas = SoftSurface::create(WGBP(Surface, _.size = canvasSize, _.format = PixelFormat::ARGB_8, _.canvas = true));
+
+	std::string md = "# Heading\n\nSome *emphasis*, **strong** and `code` with a [link](http://x).\n\n"
+					 "- one\n- two\n  1. nested\n\n> quoted\n> text\n\n```\ncode block\n  indented\n```\n"
+					 "&copy; &#x1F600; &unknown; \xC3\xA5\xC3\xA4\xC3\xB6";
+
+	TestText text( pMarkdown, pStyle, md, canvasSize*64 );
+
+	pDevice->beginRender();
+	pDevice->beginCanvasUpdate(pCanvas);
+	pDevice->setBlendMode(BlendMode::Replace);
+	pDevice->fill(HiColor::Black);
+	pDevice->setBlendMode(BlendMode::Blend);
+
+	pMarkdown->render(&text, pDevice, RectSPX(0, 0, canvasSize.w*64, canvasSize.h*64));
+
+	pDevice->endCanvasUpdate();
+	pDevice->endRender();
+
+	auto buffer = pCanvas->allocPixelBuffer();
+	pCanvas->pushPixels(buffer);
+
+	int lit = 0;
+	for( int y = 0 ; y < canvasSize.h ; y++ )
+	{
+		uint32_t * pLine = (uint32_t*) (buffer.pixels + y * buffer.pitch);
+		for( int x = 0 ; x < canvasSize.w ; x++ )
+			if( (pLine[x] & 0xFFFFFF) != 0 )
+				lit++;
+	}
+	pCanvas->freePixelBuffer(buffer);
+
+	TEST_ASSERT(lit > 0);
+
+	// Walking the whole text with caret and hit tests must stay within bounds.
+
+	spx wanted = -1;
+	int ofs = 0;
+	int steps = 0;
+	while( ofs < int(md.size()) && steps < 1000 )
+	{
+		RectSPX r = pMarkdown->charRect(&text, ofs);
+		pMarkdown->charAtPos(&text, { r.x + r.w/2, r.y + r.h/2 });
+		pMarkdown->caretDown(&text, ofs, wanted);
+		wanted = -1;
+
+		int next = pMarkdown->caretRight(&text, ofs, wanted);
+		TEST_ASSERT(next > ofs);
+		ofs = next;
+		steps++;
+	}
+	TEST_ASSERT(ofs == int(md.size()));
+
+	return true;
+}
+
 //____ sizeScaleTest() ________________________________________________________
 
 bool TextSystemTest::sizeScaleTest(std::ostream& output)
@@ -555,6 +827,14 @@ bool TextSystemTest::sizeScaleTest(std::ostream& output)
 	TEST_ASSERT(attr.size == 10*64);
 
 	TEST_ASSERT(pDouble->blueprint().sizeScale == 2.f);
+
+	// Headings with sizeScale are taller.
+
+	auto pMarkdown = MarkdownTextLayout::create( WGBP(MarkdownTextLayout, _.heading[0] = pDouble) );
+	TestText heading( pMarkdown, pStyle, "# Big" );
+	TestText normal( pMarkdown, pStyle, "Big" );
+
+	TEST_ASSERT(pMarkdown->defaultSize(&heading, 64).h > pMarkdown->defaultSize(&normal, 64).h * 3 / 2);
 
 	return true;
 }
