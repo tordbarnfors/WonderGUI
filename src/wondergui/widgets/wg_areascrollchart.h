@@ -24,7 +24,7 @@
 #pragma once
 
 #include <wg_scrollchart.h>
-#include <wg_waveform.h>
+#include <wg_edgemapwave.h>
 
 namespace wg
 {
@@ -164,7 +164,7 @@ namespace wg
 
 		bool				m_bColorsChanged = false;
 
-		Waveform_p			m_pWaveform;
+		EdgemapWave_p		m_pWave;
 
 		std::function<void(int64_t, int64_t, int64_t, int64_t)>	m_fetcher;
 	};
@@ -276,7 +276,7 @@ namespace wg
 
 		void	_update(int microPassed, int64_t microsecTimestamp) override;
 
-		void	_updateWaveformEdge(Waveform* pWaveform, int64_t beginUS, int pixelIncUS, bool bTopEdge, AreaScrollChartEntry::SampleSet* pSamples);
+		void	_updateWaveformEdge(EdgemapWave* pWave, int64_t beginUS, int pixelIncUS, bool bTopEdge, AreaScrollChartEntry::SampleSet* pSamples);
 
 		void	_initEntrySamples(AreaScrollChartEntry* pEntry);
 

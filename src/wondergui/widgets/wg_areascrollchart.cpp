@@ -164,13 +164,13 @@ namespace wg
 
 	//____ _updateWaveformEdge() _________________________________________________
 
-	void AreaScrollChart::_updateWaveformEdge(Waveform* pWaveform, int64_t beginUS, int pixelIncUS, bool bTopEdge, AreaScrollChartEntry::SampleSet* pSamples)
+	void AreaScrollChart::_updateWaveformEdge(EdgemapWave* pWave, int64_t beginUS, int pixelIncUS, bool bTopEdge, AreaScrollChartEntry::SampleSet* pSamples)
 	{
 		// TODO: Better interpolation, especially when shrinking.
 
 		int sampleIdx = bTopEdge ? 0 : 1;
 
-        int wfSamples = pWaveform->nbSamples();
+        int wfSamples = pWave->nbSamples();
 
 		spx * pConverted = (spx*) Base::memStackAlloc(wfSamples * sizeof(spx));
 
@@ -197,9 +197,9 @@ namespace wg
 		}
 
 		if (bTopEdge)
-			pWaveform->setSamples(0, wfSamples, pConverted, nullptr);
+			pWave->setSamples(0, wfSamples, pConverted, nullptr);
 		else
-			pWaveform->setSamples(0, wfSamples, nullptr, pConverted);
+			pWave->setSamples(0, wfSamples, nullptr, pConverted);
 
 		Base::memStackFree(wfSamples * sizeof(spx));
 	}
@@ -258,22 +258,23 @@ namespace wg
             }
 
 
-			// Create our waveform
+			// Create our wave
 
-			SizeI waveformSize = { dirtLen/64 + pixelMargin*2, canvasSize.h / 64 };
+			SizeI waveSize = { dirtLen/64 + pixelMargin*2, canvasSize.h / 64 };
 
 			int edgesNeeded = (dirtLen/64) + 1;
 
-			auto pWaveform = Waveform::create(WGBP(Waveform,
-				_.size = waveformSize,
+			auto pWave = EdgemapWave::create(WGBP(EdgemapWave,
 				_.bottomOutlineThickness = entry.m_bottomOutlineThickness*m_scale,
 				_.color = entry.m_fillColor,
-				_.tint = entry.m_pFillTint,
+				_.factory = m_pEdgemapFactory,
 				_.origo = SampleOrigo::Top,
 				_.outlineColor = entry.m_outlineColor,
 				_.outlineTint = entry.m_pOutlineTint,
+				_.size = waveSize*64,
+				_.tint = entry.m_pFillTint,
 				_.topOutlineThickness = entry.m_topOutlineThickness*m_scale
-			), m_pEdgemapFactory);
+			));
 
 
 			// Find first sample to deal with
@@ -286,12 +287,12 @@ namespace wg
 			if( pSample != entry.m_samples.begin() )
 				pSample--;
 
-			// Update waveform and generate Edgemap
+			// Update wave and its edgemap
 
-			_updateWaveformEdge(pWaveform, firstEdgeTimestamp, microsecPerPixel, true, &(*pSample));
-			_updateWaveformEdge(pWaveform, firstEdgeTimestamp, microsecPerPixel, false, &(*pSample));
+			_updateWaveformEdge(pWave, firstEdgeTimestamp, microsecPerPixel, true, &(*pSample));
+			_updateWaveformEdge(pWave, firstEdgeTimestamp, microsecPerPixel, false, &(*pSample));
 
-			auto pEdgemap = pWaveform->refresh();
+			pWave->refresh();
 
 			//
 
@@ -302,13 +303,13 @@ namespace wg
 				spx pos1 = rightEdgeOfs - dirtLen - pixelMargin*64;
 				spx pos2 = canvasSize.w + pos1;
 
-				pDevice->drawEdgemap({pos1,0}, pEdgemap);
+				pWave->draw(pDevice, {pos1,0});
 
-				pDevice->drawEdgemap({pos2,0}, pEdgemap);
+				pWave->draw(pDevice, {pos2,0});
 			}
 			else
 			{
-				pDevice->drawEdgemap({rightEdgeOfs - dirtLen - pixelMargin*64, 0 }, pEdgemap);
+				pWave->draw(pDevice, {rightEdgeOfs - dirtLen - pixelMargin*64, 0 });
 			}
 		}
 	}

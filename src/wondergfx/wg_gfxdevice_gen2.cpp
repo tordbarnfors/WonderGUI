@@ -30,7 +30,7 @@
 #include <wg_gfxutil.h>
 #include <wg_gfxbase.h>
 
-#include <wg_waveform.h>
+#include <wg_edgemapwave.h>
 
 using namespace std;
 using namespace wg::Util;
@@ -3235,15 +3235,17 @@ void GfxDeviceGen2::flipDrawWave(const RectSPX& dest, const WaveLine* pTopBorder
 
 	RectI pixDest = dest / 64;
 
-	// Create waveform
+	// Create wave
 
-	auto pWave = Waveform::create( WGBP(Waveform, 
-		_.size = dest.size()/64, 
+	auto pWave = EdgemapWave::create( WGBP(EdgemapWave,
+		_.size = pixDest.size()*64,
 		_.color = fill,
-		_.topOutlineThickness = pTopBorder->thickness, 
+		_.factory = m_pBackend->edgemapFactory(),
+		_.flip = flip,
+		_.pos = dest.pos(),
+		_.topOutlineThickness = pTopBorder->thickness,
 		_.bottomOutlineThickness = pBottomBorder->thickness,
-		_.outlineColor = pTopBorder->color ),
-		m_pBackend->edgemapFactory() );
+		_.outlineColor = pTopBorder->color ) );
 
 	int samplesWanted = pixDest.w + 1;
 
@@ -3289,9 +3291,8 @@ void GfxDeviceGen2::flipDrawWave(const RectSPX& dest, const WaveLine* pTopBorder
 
 	// Render
 
-	auto pEdgemap = pWave->refresh();
-
-	flipDrawEdgemap(dest.pos(), pEdgemap, flip);
+	pWave->refresh();
+	pWave->draw(this);
 }
 
 //____ drawSegments() ________________________________________________________

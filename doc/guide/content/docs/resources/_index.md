@@ -61,6 +61,8 @@ The following table lists the classes that are considered resources with a short
 | Dataset              | Content only | Template class for wrapping any class into a WonderGUI object with smart pointers and reference counting. |
 | Edgemap              | Content only | Custom class storing graphics as a number of edges between fields of different colors. Used to store simple shapes such as graphs, charts, circles etc in a generic format for rendering. Edgemap is a base class which is subclassed depending on rendering output such as Software, OpenGL, Metal and Streaming. |
 | EdgemapFactory       | No           | A simple factory class for creating edgemaps. Subclassed into factories for various rendering outputs. |
+| EdgemapShape         | Content only | Base class for shapes made into edgemaps, so that drawing them is just drawing edgemaps. Created through an EdgemapFactory, so a StreamEdgemapFactory creates them on the receiving end of a stream. |
+| EdgemapWave          | Content only | An EdgemapShape for a "waveform", a set of samples that represents the curve of a graph, oscilloscope or similar, filled between a top and a bottom line. |
 | Font                 | No           | Stores a font used for rendering text. Subclasses exist for simple bitmap fonts and vector fonts using FreeType for rendering. |
 | NumberLayout         | No           | NumberLayout manages the layout and rendering of the textual representation of a value. Like TextLayout but for numerical values instead of strings of text. |
 | Printer              | Yes          | A low-level class for printing text to the screen as part of the wondgfx library. Meant for situations where WonderGUI's more sophisticated text layout system would be overkill. Not used by any WonderGUI widgets, but is available nevertheless. |
@@ -73,7 +75,6 @@ The following table lists the classes that are considered resources with a short
 | TextLayout           | No           | TextLayouts manages the layout and rendering of text, such as the texts placement and alignment within a rectangle. They also manage text-wrapping and can theoretically handle animated text, rotated text and bi-directional text, although just a basic TextLayout subclass has been implemented so far. |
 | TextStyle            | No           | TextStyle objects specify the font, size, color and decorations to use for some text or parts thereof. |
 | Transition           | No           | Specifies a transition from one color, position size or such to another. Subclassed into classes for dealing specifically with colors and arrays of values. |
-| Waveform             | Content only | Class for storing a "waveform", a set of samples that represents the curve of a graph, oscilloscope or similar. Waveforms are turned into edgemaps for rendering. |
 | Warpmap              | Content only | Bends a surface or an edgemap into another shape when drawn, by a grid of positions in the source. Subclassed depending on rendering output, like Edgemap. See [Warpmaps](warpmaps). |
 | WarpmapFactory       | No           | A simple factory class for creating warpmaps. Subclassed into factories for various rendering outputs. |
 

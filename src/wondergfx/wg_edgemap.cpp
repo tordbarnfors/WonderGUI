@@ -281,6 +281,85 @@ namespace wg
 		}
 	}
 
+	//____ convertSamples() _______________________________________________________
+
+	void Edgemap::convertSamples( spx * pDest, const spx * pSource, SampleOrigo origo, spx height, int nEdges, int nSamples,
+								  int srcEdgePitch, int srcSamplePitch, int destEdgePitch, int destSamplePitch )
+	{
+		spx mul = (origo == SampleOrigo::Top || origo == SampleOrigo::MiddleDown) ? 1 : -1;
+		spx offset = 0;
+
+		if( origo == SampleOrigo::Bottom )
+			offset = height;
+		else if( origo == SampleOrigo::MiddleDown || origo == SampleOrigo::MiddleUp )
+			offset = height/2;
+
+		for( int edge = 0 ; edge < nEdges ; edge++ )
+		{
+			const spx * pSrc = pSource + srcEdgePitch * edge;
+			spx * pDst = pDest + destEdgePitch * edge;
+
+			for( int sample = 0 ; sample < nSamples ; sample++ )
+			{
+				* pDst = (* pSrc * mul) + offset;
+				pDst += destSamplePitch;
+				pSrc += srcSamplePitch;
+			}
+		}
+	}
+
+	void Edgemap::convertSamples( spx * pDest, const float * pSource, SampleOrigo origo, spx height, int nEdges, int nSamples,
+								  int srcEdgePitch, int srcSamplePitch, int destEdgePitch, int destSamplePitch )
+	{
+		spx mul = (origo == SampleOrigo::Top || origo == SampleOrigo::MiddleDown) ? 1 : -1;
+		spx offset = 0;
+
+		if( origo == SampleOrigo::Bottom )
+			offset = height;
+		else if( origo == SampleOrigo::MiddleDown || origo == SampleOrigo::MiddleUp )
+			offset = height/2;
+
+		if( origo == SampleOrigo::MiddleDown || origo == SampleOrigo::MiddleUp )
+			mul *= height/2;
+		else
+			mul *= height;
+
+		for( int edge = 0 ; edge < nEdges ; edge++ )
+		{
+			const float * pSrc = pSource + srcEdgePitch * edge;
+			spx * pDst = pDest + destEdgePitch * edge;
+
+			for( int sample = 0 ; sample < nSamples ; sample++ )
+			{
+				* pDst = (* pSrc * mul) + offset;
+				pDst += destSamplePitch;
+				pSrc += srcSamplePitch;
+			}
+		}
+	}
+
+	//____ convertSample() ________________________________________________________
+
+	spx Edgemap::convertSample( spx sample, SampleOrigo origo, spx height )
+	{
+		spx mul = (origo == SampleOrigo::Top || origo == SampleOrigo::MiddleDown) ? 1 : -1;
+		spx offset = 0;
+
+		if( origo == SampleOrigo::Bottom )
+			offset = height;
+		else if( origo == SampleOrigo::MiddleDown || origo == SampleOrigo::MiddleUp )
+			offset = height/2;
+
+		return (sample * mul) + offset;
+	}
+
+	spx Edgemap::convertSample( float sample, SampleOrigo origo, spx height )
+	{
+		spx out;
+		convertSamples( &out, &sample, origo, height, 1, 1, 0, 0, 0, 0 );
+		return out;
+	}
+
 	//____ _importSamples() ________________________________________________________
 
 	void Edgemap::_importSamples(SampleOrigo origo, const spx* pSource, int edgeBegin, int edgeEnd,
@@ -289,34 +368,11 @@ namespace wg
 		if (samplePitch == 0)
 			samplePitch = 1;
 
-
 		if (edgePitch == 0)
 			edgePitch = samplePitch * (sampleEnd - sampleBegin);
 
-		int destSamplePitch = m_nbSegments - 1;
-		int destEdgePitch = 1;
-
-
-		spx mul = (origo == SampleOrigo::Top || origo == SampleOrigo::MiddleDown) ? 1 : -1;
-		spx offset = 0;
-
-		if (origo == SampleOrigo::Bottom)
-			offset = m_size.h * 64;
-		else if (origo == SampleOrigo::MiddleDown || origo == SampleOrigo::MiddleUp)
-			offset = m_size.h * 32;
-
-		for (int edge = edgeBegin; edge < edgeEnd; edge++)
-		{
-			const spx* pSrc = pSource + edgePitch * (edge - edgeBegin);
-			spx* pDst = m_pSamples + edge + sampleBegin * (m_nbSegments - 1);
-
-			for (int sample = sampleBegin; sample < sampleEnd; sample++)
-			{
-				*pDst = (*pSrc * mul) + offset;
-				pDst += destSamplePitch;
-				pSrc += samplePitch;
-			}
-		}
+		convertSamples(m_pSamples + edgeBegin + sampleBegin * (m_nbSegments - 1), pSource, origo, m_size.h * 64,
+					   edgeEnd - edgeBegin, sampleEnd - sampleBegin, edgePitch, samplePitch, 1, m_nbSegments - 1);
 
 		_samplesUpdated(edgeBegin, edgeEnd, sampleBegin, sampleEnd);
 		_mirrorFirstColumn(edgeBegin, edgeEnd, sampleBegin);
@@ -328,39 +384,11 @@ namespace wg
 		if (samplePitch == 0)
 			samplePitch = 1;
 
-
 		if (edgePitch == 0)
 			edgePitch = samplePitch * (sampleEnd - sampleBegin);
 
-		int destSamplePitch = m_nbSegments - 1;
-		int destEdgePitch = 1;
-
-
-		spx mul = (origo == SampleOrigo::Top || origo == SampleOrigo::MiddleDown) ? 1 : -1;
-		spx offset = 0;
-
-		if (origo == SampleOrigo::Bottom)
-			offset = m_size.h * 64;
-		else if (origo == SampleOrigo::MiddleDown || origo == SampleOrigo::MiddleUp)
-			offset = m_size.h * 32;
-
-		if (origo == SampleOrigo::MiddleDown || origo == SampleOrigo::MiddleUp)
-			mul *= m_size.h * 32;
-		else
-			mul *= m_size.h * 64;
-
-		for (int edge = edgeBegin; edge < edgeEnd; edge++)
-		{
-			const float* pSrc = pSource + edgePitch * edge + samplePitch * sampleBegin;
-			spx* pDst = m_pSamples + edge + sampleBegin * (m_nbSegments - 1);
-
-			for (int sample = sampleBegin; sample < sampleEnd; sample++)
-			{
-				*pDst = (*pSrc * mul) + offset;
-				pDst += destSamplePitch;
-				pSrc += samplePitch;
-			}
-		}
+		convertSamples(m_pSamples + edgeBegin + sampleBegin * (m_nbSegments - 1), pSource + edgePitch * edgeBegin + samplePitch * sampleBegin,
+					   origo, m_size.h * 64, edgeEnd - edgeBegin, sampleEnd - sampleBegin, edgePitch, samplePitch, 1, m_nbSegments - 1);
 
 		_samplesUpdated(edgeBegin, edgeEnd, sampleBegin, sampleEnd);
 		_mirrorFirstColumn(edgeBegin, edgeEnd, sampleBegin);

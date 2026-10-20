@@ -112,6 +112,19 @@ namespace wg
 		virtual void	exportBounds( spx * pMinMaxOutput, int nSections, int sectionWidth,
 									  int topEdge, int bottomEdge, int mapOffset = 0, int minMaxPitch = 2 );
 
+		//.____ Misc __________________________________________________________
+
+		// Convert samples given relative to origo into spx from the top, as edgemaps store them.
+		// Float samples are fractions of height (half the height for the middle origos).
+
+		static void		convertSamples( spx * pDest, const spx * pSource, SampleOrigo origo, spx height, int nEdges, int nSamples,
+										int srcEdgePitch, int srcSamplePitch, int destEdgePitch, int destSamplePitch );
+		static void		convertSamples( spx * pDest, const float * pSource, SampleOrigo origo, spx height, int nEdges, int nSamples,
+										int srcEdgePitch, int srcSamplePitch, int destEdgePitch, int destSamplePitch );
+
+		static spx		convertSample( spx sample, SampleOrigo origo, spx height );
+		static spx		convertSample( float sample, SampleOrigo origo, spx height );
+
 	protected:
 
 		Edgemap() {};

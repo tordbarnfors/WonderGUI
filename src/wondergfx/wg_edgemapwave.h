@@ -19,45 +19,55 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef WAVEFORM_DOT_H
-#define WAVEFORM_DOT_H
+#ifndef WG_EDGEMAPWAVE_DOT_H
+#define WG_EDGEMAPWAVE_DOT_H
 #pragma once
 
-#include <vector>
-
-#include <wg_edgemap.h>
-#include <wg_edgemapfactory.h>
-#include <wg_edgemaptools.h>
+#include <wg_edgemapshape.h>
 #include <wg_color.h>
 
 namespace wg
 {
-	class Waveform;
-	typedef	StrongPtr<Waveform>	Waveform_p;
-	typedef	WeakPtr<Waveform>	Waveform_wp;
+	class EdgemapWave;
+	typedef	StrongPtr<EdgemapWave>	EdgemapWave_p;
+	typedef	WeakPtr<EdgemapWave>	EdgemapWave_wp;
 
-	class Waveform : public Object
+	//____ EdgemapWave ________________________________________________________
+	/**
+	 * @brief A wave, like the area of a chart, made into an edgemap.
+	 *
+	 * The wave is filled between a top and a bottom line, given as samples at each pixel
+	 * along x, and the lines can have outlines. It is drawn as one edgemap, flipped as
+	 * set, which lets it run along y instead or in any direction.
+	 *
+	 * Samples are set as needed and the edgemap updated by refresh(), only where samples
+	 * have changed.
+	 */
+
+	class EdgemapWave : public EdgemapShape
 	{
 	public:
-		
+
 		struct Blueprint
 		{
 			spx					bottomOutlineThickness = 64;
 			HiColor				color = Color8::LightGrey;
+			EdgemapFactory_p	factory;								// Default edgemap factory of GfxBase if not set.
 			Finalizer_p			finalizer = nullptr;
-			Tint_p				tint;									// Overrides color when set. Placed in the rect of the waveform.
+			GfxFlip				flip = GfxFlip::None;					// Flip of the wave, which runs along x before it.
 			bool				optimize = true;						// Check for re-setting of same values to minimize updated regions.
 			SampleOrigo			origo = SampleOrigo::Top;
 			HiColor				outlineColor = Color8::DarkGrey;
 			Tint_p				outlineTint;							// Overrides outlineColor when set.
-			SizeI				size;									// Mandatory
+			CoordSPX			pos;									// Top-left corner on canvas, after flip. Rounded to whole pixels.
+			SizeSPX				size;									// Mandatory. Size before flip. Rounded to whole pixels.
+			Tint_p				tint;									// Overrides color when set. Placed in the rect of the wave.
 			spx					topOutlineThickness = 64;
 		};
-		
 
 		//.____ Creation __________________________________________
 
-		static Waveform_p	create( const Blueprint& blueprint, EdgemapFactory * pFactory = nullptr );
+		static EdgemapWave_p	create( const Blueprint& blueprint );
 
 		//.____ Identification __________________________________________
 
@@ -65,15 +75,21 @@ namespace wg
 		const static TypeInfo	TYPEINFO;
 
 		//.____ Geometry ____________________________________________________
-		
-		bool		setSize( SizeI size );							// Destroys all samples. Will need to be set again.
-		SizeI		size() const { return m_size; }
-		
+
+		bool		setSize( SizeSPX size );						// Destroys all samples. Will need to be set again.
+		SizeSPX		size() const { return m_size * 64; }
+
+		void		setPos( CoordSPX pos );
+		CoordSPX	pos() const { return m_pieces[0].pos; }
+
+		void		setFlip( GfxFlip flip );
+		GfxFlip		flip() const { return m_pieces[0].flip; }
+
 		//.____ Appearance ____________________________________________________
 
 		bool		setColor( HiColor col );
 		HiColor		color() const { return m_color; }
-		
+
 		void		setTint( Tint * pTint );
 		void		clearTint() { setTint(nullptr); }
 		Tint_p		tint() const { return m_pTint; }
@@ -86,9 +102,9 @@ namespace wg
 		Tint_p		outlineTint() const { return m_pOutlineTint; }
 
 		//.____ Content __________________________________________________
-		
+
 		int			nbSamples() const { return m_nbSamples;  }
-		
+
 		void		setSamples( int sampleBegin, int sampleEnd, spx * pTopSamples, spx * pBottomSamples );
 		void		setSamples( int sampleBegin, int sampleEnd, float * pTopSamples, float * pBottomSamples );
 
@@ -98,12 +114,14 @@ namespace wg
 		void		setFlatBottomLine( int sampleBegin, int sampleEnd, spx sample );
 		void		setFlatBottomLine( int sampleBegin, int sampleEnd, float sample );
 
-		Edgemap_p	refresh();
+		void		refresh();											// Updates the edgemap with samples set since last refresh.
+
+		Edgemap_p	edgemap() const { return m_pieces[0].pEdgemap; }
 
 	protected:
 
-		Waveform( const Blueprint& bp, EdgemapFactory * pFactory );
-		virtual ~Waveform();
+		EdgemapWave( const Blueprint& bp );
+		virtual ~EdgemapWave();
 
 		struct Brush
 		{
@@ -114,11 +132,11 @@ namespace wg
 		void 		_setFlatLine( spx * pSamples, int sampleBegin, int sampleEnd, spx sample );
 		void 		_drawLine(spx * pSrc, spx * pDestTop, spx * pDestBottom, int nPoints, Brush& brush);
 		void 		_generateInfluenceSlope( Brush& brush );
-		
+
 		void 		_updateEdgemapColors();
 		void 		_regenEdgemap();
 
-		
+
 		void		_optimizeRangeSetSamples( spx * pDestBegin, spx * pDestEnd, const spx * pSource, spx * pSampleStart );
 		void		_optimizeRangeSetSamples( spx * pDestBegin, spx * pDestEnd, const float * pSource, spx * pSampleStart );
 
@@ -131,11 +149,11 @@ namespace wg
 		uint8_t *	m_pBuffer = nullptr;
 
 		SizeI		m_size;
-		
+
 		SampleOrigo	m_origo;
-		
+
 		bool		m_bHasOutlines;
-		
+
 		HiColor		m_color = HiColor::Undefined;
 		HiColor		m_outlineColor = HiColor::Undefined;
 
@@ -146,22 +164,21 @@ namespace wg
 		Brush		m_bottomBrush;
 
 		EdgemapFactory_p	m_pFactory;
-		Edgemap_p	m_pEdgemap;
 
-		
+
 		int			m_nbSamples;
 		spx *		m_pTopSamples;
 		spx *		m_pBottomSamples;
 		int			m_topSamplesPadding;		// Extra space before/after samples for top and bottom.
 		int			m_bottomSamplesPadding;
-		
+
 
 		int			m_dirtBegin;
 		int			m_dirtEnd;
-		
+
 		bool		m_bOptimizeDirtRange = true;
 	};
 
 }
 
-#endif //WAVEFORM_DOT_H
+#endif //WG_EDGEMAPWAVE_DOT_H

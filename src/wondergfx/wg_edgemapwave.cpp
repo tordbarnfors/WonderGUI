@@ -19,37 +19,42 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#include <wg_waveform.h>
+#include <wg_edgemapwave.h>
 #include <wg_gfxbase.h>
+#include <wg_gfxutil.h>
 
 #include <algorithm>
 #include <cstring>
 
 namespace wg
 {
-	const TypeInfo Waveform::TYPEINFO = { "Waveform", &Object::TYPEINFO };
+	const TypeInfo EdgemapWave::TYPEINFO = { "EdgemapWave", &EdgemapShape::TYPEINFO };
 
 
 	//.____ create() _____________________________________________________________
 
-	Waveform_p Waveform::create( const Blueprint& blueprint, EdgemapFactory * pFactory )
+	EdgemapWave_p EdgemapWave::create( const Blueprint& blueprint )
 	{
-		return Waveform_p( new Waveform(blueprint, pFactory) );
+		return EdgemapWave_p( new EdgemapWave(blueprint) );
 	}
 
 	//____ constructor ___________________________________________________________
 
-	Waveform::Waveform( const Blueprint& bp , EdgemapFactory * pFactory )
+	EdgemapWave::EdgemapWave( const Blueprint& bp )
 	: 	m_color(bp.color),
 		m_outlineColor(bp.outlineColor),
 		m_pTint(bp.tint),
 		m_bOptimizeDirtRange(bp.optimize),
 		m_pOutlineTint(bp.outlineTint),
 		m_origo(bp.origo),
-		m_nbSamples(bp.size.w+1),
-		m_pFactory(pFactory),
-		m_size(bp.size)
+		m_pFactory(bp.factory),
+		m_size(Util::roundToPixels(bp.size))
 	{
+		m_nbSamples = m_size.w + 1;
+
+		m_pieces.resize(1);
+		m_pieces[0].pos = Util::roundToPixels(bp.pos) * 64;
+		m_pieces[0].flip = bp.flip;
 
 		m_bHasOutlines = bp.topOutlineThickness > 0 || bp.bottomOutlineThickness > 0;
 
@@ -69,8 +74,6 @@ namespace wg
 		m_topSamplesPadding = (bp.topOutlineThickness/2 / 64) + 1;
 		m_bottomSamplesPadding = (bp.bottomOutlineThickness/2 / 64) + 1;
 
-		int bufferSize = (m_nbSamples+m_topSamplesPadding*2)+(m_nbSamples+m_bottomSamplesPadding*2);
-
 		_setupBuffer(m_nbSamples, m_bOptimizeDirtRange);
 
 		_regenEdgemap();
@@ -81,22 +84,24 @@ namespace wg
 
 	//____ destructor ____________________________________________________________
 
-	Waveform::~Waveform()
+	EdgemapWave::~EdgemapWave()
 	{
 		delete [] m_pBuffer;
 	}
 
 	//____ typeInfo() ____________________________________________________________
 
-	const TypeInfo& Waveform::typeInfo(void) const
+	const TypeInfo& EdgemapWave::typeInfo(void) const
 	{
 		return TYPEINFO;
 	}
 
 	//____ setSize() ______________________________________________________________
 
-	bool Waveform::setSize( SizeI size )
+	bool EdgemapWave::setSize( SizeSPX _size )
 	{
+		SizeI size = Util::roundToPixels(_size);
+
 		if( size.w <= 0 || size.h <= 0 )
 		{
 			return false;
@@ -105,21 +110,42 @@ namespace wg
 		if( size == m_size )
 			return true;
 
-		int nSamples = size.w + 1;
-		if( nSamples != m_nbSamples )
-		{
-			_setupBuffer(nSamples, m_bOptimizeDirtRange);
-			m_size = size;
+		_setupBuffer(size.w + 1, m_bOptimizeDirtRange);
+		m_size = size;
 
-			_regenEdgemap();
-		}
+		_regenEdgemap();
 
 		return true;
 	}
 
+	//____ setPos() _______________________________________________________________
+	/**
+	 * @brief Set the top-left corner of the wave on the canvas, after flip.
+	 *
+	 * The position is rounded to whole pixels.
+	 */
+
+	void EdgemapWave::setPos( CoordSPX pos )
+	{
+		m_pieces[0].pos = Util::roundToPixels(pos) * 64;
+	}
+
+	//____ setFlip() ______________________________________________________________
+	/**
+	 * @brief Set how the wave is flipped when drawn.
+	 *
+	 * The wave runs along x before it is flipped, so a flip that rotates it by 90 or 270
+	 * degrees makes it run along y. The position stays the top-left corner.
+	 */
+
+	void EdgemapWave::setFlip( GfxFlip flip )
+	{
+		m_pieces[0].flip = flip;
+	}
+
 	//____ _setupBuffer() _______________________________________________________
 
-	void Waveform::_setupBuffer(int nbSamples, bool bClearSamples)
+	void EdgemapWave::_setupBuffer(int nbSamples, bool bClearSamples)
 	{
 		delete [] m_pBuffer;
 
@@ -144,7 +170,7 @@ namespace wg
 
 	//____ setColor() _____________________________________________________________
 
-	bool Waveform::setColor( HiColor col )
+	bool EdgemapWave::setColor( HiColor col )
 	{
 		if( !col.isValid() )
 			return false;
@@ -159,10 +185,10 @@ namespace wg
 	/**
 	 * @brief Set a Tint for the fill, overriding the fill color.
 	 *
-	 * The Tint is placed in the rectangle of the waveform.
+	 * The Tint is placed in the rectangle of the wave, before flip.
 	 */
 
-	void Waveform::setTint( Tint * pTint )
+	void EdgemapWave::setTint( Tint * pTint )
 	{
 		m_pTint = pTint;
 		_updateEdgemapColors();
@@ -170,7 +196,7 @@ namespace wg
 
 	//____ setOutlineColor() _____________________________________________________
 
-	bool Waveform::setOutlineColor( HiColor col )
+	bool EdgemapWave::setOutlineColor( HiColor col )
 	{
 		if( !col.isValid() )
 			return false;
@@ -184,10 +210,10 @@ namespace wg
 	/**
 	 * @brief Set a Tint for the outlines, overriding the outline color.
 	 *
-	 * The Tint is placed in the rectangle of the waveform.
+	 * The Tint is placed in the rectangle of the wave, before flip.
 	 */
 
-	void Waveform::setOutlineTint( Tint * pTint )
+	void EdgemapWave::setOutlineTint( Tint * pTint )
 	{
 		m_pOutlineTint = pTint;
 		_updateEdgemapColors();
@@ -196,7 +222,7 @@ namespace wg
 
 	//____ setSamples() __________________________________________________________
 
-	void Waveform::setSamples( int sampleBegin, int sampleEnd, spx * pTopSamples, spx * pBottomSamples )
+	void EdgemapWave::setSamples( int sampleBegin, int sampleEnd, spx * pTopSamples, spx * pBottomSamples )
 	{
 		limit(sampleBegin, 0, m_nbSamples);
 		limit(sampleEnd, sampleBegin, m_nbSamples);
@@ -215,17 +241,17 @@ namespace wg
 		else
 		{
 			if( pTopSamples )
-				EdgemapTools::convertSamples(m_pTopSamples + sampleBegin, pTopSamples, m_origo, m_size.h*64, 1, sampleEnd-sampleBegin, 0, 1, 0, 1);
+				Edgemap::convertSamples(m_pTopSamples + sampleBegin, pTopSamples, m_origo, m_size.h*64, 1, sampleEnd-sampleBegin, 0, 1, 0, 1);
 
 			if( pBottomSamples )
-				EdgemapTools::convertSamples(m_pBottomSamples + sampleBegin, pBottomSamples, m_origo, m_size.h*64, 1, sampleEnd-sampleBegin, 0, 1, 0, 1);
+				Edgemap::convertSamples(m_pBottomSamples + sampleBegin, pBottomSamples, m_origo, m_size.h*64, 1, sampleEnd-sampleBegin, 0, 1, 0, 1);
 
 			m_dirtBegin = std::min(sampleBegin,m_dirtBegin);
 			m_dirtEnd = std::max(sampleEnd,m_dirtEnd);
 		}
 	}
 
-	void Waveform::setSamples( int sampleBegin, int sampleEnd, float * pTopSamples, float * pBottomSamples )
+	void EdgemapWave::setSamples( int sampleBegin, int sampleEnd, float * pTopSamples, float * pBottomSamples )
 	{
 		limit(sampleBegin, 0, m_nbSamples);
 		limit(sampleEnd, sampleBegin, m_nbSamples);
@@ -244,10 +270,10 @@ namespace wg
 		else
 		{
 			if( pTopSamples )
-				EdgemapTools::convertSamples(m_pTopSamples + sampleBegin, pTopSamples, m_origo, m_size.h*64, 1, sampleEnd-sampleBegin, 0, 1, 0, 1);
+				Edgemap::convertSamples(m_pTopSamples + sampleBegin, pTopSamples, m_origo, m_size.h*64, 1, sampleEnd-sampleBegin, 0, 1, 0, 1);
 
 			if( pBottomSamples )
-				EdgemapTools::convertSamples(m_pBottomSamples + sampleBegin, pBottomSamples, m_origo, m_size.h*64, 1, sampleEnd-sampleBegin, 0, 1, 0, 1);
+				Edgemap::convertSamples(m_pBottomSamples + sampleBegin, pBottomSamples, m_origo, m_size.h*64, 1, sampleEnd-sampleBegin, 0, 1, 0, 1);
 
 			m_dirtBegin = std::min(sampleBegin,m_dirtBegin);
 			m_dirtEnd = std::max(sampleEnd,m_dirtEnd);
@@ -256,7 +282,7 @@ namespace wg
 
 	//____ _optimizeRangeSetSamples() ____________________________________________
 
-	void Waveform::_optimizeRangeSetSamples( spx * _pDestBegin, spx * _pDestEnd, const spx * pSource, spx * pSampleStart )
+	void EdgemapWave::_optimizeRangeSetSamples( spx * _pDestBegin, spx * _pDestEnd, const spx * pSource, spx * pSampleStart )
 	{
 		spx * pDestBegin = _pDestBegin;
 		spx * pDestEnd = _pDestEnd;
@@ -264,7 +290,7 @@ namespace wg
 		int nbSamples = int(pDestEnd - pDestBegin);
 		int allocBytes= nbSamples * sizeof(spx);
 		spx * pConverted = (spx*) GfxBase::memStackAlloc(allocBytes);
-		EdgemapTools::convertSamples(pConverted, pSource, m_origo, m_size.h*64, 1, nbSamples, 0, 1, 0, 1);
+		Edgemap::convertSamples(pConverted, pSource, m_origo, m_size.h*64, 1, nbSamples, 0, 1, 0, 1);
 
 		int bufferBeg = 0;
 		int bufferEnd = nbSamples;
@@ -292,7 +318,7 @@ namespace wg
 		GfxBase::memStackFree(allocBytes);
 	}
 
-	void Waveform::_optimizeRangeSetSamples( spx * _pDestBegin, spx * _pDestEnd, const float * pSource, spx * pSampleStart )
+	void EdgemapWave::_optimizeRangeSetSamples( spx * _pDestBegin, spx * _pDestEnd, const float * pSource, spx * pSampleStart )
 	{
 		spx * pDestBegin = _pDestBegin;
 		spx * pDestEnd = _pDestEnd;
@@ -300,7 +326,7 @@ namespace wg
 		int nbSamples = int(pDestEnd - pDestBegin);
 		int allocBytes= nbSamples * sizeof(spx);
 		spx * pConverted = (spx*) GfxBase::memStackAlloc(allocBytes);
-		EdgemapTools::convertSamples(pConverted, pSource, m_origo, m_size.h*64, 1, nbSamples, 0, 1, 0, 1);
+		Edgemap::convertSamples(pConverted, pSource, m_origo, m_size.h*64, 1, nbSamples, 0, 1, 0, 1);
 
 		int bufferBeg = 0;
 		int bufferEnd = nbSamples;
@@ -331,42 +357,44 @@ namespace wg
 
 	//____ setFlatTopLine() ______________________________________________________
 
-	void Waveform::setFlatTopLine( int sampleBegin, int sampleEnd, spx sample )
+	void EdgemapWave::setFlatTopLine( int sampleBegin, int sampleEnd, spx sample )
 	{
-		spx out = EdgemapTools::convertSample(sample, m_origo, m_size.h*64);
+		spx out = Edgemap::convertSample(sample, m_origo, m_size.h*64);
 
 		_setFlatLine(m_pTopSamples, sampleBegin, sampleEnd, out);
 	}
 
-	void Waveform::setFlatTopLine( int sampleBegin, int sampleEnd, float sample )
+	void EdgemapWave::setFlatTopLine( int sampleBegin, int sampleEnd, float sample )
 	{
-		spx out = EdgemapTools::convertSample(sample, m_origo, m_size.h*64);
+		spx out = Edgemap::convertSample(sample, m_origo, m_size.h*64);
 
 		_setFlatLine(m_pTopSamples, sampleBegin, sampleEnd, out);
 	}
 
 	//____ setFlatBottomLine() ___________________________________________________
 
-	void Waveform::setFlatBottomLine( int sampleBegin, int sampleEnd, spx sample )
+	void EdgemapWave::setFlatBottomLine( int sampleBegin, int sampleEnd, spx sample )
 	{
-		spx out = EdgemapTools::convertSample(sample, m_origo, m_size.h*64);
+		spx out = Edgemap::convertSample(sample, m_origo, m_size.h*64);
 
 		_setFlatLine(m_pBottomSamples, sampleBegin, sampleEnd, out);
 	}
 
-	void Waveform::setFlatBottomLine( int sampleBegin, int sampleEnd, float sample )
+	void EdgemapWave::setFlatBottomLine( int sampleBegin, int sampleEnd, float sample )
 	{
-		spx out = EdgemapTools::convertSample(sample, m_origo, m_size.h*64);
+		spx out = Edgemap::convertSample(sample, m_origo, m_size.h*64);
 
 		_setFlatLine(m_pBottomSamples, sampleBegin, sampleEnd, out);
 	}
 
 	//____ refresh() _____________________________________________________________
 
-	Edgemap_p Waveform::refresh()
+	void EdgemapWave::refresh()
 	{
 		if( m_dirtEnd - m_dirtBegin <= 0  )
-			return m_pEdgemap;
+			return;
+
+		Edgemap * pEdgemap = m_pieces[0].pEdgemap;
 
 		// Copy first/last samples to padding if changed.
 
@@ -424,8 +452,8 @@ namespace wg
 
 			// Update edgemap.
 
-			m_pEdgemap->importSamples(SampleOrigo::Top, pBuffer, 0, 1, dirtBegin, dirtEnd);
-			m_pEdgemap->importSamples(SampleOrigo::Top, pBuffer + dirtSize, 1, 2, dirtBegin, dirtEnd);
+			pEdgemap->importSamples(SampleOrigo::Top, pBuffer, 0, 1, dirtBegin, dirtEnd);
+			pEdgemap->importSamples(SampleOrigo::Top, pBuffer + dirtSize, 1, 2, dirtBegin, dirtEnd);
 
 			GfxBase::memStackFree(allocated);
 		}
@@ -462,21 +490,19 @@ namespace wg
 
 			// Update edgemap.
 
-			m_pEdgemap->importSamples(SampleOrigo::Top, pBuffer, 0, 2, dirtBegin, dirtEnd);
-			m_pEdgemap->importSamples(SampleOrigo::Top, pBuffer + dirtSize*2, 2, 4, dirtBegin, dirtEnd);
+			pEdgemap->importSamples(SampleOrigo::Top, pBuffer, 0, 2, dirtBegin, dirtEnd);
+			pEdgemap->importSamples(SampleOrigo::Top, pBuffer + dirtSize*2, 2, 4, dirtBegin, dirtEnd);
 
 			GfxBase::memStackFree(allocated);
 		}
 
 		m_dirtBegin = m_nbSamples;
 		m_dirtEnd = 0;
-
-		return m_pEdgemap;
 	}
 
 	//____ _setFlatLine() _______________________________________________________
 
-	void Waveform::_setFlatLine( spx * pSamples, int sampleBegin, int sampleEnd, spx sample )
+	void EdgemapWave::_setFlatLine( spx * pSamples, int sampleBegin, int sampleEnd, spx sample )
 	{
 		limit(sampleBegin, 0, m_nbSamples);
 		limit(sampleEnd, sampleBegin, m_nbSamples);
@@ -501,7 +527,7 @@ namespace wg
 
 	//____ _drawLine() __________________________________________________________
 
-	void Waveform::_drawLine(spx * pSrc, spx * pDestTop, spx * pDestBottom, int nPoints, Brush& brush)
+	void EdgemapWave::_drawLine(spx * pSrc, spx * pDestTop, spx * pDestBottom, int nPoints, Brush& brush)
 	{
 
 		for (int i = 0; i < nPoints; i++)
@@ -573,7 +599,7 @@ namespace wg
 
 	//____ _generateInfluenceSlope() ____________________________________________
 
-	void Waveform::_generateInfluenceSlope(Brush& brush)
+	void EdgemapWave::_generateInfluenceSlope(Brush& brush)
 	{
 		auto pCurveTab = GfxBase::curveTab();
 		int curveTabSize = GfxBase::curveTabSize();
@@ -595,9 +621,11 @@ namespace wg
 
 	//____ _updateEdgemapColors() ______________________________________________________
 
-	void Waveform::_updateEdgemapColors()
+	void EdgemapWave::_updateEdgemapColors()
 	{
-		if( m_pEdgemap == nullptr )
+		Edgemap * pEdgemap = m_pieces[0].pEdgemap;
+
+		if( pEdgemap == nullptr )
 		{
 			_regenEdgemap();
 			return;
@@ -605,21 +633,21 @@ namespace wg
 
 		HiColor	colors[5];
 		int nSegments = _generateColorPalette(colors);
-		m_pEdgemap->setColors( 0, nSegments, colors );
+		pEdgemap->setColors( 0, nSegments, colors );
 
 		if( m_pTint || m_pOutlineTint )
 		{
 			Tint_p	tints[5];
 			_generateTintPalette(tints);
-			m_pEdgemap->setColors( 0, nSegments, tints );
+			pEdgemap->setColors( 0, nSegments, tints );
 		}
 	}
 
 	//____ _regenEdgemap() ______________________________________________________
 
-	void Waveform::_regenEdgemap()
+	void EdgemapWave::_regenEdgemap()
 	{
-		EdgemapFactory_p pFactory = m_pFactory ? m_pFactory : GfxBase::defaultEdgemapFactory();
+		EdgemapFactory_p pFactory = _factoryOrDefault(m_pFactory);
 
 		HiColor	colors[5];
 		Tint_p	tints[5];
@@ -629,12 +657,12 @@ namespace wg
 
 		bool bTints = m_pTint || m_pOutlineTint;
 
-		m_pEdgemap = pFactory->createEdgemap( WGBP(Edgemap, _.colors = colors, _.tints = bTints ? tints : nullptr, _.size = m_size, _.segments = nSegments ) );
+		m_pieces[0].pEdgemap = pFactory->createEdgemap( WGBP(Edgemap, _.colors = colors, _.tints = bTints ? tints : nullptr, _.size = m_size, _.segments = nSegments ) );
 	}
 
 	//____ _generateColorPalette() _______________________________________________
 
-	int Waveform::_generateColorPalette( HiColor * pDest )
+	int EdgemapWave::_generateColorPalette( HiColor * pDest )
 	{
 		HiColor * p = pDest;
 		* p++ = Color::Transparent;
@@ -650,7 +678,7 @@ namespace wg
 
 	//____ _generateTintPalette() ______________________________________________
 
-	int Waveform::_generateTintPalette( Tint_p * pDest )
+	int EdgemapWave::_generateTintPalette( Tint_p * pDest )
 	{
 		Tint_p * p = pDest;
 		* p++ = nullptr;

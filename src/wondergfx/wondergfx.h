@@ -35,7 +35,9 @@
 #include <wg_dummyfont.h>
 #include <wg_edgemap.h>
 #include <wg_edgemapfactory.h>
+#include <wg_edgemapshape.h>
 #include <wg_edgemaptools.h>
+#include <wg_edgemapwave.h>
 #include <wg_font.h>
 #include <wg_geo.h>
 #include <wg_gfxbackend.h>
@@ -67,6 +69,5 @@
 #include <wg_surfacewriter.h>
 #include <wg_sysfont.h>
 #include <wg_transitions.h>
-#include <wg_waveform.h>
 
 #endif //WONDERGFX_DOT_H

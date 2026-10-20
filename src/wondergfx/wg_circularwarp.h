@@ -50,7 +50,7 @@ namespace wg
 	 * precision (max position error in pixels) and detailRadius (the smallest radius where that
 	 * precision is needed) unless set explicitly.
 	 *
-	 * Like Waveform, CircularWarp keeps its Warpmap and updates it when refresh() is called.
+	 * Like EdgemapWave, CircularWarp keeps its Warpmap and updates it when refresh() is called.
 	 */
 
 	class CircularWarp : public Object

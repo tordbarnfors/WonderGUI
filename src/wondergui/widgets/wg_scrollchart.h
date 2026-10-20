@@ -24,7 +24,7 @@
 #pragma once
 
 #include <wg_chart.h>
-#include <wg_waveform.h>
+#include <wg_edgemapwave.h>
 #include <wg_surfacefactory.h>
 
 namespace wg

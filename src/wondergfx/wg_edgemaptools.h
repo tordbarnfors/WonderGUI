@@ -35,12 +35,6 @@ namespace EdgemapTools
 
 	bool drawOutlinedDonut(Edgemap * pEdgemap, spx thickness, spx outlineThickness );
 
-	void convertSamples( spx * pDest, const spx * pSource, SampleOrigo origo, spx height, int nEdges, int nSamples, int srcEdgePitch, int srcSamplePitch, int destEdgePitch, int destSamplePitch );
-	void convertSamples( spx * pDest, const float * pSource, SampleOrigo origo, spx height, int nEdges, int nSamples, int srcEdgePitch, int srcSamplePitch, int destEdgePitch, int destSamplePitch );
-
-	spx convertSample( spx sample, SampleOrigo origo, spx height );
-	spx convertSample( float sample, SampleOrigo origo, spx height );
-
 }
 
 }

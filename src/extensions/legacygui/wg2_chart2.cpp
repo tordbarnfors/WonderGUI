@@ -1021,10 +1021,10 @@ void WgChart2::_renderWave( Wave& wave, wg::GfxDevice * pDevice, const WgRect& w
 	
 	WgSize newSize = { samples-1, waveCanvas.h };
 	
-	if( !wave.pWaveform || wave.pWaveform->size() != waveCanvas.size() )
+	if( !wave.pWave || wave.pWave->size() != waveCanvas.size()*64 )
 	{
-		wave.pWaveform = wg::Waveform::create( WGBP(Waveform,
-													_.size = newSize;
+		wave.pWave = wg::EdgemapWave::create( WGBP(EdgemapWave,
+													_.size = newSize*64;
 												_.color = wave.fillColor;
 												_.bottomOutlineThickness = wave.bottomLineThickness*64*m_scale/WG_SCALE_BASE;
 												_.outlineColor = wave.lineColor,
@@ -1036,20 +1036,20 @@ void WgChart2::_renderWave( Wave& wave, wg::GfxDevice * pDevice, const WgRect& w
 	
 	int samplesBegin = 0;
 	int samplesEnd = int(wave.resampledTop.size());
-	wave.pWaveform->setSamples(samplesBegin, samplesEnd, wave.resampledTop.data(), nullptr);
+	wave.pWave->setSamples(samplesBegin, samplesEnd, wave.resampledTop.data(), nullptr);
 	if( samplesEnd < samples )
-		wave.pWaveform->setFlatTopLine(samplesEnd, samples, wave.resampledDefault);
+		wave.pWave->setFlatTopLine(samplesEnd, samples, wave.resampledDefault);
 	
 	samplesBegin = 0;
 	samplesEnd = int(wave.resampledBottom.size());
-	wave.pWaveform->setSamples(samplesBegin, samplesEnd, nullptr, wave.resampledBottom.data());
+	wave.pWave->setSamples(samplesBegin, samplesEnd, nullptr, wave.resampledBottom.data());
 	if( samplesEnd < samples )
-		wave.pWaveform->setFlatBottomLine(samplesEnd, samples, wave.resampledDefault);
+		wave.pWave->setFlatBottomLine(samplesEnd, samples, wave.resampledDefault);
 
 	
-	wg::Edgemap_p pEdgemap = wave.pWaveform->refresh();
+	wave.pWave->refresh();
 	
-	pDevice->drawEdgemap( {(waveCanvas.x + wave.resampledFirst)*64, waveCanvas.y*64 }, pEdgemap);
+	wave.pWave->draw( pDevice, {(waveCanvas.x + wave.resampledFirst)*64, waveCanvas.y*64 });
 }
 
 //____ _placeLabel() __________________________________________________________
