@@ -462,7 +462,8 @@ namespace wg
 	{
 		Undefined,
 		None,
-		Underline
+		Underline,
+		Strikethrough
 	};
 
 

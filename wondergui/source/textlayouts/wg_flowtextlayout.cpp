@@ -608,7 +608,7 @@ namespace wg
 		bool	bInSelection = false;
 		bool	bRecalcColor = true;
 
-		struct Underline
+		struct DecorationLine				// Underline or strikethrough.
 		{
 			spx		begin;
 			spx		end;
@@ -617,7 +617,7 @@ namespace wg
 			HiColor	color;
 		};
 
-		std::vector<Underline> underlines;
+		std::vector<DecorationLine> decorationLines;
 
 		int nbLines = int(pData->lines.size());
 		for( int i = 0 ; i < nbLines ; i++ )
@@ -657,7 +657,7 @@ namespace wg
 				spx		lineX = 0;							// Position relative to start of line.
 				spx		ellipsisX = 0;
 
-				underlines.clear();
+				decorationLines.clear();
 
 				cursor.moveTo(pLine->begin);
 
@@ -708,30 +708,37 @@ namespace wg
 						ellipsisX = x;
 					}
 
-					if( cursor.attr().decoration == TextDecoration::Underline && x > lineX )
+					TextDecoration decoration = cursor.attr().decoration;
+
+					if( (decoration == TextDecoration::Underline || decoration == TextDecoration::Strikethrough) && x > lineX )
 					{
 						const TextAttr& attr = cursor.attr();
 
 						HiColor color = bInSelection ? HiColor::blend(localTint, m_selectionCharColor, m_selectionCharBlend) : localTint;
 						spx thickness = std::max( spx(64), align(attr.size / 16) );
-						spx y = baseline + std::max( spx(64), align(attr.size / 10) );
 
-						if( !underlines.empty() && underlines.back().end == lineX && underlines.back().color == color && underlines.back().y == y )
-							underlines.back().end = x;
+						spx y;
+						if( decoration == TextDecoration::Underline )
+							y = baseline + std::max( spx(64), align(attr.size / 10) );
 						else
-							underlines.push_back( { lineX, x, y, thickness, color } );
+							y = baseline - align(attr.size * 3 / 10 + thickness / 2);		// Through middle of lowercase letters.
+
+						if( !decorationLines.empty() && decorationLines.back().end == lineX && decorationLines.back().color == color && decorationLines.back().y == y )
+							decorationLines.back().end = x;
+						else
+							decorationLines.push_back( { lineX, x, y, thickness, color } );
 					}
 
 					lineX = x;
 				}
 
-				// Draw underlines
+				// Draw underlines and strikethroughs
 
-				if( !underlines.empty() )
+				if( !decorationLines.empty() )
 				{
 					pDevice->setTintColor( baseTint );
-					for( auto& u : underlines )
-						pDevice->fill( RectSPX( lineStart.x + u.begin, u.y, u.end - u.begin, u.thickness ), u.color );
+					for( auto& d : decorationLines )
+						pDevice->fill( RectSPX( lineStart.x + d.begin, d.y, d.end - d.begin, d.thickness ), d.color );
 					bRecalcColor = true;
 				}
 

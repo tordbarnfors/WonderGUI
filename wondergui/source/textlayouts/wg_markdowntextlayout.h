@@ -81,7 +81,7 @@ namespace wg
 			BlendMode	selectionCharBlend	= BlendMode::Invert;
 			HiColor		selectionCharColor	= HiColor::White;
 			bool		showMarkup			= false;				// Display source with visible markers, for editing.
-			TextStyle_p	strikethrough;								// ~~strikethrough~~
+			TextStyle_p	strikethrough;								// ~~strikethrough~~, typically with TextDecoration::Strikethrough.
 			TextStyle_p	strong;										// **strong**
 			int			tabWidth			= 8;					// Number of whitespace characters a tab corresonds to.
 			bool		wrap				= false;

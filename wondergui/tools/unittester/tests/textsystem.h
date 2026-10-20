@@ -30,6 +30,7 @@ private:
 	bool markdownSourceModeTest(std::ostream& output);
 	bool markdownRenderTest(std::ostream& output);
 	bool sizeScaleTest(std::ostream& output);
+	bool decorationTest(std::ostream& output);
 
 	wg::TextStyle_p		_createStyle( int size = 16 );		// Font and style are created per test, so nothing outlives Base::exit().
 

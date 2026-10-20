@@ -11,6 +11,7 @@
 #include <wax_softsurfacefactory.h>
 
 #include <vector>
+#include <algorithm>
 
 using namespace wg;
 using namespace wax;
@@ -99,6 +100,7 @@ TextSystemTest::TextSystemTest()
 	ADD_TEST(markdownSourceModeTest);
 	ADD_TEST(markdownRenderTest);
 	ADD_TEST(sizeScaleTest);
+	ADD_TEST(decorationTest);
 }
 
 TextSystemTest::~TextSystemTest()
@@ -835,6 +837,84 @@ bool TextSystemTest::sizeScaleTest(std::ostream& output)
 	TestText normal( pMarkdown, pStyle, "Big" );
 
 	TEST_ASSERT(pMarkdown->defaultSize(&heading, 64).h > pMarkdown->defaultSize(&normal, 64).h * 3 / 2);
+
+	return true;
+}
+
+//____ decorationTest() _______________________________________________________
+
+bool TextSystemTest::decorationTest(std::ostream& output)
+{
+	Base::setDefaultSurfaceFactory( SoftSurfaceFactory::create() );
+
+	auto pStyle = _createStyle(20);
+	TEST_ASSERT(pStyle != nullptr);
+
+	SizeI canvasSize(160, 40);
+
+	auto pBackend = SoftBackend::create();
+	addDefaultSoftKernels(pBackend);
+	auto pDevice = GfxDeviceGen2::create(pBackend);
+	auto pCanvas = SoftSurface::create(WGBP(Surface, _.size = canvasSize, _.format = PixelFormat::ARGB_8, _.canvas = true));
+
+	auto pLayout = PlainTextLayout::create();
+	int baseline = 0;
+
+	// Renders text and returns number of lit pixels per row.
+
+	auto renderRows = [&]( TextDecoration decoration )
+	{
+		auto pDecorated = WGCREATE(TextStyle, _.color = HiColor::White, _.decoration = decoration, _.font = pStyle->font(), _.size = 20);
+
+		TestText text( pLayout, pDecorated, "xxxxxxxx", canvasSize*64 );
+		baseline = pLayout->charPos(&text, 0).y / 64;
+
+		pDevice->beginRender();
+		pDevice->beginCanvasUpdate(pCanvas);
+		pDevice->setBlendMode(BlendMode::Replace);
+		pDevice->fill(HiColor::Black);
+		pDevice->setBlendMode(BlendMode::Blend);
+		pLayout->render(&text, pDevice, RectSPX(0, 0, canvasSize.w*64, canvasSize.h*64));
+		pDevice->endCanvasUpdate();
+		pDevice->endRender();
+
+		auto buffer = pCanvas->allocPixelBuffer();
+		pCanvas->pushPixels(buffer);
+
+		std::vector<int> rows(canvasSize.h, 0);
+		for( int y = 0 ; y < canvasSize.h ; y++ )
+		{
+			uint32_t * pLine = (uint32_t*) (buffer.pixels + y * buffer.pitch);
+			for( int x = 0 ; x < canvasSize.w ; x++ )
+				if( (pLine[x] & 0xFF) > 128 )
+					rows[y]++;
+		}
+
+		pCanvas->freePixelBuffer(buffer);
+		return rows;
+	};
+
+	auto none = renderRows(TextDecoration::None);
+	auto underline = renderRows(TextDecoration::Underline);
+	auto strikethrough = renderRows(TextDecoration::Strikethrough);
+
+	// The decoration adds a solid line, wider than any row of plain glyphs,
+	// below baseline for underline and above it for strikethrough.
+
+	int maxPlain = *std::max_element(none.begin(), none.end());
+
+	int underlineRow = -1, strikeRow = -1;
+	for( int y = 0 ; y < canvasSize.h ; y++ )
+	{
+		if( underline[y] > maxPlain && underline[y] > none[y] )
+			underlineRow = y;
+		if( strikethrough[y] > maxPlain && strikethrough[y] > none[y] )
+			strikeRow = y;
+	}
+
+	TEST_ASSERT(underlineRow > baseline);
+	TEST_ASSERT(strikeRow >= 0 && strikeRow < baseline);
+	TEST_ASSERT(none[strikeRow] < strikethrough[strikeRow]);
 
 	return true;
 }
