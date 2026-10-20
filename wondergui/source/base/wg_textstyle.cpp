@@ -322,9 +322,13 @@ namespace wg
 		else if( m_sizeScale != 1.f )
 			pDest->size = Util::align( spx(pDest->size * m_sizeScale) );
 
+		// Decorations add up, but None removes inherited ones.
+
 		TextDecoration decoration = _getDecoration(state);
-		if( decoration != TextDecoration::Undefined )
-			pDest->decoration = decoration;
+		if( decoration == TextDecoration::None )
+			pDest->decoration = TextDecoration::None;
+		else if( decoration != TextDecoration::Undefined )
+			pDest->decoration |= decoration;
 
 		HiColor color = _getColor(state);
 		if( color != HiColor::Undefined )

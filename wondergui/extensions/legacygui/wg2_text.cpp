@@ -2586,7 +2586,7 @@ bool WgText::IsCharUnderlined( int charOfs ) const
 	//TODO: Optimize
 	wg::TextAttr	attr;
 	GetCharAttr(attr,charOfs);
-	return (attr.decoration == wg::TextDecoration::Underline);
+	return ((attr.decoration & wg::TextDecoration::Underline) != wg::TextDecoration::None);
 }
 
 WgColor WgText::GetCharColor( int charOfs ) const

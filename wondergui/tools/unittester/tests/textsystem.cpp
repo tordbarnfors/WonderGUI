@@ -916,5 +916,66 @@ bool TextSystemTest::decorationTest(std::ostream& output)
 	TEST_ASSERT(strikeRow >= 0 && strikeRow < baseline);
 	TEST_ASSERT(none[strikeRow] < strikethrough[strikeRow]);
 
+	// Combined decorations draw both lines.
+
+	auto both = renderRows(TextDecoration::Underline | TextDecoration::Strikethrough);
+	TEST_ASSERT(both[underlineRow] == underline[underlineRow]);
+	TEST_ASSERT(both[strikeRow] == strikethrough[strikeRow]);
+
+	// Stacked styles add decorations, None removes inherited ones, Undefined keeps them.
+
+	auto pStrike = WGCREATE(TextStyle, _.decoration = TextDecoration::Strikethrough);
+	auto pUnderline = WGCREATE(TextStyle, _.decoration = TextDecoration::Underline);
+	auto pNone = WGCREATE(TextStyle, _.decoration = TextDecoration::None);
+	auto pUndefined = WGCREATE(TextStyle, _.color = Color::Red);
+
+	TextAttr attr;
+	pStrike->exportAttr(State::Default, &attr, 64);
+	TEST_ASSERT(attr.decoration == TextDecoration::Strikethrough);
+
+	pUnderline->addToAttr(State::Default, &attr, 64);
+	TEST_ASSERT(attr.decoration == (TextDecoration::Strikethrough | TextDecoration::Underline));
+
+	pUndefined->addToAttr(State::Default, &attr, 64);
+	TEST_ASSERT(attr.decoration == (TextDecoration::Strikethrough | TextDecoration::Underline));
+
+	pNone->addToAttr(State::Default, &attr, 64);
+	TEST_ASSERT(attr.decoration == TextDecoration::None);
+
+	// Markdown link inside strikethrough gets both.
+
+	auto pMarkdown = MarkdownTextLayout::create( WGBP(MarkdownTextLayout, _.link = pUnderline, _.strikethrough = pStrike) );
+	auto pMdStyle = WGCREATE(TextStyle, _.color = HiColor::White, _.font = pStyle->font(), _.size = 20);
+	TestText md( pMarkdown, pMdStyle, "~~[xxxxxxxx](y)~~", canvasSize*64 );
+
+	pDevice->beginRender();
+	pDevice->beginCanvasUpdate(pCanvas);
+	pDevice->setBlendMode(BlendMode::Replace);
+	pDevice->fill(HiColor::Black);
+	pDevice->setBlendMode(BlendMode::Blend);
+	pMarkdown->render(&md, pDevice, RectSPX(0, 0, canvasSize.w*64, canvasSize.h*64));
+	pDevice->endCanvasUpdate();
+	pDevice->endRender();
+
+	auto buffer = pCanvas->allocPixelBuffer();
+	pCanvas->pushPixels(buffer);
+
+	auto litInRow = [&](int y)
+	{
+		int lit = 0;
+		uint32_t * pLine = (uint32_t*) (buffer.pixels + y * buffer.pitch);
+		for( int x = 0 ; x < canvasSize.w ; x++ )
+			if( (pLine[x] & 0xFF) > 128 )
+				lit++;
+		return lit;
+	};
+
+	int mdUnderline = litInRow(underlineRow);
+	int mdStrike = litInRow(strikeRow);
+	pCanvas->freePixelBuffer(buffer);
+
+	TEST_ASSERT(mdUnderline == underline[underlineRow]);
+	TEST_ASSERT(mdStrike == strikethrough[strikeRow]);
+
 	return true;
 }

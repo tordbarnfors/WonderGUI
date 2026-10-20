@@ -192,7 +192,7 @@ void WgGfxDevice::_printTextSpan( wg::GfxDevice * pDevice, WgPen& pen, const WgT
 
 		if( pChars[i].styleHandle() != hStyle || i == selection.Begin() || i == selection.End() )
 		{
-			bool bWasUnderlined = attr.decoration == wg::TextDecoration::Underline;
+			bool bWasUnderlined = ((attr.decoration & wg::TextDecoration::Underline) != wg::TextDecoration::None);
 
 			hStyle = pChars[i].styleHandle();
 
@@ -211,7 +211,7 @@ void WgGfxDevice::_printTextSpan( wg::GfxDevice * pDevice, WgPen& pen, const WgT
 
 			// Check if this is start of underlined text and in that case draw the underline.
 
-			if( attr.decoration == wg::TextDecoration::Underline && (i==0 || !bWasUnderlined) )
+			if( ((attr.decoration & wg::TextDecoration::Underline) != wg::TextDecoration::None) && (i==0 || !bWasUnderlined) )
 			{
 				_drawUnderline( pDevice, pText, pen.GetPosX(), pen.GetPosY(), i, (ofs+len)-i );
 			}
@@ -315,7 +315,7 @@ void WgGfxDevice::_printEllipsisTextSpan( wg::GfxDevice * pDevice, WgPen& pen, c
 
 		if( pChars[i].styleHandle() != hStyle || i == selection.Begin() || i == selection.End() )
 		{
-			bool bWasUnderlined = attr.decoration == wg::TextDecoration::Underline;
+			bool bWasUnderlined = ((attr.decoration & wg::TextDecoration::Underline) != wg::TextDecoration::None);
 
 			hStyle = pChars[i].styleHandle();
 
@@ -334,7 +334,7 @@ void WgGfxDevice::_printEllipsisTextSpan( wg::GfxDevice * pDevice, WgPen& pen, c
 
 			// Check if this is start of underlined text and in that case draw the underline.
 
-			if( attr.decoration == wg::TextDecoration::Underline && (i==0 || !bWasUnderlined) )
+			if( ((attr.decoration & wg::TextDecoration::Underline) != wg::TextDecoration::None) && (i==0 || !bWasUnderlined) )
 			{
 				_drawUnderline( pDevice, pText, pen.GetPosX(), pen.GetPosY(), i, (ofs+len)-i );
 			}
@@ -631,7 +631,7 @@ void WgGfxDevice::_drawUnderline( wg::GfxDevice * pDevice, const WgText * pText,
 			wg::TextAttr attr;
 			pText->GetCharAttr( attr, i );
 
-			if( attr.decoration == wg::TextDecoration::Underline )
+			if( ((attr.decoration & wg::TextDecoration::Underline) != wg::TextDecoration::None) )
 			{
 				hStyle = pChars[i].styleHandle();
 				pen.SetAttributes( attr );

@@ -658,6 +658,7 @@ namespace wg
 				spx		ellipsisX = 0;
 
 				decorationLines.clear();
+				int lastDecorationLine[2] = { -1, -1 };		// Last underline and strikethrough segment, for merging.
 
 				cursor.moveTo(pLine->begin);
 
@@ -710,23 +711,35 @@ namespace wg
 
 					TextDecoration decoration = cursor.attr().decoration;
 
-					if( (decoration == TextDecoration::Underline || decoration == TextDecoration::Strikethrough) && x > lineX )
+					if( decoration != TextDecoration::None && decoration != TextDecoration::Undefined && x > lineX )
 					{
 						const TextAttr& attr = cursor.attr();
 
 						HiColor color = bInSelection ? HiColor::blend(localTint, m_selectionCharColor, m_selectionCharBlend) : localTint;
 						spx thickness = std::max( spx(64), align(attr.size / 16) );
 
-						spx y;
-						if( decoration == TextDecoration::Underline )
-							y = baseline + std::max( spx(64), align(attr.size / 10) );
-						else
-							y = baseline - align(attr.size * 3 / 10 + thickness / 2);		// Through middle of lowercase letters.
+						const TextDecoration kinds[2] = { TextDecoration::Underline, TextDecoration::Strikethrough };
 
-						if( !decorationLines.empty() && decorationLines.back().end == lineX && decorationLines.back().color == color && decorationLines.back().y == y )
-							decorationLines.back().end = x;
-						else
-							decorationLines.push_back( { lineX, x, y, thickness, color } );
+						for( int k = 0 ; k < 2 ; k++ )
+						{
+							if( (decoration & kinds[k]) == TextDecoration::None )
+								continue;
+
+							spx y;
+							if( kinds[k] == TextDecoration::Underline )
+								y = baseline + std::max( spx(64), align(attr.size / 10) );
+							else
+								y = baseline - align(attr.size * 3 / 10 + thickness / 2);		// Through middle of lowercase letters.
+
+							int last = lastDecorationLine[k];
+							if( last >= 0 && decorationLines[last].end == lineX && decorationLines[last].color == color && decorationLines[last].y == y )
+								decorationLines[last].end = x;
+							else
+							{
+								lastDecorationLine[k] = int(decorationLines.size());
+								decorationLines.push_back( { lineX, x, y, thickness, color } );
+							}
+						}
 					}
 
 					lineX = x;

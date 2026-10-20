@@ -458,13 +458,33 @@ namespace wg
 
 	//___  TextDecoration ________________________________________________________
 
-	enum class TextDecoration //. AutoExtras
+	/**
+		Bitmask of decorations, combine with operator|, test with operator&.
+
+		Decorations in stacked text styles add up, so a link inside struck-through
+		text gets both. None in a style removes any decorations it inherits.
+		Undefined is only used in styles, to inherit decorations without adding any.
+	*/
+
+	enum class TextDecoration : uint8_t	//. AutoExtras
 	{
-		Undefined,
-		None,
-		Underline,
-		Strikethrough
+		None			= 0,
+		Underline		= 1 << 0,
+		Strikethrough	= 1 << 1,
+		Undefined		= 0x80
 	};
+
+	inline TextDecoration operator|(TextDecoration lhs, TextDecoration rhs) {
+		return static_cast<TextDecoration>( static_cast<uint8_t>(lhs) | static_cast<uint8_t>(rhs) );
+	}
+
+	inline TextDecoration operator&(TextDecoration lhs, TextDecoration rhs) {
+		return static_cast<TextDecoration>( static_cast<uint8_t>(lhs) & static_cast<uint8_t>(rhs) );
+	}
+
+	inline TextDecoration& operator|=(TextDecoration& lhs, TextDecoration rhs) {
+		return lhs = lhs | rhs;
+	}
 
 
 	//____ ComponentNotif ___________________________________________________________
