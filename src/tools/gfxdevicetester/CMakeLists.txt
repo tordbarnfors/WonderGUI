@@ -24,7 +24,7 @@ set( SOURCES
 	testsuites/ringtests.h
 	testsuites/warptests.h
 	testsuites/linecaptests.h
-	testsuites/edgemaptoolstests.h
+	testsuites/edgemapringtests.h
 	testsuites/edgemapwavetests.h
 	testsuites/filltests.h
 	testsuites/flattenlayerstests.h

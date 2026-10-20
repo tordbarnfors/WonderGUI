@@ -14,6 +14,7 @@
 #include "tests/softshapes.h"
 #include "tests/shaperender.h"
 #include "tests/edgemap.h"
+#include "tests/edgemapring.h"
 #include "tests/warpmap.h"
 #include "tests/warprender.h"
 #include "tests/linerender.h"
@@ -36,6 +37,7 @@ TestFramework::TestFramework( std::ostream& output ) :
 	addCollection( new SoftShapesTest() );
 	addCollection( new ShapeRenderTest() );
 	addCollection( new EdgemapTest() );
+	addCollection( new EdgemapRingTest() );
 	addCollection( new WarpmapTest() );
 	addCollection( new WarpRenderTest() );
 	addCollection( new LineRenderTest() );

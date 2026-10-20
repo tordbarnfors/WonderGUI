@@ -24,6 +24,8 @@
 #pragma once
 
 #include <vector>
+#include <functional>
+#include <climits>
 
 #include <wg_object.h>
 #include <wg_edgemap.h>
@@ -91,7 +93,84 @@ namespace wg
 		static RectSPX			_pieceRect( const Piece& piece );
 		static EdgemapFactory_p	_factoryOrDefault( EdgemapFactory * pFactory );
 
+		//.____ Building pieces _____________________________________________
+		//
+		// A subclass can describe its shape by the regions met along lines through it and let
+		// _buildPieces() make the pieces. The shape is cut into cells along a grid. A cell becomes
+		// part of a piece whose edgemap either runs along canvas rows (drawn transposed) or along
+		// canvas columns. Samples are taken along the lines between its rows or columns, and the
+		// regions between them are the segments of the edgemap.
+		//
+		// Since edges are straight between samples, the grid should keep curves within cells
+		// running mostly along the lines and boundaries across the lines on the grid.
+
+		struct Region
+		{
+			uint32_t	key;			// Identifies the region. Unique along a line, the same on all lines through a piece.
+			int			color;			// Index of the region's color, -1 if nothing is drawn.
+			double		end;			// Where it ends along the line, in pixels from the start of the line.
+		};
+
+		// Regions along a line through a piece: a row at y = pos from x = begin to x = end if bRow,
+		// otherwise a column at x = pos from y = begin to y = end. Lines at the edges of a piece are
+		// moved a tiny bit into it.
+
+		using RegionFunc = std::function<void( const RectI& piece, bool bRow, double pos, double begin, double end, std::vector<Region>& regions )>;
+
+		struct Grid
+		{
+			std::vector<int>	x;		// Pixel columns between cells, ascending.
+			std::vector<int>	y;		// Pixel rows between cells, ascending.
+
+			// Lines that pieces can't span, where a boundary runs exactly along a line between samples,
+			// or where a piece should begin or end: rows that pieces along rows can't span and columns
+			// that pieces along columns can't span, if the piece reaches between begin and end.
+
+			struct Barrier
+			{
+				int		line;
+				int		begin = INT_MIN;
+				int		end = INT_MAX;
+			};
+
+			std::vector<Barrier>	barrierRows;
+			std::vector<Barrier>	barrierColumns;
+
+			std::function<int( const RectI& cell )>	orientation;	// 1 for rows, 0 for columns, -1 for nothing.
+		};
+
+		bool		_buildPieces( const Grid& grid, const RegionFunc& regions, const HiColor * pColors, EdgemapFactory * pFactory );
+
+		struct Build				// A piece built, before it is made into an edgemap.
+		{
+			RectI					rect;					// Pixels on canvas.
+			bool					bRows = true;
+			bool					bEmpty = true;			// Nothing is drawn.
+			std::vector<HiColor>	colors;					// Of the segments.
+			std::vector<spx>		samples;				// Edges of the first sample, then of the second and so on.
+		};
+
+		struct Stored				// What the edgemap of a piece holds.
+		{
+			RectI					rect;
+			bool					bRows = true;
+			int						capacity = 0;			// Segments of the edgemap, some may be unused.
+			std::vector<HiColor>	colors;
+			std::vector<spx>		samples;
+		};
+
+		struct Description
+		{
+			const RegionFunc&		regions;
+			const HiColor *			pColors;
+		};
+
+		bool		_buildPiece( const RectI& rect, bool bRows, const Description& shape, bool bForce, Build& out );
+		void		_buildCell( const RectI& rect, bool bRows, const Description& shape, std::vector<Build>& out );
+		bool		_applyPieces( std::vector<Build>& builds, EdgemapFactory * pFactory );
+
 		std::vector<Piece>	m_pieces;
+		std::vector<Stored>	m_stored;			// Content of the edgemap of each piece made by _buildPieces().
 	};
 
 } // namespace wg

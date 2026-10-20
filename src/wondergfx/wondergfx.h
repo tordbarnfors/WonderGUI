@@ -35,8 +35,8 @@
 #include <wg_dummyfont.h>
 #include <wg_edgemap.h>
 #include <wg_edgemapfactory.h>
+#include <wg_edgemapring.h>
 #include <wg_edgemapshape.h>
-#include <wg_edgemaptools.h>
 #include <wg_edgemapwave.h>
 #include <wg_font.h>
 #include <wg_geo.h>

@@ -21,10 +21,10 @@ set( SOURCES
 	wg_edgemap.h
 	wg_edgemapfactory.cpp
 	wg_edgemapfactory.h
+	wg_edgemapring.cpp
+	wg_edgemapring.h
 	wg_edgemapshape.cpp
 	wg_edgemapshape.h
-	wg_edgemaptools.cpp
-	wg_edgemaptools.h
 	wg_edgemapwave.cpp
 	wg_edgemapwave.h
 	wg_font.cpp

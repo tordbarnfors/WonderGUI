@@ -22,7 +22,6 @@
 #include <wg_gfxbase.h>
 #include <wg_bitmapcache.h>
 #include <wg_pixeltools.h>
-#include <wg_edgemaptools.h>
 #include <wg_gfxutil.h>
 
 #include <wg_compression.h>

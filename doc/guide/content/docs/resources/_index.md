@@ -61,6 +61,7 @@ The following table lists the classes that are considered resources with a short
 | Dataset              | Content only | Template class for wrapping any class into a WonderGUI object with smart pointers and reference counting. |
 | Edgemap              | Content only | Custom class storing graphics as a number of edges between fields of different colors. Used to store simple shapes such as graphs, charts, circles etc in a generic format for rendering. Edgemap is a base class which is subclassed depending on rendering output such as Software, OpenGL, Metal and Streaming. |
 | EdgemapFactory       | No           | A simple factory class for creating edgemaps. Subclassed into factories for various rendering outputs. |
+| EdgemapRing          | Content only | An EdgemapShape for a ring, pie or donut chart, gauge or disc, described by a RingSpec just like for GfxDevice::drawRing(). |
 | EdgemapShape         | Content only | Base class for shapes made into edgemaps, so that drawing them is just drawing edgemaps. Created through an EdgemapFactory, so a StreamEdgemapFactory creates them on the receiving end of a stream. |
 | EdgemapWave          | Content only | An EdgemapShape for a "waveform", a set of samples that represents the curve of a graph, oscilloscope or similar, filled between a top and a bottom line. |
 | Font                 | No           | Stores a font used for rendering text. Subclasses exist for simple bitmap fonts and vector fonts using FreeType for rendering. |
