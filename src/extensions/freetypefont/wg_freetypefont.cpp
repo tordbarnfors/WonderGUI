@@ -316,7 +316,7 @@ namespace wg
 
 	//____ hasGlyph() _____________________________________________________________
 
-	bool FreeTypeFont::hasGlyph( uint16_t ch )
+	bool FreeTypeFont::hasGlyph( char32_t ch )
 	{
 		int index = FT_Get_Char_Index( m_ftFace, ch );
 		if( index == 0 )
@@ -327,7 +327,7 @@ namespace wg
 
 	//____ getGlyphWithoutBitmap() _____________________________________________________________
 
-	void FreeTypeFont::getGlyphWithoutBitmap(uint16_t ch, Glyph& glyph)
+	void FreeTypeFont::getGlyphWithoutBitmap(char32_t ch, Glyph& glyph)
 	{
 		// Get cached glyph if we have one
 
@@ -390,7 +390,7 @@ namespace wg
 
 	//____ getGlyphWithBitmap() ______________________________________________
 
-	void FreeTypeFont::getGlyphWithBitmap(uint16_t ch, Glyph& glyph)
+	void FreeTypeFont::getGlyphWithBitmap(char32_t ch, Glyph& glyph)
 	{
 		// Get cached glyph if we have one
 
@@ -588,49 +588,66 @@ namespace wg
 
 	//___ _addGlyph() ________________________________________________________
 
-	FreeTypeFont::MyGlyph * FreeTypeFont::_addGlyph( uint16_t ch, spx size, spx advance, uint32_t kerningIndex )
+	FreeTypeFont::MyGlyph * FreeTypeFont::_addGlyph( char32_t ch, spx size, spx advance, uint32_t kerningIndex )
 	{
 		int szOfs = size/64;
 
 		if (m_pCachedFontSizes[szOfs] == nullptr)
 			m_pCachedFontSizes[szOfs] = new CachedFontSize();
 
-		if (m_pCachedFontSizes[szOfs]->page[ch >> 7] == nullptr)
-			m_pCachedFontSizes[szOfs]->page[ch >> 7] = new MyGlyph[128];
+		MyGlyph * pGlyph;
 
-		assert( !m_pCachedFontSizes[szOfs]->page[ch>>7][ch & 0x7F].isInitialized() );
+		if( ch <= 0xFFFF )
+		{
+			if (m_pCachedFontSizes[szOfs]->page[ch >> 7] == nullptr)
+				m_pCachedFontSizes[szOfs]->page[ch >> 7] = new MyGlyph[128];
 
-		auto pGlyph = &m_pCachedFontSizes[szOfs]->page[ch >> 7][ch & 0x7F]; 
-		
+			pGlyph = &m_pCachedFontSizes[szOfs]->page[ch >> 7][ch & 0x7F];
+		}
+		else
+			pGlyph = &m_pCachedFontSizes[szOfs]->extended[ch];
+
+		assert( !pGlyph->isInitialized() );
+
 		pGlyph->character = ch;
 		pGlyph->size = size;
 		pGlyph->advance = advance;
 		pGlyph->kerningIndex = kerningIndex;
 		
-		return &m_pCachedFontSizes[szOfs]->page[ch >> 7][ch & 0x7F];
+		return pGlyph;
+	}
+
+	//____ _forEachCachedGlyph() _________________________________________________
+
+	template<typename Func>
+	void FreeTypeFont::_forEachCachedGlyph( Func func )
+	{
+		for (int size = 0; size < m_nCachedFontSizes; size++)
+		{
+			CachedFontSize * pCached = m_pCachedFontSizes[size];
+			if (pCached == nullptr)
+				continue;
+
+			for (int page = 0; page < 512; page++)
+			{
+				if (pCached->page[page] != nullptr)
+				{
+					auto pGlyphs = pCached->page[page];
+					for( int glyph = 0 ; glyph < 128 ; glyph++ )
+						func(pGlyphs[glyph]);
+				}
+			}
+
+			for( auto& entry : pCached->extended )
+				func(entry.second);
+		}
 	}
 
 	//____ _cacheCleared() _____________________________________________
 
 	void FreeTypeFont::_cacheCleared()
 	{
-		for (int size = 0; size < m_nCachedFontSizes; size++)
-		{
-			if (m_pCachedFontSizes[size] != nullptr)
-			{
-				auto pPages = m_pCachedFontSizes[size]->page;
-
-				for (int page = 0; page < 512; page++)
-				{
-					if (pPages[page] != nullptr)
-					{
-						auto pGlyphs = pPages[page];
-						for( int glyph = 0 ; glyph < 128 ; glyph++ )
-							pGlyphs[glyph].bitmapLost();
-					}
-				}
-			}
-		}
+		_forEachCachedGlyph( [](MyGlyph& glyph) { glyph.bitmapLost(); } );
 	}
 
 	//____ _cacheSurfaceAdded() __________________________________________________
@@ -644,38 +661,21 @@ namespace wg
 
 	void FreeTypeFont::_cacheSurfacesRemoved( int nRemovedSurfaces, Surface * pRemovedSurfaces[] )
 	{
-		auto pSizes = m_pCachedFontSizes;
-
-		for (int size = 0; size < m_nCachedFontSizes; size++)
+		_forEachCachedGlyph( [nRemovedSurfaces,pRemovedSurfaces](MyGlyph& glyph)
 		{
-			if (m_pCachedFontSizes[size] != nullptr)
+			Surface* pGlyphSurf = glyph.pSurface;
+			if (pGlyphSurf)
 			{
-				auto pPages = m_pCachedFontSizes[size]->page;
-
-				for (int page = 0; page < 512; page++)
+				for (int i = 0; i < nRemovedSurfaces; i++)
 				{
-					if (pPages[page] != nullptr)
+					if (pGlyphSurf == pRemovedSurfaces[i])
 					{
-						auto pGlyphs = pPages[page];
-						for (int glyph = 0; glyph < 128; glyph++)
-						{
-							Surface* pGlyphSurf = pGlyphs[glyph].pSurface;
-							if (pGlyphSurf)
-							{
-								for (int i = 0; i < nRemovedSurfaces; i++)
-								{
-									if (pGlyphSurf == pRemovedSurfaces[i])
-									{
-										pGlyphs[glyph].bitmapLost();
-										break;
-									}
-								}
-							}
-						}
+						glyph.bitmapLost();
+						break;
 					}
 				}
 			}
-		}
+		});
 	}
 
 

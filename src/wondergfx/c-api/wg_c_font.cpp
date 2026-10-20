@@ -41,7 +41,7 @@ wg_spx wg_fontSize(wg_obj font)
 }
 
 
-void wg_getGlyphWithoutBitmap(wg_obj font, uint16_t chr, wg_glyph* pGlyph)
+void wg_getGlyphWithoutBitmap(wg_obj font, uint32_t chr, wg_glyph* pGlyph)
 {
 	Glyph glyph;
 
@@ -53,7 +53,7 @@ void wg_getGlyphWithoutBitmap(wg_obj font, uint16_t chr, wg_glyph* pGlyph)
 }
 
 
-void wg_getGlyphWithBitmap(wg_obj font, uint16_t chr, wg_glyph* pGlyph)
+void wg_getGlyphWithBitmap(wg_obj font, uint32_t chr, wg_glyph* pGlyph)
 {
 	Glyph glyph;
 
@@ -128,7 +128,7 @@ int wg_hasGlyphs(wg_obj font)
 }
 
 
-int wg_hasGlyph(wg_obj font, uint16_t chr)
+int wg_hasGlyph(wg_obj font, uint32_t chr)
 {
 	return getPtr(font)->hasGlyph(chr);
 }
@@ -153,7 +153,7 @@ wg_obj wg_getBackupFont(wg_obj font)
 }
 
 
-wg_obj wg_createSurfaceFromGlyph(wg_obj font, uint16_t chr, const wg_surfaceBP* blueprint, wg_obj surfaceFactory)
+wg_obj wg_createSurfaceFromGlyph(wg_obj font, uint32_t chr, const wg_surfaceBP* blueprint, wg_obj surfaceFactory)
 {
 	Surface::Blueprint bp;
 

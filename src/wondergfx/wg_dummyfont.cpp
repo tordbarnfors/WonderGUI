@@ -74,7 +74,7 @@ namespace wg
 
 	//____ hasGlyph() _________________________________________________________
 
-	bool DummyFont::hasGlyph( uint16_t chr )
+	bool DummyFont::hasGlyph( char32_t chr )
 	{
 		return false;
 	}
@@ -95,7 +95,7 @@ namespace wg
 
 	//____ getGlyphWithoutBitmap() ____________________________________________
 
-	void DummyFont::getGlyphWithoutBitmap(uint16_t chr, Glyph& glyph)
+	void DummyFont::getGlyphWithoutBitmap(char32_t chr, Glyph& glyph)
 	{
 		glyph.fontRef = nullptr;
 		glyph.advance = 0;
@@ -104,7 +104,7 @@ namespace wg
 
 	//____ getGlyphWithBitmap() _______________________________________________
 
-	void DummyFont::getGlyphWithBitmap(uint16_t chr, Glyph& glyph)
+	void DummyFont::getGlyphWithBitmap(char32_t chr, Glyph& glyph)
 	{
 		glyph.fontRef = nullptr;
 		glyph.advance = 0;

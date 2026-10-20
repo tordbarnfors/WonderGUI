@@ -55,10 +55,10 @@ public class Font : Objekt
     private static extern int wg_fontSize(IntPtr font);
 
     [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-    private static extern void wg_getGlyphWithoutBitmap(IntPtr font, UInt16 chr, ref wg_glyph glyph);
+    private static extern void wg_getGlyphWithoutBitmap(IntPtr font, UInt32 chr, ref wg_glyph glyph);
 
     [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-    private static extern void wg_getGlyphWithBitmap(IntPtr font, UInt16 chr, ref wg_glyph pGlyph);
+    private static extern void wg_getGlyphWithBitmap(IntPtr font, UInt32 chr, ref wg_glyph pGlyph);
 
     [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
     private static extern int wg_getKerning(IntPtr font, ref Glyph leftGlyph, ref Glyph rightGlyph);

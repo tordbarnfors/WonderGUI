@@ -169,8 +169,8 @@ typedef struct wg_font_calls_struct
 
 	int					(*setFontSize)(wg_obj font, wg_spx size);
 	wg_spx				(*fontSize)(wg_obj font);
-	void				(*getGlyphWithoutBitmap)(wg_obj font, uint16_t chr, wg_glyph* pGlyph);
-	void				(*getGlyphWithBitmap)(wg_obj font, uint16_t chr, wg_glyph* pGlyph);
+	void				(*getGlyphWithoutBitmap)(wg_obj font, uint32_t chr, wg_glyph* pGlyph);
+	void				(*getGlyphWithBitmap)(wg_obj font, uint32_t chr, wg_glyph* pGlyph);
 	wg_spx				(*getKerning)(wg_obj font, wg_glyph* pLeftGlyph, wg_glyph* p_rightGlyph);
 	wg_spx				(*lineGap)(wg_obj font);
 	wg_spx				(*whitespaceAdvance)(wg_obj font);
@@ -179,11 +179,11 @@ typedef struct wg_font_calls_struct
 	wg_spx 				(*maxDescend)(wg_obj font);
 	int					(*nbGlyphs)(wg_obj font);
 	int					(*hasGlyphs)(wg_obj font);
-	int					(*hasGlyph)(wg_obj font, uint16_t chr);
+	int					(*hasGlyph)(wg_obj font, uint32_t chr);
 	int					(*isMonospace)(wg_obj font);
 	int					(*isMonochrome)(wg_obj font);
 	wg_obj				(*getBackupFont)(wg_obj font);
-	wg_obj				(*createSurfaceFromGlyph)(wg_obj font, uint16_t chr, const wg_surfaceBP* blueprint, wg_obj surfaceFactory);
+	wg_obj				(*createSurfaceFromGlyph)(wg_obj font, uint32_t chr, const wg_surfaceBP* blueprint, wg_obj surfaceFactory);
 
 } wg_font_calls;
 

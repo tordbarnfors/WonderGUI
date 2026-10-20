@@ -49,7 +49,7 @@ namespace wg
 		bool		setSize( spx size ) override;
 		spx			size() override;
 
-		void		getGlyphWithoutBitmap(uint16_t chr, Glyph& glyph) override;
+		void		getGlyphWithoutBitmap(char32_t chr, Glyph& glyph) override;
 		spx			kerning(Glyph& leftGlyph, Glyph& rightGlyph) override;
 
 		spx			lineGap() override;
@@ -62,7 +62,7 @@ namespace wg
 
 		int			nbGlyphs() override;
 		bool		hasGlyphs() override;
-		bool		hasGlyph( uint16_t chr ) override;
+		bool		hasGlyph( char32_t chr ) override;
 		bool		isMonospace() override;
 
 		inline wg_obj	cObject() { return m_cFont; }

@@ -23,6 +23,7 @@
 #define	WG_BITMAPFONT_DOT_H
 #pragma once
 
+#include <unordered_map>
 #include <wg_geo.h>
 #include <wg_font.h>
 #include <wg_surface.h>
@@ -53,8 +54,8 @@ namespace wg
 		inline bool			setSize( spx size ) override { return (size == m_size);};						// SizeI is just a dummy for BitmapFont...
 		inline spx			size() override { return m_size; }
 
-		void				getGlyphWithoutBitmap(uint16_t chr, Glyph& glyph) override;
-		void				getGlyphWithBitmap(uint16_t chr, Glyph& glyph) override;
+		void				getGlyphWithoutBitmap(char32_t chr, Glyph& glyph) override;
+		void				getGlyphWithBitmap(char32_t chr, Glyph& glyph) override;
 		spx					kerning(Glyph& leftGlyph, Glyph& rightGlyph) override;
 
 		inline spx			lineGap() override { return m_lineGap; }
@@ -68,7 +69,7 @@ namespace wg
 
 		inline int			nbGlyphs() override { return m_nGlyphs; }
 		inline bool			hasGlyphs() override { return m_nGlyphs?true:false; }
-		bool				hasGlyph( uint16_t chr ) override;
+		bool				hasGlyph( char32_t chr ) override;
 		inline bool			isMonospace() override { return m_bMonospace; }
 		inline bool			isMonochrome() override { return m_bMonochrome; }
 
@@ -97,7 +98,11 @@ namespace wg
 
 		Surface_p	m_pSurface;
 		
-		MyGlyph * 	m_glyphTab[256];
+		const MyGlyph *	_findGlyph( char32_t chr ) const;
+		MyGlyph *		_glyphSlot( char32_t chr );
+
+		MyGlyph * 	m_glyphTab[256];					// Glyphs of the Basic Multilingual Plane (U+0000 - U+FFFF).
+		std::unordered_map<char32_t,MyGlyph>	m_extendedGlyphs;	// Glyphs outside the BMP.
 
 		int			m_nKerningGlyphs;
 		int16_t*	m_pKerningTable;

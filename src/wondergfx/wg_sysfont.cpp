@@ -129,7 +129,7 @@ namespace wg
 
 	//____ getGlyphWithoutBitmap() ____________________________________________
 
-	void SysFont::getGlyphWithoutBitmap(uint16_t chr, Glyph& glyph)
+	void SysFont::getGlyphWithoutBitmap(char32_t chr, Glyph& glyph)
 	{
 		if (chr > 32 && chr < 127)
 		{
@@ -147,7 +147,7 @@ namespace wg
 
 	//____ getGlyphWithBitmap() _______________________________________________
 
-	void SysFont::getGlyphWithBitmap(uint16_t chr, Glyph& glyph)
+	void SysFont::getGlyphWithBitmap(char32_t chr, Glyph& glyph)
 	{
 		if (chr > 32 && chr < 127)
 		{
@@ -181,7 +181,7 @@ namespace wg
 
 	//____ hasGlyph() _________________________________________________
 
-	bool SysFont::hasGlyph(uint16_t chr)
+	bool SysFont::hasGlyph(char32_t chr)
 	{
 		return (chr > 32 && chr < 127);
 

@@ -142,14 +142,14 @@ namespace wg
 
 	//____ hasGlyph() _____________________________________________________________
 
-	bool PluginFont::hasGlyph( uint16_t ch )
+	bool PluginFont::hasGlyph( char32_t ch )
 	{
 		return PluginCalls::font->hasGlyph(m_cFont,ch);
 	}
 
 	//____ getGlyphWithoutBitmap() _____________________________________________________________
 
-	void PluginFont::getGlyphWithoutBitmap(uint16_t ch, Glyph& glyph)
+	void PluginFont::getGlyphWithoutBitmap(char32_t ch, Glyph& glyph)
 	{
 		wg_glyph	cGlyph;
 

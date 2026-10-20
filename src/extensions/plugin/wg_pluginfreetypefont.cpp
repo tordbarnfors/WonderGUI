@@ -58,7 +58,7 @@ namespace wg
 
 	//____ getGlyphWithBitmap() ______________________________________________
 
-	void PluginFreeTypeFont::getGlyphWithBitmap(uint16_t ch, Glyph& glyph)
+	void PluginFreeTypeFont::getGlyphWithBitmap(char32_t ch, Glyph& glyph)
 	{
 		wg_glyph	cGlyph;
 

@@ -78,8 +78,8 @@ namespace wg
 
 		virtual bool			setSize( spx size ) = 0;	///@brief Set the font size for subsequent calls.
 		virtual spx				size() = 0;
-		virtual void			getGlyphWithoutBitmap(uint16_t chr, Glyph& glyph) = 0;
-		virtual void			getGlyphWithBitmap(uint16_t chr, Glyph& glyph) = 0;
+		virtual void			getGlyphWithoutBitmap(char32_t chr, Glyph& glyph) = 0;
+		virtual void			getGlyphWithBitmap(char32_t chr, Glyph& glyph) = 0;
 		virtual spx				kerning( Glyph& leftGlyph, Glyph& rightGlyph ) = 0;
 
 		virtual spx				lineGap() = 0;					///@brief Returns distance between two lines of this font and current size.
@@ -92,13 +92,13 @@ namespace wg
 
 		virtual int				nbGlyphs() = 0;					///@brief Return number of distinct glyphs in the font.
 		virtual bool			hasGlyphs() = 0;				///@brief Check if font has any glyphs at all.
-		virtual bool			hasGlyph( uint16_t chr ) = 0;	///@brief Check if font provides a glyph for specified character.
+		virtual bool			hasGlyph( char32_t chr ) = 0;	///@brief Check if font provides a glyph for specified character.
 		virtual bool			isMonospace() = 0;				///@brief Check if font is monospaced.
 		virtual bool			isMonochrome();					///@brief Check if font is monochrome or multi-colored.
 
         inline Font_p           backupFont() const;             ///@brief Font used when glyph can't be found in our font.
 
-		Surface_p				getGlyphAsSurface(uint16_t chr, const Surface::Blueprint& blueprint = Surface::Blueprint() , SurfaceFactory * pFactory = nullptr );
+		Surface_p				getGlyphAsSurface(char32_t chr, const Surface::Blueprint& blueprint = Surface::Blueprint() , SurfaceFactory * pFactory = nullptr );
 
 		//.____ Deprecated __________________________________________________________
 		

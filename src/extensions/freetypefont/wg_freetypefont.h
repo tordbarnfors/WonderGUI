@@ -24,6 +24,7 @@
 #pragma once
 
 #include <vector>
+#include <unordered_map>
 
 #include <wg_gfxtypes.h>
 #include <wg_chain.h>
@@ -87,8 +88,8 @@ namespace wg
 		bool		setSize( spx size ) override;
 		inline spx	size() override { return m_size; }
 
-		void		getGlyphWithoutBitmap(uint16_t chr, Glyph& glyph) override;
-		void		getGlyphWithBitmap(uint16_t chr, Glyph& glyph) override;
+		void		getGlyphWithoutBitmap(char32_t chr, Glyph& glyph) override;
+		void		getGlyphWithBitmap(char32_t chr, Glyph& glyph) override;
 		spx			kerning(Glyph& leftGlyph, Glyph& rightGlyph) override;
 
 		spx			lineGap() override;
@@ -101,7 +102,7 @@ namespace wg
 
 		int			nbGlyphs() override;
 		bool		hasGlyphs() override;
-		bool		hasGlyph( uint16_t chr ) override;
+		bool		hasGlyph( char32_t chr ) override;
 		bool		isMonospace() override;
 
 		inline BitmapCache_p bitmapCache() { return m_pCache; }
@@ -121,7 +122,7 @@ namespace wg
 			inline void	bitmapLost() { pSurface = nullptr; }
 			inline bool isInitialized() { return character != 0; }
 
-			uint16_t	character = 0;			// Unicode for character.
+			char32_t	character = 0;			// Unicode for character.
 			spx			size = 0;				// size of character.
 
 			spx			advance = 0;
@@ -150,7 +151,8 @@ namespace wg
 			}
 
 			spx			whitespaceAdvance;
-			MyGlyph*	page[512];
+			MyGlyph*	page[512];						// Glyphs of the Basic Multilingual Plane (U+0000 - U+FFFF).
+			std::unordered_map<char32_t,MyGlyph>	extended;	// Glyphs outside the BMP.
 		};
 
 		void 				_cacheSurfaceAdded(Surface* pSurface) override;
@@ -167,8 +169,11 @@ namespace wg
 		void				_generateBitmap( MyGlyph * pGlyph );
 		void				_copyBitmap( FT_Bitmap * pBitmap, MyGlyph * pSlot );
 
-		MyGlyph *			_addGlyph( uint16_t ch, spx size, spx advance, uint32_t kerningIndex );
-		inline MyGlyph *	_findGlyph( uint16_t glyph, spx size ) const;
+		MyGlyph *			_addGlyph( char32_t ch, spx size, spx advance, uint32_t kerningIndex );
+		inline MyGlyph *	_findGlyph( char32_t ch, spx size ) const;
+
+		template<typename Func>
+		void				_forEachCachedGlyph( Func func );
 
 		void				_refreshRenderFlags();
 
@@ -201,12 +206,25 @@ namespace wg
 
 	//____ _findGlyphInIndex() _______________________________________________________
 
-	FreeTypeFont::MyGlyph * FreeTypeFont::_findGlyph( uint16_t ch, spx size ) const
+	FreeTypeFont::MyGlyph * FreeTypeFont::_findGlyph( char32_t ch, spx size ) const
 	{
 		int sizeOfs = (size+32)/64;
 
-		if( m_pCachedFontSizes[sizeOfs] != nullptr && m_pCachedFontSizes[sizeOfs]->page[ch>>7] != nullptr && m_pCachedFontSizes[sizeOfs]->page[ch >> 7][ch&0x7F].isInitialized() )
-			return &m_pCachedFontSizes[sizeOfs]->page[ch >> 7][ch & 0x7F];
+		CachedFontSize * pCached = m_pCachedFontSizes[sizeOfs];
+		if( pCached == nullptr )
+			return 0;
+
+		if( ch <= 0xFFFF )
+		{
+			if( pCached->page[ch>>7] != nullptr && pCached->page[ch >> 7][ch&0x7F].isInitialized() )
+				return &pCached->page[ch >> 7][ch & 0x7F];
+		}
+		else
+		{
+			auto it = pCached->extended.find(ch);
+			if( it != pCached->extended.end() )
+				return &it->second;
+		}
 
 		return 0;
 	}

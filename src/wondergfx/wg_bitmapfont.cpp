@@ -144,37 +144,25 @@ namespace wg
 
 	//____ hasGlyph() _________________________________________________
 
-	inline bool BitmapFont::hasGlyph( uint16_t chr )
+	bool BitmapFont::hasGlyph( char32_t chr )
 	{
-		MyGlyph * pGlyph = m_glyphTab[chr >> 8];
-
-		if( pGlyph )
-		{
-			pGlyph += (chr & 0xFF);
-			if( pGlyph->pSurface )
-				return true;
-		}
-
-		return false;
+		const MyGlyph * pGlyph = _findGlyph(chr);
+		return pGlyph && pGlyph->pSurface;
 	}
 
 
 	//____ getGlyphWithoutBitmap() _________________________________________________________
 
-	void BitmapFont::getGlyphWithoutBitmap(uint16_t chr, Glyph& glyph)
+	void BitmapFont::getGlyphWithoutBitmap(char32_t chr, Glyph& glyph)
 	{
-		MyGlyph * pGlyph = m_glyphTab[chr >> 8];
+		const MyGlyph * pGlyph = _findGlyph(chr);
 
-		if( pGlyph )
+		if( pGlyph && pGlyph->pSurface )
 		{
-			pGlyph += (chr & 0xFF);
-			if (pGlyph->pSurface)
-			{
-				glyph.fontRef = this;
-				glyph.advance = pGlyph->advance;
-				glyph.kerningIndex = pGlyph->kerningIndex;
-				return;
-			}
+			glyph.fontRef = this;
+			glyph.advance = pGlyph->advance;
+			glyph.kerningIndex = pGlyph->kerningIndex;
+			return;
 		}
 
 		glyph.fontRef = 0;
@@ -185,24 +173,20 @@ namespace wg
 
 	//____ getGlyphWithBitmap() _________________________________________________________
 
-	void BitmapFont::getGlyphWithBitmap(uint16_t chr, Glyph& glyph)
+	void BitmapFont::getGlyphWithBitmap(char32_t chr, Glyph& glyph)
 	{
-		MyGlyph* pGlyph = m_glyphTab[chr >> 8];
+		const MyGlyph * pGlyph = _findGlyph(chr);
 
-		if (pGlyph)
+		if( pGlyph && pGlyph->pSurface )
 		{
-			pGlyph += (chr & 0xFF);
-			if (pGlyph->pSurface)
-			{
-				glyph.fontRef		= this;
-				glyph.advance		= pGlyph->advance;
-				glyph.kerningIndex	= pGlyph->kerningIndex;
-				glyph.pSurface		= pGlyph->pSurface;
-				glyph.rect			= pGlyph->rect;
-				glyph.bearingX		= pGlyph->bearingX;
-				glyph.bearingY		= pGlyph->bearingY;
-				return;
-			}
+			glyph.fontRef		= this;
+			glyph.advance		= pGlyph->advance;
+			glyph.kerningIndex	= pGlyph->kerningIndex;
+			glyph.pSurface		= pGlyph->pSurface;
+			glyph.rect			= pGlyph->rect;
+			glyph.bearingX		= pGlyph->bearingX;
+			glyph.bearingY		= pGlyph->bearingY;
+			return;
 		}
 
 		glyph.fontRef = 0;
@@ -210,6 +194,36 @@ namespace wg
 		glyph.kerningIndex = 0;
 		glyph.pSurface = nullptr;
 		return;
+	}
+
+	//____ _findGlyph() _______________________________________________________
+
+	const BitmapFont::MyGlyph * BitmapFont::_findGlyph( char32_t chr ) const
+	{
+		if( chr <= 0xFFFF )
+		{
+			MyGlyph * pPage = m_glyphTab[chr >> 8];
+			return pPage ? &pPage[chr & 0xFF] : nullptr;
+		}
+
+		auto it = m_extendedGlyphs.find(chr);
+		return it != m_extendedGlyphs.end() ? &it->second : nullptr;
+	}
+
+	//____ _glyphSlot() _______________________________________________________
+
+	BitmapFont::MyGlyph * BitmapFont::_glyphSlot( char32_t chr )
+	{
+		if( chr <= 0xFFFF )
+		{
+			int tab = chr >> 8;
+			if (m_glyphTab[tab] == nullptr)
+				m_glyphTab[tab] = new MyGlyph[256];
+
+			return &m_glyphTab[tab][chr & 0xFF];
+		}
+
+		return &m_extendedGlyphs[chr];
 	}
 
 
@@ -328,7 +342,7 @@ namespace wg
 
 		while (pChar < pCharmapEnd)
 		{
-			uint16_t ch = readUTF8Char(pChar);
+			char32_t ch = readUTF8Char(pChar);
 
 			if (ch != 10 && ch != 13)
 			{
@@ -342,22 +356,10 @@ namespace wg
 
 				if (!r.isEmpty())
 				{
-					int tab = ch / 256;
+					auto * pGlyph = _glyphSlot(ch);
 
-					if (m_glyphTab[tab] == nullptr)
+					if (!pGlyph->pSurface)
 					{
-						m_glyphTab[tab] = new MyGlyph[256];
-						for (int i = 0; i < 256; i++)
-						{
-							m_glyphTab[tab][i] = MyGlyph();
-						}
-					}
-					ch &= 0xff;
-
-					if (!m_glyphTab[tab][ch].pSurface)
-					{
-						auto * pGlyph = &m_glyphTab[tab][ch];
-						
 						pGlyph->advance = r.w * 64;
 						pGlyph->bearingX = 0;
 						pGlyph->bearingY = -baseline*64;

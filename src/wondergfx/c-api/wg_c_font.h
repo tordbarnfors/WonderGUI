@@ -52,8 +52,8 @@ extern "C" {
 
 	WG_EXPORT int		wg_setFontSize(wg_obj font, wg_spx size);
 	WG_EXPORT wg_spx	wg_fontSize(wg_obj font);
-	WG_EXPORT void		wg_getGlyphWithoutBitmap(wg_obj font, uint16_t chr, wg_glyph * pGlyph);
-	WG_EXPORT void		wg_getGlyphWithBitmap(wg_obj font, uint16_t chr, wg_glyph * pGlyph);
+	WG_EXPORT void		wg_getGlyphWithoutBitmap(wg_obj font, uint32_t chr, wg_glyph * pGlyph);
+	WG_EXPORT void		wg_getGlyphWithBitmap(wg_obj font, uint32_t chr, wg_glyph * pGlyph);
 	WG_EXPORT wg_spx	wg_getKerning(wg_obj font, wg_glyph * pLeftGlyph, wg_glyph * p_rightGlyph);
 
 	WG_EXPORT wg_spx	wg_lineGap(wg_obj font);
@@ -66,13 +66,13 @@ extern "C" {
 
 	WG_EXPORT int		wg_nbGlyphs(wg_obj font);
 	WG_EXPORT int		wg_hasGlyphs(wg_obj font);
-	WG_EXPORT int		wg_hasGlyph(wg_obj font, uint16_t chr);
+	WG_EXPORT int		wg_hasGlyph(wg_obj font, uint32_t chr);
 	WG_EXPORT int		wg_isMonospace(wg_obj font);
 	WG_EXPORT int		wg_isMonochrome(wg_obj font);
 
 	WG_EXPORT wg_obj	wg_getBackupFont(wg_obj font);
 
-	WG_EXPORT wg_obj	wg_createSurfaceFromGlyph(wg_obj font, uint16_t chr, const wg_surfaceBP* blueprint, wg_obj surfaceFactory);
+	WG_EXPORT wg_obj	wg_createSurfaceFromGlyph(wg_obj font, uint32_t chr, const wg_surfaceBP* blueprint, wg_obj surfaceFactory);
 
 
 

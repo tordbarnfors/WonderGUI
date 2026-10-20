@@ -46,7 +46,7 @@ namespace wg
 
 	//____ getGlyphAsSurface() ___________________________________________________
 
-	Surface_p Font::getGlyphAsSurface(uint16_t chr, const Surface::Blueprint& _bp, SurfaceFactory * pFactory )
+	Surface_p Font::getGlyphAsSurface(char32_t chr, const Surface::Blueprint& _bp, SurfaceFactory * pFactory )
 	{
 		Glyph glyph;
 		getGlyphWithBitmap(chr, glyph);

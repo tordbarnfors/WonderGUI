@@ -49,7 +49,7 @@ namespace wg
 
 		//.____ Rendering ______________________________________________________
 
-		void		getGlyphWithBitmap(uint16_t chr, Glyph& glyph) override;
+		void		getGlyphWithBitmap(char32_t chr, Glyph& glyph) override;
 
 
 	private:

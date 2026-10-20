@@ -53,8 +53,8 @@ namespace wg
 		inline bool		setSize(spx size) override { return (size == 14); };						// SizeI is just a dummy for SysFont...
 		inline spx		size() override { return 14; }
 
-		void			getGlyphWithoutBitmap(uint16_t chr, Glyph& glyph) override;
-		void			getGlyphWithBitmap(uint16_t chr, Glyph& glyph) override;
+		void			getGlyphWithoutBitmap(char32_t chr, Glyph& glyph) override;
+		void			getGlyphWithBitmap(char32_t chr, Glyph& glyph) override;
 		spx				kerning(Glyph& leftGlyph, Glyph& rightGlyph) override;
 
 		inline spx		lineGap() override { return 2*64; }
@@ -68,7 +68,7 @@ namespace wg
 
 		inline int		nbGlyphs() override { return 32*3; }
 		inline bool		hasGlyphs() override { return true; }
-		bool			hasGlyph(uint16_t chr) override;
+		bool			hasGlyph(char32_t chr) override;
 		inline bool		isMonospace() override { return true; }
 		inline bool		isMonochrome() override { return true; }
 
