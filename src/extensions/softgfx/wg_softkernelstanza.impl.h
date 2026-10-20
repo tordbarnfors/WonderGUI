@@ -2658,6 +2658,66 @@ void _draw_segment_strip(int colBeg, int colEnd, uint8_t* WG_RESTRICT pStripStar
 					}
 				}
 
+				// An opaque flat color writes the same pixel all through the segment. In longer runs it is
+				// packed once and copied, unless the format leaves some bytes as they are, like the X of XRGB.
+
+				constexpr int pixelBytes = SoftFormatInfo::bytesPerPixel(DSTFORMAT);
+
+				if constexpr (SOURCE == SoftBackend::StripSource::Colors && DSTFORMAT != SoftFormat::Undefined &&
+							  !SoftFormatInfo::isIndexed(DSTFORMAT) && (pixelBytes == 1 || pixelBytes == 2 || pixelBytes == 4))
+				{
+					if (*pOpaqueSegments && end - offset >= 4 * 256)
+					{
+						using Pixel = std::conditional_t<pixelBytes == 4, uint32_t, std::conditional_t<pixelBytes == 2, uint16_t, uint8_t>>;
+
+						Pixel cleared = 0, filled = Pixel(~Pixel(0));
+
+						if constexpr(bFast8)
+						{
+							_write_pixel_fast8<DSTFORMAT>((uint8_t*)&cleared, inB, inG, inR, inA);
+							_write_pixel_fast8<DSTFORMAT>((uint8_t*)&filled, inB, inG, inR, inA);
+						}
+						else
+						{
+							_write_pixel<DSTFORMAT>((uint8_t*)&cleared, inB, inG, inR, inA);
+							_write_pixel<DSTFORMAT>((uint8_t*)&filled, inB, inG, inR, inA);
+						}
+
+						if (cleared == filled)
+						{
+							int nPixels = (end - offset) >> 8;
+
+							if (pixelPitch == pixelBytes)
+							{
+								// Four bytes at a time, which is a single store also where copying
+								// more becomes a call.
+
+								uint32_t word;
+								for (int i = 0; i < 4; i += pixelBytes)
+									std::memcpy((uint8_t*)&word + i, &cleared, pixelBytes);
+
+								int bytes = nPixels * pixelBytes;
+								uint8_t* p = pDst;
+
+								for (; bytes >= 4; bytes -= 4, p += 4)
+									std::memcpy(p, &word, 4);
+
+								for (; bytes > 0; bytes -= pixelBytes, p += pixelBytes)
+									std::memcpy(p, &cleared, pixelBytes);
+							}
+							else
+							{
+								uint8_t* p = pDst;
+								for (int i = 0; i < nPixels; i++, p += pixelPitch)
+									std::memcpy(p, &cleared, pixelBytes);
+							}
+
+							pDst += nPixels * pixelPitch;
+							offset += nPixels * 256;
+						}
+					}
+				}
+
 				if (*pOpaqueSegments)
 				{
 					while (offset + 255 < end)
