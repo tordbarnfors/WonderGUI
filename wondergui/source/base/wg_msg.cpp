@@ -401,7 +401,7 @@ namespace wg
 	const TypeInfo TextInputMsg::TYPEINFO = { "TextInputMsg", &Msg::TYPEINFO };
 
 
-	TextInputMsg::TextInputMsg( char inputId, String text, Widget * pWidget )
+	TextInputMsg::TextInputMsg( char inputId, std::string_view text, Widget * pWidget )
 	{
 		m_type			= MsgType::TextInput;
 		m_text			= text;
@@ -410,7 +410,7 @@ namespace wg
 		m_inputId		= inputId;
 	}
 
-	String TextInputMsg::text() const
+	const std::string& TextInputMsg::text() const
 	{
 		return m_text;
 	}

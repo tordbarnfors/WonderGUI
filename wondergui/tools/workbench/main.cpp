@@ -268,11 +268,7 @@ namespace workbench
 
 		Base::msgRouter()->addRoute(m_pFilter, MsgType::TextEdit, [this](Msg* pMsg)
 		{
-			const String& text = m_pFilter->editor.text();
-
-			char buffer[256];
-			TextTool::getTextUTF8(text.chars(), buffer, sizeof(buffer));
-			_fillTestList(buffer);
+			_fillTestList(m_pFilter->editor.text());
 		});
 
 		m_pTestList = SelectCapsule::create(WGBP(SelectCapsule, _.recursive = true));

@@ -77,7 +77,7 @@ namespace wg
 			bool				stickyFocus			= false;
 			bool				tabLock 			= false;
 			bool				takesFocusFromChild = false;
-			String				tooltip;
+			std::string				tooltip;
 			CoordTransition_p	transition;
 			bool				usePickHandles		= false;
 			Axis				wheelOneAxis 		= Axis::Y;

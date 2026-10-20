@@ -28,6 +28,8 @@ set( SOURCES
 	tests/warprender.h
 	tests/linerender.cpp
 	tests/linerender.h
+	tests/textsystem.cpp
+	tests/textsystem.h
 )
 
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${SOURCES})

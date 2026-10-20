@@ -111,7 +111,7 @@ namespace wg
 			bool			stickyFocus = false;
 			bool			tabLock = false;
 			bool			takesFocusFromChild = false;
-			String			tooltip;
+			std::string			tooltip;
 			bool			usePickHandles = false;
 			Surface_p		icons;										// Optional, embedded default if not set.
 			Surface_p		transparencyGrid;							// Optional, embedded default if not set. Chessboard pattern or similar

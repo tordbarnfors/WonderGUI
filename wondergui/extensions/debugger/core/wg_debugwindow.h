@@ -63,7 +63,7 @@ namespace wg
 			Finalizer_p		finalizer = nullptr;
 			int				id = 0;
 			Widget_p		inspected;
-			String			label;
+			std::string			label;
 			MarkPolicy		markPolicy = MarkPolicy::Undefined;
 			std::function<void(DebugWindow*)>	onClose;
 			bool			pickable = false;
@@ -75,7 +75,7 @@ namespace wg
 			bool			stickyFocus = false;
 			bool			tabLock = false;
 			bool			takesFocusFromChild = true;
-			String			tooltip;
+			std::string			tooltip;
 			bool			usePickHandles = false;
 		};
 
@@ -96,7 +96,7 @@ namespace wg
 		void		setInspected(Object_p pInspected);
 		Object_p	inspected() const { return m_pInspected; }
 
-		void		setLabel( String label );
+		void		setLabel( std::string_view label );
 
 		void	setFocused(bool focused)
 		{

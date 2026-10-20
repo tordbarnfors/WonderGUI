@@ -22,6 +22,7 @@
 #include <wg_plugincanvaslayers.h>
 #include <wg_plugingfxdevice.h>
 #include <wg_base.h>
+#include <wg_util.h>
 
 #include <wg_plugincalls.h>
 

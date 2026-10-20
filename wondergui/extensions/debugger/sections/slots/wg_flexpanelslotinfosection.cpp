@@ -28,11 +28,11 @@ namespace wg
 
 	//____ flexPosToString() __________________________________________________
 
-	static String flexPosToString(const FlexPos& pos)
+	static std::string flexPosToString(const FlexPos& pos)
 	{
 		char temp[256];
 		snprintf(temp, sizeof(temp), "Relative (%f,%f) + (%f,%f) pts", pos.origo.x, pos.origo.y, pos.offset.x, pos.offset.y);
-		return String(temp);
+		return std::string(temp);
 	}
 
 

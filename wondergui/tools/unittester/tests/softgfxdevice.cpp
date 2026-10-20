@@ -6,7 +6,6 @@
 #include <wax_device_gen2.h>
 #include <wax_softbackend.h>
 
-#include <wg_string.h>
 
 using namespace wg;
 using namespace wax;

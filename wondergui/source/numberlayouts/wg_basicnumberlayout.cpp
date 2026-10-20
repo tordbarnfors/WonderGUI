@@ -22,6 +22,7 @@
 #include <wg_basicnumberlayout.h>
 #include <wg_base.h>
 #include <wg_util.h>
+#include <wax_utf8.h>
 
 #include <algorithm>
 #include <cmath>
@@ -39,17 +40,12 @@ namespace wg
 	{
 		m_blueprint = blueprint;
 
-		if (m_blueprint.prefixNegative.isEmpty())
-		{
-			m_blueprint.prefixNegative = m_blueprint.prefix;
+		if (m_blueprint.prefixNegative.empty())
+			m_blueprint.prefixNegative = "-" + m_blueprint.prefix;
+		else
+			m_bHadNegativePrefix = true;
 
-			Char	minus[2] = { {'-', nullptr}, {0, nullptr} };
-			if (!m_blueprint.prefix.isEmpty())
-				minus[0].setStyle(m_blueprint.prefix.chars()->stylePtr());
-			m_blueprint.prefixNegative.prepend( minus );
-		}
-
-		if (m_blueprint.suffixNegative.isEmpty())
+		if (m_blueprint.suffixNegative.empty())
 			m_blueprint.suffixNegative = m_blueprint.suffix;
 
 		if (m_blueprint.style == nullptr)
@@ -90,17 +86,11 @@ namespace wg
 		if (blueprint.styleNegativeDecimals)
 			styles.push_back( blueprint.styleNegativeDecimals );
 
-		if (!blueprint.prefix.isEmpty())
-			_addStylesFromString(styles, blueprint.prefix);
+		if (blueprint.prefixStyle)
+			styles.push_back( blueprint.prefixStyle );
 
-		if (!blueprint.prefixNegative.isEmpty())
-			_addStylesFromString(styles, blueprint.prefixNegative);
-
-		if (!blueprint.suffix.isEmpty())
-			_addStylesFromString(styles, blueprint.suffix);
-
-		if (!blueprint.suffixNegative.isEmpty())
-			_addStylesFromString(styles, blueprint.suffixNegative);
+		if (blueprint.suffixStyle)
+			styles.push_back( blueprint.suffixStyle );
 
 		for (int state1 = 0; state1 < State::NbStates; state1++)
 		{
@@ -144,7 +134,7 @@ namespace wg
 	{
 		// Generate string from value
 
-		auto charBuffer =_valueToStr(value);
+		auto segments =_valueToSegments(value);
 
 		// Place string within canvas.
 
@@ -152,7 +142,7 @@ namespace wg
 
 		SizeSPX size;
 		spx		baseline;
-		std::tie(size, baseline) = _strSizeBaseline(charBuffer.chars(), scale, state);
+		std::tie(size, baseline) = _segmentsSizeBaseline(segments, Base::defaultStyle(), scale, state);
 		ofs += Util::placementToRect(m_blueprint.placement, canvas.size(), size).pos();
 		ofs.y += baseline;
 
@@ -162,7 +152,7 @@ namespace wg
 		if (size.w > canvas.w || size.h > canvas.h)
 			popData = limitClipList(pDevice, canvas);
 
-		_renderString(pDevice, charBuffer.chars(), Base::defaultStyle(), ofs, scale, state);
+		_renderSegments(pDevice, segments, Base::defaultStyle(), ofs, scale, state);
 
 		popClipList(pDevice, popData);
 	}
@@ -171,10 +161,10 @@ namespace wg
 
 	SizeSPX BasicNumberLayout::defaultSize(double value, int scale, State state) const
 	{
-		auto charBuffer = _valueToStr(value);
+		auto segments = _valueToSegments(value);
 		SizeSPX size;
 		spx		baseline;
-		std::tie(size, baseline) = _strSizeBaseline(charBuffer.chars(), scale, state);
+		std::tie(size, baseline) = _segmentsSizeBaseline(segments, Base::defaultStyle(), scale, state);
 		return size;
 	}
 
@@ -199,6 +189,7 @@ namespace wg
 		if (copy.suffix == copy.suffixNegative)
 			copy.suffixNegative.clear();
 
+
 		if (copy.styleNegativeDecimals == copy.styleNegative ||
 			(copy.styleNegativeDecimals == copy.styleDecimals && copy.styleNegative == copy.style))
 			copy.styleNegativeDecimals = nullptr;
@@ -212,14 +203,11 @@ namespace wg
 		return copy;
 	}
 
-	//____ _valueToStr() ______________________________________________________
+	//____ _valueToSegments() ______________________________________________________
 
-	CharBuffer BasicNumberLayout::_valueToStr(double value) const
+	std::vector<NumberLayout::Segment> BasicNumberLayout::_valueToSegments(double value) const
 	{
-		const static uint16_t	codeTab[16] = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
-
-		CharBuffer	buffer;
-		buffer.setUnusedCapacity(64, 64);
+		const static char	codeTab[16] = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
 
 		bool bNegative = false;
 		
@@ -232,9 +220,9 @@ namespace wg
 		int64_t	intpart = value;
 		int64_t fracpart = (value - intpart) * pow(m_blueprint.base, m_blueprint.decimalMax) + 0.5f;
 
-		// Write fractional part
+		// Write decimal sign and fractional part
 
-		auto pStyleDecimals = bNegative ? m_blueprint.styleNegativeDecimals : m_blueprint.styleDecimals;
+		std::string decimals;
 
 		int nbDecimals = 0;
 		int divider = pow(m_blueprint.base, m_blueprint.decimalMax-1);
@@ -245,171 +233,57 @@ namespace wg
 			fracpart -= int64_t(printval) * divider;
 			divider /= m_blueprint.base;
 
-			buffer.pushBack( Char(codeTab[printval], pStyleDecimals) );
+			decimals.push_back( codeTab[printval] );
 			nbDecimals++;
 		}
 
-		// Possibly add a decimal sign
-
 		if( nbDecimals > 0 )
-			buffer.pushFront(Char(m_blueprint.decimalSign, pStyleDecimals));
+			decimals.insert( 0, Utf8::fromCodepoint(m_blueprint.decimalSign) );
 
-		// Write integer part, acknowledge grouping
+		// Write integer part backwards, acknowledge grouping
 
-		auto pStyleIntegers = bNegative ? m_blueprint.styleNegative : m_blueprint.style;
+		std::u32string integers;
+
 		int nbIntegers = 0;
-		int grouping = m_blueprint.integerGrouping > 0 ? m_blueprint.integerGrouping : -1;
 		int groupingCounter = 0;
 
 		while (intpart > 0 || nbIntegers < m_blueprint.integerMin)
 		{
 			if (groupingCounter == m_blueprint.integerGrouping)
 			{
-				buffer.pushFront(Char(m_blueprint.integerGroupSeparator, pStyleIntegers));
+				integers.push_back(m_blueprint.integerGroupSeparator);
 				groupingCounter = 0;
 			}
 
 			int printval = intpart % m_blueprint.base;
 			intpart /= m_blueprint.base;
 
-			buffer.pushFront(Char(codeTab[printval],pStyleIntegers));
+			integers.push_back(codeTab[printval]);
 			groupingCounter++;
 			nbIntegers++;
 		}
 
-		// Copy prefix and suffix
+		std::reverse( integers.begin(), integers.end() );
 
-		const String& prefix = bNegative ? m_blueprint.prefixNegative : m_blueprint.prefix;
-		const String& suffix = bNegative ? m_blueprint.suffixNegative : m_blueprint.suffix;
+		// Put the segments together
 
-		if( !prefix.isEmpty() )
-			buffer.pushFront(prefix);
-		if( !suffix.isEmpty() )
-			buffer.pushBack(suffix);
+		std::vector<Segment> segments;
 
-		return buffer;
-	}
+		const std::string& prefix = bNegative ? m_blueprint.prefixNegative : m_blueprint.prefix;
+		const std::string& suffix = bNegative ? m_blueprint.suffixNegative : m_blueprint.suffix;
 
-	//____ _strSize() _________________________________________________________
+		if( !prefix.empty() )
+			segments.push_back( { prefix, m_blueprint.prefixStyle } );
 
-	std::tuple<SizeSPX, spx> BasicNumberLayout::_strSizeBaseline(const Char * pChars, int scale, State state) const
-	{
-		SizeSPX			size;
+		segments.push_back( { Utf8::fromUtf32(integers), bNegative ? m_blueprint.styleNegative : m_blueprint.style } );
 
-		TextAttr		baseAttr;
+		if( !decimals.empty() )
+			segments.push_back( { decimals, bNegative ? m_blueprint.styleNegativeDecimals : m_blueprint.styleDecimals } );
 
-		Base::defaultStyle()->exportAttr(state, &baseAttr, scale);
+		if( !suffix.empty() )
+			segments.push_back( { suffix, m_blueprint.suffixStyle } );
 
-		TextAttr		attr;
-		Font_p 			pFont;
-
-		TextStyle_h		hCharStyle = 0xFFFF;			// Force change on first character.
-
-		Glyph glyph[2];
-		Glyph* pGlyph = &glyph[0];
-		Glyph* pPrevGlyph = &glyph[1];
-
-		spx maxAscend = 0;
-		spx maxDescend = 0;
-		spx maxDescendGap = 0;							// Including the line gap.
-		spx spaceAdv = 0;
-		spx width = 0;
-
-		while (!pChars->isEndOfLine())
-		{
-
-			if (pChars->styleHandle() != hCharStyle)
-			{
-
-				spx oldFontSize = attr.size;
-
-				attr = baseAttr;
-				if (pChars->styleHandle() != 0)
-					pChars->stylePtr()->addToAttr(state, &attr, scale);
-
-				if (pFont != attr.pFont || attr.size != oldFontSize)
-				{
-					pFont = attr.pFont;
-					pFont->setSize(attr.size);
-					pPrevGlyph->advance = 0;								// No kerning against across different fonts or fontsizes.
-				}
-
-				spx ascend = pFont->maxAscend();
-				if (ascend > maxAscend)
-					maxAscend = ascend;
-
-				spx descend = pFont->maxDescend();
-				if (descend > maxDescend)
-					maxDescend = descend;
-
-				spx descendGap = descend + pFont->lineGap();
-				if (descendGap > maxDescendGap)
-					maxDescendGap = descendGap;
-
-				spaceAdv = pFont->whitespaceAdvance();
-
-				hCharStyle = pChars->styleHandle();
-			}
-
-			uint16_t charCode = pChars->code();
-			pFont->getGlyphWithoutBitmap(charCode, *pGlyph);
-
-			if (pGlyph && charCode > 32 )
-			{
-				width += pFont->kerning(* pPrevGlyph, * pGlyph);
-
-				width += pGlyph->advance;
-			}
-			else if (pChars->code() == 32)
-				width += spaceAdv;
-
-			pPrevGlyph = pGlyph;
-
-			pChars++;
-		}
-
-		// Handle end of text
-
-/*
-			// Make sure we have space for eol caret
-
-			if (pCaret)
-			{
-				SizeSPX eolCellSize(pGlyph ? pGlyph->advance() : 0, pFont->maxAscend() + pFont->maxDescend());
-				spx w = pCaret->eolWidth(eolCellSize, scale);
-				if (w > eolCellSize.w)
-					width += w - eolCellSize.w;
-			}
-*/
-
-		// Finish this line
-
-		size.w = width;
-		size.h = maxAscend + maxDescend;
-//		pLines->base = maxAscend;
-	
-
-		return  std::make_tuple(Util::alignUp(size),maxAscend);
-	}
-
-	//____ _addStylesFromString() _____________________________________________
-
-	void BasicNumberLayout::_addStylesFromString(std::vector<TextStyle*>& stylesVector, const String& string) const
-	{
-		TextStyle_h prevStyle = 0;
-		auto pChars = string.chars();
-		while (!pChars->isEndOfText())
-		{
-			TextStyle_h hStyle = pChars->styleHandle();
-			if (hStyle != prevStyle && hStyle != 0 )
-			{
-				TextStyle* pStyle = pChars->stylePtr();
-				if (std::find(stylesVector.begin(), stylesVector.end(), pStyle) == stylesVector.end())
-					stylesVector.push_back(pStyle);
-				prevStyle = hStyle;
-			}
-			pChars++;
-		}
+		return segments;
 	}
 
 } // namespace wg

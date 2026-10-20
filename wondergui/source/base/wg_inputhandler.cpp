@@ -225,9 +225,9 @@ namespace wg
 
 	//____ putText() ___________________________________________________________
 
-	bool InputHandler::putText( const CharSeq& text )
+	bool InputHandler::putText( std::string_view text )
 	{
-		if( text.length() > 0 )
+		if( !text.empty() )
 		{
 			Base::msgRouter()->post( new TextInputMsg( m_inputId, text, _focusedWidget() ));
 		}

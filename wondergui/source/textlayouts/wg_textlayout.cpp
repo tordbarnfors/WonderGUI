@@ -37,16 +37,23 @@ namespace wg
 
 	//____ tooltip() _______________________________________________________________
 
-	String TextLayout::tooltip( const TextItem * pText ) const
+	std::string TextLayout::tooltip( const TextItem * pText ) const
 	{
-		return String();
+		return std::string();
 	}
 
-	//____ _chars() ___________________________________________________________
+	//____ linkAt() ____________________________________________________________
 
-	const Char * TextLayout::_chars( const TextItem * pText ) const
+	TextLink_p TextLayout::linkAt( const TextItem * pText, int charOfs ) const
 	{
-		return pText->_textBegin();
+		return _baseStyle(pText)->link();
+	}
+
+	//____ _text() ____________________________________________________________
+
+	const std::string& TextLayout::_text( const TextItem * pText ) const
+	{
+		return pText->_text();
 	}
 
 	//____ _dataBlock() _______________________________________________________
@@ -131,7 +138,7 @@ namespace wg
 
 	int TextLayout::_length( const TextItem * pText ) const
 	{
-		return pText->_textLength();
+		return int(pText->_text().size());
 	}
 
 

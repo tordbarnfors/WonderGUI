@@ -6,7 +6,6 @@
 #include <wondergui.h>
 #include <waxgfxstream.h>
 
-#include <wg_string.h>
 
 using namespace wg;
 

@@ -79,7 +79,7 @@ bool MyApp::_setupGUI(wapp::API* pAPI)
 
 	Base::setDefaultStyle(m_pTextStyle);
 
-	m_pTextLayoutCentered = BasicTextLayout::create(WGBP(BasicTextLayout,
+	m_pTextLayoutCentered = PlainTextLayout::create(WGBP(PlainTextLayout,
 		_.placement = Placement::Center));
 
 
@@ -117,53 +117,53 @@ Widget_p MyApp::_createControlPanel()
 
 	m_pStartSizeSelector = _createSelectBox();
 	m_pStartSizeSelector->entries.pushBack({ 
-		{ int(PackLayout::WantedSize::Default), String("Default")},
-		{ int(PackLayout::WantedSize::MaxDefault), String("MaxDefault") },
-		{ int(PackLayout::WantedSize::DefaultTimesWeight), String("DefaultTimesWeight") },
-		{ int(PackLayout::WantedSize::MaxDefaultTimesWeight), String("MaxDefaultTimesWeight") },
+		{ int(PackLayout::WantedSize::Default), "Default"},
+		{ int(PackLayout::WantedSize::MaxDefault), "MaxDefault" },
+		{ int(PackLayout::WantedSize::DefaultTimesWeight), "DefaultTimesWeight" },
+		{ int(PackLayout::WantedSize::MaxDefaultTimesWeight), "MaxDefaultTimesWeight" },
 	});
 
 	m_pExpandFactorSelector = _createSelectBox();
 	m_pExpandFactorSelector->entries.pushBack({
-		{ int(PackLayout::Factor::Zero), String("Zero")},
-		{ int(PackLayout::Factor::One), String("One") },
-		{ int(PackLayout::Factor::Margin), String("Margin") },
-		{ int(PackLayout::Factor::Size), String("Size") },
-		{ int(PackLayout::Factor::Weight), String("Weight") },
-		{ int(PackLayout::Factor::InverseWeight), String("InverseWeight") },
-		{ int(PackLayout::Factor::SizeTimesWeight), String("SizeTimesWeight") },
-		{ int(PackLayout::Factor::SizeTimesInverseWeight), String("SizeTimesInverseWeight") },
-		{ int(PackLayout::Factor::MarginTimesWeight), String("MarginTimesWeight") },
-		{ int(PackLayout::Factor::MarginTimesInverseWeight), String("MarginTimesInverseWeight") },
-		{ int(PackLayout::Factor::List1), String("List1") },
-		{ int(PackLayout::Factor::List2), String("List2") },
-		{ int(PackLayout::Factor::List3), String("List3") },
-		{ int(PackLayout::Factor::Ordered), String("Ordered") },
+		{ int(PackLayout::Factor::Zero), "Zero"},
+		{ int(PackLayout::Factor::One), "One" },
+		{ int(PackLayout::Factor::Margin), "Margin" },
+		{ int(PackLayout::Factor::Size), "Size" },
+		{ int(PackLayout::Factor::Weight), "Weight" },
+		{ int(PackLayout::Factor::InverseWeight), "InverseWeight" },
+		{ int(PackLayout::Factor::SizeTimesWeight), "SizeTimesWeight" },
+		{ int(PackLayout::Factor::SizeTimesInverseWeight), "SizeTimesInverseWeight" },
+		{ int(PackLayout::Factor::MarginTimesWeight), "MarginTimesWeight" },
+		{ int(PackLayout::Factor::MarginTimesInverseWeight), "MarginTimesInverseWeight" },
+		{ int(PackLayout::Factor::List1), "List1" },
+		{ int(PackLayout::Factor::List2), "List2" },
+		{ int(PackLayout::Factor::List3), "List3" },
+		{ int(PackLayout::Factor::Ordered), "Ordered" },
 		});
 
 	m_pShrinkFactorSelector = _createSelectBox();
 	m_pShrinkFactorSelector->entries.pushBack({
-		{ int(PackLayout::Factor::Zero), String("Zero")},
-		{ int(PackLayout::Factor::One), String("One") },
-		{ int(PackLayout::Factor::Margin), String("Margin") },
-		{ int(PackLayout::Factor::Size), String("Size") },
-		{ int(PackLayout::Factor::Weight), String("Weight") },
-		{ int(PackLayout::Factor::InverseWeight), String("InverseWeight") },
-		{ int(PackLayout::Factor::SizeTimesWeight), String("SizeTimesWeight") },
-		{ int(PackLayout::Factor::SizeTimesInverseWeight), String("SizeTimesInverseWeight") },
-		{ int(PackLayout::Factor::MarginTimesWeight), String("MarginTimesWeight") },
-		{ int(PackLayout::Factor::MarginTimesInverseWeight), String("MarginTimesInverseWeight") },
-		{ int(PackLayout::Factor::List1), String("List1") },
-		{ int(PackLayout::Factor::List2), String("List2") },
-		{ int(PackLayout::Factor::List3), String("List3") },
-		{ int(PackLayout::Factor::Ordered), String("Ordered") },
+		{ int(PackLayout::Factor::Zero), "Zero"},
+		{ int(PackLayout::Factor::One), "One" },
+		{ int(PackLayout::Factor::Margin), "Margin" },
+		{ int(PackLayout::Factor::Size), "Size" },
+		{ int(PackLayout::Factor::Weight), "Weight" },
+		{ int(PackLayout::Factor::InverseWeight), "InverseWeight" },
+		{ int(PackLayout::Factor::SizeTimesWeight), "SizeTimesWeight" },
+		{ int(PackLayout::Factor::SizeTimesInverseWeight), "SizeTimesInverseWeight" },
+		{ int(PackLayout::Factor::MarginTimesWeight), "MarginTimesWeight" },
+		{ int(PackLayout::Factor::MarginTimesInverseWeight), "MarginTimesInverseWeight" },
+		{ int(PackLayout::Factor::List1), "List1" },
+		{ int(PackLayout::Factor::List2), "List2" },
+		{ int(PackLayout::Factor::List3), "List3" },
+		{ int(PackLayout::Factor::Ordered), "Ordered" },
 		});
 
 	m_pHideSelector = _createSelectBox();
 	m_pHideSelector->entries.pushBack({
-		{ int(PackLayout::HideSetting::Never), String("Never")},
-		{ int(PackLayout::HideSetting::Restrained), String("Restrained") },
-		{ int(PackLayout::HideSetting::Aggressive), String("Aggressive") },
+		{ int(PackLayout::HideSetting::Never), "Never"},
+		{ int(PackLayout::HideSetting::Restrained), "Restrained" },
+		{ int(PackLayout::HideSetting::Aggressive), "Aggressive" },
 		});
 
 	m_pMinSizeSourceSelector = _createSizeSourceSelectBox();
@@ -186,33 +186,33 @@ Widget_p MyApp::_createControlPanel()
 
 	pts xSpacingSizeSelectors = 100;
 
-	pBase->slots.pushBack(TextDisplay::create({ .display = {.text = String("MinSize")} }), { .pos = pos + labelOffset } );
+	pBase->slots.pushBack(TextDisplay::create({ .display = {.text = "MinSize"} }), { .pos = pos + labelOffset } );
 	pBase->slots.pushBack(m_pMinSizeSourceSelector, { .pos = pos } );
 
 	pos.x += xSpacingSizeSelectors;
-	pBase->slots.pushBack(TextDisplay::create({ .display = {.text = String("DefaultSize")} }), { .pos = pos + labelOffset } );
+	pBase->slots.pushBack(TextDisplay::create({ .display = {.text = "DefaultSize"} }), { .pos = pos + labelOffset } );
 	pBase->slots.pushBack(m_pDefaultSizeSourceSelector, { .pos = pos });
 
 	pos.x += xSpacingSizeSelectors;
-	pBase->slots.pushBack(TextDisplay::create({ .display = {.text = String("MaxSize")} }), { .pos = pos + labelOffset } );
+	pBase->slots.pushBack(TextDisplay::create({ .display = {.text = "MaxSize"} }), { .pos = pos + labelOffset } );
 	pBase->slots.pushBack(m_pMaxSizeSourceSelector, { .pos = pos });
 
 	pos.x = 4;
 	pos.y += 50;
 
-	pBase->slots.pushBack(TextDisplay::create({ .display = {.text = String("Start size")} }), { .pos = pos + labelOffset } );
+	pBase->slots.pushBack(TextDisplay::create({ .display = {.text = "Start size"} }), { .pos = pos + labelOffset } );
 	pBase->slots.pushBack(m_pStartSizeSelector, { .pos = pos });
 
 	pos.x += m_pStartSizeSelector->size().w + xSpacing;
-	pBase->slots.pushBack(TextDisplay::create({ .display = {.text = String("Expand factor")} }), { .pos = pos + labelOffset } );
+	pBase->slots.pushBack(TextDisplay::create({ .display = {.text = "Expand factor"} }), { .pos = pos + labelOffset } );
 	pBase->slots.pushBack(m_pExpandFactorSelector, { .pos = pos });
 
 	pos.x += m_pExpandFactorSelector->size().w + xSpacing;
-	pBase->slots.pushBack(TextDisplay::create({ .display = {.text = String("Shrink factor")} }), { .pos = pos + labelOffset } );
+	pBase->slots.pushBack(TextDisplay::create({ .display = {.text = "Shrink factor"} }), { .pos = pos + labelOffset } );
 	pBase->slots.pushBack(m_pShrinkFactorSelector, { .pos = pos });
 
 	pos.x += m_pShrinkFactorSelector->size().w + xSpacing;
-	pBase->slots.pushBack(TextDisplay::create({ .display = {.text = String("Hide setting")} }), { .pos = pos + labelOffset } );
+	pBase->slots.pushBack(TextDisplay::create({ .display = {.text = "Hide setting"} }), { .pos = pos + labelOffset } );
 	pBase->slots.pushBack(m_pHideSelector, { .pos = pos });
 
 	pos.x = 4;
@@ -220,23 +220,23 @@ Widget_p MyApp::_createControlPanel()
 	pts inputFieldOfsX = 90;
 	pts inputFieldSpacingY = 24;
 
-	pBase->slots.pushBack(TextDisplay::create({ .display = {.text = String("List 1")} }), { .pos = pos });
+	pBase->slots.pushBack(TextDisplay::create({ .display = {.text = "List 1"} }), { .pos = pos });
 	pBase->slots.pushBack(m_pList1Input, { .pin1 = { Placement::NorthWest, {pos.x + inputFieldOfsX,pos.y } }, .pin2 = { Placement::NorthEast, {-10,pos.y + 20} }});
 
 	pos.y += inputFieldSpacingY;
-	pBase->slots.pushBack(TextDisplay::create({ .display = {.text = String("List 2")} }), { .pos = pos });
+	pBase->slots.pushBack(TextDisplay::create({ .display = {.text = "List 2"} }), { .pos = pos });
 	pBase->slots.pushBack(m_pList2Input, { .pin1 = { Placement::NorthWest, {pos.x + inputFieldOfsX,pos.y } }, .pin2 = { Placement::NorthEast, {-10,pos.y + 20} }});
 
 	pos.y += inputFieldSpacingY;
-	pBase->slots.pushBack(TextDisplay::create({ .display = {.text = String("List 3")} }), { .pos = pos });
+	pBase->slots.pushBack(TextDisplay::create({ .display = {.text = "List 3"} }), { .pos = pos });
 	pBase->slots.pushBack(m_pList3Input, { .pin1 = { Placement::NorthWest, {pos.x + inputFieldOfsX,pos.y } }, .pin2 = { Placement::NorthEast, {-10,pos.y + 20} }});
 
 	pos.y += inputFieldSpacingY;
-	pBase->slots.pushBack(TextDisplay::create({ .display = {.text = String("Expand order")} }), { .pos = pos });
+	pBase->slots.pushBack(TextDisplay::create({ .display = {.text = "Expand order"} }), { .pos = pos });
 	pBase->slots.pushBack(m_pExpandOrderInput, { .pin1 = { Placement::NorthWest, {pos.x + inputFieldOfsX,pos.y } }, .pin2 = { Placement::NorthEast, {-10,pos.y + 20} }});
 
 	pos.y += inputFieldSpacingY;
-	pBase->slots.pushBack(TextDisplay::create({ .display = {.text = String("Shrink order")} }), { .pos = pos });
+	pBase->slots.pushBack(TextDisplay::create({ .display = {.text = "Shrink order"} }), { .pos = pos });
 	pBase->slots.pushBack(m_pShrinkOrderInput, { .pin1 = { Placement::NorthWest, {pos.x + inputFieldOfsX,pos.y } }, .pin2 = { Placement::NorthEast, {-10,pos.y + 20} }});
 
 
@@ -283,11 +283,11 @@ SelectBox_p MyApp::_createSizeSourceSelectBox()
 	pWidget->setListSkin(m_pPlateSkin);
 
 	pWidget->entries.pushBack({
-		{ int(PackLayout::SizeSource::Item), String("Item")},
-		{ int(PackLayout::SizeSource::Weight), String("Weight") },
-		{ int(PackLayout::SizeSource::List1), String("List 1") },
-		{ int(PackLayout::SizeSource::List2), String("List 2") },
-		{ int(PackLayout::SizeSource::List3), String("List 3") },
+		{ int(PackLayout::SizeSource::Item), "Item"},
+		{ int(PackLayout::SizeSource::Weight), "Weight" },
+		{ int(PackLayout::SizeSource::List1), "List 1" },
+		{ int(PackLayout::SizeSource::List2), "List 2" },
+		{ int(PackLayout::SizeSource::List3), "List 3" },
 		});
 
 	return pWidget;

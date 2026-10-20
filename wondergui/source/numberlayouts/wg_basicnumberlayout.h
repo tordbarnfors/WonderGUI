@@ -50,24 +50,26 @@ namespace wg
 
 			int			decimalMax = 6;					///< Maximum number of decimals to display. Last digit is rounded. Default is 6.
 			int			decimalMin = 0;					///< Minimum number of decimals to display. Default is 0.
-			uint16_t	decimalSign = '.';				///< Character to use for decimal sign. Default is a dot/period character.
+			char32_t	decimalSign = '.';				///< Character to use for decimal sign. Default is a dot/period character.
 
 			int			integerGrouping = 3;			///< Number of integers displayed before an integerGroupSeparator is inserted. Default is 3.
-			uint16_t	integerGroupSeparator = ' ';	///< Character used to separate groups of integers. Default is whitespace.
+			char32_t	integerGroupSeparator = ' ';	///< Character used to separate groups of integers. Default is whitespace.
 			int			integerMin = 1;					///< Minimum number of integers displayed. Default is 1. Valid range is 0-32.
 
 			Placement	placement = Placement::East;	///< Placement of displayed value. Default is East, i.e. right aligned and vertically centered.
 
-			String		prefix;							///< A prefix to be displayed left of the value e.g. '$' or '£'. Negative values display the minus sign before this prefix unless prefixNegative is set. 
-			String		prefixNegative;					///< A separate prefix to display for negative values only, should include the minus sign.
+			std::string	prefix;							///< A prefix (UTF-8) to be displayed left of the value e.g. '$' or '£'. Negative values display the minus sign before this prefix unless prefixNegative is set. 
+			std::string	prefixNegative;					///< A separate prefix to display for negative values only, should include the minus sign.
+			TextStyle_p	prefixStyle;					///< TextStyle for prefix (and minus sign added to it). Default is to use the base style.
 
 			TextStyle_p	style;							///< TextStyle for the number, including decimal sign, group separator and (if prefixNegative not set) the minus sign.
 			TextStyle_p	styleDecimals;					///< A separate TextStyle, overriding .style for the decimal sign and decimals of the value. 
 			TextStyle_p	styleNegative;					///< A separate TextStyle to use for negative numbers. Overrides .style and .styleDecimals.
 			TextStyle_p	styleNegativeDecimals;			///< A separate TextStyle to use for decimal sign and decimals of negative values, overrides .style and .styleNegative.
 
-			String		suffix;							///< A suffix to be displayed right of the value e.g. " cm" or " km". 
-			String		suffixNegative;					///< A separate suffix to be displayed for negative values only.
+			std::string	suffix;							///< A suffix (UTF-8) to be displayed right of the value e.g. " cm" or " km". 
+			std::string	suffixNegative;					///< A separate suffix to be displayed for negative values only.
+			TextStyle_p	suffixStyle;					///< TextStyle for suffix. Default is to use the base style.
 		};
 
 		//.____ Creation __________________________________________
@@ -91,9 +93,7 @@ namespace wg
 		BasicNumberLayout( const Blueprint& descriptor );
 		~BasicNumberLayout();
 
-		CharBuffer	_valueToStr(double value ) const;
-		std::tuple<SizeSPX, spx> _strSizeBaseline(const Char * pChars, int scale, State state) const;
-		void		_addStylesFromString(std::vector<TextStyle*>& stylesVector, const String& string) const;
+		std::vector<Segment>	_valueToSegments(double value ) const;
 
 
 		Blueprint	m_blueprint;

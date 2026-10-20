@@ -81,7 +81,7 @@ bool MyApp::_setupGUI(wapp::API* pAPI)
 
 	Base::setDefaultStyle(m_pTextStyle);
 
-	m_pTextLayoutCentered = BasicTextLayout::create(WGBP(BasicTextLayout,
+	m_pTextLayoutCentered = PlainTextLayout::create(WGBP(PlainTextLayout,
 		_.placement = Placement::Center));
 
 
@@ -245,7 +245,7 @@ bool MyApp::generateBitmapFont()
 
 	pFont->setSize(size);
 
-	String charmap = m_pCharsEditor->editor.text();
+	std::u32string charmap = Utf8::toUtf32( m_pCharsEditor->editor.text() );
 	
 	generateFontSurface(pFont, charmap);
 	generateFontSpec(pFont, charmap);
@@ -255,7 +255,7 @@ bool MyApp::generateBitmapFont()
 
 //____ generateFontSpec() _____________________________________________________
 
-bool MyApp::generateFontSpec( FreeTypeFont * pFont, String& charmap )
+bool MyApp::generateFontSpec( FreeTypeFont * pFont, const std::u32string& charmap )
 {
 	int size = pFont->size()/64;
 	int whitespace = pFont->whitespaceAdvance()/64;
@@ -272,20 +272,20 @@ bool MyApp::generateFontSpec( FreeTypeFont * pFont, String& charmap )
 	m_bitmapFontSpec = buffer;
 	
 	m_bitmapFontSpec += "\n[CHARMAP BEGIN]\n\n";
-	m_bitmapFontSpec += CharSeq(charmap).getStdString();
+	m_bitmapFontSpec += Utf8::fromUtf32(charmap);
 	m_bitmapFontSpec += "\n[CHARMAP END]\n\n";
 	
 	m_bitmapFontSpec += "\n[KERNING BEGIN]\n\n";
 	
-	for( int i = 0 ; i < charmap.length() ; i++ )
+	for( int i = 0 ; i < int(charmap.length()) ; i++ )
 	{
-		uint16_t code1 = charmap.chars()[i].code();
+		char32_t code1 = charmap[i];
 		Glyph glyph1;
 		pFont->getGlyphWithoutBitmap(code1, glyph1);
 		
-		for( int j = 0 ; j < charmap.length() ; j++ )
+		for( int j = 0 ; j < int(charmap.length()) ; j++ )
 		{
-			uint16_t code2 = charmap.chars()[j].code();
+			char32_t code2 = charmap[j];
 			Glyph glyph2;
 			pFont->getGlyphWithoutBitmap(code2, glyph2);
 			
@@ -298,13 +298,7 @@ bool MyApp::generateFontSpec( FreeTypeFont * pFont, String& charmap )
 			
 			if( kerning != 0 )
 			{
-				char buff1[4] = {0,0,0,0};
-				TextTool::uint16ToUtf8(code1, buff1, 4);
-
-				char buff2[4] = {0,0,0,0};
-				TextTool::uint16ToUtf8(code2, buff2, 4);
-
-				snprintf( buffer, 1024, "%s%s %d ", buff1, buff2, kerning );
+				snprintf( buffer, 1024, "%s%s %d ", Utf8::fromCodepoint(code1).c_str(), Utf8::fromCodepoint(code2).c_str(), kerning );
 				m_bitmapFontSpec += buffer;
 			}
 		}
@@ -318,7 +312,7 @@ bool MyApp::generateFontSpec( FreeTypeFont * pFont, String& charmap )
 
 //____ generateFontSurface() ___________________________________________________
 
-bool MyApp::generateFontSurface( FreeTypeFont * pFont, String& chars )
+bool MyApp::generateFontSurface( FreeTypeFont * pFont, const std::u32string& chars )
 {
 	bool bUseSRGB = (m_pStemDarkeningSelector->selectedEntryId() == 1);
 		
@@ -331,10 +325,10 @@ bool MyApp::generateFontSurface( FreeTypeFont * pFont, String& chars )
 	spx ofsX = 0;
 	int nRows = 1;
 
-	for( int i = 0 ; i < chars.length() ; i++ )
+	for( int i = 0 ; i < int(chars.length()) ; i++ )
 	{
 		Glyph glyph;
-		pFont->getGlyphWithBitmap(chars.chars()[i].code(), glyph);
+		pFont->getGlyphWithBitmap(chars[i], glyph);
 
 		if( glyph.pSurface )
 		{
@@ -384,10 +378,10 @@ bool MyApp::generateFontSurface( FreeTypeFont * pFont, String& chars )
 	pDevice->drawLine(pos, Direction::Right, surfaceSize.w*64, lineColor);
 	pos.y += 64;
 	
-	for( int i = 0 ; i < chars.length() ; i++ )
+	for( int i = 0 ; i < int(chars.length()) ; i++ )
 	{
 		Glyph glyph;
-		pFont->getGlyphWithBitmap(chars.chars()[i].code(), glyph);
+		pFont->getGlyphWithBitmap(chars[i], glyph);
 		
 		spx bearingX = glyph.bearingX;
 		spx advance = glyph.advance;
@@ -505,7 +499,7 @@ Widget_p MyApp::createInputPanel()
 	{
 		snprintf( tmp, 8, "%i", i);
 //		pSizeSelector->entries.pushBack(SelectBoxEntry(i, String(tmp)));
-		pSizeSelector->entries.pushBack({ i, String(tmp) } );
+		pSizeSelector->entries.pushBack({ i, tmp } );
 
 	}
 	
@@ -519,9 +513,9 @@ Widget_p MyApp::createInputPanel()
 	auto pModeSelector = SelectBox::create();
 	pModeSelector->setSkin(m_pButtonSkin);
 	pModeSelector->setListSkin(m_pPlateSkin);
-	pModeSelector->entries.pushBack({ 	{ int(FreeTypeFont::RenderMode::Monochrome), String("Monochrome") },
-										{ int(FreeTypeFont::RenderMode::CrispEdges), String("CrispEdges") },
-										{ int(FreeTypeFont::RenderMode::BestShapes), String("BestShapes")} });
+	pModeSelector->entries.pushBack({ 	{ int(FreeTypeFont::RenderMode::Monochrome), "Monochrome" },
+										{ int(FreeTypeFont::RenderMode::CrispEdges), "CrispEdges" },
+										{ int(FreeTypeFont::RenderMode::BestShapes), "BestShapes"} });
 	
 	auto pSRGBLabel = TextDisplay::create( WGBP(TextDisplay,
 												_.display = WGBP(DynamicText,
@@ -533,8 +527,8 @@ Widget_p MyApp::createInputPanel()
 	auto pStemDarkeningSelector = SelectBox::create();
 	pStemDarkeningSelector->setSkin(m_pButtonSkin);
 	pStemDarkeningSelector->setListSkin(m_pPlateSkin);
-	pStemDarkeningSelector->entries.pushBack({ 	{ 0, String("Off") },
-											{ 1, String("On") } });
+	pStemDarkeningSelector->entries.pushBack({ 	{ 0, "Off" },
+											{ 1, "On" } });
 
 	pBottomRow->slots << pSizeLabel;
 	pBottomRow->slots << pSizeSelector;
@@ -574,7 +568,7 @@ Widget_p MyApp::createCharsPanel()
 	pBase->setLayout(m_pLayout);
 	pBase->setSkin(m_pPlateSkin);
 	
-	auto pLabel = TextDisplay::create( { .display = { .text = String("Characters to include") } } );
+	auto pLabel = TextDisplay::create( { .display = { .text = "Characters to include" } } );
 	
 	auto pWindow = ScrollPanel::create();
 
@@ -623,22 +617,22 @@ Widget_p MyApp::createOutputPanel()
 	pTopPanel->setAxis(Axis::X);
 	pTopPanel->setLayout(m_pLayout);
 	
-	auto pLeftBottomLayout = BasicTextLayout::create( { .placement = Placement::SouthWest } );
+	auto pLeftBottomLayout = PlainTextLayout::create( { .placement = Placement::SouthWest } );
 	
-	auto pLabel = TextDisplay::create( { .display = {.layout = pLeftBottomLayout, .text = String("Preview") } } );
+	auto pLabel = TextDisplay::create( { .display = {.layout = pLeftBottomLayout, .text = "Preview" } } );
 	auto pFiller = Filler::create();
-	auto pGenerateButton = Button::create( { .label = { .text = String("Generate")}, .skin = m_pButtonSkin } );
+	auto pGenerateButton = Button::create( { .label = { .text = "Generate"}, .skin = m_pButtonSkin } );
 	
 	auto pImageFormatSelector = SelectBox::create();
 	pImageFormatSelector->setSkin(m_pButtonSkin);
 	pImageFormatSelector->setListSkin(m_pPlateSkin);
-	pImageFormatSelector->entries.pushBack({ { 0, String("Uncompressed 8-bit indexed SURF") },
-												{ 1, String("Uncompressed 32-bit SURF") } });
-//												{ 2, String("Compressed 32-bit PNG")} });
+	pImageFormatSelector->entries.pushBack({ { 0, "Uncompressed 8-bit indexed SURF" },
+												{ 1, "Uncompressed 32-bit SURF" } });
+//												{ 2, "Compressed 32-bit PNG"} });
 	pImageFormatSelector->selectEntryByIndex(1);
 	m_pImageFormatSelector = pImageFormatSelector;
 	
-	auto pSaveButton = Button::create( { .label = { .text = String("Save")}, .skin = m_pButtonSkin } );
+	auto pSaveButton = Button::create( { .label = { .text = "Save"}, .skin = m_pButtonSkin } );
 
 	Base::msgRouter()->addRoute(pGenerateButton, MsgType::Select, [this](Msg*pMsg){this->generateBitmapFont();this->displayBitmapFont();} );
 	

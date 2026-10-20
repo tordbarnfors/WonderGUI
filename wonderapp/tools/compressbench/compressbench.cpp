@@ -87,7 +87,7 @@ bool MyApp::_setupGUI(API* pAPI)
 
 	pAPI->initDefaultWidgetKit();
 
-	m_pLayoutRight = BasicTextLayout::create( { .placement = Placement::East } );
+	m_pLayoutRight = PlainTextLayout::create( { .placement = Placement::East } );
 
 	// Create and populate button panel
 

@@ -115,6 +115,7 @@ namespace wg
 			Font_p			font = nullptr;
 			TextLink_p		link = nullptr;
 			pts				size = -1;
+			float			sizeScale = 1.f;			///< Scales inherited size when size isn't set, e.g. 1.5 for a heading 50% larger than surrounding text.
 
 			std::vector<StateBP>	states;
 			
@@ -139,6 +140,7 @@ namespace wg
 		inline HiColor			color( State state ) const;
 		inline HiColor			backColor( State state ) const;
 		inline pts				size( State state ) const;
+		inline float			sizeScale() const { return m_sizeScale; }
 		inline TextDecoration 	decoration( State state ) const;
 
 		inline bool             isColorStatic() const { return m_bStaticColor; }
@@ -210,6 +212,7 @@ namespace wg
 		TextLink_p			m_pLink;
 		BlendMode			m_blendMode = BlendMode::Blend;
 		BlendMode			m_backBlendMode = BlendMode::Blend;
+		float				m_sizeScale = 1.f;
 
 		uint8_t				m_sizeIndexMask;
 		uint8_t				m_sizeIndexShift;

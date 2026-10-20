@@ -2,6 +2,15 @@ source_group(Files REGULAR_EXPRESSION ".*")
 
 			
 set( SOURCES
+	wg_char.h
+	wg_charbuffer.cpp
+	wg_charbuffer.h
+	wg_charseq.cpp
+	wg_charseq.h
+	wg_string.cpp
+	wg_string.h
+	wg_texttool.cpp
+	wg_texttool.h
 	wg_legacyrootcapsule.cpp
 	wg_legacyrootcapsule.h
 	wg2_anim.cpp

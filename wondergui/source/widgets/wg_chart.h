@@ -44,7 +44,7 @@ class Chart;
 		{
 			HiColor			color = HiColor::Undefined;
 			
-			String			label;
+			std::string		label;
 			Coord			labelAdjustment;
 			bool			labelAtEnd = false;
 			Placement		labelPlacement = Placement::Undefined;
@@ -91,7 +91,7 @@ class Chart;
 		HiColor			color() const { return m_color; }
 		pts				thickness() const { return m_thickness; }
 		bool			isVisible() const { return m_bVisible; }
-		const String& label() const { return m_label; }
+		const std::string& label() const { return m_label; }
 		Coord			labelAdjustment() const { return m_labelAdjustment; }
 		bool			labelAtEnd() const { return m_bLabelAtEnd; }
 		Placement		labelPlacement() const { return m_labelPlacement; }
@@ -106,8 +106,7 @@ class Chart;
 		State			_textState() const override;
 		TextStyle*		_textStyle() const override;
 
-		const Char*		_textBegin() const override;
-		int 			_textLength() const override;
+		const std::string& _text() const override { return m_label; }
 
 		bool			_caretVisible() const override;
 		int				_caretOffset() const override;
@@ -145,7 +144,7 @@ class Chart;
 		bool			m_bVisible;
 		bool			m_bLabelAtEnd;
 
-		String			m_label;
+		std::string		m_label;
 		Coord			m_labelAdjustment;
 		TextLayout_p	m_pTextLayout;
 		Placement		m_labelPlacement = Placement::Undefined;	// Defaults to West or South depending on x- or y-line.

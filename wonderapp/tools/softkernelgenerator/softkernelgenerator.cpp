@@ -70,7 +70,7 @@ bool MyApp::_setupGUI(wapp::API* pAPI)
 
 	Base::setDefaultStyle(m_pTextStyle);
 
-	m_pTextLayoutCentered = BasicTextLayout::create(WGBP(BasicTextLayout,
+	m_pTextLayoutCentered = PlainTextLayout::create(WGBP(PlainTextLayout,
 		_.placement = Placement::Center));
 
 
@@ -213,9 +213,7 @@ bool MyApp::exportSource()
 	if( path.empty() )
 		return false;
 	
-	String kernelLabel = m_pKernelFuncNameEditor->editor.text();
-	
-	auto labelString = CharSeq(kernelLabel).getStdString();
+	std::string labelString = m_pKernelFuncNameEditor->editor.text();
 	
 	// Export source
 	

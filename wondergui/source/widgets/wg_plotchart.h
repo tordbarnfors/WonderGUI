@@ -195,7 +195,7 @@ namespace wg
 			TextLayout_p	textLayout;
 			TextStyle_p		textStyle;
 
-			String			tooltip;
+			std::string			tooltip;
 
 			Placement		topLabelPlacement = Placement::North;
 			pts				topLabelSpacing = 1;

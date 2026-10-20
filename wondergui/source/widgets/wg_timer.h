@@ -67,7 +67,7 @@ namespace wg
 			int				stepSize = 1;
 			bool			stickyFocus = false;
 			bool			tabLock = false;
-			String			tooltip;
+			std::string			tooltip;
 			int				value = 0;
 		};
 

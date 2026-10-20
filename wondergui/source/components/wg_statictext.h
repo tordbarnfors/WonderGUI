@@ -28,6 +28,9 @@
 #include <wg_textlayout.h>
 #include <wg_base.h>
 
+#include <string>
+#include <string_view>
+
 namespace wg
 {
 	class EditState;
@@ -38,7 +41,7 @@ namespace wg
 	class StaticText : public Component, protected TextItem
 	{
 		friend class TextLayout;
-		friend class BasicTextLayout;
+		friend class PlainTextLayout;
 
 	public:
 
@@ -76,10 +79,10 @@ namespace wg
 
 		//.____ Content _____________________________________________
 
-		inline 	String		text() const { return _getString(); }
+		inline const std::string&	text() const { return m_text; }			///< UTF-8 encoded text, including any markup.
 
-		inline int			length() const { return m_charBuffer.length(); }
-		inline bool			isEmpty() const { return length() == 0 ? true : false; }
+		inline int			length() const { return int(m_text.size()); }	///< Length of text in bytes.
+		inline bool			isEmpty() const { return m_text.empty(); }
 
 		//.____ Internal _______________________________________________
 
@@ -95,7 +98,7 @@ namespace wg
 		virtual spx			_matchingWidth(spx height, int scale) const;
 		virtual spx			_matchingHeight(spx width, int scale) const;
 
-		virtual String		_tooltip() const;
+		virtual std::string	_tooltip() const;
 
 		virtual void		_receive(Msg* pMsg);
 		virtual void		_render(GfxDevice* pDevice, const RectSPX& _canvas);
@@ -103,9 +106,7 @@ namespace wg
 		TextLayout*			_layout() const { return m_pLayout ? m_pLayout.rawPtr() : Base::defaultTextLayout().rawPtr(); }
 		TextStyle*			_style() const { if (m_pStyle) return m_pStyle.rawPtr(); return Base::defaultStyle().rawPtr(); }
 
-		virtual void		_setText(const CharSeq& seq);
-		virtual void		_setText(const CharBuffer* buffer);
-		virtual void		_setText(const String& str);
+		virtual void		_setText(std::string_view text);
 
 		virtual int			_charAtPos(CoordSPX pos) const;
 
@@ -121,19 +122,12 @@ namespace wg
 		virtual void		_clear();
 
 
-		virtual int			_append(const CharSeq& seq);
-		virtual int			_insert(int ofs, const CharSeq& seq);
-		virtual int			_replace(int ofs, int nDelete, const CharSeq& seq);
+		virtual int			_append(std::string_view text);
+		virtual int			_insert(int ofs, std::string_view text);
+		virtual int			_replace(int ofs, int nDelete, std::string_view text);
 		virtual int			_erase(int ofs, int len);
 
-		virtual void		_setCharStyle(TextStyle * pStyle);
-		virtual void		_setCharStyle(TextStyle * pStyle, int ofs, int len);
-
-		virtual void		_clearCharStyle();
-		virtual void		_clearCharStyle(int ofs, int len);
-
-
-		virtual String		_getString() const;
+		void				_clampRange( int& ofs, int& len ) const;		// Limits range to text and aligns it to codepoints.
 
 		virtual RectSPX		_charRect( int charOfs ) const;
 		virtual int			_charLine( int charOfs ) const;
@@ -154,8 +148,7 @@ namespace wg
 		virtual State		_textState() const override { return m_state; }
 		virtual TextStyle * _textStyle() const override { if( m_pStyle ) return m_pStyle.rawPtr(); return Base::defaultStyle().rawPtr(); }
 		
-		virtual const Char *_textBegin() const override { return m_charBuffer.chars(); }
-		virtual int 		_textLength() const override { return m_charBuffer.nbChars(); }
+		virtual const std::string& _text() const override { return m_text; }
 
 		virtual bool		_caretVisible() const override { return false; }
 		virtual int			_caretOffset() const override { return 0; }
@@ -173,7 +166,7 @@ namespace wg
 
 		State				m_state;
 		TextStyle_p			m_pStyle;
-		CharBuffer			m_charBuffer;
+		std::string			m_text;
 		TextLayout_p		m_pLayout;
 
 		// Here so it can be shared by EditableText and EditableNumber
@@ -189,7 +182,6 @@ namespace wg
 			int 			selectOfs;		// Selection is between selectOfs and caretOfs.
 			int				caretOfs;		// End of selection and caret offset (if displaying)
 			spx				wantedOfs;		// Carets wanted offset when skipping between lines. -1 = none set.
-			TextStyle_p		pCharStyle;		// Style of characters to be inserted by caret.
 		};
 	};
 

@@ -310,7 +310,7 @@ bool GfxDeviceTester::setup_chrome()
 	m_pLayout = PackLayout::create({ .wantedSize = PackLayout::WantedSize::Default,
 		.expandFactor = PackLayout::Factor::Weight, .shrinkFactor = PackLayout::Factor::Weight });
 
-	m_pRightAligned = BasicTextLayout::create({ .placement = Placement::East });
+	m_pRightAligned = PlainTextLayout::create({ .placement = Placement::East });
 
 	auto verdictStyle = [](HiColor color) {
 		auto bp = wkit::TextStyles::Strong->blueprint();

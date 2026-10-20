@@ -160,18 +160,12 @@ namespace wg
 
 	//____ _createObjectTitle() ______________________________________________
 
-	String InspectorView::_createObjectTitle(Object* pObject) const
+	std::string InspectorView::_createObjectTitle(Object* pObject) const
 	{
 		char temp[64];
 		std::snprintf(temp, sizeof(temp), " 0x%" PRIxPTR, reinterpret_cast<std::uintptr_t>(pObject));
 
-		CharBuffer buf(64);
-		buf.pushBack(pObject->typeInfo().className);
-		int ofs = buf.length();
-		buf.pushBack(temp);
-		buf.setStyle(dbgkit::TextStyles::Default, ofs, 10000);
-
-		return &buf;
+		return std::string(pObject->typeInfo().className) + temp;
 	}
 
 	//___ _createClassInfoSections() ______________________________________________

@@ -55,7 +55,7 @@ public:
 		Skin_p			skin;
 		bool			stickyFocus = false;
 		bool			tabLock = false;
-		String			tooltip;
+		std::string			tooltip;
 
 		HiColor			wireColor = HiColor::Black;
 		pts				wireStub = 5;

@@ -49,9 +49,9 @@ namespace wg
 
 	//____ tooltip() _____________________________________________________
 
-	String TextDisplay::tooltip() const
+	std::string TextDisplay::tooltip() const
 	{
-		if( !m_tooltip.isEmpty() )
+		if( !m_tooltip.empty() )
 			return m_tooltip;
 		else
 			return display._tooltip();

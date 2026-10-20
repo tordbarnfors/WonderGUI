@@ -41,6 +41,11 @@ namespace wg
 
 	static char	breakRulesTab[256];
 
+	// Base::init() of WonderGUI used to set default break rules. Now that TextTool
+	// lives in the legacy GUI we set them when the library is loaded instead.
+
+	[[maybe_unused]] static bool s_bDefaultBreakRulesSet = (TextTool::setDefaultBreakRules(), true);
+
 
 	//____ parseChar() ____________________________________________________________
 

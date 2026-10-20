@@ -42,7 +42,7 @@ namespace wg
 		if (bp.layout)
 			setLayout(bp.layout);
 
-		if (!bp.text.isEmpty())
+		if (!bp.text.empty())
 			_setText(bp.text);
 	}
 }

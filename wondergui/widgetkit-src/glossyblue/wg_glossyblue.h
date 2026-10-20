@@ -40,7 +40,7 @@
 #include <wax_core.h>			// wax::Core::throwError() for the scale check in init()
 #include <wax_font.h>
 #include <wg_textstyle.h>
-#include <wg_basictextlayout.h>
+#include <wg_plaintextlayout.h>
 #include <wg_blockskin.h>
 #include <wg_boxskin.h>
 #include <wg_colorskin.h>
@@ -286,7 +286,7 @@ namespace wg::glossyblue
 		TextStyles::Heading5 = TextStyle::create(WGBP(TextStyle, _.font = Fonts::Bold, _.color = HiColor::Black, _.size = 14));
 		TextStyles::Heading6 = TextStyle::create(WGBP(TextStyle, _.font = Fonts::Normal, _.color = HiColor::Black, _.size = 14));
 
-		// BasicTextLayout's selection defaults are selectionBackBlend =
+		// PlainTextLayout's selection defaults are selectionBackBlend =
 		// BlendMode::Invert and selectionCharBlend = BlendMode::Invert, which
 		// literally inverts whatever is behind the selection -- on a light
 		// canvas that comes out a muddy dark grey.
@@ -299,7 +299,7 @@ namespace wg::glossyblue
 		// BlendMode::Ignore on the chars would hand back the text's own
 		// colour (HiColor::blend returns baseColor for it) -- leaving
 		// selected glyphs rendered identically to unselected ones.
-		TextLayouts::LeftNoWrap = BasicTextLayout::create(WGBP(BasicTextLayout,
+		TextLayouts::LeftNoWrap = PlainTextLayout::create(WGBP(PlainTextLayout,
 			_.autoEllipsis = true,
 			_.placement = Placement::West,
 			_.selectionBackBlend = BlendMode::Replace,
@@ -308,7 +308,7 @@ namespace wg::glossyblue
 			_.selectionCharColor = Colors::TextSelectionText,
 			_.wrap = false));
 
-		TextLayouts::CenteredNoWrap = BasicTextLayout::create(WGBP(BasicTextLayout,
+		TextLayouts::CenteredNoWrap = PlainTextLayout::create(WGBP(PlainTextLayout,
 			_.autoEllipsis = true,
 			_.placement = Placement::Center,
 			_.selectionBackBlend = BlendMode::Replace,
@@ -768,7 +768,7 @@ namespace wg::glossyblue
 			Skin_p			skin = Skins::Button;
 			bool			stickyFocus = false;
 			bool			tabLock = false;
-			String			tooltip;
+			std::string			tooltip;
 		};
 
 		inline static wg::Button_p	create() { return new Button(Blueprint()); }
@@ -813,7 +813,7 @@ namespace wg::glossyblue
 			Skin_p			skin = Skins::ToggleButton;
 			bool			stickyFocus = false;
 			bool			tabLock = false;
-			String			tooltip;
+			std::string			tooltip;
 		};
 
 		inline static wg::ToggleButton_p	create() { return new ToggleButton(Blueprint()); }
@@ -857,7 +857,7 @@ namespace wg::glossyblue
 			Skin_p			skin;
 			bool			stickyFocus = false;
 			bool			tabLock = false;
-			String			tooltip;
+			std::string			tooltip;
 		};
 
 		inline static wg::ToggleButton_p	create() { return new Checkbox(Blueprint()); }
@@ -906,7 +906,7 @@ namespace wg::glossyblue
 			Skin_p			skin;
 			bool			stickyFocus = false;
 			bool			tabLock = false;
-			String			tooltip;
+			std::string			tooltip;
 		};
 
 		inline static wg::ToggleButton_p	create(const Blueprint& blueprint) { return new RadioButton(blueprint); }
@@ -950,7 +950,7 @@ namespace wg::glossyblue
 			bool			stickyFocus = false;
 			bool			tabLock = false;
 			bool			takesFocusFromChild = true;
-			String			tooltip;
+			std::string			tooltip;
 			bool			usePickHandles = false;
 
 		};
@@ -997,7 +997,7 @@ namespace wg::glossyblue
 			bool			stickyFocus = false;
 			bool			tabLock = false;
 			bool			takesFocusFromChild = true;
-			String			tooltip;
+			std::string			tooltip;
 			bool			usePickHandles = false;
 
 		};
@@ -1059,7 +1059,7 @@ namespace wg::glossyblue
 			bool				stickyFocus = false;
 			bool				tabLock = false;
 			bool				takesFocusFromChild = true;
-			String				tooltip;
+			std::string				tooltip;
 			CoordTransition_p	transition;
 			bool				usePickHandles = false;
 
@@ -1126,7 +1126,7 @@ namespace wg::glossyblue
 			bool				stickyFocus = false;
 			bool				tabLock = false;
 			bool				takesFocusFromChild = true;
-			String				tooltip;
+			std::string				tooltip;
 			CoordTransition_p	transition;
 			bool				usePickHandles = false;
 
@@ -1193,7 +1193,7 @@ namespace wg::glossyblue
 			bool				stickyFocus = false;
 			bool				tabLock = false;
 			bool				takesFocusFromChild = true;
-			String				tooltip;
+			std::string				tooltip;
 			CoordTransition_p	transition;
 			bool				usePickHandles = false;
 
@@ -1245,7 +1245,7 @@ namespace wg::glossyblue
 			bool			stickyFocus = false;
 			bool			tabLock = false;
 			bool			takesFocusFromChild = false;
-			String			tooltip;
+			std::string			tooltip;
 			bool			usePickHandles = false;
 
 		};
@@ -1286,7 +1286,7 @@ namespace wg::glossyblue
 			bool			stickyFocus = false;
 			bool			tabLock = false;
 			bool			takesFocusFromChild = false;
-			String			tooltip;
+			std::string			tooltip;
 			bool			usePickHandles = false;
 
 		};
@@ -1329,7 +1329,7 @@ namespace wg::glossyblue
 			bool				stickyFocus = false;
 			bool				tabLock = false;
 			bool				takesFocusFromChild = true;
-			String				tooltip;
+			std::string				tooltip;
 			ValueTransition_p	transition = Transitions::openClose;
 			bool				usePickHandles = false;
 		};
@@ -1368,7 +1368,7 @@ namespace wg::glossyblue
 			bool			stickyFocus = false;
 			bool			tabLock = false;
 			bool			takesFocusFromChild = true;
-			String			tooltip;
+			std::string			tooltip;
 			bool			usePickHandles = false;
 		};
 
@@ -1422,7 +1422,7 @@ namespace wg::glossyblue
 			bool			stickyFocus = false;
 			bool			tabLock = false;
 			bool			takesFocusFromChild = true;
-			String			tooltip;
+			std::string			tooltip;
 			bool			usePickHandles = false;
 
 		};
@@ -1462,7 +1462,7 @@ namespace wg::glossyblue
 			Skin_p			skin = Skins::Field;
 			bool			stickyFocus = false;
 			bool			tabLock = false;
-			String			tooltip;
+			std::string			tooltip;
 		};
 
 		inline static wg::TextEditor_p	create() { return new TextEditor(Blueprint()); }
@@ -1505,7 +1505,7 @@ namespace wg::glossyblue
 			Skin_p			skin = Skins::Field;
 			bool			stickyFocus = false;
 			bool			tabLock = false;
-			String			tooltip;
+			std::string			tooltip;
 		};
 
 		inline static wg::LineEditor_p	create() { return new LineEditor(Blueprint()); }
@@ -1556,7 +1556,7 @@ namespace wg::glossyblue
 			Skin_p			skin = Skins::SelectBox;
 			bool			stickyFocus = false;
 			bool			tabLock = false;
-			String			tooltip;
+			std::string			tooltip;
 		};
 
 		inline static wg::SelectBox_p	create() { return new SelectBox(Blueprint()); }
@@ -1606,7 +1606,7 @@ namespace wg::glossyblue
 			Skin_p			skin = Skins::Titlebar;
 			bool			stickyFocus = false;
 			bool			tabLock = false;
-			String			tooltip;
+			std::string			tooltip;
 		};
 
 		inline static wg::TextDisplay_p	create() { return new WindowTitleBar(Blueprint()); }

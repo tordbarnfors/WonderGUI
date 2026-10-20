@@ -45,7 +45,7 @@ namespace wg
 			TextLayout_p	layout;
 			Skin_p			skin;
 			TextStyle_p		style;
-			String			text;
+			std::string		text;
 		};
 		
 		//.____ Identification _________________________________________________
@@ -58,10 +58,8 @@ namespace wg
 		void			setSkin(Skin * pSkin);
 		inline Skin_p	skin() const { return m_skin.get(); }
 
-		void			setText(const char * str) { setText(CharSeq(str));}
-		void			setText(const CharSeq& seq);
-		void			setText(const String& str);
-		inline String	text() const { return m_text; }
+		void			setText(std::string_view text);
+		inline const std::string&	text() const { return m_text; }
 
 		void			setStyle(TextStyle* pStyle);
 		void			clearStyle();
@@ -102,8 +100,7 @@ namespace wg
 		SizeSPX		_textSize() const override;
 		State		_textState() const override;
 		TextStyle* _textStyle() const override;
-		const Char* _textBegin() const override;
-		int 		_textLength() const override;
+		const std::string& _text() const override { return m_text; }
 		bool		_caretVisible() const override;
 		int			_caretOffset() const override;
 		std::tuple<int, int>	_selectedText() const override;		// Begin/end of selection
@@ -120,7 +117,7 @@ namespace wg
 
 	private:
 		SkinSlot		m_skin;
-		String			m_text;
+		std::string		m_text;
 		TextLayout_p	m_pLayout;
 		TextStyle_p		m_pStyle;
 

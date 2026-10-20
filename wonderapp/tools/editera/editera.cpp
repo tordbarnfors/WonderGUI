@@ -92,11 +92,11 @@ bool Editera::setupGUI()
 	if( !m_pAPI->initDefaultWidgetKit() )
 		return false;
 
-	m_pEditorLayout = BasicTextLayout::create({ .tabWidth = 4 });
+	m_pEditorLayout = PlainTextLayout::create({ .tabWidth = 4 });
 
 	m_pEditorStyle = wkit::TextStyles::Mono;
 
-	m_pTextLayoutCentered = BasicTextLayout::create(WGBP(BasicTextLayout,
+	m_pTextLayoutCentered = PlainTextLayout::create(WGBP(PlainTextLayout,
 		_.placement = Placement::Center));
 
 

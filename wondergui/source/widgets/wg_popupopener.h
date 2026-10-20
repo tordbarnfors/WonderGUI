@@ -65,7 +65,7 @@ namespace wg
 			Skin_p			skin;
 			bool			stickyFocus		= false;
 			bool			tabLock			= false;
-			String			tooltip;
+			std::string			tooltip;
 
 		};
 

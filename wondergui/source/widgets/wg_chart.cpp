@@ -226,7 +226,7 @@ namespace wg
 
 		for (auto& line : xLines)
 		{
-			if (line.m_bVisible && line.m_pos >= rangeMin && line.m_pos <= rangeMax && !line.m_label.isEmpty())
+			if (line.m_bVisible && line.m_pos >= rangeMin && line.m_pos <= rangeMax && !line.m_label.empty())
 			{
 				RectSPX geo = line.m_labelGeo + _canvas.pos();
 
@@ -246,7 +246,7 @@ namespace wg
 
 		for (auto& line : yLines)
 		{
-			if (line.m_bVisible && !line.m_label.isEmpty())
+			if (line.m_bVisible && !line.m_label.empty())
 			{
 				RectSPX geo = line.m_labelGeo + _canvas.pos();
 
@@ -402,7 +402,7 @@ namespace wg
 
 		for (auto& line : xLines)
 		{
-			if (!line.m_label.isEmpty())
+			if (!line.m_label.empty())
 			{
 				CoordSPX ofs = _sideLabelOffset(&line);
 
@@ -428,7 +428,7 @@ namespace wg
 
 		for (auto& line : yLines)
 		{
-			if (!line.m_label.isEmpty())
+			if (!line.m_label.empty())
 			{
 				CoordSPX ofs = _topBottomLabelOffset(&line);
 
@@ -467,7 +467,7 @@ namespace wg
 
 			for (auto& line : xLines)
 			{
-				if (line.m_bVisible && !line.m_label.isEmpty() && line.m_pos >= rangeMin && line.m_pos <= rangeMax )
+				if (line.m_bVisible && !line.m_label.empty() && line.m_pos >= rangeMin && line.m_pos <= rangeMax )
 				{
 					if (pTop == nullptr || line.m_pos > pTop->m_pos)
 						pTop = &line;
@@ -523,7 +523,7 @@ namespace wg
 
 			for (auto& line : yLines)
 			{
-				if (line.m_bVisible && !line.m_label.isEmpty() && line.m_pos >= 0.f && line.m_pos <= 1.f)
+				if (line.m_bVisible && !line.m_label.empty() && line.m_pos >= 0.f && line.m_pos <= 1.f)
 				{
 					if (pLeftmost == nullptr || line.m_pos < pLeftmost->m_pos)
 						pLeftmost = &line;
@@ -703,20 +703,6 @@ namespace wg
 			return m_pDisplay->m_pTextStyle;
 
 		return Base::defaultStyle();
-	}
-
-	//____ _textBegin() _______________________________________________________
-
-	const Char* GridLine::_textBegin() const
-	{
-		return m_label.chars();
-	}
-
-	//____ _textLength() ______________________________________________________
-
-	int GridLine::_textLength() const
-	{
-		return m_label.length();
 	}
 
 	//____ _caretVisible() ____________________________________________________

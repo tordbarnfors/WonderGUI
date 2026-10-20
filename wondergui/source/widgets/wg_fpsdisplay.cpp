@@ -21,12 +21,10 @@
 =========================================================================*/
 #include	<stdio.h>
 #include	<wg_fpsdisplay.h>
-#include	<wg_texttool.h>
 #include	<wax_device.h>
 #include	<wax_color.h>
-#include	<wg_char.h>
 #include	<wg_base.h>
-#include	<wg_basictextlayout.h>
+#include	<wg_plaintextlayout.h>
 #include	<wg_msgrouter.h>
 
 namespace wg
@@ -52,12 +50,12 @@ namespace wg
 		// We set our own default text textMappers since we rely on text placement
 		// to present the information in a readable way.
 
-		labels.setLayout(BasicTextLayout::create({}));
+		labels.setLayout(PlainTextLayout::create({}));
 
-		BasicTextLayout::Blueprint bp;
+		PlainTextLayout::Blueprint bp;
 		bp.placement = Placement::NorthEast;
 
-		BasicTextLayout_p pValueTextLayout = BasicTextLayout::create( bp );
+		PlainTextLayout_p pValueTextLayout = PlainTextLayout::create( bp );
 		values.setLayout(pValueTextLayout);
 
 		_startReceiveUpdates();
@@ -171,7 +169,7 @@ namespace wg
 
 		char	temp[100];
 		snprintf( temp, 100, "%.2f\n%.2f\n%.2f\n%.2f", fpsCurrent, fpsMin, fpsAvg, fpsMax );
-		values._setText(CharSeq(temp));
+		values._setText(temp);
 
 		_requestRender();
 	}

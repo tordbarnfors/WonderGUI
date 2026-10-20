@@ -73,7 +73,7 @@ namespace wg
 			Skin_p			skin;
 			bool			stickyFocus = false;
 			bool			tabLock = false;
-			String			tooltip;
+			std::string			tooltip;
 			pts				viewLength = 0;
 			pts				viewPos = 0;
 			pts				wheelRollMovement = 8 * 3;

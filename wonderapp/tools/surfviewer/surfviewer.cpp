@@ -93,7 +93,7 @@ bool MyApp::_setupGUI(wapp::API* pAPI)
 
 	Base::setDefaultStyle(m_pTextStyle);
 
-	m_pTextLayoutCentered = BasicTextLayout::create(WGBP(BasicTextLayout,
+	m_pTextLayoutCentered = PlainTextLayout::create(WGBP(PlainTextLayout,
 		_.placement = Placement::Center));
 
 

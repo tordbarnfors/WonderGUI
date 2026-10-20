@@ -26,6 +26,8 @@
 #include <wg_number.h>
 #include <wg_caret.h>
 
+#include <string_view>
+
 namespace wg
 {
 
@@ -62,12 +64,12 @@ namespace wg
 
 		// Calling these methods gets number into edit mode, displaying caret.
 
-		int					insertAtCaret( const CharSeq& str );
-		bool				insertAtCaret( uint16_t c );
+		int					insertAtCaret( std::string_view text );
+		bool				insertAtCaret( char32_t c );
 
-		int					append( const CharSeq& seq );
-		int					insert( int ofs, const CharSeq& seq );
-		int					replace( int ofs, int nDelete, const CharSeq& seq );
+		int					append( std::string_view text );
+		int					insert( int ofs, std::string_view text );
+		int					replace( int ofs, int nDelete, std::string_view text );
 		int					erase( int ofs, int len );
 		void				eraseSelected();
 

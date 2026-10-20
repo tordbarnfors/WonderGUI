@@ -24,8 +24,7 @@
 #include <wg_base.h>
 #include <wg_blockskin.h>
 #include <wg_colorskin.h>
-#include <wg_charbuffer.h>
-#include <wg_basictextlayout.h>
+#include <wg_plaintextlayout.h>
 #include <wg_basicnumberlayout.h>
 #include <wax_surfacereader.h>
 
@@ -138,14 +137,14 @@ namespace wg
 
 		// Text and number layouts.
 
-		auto pListTextLayout = BasicTextLayout::create( WGBP(BasicTextLayout,
+		auto pListTextLayout = PlainTextLayout::create( WGBP(PlainTextLayout,
 			_.placement = Placement::East ));
 
-		auto pInfoLayout = BasicTextLayout::create( WGBP(BasicTextLayout,
+		auto pInfoLayout = PlainTextLayout::create( WGBP(PlainTextLayout,
 			_.wrap = true,
 			_.placement = Placement::Center ));
 
-		auto pWrapTextLayout = BasicTextLayout::create( WGBP(BasicTextLayout,
+		auto pWrapTextLayout = PlainTextLayout::create( WGBP(PlainTextLayout,
 			_.wrap = true,
 			_.placement = Placement::NorthWest ));
 

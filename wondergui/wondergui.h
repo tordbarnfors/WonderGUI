@@ -33,7 +33,8 @@
 #include <wg_bakeskin.h>
 #include <wg_base.h>
 #include <wg_basicnumberlayout.h>
-#include <wg_basictextlayout.h>
+#include <wg_flowtextlayout.h>
+#include <wg_plaintextlayout.h>
 #include <wg_blockingcapsule.h>
 #include <wg_blockskin.h>
 #include <wg_blockslideskin.h>
@@ -45,9 +46,6 @@
 #include <wax_canvaslayers.h>
 #include <wg_capsule.h>
 #include <wg_caret.h>
-#include <wg_char.h>
-#include <wg_charbuffer.h>
-#include <wg_charseq.h>
 #include <wg_chart.h>
 #include <wg_circleskin.h>
 #include <wg_codepages.h>
@@ -135,7 +133,6 @@
 #include <wg_staticslotvector.h>
 #include <wg_statictext.h>
 #include <wg_staticvector.h>
-#include <wg_string.h>
 #include <wg_surfacedisplay.h>
 #include <wg_tablepanel.h>
 #include <wg_dynamictext.h>
@@ -145,7 +142,6 @@
 #include <wg_textlink.h>
 #include <wg_textstyle.h>
 #include <wg_textstylemanager.h>
-#include <wg_texttool.h>
 #include <wg_tileskin.h>
 #include <wg_tintskin.h>
 #include <wg_timer.h>
