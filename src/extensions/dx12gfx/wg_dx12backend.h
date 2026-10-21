@@ -31,6 +31,7 @@
 #include <d3d12.h>
 
 #include <map>
+#include <unordered_map>
 #include <vector>
 #include <atomic>
 #include <mutex>
@@ -312,7 +313,7 @@ namespace wg
 		// Resources the command list being recorded uses, held until the GPU is
 		// done with it. See _holdUntilDone() and _releaseWhenDone().
 
-		void _holdUntilDone(ID3D12Resource* pResource);
+		void _holdUntilDone(ID3D12Pageable* pObject);
 		void _releaseWhenDone(UINT64 fenceValue);		// Call right after Signal(): hands what is held to a one-shot callback.
 
 		static bool _initReleaser();					// With the first backend.
@@ -325,6 +326,9 @@ namespace wg
 		void _drawBlitRects(const uint16_t*& pCmd, const RectSPX*& pRects, int nRects, int version, PipelineKind kind);
 		void _drawLines(const uint16_t*& pCmd, const RectSPX*& pRects, const HiColor*& pColors, int nClipRects, int nLines);
 		void _drawEdgemap(const uint16_t*& pCmd, const RectSPX*& pRects, Object* const*& pObjects, int nRects);
+
+		bool _createSRVHeap(int frameIndex, int nDescriptors);
+		bool _growSRVHeap();						// Mid-frame, when the current frame's heap is full.
 
 		bool _isDX12Surface(const Object* pObject) const;
 		static bool _isDX12SurfaceType(const TypeInfo& type);
@@ -392,7 +396,7 @@ namespace wg
 		const static int	c_defaultColors = 8*1024;
 		const static int	c_defaultExtras = 16*1024;
 		const static int	c_maxSegments = 16;					// As many as MetalBackend and GlBackend handle.
-		const static int	c_nbSRVDescriptors = 1024;			// Per frame resource. One per blit source change.
+		const static int	c_nbSRVDescriptors = 1024;			// Per frame resource to begin with, grows when needed. One per distinct blit source.
 
 		Vertex*	m_pVertexBeg = nullptr;		// Start of the current frame's vertex buffer.
 		Vertex* m_pVertexEnd = nullptr;
@@ -477,6 +481,7 @@ namespace wg
 			Microsoft::WRL::ComPtr<ID3D12Resource>			colorBuffer;
 			Microsoft::WRL::ComPtr<ID3D12Resource>			extrasBuffer;
 			Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>	srvHeap;						// Shader visible, holds blit source descriptors.
+			int												srvCapacity = 0;				// Descriptors in srvHeap.
 			Vertex*											pVertexBufferData = nullptr;	// Permanently mapped.
 			ColorDX12*										pColorBufferData = nullptr;		// Permanently mapped.
 			ExtrasDX12*										pExtrasBufferData = nullptr;	// Permanently mapped.
@@ -525,20 +530,38 @@ namespace wg
 
 		// A command list holds no references to what it uses, and D3D12 must not
 		// have a resource released while the GPU may still use it. So every
-		// texture and buffer a recorded command reads or writes is held here, as
+		// texture, buffer and descriptor heap a recorded command reads or writes
+		// is held here, as
 		// the D3D12 resource only - surfaces and edgemaps die when their owners
 		// let go, like with any other backend. On submit, _releaseWhenDone() hands
 		// the lot to a thread pool callback that fires once, when the GPU has
 		// passed the fence value signalled after it, and releases them there.
 		// Releasing a D3D12 resource is thread safe.
 
-		std::vector<Microsoft::WRL::ComPtr<ID3D12Resource>>	m_heldResources;
+		std::vector<Microsoft::WRL::ComPtr<ID3D12Pageable>>	m_heldResources;
 
 		struct PendingRelease
 		{
 			HANDLE												hEvent = nullptr;
-			std::vector<Microsoft::WRL::ComPtr<ID3D12Resource>>	resources;
+			std::vector<Microsoft::WRL::ComPtr<ID3D12Pageable>>	resources;
 		};
+
+		// Where in the current frame's shader visible heap each blit source's
+		// descriptor has been copied, keyed on its texture. Text switches blit
+		// source for almost every glyph, since the glyph cache sorts glyphs into
+		// surfaces by height, so a descriptor per switch would run out long before
+		// the frame does - in a large window full of text, that is. Every texture
+		// in here is held by m_heldResources, so the map is cleared along with
+		// each submission, before a texture can be released and its address
+		// reused.
+
+		struct SRVSlot
+		{
+			SIZE_T	srv;			// The surface's own descriptor, which is what was copied.
+			int		slot;
+		};
+
+		std::unordered_map<ID3D12Resource*, SRVSlot>		m_srvSlots;
 
 		static TP_CALLBACK_ENVIRON							s_releaserEnv;			// Keeps our module loaded while a callback runs.
 		static bool											s_bReleaserReady;

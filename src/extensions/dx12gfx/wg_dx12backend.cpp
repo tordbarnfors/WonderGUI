@@ -596,12 +596,7 @@ namespace wg
 
 			// Shader visible descriptors for blit sources, refilled every frame.
 
-			D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc = {};
-			srvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-			srvHeapDesc.NumDescriptors = c_nbSRVDescriptors;
-			srvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
-
-			CHECK_HR(pDX12Device->CreateDescriptorHeap(&srvHeapDesc, IID_PPV_ARGS(m_frameResources[i].srvHeap.GetAddressOf())), "CreateDescriptorHeap");
+			_createSRVHeap(i, c_nbSRVDescriptors);
 		}
 
 		// Create one command list for all frames (will be reset for each frame)
@@ -620,10 +615,8 @@ namespace wg
 		setObjectName(this, m_commandList.Get(), L"command list");
 
 		for (int i = 0; i < c_nbFrameResources; ++i)
-		{
 			setObjectName(this, m_frameResources[i].commandAllocator.Get(), L"command allocator");
-			setObjectName(this, m_frameResources[i].srvHeap.Get(), L"SRV heap");
-		}
+
 		m_bCommandListOpen = false;
 
 		if (!_createPipelineResources())
@@ -796,6 +789,7 @@ namespace wg
 		m_pExtrasPtr = m_pExtrasBeg;
 
 		m_frameResources[frame].nSRVDescriptors = 0;
+		m_srvSlots.clear();
 
 		// Sessions un-park what they parked, so this should already be empty.
 
@@ -878,6 +872,12 @@ namespace wg
 
 		_uploadsSubmitted();
 		_releaseWhenDone(m_fenceValue);
+
+		// The textures the descriptors in the heap were copied for are no longer
+		// held by us, so their addresses may be reused. The descriptors stay where
+		// they are, since what we just submitted reads them.
+
+		m_srvSlots.clear();
 
 		// The allocator keeps the memory of what we just submitted, it is only
 		// reset in beginRender() once the fence says the GPU is done with it.
@@ -1265,17 +1265,17 @@ namespace wg
 	// is long before the GPU has run the commands, so we hold on to their D3D12
 	// resources until the GPU is done, see _releaseWhenDone().
 
-	void DX12Backend::_holdUntilDone(ID3D12Resource* pResource)
+	void DX12Backend::_holdUntilDone(ID3D12Pageable* pObject)
 	{
-		if (!pResource)
+		if (!pObject)
 			return;
 
 		// The same canvas or blit source is often set many times per frame.
 
-		if (!m_heldResources.empty() && m_heldResources.back().Get() == pResource)
+		if (!m_heldResources.empty() && m_heldResources.back().Get() == pObject)
 			return;
 
-		m_heldResources.emplace_back(pResource);
+		m_heldResources.emplace_back(pObject);
 	}
 
 	//____ _releaseWhenDone() __________________________________________________
@@ -2332,11 +2332,8 @@ namespace wg
 			m_blitSourceCanvases.push_back(m_pBlitSource);
 		}
 
-		// Ordinary surfaces need it as much as canvases do: a temporary surface is
-		// released by GfxDeviceGen2 when the session ends. A palette based one is
-		// read through its palette buffer as well.
+		// A palette based surface is read through its palette buffer as well.
 
-		_holdUntilDone(m_pBlitSource->texture());
 		_holdUntilDone(m_pBlitSource->paletteBuffer());
 
 		// An upload into it, later in this list, has to know it has been promoted.
@@ -2348,28 +2345,53 @@ namespace wg
 		if (!frame.srvHeap || !m_pSamplerHeap)
 			return false;
 
-		if (frame.nSRVDescriptors >= c_nbSRVDescriptors)
+		// The source's descriptor is copied into the heap the first time it is
+		// used in this submission, after that we point at the copy. Text alone
+		// switches source thousands of times per frame in a large window, but
+		// between only a handful of glyph cache surfaces.
+
+		ID3D12Resource* pTexture = m_pBlitSource->texture();
+		D3D12_CPU_DESCRIPTOR_HANDLE srcSRV = m_pBlitSource->textureSRV();
+
+		int slot;
+
+		auto it = m_srvSlots.find(pTexture);
+
+		if (it != m_srvSlots.end() && it->second.srv == srcSRV.ptr)
+			slot = it->second.slot;
+		else
 		{
-			static bool bReported = false;
-			if (!bReported)
+			if (frame.nSRVDescriptors >= frame.srvCapacity && !_growSRVHeap())
 			{
-				GfxBase::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, "Out of blit source descriptors for this frame. Increase c_nbSRVDescriptors.",
-					this, &TYPEINFO, __func__, __FILE__, __LINE__);
-				bReported = true;
+				static bool bReported = false;
+				if (!bReported && !s_bDeviceLost)
+				{
+					GfxBase::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, "Out of blit source descriptors and couldn't make room for more, blits dropped.",
+						this, &TYPEINFO, __func__, __FILE__, __LINE__);
+					bReported = true;
+				}
+
+				return false;
 			}
 
-			return false;
+			// Ordinary surfaces need holding as much as canvases do: a temporary
+			// surface is released by GfxDeviceGen2 when the session ends. Once is
+			// enough, m_srvSlots is cleared with every submission.
+
+			_holdUntilDone(pTexture);
+
+			slot = frame.nSRVDescriptors++;
+
+			D3D12_CPU_DESCRIPTOR_HANDLE dest = frame.srvHeap->GetCPUDescriptorHandleForHeapStart();
+			dest.ptr += SIZE_T(slot) * m_srvDescriptorSize;
+
+			m_pDX12Device->CopyDescriptorsSimple(1, dest, srcSRV, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+
+			m_srvSlots[pTexture] = { srcSRV.ptr, slot };
 		}
 
-		D3D12_CPU_DESCRIPTOR_HANDLE dest = frame.srvHeap->GetCPUDescriptorHandleForHeapStart();
-		dest.ptr += SIZE_T(frame.nSRVDescriptors) * m_srvDescriptorSize;
-
-		m_pDX12Device->CopyDescriptorsSimple(1, dest, m_pBlitSource->textureSRV(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-
 		D3D12_GPU_DESCRIPTOR_HANDLE srvHandle = frame.srvHeap->GetGPUDescriptorHandleForHeapStart();
-		srvHandle.ptr += UINT64(frame.nSRVDescriptors) * m_srvDescriptorSize;
-
-		frame.nSRVDescriptors++;
+		srvHandle.ptr += UINT64(slot) * m_srvDescriptorSize;
 
 		m_commandList->SetGraphicsRootDescriptorTable(3, srvHandle);
 
@@ -2407,6 +2429,63 @@ namespace wg
 		}
 
 		m_bBlitSourceBound = true;
+		return true;
+	}
+
+	//____ _createSRVHeap() _____________________________________________________
+	//
+	// The shader visible heap blit source descriptors are copied into. One per
+	// frame resource, since the GPU may still be reading the other frame's.
+
+	bool DX12Backend::_createSRVHeap(int frameIndex, int nDescriptors)
+	{
+		auto& frame = m_frameResources[frameIndex];
+
+		D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc = {};
+		srvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+		srvHeapDesc.NumDescriptors = UINT(nDescriptors);
+		srvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+
+		Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> pHeap;
+
+		if (!CHECK_HR(m_pDX12Device->CreateDescriptorHeap(&srvHeapDesc, IID_PPV_ARGS(pHeap.GetAddressOf())), "CreateDescriptorHeap"))
+			return false;
+
+		setObjectName(this, pHeap.Get(), L"SRV heap");
+
+		frame.srvHeap = pHeap;
+		frame.srvCapacity = nDescriptors;
+		frame.nSRVDescriptors = 0;
+		return true;
+	}
+
+	//____ _growSRVHeap() _______________________________________________________
+	//
+	// Replaces the current frame's full heap with one twice the size, like the
+	// vertex buffers grow. Draws recorded so far read their descriptors from the
+	// old heap, so it is held until the GPU is done with them. Switching heaps
+	// leaves the descriptor tables set so far pointing into a heap that is no
+	// longer bound, which is fine since our only caller, _bindBlitSource(), sets
+	// them both right after, and nothing else uses them.
+
+	bool DX12Backend::_growSRVHeap()
+	{
+		auto& frame = m_frameResources[m_currentFrameIndex];
+
+		Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> pOldHeap = frame.srvHeap;
+
+		if (!_createSRVHeap(m_currentFrameIndex, frame.srvCapacity * 2))
+			return false;
+
+		_holdUntilDone(pOldHeap.Get());
+
+		// The descriptors we had copied are all in the old heap.
+
+		m_srvSlots.clear();
+
+		ID3D12DescriptorHeap* pHeaps[] = { frame.srvHeap.Get(), m_pSamplerHeap.Get() };
+		m_commandList->SetDescriptorHeaps(2, pHeaps);
+
 		return true;
 	}
 
