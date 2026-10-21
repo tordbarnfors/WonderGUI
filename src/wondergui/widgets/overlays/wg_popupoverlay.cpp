@@ -1086,7 +1086,12 @@ namespace wg
 		}
 
 		popupSlots._erase(ofs, nb);
-		_restoreKeyboardFocus();
+
+		// Only give focus back when the top popup closes. A popup closing beneath
+		// the top one leaves focus with the top one.
+
+		if( ofs == 0 )
+			_restoreKeyboardFocus();
 
 		if (popupSlots.isEmpty() && m_receivingUpdateCounter > 0)
 			_stopReceiveUpdates();
