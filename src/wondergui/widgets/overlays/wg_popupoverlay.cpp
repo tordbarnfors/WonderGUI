@@ -42,11 +42,11 @@ namespace wg
 
 	//____ pushFront() ________________________________________________
 
-	void PopupOverlay::MySlots::pushFront(const Widget_p& pPopup, Widget * pOpener, const Rect& launcherGeo, Placement attachPoint, bool bPeek, bool bCloseOnSelect, Size maxSize, Border overflow )
+	void PopupOverlay::MySlots::pushFront(const Widget_p& pPopup, Widget * pOpener, const Rect& launcherGeo, Placement attachPoint, bool bPeek, bool bCloseOnSelect, Size maxSize, Border overflow, bool bTakeFocus )
 	{
 		int scale = _holder()->_scale();
 
-		_pushFront(pPopup, pOpener, align(ptsToSpx(launcherGeo, scale)), attachPoint, bPeek, bCloseOnSelect, align(ptsToSpx(maxSize,scale)), align(ptsToSpx(overflow,scale)));
+		_pushFront(pPopup, pOpener, align(ptsToSpx(launcherGeo, scale)), attachPoint, bPeek, bCloseOnSelect, align(ptsToSpx(maxSize,scale)), align(ptsToSpx(overflow,scale)), bTakeFocus);
 	}
 
 	//____ pop() ________________________________________________
@@ -82,10 +82,10 @@ namespace wg
 
 	//____ _pushFront() ________________________________________________
 
-	void PopupOverlay::MySlots::_pushFront(const Widget_p& pPopup, Widget* pOpener, const RectSPX& launcherGeo, Placement attachPoint, bool bPeek, bool bCloseOnSelect, SizeSPX maxSize, BorderSPX overflow)
+	void PopupOverlay::MySlots::_pushFront(const Widget_p& pPopup, Widget* pOpener, const RectSPX& launcherGeo, Placement attachPoint, bool bPeek, bool bCloseOnSelect, SizeSPX maxSize, BorderSPX overflow, bool bTakeFocus)
 	{
 		pPopup->releaseFromParent();
-		_holder()->_addSlot(pPopup, pOpener, launcherGeo, attachPoint, bPeek, bCloseOnSelect, maxSize, overflow);
+		_holder()->_addSlot(pPopup, pOpener, launcherGeo, attachPoint, bPeek, bCloseOnSelect, maxSize, overflow, bTakeFocus);
 	}
 
 
@@ -935,23 +935,19 @@ namespace wg
 		if( !_root() )
 			return;
 
-		// Save old keyboard focus, which we assume belonged to previous menu in hierarchy.
+		// Save old keyboard focus in the top menu, so we can give it back when it closes.
 
-		if( popupSlots.size() < 2 )
-			m_pKeyFocus = _root()->_focusedChild();
-		else
-			popupSlots[1].m_pKeyFocus = _root()->_focusedChild();
+		Slot * pSlot = popupSlots._first();
+		pSlot->m_pKeyFocus = _root()->_focusedChild();
 
 		// Steal keyboard focus to top menu
 
-		Widget * pWidget = popupSlots._first()->_widget();
-
-		_childRequestFocus(popupSlots._first(), pWidget );
+		_childRequestFocus(pSlot, pSlot->_widget() );
 	}
 
 	//____ _restoreKeyboardFocus() _________________________________________________
 
-	void PopupOverlay::_restoreKeyboardFocus()
+	void PopupOverlay::_restoreKeyboardFocus( Widget * pFocus )
 	{
 		// Verify that we have a root
 
@@ -960,15 +956,15 @@ namespace wg
 
 		//
 
-		if( popupSlots.isEmpty() )
+		if( pFocus )
+			_holder()->_childRequestFocus( _slot(), pFocus );
+		else if( popupSlots.isEmpty() )
 		{
-			if( m_pKeyFocus )
-				_holder()->_childRequestFocus( _slot(), m_pKeyFocus.rawPtr() );
-			else if( _root()->_focusedChild() )
+			if( _root()->_focusedChild() )
 				_holder()->_childReleaseFocus( _slot(), _root()->_focusedChild() );
 		}
 		else
-			_holder()->_childRequestFocus( _slot(),  popupSlots._first()->m_pKeyFocus.rawPtr() );
+			_holder()->_childRequestFocus( _slot(), nullptr );
 	}
 
 	//____ _childRequestResize() _______________________________________________
@@ -997,7 +993,7 @@ namespace wg
 
 	//____ _addSlot() ____________________________________________________________
 
-	void PopupOverlay::_addSlot(Widget * _pPopup, Widget * _pOpener, const RectSPX& _launcherGeo, Placement _attachPoint, bool _bPeek, bool _bCloseOnSelect, SizeSPX _maxSize, BorderSPX overflow)
+	void PopupOverlay::_addSlot(Widget * _pPopup, Widget * _pOpener, const RectSPX& _launcherGeo, Placement _attachPoint, bool _bPeek, bool _bCloseOnSelect, SizeSPX _maxSize, BorderSPX overflow, bool _bTakeFocus)
 	{
 		// Close unrelated popups
 
@@ -1032,6 +1028,7 @@ namespace wg
 		pSlot->m_attachPoint = _attachPoint;
 		pSlot->m_bPeek = _bPeek;
 		pSlot->m_bCloseOnSelect = _bCloseOnSelect;
+		pSlot->m_bTakeFocus = _bTakeFocus;
 		pSlot->m_state = Slot::State::OpeningDelay;
 		pSlot->m_stateCounter = 0;
 		pSlot->m_maxSize = _maxSize;
@@ -1040,7 +1037,9 @@ namespace wg
 		pSlot->_setWidget(_pPopup);
 
 		_updateGeo(pSlot);
-		_stealKeyboardFocus();
+
+		if( _bTakeFocus )
+			_stealKeyboardFocus();
 
 		if( m_receivingUpdateCounter == 0 )
 			_startReceiveUpdates();
@@ -1077,6 +1076,26 @@ namespace wg
 
 		nb = std::min(nb, popupSlots.size());
 
+		// Focus is only given back when the top popup closes, and then to the widget
+		// that held it before the first of the closing popups took it. Popups closing
+		// beneath the top one, or that never took focus, leave it alone.
+
+		Widget_p	pRestoreFocus;
+		bool		bRestoreFocus = false;
+
+		if( ofs == 0 )
+		{
+			for( int i = nb - 1 ; i >= 0 ; i-- )
+			{
+				if( pSlot[i].m_bTakeFocus )
+				{
+					pRestoreFocus = pSlot[i].m_pKeyFocus.rawPtr();
+					bRestoreFocus = true;
+					break;
+				}
+			}
+		}
+
 		for(int i = 0 ; i < nb ; i++ )
 		{
 			if( pEH )
@@ -1087,11 +1106,8 @@ namespace wg
 
 		popupSlots._erase(ofs, nb);
 
-		// Only give focus back when the top popup closes. A popup closing beneath
-		// the top one leaves focus with the top one.
-
-		if( ofs == 0 )
-			_restoreKeyboardFocus();
+		if( bRestoreFocus )
+			_restoreKeyboardFocus( pRestoreFocus.rawPtr() );
 
 		if (popupSlots.isEmpty() && m_receivingUpdateCounter > 0)
 			_stopReceiveUpdates();
