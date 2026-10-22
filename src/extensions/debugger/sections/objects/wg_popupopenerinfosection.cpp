@@ -42,6 +42,7 @@ namespace wg
 			objectRow( "Popup: ",         [](PopupOpener* p) -> Object* { return p->popup().rawPtr(); } ),
 			boolRow  ( "Open: ",          [](PopupOpener* p) { return p->isOpen(); } ),
 			boolRow  ( "Open on hover: ", [](PopupOpener* p) { return p->openOnHover(); } ),
+			boolRow  ( "Take focus: ",    [](PopupOpener* p) { return p->takeFocus(); } ),
 			textRow  ( "Mouse button: ",  [](PopupOpener* p) { return toString(p->mouseButton()); } ),
 			textRow  ( "Attach point: ",  [](PopupOpener* p) { return toString(p->attachPoint()); } )
 		});
