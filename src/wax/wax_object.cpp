@@ -19,11 +19,11 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#include <wg_object.h>
-#include <wg_pointers.h>
-#include <wg_gearbase.h>
+#include <wax_object.h>
+#include <wax_pointers.h>
+#include <wax_core.h>
 
-namespace wg
+namespace wax
 {
 
 	const TypeInfo	Object::TYPEINFO = { "Object", nullptr };
@@ -36,7 +36,7 @@ namespace wg
 		WeakPtrHub * pHub;
 		if( !pObj->m_pWeakPtrHub )
 		{
-			pHub = GearBase::_allocWeakPtrHub();
+			pHub = Core::_allocWeakPtrHub();
 			pHub->refCnt = 1;
 			pHub->pObj = pObj;
 			pHub->pFinalizer = nullptr;
@@ -60,7 +60,7 @@ namespace wg
 			{
 				if( pHub->pObj )
 					pHub->pObj->m_pWeakPtrHub = nullptr;
-				GearBase::_freeWeakPtrHub(pHub);
+				Core::_freeWeakPtrHub(pHub);
 			}
 		}
 	}
@@ -73,7 +73,7 @@ namespace wg
 			pHub->pObj = nullptr;
 			pHub->pFinalizer = nullptr;
 			if (pHub->refCnt == 0)
-				GearBase::_freeWeakPtrHub(pHub);
+				Core::_freeWeakPtrHub(pHub);
 		}
 		else
 			pHub->pObj = nullptr;
@@ -88,7 +88,7 @@ namespace wg
 		}
 		else
 		{
-			pHub = GearBase::_allocWeakPtrHub();
+			pHub = Core::_allocWeakPtrHub();
 			pHub->refCnt = 0;
 			pHub->pObj = pObj;
 			pObj->m_pWeakPtrHub = pHub;
@@ -109,7 +109,7 @@ namespace wg
 
 	Object::Object() : m_refCount(0)
 	{
-		GearBase::_objectWasCreated(this);
+		Core::_objectWasCreated(this);
 	}
 
 	//____ isInstanceOf() _____________________________________________________
@@ -163,7 +163,7 @@ namespace wg
 
 	void Object::_destroy()
 	{
-		GearBase::_objectWillDestroy(this);
+		Core::_objectWillDestroy(this);
 
 		if (m_pWeakPtrHub)
 			WeakPtrHub::objectWillDestroy(m_pWeakPtrHub);
@@ -178,7 +178,7 @@ namespace wg
 	*
 	* @param pFinalizer		Pointer to a function of format "void FunctionName(Object*)", where the Object pointer points to the object being destroyed.
 	*
-	* A WonderGUI Object will automatically be destroyed when there no longer is any reference to it (besides any weak pointer).
+	* A Wax Object will automatically be destroyed when there no longer is any reference to it (besides any weak pointer).
 	* Setting a Finalizer function allows us to be notified right before the objects destructor is called.
 	*
 	* Each object can have only one finalizer, so setting a finalizer will remove any previous finalizer for that object.
@@ -199,7 +199,7 @@ namespace wg
 	*
 	* Get the Finalizer (if any) set for this Object.
 	*
-	* A WonderGUI Object will automatically be destroyed when there no longer is any reference to it (besides any weak pointer).
+	* A Wax Object will automatically be destroyed when there no longer is any reference to it (besides any weak pointer).
 	* The finalizer is a function that is called right before the objects destructor, thus notifying us of its immediate demise.
 	*
 	* @return Pointer to the finalizer if one has been set, otherwise null.
@@ -231,4 +231,4 @@ namespace wg
 	}
 
 
-} // namespace wg
+} // namespace wax

@@ -26,6 +26,7 @@
 #include <wg_plugininterface.h>
 #include <wg_pluginhostbridge.h>
 #include <wg_base.h>
+#include <wg_types.h>
 
 namespace wg
 {

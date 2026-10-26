@@ -1,8 +1,8 @@
 
-#include <wg_mempool.h>
+#include <wax_mempool.h>
 #include <stdlib.h>
 
-namespace wg
+namespace wax
 {
 
 	//____ constructor ____________________________________________________________
@@ -144,4 +144,4 @@ namespace wg
 
 
 
-} // namespace wg
+} // namespace wax

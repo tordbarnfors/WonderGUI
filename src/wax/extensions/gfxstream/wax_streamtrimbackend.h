@@ -19,15 +19,15 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef	WG_STREAMTRIMBACKEND_DOT_H
-#define WG_STREAMTRIMBACKEND_DOT_H
+#ifndef	WAX_STREAMTRIMBACKEND_DOT_H
+#define WAX_STREAMTRIMBACKEND_DOT_H
 #pragma once
 
-#include <wg_gfxbackend.h>
+#include <wax_gfxbackend.h>
 #include <vector>
 #include <deque>
 
-namespace wg
+namespace wax
 {
 
 	class StreamTrimBackend;
@@ -126,6 +126,6 @@ namespace wg
 
 	};
 
-} // namespace wg
-#endif	// WG_STREAMTRIMBACKEND_DOT_H
+} // namespace wax
+#endif	// WAX_STREAMTRIMBACKEND_DOT_H
 

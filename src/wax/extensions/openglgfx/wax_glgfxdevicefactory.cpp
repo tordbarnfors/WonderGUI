@@ -19,13 +19,13 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#include "wg_glbackend.h"
-#include "wg_glgfxdevicefactory.h"
+#include "wax_glbackend.h"
+#include "wax_glgfxdevicefactory.h"
 
-#include "wg_gfxdevice_gen2.h"
+#include "wax_gfxdevice_gen2.h"
 
 
-namespace wg
+namespace wax
 {
 
 	const TypeInfo GlGfxDeviceFactory::TYPEINFO = { "GlGfxDeviceFactory", &GfxDeviceFactory::TYPEINFO };
@@ -60,4 +60,4 @@ namespace wg
 	}
 
 
-} // namespace wg
+} // namespace wax

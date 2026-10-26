@@ -19,10 +19,10 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#include <wg_softkernels_bgr565linear_extras.h>
-#include <wg_c_softgfx.h>
+#include <wax_softkernels_bgr565linear_extras.h>
+#include <wax_c_softgfx.h>
 
-using namespace wg;
+using namespace wax;
 
 //____ _fill_bgr565linear_noblend_notint() ____________________________________________________________
 
@@ -431,12 +431,12 @@ static void _straight_blit_alpha8_to_bgr565linear_no_or_flat_tint_fixedblend(con
 }
 
 
-//____ wg_addExtraSoftKernelsForBGR565LinearCanvas() __________________________________
+//____ wax_addExtraSoftKernelsForBGR565LinearCanvas() __________________________________
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-WG_EXPORT int	wg_addExtraSoftKernelsForBGR565LinearCanvas( wg_obj backend )
+WAX_EXPORT int	wax_addExtraSoftKernelsForBGR565LinearCanvas( wax_obj backend )
 {
 	auto pBackend = static_cast<SoftBackend*>(reinterpret_cast<Object*>(backend));
 
@@ -448,7 +448,7 @@ WG_EXPORT int	wg_addExtraSoftKernelsForBGR565LinearCanvas( wg_obj backend )
 
 //____ addExtraSoftKernelsForBGR565LinearCanvas() __________________________________
 
-bool wg::addExtraSoftKernelsForBGR565LinearCanvas( SoftBackend * pBackend )
+bool wax::addExtraSoftKernelsForBGR565LinearCanvas( SoftBackend * pBackend )
 {
 	pBackend->setFillKernel( TintMode::None, BlendMode::Replace, SoftFormat::RGB_565_linear, &_fill_bgr565linear_noblend_notint );
 

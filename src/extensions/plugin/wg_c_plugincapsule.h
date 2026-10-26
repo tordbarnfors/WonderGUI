@@ -24,23 +24,23 @@
 #pragma once
 
 #include <wg_c_types.h>
-#include <wg_c_geo.h>
+#include <wax_c_geo.h>
 #include <wg_plugininterface.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-	void		wg_pluginRequestRender(wg_obj pluginCapsule, wg_rectSPX rect);
-	void		wg_pluginRequestResize(wg_obj	pluginCapsule);
-	int			wg_isPluginVisible(wg_obj pluginCapsule);
-	wg_rectSPX 	wg_pluginWindowSection(wg_obj pluginCapsule);
-	int 		wg_pluginRequestFocus(wg_obj pluginCapsule, int bRaiseWindow);
-	int 		wg_pluginReleaseFocus(wg_obj pluginCapsule);
-	int 		wg_pluginRequestPreRenderCall(wg_obj pluginCapsule);
-	void 		wg_pluginRequestInView(wg_obj pluginCapsule, wg_rectSPX mustHaveArea, wg_rectSPX niceToHaveArea);
-	void 		wg_connectPlugin(wg_obj pluginCapsule, void * pPluginRoot, wg_pluginroot_calls* pInterface);
-	void 		wg_disconnectPlugin(wg_obj pluginCapsule);
+	void		wg_pluginRequestRender(wax_obj pluginCapsule, wax_rectSPX rect);
+	void		wg_pluginRequestResize(wax_obj	pluginCapsule);
+	int			wg_isPluginVisible(wax_obj pluginCapsule);
+	wax_rectSPX 	wg_pluginWindowSection(wax_obj pluginCapsule);
+	int 		wg_pluginRequestFocus(wax_obj pluginCapsule, int bRaiseWindow);
+	int 		wg_pluginReleaseFocus(wax_obj pluginCapsule);
+	int 		wg_pluginRequestPreRenderCall(wax_obj pluginCapsule);
+	void 		wg_pluginRequestInView(wax_obj pluginCapsule, wax_rectSPX mustHaveArea, wax_rectSPX niceToHaveArea);
+	void 		wg_connectPlugin(wax_obj pluginCapsule, void * pPluginRoot, wg_pluginroot_calls* pInterface);
+	void 		wg_disconnectPlugin(wax_obj pluginCapsule);
 
 
 #ifdef __cplusplus

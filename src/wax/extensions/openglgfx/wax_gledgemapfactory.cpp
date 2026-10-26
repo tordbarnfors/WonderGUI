@@ -19,10 +19,10 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#include <wg_gledgemapfactory.h>
-#include <wg_gledgemap.h>
+#include <wax_gledgemapfactory.h>
+#include <wax_gledgemap.h>
 
-namespace wg
+namespace wax
 {
 
 
@@ -56,4 +56,4 @@ namespace wg
 	}
 
 
-} // namespace wg
+} // namespace wax

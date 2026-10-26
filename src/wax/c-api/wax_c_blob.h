@@ -19,21 +19,21 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef WG_C_BLOB_DOT_H
-#define WG_C_BLOB_DOT_H
+#ifndef WAX_C_BLOB_DOT_H
+#define WAX_C_BLOB_DOT_H
 #pragma once
 
-#include <wg_c_geartypes.h>
+#include <wax_c_types.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-	WG_EXPORT wg_obj 	wg_createBlob( int size );
-	WG_EXPORT wg_obj 	wg_createBlobFromData( void * pData, int size, void(*destructor)() );
+	WAX_EXPORT wax_obj 	wax_createBlob( int size );
+	WAX_EXPORT wax_obj 	wax_createBlobFromData( void * pData, int size, void(*destructor)() );
 
-	WG_EXPORT int		wg_blobSize( wg_obj blob );
-	WG_EXPORT void *	wg_blobData( wg_obj blob );
+	WAX_EXPORT int		wax_blobSize( wax_obj blob );
+	WAX_EXPORT void *	wax_blobData( wax_obj blob );
 
 #ifdef __cplusplus
 }

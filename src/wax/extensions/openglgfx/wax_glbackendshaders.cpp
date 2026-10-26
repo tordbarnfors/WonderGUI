@@ -19,16 +19,16 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef WG_GLSHADERS_DOT_H
-#define WG_GLSHADERS_DOT_H
+#ifndef WAX_GLSHADERS_DOT_H
+#define WAX_GLSHADERS_DOT_H
 
-#include <wg_glbackend.h>  
+#include <wax_glbackend.h>  
 
 
 // Uniform block shared by all shaders, see GlBackend::CanvasUBO. The vertex and fragment shaders
 // of a program declare it the same way.
 
-#define WG_GL_CANVAS_BLOCK \
+#define WAX_GL_CANVAS_BLOCK \
 "layout(std140) uniform Canvas														" \
 "{																					" \
 "	float  canvasWidth;																" \
@@ -54,8 +54,8 @@
 //   x = 3: pc with its strongest channel as alpha, by which Add, Invert and Max raise the alpha
 //          of the canvas.
 
-#define WG_GL_OUTPUT \
-WG_GL_CANVAS_BLOCK \
+#define WAX_GL_OUTPUT \
+WAX_GL_CANVAS_BLOCK \
 "layout(location = 0, index = 0) out vec4 color;									" \
 "layout(location = 0, index = 1) out vec4 colorFactor;								" \
 "vec4 premul(vec4 c) { return vec4(c.rgb * c.a, c.a); }								" \
@@ -93,11 +93,11 @@ WG_GL_CANVAS_BLOCK \
 // Output of fragment shaders to Alpha_8 canvases, which hold alpha in the red channel. Paint
 // modes work on alpha as on other canvases, effect modes take the alpha of the source as the
 // value, like an opaque source of that color. pa is the alpha of what is drawn times the part
-// of the pixel it covers, cov that part. blendInfo is as for WG_GL_OUTPUT, but x = 1 is also
+// of the pixel it covers, cov that part. blendInfo is as for WAX_GL_OUTPUT, but x = 1 is also
 // used by Multiply.
 
-#define WG_GL_OUTPUT_A8 \
-WG_GL_CANVAS_BLOCK \
+#define WAX_GL_OUTPUT_A8 \
+WAX_GL_CANVAS_BLOCK \
 "layout(location = 0, index = 0) out vec4 color;									" \
 "layout(location = 0, index = 1) out vec4 colorFactor;								" \
 "void writeAlpha(float pa, float cov)												" \
@@ -121,7 +121,7 @@ WG_GL_CANVAS_BLOCK \
 
 // GLSL function evaluating a tint block (see TintTools::writeGpuTintBlock()) at a pixel center.
 
-#define WG_GL_TINT_FUNC \
+#define WAX_GL_TINT_FUNC \
 "vec4 evalTint(samplerBuffer buf, int ofs, vec2 pos)								" \
 "{																					" \
 "	int nLayers = int(texelFetch(buf, ofs).x);										" \
@@ -188,7 +188,7 @@ WG_GL_CANVAS_BLOCK \
 // premultiplied by that alpha, as the border outside the source is black. Needs uniform
 // texId declared first.
 
-#define WG_GL_SOURCE_SAMPLE \
+#define WAX_GL_SOURCE_SAMPLE \
 "uniform int rgbxClip;																" \
 "vec4 sampleSource(vec2 uv)															" \
 "{																					" \
@@ -222,7 +222,7 @@ WG_GL_CANVAS_BLOCK \
 // This samples with texture() rather than texelFetch() and textureSize(), which on a 2013
 // Mac Pro (AMD, macOS OpenGL 4.1) gave random groups of black pixels.
 
-#define WG_GL_PALETTE_FUNC \
+#define WAX_GL_PALETTE_FUNC \
 "uniform vec4 paletteInfo;															" \
 "vec4 paletteLookup(float normIndex)												" \
 "{																					" \
@@ -232,14 +232,14 @@ WG_GL_CANVAS_BLOCK \
 "	return texture(paletteId, vec2((column + 0.5) / paletteInfo.y, (row + 0.5) / paletteInfo.z));	" \
 "}																					"
 
-namespace wg {
+namespace wax {
 
 
 const char GlBackend::fillVertexShader[] =
 
 "#version 330 core\n"
 
-WG_GL_CANVAS_BLOCK
+WAX_GL_CANVAS_BLOCK
 
 "uniform samplerBuffer colorBufferId;					   "
 "layout(location = 0) in ivec2 pos;                        "
@@ -259,7 +259,7 @@ const char GlBackend::fillTintmapVertexShader[] =
 
 "#version 330 core\n"
 
-WG_GL_CANVAS_BLOCK
+WAX_GL_CANVAS_BLOCK
 
 "uniform samplerBuffer colorBufferId;					   "
 "layout(location = 0) in ivec2 pos;                        "
@@ -281,7 +281,7 @@ WG_GL_CANVAS_BLOCK
 const char GlBackend::fillFragmentShader[] =
 
 "#version 330 core\n"
-WG_GL_OUTPUT
+WAX_GL_OUTPUT
 "in vec4 fragColor;									"
 "void main()										"
 "{													"
@@ -292,7 +292,7 @@ WG_GL_OUTPUT
 const char GlBackend::fillFragmentShader_A8[] =
 
 "#version 330 core\n"
-WG_GL_OUTPUT_A8
+WAX_GL_OUTPUT_A8
 "in vec4 fragColor;									"
 "void main()										"
 "{													"
@@ -302,10 +302,10 @@ WG_GL_OUTPUT_A8
 const char GlBackend::fillFragmentShaderTintmap[] =
 
 "#version 330 core\n"
-WG_GL_OUTPUT
+WAX_GL_OUTPUT
 "uniform samplerBuffer tintmapBufferId;				"
 "in vec4 fragColor;									"
-"flat in int tintOfs;  in vec2 tintPos;  " WG_GL_TINT_FUNC
+"flat in int tintOfs;  in vec2 tintPos;  " WAX_GL_TINT_FUNC
 "void main()										"
 "{													"
 "   writeColor(premul(evalTint(tintmapBufferId, tintOfs, tintPos) * fragColor), 1.0);	"
@@ -315,10 +315,10 @@ WG_GL_OUTPUT
 const char GlBackend::fillFragmentShaderTintmap_A8[] =
 
 "#version 330 core\n"
-WG_GL_OUTPUT_A8
+WAX_GL_OUTPUT_A8
 "uniform samplerBuffer tintmapBufferId;				"
 "in vec4 fragColor;									"
-"flat in int tintOfs;  in vec2 tintPos;  " WG_GL_TINT_FUNC
+"flat in int tintOfs;  in vec2 tintPos;  " WAX_GL_TINT_FUNC
 "void main()										"
 "{													"
 "   writeAlpha(evalTint(tintmapBufferId, tintOfs, tintPos).a * fragColor.a, 1.0);	"
@@ -330,7 +330,7 @@ const char GlBackend::blitVertexShader[] =
 
 "#version 330 core\n"
 
-WG_GL_CANVAS_BLOCK
+WAX_GL_CANVAS_BLOCK
 
 "uniform samplerBuffer extrasBufferId;						   "
 "uniform samplerBuffer colorBufferId;					   "
@@ -360,7 +360,7 @@ const char GlBackend::blitTintmapVertexShader[] =
 
 "#version 330 core\n"
 
-WG_GL_CANVAS_BLOCK
+WAX_GL_CANVAS_BLOCK
 
 "uniform samplerBuffer colorBufferId;						   "
 "layout(location = 2) in int colorOfs;                     "
@@ -398,36 +398,36 @@ WG_GL_CANVAS_BLOCK
 // texture is read with nearest sampling so taps never blend indexes). On an Alpha_8 canvas
 // the resulting alpha is written to the red channel, like the other _A8 shaders do.
 
-#define WG_GL_BLUR_HEAD \
+#define WAX_GL_BLUR_HEAD \
 "#version 330 core\n" \
 "struct BlurInfo { vec4 colorMtx[9]; vec2 offset[9]; };							" \
 "uniform BlurInfo blurInfo;															" \
 "uniform sampler2D texId;															" \
 "in vec2 texUV;																		"
 
-#define WG_GL_BLUR_TAP \
+#define WAX_GL_BLUR_TAP \
 "vec4 tap(vec2 uv) { return texture(texId, uv); }									"
 
-#define WG_GL_BLUR_TAP_ALPHA \
+#define WAX_GL_BLUR_TAP_ALPHA \
 "vec4 tap(vec2 uv) { return vec4(texture(texId, uv).r); }							"
 
-#define WG_GL_BLUR_TAP_PALETTE \
-"uniform sampler2D paletteId;														" WG_GL_PALETTE_FUNC \
+#define WAX_GL_BLUR_TAP_PALETTE \
+"uniform sampler2D paletteId;														" WAX_GL_PALETTE_FUNC \
 "vec4 tap(vec2 uv) { return paletteLookup(texture(texId, uv).r); }					"
 
-#define WG_GL_BLUR_FLAT \
+#define WAX_GL_BLUR_FLAT \
 "in vec4 fragColor;																	" \
 "vec4 tintColor() { return fragColor; }												"
 
-#define WG_GL_BLUR_TINT \
+#define WAX_GL_BLUR_TINT \
 "uniform samplerBuffer tintmapBufferId;												" \
-"flat in int tintOfs;  in vec2 tintPos;  flat in vec4 flatTint;						" WG_GL_TINT_FUNC \
+"flat in int tintOfs;  in vec2 tintPos;  flat in vec4 flatTint;						" WAX_GL_TINT_FUNC \
 "vec4 tintColor() { return evalTint(tintmapBufferId, tintOfs, tintPos) * flatTint; }"
 
 // Taps are premultiplied, like the textures. The colors of the taps are blurred and alpha is
 // taken from the center tap, which gives a straight color.
 
-#define WG_GL_BLUR_SUM \
+#define WAX_GL_BLUR_SUM \
 "vec4 blurred()																		" \
 "{																					" \
 "	vec4 c = vec4(0.0);																" \
@@ -439,23 +439,23 @@ WG_GL_CANVAS_BLOCK
 "	return vec4(clamp(c.rgb, 0.0, 1.0), c.a);										" \
 "}																					"
 
-#define WG_GL_BLUR_OUT \
-WG_GL_OUTPUT \
+#define WAX_GL_BLUR_OUT \
+WAX_GL_OUTPUT \
 "void main() { writeColor(premul(blurred() * tintColor()), 1.0); }					"
 
-#define WG_GL_BLUR_OUT_A8 \
-WG_GL_OUTPUT_A8 \
+#define WAX_GL_BLUR_OUT_A8 \
+WAX_GL_OUTPUT_A8 \
 "void main() { writeAlpha(blurred().a * tintColor().a, 1.0); }						"
 
-#define WG_GL_BLUR_SHADERS(TAP) \
-	{ { WG_GL_BLUR_HEAD TAP WG_GL_BLUR_FLAT WG_GL_BLUR_SUM WG_GL_BLUR_OUT, WG_GL_BLUR_HEAD TAP WG_GL_BLUR_FLAT WG_GL_BLUR_SUM WG_GL_BLUR_OUT_A8 }, \
-	  { WG_GL_BLUR_HEAD TAP WG_GL_BLUR_TINT WG_GL_BLUR_SUM WG_GL_BLUR_OUT, WG_GL_BLUR_HEAD TAP WG_GL_BLUR_TINT WG_GL_BLUR_SUM WG_GL_BLUR_OUT_A8 } }
+#define WAX_GL_BLUR_SHADERS(TAP) \
+	{ { WAX_GL_BLUR_HEAD TAP WAX_GL_BLUR_FLAT WAX_GL_BLUR_SUM WAX_GL_BLUR_OUT, WAX_GL_BLUR_HEAD TAP WAX_GL_BLUR_FLAT WAX_GL_BLUR_SUM WAX_GL_BLUR_OUT_A8 }, \
+	  { WAX_GL_BLUR_HEAD TAP WAX_GL_BLUR_TINT WAX_GL_BLUR_SUM WAX_GL_BLUR_OUT, WAX_GL_BLUR_HEAD TAP WAX_GL_BLUR_TINT WAX_GL_BLUR_SUM WAX_GL_BLUR_OUT_A8 } }
 
 const char * const GlBackend::blurFragmentShaders[3][2][2] =
 {
-	WG_GL_BLUR_SHADERS(WG_GL_BLUR_TAP),
-	WG_GL_BLUR_SHADERS(WG_GL_BLUR_TAP_ALPHA),
-	WG_GL_BLUR_SHADERS(WG_GL_BLUR_TAP_PALETTE)
+	WAX_GL_BLUR_SHADERS(WAX_GL_BLUR_TAP),
+	WAX_GL_BLUR_SHADERS(WAX_GL_BLUR_TAP_ALPHA),
+	WAX_GL_BLUR_SHADERS(WAX_GL_BLUR_TAP_PALETTE)
 };
 
 
@@ -464,8 +464,8 @@ const char * const GlBackend::blurFragmentShaders[3][2][2] =
 const char GlBackend::blitFragmentShader[] =
 
 "#version 330 core\n"
-WG_GL_OUTPUT
-"uniform sampler2D texId;						" WG_GL_SOURCE_SAMPLE
+WAX_GL_OUTPUT
+"uniform sampler2D texId;						" WAX_GL_SOURCE_SAMPLE
 "in vec2 texUV;									"
 "in vec4 fragColor;								"
 "void main()									"
@@ -476,8 +476,8 @@ WG_GL_OUTPUT
 const char GlBackend::blitFragmentShader_A8[] =
 
 "#version 330 core\n"
-WG_GL_OUTPUT_A8
-"uniform sampler2D texId;						" WG_GL_SOURCE_SAMPLE
+WAX_GL_OUTPUT_A8
+"uniform sampler2D texId;						" WAX_GL_SOURCE_SAMPLE
 "in vec2 texUV;									"
 "in vec4 fragColor;								"
 "void main()									"
@@ -489,7 +489,7 @@ WG_GL_OUTPUT_A8
 const char GlBackend::alphaBlitFragmentShader[] =
 
 "#version 330 core\n"
-WG_GL_OUTPUT
+WAX_GL_OUTPUT
 "uniform sampler2D texId;						"
 "in vec2 texUV;									"
 "in vec4 fragColor;								"
@@ -501,7 +501,7 @@ WG_GL_OUTPUT
 const char GlBackend::alphaBlitFragmentShader_A8[] =
 
 "#version 330 core\n"
-WG_GL_OUTPUT_A8
+WAX_GL_OUTPUT_A8
 "uniform sampler2D texId;						"
 "in vec2 texUV;									"
 "in vec4 fragColor;								"
@@ -514,11 +514,11 @@ WG_GL_OUTPUT_A8
 const char GlBackend::blitFragmentShaderTintmap[] =
 
 "#version 330 core\n"
-WG_GL_OUTPUT
-"uniform sampler2D texId;						" WG_GL_SOURCE_SAMPLE
+WAX_GL_OUTPUT
+"uniform sampler2D texId;						" WAX_GL_SOURCE_SAMPLE
 "uniform samplerBuffer tintmapBufferId;			"
 "in vec2 texUV;									"
-"flat in int tintOfs;  in vec2 tintPos;  " "flat in vec4 flatTint;  " WG_GL_TINT_FUNC
+"flat in int tintOfs;  in vec2 tintPos;  " "flat in vec4 flatTint;  " WAX_GL_TINT_FUNC
 "void main()									"
 "{												"
 "   vec4 fragColor = evalTint(tintmapBufferId, tintOfs, tintPos) * flatTint;	"
@@ -528,11 +528,11 @@ WG_GL_OUTPUT
 const char GlBackend::blitFragmentShaderTintmap_A8[] =
 
 "#version 330 core\n"
-WG_GL_OUTPUT_A8
-"uniform sampler2D texId;						" WG_GL_SOURCE_SAMPLE
+WAX_GL_OUTPUT_A8
+"uniform sampler2D texId;						" WAX_GL_SOURCE_SAMPLE
 "uniform samplerBuffer tintmapBufferId;			"
 "in vec2 texUV;									"
-"flat in int tintOfs;  in vec2 tintPos;  " "flat in vec4 flatTint;  " WG_GL_TINT_FUNC
+"flat in int tintOfs;  in vec2 tintPos;  " "flat in vec4 flatTint;  " WAX_GL_TINT_FUNC
 "void main()									"
 "{												"
 "   float fragA = (evalTint(tintmapBufferId, tintOfs, tintPos) * flatTint).a;	"
@@ -542,11 +542,11 @@ WG_GL_OUTPUT_A8
 const char GlBackend::alphaBlitFragmentShaderTintmap[] =
 
 "#version 330 core\n"
-WG_GL_OUTPUT
+WAX_GL_OUTPUT
 "uniform sampler2D texId;						"
 "uniform samplerBuffer tintmapBufferId;			"
 "in vec2 texUV;									"
-"flat in int tintOfs;  in vec2 tintPos;  " "flat in vec4 flatTint;  " WG_GL_TINT_FUNC
+"flat in int tintOfs;  in vec2 tintPos;  " "flat in vec4 flatTint;  " WAX_GL_TINT_FUNC
 "void main()									"
 "{												"
 "   vec4 fragColor = evalTint(tintmapBufferId, tintOfs, tintPos) * flatTint;	"
@@ -556,11 +556,11 @@ WG_GL_OUTPUT
 const char GlBackend::alphaBlitFragmentShaderTintmap_A8[] =
 
 "#version 330 core\n"
-WG_GL_OUTPUT_A8
+WAX_GL_OUTPUT_A8
 "uniform sampler2D texId;						"
 "uniform samplerBuffer tintmapBufferId;			"
 "in vec2 texUV;									"
-"flat in int tintOfs;  in vec2 tintPos;  " "flat in vec4 flatTint;  " WG_GL_TINT_FUNC
+"flat in int tintOfs;  in vec2 tintPos;  " "flat in vec4 flatTint;  " WAX_GL_TINT_FUNC
 "void main()									"
 "{												"
 "   float fragA = (evalTint(tintmapBufferId, tintOfs, tintPos) * flatTint).a;	"
@@ -572,7 +572,7 @@ const char GlBackend::paletteBlitNearestVertexShader[] =
 
 "#version 330 core\n"
 
-WG_GL_CANVAS_BLOCK
+WAX_GL_CANVAS_BLOCK
 
 "uniform samplerBuffer extrasBufferId;						   "
 "uniform samplerBuffer colorBufferId;					   "
@@ -602,7 +602,7 @@ const char GlBackend::paletteBlitNearestTintmapVertexShader[] =
 
 "#version 330 core\n"
 
-WG_GL_CANVAS_BLOCK
+WAX_GL_CANVAS_BLOCK
 
 "uniform samplerBuffer colorBufferId;						   "
 "layout(location = 2) in int colorOfs;                     "
@@ -634,10 +634,10 @@ WG_GL_CANVAS_BLOCK
 const char GlBackend::paletteBlitNearestFragmentShader[] =
 
 "#version 330 core\n"
-WG_GL_OUTPUT
+WAX_GL_OUTPUT
 "uniform sampler2D texId;						"
 "uniform int clipToSource;					"	// Set for a ClipBlit: nothing outside the source is read.
-"uniform sampler2D paletteId;					" WG_GL_PALETTE_FUNC
+"uniform sampler2D paletteId;					" WAX_GL_PALETTE_FUNC
 "in vec2 texUV;									"
 "in vec4 fragColor;								"
 "float inside(vec2 uv)							"
@@ -652,10 +652,10 @@ WG_GL_OUTPUT
 const char GlBackend::paletteBlitNearestFragmentShader_A8[] =
 
 "#version 330 core\n"
-WG_GL_OUTPUT_A8
+WAX_GL_OUTPUT_A8
 "uniform sampler2D texId;						"
 "uniform int clipToSource;					"	// Set for a ClipBlit: nothing outside the source is read.
-"uniform sampler2D paletteId;						" WG_GL_PALETTE_FUNC
+"uniform sampler2D paletteId;						" WAX_GL_PALETTE_FUNC
 "in vec2 texUV;									"
 "in vec4 fragColor;								"
 "float inside(vec2 uv)							"
@@ -671,13 +671,13 @@ WG_GL_OUTPUT_A8
 const char GlBackend::paletteBlitNearestFragmentShaderTintmap[] =
 
 "#version 330 core\n"
-WG_GL_OUTPUT
+WAX_GL_OUTPUT
 "uniform sampler2D texId;						"
 "uniform samplerBuffer tintmapBufferId;			"
 "uniform int clipToSource;					"	// Set for a ClipBlit: nothing outside the source is read.
-"uniform sampler2D paletteId;					" WG_GL_PALETTE_FUNC
+"uniform sampler2D paletteId;					" WAX_GL_PALETTE_FUNC
 "in vec2 texUV;									"
-"flat in int tintOfs;  in vec2 tintPos;  " "flat in vec4 flatTint;  " WG_GL_TINT_FUNC
+"flat in int tintOfs;  in vec2 tintPos;  " "flat in vec4 flatTint;  " WAX_GL_TINT_FUNC
 "float inside(vec2 uv)							"
 "{												"
 "   return (clipToSource != 0 && (any(lessThan(uv, vec2(0.0))) || any(greaterThanEqual(uv, vec2(1.0))))) ? 0.0 : 1.0;	"
@@ -691,13 +691,13 @@ WG_GL_OUTPUT
 const char GlBackend::paletteBlitNearestFragmentShaderTintmap_A8[] =
 
 "#version 330 core\n"
-WG_GL_OUTPUT_A8
+WAX_GL_OUTPUT_A8
 "uniform sampler2D texId;						"
 "uniform samplerBuffer tintmapBufferId;			"
 "uniform int clipToSource;					"	// Set for a ClipBlit: nothing outside the source is read.
-"uniform sampler2D paletteId;						" WG_GL_PALETTE_FUNC
+"uniform sampler2D paletteId;						" WAX_GL_PALETTE_FUNC
 "in vec2 texUV;									"
-"flat in int tintOfs;  in vec2 tintPos;  " "flat in vec4 flatTint;  " WG_GL_TINT_FUNC
+"flat in int tintOfs;  in vec2 tintPos;  " "flat in vec4 flatTint;  " WAX_GL_TINT_FUNC
 "float inside(vec2 uv)							"
 "{												"
 "   return (clipToSource != 0 && (any(lessThan(uv, vec2(0.0))) || any(greaterThanEqual(uv, vec2(1.0))))) ? 0.0 : 1.0;	"
@@ -714,7 +714,7 @@ const char GlBackend::paletteBlitInterpolateVertexShader[] =
 
 "#version 330 core\n"
 
-WG_GL_CANVAS_BLOCK
+WAX_GL_CANVAS_BLOCK
 
 "uniform samplerBuffer extrasBufferId;						   "
 "uniform samplerBuffer colorBufferId;					   "
@@ -752,7 +752,7 @@ const char GlBackend::paletteBlitInterpolateTintmapVertexShader[] =
 
 "#version 330 core\n"
 
-WG_GL_CANVAS_BLOCK
+WAX_GL_CANVAS_BLOCK
 
 "uniform samplerBuffer colorBufferId;						   "
 "layout(location = 2) in int colorOfs;                     "
@@ -797,10 +797,10 @@ WG_GL_CANVAS_BLOCK
 const char GlBackend::paletteBlitInterpolateFragmentShader[] =
 
 "#version 330 core\n"
-WG_GL_OUTPUT
+WAX_GL_OUTPUT
 "uniform sampler2D texId;						"
 "uniform int clipToSource;					"	// Set for a ClipBlit: nothing outside the source is read.
-"uniform sampler2D paletteId;						" WG_GL_PALETTE_FUNC
+"uniform sampler2D paletteId;						" WAX_GL_PALETTE_FUNC
 "in vec2 uvFrac;								"
 "in vec4 fragColor;								"
 "float inside(vec2 uv)							"
@@ -831,10 +831,10 @@ WG_GL_OUTPUT
 const char GlBackend::paletteBlitInterpolateFragmentShader_A8[] =
 
 "#version 330 core\n"
-WG_GL_OUTPUT_A8
+WAX_GL_OUTPUT_A8
 "uniform sampler2D texId;						"
 "uniform int clipToSource;					"	// Set for a ClipBlit: nothing outside the source is read.
-"uniform sampler2D paletteId;						" WG_GL_PALETTE_FUNC
+"uniform sampler2D paletteId;						" WAX_GL_PALETTE_FUNC
 "in vec2 uvFrac;								"
 "in vec4 fragColor;								"
 "float inside(vec2 uv)							"
@@ -866,13 +866,13 @@ WG_GL_OUTPUT_A8
 const char GlBackend::paletteBlitInterpolateFragmentShaderTintmap[] =
 
 "#version 330 core\n"
-WG_GL_OUTPUT
+WAX_GL_OUTPUT
 "uniform sampler2D texId;						"
 "uniform samplerBuffer tintmapBufferId;			"
 "uniform int clipToSource;					"	// Set for a ClipBlit: nothing outside the source is read.
-"uniform sampler2D paletteId;						" WG_GL_PALETTE_FUNC
+"uniform sampler2D paletteId;						" WAX_GL_PALETTE_FUNC
 "in vec2 uvFrac;								"
-"flat in int tintOfs;  in vec2 tintPos;  " "flat in vec4 flatTint;  " WG_GL_TINT_FUNC
+"flat in int tintOfs;  in vec2 tintPos;  " "flat in vec4 flatTint;  " WAX_GL_TINT_FUNC
 "float inside(vec2 uv)							"
 "{												"
 "   return (clipToSource != 0 && (any(lessThan(uv, vec2(0.0))) || any(greaterThanEqual(uv, vec2(1.0))))) ? 0.0 : 1.0;	"
@@ -902,13 +902,13 @@ WG_GL_OUTPUT
 const char GlBackend::paletteBlitInterpolateFragmentShaderTintmap_A8[] =
 
 "#version 330 core\n"
-WG_GL_OUTPUT_A8
+WAX_GL_OUTPUT_A8
 "uniform sampler2D texId;						"
 "uniform samplerBuffer tintmapBufferId;			"
 "uniform int clipToSource;					"	// Set for a ClipBlit: nothing outside the source is read.
-"uniform sampler2D paletteId;						" WG_GL_PALETTE_FUNC
+"uniform sampler2D paletteId;						" WAX_GL_PALETTE_FUNC
 "in vec2 uvFrac;								"
-"flat in int tintOfs;  in vec2 tintPos;  " "flat in vec4 flatTint;  " WG_GL_TINT_FUNC
+"flat in int tintOfs;  in vec2 tintPos;  " "flat in vec4 flatTint;  " WAX_GL_TINT_FUNC
 "float inside(vec2 uv)							"
 "{												"
 "   return (clipToSource != 0 && (any(lessThan(uv, vec2(0.0))) || any(greaterThanEqual(uv, vec2(1.0))))) ? 0.0 : 1.0;	"
@@ -940,7 +940,7 @@ const char GlBackend::lineFromToVertexShader[] =
 
 "#version 330 core\n"
 
-WG_GL_CANVAS_BLOCK
+WAX_GL_CANVAS_BLOCK
 
 "uniform samplerBuffer colorBufferId;					"
 "uniform samplerBuffer extrasBufferId;					"
@@ -980,7 +980,7 @@ WG_GL_CANVAS_BLOCK
 const char GlBackend::lineFromToFragmentShader[] =
 
 "#version 330 core\n"
-WG_GL_OUTPUT
+WAX_GL_OUTPUT
 "uniform samplerBuffer tintmapBufferId;	"
 "in vec4 fragColor;                     "
 "flat in int tintOfs;					"
@@ -990,7 +990,7 @@ WG_GL_OUTPUT
 "flat in float slope;						"
 "flat in float ifSteep;						"
 "flat in float ifMild;						"
-WG_GL_TINT_FUNC
+WAX_GL_TINT_FUNC
 "float coverage() { return clamp(w - abs(gl_FragCoord.x*ifSteep + gl_FragCoord.y*ifMild - s - (gl_FragCoord.x*ifMild + gl_FragCoord.y*ifSteep) * slope), 0.0, 1.0); }	"
 "vec4 lineColor() { return tintOfs >= 0 ? evalTint(tintmapBufferId, tintOfs, tintPos) * fragColor : fragColor; }	"
 "void main()                            "
@@ -1002,7 +1002,7 @@ WG_GL_TINT_FUNC
 const char GlBackend::lineFromToFragmentShader_A8[] =
 
 "#version 330 core\n"
-WG_GL_OUTPUT_A8
+WAX_GL_OUTPUT_A8
 "uniform samplerBuffer tintmapBufferId;	"
 "in vec4 fragColor;                     "
 "flat in int tintOfs;					"
@@ -1012,7 +1012,7 @@ WG_GL_OUTPUT_A8
 "flat in float slope;						"
 "flat in float ifSteep;						"
 "flat in float ifMild;						"
-WG_GL_TINT_FUNC
+WAX_GL_TINT_FUNC
 "float coverage() { return clamp(w - abs(gl_FragCoord.x*ifSteep + gl_FragCoord.y*ifMild - s - (gl_FragCoord.x*ifMild + gl_FragCoord.y*ifSteep) * slope), 0.0, 1.0); }	"
 "vec4 lineColor() { return tintOfs >= 0 ? evalTint(tintmapBufferId, tintOfs, tintPos) * fragColor : fragColor; }	"
 "void main()                            "
@@ -1027,7 +1027,7 @@ const char GlBackend::aaFillVertexShader[] =
 
 "#version 330 core\n"
 
-WG_GL_CANVAS_BLOCK
+WAX_GL_CANVAS_BLOCK
 
 "uniform samplerBuffer colorBufferId;					    "
 "uniform samplerBuffer extrasBufferId;						"
@@ -1053,7 +1053,7 @@ const char GlBackend::aaFillTintmapVertexShader[] =
 
 "#version 330 core\n"
 
-WG_GL_CANVAS_BLOCK
+WAX_GL_CANVAS_BLOCK
 
 "uniform samplerBuffer colorBufferId;					    "
 "uniform samplerBuffer extrasBufferId;						"
@@ -1084,7 +1084,7 @@ WG_GL_CANVAS_BLOCK
 const char GlBackend::aaFillFragmentShader[] =
 
 "#version 330 core\n"
-WG_GL_OUTPUT
+WAX_GL_OUTPUT
 "in vec4 fragColor;						"
 "flat in vec4 rect;						"
 "void main()                            "
@@ -1098,7 +1098,7 @@ WG_GL_OUTPUT
 const char GlBackend::aaFillFragmentShader_A8[] =
 
 "#version 330 core\n"
-WG_GL_OUTPUT_A8
+WAX_GL_OUTPUT_A8
 "in vec4 fragColor;						"
 "flat in vec4 rect;						"
 "void main()                            "
@@ -1113,10 +1113,10 @@ WG_GL_OUTPUT_A8
 const char GlBackend::aaFillFragmentShaderTintmap[] =
 
 "#version 330 core\n"
-WG_GL_OUTPUT
+WAX_GL_OUTPUT
 "uniform samplerBuffer tintmapBufferId;	"
 "in vec4 fragColor;						"
-"flat in int tintOfs;  in vec2 tintPos;  " WG_GL_TINT_FUNC
+"flat in int tintOfs;  in vec2 tintPos;  " WAX_GL_TINT_FUNC
 "flat in vec4 rect;						"
 "void main()                            "
 "{										"
@@ -1129,10 +1129,10 @@ WG_GL_OUTPUT
 const char GlBackend::aaFillFragmentShaderTintmap_A8[] =
 
 "#version 330 core\n"
-WG_GL_OUTPUT_A8
+WAX_GL_OUTPUT_A8
 "uniform samplerBuffer tintmapBufferId;	"
 "in vec4 fragColor;						"
-"flat in int tintOfs;  in vec2 tintPos;  " WG_GL_TINT_FUNC
+"flat in int tintOfs;  in vec2 tintPos;  " WAX_GL_TINT_FUNC
 "flat in vec4 rect;						"
 "void main()                            "
 "{										"
@@ -1147,7 +1147,7 @@ const char GlBackend::segmentsVertexShader[] =
 
 "#version 330 core\n"
 
-WG_GL_CANVAS_BLOCK
+WAX_GL_CANVAS_BLOCK
 
 "uniform samplerBuffer extrasBufferId;					"
 "uniform samplerBuffer colorBufferId;					"
@@ -1187,7 +1187,7 @@ WG_GL_CANVAS_BLOCK
 // whole pixel, each by the part of it between its edges. The edgemap buffer holds a
 // table with the offset of each segment's tint block, -1 for flat colored segments.
 
-#define WG_GL_SEGCOLOR_FUNC \
+#define WAX_GL_SEGCOLOR_FUNC \
 "vec4 segColor(int seg, int flatColorsOfs, int tintTableOfs, vec2 epos)			" \
 "{																				" \
 "	int tofs = int(texelFetch(edgemapId, tintTableOfs + seg).x);					" \
@@ -1198,7 +1198,7 @@ WG_GL_CANVAS_BLOCK
 // into it. uv.y is half a pixel back, so it is whole at pixel centers. tileSize is the size
 // of the edgemap in columns and pixels, zero when not tiling.
 
-#define WG_GL_WRAP_FUNC \
+#define WAX_GL_WRAP_FUNC \
 "vec2 wrapUV(vec2 uv, vec2 tileSize)											" \
 "{																				" \
 "	if (tileSize.x > 0.0)														" \
@@ -1214,9 +1214,9 @@ WG_GL_CANVAS_BLOCK
 // segment, which is (canvas * (1 - m) + pc * m) / (1 - m + pc.a * m), where m is the morph
 // factor (1 for Replace). That is averaged by area, so each segment adds its part of the second
 // term and of how much of the canvas is kept (keep). A segment whose result is transparent gives
-// black, like a transparent Replace does. Needs WG_GL_OUTPUT.
+// black, like a transparent Replace does. Needs WAX_GL_OUTPUT.
 
-#define WG_GL_SEGPART_FUNC \
+#define WAX_GL_SEGPART_FUNC \
 "bool keepsResultColors() { return blendInfo.x > 0.5 && blendInfo.x < 1.5 && blendInfo.z > 0.5; }	" \
 "vec4 segPart(vec4 pc, float part, inout float keep)								" \
 "{																				" \
@@ -1235,7 +1235,7 @@ WG_GL_CANVAS_BLOCK
 const char GlBackend::segmentsFragmentShader[] =
 
 "#version 330 core\n"
-WG_GL_OUTPUT
+WAX_GL_OUTPUT
 "uniform samplerBuffer tintmapBufferId;			"
 "uniform samplerBuffer edgemapId;				"
 "in vec2 mapUV;									"
@@ -1246,10 +1246,10 @@ WG_GL_OUTPUT
 "flat in int tintOfs;							"
 "in vec2 tintPos;								"
 "flat in vec4 flatTint;							"
-WG_GL_TINT_FUNC
-WG_GL_SEGCOLOR_FUNC
-WG_GL_WRAP_FUNC
-WG_GL_SEGPART_FUNC
+WAX_GL_TINT_FUNC
+WAX_GL_SEGCOLOR_FUNC
+WAX_GL_WRAP_FUNC
+WAX_GL_SEGPART_FUNC
 "void main()									"
 "{												"
 "	vec2 texUV = wrapUV(mapUV, tileSize);"
@@ -1287,7 +1287,7 @@ WG_GL_SEGPART_FUNC
 const char GlBackend::segmentsFragmentShader_A8[] =
 
 "#version 330 core\n"
-WG_GL_OUTPUT_A8
+WAX_GL_OUTPUT_A8
 "uniform samplerBuffer tintmapBufferId;			"
 "uniform samplerBuffer edgemapId;				"
 "in vec2 mapUV;									"
@@ -1298,9 +1298,9 @@ WG_GL_OUTPUT_A8
 "flat in int tintOfs;							"
 "in vec2 tintPos;								"
 "flat in vec4 flatTint;							"
-WG_GL_TINT_FUNC
-WG_GL_SEGCOLOR_FUNC
-WG_GL_WRAP_FUNC
+WAX_GL_TINT_FUNC
+WAX_GL_SEGCOLOR_FUNC
+WAX_GL_WRAP_FUNC
 "void main()									"
 "{												"
 "	vec2 texUV = wrapUV(mapUV, tileSize);"
@@ -1338,7 +1338,7 @@ const char GlBackend::shapeVertexShader[] =
 
 "#version 330 core\n"
 
-WG_GL_CANVAS_BLOCK
+WAX_GL_CANVAS_BLOCK
 
 "uniform samplerBuffer colorBufferId;					"
 "layout(location = 0) in ivec2 pos;                     "
@@ -1364,9 +1364,9 @@ WG_GL_CANVAS_BLOCK
 
 // Coverage of the segments of a shape at a pixel center, accumulated as color times alpha
 // and alpha, weighted by coverage, in acc, and the coverage of drawn segments in covered.
-// Needs extrasBufferId, colorBufferId and WG_GL_TINT_FUNC.
+// Needs extrasBufferId, colorBufferId and WAX_GL_TINT_FUNC.
 
-#define WG_GL_SHAPE_FUNCS \
+#define WAX_GL_SHAPE_FUNCS \
 "vec4 shapeEntry(int i)																" \
 "{																					" \
 "	return texelFetch(extrasBufferId, i);											" \
@@ -1721,7 +1721,7 @@ WG_GL_CANVAS_BLOCK
 const char GlBackend::shapeFragmentShader[] =
 
 "#version 330 core\n"
-WG_GL_OUTPUT
+WAX_GL_OUTPUT
 "uniform samplerBuffer extrasBufferId;			"
 "uniform samplerBuffer colorBufferId;			"
 "uniform samplerBuffer tintmapBufferId;			"
@@ -1729,8 +1729,8 @@ WG_GL_OUTPUT
 "flat in int tintOfs;							"
 "in vec2 canvasPos;								"
 "flat in vec4 flatTint;							"
-WG_GL_TINT_FUNC
-WG_GL_SHAPE_FUNCS
+WAX_GL_TINT_FUNC
+WAX_GL_SHAPE_FUNCS
 "void main()									"
 "{												"
 "	vec4 acc;									"
@@ -1744,7 +1744,7 @@ WG_GL_SHAPE_FUNCS
 const char GlBackend::shapeFragmentShader_A8[] =
 
 "#version 330 core\n"
-WG_GL_OUTPUT_A8
+WAX_GL_OUTPUT_A8
 "uniform samplerBuffer extrasBufferId;			"
 "uniform samplerBuffer colorBufferId;			"
 "uniform samplerBuffer tintmapBufferId;			"
@@ -1752,8 +1752,8 @@ WG_GL_OUTPUT_A8
 "flat in int tintOfs;							"
 "in vec2 canvasPos;								"
 "flat in vec4 flatTint;							"
-WG_GL_TINT_FUNC
-WG_GL_SHAPE_FUNCS
+WAX_GL_TINT_FUNC
+WAX_GL_SHAPE_FUNCS
 "void main()									"
 "{												"
 "	vec4 acc;									"
@@ -1783,7 +1783,7 @@ const char GlBackend::warpVertexShader[] =
 
 "#version 330 core\n"
 
-WG_GL_CANVAS_BLOCK
+WAX_GL_CANVAS_BLOCK
 
 "uniform samplerBuffer colorBufferId;					"
 "layout(location = 0) in ivec2 pos;                     "
@@ -1815,7 +1815,7 @@ WG_GL_CANVAS_BLOCK
 // warpNearestCopy() moves a center in the gap between copies on a periodic axis to the nearest
 // copy, which is where colors are taken and edges evaluated.
 
-#define WG_GL_WARP_FUNCS \
+#define WAX_GL_WARP_FUNCS \
 "vec4 warpEntry(int i) { return texelFetch(extrasBufferId, warpOfs + i); }			" \
 "float warpHalfPlane(float f, vec2 g)												" \
 "{																					" \
@@ -1892,7 +1892,7 @@ WG_GL_CANVAS_BLOCK
 // SEGMENT is code run for each part, with the segment in e, the part in part and the position for
 // colors in sc. Needs edgemapId.
 
-#define WG_GL_WARP_SEGMENTS(SEGMENT) \
+#define WAX_GL_WARP_SEGMENTS(SEGMENT) \
 "	vec2 s, dx, dy;																	" \
 "	warpPosition(canvasPos, s, dx, dy);												" \
 "	vec4 e0 = warpEntry(0);															" \
@@ -1945,7 +1945,7 @@ SEGMENT \
 const char GlBackend::warpEdgemapFragmentShader[] =
 
 "#version 330 core\n"
-WG_GL_OUTPUT
+WAX_GL_OUTPUT
 "uniform samplerBuffer extrasBufferId;			"
 "uniform samplerBuffer tintmapBufferId;			"
 "uniform samplerBuffer edgemapId;				"
@@ -1954,17 +1954,17 @@ WG_GL_OUTPUT
 "flat in int tintOfs;							"
 "in vec2 canvasPos;								"
 "flat in vec4 flatTint;							"
-WG_GL_TINT_FUNC
-WG_GL_SEGCOLOR_FUNC
-WG_GL_SEGPART_FUNC
-WG_GL_WARP_FUNCS
+WAX_GL_TINT_FUNC
+WAX_GL_SEGCOLOR_FUNC
+WAX_GL_SEGPART_FUNC
+WAX_GL_WARP_FUNCS
 "void main()									"
 "{												"
 "	vec4 tint = premul((tintOfs >= 0 ? evalTint(tintmapBufferId, tintOfs, canvasPos) : vec4(1.0)) * flatTint);	"
 "	vec4 acc = vec4(0.0);						"
 "	float keep = 0.0;							"
 "	float covered = 0.0;						"
-WG_GL_WARP_SEGMENTS("{ acc += segPart(premul(segColor(e, flatColorsOfs, tintTableOfs, sc)) * tint, part, keep); covered += part; }")
+WAX_GL_WARP_SEGMENTS("{ acc += segPart(premul(segColor(e, flatColorsOfs, tintTableOfs, sc)) * tint, part, keep); covered += part; }")
 "	if (covered < 1.0 / 256.0)					"
 "		discard;								"
 "	if (keepsResultColors())					"
@@ -1979,7 +1979,7 @@ WG_GL_WARP_SEGMENTS("{ acc += segPart(premul(segColor(e, flatColorsOfs, tintTabl
 const char GlBackend::warpEdgemapFragmentShader_A8[] =
 
 "#version 330 core\n"
-WG_GL_OUTPUT_A8
+WAX_GL_OUTPUT_A8
 "uniform samplerBuffer extrasBufferId;			"
 "uniform samplerBuffer tintmapBufferId;			"
 "uniform samplerBuffer edgemapId;				"
@@ -1988,14 +1988,14 @@ WG_GL_OUTPUT_A8
 "flat in int tintOfs;							"
 "in vec2 canvasPos;								"
 "flat in vec4 flatTint;							"
-WG_GL_TINT_FUNC
-WG_GL_SEGCOLOR_FUNC
-WG_GL_WARP_FUNCS
+WAX_GL_TINT_FUNC
+WAX_GL_SEGCOLOR_FUNC
+WAX_GL_WARP_FUNCS
 "void main()									"
 "{												"
 "	float acc = 0.0;							"
 "	float covered = 0.0;						"
-WG_GL_WARP_SEGMENTS("{ acc += segColor(e, flatColorsOfs, tintTableOfs, sc).a * part; covered += part; }")
+WAX_GL_WARP_SEGMENTS("{ acc += segColor(e, flatColorsOfs, tintTableOfs, sc).a * part; covered += part; }")
 "	if (covered < 1.0 / 256.0)					"
 "		discard;								"
 "	vec4 tint = (tintOfs >= 0 ? evalTint(tintmapBufferId, tintOfs, canvasPos) : vec4(1.0)) * flatTint;	"
@@ -2011,9 +2011,9 @@ WG_GL_WARP_SEGMENTS("{ acc += segColor(e, flatColorsOfs, tintTableOfs, sc).a * p
 // bilinear sampling, which looks up the four texels around the position. Gradients are given
 // for mipmapped surfaces, which the derivatives of positions that wrap would get wrong.
 
-#define WG_GL_WARP_SAMPLE \
+#define WAX_GL_WARP_SAMPLE \
 "uniform sampler2D texId;															" \
-"uniform sampler2D paletteId;														" WG_GL_PALETTE_FUNC \
+"uniform sampler2D paletteId;														" WAX_GL_PALETTE_FUNC \
 "uniform int sourceKind;															" \
 "uniform float clampInset;															" \
 "vec2 warpKeepInside(vec2 p, vec2 begin, vec2 size)									" \
@@ -2045,7 +2045,7 @@ WG_GL_WARP_SEGMENTS("{ acc += segColor(e, flatColorsOfs, tintTableOfs, sc).a * p
 "	return sourceKind == 1 ? vec4(c.r) : c;											" \
 "}																					"
 
-#define WG_GL_WARP_BLIT_COVERAGE \
+#define WAX_GL_WARP_BLIT_COVERAGE \
 "	vec2 s, dx, dy;																	" \
 "	warpPosition(canvasPos, s, dx, dy);												" \
 "	vec4 e1 = warpEntry(1);															" \
@@ -2065,7 +2065,7 @@ WG_GL_WARP_SEGMENTS("{ acc += segColor(e, flatColorsOfs, tintTableOfs, sc).a * p
 const char GlBackend::warpBlitFragmentShader[] =
 
 "#version 330 core\n"
-WG_GL_OUTPUT
+WAX_GL_OUTPUT
 "uniform samplerBuffer extrasBufferId;			"
 "uniform samplerBuffer tintmapBufferId;			"
 "uniform samplerBuffer warpmapId;				"
@@ -2073,19 +2073,19 @@ WG_GL_OUTPUT
 "flat in int tintOfs;							"
 "in vec2 canvasPos;								"
 "flat in vec4 flatTint;							"
-WG_GL_TINT_FUNC
-WG_GL_WARP_FUNCS
-WG_GL_WARP_SAMPLE
+WAX_GL_TINT_FUNC
+WAX_GL_WARP_FUNCS
+WAX_GL_WARP_SAMPLE
 "void main()									"
 "{												"
-WG_GL_WARP_BLIT_COVERAGE
+WAX_GL_WARP_BLIT_COVERAGE
 "	writeColor(c * premul(tint) * cov, cov);	"
 "}";
 
 const char GlBackend::warpBlitFragmentShader_A8[] =
 
 "#version 330 core\n"
-WG_GL_OUTPUT_A8
+WAX_GL_OUTPUT_A8
 "uniform samplerBuffer extrasBufferId;			"
 "uniform samplerBuffer tintmapBufferId;			"
 "uniform samplerBuffer warpmapId;				"
@@ -2093,12 +2093,12 @@ WG_GL_OUTPUT_A8
 "flat in int tintOfs;							"
 "in vec2 canvasPos;								"
 "flat in vec4 flatTint;							"
-WG_GL_TINT_FUNC
-WG_GL_WARP_FUNCS
-WG_GL_WARP_SAMPLE
+WAX_GL_TINT_FUNC
+WAX_GL_WARP_FUNCS
+WAX_GL_WARP_SAMPLE
 "void main()									"
 "{												"
-WG_GL_WARP_BLIT_COVERAGE
+WAX_GL_WARP_BLIT_COVERAGE
 "	writeAlpha(c.a * tint.a * cov, cov);		"
 "}";
 
@@ -2156,4 +2156,4 @@ const char GlBackend::segmentsFragmentShader_A8[] =
 
 }
 
-#endif //WG_GLSHADERS_DOT_H
+#endif //WAX_GLSHADERS_DOT_H

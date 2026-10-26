@@ -30,7 +30,7 @@
 #	include <wg2_geo.h>
 #endif
 
-#include <wg_surface.h>
+#include <wax_surface.h>
 #include <wg_blockskin.h>
 
 

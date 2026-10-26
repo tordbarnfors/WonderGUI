@@ -19,19 +19,19 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef WG_EDGEMAP_DOT_H
-#define WG_EDGEMAP_DOT_H
+#ifndef WAX_EDGEMAP_DOT_H
+#define WAX_EDGEMAP_DOT_H
 #pragma once
 
 #include <bitset>
 
-#include <wg_object.h>
-#include <wg_gfxtypes.h>
-#include <wg_color.h>
-#include <wg_geo.h>
-#include <wg_tint.h>
+#include <wax_object.h>
+#include <wax_types.h>
+#include <wax_color.h>
+#include <wax_geo.h>
+#include <wax_tint.h>
 
-namespace wg
+namespace wax
 {
 
 	class Edgemap;
@@ -155,5 +155,5 @@ namespace wg
 };
 
 
-} // namespace wg
-#endif // WG_EDGEMAP_DOT_H
+} // namespace wax
+#endif // WAX_EDGEMAP_DOT_H

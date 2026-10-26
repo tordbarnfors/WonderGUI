@@ -1,7 +1,7 @@
 using System.Drawing;
 using System.Runtime.InteropServices;
 
-namespace WG;
+namespace Wax;
 
 
 	[StructLayout(LayoutKind.Sequential)]
@@ -60,7 +60,7 @@ public class Surface : Objekt
 		public bool Buffered = false;
 		public bool Canvas = false;
 		public ColorSpace ColorSpace = ColorSpace.Undefined;        // Defaults to sRGB.
-		//		public const wg_color8* palette;				HOW DO WE DO THIS?
+		//		public const wax_color8* palette;				HOW DO WE DO THIS?
 		public int PaletteSize = 0;
 		public int PaletteCapacity = 0;
 		public bool Dynamic = false;
@@ -76,75 +76,75 @@ public class Surface : Objekt
 	//____ SetId() ____________________________________________________________
 	public void SetId(int id)
 	{
-		wg_setSurfaceIdentity(_obj, id);
+		wax_setSurfaceIdentity(_obj, id);
 	}
 
 	//____ Id() _______________________________________________________________
 	public int Id()
 	{
-		return wg_getSurfaceIdentity(_obj);
+		return wax_getSurfaceIdentity(_obj);
 	}
 
 	//____ SizeInPixels() _____________________________________________________
 	public SizeI SizeInPixels()
 	{
-		return wg_surfacePixelSize(_obj);
+		return wax_surfacePixelSize(_obj);
 	}
 
 	//____ Fill() _____________________________________________________________
 	public bool Fill(ref Color color)
 	{
-		return (wg_fillSurface(_obj, color) == 1);
+		return (wax_fillSurface(_obj, color) == 1);
 	}
 
 	//____ FillRect() _________________________________________________________
 	public bool FillRect(ref RectI rect, ref Color color)
 	{
-		return (wg_fillSurfaceRect(_obj, ref rect, color) == 1);
+		return (wax_fillSurfaceRect(_obj, ref rect, color) == 1);
 	}
 
 	//____ Copy() _____________________________________________________________
 	public bool Copy(CoordI dest, Surface source)
 	{
-		return (wg_copySurface(_obj, dest, source.CHandle()) == 1);
+		return (wax_copySurface(_obj, dest, source.CHandle()) == 1);
 	}
 
 	//____ CopyRect() _________________________________________________________
 	public bool CopyRect(ref CoordI dest, Surface sourceSurface, ref RectI sourceRect)
 	{
-		return (wg_copySurfaceRect(_obj, dest, sourceSurface.CHandle(), ref sourceRect) == 1);
+		return (wax_copySurfaceRect(_obj, dest, sourceSurface.CHandle(), ref sourceRect) == 1);
 	}
 
     //____ GetPixelDescription() _________________________________________________
-    public ref readonly PixelDescription GetPixelDescription() => ref wg_surfacePixelDescription(_obj);
+    public ref readonly PixelDescription GetPixelDescription() => ref wax_surfacePixelDescription(_obj);
 
     //____ GetPixelFormat() ______________________________________________________
 
-    public PixelFormat GetPixelFormat() => wg_surfacePixelFormat(_obj);
+    public PixelFormat GetPixelFormat() => wax_surfacePixelFormat(_obj);
 
     //____ GetColorSpace() ______________________________________________________
 
-    public ColorSpace GetColorSpace() => wg_surfaceColorSpace(_obj);
+    public ColorSpace GetColorSpace() => wax_surfaceColorSpace(_obj);
 
     //____ IsBigEndian() ________________________________________________________
 
-    public bool IsBigEndian() => wg_surfaceIsBigEndian(_obj) == 1;
+    public bool IsBigEndian() => wax_surfaceIsBigEndian(_obj) == 1;
 
     //____ GetPixelBits() ________________________________________________________
-    public int GetPixelBits() => wg_surfacePixelBits(_obj);
+    public int GetPixelBits() => wax_surfacePixelBits(_obj);
 
     //____ IsOpaque() _________________________________________________________
-    public bool IsOpaque() => wg_surfaceIsOpaque(_obj) == 1;
+    public bool IsOpaque() => wax_surfaceIsOpaque(_obj) == 1;
 
     //____ CanBeCanvas() ______________________________________________________
-    public bool CanBeCanvas() => wg_surfaceCanBeCanvas(_obj) == 1;
+    public bool CanBeCanvas() => wax_surfaceCanBeCanvas(_obj) == 1;
 
 	//____ AllocPixelBuffer() _________________________________________________
 	public PixelBuffer AllocPixelBuffer()
 	{
-		C_PixelBuffer c_buff = wg_allocPixelBuffer(_obj);
+		C_PixelBuffer c_buff = wax_allocPixelBuffer(_obj);
 
-		int sizeInBytes = (c_buff.rect.H - 1) * c_buff.pitch + (c_buff.rect.W * wg_surfacePixelBits(_obj)) / 8;
+		int sizeInBytes = (c_buff.rect.H - 1) * c_buff.pitch + (c_buff.rect.W * wax_surfacePixelBits(_obj)) / 8;
 
 		return new(c_buff,sizeInBytes);
 	}
@@ -152,19 +152,19 @@ public class Surface : Objekt
 	//____ PushPixels() _______________________________________________________
 	public void PushPixels(in PixelBuffer buffer)
 	{
-		wg_pushPixels(_obj, buffer._c_buffer);
+		wax_pushPixels(_obj, buffer._c_buffer);
 	}
 
 	//____ PullPixels() _______________________________________________________
 	public void PullPixels(in PixelBuffer buffer)
 	{
-		wg_pullPixels(_obj, buffer._c_buffer);
+		wax_pullPixels(_obj, buffer._c_buffer);
 	}
 
 	//____ FreePixelBuffer() __________________________________________________
 	public void FreePixelBuffer(in PixelBuffer buffer)
 	{
-		wg_freePixelBuffer(_obj, buffer._c_buffer);
+		wax_freePixelBuffer(_obj, buffer._c_buffer);
 	}
 
 	//____ C_Blueprint ________________________________________________________
@@ -212,67 +212,67 @@ public class Surface : Objekt
 	//____ DLL functions ______________________________________________________
 
 	[DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-	private static extern void wg_setSurfaceIdentity(IntPtr surface, int id);
+	private static extern void wax_setSurfaceIdentity(IntPtr surface, int id);
 
 	[DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-	private static extern int wg_getSurfaceIdentity(IntPtr surface);
+	private static extern int wax_getSurfaceIdentity(IntPtr surface);
 
 	[DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-	private static extern SizeI wg_surfacePixelSize(IntPtr surface);                        ///< @brief Get the size in pixels of the surface.
+	private static extern SizeI wax_surfacePixelSize(IntPtr surface);                        ///< @brief Get the size in pixels of the surface.
 
 	[DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-	private static extern int wg_fillSurface(IntPtr surface, Color col);                                ///< @brief Fill surface with specified color.
+	private static extern int wax_fillSurface(IntPtr surface, Color col);                                ///< @brief Fill surface with specified color.
 
 	[DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-	private static extern int wg_fillSurfaceRect(IntPtr surface, ref RectI region, Color col);          ///< @brief Fill section of surface with specified color
+	private static extern int wax_fillSurfaceRect(IntPtr surface, ref RectI region, Color col);          ///< @brief Fill section of surface with specified color
 
 	[DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-	private static extern int wg_copySurface(IntPtr destSurface, CoordI dst, IntPtr sourceSurface);     ///< @brief Copy other surface as a block
+	private static extern int wax_copySurface(IntPtr destSurface, CoordI dst, IntPtr sourceSurface);     ///< @brief Copy other surface as a block
 
 	[DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-	private static extern int wg_copySurfaceRect(IntPtr destSurface, CoordI dst, IntPtr sourceSurface, ref RectI srcRect);    ///< @brief Copy block of graphics from other surface
+	private static extern int wax_copySurfaceRect(IntPtr destSurface, CoordI dst, IntPtr sourceSurface, ref RectI srcRect);    ///< @brief Copy block of graphics from other surface
 
 	[DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-	private static extern ref readonly PixelDescription wg_surfacePixelDescription(IntPtr surface); ///< @brief Get the pixel description for the surface.
+	private static extern ref readonly PixelDescription wax_surfacePixelDescription(IntPtr surface); ///< @brief Get the pixel description for the surface.
 
 	[DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-	private static extern PixelFormat wg_surfacePixelFormat(IntPtr surface);
+	private static extern PixelFormat wax_surfacePixelFormat(IntPtr surface);
 
 	[DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-	private static extern ColorSpace wg_surfaceColorSpace(IntPtr surface);
+	private static extern ColorSpace wax_surfaceColorSpace(IntPtr surface);
 
 	[DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-	private static extern int wg_surfaceIsBigEndian(IntPtr surface);
+	private static extern int wax_surfaceIsBigEndian(IntPtr surface);
 
 	[DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-	private static extern int wg_surfacePixelBits(IntPtr surface);
+	private static extern int wax_surfacePixelBits(IntPtr surface);
 
 	[DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-	private static extern int wg_surfaceIsOpaque(IntPtr surface);                ///< @brief Check if surface is guaranteed to be entirely opaque.
+	private static extern int wax_surfaceIsOpaque(IntPtr surface);                ///< @brief Check if surface is guaranteed to be entirely opaque.
 
 	[DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-	private static extern int wg_surfaceCanBeCanvas(IntPtr surface);
+	private static extern int wax_surfaceCanBeCanvas(IntPtr surface);
 
 	[DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-	private static extern C_PixelBuffer wg_allocPixelBuffer(IntPtr surface);
+	private static extern C_PixelBuffer wax_allocPixelBuffer(IntPtr surface);
 
 	[DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-	private static extern C_PixelBuffer wg_allocPixelBufferFromRect(IntPtr surface, in RectI rect);
+	private static extern C_PixelBuffer wax_allocPixelBufferFromRect(IntPtr surface, in RectI rect);
 
 	[DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-	private static extern int wg_pushPixels(IntPtr surface, in C_PixelBuffer buffer);
+	private static extern int wax_pushPixels(IntPtr surface, in C_PixelBuffer buffer);
 
 	[DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-	private static extern int wg_pushPixelsFromRect(IntPtr surface, in C_PixelBuffer buffer, in RectI bufferRect);
+	private static extern int wax_pushPixelsFromRect(IntPtr surface, in C_PixelBuffer buffer, in RectI bufferRect);
 
 	[DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-	private static extern void wg_pullPixels(IntPtr surface, in C_PixelBuffer buffer);
+	private static extern void wax_pullPixels(IntPtr surface, in C_PixelBuffer buffer);
 
 	[DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-	private static extern void wg_pullPixelsFromRect(IntPtr surface, in C_PixelBuffer buffer, in RectI bufferRect);            // Needs to be overridden!
+	private static extern void wax_pullPixelsFromRect(IntPtr surface, in C_PixelBuffer buffer, in RectI bufferRect);            // Needs to be overridden!
 
 	[DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-	private static extern void wg_freePixelBuffer(IntPtr surface, in C_PixelBuffer buffer);
+	private static extern void wax_freePixelBuffer(IntPtr surface, in C_PixelBuffer buffer);
 
 
 }

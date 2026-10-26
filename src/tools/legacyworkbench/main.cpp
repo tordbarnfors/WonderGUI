@@ -34,19 +34,19 @@
 /*
 #include <wg_streamsurface.h>
 #include <wg_streamsurfacefactory.h>
-#include <wg_streamplayer.h>
+#include <wax_streamplayer.h>
 */
 
-#include <wg_gfxdevice_gen2.h>
+#include <wax_gfxdevice_gen2.h>
 
-#include <wg_softsurface.h>
-#include <wg_softsurfacefactory.h>
-#include <wg_softedgemapfactory.h>
-#include <wg_softbackend.h>
-#include <wg_softkernels_default.h>
+#include <wax_softsurface.h>
+#include <wax_softsurfacefactory.h>
+#include <wax_softedgemapfactory.h>
+#include <wax_softbackend.h>
+#include <wax_softkernels_default.h>
 #include <wg_boxskin.h>
-#include <wg_bitmapfont.h>
-#include <wg_freetypefont.h>
+#include <wax_bitmapfont.h>
+#include <wax_freetypefont.h>
 #include <wg_textstyle.h>
 #include <wg_blockskin.h>
 #include <wg_tileskin.h>

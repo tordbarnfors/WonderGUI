@@ -21,9 +21,9 @@
 =========================================================================*/
 
 
-#include <wg_dx12surfacefactory.h>
+#include <wax_dx12surfacefactory.h>
 
-namespace wg
+namespace wax
 {
 
 
@@ -70,4 +70,4 @@ namespace wg
 	}
 
 
-} // namespace wg
+} // namespace wax

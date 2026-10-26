@@ -19,9 +19,9 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#include <wg_dataset.h>
+#include <wax_dataset.h>
 
-namespace wg
+namespace wax
 {
 	const TypeInfo BasicDataset::TYPEINFO = { "BasicDataset", &Object::TYPEINFO };
 

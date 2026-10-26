@@ -19,5 +19,5 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#include <wg_c_geartypes.h>
-#include <wg_geartypes.h>
+#include <wax_c_types.h>
+#include <wax_types.h>

@@ -23,7 +23,7 @@
 #define WONDERGUI_DOT_H
 #pragma once
 
-#include <wondergfx.h>
+#include <wax.h>
 
 #include <wg_animframes.h>
 #include <wg_animplayer.h>
@@ -42,7 +42,7 @@
 #include <wg_button.h>
 #include <wg_canvascapsule.h>
 #include <wg_canvasdisplay.h>
-#include <wg_canvaslayers.h>
+#include <wax_canvaslayers.h>
 #include <wg_capsule.h>
 #include <wg_caret.h>
 #include <wg_char.h>
@@ -56,7 +56,7 @@
 #include <wg_component.h>
 #include <wg_container.h>
 #include <wg_lambdaskin.h>
-#include <wg_dataset.h>
+#include <wax_dataset.h>
 #include <wg_doubleskin.h>
 #include <wg_dragndropoverlay.h>
 #include <wg_dynamicslotvector.h>

@@ -19,32 +19,32 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef WG_C_GFXBACKEND_DOT_H
-#define WG_C_GFXBACKEND_DOT_H
+#ifndef WAX_C_GFXBACKEND_DOT_H
+#define WAX_C_GFXBACKEND_DOT_H
 #pragma once
 
-#include <wg_c_gfxtypes.h>
-#include <wg_c_geo.h>
-#include <wg_c_color.h>
+#include <wax_c_types.h>
+#include <wax_c_geo.h>
+#include <wax_c_color.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 
-//____ wg_canvasInfo __________________________________________________________
+//____ wax_canvasInfo __________________________________________________________
 
-typedef struct wg_canvasInfo_struct		// NOT BINARY EQUIVALENT!
+typedef struct wax_canvasInfo_struct		// NOT BINARY EQUIVALENT!
 {
-	wg_canvasRef	ref;
-	wg_obj			surface;
-	wg_sizeSPX		size;
+	wax_canvasRef	ref;
+	wax_obj			surface;
+	wax_sizeSPX		size;
 	int				scale;
-} wg_canvasInfo;
+} wax_canvasInfo;
 
-//____ wg_sessionInfo _________________________________________________________
+//____ wax_sessionInfo _________________________________________________________
 
-typedef struct wg_sessionInfo_struct		// Binary equivalent of GfxBackend::SessionInfo.
+typedef struct wax_sessionInfo_struct		// Binary equivalent of GfxBackend::SessionInfo.
 {
 	// Commands
 
@@ -75,37 +75,37 @@ typedef struct wg_sessionInfo_struct		// Binary equivalent of GfxBackend::Sessio
 	int		nShapeSegments;		// Total number of segments (fill, outline, slices...) of all shapes.
 	int		nShapeTints;		// Total number of Tints encoded in DrawShape commands.
 
-} wg_sessionInfo;
+} wax_sessionInfo;
 
 
-WG_EXPORT void	wg_backendBeginRender( wg_obj backend );
-WG_EXPORT void	wg_backendEndRender( wg_obj backend );
+WAX_EXPORT void	wax_backendBeginRender( wax_obj backend );
+WAX_EXPORT void	wax_backendEndRender( wax_obj backend );
 
-WG_EXPORT void	wg_backendBeginSession( wg_obj backend, wg_canvasRef canvasRef, wg_obj canvasSurface, int nUpdateRects, const wg_rectSPX * pUpdateRects, const wg_sessionInfo * pInfo );
-WG_EXPORT void	wg_backendEndSession( wg_obj backend );
+WAX_EXPORT void	wax_backendBeginSession( wax_obj backend, wax_canvasRef canvasRef, wax_obj canvasSurface, int nUpdateRects, const wax_rectSPX * pUpdateRects, const wax_sessionInfo * pInfo );
+WAX_EXPORT void	wax_backendEndSession( wax_obj backend );
 
-WG_EXPORT void	wg_backendSetCanvasWithSurface( wg_obj backend, wg_obj surface );
-WG_EXPORT void	wg_backendSetCanvasWithRef( wg_obj backend, wg_canvasRef canvas );
+WAX_EXPORT void	wax_backendSetCanvasWithSurface( wax_obj backend, wax_obj surface );
+WAX_EXPORT void	wax_backendSetCanvasWithRef( wax_obj backend, wax_canvasRef canvas );
 
-WG_EXPORT void	wg_backendSetObjects(wg_obj backend, wg_obj* const * pBeg, wg_obj* const * pEnd);
+WAX_EXPORT void	wax_backendSetObjects(wax_obj backend, wax_obj* const * pBeg, wax_obj* const * pEnd);
 
-WG_EXPORT void	wg_backendSetRects(wg_obj backend, const wg_rectSPX* pBeg, const wg_rectSPX* pEnd);
-WG_EXPORT void	wg_backendSetColors(wg_obj backend, const wg_color * pBeg, const wg_color * pEnd);
-WG_EXPORT void	wg_backendSetTransforms(wg_obj backend, const wg_transform * pBeg, const wg_transform * pEnd);
+WAX_EXPORT void	wax_backendSetRects(wax_obj backend, const wax_rectSPX* pBeg, const wax_rectSPX* pEnd);
+WAX_EXPORT void	wax_backendSetColors(wax_obj backend, const wax_color * pBeg, const wax_color * pEnd);
+WAX_EXPORT void	wax_backendSetTransforms(wax_obj backend, const wax_transform * pBeg, const wax_transform * pEnd);
 
-WG_EXPORT void	wg_backendProcessCommands(wg_obj backend, const uint16_t* pBeg, const uint16_t * pEnd, int version);
-
-
-WG_EXPORT wg_canvasInfo wg_backendCanvasInfo(wg_obj backend, wg_canvasRef ref);
-
-WG_EXPORT wg_obj	wg_backendSurfaceFactory(wg_obj backend);
-WG_EXPORT wg_obj	wg_backendEdgemapFactory(wg_obj backend);
-WG_EXPORT wg_obj	wg_backendWarpmapFactory(wg_obj backend);
+WAX_EXPORT void	wax_backendProcessCommands(wax_obj backend, const uint16_t* pBeg, const uint16_t * pEnd, int version);
 
 
-WG_EXPORT int		wg_backendMaxEdges(wg_obj backend);
+WAX_EXPORT wax_canvasInfo wax_backendCanvasInfo(wax_obj backend, wax_canvasRef ref);
 
-WG_EXPORT const wg_typeInfo * wg_backendSurfaceType(wg_obj backend);
+WAX_EXPORT wax_obj	wax_backendSurfaceFactory(wax_obj backend);
+WAX_EXPORT wax_obj	wax_backendEdgemapFactory(wax_obj backend);
+WAX_EXPORT wax_obj	wax_backendWarpmapFactory(wax_obj backend);
+
+
+WAX_EXPORT int		wax_backendMaxEdges(wax_obj backend);
+
+WAX_EXPORT const wax_typeInfo * wax_backendSurfaceType(wax_obj backend);
 
 
 #ifdef __cplusplus

@@ -39,7 +39,7 @@
 #	include <wg2_key.h>
 #endif
 
-#include <wg_chain.h>
+#include <wax_chain.h>
 
 class WgRoot;
 class WgPanel;
@@ -263,7 +263,7 @@ private:
 	public:
 		virtual ~Callback() {};
 
-		LINK_METHODS(Callback);
+		WAX_LINK_METHODS(Callback);
 
 		virtual void 			ProcessEvent( const WgEvent::Event * pEvent ) = 0;
 		virtual bool 			IsAlive() const = 0;

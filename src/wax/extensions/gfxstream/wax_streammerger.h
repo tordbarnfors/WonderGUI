@@ -19,15 +19,15 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef	WG_STREAMMERGER_DOT_H
-#define	WG_STREAMMERGER_DOT_H
+#ifndef	WAX_STREAMMERGER_DOT_H
+#define	WAX_STREAMMERGER_DOT_H
 #pragma once
 
-#include <wg_streamsource.h>
+#include <wax_streamsource.h>
 
 #include <vector>
 
-namespace wg
+namespace wax
 {
 
 	class StreamMerger;
@@ -83,5 +83,5 @@ namespace wg
 	};
 
 
-} // namespace wg
-#endif //WG_STREAMMERGER_DOT_H
+} // namespace wax
+#endif //WAX_STREAMMERGER_DOT_H

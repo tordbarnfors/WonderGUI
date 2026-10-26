@@ -19,19 +19,19 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef	WG_STREAMLOOPWRAPPER_DOT_H
-#define	WG_STREAMLOOPWRAPPER_DOT_H
+#ifndef	WAX_STREAMLOOPWRAPPER_DOT_H
+#define	WAX_STREAMLOOPWRAPPER_DOT_H
 #pragma once
 
-#include <wg_gfxtypes.h>
-#include <wg_object.h>
-#include <wg_pointers.h>
-#include <wg_streamsource.h>
-#include <wg_gfxstream.h>
+#include <wax_types.h>
+#include <wax_object.h>
+#include <wax_pointers.h>
+#include <wax_streamsource.h>
+#include <wax_gfxstream.h>
 
 #include <functional>
 
-namespace wg
+namespace wax
 {
 
 	class StreamLoopWrapper;
@@ -93,6 +93,6 @@ namespace wg
 
 
 
-} // namespace wg
-#endif //WG_STREAMLOOPWRAPPER_DOT_H
+} // namespace wax
+#endif //WAX_STREAMLOOPWRAPPER_DOT_H
 

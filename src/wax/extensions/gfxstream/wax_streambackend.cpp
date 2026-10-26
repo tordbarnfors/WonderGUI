@@ -22,19 +22,19 @@
 #include <cstring>
 #include <algorithm>
 
-#include <wg_streambackend.h>
-#include <wg_remotesurface.h>
-#include <wg_mirrorsurface.h>
-#include <wg_streamedgemap.h>
-#include <wg_remotesurfacefactory.h>
-#include <wg_streamedgemapfactory.h>
-#include <wg_streamwarpmap.h>
-#include <wg_streamwarpmapfactory.h>
-#include <wg_gfxbase.h>
+#include <wax_streambackend.h>
+#include <wax_remotesurface.h>
+#include <wax_mirrorsurface.h>
+#include <wax_streamedgemap.h>
+#include <wax_remotesurfacefactory.h>
+#include <wax_streamedgemapfactory.h>
+#include <wax_streamwarpmap.h>
+#include <wax_streamwarpmapfactory.h>
+#include <wax_core.h>
 
 #include <assert.h>
 
-namespace wg
+namespace wax
 {
 
 	const TypeInfo StreamBackend::TYPEINFO = { "StreamBackend", &Object::TYPEINFO };
@@ -200,7 +200,7 @@ namespace wg
 				* it++ = static_cast<StreamWarpmap*>(pObj)->inStreamId();
 			else
 			{
-				GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Unknown object type in object list.", this, &StreamBackend::TYPEINFO, __func__, __FILE__, __LINE__);				
+				Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Unknown object type in object list.", this, &StreamBackend::TYPEINFO, __func__, __FILE__, __LINE__);				
 				return;
 			}
 		}
@@ -407,12 +407,12 @@ namespace wg
 		int dataStart = 0;
 
 
-		uint32_t compression = Util::makeEndianSpecificToken( 'N','O','N','E' );
+		uint32_t compression = GfxUtil::makeEndianSpecificToken( 'N','O','N','E' );
 
 		if( pCompressor )
 		{
 			memStackAllocated = pCompressor->maxCompressedSize(int(pEnd - pBeg));
-			auto pBuffer = GfxBase::memStackAlloc(memStackAllocated);
+			auto pBuffer = Core::memStackAlloc(memStackAllocated);
 
 			int size = pCompressor->compress(pBuffer, _pBeg, _pEnd );
 			pBeg = (char *) pBuffer;
@@ -453,7 +453,7 @@ namespace wg
 			p += bytesOfData;
 		}
 
-		GfxBase::memStackFree(memStackAllocated);
+		Core::memStackFree(memStackAllocated);
 	}
 
-} // namespace wg
+} // namespace wax

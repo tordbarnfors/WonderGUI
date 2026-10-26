@@ -24,7 +24,7 @@
 #pragma once
 
 #include <wg_stateskin.h>
-#include <wg_tint.h>
+#include <wax_tint.h>
 
 #include <vector>
 

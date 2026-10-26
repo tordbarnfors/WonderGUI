@@ -1,5 +1,5 @@
 #include "testsuite.h"
-#include <wg_blurbrush.h>
+#include <wax_blurbrush.h>
 
 // Palette based sources with palettes of different sizes and capacities. The left half is
 // drawn from the palette source, the right half from a BGRA source with the same pixels,

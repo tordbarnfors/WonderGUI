@@ -201,7 +201,7 @@ namespace wg
 
 			for (auto& slot : m_pListOfTreeViews->slots)
 			{
-				auto pTreeView = wg_dynamic_cast<WidgetTreeView_p>(slot.widget());
+				auto pTreeView = wax_dynamic_cast<WidgetTreeView_p>(slot.widget());
 				if (pTreeView)
 					pTreeView->select(pWidget);
 			}
@@ -272,7 +272,7 @@ namespace wg
 			// Try to find an existing window for this object.
 			for( auto& slot : m_pWorkspace->slots )
 			{
-				auto pDebugWin = wg_dynamic_cast<DebugWindow_p>(slot.widget());
+				auto pDebugWin = wax_dynamic_cast<DebugWindow_p>(slot.widget());
 
 				if( pDebugWin && &pDebugWin->content()->typeInfo() == pWantedTypeInfo )
 				{
@@ -407,7 +407,7 @@ namespace wg
 
 		Base::msgRouter()->addRoute(pPickButton, MsgType::Toggle, [this](Msg* pMsg) {
 
-			auto pButton = wg_static_cast<ToggleButton_p>(pMsg->source());
+			auto pButton = wax_static_cast<ToggleButton_p>(pMsg->source());
 			setSelectMode(pButton->isChecked());
 		});
 
@@ -422,11 +422,11 @@ namespace wg
 
 		Base::msgRouter()->addRoute(pDirtyRectsToggle, MsgType::Toggle, [this](Msg* pMsg) {
 
-			bool bChecked = wg_static_cast<ToggleButton_p>(pMsg->source())->isChecked();
+			bool bChecked = wax_static_cast<ToggleButton_p>(pMsg->source())->isChecked();
 
 			for (auto capsule : m_capsules)
 			{
-				auto pRoot = wg_dynamic_cast<RootPanel_p>(capsule->root());
+				auto pRoot = wax_dynamic_cast<RootPanel_p>(capsule->root());
 				if( pRoot )
 					pRoot->setDebugMode(bChecked);
 			}
@@ -484,7 +484,7 @@ namespace wg
 
 			for( auto& slot : m_pListOfTreeViews->slots )
 			{
-				auto pTreeView = wg_dynamic_cast<WidgetTreeView_p>(slot.widget());
+				auto pTreeView = wax_dynamic_cast<WidgetTreeView_p>(slot.widget());
 				if (pTreeView)
 					pTreeView->collapseAll();
 			}
@@ -496,7 +496,7 @@ namespace wg
 
 			for (auto& slot : m_pListOfTreeViews->slots)
 			{
-				auto pTreeView = wg_dynamic_cast<WidgetTreeView_p>(slot.widget());
+				auto pTreeView = wax_dynamic_cast<WidgetTreeView_p>(slot.widget());
 				if (pTreeView)
 					pTreeView->expandAll();
 			}

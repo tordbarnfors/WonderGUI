@@ -19,13 +19,13 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef	WG_COLOR_DOT_H
-#define	WG_COLOR_DOT_H
+#ifndef	WAX_COLOR_DOT_H
+#define	WAX_COLOR_DOT_H
 #pragma once
 
-#include	<wg_gfxtypes.h>
+#include	<wax_types.h>
 
-namespace wg
+namespace wax
 {
 
 	//____ Class Color8 _______________________________________________________________________
@@ -41,7 +41,7 @@ namespace wg
 		The different components can be accessed individually through the r, g, b and a members,
 		or as a group through the argb member.
 
-		WonderGUI uses HiColor for all API calls and internal operations, so Color8 is only provided
+		Wax uses HiColor for all API calls and internal operations, so Color8 is only provided
 		for developer convenience since colors often are expressed in this range.
 
 		Color channels are sRGB, the alpha channel is linear. Color8 and HiColor only differ in
@@ -262,13 +262,13 @@ namespace wg
 
 		For convenience, the color class also provides static, predefined colors matching the standard web - palette.
 
-		This is the color format used internally by WonderGUI.
+		This is the color format used internally by Wax.
 	*/
 
 
 	class HiColor
 	{
-		friend class GfxBase;
+		friend class Core;
 	public:
 
 		//.____ Creation __________________________________________
@@ -496,5 +496,5 @@ namespace wg
 	}
 
 
-} // namespace wg
-#endif // WG_COLOR_DOT_H
+} // namespace wax
+#endif // WAX_COLOR_DOT_H

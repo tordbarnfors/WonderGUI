@@ -21,10 +21,10 @@
 =========================================================================*/
 #include <sdlwindow.h>
 
-#include <wg_glsurface.h>
-#include <wg_glsurfacefactory.h>
-#include <wg_gledgemapfactory.h>
-#include <wg_glbackend.h>
+#include <wax_glsurface.h>
+#include <wax_glsurfacefactory.h>
+#include <wax_gledgemapfactory.h>
+#include <wax_glbackend.h>
 
 #ifndef __APPLE__
 #   include <GL/glew.h>

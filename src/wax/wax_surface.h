@@ -19,19 +19,19 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef WG_SURFACE_DOT_H
-#define	WG_SURFACE_DOT_H
+#ifndef WAX_SURFACE_DOT_H
+#define	WAX_SURFACE_DOT_H
 #pragma once
 //==============================================================================
 
-#include <wg_gfxtypes.h>
-#include <wg_geo.h>
-#include <wg_color.h>
-#include <wg_pointers.h>
-#include <wg_blob.h>
-#include <wg_gfxutil.h>
+#include <wax_types.h>
+#include <wax_geo.h>
+#include <wax_color.h>
+#include <wax_pointers.h>
+#include <wax_blob.h>
+#include <wax_gfxutil.h>
 
-namespace wg
+namespace wax
 {
 	class SurfaceFactory;
 
@@ -179,7 +179,7 @@ namespace wg
 		struct Blueprint
 		{
 			Object_p			baggage;
-			bool				bigEndian = (WG_IS_BIG_ENDIAN == 1);	// Byte order of the pixels. Defaults to the byte order of the system.
+			bool				bigEndian = (WAX_IS_BIG_ENDIAN == 1);	// Byte order of the pixels. Defaults to the byte order of the system.
 			bool				buffered = false;
 			bool				canvas = false;
 			ColorSpace			colorSpace = ColorSpace::Undefined;		// Color space of the pixels. Defaults to sRGB.
@@ -289,7 +289,7 @@ namespace wg
 			m_pixelFormat = format;
 			m_colorSpace = bp.colorSpace == ColorSpace::Undefined ? ColorSpace::sRGB : bp.colorSpace;
 			m_bBigEndian = bp.bigEndian;
-			m_pixelDescription = Util::pixelFormatToDescription(format, bp.bigEndian);
+			m_pixelDescription = GfxUtil::pixelFormatToDescription(format, bp.bigEndian);
 			m_pPixelDescription = &m_pixelDescription;
 
 			m_size = bp.size;
@@ -342,7 +342,7 @@ namespace wg
 		PixelDescription	m_pixelDescription;
 		PixelFormat			m_pixelFormat;
 		ColorSpace			m_colorSpace = ColorSpace::sRGB;
-		bool				m_bBigEndian = (WG_IS_BIG_ENDIAN == 1);
+		bool				m_bBigEndian = (WAX_IS_BIG_ENDIAN == 1);
 		SizeI				m_size;								// Width and height in pixels.
 
 		SampleMethod		m_sampleMethod = SampleMethod::Nearest;
@@ -367,7 +367,7 @@ namespace wg
  *
  * @param id	An integer to be saved in the Surface as its ID.
  *
- * The ID is not used internally by WonderGUI and doesn't affect anything. It just
+ * The ID is not used internally by Wax and doesn't affect anything. It just
  * provides a simple way for you to tag a Surface for later identification.
  */
 
@@ -382,7 +382,7 @@ namespace wg
 	 *
 	 * @return ID of this Surface. Default ID for all surfaces is 0.
 	 *
-	 * The ID is not used internally by WonderGUI and doesn't affect anything. It just
+	 * The ID is not used internally by Wax and doesn't affect anything. It just
 	 * provides a simple way for you to tag a Surface for later identification.
 	 */
 
@@ -629,7 +629,7 @@ namespace wg
 	 * be a DataSet or Blob containing meta data about the Surface that might be
 	 * relevant to your application.
 	 * 
-	 * The baggage is irrelevant to and ignored by WonderGUI.
+	 * The baggage is irrelevant to and ignored by Wax.
 	 */
 
 	void Surface::setBaggage(Object * pBaggage)
@@ -648,7 +648,7 @@ namespace wg
 	 * be a DataSet or Blob containing meta data about the Surface that might be
 	 * relevant to your application.
 	 * 
-	 * The baggage is irrelevant to and ignored by WonderGUI.
+	 * The baggage is irrelevant to and ignored by Wax.
 	 * 
 	 */
 
@@ -661,5 +661,5 @@ namespace wg
 
 	//==============================================================================
 
-} // namespace wg
-#endif // WG_SURFACE_DOT_H
+} // namespace wax
+#endif // WAX_SURFACE_DOT_H

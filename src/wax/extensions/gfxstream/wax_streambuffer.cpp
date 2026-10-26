@@ -21,10 +21,10 @@
 =========================================================================*/
 #include <cstring>
 
-#include <wg_streambuffer.h>
-#include <wg_gfxbase.h>
+#include <wax_streambuffer.h>
+#include <wax_core.h>
 
-namespace wg
+namespace wax
 {
 
 	const TypeInfo StreamBuffer::TYPEINFO = { "StreamBuffer", &Object::TYPEINFO };
@@ -127,7 +127,7 @@ namespace wg
 		{
 			char	msg[64];
 			snprintf( msg, 64, "StreamBuffer reallocated to %d bytes", bufferSizeNeeded);
-			GfxBase::throwError(ErrorLevel::Warning, ErrorCode::Performance, msg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			Core::throwError(ErrorLevel::Warning, ErrorCode::Performance, msg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 
 			_resizeBuffer(bufferSizeNeeded);
 		}
@@ -296,4 +296,4 @@ namespace wg
 	}
 
 
-} // namespace wg
+} // namespace wax

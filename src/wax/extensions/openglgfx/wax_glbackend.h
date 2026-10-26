@@ -19,12 +19,12 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef WG_GLBACKEND_DOT_H
-#define WG_GLBACKEND_DOT_H
+#ifndef WAX_GLBACKEND_DOT_H
+#define WAX_GLBACKEND_DOT_H
 #pragma once
 
-#include <wg_geo.h>
-#include <wg_gfxutil.h>
+#include <wax_geo.h>
+#include <wax_gfxutil.h>
 
 #ifdef WIN32
 #	include <GL/glew.h>
@@ -37,12 +37,12 @@
 #	endif
 #endif
 
-#include <wg_gfxbackend.h>
-#include <wg_gpushapes.h>
-#include <wg_tinttools.h>
-#include <wg_glsurface.h>
+#include <wax_gfxbackend.h>
+#include <wax_gpushapes.h>
+#include <wax_tinttools.h>
+#include <wax_glsurface.h>
 
-namespace wg
+namespace wax
 {
 	class GlSurface;
 	class GlBackend;
@@ -298,7 +298,7 @@ namespace wg
 			float	height;
 			float	yOfs;
 			float	yMul;
-			float	blendInfo[4];		// How fragment shaders output to the blender, see WG_GL_OUTPUT.
+			float	blendInfo[4];		// How fragment shaders output to the blender, see WAX_GL_OUTPUT.
 		};
 
 
@@ -455,6 +455,6 @@ namespace wg
 
 	};
 
-} // namespace wg
-#endif //WG_GLGFXDEVICE_DOT_H
+} // namespace wax
+#endif //WAX_GLGFXDEVICE_DOT_H
 

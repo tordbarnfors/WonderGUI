@@ -20,9 +20,9 @@
 
 =========================================================================*/
 #include <assert.h>
-#include <wg_memstack.h>
+#include <wax_memstack.h>
 
-namespace wg
+namespace wax
 {
 
 	MemStack::BlockHeader::BlockHeader(int bytes)
@@ -107,4 +107,4 @@ namespace wg
 		return false;
 	}
 
-} // namespace wg
+} // namespace wax

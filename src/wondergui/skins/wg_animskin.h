@@ -24,7 +24,7 @@
 #pragma once
 
 #include <wg_skin.h>
-#include <wg_object.h>
+#include <wax_object.h>
 
 #include <utility>
 #include <vector>

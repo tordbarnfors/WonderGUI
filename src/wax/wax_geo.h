@@ -19,18 +19,18 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef	WG_GEO_DOT_H
-#define	WG_GEO_DOT_H
+#ifndef	WAX_GEO_DOT_H
+#define	WAX_GEO_DOT_H
 #pragma once
 //=============================================================================
 
-#include <wg_gfxtypes.h>
+#include <wax_types.h>
 
 #include <utility>
 #include <cstdlib>
 #include <algorithm>
 
-namespace wg
+namespace wax
 {
 	template<class T> class CoordT;
 	template<class T> class BorderT;
@@ -468,7 +468,7 @@ namespace wg
 		Increasing x and y will always move the rectangle to the right and down respectively.
 
 		Members are not checked or truncated so width and height are allowed to contain negative values
-		but various WonderGUI methods accepting a Rect as parameter might not be able to handle it.
+		but various Wax methods accepting a Rect as parameter might not be able to handle it.
 
 	**/
 
@@ -1520,5 +1520,5 @@ namespace wg
 	 }
 
 
-} // namespace wg
-#endif	//WG_GEO_DOT_H
+} // namespace wax
+#endif	//WAX_GEO_DOT_H

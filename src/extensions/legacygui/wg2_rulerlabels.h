@@ -5,7 +5,7 @@
 #	include <wg2_widget.h>
 #endif
 
-#include <wg_chain.h>
+#include <wax_chain.h>
 
 #ifndef WG2_TEXT_DOT_H
 #	include <wg2_text.h>
@@ -43,7 +43,7 @@ protected:
 	class Label : public wg::Link
 	{
 	public:
-		LINK_METHODS(Label);
+		WAX_LINK_METHODS(Label);
 
 		WgText		text;
 		float		offset;

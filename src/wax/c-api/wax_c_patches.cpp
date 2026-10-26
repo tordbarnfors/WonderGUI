@@ -19,126 +19,126 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#include <wg_c_patches.h>
-#include <wg_patches.h>
+#include <wax_c_patches.h>
+#include <wax_patches.h>
 
 #include <type_traits>
 
-using namespace wg;
+using namespace wax;
 
-wg_patches wg_createPatches()
+wax_patches wax_createPatches()
 {
 	return new PatchesSPX();
 }
 
-void wg_deletePatches(wg_patches obj)
+void wax_deletePatches(wax_patches obj)
 {
 	delete (PatchesSPX *) obj;
 }
 
-int wg_setPatchesCapacity( wg_patches obj, int capacity )
+int wax_setPatchesCapacity( wax_patches obj, int capacity )
 {
 	return reinterpret_cast<PatchesSPX*>(obj)->capacity();
 }
 
-void wg_clearPatches(wg_patches obj)
+void wax_clearPatches(wax_patches obj)
 {
 	reinterpret_cast<PatchesSPX*>(obj)->clear();
 }
 
-void wg_addPatch( wg_patches obj, wg_rectSPX rect )
+void wax_addPatch( wax_patches obj, wax_rectSPX rect )
 {
 	reinterpret_cast<PatchesSPX*>(obj)->add( *(RectSPX*)&rect );
 }
 
-void wg_addPatches( wg_patches dest, wg_patches from )
+void wax_addPatches( wax_patches dest, wax_patches from )
 {
 	reinterpret_cast<PatchesSPX*>(dest)->add( reinterpret_cast<PatchesSPX*>(from) );
 }
 
-void wg_addPatchesSubset( wg_patches dest, wg_patches from, int ofs, int len )
+void wax_addPatchesSubset( wax_patches dest, wax_patches from, int ofs, int len )
 {
 	reinterpret_cast<PatchesSPX*>(dest)->add( reinterpret_cast<PatchesSPX*>(from), ofs, len );
 }
 
-void wg_subPatch( wg_patches obj, wg_rectSPX rect )
+void wax_subPatch( wax_patches obj, wax_rectSPX rect )
 {
 	reinterpret_cast<PatchesSPX*>(obj)->sub( *(RectSPX*)&rect );
 }
 
-void wg_subPatches( wg_patches dest, wg_patches from )
+void wax_subPatches( wax_patches dest, wax_patches from )
 {
 	reinterpret_cast<PatchesSPX*>(dest)->sub( reinterpret_cast<PatchesSPX*>(from) );
 }
 
-void wg_subPatchesSubset( wg_patches dest, wg_patches from, int ofs, int len )
+void wax_subPatchesSubset( wax_patches dest, wax_patches from, int ofs, int len )
 {
 	reinterpret_cast<PatchesSPX*>(dest)->sub( reinterpret_cast<PatchesSPX*>(from), ofs, len );
 }
 
-void wg_pushPatch( wg_patches obj, wg_rectSPX rect )
+void wax_pushPatch( wax_patches obj, wax_rectSPX rect )
 {
 	reinterpret_cast<PatchesSPX*>(obj)->push( *(RectSPX*)&rect );
 }
 
-void wg_pushPatches( wg_patches dest, wg_patches from )
+void wax_pushPatches( wax_patches dest, wax_patches from )
 {
 	reinterpret_cast<PatchesSPX*>(dest)->push( reinterpret_cast<PatchesSPX*>(from) );
 }
 
-void wg_pushPatchesSubset( wg_patches dest, wg_patches from, int ofs, int len )
+void wax_pushPatchesSubset( wax_patches dest, wax_patches from, int ofs, int len )
 {
 	reinterpret_cast<PatchesSPX*>(dest)->push( reinterpret_cast<PatchesSPX*>(from), ofs, len );
 }
 
-void wg_popPatch( wg_patches obj )
+void wax_popPatch( wax_patches obj )
 {
 	reinterpret_cast<PatchesSPX*>(obj)->pop();
 }
 
-void wg_trimPushPatches( wg_patches dest, wg_patches from, wg_rectSPX trim )
+void wax_trimPushPatches( wax_patches dest, wax_patches from, wax_rectSPX trim )
 {
 	reinterpret_cast<PatchesSPX*>(dest)->trimPush(*reinterpret_cast<PatchesSPX*>(from), *(RectSPX*)&trim );
 }
 
-int wg_removePatches( wg_patches obj, int ofs, int len )
+int wax_removePatches( wax_patches obj, int ofs, int len )
 {
 	return reinterpret_cast<PatchesSPX*>(obj)->remove( ofs, len );
 }
 
-void wg_clipPatches( wg_patches obj, wg_rectSPX clip )
+void wax_clipPatches( wax_patches obj, wax_rectSPX clip )
 {
 	reinterpret_cast<PatchesSPX*>(obj)->clip( *(RectSPX*)&clip );
 }
 
-wg_rectSPX wg_patchesBounds( wg_patches obj )
+wax_rectSPX wax_patchesBounds( wax_patches obj )
 {
 	RectSPX r = reinterpret_cast<PatchesSPX*>(obj)->bounds();
 
 	return { r.x, r.y, r.w, r.h };
 }
 
-const wg_rectSPX * wg_patchesBegin( wg_patches obj )
+const wax_rectSPX * wax_patchesBegin( wax_patches obj )
 {
-	return reinterpret_cast<const wg_rectSPX*>( reinterpret_cast<PatchesSPX*>(obj)->begin() );
+	return reinterpret_cast<const wax_rectSPX*>( reinterpret_cast<PatchesSPX*>(obj)->begin() );
 }
 
-const wg_rectSPX * wg_patchesEnd( wg_patches obj )
+const wax_rectSPX * wax_patchesEnd( wax_patches obj )
 {
-	return reinterpret_cast<const wg_rectSPX*>( reinterpret_cast<PatchesSPX*>(obj)->end() );
+	return reinterpret_cast<const wax_rectSPX*>( reinterpret_cast<PatchesSPX*>(obj)->end() );
 }
 
-int wg_patchesSize( wg_patches obj )
+int wax_patchesSize( wax_patches obj )
 {
 	return reinterpret_cast<PatchesSPX*>(obj)->size();
 }
 
-int wg_patchesCapacity( wg_patches obj )
+int wax_patchesCapacity( wax_patches obj )
 {
 	return reinterpret_cast<PatchesSPX*>(obj)->capacity();
 }
 
-int wg_patchesIsEmpty( wg_patches obj )
+int wax_patchesIsEmpty( wax_patches obj )
 {
 	return reinterpret_cast<PatchesSPX*>(obj)->isEmpty();
 }

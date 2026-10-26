@@ -19,44 +19,44 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#include <wg_c_object.h>
-#include <wg_object.h>
+#include <wax_c_object.h>
+#include <wax_object.h>
 
-using namespace wg;
+using namespace wax;
 
-const wg_typeInfo* wg_getTypeInfo(wg_obj object)
+const wax_typeInfo* wax_getTypeInfo(wax_obj object)
 {
 	const TypeInfo& ret = reinterpret_cast<const Object*>(object)->typeInfo();
-	return reinterpret_cast<const wg_typeInfo*>(&ret);
+	return reinterpret_cast<const wax_typeInfo*>(&ret);
 }
 
-int wg_isInstanceOf(wg_obj object, const wg_typeInfo* pTypeInfo)
+int wax_isInstanceOf(wax_obj object, const wax_typeInfo* pTypeInfo)
 {
 	return reinterpret_cast<Object*>(object)->isInstanceOf(reinterpret_cast<const TypeInfo&>(*pTypeInfo));
 }
 
-void wg_setFinalizer(wg_obj object, wg_finalizer_func pFinalizer)
+void wax_setFinalizer(wax_obj object, wax_finalizer_func pFinalizer)
 {
 	reinterpret_cast<Object*>(object)->setFinalizer(reinterpret_cast<void(*)(Object*)>(pFinalizer));
 }
 
-wg_finalizer_func wg_finalizer(wg_obj object)
+wax_finalizer_func wax_finalizer(wax_obj object)
 {
 	auto pFinalizer = reinterpret_cast<Object*>(object)->finalizer();
-	return reinterpret_cast<wg_finalizer_func>(pFinalizer.rawPtr());
+	return reinterpret_cast<wax_finalizer_func>(pFinalizer.rawPtr());
 }
 
-void wg_retain(wg_obj object)
+void wax_retain(wax_obj object)
 {
 	reinterpret_cast<Object*>(object)->retain();
 }
 
-void wg_release(wg_obj object)
+void wax_release(wax_obj object)
 {
 	reinterpret_cast<Object*>(object)->release();
 }
 
-int wg_refcount(wg_obj object)
+int wax_refcount(wax_obj object)
 {
 	return reinterpret_cast<Object*>(object)->refcount();
 }

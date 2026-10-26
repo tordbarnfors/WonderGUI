@@ -19,25 +19,25 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef WG_C_STREAMWRAPPER_DOT_H
-#define WG_C_STREAMWRAPPER_DOT_H
+#ifndef WAX_C_STREAMWRAPPER_DOT_H
+#define WAX_C_STREAMWRAPPER_DOT_H
 #pragma once
 
-#include <wg_c_gfxtypes.h>
-#include <wg_c_geo.h>
+#include <wax_c_types.h>
+#include <wax_c_geo.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-	WG_EXPORT wg_obj	wg_createStreamWrapper( const void * pBegin, const void * pEnd );
+	WAX_EXPORT wax_obj	wax_createStreamWrapper( const void * pBegin, const void * pEnd );
 
-	WG_EXPORT wg_component	wg_getStreamWrapperOutput(wg_obj streamWrapper);
+	WAX_EXPORT wax_component	wax_getStreamWrapperOutput(wax_obj streamWrapper);
 
-	WG_EXPORT int	wg_chunkInStreamWrapper(wg_obj streamWrapper);
-	WG_EXPORT int	wg_bytesInStreamWrapper(wg_obj streamWrapper);
+	WAX_EXPORT int	wax_chunkInStreamWrapper(wax_obj streamWrapper);
+	WAX_EXPORT int	wax_bytesInStreamWrapper(wax_obj streamWrapper);
 
-	WG_EXPORT void	wg_restartStreamWrapper(wg_obj streamWrapper);
+	WAX_EXPORT void	wax_restartStreamWrapper(wax_obj streamWrapper);
 
 #ifdef __cplusplus
 }

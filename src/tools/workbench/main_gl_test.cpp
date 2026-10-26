@@ -18,9 +18,9 @@
 
 #include <wondergui.h>
 
-#include <wg_glsurface.h>
-#include <wg_glsurfacefactory.h>
-#include <wg_glgfxdevice.h>
+#include <wax_glsurface.h>
+#include <wax_glsurfacefactory.h>
+#include <wax_glgfxdevice.h>
 #include <testwidget.h>
 
 

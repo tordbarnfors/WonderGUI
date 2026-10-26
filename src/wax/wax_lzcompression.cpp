@@ -20,20 +20,20 @@
 
 =========================================================================*/
 
-#include <wg_lzcompression.h>
-#include <wg_gfxutil.h>
-#include <wg_gfxbase.h>
+#include <wax_lzcompression.h>
+#include <wax_gfxutil.h>
+#include <wax_core.h>
 
 #include <algorithm>
 #include <cstring>
 
-namespace wg
+namespace wax
 {
 const TypeInfo LZCompressor::TYPEINFO = { "LZCompressor", &Compressor::TYPEINFO };
 const TypeInfo LZDecompressor::TYPEINFO = { "LZDecompressor", &Decompressor::TYPEINFO };
 
-const uint32_t LZCompressor::ID_TOKEN = Util::makeEndianSpecificToken('L', 'Z', 'W', 'G');
-const uint32_t LZDecompressor::ID_TOKEN = Util::makeEndianSpecificToken('L', 'Z', 'W', 'G');
+const uint32_t LZCompressor::ID_TOKEN = GfxUtil::makeEndianSpecificToken('L', 'Z', 'W', 'G');
+const uint32_t LZDecompressor::ID_TOKEN = GfxUtil::makeEndianSpecificToken('L', 'Z', 'W', 'G');
 
 //____ create() _____________________________________________________________
 
@@ -107,7 +107,7 @@ int LZCompressor::compress( void * _pDest, const void * _pBegin, const void * _p
 
 	int windowSize = m_windowSize*sizeof(uint16_t);
 
-	auto pWindow = (uint16_t *) GfxBase::memStackAlloc(windowSize);
+	auto pWindow = (uint16_t *) Core::memStackAlloc(windowSize);
 
 	std::memset( pWindow, 0, windowSize );
 
@@ -265,7 +265,7 @@ int LZCompressor::compress( void * _pDest, const void * _pBegin, const void * _p
 
 	// Cleanup and return
 
-	GfxBase::memStackFree(windowSize);
+	Core::memStackFree(windowSize);
 
 	return int(pWrite - pDest);
 }

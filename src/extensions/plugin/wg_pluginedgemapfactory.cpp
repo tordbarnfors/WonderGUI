@@ -25,7 +25,7 @@
 #include <wg_pluginedgemap.h>
 #include <wg_pluginedgemapfactory.h>
 
-#include <wg_gfxbase.h>
+#include <wax_core.h>
 
 
 namespace wg
@@ -35,7 +35,7 @@ namespace wg
 
 	//____ constructor ________________________________________________________
 
-	PluginEdgemapFactory::PluginEdgemapFactory( wg_obj cFactory) : m_cFactory(cFactory)
+	PluginEdgemapFactory::PluginEdgemapFactory( wax_obj cFactory) : m_cFactory(cFactory)
 	{
 		/*
 		 TODO: Solve this in a more correct way:
@@ -89,7 +89,7 @@ namespace wg
 	{
 		bpTranslator cBP(blueprint);
 
-		auto obj = PluginCalls::edgemapFactory->createEdgemapFromFloats(m_cFactory, cBP.bp(), (wg_sampleOrigo) origo, pSamples, edges, edgePitch, samplePitch);
+		auto obj = PluginCalls::edgemapFactory->createEdgemapFromFloats(m_cFactory, cBP.bp(), (wax_sampleOrigo) origo, pSamples, edges, edgePitch, samplePitch);
 		auto pEdgemap = PluginEdgemap::create(obj);
 		PluginCalls::object->release(obj);
 		return pEdgemap;
@@ -99,7 +99,7 @@ namespace wg
 	{
 		bpTranslator cBP(blueprint);
 
-		auto obj = PluginCalls::edgemapFactory->createEdgemapFromSpx(m_cFactory, cBP.bp(), (wg_sampleOrigo)origo, pSamples, edges, edgePitch, samplePitch);
+		auto obj = PluginCalls::edgemapFactory->createEdgemapFromSpx(m_cFactory, cBP.bp(), (wax_sampleOrigo)origo, pSamples, edges, edgePitch, samplePitch);
 		auto pEdgemap = PluginEdgemap::create(obj);
 		PluginCalls::object->release(obj);
 		return pEdgemap;
@@ -107,7 +107,7 @@ namespace wg
 
 	PluginEdgemapFactory::bpTranslator::bpTranslator( const Edgemap::Blueprint& cppBP )
 	{
-		m_cBP.colors = (const wg_color*) cppBP.colors;
+		m_cBP.colors = (const wax_color*) cppBP.colors;
 		m_cBP.segments = cppBP.segments;
 		m_cBP.size.w = cppBP.size.w;
 		m_cBP.size.h = cppBP.size.h;

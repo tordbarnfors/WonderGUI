@@ -19,9 +19,9 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#include <wg_edgemapfactory.h>
+#include <wax_edgemapfactory.h>
 
-namespace wg
+namespace wax
 {
 
 	const TypeInfo EdgemapFactory::TYPEINFO = { "EdgemapFactory", &Object::TYPEINFO };

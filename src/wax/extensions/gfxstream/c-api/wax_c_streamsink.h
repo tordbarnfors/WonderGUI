@@ -19,17 +19,17 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef WG_C_STREAMSINK_DOT_H
-#define WG_C_STREAMSINK_DOT_H
+#ifndef WAX_C_STREAMSINK_DOT_H
+#define WAX_C_STREAMSINK_DOT_H
 #pragma once
 
-#include <wg_c_gfxtypes.h>
+#include <wax_c_types.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-	WG_EXPORT void	wg_processStreamChunks( wg_component streamSink, const void * pBegin, const void * pEnd );
+	WAX_EXPORT void	wax_processStreamChunks( wax_component streamSink, const void * pBegin, const void * pEnd );
 
 #ifdef __cplusplus
 }

@@ -1,6 +1,6 @@
 #include "testsuite.h"
 
-#include <wg_tint.h>
+#include <wax_tint.h>
 
 // Circles, rings, pies and gauges drawn with GfxDevice::drawRing().
 

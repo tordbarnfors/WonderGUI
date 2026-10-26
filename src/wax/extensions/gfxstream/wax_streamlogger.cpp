@@ -19,15 +19,15 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#include <wg_streamlogger.h>
-#include <wg_tinttools.h>
-#include <wg_gfxbackend.h>
+#include <wax_streamlogger.h>
+#include <wax_tinttools.h>
+#include <wax_gfxbackend.h>
 
 #include <assert.h>
 
 #include <iomanip>
 
-namespace wg
+namespace wax
 {
 
 	const TypeInfo StreamLogger::TYPEINFO = { "StreamLogger", &Object::TYPEINFO };
@@ -839,4 +839,4 @@ namespace wg
 		}
 	}
 
-} //namespace wg
+} //namespace wax

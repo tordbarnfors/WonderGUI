@@ -19,11 +19,11 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef	WG_RLECOMPRESSION_DOT_H
-#define	WG_RLECOMPRESSION_DOT_H
+#ifndef	WAX_RLECOMPRESSION_DOT_H
+#define	WAX_RLECOMPRESSION_DOT_H
 #pragma once
 
-#include <wg_compression.h>
+#include <wax_compression.h>
 
 
 /*
@@ -48,7 +48,7 @@
 
 
 
-namespace wg
+namespace wax
 {
 
 	class RLECompressor;
@@ -136,4 +136,4 @@ namespace wg
 }
 
 
-#endif //WG_RLECOMPRESSION_DOT_H
+#endif //WAX_RLECOMPRESSION_DOT_H

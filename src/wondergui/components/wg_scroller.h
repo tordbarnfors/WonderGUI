@@ -24,7 +24,7 @@
 #pragma once
 
 #include <wg_component.h>
-#include <wg_pointers.h>
+#include <wax_pointers.h>
 #include <wg_skin.h>
 #include <wg_msg.h>
 

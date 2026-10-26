@@ -19,25 +19,25 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef WG_C_STREAMSPLITTER_DOT_H
-#define WG_C_STREAMSPLITTER_DOT_H
+#ifndef WAX_C_STREAMSPLITTER_DOT_H
+#define WAX_C_STREAMSPLITTER_DOT_H
 #pragma once
 
-#include <wg_c_gfxtypes.h>
-#include <wg_c_geo.h>
+#include <wax_c_types.h>
+#include <wax_c_geo.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-	WG_EXPORT wg_obj	wg_createStreamSplitter();
-	WG_EXPORT wg_obj	wg_createStreamSplitterWithOutputs( wg_component output1, wg_component output2 );
+	WAX_EXPORT wax_obj	wax_createStreamSplitter();
+	WAX_EXPORT wax_obj	wax_createStreamSplitterWithOutputs( wax_component output1, wax_component output2 );
 
-	WG_EXPORT wg_component	wg_getStreamSplitterInput(wg_obj streamSplitter);
+	WAX_EXPORT wax_component	wax_getStreamSplitterInput(wax_obj streamSplitter);
 
-	WG_EXPORT void		wg_clearStreamSplitterOutputs(wg_obj streamSplitter);
-	WG_EXPORT void		wg_addStreamSplitterOutput(wg_obj streamSplitter, wg_component output);
-	WG_EXPORT void		wg_removeStreamSplitterOutput(wg_obj streamSplitter, wg_component output);
+	WAX_EXPORT void		wax_clearStreamSplitterOutputs(wax_obj streamSplitter);
+	WAX_EXPORT void		wax_addStreamSplitterOutput(wax_obj streamSplitter, wax_component output);
+	WAX_EXPORT void		wax_removeStreamSplitterOutput(wax_obj streamSplitter, wax_component output);
 
 
 #ifdef __cplusplus

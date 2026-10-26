@@ -19,12 +19,12 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef WG_GLSHADERS_DOT_H
-#define WG_GLSHADERS_DOT_H
+#ifndef WAX_GLSHADERS_DOT_H
+#define WAX_GLSHADERS_DOT_H
 
-#include <wg_glgfxdevice.h>  
+#include <wax_glgfxdevice.h>  
 
-namespace wg {
+namespace wax {
 
 
 const char GlGfxDevice::fillVertexShader[] =
@@ -1096,4 +1096,4 @@ static const char segmentsFragmentShader2[] =
 
 }
 
-#endif //WG_GLSHADERS_DOT_H
+#endif //WAX_GLSHADERS_DOT_H

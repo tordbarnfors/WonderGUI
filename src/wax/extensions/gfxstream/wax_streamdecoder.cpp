@@ -19,11 +19,11 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#include <wg_streamdecoder.h>
+#include <wax_streamdecoder.h>
 
 #include <tuple>
 
-namespace wg
+namespace wax
 {
 	const TypeInfo StreamDecoder::TYPEINFO = { "StreamDecoder", &Object::TYPEINFO };
 

@@ -19,313 +19,313 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#include <wg_c_gfxdevice.h>
+#include <wax_c_gfxdevice.h>
 #include <algorithm>
 #include <new>
-#include <wg_gfxdevice_gen2.h>
-#include <wg_gfxbase.h>
+#include <wax_gfxdevice_gen2.h>
+#include <wax_core.h>
 
-#include <wg_c_blurbrush.h>
+#include <wax_c_blurbrush.h>
 
 #include <type_traits>
 
 
-using namespace wg;
+using namespace wax;
 
 
-static_assert( sizeof(wg_waveLine) == sizeof(wg::WaveLine), "wg_waveLine differs in size from wg::WaveLine!" );
-static_assert( std::is_trivially_copyable<wg::WaveLine>::value, "wg::WaveLine is not trivially copyable" );
+static_assert( sizeof(wax_waveLine) == sizeof(wax::WaveLine), "wax_waveLine differs in size from wax::WaveLine!" );
+static_assert( std::is_trivially_copyable<wax::WaveLine>::value, "wax::WaveLine is not trivially copyable" );
 
 
 
-inline GfxDeviceGen2* getPtr(wg_obj obj) {
+inline GfxDeviceGen2* getPtr(wax_obj obj) {
 	return static_cast<GfxDeviceGen2*>(reinterpret_cast<Object*>(obj));
 }
 
-inline Edgemap* getEdgemapPtr(wg_obj obj) {
+inline Edgemap* getEdgemapPtr(wax_obj obj) {
 	return static_cast<Edgemap*>(reinterpret_cast<Object*>(obj));
 }
 
 
-wg_obj wg_createGfxDevice( wg_obj backend )
+wax_obj wax_createGfxDevice( wax_obj backend )
 {
 	auto p = GfxDeviceGen2::create( static_cast<GfxBackend*>(reinterpret_cast<Object*>(backend)) );
 	p->retain();
 	return static_cast<Object*>(p);
 }
 
-int wg_setBackend( wg_obj device, wg_obj backend )
+int wax_setBackend( wax_obj device, wax_obj backend )
 {
 	return getPtr(device)->setBackend(static_cast<GfxBackend*>(reinterpret_cast<Object*>(backend)));
 }
 
-wg_obj wg_getBackend( wg_obj device )
+wax_obj wax_getBackend( wax_obj device )
 {
 	return static_cast<Object*>(getPtr(device)->backend().rawPtr());
 }
 
 
-wg_canvasInfo wg_getCanvas(wg_obj device)
+wax_canvasInfo wax_getCanvas(wax_obj device)
 {
 	auto& canvasInfo = getPtr(device)->canvas();
-	return { (wg_canvasRef)canvasInfo.ref, canvasInfo.pSurface, {canvasInfo.size.w, canvasInfo.size.h}, canvasInfo.scale };
+	return { (wax_canvasRef)canvasInfo.ref, canvasInfo.pSurface, {canvasInfo.size.w, canvasInfo.size.h}, canvasInfo.scale };
 }
 
 
-wg_canvasInfo wg_getCanvasRef(wg_obj device, wg_canvasRef ref)
+wax_canvasInfo wax_getCanvasRef(wax_obj device, wax_canvasRef ref)
 {
 	auto& canvasInfo = getPtr(device)->canvas((CanvasRef)ref);
-	return { (wg_canvasRef)canvasInfo.ref, canvasInfo.pSurface, {canvasInfo.size.w, canvasInfo.size.h}, canvasInfo.scale };
+	return { (wax_canvasRef)canvasInfo.ref, canvasInfo.pSurface, {canvasInfo.size.w, canvasInfo.size.h}, canvasInfo.scale };
 }
 
 
-wg_obj	wg_canvasLayers(wg_obj device)
+wax_obj	wax_canvasLayers(wax_obj device)
 {
 	return getPtr(device)->canvasLayers().rawPtr();
 }
 
 
-wg_obj wg_surfaceFactory(wg_obj device)
+wax_obj wax_surfaceFactory(wax_obj device)
 {
 	return getPtr(device)->surfaceFactory().rawPtr();
 }
 
 
-wg_obj wg_edgemapFactory(wg_obj device)
+wax_obj wax_edgemapFactory(wax_obj device)
 {
 	return getPtr(device)->edgemapFactory().rawPtr();
 }
 
-wg_obj wg_warpmapFactory(wg_obj device)
+wax_obj wax_warpmapFactory(wax_obj device)
 {
 	return getPtr(device)->warpmapFactory().rawPtr();
 }
 
 
-int	wg_maxSegments()
+int	wax_maxSegments()
 {
 	return GfxDevice::maxSegments();
 }
 
 
-wg_sizeSPX wg_canvasSize(wg_obj device)
+wax_sizeSPX wax_canvasSize(wax_obj device)
 {
 	auto canvasSize = getPtr(device)->canvasSize();
 	return { canvasSize.w, canvasSize.h };
 }
 
 
-int wg_setClipList(wg_obj device, int nRectangles, const wg_rectSPX* pRectangles)
+int wax_setClipList(wax_obj device, int nRectangles, const wax_rectSPX* pRectangles)
 {
 	return getPtr(device)->setClipList(nRectangles, (RectSPX*)pRectangles);
 }
 
 
-void wg_resetClipList(wg_obj device)
+void wax_resetClipList(wax_obj device)
 {
 	getPtr(device)->resetClipList();
 }
 
 
-int	wg_pushClipList(wg_obj device, int nRectangles, const wg_rectSPX* pRectangles)
+int	wax_pushClipList(wax_obj device, int nRectangles, const wax_rectSPX* pRectangles)
 {
 	return getPtr(device)->pushClipList(nRectangles, (RectSPX*)pRectangles);
 }
 
 
-int	wg_popClipList(wg_obj device)
+int	wax_popClipList(wax_obj device)
 {
 	return getPtr(device)->popClipList();
 }
 
 
-const wg_rectSPX* wg_getClipList(wg_obj device)
+const wax_rectSPX* wax_getClipList(wax_obj device)
 {
-	return (wg_rectSPX*) getPtr(device)->clipList();
+	return (wax_rectSPX*) getPtr(device)->clipList();
 }
 
 
-int wg_clipListSize(wg_obj device)
+int wax_clipListSize(wax_obj device)
 {
  	return getPtr(device)->clipListSize();
 }
 
 
-const wg_rectSPX* wg_clipBounds(wg_obj device)
+const wax_rectSPX* wax_clipBounds(wax_obj device)
 {
-	return (wg_rectSPX*) &getPtr(device)->clipBounds();
+	return (wax_rectSPX*) &getPtr(device)->clipBounds();
 }
 
 
-void wg_setTintColor(wg_obj device, wg_color color)
+void wax_setTintColor(wax_obj device, wax_color color)
 {
 	getPtr(device)->setTintColor( HiColor( color.r, color.g, color.b, color.a) );
 }
 
 
-wg_color wg_getTintColor(wg_obj device)
+wax_color wax_getTintColor(wax_obj device)
 {
 	auto color = getPtr(device)->tintColor();
 	return { color.b, color.g, color.r, color.a };
 }
 
 
-void wg_clearTintColor(wg_obj device)
+void wax_clearTintColor(wax_obj device)
 {
 	getPtr(device)->clearTintColor();
 }
 
 
-int	wg_hasTintColor(wg_obj device)
+int	wax_hasTintColor(wax_obj device)
 {
 	return getPtr(device)->hasTintColor();
 }
 
 
-void wg_setTint(wg_obj device, const wg_rectSPX* rect, const wg_obj tint)
+void wax_setTint(wax_obj device, const wax_rectSPX* rect, const wax_obj tint)
 {
 	getPtr(device)->setTint( *(const RectSPX*)rect, static_cast<Tint*>(reinterpret_cast<Object*>(tint)) );
 }
 
 
-wg_obj wg_getTint(wg_obj device)
+wax_obj wax_getTint(wax_obj device)
 {
 	return static_cast<Object*>(getPtr(device)->tint().rawPtr());
 }
 
 
-wg_rectSPX wg_getTintRect(wg_obj device)
+wax_rectSPX wax_getTintRect(wax_obj device)
 {
 	RectSPX rect = getPtr(device)->tintRect();
 	return { rect.x, rect.y, rect.w, rect.h };
 }
 
 
-void wg_clearTint(wg_obj device)
+void wax_clearTint(wax_obj device)
 {
 	getPtr(device)->clearTint();
 }
 
 
-int wg_hasTint(wg_obj device)
+int wax_hasTint(wax_obj device)
 {
 	return getPtr(device)->hasTint();
 }
 
 
-int wg_setBlendMode(wg_obj device, wg_blendMode blendMode)
+int wax_setBlendMode(wax_obj device, wax_blendMode blendMode)
 {
 	return getPtr(device)->setBlendMode( (BlendMode) blendMode );
 }
 
 
-wg_blendMode wg_getBlendMode(wg_obj device)
+wax_blendMode wax_getBlendMode(wax_obj device)
 {
-	return (wg_blendMode) getPtr(device)->blendMode();
+	return (wax_blendMode) getPtr(device)->blendMode();
 }
 
 
-int wg_setBlitSource(wg_obj device, wg_obj surface)
+int wax_setBlitSource(wax_obj device, wax_obj surface)
 {
 	return getPtr(device)->setBlitSource( static_cast<Surface*>(reinterpret_cast<Object*>(surface)) );
 }
 
 
-wg_obj wg_getBlitSource(wg_obj device)
+wax_obj wax_getBlitSource(wax_obj device)
 {
-	return (wg_obj) getPtr(device)->blitSource();
+	return (wax_obj) getPtr(device)->blitSource();
 }
 
 
-void wg_setMorphFactor(wg_obj device, float factor)
+void wax_setMorphFactor(wax_obj device, float factor)
 {
 	getPtr(device)->setMorphFactor(factor);
 }
 
 
-float wg_getMorphFactor(wg_obj device)
+float wax_getMorphFactor(wax_obj device)
 {
 	return getPtr(device)->morphFactor();
 }
 
-void wg_setBlurMatrices(wg_obj device, wg_spx radius, const float red[9], const float green[9], const float blue[9] )
+void wax_setBlurMatrices(wax_obj device, wax_spx radius, const float red[9], const float green[9], const float blue[9] )
 {
 	// We need to create a Blurbrush on the fly
 
-	auto pBlurbrush = Blurbrush::create( WGBP(Blurbrush, _.size = radius, _.red = red, _.green = green, _.blue = blue) );
+	auto pBlurbrush = Blurbrush::create( WAXBP(Blurbrush, _.size = radius, _.red = red, _.green = green, _.blue = blue) );
 
 	getPtr(device)->setBlurbrush( pBlurbrush );
 }
 
-void wg_setBlurbrush(wg_obj device, wg_obj brush )
+void wax_setBlurbrush(wax_obj device, wax_obj brush )
 {
 	Blurbrush* pBrush = brush == 0 ? nullptr : static_cast<Blurbrush*>(reinterpret_cast<Object*>(brush));
 
 	getPtr(device)->setBlurbrush( pBrush );
 }
 
-wg_obj wg_getBlurbrush(wg_obj device)
+wax_obj wax_getBlurbrush(wax_obj device)
 {
 	return static_cast<Object*>(getPtr(device)->blurbrush().rawPtr());
 }
 
 
-void wg_setFixedBlendColor(wg_obj device, wg_color color )
+void wax_setFixedBlendColor(wax_obj device, wax_color color )
 {
 	getPtr(device)->setFixedBlendColor( HiColor( color.r, color.g, color.b, color.a) );
 }
 
 
-wg_color wg_getFixedBlendColor(wg_obj device)
+wax_color wax_getFixedBlendColor(wax_obj device)
 {
 	auto color = getPtr(device)->fixedBlendColor();
 	return { color.b, color.g, color.r, color.a };
 }
 
 
-void wg_setRenderLayer(wg_obj device, int layer)
+void wax_setRenderLayer(wax_obj device, int layer)
 {
 	getPtr(device)->setRenderLayer(layer);
 }
 
 
-int wg_getRenderLayer(wg_obj device)
+int wax_getRenderLayer(wax_obj device)
 {
 	return getPtr(device)->renderLayer();
 }
 
 
-int wg_beginRender(wg_obj device)
+int wax_beginRender(wax_obj device)
 {
 	return getPtr(device)->beginRender();
 }
 
 
-int wg_endRender(wg_obj device)
+int wax_endRender(wax_obj device)
 {
 	return getPtr(device)->endRender();
 }
 
 
-int wg_isDeviceRendering(wg_obj device)
+int wax_isDeviceRendering(wax_obj device)
 {
 	return getPtr(device)->isRendering();
 }
 
 
-int wg_isDeviceIdle(wg_obj device)
+int wax_isDeviceIdle(wax_obj device)
 {
 	return getPtr(device)->isIdle();
 }
 
 
-void wg_flushDevice(wg_obj device)
+void wax_flushDevice(wax_obj device)
 {
 	getPtr(device)->flush();
 }
 
 
-int wg_beginCanvasUpdateWithRef(wg_obj device, wg_canvasRef canvas, int nUpdateRects, const wg_rectSPX* pUpdateRects, wg_obj canvasLayers, int startLayer)
+int wax_beginCanvasUpdateWithRef(wax_obj device, wax_canvasRef canvas, int nUpdateRects, const wax_rectSPX* pUpdateRects, wax_obj canvasLayers, int startLayer)
 {
 	CanvasLayers* pLayers = canvasLayers == 0 ? nullptr : static_cast<CanvasLayers*>(reinterpret_cast<Object*>(canvasLayers));
 
@@ -334,7 +334,7 @@ int wg_beginCanvasUpdateWithRef(wg_obj device, wg_canvasRef canvas, int nUpdateR
 }
 
 
-int wg_beginCanvasUpdateWithSurface(wg_obj device, wg_obj surface, int nUpdateRects, const wg_rectSPX* pUpdateRects, wg_obj canvasLayers, int startLayer)
+int wax_beginCanvasUpdateWithSurface(wax_obj device, wax_obj surface, int nUpdateRects, const wax_rectSPX* pUpdateRects, wax_obj canvasLayers, int startLayer)
 {
 	CanvasLayers* pLayers = canvasLayers == 0 ? nullptr : static_cast<CanvasLayers*>(reinterpret_cast<Object*>(canvasLayers));
 
@@ -343,224 +343,224 @@ int wg_beginCanvasUpdateWithSurface(wg_obj device, wg_obj surface, int nUpdateRe
 }
 
 
-void wg_endCanvasUpdate(wg_obj device)
+void wax_endCanvasUpdate(wax_obj device)
 {
 	getPtr(device)->endCanvasUpdate();
 }
 
-void wg_flattenLayers(wg_obj device)
+void wax_flattenLayers(wax_obj device)
 {
 	getPtr(device)->flattenLayers();
 }
 
-void wg_clearLayers(wg_obj device)
+void wax_clearLayers(wax_obj device)
 {
 	getPtr(device)->clearLayers();
 }
 
-void wg_fill(wg_obj device, wg_color col)
+void wax_fill(wax_obj device, wax_color col)
 {
 	getPtr(device)->fill( HiColor(col.r, col.g, col.b, col.a) );
 }
 
-void wg_fillRect(wg_obj device, const wg_rectSPX* rect, wg_color col)
+void wax_fillRect(wax_obj device, const wax_rectSPX* rect, wax_color col)
 {
 	getPtr(device)->fill( *(const RectSPX*) rect, HiColor(col.r, col.g, col.b, col.a) );
 }
 
 
-void wg_drawLine(wg_obj device, wg_coordSPX begin, wg_coordSPX end, wg_color color, wg_spx thickness)
+void wax_drawLine(wax_obj device, wax_coordSPX begin, wax_coordSPX end, wax_color color, wax_spx thickness)
 {
 	getPtr(device)->drawLine({ begin.x, begin.y }, { end.x, end.y }, * (HiColor*) &color, (spx) thickness);
 }
 
 
-void wg_drawStraightLine(wg_obj device, wg_coordSPX begin, wg_direction dir, wg_spx length, wg_color color, wg_spx thickness)
+void wax_drawStraightLine(wax_obj device, wax_coordSPX begin, wax_direction dir, wax_spx length, wax_color color, wax_spx thickness)
 {
 	getPtr(device)->drawLine( { begin.x, begin.y }, (Direction) dir, (spx) length, *(HiColor*)&color, (spx)thickness );
 }
 
-static LineCap toLineCap(wg_lineCap cap)
+static LineCap toLineCap(wax_lineCap cap)
 {
 	return LineCap( (LineCapShape) cap.shape, (uint16_t) std::min(std::max(cap.spearLength, 0), 65535) );
 }
 
-void wg_drawLineWithCaps(wg_obj device, wg_coordSPX begin, wg_coordSPX end, wg_color color, wg_spx thickness, wg_lineCap beginCap, wg_lineCap endCap)
+void wax_drawLineWithCaps(wax_obj device, wax_coordSPX begin, wax_coordSPX end, wax_color color, wax_spx thickness, wax_lineCap beginCap, wax_lineCap endCap)
 {
 	getPtr(device)->drawLine({ begin.x, begin.y }, { end.x, end.y }, *(HiColor*)&color, (spx)thickness, { toLineCap(beginCap), toLineCap(endCap) });
 }
 
-void wg_drawStraightLineWithCaps(wg_obj device, wg_coordSPX begin, wg_direction dir, wg_spx length, wg_color color, wg_spx thickness, wg_lineCap beginCap, wg_lineCap endCap)
+void wax_drawStraightLineWithCaps(wax_obj device, wax_coordSPX begin, wax_direction dir, wax_spx length, wax_color color, wax_spx thickness, wax_lineCap beginCap, wax_lineCap endCap)
 {
 	getPtr(device)->drawLine({ begin.x, begin.y }, (Direction)dir, (spx)length, *(HiColor*)&color, (spx)thickness, { toLineCap(beginCap), toLineCap(endCap) });
 }
 
 
-void wg_blit(wg_obj device, wg_coordSPX dest)
+void wax_blit(wax_obj device, wax_coordSPX dest)
 {
 	getPtr(device)->blit( {dest.x, dest.y} );
 }
 
 
-void wg_blitRect(wg_obj device, wg_coordSPX dest, const wg_rectSPX* src)
+void wax_blitRect(wax_obj device, wax_coordSPX dest, const wax_rectSPX* src)
 {
 	getPtr(device)->blit( { dest.x, dest.y }, * (const RectSPX*) src );
 }
 
 
-void wg_flipBlit(wg_obj device, wg_coordSPX dest, wg_gfxFlip flip)
+void wax_flipBlit(wax_obj device, wax_coordSPX dest, wax_gfxFlip flip)
 {
 	getPtr(device)->flipBlit({ dest.x, dest.y }, (GfxFlip) flip );
 }
 
 
-void wg_flipBlitRect(wg_obj device, wg_coordSPX dest, const wg_rectSPX* src, wg_gfxFlip flip)
+void wax_flipBlitRect(wax_obj device, wax_coordSPX dest, const wax_rectSPX* src, wax_gfxFlip flip)
 {
 	getPtr(device)->flipBlit({ dest.x, dest.y }, *(const RectSPX*)src, (GfxFlip) flip );
 }
 
 
-void wg_stretchBlit(wg_obj device, const wg_rectSPX* dest)
+void wax_stretchBlit(wax_obj device, const wax_rectSPX* dest)
 {
 	getPtr(device)->stretchBlit( *(const RectSPX*)dest );
 }
 
 
-void wg_stretchBlitRect(wg_obj device, const wg_rectSPX* dest, const wg_rectSPX* src)
+void wax_stretchBlitRect(wax_obj device, const wax_rectSPX* dest, const wax_rectSPX* src)
 {
 	getPtr(device)->stretchBlit( *(const RectSPX*)dest, *(const RectSPX*)src );
 }
 
 
-void wg_stretchFlipBlit(wg_obj device, const wg_rectSPX* dest, wg_gfxFlip flip)
+void wax_stretchFlipBlit(wax_obj device, const wax_rectSPX* dest, wax_gfxFlip flip)
 {
 	getPtr(device)->stretchFlipBlit( *(const RectSPX*)dest, (GfxFlip) flip );
 }
 
 
-void wg_stretchFlipBlitRect(wg_obj device, const wg_rectSPX* dest, const wg_rectSPX* src, wg_gfxFlip flip)
+void wax_stretchFlipBlitRect(wax_obj device, const wax_rectSPX* dest, const wax_rectSPX* src, wax_gfxFlip flip)
 {
 	getPtr(device)->stretchFlipBlit(*(const RectSPX*)dest, *(const RectSPX*)src, (GfxFlip)flip);
 }
 
 
-void wg_precisionBlit(wg_obj device, const wg_rectSPX* dest, const wg_rectF* srcSPX)
+void wax_precisionBlit(wax_obj device, const wax_rectSPX* dest, const wax_rectF* srcSPX)
 {
 	getPtr(device)->precisionBlit(*(const RectSPX*)dest, *(const RectF*)srcSPX );
 
 }
 
 
-void wg_transformBlit(wg_obj device, const wg_rectSPX* dest, wg_coordF srcSPX, const wg_transform * pTransform)
+void wax_transformBlit(wax_obj device, const wax_rectSPX* dest, wax_coordF srcSPX, const wax_transform * pTransform)
 {
-	getPtr(device)->transformBlit(*(const RectSPX*)dest, {srcSPX.x, srcSPX.y}, * reinterpret_cast<const wg::Transform*>(pTransform) );
+	getPtr(device)->transformBlit(*(const RectSPX*)dest, {srcSPX.x, srcSPX.y}, * reinterpret_cast<const wax::Transform*>(pTransform) );
 }
 
 
-void wg_rotScaleBlit(wg_obj device, const wg_rectSPX* dest, float rotationDegrees, float scale, wg_coordF srcCenter, wg_coordF destCenter)
+void wax_rotScaleBlit(wax_obj device, const wax_rectSPX* dest, float rotationDegrees, float scale, wax_coordF srcCenter, wax_coordF destCenter)
 {
 	getPtr(device)->rotScaleBlit(*(const RectSPX*)dest, rotationDegrees, scale, {srcCenter.x, srcCenter.y}, {destCenter.x, destCenter.y} );
 }
 
 
-void wg_tile(wg_obj device, const wg_rectSPX* dest, wg_coordSPX shift)
+void wax_tile(wax_obj device, const wax_rectSPX* dest, wax_coordSPX shift)
 {
 	getPtr(device)->tile(*(const RectSPX*)dest, {shift.x, shift.y} );
 }
 
 
-void wg_flipTile(wg_obj device, const wg_rectSPX* dest, wg_gfxFlip flip, wg_coordSPX shift)
+void wax_flipTile(wax_obj device, const wax_rectSPX* dest, wax_gfxFlip flip, wax_coordSPX shift)
 {
 	getPtr(device)->flipTile(*(const RectSPX*)dest, (GfxFlip) flip, { shift.x, shift.y });
 }
 
 
-void wg_scaleTile(wg_obj device, const wg_rectSPX* dest, float scale, wg_coordSPX shift)
+void wax_scaleTile(wax_obj device, const wax_rectSPX* dest, float scale, wax_coordSPX shift)
 {
 	getPtr(device)->scaleTile(*(const RectSPX*)dest, scale, { shift.x, shift.y });
 }
 
 
-void wg_scaleFlipTile(wg_obj device, const wg_rectSPX* dest, float scale, wg_gfxFlip flip, wg_coordSPX shift)
+void wax_scaleFlipTile(wax_obj device, const wax_rectSPX* dest, float scale, wax_gfxFlip flip, wax_coordSPX shift)
 {
 	getPtr(device)->scaleFlipTile(*(const RectSPX*)dest, scale, (GfxFlip) flip, {shift.x, shift.y});
 }
 
 
-void wg_drawWave(wg_obj device, const wg_rectSPX* dest, const wg_waveLine* pTopBorder, const wg_waveLine* pBottomBorder, wg_color fill)
+void wax_drawWave(wax_obj device, const wax_rectSPX* dest, const wax_waveLine* pTopBorder, const wax_waveLine* pBottomBorder, wax_color fill)
 {
 	getPtr(device)->drawWave(*(const RectSPX*)dest, (WaveLine*) pTopBorder, (WaveLine*) pBottomBorder, * (HiColor*) &fill );
 }
 
 
-void wg_flipDrawWave(wg_obj device, const wg_rectSPX* dest, const wg_waveLine* pTopBorder, const wg_waveLine* pBottomBorder, wg_color fill, wg_gfxFlip flip)
+void wax_flipDrawWave(wax_obj device, const wax_rectSPX* dest, const wax_waveLine* pTopBorder, const wax_waveLine* pBottomBorder, wax_color fill, wax_gfxFlip flip)
 {
 	getPtr(device)->flipDrawWave(*(const RectSPX*)dest, (WaveLine*)pTopBorder, (WaveLine*)pBottomBorder, *(HiColor*)&fill, (GfxFlip) flip );
 }
 
 
-void wg_drawElipse(wg_obj device, const wg_rectSPX* canvas, wg_spx thickness, wg_color color, wg_spx outlineThickness, wg_color outlineColor)
+void wax_drawElipse(wax_obj device, const wax_rectSPX* canvas, wax_spx thickness, wax_color color, wax_spx outlineThickness, wax_color outlineColor)
 {
 	getPtr(device)->drawElipse(*(const RectSPX*)canvas, thickness, *(HiColor*)&color, outlineThickness, *(HiColor*)&outlineColor );
 }
 
 
-void wg_drawPieChart(wg_obj device, const wg_rectSPX* canvas, float start, int nSlices, const float* pSliceSizes, const wg_color* pSliceColors, float hubSize, wg_color hubColor, wg_color backColor, int bRectangular)
+void wax_drawPieChart(wax_obj device, const wax_rectSPX* canvas, float start, int nSlices, const float* pSliceSizes, const wax_color* pSliceColors, float hubSize, wax_color hubColor, wax_color backColor, int bRectangular)
 {
 	getPtr(device)->drawPieChart(*(const RectSPX*)canvas, start, nSlices, pSliceSizes, (HiColor*)pSliceColors, hubSize, *(HiColor*)&hubColor, *(HiColor*)&backColor, bRectangular );
 }
 
 
-void wg_drawSegments(wg_obj device, const wg_rectSPX* dest, int nSegments, const wg_color* pSegmentColors, int nEdgeStrips, const int* pEdgeStrips, int edgeStripPitch, wg_tintMode tintMode)
+void wax_drawSegments(wax_obj device, const wax_rectSPX* dest, int nSegments, const wax_color* pSegmentColors, int nEdgeStrips, const int* pEdgeStrips, int edgeStripPitch, wax_tintMode tintMode)
 {
 	getPtr(device)->drawSegments(*(const RectSPX*)dest, nSegments, (HiColor*)pSegmentColors, nEdgeStrips, pEdgeStrips, edgeStripPitch, (TintMode) tintMode );
 }
 
 
-void wg_flipDrawSegments(wg_obj device, const wg_rectSPX* dest, int nSegments, const wg_color* pSegmentColors, int nEdgeStrips, const int* pEdgeStrips, int edgeStripPitch, wg_gfxFlip flip, wg_tintMode tintMode)
+void wax_flipDrawSegments(wax_obj device, const wax_rectSPX* dest, int nSegments, const wax_color* pSegmentColors, int nEdgeStrips, const int* pEdgeStrips, int edgeStripPitch, wax_gfxFlip flip, wax_tintMode tintMode)
 {
 	getPtr(device)->flipDrawSegments(*(const RectSPX*)dest, nSegments, (HiColor*)pSegmentColors, nEdgeStrips, pEdgeStrips, edgeStripPitch, (GfxFlip) flip, (TintMode)tintMode);
 }
 
 
-void wg_drawEdgemap(wg_obj device, wg_coordSPX dest, wg_obj edgemap)
+void wax_drawEdgemap(wax_obj device, wax_coordSPX dest, wax_obj edgemap)
 {
 	getPtr(device)->drawEdgemap({ dest.x, dest.y }, getEdgemapPtr(edgemap));
 }
 
 
-void wg_flipDrawEdgemap(wg_obj device, wg_coordSPX dest, wg_obj edgemap, wg_gfxFlip flip)
+void wax_flipDrawEdgemap(wax_obj device, wax_coordSPX dest, wax_obj edgemap, wax_gfxFlip flip)
 {
 	getPtr(device)->flipDrawEdgemap({ dest.x, dest.y }, getEdgemapPtr(edgemap), (GfxFlip) flip );
 }
 
-void wg_warpBlit(wg_obj device, wg_coordSPX dest, wg_obj warpmap, wg_coordSPX sourceOffset)
+void wax_warpBlit(wax_obj device, wax_coordSPX dest, wax_obj warpmap, wax_coordSPX sourceOffset)
 {
 	getPtr(device)->warpBlit({ dest.x, dest.y }, static_cast<Warpmap*>(reinterpret_cast<Object*>(warpmap)), { sourceOffset.x, sourceOffset.y });
 }
 
-void wg_warpBlitRect(wg_obj device, wg_coordSPX dest, wg_obj warpmap, const wg_rectSPX* source, wg_coordSPX sourceOffset)
+void wax_warpBlitRect(wax_obj device, wax_coordSPX dest, wax_obj warpmap, const wax_rectSPX* source, wax_coordSPX sourceOffset)
 {
 	getPtr(device)->warpBlit({ dest.x, dest.y }, static_cast<Warpmap*>(reinterpret_cast<Object*>(warpmap)), *(const RectSPX*)source, { sourceOffset.x, sourceOffset.y });
 }
 
-void wg_warpDrawEdgemap(wg_obj device, wg_coordSPX dest, wg_obj warpmap, wg_obj edgemap, wg_coordSPX sourceOffset)
+void wax_warpDrawEdgemap(wax_obj device, wax_coordSPX dest, wax_obj warpmap, wax_obj edgemap, wax_coordSPX sourceOffset)
 {
 	getPtr(device)->warpDrawEdgemap({ dest.x, dest.y }, static_cast<Warpmap*>(reinterpret_cast<Object*>(warpmap)), getEdgemapPtr(edgemap), { sourceOffset.x, sourceOffset.y });
 }
 
-void wg_tileEdgemap(wg_obj device, const wg_rectSPX* dest, wg_obj edgemap, wg_coordSPX shift)
+void wax_tileEdgemap(wax_obj device, const wax_rectSPX* dest, wax_obj edgemap, wax_coordSPX shift)
 {
 	getPtr(device)->tileEdgemap(*(const RectSPX*)dest, getEdgemapPtr(edgemap), { shift.x, shift.y });
 }
 
-void wg_flipTileEdgemap(wg_obj device, const wg_rectSPX* dest, wg_obj edgemap, wg_gfxFlip flip, wg_coordSPX shift)
+void wax_flipTileEdgemap(wax_obj device, const wax_rectSPX* dest, wax_obj edgemap, wax_gfxFlip flip, wax_coordSPX shift)
 {
 	getPtr(device)->flipTileEdgemap(*(const RectSPX*)dest, getEdgemapPtr(edgemap), (GfxFlip) flip, { shift.x, shift.y });
 }
 
 
-void wg_drawRoundedBox(wg_obj device, const wg_roundedBoxSpec* spec)
+void wax_drawRoundedBox(wax_obj device, const wax_roundedBoxSpec* spec)
 {
 	RoundedBoxSpec box;
 
@@ -578,7 +578,7 @@ void wg_drawRoundedBox(wg_obj device, const wg_roundedBoxSpec* spec)
 	getPtr(device)->drawRoundedBox(box);
 }
 
-void wg_drawRing(wg_obj device, const wg_ringSpec* spec)
+void wax_drawRing(wax_obj device, const wax_ringSpec* spec)
 {
 	// Invalid slices are passed on for GfxDevice to report.
 
@@ -586,7 +586,7 @@ void wg_drawRing(wg_obj device, const wg_ringSpec* spec)
 	int nCopied = spec->pSlices ? std::max(nSlices, 0) : 0;
 
 	int bufferSize = sizeof(RingSlice) * std::max(nCopied, 1);
-	auto slices = (RingSlice*) GfxBase::memStackAlloc(bufferSize);
+	auto slices = (RingSlice*) Core::memStackAlloc(bufferSize);
 
 	for (int i = 0; i < nCopied; i++)
 	{
@@ -612,40 +612,40 @@ void wg_drawRing(wg_obj device, const wg_ringSpec* spec)
 
 	getPtr(device)->drawRing(ring);
 
-	GfxBase::memStackFree(bufferSize);
+	Core::memStackFree(bufferSize);
 }
 
-void wg_blitNinePatch(wg_obj device, const wg_rectSPX* dstRect, const wg_borderSPX* dstFrame, const wg_ninePatch* patch, int scale)
+void wax_blitNinePatch(wax_obj device, const wax_rectSPX* dstRect, const wax_borderSPX* dstFrame, const wax_ninePatch* patch, int scale)
 {
 	getPtr(device)->blitNinePatch(*(const RectSPX*)dstRect, *(BorderSPX*) dstFrame, * (NinePatch*) patch, scale);
 }
 
-void wg_blur(wg_obj device, wg_coordSPX dest)
+void wax_blur(wax_obj device, wax_coordSPX dest)
 {
 	getPtr(device)->blur( {dest.x, dest.y} );
 }
 
-void wg_blurRect(wg_obj device, wg_coordSPX dest, const wg_rectSPX* src)
+void wax_blurRect(wax_obj device, wax_coordSPX dest, const wax_rectSPX* src)
 {
 	getPtr(device)->blur( { dest.x, dest.y }, * (const RectSPX*) src );
 }
 
-void wg_stretchBlur(wg_obj device, const wg_rectSPX* dest)
+void wax_stretchBlur(wax_obj device, const wax_rectSPX* dest)
 {
 	getPtr(device)->stretchBlur( *(const RectSPX*)dest );
 }
 
-void wg_stretchBlurRect(wg_obj device, const wg_rectSPX* dest, const wg_rectSPX* src)
+void wax_stretchBlurRect(wax_obj device, const wax_rectSPX* dest, const wax_rectSPX* src)
 {
 	getPtr(device)->stretchBlur( *(const RectSPX*)dest, *(const RectSPX*)src );
 }
 
-void wg_transformBlur(wg_obj device, const wg_rectSPX* dest, wg_coordF srcSPX, const wg_transform* pTransform)
+void wax_transformBlur(wax_obj device, const wax_rectSPX* dest, wax_coordF srcSPX, const wax_transform* pTransform)
 {
-	getPtr(device)->transformBlur(*(const RectSPX*)dest, {srcSPX.x, srcSPX.y}, *reinterpret_cast<const wg::Transform*>(pTransform) );
+	getPtr(device)->transformBlur(*(const RectSPX*)dest, {srcSPX.x, srcSPX.y}, *reinterpret_cast<const wax::Transform*>(pTransform) );
 }
 
-void wg_rotScaleBlur(wg_obj device, const wg_rectSPX* dest, float rotationDegrees, float scale, wg_coordF srcCenter, wg_coordF destCenter)
+void wax_rotScaleBlur(wax_obj device, const wax_rectSPX* dest, float rotationDegrees, float scale, wax_coordF srcCenter, wax_coordF destCenter)
 {
 	getPtr(device)->rotScaleBlur(*(const RectSPX*)dest, rotationDegrees, scale, {srcCenter.x, srcCenter.y}, {destCenter.x, destCenter.y} );
 }

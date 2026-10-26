@@ -19,11 +19,11 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef WG_C_BLOB_DOT_H
-#define WG_C_BLOB_DOT_H
+#ifndef WAX_C_BLOB_DOT_H
+#define WAX_C_BLOB_DOT_H
 #pragma once
 
-#include <wg_c_gfxtypes.h>
+#include <wax_c_types.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -32,27 +32,27 @@ extern "C" {
 
 enum
 {
-	WG_SAVE_IDENTITY = 1,
-	WG_SAVE_SAMPLE_METHOD = 2,
-	WG_SAVE_SCALE = 4,
-	WG_SAVE_BUFFERED_FLAG = 8,
-	WG_SAVE_CANVAS_FLAG = 16,
-	WG_SAVE_DYNAMIC_FLAG = 32,
-	WG_SAVE_TILING_FLAG = 64,
-	WG_SAVE_MIPMAP_FLAG = 128
+	WAX_SAVE_IDENTITY = 1,
+	WAX_SAVE_SAMPLE_METHOD = 2,
+	WAX_SAVE_SCALE = 4,
+	WAX_SAVE_BUFFERED_FLAG = 8,
+	WAX_SAVE_CANVAS_FLAG = 16,
+	WAX_SAVE_DYNAMIC_FLAG = 32,
+	WAX_SAVE_TILING_FLAG = 64,
+	WAX_SAVE_MIPMAP_FLAG = 128
 
-} wg_surfaceWriteSaveInfo;
+} wax_surfaceWriteSaveInfo;
 
-//____ wg_surfaceWriterBP __________________________________________________________
+//____ wax_surfaceWriterBP __________________________________________________________
 
-typedef struct wg_surfaceWriterBP_struct			// NOT BINARY EQUIVALENT!
+typedef struct wax_surfaceWriterBP_struct			// NOT BINARY EQUIVALENT!
 {
 	int			saveInfo;
 	
-} wg_surfaceWriterBP;
+} wax_surfaceWriterBP;
 
-WG_EXPORT wg_obj 	wg_createSurfaceWriter(const wg_surfaceWriterBP* blueprint);
-WG_EXPORT wg_obj	wg_writeSurfaceToBlob( wg_obj surfaceWriter, wg_obj surface, int extraDataSize, char * pExtraData );
+WAX_EXPORT wax_obj 	wax_createSurfaceWriter(const wax_surfaceWriterBP* blueprint);
+WAX_EXPORT wax_obj	wax_writeSurfaceToBlob( wax_obj surfaceWriter, wax_obj surface, int extraDataSize, char * pExtraData );
 
 #ifdef __cplusplus
 }

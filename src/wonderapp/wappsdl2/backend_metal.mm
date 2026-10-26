@@ -22,10 +22,10 @@
 
 #include <sdlwindow.h>
 
-#include <wg_metalsurface.h>
-#include <wg_metalsurfacefactory.h>
-#include <wg_metaledgemapfactory.h>
-#include <wg_metalbackend.h>
+#include <wax_metalsurface.h>
+#include <wax_metalsurfacefactory.h>
+#include <wax_metaledgemapfactory.h>
+#include <wax_metalbackend.h>
 
 
 using namespace wg;
@@ -127,7 +127,7 @@ SDLWindowMetal::SDLWindowMetal(wapp::Window* pUserWindow, wg::Placement origin, 
 
 		auto pDevice = Base::defaultGfxDevice();
 
-		m_pBackend = wg_static_cast<MetalBackend_p>(static_cast<GfxDeviceGen2*>(Base::defaultGfxDevice().rawPtr())->backend());
+		m_pBackend = wax_static_cast<MetalBackend_p>(static_cast<GfxDeviceGen2*>(Base::defaultGfxDevice().rawPtr())->backend());
 		m_pBackend->setDefaultCanvas(nullptr, {int(geo.w),int(geo.h)}, PixelFormat::ARGB_8);
 
 		m_pCanvas = MetalSurface::create({.canvas = true, .format = PixelFormat::ARGB_8, .scale = int(scaleFactor)*64, .size = {int(geo.w*scaleFactor),int(geo.h*scaleFactor)} });

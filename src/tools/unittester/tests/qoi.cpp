@@ -3,9 +3,9 @@
 #include "qoi.h"
 
 #include <wondergui.h>
-#include <wg_softsurface.h>
-#include <wg_softsurfacefactory.h>
-#include <wg_qoicompression.h>
+#include <wax_softsurface.h>
+#include <wax_softsurfacefactory.h>
+#include <wax_qoicompression.h>
 
 using namespace wg;
 
@@ -207,10 +207,10 @@ bool QOITest::decompressTest(std::ostream& output)
 	for( int i = 0 ; i < pixelBytes ; i += 4 )
 		TEST_ASSERT( buffer[i] == le[i] && buffer[i+1] == le[i+1] && buffer[i+2] == le[i+2] && buffer[i+3] == 255 );
 
-	// GfxBase knows about both byte orders.
+	// wax::Core knows about both byte orders.
 
-	TEST_ASSERT( GfxBase::getDecompressor(QOIDecompressor::ID_TOKEN)->idToken() == QOIDecompressor::ID_TOKEN );
-	TEST_ASSERT( GfxBase::getDecompressor(QOIDecompressor::ID_TOKEN_BIG_ENDIAN)->idToken() == QOIDecompressor::ID_TOKEN_BIG_ENDIAN );
+	TEST_ASSERT( wax::Core::getDecompressor(QOIDecompressor::ID_TOKEN)->idToken() == QOIDecompressor::ID_TOKEN );
+	TEST_ASSERT( wax::Core::getDecompressor(QOIDecompressor::ID_TOKEN_BIG_ENDIAN)->idToken() == QOIDecompressor::ID_TOKEN_BIG_ENDIAN );
 
 	return true;
 }

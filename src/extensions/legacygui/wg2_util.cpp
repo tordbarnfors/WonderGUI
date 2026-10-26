@@ -2,7 +2,7 @@
 #include <wg2_util.h>
 #include <wg2_geo.h>
 #include <wg2_blockset.h>
-#include <wg_surface.h>
+#include <wax_surface.h>
 #include <wg2_widget.h>
 #include <wg2_panel.h>
 #include <wg2_gfxanim.h>

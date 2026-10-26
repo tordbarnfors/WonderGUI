@@ -33,9 +33,9 @@ namespace wg
 
 	//____ constructor ____________________________________________________________
 
-	PluginBitmapFont::PluginBitmapFont( wg_obj cBitmapFont ) : PluginFont(cBitmapFont)
+	PluginBitmapFont::PluginBitmapFont( wax_obj cBitmapFont ) : PluginFont(cBitmapFont)
 	{
-		wg_obj surface = PluginCalls::bitmapFont->getBitmapFontSurface(cBitmapFont);
+		wax_obj surface = PluginCalls::bitmapFont->getBitmapFontSurface(cBitmapFont);
 		
 		// PluginBitmapFont doesn't support backup fonts.
 		assert( PluginCalls::font->getBackupFont(cBitmapFont) == 0 );
@@ -60,7 +60,7 @@ namespace wg
 
 	void PluginBitmapFont::getGlyphWithBitmap(char32_t ch, Glyph& glyph)
 	{
-		wg_glyph	cGlyph;
+		wax_glyph	cGlyph;
 
 		PluginCalls::font->getGlyphWithBitmap(m_cFont, ch, &cGlyph);
 

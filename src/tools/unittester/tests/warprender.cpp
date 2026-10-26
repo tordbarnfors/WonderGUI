@@ -3,24 +3,24 @@
 #include "warprender.h"
 
 #include <wondergui.h>
-#include <wg_gfxdevice_gen2.h>
-#include <wg_softbackend.h>
-#include <wg_linearbackend.h>
-#include <wg_referencebackend.h>
-#include <wg_softsurface.h>
-#include <wg_softedgemap.h>
-#include <wg_softedgemapfactory.h>
-#include <wg_softwarpmap.h>
-#include <wg_softwarpmapfactory.h>
-#include <wg_softkernels_default.h>
-#include <wg_circularwarp.h>
-#include <wondergfx_c.h>
-#include <wg_c_object.h>
-#include <wg_c_softgfx.h>
-#include <wg_streambackend.h>
-#include <wg_streamplayer.h>
-#include <wg_streamencoder.h>
-#include <wg_softsurfacefactory.h>
+#include <wax_gfxdevice_gen2.h>
+#include <wax_softbackend.h>
+#include <wax_linearbackend.h>
+#include <wax_referencebackend.h>
+#include <wax_softsurface.h>
+#include <wax_softedgemap.h>
+#include <wax_softedgemapfactory.h>
+#include <wax_softwarpmap.h>
+#include <wax_softwarpmapfactory.h>
+#include <wax_softkernels_default.h>
+#include <wax_circularwarp.h>
+#include <wax_c.h>
+#include <wax_c_object.h>
+#include <wax_c_softgfx.h>
+#include <wax_streambackend.h>
+#include <wax_streamplayer.h>
+#include <wax_streamencoder.h>
+#include <wax_softsurfacefactory.h>
 
 #include <algorithm>
 #include <cmath>
@@ -665,10 +665,10 @@ bool WarpRenderTest::cApiTest(std::ostream& output)
 
 	auto c = [&](GfxDevice* pDevice)
 	{
-		wg_obj device = (wg_obj) static_cast<Object*>(pDevice);
-		wg_obj factory = wg_createSoftWarpmapFactory();
+		wax_obj device = (wax_obj) static_cast<Object*>(pDevice);
+		wax_obj factory = wax_createSoftWarpmapFactory();
 
-		wg_circularWarpBP ringBP = {};
+		wax_circularWarpBP ringBP = {};
 		ringBP.size = { 44, 44 };
 		ringBP.center = { 0.5f, 0.5f };
 		ringBP.topRadius = 21 * 64;
@@ -676,24 +676,24 @@ bool WarpRenderTest::cApiTest(std::ostream& output)
 		ringBP.startAngle = 30.f;
 		ringBP.sweep = 300.f;
 
-		wg_obj ring = wg_createCircularWarp(&ringBP, factory);
+		wax_obj ring = wax_createCircularWarp(&ringBP, factory);
 
-		wg_warpmapBP bentBP = {};
+		wax_warpmapBP bentBP = {};
 		bentBP.size = { warpSize.w, warpSize.h };
 		bentBP.cellSize = cellSize;
 		bentBP.uPeriod = 1.5f;
 
-		wg_obj bent = wg_createWarpmapFromNodes(factory, &bentBP, (const wg_coordF*) nodeData.data(), 0);
+		wax_obj bent = wax_createWarpmapFromNodes(factory, &bentBP, (const wax_coordF*) nodeData.data(), 0);
 
-		wg_warpDrawEdgemap(device, { 64 * 3, 64 * 4 }, wg_refreshCircularWarp(ring), (wg_obj) static_cast<Object*>(pEdgemap.rawPtr()), { 64 * 5, 0 });
+		wax_warpDrawEdgemap(device, { 64 * 3, 64 * 4 }, wax_refreshCircularWarp(ring), (wax_obj) static_cast<Object*>(pEdgemap.rawPtr()), { 64 * 5, 0 });
 		pDevice->setBlitSource(pSurface);
-		wg_warpBlit(device, { 64 * 60, 64 * 4 }, bent, { 64 * 2, 64 * 3 });
-		wg_rectSPX source = { 64 * 4, 64 * 2, 64 * 20, 64 * 12 };
-		wg_warpBlitRect(device, { 64 * 110, 64 * 4 }, bent, &source, { 0, 0 });
+		wax_warpBlit(device, { 64 * 60, 64 * 4 }, bent, { 64 * 2, 64 * 3 });
+		wax_rectSPX source = { 64 * 4, 64 * 2, 64 * 20, 64 * 12 };
+		wax_warpBlitRect(device, { 64 * 110, 64 * 4 }, bent, &source, { 0, 0 });
 
-		wg_release(bent);
-		wg_release(ring);
-		wg_release(factory);
+		wax_release(bent);
+		wax_release(ring);
+		wax_release(factory);
 	};
 
 	return compare(output, "C API", render(Backend::Soft, c), "C API", render(Backend::Soft, cpp), "C++", 0);

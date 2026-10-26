@@ -15,85 +15,82 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <Compile Include="..\wg_bitmapcache.cs">
-        <Link>wg_bitmapcache.cs</Link>
+      <Compile Include="..\wax_bitmapcache.cs">
+        <Link>wax_bitmapcache.cs</Link>
       </Compile>
-      <Compile Include="..\wg_bitmapfont.cs">
-        <Link>wg_bitmapfont.cs</Link>
+      <Compile Include="..\wax_bitmapfont.cs">
+        <Link>wax_bitmapfont.cs</Link>
       </Compile>
-      <Compile Include="..\wg_blob.cs">
-        <Link>wg_blob.cs</Link>
+      <Compile Include="..\wax_blob.cs">
+        <Link>wax_blob.cs</Link>
       </Compile>
-      <Compile Include="..\wg_canvaslayers.cs">
-        <Link>wg_canvaslayers.cs</Link>
+      <Compile Include="..\wax_canvaslayers.cs">
+        <Link>wax_canvaslayers.cs</Link>
       </Compile>
-      <Compile Include="..\wg_color.cs">
-        <Link>wg_color.cs</Link>
+      <Compile Include="..\wax_color.cs">
+        <Link>wax_color.cs</Link>
       </Compile>
-      <Compile Include="..\wg_font.cs">
-        <Link>wg_font.cs</Link>
+      <Compile Include="..\wax_font.cs">
+        <Link>wax_font.cs</Link>
       </Compile>
-      <Compile Include="..\wg_freetypefont.cs">
-        <Link>wg_freetypefont.cs</Link>
+      <Compile Include="..\wax_freetypefont.cs">
+        <Link>wax_freetypefont.cs</Link>
       </Compile>
-      <Compile Include="..\wg_gearbase.cs">
-        <Link>wg_gearbase.cs</Link>
+      <Compile Include="..\wax_geo.cs">
+        <Link>wax_geo.cs</Link>
       </Compile>
-      <Compile Include="..\wg_geo.cs">
-        <Link>wg_geo.cs</Link>
+      <Compile Include="..\wax_gfxbackend.cs">
+        <Link>wax_gfxbackend.cs</Link>
       </Compile>
-      <Compile Include="..\wg_gfxbackend.cs">
-        <Link>wg_gfxbackend.cs</Link>
+      <Compile Include="..\wax_core.cs">
+        <Link>wax_core.cs</Link>
       </Compile>
-      <Compile Include="..\wg_gfxbase.cs">
-        <Link>wg_gfxbase.cs</Link>
+      <Compile Include="..\wax_gfxdevice.cs">
+        <Link>wax_gfxdevice.cs</Link>
       </Compile>
-      <Compile Include="..\wg_gfxdevice.cs">
-        <Link>wg_gfxdevice.cs</Link>
+      <Compile Include="..\wax_types.cs">
+        <Link>wax_types.cs</Link>
       </Compile>
-      <Compile Include="..\wg_gfxtypes.cs">
-        <Link>wg_gfxtypes.cs</Link>
+      <Compile Include="..\wax_mirrorsurface.cs" Link="wax_mirrorsurface.cs" />
+      <Compile Include="..\wax_mirrorsurfacefactory.cs" Link="wax_mirrorsurfacefactory.cs" />
+      <Compile Include="..\wax_objekt.cs">
+        <Link>wax_objekt.cs</Link>
       </Compile>
-      <Compile Include="..\wg_mirrorsurface.cs" Link="wg_mirrorsurface.cs" />
-      <Compile Include="..\wg_mirrorsurfacefactory.cs" Link="wg_mirrorsurfacefactory.cs" />
-      <Compile Include="..\wg_objekt.cs">
-        <Link>wg_objekt.cs</Link>
+      <Compile Include="..\wax_printer.cs">
+        <Link>wax_printer.cs</Link>
       </Compile>
-      <Compile Include="..\wg_printer.cs">
-        <Link>wg_printer.cs</Link>
+      <Compile Include="..\wax_softbackend.cs">
+        <Link>wax_softbackend.cs</Link>
       </Compile>
-      <Compile Include="..\wg_softbackend.cs">
-        <Link>wg_softbackend.cs</Link>
+      <Compile Include="..\wax_softsurface.cs">
+        <Link>wax_softsurface.cs</Link>
       </Compile>
-      <Compile Include="..\wg_softsurface.cs">
-        <Link>wg_softsurface.cs</Link>
+      <Compile Include="..\wax_softsurfacefactory.cs">
+        <Link>wax_softsurfacefactory.cs</Link>
       </Compile>
-      <Compile Include="..\wg_softsurfacefactory.cs">
-        <Link>wg_softsurfacefactory.cs</Link>
+      <Compile Include="..\wax_streambackend.cs">
+        <Link>wax_streambackend.cs</Link>
       </Compile>
-      <Compile Include="..\wg_streambackend.cs">
-        <Link>wg_streambackend.cs</Link>
+      <Compile Include="..\wax_streamencoder.cs">
+        <Link>wax_streamencoder.cs</Link>
       </Compile>
-      <Compile Include="..\wg_streamencoder.cs">
-        <Link>wg_streamencoder.cs</Link>
+      <Compile Include="..\wax_streamsink.cs">
+        <Link>wax_streamsink.cs</Link>
       </Compile>
-      <Compile Include="..\wg_streamsink.cs">
-        <Link>wg_streamsink.cs</Link>
+      <Compile Include="..\wax_streamwriter.cs">
+        <Link>wax_streamwriter.cs</Link>
       </Compile>
-      <Compile Include="..\wg_streamwriter.cs">
-        <Link>wg_streamwriter.cs</Link>
+      <Compile Include="..\wax_surface.cs">
+        <Link>wax_surface.cs</Link>
       </Compile>
-      <Compile Include="..\wg_surface.cs">
-        <Link>wg_surface.cs</Link>
+      <Compile Include="..\wax_surfacefactory.cs">
+        <Link>wax_surfacefactory.cs</Link>
       </Compile>
-      <Compile Include="..\wg_surfacefactory.cs">
-        <Link>wg_surfacefactory.cs</Link>
+      <Compile Include="..\wax_surfacewriter.cs">
+        <Link>wax_surfacewriter.cs</Link>
       </Compile>
-      <Compile Include="..\wg_surfacewriter.cs">
-        <Link>wg_surfacewriter.cs</Link>
-      </Compile>
-      <Compile Include="..\wg_sysfont.cs">
-        <Link>wg_sysfont.cs</Link>
+      <Compile Include="..\wax_sysfont.cs">
+        <Link>wax_sysfont.cs</Link>
       </Compile>
     </ItemGroup>
 

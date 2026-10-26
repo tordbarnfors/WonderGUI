@@ -23,10 +23,10 @@
 #define WG_BAKESKIN_DOT_H
 #pragma once
 
-#include <wg_surface.h>
+#include <wax_surface.h>
 #include <wg_skin.h>
-#include <wg_color.h>
-#include <wg_tint.h>
+#include <wax_color.h>
+#include <wax_tint.h>
 
 #include <initializer_list>
 #include <utility>

@@ -19,15 +19,15 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef	WG_SYSFONT_DOT_H
-#define	WG_SYSFONT_DOT_H
+#ifndef	WAX_SYSFONT_DOT_H
+#define	WAX_SYSFONT_DOT_H
 #pragma once
 
-#include <wg_geo.h>
-#include <wg_font.h>
-#include <wg_surfacefactory.h>
+#include <wax_geo.h>
+#include <wax_font.h>
+#include <wax_surfacefactory.h>
 
-namespace wg
+namespace wax
 {
 
 	class SysFont;
@@ -81,5 +81,5 @@ namespace wg
 
 
 
-} // namespace wg
-#endif // WG_SYSFONT_DOT_H
+} // namespace wax
+#endif // WAX_SYSFONT_DOT_H

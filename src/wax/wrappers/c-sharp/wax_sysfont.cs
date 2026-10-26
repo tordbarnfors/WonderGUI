@@ -1,6 +1,6 @@
 using System.Runtime.InteropServices;
 
-namespace WG;
+namespace Wax;
 
 
 public class SysFont : Font
@@ -9,15 +9,15 @@ public class SysFont : Font
  
     public SysFont(SurfaceFactory factory, Font backupFont)
     {
-        _obj = wg_createSysFont(factory.CHandle(), backupFont.CHandle());
+        _obj = wax_createSysFont(factory.CHandle(), backupFont.CHandle());
     }
 
     //____ DLL functions ______________________________________________________
 
     [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-    public static extern IntPtr wg_createSysFont( IntPtr surfaceFactory, IntPtr backupFont );
+    public static extern IntPtr wax_createSysFont( IntPtr surfaceFactory, IntPtr backupFont );
 /*
     [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-    public static extern IntPtr wg_getBitmapFontSurface( IntPtr bitmapFont );
+    public static extern IntPtr wax_getBitmapFontSurface( IntPtr bitmapFont );
 */
 }

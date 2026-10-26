@@ -1,28 +1,28 @@
 
 set(SOURCES
 
-	wg_metalbackend.h
-	wg_metalbackend.mm
-	wg_metalgfxdevicefactory.h
-	wg_metalgfxdevicefactory.mm
-	wg_metalshaders.mm
-	wg_metalshaders.mm.template
-	wg_metalsurface.h
-	wg_metalsurface.mm
-	wg_metalsurfacefactory.h
-	wg_metalsurfacefactory.mm
-	wg_metaledgemap.h
-	wg_metaledgemap.mm
-	wg_metaledgemapfactory.h
-	wg_metaledgemapfactory.mm
-	wg_metalwarpmap.h
-	wg_metalwarpmap.mm
-	wg_metalwarpmapfactory.h
-	wg_metalwarpmapfactory.mm
-	wg_shadercontent.mm
+	wax_metalbackend.h
+	wax_metalbackend.mm
+	wax_metalgfxdevicefactory.h
+	wax_metalgfxdevicefactory.mm
+	wax_metalshaders.mm
+	wax_metalshaders.mm.template
+	wax_metalsurface.h
+	wax_metalsurface.mm
+	wax_metalsurfacefactory.h
+	wax_metalsurfacefactory.mm
+	wax_metaledgemap.h
+	wax_metaledgemap.mm
+	wax_metaledgemapfactory.h
+	wax_metaledgemapfactory.mm
+	wax_metalwarpmap.h
+	wax_metalwarpmap.mm
+	wax_metalwarpmapfactory.h
+	wax_metalwarpmapfactory.mm
+	wax_shadercontent.mm
 )
 
-set_source_files_properties(wg_metalshaders.mm.template wg_shadercontent.mm PROPERTIES HEADER_FILE_ONLY YES)
+set_source_files_properties(wax_metalshaders.mm.template wax_shadercontent.mm PROPERTIES HEADER_FILE_ONLY YES)
 
 
 set(INCDIRS
@@ -31,19 +31,19 @@ set(INCDIRS
 
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${SOURCES})
 
-add_library( wgmetalgfx STATIC ${SOURCES} )
+add_library( waxmetalgfx STATIC ${SOURCES} )
 
 # Declared so the linker gets the libraries in the right order. GNU ld needs that,
 # MSVC and Apple's linker don't care.
-target_link_libraries( wgmetalgfx PUBLIC wondergfx )
+target_link_libraries( waxmetalgfx PUBLIC wax )
 
-target_include_directories(wgmetalgfx PRIVATE 
-	${WONDERGFX_INCDIRS}
+target_include_directories(waxmetalgfx PRIVATE 
+	${WAX_INCDIRS}
 	${INCDIRS}
 )
 
-set_target_properties( wgmetalgfx PROPERTIES FOLDER "Extensions" )
+set_target_properties( waxmetalgfx PROPERTIES FOLDER "Extensions" )
 
 list(TRANSFORM SOURCES PREPEND ${CMAKE_CURRENT_LIST_DIR}/ )
-set(WGMETALGFX_SOURCES ${SOURCES} PARENT_SCOPE)
-set(WGMETALGFX_INCDIRS ${INCDIRS} PARENT_SCOPE)
+set(WAXMETALGFX_SOURCES ${SOURCES} PARENT_SCOPE)
+set(WAXMETALGFX_INCDIRS ${INCDIRS} PARENT_SCOPE)

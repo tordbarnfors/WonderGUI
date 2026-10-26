@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 //
-//								>>> wg_chain.h <<<
+//								>>> wax_chain.h <<<
 //
 //					(c) 2002 Tord Jansson (tord.jansson@gmail.com)
 //
@@ -11,13 +11,13 @@
 //  distribution does not require any license.
 //
 //-----------------------------------------------------------------------------
-#ifndef WG_CHAIN_DOT_H
-#define	WG_CHAIN_DOT_H
+#ifndef WAX_CHAIN_DOT_H
+#define	WAX_CHAIN_DOT_H
 #pragma once
 
-#include <wg_geartypes.h>
+#include <wax_types.h>
 
-namespace wg
+namespace wax
 {
 
 	class Link;
@@ -88,31 +88,31 @@ namespace wg
 
 	//____ Class Link _____________________________________________________________
 
-	#define	LINK_METHODS( type ) \
-		inline bool	moveUp() { return wg::Link::_moveUp(); }; \
-		inline bool	moveDown() { return wg::Link::_moveDown(); }; \
-		inline bool	moveFirst( wg::Chain<type> * pChain = 0 ) { return wg::Link::_moveFirst( pChain ); }; \
-		inline bool	moveLast( wg::Chain<type> * pChain = 0 ) { return wg::Link::_moveLast( pChain ); }; \
-		inline bool	moveAfter( type * pLink ) { return wg::Link::_moveAfter( pLink ); }; \
-		inline bool	moveBefore( type * pLink) { return wg::Link::_moveBefore( pLink ); }; \
-		inline bool	disconnect() {return wg::Link::_disconnect(); }; \
+	#define	WAX_LINK_METHODS( type ) \
+		inline bool	moveUp() { return wax::Link::_moveUp(); }; \
+		inline bool	moveDown() { return wax::Link::_moveDown(); }; \
+		inline bool	moveFirst( wax::Chain<type> * pChain = 0 ) { return wax::Link::_moveFirst( pChain ); }; \
+		inline bool	moveLast( wax::Chain<type> * pChain = 0 ) { return wax::Link::_moveLast( pChain ); }; \
+		inline bool	moveAfter( type * pLink ) { return wax::Link::_moveAfter( pLink ); }; \
+		inline bool	moveBefore( type * pLink) { return wax::Link::_moveBefore( pLink ); }; \
+		inline bool	disconnect() {return wax::Link::_disconnect(); }; \
 		inline type *	prev() const { return (type *) m_pPrev; }; \
 		inline type *	next() const { return (type *) m_pNext; }; \
-		inline wg::Chain<type> * chain() const { return (wg::Chain<type> *) m_pChain; }; \
-		inline int		index() const { return wg::Link::_index(); };
+		inline wax::Chain<type> * chain() const { return (wax::Chain<type> *) m_pChain; }; \
+		inline int		index() const { return wax::Link::_index(); };
 
-	#define	PROTECTED_LINK_METHODS( type ) \
-		inline bool	_moveUp() { return wg::Link::_moveUp(); }; \
-		inline bool	_moveDown() { return wg::Link::_moveDown(); }; \
-		inline bool	_moveFirst( wg::Chain<type> * pChain = 0 ) { return wg::Link::_moveFirst( pChain ); }; \
-		inline bool	_moveLast( wg::Chain<type> * pChain = 0 ) { return wg::Link::_moveLast( pChain ); }; \
-		inline bool	_moveAfter( type * pLink ) { return wg::Link::_moveAfter( pLink ); }; \
-		inline bool	_moveBefore( type * pLink) { return wg::Link::_moveBefore( pLink ); }; \
-		inline bool	_disconnect() {return wg::Link::_disconnect(); }; \
+	#define	WAX_PROTECTED_LINK_METHODS( type ) \
+		inline bool	_moveUp() { return wax::Link::_moveUp(); }; \
+		inline bool	_moveDown() { return wax::Link::_moveDown(); }; \
+		inline bool	_moveFirst( wax::Chain<type> * pChain = 0 ) { return wax::Link::_moveFirst( pChain ); }; \
+		inline bool	_moveLast( wax::Chain<type> * pChain = 0 ) { return wax::Link::_moveLast( pChain ); }; \
+		inline bool	_moveAfter( type * pLink ) { return wax::Link::_moveAfter( pLink ); }; \
+		inline bool	_moveBefore( type * pLink) { return wax::Link::_moveBefore( pLink ); }; \
+		inline bool	_disconnect() {return wax::Link::_disconnect(); }; \
 		inline type *	_prev() const { return (type *) m_pPrev; }; \
 		inline type *	_next() const { return (type *) m_pNext; }; \
-		inline wg::Chain<type> * _chain() const { return (wg::Chain<type> *) m_pChain; }; \
-		inline int		_index() const { return wg::Link::_index(); };
+		inline wax::Chain<type> * _chain() const { return (wax::Chain<type> *) m_pChain; }; \
+		inline int		_index() const { return wax::Link::_index(); };
 
 
 
@@ -211,5 +211,5 @@ namespace wg
 
 	//______________________________________________________________________________
 
-} // namespace wg
-#endif // WG_CHAIN_DOT_H
+} // namespace wax
+#endif // WAX_CHAIN_DOT_H

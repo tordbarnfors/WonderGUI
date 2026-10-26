@@ -73,9 +73,9 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 #
 # SDL2, SDL2_image and FreeType libraries are needed by several compile targets,
 # such as tools, workbenches, examples and some WonderApp frameworks. OpenGL and
-# GLEW are looked for by extensions/openglgfx, which is only built for wappsdl2gl.
+# GLEW are looked for by wax/extensions/openglgfx, which is only built for wappsdl2gl.
 #
-# The base libraries (WonderGear, WonderGfx, WonderGlyphs and WonderGUI) do not need these.
+# The base libraries (Wax and WonderGUI) do not need these.
 #
 #------------------------------------------------------------------------------
 
@@ -221,24 +221,23 @@ endif()
 
 #------------------------------------------------------------------------------
 
-add_subdirectory(wondergear)
-add_subdirectory(wondergfx)
+add_subdirectory(wax)
 add_subdirectory(wondergui)
 
 add_subdirectory(extensions/debugger)
 
 if( WAPPLIB STREQUAL "wappsdl2metal")
-	add_subdirectory(extensions/metalgfx)
+	add_subdirectory(wax/extensions/metalgfx)
 elseif( WAPPLIB STREQUAL "wappwin32dx12" )
-	add_subdirectory(extensions/dx12gfx)
+	add_subdirectory(wax/extensions/dx12gfx)
 elseif( WAPPLIB STREQUAL "wappsdl2gl" )
-	add_subdirectory(extensions/openglgfx)
+	add_subdirectory(wax/extensions/openglgfx)
 endif()
 
-add_subdirectory(extensions/gfxstream)
-add_subdirectory(extensions/softgfx)
+add_subdirectory(wax/extensions/gfxstream)
+add_subdirectory(wax/extensions/softgfx)
 
-add_subdirectory(extensions/freetypefont)
+add_subdirectory(wax/extensions/freetypefont)
 
 add_subdirectory(extensions/legacygui)
 

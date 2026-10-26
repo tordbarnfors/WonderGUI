@@ -19,17 +19,17 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef	WG_BLOB_DOT_H
-#define	WG_BLOB_DOT_H
+#ifndef	WAX_BLOB_DOT_H
+#define	WAX_BLOB_DOT_H
 #pragma once
 
 #include <stddef.h>
 #include <functional>
 
-#include <wg_pointers.h>
-#include <wg_geartypes.h>
+#include <wax_pointers.h>
+#include <wax_types.h>
 
-namespace wg
+namespace wax
 {
 	class Blob;
 	typedef	StrongPtr<Blob>		Blob_p;
@@ -39,8 +39,8 @@ namespace wg
 	/**
 	 * @brief Reference counted container of arbitrary data.
 	 *
-	 * Blob is a container that can be used to wrap a non-WonderGUI
-	 * object or any set of data into a reference counted WonderGUI object.
+	 * Blob is a container that can be used to wrap a non-Wax
+	 * object or any set of data into a reference counted Wax object.
 	 *
 	 * When the Blob is destroyed, the external object is destroyed or the memory area
 	 * released.
@@ -167,5 +167,5 @@ namespace wg
 
 
 
-} // namespace wg
-#endif //WG_BLOB_DOT_H
+} // namespace wax
+#endif //WAX_BLOB_DOT_H

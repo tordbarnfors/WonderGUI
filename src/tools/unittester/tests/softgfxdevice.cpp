@@ -3,8 +3,8 @@
 #include "softgfxdevice.h"
 
 #include <wondergui.h>
-#include <wg_gfxdevice_gen2.h>
-#include <wg_softbackend.h>
+#include <wax_gfxdevice_gen2.h>
+#include <wax_softbackend.h>
 
 #include <wg_string.h>
 

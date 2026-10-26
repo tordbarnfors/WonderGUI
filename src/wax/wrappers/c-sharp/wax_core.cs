@@ -1,9 +1,9 @@
 using System.ComponentModel;
 using System.Runtime.InteropServices;
 
-namespace WG;
+namespace Wax;
 
-public static class GfxBase
+public static class Core
 {
     private const string NativeLib = "streamgendll";
 
@@ -11,7 +11,7 @@ public static class GfxBase
 
     static public bool Init()
     {
-        int ret = wg_initGfxBase();
+        int ret = wax_initCore();
 
         return (ret == 1);
     }
@@ -20,7 +20,7 @@ public static class GfxBase
 
     static public bool Exit()
     {
-        int ret = wg_exitGfxBase();
+        int ret = wax_exitCore();
 
         return (ret == 1);
     }
@@ -29,7 +29,7 @@ public static class GfxBase
 
     static public bool IsInitialized()
     {
-        int ret = wg_initGfxBase();
+        int ret = wax_initCore();
 
         return (ret == 1);
     }
@@ -38,7 +38,7 @@ public static class GfxBase
 
     static public BitmapCache GetDefaultBitmapCache()
     {
-        return new BitmapCache(wg_defaultBitmapCache());
+        return new BitmapCache(wax_defaultBitmapCache());
     }
 
 
@@ -79,7 +79,7 @@ public static class GfxBase
 
     static public void SetErrorHandler(ErrorHandler handler)
     {
-        wg_setErrorHandler(InternalErrorHandler);
+        wax_setErrorHandler(InternalErrorHandler);
 
         _handler = handler;
     }
@@ -87,21 +87,21 @@ public static class GfxBase
     //____ SetDefaultSurfaceFactory() _________________________________________
     static public void SetDefaultSurfaceFactory(SurfaceFactory factory)
     {
-        wg_setDefaultSurfaceFactory( factory.CHandle() );
+        wax_setDefaultSurfaceFactory( factory.CHandle() );
     }
 
     /*
         //____ SetDefaultEdgemapFactory() _________________________________________
         static public void SetDefaultSurfaceFactory(EdgemapFactory factory)
         {
-            wg_setDefaultEdgemapFactory(factory.CHandle());
+            wax_setDefaultEdgemapFactory(factory.CHandle());
         }
     */
 
     //____ SetDefaultGfxDevice() _________________________________________
     static public void SetDefaultGfxDevice(GfxDevice device)
     {
-        wg_setDefaultGfxDevice(device.CHandle());
+        wax_setDefaultGfxDevice(device.CHandle());
     }
 
     private static void InternalErrorHandler(in C_ErrorInfo c_errInfo)
@@ -144,37 +144,37 @@ public static class GfxBase
     //____ DLL functions ______________________________________________________
 
     [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-    private static extern int wg_initGfxBase();
+    private static extern int wax_initCore();
 
     [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-    private static extern int wg_exitGfxBase();
+    private static extern int wax_exitCore();
 
     [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-    private static extern int wg_isGfxBaseInitialized();
+    private static extern int wax_isCoreInitialized();
 
     [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-    public static extern IntPtr	wg_defaultBitmapCache();
+    public static extern IntPtr	wax_defaultBitmapCache();
     
     [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-    private static extern void wg_setErrorHandler(C_ErrorHandler errorHandler);
+    private static extern void wax_setErrorHandler(C_ErrorHandler errorHandler);
 
     [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-    private static extern void wg_setDefaultSurfaceFactory( IntPtr factory );
+    private static extern void wax_setDefaultSurfaceFactory( IntPtr factory );
 
     [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-    private static extern IntPtr wg_defaultSurfaceFactory();
+    private static extern IntPtr wax_defaultSurfaceFactory();
 
     [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-    private static extern void wg_setDefaultEdgemapFactory( IntPtr factory );
+    private static extern void wax_setDefaultEdgemapFactory( IntPtr factory );
 
     [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-    private static extern IntPtr wg_defaultEdgemapFactory();
+    private static extern IntPtr wax_defaultEdgemapFactory();
 
     [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-    private static extern void wg_setDefaultGfxDevice( IntPtr device );
+    private static extern void wax_setDefaultGfxDevice( IntPtr device );
 
     [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-    private static extern IntPtr wg_defaultGfxDevice();
+    private static extern IntPtr wax_defaultGfxDevice();
 
 
 

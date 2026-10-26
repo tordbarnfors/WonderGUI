@@ -22,10 +22,10 @@
 #include <stdio.h>
 #include <limits.h>
 #include <string.h>
-#include <wg_font.h>
-#include <wg_gfxbase.h>
+#include <wax_font.h>
+#include <wax_core.h>
 
-namespace wg
+namespace wax
 {
 
 	const TypeInfo Font::TYPEINFO = { "Font", &Object::TYPEINFO };
@@ -55,7 +55,7 @@ namespace wg
 			return nullptr;
 		
 		if( pFactory == nullptr )
-			pFactory = GfxBase::defaultSurfaceFactory();
+			pFactory = Core::defaultSurfaceFactory();
 		
 		if( !pFactory )
 			return nullptr;
@@ -81,7 +81,7 @@ namespace wg
 
 		if (p == this)
 		{
-			GfxBase::throwError( ErrorLevel::Error, ErrorCode::InvalidParam, "Can't set backup font, would create cyclic fallback.", this, &TYPEINFO, __func__, __FILE__, __LINE__ );
+			Core::throwError( ErrorLevel::Error, ErrorCode::InvalidParam, "Can't set backup font, would create cyclic fallback.", this, &TYPEINFO, __func__, __FILE__, __LINE__ );
 			return;
 		}
 
@@ -90,4 +90,4 @@ namespace wg
 
 
 
-} // namespace wg
+} // namespace wax

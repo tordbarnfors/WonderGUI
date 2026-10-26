@@ -20,7 +20,7 @@
 
 =========================================================================*/
 #include <wg_filler.h>
-#include <wg_gfxdevice.h>
+#include <wax_gfxdevice.h>
 
 namespace wg
 {

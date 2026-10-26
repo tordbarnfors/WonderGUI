@@ -25,12 +25,12 @@
 
 #include <vector>
 
-#include <wg_edgemap.h>
-#include <wg_edgemapfactory.h>
-#include <wg_edgemaptools.h>
-#include <wg_color.h>
+#include <wax_edgemap.h>
+#include <wax_edgemapfactory.h>
+#include <wax_edgemaptools.h>
+#include <wax_color.h>
 
-namespace wg
+namespace wax
 {
 	class Waveform;
 	typedef	StrongPtr<Waveform>	Waveform_p;

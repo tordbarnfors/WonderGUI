@@ -3,22 +3,22 @@
 #include "linerender.h"
 
 #include <wondergui.h>
-#include <wg_gfxdevice_gen2.h>
-#include <wg_gfxbackend.h>
-#include <wg_backendlogger.h>
-#include <wg_softbackend.h>
-#include <wg_linearbackend.h>
-#include <wg_referencebackend.h>
-#include <wg_softsurface.h>
-#include <wg_softsurfacefactory.h>
-#include <wg_softedgemapfactory.h>
-#include <wg_softkernels_default.h>
-#include <wg_softshapes.h>
-#include <wg_streambackend.h>
-#include <wg_streamplayer.h>
-#include <wg_streamencoder.h>
-#include <wondergfx_c.h>
-#include <wg_c_object.h>
+#include <wax_gfxdevice_gen2.h>
+#include <wax_gfxbackend.h>
+#include <wax_backendlogger.h>
+#include <wax_softbackend.h>
+#include <wax_linearbackend.h>
+#include <wax_referencebackend.h>
+#include <wax_softsurface.h>
+#include <wax_softsurfacefactory.h>
+#include <wax_softedgemapfactory.h>
+#include <wax_softkernels_default.h>
+#include <wax_softshapes.h>
+#include <wax_streambackend.h>
+#include <wax_streamplayer.h>
+#include <wax_streamencoder.h>
+#include <wax_c.h>
+#include <wax_c_object.h>
 
 #include <algorithm>
 #include <cmath>
@@ -621,13 +621,13 @@ bool LineRenderTest::cApiTest(std::ostream& output)
 
 	auto c = [&](GfxDevice* pDevice)
 	{
-		wg_obj device = (wg_obj) static_cast<Object*>(pDevice);
-		wg_color color;
+		wax_obj device = (wax_obj) static_cast<Object*>(pDevice);
+		wax_color color;
 		std::memcpy(&color, &c_lineColor, sizeof(color));
 
-		wg_drawLineWithCaps(device, { 64 * 10, 64 * 10 }, { 64 * 200 + 13, 64 * 60 + 40 }, color, 64 * 5 + 7, { WG_LINECAP_ROUND, 200 }, { WG_LINECAP_SPEAR, 175 });
-		wg_drawStraightLineWithCaps(device, { 64 * 20, 64 * 100 }, WG_DIR_RIGHT, 64 * 150, color, 64 * 4, { WG_LINECAP_SQUARE, 200 }, { WG_LINECAP_VERTICAL, 200 });
-		wg_drawLine(device, { 64 * 30, 64 * 120 }, { 64 * 230, 64 * 200 }, color, 64 * 3);
+		wax_drawLineWithCaps(device, { 64 * 10, 64 * 10 }, { 64 * 200 + 13, 64 * 60 + 40 }, color, 64 * 5 + 7, { WAX_LINECAP_ROUND, 200 }, { WAX_LINECAP_SPEAR, 175 });
+		wax_drawStraightLineWithCaps(device, { 64 * 20, 64 * 100 }, WAX_DIR_RIGHT, 64 * 150, color, 64 * 4, { WAX_LINECAP_SQUARE, 200 }, { WAX_LINECAP_VERTICAL, 200 });
+		wax_drawLine(device, { 64 * 30, 64 * 120 }, { 64 * 230, 64 * 200 }, color, 64 * 3);
 	};
 
 	return compare(output, "C API", render(Backend::Soft, c), "C API", render(Backend::Soft, cpp), "C++", 0);

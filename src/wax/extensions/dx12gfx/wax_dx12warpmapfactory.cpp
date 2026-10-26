@@ -20,10 +20,10 @@
 
 =========================================================================*/
 
-#include <wg_dx12warpmapfactory.h>
-#include <wg_dx12warpmap.h>
+#include <wax_dx12warpmapfactory.h>
+#include <wax_dx12warpmap.h>
 
-namespace wg
+namespace wax
 {
 
 	const TypeInfo DX12WarpmapFactory::TYPEINFO = { "DX12WarpmapFactory", &WarpmapFactory::TYPEINFO };
@@ -47,4 +47,4 @@ namespace wg
 		return DX12Warpmap::create(blueprint, pNodes, pitch);
 	}
 
-} // namespace wg
+} // namespace wax

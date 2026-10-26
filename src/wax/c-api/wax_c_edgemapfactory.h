@@ -19,11 +19,11 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef WG_C_EDGEMAPFACTORY_DOT_H
-#define WG_C_EDGEMAPFACTORY_DOT_H
+#ifndef WAX_C_EDGEMAPFACTORY_DOT_H
+#define WAX_C_EDGEMAPFACTORY_DOT_H
 #pragma once
 
-#include <wg_c_edgemap.h>
+#include <wax_c_edgemap.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -32,13 +32,13 @@ extern "C" {
 
 	//.____ Misc _______________________________________________________
 
-	WG_EXPORT wg_obj wg_createEdgemap( wg_obj factory, const wg_edgemapBP* blueprint);
+	WAX_EXPORT wax_obj wax_createEdgemap( wax_obj factory, const wax_edgemapBP* blueprint);
 
-	WG_EXPORT wg_obj wg_createEdgemapFromFloats( wg_obj factory, const wg_edgemapBP* blueprint, wg_sampleOrigo origo,
+	WAX_EXPORT wax_obj wax_createEdgemapFromFloats( wax_obj factory, const wax_edgemapBP* blueprint, wax_sampleOrigo origo,
 												const float* pSamples, int edges, int edgePitch, int samplePitch);
 
-	WG_EXPORT wg_obj wg_createEdgemapFromSpx( wg_obj factory, const wg_edgemapBP* blueprint, wg_sampleOrigo origo, 
-											 const wg_spx* pSamples, int edges, int edgePitch, int samplePitch);
+	WAX_EXPORT wax_obj wax_createEdgemapFromSpx( wax_obj factory, const wax_edgemapBP* blueprint, wax_sampleOrigo origo, 
+											 const wax_spx* pSamples, int edges, int edgePitch, int samplePitch);
 
 #ifdef __cplusplus
 }

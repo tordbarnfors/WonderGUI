@@ -22,7 +22,7 @@
 #include <wg_reordercapsule.h>
 #include <wg_msg.h>
 #include <wg_colorskin.h>
-#include <wg_dataset.h>
+#include <wax_dataset.h>
 #include <wg_packpanel.h>
 #include <wg_msgrouter.h>
 #include <wg_sizecapsule.h>
@@ -248,7 +248,7 @@ namespace wg
 
 					if( !m_bPickedFromMe )
 					{
-						auto pCasted = wg_dynamic_cast<StrongPtr<DropData>>(pMsg->dataset());
+						auto pCasted = wax_dynamic_cast<StrongPtr<DropData>>(pMsg->dataset());
 						m_pPicked = pCasted->data.pWidget;
 						m_pickedWeight = pCasted->data.weight;
 

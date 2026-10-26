@@ -26,14 +26,19 @@
 #include <string>
 
 #include <wg_types.h>
-#include <wg_geo.h>
-#include <wg_pointers.h>
+#include <wax_geo.h>
+#include <wax_pointers.h>
 #include <wg_widget.h>
 #include <wg_key.h>
 
 
 
 
+
+namespace wax
+{
+	class BasicDataset;
+}
 
 namespace wg
 {
@@ -47,7 +52,6 @@ namespace wg
 	class StaticText;
 	class Text;
 	class EditableText;
-	class BasicDataset;
 
 	typedef WeakPtr<Object>		Object_wp;
 

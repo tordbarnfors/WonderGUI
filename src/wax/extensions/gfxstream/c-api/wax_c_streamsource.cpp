@@ -19,22 +19,22 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#include <wg_c_streamsource.h>
-#include <wg_streamsource.h>
+#include <wax_c_streamsource.h>
+#include <wax_streamsource.h>
 
-using namespace wg;
+using namespace wax;
 
-inline StreamSource* getPtr(wg_component sink) {
+inline StreamSource* getPtr(wax_component sink) {
 	return static_cast<StreamSource*>(reinterpret_cast<StreamSource*>(sink.pInterface));
 }
 
-int wg_hasStreamChunks( wg_component streamSource )
+int wax_hasStreamChunks( wax_component streamSource )
 {
     auto p = getPtr(streamSource);
     return p->hasChunks();
 }
 
-int wg_showStreamChunks( wg_component streamSource, wg_streamData ** pSegments )
+int wax_showStreamChunks( wax_component streamSource, wax_streamData ** pSegments )
 {
     auto p = getPtr(streamSource);
 
@@ -42,25 +42,25 @@ int wg_showStreamChunks( wg_component streamSource, wg_streamData ** pSegments )
 	const GfxStream::Data * pSeg;
 
     std::tie(nbSegments, pSeg) = p->showChunks();
-	* pSegments = (wg_streamData*) pSeg;
+	* pSegments = (wax_streamData*) pSeg;
     return nbSegments;
 }
 
-void wg_discardStreamChunks( wg_component streamSource, int bytes )
+void wax_discardStreamChunks( wax_component streamSource, int bytes )
 {
     auto p = getPtr(streamSource);
     p->discardChunks(bytes);
 }
 
-int wg_fetchStreamChunks( wg_component streamSource )
+int wax_fetchStreamChunks( wax_component streamSource )
 {
     auto p = getPtr(streamSource);
     return p->fetchChunks();
 }
 
-wg_streamChunkId wg_peekStreamChunk( wg_component streamSource )
+wax_streamChunkId wax_peekStreamChunk( wax_component streamSource )
 {
     auto p = getPtr(streamSource);
-    return (wg_streamChunkId) p->peekChunk();
+    return (wax_streamChunkId) p->peekChunk();
 }
 

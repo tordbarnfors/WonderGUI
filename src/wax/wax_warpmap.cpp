@@ -19,12 +19,12 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#include <wg_warpmap.h>
+#include <wax_warpmap.h>
 
 #include <cmath>
 #include <cstring>
 
-namespace wg
+namespace wax
 {
 
 	const TypeInfo Warpmap::TYPEINFO = { "Warpmap", &Object::TYPEINFO };
@@ -226,4 +226,4 @@ namespace wg
 		}
 	}
 
-} // namespace wg
+} // namespace wax

@@ -152,7 +152,7 @@ PS_OUTPUT main(PS_INPUT input)
     if (keepsResultColors())
     {
         output.color = acc;
-#ifdef WG_DUAL_SOURCE
+#ifdef WAX_DUAL_SOURCE
         float factor = covered - keep;
         output.factor = float4(factor, factor, factor, factor);
 #endif

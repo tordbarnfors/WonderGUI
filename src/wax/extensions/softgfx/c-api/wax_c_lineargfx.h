@@ -19,35 +19,35 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef WG_C_LINEARGFX_DOT_H
-#define WG_C_LINEARGFX_DOT_H
+#ifndef WAX_C_LINEARGFX_DOT_H
+#define WAX_C_LINEARGFX_DOT_H
 #pragma once
 
-#include <wg_c_gfxtypes.h>
-#include <wg_c_geo.h>
+#include <wax_c_types.h>
+#include <wax_c_geo.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-	typedef struct wg_linearGfxSegment_struct
+	typedef struct wax_linearGfxSegment_struct
 	{
-		wg_rectI	rect;			// In pixels, not spx!
+		wax_rectI	rect;			// In pixels, not spx!
 		uint8_t *	pBuffer;
 		int 		pitch;
-	} wg_linearGfxSegment;
+	} wax_linearGfxSegment;
 
-	WG_EXPORT wg_obj 	wg_createLinearBackend(void*(*beginCanvasRenderFunc)(wg_canvasRef ref, int nBytes),
-							void(*endCanvasRenderFunc)(wg_canvasRef ref, int nSegments, const wg_linearGfxSegment * pSegments) );
+	WAX_EXPORT wax_obj 	wax_createLinearBackend(void*(*beginCanvasRenderFunc)(wax_canvasRef ref, int nBytes),
+							void(*endCanvasRenderFunc)(wax_canvasRef ref, int nSegments, const wax_linearGfxSegment * pSegments) );
 
-	WG_EXPORT int		wg_defineLinearBackendCanvas( wg_obj backend, wg_canvasRef ref, wg_sizeSPX size, wg_pixelFormat format, int scale,
-													  wg_colorSpace colorSpace, wg_byteOrder byteOrder );
+	WAX_EXPORT int		wax_defineLinearBackendCanvas( wax_obj backend, wax_canvasRef ref, wax_sizeSPX size, wax_pixelFormat format, int scale,
+													  wax_colorSpace colorSpace, wax_byteOrder byteOrder );
 
-	WG_EXPORT void		wg_setLinearBackendSegmentPadding( wg_obj backend, int bytes );
-	WG_EXPORT int		wg_linearBackendSegmentPadding( wg_obj backend);
+	WAX_EXPORT void		wax_setLinearBackendSegmentPadding( wax_obj backend, int bytes );
+	WAX_EXPORT int		wax_linearBackendSegmentPadding( wax_obj backend);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // WG_C_SOFTGFX_DOT_H
+#endif // WAX_C_SOFTGFX_DOT_H

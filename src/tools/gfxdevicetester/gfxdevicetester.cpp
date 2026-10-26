@@ -7,9 +7,9 @@
 #include <map>
 #include <sstream>
 
-#include <wondergfx.h>
-#include <wg_referencebackend.h>
-#include <wg_softsurface.h>
+#include <wax.h>
+#include <wax_referencebackend.h>
+#include <wax_softsurface.h>
 
 #include "gfxdevicetester.h"
 
@@ -1054,7 +1054,7 @@ bool GfxDeviceTester::read_canvas(Side side, vector<uint8_t>& pixels)
 
 	bool bOk = PixelTools::copyPixels(m_canvasSize.w, m_canvasSize.h, buffer.pixels, buffer.format, buffer.colorSpace, buffer.bigEndian, srcPitchAdd,
 		buffer.palette, pSurface->paletteSize(),
-		pixels.data(), PixelFormat::ARGB_8, m_compareColorSpace, (WG_IS_BIG_ENDIAN == 1), 0, nullptr, dstPaletteEntries, 0);
+		pixels.data(), PixelFormat::ARGB_8, m_compareColorSpace, (WAX_IS_BIG_ENDIAN == 1), 0, nullptr, dstPaletteEntries, 0);
 
 	pSurface->freePixelBuffer(buffer);
 	return bOk;
@@ -1073,7 +1073,7 @@ void GfxDeviceTester::write_image(Surface* pSurface, const vector<uint8_t>& pixe
 	int dstPitchAdd = buffer.pitch - m_canvasSize.w * Util::pixelFormatToDescription(buffer.format).bits / 8;
 	int dstPaletteEntries = 0;
 
-	PixelTools::copyPixels(m_canvasSize.w, m_canvasSize.h, pixels.data(), PixelFormat::ARGB_8, m_compareColorSpace, (WG_IS_BIG_ENDIAN == 1), 0,
+	PixelTools::copyPixels(m_canvasSize.w, m_canvasSize.h, pixels.data(), PixelFormat::ARGB_8, m_compareColorSpace, (WAX_IS_BIG_ENDIAN == 1), 0,
 		nullptr, 0,
 		buffer.pixels, buffer.format, buffer.colorSpace, buffer.bigEndian, dstPitchAdd, nullptr, dstPaletteEntries, 0);
 
@@ -1176,7 +1176,7 @@ void GfxDeviceTester::refresh_diff(Viewer& viewer)
 		return;
 	}
 
-	const int alphaOfs = WG_IS_BIG_ENDIAN ? 0 : 3;
+	const int alphaOfs = WAX_IS_BIG_ENDIAN ? 0 : 3;
 
 	vector<uint8_t> diff(testee.size());
 
@@ -1334,7 +1334,7 @@ void GfxDeviceTester::run_batch_accuracy()
 				if (!pFile)
 					continue;
 
-				const int r = WG_IS_BIG_ENDIAN ? 1 : 2, g = WG_IS_BIG_ENDIAN ? 2 : 1, b = WG_IS_BIG_ENDIAN ? 3 : 0;
+				const int r = WAX_IS_BIG_ENDIAN ? 1 : 2, g = WAX_IS_BIG_ENDIAN ? 2 : 1, b = WAX_IS_BIG_ENDIAN ? 3 : 0;
 
 				fprintf(pFile, "P6 %d %d 255\n", m_canvasSize.w, m_canvasSize.h);
 				for (size_t p = 0; p + 3 < pixels.size(); p += 4)

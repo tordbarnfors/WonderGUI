@@ -19,21 +19,21 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#include <wg_edgemaptools.h>
-#include <wg_gfxbase.h>
-#include <wg_gfxutil.h>
+#include <wax_edgemaptools.h>
+#include <wax_core.h>
+#include <wax_gfxutil.h>
 
 using namespace std;
 
-namespace wg {
+namespace wax {
 namespace EdgemapTools {
 
 //____ createDonut() ______________________________________________________
 
 Edgemap_p createDonut(SizeSPX size, spx thickness, HiColor fillColor, spx outlineThickness, HiColor outlineColor, EdgemapFactory * pFactory )
 {
-	auto pCurveTab = GfxBase::curveTab();
-	int curveTabSize = GfxBase::curveTabSize();
+	auto pCurveTab = Core::curveTab();
+	int curveTabSize = Core::curveTabSize();
 
 	// Center in 26.6 format.
 
@@ -74,7 +74,7 @@ Edgemap_p createDonut(SizeSPX size, spx thickness, HiColor fillColor, spx outlin
 	int samplePoints = clip.w + 1;
 
 	int bufferSize = samplePoints * sizeof(int) * 4 * 2;		// length+1 * sizeof(int) * 4 separate traces * 2 halves.
-	int * pBuffer = (int*)GfxBase::memStackAlloc(bufferSize);
+	int * pBuffer = (int*)Core::memStackAlloc(bufferSize);
 
 	// Do line traces.
 
@@ -211,9 +211,9 @@ Edgemap_p createDonut(SizeSPX size, spx thickness, HiColor fillColor, spx outlin
 	col[8] = HiColor::Transparent;
 
 	if( !pFactory )
-		pFactory = GfxBase::defaultEdgemapFactory();
+		pFactory = Core::defaultEdgemapFactory();
 		
-	auto pEdgemap = pFactory->createEdgemap( WGBP(Edgemap,
+	auto pEdgemap = pFactory->createEdgemap( WAXBP(Edgemap,
 													_.size = outerRect.size(),
 													_.segments = 9,
 													_.colors = col) );
@@ -226,7 +226,7 @@ Edgemap_p createDonut(SizeSPX size, spx thickness, HiColor fillColor, spx outlin
 	
 	// Free temporary work memory
 
-	GfxBase::memStackFree(bufferSize);
+	Core::memStackFree(bufferSize);
 
 	return pEdgemap;
 }
@@ -240,8 +240,8 @@ bool drawOutlinedDonut(Edgemap * pEdgemap, spx thickness, spx outlineThickness )
 	if( pEdgemap->segments() < 9 )
 		return false;
 
-	auto pCurveTab = GfxBase::curveTab();
-	int curveTabSize = GfxBase::curveTabSize();
+	auto pCurveTab = Core::curveTab();
+	int curveTabSize = Core::curveTabSize();
 
 	
 	// Center and corners in 26.6 format.
@@ -269,7 +269,7 @@ bool drawOutlinedDonut(Edgemap * pEdgemap, spx thickness, spx outlineThickness )
 	int samplePoints = size.w + 1;
 
 	int bufferSize = samplePoints * sizeof(int) * 4 * 2;		// length+1 * sizeof(int) * 4 separate traces * 2 halves.
-	int * pBuffer = (int*)GfxBase::memStackAlloc(bufferSize);
+	int * pBuffer = (int*)Core::memStackAlloc(bufferSize);
 
 	// Do line traces.
 
@@ -389,7 +389,7 @@ bool drawOutlinedDonut(Edgemap * pEdgemap, spx thickness, spx outlineThickness )
 
 	// Free temporary work memory
 
-	GfxBase::memStackFree(bufferSize);
+	Core::memStackFree(bufferSize);
 
 	pEdgemap->setRenderSegments(9);
 	return true;
@@ -480,4 +480,4 @@ spx convertSample( float sample, SampleOrigo origo, spx height )
 }
 
 }	// namespace EdgemapTools
-}	// namespace wg
+}	// namespace wax

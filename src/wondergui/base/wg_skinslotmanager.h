@@ -23,9 +23,9 @@
 #define WG_SKINSLOTMANAGER_DOT_H
 #pragma once
 
-#include <wg_mempool.h>
+#include <wax_mempool.h>
 #include <wg_util.h>
-#include <wg_pointers.h>
+#include <wax_pointers.h>
 
 #include <vector>
 

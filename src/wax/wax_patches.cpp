@@ -19,10 +19,10 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#include <wg_patches.h>
-#include <wg_patches.impl.h>
+#include <wax_patches.h>
+#include <wax_patches.impl.h>
 
-namespace wg
+namespace wax
 {
 //	template class PatchesT<pts>;
 //	template class PatchesT<spx>;
@@ -30,4 +30,4 @@ namespace wg
 	template class PatchesT<float>;
 
 
-} // namespace wg
+} // namespace wax

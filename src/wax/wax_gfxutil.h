@@ -19,30 +19,30 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef WG_GFXUTIL_DOT_H
-#define WG_GFXUTIL_DOT_H
+#ifndef WAX_GFXUTIL_DOT_H
+#define WAX_GFXUTIL_DOT_H
 #pragma once
 
-#include <wg_geo.h>
-#include <wg_gfxtypes.h>
-#include <wg_patches.h>
+#include <wax_geo.h>
+#include <wax_types.h>
+#include <wax_patches.h>
 
 #include <algorithm>
 
-namespace wg
+namespace wax
 {
 
 	class GfxDevice;
 
-	//____ Util _________________________________________________________________
+	//____ GfxUtil ______________________________________________________________
 
-	namespace Util		/** @private */
+	namespace GfxUtil		/** @private */
 	{
 
 		// Helper to create endian-aware uint32_t from four chars
 
 		static constexpr uint32_t makeEndianSpecificToken(char a, char b, char c, char d) {
-			#if WG_IS_BIG_ENDIAN
+			#if WAX_IS_BIG_ENDIAN
 				return (a << 24) | (b << 16) | (c << 8) | d;
 			#else
 				return a | (b << 8) | (c << 16) | (d << 24);
@@ -492,7 +492,7 @@ namespace wg
 
 		constexpr bool isSystemBigEndian()
 		{
-	#if WG_IS_LITTLE_ENDIAN
+	#if WAX_IS_LITTLE_ENDIAN
 			return false;
 	#else
 			return true;
@@ -504,7 +504,7 @@ namespace wg
 
 	}
 
-	RectI Util::roundToPixels(const RectSPX& r)
+	RectI GfxUtil::roundToPixels(const RectSPX& r)
 	{
 		int x2 = r.x + r.w;
 		int y2 = r.y + r.h;
@@ -520,31 +520,31 @@ namespace wg
 		return out;
 	}
 
-	CoordI Util::roundToPixels(const CoordSPX& r)
+	CoordI GfxUtil::roundToPixels(const CoordSPX& r)
 	{
 		return { (r.x + 32) >> 6, (r.y + 32) >> 6 };
 	}
 
-	SizeI Util::roundToPixels(const SizeSPX& r)
+	SizeI GfxUtil::roundToPixels(const SizeSPX& r)
 	{
 		return { (r.w + 32) >> 6, (r.h + 32) >> 6 };
 	}
 
-	BorderI Util::roundToPixels(const BorderSPX& r)
+	BorderI GfxUtil::roundToPixels(const BorderSPX& r)
 	{
 		return { (r.top + 32) >> 6, (r.right + 32) >> 6, (r.bottom + 32) >> 6, (r.left + 32) >> 6 };
 	}
 
 
-	int Util::roundToPixels(spx r)
+	int GfxUtil::roundToPixels(spx r)
 	{
 		return (r + 32) >> 6;
 	}
 
-	uint32_t Util::alignUp8(uint32_t value)
+	uint32_t GfxUtil::alignUp8(uint32_t value)
 	{
 		return (value + 7) & 0xFFFFFFF8;
 	}
 
-} // namespace wg
-#endif // WG_GFXUTIL_DOT_H
+} // namespace wax
+#endif // WAX_GFXUTIL_DOT_H

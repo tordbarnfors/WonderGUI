@@ -23,12 +23,13 @@
 #define	WG_PLUGINSURFACEFACTORY_DOT_H
 #pragma once
 
-#include <wg_surfacefactory.h>
+#include <wax_surfacefactory.h>
+#include <wg_types.h>
 
 #include <vector>
 
-typedef void* wg_obj;
-typedef struct wg_surfaceBP_struct wg_surfaceBP;
+typedef void* wax_obj;
+typedef struct wax_surfaceBP_struct wax_surfaceBP;
 
 namespace wg
 {
@@ -44,7 +45,7 @@ namespace wg
 	public:
 		//.____ Creation __________________________________________
 
-		static PluginSurfaceFactory_p	create(wg_obj cFactory) { return PluginSurfaceFactory_p(new PluginSurfaceFactory(cFactory)); }
+		static PluginSurfaceFactory_p	create(wax_obj cFactory) { return PluginSurfaceFactory_p(new PluginSurfaceFactory(cFactory)); }
 
 		//.____ Identification __________________________________________
 
@@ -69,13 +70,13 @@ namespace wg
 									const Color8* pPalette = nullptr, int paletteSize = 0) override;
 
 	protected:
-		PluginSurfaceFactory( wg_obj cFactory );
+		PluginSurfaceFactory( wax_obj cFactory );
 		~PluginSurfaceFactory();
 
-		void _convertBlueprint(wg_surfaceBP* pDest, const Surface::Blueprint* pSource);
+		void _convertBlueprint(wax_surfaceBP* pDest, const Surface::Blueprint* pSource);
 
 
-		wg_obj	m_cFactory;
+		wax_obj	m_cFactory;
 	};
 }
 

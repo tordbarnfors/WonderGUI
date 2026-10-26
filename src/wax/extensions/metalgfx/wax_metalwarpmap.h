@@ -19,16 +19,16 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef WG_METALWARPMAP_DOT_H
-#define WG_METALWARPMAP_DOT_H
+#ifndef WAX_METALWARPMAP_DOT_H
+#define WAX_METALWARPMAP_DOT_H
 #pragma once
 
 #import "MetalKit/MetalKit.h"
 
-#include <wg_warpmap.h>
+#include <wax_warpmap.h>
 
 
-namespace wg
+namespace wax
 {
 
 	class MetalWarpmap;
@@ -72,5 +72,5 @@ namespace wg
 		float *      	m_pBuffer = nullptr;
 	};
 
-} // namespace wg
-#endif // WG_METALWARPMAP_DOT_H
+} // namespace wax
+#endif // WAX_METALWARPMAP_DOT_H

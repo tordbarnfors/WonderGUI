@@ -19,11 +19,11 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef WG_GLWARPMAP_DOT_H
-#define WG_GLWARPMAP_DOT_H
+#ifndef WAX_GLWARPMAP_DOT_H
+#define WAX_GLWARPMAP_DOT_H
 #pragma once
 
-#include <wg_warpmap.h>
+#include <wax_warpmap.h>
 
 #ifdef WIN32
 #	include <GL/glew.h>
@@ -36,7 +36,7 @@
 #	endif
 #endif
 
-namespace wg
+namespace wax
 {
 	class GlWarpmap;
 	typedef	StrongPtr<GlWarpmap>	GlWarpmap_p;
@@ -78,5 +78,5 @@ namespace wg
 		GLuint		m_textureId = 0;
 	};
 
-} // namespace wg
-#endif // WG_GLWARPMAP_DOT_H
+} // namespace wax
+#endif // WAX_GLWARPMAP_DOT_H

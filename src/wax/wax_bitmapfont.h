@@ -19,16 +19,16 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef	WG_BITMAPFONT_DOT_H
-#define	WG_BITMAPFONT_DOT_H
+#ifndef	WAX_BITMAPFONT_DOT_H
+#define	WAX_BITMAPFONT_DOT_H
 #pragma once
 
 #include <unordered_map>
-#include <wg_geo.h>
-#include <wg_font.h>
-#include <wg_surface.h>
+#include <wax_geo.h>
+#include <wax_font.h>
+#include <wax_surface.h>
 
-namespace wg
+namespace wax
 {
 
 	class BitmapFont;
@@ -120,5 +120,5 @@ namespace wg
 
 
 
-} // namespace wg
-#endif // WG_BITMAPFONT_DOT_H
+} // namespace wax
+#endif // WAX_BITMAPFONT_DOT_H

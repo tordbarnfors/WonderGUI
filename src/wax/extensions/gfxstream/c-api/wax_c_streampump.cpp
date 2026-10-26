@@ -19,24 +19,24 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#include <wg_c_streampump.h>
-#include <wg_streampump.h>
+#include <wax_c_streampump.h>
+#include <wax_streampump.h>
 
-using namespace wg;
+using namespace wax;
 
-inline StreamPump* getPtr(wg_obj obj) {
+inline StreamPump* getPtr(wax_obj obj) {
 	return static_cast<StreamPump*>(reinterpret_cast<Object*>(obj));
 }
 
 
-wg_obj wg_createStreamPump()
+wax_obj wax_createStreamPump()
 {
 	auto p = StreamPump::create();
 	p->retain();
 	return p.rawPtr();
 }
 
-wg_obj wg_createStreamPumpWithInputOutput(wg_component input, wg_component output)
+wax_obj wax_createStreamPumpWithInputOutput(wax_component input, wax_component output)
 {
 	StreamSource_p pInput(reinterpret_cast<Object*>(input.object), * reinterpret_cast<StreamSource*>(input.pInterface));
 	StreamSink_p pOutput(reinterpret_cast<Object*>(output.object), *reinterpret_cast<StreamSink*>(output.pInterface));
@@ -46,69 +46,69 @@ wg_obj wg_createStreamPumpWithInputOutput(wg_component input, wg_component outpu
 	return p.rawPtr();
 }
 
-void wg_setStreamPumpInput(wg_obj streamPump, wg_component input)
+void wax_setStreamPumpInput(wax_obj streamPump, wax_component input)
 {
 	StreamSource_p pInput(reinterpret_cast<Object*>(input.object), *reinterpret_cast<StreamSource*>(input.pInterface));
 	getPtr(streamPump)->setInput(pInput);
 }
 
-void wg_setStreamPumpOutput(wg_obj streamPump, wg_component output)
+void wax_setStreamPumpOutput(wax_obj streamPump, wax_component output)
 {
 	StreamSink_p pOutput(reinterpret_cast<Object*>(output.object), *reinterpret_cast<StreamSink*>(output.pInterface));
 	getPtr(streamPump)->setOutput(pOutput);
 }
 
-void wg_setFlowControl(wg_obj streamPump, uint16_t fenceId, int credits, int bytesPerCredit )
+void wax_setFlowControl(wax_obj streamPump, uint16_t fenceId, int credits, int bytesPerCredit )
 {
 	getPtr(streamPump)->setFlowControl( fenceId, credits, bytesPerCredit );
 }
 
-void wg_restartFlowContol(wg_obj streamPump, int credits)
+void wax_restartFlowContol(wax_obj streamPump, int credits)
 {
 	getPtr(streamPump)->restartFlowControl(credits);
 }
 
-void wg_addFlowControlCredits(wg_obj streamPump, int credits)
+void wax_addFlowControlCredits(wax_obj streamPump, int credits)
 {
 	getPtr(streamPump)->addCredits(credits);
 }
 
-wg_streamChunkId wg_peekChunk(wg_obj streamPump)
+wax_streamChunkId wax_peekChunk(wax_obj streamPump)
 {
-	return (wg_streamChunkId) getPtr(streamPump)->peekChunk();
+	return (wax_streamChunkId) getPtr(streamPump)->peekChunk();
 }
 
-int wg_pumpChunk(wg_obj streamPump)
+int wax_pumpChunk(wax_obj streamPump)
 {
 	return getPtr(streamPump)->pumpChunk();
 }
 
-int wg_pumpUntilFrame(wg_obj streamPump)
+int wax_pumpUntilFrame(wax_obj streamPump)
 {
 	return getPtr(streamPump)->pumpUntilFrame();
 }
 
-int wg_pumpFrame(wg_obj streamPump)
+int wax_pumpFrame(wax_obj streamPump)
 {
 	return getPtr(streamPump)->pumpFrame();
 }
 
-int wg_pumpAllFrames(wg_obj streamPump)
+int wax_pumpAllFrames(wax_obj streamPump)
 {
 	return getPtr(streamPump)->pumpAllFrames();
 }
 
-int wg_pumpAllFramesWithTrimming(wg_obj streamPump, wg_obj trimBackend)
+int wax_pumpAllFramesWithTrimming(wax_obj streamPump, wax_obj trimBackend)
 {
 	return getPtr(streamPump)->pumpAllFrames(static_cast<StreamTrimBackend*>(reinterpret_cast<Object*>(trimBackend)));
 }
 
-int wg_pumpAll(wg_obj streamPump)
+int wax_pumpAll(wax_obj streamPump)
 {
 	return getPtr(streamPump)->pumpAll();
 }
 
-int wg_pumpBytes( wg_obj streamPump, int maxBytes )
+int wax_pumpBytes( wax_obj streamPump, int maxBytes )
 {
 	return getPtr(streamPump)->pumpBytes(maxBytes);
 }

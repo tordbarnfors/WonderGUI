@@ -23,7 +23,7 @@
 #define	WG_THEME_OLDSKOOL_DOT_H
 #pragma once
 
-#include <wg_font.h>
+#include <wax_font.h>
 #include <wg_textstyle.h>
 #include <wg_basictextlayout.h>
 #include <wg_blockskin.h>

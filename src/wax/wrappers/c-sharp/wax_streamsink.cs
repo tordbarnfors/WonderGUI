@@ -1,6 +1,6 @@
 using System.Runtime.InteropServices;
 
-using WG;
+using Wax;
 
 public struct StreamSink
 {
@@ -18,7 +18,7 @@ public struct StreamSink
     {
         fixed (byte* ptr = data)
         {
-            wg_processStreamChunks(c_component, ptr, ptr + data.Length);
+            wax_processStreamChunks(c_component, ptr, ptr + data.Length);
         }
     }
 
@@ -30,7 +30,7 @@ public struct StreamSink
     //____ DLL functions ______________________________________________________
 
     [DllImport(Objekt.NativeLib, CallingConvention = CallingConvention.Cdecl)]
-	private static extern unsafe void	wg_processStreamChunks( C_Component streamSink, byte * pBegin, byte * pEnd );
+	private static extern unsafe void	wax_processStreamChunks( C_Component streamSink, byte * pBegin, byte * pEnd );
 
 
 }

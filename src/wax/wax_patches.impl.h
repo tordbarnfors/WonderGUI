@@ -22,7 +22,7 @@
 #include <memory.h>
 #include <cstring>
 
-namespace wg
+namespace wax
 {
 
 	//____ constructor _____________________________________________________________
@@ -462,4 +462,4 @@ namespace wg
 		setCapacity(capacity);
 	}
 
-} // namespace wg
+} // namespace wax

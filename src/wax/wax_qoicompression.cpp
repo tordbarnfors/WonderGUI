@@ -19,21 +19,21 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 =========================================================================*/
 
-#include <wg_qoicompression.h>
-#include <wg_gfxutil.h>
-#include <wg_gfxbase.h>
+#include <wax_qoicompression.h>
+#include <wax_gfxutil.h>
+#include <wax_core.h>
 
 #include <climits>
 
-namespace wg
+namespace wax
 {
 const TypeInfo QOICompressor::TYPEINFO = { "QOICompressor", &Compressor::TYPEINFO };
 const TypeInfo QOIDecompressor::TYPEINFO = { "QOIDecompressor", &Decompressor::TYPEINFO };
 
-const uint32_t QOICompressor::ID_TOKEN = Util::makeEndianSpecificToken('Q', 'O', 'I', 'L');
-const uint32_t QOICompressor::ID_TOKEN_BIG_ENDIAN = Util::makeEndianSpecificToken('Q', 'O', 'I', 'B');
-const uint32_t QOIDecompressor::ID_TOKEN = Util::makeEndianSpecificToken('Q', 'O', 'I', 'L');
-const uint32_t QOIDecompressor::ID_TOKEN_BIG_ENDIAN = Util::makeEndianSpecificToken('Q', 'O', 'I', 'B');
+const uint32_t QOICompressor::ID_TOKEN = GfxUtil::makeEndianSpecificToken('Q', 'O', 'I', 'L');
+const uint32_t QOICompressor::ID_TOKEN_BIG_ENDIAN = GfxUtil::makeEndianSpecificToken('Q', 'O', 'I', 'B');
+const uint32_t QOIDecompressor::ID_TOKEN = GfxUtil::makeEndianSpecificToken('Q', 'O', 'I', 'L');
+const uint32_t QOIDecompressor::ID_TOKEN_BIG_ENDIAN = GfxUtil::makeEndianSpecificToken('Q', 'O', 'I', 'B');
 
 static const uint8_t	c_opIndex	= 0x00;
 static const uint8_t	c_opDiff	= 0x40;
@@ -293,7 +293,7 @@ QOICompressor_p QOICompressor::create( const Blueprint& blueprint )
 {
 	if( blueprint.format != PixelFormat::ARGB_8 && blueprint.format != PixelFormat::XRGB_8 )
 	{
-		GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "QOI compression is only supported for pixel formats ARGB_8 and XRGB_8.", nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
+		Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "QOI compression is only supported for pixel formats ARGB_8 and XRGB_8.", nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
 		return nullptr;
 	}
 
@@ -340,7 +340,7 @@ int QOICompressor::compress( void * pDest, const void * pBegin, const void * pEn
 {
 	if( (((const uint8_t*) pEnd) - ((const uint8_t*) pBegin)) % 4 != 0 )
 	{
-		GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Size of data to compress is not a multiple of 4 bytes.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+		Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Size of data to compress is not a multiple of 4 bytes.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 		return 0;
 	}
 

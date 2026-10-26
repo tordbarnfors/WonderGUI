@@ -19,8 +19,8 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef WG_C_INTERNAL_DOT_H
-#define WG_C_INTERNAL_DOT_H
+#ifndef WAX_C_INTERNAL_DOT_H
+#define WAX_C_INTERNAL_DOT_H
 #pragma once
 
 /* Functions used internally by the C-API */
@@ -28,23 +28,23 @@
 
 #ifdef __cplusplus
 
-#include <wg_surface.h>
-#include <wg_c_surface.h>
+#include <wax_surface.h>
+#include <wax_c_surface.h>
 
-#include <wg_edgemap.h>
-#include <wg_c_edgemap.h>
+#include <wax_edgemap.h>
+#include <wax_c_edgemap.h>
 
-#include <wg_tint.h>
+#include <wax_tint.h>
 
-#include <wg_warpmap.h>
-#include <wg_c_warpmap.h>
+#include <wax_warpmap.h>
+#include <wax_c_warpmap.h>
 
 
-WG_NO_EXPORT void convertSurfaceBlueprint(wg::Surface::Blueprint* pDest, const wg_surfaceBP* pSource);
-WG_NO_EXPORT void convertEdgemapBlueprint(wg::Edgemap::Blueprint* pDest, const wg_edgemapBP* pSource, wg::Tint_p * pSpaceForTints );	// pSpaceForTints needs room for bp.segments pointers.
-WG_NO_EXPORT void convertWarpmapBlueprint(wg::Warpmap::Blueprint* pDest, const wg_warpmapBP* pSource);
+WAX_NO_EXPORT void convertSurfaceBlueprint(wax::Surface::Blueprint* pDest, const wax_surfaceBP* pSource);
+WAX_NO_EXPORT void convertEdgemapBlueprint(wax::Edgemap::Blueprint* pDest, const wax_edgemapBP* pSource, wax::Tint_p * pSpaceForTints );	// pSpaceForTints needs room for bp.segments pointers.
+WAX_NO_EXPORT void convertWarpmapBlueprint(wax::Warpmap::Blueprint* pDest, const wax_warpmapBP* pSource);
 
 
 #endif	//__cplusplus
 
-#endif	//WG_C_INTERNAL_DOT_H
+#endif	//WAX_C_INTERNAL_DOT_H

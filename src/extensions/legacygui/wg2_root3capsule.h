@@ -8,7 +8,7 @@
 // widget hierarchy. In order for this to work, wg::Base needs to have a proper
 // context and wg::Base::update has to be called in order for update receivers
 // to work. The contexts of wg::Base and WgBase has to be compatible with one
-// another (it's recommended that the GfxContext of both has the same members).
+// another (it's recommended that the wax::Context of both has the same members).
 
 // There is currently no user interaction implemented, so clicking or hovering
 // the modern WG widgets does not do anything.

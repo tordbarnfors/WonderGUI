@@ -19,9 +19,9 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#include <wg_gfxdevicefactory.h>
+#include <wax_gfxdevicefactory.h>
 
-namespace wg
+namespace wax
 {
 
 	const TypeInfo GfxDeviceFactory::TYPEINFO = { "GfxDeviceFactory", &Object::TYPEINFO };
@@ -38,4 +38,4 @@ namespace wg
 
 
 
-} // namespace wg
+} // namespace wax

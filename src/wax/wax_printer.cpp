@@ -19,9 +19,9 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#include <wg_printer.h>
+#include <wax_printer.h>
 
-namespace wg
+namespace wax
 {
 
 	const TypeInfo Printer::TYPEINFO = { "Printer", &Object::TYPEINFO };
@@ -611,4 +611,4 @@ namespace wg
 	}
 
 
-} // namespace wg
+} // namespace wax

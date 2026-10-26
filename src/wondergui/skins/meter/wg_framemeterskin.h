@@ -24,8 +24,8 @@
 #pragma once
 
 #include <wg_skin.h>
-#include <wg_tint.h>
-#include <wg_surface.h>
+#include <wax_tint.h>
+#include <wax_surface.h>
 #include <vector>
 
 namespace wg

@@ -38,10 +38,10 @@
 #include <functional>
 #include <vector>
 
-#include <wg_surfacefactory.h>
+#include <wax_surfacefactory.h>
 #include <wg_skin.h>
-#include <wg_tint.h>
-#include <wg_waveform.h>
+#include <wax_tint.h>
+#include <wax_waveform.h>
 
 
 //____ WgChart ____________________________________________________________

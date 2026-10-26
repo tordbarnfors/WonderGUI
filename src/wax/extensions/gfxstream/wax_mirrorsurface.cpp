@@ -19,11 +19,11 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#include <wg_mirrorsurface.h>
-#include <wg_streambackend.h>
-#include <wg_gfxbase.h>
+#include <wax_mirrorsurface.h>
+#include <wax_streambackend.h>
+#include <wax_core.h>
 
-namespace wg
+namespace wax
 {
 
 	const TypeInfo MirrorSurface::TYPEINFO = { "MirrorSurface", &Surface::TYPEINFO };
@@ -35,13 +35,13 @@ namespace wg
 	{
 		if (!blueprint.encoder)
 		{
-			GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "You must provide a StreamEncoder in the blueprint.", nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
+			Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "You must provide a StreamEncoder in the blueprint.", nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return nullptr;
 		}
 
 		if (!blueprint.surface)
 		{
-			GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "You must provide a Surface in the blueprint.", nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
+			Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "You must provide a Surface in the blueprint.", nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return nullptr;
 		}
 
@@ -219,13 +219,13 @@ namespace wg
 
 		auto pixelBuffer = m_pSurface->allocPixelBuffer(bounds);
 
-		auto pixelDescription = Util::pixelFormatToDescription(pixelBuffer.format, pixelBuffer.bigEndian);
+		auto pixelDescription = GfxUtil::pixelFormatToDescription(pixelBuffer.format, pixelBuffer.bigEndian);
 
 		int allocSize = 0;
 		for( int i = 0 ; i < nRects ; i++ )
 			allocSize += pRects[i].w * pRects[i].h * pixelDescription.bits / 8;
 
-		auto pBuffer = (uint8_t *) GfxBase::memStackAlloc(allocSize);
+		auto pBuffer = (uint8_t *) Core::memStackAlloc(allocSize);
 
 		// Copy pixels from rectangles to continuous buffer memory.
 
@@ -266,9 +266,9 @@ namespace wg
 
 		// Cleanup
 
-		GfxBase::memStackFree(allocSize);
+		Core::memStackFree(allocSize);
 		m_pSurface->freePixelBuffer(pixelBuffer);
 	}
 
 
-} // namespace wg
+} // namespace wax

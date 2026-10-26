@@ -23,9 +23,10 @@
 #define	WG_PLUGINWARPMAPFACTORY_DOT_H
 #pragma once
 
-#include <wg_warpmapfactory.h>
+#include <wax_warpmapfactory.h>
+#include <wg_types.h>
 
-typedef void* wg_obj;
+typedef void* wax_obj;
 
 namespace wg
 {
@@ -41,7 +42,7 @@ namespace wg
 
 		//.____ Creation __________________________________________
 
-		static PluginWarpmapFactory_p	create(wg_obj cFactory) { return PluginWarpmapFactory_p(new PluginWarpmapFactory(cFactory)); }
+		static PluginWarpmapFactory_p	create(wax_obj cFactory) { return PluginWarpmapFactory_p(new PluginWarpmapFactory(cFactory)); }
 
 		//.____ Identification __________________________________________
 
@@ -54,10 +55,10 @@ namespace wg
 		Warpmap_p createWarpmap( const Warpmap::Blueprint& blueprint, const CoordF * pNodes, int pitch = 0 ) override;
 
 	protected:
-		PluginWarpmapFactory( wg_obj cFactory ) : m_cFactory(cFactory) {}
+		PluginWarpmapFactory( wax_obj cFactory ) : m_cFactory(cFactory) {}
 		virtual ~PluginWarpmapFactory() {}
 
-		wg_obj	m_cFactory;			// Not retained, see PluginEdgemapFactory.
+		wax_obj	m_cFactory;			// Not retained, see PluginEdgemapFactory.
 	};
 
 } // namespace wg

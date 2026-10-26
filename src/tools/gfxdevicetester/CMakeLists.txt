@@ -57,12 +57,12 @@ add_executable(gfxdevicetester
 
 target_include_directories(gfxdevicetester PRIVATE
 	${WAPP_INCDIRS}
-	${WGSOFTGFX_INCDIRS}
+	${WAXSOFTGFX_INCDIRS}
 )
 
 target_working_directory(gfxdevicetester ${WG_ROOT} )
 
 target_link_libraries(gfxdevicetester PRIVATE
 	${WAPPLIB}
-	wgsoftgfx
+	waxsoftgfx
 )

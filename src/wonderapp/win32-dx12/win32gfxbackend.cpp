@@ -24,8 +24,8 @@
 
 #include <wondergui.h>
 
-#include <wg_dx12surfacefactory.h>
-#include <wg_dx12backend.h>
+#include <wax_dx12surfacefactory.h>
+#include <wax_dx12backend.h>
 
 #include <dx12_wrapper.h>
 

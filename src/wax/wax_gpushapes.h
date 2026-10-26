@@ -19,13 +19,13 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef	WG_GPUSHAPES_DOT_H
-#define	WG_GPUSHAPES_DOT_H
+#ifndef	WAX_GPUSHAPES_DOT_H
+#define	WAX_GPUSHAPES_DOT_H
 #pragma once
 
-#include <wg_gfxbackend.h>
+#include <wax_gfxbackend.h>
 
-namespace wg
+namespace wax
 {
 	/**
 	 * @brief Shapes (GfxBackend::Command::DrawShape) prepared for the shape shaders of GPU backends.
@@ -124,4 +124,4 @@ namespace wg
 	}
 }
 
-#endif //WG_GPUSHAPES_DOT_H
+#endif //WAX_GPUSHAPES_DOT_H

@@ -19,9 +19,9 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#include <wg_dummyfont.h>
+#include <wax_dummyfont.h>
 
-namespace wg
+namespace wax
 {
 	const TypeInfo DummyFont::TYPEINFO = { "DummyFont", &Font::TYPEINFO };
 

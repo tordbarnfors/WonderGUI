@@ -26,10 +26,11 @@
 #include <wg_plugininterface.h>
 #include <wg_widget.h>
 #include <wg_slotholder.h>
-#include <wg_geo.h>
-#include <wg_patches.h>
+#include <wax_geo.h>
+#include <wax_patches.h>
 #include <wg_msgrouter.h>
-#include <wg_gfxdevice.h>
+#include <wax_gfxdevice.h>
+#include <wg_types.h>
 #include <wg_slot.h>
 #include <wg_root.h>
 #include <wg_pluginbase.h>
@@ -69,7 +70,7 @@ namespace wg
 		//.____ Creation __________________________________________
 
 		static PluginRoot_p	create();
-		static PluginRoot_p	create( wg_obj myPluginCapsule, PluginContext * pContext );
+		static PluginRoot_p	create( wax_obj myPluginCapsule, PluginContext * pContext );
 
 		//.____ Components ____________________________________
 
@@ -113,7 +114,7 @@ namespace wg
 		bool		_markTest(const CoordSPX& ofs);
 
 		void    	_preRender();
-		void		_render(wg_obj device, const RectSPX& _canvas, const RectSPX& _window);
+		void		_render(wax_obj device, const RectSPX& _canvas, const RectSPX& _window);
 
 		void		_resize(const SizeSPX& size, int scale = -1);
 		void		_setState(State state);
@@ -134,7 +135,7 @@ namespace wg
 
 	protected:
 		PluginRoot();
-		PluginRoot(wg_obj myPluginCapsule, PluginContext * pContext);
+		PluginRoot(wax_obj myPluginCapsule, PluginContext * pContext);
 		~PluginRoot();
 
 		// SlotHolder methods
@@ -187,7 +188,7 @@ namespace wg
 		Widget*			_child() const override;
 		Widget*			_focusedChild() const override;
 
-		wg_obj			m_pluginCapsule;
+		wax_obj			m_pluginCapsule;
 
 		std::vector<Widget_wp>   m_preRenderCalls;
 

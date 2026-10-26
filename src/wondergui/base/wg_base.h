@@ -23,7 +23,7 @@
 #define	WG_BASE_DOT_H
 #pragma once
 
-#include <wg_gfxbase.h>
+#include <wax_core.h>
 
 #include <assert.h>
 
@@ -39,9 +39,14 @@
 
 
 
-namespace wg
+namespace wax
 {
 	class Font;
+}
+
+namespace wg
+{
+	class Base;			// Declared here so friend declarations below don't refer to wax::Core.
 	class MsgRouter;
 	class NumberLayout;
 	class InputHandler;
@@ -81,7 +86,7 @@ namespace wg
 
 		std::vector<Receiver*>	updateReceivers;
 		
-		GfxContext_p		pGfxContext;
+		wax::Context_p		pWaxContext;
 	};
 
 	typedef	StrongPtr<GUIContext>	GUIContext_p;
@@ -99,7 +104,7 @@ namespace wg
 	 *
 	 */
 
-	class Base : public GfxBase
+	class Base : public wax::Core
 	{
 //		friend class Object_wp;
 		friend class Object;

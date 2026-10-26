@@ -19,18 +19,18 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#include <wg_c_streamloopwrapper.h>
-#include <wg_streamloopwrapper.h>
+#include <wax_c_streamloopwrapper.h>
+#include <wax_streamloopwrapper.h>
 
-using namespace wg;
+using namespace wax;
 
-inline StreamLoopWrapper* getPtr(wg_obj obj) {
+inline StreamLoopWrapper* getPtr(wax_obj obj) {
 	return static_cast<StreamLoopWrapper*>(reinterpret_cast<Object*>(obj));
 }
 
-wg_obj	wg_createStreamLoopWrapper(const void * pBufferBegin, const void * pBufferEnd,
-											wg_getWritePtr_func getWritePtrFunc,
-										   wg_setReadPtr_func setReadPtrFunc)
+wax_obj	wax_createStreamLoopWrapper(const void * pBufferBegin, const void * pBufferEnd,
+											wax_getWritePtr_func getWritePtrFunc,
+										   wax_setReadPtr_func setReadPtrFunc)
 {
 	auto p = StreamLoopWrapper::create(pBufferBegin, pBufferEnd, getWritePtrFunc, setReadPtrFunc);
 	p->retain();
@@ -38,7 +38,7 @@ wg_obj	wg_createStreamLoopWrapper(const void * pBufferBegin, const void * pBuffe
 
 }
 
-wg_component	wg_getStreamLoopWrapperOutput(wg_obj loopWrapper)
+wax_component	wax_getStreamLoopWrapperOutput(wax_obj loopWrapper)
 {
 	auto p = getPtr(loopWrapper);
 	return { static_cast<Object*>(p), &p->output };

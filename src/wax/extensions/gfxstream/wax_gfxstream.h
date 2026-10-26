@@ -19,20 +19,20 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef	WG_STREAM_DOT_H
-#define	WG_STREAM_DOT_H
+#ifndef	WAX_STREAM_DOT_H
+#define	WAX_STREAM_DOT_H
 #pragma once
 
-#include <wg_gfxtypes.h>
-#include <wg_gfxutil.h>
+#include <wax_types.h>
+#include <wax_gfxutil.h>
 
 #include <assert.h>
 #include <cstring>
 
 
-#define WG_GFXSTREAM_USE_SURFACE_UPDATE2
+#define WAX_GFXSTREAM_USE_SURFACE_UPDATE2
 
-namespace wg
+namespace wax
 {
 	class GfxStream
 	{
@@ -328,4 +328,4 @@ namespace wg
 };
 
 
-#endif //WG_STREAM_DOT_H
+#endif //WAX_STREAM_DOT_H

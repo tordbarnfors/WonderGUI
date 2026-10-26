@@ -19,13 +19,13 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#include <wg_bitmapcache.h>
-#include <wg_gfxdevice.h>
-#include <wg_gfxbase.h>
+#include <wax_bitmapcache.h>
+#include <wax_gfxdevice.h>
+#include <wax_core.h>
 
 #include <algorithm>
 
-namespace wg
+namespace wax
 {
 
 	const TypeInfo BitmapCache::TYPEINFO = { "BitmapCache", &Object::TYPEINFO };
@@ -78,7 +78,7 @@ namespace wg
 	{
 		if (maxBytes < 0)
 		{
-			GfxBase::throwError(ErrorLevel::SilentError, ErrorCode::InvalidParam, "You can not set cache to a negative size!", nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
+			Core::throwError(ErrorLevel::SilentError, ErrorCode::InvalidParam, "You can not set cache to a negative size!", nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return;
 		}
 
@@ -170,14 +170,14 @@ namespace wg
 
 	BitmapCache::CacheSurf * BitmapCache::_addCacheSurface( int category, int width, int height )
 	{
-		auto pFactory = m_pFactory ? m_pFactory : GfxBase::defaultSurfaceFactory();
+		auto pFactory = m_pFactory ? m_pFactory : Core::defaultSurfaceFactory();
 		
 		Surface_p pSurf;
 		
 		if( category == 9 )
-			pSurf = pFactory->createSurface( WGBP(Surface, _.size = {width,height}, _.format = PixelFormat::Alpha_8) );
+			pSurf = pFactory->createSurface( WAXBP(Surface, _.size = {width,height}, _.format = PixelFormat::Alpha_8) );
 		else
-			pSurf = pFactory->createSurface( WGBP(Surface, _.size = {width,s_categoryHeight[category]}, _.format = PixelFormat::Alpha_8) );
+			pSurf = pFactory->createSurface( WAXBP(Surface, _.size = {width,s_categoryHeight[category]}, _.format = PixelFormat::Alpha_8) );
 
 		m_cacheSize += width * height;
 
@@ -230,4 +230,4 @@ namespace wg
 			_truncateCache(maxSize);
 	}
 
-} // namespace wg
+} // namespace wax

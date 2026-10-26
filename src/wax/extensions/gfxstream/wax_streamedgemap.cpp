@@ -19,14 +19,14 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#include <wg_streamedgemap.h>
-#include <wg_streambackend.h>
-#include <wg_gfxbase.h>
-#include <wg_tinttools.h>
+#include <wax_streamedgemap.h>
+#include <wax_streambackend.h>
+#include <wax_core.h>
+#include <wax_tinttools.h>
 
 #include <cstring>
 
-namespace wg
+namespace wax
 {
 
 const TypeInfo StreamEdgemap::TYPEINFO = { "StreamEdgemap", &Edgemap::TYPEINFO };
@@ -169,7 +169,7 @@ void StreamEdgemap::_samplesUpdated(int edgeBegin, int edgeEnd, int sampleBegin,
 		int samples = (edgeEnd - edgeBegin) * (sampleEnd - sampleBegin);
 		int bufferBytes = sizeof(spx) * samples;
 
-		spx * pBuffer = (spx*) GfxBase::memStackAlloc(bufferBytes);
+		spx * pBuffer = (spx*) Core::memStackAlloc(bufferBytes);
 
 		spx* pDest = pBuffer;
 		spx* pSource = m_pSamples + sampleBegin * nbEdges + edgeBegin;
@@ -188,7 +188,7 @@ void StreamEdgemap::_samplesUpdated(int edgeBegin, int edgeEnd, int sampleBegin,
 
 		// Release temporary buffer
 
-		GfxBase::memStackFree(bufferBytes);	// pBuffer
+		Core::memStackFree(bufferBytes);	// pBuffer
 	}
 }
 
@@ -263,5 +263,5 @@ GfxStream::SpxFormat StreamEdgemap::_findBestPackFormat( int spxMask )
 	return GfxStream::SpxFormat::Int32_dec;							// We need 32 bits.
 }
 
-} // namespace wg
+} // namespace wax
 

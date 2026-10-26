@@ -19,16 +19,16 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef	WG_FONT_DOT_H
-#define	WG_FONT_DOT_H
+#ifndef	WAX_FONT_DOT_H
+#define	WAX_FONT_DOT_H
 #pragma once
 
-#include <wg_geo.h>
-#include <wg_pointers.h>
-#include <wg_surface.h>
-#include <wg_surfacefactory.h>
+#include <wax_geo.h>
+#include <wax_pointers.h>
+#include <wax_surface.h>
+#include <wax_surfacefactory.h>
 
-namespace wg
+namespace wax
 {
 
 	class	Font;
@@ -57,7 +57,7 @@ namespace wg
 	//____ Font _____________________________________________________________
 	/**
 	 * @class Font
-	 * @file wg_font.h
+	 * @file wax_font.h
 	 * @brief Base class for various types of fonts.
 	 *
 	 * The Font class is the base class from which all fonts are subclassed,
@@ -121,5 +121,5 @@ namespace wg
     }
 
 
-} // namespace wg
-#endif // WG_FONT_DOT_H
+} // namespace wax
+#endif // WAX_FONT_DOT_H

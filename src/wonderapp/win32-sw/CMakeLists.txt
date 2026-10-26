@@ -25,7 +25,7 @@ set(SOURCES
 set(INCDIRS
 	${CMAKE_CURRENT_LIST_DIR}
 	${WONDERGUI_INCDIRS}
-	${WGFREETYPEFONT_INCDIRS}
+	${WAXFREETYPEFONT_INCDIRS}
 	${WGDEBUGGER_INCDIRS}
 	${PROJECT_SOURCE_DIR}/wonderapp/common
 	${PROJECT_SOURCE_DIR}/wonderapp/win32-common
@@ -42,7 +42,7 @@ add_library(wappwin32sw STATIC
 
 target_include_directories(wappwin32sw PRIVATE
     ${INCDIRS}
-    ${WGSOFTGFX_INCDIRS}
+    ${WAXSOFTGFX_INCDIRS}
 )
 
 set_target_properties(wappwin32sw PROPERTIES FOLDER "WonderApp" )
@@ -52,8 +52,8 @@ target_link_directories(wappwin32sw PUBLIC
 )
 
 target_link_libraries(wappwin32sw PRIVATE
-    wgsoftgfx
-    wgfreetypefont
+    waxsoftgfx
+    waxfreetypefont
     wondergui
     wgdebugger
     ${FREETYPE2_LIB}

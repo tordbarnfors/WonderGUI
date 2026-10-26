@@ -19,16 +19,16 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef	WG_STREAMSINK_DOT_H
-#define	WG_STREAMSINK_DOT_H
+#ifndef	WAX_STREAMSINK_DOT_H
+#define	WAX_STREAMSINK_DOT_H
 #pragma once
 
-#include <wg_pointers.h>
-#include <wg_gfxstream.h>
+#include <wax_pointers.h>
+#include <wax_gfxstream.h>
 
 
 
-namespace wg
+namespace wax
 {
 
 	class StreamSink;
@@ -62,5 +62,5 @@ namespace wg
 	};
 
 
-} // namespace wg
-#endif //WG_STREAMSINK_DOT_H
+} // namespace wax
+#endif //WAX_STREAMSINK_DOT_H

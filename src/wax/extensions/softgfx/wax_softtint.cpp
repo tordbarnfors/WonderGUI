@@ -20,14 +20,14 @@
 
 =========================================================================*/
 
-#include <wg_softtint.h>
+#include <wax_softtint.h>
 
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
 #include <cstring>
 
-namespace wg
+namespace wax
 {
 	namespace
 	{

@@ -20,9 +20,9 @@
 
 =========================================================================*/
 
-#include <wg_dx12backend.h>
+#include <wax_dx12backend.h>
 
-namespace wg {
+namespace wax {
 
 const char DX12Backend::g_fillVS[] =
 

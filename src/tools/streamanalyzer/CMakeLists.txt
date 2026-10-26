@@ -46,8 +46,8 @@ add_executable(streamanalyzer MACOSX_BUNDLE
 
 target_include_directories(streamanalyzer PRIVATE 
 	${WAPP_INCDIRS}
-	${WGGFXSTREAM_INCDIRS}
-	${WGSOFTGFX_INCDIRS}
+	${WAXGFXSTREAM_INCDIRS}
+	${WAXSOFTGFX_INCDIRS}
 	${WGDEBUGGER_INCDIRS}
 )
 
@@ -55,8 +55,8 @@ target_working_directory(streamanalyzer ${WG_ROOT} )
 
 target_link_libraries(streamanalyzer PRIVATE
 	${WAPPLIB}
-	wggfxstream
-	wgsoftgfx
+	waxgfxstream
+	waxsoftgfx
 	wgdebugger
 #	Freetype::Freetype
 )

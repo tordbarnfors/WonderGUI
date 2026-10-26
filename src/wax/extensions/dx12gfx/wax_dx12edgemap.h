@@ -20,17 +20,17 @@
 
 =========================================================================*/
 
-#ifndef WG_DX12EDGEMAP_DOT_H
-#define WG_DX12EDGEMAP_DOT_H
+#ifndef WAX_DX12EDGEMAP_DOT_H
+#define WAX_DX12EDGEMAP_DOT_H
 #pragma once
 
 #define NOMINMAX
-#include <wg_edgemap.h>
+#include <wax_edgemap.h>
 
 #include <wrl.h>
 #include <d3d12.h>
 
-namespace wg
+namespace wax
 {
 
 	class DX12Edgemap;
@@ -105,5 +105,5 @@ namespace wg
 
 
 
-} // namespace wg
-#endif // WG_DX12EDGEMAP_DOT_H
+} // namespace wax
+#endif // WAX_DX12EDGEMAP_DOT_H

@@ -19,10 +19,10 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#include <wg_streamwarpmapfactory.h>
-#include <wg_streamwarpmap.h>
+#include <wax_streamwarpmapfactory.h>
+#include <wax_streamwarpmap.h>
 
-namespace wg
+namespace wax
 {
 	const TypeInfo StreamWarpmapFactory::TYPEINFO = { "StreamWarpmapFactory", &WarpmapFactory::TYPEINFO };
 
@@ -45,4 +45,4 @@ namespace wg
 		return StreamWarpmap::create(m_pEncoder, blueprint, pNodes, pitch);
 	}
 
-} // namespace wg
+} // namespace wax

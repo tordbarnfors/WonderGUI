@@ -48,17 +48,17 @@
 	and compared per pixel, except where coverage is estimated.
 */
 
-#include <wg_softbackend.h>
-#include <wg_softedgemap.h>
-#include <wg_softwarpmap.h>
-#include <wg_gfxbase.h>
-#include <wg_gfxutil.h>
+#include <wax_softbackend.h>
+#include <wax_softedgemap.h>
+#include <wax_softwarpmap.h>
+#include <wax_core.h>
+#include <wax_gfxutil.h>
 
 #include <algorithm>
 #include <cstdlib>
 #include <limits>
 
-namespace wg
+namespace wax
 {
 	namespace
 	{
@@ -240,7 +240,7 @@ namespace wg
 				toString(m_blendMode),
 				toString(m_canvasSoftFormat));
 
-			GfxBase::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, errorMsg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			Core::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, errorMsg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return false;
 		}
 
@@ -268,7 +268,7 @@ namespace wg
 
 		w.pWarpmap = pWarpmap;
 		w.pEdgemap = pEdgemap;
-		w.dest = Util::roundToPixels(params.dest);
+		w.dest = GfxUtil::roundToPixels(params.dest);
 
 		if (pEdgemap)
 		{
@@ -396,7 +396,7 @@ namespace wg
 				snprintf(errorMsg, 1024, "Failed WarpBlit operation. SoftBackend is missing transform kernel reading %s into HiColor buffer.",
 					toString(srcFormat));
 
-				GfxBase::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, errorMsg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				Core::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, errorMsg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 				return false;
 			}
 
@@ -1249,4 +1249,4 @@ namespace wg
 		return buffer.data();
 	}
 
-} // namespace wg
+} // namespace wax

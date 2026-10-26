@@ -19,98 +19,98 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#include <wg_c_gfxbackend.h>
+#include <wax_c_gfxbackend.h>
 #include <cstddef>
-#include <wg_gfxbackend.h>
+#include <wax_gfxbackend.h>
 
-using namespace wg;
+using namespace wax;
 
-static_assert(sizeof(wg_sessionInfo) == sizeof(GfxBackend::SessionInfo), "wg_sessionInfo differs in size from GfxBackend::SessionInfo!");
-static_assert(offsetof(wg_sessionInfo, nWarpDraws) == offsetof(GfxBackend::SessionInfo, nWarpDraws), "wg_sessionInfo isn't binary equivalent to GfxBackend::SessionInfo!");
-static_assert(offsetof(wg_sessionInfo, nShapeTints) == offsetof(GfxBackend::SessionInfo, nShapeTints), "wg_sessionInfo isn't binary equivalent to GfxBackend::SessionInfo!");
+static_assert(sizeof(wax_sessionInfo) == sizeof(GfxBackend::SessionInfo), "wax_sessionInfo differs in size from GfxBackend::SessionInfo!");
+static_assert(offsetof(wax_sessionInfo, nWarpDraws) == offsetof(GfxBackend::SessionInfo, nWarpDraws), "wax_sessionInfo isn't binary equivalent to GfxBackend::SessionInfo!");
+static_assert(offsetof(wax_sessionInfo, nShapeTints) == offsetof(GfxBackend::SessionInfo, nShapeTints), "wax_sessionInfo isn't binary equivalent to GfxBackend::SessionInfo!");
 
-inline GfxBackend* getPtr(wg_obj obj) {
+inline GfxBackend* getPtr(wax_obj obj) {
 	return static_cast<GfxBackend*>(reinterpret_cast<Object*>(obj));
 }
 
 
-void wg_backendBeginRender( wg_obj backend )
+void wax_backendBeginRender( wax_obj backend )
 {
 	getPtr(backend)->beginRender();
 }
 
-void wg_backendEndRender( wg_obj backend )
+void wax_backendEndRender( wax_obj backend )
 {
 	getPtr(backend)->endRender();
 }
 
-void wg_backendBeginSession( wg_obj backend, wg_canvasRef canvasRef, wg_obj canvasSurface, int nUpdateRects, const wg_rectSPX * pUpdateRects, const wg_sessionInfo * pInfo )
+void wax_backendBeginSession( wax_obj backend, wax_canvasRef canvasRef, wax_obj canvasSurface, int nUpdateRects, const wax_rectSPX * pUpdateRects, const wax_sessionInfo * pInfo )
 {
 	getPtr(backend)->beginSession( (CanvasRef) canvasRef, static_cast<Surface*>(reinterpret_cast<Object*>(canvasSurface)), nUpdateRects, (const RectSPX*) pUpdateRects, (const GfxBackend::SessionInfo *) pInfo );
 }
 
-void wg_backendEndSession( wg_obj backend )
+void wax_backendEndSession( wax_obj backend )
 {
 	getPtr(backend)->endSession();
 }
 
-void wg_backendSetCanvasWithSurface( wg_obj backend, wg_obj surface )
+void wax_backendSetCanvasWithSurface( wax_obj backend, wax_obj surface )
 {
 	getPtr(backend)->setCanvas(static_cast<Surface*>(reinterpret_cast<Object*>(surface)));
 }
 
-void wg_backendSetCanvasWithRef( wg_obj backend, wg_canvasRef canvas )
+void wax_backendSetCanvasWithRef( wax_obj backend, wax_canvasRef canvas )
 {
 	getPtr(backend)->setCanvas( (CanvasRef) canvas );
 }
 
-void wg_backendSetObjects(wg_obj backend, wg_obj* const * pBeg, wg_obj* const * pEnd)
+void wax_backendSetObjects(wax_obj backend, wax_obj* const * pBeg, wax_obj* const * pEnd)
 {
 	getPtr(backend)->setObjects( reinterpret_cast<Object* const *>(pBeg), reinterpret_cast<Object* const *>(pEnd) );
 }
 
-void wg_backendSetRects(wg_obj backend, const wg_rectSPX* pBeg, const wg_rectSPX* pEnd)
+void wax_backendSetRects(wax_obj backend, const wax_rectSPX* pBeg, const wax_rectSPX* pEnd)
 {
 	getPtr(backend)->setRects( (const RectSPX *) pBeg, (const RectSPX *) pEnd );
 }
 
-void wg_backendSetColors(wg_obj backend, const wg_color * pBeg, const wg_color * pEnd)
+void wax_backendSetColors(wax_obj backend, const wax_color * pBeg, const wax_color * pEnd)
 {
 	getPtr(backend)->setColors( (const HiColor *) pBeg, (const HiColor *) pEnd );
 }
 
-void wg_backendSetTransforms(wg_obj backend, const wg_transform * pBeg, const wg_transform * pEnd)
+void wax_backendSetTransforms(wax_obj backend, const wax_transform * pBeg, const wax_transform * pEnd)
 {
 	getPtr(backend)->setTransforms( (const Transform *) pBeg, (const Transform *) pEnd );
 }
 
-void wg_backendProcessCommands(wg_obj backend, const uint16_t* pBeg, const uint16_t * pEnd, int version)
+void wax_backendProcessCommands(wax_obj backend, const uint16_t* pBeg, const uint16_t * pEnd, int version)
 {
 	getPtr(backend)->processCommands( pBeg, pEnd, version );
 }
 
-wg_canvasInfo wg_backendCanvasInfo(wg_obj backend, wg_canvasRef ref)
+wax_canvasInfo wax_backendCanvasInfo(wax_obj backend, wax_canvasRef ref)
 {
 	auto canvasInfo = getPtr(backend)->canvasInfo((CanvasRef)ref);
-	return { (wg_canvasRef)canvasInfo->ref, canvasInfo->pSurface, {canvasInfo->size.w, canvasInfo->size.h}, canvasInfo->scale };
+	return { (wax_canvasRef)canvasInfo->ref, canvasInfo->pSurface, {canvasInfo->size.w, canvasInfo->size.h}, canvasInfo->scale };
 }
 
-wg_obj wg_backendSurfaceFactory(wg_obj backend)
+wax_obj wax_backendSurfaceFactory(wax_obj backend)
 {
 	return getPtr(backend)->surfaceFactory().rawPtr();
 }
 
-wg_obj wg_backendEdgemapFactory(wg_obj backend)
+wax_obj wax_backendEdgemapFactory(wax_obj backend)
 {
 	return getPtr(backend)->edgemapFactory().rawPtr();
 }
 
-wg_obj wg_backendWarpmapFactory(wg_obj backend)
+wax_obj wax_backendWarpmapFactory(wax_obj backend)
 {
 	return getPtr(backend)->warpmapFactory().rawPtr();
 }
 
-int wg_backendMaxEdges(wg_obj backend)
+int wax_backendMaxEdges(wax_obj backend)
 {
 	return getPtr(backend)->maxEdges();
 }

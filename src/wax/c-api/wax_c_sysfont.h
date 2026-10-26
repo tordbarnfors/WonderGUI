@@ -19,17 +19,17 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef WG_C_SYSFONT_DOT_H
-#define WG_C_SYSFONT_DOT_H
+#ifndef WAX_C_SYSFONT_DOT_H
+#define WAX_C_SYSFONT_DOT_H
 #pragma once
 
-#include <wg_c_geartypes.h>
+#include <wax_c_types.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-WG_EXPORT wg_obj		wg_createSysFont(wg_obj surfaceFactory, wg_obj backupFont);
+WAX_EXPORT wax_obj		wax_createSysFont(wax_obj surfaceFactory, wax_obj backupFont);
 
 #ifdef __cplusplus
 }

@@ -1,7 +1,7 @@
 
 using System.Runtime.InteropServices;
 
-namespace WG;
+namespace Wax;
 
 public class SoftSurfaceFactory : SurfaceFactory
 {
@@ -9,7 +9,7 @@ public class SoftSurfaceFactory : SurfaceFactory
     //____ Constructor ________________________________________________________
     public SoftSurfaceFactory()
     {
-        _obj = wg_createSoftSurfaceFactory();
+        _obj = wax_createSoftSurfaceFactory();
     }
 
     //____ CreateSurface() ____________________________________________________
@@ -19,7 +19,7 @@ public class SoftSurfaceFactory : SurfaceFactory
         Surface.C_Blueprint bp;
         Surface.ConvertBlueprint(in blueprint, out bp);
 
-        IntPtr surf = wg_createSurface(_obj, ref bp);
+        IntPtr surf = wax_createSurface(_obj, ref bp);
 
         return new SoftSurface(surf);
     }
@@ -29,7 +29,7 @@ public class SoftSurfaceFactory : SurfaceFactory
         Surface.C_Blueprint bp;
         Surface.ConvertBlueprint(in blueprint, out bp);
 
-        IntPtr surf = wg_createSurfaceFromBlob(_obj, ref bp, blob.CHandle(), pitch);
+        IntPtr surf = wax_createSurfaceFromBlob(_obj, ref bp, blob.CHandle(), pitch);
 
         return new SoftSurface(surf);        
     }
@@ -39,7 +39,7 @@ public class SoftSurfaceFactory : SurfaceFactory
         Surface.C_Blueprint bp;
         Surface.ConvertBlueprint(in blueprint, out bp);
 
-        IntPtr surf = wg_createSurfaceFromBitmap(_obj, ref bp, pixels, pixelFormat, pitch, palette, palette.Length);
+        IntPtr surf = wax_createSurfaceFromBitmap(_obj, ref bp, pixels, pixelFormat, pitch, palette, palette.Length);
 
         return new SoftSurface(surf);
     }
@@ -49,7 +49,7 @@ public class SoftSurfaceFactory : SurfaceFactory
         Surface.C_Blueprint bp;
         Surface.ConvertBlueprint(in blueprint, out bp);
 
-        IntPtr surf = wg_createSurfaceFromRawData(_obj, ref bp, pixels, pixelDescription, pitch, palette, palette.Length);
+        IntPtr surf = wax_createSurfaceFromRawData(_obj, ref bp, pixels, pixelDescription, pitch, palette, palette.Length);
 
         return new SoftSurface(surf);
     }
@@ -57,6 +57,6 @@ public class SoftSurfaceFactory : SurfaceFactory
     //____ DLL functions ______________________________________________________
 
     [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-    protected static extern IntPtr	wg_createSoftSurfaceFactory();
+    protected static extern IntPtr	wax_createSoftSurfaceFactory();
 
 }

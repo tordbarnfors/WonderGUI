@@ -23,7 +23,7 @@
 #include <wg2_eventhandler.h>
 #include <wg2_event.h>
 #include <wg2_gfxdevice.h>
-#include <wg_surfacefactory.h>
+#include <wax_surfacefactory.h>
 #include <wg2_patches.h>
 #include <wg2_base.h>
 #include <wg2_util.h>
@@ -603,7 +603,7 @@ void WgShadowLayer::_renderPatches(wg::GfxDevice * pDevice, const WgRect& _canva
 
 		if (!m_pShadowSurface)
 		{
-			auto pSurfaceFactory = wg::GfxBase::defaultSurfaceFactory();
+			auto pSurfaceFactory = wax::Core::defaultSurfaceFactory();
 
 			if (pSurfaceFactory)
 			{

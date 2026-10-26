@@ -23,12 +23,13 @@
 #define	WG_PLUGINEDGEMAPFACTORY_DOT_H
 #pragma once
 
-#include <wg_edgemapfactory.h>
-#include <wg_c_edgemap.h>
+#include <wax_edgemapfactory.h>
+#include <wax_c_edgemap.h>
+#include <wg_types.h>
 
 #include <vector>
 
-typedef void* wg_obj;
+typedef void* wax_obj;
 
 namespace wg
 {
@@ -44,7 +45,7 @@ namespace wg
 	public:
 		//.____ Creation __________________________________________
 
-		static PluginEdgemapFactory_p	create(wg_obj cFactory) { return PluginEdgemapFactory_p(new PluginEdgemapFactory(cFactory)); }
+		static PluginEdgemapFactory_p	create(wax_obj cFactory) { return PluginEdgemapFactory_p(new PluginEdgemapFactory(cFactory)); }
 
 		//.____ Identification __________________________________________
 
@@ -59,7 +60,7 @@ namespace wg
 
 
 	protected:
-		PluginEdgemapFactory( wg_obj cFactory );
+		PluginEdgemapFactory( wax_obj cFactory );
 		~PluginEdgemapFactory();
 
 		class bpTranslator
@@ -68,15 +69,15 @@ namespace wg
 			bpTranslator( const Edgemap::Blueprint& cppBP );
 			~bpTranslator();
 
-			const wg_edgemapBP * bp() const { return &m_cBP; };
+			const wax_edgemapBP * bp() const { return &m_cBP; };
 		private:
-			wg_edgemapBP	m_cBP;
+			wax_edgemapBP	m_cBP;
 
-			wg_obj			m_hostTints[Edgemap::maxSegments];		// Host copies of blueprint tints, released by destructor.
+			wax_obj			m_hostTints[Edgemap::maxSegments];		// Host copies of blueprint tints, released by destructor.
 		};
 
 
-		wg_obj	m_cFactory;
+		wax_obj	m_cFactory;
 	};
 }
 

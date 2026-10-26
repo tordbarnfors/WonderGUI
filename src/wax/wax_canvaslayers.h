@@ -19,20 +19,20 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef WG_CANVASLAYERS_DOT_H
-#define WG_CANVASLAYERS_DOT_H
+#ifndef WAX_CANVASLAYERS_DOT_H
+#define WAX_CANVASLAYERS_DOT_H
 #pragma once
 
-#include <wg_gfxtypes.h>
-#include <wg_object.h>
-#include <wg_color.h>
+#include <wax_types.h>
+#include <wax_object.h>
+#include <wax_color.h>
 
 #include <initializer_list>
 #include <utility>
 #include <functional>
 #include <vector>
 
-namespace wg
+namespace wax
 {
     class Surface;
     class GfxDevice;
@@ -46,7 +46,7 @@ namespace wg
 	 * @class CanvasLayers
 	 * @author Tord Jansson
 	 * @date 22/01/21
-	 * @file wg_canvaslayers.h
+	 * @file wax_canvaslayers.h
 	 * @brief Specifies canvas layers and the operations on them.
 	 * 
 	 * CanvasLayers specifies layers 1 and above when performing multi-layer rendering.
@@ -170,5 +170,5 @@ namespace wg
 
 
 
-} // namespace wg
-#endif //WG_CANVASLAYERS_DOT_H
+} // namespace wax
+#endif //WAX_CANVASLAYERS_DOT_H

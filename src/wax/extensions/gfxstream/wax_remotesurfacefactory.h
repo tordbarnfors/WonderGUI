@@ -19,16 +19,16 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef	WG_REMOTESURFACEFACTORY_DOT_H
-#define	WG_REMOTESURFACEFACTORY_DOT_H
+#ifndef	WAX_REMOTESURFACEFACTORY_DOT_H
+#define	WAX_REMOTESURFACEFACTORY_DOT_H
 #pragma once
 
-#include <wg_surfacefactory.h>
-#include <wg_streamencoder.h>
+#include <wax_surfacefactory.h>
+#include <wax_streamencoder.h>
 
 #include <vector>
 
-namespace wg
+namespace wax
 {
 
 	class RemoteSurfaceFactory;
@@ -82,5 +82,5 @@ namespace wg
 }
 
 
-#endif //WG_REMOTESURFACEFACTORY_DOT_H
+#endif //WAX_REMOTESURFACEFACTORY_DOT_H
 

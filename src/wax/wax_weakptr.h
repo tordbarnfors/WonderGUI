@@ -19,13 +19,13 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef	WG_WEAKPTR_DOT_H
-#define	WG_WEAKPTR_DOT_H
+#ifndef	WAX_WEAKPTR_DOT_H
+#define	WAX_WEAKPTR_DOT_H
 #pragma once
 
-//#include <wg_object.h>
+//#include <wax_object.h>
 
-namespace wg
+namespace wax
 {
 	class Object;
 
@@ -183,6 +183,6 @@ namespace wg
 
 
 
-} // namespace wg
-#endif //WG_WEAKPTR_DOT_H
+} // namespace wax
+#endif //WAX_WEAKPTR_DOT_H
 

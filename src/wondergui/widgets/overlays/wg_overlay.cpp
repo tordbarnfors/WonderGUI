@@ -20,7 +20,7 @@
 
 =========================================================================*/
 #include <wg_overlay.h>
-#include <wg_patches.h>
+#include <wax_patches.h>
 
 namespace wg
 {

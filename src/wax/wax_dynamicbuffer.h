@@ -19,13 +19,13 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef	WG_DYNAMICBUFFER_DOT_H
-#define	WG_DYNAMICBUFFER_DOT_H
+#ifndef	WAX_DYNAMICBUFFER_DOT_H
+#define	WAX_DYNAMICBUFFER_DOT_H
 #pragma once
 
 #include <cstring>
 
-namespace wg
+namespace wax
 {
 
 class DynamicBuffer
@@ -230,5 +230,5 @@ private:
 	auto& header = (Header&) * &buffer[1024];
 */
 
-} // namespace wg
-#endif //WG_BASE_DOT_H
+} // namespace wax
+#endif //WAX_CORE_DOT_H

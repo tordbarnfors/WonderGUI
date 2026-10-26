@@ -20,13 +20,13 @@
 
 =========================================================================*/
 
-#include <wg_tinttools.h>
+#include <wax_tinttools.h>
 
 #include <algorithm>
 #include <cmath>
 #include <cstring>
 
-namespace wg
+namespace wax
 {
 namespace TintTools
 {

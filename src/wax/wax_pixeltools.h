@@ -19,15 +19,15 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef	WG_PIXELTOOLS_DOT_H
-#define	WG_PIXELTOOLS_DOT_H
+#ifndef	WAX_PIXELTOOLS_DOT_H
+#define	WAX_PIXELTOOLS_DOT_H
 #pragma once
 
-#include <wg_gfxtypes.h>
-#include <wg_color.h>
-#include <wg_geo.h>
+#include <wax_types.h>
+#include <wax_color.h>
+#include <wax_geo.h>
 
-namespace wg
+namespace wax
 {
 	/**
 	 * Tools for converting, filling and inspecting raw pixel data.
@@ -35,7 +35,7 @@ namespace wg
 	 * Pixels are described by a PixelFormat (or PixelDescription), a ColorSpace and a byte order.
 	 * Conversion between any of them is supported. ColorSpace::Undefined is treated as sRGB.
 	 *
-	 * Colors (HiColor) given to these functions are sRGB, as everywhere else in WonderGUI.
+	 * Colors (HiColor) given to these functions are sRGB, as everywhere else in Wax.
 	 *
 	 * Palettes are in the color space of the pixels they belong to.
 	 *
@@ -75,4 +75,4 @@ namespace wg
 	}
 }
 
-#endif //WG_PIXELTOOLS_DOT_H
+#endif //WAX_PIXELTOOLS_DOT_H

@@ -1,5 +1,5 @@
 #include "testsuite.h"
-#include <wg_waveform.h>
+#include <wax_waveform.h>
 
 class WaveformTests : public TestSuite
 {

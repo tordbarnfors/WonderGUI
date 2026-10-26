@@ -20,7 +20,7 @@
 
 =========================================================================*/
 #include <wg_lambdapanel.h>
-#include <wg_patches.h>
+#include <wax_patches.h>
 #include <wg_util.h>
 
 #include <wg_dynamicslotvector.impl.h>

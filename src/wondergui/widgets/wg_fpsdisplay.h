@@ -26,11 +26,15 @@
 #include <wg_widget.h>
 #include	<wg_dynamictext.h>
 
+namespace wax
+{
+	class Font;
+}
+
 namespace wg
 {
 
 
-	class Font;
 
 	class FpsDisplay;
 	typedef	StrongPtr<FpsDisplay>		FpsDisplay_p;

@@ -39,8 +39,8 @@
 #include <vector>
 #include <deque>
 
-#include <wg_surfacefactory.h>
-#include <wg_tint.h>
+#include <wax_surfacefactory.h>
+#include <wax_tint.h>
 
 //____ WgScrollChart ____________________________________________________________
 

@@ -22,7 +22,7 @@
 #include <wg2_dragndroplayer.h>
 #include <wg2_base.h>
 #include <wg2_gfxdevice.h>
-#include <wg_surfacefactory.h>
+#include <wax_surfacefactory.h>
 #include <wg2_patches.h>
 #include <wg2_image.h>
 #include <wg2_eventhandler.h>

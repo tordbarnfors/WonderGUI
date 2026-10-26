@@ -19,24 +19,24 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#include <wg_c_edgemapfactory.h>
-#include <wg_c_internal.h>
-#include <wg_edgemapfactory.h>
+#include <wax_c_edgemapfactory.h>
+#include <wax_c_internal.h>
+#include <wax_edgemapfactory.h>
 
-using namespace wg;
+using namespace wax;
 
-inline EdgemapFactory* getPtr(wg_obj obj) {
+inline EdgemapFactory* getPtr(wax_obj obj) {
 	return static_cast<EdgemapFactory*>(reinterpret_cast<Object*>(obj));
 }
 
 
-static void convertBP(const wg_edgemapBP* pSrc, Edgemap::Blueprint& dest, Tint_p * pSpaceForTints)
+static void convertBP(const wax_edgemapBP* pSrc, Edgemap::Blueprint& dest, Tint_p * pSpaceForTints)
 {
 	convertEdgemapBlueprint(&dest, pSrc, pSpaceForTints);
 }
 
 
-wg_obj wg_createEdgemap(wg_obj factory, const wg_edgemapBP* pCBP)
+wax_obj wax_createEdgemap(wax_obj factory, const wax_edgemapBP* pCBP)
 {
 	Edgemap::Blueprint	cppBP;
 	Tint_p tints[Edgemap::maxSegments];
@@ -44,10 +44,10 @@ wg_obj wg_createEdgemap(wg_obj factory, const wg_edgemapBP* pCBP)
 
 	auto p = getPtr(factory)->createEdgemap(cppBP);
 	p->retain();
-	return (wg_obj) static_cast<Object*>(p.rawPtr());
+	return (wax_obj) static_cast<Object*>(p.rawPtr());
 }
 
-wg_obj wg_createEdgemapFromFloats(wg_obj factory, const wg_edgemapBP* pCBP, wg_sampleOrigo origo,
+wax_obj wax_createEdgemapFromFloats(wax_obj factory, const wax_edgemapBP* pCBP, wax_sampleOrigo origo,
 	const float* pSamples, int edges, int edgePitch, int samplePitch)
 {
 	Edgemap::Blueprint	cppBP;
@@ -56,11 +56,11 @@ wg_obj wg_createEdgemapFromFloats(wg_obj factory, const wg_edgemapBP* pCBP, wg_s
 
 	auto p = getPtr(factory)->createEdgemap(cppBP, (SampleOrigo) origo, pSamples, edges, edgePitch, samplePitch);
 	p->retain();
-	return (wg_obj) static_cast<Object*>(p.rawPtr());
+	return (wax_obj) static_cast<Object*>(p.rawPtr());
 }
 
-wg_obj wg_createEdgemapFromSpx(wg_obj factory, const wg_edgemapBP* pCBP, wg_sampleOrigo origo,
-	const wg_spx* pSamples, int edges, int edgePitch, int samplePitch)
+wax_obj wax_createEdgemapFromSpx(wax_obj factory, const wax_edgemapBP* pCBP, wax_sampleOrigo origo,
+	const wax_spx* pSamples, int edges, int edgePitch, int samplePitch)
 {
 	Edgemap::Blueprint	cppBP;
 	Tint_p tints[Edgemap::maxSegments];
@@ -68,5 +68,5 @@ wg_obj wg_createEdgemapFromSpx(wg_obj factory, const wg_edgemapBP* pCBP, wg_samp
 
 	auto p = getPtr(factory)->createEdgemap(cppBP, (SampleOrigo)origo, (const spx*) pSamples, edges, edgePitch, samplePitch);
 	p->retain();
-	return (wg_obj) static_cast<Object*>(p.rawPtr());
+	return (wax_obj) static_cast<Object*>(p.rawPtr());
 }

@@ -1,7 +1,7 @@
 #pragma once
-#include <wg_softbackend.h>
+#include <wax_softbackend.h>
 
-namespace wg
+namespace wax
 {
 	bool addLinearTinySoftKernels( SoftBackend * pBackend );
 };

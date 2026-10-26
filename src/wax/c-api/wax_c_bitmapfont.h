@@ -19,22 +19,22 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef WG_C_BITMAPFONT_DOT_H
-#define WG_C_BITMAPFONT_DOT_H
+#ifndef WAX_C_BITMAPFONT_DOT_H
+#define WAX_C_BITMAPFONT_DOT_H
 #pragma once
 
-#include <wg_c_font.h>
+#include <wax_c_font.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-WG_EXPORT wg_obj		wg_createBitmapFont( wg_obj surface, char * pGlyphSpec, wg_obj backupFont );
-WG_EXPORT wg_obj		wg_getBitmapFontSurface( wg_obj bitmapFont );
+WAX_EXPORT wax_obj		wax_createBitmapFont( wax_obj surface, char * pGlyphSpec, wax_obj backupFont );
+WAX_EXPORT wax_obj		wax_getBitmapFontSurface( wax_obj bitmapFont );
 
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif //WG_C_BITMAPFONT_DOT_H
+#endif //WAX_C_BITMAPFONT_DOT_H

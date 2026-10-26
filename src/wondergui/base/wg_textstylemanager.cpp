@@ -21,7 +21,7 @@
 =========================================================================*/
 #include <wg_textstylemanager.h>
 #include <wg_base.h>
-#include <wg_dummyfont.h>
+#include <wax_dummyfont.h>
 #include <mutex>
 static std::mutex g_accessMutex;
 

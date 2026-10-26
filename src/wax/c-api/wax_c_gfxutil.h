@@ -19,21 +19,21 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef WG_C_GFXUTIL_DOT_H
-#define WG_C_GFXUTIL_DOT_H
+#ifndef WAX_C_GFXUTIL_DOT_H
+#define WAX_C_GFXUTIL_DOT_H
 #pragma once
 
-#include <wg_c_gfxtypes.h>
+#include <wax_c_types.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-	WG_EXPORT const wg_pixelDescription* 	wg_pixelFormatToDescription( wg_pixelFormat format );		// Byte order of the system.
-	WG_EXPORT  wg_pixelFormat 				wg_pixelDescriptionToFormat(const wg_pixelDescription * pDescription);	// Byte order is ignored.
+	WAX_EXPORT const wax_pixelDescription* 	wax_pixelFormatToDescription( wax_pixelFormat format );		// Byte order of the system.
+	WAX_EXPORT  wax_pixelFormat 				wax_pixelDescriptionToFormat(const wax_pixelDescription * pDescription);	// Byte order is ignored.
 	
 #ifdef __cplusplus
 }
 #endif
 
-#endif //WG_C_GFXUTIL_DOT_H
+#endif //WAX_C_GFXUTIL_DOT_H

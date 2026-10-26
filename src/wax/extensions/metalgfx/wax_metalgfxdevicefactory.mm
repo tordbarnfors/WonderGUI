@@ -21,13 +21,13 @@
 =========================================================================*/
 
 
-#include "wg_metalbackend.h"
-#include "wg_metalgfxdevicefactory.h"
+#include "wax_metalbackend.h"
+#include "wax_metalgfxdevicefactory.h"
 
-#include "wg_gfxdevice_gen2.h"
+#include "wax_gfxdevice_gen2.h"
 
 
-namespace wg
+namespace wax
 {
 
 	const TypeInfo MetalGfxDeviceFactory::TYPEINFO = { "MetalGfxDeviceFactory", &GfxDeviceFactory::TYPEINFO };
@@ -64,4 +64,4 @@ namespace wg
 	}
 
 
-} // namespace wg
+} // namespace wax

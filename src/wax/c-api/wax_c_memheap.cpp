@@ -21,16 +21,16 @@
 =========================================================================*/
 #include <new>
 
-#include <wg_c_memheap.h>
-#include <wg_memheap.h>
-#include <wg_object.h>
+#include <wax_c_memheap.h>
+#include <wax_memheap.h>
+#include <wax_object.h>
 
 
-using namespace wg;
+using namespace wax;
 
 
 
-wg_memHeap wg_initMemHeap( void * pHeap, int bytes )
+wax_memHeap wax_initMemHeap( void * pHeap, int bytes )
 {
 	int offset = sizeof(MemHeap);
 	
@@ -42,44 +42,44 @@ wg_memHeap wg_initMemHeap( void * pHeap, int bytes )
 	return new(pHeap) MemHeap(areaStart,bytes);
 }
 
-void wg_exitMemHeap( wg_memHeap heap )
+void wax_exitMemHeap( wax_memHeap heap )
 {
 	reinterpret_cast<MemHeap*>(heap)->~MemHeap();
 }
 
-void * wg_memHeapMalloc( wg_memHeap heap, int bytes )
+void * wax_memHeapMalloc( wax_memHeap heap, int bytes )
 {
 	return reinterpret_cast<MemHeap*>(heap)->malloc(bytes);
 }
 
-void wg_memHeapFree( wg_memHeap heap, void * pBuffer )
+void wax_memHeapFree( wax_memHeap heap, void * pBuffer )
 {
 	reinterpret_cast<MemHeap*>(heap)->free(pBuffer);
 }
 
 /*
-void wg_drawMemHeapFragmentMap( wg_memHeap heap, int nSections, uint16_t * pSectionTable, wg_obj surface )
+void wax_drawMemHeapFragmentMap( wax_memHeap heap, int nSections, uint16_t * pSectionTable, wax_obj surface )
 {
 	reinterpret_cast<MemHeap*>(heap)->drawFragmentMap(nSections, pSectionTable, static_cast<Surface*>(reinterpret_cast<Object*>(surface)));
 }
 */
 
-void wg_setMemHeapDebugLevel( wg_memHeap heap, int level )
+void wax_setMemHeapDebugLevel( wax_memHeap heap, int level )
 {
 	reinterpret_cast<MemHeap*>(heap)->setDebugLevel(level);
 }
 
-int wg_memHeapCapacity( wg_memHeap heap )
+int wax_memHeapCapacity( wax_memHeap heap )
 {
 	return reinterpret_cast<MemHeap*>(heap)->capacity();
 }
 
-int wg_memHeapReserved( wg_memHeap heap )
+int wax_memHeapReserved( wax_memHeap heap )
 {
 	return reinterpret_cast<MemHeap*>(heap)->reserved();
 }
 
-int wg_largestAvailableBlock( wg_memHeap heap )
+int wax_largestAvailableBlock( wax_memHeap heap )
 {
 	return reinterpret_cast<MemHeap*>(heap)->largestAvailableBlock();
 }

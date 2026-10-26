@@ -19,55 +19,55 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#include <wg_c_streambuffer.h>
-#include <wg_streambuffer.h>
+#include <wax_c_streambuffer.h>
+#include <wax_streambuffer.h>
 
-using namespace wg;
+using namespace wax;
 
-inline StreamBuffer* getPtr(wg_obj obj) {
+inline StreamBuffer* getPtr(wax_obj obj) {
 	return static_cast<StreamBuffer*>(reinterpret_cast<Object*>(obj));
 }
 
-wg_obj wg_createStreamBuffer(int initialCapacity)
+wax_obj wax_createStreamBuffer(int initialCapacity)
 {
 	auto pObj = StreamBuffer::create(initialCapacity);
 	pObj->retain();
 	return static_cast<Object*>(pObj.rawPtr());
 }
 
-wg_component wg_getStreamBufferOutput(wg_obj streamBuffer)
+wax_component wax_getStreamBufferOutput(wax_obj streamBuffer)
 {
 	auto p = getPtr(streamBuffer);
 	return { static_cast<Object*>(p), &p->output };
 }
 
-wg_component wg_getStreamBufferInput(wg_obj streamBuffer)
+wax_component wax_getStreamBufferInput(wax_obj streamBuffer)
 {
 	auto p = getPtr(streamBuffer);
 	return { static_cast<Object*>(p), &p->input };
 }
 
-int wg_streamBufferCapacity(wg_obj streamBuffer)
+int wax_streamBufferCapacity(wax_obj streamBuffer)
 {
 	return getPtr(streamBuffer)->capacity();
 }
 
-int wg_streamBufferHasChunk(wg_obj streamBuffer)
+int wax_streamBufferHasChunk(wax_obj streamBuffer)
 {
 	return getPtr(streamBuffer)->hasChunk();
 }
 
-int wg_streamBufferSize(wg_obj streamBuffer)
+int wax_streamBufferSize(wax_obj streamBuffer)
 {
 	return getPtr(streamBuffer)->size();
 }
 
-void wg_resetStreamBuffer(wg_obj streamBuffer)
+void wax_resetStreamBuffer(wax_obj streamBuffer)
 {
 	getPtr(streamBuffer)->reset();
 }
 
-int wg_setStreamBufferCapacity( wg_obj streamBuffer, int capacity )
+int wax_setStreamBufferCapacity( wax_obj streamBuffer, int capacity )
 {
 	return getPtr(streamBuffer)->setCapacity(capacity);
 }

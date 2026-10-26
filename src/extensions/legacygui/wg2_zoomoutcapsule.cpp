@@ -24,7 +24,7 @@
 #include <wg2_util.h>
 #include <wg2_eventhandler.h>
 #include <wg2_patches.h>
-#include <wg_surfacefactory.h>
+#include <wax_surfacefactory.h>
 #include <wg2_image.h>
 #include <wg2_base.h>
 #include <wg2_sizecapsule.h>
@@ -377,7 +377,7 @@ void WgZoomOutCapsule::_onEvent( const WgEvent::Event * pEvent, WgEventHandler *
 
 				// We need a separate surface that will belong to our image.
 
-				auto pSurface = wg::GfxBase::defaultSurfaceFactory()->createSurface( WGBP(Surface,
+				auto pSurface = wax::Core::defaultSurfaceFactory()->createSurface( WGBP(Surface,
 																						  _.size = m_pScreenshot->pixelSize(),
 																						  _.format = WgPixelType::ARGB_8,
 																						  _.colorSpace = m_pScreenshot->colorSpace(),

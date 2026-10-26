@@ -1,6 +1,6 @@
 using System.Runtime.InteropServices;
 
-namespace WG;
+namespace Wax;
 
 public class Glyph
 {
@@ -27,11 +27,11 @@ public class Font : Objekt
 
     public void SetSize(int size)
     {
-	    wg_setFontSize(_obj, size);
+	    wax_setFontSize(_obj, size);
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    protected struct wg_glyph
+    protected struct wax_glyph
 	{
 		public int      advance;
 		public uint     kerningIndex;
@@ -49,32 +49,32 @@ public class Font : Objekt
     //____ DLL functions ______________________________________________________
 
     [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-    private static extern int wg_setFontSize(IntPtr font, int size);
+    private static extern int wax_setFontSize(IntPtr font, int size);
 
     [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-    private static extern int wg_fontSize(IntPtr font);
+    private static extern int wax_fontSize(IntPtr font);
 
     [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-    private static extern void wg_getGlyphWithoutBitmap(IntPtr font, UInt32 chr, ref wg_glyph glyph);
+    private static extern void wax_getGlyphWithoutBitmap(IntPtr font, UInt32 chr, ref wax_glyph glyph);
 
     [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-    private static extern void wg_getGlyphWithBitmap(IntPtr font, UInt32 chr, ref wg_glyph pGlyph);
+    private static extern void wax_getGlyphWithBitmap(IntPtr font, UInt32 chr, ref wax_glyph pGlyph);
 
     [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-    private static extern int wg_getKerning(IntPtr font, ref Glyph leftGlyph, ref Glyph rightGlyph);
+    private static extern int wax_getKerning(IntPtr font, ref Glyph leftGlyph, ref Glyph rightGlyph);
 
     [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-    private static extern int wg_lineGap(IntPtr font);
+    private static extern int wax_lineGap(IntPtr font);
 
     [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-    private static extern int wg_whitespaceAdvance(IntPtr font);
+    private static extern int wax_whitespaceAdvance(IntPtr font);
 
     [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-    private static extern int wg_maxAdvance(IntPtr font);
+    private static extern int wax_maxAdvance(IntPtr font);
 
     [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-    private static extern int wg_maxAscend(IntPtr font);
+    private static extern int wax_maxAscend(IntPtr font);
 
     [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-    private static extern int wg_maxDescend(IntPtr font);
+    private static extern int wax_maxDescend(IntPtr font);
 }

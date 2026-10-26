@@ -2,20 +2,20 @@
 #include "shapecoverage.h"
 
 #include <wondergui.h>
-#include <wg_gfxdevice_gen2.h>
-#include <wg_c_gfxdevice.h>
-#include <wg_gfxutil.h>
-#include <wg_softbackend.h>
-#include <wg_linearbackend.h>
-#include <wg_softsurface.h>
-#include <wg_softsurfacefactory.h>
-#include <wg_softedgemapfactory.h>
-#include <wg_softkernels_default.h>
-#include <wg_softshapes.h>
-#include <wg_referencebackend.h>
-#include <wg_streambackend.h>
-#include <wg_streamplayer.h>
-#include <wg_streamencoder.h>
+#include <wax_gfxdevice_gen2.h>
+#include <wax_c_gfxdevice.h>
+#include <wax_gfxutil.h>
+#include <wax_softbackend.h>
+#include <wax_linearbackend.h>
+#include <wax_softsurface.h>
+#include <wax_softsurfacefactory.h>
+#include <wax_softedgemapfactory.h>
+#include <wax_softkernels_default.h>
+#include <wax_softshapes.h>
+#include <wax_referencebackend.h>
+#include <wax_streambackend.h>
+#include <wax_streamplayer.h>
+#include <wax_streamencoder.h>
 
 #include <algorithm>
 #include <cmath>
@@ -547,19 +547,19 @@ namespace
 			return;
 		}
 
-		wg_roundedBoxSpec box;
-		box.rect = *(const wg_rectSPX*)&spec.rect;
+		wax_roundedBoxSpec box;
+		box.rect = *(const wax_rectSPX*)&spec.rect;
 
 		for (int i = 0; i < 4; i++)
 			box.radius[i] = spec.radius[i];
 
-		box.outline = *(const wg_borderSPX*)&spec.outline;
-		box.fillColor = *(const wg_color*)&spec.fillColor;
-		box.outlineColor = *(const wg_color*)&spec.outlineColor;
+		box.outline = *(const wax_borderSPX*)&spec.outline;
+		box.fillColor = *(const wax_color*)&spec.fillColor;
+		box.outlineColor = *(const wax_color*)&spec.outlineColor;
 		box.fillTint = static_cast<Object*>(spec.pFillTint);
 		box.outlineTint = static_cast<Object*>(spec.pOutlineTint);
 
-		wg_drawRoundedBox(static_cast<Object*>(pDevice), &box);
+		wax_drawRoundedBox(static_cast<Object*>(pDevice), &box);
 	}
 
 	void drawRing(GfxDevice* pDevice, const RingSpec& spec, bool bCApi)
@@ -570,27 +570,27 @@ namespace
 			return;
 		}
 
-		std::vector<wg_ringSlice> slices(spec.nSlices);
+		std::vector<wax_ringSlice> slices(spec.nSlices);
 
 		for (int i = 0; i < spec.nSlices; i++)
-			slices[i] = { spec.pSlices[i].size, *(const wg_color*)&spec.pSlices[i].color, static_cast<Object*>(spec.pSlices[i].pTint) };
+			slices[i] = { spec.pSlices[i].size, *(const wax_color*)&spec.pSlices[i].color, static_cast<Object*>(spec.pSlices[i].pTint) };
 
-		wg_ringSpec ring;
-		ring.rect = *(const wg_rectSPX*)&spec.rect;
+		wax_ringSpec ring;
+		ring.rect = *(const wax_rectSPX*)&spec.rect;
 		ring.thickness = spec.thickness;
 		ring.outline = spec.outline;
 		ring.start = spec.start;
 		ring.nSlices = spec.nSlices;
 		ring.pSlices = slices.data();
 		ring.bSquare = spec.bSquare;
-		ring.outlineColor = *(const wg_color*)&spec.outlineColor;
+		ring.outlineColor = *(const wax_color*)&spec.outlineColor;
 		ring.outlineTint = static_cast<Object*>(spec.pOutlineTint);
-		ring.hubColor = *(const wg_color*)&spec.hubColor;
+		ring.hubColor = *(const wax_color*)&spec.hubColor;
 		ring.hubTint = static_cast<Object*>(spec.pHubTint);
-		ring.backColor = *(const wg_color*)&spec.backColor;
+		ring.backColor = *(const wax_color*)&spec.backColor;
 		ring.backTint = static_cast<Object*>(spec.pBackTint);
 
-		wg_drawRing(static_cast<Object*>(pDevice), &ring);
+		wax_drawRing(static_cast<Object*>(pDevice), &ring);
 	}
 
 	void drawScene(GfxDevice* pDevice, bool bCApi = false)

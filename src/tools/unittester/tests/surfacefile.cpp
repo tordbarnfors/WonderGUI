@@ -3,11 +3,11 @@
 #include "surfacefile.h"
 
 #include <wondergui.h>
-#include <wg_softsurface.h>
-#include <wg_softsurfacefactory.h>
-#include <wg_lzcompression.h>
-#include <wg_rlecompression.h>
-#include <wg_qoicompression.h>
+#include <wax_softsurface.h>
+#include <wax_softsurfacefactory.h>
+#include <wax_lzcompression.h>
+#include <wax_rlecompression.h>
+#include <wax_qoicompression.h>
 
 using namespace wg;
 

@@ -19,15 +19,15 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef WG_MEMPOOL_DOT_H
-#define WG_MEMPOOL_DOT_H
+#ifndef WAX_MEMPOOL_DOT_H
+#define WAX_MEMPOOL_DOT_H
 #pragma once
 
 
-#include <wg_geartypes.h>
-#include <wg_chain.h>
+#include <wax_types.h>
+#include <wax_chain.h>
 
-namespace wg
+namespace wax
 {
 
 	class MemPool
@@ -65,7 +65,7 @@ namespace wg
 			Block( int nEntries, int entrySize );
 			~Block();
 
-			LINK_METHODS( Block );
+			WAX_LINK_METHODS( Block );
 
 
 			void * allocEntry();
@@ -93,5 +93,5 @@ namespace wg
 
 
 
-} // namespace wg
-#endif //WG_MEMPOOL_DOT_H
+} // namespace wax
+#endif //WAX_MEMPOOL_DOT_H

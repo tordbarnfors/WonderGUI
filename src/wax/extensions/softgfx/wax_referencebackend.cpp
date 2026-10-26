@@ -20,13 +20,13 @@
 
 =========================================================================*/
 
-#include <wg_referencebackend.h>
-#include <wg_softsurfacefactory.h>
-#include <wg_softedgemapfactory.h>
-#include <wg_softwarpmapfactory.h>
-#include <wg_softwarpmap.h>
-#include <wg_gfxutil.h>
-#include <wg_gfxbase.h>
+#include <wax_referencebackend.h>
+#include <wax_softsurfacefactory.h>
+#include <wax_softedgemapfactory.h>
+#include <wax_softwarpmapfactory.h>
+#include <wax_softwarpmap.h>
+#include <wax_gfxutil.h>
+#include <wax_core.h>
 
 #include <algorithm>
 #include <cfloat>
@@ -36,7 +36,7 @@
 #include <limits>
 #include <memory>
 
-namespace wg
+namespace wax
 {
 	const TypeInfo ReferenceBackend::TYPEINFO = { "ReferenceBackend", &GfxBackend::TYPEINFO };
 
@@ -151,7 +151,7 @@ namespace wg
 
 		if (!pInfo)
 		{
-			GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Canvas reference has not been defined.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Canvas reference has not been defined.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return;
 		}
 
@@ -178,7 +178,7 @@ namespace wg
 			if (format != PixelFormat::ARGB_8 && format != PixelFormat::XRGB_8 && format != PixelFormat::RGB_565 &&
 				format != PixelFormat::BGR_565 && format != PixelFormat::Alpha_8)
 			{
-				GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "ReferenceBackend can't render to surfaces of this pixel format.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "ReferenceBackend can't render to surfaces of this pixel format.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			}
 			else
 			{
@@ -492,8 +492,8 @@ namespace wg
 
 	void ReferenceBackend::_drawLine(CoordSPX _begin, CoordSPX _end, spx thickness, const Color& color, int nClipRects, const RectSPX* pClipRects)
 	{
-		CoordI begin = Util::roundToPixels(_begin);
-		CoordI end = Util::roundToPixels(_end);
+		CoordI begin = GfxUtil::roundToPixels(_begin);
+		CoordI end = GfxUtil::roundToPixels(_end);
 
 		// We draw along the 'major' axis, which is the axis the line mainly runs along,
 		// placing a column of color across the 'minor' axis at each pixel.
@@ -572,7 +572,7 @@ namespace wg
 
 		EdgeMode edgeMode = (cmd == Command::Tile) ? EdgeMode::Tile : (cmd == Command::ClipBlit) ? EdgeMode::Clip : EdgeMode::Clamp;
 
-		CoordI destPixel = Util::roundToPixels(dest);
+		CoordI destPixel = GfxUtil::roundToPixels(dest);
 		RectI pixels = _pixelRect(rect);
 
 		for (int y = pixels.y; y < pixels.y + pixels.h; y++)
@@ -634,7 +634,7 @@ namespace wg
 			return;
 
 		SizeI mapSize = pEdgemap->pixelSize();
-		CoordI origo = Util::roundToPixels(_origo);
+		CoordI origo = GfxUtil::roundToPixels(_origo);
 
 		// The standard transforms tell how we move over the edgemap when we move over the canvas,
 		// just like for blits. The corner of the edgemap we start from is the one that makes us
@@ -898,7 +898,7 @@ namespace wg
 		if (!pEdgemap && !m_pBlitSource)
 			return;
 
-		CoordI dest = Util::roundToPixels(params.dest);
+		CoordI dest = GfxUtil::roundToPixels(params.dest);
 		SizeI warpSize = pWarpmap->pixelSize();
 
 		// Source rectangle, in pixels of the source.
@@ -1767,7 +1767,7 @@ namespace wg
 
 	ReferenceBackend::Color ReferenceBackend::_readPixel(const PixelBuffer& buffer, int x, int y)
 	{
-		int bytesPerPixel = Util::pixelFormatToDescription(buffer.format).bits / 8;
+		int bytesPerPixel = GfxUtil::pixelFormatToDescription(buffer.format).bits / 8;
 		const uint8_t* p = buffer.pixels + (y - buffer.rect.y) * buffer.pitch + (x - buffer.rect.x) * bytesPerPixel;
 
 		bool bLinear = (buffer.colorSpace == ColorSpace::Linear);			// Undefined is treated as sRGB.
@@ -1839,7 +1839,7 @@ namespace wg
 
 	void ReferenceBackend::_writePixel(const PixelBuffer& buffer, int x, int y, const Color& color)
 	{
-		int bytesPerPixel = Util::pixelFormatToDescription(buffer.format).bits / 8;
+		int bytesPerPixel = GfxUtil::pixelFormatToDescription(buffer.format).bits / 8;
 		uint8_t* p = buffer.pixels + (y - buffer.rect.y) * buffer.pitch + (x - buffer.rect.x) * bytesPerPixel;
 
 		bool bLinear = (buffer.colorSpace == ColorSpace::Linear);			// Undefined is treated as sRGB.
@@ -1908,10 +1908,10 @@ namespace wg
 
 	RectI ReferenceBackend::_pixelRect(const RectSPX& rect)
 	{
-		int left = Util::roundToPixels(rect.x);
-		int top = Util::roundToPixels(rect.y);
-		int right = Util::roundToPixels(rect.x + rect.w);
-		int bottom = Util::roundToPixels(rect.y + rect.h);
+		int left = GfxUtil::roundToPixels(rect.x);
+		int top = GfxUtil::roundToPixels(rect.y);
+		int right = GfxUtil::roundToPixels(rect.x + rect.w);
+		int bottom = GfxUtil::roundToPixels(rect.y + rect.h);
 
 		return RectI(left, top, right - left, bottom - top);
 	}
@@ -2204,13 +2204,13 @@ namespace wg
 			// Geometry, from spx to pixels.
 
 			spx radius[4] = { box.radius[0], box.radius[1], box.radius[2], box.radius[3] };
-			Util::clampCornerRadii(box.rect.size(), radius);
+			GfxUtil::clampCornerRadii(box.rect.size(), radius);
 
 			BorderSPX outline = { std::max(box.outline.top, 0), std::max(box.outline.right, 0),
 								  std::max(box.outline.bottom, 0), std::max(box.outline.left, 0) };
 
 			spx innerRadius[4];
-			Util::innerCornerRadii(radius, outline, innerRadius);
+			GfxUtil::innerCornerRadii(radius, outline, innerRadius);
 
 			const RectSPX& rect = box.rect;
 			Box& outer = pShape->outer;
@@ -3038,4 +3038,4 @@ namespace wg
 	{
 	}
 
-} // namespace wg
+} // namespace wax

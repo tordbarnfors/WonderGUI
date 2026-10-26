@@ -19,23 +19,23 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#include <wg_c_streamsplitter.h>
-#include <wg_streamsplitter.h>
+#include <wax_c_streamsplitter.h>
+#include <wax_streamsplitter.h>
 
-using namespace wg;
+using namespace wax;
 
-inline StreamSplitter* getPtr(wg_obj obj) {
+inline StreamSplitter* getPtr(wax_obj obj) {
 	return static_cast<StreamSplitter*>(reinterpret_cast<Object*>(obj));
 }
 
-wg_obj wg_createStreamSplitter()
+wax_obj wax_createStreamSplitter()
 {
 	auto p = StreamSplitter::create();
 	p->retain();
 	return p.rawPtr();
 }
 
-wg_obj wg_createStreamSplitterWithOutputs(wg_component output1, wg_component output2)
+wax_obj wax_createStreamSplitterWithOutputs(wax_component output1, wax_component output2)
 {
 	StreamSink_p pSink1(reinterpret_cast<Object*>(output1.object), *reinterpret_cast<StreamSink*>(output1.pInterface));
 	StreamSink_p pSink2(reinterpret_cast<Object*>(output2.object), *reinterpret_cast<StreamSink*>(output2.pInterface));
@@ -45,26 +45,26 @@ wg_obj wg_createStreamSplitterWithOutputs(wg_component output1, wg_component out
 	return p.rawPtr();
 }
 
-wg_component wg_getStreamSplitterInput(wg_obj streamSplitter)
+wax_component wax_getStreamSplitterInput(wax_obj streamSplitter)
 {
 	auto p = getPtr(streamSplitter);
 	return { static_cast<Object*>(p), &p->input };
 }
 
-void wg_clearStreamSplitterOutputs(wg_obj streamSplitter)
+void wax_clearStreamSplitterOutputs(wax_obj streamSplitter)
 {
 	getPtr(streamSplitter)->clearOutputs();
 
 }
 
-void wg_addStreamSplitterOutput(wg_obj streamSplitter, wg_component output)
+void wax_addStreamSplitterOutput(wax_obj streamSplitter, wax_component output)
 {
 	StreamSink_p pSink(reinterpret_cast<Object*>(output.object), *reinterpret_cast<StreamSink*>(output.pInterface));
 	getPtr(streamSplitter)->addOutput(pSink);
 
 }
 
-void wg_removeStreamSplitterOutput(wg_obj streamSplitter, wg_component output)
+void wax_removeStreamSplitterOutput(wax_obj streamSplitter, wax_component output)
 {
 	StreamSink_p pSink(reinterpret_cast<Object*>(output.object), *reinterpret_cast<StreamSink*>(output.pInterface));
 	getPtr(streamSplitter)->removeOutput(pSink);

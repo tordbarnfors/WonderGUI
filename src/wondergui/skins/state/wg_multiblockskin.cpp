@@ -20,8 +20,8 @@
 
 =========================================================================*/
 #include <wg_multiblockskin.h>
-#include <wg_gfxdevice.h>
-#include <wg_geo.h>
+#include <wax_gfxdevice.h>
+#include <wax_geo.h>
 #include <wg_util.h>
 
 #include <assert.h>

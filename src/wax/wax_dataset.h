@@ -19,16 +19,16 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef WG_DATASET_DOT_H
-#define	WG_DATASET_DOT_H
+#ifndef WAX_DATASET_DOT_H
+#define	WAX_DATASET_DOT_H
 #pragma once
 
 #include <cstdint>
-#include <wg_pointers.h>
+#include <wax_pointers.h>
 
 #include <functional>
 
-namespace wg
+namespace wax
 {
 
 	//____ BasicDataset _______________________________________________________
@@ -63,10 +63,10 @@ namespace wg
 	template<class Type> using Dataset_wp = WeakPtr<Dataset<Type>>;
 
 /**
-	@Template class for embedding any class into a WonderGUI object.
+	@Template class for embedding any class into a Wax object.
 
 	Dataset is a template class that can be used to embedd a class or struct
-	into a reference counted WonderGUI object. The main purpose is to allow
+	into a reference counted Wax object. The main purpose is to allow
 	any arbitrary class to be used as baggage for a Widget or Surface, providing
 	additional application specific data, but it can be used for anything.
 
@@ -117,5 +117,5 @@ namespace wg
 		return ti;
 	}(s_className);
 
-} // namespace wg
-#endif //WG_DATASET_DOT_H
+} // namespace wax
+#endif //WAX_DATASET_DOT_H

@@ -3,8 +3,9 @@
 
 
 
-#include <wg_chain.h>
-#include <wg_blob.h>
+#include <wax_chain.h>
+#include <wax_blob.h>
+#include <wg_types.h>
 
 #include <stdio.h>
 #include <vector>

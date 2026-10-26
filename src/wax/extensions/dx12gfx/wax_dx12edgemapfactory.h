@@ -21,14 +21,14 @@
 =========================================================================*/
 
 
-#ifndef WG_DX12EDGEMAPFACTORY_DOT_H
-#define	WG_DX12EDGEMAPFACTORY_DOT_H
+#ifndef WAX_DX12EDGEMAPFACTORY_DOT_H
+#define	WAX_DX12EDGEMAPFACTORY_DOT_H
 #pragma once
 
 
-#include <wg_edgemapfactory.h>
+#include <wax_edgemapfactory.h>
 
-namespace wg
+namespace wax
 {
 
 
@@ -67,8 +67,8 @@ namespace wg
 
 	//==============================================================================
 
-} // namespace wg
-#endif // WG_DX12EDGEMAPFACTORY_DOT_H
+} // namespace wax
+#endif // WAX_DX12EDGEMAPFACTORY_DOT_H
 
 
 

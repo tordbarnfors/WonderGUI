@@ -19,12 +19,12 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#include <wg_glwarpmap.h>
-#include <wg_gfxbase.h>
+#include <wax_glwarpmap.h>
+#include <wax_core.h>
 
 #include <algorithm>
 
-namespace wg
+namespace wax
 {
 	const TypeInfo GlWarpmap::TYPEINFO = { "GlWarpmap", &Warpmap::TYPEINFO };
 
@@ -97,7 +97,7 @@ namespace wg
 			return;
 
 		int bytes = (rowEnd - rowBeg) * cells.w * 2 * 4 * sizeof(GLfloat);
-		auto pBuffer = (GLfloat*) GfxBase::memStackAlloc(bytes);
+		auto pBuffer = (GLfloat*) Core::memStackAlloc(bytes);
 		GLfloat* pOut = pBuffer;
 
 		for (int row = rowBeg; row < rowEnd; row++)
@@ -119,7 +119,7 @@ namespace wg
 		glBufferSubData(GL_TEXTURE_BUFFER, rowBeg * cells.w * 2 * 4 * sizeof(GLfloat), bytes, pBuffer);
 		glBindBuffer(GL_TEXTURE_BUFFER, 0);
 
-		GfxBase::memStackFree(bytes);
+		Core::memStackFree(bytes);
 	}
 
-} // namespace wg
+} // namespace wax

@@ -19,22 +19,22 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef WG_C_STREAMWRITER_DOT_H
-#define WG_C_STREAMWRITER_DOT_H
+#ifndef WAX_C_STREAMWRITER_DOT_H
+#define WAX_C_STREAMWRITER_DOT_H
 #pragma once
 
-#include <wg_c_gfxtypes.h>
-#include <wg_c_geo.h>
+#include <wax_c_types.h>
+#include <wax_c_geo.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-typedef	void(*wg_writeStream_func)(int nBytes, const void* pDest);
+typedef	void(*wax_writeStream_func)(int nBytes, const void* pDest);
 
-WG_EXPORT wg_obj		wg_createStreamWriter(wg_writeStream_func dispatcher);
+WAX_EXPORT wax_obj		wax_createStreamWriter(wax_writeStream_func dispatcher);
 
-WG_EXPORT wg_component	wg_getStreamWriterInput(wg_obj streamWriter);
+WAX_EXPORT wax_component	wax_getStreamWriterInput(wax_obj streamWriter);
 
 #ifdef __cplusplus
 }

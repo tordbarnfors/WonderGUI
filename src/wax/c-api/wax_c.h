@@ -19,36 +19,38 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef WONDERGFX_C_DOT_H
-#define WONDERGFX_C_DOT_H
+#ifndef WAX_C_DOT_H
+#define WAX_C_DOT_H
 #pragma once
 
-#include <wondergear_c.h>
+#include <wax_c_blob.h>
+#include <wax_c_core.h>
+#include <wax_c_types.h>
+#include <wax_c_memheap.h>
+#include <wax_c_object.h>
 
-#include <wg_c_bitmapcache.h>
-#include <wg_c_bitmapfont.h>
-#include <wg_c_blurbrush.h>
-#include <wg_c_canvaslayers.h>
-#include <wg_c_color.h>
-#include <wg_c_edgemap.h>
-#include <wg_c_edgemapfactory.h>
-#include <wg_c_warpmap.h>
-#include <wg_c_warpmapfactory.h>
-#include <wg_c_circularwarp.h>
-#include <wg_c_font.h>
-#include <wg_c_geo.h>
-#include <wg_c_gfxbackend.h>
-#include <wg_c_gfxbase.h>
-#include <wg_c_gfxdevice.h>
-#include <wg_c_gfxtypes.h>
-#include <wg_c_gfxutil.h>
-#include <wg_c_patches.h>
-#include <wg_c_printer.h>
-#include <wg_c_surface.h>
-#include <wg_c_surfacefactory.h>
-#include <wg_c_surfacereader.h>
-#include <wg_c_surfacewriter.h>
-#include <wg_c_tint.h>
+#include <wax_c_bitmapcache.h>
+#include <wax_c_bitmapfont.h>
+#include <wax_c_blurbrush.h>
+#include <wax_c_canvaslayers.h>
+#include <wax_c_color.h>
+#include <wax_c_edgemap.h>
+#include <wax_c_edgemapfactory.h>
+#include <wax_c_warpmap.h>
+#include <wax_c_warpmapfactory.h>
+#include <wax_c_circularwarp.h>
+#include <wax_c_font.h>
+#include <wax_c_geo.h>
+#include <wax_c_gfxbackend.h>
+#include <wax_c_gfxdevice.h>
+#include <wax_c_gfxutil.h>
+#include <wax_c_patches.h>
+#include <wax_c_printer.h>
+#include <wax_c_surface.h>
+#include <wax_c_surfacefactory.h>
+#include <wax_c_surfacereader.h>
+#include <wax_c_surfacewriter.h>
+#include <wax_c_tint.h>
 
 
-#endif //WONDERGFX_C_DOT_H
+#endif //WAX_C_DOT_H

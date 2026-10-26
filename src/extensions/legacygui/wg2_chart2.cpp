@@ -25,7 +25,7 @@
 #include <wg2_base.h>
 #include <wg_texttool.h>
 #include <wg2_util.h>
-#include <wg_surfacefactory.h>
+#include <wax_surfacefactory.h>
 
 #include <algorithm>
 #include <cmath>
@@ -978,7 +978,7 @@ void WgChart2::_onRender( wg::GfxDevice * pDevice, const WgRect& _canvas, const 
 	WgRect waveClip = WgRect( waveCanvas.x, canvas.y, waveCanvas.w, canvas.h )*64;	// Samples stay within padding, values may stretch outside.
 
 	int allocSize = oldClipListSize*sizeof(WgRect);
-	WgRect * pRects = (WgRect*) wg::GfxBase::memStackAlloc( allocSize );
+	WgRect * pRects = (WgRect*) wax::Core::memStackAlloc( allocSize );
 	int nRects = 0;
 
 	for( int i = 0 ; i < oldClipListSize ; i++ )
@@ -1003,7 +1003,7 @@ void WgChart2::_onRender( wg::GfxDevice * pDevice, const WgRect& _canvas, const 
 	}
 
 	pDevice->setClipList(oldClipListSize, pOldClipList);
-	wg::GfxBase::memStackFree(allocSize);
+	wax::Core::memStackFree(allocSize);
 }
 
 //____ _renderWave() __________________________________________________________
@@ -1267,7 +1267,7 @@ void WgChart2::_resampleWave(Wave * pWave, bool bRequestRenderOnChanges )
 		nbNewTopSamples = nResampled;
 
 		if( bRequestRenderOnChanges )
-			pNewTopSamples = (int*) wg::GfxBase::memStackAlloc( nResampled * sizeof(int) );
+			pNewTopSamples = (int*) wax::Core::memStackAlloc( nResampled * sizeof(int) );
 		else
 		{
 			pWave->resampledTop.resize(nResampled);
@@ -1308,7 +1308,7 @@ void WgChart2::_resampleWave(Wave * pWave, bool bRequestRenderOnChanges )
 		nbNewBottomSamples = nResampled;
 
 		if (bRequestRenderOnChanges)
-			pNewBottomSamples = (int*) wg::GfxBase::memStackAlloc(nResampled * sizeof(int));
+			pNewBottomSamples = (int*) wax::Core::memStackAlloc(nResampled * sizeof(int));
 		else
 		{
 			pWave->resampledBottom.resize(nResampled);
@@ -1372,14 +1372,14 @@ void WgChart2::_resampleWave(Wave * pWave, bool bRequestRenderOnChanges )
 		{
 			pWave->resampledBottom.resize(nResampled);
 			memcpy(&pWave->resampledBottom[0], pNewBottomSamples, nbNewBottomSamples * sizeof(int));
-			wg::GfxBase::memStackFree(nbNewBottomSamples * sizeof(int));
+			wax::Core::memStackFree(nbNewBottomSamples * sizeof(int));
 		}
 
 		if( nbNewTopSamples > 0 )
 		{
 			pWave->resampledTop.resize(nResampled);
 			memcpy(&pWave->resampledTop[0], pNewTopSamples, nbNewTopSamples * sizeof(int));
-			wg::GfxBase::memStackFree(nbNewTopSamples * sizeof(int));
+			wax::Core::memStackFree(nbNewTopSamples * sizeof(int));
 		}
 	}
 

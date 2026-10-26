@@ -19,19 +19,32 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef	WG_GFXBASE_DOT_H
-#define	WG_GFXBASE_DOT_H
+#ifndef	WAX_CORE_DOT_H
+#define	WAX_CORE_DOT_H
 #pragma once
 
 #include <assert.h>
+#include <functional>
+#include <unordered_map>
+#include <atomic>
+#include <string>
+#include <vector>
 
-#include <wg_gearbase.h>
-#include <wg_gfxdevice.h>
-#include <wg_gfxdevicefactory.h>
-#include <wg_compression.h>
+#include <wax_strongptr.h>
+#include <wax_weakptr.h>
+#include <wax_object.h>
+#include <wax_types.h>
+#include <wax_gfxdevice.h>
+#include <wax_gfxdevicefactory.h>
+#include <wax_compression.h>
 
-namespace wg
+namespace wax
 {
+	class MemPool;
+	class WeakPtrHub;
+	class MemStack;
+	class Object;
+
 	class BitmapCache;
 	typedef	StrongPtr<BitmapCache>		BitmapCache_p;
 
@@ -42,9 +55,26 @@ namespace wg
 	typedef	StrongPtr<GfxDeviceFactory>	GfxDeviceFactory_p;
 
 
-	class GfxContext : public Object
+	class Error
 	{
-		friend class GfxBase;
+	public:
+		ErrorLevel	severity;
+		ErrorCode		code;
+		const char *	message;
+		const Object *	pObject;
+		const char *	classname;
+		const char *	function;
+		const char *	file;
+		int				line;
+	};
+
+	//____ Context ____________________________________________________________
+
+	class Context : public Object
+	{
+		friend class Core;
+
+		std::function<void(Error&)>	pErrorHandler = nullptr;
 
 		SurfaceFactory_p	pDefaultSurfaceFactory;
 		EdgemapFactory_p	pDefaultEdgemapFactory;
@@ -52,15 +82,24 @@ namespace wg
 		GfxDeviceFactory_p	pDefaultGfxDeviceFactory;
 		GfxDevice_p			pDefaultGfxDevice;
 		BitmapCache_p		pDefaultBitmapCache;
-
-		GearContext_p		pGearContext;
 	};
 
-	typedef	StrongPtr<GfxContext>	GfxContext_p;
-	typedef	WeakPtr<GfxContext>		GfxContext_wp;
+	typedef	StrongPtr<Context>	Context_p;
+	typedef	WeakPtr<Context>	Context_wp;
 
+	//____ Core _______________________________________________________________
+	/**
+	 * @brief	Static core class for Wax.
+	 *
+	 * A static base class for Wax that handles initialization and general
+	 * housekeeping and resource allocation.
+	 *
+	 * The first thing that you need to do when starting Wax is to call Core::init()
+	 * and the last thing you should do is to call Core::exit().
+	 *
+	 */
 
-	class GfxBase : public GearBase
+	class Core
 	{
 //		friend class Object_wp;
 		friend class Object;
@@ -76,39 +115,95 @@ namespace wg
 
 		//.____ Content _____________________________________________
 
-		static GfxContext_p			setContext( const GfxContext_p& pNewContext );
-		static GfxContext_p			context() { return s_pGfxContext; }
+		static Context_p			setContext( const Context_p& pNewContext );
+		static Context_p			context() { return s_pContext; }
+
+		static void					setErrorHandler(std::function<void(Error&)> handler);
+		std::function<void(Error&)>	errorHandler();
 
 		static BitmapCache_p		defaultBitmapCache();
-		
+
 		static void					setDefaultSurfaceFactory( SurfaceFactory * pFactory );
-		static inline SurfaceFactory_p	defaultSurfaceFactory() { return s_pGfxContext->pDefaultSurfaceFactory; };
+		static inline SurfaceFactory_p	defaultSurfaceFactory() { return s_pContext->pDefaultSurfaceFactory; };
 
 		static void					setDefaultEdgemapFactory(EdgemapFactory* pFactory);
-		static inline EdgemapFactory_p	defaultEdgemapFactory() { return s_pGfxContext->pDefaultEdgemapFactory; };
+		static inline EdgemapFactory_p	defaultEdgemapFactory() { return s_pContext->pDefaultEdgemapFactory; };
 
 		static void					setDefaultWarpmapFactory(WarpmapFactory* pFactory);
-		static inline WarpmapFactory_p	defaultWarpmapFactory() { return s_pGfxContext->pDefaultWarpmapFactory; };
+		static inline WarpmapFactory_p	defaultWarpmapFactory() { return s_pContext->pDefaultWarpmapFactory; };
 
 		static void					setDefaultGfxDeviceFactory(GfxDeviceFactory* pFactory);
-		static inline GfxDeviceFactory_p	defaultGfxDeviceFactory() { return s_pGfxContext->pDefaultGfxDeviceFactory; };
+		static inline GfxDeviceFactory_p	defaultGfxDeviceFactory() { return s_pContext->pDefaultGfxDeviceFactory; };
 
 		static void					setDefaultGfxDevice( GfxDevice * pDevice );
-		static inline GfxDevice_p	defaultGfxDevice() { return s_pGfxContext->pDefaultGfxDevice; };
-
-		static constexpr int *		curveTab() { return s_curveTab; }
-		static constexpr int		curveTabSize() { return c_nCurveTabEntries; }
+		static inline GfxDevice_p	defaultGfxDevice() { return s_pContext->pDefaultGfxDevice; };
 
 		static Decompressor_p		getDecompressor( uint32_t idToken );
 		static void					addDecompressor( Decompressor * pDecompressor );
 
+		//.____ Misc ________________________________________________
+
+		const static TypeInfo	TYPEINFO;
+
+		static bool			isInitialized() { return s_pPtrPool != nullptr; }
+
+		static char *		memStackAlloc( int bytes );
+		static void			memStackFree( int bytes );
+
+		static void			throwError( ErrorLevel severity, ErrorCode code, const char * pMsg, const Object * pObject, const TypeInfo * pClassType, const char * pFunction, const char * pFile, int line );
+
+		static void			beginObjectTracking();
+		static void			endObjectTracking();
+		static bool			isObjectTracking() { return s_bTrackingObjects;  }
+
+		static void			printObjects(std::ostream& stream);
+
+		static constexpr int *		curveTab() { return s_curveTab; }
+		static constexpr int		curveTabSize() { return c_nCurveTabEntries; }
+
+		//.____ Internal ____________________________________________________________
+
+		template<typename T>
+		static T _trackObj(const T& pObj, const char* pFileName, int lineNb)
+		{
+			_trackObject(pObj, pFileName, lineNb);
+			return pObj;
+		}
+
+		static void			_trackObject(Object* pObject, const char* pFileName, int lineNb);
+
+	protected:
+		static int					s_initCounter;
+
+		static WeakPtrHub *	_allocWeakPtrHub();
+		static void			_freeWeakPtrHub(WeakPtrHub * pHub);
+
+        inline static void	_objectWasCreated(Object* pObject) { s_objectsCreated.fetch_add(1, std::memory_order_relaxed); if (s_bTrackingObjects) _trackObject(pObject, nullptr, -1); }
+        inline static void	_objectWillDestroy(Object* pObject) { s_objectsDestroyed.fetch_add(1, std::memory_order_relaxed); if (s_bTrackingObjects) s_trackedObjects.erase(pObject); }
+
+		static Context_p					s_pContext;
+
+		static MemPool *					s_pPtrPool;
+		static MemStack *					s_pMemStack;
+
+		struct ObjectInfo
+		{
+			// Filename and line where this objects create() method was called.
+
+			const char*		pFileName;
+			int				lineNb;
+			unsigned int	serialNb;
+		};
+
+		static std::atomic<unsigned int>	s_objectsCreated;
+		static std::atomic<unsigned int>	s_objectsDestroyed;
+
+		static bool			s_bTrackingObjects;
+		static std::unordered_map<Object*, ObjectInfo>	s_trackedObjects;
+
 	private:
 
-		static GfxContext_p			s_pGfxContext;
-
 		static void					_genCurveTab();
-
-		static int					s_gfxInitCounter;
 
 		const static int 			c_nCurveTabEntries = 1024;
 		static int 					s_curveTab[c_nCurveTabEntries];
@@ -118,5 +213,5 @@ namespace wg
 
 
 
-} // namespace wg
-#endif //WG_GFXBASE_DOT_H
+} // namespace wax
+#endif //WAX_CORE_DOT_H

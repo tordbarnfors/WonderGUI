@@ -24,9 +24,9 @@
 #include <windows.h>
 #include <dx12_wrapper.h>
 
-#include <wg_gfxdevice.h>
-#include <wg_gfxbase.h>
-#include <wg_dx12backend.h>
+#include <wax_gfxdevice.h>
+#include <wax_core.h>
+#include <wax_dx12backend.h>
 
 #include <cstdio>
 #include <vector>
@@ -47,7 +47,7 @@ static constexpr bool c_bPresentFullFrames = false;
 
 static DX12Backend_p _backend()
 {
-	return wg_static_cast<DX12Backend_p>(wg_static_cast<GfxDeviceGen2_p>(Base::defaultGfxDevice())->backend());
+	return wax_static_cast<DX12Backend_p>(wax_static_cast<GfxDeviceGen2_p>(Base::defaultGfxDevice())->backend());
 }
 
 

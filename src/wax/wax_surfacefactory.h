@@ -19,16 +19,16 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef WG_SURFACEFACTORY_DOT_H
-#define	WG_SURFACEFACTORY_DOT_H
+#ifndef WAX_SURFACEFACTORY_DOT_H
+#define	WAX_SURFACEFACTORY_DOT_H
 #pragma once
 //==============================================================================
 
-#include <wg_surface.h>
-#include <wg_blob.h>
+#include <wax_surface.h>
+#include <wax_blob.h>
 
 
-namespace wg
+namespace wax
 {
 
 
@@ -42,7 +42,7 @@ namespace wg
 	 * @brief Factory class for creating surfaces.
 	 *
 	 * SurfaceFactory is the base class for all surface factories. The surface factories
-	 * are used by WonderGUI objects that needs to dynamically create surfaces as
+	 * are used by Wax objects that needs to dynamically create surfaces as
 	 * part of their operation, like FreeTypeFont.
 	 *
 	 **/
@@ -78,5 +78,5 @@ namespace wg
 
 	//==============================================================================
 
-} // namespace wg
-#endif // WG_SURFACEFACTORY_DOT_H
+} // namespace wax
+#endif // WAX_SURFACEFACTORY_DOT_H

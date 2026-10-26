@@ -1,7 +1,7 @@
 #include "testsuite.h"
 
-#include <wg_tint.h>
-#include <wg_circularwarp.h>
+#include <wax_tint.h>
+#include <wax_circularwarp.h>
 
 #include <cmath>
 #include <vector>

@@ -19,19 +19,19 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#include <wg_c_canvaslayers.h>
-#include <wg_canvaslayers.h>
-#include <wg_gfxdevice.h>
+#include <wax_c_canvaslayers.h>
+#include <wax_canvaslayers.h>
+#include <wax_gfxdevice.h>
 
-using namespace wg;
+using namespace wax;
 
-inline CanvasLayers* getPtr(wg_obj obj) {
+inline CanvasLayers* getPtr(wax_obj obj) {
 	return static_cast<CanvasLayers*>(reinterpret_cast<Object*>(obj));
 }
 
-static_assert(WG_MAX_CANVAS_LAYERS == CanvasLayers::maxLayers(), "WG_MAX_CANVAS_LAYERS needs to match CanvasLayers::MaxLayers()!" );
+static_assert(WAX_MAX_CANVAS_LAYERS == CanvasLayers::maxLayers(), "WAX_MAX_CANVAS_LAYERS needs to match CanvasLayers::MaxLayers()!" );
 
-wg_obj wg_createCanvasLayers(const wg_canvasLayersBP* pBP)
+wax_obj wax_createCanvasLayers(const wax_canvasLayersBP* pBP)
 {
 
 	//TODO: Can we assign function directly without a lambda between? 
@@ -41,7 +41,7 @@ wg_obj wg_createCanvasLayers(const wg_canvasLayersBP* pBP)
 
 	CanvasLayers::Blueprint bp;
 
-	wg_canvasLayers_func func = pBP->finalizeCanvasFunc;
+	wax_canvasLayers_func func = pBP->finalizeCanvasFunc;
 	void*	pointer = pBP->finalizeCanvasPtr;
 	int		integer = pBP->finalizeCanvasInt;
 	if (func != NULL)
@@ -56,7 +56,7 @@ wg_obj wg_createCanvasLayers(const wg_canvasLayersBP* pBP)
 
 	bp.baseLayer = pBP->baseLayer;
 
-	for (int i = 0; i < WG_MAX_CANVAS_LAYERS && pBP->layers[i].format != WG_PIXFMT_UNDEFINED; i++)
+	for (int i = 0; i < WAX_MAX_CANVAS_LAYERS && pBP->layers[i].format != WAX_PIXFMT_UNDEFINED; i++)
 	{
 		CanvasLayers::LayerBP layer;
 
@@ -95,17 +95,17 @@ wg_obj wg_createCanvasLayers(const wg_canvasLayersBP* pBP)
 	return static_cast<Object*>(p);
 }
 
-int wg_canvasLayersSize(wg_obj canvasLayers)
+int wax_canvasLayersSize(wax_obj canvasLayers)
 {
 	return getPtr(canvasLayers)->size();
 }
 
-wg_pixelFormat wg_layerFormat(wg_obj canvasLayers, int layer)
+wax_pixelFormat wax_layerFormat(wax_obj canvasLayers, int layer)
 {
-	return (wg_pixelFormat) getPtr(canvasLayers)->layerFormat(layer);
+	return (wax_pixelFormat) getPtr(canvasLayers)->layerFormat(layer);
 }
 
-int wg_baseLayer(wg_obj canvasLayers)
+int wax_baseLayer(wax_obj canvasLayers)
 {
 	return getPtr(canvasLayers)->baseLayer();
 }

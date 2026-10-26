@@ -25,7 +25,8 @@
 
 
 #include <wg_c_types.h>
-#include <wg_font.h>
+#include <wax_font.h>
+#include <wg_types.h>
 
 
 namespace wg
@@ -65,14 +66,14 @@ namespace wg
 		bool		hasGlyph( char32_t chr ) override;
 		bool		isMonospace() override;
 
-		inline wg_obj	cObject() { return m_cFont; }
+		inline wax_obj	cObject() { return m_cFont; }
 
 
 	protected:
-		PluginFont( wg_obj cFont );
+		PluginFont( wax_obj cFont );
 		~PluginFont();
 
-		wg_obj		m_cFont;
+		wax_obj		m_cFont;
 	};
 
 

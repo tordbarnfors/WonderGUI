@@ -4,14 +4,14 @@
 #include <wonderapp.h>
 
 #include <wondergui.h>
-#include <wg_freetypefont.h>
+#include <wax_freetypefont.h>
 
-#include <wg_softsurface.h>
+#include <wax_softsurface.h>
 
 #include <initializer_list>
 #include <string>
 
-#include <wondergfx_c.h>
+#include <wax_c.h>
 
 using namespace wg;
 
@@ -47,14 +47,14 @@ private:
 	Blob_p			m_pStreamBlob;
 
 
-	wg_obj 			m_wrapper = nullptr;
-	wg_obj 			m_player = nullptr;
-	wg_obj 			m_pump = nullptr;
-	wg_obj			m_streamGfxDevice = nullptr;
+	wax_obj 			m_wrapper = nullptr;
+	wax_obj 			m_player = nullptr;
+	wax_obj 			m_pump = nullptr;
+	wax_obj			m_streamGfxDevice = nullptr;
 
-	wg_obj			m_streamFrontCanvas = nullptr;
-	wg_obj			m_streamBackCanvas = nullptr;
+	wax_obj			m_streamFrontCanvas = nullptr;
+	wax_obj			m_streamBackCanvas = nullptr;
 
-	wg_patches		m_streamFrontPatches = nullptr;
-	wg_patches		m_streamBackPatches = nullptr;
+	wax_patches		m_streamFrontPatches = nullptr;
+	wax_patches		m_streamBackPatches = nullptr;
 };

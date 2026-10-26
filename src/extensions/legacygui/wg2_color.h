@@ -26,7 +26,7 @@
 #	include	<wg2_types.h>
 #endif
 
-#include <wg_color.h>
+#include <wax_color.h>
 
 typedef wg::Color		WgColor;
 

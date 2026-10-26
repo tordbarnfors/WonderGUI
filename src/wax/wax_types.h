@@ -19,14 +19,162 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef	WG_GFXTYPES_DOT_H
-#define WG_GFXTYPES_DOT_H
+#ifndef	WAX_TYPES_DOT_H
+#define WAX_TYPES_DOT_H
 #pragma once
 
-#include <wg_geartypes.h>
+#include <cstdint>
 
-namespace wg
+namespace wax
 {
+
+#if defined(_WIN32)
+#	if defined(_M_X64) || defined(_M_IX86)
+#		define WAX_IS_BIG_ENDIAN 0
+#		define WAX_IS_LITTLE_ENDIAN 1
+#	endif
+#else
+	#if defined(__BYTE_ORDER__) && defined(__ORDER_BIG_ENDIAN__) && defined(__ORDER_LITTLE_ENDIAN__)
+	#	 if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+	#		define WAX_IS_BIG_ENDIAN 1
+	#		define WAX_IS_LITTLE_ENDIAN 0
+	#	elif __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+	#		define WAX_IS_BIG_ENDIAN 0
+	#		define WAX_IS_LITTLE_ENDIAN 1
+	#	endif
+	#else
+	#	ifdef __BIG_ENDIAN__
+	#		if __BIG_ENDIAN__
+	#			define WAX_IS_BIG_ENDIAN 1
+	#			define WAX_IS_LITTLE_ENDIAN 0
+	#		endif
+	#	endif
+
+	#	ifdef __LITTLE_ENDIAN__
+	#		if __LITTLE_ENDIAN__
+	#			define WAX_IS_BIG_ENDIAN 0
+	#			define WAX_IS_LITTLE_ENDIAN 1
+	#		endif
+	#	endif
+	#endif
+#endif
+
+
+	#ifndef WAX_IS_BIG_ENDIAN
+	#error Could not detect endianness. You need to define WAX_IS_BIG_ENDIAN and WAX_IS_LITTLE_ENDIAN in wax_types.h
+	#define WAX_IS_BIG_ENDIAN 0
+	#define WAX_IS_LITTLE_ENDIAN 0
+	#endif
+
+
+	#if INTPTR_MAX == INT64_MAX
+	#		define	WAX_IS_64_BITS 1
+	#elif INTPTR_MAX == INT32_MAX
+	#		define WAX_IS_64_BITS 0	
+	#else
+	#error Could not detect if target is 32 or 64 bits. You need to manually set WAX_IS_64_BITS in wax_types.h
+	#endif
+
+
+
+//-----------------------------------------------------------------------------
+
+
+template<typename T, typename T2, typename T3> inline void limit(T& x, T2 min, T3 max) { if( x < min) x = min; if( x > max) x = max; }
+
+#define WAXBP(T, ...)\
+	([&]{ wax::T::Blueprint _{}; __VA_ARGS__; return _; }())
+
+#define WAXOVR(T, ...)\
+([&]{ auto _ = T; __VA_ARGS__; return _; }())
+
+#define WAXCREATE(T, ...)\
+	wax::T::create([&]{ wax::T::Blueprint _{}; __VA_ARGS__; return _; }())
+
+
+
+#define WAXTRACK(pObj) wax::Core::_trackObj(pObj, __FILE__, __LINE__ ) 
+
+
+	//____ ErrorLevel ________________________________________________
+
+	enum class ErrorLevel		//. autoExtras
+	{
+		Warning,
+		SilentError,
+		Error,
+		Critical
+	};
+
+	//____ ErrorCode ____________________________________________________
+
+	enum class ErrorCode			//. autoExtras
+	{
+		OutOfRange,
+		InvalidIterator,
+		InvalidParam,
+		FailedPrerequisite,
+		OpenGL,						// OpenGL has issued a GLerror
+		Internal,
+		SystemIntegrity,
+		IllegalCall,
+		ResourceExhausted,			// A limited internal resource has been exhausted
+		RenderFailure,
+		Performance,				// Only used with ErrorLevel::Warning for performance warnings.
+		Other
+	};
+
+
+
+	//____ Bitmask ____________________________________________________
+
+	template<typename T> class Bitmask
+	{
+	public:
+	  Bitmask() { m_mask = 0; }
+		Bitmask(T v) { m_mask = v; }
+
+		inline void setBit(int index) { m_mask |= (T(1) << index); }
+		inline void setBit(int index, bool value) { m_mask &= ~(T(1) << index); m_mask |= (T(value) << index); }
+		inline bool bit(int index) const { return ((m_mask & (T(1) << index)) != 0); }
+		inline void clearBit(int index) { m_mask &= ~(T(1) << index); }
+		inline bool isEmpty() const { return m_mask == 0; }
+		inline void flipBit(int index) { m_mask ^= (T(1) << index);  }
+
+		inline Bitmask<T> operator=(const Bitmask<T>& r) { m_mask = r.m_mask; return *this; }
+		inline Bitmask<T> operator=(T r) { m_mask = r; return *this; }
+
+		inline Bitmask<T> operator&(const Bitmask<T>& r) { return Bitmask<T>(m_mask & r.m_mask); }
+		inline Bitmask<T> operator|(const Bitmask<T>& r) { return Bitmask<T>(m_mask | r.m_mask); }
+		inline Bitmask<T> operator^(const Bitmask<T>& r) { return Bitmask<T>(m_mask ^ r.m_mask); }
+		inline Bitmask<T> operator~() { return Bitmask<T>(~m_mask); }
+
+		inline Bitmask<T> operator&=(const Bitmask<T>& r) { m_mask &= r.m_mask; return *this; }
+		inline Bitmask<T> operator|=(const Bitmask<T>& r) { m_mask |= r.m_mask; return *this; }
+		inline Bitmask<T> operator^=(const Bitmask<T>& r) { m_mask ^= r.m_mask; return *this; }
+
+
+		inline operator T() const { return m_mask; }
+
+		T	 mask() const { return m_mask; }
+
+	private:
+		T	m_mask;
+	};
+
+
+	//____ TypeInfo __________________________________________________________
+
+	struct TypeInfo
+	{
+		const char * className;
+		const TypeInfo * pSuperClass;
+
+		inline bool operator==(const TypeInfo& other) const { return (this == &other); }		// Same address is same structure.
+		inline bool operator!=(const TypeInfo& other) const { return (this != &other); }		// Same address is same structure.
+	};
+
+
 
 
 //-----------------------------------------------------------------------------
@@ -34,7 +182,7 @@ namespace wg
 // 15 and 24 binals respetively depending on if architecture is 32 or 64 bits.
 // This is used internally for high-precision integer operations.
 
-#if WG_IS_64_BITS
+#if WAX_IS_64_BITS
 
 	typedef int64_t binalInt;
 /*
@@ -297,7 +445,7 @@ namespace wg
 	/**
 	 * Color space of the color channels of a Surface. Alpha is always linear.
 	 *
-	 * Colors given to WonderGUI, as Color8 and HiColor, are always sRGB.
+	 * Colors given to Wax, as Color8 and HiColor, are always sRGB.
 	 * Undefined is only used in blueprints, where it gives the default (sRGB).
 	 */
 
@@ -325,7 +473,7 @@ namespace wg
 		// These constructors are needed for Clang to compile GfxUtil::pixelDescTab in C++11 setting.
 
 		PixelDescription() {}
-		constexpr PixelDescription(int _bits, PixelType _type, uint64_t _R_mask, uint64_t _G_mask, uint64_t _B_mask, uint64_t _A_mask, bool _bigEndian = (WG_IS_BIG_ENDIAN == 1) ) :
+		constexpr PixelDescription(int _bits, PixelType _type, uint64_t _R_mask, uint64_t _G_mask, uint64_t _B_mask, uint64_t _A_mask, bool _bigEndian = (WAX_IS_BIG_ENDIAN == 1) ) :
 		bits(_bits), type(_type), bigEndian(_bigEndian), R_mask(_R_mask), G_mask(_G_mask), B_mask(_B_mask), A_mask(_A_mask) {}
 
 		bool operator==( const PixelDescription& k ) const
@@ -336,7 +484,7 @@ namespace wg
 
 		int			bits = 0;			///< Number of bits for the pixel, includes any non-used padding bits.
 		PixelType	type = PixelType::Chunky;
-		bool		bigEndian = (WG_IS_BIG_ENDIAN == 1);	///< Byte order of the pixels. Defaults to the byte order of the system.
+		bool		bigEndian = (WAX_IS_BIG_ENDIAN == 1);	///< Byte order of the pixels. Defaults to the byte order of the system.
 
 		uint64_t	R_mask = 0;			///< bitmask for getting the red bits out of chunky pixel
 		uint64_t	G_mask = 0;			///< bitmask for getting the green bits out of chunky pixel
@@ -457,8 +605,8 @@ namespace wg
 		Spear				// Pointed tip on the endpoint.
 	};
 
-} // namespace wg
+} // namespace wax
 
-#include <wg_gfxenumextras.h>
+#include <wax_enumextras.h>
 
-#endif // WG_GFXTYPES_DOT_H
+#endif // WAX_TYPES_DOT_H

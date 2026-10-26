@@ -19,26 +19,26 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#include <wg_c_softgfx.h>
-#include <wg_c_internal.h>
+#include <wax_c_softgfx.h>
+#include <wax_c_internal.h>
 
-#include <wg_softbackend.h>
-#include <wg_softsurface.h>
-#include <wg_softsurfacefactory.h>
-#include <wg_softedgemap.h>
-#include <wg_softedgemapfactory.h>
-#include <wg_softwarpmapfactory.h>
+#include <wax_softbackend.h>
+#include <wax_softsurface.h>
+#include <wax_softsurfacefactory.h>
+#include <wax_softedgemap.h>
+#include <wax_softedgemapfactory.h>
+#include <wax_softwarpmapfactory.h>
 
-using namespace wg;
+using namespace wax;
 
-wg_obj wg_createSoftBackend(void)
+wax_obj wax_createSoftBackend(void)
 {
 	auto p = SoftBackend::create();
 	p->retain();
-	return (wg_obj) static_cast<Object*>(p.rawPtr());
+	return (wax_obj) static_cast<Object*>(p.rawPtr());
 }
 
-int wg_defineSoftBackendCanvas( wg_obj backend, wg_canvasRef ref, wg_obj softSurface )
+int wax_defineSoftBackendCanvas( wax_obj backend, wax_canvasRef ref, wax_obj softSurface )
 {
 	auto pBackend = static_cast<SoftBackend*>(reinterpret_cast<Object*>(backend));
 	auto pSurface = static_cast<SoftSurface*>(reinterpret_cast<Object*>(softSurface));
@@ -46,57 +46,57 @@ int wg_defineSoftBackendCanvas( wg_obj backend, wg_canvasRef ref, wg_obj softSur
 	return pBackend->defineCanvas((CanvasRef) ref, pSurface);
 }
 
-wg_obj wg_createSoftSurface(const wg_surfaceBP* blueprint)
+wax_obj wax_createSoftSurface(const wax_surfaceBP* blueprint)
 {
 	Surface::Blueprint	bp;
 	convertSurfaceBlueprint(&bp, blueprint);
 
 	auto p = SoftSurface::create(bp);
 	p->retain();
-	return (wg_obj) static_cast<Object*>(p.rawPtr());
+	return (wax_obj) static_cast<Object*>(p.rawPtr());
 }
 
 
-wg_obj wg_createSoftSurfaceFromBlob(const wg_surfaceBP* blueprint, wg_obj blob, int pitch)
+wax_obj wax_createSoftSurfaceFromBlob(const wax_surfaceBP* blueprint, wax_obj blob, int pitch)
 {
 	Surface::Blueprint	bp;
 	convertSurfaceBlueprint(&bp, blueprint);
 	auto p = SoftSurface::create(bp, static_cast<Blob*>(reinterpret_cast<Object*>(blob)), pitch );
 	p->retain();
-	return (wg_obj) static_cast<Object*>(p.rawPtr());
+	return (wax_obj) static_cast<Object*>(p.rawPtr());
 }
 
-wg_obj	wg_createSoftSurfaceFromBitmap(const wg_surfaceBP* blueprint, const uint8_t* pPixels,
-									   wg_pixelFormat pixelFormat, int pitch, const wg_color8 * pPalette, int paletteSize )
+wax_obj	wax_createSoftSurfaceFromBitmap(const wax_surfaceBP* blueprint, const uint8_t* pPixels,
+									   wax_pixelFormat pixelFormat, int pitch, const wax_color8 * pPalette, int paletteSize )
 {
 	Surface::Blueprint	bp;
 	convertSurfaceBlueprint(&bp, blueprint);
 	auto p = SoftSurface::create(bp, pPixels, (PixelFormat) pixelFormat, pitch, (const Color8*) pPalette, paletteSize);
 	p->retain();
-	return (wg_obj) static_cast<Object*>(p.rawPtr());
+	return (wax_obj) static_cast<Object*>(p.rawPtr());
 }
 
-wg_obj	wg_createSoftSurfaceFromRawData(const wg_surfaceBP* blueprint, const uint8_t* pPixels,
-										const wg_pixelDescription * pPixelDescription, int pitch, const wg_color8 * pPalette, int paletteSize )
+wax_obj	wax_createSoftSurfaceFromRawData(const wax_surfaceBP* blueprint, const uint8_t* pPixels,
+										const wax_pixelDescription * pPixelDescription, int pitch, const wax_color8 * pPalette, int paletteSize )
 {
 	Surface::Blueprint	bp;
 	convertSurfaceBlueprint(&bp, blueprint);
 	
 	auto p = SoftSurface::create(bp, pPixels, *(PixelDescription*) pPixelDescription, pitch, (const Color8*) pPalette, paletteSize);
 	p->retain();
-	return (wg_obj) static_cast<Object*>(p.rawPtr());
+	return (wax_obj) static_cast<Object*>(p.rawPtr());
 }
 
 
-wg_obj wg_createSoftSurfaceFactory()
+wax_obj wax_createSoftSurfaceFactory()
 {
 	auto p = SoftSurfaceFactory::create();
 	p->retain();
-	return (wg_obj) static_cast<Object*>(p.rawPtr());
+	return (wax_obj) static_cast<Object*>(p.rawPtr());
 }
 
 
-wg_obj wg_createSoftEdgemap( const wg_edgemapBP* blueprint )
+wax_obj wax_createSoftEdgemap( const wax_edgemapBP* blueprint )
 {
 	Edgemap::Blueprint	bp;
 
@@ -107,10 +107,10 @@ wg_obj wg_createSoftEdgemap( const wg_edgemapBP* blueprint )
 
 	auto p = SoftEdgemap::create(bp);
 	p->retain();
-	return (wg_obj) static_cast<Object*>(p.rawPtr());
+	return (wax_obj) static_cast<Object*>(p.rawPtr());
 }
 
-wg_obj wg_createSoftEdgemapFromFloats( const wg_edgemapBP* blueprint, wg_sampleOrigo origo, const float * pSamples, int edges, int edgePitch, int samplePitch)
+wax_obj wax_createSoftEdgemapFromFloats( const wax_edgemapBP* blueprint, wax_sampleOrigo origo, const float * pSamples, int edges, int edgePitch, int samplePitch)
 {
 	Edgemap::Blueprint	bp;
 
@@ -121,10 +121,10 @@ wg_obj wg_createSoftEdgemapFromFloats( const wg_edgemapBP* blueprint, wg_sampleO
 
 	auto p = SoftEdgemap::create(bp, (SampleOrigo) origo, pSamples, edges, edgePitch, samplePitch);
 	p->retain();
-	return (wg_obj) static_cast<Object*>(p.rawPtr());
+	return (wax_obj) static_cast<Object*>(p.rawPtr());
 }
 
-wg_obj wg_createSoftEdgemapFromSpx( const wg_edgemapBP* blueprint, wg_sampleOrigo origo, const wg_spx * pSamples, int edges, int edgePitch, int samplePitch)
+wax_obj wax_createSoftEdgemapFromSpx( const wax_edgemapBP* blueprint, wax_sampleOrigo origo, const wax_spx * pSamples, int edges, int edgePitch, int samplePitch)
 {
 	Edgemap::Blueprint	bp;
 
@@ -135,20 +135,20 @@ wg_obj wg_createSoftEdgemapFromSpx( const wg_edgemapBP* blueprint, wg_sampleOrig
 
 	auto p = SoftEdgemap::create(bp, (SampleOrigo) origo, pSamples, edges, edgePitch, samplePitch);
 	p->retain();
-	return (wg_obj) static_cast<Object*>(p.rawPtr());
+	return (wax_obj) static_cast<Object*>(p.rawPtr());
 }
 
-wg_obj wg_createSoftEdgemapFactory(void)
+wax_obj wax_createSoftEdgemapFactory(void)
 {
 	auto p = SoftEdgemapFactory::create();
 	p->retain();
-	return (wg_obj) static_cast<Object*>(p.rawPtr());
+	return (wax_obj) static_cast<Object*>(p.rawPtr());
 }
 
-wg_obj wg_createSoftWarpmapFactory(void)
+wax_obj wax_createSoftWarpmapFactory(void)
 {
 	auto p = SoftWarpmapFactory::create();
 	p->retain();
-	return (wg_obj) static_cast<Object*>(p.rawPtr());
+	return (wax_obj) static_cast<Object*>(p.rawPtr());
 }
 

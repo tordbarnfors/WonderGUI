@@ -21,11 +21,11 @@
 =========================================================================*/
 #include <sdlwindow.h>
 
-#include <wg_softsurface.h>
-#include <wg_softsurfacefactory.h>
-#include <wg_softedgemapfactory.h>
-#include <wg_softbackend.h>
-#include <wg_softkernels_default.h>
+#include <wax_softsurface.h>
+#include <wax_softsurfacefactory.h>
+#include <wax_softedgemapfactory.h>
+#include <wax_softbackend.h>
+#include <wax_softkernels_default.h>
 
 
 using namespace wg;

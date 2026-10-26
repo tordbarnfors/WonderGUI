@@ -20,10 +20,10 @@
 
 =========================================================================*/
 #include <wg_util.h>
-#include <wg_geo.h>
-#include <wg_surface.h>
-#include <wg_gfxdevice.h>
-#include <wg_patches.h>
+#include <wax_geo.h>
+#include <wax_surface.h>
+#include <wax_gfxdevice.h>
+#include <wax_patches.h>
 #include <wg_base.h>
 #include <wg_state.h>
 

@@ -19,12 +19,12 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef WG_GLEDGEMAP_DOT_H
-#define WG_GLEDGEMAP_DOT_H
+#ifndef WAX_GLEDGEMAP_DOT_H
+#define WAX_GLEDGEMAP_DOT_H
 #pragma once
 
-#include <wg_edgemap.h>
-#include <wg_tinttools.h>
+#include <wax_edgemap.h>
+#include <wax_tinttools.h>
 
 #ifdef WIN32
 #	include <GL/glew.h>
@@ -37,7 +37,7 @@
 #	endif
 #endif
 
-namespace wg
+namespace wax
 {
 
 	class GlEdgemap;
@@ -88,5 +88,5 @@ namespace wg
 
 
 
-} // namespace wg
-#endif // WG_GLEDGEMAP_DOT_H
+} // namespace wax
+#endif // WAX_GLEDGEMAP_DOT_H

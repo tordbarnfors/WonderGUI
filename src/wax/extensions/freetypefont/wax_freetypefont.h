@@ -19,21 +19,21 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef WG_FREETYPEFONT_DOT_H
-#define WG_FREETYPEFONT_DOT_H
+#ifndef WAX_FREETYPEFONT_DOT_H
+#define WAX_FREETYPEFONT_DOT_H
 #pragma once
 
 #include <vector>
 #include <unordered_map>
 
-#include <wg_gfxtypes.h>
-#include <wg_chain.h>
+#include <wax_types.h>
+#include <wax_chain.h>
 
 
-#include <wg_font.h>
-#include <wg_blob.h>
-#include <wg_bitmapcache.h>
-#include <wg_gfxbase.h>
+#include <wax_font.h>
+#include <wax_blob.h>
+#include <wax_bitmapcache.h>
+#include <wax_core.h>
 
 
 typedef struct FT_LibraryRec_  *FT_Library;
@@ -42,7 +42,7 @@ struct	FT_FaceRec_;
 typedef struct FT_FaceRec_*	FT_Face;
 typedef struct  FT_Bitmap_ FT_Bitmap;
 
-namespace wg
+namespace wax
 {
 	class FreeTypeFont;
 	typedef	StrongPtr<FreeTypeFont>		FreeTypeFont_p;
@@ -230,6 +230,6 @@ namespace wg
 	}
 
 
-} // namespace wg
+} // namespace wax
 
-#endif //WG_FREETYPEFONT_DOT_H
+#endif //WAX_FREETYPEFONT_DOT_H

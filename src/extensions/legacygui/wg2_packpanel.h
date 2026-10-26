@@ -52,7 +52,7 @@ public:
 	WgPackPanel*		Parent() const;
 
 protected:
-	PROTECTED_LINK_METHODS( WgPackHook );
+	WAX_PROTECTED_LINK_METHODS( WgPackHook );
 
 	WgPackHook( WgPackPanel * pParent );
 

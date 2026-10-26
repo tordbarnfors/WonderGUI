@@ -19,15 +19,15 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef WG_GRIDWALKER_DOT_H
-#define WG_GRIDWALKER_DOT_H
+#ifndef WAX_GRIDWALKER_DOT_H
+#define WAX_GRIDWALKER_DOT_H
 #pragma once
 
-#include <wg_gfxtypes.h>
-#include <wg_surface.h>
+#include <wax_types.h>
+#include <wax_surface.h>
 #include <cassert>
 
-namespace wg
+namespace wax
 {
 	class GridWalker
 	{
@@ -70,4 +70,4 @@ namespace wg
 		}
 	}
 }
-#endif //WG_GRIDWALKER_DOT_H
+#endif //WAX_GRIDWALKER_DOT_H

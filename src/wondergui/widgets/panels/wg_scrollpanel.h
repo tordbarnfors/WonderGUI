@@ -28,7 +28,7 @@
 #include <wg_container.h>
 #include <wg_slot.h>
 #include <wg_scroller.h>
-#include <wg_transitions.h>
+#include <wax_transitions.h>
 
 namespace wg
 {

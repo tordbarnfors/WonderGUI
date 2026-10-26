@@ -19,16 +19,16 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#include <wg_c_circularwarp.h>
-#include <wg_circularwarp.h>
+#include <wax_c_circularwarp.h>
+#include <wax_circularwarp.h>
 
-using namespace wg;
+using namespace wax;
 
-inline CircularWarp* getPtr(wg_obj obj) {
+inline CircularWarp* getPtr(wax_obj obj) {
 	return static_cast<CircularWarp*>(reinterpret_cast<Object*>(obj));
 }
 
-wg_obj wg_createCircularWarp( const wg_circularWarpBP* pCBP, wg_obj warpmapFactory )
+wax_obj wax_createCircularWarp( const wax_circularWarpBP* pCBP, wax_obj warpmapFactory )
 {
 	CircularWarp::Blueprint bp;
 
@@ -50,78 +50,78 @@ wg_obj wg_createCircularWarp( const wg_circularWarpBP* pCBP, wg_obj warpmapFacto
 		return nullptr;
 
 	p->retain();
-	return (wg_obj) static_cast<Object*>(p.rawPtr());
+	return (wax_obj) static_cast<Object*>(p.rawPtr());
 }
 
-int wg_setCircularWarpSize( wg_obj circularWarp, wg_sizeI size )
+int wax_setCircularWarpSize( wax_obj circularWarp, wax_sizeI size )
 {
 	return getPtr(circularWarp)->setSize({ size.w, size.h });
 }
 
-wg_sizeI wg_circularWarpSize( wg_obj circularWarp )
+wax_sizeI wax_circularWarpSize( wax_obj circularWarp )
 {
 	SizeI sz = getPtr(circularWarp)->size();
 	return { sz.w, sz.h };
 }
 
-int wg_setCircularWarpCenter( wg_obj circularWarp, wg_coordF center )
+int wax_setCircularWarpCenter( wax_obj circularWarp, wax_coordF center )
 {
 	return getPtr(circularWarp)->setCenter({ center.x, center.y });
 }
 
-wg_coordF wg_circularWarpCenter( wg_obj circularWarp )
+wax_coordF wax_circularWarpCenter( wax_obj circularWarp )
 {
 	CoordF c = getPtr(circularWarp)->center();
 	return { c.x, c.y };
 }
 
-int wg_setCircularWarpRadii( wg_obj circularWarp, wg_spx topRadius, wg_spx bottomRadius )
+int wax_setCircularWarpRadii( wax_obj circularWarp, wax_spx topRadius, wax_spx bottomRadius )
 {
 	return getPtr(circularWarp)->setRadii(topRadius, bottomRadius);
 }
 
-wg_spx wg_circularWarpTopRadius( wg_obj circularWarp )
+wax_spx wax_circularWarpTopRadius( wax_obj circularWarp )
 {
 	return getPtr(circularWarp)->topRadius();
 }
 
-wg_spx wg_circularWarpBottomRadius( wg_obj circularWarp )
+wax_spx wax_circularWarpBottomRadius( wax_obj circularWarp )
 {
 	return getPtr(circularWarp)->bottomRadius();
 }
 
-int wg_setCircularWarpAngles( wg_obj circularWarp, float startAngle, float sweep )
+int wax_setCircularWarpAngles( wax_obj circularWarp, float startAngle, float sweep )
 {
 	return getPtr(circularWarp)->setAngles(startAngle, sweep);
 }
 
-float wg_circularWarpStartAngle( wg_obj circularWarp )
+float wax_circularWarpStartAngle( wax_obj circularWarp )
 {
 	return getPtr(circularWarp)->startAngle();
 }
 
-float wg_circularWarpSweep( wg_obj circularWarp )
+float wax_circularWarpSweep( wax_obj circularWarp )
 {
 	return getPtr(circularWarp)->sweep();
 }
 
-int wg_setCircularWarpCellSize( wg_obj circularWarp, int cellSize )
+int wax_setCircularWarpCellSize( wax_obj circularWarp, int cellSize )
 {
 	return getPtr(circularWarp)->setCellSize(cellSize);
 }
 
-int wg_circularWarpCellSize( wg_obj circularWarp )
+int wax_circularWarpCellSize( wax_obj circularWarp )
 {
 	return getPtr(circularWarp)->cellSize();
 }
 
-int wg_setCircularWarpPrecision( wg_obj circularWarp, float precision, wg_spx detailRadius )
+int wax_setCircularWarpPrecision( wax_obj circularWarp, float precision, wax_spx detailRadius )
 {
 	return getPtr(circularWarp)->setPrecision(precision, detailRadius);
 }
 
-wg_obj wg_refreshCircularWarp( wg_obj circularWarp )
+wax_obj wax_refreshCircularWarp( wax_obj circularWarp )
 {
 	Warpmap_p p = getPtr(circularWarp)->refresh();
-	return (wg_obj) static_cast<Object*>(p.rawPtr());
+	return (wax_obj) static_cast<Object*>(p.rawPtr());
 }

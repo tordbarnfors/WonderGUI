@@ -21,7 +21,7 @@
 =========================================================================*/
 #include <wg_tablepanel.h>
 #include <wg_skinslot.h>
-#include <wg_patches.h>
+#include <wax_patches.h>
 #include <wg_packlayout.h>
 #include <wg_util.h>
 #include <wg_msg.h>

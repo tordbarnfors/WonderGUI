@@ -19,13 +19,13 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef WG_EDGEMAPFACTORY_DOT_H
-#define	WG_EDGEMAPFACTORY_DOT_H
+#ifndef WAX_EDGEMAPFACTORY_DOT_H
+#define	WAX_EDGEMAPFACTORY_DOT_H
 #pragma once
 
-#include <wg_edgemap.h>
+#include <wax_edgemap.h>
 
-namespace wg
+namespace wax
 {
 
 
@@ -39,7 +39,7 @@ namespace wg
 	 * @brief Factory class for creating edgemaps.
 	 *
 	 * EdgemapFactory is the base class for all edgemap factories. The edgemap factories
-	 * are used by WonderGUI objects that needs to dynamically create edgemaps as
+	 * are used by Wax objects that needs to dynamically create edgemaps as
 	 * part of their operation.
 	 *
 	 **/
@@ -66,8 +66,8 @@ namespace wg
 
 	//==============================================================================
 
-} // namespace wg
-#endif // WG_EDGEMAPFACTORY_DOT_H
+} // namespace wax
+#endif // WAX_EDGEMAPFACTORY_DOT_H
 
 
 

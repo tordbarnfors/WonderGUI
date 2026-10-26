@@ -24,9 +24,9 @@
 #pragma once
 
 #include <wg_capsule.h>
-#include <wg_transitions.h>
+#include <wax_transitions.h>
 #include <wg_filler.h>
-#include <wg_dataset.h>
+#include <wax_dataset.h>
 
 namespace wg
 {

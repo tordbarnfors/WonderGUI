@@ -24,59 +24,59 @@
 
 using namespace wg;
 
-inline PluginCapsule* getCapsule(wg_obj obj) {
+inline PluginCapsule* getCapsule(wax_obj obj) {
 	return static_cast<PluginCapsule*>(reinterpret_cast<Object*>(obj));
 }
 
-void wg_pluginRequestRender(wg_obj pluginCapsule, wg_rectSPX rect)
+void wg_pluginRequestRender(wax_obj pluginCapsule, wax_rectSPX rect)
 {
 	getCapsule(pluginCapsule)->_pluginRequestRender({ rect.x, rect.y, rect.w, rect.h });
 }
 
-void wg_pluginRequestResize(wg_obj	pluginCapsule)
+void wg_pluginRequestResize(wax_obj	pluginCapsule)
 {
 	getCapsule(pluginCapsule)->_pluginRequestResize();
 }
 
-int wg_isPluginVisible(wg_obj pluginCapsule)
+int wg_isPluginVisible(wax_obj pluginCapsule)
 {
 	return getCapsule(pluginCapsule)->_isPluginVisible();
 }
 
-wg_rectSPX wg_pluginWindowSection(wg_obj pluginCapsule)
+wax_rectSPX wg_pluginWindowSection(wax_obj pluginCapsule)
 {
 	auto rect = getCapsule(pluginCapsule)->_pluginWindowSection();
 
 	return { rect.x, rect.y, rect.w, rect.h };
 }
 
-int wg_pluginRequestFocus(wg_obj pluginCapsule, int bRaiseWindow)
+int wg_pluginRequestFocus(wax_obj pluginCapsule, int bRaiseWindow)
 {
 	return getCapsule(pluginCapsule)->_pluginRequestFocus(bool(bRaiseWindow));
 }
 
-int wg_pluginReleaseFocus(wg_obj pluginCapsule)
+int wg_pluginReleaseFocus(wax_obj pluginCapsule)
 {
 	return getCapsule(pluginCapsule)->_pluginReleaseFocus();
 }
 
-int wg_pluginRequestPreRenderCall(wg_obj pluginCapsule)
+int wg_pluginRequestPreRenderCall(wax_obj pluginCapsule)
 {
 	return 	getCapsule(pluginCapsule)->_requestPreRenderCall();
 }
 
-void wg_pluginRequestInView(wg_obj pluginCapsule, wg_rectSPX mustHaveArea, wg_rectSPX niceToHaveArea)
+void wg_pluginRequestInView(wax_obj pluginCapsule, wax_rectSPX mustHaveArea, wax_rectSPX niceToHaveArea)
 {
 	return getCapsule(pluginCapsule)->_pluginRequestInView( {mustHaveArea.x, mustHaveArea.y, mustHaveArea.w, mustHaveArea.h},
 														{niceToHaveArea.x, niceToHaveArea.y, niceToHaveArea.w, niceToHaveArea.h} );
 }
 
-void wg_connectPlugin(wg_obj pluginCapsule, void * pPluginRoot, wg_pluginroot_calls* pInterface)
+void wg_connectPlugin(wax_obj pluginCapsule, void * pPluginRoot, wg_pluginroot_calls* pInterface)
 {
 	return getCapsule(pluginCapsule)->_connectPlugin(pPluginRoot,pInterface);
 }
 
-void wg_disconnectPlugin(wg_obj pluginCapsule)
+void wg_disconnectPlugin(wax_obj pluginCapsule)
 {
 	return getCapsule(pluginCapsule)->_disconnectPlugin();
 }

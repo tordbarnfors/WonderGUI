@@ -19,17 +19,17 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef WG_DX12WARPMAP_DOT_H
-#define WG_DX12WARPMAP_DOT_H
+#ifndef WAX_DX12WARPMAP_DOT_H
+#define WAX_DX12WARPMAP_DOT_H
 #pragma once
 
 #define NOMINMAX
-#include <wg_warpmap.h>
+#include <wax_warpmap.h>
 
 #include <wrl.h>
 #include <d3d12.h>
 
-namespace wg
+namespace wax
 {
 
 	class DX12Warpmap;
@@ -78,5 +78,5 @@ namespace wg
 		float *	m_pBuffer = nullptr;			// Permanently mapped content of m_buffer.
 	};
 
-} // namespace wg
-#endif // WG_DX12WARPMAP_DOT_H
+} // namespace wax
+#endif // WAX_DX12WARPMAP_DOT_H

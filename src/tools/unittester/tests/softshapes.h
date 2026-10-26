@@ -1,7 +1,7 @@
 
 #include "../testframework.h"
 
-#include <wg_softshapes.h>
+#include <wax_softshapes.h>
 
 class SoftShapesTest : public TestCollection
 {

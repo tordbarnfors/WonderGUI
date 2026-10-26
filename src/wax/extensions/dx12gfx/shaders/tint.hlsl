@@ -1,4 +1,4 @@
-// The tint, shared by all pixel shaders that apply one. wg_dx12shaders.cpp.template
+// The tint, shared by all pixel shaders that apply one. wax_dx12shaders.cpp.template
 // puts this file in front of each of them, after output.hlsl, D3DCompile has no
 // include handler here.
 //

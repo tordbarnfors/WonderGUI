@@ -2,7 +2,7 @@
 #include "compressbench.h"
 
 #include <wondergui.h>
-#include <wg_freetypefont.h>
+#include <wax_freetypefont.h>
 
 #include <string>
 #include <filesystem>
@@ -225,7 +225,7 @@ void MyApp::onRun()
 
 		// Check decompressed result.
 
-		auto pResultDisplay = wg_dynamic_cast<TextDisplay_p>(m_pResultTable->slots[i+1][6].widget());
+		auto pResultDisplay = wax_dynamic_cast<TextDisplay_p>(m_pResultTable->slots[i+1][6].widget());
 
 		bool bEquivalent = true;
 
@@ -298,35 +298,35 @@ void MyApp::updateListRow( int row, int srcSize, int compressedSize, int compres
 
 	// Update ratio display
 
-	auto pRatioDisplay = wg_dynamic_cast<TextDisplay_p>(m_pResultTable->slots[row][1].widget());
+	auto pRatioDisplay = wax_dynamic_cast<TextDisplay_p>(m_pResultTable->slots[row][1].widget());
 
 	snprintf( temp, 16, "%d", compressedSize*100/srcSize );
 	pRatioDisplay->display.setText( temp );
 
 	// Update uncompressed size
 
-	auto pCompDisplay = wg_dynamic_cast<TextDisplay_p>(m_pResultTable->slots[row][2].widget());
+	auto pCompDisplay = wax_dynamic_cast<TextDisplay_p>(m_pResultTable->slots[row][2].widget());
 
 	snprintf( temp, 16, "%d", compressedSize );
 	pCompDisplay->display.setText( temp );
 
 	// Update uncompressed size
 
-	auto pUncompDisplay = wg_dynamic_cast<TextDisplay_p>(m_pResultTable->slots[row][3].widget());
+	auto pUncompDisplay = wax_dynamic_cast<TextDisplay_p>(m_pResultTable->slots[row][3].widget());
 
 	snprintf( temp, 16, "%d", srcSize );
 	pUncompDisplay->display.setText( temp );
 
 	// Update Compress speed
 
-	auto pCompTimeDisplay = wg_dynamic_cast<TextDisplay_p>(m_pResultTable->slots[row][4].widget());
+	auto pCompTimeDisplay = wax_dynamic_cast<TextDisplay_p>(m_pResultTable->slots[row][4].widget());
 
 	snprintf( temp, 16, "%d", compressMicroSec );
 	pCompTimeDisplay->display.setText( temp );
 
 	// Update Decompress speed
 
-	auto pDecompTimeDisplay = wg_dynamic_cast<TextDisplay_p>(m_pResultTable->slots[row][5].widget());
+	auto pDecompTimeDisplay = wax_dynamic_cast<TextDisplay_p>(m_pResultTable->slots[row][5].widget());
 
 	snprintf( temp, 16, "%d", decompressMicroSec );
 	pDecompTimeDisplay->display.setText( temp );

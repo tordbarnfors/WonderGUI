@@ -19,57 +19,57 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef WG_C_PATCHES_DOT_H
-#define WG_C_PATCHES_DOT_H
+#ifndef WAX_C_PATCHES_DOT_H
+#define WAX_C_PATCHES_DOT_H
 #pragma once
 
-#include <wg_c_geartypes.h>
-#include <wg_c_geo.h>
+#include <wax_c_types.h>
+#include <wax_c_geo.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-typedef void* wg_patches;
+typedef void* wax_patches;
 
-WG_EXPORT wg_patches	wg_createPatches();
-WG_EXPORT void			wg_deletePatches(wg_patches obj);
+WAX_EXPORT wax_patches	wax_createPatches();
+WAX_EXPORT void			wax_deletePatches(wax_patches obj);
 
-WG_EXPORT int			wg_setPatchesCapacity( wg_patches obj, int capacity );
+WAX_EXPORT int			wax_setPatchesCapacity( wax_patches obj, int capacity );
 
-WG_EXPORT void			wg_clearPatches(wg_patches obj);
+WAX_EXPORT void			wax_clearPatches(wax_patches obj);
 
-WG_EXPORT void			wg_addPatch( wg_patches obj, wg_rectSPX rect );
-WG_EXPORT void			wg_addPatches( wg_patches dest, wg_patches from );
-WG_EXPORT void			wg_addPatchesSubset( wg_patches dest, wg_patches from, int ofs, int len );
+WAX_EXPORT void			wax_addPatch( wax_patches obj, wax_rectSPX rect );
+WAX_EXPORT void			wax_addPatches( wax_patches dest, wax_patches from );
+WAX_EXPORT void			wax_addPatchesSubset( wax_patches dest, wax_patches from, int ofs, int len );
 
-WG_EXPORT void			wg_subPatch(wg_patches obj, wg_rectSPX rect);
-WG_EXPORT void			wg_subPatches(wg_patches dest, wg_patches from);
-WG_EXPORT void			wg_subPatchesSubset( wg_patches dest, wg_patches from, int ofs, int len );
+WAX_EXPORT void			wax_subPatch(wax_patches obj, wax_rectSPX rect);
+WAX_EXPORT void			wax_subPatches(wax_patches dest, wax_patches from);
+WAX_EXPORT void			wax_subPatchesSubset( wax_patches dest, wax_patches from, int ofs, int len );
 
-WG_EXPORT void			wg_pushPatch(wg_patches obj, wg_rectSPX rect);
-WG_EXPORT void			wg_pushPatches(wg_patches dest, wg_patches from);
-WG_EXPORT void			wg_pushPatchesSubset( wg_patches dest, wg_patches from, int ofs, int len );
+WAX_EXPORT void			wax_pushPatch(wax_patches obj, wax_rectSPX rect);
+WAX_EXPORT void			wax_pushPatches(wax_patches dest, wax_patches from);
+WAX_EXPORT void			wax_pushPatchesSubset( wax_patches dest, wax_patches from, int ofs, int len );
 
-WG_EXPORT void			wg_popPatch( wg_patches obj );
-WG_EXPORT void			wg_trimPushPatches( wg_patches dest, wg_patches from, wg_rectSPX trim );
+WAX_EXPORT void			wax_popPatch( wax_patches obj );
+WAX_EXPORT void			wax_trimPushPatches( wax_patches dest, wax_patches from, wax_rectSPX trim );
 
-WG_EXPORT int			wg_removePatches( wg_patches dest, int ofs, int len );
+WAX_EXPORT int			wax_removePatches( wax_patches dest, int ofs, int len );
 
 //.____ Misc __________________________________________________________
 
-WG_EXPORT void			wg_clipPatches(	wg_patches obj, wg_rectSPX clip );
-WG_EXPORT wg_rectSPX	wg_patchesBounds( wg_patches obj );
+WAX_EXPORT void			wax_clipPatches(	wax_patches obj, wax_rectSPX clip );
+WAX_EXPORT wax_rectSPX	wax_patchesBounds( wax_patches obj );
 
 
 //.____ Content ________________________________________________________
 
-WG_EXPORT const wg_rectSPX * wg_patchesBegin( wg_patches obj );
-WG_EXPORT const wg_rectSPX * wg_patchesEnd( wg_patches obj );
+WAX_EXPORT const wax_rectSPX * wax_patchesBegin( wax_patches obj );
+WAX_EXPORT const wax_rectSPX * wax_patchesEnd( wax_patches obj );
 
-WG_EXPORT int			wg_patchesSize( wg_patches obj );
-WG_EXPORT int			wg_patchesCapacity( wg_patches obj );
-WG_EXPORT int			wg_patchesIsEmpty( wg_patches obj );
+WAX_EXPORT int			wax_patchesSize( wax_patches obj );
+WAX_EXPORT int			wax_patchesCapacity( wax_patches obj );
+WAX_EXPORT int			wax_patchesIsEmpty( wax_patches obj );
 
 
 #ifdef __cplusplus

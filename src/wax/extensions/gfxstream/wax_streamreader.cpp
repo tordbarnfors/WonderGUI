@@ -22,10 +22,10 @@
 #include <cstring>
 #include <algorithm>
 
-#include <wg_streamreader.h>
+#include <wax_streamreader.h>
 #include <assert.h>
 
-namespace wg
+namespace wax
 {
 
 	const TypeInfo StreamReader::TYPEINFO = { "StreamReader", &Object::TYPEINFO };
@@ -268,4 +268,4 @@ namespace wg
 	}
 
 
-} // namespace wg
+} // namespace wax

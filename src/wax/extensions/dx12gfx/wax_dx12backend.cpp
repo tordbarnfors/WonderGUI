@@ -22,13 +22,13 @@
 
 #define NOMINMAX
 
-#include <wg_dx12backend.h>
-#include <wg_dx12surface.h>
-#include <wg_dx12surfacefactory.h>
-#include <wg_dx12edgemap.h>
-#include <wg_dx12edgemapfactory.h>
-#include <wg_dx12warpmap.h>
-#include <wg_dx12warpmapfactory.h>
+#include <wax_dx12backend.h>
+#include <wax_dx12surface.h>
+#include <wax_dx12surfacefactory.h>
+#include <wax_dx12edgemap.h>
+#include <wax_dx12edgemapfactory.h>
+#include <wax_dx12warpmap.h>
+#include <wax_dx12warpmapfactory.h>
 #include <d3dcompiler.h>
 
 #include <cstdio>
@@ -41,12 +41,12 @@
 #include <utility>
 #include <algorithm>
 
-#include <wg_gfxbase.h>
-#include <wg_gfxutil.h>
+#include <wax_core.h>
+#include <wax_gfxutil.h>
 
 
 
-namespace wg
+namespace wax
 {
 
 	//____ setObjectName() _________________________________________________________
@@ -61,7 +61,7 @@ namespace wg
 			return;
 
 		wchar_t name[128];
-		swprintf( name, 128, L"WonderGUI DX12Backend %p: %ls", pBackend, pWhat );
+		swprintf( name, 128, L"Wax DX12Backend %p: %ls", pBackend, pWhat );
 		pObject->SetName( name );
 	}
 
@@ -102,7 +102,7 @@ namespace wg
 
 			char buffer[256];
 			sprintf_s(buffer, "%s failed, HRESULT = 0x%08lX", what, (unsigned long)hr);
-			GfxBase::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, buffer, pObject, pClassType, func, file, line);
+			Core::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, buffer, pObject, pClassType, func, file, line);
 			assert(false);
 			return false;
 		}
@@ -132,7 +132,7 @@ namespace wg
 	{
 		if (!s_pDevice || !s_pCommandQueue)
 		{
-			GfxBase::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite,
+			Core::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite,
 				"No D3D12 device set. Call DX12Backend::setDevice() before creating a backend.",
 				nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return nullptr;
@@ -151,7 +151,7 @@ namespace wg
 		}
 		else if (s_pDevice.Get() != pDX12Device || s_pCommandQueue.Get() != pDX12CommandQueue)
 		{
-			GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam,
+			Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam,
 				"All backends must share the device and command queue set by DX12Backend::setDevice().",
 				nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return nullptr;
@@ -166,7 +166,7 @@ namespace wg
 	{
 		if (!s_backends.empty())
 		{
-			GfxBase::throwError(ErrorLevel::Error, ErrorCode::IllegalCall,
+			Core::throwError(ErrorLevel::Error, ErrorCode::IllegalCall,
 				"Can't change D3D12 device while DX12Backends exist.",
 				nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return false;
@@ -174,7 +174,7 @@ namespace wg
 
 		if ((pDX12Device == nullptr) != (pDX12CommandQueue == nullptr))
 		{
-			GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam,
+			Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam,
 				"Device and command queue must both be set or both be null.",
 				nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return false;
@@ -323,7 +323,7 @@ namespace wg
 		sprintf_s(buffer, "D3D12 device lost: 0x%08lX, %s. DX12 rendering stops until a new device is set.",
 				  (unsigned long)reason, pMeaning);
 
-		GfxBase::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, buffer, nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
+		Core::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, buffer, nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
 	}
 
 	//____ _dumpDRED() ___________________________________________________________
@@ -348,7 +348,7 @@ namespace wg
 
 		if (FAILED(s_pDevice->QueryInterface(IID_PPV_ARGS(pDred.GetAddressOf()))))
 		{
-			OutputDebugStringA("WonderGUI DX12Backend: No DRED data. Enable it with ID3D12DeviceRemovedExtendedDataSettings before the device is created.\n");
+			OutputDebugStringA("Wax DX12Backend: No DRED data. Enable it with ID3D12DeviceRemovedExtendedDataSettings before the device is created.\n");
 			return;
 		}
 
@@ -375,13 +375,13 @@ namespace wg
 		HRESULT hrBreadcrumbs = pDred->GetAutoBreadcrumbsOutput(&breadcrumbs);
 		if (FAILED(hrBreadcrumbs))
 		{
-			sprintf_s(line, "WonderGUI DX12Backend: No DRED breadcrumbs (0x%08lX). Auto-breadcrumbs were not enabled when the device was created, "
+			sprintf_s(line, "Wax DX12Backend: No DRED breadcrumbs (0x%08lX). Auto-breadcrumbs were not enabled when the device was created, "
 							"which has to happen before the first D3D12CreateDevice() in the process.\n", (unsigned long)hrBreadcrumbs);
 			OutputDebugStringA(line);
 		}
 		else
 		{
-			OutputDebugStringA("WonderGUI DX12Backend: DRED breadcrumbs, command lists the GPU had not finished:\n");
+			OutputDebugStringA("Wax DX12Backend: DRED breadcrumbs, command lists the GPU had not finished:\n");
 
 			int nUnfinished = 0;
 
@@ -432,16 +432,16 @@ namespace wg
 		HRESULT hrPageFault = pDred->GetPageFaultAllocationOutput(&pageFault);
 		if (FAILED(hrPageFault))
 		{
-			sprintf_s(line, "WonderGUI DX12Backend: No DRED page fault data (0x%08lX), page fault reporting was not enabled.\n", (unsigned long)hrPageFault);
+			sprintf_s(line, "Wax DX12Backend: No DRED page fault data (0x%08lX), page fault reporting was not enabled.\n", (unsigned long)hrPageFault);
 			OutputDebugStringA(line);
 		}
 		else
 		{
 			if (pageFault.PageFaultVA == 0)
-				OutputDebugStringA("WonderGUI DX12Backend: DRED reports no page fault.\n");
+				OutputDebugStringA("Wax DX12Backend: DRED reports no page fault.\n");
 			else
 			{
-				sprintf_s(line, "WonderGUI DX12Backend: DRED page fault at GPU address 0x%llX.\n", (unsigned long long) pageFault.PageFaultVA);
+				sprintf_s(line, "Wax DX12Backend: DRED page fault at GPU address 0x%llX.\n", (unsigned long long) pageFault.PageFaultVA);
 				OutputDebugStringA(line);
 
 				struct { const D3D12_DRED_ALLOCATION_NODE* pHead; const char* pWhat; } lists[] = {
@@ -465,7 +465,7 @@ namespace wg
 			}
 		}
 #else
-		OutputDebugStringA("WonderGUI DX12Backend: Built with a Windows SDK too old for DRED (10.0.18362 or later needed).\n");
+		OutputDebugStringA("Wax DX12Backend: Built with a Windows SDK too old for DRED (10.0.18362 or later needed).\n");
 #endif
 	}
 
@@ -532,7 +532,7 @@ namespace wg
 		m_bCommandListOpen = false;
 
 		if (!_createPipelineResources() && !s_bDeviceLost)
-			GfxBase::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to create pipeline resources, nothing will render.",
+			Core::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to create pipeline resources, nothing will render.",
 				this, &TYPEINFO, __func__, __FILE__, __LINE__);
 
 	}
@@ -887,7 +887,7 @@ namespace wg
 			if (_isDX12Surface(pCanvas))
 				pCanvasSurface = static_cast<DX12Surface*>(pCanvas);
 			else
-				GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Canvas is not a DX12Surface, rendering to default canvas instead.",
+				Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Canvas is not a DX12Surface, rendering to default canvas instead.",
 					this, &TYPEINFO, __func__, __FILE__, __LINE__);
 		}
 
@@ -1014,7 +1014,7 @@ namespace wg
 	{
 		if (pSurface && !_isDX12Surface(pSurface))
 		{
-			GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Canvas is not a DX12Surface.",
+			Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Canvas is not a DX12Surface.",
 				this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return;
 		}
@@ -1037,7 +1037,7 @@ namespace wg
 			}
 		}
 		else
-			GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Only CanvasRef::Default is supported.",
+			Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Only CanvasRef::Default is supported.",
 				this, &TYPEINFO, __func__, __FILE__, __LINE__);
 	}
 
@@ -1249,7 +1249,7 @@ namespace wg
 	{
 		if (pCanvas && (!pCanvas->texture() || !pCanvas->canBeCanvas() || pCanvas->renderTargetView().ptr == 0))
 		{
-			GfxBase::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "Surface can not be used as canvas.",
+			Core::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "Surface can not be used as canvas.",
 				this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			pCanvas = nullptr;
 		}
@@ -1555,7 +1555,7 @@ namespace wg
 					{
 						char buffer[128];
 						sprintf_s(buffer, "Command %d is unknown, rest of session dropped.", (int)cmd);
-						GfxBase::throwError(ErrorLevel::Error, ErrorCode::Other, buffer, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+						Core::throwError(ErrorLevel::Error, ErrorCode::Other, buffer, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 						bReported = true;
 					}
 
@@ -1622,7 +1622,7 @@ namespace wg
 				static bool bReported = false;
 				if (!bReported && _blameSessionInfo())
 				{
-					GfxBase::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, "Vertex buffer full, fills dropped. SessionInfo underestimated what the session needs.",
+					Core::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, "Vertex buffer full, fills dropped. SessionInfo underestimated what the session needs.",
 						this, &TYPEINFO, __func__, __FILE__, __LINE__);
 					bReported = true;
 				}
@@ -1749,7 +1749,7 @@ namespace wg
 				static bool bReported = false;
 				if (!bReported && _blameSessionInfo())
 				{
-					GfxBase::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, "Vertex buffer full, lines dropped. SessionInfo underestimated what the session needs.",
+					Core::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, "Vertex buffer full, lines dropped. SessionInfo underestimated what the session needs.",
 						this, &TYPEINFO, __func__, __FILE__, __LINE__);
 					bReported = true;
 				}
@@ -1757,8 +1757,8 @@ namespace wg
 				continue;
 			}
 
-			CoordI begin = Util::roundToPixels(beginSpx);
-			CoordI end = Util::roundToPixels(endSpx);
+			CoordI begin = GfxUtil::roundToPixels(beginSpx);
+			CoordI end = GfxUtil::roundToPixels(endSpx);
 
 			float	width;
 			float	slope;
@@ -1936,7 +1936,7 @@ namespace wg
 				static bool bReported = false;
 				if (!bReported && _blameSessionInfo())
 				{
-					GfxBase::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, "Buffer full, lines dropped. SessionInfo underestimated what the session needs.",
+					Core::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, "Buffer full, lines dropped. SessionInfo underestimated what the session needs.",
 						this, &TYPEINFO, __func__, __FILE__, __LINE__);
 					bReported = true;
 				}
@@ -1994,7 +1994,7 @@ namespace wg
 			static bool bReported = false;
 			if (!bReported && _blameSessionInfo())
 			{
-				GfxBase::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, "Color buffer full, draws dropped. SessionInfo underestimated what the session needs.",
+				Core::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, "Color buffer full, draws dropped. SessionInfo underestimated what the session needs.",
 					this, &TYPEINFO, __func__, __FILE__, __LINE__);
 				bReported = true;
 			}
@@ -2031,7 +2031,7 @@ namespace wg
 			static bool bReported = false;
 			if (!bReported && _blameSessionInfo())
 			{
-				GfxBase::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, "Color buffer full, tint ignored. SessionInfo underestimated what the session needs.",
+				Core::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, "Color buffer full, tint ignored. SessionInfo underestimated what the session needs.",
 					this, &TYPEINFO, __func__, __FILE__, __LINE__);
 				bReported = true;
 			}
@@ -2109,7 +2109,7 @@ namespace wg
 			static bool bReported = false;
 			if (!bReported && _blameSessionInfo() && m_pExtrasPtr)
 			{
-				GfxBase::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, "Extras buffer full, draws dropped. SessionInfo underestimated what the session needs.",
+				Core::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, "Extras buffer full, draws dropped. SessionInfo underestimated what the session needs.",
 					this, &TYPEINFO, __func__, __FILE__, __LINE__);
 				bReported = true;
 			}
@@ -2133,7 +2133,7 @@ namespace wg
 			static bool bReported = false;
 			if (!bReported && _blameSessionInfo() && m_pExtrasPtr)
 			{
-				GfxBase::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, "Extras buffer full, blurs dropped. SessionInfo underestimated what the session needs.",
+				Core::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, "Extras buffer full, blurs dropped. SessionInfo underestimated what the session needs.",
 					this, &TYPEINFO, __func__, __FILE__, __LINE__);
 				bReported = true;
 			}
@@ -2193,7 +2193,7 @@ namespace wg
 			static bool bReported = false;
 			if (!bReported && _blameSessionInfo())
 			{
-				GfxBase::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, "Extras buffer full, blits dropped. SessionInfo underestimated what the session needs.",
+				Core::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, "Extras buffer full, blits dropped. SessionInfo underestimated what the session needs.",
 					this, &TYPEINFO, __func__, __FILE__, __LINE__);
 				bReported = true;
 			}
@@ -2226,7 +2226,7 @@ namespace wg
 
 		if (pSurface == m_pActiveCanvas)
 		{
-			GfxBase::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite,
+			Core::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite,
 				"Can't blit from the surface we are rendering into.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			m_pBlitSource = nullptr;
 			return;
@@ -2305,7 +2305,7 @@ namespace wg
 				static bool bReported = false;
 				if (!bReported && !s_bDeviceLost)
 				{
-					GfxBase::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, "Out of blit source descriptors and couldn't make room for more, blits dropped.",
+					Core::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, "Out of blit source descriptors and couldn't make room for more, blits dropped.",
 						this, &TYPEINFO, __func__, __FILE__, __LINE__);
 					bReported = true;
 				}
@@ -2753,7 +2753,7 @@ namespace wg
 				static bool bReported = false;
 				if (!bReported && _blameSessionInfo())
 				{
-					GfxBase::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, "Vertex buffer full, blits dropped. SessionInfo underestimated what the session needs.",
+					Core::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, "Vertex buffer full, blits dropped. SessionInfo underestimated what the session needs.",
 						this, &TYPEINFO, __func__, __FILE__, __LINE__);
 					bReported = true;
 				}
@@ -2858,7 +2858,7 @@ namespace wg
 
 				char buffer[256];
 				sprintf_s(buffer, "Can't draw edgemap, %s.", pReason);
-				GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, buffer, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, buffer, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 				bReported = true;
 			}
 
@@ -2885,7 +2885,7 @@ namespace wg
 			pEdgemap->m_size.w * 64 * int(std::abs(mtx.xy)) + pEdgemap->m_size.h * 64 * int(std::abs(mtx.yy))
 		};
 
-		RectI dest = Util::roundToPixels(destIn);
+		RectI dest = GfxUtil::roundToPixels(destIn);
 
 		int uIncX = int(mtx.xx);
 		int vIncX = int(mtx.xy);
@@ -2955,7 +2955,7 @@ namespace wg
 			static bool bReported = false;
 			if (!bReported && _blameSessionInfo())
 			{
-				GfxBase::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, "Vertex buffer full, edgemaps dropped. SessionInfo underestimated what the session needs.",
+				Core::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, "Vertex buffer full, edgemaps dropped. SessionInfo underestimated what the session needs.",
 					this, &TYPEINFO, __func__, __FILE__, __LINE__);
 				bReported = true;
 			}
@@ -2970,7 +2970,7 @@ namespace wg
 		{
 			const RectSPX& patchSpx = *pRects++;
 
-			RectI patch = Util::roundToPixels(patchSpx);		// Rounded like the position of the edgemap.
+			RectI patch = GfxUtil::roundToPixels(patchSpx);		// Rounded like the position of the edgemap.
 
 			int dx1 = patch.x;
 			int dy1 = patch.y;
@@ -3051,7 +3051,7 @@ namespace wg
 
 		if (maxEntries == 0)
 		{
-			GfxBase::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, "Failed DrawShape operation. Unsupported kind of shape.",
+			Core::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, "Failed DrawShape operation. Unsupported kind of shape.",
 				this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return;
 		}
@@ -3068,7 +3068,7 @@ namespace wg
 			{
 				char buffer[256];
 				sprintf_s(buffer, "%s buffer full, shapes dropped. SessionInfo underestimated what the session needs.", pBuffer);
-				GfxBase::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, buffer, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				Core::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, buffer, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 				bReported = true;
 			}
 		};
@@ -3197,7 +3197,7 @@ namespace wg
 
 				char buffer[256];
 				sprintf_s(buffer, "Can't draw warp, %s.", pReason);
-				GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, buffer, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, buffer, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 				bReported = true;
 			}
 
@@ -3237,7 +3237,7 @@ namespace wg
 			{
 				char buffer[256];
 				sprintf_s(buffer, "%s buffer full, warps dropped. SessionInfo underestimated what the session needs.", pBuffer);
-				GfxBase::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, buffer, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				Core::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, buffer, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 				bReported = true;
 			}
 		};
@@ -3257,7 +3257,7 @@ namespace wg
 
 		// Extras, see warp.hlsl.
 
-		CoordI dest = Util::roundToPixels(params.dest);
+		CoordI dest = GfxUtil::roundToPixels(params.dest);
 		SizeI warpSize = pWarpmap->pixelSize();
 
 		float srcW = pEdgemap ? float(pEdgemap->m_size.w) : params.source.w / 64.f;
@@ -3288,7 +3288,7 @@ namespace wg
 
 		for (int i = 0; i < params.nRects; i++)
 		{
-			RectI patch = RectI::overlap(Util::roundToPixels(pRects[i]), RectI(dest, warpSize));
+			RectI patch = RectI::overlap(GfxUtil::roundToPixels(pRects[i]), RectI(dest, warpSize));
 
 			if (patch.w <= 0 || patch.h <= 0)
 				continue;
@@ -3416,7 +3416,7 @@ namespace wg
 		m_defaultCanvas.size = size;
 		m_defaultCanvas.scale = scale;
 
-		// WonderGUI has no name for R8G8B8A8, the usual swap chain format, so it is
+		// Wax has no name for R8G8B8A8, the usual swap chain format, so it is
 		// reported as ARGB_8. Channel order is the one thing about the default canvas
 		// nobody can ask us, and the color space, which they can, is then right.
 
@@ -3460,7 +3460,7 @@ namespace wg
 			return &m_defaultCanvas;
 		else
 		{
-			GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Only Default canvas is supported.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Only Default canvas is supported.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return &m_dummyCanvas;
 		}
 	}
@@ -3623,13 +3623,13 @@ namespace wg
 		auto& frame = m_frameResources[m_currentFrameIndex];
 
 		bool bOK = _reserveBuffer(frame.vertexBuffer, frame.pVertexBufferData, frame.vertexCapacity,
-								  m_pVertexBeg, m_pVertexPtr, m_pVertexEnd, nVertices, L"WonderGUI Vertex Buffer");
+								  m_pVertexBeg, m_pVertexPtr, m_pVertexEnd, nVertices, L"Wax Vertex Buffer");
 
 		bOK = _reserveBuffer(frame.colorBuffer, frame.pColorBufferData, frame.colorCapacity,
-							 m_pColorBeg, m_pColorPtr, m_pColorEnd, nColors, L"WonderGUI Color Buffer") && bOK;
+							 m_pColorBeg, m_pColorPtr, m_pColorEnd, nColors, L"Wax Color Buffer") && bOK;
 
 		bOK = _reserveBuffer(frame.extrasBuffer, frame.pExtrasBufferData, frame.extrasCapacity,
-							 m_pExtrasBeg, m_pExtrasPtr, m_pExtrasEnd, nExtras, L"WonderGUI Extras Buffer") && bOK;
+							 m_pExtrasBeg, m_pExtrasPtr, m_pExtrasEnd, nExtras, L"Wax Extras Buffer") && bOK;
 
 		// One descriptor per entry in the object tables of the session is enough
 		// for every blit source, see m_objectSRVs. Mipmaps that need drawing take
@@ -3655,7 +3655,7 @@ namespace wg
 				char buffer[256];
 				sprintf_s(buffer, "Couldn't make room for %d vertices, %d colors and %d extras, draws that don't fit are dropped.",
 						  nVertices, nColors, nExtras);
-				GfxBase::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, buffer, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				Core::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, buffer, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 				bReported = true;
 			}
 		}
@@ -3703,7 +3703,7 @@ namespace wg
 				char buffer[256];
 				sprintf_s(buffer, "SessionInfo underestimated what the session needs: room was made for %d %s, the session wrote %d.",
 						  usage[i].reserved, usage[i].pWhat, usage[i].used);
-				GfxBase::throwError(ErrorLevel::Warning, ErrorCode::Internal, buffer, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				Core::throwError(ErrorLevel::Warning, ErrorCode::Internal, buffer, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 				bReported[i] = true;
 			}
 		}
@@ -3783,7 +3783,7 @@ namespace wg
 		for (int i = 0; i < 17; i++)
 		{
 			double b = i / 16.0;
-			m_lineThicknessTable[i] = (float) Util::squareRoot(1.0 + b * b);
+			m_lineThicknessTable[i] = (float) GfxUtil::squareRoot(1.0 + b * b);
 		}
 
 		struct { PipelineKind kind; const char * pVS; } shaders[] =
@@ -3944,7 +3944,7 @@ namespace wg
 			const char* pErrorMsg = pErrorBlob ? (const char*)pErrorBlob->GetBufferPointer() : "Unknown error";
 			char buffer[512];
 			sprintf_s(buffer, "D3D12SerializeVersionedRootSignature failed, HRESULT = 0x%08lX: %s", (unsigned long)hr, pErrorMsg);
-			GfxBase::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, buffer, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			Core::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, buffer, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			assert(false);
 			return false;
 		}
@@ -4158,7 +4158,7 @@ namespace wg
 			{
 				char buffer[128];
 				sprintf_s(buffer, "BlendMode %d is unknown, using Blend.", (int) blendMode);
-				GfxBase::throwError(ErrorLevel::Warning, ErrorCode::Other, buffer, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				Core::throwError(ErrorLevel::Warning, ErrorCode::Other, buffer, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 
 				srcBlend = D3D12_BLEND_ONE;
 				destBlend = D3D12_BLEND_INV_SRC_ALPHA;
@@ -4308,7 +4308,7 @@ namespace wg
 			const char* pError = errorMsg ? (const char*)errorMsg->GetBufferPointer() : "Unknown error";
 			char buffer[1024];
 			sprintf_s(buffer, "Vertex shader compile failed, HRESULT = 0x%08lX: %s", (unsigned long)hr, pError);
-			GfxBase::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, buffer, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			Core::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, buffer, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			assert(false);
 			return false;
 		}
@@ -4324,10 +4324,10 @@ namespace wg
 
 		Microsoft::WRL::ComPtr<ID3DBlob> errorMsg;
 
-		// WG_DUAL_SOURCE has the shader output the second color of dual-source blending,
+		// WAX_DUAL_SOURCE has the shader output the second color of dual-source blending,
 		// see output.hlsl.
 
-		const D3D_SHADER_MACRO dualSourceDefines[] = { { "WG_DUAL_SOURCE", "1" }, { nullptr, nullptr } };
+		const D3D_SHADER_MACRO dualSourceDefines[] = { { "WAX_DUAL_SOURCE", "1" }, { nullptr, nullptr } };
 
 		HRESULT hr = D3DCompile(pSrc, strlen((const char*)pSrc), nullptr, bDualSource ? dualSourceDefines : nullptr, nullptr, "main", "ps_5_0", compileFlags, 0, shaderBlob.GetAddressOf(), errorMsg.GetAddressOf());
 		if (FAILED(hr))
@@ -4336,7 +4336,7 @@ namespace wg
 
 			char buffer[1024];
 			sprintf_s(buffer, "Pixel shader compile failed, HRESULT = 0x%08lX: %s", (unsigned long)hr, pError);
-			GfxBase::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, buffer, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			Core::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, buffer, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			assert(false);
 			return false;
 		}

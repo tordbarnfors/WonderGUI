@@ -26,6 +26,7 @@
 #include <wg_hostbridge.h>
 
 #include <vector>
+#include <wg_types.h>
 
 
 namespace wg

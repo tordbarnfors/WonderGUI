@@ -19,17 +19,17 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#include <wg_c_surfacereader.h>
-#include <wg_surfacereader.h>
+#include <wax_c_surfacereader.h>
+#include <wax_surfacereader.h>
 
-using namespace wg;
+using namespace wax;
 
-inline SurfaceReader* getPtr(wg_obj obj) {
+inline SurfaceReader* getPtr(wax_obj obj) {
 	return static_cast<SurfaceReader*>(reinterpret_cast<Object*>(obj));
 }
 
 
-wg_obj wg_createSurfaceReader(const wg_surfaceReaderBP* blueprint)
+wax_obj wax_createSurfaceReader(const wax_surfaceReaderBP* blueprint)
 {
 	SurfaceReader::Blueprint bp;
 	bp.factory = blueprint->factory == nullptr ? nullptr : static_cast<SurfaceFactory*>(reinterpret_cast<Object*>(blueprint->factory));
@@ -39,14 +39,14 @@ wg_obj wg_createSurfaceReader(const wg_surfaceReaderBP* blueprint)
 	return static_cast<Object*>(pReader);
 }
 
-wg_obj wg_readSurfaceFromBlob( wg_obj surfaceReader, wg_obj blob )
+wax_obj wax_readSurfaceFromBlob( wax_obj surfaceReader, wax_obj blob )
 {
 	auto pSurface = getPtr(surfaceReader)->readSurfaceFromBlob(static_cast<Blob*>(reinterpret_cast<Object*>(blob)));
 	pSurface->retain();
 	return static_cast<Object*>(pSurface);
 }
 
-wg_obj wg_readSurfaceFromMemory( wg_obj surfaceReader, const char * pData )
+wax_obj wax_readSurfaceFromMemory( wax_obj surfaceReader, const char * pData )
 {
 	auto pSurface = getPtr(surfaceReader)->readSurfaceFromMemory(pData);
 	pSurface->retain();

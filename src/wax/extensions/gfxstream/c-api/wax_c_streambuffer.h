@@ -19,27 +19,27 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef WG_C_STREAMBUFFER_DOT_H
-#define WG_C_STREAMBUFFER_DOT_H
+#ifndef WAX_C_STREAMBUFFER_DOT_H
+#define WAX_C_STREAMBUFFER_DOT_H
 #pragma once
 
-#include <wg_c_gfxtypes.h>
+#include <wax_c_types.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-	WG_EXPORT wg_obj		wg_createStreamBuffer(int initialCapacity);
+	WAX_EXPORT wax_obj		wax_createStreamBuffer(int initialCapacity);
 
-	WG_EXPORT wg_component	wg_getStreamBufferOutput(wg_obj streamBuffer);
-	WG_EXPORT wg_component	wg_getStreamBufferInput(wg_obj streamBuffer);
+	WAX_EXPORT wax_component	wax_getStreamBufferOutput(wax_obj streamBuffer);
+	WAX_EXPORT wax_component	wax_getStreamBufferInput(wax_obj streamBuffer);
 
-	WG_EXPORT int			wg_streamBufferCapacity(wg_obj streamBuffer);
-	WG_EXPORT int			wg_streamBufferHasChunk(wg_obj streamBuffer);
-	WG_EXPORT int			wg_streamBufferSize(wg_obj streamBuffer);
+	WAX_EXPORT int			wax_streamBufferCapacity(wax_obj streamBuffer);
+	WAX_EXPORT int			wax_streamBufferHasChunk(wax_obj streamBuffer);
+	WAX_EXPORT int			wax_streamBufferSize(wax_obj streamBuffer);
 
-	WG_EXPORT void			wg_resetStreamBuffer(wg_obj streamBuffer);
-	WG_EXPORT int			wg_setStreamBufferCapacity( wg_obj streamBuffer, int capacity );
+	WAX_EXPORT void			wax_resetStreamBuffer(wax_obj streamBuffer);
+	WAX_EXPORT int			wax_setStreamBufferCapacity( wax_obj streamBuffer, int capacity );
 
 
 

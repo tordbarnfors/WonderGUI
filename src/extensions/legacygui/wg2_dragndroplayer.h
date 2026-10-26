@@ -25,9 +25,9 @@
 
 #include <vector>
 #include <wg2_layer.h>
-#include <wg_dataset.h>
+#include <wax_dataset.h>
 #include <wg2_key.h>
-#include <wg_surfacefactory.h>
+#include <wax_surfacefactory.h>
 
 //____ WgDragNDropHook ___________________________________________________________
 

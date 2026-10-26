@@ -40,7 +40,7 @@
 #	include <wg2_smartptr.h>
 #endif
 
-#include <wg_dataset.h>
+#include <wax_dataset.h>
 
 class WgEventHandler;
 class WgWidget;

@@ -19,16 +19,16 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#include <wg_c_freetypefont.h>
-#include <wg_freetypefont.h>
+#include <wax_c_freetypefont.h>
+#include <wax_freetypefont.h>
 
-using namespace wg;
+using namespace wax;
 
-inline FreeTypeFont* getPtr(wg_obj obj) {
+inline FreeTypeFont* getPtr(wax_obj obj) {
 	return static_cast<FreeTypeFont*>(reinterpret_cast<Object*>(obj));
 }
 
-wg_obj wg_createFreeTypeFont( wg_freeTypeFontBP blueprint )
+wax_obj wax_createFreeTypeFont( wax_freeTypeFontBP blueprint )
 {
 	FreeTypeFont::Blueprint bp;
 
@@ -47,7 +47,7 @@ wg_obj wg_createFreeTypeFont( wg_freeTypeFontBP blueprint )
 }
 
 
-wg_obj wg_getFreeTypeFontBitmapCache( wg_obj font )
+wax_obj wax_getFreeTypeFontBitmapCache( wax_obj font )
 {
 	auto pCache = getPtr(font)->bitmapCache();
 	pCache->retain();

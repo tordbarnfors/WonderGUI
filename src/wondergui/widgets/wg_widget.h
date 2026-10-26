@@ -28,18 +28,23 @@
 #include <wg_receiver.h>
 #include <wg_slotholder.h>
 #include <wg_skinslot.h>
-#include <wg_patches.h>
+#include <wax_patches.h>
 #include <wg_util.h>
 
 #include <wg_base.h>
 
-namespace wg
+namespace wax
 {
 	class GfxDevice;
+}
+
+namespace wg
+{
+	class Base;			// So friend declarations don't refer to wax::Core.
+	class Layer;
 	class Container;
 	class List;
 	class Capsule;
-	class Layer;
 	class MsgRouter;
 	class SlotHolder;
     class Component;

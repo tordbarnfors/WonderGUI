@@ -25,10 +25,10 @@
 
 #include <wg_types.h>
 #include <wg_component.h>
-#include <wg_geo.h>
+#include <wax_geo.h>
 #include <wg_skin.h>
 #include <wg_util.h>
-#include <wg_blurbrush.h>
+#include <wax_blurbrush.h>
 
 namespace wg
 {

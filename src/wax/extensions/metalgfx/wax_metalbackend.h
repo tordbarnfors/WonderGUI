@@ -19,24 +19,24 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef WG_METALBACKEND_DOT_H
-#define WG_METALBACKEND_DOT_H
+#ifndef WAX_METALBACKEND_DOT_H
+#define WAX_METALBACKEND_DOT_H
 #pragma once
 
 #import "simd/simd.h"
 #import "MetalKit/MetalKit.h"
 
-#include <wg_gfxtypes.h>
-#include <wg_gfxbackend.h>
-#include <wg_gpushapes.h>
-#include <wg_tinttools.h>
-#include <wg_metalsurface.h>
+#include <wax_types.h>
+#include <wax_gfxbackend.h>
+#include <wax_gpushapes.h>
+#include <wax_tinttools.h>
+#include <wax_metalsurface.h>
 
 #include <map>
 #include <vector>
 
 
-namespace wg
+namespace wax
 {
 	class Surface;
 
@@ -369,7 +369,7 @@ namespace wg
 
 }
 
-// namespace wg
-#endif //WG_METALBACKEND_DOT_H
+// namespace wax
+#endif //WAX_METALBACKEND_DOT_H
 
 

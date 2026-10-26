@@ -19,15 +19,15 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef WG_PATCHES_DOT_H
-#define WG_PATCHES_DOT_H
+#ifndef WAX_PATCHES_DOT_H
+#define WAX_PATCHES_DOT_H
 #pragma once
 
 #include <limits.h>
 
-#include <wg_geo.h>
+#include <wax_geo.h>
 
-namespace wg
+namespace wax
 {
 	template<class T>
 	class PatchesT
@@ -126,5 +126,5 @@ namespace wg
 	typedef PatchesT<float>	PatchesF;
 
 
-} // namespace wg
-#endif //WG_PATCHES_DOT_H
+} // namespace wax
+#endif //WAX_PATCHES_DOT_H

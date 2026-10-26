@@ -21,7 +21,7 @@
 =========================================================================*/
 #include <wg_canvasdisplay.h>
 #include <wg_canvascapsule.h>
-#include <wg_gfxdevice.h>
+#include <wax_gfxdevice.h>
 
 namespace wg
 {

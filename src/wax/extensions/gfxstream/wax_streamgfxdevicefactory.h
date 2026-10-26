@@ -19,15 +19,15 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef	WG_STREAMGFXDEVICEFACTORY_DOT_H
-#define	WG_STREAMGFXDEVICEFACTORY_DOT_H
+#ifndef	WAX_STREAMGFXDEVICEFACTORY_DOT_H
+#define	WAX_STREAMGFXDEVICEFACTORY_DOT_H
 #pragma once
 
-#include <wg_streambackend.h>
-#include <wg_gfxdevicefactory.h>
-#include <wg_geo.h>
+#include <wax_streambackend.h>
+#include <wax_gfxdevicefactory.h>
+#include <wax_geo.h>
 
-namespace wg
+namespace wax
 {
 
 	class StreamGfxDeviceFactory;
@@ -77,5 +77,5 @@ namespace wg
 }
 
 
-#endif //WG_SOFTGFXDEVICEFACTORY_DOT_H
+#endif //WAX_SOFTGFXDEVICEFACTORY_DOT_H
 

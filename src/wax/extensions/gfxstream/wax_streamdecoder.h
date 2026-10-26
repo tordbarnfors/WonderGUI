@@ -19,20 +19,20 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef	WG_STREAMDECODER_DOT_H
-#define	WG_STREAMDECODER_DOT_H
+#ifndef	WAX_STREAMDECODER_DOT_H
+#define	WAX_STREAMDECODER_DOT_H
 #pragma once
 
-#include <wg_gfxstream.h>
-#include <wg_gfxtypes.h>
-#include <wg_geo.h>
-#include <wg_color.h>
-#include <wg_streamsource.h>
-#include <wg_gfxutil.h>
+#include <wax_gfxstream.h>
+#include <wax_types.h>
+#include <wax_geo.h>
+#include <wax_color.h>
+#include <wax_streamsource.h>
+#include <wax_gfxutil.h>
 
 #include <cstring>
 
-namespace wg
+namespace wax
 {
 	class StreamDecoder;
 	typedef	StrongPtr<StreamDecoder>	StreamDecoder_p;
@@ -525,4 +525,4 @@ namespace wg
 
 
 
-#endif // WG_STREAMDecoder_DOT_H
+#endif // WAX_STREAMDecoder_DOT_H

@@ -19,17 +19,17 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef WG_WARPMAP_DOT_H
-#define WG_WARPMAP_DOT_H
+#ifndef WAX_WARPMAP_DOT_H
+#define WAX_WARPMAP_DOT_H
 #pragma once
 
-#include <wg_object.h>
-#include <wg_gfxtypes.h>
-#include <wg_geo.h>
+#include <wax_object.h>
+#include <wax_types.h>
+#include <wax_geo.h>
 
 #include <algorithm>
 
-namespace wg
+namespace wax
 {
 	class Warpmap;
 	typedef	StrongPtr<Warpmap>	Warpmap_p;
@@ -171,5 +171,5 @@ namespace wg
 		CoordF*			m_pNodes = nullptr;					// m_nodes.w * m_nodes.h, row by row.
 	};
 
-} // namespace wg
-#endif // WG_WARPMAP_DOT_H
+} // namespace wax
+#endif // WAX_WARPMAP_DOT_H

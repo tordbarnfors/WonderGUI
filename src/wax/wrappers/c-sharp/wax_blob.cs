@@ -1,6 +1,6 @@
 using System.Runtime.InteropServices;
 
-namespace WG;
+namespace Wax;
 
 
 public class Blob : Objekt
@@ -16,12 +16,12 @@ public class Blob : Objekt
 
 	public Blob(int size)
 	{
-		_obj = wg_createBlob(size);
+		_obj = wax_createBlob(size);
 	}
 
 	public Blob(in Span<byte> bytes, BlobDestroyedCallback callback)
 	{
-		_obj = wg_createBlobFromData(bytes, bytes.Length, callback);
+		_obj = wax_createBlobFromData(bytes, bytes.Length, callback);
 		_destructor = callback;			// Save it so it doesn't get garbage collected.
 	}
 
@@ -33,14 +33,14 @@ public class Blob : Objekt
 	//____ Size() _____________________________________________________________
 	public int Size()
 	{
-		return wg_blobSize(_obj);
+		return wax_blobSize(_obj);
 	}
 
 	//____ Data() _____________________________________________________________
 	public Span<byte> Data()
 	{
-		IntPtr ptr = wg_blobData(_obj);
-		int ptrLength = wg_blobSize(_obj);
+		IntPtr ptr = wax_blobData(_obj);
+		int ptrLength = wax_blobSize(_obj);
 
 		Span<byte> byteArray;
 		unsafe
@@ -56,14 +56,14 @@ public class Blob : Objekt
 	//____ DLL functions ______________________________________________________
 
 	[DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-	private static extern IntPtr wg_createBlob(int size);
+	private static extern IntPtr wax_createBlob(int size);
 
 	[DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-	static public extern IntPtr	wg_createBlobFromData( Span<byte> pData, int size, BlobDestroyedCallback destructor );
+	static public extern IntPtr	wax_createBlobFromData( Span<byte> pData, int size, BlobDestroyedCallback destructor );
 
 	[DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-	private static extern int wg_blobSize(IntPtr blob);
+	private static extern int wax_blobSize(IntPtr blob);
 
 	[DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-	private static extern IntPtr wg_blobData(IntPtr blob);
+	private static extern IntPtr wax_blobData(IntPtr blob);
 }

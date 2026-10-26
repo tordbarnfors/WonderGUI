@@ -19,14 +19,14 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#include <wg_color.h>
-#include <wg_gfxutil.h>
-#include <wg_gfxbase.h>
+#include <wax_color.h>
+#include <wax_gfxutil.h>
+#include <wax_core.h>
 
 #include <algorithm>
 #include <math.h>
 
-namespace wg
+namespace wax
 {
 
 	const Color8 Color8::Transparent		( 0x00000000 );
@@ -203,10 +203,10 @@ namespace wg
 	Color8 Color8::operator+(const Color8& k) const
 	{
 		Color8 kNewColor;
-		kNewColor.r = Util::limitUint8(((int)r) + k.r);
-		kNewColor.g = Util::limitUint8(((int)g) + k.g);
-		kNewColor.b = Util::limitUint8(((int)b) + k.b);
-		kNewColor.a = Util::limitUint8(((int)a) + k.a);
+		kNewColor.r = GfxUtil::limitUint8(((int)r) + k.r);
+		kNewColor.g = GfxUtil::limitUint8(((int)g) + k.g);
+		kNewColor.b = GfxUtil::limitUint8(((int)b) + k.b);
+		kNewColor.a = GfxUtil::limitUint8(((int)a) + k.a);
 		return kNewColor;
 	}
 
@@ -214,10 +214,10 @@ namespace wg
 	Color8 Color8::operator-(const Color8& k) const
 	{
 		Color8 kNewColor;
-		kNewColor.r = Util::limitUint8(((int)r) - k.r);
-		kNewColor.g = Util::limitUint8(((int)g) - k.g);
-		kNewColor.b = Util::limitUint8(((int)b) - k.b);
-		kNewColor.a = Util::limitUint8(((int)a) - k.a);
+		kNewColor.r = GfxUtil::limitUint8(((int)r) - k.r);
+		kNewColor.g = GfxUtil::limitUint8(((int)g) - k.g);
+		kNewColor.b = GfxUtil::limitUint8(((int)b) - k.b);
+		kNewColor.a = GfxUtil::limitUint8(((int)a) - k.a);
 		return kNewColor;
 	}
 
@@ -263,7 +263,7 @@ namespace wg
 		float fg = r / 255.f;
 		float fb = r / 255.f;
 
-		float k = 1.f - wg::max( fr, fg, fb );
+		float k = 1.f - wax::max( fr, fg, fb );
 		* _c = (1.f-fr-k) / (1.f-k);
 		* _m = (1.f-fg-k) / (1.f-k);
 		* _y = (1.f-fb-k) / (1.f-k);
@@ -491,4 +491,4 @@ namespace wg
 	}
 
 
-} // namespace wg
+} // namespace wax

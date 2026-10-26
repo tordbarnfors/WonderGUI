@@ -19,11 +19,11 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef WG_C_WARPMAPFACTORY_DOT_H
-#define WG_C_WARPMAPFACTORY_DOT_H
+#ifndef WAX_C_WARPMAPFACTORY_DOT_H
+#define WAX_C_WARPMAPFACTORY_DOT_H
 #pragma once
 
-#include <wg_c_warpmap.h>
+#include <wax_c_warpmap.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -31,8 +31,8 @@ extern "C" {
 
 	//.____ Misc _______________________________________________________
 
-	WG_EXPORT wg_obj wg_createWarpmap( wg_obj factory, const wg_warpmapBP* blueprint );
-	WG_EXPORT wg_obj wg_createWarpmapFromNodes( wg_obj factory, const wg_warpmapBP* blueprint, const wg_coordF* pNodes, int pitch );
+	WAX_EXPORT wax_obj wax_createWarpmap( wax_obj factory, const wax_warpmapBP* blueprint );
+	WAX_EXPORT wax_obj wax_createWarpmapFromNodes( wax_obj factory, const wax_warpmapBP* blueprint, const wax_coordF* pNodes, int pitch );
 
 #ifdef __cplusplus
 }

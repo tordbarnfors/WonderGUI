@@ -21,10 +21,10 @@
 =========================================================================*/
 #include <cstring>
 
-#include <wg_streamwriter.h>
+#include <wax_streamwriter.h>
 #include <assert.h>
 
-namespace wg
+namespace wax
 {
 
 	const TypeInfo StreamWriter::TYPEINFO = { "StreamWriter", &Object::TYPEINFO };
@@ -65,4 +65,4 @@ namespace wg
 	}
 
 
-} // namespace wg
+} // namespace wax

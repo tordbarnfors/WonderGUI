@@ -26,7 +26,7 @@
 #endif
 
 #	include <wg_texttool.h>
-#	include <wg_font.h>
+#	include <wax_font.h>
 
 
 //____ Constructor() __________________________________________________________

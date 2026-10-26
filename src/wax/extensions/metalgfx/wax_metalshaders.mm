@@ -20,9 +20,9 @@
 
 =========================================================================*/
 
-#include <wg_metalbackend.h>
+#include <wax_metalbackend.h>
 
-namespace wg {
+namespace wax {
 
 
 const char MetalBackend::shaders[] =

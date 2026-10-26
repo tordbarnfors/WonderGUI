@@ -21,7 +21,7 @@
 =========================================================================*/
 #include <wg2_checkbox.h>
 #include <wg2_gfxdevice.h>
-#include <wg_font.h>
+#include <wax_font.h>
 #include <wg2_util.h>
 #include <wg2_rootpanel.h>
 #include <wg2_eventhandler.h>

@@ -23,7 +23,7 @@
 #include <wg2_util.h>
 #include <wg2_base.h>
 #include <wg_util.h>
-#include <wg_gfxbase.h>
+#include <wax_core.h>
 
 #include <algorithm>
 

@@ -20,7 +20,7 @@
 
 =========================================================================*/
 #include <wg_caret.h>
-#include <wg_gfxdevice.h>
+#include <wax_gfxdevice.h>
 #include <wg_util.h>
 
 namespace wg

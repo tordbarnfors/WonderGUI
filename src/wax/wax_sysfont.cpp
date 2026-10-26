@@ -19,9 +19,9 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#include <wg_sysfont.h>
+#include <wax_sysfont.h>
 
-namespace wg
+namespace wax
 {
 	const TypeInfo	SysFont::TYPEINFO = { "SysFont", &Font::TYPEINFO };
 
@@ -87,7 +87,7 @@ namespace wg
 
 	SysFont::SysFont(SurfaceFactory* pFactory, Font * pBackupFont ) : Font(pBackupFont)
 	{
-		m_pSurface = pFactory->createSurface( WGBP(Surface, _.size = { 512,48 }, _.format = PixelFormat::Alpha_8) );
+		m_pSurface = pFactory->createSurface( WAXBP(Surface, _.size = { 512,48 }, _.format = PixelFormat::Alpha_8) );
 
 		auto pixbuf = m_pSurface->allocPixelBuffer();
 

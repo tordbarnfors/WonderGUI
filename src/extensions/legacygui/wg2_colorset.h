@@ -30,8 +30,8 @@
 #	include <wg2_color.h>
 #endif
 
-#include <wg_object.h>
-#include <wg_pointers.h>
+#include <wax_object.h>
+#include <wax_pointers.h>
 
 class WgColorset;
 

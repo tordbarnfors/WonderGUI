@@ -19,15 +19,15 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef	WG_SOFTTINT_DOT_H
-#define	WG_SOFTTINT_DOT_H
+#ifndef	WAX_SOFTTINT_DOT_H
+#define	WAX_SOFTTINT_DOT_H
 #pragma once
 
-#include <wg_tinttools.h>
+#include <wax_tinttools.h>
 
 #include <vector>
 
-namespace wg
+namespace wax
 {
 	//____ SoftTint ___________________________________________________________
 	/**
@@ -137,4 +137,4 @@ namespace wg
 
 }
 
-#endif //WG_SOFTTINT_DOT_H
+#endif //WAX_SOFTTINT_DOT_H

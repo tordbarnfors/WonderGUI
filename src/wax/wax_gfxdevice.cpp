@@ -23,15 +23,15 @@
 #include <cmath>
 #include <cstring>
 
-#include <wg_gfxdevice.h>
-#include <wg_geo.h>
-#include <wg_gfxutil.h>
-#include <wg_gfxbase.h>
+#include <wax_gfxdevice.h>
+#include <wax_geo.h>
+#include <wax_gfxutil.h>
+#include <wax_core.h>
 
 using namespace std;
-using namespace wg::Util;
+using namespace wax::GfxUtil;
 
-namespace wg
+namespace wax
 {
 
 	const TypeInfo GfxDevice::TYPEINFO = { "GfxDevice", &Object::TYPEINFO };
@@ -64,4 +64,4 @@ namespace wg
 	}
 
 
-} // namespace wg
+} // namespace wax

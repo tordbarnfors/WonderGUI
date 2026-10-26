@@ -20,16 +20,16 @@
 
 =========================================================================*/
 #include <cmath>
-#include <wg_linearbackend.h>
-#include <wg_softedgemap.h>
-#include <wg_softwarpmap.h>
-#include <wg_gfxbase.h>
+#include <wax_linearbackend.h>
+#include <wax_softedgemap.h>
+#include <wax_softwarpmap.h>
+#include <wax_core.h>
 #include <cstring>
 
 
 using namespace std;
 
-namespace wg
+namespace wax
 {
 	const TypeInfo LinearBackend::TYPEINFO = { "LinearBackend", &GfxBackend::TYPEINFO };
 
@@ -178,7 +178,7 @@ namespace wg
 		m_pCanvasPixels		= nullptr;
 		m_canvasSoftFormat	= SoftFormatInfo::softFormat(pInfo->format, pInfo->colorSpace, pInfo->bigEndian);
 		m_canvasPitch		= 0;
-		m_canvasPixelBytes	= Util::pixelFormatToDescription(pInfo->format).bits/8;
+		m_canvasPixelBytes	= GfxUtil::pixelFormatToDescription(pInfo->format).bits/8;
 
 		_resetStates();
 
@@ -341,7 +341,7 @@ namespace wg
 						toString(mode),
 						toString(m_canvasSoftFormat));
 
-					GfxBase::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, errorMsg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+					Core::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, errorMsg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 				};
 
 				bool bRuns;
@@ -536,7 +536,7 @@ namespace wg
 						toString(m_blendMode),
 						toString(m_canvasSoftFormat));
 
-					GfxBase::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, errorMsg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+					Core::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, errorMsg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 					return;
 				}
 
@@ -602,8 +602,8 @@ namespace wg
 
 					// Lines without caps, from pixel to pixel.
 
-					beg = Util::roundToPixels(beg);
-					end = Util::roundToPixels(end);
+					beg = GfxUtil::roundToPixels(beg);
+					end = GfxUtil::roundToPixels(end);
 
 
 					if (std::abs(beg.x - end.x) > std::abs(beg.y - end.y))
@@ -820,8 +820,8 @@ namespace wg
 				auto& mtx = s_standardTransforms[flip];
 
 				RectI _dest = { 
-					Util::roundToPixels(destX), 
-					Util::roundToPixels(destY), 
+					GfxUtil::roundToPixels(destX), 
+					GfxUtil::roundToPixels(destY), 
 					pEdgemap->m_size.w * int(abs(mtx.xx)) + pEdgemap->m_size.h * int(abs(mtx.yx)),
 					pEdgemap->m_size.w * int(abs(mtx.xy)) + pEdgemap->m_size.h * int(abs(mtx.yy)),
 				};
@@ -941,7 +941,7 @@ namespace wg
 						toString(m_blendMode),
 						toString(m_canvasSoftFormat));
 
-					GfxBase::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, errorMsg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+					Core::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, errorMsg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 					break;
 				}
 
@@ -949,7 +949,7 @@ namespace wg
 
 				for (int patchIdx = 0; patchIdx < nRects; patchIdx++)
 				{
-					RectI patch = Util::roundToPixels(pMyRects[patchIdx]);		// Rounded like the position of the edgemap.
+					RectI patch = GfxUtil::roundToPixels(pMyRects[patchIdx]);		// Rounded like the position of the edgemap.
 					if (!bTile)
 						patch = RectI::overlap(dest, patch);
 
@@ -1267,7 +1267,7 @@ namespace wg
 
 		int memBufferSize = chunkLines * width*8;
 
-		uint8_t * pChunkBuffer = (uint8_t*) GfxBase::memStackAlloc(memBufferSize);
+		uint8_t * pChunkBuffer = (uint8_t*) Core::memStackAlloc(memBufferSize);
 
 		int line = 0;
 
@@ -1287,7 +1287,7 @@ namespace wg
 			pDst += destPitch*thisChunkLines;
 		}
 
-		GfxBase::memStackFree(memBufferSize);
+		Core::memStackFree(memBufferSize);
 	}
 
 	//____ _dummyLinearStraightBlit() _____________________________________________
@@ -1344,7 +1344,7 @@ namespace wg
 
 		int memBufferSize = chunkLines * destWidth * 8;
 
-		uint8_t * pChunkBuffer = (uint8_t*)GfxBase::memStackAlloc(memBufferSize);
+		uint8_t * pChunkBuffer = (uint8_t*)Core::memStackAlloc(memBufferSize);
 
 		int line = 0;
 
@@ -1366,7 +1366,7 @@ namespace wg
 			pDst += destPitch*thisChunkLines;
 		}
 
-		GfxBase::memStackFree(memBufferSize);
+		Core::memStackFree(memBufferSize);
 	}
 
 
@@ -1378,4 +1378,4 @@ namespace wg
 
 
 
-} // namespace wg
+} // namespace wax

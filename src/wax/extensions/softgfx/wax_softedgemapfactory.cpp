@@ -19,10 +19,10 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#include <wg_softedgemapfactory.h>
-#include <wg_softedgemap.h>
+#include <wax_softedgemapfactory.h>
+#include <wax_softedgemap.h>
 
-namespace wg
+namespace wax
 {
 
 
@@ -56,4 +56,4 @@ namespace wg
 	}
 
 
-} // namespace wg
+} // namespace wax

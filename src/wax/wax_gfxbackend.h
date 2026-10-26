@@ -19,31 +19,31 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef	WG_GFXBACKEND_DOT_H
-#define WG_GFXBACKEND_DOT_H
+#ifndef	WAX_GFXBACKEND_DOT_H
+#define WAX_GFXBACKEND_DOT_H
 #pragma once
 
 #include <climits>
 #include <bitset>
 
-#include <wg_gfxdevice.h>
+#include <wax_gfxdevice.h>
 
-#include <wg_pointers.h>
-#include <wg_gfxtypes.h>
-#include <wg_color.h>
-#include <wg_edgemap.h>
+#include <wax_pointers.h>
+#include <wax_types.h>
+#include <wax_color.h>
+#include <wax_edgemap.h>
 
 
-#include <wg_geo.h>
-#include <wg_surface.h>
-#include <wg_surfacefactory.h>
-#include <wg_edgemapfactory.h>
-#include <wg_canvaslayers.h>
+#include <wax_geo.h>
+#include <wax_surface.h>
+#include <wax_surfacefactory.h>
+#include <wax_edgemapfactory.h>
+#include <wax_canvaslayers.h>
 
 #include <vector>
 #include <cstring>
 
-namespace wg
+namespace wax
 {
 
 
@@ -195,7 +195,7 @@ namespace wg
 			  Colors: fill color if HasFill, outline color if HasOutline, then the colors of
 			  the encoded tints.
 
-			  Radii are clamped as by Util::clampCornerRadii().
+			  Radii are clamped as by GfxUtil::clampCornerRadii().
 
 			ShapeKind::Ring payload:
 
@@ -389,6 +389,6 @@ namespace wg
 		return index;
 	}
 
-} // namespace wg
-#endif	// WG_GFXBACKEND_DOT_H
+} // namespace wax
+#endif	// WAX_GFXBACKEND_DOT_H
 

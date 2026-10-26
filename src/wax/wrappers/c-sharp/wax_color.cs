@@ -1,6 +1,6 @@
 using System.Runtime.InteropServices;
 
-namespace WG;
+namespace Wax;
 
 [StructLayout(LayoutKind.Sequential)]
 public record struct Color8(byte B, byte G, byte R, byte A);

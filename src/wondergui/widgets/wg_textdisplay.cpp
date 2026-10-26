@@ -21,8 +21,8 @@
 =========================================================================*/
 #include <wg_textdisplay.h>
 #include <wg_key.h>
-#include <wg_font.h>
-#include <wg_gfxdevice.h>
+#include <wax_font.h>
+#include <wax_gfxdevice.h>
 #include <wg_msgrouter.h>
 
 namespace wg

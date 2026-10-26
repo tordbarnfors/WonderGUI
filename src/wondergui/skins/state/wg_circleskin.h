@@ -25,7 +25,7 @@
 
 
 #include <wg_stateskin.h>
-#include <wg_color.h>
+#include <wax_color.h>
 
 #include <vector>
 

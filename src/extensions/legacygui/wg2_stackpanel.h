@@ -54,7 +54,7 @@ public:
 	WgStackPanel * 	Parent() const { return m_pParent; }
 
 protected:
-	PROTECTED_LINK_METHODS( WgStackHook );
+	WAX_PROTECTED_LINK_METHODS( WgStackHook );
 
 	WgStackHook( WgStackPanel * pParent );
 

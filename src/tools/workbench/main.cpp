@@ -19,27 +19,27 @@
 
 
 #include <wondergui.h>
-#include <wg_componentptr.h>
-#include <wg_memheap.h>
+#include <wax_componentptr.h>
+#include <wax_memheap.h>
 
 #include <bitset>
 #include <string>
 #include <iostream>
 #include <climits>
 
-#include <wg_softsurface.h>
-#include <wg_softsurfacefactory.h>
-#include <wg_softedgemapfactory.h>
-#include <wg_softbackend.h>
-#include <wg_softkernels_default.h>
+#include <wax_softsurface.h>
+#include <wax_softsurfacefactory.h>
+#include <wax_softedgemapfactory.h>
+#include <wax_softbackend.h>
+#include <wax_softkernels_default.h>
 
-#include <wg_glsurface.h>
-#include <wg_glsurfacefactory.h>
-#include <wg_gledgemapfactory.h>
+#include <wax_glsurface.h>
+#include <wax_glsurfacefactory.h>
+#include <wax_gledgemapfactory.h>
 
-#include <wg_freetypefont.h>
+#include <wax_freetypefont.h>
 
-#include <wg_dynamicbuffer.h>
+#include <wax_dynamicbuffer.h>
 
 #include <wg_drawerpanel.h>
 #include <wg_scrollcapsule.h>
@@ -731,7 +731,7 @@ int main(int argc, char** argv)
 
 		/*	Filler_p pBackground = Filler::create();
 			pBackground->setSkin( ColorSkin::create(Color::aqua) );
-			pFlexPanel->addWidget(pBackground, WG_NORTHWEST, CoordI(), WG_SOUTHEAST, CoordI());
+			pFlexPanel->addWidget(pBackground, WAX_NORTHWEST, CoordI(), WAX_SOUTHEAST, CoordI());
 		*/
 
 
@@ -1163,7 +1163,7 @@ void convertSDLFormat( PixelDescription * pWGFormat, const SDL_PixelFormat * pSD
 {
 	pWGFormat->type = PixelType::Chunky;
 	pWGFormat->bits = pSDLFormat->BitsPerPixel;
-	pWGFormat->bigEndian = (WG_IS_BIG_ENDIAN == 1);		// SDL masks are for pixels read in native byte order.
+	pWGFormat->bigEndian = (WAX_IS_BIG_ENDIAN == 1);		// SDL masks are for pixels read in native byte order.
 
 	pWGFormat->R_mask = pSDLFormat->Rmask;
 	pWGFormat->G_mask = pSDLFormat->Gmask;
@@ -4267,8 +4267,8 @@ bool packPanelStressTest2(ComponentPtr<DynamicSlot> pEntry)
 
 	pButtonRow->slots << pHideLeftButton << pUnhideLeftButton;
 
-	Base::msgRouter()->addRoute(pHideLeftButton, MsgType::Select, [pInnerPanel](Msg* pMsg) { wg_dynamic_cast<Filler_p>(pInnerPanel->slots[0].widget())->setDefaultSize({ 0,0 }); });
-	Base::msgRouter()->addRoute(pUnhideLeftButton, MsgType::Select, [pInnerPanel](Msg* pMsg) { wg_dynamic_cast<Filler_p>(pInnerPanel->slots[0].widget())->setDefaultSize({ 200,0 }); });
+	Base::msgRouter()->addRoute(pHideLeftButton, MsgType::Select, [pInnerPanel](Msg* pMsg) { wax_dynamic_cast<Filler_p>(pInnerPanel->slots[0].widget())->setDefaultSize({ 0,0 }); });
+	Base::msgRouter()->addRoute(pUnhideLeftButton, MsgType::Select, [pInnerPanel](Msg* pMsg) { wax_dynamic_cast<Filler_p>(pInnerPanel->slots[0].widget())->setDefaultSize({ 200,0 }); });
 
 
 	*pEntry = pOuterPanel;
@@ -4724,7 +4724,7 @@ bool reorderCapsuleTest(ComponentPtr<DynamicSlot> pEntry)
 
 	Base::msgRouter()->addRoute(pSupply, MsgType::Pick, [](Msg* _pMsg) {
 		auto pMsg = static_cast<PickMsg*>(_pMsg);
-		auto pMe = wg_dynamic_cast<LabelCapsule_p>(pMsg->source());
+		auto pMe = wax_dynamic_cast<LabelCapsule_p>(pMsg->source());
 
 		if( !pMe->slot.isEmpty() )
 		{

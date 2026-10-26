@@ -19,34 +19,34 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef WG_C_MEMHEAP_DOT_H
-#define WG_C_MEMHEAP_DOT_H
+#ifndef WAX_C_MEMHEAP_DOT_H
+#define WAX_C_MEMHEAP_DOT_H
 #pragma once
 
-#include <wg_c_geartypes.h>
+#include <wax_c_types.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-	typedef void * wg_memHeap;
+	typedef void * wax_memHeap;
 
-	WG_EXPORT wg_memHeap	wg_initMemHeap( void * pHeap, int bytes );
-	WG_EXPORT void			wg_exitMemHeap( wg_memHeap heap );
+	WAX_EXPORT wax_memHeap	wax_initMemHeap( void * pHeap, int bytes );
+	WAX_EXPORT void			wax_exitMemHeap( wax_memHeap heap );
 
-	WG_EXPORT void *		wg_malloc( wg_memHeap heap, int bytes );
-	WG_EXPORT void  		wg_free( wg_memHeap heap, void * pBuffer );
+	WAX_EXPORT void *		wax_malloc( wax_memHeap heap, int bytes );
+	WAX_EXPORT void  		wax_free( wax_memHeap heap, void * pBuffer );
 /*
-	void		wg_drawFragmentMap( wg_memHeap heap, int nSections, uint16_t * pSectionTable, wg_obj surface );
+	void		wax_drawFragmentMap( wax_memHeap heap, int nSections, uint16_t * pSectionTable, wax_obj surface );
 */
-	WG_EXPORT void			wg_setMemHeapDebugLevel( wg_memHeap heap, int level );
+	WAX_EXPORT void			wax_setMemHeapDebugLevel( wax_memHeap heap, int level );
 
-	WG_EXPORT int			wg_memHeapCapacity( wg_memHeap heap );
-	WG_EXPORT int			wg_memHeapReserved( wg_memHeap heap );
-	WG_EXPORT int			wg_largestAvailableBlock( wg_memHeap heap );
+	WAX_EXPORT int			wax_memHeapCapacity( wax_memHeap heap );
+	WAX_EXPORT int			wax_memHeapReserved( wax_memHeap heap );
+	WAX_EXPORT int			wax_largestAvailableBlock( wax_memHeap heap );
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif //WG_C_MEMHEAP_DOT_H
+#endif //WAX_C_MEMHEAP_DOT_H

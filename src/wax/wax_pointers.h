@@ -19,27 +19,27 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef	WG_POINTERS_DOT_H
-#define	WG_POINTERS_DOT_H
+#ifndef	WAX_POINTERS_DOT_H
+#define	WAX_POINTERS_DOT_H
 #pragma once
 
-#include <wg_object.h>
-#include <wg_strongptr.h>
-#include <wg_weakptr.h>
-#include <wg_componentptr.h>
+#include <wax_object.h>
+#include <wax_strongptr.h>
+#include <wax_weakptr.h>
+#include <wax_componentptr.h>
 
 template <class Type_p>
-Type_p wg_dynamic_cast(wg::Object * pObject) {
+Type_p wax_dynamic_cast(wax::Object * pObject) {
 
 	return dynamic_cast<typename Type_p::raw_type>(pObject);
 }
 
 template <class Type_p>
-Type_p wg_static_cast(wg::Object * pObject) {
+Type_p wax_static_cast(wax::Object * pObject) {
 
 	return static_cast<typename Type_p::raw_type>(pObject);
 }
 
 
-#endif //WG_POINTERS_DOT_H
+#endif //WAX_POINTERS_DOT_H
 

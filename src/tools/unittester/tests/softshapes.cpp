@@ -1,14 +1,14 @@
 #include "softshapes.h"
 #include "shapecoverage.h"
 
-#include <wg_gfxutil.h>
+#include <wax_gfxutil.h>
 
 #include <cmath>
 #include <cstdlib>
 #include <climits>
 #include <algorithm>
 
-using namespace wg;
+using namespace wax;
 
 namespace
 {
@@ -98,7 +98,7 @@ namespace
 		RefBox ref;
 
 		spx radius[4] = { box.radius[0], box.radius[1], box.radius[2], box.radius[3] };
-		Util::clampCornerRadii(box.rect.size(), radius);
+		GfxUtil::clampCornerRadii(box.rect.size(), radius);
 
 		const RectSPX& r = box.rect;
 		const BorderSPX& o = box.outline;
@@ -121,7 +121,7 @@ namespace
 		ref.inner.bottom = (in.y + in.h) / 64.0;
 
 		spx innerRadius[4];
-		Util::innerCornerRadii(radius, o, innerRadius);
+		GfxUtil::innerCornerRadii(radius, o, innerRadius);
 
 		for (int i = 0; i < 4; i++)
 			ref.inner.r[i] = innerRadius[i] / 64.0;
@@ -445,13 +445,13 @@ bool SoftShapesTest::clampCornerRadiiTest(std::ostream& output)
 {
 	{
 		spx r[4] = { 10, 20, 30, 40 };
-		Util::clampCornerRadii({ 1000, 1000 }, r);
+		GfxUtil::clampCornerRadii({ 1000, 1000 }, r);
 		TEST_ASSERT(r[0] == 10 && r[1] == 20 && r[2] == 30 && r[3] == 40);
 	}
 
 	{
 		spx r[4] = { -10, 20, 30, 40 };
-		Util::clampCornerRadii({ 1000, 1000 }, r);
+		GfxUtil::clampCornerRadii({ 1000, 1000 }, r);
 		TEST_ASSERT(r[0] == 0);
 	}
 
@@ -459,7 +459,7 @@ bool SoftShapesTest::clampCornerRadiiTest(std::ostream& output)
 		// Left side needs 60 but has 40, all radii scaled by 40/60.
 
 		spx r[4] = { 30, 15, 0, 30 };
-		Util::clampCornerRadii({ 100, 40 }, r);
+		GfxUtil::clampCornerRadii({ 100, 40 }, r);
 		TEST_ASSERT(r[0] == 20 && r[1] == 10 && r[2] == 0 && r[3] == 20);
 	}
 
@@ -467,7 +467,7 @@ bool SoftShapesTest::clampCornerRadiiTest(std::ostream& output)
 		// Pill.
 
 		spx r[4] = { 1000, 1000, 1000, 1000 };
-		Util::clampCornerRadii({ 300, 100 }, r);
+		GfxUtil::clampCornerRadii({ 300, 100 }, r);
 		TEST_ASSERT(r[0] == 50 && r[1] == 50 && r[2] == 50 && r[3] == 50);
 	}
 

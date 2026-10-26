@@ -21,12 +21,12 @@
 =========================================================================*/
 #include <memory.h>
 
-#include <wg_glsurface.h>
-#include <wg_glbackend.h>
-#include <wg_gfxutil.h>
-#include <wg_pixeltools.h>
-#include <wg_blob.h>
-#include <wg_gfxbase.h>
+#include <wax_glsurface.h>
+#include <wax_glbackend.h>
+#include <wax_gfxutil.h>
+#include <wax_pixeltools.h>
+#include <wax_blob.h>
+#include <wax_core.h>
 #include <assert.h>
 #include <vector>
 #include <algorithm>
@@ -35,7 +35,7 @@
 #define GL_SILENCE_DEPRECATION
 
 
-namespace wg
+namespace wax
 {
 	const TypeInfo GlSurface::TYPEINFO = { "GlSurface", &Surface::TYPEINFO };
 
@@ -111,7 +111,7 @@ namespace wg
 		if (!_isBlueprintValid(bp, maxSize()) || !_isFormatSupported(bp.format) )
 			return GlSurface_p();
 
-        int realPitch = pitch > 0 ? pitch : bp.size.w * Util::pixelFormatToDescription( bp.format == PixelFormat::Undefined ? PixelFormat::ARGB_8 : bp.format ).bits/8;
+        int realPitch = pitch > 0 ? pitch : bp.size.w * GfxUtil::pixelFormatToDescription( bp.format == PixelFormat::Undefined ? PixelFormat::ARGB_8 : bp.format ).bits/8;
         
 		if ( !pBlob || realPitch % 4 != 0 )
 			return GlSurface_p();
@@ -234,7 +234,7 @@ namespace wg
 	}
 
 	GlSurface::GlSurface(const Blueprint& bp, const uint8_t* pPixels, PixelFormat format, int pitch, const Color8 * pPalette, int paletteSize)
-	: GlSurface(bp, pPixels, Util::pixelFormatToDescription(format != PixelFormat::Undefined ? format : bp.format != PixelFormat::Undefined ? bp.format : PixelFormat::ARGB_8, bp.bigEndian),
+	: GlSurface(bp, pPixels, GfxUtil::pixelFormatToDescription(format != PixelFormat::Undefined ? format : bp.format != PixelFormat::Undefined ? bp.format : PixelFormat::ARGB_8, bp.bigEndian),
 				pitch, pPalette, paletteSize)
 	{
 		// Source pixels are in the byte order and color space of the blueprint.
@@ -493,7 +493,7 @@ namespace wg
 	void GlSurface::_setPixelDetails()
 	{
 		bool bSRGB = (m_colorSpace == ColorSpace::sRGB);
-		m_bSwapBytes = (m_bBigEndian != (WG_IS_BIG_ENDIAN == 1));
+		m_bSwapBytes = (m_bBigEndian != (WAX_IS_BIG_ENDIAN == 1));
 
 		switch (m_pixelFormat)
 		{
@@ -555,7 +555,7 @@ namespace wg
 	//____ _uploadPalette() ______________________________________________________
 	/*
 		The palette texture is up to 256 texels wide with as many rows as needed for
-		paletteCapacity() entries, see WG_GL_PALETTE_FUNC. Entries beyond m_paletteSize are cleared.
+		paletteCapacity() entries, see WAX_GL_PALETTE_FUNC. Entries beyond m_paletteSize are cleared.
 	*/
 
 	void GlSurface::_uploadPalette()
@@ -788,7 +788,7 @@ namespace wg
 			glBindFramebuffer(GL_READ_FRAMEBUFFER, m_framebufferId);
 			if (glCheckFramebufferStatus(GL_READ_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 			{
-				GfxBase::throwError(ErrorLevel::SilentError, ErrorCode::OpenGL, "Can not read pixel from surface for unknow reason, returning 4096 as alpha value.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				Core::throwError(ErrorLevel::SilentError, ErrorCode::OpenGL, "Can not read pixel from surface for unknow reason, returning 4096 as alpha value.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 
 				return 4096;
 			}
@@ -978,7 +978,7 @@ namespace wg
 
 	const uint8_t* GlSurface::_premultiplied(const uint8_t* pPixels, int& pitch, int width, int height, std::vector<uint8_t>& buffer) const
 	{
-		int alphaByte = (m_bSwapBytes != (WG_IS_BIG_ENDIAN == 1)) ? 0 : 3;		// Alpha is the high byte of the pixel.
+		int alphaByte = (m_bSwapBytes != (WAX_IS_BIG_ENDIAN == 1)) ? 0 : 3;		// Alpha is the high byte of the pixel.
 
 		bool bOpaque = true;
 		for (int y = 0; y < height && bOpaque; y++)
@@ -1025,7 +1025,7 @@ namespace wg
 			{
 				uint32_t v = p[x];
 				if (m_bSwapBytes)
-					v = Util::endianSwap(v);
+					v = GfxUtil::endianSwap(v);
 
 				int a = v >> 24;
 				if (a == 255)
@@ -1046,9 +1046,9 @@ namespace wg
 				}
 
 				if (m_bSwapBytes)
-					v = Util::endianSwap(v);
+					v = GfxUtil::endianSwap(v);
 				p[x] = v;
 			}
 		}
 	}
-} // namespace wg
+} // namespace wax

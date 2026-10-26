@@ -19,16 +19,16 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef	WG_SPXCOMPRESSION_DOT_H
-#define	WG_SPXCOMPRESSION_DOT_H
+#ifndef	WAX_SPXCOMPRESSION_DOT_H
+#define	WAX_SPXCOMPRESSION_DOT_H
 #pragma once
 
-#include <wg_compression.h>
-#include <wg_gfxtypes.h>
+#include <wax_compression.h>
+#include <wax_types.h>
 
 
 
-namespace wg
+namespace wax
 {
 
 	class SPXCompressor;
@@ -116,4 +116,4 @@ namespace wg
 
 }
 
-#endif //WG_SPXCOMPRESSION_DOT_H
+#endif //WAX_SPXCOMPRESSION_DOT_H

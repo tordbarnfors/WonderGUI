@@ -19,27 +19,27 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef WG_C_OBJECT_DOT_H
-#define WG_C_OBJECT_DOT_H
+#ifndef WAX_C_OBJECT_DOT_H
+#define WAX_C_OBJECT_DOT_H
 #pragma once
 
-#include <wg_c_geartypes.h>
+#include <wax_c_types.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 
-	WG_EXPORT const wg_typeInfo*	wg_getTypeInfo(wg_obj);
-	WG_EXPORT int				wg_isInstanceOf(wg_obj, const wg_typeInfo* pTypeInfo);
+	WAX_EXPORT const wax_typeInfo*	wax_getTypeInfo(wax_obj);
+	WAX_EXPORT int				wax_isInstanceOf(wax_obj, const wax_typeInfo* pTypeInfo);
 
-	WG_EXPORT void				wg_setFinalizer(wg_obj, wg_finalizer_func pFinalizer);
-	WG_EXPORT wg_finalizer_func	wg_finalizer(wg_obj);
+	WAX_EXPORT void				wax_setFinalizer(wax_obj, wax_finalizer_func pFinalizer);
+	WAX_EXPORT wax_finalizer_func	wax_finalizer(wax_obj);
 
-	WG_EXPORT void				wg_retain(wg_obj);
-	WG_EXPORT void				wg_release(wg_obj);
+	WAX_EXPORT void				wax_retain(wax_obj);
+	WAX_EXPORT void				wax_release(wax_obj);
 
-	WG_EXPORT int				wg_refcount(wg_obj);
+	WAX_EXPORT int				wax_refcount(wax_obj);
 
 
 #ifdef __cplusplus

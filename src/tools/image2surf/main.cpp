@@ -1,11 +1,11 @@
 
-#include <wondergfx.h>
-#include <wg_softsurface.h>
-#include <wg_softsurfacefactory.h>
-#include <wg_q565compression.h>
-#include <wg_lzcompression.h>
-#include <wg_rlecompression.h>
-#include <wg_qoicompression.h>
+#include <wax.h>
+#include <wax_softsurface.h>
+#include <wax_softsurfacefactory.h>
+#include <wax_q565compression.h>
+#include <wax_lzcompression.h>
+#include <wax_rlecompression.h>
+#include <wax_qoicompression.h>
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
@@ -13,7 +13,7 @@
 #include <utility>
 #include <fstream>
 
-using namespace wg;
+using namespace wax;
 using namespace std;
 
 bool	bQuit = false;
@@ -22,7 +22,7 @@ bool	bQuit = false;
 
 PixelFormat		g_format = PixelFormat::ARGB_8;
 ColorSpace		g_colorSpace = ColorSpace::sRGB;
-bool			g_bBigEndian = (WG_IS_BIG_ENDIAN == 1);
+bool			g_bBigEndian = (WAX_IS_BIG_ENDIAN == 1);
 
 Compressor_p	g_pPixelCompressor;
 bool			g_bQOICompression = false;
@@ -95,7 +95,7 @@ int parseCommandLine( int argc, char** argv )
 			char * pValue = pArg + 12;
 
 			if( strcmp(pValue, "native") == 0 )
-				g_bBigEndian = (WG_IS_BIG_ENDIAN == 1);
+				g_bBigEndian = (WAX_IS_BIG_ENDIAN == 1);
 			else if( strcmp(pValue, "little") == 0 )
 				g_bBigEndian = false;
 			else if( strcmp(pValue, "big") == 0 )
@@ -124,11 +124,11 @@ int parseCommandLine( int argc, char** argv )
 			}
 			else if (strcmp(pValue, "RLE1") == 0)
 			{
-				g_pPixelCompressor = RLECompressor::create( WGBP(RLECompressor, _.primSize = 1 ));
+				g_pPixelCompressor = RLECompressor::create( WAXBP(RLECompressor, _.primSize = 1 ));
 			}
 			else if (strcmp(pValue, "RLE2") == 0)
 			{
-				g_pPixelCompressor = RLECompressor::create(WGBP(RLECompressor, _.primSize = 2 ));
+				g_pPixelCompressor = RLECompressor::create(WAXBP(RLECompressor, _.primSize = 2 ));
 			}
 			else if (strcmp(pValue, "QOI") == 0)
 			{
@@ -170,7 +170,7 @@ int parseCommandLine( int argc, char** argv )
 			return -1;
 		}
 
-		g_pPixelCompressor = QOICompressor::create( WGBP(QOICompressor, _.format = g_format, _.bigEndian = g_bBigEndian ) );
+		g_pPixelCompressor = QOICompressor::create( WAXBP(QOICompressor, _.format = g_format, _.bigEndian = g_bBigEndian ) );
 	}
 
 	return 0;
@@ -222,7 +222,7 @@ int main ( int argc, char** argv )
 
 	// Init wg
 
-	GfxBase::init();
+	wax::Core::init();
 
 	// Load image
 
@@ -244,7 +244,7 @@ int main ( int argc, char** argv )
 
 		if( pImage )
 		{
-			PixelDescription desc = Util::pixelFormatToDescription(PixelFormat::ARGB_8, false);
+			PixelDescription desc = GfxUtil::pixelFormatToDescription(PixelFormat::ARGB_8, false);
 
 			swap( desc.B_mask, desc.R_mask);
 
@@ -255,7 +255,7 @@ int main ( int argc, char** argv )
 	if( pOrg == nullptr )
 	{
 		printf( "Error loading/decoding '%s'\n", g_pInputFileName );
-		GfxBase::exit();
+		wax::Core::exit();
 		return -1;
 	}
 
@@ -286,7 +286,7 @@ exit:
 	pOrg = nullptr;
 	pConverted = nullptr;
 	g_pPixelCompressor = nullptr;
-	GfxBase::exit();
+	wax::Core::exit();
 	if( pImage )
 		stbi_image_free(pImage);
     return 0;

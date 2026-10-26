@@ -25,10 +25,10 @@
 
 #include <vector>
 
-#include <wg_pointers.h>
-#include <wg_color.h>
+#include <wax_pointers.h>
+#include <wax_color.h>
 #include <wg_util.h>
-#include <wg_font.h>
+#include <wax_font.h>
 #include <wg_textlink.h>
 #include <wg_state.h>
 
@@ -36,6 +36,7 @@ class WgBase;					// Legacy GUI also uses modern TextStyle.
 
 namespace wg
 {
+	class Base;			// So friend declarations don't refer to wax::Core.
 
 	class TextStyle;
 	typedef	StrongPtr<TextStyle>	TextStyle_p;

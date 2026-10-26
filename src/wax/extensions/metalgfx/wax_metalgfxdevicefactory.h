@@ -19,15 +19,15 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef WG_METALGFXDEVICEFACTORY_DOT_H
-#define	WG_METALGFXDEVICEFACTORY_DOT_H
+#ifndef WAX_METALGFXDEVICEFACTORY_DOT_H
+#define	WAX_METALGFXDEVICEFACTORY_DOT_H
 #pragma once
 //==============================================================================
 
-#include <wg_gfxdevicefactory.h>
+#include <wax_gfxdevicefactory.h>
 
 
-namespace wg
+namespace wax
 {
 	class MetalGfxDeviceFactory;
 	typedef	StrongPtr<MetalGfxDeviceFactory>	MetalGfxDeviceFactory_p;
@@ -82,5 +82,5 @@ namespace wg
 
 	//==============================================================================
 
-} // namespace wg
-#endif // WG_METALGFXDEVICEFACTORY_DOT_H
+} // namespace wax
+#endif // WAX_METALGFXDEVICEFACTORY_DOT_H

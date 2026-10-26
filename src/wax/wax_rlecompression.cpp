@@ -20,18 +20,18 @@
 
 =========================================================================*/
 
-#include <wg_rlecompression.h>
-#include <wg_gfxutil.h>
-#include <wg_gfxbase.h>
+#include <wax_rlecompression.h>
+#include <wax_gfxutil.h>
+#include <wax_core.h>
 #include <cstring>
 
-namespace wg
+namespace wax
 {
 const TypeInfo RLECompressor::TYPEINFO = { "RLECompressor", &Compressor::TYPEINFO };
 const TypeInfo RLEDecompressor::TYPEINFO = { "RLEDecompressor", &Decompressor::TYPEINFO };
 
-const uint32_t RLECompressor::ID_TOKEN = Util::makeEndianSpecificToken('R', 'L', 'E', 'x');
-const uint32_t RLEDecompressor::ID_TOKEN = Util::makeEndianSpecificToken('R', 'L', 'E', 'x');
+const uint32_t RLECompressor::ID_TOKEN = GfxUtil::makeEndianSpecificToken('R', 'L', 'E', 'x');
+const uint32_t RLEDecompressor::ID_TOKEN = GfxUtil::makeEndianSpecificToken('R', 'L', 'E', 'x');
 
 //____ create() _____________________________________________________________
 
@@ -94,7 +94,7 @@ int RLECompressor::compress( void * pDest, const void * pBegin, const void * pEn
 {
 	if( (((int8_t*) pEnd) - ((int8_t*) pBegin)) % m_primSize != 0 )
 	{
-		GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Size of data to compress is not a multiple of primSize.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+		Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Size of data to compress is not a multiple of primSize.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 		return -1;
 	}
 

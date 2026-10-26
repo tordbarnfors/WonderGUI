@@ -23,30 +23,30 @@
 #define WONDERSTREAM_DOT_H
 #pragma once
 
-#include <wg_gfxstream.h>
-#include <wg_streambackend.h>
-#include <wg_streambuffer.h>
-#include <wg_streamdecoder.h>
-#include <wg_streamencoder.h>
-#include <wg_streamlogger.h>
-#include <wg_streamloopwrapper.h>
-#include <wg_streamplayer.h>
-#include <wg_streampump.h>
-#include <wg_streamreader.h>
-#include <wg_streamsink.h>
-#include <wg_streamsource.h>
-#include <wg_streamsplitter.h>
-#include <wg_remotesurface.h>
-#include <wg_remotesurfacefactory.h>
-#include <wg_mirrorsurface.h>
-#include <wg_mirrorsurfacefactory.h>
-#include <wg_streamtrimbackend.h>
-#include <wg_streamwrapper.h>
-#include <wg_streamwriter.h>
-#include <wg_streamedgemap.h>
-#include <wg_streamedgemapfactory.h>
-#include <wg_streamwarpmap.h>
-#include <wg_streamwarpmapfactory.h>
+#include <wax_gfxstream.h>
+#include <wax_streambackend.h>
+#include <wax_streambuffer.h>
+#include <wax_streamdecoder.h>
+#include <wax_streamencoder.h>
+#include <wax_streamlogger.h>
+#include <wax_streamloopwrapper.h>
+#include <wax_streamplayer.h>
+#include <wax_streampump.h>
+#include <wax_streamreader.h>
+#include <wax_streamsink.h>
+#include <wax_streamsource.h>
+#include <wax_streamsplitter.h>
+#include <wax_remotesurface.h>
+#include <wax_remotesurfacefactory.h>
+#include <wax_mirrorsurface.h>
+#include <wax_mirrorsurfacefactory.h>
+#include <wax_streamtrimbackend.h>
+#include <wax_streamwrapper.h>
+#include <wax_streamwriter.h>
+#include <wax_streamedgemap.h>
+#include <wax_streamedgemapfactory.h>
+#include <wax_streamwarpmap.h>
+#include <wax_streamwarpmapfactory.h>
 
 
 

@@ -1,5 +1,5 @@
 #include "testsuite.h"
-#include <wg_blurbrush.h>
+#include <wax_blurbrush.h>
 
 // Where pixels are sampled from: nearest and bilinear stretches at exact and odd scales,
 // edges of rotated ClipBlits from sources with and without alpha, and blur tap positions.

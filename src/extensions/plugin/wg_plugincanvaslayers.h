@@ -23,10 +23,11 @@
 #define WG_PLUGINCANVASLAYERS_DOT_H
 #pragma once
 
-#include <wg_canvaslayers.h>
+#include <wax_canvaslayers.h>
+#include <wg_types.h>
 
 
-typedef void* wg_obj;
+typedef void* wax_obj;
 
 namespace wg
 {
@@ -63,15 +64,15 @@ namespace wg
 
 		//.____ Misc _______________________________________________________
 
-		inline wg_obj		cObject() { return m_cCanvasLayer; }
+		inline wax_obj		cObject() { return m_cCanvasLayer; }
 
 	protected:
 		PluginCanvasLayers( PluginGfxDevice * pDevice, const Blueprint& bp);
 		~PluginCanvasLayers();
 
-		static void _callbackRouter( wg_obj cDevice, void* pMe, int funcNb );
+		static void _callbackRouter( wax_obj cDevice, void* pMe, int funcNb );
 
-		wg_obj			m_cCanvasLayer;
+		wax_obj			m_cCanvasLayer;
 		PluginGfxDevice_p	m_pDevice;
 	};
 

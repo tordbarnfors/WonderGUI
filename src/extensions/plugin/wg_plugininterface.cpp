@@ -23,27 +23,27 @@
 
 #include <wg_c_hostbridge.h>
 
-#include <wg_c_bitmapcache.h>
-#include <wg_c_bitmapfont.h>
-#include <wg_c_canvaslayers.h>
-#include <wg_c_font.h>
-#include <wg_c_gfxdevice.h>
+#include <wax_c_bitmapcache.h>
+#include <wax_c_bitmapfont.h>
+#include <wax_c_canvaslayers.h>
+#include <wax_c_font.h>
+#include <wax_c_gfxdevice.h>
 /*
-#include <wg_c_streambuffer.h>
-#include <wg_c_streamplayer.h>
-#include <wg_c_streampump.h>
-#include <wg_c_streamreader.h>
+#include <wax_c_streambuffer.h>
+#include <wax_c_streamplayer.h>
+#include <wax_c_streampump.h>
+#include <wax_c_streamreader.h>
 */
-#include <wg_c_object.h>
-#include <wg_c_surface.h>
-#include <wg_c_surfacefactory.h>
-#include <wg_c_edgemap.h>
-#include <wg_c_edgemapfactory.h>
-#include <wg_c_warpmap.h>
-#include <wg_c_warpmapfactory.h>
+#include <wax_c_object.h>
+#include <wax_c_surface.h>
+#include <wax_c_surfacefactory.h>
+#include <wax_c_edgemap.h>
+#include <wax_c_edgemapfactory.h>
+#include <wax_c_warpmap.h>
+#include <wax_c_warpmapfactory.h>
 #include <wg_c_plugincapsule.h>
 
-#include <wg_c_tint.h>
+#include <wax_c_tint.h>
 
 #include <mutex>
 
@@ -104,26 +104,26 @@ static std::once_flag	bodyPopulated;
 // and return 0 or null, with the call's own signature so no caller is surprised
 // by how a value comes back.
 
-static void			stub_setTintmap(wg_obj, const wg_rectSPX*, const wg_obj) {}
-static wg_obj		stub_getTintmap(wg_obj) { return nullptr; }
-static wg_rectSPX	stub_getTintmapRect(wg_obj) { return wg_rectSPX{ 0, 0, 0, 0 }; }
-static void			stub_clearTintmap(wg_obj) {}
-static int			stub_hasTintmap(wg_obj) { return 0; }
-static void			stub_setTintGradient(wg_obj, const wg_rectSPX*, const void*) {}
-static void			stub_clearTintGradient(wg_obj) {}
+static void			stub_setTintmap(wax_obj, const wax_rectSPX*, const wax_obj) {}
+static wax_obj		stub_getTintmap(wax_obj) { return nullptr; }
+static wax_rectSPX	stub_getTintmapRect(wax_obj) { return wax_rectSPX{ 0, 0, 0, 0 }; }
+static void			stub_clearTintmap(wax_obj) {}
+static int			stub_hasTintmap(wax_obj) { return 0; }
+static void			stub_setTintGradient(wax_obj, const wax_rectSPX*, const void*) {}
+static void			stub_clearTintGradient(wax_obj) {}
 
-static int				stub_edgemapPaletteType(wg_obj) { return 0; }		// Was WG_EDGEMAP_PALETTE_UNDEFINED.
-static int				stub_setEdgemapColorsFromGradients(wg_obj, int, int, const void*) { return 0; }
-static int				stub_setEdgemapColorsFromTintmaps(wg_obj, int, int, wg_obj*) { return 0; }
-static int				stub_setEdgemapColorsFromStrips(wg_obj, int, int, const wg_color*, const wg_color*) { return 0; }
-static int				stub_importEdgemapPaletteEntries(wg_obj, int, int, const wg_color*) { return 0; }
-static const wg_color*	stub_edgemapColorstrips(wg_obj) { return nullptr; }
-static int				stub_importPaletteEntries(wg_obj, int, int, const wg_color*) { return 0; }
+static int				stub_edgemapPaletteType(wax_obj) { return 0; }		// Was WG_EDGEMAP_PALETTE_UNDEFINED.
+static int				stub_setEdgemapColorsFromGradients(wax_obj, int, int, const void*) { return 0; }
+static int				stub_setEdgemapColorsFromTintmaps(wax_obj, int, int, wax_obj*) { return 0; }
+static int				stub_setEdgemapColorsFromStrips(wax_obj, int, int, const wax_color*, const wax_color*) { return 0; }
+static int				stub_importEdgemapPaletteEntries(wax_obj, int, int, const wax_color*) { return 0; }
+static const wax_color*	stub_edgemapColorstrips(wax_obj) { return nullptr; }
+static int				stub_importPaletteEntries(wax_obj, int, int, const wax_color*) { return 0; }
 
-static int		stub_isTintmapFlag(wg_obj) { return 0; }
-static void		stub_exportTintmapColors(wg_obj, wg_sizeI, wg_color*, wg_color*) {}
-static wg_obj	stub_createGradyent(wg_color, wg_color, wg_color, wg_color) { return nullptr; }
-static wg_obj	stub_createStaticTintmap(wg_sizeI, const wg_color*, const wg_color*) { return nullptr; }
+static int		stub_isTintmapFlag(wax_obj) { return 0; }
+static void		stub_exportTintmapColors(wax_obj, wax_sizeI, wax_color*, wax_color*) {}
+static wax_obj	stub_createGradyent(wax_color, wax_color, wax_color, wax_color) { return nullptr; }
+static wax_obj	stub_createStaticTintmap(wax_sizeI, const wax_color*, const wax_color*) { return nullptr; }
 
 
 
@@ -137,69 +137,69 @@ static wg_obj	stub_createStaticTintmap(wg_sizeI, const wg_color*, const wg_color
 static void populateBody(wg_c_calls_body * pBody)
 {
 	pBody->bitmapCache.structSize			= sizeof(wg_bitmapcache_calls);
-	pBody->bitmapCache.createBitmapCache	= LOCKED(wg_createBitmapCache);
-	pBody->bitmapCache.setCacheLimit		= LOCKED(wg_setCacheLimit);
-	pBody->bitmapCache.cacheLimit			= LOCKED(wg_cacheLimit);
-	pBody->bitmapCache.cacheSize			= LOCKED(wg_cacheSize);
-	pBody->bitmapCache.clearCache			= LOCKED(wg_clearCache);
-	pBody->bitmapCache.addCacheListener		= LOCKED(wg_addCacheListener);
-	pBody->bitmapCache.removeCacheListener	= LOCKED(wg_removeCacheListener);
-	pBody->bitmapCache.getCacheSlot			= LOCKED(wg_getCacheSlot);
-	pBody->bitmapCache.getNbCacheSurfaces	= LOCKED(wg_getNbCacheSurfaces);
-	pBody->bitmapCache.getCacheSurfaces		= LOCKED(wg_getCacheSurfaces);
+	pBody->bitmapCache.createBitmapCache	= LOCKED(wax_createBitmapCache);
+	pBody->bitmapCache.setCacheLimit		= LOCKED(wax_setCacheLimit);
+	pBody->bitmapCache.cacheLimit			= LOCKED(wax_cacheLimit);
+	pBody->bitmapCache.cacheSize			= LOCKED(wax_cacheSize);
+	pBody->bitmapCache.clearCache			= LOCKED(wax_clearCache);
+	pBody->bitmapCache.addCacheListener		= LOCKED(wax_addCacheListener);
+	pBody->bitmapCache.removeCacheListener	= LOCKED(wax_removeCacheListener);
+	pBody->bitmapCache.getCacheSlot			= LOCKED(wax_getCacheSlot);
+	pBody->bitmapCache.getNbCacheSurfaces	= LOCKED(wax_getNbCacheSurfaces);
+	pBody->bitmapCache.getCacheSurfaces		= LOCKED(wax_getCacheSurfaces);
 
 
 	pBody->bitmapFont.structSize			= sizeof(wg_bitmapfont_calls);
-	pBody->bitmapFont.createBitmapFont		= LOCKED(wg_createBitmapFont);
-	pBody->bitmapFont.getBitmapFontSurface	= LOCKED(wg_getBitmapFontSurface);
+	pBody->bitmapFont.createBitmapFont		= LOCKED(wax_createBitmapFont);
+	pBody->bitmapFont.getBitmapFontSurface	= LOCKED(wax_getBitmapFontSurface);
 
 
 	pBody->canvasLayers.structSize			= sizeof(wg_canvaslayers_calls);
-	pBody->canvasLayers.baseLayer			= LOCKED(wg_baseLayer);
-	pBody->canvasLayers.canvasLayersSize	= LOCKED(wg_canvasLayersSize);
-	pBody->canvasLayers.createCanvasLayers	= LOCKED(wg_createCanvasLayers);
-	pBody->canvasLayers.layerFormat			= LOCKED(wg_layerFormat);
+	pBody->canvasLayers.baseLayer			= LOCKED(wax_baseLayer);
+	pBody->canvasLayers.canvasLayersSize	= LOCKED(wax_canvasLayersSize);
+	pBody->canvasLayers.createCanvasLayers	= LOCKED(wax_createCanvasLayers);
+	pBody->canvasLayers.layerFormat			= LOCKED(wax_layerFormat);
 
 	pBody->font.structSize					= sizeof(wg_font_calls);
-	pBody->font.setFontSize					= LOCKED(wg_setFontSize);
-	pBody->font.fontSize					= LOCKED(wg_fontSize);
-	pBody->font.getGlyphWithoutBitmap		= LOCKED(wg_getGlyphWithoutBitmap);
-	pBody->font.getGlyphWithBitmap			= LOCKED(wg_getGlyphWithBitmap);
-	pBody->font.getKerning					= LOCKED(wg_getKerning);
-	pBody->font.lineGap						= LOCKED(wg_lineGap);
-	pBody->font.whitespaceAdvance			= LOCKED(wg_whitespaceAdvance);
-	pBody->font.maxAdvance					= LOCKED(wg_maxAdvance);
-	pBody->font.maxAscend					= LOCKED(wg_maxAscend);
-	pBody->font.maxDescend					= LOCKED(wg_maxDescend);
-	pBody->font.nbGlyphs					= LOCKED(wg_nbGlyphs);
-	pBody->font.hasGlyphs					= LOCKED(wg_hasGlyphs);
-	pBody->font.hasGlyph					= LOCKED(wg_hasGlyph);
-	pBody->font.isMonospace					= LOCKED(wg_isMonospace);
-	pBody->font.isMonochrome				= LOCKED(wg_isMonochrome);
-	pBody->font.getBackupFont				= LOCKED(wg_getBackupFont);
-	pBody->font.createSurfaceFromGlyph		= LOCKED(wg_createSurfaceFromGlyph);
+	pBody->font.setFontSize					= LOCKED(wax_setFontSize);
+	pBody->font.fontSize					= LOCKED(wax_fontSize);
+	pBody->font.getGlyphWithoutBitmap		= LOCKED(wax_getGlyphWithoutBitmap);
+	pBody->font.getGlyphWithBitmap			= LOCKED(wax_getGlyphWithBitmap);
+	pBody->font.getKerning					= LOCKED(wax_getKerning);
+	pBody->font.lineGap						= LOCKED(wax_lineGap);
+	pBody->font.whitespaceAdvance			= LOCKED(wax_whitespaceAdvance);
+	pBody->font.maxAdvance					= LOCKED(wax_maxAdvance);
+	pBody->font.maxAscend					= LOCKED(wax_maxAscend);
+	pBody->font.maxDescend					= LOCKED(wax_maxDescend);
+	pBody->font.nbGlyphs					= LOCKED(wax_nbGlyphs);
+	pBody->font.hasGlyphs					= LOCKED(wax_hasGlyphs);
+	pBody->font.hasGlyph					= LOCKED(wax_hasGlyph);
+	pBody->font.isMonospace					= LOCKED(wax_isMonospace);
+	pBody->font.isMonochrome				= LOCKED(wax_isMonochrome);
+	pBody->font.getBackupFont				= LOCKED(wax_getBackupFont);
+	pBody->font.createSurfaceFromGlyph		= LOCKED(wax_createSurfaceFromGlyph);
 
 
 	pBody->gfxDevice.structSize				= sizeof(wg_gfxdevice_calls);
 	pBody->gfxDevice.deviceSurfaceType		= nullptr;						// Hopefully this is not used anymore.
-	pBody->gfxDevice.getCanvas				= LOCKED(wg_getCanvas);
-	pBody->gfxDevice.getCanvasRef			= LOCKED(wg_getCanvasRef);
-	pBody->gfxDevice.canvasLayers			= LOCKED(wg_canvasLayers);
-	pBody->gfxDevice.surfaceFactory			= LOCKED(wg_surfaceFactory);
-	pBody->gfxDevice.edgemapFactory			= LOCKED(wg_edgemapFactory);
-	pBody->gfxDevice.maxSegments			= LOCKED(wg_maxSegments);
-	pBody->gfxDevice.canvasSize				= LOCKED(wg_canvasSize);
-	pBody->gfxDevice.setClipList			= LOCKED(wg_setClipList);
-	pBody->gfxDevice.resetClipList			= LOCKED(wg_resetClipList);
-	pBody->gfxDevice.pushClipList			= LOCKED(wg_pushClipList);
-	pBody->gfxDevice.popClipList			= LOCKED(wg_popClipList);
-	pBody->gfxDevice.getClipList			= LOCKED(wg_getClipList);
-	pBody->gfxDevice.clipListSize			= LOCKED(wg_clipListSize);
-	pBody->gfxDevice.clipBounds				= LOCKED(wg_clipBounds);
-	pBody->gfxDevice.setTintColor			= LOCKED(wg_setTintColor);
-	pBody->gfxDevice.clearTintColor			= LOCKED(wg_clearTintColor);
-	pBody->gfxDevice.hasTintColor			= LOCKED(wg_hasTintColor);
-	pBody->gfxDevice.getTintColor			= LOCKED(wg_getTintColor);
+	pBody->gfxDevice.getCanvas				= LOCKED(wax_getCanvas);
+	pBody->gfxDevice.getCanvasRef			= LOCKED(wax_getCanvasRef);
+	pBody->gfxDevice.canvasLayers			= LOCKED(wax_canvasLayers);
+	pBody->gfxDevice.surfaceFactory			= LOCKED(wax_surfaceFactory);
+	pBody->gfxDevice.edgemapFactory			= LOCKED(wax_edgemapFactory);
+	pBody->gfxDevice.maxSegments			= LOCKED(wax_maxSegments);
+	pBody->gfxDevice.canvasSize				= LOCKED(wax_canvasSize);
+	pBody->gfxDevice.setClipList			= LOCKED(wax_setClipList);
+	pBody->gfxDevice.resetClipList			= LOCKED(wax_resetClipList);
+	pBody->gfxDevice.pushClipList			= LOCKED(wax_pushClipList);
+	pBody->gfxDevice.popClipList			= LOCKED(wax_popClipList);
+	pBody->gfxDevice.getClipList			= LOCKED(wax_getClipList);
+	pBody->gfxDevice.clipListSize			= LOCKED(wax_clipListSize);
+	pBody->gfxDevice.clipBounds				= LOCKED(wax_clipBounds);
+	pBody->gfxDevice.setTintColor			= LOCKED(wax_setTintColor);
+	pBody->gfxDevice.clearTintColor			= LOCKED(wax_clearTintColor);
+	pBody->gfxDevice.hasTintColor			= LOCKED(wax_hasTintColor);
+	pBody->gfxDevice.getTintColor			= LOCKED(wax_getTintColor);
 
 	pBody->gfxDevice.setTintmap				= &stub_setTintmap;
 	pBody->gfxDevice.getTintmap				= &stub_getTintmap;
@@ -208,185 +208,185 @@ static void populateBody(wg_c_calls_body * pBody)
 	pBody->gfxDevice.hasTintmap				= &stub_hasTintmap;
 	pBody->gfxDevice.setTintGradient		= &stub_setTintGradient;
 	pBody->gfxDevice.clearTintGradient		= &stub_clearTintGradient;
-	pBody->gfxDevice.setTint				= LOCKED(wg_setTint);
-	pBody->gfxDevice.getTint				= LOCKED(wg_getTint);
-	pBody->gfxDevice.getTintRect			= LOCKED(wg_getTintRect);
-	pBody->gfxDevice.clearTint				= LOCKED(wg_clearTint);
-	pBody->gfxDevice.hasTint				= LOCKED(wg_hasTint);
+	pBody->gfxDevice.setTint				= LOCKED(wax_setTint);
+	pBody->gfxDevice.getTint				= LOCKED(wax_getTint);
+	pBody->gfxDevice.getTintRect			= LOCKED(wax_getTintRect);
+	pBody->gfxDevice.clearTint				= LOCKED(wax_clearTint);
+	pBody->gfxDevice.hasTint				= LOCKED(wax_hasTint);
 
-	pBody->gfxDevice.setBlendMode			= LOCKED(wg_setBlendMode);
-	pBody->gfxDevice.getBlendMode			= LOCKED(wg_getBlendMode);
-	pBody->gfxDevice.setBlitSource			= LOCKED(wg_setBlitSource);
-	pBody->gfxDevice.getBlitSource			= LOCKED(wg_getBlitSource);
-	pBody->gfxDevice.setMorphFactor			= LOCKED(wg_setMorphFactor);
-	pBody->gfxDevice.getMorphFactor			= LOCKED(wg_getMorphFactor);
-	pBody->gfxDevice.setRenderLayer			= LOCKED(wg_setRenderLayer);
-	pBody->gfxDevice.getRenderLayer			= LOCKED(wg_getRenderLayer);
-	pBody->gfxDevice.beginRender			= LOCKED(wg_beginRender);
-	pBody->gfxDevice.endRender				= LOCKED(wg_endRender);
-	pBody->gfxDevice.isDeviceRendering		= LOCKED(wg_isDeviceRendering);
-	pBody->gfxDevice.isDeviceIdle			= LOCKED(wg_isDeviceIdle);
-	pBody->gfxDevice.flushDevice			= LOCKED(wg_flushDevice);
-	pBody->gfxDevice.beginCanvasUpdateWithRef		= LOCKED(wg_beginCanvasUpdateWithRef);
-	pBody->gfxDevice.beginCanvasUpdateWithSurface	= LOCKED(wg_beginCanvasUpdateWithSurface);
-	pBody->gfxDevice.endCanvasUpdate		= LOCKED(wg_endCanvasUpdate);
-	pBody->gfxDevice.fill					= LOCKED(wg_fill);
-	pBody->gfxDevice.fillRect				= LOCKED(wg_fillRect);
+	pBody->gfxDevice.setBlendMode			= LOCKED(wax_setBlendMode);
+	pBody->gfxDevice.getBlendMode			= LOCKED(wax_getBlendMode);
+	pBody->gfxDevice.setBlitSource			= LOCKED(wax_setBlitSource);
+	pBody->gfxDevice.getBlitSource			= LOCKED(wax_getBlitSource);
+	pBody->gfxDevice.setMorphFactor			= LOCKED(wax_setMorphFactor);
+	pBody->gfxDevice.getMorphFactor			= LOCKED(wax_getMorphFactor);
+	pBody->gfxDevice.setRenderLayer			= LOCKED(wax_setRenderLayer);
+	pBody->gfxDevice.getRenderLayer			= LOCKED(wax_getRenderLayer);
+	pBody->gfxDevice.beginRender			= LOCKED(wax_beginRender);
+	pBody->gfxDevice.endRender				= LOCKED(wax_endRender);
+	pBody->gfxDevice.isDeviceRendering		= LOCKED(wax_isDeviceRendering);
+	pBody->gfxDevice.isDeviceIdle			= LOCKED(wax_isDeviceIdle);
+	pBody->gfxDevice.flushDevice			= LOCKED(wax_flushDevice);
+	pBody->gfxDevice.beginCanvasUpdateWithRef		= LOCKED(wax_beginCanvasUpdateWithRef);
+	pBody->gfxDevice.beginCanvasUpdateWithSurface	= LOCKED(wax_beginCanvasUpdateWithSurface);
+	pBody->gfxDevice.endCanvasUpdate		= LOCKED(wax_endCanvasUpdate);
+	pBody->gfxDevice.fill					= LOCKED(wax_fill);
+	pBody->gfxDevice.fillRect				= LOCKED(wax_fillRect);
 	pBody->gfxDevice.plotPixels				= nullptr;				// Plot pixels has been deprecated.
-	pBody->gfxDevice.drawLine				= LOCKED(wg_drawLine);
-	pBody->gfxDevice.drawStraightLine		= LOCKED(wg_drawStraightLine);
-	pBody->gfxDevice.blit					= LOCKED(wg_blit);
-	pBody->gfxDevice.blitRect				= LOCKED(wg_blitRect);
-	pBody->gfxDevice.flipBlit				= LOCKED(wg_flipBlit);
-	pBody->gfxDevice.flipBlitRect			= LOCKED(wg_flipBlitRect);
-	pBody->gfxDevice.stretchBlit			= LOCKED(wg_stretchBlit);
-	pBody->gfxDevice.stretchBlitRect		= LOCKED(wg_stretchBlitRect);
-	pBody->gfxDevice.stretchFlipBlit		= LOCKED(wg_stretchFlipBlit);
-	pBody->gfxDevice.stretchFlipBlitRect	= LOCKED(wg_stretchFlipBlitRect);
-	pBody->gfxDevice.precisionBlit			= LOCKED(wg_precisionBlit);
-	pBody->gfxDevice.transformBlit			= LOCKED(wg_transformBlit);
-	pBody->gfxDevice.rotScaleBlit			= LOCKED(wg_rotScaleBlit);
-	pBody->gfxDevice.tile					= LOCKED(wg_tile);
-	pBody->gfxDevice.flipTile				= LOCKED(wg_flipTile);
-	pBody->gfxDevice.scaleTile				= LOCKED(wg_scaleTile);
-	pBody->gfxDevice.scaleFlipTile			= LOCKED(wg_scaleFlipTile);
-	pBody->gfxDevice.drawWave				= LOCKED(wg_drawWave);
-	pBody->gfxDevice.flipDrawWave			= LOCKED(wg_flipDrawWave);
-	pBody->gfxDevice.drawElipse				= LOCKED(wg_drawElipse);
-	pBody->gfxDevice.drawPieChart			= LOCKED(wg_drawPieChart);
-	pBody->gfxDevice.drawSegments			= LOCKED(wg_drawSegments);
-	pBody->gfxDevice.flipDrawSegments		= LOCKED(wg_flipDrawSegments);
-	pBody->gfxDevice.drawEdgemap			= LOCKED(wg_drawEdgemap);
-	pBody->gfxDevice.flipDrawEdgemap		= LOCKED(wg_flipDrawEdgemap);
-	pBody->gfxDevice.tileEdgemap			= LOCKED(wg_tileEdgemap);
-	pBody->gfxDevice.flipTileEdgemap		= LOCKED(wg_flipTileEdgemap);
-	pBody->gfxDevice.blitNinePatch			= LOCKED(wg_blitNinePatch);
+	pBody->gfxDevice.drawLine				= LOCKED(wax_drawLine);
+	pBody->gfxDevice.drawStraightLine		= LOCKED(wax_drawStraightLine);
+	pBody->gfxDevice.blit					= LOCKED(wax_blit);
+	pBody->gfxDevice.blitRect				= LOCKED(wax_blitRect);
+	pBody->gfxDevice.flipBlit				= LOCKED(wax_flipBlit);
+	pBody->gfxDevice.flipBlitRect			= LOCKED(wax_flipBlitRect);
+	pBody->gfxDevice.stretchBlit			= LOCKED(wax_stretchBlit);
+	pBody->gfxDevice.stretchBlitRect		= LOCKED(wax_stretchBlitRect);
+	pBody->gfxDevice.stretchFlipBlit		= LOCKED(wax_stretchFlipBlit);
+	pBody->gfxDevice.stretchFlipBlitRect	= LOCKED(wax_stretchFlipBlitRect);
+	pBody->gfxDevice.precisionBlit			= LOCKED(wax_precisionBlit);
+	pBody->gfxDevice.transformBlit			= LOCKED(wax_transformBlit);
+	pBody->gfxDevice.rotScaleBlit			= LOCKED(wax_rotScaleBlit);
+	pBody->gfxDevice.tile					= LOCKED(wax_tile);
+	pBody->gfxDevice.flipTile				= LOCKED(wax_flipTile);
+	pBody->gfxDevice.scaleTile				= LOCKED(wax_scaleTile);
+	pBody->gfxDevice.scaleFlipTile			= LOCKED(wax_scaleFlipTile);
+	pBody->gfxDevice.drawWave				= LOCKED(wax_drawWave);
+	pBody->gfxDevice.flipDrawWave			= LOCKED(wax_flipDrawWave);
+	pBody->gfxDevice.drawElipse				= LOCKED(wax_drawElipse);
+	pBody->gfxDevice.drawPieChart			= LOCKED(wax_drawPieChart);
+	pBody->gfxDevice.drawSegments			= LOCKED(wax_drawSegments);
+	pBody->gfxDevice.flipDrawSegments		= LOCKED(wax_flipDrawSegments);
+	pBody->gfxDevice.drawEdgemap			= LOCKED(wax_drawEdgemap);
+	pBody->gfxDevice.flipDrawEdgemap		= LOCKED(wax_flipDrawEdgemap);
+	pBody->gfxDevice.tileEdgemap			= LOCKED(wax_tileEdgemap);
+	pBody->gfxDevice.flipTileEdgemap		= LOCKED(wax_flipTileEdgemap);
+	pBody->gfxDevice.blitNinePatch			= LOCKED(wax_blitNinePatch);
 
-	pBody->gfxDevice.setBlurMatrices		= LOCKED(wg_setBlurMatrices);
-	pBody->gfxDevice.setFixedBlendColor		= LOCKED(wg_setFixedBlendColor);
-	pBody->gfxDevice.getFixedBlendColor		= LOCKED(wg_getFixedBlendColor);
+	pBody->gfxDevice.setBlurMatrices		= LOCKED(wax_setBlurMatrices);
+	pBody->gfxDevice.setFixedBlendColor		= LOCKED(wax_setFixedBlendColor);
+	pBody->gfxDevice.getFixedBlendColor		= LOCKED(wax_getFixedBlendColor);
 	
-	pBody->gfxDevice.blur					= LOCKED(wg_blur);
-	pBody->gfxDevice.blurRect				= LOCKED(wg_blurRect);
-	pBody->gfxDevice.stretchBlur			= LOCKED(wg_stretchBlur);
-	pBody->gfxDevice.stretchBlurRect		= LOCKED(wg_stretchBlurRect);
-	pBody->gfxDevice.transformBlur			= LOCKED(wg_transformBlur);
-	pBody->gfxDevice.rotScaleBlur			= LOCKED(wg_rotScaleBlur);
+	pBody->gfxDevice.blur					= LOCKED(wax_blur);
+	pBody->gfxDevice.blurRect				= LOCKED(wax_blurRect);
+	pBody->gfxDevice.stretchBlur			= LOCKED(wax_stretchBlur);
+	pBody->gfxDevice.stretchBlurRect		= LOCKED(wax_stretchBlurRect);
+	pBody->gfxDevice.transformBlur			= LOCKED(wax_transformBlur);
+	pBody->gfxDevice.rotScaleBlur			= LOCKED(wax_rotScaleBlur);
 
-	pBody->gfxDevice.setBlurbrush			= LOCKED(wg_setBlurbrush);
+	pBody->gfxDevice.setBlurbrush			= LOCKED(wax_setBlurbrush);
 
-	pBody->gfxDevice.drawRoundedBox			= LOCKED(wg_drawRoundedBox);
-	pBody->gfxDevice.drawRing				= LOCKED(wg_drawRing);
-	pBody->gfxDevice.warpmapFactory			= LOCKED(wg_warpmapFactory);
-	pBody->gfxDevice.warpBlit				= LOCKED(wg_warpBlit);
-	pBody->gfxDevice.warpBlitRect			= LOCKED(wg_warpBlitRect);
-	pBody->gfxDevice.warpDrawEdgemap		= LOCKED(wg_warpDrawEdgemap);
-	pBody->gfxDevice.drawLineWithCaps		= LOCKED(wg_drawLineWithCaps);
-	pBody->gfxDevice.drawStraightLineWithCaps = LOCKED(wg_drawStraightLineWithCaps);
+	pBody->gfxDevice.drawRoundedBox			= LOCKED(wax_drawRoundedBox);
+	pBody->gfxDevice.drawRing				= LOCKED(wax_drawRing);
+	pBody->gfxDevice.warpmapFactory			= LOCKED(wax_warpmapFactory);
+	pBody->gfxDevice.warpBlit				= LOCKED(wax_warpBlit);
+	pBody->gfxDevice.warpBlitRect			= LOCKED(wax_warpBlitRect);
+	pBody->gfxDevice.warpDrawEdgemap		= LOCKED(wax_warpDrawEdgemap);
+	pBody->gfxDevice.drawLineWithCaps		= LOCKED(wax_drawLineWithCaps);
+	pBody->gfxDevice.drawStraightLineWithCaps = LOCKED(wax_drawStraightLineWithCaps);
 
 /*
 	pBody->streamBuffer.structSize				= sizeof(wg_streambuffer_calls);
-	pBody->streamBuffer.createStreamBuffer		= LOCKED(wg_createStreamBuffer);
-	pBody->streamBuffer.getStreamBufferOutput	= LOCKED(wg_getStreamBufferOutput);
-	pBody->streamBuffer.getStreamBufferInput	= LOCKED(wg_getStreamBufferInput);
-	pBody->streamBuffer.streamBufferCapacity	= LOCKED(wg_streamBufferCapacity);
-	pBody->streamBuffer.streamBufferHasChunk	= LOCKED(wg_streamBufferHasChunk);
+	pBody->streamBuffer.createStreamBuffer		= LOCKED(wax_createStreamBuffer);
+	pBody->streamBuffer.getStreamBufferOutput	= LOCKED(wax_getStreamBufferOutput);
+	pBody->streamBuffer.getStreamBufferInput	= LOCKED(wax_getStreamBufferInput);
+	pBody->streamBuffer.streamBufferCapacity	= LOCKED(wax_streamBufferCapacity);
+	pBody->streamBuffer.streamBufferHasChunk	= LOCKED(wax_streamBufferHasChunk);
 	pBody->streamBuffer.streamBufferBytes		= LOCKED(wg_streamBufferBytes);
 
 
 	pBody->streamPlayer.structSize			= sizeof(wg_streamplayer_calls);
-	pBody->streamPlayer.createStreamPlayer	= LOCKED(wg_createStreamPlayer);
-	pBody->streamPlayer.getStreamPlayerInput	= LOCKED(wg_getStreamPlayerInput);
-	pBody->streamPlayer.setStreamPlayerStoreDirtyRects = LOCKED(wg_setStreamPlayerStoreDirtyRects);
-	pBody->streamPlayer.setStreamPlayerMaxDirtyRects = LOCKED(wg_setStreamPlayerMaxDirtyRects);
-	pBody->streamPlayer.getStreamPlayerDirtyRects = LOCKED(wg_getStreamPlayerDirtyRects);
-	pBody->streamPlayer.clearStreamPlayerDirtyRects = LOCKED(wg_clearStreamPlayerDirtyRects);
+	pBody->streamPlayer.createStreamPlayer	= LOCKED(wax_createStreamPlayer);
+	pBody->streamPlayer.getStreamPlayerInput	= LOCKED(wax_getStreamPlayerInput);
+	pBody->streamPlayer.setStreamPlayerStoreDirtyRects = LOCKED(wax_setStreamPlayerStoreDirtyRects);
+	pBody->streamPlayer.setStreamPlayerMaxDirtyRects = LOCKED(wax_setStreamPlayerMaxDirtyRects);
+	pBody->streamPlayer.getStreamPlayerDirtyRects = LOCKED(wax_getStreamPlayerDirtyRects);
+	pBody->streamPlayer.clearStreamPlayerDirtyRects = LOCKED(wax_clearStreamPlayerDirtyRects);
 
 
 	pBody->streamPump.structSize			= sizeof(wg_streampump_calls);
-	pBody->streamPump.createStreamPump		= LOCKED(wg_createStreamPump);
-	pBody->streamPump.createStreamPumpWithInputOutput = LOCKED(wg_createStreamPumpWithInputOutput);
-	pBody->streamPump.setStreamPumpInput	= LOCKED(wg_setStreamPumpInput);
-	pBody->streamPump.setStreamPumpOutput	= LOCKED(wg_setStreamPumpOutput);
-	pBody->streamPump.peekChunk				= LOCKED(wg_peekChunk);
-	pBody->streamPump.pumpChunk				= LOCKED(wg_pumpChunk);
-	pBody->streamPump.pumpUntilFrame		= LOCKED(wg_pumpUntilFrame);
-	pBody->streamPump.pumpFrame				= LOCKED(wg_pumpFrame);
-	pBody->streamPump.pumpAll				= LOCKED(wg_pumpAll);
+	pBody->streamPump.createStreamPump		= LOCKED(wax_createStreamPump);
+	pBody->streamPump.createStreamPumpWithInputOutput = LOCKED(wax_createStreamPumpWithInputOutput);
+	pBody->streamPump.setStreamPumpInput	= LOCKED(wax_setStreamPumpInput);
+	pBody->streamPump.setStreamPumpOutput	= LOCKED(wax_setStreamPumpOutput);
+	pBody->streamPump.peekChunk				= LOCKED(wax_peekChunk);
+	pBody->streamPump.pumpChunk				= LOCKED(wax_pumpChunk);
+	pBody->streamPump.pumpUntilFrame		= LOCKED(wax_pumpUntilFrame);
+	pBody->streamPump.pumpFrame				= LOCKED(wax_pumpFrame);
+	pBody->streamPump.pumpAll				= LOCKED(wax_pumpAll);
 
 
 	pBody->streamReader.structSize				= sizeof(wg_streamreader_calls);
-	pBody->streamReader.createStreamReader		= LOCKED(wg_createStreamReader);
-	pBody->streamReader.getStreamReaderOutput	= LOCKED(wg_getStreamReaderOutput);
-	pBody->streamReader.streamReaderCapacity	= LOCKED(wg_streamReaderCapacity);
-	pBody->streamReader.streamReaderHasChunk	= LOCKED(wg_streamReaderHasChunk);
-	pBody->streamReader.streamReaderBytes		= LOCKED(wg_streamReaderBytes);
+	pBody->streamReader.createStreamReader		= LOCKED(wax_createStreamReader);
+	pBody->streamReader.getStreamReaderOutput	= LOCKED(wax_getStreamReaderOutput);
+	pBody->streamReader.streamReaderCapacity	= LOCKED(wax_streamReaderCapacity);
+	pBody->streamReader.streamReaderHasChunk	= LOCKED(wax_streamReaderHasChunk);
+	pBody->streamReader.streamReaderBytes		= LOCKED(wax_streamReaderBytes);
 */
 
 
 	pBody->object.structSize				= sizeof(wg_object_calls);
-	pBody->object.finalizer					= LOCKED(wg_finalizer);
-	pBody->object.getTypeInfo				= LOCKED(wg_getTypeInfo);
-	pBody->object.isInstanceOf				= LOCKED(wg_isInstanceOf);
-	pBody->object.refcount					= LOCKED(wg_refcount);
-	pBody->object.release					= LOCKED(wg_release);
-	pBody->object.retain					= LOCKED(wg_retain);
-	pBody->object.setFinalizer				= LOCKED(wg_setFinalizer);
+	pBody->object.finalizer					= LOCKED(wax_finalizer);
+	pBody->object.getTypeInfo				= LOCKED(wax_getTypeInfo);
+	pBody->object.isInstanceOf				= LOCKED(wax_isInstanceOf);
+	pBody->object.refcount					= LOCKED(wax_refcount);
+	pBody->object.release					= LOCKED(wax_release);
+	pBody->object.retain					= LOCKED(wax_retain);
+	pBody->object.setFinalizer				= LOCKED(wax_setFinalizer);
 
 
 	pBody->surface.structSize				= sizeof(wg_surface_calls);
-	pBody->surface.setSurfaceIdentity		= LOCKED(wg_setSurfaceIdentity);
-	pBody->surface.getSurfaceIdentity		= LOCKED(wg_getSurfaceIdentity);
-	pBody->surface.surfacePixelSize			= LOCKED(wg_surfacePixelSize);
-	pBody->surface.surfacePixelWidth		= LOCKED(wg_surfacePixelWidth);
-	pBody->surface.surfacePixelHeight		= LOCKED(wg_surfacePixelHeight);
-	pBody->surface.surfacePointSize			= LOCKED(wg_surfacePointSize);
-	pBody->surface.surfacePointWidth		= LOCKED(wg_surfacePointWidth);
-	pBody->surface.surfacePointHeight		= LOCKED(wg_surfacePointHeight);
-	pBody->surface.surfaceScale				= LOCKED(wg_surfaceScale);
-	pBody->surface.surfaceSampleMethod		= LOCKED(wg_surfaceSampleMethod);
-	pBody->surface.surfaceIsTiling			= LOCKED(wg_surfaceIsTiling);
-	pBody->surface.surfaceIsMipmapped		= LOCKED(wg_surfaceIsMipmapped);
-	pBody->surface.surfaceAlpha				= LOCKED(wg_surfaceAlpha);
-	pBody->surface.surfacePalette			= LOCKED(wg_surfacePalette);
-	pBody->surface.surfacePaletteSize		= LOCKED(wg_surfacePaletteSize);
-	pBody->surface.surfacePaletteCapacity	= LOCKED(wg_surfacePaletteCapacity);
-	pBody->surface.surfacePixelDescription	= LOCKED(wg_surfacePixelDescription);
-	pBody->surface.surfacePixelFormat		= LOCKED(wg_surfacePixelFormat);
-	pBody->surface.surfacePixelBits			= LOCKED(wg_surfacePixelBits);
-	pBody->surface.surfaceIsOpaque			= LOCKED(wg_surfaceIsOpaque);
-	pBody->surface.surfaceCanBeCanvas		= LOCKED(wg_surfaceCanBeCanvas);
-	pBody->surface.allocPixelBuffer			= LOCKED(wg_allocPixelBuffer);
-	pBody->surface.allocPixelBufferFromRect	= LOCKED(wg_allocPixelBufferFromRect);
-	pBody->surface.pushPixels				= LOCKED(wg_pushPixels);
-	pBody->surface.pushPixelsFromRect		= LOCKED(wg_pushPixelsFromRect);
-	pBody->surface.pullPixels				= LOCKED(wg_pullPixels);
-	pBody->surface.pullPixelsFromRect		= LOCKED(wg_pullPixelsFromRect);
-	pBody->surface.freePixelBuffer			= LOCKED(wg_freePixelBuffer);
-	pBody->surface.fillSurface				= LOCKED(wg_fillSurface);
-	pBody->surface.fillSurfaceRect			= LOCKED(wg_fillSurfaceRect);
-	pBody->surface.copySurface				= LOCKED(wg_copySurface);
-	pBody->surface.copySurfaceRect			= LOCKED(wg_copySurfaceRect);
-	pBody->surface.setSurfaceBaggage		= LOCKED(wg_setSurfaceBaggage);
-	pBody->surface.getSurfaceBaggage		= LOCKED(wg_getSurfaceBaggage);
-	pBody->surface.addSurfaceObserver		= LOCKED(wg_addSurfaceObserver);
-	pBody->surface.removeSurfaceObserver	= LOCKED(wg_removeSurfaceObserver);
-	pBody->surface.getSurfaceBlueprint		= LOCKED(wg_getSurfaceBlueprint);
-	pBody->surface.surfaceColorSpace		= LOCKED(wg_surfaceColorSpace);
-	pBody->surface.surfaceIsBigEndian		= LOCKED(wg_surfaceIsBigEndian);
+	pBody->surface.setSurfaceIdentity		= LOCKED(wax_setSurfaceIdentity);
+	pBody->surface.getSurfaceIdentity		= LOCKED(wax_getSurfaceIdentity);
+	pBody->surface.surfacePixelSize			= LOCKED(wax_surfacePixelSize);
+	pBody->surface.surfacePixelWidth		= LOCKED(wax_surfacePixelWidth);
+	pBody->surface.surfacePixelHeight		= LOCKED(wax_surfacePixelHeight);
+	pBody->surface.surfacePointSize			= LOCKED(wax_surfacePointSize);
+	pBody->surface.surfacePointWidth		= LOCKED(wax_surfacePointWidth);
+	pBody->surface.surfacePointHeight		= LOCKED(wax_surfacePointHeight);
+	pBody->surface.surfaceScale				= LOCKED(wax_surfaceScale);
+	pBody->surface.surfaceSampleMethod		= LOCKED(wax_surfaceSampleMethod);
+	pBody->surface.surfaceIsTiling			= LOCKED(wax_surfaceIsTiling);
+	pBody->surface.surfaceIsMipmapped		= LOCKED(wax_surfaceIsMipmapped);
+	pBody->surface.surfaceAlpha				= LOCKED(wax_surfaceAlpha);
+	pBody->surface.surfacePalette			= LOCKED(wax_surfacePalette);
+	pBody->surface.surfacePaletteSize		= LOCKED(wax_surfacePaletteSize);
+	pBody->surface.surfacePaletteCapacity	= LOCKED(wax_surfacePaletteCapacity);
+	pBody->surface.surfacePixelDescription	= LOCKED(wax_surfacePixelDescription);
+	pBody->surface.surfacePixelFormat		= LOCKED(wax_surfacePixelFormat);
+	pBody->surface.surfacePixelBits			= LOCKED(wax_surfacePixelBits);
+	pBody->surface.surfaceIsOpaque			= LOCKED(wax_surfaceIsOpaque);
+	pBody->surface.surfaceCanBeCanvas		= LOCKED(wax_surfaceCanBeCanvas);
+	pBody->surface.allocPixelBuffer			= LOCKED(wax_allocPixelBuffer);
+	pBody->surface.allocPixelBufferFromRect	= LOCKED(wax_allocPixelBufferFromRect);
+	pBody->surface.pushPixels				= LOCKED(wax_pushPixels);
+	pBody->surface.pushPixelsFromRect		= LOCKED(wax_pushPixelsFromRect);
+	pBody->surface.pullPixels				= LOCKED(wax_pullPixels);
+	pBody->surface.pullPixelsFromRect		= LOCKED(wax_pullPixelsFromRect);
+	pBody->surface.freePixelBuffer			= LOCKED(wax_freePixelBuffer);
+	pBody->surface.fillSurface				= LOCKED(wax_fillSurface);
+	pBody->surface.fillSurfaceRect			= LOCKED(wax_fillSurfaceRect);
+	pBody->surface.copySurface				= LOCKED(wax_copySurface);
+	pBody->surface.copySurfaceRect			= LOCKED(wax_copySurfaceRect);
+	pBody->surface.setSurfaceBaggage		= LOCKED(wax_setSurfaceBaggage);
+	pBody->surface.getSurfaceBaggage		= LOCKED(wax_getSurfaceBaggage);
+	pBody->surface.addSurfaceObserver		= LOCKED(wax_addSurfaceObserver);
+	pBody->surface.removeSurfaceObserver	= LOCKED(wax_removeSurfaceObserver);
+	pBody->surface.getSurfaceBlueprint		= LOCKED(wax_getSurfaceBlueprint);
+	pBody->surface.surfaceColorSpace		= LOCKED(wax_surfaceColorSpace);
+	pBody->surface.surfaceIsBigEndian		= LOCKED(wax_surfaceIsBigEndian);
 
 
 	pBody->surfaceFactory.structSize		= sizeof(wg_surfacefactory_calls);
-	pBody->surfaceFactory.maxSurfaceSize	= LOCKED(wg_maxSurfaceSize);
-	pBody->surfaceFactory.createSurface		= LOCKED(wg_createSurface);
-	pBody->surfaceFactory.createSurfaceFromBlob = LOCKED(wg_createSurfaceFromBlob);
-	pBody->surfaceFactory.createSurfaceFromBitmap = LOCKED(wg_createSurfaceFromBitmap);
-	pBody->surfaceFactory.createSurfaceFromRawData = LOCKED(wg_createSurfaceFromRawData);
+	pBody->surfaceFactory.maxSurfaceSize	= LOCKED(wax_maxSurfaceSize);
+	pBody->surfaceFactory.createSurface		= LOCKED(wax_createSurface);
+	pBody->surfaceFactory.createSurfaceFromBlob = LOCKED(wax_createSurfaceFromBlob);
+	pBody->surfaceFactory.createSurfaceFromBitmap = LOCKED(wax_createSurfaceFromBitmap);
+	pBody->surfaceFactory.createSurfaceFromRawData = LOCKED(wax_createSurfaceFromRawData);
 
 	pBody->edgemap.structSize				= sizeof(wg_edgemap_calls);
-	pBody->edgemap.edgemapPixelSize			= LOCKED(wg_edgemapPixelSize);
-	pBody->edgemap.setRenderSegments		= LOCKED(wg_setRenderSegments);
-	pBody->edgemap.getRenderSegments		= LOCKED(wg_getRenderSegments);
+	pBody->edgemap.edgemapPixelSize			= LOCKED(wax_edgemapPixelSize);
+	pBody->edgemap.setRenderSegments		= LOCKED(wax_setRenderSegments);
+	pBody->edgemap.getRenderSegments		= LOCKED(wax_getRenderSegments);
 
 	pBody->edgemap.edgemapPaletteType		= &stub_edgemapPaletteType;
 	pBody->edgemap.setEdgemapColorsFromGradients = &stub_setEdgemapColorsFromGradients;
@@ -396,39 +396,39 @@ static void populateBody(wg_c_calls_body * pBody)
 	pBody->edgemap.edgemapColorstripsX		= &stub_edgemapColorstrips;
 	pBody->edgemap.edgemapColorstripsY		= &stub_edgemapColorstrips;
 	pBody->edgemap.importPaletteEntries		= &stub_importPaletteEntries;
-	pBody->edgemap.setEdgemapColors			= LOCKED(wg_setEdgemapColors);
-	pBody->edgemap.setEdgemapTints			= LOCKED(wg_setEdgemapTints);
+	pBody->edgemap.setEdgemapColors			= LOCKED(wax_setEdgemapColors);
+	pBody->edgemap.setEdgemapTints			= LOCKED(wax_setEdgemapTints);
 
 
-	pBody->edgemap.edgemapFlatColors		= LOCKED(wg_edgemapFlatColors);
-	pBody->edgemap.edgemapTint				= LOCKED(wg_edgemapTint);
+	pBody->edgemap.edgemapFlatColors		= LOCKED(wax_edgemapFlatColors);
+	pBody->edgemap.edgemapTint				= LOCKED(wax_edgemapTint);
 
-	pBody->edgemap.edgemapSegments			= LOCKED(wg_edgemapSegments);
-	pBody->edgemap.edgemapSamples			= LOCKED(wg_edgemapSamples);
-	pBody->edgemap.edgemapIsTiling			= LOCKED(wg_edgemapIsTiling);
-	pBody->edgemap.importSpxSamples			= LOCKED(wg_importSpxSamples);
-	pBody->edgemap.importFloatSamples		= LOCKED(wg_importFloatSamples);
-	pBody->edgemap.exportSpxSamples			= LOCKED(wg_exportSpxSamples);
-	pBody->edgemap.exportFloatSamples		= LOCKED(wg_exportFloatSamples);
-	pBody->edgemap.exportBounds				= LOCKED(wg_exportBounds);
+	pBody->edgemap.edgemapSegments			= LOCKED(wax_edgemapSegments);
+	pBody->edgemap.edgemapSamples			= LOCKED(wax_edgemapSamples);
+	pBody->edgemap.edgemapIsTiling			= LOCKED(wax_edgemapIsTiling);
+	pBody->edgemap.importSpxSamples			= LOCKED(wax_importSpxSamples);
+	pBody->edgemap.importFloatSamples		= LOCKED(wax_importFloatSamples);
+	pBody->edgemap.exportSpxSamples			= LOCKED(wax_exportSpxSamples);
+	pBody->edgemap.exportFloatSamples		= LOCKED(wax_exportFloatSamples);
+	pBody->edgemap.exportBounds				= LOCKED(wax_exportBounds);
 
 	pBody->edgemapFactory.structSize		= sizeof(wg_edgemapfactory_calls);
-	pBody->edgemapFactory.createEdgemap		= LOCKED(wg_createEdgemap);
-	pBody->edgemapFactory.createEdgemapFromFloats = LOCKED(wg_createEdgemapFromFloats);
-	pBody->edgemapFactory.createEdgemapFromSpx = LOCKED(wg_createEdgemapFromSpx);
+	pBody->edgemapFactory.createEdgemap		= LOCKED(wax_createEdgemap);
+	pBody->edgemapFactory.createEdgemapFromFloats = LOCKED(wax_createEdgemapFromFloats);
+	pBody->edgemapFactory.createEdgemapFromSpx = LOCKED(wax_createEdgemapFromSpx);
 
 	pBody->warpmap.structSize				= sizeof(wg_warpmap_calls);
-	pBody->warpmap.warpmapPixelSize			= LOCKED(wg_warpmapPixelSize);
-	pBody->warpmap.warpmapCellSize			= LOCKED(wg_warpmapCellSize);
-	pBody->warpmap.setWarpmapPeriods		= LOCKED(wg_setWarpmapPeriods);
-	pBody->warpmap.warpmapUPeriod			= LOCKED(wg_warpmapUPeriod);
-	pBody->warpmap.warpmapVPeriod			= LOCKED(wg_warpmapVPeriod);
-	pBody->warpmap.importWarpmapNodes		= LOCKED(wg_importWarpmapNodes);
-	pBody->warpmap.exportWarpmapNodes		= LOCKED(wg_exportWarpmapNodes);
+	pBody->warpmap.warpmapPixelSize			= LOCKED(wax_warpmapPixelSize);
+	pBody->warpmap.warpmapCellSize			= LOCKED(wax_warpmapCellSize);
+	pBody->warpmap.setWarpmapPeriods		= LOCKED(wax_setWarpmapPeriods);
+	pBody->warpmap.warpmapUPeriod			= LOCKED(wax_warpmapUPeriod);
+	pBody->warpmap.warpmapVPeriod			= LOCKED(wax_warpmapVPeriod);
+	pBody->warpmap.importWarpmapNodes		= LOCKED(wax_importWarpmapNodes);
+	pBody->warpmap.exportWarpmapNodes		= LOCKED(wax_exportWarpmapNodes);
 
 	pBody->warpmapFactory.structSize		= sizeof(wg_warpmapfactory_calls);
-	pBody->warpmapFactory.createWarpmap		= LOCKED(wg_createWarpmap);
-	pBody->warpmapFactory.createWarpmapFromNodes = LOCKED(wg_createWarpmapFromNodes);
+	pBody->warpmapFactory.createWarpmap		= LOCKED(wax_createWarpmap);
+	pBody->warpmapFactory.createWarpmapFromNodes = LOCKED(wax_createWarpmapFromNodes);
 
 	pBody->hostBridge.structSize			= sizeof(wg_hostbridge_calls);
 	pBody->hostBridge.hidePointer			= LOCKED(wg_hidePointer);
@@ -454,11 +454,11 @@ static void populateBody(wg_c_calls_body * pBody)
 	pBody->pluginCapsule.disconnect			= LOCKED(wg_disconnectPlugin);
 
 	pBody->blurbrush.structSize				= sizeof(wg_blurbrush_calls);
-	pBody->blurbrush.create					= LOCKED(wg_createBlurbrush);
-	pBody->blurbrush.size					= LOCKED(wg_blurbrushSize);
-	pBody->blurbrush.blue					= LOCKED(wg_blurbrushBlue);
-	pBody->blurbrush.green					= LOCKED(wg_blurbrushGreen);
-	pBody->blurbrush.red					= LOCKED(wg_blurbrushRed);
+	pBody->blurbrush.create					= LOCKED(wax_createBlurbrush);
+	pBody->blurbrush.size					= LOCKED(wax_blurbrushSize);
+	pBody->blurbrush.blue					= LOCKED(wax_blurbrushBlue);
+	pBody->blurbrush.green					= LOCKED(wax_blurbrushGreen);
+	pBody->blurbrush.red					= LOCKED(wax_blurbrushRed);
 
 	pBody->tintmap.structSize				= sizeof(wg_tintmap_calls);
 	pBody->tintmap.isTintmapOpaque			= &stub_isTintmapFlag;
@@ -473,21 +473,21 @@ static void populateBody(wg_c_calls_body * pBody)
 	pBody->staticTintmap.createStaticTintmap = &stub_createStaticTintmap;
 
 	pBody->tint.structSize					= sizeof(wg_tint_calls);
-	pBody->tint.defaultTintBP				= LOCKED(wg_defaultTintBP);
-	pBody->tint.createTint					= LOCKED(wg_createTint);
-	pBody->tint.createTintFromData			= LOCKED(wg_createTintFromData);
-	pBody->tint.createTintMix				= LOCKED(wg_createTintMix);
-	pBody->tint.mixTints					= LOCKED(wg_mixTints);
-	pBody->tint.isTintOpaque				= LOCKED(wg_isTintOpaque);
-	pBody->tint.isTintFlat					= LOCKED(wg_isTintFlat);
-	pBody->tint.isTintMix					= LOCKED(wg_isTintMix);
-	pBody->tint.getTintBlueprint			= LOCKED(wg_getTintBlueprint);
-	pBody->tint.tintMixComponents			= LOCKED(wg_tintMixComponents);
-	pBody->tint.tintMixComponent			= LOCKED(wg_tintMixComponent);
-	pBody->tint.tintMixWeight				= LOCKED(wg_tintMixWeight);
-	pBody->tint.tintColorAt					= LOCKED(wg_tintColorAt);
-	pBody->tint.tintAlphaAt					= LOCKED(wg_tintAlphaAt);
-	pBody->tint.exportTintData				= LOCKED(wg_exportTintData);
+	pBody->tint.defaultTintBP				= LOCKED(wax_defaultTintBP);
+	pBody->tint.createTint					= LOCKED(wax_createTint);
+	pBody->tint.createTintFromData			= LOCKED(wax_createTintFromData);
+	pBody->tint.createTintMix				= LOCKED(wax_createTintMix);
+	pBody->tint.mixTints					= LOCKED(wax_mixTints);
+	pBody->tint.isTintOpaque				= LOCKED(wax_isTintOpaque);
+	pBody->tint.isTintFlat					= LOCKED(wax_isTintFlat);
+	pBody->tint.isTintMix					= LOCKED(wax_isTintMix);
+	pBody->tint.getTintBlueprint			= LOCKED(wax_getTintBlueprint);
+	pBody->tint.tintMixComponents			= LOCKED(wax_tintMixComponents);
+	pBody->tint.tintMixComponent			= LOCKED(wax_tintMixComponent);
+	pBody->tint.tintMixWeight				= LOCKED(wax_tintMixWeight);
+	pBody->tint.tintColorAt					= LOCKED(wax_tintColorAt);
+	pBody->tint.tintAlphaAt					= LOCKED(wax_tintAlphaAt);
+	pBody->tint.exportTintData				= LOCKED(wax_exportTintData);
 }
 
 

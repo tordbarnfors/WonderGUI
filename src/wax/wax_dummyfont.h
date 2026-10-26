@@ -19,16 +19,16 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef	WG_DUMMYFONT_DOT_H
-#define	WG_DUMMYFONT_DOT_H
+#ifndef	WAX_DUMMYFONT_DOT_H
+#define	WAX_DUMMYFONT_DOT_H
 #pragma once
 
-#include <wg_geo.h>
-#include <wg_font.h>
+#include <wax_geo.h>
+#include <wax_font.h>
 
 
 
-namespace wg
+namespace wax
 {
 	class DummyFont;
 	typedef	StrongPtr<DummyFont>	DummyFont_p;
@@ -77,4 +77,4 @@ namespace wg
 
 }
 
-#endif // WG_DUMMYFONT_DOT_H
+#endif // WAX_DUMMYFONT_DOT_H

@@ -1,172 +1,193 @@
-
 set( SOURCES
 
-	wg_backendlogger.cpp
-	wg_backendlogger.h
-	wg_bitmapcache.cpp
-	wg_bitmapcache.h
-	wg_bitmapfont.cpp
-	wg_bitmapfont.h
-	wg_blurbrush.cpp
-	wg_blurbrush.h
-	wg_canvaslayers.cpp
-	wg_canvaslayers.h
-	wg_color.cpp
-	wg_color.h
-	wg_compression.cpp
-	wg_compression.h
-	wg_dummyfont.cpp
-	wg_dummyfont.h
-	wg_edgemap.cpp
-	wg_edgemap.h
-	wg_edgemapfactory.cpp
-	wg_edgemapfactory.h
-	wg_edgemaptools.cpp
-	wg_edgemaptools.h
-	wg_font.cpp
-	wg_font.h
-	wg_geo.cpp
-	wg_geo.h
-	wg_gfxbase.cpp
-	wg_gfxbase.h
-	wg_gfxdevice.cpp
-	wg_gfxdevice.h
-	wg_gfxdevicefactory.h
-	wg_gfxdevicefactory.cpp
-	wg_gfxdevice_gen2.cpp
-	wg_gfxdevice_gen2.h
-	wg_gfxbackend.cpp
-	wg_gfxbackend.h
-	wg_gfxenumextras.cpp
-	wg_gfxenumextras.h
-	wg_gfxtypes.h
-	wg_gfxutil.cpp
-	wg_gfxutil.h
-	wg_gpushapes.cpp
-	wg_gpushapes.h
-	wg_gridwalker.cpp
-	wg_gridwalker.h
-	wg_lzcompression.cpp
-	wg_lzcompression.h
-	wg_patches.impl.h
-	wg_patches.cpp
-	wg_patches.h
-	wg_pixeltools.cpp
-	wg_pixeltools.h
-	wg_printer.cpp
-	wg_printer.h
-	wg_q565compression.cpp
-	wg_q565compression.h
-	wg_qoicompression.cpp
-	wg_qoicompression.h
-	wg_rlecompression.cpp
-	wg_rlecompression.h
-	wg_spans.h
-	wg_spxcompression.cpp
-	wg_spxcompression.h
-	wg_surface.cpp
-	wg_surface.h
-	wg_surfacefactory.cpp
-	wg_surfacefactory.h
-	wg_surfacefileheader.h
-	wg_surfacefileinspector.cpp
-	wg_surfacefileinspector.h
-	wg_surfacereader.cpp
-	wg_surfacereader.h
-	wg_surfacewriter.cpp
-	wg_surfacewriter.h
-	wg_sysfont.cpp
-	wg_sysfont.h
-	wg_tint.cpp
-	wg_tint.h
-	wg_tinttools.cpp
-	wg_tinttools.h
-	wg_transitions.cpp
-	wg_transitions.h
-	wg_waveform.cpp
-	wg_waveform.h
-	wg_warpmap.cpp
-	wg_warpmap.h
-	wg_warpmapfactory.cpp
-	wg_warpmapfactory.h
-	wg_circularwarp.cpp
-	wg_circularwarp.h
-	wondergfx.h
+	wax_backendlogger.cpp
+	wax_backendlogger.h
+	wax_core.cpp
+	wax_core.h
+	wax_bitmapcache.cpp
+	wax_bitmapcache.h
+	wax_bitmapfont.cpp
+	wax_bitmapfont.h
+	wax_blob.cpp
+	wax_blob.h
+	wax_blurbrush.cpp
+	wax_blurbrush.h
+	wax_canvaslayers.cpp
+	wax_canvaslayers.h
+	wax_chain.cpp
+	wax_chain.h
+	wax_circularwarp.cpp
+	wax_circularwarp.h
+	wax_color.cpp
+	wax_color.h
+	wax_componentptr.h
+	wax_compression.cpp
+	wax_compression.h
+	wax_dataset.cpp
+	wax_dataset.h
+	wax_dummyfont.cpp
+	wax_dummyfont.h
+	wax_dynamicbuffer.h
+	wax_edgemap.cpp
+	wax_edgemap.h
+	wax_edgemapfactory.cpp
+	wax_edgemapfactory.h
+	wax_edgemaptools.cpp
+	wax_edgemaptools.h
+	wax_enumextras.cpp
+	wax_enumextras.h
+	wax_font.cpp
+	wax_font.h
+	wax_geo.cpp
+	wax_geo.h
+	wax_gfxbackend.cpp
+	wax_gfxbackend.h
+	wax_gfxdevice.cpp
+	wax_gfxdevice.h
+	wax_gfxdevice_gen2.cpp
+	wax_gfxdevice_gen2.h
+	wax_gfxdevicefactory.cpp
+	wax_gfxdevicefactory.h
+	wax_gfxutil.cpp
+	wax_gfxutil.h
+	wax_gpushapes.cpp
+	wax_gpushapes.h
+	wax_gridwalker.cpp
+	wax_gridwalker.h
+	wax_lzcompression.cpp
+	wax_lzcompression.h
+	wax_memheap.cpp
+	wax_memheap.h
+	wax_mempool.cpp
+	wax_mempool.h
+	wax_memstack.cpp
+	wax_memstack.h
+	wax_object.cpp
+	wax_object.h
+	wax_patches.cpp
+	wax_patches.h
+	wax_patches.impl.h
+	wax_pixeltools.cpp
+	wax_pixeltools.h
+	wax_pointers.h
+	wax_printer.cpp
+	wax_printer.h
+	wax_q565compression.cpp
+	wax_q565compression.h
+	wax_qoicompression.cpp
+	wax_qoicompression.h
+	wax_rlecompression.cpp
+	wax_rlecompression.h
+	wax_spans.h
+	wax_spxcompression.cpp
+	wax_spxcompression.h
+	wax_strongptr.h
+	wax_surface.cpp
+	wax_surface.h
+	wax_surfacefactory.cpp
+	wax_surfacefactory.h
+	wax_surfacefileheader.h
+	wax_surfacefileinspector.cpp
+	wax_surfacefileinspector.h
+	wax_surfacereader.cpp
+	wax_surfacereader.h
+	wax_surfacewriter.cpp
+	wax_surfacewriter.h
+	wax_sysfont.cpp
+	wax_sysfont.h
+	wax_tint.cpp
+	wax_tint.h
+	wax_tinttools.cpp
+	wax_tinttools.h
+	wax_transitions.cpp
+	wax_transitions.h
+	wax_types.h
+	wax_warpmap.cpp
+	wax_warpmap.h
+	wax_warpmapfactory.cpp
+	wax_warpmapfactory.h
+	wax_waveform.cpp
+	wax_waveform.h
+	wax_weakptr.h
 
-	c-api/wg_c_bitmapcache.cpp
-	c-api/wg_c_bitmapcache.h
-	c-api/wg_c_bitmapfont.cpp
-	c-api/wg_c_bitmapfont.h	
-	c-api/wg_c_blurbrush.cpp
-	c-api/wg_c_blurbrush.h	
-	c-api/wg_c_canvaslayers.cpp
-	c-api/wg_c_canvaslayers.h
-	c-api/wg_c_color.cpp
-	c-api/wg_c_color.h
-	c-api/wg_c_edgemap.cpp
-	c-api/wg_c_edgemap.h
-	c-api/wg_c_edgemapfactory.cpp
-	c-api/wg_c_edgemapfactory.h
-	c-api/wg_c_warpmap.cpp
-	c-api/wg_c_warpmap.h
-	c-api/wg_c_warpmapfactory.cpp
-	c-api/wg_c_warpmapfactory.h
-	c-api/wg_c_circularwarp.cpp
-	c-api/wg_c_circularwarp.h
-	c-api/wg_c_font.cpp
-	c-api/wg_c_font.h	
-	c-api/wg_c_geo.cpp
-	c-api/wg_c_geo.h
-	c-api/wg_c_gfxbackend.cpp
-	c-api/wg_c_gfxbackend.h
-	c-api/wg_c_gfxbase.cpp
-	c-api/wg_c_gfxbase.h
-	c-api/wg_c_gfxdevice.cpp
-	c-api/wg_c_gfxdevice.h
-	c-api/wg_c_gfxtypes.h
-	c-api/wg_c_gfxutil.cpp
-	c-api/wg_c_gfxutil.h
-	c-api/wg_c_internal.cpp
-	c-api/wg_c_internal.h
-	c-api/wg_c_patches.cpp
-	c-api/wg_c_patches.h
-	c-api/wg_c_printer.cpp
-	c-api/wg_c_printer.h
-	c-api/wg_c_surface.cpp
-	c-api/wg_c_surface.h
-	c-api/wg_c_surfacefactory.cpp
-	c-api/wg_c_surfacefactory.h
-	c-api/wg_c_surfacereader.cpp
-	c-api/wg_c_surfacereader.h
-	c-api/wg_c_surfacewriter.cpp
-	c-api/wg_c_surfacewriter.h
-	c-api/wg_c_sysfont.cpp
-	c-api/wg_c_tint.cpp
-	c-api/wg_c_tint.h
-	c-api/wg_c_sysfont.h
-	c-api/wondergfx_c.h
+	c-api/wax_c.h
+	c-api/wax_c_core.cpp
+	c-api/wax_c_core.h
+	c-api/wax_c_bitmapcache.cpp
+	c-api/wax_c_bitmapcache.h
+	c-api/wax_c_bitmapfont.cpp
+	c-api/wax_c_bitmapfont.h
+	c-api/wax_c_blob.cpp
+	c-api/wax_c_blob.h
+	c-api/wax_c_blurbrush.cpp
+	c-api/wax_c_blurbrush.h
+	c-api/wax_c_canvaslayers.cpp
+	c-api/wax_c_canvaslayers.h
+	c-api/wax_c_circularwarp.cpp
+	c-api/wax_c_circularwarp.h
+	c-api/wax_c_color.cpp
+	c-api/wax_c_color.h
+	c-api/wax_c_edgemap.cpp
+	c-api/wax_c_edgemap.h
+	c-api/wax_c_edgemapfactory.cpp
+	c-api/wax_c_edgemapfactory.h
+	c-api/wax_c_font.cpp
+	c-api/wax_c_font.h
+	c-api/wax_c_geo.cpp
+	c-api/wax_c_geo.h
+	c-api/wax_c_gfxbackend.cpp
+	c-api/wax_c_gfxbackend.h
+	c-api/wax_c_gfxdevice.cpp
+	c-api/wax_c_gfxdevice.h
+	c-api/wax_c_gfxutil.cpp
+	c-api/wax_c_gfxutil.h
+	c-api/wax_c_internal.cpp
+	c-api/wax_c_internal.h
+	c-api/wax_c_memheap.cpp
+	c-api/wax_c_memheap.h
+	c-api/wax_c_object.cpp
+	c-api/wax_c_object.h
+	c-api/wax_c_patches.cpp
+	c-api/wax_c_patches.h
+	c-api/wax_c_printer.cpp
+	c-api/wax_c_printer.h
+	c-api/wax_c_surface.cpp
+	c-api/wax_c_surface.h
+	c-api/wax_c_surfacefactory.cpp
+	c-api/wax_c_surfacefactory.h
+	c-api/wax_c_surfacereader.cpp
+	c-api/wax_c_surfacereader.h
+	c-api/wax_c_surfacewriter.cpp
+	c-api/wax_c_surfacewriter.h
+	c-api/wax_c_sysfont.cpp
+	c-api/wax_c_sysfont.h
+	c-api/wax_c_tint.cpp
+	c-api/wax_c_tint.h
+	c-api/wax_c_types.cpp
+	c-api/wax_c_types.h
+	c-api/wax_c_warpmap.cpp
+	c-api/wax_c_warpmap.h
+	c-api/wax_c_warpmapfactory.cpp
+	c-api/wax_c_warpmapfactory.h
+
+	wax.h
 )
 
 set(INCDIRS
-	${WONDERGEAR_INCDIRS}
 	${CMAKE_CURRENT_LIST_DIR}
 	${CMAKE_CURRENT_LIST_DIR}/c-api
 )
 
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${SOURCES})
 
-add_library( wondergfx STATIC ${SOURCES} )
-generate_export_header(wondergfx BASE_NAME wg)
+add_library( wax STATIC ${SOURCES} )
+generate_export_header(wax BASE_NAME wax)
 
-target_include_directories(wondergfx PRIVATE ${INCDIRS} 
+target_include_directories(wax PRIVATE ${INCDIRS}
 	"${CMAKE_CURRENT_BINARY_DIR}"  # For generated header
 )
 
-target_link_libraries(wondergfx PUBLIC wondergear )
-
 
 list(TRANSFORM SOURCES PREPEND ${CMAKE_CURRENT_LIST_DIR}/ )
-set(WONDERGFX_SOURCES ${SOURCES} PARENT_SCOPE)
-set(WONDERGFX_INCDIRS ${INCDIRS} PARENT_SCOPE)
-
-
+set(WAX_SOURCES ${SOURCES} PARENT_SCOPE)
+set(WAX_INCDIRS ${INCDIRS} PARENT_SCOPE)

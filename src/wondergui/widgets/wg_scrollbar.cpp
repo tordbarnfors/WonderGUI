@@ -21,8 +21,8 @@
 =========================================================================*/
 #include <memory.h>
 #include <wg_scrollbar.h>
-#include <wg_surface.h>
-#include <wg_gfxdevice.h>
+#include <wax_surface.h>
+#include <wax_gfxdevice.h>
 #include <wg_util.h>
 #include <wg_msgrouter.h>
 #include <wg_base.h>

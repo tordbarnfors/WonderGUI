@@ -20,32 +20,32 @@
 
 =========================================================================*/
 #include <cmath>
-#include <wg_softbackend.h>
-#include <wg_softsurfacefactory.h>
-#include <wg_softedgemapfactory.h>
-#include <wg_softedgemap.h>
-#include <wg_softwarpmapfactory.h>
-#include <wg_softwarpmap.h>
+#include <wax_softbackend.h>
+#include <wax_softsurfacefactory.h>
+#include <wax_softedgemapfactory.h>
+#include <wax_softedgemap.h>
+#include <wax_softwarpmapfactory.h>
+#include <wax_softwarpmap.h>
 #include <algorithm>
-#include <wg_gfxbase.h>
+#include <wax_core.h>
 #include <cstring>
 
 // Prefetches memory about to be written, nothing where not supported. Keep it in code doing
 // more than prefetching, compilers may drop calls to functions that don't.
 
 #if defined(__GNUC__) || defined(__clang__)
-#	define WG_PREFETCH_FOR_WRITE(p)	__builtin_prefetch((p), 1)
+#	define WAX_PREFETCH_FOR_WRITE(p)	__builtin_prefetch((p), 1)
 #elif defined(_MSC_VER) && (defined(_M_X64) || defined(_M_IX86))
 #	include <xmmintrin.h>
-#	define WG_PREFETCH_FOR_WRITE(p)	_mm_prefetch((const char*)(p), _MM_HINT_T0)
+#	define WAX_PREFETCH_FOR_WRITE(p)	_mm_prefetch((const char*)(p), _MM_HINT_T0)
 #else
-#	define WG_PREFETCH_FOR_WRITE(p)	((void)0)
+#	define WAX_PREFETCH_FOR_WRITE(p)	((void)0)
 #endif
 
 
 using namespace std;
 
-namespace wg
+namespace wax
 {
 	const TypeInfo SoftBackend::TYPEINFO = { "SoftBackend", &GfxBackend::TYPEINFO };
 
@@ -211,7 +211,7 @@ namespace wg
 
 	void SoftBackend::setCanvas(Surface* _pSurface)
 	{
-		// WonderGFX should be able to run without RTTI.
+		// Wax should be able to run without RTTI.
 
 		auto pSurface = _pSurface->isInstanceOf(SoftSurface::TYPEINFO) ? static_cast<SoftSurface*>(_pSurface) : nullptr;
 
@@ -430,7 +430,7 @@ namespace wg
 						toString(mode),
 						toString(m_canvasSoftFormat));
 
-					GfxBase::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, errorMsg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+					Core::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, errorMsg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 				};
 
 				// Fills a rectangle of whole pixels with given kernel, taking tint into account.
@@ -608,7 +608,7 @@ namespace wg
 						toString(m_blendMode),
 						toString(m_canvasSoftFormat));
 
-					GfxBase::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, errorMsg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+					Core::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, errorMsg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 					return;
 				}
 
@@ -659,8 +659,8 @@ namespace wg
 
 					// Lines without caps, from pixel to pixel.
 
-					beg = Util::roundToPixels(beg);
-					end = Util::roundToPixels(end);
+					beg = GfxUtil::roundToPixels(beg);
+					end = GfxUtil::roundToPixels(end);
 
 
 					if (std::abs(beg.x - end.x) > std::abs(beg.y - end.y))
@@ -826,8 +826,8 @@ namespace wg
 				auto& mtx = s_standardTransforms[flip];
 
 				RectI _dest = { 
-					Util::roundToPixels(destX), 
-					Util::roundToPixels(destY), 
+					GfxUtil::roundToPixels(destX), 
+					GfxUtil::roundToPixels(destY), 
 					pEdgemap->m_size.w * int(abs(mtx.xx)) + pEdgemap->m_size.h * int(abs(mtx.yx)),
 					pEdgemap->m_size.w * int(abs(mtx.xy)) + pEdgemap->m_size.h * int(abs(mtx.yy)),
 				};
@@ -949,7 +949,7 @@ namespace wg
 						toString(m_blendMode),
 						toString(m_canvasSoftFormat));
 
-					GfxBase::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, errorMsg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+					Core::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, errorMsg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 					break;
 				}
 
@@ -957,7 +957,7 @@ namespace wg
 
 				for (int patchIdx = 0; patchIdx < nRects; patchIdx++)
 				{
-					RectI patch = Util::roundToPixels(pMyRects[patchIdx]);		// Rounded like the position of the edgemap.
+					RectI patch = GfxUtil::roundToPixels(pMyRects[patchIdx]);		// Rounded like the position of the edgemap.
 					if (!bTile)
 						patch = RectI::overlap(dest, patch);
 
@@ -1431,7 +1431,7 @@ namespace wg
 
 		int memBufferSize = chunkLines * dest.w * 8;
 
-		uint8_t* pChunkBuffer = (uint8_t*)GfxBase::memStackAlloc(memBufferSize);
+		uint8_t* pChunkBuffer = (uint8_t*)Core::memStackAlloc(memBufferSize);
 
 		int line = 0;
 
@@ -1450,7 +1450,7 @@ namespace wg
 			line += thisChunkLines;
 		}
 
-		GfxBase::memStackFree(memBufferSize);
+		Core::memStackFree(memBufferSize);
 	}
 
 	//____ _onePassTransformBlit() ____________________________________________
@@ -1495,7 +1495,7 @@ namespace wg
 
 		int memBufferSize = chunkLines * dest.w * 8;
 
-		uint8_t* pChunkBuffer = (uint8_t*)GfxBase::memStackAlloc(memBufferSize);
+		uint8_t* pChunkBuffer = (uint8_t*)Core::memStackAlloc(memBufferSize);
 
 		int line = 0;
 
@@ -1515,7 +1515,7 @@ namespace wg
 			line += thisChunkLines;
 		}
 
-		GfxBase::memStackFree(memBufferSize);
+		Core::memStackFree(memBufferSize);
 	}
 
 	//____ _dummyStraightBlit() _________________________________________________
@@ -1540,7 +1540,7 @@ namespace wg
 				toString(m_canvasSoftFormat));
 		}
 
-		GfxBase::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, errorMsg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+		Core::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, errorMsg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 	}
 
 	//____ _dummyTransformBlit() ________________________________________________
@@ -1582,7 +1582,7 @@ namespace wg
 			toString(m_blendMode),
 			toString(m_canvasSoftFormat));
 
-		GfxBase::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, errorMsg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+		Core::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, errorMsg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 
 	}
 
@@ -1966,7 +1966,7 @@ namespace wg
 
 			t.pitch = length;
 			t.bufferBytes = sizeof(HiColor) * (nSegments + 1) * length;
-			t.pColumns = (HiColor*)GfxBase::memStackAlloc(t.bufferBytes);
+			t.pColumns = (HiColor*)Core::memStackAlloc(t.bufferBytes);
 			t.pGlobal = t.pColumns + nSegments * length;
 		}
 	}
@@ -2187,7 +2187,7 @@ namespace wg
 		static bool bWarned = false;
 		if (!bWarned)
 		{
-			GfxBase::throwError(ErrorLevel::Warning, ErrorCode::RenderFailure, "Kernels for tinted edgemaps missing, tints on edgemaps are approximated with flat colors.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			Core::throwError(ErrorLevel::Warning, ErrorCode::RenderFailure, "Kernels for tinted edgemaps missing, tints on edgemaps are approximated with flat colors.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			bWarned = true;
 		}
 	}
@@ -2366,7 +2366,7 @@ namespace wg
 	void SoftBackend::_endEdgemapTinting(EdgemapTinting& t)
 	{
 		if (t.bufferBytes > 0)
-			GfxBase::memStackFree(t.bufferBytes);
+			Core::memStackFree(t.bufferBytes);
 
 		t.bufferBytes = 0;
 	}
@@ -2463,7 +2463,7 @@ namespace wg
 			for (int i = 0; i < 17; i++)
 			{
 				double b = i / 16.0;
-				s_lineThicknessTable[i] = (int)(Util::squareRoot(1.0 + b * b) * 65536);
+				s_lineThicknessTable[i] = (int)(GfxUtil::squareRoot(1.0 + b * b) * 65536);
 			}
 
 			s_bTablesInitialized = true;
@@ -2515,7 +2515,7 @@ namespace wg
 
 		if (kind != ShapeKind::RoundedBox && kind != ShapeKind::Ring)
 		{
-			GfxBase::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, "Failed DrawShape operation. Unsupported kind of shape.",
+			Core::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, "Failed DrawShape operation. Unsupported kind of shape.",
 				this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return false;
 		}
@@ -2532,7 +2532,7 @@ namespace wg
 				toString(m_blendMode),
 				toString(m_canvasSoftFormat));
 
-			GfxBase::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, errorMsg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			Core::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, errorMsg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return false;
 		}
 
@@ -2891,9 +2891,9 @@ namespace wg
 			const int end = pRuns[nRuns - 1].end * pixelBytes;
 
 			for (int ofs = beg; ofs < end; ofs += int(kCacheLineSize))
-				WG_PREFETCH_FOR_WRITE(pRow + ofs);
+				WAX_PREFETCH_FOR_WRITE(pRow + ofs);
 
-			WG_PREFETCH_FOR_WRITE(pRow + end - 1);
+			WAX_PREFETCH_FOR_WRITE(pRow + end - 1);
 		}
 	}
 
@@ -3071,7 +3071,7 @@ namespace wg
 				toString(m_blendMode),
 				toString(m_canvasSoftFormat));
 
-			GfxBase::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, errorMsg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			Core::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, errorMsg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return false;
 		}
 
@@ -3161,4 +3161,4 @@ namespace wg
 		return buffer.data();
 	}
 
-} // namespace wg
+} // namespace wax

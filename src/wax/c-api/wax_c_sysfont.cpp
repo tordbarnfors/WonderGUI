@@ -19,15 +19,15 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#include <wg_c_sysfont.h>
-#include <wg_sysfont.h>
+#include <wax_c_sysfont.h>
+#include <wax_sysfont.h>
 
 #include <type_traits>
 
 
-using namespace wg;
+using namespace wax;
 
-wg_obj wg_createSysFont(wg_obj surfaceFactory, wg_obj backupFont)
+wax_obj wax_createSysFont(wax_obj surfaceFactory, wax_obj backupFont)
 {
 	SurfaceFactory * pFactory = surfaceFactory == nullptr ? nullptr : static_cast<SurfaceFactory*>(reinterpret_cast<Object*>(surfaceFactory) );
 	Font * pBackupFont = backupFont == nullptr ? nullptr : static_cast<Font*>(reinterpret_cast<Object*>(backupFont) );

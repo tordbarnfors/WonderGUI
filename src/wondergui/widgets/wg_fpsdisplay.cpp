@@ -22,8 +22,8 @@
 #include	<stdio.h>
 #include	<wg_fpsdisplay.h>
 #include	<wg_texttool.h>
-#include	<wg_gfxdevice.h>
-#include	<wg_color.h>
+#include	<wax_gfxdevice.h>
+#include	<wax_color.h>
 #include	<wg_char.h>
 #include	<wg_base.h>
 #include	<wg_basictextlayout.h>

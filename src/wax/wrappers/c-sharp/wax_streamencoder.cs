@@ -1,6 +1,6 @@
 using System.Runtime.InteropServices;
 
-namespace WG;
+namespace Wax;
 
 public class StreamEncoder : Objekt
 {
@@ -26,43 +26,43 @@ public class StreamEncoder : Objekt
         c_bp.sampleMethod = blueprint.SampleMethod;
         c_bp.sink = blueprint.Sink.c_component;
 
-        _obj = wg_createStreamEncoder(ref c_bp);
+        _obj = wax_createStreamEncoder(ref c_bp);
     }
 
     //____ SetStream() ________________________________________________________
     public void SetStream(StreamSink stream)
     {
-        wg_setEncoderStream(_obj, stream.c_component);
+        wax_setEncoderStream(_obj, stream.c_component);
     }
 
     //____ SetDefaultPixelFormat() ____________________________________________
     public void SetDefaultPixelFormat(PixelFormat pixelFormat)
     {
-        wg_setEncoderDefaultPixelFormat(_obj, pixelFormat);
+        wax_setEncoderDefaultPixelFormat(_obj, pixelFormat);
     }
 
     //____ DefaultPixelFormat() _______________________________________________
     public PixelFormat DefaultPixelFormat()
     {
-        return wg_getEncoderDefaultPixelFormat(_obj);
+        return wax_getEncoderDefaultPixelFormat(_obj);
     }
 
     //____ SetDefaultSampleMethod() ___________________________________________
     public void SetDefaultSampleMethod(SampleMethod sampleMethod)
     {
-        wg_setEncoderDefaultSampleMethod(_obj, sampleMethod);
+        wax_setEncoderDefaultSampleMethod(_obj, sampleMethod);
     }
 
     //____ DefaultSampleMethod() ______________________________________________
     public SampleMethod DefaultSampleMethod()
     {
-        return wg_getEncoderDefaultSampleMethod(_obj);
+        return wax_getEncoderDefaultSampleMethod(_obj);
     }
 
     //____ Flush() ____________________________________________________________
     public void Flush()
     {
-        wg_flushEncoder(_obj);
+        wax_flushEncoder(_obj);
     }
     
     //____ C_Blueprint ________________________________________________________
@@ -79,25 +79,25 @@ public class StreamEncoder : Objekt
    //____ DLL functions ______________________________________________________
 
     [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-	private static extern IntPtr wg_createStreamEncoder( ref C_Blueprint bp);
+	private static extern IntPtr wax_createStreamEncoder( ref C_Blueprint bp);
 
     [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-	private static extern void wg_setEncoderStream(IntPtr encoder, C_Component sinkForStream);
+	private static extern void wax_setEncoderStream(IntPtr encoder, C_Component sinkForStream);
 
     [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-	private static extern void wg_setEncoderDefaultPixelFormat(IntPtr encoder, PixelFormat pixelFormat);
+	private static extern void wax_setEncoderDefaultPixelFormat(IntPtr encoder, PixelFormat pixelFormat);
 
     [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-	private static extern PixelFormat wg_getEncoderDefaultPixelFormat(IntPtr encoder);
+	private static extern PixelFormat wax_getEncoderDefaultPixelFormat(IntPtr encoder);
 
     [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-	private static extern void wg_setEncoderDefaultSampleMethod(IntPtr encoder, SampleMethod sampleMethod);
+	private static extern void wax_setEncoderDefaultSampleMethod(IntPtr encoder, SampleMethod sampleMethod);
 
     [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-	private static extern SampleMethod wg_getEncoderDefaultSampleMethod(IntPtr encoder);
+	private static extern SampleMethod wax_getEncoderDefaultSampleMethod(IntPtr encoder);
 
     [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-	private static extern void			wg_flushEncoder(IntPtr encoder);
+	private static extern void			wax_flushEncoder(IntPtr encoder);
 
 
 }

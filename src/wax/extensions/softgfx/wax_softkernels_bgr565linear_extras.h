@@ -26,15 +26,15 @@
  */
 
 
-#ifndef WG_SOFTKERNELS_BGR565LINEAR_EXTRAS_DOT_H
-#define WG_SOFTKERNELS_BGR565LINEAR_EXTRAS_DOT_H
+#ifndef WAX_SOFTKERNELS_BGR565LINEAR_EXTRAS_DOT_H
+#define WAX_SOFTKERNELS_BGR565LINEAR_EXTRAS_DOT_H
 #pragma once
 
-#include <wg_softbackend.h>
+#include <wax_softbackend.h>
 
-namespace wg
+namespace wax
 {
 	bool addExtraSoftKernelsForBGR565LinearCanvas( SoftBackend * pDevice );
 };
 
-#endif //WG_SOFTKERNELS_BGR565LINEAR_EXTRAS_DOT_H
+#endif //WAX_SOFTKERNELS_BGR565LINEAR_EXTRAS_DOT_H

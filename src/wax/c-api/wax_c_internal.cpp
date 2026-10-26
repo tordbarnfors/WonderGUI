@@ -19,15 +19,15 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#include <wg_c_internal.h>
-#include <wg_gfxbase.h>
+#include <wax_c_internal.h>
+#include <wax_core.h>
 
-using namespace wg;
+using namespace wax;
 
-void convertSurfaceBlueprint(Surface::Blueprint* pDest, const wg_surfaceBP* pSource)
+void convertSurfaceBlueprint(Surface::Blueprint* pDest, const wax_surfaceBP* pSource)
 {
-	if( pSource->byteOrder != WG_BYTEORDER_NATIVE )
-		pDest->bigEndian = (pSource->byteOrder == WG_BYTEORDER_BIG_ENDIAN);
+	if( pSource->byteOrder != WAX_BYTEORDER_NATIVE )
+		pDest->bigEndian = (pSource->byteOrder == WAX_BYTEORDER_BIG_ENDIAN);
 	pDest->buffered = pSource->buffered;
 	pDest->canvas = pSource->canvas;
 	pDest->colorSpace = (ColorSpace)pSource->colorSpace;
@@ -46,7 +46,7 @@ void convertSurfaceBlueprint(Surface::Blueprint* pDest, const wg_surfaceBP* pSou
 	pDest->tiling = pSource->tiling;
 }
 
-void convertEdgemapBlueprint(Edgemap::Blueprint* pDest, const wg_edgemapBP* pSource, Tint_p * pSpaceForTints )
+void convertEdgemapBlueprint(Edgemap::Blueprint* pDest, const wax_edgemapBP* pSource, Tint_p * pSpaceForTints )
 {
 	pDest->colors		= (HiColor*) pSource->colors;
 	pDest->segments		= pSource->segments;
@@ -64,7 +64,7 @@ void convertEdgemapBlueprint(Edgemap::Blueprint* pDest, const wg_edgemapBP* pSou
 		pDest->tints		= nullptr;
 }
 
-void convertWarpmapBlueprint(Warpmap::Blueprint* pDest, const wg_warpmapBP* pSource)
+void convertWarpmapBlueprint(Warpmap::Blueprint* pDest, const wax_warpmapBP* pSource)
 {
 	if( pSource->cellSize > 0 )
 		pDest->cellSize	= pSource->cellSize;

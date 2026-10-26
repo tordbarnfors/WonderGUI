@@ -34,7 +34,7 @@ static const char	c_hookType[] = {"PluginRootHook"};
 
 
 
-WgPluginRoot::WgPluginRoot( wg_obj myPluginCapsule, WgPluginContext * pContext )
+WgPluginRoot::WgPluginRoot( wax_obj myPluginCapsule, WgPluginContext * pContext )
 {
 	m_pContext = pContext;
 	m_pluginCapsule = myPluginCapsule;
@@ -256,7 +256,7 @@ void WgPluginRoot::_preRender()
 
 //____ _render() ______________________________________________________________
 
-void WgPluginRoot::_render(wg_obj device, const RectSPX& _canvas, const RectSPX& _window)
+void WgPluginRoot::_render(wax_obj device, const RectSPX& _canvas, const RectSPX& _window)
 {
 	if (!m_hook.Widget())
 		return;
@@ -264,8 +264,8 @@ void WgPluginRoot::_render(wg_obj device, const RectSPX& _canvas, const RectSPX&
 	WgPluginBase::setContext(m_pContext);
 
 
-	wg_obj hSurfFactory = PluginCalls::gfxDevice->surfaceFactory(device);
-	wg_obj hWaveFactory = PluginCalls::gfxDevice->edgemapFactory(device);
+	wax_obj hSurfFactory = PluginCalls::gfxDevice->surfaceFactory(device);
+	wax_obj hWaveFactory = PluginCalls::gfxDevice->edgemapFactory(device);
 
 	auto pSurfFactory = PluginSurfaceFactory::create(hSurfFactory);
 	auto pWaveFactory = PluginEdgemapFactory::create(hWaveFactory);

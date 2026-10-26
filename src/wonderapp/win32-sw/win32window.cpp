@@ -21,7 +21,7 @@
 =========================================================================*/
 #include <win32window.h>
 #include <windows.h>
-#include <wg_softsurface.h>
+#include <wax_softsurface.h>
 
 extern std::wstring _stringToWString(const std::string& str);
 

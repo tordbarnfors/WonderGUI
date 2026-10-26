@@ -19,12 +19,12 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#include <wg_geo.h>
+#include <wax_geo.h>
 
 #include <utility>
 #include <algorithm>
 #include <cstdlib>
 
-namespace wg
+namespace wax
 {
-} // namespace wg
+} // namespace wax

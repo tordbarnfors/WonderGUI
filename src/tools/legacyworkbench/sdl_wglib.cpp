@@ -1,8 +1,8 @@
 #include "sdl_wglib.h"
 //#include <wg_surface_sdl.h>
-#include <wg_softsurface.h>
-#include <wg_softsurfacefactory.h>
-#include <wg_bitmapfont.h>
+#include <wax_softsurface.h>
+#include <wax_softsurfacefactory.h>
+#include <wax_bitmapfont.h>
 #include <wglegacygui.h>
 
 namespace sdl_wglib

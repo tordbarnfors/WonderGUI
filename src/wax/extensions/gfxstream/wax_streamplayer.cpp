@@ -19,15 +19,15 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#include <wg_streamplayer.h>
-#include <wg_tinttools.h>
-#include <wg_gfxbase.h>
-#include <wg_gfxutil.h>
-#include <wg_pixeltools.h>
+#include <wax_streamplayer.h>
+#include <wax_tinttools.h>
+#include <wax_core.h>
+#include <wax_gfxutil.h>
+#include <wax_pixeltools.h>
 #include <assert.h>
 #include <algorithm>
 
-namespace wg
+namespace wax
 {
 
 	const TypeInfo StreamPlayer::TYPEINFO = { "StreamPlayer", &Object::TYPEINFO };
@@ -174,7 +174,7 @@ namespace wg
 					char msg[128];
 					snprintf(msg, sizeof(msg), "Skipping %s chunk, next chunk will be processed.", toString(header.type) );
 
-					GfxBase::throwError(ErrorLevel::Warning, ErrorCode::SystemIntegrity, msg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+					Core::throwError(ErrorLevel::Warning, ErrorCode::SystemIntegrity, msg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 					m_pDecoder->skip(header.size);
 					return true;
 				}
@@ -186,7 +186,7 @@ namespace wg
 					char msg[128];
 					snprintf(msg, sizeof(msg), "Skipping %s chunk, continue processing %s next %s.", toString(header.type), m_bSkipEndInclusive ? "after" : "on", toString(m_skipEndId) );
 
-					GfxBase::throwError(ErrorLevel::Warning, ErrorCode::SystemIntegrity, msg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+					Core::throwError(ErrorLevel::Warning, ErrorCode::SystemIntegrity, msg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 				}
 				m_pDecoder->skip(header.size);
 				return true;
@@ -216,7 +216,7 @@ namespace wg
 				char msg[160];
 				snprintf(msg, sizeof(msg), "Stream protocol version %d.%d is not supported, %d.%d or later is needed. Skipping stream up to next ProtocolVersion.",
 						 m_streamMajorVersion, m_streamMinorVersion, c_minProtocolVersion/256, c_minProtocolVersion & 0xFF );
-				GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, msg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, msg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 
 				m_bSkip = true;
 				m_bSkipEndInclusive = false;
@@ -359,7 +359,7 @@ namespace wg
 
 			if( canvasId > 0 && ( canvasId >= m_vObjects.size() || m_vObjects[canvasId] == nullptr ))
 			{
-				GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "BeginSession with invalid canvasId, will skip this session.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "BeginSession with invalid canvasId, will skip this session.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 
 				m_bSkip = true;
 				m_bSkipEndInclusive = true;
@@ -445,7 +445,7 @@ namespace wg
 			{
 				if( objectId >= m_vObjects.size() || m_vObjects[objectId] == nullptr )
 				{
-					GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "SetCanvas with invalid objectId, ignored.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+					Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "SetCanvas with invalid objectId, ignored.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 					break;
 				}
 
@@ -479,7 +479,7 @@ namespace wg
 
 					if( id >= m_vObjects.size() || m_vObjects[id] == nullptr )
 					{
-						GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Invalid objectId in Objects chunk, will skip session.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+						Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Invalid objectId in Objects chunk, will skip session.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 
 						m_bSkip = true;
 						m_bSkipEndInclusive = false;
@@ -623,7 +623,7 @@ namespace wg
 				m_vObjects.resize(objectId + 16, nullptr);
 			else if( m_vObjects[objectId] != nullptr )
 			{
-				GfxBase::throwError(ErrorLevel::Warning, ErrorCode::InvalidParam, "CreateSurface with objectId that already is in use. The old object will be replaced.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				Core::throwError(ErrorLevel::Warning, ErrorCode::InvalidParam, "CreateSurface with objectId that already is in use. The old object will be replaced.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			}
 
 			// A palette follows in SurfacePalette chunks. The surface is created once all of it
@@ -655,7 +655,7 @@ namespace wg
 			auto it = std::find_if(m_pendingSurfaces.begin(), m_pendingSurfaces.end(), [objectId](const PendingSurface& p) { return p.objectId == objectId; });
 			if (it == m_pendingSurfaces.end())
 			{
-				GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "SurfacePalette chunk for a surface that isn't waiting for its palette.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "SurfacePalette chunk for a surface that isn't waiting for its palette.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 				m_pDecoder->skip(header.size - dataInfo.encodedSize);
 				break;
 			}
@@ -678,7 +678,7 @@ namespace wg
 					m_vObjects[objectId] = m_pSurfaceFactory->createSurface(bp);
 				}
 				else
-					GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "SurfacePalette size doesn't match the palette size given in CreateSurface. Surface not created.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+					Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "SurfacePalette size doesn't match the palette size given in CreateSurface. Surface not created.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 
 				m_pendingSurfaces.erase(it);
 			}
@@ -696,18 +696,18 @@ namespace wg
 
 			if( objectId >= m_vObjects.size() || m_vObjects[objectId] == nullptr )
 			{
-				GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "SurfaceUpdate with invalid objectId", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "SurfaceUpdate with invalid objectId", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 				break;
 			}
 
-			auto& buffer = m_surfaceDataBuffers.emplace_back(wg_static_cast<Surface_p>(m_vObjects[objectId]));
+			auto& buffer = m_surfaceDataBuffers.emplace_back(wax_static_cast<Surface_p>(m_vObjects[objectId]));
 
 			buffer.rects.resize(1);
 			buffer.rects[0] = rect;
 
 			if (m_updateCanvasRef != CanvasRef::None)
 			{
-				GfxBase::throwError(ErrorLevel::Critical, ErrorCode::IllegalCall, "Received old-style SurfaceUpdate chunk while CanvasRef-based SurfaceUpdate in progress. These can not be processed in parallel, system is now unstable!", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				Core::throwError(ErrorLevel::Critical, ErrorCode::IllegalCall, "Received old-style SurfaceUpdate chunk while CanvasRef-based SurfaceUpdate in progress. These can not be processed in parallel, system is now unstable!", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			}
 
 			m_updateObject = objectId;
@@ -737,10 +737,10 @@ namespace wg
 			if( canvasRef != CanvasRef::None )
 				pSurf = m_pBackend->canvasInfo(canvasRef)->pSurface;
 			else if( surfaceId < m_vObjects.size() && m_vObjects[surfaceId] != nullptr )
-				pSurf = wg_static_cast<Surface_p>(m_vObjects[surfaceId]);
+				pSurf = wax_static_cast<Surface_p>(m_vObjects[surfaceId]);
 			else
 			{
-				GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "SurfaceUpdate2 with invalid surfaceId", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "SurfaceUpdate2 with invalid surfaceId", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 				m_pDecoder->skip(nRects * 16);	// Skip rects
 				break;
 			}
@@ -770,22 +770,22 @@ namespace wg
 			{
 				if( dataInfo.objectId >= m_vObjects.size() || m_vObjects[dataInfo.objectId] == nullptr )
 				{
-					GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "SurfacePixel with invalid objectId", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+					Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "SurfacePixel with invalid objectId", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 					m_pDecoder->skip(header.size - dataInfo.encodedSize);
 					break;
 				}
 
-				pSurface = wg_static_cast<Surface_p>(m_vObjects[dataInfo.objectId]);
+				pSurface = wax_static_cast<Surface_p>(m_vObjects[dataInfo.objectId]);
 			}
 			else
 			{
 				if( m_updateCanvasRef != CanvasRef::None )
 					pSurface = m_pBackend->canvasInfo(m_updateCanvasRef)->pSurface;
 				else if( m_updateObject > 0 )
-					pSurface = wg_static_cast<Surface_p>(m_vObjects[m_updateObject]);
+					pSurface = wax_static_cast<Surface_p>(m_vObjects[m_updateObject]);
 				else
 				{
-					GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "SurfacePixel chunk with no valid surface reference", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+					Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "SurfacePixel chunk with no valid surface reference", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 					m_pDecoder->skip(header.size - dataInfo.encodedSize);
 					break;
 				}
@@ -797,7 +797,7 @@ namespace wg
 
 			if( it == m_surfaceDataBuffers.end() )
 			{
-				GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "SurfacePixel chunk, but surface has not been prepared by preceeding SurfaceUpdate chunk", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "SurfacePixel chunk, but surface has not been prepared by preceeding SurfaceUpdate chunk", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 				m_pDecoder->skip(header.size - dataInfo.encodedSize);
 				break;
 			}
@@ -822,7 +822,7 @@ namespace wg
 								   (it->format == pixelBuffer.format && it->colorSpace == pixelBuffer.colorSpace &&
 									(it->bigEndian == pixelBuffer.bigEndian || pixelBits <= 8));
 
-				auto srcDesc = Util::pixelFormatToDescription(bSameLayout ? pixelBuffer.format : it->format, bSameLayout ? pixelBuffer.bigEndian : it->bigEndian);
+				auto srcDesc = GfxUtil::pixelFormatToDescription(bSameLayout ? pixelBuffer.format : it->format, bSameLayout ? pixelBuffer.bigEndian : it->bigEndian);
 
 				// Go through rects and copy pixels
 
@@ -878,7 +878,7 @@ namespace wg
 
 			if( objectId >= m_vObjects.size() || m_vObjects[objectId] == nullptr )
 			{
-				GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "FillSurface with invalid objectId", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "FillSurface with invalid objectId", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 				break;
 			}
 
@@ -922,7 +922,7 @@ namespace wg
 
 			if( objectId >= m_vObjects.size() || m_vObjects[objectId] == nullptr || !m_vObjects[objectId]->isInstanceOf(Surface::TYPEINFO) )
 			{
-				GfxBase::throwError(ErrorLevel::Warning, ErrorCode::InvalidParam, "DeleteSurface with invalid objectId", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				Core::throwError(ErrorLevel::Warning, ErrorCode::InvalidParam, "DeleteSurface with invalid objectId", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 				break;
 			}
 
@@ -947,7 +947,7 @@ namespace wg
 				m_vObjects.resize(objectId + 16, nullptr);
 			else if( m_vObjects[objectId] != nullptr )
 			{
-				GfxBase::throwError(ErrorLevel::Warning, ErrorCode::InvalidParam, "CreateEdgemap with objectId that already is in use. The old object will be replaced.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				Core::throwError(ErrorLevel::Warning, ErrorCode::InvalidParam, "CreateEdgemap with objectId that already is in use. The old object will be replaced.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			}
 
 			Edgemap::Blueprint		bp;
@@ -970,7 +970,7 @@ namespace wg
 
 			if( objectId >= m_vObjects.size() || m_vObjects[objectId] == nullptr )
 			{
-				GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "SetEdgemapRenderSegments with invalid objectId", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "SetEdgemapRenderSegments with invalid objectId", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 				break;
 			}
 
@@ -992,21 +992,21 @@ namespace wg
 
 			if( objectId >= m_vObjects.size() || m_vObjects[objectId] == nullptr )
 			{
-				GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "SetEdgemapColors with invalid objectId", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "SetEdgemapColors with invalid objectId", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 
 				m_pDecoder->skip(sizeof(HiColor)*nColors);
 				break;
 			}
 
 			int memAllocated = sizeof(HiColor)*nColors;
-			auto * pColors = (HiColor*) GfxBase::memStackAlloc(memAllocated);
+			auto * pColors = (HiColor*) Core::memStackAlloc(memAllocated);
 			
 			for( int i = 0 ; i < nColors ; i++ )
 				decoder >> pColors[i];
 
 			static_cast<Edgemap*>(m_vObjects[objectId].rawPtr())->setColors(begin, end, pColors);
 
-			GfxBase::memStackFree(memAllocated);
+			Core::memStackFree(memAllocated);
 			break;
 		}
 
@@ -1022,7 +1022,7 @@ namespace wg
 
 			if( objectId >= m_vObjects.size() || m_vObjects[objectId] == nullptr || nBytes <= 0 || nBytes > TintTools::c_maxSerializedTintBytes )
 			{
-				GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "SetEdgemapTint with invalid objectId or size", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "SetEdgemapTint with invalid objectId or size", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 
 				if( nBytes > 0 )
 					m_pDecoder->skip(nBytes);
@@ -1059,11 +1059,11 @@ namespace wg
 
 			if( objectId >= m_vObjects.size() || m_vObjects[objectId] == nullptr )
 			{
-				GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "EdgemapUpdate with invalid objectId", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "EdgemapUpdate with invalid objectId", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 				break;
 			}
 
-			m_edgemapDataBuffers.emplace_back(wg_static_cast<Edgemap_p>(m_vObjects[objectId]), edgeBegin, edgeEnd, sampleBegin, sampleEnd);
+			m_edgemapDataBuffers.emplace_back(wax_static_cast<Edgemap_p>(m_vObjects[objectId]), edgeBegin, edgeEnd, sampleBegin, sampleEnd);
 
 			m_updateObject = objectId;
 			break;
@@ -1078,12 +1078,12 @@ namespace wg
 
 			if( objectId >= m_vObjects.size() || m_vObjects[objectId] == nullptr )
 			{
-				GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "EdgemapSamples with invalid objectId", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "EdgemapSamples with invalid objectId", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 				m_pDecoder->skip(header.size - dataInfo.encodedSize);
 				break;
 			}
 
-			auto pEdgemap = wg_static_cast<Edgemap_p>(m_vObjects[objectId]);
+			auto pEdgemap = wax_static_cast<Edgemap_p>(m_vObjects[objectId]);
 
 			auto it = m_edgemapDataBuffers.begin();
 			while( it != m_edgemapDataBuffers.end() && it->pEdgemap != pEdgemap )
@@ -1091,7 +1091,7 @@ namespace wg
 
 			if( it == m_edgemapDataBuffers.end() )
 			{
-				GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "EdgemapSamples chunk, but edgemap has not been prepared by preceeding EdgemapUpdate chunk", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "EdgemapSamples chunk, but edgemap has not been prepared by preceeding EdgemapUpdate chunk", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 				m_pDecoder->skip(header.size - dataInfo.encodedSize);
 				break;
 			}
@@ -1115,7 +1115,7 @@ namespace wg
 
 			if( objectId >= m_vObjects.size() || m_vObjects[objectId] == nullptr || !m_vObjects[objectId]->isInstanceOf(Edgemap::TYPEINFO) )
 			{
-				GfxBase::throwError(ErrorLevel::Warning, ErrorCode::InvalidParam, "DeleteEdgemap with invalid objectId", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				Core::throwError(ErrorLevel::Warning, ErrorCode::InvalidParam, "DeleteEdgemap with invalid objectId", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 				break;
 			}
 
@@ -1141,14 +1141,14 @@ namespace wg
 				m_vObjects.resize(objectId + 16, nullptr);
 			else if( m_vObjects[objectId] != nullptr )
 			{
-				GfxBase::throwError(ErrorLevel::Warning, ErrorCode::InvalidParam, "CreateWarpmap with objectId that already is in use. The old object will be replaced.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				Core::throwError(ErrorLevel::Warning, ErrorCode::InvalidParam, "CreateWarpmap with objectId that already is in use. The old object will be replaced.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			}
 
 			auto pFactory = m_pBackend->warpmapFactory();
 
 			if( !pFactory )
 			{
-				GfxBase::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "CreateWarpmap, but backend has no WarpmapFactory.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				Core::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "CreateWarpmap, but backend has no WarpmapFactory.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 				m_vObjects[objectId] = nullptr;
 				break;
 			}
@@ -1179,20 +1179,20 @@ namespace wg
 			if( objectId >= m_vObjects.size() || m_vObjects[objectId] == nullptr || !m_vObjects[objectId]->isInstanceOf(Warpmap::TYPEINFO) ||
 				header.size != 8 + nNodes * 8 )
 			{
-				GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "WarpmapNodes with invalid objectId or size", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "WarpmapNodes with invalid objectId or size", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 				m_pDecoder->skip(header.size - 8);
 				break;
 			}
 
 			int memAllocated = sizeof(CoordF) * nNodes;
-			auto * pNodes = (CoordF*) GfxBase::memStackAlloc(memAllocated);
+			auto * pNodes = (CoordF*) Core::memStackAlloc(memAllocated);
 
 			for( int i = 0 ; i < nNodes ; i++ )
 				decoder >> pNodes[i];
 
 			static_cast<Warpmap*>(m_vObjects[objectId].rawPtr())->importNodes({ column, row, nNodes, 1 }, pNodes);
 
-			GfxBase::memStackFree(memAllocated);
+			Core::memStackFree(memAllocated);
 			break;
 		}
 
@@ -1208,7 +1208,7 @@ namespace wg
 
 			if( objectId >= m_vObjects.size() || m_vObjects[objectId] == nullptr || !m_vObjects[objectId]->isInstanceOf(Warpmap::TYPEINFO) )
 			{
-				GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "SetWarpmapPeriods with invalid objectId", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "SetWarpmapPeriods with invalid objectId", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 				break;
 			}
 
@@ -1224,7 +1224,7 @@ namespace wg
 
 			if( objectId >= m_vObjects.size() || m_vObjects[objectId] == nullptr || !m_vObjects[objectId]->isInstanceOf(Warpmap::TYPEINFO) )
 			{
-				GfxBase::throwError(ErrorLevel::Warning, ErrorCode::InvalidParam, "DeleteWarpmap with invalid objectId", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				Core::throwError(ErrorLevel::Warning, ErrorCode::InvalidParam, "DeleteWarpmap with invalid objectId", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 				break;
 			}
 
@@ -1265,4 +1265,4 @@ namespace wg
 		return true;
 	}
 
-} //namespace wg
+} //namespace wax

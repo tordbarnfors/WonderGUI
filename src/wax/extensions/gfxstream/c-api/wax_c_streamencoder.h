@@ -19,41 +19,41 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef WG_C_STREAMENCODER_DOT_H
-#define WG_C_STREAMENCODER_DOT_H
+#ifndef WAX_C_STREAMENCODER_DOT_H
+#define WAX_C_STREAMENCODER_DOT_H
 #pragma once
 
-#include <wg_c_gfxtypes.h>
+#include <wax_c_types.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-	//____ wg_streamEncoderBP __________________________________________________________
+	//____ wax_streamEncoderBP __________________________________________________________
 
-	typedef struct wg_streamEncoderBP_struct			// NOT BINARY EQUIVALENT!
+	typedef struct wax_streamEncoderBP_struct			// NOT BINARY EQUIVALENT!
 	{
 		int				bufferBytes;
 		uint16_t		objectIdStart;
-		wg_pixelFormat	pixelFormat;
-		wg_sampleMethod	sampleMethod;
-		wg_component	sink;
-	} wg_streamEncoderBP;
+		wax_pixelFormat	pixelFormat;
+		wax_sampleMethod	sampleMethod;
+		wax_component	sink;
+	} wax_streamEncoderBP;
 
 	//
 
-//	wg_obj			wg_createStreamEncoder(wg_component sinkForStream, int bufferBytes );
-	WG_EXPORT wg_obj			wg_createStreamEncoder( const wg_streamEncoderBP* blueprint);
+//	wax_obj			wax_createStreamEncoder(wax_component sinkForStream, int bufferBytes );
+	WAX_EXPORT wax_obj			wax_createStreamEncoder( const wax_streamEncoderBP* blueprint);
 
-	WG_EXPORT void				wg_setEncoderStream(wg_obj encoder, wg_component sinkForStream);
+	WAX_EXPORT void				wax_setEncoderStream(wax_obj encoder, wax_component sinkForStream);
 
-	WG_EXPORT void				wg_setEncoderDefaultPixelFormat(wg_obj encoder, wg_pixelFormat pixelFormat);
-	WG_EXPORT wg_pixelFormat 	wg_getEncoderDefaultPixelFormat(wg_obj encoder);
+	WAX_EXPORT void				wax_setEncoderDefaultPixelFormat(wax_obj encoder, wax_pixelFormat pixelFormat);
+	WAX_EXPORT wax_pixelFormat 	wax_getEncoderDefaultPixelFormat(wax_obj encoder);
 
-	WG_EXPORT void				wg_setEncoderDefaultSampleMethod(wg_obj encoder, wg_sampleMethod sampleMethod);
-	WG_EXPORT wg_sampleMethod	wg_getEncoderDefaultSampleMethod(wg_obj encoder);
+	WAX_EXPORT void				wax_setEncoderDefaultSampleMethod(wax_obj encoder, wax_sampleMethod sampleMethod);
+	WAX_EXPORT wax_sampleMethod	wax_getEncoderDefaultSampleMethod(wax_obj encoder);
 
-	WG_EXPORT void				wg_flushEncoder(wg_obj encoder);
+	WAX_EXPORT void				wax_flushEncoder(wax_obj encoder);
 
 #ifdef __cplusplus
 }

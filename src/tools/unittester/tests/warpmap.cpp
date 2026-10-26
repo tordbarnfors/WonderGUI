@@ -3,9 +3,9 @@
 #include "warpmap.h"
 
 #include <wondergui.h>
-#include <wg_softwarpmap.h>
-#include <wg_softwarpmapfactory.h>
-#include <wg_circularwarp.h>
+#include <wax_softwarpmap.h>
+#include <wax_softwarpmapfactory.h>
+#include <wax_circularwarp.h>
 
 #include <cmath>
 #include <vector>

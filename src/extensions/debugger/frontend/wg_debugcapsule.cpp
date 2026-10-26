@@ -93,7 +93,7 @@ namespace wg
 					auto pMsg = static_cast<MouseClickMsg*>(_pMsg);
 					CoordSPX mousePos = _toLocal(pMsg->pointerSpxPos());
 
-					auto pContainer = wg_dynamic_cast<Container_p>(slot._widget());
+					auto pContainer = wax_dynamic_cast<Container_p>(slot._widget());
 					if (pContainer)
 					{
 						Widget * pWidget = pContainer->_findWidget(mousePos, SearchMode::MarkPolicy);

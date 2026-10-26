@@ -19,10 +19,10 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#include <wg_glwarpmapfactory.h>
-#include <wg_glwarpmap.h>
+#include <wax_glwarpmapfactory.h>
+#include <wax_glwarpmap.h>
 
-namespace wg
+namespace wax
 {
 	const TypeInfo GlWarpmapFactory::TYPEINFO = { "GlWarpmapFactory", &WarpmapFactory::TYPEINFO };
 
@@ -45,4 +45,4 @@ namespace wg
 		return GlWarpmap::create(blueprint, pNodes, pitch);
 	}
 
-} // namespace wg
+} // namespace wax

@@ -19,78 +19,100 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#include <wg_c_gfxbase.h>
-#include <wg_gfxbase.h>
-#include <wg_bitmapcache.h>
+#include <string>
 
-using namespace wg;
+#include <wax_c_core.h>
+#include <wax_core.h>
+#include <wax_bitmapcache.h>
 
-int wg_initGfxBase()
+using namespace wax;
+
+int wax_initCore()
 {
-	return GfxBase::init();
+	return Core::init();
 }
 
-int wg_exitGfxBase()
+int wax_exitCore()
 {
-	return GfxBase::exit();
+	return Core::exit();
 }
 
-int wg_isGfxBaseInitialized()
+int wax_isCoreInitialized()
 {
-	return GfxBase::isInitialized();
+	return Core::isInitialized();
 }
 
-wg_obj wg_defaultBitmapCache()
+void wax_setErrorHandler( void (*errorHandler)(const wax_errorInfo * pError) )
 {
-	BitmapCache* pCache = GfxBase::defaultBitmapCache();
-	return (wg_obj) static_cast<Object*>(pCache);
+
+	Core::setErrorHandler( [errorHandler](Error& error)
+	{
+		wax_errorInfo	errorInfo;
+
+		errorInfo.classname = error.classname;
+		errorInfo.code = (wax_errorCode) error.code;
+		errorInfo.file = error.file;
+		errorInfo.function = error.function;
+		errorInfo.object = error.pObject;
+		errorInfo.line = error.line;
+		errorInfo.message = error.message;
+		errorInfo.severity = (wax_errorLevel) error.severity;
+
+		errorHandler(&errorInfo);
+	});
 }
 
-void wg_setDefaultSurfaceFactory( wg_obj factory )
+wax_obj wax_defaultBitmapCache()
+{
+	BitmapCache* pCache = Core::defaultBitmapCache();
+	return (wax_obj) static_cast<Object*>(pCache);
+}
+
+void wax_setDefaultSurfaceFactory( wax_obj factory )
 {
 	SurfaceFactory* pFactory = static_cast<SurfaceFactory*>(reinterpret_cast<Object*>(factory));
-	return GfxBase::setDefaultSurfaceFactory(pFactory);
+	return Core::setDefaultSurfaceFactory(pFactory);
 }
 
-wg_obj wg_defaultSurfaceFactory()
+wax_obj wax_defaultSurfaceFactory()
 {
-	SurfaceFactory * pFactory = GfxBase::defaultSurfaceFactory();
-	return (wg_obj) static_cast<Object*>(pFactory);
+	SurfaceFactory * pFactory = Core::defaultSurfaceFactory();
+	return (wax_obj) static_cast<Object*>(pFactory);
 }
 
-void wg_setDefaultEdgemapFactory( wg_obj factory )
+void wax_setDefaultEdgemapFactory( wax_obj factory )
 {
 	EdgemapFactory* pFactory = static_cast<EdgemapFactory*>(reinterpret_cast<Object*>(factory));
-	return GfxBase::setDefaultEdgemapFactory(pFactory);
+	return Core::setDefaultEdgemapFactory(pFactory);
 }
 
-wg_obj wg_defaultEdgemapFactory()
+wax_obj wax_defaultEdgemapFactory()
 {
-	EdgemapFactory * pFactory = GfxBase::defaultEdgemapFactory();
-	return (wg_obj) static_cast<Object*>(pFactory);
+	EdgemapFactory * pFactory = Core::defaultEdgemapFactory();
+	return (wax_obj) static_cast<Object*>(pFactory);
 }
 
-void wg_setDefaultWarpmapFactory( wg_obj factory )
+void wax_setDefaultWarpmapFactory( wax_obj factory )
 {
 	WarpmapFactory* pFactory = static_cast<WarpmapFactory*>(reinterpret_cast<Object*>(factory));
-	return GfxBase::setDefaultWarpmapFactory(pFactory);
+	return Core::setDefaultWarpmapFactory(pFactory);
 }
 
-wg_obj wg_defaultWarpmapFactory()
+wax_obj wax_defaultWarpmapFactory()
 {
-	WarpmapFactory * pFactory = GfxBase::defaultWarpmapFactory();
-	return (wg_obj) static_cast<Object*>(pFactory);
+	WarpmapFactory * pFactory = Core::defaultWarpmapFactory();
+	return (wax_obj) static_cast<Object*>(pFactory);
 }
 
-void wg_setDefaultGfxDevice( wg_obj device )
+void wax_setDefaultGfxDevice( wax_obj device )
 {
 	GfxDevice* pDevice = static_cast<GfxDevice*>(reinterpret_cast<Object*>(device));
-	return GfxBase::setDefaultGfxDevice(pDevice);
+	return Core::setDefaultGfxDevice(pDevice);
 }
 
-wg_obj wg_defaultGfxDevice()
+wax_obj wax_defaultGfxDevice()
 {
-	GfxDevice * pDevice = GfxBase::defaultGfxDevice();
-	return (wg_obj) static_cast<Object*>(pDevice);
+	GfxDevice * pDevice = Core::defaultGfxDevice();
+	return (wax_obj) static_cast<Object*>(pDevice);
 }
 

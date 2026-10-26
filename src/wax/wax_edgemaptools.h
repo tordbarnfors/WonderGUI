@@ -23,10 +23,10 @@
 #define EDGEMAPTOOLS_DOT_H
 #pragma once
 
-#include <wg_edgemap.h>
-#include <wg_edgemapfactory.h>
+#include <wax_edgemap.h>
+#include <wax_edgemapfactory.h>
 
-namespace wg
+namespace wax
 {
 namespace EdgemapTools
 {

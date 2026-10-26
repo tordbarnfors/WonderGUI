@@ -19,10 +19,10 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#include <wg_gfxstream.h>
-#include <wg_gfxbase.h>
+#include <wax_gfxstream.h>
+#include <wax_core.h>
 
-namespace wg
+namespace wax
 {
 const char * toString(GfxStream::ChunkId i)
 {
@@ -88,7 +88,7 @@ GfxStream::DataInfo GfxStream::readDataInfo(const uint8_t* _pChunkData)
 		info.bufferSize = totalSize;
 		info.objectId = 0;			// Will this work????
 
-		info.compression = Util::makeEndianSpecificToken('N','O','N','E');
+		info.compression = GfxUtil::makeEndianSpecificToken('N','O','N','E');
 		info.dataStart = 0;
 		info.chunkOffset = chunkOfs;
 		info.chunkComp = compression;
@@ -161,15 +161,15 @@ int GfxStream::loadDecompressData( DataInfo& dataInfo, uint8_t * pBuffer, const 
 	{
 		int size;
 
-		if(dataInfo.compression != Util::makeEndianSpecificToken('N','O','N','E') )
+		if(dataInfo.compression != GfxUtil::makeEndianSpecificToken('N','O','N','E') )
 		{
-			auto pCompressor = GfxBase::getDecompressor(dataInfo.compression);
+			auto pCompressor = Core::getDecompressor(dataInfo.compression);
 
 			if( pCompressor )
 				return pCompressor->decompress(pBuffer, pBuffer + dataInfo.dataStart, pBuffer + dataInfo.bufferSize);
 			else
 			{
-				GfxBase::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "Don't know how to decompress data in chunk, add matching compressor to Base.", nullptr, nullptr, __func__, __FILE__, __LINE__ );
+				Core::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "Don't know how to decompress data in chunk, add matching decompressor to Core.", nullptr, nullptr, __func__, __FILE__, __LINE__ );
 				return -1;
 			}
 		}

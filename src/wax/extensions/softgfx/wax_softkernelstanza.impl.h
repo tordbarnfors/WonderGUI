@@ -1,36 +1,36 @@
 
-#include <wg_softbackend.h>
-#include <wg_gfxutil.h>
-#include <wg_gfxbase.h>
+#include <wax_softbackend.h>
+#include <wax_gfxutil.h>
+#include <wax_core.h>
 
 #include <algorithm>
 #include <cstring>
 #include <type_traits>
 
-using namespace wg;
-using namespace wg::Util;
+using namespace wax;
+using namespace wax::GfxUtil;
 
 // Macro for restrict keyword
 #if (_MSC_VER > 1800)
-#define WG_RESTRICT __restrict
+#define WAX_RESTRICT __restrict
 #else
-#define WG_RESTRICT __restrict__
+#define WAX_RESTRICT __restrict__
 #endif
 
 // Macro for conditions that seldom hold in the kernels, so that the common path is laid out first.
 #if defined(__GNUC__) || defined(__clang__)
-#define WG_UNLIKELY(x) __builtin_expect(!!(x), 0)
+#define WAX_UNLIKELY(x) __builtin_expect(!!(x), 0)
 #else
-#define WG_UNLIKELY(x) (x)
+#define WAX_UNLIKELY(x) (x)
 #endif
 
 // Macro for functions that only handle rare cases, which would crowd the kernels if inlined.
 #if defined(__GNUC__) || defined(__clang__)
-#define WG_NOINLINE __attribute__((noinline))
+#define WAX_NOINLINE __attribute__((noinline))
 #elif defined(_MSC_VER)
-#define WG_NOINLINE __declspec(noinline)
+#define WAX_NOINLINE __declspec(noinline)
 #else
-#define WG_NOINLINE
+#define WAX_NOINLINE
 #endif
 
 //____ Pixel layout helpers _______________________________________________________
@@ -38,19 +38,19 @@ using namespace wg::Util;
 // Loads and stores of 16-bit pixels, swapped if the byte order of the format differs from the system.
 
 template<SoftFormat format>
-static inline uint16_t _load16(const uint8_t* WG_RESTRICT pPixel)
+static inline uint16_t _load16(const uint8_t* WAX_RESTRICT pPixel)
 {
 	uint16_t pixel = *(const uint16_t*)pPixel;
 	if constexpr (SoftFormatInfo::needsSwap(format))
-		pixel = Util::endianSwap(pixel);
+		pixel = GfxUtil::endianSwap(pixel);
 	return pixel;
 }
 
 template<SoftFormat format>
-static inline void _store16(uint8_t* WG_RESTRICT pPixel, uint16_t pixel)
+static inline void _store16(uint8_t* WAX_RESTRICT pPixel, uint16_t pixel)
 {
 	if constexpr (SoftFormatInfo::needsSwap(format))
-		pixel = Util::endianSwap(pixel);
+		pixel = GfxUtil::endianSwap(pixel);
 	*(uint16_t*)pPixel = pixel;
 }
 
@@ -66,7 +66,7 @@ template<SoftFormat format> constexpr int _ofsA() { return SoftFormatInfo::isBig
 // Reads a pixel with 8 bits per channel, without color space conversion.
 
 template<SoftFormat format>
-static inline void _read_pixel_fast8(const uint8_t* WG_RESTRICT pPixel, const Color8* WG_RESTRICT pPalette, const HiColor* WG_RESTRICT pPalette4096, int16_t& outB, int16_t& outG, int16_t& outR, int16_t& outA)
+static inline void _read_pixel_fast8(const uint8_t* WAX_RESTRICT pPixel, const Color8* WAX_RESTRICT pPalette, const HiColor* WAX_RESTRICT pPalette4096, int16_t& outB, int16_t& outG, int16_t& outR, int16_t& outA)
 {
 	constexpr PixelFormat layout = SoftFormatInfo::pixelFormat(format);
 
@@ -128,7 +128,7 @@ static inline void _read_pixel_fast8(const uint8_t* WG_RESTRICT pPixel, const Co
 // Reads a pixel with 12 bits per channel (0 -> 4096), converted to linear.
 
 template<SoftFormat format>
-static inline void _read_pixel(const uint8_t* WG_RESTRICT pPixel, const Color8* WG_RESTRICT pPalette, const HiColor* WG_RESTRICT pPalette4096, int16_t& outB, int16_t& outG, int16_t& outR, int16_t& outA)
+static inline void _read_pixel(const uint8_t* WAX_RESTRICT pPixel, const Color8* WAX_RESTRICT pPalette, const HiColor* WAX_RESTRICT pPalette4096, int16_t& outB, int16_t& outG, int16_t& outR, int16_t& outA)
 {
 	constexpr PixelFormat layout = SoftFormatInfo::pixelFormat(format);
 
@@ -339,7 +339,7 @@ constexpr bool _is_effect_mode()
 // isn't inlined, which would slow down the common case of an opaque canvas.
 
 template<BlendMode mode>
-static WG_NOINLINE BlendedPixel _blend_effect_on_glass(int sB, int sG, int sR, int sA, int backB, int backG, int backR, int backA)
+static WAX_NOINLINE BlendedPixel _blend_effect_on_glass(int sB, int sG, int sR, int sA, int backB, int backG, int backR, int backA)
 {
 	int pB = (backB * backA + 2048) >> 12;
 	int pG = (backG * backA + 2048) >> 12;
@@ -425,7 +425,7 @@ static inline void _blend_effect(int sB, int sG, int sR, int sA, int16_t backB, 
 		else if constexpr (mode == BlendMode::Max)
 			outA = std::max(int(backA), sA);
 	}
-	else if (mode != BlendMode::Multiply && SoftFormatInfo::hasAlpha(destFormat) && WG_UNLIKELY(backA != 4096))
+	else if (mode != BlendMode::Multiply && SoftFormatInfo::hasAlpha(destFormat) && WAX_UNLIKELY(backA != 4096))
 	{
 		BlendedPixel out = _blend_effect_on_glass<mode>(sB, sG, sR, sA, backB, backG, backR, backA);
 		outB = out.b;
@@ -484,7 +484,7 @@ static inline void _blend_effect(int sB, int sG, int sR, int sA, int16_t backB, 
 // _blend_effect_on_glass() for 8-bit channels, which are converted to 12 bits for it.
 
 template<BlendMode mode>
-static WG_NOINLINE BlendedPixel _blend_effect_on_glass_fast8(int srcB, int srcG, int srcR, int srcA, int backB, int backG, int backR, int backA)
+static WAX_NOINLINE BlendedPixel _blend_effect_on_glass_fast8(int srcB, int srcG, int srcR, int srcA, int backB, int backG, int backR, int backA)
 {
 	auto to12 = [](int value) { return SoftBackend::s_mulTab[value] >> 4; };
 	auto to8 = [](int value) { return int16_t((value * 255 + 2048) >> 12); };
@@ -604,7 +604,7 @@ static inline void _blend_pixels_fast8(int morphFactor,
 			// Porter-Duff over only differs from mixing by the alpha of the source where the
 			// canvas isn't opaque.
 
-			if (SoftFormatInfo::hasAlpha(destFormat) && WG_UNLIKELY(backA != 255))
+			if (SoftFormatInfo::hasAlpha(destFormat) && WAX_UNLIKELY(backA != 255))
 			{
 				BlendedPixel out = _blend_over_fast8(srcB, srcG, srcR, srcA, backB, backG, backR, backA);
 				outB = out.b;
@@ -638,7 +638,7 @@ static inline void _blend_pixels_fast8(int morphFactor,
 			// Effect modes onto a pixel that isn't opaque work on its premultiplied color, see
 			// _blend_effect(). Multiply gives the same either way.
 
-			if (WG_UNLIKELY(backA != 255))
+			if (WAX_UNLIKELY(backA != 255))
 			{
 				BlendedPixel out = _blend_effect_on_glass_fast8<mode>(srcB, srcG, srcR, srcA, backB, backG, backR, backA);
 				outB = out.b;
@@ -835,7 +835,7 @@ static inline void	_blend_pixels(int morphFactor,
 			// Porter-Duff over only differs from mixing by the alpha of the source where the
 			// canvas isn't opaque.
 
-			if (SoftFormatInfo::hasAlpha(destFormat) && WG_UNLIKELY(backA != 4096))
+			if (SoftFormatInfo::hasAlpha(destFormat) && WAX_UNLIKELY(backA != 4096))
 			{
 				BlendedPixel out = _blend_over(srcB, srcG, srcR, srcA, backB, backG, backR, backA);
 				outB = out.b;
@@ -943,7 +943,7 @@ static inline void _write_transparent(uint8_t* pDst, int16_t fixedB, int16_t fix
 //____ _color_tint_init() _________________________________________________
 template<TintMode tintMode>
 static inline void _color_tint_init(const SoftBackend::ColTrans& tint, int bits, int16_t inB, int16_t inG, int16_t inR, int16_t inA,
-							 int16_t& outB, int16_t& outG, int16_t& outR, int16_t& outA, const HiColor*& WG_RESTRICT pTintmapX, const HiColor*& WG_RESTRICT pTintmapY, CoordI patchPos)
+							 int16_t& outB, int16_t& outG, int16_t& outR, int16_t& outA, const HiColor*& WAX_RESTRICT pTintmapX, const HiColor*& WAX_RESTRICT pTintmapY, CoordI patchPos)
 {
 	if constexpr(tintMode == TintMode::None)
 	{
@@ -1138,7 +1138,7 @@ inline void _texel_tint_pixel(int bits, int16_t& pixelB, int16_t& pixelG, int16_
 // the alpha of the source is the value, Multiply and Min fade it towards 1, which has no effect.
 
 template<BlendMode BLEND, SoftFormat DSTFORMAT, bool bFast8>
-static inline void _blend_line_edge(uint8_t* WG_RESTRICT pDst, int coverage, int morphFactor,
+static inline void _blend_line_edge(uint8_t* WAX_RESTRICT pDst, int coverage, int morphFactor,
 									int16_t srcB, int16_t srcG, int16_t srcR, int16_t srcA,
 									int16_t fixedB, int16_t fixedG, int16_t fixedR, int16_t fixedA)
 {
@@ -1193,7 +1193,7 @@ static inline void _blend_line_edge(uint8_t* WG_RESTRICT pDst, int coverage, int
 //____ _draw_line() _______________________________________________________
 
 template<BlendMode BLEND, TintMode TINT, SoftFormat DSTFORMAT>
-void _draw_line(uint8_t* WG_RESTRICT pRow, int rowInc, int pixelInc, int length, int width, int pos, int slope, HiColor color, const SoftBackend::ColTrans& tint, CoordI patchPos)
+void _draw_line(uint8_t* WAX_RESTRICT pRow, int rowInc, int pixelInc, int length, int width, int pos, int slope, HiColor color, const SoftBackend::ColTrans& tint, CoordI patchPos)
 {
 	constexpr bool bFast8 = SoftFormatInfo::isLinear(DSTFORMAT);
 
@@ -1204,7 +1204,7 @@ void _draw_line(uint8_t* WG_RESTRICT pRow, int rowInc, int pixelInc, int length,
 
 	if constexpr(bFast8)
 	{
-		const uint8_t* WG_RESTRICT pPackTab = HiColor::packLinearTab;
+		const uint8_t* WAX_RESTRICT pPackTab = HiColor::packLinearTab;
 
 		srcB = pPackTab[color.b];
 		srcG = pPackTab[color.g];
@@ -1259,7 +1259,7 @@ void _draw_line(uint8_t* WG_RESTRICT pRow, int rowInc, int pixelInc, int length,
 		int end = (pos + width) >> 16;
 		int ofs = beg;
 
-		uint8_t* WG_RESTRICT pDst = pRow + ofs * pixelInc;
+		uint8_t* WAX_RESTRICT pDst = pRow + ofs * pixelInc;
 
 		if (beg == end)
 		{
@@ -1322,7 +1322,7 @@ void _draw_line(uint8_t* WG_RESTRICT pRow, int rowInc, int pixelInc, int length,
 //____ _clip_draw_line() __________________________________________________
 
 template<BlendMode BLEND, TintMode TINT, SoftFormat DSTFORMAT>
-void _clip_draw_line(int clipStart, int clipEnd, uint8_t* WG_RESTRICT pRow, int rowInc, int pixelInc, int length, int width, int pos, int slope, HiColor color, const SoftBackend::ColTrans& tint, CoordI patchPos)
+void _clip_draw_line(int clipStart, int clipEnd, uint8_t* WAX_RESTRICT pRow, int rowInc, int pixelInc, int length, int width, int pos, int slope, HiColor color, const SoftBackend::ColTrans& tint, CoordI patchPos)
 {
 	constexpr bool bFast8 = false;
 
@@ -1333,7 +1333,7 @@ void _clip_draw_line(int clipStart, int clipEnd, uint8_t* WG_RESTRICT pRow, int 
 
 	if constexpr(bFast8)
 	{
-		const uint8_t* WG_RESTRICT pPackTab = HiColor::packLinearTab;
+		const uint8_t* WAX_RESTRICT pPackTab = HiColor::packLinearTab;
 
 		srcB = pPackTab[color.b];
 		srcG = pPackTab[color.g];
@@ -1364,7 +1364,7 @@ void _clip_draw_line(int clipStart, int clipEnd, uint8_t* WG_RESTRICT pRow, int 
 
 	if constexpr(bFast8)
 	{
-		const uint8_t* WG_RESTRICT pPackTab = HiColor::packLinearTab;
+		const uint8_t* WAX_RESTRICT pPackTab = HiColor::packLinearTab;
 
 		fixedB = pPackTab[tint.fixedBlendColor.b];
 		fixedG = pPackTab[tint.fixedBlendColor.g];
@@ -1407,7 +1407,7 @@ void _clip_draw_line(int clipStart, int clipEnd, uint8_t* WG_RESTRICT pRow, int 
 		int end = (clippedPos + clippedWidth) >> 16;
 		int ofs = beg;
 
-		uint8_t* WG_RESTRICT pDst = pRow + ofs * pixelInc;
+		uint8_t* WAX_RESTRICT pDst = pRow + ofs * pixelInc;
 
 		if (beg == end)
 		{
@@ -1476,7 +1476,7 @@ void _clip_draw_line(int clipStart, int clipEnd, uint8_t* WG_RESTRICT pRow, int 
 //____ _fill() ____________________________________________________________
 
 template<TintMode TINT, BlendMode BLEND, SoftFormat DSTFORMAT>
-void _fill(uint8_t* WG_RESTRICT pDst, int pitchX, int pitchY, int nLines, int lineLength, HiColor col, const SoftBackend::ColTrans& tint, CoordI patchPos)
+void _fill(uint8_t* WAX_RESTRICT pDst, int pitchX, int pitchY, int nLines, int lineLength, HiColor col, const SoftBackend::ColTrans& tint, CoordI patchPos)
 {
 //	if( TINT == TintMode::None || TINT == TintMode::Flat )
 
@@ -1490,7 +1490,7 @@ void _fill(uint8_t* WG_RESTRICT pDst, int pitchX, int pitchY, int nLines, int li
 
 	if constexpr(bFast8)
 	{
-		const uint8_t* WG_RESTRICT pPackTab = HiColor::packLinearTab;
+		const uint8_t* WAX_RESTRICT pPackTab = HiColor::packLinearTab;
 
 		srcB = pPackTab[col.b];
 		srcG = pPackTab[col.g];
@@ -1521,7 +1521,7 @@ void _fill(uint8_t* WG_RESTRICT pDst, int pitchX, int pitchY, int nLines, int li
 
 	if constexpr(bFast8)
 	{
-		const uint8_t* WG_RESTRICT pPackTab = HiColor::packLinearTab;
+		const uint8_t* WAX_RESTRICT pPackTab = HiColor::packLinearTab;
 
 		fixedB = pPackTab[tint.fixedBlendColor.b];
 		fixedG = pPackTab[tint.fixedBlendColor.g];
@@ -1670,7 +1670,7 @@ void _fill(uint8_t* WG_RESTRICT pDst, int pitchX, int pitchY, int nLines, int li
 //_____ _straight_blit() ____________________________________________________________
 
 template<SoftFormat SRCFORMAT, TintMode TINT, BlendMode BLEND, SoftFormat DSTFORMAT, SoftBackend::ReadOp READOP>
-void _straight_blit(const uint8_t* WG_RESTRICT pSrc, uint8_t* WG_RESTRICT pDst, const SoftSurface* WG_RESTRICT pSrcSurf, const SoftBackend::Pitches& pitches, int nLines, int lineLength, const SoftBackend::ColTrans& tint, CoordI patchPos, const Transform* WG_RESTRICT pMatrix)
+void _straight_blit(const uint8_t* WAX_RESTRICT pSrc, uint8_t* WAX_RESTRICT pDst, const SoftSurface* WAX_RESTRICT pSrcSurf, const SoftBackend::Pitches& pitches, int nLines, int lineLength, const SoftBackend::ColTrans& tint, CoordI patchPos, const Transform* WAX_RESTRICT pMatrix)
 {
 	constexpr bool srcIsLinear = SoftFormatInfo::isLinear(SRCFORMAT);
 
@@ -1735,8 +1735,8 @@ void _straight_blit(const uint8_t* WG_RESTRICT pSrc, uint8_t* WG_RESTRICT pDst, 
 		surfSize = pSrcSurf->pixelSize();
 	}
 
-	const Color8* WG_RESTRICT pPalette = pSrcSurf->palette();
-	const HiColor* WG_RESTRICT pPalette4096 = pSrcSurf->palette4096();
+	const Color8* WAX_RESTRICT pPalette = pSrcSurf->palette();
+	const HiColor* WAX_RESTRICT pPalette4096 = pSrcSurf->palette4096();
 
 	// Step 1: Prepare any tint gradient
 
@@ -1753,7 +1753,7 @@ void _straight_blit(const uint8_t* WG_RESTRICT pSrc, uint8_t* WG_RESTRICT pDst, 
 	
 	if constexpr (bFast8)
 	{
-		const uint8_t* WG_RESTRICT pPackTab = HiColor::packLinearTab;
+		const uint8_t* WAX_RESTRICT pPackTab = HiColor::packLinearTab;
 
 		fixedB = pPackTab[tint.fixedBlendColor.b];
 		fixedG = pPackTab[tint.fixedBlendColor.g];
@@ -2055,8 +2055,8 @@ static inline void _bilinear_mix(int fracX, int fracY, const Texel& s11, const T
 // blending can't change the result. Gives exactly the same result as _transform_blit().
 
 template<SoftFormat SRCFORMAT, BlendMode BLEND, SoftFormat DSTFORMAT, bool bFast8>
-void _scale_blit_bilinear(const SoftSurface* WG_RESTRICT pSrcSurf, BinalCoord pos, binalInt pixelIncX, binalInt lineIncY,
-						  uint8_t* WG_RESTRICT pDst, int dstPitchX, int dstPitchY, int nLines, int lineLength, const SoftBackend::ColTrans& tint,
+void _scale_blit_bilinear(const SoftSurface* WAX_RESTRICT pSrcSurf, BinalCoord pos, binalInt pixelIncX, binalInt lineIncY,
+						  uint8_t* WAX_RESTRICT pDst, int dstPitchX, int dstPitchY, int nLines, int lineLength, const SoftBackend::ColTrans& tint,
 						  int16_t fixedB, int16_t fixedG, int16_t fixedR, int16_t fixedA)
 {
 	if (nLines <= 0 || lineLength <= 0)
@@ -2065,8 +2065,8 @@ void _scale_blit_bilinear(const SoftSurface* WG_RESTRICT pSrcSurf, BinalCoord po
 	int srcPixelBytes = pSrcSurf->pixelBits() / 8;
 	int srcPitch = pSrcSurf->pitch();
 
-	const Color8* WG_RESTRICT pPalette = pSrcSurf->palette();
-	const HiColor* WG_RESTRICT pPalette4096 = pSrcSurf->palette4096();
+	const Color8* WAX_RESTRICT pPalette = pSrcSurf->palette();
+	const HiColor* WAX_RESTRICT pPalette4096 = pSrcSurf->palette4096();
 
 	// Columns of the source that are sampled, same as by _transform_blit(): the right
 	// neighbour of a sample is only read when it has a weight.
@@ -2078,7 +2078,7 @@ void _scale_blit_bilinear(const SoftSurface* WG_RESTRICT pSrcSurf, BinalCoord po
 	// Buffer for two unpacked rows, which are kept as long as they are sampled.
 
 	int bufferBytes = nColumns * 4 * int(sizeof(int16_t)) * 2;
-	int16_t* pBuffer = (int16_t*)GfxBase::memStackAlloc(bufferBytes);
+	int16_t* pBuffer = (int16_t*)Core::memStackAlloc(bufferBytes);
 
 	int16_t* pRows[2] = { pBuffer, pBuffer + nColumns * 4 };
 	int rowIndex[2] = { -1, -1 };
@@ -2196,13 +2196,13 @@ void _scale_blit_bilinear(const SoftSurface* WG_RESTRICT pSrcSurf, BinalCoord po
 		pDst += dstPitchY;
 	}
 
-	GfxBase::memStackFree(bufferBytes);
+	Core::memStackFree(bufferBytes);
 }
 
 //____ _transform_blit __________________________________________
 
 template<SoftFormat SRCFORMAT, SampleMethod SAMPLEMETHOD, TintMode TINT, BlendMode BLEND, SoftFormat DSTFORMAT, SoftBackend::ReadOp READOP>
-void _transform_blit(const SoftSurface* WG_RESTRICT pSrcSurf, BinalCoord pos, const binalInt matrix[2][2], uint8_t* WG_RESTRICT pDst, int dstPitchX, int dstPitchY, int nLines, int lineLength, const SoftBackend::ColTrans& tint, CoordI patchPos)
+void _transform_blit(const SoftSurface* WAX_RESTRICT pSrcSurf, BinalCoord pos, const binalInt matrix[2][2], uint8_t* WAX_RESTRICT pDst, int dstPitchX, int dstPitchY, int nLines, int lineLength, const SoftBackend::ColTrans& tint, CoordI patchPos)
 {
 	constexpr bool srcIsLinear = SoftFormatInfo::isLinear(SRCFORMAT);
 
@@ -2233,8 +2233,8 @@ void _transform_blit(const SoftSurface* WG_RESTRICT pSrcSurf, BinalCoord pos, co
 	binalInt	srcPosMaskX_binals = (srcPosMaskX << BINAL_SHIFT) | BINAL_MASK;
 	binalInt	srcPosMaskY_binals = (srcPosMaskY << BINAL_SHIFT) | BINAL_MASK;
 
-	const Color8* WG_RESTRICT pPalette = pSrcSurf->palette();
-	const HiColor* WG_RESTRICT pPalette4096 = pSrcSurf->palette4096();
+	const Color8* WAX_RESTRICT pPalette = pSrcSurf->palette();
+	const HiColor* WAX_RESTRICT pPalette4096 = pSrcSurf->palette4096();
 
 	// Step 1: Setup fixed blend color
 	
@@ -2242,7 +2242,7 @@ void _transform_blit(const SoftSurface* WG_RESTRICT pSrcSurf, BinalCoord pos, co
 
 	if constexpr(bFast8)
 	{
-		const uint8_t* WG_RESTRICT pPackTab = HiColor::packLinearTab;
+		const uint8_t* WAX_RESTRICT pPackTab = HiColor::packLinearTab;
 
 		fixedB = pPackTab[tint.fixedBlendColor.b];
 		fixedG = pPackTab[tint.fixedBlendColor.g];
@@ -2287,7 +2287,7 @@ void _transform_blit(const SoftSurface* WG_RESTRICT pSrcSurf, BinalCoord pos, co
 			// Step 2: Read source color.
 
 			int16_t srcB, srcG, srcR, srcA;
-			uint8_t* WG_RESTRICT p = pSrcSurf->pixels() + (ofsY >> BINAL_SHIFT) * srcPitch + (ofsX >> BINAL_SHIFT) * srcPixelBytes;
+			uint8_t* WAX_RESTRICT p = pSrcSurf->pixels() + (ofsY >> BINAL_SHIFT) * srcPitch + (ofsX >> BINAL_SHIFT) * srcPixelBytes;
 
 			if constexpr(SAMPLEMETHOD == SampleMethod::Bilinear)
 			{
@@ -2565,7 +2565,7 @@ void _transform_blit(const SoftSurface* WG_RESTRICT pSrcSurf, BinalCoord pos, co
 //____ _add_segment_color() _______________________________________________
 
 template<SoftBackend::StripSource SOURCE>
-static inline void _add_segment_color(int blendFraction, int offset, const int16_t* WG_RESTRICT pSegmentColor, const HiColor* WG_RESTRICT pSegmentTintmap, int& accB, int& accG, int& accR, int& accA)
+static inline void _add_segment_color(int blendFraction, int offset, const int16_t* WAX_RESTRICT pSegmentColor, const HiColor* WAX_RESTRICT pSegmentTintmap, int& accB, int& accG, int& accR, int& accA)
 {
 	if constexpr(SOURCE == SoftBackend::StripSource::Colors)
 	{
@@ -2592,7 +2592,7 @@ static inline void _add_segment_color(int blendFraction, int offset, const int16
 
 //____ _draw_segment_strip() _______________________________________________
 template<SoftBackend::StripSource SOURCE, BlendMode BLEND, SoftFormat DSTFORMAT>
-void _draw_segment_strip(int colBeg, int colEnd, uint8_t* WG_RESTRICT pStripStart, int pixelPitch, int nEdges, SoftBackend::SegmentEdge* WG_RESTRICT pEdges, const int16_t* WG_RESTRICT pSegmentColors, const HiColor* WG_RESTRICT pSegmentTintmap, int segmentTintmapPitch, const bool* WG_RESTRICT pTransparentSegments, const bool* WG_RESTRICT pOpaqueSegments, const SoftBackend::ColTrans& tint)
+void _draw_segment_strip(int colBeg, int colEnd, uint8_t* WAX_RESTRICT pStripStart, int pixelPitch, int nEdges, SoftBackend::SegmentEdge* WAX_RESTRICT pEdges, const int16_t* WAX_RESTRICT pSegmentColors, const HiColor* WAX_RESTRICT pSegmentTintmap, int segmentTintmapPitch, const bool* WAX_RESTRICT pTransparentSegments, const bool* WAX_RESTRICT pOpaqueSegments, const SoftBackend::ColTrans& tint)
 {
 	constexpr bool bFast8 = SoftFormatInfo::isLinear(DSTFORMAT);
 
@@ -2604,7 +2604,7 @@ void _draw_segment_strip(int colBeg, int colEnd, uint8_t* WG_RESTRICT pStripStar
 
 	if constexpr(bFast8)
 	{
-		const uint8_t* WG_RESTRICT pPackTab = HiColor::packLinearTab;
+		const uint8_t* WAX_RESTRICT pPackTab = HiColor::packLinearTab;
 
 		fixedB = pPackTab[tint.fixedBlendColor.b];
 		fixedG = pPackTab[tint.fixedBlendColor.g];
@@ -2621,7 +2621,7 @@ void _draw_segment_strip(int colBeg, int colEnd, uint8_t* WG_RESTRICT pStripStar
 
 	// Render the column
 	int offset = colBeg;				// 24.8 format, but binals cleared (always pointing at beginning of full pixel).
-	uint8_t* WG_RESTRICT pDst = pStripStart + (offset >> 8) * pixelPitch;
+	uint8_t* WAX_RESTRICT pDst = pStripStart + (offset >> 8) * pixelPitch;
 
 	while (offset < colEnd)
 	{
@@ -3041,7 +3041,7 @@ static inline int _limit4096(int value)
 // Alpha-only destinations treat alpha as the color, like the fill kernels.
 
 template<BlendMode BLEND, SoftFormat DSTFORMAT>
-void _draw_coverage_span(uint8_t* WG_RESTRICT pDst, int pixelPitch, int length, const SoftBackend::CoveragePixel* WG_RESTRICT pPixels, const SoftBackend::ColTrans& tint)
+void _draw_coverage_span(uint8_t* WAX_RESTRICT pDst, int pixelPitch, int length, const SoftBackend::CoveragePixel* WAX_RESTRICT pPixels, const SoftBackend::ColTrans& tint)
 {
 	constexpr bool bAlphaOnly = (DSTFORMAT == SoftFormat::Alpha_8);
 	constexpr bool bAlpha = SoftFormatInfo::hasAlpha(DSTFORMAT);

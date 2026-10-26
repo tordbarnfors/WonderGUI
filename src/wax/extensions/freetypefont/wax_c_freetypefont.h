@@ -19,11 +19,11 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef WG_C_FREETYPEFONT_DOT_H
-#define WG_C_FREETYPEFONT_DOT_H
+#ifndef WAX_C_FREETYPEFONT_DOT_H
+#define WAX_C_FREETYPEFONT_DOT_H
 #pragma once
 
-#include <wg_c_gfxtypes.h>
+#include <wax_c_types.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -32,36 +32,36 @@ extern "C" {
 
 typedef enum
 {
-	WG_FT_MONOCHROME,
-	WG_FT_CRISPEDGES,
-	WG_FT_BESTSHAPES
+	WAX_FT_MONOCHROME,
+	WAX_FT_CRISPEDGES,
+	WAX_FT_BESTSHAPES
 
-} wg_renderMode;
+} wax_renderMode;
 
 
-//____ wg_freeTypeFontBP __________________________________________________________
+//____ wax_freeTypeFontBP __________________________________________________________
 
-struct wg_freeTypeFontBP_struct			// NOT BINARY EQUIVALENT!
+struct wax_freeTypeFontBP_struct			// NOT BINARY EQUIVALENT!
 {
-	wg_obj			backupFont;
-	wg_obj			blob;
-	wg_obj			cache;
+	wax_obj			backupFont;
+	wax_obj			blob;
+	wax_obj			cache;
 	int				faceIndex;
-	wg_renderMode	renderMode;
+	wax_renderMode	renderMode;
 	int				stemDarkening;
 	int				xDPI;
 	int				yDPI;
-} wg_freeTypeFontBP_default = { 0, 0, 0, 0, WG_FT_BESTSHAPES, false, 72, 72 };
+} wax_freeTypeFontBP_default = { 0, 0, 0, 0, WAX_FT_BESTSHAPES, false, 72, 72 };
 
 
-typedef struct wg_freeTypeFontBP_struct	wg_freeTypeFontBP;
+typedef struct wax_freeTypeFontBP_struct	wax_freeTypeFontBP;
 
-WG_EXPORT wg_obj	wg_createFreeTypeFont( wg_freeTypeFontBP blueprint );
-WG_EXPORT wg_obj	wg_getFreeTypeFontBitmapCache( wg_obj font );
+WAX_EXPORT wax_obj	wax_createFreeTypeFont( wax_freeTypeFontBP blueprint );
+WAX_EXPORT wax_obj	wax_getFreeTypeFontBitmapCache( wax_obj font );
 
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif //WG_C_FREETYPEFONT_DOT_H
+#endif //WAX_C_FREETYPEFONT_DOT_H

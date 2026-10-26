@@ -23,9 +23,10 @@
 #define	WG_PLUGINWARPMAP_DOT_H
 #pragma once
 
-#include <wg_warpmap.h>
+#include <wax_warpmap.h>
+#include <wg_types.h>
 
-typedef void* wg_obj;
+typedef void* wax_obj;
 
 namespace wg
 {
@@ -47,7 +48,7 @@ namespace wg
 
 		//.____ Creation __________________________________________
 
-		static PluginWarpmap_p	create( wg_obj object );
+		static PluginWarpmap_p	create( wax_obj object );
 
 		//.____ Identification __________________________________________
 
@@ -60,15 +61,15 @@ namespace wg
 
 		//.____ Misc _________________________________________________________
 
-		inline wg_obj	cObject() { return m_cWarpmap; }
+		inline wax_obj	cObject() { return m_cWarpmap; }
 
 	private:
-		PluginWarpmap( wg_obj object );
+		PluginWarpmap( wax_obj object );
 		~PluginWarpmap();
 
 		void	_nodesUpdated( const RectI& region ) override;
 
-		wg_obj	m_cWarpmap;
+		wax_obj	m_cWarpmap;
 		bool	m_bConstructed = false;
 	};
 

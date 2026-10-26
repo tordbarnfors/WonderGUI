@@ -19,13 +19,13 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#include <wg_edgemap.h>
+#include <wax_edgemap.h>
 
 #include <cstring>
 #include <climits>
 #include <algorithm>
 
-namespace wg
+namespace wax
 {
 
 	const TypeInfo Edgemap::TYPEINFO = { "Edgemap", &Object::TYPEINFO };
@@ -408,4 +408,4 @@ namespace wg
 	}
 
 
-} // namespace wg
+} // namespace wax

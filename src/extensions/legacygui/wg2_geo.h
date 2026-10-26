@@ -27,7 +27,7 @@
 #	include <wg2_types.h>
 #endif
 
-#include <wg_geo.h>
+#include <wax_geo.h>
 
 typedef wg::CoordT<int8_t>		WgCoord8;
 typedef wg::CoordT<int16_t>		WgCoord16;

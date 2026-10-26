@@ -36,9 +36,9 @@ namespace wg
 
 	//____ createWarpmap() ____________________________________________________
 
-	static wg_warpmapBP convertBlueprint( const Warpmap::Blueprint& bp )
+	static wax_warpmapBP convertBlueprint( const Warpmap::Blueprint& bp )
 	{
-		wg_warpmapBP cBP;
+		wax_warpmapBP cBP;
 		cBP.cellSize = bp.cellSize;
 		cBP.size = { bp.size.w, bp.size.h };
 		cBP.uPeriod = bp.uPeriod;
@@ -48,7 +48,7 @@ namespace wg
 
 	Warpmap_p PluginWarpmapFactory::createWarpmap( const Warpmap::Blueprint& blueprint )
 	{
-		wg_warpmapBP cBP = convertBlueprint(blueprint);
+		wax_warpmapBP cBP = convertBlueprint(blueprint);
 
 		auto obj = PluginCalls::warpmapFactory->createWarpmap(m_cFactory, &cBP);
 		if (!obj)
@@ -61,9 +61,9 @@ namespace wg
 
 	Warpmap_p PluginWarpmapFactory::createWarpmap( const Warpmap::Blueprint& blueprint, const CoordF * pNodes, int pitch )
 	{
-		wg_warpmapBP cBP = convertBlueprint(blueprint);
+		wax_warpmapBP cBP = convertBlueprint(blueprint);
 
-		auto obj = PluginCalls::warpmapFactory->createWarpmapFromNodes(m_cFactory, &cBP, (const wg_coordF*) pNodes, pitch);
+		auto obj = PluginCalls::warpmapFactory->createWarpmapFromNodes(m_cFactory, &cBP, (const wax_coordF*) pNodes, pitch);
 		if (!obj)
 			return nullptr;
 

@@ -19,11 +19,11 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#include <wg_softkernels_bgr565srgb_extras.h>
-#include <wg_c_softkernels_bgr565srgb_extras.h>
-#include <wg_c_softgfx.h>
+#include <wax_softkernels_bgr565srgb_extras.h>
+#include <wax_c_softkernels_bgr565srgb_extras.h>
+#include <wax_c_softgfx.h>
 
-using namespace wg;
+using namespace wax;
 
 //____ _pack565() _____________________________________________________________
 // Packs 8-bit channels into a BGR_565 pixel, rounding each to the nearest step.
@@ -511,8 +511,8 @@ void _draw_segment_strip_blend_to_bgr565srgb(int colBeg, int colEnd, uint8_t* pS
 						if (pixel != in)
 						{
 							in = pixel;
-#if WG_IS_BIG_ENDIAN
-							pixel = Util::endianSwap(pixel);
+#if WAX_IS_BIG_ENDIAN
+							pixel = GfxUtil::endianSwap(pixel);
 #endif
 							backB = SoftBackend::s_channel_5_sRGB[pixel & 0x1F];
 							backG = SoftBackend::s_channel_6_sRGB[(pixel >> 5) & 0x3F];
@@ -575,8 +575,8 @@ void _draw_segment_strip_blend_to_bgr565srgb(int colBeg, int colEnd, uint8_t* pS
 				int16_t backB, backG, backR;
 
 				uint16_t pixel = *(uint16_t*)pDst;
-#if WG_IS_BIG_ENDIAN
-				pixel = Util::endianSwap(pixel);
+#if WAX_IS_BIG_ENDIAN
+				pixel = GfxUtil::endianSwap(pixel);
 #endif
 				backB = SoftBackend::s_channel_5_sRGB[pixel & 0x1F];
 				backG = SoftBackend::s_channel_6_sRGB[(pixel >> 5) & 0x3F];
@@ -627,12 +627,12 @@ void _draw_segment_strip_blend_to_bgr565srgb(int colBeg, int colEnd, uint8_t* pS
 
 
 
-//____ wg_addExtraSoftKernelsForBGR565sRGBCanvas() __________________________________
+//____ wax_addExtraSoftKernelsForBGR565sRGBCanvas() __________________________________
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-WG_EXPORT int	wg_addExtraSoftKernelsForBGR565sRGBCanvas( wg_obj backend )
+WAX_EXPORT int	wax_addExtraSoftKernelsForBGR565sRGBCanvas( wax_obj backend )
 {
 	auto pBackend = static_cast<SoftBackend*>(reinterpret_cast<Object*>(backend));
 
@@ -644,7 +644,7 @@ WG_EXPORT int	wg_addExtraSoftKernelsForBGR565sRGBCanvas( wg_obj backend )
 
 //____ addExtraSoftKernelsForBGR565sRGBCanvas() __________________________________
 
-bool wg::addExtraSoftKernelsForBGR565sRGBCanvas( SoftBackend * pBackend )
+bool wax::addExtraSoftKernelsForBGR565sRGBCanvas( SoftBackend * pBackend )
 {
 	pBackend->setFillKernel( TintMode::None, BlendMode::Replace, SoftFormat::RGB_565_sRGB, &_fill_bgr565srgb_noblend_notint );
 

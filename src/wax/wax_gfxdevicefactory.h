@@ -19,15 +19,15 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef WG_GFXDEVICEFACTORY_DOT_H
-#define	WG_GFXDEVICEFACTORY_DOT_H
+#ifndef WAX_GFXDEVICEFACTORY_DOT_H
+#define	WAX_GFXDEVICEFACTORY_DOT_H
 #pragma once
 //==============================================================================
 
-#include <wg_gfxdevice.h>
+#include <wax_gfxdevice.h>
 
 
-namespace wg
+namespace wax
 {
 
 
@@ -65,5 +65,5 @@ namespace wg
 
 	//==============================================================================
 
-} // namespace wg
-#endif // WG_GFXDEVICEFACTORY_DOT_H
+} // namespace wax
+#endif // WAX_GFXDEVICEFACTORY_DOT_H

@@ -19,28 +19,28 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef WG_C_STREAMREADER_DOT_H
-#define WG_C_STREAMREADER_DOT_H
+#ifndef WAX_C_STREAMREADER_DOT_H
+#define WAX_C_STREAMREADER_DOT_H
 #pragma once
 
-#include <wg_c_gfxtypes.h>
+#include <wax_c_types.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-	typedef	int(*wg_readStream_func)(int nBytes, void* pDest);
+	typedef	int(*wax_readStream_func)(int nBytes, void* pDest);
 
 
-	WG_EXPORT wg_obj		wg_createStreamReader(wg_readStream_func callback);
+	WAX_EXPORT wax_obj		wax_createStreamReader(wax_readStream_func callback);
 
-	WG_EXPORT wg_component	wg_getStreamReaderOutput(wg_obj streamReader);
+	WAX_EXPORT wax_component	wax_getStreamReaderOutput(wax_obj streamReader);
 
-	WG_EXPORT void			wg_resetStreamReader(wg_obj streamReader);
+	WAX_EXPORT void			wax_resetStreamReader(wax_obj streamReader);
 
-	WG_EXPORT int			wg_streamReaderCapacity(wg_obj streamReader);
-	WG_EXPORT int			wg_streamReaderHasChunk(wg_obj streamReader);
-	WG_EXPORT int			wg_streamReaderBytes(wg_obj streamReader);
+	WAX_EXPORT int			wax_streamReaderCapacity(wax_obj streamReader);
+	WAX_EXPORT int			wax_streamReaderHasChunk(wax_obj streamReader);
+	WAX_EXPORT int			wax_streamReaderBytes(wax_obj streamReader);
 
 #ifdef __cplusplus
 }

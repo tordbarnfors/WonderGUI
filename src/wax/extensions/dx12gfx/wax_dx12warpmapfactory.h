@@ -19,13 +19,13 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef WG_DX12WARPMAPFACTORY_DOT_H
-#define	WG_DX12WARPMAPFACTORY_DOT_H
+#ifndef WAX_DX12WARPMAPFACTORY_DOT_H
+#define	WAX_DX12WARPMAPFACTORY_DOT_H
 #pragma once
 
-#include <wg_warpmapfactory.h>
+#include <wax_warpmapfactory.h>
 
-namespace wg
+namespace wax
 {
 
 	class DX12WarpmapFactory;
@@ -58,5 +58,5 @@ namespace wg
 		virtual ~DX12WarpmapFactory() {}
 	};
 
-} // namespace wg
-#endif // WG_DX12WARPMAPFACTORY_DOT_H
+} // namespace wax
+#endif // WAX_DX12WARPMAPFACTORY_DOT_H

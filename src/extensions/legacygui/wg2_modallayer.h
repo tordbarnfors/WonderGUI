@@ -26,7 +26,7 @@
 #	include <wg2_layer.h>
 #endif
 
-#include <wg_chain.h>
+#include <wax_chain.h>
 
 class WgModalLayer;
 
@@ -67,7 +67,7 @@ public:
 protected:
 	// TODO: Constructor should in the future call SetHook() on Widget, once we are totally rid of widgets...
 
-	PROTECTED_LINK_METHODS( WgModalHook );
+	WAX_PROTECTED_LINK_METHODS( WgModalHook );
 
 	WgModalHook( WgModalLayer * pParent );
 

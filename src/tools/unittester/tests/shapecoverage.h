@@ -1,6 +1,6 @@
 #pragma once
 
-#include <wg_softshapes.h>
+#include <wax_softshapes.h>
 
 #include <climits>
 #include <functional>
@@ -13,15 +13,15 @@
 // rasterized once for each segment, drawn as the only one, in white. Checks
 // that runs are well formed and pixels aren't given twice.
 
-class ShapeCoverage : public wg::SoftShapes::RowSink
+class ShapeCoverage : public wax::SoftShapes::RowSink
 {
 public:
-	ShapeCoverage(const wg::RectI& area, int nSegments)
+	ShapeCoverage(const wax::RectI& area, int nSegments)
 		: m_area(area), m_nSegments(nSegments), m_coverage(size_t(nSegments) * area.w * area.h, 0), m_hits(size_t(area.w) * area.h, 0) {}
 
 	// Calls rasterize once for each segment, which rasterizes the shape into the given sink.
 
-	void collect(const std::function<void(wg::SoftShapes::RowSink*)>& rasterize)
+	void collect(const std::function<void(wax::SoftShapes::RowSink*)>& rasterize)
 	{
 		for (m_segment = 0; m_segment < m_nSegments; m_segment++)
 		{
@@ -38,13 +38,13 @@ public:
 		return segment == m_segment ? white : nullptr;
 	}
 
-	void row(int y, int nRuns, const wg::SoftShapes::Run* pRuns, const wg::SoftShapes::CoveragePixel* pPixels) override
+	void row(int y, int nRuns, const wax::SoftShapes::Run* pRuns, const wax::SoftShapes::CoveragePixel* pPixels) override
 	{
 		int prevEnd = INT_MIN;
 
 		for (int i = 0; i < nRuns; i++)
 		{
-			const wg::SoftShapes::Run& run = pRuns[i];
+			const wax::SoftShapes::Run& run = pRuns[i];
 
 			if (run.begin >= run.end || run.begin < prevEnd || run.begin < m_area.x || run.end > m_area.x + m_area.w || y < m_area.y || y >= m_area.y + m_area.h)
 			{
@@ -64,14 +64,14 @@ public:
 				if (++m_hits[idx] > 1)
 					_error("Pixel " + std::to_string(x) + "," + std::to_string(y) + " given twice.");
 
-				int coverage = wg::SoftShapes::c_fullCoverage;
+				int coverage = wax::SoftShapes::c_fullCoverage;
 
 				if (run.segment < 0)
 				{
-					const wg::SoftShapes::CoveragePixel& px = *pPixels++;
+					const wax::SoftShapes::CoveragePixel& px = *pPixels++;
 					coverage = px.coverage;
 
-					if (px.coverage <= 0 || px.coverage > wg::SoftShapes::c_fullCoverage || px.b != px.coverage || px.a != px.coverage)
+					if (px.coverage <= 0 || px.coverage > wax::SoftShapes::c_fullCoverage || px.b != px.coverage || px.a != px.coverage)
 						_error("Bad coverage pixel " + std::to_string(x) + "," + std::to_string(y));
 				}
 
@@ -88,7 +88,7 @@ public:
 private:
 	void _error(const std::string& msg) { if (m_error.empty()) m_error = msg; }
 
-	wg::RectI			m_area;
+	wax::RectI			m_area;
 	int					m_nSegments;
 	int					m_segment = 0;
 	std::vector<int>	m_coverage;

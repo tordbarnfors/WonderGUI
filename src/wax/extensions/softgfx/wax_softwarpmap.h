@@ -19,13 +19,13 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef WG_SOFTWARPMAP_DOT_H
-#define	WG_SOFTWARPMAP_DOT_H
+#ifndef WAX_SOFTWARPMAP_DOT_H
+#define	WAX_SOFTWARPMAP_DOT_H
 #pragma once
 
-#include <wg_warpmap.h>
+#include <wax_warpmap.h>
 
-namespace wg
+namespace wax
 {
 	class SoftWarpmap;
 	typedef	StrongPtr<SoftWarpmap>	SoftWarpmap_p;
@@ -60,5 +60,5 @@ namespace wg
 		void	_nodesUpdated( const RectI& region ) override {}
 	};
 
-} // namespace wg
-#endif //WG_SOFTWARPMAP_DOT_H
+} // namespace wax
+#endif //WAX_SOFTWARPMAP_DOT_H

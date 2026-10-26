@@ -28,7 +28,7 @@
 #	include <wg2_panel.h>
 #endif
 
-#include <wg_chain.h>
+#include <wax_chain.h>
 
 class WgFlexPanel;
 
@@ -123,7 +123,7 @@ public:
 protected:
 	// TODO: Constructor should in the future call SetHook() on Widget, once we are totally rid of widgets...
 
-	PROTECTED_LINK_METHODS( WgFlexHook );
+	WAX_PROTECTED_LINK_METHODS( WgFlexHook );
 
 	WgFlexHook( WgFlexPanel * pParent, const WgRect& placementGeo, WgBorders padding );
 

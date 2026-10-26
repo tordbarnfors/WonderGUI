@@ -22,7 +22,7 @@
 #include <wonderapp.h>
 #include <wondergui.h>
 #include <wg_debugger.h>
-#include <wg_freetypefont.h>
+#include <wax_freetypefont.h>
 #include <widgetkits/wg_oldskool.h>
 
 #ifdef WIN32
@@ -746,7 +746,7 @@ void MyAppAPI::convertSDLFormat(PixelDescription* pWGFormat, const SDL_PixelForm
 		pWGFormat->type = PixelType::Chunky;
 
 	pWGFormat->bits = pSDLFormat->BitsPerPixel;
-	pWGFormat->bigEndian = (WG_IS_BIG_ENDIAN == 1);		// SDL masks are for pixels read in native byte order.
+	pWGFormat->bigEndian = (WAX_IS_BIG_ENDIAN == 1);		// SDL masks are for pixels read in native byte order.
 	
 	pWGFormat->R_mask = pSDLFormat->Rmask;
 	pWGFormat->G_mask = pSDLFormat->Gmask;

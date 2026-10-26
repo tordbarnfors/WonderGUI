@@ -24,9 +24,9 @@
 
 #include <wondergui.h>
 
-#include <wg_softkernels_default.h>
-#include <wg_softsurfacefactory.h>
-#include <wg_softbackend.h>
+#include <wax_softkernels_default.h>
+#include <wax_softsurfacefactory.h>
+#include <wax_softbackend.h>
 
 using namespace wg;
 

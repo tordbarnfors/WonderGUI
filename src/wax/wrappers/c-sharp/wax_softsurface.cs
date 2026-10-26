@@ -1,6 +1,6 @@
 using System.Runtime.InteropServices;
 
-namespace WG;
+namespace Wax;
 
 public class SoftSurface : Surface
 {
@@ -16,7 +16,7 @@ public class SoftSurface : Surface
 		C_Blueprint bp;
 		Surface.ConvertBlueprint(in blueprint, out bp);
 
-		_obj = wg_createSoftSurface(ref bp);
+		_obj = wax_createSoftSurface(ref bp);
 	}
 
     //____ SoftSurface() ______________________________________________________
@@ -26,7 +26,7 @@ public class SoftSurface : Surface
         Surface.C_Blueprint bp;
         Surface.ConvertBlueprint(in blueprint, out bp);
 
-        _obj = wg_createSoftSurfaceFromBlob(ref bp, blob.CHandle(), pitch);
+        _obj = wax_createSoftSurfaceFromBlob(ref bp, blob.CHandle(), pitch);
     }
 
     public SoftSurface(Surface.Blueprint blueprint, Byte[] pixels, PixelFormat pixelFormat, int pitch, Color8[] palette)
@@ -34,7 +34,7 @@ public class SoftSurface : Surface
         Surface.C_Blueprint bp;
         Surface.ConvertBlueprint(in blueprint, out bp);
 
-        _obj = wg_createSoftSurfaceFromBitmap(ref bp, pixels, pixelFormat, pitch, palette, palette.Length);
+        _obj = wax_createSoftSurfaceFromBitmap(ref bp, pixels, pixelFormat, pitch, palette, palette.Length);
     }
 
     public SoftSurface(Surface.Blueprint blueprint, Byte[] pixels, PixelDescription pixelDescription, int pitch, Color8[] palette)
@@ -42,24 +42,24 @@ public class SoftSurface : Surface
         Surface.C_Blueprint bp;
         Surface.ConvertBlueprint(in blueprint, out bp);
 
-        _obj = wg_createSoftSurfaceFromRawData(ref bp, pixels, pixelDescription, pitch, palette, palette.Length);
+        _obj = wax_createSoftSurfaceFromRawData(ref bp, pixels, pixelDescription, pitch, palette, palette.Length);
     }
 
     //____ DLL functions ______________________________________________________
 
 	[DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-	private static extern IntPtr wg_createSoftSurface(ref C_Blueprint blueprint);
+	private static extern IntPtr wax_createSoftSurface(ref C_Blueprint blueprint);
 	
  	[DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-   	private static extern IntPtr wg_createSoftSurfaceFromBlob(ref C_Blueprint blueprint, IntPtr blob, int pitch);
+   	private static extern IntPtr wax_createSoftSurfaceFromBlob(ref C_Blueprint blueprint, IntPtr blob, int pitch);
 
 	[DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-    private static extern IntPtr wg_createSoftSurfaceFromBitmap(ref C_Blueprint blueprint, Byte[] pixels,
+    private static extern IntPtr wax_createSoftSurfaceFromBitmap(ref C_Blueprint blueprint, Byte[] pixels,
 																PixelFormat pixelFormat, int pitch, Color8[] palette, int paletteSize );
 
 
 	[DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-    private static extern IntPtr wg_createSoftSurfaceFromRawData(ref C_Blueprint blueprint, Byte[] pixels,
+    private static extern IntPtr wax_createSoftSurfaceFromRawData(ref C_Blueprint blueprint, Byte[] pixels,
 																PixelDescription pixelDescription, int pitch, Color8[] palette, int paletteSize );
 
 }

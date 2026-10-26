@@ -19,23 +19,23 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#include <wg_c_streamwriter.h>
-#include <wg_streamwriter.h>
+#include <wax_c_streamwriter.h>
+#include <wax_streamwriter.h>
 
-using namespace wg;
+using namespace wax;
 
-inline StreamWriter* getPtr(wg_obj obj) {
+inline StreamWriter* getPtr(wax_obj obj) {
 	return static_cast<StreamWriter*>(reinterpret_cast<Object*>(obj));
 }
 
-wg_obj wg_createStreamWriter(wg_writeStream_func dispatcher)
+wax_obj wax_createStreamWriter(wax_writeStream_func dispatcher)
 {
 	auto p = StreamWriter::create(dispatcher);
 	p->retain();
 	return p.rawPtr();
 }
 
-wg_component wg_getStreamWriterInput(wg_obj streamWriter)
+wax_component wax_getStreamWriterInput(wax_obj streamWriter)
 {
 	auto p = getPtr(streamWriter);
 	return { static_cast<Object*>(p), &p->input };

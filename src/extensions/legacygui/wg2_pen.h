@@ -36,7 +36,7 @@
 
 #include <wg_textstyle.h>
 
-#include <wg_font.h>
+#include <wax_font.h>
 
 #ifndef	WG2_GFXDEVICE_DOT_H
 #	include <wg2_gfxdevice.h>

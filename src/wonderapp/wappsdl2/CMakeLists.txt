@@ -20,7 +20,7 @@ set(SOURCES
 set(INCDIRS
 	${CMAKE_CURRENT_LIST_DIR}
 	${WONDERGUI_INCDIRS}
-	${WGFREETYPEFONT_INCDIRS}
+	${WAXFREETYPEFONT_INCDIRS}
 	${WGDEBUGGER_INCDIRS}
 	${PROJECT_SOURCE_DIR}/wonderapp/common
 	${PROJECT_SOURCE_DIR}
@@ -40,7 +40,7 @@ add_library(wappsdl2sw STATIC
 
 target_include_directories(wappsdl2sw PRIVATE
     ${INCDIRS}
-    ${WGSOFTGFX_INCDIRS}
+    ${WAXSOFTGFX_INCDIRS}
     ${WGDEBUGGER_INCDIRS}
     ${SDL2_INCDIR}
     ${SDL2IMAGE_INCDIR}
@@ -56,8 +56,8 @@ target_link_directories(wappsdl2sw PUBLIC
 
 target_link_libraries(wappsdl2sw PRIVATE
     wgdebugger
-    wgsoftgfx
-    wgfreetypefont
+    waxsoftgfx
+    waxfreetypefont
     wondergui
     ${FREETYPE2_LIB}
     ${SDL2_LIBS}
@@ -79,7 +79,7 @@ add_library(wappsdl2gl STATIC
 
 target_include_directories(wappsdl2gl PRIVATE
     ${INCDIRS}
-    ${WGOPENGLGFX_INCDIRS}
+    ${WAXOPENGLGFX_INCDIRS}
     ${WGDEBUGGER_INCDIRS}
     ${SDL2_INCDIR}
     ${SDL2IMAGE_INCDIR}
@@ -95,8 +95,8 @@ target_link_directories(wappsdl2gl PUBLIC
 )
 
 target_link_libraries(wappsdl2gl PRIVATE
-    wgopenglgfx
-    wgfreetypefont
+    waxopenglgfx
+    waxfreetypefont
     wondergui
     wgdebugger
     ${FREETYPE2_LIB}
@@ -120,7 +120,7 @@ if(WAPPLIB STREQUAL "wappsdl2metal")
 
     target_include_directories(wappsdl2metal PRIVATE
         ${INCDIRS}
-        ${WGMETALGFX_INCDIRS}
+        ${WAXMETALGFX_INCDIRS}
         ${WGDEBUGGER_INCDIRS}
         ${SDL2_INCDIR}
         ${SDL2IMAGE_INCDIR}
@@ -136,8 +136,8 @@ if(WAPPLIB STREQUAL "wappsdl2metal")
 
 
     target_link_libraries(wappsdl2metal PRIVATE
-        wgmetalgfx
-        wgfreetypefont
+        waxmetalgfx
+        waxfreetypefont
         wondergui
         wgdebugger
         ${FREETYPE2_LIB}

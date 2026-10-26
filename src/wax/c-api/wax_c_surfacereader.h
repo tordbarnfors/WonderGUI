@@ -19,26 +19,26 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef WG_C_SURFACEREADER_DOT_H
-#define WG_C_SURFACEREADER_DOT_H
+#ifndef WAX_C_SURFACEREADER_DOT_H
+#define WAX_C_SURFACEREADER_DOT_H
 #pragma once
 
-#include <wg_c_gfxtypes.h>
+#include <wax_c_types.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-//____ wg_surfaceReaderBP __________________________________________________________
+//____ wax_surfaceReaderBP __________________________________________________________
 
-typedef struct wg_surfaceReaderBP_struct			// NOT BINARY EQUIVALENT!
+typedef struct wax_surfaceReaderBP_struct			// NOT BINARY EQUIVALENT!
 {
-	wg_obj				factory;
-} wg_surfaceReaderBP;
+	wax_obj				factory;
+} wax_surfaceReaderBP;
 
-WG_EXPORT wg_obj 	wg_createSurfaceReader(const wg_surfaceReaderBP* blueprint);
-WG_EXPORT wg_obj	wg_readSurfaceFromBlob( wg_obj surfaceReader, wg_obj blob );
-WG_EXPORT wg_obj	wg_readSurfaceFromMemory( wg_obj surfaceReader, const char * pData );
+WAX_EXPORT wax_obj 	wax_createSurfaceReader(const wax_surfaceReaderBP* blueprint);
+WAX_EXPORT wax_obj	wax_readSurfaceFromBlob( wax_obj surfaceReader, wax_obj blob );
+WAX_EXPORT wax_obj	wax_readSurfaceFromMemory( wax_obj surfaceReader, const char * pData );
 
 #ifdef __cplusplus
 }

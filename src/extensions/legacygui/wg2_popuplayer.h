@@ -27,7 +27,7 @@
 	#include <wg2_layer.h>
 #endif
 
-#include <wg_chain.h>
+#include <wax_chain.h>
 
 class WgPopupLayer;
 
@@ -54,7 +54,7 @@ public:
 
 
 protected:
-	PROTECTED_LINK_METHODS(WgPopupHook);
+	WAX_PROTECTED_LINK_METHODS(WgPopupHook);
 
 	WgPopupHook(WgPopupLayer * pParent) : m_pParent(pParent), attachPoint(WgOrigo::NorthWest), maxSize(INT_MAX,INT_MAX) {}
 

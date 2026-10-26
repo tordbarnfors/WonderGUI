@@ -1,6 +1,6 @@
 using System.Runtime.InteropServices;
 
-namespace WG;
+namespace Wax;
 
 
 public class StreamWriter : Objekt
@@ -8,7 +8,7 @@ public class StreamWriter : Objekt
     //____ Constructor ________________________________________________________
     public StreamWriter(WriteStreamCallback callback)
     {
-        _obj = wg_createStreamWriter(callback);
+        _obj = wax_createStreamWriter(callback);
         _callback = callback;
     }
 
@@ -16,7 +16,7 @@ public class StreamWriter : Objekt
 
     public StreamSink GetSink()
     {
-        C_Component c_comp = wg_getStreamWriterInput(_obj);
+        C_Component c_comp = wax_getStreamWriterInput(_obj);
         StreamSink sink = new StreamSink(c_comp.component, this);
         return sink;
     }
@@ -34,10 +34,10 @@ public class StreamWriter : Objekt
     //____ DLL functions ______________________________________________________
 
     [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-    protected static extern IntPtr wg_createStreamWriter(WriteStreamCallback dispatcher);
+    protected static extern IntPtr wax_createStreamWriter(WriteStreamCallback dispatcher);
 
     [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-    private static extern C_Component	wg_getStreamWriterInput(IntPtr streamWriter);
+    private static extern C_Component	wax_getStreamWriterInput(IntPtr streamWriter);
 
 
 }

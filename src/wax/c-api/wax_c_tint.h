@@ -19,71 +19,71 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef WG_C_TINT_DOT_H
-#define WG_C_TINT_DOT_H
+#ifndef WAX_C_TINT_DOT_H
+#define WAX_C_TINT_DOT_H
 #pragma once
 
-#include <wg_c_gfxtypes.h>
-#include <wg_c_geo.h>
-#include <wg_c_color.h>
+#include <wax_c_types.h>
+#include <wax_c_geo.h>
+#include <wax_c_color.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-//____ wg_colorStop ____________________________________________________________
+//____ wax_colorStop ____________________________________________________________
 
-typedef struct wg_colorStop_struct
+typedef struct wax_colorStop_struct
 {
 	float		pos;				// 0.0 -> 1.0
-	wg_color	color;
-} wg_colorStop;
+	wax_color	color;
+} wax_colorStop;
 
-//____ wg_tintBP _______________________________________________________________
+//____ wax_tintBP _______________________________________________________________
 
-typedef struct wg_tintBP_struct			// NOT BINARY EQUIVALENT!
+typedef struct wax_tintBP_struct			// NOT BINARY EQUIVALENT!
 {
-	wg_coordF				begin;			// Linear: start, relative to rect. Default {0,0}.
-	wg_coordF				center;			// Radial: center, relative to rect. Default {0.5,0.5}.
-	wg_coordF				end;			// Linear: end, relative to rect. Default {0,1}.
-	wg_sizeF				radius;			// Radial: radius. Default {0.5,0.5}.
-	wg_tintRadius			radiusMode;
-	wg_tintShape			shape;
-	wg_tintSpread			spread;
+	wax_coordF				begin;			// Linear: start, relative to rect. Default {0,0}.
+	wax_coordF				center;			// Radial: center, relative to rect. Default {0.5,0.5}.
+	wax_coordF				end;			// Linear: end, relative to rect. Default {0,1}.
+	wax_sizeF				radius;			// Radial: radius. Default {0.5,0.5}.
+	wax_tintRadius			radiusMode;
+	wax_tintShape			shape;
+	wax_tintSpread			spread;
 	int						nbStops;		// 1 -> 16.
-	const wg_colorStop *	stops;
-} wg_tintBP;
+	const wax_colorStop *	stops;
+} wax_tintBP;
 
 
-WG_EXPORT wg_tintBP		wg_defaultTintBP();								// Blueprint with default values.
+WAX_EXPORT wax_tintBP		wax_defaultTintBP();								// Blueprint with default values.
 
-WG_EXPORT wg_obj		wg_createTint( const wg_tintBP* pBlueprint );		// Returns retained object or null.
-WG_EXPORT wg_obj		wg_createTintMix( int nbComponents, const wg_obj* pComponents, const float* pWeights );	// Returns retained object or null. 1 -> 4 simple tints.
-WG_EXPORT wg_obj		wg_mixTints( wg_obj fromTint, wg_obj toTint, float progress );	// Returns retained object.
+WAX_EXPORT wax_obj		wax_createTint( const wax_tintBP* pBlueprint );		// Returns retained object or null.
+WAX_EXPORT wax_obj		wax_createTintMix( int nbComponents, const wax_obj* pComponents, const float* pWeights );	// Returns retained object or null. 1 -> 4 simple tints.
+WAX_EXPORT wax_obj		wax_mixTints( wax_obj fromTint, wax_obj toTint, float progress );	// Returns retained object.
 
-WG_EXPORT int			wg_isTintOpaque( wg_obj tint );
-WG_EXPORT int			wg_isTintFlat( wg_obj tint );
-WG_EXPORT int			wg_isTintMix( wg_obj tint );
+WAX_EXPORT int			wax_isTintOpaque( wax_obj tint );
+WAX_EXPORT int			wax_isTintFlat( wax_obj tint );
+WAX_EXPORT int			wax_isTintMix( wax_obj tint );
 
 // Blueprint of a simple tint. Its stops point into the tint and stay valid as long as it does.
 // A mix has no blueprint of its own, get its components instead.
 
-WG_EXPORT wg_tintBP		wg_getTintBlueprint( wg_obj tint );
+WAX_EXPORT wax_tintBP		wax_getTintBlueprint( wax_obj tint );
 
-WG_EXPORT int			wg_tintMixComponents( wg_obj tint );				// 0 for a simple tint.
-WG_EXPORT wg_obj		wg_tintMixComponent( wg_obj tint, int index );		// Not retained.
-WG_EXPORT float			wg_tintMixWeight( wg_obj tint, int index );
+WAX_EXPORT int			wax_tintMixComponents( wax_obj tint );				// 0 for a simple tint.
+WAX_EXPORT wax_obj		wax_tintMixComponent( wax_obj tint, int index );		// Not retained.
+WAX_EXPORT float			wax_tintMixWeight( wax_obj tint, int index );
 
-WG_EXPORT wg_color		wg_tintColorAt( wg_obj tint, wg_coordSPX pos, const wg_rectSPX* pRect );
-WG_EXPORT int			wg_tintAlphaAt( wg_obj tint, wg_coordSPX pos, const wg_rectSPX* pRect );	// 0 -> 4096.
+WAX_EXPORT wax_color		wax_tintColorAt( wax_obj tint, wax_coordSPX pos, const wax_rectSPX* pRect );
+WAX_EXPORT int			wax_tintAlphaAt( wax_obj tint, wax_coordSPX pos, const wax_rectSPX* pRect );	// 0 -> 4096.
 
 // Tints as bytes, e.g. for passing them between plugin and host. See TintTools::serializeTint()
 // for the format. A mix survives this, which it doesn't through a blueprint.
 
-#define WG_MAX_TINT_DATA_BYTES	(4 + 4 * (44 + 16 * 12))
+#define WAX_MAX_TINT_DATA_BYTES	(4 + 4 * (44 + 16 * 12))
 
-WG_EXPORT int			wg_exportTintData( wg_obj tint, void* pDest, int maxBytes );	// Returns bytes written, 0 if it doesn't fit. tint may be null.
-WG_EXPORT wg_obj		wg_createTintFromData( const void* pData, int bytes );			// Returns retained object or null.
+WAX_EXPORT int			wax_exportTintData( wax_obj tint, void* pDest, int maxBytes );	// Returns bytes written, 0 if it doesn't fit. tint may be null.
+WAX_EXPORT wax_obj		wax_createTintFromData( const void* pData, int bytes );			// Returns retained object or null.
 
 #ifdef __cplusplus
 }

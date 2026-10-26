@@ -1,6 +1,6 @@
 using System.Runtime.InteropServices;
 
-namespace WG;
+namespace Wax;
 
 
 public class BitmapCache : Objekt
@@ -8,7 +8,7 @@ public class BitmapCache : Objekt
     //____ Constructor ________________________________________________________
     public BitmapCache(int maxBytes, SurfaceFactory factory)
     {
-        _obj = wg_createBitmapCache(maxBytes, factory.CHandle());
+        _obj = wax_createBitmapCache(maxBytes, factory.CHandle());
     }
 
     internal BitmapCache(IntPtr c_obj)
@@ -20,42 +20,42 @@ public class BitmapCache : Objekt
     //____ SetLimit() _________________________________________________________
     public void SetLimit(int maxBytes)
     {
-        wg_setCacheLimit(_obj, maxBytes);
+        wax_setCacheLimit(_obj, maxBytes);
     }
 
     //____ Limit() ____________________________________________________________
     public int Limit()
     {
-        return wg_cacheLimit(_obj);
+        return wax_cacheLimit(_obj);
     }
 
     //____ Size() _____________________________________________________________
     public int Size()
     {
-        return wg_cacheSize(_obj);
+        return wax_cacheSize(_obj);
     }
 
     //____ Clear() ____________________________________________________________
     public void Clear()
     {
-        wg_clearCache(_obj);
+        wax_clearCache(_obj);
     }
 
 
     //____ DLL functions ______________________________________________________
 
     [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-    private static extern IntPtr wg_createBitmapCache( int maxSize, IntPtr surfaceFactory );
+    private static extern IntPtr wax_createBitmapCache( int maxSize, IntPtr surfaceFactory );
 
     [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-    private static extern void wg_setCacheLimit(IntPtr bitmapCache, int maxBytes);
+    private static extern void wax_setCacheLimit(IntPtr bitmapCache, int maxBytes);
 
     [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-    private static extern int wg_cacheLimit(IntPtr bitmapCache);
+    private static extern int wax_cacheLimit(IntPtr bitmapCache);
 
     [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-    private static extern int wg_cacheSize(IntPtr bitmapCache);
+    private static extern int wax_cacheSize(IntPtr bitmapCache);
 
     [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-    private static extern void wg_clearCache(IntPtr bitmapCache);    
+    private static extern void wax_clearCache(IntPtr bitmapCache);    
 }

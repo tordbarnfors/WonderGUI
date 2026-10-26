@@ -23,19 +23,19 @@
 
 #define NOMINMAX
 
-#include <wg_dx12surface.h>
-#include <wg_dx12backend.h>
+#include <wax_dx12surface.h>
+#include <wax_dx12backend.h>
 
-#include <wg_gfxbase.h>
-#include <wg_gfxutil.h>
-#include <wg_pixeltools.h>
+#include <wax_core.h>
+#include <wax_gfxutil.h>
+#include <wax_pixeltools.h>
 
 #include <algorithm>
 #include <cstring>
 #include <cstdio>
 #include <cwchar>
 
-namespace wg
+namespace wax
 {
 
 	using namespace std;
@@ -63,7 +63,7 @@ namespace wg
 			return;
 
 		wchar_t name[128];
-		swprintf( name, 128, L"WonderGUI DX12Surface %p %dx%d: %ls", pSurface, size.w, size.h, pWhat );
+		swprintf( name, 128, L"Wax DX12Surface %p %dx%d: %ls", pSurface, size.w, size.h, pWhat );
 		pObject->SetName( name );
 	}
 
@@ -187,7 +187,7 @@ namespace wg
 			// was reported then, and is no news to every surface created after.
 
 			if( !DX12Backend::isDeviceLost() )
-				GfxBase::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite,
+				Core::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite,
 					"No D3D12 device set. Call DX12Backend::setDevice() before creating any surface.",
 					nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return false;
@@ -207,17 +207,17 @@ namespace wg
 			// The same goes for the failures further down.
 
 			if( !DX12Backend::checkDeviceLost() )
-				GfxBase::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to create resources for surface uploads.",
+				Core::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to create resources for surface uploads.",
 					nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return false;
 		}
 
 		s_copyList->Close();
 
-		s_copyQueue->SetName(L"WonderGUI DX12Surface: copy queue");
-		s_copyAllocator->SetName(L"WonderGUI DX12Surface: copy allocator");
-		s_copyList->SetName(L"WonderGUI DX12Surface: copy list");
-		s_copyFence->SetName(L"WonderGUI DX12Surface: copy fence");
+		s_copyQueue->SetName(L"Wax DX12Surface: copy queue");
+		s_copyAllocator->SetName(L"Wax DX12Surface: copy allocator");
+		s_copyList->SetName(L"Wax DX12Surface: copy list");
+		s_copyFence->SetName(L"Wax DX12Surface: copy fence");
 
 		s_copyFenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
 
@@ -236,7 +236,7 @@ namespace wg
 	// on the way in and on the way out: sRGB to linear when a texel is sampled,
 	// linear to sRGB when a pixel is written.
 	//
-	// Alpha is linear in every format WonderGUI has, so Alpha_8 stays plain.
+	// Alpha is linear in every format Wax has, so Alpha_8 stays plain.
 
 	bool DX12Surface::_setPixelDetails()
 	{
@@ -286,7 +286,7 @@ namespace wg
 			{
 				char buffer[256];
 				sprintf_s(buffer, "Pixel format %s is not supported by DX12Backend. The surface will have no texture.", toString(format));
-				GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, buffer, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, buffer, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 
 				m_dxgiFormat = DXGI_FORMAT_UNKNOWN;
 				bSupported = false;
@@ -299,8 +299,8 @@ namespace wg
 		// can't hold, so that the surface can still hand out pixels.
 
 		m_pixelFormat = format;
-		m_bBigEndian = (WG_IS_BIG_ENDIAN == 1);
-		m_pixelDescription = Util::pixelFormatToDescription(format, m_bBigEndian);
+		m_bBigEndian = (WAX_IS_BIG_ENDIAN == 1);
+		m_pixelDescription = GfxUtil::pixelFormatToDescription(format, m_bBigEndian);
 		m_pixelSize = m_pPixelDescription->bits / 8;
 		m_bAlphaOnly = (m_dxgiFormat == DXGI_FORMAT_A8_UNORM);
 		m_bIndexed = (m_dxgiFormat == DXGI_FORMAT_R8_UINT || m_dxgiFormat == DXGI_FORMAT_R16_UINT);
@@ -390,7 +390,7 @@ namespace wg
 		if( format == PixelFormat::Undefined )
 			format = m_pixelFormat;
 
-		auto srcDesc = Util::pixelFormatToDescription(format, bp.bigEndian);
+		auto srcDesc = GfxUtil::pixelFormatToDescription(format, bp.bigEndian);
 
 		if( pitch == 0 )
 			pitch = PixelTools::bytesPerLine(srcDesc, m_size.w);
@@ -439,7 +439,7 @@ namespace wg
 
 			char buffer[256];
 			sprintf_s(buffer, "Can't create a %dx%d surface with %d bits per pixel.", m_size.w, m_size.h, m_pPixelDescription->bits);
-			GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, buffer, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, buffer, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return;
 		}
 
@@ -512,7 +512,7 @@ namespace wg
 													  D3D12_RESOURCE_STATE_COMMON, nullptr, IID_PPV_ARGS(m_texture.GetAddressOf()))) )
 		{
 			if( !DX12Backend::checkDeviceLost() )
-				GfxBase::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to create texture for surface.",
+				Core::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to create texture for surface.",
 					this, &TYPEINFO, __func__, __FILE__, __LINE__);
 
 			if( _allocFallbackPixels() )
@@ -544,7 +544,7 @@ namespace wg
 			m_texture = nullptr;
 			m_uploadBuffer = nullptr;
 			if( !DX12Backend::checkDeviceLost() )
-				GfxBase::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to create pixel buffer for surface.",
+				Core::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to create pixel buffer for surface.",
 					this, &TYPEINFO, __func__, __FILE__, __LINE__);
 
 			if( _allocFallbackPixels() )
@@ -561,7 +561,7 @@ namespace wg
 			m_uploadBuffer = nullptr;
 			m_pUploadData = nullptr;
 			if( !DX12Backend::checkDeviceLost() )
-				GfxBase::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to map pixel buffer for surface.",
+				Core::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to map pixel buffer for surface.",
 					this, &TYPEINFO, __func__, __FILE__, __LINE__);
 
 			if( _allocFallbackPixels() )
@@ -586,7 +586,7 @@ namespace wg
 		{
 			m_texture = nullptr;
 			if( !DX12Backend::checkDeviceLost() )
-				GfxBase::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to create descriptor heap for surface.",
+				Core::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to create descriptor heap for surface.",
 					this, &TYPEINFO, __func__, __FILE__, __LINE__);
 
 			_copyInPixels( pPixels, pitch, pSrcPixelDesc, pSrcPalette, srcPaletteSize );
@@ -628,7 +628,7 @@ namespace wg
 			{
 				m_texture = nullptr;
 				if( !DX12Backend::checkDeviceLost() )
-					GfxBase::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to create render target heap for surface.",
+					Core::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to create render target heap for surface.",
 						this, &TYPEINFO, __func__, __FILE__, __LINE__);
 
 				_copyInPixels( pPixels, pitch, pSrcPixelDesc, pSrcPalette, srcPaletteSize );
@@ -693,7 +693,7 @@ namespace wg
 			m_paletteBuffer = nullptr;
 			m_pPaletteData = nullptr;
 			if( !DX12Backend::checkDeviceLost() )
-				GfxBase::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to create palette buffer for surface.",
+				Core::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to create palette buffer for surface.",
 					this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return false;
 		}
@@ -834,7 +834,7 @@ namespace wg
 
 		if( m_resourceState != D3D12_RESOURCE_STATE_COMMON )
 		{
-			GfxBase::throwError(ErrorLevel::Error, ErrorCode::Internal,
+			Core::throwError(ErrorLevel::Error, ErrorCode::Internal,
 				"Can't upload to a surface that is in use by the backend.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return;
 		}
@@ -878,7 +878,7 @@ namespace wg
 				FAILED(premultiplied->Map(0, nullptr, (void**) &pDest)) )
 			{
 				if( !DX12Backend::checkDeviceLost() )
-					GfxBase::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to create buffer for premultiplied pixels, colors of transparent pixels will be off.",
+					Core::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to create buffer for premultiplied pixels, colors of transparent pixels will be off.",
 						this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			}
 			else
@@ -999,7 +999,7 @@ namespace wg
 													  D3D12_RESOURCE_STATE_COPY_DEST, nullptr, IID_PPV_ARGS(m_readbackBuffer.GetAddressOf()))) )
 		{
 			if( !DX12Backend::checkDeviceLost() )
-				GfxBase::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to create readback buffer for canvas surface.",
+				Core::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to create readback buffer for canvas surface.",
 					this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return false;
 		}
@@ -1033,7 +1033,7 @@ namespace wg
 
 		if( m_resourceState != D3D12_RESOURCE_STATE_COMMON )
 		{
-			GfxBase::throwError(ErrorLevel::Error, ErrorCode::Internal,
+			Core::throwError(ErrorLevel::Error, ErrorCode::Internal,
 				"Can't read back a surface that is in use by the backend.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return;
 		}
@@ -1221,4 +1221,4 @@ namespace wg
 		// Nothing to do here.
 	}
 
-} // namespace wg
+} // namespace wax

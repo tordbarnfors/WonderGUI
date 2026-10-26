@@ -48,7 +48,7 @@ public:
 	WgFlowPanel*	Parent() const;
 
 protected:
-	PROTECTED_LINK_METHODS( WgFlowHook );
+	WAX_PROTECTED_LINK_METHODS( WgFlowHook );
 
 	WgFlowHook( WgFlowPanel * pParent );
 

@@ -19,24 +19,24 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef WG_STREAMPUMP_DOT_H
-#define WG_STREAMPUMP_DOT_H
+#ifndef WAX_STREAMPUMP_DOT_H
+#define WAX_STREAMPUMP_DOT_H
 #pragma once
 
-#include <wg_geo.h>
-#include <wg_object.h>
-#include <wg_componentptr.h>
+#include <wax_geo.h>
+#include <wax_object.h>
+#include <wax_componentptr.h>
 
-#include <wg_streamsource.h>
-#include <wg_streamsink.h>
-#include <wg_streamtrimbackend.h>
-#include <wg_compression.h>
+#include <wax_streamsource.h>
+#include <wax_streamsink.h>
+#include <wax_streamtrimbackend.h>
+#include <wax_compression.h>
 
 
 #include <vector>
 #include <functional>
 
-namespace wg
+namespace wax
 {
 	class StreamPump;
 	typedef	StrongPtr<StreamPump>	StreamPump_p;
@@ -123,4 +123,4 @@ namespace wg
 	};
 }
 
-#endif // WG_STREAMPUMP_DOT_H
+#endif // WAX_STREAMPUMP_DOT_H

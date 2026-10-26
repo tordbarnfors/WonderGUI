@@ -19,9 +19,9 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#include <wg_pixeltools.h>
-#include <wg_gfxutil.h>
-#include <wg_gfxbase.h>
+#include <wax_pixeltools.h>
+#include <wax_gfxutil.h>
+#include <wax_core.h>
 
 #include <cstring>
 #include <cmath>
@@ -29,7 +29,7 @@
 #include <vector>
 #include <unordered_map>
 
-namespace wg { namespace PixelTools
+namespace wax { namespace PixelTools
 {
 
 /*
@@ -927,7 +927,7 @@ bool copyPixels(int width, int height,
 	if (srcFormat == PixelFormat::Undefined)
 		return false;
 
-	return copyPixels(width, height, pSrc, Util::pixelFormatToDescription(srcFormat, srcBigEndian), srcColorSpace, srcPitchAdd,
+	return copyPixels(width, height, pSrc, GfxUtil::pixelFormatToDescription(srcFormat, srcBigEndian), srcColorSpace, srcPitchAdd,
 					  pSrcPalette, srcPaletteEntries, pDst, dstFormat, dstColorSpace, dstBigEndian, dstPitchAdd,
 					  pDstPalette, dstPaletteEntries, maxDstPaletteEntries);
 }
@@ -953,26 +953,26 @@ bool copyPixels(int width, int height,
 	if (dstCS == ColorSpace::Undefined)
 		dstCS = ColorSpace::sRGB;
 
-	PixelDescription dstDesc = Util::pixelFormatToDescription(dstFormat, dstBigEndian);
+	PixelDescription dstDesc = GfxUtil::pixelFormatToDescription(dstFormat, dstBigEndian);
 
 	bool bSrcHasPalette = (srcDesc.type == PixelType::Index || srcDesc.type == PixelType::Bitplanes);
 	bool bDstHasPalette = (dstDesc.type == PixelType::Index || dstDesc.type == PixelType::Bitplanes);
 
 	if (bSrcHasPalette && pSrcPalette == nullptr)
 	{
-		GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Source pixels need a palette.", nullptr, nullptr, __func__, __FILE__, __LINE__);
+		Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Source pixels need a palette.", nullptr, nullptr, __func__, __FILE__, __LINE__);
 		return false;
 	}
 
 	if (bDstHasPalette && pDstPalette == nullptr)
 	{
-		GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Destination pixels need a palette.", nullptr, nullptr, __func__, __FILE__, __LINE__);
+		Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Destination pixels need a palette.", nullptr, nullptr, __func__, __FILE__, __LINE__);
 		return false;
 	}
 
 	if (srcDesc.type == PixelType::Chunky && srcDesc.bits != 8 && srcDesc.bits != 16 && srcDesc.bits != 24 && srcDesc.bits != 32 && srcDesc.bits != 64)
 	{
-		GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Chunky pixels need to be 8, 16, 24, 32 or 64 bits.", nullptr, nullptr, __func__, __FILE__, __LINE__);
+		Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Chunky pixels need to be 8, 16, 24, 32 or 64 bits.", nullptr, nullptr, __func__, __FILE__, __LINE__);
 		return false;
 	}
 
@@ -1182,7 +1182,7 @@ bool copyPixels(int width, int height,
 
 	if (!bOk)
 	{
-		GfxBase::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "Out of entries in destination palette. All colors can not be represented. Some pixels copied to destination, but operation aborted.", nullptr, nullptr, __func__, __FILE__, __LINE__);
+		Core::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "Out of entries in destination palette. All colors can not be represented. Some pixels copied to destination, but operation aborted.", nullptr, nullptr, __func__, __FILE__, __LINE__);
 		return false;
 	}
 
@@ -1195,7 +1195,7 @@ int colorToPixelBytes(HiColor color, PixelFormat format, ColorSpace colorSpace, 
 {
 	_initTables();
 
-	auto desc = Util::pixelFormatToDescription(format, bigEndian);
+	auto desc = GfxUtil::pixelFormatToDescription(format, bigEndian);
 
 	if (colorSpace == ColorSpace::Undefined)
 		colorSpace = ColorSpace::sRGB;
@@ -1275,7 +1275,7 @@ int colorToPixelBytes(HiColor color, PixelFormat format, ColorSpace colorSpace, 
 void fillBitmap(uint8_t* pBitmap, PixelFormat format, ColorSpace colorSpace, bool bigEndian, int pitch, const RectI& fillRect,
 				HiColor color, const Color8* pPalette, int paletteSize)
 {
-	auto desc = Util::pixelFormatToDescription(format, bigEndian);
+	auto desc = GfxUtil::pixelFormatToDescription(format, bigEndian);
 
 	uint8_t pixelArea[18];
 	int pixelBytes = colorToPixelBytes(color, format, colorSpace, bigEndian, pixelArea, pPalette, paletteSize);
@@ -1387,7 +1387,7 @@ bool extractAlphaChannel(PixelFormat format, bool bigEndian, const uint8_t* pSrc
 {
 	_initTables();
 
-	auto desc = Util::pixelFormatToDescription(format, bigEndian);
+	auto desc = GfxUtil::pixelFormatToDescription(format, bigEndian);
 
 	switch (desc.type)
 	{
@@ -1478,4 +1478,4 @@ bool extractAlphaChannel(PixelFormat format, bool bigEndian, const uint8_t* pSrc
 	return false;
 }
 
-} } // namespace wg::PixelTools
+} } // namespace wax::PixelTools

@@ -20,11 +20,11 @@
 
 =========================================================================*/
 
-#ifndef WG_DX12SURFACE_DOT_H
-#define WG_DX12SURFACE_DOT_H
+#ifndef WAX_DX12SURFACE_DOT_H
+#define WAX_DX12SURFACE_DOT_H
 #pragma once
 
-#include <wg_surface.h>
+#include <wax_surface.h>
 
 #include <wrl.h>
 #include <d3d12.h>
@@ -32,7 +32,7 @@
 
 #include <vector>
 
-namespace wg
+namespace wax
 {
 
 	class DX12Backend;
@@ -203,5 +203,5 @@ namespace wg
 
 	//========================================================================================
 
-} // namespace wg
-#endif // WG_DX12SURFACE_DOT_H
+} // namespace wax
+#endif // WAX_DX12SURFACE_DOT_H

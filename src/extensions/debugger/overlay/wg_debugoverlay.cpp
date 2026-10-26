@@ -30,7 +30,7 @@
 #include <wg_tablepanel.h>
 #include <wg_numberdisplay.h>
 #include <wg_textdisplay.h>
-#include <wg_gfxdevice.h>
+#include <wax_gfxdevice.h>
 #include <wg_togglegroup.h>
 #include <wg_basictextlayout.h>
 #include <wg_basicnumberlayout.h>
@@ -557,7 +557,7 @@ namespace wg
 
 					if( pWidget == this )
 					{
-						auto pContainer = wg_dynamic_cast<Container_p>(mainSlot._widget());
+						auto pContainer = wax_dynamic_cast<Container_p>(mainSlot._widget());
 						if (pContainer)
 						{
 							Widget * pWidget = pContainer->_findWidget(mousePos, SearchMode::MarkPolicy);
@@ -883,7 +883,7 @@ namespace wg
 
 		Base::msgRouter()->addRoute(pPickButton, MsgType::Toggle, [this](Msg* pMsg) {
 
-			auto pButton = wg_static_cast<ToggleButton_p>(pMsg->source());
+			auto pButton = wax_static_cast<ToggleButton_p>(pMsg->source());
 
 			this->m_bSelectMode = pButton->isChecked();
 			});

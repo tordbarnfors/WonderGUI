@@ -19,38 +19,38 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef WG_C_SOFTGFX_DOT_H
-#define WG_C_SOFTGFX_DOT_H
+#ifndef WAX_C_SOFTGFX_DOT_H
+#define WAX_C_SOFTGFX_DOT_H
 #pragma once
 
-#include <wg_c_gfxtypes.h>
-#include <wg_c_surface.h>
-#include <wg_c_edgemap.h>
+#include <wax_c_types.h>
+#include <wax_c_surface.h>
+#include <wax_c_edgemap.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-WG_EXPORT wg_obj	wg_createSoftBackend(void);
-WG_EXPORT int		wg_defineSoftBackendCanvas( wg_obj backend, wg_canvasRef ref, wg_obj softSurface );
+WAX_EXPORT wax_obj	wax_createSoftBackend(void);
+WAX_EXPORT int		wax_defineSoftBackendCanvas( wax_obj backend, wax_canvasRef ref, wax_obj softSurface );
 
 
-WG_EXPORT wg_obj	wg_createSoftSurface(const wg_surfaceBP* blueprint);
-WG_EXPORT wg_obj	wg_createSoftSurfaceFromBlob(const wg_surfaceBP* blueprint, wg_obj blob, int pitch);
-WG_EXPORT wg_obj	wg_createSoftSurfaceFromBitmap(	wg_obj factory, const wg_surfaceBP* blueprint, const uint8_t* pPixels,
-													wg_pixelFormat pixelFormat, int pitch, const wg_color8 * pPalette, int paletteSize );
-WG_EXPORT wg_obj	wg_createSoftSurfaceFromRawData(wg_obj factory, const wg_surfaceBP* blueprint, const uint8_t* pPixels,
-													const wg_pixelDescription * pPixelDescription, int pitch, const wg_color8 * pPalette, int paletteSize );
+WAX_EXPORT wax_obj	wax_createSoftSurface(const wax_surfaceBP* blueprint);
+WAX_EXPORT wax_obj	wax_createSoftSurfaceFromBlob(const wax_surfaceBP* blueprint, wax_obj blob, int pitch);
+WAX_EXPORT wax_obj	wax_createSoftSurfaceFromBitmap(	wax_obj factory, const wax_surfaceBP* blueprint, const uint8_t* pPixels,
+													wax_pixelFormat pixelFormat, int pitch, const wax_color8 * pPalette, int paletteSize );
+WAX_EXPORT wax_obj	wax_createSoftSurfaceFromRawData(wax_obj factory, const wax_surfaceBP* blueprint, const uint8_t* pPixels,
+													const wax_pixelDescription * pPixelDescription, int pitch, const wax_color8 * pPalette, int paletteSize );
 
-WG_EXPORT wg_obj	wg_createSoftSurfaceFactory(void);
+WAX_EXPORT wax_obj	wax_createSoftSurfaceFactory(void);
 
 
-WG_EXPORT wg_obj	wg_createSoftEdgemap( const wg_edgemapBP* blueprint );
-WG_EXPORT wg_obj	wg_createSoftEdgemapFromFloats( const wg_edgemapBP* blueprint, wg_sampleOrigo origo, const float * pSamples, int edges, int edgePitch, int samplePitch);
-WG_EXPORT wg_obj	wg_createSoftEdgemapFromSpx( const wg_edgemapBP* blueprint, wg_sampleOrigo origo, const wg_spx * pSamples, int edges, int edgePitch, int samplePitch);
+WAX_EXPORT wax_obj	wax_createSoftEdgemap( const wax_edgemapBP* blueprint );
+WAX_EXPORT wax_obj	wax_createSoftEdgemapFromFloats( const wax_edgemapBP* blueprint, wax_sampleOrigo origo, const float * pSamples, int edges, int edgePitch, int samplePitch);
+WAX_EXPORT wax_obj	wax_createSoftEdgemapFromSpx( const wax_edgemapBP* blueprint, wax_sampleOrigo origo, const wax_spx * pSamples, int edges, int edgePitch, int samplePitch);
 
-WG_EXPORT wg_obj	wg_createSoftEdgemapFactory(void);
-WG_EXPORT wg_obj	wg_createSoftWarpmapFactory(void);
+WAX_EXPORT wax_obj	wax_createSoftEdgemapFactory(void);
+WAX_EXPORT wax_obj	wax_createSoftWarpmapFactory(void);
 
 
 
@@ -58,4 +58,4 @@ WG_EXPORT wg_obj	wg_createSoftWarpmapFactory(void);
 }
 #endif
 
-#endif // WG_C_SOFTGFX_DOT_H
+#endif // WAX_C_SOFTGFX_DOT_H

@@ -19,16 +19,16 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#include <wg_c_streamsink.h>
-#include <wg_streamsink.h>
+#include <wax_c_streamsink.h>
+#include <wax_streamsink.h>
 
-using namespace wg;
+using namespace wax;
 
-inline StreamSink* getPtr(wg_component sink) {
+inline StreamSink* getPtr(wax_component sink) {
 	return static_cast<StreamSink*>(reinterpret_cast<StreamSink*>(sink.pInterface));
 }
 
-void wg_processStreamChunks( wg_component streamSink, const void * pBegin, const void * pEnd )
+void wax_processStreamChunks( wax_component streamSink, const void * pBegin, const void * pEnd )
 {
     auto p = getPtr(streamSink);
     p->processChunks(pBegin, pEnd);

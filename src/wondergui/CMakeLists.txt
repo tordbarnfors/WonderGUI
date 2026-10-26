@@ -290,7 +290,7 @@ set(WIDGETKIT_SOURCES
 
 
 set(INCDIRS
-	${WONDERGFX_INCDIRS}
+	${WAX_INCDIRS}
 	${CMAKE_CURRENT_LIST_DIR}
 	${CMAKE_CURRENT_LIST_DIR}/base/
 	${CMAKE_CURRENT_LIST_DIR}/c-api/
@@ -321,7 +321,7 @@ target_include_directories(wondergui PRIVATE ${INCDIRS}
 	"${CMAKE_CURRENT_BINARY_DIR}"  # For generated header
 )
 
-target_link_libraries(wondergui PUBLIC wondergfx )
+target_link_libraries(wondergui PUBLIC wax )
 
 list(APPEND SOURCES ${WIDGETKIT_SOURCES})
 list(TRANSFORM SOURCES PREPEND ${CMAKE_CURRENT_LIST_DIR}/ )

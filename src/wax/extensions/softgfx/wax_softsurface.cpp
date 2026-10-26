@@ -22,12 +22,12 @@
 #include <cassert>
 #include <cstring>
 #include <memory.h>
-#include <wg_softsurface.h>
-#include <wg_gfxutil.h>
-#include <wg_gfxbase.h>
-#include <wg_pixeltools.h>
+#include <wax_softsurface.h>
+#include <wax_gfxutil.h>
+#include <wax_core.h>
+#include <wax_pixeltools.h>
 
-namespace wg
+namespace wax
 {
 
 	using namespace std;
@@ -38,7 +38,7 @@ namespace wg
 
 	SizeI SoftSurface::maxSize()
 	{
-#if WG_IS_64_BITS
+#if WAX_IS_64_BITS
 		return SizeI(1048576,1048576);
 #else
 		return SizeI(65534, 65534);
@@ -150,7 +150,7 @@ namespace wg
 
 		_fixSrcParam(format, pPalette, paletteSize);
 
-		auto srcDesc = Util::pixelFormatToDescription(format, m_bBigEndian);
+		auto srcDesc = GfxUtil::pixelFormatToDescription(format, m_bBigEndian);
 		int srcPitchAdd = (pitch == 0) ? 0 : pitch - PixelTools::bytesPerLine(srcDesc, m_size.w);
 		
 		PixelTools::copyPixels(m_size.w, m_size.h, pPixels, srcDesc, m_colorSpace, srcPitchAdd, pPalette, paletteSize,
@@ -240,12 +240,12 @@ namespace wg
 	{
 		if (m_bTiling)
 		{
-			int xBits = Util::mostSignificantBit(m_size.w);
-			int yBits = Util::mostSignificantBit(m_size.h);
+			int xBits = GfxUtil::mostSignificantBit(m_size.w);
+			int yBits = GfxUtil::mostSignificantBit(m_size.h);
 
 			if (m_size.w != 1 << xBits || m_size.h != 1 << yBits)
 			{
-				GfxBase::throwError(ErrorLevel::Warning, ErrorCode::FailedPrerequisite, "Surface of non-two-factor size set to tile. Tiling will happen at largest two-factor boundary.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				Core::throwError(ErrorLevel::Warning, ErrorCode::FailedPrerequisite, "Surface of non-two-factor size set to tile. Tiling will happen at largest two-factor boundary.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			}
 
 			m_srcPosMaskX = (1 << xBits) -1;
@@ -357,4 +357,4 @@ namespace wg
 		}
 	}
 
-} // namespace wg
+} // namespace wax

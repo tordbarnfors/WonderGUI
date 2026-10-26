@@ -44,7 +44,7 @@ namespace wg
 		return PluginRoot_p(new PluginRoot());
 	}
 
-	PluginRoot_p PluginRoot::create(wg_obj myPluginCapsule, PluginContext * pContext)
+	PluginRoot_p PluginRoot::create(wax_obj myPluginCapsule, PluginContext * pContext)
 	{
 		return PluginRoot_p(new PluginRoot(myPluginCapsule, pContext));
 	}
@@ -79,7 +79,7 @@ namespace wg
 		m_interface.onUpdate		= wg_onPluginUpdate;
 	}
 
-	PluginRoot::PluginRoot(wg_obj myPluginCapsule, PluginContext * pContext) : PluginRoot()
+	PluginRoot::PluginRoot(wax_obj myPluginCapsule, PluginContext * pContext) : PluginRoot()
 	{
 		m_pluginCapsule = myPluginCapsule;
 		m_pContext		= pContext;
@@ -242,15 +242,15 @@ namespace wg
 
 	//____ _render() __________________________________________________________
 
-	void PluginRoot::_render(wg_obj device, const RectSPX& _canvas, const RectSPX& _window)
+	void PluginRoot::_render(wax_obj device, const RectSPX& _canvas, const RectSPX& _window)
 	{
 		if (slot.isEmpty())
 			return;
 
 		PluginBase::setContext(m_pContext);
 
-		wg_obj hSurfFactory = PluginCalls::gfxDevice->surfaceFactory(device);
-		wg_obj hWaveFactory = PluginCalls::gfxDevice->edgemapFactory(device);
+		wax_obj hSurfFactory = PluginCalls::gfxDevice->surfaceFactory(device);
+		wax_obj hWaveFactory = PluginCalls::gfxDevice->edgemapFactory(device);
 
 		auto pSurfFactory = PluginSurfaceFactory::create(hSurfFactory);
 		auto pWaveFactory = PluginEdgemapFactory::create(hWaveFactory);

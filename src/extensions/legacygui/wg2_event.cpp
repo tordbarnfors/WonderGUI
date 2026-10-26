@@ -30,7 +30,7 @@
 #include <wg2_textdisplay.h>
 #include <wg2_lineeditor.h>
 #include <wg2_multislider.h>
-#include <wg_dataset.h>
+#include <wax_dataset.h>
 
 #include <cassert>
 

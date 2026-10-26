@@ -1,6 +1,6 @@
 #include "testsuite.h"
 
-#include <wg_canvaslayers.h>
+#include <wax_canvaslayers.h>
 
 // Calls GfxDeviceGen2::flattenLayers() in the middle of a canvas update, without and with CanvasLayers.
 //

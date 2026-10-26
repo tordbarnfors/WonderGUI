@@ -26,8 +26,8 @@
 #    include <wg2_capsule.h>
 #endif
 
-#include <wg_surfacefactory.h>
-#include <wg_canvaslayers.h>
+#include <wax_surfacefactory.h>
+#include <wax_canvaslayers.h>
 
 #include <wg2_patches.h>
 

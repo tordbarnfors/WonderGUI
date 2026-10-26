@@ -23,23 +23,27 @@
 #define WG_UTIL_DOT_H
 #pragma once
 
-#include <wg_gfxutil.h>
+#include <wax_gfxutil.h>
 #include <wg_types.h>
-#include <wg_geo.h>
-#include <wg_patches.h>
+#include <wax_geo.h>
+#include <wax_patches.h>
+#include <wg_types.h>
 #include <wg_state.h>
 
-namespace wg
+namespace wax
 {
-
 	class GfxDevice;
 	class Surface;
 	struct NinePatch;
+}
 
+namespace wg
+{
 	//____ Util _________________________________________________________________
 
 	namespace Util		/** @private */
 	{
+		using namespace wax::GfxUtil;		// Wax has its own Util, which we extend.
 
 		bool		markTestStretchRect( CoordSPX ofs, Surface * pSurface, const RectSPX& source, const RectSPX& area, int opacityTreshold );
 		bool		markTestTileRect(CoordSPX ofs, Surface* pSurface, const RectSPX& area, int scale, int opacityTreshold);

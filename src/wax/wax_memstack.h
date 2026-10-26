@@ -19,15 +19,15 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef WG_MEMSTACK_DOT_H
-#define WG_MEMSTACK_DOT_H
+#ifndef WAX_MEMSTACK_DOT_H
+#define WAX_MEMSTACK_DOT_H
 #pragma once
 
-#include <wg_chain.h>
+#include <wax_chain.h>
 
 //#include <vector>
 
-namespace wg
+namespace wax
 {
 
 	class MemStack
@@ -66,5 +66,5 @@ namespace wg
 	};
 
 
-} // namespace wg
-#endif //WG_MEMSTACK_DOT_H
+} // namespace wax
+#endif //WAX_MEMSTACK_DOT_H

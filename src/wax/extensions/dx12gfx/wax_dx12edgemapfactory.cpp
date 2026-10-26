@@ -20,10 +20,10 @@
 
 =========================================================================*/
 
-#include <wg_dx12edgemapfactory.h>
-#include <wg_dx12edgemap.h>
+#include <wax_dx12edgemapfactory.h>
+#include <wax_dx12edgemap.h>
 
-namespace wg
+namespace wax
 {
 
 
@@ -57,4 +57,4 @@ namespace wg
 	}
 
 
-} // namespace wg
+} // namespace wax

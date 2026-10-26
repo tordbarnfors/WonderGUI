@@ -19,16 +19,16 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#include <wg_c_streamencoder.h>
-#include <wg_streamencoder.h>
+#include <wax_c_streamencoder.h>
+#include <wax_streamencoder.h>
 
-using namespace wg;
+using namespace wax;
 
-inline StreamEncoder* getPtr(wg_obj obj) {
+inline StreamEncoder* getPtr(wax_obj obj) {
 	return static_cast<StreamEncoder*>(reinterpret_cast<Object*>(obj));
 }
 
-wg_obj wg_createStreamEncoder( const wg_streamEncoderBP* blueprint)
+wax_obj wax_createStreamEncoder( const wax_streamEncoderBP* blueprint)
 {
 	StreamEncoder::Blueprint bp;
 
@@ -44,32 +44,32 @@ wg_obj wg_createStreamEncoder( const wg_streamEncoderBP* blueprint)
 	return static_cast<Object*>(pObj.rawPtr());
 }
 
-void wg_setEncoderStream(wg_obj encoder, wg_component sinkForStream)
+void wax_setEncoderStream(wax_obj encoder, wax_component sinkForStream)
 {
 	getPtr(encoder)->setStream(StreamSink_p(reinterpret_cast<Object*>(sinkForStream.object), *reinterpret_cast<StreamSink*>(sinkForStream.pInterface)));
 }
 
-void wg_setEncoderDefaultPixelFormat(wg_obj encoder, wg_pixelFormat pixelFormat)
+void wax_setEncoderDefaultPixelFormat(wax_obj encoder, wax_pixelFormat pixelFormat)
 {
 	getPtr(encoder)->setDefaultPixelFormat((PixelFormat) pixelFormat);
 }
 
-wg_pixelFormat wg_getEncoderDefaultPixelFormat(wg_obj encoder)
+wax_pixelFormat wax_getEncoderDefaultPixelFormat(wax_obj encoder)
 {
-	return (wg_pixelFormat) getPtr(encoder)->defaultPixelFormat();
+	return (wax_pixelFormat) getPtr(encoder)->defaultPixelFormat();
 }
 
-void wg_setEncoderDefaultSampleMethod(wg_obj encoder, wg_sampleMethod sampleMethod)
+void wax_setEncoderDefaultSampleMethod(wax_obj encoder, wax_sampleMethod sampleMethod)
 {
 	getPtr(encoder)->setDefaultSampleMethod((SampleMethod) sampleMethod);
 }
 
-wg_sampleMethod wg_getEncoderDefaultSampleMethod(wg_obj encoder)
+wax_sampleMethod wax_getEncoderDefaultSampleMethod(wax_obj encoder)
 {
-	return (wg_sampleMethod) getPtr(encoder)->defaultSampleMethod();
+	return (wax_sampleMethod) getPtr(encoder)->defaultSampleMethod();
 }
 
-void wg_flushEncoder(wg_obj encoder)
+void wax_flushEncoder(wax_obj encoder)
 {
 	getPtr(encoder)->flush();
 }

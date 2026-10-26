@@ -20,17 +20,17 @@
 
 =========================================================================*/
 
-#include <wg_q565compression.h>
-#include <wg_gfxutil.h>
-#include <wg_gfxbase.h>
+#include <wax_q565compression.h>
+#include <wax_gfxutil.h>
+#include <wax_core.h>
 
-namespace wg
+namespace wax
 {
 const TypeInfo Q565Compressor::TYPEINFO = { "Q565Compressor", &Compressor::TYPEINFO };
 const TypeInfo Q565Decompressor::TYPEINFO = { "Q565Decompressor", &Decompressor::TYPEINFO };
 
-const uint32_t Q565Compressor::ID_TOKEN = Util::makeEndianSpecificToken('Q', '5', '6', '5');
-const uint32_t Q565Decompressor::ID_TOKEN = Util::makeEndianSpecificToken('Q', '5', '6', '5');
+const uint32_t Q565Compressor::ID_TOKEN = GfxUtil::makeEndianSpecificToken('Q', '5', '6', '5');
+const uint32_t Q565Decompressor::ID_TOKEN = GfxUtil::makeEndianSpecificToken('Q', '5', '6', '5');
 
 static const uint8_t c_endOfStream = 0xD2;		// RGB-delta with no change, which is never used for anything else.
 
@@ -121,7 +121,7 @@ int Q565Compressor::compress( void * pDest, const void * pBegin, const void * pE
 {
 	if( ((intptr_t(pBegin) | intptr_t(pEnd) ) &0x1) == 1 )
 	{
-		GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Data to compress must start/stop on WORD boundary.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+		Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Data to compress must start/stop on WORD boundary.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 		return 0;
 	}
 

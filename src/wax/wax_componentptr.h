@@ -19,13 +19,13 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef	WG_COMPONENTPTR_DOT_H
-#define	WG_COMPONENTPTR_DOT_H
+#ifndef	WAX_COMPONENTPTR_DOT_H
+#define	WAX_COMPONENTPTR_DOT_H
 #pragma once
 
-#include <wg_object.h>
+#include <wax_object.h>
 
-namespace wg
+namespace wax
 {
 
 	template<class Comp> class ComponentPtr
@@ -131,6 +131,6 @@ protected:
 
 
 
-} // namespace wg
-#endif //WG_COMPONENTPTR_DOT_H
+} // namespace wax
+#endif //WAX_COMPONENTPTR_DOT_H
 

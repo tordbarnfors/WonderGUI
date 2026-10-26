@@ -19,20 +19,20 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#include <wg_surfacereader.h>
-#include <wg_gfxbase.h>
-#include <wg_gfxutil.h>
-#include <wg_pixeltools.h>
+#include <wax_surfacereader.h>
+#include <wax_core.h>
+#include <wax_gfxutil.h>
+#include <wax_pixeltools.h>
 
-#include <wg_compression.h>
-#include <wg_lzcompression.h>
-#include <wg_q565compression.h>
-#include <wg_qoicompression.h>
-#include <wg_rlecompression.h>
+#include <wax_compression.h>
+#include <wax_lzcompression.h>
+#include <wax_q565compression.h>
+#include <wax_qoicompression.h>
+#include <wax_rlecompression.h>
 
 #include <cstring>
 
-namespace wg
+namespace wax
 {
 	const TypeInfo SurfaceReader::TYPEINFO = { "SurfaceReader", &Object::TYPEINFO };
 
@@ -75,7 +75,7 @@ namespace wg
 		else if (*(uint32_t*)id_QOI == *(uint32_t*)identifier)
 			return _readQOIFromStream(stream, _bp);
 
-		GfxBase::throwError(ErrorLevel::Error, ErrorCode::Other, "Stream is not a supported image format.", this, &TYPEINFO, __func__, __FILE__, __LINE__ );
+		Core::throwError(ErrorLevel::Error, ErrorCode::Other, "Stream is not a supported image format.", this, &TYPEINFO, __func__, __FILE__, __LINE__ );
 		return nullptr;
 	}
 
@@ -97,12 +97,12 @@ namespace wg
 
 		int dataBytes = header.paletteBytes + header.pixelBytes;
 
-		char * pData = GfxBase::memStackAlloc(dataBytes);
+		char * pData = Core::memStackAlloc(dataBytes);
 		stream.read( pData, dataBytes );
 
 		auto pSurface = _createSurface(header, pData, _bp);
 
-		GfxBase::memStackFree(dataBytes);
+		Core::memStackFree(dataBytes);
 		return pSurface;
 	}
 
@@ -118,7 +118,7 @@ namespace wg
 
 		if( !stream.good() )
 		{
-			GfxBase::throwError(ErrorLevel::Error, ErrorCode::Other, "QOI image ended before end of header.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			Core::throwError(ErrorLevel::Error, ErrorCode::Other, "QOI image ended before end of header.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return nullptr;
 		}
 
@@ -170,7 +170,7 @@ namespace wg
 		if( pixelsLeft > 0 || pBuffer->sgetn((char*) &data[ofs], 8) != 8 )
 		{
 			stream.setstate(std::ios::eofbit | std::ios::failbit);
-			GfxBase::throwError(ErrorLevel::Error, ErrorCode::Other, "QOI image ended before all pixels were read.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			Core::throwError(ErrorLevel::Error, ErrorCode::Other, "QOI image ended before all pixels were read.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return nullptr;
 		}
 
@@ -183,7 +183,7 @@ namespace wg
 	{
 		if( pDataEnd && pDataEnd - pData < c_qoiHeaderSize )
 		{
-			GfxBase::throwError(ErrorLevel::Error, ErrorCode::Other, "QOI image is too small to contain a header.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			Core::throwError(ErrorLevel::Error, ErrorCode::Other, "QOI image is too small to contain a header.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return nullptr;
 		}
 
@@ -216,7 +216,7 @@ namespace wg
 		if( std::memcmp(p, "qoif", 4) != 0 || width == 0 || height == 0 || height >= c_qoiMaxPixels / width ||
 		   (header.channels != 3 && header.channels != 4) || header.colorspace > 1 )
 		{
-			GfxBase::throwError(ErrorLevel::Error, ErrorCode::Other, "Invalid or unsupported QOI header.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			Core::throwError(ErrorLevel::Error, ErrorCode::Other, "Invalid or unsupported QOI header.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return false;
 		}
 
@@ -231,14 +231,14 @@ namespace wg
 	{
 		// Prepare surface blueprint
 
-		auto bp = WGBP(Surface,
+		auto bp = WAXBP(Surface,
 						_.size			= { header.width, header.height },
 						_.format		= header.channels == 4 ? PixelFormat::ARGB_8 : PixelFormat::XRGB_8,
 						_.colorSpace	= header.colorspace == 1 ? ColorSpace::Linear : ColorSpace::sRGB );
 
 		if (_addFlagsFromOtherBlueprint(bp, _bp) != 0)
 		{
-			GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Provided blueprint can not alter size, format or palette of loaded surface but have one or more of these parameters set.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Provided blueprint can not alter size, format or palette of loaded surface but have one or more of these parameters set.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return nullptr;
 		}
 
@@ -258,9 +258,9 @@ namespace wg
 
 		bool bSameLayout = pixbuf.format == bp.format && pixbuf.colorSpace == bp.colorSpace && pixbuf.pitch == lineBytes;
 
-		auto pDecompressor = QOIDecompressor::create( WGBP(QOIDecompressor, _.bigEndian = bSameLayout ? pixbuf.bigEndian : false ) );
+		auto pDecompressor = QOIDecompressor::create( WAXBP(QOIDecompressor, _.bigEndian = bSameLayout ? pixbuf.bigEndian : false ) );
 
-		uint8_t *	pDecompressed = bSameLayout ? pixbuf.pixels : (uint8_t*) GfxBase::memStackAlloc(nPixels * 4);
+		uint8_t *	pDecompressed = bSameLayout ? pixbuf.pixels : (uint8_t*) Core::memStackAlloc(nPixels * 4);
 
 		int bytes = pDecompressor->decompress(pDecompressed, nPixels * 4, pChunks, pChunksEnd);
 
@@ -268,12 +268,12 @@ namespace wg
 
 		if( bytes != nPixels * 4 )
 		{
-			GfxBase::throwError(ErrorLevel::Error, ErrorCode::Other, "QOI data ended before all pixels were decoded.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			Core::throwError(ErrorLevel::Error, ErrorCode::Other, "QOI data ended before all pixels were decoded.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			bOk = false;
 		}
 		else if( !bSameLayout )
 		{
-			auto dstDesc = Util::pixelFormatToDescription(pixbuf.format, pixbuf.bigEndian);
+			auto dstDesc = GfxUtil::pixelFormatToDescription(pixbuf.format, pixbuf.bigEndian);
 			int paletteEntries = pSurface->paletteSize();
 
 			bOk = PixelTools::copyPixels(header.width, header.height, pDecompressed, bp.format, bp.colorSpace, false, 0, nullptr, 0,
@@ -282,11 +282,11 @@ namespace wg
 										 const_cast<Color8*>(pixbuf.palette), paletteEntries, pSurface->paletteCapacity());
 
 			if( !bOk )
-				GfxBase::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "Failed to convert pixels of QOI image to surface.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				Core::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "Failed to convert pixels of QOI image to surface.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 		}
 
 		if( !bSameLayout )
-			GfxBase::memStackFree(nPixels * 4);
+			Core::memStackFree(nPixels * 4);
 
 		if( !bOk )
 		{
@@ -346,7 +346,7 @@ namespace wg
 	{
 		if( header.versionNumber < 1 || header.versionNumber > 2 )
 		{
-			GfxBase::throwError(ErrorLevel::Error, ErrorCode::Other, "Unsupported version of surface file.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			Core::throwError(ErrorLevel::Error, ErrorCode::Other, "Unsupported version of surface file.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return nullptr;
 		}
 
@@ -354,7 +354,7 @@ namespace wg
 
 		if( layout.format == PixelFormat::Undefined )
 		{
-			GfxBase::throwError(ErrorLevel::Error, ErrorCode::Other, "Pixel format of surface file is not supported.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			Core::throwError(ErrorLevel::Error, ErrorCode::Other, "Pixel format of surface file is not supported.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return nullptr;
 		}
 
@@ -363,7 +363,7 @@ namespace wg
 		Surface::Blueprint bp = _blueprintFromHeader(&header, layout);
 		if (_addFlagsFromOtherBlueprint(bp, _bp) != 0)
 		{
-			GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Provided blueprint can not alter size, format or palette of loaded surface but have one or more of these parameters set.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Provided blueprint can not alter size, format or palette of loaded surface but have one or more of these parameters set.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return nullptr;
 		}
 
@@ -376,16 +376,16 @@ namespace wg
 		{
 			pPalette = (const Color8*) pData;
 
-			if (header.paletteCompression != Util::makeEndianSpecificToken( 'N','O','N','E' ))
+			if (header.paletteCompression != GfxUtil::makeEndianSpecificToken( 'N','O','N','E' ))
 			{
-				Decompressor * pDecompressor = GfxBase::getDecompressor(header.paletteCompression);
+				Decompressor * pDecompressor = Core::getDecompressor(header.paletteCompression);
 
 				if( !pDecompressor )
 				{
 					char msg[] = "Don't know how to decompress 'XXXX'.";
 					* (uint32_t*)&msg[30] = header.paletteCompression;
 
-					GfxBase::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, msg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+					Core::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, msg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 					return nullptr;
 				}
 
@@ -419,16 +419,16 @@ namespace wg
 		const char *	pPixels = pPixelData;
 		int				decompressedBytes = 0;
 
-		if (header.pixelCompression != Util::makeEndianSpecificToken( 'N','O','N','E' ))
+		if (header.pixelCompression != GfxUtil::makeEndianSpecificToken( 'N','O','N','E' ))
 		{
-			Decompressor * pDecompressor = GfxBase::getDecompressor(header.pixelCompression);
+			Decompressor * pDecompressor = Core::getDecompressor(header.pixelCompression);
 
 			if( !pDecompressor )
 			{
 				char msg[] = "Don't know how to decompress 'XXXX'.";
 				* (uint32_t*)&msg[30] = header.pixelCompression;
 
-				GfxBase::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, msg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				Core::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, msg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 				pSurface->freePixelBuffer(pixbuf);
 				return nullptr;
 			}
@@ -446,7 +446,7 @@ namespace wg
 			}
 
 			decompressedBytes = fileLineBytes * header.height + header.pixelDecompressMargin;
-			char * pDecompressed = GfxBase::memStackAlloc(decompressedBytes);
+			char * pDecompressed = Core::memStackAlloc(decompressedBytes);
 			pDecompressor->decompress(pDecompressed, pBegin, pEnd);
 			pPixels = pDecompressed;
 		}
@@ -459,7 +459,7 @@ namespace wg
 			_copyUncompressedFromMemory(pixbuf.pixels, pPixels, fileLineBytes, pixbuf.pitch, header.height);
 		else
 		{
-			auto dstDesc = Util::pixelFormatToDescription(pixbuf.format, pixbuf.bigEndian);
+			auto dstDesc = GfxUtil::pixelFormatToDescription(pixbuf.format, pixbuf.bigEndian);
 			int paletteEntries = pSurface->paletteSize();
 
 			bOk = PixelTools::copyPixels(header.width, header.height, (const uint8_t*) pPixels, layout.description, layout.colorSpace, 0,
@@ -469,11 +469,11 @@ namespace wg
 		}
 
 		if( decompressedBytes > 0 )
-			GfxBase::memStackFree(decompressedBytes);
+			Core::memStackFree(decompressedBytes);
 
 		if( !bOk )
 		{
-			GfxBase::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "Failed to convert pixels of surface file to surface.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			Core::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "Failed to convert pixels of surface file to surface.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			pSurface->freePixelBuffer(pixbuf);
 			return nullptr;
 		}
@@ -489,7 +489,7 @@ namespace wg
 
 Surface::Blueprint SurfaceReader::_blueprintFromHeader( const SurfaceFileHeader * pHeader, const SurfaceFileLayout& layout )
 {
-	return WGBP(Surface,
+	return WAXBP(Surface,
 				_.size 			= {pHeader->width, pHeader->height},
 				_.scale 		= pHeader->scale,
 				_.format 		= layout.format,
@@ -572,7 +572,7 @@ void SurfaceReader::_copyUncompressedFromMemory(void* pDest, const void* pSource
 }
 
 
-} // namespace wg
+} // namespace wax
 
 
 

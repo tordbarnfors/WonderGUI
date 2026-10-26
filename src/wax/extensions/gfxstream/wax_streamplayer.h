@@ -19,22 +19,22 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef	WG_STREAMPLAYER_DOT_H
-#define	WG_STREAMPLAYER_DOT_H
+#ifndef	WAX_STREAMPLAYER_DOT_H
+#define	WAX_STREAMPLAYER_DOT_H
 #pragma once
 
-#include <wg_object.h>
-#include <wg_gfxstream.h>
-#include <wg_streamsink.h>
-#include <wg_streamdecoder.h>
-#include <wg_gfxbackend.h>
-#include <wg_patches.h>
-#include <wg_compression.h>
+#include <wax_object.h>
+#include <wax_gfxstream.h>
+#include <wax_streamsink.h>
+#include <wax_streamdecoder.h>
+#include <wax_gfxbackend.h>
+#include <wax_patches.h>
+#include <wax_compression.h>
 
 #include <vector>
 #include <tuple>
 
-namespace wg
+namespace wax
 {
 
 	class StreamPlayer;
@@ -246,4 +246,4 @@ namespace wg
 
 }
 
-#endif // WG_STREAMPLAYER_DOT_H
+#endif // WAX_STREAMPLAYER_DOT_H

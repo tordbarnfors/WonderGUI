@@ -26,7 +26,7 @@
 
 #include <wg_widget.h>
 #include <wg_skin.h>
-#include <wg_transitions.h>
+#include <wax_transitions.h>
 
 namespace wg
 {

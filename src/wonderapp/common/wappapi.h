@@ -26,11 +26,15 @@
 #include <vector>
 #include <string>
 
-namespace wg
+namespace wax
 {
 	class Blob;
 	class Surface;
 	class SurfaceFactory;
+}
+
+namespace wg
+{
 	typedef    wg::StrongPtr<Blob>        Blob_p;
 	typedef    wg::StrongPtr<Surface>     Surface_p;
 }

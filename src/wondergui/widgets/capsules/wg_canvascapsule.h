@@ -24,12 +24,12 @@
 #pragma once
 
 #include <wg_capsule.h>
-#include <wg_surfacefactory.h>
-#include <wg_patches.h>
-#include <wg_canvaslayers.h>
+#include <wax_surfacefactory.h>
+#include <wax_patches.h>
+#include <wax_canvaslayers.h>
 #include <wg_glow.h>
-#include <wg_tint.h>
-#include <wg_transitions.h>
+#include <wax_tint.h>
+#include <wax_transitions.h>
 
 namespace wg
 {

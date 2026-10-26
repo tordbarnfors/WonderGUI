@@ -1,5 +1,5 @@
 #include "testsuite.h"
-#include <wg_blurbrush.h>
+#include <wax_blurbrush.h>
 
 // Blur from every kind of source: ARGB (linear and sRGB), XRGB, Alpha_8 and palette based
 // (linear and sRGB). Alpha_8 sources behave like white ARGB. Blur keeps the alpha of the

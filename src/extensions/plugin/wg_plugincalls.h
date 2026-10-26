@@ -24,7 +24,8 @@
 #pragma once
 
 #include <wg_plugininterface.h>
-#include <wg_tint.h>
+#include <wax_tint.h>
+#include <wg_types.h>
 
 namespace wg
 {
@@ -61,8 +62,8 @@ namespace wg
 		// Tints are objects on both sides. These make a host copy of a plugin Tint
 		// and the other way around, through TintTools serialization.
 
-		static wg_obj	_hostTint(Tint* pTint);				// Returns retained object, null for null.
-		static Tint_p	_localTint(wg_obj hostTint);		// Null for null.
+		static wax_obj	_hostTint(Tint* pTint);				// Returns retained object, null for null.
+		static Tint_p	_localTint(wax_obj hostTint);		// Null for null.
 	};
 
 

@@ -19,14 +19,14 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef WG_MEMHEAP_DOT_H
-#define WG_MEMHEAP_DOT_H
+#ifndef WAX_MEMHEAP_DOT_H
+#define WAX_MEMHEAP_DOT_H
 #pragma once
 
 #include <cstdint>
 
 
-namespace wg 
+namespace wax 
 {
 	class Surface;
 
@@ -75,8 +75,8 @@ namespace wg
 
 
 
-} // namespace wg
-#endif //WG_MEMSTACK_DOT_H
+} // namespace wax
+#endif //WAX_MEMSTACK_DOT_H
 
 
 

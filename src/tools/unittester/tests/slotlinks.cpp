@@ -4,7 +4,7 @@
 #include "slotlinks.h"
 
 #include <wondergui.h>
-#include <wondergfxstream.h>
+#include <waxgfxstream.h>
 
 #include <wg_string.h>
 

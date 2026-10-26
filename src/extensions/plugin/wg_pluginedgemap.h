@@ -24,10 +24,11 @@
 #pragma once
 
 
-#include <wg_edgemap.h>
+#include <wax_edgemap.h>
+#include <wg_types.h>
 
-typedef void* wg_obj;
-typedef struct wg_edgemapBP_struct wg_edgemapBP;
+typedef void* wax_obj;
+typedef struct wax_edgemapBP_struct wax_edgemapBP;
 
 namespace wg
 {
@@ -46,7 +47,7 @@ namespace wg
 
 		//.____ Creation __________________________________________
 
-		static PluginEdgemap_p	create( wg_obj object );
+		static PluginEdgemap_p	create( wax_obj object );
 
 		//.____ Identification __________________________________________
 
@@ -69,10 +70,10 @@ namespace wg
 
 		//.____ Misc _________________________________________________________
 		 
-		inline wg_obj		cObject() { return m_cEdgemap; }
+		inline wax_obj		cObject() { return m_cEdgemap; }
 
 	private:
-		PluginEdgemap( wg_obj object );
+		PluginEdgemap( wax_obj object );
 		~PluginEdgemap();
 
 		void 	_importSamples(SampleOrigo origo, const spx* pSource, int edgeBegin, int edgeEnd,
@@ -84,7 +85,7 @@ namespace wg
 		void	_samplesUpdated(int edgeBegin, int edgeEnd, int sampleBegin, int sampleEnd) override;
 		void	_colorsUpdated(int beginSegment, int endSegment) override;
 
-		wg_obj	m_cEdgemap;
+		wax_obj	m_cEdgemap;
 	};
 } // namespace wg
 #endif //WG_PLUGINEDGEMAP_DOT_H

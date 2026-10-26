@@ -20,15 +20,15 @@
 
 =========================================================================*/
 
-#include <wg_dx12warpmap.h>
-#include <wg_dx12backend.h>
-#include <wg_gfxbase.h>
+#include <wax_dx12warpmap.h>
+#include <wax_dx12backend.h>
+#include <wax_core.h>
 
 #include <cstring>
 #include <cwchar>
 #include <algorithm>
 
-namespace wg
+namespace wax
 {
 
 	const TypeInfo DX12Warpmap::TYPEINFO = { "DX12Warpmap", &Warpmap::TYPEINFO };
@@ -63,7 +63,7 @@ namespace wg
 
 		if (!pDevice)
 		{
-			GfxBase::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite,
+			Core::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite,
 				"No D3D12 device set. DX12Backend::setDevice() must be called before any warpmap is created.",
 				this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return;
@@ -97,7 +97,7 @@ namespace wg
 			// A lost device is reported once by DX12Backend, not by every warpmap.
 
 			if (!DX12Backend::checkDeviceLost())
-				GfxBase::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to create buffer for warpmap.",
+				Core::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to create buffer for warpmap.",
 					this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			m_buffer = nullptr;
 			return;
@@ -106,7 +106,7 @@ namespace wg
 		// Named after us, so the debug layer's live object report shows where it comes from.
 		{
 			wchar_t name[96];
-			swprintf(name, 96, L"WonderGUI DX12Warpmap %p: buffer", (const void*) this);
+			swprintf(name, 96, L"Wax DX12Warpmap %p: buffer", (const void*) this);
 			m_buffer->SetName(name);
 		}
 
@@ -115,7 +115,7 @@ namespace wg
 		if (FAILED(m_buffer->Map(0, &readRange, (void**) &m_pBuffer)))
 		{
 			if (!DX12Backend::checkDeviceLost())
-				GfxBase::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to map buffer for warpmap.",
+				Core::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to map buffer for warpmap.",
 					this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			m_buffer = nullptr;
 			m_pBuffer = nullptr;
@@ -175,4 +175,4 @@ namespace wg
 		}
 	}
 
-} // namespace wg
+} // namespace wax

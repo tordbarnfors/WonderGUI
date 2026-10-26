@@ -35,8 +35,8 @@
 #include <wg2_pluginbase.h>
 
 #include <wg_skin.h>
-#include <wg_gfxdevice.h>
-#include <wg_surface.h>
+#include <wax_gfxdevice.h>
+#include <wax_surface.h>
 
 #include <wg_plugininterface.h>
 
@@ -46,7 +46,7 @@ class WgPluginRoot : public WgWidgetHolder, public WgRoot
 	friend class WgWidget;
 
 public:
-	WgPluginRoot( wg_obj myPluginCapsule, WgPluginContext * pContext );
+	WgPluginRoot( wax_obj myPluginCapsule, WgPluginContext * pContext );
 	~WgPluginRoot();
 
 	WgWidget *				FindWidget( const WgCoord& ofs, WgSearchMode mode ) override;
@@ -87,7 +87,7 @@ public:
 	bool			_markTest(const wg::CoordSPX& ofs);
 
 	void    		_preRender();
-	void			_render(wg_obj device, const wg::RectSPX& _canvas, const wg::RectSPX& _window);
+	void			_render(wax_obj device, const wg::RectSPX& _canvas, const wg::RectSPX& _window);
 
 	void			_resize(const wg::SizeSPX& size, int scale = -1);
 	void			_setState(wg::State state);
@@ -159,7 +159,7 @@ protected:
 	Hook				m_hook;
 	WgEventHandler *	m_pEventHandler = nullptr;
 
-	wg_obj					m_pluginCapsule;
+	wax_obj					m_pluginCapsule;
 
 	std::vector<WgWidgetWeakPtr> m_preRenderCalls;
 

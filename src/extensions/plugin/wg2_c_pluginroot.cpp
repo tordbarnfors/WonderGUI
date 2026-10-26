@@ -24,7 +24,7 @@
 #include <wg2_c_pluginroot.h>
 #include <wg2_pluginroot.h>
 
-#include <wg_geo.h>
+#include <wax_geo.h>
 
 using namespace wg;
 
@@ -34,35 +34,35 @@ inline WgPluginRoot* getRoot(void * pRoot) {
 
 
 
-wg_spx wg2_matchingPluginHeight(void* pPluginRoot, wg_spx width, int scale)
+wax_spx wg2_matchingPluginHeight(void* pPluginRoot, wax_spx width, int scale)
 {
-	return (wg_spx) getRoot(pPluginRoot)->_matchingHeight(spx(width), scale);
+	return (wax_spx) getRoot(pPluginRoot)->_matchingHeight(spx(width), scale);
 }
 
-wg_spx wg2_matchingPluginWidth(void* pPluginRoot, wg_spx height, int scale)
+wax_spx wg2_matchingPluginWidth(void* pPluginRoot, wax_spx height, int scale)
 {
-	return (wg_spx) getRoot(pPluginRoot)->_matchingWidth(spx(height), scale);
+	return (wax_spx) getRoot(pPluginRoot)->_matchingWidth(spx(height), scale);
 }
 
-wg_sizeSPX wg2_defaultPluginSize(void* pPluginRoot, int scale)
+wax_sizeSPX wg2_defaultPluginSize(void* pPluginRoot, int scale)
 {
 	SizeSPX sz = getRoot(pPluginRoot)->_defaultSize(scale);
 	return { sz.w, sz.h };
 }
 
-wg_sizeSPX wg2_minPluginSize(void* pPluginRoot, int scale)
+wax_sizeSPX wg2_minPluginSize(void* pPluginRoot, int scale)
 {
 	SizeSPX sz = getRoot(pPluginRoot)->_minSize(scale);
 	return { sz.w, sz.h };
 }
 
-wg_sizeSPX wg2_maxPluginSize(void* pPluginRoot, int scale)
+wax_sizeSPX wg2_maxPluginSize(void* pPluginRoot, int scale)
 {
 	SizeSPX sz = getRoot(pPluginRoot)->_maxSize(scale);
 	return { sz.w, sz.h };
 }
 
-int	wg2_markTestPlugin(void* pPluginRoot, wg_coordSPX ofs)
+int	wg2_markTestPlugin(void* pPluginRoot, wax_coordSPX ofs)
 {
 	return getRoot(pPluginRoot)->_markTest({ ofs.x, ofs.y });
 }
@@ -72,12 +72,12 @@ void wg2_preRenderPlugin(void* pPluginRoot)
 	getRoot(pPluginRoot)->_preRender();
 }
 
-void wg2_renderPlugin(void* pPluginRoot, wg_obj device, wg_rectSPX canvas, wg_rectSPX window)
+void wg2_renderPlugin(void* pPluginRoot, wax_obj device, wax_rectSPX canvas, wax_rectSPX window)
 {
 	getRoot(pPluginRoot)->_render(device, {canvas.x, canvas.y, canvas.w, canvas.h}, {window.x, window.y, window.w, window.h});
 }
 
-void wg2_resizePlugin(void* pPluginRoot, wg_sizeSPX size, int scale)
+void wg2_resizePlugin(void* pPluginRoot, wax_sizeSPX size, int scale)
 {
 	getRoot(pPluginRoot)->_resize({ size.w, size.h }, scale);
 }
@@ -87,12 +87,12 @@ void wg2_setPluginState(void* pPluginRoot, wg_state state)
 	getRoot(pPluginRoot)->_setState(*(State*)&state);
 }
 
-void wg2_pluginReceive(void* pPluginRoot, wg_obj msg)
+void wg2_pluginReceive(void* pPluginRoot, wax_obj msg)
 {
 
 }
 
-void wg2_setPluginPointerPos(void* pPluginRoot, wg_coordSPX pos, int64_t timestamp )
+void wg2_setPluginPointerPos(void* pPluginRoot, wax_coordSPX pos, int64_t timestamp )
 {
 	getRoot(pPluginRoot)->_setPointerPos({pos.x,pos.y}, timestamp);
 }
@@ -112,7 +112,7 @@ void wg2_putPluginText(void* pPluginRoot, const char * pUTF8String )
 	getRoot(pPluginRoot)->_putText(pUTF8String);
 }
 
-void wg2_pluginWheelRoll(void* pPluginRoot, int wheel, wg_pts distance, int bInvert, int64_t timestamp )
+void wg2_pluginWheelRoll(void* pPluginRoot, int wheel, wax_pts distance, int bInvert, int64_t timestamp )
 {
 	getRoot(pPluginRoot)->_wheelRoll(wheel, float(distance), bool(bInvert), timestamp);
 }

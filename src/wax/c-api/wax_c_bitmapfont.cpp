@@ -19,17 +19,17 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#include <wg_c_bitmapfont.h>
-#include <wg_bitmapfont.h>
+#include <wax_c_bitmapfont.h>
+#include <wax_bitmapfont.h>
 
-using namespace wg;
+using namespace wax;
 
-inline BitmapFont* getPtr(wg_obj obj) {
+inline BitmapFont* getPtr(wax_obj obj) {
 	return static_cast<BitmapFont*>(reinterpret_cast<Object*>(obj));
 }
 
 
-wg_obj wg_createBitmapFont( wg_obj surface, char * pGlyphSpec, wg_obj backupFont )
+wax_obj wax_createBitmapFont( wax_obj surface, char * pGlyphSpec, wax_obj backupFont )
 {
 	auto pSurface = static_cast<Surface*>(reinterpret_cast<Object*>(surface));
 	auto pBackupFont = static_cast<Font*>(reinterpret_cast<Object*>(surface));
@@ -40,7 +40,7 @@ wg_obj wg_createBitmapFont( wg_obj surface, char * pGlyphSpec, wg_obj backupFont
 }
 
 
-wg_obj wg_getBitmapFontSurface( wg_obj font )
+wax_obj wax_getBitmapFontSurface( wax_obj font )
 {
 	auto pSurface = getPtr(font)->surface();
 	return static_cast<Object*>(pSurface.rawPtr());

@@ -17,14 +17,14 @@
 
 #include <wondergui.h>
 
-#include <wg_softsurface.h>
-#include <wg_softsurfacefactory.h>
+#include <wax_softsurface.h>
+#include <wax_softsurfacefactory.h>
 #include <wg_softgfxdevice.h>
 #include <wg_streamsurface.h>
 #include <wg_streamsurfacefactory.h>
 #include <wg_streamgfxdevice.h>
 
-#include <wg_freetypefont.h>
+#include <wax_freetypefont.h>
 #include <wg_packlist.h>
 #include <testwidget.h>
 #include <wg_popupopener.h>

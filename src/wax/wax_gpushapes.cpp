@@ -19,15 +19,15 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#include <wg_gpushapes.h>
-#include <wg_gfxutil.h>
-#include <wg_tinttools.h>
+#include <wax_gpushapes.h>
+#include <wax_gfxutil.h>
+#include <wax_tinttools.h>
 
 #include <algorithm>
 #include <cmath>
 #include <vector>
 
-namespace wg
+namespace wax
 {
 	namespace GpuShapes
 	{
@@ -85,7 +85,7 @@ namespace wg
 				const RectSPX& rect = box.rect;
 
 				spx radius[4] = { box.radius[0], box.radius[1], box.radius[2], box.radius[3] };
-				Util::clampCornerRadii(rect.size(), radius);
+				GfxUtil::clampCornerRadii(rect.size(), radius);
 
 				const BorderSPX outline = { std::max(box.outline.top, 0), std::max(box.outline.right, 0),
 											std::max(box.outline.bottom, 0), std::max(box.outline.left, 0) };
@@ -93,7 +93,7 @@ namespace wg
 				const bool bOutline = (outline.top | outline.right | outline.bottom | outline.left) != 0;
 
 				spx innerRadius[4];
-				Util::innerCornerRadii(radius, outline, innerRadius);
+				GfxUtil::innerCornerRadii(radius, outline, innerRadius);
 
 				const int64_t right = int64_t(rect.x) + rect.w;
 				const int64_t bottom = int64_t(rect.y) + rect.h;

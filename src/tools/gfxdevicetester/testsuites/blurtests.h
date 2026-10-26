@@ -1,6 +1,6 @@
 #include "testsuite.h"
-#include <wg_blurbrush.h>
-#include <wg_tint.h>
+#include <wax_blurbrush.h>
+#include <wax_tint.h>
 
 class BlurTests : public TestSuite
 {

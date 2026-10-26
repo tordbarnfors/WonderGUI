@@ -22,19 +22,19 @@
 
 #include <memory.h>
 
-#include <wg_metalsurface.h>
-#include <wg_metalbackend.h>
-#include <wg_gfxutil.h>
-#include <wg_blob.h>
-#include <wg_gfxbase.h>
-#include <wg_pixeltools.h>
+#include <wax_metalsurface.h>
+#include <wax_metalbackend.h>
+#include <wax_gfxutil.h>
+#include <wax_blob.h>
+#include <wax_core.h>
+#include <wax_pixeltools.h>
 
 #include <assert.h>
 #include <algorithm>
 
 
 
-namespace wg
+namespace wax
 {
 	const TypeInfo MetalSurface::TYPEINFO = { "MetalSurface", &Surface::TYPEINFO };
 
@@ -183,7 +183,7 @@ namespace wg
 		if( format == PixelFormat::Undefined )
 			format = m_pixelFormat;
 
-		auto srcDesc = Util::pixelFormatToDescription(format, bp.bigEndian);
+		auto srcDesc = GfxUtil::pixelFormatToDescription(format, bp.bigEndian);
 
 		_setPixelDetails();
 		m_bMipmapped = bp.mipmap;
@@ -406,7 +406,7 @@ namespace wg
 		// space stays and picks between the normal and _sRGB texture formats.
 
 		bool bSRGB = (m_colorSpace == ColorSpace::sRGB);
-		[[maybe_unused]] bool bNativeByteOrder = (m_bBigEndian == (WG_IS_BIG_ENDIAN == 1));
+		[[maybe_unused]] bool bNativeByteOrder = (m_bBigEndian == (WAX_IS_BIG_ENDIAN == 1));
 
 		PixelFormat format = m_pixelFormat;
 
@@ -444,14 +444,14 @@ namespace wg
 				break;
 
 			default:
-                GfxBase::throwError( ErrorLevel::Critical, ErrorCode::InvalidParam, "Specified PixelFormat not supported", this, &TYPEINFO, __func__, __FILE__, __LINE__ );
+                Core::throwError( ErrorLevel::Critical, ErrorCode::InvalidParam, "Specified PixelFormat not supported", this, &TYPEINFO, __func__, __FILE__, __LINE__ );
 				assert(false);           // Just to really catch this in a clear way during development.
 				break;
 		}
 
 		m_pixelFormat = format;
-		m_bBigEndian = (WG_IS_BIG_ENDIAN == 1);
-		m_pixelDescription = Util::pixelFormatToDescription(format, m_bBigEndian);
+		m_bBigEndian = (WAX_IS_BIG_ENDIAN == 1);
+		m_pixelDescription = GfxUtil::pixelFormatToDescription(format, m_bBigEndian);
         m_pixelSize = m_pPixelDescription->bits / 8;
 	}
 
@@ -812,4 +812,4 @@ namespace wg
 
 
 
-} // namespace wg
+} // namespace wax

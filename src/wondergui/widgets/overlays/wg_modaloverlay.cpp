@@ -21,7 +21,7 @@
 =========================================================================*/
 #include <wg_modaloverlay.h>
 #include <wg_util.h>
-#include <wg_patches.h>
+#include <wax_patches.h>
 #include <wg_msgrouter.h>
 #include <wg_base.h>
 #include <wg_inputhandler.h>

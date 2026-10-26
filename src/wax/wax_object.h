@@ -19,17 +19,17 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef WG_OBJECT_DOT_H
-#define WG_OBJECT_DOT_H
+#ifndef WAX_OBJECT_DOT_H
+#define WAX_OBJECT_DOT_H
 #pragma once
 
 #include <atomic>
 
-#include <wg_strongptr.h>
-#include <wg_weakptr.h>
-#include <wg_geartypes.h>
+#include <wax_strongptr.h>
+#include <wax_weakptr.h>
+#include <wax_types.h>
 
-namespace wg
+namespace wax
 {
 
 	class Object;
@@ -40,9 +40,9 @@ namespace wg
 
 
 	/**
-	 * @brief Base class for all reference counted objects in WonderGUI.
+	 * @brief Base class for all reference counted objects in Wax.
 	 *
-	 * Base class for all reference counted objects in WonderGUI.
+	 * Base class for all reference counted objects in Wax.
 	 *
 	 * Object provides the datastructures needed for smart pointers, weak pointers and
 	 * destruction notifiers as well as methods for identifying object types and
@@ -156,5 +156,5 @@ namespace wg
 		return m_refCount; 
 	}
 
-} // namespace wg
-#endif //WG_OBJECT_DOT_H
+} // namespace wax
+#endif //WAX_OBJECT_DOT_H

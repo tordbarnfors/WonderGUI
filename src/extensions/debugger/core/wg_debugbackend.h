@@ -27,8 +27,8 @@
 #include <functional>
 #include <vector>
 
-#include <wg_object.h>
-#include <wg_pointers.h>
+#include <wax_object.h>
+#include <wax_pointers.h>
 #include <wg_widget.h>
 #include <wg_infosection.h>
 #include <wg_inspectorview.h>

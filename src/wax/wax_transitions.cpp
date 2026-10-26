@@ -19,9 +19,9 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#include <wg_transitions.h>
+#include <wax_transitions.h>
 
-namespace wg
+namespace wax
 {
 	const TypeInfo Transition::TYPEINFO = { "Transition", &Object::TYPEINFO };
 	const TypeInfo ColorTransition::TYPEINFO = { "ColorTransition", &Transition::TYPEINFO };
@@ -93,7 +93,7 @@ namespace wg
 
 	ColorTransition_p ColorTransition::create(int duration, TransitionCurve curve)
 	{
-		return ColorTransition_p(new ColorTransition(WGBP(ColorTransition, _.duration = duration, _.curve = curve)));
+		return ColorTransition_p(new ColorTransition(WAXBP(ColorTransition, _.duration = duration, _.curve = curve)));
 	}
 
 

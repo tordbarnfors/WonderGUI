@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 //
-//								>>> wg_chain.cpp <<<
+//								>>> wax_chain.cpp <<<
 //
 //					(c) 2002 Tord Jansson (tord.jansson@gmail.com)
 //
@@ -12,9 +12,9 @@
 //
 //-----------------------------------------------------------------------------
 
-#include	<wg_chain.h>
+#include	<wax_chain.h>
 
-namespace wg
+namespace wax
 {
 
 
@@ -272,4 +272,4 @@ namespace wg
 		return false;
 	}
 
-} // namespace wg
+} // namespace wax

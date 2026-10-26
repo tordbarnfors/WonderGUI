@@ -2,10 +2,10 @@
 #include "streamplayer.h"
 
 #include <wondergui.h>
-#include <wg_freetypefont.h>
-#include <wg_softbackend.h>
-#include <extensions/gfxstream/c-api/wondergfxstream_c.h>
-#include <wg_c_softgfx.h>
+#include <wax_freetypefont.h>
+#include <wax_softbackend.h>
+#include <extensions/gfxstream/c-api/waxgfxstream_c.h>
+#include <wax_c_softgfx.h>
 #include <string>
 #include <fstream>
 
@@ -61,54 +61,54 @@ bool MyApp::init(wapp::API* pAPI)
 
 bool MyApp::update()
 {
-	wg_defineSoftBackendCanvas(m_streamGfxDevice, WG_CANVAS_1, m_streamBackCanvas);
+	wax_defineSoftBackendCanvas(m_streamGfxDevice, WAX_CANVAS_1, m_streamBackCanvas);
 
-	if( wg_pumpUntilFrame(m_pump) )
+	if( wax_pumpUntilFrame(m_pump) )
 	{
-		wg_pumpFrame(m_pump);
+		wax_pumpFrame(m_pump);
 //		wg_pumpAllFramesOptimizeClipping(m_pump, 5);		// TODO: Set to CONFIG_USB_DISPLAY_FRAME_OPTIMIZATION_DEPTH
 
-		const wg_rectSPX* pDirtyRects;
+		const wax_rectSPX* pDirtyRects;
 		int				nDirtyRects;
 
-		nDirtyRects = wg_getStreamPlayerDirtyRects(m_player, WG_CANVAS_1, (const wg_rectI**) &pDirtyRects );
+		nDirtyRects = wax_getStreamPlayerDirtyRects(m_player, WAX_CANVAS_1, (const wax_rectI**) &pDirtyRects );
 
 		if( nDirtyRects > 0 )
 		{
-			if( wg_patchesIsEmpty(m_streamBackPatches) == 1 )
+			if( wax_patchesIsEmpty(m_streamBackPatches) == 1 )
 			{
 				for( int i = 0 ; i < nDirtyRects ; i++ )
-					wg_pushPatch(m_streamBackPatches, pDirtyRects[i] );
+					wax_pushPatch(m_streamBackPatches, pDirtyRects[i] );
 			}
 			else
 			{
 				for( int i = 0 ; i < nDirtyRects ; i++ )
-					wg_addPatch(m_streamBackPatches, pDirtyRects[i] );
+					wax_addPatch(m_streamBackPatches, pDirtyRects[i] );
 			}
 
-			wg_clearStreamPlayerDirtyRects(m_player);
+			wax_clearStreamPlayerDirtyRects(m_player);
 		}
 	};
 
-	if( wg_patchesIsEmpty(m_streamFrontPatches) == 0 )
+	if( wax_patchesIsEmpty(m_streamFrontPatches) == 0 )
 	{
-		wg_subPatches(m_streamFrontPatches, m_streamBackPatches);
+		wax_subPatches(m_streamFrontPatches, m_streamBackPatches);
 
-		if( wg_patchesIsEmpty(m_streamFrontPatches) ==0 )
+		if( wax_patchesIsEmpty(m_streamFrontPatches) ==0 )
 		{
 			int pixelBytes = 4;
 
-			wg_pixelBuffer frontBuffer;
-			wg_pixelBuffer backBuffer;
+			wax_pixelBuffer frontBuffer;
+			wax_pixelBuffer backBuffer;
 
-			frontBuffer = wg_allocPixelBuffer(m_streamFrontCanvas);
-			backBuffer = wg_allocPixelBuffer(m_streamBackCanvas);
+			frontBuffer = wax_allocPixelBuffer(m_streamFrontCanvas);
+			backBuffer = wax_allocPixelBuffer(m_streamBackCanvas);
 
-			wg_pushPixels(m_streamFrontCanvas, &frontBuffer);
-			wg_pushPixels(m_streamBackCanvas, &backBuffer);
+			wax_pushPixels(m_streamFrontCanvas, &frontBuffer);
+			wax_pushPixels(m_streamBackCanvas, &backBuffer);
 
-			const wg_rectSPX * pRect = wg_patchesBegin(m_streamFrontPatches);
-			const wg_rectSPX * pEnd = wg_patchesEnd(m_streamFrontPatches);
+			const wax_rectSPX * pRect = wax_patchesBegin(m_streamFrontPatches);
+			const wax_rectSPX * pEnd = wax_patchesEnd(m_streamFrontPatches);
 
 			while( pRect < pEnd )
 			{
@@ -151,24 +151,24 @@ bool MyApp::update()
 			}
 
 
-			wg_pullPixels(m_streamBackCanvas, &backBuffer);
-			wg_freePixelBuffer(m_streamFrontCanvas, &frontBuffer);
-			wg_freePixelBuffer(m_streamBackCanvas, &backBuffer);
+			wax_pullPixels(m_streamBackCanvas, &backBuffer);
+			wax_freePixelBuffer(m_streamFrontCanvas, &frontBuffer);
+			wax_freePixelBuffer(m_streamBackCanvas, &backBuffer);
 
-			wg_clearPatches(m_streamFrontPatches);
+			wax_clearPatches(m_streamFrontPatches);
 		}
 	}
 
 	int screenIsReady = 1;
-	if( wg_patchesIsEmpty(m_streamBackPatches) == 0 && screenIsReady == 1 )
+	if( wax_patchesIsEmpty(m_streamBackPatches) == 0 && screenIsReady == 1 )
 	{
 		// Swap front and back
 
-		wg_obj temp = m_streamFrontCanvas;
+		wax_obj temp = m_streamFrontCanvas;
 		m_streamFrontCanvas = m_streamBackCanvas;
 		m_streamBackCanvas = temp;
 
-		wg_patches temp2 = m_streamFrontPatches;
+		wax_patches temp2 = m_streamFrontPatches;
 		m_streamFrontPatches = m_streamBackPatches;
 		m_streamBackPatches = temp2;
 
@@ -186,23 +186,23 @@ bool MyApp::update()
 void MyApp::exit()
 {
 	if( m_pump )
-		wg_release(m_pump);
+		wax_release(m_pump);
 	if( m_player )
-		wg_release(m_player);
+		wax_release(m_player);
 	if( m_wrapper )
-		wg_release(m_wrapper);
+		wax_release(m_wrapper);
 
 	if( m_streamFrontCanvas )
-		wg_release(m_streamFrontCanvas);
+		wax_release(m_streamFrontCanvas);
 
 	if( m_streamBackCanvas )
-		wg_release(m_streamBackCanvas);
+		wax_release(m_streamBackCanvas);
 
 	if( m_streamFrontPatches )
-		wg_deletePatches(m_streamFrontPatches);
+		wax_deletePatches(m_streamFrontPatches);
 
 	if( m_streamBackPatches )
-		wg_deletePatches(m_streamBackPatches);
+		wax_deletePatches(m_streamBackPatches);
 }
 
 //____ closeWindow() __________________________________________________________
@@ -232,39 +232,39 @@ bool MyApp::_setupStreamPlaying()
 {
 	// We use the C-interface here just to try it! B-)
 
-	wg_surfaceBP bp = { .canvas = 1, .size = {800,480} };
+	wax_surfaceBP bp = { .canvas = 1, .size = {800,480} };
 
-	m_streamFrontCanvas		= wg_createSoftSurface( &bp );
-	m_streamFrontPatches	= wg_createPatches();
+	m_streamFrontCanvas		= wax_createSoftSurface( &bp );
+	m_streamFrontPatches	= wax_createPatches();
 
-	m_streamBackCanvas		= wg_createSoftSurface( &bp );
-	m_streamBackPatches		= wg_createPatches();
+	m_streamBackCanvas		= wax_createSoftSurface( &bp );
+	m_streamBackPatches		= wax_createPatches();
 
 
 	m_pDisplay->setSurface( static_cast<SoftSurface*>(reinterpret_cast<Object*>(m_streamFrontCanvas)) );
 
 	m_streamGfxDevice = static_cast<Object*>(Base::defaultGfxDevice());
 
-	wg_defineSoftBackendCanvas(m_streamGfxDevice, WG_CANVAS_1, m_streamFrontCanvas);
+	wax_defineSoftBackendCanvas(m_streamGfxDevice, WAX_CANVAS_1, m_streamFrontCanvas);
 
 
-	wg_obj	gfxDevice = static_cast<Object*>(Base::defaultGfxDevice());
-	wg_obj	surfaceFactory = static_cast<Object*>(Base::defaultSurfaceFactory());
-	wg_obj	edgemapFactory = static_cast<Object*>(Base::defaultEdgemapFactory());
+	wax_obj	gfxDevice = static_cast<Object*>(Base::defaultGfxDevice());
+	wax_obj	surfaceFactory = static_cast<Object*>(Base::defaultSurfaceFactory());
+	wax_obj	edgemapFactory = static_cast<Object*>(Base::defaultEdgemapFactory());
 
 	
 
-	m_wrapper = wg_createStreamWrapper(m_pStreamBlob->begin(), m_pStreamBlob->end());
-	m_player = wg_createStreamPlayer(gfxDevice, surfaceFactory, edgemapFactory );
+	m_wrapper = wax_createStreamWrapper(m_pStreamBlob->begin(), m_pStreamBlob->end());
+	m_player = wax_createStreamPlayer(gfxDevice, surfaceFactory, edgemapFactory );
 
-	wg_component tap = wg_getStreamWrapperOutput(m_wrapper);
-	wg_component sink =wg_getStreamPlayerInput(m_player);
+	wax_component tap = wax_getStreamWrapperOutput(m_wrapper);
+	wax_component sink =wax_getStreamPlayerInput(m_player);
 
 
-	m_pump = wg_createStreamPumpWithInputOutput(tap, sink);
+	m_pump = wax_createStreamPumpWithInputOutput(tap, sink);
 
-	wg_setStreamPlayerStoreDirtyRects(m_player, 1);
-	wg_setStreamPlayerMaxDirtyRects(m_player, 60);
+	wax_setStreamPlayerStoreDirtyRects(m_player, 1);
+	wax_setStreamPlayerMaxDirtyRects(m_player, 60);
 
 	return true;
 }

@@ -3,8 +3,8 @@
 
 #include <wonderapp.h>
 #include <wondergui.h>
-#include <wondergfxstream.h>
-#include <wg_freetypefont.h>
+#include <waxgfxstream.h>
+#include <wax_freetypefont.h>
 
 #include <wg_debugger.h>
 

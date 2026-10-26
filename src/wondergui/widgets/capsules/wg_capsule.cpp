@@ -20,7 +20,7 @@
 
 =========================================================================*/
 #include <wg_capsule.h>
-#include <wg_patches.h>
+#include <wax_patches.h>
 
 namespace wg
 {

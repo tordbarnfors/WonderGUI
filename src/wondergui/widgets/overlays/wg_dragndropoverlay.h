@@ -24,7 +24,7 @@
 #pragma once
 
 #include <wg_overlay.h>
-#include <wg_dataset.h>
+#include <wax_dataset.h>
 #include <wg_key.h>
 
 namespace wg

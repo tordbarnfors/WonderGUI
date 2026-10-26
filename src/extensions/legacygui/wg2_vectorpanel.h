@@ -30,7 +30,7 @@
 #	include <wg2_widget.h>
 #endif
 
-#include <wg_chain.h>
+#include <wax_chain.h>
 
 class WgVectorPanel;
 
@@ -62,7 +62,7 @@ public:
 	bool			SetVisible( bool bVisible );
 
 protected:
-	PROTECTED_LINK_METHODS( WgVectorHook );
+	WAX_PROTECTED_LINK_METHODS( WgVectorHook );
 
 	WgVectorHook();
 	~WgVectorHook();

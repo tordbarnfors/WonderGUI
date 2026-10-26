@@ -20,16 +20,16 @@
 #include <cstring>
 
 #include <wondergui.h>
-#include <wondergfxstream.h>
-#include <wg_freetypefont.h>
+#include <waxgfxstream.h>
+#include <wax_freetypefont.h>
 
-#include <wg_softsurface.h>
-#include <wg_softedgemap.h>
-#include <wg_softedgemapfactory.h>
-#include <wg_softsurfacefactory.h>
-#include <wg_softbackend.h>
-#include <wg_softkernels_default.h>
-#include <wg_gfxdevice_gen2.h>
+#include <wax_softsurface.h>
+#include <wax_softedgemap.h>
+#include <wax_softedgemapfactory.h>
+#include <wax_softsurfacefactory.h>
+#include <wax_softbackend.h>
+#include <wax_softkernels_default.h>
+#include <wax_gfxdevice_gen2.h>
 
 using namespace wg;
 using namespace std;
@@ -686,7 +686,7 @@ void convertSDLFormat( PixelDescription * pWGFormat, const SDL_PixelFormat * pSD
 {
 	pWGFormat->type = PixelType::Chunky;
 	pWGFormat->bits = pSDLFormat->BitsPerPixel;
-	pWGFormat->bigEndian = (WG_IS_BIG_ENDIAN == 1);		// SDL masks are for pixels read in native byte order.
+	pWGFormat->bigEndian = (WAX_IS_BIG_ENDIAN == 1);		// SDL masks are for pixels read in native byte order.
 
 	pWGFormat->R_mask = pSDLFormat->Rmask;
 	pWGFormat->G_mask = pSDLFormat->Gmask;

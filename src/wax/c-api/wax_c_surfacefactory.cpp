@@ -19,63 +19,63 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#include <wg_c_surfacefactory.h>
-#include <wg_c_internal.h>
-#include <wg_surfacefactory.h>
+#include <wax_c_surfacefactory.h>
+#include <wax_c_internal.h>
+#include <wax_surfacefactory.h>
 
-using namespace wg;
+using namespace wax;
 
-inline SurfaceFactory* getPtr(wg_obj obj) {
+inline SurfaceFactory* getPtr(wax_obj obj) {
 	return static_cast<SurfaceFactory*>(reinterpret_cast<Object*>(obj));
 }
 
 
 
 
-wg_sizeI wg_maxSurfaceSize(wg_obj surfaceFactory)
+wax_sizeI wax_maxSurfaceSize(wax_obj surfaceFactory)
 {
     SizeI size = getPtr(surfaceFactory)->maxSize();
-    return *(wg_sizeI*) &size;
+    return *(wax_sizeI*) &size;
 }
 
 
-wg_obj wg_createSurface(wg_obj factory, const wg_surfaceBP* blueprint)
+wax_obj wax_createSurface(wax_obj factory, const wax_surfaceBP* blueprint)
 {
 	Surface::Blueprint	bp;
 	convertSurfaceBlueprint(&bp, blueprint);
 	
 	auto p = getPtr(factory)->createSurface(bp);
 	p->retain();
-	return (wg_obj) static_cast<Object*>(p.rawPtr());
+	return (wax_obj) static_cast<Object*>(p.rawPtr());
 }
 
 
-wg_obj wg_createSurfaceFromBlob(wg_obj factory, const wg_surfaceBP* blueprint, wg_obj blob, int pitch)
+wax_obj wax_createSurfaceFromBlob(wax_obj factory, const wax_surfaceBP* blueprint, wax_obj blob, int pitch)
 {
 	Surface::Blueprint	bp;
 	convertSurfaceBlueprint(&bp, blueprint);
 	auto p = getPtr(factory)->createSurface(bp, static_cast<Blob*>(reinterpret_cast<Object*>(blob)), pitch );
 	p->retain();
-	return (wg_obj) static_cast<Object*>(p.rawPtr());
+	return (wax_obj) static_cast<Object*>(p.rawPtr());
 }
 
-wg_obj	wg_createSurfaceFromBitmap(wg_obj factory, const wg_surfaceBP* blueprint, const uint8_t* pPixels,
-								   wg_pixelFormat pixelFormat, int pitch, const wg_color8 * pPalette, int paletteSize )
+wax_obj	wax_createSurfaceFromBitmap(wax_obj factory, const wax_surfaceBP* blueprint, const uint8_t* pPixels,
+								   wax_pixelFormat pixelFormat, int pitch, const wax_color8 * pPalette, int paletteSize )
 {
 	Surface::Blueprint	bp;
 	convertSurfaceBlueprint(&bp, blueprint);
 	auto p = getPtr(factory)->createSurface(bp, pPixels, (PixelFormat) pixelFormat, pitch, (Color8*) pPalette, paletteSize);
 	p->retain();
-	return (wg_obj) static_cast<Object*>(p.rawPtr());
+	return (wax_obj) static_cast<Object*>(p.rawPtr());
 }
 
-wg_obj	wg_createSurfaceFromRawData(wg_obj factory, const wg_surfaceBP* blueprint, const uint8_t* pPixels,
-									const wg_pixelDescription * pPixelDescription, int pitch, const wg_color8 * pPalette, int paletteSize )
+wax_obj	wax_createSurfaceFromRawData(wax_obj factory, const wax_surfaceBP* blueprint, const uint8_t* pPixels,
+									const wax_pixelDescription * pPixelDescription, int pitch, const wax_color8 * pPalette, int paletteSize )
 {
 	Surface::Blueprint	bp;
 	convertSurfaceBlueprint(&bp, blueprint);
 	auto p = getPtr(factory)->createSurface(bp, pPixels, *(PixelDescription*)pPixelDescription, pitch, (Color8*) pPalette, paletteSize);
 	p->retain();
-	return (wg_obj) static_cast<Object*>(p.rawPtr());
+	return (wax_obj) static_cast<Object*>(p.rawPtr());
 }
 

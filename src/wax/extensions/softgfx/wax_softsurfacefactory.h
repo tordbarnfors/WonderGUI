@@ -19,13 +19,13 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef WG_SOFTSURFACEFACTORY_DOT_H
-#define WG_SOFTSURFACEFACTORY_DOT_H
+#ifndef WAX_SOFTSURFACEFACTORY_DOT_H
+#define WAX_SOFTSURFACEFACTORY_DOT_H
 
-#include <wg_softsurface.h>
-#include <wg_surfacefactory.h>
+#include <wax_softsurface.h>
+#include <wax_surfacefactory.h>
 
-namespace wg
+namespace wax
 {
 
 	class SoftSurfaceFactory;
@@ -72,5 +72,5 @@ namespace wg
 
 	//========================================================================================
 
-} // namespace wg
-#endif // WG_SOFTSURFACEFACTORY_DOT_H
+} // namespace wax
+#endif // WAX_SOFTSURFACEFACTORY_DOT_H

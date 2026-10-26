@@ -26,6 +26,7 @@
 
 #include <wg_pluginfont.h>
 #include <wg_pluginsurface.h>
+#include <wg_types.h>
 
 namespace wg
 {
@@ -40,7 +41,7 @@ namespace wg
 
 		//.____ Creation __________________________________________
 
-		static PluginBitmapFont_p	create( wg_obj cBitmapFont ) { return PluginBitmapFont_p(new PluginBitmapFont(cBitmapFont)); }
+		static PluginBitmapFont_p	create( wax_obj cBitmapFont ) { return PluginBitmapFont_p(new PluginBitmapFont(cBitmapFont)); }
 
 		//.____ Identification __________________________________________
 
@@ -53,7 +54,7 @@ namespace wg
 
 
 	private:
-		PluginBitmapFont( wg_obj cFont );
+		PluginBitmapFont( wax_obj cFont );
 		~PluginBitmapFont();
 		
 		PluginSurface_p		m_pSurface;

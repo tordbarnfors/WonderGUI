@@ -22,21 +22,21 @@
 
 #import "Foundation/Foundation.h"
 
-#include <wg_metalbackend.h>
-#include <wg_metalsurfacefactory.h>
-#include <wg_metaledgemapfactory.h>
-#include <wg_metaledgemap.h>
-#include <wg_metalwarpmapfactory.h>
-#include <wg_metalwarpmap.h>
-#include <wg_gfxbase.h>
-#include <wg_gfxutil.h>
+#include <wax_metalbackend.h>
+#include <wax_metalsurfacefactory.h>
+#include <wax_metaledgemapfactory.h>
+#include <wax_metaledgemap.h>
+#include <wax_metalwarpmapfactory.h>
+#include <wax_metalwarpmap.h>
+#include <wax_core.h>
+#include <wax_gfxutil.h>
 
 #include <cmath>
 
 
-namespace wg
+namespace wax
 {
-using namespace Util;
+using namespace GfxUtil;
 
 const TypeInfo MetalBackend::TYPEINFO = { "MetalBackend", &GfxBackend::TYPEINFO };
 
@@ -96,7 +96,7 @@ MetalBackend::MetalBackend()
 	if( m_library == nil )
 	{
 		NSString * pMessage = [NSString stringWithFormat:@"Failed to compile shaders: %@", error ? error.localizedDescription : @"unknown error"];
-		GfxBase::throwError(ErrorLevel::Critical, ErrorCode::Internal, pMessage.UTF8String, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+		Core::throwError(ErrorLevel::Critical, ErrorCode::Internal, pMessage.UTF8String, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 	}
 
 	[shaderString release];
@@ -682,7 +682,7 @@ bool MetalBackend::setDefaultCanvas( MTLRenderPassDescriptor* renderPassDesc, Si
 	DestFormat destFormat;
 	if( !_toDestFormat(pixelFormat, colorSpace, destFormat) )
 	{
-		GfxBase::throwError(ErrorLevel::SilentError, ErrorCode::InvalidParam, "pixelFormat must be ARGB_8, XRGB_8 or Alpha_8", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+		Core::throwError(ErrorLevel::SilentError, ErrorCode::InvalidParam, "pixelFormat must be ARGB_8, XRGB_8 or Alpha_8", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 		return false;
 	}
 
@@ -1515,7 +1515,7 @@ void MetalBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, i
 
 				if (maxEntries == 0)
 				{
-					GfxBase::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, "Failed DrawShape operation. Unsupported kind of shape.",
+					Core::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, "Failed DrawShape operation. Unsupported kind of shape.",
 						this, &TYPEINFO, __func__, __FILE__, __LINE__);
 					break;
 				}
@@ -2246,7 +2246,7 @@ id<MTLRenderCommandEncoder> MetalBackend::_setCanvas( MetalSurface * pCanvas, in
 	m_activeCanvasFormat = destFormat;
 
 	if( !bValidFormat )
-		GfxBase::throwError(ErrorLevel::Error, ErrorCode::Internal, "Canvas format is neither ARGB_8, XRGB_8 or Alpha_8", this, &TYPEINFO, __func__, __FILE__, __LINE__ );
+		Core::throwError(ErrorLevel::Error, ErrorCode::Internal, "Canvas format is neither ARGB_8, XRGB_8 or Alpha_8", this, &TYPEINFO, __func__, __FILE__, __LINE__ );
 
 
 	return renderEncoder;
@@ -2262,7 +2262,7 @@ void MetalBackend::_initTables()
 	for (int i = 0; i < 17; i++)
 	{
 		double b = i / 16.0;
-		m_lineThicknessTable[i] = (float)Util::squareRoot(1.0 + b * b);
+		m_lineThicknessTable[i] = (float)GfxUtil::squareRoot(1.0 + b * b);
 	}
 }
 
@@ -2370,7 +2370,7 @@ id<MTLRenderPipelineState> MetalBackend::_mipmapPipeline( MTLPixelFormat format 
 	if( pipelineState == nil )
 	{
 		NSString * pMessage = [NSString stringWithFormat:@"Failed to create Mipmap Pipeline: %@", error ? error.localizedDescription : @"unknown error"];
-		GfxBase::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, pMessage.UTF8String, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+		Core::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, pMessage.UTF8String, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 	}
 
 	[descriptor.vertexFunction release];
@@ -2566,7 +2566,7 @@ id<MTLRenderPipelineState> MetalBackend::_compileRenderPipeline( NSString* label
 	if( pipelineState == nil )
 	{
 		NSString * pMessage = [NSString stringWithFormat:@"Failed to create %@: %@", label, pError ? pError.localizedDescription : @"shader function missing"];
-		GfxBase::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, pMessage.UTF8String, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+		Core::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, pMessage.UTF8String, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 	}
 
 	[descriptor.vertexFunction release];
@@ -2575,4 +2575,4 @@ id<MTLRenderPipelineState> MetalBackend::_compileRenderPipeline( NSString* label
 
 	return pipelineState;
 }
-} //namespace wg
+} //namespace wax

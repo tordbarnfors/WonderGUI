@@ -1,6 +1,6 @@
 using System.Runtime.InteropServices;
 
-namespace WG;
+namespace Wax;
 
 
 public class FreeTypeFont : Font
@@ -32,7 +32,7 @@ public class FreeTypeFont : Font
 	//____ Constructor ________________________________________________________
 	public FreeTypeFont(in Blueprint bp)
 	{
-		wg_freeTypeFontBP cbp;
+		wax_freeTypeFontBP cbp;
 
 		cbp.backupFont = bp.BackupFont == null ? 0 : bp.BackupFont.CHandle();
 		cbp.blob = bp.Blob == null ? 0 : bp.Blob.CHandle();
@@ -44,12 +44,12 @@ public class FreeTypeFont : Font
 		cbp.xDPI = bp.XDPI;
 		cbp.yDPI = bp.YDPI;
 
-		_obj = wg_createFreeTypeFont(cbp);
+		_obj = wax_createFreeTypeFont(cbp);
 	}
 
 
 	[StructLayout(LayoutKind.Sequential)]
-	struct wg_freeTypeFontBP
+	struct wax_freeTypeFontBP
 	{
 		public IntPtr backupFont;
 		public IntPtr blob;
@@ -64,9 +64,9 @@ public class FreeTypeFont : Font
     //____ DLL functions ______________________________________________________
 
 	[DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-	private static extern IntPtr wg_createFreeTypeFont( wg_freeTypeFontBP blueprint );
+	private static extern IntPtr wax_createFreeTypeFont( wax_freeTypeFontBP blueprint );
 
 	[DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-	private static extern IntPtr wg_getFreeTypeFontBitmapCache( IntPtr font );
+	private static extern IntPtr wax_getFreeTypeFontBitmapCache( IntPtr font );
 
 }

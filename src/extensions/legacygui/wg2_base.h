@@ -41,7 +41,7 @@
 #	include <wg2_key.h>
 #endif
 
-#include <wg_gfxbase.h>
+#include <wax_core.h>
 #include <wg_textstyle.h>
 #include <wg_hostbridge.h>
 
@@ -49,10 +49,14 @@
 class WgCursor;
 class WgWidget;
 
-namespace wg
+namespace wax
 {
 	class Object;
 	class MemStack;
+}
+
+namespace wg
+{
     class HostBridge;
 };
 
@@ -91,14 +95,14 @@ class WgContext : public wg::Object
 	wg::HostBridge *	pHostBridge = nullptr;
 	
 	wg::TextStyle_p		pDefaultTextStyle = nullptr;
-	wg::GfxContext_p	pGfxContext;
+	wax::Context_p	pWaxContext;
 };
 
 typedef	wg::StrongPtr<WgContext>	WgContext_p;
 typedef	wg::WeakPtr<WgContext>		WgContext_wp;
 
 
-class WgBase : public wg::GfxBase
+class WgBase : public wax::Core
 {
 	friend class WgWidget;
 	

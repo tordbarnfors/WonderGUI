@@ -20,13 +20,13 @@
 
 =========================================================================*/
 
-#ifndef	WG_DX12BACKEND_DOT_H
-#define WG_DX12BACKEND_DOT_H
+#ifndef	WAX_DX12BACKEND_DOT_H
+#define WAX_DX12BACKEND_DOT_H
 #pragma once
 
-#include <wg_gfxbackend.h>
-#include <wg_gpushapes.h>
-#include <wg_tinttools.h>
+#include <wax_gfxbackend.h>
+#include <wax_gpushapes.h>
+#include <wax_tinttools.h>
 
 #include <wrl.h>
 
@@ -36,7 +36,7 @@
 #include <vector>
 #include <atomic>
 
-namespace wg
+namespace wax
 {
 
 
@@ -588,6 +588,6 @@ namespace wg
 
 	};
 
-} // namespace wg
-#endif	// WG_DX12BACKEND_DOT_H
+} // namespace wax
+#endif	// WAX_DX12BACKEND_DOT_H
 

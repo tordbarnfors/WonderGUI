@@ -19,35 +19,35 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#include <wg_c_surfacewriter.h>
-#include <wg_surfacewriter.h>
+#include <wax_c_surfacewriter.h>
+#include <wax_surfacewriter.h>
 
-using namespace wg;
+using namespace wax;
 
-inline SurfaceWriter* getPtr(wg_obj obj) {
+inline SurfaceWriter* getPtr(wax_obj obj) {
 	return static_cast<SurfaceWriter*>(reinterpret_cast<Object*>(obj));
 }
 
 
-wg_obj wg_createSurfaceWriter(const wg_surfaceWriterBP* blueprint)
+wax_obj wax_createSurfaceWriter(const wax_surfaceWriterBP* blueprint)
 {
 	SurfaceWriter::Blueprint bp;
 
-	bp.saveInfo.scale = (blueprint->saveInfo & WG_SAVE_SCALE);
-	bp.saveInfo.identity = (blueprint->saveInfo & WG_SAVE_IDENTITY);
-	bp.saveInfo.sampleMethod = (blueprint->saveInfo & WG_SAVE_SAMPLE_METHOD);
-	bp.saveInfo.mipmap = (blueprint->saveInfo & WG_SAVE_MIPMAP_FLAG);
-	bp.saveInfo.tiling = (blueprint->saveInfo & WG_SAVE_TILING_FLAG);
-	bp.saveInfo.dynamic = (blueprint->saveInfo & WG_SAVE_DYNAMIC_FLAG);
-	bp.saveInfo.buffered = (blueprint->saveInfo & WG_SAVE_BUFFERED_FLAG);
-	bp.saveInfo.canvas = (blueprint->saveInfo & WG_SAVE_CANVAS_FLAG);
+	bp.saveInfo.scale = (blueprint->saveInfo & WAX_SAVE_SCALE);
+	bp.saveInfo.identity = (blueprint->saveInfo & WAX_SAVE_IDENTITY);
+	bp.saveInfo.sampleMethod = (blueprint->saveInfo & WAX_SAVE_SAMPLE_METHOD);
+	bp.saveInfo.mipmap = (blueprint->saveInfo & WAX_SAVE_MIPMAP_FLAG);
+	bp.saveInfo.tiling = (blueprint->saveInfo & WAX_SAVE_TILING_FLAG);
+	bp.saveInfo.dynamic = (blueprint->saveInfo & WAX_SAVE_DYNAMIC_FLAG);
+	bp.saveInfo.buffered = (blueprint->saveInfo & WAX_SAVE_BUFFERED_FLAG);
+	bp.saveInfo.canvas = (blueprint->saveInfo & WAX_SAVE_CANVAS_FLAG);
 	
 	auto pWriter = SurfaceWriter::create(bp);
 	pWriter->retain();
 	return static_cast<Object*>(pWriter);
 }
 
-wg_obj	wg_writeSurfaceToBlob( wg_obj surfaceWriter, wg_obj surface, int extraDataSize, char * pExtraData )
+wax_obj	wax_writeSurfaceToBlob( wax_obj surfaceWriter, wax_obj surface, int extraDataSize, char * pExtraData )
 {
 	auto pSurface = static_cast<Surface*>(reinterpret_cast<Object*>(surface));
 	auto pBlob = getPtr(surfaceWriter)->writeSurfaceToBlob(pSurface);

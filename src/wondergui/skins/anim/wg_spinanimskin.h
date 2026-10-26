@@ -24,10 +24,10 @@
 #pragma once
 
 #include <wg_animskin.h>
-#include <wg_color.h>
-#include <wg_tint.h>
-#include <wg_surface.h>
-#include <wg_transitions.h>
+#include <wax_color.h>
+#include <wax_tint.h>
+#include <wax_surface.h>
+#include <wax_transitions.h>
 
 namespace wg
 {

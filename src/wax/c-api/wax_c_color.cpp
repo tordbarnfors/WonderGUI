@@ -21,10 +21,10 @@
 =========================================================================*/
 #include <type_traits>
 
-#include <wg_c_color.h>
-#include <wg_color.h>
+#include <wax_c_color.h>
+#include <wax_color.h>
 
 
-static_assert( sizeof(wg_color) == sizeof(wg::HiColor), "wg_color differs in size from wg::HiColor!" );
-static_assert( std::is_trivially_copyable<wg::HiColor>::value, "HiColor is not trivially copyable!" );
+static_assert( sizeof(wax_color) == sizeof(wax::HiColor), "wax_color differs in size from wax::HiColor!" );
+static_assert( std::is_trivially_copyable<wax::HiColor>::value, "HiColor is not trivially copyable!" );
 

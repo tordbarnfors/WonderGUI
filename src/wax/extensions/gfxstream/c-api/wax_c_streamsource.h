@@ -19,22 +19,22 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef WG_C_STREAMSOURCE_DOT_H
-#define WG_C_STREAMSOURCE_DOT_H
+#ifndef WAX_C_STREAMSOURCE_DOT_H
+#define WAX_C_STREAMSOURCE_DOT_H
 #pragma once
 
-#include <wg_c_gfxtypes.h>
-#include <wg_c_gfxstream.h>
+#include <wax_c_types.h>
+#include <wax_c_gfxstream.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-	WG_EXPORT int				wg_hasStreamChunks( wg_component streamSource );
-	WG_EXPORT int				wg_showStreamChunks( wg_component streamSource, wg_streamData ** pSegments );
-    WG_EXPORT void				wg_discardStreamChunks( wg_component streamSource, int bytes );
-    WG_EXPORT int				wg_fetchStreamChunks( wg_component streamSource );
-    WG_EXPORT wg_streamChunkId	wg_peekStreamChunk( wg_component streamSource );
+	WAX_EXPORT int				wax_hasStreamChunks( wax_component streamSource );
+	WAX_EXPORT int				wax_showStreamChunks( wax_component streamSource, wax_streamData ** pSegments );
+    WAX_EXPORT void				wax_discardStreamChunks( wax_component streamSource, int bytes );
+    WAX_EXPORT int				wax_fetchStreamChunks( wax_component streamSource );
+    WAX_EXPORT wax_streamChunkId	wax_peekStreamChunk( wax_component streamSource );
 
 #ifdef __cplusplus
 }

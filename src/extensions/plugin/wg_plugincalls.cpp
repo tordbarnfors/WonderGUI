@@ -20,7 +20,7 @@
 
 =========================================================================*/
 #include <wg_plugincalls.h>
-#include <wg_tinttools.h>
+#include <wax_tinttools.h>
 
 namespace wg
 {
@@ -147,7 +147,7 @@ namespace wg
 
 	//____ _hostTint() ________________________________________________________
 
-	wg_obj PluginCalls::_hostTint(Tint* pTint)
+	wax_obj PluginCalls::_hostTint(Tint* pTint)
 	{
 		if( !pTint )
 			return nullptr;
@@ -160,7 +160,7 @@ namespace wg
 
 	//____ _localTint() _______________________________________________________
 
-	Tint_p PluginCalls::_localTint(wg_obj hostTint)
+	Tint_p PluginCalls::_localTint(wax_obj hostTint)
 	{
 		if( !hostTint )
 			return nullptr;

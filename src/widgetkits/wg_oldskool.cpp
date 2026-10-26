@@ -22,8 +22,8 @@
 
 #include "wg_oldskool.h"
 
-#include <wg_sysfont.h>
-#include <wg_surfacereader.h>
+#include <wax_sysfont.h>
+#include <wax_surfacereader.h>
 #include <wg_base.h>
 
 namespace wg::oldskool

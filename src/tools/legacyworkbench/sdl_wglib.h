@@ -20,12 +20,16 @@
 #include <wg2_types.h>
 #include <wg2_widget.h>
 
-#include <wg_surface.h>
-#include <wg_font.h>
+#include <wax_surface.h>
+#include <wax_font.h>
+
+namespace wax
+{
+	class SurfaceFactory;
+}
 
 namespace wg
 {
-    class SurfaceFactory;
 };
 
 

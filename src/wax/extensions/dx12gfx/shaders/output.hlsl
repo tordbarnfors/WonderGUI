@@ -1,5 +1,5 @@
 // Output of the pixel shaders that draw into canvases, and the root constants they
-// share. wg_dx12shaders.cpp.template puts this file in front of each of them, ahead
+// share. wax_dx12shaders.cpp.template puts this file in front of each of them, ahead
 // of tint.hlsl.
 //
 // Canvases with alpha hold premultiplied colors. A pixel shader works out the
@@ -7,7 +7,7 @@
 // and that part (cov), and hands them to writeOutput(). That passes them on as the
 // blend mode of the pipeline needs them, the second color being the second source
 // of dual-source blending, see DX12Backend::_createPipeline(). It is only output by
-// pipelines that blend with it, which compile the shaders with WG_DUAL_SOURCE.
+// pipelines that blend with it, which compile the shaders with WAX_DUAL_SOURCE.
 //
 //   outputMode 0: pc, with its alpha as the second color (Blend, Subtract and
 //                 Multiply).
@@ -39,7 +39,7 @@ cbuffer PixelInfo : register(b1)
 struct PS_OUTPUT
 {
     float4 color : SV_Target0;
-#ifdef WG_DUAL_SOURCE
+#ifdef WAX_DUAL_SOURCE
     float4 factor : SV_Target1;
 #endif
 };
@@ -109,7 +109,7 @@ PS_OUTPUT writeOutput(float4 pc, float cov)
     PS_OUTPUT output;
 
     output.color = color;
-#ifdef WG_DUAL_SOURCE
+#ifdef WAX_DUAL_SOURCE
     output.factor = factor;
 #endif
 

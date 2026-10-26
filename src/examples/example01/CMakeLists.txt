@@ -29,14 +29,14 @@ target_link_directories(example01 PRIVATE
 
 target_include_directories(example01 PRIVATE 
 	${WONDERGUI_INCDIRS}
-	${WGSOFTGFX_INCDIRS}
+	${WAXSOFTGFX_INCDIRS}
 )
 
 
 target_working_directory(example01 ${WG_ROOT} )
 
 target_link_libraries(example01 PUBLIC
-	wgsoftgfx
+	waxsoftgfx
 	wondergui 
 	${SDL2_LIBS}
 )

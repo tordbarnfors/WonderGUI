@@ -1,17 +1,17 @@
 
 
-#include <wg_memheap.h>
-#include <wg_c_memheap.h>
+#include <wax_memheap.h>
+#include <wax_c_memheap.h>
 #include <cstddef>
 
 #include "cpp_necessities.h"
 
 
-static wg::MemHeap* cpp_memHeap;
+static wax::MemHeap* cpp_memHeap;
 
-void init_cpp_necessities(wg_memHeap heap)
+void init_cpp_necessities(wax_memHeap heap)
 {
-  cpp_memHeap = reinterpret_cast<wg::MemHeap*>(heap);
+  cpp_memHeap = reinterpret_cast<wax::MemHeap*>(heap);
 }
 
 void exit_cpp_necessities()

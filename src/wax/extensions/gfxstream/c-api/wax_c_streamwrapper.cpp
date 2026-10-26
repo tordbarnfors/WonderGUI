@@ -19,41 +19,41 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#include <wg_c_streamwrapper.h>
-#include <wg_streamwrapper.h>
+#include <wax_c_streamwrapper.h>
+#include <wax_streamwrapper.h>
 
-using namespace wg;
+using namespace wax;
 
-inline StreamWrapper* getPtr(wg_obj obj) {
+inline StreamWrapper* getPtr(wax_obj obj) {
 	return static_cast<StreamWrapper*>(reinterpret_cast<Object*>(obj));
 }
 
-wg_obj wg_createStreamWrapper( const void * pBegin, const void * pEnd )
+wax_obj wax_createStreamWrapper( const void * pBegin, const void * pEnd )
 {
 	auto p = StreamWrapper::create(pBegin, pEnd);
 	p->retain();
 	return p.rawPtr();
 }
 
-wg_component wg_getStreamWrapperOutput(wg_obj streamWrapper)
+wax_component wax_getStreamWrapperOutput(wax_obj streamWrapper)
 {
 	auto p = getPtr(streamWrapper);
 	return { static_cast<Object*>(p), &p->output };
 }
 
-int wg_chunkInStreamWrapper(wg_obj streamWrapper)
+int wax_chunkInStreamWrapper(wax_obj streamWrapper)
 {
 	auto p = getPtr(streamWrapper);
 	return p->chunkInBuffer();
 }
 
-int wg_bytesInStreamWrapper(wg_obj streamWrapper)
+int wax_bytesInStreamWrapper(wax_obj streamWrapper)
 {
 	auto p = getPtr(streamWrapper);
 	return p->bytesInBuffer();
 }
 
-void	wg_restartStreamWrapper(wg_obj streamWrapper)
+void	wax_restartStreamWrapper(wax_obj streamWrapper)
 {
 	auto p = getPtr(streamWrapper);
 	p->restart();

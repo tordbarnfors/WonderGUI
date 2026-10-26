@@ -19,18 +19,18 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef	WG_SOFTBACKEND_DOT_H
-#define WG_SOFTBACKEND_DOT_H
+#ifndef	WAX_SOFTBACKEND_DOT_H
+#define WAX_SOFTBACKEND_DOT_H
 #pragma once
 
-#include <wg_gfxbackend.h>
-#include <wg_tinttools.h>
-#include <wg_softtint.h>
-#include <wg_softsurface.h>
-#include <wg_softformat.h>
-#include <wg_softshapes.h>
+#include <wax_gfxbackend.h>
+#include <wax_tinttools.h>
+#include <wax_softtint.h>
+#include <wax_softsurface.h>
+#include <wax_softformat.h>
+#include <wax_softshapes.h>
 
-namespace wg
+namespace wax
 {
 #if defined(__ARM_ARCH) && defined(__APPLE__)
 	// Apple Silicon (M1/M2/M3)
@@ -361,7 +361,7 @@ namespace wg
 
 		// Warps (Command::WarpBlit and WarpDrawEdgemap), shared with LinearBackend. _beginWarp()
 		// prepares a command, _drawWarp() draws it within one clip rectangle onto pixels where
-		// pixel (x,y) is at pOrigin + y * pitch + x * m_canvasPixelBytes. See wg_softbackend_warp.cpp.
+		// pixel (x,y) is at pOrigin + y * pitch + x * m_canvasPixelBytes. See wax_softbackend_warp.cpp.
 
 		static const int c_warpOutside = -2;	// WarpCell::kind: Nothing of the source in the cell.
 		static const int c_warpMixed = -1;		// WarpCell::kind: Coverage or segment varies over the cell.
@@ -713,6 +713,6 @@ namespace wg
 		}
 	}
 
-} // namespace wg
-#endif	// WG_SOFTBACKEND_DOT_H
+} // namespace wax
+#endif	// WAX_SOFTBACKEND_DOT_H
 

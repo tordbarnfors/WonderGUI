@@ -19,9 +19,9 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#include <wg_compression.h>
+#include <wax_compression.h>
 
-namespace wg
+namespace wax
 {
 	const TypeInfo Compressor::TYPEINFO = { "Compressor", &Object::TYPEINFO };
 	const TypeInfo Decompressor::TYPEINFO = { "Decompressor", &Object::TYPEINFO };

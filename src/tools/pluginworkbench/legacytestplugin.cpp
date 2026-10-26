@@ -1,7 +1,7 @@
 
 #include <wglegacygui.h>
 #include <wglegacyplugin.h>
-#include <wg_freetypefont.h>
+#include <wax_freetypefont.h>
 
 #include <string>
 #include <fstream>
@@ -18,7 +18,7 @@ using namespace std;
 
 extern "C" {
 	DLLEXPORTPREFIX int		init( wg_plugin_interface * pInterface, void * pRealHostBridge,
-								  wg_obj hPluginCapsule, wg_obj hGfxDevice, wg_obj hSurfaceFactory, wg_obj hEdgemapFactory );
+								  wax_obj hPluginCapsule, wax_obj hGfxDevice, wax_obj hSurfaceFactory, wax_obj hEdgemapFactory );
 	DLLEXPORTPREFIX int		update(void);
 	DLLEXPORTPREFIX void	exitX(void);
 
@@ -36,7 +36,7 @@ WgPluginRoot * 	g_pPluginRoot;
 
 //____ init() _________________________________________________________________
 
-DLLEXPORTPREFIX int init( wg_plugin_interface * pInterface, void * pRealHostBridge, wg_obj hPluginCapsule, wg_obj hGfxDevice, wg_obj hSurfaceFactory, wg_obj hEdgemapFactory )
+DLLEXPORTPREFIX int init( wg_plugin_interface * pInterface, void * pRealHostBridge, wax_obj hPluginCapsule, wax_obj hGfxDevice, wax_obj hSurfaceFactory, wax_obj hEdgemapFactory )
 {
 	if( !WgPluginBase::init(pInterface, pRealHostBridge) )
 		return 0;								// Host's plugin interface is older than ours.

@@ -19,20 +19,20 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#include <wg_gfxtypes.h>
-#include <wg_gfxutil.h>
-#include <wg_geo.h>
-#include <wg_surface.h>
-#include <wg_gfxdevice.h>
-#include <wg_patches.h>
-#include <wg_gfxbase.h>
+#include <wax_types.h>
+#include <wax_gfxutil.h>
+#include <wax_geo.h>
+#include <wax_surface.h>
+#include <wax_gfxdevice.h>
+#include <wax_patches.h>
+#include <wax_core.h>
 
 #include <algorithm>
 
-namespace wg
+namespace wax
 {
 
-	const Util::Matrix22 Util::_flipMatrix[GfxFlip_size] = { { 1,0,0,1 },			// Normal
+	const GfxUtil::Matrix22 GfxUtil::_flipMatrix[GfxFlip_size] = { { 1,0,0,1 },			// Normal
 															{ -1,0,0,1 },			// FlipX
 															{ 1,0,0,-1 },			// FlipY
 															{ 0,-1,1,0 },			// Rot90
@@ -45,7 +45,7 @@ namespace wg
 															{ 0,-1,-1,0 },			// Rot270FlipX
 															{ 0,1,1,0 } };			// Rot270FlipY
 
-	const Util::Matrix22 Util::_unflipMatrix[GfxFlip_size]= { { 1,0,0,1 },			// Normal
+	const GfxUtil::Matrix22 GfxUtil::_unflipMatrix[GfxFlip_size]= { { 1,0,0,1 },			// Normal
 															{ -1,0,0,1 },			// FlipX
 															{ 1,0,0,-1 },			// FlipY
 															{ 0,1,-1,0 },			// Rot90
@@ -58,7 +58,7 @@ namespace wg
 															{ 0,-1,-1,0 },			// Rot270FlipX
 															{ 0,1,1,0 } };			// Rot270FlipY
 /*
-	const int Util::_flipOrigoMatrix[GfxFlip_size][2] = {	{ 0,0 },				// Normal
+	const int GfxUtil::_flipOrigoMatrix[GfxFlip_size][2] = {	{ 0,0 },				// Normal
 															{ 1,0 },				// FlipX
 															{ 0,1 },				// FlipY
 															{ 0,1 },				// Rot90
@@ -72,7 +72,7 @@ namespace wg
 															{ 0,0 } };				// Rot270FlipY
 */
 
-const Util::Matrix22 Util::_flipOrigoMatrix[GfxFlip_size] = {	{ 0,0,0,0 },				// Normal
+const GfxUtil::Matrix22 GfxUtil::_flipOrigoMatrix[GfxFlip_size] = {	{ 0,0,0,0 },				// Normal
 																{ 1,0,0,0 },				// FlipX
 																{ 0,0,0,1 },				// FlipY
 																{ 0,1,0,0 },				// Rot90
@@ -85,7 +85,7 @@ const Util::Matrix22 Util::_flipOrigoMatrix[GfxFlip_size] = {	{ 0,0,0,0 },				//
 																{ 0,1,1,0 },				// Rot270FlipX
 																{ 0,0,0,0 } };				// Rot270FlipY
 
-const Util::Matrix22 Util::_unflipOrigoMatrix[GfxFlip_size] = {	{ 0,0,0,0 },				// Normal
+const GfxUtil::Matrix22 GfxUtil::_unflipOrigoMatrix[GfxFlip_size] = {	{ 0,0,0,0 },				// Normal
 																{ 1,0,0,0 },				// FlipX
 																{ 0,0,0,1 },				// FlipY
 																{ 0,0,1,0 },				// Rot90
@@ -98,7 +98,7 @@ const Util::Matrix22 Util::_unflipOrigoMatrix[GfxFlip_size] = {	{ 0,0,0,0 },				
 																{ 0,1,1,0 },				// Rot270FlipX
 																{ 0,0,0,0 } };				// Rot270FlipY
 
-	uint8_t Util::_limitUint8Table[768] = {	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	uint8_t GfxUtil::_limitUint8Table[768] = {	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 										0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 										0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 										0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -183,12 +183,12 @@ const PixelDescription	pixelDescTab[PixelFormat_size] = {
 
 //____ pixelFormatToDescription() _____________________________________________
 
-const PixelDescription& Util::pixelFormatToDescription( PixelFormat format )
+const PixelDescription& GfxUtil::pixelFormatToDescription( PixelFormat format )
 {
 	return pixelDescTab[int(format)];
 }
 
-PixelDescription Util::pixelFormatToDescription( PixelFormat format, bool bBigEndian )
+PixelDescription GfxUtil::pixelFormatToDescription( PixelFormat format, bool bBigEndian )
 {
 	PixelDescription desc = pixelDescTab[int(format)];
 	desc.bigEndian = bBigEndian;
@@ -197,7 +197,7 @@ PixelDescription Util::pixelFormatToDescription( PixelFormat format, bool bBigEn
 
 //____ pixelDescriptionToFormat() _____________________________________________
 
-PixelFormat	Util::pixelDescriptionToFormat(const PixelDescription& description)
+PixelFormat	GfxUtil::pixelDescriptionToFormat(const PixelDescription& description)
 {
 	// Byte order is not part of the format, so it is ignored here.
 
@@ -225,7 +225,7 @@ PixelFormat	Util::pixelDescriptionToFormat(const PixelDescription& description)
 
 // powerOfTen function is needed for squareRoot function (IMPORTANT)
 
-double Util::squareRoot(double a)
+double GfxUtil::squareRoot(double a)
 {
 	/*
 		find more detail of this method on wiki methods_of_computing_square_roots
@@ -278,7 +278,7 @@ double Util::squareRoot(double a)
 	return rst;
 }
 
-double Util::powerOfTen(int num)
+double GfxUtil::powerOfTen(int num)
 {
 	double rst = 1.0;
 	if(num >= 0)
@@ -294,16 +294,16 @@ double Util::powerOfTen(int num)
 	return rst;
 }
 
-int Util::gcd(int a, int b)
+int GfxUtil::gcd(int a, int b)
 {
-	return b == 0 ? a : Util::gcd(b, a % b);
+	return b == 0 ? a : GfxUtil::gcd(b, a % b);
 }
 
 	//____ mostSignificantBit() _______________________________________________
 
 	// Uses the de Bruijn algorithm for finding the most significant bit in an integer.
 
-	uint32_t Util::mostSignificantBit(uint32_t value)
+	uint32_t GfxUtil::mostSignificantBit(uint32_t value)
 	{
 		static const int MultiplyDeBruijnBitPosition[32] =
 		{
@@ -320,4 +320,4 @@ int Util::gcd(int a, int b)
 		return MultiplyDeBruijnBitPosition[(uint32_t)(value * 0x07C4ACDDU) >> 27];
 	}
 
-} // namespace wg
+} // namespace wax

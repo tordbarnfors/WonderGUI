@@ -19,10 +19,10 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#include <wg_streamedgemapfactory.h>
-#include <wg_streamedgemap.h>
+#include <wax_streamedgemapfactory.h>
+#include <wax_streamedgemap.h>
 
-namespace wg
+namespace wax
 {
 
 	const TypeInfo StreamEdgemapFactory::TYPEINFO = { "StreamEdgemapFactory", &EdgemapFactory::TYPEINFO };
@@ -53,4 +53,4 @@ namespace wg
 	}
 
 
-} // namespace wg
+} // namespace wax

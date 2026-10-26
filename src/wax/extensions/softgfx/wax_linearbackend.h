@@ -19,14 +19,14 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef	WG_LINEARBACKEND_DOT_H
-#define WG_LINEARBACKEND_DOT_H
+#ifndef	WAX_LINEARBACKEND_DOT_H
+#define WAX_LINEARBACKEND_DOT_H
 #pragma once
 
-#include <wg_softbackend.h>
-#include <wg_softsurface.h>
+#include <wax_softbackend.h>
+#include <wax_softsurface.h>
 
-namespace wg
+namespace wax
 {
 	class LinearBackend;
 	typedef	StrongPtr<LinearBackend>	LinearBackend_p;
@@ -64,7 +64,7 @@ namespace wg
 		//.____ Misc _____________________________________________________
 
 		bool		defineCanvas( CanvasRef ref, const SizeSPX size, PixelFormat pixelFormat, int scale = 64,
-								  ColorSpace colorSpace = ColorSpace::sRGB, bool bBigEndian = (WG_IS_BIG_ENDIAN == 1) );
+								  ColorSpace colorSpace = ColorSpace::sRGB, bool bBigEndian = (WAX_IS_BIG_ENDIAN == 1) );
 
 		const CanvasInfo *	canvasInfo(CanvasRef ref) const override;
 
@@ -134,6 +134,6 @@ namespace wg
 		int						m_segmentPadding = 0;
 	};
 
-} // namespace wg
-#endif	// WG_LINEARBACKEND_DOT_H
+} // namespace wax
+#endif	// WAX_LINEARBACKEND_DOT_H
 

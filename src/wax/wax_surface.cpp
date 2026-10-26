@@ -21,15 +21,15 @@
 =========================================================================*/
 #include <limits>
 #include <memory.h>
-#include <wg_surface.h>
-#include <wg_dataset.h>
-#include <wg_gfxutil.h>
-#include <wg_gfxbase.h>
-#include <wg_pixeltools.h>
+#include <wax_surface.h>
+#include <wax_dataset.h>
+#include <wax_gfxutil.h>
+#include <wax_core.h>
+#include <wax_pixeltools.h>
 
-namespace wg
+namespace wax
 {
-	using namespace Util;
+	using namespace GfxUtil;
 
 
 	const TypeInfo Surface::TYPEINFO = { "Surface", &Object::TYPEINFO };
@@ -274,7 +274,7 @@ namespace wg
 		bool bPushed = pSrcSurface->pushPixels(srcbuf);
 		if (!bPushed)
 		{
-			GfxBase::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "Failed to access pixels of source surface.",
+			Core::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "Failed to access pixels of source surface.",
 				this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			//TODO: Error handling.
 		}
@@ -283,8 +283,8 @@ namespace wg
 		
 		//
 		
-		auto srcDesc = Util::pixelFormatToDescription(srcbuf.format, srcbuf.bigEndian);
-		auto dstDesc = Util::pixelFormatToDescription(dstbuf.format, dstbuf.bigEndian);
+		auto srcDesc = GfxUtil::pixelFormatToDescription(srcbuf.format, srcbuf.bigEndian);
+		auto dstDesc = GfxUtil::pixelFormatToDescription(dstbuf.format, dstbuf.bigEndian);
 
 		bool retVal = PixelTools::copyPixels(srcbuf.rect.w, srcbuf.rect.h,
 											 srcbuf.pixels, srcDesc, srcbuf.colorSpace, srcbuf.pitch - PixelTools::bytesPerLine(srcDesc, srcbuf.rect.w),
@@ -306,11 +306,11 @@ namespace wg
 	Surface_p Surface::convert( const Surface::Blueprint& _bp, SurfaceFactory* pFactory)
 	{
 		if (!pFactory)
-			pFactory = GfxBase::defaultSurfaceFactory();
+			pFactory = Core::defaultSurfaceFactory();
 
 		if (!pFactory)
 		{
-			GfxBase::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No surface factory available for surface conversion.",
+			Core::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No surface factory available for surface conversion.",
 				this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return Surface_p();
 		}
@@ -367,7 +367,7 @@ namespace wg
 		if( bp.colorSpace < ColorSpace_min || bp.colorSpace > ColorSpace_max )
 			return false;
 
-		PixelDescription desc = Util::pixelFormatToDescription(format);
+		PixelDescription desc = GfxUtil::pixelFormatToDescription(format);
 		
 		
 		if( size.isEmpty() )
@@ -429,7 +429,7 @@ namespace wg
 		if( format == PixelFormat::Undefined )
 			format = m_pixelFormat;
 		
-		auto srcDesc = Util::pixelFormatToDescription(format);
+		auto srcDesc = GfxUtil::pixelFormatToDescription(format);
 		if( srcDesc.type == PixelType::Index || srcDesc.type == PixelType::Bitplanes )
 		{
 			if( pPalette == nullptr )
@@ -579,4 +579,4 @@ namespace wg
 	  */
 
 
-} // namespace wg
+} // namespace wax

@@ -22,7 +22,7 @@
 #include <assert.h>
 #include <wg_stackpanel.h>
 #include <wg_util.h>
-#include <wg_patches.h>
+#include <wax_patches.h>
 
 #include <wg_dynamicslotvector.impl.h>
 #include <wg_panel.impl.h>

@@ -3,12 +3,12 @@
 #include "softtint.h"
 
 #include <wondergui.h>
-#include <wg_gfxdevice_gen2.h>
-#include <wg_softbackend.h>
-#include <wg_softkernels_default.h>
-#include <wg_softsurface.h>
-#include <wg_softtint.h>
-#include <wg_tinttools.h>
+#include <wax_gfxdevice_gen2.h>
+#include <wax_softbackend.h>
+#include <wax_softkernels_default.h>
+#include <wax_softsurface.h>
+#include <wax_softtint.h>
+#include <wax_tinttools.h>
 
 #include <algorithm>
 #include <cmath>
@@ -555,7 +555,7 @@ bool SoftTintTest::tintedRenderingTest(std::ostream& output)
 
 				bool bOk = PixelTools::copyPixels(canvasSize.w, canvasSize.h, buffer.pixels, buffer.format, buffer.colorSpace, buffer.bigEndian, srcPitchAdd,
 												  buffer.palette, pCanvas->paletteSize(), pixels.data(), PixelFormat::ARGB_8, ColorSpace::sRGB,
-												  (WG_IS_BIG_ENDIAN == 1), 0, nullptr, dstPaletteEntries, 0);
+												  (WAX_IS_BIG_ENDIAN == 1), 0, nullptr, dstPaletteEntries, 0);
 				pCanvas->freePixelBuffer(buffer);
 				TEST_ASSERT(bOk);
 

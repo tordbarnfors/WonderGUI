@@ -20,7 +20,7 @@
 
 =========================================================================*/
 #include <wg_selectbox.h>
-#include <wg_gfxdevice.h>
+#include <wax_gfxdevice.h>
 #include <wg_util.h>
 #include <wg_msgrouter.h>
 #include <wg_base.h>

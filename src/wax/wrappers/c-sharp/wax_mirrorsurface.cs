@@ -1,7 +1,7 @@
 using System.Reflection.Metadata.Ecma335;
 using System.Runtime.InteropServices;
 
-namespace WG;
+namespace Wax;
 
 public class MirrorSurface : Surface
 {
@@ -29,7 +29,7 @@ public class MirrorSurface : Surface
         bp.surface = blueprint.Surface.CHandle();
         bp.streamOnCreate = blueprint.StreamOnCreate ? 1 : 0;
 
-		_obj = wg_createMirrorSurface(encoder.CHandle(), ref bp);
+		_obj = wax_createMirrorSurface(encoder.CHandle(), ref bp);
 	}
 
     [StructLayout(LayoutKind.Sequential)]
@@ -44,6 +44,6 @@ public class MirrorSurface : Surface
     //____ DLL functions ______________________________________________________
 
     [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-	private static extern IntPtr wg_createMirrorSurface(IntPtr streamEncoder, ref C_Blueprint blueprint);
+	private static extern IntPtr wax_createMirrorSurface(IntPtr streamEncoder, ref C_Blueprint blueprint);
 
 }

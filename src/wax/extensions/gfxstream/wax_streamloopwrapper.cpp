@@ -22,10 +22,10 @@
 #include <cstring>
 #include <algorithm>
 
-#include <wg_streamloopwrapper.h>
+#include <wax_streamloopwrapper.h>
 #include <assert.h>
 
-namespace wg
+namespace wax
 {
 
 	const TypeInfo StreamLoopWrapper::TYPEINFO = { "StreamLoopWrapper", &Object::TYPEINFO };
@@ -239,4 +239,4 @@ out:
 	}
 
 
-} // namespace wg
+} // namespace wax

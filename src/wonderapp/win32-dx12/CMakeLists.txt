@@ -28,7 +28,7 @@ set(SOURCES
 set(INCDIRS
 	${CMAKE_CURRENT_LIST_DIR}
 	${WONDERGUI_INCDIRS}
-	${WGFREETYPEFONT_INCDIRS}
+	${WAXFREETYPEFONT_INCDIRS}
 	${WGDEBUGGER_INCDIRS}
 	${PROJECT_SOURCE_DIR}/wonderapp/common
 	${PROJECT_SOURCE_DIR}/wonderapp/win32-common
@@ -54,8 +54,8 @@ target_link_directories(wappwin32dx12 PUBLIC
 )
 
 target_link_libraries(wappwin32dx12 PRIVATE
-    wgdx12gfx
-    wgfreetypefont
+    waxdx12gfx
+    waxfreetypefont
     wondergui
     wgdebugger
     ${FREETYPE2_LIB}

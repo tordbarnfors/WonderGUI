@@ -20,7 +20,7 @@
 
 =========================================================================*/
 #include <wg_blockslideskin.h>
-#include <wg_geo.h>
+#include <wax_geo.h>
 #include <wg_util.h>
 #include <wg_skin.impl.h>
 

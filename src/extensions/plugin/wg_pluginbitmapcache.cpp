@@ -36,7 +36,7 @@ namespace wg
 
 	//____ constructor ____________________________________________________________
 
-	PluginBitmapCache::PluginBitmapCache( wg_obj bitmapCache )
+	PluginBitmapCache::PluginBitmapCache( wax_obj bitmapCache )
 	{
 		m_cCache = bitmapCache;
 		PluginCalls::object->retain(bitmapCache);
@@ -49,9 +49,9 @@ namespace wg
 		{
 			// Reserve buffer, get surface objects
 
-			int mem = nbSurfaces * sizeof(wg_obj);
+			int mem = nbSurfaces * sizeof(wax_obj);
 
-			wg_obj * pSurfaces = (wg_obj*) Base::memStackAlloc(mem);
+			wax_obj * pSurfaces = (wax_obj*) Base::memStackAlloc(mem);
 			PluginCalls::bitmapCache->getCacheSurfaces(bitmapCache, nbSurfaces, pSurfaces);
 
 
@@ -80,7 +80,7 @@ namespace wg
 
 			for (int i = 0; i < nbSurfaces; i++)
 			{
-				wg_obj obj = pSurfaces[i];
+				wax_obj obj = pSurfaces[i];
 
 				int ofs = PluginCalls::surface->getSurfaceIdentity(obj) - 1;
 				m_surfaces[ofs] = PluginSurface::create(obj);
@@ -93,13 +93,13 @@ namespace wg
 
 		// Set up listener.
 
-		wg_cacheListenerBP	bp;
+		wax_cacheListenerBP	bp;
 
 
-		bp.addFunc = [](wg_obj surface, void* pData, int data) { ((PluginBitmapCache*)pData)->_surfaceAdded(surface); };
+		bp.addFunc = [](wax_obj surface, void* pData, int data) { ((PluginBitmapCache*)pData)->_surfaceAdded(surface); };
 		bp.addPtr = this;
 
-		bp.removeFunc = [](int nSurfaces, wg_obj* pSurfaces, void* pData, int data) { ((PluginBitmapCache*)pData)->_surfacesRemoved(nSurfaces, pSurfaces); };
+		bp.removeFunc = [](int nSurfaces, wax_obj* pSurfaces, void* pData, int data) { ((PluginBitmapCache*)pData)->_surfacesRemoved(nSurfaces, pSurfaces); };
 		bp.removePtr = this;
 
 		bp.clearFunc = [](void* pData, int data) { ((PluginBitmapCache*)pData)->_cleared(); };
@@ -199,7 +199,7 @@ namespace wg
 
 	//____ wrapperSurface() ___________________________________________________
 
-	PluginSurface* PluginBitmapCache::wrapperSurface(wg_obj surfaceObject)
+	PluginSurface* PluginBitmapCache::wrapperSurface(wax_obj surfaceObject)
 	{
 		int offset = PluginCalls::surface->getSurfaceIdentity(surfaceObject) -1;
 
@@ -210,7 +210,7 @@ namespace wg
 
 	//____ _surfaceAdded() ____________________________________________________
 
-	void PluginBitmapCache::_surfaceAdded(wg_obj surface)
+	void PluginBitmapCache::_surfaceAdded(wax_obj surface)
 	{
 		int ofs = PluginCalls::surface->getSurfaceIdentity(surface) - 1;
 		if (ofs < 0)
@@ -236,7 +236,7 @@ namespace wg
 
 	//____ _surfacesRemoved() _________________________________________________
 
-	void PluginBitmapCache::_surfacesRemoved(int nSurfaces, wg_obj* pSurfaces)
+	void PluginBitmapCache::_surfacesRemoved(int nSurfaces, wax_obj* pSurfaces)
 	{
 		for (int i = 0; i < nSurfaces; i++)
 		{

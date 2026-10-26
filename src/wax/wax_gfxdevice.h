@@ -19,31 +19,31 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef	WG_GFXDEVICE_DOT_H
-#define WG_GFXDEVICE_DOT_H
+#ifndef	WAX_GFXDEVICE_DOT_H
+#define WAX_GFXDEVICE_DOT_H
 #pragma once
 
 #include <climits>
 
-#include <wg_pointers.h>
-#include <wg_gfxtypes.h>
-#include <wg_color.h>
-#include <wg_edgemap.h>
-#include <wg_tint.h>
-#include <wg_blurbrush.h>
+#include <wax_pointers.h>
+#include <wax_types.h>
+#include <wax_color.h>
+#include <wax_edgemap.h>
+#include <wax_tint.h>
+#include <wax_blurbrush.h>
 
 
-#include <wg_geo.h>
-#include <wg_surface.h>
-#include <wg_surfacefactory.h>
-#include <wg_edgemapfactory.h>
-#include <wg_warpmap.h>
-#include <wg_warpmapfactory.h>
-#include <wg_canvaslayers.h>
+#include <wax_geo.h>
+#include <wax_surface.h>
+#include <wax_surfacefactory.h>
+#include <wax_edgemapfactory.h>
+#include <wax_warpmap.h>
+#include <wax_warpmapfactory.h>
+#include <wax_canvaslayers.h>
 
 #include <vector>
 
-namespace wg
+namespace wax
 {
 
 	class	Surface;
@@ -218,7 +218,7 @@ namespace wg
 	{
 		CanvasInfo() {};
 		CanvasInfo( CanvasRef _ref, Surface_p _pSurface, SizeI _size, PixelFormat _format, int _scale,
-					ColorSpace _colorSpace = ColorSpace::sRGB, bool _bigEndian = (WG_IS_BIG_ENDIAN == 1) ) :
+					ColorSpace _colorSpace = ColorSpace::sRGB, bool _bigEndian = (WAX_IS_BIG_ENDIAN == 1) ) :
 			ref(_ref),
 			pSurface(_pSurface),
 			size(_size),
@@ -234,7 +234,7 @@ namespace wg
 
 		PixelFormat	format = PixelFormat::Undefined;
 		ColorSpace	colorSpace = ColorSpace::sRGB;
-		bool		bigEndian = (WG_IS_BIG_ENDIAN == 1);
+		bool		bigEndian = (WAX_IS_BIG_ENDIAN == 1);
 	};
 
 
@@ -418,6 +418,6 @@ namespace wg
 
 
 
-} // namespace wg
-#endif	// WG_GFXDEVICE_DOT_H
+} // namespace wax
+#endif	// WAX_GFXDEVICE_DOT_H
 

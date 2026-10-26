@@ -1,9 +1,9 @@
-#include <wg_c_geartypes.h>
+#include <wax_c_types.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-	WG_EXPORT int	wg_addLinearTinySoftKernels( wg_obj backend );
+	WAX_EXPORT int	wax_addLinearTinySoftKernels( wax_obj backend );
 #ifdef __cplusplus
 }
 #endif

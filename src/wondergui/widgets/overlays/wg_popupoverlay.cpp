@@ -21,13 +21,13 @@
 =========================================================================*/
 #include <wg_popupoverlay.h>
 #include <wg_util.h>
-#include <wg_patches.h>
+#include <wax_patches.h>
 #include <wg_msgrouter.h>
 #include <wg_panel.h>
 #include <wg_base.h>
 #include <wg_inputhandler.h>
 #include <wg_staticslotvector.impl.h>
-#include <wg_gfxdevice.h>
+#include <wax_gfxdevice.h>
 
 #include <algorithm>
 

@@ -24,12 +24,12 @@
 #include <wg2_gfxdevice.h>
 #include <wg2_base.h>
 
-#include <wg_surface.h>
+#include <wax_surface.h>
 #include <wg2_geo.h>
 #include <wg2_blockset.h>
 #include <wg2_text.h>
 #include <wg2_cursorinstance.h>
-#include <wg_font.h>
+#include <wax_font.h>
 #include <wg2_gfxanim.h>
 #include <wg2_util.h>
 #include <wg2_pen.h>

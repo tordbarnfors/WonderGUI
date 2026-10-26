@@ -2,7 +2,7 @@
 
 #include <cmath>
 
-#include <wg_canvaslayers.h>
+#include <wax_canvaslayers.h>
 
 // Draws the same scene twice: directly onto the canvas (left half) and onto a transparent
 // layer that is then blended onto the canvas (right half). With correct alpha compositing

@@ -33,7 +33,7 @@ namespace wg
 
 	//____ constructor ________________________________________________________
 
-	PluginSurfaceFactory::PluginSurfaceFactory( wg_obj cFactory) : m_cFactory(cFactory)
+	PluginSurfaceFactory::PluginSurfaceFactory( wax_obj cFactory) : m_cFactory(cFactory)
 	{
 		/*
 		 TODO: Solve this in a more correct way:
@@ -73,7 +73,7 @@ namespace wg
 
 	SizeI PluginSurfaceFactory::maxSize() const
 	{			
-		wg_sizeI sz = PluginCalls::surfaceFactory->maxSurfaceSize(m_cFactory);
+		wax_sizeI sz = PluginCalls::surfaceFactory->maxSurfaceSize(m_cFactory);
 		return { sz.w, sz.h };
 	}
 
@@ -81,7 +81,7 @@ namespace wg
 
 	Surface_p PluginSurfaceFactory::createSurface(const Surface::Blueprint& blueprint)
 	{
-		wg_surfaceBP	bp;
+		wax_surfaceBP	bp;
 		_convertBlueprint(&bp, &blueprint);
 
 		auto obj = PluginCalls::surfaceFactory->createSurface(m_cFactory, &bp);
@@ -92,7 +92,7 @@ namespace wg
 
 	Surface_p PluginSurfaceFactory::createSurface(const Surface::Blueprint& blueprint, Blob * pBlob, int pitch )
 	{
-		wg_surfaceBP	bp;
+		wax_surfaceBP	bp;
 		_convertBlueprint(&bp, &blueprint);
 
 		auto obj = PluginCalls::surfaceFactory->createSurfaceFromBlob(m_cFactory, &bp, static_cast<Object*>(pBlob), pitch );
@@ -105,10 +105,10 @@ namespace wg
 	Surface_p PluginSurfaceFactory::createSurface(const Surface::Blueprint& blueprint, const uint8_t* pPixels,
 		PixelFormat format, int pitch, const Color8* pPalette, int paletteSize)
 	{
-		wg_surfaceBP	bp;
+		wax_surfaceBP	bp;
 		_convertBlueprint(&bp, &blueprint);
 
-		auto obj = PluginCalls::surfaceFactory->createSurfaceFromBitmap(m_cFactory, &bp, pPixels, wg_pixelFormat(format), pitch, (const wg_color8*) pPalette, paletteSize);
+		auto obj = PluginCalls::surfaceFactory->createSurfaceFromBitmap(m_cFactory, &bp, pPixels, wax_pixelFormat(format), pitch, (const wax_color8*) pPalette, paletteSize);
 		auto pSurf = PluginSurface::create(obj);
 		PluginCalls::object->release(obj);
 		return pSurf;
@@ -117,11 +117,11 @@ namespace wg
 	Surface_p PluginSurfaceFactory::createSurface(const Surface::Blueprint& blueprint, const uint8_t* pPixels,
 		const PixelDescription& pixelDescription, int pitch, const Color8* pPalette, int paletteSize)
 	{
-		wg_surfaceBP	bp;
+		wax_surfaceBP	bp;
 		_convertBlueprint(&bp, &blueprint);
 
 		auto obj = PluginCalls::surfaceFactory->createSurfaceFromRawData(m_cFactory, &bp, pPixels, 
-					(const wg_pixelDescription*) &pixelDescription, pitch, (const wg_color8*)pPalette, paletteSize);
+					(const wax_pixelDescription*) &pixelDescription, pitch, (const wax_color8*)pPalette, paletteSize);
 		auto pSurf = PluginSurface::create(obj);
 		PluginCalls::object->release(obj);
 		return pSurf;
@@ -129,20 +129,20 @@ namespace wg
 
 	//____ _convertBlueprint() ________________________________________________
 
-	void PluginSurfaceFactory::_convertBlueprint(wg_surfaceBP* pDest, const Surface::Blueprint* pSource)
+	void PluginSurfaceFactory::_convertBlueprint(wax_surfaceBP* pDest, const Surface::Blueprint* pSource)
 	{
-		pDest->byteOrder = pSource->bigEndian ? WG_BYTEORDER_BIG_ENDIAN : WG_BYTEORDER_LITTLE_ENDIAN;
+		pDest->byteOrder = pSource->bigEndian ? WAX_BYTEORDER_BIG_ENDIAN : WAX_BYTEORDER_LITTLE_ENDIAN;
 		pDest->buffered = pSource->buffered;
 		pDest->canvas = pSource->canvas;
-		pDest->colorSpace = (wg_colorSpace)pSource->colorSpace;
-		pDest->palette = (wg_color8*)pSource->palette;
+		pDest->colorSpace = (wax_colorSpace)pSource->colorSpace;
+		pDest->palette = (wax_color8*)pSource->palette;
 		pDest->paletteSize = pSource->paletteSize;
 		pDest->paletteCapacity = pSource->paletteCapacity;
 		pDest->dynamic = pSource->dynamic;
-		pDest->format = (wg_pixelFormat)pSource->format;
+		pDest->format = (wax_pixelFormat)pSource->format;
 		pDest->identity = pSource->identity;
 		pDest->mipmap = pSource->mipmap;
-		pDest->sampleMethod = (wg_sampleMethod)pSource->sampleMethod;
+		pDest->sampleMethod = (wax_sampleMethod)pSource->sampleMethod;
 		pDest->scale = pSource->scale;
 		pDest->size.w = pSource->size.w;
 		pDest->size.h = pSource->size.h;

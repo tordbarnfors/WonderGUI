@@ -19,15 +19,15 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef	WG_STREAMSPLITTER_DOT_H
-#define	WG_STREAMSPLITTER_DOT_H
+#ifndef	WAX_STREAMSPLITTER_DOT_H
+#define	WAX_STREAMSPLITTER_DOT_H
 #pragma once
 
-#include <wg_streamsink.h>
+#include <wax_streamsink.h>
 
 #include <vector>
 
-namespace wg
+namespace wax
 {
 
 	class StreamSplitter;
@@ -71,5 +71,5 @@ namespace wg
 	};
 
 
-} // namespace wg
-#endif //WG_STREAMSPLITTER_DOT_H
+} // namespace wax
+#endif //WAX_STREAMSPLITTER_DOT_H

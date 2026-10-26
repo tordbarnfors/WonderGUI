@@ -1,6 +1,6 @@
 #include "testsuite.h"
 
-#include <wg_tint.h>
+#include <wax_tint.h>
 
 // Rounded boxes drawn with GfxDevice::drawRoundedBox().
 

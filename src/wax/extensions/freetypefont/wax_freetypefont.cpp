@@ -27,10 +27,10 @@
 #include <algorithm>
 #include <assert.h>
 
-#include <wg_freetypefont.h>
-#include <wg_surface.h>
-#include <wg_surfacefactory.h>
-#include <wg_gfxutil.h>
+#include <wax_freetypefont.h>
+#include <wax_surface.h>
+#include <wax_surfacefactory.h>
+#include <wax_gfxutil.h>
 
 
 #include <ft2build.h>
@@ -45,9 +45,9 @@
 										// without stem darkening when gamma correction is enabled.
 #endif
 
-namespace wg
+namespace wax
 {
-	using namespace Util;
+	using namespace GfxUtil;
 
 	const TypeInfo FreeTypeFont::TYPEINFO = { "FreeTypeFont", &Font::TYPEINFO };
 
@@ -60,14 +60,14 @@ namespace wg
 
 	FreeTypeFont_p FreeTypeFont::create( Blob * pTTFBlob )
 	{
-		return FreeTypeFont_p( new FreeTypeFont(WGBP(FreeTypeFont, _.blob = pTTFBlob )) );
+		return FreeTypeFont_p( new FreeTypeFont(WAXBP(FreeTypeFont, _.blob = pTTFBlob )) );
 	}
 
 	FreeTypeFont_p FreeTypeFont::create( const Blueprint& blueprint )
 	{
 		if( !blueprint.blob )
 		{
-			GearBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Blueprint must contain a blob with the font", nullptr, &FreeTypeFont::TYPEINFO, __func__, __FILE__, __LINE__);
+			Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Blueprint must contain a blob with the font", nullptr, &FreeTypeFont::TYPEINFO, __func__, __FILE__, __LINE__);
 			return nullptr;
 		}
 
@@ -83,13 +83,13 @@ namespace wg
             FT_Error err = FT_Init_FreeType(&s_freeTypeLibrary);
             if (err != 0)
             {
-				GearBase::throwError(ErrorLevel::Critical, ErrorCode::Internal, "Failed to init FreeType", this, &FreeTypeFont::TYPEINFO, __func__, __FILE__, __LINE__);
+				Core::throwError(ErrorLevel::Critical, ErrorCode::Internal, "Failed to init FreeType", this, &FreeTypeFont::TYPEINFO, __func__, __FILE__, __LINE__);
             }
         }
         s_nInstances++;
 
 		m_pFontFile = bp.blob;
-		m_pCache 	=  bp.cache ? BitmapCache_p(bp.cache) : GfxBase::defaultBitmapCache();
+		m_pCache 	=  bp.cache ? BitmapCache_p(bp.cache) : Core::defaultBitmapCache();
 		m_size 			= 0;
 		m_xDPI		= bp.xDPI;
 		m_yDPI		= bp.yDPI;
@@ -103,7 +103,7 @@ namespace wg
 											&m_ftFace );
 		if( err )
 		{
-			GearBase::throwError(ErrorLevel::Critical, ErrorCode::InvalidParam, "FreeType failed to initialize font in blob", this, &FreeTypeFont::TYPEINFO, __func__, __FILE__, __LINE__);
+			Core::throwError(ErrorLevel::Critical, ErrorCode::InvalidParam, "FreeType failed to initialize font in blob", this, &FreeTypeFont::TYPEINFO, __func__, __FILE__, __LINE__);
 		}
 
 		m_renderMode = bp.renderMode;
@@ -475,7 +475,7 @@ namespace wg
 		err = FT_Load_Glyph( m_ftFace, pGlyph->kerningIndex, FT_LOAD_RENDER | FT_LOAD_COLOR | m_renderFlags );
 		if( err )
         {
-			GfxBase::throwError(ErrorLevel::Error, ErrorCode::Internal, "FreeType failed to load glyph for bitmap generation", this, &FreeTypeFont::TYPEINFO, __func__, __FILE__, __LINE__);
+			Core::throwError(ErrorLevel::Error, ErrorCode::Internal, "FreeType failed to load glyph for bitmap generation", this, &FreeTypeFont::TYPEINFO, __func__, __FILE__, __LINE__);
 			
             if( bDifferentSize )
                 FT_Set_Char_Size( m_ftFace, m_size, 0, 0,0 );
@@ -721,4 +721,4 @@ namespace wg
 	}
 */
 
-} // namespace wg
+} // namespace wax

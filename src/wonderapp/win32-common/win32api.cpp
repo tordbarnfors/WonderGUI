@@ -27,7 +27,7 @@
 #include <fstream>
 #include <iostream>
 
-#include <wg_freetypefont.h>
+#include <wax_freetypefont.h>
 
 
 #define STB_IMAGE_IMPLEMENTATION

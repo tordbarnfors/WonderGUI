@@ -2,7 +2,7 @@
 #include <vector>
 
 #include <wg_types.h>
-#include <wg_softformat.h>
+#include <wax_softformat.h>
 
 
 class KernelDB

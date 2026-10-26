@@ -1,6 +1,6 @@
 using System.Runtime.InteropServices;
 
-namespace WG;
+namespace Wax;
 
 
 public class SurfaceWriter : Objekt
@@ -53,7 +53,7 @@ public class SurfaceWriter : Objekt
 
 		bp.saveInfo = saveInfo;
 
-		_obj = wg_createSurfaceWriter(ref bp);
+		_obj = wax_createSurfaceWriter(ref bp);
 	}
 
 	//____ WriteSurfaceToBlob() _______________________________________________
@@ -62,7 +62,7 @@ public class SurfaceWriter : Objekt
 	{
 		int extraLength = extraData?.Length ?? 0;
 
-		IntPtr p = wg_writeSurfaceToBlob(_obj, surface.CHandle(), extraLength, extraData);
+		IntPtr p = wax_writeSurfaceToBlob(_obj, surface.CHandle(), extraLength, extraData);
 		return new Blob(p);
 	}
 
@@ -77,9 +77,9 @@ public class SurfaceWriter : Objekt
     //____ DLL functions ______________________________________________________
 
 	[DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-	private static extern IntPtr wg_createSurfaceWriter(ref C_Blueprint blueprint);
+	private static extern IntPtr wax_createSurfaceWriter(ref C_Blueprint blueprint);
 
 	[DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-	private static extern IntPtr wg_writeSurfaceToBlob(IntPtr surfaceWriter, IntPtr surface, int extraDataSize, byte[]? pExtraData);
+	private static extern IntPtr wax_writeSurfaceToBlob(IntPtr surfaceWriter, IntPtr surface, int extraDataSize, byte[]? pExtraData);
 
 }

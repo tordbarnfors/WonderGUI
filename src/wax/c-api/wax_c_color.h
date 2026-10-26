@@ -19,8 +19,8 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef WG_C_COLOR_DOT_H
-#define WG_C_COLOR_DOT_H
+#ifndef WAX_C_COLOR_DOT_H
+#define WAX_C_COLOR_DOT_H
 #pragma once
 
 #include <stdint.h>
@@ -29,9 +29,9 @@
 extern "C" {
 #endif
 
-	//____ wg_color ______________________________________________________________
+	//____ wax_color ______________________________________________________________
 
-	typedef struct wg_color_struct
+	typedef struct wax_color_struct
 	{
 		union
 		{
@@ -44,12 +44,12 @@ extern "C" {
 			};
 			int64_t argb;
 		};
-	} wg_color;
+	} wax_color;
 
 
-	//____ wg_color8 _____________________________________________________________
+	//____ wax_color8 _____________________________________________________________
 
-	typedef struct wg_color8_struct
+	typedef struct wax_color8_struct
 	{
 		union
 		{
@@ -62,7 +62,7 @@ extern "C" {
 			};
 			uint32_t argb;
 		};
-	} wg_color8;
+	} wax_color8;
 
 #ifdef __cplusplus
 }

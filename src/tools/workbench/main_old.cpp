@@ -13,8 +13,8 @@
 #include <wg_knob.h>
 #include <iostream>
 
-#include <wg_softsurface.h>
-#include <wg_softsurfacefactory.h>
+#include <wax_softsurface.h>
+#include <wax_softsurfacefactory.h>
 #include <wg_softgfxdevice.h>
 #include <sdl_wglib.h>
 
@@ -287,14 +287,14 @@ RootPanel_p setupGUI( const GfxDevice_p& pDevice )
 	// Main Flex
 
 	FlexPanel_p pFlex = FlexPanel::create();
-	pBottom->addWidget( pFlex, WG_NORTHWEST, CoordI(), WG_SOUTHEAST, CoordI(), Borders(10) );
+	pBottom->addWidget( pFlex, WAX_NORTHWEST, CoordI(), WAX_SOUTHEAST, CoordI(), Borders(10) );
 
 	// Background
 
 //	Image * pBackground = new Image();
 //	pBackground->SetSource( pBackBlock );
 //	FlexHook * pHook = pFlex->addWidget( pBackground );
-//	pHook->SetAnchored( WG_NORTHWEST, WG_SOUTHEAST );
+//	pHook->SetAnchored( WAX_NORTHWEST, WAX_SOUTHEAST );
 
 	BlockSkin_p pBgSkin = BlockSkin::create();
 	pBgSkin->setSurface(pBackImg);
@@ -308,7 +308,7 @@ RootPanel_p setupGUI( const GfxDevice_p& pDevice )
 /*
 	{
 		ShaderCapsule * pShader = new ShaderCapsule();
-		pShader->setBlendMode(WG_BLENDMODE_MULTIPLY);
+		pShader->setBlendMode(WAX_BLENDMODE_MULTIPLY);
 		pShader->setColor( Color(0xFF0000FF) );
 
 		StackPanel * pStack = new StackPanel();
@@ -318,11 +318,11 @@ RootPanel_p setupGUI( const GfxDevice_p& pDevice )
 		pStack->addWidget( pBg );
 
 		ShaderCapsule * pShader2 = new ShaderCapsule();
-		pShader2->setBlendMode(WG_BLENDMODE_ADD);
+		pShader2->setBlendMode(WAX_BLENDMODE_ADD);
 		pShader2->setColor( Color(0xFFFFFFFF) );
 		StackHook * pHook = pStack->addWidget( pShader2 );
 		pHook->setSizePolicy( StackHook::SCALE );
-		pHook->setOrigo( WG_CENTER );
+		pHook->setOrigo( WAX_CENTER );
 		pHook->SetBorders( Borders(2) );
 
 
@@ -387,8 +387,8 @@ RootPanel_p setupGUI( const GfxDevice_p& pDevice )
 
 		pList->header.setSkin( pDB->getSkin("plate") );
 		pList->header.label.set( "LABEL" );
-		pList->header.arrow.set( pDB->getSkin("sortarrow"), WG_EAST, Borders(0,0,0,2) );
-		pList->header.icon.set( pDB->getSkin("smiley"), WG_WEST, Borders(0,2,0,0) );
+		pList->header.arrow.set( pDB->getSkin("sortarrow"), WAX_EAST, Borders(0,0,0,2) );
+		pList->header.icon.set( pDB->getSkin("smiley"), WAX_WEST, Borders(0,2,0,0) );
 
 		pList->setSortFunction( sortWidgetId );
 
@@ -404,7 +404,7 @@ RootPanel_p setupGUI( const GfxDevice_p& pDevice )
 			char str[40];
 			sprintf( str, "ENTRY %d", id );
 			pLabel->text()->set( str );
-			pLabel->text()->setAlignment(WG_CENTER);
+			pLabel->text()->setAlignment(WAX_CENTER);
 			pLabel->text()->setWrap(true);
 			pLabel->setMarkOpacity(0);
 			pLabel->setId(id);
@@ -479,7 +479,7 @@ RootPanel_p setupGUI( const GfxDevice_p& pDevice )
 //		addResizablePanel( pFlex, pMenu, pEventHandler );
 		pMenu->grabFocus();
 
-//		pMenuPanel->OpenMenu( pMenu, RectI(10,10,100,10), WG_SOUTHWEST );
+//		pMenuPanel->OpenMenu( pMenu, RectI(10,10,100,10), WAX_SOUTHWEST );
 
 	}
 */
@@ -605,7 +605,7 @@ RootPanel_p setupGUI( const GfxDevice_p& pDevice )
 	Button * pButton = (Button*) pDB->cloneWidget( "button" );
 	pEventHandler->AddCallback( WgEventFilter::MouseButtonPress(pButton, 1), cbOpenModal, pModalButton );
 
-	FlexHook * pHook = pFlex->addWidget( pButton, RectI(0,0,100,100), WG_NORTHWEST );
+	FlexHook * pHook = pFlex->addWidget( pButton, RectI(0,0,100,100), WAX_NORTHWEST );
 */
 	//
 /*
@@ -613,7 +613,7 @@ RootPanel_p setupGUI( const GfxDevice_p& pDevice )
 	pFlag1->SetSource( pSplashBlock );
 	pEventHandler->AddCallback( WgEventFilter::MouseButtonPress(pFlag1, 1), cbInitDrag, pFlag1 );
 
-	FlexHook * pHook = pFlex->addWidget( pFlag1, CoordI(0,0), WG_CENTER );
+	FlexHook * pHook = pFlex->addWidget( pFlag1, CoordI(0,0), WAX_CENTER );
 
 
 
@@ -621,14 +621,14 @@ RootPanel_p setupGUI( const GfxDevice_p& pDevice )
 	pFlag2->SetSource( pFlagBlock );
 	pEventHandler->AddCallback( WgEventFilter::MouseButtonDrag(pFlag1, 1), cbDragWidget, pFlag1 );
 
-	pHook = pFlex->addWidget( pFlag2, CoordI(100,100), WG_CENTER );
+	pHook = pFlex->addWidget( pFlag2, CoordI(100,100), WAX_CENTER );
 
 	//
 */
 
 //	PackPanel_p pVBox = PackPanel::create();
 //	pVBox->setOrientation( WG_VERTICAL );
-//	pFlex->addWidget( pVBox, CoordI(50,50), WG_NORTHWEST );
+//	pFlex->addWidget( pVBox, CoordI(50,50), WAX_NORTHWEST );
 
 
 //	Image * pFlag3 = new Image();
@@ -647,7 +647,7 @@ RootPanel_p setupGUI( const GfxDevice_p& pDevice )
 //	SizeCapsule * pSizeCapsule = new SizeCapsule();
 //	pSizeCapsule->setMaxSize( SizeI(150,600) );
 //	pSizeCapsule->setWidget( pVBox );
-//	FlexHook * p = pFlex->addWidget( pVBox, CoordI(50,50), WG_NORTHWEST );
+//	FlexHook * p = pFlex->addWidget( pVBox, CoordI(50,50), WAX_NORTHWEST );
 //	p->setSizePolicy( WG_BOUND, WG_DEFAULT );
 //	p->setSize( SizeI(150,10 ) );
 
@@ -778,7 +778,7 @@ void cbDragWidget( const WgEventPtr& _pEvent, const Object_p& pObject )
 
 void cbOpenModal( const WgEventPtr& _pEvent, const Object_p& pWidget )
 {
-	g_pModal->addModalWidget( Widget::cast(pWidget), CoordI(), WG_SOUTHEAST );
+	g_pModal->addModalWidget( Widget::cast(pWidget), CoordI(), WAX_SOUTHEAST );
 }
 
 //____ cbCloseModal() __________________________________________________________

@@ -19,13 +19,13 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef	WG_METALSURFACEFACTORY_DOT_H
-#define	WG_METALSURFACEFACTORY_DOT_H
+#ifndef	WAX_METALSURFACEFACTORY_DOT_H
+#define	WAX_METALSURFACEFACTORY_DOT_H
 #pragma once
 
-#include <wg_surfacefactory.h>
+#include <wax_surfacefactory.h>
 
-namespace wg
+namespace wax
 {
 
 	class MetalSurfaceFactory;
@@ -72,5 +72,5 @@ namespace wg
 }
 
 
-#endif //WG_METALSURFACEFACTORY_DOT_H
+#endif //WAX_METALSURFACEFACTORY_DOT_H
 

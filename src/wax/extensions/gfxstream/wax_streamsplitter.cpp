@@ -22,10 +22,10 @@
 #include <cstring>
 #include <algorithm>
 
-#include <wg_streamsplitter.h>
+#include <wax_streamsplitter.h>
 #include <assert.h>
 
-namespace wg
+namespace wax
 {
 
 	const TypeInfo StreamSplitter::TYPEINFO = { "StreamSplitter", &Object::TYPEINFO };
@@ -98,4 +98,4 @@ namespace wg
 	}
 
 
-} // namespace wg
+} // namespace wax

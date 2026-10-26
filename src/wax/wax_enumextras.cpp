@@ -19,9 +19,9 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#include <wg_gfxenumextras.h>
+#include <wax_enumextras.h>
 
-namespace wg
+namespace wax
 {
 
 //. startAutoSection
@@ -32,6 +32,36 @@ namespace wg
 				Any modifications here will be overwritten!
 
 =========================================================================*/
+
+	const char * toString(ErrorLevel i)
+	{
+		static const char * names[] = { 
+			"Warning",
+			"SilentError",
+			"Error",
+			"Critical" };
+
+		return names[(int)i];
+	}
+
+	const char * toString(ErrorCode i)
+	{
+		static const char * names[] = { 
+			"OutOfRange",
+			"InvalidIterator",
+			"InvalidParam",
+			"FailedPrerequisite",
+			"OpenGL",
+			"Internal",
+			"SystemIntegrity",
+			"IllegalCall",
+			"ResourceExhausted",
+			"RenderFailure",
+			"Performance",
+			"Other" };
+
+		return names[(int)i];
+	}
 
 	const char * toString(TintMode i)
 	{
@@ -314,4 +344,4 @@ namespace wg
 
 
 
-}	//namespace wg
+}	//namespace wax

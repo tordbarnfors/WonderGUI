@@ -23,17 +23,21 @@
 #define WG_SKIN_DOT_H
 #pragma once
 
-#include <wg_pointers.h>
-#include <wg_geo.h>
+#include <wax_pointers.h>
+#include <wax_geo.h>
 #include <wg_types.h>
 #include <wg_state.h>
 #include <wg_util.h>
+
+namespace wax
+{
+	class GfxDevice;
+}
 
 namespace wg
 {
 
 	class Skin;
-	class GfxDevice;
 	class SkinSlot;
 
 	typedef	StrongPtr<Skin>	Skin_p;

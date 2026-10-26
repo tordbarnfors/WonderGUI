@@ -19,13 +19,13 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef WG_GLWARPMAPFACTORY_DOT_H
-#define	WG_GLWARPMAPFACTORY_DOT_H
+#ifndef WAX_GLWARPMAPFACTORY_DOT_H
+#define	WAX_GLWARPMAPFACTORY_DOT_H
 #pragma once
 
-#include <wg_warpmapfactory.h>
+#include <wax_warpmapfactory.h>
 
-namespace wg
+namespace wax
 {
 	class GlWarpmapFactory;
 	typedef	StrongPtr<GlWarpmapFactory>	GlWarpmapFactory_p;
@@ -56,5 +56,5 @@ namespace wg
 		virtual ~GlWarpmapFactory() {}
 	};
 
-} // namespace wg
-#endif // WG_GLWARPMAPFACTORY_DOT_H
+} // namespace wax
+#endif // WAX_GLWARPMAPFACTORY_DOT_H

@@ -31,7 +31,7 @@ namespace wg
 
 	//____ constructor ____________________________________________________________
 
-	PluginFont::PluginFont( wg_obj cFont ) : Font(nullptr), m_cFont(cFont)
+	PluginFont::PluginFont( wax_obj cFont ) : Font(nullptr), m_cFont(cFont)
 	{
 		PluginCalls::object->retain(cFont);
 	}
@@ -68,7 +68,7 @@ namespace wg
 
 	spx PluginFont::kerning( Glyph& leftGlyph, Glyph& rightGlyph )
 	{
-		wg_glyph	left, right;
+		wax_glyph	left, right;
 
 		left.advance = leftGlyph.advance;
 		left.kerningIndex = leftGlyph.kerningIndex;
@@ -151,7 +151,7 @@ namespace wg
 
 	void PluginFont::getGlyphWithoutBitmap(char32_t ch, Glyph& glyph)
 	{
-		wg_glyph	cGlyph;
+		wax_glyph	cGlyph;
 
 		PluginCalls::font->getGlyphWithoutBitmap(m_cFont, ch, &cGlyph);
 

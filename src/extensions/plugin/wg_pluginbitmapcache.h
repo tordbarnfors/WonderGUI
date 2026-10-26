@@ -23,9 +23,10 @@
 #define	WG_PLUGINBITMAPCACHE_DOT_H
 #pragma once
 
-#include <wg_bitmapcache.h>
+#include <wax_bitmapcache.h>
 #include <wg_pluginsurface.h>
-#include <wg_c_bitmapcache.h>
+#include <wax_c_bitmapcache.h>
+#include <wg_types.h>
 #include <wg_c_types.h>
 
 namespace wg
@@ -42,7 +43,7 @@ namespace wg
 	public:
 		//.____ Creation __________________________________________
 
-		static PluginBitmapCache_p	create(wg_obj bitmapCache);
+		static PluginBitmapCache_p	create(wax_obj bitmapCache);
 
 		//.____ Identification __________________________________________
 
@@ -66,20 +67,20 @@ namespace wg
 		std::tuple<Surface_p, CoordI> 	getCacheSlot(SizeI size);
 		std::vector<Surface_p>			getSurfaces() const;
 
-		PluginSurface *  wrapperSurface(wg_obj surfaceObject);
+		PluginSurface *  wrapperSurface(wax_obj surfaceObject);
 
 
 	protected:
-		PluginBitmapCache(wg_obj bitmapCache);
+		PluginBitmapCache(wax_obj bitmapCache);
 		virtual ~PluginBitmapCache();
 
-		void _surfaceAdded(wg_obj surface);
-		void _surfacesRemoved(int nSurfaces, wg_obj * pSurfaces);
+		void _surfaceAdded(wax_obj surface);
+		void _surfacesRemoved(int nSurfaces, wax_obj * pSurfaces);
 		void _cleared();
 
 
-		wg_obj				m_cCache;
-		wg_cacheListener	m_listenerId;
+		wax_obj				m_cCache;
+		wax_cacheListener	m_listenerId;
 
 
 		std::vector<BitmapCacheListener*>	m_listeners;	// List of alive listeners.

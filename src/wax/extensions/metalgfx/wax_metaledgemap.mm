@@ -20,13 +20,13 @@
 
 =========================================================================*/
 
-#include <wg_metaledgemap.h>
-#include <wg_metalbackend.h>
-#include <wg_tinttools.h>
+#include <wax_metaledgemap.h>
+#include <wax_metalbackend.h>
+#include <wax_tinttools.h>
 
 #include <cstring>
 
-namespace wg
+namespace wax
 {
 
 const TypeInfo MetalEdgemap::TYPEINFO = { "MetalEdgemap", &Edgemap::TYPEINFO };
@@ -273,5 +273,5 @@ void MetalEdgemap::_writeColors(int beginSegment, int endSegment)
 
 
 
-} // namespace wg
+} // namespace wax
 

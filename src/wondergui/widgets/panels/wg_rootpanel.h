@@ -25,10 +25,10 @@
 
 #include <wg_widget.h>
 #include <wg_slotholder.h>
-#include <wg_geo.h>
-#include <wg_patches.h>
+#include <wax_geo.h>
+#include <wax_patches.h>
 #include <wg_msgrouter.h>
-#include <wg_gfxdevice.h>
+#include <wax_gfxdevice.h>
 #include <wg_slot.h>
 #include <wg_root.h>
 

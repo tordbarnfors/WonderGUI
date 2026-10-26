@@ -19,11 +19,11 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#include <wg_backendlogger.h>
+#include <wax_backendlogger.h>
 #include <cstring>
-#include <wg_tinttools.h>
+#include <wax_tinttools.h>
 
-namespace wg
+namespace wax
 {
 	const TypeInfo BackendLogger::TYPEINFO = { "BackendLogger", &GfxBackend::TYPEINFO };
 
@@ -747,4 +747,4 @@ namespace wg
 
 
 
-} // namespace wg
+} // namespace wax

@@ -24,10 +24,11 @@
 #pragma once
 
 
-#include <wg_surface.h>
+#include <wax_surface.h>
+#include <wg_types.h>
 
-typedef void* wg_obj;
-typedef struct wg_surfaceBP_struct wg_surfaceBP;
+typedef void* wax_obj;
+typedef struct wax_surfaceBP_struct wax_surfaceBP;
 
 namespace wg
 {
@@ -46,7 +47,7 @@ namespace wg
 
 		//.____ Creation __________________________________________
 
-		static PluginSurface_p	create( wg_obj object );
+		static PluginSurface_p	create( wax_obj object );
 
 		//.____ Identification __________________________________________
 
@@ -81,13 +82,13 @@ namespace wg
 		int					addObserver(const std::function<void(int nRects, const RectI* pRects)>& func) override;
 		bool				removeObserver(int observerId) override;
 
-		inline wg_obj		cObject() { return m_cSurface; }
+		inline wax_obj		cObject() { return m_cSurface; }
 
 	private:
-		PluginSurface( wg_obj object );
+		PluginSurface( wax_obj object );
 		~PluginSurface();
 
-		wg_obj		m_cSurface;
+		wax_obj		m_cSurface;
 		int			m_cObserverId = 0;
 
 	};

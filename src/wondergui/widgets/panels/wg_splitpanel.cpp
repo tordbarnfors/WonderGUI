@@ -20,7 +20,7 @@
 
 =========================================================================*/
 #include <wg_splitpanel.h>
-#include <wg_patches.h>
+#include <wax_patches.h>
 #include <wg_msg.h>
 
 //TODO: Set opaque if there is no skin (or skin has no borders) and both children and the handle are opaque.

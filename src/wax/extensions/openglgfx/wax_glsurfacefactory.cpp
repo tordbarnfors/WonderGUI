@@ -21,13 +21,13 @@
 =========================================================================*/
 #include <memory.h>
 
-#include <wg_glsurface.h>
-#include <wg_glsurfacefactory.h>
-#include <wg_gfxutil.h>
+#include <wax_glsurface.h>
+#include <wax_glsurfacefactory.h>
+#include <wax_gfxutil.h>
 
 
 
-namespace wg
+namespace wax
 {
 
 	const TypeInfo GlSurfaceFactory::TYPEINFO = { "GlSurfaceFactory", &SurfaceFactory::TYPEINFO };
@@ -70,4 +70,4 @@ namespace wg
 		return GlSurface::create(blueprint, pPixels, pixelDescription, pitch, pPalette, paletteSize);
 	}
 
-} // namespace wg
+} // namespace wax

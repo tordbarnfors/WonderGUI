@@ -19,9 +19,9 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#include <wg_softwarpmap.h>
+#include <wax_softwarpmap.h>
 
-namespace wg
+namespace wax
 {
 	const TypeInfo SoftWarpmap::TYPEINFO = { "SoftWarpmap", &Warpmap::TYPEINFO };
 
@@ -53,4 +53,4 @@ namespace wg
 		return TYPEINFO;
 	}
 
-} // namespace wg
+} // namespace wax

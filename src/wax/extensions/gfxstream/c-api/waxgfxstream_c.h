@@ -23,20 +23,20 @@
 #define WONDERSTREAM_C_DOT_H
 #pragma once
 
-#include <wg_c_streambuffer.h>
-#include <wg_c_streamencoder.h>
-#include <wg_c_streamlogger.h>
-#include <wg_c_streamloopwrapper.h>
-#include <wg_c_streamplayer.h>
-#include <wg_c_streampump.h>
-#include <wg_c_streamreader.h>
-#include <wg_c_streamsink.h>
-#include <wg_c_streamsource.h>
-#include <wg_c_streamgfx.h>
-#include <wg_c_streamsplitter.h>
-#include <wg_c_streamtrimbackend.h>
-#include <wg_c_streamwrapper.h>
-#include <wg_c_streamwriter.h>
+#include <wax_c_streambuffer.h>
+#include <wax_c_streamencoder.h>
+#include <wax_c_streamlogger.h>
+#include <wax_c_streamloopwrapper.h>
+#include <wax_c_streamplayer.h>
+#include <wax_c_streampump.h>
+#include <wax_c_streamreader.h>
+#include <wax_c_streamsink.h>
+#include <wax_c_streamsource.h>
+#include <wax_c_streamgfx.h>
+#include <wax_c_streamsplitter.h>
+#include <wax_c_streamtrimbackend.h>
+#include <wax_c_streamwrapper.h>
+#include <wax_c_streamwriter.h>
 
 
 

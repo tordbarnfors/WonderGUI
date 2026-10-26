@@ -19,25 +19,25 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef WG_C_STREAMLOOPWRAPPER_DOT_H
-#define WG_C_STREAMLOOPWRAPPER_DOT_H
+#ifndef WAX_C_STREAMLOOPWRAPPER_DOT_H
+#define WAX_C_STREAMLOOPWRAPPER_DOT_H
 #pragma once
 
-#include <wg_c_gfxtypes.h>
-#include <wg_c_geo.h>
+#include <wax_c_types.h>
+#include <wax_c_geo.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-	typedef	const void *(*wg_getWritePtr_func)(void);
-	typedef	void(*wg_setReadPtr_func)(const void * pReadPos);
+	typedef	const void *(*wax_getWritePtr_func)(void);
+	typedef	void(*wax_setReadPtr_func)(const void * pReadPos);
 
-	WG_EXPORT wg_obj		wg_createStreamLoopWrapper(const void * pBufferBegin, const void * pBufferEnd,
-											   wg_getWritePtr_func getWritePtrFunc,
-											   wg_setReadPtr_func setReadPtrFunc);
+	WAX_EXPORT wax_obj		wax_createStreamLoopWrapper(const void * pBufferBegin, const void * pBufferEnd,
+											   wax_getWritePtr_func getWritePtrFunc,
+											   wax_setReadPtr_func setReadPtrFunc);
 
-	WG_EXPORT wg_component	wg_getStreamLoopWrapperOutput(wg_obj loopWrapper);
+	WAX_EXPORT wax_component	wax_getStreamLoopWrapperOutput(wax_obj loopWrapper);
 
 
 #ifdef __cplusplus

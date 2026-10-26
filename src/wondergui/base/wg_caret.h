@@ -23,13 +23,18 @@
 #define WG_CARET_DOT_H
 #pragma once
 
-#include <wg_geo.h>
-#include <wg_pointers.h>
+#include <wax_geo.h>
+#include <wax_pointers.h>
+#include <wg_types.h>
+
+namespace wax
+{
+	class GfxDevice;
+}
 
 namespace wg
 {
 
-	class GfxDevice;
 
 	class Caret;
 	typedef	StrongPtr<Caret>		Caret_p;

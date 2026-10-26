@@ -4,7 +4,7 @@
 #include <wonderapp.h>
 
 #include <wondergui.h>
-#include <wg_freetypefont.h>
+#include <wax_freetypefont.h>
 
 #include <initializer_list>
 #include <string>

@@ -30,14 +30,14 @@ namespace wg
 
 	//____ create ______________________________________________________________
 
-	PluginEdgemap_p PluginEdgemap::create( wg_obj object)
+	PluginEdgemap_p PluginEdgemap::create( wax_obj object)
 	{
 		return PluginEdgemap_p(new PluginEdgemap(object));
 	}
 
 	//____ constructor _____________________________________________________________
 
-	PluginEdgemap::PluginEdgemap(wg_obj object)
+	PluginEdgemap::PluginEdgemap(wax_obj object)
 	{
 		PluginCalls::object->retain(object);
 
@@ -45,7 +45,7 @@ namespace wg
 
 		// We have initialized with an empty Blueprint. Now lets set correct values.
 
-		wg_sizeI pixSize	= PluginCalls::edgemap->edgemapPixelSize(object);
+		wax_sizeI pixSize	= PluginCalls::edgemap->edgemapPixelSize(object);
 		m_size				= *(SizeI*)&pixSize;
 		m_bTiling			= PluginCalls::edgemap->edgemapIsTiling(object) != 0;
 		m_nbSegments		= PluginCalls::edgemap->edgemapSegments(object);
@@ -57,7 +57,7 @@ namespace wg
 		m_pFlatColors		= (HiColor*) m_pBuffer;
 		m_pTints			= new Tint_p[m_nbSegments];
 
-		const wg_color * pFlatColors = PluginCalls::edgemap->edgemapFlatColors(object);
+		const wax_color * pFlatColors = PluginCalls::edgemap->edgemapFlatColors(object);
 
 		for( int i = 0 ; i < m_nbSegments ; i++ )
 		{
@@ -102,7 +102,7 @@ namespace wg
 		if( !Edgemap::setColors(begin, end, pColors) )
 			return false;
 
-		return (bool) PluginCalls::edgemap->setEdgemapColors( m_cEdgemap, begin, end, reinterpret_cast<const wg_color *>(pColors));
+		return (bool) PluginCalls::edgemap->setEdgemapColors( m_cEdgemap, begin, end, reinterpret_cast<const wax_color *>(pColors));
 	}
 
 	bool PluginEdgemap::setColors( int begin, int end, const Tint_p * pTints )
@@ -112,7 +112,7 @@ namespace wg
 
 		// Host copies of the tints, released once the host has its own references.
 
-		wg_obj	hostTints[Edgemap::maxSegments];
+		wax_obj	hostTints[Edgemap::maxSegments];
 
 		for( int i = begin ; i < end ; i++ )
 			hostTints[i-begin] = PluginCalls::_hostTint( pTints[i-begin] );
@@ -142,7 +142,7 @@ namespace wg
 	void  PluginEdgemap::_importSamples(SampleOrigo origo, const spx* pSource, int edgeBegin, int edgeEnd,
 								   int sampleBegin, int sampleEnd, int edgePitch, int samplePitch)
 	{
-		PluginCalls::edgemap->importSpxSamples(m_cEdgemap, (wg_sampleOrigo) origo, (const wg_spx*) pSource, edgeBegin, edgeEnd,
+		PluginCalls::edgemap->importSpxSamples(m_cEdgemap, (wax_sampleOrigo) origo, (const wax_spx*) pSource, edgeBegin, edgeEnd,
 			sampleBegin, sampleEnd, edgePitch, samplePitch);
 
 	}
@@ -150,7 +150,7 @@ namespace wg
 	void  PluginEdgemap::_importSamples(SampleOrigo origo, const float* pSource, int edgeBegin, int edgeEnd,
 								   int sampleBegin, int sampleEnd, int edgePitch, int samplePitch)
 	{
-		PluginCalls::edgemap->importFloatSamples(m_cEdgemap, (wg_sampleOrigo) origo, pSource, edgeBegin, edgeEnd,
+		PluginCalls::edgemap->importFloatSamples(m_cEdgemap, (wax_sampleOrigo) origo, pSource, edgeBegin, edgeEnd,
 			sampleBegin, sampleEnd, edgePitch, samplePitch);
 	}
 

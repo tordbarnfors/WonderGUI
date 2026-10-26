@@ -19,42 +19,42 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#include <wg_c_blurbrush.h>
-#include <wg_blurbrush.h>
+#include <wax_c_blurbrush.h>
+#include <wax_blurbrush.h>
 
 #include <type_traits>
 
 
-using namespace wg;
+using namespace wax;
 
 
-inline Blurbrush* getPtr(wg_obj obj) {
+inline Blurbrush* getPtr(wax_obj obj) {
 	return static_cast<Blurbrush*>(reinterpret_cast<Object*>(obj));
 }
 
-wg_obj wg_createBlurbrush( wg_blurbrushBP _bp )
+wax_obj wax_createBlurbrush( wax_blurbrushBP _bp )
 {	
-	auto pBlurbrush = Blurbrush::create( WGBP(Blurbrush, _.size = _bp.size, _.blue = _bp.blue, _.green = _bp.green, _.red = _bp.red) );
+	auto pBlurbrush = Blurbrush::create( WAXBP(Blurbrush, _.size = _bp.size, _.blue = _bp.blue, _.green = _bp.green, _.red = _bp.red) );
 	pBlurbrush->retain();
 	return static_cast<Object*>(pBlurbrush);
 }
 
-wg_spx wg_blurbrushSize( wg_obj blurbrush )
+wax_spx wax_blurbrushSize( wax_obj blurbrush )
 {
 	return getPtr(blurbrush)->size();
 }
 
-const float* wg_blurbrushBlue( wg_obj blurbrush )
+const float* wax_blurbrushBlue( wax_obj blurbrush )
 {
 	return getPtr(blurbrush)->blue();
 }
 
-const float* wg_blurbrushGreen( wg_obj blurbrush )
+const float* wax_blurbrushGreen( wax_obj blurbrush )
 {
 	return getPtr(blurbrush)->green();
 }
 
-const float* wg_blurbrushRed( wg_obj blurbrush )
+const float* wax_blurbrushRed( wax_obj blurbrush )
 {
 	return getPtr(blurbrush)->red();
 }

@@ -19,19 +19,19 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef	WG_SOFTSHAPES_DOT_H
-#define	WG_SOFTSHAPES_DOT_H
+#ifndef	WAX_SOFTSHAPES_DOT_H
+#define	WAX_SOFTSHAPES_DOT_H
 #pragma once
 
-#include <wg_geo.h>
-#include <wg_gfxtypes.h>
-#include <wg_gfxdevice.h>
+#include <wax_geo.h>
+#include <wax_types.h>
+#include <wax_gfxdevice.h>
 
 #include <cstdint>
 #include <memory>
 #include <vector>
 
-namespace wg
+namespace wax
 {
 	//____ SoftShapes _________________________________________________________
 	/**
@@ -152,7 +152,7 @@ namespace wg
 		struct RoundedBox
 		{
 			RectSPX		rect;							// Outer edge, the outline lies inside.
-			spx			radius[4] = { 0, 0, 0, 0 };		// Top-left, top-right, bottom-right, bottom-left. Clamped as by Util::clampCornerRadii().
+			spx			radius[4] = { 0, 0, 0, 0 };		// Top-left, top-right, bottom-right, bottom-left. Clamped as by GfxUtil::clampCornerRadii().
 			BorderSPX	outline;						// Thickness of outline along each side.
 		};
 
@@ -499,4 +499,4 @@ namespace wg
 
 }
 
-#endif //WG_SOFTSHAPES_DOT_H
+#endif //WAX_SOFTSHAPES_DOT_H

@@ -19,13 +19,13 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef	WG_SOFTFORMAT_DOT_H
-#define	WG_SOFTFORMAT_DOT_H
+#ifndef	WAX_SOFTFORMAT_DOT_H
+#define	WAX_SOFTFORMAT_DOT_H
 #pragma once
 
-#include <wg_gfxtypes.h>
+#include <wax_types.h>
 
-namespace wg
+namespace wax
 {
 	//____ SoftFormat _________________________________________________________
 	/**
@@ -124,7 +124,7 @@ namespace wg
 
 		// Byte order differs from the one of the system, so 16 and 32-bit loads and stores need to be swapped.
 
-		constexpr bool			needsSwap(SoftFormat f) { return c_entries[int(f)].bigEndian != (WG_IS_BIG_ENDIAN == 1); }
+		constexpr bool			needsSwap(SoftFormat f) { return c_entries[int(f)].bigEndian != (WAX_IS_BIG_ENDIAN == 1); }
 
 		// Channels are kept linear in 8 bits. Blending them directly is blending in linear space.
 		// True for alpha only, since alpha always is linear. Not true for the HiColor buffer (Undefined).
@@ -177,4 +177,4 @@ namespace wg
 	inline const char * toString(SoftFormat f) { return SoftFormatInfo::toString(f); }
 }
 
-#endif //WG_SOFTFORMAT_DOT_H
+#endif //WAX_SOFTFORMAT_DOT_H

@@ -19,8 +19,8 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef WG_C_GEO_DOT_H
-#define WG_C_GEO_DOT_H
+#ifndef WAX_C_GEO_DOT_H
+#define WAX_C_GEO_DOT_H
 #pragma once
 
 #include <stdint.h>
@@ -30,92 +30,92 @@ extern "C" {
 #endif
 
 
-	typedef int		wg_spx;
-	typedef float	wg_pts;
+	typedef int		wax_spx;
+	typedef float	wax_pts;
 
 
 	typedef struct
 	{
 		int	x, y;
-	} wg_coordI;
+	} wax_coordI;
 
 	typedef struct
 	{
 		float	x, y;
-	} wg_coordF;
+	} wax_coordF;
 
 	typedef struct
 	{
-		wg_pts	x, y;
-	} wg_coord;
+		wax_pts	x, y;
+	} wax_coord;
 
 	typedef struct
 	{
-		wg_spx	x, y;
-	} wg_coordSPX;
+		wax_spx	x, y;
+	} wax_coordSPX;
 
 
 	typedef struct
 	{
 		int	w, h;
-	} wg_sizeI;
+	} wax_sizeI;
 
 	typedef struct
 	{
 		float	w, h;
-	} wg_sizeF;
+	} wax_sizeF;
 
 	typedef struct
 	{
-		wg_pts	w, h;
-	} wg_size;
+		wax_pts	w, h;
+	} wax_size;
 
 	typedef struct
 	{
-		wg_spx	w, h;
-	} wg_sizeSPX;
+		wax_spx	w, h;
+	} wax_sizeSPX;
 
 
 	typedef struct
 	{
 		int	top, right, bottom, left;
-	} wg_borderI;
+	} wax_borderI;
 
 	typedef struct
 	{
 		float	top, right, bottom, left;
-	} wg_borderF;
+	} wax_borderF;
 
 	typedef struct
 	{
-		wg_pts	top, right, bottom, left;
-	} wg_border;
+		wax_pts	top, right, bottom, left;
+	} wax_border;
 
 	typedef struct
 	{
-		wg_spx	top, right, bottom, left;
-	} wg_borderSPX;
+		wax_spx	top, right, bottom, left;
+	} wax_borderSPX;
 
 
 	typedef struct
 	{
 		int	x, y, w, h;
-	} wg_rectI;
+	} wax_rectI;
 
 	typedef struct
 	{
 		float	x, y, w, h;
-	} wg_rectF;
+	} wax_rectF;
 
 	typedef struct
 	{
-		wg_pts	x, y, w, h;
-	} wg_rect;
+		wax_pts	x, y, w, h;
+	} wax_rect;
 
 	typedef struct
 	{
-		wg_spx	x, y, w, h;
-	} wg_rectSPX;
+		wax_spx	x, y, w, h;
+	} wax_rectSPX;
 
 #ifdef __cplusplus
 }

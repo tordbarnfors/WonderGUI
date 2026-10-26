@@ -23,8 +23,8 @@
 #define WG_NUMBERLAYOUT_DOT_H
 #pragma once
 
-#include <wg_object.h>
-#include <wg_pointers.h>
+#include <wax_object.h>
+#include <wax_pointers.h>
 #include <wg_string.h>
 
 namespace wg

@@ -24,18 +24,18 @@
 #include <cmath>
 #include <cstring>
 
-#include <wg_gfxdevice_gen2.h>
-#include <wg_tinttools.h>
-#include <wg_geo.h>
-#include <wg_gfxutil.h>
-#include <wg_gfxbase.h>
+#include <wax_gfxdevice_gen2.h>
+#include <wax_tinttools.h>
+#include <wax_geo.h>
+#include <wax_gfxutil.h>
+#include <wax_core.h>
 
-#include <wg_waveform.h>
+#include <wax_waveform.h>
 
 using namespace std;
-using namespace wg::Util;
+using namespace wax::GfxUtil;
 
-namespace wg
+namespace wax
 {
 
 	const TypeInfo GfxDeviceGen2::TYPEINFO = { "GfxDeviceGen2", &GfxDevice::TYPEINFO };
@@ -105,7 +105,7 @@ bool GfxDeviceGen2::setBackend( GfxBackend * pBackend )
 {
 	if( m_bRendering )
 	{
-		GfxBase::throwError(ErrorLevel::Error, ErrorCode::IllegalCall, "Cannot change backend while rendering.",
+		Core::throwError(ErrorLevel::Error, ErrorCode::IllegalCall, "Cannot change backend while rendering.",
 			this, &TYPEINFO, __func__, __FILE__, __LINE__);
 		return  false;
 	}
@@ -194,7 +194,7 @@ bool GfxDeviceGen2::setClipList(int nRectangles, const RectSPX* pRectangles)
 
 		if (!m_pActiveCanvas->updateRects.bounds.contains(bounds) )
 		{
-			GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "ClipList contains rectangels outside canvas update rectangles. ClipList not set.",
+			Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "ClipList contains rectangels outside canvas update rectangles. ClipList not set.",
 				this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return false;
 		}
@@ -237,7 +237,7 @@ bool GfxDeviceGen2::pushClipList(int nRectangles, const RectSPX* pRectangles)
 {
 	if (!m_pActiveCanvas)
 	{
-		GfxBase::throwError(ErrorLevel::Error, ErrorCode::IllegalCall, "No active canvas. Cannot push clip list.",
+		Core::throwError(ErrorLevel::Error, ErrorCode::IllegalCall, "No active canvas. Cannot push clip list.",
 			this, &TYPEINFO, __func__, __FILE__, __LINE__);
 		return false;
 	}
@@ -254,7 +254,7 @@ bool GfxDeviceGen2::pushClipList(int nRectangles, const RectSPX* pRectangles)
 
 		if (!m_pActiveCanvas->updateRects.bounds.contains(bounds))
 		{
-			GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "ClipList contains rectangels outside canvas update rectangles. ClipList not set.",
+			Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "ClipList contains rectangels outside canvas update rectangles. ClipList not set.",
 				this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return false;
 		}
@@ -281,7 +281,7 @@ bool GfxDeviceGen2::popClipList()
 {
 	if (!m_pActiveCanvas)
 	{
-		GfxBase::throwError(ErrorLevel::Error, ErrorCode::IllegalCall, "No active canvas. Cannot pop clip list.",
+		Core::throwError(ErrorLevel::Error, ErrorCode::IllegalCall, "No active canvas. Cannot pop clip list.",
 			this, &TYPEINFO, __func__, __FILE__, __LINE__);
 
 		return false;
@@ -289,7 +289,7 @@ bool GfxDeviceGen2::popClipList()
 
 	if (m_pActiveCanvas->clipListStack.size() == 1)
 	{
-		GfxBase::throwError(ErrorLevel::Error, ErrorCode::IllegalCall, "Clip list stack underflow. Cannot pop clip list.",
+		Core::throwError(ErrorLevel::Error, ErrorCode::IllegalCall, "Clip list stack underflow. Cannot pop clip list.",
 			this, &TYPEINFO, __func__, __FILE__, __LINE__);
 
 		return false;
@@ -348,7 +348,7 @@ void GfxDeviceGen2::setTintColor(HiColor color)
 
 	if( !color.isValid() && color != HiColor::Undefined )
 	{
-		GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Invalid tint color.",
+		Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Invalid tint color.",
 			this, &TYPEINFO, __func__, __FILE__, __LINE__);
 #ifdef NDEBUG
 		return;
@@ -479,7 +479,7 @@ bool GfxDeviceGen2::setBlitSource(Surface* pSource)
 {
 	if (pSource && !m_pBackend->canBeBlitSource(pSource->typeInfo()))
 	{
-		GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Surface can not be used as blit source.",
+		Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Surface can not be used as blit source.",
 			this, &TYPEINFO, __func__, __FILE__, __LINE__);
 
 		return false;
@@ -561,14 +561,14 @@ void GfxDeviceGen2::setRenderLayer(int layer)
 {
 	if (!m_pActiveCanvas)
 	{
-		GfxBase::throwError(ErrorLevel::Error, ErrorCode::IllegalCall, "No active canvas. Cannot set render layer.",
+		Core::throwError(ErrorLevel::Error, ErrorCode::IllegalCall, "No active canvas. Cannot set render layer.",
 			this, &TYPEINFO, __func__, __FILE__, __LINE__);
 		return;
 	}
 
 	if (layer < 0 || layer >= int(m_pActiveCanvas->layers.size()))
 	{
-		GfxBase::throwError(ErrorLevel::SilentError, ErrorCode::InvalidParam, "Specified layer out of bounds.",
+		Core::throwError(ErrorLevel::SilentError, ErrorCode::InvalidParam, "Specified layer out of bounds.",
 			this, &TYPEINFO, __func__, __FILE__, __LINE__);
 		return;
 	}
@@ -592,7 +592,7 @@ int GfxDeviceGen2::renderLayer() const
 {
 	if (!m_pActiveCanvas)
 	{
-		GfxBase::throwError(ErrorLevel::Error, ErrorCode::IllegalCall, "No active canvas. Cannot get render layer.",
+		Core::throwError(ErrorLevel::Error, ErrorCode::IllegalCall, "No active canvas. Cannot get render layer.",
 			this, &TYPEINFO, __func__, __FILE__, __LINE__);
 		return 0;
 	}
@@ -615,14 +615,14 @@ bool GfxDeviceGen2::beginRender()
 {
 	if (m_bRendering)
 	{
-		GfxBase::throwError(ErrorLevel::Error, ErrorCode::IllegalCall, "Already in rendering state.",
+		Core::throwError(ErrorLevel::Error, ErrorCode::IllegalCall, "Already in rendering state.",
 			this, &TYPEINFO, __func__, __FILE__, __LINE__);
 		return false;
 	}
 
 	if( !m_pBackend )
 	{
-		GfxBase::throwError(ErrorLevel::Error, ErrorCode::IllegalCall, "No backend assigned.",
+		Core::throwError(ErrorLevel::Error, ErrorCode::IllegalCall, "No backend assigned.",
 			this, &TYPEINFO, __func__, __FILE__, __LINE__);
 		return false;
 	}
@@ -638,7 +638,7 @@ bool GfxDeviceGen2::endRender()
 {
 	if (!m_bRendering)
 	{
-		GfxBase::throwError(ErrorLevel::Error, ErrorCode::IllegalCall, "Not in rendering state.",
+		Core::throwError(ErrorLevel::Error, ErrorCode::IllegalCall, "Not in rendering state.",
 			this, &TYPEINFO, __func__, __FILE__, __LINE__);
 		return false;
 	}
@@ -648,7 +648,7 @@ bool GfxDeviceGen2::endRender()
 
 	if (!m_canvasStack.empty())
 	{
-		GfxBase::throwError(ErrorLevel::Error, ErrorCode::IllegalCall, "Rendering ended with active canvas updates.",
+		Core::throwError(ErrorLevel::Error, ErrorCode::IllegalCall, "Rendering ended with active canvas updates.",
 			this, &TYPEINFO, __func__, __FILE__, __LINE__);
 		return false;
 	}
@@ -685,7 +685,7 @@ bool GfxDeviceGen2::_beginCanvasUpdate(CanvasRef ref, Surface* pCanvas, int nUpd
 
 	if (ref == CanvasRef::None && pCanvas == nullptr)
 	{
-		GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Either CanvasRef or Surface must be specified.",
+		Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Either CanvasRef or Surface must be specified.",
 			this, &TYPEINFO, __func__, __FILE__, __LINE__);
 
 		return false;
@@ -693,7 +693,7 @@ bool GfxDeviceGen2::_beginCanvasUpdate(CanvasRef ref, Surface* pCanvas, int nUpd
 
 	if (pCanvas && (!m_pBackend->canBeCanvas(pCanvas->typeInfo()) || !pCanvas->canBeCanvas()))
 	{
-		GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Surface can not be used as canvas.",
+		Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Surface can not be used as canvas.",
 			this, &TYPEINFO, __func__, __FILE__, __LINE__);
 
 		return false;
@@ -704,7 +704,7 @@ bool GfxDeviceGen2::_beginCanvasUpdate(CanvasRef ref, Surface* pCanvas, int nUpd
 
 	if (startLayer != -1 && (startLayer < 0 || startLayer > (pLayers ? pLayers->size() : 0)))
 	{
-		GfxBase::throwError(ErrorLevel::SilentError, ErrorCode::InvalidParam, "Start layer out of bounds, using default instead.",
+		Core::throwError(ErrorLevel::SilentError, ErrorCode::InvalidParam, "Start layer out of bounds, using default instead.",
 			this, &TYPEINFO, __func__, __FILE__, __LINE__);
 
 		startLayer = -1;
@@ -804,7 +804,7 @@ bool GfxDeviceGen2::_beginCanvasUpdate(CanvasRef ref, Surface* pCanvas, int nUpd
 		{
 			// Create our layer canvas
 
-			layer.pLayerCanvas = m_pBackend->surfaceFactory()->createSurface(WGBP(Surface,
+			layer.pLayerCanvas = m_pBackend->surfaceFactory()->createSurface(WAXBP(Surface,
 				_.size = entry.info.size / 64,
 				_.format = info.format,
 				_.colorSpace = info.colorSpace == ColorSpace::Undefined ? entry.info.colorSpace : info.colorSpace,
@@ -856,7 +856,7 @@ void GfxDeviceGen2::endCanvasUpdate()
 {
 	if (m_canvasStack.empty())
 	{
-		GfxBase::throwError(ErrorLevel::Error, ErrorCode::IllegalCall, "No active canvas to end.",
+		Core::throwError(ErrorLevel::Error, ErrorCode::IllegalCall, "No active canvas to end.",
 			this, &TYPEINFO, __func__, __FILE__, __LINE__);
 		
 		return;
@@ -1241,14 +1241,14 @@ void GfxDeviceGen2::_doFlattenLayers()
 		auto pSpxRects = canvasData.updateRects.pRects;
 
 		int bufferSize = nRects * sizeof(RectI);
-		auto pPixelRects = (RectI*) GfxBase::memStackAlloc( bufferSize );
+		auto pPixelRects = (RectI*) Core::memStackAlloc( bufferSize );
 
 		for( int i = 0 ; i < nRects ; i++ )
 			pPixelRects[i] = pSpxRects[i]/64;
 
 		pUpdatedSurf->notifyObservers(nRects, pPixelRects);
 
-		GfxBase::memStackFree( bufferSize );
+		Core::memStackFree( bufferSize );
 	}
 
 	// Release objects
@@ -1269,7 +1269,7 @@ void GfxDeviceGen2::fill(HiColor color)
 {
 	if (!m_pActiveCanvas)
 	{
-		GfxBase::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No active canvas to fill.",
+		Core::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No active canvas to fill.",
 			this, &TYPEINFO, __func__, __FILE__, __LINE__);
 
 		return;
@@ -1318,7 +1318,7 @@ void GfxDeviceGen2::fill(const RectSPX& rect, HiColor color)
 {
 	if (!m_pActiveCanvas)
 	{
-		GfxBase::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No active canvas to fill.",
+		Core::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No active canvas to fill.",
 			this, &TYPEINFO, __func__, __FILE__, __LINE__);
 
 		return;
@@ -1452,7 +1452,7 @@ void GfxDeviceGen2::drawLine(CoordSPX beg, CoordSPX end, HiColor color, spx thic
 {
 	if (!m_pActiveCanvas)
 	{
-		GfxBase::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No active canvas to draw line on.",
+		Core::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No active canvas to draw line on.",
 			this, &TYPEINFO, __func__, __FILE__, __LINE__);
 
 		return;
@@ -1553,7 +1553,7 @@ void GfxDeviceGen2::drawRoundedBox(const RoundedBoxSpec& spec)
 {
 	if (!m_pActiveCanvas)
 	{
-		GfxBase::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No active canvas to draw rounded box to.",
+		Core::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No active canvas to draw rounded box to.",
 			this, &TYPEINFO, __func__, __FILE__, __LINE__);
 
 		return;
@@ -1579,7 +1579,7 @@ void GfxDeviceGen2::drawRoundedBox(const RoundedBoxSpec& spec)
 		return;
 
 	spx radius[4] = { spec.radius[0], spec.radius[1], spec.radius[2], spec.radius[3] };
-	Util::clampCornerRadii(rect.size(), radius);
+	GfxUtil::clampCornerRadii(rect.size(), radius);
 
 	// Square, untinted boxes aligned to pixels are just fills.
 
@@ -1706,7 +1706,7 @@ void GfxDeviceGen2::drawRing(const RingSpec& spec)
 {
 	if (!m_pActiveCanvas)
 	{
-		GfxBase::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No active canvas to draw ring to.",
+		Core::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No active canvas to draw ring to.",
 			this, &TYPEINFO, __func__, __FILE__, __LINE__);
 
 		return;
@@ -1721,14 +1721,14 @@ void GfxDeviceGen2::drawRing(const RingSpec& spec)
 
 	if (nSlices < 0 || (nSlices > 0 && !spec.pSlices))
 	{
-		GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Invalid slices.",
+		Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Invalid slices.",
 			this, &TYPEINFO, __func__, __FILE__, __LINE__);
 		return;
 	}
 
 	if (nSlices > c_maxRingSlices)
 	{
-		GfxBase::throwError(ErrorLevel::Warning, ErrorCode::InvalidParam, "Too many slices, the ones beyond maxRingSlices() are not drawn.",
+		Core::throwError(ErrorLevel::Warning, ErrorCode::InvalidParam, "Too many slices, the ones beyond maxRingSlices() are not drawn.",
 			this, &TYPEINFO, __func__, __FILE__, __LINE__);
 		nSlices = c_maxRingSlices;
 	}
@@ -1902,7 +1902,7 @@ void GfxDeviceGen2::blit(CoordSPX dest)
 {
 	if (!m_pActiveCanvas)
 	{
-		GfxBase::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No active canvas to blit to.",
+		Core::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No active canvas to blit to.",
 			this, &TYPEINFO, __func__, __FILE__, __LINE__);
 
 		return;
@@ -1910,7 +1910,7 @@ void GfxDeviceGen2::blit(CoordSPX dest)
 	
 	if (m_renderState.blitSource == nullptr)
 	{
-		GfxBase::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No blit source set.",
+		Core::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No blit source set.",
 			this, &TYPEINFO, __func__, __FILE__, __LINE__);
 		return;
 	}
@@ -1922,7 +1922,7 @@ void GfxDeviceGen2::blit(CoordSPX dest, const RectSPX& src)
 {
 	if (!m_pActiveCanvas)
 	{
-		GfxBase::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No active canvas to blit to.",
+		Core::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No active canvas to blit to.",
 			this, &TYPEINFO, __func__, __FILE__, __LINE__);
 
 		return;
@@ -1930,7 +1930,7 @@ void GfxDeviceGen2::blit(CoordSPX dest, const RectSPX& src)
 	
 	if (m_renderState.blitSource == nullptr)
 	{
-		GfxBase::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No blit source set.",
+		Core::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No blit source set.",
 			this, &TYPEINFO, __func__, __FILE__, __LINE__);
 		return;
 	}
@@ -1944,7 +1944,7 @@ void GfxDeviceGen2::flipBlit(CoordSPX dest, GfxFlip flip)
 {
 	if (!m_pActiveCanvas)
 	{
-		GfxBase::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No active canvas to blit to.",
+		Core::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No active canvas to blit to.",
 			this, &TYPEINFO, __func__, __FILE__, __LINE__);
 
 		return;
@@ -1952,7 +1952,7 @@ void GfxDeviceGen2::flipBlit(CoordSPX dest, GfxFlip flip)
 
 	if (m_renderState.blitSource == nullptr)
 	{
-		GfxBase::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No blit source set.",
+		Core::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No blit source set.",
 			this, &TYPEINFO, __func__, __FILE__, __LINE__);
 		return;
 	}
@@ -1973,7 +1973,7 @@ void GfxDeviceGen2::flipBlit(CoordSPX dest, const RectSPX& src, GfxFlip flip)
 {
 	if (!m_pActiveCanvas)
 	{
-		GfxBase::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No active canvas to blit to.",
+		Core::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No active canvas to blit to.",
 			this, &TYPEINFO, __func__, __FILE__, __LINE__);
 
 		return;
@@ -1981,7 +1981,7 @@ void GfxDeviceGen2::flipBlit(CoordSPX dest, const RectSPX& src, GfxFlip flip)
 
 	if (m_renderState.blitSource == nullptr)
 	{
-		GfxBase::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No blit source set.",
+		Core::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No blit source set.",
 			this, &TYPEINFO, __func__, __FILE__, __LINE__);
 		return;
 	}
@@ -2003,7 +2003,7 @@ void GfxDeviceGen2::stretchBlit(const RectSPX& dest)
 {
 	if (!m_pActiveCanvas)
 	{
-		GfxBase::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No active canvas to blit to.",
+		Core::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No active canvas to blit to.",
 			this, &TYPEINFO, __func__, __FILE__, __LINE__);
 
 		return;
@@ -2011,7 +2011,7 @@ void GfxDeviceGen2::stretchBlit(const RectSPX& dest)
 
 	if (m_renderState.blitSource == nullptr)
 	{
-		GfxBase::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No blit source set.",
+		Core::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No blit source set.",
 			this, &TYPEINFO, __func__, __FILE__, __LINE__);
 		return;
 	}
@@ -2023,7 +2023,7 @@ void GfxDeviceGen2::stretchBlit(const RectSPX& _dest, const RectSPX& src)
 {
 	if (!m_pActiveCanvas)
 	{
-		GfxBase::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No active canvas to blit to.",
+		Core::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No active canvas to blit to.",
 			this, &TYPEINFO, __func__, __FILE__, __LINE__);
 
 		return;
@@ -2031,7 +2031,7 @@ void GfxDeviceGen2::stretchBlit(const RectSPX& _dest, const RectSPX& src)
 
 	if (m_renderState.blitSource == nullptr)
 	{
-		GfxBase::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No blit source set.",
+		Core::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No blit source set.",
 			this, &TYPEINFO, __func__, __FILE__, __LINE__);
 		return;
 	}
@@ -2110,7 +2110,7 @@ void GfxDeviceGen2::stretchFlipBlit(const RectSPX& dest, GfxFlip flip)
 {
 	if (!m_pActiveCanvas)
 	{
-		GfxBase::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No active canvas to blit to.",
+		Core::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No active canvas to blit to.",
 			this, &TYPEINFO, __func__, __FILE__, __LINE__);
 
 		return;
@@ -2118,7 +2118,7 @@ void GfxDeviceGen2::stretchFlipBlit(const RectSPX& dest, GfxFlip flip)
 
 	if (m_renderState.blitSource == nullptr)
 	{
-		GfxBase::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No blit source set.",
+		Core::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No blit source set.",
 			this, &TYPEINFO, __func__, __FILE__, __LINE__);
 		return;
 	}
@@ -2130,7 +2130,7 @@ void GfxDeviceGen2::stretchFlipBlit(const RectSPX& _dest, const RectSPX& src, Gf
 {
 	if (!m_pActiveCanvas)
 	{
-		GfxBase::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No active canvas to blit to.",
+		Core::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No active canvas to blit to.",
 			this, &TYPEINFO, __func__, __FILE__, __LINE__);
 
 		return;
@@ -2138,7 +2138,7 @@ void GfxDeviceGen2::stretchFlipBlit(const RectSPX& _dest, const RectSPX& src, Gf
 
 	if (m_renderState.blitSource == nullptr)
 	{
-		GfxBase::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No blit source set.",
+		Core::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No blit source set.",
 			this, &TYPEINFO, __func__, __FILE__, __LINE__);
 		return;
 	}
@@ -2212,7 +2212,7 @@ void GfxDeviceGen2::precisionBlit(const RectSPX& _dest, const RectF& src)
 {
 	if (!m_pActiveCanvas)
 	{
-		GfxBase::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No active canvas to blit to.",
+		Core::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No active canvas to blit to.",
 			this, &TYPEINFO, __func__, __FILE__, __LINE__);
 
 		return;
@@ -2220,7 +2220,7 @@ void GfxDeviceGen2::precisionBlit(const RectSPX& _dest, const RectF& src)
 
 	if (m_renderState.blitSource == nullptr)
 	{
-		GfxBase::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No blit source set.",
+		Core::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No blit source set.",
 			this, &TYPEINFO, __func__, __FILE__, __LINE__);
 		return;
 	}
@@ -2309,7 +2309,7 @@ void GfxDeviceGen2::transformBlit(const RectSPX& dest, CoordF src, const Transfo
 {
 	if (!m_pActiveCanvas)
 	{
-		GfxBase::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No active canvas to blit to.",
+		Core::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No active canvas to blit to.",
 			this, &TYPEINFO, __func__, __FILE__, __LINE__);
 
 		return;
@@ -2317,7 +2317,7 @@ void GfxDeviceGen2::transformBlit(const RectSPX& dest, CoordF src, const Transfo
 
 	if (m_renderState.blitSource == nullptr)
 	{
-		GfxBase::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No blit source set.",
+		Core::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No blit source set.",
 			this, &TYPEINFO, __func__, __FILE__, __LINE__);
 		return;
 	}
@@ -2333,7 +2333,7 @@ void GfxDeviceGen2::rotScaleBlit(const RectSPX& dest, float rotationDegrees, flo
 {
 	if (!m_pActiveCanvas)
 	{
-		GfxBase::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No active canvas to blit to.",
+		Core::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No active canvas to blit to.",
 			this, &TYPEINFO, __func__, __FILE__, __LINE__);
 
 		return;
@@ -2341,7 +2341,7 @@ void GfxDeviceGen2::rotScaleBlit(const RectSPX& dest, float rotationDegrees, flo
 
 	if (m_renderState.blitSource == nullptr)
 	{
-		GfxBase::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No blit source set.",
+		Core::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No blit source set.",
 			this, &TYPEINFO, __func__, __FILE__, __LINE__);
 		return;
 	}
@@ -2384,7 +2384,7 @@ void GfxDeviceGen2::tile(const RectSPX& dest, CoordSPX shift)
 {
 	if (!m_pActiveCanvas)
 	{
-		GfxBase::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No active canvas to tile to.",
+		Core::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No active canvas to tile to.",
 			this, &TYPEINFO, __func__, __FILE__, __LINE__);
 
 		return;
@@ -2392,7 +2392,7 @@ void GfxDeviceGen2::tile(const RectSPX& dest, CoordSPX shift)
 
 	if (m_renderState.blitSource == nullptr)
 	{
-		GfxBase::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No blit source set.",
+		Core::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No blit source set.",
 			this, &TYPEINFO, __func__, __FILE__, __LINE__);
 		return;
 	}
@@ -2401,7 +2401,7 @@ void GfxDeviceGen2::tile(const RectSPX& dest, CoordSPX shift)
 
 	if (!pSource->isTiling())
 	{
-		GfxBase::throwError(ErrorLevel::SilentError, ErrorCode::FailedPrerequisite, "Tile method called on non-tiling surface", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+		Core::throwError(ErrorLevel::SilentError, ErrorCode::FailedPrerequisite, "Tile method called on non-tiling surface", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 		return;
 	}
 
@@ -2414,7 +2414,7 @@ void GfxDeviceGen2::flipTile(const RectSPX& dest, GfxFlip flip, CoordSPX shift)
 {
 	if (!m_pActiveCanvas)
 	{
-		GfxBase::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No active canvas to tile to.",
+		Core::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No active canvas to tile to.",
 			this, &TYPEINFO, __func__, __FILE__, __LINE__);
 
 		return;
@@ -2422,7 +2422,7 @@ void GfxDeviceGen2::flipTile(const RectSPX& dest, GfxFlip flip, CoordSPX shift)
 
 	if (m_renderState.blitSource == nullptr)
 	{
-		GfxBase::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No blit source set.",
+		Core::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No blit source set.",
 			this, &TYPEINFO, __func__, __FILE__, __LINE__);
 		return;
 	}
@@ -2431,7 +2431,7 @@ void GfxDeviceGen2::flipTile(const RectSPX& dest, GfxFlip flip, CoordSPX shift)
 
 	if (!pSource->isTiling())
 	{
-		GfxBase::throwError(ErrorLevel::SilentError, ErrorCode::FailedPrerequisite, "Tile method called on non-tiling surface", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+		Core::throwError(ErrorLevel::SilentError, ErrorCode::FailedPrerequisite, "Tile method called on non-tiling surface", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 		return;
 	}
 
@@ -2456,7 +2456,7 @@ void GfxDeviceGen2::scaleTile(const RectSPX& dest, float scale, CoordSPX shift)
 {
 	if (!m_pActiveCanvas)
 	{
-		GfxBase::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No active canvas to tile to.",
+		Core::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No active canvas to tile to.",
 			this, &TYPEINFO, __func__, __FILE__, __LINE__);
 
 		return;
@@ -2464,7 +2464,7 @@ void GfxDeviceGen2::scaleTile(const RectSPX& dest, float scale, CoordSPX shift)
 
 	if (m_renderState.blitSource == nullptr)
 	{
-		GfxBase::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No blit source set.",
+		Core::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No blit source set.",
 			this, &TYPEINFO, __func__, __FILE__, __LINE__);
 		return;
 	}
@@ -2473,7 +2473,7 @@ void GfxDeviceGen2::scaleTile(const RectSPX& dest, float scale, CoordSPX shift)
 
 	if (!pSource->isTiling())
 	{
-		GfxBase::throwError(ErrorLevel::SilentError, ErrorCode::FailedPrerequisite, "Tile method called on non-tiling surface", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+		Core::throwError(ErrorLevel::SilentError, ErrorCode::FailedPrerequisite, "Tile method called on non-tiling surface", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 		return;
 	}
 
@@ -2495,7 +2495,7 @@ void GfxDeviceGen2::scaleFlipTile(const RectSPX& dest, float scale, GfxFlip flip
 {
 	if (!m_pActiveCanvas)
 	{
-		GfxBase::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No active canvas to tile to.",
+		Core::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No active canvas to tile to.",
 			this, &TYPEINFO, __func__, __FILE__, __LINE__);
 
 		return;
@@ -2503,7 +2503,7 @@ void GfxDeviceGen2::scaleFlipTile(const RectSPX& dest, float scale, GfxFlip flip
 
 	if (m_renderState.blitSource == nullptr)
 	{
-		GfxBase::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No blit source set.",
+		Core::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No blit source set.",
 			this, &TYPEINFO, __func__, __FILE__, __LINE__);
 		return;
 	}
@@ -2512,7 +2512,7 @@ void GfxDeviceGen2::scaleFlipTile(const RectSPX& dest, float scale, GfxFlip flip
 
 	if (!pSource->isTiling())
 	{
-		GfxBase::throwError(ErrorLevel::SilentError, ErrorCode::FailedPrerequisite, "Tile method called on non-tiling surface", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+		Core::throwError(ErrorLevel::SilentError, ErrorCode::FailedPrerequisite, "Tile method called on non-tiling surface", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 		return;
 	}
 
@@ -2539,7 +2539,7 @@ void GfxDeviceGen2::blur(CoordSPX dest)
 {
 	if (!m_pActiveCanvas)
 	{
-		GfxBase::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No active canvas to blur to.",
+		Core::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No active canvas to blur to.",
 			this, &TYPEINFO, __func__, __FILE__, __LINE__);
 
 		return;
@@ -2547,7 +2547,7 @@ void GfxDeviceGen2::blur(CoordSPX dest)
 
 	if( m_renderState.pBlurbrush == nullptr )
 	{
-		GfxBase::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No Blurbrush set.",
+		Core::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No Blurbrush set.",
 			this, &TYPEINFO, __func__, __FILE__, __LINE__);
 
 		return;
@@ -2555,7 +2555,7 @@ void GfxDeviceGen2::blur(CoordSPX dest)
 
 	if (m_renderState.blitSource == nullptr)
 	{
-		GfxBase::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No blit source set.",
+		Core::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No blit source set.",
 			this, &TYPEINFO, __func__, __FILE__, __LINE__);
 		return;
 	}
@@ -2567,7 +2567,7 @@ void GfxDeviceGen2::blur(CoordSPX dest, const RectSPX& src)
 {
 	if (!m_pActiveCanvas)
 	{
-		GfxBase::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No active canvas to blur to.",
+		Core::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No active canvas to blur to.",
 			this, &TYPEINFO, __func__, __FILE__, __LINE__);
 
 		return;
@@ -2575,7 +2575,7 @@ void GfxDeviceGen2::blur(CoordSPX dest, const RectSPX& src)
 
 	if (m_renderState.pBlurbrush == nullptr)
 	{
-		GfxBase::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No Blurbrush set.",
+		Core::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No Blurbrush set.",
 			this, &TYPEINFO, __func__, __FILE__, __LINE__);
 
 		return;
@@ -2583,7 +2583,7 @@ void GfxDeviceGen2::blur(CoordSPX dest, const RectSPX& src)
 
 	if (m_renderState.blitSource == nullptr)
 	{
-		GfxBase::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No blit source set.",
+		Core::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No blit source set.",
 			this, &TYPEINFO, __func__, __FILE__, __LINE__);
 		return;
 	}
@@ -2597,7 +2597,7 @@ void GfxDeviceGen2::stretchBlur(const RectSPX& dest)
 {
 	if (!m_pActiveCanvas)
 	{
-		GfxBase::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No active canvas to blur to.",
+		Core::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No active canvas to blur to.",
 			this, &TYPEINFO, __func__, __FILE__, __LINE__);
 
 		return;
@@ -2605,7 +2605,7 @@ void GfxDeviceGen2::stretchBlur(const RectSPX& dest)
 
 	if (m_renderState.pBlurbrush == nullptr)
 	{
-		GfxBase::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No Blurbrush set.",
+		Core::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No Blurbrush set.",
 			this, &TYPEINFO, __func__, __FILE__, __LINE__);
 
 		return;
@@ -2613,7 +2613,7 @@ void GfxDeviceGen2::stretchBlur(const RectSPX& dest)
 
 	if (m_renderState.blitSource == nullptr)
 	{
-		GfxBase::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No blit source set.",
+		Core::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No blit source set.",
 			this, &TYPEINFO, __func__, __FILE__, __LINE__);
 		return;
 	}
@@ -2625,7 +2625,7 @@ void GfxDeviceGen2::stretchBlur(const RectSPX& _dest, const RectSPX& src)
 {
 	if (!m_pActiveCanvas)
 	{
-		GfxBase::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No active canvas to blur to.",
+		Core::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No active canvas to blur to.",
 			this, &TYPEINFO, __func__, __FILE__, __LINE__);
 
 		return;
@@ -2633,7 +2633,7 @@ void GfxDeviceGen2::stretchBlur(const RectSPX& _dest, const RectSPX& src)
 
 	if (m_renderState.pBlurbrush == nullptr)
 	{
-		GfxBase::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No Blurbrush set.",
+		Core::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No Blurbrush set.",
 			this, &TYPEINFO, __func__, __FILE__, __LINE__);
 
 		return;
@@ -2641,7 +2641,7 @@ void GfxDeviceGen2::stretchBlur(const RectSPX& _dest, const RectSPX& src)
 
 	if (m_renderState.blitSource == nullptr)
 	{
-		GfxBase::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No blit source set.",
+		Core::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No blit source set.",
 			this, &TYPEINFO, __func__, __FILE__, __LINE__);
 		return;
 	}
@@ -2699,7 +2699,7 @@ void GfxDeviceGen2::transformBlur(const RectSPX& dest, CoordF src, const Transfo
 {
 	if (!m_pActiveCanvas)
 	{
-		GfxBase::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No active canvas to blur to.",
+		Core::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No active canvas to blur to.",
 			this, &TYPEINFO, __func__, __FILE__, __LINE__);
 
 		return;
@@ -2707,7 +2707,7 @@ void GfxDeviceGen2::transformBlur(const RectSPX& dest, CoordF src, const Transfo
 
 	if (m_renderState.pBlurbrush == nullptr)
 	{
-		GfxBase::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No Blurbrush set.",
+		Core::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No Blurbrush set.",
 			this, &TYPEINFO, __func__, __FILE__, __LINE__);
 
 		return;
@@ -2715,7 +2715,7 @@ void GfxDeviceGen2::transformBlur(const RectSPX& dest, CoordF src, const Transfo
 
 	if (m_renderState.blitSource == nullptr)
 	{
-		GfxBase::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No blit source set.",
+		Core::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No blit source set.",
 			this, &TYPEINFO, __func__, __FILE__, __LINE__);
 		return;
 	}
@@ -2729,7 +2729,7 @@ void GfxDeviceGen2::rotScaleBlur(const RectSPX& dest, float rotationDegrees, flo
 {
 	if (!m_pActiveCanvas)
 	{
-		GfxBase::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No active canvas to blur to.",
+		Core::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No active canvas to blur to.",
 			this, &TYPEINFO, __func__, __FILE__, __LINE__);
 
 		return;
@@ -2737,7 +2737,7 @@ void GfxDeviceGen2::rotScaleBlur(const RectSPX& dest, float rotationDegrees, flo
 
 	if (m_renderState.pBlurbrush == nullptr)
 	{
-		GfxBase::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No Blurbrush set.",
+		Core::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No Blurbrush set.",
 			this, &TYPEINFO, __func__, __FILE__, __LINE__);
 
 		return;
@@ -2745,7 +2745,7 @@ void GfxDeviceGen2::rotScaleBlur(const RectSPX& dest, float rotationDegrees, flo
 
 	if (m_renderState.blitSource == nullptr)
 	{
-		GfxBase::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No blit source set.",
+		Core::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No blit source set.",
 			this, &TYPEINFO, __func__, __FILE__, __LINE__);
 		return;
 	}
@@ -2786,7 +2786,7 @@ void GfxDeviceGen2::blitNinePatch(const RectSPX& dstRect, const BorderSPX& dstFr
 {
 	if (!m_pActiveCanvas)
 	{
-		GfxBase::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No active canvas to blit to.",
+		Core::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No active canvas to blit to.",
 			this, &TYPEINFO, __func__, __FILE__, __LINE__);
 
 		return;
@@ -2796,7 +2796,7 @@ void GfxDeviceGen2::blitNinePatch(const RectSPX& dstRect, const BorderSPX& dstFr
 
 	if (pSource == nullptr)
 	{
-		GfxBase::throwError(ErrorLevel::SilentError, ErrorCode::FailedPrerequisite, "No blit source set", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+		Core::throwError(ErrorLevel::SilentError, ErrorCode::FailedPrerequisite, "No blit source set", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 		return;
 	}
 
@@ -2985,14 +2985,14 @@ void GfxDeviceGen2::flipDrawEdgemap(CoordSPX dest, Edgemap* pEdgemap, GfxFlip fl
 {
 	if(!pEdgemap)
 	{
-		GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Null edgemap pointer passed to drawEdgemap.",
+		Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Null edgemap pointer passed to drawEdgemap.",
 			this, &TYPEINFO, __func__, __FILE__, __LINE__);
 		return;
 	}
 
 	if (!m_pActiveCanvas)
 	{
-		GfxBase::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No active canvas to draw edgemap to.",
+		Core::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No active canvas to draw edgemap to.",
 			this, &TYPEINFO, __func__, __FILE__, __LINE__);
 
 		return;
@@ -3033,14 +3033,14 @@ void GfxDeviceGen2::flipTileEdgemap(const RectSPX& dest, Edgemap* pEdgemap, GfxF
 {
 	if(!pEdgemap)
 	{
-		GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Null edgemap pointer passed to tileEdgemap.",
+		Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Null edgemap pointer passed to tileEdgemap.",
 			this, &TYPEINFO, __func__, __FILE__, __LINE__);
 		return;
 	}
 
 	if (!m_pActiveCanvas)
 	{
-		GfxBase::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No active canvas to tile edgemap to.",
+		Core::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No active canvas to tile edgemap to.",
 			this, &TYPEINFO, __func__, __FILE__, __LINE__);
 
 		return;
@@ -3048,7 +3048,7 @@ void GfxDeviceGen2::flipTileEdgemap(const RectSPX& dest, Edgemap* pEdgemap, GfxF
 
 	if (!pEdgemap->isTiling())
 	{
-		GfxBase::throwError(ErrorLevel::SilentError, ErrorCode::FailedPrerequisite, "Tile method called on non-tiling edgemap",
+		Core::throwError(ErrorLevel::SilentError, ErrorCode::FailedPrerequisite, "Tile method called on non-tiling edgemap",
 			this, &TYPEINFO, __func__, __FILE__, __LINE__);
 		return;
 	}
@@ -3107,7 +3107,7 @@ void GfxDeviceGen2::warpBlit(CoordSPX dest, Warpmap* pWarpmap, CoordSPX sourceOf
 {
 	if (m_renderState.blitSource == nullptr)
 	{
-		GfxBase::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No blit source set.",
+		Core::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No blit source set.",
 			this, &TYPEINFO, __func__, __FILE__, __LINE__);
 		return;
 	}
@@ -3119,7 +3119,7 @@ void GfxDeviceGen2::warpBlit(CoordSPX dest, Warpmap* pWarpmap, const RectSPX& so
 {
 	if (m_renderState.blitSource == nullptr)
 	{
-		GfxBase::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No blit source set.",
+		Core::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No blit source set.",
 			this, &TYPEINFO, __func__, __FILE__, __LINE__);
 		return;
 	}
@@ -3136,7 +3136,7 @@ void GfxDeviceGen2::warpDrawEdgemap(CoordSPX dest, Warpmap* pWarpmap, Edgemap* p
 {
 	if (!pEdgemap)
 	{
-		GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Null edgemap pointer passed to warpDrawEdgemap.",
+		Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Null edgemap pointer passed to warpDrawEdgemap.",
 			this, &TYPEINFO, __func__, __FILE__, __LINE__);
 		return;
 	}
@@ -3155,19 +3155,19 @@ void GfxDeviceGen2::_encodeWarp(CoordSPX dest, Warpmap* pWarpmap, Edgemap* pEdge
 {
 	if (!pWarpmap)
 	{
-		GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Null warpmap pointer passed to warp method.",
+		Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Null warpmap pointer passed to warp method.",
 			this, &TYPEINFO, __func__, __FILE__, __LINE__);
 		return;
 	}
 
 	if (!m_pActiveCanvas)
 	{
-		GfxBase::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No active canvas to draw to.",
+		Core::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No active canvas to draw to.",
 			this, &TYPEINFO, __func__, __FILE__, __LINE__);
 		return;
 	}
 
-	RectSPX area = { Util::roundToPixels(dest) * 64, pWarpmap->pixelSize() * 64 };
+	RectSPX area = { GfxUtil::roundToPixels(dest) * 64, pWarpmap->pixelSize() * 64 };
 
 	int nRects = 0;
 	auto& rects = m_pActiveLayer->rects;
@@ -3227,7 +3227,7 @@ void GfxDeviceGen2::flipDrawWave(const RectSPX& dest, const WaveLine* pTopBorder
 {
 	if (!m_pActiveCanvas )
 	{
-		GfxBase::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No active canvas to draw wave to.",
+		Core::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No active canvas to draw wave to.",
 			this, &TYPEINFO, __func__, __FILE__, __LINE__);
 
 		return;
@@ -3237,7 +3237,7 @@ void GfxDeviceGen2::flipDrawWave(const RectSPX& dest, const WaveLine* pTopBorder
 
 	// Create waveform
 
-	auto pWave = Waveform::create( WGBP(Waveform, 
+	auto pWave = Waveform::create( WAXBP(Waveform, 
 		_.size = dest.size()/64, 
 		_.color = fill,
 		_.topOutlineThickness = pTopBorder->thickness, 
@@ -3249,7 +3249,7 @@ void GfxDeviceGen2::flipDrawWave(const RectSPX& dest, const WaveLine* pTopBorder
 
 	// Reserve temporary work buffers, we need to convert samples from 24:8 to spx (26:6) format.
 
-	auto pBuffer = GfxBase::memStackAlloc(samplesWanted * sizeof(spx) * 2 );
+	auto pBuffer = Core::memStackAlloc(samplesWanted * sizeof(spx) * 2 );
 	auto pTopWaveSamples = (spx*)pBuffer;
 	auto pBottomWaveSamples = pTopWaveSamples + samplesWanted;
 
@@ -3285,7 +3285,7 @@ void GfxDeviceGen2::flipDrawWave(const RectSPX& dest, const WaveLine* pTopBorder
 
 	pWave->setSamples(0, samplesWanted, pTopWaveSamples, pBottomWaveSamples);
 
-	GfxBase::memStackFree(samplesWanted * sizeof(spx) * 2);
+	Core::memStackFree(samplesWanted * sizeof(spx) * 2);
 
 	// Render
 
@@ -3307,14 +3307,14 @@ void GfxDeviceGen2::flipDrawSegments(const RectSPX& dest, int nSegments, const H
 {
 	if (!m_pActiveCanvas)
 	{
-		GfxBase::throwError(ErrorLevel::Error, ErrorCode::IllegalCall, "No active canvas to draw segments to.",
+		Core::throwError(ErrorLevel::Error, ErrorCode::IllegalCall, "No active canvas to draw segments to.",
 			this, &TYPEINFO, __func__, __FILE__, __LINE__);
 		return;
 	}
 
 	auto pFactory = m_pBackend->edgemapFactory();
 
-	auto pEdgemap = pFactory->createEdgemap(WGBP(Edgemap,
+	auto pEdgemap = pFactory->createEdgemap(WAXBP(Edgemap,
 		_.size = dest.size() / 64,
 		_.segments = nSegments,
 		_.colors = pSegmentColors
@@ -3389,7 +3389,7 @@ void GfxDeviceGen2::drawPieChart(const RectSPX& canvas, float start, int nSlices
 {
 	if (nSlices < 0 || (nSlices > 0 && (!pSliceSizes || !pSliceColors)))
 	{
-		GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Invalid slices.",
+		Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Invalid slices.",
 			this, &TYPEINFO, __func__, __FILE__, __LINE__);
 		return;
 	}
@@ -3398,7 +3398,7 @@ void GfxDeviceGen2::drawPieChart(const RectSPX& canvas, float start, int nSlices
 		return;
 
 	int bufferSize = sizeof(RingSlice) * std::max(nSlices, 1);
-	auto slices = (RingSlice*) GfxBase::memStackAlloc(bufferSize);
+	auto slices = (RingSlice*) Core::memStackAlloc(bufferSize);
 
 	for (int i = 0; i < nSlices; i++)
 		new (&slices[i]) RingSlice{ pSliceSizes[i], pSliceColors[i], nullptr };
@@ -3419,7 +3419,7 @@ void GfxDeviceGen2::drawPieChart(const RectSPX& canvas, float start, int nSlices
 
 	drawRing(ring);
 
-	GfxBase::memStackFree(bufferSize);
+	Core::memStackFree(bufferSize);
 }
 
 

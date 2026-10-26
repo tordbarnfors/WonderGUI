@@ -21,7 +21,7 @@
 =========================================================================*/
 #include <memory.h>
 #include <wg2_slider.h>
-#include <wg_surface.h>
+#include <wax_surface.h>
 #include <wg2_gfxdevice.h>
 #include <wg2_util.h>
 #include <wg2_slidertarget.h>

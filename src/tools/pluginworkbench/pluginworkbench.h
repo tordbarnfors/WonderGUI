@@ -4,7 +4,7 @@
 #include <wonderapp.h>
 
 #include <wondergui.h>
-#include <wg_freetypefont.h>
+#include <wax_freetypefont.h>
 
 #include <initializer_list>
 #include <string>
@@ -27,7 +27,7 @@ public:
 
 private:
 
-	typedef int (*initClientFunc)( wg_plugin_interface * pInterface, void * pHostBridge, wg_obj hPluginCapsule, wg_obj hGfxDevice, wg_obj hSurfaceFactory, wg_obj hEdgemapFactory );
+	typedef int (*initClientFunc)( wg_plugin_interface * pInterface, void * pHostBridge, wax_obj hPluginCapsule, wax_obj hGfxDevice, wax_obj hSurfaceFactory, wax_obj hEdgemapFactory );
 	typedef int (*updateClientFunc)(void);
 	typedef void (*exitClientFunc)(void);
 

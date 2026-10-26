@@ -19,13 +19,13 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#include "wg_streambackend.h"
-#include "wg_streamgfxdevicefactory.h"
+#include "wax_streambackend.h"
+#include "wax_streamgfxdevicefactory.h"
 
-#include "wg_gfxdevice_gen2.h"
+#include "wax_gfxdevice_gen2.h"
 
 
-namespace wg
+namespace wax
 {
 
 	const TypeInfo StreamGfxDeviceFactory::TYPEINFO = { "StreamGfxDeviceFactory", &GfxDeviceFactory::TYPEINFO };
@@ -60,5 +60,5 @@ StreamGfxDeviceFactory::StreamGfxDeviceFactory(const Blueprint& bp)
 		return pDevice;
 	}
 
-} // namespace wg
+} // namespace wax
 

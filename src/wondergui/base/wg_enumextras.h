@@ -25,7 +25,7 @@
 
 #include <wg_types.h>
 #include <wg_key.h>
-#include <wg_gfxenumextras.h>
+#include <wax_enumextras.h>
 
 namespace wg
 {

@@ -1,7 +1,7 @@
 
 #include "softkernelgenerator.h"
 
-#include <wg_freetypefont.h>
+#include <wax_freetypefont.h>
 #include <string>
 #include <fstream>
 
@@ -228,8 +228,8 @@ bool MyApp::exportSource()
 	myStream.open(path + ".h");
 
 	myStream << "#pragma once" << endl;
-	myStream << "#include <wg_softbackend.h>" << endl << endl;
-	myStream << "namespace wg" << endl;
+	myStream << "#include <wax_softbackend.h>" << endl << endl;
+	myStream << "namespace wax" << endl;
 	myStream << "{" << endl;
 	myStream << "	bool " << labelString << "( SoftBackend * pBackend );" << endl;
 	myStream << "};" << endl;
@@ -240,12 +240,12 @@ bool MyApp::exportSource()
 	
 	myStream.open(path + "_c.h");
 
-	myStream << "#include <wg_c_geartypes.h>" << endl;
+	myStream << "#include <wax_c_types.h>" << endl;
 	myStream << endl;
 	myStream << "#ifdef __cplusplus" << endl;
 	myStream << "extern \"C\" {" << endl;
 	myStream << "#endif" << endl;
-	myStream << "	WG_EXPORT int	wg_" << labelString << "( wg_obj backend );" << endl;
+	myStream << "	WAX_EXPORT int	wax_" << labelString << "( wax_obj backend );" << endl;
 	myStream << "#ifdef __cplusplus" << endl;
 	myStream << "}" << endl;
 	myStream << "#endif" << endl;

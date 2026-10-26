@@ -23,7 +23,7 @@
 #define	WG_PACKLAYOUT_DOT_H
 #pragma once
 
-#include <wg_pointers.h>
+#include <wax_pointers.h>
 #include <wg_types.h>
 
 #include <vector>

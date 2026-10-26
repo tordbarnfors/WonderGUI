@@ -19,19 +19,19 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef	WG_REFERENCEBACKEND_DOT_H
-#define WG_REFERENCEBACKEND_DOT_H
+#ifndef	WAX_REFERENCEBACKEND_DOT_H
+#define WAX_REFERENCEBACKEND_DOT_H
 #pragma once
 
-#include <wg_gfxbackend.h>
-#include <wg_tinttools.h>
-#include <wg_softsurface.h>
-#include <wg_softedgemap.h>
-#include <wg_softwarpmap.h>
+#include <wax_gfxbackend.h>
+#include <wax_tinttools.h>
+#include <wax_softsurface.h>
+#include <wax_softedgemap.h>
+#include <wax_softwarpmap.h>
 
 #include <vector>
 
-namespace wg
+namespace wax
 {
 	class ReferenceBackend;
 	typedef	StrongPtr<ReferenceBackend>	ReferenceBackend_p;
@@ -229,7 +229,7 @@ namespace wg
 		static void		_segmentCoverage(const EdgeLine* pEdges, int nEdges, int row, double* pCoverage);
 		static double	_areaBelow(const EdgeLine* pEdges, int nEdges, int row);
 
-		// Shapes (Command::DrawShape), see "Shapes" in wg_referencebackend.cpp.
+		// Shapes (Command::DrawShape), see "Shapes" in wax_referencebackend.cpp.
 
 		struct ShapeEdge;
 		class Shape;
@@ -277,5 +277,5 @@ namespace wg
 		std::vector<TintTools::DecodedTint>	m_segmentTints;	// Tints of the segments of the edgemap being drawn.
 	};
 
-} // namespace wg
-#endif	// WG_REFERENCEBACKEND_DOT_H
+} // namespace wax
+#endif	// WAX_REFERENCEBACKEND_DOT_H

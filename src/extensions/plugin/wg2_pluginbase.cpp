@@ -35,7 +35,7 @@ WgPluginContext_p	WgPluginBase::s_pContext;
 bool WgPluginBase::init(wg_plugin_interface* pCallsCollection, void * pRealHostBridge,
 						std::function<void(WgPluginContext *)> contextSwitchCallback )
 {
-	// Plugin initialization works differently from GearBase/GfxBase/Base in that a
+	// Plugin initialization works differently from wax::Core/wax::Core/Base in that a
 	// new context is setup for each call to init.
 	
 	if( !PluginCalls::_init(pCallsCollection) )

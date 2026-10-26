@@ -41,7 +41,7 @@
 #endif
 
 
-#include <wg_gfxdevice.h>
+#include <wax_gfxdevice.h>
 #include <wg2_geo.h>
 
 //____ WgWaveLine ___________________________________________________________

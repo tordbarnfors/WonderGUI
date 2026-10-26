@@ -19,13 +19,13 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#include <wg_circularwarp.h>
-#include <wg_gfxbase.h>
+#include <wax_circularwarp.h>
+#include <wax_core.h>
 
 #include <cmath>
 #include <vector>
 
-namespace wg
+namespace wax
 {
 	const TypeInfo CircularWarp::TYPEINFO = { "CircularWarp", &Object::TYPEINFO };
 
@@ -40,7 +40,7 @@ namespace wg
 			return nullptr;
 
 		if (!pFactory)
-			pFactory = GfxBase::defaultWarpmapFactory();
+			pFactory = Core::defaultWarpmapFactory();
 
 		if (!pFactory)
 			return nullptr;
@@ -270,4 +270,4 @@ namespace wg
 		}
 	}
 
-} // namespace wg
+} // namespace wax

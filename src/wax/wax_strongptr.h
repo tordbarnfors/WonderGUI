@@ -19,13 +19,13 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef	WG_STRONGPTR_DOT_H
-#define	WG_STRONGPTR_DOT_H
+#ifndef	WAX_STRONGPTR_DOT_H
+#define	WAX_STRONGPTR_DOT_H
 #pragma once
 
 #include <cassert>
 
-namespace wg
+namespace wax
 {
 	struct TypeInfo;
 class Object;
@@ -185,6 +185,6 @@ protected:
 
 
 
-} // namespace wg
-#endif //WG_STRONGPTR_DOT_H
+} // namespace wax
+#endif //WAX_STRONGPTR_DOT_H
 

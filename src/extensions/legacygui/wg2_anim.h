@@ -26,7 +26,7 @@
 #	include <wg2_types.h>
 #endif
 
-#include <wg_chain.h>
+#include <wax_chain.h>
 
 class		WgKeyFrame;
 struct	WgAnimPlayPos;
@@ -45,7 +45,7 @@ public:
 protected:
 	int		m_timestamp;
 	int		m_duration;
-	LINK_METHODS( WgKeyFrame );
+	WAX_LINK_METHODS( WgKeyFrame );
 };
 
 

@@ -19,15 +19,15 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef	WG_STREAMWRITER_DOT_H
-#define	WG_STREAMWRITER_DOT_H
+#ifndef	WAX_STREAMWRITER_DOT_H
+#define	WAX_STREAMWRITER_DOT_H
 #pragma once
 
-#include <wg_streamsink.h>
+#include <wax_streamsink.h>
 
 #include <functional>
 
-namespace wg
+namespace wax
 {
 
 	class StreamWriter;
@@ -62,5 +62,5 @@ namespace wg
 	};
 
 
-} // namespace wg
-#endif //WG_STREAMWRITER_DOT_H
+} // namespace wax
+#endif //WAX_STREAMWRITER_DOT_H

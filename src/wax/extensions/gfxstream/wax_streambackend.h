@@ -19,18 +19,18 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef	WG_STREAMBACKEND_DOT_H
-#define	WG_STREAMBACKEND_DOT_H
+#ifndef	WAX_STREAMBACKEND_DOT_H
+#define	WAX_STREAMBACKEND_DOT_H
 #pragma once
 
-#include <wg_gfxbackend.h>
-#include <wg_streamencoder.h>
-#include <wg_remotesurface.h>
-#include <wg_compression.h>
+#include <wax_gfxbackend.h>
+#include <wax_streamencoder.h>
+#include <wax_remotesurface.h>
+#include <wax_compression.h>
 
 #include <functional>
 
-namespace wg
+namespace wax
 {
 
 	class StreamBackend;
@@ -93,7 +93,7 @@ namespace wg
 
 		bool	defineCanvas( CanvasRef ref, RemoteSurface * pSurface );
 		bool	defineCanvas( CanvasRef ref, const SizeI& pixelSize, PixelFormat pixelFormat, int scale = 64,
-							  ColorSpace colorSpace = ColorSpace::sRGB, bool bBigEndian = (WG_IS_BIG_ENDIAN == 1) );
+							  ColorSpace colorSpace = ColorSpace::sRGB, bool bBigEndian = (WAX_IS_BIG_ENDIAN == 1) );
 
 		void	encodeCanvasList();
 		void	encodeTick(int32_t microsecPassed);		// Microsec since last tick (or beginning of stream if first tick)
@@ -142,5 +142,5 @@ namespace wg
 	};
 
 
-} // namespace wg
-#endif //WG_STREAMBACKEND_DOT_H
+} // namespace wax
+#endif //WAX_STREAMBACKEND_DOT_H

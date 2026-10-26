@@ -24,18 +24,18 @@
 #pragma once
 
 #include <wg_c_types.h>
-#include <wg_c_geo.h>
-#include <wg_c_color.h>
-#include <wg_c_tint.h>
+#include <wax_c_geo.h>
+#include <wax_c_color.h>
+#include <wax_c_tint.h>
 
 
-#include <wg_c_bitmapcache.h>
-#include <wg_c_canvaslayers.h>
-#include <wg_c_font.h>
-#include <wg_c_gfxdevice.h>
-#include <wg_c_edgemap.h>
-#include <wg_c_warpmap.h>
-#include <wg_c_blurbrush.h>
+#include <wax_c_bitmapcache.h>
+#include <wax_c_canvaslayers.h>
+#include <wax_c_font.h>
+#include <wax_c_gfxdevice.h>
+#include <wax_c_edgemap.h>
+#include <wax_c_warpmap.h>
+#include <wax_c_blurbrush.h>
 
 
 #ifdef __cplusplus
@@ -63,33 +63,33 @@ typedef struct wg_pluginroot_calls_struct
 {
 		int			structSize;
 
-		wg_spx			(*matchingHeight)(void* pPluginRoot, wg_spx width, int scale);
-		wg_spx			(*matchingWidth)(void* pPluginRoot, wg_spx height, int scale);
+		wax_spx			(*matchingHeight)(void* pPluginRoot, wax_spx width, int scale);
+		wax_spx			(*matchingWidth)(void* pPluginRoot, wax_spx height, int scale);
 
-		wg_sizeSPX		(*defaultSize)(void* pPluginRoot, int scale);
-		wg_sizeSPX		(*minSize)(void* pPluginRoot, int scale);
-		wg_sizeSPX		(*maxSize)(void* pPluginRoot, int scale);
+		wax_sizeSPX		(*defaultSize)(void* pPluginRoot, int scale);
+		wax_sizeSPX		(*minSize)(void* pPluginRoot, int scale);
+		wax_sizeSPX		(*maxSize)(void* pPluginRoot, int scale);
 
-		int				(*markTest)(void* pPluginRoot, wg_coordSPX ofs);
+		int				(*markTest)(void* pPluginRoot, wax_coordSPX ofs);
 
 		void    		(*preRender)(void* pPluginRoot);
-		void			(*render)(void* pPluginRoot, wg_obj pDevice, wg_rectSPX canvas, wg_rectSPX window);
+		void			(*render)(void* pPluginRoot, wax_obj pDevice, wax_rectSPX canvas, wax_rectSPX window);
 
-		void			(*resize)(void* pPluginRoot, wg_sizeSPX size, int scale);
+		void			(*resize)(void* pPluginRoot, wax_sizeSPX size, int scale);
 		void			(*setState)(void* pPluginRoot, wg_state state);
-		void			(*receive)(void* pPluginRoot, wg_obj msg);
+		void			(*receive)(void* pPluginRoot, wax_obj msg);
 
 //		wg_string		(*tooltip)(void* pPluginRoot);
 		wg_pointerStyle	(*pointerStyle)(void* pPluginRoot);
 
-		void			(*setPointerPos)(void* pPluginRoot, wg_coordSPX pos, int64_t timestamp );
+		void			(*setPointerPos)(void* pPluginRoot, wax_coordSPX pos, int64_t timestamp );
 		void			(*setButtonState)(void* pPluginRoot, int button, int pressed, int64_t timestamp );
 		void			(*setKeyState)(void* pPluginRoot, int nativeKeycode, int pressed, int64_t timestamp );
 		void			(*putText)(void* pPluginRoot, const char * pUTF8String );
 
 		void			(*onUpdate)(void* pPluginRoot, int microPassed, int64_t microsecTimestamp);
 
-		void 			(*wheelRoll)(void* pPluginRoot, int wheel, wg_pts distance, int bInvert, int64_t timestamp );
+		void 			(*wheelRoll)(void* pPluginRoot, int wheel, wax_pts distance, int bInvert, int64_t timestamp );
 
 } wg_pluginroot_calls;
 
@@ -121,16 +121,16 @@ typedef struct wg_bitmapcache_calls_struct
 {
 	int					structSize;
 
-	wg_obj				(*createBitmapCache)( int maxSize, wg_obj surfaceFactory );
-	void				(*setCacheLimit)(wg_obj bitmapCache, int maxBytes);
-	int                 (*cacheLimit)(wg_obj bitmapCache);
-	int                 (*cacheSize)(wg_obj bitmapCache);
-	void                (*clearCache)(wg_obj bitmapCache);
-	wg_cacheListener    (*addCacheListener)(wg_obj bitmapCache, wg_cacheListenerBP blueprint );
-	void                (*removeCacheListener)(wg_obj bitmapCache, wg_cacheListener listener );
-	wg_cacheSlot        (*getCacheSlot)(wg_obj bitmapCache, wg_sizeI size);
-	int                 (*getNbCacheSurfaces)(wg_obj bitmapCache);
-	int                 (*getCacheSurfaces)(wg_obj bitmapCache, int maxSurfaces, wg_obj * pArray );
+	wax_obj				(*createBitmapCache)( int maxSize, wax_obj surfaceFactory );
+	void				(*setCacheLimit)(wax_obj bitmapCache, int maxBytes);
+	int                 (*cacheLimit)(wax_obj bitmapCache);
+	int                 (*cacheSize)(wax_obj bitmapCache);
+	void                (*clearCache)(wax_obj bitmapCache);
+	wax_cacheListener    (*addCacheListener)(wax_obj bitmapCache, wax_cacheListenerBP blueprint );
+	void                (*removeCacheListener)(wax_obj bitmapCache, wax_cacheListener listener );
+	wax_cacheSlot        (*getCacheSlot)(wax_obj bitmapCache, wax_sizeI size);
+	int                 (*getNbCacheSurfaces)(wax_obj bitmapCache);
+	int                 (*getCacheSurfaces)(wax_obj bitmapCache, int maxSurfaces, wax_obj * pArray );
 
 } wg_bitmapcache_calls;
 
@@ -141,8 +141,8 @@ typedef struct wg_bitmapfont_calls_struct
 {
 	int					structSize;
 
-	wg_obj				(*createBitmapFont)(wg_obj surface, char* pGlyphSpec, wg_obj backupFont);
-	wg_obj				(*getBitmapFontSurface)(wg_obj bitmapFont);
+	wax_obj				(*createBitmapFont)(wax_obj surface, char* pGlyphSpec, wax_obj backupFont);
+	wax_obj				(*getBitmapFontSurface)(wax_obj bitmapFont);
 
 } wg_bitmapfont_calls;
 
@@ -153,10 +153,10 @@ typedef struct wg_canvaslayers_calls_struct
 {
 	int					structSize;
 
-	wg_obj				(*createCanvasLayers)(const wg_canvasLayersBP* pBlueprint);
-	int					(*canvasLayersSize)(wg_obj canvasLayers);
-	wg_pixelFormat		(*layerFormat)(wg_obj canvasLayers, int layer);
-	int					(*baseLayer)(wg_obj canvasLayers);
+	wax_obj				(*createCanvasLayers)(const wax_canvasLayersBP* pBlueprint);
+	int					(*canvasLayersSize)(wax_obj canvasLayers);
+	wax_pixelFormat		(*layerFormat)(wax_obj canvasLayers, int layer);
+	int					(*baseLayer)(wax_obj canvasLayers);
 
 } wg_canvaslayers_calls;
 
@@ -167,23 +167,23 @@ typedef struct wg_font_calls_struct
 {
 	int					structSize;
 
-	int					(*setFontSize)(wg_obj font, wg_spx size);
-	wg_spx				(*fontSize)(wg_obj font);
-	void				(*getGlyphWithoutBitmap)(wg_obj font, uint32_t chr, wg_glyph* pGlyph);
-	void				(*getGlyphWithBitmap)(wg_obj font, uint32_t chr, wg_glyph* pGlyph);
-	wg_spx				(*getKerning)(wg_obj font, wg_glyph* pLeftGlyph, wg_glyph* p_rightGlyph);
-	wg_spx				(*lineGap)(wg_obj font);
-	wg_spx				(*whitespaceAdvance)(wg_obj font);
-	wg_spx				(*maxAdvance)(wg_obj font);
-	wg_spx				(*maxAscend)(wg_obj font);
-	wg_spx 				(*maxDescend)(wg_obj font);
-	int					(*nbGlyphs)(wg_obj font);
-	int					(*hasGlyphs)(wg_obj font);
-	int					(*hasGlyph)(wg_obj font, uint32_t chr);
-	int					(*isMonospace)(wg_obj font);
-	int					(*isMonochrome)(wg_obj font);
-	wg_obj				(*getBackupFont)(wg_obj font);
-	wg_obj				(*createSurfaceFromGlyph)(wg_obj font, uint32_t chr, const wg_surfaceBP* blueprint, wg_obj surfaceFactory);
+	int					(*setFontSize)(wax_obj font, wax_spx size);
+	wax_spx				(*fontSize)(wax_obj font);
+	void				(*getGlyphWithoutBitmap)(wax_obj font, uint32_t chr, wax_glyph* pGlyph);
+	void				(*getGlyphWithBitmap)(wax_obj font, uint32_t chr, wax_glyph* pGlyph);
+	wax_spx				(*getKerning)(wax_obj font, wax_glyph* pLeftGlyph, wax_glyph* p_rightGlyph);
+	wax_spx				(*lineGap)(wax_obj font);
+	wax_spx				(*whitespaceAdvance)(wax_obj font);
+	wax_spx				(*maxAdvance)(wax_obj font);
+	wax_spx				(*maxAscend)(wax_obj font);
+	wax_spx 				(*maxDescend)(wax_obj font);
+	int					(*nbGlyphs)(wax_obj font);
+	int					(*hasGlyphs)(wax_obj font);
+	int					(*hasGlyph)(wax_obj font, uint32_t chr);
+	int					(*isMonospace)(wax_obj font);
+	int					(*isMonochrome)(wax_obj font);
+	wax_obj				(*getBackupFont)(wax_obj font);
+	wax_obj				(*createSurfaceFromGlyph)(wax_obj font, uint32_t chr, const wax_surfaceBP* blueprint, wax_obj surfaceFactory);
 
 } wg_font_calls;
 
@@ -194,116 +194,116 @@ typedef struct wg_gfxdevice_calls_struct
 {
 	int					structSize;
 
-	const wg_typeInfo*	(*deviceSurfaceType)(wg_obj device);
-	wg_canvasInfo		(*getCanvas)(wg_obj device);
-	wg_canvasInfo		(*getCanvasRef)(wg_obj device, wg_canvasRef ref);
-	wg_obj				(*canvasLayers)(wg_obj device);
-	wg_obj				(*surfaceFactory)(wg_obj device);
-	wg_obj				(*edgemapFactory)(wg_obj device);
+	const wax_typeInfo*	(*deviceSurfaceType)(wax_obj device);
+	wax_canvasInfo		(*getCanvas)(wax_obj device);
+	wax_canvasInfo		(*getCanvasRef)(wax_obj device, wax_canvasRef ref);
+	wax_obj				(*canvasLayers)(wax_obj device);
+	wax_obj				(*surfaceFactory)(wax_obj device);
+	wax_obj				(*edgemapFactory)(wax_obj device);
 	int					(*maxSegments)();
-	wg_sizeSPX			(*canvasSize)(wg_obj device);
-	int					(*setClipList)(wg_obj device, int nRectangles, const wg_rectSPX* pRectangles);
-	void				(*resetClipList)(wg_obj device);
-	int					(*pushClipList)(wg_obj device, int nRectangles, const wg_rectSPX* pRectangles);
-	int					(*popClipList)(wg_obj device);
-	const wg_rectSPX*	(*getClipList)(wg_obj device);
-	int					(*clipListSize)(wg_obj device);
-	const wg_rectSPX*	(*clipBounds)(wg_obj device);
-	void				(*setTintColor)(wg_obj device, wg_color color);
-	wg_color			(*getTintColor)(wg_obj device);
+	wax_sizeSPX			(*canvasSize)(wax_obj device);
+	int					(*setClipList)(wax_obj device, int nRectangles, const wax_rectSPX* pRectangles);
+	void				(*resetClipList)(wax_obj device);
+	int					(*pushClipList)(wax_obj device, int nRectangles, const wax_rectSPX* pRectangles);
+	int					(*popClipList)(wax_obj device);
+	const wax_rectSPX*	(*getClipList)(wax_obj device);
+	int					(*clipListSize)(wax_obj device);
+	const wax_rectSPX*	(*clipBounds)(wax_obj device);
+	void				(*setTintColor)(wax_obj device, wax_color color);
+	wax_color			(*getTintColor)(wax_obj device);
 
 	// RETIRED: Tintmaps and tint gradients were replaced by Tints, see setTint() below.
 
-	void				(*setTintmap)(wg_obj device, const wg_rectSPX* rect, const wg_obj tintmap);
-	wg_obj				(*getTintmap)(wg_obj device);
-	wg_rectSPX			(*getTintmapRect)(wg_obj device);
-	void				(*clearTintmap)(wg_obj device);
-	int					(*hasTintmap)(wg_obj device);
-	void				(*setTintGradient)(wg_obj device, const wg_rectSPX* rect, const void* gradient);
-	void				(*clearTintGradient)(wg_obj device);
+	void				(*setTintmap)(wax_obj device, const wax_rectSPX* rect, const wax_obj tintmap);
+	wax_obj				(*getTintmap)(wax_obj device);
+	wax_rectSPX			(*getTintmapRect)(wax_obj device);
+	void				(*clearTintmap)(wax_obj device);
+	int					(*hasTintmap)(wax_obj device);
+	void				(*setTintGradient)(wax_obj device, const wax_rectSPX* rect, const void* gradient);
+	void				(*clearTintGradient)(wax_obj device);
 
-	int					(*setBlendMode)(wg_obj device, wg_blendMode blendMode);
-	wg_blendMode 		(*getBlendMode)(wg_obj device);
-	int					(*setBlitSource)(wg_obj device, wg_obj surface);
-	wg_obj 				(*getBlitSource)(wg_obj device);
-	void				(*setMorphFactor)(wg_obj device, float factor);
-	float				(*getMorphFactor)(wg_obj device);
-	void				(*setRenderLayer)(wg_obj device, int layer);
-	int					(*getRenderLayer)(wg_obj device);
-	int					(*beginRender)(wg_obj device);
-	int					(*endRender)(wg_obj device);
-	int					(*isDeviceRendering)(wg_obj device);
-	int					(*isDeviceIdle)(wg_obj device);
-	void				(*flushDevice)(wg_obj device);
-	int					(*beginCanvasUpdateWithRef)(wg_obj device, wg_canvasRef canvas, int nUpdateRects, const wg_rectSPX* pUpdateRects, wg_obj canvasLayers, int startLayer);
-	int					(*beginCanvasUpdateWithSurface)(wg_obj device, wg_obj surface, int nUpdateRects, const wg_rectSPX* pUpdateRects, wg_obj canvasLayers, int startLayer);
-	void				(*endCanvasUpdate)(wg_obj device);
-	void				(*fill)(wg_obj device, wg_color col);
-	void				(*fillRect)(wg_obj device, const wg_rectSPX* rect, wg_color col);
-	void				(*plotPixels)(wg_obj device, int nCoords, const wg_coordSPX* pCoords, const wg_color* pColors);
-	void				(*drawLine)(wg_obj device, wg_coordSPX begin, wg_coordSPX end, wg_color color, wg_spx thickness);
-	void				(*drawStraightLine)(wg_obj device, wg_coordSPX begin, wg_direction dir, wg_spx length, wg_color color, wg_spx thickness);
-	void				(*blit)(wg_obj device, wg_coordSPX dest);
-	void				(*blitRect)(wg_obj device, wg_coordSPX dest, const wg_rectSPX* src);
-	void				(*flipBlit)(wg_obj device, wg_coordSPX dest, wg_gfxFlip flip);
-	void				(*flipBlitRect)(wg_obj device, wg_coordSPX dest, const wg_rectSPX* src, wg_gfxFlip flip);
-	void				(*stretchBlit)(wg_obj device, const wg_rectSPX* dest);
-	void				(*stretchBlitRect)(wg_obj device, const wg_rectSPX* dest, const wg_rectSPX* src);
-	void				(*stretchFlipBlit)(wg_obj device, const wg_rectSPX* dest, wg_gfxFlip flip);
-	void				(*stretchFlipBlitRect)(wg_obj device, const wg_rectSPX* dest, const wg_rectSPX* src, wg_gfxFlip flip);
-	void				(*precisionBlit)(wg_obj device, const wg_rectSPX* dest, const wg_rectF* srcSPX);
-	void				(*transformBlit)(wg_obj device, const wg_rectSPX* dest, wg_coordF srcSPX, const wg_transform * pTransform);
-	void				(*rotScaleBlit)(wg_obj device, const wg_rectSPX* dest, float rotationDegrees, float scale, wg_coordF srcCenter, wg_coordF destCenter);
-	void				(*tile)(wg_obj device, const wg_rectSPX* dest, wg_coordSPX shift);
-	void				(*flipTile)(wg_obj device, const wg_rectSPX* dest, wg_gfxFlip flip, wg_coordSPX shift);
-	void				(*scaleTile)(wg_obj device, const wg_rectSPX* dest, float scale, wg_coordSPX shift);
-	void				(*scaleFlipTile)(wg_obj device, const wg_rectSPX* dest, float scale, wg_gfxFlip flip, wg_coordSPX shift);
-	void				(*drawWave)(wg_obj device, const wg_rectSPX* dest, const wg_waveLine* pTopBorder, const wg_waveLine* pBottomBorder, wg_color fill);
-	void				(*flipDrawWave)(wg_obj device, const wg_rectSPX* dest, const wg_waveLine* pTopBorder, const wg_waveLine* pBottomBorder, wg_color fill, wg_gfxFlip flip);
-	void				(*drawElipse)(wg_obj device, const wg_rectSPX* canvas, wg_spx thickness, wg_color color, wg_spx outlineThickness, wg_color outlineColor);
-	void				(*drawPieChart)(wg_obj device, const wg_rectSPX* canvas, float start, int nSlices, const float* pSliceSizes, const wg_color* pSliceColors, float hubSize, wg_color hubColor, wg_color backColor, int bRectangular);
-	void				(*drawSegments)(wg_obj device, const wg_rectSPX* dest, int nSegments, const wg_color* pSegmentColors, int nEdgeStrips, const int* pEdgeStrips, int edgeStripPitch, wg_tintMode tintMode);
-	void				(*flipDrawSegments)(wg_obj device, const wg_rectSPX* dest, int nSegments, const wg_color* pSegmentColors, int nEdgeStrips, const int* pEdgeStrips, int edgeStripPitch, wg_gfxFlip flip, wg_tintMode tintMode);
-	void				(*drawEdgemap)(wg_obj device, wg_coordSPX dest, wg_obj edgemap);
-	void				(*flipDrawEdgemap)(wg_obj device, wg_coordSPX dest, wg_obj edgemap, wg_gfxFlip flip);
-	void				(*blitNinePatch)(wg_obj device, const wg_rectSPX* dstRect, const wg_borderSPX* dstFrame, const wg_ninePatch* patch, int scale);
+	int					(*setBlendMode)(wax_obj device, wax_blendMode blendMode);
+	wax_blendMode 		(*getBlendMode)(wax_obj device);
+	int					(*setBlitSource)(wax_obj device, wax_obj surface);
+	wax_obj 				(*getBlitSource)(wax_obj device);
+	void				(*setMorphFactor)(wax_obj device, float factor);
+	float				(*getMorphFactor)(wax_obj device);
+	void				(*setRenderLayer)(wax_obj device, int layer);
+	int					(*getRenderLayer)(wax_obj device);
+	int					(*beginRender)(wax_obj device);
+	int					(*endRender)(wax_obj device);
+	int					(*isDeviceRendering)(wax_obj device);
+	int					(*isDeviceIdle)(wax_obj device);
+	void				(*flushDevice)(wax_obj device);
+	int					(*beginCanvasUpdateWithRef)(wax_obj device, wax_canvasRef canvas, int nUpdateRects, const wax_rectSPX* pUpdateRects, wax_obj canvasLayers, int startLayer);
+	int					(*beginCanvasUpdateWithSurface)(wax_obj device, wax_obj surface, int nUpdateRects, const wax_rectSPX* pUpdateRects, wax_obj canvasLayers, int startLayer);
+	void				(*endCanvasUpdate)(wax_obj device);
+	void				(*fill)(wax_obj device, wax_color col);
+	void				(*fillRect)(wax_obj device, const wax_rectSPX* rect, wax_color col);
+	void				(*plotPixels)(wax_obj device, int nCoords, const wax_coordSPX* pCoords, const wax_color* pColors);
+	void				(*drawLine)(wax_obj device, wax_coordSPX begin, wax_coordSPX end, wax_color color, wax_spx thickness);
+	void				(*drawStraightLine)(wax_obj device, wax_coordSPX begin, wax_direction dir, wax_spx length, wax_color color, wax_spx thickness);
+	void				(*blit)(wax_obj device, wax_coordSPX dest);
+	void				(*blitRect)(wax_obj device, wax_coordSPX dest, const wax_rectSPX* src);
+	void				(*flipBlit)(wax_obj device, wax_coordSPX dest, wax_gfxFlip flip);
+	void				(*flipBlitRect)(wax_obj device, wax_coordSPX dest, const wax_rectSPX* src, wax_gfxFlip flip);
+	void				(*stretchBlit)(wax_obj device, const wax_rectSPX* dest);
+	void				(*stretchBlitRect)(wax_obj device, const wax_rectSPX* dest, const wax_rectSPX* src);
+	void				(*stretchFlipBlit)(wax_obj device, const wax_rectSPX* dest, wax_gfxFlip flip);
+	void				(*stretchFlipBlitRect)(wax_obj device, const wax_rectSPX* dest, const wax_rectSPX* src, wax_gfxFlip flip);
+	void				(*precisionBlit)(wax_obj device, const wax_rectSPX* dest, const wax_rectF* srcSPX);
+	void				(*transformBlit)(wax_obj device, const wax_rectSPX* dest, wax_coordF srcSPX, const wax_transform * pTransform);
+	void				(*rotScaleBlit)(wax_obj device, const wax_rectSPX* dest, float rotationDegrees, float scale, wax_coordF srcCenter, wax_coordF destCenter);
+	void				(*tile)(wax_obj device, const wax_rectSPX* dest, wax_coordSPX shift);
+	void				(*flipTile)(wax_obj device, const wax_rectSPX* dest, wax_gfxFlip flip, wax_coordSPX shift);
+	void				(*scaleTile)(wax_obj device, const wax_rectSPX* dest, float scale, wax_coordSPX shift);
+	void				(*scaleFlipTile)(wax_obj device, const wax_rectSPX* dest, float scale, wax_gfxFlip flip, wax_coordSPX shift);
+	void				(*drawWave)(wax_obj device, const wax_rectSPX* dest, const wax_waveLine* pTopBorder, const wax_waveLine* pBottomBorder, wax_color fill);
+	void				(*flipDrawWave)(wax_obj device, const wax_rectSPX* dest, const wax_waveLine* pTopBorder, const wax_waveLine* pBottomBorder, wax_color fill, wax_gfxFlip flip);
+	void				(*drawElipse)(wax_obj device, const wax_rectSPX* canvas, wax_spx thickness, wax_color color, wax_spx outlineThickness, wax_color outlineColor);
+	void				(*drawPieChart)(wax_obj device, const wax_rectSPX* canvas, float start, int nSlices, const float* pSliceSizes, const wax_color* pSliceColors, float hubSize, wax_color hubColor, wax_color backColor, int bRectangular);
+	void				(*drawSegments)(wax_obj device, const wax_rectSPX* dest, int nSegments, const wax_color* pSegmentColors, int nEdgeStrips, const int* pEdgeStrips, int edgeStripPitch, wax_tintMode tintMode);
+	void				(*flipDrawSegments)(wax_obj device, const wax_rectSPX* dest, int nSegments, const wax_color* pSegmentColors, int nEdgeStrips, const int* pEdgeStrips, int edgeStripPitch, wax_gfxFlip flip, wax_tintMode tintMode);
+	void				(*drawEdgemap)(wax_obj device, wax_coordSPX dest, wax_obj edgemap);
+	void				(*flipDrawEdgemap)(wax_obj device, wax_coordSPX dest, wax_obj edgemap, wax_gfxFlip flip);
+	void				(*blitNinePatch)(wax_obj device, const wax_rectSPX* dstRect, const wax_borderSPX* dstFrame, const wax_ninePatch* patch, int scale);
 
-	void				(*setBlurMatrices)(wg_obj device, wg_spx radius, const float red[9], const float green[9], const float blue[9] );
-	void				(*setFixedBlendColor)(wg_obj device, wg_color color );
-	wg_color			(*getFixedBlendColor)(wg_obj device);
+	void				(*setBlurMatrices)(wax_obj device, wax_spx radius, const float red[9], const float green[9], const float blue[9] );
+	void				(*setFixedBlendColor)(wax_obj device, wax_color color );
+	wax_color			(*getFixedBlendColor)(wax_obj device);
 	
-	void				(*blur)(wg_obj device, wg_coordSPX dest);
-	void				(*blurRect)(wg_obj device, wg_coordSPX dest, const wg_rectSPX* src);
-	void				(*stretchBlur)(wg_obj device, const wg_rectSPX* dest);
-	void				(*stretchBlurRect)(wg_obj device, const wg_rectSPX* dest, const wg_rectSPX* src);
-	void				(*transformBlur)(wg_obj device, const wg_rectSPX* dest, wg_coordF srcSPX, const wg_transform * pTransform);
-	void				(*rotScaleBlur)(wg_obj device, const wg_rectSPX* dest, float rotationDegrees, float scale, wg_coordF srcCenter, wg_coordF destCenter);
+	void				(*blur)(wax_obj device, wax_coordSPX dest);
+	void				(*blurRect)(wax_obj device, wax_coordSPX dest, const wax_rectSPX* src);
+	void				(*stretchBlur)(wax_obj device, const wax_rectSPX* dest);
+	void				(*stretchBlurRect)(wax_obj device, const wax_rectSPX* dest, const wax_rectSPX* src);
+	void				(*transformBlur)(wax_obj device, const wax_rectSPX* dest, wax_coordF srcSPX, const wax_transform * pTransform);
+	void				(*rotScaleBlur)(wax_obj device, const wax_rectSPX* dest, float rotationDegrees, float scale, wax_coordF srcCenter, wax_coordF destCenter);
 
 	// New since first revision to interface
 
-	void				(*setBlurbrush)(wg_obj device, wg_obj brush );
+	void				(*setBlurbrush)(wax_obj device, wax_obj brush );
 
-	void				(*setTint)(wg_obj device, const wg_rectSPX* rect, const wg_obj tint);
-	wg_obj				(*getTint)(wg_obj device);
-	wg_rectSPX			(*getTintRect)(wg_obj device);
-	void				(*clearTint)(wg_obj device);
-	int					(*hasTint)(wg_obj device);
-	void				(*clearTintColor)(wg_obj device);
-	int					(*hasTintColor)(wg_obj device);
+	void				(*setTint)(wax_obj device, const wax_rectSPX* rect, const wax_obj tint);
+	wax_obj				(*getTint)(wax_obj device);
+	wax_rectSPX			(*getTintRect)(wax_obj device);
+	void				(*clearTint)(wax_obj device);
+	int					(*hasTint)(wax_obj device);
+	void				(*clearTintColor)(wax_obj device);
+	int					(*hasTintColor)(wax_obj device);
 
-	void				(*tileEdgemap)(wg_obj device, const wg_rectSPX* dest, wg_obj edgemap, wg_coordSPX shift);
-	void				(*flipTileEdgemap)(wg_obj device, const wg_rectSPX* dest, wg_obj edgemap, wg_gfxFlip flip, wg_coordSPX shift);
+	void				(*tileEdgemap)(wax_obj device, const wax_rectSPX* dest, wax_obj edgemap, wax_coordSPX shift);
+	void				(*flipTileEdgemap)(wax_obj device, const wax_rectSPX* dest, wax_obj edgemap, wax_gfxFlip flip, wax_coordSPX shift);
 
-	void				(*drawRoundedBox)(wg_obj device, const wg_roundedBoxSpec* spec);
-	void				(*drawRing)(wg_obj device, const wg_ringSpec* spec);
+	void				(*drawRoundedBox)(wax_obj device, const wax_roundedBoxSpec* spec);
+	void				(*drawRing)(wax_obj device, const wax_ringSpec* spec);
 
-	wg_obj				(*warpmapFactory)(wg_obj device);
-	void				(*warpBlit)(wg_obj device, wg_coordSPX dest, wg_obj warpmap, wg_coordSPX sourceOffset);
-	void				(*warpBlitRect)(wg_obj device, wg_coordSPX dest, wg_obj warpmap, const wg_rectSPX* source, wg_coordSPX sourceOffset);
-	void				(*warpDrawEdgemap)(wg_obj device, wg_coordSPX dest, wg_obj warpmap, wg_obj edgemap, wg_coordSPX sourceOffset);
+	wax_obj				(*warpmapFactory)(wax_obj device);
+	void				(*warpBlit)(wax_obj device, wax_coordSPX dest, wax_obj warpmap, wax_coordSPX sourceOffset);
+	void				(*warpBlitRect)(wax_obj device, wax_coordSPX dest, wax_obj warpmap, const wax_rectSPX* source, wax_coordSPX sourceOffset);
+	void				(*warpDrawEdgemap)(wax_obj device, wax_coordSPX dest, wax_obj warpmap, wax_obj edgemap, wax_coordSPX sourceOffset);
 
-	void				(*drawLineWithCaps)(wg_obj device, wg_coordSPX begin, wg_coordSPX end, wg_color color, wg_spx thickness, wg_lineCap beginCap, wg_lineCap endCap);
-	void				(*drawStraightLineWithCaps)(wg_obj device, wg_coordSPX begin, wg_direction dir, wg_spx length, wg_color color, wg_spx thickness, wg_lineCap beginCap, wg_lineCap endCap);
+	void				(*drawLineWithCaps)(wax_obj device, wax_coordSPX begin, wax_coordSPX end, wax_color color, wax_spx thickness, wax_lineCap beginCap, wax_lineCap endCap);
+	void				(*drawStraightLineWithCaps)(wax_obj device, wax_coordSPX begin, wax_direction dir, wax_spx length, wax_color color, wax_spx thickness, wax_lineCap beginCap, wax_lineCap endCap);
 
 } wg_gfxdevice_calls;
 
@@ -314,12 +314,12 @@ typedef struct wg_streambuffer_calls_struct
 {
 	int					structSize;
 
-	wg_obj				(*createStreamBuffer)(int initialCapacity);
-	wg_component		(*getStreamBufferOutput)(wg_obj streamBuffer);
-	wg_component		(*getStreamBufferInput)(wg_obj streamBuffer);
-	int					(*streamBufferCapacity)(wg_obj streamBuffer);
-	int					(*streamBufferHasChunk)(wg_obj streamBuffer);
-	int					(*streamBufferBytes)(wg_obj streamBuffer);
+	wax_obj				(*createStreamBuffer)(int initialCapacity);
+	wax_component		(*getStreamBufferOutput)(wax_obj streamBuffer);
+	wax_component		(*getStreamBufferInput)(wax_obj streamBuffer);
+	int					(*streamBufferCapacity)(wax_obj streamBuffer);
+	int					(*streamBufferHasChunk)(wax_obj streamBuffer);
+	int					(*streamBufferBytes)(wax_obj streamBuffer);
 
 } wg_streambuffer_calls;
 
@@ -330,12 +330,12 @@ typedef struct wg_streamplayer_calls_struct
 {
 	int					structSize;
 
-	wg_obj				(*createStreamPlayer)(wg_obj device, wg_obj surfaceFactory, wg_obj edgemapFactory);
-	wg_component		(*getStreamPlayerInput)(wg_obj streamPlayer);
-	void				(*setStreamPlayerStoreDirtyRects)(wg_obj streamPlayer, int bStore);
-	void				(*setStreamPlayerMaxDirtyRects)(wg_obj streamPlayer, int max);
-	int					(*getStreamPlayerDirtyRects)(wg_obj streamPlayer, wg_canvasRef canvas, const wg_rectI** pRects);
-	void				(*clearStreamPlayerDirtyRects)(wg_obj streamPlayer);
+	wax_obj				(*createStreamPlayer)(wax_obj device, wax_obj surfaceFactory, wax_obj edgemapFactory);
+	wax_component		(*getStreamPlayerInput)(wax_obj streamPlayer);
+	void				(*setStreamPlayerStoreDirtyRects)(wax_obj streamPlayer, int bStore);
+	void				(*setStreamPlayerMaxDirtyRects)(wax_obj streamPlayer, int max);
+	int					(*getStreamPlayerDirtyRects)(wax_obj streamPlayer, wax_canvasRef canvas, const wax_rectI** pRects);
+	void				(*clearStreamPlayerDirtyRects)(wax_obj streamPlayer);
 
 } wg_streamplayer_calls;
 
@@ -346,15 +346,15 @@ typedef struct wg_streampump_calls_struct
 {
 	int					structSize;
 
-	wg_obj				(*createStreamPump)();
-	wg_obj				(*createStreamPumpWithInputOutput)(wg_component input, wg_component output);
-	void				(*setStreamPumpInput)(wg_obj streamPump, wg_component input);
-	void				(*setStreamPumpOutput)(wg_obj streamPump, wg_component output);
-	wg_streamChunkId		(*peekChunk)(wg_obj streamPump);
-	int					(*pumpChunk)(wg_obj streamPump);
-	int					(*pumpUntilFrame)(wg_obj streamPump);
-	int					(*pumpFrame)(wg_obj streamPump);
-	int					(*pumpAll)(wg_obj streamPump);
+	wax_obj				(*createStreamPump)();
+	wax_obj				(*createStreamPumpWithInputOutput)(wax_component input, wax_component output);
+	void				(*setStreamPumpInput)(wax_obj streamPump, wax_component input);
+	void				(*setStreamPumpOutput)(wax_obj streamPump, wax_component output);
+	wax_streamChunkId		(*peekChunk)(wax_obj streamPump);
+	int					(*pumpChunk)(wax_obj streamPump);
+	int					(*pumpUntilFrame)(wax_obj streamPump);
+	int					(*pumpFrame)(wax_obj streamPump);
+	int					(*pumpAll)(wax_obj streamPump);
 
 } wg_streampump_calls;
 
@@ -365,11 +365,11 @@ typedef struct wg_streamreader_calls_struct
 {
 	int					structSize;
 
-	wg_obj				(*createStreamReader)(wg_readStream_func callback);
-	wg_component		(*getStreamReaderOutput)(wg_obj streamReader);
-	int					(*streamReaderCapacity)(wg_obj streamReader);
-	int					(*streamReaderHasChunk)(wg_obj streamReader);
-	int					(*streamReaderBytes)(wg_obj streamReader);
+	wax_obj				(*createStreamReader)(wax_readStream_func callback);
+	wax_component		(*getStreamReaderOutput)(wax_obj streamReader);
+	int					(*streamReaderCapacity)(wax_obj streamReader);
+	int					(*streamReaderHasChunk)(wax_obj streamReader);
+	int					(*streamReaderBytes)(wax_obj streamReader);
 
 } wg_streamreader_calls;
 */
@@ -381,13 +381,13 @@ typedef struct wg_object_calls_struct
 {
 	int					structSize;
 
-	const wg_typeInfo*	(*getTypeInfo)(wg_obj);
-	int					(*isInstanceOf)(wg_obj, const wg_typeInfo* pTypeInfo);
-	void				(*setFinalizer)(wg_obj, wg_finalizer_func pFinalizer);
-	wg_finalizer_func	(*finalizer)(wg_obj);
-	void				(*retain)(wg_obj);
-	void				(*release)(wg_obj);
-	int					(*refcount)(wg_obj);
+	const wax_typeInfo*	(*getTypeInfo)(wax_obj);
+	int					(*isInstanceOf)(wax_obj, const wax_typeInfo* pTypeInfo);
+	void				(*setFinalizer)(wax_obj, wax_finalizer_func pFinalizer);
+	wax_finalizer_func	(*finalizer)(wax_obj);
+	void				(*retain)(wax_obj);
+	void				(*release)(wax_obj);
+	int					(*refcount)(wax_obj);
 
 } wg_object_calls;
 
@@ -398,45 +398,45 @@ typedef struct wg_surface_calls_struct
 {
 	int					structSize;
 
-	void				(*setSurfaceIdentity)(wg_obj surface, int id);
-	int					(*getSurfaceIdentity)(wg_obj surface);
-	wg_sizeI			(*surfacePixelSize)(wg_obj surface);
-	int					(*surfacePixelWidth)(wg_obj surface);
-	int					(*surfacePixelHeight)(wg_obj surface);
-	wg_size				(*surfacePointSize)(wg_obj surface);
-	wg_pts				(*surfacePointWidth)(wg_obj surface);
-	wg_pts				(*surfacePointHeight)(wg_obj surface);
-	int					(*surfaceScale)(wg_obj surface);
-	wg_sampleMethod		(*surfaceSampleMethod)(wg_obj surface);
-	int					(*surfaceIsTiling)(wg_obj surface);
-	int					(*surfaceIsMipmapped)(wg_obj surface);
-	int					(*surfaceAlpha)(wg_obj surface, wg_coordSPX coord);
-	const wg_color8*	(*surfacePalette)(wg_obj surface);
-	int					(*surfacePaletteSize)(wg_obj surface);
-	int					(*surfacePaletteCapacity)(wg_obj surface);
-	const wg_pixelDescription* (*surfacePixelDescription)(wg_obj surface);
-	wg_pixelFormat		(*surfacePixelFormat)(wg_obj surface);
-	int					(*surfacePixelBits)(wg_obj surface);
-	int					(*surfaceIsOpaque)(wg_obj surface);
-	int					(*surfaceCanBeCanvas)(wg_obj surface);
-	wg_pixelBuffer		(*allocPixelBuffer)(wg_obj surface);
-	wg_pixelBuffer		(*allocPixelBufferFromRect)(wg_obj surface, const wg_rectI* rect);
-	int					(*pushPixels)(wg_obj surface, const wg_pixelBuffer* buffer);
-	int					(*pushPixelsFromRect)(wg_obj surface, const wg_pixelBuffer* buffer, const wg_rectI* bufferRect);
-	void				(*pullPixels)(wg_obj surface, const wg_pixelBuffer* buffer);
-	void				(*pullPixelsFromRect)(wg_obj surface, const wg_pixelBuffer* buffer, const wg_rectI* bufferRect);
-	void				(*freePixelBuffer)(wg_obj surface, const wg_pixelBuffer* buffer);
-	int					(*fillSurface)(wg_obj surface, wg_color col);
-	int					(*fillSurfaceRect)(wg_obj surface, const wg_rectI* region, wg_color col);
-	int					(*copySurface)(wg_obj destSurface, wg_coordI dst, wg_obj sourceSurface);
-	int					(*copySurfaceRect)(wg_obj destSurface, wg_coordI dst, wg_obj sourceSurface, const wg_rectI* srcRect);
-	void				(*setSurfaceBaggage)(wg_obj surface, wg_obj baggage);
-	wg_obj				(*getSurfaceBaggage)(wg_obj surface);
-	int					(*addSurfaceObserver)(wg_obj surface, wg_surfaceObserver_func, void* pData, int data);
-	int					(*removeSurfaceObserver)(wg_obj surface, int observerId);
-	wg_surfaceBP		(*getSurfaceBlueprint)(wg_obj surface);
-	wg_colorSpace		(*surfaceColorSpace)(wg_obj surface);
-	int					(*surfaceIsBigEndian)(wg_obj surface);
+	void				(*setSurfaceIdentity)(wax_obj surface, int id);
+	int					(*getSurfaceIdentity)(wax_obj surface);
+	wax_sizeI			(*surfacePixelSize)(wax_obj surface);
+	int					(*surfacePixelWidth)(wax_obj surface);
+	int					(*surfacePixelHeight)(wax_obj surface);
+	wax_size				(*surfacePointSize)(wax_obj surface);
+	wax_pts				(*surfacePointWidth)(wax_obj surface);
+	wax_pts				(*surfacePointHeight)(wax_obj surface);
+	int					(*surfaceScale)(wax_obj surface);
+	wax_sampleMethod		(*surfaceSampleMethod)(wax_obj surface);
+	int					(*surfaceIsTiling)(wax_obj surface);
+	int					(*surfaceIsMipmapped)(wax_obj surface);
+	int					(*surfaceAlpha)(wax_obj surface, wax_coordSPX coord);
+	const wax_color8*	(*surfacePalette)(wax_obj surface);
+	int					(*surfacePaletteSize)(wax_obj surface);
+	int					(*surfacePaletteCapacity)(wax_obj surface);
+	const wax_pixelDescription* (*surfacePixelDescription)(wax_obj surface);
+	wax_pixelFormat		(*surfacePixelFormat)(wax_obj surface);
+	int					(*surfacePixelBits)(wax_obj surface);
+	int					(*surfaceIsOpaque)(wax_obj surface);
+	int					(*surfaceCanBeCanvas)(wax_obj surface);
+	wax_pixelBuffer		(*allocPixelBuffer)(wax_obj surface);
+	wax_pixelBuffer		(*allocPixelBufferFromRect)(wax_obj surface, const wax_rectI* rect);
+	int					(*pushPixels)(wax_obj surface, const wax_pixelBuffer* buffer);
+	int					(*pushPixelsFromRect)(wax_obj surface, const wax_pixelBuffer* buffer, const wax_rectI* bufferRect);
+	void				(*pullPixels)(wax_obj surface, const wax_pixelBuffer* buffer);
+	void				(*pullPixelsFromRect)(wax_obj surface, const wax_pixelBuffer* buffer, const wax_rectI* bufferRect);
+	void				(*freePixelBuffer)(wax_obj surface, const wax_pixelBuffer* buffer);
+	int					(*fillSurface)(wax_obj surface, wax_color col);
+	int					(*fillSurfaceRect)(wax_obj surface, const wax_rectI* region, wax_color col);
+	int					(*copySurface)(wax_obj destSurface, wax_coordI dst, wax_obj sourceSurface);
+	int					(*copySurfaceRect)(wax_obj destSurface, wax_coordI dst, wax_obj sourceSurface, const wax_rectI* srcRect);
+	void				(*setSurfaceBaggage)(wax_obj surface, wax_obj baggage);
+	wax_obj				(*getSurfaceBaggage)(wax_obj surface);
+	int					(*addSurfaceObserver)(wax_obj surface, wax_surfaceObserver_func, void* pData, int data);
+	int					(*removeSurfaceObserver)(wax_obj surface, int observerId);
+	wax_surfaceBP		(*getSurfaceBlueprint)(wax_obj surface);
+	wax_colorSpace		(*surfaceColorSpace)(wax_obj surface);
+	int					(*surfaceIsBigEndian)(wax_obj surface);
 
 } wg_surface_calls;
 
@@ -447,11 +447,11 @@ typedef struct wg_surfacefactory_calls_struct
 {
 	int					structSize;
 
-	wg_sizeI			(*maxSurfaceSize)(wg_obj surfaceFactory);
-	wg_obj				(*createSurface)(wg_obj factory, const wg_surfaceBP* blueprint);
-	wg_obj				(*createSurfaceFromBlob)(wg_obj factory, const wg_surfaceBP* blueprint, wg_obj blob, int pitch);
-	wg_obj				(*createSurfaceFromBitmap)(wg_obj factory, const wg_surfaceBP* blueprint, const uint8_t* pPixels, wg_pixelFormat format,  int pitch, const wg_color8 * pPalette, int paletteSize);
-	wg_obj				(*createSurfaceFromRawData)(wg_obj factory, const wg_surfaceBP* blueprint, const uint8_t* pPixels, const wg_pixelDescription* pPixelDescription, int pitch, const wg_color8* pPalette, int paletteSize);
+	wax_sizeI			(*maxSurfaceSize)(wax_obj surfaceFactory);
+	wax_obj				(*createSurface)(wax_obj factory, const wax_surfaceBP* blueprint);
+	wax_obj				(*createSurfaceFromBlob)(wax_obj factory, const wax_surfaceBP* blueprint, wax_obj blob, int pitch);
+	wax_obj				(*createSurfaceFromBitmap)(wax_obj factory, const wax_surfaceBP* blueprint, const uint8_t* pPixels, wax_pixelFormat format,  int pitch, const wax_color8 * pPalette, int paletteSize);
+	wax_obj				(*createSurfaceFromRawData)(wax_obj factory, const wax_surfaceBP* blueprint, const uint8_t* pPixels, const wax_pixelDescription* pPixelDescription, int pitch, const wax_color8* pPalette, int paletteSize);
 
 } wg_surfacefactory_calls;
 
@@ -462,36 +462,36 @@ typedef struct wg_edgemap_calls_struct
 {
 	int					structSize;
 
-	wg_sizeI			(*edgemapPixelSize)(wg_obj edgemap);
-	int					(*setRenderSegments)(wg_obj edgemap, int nSegments);
-	int					(*getRenderSegments)(wg_obj edgemap);
+	wax_sizeI			(*edgemapPixelSize)(wax_obj edgemap);
+	int					(*setRenderSegments)(wax_obj edgemap, int nSegments);
+	int					(*getRenderSegments)(wax_obj edgemap);
 
-	int					(*edgemapPaletteType)(wg_obj edgemap);		// RETIRED, there are no palette types anymore.
-	int					(*setEdgemapColors)(wg_obj edgemap, int begin, int end, const wg_color * pColors);
-	int					(*setEdgemapColorsFromGradients)(wg_obj edgemap, int begin, int end, const void * pGradients );		// RETIRED
-	int					(*setEdgemapColorsFromTintmaps)(wg_obj edgemap, int begin, int end, wg_obj * pTintmaps );			// RETIRED
-	int					(*setEdgemapColorsFromStrips)(wg_obj edgemap, int begin, int end, const wg_color * pColorstripX, const wg_color * pColorstripY );	// RETIRED
+	int					(*edgemapPaletteType)(wax_obj edgemap);		// RETIRED, there are no palette types anymore.
+	int					(*setEdgemapColors)(wax_obj edgemap, int begin, int end, const wax_color * pColors);
+	int					(*setEdgemapColorsFromGradients)(wax_obj edgemap, int begin, int end, const void * pGradients );		// RETIRED
+	int					(*setEdgemapColorsFromTintmaps)(wax_obj edgemap, int begin, int end, wax_obj * pTintmaps );			// RETIRED
+	int					(*setEdgemapColorsFromStrips)(wax_obj edgemap, int begin, int end, const wax_color * pColorstripX, const wax_color * pColorstripY );	// RETIRED
 
-	int					(*importEdgemapPaletteEntries)(wg_obj edgemap, int begin, int end, const wg_color * pColors );		// RETIRED
+	int					(*importEdgemapPaletteEntries)(wax_obj edgemap, int begin, int end, const wax_color * pColors );		// RETIRED
 
-	const wg_color *  	(*edgemapFlatColors)(wg_obj edgemap);
-	const wg_color *  	(*edgemapColorstripsX)(wg_obj edgemap);		// RETIRED
-	const wg_color *  	(*edgemapColorstripsY)(wg_obj edgemap);		// RETIRED
+	const wax_color *  	(*edgemapFlatColors)(wax_obj edgemap);
+	const wax_color *  	(*edgemapColorstripsX)(wax_obj edgemap);		// RETIRED
+	const wax_color *  	(*edgemapColorstripsY)(wax_obj edgemap);		// RETIRED
 
-	int					(*edgemapSegments)(wg_obj edgemap);
-	int					(*edgemapSamples)(wg_obj edgemap);
-	int 				(*importSpxSamples)(wg_obj edgemap, wg_sampleOrigo origo, const wg_spx* pSource, int edgeBegin, int edgeEnd, int sampleBegin, int sampleEnd, int edgePitch, int samplePitch);
-	int 				(*importFloatSamples)(wg_obj edgemap, wg_sampleOrigo origo, const float* pSource, int edgeBegin, int edgeEnd, int sampleBegin, int sampleEnd, int edgePitch, int samplePitch);
-	int 				(*exportSpxSamples)(wg_obj edgemap, wg_sampleOrigo origo, wg_spx* pDestination, int edgeBegin, int edgeEnd, int sampleBegin, int sampleEnd, int edgePitch, int samplePitch);
-	int 				(*exportFloatSamples)(wg_obj edgemap, wg_sampleOrigo origo, float* pDestination, int edgeBegin, int edgeEnd, int sampleBegin, int sampleEnd, int edgePitch, int samplePitch);
-	int					(*importPaletteEntries)(wg_obj edgemap, int begin, int end, const wg_color * pColors );		// RETIRED
+	int					(*edgemapSegments)(wax_obj edgemap);
+	int					(*edgemapSamples)(wax_obj edgemap);
+	int 				(*importSpxSamples)(wax_obj edgemap, wax_sampleOrigo origo, const wax_spx* pSource, int edgeBegin, int edgeEnd, int sampleBegin, int sampleEnd, int edgePitch, int samplePitch);
+	int 				(*importFloatSamples)(wax_obj edgemap, wax_sampleOrigo origo, const float* pSource, int edgeBegin, int edgeEnd, int sampleBegin, int sampleEnd, int edgePitch, int samplePitch);
+	int 				(*exportSpxSamples)(wax_obj edgemap, wax_sampleOrigo origo, wax_spx* pDestination, int edgeBegin, int edgeEnd, int sampleBegin, int sampleEnd, int edgePitch, int samplePitch);
+	int 				(*exportFloatSamples)(wax_obj edgemap, wax_sampleOrigo origo, float* pDestination, int edgeBegin, int edgeEnd, int sampleBegin, int sampleEnd, int edgePitch, int samplePitch);
+	int					(*importPaletteEntries)(wax_obj edgemap, int begin, int end, const wax_color * pColors );		// RETIRED
 
-	void				(*exportBounds)( wg_obj edgemap, wg_spx * pMinMaxOutput, int nSections, int sectionWidth, int topEdge, int bottomEdge, int mapOffset, int minMaxPitch );
+	void				(*exportBounds)( wax_obj edgemap, wax_spx * pMinMaxOutput, int nSections, int sectionWidth, int topEdge, int bottomEdge, int mapOffset, int minMaxPitch );
 
-	int					(*setEdgemapTints)(wg_obj edgemap, int begin, int end, const wg_obj * pTints );
-	wg_obj				(*edgemapTint)(wg_obj edgemap, int segment);
+	int					(*setEdgemapTints)(wax_obj edgemap, int begin, int end, const wax_obj * pTints );
+	wax_obj				(*edgemapTint)(wax_obj edgemap, int segment);
 
-	int					(*edgemapIsTiling)(wg_obj edgemap);
+	int					(*edgemapIsTiling)(wax_obj edgemap);
 } wg_edgemap_calls;
 
 
@@ -502,13 +502,13 @@ typedef struct wg_warpmap_calls_struct
 {
 	int					structSize;
 
-	wg_sizeI			(*warpmapPixelSize)(wg_obj warpmap);
-	int					(*warpmapCellSize)(wg_obj warpmap);
-	int					(*setWarpmapPeriods)(wg_obj warpmap, float uPeriod, float vPeriod);
-	float				(*warpmapUPeriod)(wg_obj warpmap);
-	float				(*warpmapVPeriod)(wg_obj warpmap);
-	int					(*importWarpmapNodes)(wg_obj warpmap, const wg_rectI* region, const wg_coordF* pSource, int pitch);
-	int					(*exportWarpmapNodes)(wg_obj warpmap, const wg_rectI* region, wg_coordF* pDestination, int pitch);
+	wax_sizeI			(*warpmapPixelSize)(wax_obj warpmap);
+	int					(*warpmapCellSize)(wax_obj warpmap);
+	int					(*setWarpmapPeriods)(wax_obj warpmap, float uPeriod, float vPeriod);
+	float				(*warpmapUPeriod)(wax_obj warpmap);
+	float				(*warpmapVPeriod)(wax_obj warpmap);
+	int					(*importWarpmapNodes)(wax_obj warpmap, const wax_rectI* region, const wax_coordF* pSource, int pitch);
+	int					(*exportWarpmapNodes)(wax_obj warpmap, const wax_rectI* region, wax_coordF* pDestination, int pitch);
 
 } wg_warpmap_calls;
 
@@ -519,8 +519,8 @@ typedef struct wg_warpmapfactory_calls_struct
 {
 	int					structSize;
 
-	wg_obj				(*createWarpmap)(wg_obj factory, const wg_warpmapBP* blueprint);
-	wg_obj				(*createWarpmapFromNodes)(wg_obj factory, const wg_warpmapBP* blueprint, const wg_coordF* pNodes, int pitch);
+	wax_obj				(*createWarpmap)(wax_obj factory, const wax_warpmapBP* blueprint);
+	wax_obj				(*createWarpmapFromNodes)(wax_obj factory, const wax_warpmapBP* blueprint, const wax_coordF* pNodes, int pitch);
 
 } wg_warpmapfactory_calls;
 
@@ -531,9 +531,9 @@ typedef struct wg_edgemapfactory_calls_struct
 {
 	int					structSize;
 
-	wg_obj				(*createEdgemap)(wg_obj factory, const wg_edgemapBP* blueprint);
-	wg_obj				(*createEdgemapFromFloats)(wg_obj factory, const wg_edgemapBP* blueprint, wg_sampleOrigo origo, const float* pSamples, int edges, int edgePitch, int samplePitch);
-	wg_obj				(*createEdgemapFromSpx)(wg_obj factory, const wg_edgemapBP* blueprint, wg_sampleOrigo origo, const wg_spx* pSamples, int edges, int edgePitch, int samplePitch);
+	wax_obj				(*createEdgemap)(wax_obj factory, const wax_edgemapBP* blueprint);
+	wax_obj				(*createEdgemapFromFloats)(wax_obj factory, const wax_edgemapBP* blueprint, wax_sampleOrigo origo, const float* pSamples, int edges, int edgePitch, int samplePitch);
+	wax_obj				(*createEdgemapFromSpx)(wax_obj factory, const wax_edgemapBP* blueprint, wax_sampleOrigo origo, const wax_spx* pSamples, int edges, int edgePitch, int samplePitch);
 
 } wg_edgemapfactory_calls;
 
@@ -545,18 +545,18 @@ typedef	struct wg_plugincapsule_calls_struct
 {
 		int			structSize;
 
-		void		(*requestRender)(wg_obj hostCapsule, wg_rectSPX rect);
-		void		(*requestResize)(wg_obj	hostCapsule);
-		int			(*isVisible)(wg_obj hostCapsule);
-		wg_rectSPX	(*windowSection)(wg_obj hostCapsule);
-		int			(*requestFocus)(wg_obj hostCapsule, int bRaiseWindow);
-		int			(*releaseFocus)(wg_obj hostCapsule);
-		int			(*requestPreRenderCall)(wg_obj hostCapsule);
+		void		(*requestRender)(wax_obj hostCapsule, wax_rectSPX rect);
+		void		(*requestResize)(wax_obj	hostCapsule);
+		int			(*isVisible)(wax_obj hostCapsule);
+		wax_rectSPX	(*windowSection)(wax_obj hostCapsule);
+		int			(*requestFocus)(wax_obj hostCapsule, int bRaiseWindow);
+		int			(*releaseFocus)(wax_obj hostCapsule);
+		int			(*requestPreRenderCall)(wax_obj hostCapsule);
 
-		void		(*requestInView)(wg_obj hostCapsule, wg_rectSPX mustHaveArea, wg_rectSPX niceToHaveArea );
+		void		(*requestInView)(wax_obj hostCapsule, wax_rectSPX mustHaveArea, wax_rectSPX niceToHaveArea );
 
-		void		(*connect)(wg_obj hostCapsule, void * pPluginRoot, wg_pluginroot_calls* pInterface);
-		void		(*disconnect)(wg_obj hostCapsule);
+		void		(*connect)(wax_obj hostCapsule, void * pPluginRoot, wg_pluginroot_calls* pInterface);
+		void		(*disconnect)(wax_obj hostCapsule);
 
 } wg_plugincapsule_calls;
 
@@ -566,13 +566,13 @@ typedef struct wg_blurbrush_calls_struct
 {
 	int				structSize;
 
-	wg_obj			(*create)( wg_blurbrushBP bp );
+	wax_obj			(*create)( wax_blurbrushBP bp );
 
-	wg_spx			(*size)( wg_obj blurbrush );
+	wax_spx			(*size)( wax_obj blurbrush );
 
-	const float*	(*blue)( wg_obj blurbrush );
-	const float*	(*green)( wg_obj blurbrush );
-	const float*	(*red)( wg_obj blurbrush );
+	const float*	(*blue)( wax_obj blurbrush );
+	const float*	(*green)( wax_obj blurbrush );
+	const float*	(*red)( wax_obj blurbrush );
 
 } wg_blurbrush_calls;
 
@@ -586,11 +586,11 @@ typedef struct wg_tintmap_calls_struct
 {
 	int				structSize;
 
-	int		(*isTintmapOpaque)( wg_obj tintmap );
-	int		(*isTintmapVertical)( wg_obj tintmap );
-	int		(*isTintmapHorizontal)( wg_obj tintmap );
+	int		(*isTintmapOpaque)( wax_obj tintmap );
+	int		(*isTintmapVertical)( wax_obj tintmap );
+	int		(*isTintmapHorizontal)( wax_obj tintmap );
 
-	void	(*exportTintmapColors)( wg_obj tintmap, wg_sizeI tintmapSize, wg_color* pOutputX, wg_color* pOutputY);
+	void	(*exportTintmapColors)( wax_obj tintmap, wax_sizeI tintmapSize, wax_color* pOutputX, wax_color* pOutputY);
 
 } wg_tintmap_calls;
 
@@ -598,7 +598,7 @@ typedef struct wg_gradyent_calls_struct
 {
 	int				structSize;
 
-	wg_obj	(*createGradyent)(wg_color top, wg_color bottom, wg_color left, wg_color right);
+	wax_obj	(*createGradyent)(wax_color top, wax_color bottom, wax_color left, wax_color right);
 
 } wg_gradyent_calls;
 
@@ -606,7 +606,7 @@ typedef struct wg_statictintmap_calls_struct
 {
 	int				structSize;
 
-	wg_obj	(*createStaticTintmap)( wg_sizeI size, const wg_color * pColorstripX, const wg_color * pColorstripY );
+	wax_obj	(*createStaticTintmap)( wax_sizeI size, const wax_color * pColorstripX, const wax_color * pColorstripY );
 
 } wg_statictintmap_calls;
 
@@ -616,24 +616,24 @@ typedef struct wg_tint_calls_struct
 {
 	int				structSize;
 
-	wg_obj		(*createTint)( const wg_tintBP* pBlueprint );
-	wg_obj		(*createTintFromData)( const void* pData, int bytes );		// See wg_exportTintData().
-	wg_obj		(*mixTints)( wg_obj fromTint, wg_obj toTint, float progress );
+	wax_obj		(*createTint)( const wax_tintBP* pBlueprint );
+	wax_obj		(*createTintFromData)( const void* pData, int bytes );		// See wax_exportTintData().
+	wax_obj		(*mixTints)( wax_obj fromTint, wax_obj toTint, float progress );
 
-	int			(*isTintOpaque)( wg_obj tint );
-	int			(*isTintFlat)( wg_obj tint );
-	int			(*isTintMix)( wg_obj tint );
+	int			(*isTintOpaque)( wax_obj tint );
+	int			(*isTintFlat)( wax_obj tint );
+	int			(*isTintMix)( wax_obj tint );
 
-	wg_color	(*tintColorAt)( wg_obj tint, wg_coordSPX pos, const wg_rectSPX* pRect );
-	int			(*exportTintData)( wg_obj tint, void* pDest, int maxBytes );
+	wax_color	(*tintColorAt)( wax_obj tint, wax_coordSPX pos, const wax_rectSPX* pRect );
+	int			(*exportTintData)( wax_obj tint, void* pDest, int maxBytes );
 
-	wg_tintBP	(*defaultTintBP)( void );
-	wg_obj		(*createTintMix)( int nbComponents, const wg_obj* pComponents, const float* pWeights );
-	wg_tintBP	(*getTintBlueprint)( wg_obj tint );
-	int			(*tintMixComponents)( wg_obj tint );
-	wg_obj		(*tintMixComponent)( wg_obj tint, int index );
-	float		(*tintMixWeight)( wg_obj tint, int index );
-	int			(*tintAlphaAt)( wg_obj tint, wg_coordSPX pos, const wg_rectSPX* pRect );
+	wax_tintBP	(*defaultTintBP)( void );
+	wax_obj		(*createTintMix)( int nbComponents, const wax_obj* pComponents, const float* pWeights );
+	wax_tintBP	(*getTintBlueprint)( wax_obj tint );
+	int			(*tintMixComponents)( wax_obj tint );
+	wax_obj		(*tintMixComponent)( wax_obj tint, int index );
+	float		(*tintMixWeight)( wax_obj tint, int index );
+	int			(*tintAlphaAt)( wax_obj tint, wax_coordSPX pos, const wax_rectSPX* pRect );
 
 } wg_tint_calls;
 

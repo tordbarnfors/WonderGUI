@@ -1,23 +1,23 @@
 
 set(SOURCES
 
-	wg_glbackend.cpp
-	wg_glbackend.h
-	wg_glbackendshaders.cpp
-	wg_glgfxdevicefactory.cpp
-	wg_glgfxdevicefactory.h
-	wg_glsurface.cpp
-	wg_glsurface.h
-	wg_glsurfacefactory.cpp
-	wg_glsurfacefactory.h
-	wg_gledgemap.cpp
-	wg_gledgemap.h
-	wg_gledgemapfactory.cpp
-	wg_gledgemapfactory.h
-	wg_glwarpmap.cpp
-	wg_glwarpmap.h
-	wg_glwarpmapfactory.cpp
-	wg_glwarpmapfactory.h
+	wax_glbackend.cpp
+	wax_glbackend.h
+	wax_glbackendshaders.cpp
+	wax_glgfxdevicefactory.cpp
+	wax_glgfxdevicefactory.h
+	wax_glsurface.cpp
+	wax_glsurface.h
+	wax_glsurfacefactory.cpp
+	wax_glsurfacefactory.h
+	wax_gledgemap.cpp
+	wax_gledgemap.h
+	wax_gledgemapfactory.cpp
+	wax_gledgemapfactory.h
+	wax_glwarpmap.cpp
+	wax_glwarpmap.h
+	wax_glwarpmapfactory.cpp
+	wax_glwarpmapfactory.h
 )
 
 set(INCDIRS
@@ -29,7 +29,7 @@ set(INCDIRS
 #
 # Only looked for here, so nothing needs them unless this extension is built.
 # GLEW loads the OpenGL entry points on Windows and Linux. macOS has them in its
-# OpenGL framework, see wg_glbackend.h.
+# OpenGL framework, see wax_glbackend.h.
 #------------------------------------------------------------------------------
 
 find_package(OpenGL REQUIRED)
@@ -57,23 +57,23 @@ endif()
 
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${SOURCES})
 
-add_library( wgopenglgfx STATIC ${SOURCES} )
+add_library( waxopenglgfx STATIC ${SOURCES} )
 
-target_include_directories(wgopenglgfx PRIVATE 
-	${WONDERGFX_INCDIRS}
+target_include_directories(waxopenglgfx PRIVATE 
+	${WAX_INCDIRS}
 	${INCDIRS}
 )
 
-# Public, so whatever links wgopenglgfx gets the GL headers and libraries too.
+# Public, so whatever links waxopenglgfx gets the GL headers and libraries too.
 
-target_link_libraries(wgopenglgfx PUBLIC wondergfx OpenGL::GL)
+target_link_libraries(waxopenglgfx PUBLIC wax OpenGL::GL)
 
 if(NOT APPLE)
-	target_link_libraries(wgopenglgfx PUBLIC GLEW::GLEW)
+	target_link_libraries(waxopenglgfx PUBLIC GLEW::GLEW)
 endif()
 
-set_target_properties( wgopenglgfx PROPERTIES FOLDER "Extensions" )
+set_target_properties( waxopenglgfx PROPERTIES FOLDER "Extensions" )
 
 list(TRANSFORM SOURCES PREPEND ${CMAKE_CURRENT_LIST_DIR}/ )
-set(WGOPENGLGFX_SOURCES ${SOURCES} PARENT_SCOPE)
-set(WGOPENGLGFX_INCDIRS ${INCDIRS} PARENT_SCOPE)
+set(WAXOPENGLGFX_SOURCES ${SOURCES} PARENT_SCOPE)
+set(WAXOPENGLGFX_INCDIRS ${INCDIRS} PARENT_SCOPE)

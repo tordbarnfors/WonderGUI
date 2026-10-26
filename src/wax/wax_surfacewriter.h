@@ -19,17 +19,17 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef WG_SURFACEWRITER_DOT_H
-#define WG_SURFACEWRITER_DOT_H
+#ifndef WAX_SURFACEWRITER_DOT_H
+#define WAX_SURFACEWRITER_DOT_H
 #pragma once
 
 #include <ostream>
 
-#include <wg_surfacefileheader.h>
-#include <wg_surfacefactory.h>
-#include <wg_compression.h>
+#include <wax_surfacefileheader.h>
+#include <wax_surfacefactory.h>
+#include <wax_compression.h>
 
-namespace wg
+namespace wax
 {
 
 
@@ -129,6 +129,6 @@ protected:
 
 //==============================================================================
 
-} // namespace wg
-#endif // WG_SURFACEREADER_DOT_H
+} // namespace wax
+#endif // WAX_SURFACEREADER_DOT_H
 

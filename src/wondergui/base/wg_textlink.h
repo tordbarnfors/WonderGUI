@@ -26,8 +26,9 @@
 #include <string>
 #include <functional>
 
-#include <wg_pointers.h>
-#include <wg_geo.h>
+#include <wax_pointers.h>
+#include <wax_geo.h>
+#include <wg_types.h>
 
 namespace wg
 {

@@ -24,7 +24,7 @@
 #pragma once
 
 #include <wg_scrollchart.h>
-#include <wg_waveform.h>
+#include <wax_waveform.h>
 
 namespace wg
 {

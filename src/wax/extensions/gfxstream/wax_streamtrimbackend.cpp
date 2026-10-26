@@ -19,9 +19,9 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#include <wg_streamtrimbackend.h>
+#include <wax_streamtrimbackend.h>
 
-namespace wg
+namespace wax
 {
 	const TypeInfo StreamTrimBackend::TYPEINFO = { "StreamTrimBackend", &GfxBackend::TYPEINFO };
 
@@ -389,4 +389,4 @@ namespace wg
 	}
 
 
-} // namespace wg
+} // namespace wax

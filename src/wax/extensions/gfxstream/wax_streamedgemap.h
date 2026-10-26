@@ -19,14 +19,14 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef WG_STREAMEDGEMAP_DOT_H
-#define WG_STREAMEDGEMAP_DOT_H
+#ifndef WAX_STREAMEDGEMAP_DOT_H
+#define WAX_STREAMEDGEMAP_DOT_H
 #pragma once
 
-#include <wg_edgemap.h>
-#include <wg_streamencoder.h>
+#include <wax_edgemap.h>
+#include <wax_streamencoder.h>
 
-namespace wg
+namespace wax
 {
 
 	class StreamEdgemap;
@@ -77,5 +77,5 @@ namespace wg
 
 
 
-} // namespace wg
-#endif // WG_STREAMEDGEMAP_DOT_H
+} // namespace wax
+#endif // WAX_STREAMEDGEMAP_DOT_H

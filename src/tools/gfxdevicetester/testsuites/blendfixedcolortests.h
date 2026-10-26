@@ -1,5 +1,5 @@
 #include "testsuite.h"
-#include <wg_color.h>
+#include <wax_color.h>
 
 class BlendFixedColorTests : public TestSuite
 {

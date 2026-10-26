@@ -19,13 +19,13 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef	WG_GFXENUMEXTRAS_DOT_H
-#define WG_GFXENUMEXTRAS_DOT_H
+#ifndef	WAX_ENUMEXTRAS_DOT_H
+#define WAX_ENUMEXTRAS_DOT_H
 #pragma once
 
-#include <wg_gfxtypes.h>
+#include <wax_types.h>
 
-namespace wg
+namespace wax
 {
 
 //. startAutoSection
@@ -37,6 +37,8 @@ namespace wg
 
 =========================================================================*/
 
+	const static ErrorLevel      ErrorLevel_min      = ErrorLevel::Warning;
+	const static ErrorCode       ErrorCode_min       = ErrorCode::OutOfRange;
 	const static TintMode        TintMode_min        = TintMode::None;
 	const static TintShape       TintShape_min       = TintShape::Linear;
 	const static TintSpread      TintSpread_min      = TintSpread::Pad;
@@ -57,6 +59,8 @@ namespace wg
 	const static Compression     Compression_min     = Compression::None;
 	const static LineCapShape    LineCapShape_min    = LineCapShape::None;
 
+	const static ErrorLevel      ErrorLevel_max      = ErrorLevel::Critical;
+	const static ErrorCode       ErrorCode_max       = ErrorCode::Other;
 	const static TintMode        TintMode_max        = TintMode::GradientXY;
 	const static TintShape       TintShape_max       = TintShape::Radial;
 	const static TintSpread      TintSpread_max      = TintSpread::Reflect;
@@ -77,6 +81,8 @@ namespace wg
 	const static Compression     Compression_max     = Compression::Spx16I;
 	const static LineCapShape    LineCapShape_max    = LineCapShape::Spear;
 
+	const static int             ErrorLevel_size     = (int)ErrorLevel::Critical + 1;
+	const static int             ErrorCode_size      = (int)ErrorCode::Other + 1;
 	const static int             TintMode_size       = (int)TintMode::GradientXY + 1;
 	const static int             TintShape_size      = (int)TintShape::Radial + 1;
 	const static int             TintSpread_size     = (int)TintSpread::Reflect + 1;
@@ -97,6 +103,8 @@ namespace wg
 	const static int             Compression_size    = (int)Compression::Spx16I + 1;
 	const static int             LineCapShape_size   = (int)LineCapShape::Spear + 1;
 
+	const char * toString(ErrorLevel);
+	const char * toString(ErrorCode);
 	const char * toString(TintMode);
 	const char * toString(TintShape);
 	const char * toString(TintSpread);
@@ -122,6 +130,6 @@ namespace wg
 
 
 
-} // namespace wg
+} // namespace wax
 
-#endif //WG_GFXENUMEXTRAS_DOT_H
+#endif //WAX_ENUMEXTRAS_DOT_H

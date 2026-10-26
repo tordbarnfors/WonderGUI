@@ -19,19 +19,19 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef	WG_TINT_DOT_H
-#define	WG_TINT_DOT_H
+#ifndef	WAX_TINT_DOT_H
+#define	WAX_TINT_DOT_H
 #pragma once
 
-#include <wg_object.h>
-#include <wg_gfxtypes.h>
-#include <wg_geo.h>
-#include <wg_color.h>
+#include <wax_object.h>
+#include <wax_types.h>
+#include <wax_geo.h>
+#include <wax_color.h>
 
 #include <vector>
 #include <initializer_list>
 
-namespace wg
+namespace wax
 {
 
 	//____ ColorStop __________________________________________________________
@@ -176,4 +176,4 @@ namespace wg
 
 
 
-#endif //WG_TINT_DOT_H
+#endif //WAX_TINT_DOT_H

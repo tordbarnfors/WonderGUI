@@ -27,6 +27,7 @@
 #include <wg_plugininterface.h>
 
 #include <cstring>
+#include <wg_types.h>
 
 //TODO: Need to support skin padding.
 

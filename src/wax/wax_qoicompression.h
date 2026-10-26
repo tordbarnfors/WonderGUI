@@ -18,12 +18,12 @@
   closed source projects under a separate license. Interested parties
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 =========================================================================*/
-#ifndef	WG_QOICOMPRESSION_DOT_H
-#define	WG_QOICOMPRESSION_DOT_H
+#ifndef	WAX_QOICOMPRESSION_DOT_H
+#define	WAX_QOICOMPRESSION_DOT_H
 #pragma once
 
-#include <wg_compression.h>
-#include <wg_gfxtypes.h>
+#include <wax_compression.h>
+#include <wax_types.h>
 
 
 /*
@@ -66,7 +66,7 @@
 */
 
 
-namespace wg
+namespace wax
 {
 	// A QOI image file is a 14 byte header ('qoif', width and height as big endian
 	// uint32_t, channels and colorspace as uint8_t) followed by the compressed data.
@@ -94,7 +94,7 @@ namespace wg
 		struct Blueprint
 		{
 			PixelFormat		format = PixelFormat::ARGB_8;			// ARGB_8 or XRGB_8. Alpha is ignored for XRGB_8 and compressed as 255.
-			bool			bigEndian = (WG_IS_BIG_ENDIAN == 1);	// Byte order of the pixels.
+			bool			bigEndian = (WAX_IS_BIG_ENDIAN == 1);	// Byte order of the pixels.
 			Finalizer_p		finalizer = nullptr;
 		};
 
@@ -142,7 +142,7 @@ namespace wg
 
 		struct Blueprint
 		{
-			bool			bigEndian = (WG_IS_BIG_ENDIAN == 1);	// Byte order of the pixels.
+			bool			bigEndian = (WAX_IS_BIG_ENDIAN == 1);	// Byte order of the pixels.
 			Finalizer_p		finalizer = nullptr;
 		};
 
@@ -178,4 +178,4 @@ namespace wg
 }
 
 
-#endif //WG_QOICOMPRESSION_DOT_H
+#endif //WAX_QOICOMPRESSION_DOT_H

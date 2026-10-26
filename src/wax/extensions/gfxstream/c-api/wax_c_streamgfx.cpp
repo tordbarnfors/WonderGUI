@@ -19,58 +19,58 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#include <wg_c_streamgfx.h>
-#include <wg_c_internal.h>
+#include <wax_c_streamgfx.h>
+#include <wax_c_internal.h>
 
-#include <wg_streambackend.h>
-#include <wg_streamwarpmapfactory.h>
-#include <wg_remotesurface.h>
-#include <wg_remotesurfacefactory.h>
-#include <wg_mirrorsurface.h>
-#include <wg_mirrorsurfacefactory.h>
+#include <wax_streambackend.h>
+#include <wax_streamwarpmapfactory.h>
+#include <wax_remotesurface.h>
+#include <wax_remotesurfacefactory.h>
+#include <wax_mirrorsurface.h>
+#include <wax_mirrorsurfacefactory.h>
 
-#include <wg_streamedgemap.h>
-#include <wg_streamedgemapfactory.h>
+#include <wax_streamedgemap.h>
+#include <wax_streamedgemapfactory.h>
 
 
-using namespace wg;
+using namespace wax;
 
-inline StreamBackend* getPtr(wg_obj obj) {
+inline StreamBackend* getPtr(wax_obj obj) {
 	return static_cast<StreamBackend*>(reinterpret_cast<Object*>(obj));
 }
 
-wg_obj wg_createStreamBackend(wg_obj streamEncoder, int maxEdges )
+wax_obj wax_createStreamBackend(wax_obj streamEncoder, int maxEdges )
 {
 	auto pObj = StreamBackend::create( static_cast<StreamEncoder*>(reinterpret_cast<Object*>(streamEncoder)), maxEdges);
 	pObj->retain();
 	return static_cast<Object*>(pObj.rawPtr());
 }
 
-int wg_defineStreamBackendCanvasWithSurface( wg_obj streamBackend, wg_canvasRef ref, wg_obj surface )
+int wax_defineStreamBackendCanvasWithSurface( wax_obj streamBackend, wax_canvasRef ref, wax_obj surface )
 {
 	return getPtr(streamBackend)->defineCanvas( (CanvasRef) ref, static_cast<RemoteSurface*>(reinterpret_cast<Object*>(surface)) );
 }
 
-int wg_defineStreamBackendCanvas( wg_obj streamBackend, wg_canvasRef ref, wg_sizeI pixelSize, wg_pixelFormat pixelFormat, int scale,
-								  wg_colorSpace colorSpace, wg_byteOrder byteOrder )
+int wax_defineStreamBackendCanvas( wax_obj streamBackend, wax_canvasRef ref, wax_sizeI pixelSize, wax_pixelFormat pixelFormat, int scale,
+								  wax_colorSpace colorSpace, wax_byteOrder byteOrder )
 {
-	bool bBigEndian = byteOrder == WG_BYTEORDER_NATIVE ? (WG_IS_BIG_ENDIAN == 1) : (byteOrder == WG_BYTEORDER_BIG_ENDIAN);
+	bool bBigEndian = byteOrder == WAX_BYTEORDER_NATIVE ? (WAX_IS_BIG_ENDIAN == 1) : (byteOrder == WAX_BYTEORDER_BIG_ENDIAN);
 
 	return getPtr(streamBackend)->defineCanvas( (CanvasRef) ref, {pixelSize.w, pixelSize.h}, (PixelFormat) pixelFormat, scale,
 												(ColorSpace) colorSpace, bBigEndian );
 }
 
-void wg_encodeCanvasList(wg_obj streamBackend)
+void wax_encodeCanvasList(wax_obj streamBackend)
 {
 	getPtr(streamBackend)->encodeCanvasList();
 }
 
-void wg_encodeTick(wg_obj streamBackend, int32_t microsecPassed)
+void wax_encodeTick(wax_obj streamBackend, int32_t microsecPassed)
 {
 	getPtr(streamBackend)->encodeTick(microsecPassed);
 }
 
-wg_obj wg_createRemoteSurface(wg_obj streamEncoder, const wg_surfaceBP* blueprint)
+wax_obj wax_createRemoteSurface(wax_obj streamEncoder, const wax_surfaceBP* blueprint)
 {
 	Surface::Blueprint	bp;
 	convertSurfaceBlueprint(&bp, blueprint);
@@ -78,11 +78,11 @@ wg_obj wg_createRemoteSurface(wg_obj streamEncoder, const wg_surfaceBP* blueprin
 
 	auto p = RemoteSurface::create(pEncoder, bp);
 	p->retain();
-	return (wg_obj) static_cast<Object*>(p.rawPtr());
+	return (wax_obj) static_cast<Object*>(p.rawPtr());
 }
 
 
-wg_obj wg_createRemoteSurfaceFromBlob(wg_obj streamEncoder, const wg_surfaceBP* blueprint, wg_obj blob, int pitch)
+wax_obj wax_createRemoteSurfaceFromBlob(wax_obj streamEncoder, const wax_surfaceBP* blueprint, wax_obj blob, int pitch)
 {
 	Surface::Blueprint	bp;
 	convertSurfaceBlueprint(&bp, blueprint);
@@ -90,11 +90,11 @@ wg_obj wg_createRemoteSurfaceFromBlob(wg_obj streamEncoder, const wg_surfaceBP* 
 
 	auto p = RemoteSurface::create(pEncoder, bp, static_cast<Blob*>(reinterpret_cast<Object*>(blob)), pitch );
 	p->retain();
-	return (wg_obj) static_cast<Object*>(p.rawPtr());
+	return (wax_obj) static_cast<Object*>(p.rawPtr());
 }
 
-wg_obj	wg_createRemoteSurfaceFromBitmap(wg_obj streamEncoder, wg_obj factory, const wg_surfaceBP* blueprint, const uint8_t* pPixels,
-									   wg_pixelFormat pixelFormat, int pitch, const wg_color8 * pPalette )
+wax_obj	wax_createRemoteSurfaceFromBitmap(wax_obj streamEncoder, wax_obj factory, const wax_surfaceBP* blueprint, const uint8_t* pPixels,
+									   wax_pixelFormat pixelFormat, int pitch, const wax_color8 * pPalette )
 {
 	Surface::Blueprint	bp;
 	convertSurfaceBlueprint(&bp, blueprint);
@@ -102,11 +102,11 @@ wg_obj	wg_createRemoteSurfaceFromBitmap(wg_obj streamEncoder, wg_obj factory, co
 
 	auto p = RemoteSurface::create(pEncoder, bp, pPixels, (PixelFormat) pixelFormat, pitch, (const Color8*) pPalette);
 	p->retain();
-	return (wg_obj) static_cast<Object*>(p.rawPtr());
+	return (wax_obj) static_cast<Object*>(p.rawPtr());
 }
 
-wg_obj	wg_createRemoteSurfaceFromRawData(wg_obj streamEncoder, wg_obj factory, const wg_surfaceBP* blueprint, const uint8_t* pPixels,
-										const wg_pixelDescription * pPixelDescription, int pitch, const wg_color8 * pPalette )
+wax_obj	wax_createRemoteSurfaceFromRawData(wax_obj streamEncoder, wax_obj factory, const wax_surfaceBP* blueprint, const uint8_t* pPixels,
+										const wax_pixelDescription * pPixelDescription, int pitch, const wax_color8 * pPalette )
 {
 	Surface::Blueprint	bp;
 	convertSurfaceBlueprint(&bp, blueprint);
@@ -114,18 +114,18 @@ wg_obj	wg_createRemoteSurfaceFromRawData(wg_obj streamEncoder, wg_obj factory, c
 
 	auto p = RemoteSurface::create(pEncoder, bp, pPixels, *(PixelDescription*) pPixelDescription, pitch, (const Color8*) pPalette);
 	p->retain();
-	return (wg_obj) static_cast<Object*>(p.rawPtr());
+	return (wax_obj) static_cast<Object*>(p.rawPtr());
 }
 
 
-wg_obj wg_createRemoteSurfaceFactory(wg_obj streamEncoder)
+wax_obj wax_createRemoteSurfaceFactory(wax_obj streamEncoder)
 {
 	auto p = RemoteSurfaceFactory::create(static_cast<StreamEncoder*>(reinterpret_cast<Object*>(streamEncoder)));
 	p->retain();
-	return (wg_obj) static_cast<Object*>(p.rawPtr());
+	return (wax_obj) static_cast<Object*>(p.rawPtr());
 }
 
-wg_obj wg_createMirrorSurface(wg_obj streamEncoder, wg_mirrorSurfaceBP* blueprint)
+wax_obj wax_createMirrorSurface(wax_obj streamEncoder, wax_mirrorSurfaceBP* blueprint)
 {
 	MirrorSurface::Blueprint	bp;
 	bp.canvasRef = (CanvasRef) blueprint->canvasRef;
@@ -134,39 +134,39 @@ wg_obj wg_createMirrorSurface(wg_obj streamEncoder, wg_mirrorSurfaceBP* blueprin
 	bp.streamOnCreate = blueprint->streamOnCreate != 0;
 	auto p = MirrorSurface::create(bp);
 	p->retain();
-	return (wg_obj) static_cast<Object*>(p.rawPtr());
+	return (wax_obj) static_cast<Object*>(p.rawPtr());
 }
 
-wg_obj wg_createMirrorSurfaceFactory(wg_obj streamEncoder, wg_obj backingSurfaceFactory)
+wax_obj wax_createMirrorSurfaceFactory(wax_obj streamEncoder, wax_obj backingSurfaceFactory)
 {
 	auto pEncoder = static_cast<StreamEncoder*>(reinterpret_cast<Object*>(streamEncoder));
 	auto pBackingFactory = static_cast<SurfaceFactory*>(reinterpret_cast<Object*>(backingSurfaceFactory));
 	auto p = MirrorSurfaceFactory::create(pEncoder, pBackingFactory);
 	p->retain();
-	return (wg_obj) static_cast<Object*>(p.rawPtr());
+	return (wax_obj) static_cast<Object*>(p.rawPtr());
 }
 
-void wg_setRememberRemoteSurfacesCreated(wg_obj remoteSurfaceFactory, int bRemember)
+void wax_setRememberRemoteSurfacesCreated(wax_obj remoteSurfaceFactory, int bRemember)
 {
 	static_cast<RemoteSurfaceFactory*>(reinterpret_cast<Object*>(remoteSurfaceFactory))->setRememberSurfacesCreated(bRemember == 1);
 }
 
-void wg_recreateRemoteSurfaces(wg_obj remoteSurfaceFactory)
+void wax_recreateRemoteSurfaces(wax_obj remoteSurfaceFactory)
 {
 	static_cast<RemoteSurfaceFactory*>(reinterpret_cast<Object*>(remoteSurfaceFactory))->recreateRemoteSurfaces();
 }
 
-void wg_setRememberMirrorSurfacesCreated(wg_obj mirrorSurfaceFactory, int bRemember)
+void wax_setRememberMirrorSurfacesCreated(wax_obj mirrorSurfaceFactory, int bRemember)
 {
 	static_cast<MirrorSurfaceFactory*>(reinterpret_cast<Object*>(mirrorSurfaceFactory))->setRememberSurfacesCreated(bRemember == 1);
 }
 
-void wg_streamMirrorSurfacesAsNew(wg_obj mirrorSurfaceFactory)
+void wax_streamMirrorSurfacesAsNew(wax_obj mirrorSurfaceFactory)
 {
 	static_cast<MirrorSurfaceFactory*>(reinterpret_cast<Object*>(mirrorSurfaceFactory))->streamAllAsNew();
 }
 
-wg_obj wg_createStreamEdgemap(wg_obj streamEncoder, const wg_edgemapBP* blueprint )
+wax_obj wax_createStreamEdgemap(wax_obj streamEncoder, const wax_edgemapBP* blueprint )
 {
 	Edgemap::Blueprint	bp;
 
@@ -178,10 +178,10 @@ wg_obj wg_createStreamEdgemap(wg_obj streamEncoder, const wg_edgemapBP* blueprin
 	auto pEncoder = static_cast<StreamEncoder*>(reinterpret_cast<Object*>(streamEncoder));
 	auto p = StreamEdgemap::create(pEncoder, bp);
 	p->retain();
-	return (wg_obj) static_cast<Object*>(p.rawPtr());
+	return (wax_obj) static_cast<Object*>(p.rawPtr());
 }
 
-wg_obj wg_createStreamEdgemapFromFloats(wg_obj streamEncoder, const wg_edgemapBP* blueprint, wg_sampleOrigo origo, const float * pSamples, int edges, int edgePitch, int samplePitch)
+wax_obj wax_createStreamEdgemapFromFloats(wax_obj streamEncoder, const wax_edgemapBP* blueprint, wax_sampleOrigo origo, const float * pSamples, int edges, int edgePitch, int samplePitch)
 {
 	Edgemap::Blueprint	bp;
 
@@ -193,10 +193,10 @@ wg_obj wg_createStreamEdgemapFromFloats(wg_obj streamEncoder, const wg_edgemapBP
 	auto pEncoder = static_cast<StreamEncoder*>(reinterpret_cast<Object*>(streamEncoder));
 	auto p = StreamEdgemap::create(pEncoder, bp, (SampleOrigo) origo, pSamples, edges, edgePitch, samplePitch);
 	p->retain();
-	return (wg_obj) static_cast<Object*>(p.rawPtr());
+	return (wax_obj) static_cast<Object*>(p.rawPtr());
 }
 
-wg_obj wg_createStreamEdgemapFromSpx(wg_obj streamEncoder, const wg_edgemapBP* blueprint, wg_sampleOrigo origo, const wg_spx * pSamples, int edges, int edgePitch, int samplePitch)
+wax_obj wax_createStreamEdgemapFromSpx(wax_obj streamEncoder, const wax_edgemapBP* blueprint, wax_sampleOrigo origo, const wax_spx * pSamples, int edges, int edgePitch, int samplePitch)
 {
 	Edgemap::Blueprint	bp;
 
@@ -208,21 +208,21 @@ wg_obj wg_createStreamEdgemapFromSpx(wg_obj streamEncoder, const wg_edgemapBP* b
 	auto pEncoder = static_cast<StreamEncoder*>(reinterpret_cast<Object*>(streamEncoder));
 	auto p = StreamEdgemap::create(pEncoder, bp, (SampleOrigo) origo, pSamples, edges, edgePitch, samplePitch);
 	p->retain();
-	return (wg_obj) static_cast<Object*>(p.rawPtr());
+	return (wax_obj) static_cast<Object*>(p.rawPtr());
 }
 
-wg_obj wg_createStreamEdgemapFactory(wg_obj streamEncoder)
+wax_obj wax_createStreamEdgemapFactory(wax_obj streamEncoder)
 {
 	auto pEncoder = static_cast<StreamEncoder*>(reinterpret_cast<Object*>(streamEncoder));
 	auto p = StreamEdgemapFactory::create(pEncoder);
 	p->retain();
-	return (wg_obj) static_cast<Object*>(p.rawPtr());
+	return (wax_obj) static_cast<Object*>(p.rawPtr());
 }
 
-wg_obj wg_createStreamWarpmapFactory(wg_obj streamEncoder)
+wax_obj wax_createStreamWarpmapFactory(wax_obj streamEncoder)
 {
 	auto pEncoder = static_cast<StreamEncoder*>(reinterpret_cast<Object*>(streamEncoder));
 	auto p = StreamWarpmapFactory::create(pEncoder);
 	p->retain();
-	return (wg_obj) static_cast<Object*>(p.rawPtr());
+	return (wax_obj) static_cast<Object*>(p.rawPtr());
 }

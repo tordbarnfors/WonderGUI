@@ -19,17 +19,17 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef	WG_REMOTESURFACE_DOT_H
-#define	WG_REMOTESURFACE_DOT_H
+#ifndef	WAX_REMOTESURFACE_DOT_H
+#define	WAX_REMOTESURFACE_DOT_H
 #pragma once
 
 
-#include <wg_surface.h>
-#include <wg_streamencoder.h>
+#include <wax_surface.h>
+#include <wax_streamencoder.h>
 
 #include <vector>
 
-namespace wg
+namespace wax
 {
 
 	class RemoteSurface;
@@ -103,6 +103,6 @@ namespace wg
 		bool			m_bDynamic;
 		std::vector<Color8>	m_palette;		// Our copy of the palette, which m_pPalette points into.
 	};
-} // namespace wg
-#endif //WG_REMOTESURFACE_DOT_H
+} // namespace wax
+#endif //WAX_REMOTESURFACE_DOT_H
 

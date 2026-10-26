@@ -21,7 +21,7 @@
 =========================================================================*/
 #include <wg2_textdisplay.h>
 #include <wg2_key.h>
-#include <wg_font.h>
+#include <wax_font.h>
 #include <wg2_gfxdevice.h>
 #include <wg2_eventhandler.h>
 #include <wg2_util.h>

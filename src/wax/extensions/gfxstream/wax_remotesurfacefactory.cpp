@@ -21,13 +21,13 @@
 =========================================================================*/
 #include <memory.h>
 
-#include <wg_remotesurface.h>
-#include <wg_remotesurfacefactory.h>
-#include <wg_gfxutil.h>
+#include <wax_remotesurface.h>
+#include <wax_remotesurfacefactory.h>
+#include <wax_gfxutil.h>
 
 
 
-namespace wg
+namespace wax
 {
 
 	const TypeInfo RemoteSurfaceFactory::TYPEINFO = { "RemoteSurfaceFactory", &SurfaceFactory::TYPEINFO };
@@ -140,4 +140,4 @@ namespace wg
 	}
 
 
-} // namespace wg
+} // namespace wax

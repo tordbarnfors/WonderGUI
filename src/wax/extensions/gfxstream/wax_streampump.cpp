@@ -19,10 +19,10 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#include <wg_streampump.h>
-#include <wg_surface.h>
-#include <wg_patches.h>
-#include <wg_gfxbase.h>
+#include <wax_streampump.h>
+#include <wax_surface.h>
+#include <wax_patches.h>
+#include <wax_core.h>
 
 
 #include <vector>
@@ -32,7 +32,7 @@
 
 using namespace std;
 
-namespace wg
+namespace wax
 {
 	const TypeInfo StreamPump::TYPEINFO = { "StreamPump", &Object::TYPEINFO };
 
@@ -118,7 +118,7 @@ namespace wg
 
 //		char temp[128];
 //		snprintf(temp, 128, "Added %d credits.", credits);
-//		GfxBase::throwError(ErrorLevel::Warning, ErrorCode::Other, temp, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+//		Core::throwError(ErrorLevel::Warning, ErrorCode::Other, temp, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 	}
 
 
@@ -432,14 +432,14 @@ namespace wg
 					GfxStream::DataInfo info = GfxStream::readDataInfo(p+GfxStream::HeaderSize);
 
 					if( info.bFirstChunk )
-						pBuffer = (uint8_t*) GfxBase::memStackAlloc(info.bufferSize);
+						pBuffer = (uint8_t*) Core::memStackAlloc(info.bufferSize);
 
 					GfxStream::loadDecompressData(info, pBuffer, p+GfxStream::HeaderSize+info.encodedSize, GfxStream::dataSize(p) - info.encodedSize);
 
 					if (info.bLastChunk)
 					{
 						pTrimBackend->addMaskingSession(canvasRef, nullptr, nUpdateRects, (RectSPX*) pBuffer);
-						GfxBase::memStackFree(info.bufferSize);
+						Core::memStackFree(info.bufferSize);
 					}
 				}
 
@@ -569,7 +569,7 @@ namespace wg
 
 //						char temp[128];
 //						snprintf(temp, 128, "Sending a fence as part of flow control. Id = %d, Value = %d. %d credits left", m_fenceId, m_fenceValueSent, m_credits);
-//						GfxBase::throwError(ErrorLevel::Warning, ErrorCode::Other, temp, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+//						Core::throwError(ErrorLevel::Warning, ErrorCode::Other, temp, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 					}
 
 				}

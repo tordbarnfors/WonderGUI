@@ -20,10 +20,10 @@
 
 =========================================================================*/
 
-#include <wg_metalwarpmapfactory.h>
-#include <wg_metalwarpmap.h>
+#include <wax_metalwarpmapfactory.h>
+#include <wax_metalwarpmap.h>
 
-namespace wg
+namespace wax
 {
 	const TypeInfo MetalWarpmapFactory::TYPEINFO = { "MetalWarpmapFactory", &WarpmapFactory::TYPEINFO };
 
@@ -46,4 +46,4 @@ namespace wg
 		return MetalWarpmap::create(blueprint, pNodes, pitch);
 	}
 
-} // namespace wg
+} // namespace wax

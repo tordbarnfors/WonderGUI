@@ -1,25 +1,25 @@
 
 #include "streamanalyzer.h"
 
-#include <wg_softbackend.h>
-#include <wg_softkernels_rgb555be_base.h>
-#include <wg_softkernels_rgb555be_extras.h>
+#include <wax_softbackend.h>
+#include <wax_softkernels_rgb555be_base.h>
+#include <wax_softkernels_rgb555be_extras.h>
 
-#include <wg_softkernels_bgr565srgb_base.h>
-#include <wg_softkernels_bgr565srgb_extras.h>
-
-
-#include <wg_softkernels_bgr565srgb_base.h>
-#include <wg_softkernels_bgr565srgb_extras.h>
+#include <wax_softkernels_bgr565srgb_base.h>
+#include <wax_softkernels_bgr565srgb_extras.h>
 
 
-#include <wg_softkernels_default.h>
+#include <wax_softkernels_bgr565srgb_base.h>
+#include <wax_softkernels_bgr565srgb_extras.h>
 
-#include <wg_gfxdevice_gen2.h>
 
-#include <wg_linearbackend.h>
+#include <wax_softkernels_default.h>
 
-#include <wg_streamtrimbackend.h>
+#include <wax_gfxdevice_gen2.h>
+
+#include <wax_linearbackend.h>
+
+#include <wax_streamtrimbackend.h>
 
 #include <string>
 #include <fstream>
@@ -60,9 +60,9 @@ bool MyApp::init(API* pAPI)
 	}
 */
 
-	auto pDeviceGen2 = wg_dynamic_cast<GfxDeviceGen2_p>(Base::defaultGfxDevice());
+	auto pDeviceGen2 = wax_dynamic_cast<GfxDeviceGen2_p>(Base::defaultGfxDevice());
 
-	auto pSoftBackend = wg_dynamic_cast<SoftBackend_p>(pDeviceGen2->backend());
+	auto pSoftBackend = wax_dynamic_cast<SoftBackend_p>(pDeviceGen2->backend());
 	if( pSoftBackend )
 	{
 		addBaseSoftKernelsForBGR565sRGBCanvas(pSoftBackend);
@@ -970,7 +970,7 @@ bool MyApp::loadStream(std::string path)
 	auto pStreamGfxDevice = GfxDeviceGen2::create(pStreamGfxBackend);
 //	auto pStreamGfxDevice = GfxDeviceGen2::create(pTrimGfxBackend);
 
-//	auto pStreamGfxDevice = wg_dynamic_cast<SoftGfxDevice_p>(Base::defaultGfxDevice());
+//	auto pStreamGfxDevice = wax_dynamic_cast<SoftGfxDevice_p>(Base::defaultGfxDevice());
 
 	addDefaultSoftKernels(pStreamGfxBackend);
 /*
@@ -1039,12 +1039,12 @@ bool MyApp::loadStream(std::string path)
 
 void MyApp::setupScreens(const CanvasInfo* pBeg, const CanvasInfo* pEnd)
 {
-	SurfaceFactory_p	pFactory = GfxBase::defaultSurfaceFactory();
+	SurfaceFactory_p	pFactory = wax::Core::defaultSurfaceFactory();
 
 	// Ugly typecast! Will only work with SoftGfxDevice!
 
-	LinearBackend_p		pLinearBackend = wg_dynamic_cast<LinearBackend_p>(m_pStreamGfxBackend);
-	SoftBackend_p		pSoftBackend = wg_dynamic_cast<SoftBackend_p>(m_pStreamGfxBackend);
+	LinearBackend_p		pLinearBackend = wax_dynamic_cast<LinearBackend_p>(m_pStreamGfxBackend);
+	SoftBackend_p		pSoftBackend = wax_dynamic_cast<SoftBackend_p>(m_pStreamGfxBackend);
 
 	for( auto pCanvas = pBeg ; pCanvas < pEnd ; pCanvas++ )
 	{
@@ -1059,21 +1059,21 @@ void MyApp::setupScreens(const CanvasInfo* pBeg, const CanvasInfo* pEnd)
 		if( pLinearBackend )
 			pLinearBackend->defineCanvas(pCanvas->ref, pCanvas->size, format, pCanvas->scale, pCanvas->colorSpace, pCanvas->bigEndian );
 		else
-			pSoftBackend->defineCanvas(pCanvas->ref, wg_dynamic_cast<SoftSurface_p>(pSurf));
+			pSoftBackend->defineCanvas(pCanvas->ref, wax_dynamic_cast<SoftSurface_p>(pSurf));
 	}
 }
 
 
 void MyApp::setupScreens()
 {
-	SurfaceFactory_p	pFactory = GfxBase::defaultSurfaceFactory();
+	SurfaceFactory_p	pFactory = wax::Core::defaultSurfaceFactory();
 
 	// Ugly typecast! Will only work with SoftGfxDevice!
 	
-	auto pBackend = wg_dynamic_cast<GfxDeviceGen2_p>(m_pStreamGfxDevice)->backend();
+	auto pBackend = wax_dynamic_cast<GfxDeviceGen2_p>(m_pStreamGfxDevice)->backend();
 
-	LinearBackend_p		pLinearBackend = wg_dynamic_cast<LinearBackend_p>(pBackend);
-	SoftBackend_p		pSoftBackend = wg_dynamic_cast<SoftBackend_p>(pBackend);
+	LinearBackend_p		pLinearBackend = wax_dynamic_cast<LinearBackend_p>(pBackend);
+	SoftBackend_p		pSoftBackend = wax_dynamic_cast<SoftBackend_p>(pBackend);
 
 	for (int i = 0; i < 11; i++)
 	{
@@ -1085,7 +1085,7 @@ void MyApp::setupScreens()
 		if( pLinearBackend )
 			pLinearBackend->defineCanvas(CanvasRef(int(CanvasRef::Default) + i), {800*64,480*64}, PixelFormat::RGB_565, 64, ColorSpace::sRGB );
 		else
-			pSoftBackend->defineCanvas(CanvasRef(int(CanvasRef::Default) + i), wg_dynamic_cast<SoftSurface_p>(pSurf));
+			pSoftBackend->defineCanvas(CanvasRef(int(CanvasRef::Default) + i), wax_dynamic_cast<SoftSurface_p>(pSurf));
 	}
 }
 
@@ -1102,7 +1102,7 @@ void MyApp::updateGUIAfterReload()
 	m_overlayDisplays.clear();
 
 
-	auto pSurfFactory = GfxBase::defaultSurfaceFactory();
+	auto pSurfFactory = wax::Core::defaultSurfaceFactory();
 
 
 	int toggleNb = 0;
@@ -1512,14 +1512,14 @@ void MyApp::_updateResourcesView()
 		{
 			if( pObj->isInstanceOf(Surface::TYPEINFO) )
 			{
-				auto pSurf = wg_static_cast<Surface_p>(pObj);
+				auto pSurf = wax_static_cast<Surface_p>(pObj);
 
 				auto pWidget = _buildSurfaceDisplayWithIndexTag( pSurf, index );
 				m_pResourcePanel->slots.pushBack( pWidget, { .weight = 0 } );
 			}
 			else if( pObj->isInstanceOf(Edgemap::TYPEINFO) )
 			{
-				auto pEdgemap = wg_static_cast<Edgemap_p>(pObj);
+				auto pEdgemap = wax_static_cast<Edgemap_p>(pObj);
 				auto pWidget = _buildEdgemapDisplayWithIndexTag( pEdgemap, index );
 				m_pResourcePanel->slots.pushBack( pWidget, { .weight = 0 } );
 			}
@@ -1534,7 +1534,7 @@ void MyApp::_updateResourcesView()
 
 void MyApp::_updateDebugOverlays()
 {
-	auto pDevice = GfxBase::defaultGfxDevice();
+	auto pDevice = wax::Core::defaultGfxDevice();
 	
 	auto pOverlaySkin = BoxSkin::create( Border(1), HiColor(4096,0,0,1024), HiColor(4096,0,0,4096));
 	

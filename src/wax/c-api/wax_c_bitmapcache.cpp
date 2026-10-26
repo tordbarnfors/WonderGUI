@@ -19,13 +19,13 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#include <wg_c_bitmapcache.h>
-#include <wg_bitmapcache.h>
-#include <wg_gfxbase.h>
+#include <wax_c_bitmapcache.h>
+#include <wax_bitmapcache.h>
+#include <wax_core.h>
 
-using namespace wg;
+using namespace wax;
 
-inline BitmapCache* getPtr(wg_obj obj) {
+inline BitmapCache* getPtr(wax_obj obj) {
 	return static_cast<BitmapCache*>(reinterpret_cast<Object*>(obj));
 }
 
@@ -38,23 +38,23 @@ public:
 	void _cacheSurfaceAdded(Surface* pSurface) override { m_data.addFunc(static_cast<Object*>(pSurface),m_data.addPtr,m_data.addInt); }
 	void _cacheSurfacesRemoved(int nSurfaces, Surface* pSurfaces[]) override
 	{
-		wg_obj * pObjects = (wg_obj*) GfxBase::memStackAlloc(sizeof(wg_obj)*nSurfaces);
+		wax_obj * pObjects = (wax_obj*) Core::memStackAlloc(sizeof(wax_obj)*nSurfaces);
 		
 		for( int i = 0 ; i < nSurfaces ; i++ )
 			pObjects[i] = static_cast<Object*>(pSurfaces[i]);
 		
 		m_data.removeFunc(nSurfaces,pObjects,m_data.removePtr,m_data.removeInt);
 		
-		GfxBase::memStackFree(sizeof(wg_obj)*nSurfaces);
+		Core::memStackFree(sizeof(wax_obj)*nSurfaces);
 	}
 	void _cacheCleared() override { m_data.clearFunc( m_data.addPtr, m_data.addInt ); }
 	
-	wg_cacheListenerBP m_data;
+	wax_cacheListenerBP m_data;
 																	
 };
 
 
-wg_obj wg_createBitmapCache( int maxSize, wg_obj surfaceFactory )
+wax_obj wax_createBitmapCache( int maxSize, wax_obj surfaceFactory )
 {
 	SurfaceFactory * pFactory = surfaceFactory == 0 ? nullptr : static_cast<SurfaceFactory*>(reinterpret_cast<Object*>(surfaceFactory));
 
@@ -63,27 +63,27 @@ wg_obj wg_createBitmapCache( int maxSize, wg_obj surfaceFactory )
 	return static_cast<Object*>(p.rawPtr());
 }
 
-void wg_setCacheLimit(wg_obj bitmapCache, int maxBytes)
+void wax_setCacheLimit(wax_obj bitmapCache, int maxBytes)
 {
 	getPtr(bitmapCache)->setLimit(maxBytes);
 }
 
-int wg_cacheLimit(wg_obj bitmapCache)
+int wax_cacheLimit(wax_obj bitmapCache)
 {
 	return getPtr(bitmapCache)->limit();
 }
 
-int wg_cacheSize(wg_obj bitmapCache)
+int wax_cacheSize(wax_obj bitmapCache)
 {
 	return getPtr(bitmapCache)->size();
 }
 
-void wg_clearCache(wg_obj bitmapCache)
+void wax_clearCache(wax_obj bitmapCache)
 {
 	getPtr(bitmapCache)->clear();
 }
 
-wg_cacheListener wg_addCacheListener(wg_obj bitmapCache, wg_cacheListenerBP blueprint )
+wax_cacheListener wax_addCacheListener(wax_obj bitmapCache, wax_cacheListenerBP blueprint )
 {
 	auto pListener = new Listener();
 	pListener->m_data = blueprint;
@@ -92,7 +92,7 @@ wg_cacheListener wg_addCacheListener(wg_obj bitmapCache, wg_cacheListenerBP blue
 	return pListener;
 }
 
-void wg_removeCacheListener(wg_obj bitmapCache, wg_cacheListener listener )
+void wax_removeCacheListener(wax_obj bitmapCache, wax_cacheListener listener )
 {
 	auto pListener = static_cast<Listener*>(listener);
 	
@@ -100,7 +100,7 @@ void wg_removeCacheListener(wg_obj bitmapCache, wg_cacheListener listener )
 	delete pListener;
 }
 
-wg_cacheSlot wg_getCacheSlot(wg_obj bitmapCache, wg_sizeI size)
+wax_cacheSlot wax_getCacheSlot(wax_obj bitmapCache, wax_sizeI size)
 {
 	Surface_p	pSurf;
 	CoordI		coord;
@@ -110,13 +110,13 @@ wg_cacheSlot wg_getCacheSlot(wg_obj bitmapCache, wg_sizeI size)
 	return {static_cast<Object*>(pSurf.rawPtr()),{coord.x,coord.y}};
 }
 
-int wg_getNbCacheSurfaces(wg_obj bitmapCache)
+int wax_getNbCacheSurfaces(wax_obj bitmapCache)
 {
 	return getPtr(bitmapCache)->nbSurfaces();
 }
 
 
-int wg_getCacheSurfaces(wg_obj bitmapCache, int maxSurfaces, wg_obj * pArray )
+int wax_getCacheSurfaces(wax_obj bitmapCache, int maxSurfaces, wax_obj * pArray )
 {
 	auto surfVector = getPtr(bitmapCache)->getSurfaces();
 	int amount = std::min(maxSurfaces, (int)surfVector.size());

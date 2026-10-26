@@ -19,10 +19,10 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#include <wg_gridwalker.h>
-#include <wg_gfxutil.h>
+#include <wax_gridwalker.h>
+#include <wax_gfxutil.h>
 
-namespace wg
+namespace wax
 {
 
 
@@ -30,7 +30,7 @@ namespace wg
 	{
 		m_pBuffer = &pixelBuffer;
 
-		PixelDescription pixelDescription = Util::pixelFormatToDescription(m_pBuffer->format);
+		PixelDescription pixelDescription = GfxUtil::pixelFormatToDescription(m_pBuffer->format);
 
 		m_pixelBytes = pixelDescription.bits / 8;
 

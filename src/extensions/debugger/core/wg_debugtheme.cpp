@@ -27,7 +27,7 @@
 #include <wg_charbuffer.h>
 #include <wg_basictextlayout.h>
 #include <wg_basicnumberlayout.h>
-#include <wg_surfacereader.h>
+#include <wax_surfacereader.h>
 
 namespace wg
 {

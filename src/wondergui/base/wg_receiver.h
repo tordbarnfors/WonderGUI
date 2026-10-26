@@ -23,10 +23,12 @@
 #define	WG_RECEIVER_DOT_H
 #pragma once
 
-#include <wg_pointers.h>
+#include <wax_pointers.h>
+#include <wg_types.h>
 
 namespace wg
 {
+	class Base;			// So friend declarations don't refer to wax::Core.
 
 	class Msg;
 	typedef	StrongPtr<Msg>			Msg_p;

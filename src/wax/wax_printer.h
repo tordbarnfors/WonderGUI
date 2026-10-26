@@ -19,16 +19,16 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef	WG_PRINTER_DOT_H
-#define	WG_PRINTER_DOT_H
+#ifndef	WAX_PRINTER_DOT_H
+#define	WAX_PRINTER_DOT_H
 #pragma once
 
-#include <wg_pointers.h>
-#include <wg_gfxtypes.h>
-#include <wg_gfxdevice.h>
-#include <wg_font.h>
+#include <wax_pointers.h>
+#include <wax_types.h>
+#include <wax_gfxdevice.h>
+#include <wax_font.h>
 
-namespace wg
+namespace wax
 {
 
 	class Printer;
@@ -129,5 +129,5 @@ namespace wg
 	};
 
 
-} // namespace wg
-#endif //WG_PRINTER_DOT_H
+} // namespace wax
+#endif //WAX_PRINTER_DOT_H

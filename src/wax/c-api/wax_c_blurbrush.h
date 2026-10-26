@@ -19,38 +19,38 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef WG_C_BLURBRUSH_DOT_H
-#define WG_C_BLURBRUSH_DOT_H
+#ifndef WAX_C_BLURBRUSH_DOT_H
+#define WAX_C_BLURBRUSH_DOT_H
 #pragma once
 
-#include <wg_c_gfxtypes.h>
-#include <wg_c_geo.h>
-#include <wg_c_color.h>
+#include <wax_c_types.h>
+#include <wax_c_geo.h>
+#include <wax_c_color.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 
-//____ wg_blurbrushBP __________________________________________________________
+//____ wax_blurbrushBP __________________________________________________________
 
-typedef struct wg_blurbrushBP_struct			// NOT BINARY EQUIVALENT!
+typedef struct wax_blurbrushBP_struct			// NOT BINARY EQUIVALENT!
 {
 	const float *	blue;
 	const float *	green;
 	const float *	red;
 	
-	wg_spx		size = 64 * 4;;
-} wg_blurbrushBP;
+	wax_spx		size = 64 * 4;;
+} wax_blurbrushBP;
 
 
-WG_EXPORT wg_obj		wg_createBlurbrush( wg_blurbrushBP bp );
+WAX_EXPORT wax_obj		wax_createBlurbrush( wax_blurbrushBP bp );
 
-WG_EXPORT wg_spx		wg_blurbrushSize( wg_obj blurbrush );
+WAX_EXPORT wax_spx		wax_blurbrushSize( wax_obj blurbrush );
 
-WG_EXPORT const float*	wg_blurbrushBlue( wg_obj blurbrush );
-WG_EXPORT const float*	wg_blurbrushGreen( wg_obj blurbrush );
-WG_EXPORT const float*	wg_blurbrushRed( wg_obj blurbrush );
+WAX_EXPORT const float*	wax_blurbrushBlue( wax_obj blurbrush );
+WAX_EXPORT const float*	wax_blurbrushGreen( wax_obj blurbrush );
+WAX_EXPORT const float*	wax_blurbrushRed( wax_obj blurbrush );
 
 
 #ifdef __cplusplus

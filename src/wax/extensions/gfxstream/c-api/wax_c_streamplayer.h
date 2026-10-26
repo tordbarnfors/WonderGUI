@@ -19,35 +19,35 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef WG_C_STREAMPLAYER_DOT_H
-#define WG_C_STREAMPLAYER_DOT_H
+#ifndef WAX_C_STREAMPLAYER_DOT_H
+#define WAX_C_STREAMPLAYER_DOT_H
 #pragma once
 
-#include <wg_c_gfxtypes.h>
-#include <wg_c_geo.h>
+#include <wax_c_types.h>
+#include <wax_c_geo.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-	typedef	void(*wg_streamPlayerFence_func)(uint16_t fenceID, uint32_t fenceValue);
+	typedef	void(*wax_streamPlayerFence_func)(uint16_t fenceID, uint32_t fenceValue);
 
 
-	WG_EXPORT wg_obj		wg_createStreamPlayer(wg_obj backend, wg_obj surfaceFactory, wg_obj edgemapFactory);
+	WAX_EXPORT wax_obj		wax_createStreamPlayer(wax_obj backend, wax_obj surfaceFactory, wax_obj edgemapFactory);
 
-	WG_EXPORT wg_component	wg_getStreamPlayerInput(wg_obj streamPlayer);
+	WAX_EXPORT wax_component	wax_getStreamPlayerInput(wax_obj streamPlayer);
 
-	WG_EXPORT void			wg_resetStreamPlayer(wg_obj streamPlayer);
+	WAX_EXPORT void			wax_resetStreamPlayer(wax_obj streamPlayer);
 
-	WG_EXPORT void			wg_setStreamPlayerStoreDirtyRects(wg_obj streamPlayer, int bStore);
-	WG_EXPORT void			wg_setStreamPlayerMaxDirtyRects(wg_obj streamPlayer, int max);
+	WAX_EXPORT void			wax_setStreamPlayerStoreDirtyRects(wax_obj streamPlayer, int bStore);
+	WAX_EXPORT void			wax_setStreamPlayerMaxDirtyRects(wax_obj streamPlayer, int max);
 
-	WG_EXPORT int			wg_getStreamPlayerDirtyRects(wg_obj streamPlayer, wg_canvasRef canvas, const wg_rectI **pRects );
+	WAX_EXPORT int			wax_getStreamPlayerDirtyRects(wax_obj streamPlayer, wax_canvasRef canvas, const wax_rectI **pRects );
 
-	WG_EXPORT void			wg_clearStreamPlayerDirtyRects(wg_obj streamPlayer);
+	WAX_EXPORT void			wax_clearStreamPlayerDirtyRects(wax_obj streamPlayer);
 
-/*WG_EXPORT void			wg_setStreamPlayerCanvasInfoCallback( const std::function<void(const CanvasInfo * pBegin, const CanvasInfo * pEnd)>& callback ); */
-	WG_EXPORT void			wg_setStreamPlayerFenceCallback(wg_obj streamPlayer, wg_streamPlayerFence_func callback );
+/*WAX_EXPORT void			wax_setStreamPlayerCanvasInfoCallback( const std::function<void(const CanvasInfo * pBegin, const CanvasInfo * pEnd)>& callback ); */
+	WAX_EXPORT void			wax_setStreamPlayerFenceCallback(wax_obj streamPlayer, wax_streamPlayerFence_func callback );
 
 
 

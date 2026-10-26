@@ -25,7 +25,8 @@
 
 #include <vector>
 
-#include <wg_object.h>
+#include <wax_object.h>
+#include <wg_types.h>
 
 namespace wg
 {

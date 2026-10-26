@@ -409,7 +409,7 @@ private:
 	inline static const BlendMode c_effectModes[c_nbEffectModes] = { BlendMode::Add, BlendMode::Subtract, BlendMode::Multiply, BlendMode::Invert, BlendMode::Min, BlendMode::Max };
 
 	// Color for each effect mode. Not a static table, since converting Color8 to HiColor needs
-	// tables that GfxBase sets up at runtime.
+	// tables that wax::Core sets up at runtime.
 
 	static HiColor effectColor(int mode)
 	{

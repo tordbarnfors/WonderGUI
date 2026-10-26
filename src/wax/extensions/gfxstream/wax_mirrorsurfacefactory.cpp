@@ -21,13 +21,13 @@
 =========================================================================*/
 #include <memory.h>
 
-#include <wg_mirrorsurface.h>
-#include <wg_mirrorsurfacefactory.h>
-#include <wg_gfxutil.h>
+#include <wax_mirrorsurface.h>
+#include <wax_mirrorsurfacefactory.h>
+#include <wax_gfxutil.h>
 
 
 
-namespace wg
+namespace wax
 {
 
 	const TypeInfo MirrorSurfaceFactory::TYPEINFO = { "MirrorSurfaceFactory", &SurfaceFactory::TYPEINFO };
@@ -61,7 +61,7 @@ namespace wg
 	{
 		auto pOrgSurface = m_pBackingSurfaceFactory->createSurface(blueprint);
 
-		auto p = MirrorSurface::create( WGBP(MirrorSurface, _.encoder = m_pEncoder, _.surface = pOrgSurface ));
+		auto p = MirrorSurface::create( WAXBP(MirrorSurface, _.encoder = m_pEncoder, _.surface = pOrgSurface ));
 		_addReference( p );
 		return p;
 	}
@@ -70,7 +70,7 @@ namespace wg
 	{
 		auto pOrgSurface = m_pBackingSurfaceFactory->createSurface(blueprint, pBlob, pitch);
 
-		auto p = MirrorSurface::create(WGBP(MirrorSurface, _.encoder = m_pEncoder, _.surface = pOrgSurface, _.streamOnCreate = true));
+		auto p = MirrorSurface::create(WAXBP(MirrorSurface, _.encoder = m_pEncoder, _.surface = pOrgSurface, _.streamOnCreate = true));
 		_addReference( p );
 		return p;
 	}
@@ -80,7 +80,7 @@ namespace wg
 	{
 		auto pOrgSurface = m_pBackingSurfaceFactory->createSurface(blueprint, pPixels, format, pitch, pPalette, paletteSize);
 
-		auto p = MirrorSurface::create(WGBP(MirrorSurface, _.encoder = m_pEncoder, _.surface = pOrgSurface, _.streamOnCreate = true));
+		auto p = MirrorSurface::create(WAXBP(MirrorSurface, _.encoder = m_pEncoder, _.surface = pOrgSurface, _.streamOnCreate = true));
 		_addReference(p);
 		return p;
 	}
@@ -90,7 +90,7 @@ namespace wg
 	{
 		auto pOrgSurface = m_pBackingSurfaceFactory->createSurface(blueprint, pPixels, pixelDescription, pitch, pPalette, paletteSize);
 
-		auto p = MirrorSurface::create(WGBP(MirrorSurface, _.encoder = m_pEncoder, _.surface = pOrgSurface, _.streamOnCreate = true));
+		auto p = MirrorSurface::create(WAXBP(MirrorSurface, _.encoder = m_pEncoder, _.surface = pOrgSurface, _.streamOnCreate = true));
 		_addReference(p);
 		return p;
 	}
@@ -154,4 +154,4 @@ namespace wg
 		}
 	}
 
-} // namespace wg
+} // namespace wax

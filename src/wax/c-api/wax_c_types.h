@@ -19,271 +19,346 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef WG_C_GFXTYPES_DOT_H
-#define WG_C_GFXTYPES_DOT_H
+#ifndef WAX_C_TYPES_DOT_H
+#define WAX_C_TYPES_DOT_H
 #pragma once
 
-#include <wg_c_geartypes.h>
+#include <stdint.h>
+
+#if __has_include(<wax_export.h>)
+#include <wax_export.h>
+#else
+#	define WAX_EXPORT
+#	define WAX_NO_EXPORT
+#	define WAX_DEPRECATED
+#	define	WAX_DEPRECATED_EXPORT
+#	define	WAX_DEPRECATED_NO_EXPORT
+#endif
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-//____ wg_placement ___________________________________________________________
+typedef void* wax_obj;
+
+
+typedef	void(*wax_finalizer_func)(wax_obj);
+
+//____ wax_component __________________________________________________________
+
+typedef struct wax_component_struct
+{
+	wax_obj object;
+	void * pInterface;
+} wax_component;
+
+
+//____ wax_typeInfo ___________________________________________________________
+
+typedef struct wax_typeInfo_struct
+{
+	const char* className;
+	const struct wax_typeInfo_struct* pSuperClass;
+} wax_typeInfo;
+
+//____ wax_errorLevel ________________________________________________
+
+typedef enum
+{
+	WAX_WARNING = 0,
+	WAX_SILENT_ERROR,
+	WAX_ERROR,
+	WAX_CRITICAL
+} wax_errorLevel;
+
+//____ wax_errorCode ____________________________________________________
+
+typedef enum
+{
+	WAX_ERROR_OUT_OF_RANGE = 0,
+	WAX_ERROR_INVALID_ITERATOR,
+	WAX_ERROR_INVALID_PARAM,
+	WAX_ERROR_FAILED_PREREQUISITE,
+	WAX_ERROR_OPENGL,						// OPENGL HAS ISSUED A GLERROR
+	WAX_ERROR_INTERNAL,
+	WAX_ERROR_SYSTEM_INTEGRITY,
+	WAX_ERROR_ILLEGAL_CALL,
+	WAX_ERROR_RESOURCE_EXHAUSTED,			// A LIMITED INTERNAL RESOURCE HAS BEEN EXHAUSTED
+	WAX_ERROR_RENDER_FAILURE,
+	WAX_ERROR_PERFORMANCE,					// ONLY USED IN COMBO WITH WAX_WARNING.
+	WAX_ERROR_OTHER
+} wax_errorCode;
+
+//____ wax_errorInfo _____________________________________________________
+
+typedef struct wax_errorInfo_struct
+{
+	wax_errorLevel	severity;
+	wax_errorCode		code;
+	const char * 		message;
+	const void *		object;
+	const char *		classname;
+	const char *		function;
+	const char *		file;
+	int					line;
+} wax_errorInfo;
+
+
+//____ wax_placement ___________________________________________________________
 
 typedef enum
 {
 	// Clockwise from upper left corner, center last. Must be in range 0-8
 
-	WG_NORTHWEST = 0,
-	WG_NORTH,
-	WG_NORTHEAST,
-	WG_EAST,
-	WG_SOUTHEAST,
-	WG_SOUTH,
-	WG_SOUTHWEST,
-	WG_WEST,
-	WG_CENTER
+	WAX_NORTHWEST = 0,
+	WAX_NORTH,
+	WAX_NORTHEAST,
+	WAX_EAST,
+	WAX_SOUTHEAST,
+	WAX_SOUTH,
+	WAX_SOUTHWEST,
+	WAX_WEST,
+	WAX_CENTER
 
-} wg_placement;
+} wax_placement;
 
-//____ wg_tintMode ___________________________________________________________
+//____ wax_tintMode ___________________________________________________________
 
 // DEPRECATED!!
 
 typedef enum
 {
-	WG_TINT_NONE = 0,
-	WG_TINT_FLAT,
-	WG_TINT_GRADIENT_X,
-	WG_TINT_GRADIENT_Y,
-	WG_TINT_GRADIENT_XY
-} wg_tintMode;
+	WAX_TINT_NONE = 0,
+	WAX_TINT_FLAT,
+	WAX_TINT_GRADIENT_X,
+	WAX_TINT_GRADIENT_Y,
+	WAX_TINT_GRADIENT_XY
+} wax_tintMode;
 
-//____ wg_tintShape ___________________________________________________________
-
-typedef enum
-{
-	WG_TINTSHAPE_LINEAR = 0,
-	WG_TINTSHAPE_RADIAL
-} wg_tintShape;
-
-//____ wg_tintSpread ___________________________________________________________
+//____ wax_tintShape ___________________________________________________________
 
 typedef enum
 {
-	WG_TINTSPREAD_PAD = 0,
-	WG_TINTSPREAD_REPEAT,
-	WG_TINTSPREAD_REFLECT
-} wg_tintSpread;
+	WAX_TINTSHAPE_LINEAR = 0,
+	WAX_TINTSHAPE_RADIAL
+} wax_tintShape;
 
-//____ wg_tintRadius ___________________________________________________________
-
-typedef enum
-{
-	WG_TINTRADIUS_FIT = 0,
-	WG_TINTRADIUS_CIRCLE
-} wg_tintRadius;
-
-
-//____ wg_blendMode ____________________________________________________________
+//____ wax_tintSpread ___________________________________________________________
 
 typedef enum
 {
-	WG_BLENDMODE_UNDEFINED,
-	WG_BLENDMODE_IGNORE,
-	WG_BLENDMODE_REPLACE,
-	WG_BLENDMODE_ADD,
-	WG_BLENDMODE_SUBTRACT,
-	WG_BLENDMODE_MULTIPLY,
-	WG_BLENDMODE_INVERT,
-	WG_BLENDMODE_MIN,
-	WG_BLENDMODE_MAX,
-	WG_BLENDMODE_MORPH
-} wg_blendMode;
+	WAX_TINTSPREAD_PAD = 0,
+	WAX_TINTSPREAD_REPEAT,
+	WAX_TINTSPREAD_REFLECT
+} wax_tintSpread;
 
-//____ wg_direction ____________________________________________________________
+//____ wax_tintRadius ___________________________________________________________
 
 typedef enum
 {
-	WG_DIR_UNDEFINED,
-	WG_DIR_UP,
-	WG_DIR_RIGHT,
-	WG_DIR_DOWN,
-	WG_DIR_LEFT
-} wg_direction;
+	WAX_TINTRADIUS_FIT = 0,
+	WAX_TINTRADIUS_CIRCLE
+} wax_tintRadius;
 
-//____ wg_lineCapShape ________________________________________________________
+
+//____ wax_blendMode ____________________________________________________________
 
 typedef enum
 {
-	WG_LINECAP_NONE,
-	WG_LINECAP_FLAT,
-	WG_LINECAP_SQUARE,
-	WG_LINECAP_ROUND,
-	WG_LINECAP_VERTICAL,
-	WG_LINECAP_HORIZONTAL,
-	WG_LINECAP_SPEAR
-} wg_lineCapShape;
+	WAX_BLENDMODE_UNDEFINED,
+	WAX_BLENDMODE_IGNORE,
+	WAX_BLENDMODE_REPLACE,
+	WAX_BLENDMODE_ADD,
+	WAX_BLENDMODE_SUBTRACT,
+	WAX_BLENDMODE_MULTIPLY,
+	WAX_BLENDMODE_INVERT,
+	WAX_BLENDMODE_MIN,
+	WAX_BLENDMODE_MAX,
+	WAX_BLENDMODE_MORPH
+} wax_blendMode;
 
-//____ wg_sampleMethod ____________________________________________________________
+//____ wax_direction ____________________________________________________________
 
 typedef enum
 {
-	WG_SAMPLE_NEAREST,
-	WG_SAMPLE_BILINEAR,
-	WG_SAMPLE_UNDEFINED			// Default to Bilinear if it is accelerated, otherwise Nearest.
-} wg_sampleMethod;
+	WAX_DIR_UNDEFINED,
+	WAX_DIR_UP,
+	WAX_DIR_RIGHT,
+	WAX_DIR_DOWN,
+	WAX_DIR_LEFT
+} wax_direction;
 
-//____ wg_pixelFormat _____________________________________________________________
+//____ wax_lineCapShape ________________________________________________________
+
+typedef enum
+{
+	WAX_LINECAP_NONE,
+	WAX_LINECAP_FLAT,
+	WAX_LINECAP_SQUARE,
+	WAX_LINECAP_ROUND,
+	WAX_LINECAP_VERTICAL,
+	WAX_LINECAP_HORIZONTAL,
+	WAX_LINECAP_SPEAR
+} wax_lineCapShape;
+
+//____ wax_sampleMethod ____________________________________________________________
+
+typedef enum
+{
+	WAX_SAMPLE_NEAREST,
+	WAX_SAMPLE_BILINEAR,
+	WAX_SAMPLE_UNDEFINED			// Default to Bilinear if it is accelerated, otherwise Nearest.
+} wax_sampleMethod;
+
+//____ wax_pixelFormat _____________________________________________________________
 
 // Channels are named in register order, starting with the most significant bits.
 // Byte order and color space are separate properties.
 
 typedef enum
 {
-	WG_PIXFMT_UNDEFINED,
-	WG_PIXFMT_XRGB_8,				///< 8 bits each of padding, red, green and blue.
-	WG_PIXFMT_ARGB_8,				///< 8 bits each of alpha, red, green and blue.
-	WG_PIXFMT_INDEX_8,				///< 8 bits of index into the palette.
-	WG_PIXFMT_INDEX_16,				///< 16 bits of index into the palette.
-	WG_PIXFMT_ALPHA_8,				///< 8 bits of alpha only.
-	WG_PIXFMT_RGB_565,				///< 5 bits of red, 6 bits of green and 5 bits of blue.
-	WG_PIXFMT_BGR_565,				///< 5 bits of blue, 6 bits of green and 5 bits of red.
+	WAX_PIXFMT_UNDEFINED,
+	WAX_PIXFMT_XRGB_8,				///< 8 bits each of padding, red, green and blue.
+	WAX_PIXFMT_ARGB_8,				///< 8 bits each of alpha, red, green and blue.
+	WAX_PIXFMT_INDEX_8,				///< 8 bits of index into the palette.
+	WAX_PIXFMT_INDEX_16,				///< 16 bits of index into the palette.
+	WAX_PIXFMT_ALPHA_8,				///< 8 bits of alpha only.
+	WAX_PIXFMT_RGB_565,				///< 5 bits of red, 6 bits of green and 5 bits of blue.
+	WAX_PIXFMT_BGR_565,				///< 5 bits of blue, 6 bits of green and 5 bits of red.
 
-	WG_PIXFMT_BITPLANES_1,
-	WG_PIXFMT_BITPLANES_2,
-	WG_PIXFMT_BITPLANES_4,
-	WG_PIXFMT_BITPLANES_5,
-	WG_PIXFMT_BITPLANES_8,
+	WAX_PIXFMT_BITPLANES_1,
+	WAX_PIXFMT_BITPLANES_2,
+	WAX_PIXFMT_BITPLANES_4,
+	WAX_PIXFMT_BITPLANES_5,
+	WAX_PIXFMT_BITPLANES_8,
 
-	WG_PIXFMT_BITPLANES_A1_1,
-	WG_PIXFMT_BITPLANES_A1_2,
-	WG_PIXFMT_BITPLANES_A1_4,
-	WG_PIXFMT_BITPLANES_A1_5,
-	WG_PIXFMT_BITPLANES_A1_8,
+	WAX_PIXFMT_BITPLANES_A1_1,
+	WAX_PIXFMT_BITPLANES_A1_2,
+	WAX_PIXFMT_BITPLANES_A1_4,
+	WAX_PIXFMT_BITPLANES_A1_5,
+	WAX_PIXFMT_BITPLANES_A1_8,
 
-	WG_PIXFMT_XRGB_16,				///< 16 bits each of padding, red, green and blue.
-	WG_PIXFMT_ARGB_16				///< 16 bits each of alpha, red, green and blue.
-} wg_pixelFormat;
+	WAX_PIXFMT_XRGB_16,				///< 16 bits each of padding, red, green and blue.
+	WAX_PIXFMT_ARGB_16				///< 16 bits each of alpha, red, green and blue.
+} wax_pixelFormat;
 
 
-//____ wg_pixelType _________________________________________________________
-
-typedef enum
-{
-	WG_PIXTYPE_CHUNKY,			///< Normal pixel. All bits for a pixel are packed into same sequence of bytes.
-	WG_PIXTYPE_INDEX,			///< Pixels are color indexes into a palette.
-	WG_PIXTYPE_BITPLANES		///< Pixels are color indexes into a palette, stored in 16-bit bitplanes. Starting with lowest bitplane.
-} wg_pixelType;
-
-//____ wg_colorSpace ________________________________________________________
+//____ wax_pixelType _________________________________________________________
 
 typedef enum
 {
-	WG_COLORSPACE_UNDEFINED,	///< Only for blueprints, gives the default (sRGB).
-	WG_COLORSPACE_LINEAR,
-	WG_COLORSPACE_SRGB
-} wg_colorSpace;
+	WAX_PIXTYPE_CHUNKY,			///< Normal pixel. All bits for a pixel are packed into same sequence of bytes.
+	WAX_PIXTYPE_INDEX,			///< Pixels are color indexes into a palette.
+	WAX_PIXTYPE_BITPLANES		///< Pixels are color indexes into a palette, stored in 16-bit bitplanes. Starting with lowest bitplane.
+} wax_pixelType;
 
-//____ wg_byteOrder ________________________________________________________
+//____ wax_colorSpace ________________________________________________________
 
 typedef enum
 {
-	WG_BYTEORDER_NATIVE,		///< Byte order of the system.
-	WG_BYTEORDER_LITTLE_ENDIAN,
-	WG_BYTEORDER_BIG_ENDIAN
-} wg_byteOrder;
+	WAX_COLORSPACE_UNDEFINED,	///< Only for blueprints, gives the default (sRGB).
+	WAX_COLORSPACE_LINEAR,
+	WAX_COLORSPACE_SRGB
+} wax_colorSpace;
 
-//____ wg_pixelDescription _____________________________________________________
+//____ wax_byteOrder ________________________________________________________
 
-typedef struct wg_pixelDescription_struct
+typedef enum
+{
+	WAX_BYTEORDER_NATIVE,		///< Byte order of the system.
+	WAX_BYTEORDER_LITTLE_ENDIAN,
+	WAX_BYTEORDER_BIG_ENDIAN
+} wax_byteOrder;
+
+//____ wax_pixelDescription _____________________________________________________
+
+typedef struct wax_pixelDescription_struct
 {
 	int				bits;			///< Number of bits for the pixel, includes any non-used padding bits.
-	wg_pixelType	type;
+	wax_pixelType	type;
 	uint8_t			bigEndian;		///< Byte order of the pixels (of the 16-bit words for bitplanes).
 
 	uint64_t		R_mask;			///< bitmask for getting the red bits out of chunky pixel
 	uint64_t		G_mask;			///< bitmask for getting the green bits out of chunky pixel
 	uint64_t		B_mask;			///< bitmask for getting the blue bits out of chunky pixel
 	uint64_t		A_mask;			///< bitmask for getting the alpha bits out of chunky pixel
-} wg_pixelDescription;
+} wax_pixelDescription;
 
-//____ wg_gfxFlip ____________________________________________________________
+//____ wax_gfxFlip ____________________________________________________________
 
 typedef enum
 {
-	WG_GFXFLIP_NORMAL = 0,
-	WG_GFXFLIP_X,
-	WG_GFXFLIP_Y,
-	WG_GFXFLIP_ROT90,
-	WG_GFXFLIP_ROT90_FLIP_X,
-	WG_GFXFLIP_ROT90_FLIP_Y,
-	WG_GFXFLIP_ROT180,
-	WG_GFXFLIP_ROT180_FLIP_X,
-	WG_GFXFLIP_ROT180_FLIP_Y,
-	WG_GFXFLIP_ROT270,
-	WG_GFXFLIP_ROT270_FLIP_X,
-	WG_GFXFLIP_ROT270_FLIP_Y,
-} wg_gfxFlip;
+	WAX_GFXFLIP_NORMAL = 0,
+	WAX_GFXFLIP_X,
+	WAX_GFXFLIP_Y,
+	WAX_GFXFLIP_ROT90,
+	WAX_GFXFLIP_ROT90_FLIP_X,
+	WAX_GFXFLIP_ROT90_FLIP_Y,
+	WAX_GFXFLIP_ROT180,
+	WAX_GFXFLIP_ROT180_FLIP_X,
+	WAX_GFXFLIP_ROT180_FLIP_Y,
+	WAX_GFXFLIP_ROT270,
+	WAX_GFXFLIP_ROT270_FLIP_X,
+	WAX_GFXFLIP_ROT270_FLIP_Y,
+} wax_gfxFlip;
 
-//____ wg_transform ___________________________________________________________
+//____ wax_transform ___________________________________________________________
 
 typedef struct
 {
 	float	xx, xy;		// Increment of X and Y position in source when increasing destination along X-axis
 	float	yx, yy;		// Increment of X and Y position in source when increasing destination along Y-axis
-}  wg_transform;
+}  wax_transform;
 
-//____ wg_canvasRef ____________________________________________________________
-
-typedef enum
-{
-	WG_CANVAS_NONE,
-	WG_CANVAS_DEFAULT,
-	WG_CANVAS_1,
-	WG_CANVAS_2,
-	WG_CANVAS_3,
-	WG_CANVAS_4,
-	WG_CANVAS_5,
-	WG_CANVAS_6,
-	WG_CANVAS_7,
-	WG_CANVAS_8,
-	WG_CANVAS_9,
-	WG_CANVAS_10,
-	WG_CANVAS_11,
-	WG_CANVAS_12,
-	WG_CANVAS_13,
-	WG_CANVAS_14,
-	WG_CANVAS_15,
-	WG_CANVAS_16,
-	WG_CANVAS_17,
-	WG_CANVAS_18,
-	WG_CANVAS_19,
-	WG_CANVAS_20,
-	WG_CANVAS_21,
-	WG_CANVAS_22,
-	WG_CANVAS_23,
-	WG_CANVAS_24,
-	WG_CANVAS_25,
-	WG_CANVAS_26,
-	WG_CANVAS_27,
-	WG_CANVAS_28,
-	WG_CANVAS_29,
-	WG_CANVAS_30,
-	WG_CANVAS_31,
-	WG_CANVAS_32
-} wg_canvasRef;
-
-//____ wg_sampleOrigo _____________________________________________________________
+//____ wax_canvasRef ____________________________________________________________
 
 typedef enum
 {
-	WG_SAMPLEORIGO_TOP = 0,				// Origo at top, increasing values goes down.
-	WG_SAMPLEORIGO_MIDDLE_UP = 1,		// Origo at middle, increasing values goes up.
-	WG_SAMPLEORIGO_MIDDLE_DOWN = 2,		// Origo at middle, increasing values goes down.
-	WG_SAMPLEORIGO_BOTTOM = 3			// Origo at bottom, increasing values goes up.
-} wg_sampleOrigo;
+	WAX_CANVAS_NONE,
+	WAX_CANVAS_DEFAULT,
+	WAX_CANVAS_1,
+	WAX_CANVAS_2,
+	WAX_CANVAS_3,
+	WAX_CANVAS_4,
+	WAX_CANVAS_5,
+	WAX_CANVAS_6,
+	WAX_CANVAS_7,
+	WAX_CANVAS_8,
+	WAX_CANVAS_9,
+	WAX_CANVAS_10,
+	WAX_CANVAS_11,
+	WAX_CANVAS_12,
+	WAX_CANVAS_13,
+	WAX_CANVAS_14,
+	WAX_CANVAS_15,
+	WAX_CANVAS_16,
+	WAX_CANVAS_17,
+	WAX_CANVAS_18,
+	WAX_CANVAS_19,
+	WAX_CANVAS_20,
+	WAX_CANVAS_21,
+	WAX_CANVAS_22,
+	WAX_CANVAS_23,
+	WAX_CANVAS_24,
+	WAX_CANVAS_25,
+	WAX_CANVAS_26,
+	WAX_CANVAS_27,
+	WAX_CANVAS_28,
+	WAX_CANVAS_29,
+	WAX_CANVAS_30,
+	WAX_CANVAS_31,
+	WAX_CANVAS_32
+} wax_canvasRef;
+
+//____ wax_sampleOrigo _____________________________________________________________
+
+typedef enum
+{
+	WAX_SAMPLEORIGO_TOP = 0,				// Origo at top, increasing values goes down.
+	WAX_SAMPLEORIGO_MIDDLE_UP = 1,		// Origo at middle, increasing values goes up.
+	WAX_SAMPLEORIGO_MIDDLE_DOWN = 2,		// Origo at middle, increasing values goes down.
+	WAX_SAMPLEORIGO_BOTTOM = 3			// Origo at bottom, increasing values goes up.
+} wax_sampleOrigo;
 
 
 #ifdef __cplusplus

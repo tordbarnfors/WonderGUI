@@ -20,9 +20,9 @@ target_link_directories(streamgenerator PRIVATE
 
 target_include_directories(streamgenerator PRIVATE 
 	${WONDERGUI_INCDIRS}
-	${WGSOFTGFX_INCDIRS}
-	${WGGFXSTREAM_INCDIRS}
-	${WGFREETYPEFONT_INCDIRS}
+	${WAXSOFTGFX_INCDIRS}
+	${WAXGFXSTREAM_INCDIRS}
+	${WAXFREETYPEFONT_INCDIRS}
 	${WG_ROOT}/SDL2/include/
 	${WG_ROOT}/SDL2_image/include/
 )
@@ -31,10 +31,10 @@ target_include_directories(streamgenerator PRIVATE
 target_working_directory(streamgenerator ${WG_ROOT} )
 
 target_link_libraries(streamgenerator PRIVATE
-	wgsoftgfx
-	wgfreetypefont
+	waxsoftgfx
+	waxfreetypefont
 	wondergui
-	wggfxstream
+	waxgfxstream
 	${SDL2_LIBS}
 	${SDL2IMAGE_LIBS}
 	${FREETYPE2_LIB}

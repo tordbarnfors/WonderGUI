@@ -1,8 +1,8 @@
 set(SOURCES
-    wg_freetypefont.h
-    wg_freetypefont.cpp
-    wg_c_freetypefont.h
-    wg_c_freetypefont.cpp
+    wax_freetypefont.h
+    wax_freetypefont.cpp
+    wax_c_freetypefont.h
+    wax_c_freetypefont.cpp
 )
 
 
@@ -12,24 +12,24 @@ set(INCDIRS
 
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${SOURCES})
 
-add_library( wgfreetypefont STATIC ${SOURCES} )
-generate_export_header(wgfreetypefont BASE_NAME wg)
+add_library( waxfreetypefont STATIC ${SOURCES} )
+generate_export_header(waxfreetypefont BASE_NAME wax)
 
-target_link_libraries( wgfreetypefont 
-    wondergfx
+target_link_libraries( waxfreetypefont 
+    wax
     Freetype::Freetype
 )
 
-target_include_directories(wgfreetypefont PRIVATE
+target_include_directories(waxfreetypefont PRIVATE
     ${INCDIRS}
-    ${WONDERGFX_INCDIRS}
+    ${WAX_INCDIRS}
     ${FREETYPE2_INCDIR}
 	"${CMAKE_CURRENT_BINARY_DIR}"  # For generated header
 )
 
-set_target_properties( wgfreetypefont PROPERTIES FOLDER "Extensions" )
+set_target_properties( waxfreetypefont PROPERTIES FOLDER "Extensions" )
 
 
 list(TRANSFORM SOURCES PREPEND ${CMAKE_CURRENT_LIST_DIR}/ )
-set(WGFREETYPEFONT_SOURCES ${SOURCES} PARENT_SCOPE)
-set(WGFREETYPEFONT_INCDIRS ${INCDIRS} PARENT_SCOPE)
+set(WAXFREETYPEFONT_SOURCES ${SOURCES} PARENT_SCOPE)
+set(WAXFREETYPEFONT_INCDIRS ${INCDIRS} PARENT_SCOPE)

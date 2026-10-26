@@ -20,7 +20,7 @@
 
 =========================================================================*/
 #include <wg_bakeskin.h>
-#include <wg_geo.h>
+#include <wax_geo.h>
 #include <wg_util.h>
 #include <wg_base.h>
 #include <wg_skin.impl.h>

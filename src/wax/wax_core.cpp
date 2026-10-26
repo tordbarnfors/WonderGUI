@@ -19,30 +19,48 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#include <wg_gfxbase.h>
-#include <wg_bitmapcache.h>
-#include <wg_pixeltools.h>
-#include <wg_edgemaptools.h>
-#include <wg_gfxutil.h>
+#include <wax_core.h>
+#include <wax_memstack.h>
+#include <wax_mempool.h>
+#include <wax_object.h>
+#include <wax_bitmapcache.h>
+#include <wax_pixeltools.h>
+#include <wax_edgemaptools.h>
+#include <wax_gfxutil.h>
 
-#include <wg_compression.h>
-#include <wg_q565compression.h>
-#include <wg_qoicompression.h>
-#include <wg_lzcompression.h>
-#include <wg_spxcompression.h>
-#include <wg_rlecompression.h>
+#include <wax_compression.h>
+#include <wax_q565compression.h>
+#include <wax_qoicompression.h>
+#include <wax_lzcompression.h>
+#include <wax_spxcompression.h>
+#include <wax_rlecompression.h>
 
+#include <iostream>
+#include <algorithm>
+#include <cassert>
 
-
-namespace wg
+namespace wax
 {
-	int					GfxBase::s_gfxInitCounter = 0;
+	const TypeInfo	Core::TYPEINFO = { "Core", nullptr };
 
-	GfxContext_p		GfxBase::s_pGfxContext;
+	int							Core::s_initCounter = 0;
 
-	int 				GfxBase::s_curveTab[c_nCurveTabEntries];
+	Context_p					Core::s_pContext;
 
-	std::vector<Decompressor_p> GfxBase::s_decompressors;
+	MemPool *					Core::s_pPtrPool = nullptr;
+	MemStack *					Core::s_pMemStack = nullptr;
+
+	std::atomic<unsigned int>	Core::s_objectsCreated;
+	std::atomic<unsigned int>	Core::s_objectsDestroyed;
+
+
+	bool						Core::s_bTrackingObjects = false;
+
+	std::unordered_map<Object*, Core::ObjectInfo>	Core::s_trackedObjects;
+
+	int 						Core::s_curveTab[c_nCurveTabEntries];
+
+	std::vector<Decompressor_p> Core::s_decompressors;
 
 
 	namespace PixelTools
@@ -52,132 +70,274 @@ namespace wg
 	}
 
 
-
 	//____ init() __________________________________________________________________
 
-	bool GfxBase::init( )
+	bool Core::init()
 	{
-		if( s_gfxInitCounter == 0 )
+		if( s_initCounter == 0 )
 		{
-			if( !GearBase::init() )
-			   return false;
+			s_objectsCreated = 0;
+			s_objectsDestroyed = 0;
+			s_pPtrPool = new MemPool( 128, sizeof( WeakPtrHub ) );
+			s_pMemStack = new MemStack( 4096 );
 
-			s_pGfxContext = new GfxContext();
-			s_pGfxContext->pGearContext = GearBase::context();
-			
+			s_pContext = new Context();
+
 			HiColor::_initTables();
 			PixelTools::_initTables();
 			_genCurveTab();
 		}
-		
-		s_gfxInitCounter++;
+
+		s_initCounter++;
 		return true;
 	}
 
 	//____ exit() __________________________________________________________________
 
-	bool GfxBase::exit()
+	bool Core::exit()
 	{
-		if( s_gfxInitCounter > 1 )
+		if( s_initCounter <= 0 )
 		{
-			s_gfxInitCounter--;
-			return true;
-		}
-		
-		if( s_gfxInitCounter <= 0 )
-		{
-			throwError(ErrorLevel::SilentError, ErrorCode::IllegalCall, "Call to GfxBase::exit() ignored, not initialized or already exited.", nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
+			throwError(ErrorLevel::SilentError, ErrorCode::IllegalCall, "Call to Core::exit() ignored, not initialized or already exited.", nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return false;
 		}
-		
-		s_gfxInitCounter = 0;
 
-		if( s_pGfxContext->pDefaultBitmapCache )
-			s_pGfxContext->pDefaultBitmapCache->clear();
+		if( s_initCounter > 1 )
+		{
+			s_initCounter--;
+			return true;
+		}
+
+		if( s_pContext->pDefaultBitmapCache )
+			s_pContext->pDefaultBitmapCache->clear();
 
 		// We need to make sure our objects are destroyed before continuing.
 
-		s_pGfxContext->pDefaultSurfaceFactory = nullptr;
-		s_pGfxContext->pDefaultEdgemapFactory = nullptr;
-		s_pGfxContext->pDefaultWarpmapFactory = nullptr;
-		s_pGfxContext->pDefaultGfxDevice = nullptr;
-		s_pGfxContext->pDefaultBitmapCache = nullptr;
-		s_pGfxContext->pDefaultGfxDeviceFactory = nullptr;
-		
-		s_pGfxContext = nullptr;
-		
+		s_pContext->pDefaultSurfaceFactory = nullptr;
+		s_pContext->pDefaultEdgemapFactory = nullptr;
+		s_pContext->pDefaultWarpmapFactory = nullptr;
+		s_pContext->pDefaultGfxDevice = nullptr;
+		s_pContext->pDefaultBitmapCache = nullptr;
+		s_pContext->pDefaultGfxDeviceFactory = nullptr;
+
 		PixelTools::_releaseTables();
 
 		s_decompressors.clear();
 
-		return GearBase::exit();
+		if( !s_pPtrPool->isEmpty() )
+		{
+			throwError(ErrorLevel::SilentError, ErrorCode::SystemIntegrity, "Some weak pointers still in use. Can not exit Wax.", nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
+			return false;
+		}
+
+		s_initCounter = 0;
+
+		if( !s_pMemStack->isEmpty() )
+		{
+			throwError(ErrorLevel::Warning, ErrorCode::SystemIntegrity, "Memstack still contains data. Not all allocations have been correctly released.", nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
+		}
+
+		delete s_pPtrPool;
+		s_pPtrPool = nullptr;
+
+		delete s_pMemStack;
+		s_pMemStack = nullptr;
+
+		// Our context should be the only object alive at this point. Still needed for the error-handler.
+
+		if (s_objectsCreated != s_objectsDestroyed )
+			throwError(ErrorLevel::Warning, ErrorCode::SystemIntegrity, "Some objects still alive after Wax exit. Might cause problems when they go out of scope. Forgotten to clear pointers?\nHint: Enable object tracking to find out which ones.", nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
+
+		s_pContext = nullptr;
+		return true;
 	}
 
 	//____ setContext() _______________________________________________________
 
-	GfxContext_p GfxBase::setContext( const GfxContext_p& pNewContext )
+	Context_p Core::setContext( const Context_p& pNewContext )
 	{
-		auto pOld = s_pGfxContext;
-		
+		Context_p p = s_pContext;
+
 		if( pNewContext )
-			s_pGfxContext = pNewContext;
+			s_pContext = pNewContext;
 		else
-			s_pGfxContext = new GfxContext();
-
-		GearBase::setContext(s_pGfxContext->pGearContext);
-		s_pGfxContext->pGearContext = GearBase::context();
-
-		return pOld;
+			s_pContext = new Context();
+		return p;
 	}
 
-	//____ defaultBitmapCache() __________________________________________________
+	//____ throwError() _________________________________________________________
 
-	BitmapCache_p GfxBase::defaultBitmapCache()
+	void Core::throwError(ErrorLevel severity, ErrorCode code, const char * msg, const Object * pObject, const TypeInfo* pClassType, const char * function, const char * file, int line)
 	{
-		if( s_pGfxContext->pDefaultBitmapCache == nullptr )
-			s_pGfxContext->pDefaultBitmapCache = BitmapCache::create(16*1024*1024);
+		if (s_pContext != nullptr && s_pContext->pErrorHandler)
+		{
+			Error	error;
 
-		return s_pGfxContext->pDefaultBitmapCache;
+			error.code = code;
+			error.message = msg;
+			error.pObject = pObject;
+			error.classname = pClassType ? pClassType->className : nullptr;
+			error.function = function;
+			error.file = file;
+			error.line = line;
+			error.severity = severity;
+
+			s_pContext->pErrorHandler(error);
+		}
+	}
+
+	//____ beginObjectTracking() _________________________________________________
+
+	void Core::beginObjectTracking()
+	{
+		s_bTrackingObjects = true;
+	}
+
+	//____ endObjectTracking() __________________________________________________
+
+	void Core::endObjectTracking()
+	{
+		s_bTrackingObjects = false;
+		s_trackedObjects.clear();
+	}
+
+	//____ printObjects() ________________________________________________
+
+	void Core::printObjects(std::ostream& stream)
+	{
+
+		stream << "Objects created: " << s_objectsCreated << std::endl;
+		stream << "Objects destroyed: " << s_objectsDestroyed << std::endl;
+		stream << "Objects alive: " << (s_objectsCreated - s_objectsDestroyed) << std::endl;
+
+        if( !s_trackedObjects.empty() )
+        {
+            stream << std::endl;
+            stream << "Tracked objects: " << s_trackedObjects.size() << std::endl;
+            stream << "---------------------------------------" << std::endl;
+
+			for (auto& tracked : s_trackedObjects)
+			{
+				const char* pClassName = tracked.first->typeInfo().className;
+
+				stream << "#" << tracked.second.serialNb << " - " << pClassName << " @ 0x" << tracked.first << " with " << tracked.first->refcount() << " references.";
+
+				if (tracked.second.pFileName)
+					stream << " Tracked from " << tracked.second.pFileName << ":" << tracked.second.lineNb;
+
+				stream << std::endl;
+			}
+		}
+	}
+
+
+	//____ setErrorHandler() _________________________________________________________
+
+	void Core::setErrorHandler(std::function<void(Error&)> handler)
+	{
+		s_pContext->pErrorHandler = handler;
+	}
+
+	//____ errorHandler() ____________________________________________________________
+
+	std::function<void(Error&)>	Core::errorHandler()
+	{
+		return s_pContext->pErrorHandler;
+	}
+
+	//____ memStackAlloc() ________________________________________________________
+
+	char * Core::memStackAlloc( int bytes )
+	{
+		assert(s_pMemStack != nullptr);
+		return s_pMemStack->allocBytes(bytes);
+	}
+
+	//____ memStackFree() ______________________________________________________
+
+	void Core::memStackFree( int bytes )
+	{	assert(s_pMemStack != nullptr);
+		return s_pMemStack->releaseBytes(bytes);
+	}
+
+	//____ _trackObject() ________________________________________________________
+
+	void Core::_trackObject(Object* pObject, const char* pFileName, int lineNb)
+	{
+        if( s_bTrackingObjects )
+            s_trackedObjects[pObject] = { pFileName, lineNb, s_objectsCreated };
+	}
+
+	//____ _allocWeakPtrHub() ______________________________________________________
+
+	WeakPtrHub * Core::_allocWeakPtrHub()
+	{
+		assert( s_pPtrPool != nullptr );
+		WeakPtrHub * pHub = (WeakPtrHub*) s_pPtrPool->allocEntry();
+
+		new (pHub) WeakPtrHub();
+
+		return pHub;
+	}
+
+	//____ _freeWeakPtrHub() _______________________________________________________
+
+	void Core::_freeWeakPtrHub( WeakPtrHub * pHub )
+	{
+		assert( s_pPtrPool != nullptr );
+		pHub->~WeakPtrHub();
+		s_pPtrPool->freeEntry( pHub );
+	}
+
+
+//____ defaultBitmapCache() __________________________________________________
+
+	BitmapCache_p Core::defaultBitmapCache()
+	{
+		if( s_pContext->pDefaultBitmapCache == nullptr )
+			s_pContext->pDefaultBitmapCache = BitmapCache::create(16*1024*1024);
+
+		return s_pContext->pDefaultBitmapCache;
 	}
 
 	//____ setDefaultSurfaceFactory() ____________________________________________
 
-	void GfxBase::setDefaultSurfaceFactory( SurfaceFactory * pFactory )
+	void Core::setDefaultSurfaceFactory( SurfaceFactory * pFactory )
 	{
-		s_pGfxContext->pDefaultSurfaceFactory = pFactory;
+		s_pContext->pDefaultSurfaceFactory = pFactory;
 	}
 
 	//____ setDefaultEdgemapFactory() ____________________________________________
 
-	void GfxBase::setDefaultEdgemapFactory(EdgemapFactory* pFactory)
+	void Core::setDefaultEdgemapFactory(EdgemapFactory* pFactory)
 	{
-		s_pGfxContext->pDefaultEdgemapFactory = pFactory;
+		s_pContext->pDefaultEdgemapFactory = pFactory;
 	}
 
 	//____ setDefaultWarpmapFactory() ____________________________________________
 
-	void GfxBase::setDefaultWarpmapFactory(WarpmapFactory* pFactory)
+	void Core::setDefaultWarpmapFactory(WarpmapFactory* pFactory)
 	{
-		s_pGfxContext->pDefaultWarpmapFactory = pFactory;
+		s_pContext->pDefaultWarpmapFactory = pFactory;
 	}
 
 	//____ setDefaultGfxDeviceFactory() ____________________________________________
 
-	void GfxBase::setDefaultGfxDeviceFactory(GfxDeviceFactory* pFactory)
+	void Core::setDefaultGfxDeviceFactory(GfxDeviceFactory* pFactory)
 	{
-		s_pGfxContext->pDefaultGfxDeviceFactory = pFactory;
+		s_pContext->pDefaultGfxDeviceFactory = pFactory;
 	}
 
 	//____ setDefaultGfxDevice() _________________________________________________
 
-	void GfxBase::setDefaultGfxDevice( GfxDevice * pDevice )
+	void Core::setDefaultGfxDevice( GfxDevice * pDevice )
 	{
-		s_pGfxContext->pDefaultGfxDevice = pDevice;
+		s_pContext->pDefaultGfxDevice = pDevice;
 	}
 
 	//____ getDecompressor() _______________________________________________________
 
-	Decompressor_p GfxBase::getDecompressor( uint32_t idToken )
+	Decompressor_p Core::getDecompressor( uint32_t idToken )
 	{
 		for( auto& p : s_decompressors )
 			if( p->idToken() == idToken )
@@ -208,22 +368,22 @@ namespace wg
 
 	//____ addDecompressor() _______________________________________________________
 
-	void GfxBase::addDecompressor( Decompressor * pDecompressor )
+	void Core::addDecompressor( Decompressor * pDecompressor )
 	{
 		s_decompressors.push_back(pDecompressor);
 	}
 
 	//____ _genCurveTab() ___________________________________________________________
 
-	void GfxBase::_genCurveTab()
+	void Core::_genCurveTab()
 	{
 		//		double factor = 3.14159265 / (2.0 * c_nCurveTabEntries);
 
 		for (int i = 0; i < c_nCurveTabEntries; i++)
 		{
 			double y = 1.0 - i / (double)c_nCurveTabEntries;
-			s_curveTab[i] = (int)(Util::squareRoot(1.0 - y*y)*65536.0);
+			s_curveTab[i] = (int)(GfxUtil::squareRoot(1.0 - y*y)*65536.0);
 		}
 	}
 
-} // namespace wg
+} // namespace wax

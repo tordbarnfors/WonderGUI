@@ -19,15 +19,15 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef	WG_BACKENDLOGGER_DOT_H
-#define WG_BACKENDLOGGER_DOT_H
+#ifndef	WAX_BACKENDLOGGER_DOT_H
+#define WAX_BACKENDLOGGER_DOT_H
 #pragma once
 
-#include <wg_gfxbackend.h>
+#include <wax_gfxbackend.h>
 #include <iostream>
 
 
-namespace wg
+namespace wax
 {
 
 	class BackendLogger;
@@ -111,6 +111,6 @@ protected:
 
 	};
 
-} // namespace wg
-#endif	// WG_BACKENDLOGGER_DOT_H
+} // namespace wax
+#endif	// WAX_BACKENDLOGGER_DOT_H
 

@@ -27,7 +27,7 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <wg2_text.h>
-#include <wg_font.h>
+#include <wax_font.h>
 #include <wg2_valueformat.h>
 #include <wg2_text.h>			// UGLY DEPENDENCY FOR QUICKHACK IN INSERT TEXT METHODS!!!
 #include <wg_texttool.h>
@@ -2393,8 +2393,8 @@ wg::TextStyle_p WgText::_cloneBaseStyle() const
     if( m_pBaseStyle )
         return m_pBaseStyle->clone();
 
-    if( wg::GfxBase::defaultStyle() )
-        return wg::GfxBase::defaultStyle()->clone();
+    if( wax::Core::defaultStyle() )
+        return wax::Core::defaultStyle()->clone();
 
     return wg::TextStyle::create();
 }

@@ -30,7 +30,7 @@ namespace wg
 
 	//____ create() ___________________________________________________________
 
-	PluginWarpmap_p PluginWarpmap::create( wg_obj object )
+	PluginWarpmap_p PluginWarpmap::create( wax_obj object )
 	{
 		if (!object)
 			return nullptr;
@@ -41,12 +41,12 @@ namespace wg
 	//____ constructor ________________________________________________________
 	// Initialized with an empty Blueprint, then given the geometry and nodes of the host's Warpmap.
 
-	PluginWarpmap::PluginWarpmap( wg_obj object )
+	PluginWarpmap::PluginWarpmap( wax_obj object )
 	{
 		PluginCalls::object->retain(object);
 		m_cWarpmap = object;
 
-		wg_sizeI size	= PluginCalls::warpmap->warpmapPixelSize(object);
+		wax_sizeI size	= PluginCalls::warpmap->warpmapPixelSize(object);
 		m_size			= { size.w, size.h };
 		m_cellSize		= std::max(1, PluginCalls::warpmap->warpmapCellSize(object));
 		m_uPeriod		= PluginCalls::warpmap->warpmapUPeriod(object);
@@ -57,8 +57,8 @@ namespace wg
 
 		m_pNodes = new CoordF[m_nodes.w * m_nodes.h];
 
-		wg_rectI all = { 0, 0, m_nodes.w, m_nodes.h };
-		PluginCalls::warpmap->exportWarpmapNodes(object, &all, (wg_coordF*) m_pNodes, 0);
+		wax_rectI all = { 0, 0, m_nodes.w, m_nodes.h };
+		PluginCalls::warpmap->exportWarpmapNodes(object, &all, (wax_coordF*) m_pNodes, 0);
 
 		m_bConstructed = true;
 	}
@@ -95,8 +95,8 @@ namespace wg
 		if (!m_bConstructed)
 			return;
 
-		wg_rectI cRegion = { region.x, region.y, region.w, region.h };
-		PluginCalls::warpmap->importWarpmapNodes(m_cWarpmap, &cRegion, (const wg_coordF*) (m_pNodes + region.y * m_nodes.w + region.x), m_nodes.w);
+		wax_rectI cRegion = { region.x, region.y, region.w, region.h };
+		PluginCalls::warpmap->importWarpmapNodes(m_cWarpmap, &cRegion, (const wax_coordF*) (m_pNodes + region.y * m_nodes.w + region.x), m_nodes.w);
 	}
 
 } // namespace wg

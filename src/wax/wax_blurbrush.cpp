@@ -19,9 +19,9 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#include <wg_blurbrush.h>
+#include <wax_blurbrush.h>
 
-namespace wg
+namespace wax
 {
 
 	const TypeInfo Blurbrush::TYPEINFO = { "Blurbrush", &Object::TYPEINFO };

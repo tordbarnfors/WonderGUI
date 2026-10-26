@@ -19,14 +19,14 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef	WG_COMPRESSION_DOT_H
-#define	WG_COMPRESSION_DOT_H
+#ifndef	WAX_COMPRESSION_DOT_H
+#define	WAX_COMPRESSION_DOT_H
 #pragma once
 
-#include <wg_object.h>
+#include <wax_object.h>
 
 
-namespace wg
+namespace wax
 {
 
 	class Compressor;
@@ -89,4 +89,4 @@ namespace wg
 
 
 
-#endif //WG_COMPRESSION_DOT_H
+#endif //WAX_COMPRESSION_DOT_H

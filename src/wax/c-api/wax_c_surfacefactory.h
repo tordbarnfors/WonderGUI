@@ -19,11 +19,11 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef WG_C_SURFACEFACTORY_DOT_H
-#define WG_C_SURFACEFACTORY_DOT_H
+#ifndef WAX_C_SURFACEFACTORY_DOT_H
+#define WAX_C_SURFACEFACTORY_DOT_H
 #pragma once
 
-#include <wg_c_surface.h>
+#include <wax_c_surface.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -31,18 +31,18 @@ extern "C" {
 
 //.____ Geometry _________________________________________________
 
-WG_EXPORT wg_sizeI		wg_maxSurfaceSize(wg_obj surfaceFactory);
+WAX_EXPORT wax_sizeI		wax_maxSurfaceSize(wax_obj surfaceFactory);
 
 //.____ Misc _______________________________________________________
 
-WG_EXPORT wg_obj	wg_createSurface(wg_obj factory, const wg_surfaceBP* blueprint);
-WG_EXPORT wg_obj	wg_createSurfaceFromBlob(wg_obj factory, const wg_surfaceBP* blueprint, wg_obj blob, int pitch);
-WG_EXPORT wg_obj	wg_createSurfaceFromBitmap(	wg_obj factory, const wg_surfaceBP* blueprint, 
-												const uint8_t* pPixels, wg_pixelFormat pixelFormat, 
-												int pitch, const wg_color8 * pPalette, int paletteSize );
-WG_EXPORT wg_obj	wg_createSurfaceFromRawData(wg_obj factory, const wg_surfaceBP* blueprint, 
-												const uint8_t* pPixels,	const wg_pixelDescription * pPixelDescription, 
-												int pitch, const wg_color8 * pPalette, int paletteSize );
+WAX_EXPORT wax_obj	wax_createSurface(wax_obj factory, const wax_surfaceBP* blueprint);
+WAX_EXPORT wax_obj	wax_createSurfaceFromBlob(wax_obj factory, const wax_surfaceBP* blueprint, wax_obj blob, int pitch);
+WAX_EXPORT wax_obj	wax_createSurfaceFromBitmap(	wax_obj factory, const wax_surfaceBP* blueprint, 
+												const uint8_t* pPixels, wax_pixelFormat pixelFormat, 
+												int pitch, const wax_color8 * pPalette, int paletteSize );
+WAX_EXPORT wax_obj	wax_createSurfaceFromRawData(wax_obj factory, const wax_surfaceBP* blueprint, 
+												const uint8_t* pPixels,	const wax_pixelDescription * pPixelDescription, 
+												int pitch, const wax_color8 * pPalette, int paletteSize );
 
 #ifdef __cplusplus
 }

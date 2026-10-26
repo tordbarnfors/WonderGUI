@@ -19,11 +19,11 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#include <wg_softedgemap.h>
+#include <wax_softedgemap.h>
 
 #include <cstring>
 
-namespace wg
+namespace wax
 {
 
 const TypeInfo SoftEdgemap::TYPEINFO = { "SoftEdgemap", &Edgemap::TYPEINFO };
@@ -123,5 +123,5 @@ void SoftEdgemap::_colorsUpdated(int beginSegment, int endSegment)
 	}
 }
 
-} // namespace wg
+} // namespace wax
 

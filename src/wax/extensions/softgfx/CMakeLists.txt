@@ -1,67 +1,67 @@
 
 set(SOURCES
 
-	c-api/wg_c_softgfx.cpp
-	c-api/wg_c_softgfx.h
-	c-api/wg_c_lineargfx.cpp
-	c-api/wg_c_lineargfx.h
-	c-api/wg_c_softkernels_default.h
-	c-api/wg_c_softkernels_tinylinear.h
-	c-api/wg_c_softkernels_rgb555be_base.h
-	c-api/wg_c_softkernels_rgb555be_extras.h
-	c-api/wg_c_softkernels_bgr565srgb_base.h
-	c-api/wg_c_softkernels_bgr565srgb_extras.h
-	c-api/wg_c_softkernels_bgr565linear_base.h
-	c-api/wg_c_softkernels_bgr565linear_extras.h
+	c-api/wax_c_softgfx.cpp
+	c-api/wax_c_softgfx.h
+	c-api/wax_c_lineargfx.cpp
+	c-api/wax_c_lineargfx.h
+	c-api/wax_c_softkernels_default.h
+	c-api/wax_c_softkernels_tinylinear.h
+	c-api/wax_c_softkernels_rgb555be_base.h
+	c-api/wax_c_softkernels_rgb555be_extras.h
+	c-api/wax_c_softkernels_bgr565srgb_base.h
+	c-api/wax_c_softkernels_bgr565srgb_extras.h
+	c-api/wax_c_softkernels_bgr565linear_base.h
+	c-api/wax_c_softkernels_bgr565linear_extras.h
 
-	wg_linearbackend.cpp
-	wg_linearbackend.h
-	wg_referencebackend.cpp
-	wg_referencebackend.h
-	wg_softtint.cpp
-	wg_softtint.h
-	wg_softbackend.cpp
-	wg_softbackend.h
-	wg_softbackend_warp.cpp
-	wg_softkernels_default.cpp
-	wg_softkernels_default.h
+	wax_linearbackend.cpp
+	wax_linearbackend.h
+	wax_referencebackend.cpp
+	wax_referencebackend.h
+	wax_softtint.cpp
+	wax_softtint.h
+	wax_softbackend.cpp
+	wax_softbackend.h
+	wax_softbackend_warp.cpp
+	wax_softkernels_default.cpp
+	wax_softkernels_default.h
 
 
-	wg_softkernels_tinylinear.cpp
-	wg_softkernels_tinylinear.h
+	wax_softkernels_tinylinear.cpp
+	wax_softkernels_tinylinear.h
 
-	wg_softkernels_bgr565srgb_base.cpp
-	wg_softkernels_bgr565srgb_base.h
-	wg_softkernels_bgr565srgb_extras.cpp
-	wg_softkernels_bgr565srgb_extras.h
+	wax_softkernels_bgr565srgb_base.cpp
+	wax_softkernels_bgr565srgb_base.h
+	wax_softkernels_bgr565srgb_extras.cpp
+	wax_softkernels_bgr565srgb_extras.h
 
-	wg_softkernels_bgr565linear_base.cpp
-	wg_softkernels_bgr565linear_base.h
-	wg_softkernels_bgr565linear_extras.cpp
-	wg_softkernels_bgr565linear_extras.h
+	wax_softkernels_bgr565linear_base.cpp
+	wax_softkernels_bgr565linear_base.h
+	wax_softkernels_bgr565linear_extras.cpp
+	wax_softkernels_bgr565linear_extras.h
 
-	wg_softkernels_rgb555be_base.cpp
-	wg_softkernels_rgb555be_base.h
-	wg_softkernels_rgb555be_extras.cpp
-	wg_softkernels_rgb555be_extras.h
+	wax_softkernels_rgb555be_base.cpp
+	wax_softkernels_rgb555be_base.h
+	wax_softkernels_rgb555be_extras.cpp
+	wax_softkernels_rgb555be_extras.h
 
-	wg_softkernelstanza.impl.h
-	wg_softgfxdevicefactory.cpp
-	wg_softgfxdevicefactory.h	
-	wg_softsurface.cpp
-	wg_softsurface.h
-	wg_softsurfacefactory.cpp
-	wg_softsurfacefactory.h
-	wg_softedgemap.cpp
-	wg_softedgemap.h
-	wg_softedgemapfactory.cpp
-	wg_softedgemapfactory.h
-	wg_softwarpmap.cpp
-	wg_softwarpmap.h
-	wg_softwarpmapfactory.cpp
-	wg_softwarpmapfactory.h
-	wg_softshapes.cpp
-	wg_softshapes.h
+	wax_softkernelstanza.impl.h
+	wax_softgfxdevicefactory.cpp
+	wax_softgfxdevicefactory.h	
+	wax_softsurface.cpp
+	wax_softsurface.h
+	wax_softsurfacefactory.cpp
+	wax_softsurfacefactory.h
+	wax_softedgemap.cpp
+	wax_softedgemap.h
+	wax_softedgemapfactory.cpp
+	wax_softedgemapfactory.h
+	wax_softwarpmap.cpp
+	wax_softwarpmap.h
+	wax_softwarpmapfactory.cpp
+	wax_softwarpmapfactory.h
+	wax_softshapes.cpp
+	wax_softshapes.h
 )
 
 set(INCDIRS
@@ -71,23 +71,23 @@ set(INCDIRS
 
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${SOURCES})
 
-add_library( wgsoftgfx STATIC ${SOURCES} )
+add_library( waxsoftgfx STATIC ${SOURCES} )
 
 # Declared so the linker gets the libraries in the right order. GNU ld needs that,
 # MSVC and Apple's linker don't care.
-target_link_libraries( wgsoftgfx PUBLIC wondergfx )
-generate_export_header(wgsoftgfx BASE_NAME wg)
+target_link_libraries( waxsoftgfx PUBLIC wax )
+generate_export_header(waxsoftgfx BASE_NAME wax)
 
-target_include_directories(wgsoftgfx PRIVATE 
-	${WONDERGFX_INCDIRS}
+target_include_directories(waxsoftgfx PRIVATE 
+	${WAX_INCDIRS}
 	${INCDIRS}
 	"${CMAKE_CURRENT_BINARY_DIR}"  # For generated header
 )
 
-set_target_properties( wgsoftgfx PROPERTIES FOLDER "Extensions" )
+set_target_properties( waxsoftgfx PROPERTIES FOLDER "Extensions" )
 
 
 
 list(TRANSFORM SOURCES PREPEND ${CMAKE_CURRENT_LIST_DIR}/ )
-set(WGSOFTGFX_SOURCES ${SOURCES} PARENT_SCOPE)
-set(WGSOFTGFX_INCDIRS ${INCDIRS} PARENT_SCOPE)
+set(WAXSOFTGFX_SOURCES ${SOURCES} PARENT_SCOPE)
+set(WAXSOFTGFX_INCDIRS ${INCDIRS} PARENT_SCOPE)

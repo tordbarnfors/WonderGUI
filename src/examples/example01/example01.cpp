@@ -36,10 +36,10 @@
 #endif
 #include <wondergui.h>
 
-#include <wg_softsurface.h>
-#include <wg_gfxdevice_gen2.h>
-#include <wg_softbackend.h>
-#include <wg_softkernels_default.h>
+#include <wax_softsurface.h>
+#include <wax_gfxdevice_gen2.h>
+#include <wax_softbackend.h>
+#include <wax_softkernels_default.h>
 
 using namespace wg;
 

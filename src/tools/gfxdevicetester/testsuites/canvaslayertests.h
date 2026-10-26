@@ -1,6 +1,6 @@
 #include "testsuite.h"
 
-#include <wg_canvaslayers.h>
+#include <wax_canvaslayers.h>
 //#include <wg_plugincanvaslayers.h>
 
 class CanvasLayerTests : public TestSuite

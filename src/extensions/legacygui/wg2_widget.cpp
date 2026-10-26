@@ -24,9 +24,9 @@
 #include <wg2_types.h>
 #include <wg2_gfxdevice.h>
 #include <wg2_util.h>
-#include <wg_dataset.h>
-#include <wg_gfxbase.h>
-#include <wg_surfacefactory.h>
+#include <wax_dataset.h>
+#include <wax_core.h>
+#include <wax_surfacefactory.h>
 #include <wg_util.h>
 
 #	include <wg2_rootpanel.h>
@@ -255,8 +255,8 @@ wg::Surface_p WgWidget::Screenshot( const wg::Surface::Blueprint& bp )
 
 wg::Surface_p WgWidget::Screenshot( const WgRect& _rect, const wg::Surface::Blueprint& _bp )
 {
-	auto pDevice = wg::GfxBase::defaultGfxDevice();
-	auto pFactory =  wg::GfxBase::defaultSurfaceFactory();
+	auto pDevice = wax::Core::defaultGfxDevice();
+	auto pFactory =  wax::Core::defaultSurfaceFactory();
 
 	if( !pDevice || !pFactory )
 		return nullptr;
@@ -333,7 +333,7 @@ WgWidget * WgWidget::CommonAncestor(WgWidget* pOtherWidget)
 
     if (nb1 == c_maxLevels-1 || nb2 == c_maxLevels-1)
     {
-//        wg::GfxBase::throwError(ErrorLevel::SilentError, ErrorCode::Internal, "Widget hierarchy too deep for operation.", this, Widget::TYPEINFO, __func__, __FILE__, __LINE__);
+//        wax::Core::throwError(ErrorLevel::SilentError, ErrorCode::Internal, "Widget hierarchy too deep for operation.", this, Widget::TYPEINFO, __func__, __FILE__, __LINE__);
         return nullptr;
     }
 
@@ -621,7 +621,7 @@ int WgWidget::_convertAndPushClipList( wg::GfxDevice * pDevice, int nRects, cons
 	
 	int nBytes = nRects*sizeof(wg::RectSPX);
 	
-	wg::RectSPX * pClipRects = (wg::RectSPX*) wg::GfxBase::memStackAlloc(nBytes);
+	wg::RectSPX * pClipRects = (wg::RectSPX*) wax::Core::memStackAlloc(nBytes);
 	
 	for(int i = 0 ; i < nRects ; i++)
 		pClipRects[i] = pRects[i]*64;
@@ -639,7 +639,7 @@ void WgWidget::_popAndReleaseClipList( wg::GfxDevice * pDevice, int bytesToRelea
 	//	return;						// No cliplist was pushed.
 		
 	pDevice->popClipList();
-	wg::GfxBase::memStackFree(bytesToRelease);
+	wax::Core::memStackFree(bytesToRelease);
 }
 
 

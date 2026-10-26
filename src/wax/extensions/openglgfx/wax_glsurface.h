@@ -19,8 +19,8 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef	WG_GLSURFACE_DOT_H
-#define	WG_GLSURFACE_DOT_H
+#ifndef	WAX_GLSURFACE_DOT_H
+#define	WAX_GLSURFACE_DOT_H
 #pragma once
 
 #define GL_GLEXT_PROTOTYPES 1
@@ -38,11 +38,11 @@
 #	endif
 #endif
 
-#include <wg_surface.h>
+#include <wax_surface.h>
 
 #include <vector>
 
-namespace wg
+namespace wax
 {
 
 	class GlSurface;
@@ -160,6 +160,6 @@ namespace wg
         
 		uint8_t*	m_pAlphaMap = nullptr;
 	};
-} // namespace wg
-#endif //WG_GLSURFACE_DOT_H
+} // namespace wax
+#endif //WAX_GLSURFACE_DOT_H
 

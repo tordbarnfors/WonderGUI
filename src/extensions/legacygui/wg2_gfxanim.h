@@ -38,7 +38,7 @@
 #	include <wg2_blockset.h>
 #endif
 
-#include <wg_surface.h>
+#include <wax_surface.h>
 
 class WgGfxFrame;
 

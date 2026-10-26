@@ -19,15 +19,15 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef	WG_TINTTOOLS_DOT_H
-#define	WG_TINTTOOLS_DOT_H
+#ifndef	WAX_TINTTOOLS_DOT_H
+#define	WAX_TINTTOOLS_DOT_H
 #pragma once
 
-#include <wg_tint.h>
+#include <wax_tint.h>
 
 #include <cmath>
 
-namespace wg
+namespace wax
 {
 	/**
 	 * @brief Helpers shared by everything that renders Tints.
@@ -237,4 +237,4 @@ namespace wg
 
 }
 
-#endif //WG_TINTTOOLS_DOT_H
+#endif //WAX_TINTTOOLS_DOT_H

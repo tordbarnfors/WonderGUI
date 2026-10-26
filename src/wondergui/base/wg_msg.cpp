@@ -23,7 +23,7 @@
 #include <wg_key.h>
 #include <wg_widget.h>
 #include <wg_editabletext.h>
-#include <wg_dataset.h>
+#include <wax_dataset.h>
 
 namespace wg
 {

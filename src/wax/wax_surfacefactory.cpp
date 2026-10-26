@@ -19,9 +19,9 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#include <wg_surfacefactory.h>
+#include <wax_surfacefactory.h>
 
-namespace wg
+namespace wax
 {
 
 	const TypeInfo SurfaceFactory::TYPEINFO = { "SurfaceFactory", &Object::TYPEINFO };
@@ -38,4 +38,4 @@ namespace wg
 
 
 
-} // namespace wg
+} // namespace wax

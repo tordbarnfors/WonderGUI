@@ -1,6 +1,6 @@
 #include "testsuite.h"
 
-#include <wg_edgemaptools.h>
+#include <wax_edgemaptools.h>
 
 class EdgemapToolsTests : public TestSuite
 {

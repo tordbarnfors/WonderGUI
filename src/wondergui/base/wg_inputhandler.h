@@ -23,8 +23,8 @@
 #define WG_INPUTHANDLER_DOT_H
 #pragma once
 
-#include <wg_pointers.h>
-#include <wg_geo.h>
+#include <wax_pointers.h>
+#include <wax_geo.h>
 #include <wg_widget.h>
 #include <wg_key.h>
 #include <wg_msg.h>

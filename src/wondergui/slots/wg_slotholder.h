@@ -23,8 +23,15 @@
 #define WG_SLOTHOLDER_DOT_H
 #pragma once
 
-#include <wg_geo.h>
+#include <wax_geo.h>
+#include <wg_types.h>
 
+
+namespace wax
+{
+	class Object;
+	struct TypeInfo;
+}
 
 namespace wg
 {
@@ -32,8 +39,6 @@ namespace wg
 	class Root;
 	class Widget;
 	class StaticSlot;
-	class Object;
-	struct TypeInfo;
 
 
 	//____ SlotHolder ______________________________________________________________

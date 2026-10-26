@@ -1,13 +1,13 @@
 #!/usr/bin/ruby
-# Update wg_enumextras.h/cpp with functions for all enums in wg_types.h marked "autoExtras".
+# Update wax_enumextras.h/cpp and wg_enumextras.h/cpp with functions for all enums in
+# wax_types.h and wg_types.h marked "autoExtras".
 
 
 	Task = Struct.new( :input, :header_out, :source_out )
 
 	$tasks = []
 
-	$tasks << Task.new( 'src/wondergear/wg_geartypes.h', 'src/wondergear/wg_gearenumextras.h', 'src/wondergear/wg_gearenumextras.cpp' )
-	$tasks << Task.new( 'src/wondergfx/wg_gfxtypes.h', 'src/wondergfx/wg_gfxenumextras.h', 'src/wondergfx/wg_gfxenumextras.cpp' )
+	$tasks << Task.new( 'src/wax/wax_types.h', 'src/wax/wax_enumextras.h', 'src/wax/wax_enumextras.cpp' )
 	$tasks << Task.new( 'src/wondergui/base/wg_types.h', 'src/wondergui/base/wg_enumextras.h', 'src/wondergui/base/wg_enumextras.cpp' )
 
 

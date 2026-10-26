@@ -19,16 +19,16 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef	WG_MIRRORSURFACEFACTORY_DOT_H
-#define	WG_MIRRORSURFACEFACTORY_DOT_H
+#ifndef	WAX_MIRRORSURFACEFACTORY_DOT_H
+#define	WAX_MIRRORSURFACEFACTORY_DOT_H
 #pragma once
 
-#include <wg_surfacefactory.h>
-#include <wg_streamencoder.h>
+#include <wax_surfacefactory.h>
+#include <wax_streamencoder.h>
 
 #include <vector>
 
-namespace wg
+namespace wax
 {
 
 	class MirrorSurfaceFactory;
@@ -85,5 +85,5 @@ namespace wg
 }
 
 
-#endif //WG_MIRRORSURFACEFACTORY_DOT_H
+#endif //WAX_MIRRORSURFACEFACTORY_DOT_H
 

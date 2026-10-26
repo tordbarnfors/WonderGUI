@@ -22,10 +22,10 @@
 #include <cstring>
 #include <algorithm>
 
-#include <wg_streammerger.h>
+#include <wax_streammerger.h>
 #include <assert.h>
 
-namespace wg
+namespace wax
 {
 
 	const TypeInfo StreamMerger::TYPEINFO = { "StreamMerger", &Object::TYPEINFO };
@@ -170,4 +170,4 @@ namespace wg
 		return GfxStream::ChunkId::OutOfData;
 	}
 
-} // namespace wg
+} // namespace wax

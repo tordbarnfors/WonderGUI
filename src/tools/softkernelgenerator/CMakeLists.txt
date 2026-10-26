@@ -16,7 +16,7 @@ add_executable(softkernelgenerator
 
 target_include_directories(softkernelgenerator PRIVATE 
 	${WAPP_INCDIRS}
-	${WGSOFTGFX_INCDIRS}		# For wg_softformat.h
+	${WAXSOFTGFX_INCDIRS}		# For wax_softformat.h
 )
 
 target_working_directory(softkernelgenerator ${WG_ROOT} )

@@ -19,13 +19,13 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef WG_WARPMAPFACTORY_DOT_H
-#define	WG_WARPMAPFACTORY_DOT_H
+#ifndef WAX_WARPMAPFACTORY_DOT_H
+#define	WAX_WARPMAPFACTORY_DOT_H
 #pragma once
 
-#include <wg_warpmap.h>
+#include <wax_warpmap.h>
 
-namespace wg
+namespace wax
 {
 
 	class WarpmapFactory;
@@ -38,7 +38,7 @@ namespace wg
 	 * @brief Factory class for creating warpmaps.
 	 *
 	 * WarpmapFactory is the base class for all warpmap factories. The warpmap factories
-	 * are used by WonderGUI objects that needs to dynamically create warpmaps as
+	 * are used by Wax objects that needs to dynamically create warpmaps as
 	 * part of their operation, such as CircularWarp.
 	 *
 	 **/
@@ -61,5 +61,5 @@ namespace wg
 		virtual ~WarpmapFactory() {}
 	};
 
-} // namespace wg
-#endif // WG_WARPMAPFACTORY_DOT_H
+} // namespace wax
+#endif // WAX_WARPMAPFACTORY_DOT_H

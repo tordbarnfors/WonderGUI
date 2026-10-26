@@ -19,17 +19,17 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#include <wg_c_warpmapfactory.h>
-#include <wg_c_internal.h>
-#include <wg_warpmapfactory.h>
+#include <wax_c_warpmapfactory.h>
+#include <wax_c_internal.h>
+#include <wax_warpmapfactory.h>
 
-using namespace wg;
+using namespace wax;
 
-inline WarpmapFactory* getPtr(wg_obj obj) {
+inline WarpmapFactory* getPtr(wax_obj obj) {
 	return static_cast<WarpmapFactory*>(reinterpret_cast<Object*>(obj));
 }
 
-wg_obj wg_createWarpmap(wg_obj factory, const wg_warpmapBP* pCBP)
+wax_obj wax_createWarpmap(wax_obj factory, const wax_warpmapBP* pCBP)
 {
 	Warpmap::Blueprint	cppBP;
 	convertWarpmapBlueprint(&cppBP, pCBP);
@@ -39,10 +39,10 @@ wg_obj wg_createWarpmap(wg_obj factory, const wg_warpmapBP* pCBP)
 		return nullptr;
 
 	p->retain();
-	return (wg_obj) static_cast<Object*>(p.rawPtr());
+	return (wax_obj) static_cast<Object*>(p.rawPtr());
 }
 
-wg_obj wg_createWarpmapFromNodes(wg_obj factory, const wg_warpmapBP* pCBP, const wg_coordF* pNodes, int pitch)
+wax_obj wax_createWarpmapFromNodes(wax_obj factory, const wax_warpmapBP* pCBP, const wax_coordF* pNodes, int pitch)
 {
 	Warpmap::Blueprint	cppBP;
 	convertWarpmapBlueprint(&cppBP, pCBP);
@@ -52,5 +52,5 @@ wg_obj wg_createWarpmapFromNodes(wg_obj factory, const wg_warpmapBP* pCBP, const
 		return nullptr;
 
 	p->retain();
-	return (wg_obj) static_cast<Object*>(p.rawPtr());
+	return (wax_obj) static_cast<Object*>(p.rawPtr());
 }

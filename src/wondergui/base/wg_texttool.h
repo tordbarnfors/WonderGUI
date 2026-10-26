@@ -26,13 +26,16 @@
 #include <wg_types.h>
 #include <wg_textstyle.h>
 #include <wg_charseq.h>
-#include <wg_pointers.h>
+#include <wax_pointers.h>
+
+namespace wax
+{
+	class Font;
+}
 
 namespace wg
 {
 
-	class Font;
-	class Font;
 	class Char;
 	class TextNode;
 

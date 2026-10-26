@@ -19,9 +19,9 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#include <wg_softsurfacefactory.h>
+#include <wax_softsurfacefactory.h>
 
-namespace wg
+namespace wax
 {
 
 
@@ -68,4 +68,4 @@ namespace wg
 	}
 
 
-} // namespace wg
+} // namespace wax

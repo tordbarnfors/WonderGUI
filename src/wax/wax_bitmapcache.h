@@ -19,19 +19,19 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef	WG_BITMAPCACHE_DOT_H
-#define	WG_BITMAPCACHE_DOT_H
+#ifndef	WAX_BITMAPCACHE_DOT_H
+#define	WAX_BITMAPCACHE_DOT_H
 #pragma once
 
 #include <stddef.h>
 #include <vector>
 
-#include <wg_pointers.h>
-#include <wg_gfxtypes.h>
-#include <wg_surface.h>
-#include <wg_surfacefactory.h>
+#include <wax_pointers.h>
+#include <wax_types.h>
+#include <wax_surface.h>
+#include <wax_surfacefactory.h>
 
-namespace wg
+namespace wax
 {
 
 	class BitmapCache;
@@ -121,5 +121,5 @@ namespace wg
 	};
 
 
-} // namespace wg
-#endif //WG_BITMAPCACHE_DOT_H
+} // namespace wax
+#endif //WAX_BITMAPCACHE_DOT_H

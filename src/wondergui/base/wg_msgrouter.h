@@ -29,7 +29,7 @@
 #include <functional>
 
 #include <wg_msg.h>
-#include <wg_chain.h>
+#include <wax_chain.h>
 
 
 #include <wg_key.h>
@@ -114,7 +114,7 @@ namespace wg
 			Route( MsgType filter );
 			virtual ~Route();
 
-			LINK_METHODS(Route);
+			WAX_LINK_METHODS(Route);
 
 			virtual void 		dispatch( Msg * pMsg ) = 0;
 			virtual bool 		isAlive() const = 0;

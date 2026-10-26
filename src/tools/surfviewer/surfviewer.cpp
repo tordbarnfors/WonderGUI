@@ -2,7 +2,7 @@
 #include "surfviewer.h"
 
 #include <wondergui.h>
-#include <wg_freetypefont.h>
+#include <wax_freetypefont.h>
 #include <string>
 #include <fstream>
 

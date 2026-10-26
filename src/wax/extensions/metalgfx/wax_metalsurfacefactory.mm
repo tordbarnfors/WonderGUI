@@ -22,13 +22,13 @@
 
 #include <memory.h>
 
-#include "wg_metalsurface.h"
-#include "wg_metalsurfacefactory.h"
-#include <wg_gfxutil.h>
+#include "wax_metalsurface.h"
+#include "wax_metalsurfacefactory.h"
+#include <wax_gfxutil.h>
 
 
 
-namespace wg
+namespace wax
 {
 
 	const TypeInfo MetalSurfaceFactory::TYPEINFO = { "MetalSurfaceFactory", &SurfaceFactory::TYPEINFO };
@@ -71,4 +71,4 @@ namespace wg
 		return MetalSurface::create(blueprint, pPixels, pixelDescription, pitch, pPalette, paletteSize);
 	}
 
-} // namespace wg
+} // namespace wax

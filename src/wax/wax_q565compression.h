@@ -19,11 +19,11 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef	WG_Q565COMPRESSION_DOT_H
-#define	WG_Q565COMPRESSION_DOT_H
+#ifndef	WAX_Q565COMPRESSION_DOT_H
+#define	WAX_Q565COMPRESSION_DOT_H
 #pragma once
 
-#include <wg_compression.h>
+#include <wax_compression.h>
 
 
 /*
@@ -44,7 +44,7 @@
 */
 
 
-namespace wg
+namespace wax
 {
 
 	class Q565Compressor;
@@ -122,4 +122,4 @@ namespace wg
 }
 
 
-#endif //WG_Q565COMPRESSION_DOT_H
+#endif //WAX_Q565COMPRESSION_DOT_H

@@ -20,12 +20,12 @@
 
 =========================================================================*/
 
-#include <wg_metalwarpmap.h>
-#include <wg_metalbackend.h>
+#include <wax_metalwarpmap.h>
+#include <wax_metalbackend.h>
 
 #include <algorithm>
 
-namespace wg
+namespace wax
 {
 
 const TypeInfo MetalWarpmap::TYPEINFO = { "MetalWarpmap", &Warpmap::TYPEINFO };
@@ -111,4 +111,4 @@ void MetalWarpmap::_nodesUpdated( const RectI& region )
 	}
 }
 
-} // namespace wg
+} // namespace wax

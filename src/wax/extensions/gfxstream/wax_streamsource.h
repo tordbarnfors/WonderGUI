@@ -19,17 +19,17 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef	WG_STREAMSOURCE_DOT_H
-#define	WG_STREAMSOURCE_DOT_H
+#ifndef	WAX_STREAMSOURCE_DOT_H
+#define	WAX_STREAMSOURCE_DOT_H
 #pragma once
 
-#include <wg_gfxtypes.h>
-#include <wg_pointers.h>
-#include <wg_gfxstream.h>
+#include <wax_types.h>
+#include <wax_pointers.h>
+#include <wax_gfxstream.h>
 
 #include <tuple>
 
-namespace wg
+namespace wax
 {
 
 	class StreamSource;
@@ -72,6 +72,6 @@ namespace wg
 	};
 
 
-} // namespace wg
-#endif //WG_STREAMSOURCE_DOT_H
+} // namespace wax
+#endif //WAX_STREAMSOURCE_DOT_H
 #pragma once

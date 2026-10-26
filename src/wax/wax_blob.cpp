@@ -19,9 +19,9 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#include <wg_blob.h>
+#include <wax_blob.h>
 
-namespace wg
+namespace wax
 {
 
 	const TypeInfo Blob::TYPEINFO = { "Blob", &Object::TYPEINFO };
@@ -56,9 +56,9 @@ namespace wg
 	}
 
 	/**
-	 * @brief Wrap a non-WonderGUI object or arbritary data into a Blob.
+	 * @brief Wrap a non-Wax object or arbritary data into a Blob.
 	 *
-	 * Wrap a non-WonderGUI object or arbitrary data into a Blob.
+	 * Wrap a non-Wax object or arbitrary data into a Blob.
 	 *
 	 * @param pData			Pointer at the data to be considered the content of the Blob.
 	 *
@@ -80,9 +80,9 @@ namespace wg
 	}
 
 	/**
-	 * @brief Wrap a non-WonderGUI object or arbritary data into a Blob.
+	 * @brief Wrap a non-Wax object or arbritary data into a Blob.
 	 *
-	 * Wrap a non-WonderGUI object or arbitrary data into a Blob.
+	 * Wrap a non-Wax object or arbitrary data into a Blob.
 	 *
 	 * @param pData			Pointer at the data to be considered the content of the Blob.
 	 *
@@ -138,4 +138,4 @@ namespace wg
 		return TYPEINFO;
 	}
 
-} // namespace wg
+} // namespace wax

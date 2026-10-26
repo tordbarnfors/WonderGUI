@@ -19,14 +19,14 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef WG_STREAMWARPMAP_DOT_H
-#define WG_STREAMWARPMAP_DOT_H
+#ifndef WAX_STREAMWARPMAP_DOT_H
+#define WAX_STREAMWARPMAP_DOT_H
 #pragma once
 
-#include <wg_warpmap.h>
-#include <wg_streamencoder.h>
+#include <wax_warpmap.h>
+#include <wax_streamencoder.h>
 
-namespace wg
+namespace wax
 {
 	class StreamWarpmap;
 	typedef StrongPtr<StreamWarpmap> StreamWarpmap_p;
@@ -74,5 +74,5 @@ namespace wg
 		uint16_t			m_inStreamId;		// Id of this warpmap in the stream.
 	};
 
-} // namespace wg
-#endif // WG_STREAMWARPMAP_DOT_H
+} // namespace wax
+#endif // WAX_STREAMWARPMAP_DOT_H

@@ -74,9 +74,9 @@ namespace wg
 	{
 		m_pDevice = pDevice;
 
-		wg_canvasLayersBP cBP;
+		wax_canvasLayersBP cBP;
 
-		memset(&cBP, 0, sizeof(wg_canvasLayersBP));
+		memset(&cBP, 0, sizeof(wax_canvasLayersBP));
 
 		cBP.baseLayer = bp.baseLayer;
 
@@ -98,8 +98,8 @@ namespace wg
 
 		for (int i = 0; i < nLayers; i++)
 		{
-			cBP.layers[i].format = (wg_pixelFormat) bp.layers[i].format;
-			cBP.layers[i].colorSpace = (wg_colorSpace) bp.layers[i].colorSpace;
+			cBP.layers[i].format = (wax_pixelFormat) bp.layers[i].format;
+			cBP.layers[i].colorSpace = (wax_colorSpace) bp.layers[i].colorSpace;
 
 			if (bp.layers[i].preBlendCanvasFunc)
 			{
@@ -151,7 +151,7 @@ namespace wg
 
 	//____ _callbackRouter() __________________________________________________
 
-	void PluginCanvasLayers::_callbackRouter( wg_obj cDevice, void* _pMe, int funcNb )
+	void PluginCanvasLayers::_callbackRouter( wax_obj cDevice, void* _pMe, int funcNb )
 	{
 		PluginCanvasLayers* pMe = (PluginCanvasLayers*)_pMe;
 

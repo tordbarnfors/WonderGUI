@@ -24,7 +24,7 @@
 #pragma once
 
 #include <wg_stateskin.h>
-#include <wg_surface.h>
+#include <wax_surface.h>
 
 #include <initializer_list>
 #include <utility>

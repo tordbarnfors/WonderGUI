@@ -19,12 +19,12 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#include <wg_gfxbackend.h>
+#include <wax_gfxbackend.h>
 
 #include <cstring>
 #include <algorithm>
 
-namespace wg
+namespace wax
 {
 	const TypeInfo GfxBackend::TYPEINFO = { "GfxBackend", &Object::TYPEINFO };
 
@@ -187,4 +187,4 @@ LineCaps GfxBackend::decodeLineCaps(uint16_t word)
 	return LineCaps(decodeCap(word & 0xFF), decodeCap(word >> 8));
 }
 
-} // namespace wg
+} // namespace wax

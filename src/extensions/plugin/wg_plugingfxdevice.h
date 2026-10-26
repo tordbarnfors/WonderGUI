@@ -23,17 +23,18 @@
 #define WG_PLUGINGFXDEVICE_DOT_H
 #pragma once
 
-#include <wg_geo.h>
+#include <wax_geo.h>
 
-#include <wg_gfxdevice.h>
-#include <wg_c_gfxdevice.h>
+#include <wax_gfxdevice.h>
+#include <wax_c_gfxdevice.h>
+#include <wg_types.h>
 #include <wg_pluginsurfacefactory.h>
 #include <wg_pluginedgemapfactory.h>
 #include <wg_pluginwarpmapfactory.h>
 
 #include <vector>
 
-typedef void* wg_obj;
+typedef void* wax_obj;
 
 namespace wg
 {
@@ -48,7 +49,7 @@ namespace wg
 
 		//.____ Creation __________________________________________
 
-		static PluginGfxDevice_p	create( wg_obj hDevice, PluginSurfaceFactory * pSurfaceFactory, PluginEdgemapFactory * pEdgemapFactory );
+		static PluginGfxDevice_p	create( wax_obj hDevice, PluginSurfaceFactory * pSurfaceFactory, PluginEdgemapFactory * pEdgemapFactory );
 
 		//.____ Identification __________________________________________
 
@@ -198,7 +199,7 @@ namespace wg
 
  
 	protected:
-		PluginGfxDevice( wg_obj object, PluginSurfaceFactory * pSurfaceFactory, PluginEdgemapFactory * pEdgemapFactory );
+		PluginGfxDevice( wax_obj object, PluginSurfaceFactory * pSurfaceFactory, PluginEdgemapFactory * pEdgemapFactory );
 		~PluginGfxDevice();
 
         bool    _beginCanvasUpdate( CanvasRef canvasRef, Surface * pCanvas, int nUpdateRects, const RectSPX* pUpdateRects, CanvasLayers * pLayers, int startLayer);
@@ -209,11 +210,11 @@ namespace wg
 			CanvasLayers_p	pCanvasLayers;
 		};
 
-        wg_obj  m_cDevice;
+        wax_obj  m_cDevice;
 
-		std::vector<wg_ringSlice>	m_ringSlices;		// Slices passed on by drawRing().
+		std::vector<wax_ringSlice>	m_ringSlices;		// Slices passed on by drawRing().
 		
-		wg_obj	m_hostBlurbrush = nullptr;
+		wax_obj	m_hostBlurbrush = nullptr;
 		PluginSurfaceFactory_p	m_pSurfaceFactory;
         PluginEdgemapFactory_p	m_pEdgemapFactory;
         PluginWarpmapFactory_p	m_pWarpmapFactory;

@@ -26,14 +26,14 @@
 #include <wg_basicnumberlayout.h>
 #include <wg_inputhandler.h>
 
-#include <wg_dummyfont.h>
-#include <wg_memstack.h>
-#include <wg_mempool.h>
+#include <wax_dummyfont.h>
+#include <wax_memstack.h>
+#include <wax_mempool.h>
 #include <wg_textstyle.h>
 #include <wg_texttool.h>
 #include <wg_textstylemanager.h>
 #include <wg_skinslotmanager.h>
-#include <wg_bitmapcache.h>
+#include <wax_bitmapcache.h>
 #include <wg_packlayout.h>
 
 #include <iostream>
@@ -41,7 +41,7 @@
 
 namespace wg
 {
-	const TypeInfo	Base::TYPEINFO = { "Base", &GfxBase::TYPEINFO };
+	const TypeInfo	Base::TYPEINFO = { "Base", &wax::Core::TYPEINFO };
 
 	int				Base::s_guiInitCounter = 0;
 
@@ -59,11 +59,11 @@ namespace wg
 			return true;
 		}
 
-		if( !GfxBase::init() )
+		if( !wax::Core::init() )
 			return false;
 
 		s_pGUIContext = new GUIContext();
-		s_pGUIContext->pGfxContext = GfxBase::context();
+		s_pGUIContext->pWaxContext = wax::Core::context();
 
 		s_pGUIContext->pHostBridge = pHostBridge;
 
@@ -110,7 +110,7 @@ namespace wg
 
 		if( s_guiInitCounter > 1 )
 		{
-			s_guiInitCounter--;			// This belongs to GfxBase, but we do like this anyway.
+			s_guiInitCounter--;			// This belongs to wax::Core, but we do like this anyway.
 			return true;
 		}
 
@@ -132,7 +132,7 @@ namespace wg
 		TextStyleManager::exit();
 
 		s_guiInitCounter = 0;
-		return GfxBase::exit();
+		return wax::Core::exit();
 	}
 
 	//____ setContext() _______________________________________________________
@@ -144,14 +144,14 @@ namespace wg
 		if( pNewContext )
 		{
 			s_pGUIContext = pNewContext;
-			GfxBase::setContext(pNewContext->pGfxContext);
+			wax::Core::setContext(pNewContext->pWaxContext);
 		}
 		else
 		{
 			auto p = new GUIContext();
 
-			GfxBase::setContext(nullptr);
-			p->pGfxContext = GfxBase::context();
+			wax::Core::setContext(nullptr);
+			p->pWaxContext = wax::Core::context();
 
 			p->pDefaultCaret = Caret::create();
 

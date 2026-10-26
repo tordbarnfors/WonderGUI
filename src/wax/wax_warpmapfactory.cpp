@@ -19,9 +19,9 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#include <wg_warpmapfactory.h>
+#include <wax_warpmapfactory.h>
 
-namespace wg
+namespace wax
 {
 	const TypeInfo WarpmapFactory::TYPEINFO = { "WarpmapFactory", &Object::TYPEINFO };
 
@@ -32,4 +32,4 @@ namespace wg
 		return TYPEINFO;
 	}
 
-} // namespace wg
+} // namespace wax

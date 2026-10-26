@@ -20,19 +20,19 @@
 
 =========================================================================*/
 
-#include <wg_spxcompression.h>
-#include <wg_gfxutil.h>
-#include <wg_gfxbase.h>
+#include <wax_spxcompression.h>
+#include <wax_gfxutil.h>
+#include <wax_core.h>
 
 #include <cstring>
 
-namespace wg
+namespace wax
 {
 const TypeInfo SPXCompressor::TYPEINFO = { "SPXCompressor", &Compressor::TYPEINFO };
 const TypeInfo SPXDecompressor::TYPEINFO = { "SPXDecompressor", &Decompressor::TYPEINFO };
 
-const uint32_t SPXCompressor::ID_TOKEN = Util::makeEndianSpecificToken('S', 'P', 'X', '0');
-const uint32_t SPXDecompressor::ID_TOKEN = Util::makeEndianSpecificToken('S', 'P', 'X', '0');
+const uint32_t SPXCompressor::ID_TOKEN = GfxUtil::makeEndianSpecificToken('S', 'P', 'X', '0');
+const uint32_t SPXDecompressor::ID_TOKEN = GfxUtil::makeEndianSpecificToken('S', 'P', 'X', '0');
 
 //____ create() _____________________________________________________________
 
@@ -70,7 +70,7 @@ int SPXCompressor::compress( void * _pDest, const void * _pBegin, const void * _
 {
 	if( ((intptr_t(_pBegin) | intptr_t(_pEnd) ) &0x01) == 1 )
 	{
-		GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Data to compress must start/stop on WORD boundary.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+		Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Data to compress must start/stop on WORD boundary.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 		return 0;
 	}
 

@@ -30,14 +30,14 @@ namespace wg
 
 	//____ create ______________________________________________________________
 
-	PluginSurface_p PluginSurface::create( wg_obj object)
+	PluginSurface_p PluginSurface::create( wax_obj object)
 	{
 		return PluginSurface_p(new PluginSurface(object));
 	}
 
 	//____ constructor _____________________________________________________________
 
-	PluginSurface::PluginSurface(wg_obj object) : Surface( Blueprint(), PixelFormat::ARGB_8, SampleMethod::Bilinear )
+	PluginSurface::PluginSurface(wax_obj object) : Surface( Blueprint(), PixelFormat::ARGB_8, SampleMethod::Bilinear )
 	{
 		PluginCalls::object->retain(object);
 
@@ -52,7 +52,7 @@ namespace wg
 		m_bBigEndian		= PluginCalls::surface->surfaceIsBigEndian(object) != 0;
 		m_pixelDescription	= * (const PixelDescription*)PluginCalls::surface->surfacePixelDescription(object);
 
-		wg_sizeI pixSize 	= PluginCalls::surface->surfacePixelSize(object);
+		wax_sizeI pixSize 	= PluginCalls::surface->surfacePixelSize(object);
 		m_size				= * (SizeI*) &pixSize;
 		m_sampleMethod		= (SampleMethod)PluginCalls::surface->surfaceSampleMethod(object);
 		m_bMipmapped		= PluginCalls::surface->surfaceIsMipmapped(object);
@@ -92,7 +92,7 @@ namespace wg
 
 	const PixelBuffer PluginSurface::allocPixelBuffer(const RectI& rect)
 	{
-		auto pixbuf = PluginCalls::surface->allocPixelBufferFromRect(m_cSurface, (const wg_rectI*)&rect);
+		auto pixbuf = PluginCalls::surface->allocPixelBufferFromRect(m_cSurface, (const wax_rectI*)&rect);
 
 		return { (PixelFormat) pixbuf.format, pixbuf.pixels, (Color8*) pixbuf.palette, * (RectI*) &pixbuf.rect, pixbuf.pitch,
 				 (ColorSpace) pixbuf.colorSpace, pixbuf.bigEndian != 0 };
@@ -102,10 +102,10 @@ namespace wg
 
 	bool PluginSurface::pushPixels(const PixelBuffer& buffer, const RectI& bufferRect)
 	{
-		wg_pixelBuffer pixbuf = { (wg_pixelFormat)buffer.format, buffer.pixels, (wg_color8*)buffer.palette, *(wg_rectI*)&buffer.rect, buffer.pitch,
-								  (wg_colorSpace)buffer.colorSpace, (uint8_t) buffer.bigEndian };
+		wax_pixelBuffer pixbuf = { (wax_pixelFormat)buffer.format, buffer.pixels, (wax_color8*)buffer.palette, *(wax_rectI*)&buffer.rect, buffer.pitch,
+								  (wax_colorSpace)buffer.colorSpace, (uint8_t) buffer.bigEndian };
 
-		return PluginCalls::surface->pushPixelsFromRect(m_cSurface, &pixbuf, (const wg_rectI*) &bufferRect);
+		return PluginCalls::surface->pushPixelsFromRect(m_cSurface, &pixbuf, (const wax_rectI*) &bufferRect);
 	}
 
 	//____ pullPixels() _______________________________________________________
@@ -114,10 +114,10 @@ namespace wg
 	{
 		//TODO: Support bAutoNotify when we are ready to change the C-API.
 
-		wg_pixelBuffer pixbuf = { (wg_pixelFormat)buffer.format, buffer.pixels, (wg_color8*)buffer.palette, *(wg_rectI*)&buffer.rect, buffer.pitch,
-								  (wg_colorSpace)buffer.colorSpace, (uint8_t) buffer.bigEndian };
+		wax_pixelBuffer pixbuf = { (wax_pixelFormat)buffer.format, buffer.pixels, (wax_color8*)buffer.palette, *(wax_rectI*)&buffer.rect, buffer.pitch,
+								  (wax_colorSpace)buffer.colorSpace, (uint8_t) buffer.bigEndian };
 
-		PluginCalls::surface->pullPixelsFromRect(m_cSurface, &pixbuf, (const wg_rectI*)&bufferRect);
+		PluginCalls::surface->pullPixelsFromRect(m_cSurface, &pixbuf, (const wax_rectI*)&bufferRect);
 
 		if( bAutoNotify )
 		{
@@ -129,8 +129,8 @@ namespace wg
 
 	void PluginSurface::freePixelBuffer(const PixelBuffer& buffer)
 	{
-		wg_pixelBuffer pixbuf = { (wg_pixelFormat)buffer.format, buffer.pixels, (wg_color8*)buffer.palette, *(wg_rectI*)&buffer.rect, buffer.pitch,
-								  (wg_colorSpace)buffer.colorSpace, (uint8_t) buffer.bigEndian };
+		wax_pixelBuffer pixbuf = { (wax_pixelFormat)buffer.format, buffer.pixels, (wax_color8*)buffer.palette, *(wax_rectI*)&buffer.rect, buffer.pitch,
+								  (wax_colorSpace)buffer.colorSpace, (uint8_t) buffer.bigEndian };
 
 		PluginCalls::surface->freePixelBuffer(m_cSurface, &pixbuf);
 	}
@@ -146,12 +146,12 @@ namespace wg
 
 	bool PluginSurface::fill(HiColor color)
 	{
-		return PluginCalls::surface->fillSurface(m_cSurface, *(wg_color*)&color);
+		return PluginCalls::surface->fillSurface(m_cSurface, *(wax_color*)&color);
 	}
 
 	bool PluginSurface::fill(const RectI& region, HiColor color )
 	{
-		return PluginCalls::surface->fillSurfaceRect( m_cSurface, (const wg_rectI*) &region, * (wg_color*)&color );
+		return PluginCalls::surface->fillSurfaceRect( m_cSurface, (const wax_rectI*) &region, * (wax_color*)&color );
 	}
 
 	//____ addObserver() ______________________________________________________
@@ -159,7 +159,7 @@ namespace wg
 	int PluginSurface::addObserver(const std::function<void(int nRects, const RectI* pRects)>& func)
 	{
 		if( m_pObserver == nullptr )
-			m_cObserverId = PluginCalls::surface->addSurfaceObserver(m_cSurface, [](int nRects, const wg_rectI* pRects, void* pData, int data) { ((PluginSurface*)pData)->notifyObservers(nRects, (RectI*)pRects); }, this, 0);
+			m_cObserverId = PluginCalls::surface->addSurfaceObserver(m_cSurface, [](int nRects, const wax_rectI* pRects, void* pData, int data) { ((PluginSurface*)pData)->notifyObservers(nRects, (RectI*)pRects); }, this, 0);
 
 		return Surface::addObserver(func);
 	}

@@ -37,8 +37,8 @@
 // Surface::Blueprint.scale = 128 for correct hidpi sizing.
 
 #include <wg_base.h>				// Base::setDefaultStyle() / setDefaultTextLayout()
-#include <wg_gfxbase.h>			// GfxBase::throwError() for the scale check in init()
-#include <wg_font.h>
+#include <wax_core.h>			// wax::Core::throwError() for the scale check in init()
+#include <wax_font.h>
 #include <wg_textstyle.h>
 #include <wg_basictextlayout.h>
 #include <wg_blockskin.h>
@@ -251,7 +251,7 @@ namespace wg::glossyblue
 
 		if( pSkinBlocks->scale() != 128 )
 		{
-			GfxBase::throwError( ErrorLevel::Error, ErrorCode::InvalidParam,
+			wax::Core::throwError( ErrorLevel::Error, ErrorCode::InvalidParam,
 				"glossyblue: skinblocks surface must be created with scale = 128. "
 				"It is a 2x-density atlas, and at any other scale every block is "
 				"sampled from the wrong place. Add _.scale = 128 to its Surface blueprint.",

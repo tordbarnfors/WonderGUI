@@ -25,7 +25,31 @@
 
 #include <cstdint>
 
-#include <wg_gfxtypes.h>
+#include <wax_types.h>
+
+//____ Wax ____________________________________________________________________
+//
+// WonderGUI is built on top of the Wax graphics library. Everything in the
+// wax namespace is made available in wg as well, so wax classes can be
+// referred to as wg::Surface, wg::GfxDevice etc.
+//
+// Note: This doesn't work for names that wg declares itself. Don't forward-
+// declare wax classes inside namespace wg, that creates a second, separate
+// class instead of referring to the wax one.
+
+namespace wg
+{
+	using namespace wax;
+}
+
+#define WGBP(T, ...)	([&]{ wg::T::Blueprint _{}; __VA_ARGS__; return _; }())
+
+#define WGOVR(T, ...)([&]{ auto _ = T; __VA_ARGS__; return _; }())
+
+#define WGCREATE(T, ...)	wg::T::create([&]{ wg::T::Blueprint _{}; __VA_ARGS__; return _; }())
+
+#define WGTRACK(pObj) wg::Base::_trackObj(pObj, __FILE__, __LINE__ )
+
 
 namespace wg
 {

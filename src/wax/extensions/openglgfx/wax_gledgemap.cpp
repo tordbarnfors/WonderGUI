@@ -19,12 +19,12 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#include <wg_gledgemap.h>
-#include <wg_gfxbase.h>
+#include <wax_gledgemap.h>
+#include <wax_core.h>
 
 #include <cstring>
 
-namespace wg
+namespace wax
 {
 
 	const TypeInfo GlEdgemap::TYPEINFO = { "GlEdgemap", &Edgemap::TYPEINFO };
@@ -126,7 +126,7 @@ namespace wg
 
 		int outBytes = nPixelColumns * (m_nbSegments - 1) * 4 * sizeof(GLfloat);
 
-		auto pBuffer = (GLfloat*)GfxBase::memStackAlloc(outBytes);
+		auto pBuffer = (GLfloat*)Core::memStackAlloc(outBytes);
 
 		auto pOut = pBuffer;
 
@@ -202,7 +202,7 @@ namespace wg
 
 		// Release temp buffer
 
-		GfxBase::memStackFree(outBytes);
+		Core::memStackFree(outBytes);
 	}
 
 	//____ _colorsUpdated() ____________________________________________________
@@ -241,7 +241,7 @@ namespace wg
 
 		int paletteBytes = nEntries * 4 * sizeof(GLfloat);
 
-		auto pBuffer = (GLfloat*)GfxBase::memStackAlloc(paletteBytes);
+		auto pBuffer = (GLfloat*)Core::memStackAlloc(paletteBytes);
 		auto pOut = pBuffer;
 
 		for (int seg = 0; seg < m_nbSegments; seg++)
@@ -280,7 +280,7 @@ namespace wg
 		glBufferSubData(GL_TEXTURE_BUFFER, m_paletteOfs, paletteBytes, pBuffer);
 		glBindBuffer(GL_TEXTURE_BUFFER, 0);
 
-		GfxBase::memStackFree(paletteBytes);
+		Core::memStackFree(paletteBytes);
 
 		// A reallocated buffer has lost its samples.
 
@@ -288,5 +288,5 @@ namespace wg
 			_samplesUpdated(0, m_nbSegments - 1, 0, m_size.w + 1);
 	}
 
-} // namespace wg
+} // namespace wax
 

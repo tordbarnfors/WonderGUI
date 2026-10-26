@@ -22,7 +22,7 @@
 #include <wg2_lineeditor.h>
 
 #include	<wg2_key.h>
-#include	<wg_font.h>
+#include	<wax_font.h>
 #include 	<wg2_gfxdevice.h>
 #include 	<wg2_pen.h>
 #include 	<wg2_eventhandler.h>

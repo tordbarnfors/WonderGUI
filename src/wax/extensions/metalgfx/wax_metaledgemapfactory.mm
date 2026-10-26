@@ -20,10 +20,10 @@
 
 =========================================================================*/
 
-#include <wg_metaledgemapfactory.h>
-#include <wg_metaledgemap.h>
+#include <wax_metaledgemapfactory.h>
+#include <wax_metaledgemap.h>
 
-namespace wg
+namespace wax
 {
 	const TypeInfo MetalEdgemapFactory::TYPEINFO = { "MetalEdgemapFactory", &EdgemapFactory::TYPEINFO };
 
@@ -54,4 +54,4 @@ namespace wg
 	}
 
 
-} // namespace wg
+} // namespace wax

@@ -32,9 +32,9 @@
 #include <stdio.h>
 #include <limits.h>
 #include <string.h>
-#include <wg_bitmapfont.h>
-#include <wg_gridwalker.h>
-#include <wg_gfxbase.h>
+#include <wax_bitmapfont.h>
+#include <wax_gridwalker.h>
+#include <wax_core.h>
 
 
 inline int readUTF8Char( const char *& _pStr )
@@ -91,7 +91,7 @@ inline int readUTF8Char( const char *& _pStr )
 }
 
 
-namespace wg
+namespace wax
 {
 	const TypeInfo	BitmapFont::TYPEINFO = { "BitmapFont", &Font::TYPEINFO };
 
@@ -258,28 +258,28 @@ namespace wg
 
 		if (!pInfoBeg)
 		{
-			GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Missing [INFO BEGIN] section.",
+			Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Missing [INFO BEGIN] section.",
 				this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return;
 		}
 
 		if (!pInfoEnd)
 		{
-			GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Missing [INFO END] section.",
+			Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Missing [INFO END] section.",
 				this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return;
 		}
 
 		if (!pCharmapBeg)
 		{
-			GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Missing [CHARMAP BEGIN] section.",
+			Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Missing [CHARMAP BEGIN] section.",
 				this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return;
 		}
 
 		if (!pCharmapEnd)
 		{
-			GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Missing [CHARMAP END] section.",
+			Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Missing [CHARMAP END] section.",
 				this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return;
 		}
@@ -414,4 +414,4 @@ namespace wg
 			m_maxDescend = maxDescend * 64;
 	}
 
-} // namespace wg
+} // namespace wax

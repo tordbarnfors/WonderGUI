@@ -26,7 +26,7 @@
 #	include <wg2_gfxdevice.h>
 #endif
 
-#include <wg_gfxbase.h>
+#include <wax_core.h>
 
 #include <wg2_eventhandler.h>
 
@@ -486,7 +486,7 @@ bool WgRootPanel::RenderSection( const WgRect& _clip )
         int nRects = dirtyPatches.size();
         const WgRect* pRects = dirtyPatches.begin();
 
-		wg::RectSPX * pClipRects = (wg::RectSPX*) wg::GfxBase::memStackAlloc(nRects*sizeof(wg::RectSPX));
+		wg::RectSPX * pClipRects = (wg::RectSPX*) wax::Core::memStackAlloc(nRects*sizeof(wg::RectSPX));
 
 		for(int i = 0 ; i < nRects ; i++)
 			pClipRects[i] = pRects[i]*64;
@@ -500,7 +500,7 @@ bool WgRootPanel::RenderSection( const WgRect& _clip )
 
         m_pGfxDevice->endCanvasUpdate();
 
-		wg::GfxBase::memStackFree(nRects*sizeof(wg::RectSPX));
+		wax::Core::memStackFree(nRects*sizeof(wg::RectSPX));
 
     }
 	// Handle updated rect overlays

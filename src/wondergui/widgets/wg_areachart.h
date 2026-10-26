@@ -24,8 +24,8 @@
 #pragma once
 
 #include <wg_chart.h>
-#include <wg_waveform.h>
-#include <wg_spans.h>
+#include <wax_waveform.h>
+#include <wax_spans.h>
 
 namespace wg
 {

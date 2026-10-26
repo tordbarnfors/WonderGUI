@@ -19,15 +19,15 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef	WG_METALSURFACE_DOT_H
-#define	WG_METALSURFACE_DOT_H
+#ifndef	WAX_METALSURFACE_DOT_H
+#define	WAX_METALSURFACE_DOT_H
 #pragma once
 
 #import "MetalKit/MetalKit.h"
 
-#include <wg_surface.h>
+#include <wax_surface.h>
 
-namespace wg
+namespace wax
 {
 
 	class MetalSurface;
@@ -140,6 +140,6 @@ namespace wg
         bool            m_bMipmapStale = false;
 
 	};
-} // namespace wg
-#endif //WG_METALSURFACE_DOT_H
+} // namespace wax
+#endif //WAX_METALSURFACE_DOT_H
 

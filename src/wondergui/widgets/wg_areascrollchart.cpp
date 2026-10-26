@@ -20,7 +20,7 @@
 
 =========================================================================*/
 #include <wg_base.h>
-#include <wg_gfxdevice.h>
+#include <wax_gfxdevice.h>
 #include <wg_areascrollchart.h>
 
 #include <cstring>

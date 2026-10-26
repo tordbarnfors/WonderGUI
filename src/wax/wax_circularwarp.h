@@ -19,14 +19,14 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef WG_CIRCULARWARP_DOT_H
-#define	WG_CIRCULARWARP_DOT_H
+#ifndef WAX_CIRCULARWARP_DOT_H
+#define	WAX_CIRCULARWARP_DOT_H
 #pragma once
 
-#include <wg_warpmap.h>
-#include <wg_warpmapfactory.h>
+#include <wax_warpmap.h>
+#include <wax_warpmapfactory.h>
 
-namespace wg
+namespace wax
 {
 	class CircularWarp;
 	typedef	StrongPtr<CircularWarp>	CircularWarp_p;
@@ -138,5 +138,5 @@ namespace wg
 		Warpmap_p			m_pWarpmap;
 	};
 
-} // namespace wg
-#endif // WG_CIRCULARWARP_DOT_H
+} // namespace wax
+#endif // WAX_CIRCULARWARP_DOT_H

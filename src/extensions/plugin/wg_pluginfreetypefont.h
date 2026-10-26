@@ -26,6 +26,7 @@
 
 #include <wg_pluginfont.h>
 #include <wg_pluginbitmapcache.h>
+#include <wg_types.h>
 
 namespace wg
 {
@@ -40,7 +41,7 @@ namespace wg
 
 		//.____ Creation __________________________________________
 
-		static PluginFreeTypeFont_p	create(wg_obj cFreeTypeFont, PluginBitmapCache* pCache);
+		static PluginFreeTypeFont_p	create(wax_obj cFreeTypeFont, PluginBitmapCache* pCache);
 
 		//.____ Identification __________________________________________
 
@@ -53,7 +54,7 @@ namespace wg
 
 
 	private:
-		PluginFreeTypeFont( wg_obj cFont, PluginBitmapCache * pCache );
+		PluginFreeTypeFont( wax_obj cFont, PluginBitmapCache * pCache );
 		~PluginFreeTypeFont();
 		
 		PluginBitmapCache_p m_pCache;

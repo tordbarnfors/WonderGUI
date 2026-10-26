@@ -16,9 +16,9 @@ target_working_directory(workbench ${WG_ROOT} )
 
 target_include_directories(workbench PRIVATE 
 	${WONDERGUI_INCDIRS}
-	${WGSOFTGFX_INCDIRS}
-	${WGOPENGLGFX_INCDIRS}
-	${WGFREETYPEFONT_INCDIRS}
+	${WAXSOFTGFX_INCDIRS}
+	${WAXOPENGLGFX_INCDIRS}
+	${WAXFREETYPEFONT_INCDIRS}
 	${WGDEBUGGER_INCDIRS}
 	${SDL2_INCDIR}
 	${SDL2IMAGE_INCDIR}
@@ -37,9 +37,9 @@ target_link_directories(workbench PRIVATE
 
 target_link_libraries(workbench PRIVATE
 	wgdebugger
-	wgsoftgfx
-	wgopenglgfx
-	wgfreetypefont
+	waxsoftgfx
+	waxopenglgfx
+	waxfreetypefont
 	wondergui 
 	${SDL2_LIBS}
 	${SDL2IMAGE_LIBS}

@@ -31,14 +31,14 @@ namespace wg
 
 	//____ create() ___________________________________________________________
 
-	PluginFreeTypeFont_p PluginFreeTypeFont::create(wg_obj cFreeTypeFont, PluginBitmapCache* pCache) 
+	PluginFreeTypeFont_p PluginFreeTypeFont::create(wax_obj cFreeTypeFont, PluginBitmapCache* pCache) 
 	{ 
 		return PluginFreeTypeFont_p(new PluginFreeTypeFont(cFreeTypeFont, pCache)); 
 	}
 
 	//____ constructor ____________________________________________________________
 
-	PluginFreeTypeFont::PluginFreeTypeFont( wg_obj cFreeTypeFont, PluginBitmapCache * pCache ) : PluginFont(cFreeTypeFont)
+	PluginFreeTypeFont::PluginFreeTypeFont( wax_obj cFreeTypeFont, PluginBitmapCache * pCache ) : PluginFont(cFreeTypeFont)
 	{
 		m_pCache = pCache;
 	}
@@ -60,7 +60,7 @@ namespace wg
 
 	void PluginFreeTypeFont::getGlyphWithBitmap(char32_t ch, Glyph& glyph)
 	{
-		wg_glyph	cGlyph;
+		wax_glyph	cGlyph;
 
 		PluginCalls::font->getGlyphWithBitmap(m_cFont, ch, &cGlyph);
 

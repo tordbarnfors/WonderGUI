@@ -20,7 +20,7 @@ add_subdirectory(embeddedworkbench)
 # These render through OpenGL themselves rather than through the WonderApp
 # framework, so they are only built when the OpenGL extension is.
 
-if(TARGET wgopenglgfx)
+if(TARGET waxopenglgfx)
 	add_subdirectory(workbench)
 endif()
 
@@ -33,7 +33,7 @@ endif()
 if(TARGET wglegacygui)
 	add_subdirectory(legacyrunner)
 
-	if(TARGET wgopenglgfx)
+	if(TARGET waxopenglgfx)
 		add_subdirectory(legacyworkbench)
 	endif()
 endif()

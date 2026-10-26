@@ -247,10 +247,10 @@ bool KernelDB::_generateSource(std::ostream& out, const std::string& kernelLabel
 	out << "The more supported, the more code is generated, resulting in a larger binary." << endl;
 	out << endl;
 	out << "Generating optimized blits for all possible combinations can result in tens of" << endl;
-	out << "thousands of optimized render loops, growing the size of WonderGUI by many" << endl;
+	out << "thousands of optimized render loops, growing the size of Wax by many" << endl;
 	out << "megabytes." << endl;
 	out << endl;
-	out << "For modern desktop applications wg_softkernels_default.h/cpp provides a good" << endl;
+	out << "For modern desktop applications wax_softkernels_default.h/cpp provides a good" << endl;
 	out << "balance between size and performance, supporting everyting but only optimizing" << endl;
 	out << "most important blit operations." << endl;
 	out << endl;
@@ -264,7 +264,7 @@ bool KernelDB::_generateSource(std::ostream& out, const std::string& kernelLabel
 		for (int i = 0; i < TintMode_size; i++)
 		{
 			if( m_tintModes[i] )
-				out << wg::toString( (TintMode) i ) << endl << "                       ";
+				out << wax::toString( (TintMode) i ) << endl << "                       ";
 			else
 				bAllSupported = false;
 		}
@@ -277,7 +277,7 @@ bool KernelDB::_generateSource(std::ostream& out, const std::string& kernelLabel
 			for (int i = 0; i < TintMode_size; i++)
 			{
 				if( !m_tintModes[i] )
-					out << " " << wg::toString( (TintMode) i );
+					out << " " << wax::toString( (TintMode) i );
 			}
 		}
 		out << ")" << endl << endl;
@@ -291,7 +291,7 @@ bool KernelDB::_generateSource(std::ostream& out, const std::string& kernelLabel
 		for (int i = 0; i < BlendMode_size; i++)
 		{
 			if( m_blendModes[i] )
-				out << wg::toString( (BlendMode) i ) << endl << "                       ";
+				out << wax::toString( (BlendMode) i ) << endl << "                       ";
 			else if( i != int(BlendMode::Undefined) && i != int(BlendMode::Ignore) )
 				bAllSupported = false;
 		}
@@ -304,7 +304,7 @@ bool KernelDB::_generateSource(std::ostream& out, const std::string& kernelLabel
 			for (int i = 0; i < BlendMode_size; i++)
 			{
 				if( !m_blendModes[i] && i != int(BlendMode::Undefined) && i != int(BlendMode::Ignore) )
-					out << " " << wg::toString( (BlendMode) i );
+					out << " " << wax::toString( (BlendMode) i );
 			}
 		}
 		out << ")" << endl << endl;
@@ -317,7 +317,7 @@ bool KernelDB::_generateSource(std::ostream& out, const std::string& kernelLabel
 		for (int i = 0; i < SoftFormat_size; i++)
 		{
 			if( m_srcFormats[i] )
-				out << wg::toString( (SoftFormat) i ) << endl << "                       ";
+				out << wax::toString( (SoftFormat) i ) << endl << "                       ";
 			else if( i != int(SoftFormat::Undefined) && SoftFormat(i) != SoftFormat::BGR_565_BE_linear_G5 )
 				bAllSupported = false;
 		}
@@ -330,7 +330,7 @@ bool KernelDB::_generateSource(std::ostream& out, const std::string& kernelLabel
 			for (int i = 0; i < SoftFormat_size; i++)
 			{
 				if( !m_srcFormats[i] && i != int(SoftFormat::Undefined) && SoftFormat(i) != SoftFormat::BGR_565_BE_linear_G5 )
-					out << " " << wg::toString( (SoftFormat) i );
+					out << " " << wax::toString( (SoftFormat) i );
 			}
 		}
 		out << ")" << endl << endl;
@@ -343,7 +343,7 @@ bool KernelDB::_generateSource(std::ostream& out, const std::string& kernelLabel
 		for (int i = 0; i < SoftFormat_size; i++)
 		{
 			if( m_destFormats[i] )
-				out << wg::toString( (SoftFormat) i ) << endl << "                       ";
+				out << wax::toString( (SoftFormat) i ) << endl << "                       ";
 			else if( SoftFormatInfo::isDestination(SoftFormat(i)) )
 				bAllSupported = false;
 		}
@@ -356,7 +356,7 @@ bool KernelDB::_generateSource(std::ostream& out, const std::string& kernelLabel
 			for (int i = 0; i < SoftFormat_size; i++)
 			{
 				if( !m_destFormats[i] && SoftFormatInfo::isDestination(SoftFormat(i)) )
-					out << " " << wg::toString( (SoftFormat) i );
+					out << " " << wax::toString( (SoftFormat) i );
 			}
 		}
 		out << ")" << endl << endl;
@@ -422,15 +422,15 @@ bool KernelDB::_generateSource(std::ostream& out, const std::string& kernelLabel
 
 	// Print out initial stanza
 
-	out << "#include <wg_softbackend.h>" << endl;
-	out << "#include <wg_softkernelstanza.impl.h>" << endl;
-	out << "#include <wg_c_object.h>" << endl;
+	out << "#include <wax_softbackend.h>" << endl;
+	out << "#include <wax_softkernelstanza.impl.h>" << endl;
+	out << "#include <wax_c_object.h>" << endl;
 
 	out << endl;
-	out << "using namespace wg;" << endl;
+	out << "using namespace wax;" << endl;
 	out << endl;
 
-	out << "namespace wg" << endl;
+	out << "namespace wax" << endl;
 	out << "{" << endl;
 	out << "	bool " << kernelLabel << "( SoftBackend * pDevice );" << endl;
 	out << "};" << endl << endl;
@@ -438,7 +438,7 @@ bool KernelDB::_generateSource(std::ostream& out, const std::string& kernelLabel
 	out << "#ifdef __cplusplus" << endl;
 	out << "extern \"C\" {" << endl;
 	out << "#endif" << endl;
-	out << "WG_EXPORT int	wg_" << kernelLabel << "( wg_obj backend )" << endl;
+	out << "WAX_EXPORT int	wax_" << kernelLabel << "( wax_obj backend )" << endl;
 	out << "{" << endl;
 	out << "	auto pBackend = static_cast<SoftBackend*>(reinterpret_cast<Object*>(backend));" << endl;
 	out << endl;
@@ -450,7 +450,7 @@ bool KernelDB::_generateSource(std::ostream& out, const std::string& kernelLabel
 
 
 	out << endl;
-	out << "bool wg::" << kernelLabel << "( SoftBackend * pBackend )" << endl;
+	out << "bool wax::" << kernelLabel << "( SoftBackend * pBackend )" << endl;
 	out << "{" << endl;
 
 	// Print out the fill kernels.

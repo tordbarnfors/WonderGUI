@@ -21,12 +21,12 @@
 =========================================================================*/
 #include <memory.h>
 
-#include <wg_remotesurface.h>
-#include <wg_gfxutil.h>
-#include <wg_blob.h>
-#include <wg_pixeltools.h>
-#include <wg_gfxbase.h>
-#include <wg_streambackend.h>
+#include <wax_remotesurface.h>
+#include <wax_gfxutil.h>
+#include <wax_blob.h>
+#include <wax_pixeltools.h>
+#include <wax_core.h>
+#include <wax_streambackend.h>
 
 #include <assert.h>
 #include <cstring>
@@ -34,7 +34,7 @@
 
 
 
-namespace wg
+namespace wax
 {
 	const TypeInfo RemoteSurface::TYPEINFO = { "RemoteSurface", &Surface::TYPEINFO };
 
@@ -110,7 +110,7 @@ namespace wg
 		if (srcFormat == PixelFormat::Undefined)
 			srcFormat = m_pixelFormat;
 
-		auto srcDesc = Util::pixelFormatToDescription(srcFormat, m_bBigEndian);
+		auto srcDesc = GfxUtil::pixelFormatToDescription(srcFormat, m_bBigEndian);
 
 		if( pitch == 0 )
 			pitch = PixelTools::bytesPerLine(srcDesc, m_size.w);
@@ -311,7 +311,7 @@ namespace wg
 
 		int allocSize = dataSize;		// Increase if needed by future compression
 
-		auto pBuffer = (uint8_t *) GfxBase::memStackAlloc(allocSize);
+		auto pBuffer = (uint8_t *) Core::memStackAlloc(allocSize);
 
 		auto pLine = pSource;
 		auto pDest = pBuffer;
@@ -336,7 +336,7 @@ namespace wg
 
 		StreamBackend::_compressSplitAndEncode(pEncoder, GfxStream::ChunkId::SurfacePixels, m_inStreamId, nullptr, pBuffer, pBuffer + dataSize);
 
-		GfxBase::memStackFree(allocSize);
+		Core::memStackFree(allocSize);
 	}
 
 	//____ _sendDeleteSurface() _______________________________________________
@@ -348,4 +348,4 @@ namespace wg
 
 	}
 
-} // namespace wg
+} // namespace wax

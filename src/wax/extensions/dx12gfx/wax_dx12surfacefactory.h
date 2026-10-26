@@ -20,13 +20,13 @@
 
 =========================================================================*/
 
-#ifndef WG_DX12SURFACEFACTORY_DOT_H
-#define WG_DX12SURFACEFACTORY_DOT_H
+#ifndef WAX_DX12SURFACEFACTORY_DOT_H
+#define WAX_DX12SURFACEFACTORY_DOT_H
 
-#include <wg_dx12surface.h>
-#include <wg_surfacefactory.h>
+#include <wax_dx12surface.h>
+#include <wax_surfacefactory.h>
 
-namespace wg
+namespace wax
 {
 
 	class DX12SurfaceFactory;
@@ -73,5 +73,5 @@ namespace wg
 
 	//========================================================================================
 
-} // namespace wg
-#endif // WG_DX12SURFACEFACTORY_DOT_H
+} // namespace wax
+#endif // WAX_DX12SURFACEFACTORY_DOT_H

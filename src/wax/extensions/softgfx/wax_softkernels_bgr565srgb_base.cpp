@@ -7,10 +7,10 @@ well as what blit operations have custom/optimized implementations.
 The more supported, the more code is generated, resulting in a larger binary.
 
 Generating optimized blits for all possible combinations can result in tens of
-thousands of optimized render loops, growing the size of WonderGUI by many
+thousands of optimized render loops, growing the size of Wax by many
 megabytes.
 
-For modern desktop applications wg_softkernels_default.h/cpp provides a good
+For modern desktop applications wax_softkernels_default.h/cpp provides a good
 balance between size and performance, supporting everyting but only optimizing
 most important blit operations.
 
@@ -88,13 +88,13 @@ Destination Formats:XRGB_8_sRGB
 
 *******************************************************************************/
 
-#include <wg_softbackend.h>
-#include <wg_softkernelstanza.impl.h>
-#include <wg_c_object.h>
+#include <wax_softbackend.h>
+#include <wax_softkernelstanza.impl.h>
+#include <wax_c_object.h>
 
-using namespace wg;
+using namespace wax;
 
-namespace wg
+namespace wax
 {
 	bool addBaseSoftKernelsForBGR565sRGBCanvas( SoftBackend * pDevice );
 };
@@ -102,7 +102,7 @@ namespace wg
 #ifdef __cplusplus
 extern "C" {
 #endif
-WG_EXPORT int	wg_addBaseSoftKernelsForBGR565sRGBCanvas( wg_obj backend )
+WAX_EXPORT int	wax_addBaseSoftKernelsForBGR565sRGBCanvas( wax_obj backend )
 {
 	auto pBackend = static_cast<SoftBackend*>(reinterpret_cast<Object*>(backend));
 
@@ -113,7 +113,7 @@ WG_EXPORT int	wg_addBaseSoftKernelsForBGR565sRGBCanvas( wg_obj backend )
 }
 #endif
 
-bool wg::addBaseSoftKernelsForBGR565sRGBCanvas( SoftBackend * pBackend )
+bool wax::addBaseSoftKernelsForBGR565sRGBCanvas( SoftBackend * pBackend )
 {
 pBackend->setFillKernel( TintMode::None, BlendMode::Replace, SoftFormat::XRGB_8_sRGB, _fill<TintMode::None,BlendMode::Replace, SoftFormat::XRGB_8_sRGB> );
 pBackend->setFillKernel( TintMode::None, BlendMode::Replace, SoftFormat::ARGB_8_sRGB, _fill<TintMode::None,BlendMode::Replace, SoftFormat::ARGB_8_sRGB> );

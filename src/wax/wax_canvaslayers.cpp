@@ -19,10 +19,10 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#include <wg_canvaslayers.h>
-#include <wg_gfxbase.h>
+#include <wax_canvaslayers.h>
+#include <wax_core.h>
 
-namespace wg
+namespace wax
 {
 	const TypeInfo CanvasLayers::TYPEINFO = { "CanvasLayers", &Object::TYPEINFO };
 
@@ -53,7 +53,7 @@ namespace wg
 		
 		if( bp.layers.size() > c_maxLayers )
 		{
-			GfxBase::throwError(ErrorLevel::SilentError, ErrorCode::InvalidParam, "Number of layers exceeds maximum", nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
+			Core::throwError(ErrorLevel::SilentError, ErrorCode::InvalidParam, "Number of layers exceeds maximum", nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return nullptr;
 		}
 		
@@ -61,11 +61,11 @@ namespace wg
 		{
 			PixelFormat format = layer.format;
 
-			auto type = Util::pixelFormatToDescription(format).type;
+			auto type = GfxUtil::pixelFormatToDescription(format).type;
 
 			if (type == PixelType::Index || type == PixelType::Bitplanes)
 			{
-				GfxBase::throwError(ErrorLevel::SilentError, ErrorCode::InvalidParam, "Canvas layers can not be palette-based", nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
+				Core::throwError(ErrorLevel::SilentError, ErrorCode::InvalidParam, "Canvas layers can not be palette-based", nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
 				return nullptr;
 			}
 						
@@ -73,7 +73,7 @@ namespace wg
 
 		if (bp.baseLayer < 0 || bp.baseLayer > (int)bp.layers.size())
 		{
-			GfxBase::throwError(ErrorLevel::Critical, ErrorCode::InvalidParam, "Default layer is out of bounds.", nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
+			Core::throwError(ErrorLevel::Critical, ErrorCode::InvalidParam, "Default layer is out of bounds.", nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return nullptr;
 		}
 
@@ -115,7 +115,7 @@ namespace wg
 	{
 		if (layer < 1 || layer > (int)m_layers.size())
 		{
-			GfxBase::throwError(ErrorLevel::SilentError, ErrorCode::InvalidParam, "Layer does not exist.", nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
+			Core::throwError(ErrorLevel::SilentError, ErrorCode::InvalidParam, "Layer does not exist.", nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return PixelFormat::Undefined;
 		}
 

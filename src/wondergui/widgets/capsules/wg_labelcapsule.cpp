@@ -20,7 +20,7 @@
 
 =========================================================================*/
 #include <wg_labelcapsule.h>
-#include <wg_gfxdevice.h>
+#include <wax_gfxdevice.h>
 
 namespace wg
 {

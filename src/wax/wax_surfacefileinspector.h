@@ -19,15 +19,15 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef WG_SURFACEFILEINSPECTOR_DOT_H
-#define WG_SURFACEFILEINSPECTOR_DOT_H
+#ifndef WAX_SURFACEFILEINSPECTOR_DOT_H
+#define WAX_SURFACEFILEINSPECTOR_DOT_H
 #pragma once
 
 
-#include <wg_surface.h>
-#include <wg_surfacefileheader.h>
+#include <wax_surface.h>
+#include <wax_surfacefileheader.h>
 
-namespace wg
+namespace wax
 {
 
 class SurfaceFileInspector;
@@ -75,8 +75,8 @@ protected:
 
 //==============================================================================
 
-} // namespace wg
-#endif // WG_SURFACEFILEINSPECTOR_DOT_H
+} // namespace wax
+#endif // WAX_SURFACEFILEINSPECTOR_DOT_H
 
 
 

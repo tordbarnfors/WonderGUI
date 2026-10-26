@@ -23,17 +23,21 @@
 #define	WG_TEXTLAYOUT_DOT_H
 #pragma once
 
-#include <wg_pointers.h>
-#include <wg_geo.h>
+#include <wax_pointers.h>
+#include <wax_geo.h>
 #include <wg_string.h>
 #include <wg_key.h>
 #include <wg_receiver.h>
+
+namespace wax
+{
+	class GfxDevice;
+}
 
 namespace wg
 {
 	class EditState;
 
-	class GfxDevice;
 	class CharBuffer;
 	class TextStyle;
 

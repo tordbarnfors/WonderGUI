@@ -21,17 +21,17 @@
 =========================================================================*/
 #include <tuple>
 
-#include <wg_c_streamplayer.h>
+#include <wax_c_streamplayer.h>
 
-#include <wg_streamplayer.h>
+#include <wax_streamplayer.h>
 
-using namespace wg;
+using namespace wax;
 
-inline StreamPlayer* getPtr(wg_obj obj) {
+inline StreamPlayer* getPtr(wax_obj obj) {
 	return static_cast<StreamPlayer*>(reinterpret_cast<Object*>(obj));
 }
 
-wg_obj wg_createStreamPlayer(wg_obj backend, wg_obj surfaceFactory, wg_obj edgemapFactory)
+wax_obj wax_createStreamPlayer(wax_obj backend, wax_obj surfaceFactory, wax_obj edgemapFactory)
 {
 	GfxBackend* pBackend = static_cast<GfxBackend*>(reinterpret_cast<Object*>(backend));
 	SurfaceFactory* pSurfaceFactory = static_cast<SurfaceFactory*>(reinterpret_cast<Object*>(surfaceFactory));
@@ -42,44 +42,44 @@ wg_obj wg_createStreamPlayer(wg_obj backend, wg_obj surfaceFactory, wg_obj edgem
 	return p.rawPtr();
 }
 
-wg_component wg_getStreamPlayerInput(wg_obj streamPlayer)
+wax_component wax_getStreamPlayerInput(wax_obj streamPlayer)
 {
 	auto p = getPtr(streamPlayer);
 	return { static_cast<Object*>(p), &p->input };
 }
 
-void wg_resetStreamPlayer(wg_obj streamPlayer)
+void wax_resetStreamPlayer(wax_obj streamPlayer)
 {
 	auto p = getPtr(streamPlayer);
 	p->reset();
 }
 
 
-void wg_setStreamPlayerStoreDirtyRects(wg_obj streamPlayer, int bStore)
+void wax_setStreamPlayerStoreDirtyRects(wax_obj streamPlayer, int bStore)
 {
 	getPtr(streamPlayer)->setStoreDirtyRects(bStore);
 }
 
-void wg_setStreamPlayerMaxDirtyRects(wg_obj streamPlayer, int max)
+void wax_setStreamPlayerMaxDirtyRects(wax_obj streamPlayer, int max)
 {
 	getPtr(streamPlayer)->setMaxDirtyRects(max);
 }
 
-int wg_getStreamPlayerDirtyRects(wg_obj streamPlayer, wg_canvasRef canvas, const wg_rectI** pRects)
+int wax_getStreamPlayerDirtyRects(wax_obj streamPlayer, wax_canvasRef canvas, const wax_rectI** pRects)
 {
 	int size;
 	const RectI* pDirtyRects;
 	std::tie(size,pDirtyRects) = getPtr(streamPlayer)->dirtyRects( (CanvasRef) canvas);
-	*pRects = (wg_rectI*) pDirtyRects;
+	*pRects = (wax_rectI*) pDirtyRects;
 	return size;
 }
 
-void wg_clearStreamPlayerDirtyRects(wg_obj streamPlayer)
+void wax_clearStreamPlayerDirtyRects(wax_obj streamPlayer)
 {
 	getPtr(streamPlayer)->clearDirtyRects();
 }
 
-void wg_setStreamPlayerFenceCallback(wg_obj streamPlayer, wg_streamPlayerFence_func callback)
+void wax_setStreamPlayerFenceCallback(wax_obj streamPlayer, wax_streamPlayerFence_func callback)
 {
 	getPtr(streamPlayer)->setFenceCallback( callback );
 }

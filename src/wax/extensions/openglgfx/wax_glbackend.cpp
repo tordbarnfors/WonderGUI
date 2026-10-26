@@ -25,21 +25,21 @@
 #include <cstring>
 #include <algorithm>
 
-#include <wg_glbackend.h>
-#include <wg_glsurface.h>
-#include <wg_glsurfacefactory.h>
-#include <wg_gledgemap.h>
-#include <wg_gledgemapfactory.h>
-#include <wg_glwarpmap.h>
-#include <wg_glwarpmapfactory.h>
-#include <wg_gpushapes.h>
-#include <wg_gfxbase.h>
-#include <wg_gfxutil.h>
+#include <wax_glbackend.h>
+#include <wax_glsurface.h>
+#include <wax_glsurfacefactory.h>
+#include <wax_gledgemap.h>
+#include <wax_gledgemapfactory.h>
+#include <wax_glwarpmap.h>
+#include <wax_glwarpmapfactory.h>
+#include <wax_gpushapes.h>
+#include <wax_core.h>
+#include <wax_gfxutil.h>
 
 using namespace std;
-using namespace wg::Util;
+using namespace wax::GfxUtil;
 
-namespace wg
+namespace wax
 {
 const TypeInfo GlBackend::TYPEINFO = { "GlBackend", &GfxBackend::TYPEINFO };
 
@@ -116,7 +116,7 @@ void GlBackend::onGlError(GLenum errorCode, const Object * pObject, const TypeIn
 
 
 	snprintf( buffer, 1024, "OpenGL error 0x%x: %s", errorCode, pErrorName );
-	GfxBase::throwError(ErrorLevel::SilentError, ErrorCode::OpenGL, buffer, pObject, pClassType, func, file, line);
+	Core::throwError(ErrorLevel::SilentError, ErrorCode::OpenGL, buffer, pObject, pClassType, func, file, line);
 }
 
 
@@ -144,7 +144,7 @@ void GlBackend::setCanvas(CanvasRef ref)
 	}
 	else
 	{
-		GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "GlBackend::setCanvas(CanvasRef) only supports CanvasRef::Default.",
+		Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "GlBackend::setCanvas(CanvasRef) only supports CanvasRef::Default.",
 			this, &TYPEINFO, __func__, __FILE__, __LINE__);
 	}
 }
@@ -172,13 +172,13 @@ void GlBackend::_resetCommandStates()
 //____ _setRgbxClip() _________________________________________________________
 /*
 	Tells the generic blit shaders whether to work out the alpha of a source without alpha
-	from the position, which they need to do for a ClipBlit (see WG_GL_SOURCE_SAMPLE).
+	from the position, which they need to do for a ClipBlit (see WAX_GL_SOURCE_SAMPLE).
 	The uniform stays with the program, so it's set for every blit.
 */
 
 void GlBackend::_setPaletteInfo(GLuint prog, GlSurface* pSurf)
 {
-	// Tells WG_GL_PALETTE_FUNC how to find a palette entry, see GlSurface::_uploadPalette().
+	// Tells WAX_GL_PALETTE_FUNC how to find a palette entry, see GlSurface::_uploadPalette().
 
 	GLint loc = glGetUniformLocation(prog, "paletteInfo");
 	if (loc != -1)
@@ -884,7 +884,7 @@ void GlBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, int 
 
 			if (maxEntries == 0)
 			{
-				GfxBase::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, "Failed DrawShape operation. Unsupported kind of shape.",
+				Core::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, "Failed DrawShape operation. Unsupported kind of shape.",
 					this, &TYPEINFO, __func__, __FILE__, __LINE__);
 				break;
 			}
@@ -1834,7 +1834,7 @@ const CanvasInfo * GlBackend::canvasInfo(CanvasRef ref) const
 		return &m_defaultCanvas;
 	else
 	{
-		GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Only Default canvas is supported.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+		Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Only Default canvas is supported.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 		return &m_dummyCanvas;
 	}
 }
@@ -1850,7 +1850,7 @@ void GlBackend::beginRender()
 
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 	{
-		GfxBase::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "Framebuffer is not complete.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+		Core::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "Framebuffer is not complete.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 		return;
 	}
 
@@ -2407,7 +2407,7 @@ void GlBackend::endSession()
 					glUniform1i(glGetUniformLocation(prog, "sourceKind"), sourceKind);
 
 					// A surface that isn't tiling is read as if the edge pixels of the source rectangle
-					// continued outside it, see WG_GL_WARP_SAMPLE.
+					// continued outside it, see WAX_GL_WARP_SAMPLE.
 
 					float clampInset = pSurf->isTiling() ? 0.f : pSurf->sampleMethod() == SampleMethod::Bilinear ? 0.5f : 1.f / 256;
 					glUniform1f(glGetUniformLocation(prog, "clampInset"), clampInset);
@@ -2459,7 +2459,7 @@ void GlBackend::endSession()
 	Canvases with alpha hold premultiplied colors, which lets fixed-function blending follow the
 	blend rules exactly: Blend is Porter-Duff over, Morph a premultiplied cross-fade and a partly
 	covered pixel gets the average of the blend result and the canvas. The fragment shaders pass
-	what they draw to the blender as the mode needs it (see WG_GL_OUTPUT), told by blendInfo:
+	what they draw to the blender as the mode needs it (see WAX_GL_OUTPUT), told by blendInfo:
 
 	- Replace and Morph keep the uncovered part of the pixel by the second color of dual-source
 	  blending. Replace is only blended where pixels are partly covered, see _setPartialCoverage().
@@ -2476,7 +2476,7 @@ void GlBackend::_setBlendMode(BlendMode mode)
 
 	bool bAlphaOnly = m_bActiveCanvasIsA8;
 
-	float output = 0.f;							// blendInfo.x, see WG_GL_OUTPUT.
+	float output = 0.f;							// blendInfo.x, see WAX_GL_OUTPUT.
 	float morph = 1.f;
 
 	glBlendEquation(GL_FUNC_ADD);
@@ -2920,7 +2920,7 @@ GLuint GlBackend::_loadOrCompileProgram(int programNb, const char* pVertexShader
 			char	buffer[2048 * 3 + 256];
 
 			snprintf(buffer, 2048*3+256, "Failed compiling OpenGL shader\nVertexShaderLog: %s\nFragmentShaderLog: %s\nProgramInfoLog: %s", vertexShaderLog, fragmentShaderLog, programInfoLog);
-			GfxBase::throwError(ErrorLevel::SilentError, ErrorCode::OpenGL, buffer, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			Core::throwError(ErrorLevel::SilentError, ErrorCode::OpenGL, buffer, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 		}
 
 		glDetachShader(programID, vertexShaderID);
@@ -3057,7 +3057,7 @@ void GlBackend::_initTables()
 	for (int i = 0; i < 17; i++)
 	{
 		double b = i / 16.0;
-		m_lineThicknessTable[i] = (float)Util::squareRoot(1.0 + b * b);
+		m_lineThicknessTable[i] = (float)GfxUtil::squareRoot(1.0 + b * b);
 	}
 }
 
@@ -3079,5 +3079,5 @@ float GlBackend::_scaleThickness(float thickness, float slope)
 	return thickness * scale;
 }
 
-} // namespace wg
+} // namespace wax
 

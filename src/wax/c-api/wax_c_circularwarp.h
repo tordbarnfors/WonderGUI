@@ -19,65 +19,65 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef WG_C_CIRCULARWARP_DOT_H
-#define WG_C_CIRCULARWARP_DOT_H
+#ifndef WAX_C_CIRCULARWARP_DOT_H
+#define WAX_C_CIRCULARWARP_DOT_H
 #pragma once
 
-#include <wg_c_gfxtypes.h>
-#include <wg_c_geo.h>
+#include <wax_c_types.h>
+#include <wax_c_geo.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-	//____ wg_circularWarpBP _____________________________________________________
+	//____ wax_circularWarpBP _____________________________________________________
 
-	typedef struct wg_circularWarpBP_struct		// NOT BINARY EQUIVALENT!
+	typedef struct wax_circularWarpBP_struct		// NOT BINARY EQUIVALENT!
 	{
-		wg_spx				bottomRadius;			// Radius the bottom of the source is placed at.
+		wax_spx				bottomRadius;			// Radius the bottom of the source is placed at.
 		int					cellSize;				// 0 = calculated from precision and detailRadius.
-		wg_coordF			center;					// Center of circle, relative to size. Usually { 0.5f, 0.5f }.
-		wg_spx				detailRadius;			// Smallest radius where precision is needed. 0 = smallest of the radii.
+		wax_coordF			center;					// Center of circle, relative to size. Usually { 0.5f, 0.5f }.
+		wax_spx				detailRadius;			// Smallest radius where precision is needed. 0 = smallest of the radii.
 		float				precision;				// Max position error in pixels when cellSize is calculated. 0 = default (0.25).
-		wg_sizeI			size;					// Mandatory. Size of the Warpmap in pixels.
+		wax_sizeI			size;					// Mandatory. Size of the Warpmap in pixels.
 		float				startAngle;				// Degrees. Where the left side of the source is placed. 0 = up, clockwise.
 		float				sweep;					// Degrees covered by the width of the source. Negative goes counter clockwise.
-		wg_spx				topRadius;				// Radius the top of the source is placed at.
-	} wg_circularWarpBP;
+		wax_spx				topRadius;				// Radius the top of the source is placed at.
+	} wax_circularWarpBP;
 
 	// Factory is the WarpmapFactory to create the Warpmap with, the default one if null.
 
-	WG_EXPORT wg_obj		wg_createCircularWarp( const wg_circularWarpBP* blueprint, wg_obj warpmapFactory );
+	WAX_EXPORT wax_obj		wax_createCircularWarp( const wax_circularWarpBP* blueprint, wax_obj warpmapFactory );
 
 	//.____ Geometry ______________________________________________________
 
-	WG_EXPORT int			wg_setCircularWarpSize( wg_obj circularWarp, wg_sizeI size );
-	WG_EXPORT wg_sizeI		wg_circularWarpSize( wg_obj circularWarp );
+	WAX_EXPORT int			wax_setCircularWarpSize( wax_obj circularWarp, wax_sizeI size );
+	WAX_EXPORT wax_sizeI		wax_circularWarpSize( wax_obj circularWarp );
 
-	WG_EXPORT int			wg_setCircularWarpCenter( wg_obj circularWarp, wg_coordF center );
-	WG_EXPORT wg_coordF		wg_circularWarpCenter( wg_obj circularWarp );
+	WAX_EXPORT int			wax_setCircularWarpCenter( wax_obj circularWarp, wax_coordF center );
+	WAX_EXPORT wax_coordF		wax_circularWarpCenter( wax_obj circularWarp );
 
-	WG_EXPORT int			wg_setCircularWarpRadii( wg_obj circularWarp, wg_spx topRadius, wg_spx bottomRadius );
-	WG_EXPORT wg_spx		wg_circularWarpTopRadius( wg_obj circularWarp );
-	WG_EXPORT wg_spx		wg_circularWarpBottomRadius( wg_obj circularWarp );
+	WAX_EXPORT int			wax_setCircularWarpRadii( wax_obj circularWarp, wax_spx topRadius, wax_spx bottomRadius );
+	WAX_EXPORT wax_spx		wax_circularWarpTopRadius( wax_obj circularWarp );
+	WAX_EXPORT wax_spx		wax_circularWarpBottomRadius( wax_obj circularWarp );
 
-	WG_EXPORT int			wg_setCircularWarpAngles( wg_obj circularWarp, float startAngle, float sweep );
-	WG_EXPORT float			wg_circularWarpStartAngle( wg_obj circularWarp );
-	WG_EXPORT float			wg_circularWarpSweep( wg_obj circularWarp );
+	WAX_EXPORT int			wax_setCircularWarpAngles( wax_obj circularWarp, float startAngle, float sweep );
+	WAX_EXPORT float			wax_circularWarpStartAngle( wax_obj circularWarp );
+	WAX_EXPORT float			wax_circularWarpSweep( wax_obj circularWarp );
 
 	//.____ Precision _____________________________________________________
 
-	WG_EXPORT int			wg_setCircularWarpCellSize( wg_obj circularWarp, int cellSize );
-	WG_EXPORT int			wg_circularWarpCellSize( wg_obj circularWarp );
+	WAX_EXPORT int			wax_setCircularWarpCellSize( wax_obj circularWarp, int cellSize );
+	WAX_EXPORT int			wax_circularWarpCellSize( wax_obj circularWarp );
 
-	WG_EXPORT int			wg_setCircularWarpPrecision( wg_obj circularWarp, float precision, wg_spx detailRadius );
+	WAX_EXPORT int			wax_setCircularWarpPrecision( wax_obj circularWarp, float precision, wax_spx detailRadius );
 
 	//.____ Content _______________________________________________________
 
 	// Updates the Warpmap from current settings and returns it. The Warpmap belongs to the
 	// CircularWarp, retain it to keep it after a refresh that replaces it.
 
-	WG_EXPORT wg_obj		wg_refreshCircularWarp( wg_obj circularWarp );
+	WAX_EXPORT wax_obj		wax_refreshCircularWarp( wax_obj circularWarp );
 
 #ifdef __cplusplus
 }

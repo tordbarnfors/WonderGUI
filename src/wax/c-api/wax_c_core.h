@@ -19,35 +19,36 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef WG_C_GFXBASE_DOT_H
-#define WG_C_GFXBASE_DOT_H
+#ifndef WAX_C_CORE_DOT_H
+#define WAX_C_CORE_DOT_H
 #pragma once
 
-#include <wg_c_gfxtypes.h>
-#include <wg_c_gearbase.h>
+#include <wax_c_types.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 
-WG_EXPORT int		wg_initGfxBase(void);
-WG_EXPORT int		wg_exitGfxBase(void);
-WG_EXPORT int		wg_isGfxBaseInitialized(void);
+WAX_EXPORT int		wax_initCore(void);
+WAX_EXPORT int		wax_exitCore(void);
+WAX_EXPORT int		wax_isCoreInitialized(void);
 
-WG_EXPORT wg_obj	wg_defaultBitmapCache();
+WAX_EXPORT void		wax_setErrorHandler(void (*errorHandler)(const wax_errorInfo * pError) );
 
-WG_EXPORT void	wg_setDefaultSurfaceFactory( wg_obj factory );
-WG_EXPORT wg_obj	wg_defaultSurfaceFactory();
+WAX_EXPORT wax_obj	wax_defaultBitmapCache();
 
-WG_EXPORT void	wg_setDefaultEdgemapFactory( wg_obj factory );
-WG_EXPORT wg_obj	wg_defaultEdgemapFactory();
+WAX_EXPORT void	wax_setDefaultSurfaceFactory( wax_obj factory );
+WAX_EXPORT wax_obj	wax_defaultSurfaceFactory();
 
-WG_EXPORT void	wg_setDefaultWarpmapFactory( wg_obj factory );
-WG_EXPORT wg_obj	wg_defaultWarpmapFactory();
+WAX_EXPORT void	wax_setDefaultEdgemapFactory( wax_obj factory );
+WAX_EXPORT wax_obj	wax_defaultEdgemapFactory();
 
-WG_EXPORT void	wg_setDefaultGfxDevice( wg_obj device );
-WG_EXPORT wg_obj	wg_defaultGfxDevice();
+WAX_EXPORT void	wax_setDefaultWarpmapFactory( wax_obj factory );
+WAX_EXPORT wax_obj	wax_defaultWarpmapFactory();
+
+WAX_EXPORT void	wax_setDefaultGfxDevice( wax_obj device );
+WAX_EXPORT wax_obj	wax_defaultGfxDevice();
 
 
 
@@ -55,4 +56,4 @@ WG_EXPORT wg_obj	wg_defaultGfxDevice();
 }
 #endif
 
-#endif //WG_C_GFXBASE_DOT_H
+#endif //WAX_C_CORE_DOT_H

@@ -20,14 +20,14 @@
 
 =========================================================================*/
 
-#include <wg_tint.h>
-#include <wg_tinttools.h>
-#include <wg_gfxbase.h>
+#include <wax_tint.h>
+#include <wax_tinttools.h>
+#include <wax_core.h>
 
 #include <algorithm>
 #include <cmath>
 
-namespace wg
+namespace wax
 {
 
 	const TypeInfo Tint::TYPEINFO = { "Tint", &Object::TYPEINFO };
@@ -38,7 +38,7 @@ namespace wg
 	{
 		if (bp.stops.empty() || bp.stops.size() > c_maxStops)
 		{
-			GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "A Tint needs between 1 and 16 color stops.",
+			Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "A Tint needs between 1 and 16 color stops.",
 				nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return nullptr;
 		}
@@ -47,7 +47,7 @@ namespace wg
 		{
 			if (!stop.color.isValid() || !std::isfinite(stop.pos))
 			{
-				GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Invalid color stop.",
+				Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Invalid color stop.",
 					nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
 				return nullptr;
 			}
@@ -56,7 +56,7 @@ namespace wg
 		if (!std::isfinite(bp.begin.x) || !std::isfinite(bp.begin.y) || !std::isfinite(bp.end.x) || !std::isfinite(bp.end.y) ||
 			!std::isfinite(bp.center.x) || !std::isfinite(bp.center.y) || !std::isfinite(bp.radius.w) || !std::isfinite(bp.radius.h))
 		{
-			GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Invalid geometry.",
+			Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Invalid geometry.",
 				nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return nullptr;
 		}
@@ -240,7 +240,7 @@ namespace wg
 	{
 		if (nComponents < 1 || nComponents > c_maxMixComponents || !pComponents || !pWeights)
 		{
-			GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Invalid number of mix components.",
+			Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Invalid number of mix components.",
 				nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return nullptr;
 		}
@@ -252,7 +252,7 @@ namespace wg
 		{
 			if (!pComponents[i] || pComponents[i]->isMix() || !(pWeights[i] >= 0.f))
 			{
-				GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Mix components must be simple Tints with non-negative weights.",
+				Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Mix components must be simple Tints with non-negative weights.",
 					nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
 				return nullptr;
 			}

@@ -21,7 +21,7 @@
 =========================================================================*/
 #include <wg2_pen.h>
 #include <wg2_text.h>
-#include <wg_font.h>
+#include <wax_font.h>
 #include <wg2_cursorinstance.h>
 #include <wg2_gfxanim.h>
 #include <wg2_blockset.h>

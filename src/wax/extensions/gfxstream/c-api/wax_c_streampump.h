@@ -19,41 +19,41 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef WG_C_STREAMPUMP_DOT_H
-#define WG_C_STREAMPUMP_DOT_H
+#ifndef WAX_C_STREAMPUMP_DOT_H
+#define WAX_C_STREAMPUMP_DOT_H
 #pragma once
 
-#include <wg_c_gfxtypes.h>
-#include <wg_c_geo.h>
-#include <wg_c_gfxstream.h>
+#include <wax_c_types.h>
+#include <wax_c_geo.h>
+#include <wax_c_gfxstream.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-	WG_EXPORT wg_obj			wg_createStreamPump(void);
-	WG_EXPORT wg_obj			wg_createStreamPumpWithInputOutput( wg_component input, wg_component output);
+	WAX_EXPORT wax_obj			wax_createStreamPump(void);
+	WAX_EXPORT wax_obj			wax_createStreamPumpWithInputOutput( wax_component input, wax_component output);
 
-	WG_EXPORT void				wg_setStreamPumpInput(wg_obj streamPump, wg_component input);
-	WG_EXPORT void				wg_setStreamPumpOutput(wg_obj streamPump, wg_component output);
+	WAX_EXPORT void				wax_setStreamPumpInput(wax_obj streamPump, wax_component input);
+	WAX_EXPORT void				wax_setStreamPumpOutput(wax_obj streamPump, wax_component output);
 
-	WG_EXPORT void				wg_setFlowControl(wg_obj streamPump, uint16_t fenceId, int credits, int bytesPerCredit );
-	WG_EXPORT void				wg_restartFlowControl(wg_obj streamPump, int credits);
-	WG_EXPORT void				wg_AddFlowControlCredits(wg_obj streamPump, int credits);
-
-
-
-	WG_EXPORT wg_streamChunkId	wg_peekChunk(wg_obj streamPump);
+	WAX_EXPORT void				wax_setFlowControl(wax_obj streamPump, uint16_t fenceId, int credits, int bytesPerCredit );
+	WAX_EXPORT void				wax_restartFlowControl(wax_obj streamPump, int credits);
+	WAX_EXPORT void				wax_AddFlowControlCredits(wax_obj streamPump, int credits);
 
 
-	WG_EXPORT int				wg_pumpChunk(wg_obj streamPump);
-	WG_EXPORT int				wg_pumpUntilFrame(wg_obj streamPump);
-	WG_EXPORT int				wg_pumpFrame(wg_obj streamPump);
-	WG_EXPORT int				wg_pumpAllFrames(wg_obj streamPump);
-	WG_EXPORT int				wg_pumpAllFramesWithTrimming(wg_obj streamPump, wg_obj trimBackend);
-	WG_EXPORT int				wg_pumpAll(wg_obj streamPump);
 
-	WG_EXPORT int				wg_pumpBytes( wg_obj streamPump, int maxBytes );
+	WAX_EXPORT wax_streamChunkId	wax_peekChunk(wax_obj streamPump);
+
+
+	WAX_EXPORT int				wax_pumpChunk(wax_obj streamPump);
+	WAX_EXPORT int				wax_pumpUntilFrame(wax_obj streamPump);
+	WAX_EXPORT int				wax_pumpFrame(wax_obj streamPump);
+	WAX_EXPORT int				wax_pumpAllFrames(wax_obj streamPump);
+	WAX_EXPORT int				wax_pumpAllFramesWithTrimming(wax_obj streamPump, wax_obj trimBackend);
+	WAX_EXPORT int				wax_pumpAll(wax_obj streamPump);
+
+	WAX_EXPORT int				wax_pumpBytes( wax_obj streamPump, int maxBytes );
 
 #ifdef __cplusplus
 }

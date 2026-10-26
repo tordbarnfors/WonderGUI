@@ -28,10 +28,14 @@
 #include <wg_icon.h>
 #include <wg_togglegroup.h>
 
+namespace wax
+{
+	class Surface;
+}
+
 namespace wg
 {
 
-	class	Surface;
 
 	class ToggleButton;
 	typedef	StrongPtr<ToggleButton>		ToggleButton_p;

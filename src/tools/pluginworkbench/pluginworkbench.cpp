@@ -2,7 +2,7 @@
 #include "pluginworkbench.h"
 
 #include <wondergui.h>
-#include <wg_freetypefont.h>
+#include <wax_freetypefont.h>
 #include <wg_key.h>
 
 #include <string>
@@ -55,7 +55,7 @@ bool MyApp::init(wapp::API* pAPI)
 	m_pUpdateClient = (updateClientFunc)pAPI->loadSymbol(m_libId, "update" );
 	m_pExitClient = (exitClientFunc)pAPI->loadSymbol(m_libId, "exitX" );
 
-	void * pCreateBitmapCache = pAPI->loadSymbol(m_libId, "wg_getTypeInfo" );
+	void * pCreateBitmapCache = pAPI->loadSymbol(m_libId, "wax_getTypeInfo" );
 
 
 	wg_plugin_interface	c_calls;

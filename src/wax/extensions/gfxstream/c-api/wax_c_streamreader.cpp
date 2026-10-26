@@ -19,44 +19,44 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#include <wg_c_streamreader.h>
-#include <wg_streamreader.h>
+#include <wax_c_streamreader.h>
+#include <wax_streamreader.h>
 
-using namespace wg;
+using namespace wax;
 
-inline StreamReader* getPtr(wg_obj obj) {
+inline StreamReader* getPtr(wax_obj obj) {
 	return static_cast<StreamReader*>(reinterpret_cast<Object*>(obj));
 }
 
-wg_obj wg_createStreamReader(wg_readStream_func callback)
+wax_obj wax_createStreamReader(wax_readStream_func callback)
 {
 	auto p = StreamReader::create(callback);
 	p->retain();
 	return p.rawPtr();
 }
 
-wg_component wg_getStreamReaderOutput(wg_obj streamReader)
+wax_component wax_getStreamReaderOutput(wax_obj streamReader)
 {
 	auto p = getPtr(streamReader);
 	return { static_cast<Object*>(p), &p->output };
 }
 
-void wg_resetStreamReader(wg_obj streamReader)
+void wax_resetStreamReader(wax_obj streamReader)
 {
 	getPtr(streamReader)->reset();
 }
 
-int wg_streamReaderCapacity(wg_obj streamReader)
+int wax_streamReaderCapacity(wax_obj streamReader)
 {
 	return getPtr(streamReader)->bufferCapacity();
 }
 
-int wg_streamReaderHasChunk(wg_obj streamReader)
+int wax_streamReaderHasChunk(wax_obj streamReader)
 {
 	return getPtr(streamReader)->chunkInBuffer();
 }
 
-int wg_streamReaderBytes(wg_obj streamReader)
+int wax_streamReaderBytes(wax_obj streamReader)
 {
 	return getPtr(streamReader)->bytesInBuffer();
 }

@@ -19,43 +19,43 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#include <wg_c_lineargfx.h>
-#include <wg_c_internal.h>
-#include <wg_linearbackend.h>
+#include <wax_c_lineargfx.h>
+#include <wax_c_internal.h>
+#include <wax_linearbackend.h>
 
-using namespace wg;
+using namespace wax;
 
 
-wg_obj wg_createLinearBackend(void*(*beginCanvasRenderFunc)(wg_canvasRef ref, int nBytes),
-								 void(*endCanvasRenderFunc)(wg_canvasRef ref, int nSegments, const wg_linearGfxSegment * pSegments) )
+wax_obj wax_createLinearBackend(void*(*beginCanvasRenderFunc)(wax_canvasRef ref, int nBytes),
+								 void(*endCanvasRenderFunc)(wax_canvasRef ref, int nSegments, const wax_linearGfxSegment * pSegments) )
 {
 	auto pBackend = LinearBackend::create([beginCanvasRenderFunc](CanvasRef ref, int nBytes)
 							{
-								return beginCanvasRenderFunc((wg_canvasRef)ref, nBytes);
+								return beginCanvasRenderFunc((wax_canvasRef)ref, nBytes);
 							},
 
 							[endCanvasRenderFunc](CanvasRef ref, int nSegments, const LinearBackend::Segment * pSegments)
 							{
-								return endCanvasRenderFunc((wg_canvasRef)ref, nSegments, (wg_linearGfxSegment*) pSegments);
+								return endCanvasRenderFunc((wax_canvasRef)ref, nSegments, (wax_linearGfxSegment*) pSegments);
 							} );
 
 	pBackend->retain();
-	return (wg_obj) static_cast<Object*>(pBackend.rawPtr());
+	return (wax_obj) static_cast<Object*>(pBackend.rawPtr());
 }
 
 
-int wg_defineLinearBackendCanvas( wg_obj backend, wg_canvasRef ref, wg_sizeSPX size, wg_pixelFormat format, int scale,
-								  wg_colorSpace colorSpace, wg_byteOrder byteOrder )
+int wax_defineLinearBackendCanvas( wax_obj backend, wax_canvasRef ref, wax_sizeSPX size, wax_pixelFormat format, int scale,
+								  wax_colorSpace colorSpace, wax_byteOrder byteOrder )
 {
 	auto pBackend = static_cast<LinearBackend*>(reinterpret_cast<Object*>(backend));
 
-	bool bBigEndian = byteOrder == WG_BYTEORDER_NATIVE ? (WG_IS_BIG_ENDIAN == 1) : (byteOrder == WG_BYTEORDER_BIG_ENDIAN);
+	bool bBigEndian = byteOrder == WAX_BYTEORDER_NATIVE ? (WAX_IS_BIG_ENDIAN == 1) : (byteOrder == WAX_BYTEORDER_BIG_ENDIAN);
 
 	return pBackend->defineCanvas((CanvasRef) ref, {size.w,size.h}, (PixelFormat) format, scale, (ColorSpace) colorSpace, bBigEndian);
 }
 
 
-void wg_setLinearBackendSegmentPadding( wg_obj backend, int bytes )
+void wax_setLinearBackendSegmentPadding( wax_obj backend, int bytes )
 {
 	auto pBackend = static_cast<LinearBackend*>(reinterpret_cast<Object*>(backend));
 
@@ -63,7 +63,7 @@ void wg_setLinearBackendSegmentPadding( wg_obj backend, int bytes )
 }
 
 
-int wg_linearBackendSegmentPadding( wg_obj backend)
+int wax_linearBackendSegmentPadding( wax_obj backend)
 {
 	auto pBackend = static_cast<LinearBackend*>(reinterpret_cast<Object*>(backend));
 

@@ -19,14 +19,14 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef WG_SOFTEDGEMAP_DOT_H
-#define WG_SOFTEDGEMAP_DOT_H
+#ifndef WAX_SOFTEDGEMAP_DOT_H
+#define WAX_SOFTEDGEMAP_DOT_H
 #pragma once
 
-#include <wg_edgemap.h>
-#include <wg_softtint.h>
+#include <wax_edgemap.h>
+#include <wax_softtint.h>
 
-namespace wg
+namespace wax
 {
 
 	class SoftEdgemap;
@@ -72,5 +72,5 @@ protected:
 
 
 
-} // namespace wg
-#endif // WG_SOFTEDGEMAP_DOT_H
+} // namespace wax
+#endif // WAX_SOFTEDGEMAP_DOT_H

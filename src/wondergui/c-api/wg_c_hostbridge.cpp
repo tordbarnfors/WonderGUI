@@ -28,7 +28,7 @@
 
 using namespace wg;
 
-inline HostBridge* getPtr(wg_obj obj) {
+inline HostBridge* getPtr(wax_obj obj) {
 	return reinterpret_cast<HostBridge*>(obj);
 }
 

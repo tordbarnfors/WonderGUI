@@ -19,10 +19,10 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#include <wg_softkernels_rgb555be_extras.h>
-#include <wg_c_softgfx.h>
+#include <wax_softkernels_rgb555be_extras.h>
+#include <wax_c_softgfx.h>
 
-using namespace wg;
+using namespace wax;
 
 //____ _fill_rgb555bigendian_noblend_notint() ____________________________________________________________
 
@@ -442,12 +442,12 @@ static void _straight_blit_alpha8_to_rgb555bigendian_no_or_flat_tint_fixedblend(
 }
 
 
-//____ wg_addExtraSoftKernelsForRGB555BECanvas() __________________________________
+//____ wax_addExtraSoftKernelsForRGB555BECanvas() __________________________________
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-WG_EXPORT int	wg_addExtraSoftKernelsForRGB555BECanvas( wg_obj backend )
+WAX_EXPORT int	wax_addExtraSoftKernelsForRGB555BECanvas( wax_obj backend )
 {
 	auto pBackend = static_cast<SoftBackend*>(reinterpret_cast<Object*>(backend));
 
@@ -459,7 +459,7 @@ WG_EXPORT int	wg_addExtraSoftKernelsForRGB555BECanvas( wg_obj backend )
 
 //____ addExtraSoftKernelsForRGB555BECanvas() __________________________________
 
-bool wg::addExtraSoftKernelsForRGB555BECanvas( SoftBackend * pBackend )
+bool wax::addExtraSoftKernelsForRGB555BECanvas( SoftBackend * pBackend )
 {
 	pBackend->setFillKernel( TintMode::None, BlendMode::Replace, SoftFormat::BGR_565_BE_linear, &_fill_rgb555bigendian_noblend_notint );
 

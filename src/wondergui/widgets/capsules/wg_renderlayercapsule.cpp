@@ -20,8 +20,8 @@
 
 =========================================================================*/
 #include <wg_renderlayercapsule.h>
-#include <wg_gfxdevice.h>
-#include <wg_patches.h>
+#include <wax_gfxdevice.h>
+#include <wax_patches.h>
 
 namespace wg
 {

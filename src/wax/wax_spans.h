@@ -19,13 +19,13 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef WG_SPANS_DOT_H
-#define WG_SPANS_DOT_H
+#ifndef WAX_SPANS_DOT_H
+#define WAX_SPANS_DOT_H
 #pragma once
 
 #include <algorithm>
 
-namespace wg
+namespace wax
 {
 
 	template<typename Prim, int Capacity, Prim minGap>
@@ -137,5 +137,5 @@ namespace wg
 		}
 	};
 
-} // namespace wg
-#endif //WG_SPANS_DOT_H
+} // namespace wax
+#endif //WAX_SPANS_DOT_H
