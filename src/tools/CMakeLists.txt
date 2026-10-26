@@ -3,7 +3,6 @@ add_subdirectory(editera)
 add_subdirectory(fontgenerator)
 add_subdirectory(gfxbench)
 add_subdirectory(gfxdevicetester)
-add_subdirectory(gfxdevicetester2)
 add_subdirectory(helloworld)
 add_subdirectory(image2surf)
 add_subdirectory(packlayouttester)
@@ -48,7 +47,6 @@ set(TOOL_TARGETS
 	compressbench
 	editera
 	gfxdevicetester
-	gfxdevicetester2
 	embeddedworkbench
 	legacyworkbench
 	legacytestplugin

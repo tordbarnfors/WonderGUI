@@ -1,25 +1,37 @@
-
+#pragma once
 
 #include <wondergui.h>
-
 #include <wonderapp.h>
 
-#include <wg_softkernels_default.h>
-#include <wg_softedgemapfactory.h>
-#include <wg_softsurfacefactory.h>
+#include <chrono>
+#include <string>
+#include <vector>
 
-
-
-#include "device.h"
 #include "testsuites/testsuite.h"
 
+using namespace wg;
+using namespace std;
 
+
+//____ GfxDeviceTester ________________________________________________________
+/*
+	Runs the test suites on two backends and compares them:
+
+		Testee		- The native GfxDevice provided by the WonderApp framework.
+		Reference	- GfxDeviceGen2 with ReferenceBackend, which renders everything by the book.
+
+	The window has three views:
+
+		Display		- Shows testee, reference and their difference for one test,
+					  picked from a tree of all test suites.
+		Accuracy	- Compares every test on both backends and lists the results.
+		Performance	- Times every test on the testee.
+*/
 
 class GfxDeviceTester : public WonderApp
 {
 	friend class WonderApp;
 public:
-
 
 	bool	init(wapp::API* pAPI) override;
 	bool	update() override;
@@ -27,79 +39,109 @@ public:
 
 	void	closeWindow(wapp::Window* pWindow) override;
 
-
-	// Pre-init configuration
-
-	void	addTestDevice(Device_p pDevice);
-	void	destroy_testdevices();
-
-
-
-	
 protected:
-	GfxDeviceTester();
-	~GfxDeviceTester();
+	GfxDeviceTester() {}
+	~GfxDeviceTester() {}
 
-	enum class DisplayMode
+	enum class View
 	{
-		Testee,
-		Reference,
-		Both,
-		Diff,
-		Time,
-		Compare
+		Display,
+		Accuracy,
+		Performance
 	};
 
-	enum DeviceEnum
+	enum class Background
 	{
-		REFERENCE = 0,
-		TESTEE = 1,
+		Black,
+		White,
+		Grey,
+		Checkered
 	};
 
 	enum class ClipList
 	{
-		One,
-		Few,
-		Many
+		One,											// The whole canvas.
+		Few,											// Checkerboard of 1/8 canvas sized rectangles.
+		Many											// Checkerboard of 1/32 canvas sized rectangles.
 	};
 
+	enum Side
+	{
+		TESTEE = 0,
+		REFERENCE = 1
+	};
+
+	// A GfxDevice and the canvas the tests render to.
+
+	struct Backend
+	{
+		string			name;
+		GfxDevice_p		pDevice;
+		Surface_p		pCanvas;
+	};
 
 	struct SuiteEntry
 	{
-		bool		bActive = true;
-		bool		bWorking;
-		string		name;
-		int			nbTests;
-		std::function<TestSuite*()> factory;
-		TestSuite *	pReferenceSuite;
-		TestSuite *	pTesteeSuite;
+		string			name;
+		bool			bWorking = false;					// Initialized on both backends.
+		TestSuite*		pSuites[2] = { nullptr, nullptr };	// One instance per backend, they hold backend specific resources.
+		int				firstTest = 0;
+		int				nbTests = 0;
+		DrawerPanel_p	pTreeDrawer;
 	};
 
-
-	struct DeviceTest
-	{
-		Test* pTest = nullptr;
-		double	render_time = 0;						// Seconds to render number of rounds
-		double	stalling_time = 0;						// Seconds for endRender() call afterwards. OpenGL stalls here. 
-	};
-
-	struct CompareResult
+	struct AccuracyResult
 	{
 		bool	bDone = false;
-		int		maxDiff = 0;							// Largest difference in any channel, 0-255.
-		double	meanDiff = 0;							// Mean difference over all channels of all pixels.
-		int		nbOverThreshold = 0;					// Channel values differing by more than c_diffThreshold.
-		CoordI	worst;									// First pixel with the largest difference.
+		bool	bFailed = false;							// Couldn't be rendered or read back.
+		int		maxDiff = 0;								// Largest difference in any channel, 0-255.
+		double	meanDiff = 0;								// Mean difference over all channels of all pixels.
+		int		nbOverThreshold = 0;						// Channel values differing by more than c_diffThreshold.
+		CoordI	worst;										// First pixel with the largest difference.
+	};
+
+	struct PerformanceResult
+	{
+		bool	bDone = false;								// Timed at least once.
+		bool	bFailed = false;
+		double	secondsPerRun = 0;							// From the fastest measurement of all passes.
+		int		loops = 0;									// Calls to run() per measurement, 0 until calibrated.
+		double	baseline = 0;								// Seconds for a measurement without any calls to run().
+		vector<double> passes;								// Seconds of the fastest measurement of each pass.
+
+		double	spread() const;								// Of the passes, relative to the fastest.
 	};
 
 	struct TestEntry
 	{
-		string	name;
-		bool	bActive = false;
-		bool	bWorking;
+		string				name;
+		int					suite = 0;
+		Test*				pTests[2] = { nullptr, nullptr };	// Testee, followed by Reference.
 
-		DeviceTest devices[2];							// Testee, followed by Reference
-		CompareResult compare;
+		AccuracyResult		accuracy;
+		PerformanceResult	performance;
+		double				loadedSecondsPerRun = -1;			// From loaded performance results, negative if none.
+
+		Widget_p			pTreeEntry;
+		TextDisplay_p		pPerfTimeCell;
+		TextDisplay_p		pPerfLoadedCell;
+		TextDisplay_p		pPerfChangeCell;
+	};
+
+	// Testee, reference and diff boxes for one test, with a slider for amplifying the diff.
+
+	struct Viewer
+	{
+		TextDisplay_p		pTitle;							// Suite and name of the test shown.
+		Surface_p			pImages[3];						// Testee, reference and diff, as displayed.
+		Slider_p			pDiffSlider;
+		TextDisplay_p		pDiffFactorLabel;
+
+		int					test = -1;
+		Background			background = Background::Black;
+		ClipList			clipList = ClipList::One;
+		int					diffFactor = 1;
+		vector<uint8_t>		pixels[2];						// Testee and reference read back as ARGB_8.
 	};
 
 	// A test differs if any channel value differs by more than c_diffThreshold. If no more
@@ -109,78 +151,173 @@ protected:
 	static const int	c_diffThreshold = 16;
 	static const int	c_maxSpecks = 64;
 
+	static const int	c_maxDiffFactor = 10;
 
-	bool		setup_chrome();
-	void		teardown_chrome();
+	// Performance measurements. Calls to run() are looped until a measurement takes at
+	// least c_perfTargetTime. Then each pass through the tests runs every test for at
+	// least c_perfWarmupTime and keeps its fastest of c_perfRounds measurements
+	// (c_perfSlowRounds for tests taking more than 10 times c_perfTargetTime).
+	// The result is the fastest of all passes.
+	//
+	// Spreading measurements over many passes gives much more stable results than
+	// taking many measurements in one go, since timings tend to be disturbed in
+	// bursts lasting longer than a test.
 
-	void		setup_testdevices();
+	// A GPU lowers its clocks when idle and needs a while to get them up again, so
+	// a run starts by keeping the testee busy for c_perfRunWarmupTime, and tests are
+	// timed back to back for c_perfUpdateBudget before letting the window update.
+
+	static constexpr double	c_perfTargetTime = 0.01;
+	static constexpr double	c_perfWarmupTime = 0.02;
+	static constexpr double	c_perfRunWarmupTime = 0.5;
+	static constexpr double	c_perfUpdateBudget = 0.25;
+	static const int		c_perfRounds = 5;
+	static const int		c_perfSlowRounds = 3;
+	static const int		c_perfMaxLoops = 100000;
+
+	static constexpr double	c_progressBudget = 0.05;		// Seconds of accuracy testing per update.
+
+	// Change from loaded performance results that is highlighted as faster or slower.
+
+	static constexpr double	c_perfChangeThreshold = 0.05;
+
+	using Clock = std::chrono::steady_clock;
+
+	//
+
+	void		setup_backends();
 	void		setup_tests();
-	bool		add_testsuite( const std::function<TestSuite*()>& testSuiteFactory);
-	void		regen_testentries();
-
-	
-	bool 		set_devices( Device_p pReference, Device_p pTestee );
-	void		run_tests(Device* pDevice, DeviceEnum device);
-	void		run_test(GfxDevice* pGfxDevice, Test* pTest);
-	void		clock_test(DeviceTest* pDeviceTest, int rounds, Device* pDevice);
+	void		add_testsuite(TestSuite* pTesteeSuite, TestSuite* pReferenceSuite);
 	void		destroy_tests();
 
-	void		update_displaymode();
-	void		display_test_results();
+	bool		setup_chrome();
+	Widget_p	create_display_view();
+	Widget_p	create_accuracy_view();
+	Widget_p	create_performance_view();
+	Widget_p	create_test_tree();
+	Widget_p	create_progress_bar(Slider_p& pBar, TextDisplay_p& pLabel);
+	void		create_viewer(Viewer& viewer);
+	Widget_p	create_image_box(Viewer& viewer, int image, float zoom);
+	TextDisplay_p	create_cell(int test, TextLayout* pLayout = nullptr, TextStyle* pStyle = nullptr, const string& text = string());
+	void		highlight_row(TablePanel* pTable, int row, bool bHighlight);
 
-	void		setup_cliplist(ClipList list);
+	void		select_view(View view);
 
-	SurfaceDisplay_p	create_canvas();
-	void		refresh_performance_display();
-	void		refresh_performance_measurements();
+	// Rendering and comparing
 
-	void		run_comparison();
-	bool		read_canvas(Device* pDevice, ColorSpace colorSpace, vector<uint8_t>& pixels);
-	void		refresh_compare_display();
-	void		show_test(int index);
+	bool		render_test(Side side, int test, Background background, ClipList clipList = ClipList::One);
+	vector<RectSPX>	clip_rects(ClipList clipList);
+	void		fill_background(GfxDevice* pDevice, Background background);
+	bool		read_canvas(Side side, vector<uint8_t>& pixels);
+	void		write_image(Surface* pSurface, const vector<uint8_t>& pixels);
+	void		compare(const vector<uint8_t>& testee, const vector<uint8_t>& reference, AccuracyResult& result);
 
+	void		show_test(Viewer& viewer, int test);
+	void		refresh_viewer(Viewer& viewer);
+	void		refresh_diff(Viewer& viewer);
 
-	const SizeI			g_canvasSize = { 512, 512 };
+	void		show_in_display(int test);
+
+	// Accuracy
+
+	void		start_accuracy_run();
+	void		continue_accuracy_run();
+	void		run_accuracy_test(int test);
+	void		run_batch_accuracy();
+	void		refresh_accuracy_table();
+	void		select_accuracy_row(int test);
+
+	// Performance
+
+	void		start_performance_run(const vector<int>& tests);
+	void		continue_performance_run();
+	void		run_performance_pass(int test);
+	void		warm_up_testee(int test);
+	int			calibrate_test(Test* pTest, double& baseline);
+	double		time_test(Test* pTest, int loops);
+	void		sync_testee();
+	void		refresh_performance_row(int test);
+	void		select_performance_row(int test);
+	void		refresh_performance_details();
+	bool		performance_change(int test, double& ratio) const;
+	static string	format_change(double ratio);
+
+	void		save_performance_results();
+	void		load_performance_results();
+
+	static string	format_time(double seconds);
+
+	//
+
+	const SizeI			m_canvasSize = { 512, 512 };
 
 	wapp::API*			m_pAPI = nullptr;
 	wapp::Window_p		m_pWindow;
 
-	ScrollCapsule_p		g_pViewScroller = nullptr;
+	Backend				m_backends[2];						// Testee, followed by Reference.
+	ColorSpace			m_compareColorSpace = ColorSpace::sRGB;
 
-	Device_p            g_pTesteeDevice = nullptr;
-	Device_p            g_pReferenceDevice = nullptr;
+	vector<SuiteEntry>	m_suites;
+	vector<TestEntry>	m_tests;
 
-	Widget_p			g_pPerformanceDisplay = nullptr;
-	TablePanel_p		g_pPerformanceTable = nullptr;
-	TextLayout_p		g_pPerformanceValueMapper = nullptr;
-	PackLayout_p		g_pPerformanceEntryLayout = nullptr;
+	vector<RouteId>		m_routes;
 
-	vector<Device_p>	g_testdevices;
-	vector<SuiteEntry>	g_testsuites;
-	vector<TestEntry>	g_tests;
+	// Chrome
 
-	vector<RectSPX>		g_clipList;
+	PackLayout_p		m_pLayout;
+	TextLayout_p		m_pRightAligned;
 
-	DisplayMode			g_displayMode = DisplayMode::Testee;
-	float				g_zoomFactor = 1.f;
+	ToggleButton_p		m_pViewButtons[3];
+	PaddingCapsule_p	m_pViewBase;
+	Widget_p			m_pViews[3];
 
-	bool				g_bRefreshPerformance = false;
+	TextStyle_p			m_pOkStyle;
+	TextStyle_p			m_pSpecksStyle;
+	TextStyle_p			m_pDiffStyle;
 
-	Widget_p			g_pCompareDisplay = nullptr;
-	TablePanel_p		g_pCompareTable = nullptr;
-	TextDisplay_p		g_pCompareSummary = nullptr;
-	TextStyle_p			g_pOkStyle = nullptr;
-	TextStyle_p			g_pSpecksStyle = nullptr;
-	TextStyle_p			g_pDiffStyle = nullptr;
-	bool				g_bRunComparison = false;
-	vector<RouteId>		g_compareRoutes;
+	Skin_p				m_pCellSkin;						// Table cells, normal and in selected row.
+	Skin_p				m_pSelectedCellSkin;
 
-	SelectCapsule_p		g_pTestSelector = nullptr;
-	vector<Widget_p>	g_testListEntries;
+	// Display view
 
+	Viewer				m_displayViewer;
+	SelectCapsule_p		m_pTestTreeSelector;
 
-	Surface_p			m_pLinearDeviceSurface;
-	Surface_p			m_pLinearBackendSurface;
+	// Accuracy view
 
-	Blob_p				m_pSavedBlob;
+	Viewer				m_accuracyViewer;
+	TablePanel_p		m_pAccuracyTable;
+	TextDisplay_p		m_pAccuracySummary;
+	Button_p			m_pAccuracyRunButton;
+	Slider_p			m_pAccuracyProgress;
+	TextDisplay_p		m_pAccuracyProgressLabel;
+	vector<int>			m_accuracyRowOrder;					// Test index of each table row, after the header.
+	int					m_accuracySelected = -1;
+
+	bool				m_bAccuracyRunning = false;
+	int					m_accuracyNext = 0;
+
+	bool				m_bBatchAccuracy = false;			// Run from command line, see init().
+	vector<string>		m_batchSuites;
+	bool				m_bBatchDump = false;
+
+	// Performance view
+
+	Viewer				m_performanceViewer;					// Only the testee image is displayed.
+	TablePanel_p		m_pPerformanceTable;
+	TextDisplay_p		m_pPerformanceSummary;
+	TextDisplay_p		m_pPerformanceLoadedLabel;
+	TextDisplay_p		m_pPerformanceDetails;				// Results of the selected test, below its image.
+	int					m_performanceSelected = -1;
+	Button_p			m_pPerformanceRunButton;
+	Slider_p			m_pPerformanceProgress;
+	TextDisplay_p		m_pPerformanceProgressLabel;
+
+	int					m_performancePasses = 5;			// Setting for passes through the tests per run.
+
+	bool				m_bPerformanceRunning = false;
+	vector<int>			m_performanceQueue;					// Tests to time in this run.
+	int					m_performanceRunPasses = 0;			// Passes through m_performanceQueue in this run.
+	int					m_performancePass = 0;
+	int					m_performanceNext = 0;				// Index in m_performanceQueue.
 };

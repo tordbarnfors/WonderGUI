@@ -4,74 +4,60 @@ set(CMAKE_CXX_STANDARD 20)
 
 set( SOURCES
 
-	device.cpp
-	device.h
 	gfxdevicetester.cpp
 	gfxdevicetester.h
-	testunit.h
-)
 
-# The test suites live with gfxdevicetester2, which is replacing this tool.
-
-set( TESTSUITE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../gfxdevicetester2/testsuites )
-
-set( TESTSUITES
-
-	${TESTSUITE_DIR}/a8tests.h
-	${TESTSUITE_DIR}/blurtests.h
-	${TESTSUITE_DIR}/blursourcetests.h
-	${TESTSUITE_DIR}/blendfixedcolortests.h
-	${TESTSUITE_DIR}/blendtests.h
-	${TESTSUITE_DIR}/blitblendtests.h
-	${TESTSUITE_DIR}/blitconsistencytest.h
-	${TESTSUITE_DIR}/blittests.h
-	${TESTSUITE_DIR}/canvasformattests.h
-	${TESTSUITE_DIR}/canvaslayertests.h
-	${TESTSUITE_DIR}/colortests.h
-	${TESTSUITE_DIR}/edgemaptests.h
-	${TESTSUITE_DIR}/edgemaptinttests.h
-	${TESTSUITE_DIR}/roundedboxtests.h
-	${TESTSUITE_DIR}/ringtests.h
-	${TESTSUITE_DIR}/edgemaptoolstests.h
-	${TESTSUITE_DIR}/filltests.h
-	${TESTSUITE_DIR}/linetests.h
-	${TESTSUITE_DIR}/mipmaptests.h
-	${TESTSUITE_DIR}/paletteblittests.h
-	${TESTSUITE_DIR}/palettecapacitytests.h
-	${TESTSUITE_DIR}/piecharttests.h
-	${TESTSUITE_DIR}/readbacktests.h
-	${TESTSUITE_DIR}/rgb565bigendiantests.h
-	${TESTSUITE_DIR}/samplingtests.h
-	${TESTSUITE_DIR}/segmenttests.h
-	${TESTSUITE_DIR}/testsuite.h
-	${TESTSUITE_DIR}/tiletests.h
-	${TESTSUITE_DIR}/tintblittests.h
-	${TESTSUITE_DIR}/tintsegmenttests.h
-	${TESTSUITE_DIR}/tinttests.h
-	${TESTSUITE_DIR}/wavetests.h
-	${TESTSUITE_DIR}/waveformtests.h
+	testsuites/a8tests.h
+	testsuites/blurtests.h
+	testsuites/blursourcetests.h
+	testsuites/blendfixedcolortests.h
+	testsuites/blendtests.h
+	testsuites/blitblendtests.h
+	testsuites/blitconsistencytest.h
+	testsuites/blittests.h
+	testsuites/canvasformattests.h
+	testsuites/canvaslayertests.h
+	testsuites/colortests.h
+	testsuites/edgemaptests.h
+	testsuites/edgemaptinttests.h
+	testsuites/roundedboxtests.h
+	testsuites/ringtests.h
+	testsuites/warptests.h
+	testsuites/linecaptests.h
+	testsuites/edgemaptoolstests.h
+	testsuites/filltests.h
+	testsuites/flattenlayerstests.h
+	testsuites/layerroundtriptests.h
+	testsuites/blendruletests.h
+	testsuites/linetests.h
+	testsuites/mipmaptests.h
+	testsuites/paletteblittests.h
+	testsuites/palettecapacitytests.h
+	testsuites/piecharttests.h
+	testsuites/readbacktests.h
+	testsuites/rgb565bigendiantests.h
+	testsuites/samplingtests.h
+	testsuites/segmenttests.h
+	testsuites/testsuite.h
+	testsuites/tiletests.h
+	testsuites/tintblittests.h
+	testsuites/tintsegmenttests.h
+	testsuites/tinttests.h
+	testsuites/wavetests.h
+	testsuites/waveformtests.h
 )
 
 
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${SOURCES})
-source_group("testsuites" FILES ${TESTSUITES})
 
 add_executable(gfxdevicetester
 	${SOURCES}
-	${TESTSUITES}
 )
 
 
 target_include_directories(gfxdevicetester PRIVATE
-	${CMAKE_CURRENT_SOURCE_DIR}/../gfxdevicetester2
 	${WAPP_INCDIRS}
-	${WGOPENGLGFX_INCDIRS}
-	${WGMETALGFX_INCDIRS}
 	${WGSOFTGFX_INCDIRS}
-	${WGGFXSTREAM_INCDIRS}
-)
-
-target_link_directories(gfxdevicetester PRIVATE 
 )
 
 target_working_directory(gfxdevicetester ${WG_ROOT} )
@@ -79,6 +65,4 @@ target_working_directory(gfxdevicetester ${WG_ROOT} )
 target_link_libraries(gfxdevicetester PRIVATE
 	${WAPPLIB}
 	wgsoftgfx
-	wggfxstream
 )
-

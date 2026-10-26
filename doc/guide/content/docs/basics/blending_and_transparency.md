@@ -207,4 +207,4 @@ The software backends draw BlendFixedColor onto the fixed color, as described un
 
 The GPU backends keep canvases and other surfaces with alpha premultiplied and use dual-source blending, as described under Exactness. Colors of nearly transparent pixels therefore lose some precision when read back from them.
 
-GfxDeviceTester2 has tests for these rules in BlendRuleTests and LayerRoundTripTests, and for warps in WarpTests.
+GfxDeviceTester has tests for these rules in BlendRuleTests and LayerRoundTripTests, and for warps in WarpTests.

@@ -210,14 +210,10 @@ example01       - Minimal example program.
 workbench       - My messy program for testing out things.
                   Requires OpenGL, GLEW, FreeType, SDL and SDL_Image.
 
-gfxdevicetester - Program for testing graphics devices for bugs and
-                  comparing them for speed and consistency.
-                  Currently requires OpenGL, GLEW, FreeType, SDL and SDL_Image.
-
-gfxdevicetester2 - Successor to gfxdevicetester. Compares the native graphics
-                  device of the WonderApp framework against the software
-                  reference: side by side with a diff, accuracy of all tests
-                  and performance of the native device.
+gfxdevicetester - Compares the native graphics device of the WonderApp
+                  framework against the software reference: side by side
+                  with a diff, accuracy of all tests and performance of the
+                  native device.
 
 unittester      - Simple console application to run some simple unit tests
                   on parts of WonderGUI. No requirements.
