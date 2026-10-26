@@ -16,24 +16,14 @@ set( SOURCES
 	wax_canvaslayers.h
 	wax_chain.cpp
 	wax_chain.h
-	wax_circularwarp.cpp
-	wax_circularwarp.h
 	wax_color.cpp
 	wax_color.h
 	wax_componentptr.h
-	wax_compression.cpp
-	wax_compression.h
 	wax_dataset.cpp
 	wax_dataset.h
 	wax_dummyfont.cpp
 	wax_dummyfont.h
 	wax_dynamicbuffer.h
-	wax_edgemap.cpp
-	wax_edgemap.h
-	wax_edgemapfactory.cpp
-	wax_edgemapfactory.h
-	wax_edgemaptools.cpp
-	wax_edgemaptools.h
 	wax_enumextras.cpp
 	wax_enumextras.h
 	wax_font.cpp
@@ -54,8 +44,6 @@ set( SOURCES
 	wax_gpushapes.h
 	wax_gridwalker.cpp
 	wax_gridwalker.h
-	wax_lzcompression.cpp
-	wax_lzcompression.h
 	wax_memheap.cpp
 	wax_memheap.h
 	wax_mempool.cpp
@@ -72,27 +60,8 @@ set( SOURCES
 	wax_pointers.h
 	wax_printer.cpp
 	wax_printer.h
-	wax_q565compression.cpp
-	wax_q565compression.h
-	wax_qoicompression.cpp
-	wax_qoicompression.h
-	wax_rlecompression.cpp
-	wax_rlecompression.h
 	wax_spans.h
-	wax_spxcompression.cpp
-	wax_spxcompression.h
 	wax_strongptr.h
-	wax_surface.cpp
-	wax_surface.h
-	wax_surfacefactory.cpp
-	wax_surfacefactory.h
-	wax_surfacefileheader.h
-	wax_surfacefileinspector.cpp
-	wax_surfacefileinspector.h
-	wax_surfacereader.cpp
-	wax_surfacereader.h
-	wax_surfacewriter.cpp
-	wax_surfacewriter.h
 	wax_sysfont.cpp
 	wax_sysfont.h
 	wax_tint.cpp
@@ -102,13 +71,48 @@ set( SOURCES
 	wax_transitions.cpp
 	wax_transitions.h
 	wax_types.h
-	wax_warpmap.cpp
-	wax_warpmap.h
-	wax_warpmapfactory.cpp
-	wax_warpmapfactory.h
-	wax_waveform.cpp
-	wax_waveform.h
 	wax_weakptr.h
+
+	compression/wax_compression.cpp
+	compression/wax_compression.h
+	compression/wax_lzcompression.cpp
+	compression/wax_lzcompression.h
+	compression/wax_q565compression.cpp
+	compression/wax_q565compression.h
+	compression/wax_qoicompression.cpp
+	compression/wax_qoicompression.h
+	compression/wax_rlecompression.cpp
+	compression/wax_rlecompression.h
+	compression/wax_spxcompression.cpp
+	compression/wax_spxcompression.h
+
+	edgemap/wax_edgemap.cpp
+	edgemap/wax_edgemap.h
+	edgemap/wax_edgemapfactory.cpp
+	edgemap/wax_edgemapfactory.h
+	edgemap/wax_edgemaptools.cpp
+	edgemap/wax_edgemaptools.h
+	edgemap/wax_waveform.cpp
+	edgemap/wax_waveform.h
+
+	surface/wax_surface.cpp
+	surface/wax_surface.h
+	surface/wax_surfacefactory.cpp
+	surface/wax_surfacefactory.h
+	surface/wax_surfacefileheader.h
+	surface/wax_surfacefileinspector.cpp
+	surface/wax_surfacefileinspector.h
+	surface/wax_surfacereader.cpp
+	surface/wax_surfacereader.h
+	surface/wax_surfacewriter.cpp
+	surface/wax_surfacewriter.h
+
+	warp/wax_circularwarp.cpp
+	warp/wax_circularwarp.h
+	warp/wax_warpmap.cpp
+	warp/wax_warpmap.h
+	warp/wax_warpmapfactory.cpp
+	warp/wax_warpmapfactory.h
 
 	c-api/wax_c.h
 	c-api/wax_c_core.cpp
@@ -175,6 +179,10 @@ set( SOURCES
 
 set(INCDIRS
 	${CMAKE_CURRENT_LIST_DIR}
+	${CMAKE_CURRENT_LIST_DIR}/compression
+	${CMAKE_CURRENT_LIST_DIR}/edgemap
+	${CMAKE_CURRENT_LIST_DIR}/surface
+	${CMAKE_CURRENT_LIST_DIR}/warp
 	${CMAKE_CURRENT_LIST_DIR}/c-api
 )
 
