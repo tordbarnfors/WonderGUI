@@ -16,7 +16,7 @@
 #
 # in namespace <ns>. Pixel compression defaults to LZWG.
 #
-# <path> is the image2surf tool, built from src/tools/image2surf.
+# <path> is the image2surf tool, built from src/wondergui/tools/image2surf.
 
 require 'tmpdir'
 require 'fileutils'

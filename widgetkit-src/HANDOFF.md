@@ -27,7 +27,7 @@ The kit's source of truth is `widgetkit-src/`, **not** the generated headers:
 | `widgetkit-src/glossyblue/palette.yaml` | colour tokens + `exported_colors` |
 | `widgetkit-src/glossyblue/header_shell.h` | **hand-maintained C++**, two generated regions |
 | `widgetkit-src/glossyblue/parts/*.png` + `.json` | stage-1 output, editable checkpoint |
-| `src/widgetkits/wg_glossyblue.h` | **generated — never edit** |
+| `src/wondergui/widgetkits/wg_glossyblue.h` | **generated — never edit** |
 | `resources/glossyblue_skinblocks.png` | **generated — never edit** |
 
 Regenerating:
@@ -39,7 +39,7 @@ python3 build.py pack glossyblue
 ```
 
 `pack` rewrites the two marked regions of `header_shell.h`'s generated copy and
-deploys to `resources/` and `src/widgetkits/`. It is deterministic: identical
+deploys to `resources/` and `src/wondergui/widgetkits/`. It is deterministic: identical
 parts give a byte-identical atlas and header. **A spec change that only affects
 metadata (`rigid_part`, `padding_pts`, `spacing_pts`) still needs
 `render --force` for that widget**, because `pack` reads the JSON sidecar, not

@@ -224,7 +224,7 @@ endif()
 add_subdirectory(wax)
 add_subdirectory(wondergui)
 
-add_subdirectory(extensions/debugger)
+add_subdirectory(wondergui/extensions/debugger)
 
 if( WAPPLIB STREQUAL "wappsdl2metal")
 	add_subdirectory(wax/extensions/metalgfx)
@@ -239,9 +239,9 @@ add_subdirectory(wax/extensions/softgfx)
 
 add_subdirectory(wax/extensions/freetypefont)
 
-add_subdirectory(extensions/legacygui)
+add_subdirectory(wondergui/extensions/legacygui)
 
-add_subdirectory(extensions/plugin)
+add_subdirectory(wondergui/extensions/plugin)
 
 if( WAPPLIB STREQUAL "wappwin32sw" )
 	add_subdirectory(wonderapp/win32-sw)
@@ -251,8 +251,8 @@ else()
 	add_subdirectory(wonderapp/wappsdl2)
 endif()
 
-add_subdirectory(tools)
-add_subdirectory(examples)
+add_subdirectory(wondergui/tools)
+add_subdirectory(wondergui/examples)
 
 
 #install(TARGETS example01 DESTINATION ${WG_ROOT}/distribution/examples)

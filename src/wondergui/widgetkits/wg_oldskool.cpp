@@ -31,7 +31,7 @@ namespace wg::oldskool
 	// Skin blocks as a .surf, generated from resources/oldskool_skinblocks.png into
 	// wg_oldskool_resources.cpp. To regenerate, from the WonderGUI root:
 	//
-	//   scripts/embed_images.rb --image2surf=<path to image2surf> --output=src/widgetkits/wg_oldskool_resources.cpp
+	//   scripts/embed_images.rb --image2surf=<path to image2surf> --output=src/wondergui/widgetkits/wg_oldskool_resources.cpp
 	//                           --namespace=wg::oldskool _skinBlocksSurf=resources/oldskool_skinblocks.png
 
 	extern const char	_skinBlocksSurf[];

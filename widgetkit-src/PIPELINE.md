@@ -15,7 +15,7 @@ engine source (not guessed) and are easy to get wrong.
 - `<kit>/parts/<Name>.png` + `.json` — stage-1 output, a human-editable checkpoint.
 - `<kit>/header_shell.h` — hand-maintained C++, with two generated regions.
 - Generated: `<kit>_skinblocks.png`, `wg_<kit>.h`, `preview.html`, deployed to
-  `resources/` and `src/widgetkits/`.
+  `resources/` and `src/wondergui/widgetkits/`.
 
 Two stages, deliberately separable so art can be hand-touched between them:
 

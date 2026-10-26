@@ -280,13 +280,13 @@ set( SOURCES
 	wondergui.h
 )
 
-# The oldskool widget kit lives outside this directory, but needs compiling
-# since it embeds its skin blocks.
+# The oldskool widget kit is compiled into the library, since it embeds its
+# skin blocks.
 
 set(WIDGETKIT_SOURCES
-	../widgetkits/wg_oldskool.h
-	../widgetkits/wg_oldskool.cpp
-	../widgetkits/wg_oldskool_resources.cpp
+	widgetkits/wg_oldskool.h
+	widgetkits/wg_oldskool.cpp
+	widgetkits/wg_oldskool_resources.cpp
 )
 
 
