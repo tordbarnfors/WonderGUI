@@ -9,6 +9,7 @@
 #include <wg_string.h>
 
 using namespace wg;
+using namespace wax;
 
 GfxStreamTest::GfxStreamTest()
 {

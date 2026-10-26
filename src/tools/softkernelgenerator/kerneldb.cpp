@@ -3,6 +3,7 @@
 #include <wg_enumextras.h>
 
 using namespace wg;
+using namespace wax;
 using namespace std;
 
 KernelDB::KernelDB()

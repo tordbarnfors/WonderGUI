@@ -10,6 +10,7 @@
 #include <wax_qoicompression.h>
 
 using namespace wg;
+using namespace wax;
 
 //____ surfacePixels() ________________________________________________________
 

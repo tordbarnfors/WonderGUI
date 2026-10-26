@@ -36,7 +36,6 @@ class WgBase;					// Legacy GUI also uses modern TextStyle.
 
 namespace wg
 {
-	class Base;			// So friend declarations don't refer to wax::Core.
 
 	class TextStyle;
 	typedef	StrongPtr<TextStyle>	TextStyle_p;

@@ -98,11 +98,11 @@ bool packPanelHierarchyTest(WgRootPanel* pRoot);
 //#define USE_OPEN_GL
 /*
  wg::GfxStreamPlug_p         g_pGfxStreamPlug;
-wg::StreamPlayer_p       g_pStreamPlayer;
+wax::StreamPlayer_p       g_pStreamPlayer;
 wg::StreamGfxDevice_p       g_pStreamGfxDevice;
 wg::StreamSurfaceFactory_p  g_pStreamSurfaceFactory;
  */
-wg::SoftSurfaceFactory_p    g_pSoftSurfaceFactory;
+wax::SoftSurfaceFactory_p    g_pSoftSurfaceFactory;
 wg::SurfaceFactory_p	    g_pSurfaceFactory;
 wg::EdgemapFactory_p	    g_pEdgemapFactory;
 wg::GfxDevice_p		        g_pGfxDevice;
@@ -246,7 +246,7 @@ int main ( int argc, char** argv )
 	g_pSurfaceFactory = new WgGlSurfaceFactory();
 	g_pEdgemapFactory = new WgGlEdgemapFactory();
 	
-//    g_pModernSurfaceFactory = wg::GlSurfaceFactory::create();
+//    g_pModernSurfaceFactory = wax::GlSurfaceFactory::create();
 #else
 	SDL_Surface * pScreen = SDL_GetWindowSurface(pWin);
 	
@@ -255,14 +255,14 @@ int main ( int argc, char** argv )
 	if (pScreen->format->BitsPerPixel == 32)
 		type = WgPixelType::ARGB_8;					// 24-bit window surfaces are not supported.
 
-	auto pCanvas = wg::SoftSurface::create( WGBP(Surface,
+	auto pCanvas = wax::SoftSurface::create( WGBP(Surface,
 												 _.size = WgSize(width,height),
 												 _.format = type,
 												 _.canvas = true ),
 											wg::Blob::create(pScreen->pixels, nullptr),
 											pScreen->pitch);
 
-	auto pBackend = wg::SoftBackend::create();
+	auto pBackend = wax::SoftBackend::create();
 	addDefaultSoftKernels(pBackend);
 	pBackend->defineCanvas( wg::CanvasRef::Default, pCanvas );
 
@@ -273,9 +273,9 @@ int main ( int argc, char** argv )
 	g_pGfxDevice = pGfxDevice;
 	g_pCanvas = pCanvas;
 	
-	g_pSoftSurfaceFactory = wg::SoftSurfaceFactory::create();
+	g_pSoftSurfaceFactory = wax::SoftSurfaceFactory::create();
 	g_pSurfaceFactory = g_pSoftSurfaceFactory;
-	g_pEdgemapFactory = wg::SoftEdgemapFactory::create();
+	g_pEdgemapFactory = wax::SoftEdgemapFactory::create();
 
 #endif
 	
@@ -297,7 +297,7 @@ int main ( int argc, char** argv )
 	
 	auto pFontBlob = wg::Blob::create(pFontFile, size, [pFontFile] { free(pFontFile); });
 
-	auto pFont = wg::FreeTypeFont::create( { .blob = pFontBlob } );
+	auto pFont = wax::FreeTypeFont::create( { .blob = pFontBlob } );
 	
 	// Load bitmap font
 

@@ -28,6 +28,7 @@
 #include <vector>
 
 using namespace wg;
+using namespace wax;
 
 /*
 	Draws through Warpmaps with GfxDeviceGen2 and the software backends:

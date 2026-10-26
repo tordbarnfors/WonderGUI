@@ -10,6 +10,7 @@
 #include "testsuites/testsuite.h"
 
 using namespace wg;
+using namespace wax;
 using namespace std;
 
 

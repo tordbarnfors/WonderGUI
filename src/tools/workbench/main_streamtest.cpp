@@ -30,6 +30,7 @@
 #include <wg_popupopener.h>
 
 using namespace wg;
+using namespace wax;
 using namespace std;
 
 void 			translateEvents( const InputHandler_p& pInput, const RootPanel_p& pRoot );

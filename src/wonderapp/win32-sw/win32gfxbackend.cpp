@@ -34,10 +34,10 @@ using namespace wg;
 
 void initGfxBackend()
 {
-	auto pFactory = wg::SoftSurfaceFactory::create();
+	auto pFactory = wax::SoftSurfaceFactory::create();
 	Base::setDefaultSurfaceFactory(pFactory);
 
-	auto pBackend = wg::SoftBackend::create();
+	auto pBackend = wax::SoftBackend::create();
 
 	addDefaultSoftKernels(pBackend);
 

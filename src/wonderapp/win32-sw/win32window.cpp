@@ -63,7 +63,7 @@ Win32Window::Win32Window(wapp::Window* pUserWindow, wg::Placement origin, wg::Co
 		int scale = dpi * 64 / 96; // 96 DPI is 100% scaling
 
 
-		auto pCanvas = wg::SoftSurface::createInPlace({
+		auto pCanvas = wax::SoftSurface::createInPlace({
 			.canvas = true,
 			.format = PixelFormat::ARGB_8,
 			.scale = scale,
@@ -174,7 +174,7 @@ void Win32Window::onResize(int widthInPixels, int heightInPixels)
 
 	// Update root panel's surface
 
-	auto pCanvas = wg::SoftSurface::createInPlace({
+	auto pCanvas = wax::SoftSurface::createInPlace({
 		.canvas = true,
 		.format = PixelFormat::ARGB_8,
 		.scale = scale,

@@ -26,6 +26,7 @@
 #include <wax_blob.h>
 #include <wax_chain.h>
 #include <wax_dataset.h>
+#include <wax_dynamicbuffer.h>
 #include <wax_core.h>
 #include <wax_types.h>
 #include <wax_memheap.h>
@@ -39,6 +40,7 @@
 #include <wax_bitmapfont.h>
 #include <wax_blurbrush.h>
 #include <wax_canvaslayers.h>
+#include <wax_circularwarp.h>
 #include <wax_color.h>
 #include <wax_compression.h>
 #include <wax_dummyfont.h>
@@ -75,5 +77,7 @@
 #include <wax_sysfont.h>
 #include <wax_transitions.h>
 #include <wax_waveform.h>
+#include <wax_warpmap.h>
+#include <wax_warpmapfactory.h>
 
 #endif //WAX_DOT_H

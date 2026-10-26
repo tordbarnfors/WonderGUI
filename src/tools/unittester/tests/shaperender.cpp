@@ -22,6 +22,7 @@
 #include <functional>
 
 using namespace wg;
+using namespace wax;
 
 /*
 	Draws shapes through GfxDeviceGen2 and the software backends and checks the pixels
@@ -667,7 +668,7 @@ bool ShapeRenderTest::linearBackendTest(std::ostream& output)
 	std::vector<uint8_t> linearPixels(c_canvasSize.w * c_canvasSize.h * 4, 0);
 
 	auto pLinearBackend = LinearBackend::create(
-		WGBP(LinearBackend, _.mirrorBuffer = SoftShapes::c_defaultMaxMirrorBuffer, _.maxMirrorBuffer = SoftShapes::c_defaultMaxMirrorBuffer),
+		WAXBP(LinearBackend, _.mirrorBuffer = SoftShapes::c_defaultMaxMirrorBuffer, _.maxMirrorBuffer = SoftShapes::c_defaultMaxMirrorBuffer),
 		[&](CanvasRef ref, int bytes)
 		{
 			return (void*)buffer.data();

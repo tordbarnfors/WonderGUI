@@ -40,7 +40,6 @@ namespace wax
 
 namespace wg
 {
-	class Base;			// So friend declarations don't refer to wax::Core.
 	class Layer;
 	class Container;
 	class List;

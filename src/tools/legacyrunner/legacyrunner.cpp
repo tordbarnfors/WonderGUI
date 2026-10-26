@@ -11,6 +11,7 @@
 #include <wg2_knob.h>
 
 using namespace wg;
+using namespace wax;
 using namespace std;
 
 //____ create() _______________________________________________________________

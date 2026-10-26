@@ -25,6 +25,7 @@
 
 
 using namespace wg;
+using namespace wax;
 
 void 			translateEvents( const InputHandler_p& pInput, const RootPanel_p& pRoot );
 MouseButton 	translateMouseButton( Uint8 button );

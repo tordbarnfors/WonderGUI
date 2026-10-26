@@ -53,6 +53,7 @@
 
 
 using namespace wg;
+using namespace wax;
 
 
 

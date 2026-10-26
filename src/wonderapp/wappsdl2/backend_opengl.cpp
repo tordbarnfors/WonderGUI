@@ -32,6 +32,7 @@
 
 
 using namespace wg;
+using namespace wax;
 
 
 class SDLWindowGL : public SDLWindow

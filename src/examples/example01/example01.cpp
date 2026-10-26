@@ -42,6 +42,7 @@
 #include <wax_softkernels_default.h>
 
 using namespace wg;
+using namespace wax;
 
 
 void 			translateEvents( RootPanel_p pRoot );

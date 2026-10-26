@@ -51,6 +51,7 @@
 #include "tinyfiledialogs.h"
 
 using namespace wg;
+using namespace wax;
 using namespace wapp;
 
 //____ MyAppAPI ________________________________________________________

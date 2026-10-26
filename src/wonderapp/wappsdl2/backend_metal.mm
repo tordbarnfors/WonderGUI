@@ -29,6 +29,7 @@
 
 
 using namespace wg;
+using namespace wax;
 
 
 class SDLWindowMetal : public SDLWindow

@@ -34,6 +34,7 @@
 #include <stb_image.h>
 
 using namespace wg;
+using namespace wax;
 using namespace wapp;
 
 extern float			g_ticksToMicroseconds;

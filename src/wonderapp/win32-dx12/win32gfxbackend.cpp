@@ -46,10 +46,10 @@ void initGfxBackend()
 
 	g_pDX12Wrapper = new DX12Wrapper();
 
-	auto pFactory = wg::DX12SurfaceFactory::create();
+	auto pFactory = wax::DX12SurfaceFactory::create();
 	Base::setDefaultSurfaceFactory(pFactory);
 
-	auto pBackend = wg::DX12Backend::create(g_pDX12Wrapper->dx12Device(), g_pDX12Wrapper->renderCommandQueue());
+	auto pBackend = wax::DX12Backend::create(g_pDX12Wrapper->dx12Device(), g_pDX12Wrapper->renderCommandQueue());
 
 	auto pGfxDevice = wg::GfxDeviceGen2::create(pBackend);
 	Base::setDefaultGfxDevice(pGfxDevice);

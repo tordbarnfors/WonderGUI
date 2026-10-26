@@ -46,7 +46,6 @@ namespace wax
 
 namespace wg
 {
-	class Base;			// Declared here so friend declarations below don't refer to wax::Core.
 	class MsgRouter;
 	class NumberLayout;
 	class InputHandler;

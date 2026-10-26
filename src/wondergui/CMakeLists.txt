@@ -55,6 +55,7 @@ set( SOURCES
 	base/wg_togglegroup.cpp
 	base/wg_togglegroup.h
 	base/wg_types.h
+	base/wg_wax.h
 	base/wg_util.cpp
 	base/wg_util.h
 

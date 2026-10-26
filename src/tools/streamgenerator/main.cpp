@@ -32,6 +32,7 @@
 #include <wax_gfxdevice_gen2.h>
 
 using namespace wg;
+using namespace wax;
 using namespace std;
 
 

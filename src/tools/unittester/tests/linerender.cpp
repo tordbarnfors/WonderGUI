@@ -29,6 +29,7 @@
 #include <vector>
 
 using namespace wg;
+using namespace wax;
 
 /*
 	Draws lines with caps through GfxDeviceGen2 and the software backends.

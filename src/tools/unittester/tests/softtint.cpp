@@ -15,6 +15,7 @@
 #include <vector>
 
 using namespace wg;
+using namespace wax;
 
 // SoftTint, which SoftBackend uses for tints, does integer math only so that it runs on CPUs
 // without FPU. These tests compare it against references in double precision:

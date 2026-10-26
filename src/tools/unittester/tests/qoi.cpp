@@ -8,6 +8,7 @@
 #include <wax_qoicompression.h>
 
 using namespace wg;
+using namespace wax;
 
 // Test image of 16x6 pixels in R, G, B, A byte order, which covers all chunk types,
 // wrap-around of differences, a run longer than 62 and a run of the initial pixel.

@@ -34,6 +34,7 @@
 
 
 using namespace wg;
+using namespace wax;
 
 extern DX12Wrapper* g_pDX12Wrapper;
 extern std::wstring _stringToWString(const std::string& str);

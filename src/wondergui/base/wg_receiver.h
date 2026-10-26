@@ -28,7 +28,6 @@
 
 namespace wg
 {
-	class Base;			// So friend declarations don't refer to wax::Core.
 
 	class Msg;
 	typedef	StrongPtr<Msg>			Msg_p;

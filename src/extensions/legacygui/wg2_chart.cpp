@@ -1090,7 +1090,7 @@ void WgChart::_renderWave( Wave& wave, wg::GfxDevice * pDevice, const WgRect& wa
 	if( pDevice->typeInfo() == wg::GfxDeviceGen2::TYPEINFO )
 	{
 		auto pBackend = static_cast<wg::GfxDeviceGen2*>(pDevice)->backend();
-		if( pBackend->typeInfo()  == wg::SoftBackend::TYPEINFO )
+		if( pBackend->typeInfo()  == wax::SoftBackend::TYPEINFO )
 			useGradient = false;
 	}
 

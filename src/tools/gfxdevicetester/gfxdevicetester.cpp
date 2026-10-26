@@ -51,6 +51,7 @@
 
 
 using namespace wg;
+using namespace wax;
 using namespace std;
 
 

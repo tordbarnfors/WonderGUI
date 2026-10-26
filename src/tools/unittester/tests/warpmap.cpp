@@ -11,6 +11,7 @@
 #include <vector>
 
 using namespace wg;
+using namespace wax;
 
 // Tests of the Warpmap base class and the CircularWarp generator, which don't depend on any
 // backend. Rendering through Warpmaps is tested by WarpRenderTest.
