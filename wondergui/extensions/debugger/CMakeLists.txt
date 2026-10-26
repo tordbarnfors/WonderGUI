@@ -230,7 +230,7 @@ target_link_libraries( wgdebugger PUBLIC wondergui )
 target_include_directories(wgdebugger PRIVATE
     ${INCDIRS}
     ${WONDERGUI_INCDIRS}
-	${WG_ROOT}/src/
+	${WG_ROOT}
 )
 
 set_target_properties( wgdebugger PROPERTIES FOLDER "Extensions" )

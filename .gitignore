@@ -12,11 +12,11 @@ distribution/
 bin
 obj
 
-doc/html/
+wondergui/doc/html/
 
-doc/temp/
-doc/guide/resources/_gen
-doc/guide/public
+wondergui/doc/temp/
+wondergui/doc/guide/resources/_gen
+wondergui/doc/guide/public
 .hugo_build.lock
 
 resources/parallels/

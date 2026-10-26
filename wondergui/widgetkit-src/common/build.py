@@ -14,7 +14,7 @@ Usage:
       regenerate the header's two generated sections (the Colors:: constants,
       from palette.yaml's exported_colors, and the Skins::), rebuild
       preview.html, and copy the atlas + header to their real repo
-      locations (resources/, src/wondergui/widgetkits/).
+      locations (resources/, wondergui/widgetkits/).
 
 Directory layout expected (kit_dir = widgetkit-src/<kit>/):
   palette.yaml
@@ -36,7 +36,7 @@ from PIL import Image, ImageDraw
 sys.path.insert(0, str(Path(__file__).parent))
 import theme_lib as T
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
+REPO_ROOT = Path(__file__).resolve().parents[3]
 KIT_ROOT = Path(__file__).resolve().parents[1]
 
 DEFAULT_DENSITY = 2
@@ -1127,13 +1127,13 @@ def cmd_pack(kit):
     (kit_dir / "preview.html").write_text(build_preview_html(kit, atlas, manifest, density))
 
     (REPO_ROOT / "resources").mkdir(parents=True, exist_ok=True)
-    (REPO_ROOT / "src" / "wondergui" / "widgetkits").mkdir(parents=True, exist_ok=True)
+    (REPO_ROOT / "wondergui" / "widgetkits").mkdir(parents=True, exist_ok=True)
     atlas.save(REPO_ROOT / "resources" / atlas_name)
     (REPO_ROOT / "src" / "wondergui" / "widgetkits" / header_name).write_text((kit_dir / header_name).read_text())
 
     print(f"Packed {len(manifest)} widgets into {atlas.size[0]}x{atlas.size[1]} atlas @ {density}x density")
     print(f"Wrote {kit_dir / atlas_name}, {kit_dir / header_name}, {kit_dir / 'preview.html'}")
-    print(f"Deployed to resources/{atlas_name} and src/wondergui/widgetkits/{header_name}")
+    print(f"Deployed to resources/{atlas_name} and wondergui/widgetkits/{header_name}")
 
 
 def main():

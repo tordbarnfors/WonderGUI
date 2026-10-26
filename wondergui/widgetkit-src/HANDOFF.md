@@ -7,7 +7,7 @@ by measurement during that session.
 **Companion document:** `PIPELINE.md` in this same directory is the deep
 reference — the build pipeline, every WonderGUI internal
 that was verified against engine source, and the traps. Read it before touching
-`widgetkit-src/`. This document is the *state of play* and does not repeat it.
+`wondergui/widgetkit-src/`. This document is the *state of play* and does not repeat it.
 
 ---
 
@@ -17,29 +17,29 @@ Repo: `/home/tord/Workspace/WonderGUI`. Build dir: `tuxbuild/` (CMake + ninja,
 already configured). `cd tuxbuild && ninja` builds everything; `ninja widgetbench`
 builds the widget gallery, which is the main visual test harness.
 
-The kit's source of truth is `widgetkit-src/`, **not** the generated headers:
+The kit's source of truth is `wondergui/widgetkit-src/`, **not** the generated headers:
 
 | path | what it is |
 |---|---|
-| `widgetkit-src/common/build.py` | the CLI: `render` and `pack` |
-| `widgetkit-src/common/theme_lib.py` | drawing primitives |
-| `widgetkit-src/glossyblue/specs/*.yaml` | one declarative spec per widget |
-| `widgetkit-src/glossyblue/palette.yaml` | colour tokens + `exported_colors` |
-| `widgetkit-src/glossyblue/header_shell.h` | **hand-maintained C++**, two generated regions |
-| `widgetkit-src/glossyblue/parts/*.png` + `.json` | stage-1 output, editable checkpoint |
-| `src/wondergui/widgetkits/wg_glossyblue.h` | **generated — never edit** |
+| `wondergui/widgetkit-src/common/build.py` | the CLI: `render` and `pack` |
+| `wondergui/widgetkit-src/common/theme_lib.py` | drawing primitives |
+| `wondergui/widgetkit-src/glossyblue/specs/*.yaml` | one declarative spec per widget |
+| `wondergui/widgetkit-src/glossyblue/palette.yaml` | colour tokens + `exported_colors` |
+| `wondergui/widgetkit-src/glossyblue/header_shell.h` | **hand-maintained C++**, two generated regions |
+| `wondergui/widgetkit-src/glossyblue/parts/*.png` + `.json` | stage-1 output, editable checkpoint |
+| `wondergui/widgetkits/wg_glossyblue.h` | **generated — never edit** |
 | `resources/glossyblue_skinblocks.png` | **generated — never edit** |
 
 Regenerating:
 
 ```
-cd widgetkit-src/common
+cd wondergui/widgetkit-src/common
 python3 build.py render glossyblue [widget ...] [--force]
 python3 build.py pack glossyblue
 ```
 
 `pack` rewrites the two marked regions of `header_shell.h`'s generated copy and
-deploys to `resources/` and `src/wondergui/widgetkits/`. It is deterministic: identical
+deploys to `resources/` and `wondergui/widgetkits/`. It is deterministic: identical
 parts give a byte-identical atlas and header. **A spec change that only affects
 metadata (`rigid_part`, `padding_pts`, `spacing_pts`) still needs
 `render --force` for that widget**, because `pack` reads the JSON sidecar, not
@@ -108,7 +108,7 @@ headers. There is no separate step.
    reproduce the committed parts, atlas and header byte-identically with
    Linux Pillow/numpy as well.
 
-**Build note:** the committed `src/wonderapp/common/wonderapp.h` still aliases
+**Build note:** the committed `wonderapp/common/wonderapp.h` still aliases
 `wkit` to `wg::oldskool`, and the wapp loaders load
 `oldskool_skinblocks.png`. `gallery_test.cpp` uses `wkit::Skins::Field`, which
 only glossyblue has, so **widgetbench does not compile from a clean checkout**

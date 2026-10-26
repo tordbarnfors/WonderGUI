@@ -6,14 +6,14 @@ WonderGUI uses CMake as its configuration and build system. Through CMake you
 can easily create build- and project-files for your specific platform and 
 development environment.
 
-The base CMakeLists.txt is locatd in src/
+The base CMakeLists.txt is located in the WonderGUI directory.
 
 To create project files for your environment, create your binary directory,
 step into it and run cmake, like this:
 
 mkdir build
 cd build
-cmake ../src
+cmake ..
 
 This will generate the project files for your IDE (if not, use the -G switch
 and specify your generator, cmake --help will display all generators available
@@ -112,7 +112,7 @@ Visual Studio Code (VSCode)
 Have the CMake module installed.
 
 Open the WonderGUI directory in Visual Studio code. You should be asked to
-locate CMakeLists.txt which is located in src/. After this, VSCode gets stuck on
+locate CMakeLists.txt which is located in the WonderGUI directory. After this, VSCode gets stuck on
 "Saving open files" on my machines for unknown reason. Just restart VSCode and
 configuration will continue and complete.
 
@@ -138,7 +138,7 @@ Download, install and use CMake to generate the XCode project file. If you are
 unfamiliar with CMake, this is how I recommend you to do it:
 
 1. Make sure to satisfy the dependencies as described above.
-2. Click "Browse Source..." and navigate to WonderGUI/src.
+2. Click "Browse Source..." and navigate to WonderGUI.
 3. Create a directory named "build" in WonderGUI/. Click "Browse Build..." and
    select it.
 4. Click Configure, select Xcode as generator for this project and make sure 
@@ -157,11 +157,6 @@ You should now have a fully working XCode project in WonderGUI/build.
 WonderGUI directory structure
 =============================
 		
-doc/
-        Contains a Doxyfile for building the documentation with doxygen.
-        Will be populated with generated API documentation when running 
-        doxygen.
-		
 resources/
         Various files such as fonts and bitmaps used by the included
         examples and tools.
@@ -170,8 +165,18 @@ scripts/
         Various scripts used for WonderGUI development. Undocumented
         and useless for you unless you intend to hack on WonderGUI.
 		
-src/
-        The source tree containing all source code of this package.
+wax/
+        The Wax graphics library. Its own sources are in source/, its
+        C API in c-api/ and its rendering backends and other extensions
+        in extensions/.
+
+wonderapp/
+        The WonderApp framework used by the included tools and examples.
+
+wondergui/
+        The WonderGUI library. Its own sources are in source/, next to
+        its extensions, tools, examples, widget kits and documentation
+        (doc/).
 
 
 

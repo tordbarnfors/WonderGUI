@@ -1,5 +1,6 @@
 
 set( PLUGIN_SOURCES
+	wg_c_types.h
 	wonderplugin.h
 
 	wg_c_plugincapsule.h
@@ -89,6 +90,10 @@ set( LEGACYPLUGIN_SOURCES
 )
 
 set( HOST_SOURCES
+
+	wg_c_hostbridge.cpp
+	wg_c_hostbridge.h
+	wg_c_types.h
 
 	wg_plugininterface.cpp
 	wg_plugininterface.h

@@ -7,8 +7,8 @@
 
 	$tasks = []
 
-	$tasks << Task.new( 'src/wax/wax_types.h', 'src/wax/wax_enumextras.h', 'src/wax/wax_enumextras.cpp' )
-	$tasks << Task.new( 'src/wondergui/base/wg_types.h', 'src/wondergui/base/wg_enumextras.h', 'src/wondergui/base/wg_enumextras.cpp' )
+	$tasks << Task.new( 'wax/source/wax_types.h', 'wax/source/wax_enumextras.h', 'wax/source/wax_enumextras.cpp' )
+	$tasks << Task.new( 'wondergui/source/base/wg_types.h', 'wondergui/source/base/wg_enumextras.h', 'wondergui/source/base/wg_enumextras.cpp' )
 
 
 def replaceAutoSection( path, newContent )

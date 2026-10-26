@@ -6,7 +6,7 @@ engine source (not guessed) and are easy to get wrong.
 
 ## Layout
 
-`widgetkit-src/` at the repo root is the source of truth:
+`wondergui/widgetkit-src/` is the source of truth:
 
 - `common/theme_lib.py` — drawing primitives (panels, gradients, glyph shapes).
 - `common/build.py` — the CLI: `render` and `pack`.
@@ -15,7 +15,7 @@ engine source (not guessed) and are easy to get wrong.
 - `<kit>/parts/<Name>.png` + `.json` — stage-1 output, a human-editable checkpoint.
 - `<kit>/header_shell.h` — hand-maintained C++, with two generated regions.
 - Generated: `<kit>_skinblocks.png`, `wg_<kit>.h`, `preview.html`, deployed to
-  `resources/` and `src/wondergui/widgetkits/`.
+  `resources/` and `wondergui/widgetkits/`.
 
 Two stages, deliberately separable so art can be hand-touched between them:
 

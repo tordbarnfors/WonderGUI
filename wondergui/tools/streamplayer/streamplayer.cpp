@@ -4,7 +4,7 @@
 #include <wondergui.h>
 #include <wax_freetypefont.h>
 #include <wax_softbackend.h>
-#include <extensions/gfxstream/c-api/waxgfxstream_c.h>
+#include <waxgfxstream_c.h>
 #include <wax_c_softgfx.h>
 #include <string>
 #include <fstream>

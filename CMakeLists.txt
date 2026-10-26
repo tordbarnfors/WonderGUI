@@ -16,7 +16,7 @@ project(WonderGUI VERSION 3.0 DESCRIPTION "WonderGUI User Interface Library")
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
-set(WG_ROOT ${PROJECT_SOURCE_DIR}/..)
+set(WG_ROOT ${PROJECT_SOURCE_DIR})
 
 option(WONDERGUI_FETCH_DEPS "Automatically download SDL2, SDL2_image, FreeType and GLEW if not found" ON)
 
