@@ -239,6 +239,8 @@ add_subdirectory(wax/extensions/softgfx)
 
 add_subdirectory(wax/extensions/freetypefont)
 
+add_subdirectory(wax/tools)
+
 add_subdirectory(wondergui/extensions/legacygui)
 
 add_subdirectory(wondergui/extensions/plugin)

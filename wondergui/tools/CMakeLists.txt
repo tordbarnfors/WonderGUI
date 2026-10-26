@@ -1,19 +1,14 @@
 add_subdirectory(compressbench)
 add_subdirectory(editera)
 add_subdirectory(fontgenerator)
-add_subdirectory(gfxbench)
 add_subdirectory(gfxdevicetester)
 add_subdirectory(helloworld)
-add_subdirectory(image2surf)
 add_subdirectory(packlayouttester)
 add_subdirectory(softkernelgenerator)
 add_subdirectory(surfviewer)
 add_subdirectory(streamanalyzer)
-add_subdirectory(streamgenerator)
-add_subdirectory(streamplayer)
 add_subdirectory(streamgendll)
 add_subdirectory(unittester)
-add_subdirectory(warpmapprototype)
 add_subdirectory(widgetbench)
 add_subdirectory(embeddedworkbench)
 
@@ -48,15 +43,11 @@ set(TOOL_TARGETS
 	legacytestplugin
 	testplugin
 	fontgenerator
-	gfxbench
 	helloworld
-	image2surf
 	packlayouttester
 	pluginworkbench
 	softkernelgenerator
 	streamanalyzer
-	streamgenerator
-	streamplayer
 	streamgendll
 	surfviewer
 	unittester
