@@ -16,16 +16,12 @@ add_subdirectory(unittester)
 add_subdirectory(warpmapprototype)
 add_subdirectory(widgetbench)
 add_subdirectory(embeddedworkbench)
-add_subdirectory(layerworkbench)
 
 # These render through OpenGL themselves rather than through the WonderApp
 # framework, so they are only built when the OpenGL extension is.
 
 if(TARGET wgopenglgfx)
-	add_subdirectory(gfxworkbench)
-	add_subdirectory(gfxworkbench-gen2)
 	add_subdirectory(workbench)
-	add_subdirectory(lineargfxworkbench)
 endif()
 
 # These need extensions that are currently left out of the build.
@@ -50,12 +46,9 @@ set(TOOL_TARGETS
 	embeddedworkbench
 	legacyworkbench
 	legacytestplugin
-	lineargfxworkbench
 	testplugin
 	fontgenerator
 	gfxbench
-	gfxworkbench
-	gfxworkbench-gen2
 	helloworld
 	image2surf
 	packlayouttester
@@ -70,7 +63,6 @@ set(TOOL_TARGETS
 	workbench
 	widgetbench
 	legacyrunner
-	layerworkbench
 )
 
 foreach(TOOL ${TOOL_TARGETS})
