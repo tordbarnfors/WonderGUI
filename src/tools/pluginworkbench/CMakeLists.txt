@@ -8,12 +8,11 @@ source_group(WG REGULAR_EXPRESSION "wg_*|wax_*|wonder*")
 add_library(testplugin SHARED
 	testplugin.cpp
 	${WAX_SOURCES}
-	${WAX_SOURCES}
 	${WONDERGUI_SOURCES}
 	${WAXFREETYPEFONT_SOURCES}
 	${WGPLUGIN_SOURCES}
 )
-generate_export_header(testplugin BASE_NAME wg)
+generate_export_header(testplugin BASE_NAME wax)
 
 
 target_include_directories(testplugin PRIVATE 
@@ -39,7 +38,6 @@ target_link_libraries(testplugin PRIVATE Freetype::Freetype ${FREETYPE2_LIB} )
 add_library(legacytestplugin SHARED
 	legacytestplugin.cpp
 	${WAX_SOURCES}
-	${WAX_SOURCES}
 	${WONDERGUI_SOURCES}
 	${WGLEGACYGUI_SOURCES}
 	${WAXFREETYPEFONT_SOURCES}
@@ -47,7 +45,7 @@ add_library(legacytestplugin SHARED
 	${WAXSOFTGFX_SOURCES}				# Compiled in like the rest, not linked: static libraries
 	${WAXGFXSTREAM_SOURCES}				# aren't position independent, which a shared library needs on Linux.
 )
-generate_export_header(legacytestplugin BASE_NAME wg)
+generate_export_header(legacytestplugin BASE_NAME wax)
 
 target_include_directories(legacytestplugin PRIVATE
 	${WGPLUGIN_INCDIRS}
@@ -75,7 +73,7 @@ add_executable(pluginworkbench
 	pluginworkbench.cpp
 	pluginworkbench.h
 )
-generate_export_header(wax BASE_NAME wg)
+generate_export_header(wax BASE_NAME wax)
 
 target_include_directories(pluginworkbench PRIVATE 
 	${WAPP_INCDIRS}

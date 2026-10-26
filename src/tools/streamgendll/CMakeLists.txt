@@ -7,18 +7,16 @@ set(CMAKE_VISIBILITY_INLINES_HIDDEN YES)
 add_library(streamgendll MODULE
 
 	${WAX_SOURCES}
-	${WAX_SOURCES}
 	${WAXGFXSTREAM_SOURCES}
 	${WAXFREETYPEFONT_SOURCES}
 	${WAXSOFTGFX_SOURCES}
 )
 
-generate_export_header(streamgendll BASE_NAME wg)
+generate_export_header(streamgendll BASE_NAME wax)
 
 #set_target_properties(streamgendll PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS TRUE)
 
 target_include_directories(streamgendll
-	PRIVATE ${WAX_INCDIRS}
 	PRIVATE ${WAX_INCDIRS}
 	PRIVATE ${WAXGFXSTREAM_INCDIRS}
 	PRIVATE ${WAXFREETYPEFONT_INCDIRS}
