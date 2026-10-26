@@ -4,10 +4,6 @@ set( SOURCES
 	wax_backendlogger.h
 	wax_core.cpp
 	wax_core.h
-	wax_bitmapcache.cpp
-	wax_bitmapcache.h
-	wax_bitmapfont.cpp
-	wax_bitmapfont.h
 	wax_blob.cpp
 	wax_blob.h
 	wax_blurbrush.cpp
@@ -21,13 +17,9 @@ set( SOURCES
 	wax_componentptr.h
 	wax_dataset.cpp
 	wax_dataset.h
-	wax_dummyfont.cpp
-	wax_dummyfont.h
 	wax_dynamicbuffer.h
 	wax_enumextras.cpp
 	wax_enumextras.h
-	wax_font.cpp
-	wax_font.h
 	wax_geo.cpp
 	wax_geo.h
 	wax_gfxbackend.cpp
@@ -42,8 +34,6 @@ set( SOURCES
 	wax_gfxutil.h
 	wax_gpushapes.cpp
 	wax_gpushapes.h
-	wax_gridwalker.cpp
-	wax_gridwalker.h
 	wax_memheap.cpp
 	wax_memheap.h
 	wax_mempool.cpp
@@ -62,8 +52,6 @@ set( SOURCES
 	wax_printer.h
 	wax_spans.h
 	wax_strongptr.h
-	wax_sysfont.cpp
-	wax_sysfont.h
 	wax_tint.cpp
 	wax_tint.h
 	wax_tinttools.cpp
@@ -94,6 +82,19 @@ set( SOURCES
 	edgemap/wax_edgemaptools.h
 	edgemap/wax_waveform.cpp
 	edgemap/wax_waveform.h
+
+	font/wax_bitmapcache.cpp
+	font/wax_bitmapcache.h
+	font/wax_bitmapfont.cpp
+	font/wax_bitmapfont.h
+	font/wax_dummyfont.cpp
+	font/wax_dummyfont.h
+	font/wax_font.cpp
+	font/wax_font.h
+	font/wax_gridwalker.cpp
+	font/wax_gridwalker.h
+	font/wax_sysfont.cpp
+	font/wax_sysfont.h
 
 	surface/wax_surface.cpp
 	surface/wax_surface.h
@@ -181,6 +182,7 @@ set(INCDIRS
 	${CMAKE_CURRENT_LIST_DIR}
 	${CMAKE_CURRENT_LIST_DIR}/compression
 	${CMAKE_CURRENT_LIST_DIR}/edgemap
+	${CMAKE_CURRENT_LIST_DIR}/font
 	${CMAKE_CURRENT_LIST_DIR}/surface
 	${CMAKE_CURRENT_LIST_DIR}/warp
 	${CMAKE_CURRENT_LIST_DIR}/c-api
