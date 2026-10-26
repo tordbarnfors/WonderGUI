@@ -65,9 +65,9 @@ libglew-dev
 Windows
 =======
 
-My CMake script expects all dependencies to be found in the WonderGUI 
-directory. Just extract dependency-packages/wondergui-dev-additions-win.zip 
-into the WonderGUI directory and you have everything setup.
+Nothing to install. CMake downloads and builds SDL2, SDL2_image, FreeType
+and GLEW when it doesn't find them (option WONDERGUI_FETCH_DEPS, on by
+default).
 
 
 Mac OSX
@@ -77,17 +77,8 @@ Mac OSX
    /Library/Frameworks (or to <Your home directory>/Library/Frameworks if 
    your access priviliges are not high enough).
 
-2. The libraries SDL2_image and freetype are also needed and are supplied in
-   dependency-packages/wondergui-dev-additions-osx.zip. Extract the content of
-   the package and copy the freetype folder to the WonderGUI directory.
-
-   Copy SDL2_image.framework to the same directory as the SDL2 framework.
-   
-   Worth noting is also that I had some problems with priviliges for SDL_image
-   since the package wasn't correctly signed. I therefore had to run the following
-   command:
-
-   xattr -dr com.apple.quarantine /Library/Frameworks/SDL2_image.framework
+2. SDL2_image and FreeType are downloaded and built by CMake when it doesn't
+   find them (option WONDERGUI_FETCH_DEPS, on by default).
 
 
 **************************************************

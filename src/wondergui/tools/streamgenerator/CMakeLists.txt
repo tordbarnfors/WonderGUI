@@ -23,8 +23,6 @@ target_include_directories(streamgenerator PRIVATE
 	${WAXSOFTGFX_INCDIRS}
 	${WAXGFXSTREAM_INCDIRS}
 	${WAXFREETYPEFONT_INCDIRS}
-	${WG_ROOT}/SDL2/include/
-	${WG_ROOT}/SDL2_image/include/
 )
 
 

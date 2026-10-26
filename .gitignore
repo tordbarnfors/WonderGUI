@@ -23,19 +23,14 @@ resources/parallels/
 
 alpha_blending_example_files/
 
-SDL2_image/
 
-SDL2/
 SDL2.framework/
 SDL2_image.framework/
-glew/
 
 build/
 vsbuild/
 68build/
 tuxbuild/
 
-freetype/include
-freetype/lib
 
 .vscode/
