@@ -73,6 +73,7 @@ The following table lists the classes that are considered resources with a short
 | TextLayout           | No           | TextLayouts manages the layout and rendering of text, such as the texts placement and alignment within a rectangle. They also manage text-wrapping and can theoretically handle animated text, rotated text and bi-directional text, although just a basic TextLayout subclass has been implemented so far. |
 | TextStyle            | No           | TextStyle objects specify the font, size, color and decorations to use for some text or parts thereof. |
 | Transition           | No           | Specifies a transition from one color, position size or such to another. Subclassed into classes for dealing specifically with colors and arrays of values. |
+| WarpGenerator        | Yes          | Base class for generators that make and keep a Warpmap from a few settings, such as CircularWarp. See [Warpmaps](warpmaps). |
 | Waveform             | Content only | Class for storing a "waveform", a set of samples that represents the curve of a graph, oscilloscope or similar. Waveforms are turned into edgemaps for rendering. |
 | Warpmap              | Content only | Bends a surface or an edgemap into another shape when drawn, by a grid of positions in the source. Subclassed depending on rendering output, like Edgemap. See [Warpmaps](warpmaps). |
 | WarpmapFactory       | No           | A simple factory class for creating warpmaps. Subclassed into factories for various rendering outputs. |

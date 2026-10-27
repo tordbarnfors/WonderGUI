@@ -53,17 +53,6 @@ wax_obj wax_createCircularWarp( const wax_circularWarpBP* pCBP, wax_obj warpmapF
 	return (wax_obj) static_cast<Object*>(p.rawPtr());
 }
 
-int wax_setCircularWarpSize( wax_obj circularWarp, wax_sizeI size )
-{
-	return getPtr(circularWarp)->setSize({ size.w, size.h });
-}
-
-wax_sizeI wax_circularWarpSize( wax_obj circularWarp )
-{
-	SizeI sz = getPtr(circularWarp)->size();
-	return { sz.w, sz.h };
-}
-
 int wax_setCircularWarpCenter( wax_obj circularWarp, wax_coordF center )
 {
 	return getPtr(circularWarp)->setCenter({ center.x, center.y });
@@ -105,23 +94,12 @@ float wax_circularWarpSweep( wax_obj circularWarp )
 	return getPtr(circularWarp)->sweep();
 }
 
-int wax_setCircularWarpCellSize( wax_obj circularWarp, int cellSize )
+int wax_setCircularWarpDetailRadius( wax_obj circularWarp, wax_spx detailRadius )
 {
-	return getPtr(circularWarp)->setCellSize(cellSize);
+	return getPtr(circularWarp)->setDetailRadius(detailRadius);
 }
 
-int wax_circularWarpCellSize( wax_obj circularWarp )
+wax_spx wax_circularWarpDetailRadius( wax_obj circularWarp )
 {
-	return getPtr(circularWarp)->cellSize();
-}
-
-int wax_setCircularWarpPrecision( wax_obj circularWarp, float precision, wax_spx detailRadius )
-{
-	return getPtr(circularWarp)->setPrecision(precision, detailRadius);
-}
-
-wax_obj wax_refreshCircularWarp( wax_obj circularWarp )
-{
-	Warpmap_p p = getPtr(circularWarp)->refresh();
-	return (wax_obj) static_cast<Object*>(p.rawPtr());
+	return getPtr(circularWarp)->detailRadius();
 }

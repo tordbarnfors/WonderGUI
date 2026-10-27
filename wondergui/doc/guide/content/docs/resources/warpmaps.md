@@ -9,7 +9,7 @@ A Warpmap bends a surface or an edgemap into another shape when it is drawn: a g
 
 A Warpmap covers a rectangle of pixels with a grid of nodes, one node every *cellSize* pixels in both directions plus one at the right and bottom edge. Each node holds the position in the source that is drawn at that point, normalized so that 0.0 -> 1.0 covers the source: u along its width and v along its height. Positions between nodes are interpolated. Where a position falls outside the source nothing is drawn, so the shape of what is drawn is given by the nodes, with anti-aliased borders.
 
-Warpmaps are *semi-mutable*: size and cell size are set when created, nodes and periods can be changed. Each graphics backend has its own Warpmap subtype, created by its WarpmapFactory (`GfxDevice::warpmapFactory()`), or through a generator such as CircularWarp.
+Warpmaps are *semi-mutable*: size and cell size are set when created, nodes and periods can be changed. Each graphics backend has its own Warpmap subtype, created by its WarpmapFactory (`GfxDevice::warpmapFactory()`), or through a WarpGenerator such as CircularWarp.
 
 
 
@@ -52,7 +52,17 @@ CircularWarp makes and keeps a Warpmap that bends the source around a circle: it
 	pDevice->warpDrawEdgemap( { 10*64, 10*64 }, pGauge->refresh(), pEdgemap );
 ```
 
-refresh() updates the Warpmap after settings have changed and returns it. The cell size decides how closely the Warpmap follows the circle and is calculated from *precision* (largest position error in pixels) unless set. A radius of 0 gives a disc, which only works for content that doesn't change from left to right close to the center.
+The cell size decides how closely the Warpmap follows the circle and is calculated from *precision* (largest position error in pixels) at *detailRadius* (the smallest radius where that precision is needed) unless set. A radius of 0 gives a disc, which only works for content that doesn't change from left to right close to the center.
+
+
+
+## WarpGenerators
+
+CircularWarp is a WarpGenerator: it makes a Warpmap from a few settings and keeps it. Size, cell size, precision and refresh() are the same for all WarpGenerators.
+
+refresh() updates the Warpmap after settings have changed and returns it. A new Warpmap is created when size or cell size has changed, otherwise the nodes of the one it already has are updated. Unless set, the cell size is calculated from *precision* and the shape, within 4 to 64 pixels.
+
+To make your own, subclass WarpGenerator and implement _generateNodes(), which fills in the positions of all nodes, and _calcCellSize(), which picks a cell size from *precision*. _cellSizeForRadius() gives the cell size for a curve of a given radius. Override _uPeriod() and _vPeriod() if an axis is periodic, and set *m_bDirty* when one of your settings changes.
 
 
 

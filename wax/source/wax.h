@@ -77,6 +77,7 @@
 #include <wax_sysfont.h>
 #include <wax_transitions.h>
 #include <wax_waveform.h>
+#include <wax_warpgenerator.h>
 #include <wax_warpmap.h>
 #include <wax_warpmapfactory.h>
 

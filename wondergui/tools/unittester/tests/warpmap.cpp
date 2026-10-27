@@ -271,6 +271,8 @@ bool WarpmapTest::circularWarpRefreshTest(std::ostream& output)
 
 	auto pWarp = CircularWarp::create(WGBP(CircularWarp, _.size = { 100, 100 }, _.topRadius = 20 * 64, _.bottomRadius = 50 * 64, _.cellSize = 10), pFactory);
 
+	TEST_ASSERT(pWarp->isInstanceOf(WarpGenerator::TYPEINFO));
+
 	auto pMap1 = pWarp->refresh();
 	TEST_ASSERT(pWarp->refresh() == pMap1);								// Nothing changed.
 
@@ -294,7 +296,8 @@ bool WarpmapTest::circularWarpRefreshTest(std::ostream& output)
 	TEST_ASSERT(pMap3 != pMap2 && pMap3->pixelSize() == SizeI(120, 100));
 
 	TEST_ASSERT(pWarp->setCellSize(0));
-	TEST_ASSERT(pWarp->setPrecision(0.5f, 40 * 64));
+	TEST_ASSERT(pWarp->setPrecision(0.5f));
+	TEST_ASSERT(pWarp->setDetailRadius(40 * 64));
 	auto pMap4 = pWarp->refresh();
 	TEST_ASSERT(pMap4 != pMap3 && pMap4->cellSize() == int(std::sqrt(8.0 * 0.5 * 40)));
 
@@ -303,5 +306,8 @@ bool WarpmapTest::circularWarpRefreshTest(std::ostream& output)
 	TEST_ASSERT(!pWarp->setRadii(10 * 64, 10 * 64));
 	TEST_ASSERT(!pWarp->setAngles(0.f, 0.f));
 	TEST_ASSERT(!pWarp->setSize({ 0, 10 }));
+	TEST_ASSERT(!pWarp->setCellSize(-1));
+	TEST_ASSERT(!pWarp->setPrecision(0.f));
+	TEST_ASSERT(!pWarp->setDetailRadius(-1));
 	return true;
 }

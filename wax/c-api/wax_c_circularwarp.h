@@ -46,13 +46,11 @@ extern "C" {
 	} wax_circularWarpBP;
 
 	// Factory is the WarpmapFactory to create the Warpmap with, the default one if null.
+	// Size, cell size, precision and refresh are set and called through the WarpGenerator functions.
 
 	WAX_EXPORT wax_obj		wax_createCircularWarp( const wax_circularWarpBP* blueprint, wax_obj warpmapFactory );
 
 	//.____ Geometry ______________________________________________________
-
-	WAX_EXPORT int			wax_setCircularWarpSize( wax_obj circularWarp, wax_sizeI size );
-	WAX_EXPORT wax_sizeI		wax_circularWarpSize( wax_obj circularWarp );
 
 	WAX_EXPORT int			wax_setCircularWarpCenter( wax_obj circularWarp, wax_coordF center );
 	WAX_EXPORT wax_coordF		wax_circularWarpCenter( wax_obj circularWarp );
@@ -67,17 +65,8 @@ extern "C" {
 
 	//.____ Precision _____________________________________________________
 
-	WAX_EXPORT int			wax_setCircularWarpCellSize( wax_obj circularWarp, int cellSize );
-	WAX_EXPORT int			wax_circularWarpCellSize( wax_obj circularWarp );
-
-	WAX_EXPORT int			wax_setCircularWarpPrecision( wax_obj circularWarp, float precision, wax_spx detailRadius );
-
-	//.____ Content _______________________________________________________
-
-	// Updates the Warpmap from current settings and returns it. The Warpmap belongs to the
-	// CircularWarp, retain it to keep it after a refresh that replaces it.
-
-	WAX_EXPORT wax_obj		wax_refreshCircularWarp( wax_obj circularWarp );
+	WAX_EXPORT int			wax_setCircularWarpDetailRadius( wax_obj circularWarp, wax_spx detailRadius );	// 0 = smallest of the radii.
+	WAX_EXPORT wax_spx		wax_circularWarpDetailRadius( wax_obj circularWarp );
 
 #ifdef __cplusplus
 }

@@ -23,8 +23,7 @@
 #define	WAX_CIRCULARWARP_DOT_H
 #pragma once
 
-#include <wax_warpmap.h>
-#include <wax_warpmapfactory.h>
+#include <wax_warpgenerator.h>
 
 namespace wax
 {
@@ -50,10 +49,10 @@ namespace wax
 	 * precision (max position error in pixels) and detailRadius (the smallest radius where that
 	 * precision is needed) unless set explicitly.
 	 *
-	 * Like Waveform, CircularWarp keeps its Warpmap and updates it when refresh() is called.
+	 * Like other WarpGenerators, CircularWarp keeps its Warpmap and updates it when refresh() is called.
 	 */
 
-	class CircularWarp : public Object
+	class CircularWarp : public WarpGenerator
 	{
 	public:
 
@@ -83,9 +82,6 @@ namespace wax
 
 		//.____ Geometry ____________________________________________________
 
-		bool		setSize( SizeI size );
-		SizeI		size() const { return m_size; }
-
 		bool		setCenter( CoordF center );
 		CoordF		center() const { return m_center; }
 
@@ -99,43 +95,25 @@ namespace wax
 
 		//.____ Precision ___________________________________________________
 
-		bool		setCellSize( int cellSize );					// 0 = calculated from precision and detailRadius.
-		int			cellSize() const;								// Cell size in use, calculated or set.
-
-		bool		setPrecision( float precision, spx detailRadius = 0 );
-		float		precision() const { return m_precision; }
+		bool		setDetailRadius( spx detailRadius );			// 0 = smallest of topRadius and bottomRadius.
 		spx			detailRadius() const { return m_detailRadius; }
-
-		//.____ Content _____________________________________________________
-
-		// Updates the Warpmap from current settings and returns it. A new Warpmap is created
-		// when size or cell size has changed, otherwise the nodes of the existing one are updated.
-
-		Warpmap_p	refresh();
 
 	protected:
 
 		CircularWarp( const Blueprint& bp, WarpmapFactory * pFactory );
 		virtual ~CircularWarp();
 
-		int			_calcCellSize() const;
-		void		_generateNodes( CoordF * pNodes, SizeI nodes, int cellSize ) const;
+		int			_calcCellSize() const override;
+		void		_generateNodes( CoordF * pNodes, SizeI nodes, int cellSize ) const override;
+		float		_uPeriod() const override;
 
-		SizeI		m_size;
 		CoordF		m_center;
 		spx			m_topRadius;
 		spx			m_bottomRadius;
 		float		m_startAngle;
 		float		m_sweep;
 
-		int			m_cellSize;									// As set, 0 = calculated.
-		float		m_precision;
 		spx			m_detailRadius;
-
-		bool		m_bDirty = true;
-
-		WarpmapFactory_p	m_pFactory;
-		Warpmap_p			m_pWarpmap;
 	};
 
 } // namespace wax
