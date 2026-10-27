@@ -253,6 +253,9 @@ else()
 	add_subdirectory(wonderapp/wappsdl2)
 endif()
 
+add_subdirectory(wonderapp/tools)
+add_subdirectory(wonderapp/examples)
+
 add_subdirectory(wondergui/tools)
 add_subdirectory(wondergui/examples)
 
