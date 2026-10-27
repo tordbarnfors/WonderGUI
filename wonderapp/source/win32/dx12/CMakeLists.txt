@@ -5,17 +5,17 @@ source_group(Files REGULAR_EXPRESSION ".*")
 
 set(SOURCES
 
-    ../common/wonderapp.h
-    ../common/wappapi.h
-    ../common/wappwindowapi.h
-    ../common/wappwindow.h
-    ../common/wappwindow.cpp
+    ../../wonderapp.h
+    ../../wappapi.h
+    ../../wappwindowapi.h
+    ../../wappwindow.h
+    ../../wappwindow.cpp
 
-    ../win32-common/win32gfxbackend.h
-    ../win32-common/main.cpp
-    ../win32-common/win32api.h
-    ../win32-common/win32api.cpp
-    ../win32-common/stb_image.h
+    ../win32gfxbackend.h
+    ../main.cpp
+    ../win32api.h
+    ../win32api.cpp
+    ../stb_image.h
 
 	win32window.h
     win32window.cpp
@@ -30,8 +30,8 @@ set(INCDIRS
 	${WONDERGUI_INCDIRS}
 	${WAXFREETYPEFONT_INCDIRS}
 	${WGDEBUGGER_INCDIRS}
-	${PROJECT_SOURCE_DIR}/wonderapp/common
-	${PROJECT_SOURCE_DIR}/wonderapp/win32-common
+	${PROJECT_SOURCE_DIR}/wonderapp/source
+	${PROJECT_SOURCE_DIR}/wonderapp/source/win32
 	${PROJECT_SOURCE_DIR}
 )
 

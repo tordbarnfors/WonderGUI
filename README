@@ -172,8 +172,9 @@ wax/
 
 wonderapp/
         The WonderApp framework, a simple application framework built on
-        WonderGUI, with the tools and examples (tools/, examples/) that
-        are built on it.
+        WonderGUI. Its sources are in source/, with one folder per
+        platform (sdl2/, win32/), next to the tools and examples
+        (tools/, examples/) that are built on it.
 
 wondergui/
         The WonderGUI library. Its own sources are in source/, next to

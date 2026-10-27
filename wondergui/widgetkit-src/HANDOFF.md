@@ -108,7 +108,7 @@ headers. There is no separate step.
    reproduce the committed parts, atlas and header byte-identically with
    Linux Pillow/numpy as well.
 
-**Build note:** the committed `wonderapp/common/wonderapp.h` still aliases
+**Build note:** the committed `wonderapp/source/wonderapp.h` still aliases
 `wkit` to `wg::oldskool`, and the wapp loaders load
 `oldskool_skinblocks.png`. `gallery_test.cpp` uses `wkit::Skins::Field`, which
 only glossyblue has, so **widgetbench does not compile from a clean checkout**

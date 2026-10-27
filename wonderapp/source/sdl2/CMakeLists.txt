@@ -10,11 +10,11 @@ set(SOURCES
 	sdlwindow.cpp
 	tinyfiledialogs.h
 	tinyfiledialogs.c
-	../common/wappapi.h
-	../common/wappwindow.h
-	../common/wappwindow.cpp
-    ../common/wappwindowapi.h
-    ../common/wonderapp.h
+	../wappapi.h
+	../wappwindow.h
+	../wappwindow.cpp
+    ../wappwindowapi.h
+    ../wonderapp.h
 )
 
 set(INCDIRS
@@ -22,7 +22,7 @@ set(INCDIRS
 	${WONDERGUI_INCDIRS}
 	${WAXFREETYPEFONT_INCDIRS}
 	${WGDEBUGGER_INCDIRS}
-	${PROJECT_SOURCE_DIR}/wonderapp/common
+	${PROJECT_SOURCE_DIR}/wonderapp/source
 	${PROJECT_SOURCE_DIR}
 )
 
