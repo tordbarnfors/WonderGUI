@@ -1,10 +1,20 @@
-# Declare files that will always have CRLF line endings on checkout.
-*.sln text eol=crlf
-*.vcproj text eol=crlf
+# All text files have LF line endings, both in the repository and when checked
+# out, also on Windows.
 
-
+* text=auto eol=lf
 
 # Denote all files that are truly binary and should not be modified.
+
 *.png binary
 *.jpg binary
 *.bmp binary
+*.gif binary
+*.xcf binary
+*.afdesign binary
+*.surf binary
+*.ttf binary
+*.otf binary
+*.woff binary
+*.woff2 binary
+*.zip binary
+*.dll binary
