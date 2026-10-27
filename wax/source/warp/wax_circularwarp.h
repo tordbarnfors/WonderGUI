@@ -45,9 +45,9 @@ namespace wax
 	 * vary horizontally will look blocky there. A flat color is fine, as long as no edge comes within
 	 * two cells of the center.
 	 *
-	 * The cell size of the Warpmap decides how closely it follows the circle. It is calculated from
-	 * precision (max position error in pixels) and detailRadius (the smallest radius where that
-	 * precision is needed) unless set explicitly.
+	 * The cell size of the Warpmap decides how closely it follows the circle. Unless set explicitly it
+	 * is calculated from precision (max position error in pixels) at the smaller radius, where the error
+	 * is largest. For a disc, precision is kept from half the radius and outwards instead.
 	 *
 	 * Like other WarpGenerators, CircularWarp keeps its Warpmap and updates it when refresh() is called.
 	 */
@@ -61,8 +61,6 @@ namespace wax
 			spx					bottomRadius = 0;				// Radius the bottom of the source is placed at.
 			int					cellSize = 0;					// Pixels between nodes of the Warpmap. 0 = calculated, see above.
 			CoordF				center = { 0.5f, 0.5f };		// Center of circle, relative to size.
-			spx					detailRadius = 0;				// Smallest radius where precision is needed. 0 = smallest of topRadius and bottomRadius,
-																// which needs to be set for discs.
 			Finalizer_p			finalizer = nullptr;
 			float				precision = 0.25f;				// Max position error in pixels when cellSize is calculated.
 			SizeI				size;							// Mandatory. Size of the Warpmap in pixels.
@@ -93,11 +91,6 @@ namespace wax
 		float		startAngle() const { return m_startAngle; }
 		float		sweep() const { return m_sweep; }
 
-		//.____ Precision ___________________________________________________
-
-		bool		setDetailRadius( spx detailRadius );			// 0 = smallest of topRadius and bottomRadius.
-		spx			detailRadius() const { return m_detailRadius; }
-
 	protected:
 
 		CircularWarp( const Blueprint& bp, WarpmapFactory * pFactory );
@@ -112,8 +105,6 @@ namespace wax
 		spx			m_bottomRadius;
 		float		m_startAngle;
 		float		m_sweep;
-
-		spx			m_detailRadius;
 	};
 
 } // namespace wax

@@ -52,7 +52,7 @@ CircularWarp makes and keeps a Warpmap that bends the source around a circle: it
 	pDevice->warpDrawEdgemap( { 10*64, 10*64 }, pGauge->refresh(), pEdgemap );
 ```
 
-The cell size decides how closely the Warpmap follows the circle and is calculated from *precision* (largest position error in pixels) at *detailRadius* (the smallest radius where that precision is needed) unless set. A radius of 0 gives a disc, which only works for content that doesn't change from left to right close to the center.
+The cell size decides how closely the Warpmap follows the circle and is calculated from *precision* (largest position error in pixels) at the smaller radius unless set. For a disc, precision is kept from half its radius and outwards. A radius of 0 gives a disc, which only works for content that doesn't change from left to right close to the center.
 
 
 

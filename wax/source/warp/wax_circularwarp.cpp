@@ -58,7 +58,6 @@ namespace wax
 		m_bottomRadius	= bp.bottomRadius;
 		m_startAngle	= bp.startAngle;
 		m_sweep			= bp.sweep;
-		m_detailRadius	= bp.detailRadius;
 	}
 
 	//____ destructor _________________________________________________________
@@ -118,28 +117,18 @@ namespace wax
 		return true;
 	}
 
-	//____ setDetailRadius() __________________________________________________
-
-	bool CircularWarp::setDetailRadius(spx detailRadius)
-	{
-		if (detailRadius < 0)
-			return false;
-
-		if (detailRadius != m_detailRadius)
-		{
-			m_detailRadius = detailRadius;
-			m_bDirty = true;
-		}
-		return true;
-	}
-
 	//____ _calcCellSize() ____________________________________________________
+	/*
+		Precision is kept at the smaller radius, where the error is largest. A disc has no smaller
+		radius and can't show detail close to its center anyway, so half its radius is used instead.
+	*/
 
 	int CircularWarp::_calcCellSize() const
 	{
-		spx detail = m_detailRadius > 0 ? m_detailRadius : std::min(m_topRadius, m_bottomRadius);
+		spx inner = std::min(m_topRadius, m_bottomRadius);
+		spx outer = std::max(m_topRadius, m_bottomRadius);
 
-		return _cellSizeForRadius(detail / 64.0);
+		return _cellSizeForRadius((inner > 0 ? inner : outer / 2) / 64.0);
 	}
 
 	//____ _uPeriod() _________________________________________________________
