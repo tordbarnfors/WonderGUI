@@ -190,7 +190,7 @@ bool WarpmapTest::circularWarpTest(std::ostream& output)
 		{ WGBP(CircularWarp, _.size = { 300, 200 }, _.center = { 0.4f, 0.6f }, _.topRadius = 40 * 64, _.bottomRadius = 90 * 64,
 			   _.startAngle = -135.f, _.sweep = 270.f), 0.25f },																	// Arc.
 		{ WGBP(CircularWarp, _.size = { 200, 200 }, _.topRadius = 30 * 64, _.bottomRadius = 99 * 64, _.sweep = -90.f, _.precision = 0.1f), 0.1f },	// Counter clockwise, repeats 4 times.
-		{ WGBP(CircularWarp, _.size = { 160, 160 }, _.topRadius = 0, _.bottomRadius = 80 * 64, _.detailRadius = 40 * 64), 0.25f }	// Disc.
+		{ WGBP(CircularWarp, _.size = { 160, 160 }, _.topRadius = 0, _.bottomRadius = 80 * 64), 0.25f }								// Disc.
 	};
 
 	for (auto& c : cases)
@@ -205,9 +205,10 @@ bool WarpmapTest::circularWarpTest(std::ostream& output)
 		double period = 360.0 / std::abs(c.bp.sweep);
 		TEST_ASSERT(near(pMap->uPeriod(), period, 1e-5));
 
-		// Cell size from precision: sqrt(8 * precision * detail radius), detail radius being the smallest radius by default.
+		// Cell size from precision: sqrt(8 * precision * r) at the smaller radius, or half the radius of a disc.
 
-		double detail = c.bp.detailRadius > 0 ? c.bp.detailRadius / 64.0 : std::min(c.bp.topRadius, c.bp.bottomRadius) / 64.0;
+		double inner = std::min(c.bp.topRadius, c.bp.bottomRadius) / 64.0;
+		double detail = inner > 0 ? inner : std::max(c.bp.topRadius, c.bp.bottomRadius) / 64.0 / 2;
 		int expectedCell = std::clamp(int(std::sqrt(8.0 * c.bp.precision * detail)), 4, 64);
 		TEST_ASSERT(pMap->cellSize() == expectedCell);
 		TEST_ASSERT(pWarp->cellSize() == expectedCell);
@@ -223,7 +224,7 @@ bool WarpmapTest::circularWarpTest(std::ostream& output)
 				TEST_ASSERT(uDiff(node.x, exact.x, period) < 1e-5 && near(node.y, exact.y, 1e-5));
 			}
 
-		// Within precision between nodes, where at least the detail radius from the center. Precision is
+		// Within precision between nodes, outside of the radius precision is kept from. Precision is
 		// in pixels, so we convert the errors in u and v to pixels.
 
 		double rTop = c.bp.topRadius / 64.0, rBottom = c.bp.bottomRadius / 64.0;
@@ -271,6 +272,8 @@ bool WarpmapTest::circularWarpRefreshTest(std::ostream& output)
 
 	auto pWarp = CircularWarp::create(WGBP(CircularWarp, _.size = { 100, 100 }, _.topRadius = 20 * 64, _.bottomRadius = 50 * 64, _.cellSize = 10), pFactory);
 
+	TEST_ASSERT(pWarp->isInstanceOf(WarpGenerator::TYPEINFO));
+
 	auto pMap1 = pWarp->refresh();
 	TEST_ASSERT(pWarp->refresh() == pMap1);								// Nothing changed.
 
@@ -294,14 +297,16 @@ bool WarpmapTest::circularWarpRefreshTest(std::ostream& output)
 	TEST_ASSERT(pMap3 != pMap2 && pMap3->pixelSize() == SizeI(120, 100));
 
 	TEST_ASSERT(pWarp->setCellSize(0));
-	TEST_ASSERT(pWarp->setPrecision(0.5f, 40 * 64));
+	TEST_ASSERT(pWarp->setPrecision(1.f));
 	auto pMap4 = pWarp->refresh();
-	TEST_ASSERT(pMap4 != pMap3 && pMap4->cellSize() == int(std::sqrt(8.0 * 0.5 * 40)));
+	TEST_ASSERT(pMap4 != pMap3 && pMap4->cellSize() == int(std::sqrt(8.0 * 1.0 * 25)));		// At the smaller radius.
 
 	// Invalid values are refused.
 
 	TEST_ASSERT(!pWarp->setRadii(10 * 64, 10 * 64));
 	TEST_ASSERT(!pWarp->setAngles(0.f, 0.f));
 	TEST_ASSERT(!pWarp->setSize({ 0, 10 }));
+	TEST_ASSERT(!pWarp->setCellSize(-1));
+	TEST_ASSERT(!pWarp->setPrecision(0.f));
 	return true;
 }

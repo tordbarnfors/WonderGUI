@@ -686,7 +686,7 @@ bool WarpRenderTest::cApiTest(std::ostream& output)
 
 		wax_obj bent = wax_createWarpmapFromNodes(factory, &bentBP, (const wax_coordF*) nodeData.data(), 0);
 
-		wax_warpDrawEdgemap(device, { 64 * 3, 64 * 4 }, wax_refreshCircularWarp(ring), (wax_obj) static_cast<Object*>(pEdgemap.rawPtr()), { 64 * 5, 0 });
+		wax_warpDrawEdgemap(device, { 64 * 3, 64 * 4 }, wax_refreshWarpGenerator(ring), (wax_obj) static_cast<Object*>(pEdgemap.rawPtr()), { 64 * 5, 0 });
 		pDevice->setBlitSource(pSurface);
 		wax_warpBlit(device, { 64 * 60, 64 * 4 }, bent, { 64 * 2, 64 * 3 });
 		wax_rectSPX source = { 64 * 4, 64 * 2, 64 * 20, 64 * 12 };

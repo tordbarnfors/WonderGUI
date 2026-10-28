@@ -494,6 +494,12 @@ namespace wg
 	using wax::Compression;
 	using wax::LineCapShape;
 
+	//____ wax_warpgenerator.h _____________________________________________________
+
+	using wax::WarpGenerator_p;
+	using wax::WarpGenerator_wp;
+	using wax::WarpGenerator;
+
 	//____ wax_warpmap.h ___________________________________________________________
 
 	using wax::Warpmap_p;

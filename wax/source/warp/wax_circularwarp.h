@@ -23,8 +23,7 @@
 #define	WAX_CIRCULARWARP_DOT_H
 #pragma once
 
-#include <wax_warpmap.h>
-#include <wax_warpmapfactory.h>
+#include <wax_warpgenerator.h>
 
 namespace wax
 {
@@ -46,14 +45,14 @@ namespace wax
 	 * vary horizontally will look blocky there. A flat color is fine, as long as no edge comes within
 	 * two cells of the center.
 	 *
-	 * The cell size of the Warpmap decides how closely it follows the circle. It is calculated from
-	 * precision (max position error in pixels) and detailRadius (the smallest radius where that
-	 * precision is needed) unless set explicitly.
+	 * The cell size of the Warpmap decides how closely it follows the circle. Unless set explicitly it
+	 * is calculated from precision (max position error in pixels) at the smaller radius, where the error
+	 * is largest. For a disc, precision is kept from half the radius and outwards instead.
 	 *
-	 * Like Waveform, CircularWarp keeps its Warpmap and updates it when refresh() is called.
+	 * Like other WarpGenerators, CircularWarp keeps its Warpmap and updates it when refresh() is called.
 	 */
 
-	class CircularWarp : public Object
+	class CircularWarp : public WarpGenerator
 	{
 	public:
 
@@ -62,8 +61,6 @@ namespace wax
 			spx					bottomRadius = 0;				// Radius the bottom of the source is placed at.
 			int					cellSize = 0;					// Pixels between nodes of the Warpmap. 0 = calculated, see above.
 			CoordF				center = { 0.5f, 0.5f };		// Center of circle, relative to size.
-			spx					detailRadius = 0;				// Smallest radius where precision is needed. 0 = smallest of topRadius and bottomRadius,
-																// which needs to be set for discs.
 			Finalizer_p			finalizer = nullptr;
 			float				precision = 0.25f;				// Max position error in pixels when cellSize is calculated.
 			SizeI				size;							// Mandatory. Size of the Warpmap in pixels.
@@ -83,9 +80,6 @@ namespace wax
 
 		//.____ Geometry ____________________________________________________
 
-		bool		setSize( SizeI size );
-		SizeI		size() const { return m_size; }
-
 		bool		setCenter( CoordF center );
 		CoordF		center() const { return m_center; }
 
@@ -97,45 +91,20 @@ namespace wax
 		float		startAngle() const { return m_startAngle; }
 		float		sweep() const { return m_sweep; }
 
-		//.____ Precision ___________________________________________________
-
-		bool		setCellSize( int cellSize );					// 0 = calculated from precision and detailRadius.
-		int			cellSize() const;								// Cell size in use, calculated or set.
-
-		bool		setPrecision( float precision, spx detailRadius = 0 );
-		float		precision() const { return m_precision; }
-		spx			detailRadius() const { return m_detailRadius; }
-
-		//.____ Content _____________________________________________________
-
-		// Updates the Warpmap from current settings and returns it. A new Warpmap is created
-		// when size or cell size has changed, otherwise the nodes of the existing one are updated.
-
-		Warpmap_p	refresh();
-
 	protected:
 
 		CircularWarp( const Blueprint& bp, WarpmapFactory * pFactory );
 		virtual ~CircularWarp();
 
-		int			_calcCellSize() const;
-		void		_generateNodes( CoordF * pNodes, SizeI nodes, int cellSize ) const;
+		int			_calcCellSize() const override;
+		void		_generateNodes( CoordF * pNodes, SizeI nodes, int cellSize ) const override;
+		float		_uPeriod() const override;
 
-		SizeI		m_size;
 		CoordF		m_center;
 		spx			m_topRadius;
 		spx			m_bottomRadius;
 		float		m_startAngle;
 		float		m_sweep;
-
-		int			m_cellSize;									// As set, 0 = calculated.
-		float		m_precision;
-		spx			m_detailRadius;
-
-		bool		m_bDirty = true;
-
-		WarpmapFactory_p	m_pFactory;
-		Warpmap_p			m_pWarpmap;
 	};
 
 } // namespace wax
