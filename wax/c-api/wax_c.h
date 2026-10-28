@@ -41,9 +41,9 @@
 #include <wax_c_circularwarp.h>
 #include <wax_c_font.h>
 #include <wax_c_geo.h>
-#include <wax_c_gfxbackend.h>
-#include <wax_c_gfxdevice.h>
-#include <wax_c_gfxutil.h>
+#include <wax_c_backend.h>
+#include <wax_c_device.h>
+#include <wax_c_util.h>
 #include <wax_c_patches.h>
 #include <wax_c_printer.h>
 #include <wax_c_surface.h>

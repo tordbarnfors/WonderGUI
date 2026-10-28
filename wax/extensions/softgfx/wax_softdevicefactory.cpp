@@ -20,19 +20,19 @@
 
 =========================================================================*/
 #include "wax_softbackend.h"
-#include "wax_softgfxdevicefactory.h"
+#include "wax_softdevicefactory.h"
 
-#include "wax_gfxdevice_gen2.h"
+#include "wax_device_gen2.h"
 
 
 namespace wax
 {
 
-	const TypeInfo SoftGfxDeviceFactory::TYPEINFO = { "SoftGfxDeviceFactory", &GfxDeviceFactory::TYPEINFO };
+	const TypeInfo SoftDeviceFactory::TYPEINFO = { "SoftDeviceFactory", &DeviceFactory::TYPEINFO };
 
 	//____ constructor ___________________________________________________________
 
-	SoftGfxDeviceFactory::SoftGfxDeviceFactory(const Blueprint& bp)
+	SoftDeviceFactory::SoftDeviceFactory(const Blueprint& bp)
 	{
 		m_pDefaultCanvasSurface			= bp.defaultCanvasSurface;
 		m_kernels						= bp.kernels;
@@ -41,14 +41,14 @@ namespace wax
 
 	//____ typeInfo() _________________________________________________________
 
-	const TypeInfo& SoftGfxDeviceFactory::typeInfo(void) const
+	const TypeInfo& SoftDeviceFactory::typeInfo(void) const
 	{
 		return TYPEINFO;
 	}
 
-	//____ createGfxDevice() ________________________________________________________
+	//____ createDevice() ________________________________________________________
 
-	GfxDevice_p SoftGfxDeviceFactory::createGfxDevice()
+	Device_p SoftDeviceFactory::createDevice()
 	{
 		auto pBackend = SoftBackend::create();
 
@@ -58,7 +58,7 @@ namespace wax
 		if( m_pDefaultCanvasSurface )
 			pBackend->defineCanvas( CanvasRef::Default, m_pDefaultCanvasSurface);
 
-		auto pDevice = GfxDeviceGen2::create(pBackend);
+		auto pDevice = DeviceGen2::create(pBackend);
 		return pDevice;
 	}
 

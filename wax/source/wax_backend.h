@@ -19,14 +19,14 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef	WAX_GFXBACKEND_DOT_H
-#define WAX_GFXBACKEND_DOT_H
+#ifndef	WAX_BACKEND_DOT_H
+#define WAX_BACKEND_DOT_H
 #pragma once
 
 #include <climits>
 #include <bitset>
 
-#include <wax_gfxdevice.h>
+#include <wax_device.h>
 
 #include <wax_pointers.h>
 #include <wax_types.h>
@@ -47,14 +47,14 @@ namespace wax
 {
 
 
-	class GfxBackend;
-	typedef	StrongPtr<GfxBackend>	GfxBackend_p;
-	typedef	WeakPtr<GfxBackend>		GfxBackend_wp;
+	class Backend;
+	typedef	StrongPtr<Backend>	Backend_p;
+	typedef	WeakPtr<Backend>		Backend_wp;
 
 
-	//____ GfxBackend __________________________________________________________
+	//____ Backend __________________________________________________________
 
-	class GfxBackend : public Object
+	class Backend : public Object
 	{
 	public:
 
@@ -109,7 +109,7 @@ namespace wax
 
 		/*
 			Objects - blit sources, edgemaps and warpmaps - are referred to by their index in
-			the object table that setObjects() was last given. GfxDeviceGen2 gives each layer
+			the object table that setObjects() was last given. DeviceGen2 gives each layer
 			a table of its own, which lists the objects of the layer once each. Not always
 			exactly once though: a backend must not count on there being no duplicates, only
 			on an index of the table always meaning the same object. An entry can be null,
@@ -195,7 +195,7 @@ namespace wax
 			  Colors: fill color if HasFill, outline color if HasOutline, then the colors of
 			  the encoded tints.
 
-			  Radii are clamped as by GfxUtil::clampCornerRadii().
+			  Radii are clamped as by Util::clampCornerRadii().
 
 			ShapeKind::Ring payload:
 
@@ -370,8 +370,8 @@ namespace wax
 		static const int	NbStandardTransforms = GfxFlip_size + 3;
 
 	protected:
-		GfxBackend() {};
-		virtual ~GfxBackend() {};
+		Backend() {};
+		virtual ~Backend() {};
 
 		static const Transform			s_standardTransforms[NbStandardTransforms];
 		static const int				s_defaultBlur[9];
@@ -381,7 +381,7 @@ namespace wax
 
 	//____ readObjectIndex() _____________________________________________________
 
-	inline uint32_t GfxBackend::readObjectIndex(const uint16_t*& p)
+	inline uint32_t Backend::readObjectIndex(const uint16_t*& p)
 	{
 		uint32_t index;
 		std::memcpy(&index, p, 4);
@@ -390,5 +390,5 @@ namespace wax
 	}
 
 } // namespace wax
-#endif	// WAX_GFXBACKEND_DOT_H
+#endif	// WAX_BACKEND_DOT_H
 

@@ -29,16 +29,16 @@
 #include <wax_metalwarpmapfactory.h>
 #include <wax_metalwarpmap.h>
 #include <wax_core.h>
-#include <wax_gfxutil.h>
+#include <wax_util.h>
 
 #include <cmath>
 
 
 namespace wax
 {
-using namespace GfxUtil;
+using namespace Util;
 
-const TypeInfo MetalBackend::TYPEINFO = { "MetalBackend", &GfxBackend::TYPEINFO };
+const TypeInfo MetalBackend::TYPEINFO = { "MetalBackend", &Backend::TYPEINFO };
 
 id<MTLDevice>       MetalBackend::s_metalDevice = nil;
 id<MTLCommandQueue> MetalBackend::s_metalCommandQueue = nil;
@@ -2262,7 +2262,7 @@ void MetalBackend::_initTables()
 	for (int i = 0; i < 17; i++)
 	{
 		double b = i / 16.0;
-		m_lineThicknessTable[i] = (float)GfxUtil::squareRoot(1.0 + b * b);
+		m_lineThicknessTable[i] = (float)Util::squareRoot(1.0 + b * b);
 	}
 }
 

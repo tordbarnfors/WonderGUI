@@ -9,7 +9,7 @@
 #include <wax_c_geo.h>
 #include <wax_c_object.h>
 #include <wax_c_softgfx.h>
-#include <wax_c_gfxdevice.h>
+#include <wax_c_device.h>
 #include <wax_c_softkernels_default.h>
 
 #include "cpp_necessities.h"
@@ -64,7 +64,7 @@ int main ( int argc, char** argv )
 	wax_obj hBackend = wax_createSoftBackend();
 	wax_addDefaultSoftKernels(hBackend);
 
-	wax_obj hGfxDevice = wax_createGfxDevice(hBackend);
+	wax_obj hGfxDevice = wax_createDevice(hBackend);
 
 	//------------------------------------------------------
 	

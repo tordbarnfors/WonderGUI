@@ -20,7 +20,7 @@
 
 =========================================================================*/
 #include <wax_bitmapcache.h>
-#include <wax_gfxdevice.h>
+#include <wax_device.h>
 #include <wax_core.h>
 
 #include <algorithm>

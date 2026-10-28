@@ -19,24 +19,24 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef WAX_METALGFXDEVICEFACTORY_DOT_H
-#define	WAX_METALGFXDEVICEFACTORY_DOT_H
+#ifndef WAX_METALDEVICEFACTORY_DOT_H
+#define	WAX_METALDEVICEFACTORY_DOT_H
 #pragma once
 //==============================================================================
 
-#include <wax_gfxdevicefactory.h>
+#include <wax_devicefactory.h>
 
 
 namespace wax
 {
-	class MetalGfxDeviceFactory;
-	typedef	StrongPtr<MetalGfxDeviceFactory>	MetalGfxDeviceFactory_p;
-	typedef	WeakPtr<MetalGfxDeviceFactory>		MetalGfxDeviceFactory_wp;
+	class MetalDeviceFactory;
+	typedef	StrongPtr<MetalDeviceFactory>	MetalDeviceFactory_p;
+	typedef	WeakPtr<MetalDeviceFactory>		MetalDeviceFactory_wp;
 
 
-	//____ MetalGfxDeviceFactory _______________________________________________________
+	//____ MetalDeviceFactory _______________________________________________________
 
-	class MetalGfxDeviceFactory : public GfxDeviceFactory
+	class MetalDeviceFactory : public DeviceFactory
 	{
 	public:
 
@@ -54,7 +54,7 @@ namespace wax
 
 		//.____ Creation __________________________________________
 
-		static MetalGfxDeviceFactory_p	create( const Blueprint& blueprint ) { return MetalGfxDeviceFactory_p(new MetalGfxDeviceFactory(blueprint)); }
+		static MetalDeviceFactory_p	create( const Blueprint& blueprint ) { return MetalDeviceFactory_p(new MetalDeviceFactory(blueprint)); }
 
 		//.____ Identification _________________________________________________
 
@@ -64,11 +64,11 @@ namespace wax
 
 		//.____ Misc _______________________________________________________
 
-		GfxDevice_p	createGfxDevice() override;
+		Device_p	createDevice() override;
 
 	protected:
-		MetalGfxDeviceFactory(const Blueprint& bp);
-		virtual ~MetalGfxDeviceFactory() {}
+		MetalDeviceFactory(const Blueprint& bp);
+		virtual ~MetalDeviceFactory() {}
 
 		id<MTLDevice>				m_device = nil;
 		MTLRenderPassDescriptor * 	m_pDefaultCanvasRenderPassDesc = nullptr;
@@ -83,4 +83,4 @@ namespace wax
 	//==============================================================================
 
 } // namespace wax
-#endif // WAX_METALGFXDEVICEFACTORY_DOT_H
+#endif // WAX_METALDEVICEFACTORY_DOT_H

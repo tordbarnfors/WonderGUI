@@ -2,9 +2,9 @@
 #include "shapecoverage.h"
 
 #include <wondergui.h>
-#include <wax_gfxdevice_gen2.h>
-#include <wax_c_gfxdevice.h>
-#include <wax_gfxutil.h>
+#include <wax_device_gen2.h>
+#include <wax_c_device.h>
+#include <wax_util.h>
 #include <wax_softbackend.h>
 #include <wax_linearbackend.h>
 #include <wax_softsurface.h>
@@ -902,10 +902,10 @@ bool ShapeRenderTest::boxSkinTest(std::ostream& output)
 	TEST_ASSERT(!coverage.isEmpty());
 
 	spx radius[4] = { 64 * 8, 64 * 8, 64 * 3, 0 };
-	TEST_ASSERT(Util::isInsideRoundedBox(coverage.pos(), canvas, radius));
-	TEST_ASSERT(Util::isInsideRoundedBox({ coverage.x + coverage.w - 1, coverage.y }, canvas, radius));
-	TEST_ASSERT(Util::isInsideRoundedBox({ coverage.x, coverage.y + coverage.h - 1 }, canvas, radius));
-	TEST_ASSERT(Util::isInsideRoundedBox({ coverage.x + coverage.w - 1, coverage.y + coverage.h - 1 }, canvas, radius));
+	TEST_ASSERT(wax::Util::isInsideRoundedBox(coverage.pos(), canvas, radius));
+	TEST_ASSERT(wax::Util::isInsideRoundedBox({ coverage.x + coverage.w - 1, coverage.y }, canvas, radius));
+	TEST_ASSERT(wax::Util::isInsideRoundedBox({ coverage.x, coverage.y + coverage.h - 1 }, canvas, radius));
+	TEST_ASSERT(wax::Util::isInsideRoundedBox({ coverage.x + coverage.w - 1, coverage.y + coverage.h - 1 }, canvas, radius));
 
 	return true;
 }

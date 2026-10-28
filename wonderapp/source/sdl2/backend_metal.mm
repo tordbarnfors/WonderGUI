@@ -64,7 +64,7 @@ bool backend_specific_init()
 
 	auto pBackend = MetalBackend::create();
 	auto pDevice = GfxDeviceGen2::create(pBackend);
-	Base::setDefaultGfxDevice(pDevice);
+	Base::setDefaultDevice(pDevice);
 
 	auto pSurfaceFactory = MetalSurfaceFactory::create();
 	Base::setDefaultSurfaceFactory(pSurfaceFactory);
@@ -126,9 +126,9 @@ SDLWindowMetal::SDLWindowMetal(wapp::Window* pUserWindow, wg::Placement origin, 
 
 		CGFloat scaleFactor = layer.contentsScale;
 
-		auto pDevice = Base::defaultGfxDevice();
+		auto pDevice = Base::defaultDevice();
 
-		m_pBackend = wax_static_cast<MetalBackend_p>(static_cast<GfxDeviceGen2*>(Base::defaultGfxDevice().rawPtr())->backend());
+		m_pBackend = wax_static_cast<MetalBackend_p>(static_cast<GfxDeviceGen2*>(Base::defaultDevice().rawPtr())->backend());
 		m_pBackend->setDefaultCanvas(nullptr, {int(geo.w),int(geo.h)}, PixelFormat::ARGB_8);
 
 		m_pCanvas = MetalSurface::create({.canvas = true, .format = PixelFormat::ARGB_8, .scale = int(scaleFactor)*64, .size = {int(geo.w*scaleFactor),int(geo.h*scaleFactor)} });
@@ -177,7 +177,7 @@ void SDLWindowMetal::render()
 
 		m_pBackend->autopresent(surface);
 
-		auto pDevice = Base::defaultGfxDevice();
+		auto pDevice = Base::defaultDevice();
 
 		pDevice->beginRender();
 		pDevice->beginCanvasUpdate(CanvasRef::Default);
@@ -222,7 +222,7 @@ void SDLWindowMetal::onWindowSizeUpdated( int w, int h )
 		m_pBackend->setDefaultCanvas(pass, size/64, wg::PixelFormat::ARGB_8);
 		m_pBackend->autopresent(surface);
 
-		auto pDevice = Base::defaultGfxDevice();
+		auto pDevice = Base::defaultDevice();
 
 		pDevice->beginRender();
 		pDevice->beginCanvasUpdate(CanvasRef::Default);

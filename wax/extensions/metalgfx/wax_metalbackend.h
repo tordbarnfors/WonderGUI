@@ -27,7 +27,7 @@
 #import "MetalKit/MetalKit.h"
 
 #include <wax_types.h>
-#include <wax_gfxbackend.h>
+#include <wax_backend.h>
 #include <wax_gpushapes.h>
 #include <wax_tinttools.h>
 #include <wax_metalsurface.h>
@@ -44,7 +44,7 @@ namespace wax
 	typedef	StrongPtr<MetalBackend>	MetalBackend_p;
 	typedef	WeakPtr<MetalBackend>	MetalBackend_wp;
 
-	class MetalBackend : public GfxBackend
+	class MetalBackend : public Backend
 	{
 		friend class MetalSurface;
 		friend class MetalEdgemap;

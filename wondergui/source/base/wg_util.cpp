@@ -22,7 +22,7 @@
 #include <wg_util.h>
 #include <wax_geo.h>
 #include <wax_surface.h>
-#include <wax_gfxdevice.h>
+#include <wax_device.h>
 #include <wax_patches.h>
 #include <wg_base.h>
 #include <wg_state.h>

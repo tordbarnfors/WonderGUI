@@ -20,7 +20,7 @@
 
 =========================================================================*/
 #include <wg_legacyrootcapsule.h>
-#include <wax_gfxdevice.h>
+#include <wax_device.h>
 #include <wg_msg.h>
 #include <wg_msgrouter.h>
 #include <wg_base.h>

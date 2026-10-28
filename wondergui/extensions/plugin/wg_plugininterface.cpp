@@ -27,7 +27,7 @@
 #include <wax_c_bitmapfont.h>
 #include <wax_c_canvaslayers.h>
 #include <wax_c_font.h>
-#include <wax_c_gfxdevice.h>
+#include <wax_c_device.h>
 /*
 #include <wax_c_streambuffer.h>
 #include <wax_c_streamplayer.h>

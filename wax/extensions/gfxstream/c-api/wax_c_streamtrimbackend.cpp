@@ -30,7 +30,7 @@ inline StreamTrimBackend* getPtr(wax_obj obj) {
 
 wax_obj wax_createStreamTrimBackend(wax_obj backend)
 {
-	auto p = StreamTrimBackend::create(static_cast<GfxBackend*>(reinterpret_cast<Object*>(backend)));
+	auto p = StreamTrimBackend::create(static_cast<Backend*>(reinterpret_cast<Object*>(backend)));
 	p->retain();
 	return static_cast<Object*>(p.rawPtr());
 }

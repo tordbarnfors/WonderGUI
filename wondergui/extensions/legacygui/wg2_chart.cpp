@@ -26,7 +26,7 @@
 #include <wg2_util.h>
 #include <wax_surfacefactory.h>
 
-#include <wax_gfxdevice_gen2.h>
+#include <wax_device_gen2.h>
 #include <wax_softbackend.h>
 
 #include <algorithm>

@@ -23,7 +23,7 @@
 #include <wg_base.h>
 #include <wg_msgrouter.h>
 #include <wg_msg.h>
-#include <wax_gfxdevice.h>
+#include <wax_device.h>
 #include <wax_surfacefactory.h>
 #include <wax_patches.h>
 #include <wg_image.h>

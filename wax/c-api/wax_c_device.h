@@ -19,15 +19,15 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef WAX_C_GFXDEVICE_DOT_H
-#define WAX_C_GFXDEVICE_DOT_H
+#ifndef WAX_C_DEVICE_DOT_H
+#define WAX_C_DEVICE_DOT_H
 #pragma once
 
 #include <wax_c_types.h>
 #include <wax_c_geo.h>
 #include <wax_c_color.h>
 #include <wax_c_surface.h>
-#include <wax_c_gfxbackend.h>
+#include <wax_c_backend.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -98,7 +98,7 @@ extern "C" {
 
 	//____ Creation ___________________________________________________
 
-	WAX_EXPORT wax_obj		wax_createGfxDevice( wax_obj backend );
+	WAX_EXPORT wax_obj		wax_createDevice( wax_obj backend );
 
 	//____ Misc _______________________________________________________
 

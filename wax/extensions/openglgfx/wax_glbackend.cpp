@@ -34,14 +34,14 @@
 #include <wax_glwarpmapfactory.h>
 #include <wax_gpushapes.h>
 #include <wax_core.h>
-#include <wax_gfxutil.h>
+#include <wax_util.h>
 
 using namespace std;
-using namespace wax::GfxUtil;
+using namespace wax::Util;
 
 namespace wax
 {
-const TypeInfo GlBackend::TYPEINFO = { "GlBackend", &GfxBackend::TYPEINFO };
+const TypeInfo GlBackend::TYPEINFO = { "GlBackend", &Backend::TYPEINFO };
 
 Blob_p			GlBackend::s_pShaderPrograms = nullptr;
 
@@ -3057,7 +3057,7 @@ void GlBackend::_initTables()
 	for (int i = 0; i < 17; i++)
 	{
 		double b = i / 16.0;
-		m_lineThicknessTable[i] = (float)GfxUtil::squareRoot(1.0 + b * b);
+		m_lineThicknessTable[i] = (float)Util::squareRoot(1.0 + b * b);
 	}
 }
 

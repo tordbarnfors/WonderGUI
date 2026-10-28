@@ -23,12 +23,12 @@
 #define	WAX_GPUSHAPES_DOT_H
 #pragma once
 
-#include <wax_gfxbackend.h>
+#include <wax_backend.h>
 
 namespace wax
 {
 	/**
-	 * @brief Shapes (GfxBackend::Command::DrawShape) prepared for the shape shaders of GPU backends.
+	 * @brief Shapes (Backend::Command::DrawShape) prepared for the shape shaders of GPU backends.
 	 *
 	 * A shape becomes entries of four floats, which the shader reads from the entry given with
 	 * each vertex, and works out the coverage of each pixel from. Geometry is in canvas pixels.
@@ -62,7 +62,7 @@ namespace wax
 	 * The entries of segments are filled in by the backend: offset of color and tint block in its
 	 * color buffer, -1 if not drawn or not tinted, 0, 0.
 	 *
-	 * Lines with caps (GfxBackend::Command::Line) are shapes too, of kind 3, see writeLine():
+	 * Lines with caps (Backend::Command::Line) are shapes too, of kind 3, see writeLine():
 	 *
 	 *   0		kind 3, cap of begin, cap of end, offset of color in color buffer (filled in by backend)
 	 *   1		begin x, y, end x, y
@@ -96,20 +96,20 @@ namespace wax
 		 * entry, others none.
 		 */
 
-		void	measure(GfxBackend::ShapeKind kind, const uint16_t* pPayload, int& maxEntries, int& nSegments);
+		void	measure(Backend::ShapeKind kind, const uint16_t* pPayload, int& maxEntries, int& nSegments);
 
 		/**
-		 * Most entries for a session, see GfxBackend::SessionInfo.
+		 * Most entries for a session, see Backend::SessionInfo.
 		 */
 
-		inline int	maxSessionEntries(const GfxBackend::SessionInfo& info) { return info.nShapeDraws * 3 + info.nShapeSegments * 2; }
+		inline int	maxSessionEntries(const Backend::SessionInfo& info) { return info.nShapeDraws * 3 + info.nShapeSegments * 2; }
 
 		/**
 		 * Writes the entries of a shape and its segments, returns the number of entries.
 		 * pColors are the colors of the command.
 		 */
 
-		int		write(GfxBackend::ShapeKind kind, const uint16_t* pPayload, const HiColor* pColors, float* pEntries, Segment* pSegments);
+		int		write(Backend::ShapeKind kind, const uint16_t* pPayload, const HiColor* pColors, float* pEntries, Segment* pSegments);
 
 		const int	c_lineKind = 3;
 		const int	c_lineEntries = 3;

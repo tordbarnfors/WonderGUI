@@ -3,7 +3,7 @@
 #include "warprender.h"
 
 #include <wondergui.h>
-#include <wax_gfxdevice_gen2.h>
+#include <wax_device_gen2.h>
 #include <wax_softbackend.h>
 #include <wax_linearbackend.h>
 #include <wax_referencebackend.h>
@@ -47,7 +47,7 @@ namespace
 
 	const HiColor c_background = HiColor(800, 1500, 2600, 4096);
 
-	enum class Backend
+	enum class TestBackend
 	{
 		Soft,
 		Linear,
@@ -60,11 +60,11 @@ namespace
 	//____ render() ___________________________________________________________
 	// Renders a scene on a cleared canvas. LinearBackend renders in two update rectangles.
 
-	Pixels render(Backend backend, const Scene& scene, PixelFormat canvasFormat = PixelFormat::ARGB_8)
+	Pixels render(TestBackend backend, const Scene& scene, PixelFormat canvasFormat = PixelFormat::ARGB_8)
 	{
 		Pixels pixels(c_canvasSize.w * c_canvasSize.h * 4, 0);
 
-		if (backend == Backend::Linear)
+		if (backend == TestBackend::Linear)
 		{
 			std::vector<uint8_t> buffer(c_canvasSize.w * c_canvasSize.h * 4 * 2);
 
@@ -101,7 +101,7 @@ namespace
 
 		GfxBackend_p pBackend;
 
-		if (backend == Backend::Soft)
+		if (backend == TestBackend::Soft)
 		{
 			auto pSoft = SoftBackend::create();
 			addDefaultSoftKernels(pSoft);
@@ -375,8 +375,8 @@ bool WarpRenderTest::identityEdgemapTest(std::ostream& output)
 		pDevice->warpDrawEdgemap({ 70 * 64 + 20, 40 * 64 - 10 }, pWarpmap, pEdgemap);
 	};
 
-	bool bOk = compare(output, "SoftBackend", render(Backend::Soft, warped), "warp", render(Backend::Soft, direct), "drawEdgemap", 2);
-	bOk = bOk && compare(output, "ReferenceBackend", render(Backend::Reference, warped), "warp", render(Backend::Reference, direct), "drawEdgemap", 2);
+	bool bOk = compare(output, "SoftBackend", render(TestBackend::Soft, warped), "warp", render(TestBackend::Soft, direct), "drawEdgemap", 2);
+	bOk = bOk && compare(output, "ReferenceBackend", render(TestBackend::Reference, warped), "warp", render(TestBackend::Reference, direct), "drawEdgemap", 2);
 
 	return bOk;
 }
@@ -413,8 +413,8 @@ bool WarpRenderTest::identityBlitTest(std::ostream& output)
 
 		const char* pWhat = sampleMethod == SampleMethod::Nearest ? "Nearest" : "Bilinear";
 
-		bOk = bOk && compare(output, pWhat, render(Backend::Soft, warped), "SoftBackend warp", render(Backend::Soft, direct), "SoftBackend blit", 1);
-		bOk = bOk && compare(output, pWhat, render(Backend::Reference, warped), "ReferenceBackend warp", render(Backend::Reference, direct), "ReferenceBackend blit", 1);
+		bOk = bOk && compare(output, pWhat, render(TestBackend::Soft, warped), "SoftBackend warp", render(TestBackend::Soft, direct), "SoftBackend blit", 1);
+		bOk = bOk && compare(output, pWhat, render(TestBackend::Reference, warped), "ReferenceBackend warp", render(TestBackend::Reference, direct), "ReferenceBackend blit", 1);
 	}
 
 	return bOk;
@@ -426,7 +426,7 @@ bool WarpRenderTest::identityBlitTest(std::ostream& output)
 
 bool WarpRenderTest::softVsReferenceTest(std::ostream& output)
 {
-	return compare(output, "Warp scene", render(Backend::Soft, warpScene), "SoftBackend", render(Backend::Reference, warpScene), "ReferenceBackend", 6, 60, 48);
+	return compare(output, "Warp scene", render(TestBackend::Soft, warpScene), "SoftBackend", render(TestBackend::Reference, warpScene), "ReferenceBackend", 6, 60, 48);
 }
 
 //____ blendModesTest() _______________________________________________________
@@ -467,7 +467,7 @@ bool WarpRenderTest::blendModesTest(std::ostream& output)
 
 		std::string what = std::string("BlendMode::") + toString(mode);
 
-		if (!compare(output, what.c_str(), render(Backend::Soft, scene), "SoftBackend", render(Backend::Reference, scene), "ReferenceBackend", 6, 40, 48))
+		if (!compare(output, what.c_str(), render(TestBackend::Soft, scene), "SoftBackend", render(TestBackend::Reference, scene), "ReferenceBackend", 6, 40, 48))
 			return false;
 	}
 
@@ -479,7 +479,7 @@ bool WarpRenderTest::blendModesTest(std::ostream& output)
 
 bool WarpRenderTest::linearBackendTest(std::ostream& output)
 {
-	return compare(output, "Warp scene", render(Backend::Linear, warpScene), "LinearBackend", render(Backend::Soft, warpScene), "SoftBackend", 0);
+	return compare(output, "Warp scene", render(TestBackend::Linear, warpScene), "LinearBackend", render(TestBackend::Soft, warpScene), "SoftBackend", 0);
 }
 
 //____ offsetPeriodTest() _____________________________________________________
@@ -506,10 +506,10 @@ bool WarpRenderTest::offsetPeriodTest(std::ostream& output)
 		};
 	};
 
-	auto base = render(Backend::Soft, scene(0, 0));
+	auto base = render(TestBackend::Soft, scene(0, 0));
 
-	return compare(output, "Offset one period", render(Backend::Soft, scene(64 * 64, 32 * 64)), "offset", base, "no offset", 0) &&
-		   compare(output, "Offset minus two periods", render(Backend::Soft, scene(-128 * 64, -64 * 64)), "offset", base, "no offset", 0);
+	return compare(output, "Offset one period", render(TestBackend::Soft, scene(64 * 64, 32 * 64)), "offset", base, "no offset", 0) &&
+		   compare(output, "Offset minus two periods", render(TestBackend::Soft, scene(-128 * 64, -64 * 64)), "offset", base, "no offset", 0);
 }
 
 //____ clipTest() _____________________________________________________________
@@ -525,9 +525,9 @@ bool WarpRenderTest::clipTest(std::ostream& output)
 		warpScene(pDevice);
 	};
 
-	auto background = render(Backend::Soft, [](GfxDevice*) {});
+	auto background = render(TestBackend::Soft, [](GfxDevice*) {});
 
-	for (Backend backend : { Backend::Soft, Backend::Linear })
+	for (TestBackend backend : { TestBackend::Soft, TestBackend::Linear })
 	{
 		auto full = render(backend, warpScene);
 		auto pixels = render(backend, clipped);
@@ -543,7 +543,7 @@ bool WarpRenderTest::clipTest(std::ostream& output)
 				std::memcpy(expected.data() + (y * c_canvasSize.w + r.x) * 4, full.data() + (y * c_canvasSize.w + r.x) * 4, r.w * 4);
 		}
 
-		if (!compare(output, backend == Backend::Soft ? "SoftBackend" : "LinearBackend", pixels, "clipped", expected, "expected", 0))
+		if (!compare(output, backend == TestBackend::Soft ? "SoftBackend" : "LinearBackend", pixels, "clipped", expected, "expected", 0))
 			return false;
 	}
 
@@ -568,8 +568,8 @@ bool WarpRenderTest::opaqueCanvasTest(std::ostream& output)
 
 		std::string what = std::string("XRGB_8 canvas, BlendMode::") + toString(mode);
 
-		if (!compare(output, what.c_str(), render(Backend::Soft, scene, PixelFormat::XRGB_8), "SoftBackend",
-					 render(Backend::Reference, scene, PixelFormat::XRGB_8), "ReferenceBackend", 6, 60, 48))
+		if (!compare(output, what.c_str(), render(TestBackend::Soft, scene, PixelFormat::XRGB_8), "SoftBackend",
+					 render(TestBackend::Reference, scene, PixelFormat::XRGB_8), "ReferenceBackend", 6, 60, 48))
 			return false;
 	}
 
@@ -593,7 +593,7 @@ bool WarpRenderTest::streamTest(std::ostream& output)
 		pDevice->warpDrawEdgemap({ 64 * 110, 64 * 50 }, pWarpmap, makeEdgemap(pDevice, true), { 64 * 30, 0 });
 	};
 
-	auto direct = render(Backend::Soft, scene);
+	auto direct = render(TestBackend::Soft, scene);
 
 	// Through a stream
 
@@ -697,7 +697,7 @@ bool WarpRenderTest::cApiTest(std::ostream& output)
 		wax_release(factory);
 	};
 
-	return compare(output, "C API", render(Backend::Soft, c), "C API", render(Backend::Soft, cpp), "C++", 0);
+	return compare(output, "C API", render(TestBackend::Soft, c), "C API", render(TestBackend::Soft, cpp), "C++", 0);
 }
 
 //____ seamColorTest() ________________________________________________________
@@ -745,7 +745,7 @@ bool WarpRenderTest::seamColorTest(std::ostream& output)
 		pDevice->warpDrawEdgemap({ 50 * 64, 50 * 64 }, pArc, pEdgemap, { 7 * 64, 0 });
 	};
 
-	return compare(output, "Seams", render(Backend::Soft, scene), "SoftBackend", render(Backend::Reference, scene), "ReferenceBackend", 6, 4, 12);
+	return compare(output, "Seams", render(TestBackend::Soft, scene), "SoftBackend", render(TestBackend::Reference, scene), "ReferenceBackend", 6, 4, 12);
 }
 
 //____ sourceRectTest() _______________________________________________________
@@ -814,7 +814,7 @@ bool WarpRenderTest::sourceRectTest(std::ostream& output)
 
 		const char* pWhat = method == SampleMethod::Bilinear ? "Bilinear source rectangle" : "Nearest source rectangle";
 
-		for (Backend backend : { Backend::Soft, Backend::Linear, Backend::Reference })
+		for (TestBackend backend : { TestBackend::Soft, TestBackend::Linear, TestBackend::Reference })
 		{
 			if (!compare(output, pWhat, render(backend, scene(true)), "rectangle", render(backend, scene(false)), "cropped surface", 0))
 				return false;

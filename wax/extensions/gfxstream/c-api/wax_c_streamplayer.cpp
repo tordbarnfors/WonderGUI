@@ -33,7 +33,7 @@ inline StreamPlayer* getPtr(wax_obj obj) {
 
 wax_obj wax_createStreamPlayer(wax_obj backend, wax_obj surfaceFactory, wax_obj edgemapFactory)
 {
-	GfxBackend* pBackend = static_cast<GfxBackend*>(reinterpret_cast<Object*>(backend));
+	Backend* pBackend = static_cast<Backend*>(reinterpret_cast<Object*>(backend));
 	SurfaceFactory* pSurfaceFactory = static_cast<SurfaceFactory*>(reinterpret_cast<Object*>(surfaceFactory));
 	EdgemapFactory* pEdgemapFactory = static_cast<EdgemapFactory*>(reinterpret_cast<Object*>(edgemapFactory));
 

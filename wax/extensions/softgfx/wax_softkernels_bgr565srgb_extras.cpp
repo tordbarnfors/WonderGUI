@@ -512,7 +512,7 @@ void _draw_segment_strip_blend_to_bgr565srgb(int colBeg, int colEnd, uint8_t* pS
 						{
 							in = pixel;
 #if WAX_IS_BIG_ENDIAN
-							pixel = GfxUtil::endianSwap(pixel);
+							pixel = Util::endianSwap(pixel);
 #endif
 							backB = SoftBackend::s_channel_5_sRGB[pixel & 0x1F];
 							backG = SoftBackend::s_channel_6_sRGB[(pixel >> 5) & 0x3F];
@@ -576,7 +576,7 @@ void _draw_segment_strip_blend_to_bgr565srgb(int colBeg, int colEnd, uint8_t* pS
 
 				uint16_t pixel = *(uint16_t*)pDst;
 #if WAX_IS_BIG_ENDIAN
-				pixel = GfxUtil::endianSwap(pixel);
+				pixel = Util::endianSwap(pixel);
 #endif
 				backB = SoftBackend::s_channel_5_sRGB[pixel & 0x1F];
 				backG = SoftBackend::s_channel_6_sRGB[(pixel >> 5) & 0x3F];

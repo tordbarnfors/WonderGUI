@@ -173,7 +173,7 @@ void GfxDeviceTester::setup_backends()
 	// Testee: The native device of the WonderApp framework.
 
 	{
-		auto pDevice = Base::defaultGfxDevice();
+		auto pDevice = Base::defaultDevice();
 
 		string name = string("Native (") + pDevice->typeInfo().className;
 
@@ -1050,7 +1050,7 @@ bool GfxDeviceTester::read_canvas(Side side, vector<uint8_t>& pixels)
 	auto buffer = pSurface->allocPixelBuffer();
 	pSurface->pushPixels(buffer);
 
-	int srcPitchAdd = buffer.pitch - m_canvasSize.w * Util::pixelFormatToDescription(buffer.format).bits / 8;
+	int srcPitchAdd = buffer.pitch - m_canvasSize.w * wax::Util::pixelFormatToDescription(buffer.format).bits / 8;
 	int dstPaletteEntries = 0;
 
 	bool bOk = PixelTools::copyPixels(m_canvasSize.w, m_canvasSize.h, buffer.pixels, buffer.format, buffer.colorSpace, buffer.bigEndian, srcPitchAdd,
@@ -1071,7 +1071,7 @@ void GfxDeviceTester::write_image(Surface* pSurface, const vector<uint8_t>& pixe
 {
 	auto buffer = pSurface->allocPixelBuffer();
 
-	int dstPitchAdd = buffer.pitch - m_canvasSize.w * Util::pixelFormatToDescription(buffer.format).bits / 8;
+	int dstPitchAdd = buffer.pitch - m_canvasSize.w * wax::Util::pixelFormatToDescription(buffer.format).bits / 8;
 	int dstPaletteEntries = 0;
 
 	PixelTools::copyPixels(m_canvasSize.w, m_canvasSize.h, pixels.data(), PixelFormat::ARGB_8, m_compareColorSpace, (WAX_IS_BIG_ENDIAN == 1), 0,

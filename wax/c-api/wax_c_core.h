@@ -47,8 +47,8 @@ WAX_EXPORT wax_obj	wax_defaultEdgemapFactory();
 WAX_EXPORT void	wax_setDefaultWarpmapFactory( wax_obj factory );
 WAX_EXPORT wax_obj	wax_defaultWarpmapFactory();
 
-WAX_EXPORT void	wax_setDefaultGfxDevice( wax_obj device );
-WAX_EXPORT wax_obj	wax_defaultGfxDevice();
+WAX_EXPORT void	wax_setDefaultDevice( wax_obj device );
+WAX_EXPORT wax_obj	wax_defaultDevice();
 
 
 

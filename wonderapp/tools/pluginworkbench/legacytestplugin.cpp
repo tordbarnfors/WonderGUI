@@ -47,7 +47,7 @@ DLLEXPORTPREFIX int init( wg_plugin_interface * pInterface, void * pRealHostBrid
 	auto pGfxDevice 		= PluginGfxDevice::create(hGfxDevice,pSurfaceFactory, pEdgemapFactory);
 	
 	WgPluginBase::setDefaultSurfaceFactory(pSurfaceFactory);
-	WgPluginBase::setDefaultGfxDevice(pGfxDevice);
+	WgPluginBase::setDefaultDevice(pGfxDevice);
 	
 	
 	auto pPluginRoot = new WgPluginRoot(hPluginCapsule, WgPluginBase::context() );

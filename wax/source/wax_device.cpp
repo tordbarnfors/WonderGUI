@@ -23,18 +23,18 @@
 #include <cmath>
 #include <cstring>
 
-#include <wax_gfxdevice.h>
+#include <wax_device.h>
 #include <wax_geo.h>
-#include <wax_gfxutil.h>
+#include <wax_util.h>
 #include <wax_core.h>
 
 using namespace std;
-using namespace wax::GfxUtil;
+using namespace wax::Util;
 
 namespace wax
 {
 
-	const TypeInfo GfxDevice::TYPEINFO = { "GfxDevice", &Object::TYPEINFO };
+	const TypeInfo Device::TYPEINFO = { "Device", &Object::TYPEINFO };
 
 	const LineCap LineCap::None		= LineCap( LineCapShape::None );
 	const LineCap LineCap::Flat			= LineCap( LineCapShape::Flat );
@@ -46,19 +46,19 @@ namespace wax
 
 	//____ constructor _____________________________________________________________
 
-	GfxDevice::GfxDevice()
+	Device::Device()
 	{
 	}
 
 	//____ Destructor _________________________________________________________
 
-	GfxDevice::~GfxDevice()
+	Device::~Device()
 	{
 	}
 
 	//____ typeInfo() _________________________________________________________
 
-	const TypeInfo& GfxDevice::typeInfo(void) const
+	const TypeInfo& Device::typeInfo(void) const
 	{
 		return TYPEINFO;
 	}

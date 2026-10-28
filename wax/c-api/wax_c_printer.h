@@ -32,8 +32,8 @@ extern "C" {
 
 WAX_EXPORT wax_obj		wax_createPrinter();
 
-WAX_EXPORT void			wax_setPrinterGfxDevice( wax_obj printer, wax_obj gfxDevice );
-WAX_EXPORT wax_obj		wax_printerGfxDevice( wax_obj printer );
+WAX_EXPORT void			wax_setPrinterDevice( wax_obj printer, wax_obj device );
+WAX_EXPORT wax_obj		wax_printerDevice( wax_obj printer );
 
 WAX_EXPORT void			wax_setPrinterFont( wax_obj printer, wax_obj font );
 WAX_EXPORT wax_obj		wax_printerFont( wax_obj printer );

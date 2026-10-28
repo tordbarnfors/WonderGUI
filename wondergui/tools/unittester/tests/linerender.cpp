@@ -3,8 +3,8 @@
 #include "linerender.h"
 
 #include <wondergui.h>
-#include <wax_gfxdevice_gen2.h>
-#include <wax_gfxbackend.h>
+#include <wax_device_gen2.h>
+#include <wax_backend.h>
 #include <wax_backendlogger.h>
 #include <wax_softbackend.h>
 #include <wax_linearbackend.h>
@@ -53,7 +53,7 @@ namespace
 	const HiColor c_background = HiColor(800, 1500, 2600, 4096);
 	const HiColor c_lineColor = HiColor(4096, 3000, 1200, 3000);
 
-	enum class Backend
+	enum class TestBackend
 	{
 		Soft,
 		Linear,
@@ -66,11 +66,11 @@ namespace
 	//____ render() ___________________________________________________________
 	// Renders a scene on a cleared canvas. LinearBackend renders in two update rectangles.
 
-	Pixels render(Backend backend, const Scene& scene)
+	Pixels render(TestBackend backend, const Scene& scene)
 	{
 		Pixels pixels(c_canvasSize.w * c_canvasSize.h * 4, 0);
 
-		if (backend == Backend::Linear)
+		if (backend == TestBackend::Linear)
 		{
 			std::vector<uint8_t> buffer(c_canvasSize.w * c_canvasSize.h * 4 * 2);
 
@@ -107,7 +107,7 @@ namespace
 
 		GfxBackend_p pBackend;
 
-		if (backend == Backend::Soft)
+		if (backend == TestBackend::Soft)
 		{
 			auto pSoft = SoftBackend::create();
 			addDefaultSoftKernels(pSoft);
@@ -233,10 +233,10 @@ namespace
 	bool compareToReference(std::ostream& output, const char* pWhat, const std::function<void(GfxDevice* pDevice)>& scene,
 							int tolerance = c_tolerance, int bodyTolerance = c_bodyTolerance)
 	{
-		Pixels reference = render(Backend::Reference, scene);
+		Pixels reference = render(TestBackend::Reference, scene);
 
 		g_lines.clear();
-		Pixels soft = render(Backend::Soft, scene);
+		Pixels soft = render(TestBackend::Soft, scene);
 		std::vector<bool> mask = bodyMask();
 		g_lines.clear();
 
@@ -465,7 +465,7 @@ bool LineRenderTest::extremesTest(std::ostream& output)
 		return false;
 
 	g_lines.clear();
-	return compare(output, "Extremes", render(Backend::Linear, scene), "LinearBackend", render(Backend::Soft, scene), "SoftBackend", 0);
+	return compare(output, "Extremes", render(TestBackend::Linear, scene), "LinearBackend", render(TestBackend::Soft, scene), "SoftBackend", 0);
 }
 
 //____ linearBackendTest() ____________________________________________________
@@ -482,7 +482,7 @@ bool LineRenderTest::linearBackendTest(std::ostream& output)
 		drawLineAt(pDevice, 60.4, 100.7, 3.0, 90.0, 3.0, { LineCap::Spear(150), LineCap::Square });
 	};
 
-	return compare(output, "LinearBackend", render(Backend::Linear, scene), "LinearBackend", render(Backend::Soft, scene), "SoftBackend", 0);
+	return compare(output, "LinearBackend", render(TestBackend::Linear, scene), "LinearBackend", render(TestBackend::Soft, scene), "SoftBackend", 0);
 }
 
 //____ clipTest() _____________________________________________________________
@@ -501,8 +501,8 @@ bool LineRenderTest::clipTest(std::ostream& output)
 		pDevice->resetClipList();
 	};
 
-	Pixels whole = render(Backend::Soft, scene);
-	Pixels empty = render(Backend::Soft, [](GfxDevice*) {});
+	Pixels whole = render(TestBackend::Soft, scene);
+	Pixels empty = render(TestBackend::Soft, [](GfxDevice*) {});
 	Pixels expected(whole.size());
 
 	for (int y = 0; y < c_canvasSize.h; y++)
@@ -518,7 +518,7 @@ bool LineRenderTest::clipTest(std::ostream& output)
 		}
 	}
 
-	return compare(output, "Clipped", render(Backend::Soft, clipped), "clip list", expected, "masked", 0);
+	return compare(output, "Clipped", render(TestBackend::Soft, clipped), "clip list", expected, "masked", 0);
 }
 
 //____ tintTest() _____________________________________________________________
@@ -576,7 +576,7 @@ bool LineRenderTest::streamTest(std::ostream& output)
 		pDevice->drawLine({ 64 * 3, 64 * 250 }, { 64 * 250, 64 * 251 }, c_lineColor, 64 * 2);		// Without caps.
 	};
 
-	auto direct = render(Backend::Soft, scene);
+	auto direct = render(TestBackend::Soft, scene);
 
 	Pixels streamed(c_canvasSize.w * c_canvasSize.h * 4, 0);
 
@@ -631,5 +631,5 @@ bool LineRenderTest::cApiTest(std::ostream& output)
 		wax_drawLine(device, { 64 * 30, 64 * 120 }, { 64 * 230, 64 * 200 }, color, 64 * 3);
 	};
 
-	return compare(output, "C API", render(Backend::Soft, c), "C API", render(Backend::Soft, cpp), "C++", 0);
+	return compare(output, "C API", render(TestBackend::Soft, c), "C API", render(TestBackend::Soft, cpp), "C++", 0);
 }

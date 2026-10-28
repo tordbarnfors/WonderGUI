@@ -39,14 +39,14 @@
       <Compile Include="..\wax_geo.cs">
         <Link>wax_geo.cs</Link>
       </Compile>
-      <Compile Include="..\wax_gfxbackend.cs">
-        <Link>wax_gfxbackend.cs</Link>
+      <Compile Include="..\wax_backend.cs">
+        <Link>wax_backend.cs</Link>
       </Compile>
       <Compile Include="..\wax_core.cs">
         <Link>wax_core.cs</Link>
       </Compile>
-      <Compile Include="..\wax_gfxdevice.cs">
-        <Link>wax_gfxdevice.cs</Link>
+      <Compile Include="..\wax_device.cs">
+        <Link>wax_device.cs</Link>
       </Compile>
       <Compile Include="..\wax_types.cs">
         <Link>wax_types.cs</Link>

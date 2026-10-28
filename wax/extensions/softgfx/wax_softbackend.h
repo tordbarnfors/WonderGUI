@@ -23,7 +23,7 @@
 #define WAX_SOFTBACKEND_DOT_H
 #pragma once
 
-#include <wax_gfxbackend.h>
+#include <wax_backend.h>
 #include <wax_tinttools.h>
 #include <wax_softtint.h>
 #include <wax_softsurface.h>
@@ -52,7 +52,7 @@ namespace wax
 
 	//____ SoftBackend __________________________________________________________
 
-	class SoftBackend : public GfxBackend
+	class SoftBackend : public Backend
 	{
 		friend class LinearBackend;
 	public:
@@ -336,7 +336,7 @@ namespace wax
 			int				rowEnd;				// Row below the clip rectangle.
 		};
 
-		bool	_beginShape(GfxBackend::ShapeKind kind, const uint16_t* pPayload, const HiColor* pColors);
+		bool	_beginShape(Backend::ShapeKind kind, const uint16_t* pPayload, const HiColor* pColors);
 		void	_setupShapeSegment(ShapeSegment& seg, bool bActive, HiColor color, bool bTint, const uint16_t*& pTintWords, const HiColor*& pTintColors);
 		void	_drawShape(const RectI& clip, uint8_t* pOrigin, int pitch);
 		void	_drawShapeRuns(uint8_t* pOrigin, int pitch, int yBeg, int yEnd, int nRuns, const SoftShapes::Run* pRuns, const CoveragePixel* pPixels, int prefetchRow);
@@ -488,7 +488,7 @@ namespace wax
 		SoftShapes::RoundedBox		m_roundedBox;
 		SoftShapes::Ring			m_ring;
 		std::vector<uint32_t>		m_ringSliceSizes;
-		GfxBackend::ShapeKind		m_shapeKind;
+		Backend::ShapeKind		m_shapeKind;
 		std::vector<ShapeSegment>	m_shapeSegments;
 		std::vector<HiColor>		m_shapeBuffers[2];				// Colors of a segment (0) and the device tint (1) along a row.
 		std::vector<std::vector<int16_t>>	m_shapeMixBuffers;		// Colors of segments that aren't flat, for coverage pixels.

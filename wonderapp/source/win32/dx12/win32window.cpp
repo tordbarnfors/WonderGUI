@@ -24,7 +24,7 @@
 #include <windows.h>
 #include <dx12_wrapper.h>
 
-#include <wax_gfxdevice.h>
+#include <wax_device.h>
 #include <wax_core.h>
 #include <wax_dx12backend.h>
 
@@ -48,7 +48,7 @@ static constexpr bool c_bPresentFullFrames = false;
 
 static DX12Backend_p _backend()
 {
-	return wax_static_cast<DX12Backend_p>(wax_static_cast<GfxDeviceGen2_p>(Base::defaultGfxDevice())->backend());
+	return wax_static_cast<DX12Backend_p>(wax_static_cast<GfxDeviceGen2_p>(Base::defaultDevice())->backend());
 }
 
 
@@ -84,7 +84,7 @@ Win32Window::Win32Window(wapp::Window* pUserWindow, wg::Placement origin, wg::Co
 		int scale = dpi * 64 / 96; // 96 DPI is 100% scaling
 
 		_backend()->setDefaultCanvas(m_rtvHandles[m_currentBuffer], m_renderBuffers[m_currentBuffer].Get(), m_rtvFormat, { spx(m_width * 64), spx(m_height * 64) }, scale);
-		m_pRootPanel = RootPanel::create(CanvasRef::Default, Base::defaultGfxDevice());
+		m_pRootPanel = RootPanel::create(CanvasRef::Default, Base::defaultDevice());
 		assert(m_pRootPanel);
 
 

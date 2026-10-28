@@ -20,7 +20,7 @@
 
 =========================================================================*/
 #include <wg_button.h>
-#include <wax_gfxdevice.h>
+#include <wax_device.h>
 #include <wg_util.h>
 #include <wg_key.h>
 #include <wg_msg.h>

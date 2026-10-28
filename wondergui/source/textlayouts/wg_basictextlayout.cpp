@@ -21,7 +21,7 @@
 =========================================================================*/
 #include <wg_basictextlayout.h>
 #include <wg_textstyle.h>
-#include <wax_gfxdevice.h>
+#include <wax_device.h>
 #include <wg_char.h>
 #include <wg_msgrouter.h>
 #include <wg_base.h>

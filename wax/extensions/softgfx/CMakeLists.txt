@@ -46,8 +46,8 @@ set(SOURCES
 	wax_softkernels_rgb555be_extras.h
 
 	wax_softkernelstanza.impl.h
-	wax_softgfxdevicefactory.cpp
-	wax_softgfxdevicefactory.h	
+	wax_softdevicefactory.cpp
+	wax_softdevicefactory.h	
 	wax_softsurface.cpp
 	wax_softsurface.h
 	wax_softsurfacefactory.cpp

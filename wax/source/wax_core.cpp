@@ -26,7 +26,7 @@
 #include <wax_bitmapcache.h>
 #include <wax_pixeltools.h>
 #include <wax_edgemaptools.h>
-#include <wax_gfxutil.h>
+#include <wax_util.h>
 
 #include <wax_compression.h>
 #include <wax_q565compression.h>
@@ -116,9 +116,9 @@ namespace wax
 		s_pContext->pDefaultSurfaceFactory = nullptr;
 		s_pContext->pDefaultEdgemapFactory = nullptr;
 		s_pContext->pDefaultWarpmapFactory = nullptr;
-		s_pContext->pDefaultGfxDevice = nullptr;
+		s_pContext->pDefaultDevice = nullptr;
 		s_pContext->pDefaultBitmapCache = nullptr;
-		s_pContext->pDefaultGfxDeviceFactory = nullptr;
+		s_pContext->pDefaultDeviceFactory = nullptr;
 
 		PixelTools::_releaseTables();
 
@@ -321,18 +321,18 @@ namespace wax
 		s_pContext->pDefaultWarpmapFactory = pFactory;
 	}
 
-	//____ setDefaultGfxDeviceFactory() ____________________________________________
+	//____ setDefaultDeviceFactory() ____________________________________________
 
-	void Core::setDefaultGfxDeviceFactory(GfxDeviceFactory* pFactory)
+	void Core::setDefaultDeviceFactory(DeviceFactory* pFactory)
 	{
-		s_pContext->pDefaultGfxDeviceFactory = pFactory;
+		s_pContext->pDefaultDeviceFactory = pFactory;
 	}
 
-	//____ setDefaultGfxDevice() _________________________________________________
+	//____ setDefaultDevice() _________________________________________________
 
-	void Core::setDefaultGfxDevice( GfxDevice * pDevice )
+	void Core::setDefaultDevice( Device * pDevice )
 	{
-		s_pContext->pDefaultGfxDevice = pDevice;
+		s_pContext->pDefaultDevice = pDevice;
 	}
 
 	//____ getDecompressor() _______________________________________________________
@@ -382,7 +382,7 @@ namespace wax
 		for (int i = 0; i < c_nCurveTabEntries; i++)
 		{
 			double y = 1.0 - i / (double)c_nCurveTabEntries;
-			s_curveTab[i] = (int)(GfxUtil::squareRoot(1.0 - y*y)*65536.0);
+			s_curveTab[i] = (int)(Util::squareRoot(1.0 - y*y)*65536.0);
 		}
 	}
 

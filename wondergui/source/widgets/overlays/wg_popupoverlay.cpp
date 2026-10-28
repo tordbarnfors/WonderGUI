@@ -27,7 +27,7 @@
 #include <wg_base.h>
 #include <wg_inputhandler.h>
 #include <wg_staticslotvector.impl.h>
-#include <wax_gfxdevice.h>
+#include <wax_device.h>
 
 #include <algorithm>
 

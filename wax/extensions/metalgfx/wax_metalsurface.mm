@@ -24,7 +24,7 @@
 
 #include <wax_metalsurface.h>
 #include <wax_metalbackend.h>
-#include <wax_gfxutil.h>
+#include <wax_util.h>
 #include <wax_blob.h>
 #include <wax_core.h>
 #include <wax_pixeltools.h>
@@ -183,7 +183,7 @@ namespace wax
 		if( format == PixelFormat::Undefined )
 			format = m_pixelFormat;
 
-		auto srcDesc = GfxUtil::pixelFormatToDescription(format, bp.bigEndian);
+		auto srcDesc = Util::pixelFormatToDescription(format, bp.bigEndian);
 
 		_setPixelDetails();
 		m_bMipmapped = bp.mipmap;
@@ -451,7 +451,7 @@ namespace wax
 
 		m_pixelFormat = format;
 		m_bBigEndian = (WAX_IS_BIG_ENDIAN == 1);
-		m_pixelDescription = GfxUtil::pixelFormatToDescription(format, m_bBigEndian);
+		m_pixelDescription = Util::pixelFormatToDescription(format, m_bBigEndian);
         m_pixelSize = m_pPixelDescription->bits / 8;
 	}
 

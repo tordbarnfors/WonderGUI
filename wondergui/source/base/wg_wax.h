@@ -116,7 +116,7 @@ namespace wg
 	//____ wax_core.h ______________________________________________________________
 
 	using wax::SurfaceFactory_p;
-	using wax::GfxDeviceFactory_p;
+	using GfxDeviceFactory_p = wax::DeviceFactory_p;
 	using wax::Error;
 
 	//____ wax_dataset.h ___________________________________________________________
@@ -261,16 +261,16 @@ namespace wg
 	using wax::SizeT;
 	using wax::RectT;
 
-	//____ wax_gfxbackend.h ________________________________________________________
+	//____ wax_backend.h ________________________________________________________
 
-	using wax::GfxBackend_p;
-	using wax::GfxBackend_wp;
-	using wax::GfxBackend;
+	using GfxBackend_p = wax::Backend_p;
+	using GfxBackend_wp = wax::Backend_wp;
+	using GfxBackend = wax::Backend;
 
-	//____ wax_gfxdevice.h _________________________________________________________
+	//____ wax_device.h _________________________________________________________
 
-	using wax::GfxDevice_p;
-	using wax::GfxDevice_wp;
+	using GfxDevice_p = wax::Device_p;
+	using GfxDevice_wp = wax::Device_wp;
 	using wax::WaveLine;
 	using wax::RoundedBoxSpec;
 	using wax::RingSlice;
@@ -278,18 +278,18 @@ namespace wg
 	using wax::LineCap;
 	using wax::LineCaps;
 	using wax::CanvasInfo;
-	using wax::GfxDevice;
+	using GfxDevice = wax::Device;
 
-	//____ wax_gfxdevice_gen2.h ____________________________________________________
+	//____ wax_device_gen2.h ____________________________________________________
 
-	using wax::GfxDeviceGen2_p;
-	using wax::GfxDeviceGen2_wp;
-	using wax::GfxDeviceGen2;
+	using GfxDeviceGen2_p = wax::DeviceGen2_p;
+	using GfxDeviceGen2_wp = wax::DeviceGen2_wp;
+	using GfxDeviceGen2 = wax::DeviceGen2;
 
-	//____ wax_gfxdevicefactory.h __________________________________________________
+	//____ wax_devicefactory.h __________________________________________________
 
-	using wax::GfxDeviceFactory_wp;
-	using wax::GfxDeviceFactory;
+	using GfxDeviceFactory_wp = wax::DeviceFactory_wp;
+	using GfxDeviceFactory = wax::DeviceFactory;
 
 	//____ wax_gpushapes.h _________________________________________________________
 
@@ -522,7 +522,7 @@ namespace wg
 	//
 	// Core       WonderGUI has its own Base, which inherits wax::Core.
 	// Context    WonderGUI has its own GUIContext, which holds a wax::Context.
-	// GfxUtil    wg::Util extends it, see wg_util.h.
+	// Util       wg::Util extends it, see wg_util.h.
 }
 
 //____ Macros _________________________________________________________________

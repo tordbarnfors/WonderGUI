@@ -35,7 +35,7 @@
 
 namespace wax
 {
-	class GfxDevice;
+	class Device;
 }
 
 namespace wg

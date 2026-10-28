@@ -21,7 +21,7 @@
 =========================================================================*/
 
 #include <wax_q565compression.h>
-#include <wax_gfxutil.h>
+#include <wax_util.h>
 #include <wax_core.h>
 
 namespace wax
@@ -29,8 +29,8 @@ namespace wax
 const TypeInfo Q565Compressor::TYPEINFO = { "Q565Compressor", &Compressor::TYPEINFO };
 const TypeInfo Q565Decompressor::TYPEINFO = { "Q565Decompressor", &Decompressor::TYPEINFO };
 
-const uint32_t Q565Compressor::ID_TOKEN = GfxUtil::makeEndianSpecificToken('Q', '5', '6', '5');
-const uint32_t Q565Decompressor::ID_TOKEN = GfxUtil::makeEndianSpecificToken('Q', '5', '6', '5');
+const uint32_t Q565Compressor::ID_TOKEN = Util::makeEndianSpecificToken('Q', '5', '6', '5');
+const uint32_t Q565Decompressor::ID_TOKEN = Util::makeEndianSpecificToken('Q', '5', '6', '5');
 
 static const uint8_t c_endOfStream = 0xD2;		// RGB-delta with no change, which is never used for anything else.
 

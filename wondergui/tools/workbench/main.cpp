@@ -446,7 +446,7 @@ int main(int argc, char** argv)
 
 		Base::setDefaultSurfaceFactory(pSurfaceFactory);
 		Base::setDefaultEdgemapFactory(pEdgemapFactory);
-		Base::setDefaultGfxDevice(pDevice);
+		Base::setDefaultDevice(pDevice);
 
 		//	nisBlendTest();
 		commonAncestorTest();

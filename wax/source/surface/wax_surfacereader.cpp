@@ -21,7 +21,7 @@
 =========================================================================*/
 #include <wax_surfacereader.h>
 #include <wax_core.h>
-#include <wax_gfxutil.h>
+#include <wax_util.h>
 #include <wax_pixeltools.h>
 
 #include <wax_compression.h>
@@ -273,7 +273,7 @@ namespace wax
 		}
 		else if( !bSameLayout )
 		{
-			auto dstDesc = GfxUtil::pixelFormatToDescription(pixbuf.format, pixbuf.bigEndian);
+			auto dstDesc = Util::pixelFormatToDescription(pixbuf.format, pixbuf.bigEndian);
 			int paletteEntries = pSurface->paletteSize();
 
 			bOk = PixelTools::copyPixels(header.width, header.height, pDecompressed, bp.format, bp.colorSpace, false, 0, nullptr, 0,
@@ -376,7 +376,7 @@ namespace wax
 		{
 			pPalette = (const Color8*) pData;
 
-			if (header.paletteCompression != GfxUtil::makeEndianSpecificToken( 'N','O','N','E' ))
+			if (header.paletteCompression != Util::makeEndianSpecificToken( 'N','O','N','E' ))
 			{
 				Decompressor * pDecompressor = Core::getDecompressor(header.paletteCompression);
 
@@ -419,7 +419,7 @@ namespace wax
 		const char *	pPixels = pPixelData;
 		int				decompressedBytes = 0;
 
-		if (header.pixelCompression != GfxUtil::makeEndianSpecificToken( 'N','O','N','E' ))
+		if (header.pixelCompression != Util::makeEndianSpecificToken( 'N','O','N','E' ))
 		{
 			Decompressor * pDecompressor = Core::getDecompressor(header.pixelCompression);
 
@@ -459,7 +459,7 @@ namespace wax
 			_copyUncompressedFromMemory(pixbuf.pixels, pPixels, fileLineBytes, pixbuf.pitch, header.height);
 		else
 		{
-			auto dstDesc = GfxUtil::pixelFormatToDescription(pixbuf.format, pixbuf.bigEndian);
+			auto dstDesc = Util::pixelFormatToDescription(pixbuf.format, pixbuf.bigEndian);
 			int paletteEntries = pSurface->paletteSize();
 
 			bOk = PixelTools::copyPixels(header.width, header.height, (const uint8_t*) pPixels, layout.description, layout.colorSpace, 0,

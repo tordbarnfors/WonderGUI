@@ -19,10 +19,10 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#include <wax_c_gfxdevice.h>
+#include <wax_c_device.h>
 #include <algorithm>
 #include <new>
-#include <wax_gfxdevice_gen2.h>
+#include <wax_device_gen2.h>
 #include <wax_core.h>
 
 #include <wax_c_blurbrush.h>
@@ -38,8 +38,8 @@ static_assert( std::is_trivially_copyable<wax::WaveLine>::value, "wax::WaveLine 
 
 
 
-inline GfxDeviceGen2* getPtr(wax_obj obj) {
-	return static_cast<GfxDeviceGen2*>(reinterpret_cast<Object*>(obj));
+inline DeviceGen2* getPtr(wax_obj obj) {
+	return static_cast<DeviceGen2*>(reinterpret_cast<Object*>(obj));
 }
 
 inline Edgemap* getEdgemapPtr(wax_obj obj) {
@@ -47,16 +47,16 @@ inline Edgemap* getEdgemapPtr(wax_obj obj) {
 }
 
 
-wax_obj wax_createGfxDevice( wax_obj backend )
+wax_obj wax_createDevice( wax_obj backend )
 {
-	auto p = GfxDeviceGen2::create( static_cast<GfxBackend*>(reinterpret_cast<Object*>(backend)) );
+	auto p = DeviceGen2::create( static_cast<Backend*>(reinterpret_cast<Object*>(backend)) );
 	p->retain();
 	return static_cast<Object*>(p);
 }
 
 int wax_setBackend( wax_obj device, wax_obj backend )
 {
-	return getPtr(device)->setBackend(static_cast<GfxBackend*>(reinterpret_cast<Object*>(backend)));
+	return getPtr(device)->setBackend(static_cast<Backend*>(reinterpret_cast<Object*>(backend)));
 }
 
 wax_obj wax_getBackend( wax_obj device )
@@ -104,7 +104,7 @@ wax_obj wax_warpmapFactory(wax_obj device)
 
 int	wax_maxSegments()
 {
-	return GfxDevice::maxSegments();
+	return Device::maxSegments();
 }
 
 
@@ -580,9 +580,9 @@ void wax_drawRoundedBox(wax_obj device, const wax_roundedBoxSpec* spec)
 
 void wax_drawRing(wax_obj device, const wax_ringSpec* spec)
 {
-	// Invalid slices are passed on for GfxDevice to report.
+	// Invalid slices are passed on for Device to report.
 
-	int nSlices = std::min(spec->nSlices, GfxDevice::maxRingSlices());
+	int nSlices = std::min(spec->nSlices, Device::maxRingSlices());
 	int nCopied = spec->pSlices ? std::max(nSlices, 0) : 0;
 
 	int bufferSize = sizeof(RingSlice) * std::max(nCopied, 1);

@@ -22,7 +22,7 @@
 #include <wax_streamplayer.h>
 #include <wax_tinttools.h>
 #include <wax_core.h>
-#include <wax_gfxutil.h>
+#include <wax_util.h>
 #include <wax_pixeltools.h>
 #include <assert.h>
 #include <algorithm>
@@ -35,14 +35,14 @@ namespace wax
 
 	//____ create() ___________________________________________________________
 
-	StreamPlayer_p StreamPlayer::create(GfxBackend * pBackend, SurfaceFactory * pSurfaceFactory, EdgemapFactory * pEdgemapFactory )
+	StreamPlayer_p StreamPlayer::create(Backend * pBackend, SurfaceFactory * pSurfaceFactory, EdgemapFactory * pEdgemapFactory )
 	{
 		return new StreamPlayer(pBackend, pSurfaceFactory, pEdgemapFactory);
 	}
 
 	//____ constructor _____________________________________________________________
 
-	StreamPlayer::StreamPlayer(GfxBackend * pBackend, SurfaceFactory * pSurfaceFactory, EdgemapFactory * pEdgemapFactory) : input(this)
+	StreamPlayer::StreamPlayer(Backend * pBackend, SurfaceFactory * pSurfaceFactory, EdgemapFactory * pEdgemapFactory) : input(this)
 	{
 		m_pBackend = pBackend;
 		m_pSurfaceFactory = pSurfaceFactory;
@@ -822,7 +822,7 @@ namespace wax
 								   (it->format == pixelBuffer.format && it->colorSpace == pixelBuffer.colorSpace &&
 									(it->bigEndian == pixelBuffer.bigEndian || pixelBits <= 8));
 
-				auto srcDesc = GfxUtil::pixelFormatToDescription(bSameLayout ? pixelBuffer.format : it->format, bSameLayout ? pixelBuffer.bigEndian : it->bigEndian);
+				auto srcDesc = Util::pixelFormatToDescription(bSameLayout ? pixelBuffer.format : it->format, bSameLayout ? pixelBuffer.bigEndian : it->bigEndian);
 
 				// Go through rects and copy pixels
 

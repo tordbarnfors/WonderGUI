@@ -32,7 +32,7 @@
 #include <wax_c_bitmapcache.h>
 #include <wax_c_canvaslayers.h>
 #include <wax_c_font.h>
-#include <wax_c_gfxdevice.h>
+#include <wax_c_device.h>
 #include <wax_c_edgemap.h>
 #include <wax_c_warpmap.h>
 #include <wax_c_blurbrush.h>

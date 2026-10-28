@@ -23,7 +23,7 @@
 
 #include <wax_glsurface.h>
 #include <wax_glbackend.h>
-#include <wax_gfxutil.h>
+#include <wax_util.h>
 #include <wax_pixeltools.h>
 #include <wax_blob.h>
 #include <wax_core.h>
@@ -111,7 +111,7 @@ namespace wax
 		if (!_isBlueprintValid(bp, maxSize()) || !_isFormatSupported(bp.format) )
 			return GlSurface_p();
 
-        int realPitch = pitch > 0 ? pitch : bp.size.w * GfxUtil::pixelFormatToDescription( bp.format == PixelFormat::Undefined ? PixelFormat::ARGB_8 : bp.format ).bits/8;
+        int realPitch = pitch > 0 ? pitch : bp.size.w * Util::pixelFormatToDescription( bp.format == PixelFormat::Undefined ? PixelFormat::ARGB_8 : bp.format ).bits/8;
         
 		if ( !pBlob || realPitch % 4 != 0 )
 			return GlSurface_p();
@@ -234,7 +234,7 @@ namespace wax
 	}
 
 	GlSurface::GlSurface(const Blueprint& bp, const uint8_t* pPixels, PixelFormat format, int pitch, const Color8 * pPalette, int paletteSize)
-	: GlSurface(bp, pPixels, GfxUtil::pixelFormatToDescription(format != PixelFormat::Undefined ? format : bp.format != PixelFormat::Undefined ? bp.format : PixelFormat::ARGB_8, bp.bigEndian),
+	: GlSurface(bp, pPixels, Util::pixelFormatToDescription(format != PixelFormat::Undefined ? format : bp.format != PixelFormat::Undefined ? bp.format : PixelFormat::ARGB_8, bp.bigEndian),
 				pitch, pPalette, paletteSize)
 	{
 		// Source pixels are in the byte order and color space of the blueprint.
@@ -1025,7 +1025,7 @@ namespace wax
 			{
 				uint32_t v = p[x];
 				if (m_bSwapBytes)
-					v = GfxUtil::endianSwap(v);
+					v = Util::endianSwap(v);
 
 				int a = v >> 24;
 				if (a == 255)
@@ -1046,7 +1046,7 @@ namespace wax
 				}
 
 				if (m_bSwapBytes)
-					v = GfxUtil::endianSwap(v);
+					v = Util::endianSwap(v);
 				p[x] = v;
 			}
 		}

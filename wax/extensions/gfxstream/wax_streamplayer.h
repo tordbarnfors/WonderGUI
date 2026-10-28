@@ -27,7 +27,7 @@
 #include <wax_gfxstream.h>
 #include <wax_streamsink.h>
 #include <wax_streamdecoder.h>
-#include <wax_gfxbackend.h>
+#include <wax_backend.h>
 #include <wax_patches.h>
 #include <wax_compression.h>
 
@@ -53,7 +53,7 @@ namespace wax
 		struct Blueprint
 		{
 			std::function<void(const CanvasInfo * pBegin, const CanvasInfo * pEnd)> canvasInfoCallback;
-			GfxBackend_p				backend;
+			Backend_p				backend;
 			EdgemapFactory_p			edgemapFactory;
 			Finalizer_p					finalizer = nullptr;
 			int							maxDirtyRects = 64;
@@ -63,7 +63,7 @@ namespace wax
 */
 		//.____ Creation ____________________________________________________________
 
-		static StreamPlayer_p	create(GfxBackend * pBackend, SurfaceFactory * pSurfaceFactory, EdgemapFactory * pEdgemapFactory);
+		static StreamPlayer_p	create(Backend * pBackend, SurfaceFactory * pSurfaceFactory, EdgemapFactory * pEdgemapFactory);
 
 		//.____ Components __________________________________________________________
 
@@ -90,7 +90,7 @@ namespace wax
 		const std::vector<Object_p>& objects() const { return m_vObjects; }
 
 	protected:
-		StreamPlayer(GfxBackend * pDevice, SurfaceFactory * pSurfaceFactory, EdgemapFactory * pEdgemapFactory);
+		StreamPlayer(Backend * pDevice, SurfaceFactory * pSurfaceFactory, EdgemapFactory * pEdgemapFactory);
 		~StreamPlayer();
 
 		void	_processStreamChunks(const uint8_t* pBegin, const uint8_t* pEnd) override;
@@ -143,7 +143,7 @@ namespace wax
 
 
 		StreamDecoder_p		m_pDecoder;
-		GfxBackend_p		m_pBackend;
+		Backend_p		m_pBackend;
 		SurfaceFactory_p	m_pSurfaceFactory;
 		EdgemapFactory_p	m_pEdgemapFactory;
 
@@ -210,7 +210,7 @@ namespace wax
 		std::vector<EdgemapDataBuffer>	m_edgemapDataBuffers;
 
 
-		GfxBackend::SessionInfo	m_sessionInfo;			// Temporary for BeginSession/UpdateRects
+		Backend::SessionInfo	m_sessionInfo;			// Temporary for BeginSession/UpdateRects
 		DataBuffer			m_updateRectsDataBuffer;
 
 		CanvasRef			m_baseCanvasRef;

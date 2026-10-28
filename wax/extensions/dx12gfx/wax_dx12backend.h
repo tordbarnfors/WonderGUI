@@ -24,7 +24,7 @@
 #define WAX_DX12BACKEND_DOT_H
 #pragma once
 
-#include <wax_gfxbackend.h>
+#include <wax_backend.h>
 #include <wax_gpushapes.h>
 #include <wax_tinttools.h>
 
@@ -49,7 +49,7 @@ namespace wax
 
 	//____ DX12Backend __________________________________________________________
 
-	class DX12Backend : public GfxBackend
+	class DX12Backend : public Backend
 	{
 	public:
 

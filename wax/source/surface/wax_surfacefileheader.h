@@ -26,7 +26,7 @@
 #include <cstdint>
 #include <wax_types.h>
 #include <wax_geo.h>
-#include <wax_gfxutil.h>
+#include <wax_util.h>
 
 namespace wax
 {
@@ -54,7 +54,7 @@ enum class PixelCompression
 
 struct SurfaceFileHeader
 {
-	uint32_t		identifier				= GfxUtil::makeEndianSpecificToken( 'S','U','R','F' );
+	uint32_t		identifier				= Util::makeEndianSpecificToken( 'S','U','R','F' );
 	int16_t			versionNumber			= 2;
 	int16_t			headerBytes				= 0;
 	int32_t			paletteBytes			= 0;		// Includes padding
@@ -90,10 +90,10 @@ struct SurfaceFileHeader
 
 	//	-- 40 bytes header ends here.
 
-	uint32_t		pixelFiltering			= GfxUtil::makeEndianSpecificToken( 'N','O','N','E' );
+	uint32_t		pixelFiltering			= Util::makeEndianSpecificToken( 'N','O','N','E' );
 	int16_t			filterBlockWidth		= 1;
 	int16_t			filterBlockHeight		= 1;
-	uint32_t		pixelCompression		= GfxUtil::makeEndianSpecificToken( 'N','O','N','E' );
+	uint32_t		pixelCompression		= Util::makeEndianSpecificToken( 'N','O','N','E' );
 	int16_t			pixelDecompressMargin	= 0;
 	int8_t			pixelDataPadding		= 0;					// Number of extra bytes at end of pixel data to ensure each block starts on 32-bit alignment.
 	int8_t			reserved2				= 0;
@@ -101,16 +101,16 @@ struct SurfaceFileHeader
 	//	-- 56 bytes header ends here.
 
 	int32_t			paletteSize 			= 0;
-	uint32_t		paletteFiltering		= GfxUtil::makeEndianSpecificToken( 'N','O','N','E' );
+	uint32_t		paletteFiltering		= Util::makeEndianSpecificToken( 'N','O','N','E' );
 	int8_t			paletteFilteringParams[8] = { 0,0,0,0,0,0,0,0 };
-	uint32_t		paletteCompression		= GfxUtil::makeEndianSpecificToken( 'N','O','N','E' );
+	uint32_t		paletteCompression		= Util::makeEndianSpecificToken( 'N','O','N','E' );
 	int16_t			paletteDecompressMargin	= 0;
 	int8_t			paletteDataPadding		= 0;					// Number of extra bytes at end of pixel data to ensure each block starts on 32-bit alignment.
 	int8_t			reserved3				= 0;
 
 	//	-- 80 bytes header ends here.
 
-	uint32_t		extraDataCompression	= GfxUtil::makeEndianSpecificToken( 'N','O','N','E' );
+	uint32_t		extraDataCompression	= Util::makeEndianSpecificToken( 'N','O','N','E' );
 	int16_t			extraDataDecompressMargin = 0;
 	int16_t			reserved4				= 0;
 
@@ -143,7 +143,7 @@ inline SurfaceFileLayout surfaceFileLayout( const SurfaceFileHeader& header )
 		layout.format = header.format;
 		layout.colorSpace = header.linear ? ColorSpace::Linear : ColorSpace::sRGB;
 		layout.bigEndian = header.bigEndian;
-		layout.description = GfxUtil::pixelFormatToDescription(layout.format, layout.bigEndian);
+		layout.description = Util::pixelFormatToDescription(layout.format, layout.bigEndian);
 		return layout;
 	}
 
@@ -208,7 +208,7 @@ inline SurfaceFileLayout surfaceFileLayout( const SurfaceFileHeader& header )
 	if( v1.b24Bits )
 		layout.description = PixelDescription(24, PixelType::Chunky, 0xFF0000, 0xFF00, 0xFF, 0, false);
 	else
-		layout.description = GfxUtil::pixelFormatToDescription(layout.format, layout.bigEndian);
+		layout.description = Util::pixelFormatToDescription(layout.format, layout.bigEndian);
 
 	return layout;
 }

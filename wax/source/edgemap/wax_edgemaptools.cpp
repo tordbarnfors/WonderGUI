@@ -21,7 +21,7 @@
 =========================================================================*/
 #include <wax_edgemaptools.h>
 #include <wax_core.h>
-#include <wax_gfxutil.h>
+#include <wax_util.h>
 
 using namespace std;
 

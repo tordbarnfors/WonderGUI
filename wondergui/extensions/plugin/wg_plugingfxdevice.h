@@ -25,8 +25,8 @@
 
 #include <wax_geo.h>
 
-#include <wax_gfxdevice.h>
-#include <wax_c_gfxdevice.h>
+#include <wax_device.h>
+#include <wax_c_device.h>
 #include <wg_types.h>
 #include <wg_pluginsurfacefactory.h>
 #include <wg_pluginedgemapfactory.h>

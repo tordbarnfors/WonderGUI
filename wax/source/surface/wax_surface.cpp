@@ -23,13 +23,13 @@
 #include <memory.h>
 #include <wax_surface.h>
 #include <wax_dataset.h>
-#include <wax_gfxutil.h>
+#include <wax_util.h>
 #include <wax_core.h>
 #include <wax_pixeltools.h>
 
 namespace wax
 {
-	using namespace GfxUtil;
+	using namespace Util;
 
 
 	const TypeInfo Surface::TYPEINFO = { "Surface", &Object::TYPEINFO };
@@ -283,8 +283,8 @@ namespace wax
 		
 		//
 		
-		auto srcDesc = GfxUtil::pixelFormatToDescription(srcbuf.format, srcbuf.bigEndian);
-		auto dstDesc = GfxUtil::pixelFormatToDescription(dstbuf.format, dstbuf.bigEndian);
+		auto srcDesc = Util::pixelFormatToDescription(srcbuf.format, srcbuf.bigEndian);
+		auto dstDesc = Util::pixelFormatToDescription(dstbuf.format, dstbuf.bigEndian);
 
 		bool retVal = PixelTools::copyPixels(srcbuf.rect.w, srcbuf.rect.h,
 											 srcbuf.pixels, srcDesc, srcbuf.colorSpace, srcbuf.pitch - PixelTools::bytesPerLine(srcDesc, srcbuf.rect.w),
@@ -367,7 +367,7 @@ namespace wax
 		if( bp.colorSpace < ColorSpace_min || bp.colorSpace > ColorSpace_max )
 			return false;
 
-		PixelDescription desc = GfxUtil::pixelFormatToDescription(format);
+		PixelDescription desc = Util::pixelFormatToDescription(format);
 		
 		
 		if( size.isEmpty() )
@@ -429,7 +429,7 @@ namespace wax
 		if( format == PixelFormat::Undefined )
 			format = m_pixelFormat;
 		
-		auto srcDesc = GfxUtil::pixelFormatToDescription(format);
+		auto srcDesc = Util::pixelFormatToDescription(format);
 		if( srcDesc.type == PixelType::Index || srcDesc.type == PixelType::Bitplanes )
 		{
 			if( pPalette == nullptr )

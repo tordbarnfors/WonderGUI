@@ -21,7 +21,7 @@
 =========================================================================*/
 
 #include <wax_softshapes.h>
-#include <wax_gfxutil.h>
+#include <wax_util.h>
 
 #include <algorithm>
 #include <climits>
@@ -1797,7 +1797,7 @@ namespace wax
 			return;
 
 		spx radius[4] = { box.radius[0], box.radius[1], box.radius[2], box.radius[3] };
-		GfxUtil::clampCornerRadii(rect.size(), radius);
+		Util::clampCornerRadii(rect.size(), radius);
 
 		BorderSPX outline = { std::max(box.outline.top, 0), std::max(box.outline.right, 0),
 							  std::max(box.outline.bottom, 0), std::max(box.outline.left, 0) };
@@ -1813,7 +1813,7 @@ namespace wax
 							  rect.w - outline.left - outline.right, rect.h - outline.top - outline.bottom);
 
 			spx innerRadius[4];
-			GfxUtil::innerCornerRadii(radius, outline, innerRadius);
+			Util::innerCornerRadii(radius, outline, innerRadius);
 
 			BoxShape::setupContour(shape.inner, innerRect, innerRadius);
 

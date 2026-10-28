@@ -21,7 +21,7 @@
 =========================================================================*/
 #include <wax_surfacewriter.h>
 #include <wax_core.h>
-#include <wax_gfxutil.h>
+#include <wax_util.h>
 #include <wax_pixeltools.h>
 #include <wax_qoicompression.h>
 #include <cstring>
@@ -405,7 +405,7 @@ namespace wax
 			convertedBytes = lineBytes * size.h;
 			uint8_t * pConverted = (uint8_t*) Core::memStackAlloc(convertedBytes);
 
-			auto bufDesc = GfxUtil::pixelFormatToDescription(pixbuf.format, pixbuf.bigEndian);
+			auto bufDesc = Util::pixelFormatToDescription(pixbuf.format, pixbuf.bigEndian);
 			int paletteEntries = pSurface->paletteSize();
 
 			PixelTools::copyPixels(size.w, size.h, pixbuf.pixels, bufDesc, pixbuf.colorSpace, pixbuf.pitch - PixelTools::bytesPerLine(bufDesc, size.w),
@@ -576,7 +576,7 @@ namespace wax
 			convertedBytes = lineBytes * size.h;
 			uint8_t * pConverted = (uint8_t*) Core::memStackAlloc(convertedBytes);
 
-			auto bufDesc = GfxUtil::pixelFormatToDescription(pixbuf.format, pixbuf.bigEndian);
+			auto bufDesc = Util::pixelFormatToDescription(pixbuf.format, pixbuf.bigEndian);
 			int dummyPaletteEntries = 0;
 
 			PixelTools::copyPixels(size.w, size.h, pixbuf.pixels, pixbuf.format, pixbuf.colorSpace, pixbuf.bigEndian, pixbuf.pitch - PixelTools::bytesPerLine(bufDesc, size.w),

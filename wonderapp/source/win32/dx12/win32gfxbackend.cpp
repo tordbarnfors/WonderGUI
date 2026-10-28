@@ -52,7 +52,7 @@ void initGfxBackend()
 	auto pBackend = wax::DX12Backend::create(g_pDX12Wrapper->dx12Device(), g_pDX12Wrapper->renderCommandQueue());
 
 	auto pGfxDevice = wg::GfxDeviceGen2::create(pBackend);
-	Base::setDefaultGfxDevice(pGfxDevice);
+	Base::setDefaultDevice(pGfxDevice);
 }
 
 //____ exitGfxBackend() _______________________________________________________

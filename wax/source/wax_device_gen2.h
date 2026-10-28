@@ -19,15 +19,15 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef	WAX_GFXDEVICE_GEN2_DOT_H
-#define WAX_GFXDEVICE_GEN2_DOT_H
+#ifndef	WAX_DEVICE_GEN2_DOT_H
+#define WAX_DEVICE_GEN2_DOT_H
 #pragma once
 
 #include <climits>
 #include <bitset>
 
-#include <wax_gfxdevice.h>
-#include <wax_gfxbackend.h>
+#include <wax_device.h>
+#include <wax_backend.h>
 
 #include <wax_pointers.h>
 #include <wax_types.h>
@@ -54,21 +54,21 @@ namespace wax
 	class	CaretInstance;
 	class 	Pen;
 
-	class GfxDeviceGen2;
-	typedef	StrongPtr<GfxDeviceGen2>	GfxDeviceGen2_p;
-	typedef	WeakPtr<GfxDeviceGen2>	GfxDeviceGen2_wp;
+	class DeviceGen2;
+	typedef	StrongPtr<DeviceGen2>	DeviceGen2_p;
+	typedef	WeakPtr<DeviceGen2>	DeviceGen2_wp;
 
 
 
-	//____ GfxDeviceGen2 __________________________________________________________
+	//____ DeviceGen2 __________________________________________________________
 
-	class GfxDeviceGen2 : public GfxDevice
+	class DeviceGen2 : public Device
 	{
 	public:
 
 		//.____ Creation __________________________________________
 
-		static GfxDeviceGen2_p	create( GfxBackend * pBackend = nullptr );
+		static DeviceGen2_p	create( Backend * pBackend = nullptr );
 		
 		//.____ Identification __________________________________________
 
@@ -77,8 +77,8 @@ namespace wax
 
 		//.____ Misc _____________________________________________________
 
-		bool				setBackend( GfxBackend * pBackend );
-		GfxBackend_p		backend() const { return  m_pBackend; }
+		bool				setBackend( Backend * pBackend );
+		Backend_p		backend() const { return  m_pBackend; }
 
 		const CanvasInfo&	canvas() const override;
 		const CanvasInfo	canvas(CanvasRef ref) const override;
@@ -236,8 +236,8 @@ namespace wax
 
 	protected:
 
-		typedef GfxBackend::Command Command;
-		typedef GfxBackend::StateChange StateChange;
+		typedef Backend::Command Command;
+		typedef Backend::StateChange StateChange;
 
 		struct ClipList
 		{
@@ -318,14 +318,14 @@ namespace wax
 															// to our right state when that ends and we pop back.
 			uint8_t						savedStateChanges;
 			
-			GfxBackend::SessionInfo		sessionInfo;
+			Backend::SessionInfo		sessionInfo;
 		};
 
 		//
 
 
-		GfxDeviceGen2( GfxBackend * pBackend );
-		virtual ~GfxDeviceGen2();
+		DeviceGen2( Backend * pBackend );
+		virtual ~DeviceGen2();
 
 		bool _beginCanvasUpdate(CanvasRef ref, Surface* pCanvas, int nUpdateRects, const RectSPX* pUpdateRects, CanvasLayers* pLayers, int startLayer);
 
@@ -370,20 +370,20 @@ namespace wax
 		CanvasInfo					m_dummyCanvasInfo;
 		RectSPX						m_dummyRect;
 		
-		GfxBackend_p				m_pBackend;
+		Backend_p				m_pBackend;
 	};
 
-	bool GfxDeviceGen2::beginCanvasUpdate(CanvasRef ref, int nUpdateRects, const RectSPX* pUpdateRects, CanvasLayers* pLayers, int startLayer)
+	bool DeviceGen2::beginCanvasUpdate(CanvasRef ref, int nUpdateRects, const RectSPX* pUpdateRects, CanvasLayers* pLayers, int startLayer)
 	{
 		return _beginCanvasUpdate(ref, nullptr, nUpdateRects, pUpdateRects, pLayers, startLayer);
 	}
 
-	bool GfxDeviceGen2::beginCanvasUpdate(Surface* pCanvas, int nUpdateRects, const RectSPX* pUpdateRects, CanvasLayers* pLayers, int startLayer)
+	bool DeviceGen2::beginCanvasUpdate(Surface* pCanvas, int nUpdateRects, const RectSPX* pUpdateRects, CanvasLayers* pLayers, int startLayer)
 	{
 		return _beginCanvasUpdate(CanvasRef::None, pCanvas, nUpdateRects, pUpdateRects, pLayers, startLayer);
 	}
 
 
 } // namespace wax
-#endif	// WAX_GFXDEVICE_GEN2_DOT_H
+#endif	// WAX_DEVICE_GEN2_DOT_H
 

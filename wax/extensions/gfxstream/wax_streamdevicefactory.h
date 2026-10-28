@@ -19,24 +19,24 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef	WAX_STREAMGFXDEVICEFACTORY_DOT_H
-#define	WAX_STREAMGFXDEVICEFACTORY_DOT_H
+#ifndef	WAX_STREAMDEVICEFACTORY_DOT_H
+#define	WAX_STREAMDEVICEFACTORY_DOT_H
 #pragma once
 
 #include <wax_streambackend.h>
-#include <wax_gfxdevicefactory.h>
+#include <wax_devicefactory.h>
 #include <wax_geo.h>
 
 namespace wax
 {
 
-	class StreamGfxDeviceFactory;
-	typedef	StrongPtr<StreamGfxDeviceFactory>		StreamGfxDeviceFactory_p;
-	typedef	WeakPtr<StreamGfxDeviceFactory>		StreamGfxDeviceFactory_wp;
+	class StreamDeviceFactory;
+	typedef	StrongPtr<StreamDeviceFactory>		StreamDeviceFactory_p;
+	typedef	WeakPtr<StreamDeviceFactory>		StreamDeviceFactory_wp;
 
-	//____ StreamGfxDeviceFactory _____________________________________________________
+	//____ StreamDeviceFactory _____________________________________________________
 
-	class StreamGfxDeviceFactory : public GfxDeviceFactory
+	class StreamDeviceFactory : public DeviceFactory
 	{
 	public:
 
@@ -53,7 +53,7 @@ namespace wax
 
 		//.____ Creation __________________________________________
 
-		static StreamGfxDeviceFactory_p	create(const Blueprint& bp) { return StreamGfxDeviceFactory_p(new StreamGfxDeviceFactory(bp)); }
+		static StreamDeviceFactory_p	create(const Blueprint& bp) { return StreamDeviceFactory_p(new StreamDeviceFactory(bp)); }
 
 		//.____ Identification __________________________________________
 
@@ -62,11 +62,11 @@ namespace wax
 
 		//.____ Misc _______________________________________________________
 
-		GfxDevice_p	createGfxDevice() override;
+		Device_p	createDevice() override;
 
 	protected:
-		StreamGfxDeviceFactory(const Blueprint& bp);
-		virtual ~StreamGfxDeviceFactory() {}
+		StreamDeviceFactory(const Blueprint& bp);
+		virtual ~StreamDeviceFactory() {}
 
 		StreamEncoder_p		m_pEncoder;
 		int					m_maxEdges = 15;
@@ -77,5 +77,5 @@ namespace wax
 }
 
 
-#endif //WAX_SOFTGFXDEVICEFACTORY_DOT_H
+#endif //WAX_SOFTDEVICEFACTORY_DOT_H
 

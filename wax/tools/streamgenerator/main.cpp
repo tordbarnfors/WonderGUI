@@ -26,7 +26,7 @@
 #include <wax_softsurfacefactory.h>
 #include <wax_softbackend.h>
 #include <wax_softkernels_default.h>
-#include <wax_gfxdevice_gen2.h>
+#include <wax_device_gen2.h>
 
 using namespace wax;
 using namespace std;
@@ -34,22 +34,22 @@ using namespace std;
 
 
 void			processEvents();
-void			renderOutput( GfxDevice * pDevice, Surface * pWindowCanvas, Surface * pStreamCanvas );
+void			renderOutput( Device * pDevice, Surface * pWindowCanvas, Surface * pStreamCanvas );
 void * 			loadFile( const char * pPath );
 Blob_p 			loadBlob( const char * pPath );
 SoftSurface_p	loadImage( const char * pPath );
 
-void playDelayFrames(GfxDevice_p pDevice, int nFrames);
+void playDelayFrames(Device_p pDevice, int nFrames);
 
-void playRectangleDance(GfxDevice_p pDevice, CanvasRef canvas);
-void playRectangleDanceDualScreen(GfxDevice_p pDevice, CanvasRef canvasRef1, CanvasRef canvasRef2 );
-void playScroll(GfxDevice_p pDevice, RectI canvas );
-void playLogoFadeIn(GfxDevice_p pDevice, CanvasRef canvasRef, SurfaceFactory_p pFactory );
-void playSurfaceStressTest(GfxDevice_p pDevice, CanvasRef canvasRef, SurfaceFactory_p pFactory );
-void playImageStreamingTest(GfxDevice_p pDevice, CanvasRef canvasRef, SurfaceFactory_p pFactory );
-void playBounceRects(GfxDevice_p pDevice, CanvasRef canvasRef);
-void playDualScreenBounceRects(GfxDevice_p pDevice, CanvasRef canvasRef1, CanvasRef canvasRef2);
-void playDirectUpdate(GfxDevice_p pDevice, CanvasRef canvasRef );
+void playRectangleDance(Device_p pDevice, CanvasRef canvas);
+void playRectangleDanceDualScreen(Device_p pDevice, CanvasRef canvasRef1, CanvasRef canvasRef2 );
+void playScroll(Device_p pDevice, RectI canvas );
+void playLogoFadeIn(Device_p pDevice, CanvasRef canvasRef, SurfaceFactory_p pFactory );
+void playSurfaceStressTest(Device_p pDevice, CanvasRef canvasRef, SurfaceFactory_p pFactory );
+void playImageStreamingTest(Device_p pDevice, CanvasRef canvasRef, SurfaceFactory_p pFactory );
+void playBounceRects(Device_p pDevice, CanvasRef canvasRef);
+void playDualScreenBounceRects(Device_p pDevice, CanvasRef canvasRef1, CanvasRef canvasRef2);
+void playDirectUpdate(Device_p pDevice, CanvasRef canvasRef );
 
 
 CoordSPX positionSprite(SizeSPX dimensions, int tick, int length, int nb, int amount);
@@ -106,7 +106,7 @@ int main ( int argc, char** argv )
 	SoftBackend_p pGfxBackend = SoftBackend::create();
 	addDefaultSoftKernels(pGfxBackend);
 
-	GfxDevice_p pGfxDevice = GfxDeviceGen2::create(pGfxBackend);
+	Device_p pGfxDevice = DeviceGen2::create(pGfxBackend);
 
 
 	// Init font
@@ -227,7 +227,7 @@ int main ( int argc, char** argv )
 	pStreamBackend->defineCanvas(CanvasRef::Canvas_2, {240,240}, PixelFormat::Undefined );
 
 
-	auto pStreamDevice = GfxDeviceGen2::create(pStreamBackend);
+	auto pStreamDevice = DeviceGen2::create(pStreamBackend);
 
 	auto pSurfaceFactory = RemoteSurfaceFactory::create(pEncoder);
 
@@ -388,7 +388,7 @@ void processEvents()
 // Draws the stream output on the window: a background with two framed output
 // areas, the first one showing the stream canvas.
 
-void renderOutput( GfxDevice * pDevice, Surface * pWindowCanvas, Surface * pStreamCanvas )
+void renderOutput( Device * pDevice, Surface * pWindowCanvas, Surface * pStreamCanvas )
 {
 	const RectI	frames[2] = { {10,10,804,484}, {244 + 20,10,804,484} };
 	const int	border = 2;
@@ -502,7 +502,7 @@ SoftSurface_p loadImage( const char * pPath )
 
 //____ playImageStreamingTest() _______________________________________________
 
-void playImageStreamingTest(GfxDevice_p pDevice, CanvasRef canvasRef, SurfaceFactory_p pFactory )
+void playImageStreamingTest(Device_p pDevice, CanvasRef canvasRef, SurfaceFactory_p pFactory )
 {
 	SoftSurface_p pOrgSurf = loadImage( "Flow Studio Boot Image.png" );
 	SizeI logoSize = pOrgSurf->pixelSize();
@@ -528,7 +528,7 @@ void playImageStreamingTest(GfxDevice_p pDevice, CanvasRef canvasRef, SurfaceFac
 
 //____ playSurfaceStressTest() _________________________________________________
 
-void playSurfaceStressTest(GfxDevice_p pDevice, CanvasRef canvasRef, SurfaceFactory_p pFactory )
+void playSurfaceStressTest(Device_p pDevice, CanvasRef canvasRef, SurfaceFactory_p pFactory )
 {
 	SoftSurface_p pOrgSurf = loadImage( "resources/logo-200.png" );
 	SizeI logoSize = pOrgSurf->pixelSize();
@@ -595,7 +595,7 @@ void playSurfaceStressTest(GfxDevice_p pDevice, CanvasRef canvasRef, SurfaceFact
 
 //____ playLogoFadeIn() _________________________________________________
 
-void playLogoFadeIn(GfxDevice_p pDevice, CanvasRef canvasRef, SurfaceFactory_p pFactory )
+void playLogoFadeIn(Device_p pDevice, CanvasRef canvasRef, SurfaceFactory_p pFactory )
 {
 	SoftSurface_p pOrgSurf = loadImage( "resources/logo-200.png" );
 	SizeI logoSize = pOrgSurf->pixelSize();
@@ -627,7 +627,7 @@ void playLogoFadeIn(GfxDevice_p pDevice, CanvasRef canvasRef, SurfaceFactory_p p
 
 //____ playRectangleDance() _________________________________________________
 
-void playRectangleDance(GfxDevice_p pDevice, CanvasRef canvasRef )
+void playRectangleDance(Device_p pDevice, CanvasRef canvasRef )
 {
 	int ticker = 0;
 	const int length = 150;
@@ -653,12 +653,12 @@ void playRectangleDance(GfxDevice_p pDevice, CanvasRef canvasRef )
 
 //____ playDirectUpdate() _________________________________________________
 
-void playDirectUpdate(GfxDevice_p pDevice, CanvasRef canvasRef )
+void playDirectUpdate(Device_p pDevice, CanvasRef canvasRef )
 {
 	SoftBackend_p pBackend = SoftBackend::create();
 	addDefaultSoftKernels( pBackend );
 
-	GfxDevice_p	pMyDevice = GfxDeviceGen2::create(pBackend);
+	Device_p	pMyDevice = DeviceGen2::create(pBackend);
 
 	auto& canvasInfo = pDevice->canvas(canvasRef);
 
@@ -712,7 +712,7 @@ void playDirectUpdate(GfxDevice_p pDevice, CanvasRef canvasRef )
 
 //____ playBounceRects() _________________________________________________
 
-void playBounceRects(GfxDevice_p pDevice, CanvasRef canvasRef)
+void playBounceRects(Device_p pDevice, CanvasRef canvasRef)
 {
 	int ticker = 0;
 	const int length = 1000;
@@ -757,7 +757,7 @@ void playBounceRects(GfxDevice_p pDevice, CanvasRef canvasRef)
 		const int nSprites = 8;
 
 		for (int i = 0; i < nSprites; i++)
-			clip.add( GfxUtil::alignUp(spriteRects[i]));
+			clip.add( Util::alignUp(spriteRects[i]));
 
 		for (int i = 0; i < nSprites; i++)
 		{
@@ -792,7 +792,7 @@ void playBounceRects(GfxDevice_p pDevice, CanvasRef canvasRef)
 
 		for (int i = 0; i < nSprites; i++)
 		{
-			RectSPX r = GfxUtil::alignUp(spriteRects[i]);
+			RectSPX r = Util::alignUp(spriteRects[i]);
 
 			// Align x to even pixels
 /*
@@ -828,7 +828,7 @@ void playBounceRects(GfxDevice_p pDevice, CanvasRef canvasRef)
 
 //____ playDualScreenBounceRects() _________________________________________________
 
-void playDualScreenBounceRects(GfxDevice_p pDevice, CanvasRef canvasRef1, CanvasRef canvasRef2)
+void playDualScreenBounceRects(Device_p pDevice, CanvasRef canvasRef1, CanvasRef canvasRef2)
 {
 	int ticker = 0;
 	const int length = 1000;
@@ -898,11 +898,11 @@ void playDualScreenBounceRects(GfxDevice_p pDevice, CanvasRef canvasRef1, Canvas
 		for( int s = 0 ; s < 2 ; s++ )
 		{
 //			for (int i = 0; i < nSprites; i++)
-//				clip.add( GfxUtil::alignUp(spriteRects[s][i]));
+//				clip.add( Util::alignUp(spriteRects[s][i]));
 
 			for (int i = 0; i < nSprites; i++)
 			{
-				RectSPX r = GfxUtil::alignUp(spriteRects[s][i]);
+				RectSPX r = Util::alignUp(spriteRects[s][i]);
 
 				// Align x to even pixels
 	/*
@@ -952,7 +952,7 @@ void playDualScreenBounceRects(GfxDevice_p pDevice, CanvasRef canvasRef1, Canvas
 
 			for (int i = 0; i < nSprites; i++)
 			{
-				RectSPX r = GfxUtil::alignUp(spriteRects[s][i]);
+				RectSPX r = Util::alignUp(spriteRects[s][i]);
 
 				// Align x to even pixels
 	/*
@@ -970,7 +970,7 @@ void playDualScreenBounceRects(GfxDevice_p pDevice, CanvasRef canvasRef1, Canvas
 			}
 
 //			for (int i = 0; i < nSprites; i++)
-//				clip.add(GfxUtil::alignUp(spriteRects[s][i]));
+//				clip.add(Util::alignUp(spriteRects[s][i]));
 
 			CanvasRef canvas = s == 0 ? canvasRef1 : canvasRef2;
 			pDevice->beginCanvasUpdate(canvas, clip.size(), clip.begin() );
@@ -993,7 +993,7 @@ void playDualScreenBounceRects(GfxDevice_p pDevice, CanvasRef canvasRef1, Canvas
 
 //____ playRectangleDanceDualScreen() _________________________________________________
 
-void playRectangleDanceDualScreen(GfxDevice_p pDevice, CanvasRef canvasRef1, CanvasRef canvasRef2 )
+void playRectangleDanceDualScreen(Device_p pDevice, CanvasRef canvasRef1, CanvasRef canvasRef2 )
 {
 	int ticker = 0;
 	const int length = 600;
@@ -1042,7 +1042,7 @@ void playRectangleDanceDualScreen(GfxDevice_p pDevice, CanvasRef canvasRef1, Can
 
 //____ playScroll() _________________________________________________
 
-void playScroll(GfxDevice_p pDevice, RectI canvas )
+void playScroll(Device_p pDevice, RectI canvas )
 {
     int ticker = 0;
     SizeI spriteSize(30, 30);
@@ -1089,7 +1089,7 @@ CoordSPX positionSprite(SizeSPX dimensions, int tick, int length, int nb, int am
 
 //____ play general stuff ________________________________________________
 
-void playDelayFrames(GfxDevice_p pDevice, int nFrames)
+void playDelayFrames(Device_p pDevice, int nFrames)
 {
 	for (int i = 0; i < nFrames; i++)
 	{

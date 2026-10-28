@@ -35,15 +35,15 @@ wax_obj wax_createPrinter()
 }
 
 
-void wax_setPrinterGfxDevice( wax_obj printer, wax_obj gfxDevice )
+void wax_setPrinterDevice( wax_obj printer, wax_obj device )
 {
-	auto pDevice = static_cast<GfxDevice*>(reinterpret_cast<Object*>(gfxDevice));
-	getPtr(printer)->setGfxDevice(pDevice);
+	auto pDevice = static_cast<Device*>(reinterpret_cast<Object*>(device));
+	getPtr(printer)->setDevice(pDevice);
 }
 
-wax_obj wax_printerGfxDevice(wax_obj printer)
+wax_obj wax_printerDevice(wax_obj printer)
 {
-	return reinterpret_cast<wax_obj>(static_cast<Object*>(getPtr(printer)->gfxDevice().rawPtr()));
+	return reinterpret_cast<wax_obj>(static_cast<Object*>(getPtr(printer)->device().rawPtr()));
 }
 
 void wax_setPrinterFont( wax_obj printer, wax_obj font )

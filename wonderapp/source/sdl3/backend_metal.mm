@@ -68,7 +68,7 @@ bool backend_specific_init()
 
 	auto pBackend = MetalBackend::create();
 	auto pDevice = GfxDeviceGen2::create(pBackend);
-	Base::setDefaultGfxDevice(pDevice);
+	Base::setDefaultDevice(pDevice);
 
 	auto pSurfaceFactory = MetalSurfaceFactory::create();
 	Base::setDefaultSurfaceFactory(pSurfaceFactory);
@@ -120,7 +120,7 @@ SDLWindowMetal::SDLWindowMetal(wapp::Window* pUserWindow, wg::Placement origin, 
 		layer.pixelFormat = MTLPixelFormatBGRA8Unorm_sRGB;
 		layer.drawableSize = CGSizeMake(pixels.w, pixels.h);
 
-		m_pBackend = wax_static_cast<MetalBackend_p>(static_cast<GfxDeviceGen2*>(Base::defaultGfxDevice().rawPtr())->backend());
+		m_pBackend = wax_static_cast<MetalBackend_p>(static_cast<GfxDeviceGen2*>(Base::defaultDevice().rawPtr())->backend());
 		m_pBackend->setDefaultCanvas(nullptr, pixels, PixelFormat::ARGB_8);
 
 		m_pCanvas = MetalSurface::create({.canvas = true, .format = PixelFormat::ARGB_8, .scale = scale, .size = pixels });
@@ -207,7 +207,7 @@ void SDLWindowMetal::_present(bool bWithTransaction)
 
 		m_pBackend->autopresent(surface);
 
-		auto pDevice = Base::defaultGfxDevice();
+		auto pDevice = Base::defaultDevice();
 
 		pDevice->beginRender();
 		pDevice->beginCanvasUpdate(CanvasRef::Default);

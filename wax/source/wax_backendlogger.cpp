@@ -25,7 +25,7 @@
 
 namespace wax
 {
-	const TypeInfo BackendLogger::TYPEINFO = { "BackendLogger", &GfxBackend::TYPEINFO };
+	const TypeInfo BackendLogger::TYPEINFO = { "BackendLogger", &Backend::TYPEINFO };
 
 	const TypeInfo s_unspecifiedSurfaceType = { "SurfaceType Unspecified, real backend missing", &Surface::TYPEINFO };
 
@@ -434,7 +434,7 @@ namespace wax
 
 						if (capsWord != 0)
 						{
-							LineCaps caps = GfxBackend::decodeLineCaps(capsWord);
+							LineCaps caps = Backend::decodeLineCaps(capsWord);
 
 							*m_pOStream << ", caps " << toString(caps.begin.shape);
 							if (caps.begin.shape == LineCapShape::Spear)
@@ -478,7 +478,7 @@ namespace wax
 
 				case Command::DrawShape:
 				{
-					auto kind = GfxBackend::ShapeKind(p[0]);
+					auto kind = Backend::ShapeKind(p[0]);
 					int nRects = p[1];
 					int nColors = p[2];
 					int nWords = p[3];

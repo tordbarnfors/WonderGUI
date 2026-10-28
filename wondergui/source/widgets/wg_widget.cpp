@@ -456,7 +456,7 @@ namespace wg
 	{
 		//TOOD: Support layers!
 		
-		auto pDevice = Base::defaultGfxDevice();
+		auto pDevice = Base::defaultDevice();
 		auto pFactory = Base::defaultSurfaceFactory();
 
 		if( !pDevice || !pFactory )

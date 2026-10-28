@@ -22,7 +22,7 @@
 #include <memory.h>
 #include <wg_scrollbar.h>
 #include <wax_surface.h>
-#include <wax_gfxdevice.h>
+#include <wax_device.h>
 #include <wg_util.h>
 #include <wg_msgrouter.h>
 #include <wg_base.h>

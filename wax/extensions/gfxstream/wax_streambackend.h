@@ -23,7 +23,7 @@
 #define	WAX_STREAMBACKEND_DOT_H
 #pragma once
 
-#include <wax_gfxbackend.h>
+#include <wax_backend.h>
 #include <wax_streamencoder.h>
 #include <wax_remotesurface.h>
 #include <wax_compression.h>
@@ -37,7 +37,7 @@ namespace wax
 	typedef	StrongPtr<StreamBackend>	StreamBackend_p;
 	typedef	WeakPtr<StreamBackend>	StreamBackend_wp;
 
-	class StreamBackend : public GfxBackend
+	class StreamBackend : public Backend
 	{
 		friend class RemoteSurface;
 		friend class MirrorSurface;

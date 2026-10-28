@@ -23,7 +23,7 @@
 #define WAX_BACKENDLOGGER_DOT_H
 #pragma once
 
-#include <wax_gfxbackend.h>
+#include <wax_backend.h>
 #include <iostream>
 
 
@@ -37,13 +37,13 @@ namespace wax
 
 	//____ BackendLogger __________________________________________________________
 
-	class BackendLogger : public GfxBackend
+	class BackendLogger : public Backend
 {
 public:
 
 	//.____ Creation __________________________________________
 
-	static BackendLogger_p		create(std::ostream * pStream, GfxBackend * pBackend) { return BackendLogger_p(new BackendLogger(pStream, pBackend)); }
+	static BackendLogger_p		create(std::ostream * pStream, Backend * pBackend) { return BackendLogger_p(new BackendLogger(pStream, pBackend)); }
 
 
 	//.____ Identification __________________________________________
@@ -88,7 +88,7 @@ public:
 	void	waitForCompletion() override;
 
 protected:
-	BackendLogger(std::ostream * pStream, GfxBackend* pBackend) : m_pBackend(pBackend), m_pOStream(pStream) {}
+	BackendLogger(std::ostream * pStream, Backend* pBackend) : m_pBackend(pBackend), m_pOStream(pStream) {}
 
 	virtual ~BackendLogger() {};
 
@@ -105,7 +105,7 @@ protected:
 	Object* const *	m_pObjectsBeg = nullptr;		// Object table, commands refer to objects by index.
 	Object* const *	m_pObjectsEnd = nullptr;
 
-	GfxBackend_p	m_pBackend;
+	Backend_p	m_pBackend;
 
 	std::ostream*	m_pOStream = nullptr;
 

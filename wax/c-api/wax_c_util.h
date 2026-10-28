@@ -19,8 +19,8 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef WAX_C_GFXUTIL_DOT_H
-#define WAX_C_GFXUTIL_DOT_H
+#ifndef WAX_C_UTIL_DOT_H
+#define WAX_C_UTIL_DOT_H
 #pragma once
 
 #include <wax_c_types.h>
@@ -36,4 +36,4 @@ extern "C" {
 }
 #endif
 
-#endif //WAX_C_GFXUTIL_DOT_H
+#endif //WAX_C_UTIL_DOT_H

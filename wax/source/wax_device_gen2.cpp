@@ -24,27 +24,27 @@
 #include <cmath>
 #include <cstring>
 
-#include <wax_gfxdevice_gen2.h>
+#include <wax_device_gen2.h>
 #include <wax_tinttools.h>
 #include <wax_geo.h>
-#include <wax_gfxutil.h>
+#include <wax_util.h>
 #include <wax_core.h>
 
 #include <wax_waveform.h>
 
 using namespace std;
-using namespace wax::GfxUtil;
+using namespace wax::Util;
 
 namespace wax
 {
 
-	const TypeInfo GfxDeviceGen2::TYPEINFO = { "GfxDeviceGen2", &GfxDevice::TYPEINFO };
+	const TypeInfo DeviceGen2::TYPEINFO = { "DeviceGen2", &Device::TYPEINFO };
 
 	const TypeInfo s_surfaceType = { "Unkown SurfaceType, backend missing", &Surface::TYPEINFO };
 
 
 
-	const int GfxDeviceGen2::s_blitFlipOffsets[GfxFlip_size][2] = { { 0,0 },				// Normal
+	const int DeviceGen2::s_blitFlipOffsets[GfxFlip_size][2] = { { 0,0 },				// Normal
 															{ 1,0 },				// FlipX
 															{ 0,1 },				// FlipY
 															{ 0,1 },				// Rot90
@@ -57,7 +57,7 @@ namespace wax
 															{ 1,1 },				// Rot270FlipX
 															{ 0,0 } };				// Rot270FlipY
 
-	const int GfxDeviceGen2::s_blitFlipTransforms[GfxFlip_size][2][2] = {
+	const int DeviceGen2::s_blitFlipTransforms[GfxFlip_size][2][2] = {
 	{ 1,0,0,1 },			// Normal
 	{ -1,0,0,1 },			// FlipX
 	{ 1,0,0,-1 },			// FlipY
@@ -75,33 +75,33 @@ namespace wax
 
 //____ create _____________________________________________________________
 
-GfxDeviceGen2_p GfxDeviceGen2::create( GfxBackend * pBackend )
+DeviceGen2_p DeviceGen2::create( Backend * pBackend )
 {
-	return GfxDeviceGen2_p( new GfxDeviceGen2(pBackend) );
+	return DeviceGen2_p( new DeviceGen2(pBackend) );
 }
 
 //____ constructor _____________________________________________________________
 
-GfxDeviceGen2::GfxDeviceGen2( GfxBackend * pBackend ) : m_pBackend(pBackend)
+DeviceGen2::DeviceGen2( Backend * pBackend ) : m_pBackend(pBackend)
 {
 }
 
 //____ Destructor _________________________________________________________
 
-GfxDeviceGen2::~GfxDeviceGen2()
+DeviceGen2::~DeviceGen2()
 {
 }
 
 //____ typeInfo() _________________________________________________________
 
-const TypeInfo& GfxDeviceGen2::typeInfo(void) const
+const TypeInfo& DeviceGen2::typeInfo(void) const
 {
 	return TYPEINFO;
 }
 
 //____ setBackend() ___________________________________________________________
 
-bool GfxDeviceGen2::setBackend( GfxBackend * pBackend )
+bool DeviceGen2::setBackend( Backend * pBackend )
 {
 	if( m_bRendering )
 	{
@@ -116,7 +116,7 @@ bool GfxDeviceGen2::setBackend( GfxBackend * pBackend )
 
 //____ canvas() ______________________________________________________________
 
-const CanvasInfo& GfxDeviceGen2::canvas() const
+const CanvasInfo& DeviceGen2::canvas() const
 {
 	if (m_canvasStack.empty())
 		return m_dummyCanvasInfo;
@@ -124,7 +124,7 @@ const CanvasInfo& GfxDeviceGen2::canvas() const
 		return m_canvasStack.back().info;
 }
 
-const CanvasInfo GfxDeviceGen2::canvas(CanvasRef ref) const
+const CanvasInfo DeviceGen2::canvas(CanvasRef ref) const
 {
 	const CanvasInfo * pInfo = m_pBackend ? m_pBackend->canvasInfo(ref) : nullptr;
 	
@@ -136,7 +136,7 @@ const CanvasInfo GfxDeviceGen2::canvas(CanvasRef ref) const
 
 //____ canvasLayers() _____________________________________________________
 
-CanvasLayers_p GfxDeviceGen2::canvasLayers() const
+CanvasLayers_p DeviceGen2::canvasLayers() const
 {
 	if (m_canvasStack.empty())
 		return nullptr;
@@ -146,28 +146,28 @@ CanvasLayers_p GfxDeviceGen2::canvasLayers() const
 
 //____ surfaceFactory() _______________________________________________________
 
-SurfaceFactory_p GfxDeviceGen2::surfaceFactory()
+SurfaceFactory_p DeviceGen2::surfaceFactory()
 {
 	return m_pBackend ? m_pBackend->surfaceFactory() : nullptr;
 }
 
 //____ edgemapFactory() _______________________________________________________
 
-EdgemapFactory_p GfxDeviceGen2::edgemapFactory()
+EdgemapFactory_p DeviceGen2::edgemapFactory()
 {
 	return m_pBackend ? m_pBackend->edgemapFactory() : nullptr;
 }
 
 //____ warpmapFactory() _______________________________________________________
 
-WarpmapFactory_p GfxDeviceGen2::warpmapFactory()
+WarpmapFactory_p DeviceGen2::warpmapFactory()
 {
 	return m_pBackend ? m_pBackend->warpmapFactory() : nullptr;
 }
 
 //____ canvasSize() _______________________________________________________
 
-SizeSPX GfxDeviceGen2::canvasSize() const
+SizeSPX DeviceGen2::canvasSize() const
 {
 	if (m_canvasStack.empty())
 		return { 0,0 };
@@ -177,7 +177,7 @@ SizeSPX GfxDeviceGen2::canvasSize() const
 
 //____ setClipList() ______________________________________________________
 
-bool GfxDeviceGen2::setClipList(int nRectangles, const RectSPX* pRectangles)
+bool DeviceGen2::setClipList(int nRectangles, const RectSPX* pRectangles)
 {
 	if (!m_pActiveClipList)
 		return false;
@@ -217,7 +217,7 @@ bool GfxDeviceGen2::setClipList(int nRectangles, const RectSPX* pRectangles)
 
 //____ resetClipList() ____________________________________________________
 
-void GfxDeviceGen2::resetClipList()
+void DeviceGen2::resetClipList()
 {
 	if (m_pActiveClipList)
 		* m_pActiveClipList = m_pActiveCanvas->updateRects;
@@ -233,7 +233,7 @@ void GfxDeviceGen2::resetClipList()
 
 //____ pushClipList() _____________________________________________________
 
-bool GfxDeviceGen2::pushClipList(int nRectangles, const RectSPX* pRectangles)
+bool DeviceGen2::pushClipList(int nRectangles, const RectSPX* pRectangles)
 {
 	if (!m_pActiveCanvas)
 	{
@@ -277,7 +277,7 @@ bool GfxDeviceGen2::pushClipList(int nRectangles, const RectSPX* pRectangles)
 
 //____ popClipList() ______________________________________________________
 
-bool GfxDeviceGen2::popClipList()
+bool DeviceGen2::popClipList()
 {
 	if (!m_pActiveCanvas)
 	{
@@ -311,7 +311,7 @@ bool GfxDeviceGen2::popClipList()
 
 //____ clipList() _________________________________________________________
 
-const RectSPX*	GfxDeviceGen2::clipList() const
+const RectSPX*	DeviceGen2::clipList() const
 {
 	if (!m_pActiveClipList)
 		return nullptr;
@@ -321,7 +321,7 @@ const RectSPX*	GfxDeviceGen2::clipList() const
 
 //____ clipListSize() _____________________________________________________
 
-int GfxDeviceGen2::clipListSize() const
+int DeviceGen2::clipListSize() const
 {
 	if (!m_pActiveClipList)
 		return 0;
@@ -331,7 +331,7 @@ int GfxDeviceGen2::clipListSize() const
 
 //____ clipBounds() _______________________________________________________
 
-const RectSPX& GfxDeviceGen2::clipBounds() const
+const RectSPX& DeviceGen2::clipBounds() const
 {
 	if (!m_pActiveClipList)
 		return m_dummyRect;
@@ -341,7 +341,7 @@ const RectSPX& GfxDeviceGen2::clipBounds() const
 
 //____ setTintColor() _______________________________________________________________
 
-void GfxDeviceGen2::setTintColor(HiColor color)
+void DeviceGen2::setTintColor(HiColor color)
 {
 	if (color == m_renderState.tintColor)
 		return;
@@ -363,7 +363,7 @@ void GfxDeviceGen2::setTintColor(HiColor color)
 
 //____ clearTintColor() _____________________________________________________________
 
-void GfxDeviceGen2::clearTintColor()
+void DeviceGen2::clearTintColor()
 {
 	if (!m_renderState.tintColor.isUndefined() )
 	{
@@ -374,14 +374,14 @@ void GfxDeviceGen2::clearTintColor()
 
 //____ hasTintColor() _________________________________________________________
 
-bool GfxDeviceGen2::hasTintColor() const
+bool DeviceGen2::hasTintColor() const
 {
 	return m_renderState.tintColor != HiColor::Undefined;
 }
 
 //____ tintColor() ________________________________________________________
 
-HiColor GfxDeviceGen2::tintColor() const
+HiColor DeviceGen2::tintColor() const
 {
 	return m_renderState.tintColor == HiColor::Undefined ? HiColor::White : m_renderState.tintColor;
 }
@@ -401,7 +401,7 @@ HiColor GfxDeviceGen2::tintColor() const
  * @param pTint	The Tint. Nullptr clears the Tint.
  */
 
-void GfxDeviceGen2::setTint(const RectSPX& rect, Tint* pTint)
+void DeviceGen2::setTint(const RectSPX& rect, Tint* pTint)
 {
 	if (!pTint)
 	{
@@ -420,7 +420,7 @@ void GfxDeviceGen2::setTint(const RectSPX& rect, Tint* pTint)
 
 //____ clearTint() ____________________________________________________________
 
-void GfxDeviceGen2::clearTint()
+void DeviceGen2::clearTint()
 {
 	if (m_renderState.pTint)
 		m_stateChanges |= int(StateChange::Tint);
@@ -431,28 +431,28 @@ void GfxDeviceGen2::clearTint()
 
 //____ hasTint() ______________________________________________________________
 
-bool GfxDeviceGen2::hasTint() const
+bool DeviceGen2::hasTint() const
 {
 	return m_renderState.pTint != nullptr;
 }
 
 //____ tint() _________________________________________________________________
 
-Tint_p GfxDeviceGen2::tint() const
+Tint_p DeviceGen2::tint() const
 {
 	return m_renderState.pTint;
 }
 
 //____ tintRect() _____________________________________________________________
 
-RectSPX GfxDeviceGen2::tintRect() const
+RectSPX DeviceGen2::tintRect() const
 {
 	return m_renderState.tintRect;
 }
 
 //____ setBlendMode() _____________________________________________________
 
-bool GfxDeviceGen2::setBlendMode(BlendMode blendMode)
+bool DeviceGen2::setBlendMode(BlendMode blendMode)
 {
 	if (blendMode != m_renderState.blendMode)
 	{
@@ -468,14 +468,14 @@ bool GfxDeviceGen2::setBlendMode(BlendMode blendMode)
 
 //____ blendMode() ________________________________________________________
 
-BlendMode GfxDeviceGen2::blendMode() const
+BlendMode DeviceGen2::blendMode() const
 {
 	return m_renderState.blendMode;
 }
 
 //____ setBlitSource() ____________________________________________________
 
-bool GfxDeviceGen2::setBlitSource(Surface* pSource)
+bool DeviceGen2::setBlitSource(Surface* pSource)
 {
 	if (pSource && !m_pBackend->canBeBlitSource(pSource->typeInfo()))
 	{
@@ -496,14 +496,14 @@ bool GfxDeviceGen2::setBlitSource(Surface* pSource)
 
 //____ blitSource() _______________________________________________________
 
-Surface_p GfxDeviceGen2::blitSource() const
+Surface_p DeviceGen2::blitSource() const
 {
 	return m_renderState.blitSource;
 }
 
 //____ setMorphFactor() ___________________________________________________
 
-void GfxDeviceGen2::setMorphFactor(float factor)
+void DeviceGen2::setMorphFactor(float factor)
 {
 	if (factor != m_renderState.morphFactor)
 	{
@@ -514,14 +514,14 @@ void GfxDeviceGen2::setMorphFactor(float factor)
 
 //____ morphFactor() ______________________________________________________
 
-float GfxDeviceGen2::morphFactor() const
+float DeviceGen2::morphFactor() const
 {
 	return m_renderState.morphFactor;
 }
 
 //____ setBlurbrush() __________________________________________________________
 
-void GfxDeviceGen2::setBlurbrush(Blurbrush* pBrush)
+void DeviceGen2::setBlurbrush(Blurbrush* pBrush)
 {
 	if (pBrush != m_renderState.pBlurbrush)
 	{
@@ -532,14 +532,14 @@ void GfxDeviceGen2::setBlurbrush(Blurbrush* pBrush)
 
 //____ blurbrush() _____________________________________________________________
 
-Blurbrush_p	GfxDeviceGen2::blurbrush() const
+Blurbrush_p	DeviceGen2::blurbrush() const
 {
 	return m_renderState.pBlurbrush;
 }
 
 //____ setFixedBlendColor() _______________________________________________
 
-void GfxDeviceGen2::setFixedBlendColor(HiColor color)
+void DeviceGen2::setFixedBlendColor(HiColor color)
 {
 	if (m_renderState.fixedBlendColor != color)
 	{
@@ -550,14 +550,14 @@ void GfxDeviceGen2::setFixedBlendColor(HiColor color)
 
 //____ fixedBlendColor() __________________________________________________
 
-HiColor GfxDeviceGen2::fixedBlendColor() const
+HiColor DeviceGen2::fixedBlendColor() const
 {
 	return m_renderState.fixedBlendColor;
 }
 
 //____ setRenderLayer() ___________________________________________________
 
-void GfxDeviceGen2::setRenderLayer(int layer)
+void DeviceGen2::setRenderLayer(int layer)
 {
 	if (!m_pActiveCanvas)
 	{
@@ -588,7 +588,7 @@ void GfxDeviceGen2::setRenderLayer(int layer)
 
 //____ renderLayer() ______________________________________________________
 
-int GfxDeviceGen2::renderLayer() const
+int DeviceGen2::renderLayer() const
 {
 	if (!m_pActiveCanvas)
 	{
@@ -602,7 +602,7 @@ int GfxDeviceGen2::renderLayer() const
 
 //____ setSubPixelFill() ______________________________________________________
 
-void GfxDeviceGen2::setSubPixelFill(bool bSubPixelFill)
+void DeviceGen2::setSubPixelFill(bool bSubPixelFill)
 {
 	m_bSubPixelFill = bSubPixelFill;
 }
@@ -611,7 +611,7 @@ void GfxDeviceGen2::setSubPixelFill(bool bSubPixelFill)
 
 //____ beginRender() ______________________________________________________
 
-bool GfxDeviceGen2::beginRender()
+bool DeviceGen2::beginRender()
 {
 	if (m_bRendering)
 	{
@@ -634,7 +634,7 @@ bool GfxDeviceGen2::beginRender()
 
 //____ endRender() ________________________________________________________
 
-bool GfxDeviceGen2::endRender()
+bool DeviceGen2::endRender()
 {
 	if (!m_bRendering)
 	{
@@ -658,28 +658,28 @@ bool GfxDeviceGen2::endRender()
 
 //____ isRendering() ______________________________________________________
 
-bool GfxDeviceGen2::isRendering()
+bool DeviceGen2::isRendering()
 {
 	return m_bRendering;
 }
 
 //____ isIdle() ___________________________________________________________
 
-bool GfxDeviceGen2::isIdle()
+bool DeviceGen2::isIdle()
 {
 	return !m_bRendering;
 }
 
 //____ flush() ____________________________________________________________
 
-void GfxDeviceGen2::flush()
+void DeviceGen2::flush()
 {
 	return;
 }
 
 //____ _beginCanvasUpdate() _______________________________________________
 
-bool GfxDeviceGen2::_beginCanvasUpdate(CanvasRef ref, Surface* pCanvas, int nUpdateRects, const RectSPX* pUpdateRects, CanvasLayers* pLayers, int startLayer)
+bool DeviceGen2::_beginCanvasUpdate(CanvasRef ref, Surface* pCanvas, int nUpdateRects, const RectSPX* pUpdateRects, CanvasLayers* pLayers, int startLayer)
 {
 	// Error checking
 
@@ -852,7 +852,7 @@ bool GfxDeviceGen2::_beginCanvasUpdate(CanvasRef ref, Surface* pCanvas, int nUpd
 
 //____ endCanvasUpdate() __________________________________________________
 
-void GfxDeviceGen2::endCanvasUpdate()
+void DeviceGen2::endCanvasUpdate()
 {
 	if (m_canvasStack.empty())
 	{
@@ -889,7 +889,7 @@ void GfxDeviceGen2::endCanvasUpdate()
 	This means that any drawing performed outside current cliprects is lost.
 */
 
-void GfxDeviceGen2::flattenLayers()
+void DeviceGen2::flattenLayers()
 {
 	_doFlattenLayers(); 
 	_resetCanvas();
@@ -905,7 +905,7 @@ void GfxDeviceGen2::flattenLayers()
 	Current cliprects clips the clearing.
 */
 
-void GfxDeviceGen2::clearLayers()
+void DeviceGen2::clearLayers()
 {
 	auto& canvasEntry = m_canvasStack.back();
 
@@ -949,7 +949,7 @@ void GfxDeviceGen2::clearLayers()
 	* Resetting all layers render states.
 */
 
-void GfxDeviceGen2::_resetCanvas()
+void DeviceGen2::_resetCanvas()
 {
 	auto& canvasEntry = m_canvasStack.back();
 
@@ -997,7 +997,7 @@ void GfxDeviceGen2::_resetCanvas()
 
 //____ _doFlattenLayers() ____________________________________________________
 
-void GfxDeviceGen2::_doFlattenLayers()
+void DeviceGen2::_doFlattenLayers()
 {
 	auto& canvasData = m_canvasStack.back();
 
@@ -1265,7 +1265,7 @@ void GfxDeviceGen2::_doFlattenLayers()
 
 //____ fill() _____________________________________________________________
 
-void GfxDeviceGen2::fill(HiColor color)
+void DeviceGen2::fill(HiColor color)
 {
 	if (!m_pActiveCanvas)
 	{
@@ -1314,7 +1314,7 @@ void GfxDeviceGen2::fill(HiColor color)
 
 //____ fill() _____________________________________________________________
 
-void GfxDeviceGen2::fill(const RectSPX& rect, HiColor color)
+void DeviceGen2::fill(const RectSPX& rect, HiColor color)
 {
 	if (!m_pActiveCanvas)
 	{
@@ -1388,7 +1388,7 @@ void GfxDeviceGen2::fill(const RectSPX& rect, HiColor color)
 
 //____ drawLine() (start/direction) __________________________________________
 
-void GfxDeviceGen2::drawLine(CoordSPX begin, Direction dir, spx length, HiColor color, spx thickness, LineCaps caps)
+void DeviceGen2::drawLine(CoordSPX begin, Direction dir, spx length, HiColor color, spx thickness, LineCaps caps)
 {
 	if (dir == Direction::Undefined)
 		return;
@@ -1448,7 +1448,7 @@ void GfxDeviceGen2::drawLine(CoordSPX begin, Direction dir, spx length, HiColor 
 
 //____ drawLine() (from/to) __________________________________________
 
-void GfxDeviceGen2::drawLine(CoordSPX beg, CoordSPX end, HiColor color, spx thickness, LineCaps caps)
+void DeviceGen2::drawLine(CoordSPX beg, CoordSPX end, HiColor color, spx thickness, LineCaps caps)
 {
 	if (!m_pActiveCanvas)
 	{
@@ -1472,7 +1472,7 @@ void GfxDeviceGen2::drawLine(CoordSPX beg, CoordSPX end, HiColor color, spx thic
 	// this line isn't, as backends can draw them in separate batches. The last word of the latest
 	// command is the caps of its last line.
 
-	uint16_t capsWord = GfxBackend::encodeLineCaps(caps);
+	uint16_t capsWord = Backend::encodeLineCaps(caps);
 
 	if( m_pActiveLayer->latestCommand == Command::Line && commands.at(m_pActiveLayer->latestCommandOfs+4).as<uint16_t>() < 65535 &&
 		(commands.at(commands.size() - 2).as<uint16_t>() == 0) == (capsWord == 0) )
@@ -1513,7 +1513,7 @@ void GfxDeviceGen2::drawLine(CoordSPX beg, CoordSPX end, HiColor color, spx thic
 //____ _isShapeColorDrawn() __________________________________________________
 // Undefined colors are not drawn. Like fill(), transparent colors draw nothing in Blend mode.
 
-bool GfxDeviceGen2::_isShapeColorDrawn(HiColor color) const
+bool DeviceGen2::_isShapeColorDrawn(HiColor color) const
 {
 	return !color.isUndefined() && !(color.a == 0 && m_renderState.blendMode == BlendMode::Blend);
 }
@@ -1522,7 +1522,7 @@ bool GfxDeviceGen2::_isShapeColorDrawn(HiColor color) const
 // Adds the clip rectangles within the pixels touched by area, so that they stay
 // pixel aligned. Returns their number.
 
-int GfxDeviceGen2::_addShapeClipRects(const RectSPX& area)
+int DeviceGen2::_addShapeClipRects(const RectSPX& area)
 {
 	RectSPX bounds;
 	bounds.x = area.x & ~63;
@@ -1549,7 +1549,7 @@ int GfxDeviceGen2::_addShapeClipRects(const RectSPX& area)
 
 //____ drawRoundedBox() ______________________________________________________
 
-void GfxDeviceGen2::drawRoundedBox(const RoundedBoxSpec& spec)
+void DeviceGen2::drawRoundedBox(const RoundedBoxSpec& spec)
 {
 	if (!m_pActiveCanvas)
 	{
@@ -1579,7 +1579,7 @@ void GfxDeviceGen2::drawRoundedBox(const RoundedBoxSpec& spec)
 		return;
 
 	spx radius[4] = { spec.radius[0], spec.radius[1], spec.radius[2], spec.radius[3] };
-	GfxUtil::clampCornerRadii(rect.size(), radius);
+	Util::clampCornerRadii(rect.size(), radius);
 
 	// Square, untinted boxes aligned to pixels are just fills.
 
@@ -1634,22 +1634,22 @@ void GfxDeviceGen2::drawRoundedBox(const RoundedBoxSpec& spec)
 
 	uint16_t flags = 0;
 	if (bHasFill)
-		flags |= uint16_t(GfxBackend::RoundedBoxFlags::HasFill);
+		flags |= uint16_t(Backend::RoundedBoxFlags::HasFill);
 	if (bHasOutline)
-		flags |= uint16_t(GfxBackend::RoundedBoxFlags::HasOutline);
+		flags |= uint16_t(Backend::RoundedBoxFlags::HasOutline);
 	if (pTints[0])
-		flags |= uint16_t(GfxBackend::RoundedBoxFlags::HasFillTint);
+		flags |= uint16_t(Backend::RoundedBoxFlags::HasFillTint);
 	if (pTints[1])
-		flags |= uint16_t(GfxBackend::RoundedBoxFlags::HasOutlineTint);
+		flags |= uint16_t(Backend::RoundedBoxFlags::HasOutlineTint);
 
-	int nWords = GfxBackend::c_roundedBoxPayloadWords + nTintWords[0] + nTintWords[1];
+	int nWords = Backend::c_roundedBoxPayloadWords + nTintWords[0] + nTintWords[1];
 	int nColors = (bHasFill ? 1 : 0) + (bHasOutline ? 1 : 0) + nTintColors[0] + nTintColors[1];
 
 	// Write command, aligned to 32 bits.
 
 	auto& commands = m_pActiveLayer->commands;
 
-	commands.secureSpace((GfxBackend::c_drawShapeHeaderWords + nWords + 1) * 2);
+	commands.secureSpace((Backend::c_drawShapeHeaderWords + nWords + 1) * 2);
 
 	if (commands.size() % 4 != 0)
 		commands.pushUnchecked(uint16_t(Command::None));
@@ -1658,7 +1658,7 @@ void GfxDeviceGen2::drawRoundedBox(const RoundedBoxSpec& spec)
 	m_pActiveLayer->latestCommandOfs = (int)commands.size();
 
 	commands.pushUnchecked(uint16_t(Command::DrawShape));
-	commands.pushUnchecked(uint16_t(GfxBackend::ShapeKind::RoundedBox));
+	commands.pushUnchecked(uint16_t(Backend::ShapeKind::RoundedBox));
 	commands.pushUnchecked(uint16_t(nRects));
 	commands.pushUnchecked(uint16_t(nColors));
 	commands.pushUnchecked(uint16_t(nWords));
@@ -1702,7 +1702,7 @@ void GfxDeviceGen2::drawRoundedBox(const RoundedBoxSpec& spec)
 
 //____ drawRing() ____________________________________________________________
 
-void GfxDeviceGen2::drawRing(const RingSpec& spec)
+void DeviceGen2::drawRing(const RingSpec& spec)
 {
 	if (!m_pActiveCanvas)
 	{
@@ -1771,7 +1771,7 @@ void GfxDeviceGen2::drawRing(const RingSpec& spec)
 	auto& commands = m_pActiveLayer->commands;
 	auto& colors = m_pActiveLayer->colors;
 
-	commands.secureSpace((GfxBackend::c_drawShapeHeaderWords + GfxBackend::c_ringPayloadWords + nSlices * GfxBackend::c_ringSliceWords + 1) * 2);
+	commands.secureSpace((Backend::c_drawShapeHeaderWords + Backend::c_ringPayloadWords + nSlices * Backend::c_ringSliceWords + 1) * 2);
 
 	if (commands.size() % 4 != 0)
 		commands.pushUnchecked(uint16_t(Command::None));
@@ -1783,7 +1783,7 @@ void GfxDeviceGen2::drawRing(const RingSpec& spec)
 	int nColorsBefore = (int)colors.size();
 
 	commands.pushUnchecked(uint16_t(Command::DrawShape));
-	commands.pushUnchecked(uint16_t(GfxBackend::ShapeKind::Ring));
+	commands.pushUnchecked(uint16_t(Backend::ShapeKind::Ring));
 	commands.pushUnchecked(uint16_t(nRects));
 	commands.pushUnchecked(uint16_t(0));						// nColors, filled in below.
 	commands.pushUnchecked(uint16_t(0));						// nWords, filled in below.
@@ -1793,19 +1793,19 @@ void GfxDeviceGen2::drawRing(const RingSpec& spec)
 
 	uint16_t flags = 0;
 	if (spec.bSquare)
-		flags |= uint16_t(GfxBackend::RingFlags::Square);
+		flags |= uint16_t(Backend::RingFlags::Square);
 	if (bOutline)
-		flags |= uint16_t(GfxBackend::RingFlags::HasOutline);
+		flags |= uint16_t(Backend::RingFlags::HasOutline);
 	if (bHub)
-		flags |= uint16_t(GfxBackend::RingFlags::HasHub);
+		flags |= uint16_t(Backend::RingFlags::HasHub);
 	if (bBack)
-		flags |= uint16_t(GfxBackend::RingFlags::HasBack);
+		flags |= uint16_t(Backend::RingFlags::HasBack);
 	if (bOutline && spec.pOutlineTint)
-		flags |= uint16_t(GfxBackend::RingFlags::HasOutlineTint);
+		flags |= uint16_t(Backend::RingFlags::HasOutlineTint);
 	if (bHub && spec.pHubTint)
-		flags |= uint16_t(GfxBackend::RingFlags::HasHubTint);
+		flags |= uint16_t(Backend::RingFlags::HasHubTint);
 	if (bBack && spec.pBackTint)
-		flags |= uint16_t(GfxBackend::RingFlags::HasBackTint);
+		flags |= uint16_t(Backend::RingFlags::HasBackTint);
 
 	float start = std::isfinite(spec.start) ? spec.start - std::floor(spec.start) : 0.f;
 
@@ -1815,7 +1815,7 @@ void GfxDeviceGen2::drawRing(const RingSpec& spec)
 	commands.pushUnchecked(spx(0));								// Softness, reserved.
 	commands.pushUnchecked(flags);
 	commands.pushUnchecked(uint16_t(nSlices));
-	commands.pushUnchecked(uint32_t(double(start) * GfxBackend::c_shapeFullTurn) % GfxBackend::c_shapeFullTurn);
+	commands.pushUnchecked(uint32_t(double(start) * Backend::c_shapeFullTurn) % Backend::c_shapeFullTurn);
 
 	int nTints = 0;
 
@@ -1828,11 +1828,11 @@ void GfxDeviceGen2::drawRing(const RingSpec& spec)
 
 		uint16_t sliceFlags = 0;
 		if (bDrawn)
-			sliceFlags |= uint16_t(GfxBackend::RingSliceFlags::Drawn);
+			sliceFlags |= uint16_t(Backend::RingSliceFlags::Drawn);
 		if (bDrawn && slice.pTint)
-			sliceFlags |= uint16_t(GfxBackend::RingSliceFlags::Tinted);
+			sliceFlags |= uint16_t(Backend::RingSliceFlags::Tinted);
 
-		commands.pushUnchecked(uint32_t(double(size) * GfxBackend::c_shapeFullTurn));
+		commands.pushUnchecked(uint32_t(double(size) * Backend::c_shapeFullTurn));
 		commands.pushUnchecked(sliceFlags);
 		commands.pushUnchecked(uint16_t(0));
 	}
@@ -1868,11 +1868,11 @@ void GfxDeviceGen2::drawRing(const RingSpec& spec)
 		nTints++;
 	};
 
-	if (flags & uint16_t(GfxBackend::RingFlags::HasOutlineTint))
+	if (flags & uint16_t(Backend::RingFlags::HasOutlineTint))
 		encodeTint(spec.pOutlineTint);
-	if (flags & uint16_t(GfxBackend::RingFlags::HasHubTint))
+	if (flags & uint16_t(Backend::RingFlags::HasHubTint))
 		encodeTint(spec.pHubTint);
-	if (flags & uint16_t(GfxBackend::RingFlags::HasBackTint))
+	if (flags & uint16_t(Backend::RingFlags::HasBackTint))
 		encodeTint(spec.pBackTint);
 
 	for (int i = 0; i < nSlices; i++)
@@ -1898,7 +1898,7 @@ void GfxDeviceGen2::drawRing(const RingSpec& spec)
 
 //____ blit() ________________________________________________________________
 
-void GfxDeviceGen2::blit(CoordSPX dest)
+void DeviceGen2::blit(CoordSPX dest)
 {
 	if (!m_pActiveCanvas)
 	{
@@ -1918,7 +1918,7 @@ void GfxDeviceGen2::blit(CoordSPX dest)
 	_transformBlitSimple({ dest, m_renderState.blitSource->pixelSize()*64 }, { 0,0 }, 0, Command::Blit);
 }
 
-void GfxDeviceGen2::blit(CoordSPX dest, const RectSPX& src)
+void DeviceGen2::blit(CoordSPX dest, const RectSPX& src)
 {
 	if (!m_pActiveCanvas)
 	{
@@ -1940,7 +1940,7 @@ void GfxDeviceGen2::blit(CoordSPX dest, const RectSPX& src)
 
 //____ flipBlit() _________________________________________________________
 
-void GfxDeviceGen2::flipBlit(CoordSPX dest, GfxFlip flip)
+void DeviceGen2::flipBlit(CoordSPX dest, GfxFlip flip)
 {
 	if (!m_pActiveCanvas)
 	{
@@ -1969,7 +1969,7 @@ void GfxDeviceGen2::flipBlit(CoordSPX dest, GfxFlip flip)
 	_transformBlitSimple({ dest, dstSize }, { ofsX, ofsY }, int(flip), Command::Blit);
 }
 
-void GfxDeviceGen2::flipBlit(CoordSPX dest, const RectSPX& src, GfxFlip flip)
+void DeviceGen2::flipBlit(CoordSPX dest, const RectSPX& src, GfxFlip flip)
 {
 	if (!m_pActiveCanvas)
 	{
@@ -1999,7 +1999,7 @@ void GfxDeviceGen2::flipBlit(CoordSPX dest, const RectSPX& src, GfxFlip flip)
 
 //____ stretchBlit() ___________________________________________________________
 
-void GfxDeviceGen2::stretchBlit(const RectSPX& dest)
+void DeviceGen2::stretchBlit(const RectSPX& dest)
 {
 	if (!m_pActiveCanvas)
 	{
@@ -2019,7 +2019,7 @@ void GfxDeviceGen2::stretchBlit(const RectSPX& dest)
 	stretchBlit(dest, RectSPX(0, 0, m_renderState.blitSource->pixelSize() * 64));
 }
 
-void GfxDeviceGen2::stretchBlit(const RectSPX& _dest, const RectSPX& src)
+void DeviceGen2::stretchBlit(const RectSPX& _dest, const RectSPX& src)
 {
 	if (!m_pActiveCanvas)
 	{
@@ -2106,7 +2106,7 @@ void GfxDeviceGen2::stretchBlit(const RectSPX& _dest, const RectSPX& src)
 
 //____ stretchFlipBlit() _____________________________________________________
 
-void GfxDeviceGen2::stretchFlipBlit(const RectSPX& dest, GfxFlip flip)
+void DeviceGen2::stretchFlipBlit(const RectSPX& dest, GfxFlip flip)
 {
 	if (!m_pActiveCanvas)
 	{
@@ -2126,7 +2126,7 @@ void GfxDeviceGen2::stretchFlipBlit(const RectSPX& dest, GfxFlip flip)
 	stretchFlipBlit(dest, RectSPX(0, 0, m_renderState.blitSource->pixelSize() * 64), flip);
 }
 
-void GfxDeviceGen2::stretchFlipBlit(const RectSPX& _dest, const RectSPX& src, GfxFlip flip)
+void DeviceGen2::stretchFlipBlit(const RectSPX& _dest, const RectSPX& src, GfxFlip flip)
 {
 	if (!m_pActiveCanvas)
 	{
@@ -2208,7 +2208,7 @@ void GfxDeviceGen2::stretchFlipBlit(const RectSPX& _dest, const RectSPX& src, Gf
 
 //____ precisionBlit() ____________________________________________________
 
-void GfxDeviceGen2::precisionBlit(const RectSPX& _dest, const RectF& src)
+void DeviceGen2::precisionBlit(const RectSPX& _dest, const RectF& src)
 {
 	if (!m_pActiveCanvas)
 	{
@@ -2305,7 +2305,7 @@ void GfxDeviceGen2::precisionBlit(const RectSPX& _dest, const RectF& src)
 
 //____ transformBlit() ________________________________________________
 
-void GfxDeviceGen2::transformBlit(const RectSPX& dest, CoordF src, const Transform& transform)
+void DeviceGen2::transformBlit(const RectSPX& dest, CoordF src, const Transform& transform)
 {
 	if (!m_pActiveCanvas)
 	{
@@ -2329,7 +2329,7 @@ void GfxDeviceGen2::transformBlit(const RectSPX& dest, CoordF src, const Transfo
 
 //____ rotScaleBlit() _____________________________________________________
 
-void GfxDeviceGen2::rotScaleBlit(const RectSPX& dest, float rotationDegrees, float scale, CoordF srcCenter, CoordF destCenter)
+void DeviceGen2::rotScaleBlit(const RectSPX& dest, float rotationDegrees, float scale, CoordF srcCenter, CoordF destCenter)
 {
 	if (!m_pActiveCanvas)
 	{
@@ -2380,7 +2380,7 @@ void GfxDeviceGen2::rotScaleBlit(const RectSPX& dest, float rotationDegrees, flo
 
 //____ tile() _____________________________________________________________
 
-void GfxDeviceGen2::tile(const RectSPX& dest, CoordSPX shift)
+void DeviceGen2::tile(const RectSPX& dest, CoordSPX shift)
 {
 	if (!m_pActiveCanvas)
 	{
@@ -2410,7 +2410,7 @@ void GfxDeviceGen2::tile(const RectSPX& dest, CoordSPX shift)
 
 //____ flipTile() _________________________________________________________
 
-void GfxDeviceGen2::flipTile(const RectSPX& dest, GfxFlip flip, CoordSPX shift)
+void DeviceGen2::flipTile(const RectSPX& dest, GfxFlip flip, CoordSPX shift)
 {
 	if (!m_pActiveCanvas)
 	{
@@ -2452,7 +2452,7 @@ void GfxDeviceGen2::flipTile(const RectSPX& dest, GfxFlip flip, CoordSPX shift)
 
 //____ scaleTile() _________________________________________________________
 
-void GfxDeviceGen2::scaleTile(const RectSPX& dest, float scale, CoordSPX shift)
+void DeviceGen2::scaleTile(const RectSPX& dest, float scale, CoordSPX shift)
 {
 	if (!m_pActiveCanvas)
 	{
@@ -2491,7 +2491,7 @@ void GfxDeviceGen2::scaleTile(const RectSPX& dest, float scale, CoordSPX shift)
 
 //____ scaleFlipTile() _________________________________________________________
 
-void GfxDeviceGen2::scaleFlipTile(const RectSPX& dest, float scale, GfxFlip flip, CoordSPX shift)
+void DeviceGen2::scaleFlipTile(const RectSPX& dest, float scale, GfxFlip flip, CoordSPX shift)
 {
 	if (!m_pActiveCanvas)
 	{
@@ -2535,7 +2535,7 @@ void GfxDeviceGen2::scaleFlipTile(const RectSPX& dest, float scale, GfxFlip flip
 
 //____ blur() ________________________________________________________________
 
-void GfxDeviceGen2::blur(CoordSPX dest)
+void DeviceGen2::blur(CoordSPX dest)
 {
 	if (!m_pActiveCanvas)
 	{
@@ -2563,7 +2563,7 @@ void GfxDeviceGen2::blur(CoordSPX dest)
 	_transformBlitSimple({ dest, m_renderState.blitSource->pixelSize() * 64 }, { 0,0 }, 0, Command::Blur);
 }
 
-void GfxDeviceGen2::blur(CoordSPX dest, const RectSPX& src)
+void DeviceGen2::blur(CoordSPX dest, const RectSPX& src)
 {
 	if (!m_pActiveCanvas)
 	{
@@ -2593,7 +2593,7 @@ void GfxDeviceGen2::blur(CoordSPX dest, const RectSPX& src)
 
 //____ stretchBlur() ___________________________________________________________
 
-void GfxDeviceGen2::stretchBlur(const RectSPX& dest)
+void DeviceGen2::stretchBlur(const RectSPX& dest)
 {
 	if (!m_pActiveCanvas)
 	{
@@ -2621,7 +2621,7 @@ void GfxDeviceGen2::stretchBlur(const RectSPX& dest)
 	stretchBlur(dest, RectSPX(0, 0, m_renderState.blitSource->pixelSize() * 64));
 }
 
-void GfxDeviceGen2::stretchBlur(const RectSPX& _dest, const RectSPX& src)
+void DeviceGen2::stretchBlur(const RectSPX& _dest, const RectSPX& src)
 {
 	if (!m_pActiveCanvas)
 	{
@@ -2695,7 +2695,7 @@ void GfxDeviceGen2::stretchBlur(const RectSPX& _dest, const RectSPX& src)
  
 //____ transformBlur() ________________________________________________
 
-void GfxDeviceGen2::transformBlur(const RectSPX& dest, CoordF src, const Transform& transform)
+void DeviceGen2::transformBlur(const RectSPX& dest, CoordF src, const Transform& transform)
 {
 	if (!m_pActiveCanvas)
 	{
@@ -2725,7 +2725,7 @@ void GfxDeviceGen2::transformBlur(const RectSPX& dest, CoordF src, const Transfo
 
 //____ rotScaleBlur() _____________________________________________________
 
-void GfxDeviceGen2::rotScaleBlur(const RectSPX& dest, float rotationDegrees, float scale, CoordF srcCenter, CoordF destCenter)
+void DeviceGen2::rotScaleBlur(const RectSPX& dest, float rotationDegrees, float scale, CoordF srcCenter, CoordF destCenter)
 {
 	if (!m_pActiveCanvas)
 	{
@@ -2782,7 +2782,7 @@ void GfxDeviceGen2::rotScaleBlur(const RectSPX& dest, float rotationDegrees, flo
 
 //____ blitNinePatch() ________________________________________________
 
-void GfxDeviceGen2::blitNinePatch(const RectSPX& dstRect, const BorderSPX& dstFrame, const NinePatch& patch, int scale)
+void DeviceGen2::blitNinePatch(const RectSPX& dstRect, const BorderSPX& dstFrame, const NinePatch& patch, int scale)
 {
 	if (!m_pActiveCanvas)
 	{
@@ -2974,14 +2974,14 @@ void GfxDeviceGen2::blitNinePatch(const RectSPX& dstRect, const BorderSPX& dstFr
 
 //____ drawEdgemap() ___________________________________________________________
 
-void GfxDeviceGen2::drawEdgemap(CoordSPX dest, Edgemap* pEdgemap)
+void DeviceGen2::drawEdgemap(CoordSPX dest, Edgemap* pEdgemap)
 {
 	flipDrawEdgemap(dest, pEdgemap, GfxFlip::None);
 }
 
 //____ flipDrawEdgemap() _______________________________________________________
 
-void GfxDeviceGen2::flipDrawEdgemap(CoordSPX dest, Edgemap* pEdgemap, GfxFlip flip)
+void DeviceGen2::flipDrawEdgemap(CoordSPX dest, Edgemap* pEdgemap, GfxFlip flip)
 {
 	if(!pEdgemap)
 	{
@@ -3013,7 +3013,7 @@ void GfxDeviceGen2::flipDrawEdgemap(CoordSPX dest, Edgemap* pEdgemap, GfxFlip fl
 
 //____ tileEdgemap() ___________________________________________________________
 
-void GfxDeviceGen2::tileEdgemap(const RectSPX& dest, Edgemap* pEdgemap, CoordSPX shift)
+void DeviceGen2::tileEdgemap(const RectSPX& dest, Edgemap* pEdgemap, CoordSPX shift)
 {
 	flipTileEdgemap(dest, pEdgemap, GfxFlip::None, shift);
 }
@@ -3029,7 +3029,7 @@ void GfxDeviceGen2::tileEdgemap(const RectSPX& dest, Edgemap* pEdgemap, CoordSPX
  * The edgemap needs to be tiling, see Edgemap::Blueprint::tiling.
  */
 
-void GfxDeviceGen2::flipTileEdgemap(const RectSPX& dest, Edgemap* pEdgemap, GfxFlip flip, CoordSPX shift)
+void DeviceGen2::flipTileEdgemap(const RectSPX& dest, Edgemap* pEdgemap, GfxFlip flip, CoordSPX shift)
 {
 	if(!pEdgemap)
 	{
@@ -3063,7 +3063,7 @@ void GfxDeviceGen2::flipTileEdgemap(const RectSPX& dest, Edgemap* pEdgemap, GfxF
 	edgemap, or of one of the copies when tiling.
 */
 
-void GfxDeviceGen2::_encodeEdgemapDraw(const RectSPX& area, CoordSPX origo, Edgemap* pEdgemap, GfxFlip flip, Command cmd)
+void DeviceGen2::_encodeEdgemapDraw(const RectSPX& area, CoordSPX origo, Edgemap* pEdgemap, GfxFlip flip, Command cmd)
 {
 	int nRects = 0;
 	auto& rects = m_pActiveLayer->rects;
@@ -3103,7 +3103,7 @@ void GfxDeviceGen2::_encodeEdgemapDraw(const RectSPX& area, CoordSPX origo, Edge
 
 //____ warpBlit() ____________________________________________________________
 
-void GfxDeviceGen2::warpBlit(CoordSPX dest, Warpmap* pWarpmap, CoordSPX sourceOffset)
+void DeviceGen2::warpBlit(CoordSPX dest, Warpmap* pWarpmap, CoordSPX sourceOffset)
 {
 	if (m_renderState.blitSource == nullptr)
 	{
@@ -3115,7 +3115,7 @@ void GfxDeviceGen2::warpBlit(CoordSPX dest, Warpmap* pWarpmap, CoordSPX sourceOf
 	warpBlit(dest, pWarpmap, RectSPX(0, 0, m_renderState.blitSource->pixelSize() * 64), sourceOffset);
 }
 
-void GfxDeviceGen2::warpBlit(CoordSPX dest, Warpmap* pWarpmap, const RectSPX& source, CoordSPX sourceOffset)
+void DeviceGen2::warpBlit(CoordSPX dest, Warpmap* pWarpmap, const RectSPX& source, CoordSPX sourceOffset)
 {
 	if (m_renderState.blitSource == nullptr)
 	{
@@ -3132,7 +3132,7 @@ void GfxDeviceGen2::warpBlit(CoordSPX dest, Warpmap* pWarpmap, const RectSPX& so
 
 //____ warpDrawEdgemap() _____________________________________________________
 
-void GfxDeviceGen2::warpDrawEdgemap(CoordSPX dest, Warpmap* pWarpmap, Edgemap* pEdgemap, CoordSPX sourceOffset)
+void DeviceGen2::warpDrawEdgemap(CoordSPX dest, Warpmap* pWarpmap, Edgemap* pEdgemap, CoordSPX sourceOffset)
 {
 	if (!pEdgemap)
 	{
@@ -3151,7 +3151,7 @@ void GfxDeviceGen2::warpDrawEdgemap(CoordSPX dest, Warpmap* pWarpmap, Edgemap* p
 	whole pixels.
 */
 
-void GfxDeviceGen2::_encodeWarp(CoordSPX dest, Warpmap* pWarpmap, Edgemap* pEdgemap, const RectSPX* pSource, CoordSPX sourceOffset)
+void DeviceGen2::_encodeWarp(CoordSPX dest, Warpmap* pWarpmap, Edgemap* pEdgemap, const RectSPX* pSource, CoordSPX sourceOffset)
 {
 	if (!pWarpmap)
 	{
@@ -3167,7 +3167,7 @@ void GfxDeviceGen2::_encodeWarp(CoordSPX dest, Warpmap* pWarpmap, Edgemap* pEdge
 		return;
 	}
 
-	RectSPX area = { GfxUtil::roundToPixels(dest) * 64, pWarpmap->pixelSize() * 64 };
+	RectSPX area = { Util::roundToPixels(dest) * 64, pWarpmap->pixelSize() * 64 };
 
 	int nRects = 0;
 	auto& rects = m_pActiveLayer->rects;
@@ -3216,14 +3216,14 @@ void GfxDeviceGen2::_encodeWarp(CoordSPX dest, Warpmap* pWarpmap, Edgemap* pEdge
 
 //____ drawWave() ____________________________________________________________
 
-void GfxDeviceGen2::drawWave(const RectSPX& dest, const WaveLine* pTopBorder, const WaveLine* pBottomBorder, HiColor fill)
+void DeviceGen2::drawWave(const RectSPX& dest, const WaveLine* pTopBorder, const WaveLine* pBottomBorder, HiColor fill)
 {
 	flipDrawWave(dest, pTopBorder, pBottomBorder, fill, GfxFlip::None);
 }
 
 //____ flipDrawWave() __________________________________________________________
 
-void GfxDeviceGen2::flipDrawWave(const RectSPX& dest, const WaveLine* pTopBorder, const WaveLine* pBottomBorder, HiColor fill, GfxFlip flip)
+void DeviceGen2::flipDrawWave(const RectSPX& dest, const WaveLine* pTopBorder, const WaveLine* pBottomBorder, HiColor fill, GfxFlip flip)
 {
 	if (!m_pActiveCanvas )
 	{
@@ -3296,14 +3296,14 @@ void GfxDeviceGen2::flipDrawWave(const RectSPX& dest, const WaveLine* pTopBorder
 
 //____ drawSegments() ________________________________________________________
 
-void GfxDeviceGen2::drawSegments(const RectSPX& dest, int nSegments, const HiColor* pSegmentColors, int nEdgeStrips, const int* pEdgeStrips, int edgeStripPitch, TintMode tintMode)
+void DeviceGen2::drawSegments(const RectSPX& dest, int nSegments, const HiColor* pSegmentColors, int nEdgeStrips, const int* pEdgeStrips, int edgeStripPitch, TintMode tintMode)
 {
 	flipDrawSegments(dest, nSegments, pSegmentColors, nEdgeStrips, pEdgeStrips, edgeStripPitch, GfxFlip::None, tintMode);
 }
 
 //____ flipDrawSegments() ______________________________________________________
 
-void GfxDeviceGen2::flipDrawSegments(const RectSPX& dest, int nSegments, const HiColor* pSegmentColors, int nEdgeStrips, const int* pEdgeStrips, int edgeStripPitch, GfxFlip flip, TintMode tintMode)
+void DeviceGen2::flipDrawSegments(const RectSPX& dest, int nSegments, const HiColor* pSegmentColors, int nEdgeStrips, const int* pEdgeStrips, int edgeStripPitch, GfxFlip flip, TintMode tintMode)
 {
 	if (!m_pActiveCanvas)
 	{
@@ -3332,7 +3332,7 @@ void GfxDeviceGen2::flipDrawSegments(const RectSPX& dest, int nSegments, const H
 	center leave a disc of what is inside them.
 */
 
-void GfxDeviceGen2::drawElipse(const RectSPX& canvas, spx thickness, HiColor fillColor, spx outlineThickness, HiColor outlineColor)
+void DeviceGen2::drawElipse(const RectSPX& canvas, spx thickness, HiColor fillColor, spx outlineThickness, HiColor outlineColor)
 {
 	thickness = std::max(thickness, 0);
 	outlineThickness = std::max(outlineThickness, 0);
@@ -3385,7 +3385,7 @@ void GfxDeviceGen2::drawElipse(const RectSPX& canvas, spx thickness, HiColor fil
 	radius. backColor fills the rest of canvas and what the slices don't reach.
 */
 
-void GfxDeviceGen2::drawPieChart(const RectSPX& canvas, float start, int nSlices, const float* pSliceSizes, const HiColor* pSliceColors, float hubSize, HiColor hubColor, HiColor backColor, bool bRectangular)
+void DeviceGen2::drawPieChart(const RectSPX& canvas, float start, int nSlices, const float* pSliceSizes, const HiColor* pSliceColors, float hubSize, HiColor hubColor, HiColor backColor, bool bRectangular)
 {
 	if (nSlices < 0 || (nSlices > 0 && (!pSliceSizes || !pSliceColors)))
 	{
@@ -3426,7 +3426,7 @@ void GfxDeviceGen2::drawPieChart(const RectSPX& canvas, float start, int nSlices
 
 //____ _stretchBlitWithRigidPartX() _______________________________________
 
-void GfxDeviceGen2::_stretchBlitWithRigidPartX(const RectSPX& src, const RectSPX& dst, spx rigidPartOfs, spx rigidPartLength, spx rigidPartLengthDst)
+void DeviceGen2::_stretchBlitWithRigidPartX(const RectSPX& src, const RectSPX& dst, spx rigidPartOfs, spx rigidPartLength, spx rigidPartLengthDst)
 {
 	int leftSrcLen = rigidPartOfs;
 	int rightSrcLen = src.w - rigidPartOfs - rigidPartLength;
@@ -3450,7 +3450,7 @@ void GfxDeviceGen2::_stretchBlitWithRigidPartX(const RectSPX& src, const RectSPX
 
 //____ _stretchBlitWithRigidPartY() _______________________________________
 
-void GfxDeviceGen2::_stretchBlitWithRigidPartY(const RectSPX& src, const RectSPX& dst, spx rigidPartOfs, spx rigidPartLength, spx rigidPartLengthDst)
+void DeviceGen2::_stretchBlitWithRigidPartY(const RectSPX& src, const RectSPX& dst, spx rigidPartOfs, spx rigidPartLength, spx rigidPartLengthDst)
 {
 	int topSrcLen = rigidPartOfs;
 	int bottomSrcLen = src.h - rigidPartOfs - rigidPartLength;
@@ -3476,7 +3476,7 @@ void GfxDeviceGen2::_stretchBlitWithRigidPartY(const RectSPX& src, const RectSPX
 
 //____ _transformBlitSimple() ______________________________________________________
 
-void GfxDeviceGen2::_transformBlitSimple(const RectSPX& _dest, CoordSPX src, int transformOfs, Command cmd)
+void DeviceGen2::_transformBlitSimple(const RectSPX& _dest, CoordSPX src, int transformOfs, Command cmd)
 {
 	// Skip calls that won't affect destination
 
@@ -3548,7 +3548,7 @@ void GfxDeviceGen2::_transformBlitSimple(const RectSPX& _dest, CoordSPX src, int
 
 //____ _transformBlitComplex() _______________________________________________
 
-void GfxDeviceGen2::_transformBlitComplex(const RectSPX& _dest, CoordI src, const Transform& matrix, Command cmd)
+void DeviceGen2::_transformBlitComplex(const RectSPX& _dest, CoordI src, const Transform& matrix, Command cmd)
 {
 	// Clip and render the patches
 
@@ -3599,7 +3599,7 @@ void GfxDeviceGen2::_transformBlitComplex(const RectSPX& _dest, CoordI src, cons
 		}
 
 
-		int transformOfs = int(m_pActiveCanvas->transforms.size()) + GfxBackend::NbStandardTransforms;
+		int transformOfs = int(m_pActiveCanvas->transforms.size()) + Backend::NbStandardTransforms;
 		m_pActiveCanvas->transforms.emplace_back(matrix);
 
 		for( int i = 0 ; i < nRects ; i++ )
@@ -3622,7 +3622,7 @@ void GfxDeviceGen2::_transformBlitComplex(const RectSPX& _dest, CoordI src, cons
 
 //____ _resetState() ___________________________________________________________
 
-void GfxDeviceGen2::_resetState(RenderState& state)
+void DeviceGen2::_resetState(RenderState& state)
 {
 	state.blitSource = nullptr;
 	state.tintColor = HiColor::Undefined;
@@ -3639,7 +3639,7 @@ void GfxDeviceGen2::_resetState(RenderState& state)
 
 //____ _encodeStateChanges() ______________________________________________
 
-void GfxDeviceGen2::_encodeStateChanges()
+void DeviceGen2::_encodeStateChanges()
 {
 	// If this is the first state-change in a layer above baseLayer we need to
 	// force set some states to their default values. They might have been set
@@ -3812,7 +3812,7 @@ void GfxDeviceGen2::_encodeStateChanges()
 	the address, which spreads objects allocated close together over the entries.
 */
 
-uint32_t GfxDeviceGen2::_objectIndex(Object* pObject)
+uint32_t DeviceGen2::_objectIndex(Object* pObject)
 {
 	auto& layer = *m_pActiveLayer;
 

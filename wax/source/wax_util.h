@@ -19,8 +19,8 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef WAX_GFXUTIL_DOT_H
-#define WAX_GFXUTIL_DOT_H
+#ifndef WAX_UTIL_DOT_H
+#define WAX_UTIL_DOT_H
 #pragma once
 
 #include <wax_geo.h>
@@ -32,11 +32,11 @@
 namespace wax
 {
 
-	class GfxDevice;
+	class Device;
 
-	//____ GfxUtil ______________________________________________________________
+	//____ Util ______________________________________________________________
 
-	namespace GfxUtil		/** @private */
+	namespace Util		/** @private */
 	{
 
 		// Helper to create endian-aware uint32_t from four chars
@@ -311,7 +311,7 @@ namespace wax
 
 		/**
 		 * Radii of the inner corners of an outline inside a box with the given (clamped)
-		 * corner radii, as drawn by GfxDevice::drawRoundedBox(): the radius minus the thicker
+		 * corner radii, as drawn by Device::drawRoundedBox(): the radius minus the thicker
 		 * of the two sides meeting there, circular and touching both sides of the inside.
 		 * With even outlines they are concentric with the outer corners. With uneven ones
 		 * they can be larger than the inside.
@@ -504,7 +504,7 @@ namespace wax
 
 	}
 
-	RectI GfxUtil::roundToPixels(const RectSPX& r)
+	RectI Util::roundToPixels(const RectSPX& r)
 	{
 		int x2 = r.x + r.w;
 		int y2 = r.y + r.h;
@@ -520,31 +520,31 @@ namespace wax
 		return out;
 	}
 
-	CoordI GfxUtil::roundToPixels(const CoordSPX& r)
+	CoordI Util::roundToPixels(const CoordSPX& r)
 	{
 		return { (r.x + 32) >> 6, (r.y + 32) >> 6 };
 	}
 
-	SizeI GfxUtil::roundToPixels(const SizeSPX& r)
+	SizeI Util::roundToPixels(const SizeSPX& r)
 	{
 		return { (r.w + 32) >> 6, (r.h + 32) >> 6 };
 	}
 
-	BorderI GfxUtil::roundToPixels(const BorderSPX& r)
+	BorderI Util::roundToPixels(const BorderSPX& r)
 	{
 		return { (r.top + 32) >> 6, (r.right + 32) >> 6, (r.bottom + 32) >> 6, (r.left + 32) >> 6 };
 	}
 
 
-	int GfxUtil::roundToPixels(spx r)
+	int Util::roundToPixels(spx r)
 	{
 		return (r + 32) >> 6;
 	}
 
-	uint32_t GfxUtil::alignUp8(uint32_t value)
+	uint32_t Util::alignUp8(uint32_t value)
 	{
 		return (value + 7) & 0xFFFFFFF8;
 	}
 
 } // namespace wax
-#endif // WAX_GFXUTIL_DOT_H
+#endif // WAX_UTIL_DOT_H

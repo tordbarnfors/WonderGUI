@@ -21,7 +21,7 @@
 =========================================================================*/
 
 #include <wax_spxcompression.h>
-#include <wax_gfxutil.h>
+#include <wax_util.h>
 #include <wax_core.h>
 
 #include <cstring>
@@ -31,8 +31,8 @@ namespace wax
 const TypeInfo SPXCompressor::TYPEINFO = { "SPXCompressor", &Compressor::TYPEINFO };
 const TypeInfo SPXDecompressor::TYPEINFO = { "SPXDecompressor", &Decompressor::TYPEINFO };
 
-const uint32_t SPXCompressor::ID_TOKEN = GfxUtil::makeEndianSpecificToken('S', 'P', 'X', '0');
-const uint32_t SPXDecompressor::ID_TOKEN = GfxUtil::makeEndianSpecificToken('S', 'P', 'X', '0');
+const uint32_t SPXCompressor::ID_TOKEN = Util::makeEndianSpecificToken('S', 'P', 'X', '0');
+const uint32_t SPXDecompressor::ID_TOKEN = Util::makeEndianSpecificToken('S', 'P', 'X', '0');
 
 //____ create() _____________________________________________________________
 

@@ -219,7 +219,7 @@ namespace wax
 
 		auto pixelBuffer = m_pSurface->allocPixelBuffer(bounds);
 
-		auto pixelDescription = GfxUtil::pixelFormatToDescription(pixelBuffer.format, pixelBuffer.bigEndian);
+		auto pixelDescription = Util::pixelFormatToDescription(pixelBuffer.format, pixelBuffer.bigEndian);
 
 		int allocSize = 0;
 		for( int i = 0 ; i < nRects ; i++ )

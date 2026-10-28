@@ -225,7 +225,7 @@ bool QOITest::writeQOITest(std::ostream& output)
 
 	// ARGB_8 is saved with 4 channels.
 
-	auto pSurface = SoftSurface::create( { .format = PixelFormat::ARGB_8, .size = {16,6} }, le.data(), Util::pixelFormatToDescription(PixelFormat::ARGB_8, false) );
+	auto pSurface = SoftSurface::create( { .format = PixelFormat::ARGB_8, .size = {16,6} }, le.data(), wax::Util::pixelFormatToDescription(PixelFormat::ARGB_8, false) );
 
 	auto pBlob = pWriter->writeSurfaceToQOIBlob(pSurface);
 	TEST_ASSERT( pBlob && pBlob->size() == int(sizeof(c_qoiFileRGBA)) && memcmp(pBlob->data(), c_qoiFileRGBA, sizeof(c_qoiFileRGBA)) == 0 );
@@ -236,21 +236,21 @@ bool QOITest::writeQOITest(std::ostream& output)
 
 	// Big endian gives the same file.
 
-	auto pSurfaceBE = SoftSurface::create( { .bigEndian = true, .format = PixelFormat::ARGB_8, .size = {16,6} }, le.data(), Util::pixelFormatToDescription(PixelFormat::ARGB_8, false) );
+	auto pSurfaceBE = SoftSurface::create( { .bigEndian = true, .format = PixelFormat::ARGB_8, .size = {16,6} }, le.data(), wax::Util::pixelFormatToDescription(PixelFormat::ARGB_8, false) );
 
 	pBlob = pWriter->writeSurfaceToQOIBlob(pSurfaceBE);
 	TEST_ASSERT( pBlob && pBlob->size() == int(sizeof(c_qoiFileRGBA)) && memcmp(pBlob->data(), c_qoiFileRGBA, sizeof(c_qoiFileRGBA)) == 0 );
 
 	// XRGB_8 is saved with 3 channels.
 
-	auto pSurfaceX = SoftSurface::create( { .format = PixelFormat::XRGB_8, .size = {16,6} }, le.data(), Util::pixelFormatToDescription(PixelFormat::ARGB_8, false) );
+	auto pSurfaceX = SoftSurface::create( { .format = PixelFormat::XRGB_8, .size = {16,6} }, le.data(), wax::Util::pixelFormatToDescription(PixelFormat::ARGB_8, false) );
 
 	pBlob = pWriter->writeSurfaceToQOIBlob(pSurfaceX);
 	TEST_ASSERT( pBlob && pBlob->size() == int(sizeof(c_qoiFileRGB)) && memcmp(pBlob->data(), c_qoiFileRGB, sizeof(c_qoiFileRGB)) == 0 );
 
 	// Linear color space is marked in header.
 
-	auto pSurfaceLinear = SoftSurface::create( { .colorSpace = ColorSpace::Linear, .format = PixelFormat::ARGB_8, .size = {16,6} }, le.data(), Util::pixelFormatToDescription(PixelFormat::ARGB_8, false) );
+	auto pSurfaceLinear = SoftSurface::create( { .colorSpace = ColorSpace::Linear, .format = PixelFormat::ARGB_8, .size = {16,6} }, le.data(), wax::Util::pixelFormatToDescription(PixelFormat::ARGB_8, false) );
 
 	pBlob = pWriter->writeSurfaceToQOIBlob(pSurfaceLinear);
 	TEST_ASSERT( pBlob && ((uint8_t*)pBlob->data())[13] == 1 && memcmp(((uint8_t*)pBlob->data()) + 14, c_qoiFileRGBA + 14, sizeof(c_qoiFileRGBA) - 14) == 0 );
@@ -315,7 +315,7 @@ bool QOITest::readQOITest(std::ostream& output)
 bool QOITest::surfaceFileTest(std::ostream& output)
 {
 	auto le = littleEndianPixels();
-	auto pSurface = SoftSurface::create( { .format = PixelFormat::ARGB_8, .size = {16,6} }, le.data(), Util::pixelFormatToDescription(PixelFormat::ARGB_8, false) );
+	auto pSurface = SoftSurface::create( { .format = PixelFormat::ARGB_8, .size = {16,6} }, le.data(), wax::Util::pixelFormatToDescription(PixelFormat::ARGB_8, false) );
 
 	// Pixel data of a surface file with QOI compression is the same as in a QOI file.
 

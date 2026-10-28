@@ -19,23 +19,23 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef	WAX_GLGFXDEVICEFACTORY_DOT_H
-#define	WAX_GLGFXDEVICEFACTORY_DOT_H
+#ifndef	WAX_GLDEVICEFACTORY_DOT_H
+#define	WAX_GLDEVICEFACTORY_DOT_H
 #pragma once
 
-#include <wax_gfxdevicefactory.h>
+#include <wax_devicefactory.h>
 #include <wax_geo.h>
 
 namespace wax
 {
 
-	class GlGfxDeviceFactory;
-	typedef	StrongPtr<GlGfxDeviceFactory>		GlGfxDeviceFactory_p;
-	typedef	WeakPtr<GlGfxDeviceFactory>	GlGfxDeviceFactory_wp;
+	class GlDeviceFactory;
+	typedef	StrongPtr<GlDeviceFactory>		GlDeviceFactory_p;
+	typedef	WeakPtr<GlDeviceFactory>	GlDeviceFactory_wp;
 
-	//____ GlGfxDeviceFactory _____________________________________________________
+	//____ GlDeviceFactory _____________________________________________________
 
-	class GlGfxDeviceFactory : public GfxDeviceFactory
+	class GlDeviceFactory : public DeviceFactory
 	{
 	public:
 
@@ -52,7 +52,7 @@ namespace wax
 
 		//.____ Creation __________________________________________
 
-		static GlGfxDeviceFactory_p	create(const Blueprint& bp) { return GlGfxDeviceFactory_p(new GlGfxDeviceFactory(bp)); }
+		static GlDeviceFactory_p	create(const Blueprint& bp) { return GlDeviceFactory_p(new GlDeviceFactory(bp)); }
 
 		//.____ Identification __________________________________________
 
@@ -61,11 +61,11 @@ namespace wax
 
 		//.____ Misc _______________________________________________________
 
-		GfxDevice_p	createGfxDevice() override;
+		Device_p	createDevice() override;
 
 	protected:
-		GlGfxDeviceFactory(const Blueprint& bp);
-		virtual ~GlGfxDeviceFactory() {}
+		GlDeviceFactory(const Blueprint& bp);
+		virtual ~GlDeviceFactory() {}
 
 		int			m_defaultCanvasScale = 64;
 		SizeSPX		m_defaultCanvasSize;
@@ -78,5 +78,5 @@ namespace wax
 }
 
 
-#endif //WAX_GLGFXDEVICEFACTORY_DOT_H
+#endif //WAX_GLDEVICEFACTORY_DOT_H
 

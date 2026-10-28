@@ -35,7 +35,7 @@
 #include <wg2_pluginbase.h>
 
 #include <wg_skin.h>
-#include <wax_gfxdevice.h>
+#include <wax_device.h>
 #include <wax_surface.h>
 
 #include <wg_plugininterface.h>

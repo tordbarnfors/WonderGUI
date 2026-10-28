@@ -49,12 +49,12 @@
 #include <wax_edgemaptools.h>
 #include <wax_font.h>
 #include <wax_geo.h>
-#include <wax_gfxbackend.h>
-#include <wax_gfxdevice.h>
-#include <wax_gfxdevice_gen2.h>
-#include <wax_gfxdevicefactory.h>
+#include <wax_backend.h>
+#include <wax_device.h>
+#include <wax_device_gen2.h>
+#include <wax_devicefactory.h>
 #include <wax_enumextras.h>
-#include <wax_gfxutil.h>
+#include <wax_util.h>
 #include <wax_gridwalker.h>
 #include <wax_lzcompression.h>
 #include <wax_patches.h>

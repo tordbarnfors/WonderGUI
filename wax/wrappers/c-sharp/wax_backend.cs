@@ -3,7 +3,7 @@ using System.Runtime.InteropServices;
 namespace Wax;
 
 
-public class GfxBackend : Objekt
+public class Backend : Objekt
 {
-    protected GfxBackend() { }
+    protected Backend() { }
 }

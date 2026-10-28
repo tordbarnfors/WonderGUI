@@ -59,7 +59,7 @@ bool backend_specific_init()
 
 	auto pSoftDevice = GfxDeviceGen2::create(pBackend);
 
-	Base::setDefaultGfxDevice(pSoftDevice);
+	Base::setDefaultDevice(pSoftDevice);
 
 	auto pSurfaceFactory = SoftSurfaceFactory::create();
 	Base::setDefaultSurfaceFactory(pSurfaceFactory);

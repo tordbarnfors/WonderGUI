@@ -98,10 +98,10 @@ public static class Core
         }
     */
 
-    //____ SetDefaultGfxDevice() _________________________________________
-    static public void SetDefaultGfxDevice(GfxDevice device)
+    //____ SetDefaultDevice() _________________________________________
+    static public void SetDefaultDevice(Device device)
     {
-        wax_setDefaultGfxDevice(device.CHandle());
+        wax_setDefaultDevice(device.CHandle());
     }
 
     private static void InternalErrorHandler(in C_ErrorInfo c_errInfo)
@@ -171,10 +171,10 @@ public static class Core
     private static extern IntPtr wax_defaultEdgemapFactory();
 
     [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-    private static extern void wax_setDefaultGfxDevice( IntPtr device );
+    private static extern void wax_setDefaultDevice( IntPtr device );
 
     [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-    private static extern IntPtr wax_defaultGfxDevice();
+    private static extern IntPtr wax_defaultDevice();
 
 
 

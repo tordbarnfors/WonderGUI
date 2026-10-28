@@ -20,7 +20,7 @@
 
 =========================================================================*/
 #include <wax_gpushapes.h>
-#include <wax_gfxutil.h>
+#include <wax_util.h>
 #include <wax_tinttools.h>
 
 #include <algorithm>
@@ -77,15 +77,15 @@ namespace wax
 
 			int writeRoundedBox(const uint16_t* pPayload, const HiColor* pColors, float* pEntries, Segment* pSegments)
 			{
-				using Flags = GfxBackend::RoundedBoxFlags;
+				using Flags = Backend::RoundedBoxFlags;
 
-				const GfxBackend::RoundedBoxPayload box = GfxBackend::decodeRoundedBox(pPayload);
+				const Backend::RoundedBoxPayload box = Backend::decodeRoundedBox(pPayload);
 				auto has = [&box](Flags flag) { return (box.flags & uint16_t(flag)) != 0; };
 
 				const RectSPX& rect = box.rect;
 
 				spx radius[4] = { box.radius[0], box.radius[1], box.radius[2], box.radius[3] };
-				GfxUtil::clampCornerRadii(rect.size(), radius);
+				Util::clampCornerRadii(rect.size(), radius);
 
 				const BorderSPX outline = { std::max(box.outline.top, 0), std::max(box.outline.right, 0),
 											std::max(box.outline.bottom, 0), std::max(box.outline.left, 0) };
@@ -93,7 +93,7 @@ namespace wax
 				const bool bOutline = (outline.top | outline.right | outline.bottom | outline.left) != 0;
 
 				spx innerRadius[4];
-				GfxUtil::innerCornerRadii(radius, outline, innerRadius);
+				Util::innerCornerRadii(radius, outline, innerRadius);
 
 				const int64_t right = int64_t(rect.x) + rect.w;
 				const int64_t bottom = int64_t(rect.y) + rect.h;
@@ -130,10 +130,10 @@ namespace wax
 
 			int writeRing(const uint16_t* pPayload, const HiColor* pColors, float* pEntries, Segment* pSegments)
 			{
-				using Flags = GfxBackend::RingFlags;
-				using SliceFlags = GfxBackend::RingSliceFlags;
+				using Flags = Backend::RingFlags;
+				using SliceFlags = Backend::RingSliceFlags;
 
-				const GfxBackend::RingPayload ring = GfxBackend::decodeRing(pPayload);
+				const Backend::RingPayload ring = Backend::decodeRing(pPayload);
 				auto has = [&ring](Flags flag) { return (ring.flags & uint16_t(flag)) != 0; };
 				auto sliceHas = [&ring](int slice, SliceFlags flag) { return (ring.sliceFlags(slice) & uint16_t(flag)) != 0; };
 
@@ -233,12 +233,12 @@ namespace wax
 				elements.reserve(nSlices + 1);
 
 				const uint64_t fullTurn = uint64_t(1) << 32;
-				const uint32_t start = (ring.start % GfxBackend::c_shapeFullTurn) << 1;
+				const uint32_t start = (ring.start % Backend::c_shapeFullTurn) << 1;
 
 				uint64_t pos = 0;
 				for (int i = 0; i < nSlices && pos < fullTurn; i++)
 				{
-					uint64_t size = uint64_t(std::min(ring.sliceSize(i), GfxBackend::c_shapeFullTurn)) << 1;
+					uint64_t size = uint64_t(std::min(ring.sliceSize(i), Backend::c_shapeFullTurn)) << 1;
 					if (size == 0)
 						continue;
 
@@ -264,16 +264,16 @@ namespace wax
 
 		//____ measure() ______________________________________________________
 
-		void measure(GfxBackend::ShapeKind kind, const uint16_t* pPayload, int& maxEntries, int& nSegments)
+		void measure(Backend::ShapeKind kind, const uint16_t* pPayload, int& maxEntries, int& nSegments)
 		{
-			if (kind == GfxBackend::ShapeKind::RoundedBox)
+			if (kind == Backend::ShapeKind::RoundedBox)
 			{
 				maxEntries = 7;
 				nSegments = 2;
 			}
-			else if (kind == GfxBackend::ShapeKind::Ring)
+			else if (kind == Backend::ShapeKind::Ring)
 			{
-				int nSlices = GfxBackend::decodeRing(pPayload).nSlices;
+				int nSlices = Backend::decodeRing(pPayload).nSlices;
 				maxEntries = 9 + nSlices * 2;
 				nSegments = 3 + nSlices;
 			}
@@ -286,12 +286,12 @@ namespace wax
 
 		//____ write() ________________________________________________________
 
-		int write(GfxBackend::ShapeKind kind, const uint16_t* pPayload, const HiColor* pColors, float* pEntries, Segment* pSegments)
+		int write(Backend::ShapeKind kind, const uint16_t* pPayload, const HiColor* pColors, float* pEntries, Segment* pSegments)
 		{
-			if (kind == GfxBackend::ShapeKind::RoundedBox)
+			if (kind == Backend::ShapeKind::RoundedBox)
 				return writeRoundedBox(pPayload, pColors, pEntries, pSegments);
 
-			if (kind == GfxBackend::ShapeKind::Ring)
+			if (kind == Backend::ShapeKind::Ring)
 				return writeRing(pPayload, pColors, pEntries, pSegments);
 
 			return 0;

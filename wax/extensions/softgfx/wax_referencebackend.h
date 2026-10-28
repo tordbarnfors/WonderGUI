@@ -23,7 +23,7 @@
 #define WAX_REFERENCEBACKEND_DOT_H
 #pragma once
 
-#include <wax_gfxbackend.h>
+#include <wax_backend.h>
 #include <wax_tinttools.h>
 #include <wax_softsurface.h>
 #include <wax_softedgemap.h>
@@ -74,7 +74,7 @@ namespace wax
 	 *   average of what each segment gives the part of the pixel it covers, as for edgemaps,
 	 *   with coverage worked out from the exact geometry of the shape.
 	 *
-	 * Geometry follows the GfxBackend contract that all backends implement, which in a few places
+	 * Geometry follows the Backend contract that all backends implement, which in a few places
 	 * is defined in whole pixels (end points of lines and position of edgemaps are rounded to
 	 * nearest pixel). Those places are pointed out in the code.
 	 *
@@ -83,7 +83,7 @@ namespace wax
 	 * linear or sRGB color space and either byte order.
 	 */
 
-	class ReferenceBackend : public GfxBackend
+	class ReferenceBackend : public Backend
 	{
 	public:
 

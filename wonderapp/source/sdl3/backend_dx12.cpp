@@ -94,7 +94,7 @@ static DX12Wrapper*		g_pDX12Wrapper = nullptr;
 
 static DX12Backend_p _backend()
 {
-	return wax_static_cast<DX12Backend_p>(wax_static_cast<GfxDeviceGen2_p>(Base::defaultGfxDevice())->backend());
+	return wax_static_cast<DX12Backend_p>(wax_static_cast<GfxDeviceGen2_p>(Base::defaultDevice())->backend());
 }
 
 //____ backend_specific_init() ________________________________________________
@@ -110,7 +110,7 @@ bool backend_specific_init()
 	auto pBackend = DX12Backend::create(g_pDX12Wrapper->dx12Device(), g_pDX12Wrapper->renderCommandQueue());
 
 	auto pGfxDevice = GfxDeviceGen2::create(pBackend);
-	Base::setDefaultGfxDevice(pGfxDevice);
+	Base::setDefaultDevice(pGfxDevice);
 
 	auto pSurfaceFactory = DX12SurfaceFactory::create();
 	Base::setDefaultSurfaceFactory(pSurfaceFactory);
@@ -163,7 +163,7 @@ SDLWindowDX12::SDLWindowDX12(wapp::Window* pUserWindow, wg::Placement origin, wg
 	m_currentBuffer = m_pSwapChain->GetCurrentBackBufferIndex();
 
 	_backend()->setDefaultCanvas(m_rtvHandles[m_currentBuffer], m_renderBuffers[m_currentBuffer].Get(), m_rtvFormat, { spx(m_width * 64), spx(m_height * 64) }, _scale());
-	m_pRootPanel = RootPanel::create(CanvasRef::Default, Base::defaultGfxDevice());
+	m_pRootPanel = RootPanel::create(CanvasRef::Default, Base::defaultDevice());
 
 	//TODO: This is ugly. It should be handled when windows gets focused.
 

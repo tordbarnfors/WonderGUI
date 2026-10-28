@@ -35,7 +35,7 @@
 namespace wax
 {
     class Surface;
-    class GfxDevice;
+    class Device;
 
 	class CanvasLayers;
 	typedef	StrongPtr<CanvasLayers>	CanvasLayers_p;
@@ -55,10 +55,10 @@ namespace wax
 	 * in this CanvasLayer becomes layer 1. A maximum of 16 layers can be specified.
 	 * 
 	 * The surface of a layer is created on demand when the first widget or skin attempts to render to it
-	 * (calls GfxDevice::setRenderLayer(layer-number)), thus there is no cost for specifying layers that
+	 * (calls Device::setRenderLayer(layer-number)), thus there is no cost for specifying layers that
 	 * are not used.
 	 * 
-	 * When the canvas is completed (when GfxDevice::endCanvasUpdate() is called), the generated
+	 * When the canvas is completed (when Device::endCanvasUpdate() is called), the generated
 	 * surfaces are blended onto the base layer and destroyed, resulting in the canvas surface containing
 	 * the composite image.
 	 * 
@@ -82,8 +82,8 @@ namespace wax
 
 	class	CanvasLayers : public Object	
 	{
-		friend class GfxDevice;
-		friend class GfxDeviceGen2;
+		friend class Device;
+		friend class DeviceGen2;
 
 	public:
 
@@ -94,19 +94,19 @@ namespace wax
 /*
 			LayerBP() {}
 			LayerBP(PixelFormat format) : format(format) {}
-			LayerBP(PixelFormat format, const std::function<void(GfxDevice* pDevice)>& blendFunc,
-				const std::function<void(GfxDevice* pDevice)>& clearFunc = nullptr,
-				const std::function<void(GfxDevice* pDevice)>& preBlendFunc = nullptr,
-				const std::function<void(GfxDevice* pDevice)>& preBlendCanvasFunc = nullptr)
+			LayerBP(PixelFormat format, const std::function<void(Device* pDevice)>& blendFunc,
+				const std::function<void(Device* pDevice)>& clearFunc = nullptr,
+				const std::function<void(Device* pDevice)>& preBlendFunc = nullptr,
+				const std::function<void(Device* pDevice)>& preBlendCanvasFunc = nullptr)
 				: format(format), blendFunc(blendFunc), clearFunc(clearFunc), preBlendCanvasFunc(preBlendCanvasFunc), preBlendFunc(preBlendFunc) {}
 */
 
 			PixelFormat format = PixelFormat::Undefined;
 
-			std::function<void(GfxDevice* pDevice)> blendFunc = nullptr;
-			std::function<void(GfxDevice* pDevice)> clearFunc = nullptr;
-			std::function<void(GfxDevice* pDevice)> preBlendCanvasFunc = nullptr;
-			std::function<void(GfxDevice* pDevice)> preBlendFunc = nullptr;
+			std::function<void(Device* pDevice)> blendFunc = nullptr;
+			std::function<void(Device* pDevice)> clearFunc = nullptr;
+			std::function<void(Device* pDevice)> preBlendCanvasFunc = nullptr;
+			std::function<void(Device* pDevice)> preBlendFunc = nullptr;
 
 			ColorSpace	colorSpace = ColorSpace::Undefined;		// Defaults to the color space of the canvas. Last, so { format, blendFunc } still works.
 		};
@@ -115,8 +115,8 @@ namespace wax
 		{
 			int						baseLayer = 0;
 
-			std::function<void(GfxDevice* pDevice)>  clearCanvasFunc = nullptr;
-			std::function<void(GfxDevice* pDevice)>  finalizeCanvasFunc = nullptr;
+			std::function<void(Device* pDevice)>  clearCanvasFunc = nullptr;
+			std::function<void(Device* pDevice)>  finalizeCanvasFunc = nullptr;
 
 			std::vector<LayerBP>	layers;
 		};
@@ -149,22 +149,22 @@ namespace wax
 		const static int	    c_maxLayers = 16;
 
 		inline PixelFormat      _layerFormat(int i) const { return m_layers[i-1].format; }
-        inline const std::function<void(GfxDevice * pDevice)>& _layerClearFunc(int i) const { return m_layers[i-1].clearFunc; }
-        inline const std::function<void(GfxDevice * pDevice)>& _layerPreBlendFunc(int i) const { return m_layers[i-1].preBlendFunc; }
-        inline const std::function<void(GfxDevice * pDevice)>& _layerBlendFunc(int i) const { return m_layers[i-1].blendFunc; }
+        inline const std::function<void(Device * pDevice)>& _layerClearFunc(int i) const { return m_layers[i-1].clearFunc; }
+        inline const std::function<void(Device * pDevice)>& _layerPreBlendFunc(int i) const { return m_layers[i-1].preBlendFunc; }
+        inline const std::function<void(Device * pDevice)>& _layerBlendFunc(int i) const { return m_layers[i-1].blendFunc; }
 
-        inline const std::function<void(GfxDevice * pDevice)>& _canvasClearFunc() const { return m_clearCanvasFunc; }
-        inline const std::function<void(GfxDevice * pDevice)>& _canvasFinalizeFunc() const { return m_finalizeCanvasFunc; }
+        inline const std::function<void(Device * pDevice)>& _canvasClearFunc() const { return m_clearCanvasFunc; }
+        inline const std::function<void(Device * pDevice)>& _canvasFinalizeFunc() const { return m_finalizeCanvasFunc; }
 
-        inline const std::function<void(GfxDevice * pDevice)>& _canvasModifier(int i) const { return m_layers[i-1].preBlendCanvasFunc; }
+        inline const std::function<void(Device * pDevice)>& _canvasModifier(int i) const { return m_layers[i-1].preBlendCanvasFunc; }
 
 
 
         int						m_baseLayer = 0;                // 0 Means that the canvas surface is the base layer.
 		std::vector<LayerBP>	m_layers;
         
-        std::function<void(GfxDevice * pDevice)>  m_clearCanvasFunc = nullptr;
-        std::function<void(GfxDevice * pDevice)>  m_finalizeCanvasFunc = nullptr;
+        std::function<void(Device * pDevice)>  m_clearCanvasFunc = nullptr;
+        std::function<void(Device * pDevice)>  m_finalizeCanvasFunc = nullptr;
         
     };
 

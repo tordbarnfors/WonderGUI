@@ -71,7 +71,7 @@ Win32Window::Win32Window(wapp::Window* pUserWindow, wg::Placement origin, wg::Co
 			}, (uint8_t*) m_pCanvasPixels);
 
 
-		m_pRootPanel = RootPanel::create(pCanvas, Base::defaultGfxDevice());
+		m_pRootPanel = RootPanel::create(pCanvas, Base::defaultDevice());
 
 		// Show window if open is true
 

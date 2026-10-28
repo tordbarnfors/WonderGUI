@@ -30,7 +30,7 @@
 #include <wg_tablepanel.h>
 #include <wg_numberdisplay.h>
 #include <wg_textdisplay.h>
-#include <wax_gfxdevice.h>
+#include <wax_device.h>
 #include <wg_togglegroup.h>
 #include <wg_basictextlayout.h>
 #include <wg_basicnumberlayout.h>

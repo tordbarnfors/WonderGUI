@@ -3,7 +3,7 @@ using System.Runtime.InteropServices;
 namespace Wax;
 
 
-public class StreamBackend : GfxBackend
+public class StreamBackend : Backend
 {
 
     //____ Constructor() ______________________________________________________

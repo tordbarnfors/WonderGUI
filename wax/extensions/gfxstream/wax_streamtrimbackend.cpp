@@ -23,7 +23,7 @@
 
 namespace wax
 {
-	const TypeInfo StreamTrimBackend::TYPEINFO = { "StreamTrimBackend", &GfxBackend::TYPEINFO };
+	const TypeInfo StreamTrimBackend::TYPEINFO = { "StreamTrimBackend", &Backend::TYPEINFO };
 
 	//____ destructor __________________________________________________
 

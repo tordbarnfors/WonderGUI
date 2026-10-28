@@ -20,7 +20,7 @@
 
 =========================================================================*/
 #include <wax_color.h>
-#include <wax_gfxutil.h>
+#include <wax_util.h>
 #include <wax_core.h>
 
 #include <algorithm>
@@ -203,10 +203,10 @@ namespace wax
 	Color8 Color8::operator+(const Color8& k) const
 	{
 		Color8 kNewColor;
-		kNewColor.r = GfxUtil::limitUint8(((int)r) + k.r);
-		kNewColor.g = GfxUtil::limitUint8(((int)g) + k.g);
-		kNewColor.b = GfxUtil::limitUint8(((int)b) + k.b);
-		kNewColor.a = GfxUtil::limitUint8(((int)a) + k.a);
+		kNewColor.r = Util::limitUint8(((int)r) + k.r);
+		kNewColor.g = Util::limitUint8(((int)g) + k.g);
+		kNewColor.b = Util::limitUint8(((int)b) + k.b);
+		kNewColor.a = Util::limitUint8(((int)a) + k.a);
 		return kNewColor;
 	}
 
@@ -214,10 +214,10 @@ namespace wax
 	Color8 Color8::operator-(const Color8& k) const
 	{
 		Color8 kNewColor;
-		kNewColor.r = GfxUtil::limitUint8(((int)r) - k.r);
-		kNewColor.g = GfxUtil::limitUint8(((int)g) - k.g);
-		kNewColor.b = GfxUtil::limitUint8(((int)b) - k.b);
-		kNewColor.a = GfxUtil::limitUint8(((int)a) - k.a);
+		kNewColor.r = Util::limitUint8(((int)r) - k.r);
+		kNewColor.g = Util::limitUint8(((int)g) - k.g);
+		kNewColor.b = Util::limitUint8(((int)b) - k.b);
+		kNewColor.a = Util::limitUint8(((int)a) - k.a);
 		return kNewColor;
 	}
 

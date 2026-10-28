@@ -19,17 +19,17 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#include <wax_gfxdevicefactory.h>
+#include <wax_devicefactory.h>
 
 namespace wax
 {
 
-	const TypeInfo GfxDeviceFactory::TYPEINFO = { "GfxDeviceFactory", &Object::TYPEINFO };
+	const TypeInfo DeviceFactory::TYPEINFO = { "DeviceFactory", &Object::TYPEINFO };
 
 
 	//____ typeInfo() _________________________________________________________
 
-	const TypeInfo& GfxDeviceFactory::typeInfo(void) const
+	const TypeInfo& DeviceFactory::typeInfo(void) const
 	{
 		return TYPEINFO;
 	}

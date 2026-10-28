@@ -19,8 +19,8 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef	WAX_GFXDEVICE_DOT_H
-#define WAX_GFXDEVICE_DOT_H
+#ifndef	WAX_DEVICE_DOT_H
+#define WAX_DEVICE_DOT_H
 #pragma once
 
 #include <climits>
@@ -51,9 +51,9 @@ namespace wax
 	class	CaretInstance;
 	class 	Pen;
 
-	class GfxDevice;
-	typedef	StrongPtr<GfxDevice>	GfxDevice_p;
-	typedef	WeakPtr<GfxDevice>		GfxDevice_wp;
+	class Device;
+	typedef	StrongPtr<Device>	Device_p;
+	typedef	WeakPtr<Device>		Device_wp;
 
 
 	//____ WaveLine ___________________________________________________________
@@ -69,7 +69,7 @@ namespace wax
 
 	//____ RoundedBoxSpec _____________________________________________________
 	/**
-	 * A box with rounded corners and an outline, drawn by GfxDevice::drawRoundedBox().
+	 * A box with rounded corners and an outline, drawn by Device::drawRoundedBox().
 	 *
 	 * Fill and outline are drawn together, so no background shows through between
 	 * them, and they are placed with subpixel precision.
@@ -111,7 +111,7 @@ namespace wax
 	//____ RingSpec ___________________________________________________________
 	/**
 	 * A circle, ring, pie or donut chart, gauge or progress ring, drawn by
-	 * GfxDevice::drawRing().
+	 * Device::drawRing().
 	 *
 	 * The circle is the largest one centered in rect. The ring reaches thickness in
 	 * from its outer edge and is split into slices clockwise from start (12 o'clock is
@@ -137,7 +137,7 @@ namespace wax
 		spx					thickness = 0;						// Width of ring, outline included. 0 or at least the radius for a full pie or disc.
 		spx					outline = 0;						// Thickness of outline along outer and inner edge.
 		float				start = 0.f;						// Start of first slice, fraction of a turn clockwise from 12 o'clock.
-		int					nSlices = 0;						// At most GfxDevice::maxRingSlices().
+		int					nSlices = 0;						// At most Device::maxRingSlices().
 		const RingSlice*	pSlices = nullptr;
 		bool				bSquare = false;					// Outer edge follows rect.
 
@@ -151,7 +151,7 @@ namespace wax
 
 	//____ LineCap ____________________________________________________________
 	/**
-	 * The shape of one end of a line drawn by GfxDevice::drawLine().
+	 * The shape of one end of a line drawn by Device::drawLine().
 	 *
 	 * A line with LineCap::None at both ends is drawn as it always has been: its
 	 * endpoints are rounded to whole pixels and it is cut along its minor axis there
@@ -238,9 +238,9 @@ namespace wax
 	};
 
 
-	//____ GfxDevice __________________________________________________________
+	//____ Device __________________________________________________________
 
-	class GfxDevice : public Object
+	class Device : public Object
 	{
 	public:
 
@@ -409,8 +409,8 @@ namespace wax
 
 
 	protected:
-		GfxDevice();
-		virtual ~GfxDevice();
+		Device();
+		virtual ~Device();
 
 		const static int	c_maxSegments = 16;
 		const static int	c_maxRingSlices = 256;
@@ -419,5 +419,5 @@ namespace wax
 
 
 } // namespace wax
-#endif	// WAX_GFXDEVICE_DOT_H
+#endif	// WAX_DEVICE_DOT_H
 

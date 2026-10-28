@@ -4,8 +4,8 @@ set(SOURCES
 	wax_glbackend.cpp
 	wax_glbackend.h
 	wax_glbackendshaders.cpp
-	wax_glgfxdevicefactory.cpp
-	wax_glgfxdevicefactory.h
+	wax_gldevicefactory.cpp
+	wax_gldevicefactory.h
 	wax_glsurface.cpp
 	wax_glsurface.h
 	wax_glsurfacefactory.cpp

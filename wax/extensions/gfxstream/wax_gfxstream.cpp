@@ -88,7 +88,7 @@ GfxStream::DataInfo GfxStream::readDataInfo(const uint8_t* _pChunkData)
 		info.bufferSize = totalSize;
 		info.objectId = 0;			// Will this work????
 
-		info.compression = GfxUtil::makeEndianSpecificToken('N','O','N','E');
+		info.compression = Util::makeEndianSpecificToken('N','O','N','E');
 		info.dataStart = 0;
 		info.chunkOffset = chunkOfs;
 		info.chunkComp = compression;
@@ -161,7 +161,7 @@ int GfxStream::loadDecompressData( DataInfo& dataInfo, uint8_t * pBuffer, const 
 	{
 		int size;
 
-		if(dataInfo.compression != GfxUtil::makeEndianSpecificToken('N','O','N','E') )
+		if(dataInfo.compression != Util::makeEndianSpecificToken('N','O','N','E') )
 		{
 			auto pCompressor = Core::getDecompressor(dataInfo.compression);
 

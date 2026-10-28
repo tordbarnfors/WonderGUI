@@ -470,7 +470,7 @@ template<typename T, typename T2, typename T3> inline void limit(T& x, T2 min, T
 
 	struct PixelDescription
 	{
-		// These constructors are needed for Clang to compile GfxUtil::pixelDescTab in C++11 setting.
+		// These constructors are needed for Clang to compile Util::pixelDescTab in C++11 setting.
 
 		PixelDescription() {}
 		constexpr PixelDescription(int _bits, PixelType _type, uint64_t _R_mask, uint64_t _G_mask, uint64_t _B_mask, uint64_t _A_mask, bool _bigEndian = (WAX_IS_BIG_ENDIAN == 1) ) :

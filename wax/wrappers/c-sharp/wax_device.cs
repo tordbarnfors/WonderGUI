@@ -3,17 +3,17 @@ using System.Runtime.InteropServices;
 namespace Wax;
 
 
-public class GfxDevice : Objekt
+public class Device : Objekt
 {
 
     //____ Constructor ________________________________________________________
-    public GfxDevice(GfxBackend backend)
+    public Device(Backend backend)
     {
-        _obj = wax_createGfxDevice(backend.CHandle());
+        _obj = wax_createDevice(backend.CHandle());
     }
 
     //____ SetBackend() _______________________________________________________
-    public bool SetBackend(GfxBackend backend)
+    public bool SetBackend(Backend backend)
     {
         return (wax_setBackend(_obj, backend.CHandle()) == 1);
     }
@@ -211,7 +211,7 @@ public class GfxDevice : Objekt
     //____ DLL functions ______________________________________________________
 
     [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-    private static extern IntPtr wax_createGfxDevice(IntPtr backend);
+    private static extern IntPtr wax_createDevice(IntPtr backend);
 
     //	[DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
     //private static extern const wax_typeInfo* wax_deviceSurfaceType(IntPtr device);

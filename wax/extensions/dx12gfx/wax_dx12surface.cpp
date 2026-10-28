@@ -27,7 +27,7 @@
 #include <wax_dx12backend.h>
 
 #include <wax_core.h>
-#include <wax_gfxutil.h>
+#include <wax_util.h>
 #include <wax_pixeltools.h>
 
 #include <algorithm>
@@ -300,7 +300,7 @@ namespace wax
 
 		m_pixelFormat = format;
 		m_bBigEndian = (WAX_IS_BIG_ENDIAN == 1);
-		m_pixelDescription = GfxUtil::pixelFormatToDescription(format, m_bBigEndian);
+		m_pixelDescription = Util::pixelFormatToDescription(format, m_bBigEndian);
 		m_pixelSize = m_pPixelDescription->bits / 8;
 		m_bAlphaOnly = (m_dxgiFormat == DXGI_FORMAT_A8_UNORM);
 		m_bIndexed = (m_dxgiFormat == DXGI_FORMAT_R8_UINT || m_dxgiFormat == DXGI_FORMAT_R16_UINT);
@@ -390,7 +390,7 @@ namespace wax
 		if( format == PixelFormat::Undefined )
 			format = m_pixelFormat;
 
-		auto srcDesc = GfxUtil::pixelFormatToDescription(format, bp.bigEndian);
+		auto srcDesc = Util::pixelFormatToDescription(format, bp.bigEndian);
 
 		if( pitch == 0 )
 			pitch = PixelTools::bytesPerLine(srcDesc, m_size.w);

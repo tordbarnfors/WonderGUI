@@ -34,8 +34,8 @@
 #include <wax_weakptr.h>
 #include <wax_object.h>
 #include <wax_types.h>
-#include <wax_gfxdevice.h>
-#include <wax_gfxdevicefactory.h>
+#include <wax_device.h>
+#include <wax_devicefactory.h>
 #include <wax_compression.h>
 
 namespace wax
@@ -51,8 +51,8 @@ namespace wax
 	class SurfaceFactory;
 	typedef	StrongPtr<SurfaceFactory>	SurfaceFactory_p;
 
-	class GfxDeviceFactory;
-	typedef	StrongPtr<GfxDeviceFactory>	GfxDeviceFactory_p;
+	class DeviceFactory;
+	typedef	StrongPtr<DeviceFactory>	DeviceFactory_p;
 
 
 	class Error
@@ -79,8 +79,8 @@ namespace wax
 		SurfaceFactory_p	pDefaultSurfaceFactory;
 		EdgemapFactory_p	pDefaultEdgemapFactory;
 		WarpmapFactory_p	pDefaultWarpmapFactory;
-		GfxDeviceFactory_p	pDefaultGfxDeviceFactory;
-		GfxDevice_p			pDefaultGfxDevice;
+		DeviceFactory_p	pDefaultDeviceFactory;
+		Device_p			pDefaultDevice;
 		BitmapCache_p		pDefaultBitmapCache;
 	};
 
@@ -132,11 +132,11 @@ namespace wax
 		static void					setDefaultWarpmapFactory(WarpmapFactory* pFactory);
 		static inline WarpmapFactory_p	defaultWarpmapFactory() { return s_pContext->pDefaultWarpmapFactory; };
 
-		static void					setDefaultGfxDeviceFactory(GfxDeviceFactory* pFactory);
-		static inline GfxDeviceFactory_p	defaultGfxDeviceFactory() { return s_pContext->pDefaultGfxDeviceFactory; };
+		static void					setDefaultDeviceFactory(DeviceFactory* pFactory);
+		static inline DeviceFactory_p	defaultDeviceFactory() { return s_pContext->pDefaultDeviceFactory; };
 
-		static void					setDefaultGfxDevice( GfxDevice * pDevice );
-		static inline GfxDevice_p	defaultGfxDevice() { return s_pContext->pDefaultGfxDevice; };
+		static void					setDefaultDevice( Device * pDevice );
+		static inline Device_p	defaultDevice() { return s_pContext->pDefaultDevice; };
 
 		static Decompressor_p		getDecompressor( uint32_t idToken );
 		static void					addDecompressor( Decompressor * pDecompressor );

@@ -24,7 +24,7 @@
 #pragma once
 
 #include <wax_types.h>
-#include <wax_gfxutil.h>
+#include <wax_util.h>
 
 #include <assert.h>
 #include <cstring>

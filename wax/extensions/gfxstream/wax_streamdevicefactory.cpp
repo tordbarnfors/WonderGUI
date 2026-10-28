@@ -20,19 +20,19 @@
 
 =========================================================================*/
 #include "wax_streambackend.h"
-#include "wax_streamgfxdevicefactory.h"
+#include "wax_streamdevicefactory.h"
 
-#include "wax_gfxdevice_gen2.h"
+#include "wax_device_gen2.h"
 
 
 namespace wax
 {
 
-	const TypeInfo StreamGfxDeviceFactory::TYPEINFO = { "StreamGfxDeviceFactory", &GfxDeviceFactory::TYPEINFO };
+	const TypeInfo StreamDeviceFactory::TYPEINFO = { "StreamDeviceFactory", &DeviceFactory::TYPEINFO };
 
 	//____ constructor ___________________________________________________________
 
-StreamGfxDeviceFactory::StreamGfxDeviceFactory(const Blueprint& bp)
+StreamDeviceFactory::StreamDeviceFactory(const Blueprint& bp)
 	{
 		m_pEncoder = bp.encoder;
 		m_maxEdges = bp.maxEdges;
@@ -41,14 +41,14 @@ StreamGfxDeviceFactory::StreamGfxDeviceFactory(const Blueprint& bp)
 
 	//____ typeInfo() _________________________________________________________
 
-	const TypeInfo& StreamGfxDeviceFactory::typeInfo(void) const
+	const TypeInfo& StreamDeviceFactory::typeInfo(void) const
 	{
 		return TYPEINFO;
 	}
 
-	//____ createGfxDevice() ________________________________________________________
+	//____ createDevice() ________________________________________________________
 
-	GfxDevice_p StreamGfxDeviceFactory::createGfxDevice()
+	Device_p StreamDeviceFactory::createDevice()
 	{
 		auto pBackend = StreamBackend::create(m_pEncoder, m_maxEdges);
 
@@ -56,7 +56,7 @@ StreamGfxDeviceFactory::StreamGfxDeviceFactory(const Blueprint& bp)
 
 		pBackend->encodeCanvasList();
 
-		auto pDevice = GfxDeviceGen2::create(pBackend);
+		auto pDevice = DeviceGen2::create(pBackend);
 		return pDevice;
 	}
 

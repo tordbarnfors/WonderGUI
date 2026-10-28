@@ -25,7 +25,7 @@
 #include <wg_texttool.h>
 #include <wg_textstylemanager.h>
 #include <wax_memstack.h>
-#include <wax_gfxdevice.h>
+#include <wax_device.h>
 #include <wax_surface.h>
 #include <wax_freetypefont.h>
 #include <wax_dummyfont.h>

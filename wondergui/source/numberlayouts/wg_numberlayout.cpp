@@ -20,7 +20,7 @@
 
 =========================================================================*/
 #include <wg_numberlayout.h>
-#include <wax_gfxdevice.h>
+#include <wax_device.h>
 #include <wg_util.h>
 
 namespace wg

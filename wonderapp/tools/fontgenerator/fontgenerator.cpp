@@ -365,7 +365,7 @@ bool MyApp::generateFontSurface( FreeTypeFont * pFont, String& chars )
 	// Generate and fill in surface
 	
 	auto pSurface = Base::defaultSurfaceFactory()->createSurface( { .canvas = true, .colorSpace = outputColorSpace, .format = PixelFormat::ARGB_8, .size = surfaceSize });
-	auto pDevice = Base::defaultGfxDevice();
+	auto pDevice = Base::defaultDevice();
 
 	HiColor lineColor(1024,0,0,4096);
 	

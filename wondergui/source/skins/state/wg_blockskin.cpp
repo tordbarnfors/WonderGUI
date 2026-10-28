@@ -20,7 +20,7 @@
 
 =========================================================================*/
 #include <wg_blockskin.h>
-#include <wax_gfxdevice.h>
+#include <wax_device.h>
 #include <wax_geo.h>
 #include <wg_util.h>
 #include <wg_skin.impl.h>

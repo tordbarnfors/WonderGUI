@@ -25,7 +25,7 @@
 
 
 #include <wg_widget.h>
-#include <wax_gfxdevice.h>
+#include <wax_device.h>
 
 namespace wg
 {

@@ -70,13 +70,13 @@ public:
 			auto buffer = pCanvas->allocPixelBuffer({ 0, 0, c.w, c.h });
 			pCanvas->pushPixels(buffer, { 0, 0, c.w, c.h });
 			m_pCopies[i] = pFactory->createSurface(WGBP(Surface, _.size = { c.w, c.h }, _.format = c.format, _.colorSpace = buffer.colorSpace, _.sampleMethod = SampleMethod::Nearest),
-												   buffer.pixels, Util::pixelFormatToDescription(buffer.format, buffer.bigEndian), buffer.pitch);
+												   buffer.pixels, wax::Util::pixelFormatToDescription(buffer.format, buffer.bigEndian), buffer.pitch);
 			pCanvas->freePixelBuffer(buffer);
 
 			// Pixel (2,1) is inside the second fill of the second round.
 
 			int alpha = pCanvas->alpha({ 64 * 2, 64 * 1 });
-			int expected = Util::pixelFormatToDescription(c.format).A_mask == 0 ? 4096 : 200 * 4096 / 255;
+			int expected = wax::Util::pixelFormatToDescription(c.format).A_mask == 0 ? 4096 : 200 * 4096 / 255;
 			bAlphaOk[i] = std::abs(alpha - expected) <= 32;
 		}
 

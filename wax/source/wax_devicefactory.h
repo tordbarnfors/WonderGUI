@@ -19,32 +19,32 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef WAX_GFXDEVICEFACTORY_DOT_H
-#define	WAX_GFXDEVICEFACTORY_DOT_H
+#ifndef WAX_DEVICEFACTORY_DOT_H
+#define	WAX_DEVICEFACTORY_DOT_H
 #pragma once
 //==============================================================================
 
-#include <wax_gfxdevice.h>
+#include <wax_device.h>
 
 
 namespace wax
 {
 
 
-	class GfxDeviceFactory;
-	typedef	StrongPtr<GfxDeviceFactory>	GfxDeviceFactory_p;
-	typedef	WeakPtr<GfxDeviceFactory>	GfxDeviceFactory_wp;
+	class DeviceFactory;
+	typedef	StrongPtr<DeviceFactory>	DeviceFactory_p;
+	typedef	WeakPtr<DeviceFactory>	DeviceFactory_wp;
 
 
-	//____ GfxDeviceFactory _______________________________________________________
+	//____ DeviceFactory _______________________________________________________
 	/**
 	 * @brief Factory class for creating gfxdevices.
 	 *
-	 * GfxDeviceFactory is the base class for all gfxdevice factories. The gfxdevice factories
+	 * DeviceFactory is the base class for all gfxdevice factories. The gfxdevice factories
 	 * can be used to create a gfxdevice without knowing which one or the details of creating one.
 	 *
 	 **/
-	class GfxDeviceFactory : public Object
+	class DeviceFactory : public Object
 	{
 	public:
 
@@ -56,14 +56,14 @@ namespace wax
 
 		//.____ Misc _______________________________________________________
 
-		virtual GfxDevice_p	createGfxDevice() = 0;
+		virtual Device_p	createDevice() = 0;
 
 	protected:
-		virtual ~GfxDeviceFactory() {}
+		virtual ~DeviceFactory() {}
 	};
 
 
 	//==============================================================================
 
 } // namespace wax
-#endif // WAX_GFXDEVICEFACTORY_DOT_H
+#endif // WAX_DEVICEFACTORY_DOT_H

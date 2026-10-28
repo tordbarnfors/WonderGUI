@@ -22,7 +22,7 @@
 #include <memory.h>
 
 #include <wax_remotesurface.h>
-#include <wax_gfxutil.h>
+#include <wax_util.h>
 #include <wax_blob.h>
 #include <wax_pixeltools.h>
 #include <wax_core.h>
@@ -110,7 +110,7 @@ namespace wax
 		if (srcFormat == PixelFormat::Undefined)
 			srcFormat = m_pixelFormat;
 
-		auto srcDesc = GfxUtil::pixelFormatToDescription(srcFormat, m_bBigEndian);
+		auto srcDesc = Util::pixelFormatToDescription(srcFormat, m_bBigEndian);
 
 		if( pitch == 0 )
 			pitch = PixelTools::bytesPerLine(srcDesc, m_size.w);

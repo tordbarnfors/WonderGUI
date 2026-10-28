@@ -22,7 +22,7 @@
 #include <wg_doubleskin.h>
 #include <wax_geo.h>
 #include <wg_util.h>
-#include <wax_gfxdevice.h>
+#include <wax_device.h>
 #include <cassert>
 #include <algorithm>
 

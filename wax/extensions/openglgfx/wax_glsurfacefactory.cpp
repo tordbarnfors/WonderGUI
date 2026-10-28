@@ -23,7 +23,7 @@
 
 #include <wax_glsurface.h>
 #include <wax_glsurfacefactory.h>
-#include <wax_gfxutil.h>
+#include <wax_util.h>
 
 
 

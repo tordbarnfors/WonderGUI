@@ -61,7 +61,7 @@ namespace wax
 		{
 			PixelFormat format = layer.format;
 
-			auto type = GfxUtil::pixelFormatToDescription(format).type;
+			auto type = Util::pixelFormatToDescription(format).type;
 
 			if (type == PixelType::Index || type == PixelType::Bitplanes)
 			{
@@ -147,7 +147,7 @@ namespace wax
 	 * By default a layer surface is filled with transparency when created, but that will be replaced by this function if specified.
 	 * Use this function to fill the surface with any content you like before widgets or skins render into it.
 	 * 
-	 * When the function is called, it receives one parameter which is the GfxDevice to use. This has been prepared
+	 * When the function is called, it receives one parameter which is the Device to use. This has been prepared
 	 * for operation in the following way:
 	 * 
 	 * - RenderTarget is set to the surface for the layer.
@@ -171,7 +171,7 @@ namespace wax
 	 * @param layer		The layer for which we specify the finalizer. Please note that layer numbering starts on 1, not 0.
 	 * @param func		A lambda function to be used to finalize the layer after it is created.
 	 * 
-	 * When the function is called, it receives one parameter which is the GfxDevice to use. This has been prepared
+	 * When the function is called, it receives one parameter which is the Device to use. This has been prepared
 	 * for operation in the following way:
 	 * 
 	 * - RenderTarget is set to the surface for the layer.
@@ -179,7 +179,7 @@ namespace wax
 	 * - BlendMode is set to Blend.
 	 * - Tint is cleared.
 	 *
-	 * No GfxDevice settings are saved or restored. Any settings you change will have to be saved and restored within the lambda.
+	 * No Device settings are saved or restored. Any settings you change will have to be saved and restored within the lambda.
 	 * 
 	 */
 
@@ -196,7 +196,7 @@ namespace wax
 	 * @param layer		The layer for which we specify the blend function. Please note that layer numbering starts on 1, not 0.
 	 * @param func		A lambda function to be used to blend the layer onto the canvas surface.
 	 * 
-	 * When the function is called, it receives one parameter which is the GfxDevice to use. This has been prepared
+	 * When the function is called, it receives one parameter which is the Device to use. This has been prepared
 	 * for operation in the following way:
 	 * 
 	 * - RenderTarget is set to the canvas surface (base layer).
@@ -205,7 +205,7 @@ namespace wax
 	 * - BlendMode is set to Blend.
 	 * - Tint is cleared.
 	 *
-	 * No GfxDevice settings are saved or restored. Any settings you change will have to be saved and restored within the lambda.
+	 * No Device settings are saved or restored. Any settings you change will have to be saved and restored within the lambda.
 	 * 
 	 */
 
@@ -213,12 +213,12 @@ namespace wax
 	/**
 	 * @brief Set a lambda function to initialize the canvas.
 	 * 
-	 * Sets a lambda function to initialize the canvas surface. This is called from GfxDevice::beginCanvasUpdate() and is
+	 * Sets a lambda function to initialize the canvas surface. This is called from Device::beginCanvasUpdate() and is
 	 * an optional step.
 	 * 
 	 * @param func		A lambda function to be called when canvas surface is initialized.
 	 * 
-	 * When the function is called, it receives one parameter which is the GfxDevice to use. This has been prepared
+	 * When the function is called, it receives one parameter which is the Device to use. This has been prepared
 	 * for operation in the following way:
 	 * 
 	 * - Render target is set to the canvas surface (base layer).
@@ -226,7 +226,7 @@ namespace wax
 	 * - BlendMode is set to Blend.
 	 * - Tint is cleared.
 	 *
-	 * No GfxDevice settings are saved or restored. Any settings you change will have to be saved and restored within the lambda.
+	 * No Device settings are saved or restored. Any settings you change will have to be saved and restored within the lambda.
 	 * 
 	 */
 
@@ -234,12 +234,12 @@ namespace wax
 	/**
 	 * @brief Set a lambda function to finalize the canvas.
 	 * 
-	 * Sets a lambda function to finalize the canvas surface. This is called from GfxDevice::endCanvasUpdate() and is
+	 * Sets a lambda function to finalize the canvas surface. This is called from Device::endCanvasUpdate() and is
 	 * an optional step.
 	 * 
 	 * @param func		A lambda function to be called when canvas surface is finalized.
 	 * 
-	 * When the function is called, it receives one parameter which is the GfxDevice to use. This has been prepared
+	 * When the function is called, it receives one parameter which is the Device to use. This has been prepared
 	 * for operation in the following way:
 	 * 
 	 * - Render target is set to the canvas surface (base layer).
@@ -247,7 +247,7 @@ namespace wax
 	 * - BlendMode is set to Blend.
 	 * - Tint is cleared.
 	 *
-	 * No GfxDevice settings are saved or restored. Any settings you change will have to be saved and restored within the lambda.
+	 * No Device settings are saved or restored. Any settings you change will have to be saved and restored within the lambda.
 	 * 
 	 */
 
@@ -262,15 +262,15 @@ namespace wax
 	 * @param layer		The layer before which the modifier should be called. Please note that layer numbering starts on 1, not 0.
 	 * @param func		A lambda function to be used to modify content of the canvas surface.
 	 * 
-	 * When the function is called, it receives one parameter which is the GfxDevice to use. This has been prepared
+	 * When the function is called, it receives one parameter which is the Device to use. This has been prepared
 	 * for operation in the following way:
 	 * 
 	 * - Render target is set to the canvas surface (base layer).
-	 * - ClipList is set to that provided to GfxDevice::beginCanvasUpdate().
+	 * - ClipList is set to that provided to Device::beginCanvasUpdate().
 	 * - BlendMode is set to Blend.
 	 * - Tint is cleared.
 	 * 
-	 * No GfxDevice settings are saved or restored. Any settings you change will have to be saved and restored within the lambda.
+	 * No Device settings are saved or restored. Any settings you change will have to be saved and restored within the lambda.
 	 * 
 	 */
 

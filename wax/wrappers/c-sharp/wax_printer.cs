@@ -6,7 +6,7 @@ namespace Wax;
 public class Printer : Objekt
 {
 
-    //    GfxDevice_p	gfxDevice() const { return m_pGfxDevice;  }
+    //    Device_p	device() const { return m_pGfxDevice;  }
     //    Font_p		font() const { return m_pFont;  }
 
 
@@ -16,11 +16,11 @@ public class Printer : Objekt
         _obj = wax_createPrinter();
     }
 
-    //____ SetGfxDevice() _____________________________________________________
+    //____ SetDevice() _____________________________________________________
 
-    public void SetGfxDevice(GfxDevice device)
+    public void SetDevice(Device device)
     {
-        wax_setPrinterGfxDevice(_obj, device.CHandle());
+        wax_setPrinterDevice(_obj, device.CHandle());
     }
 
     //____ SetFont() __________________________________________________________
@@ -177,10 +177,10 @@ public class Printer : Objekt
     private static extern IntPtr wax_createPrinter();
 
     [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-    private static extern void wax_setPrinterGfxDevice(IntPtr printer, IntPtr gfxDevice);
+    private static extern void wax_setPrinterDevice(IntPtr printer, IntPtr device);
 
     [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-    private static extern IntPtr wax_printerGfxDevice(IntPtr printer);
+    private static extern IntPtr wax_printerDevice(IntPtr printer);
 
     [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
     private static extern void wax_setPrinterFont(IntPtr printer, IntPtr font);

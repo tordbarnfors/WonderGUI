@@ -20,7 +20,7 @@
 
 =========================================================================*/
 #include <wg_skindisplay.h>
-#include <wax_gfxdevice.h>
+#include <wax_device.h>
 
 namespace wg
 {

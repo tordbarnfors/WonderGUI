@@ -24,7 +24,7 @@
 #pragma once
 
 #include <wax_geo.h>
-#include <wax_gfxutil.h>
+#include <wax_util.h>
 
 #ifdef WIN32
 #	include <GL/glew.h>
@@ -37,7 +37,7 @@
 #	endif
 #endif
 
-#include <wax_gfxbackend.h>
+#include <wax_backend.h>
 #include <wax_gpushapes.h>
 #include <wax_tinttools.h>
 #include <wax_glsurface.h>
@@ -49,7 +49,7 @@ namespace wax
 	typedef	StrongPtr<GlBackend> GlBackend_p;
 	typedef	WeakPtr<GlBackend>	GlBackend_wp;
 
-	class GlBackend : public GfxBackend
+	class GlBackend : public Backend
 	{
 		friend class GlSurface;
 
@@ -456,5 +456,5 @@ namespace wax
 	};
 
 } // namespace wax
-#endif //WAX_GLGFXDEVICE_DOT_H
+#endif //WAX_GLDEVICE_DOT_H
 

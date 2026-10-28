@@ -70,7 +70,7 @@ namespace wg
 			return nullptr;
 		}
 
-		GfxDevice* pUseDevice = pDevice ? pDevice : Base::defaultGfxDevice().rawPtr();
+		GfxDevice* pUseDevice = pDevice ? pDevice : Base::defaultDevice().rawPtr();
 		if (pUseDevice == nullptr)
 		{
 			Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "No GfxDevice provided and no default GfxDevice set.", nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
@@ -113,7 +113,7 @@ namespace wg
 		m_pCanvasLayers = bp.canvasLayers;
 		m_windowRef = bp.windowRef;
 				
-		GfxDevice* pUseGfxDevice = bp.gfxDevice ? bp.gfxDevice.rawPtr() : Base::defaultGfxDevice().rawPtr();
+		GfxDevice* pUseGfxDevice = bp.gfxDevice ? bp.gfxDevice.rawPtr() : Base::defaultDevice().rawPtr();
 
 		if( bp.canvasRef != CanvasRef::None )
 		{
@@ -183,7 +183,7 @@ namespace wg
 
 	RootPanel::RootPanel(CanvasRef ref, GfxDevice* pGfxDevice) : RootPanel()
 	{
-		GfxDevice* pUseGfxDevice = pGfxDevice ? pGfxDevice : Base::defaultGfxDevice().rawPtr();
+		GfxDevice* pUseGfxDevice = pGfxDevice ? pGfxDevice : Base::defaultDevice().rawPtr();
 
 		m_canvas = pUseGfxDevice->canvas(ref);
 
@@ -260,7 +260,7 @@ namespace wg
 
 	bool RootPanel::setCanvas(CanvasRef canvasRef)
 	{
-        GfxDevice* pGfxDevice = m_pGfxDevice ? m_pGfxDevice : Base::defaultGfxDevice();
+        GfxDevice* pGfxDevice = m_pGfxDevice ? m_pGfxDevice : Base::defaultDevice();
 
         if( !pGfxDevice )
 		{
@@ -462,7 +462,7 @@ namespace wg
 
 	bool RootPanel::beginRender()
 	{
-		GfxDevice* pGfxDevice = m_pGfxDevice ? m_pGfxDevice : Base::defaultGfxDevice();
+		GfxDevice* pGfxDevice = m_pGfxDevice ? m_pGfxDevice : Base::defaultDevice();
 
 		if( !pGfxDevice )
 		{
@@ -526,7 +526,7 @@ namespace wg
 
 	bool RootPanel::renderSection(const Rect& _clip)
 	{
-		GfxDevice* pGfxDevice = m_pGfxDevice ? m_pGfxDevice : Base::defaultGfxDevice();
+		GfxDevice* pGfxDevice = m_pGfxDevice ? m_pGfxDevice : Base::defaultDevice();
 
 		if (!m_bRendering)
 		{
@@ -615,7 +615,7 @@ namespace wg
 
 	bool RootPanel::endRender(void)
 	{
-		GfxDevice* pGfxDevice = m_pGfxDevice ? m_pGfxDevice : Base::defaultGfxDevice();
+		GfxDevice* pGfxDevice = m_pGfxDevice ? m_pGfxDevice : Base::defaultDevice();
 
 		if (!m_bRendering)
 		{

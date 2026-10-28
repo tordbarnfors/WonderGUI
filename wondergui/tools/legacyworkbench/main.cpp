@@ -28,7 +28,7 @@
 #include <wax_streamplayer.h>
 */
 
-#include <wax_gfxdevice_gen2.h>
+#include <wax_device_gen2.h>
 
 #include <wax_softsurface.h>
 #include <wax_softsurfacefactory.h>
@@ -267,7 +267,7 @@ int main ( int argc, char** argv )
 
 #endif
 	
-	WgBase::setDefaultGfxDevice(g_pGfxDevice);
+	WgBase::setDefaultDevice(g_pGfxDevice);
 	WgBase::setDefaultSurfaceFactory(g_pSurfaceFactory);
 	WgBase::setDefaultEdgemapFactory(g_pEdgemapFactory);
 

@@ -22,19 +22,19 @@
 
 
 #include "wax_metalbackend.h"
-#include "wax_metalgfxdevicefactory.h"
+#include "wax_metaldevicefactory.h"
 
-#include "wax_gfxdevice_gen2.h"
+#include "wax_device_gen2.h"
 
 
 namespace wax
 {
 
-	const TypeInfo MetalGfxDeviceFactory::TYPEINFO = { "MetalGfxDeviceFactory", &GfxDeviceFactory::TYPEINFO };
+	const TypeInfo MetalDeviceFactory::TYPEINFO = { "MetalDeviceFactory", &DeviceFactory::TYPEINFO };
 
 	//____ constructor ___________________________________________________________
 
-	MetalGfxDeviceFactory::MetalGfxDeviceFactory(const Blueprint& bp)
+	MetalDeviceFactory::MetalDeviceFactory(const Blueprint& bp)
 	{
 		m_device 						= bp.device;
 		m_pDefaultCanvasRenderPassDesc	= bp.defaultCanvasRenderPassDesc;
@@ -47,19 +47,19 @@ namespace wax
 
 	//____ typeInfo() _________________________________________________________
 
-	const TypeInfo& MetalGfxDeviceFactory::typeInfo(void) const
+	const TypeInfo& MetalDeviceFactory::typeInfo(void) const
 	{
 		return TYPEINFO;
 	}
 
-	//____ createGfxDevice() ________________________________________________________
+	//____ createDevice() ________________________________________________________
 
-	GfxDevice_p MetalGfxDeviceFactory::createGfxDevice()
+	Device_p MetalDeviceFactory::createDevice()
 	{
 		auto pBackend = MetalBackend::create();
 		pBackend->setDefaultCanvas( m_pDefaultCanvasRenderPassDesc, m_defaultCanvasSize, m_defaultCanvasPixelFormat, m_defaultCanvasScale, m_defaultCanvasColorSpace );
 
-		auto pDevice = GfxDeviceGen2::create(pBackend);
+		auto pDevice = DeviceGen2::create(pBackend);
 		return pDevice;
 	}
 

@@ -23,7 +23,7 @@
 #include <cstring>
 #include <memory.h>
 #include <wax_softsurface.h>
-#include <wax_gfxutil.h>
+#include <wax_util.h>
 #include <wax_core.h>
 #include <wax_pixeltools.h>
 
@@ -150,7 +150,7 @@ namespace wax
 
 		_fixSrcParam(format, pPalette, paletteSize);
 
-		auto srcDesc = GfxUtil::pixelFormatToDescription(format, m_bBigEndian);
+		auto srcDesc = Util::pixelFormatToDescription(format, m_bBigEndian);
 		int srcPitchAdd = (pitch == 0) ? 0 : pitch - PixelTools::bytesPerLine(srcDesc, m_size.w);
 		
 		PixelTools::copyPixels(m_size.w, m_size.h, pPixels, srcDesc, m_colorSpace, srcPitchAdd, pPalette, paletteSize,
@@ -240,8 +240,8 @@ namespace wax
 	{
 		if (m_bTiling)
 		{
-			int xBits = GfxUtil::mostSignificantBit(m_size.w);
-			int yBits = GfxUtil::mostSignificantBit(m_size.h);
+			int xBits = Util::mostSignificantBit(m_size.w);
+			int yBits = Util::mostSignificantBit(m_size.h);
 
 			if (m_size.w != 1 << xBits || m_size.h != 1 << yBits)
 			{

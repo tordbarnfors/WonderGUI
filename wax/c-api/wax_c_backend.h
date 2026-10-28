@@ -19,8 +19,8 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef WAX_C_GFXBACKEND_DOT_H
-#define WAX_C_GFXBACKEND_DOT_H
+#ifndef WAX_C_BACKEND_DOT_H
+#define WAX_C_BACKEND_DOT_H
 #pragma once
 
 #include <wax_c_types.h>
@@ -44,7 +44,7 @@ typedef struct wax_canvasInfo_struct		// NOT BINARY EQUIVALENT!
 
 //____ wax_sessionInfo _________________________________________________________
 
-typedef struct wax_sessionInfo_struct		// Binary equivalent of GfxBackend::SessionInfo.
+typedef struct wax_sessionInfo_struct		// Binary equivalent of Backend::SessionInfo.
 {
 	// Commands
 

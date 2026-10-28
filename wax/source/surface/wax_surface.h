@@ -29,7 +29,7 @@
 #include <wax_color.h>
 #include <wax_pointers.h>
 #include <wax_blob.h>
-#include <wax_gfxutil.h>
+#include <wax_util.h>
 
 namespace wax
 {
@@ -168,9 +168,9 @@ namespace wax
 
 	class Surface : public Object
 	{
-		friend class GfxDevice;
-		friend class GfxDeviceGen2;
-		friend class GfxBackend;
+		friend class Device;
+		friend class DeviceGen2;
+		friend class Backend;
 
 	public:
 
@@ -289,7 +289,7 @@ namespace wax
 			m_pixelFormat = format;
 			m_colorSpace = bp.colorSpace == ColorSpace::Undefined ? ColorSpace::sRGB : bp.colorSpace;
 			m_bBigEndian = bp.bigEndian;
-			m_pixelDescription = GfxUtil::pixelFormatToDescription(format, bp.bigEndian);
+			m_pixelDescription = Util::pixelFormatToDescription(format, bp.bigEndian);
 			m_pPixelDescription = &m_pixelDescription;
 
 			m_size = bp.size;

@@ -22,7 +22,7 @@
 #include <wg_canvascapsule.h>
 #include <wg_canvasdisplay.h>
 
-#include <wax_gfxdevice.h>
+#include <wax_device.h>
 #include <wg_base.h>
 #include <wg_util.h>
 

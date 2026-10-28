@@ -31,7 +31,7 @@ extern "C" {
 
 
 #define		WAX_MAX_CANVAS_LAYERS	16							// Should be synced with CanvasLayers::c_maxLayers.
-	typedef	void(*wax_canvasLayers_func)(wax_obj gfxDevice, void * pData, int data );
+	typedef	void(*wax_canvasLayers_func)(wax_obj device, void * pData, int data );
 
 
 	//____ wax_canvasLayersEntryBP ________________________________________________

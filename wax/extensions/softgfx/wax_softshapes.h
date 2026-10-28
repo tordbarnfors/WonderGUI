@@ -25,7 +25,7 @@
 
 #include <wax_geo.h>
 #include <wax_types.h>
-#include <wax_gfxdevice.h>
+#include <wax_device.h>
 
 #include <cstdint>
 #include <memory>
@@ -152,7 +152,7 @@ namespace wax
 		struct RoundedBox
 		{
 			RectSPX		rect;							// Outer edge, the outline lies inside.
-			spx			radius[4] = { 0, 0, 0, 0 };		// Top-left, top-right, bottom-right, bottom-left. Clamped as by GfxUtil::clampCornerRadii().
+			spx			radius[4] = { 0, 0, 0, 0 };		// Top-left, top-right, bottom-right, bottom-left. Clamped as by Util::clampCornerRadii().
 			BorderSPX	outline;						// Thickness of outline along each side.
 		};
 

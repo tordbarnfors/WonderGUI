@@ -23,7 +23,7 @@
 #define WG_SKINIMPL_DOT_H
 #pragma once
 
-#include <wax_gfxdevice.h>
+#include <wax_device.h>
 #include <wg_types.h>
 
 namespace wg

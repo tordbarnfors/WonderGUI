@@ -52,7 +52,7 @@
 #include <wax_softedgemap.h>
 #include <wax_softwarpmap.h>
 #include <wax_core.h>
-#include <wax_gfxutil.h>
+#include <wax_util.h>
 
 #include <algorithm>
 #include <cstdlib>
@@ -268,7 +268,7 @@ namespace wax
 
 		w.pWarpmap = pWarpmap;
 		w.pEdgemap = pEdgemap;
-		w.dest = GfxUtil::roundToPixels(params.dest);
+		w.dest = Util::roundToPixels(params.dest);
 
 		if (pEdgemap)
 		{

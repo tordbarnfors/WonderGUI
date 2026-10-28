@@ -24,7 +24,7 @@
 
 #include "wax_metalsurface.h"
 #include "wax_metalsurfacefactory.h"
-#include <wax_gfxutil.h>
+#include <wax_util.h>
 
 
 

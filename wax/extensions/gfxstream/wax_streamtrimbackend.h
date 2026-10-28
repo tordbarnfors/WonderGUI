@@ -23,7 +23,7 @@
 #define WAX_STREAMTRIMBACKEND_DOT_H
 #pragma once
 
-#include <wax_gfxbackend.h>
+#include <wax_backend.h>
 #include <vector>
 #include <deque>
 
@@ -37,13 +37,13 @@ namespace wax
 
 	//____ StreamTrimBackend __________________________________________________________
 
-	class StreamTrimBackend : public GfxBackend
+	class StreamTrimBackend : public Backend
 	{
 	public:
 		
 		//.____ Creation __________________________________________
 
-		static StreamTrimBackend_p		create(GfxBackend * pBackend) { return StreamTrimBackend_p(new StreamTrimBackend(pBackend)); }
+		static StreamTrimBackend_p		create(Backend * pBackend) { return StreamTrimBackend_p(new StreamTrimBackend(pBackend)); }
 
 
 		//.____ Identification __________________________________________
@@ -91,14 +91,14 @@ namespace wax
 		void	waitForCompletion() override;
 
 	protected:
-		StreamTrimBackend(GfxBackend* pBackend) : m_pBackend(pBackend) {}
+		StreamTrimBackend(Backend* pBackend) : m_pBackend(pBackend) {}
 
 		virtual ~StreamTrimBackend();
 
 		void		_trim( RectSPX * pToTrim, RectSPX * pMaskBeg, RectSPX * pMaskEnd );
 
 
-		GfxBackend_p	m_pBackend;
+		Backend_p	m_pBackend;
 
 		// Update rects as presented to us before trimming.
 

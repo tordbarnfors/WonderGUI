@@ -1,6 +1,6 @@
 
 #include <wax_softbackend.h>
-#include <wax_gfxutil.h>
+#include <wax_util.h>
 #include <wax_core.h>
 
 #include <algorithm>
@@ -8,7 +8,7 @@
 #include <type_traits>
 
 using namespace wax;
-using namespace wax::GfxUtil;
+using namespace wax::Util;
 
 // Macro for restrict keyword
 #if (_MSC_VER > 1800)
@@ -42,7 +42,7 @@ static inline uint16_t _load16(const uint8_t* WAX_RESTRICT pPixel)
 {
 	uint16_t pixel = *(const uint16_t*)pPixel;
 	if constexpr (SoftFormatInfo::needsSwap(format))
-		pixel = GfxUtil::endianSwap(pixel);
+		pixel = Util::endianSwap(pixel);
 	return pixel;
 }
 
@@ -50,7 +50,7 @@ template<SoftFormat format>
 static inline void _store16(uint8_t* WAX_RESTRICT pPixel, uint16_t pixel)
 {
 	if constexpr (SoftFormatInfo::needsSwap(format))
-		pixel = GfxUtil::endianSwap(pixel);
+		pixel = Util::endianSwap(pixel);
 	*(uint16_t*)pPixel = pixel;
 }
 

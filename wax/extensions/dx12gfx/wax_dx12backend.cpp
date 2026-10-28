@@ -42,7 +42,7 @@
 #include <algorithm>
 
 #include <wax_core.h>
-#include <wax_gfxutil.h>
+#include <wax_util.h>
 
 
 
@@ -65,7 +65,7 @@ namespace wax
 		pObject->SetName( name );
 	}
 
-	const TypeInfo DX12Backend::TYPEINFO = { "DX12Backend", &GfxBackend::TYPEINFO };
+	const TypeInfo DX12Backend::TYPEINFO = { "DX12Backend", &Backend::TYPEINFO };
 
 
 	// Debug aid: clear each update rect before drawing it, so it is obvious which
@@ -938,7 +938,7 @@ namespace wax
 		// from the previously presented buffer. Hence no clear of the canvas.
 		//
 		// The rects we get for the draw commands are already clipped against the
-		// update rects by GfxDeviceGen2, so no extra clipping is needed here.
+		// update rects by DeviceGen2, so no extra clipping is needed here.
 		//
 		// Set c_bDebugClearUpdateRects to make the updated areas stand out, which
 		// also shows which parts of the canvas are being redrawn. Note that this
@@ -1043,7 +1043,7 @@ namespace wax
 
 	//____ _resetStates() _____________________________________________________
 	//
-	// States start over with each session and each canvas, as GfxDeviceGen2 sets
+	// States start over with each session and each canvas, as DeviceGen2 sets
 	// them again for it, like SoftBackend does. It encodes a state change only when
 	// a value differs from these defaults, so getting them out of step means drawing
 	// with the values of the previous session or canvas. The root constants that
@@ -1098,7 +1098,7 @@ namespace wax
 	//
 	// A command list keeps no references to the resources it mentions, and D3D12
 	// must not have a resource released while work using it is pending. Surfaces
-	// and edgemaps are only retained by GfxDeviceGen2 until the session ends, which
+	// and edgemaps are only retained by DeviceGen2 until the session ends, which
 	// is long before the GPU has run the commands, so we hold on to their D3D12
 	// resources until the GPU is done, see _releaseWhenDone().
 
@@ -1487,7 +1487,7 @@ namespace wax
 					// All four carry the same payload and cover the same geometry.
 					// Whether the source is clamped or tiled is a property of the
 					// surface, and the rects have already been clipped by
-					// GfxDeviceGen2, so only a blur draws differently - it reads nine
+					// DeviceGen2, so only a blur draws differently - it reads nine
 					// texels per pixel instead of one.
 
 					int32_t nRects = *p++;
@@ -1757,8 +1757,8 @@ namespace wax
 				continue;
 			}
 
-			CoordI begin = GfxUtil::roundToPixels(beginSpx);
-			CoordI end = GfxUtil::roundToPixels(endSpx);
+			CoordI begin = Util::roundToPixels(beginSpx);
+			CoordI end = Util::roundToPixels(endSpx);
 
 			float	width;
 			float	slope;
@@ -2314,7 +2314,7 @@ namespace wax
 			}
 
 			// Ordinary surfaces need holding as much as canvases do: a temporary
-			// surface is released by GfxDeviceGen2 when the session ends. Once is
+			// surface is released by DeviceGen2 when the session ends. Once is
 			// enough, m_objectSRVs is forgotten with every submission.
 
 			_holdUntilDone(pTexture);
@@ -2885,7 +2885,7 @@ namespace wax
 			pEdgemap->m_size.w * 64 * int(std::abs(mtx.xy)) + pEdgemap->m_size.h * 64 * int(std::abs(mtx.yy))
 		};
 
-		RectI dest = GfxUtil::roundToPixels(destIn);
+		RectI dest = Util::roundToPixels(destIn);
 
 		int uIncX = int(mtx.xx);
 		int vIncX = int(mtx.xy);
@@ -2970,7 +2970,7 @@ namespace wax
 		{
 			const RectSPX& patchSpx = *pRects++;
 
-			RectI patch = GfxUtil::roundToPixels(patchSpx);		// Rounded like the position of the edgemap.
+			RectI patch = Util::roundToPixels(patchSpx);		// Rounded like the position of the edgemap.
 
 			int dx1 = patch.x;
 			int dy1 = patch.y;
@@ -3022,7 +3022,7 @@ namespace wax
 		// is told both rather than assuming, as GlBackend and MetalBackend do.
 
 		// The command list mentions the edgemap's buffer but keeps no reference to
-		// it, and GfxDeviceGen2 lets go of the edgemap when the session ends. A
+		// it, and DeviceGen2 lets go of the edgemap when the session ends. A
 		// waveform drawn from a temporary would otherwise be freed while the GPU
 		// still had work referring to it.
 
@@ -3257,7 +3257,7 @@ namespace wax
 
 		// Extras, see warp.hlsl.
 
-		CoordI dest = GfxUtil::roundToPixels(params.dest);
+		CoordI dest = Util::roundToPixels(params.dest);
 		SizeI warpSize = pWarpmap->pixelSize();
 
 		float srcW = pEdgemap ? float(pEdgemap->m_size.w) : params.source.w / 64.f;
@@ -3288,7 +3288,7 @@ namespace wax
 
 		for (int i = 0; i < params.nRects; i++)
 		{
-			RectI patch = RectI::overlap(GfxUtil::roundToPixels(pRects[i]), RectI(dest, warpSize));
+			RectI patch = RectI::overlap(Util::roundToPixels(pRects[i]), RectI(dest, warpSize));
 
 			if (patch.w <= 0 || patch.h <= 0)
 				continue;
@@ -3783,7 +3783,7 @@ namespace wax
 		for (int i = 0; i < 17; i++)
 		{
 			double b = i / 16.0;
-			m_lineThicknessTable[i] = (float) GfxUtil::squareRoot(1.0 + b * b);
+			m_lineThicknessTable[i] = (float) Util::squareRoot(1.0 + b * b);
 		}
 
 		struct { PipelineKind kind; const char * pVS; } shaders[] =

@@ -1500,7 +1500,7 @@ void WgScrollChart::_regenCanvas()
 
 		if (colorSpace == wg::ColorSpace::Undefined)
 		{
-			auto pDevice = wax::Core::defaultGfxDevice();
+			auto pDevice = wax::Core::defaultDevice();
 			colorSpace = pDevice ? pDevice->canvas(wg::CanvasRef::Default).colorSpace : wg::ColorSpace::sRGB;
 		}
 

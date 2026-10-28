@@ -19,8 +19,8 @@ set( SOURCES
 	wax_streamdecoder.h
 	wax_streamencoder.cpp
 	wax_streamencoder.h
-	wax_streamgfxdevicefactory.cpp
-	wax_streamgfxdevicefactory.h	
+	wax_streamdevicefactory.cpp
+	wax_streamdevicefactory.h	
 	wax_streamlogger.cpp
 	wax_streamlogger.h
 	wax_streamloopwrapper.cpp

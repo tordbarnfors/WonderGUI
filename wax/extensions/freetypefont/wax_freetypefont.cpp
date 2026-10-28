@@ -30,7 +30,7 @@
 #include <wax_freetypefont.h>
 #include <wax_surface.h>
 #include <wax_surfacefactory.h>
-#include <wax_gfxutil.h>
+#include <wax_util.h>
 
 
 #include <ft2build.h>
@@ -47,7 +47,7 @@
 
 namespace wax
 {
-	using namespace GfxUtil;
+	using namespace Util;
 
 	const TypeInfo FreeTypeFont::TYPEINFO = { "FreeTypeFont", &Font::TYPEINFO };
 

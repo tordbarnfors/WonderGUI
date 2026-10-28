@@ -34,7 +34,7 @@
 #include <wondergui.h>
 
 #include <wax_softsurface.h>
-#include <wax_gfxdevice_gen2.h>
+#include <wax_device_gen2.h>
 #include <wax_softbackend.h>
 #include <wax_softkernels_default.h>
 

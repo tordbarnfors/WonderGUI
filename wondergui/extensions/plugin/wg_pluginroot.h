@@ -29,7 +29,7 @@
 #include <wax_geo.h>
 #include <wax_patches.h>
 #include <wg_msgrouter.h>
-#include <wax_gfxdevice.h>
+#include <wax_device.h>
 #include <wg_types.h>
 #include <wg_slot.h>
 #include <wg_root.h>

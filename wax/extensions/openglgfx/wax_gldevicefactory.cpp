@@ -20,19 +20,19 @@
 
 =========================================================================*/
 #include "wax_glbackend.h"
-#include "wax_glgfxdevicefactory.h"
+#include "wax_gldevicefactory.h"
 
-#include "wax_gfxdevice_gen2.h"
+#include "wax_device_gen2.h"
 
 
 namespace wax
 {
 
-	const TypeInfo GlGfxDeviceFactory::TYPEINFO = { "GlGfxDeviceFactory", &GfxDeviceFactory::TYPEINFO };
+	const TypeInfo GlDeviceFactory::TYPEINFO = { "GlDeviceFactory", &DeviceFactory::TYPEINFO };
 
 	//____ constructor ___________________________________________________________
 
-	GlGfxDeviceFactory::GlGfxDeviceFactory(const Blueprint& bp)
+	GlDeviceFactory::GlDeviceFactory(const Blueprint& bp)
 	{
 		m_defaultCanvasSize				= bp.defaultCanvasSize;
 		m_defaultCanvasScale			= bp.defaultCanvasScale;
@@ -43,19 +43,19 @@ namespace wax
 
 	//____ typeInfo() _________________________________________________________
 
-	const TypeInfo& GlGfxDeviceFactory::typeInfo(void) const
+	const TypeInfo& GlDeviceFactory::typeInfo(void) const
 	{
 		return TYPEINFO;
 	}
 
-	//____ createGfxDevice() ________________________________________________________
+	//____ createDevice() ________________________________________________________
 
-	GfxDevice_p GlGfxDeviceFactory::createGfxDevice()
+	Device_p GlDeviceFactory::createDevice()
 	{
 		auto pBackend = GlBackend::create(m_uboBindingPoint);
 		pBackend->setDefaultCanvas( m_defaultCanvasSize, m_defaultCanvasScale, m_defaultCanvasColorSpace );
 
-		auto pDevice = GfxDeviceGen2::create(pBackend);
+		auto pDevice = DeviceGen2::create(pBackend);
 		return pDevice;
 	}
 

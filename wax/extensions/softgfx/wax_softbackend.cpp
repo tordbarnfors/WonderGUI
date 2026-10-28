@@ -47,7 +47,7 @@ using namespace std;
 
 namespace wax
 {
-	const TypeInfo SoftBackend::TYPEINFO = { "SoftBackend", &GfxBackend::TYPEINFO };
+	const TypeInfo SoftBackend::TYPEINFO = { "SoftBackend", &Backend::TYPEINFO };
 
 	int		SoftBackend::s_lineThicknessTable[17];
 
@@ -659,8 +659,8 @@ namespace wax
 
 					// Lines without caps, from pixel to pixel.
 
-					beg = GfxUtil::roundToPixels(beg);
-					end = GfxUtil::roundToPixels(end);
+					beg = Util::roundToPixels(beg);
+					end = Util::roundToPixels(end);
 
 
 					if (std::abs(beg.x - end.x) > std::abs(beg.y - end.y))
@@ -826,8 +826,8 @@ namespace wax
 				auto& mtx = s_standardTransforms[flip];
 
 				RectI _dest = { 
-					GfxUtil::roundToPixels(destX), 
-					GfxUtil::roundToPixels(destY), 
+					Util::roundToPixels(destX), 
+					Util::roundToPixels(destY), 
 					pEdgemap->m_size.w * int(abs(mtx.xx)) + pEdgemap->m_size.h * int(abs(mtx.yx)),
 					pEdgemap->m_size.w * int(abs(mtx.xy)) + pEdgemap->m_size.h * int(abs(mtx.yy)),
 				};
@@ -957,7 +957,7 @@ namespace wax
 
 				for (int patchIdx = 0; patchIdx < nRects; patchIdx++)
 				{
-					RectI patch = GfxUtil::roundToPixels(pMyRects[patchIdx]);		// Rounded like the position of the edgemap.
+					RectI patch = Util::roundToPixels(pMyRects[patchIdx]);		// Rounded like the position of the edgemap.
 					if (!bTile)
 						patch = RectI::overlap(dest, patch);
 
@@ -2463,7 +2463,7 @@ namespace wax
 			for (int i = 0; i < 17; i++)
 			{
 				double b = i / 16.0;
-				s_lineThicknessTable[i] = (int)(GfxUtil::squareRoot(1.0 + b * b) * 65536);
+				s_lineThicknessTable[i] = (int)(Util::squareRoot(1.0 + b * b) * 65536);
 			}
 
 			s_bTablesInitialized = true;
@@ -2508,7 +2508,7 @@ namespace wax
 		Returns false if nothing should be drawn.
 	*/
 
-	bool SoftBackend::_beginShape(GfxBackend::ShapeKind kind, const uint16_t* pPayload, const HiColor* pColors)
+	bool SoftBackend::_beginShape(Backend::ShapeKind kind, const uint16_t* pPayload, const HiColor* pColors)
 	{
 		if (m_blendMode == BlendMode::Ignore)
 			return false;

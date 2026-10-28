@@ -19,8 +19,8 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#include <wax_c_gfxutil.h>
-#include <wax_gfxutil.h>
+#include <wax_c_util.h>
+#include <wax_util.h>
 
 #include <cstddef>
 
@@ -34,11 +34,11 @@ static_assert( (int) WAX_COLORSPACE_SRGB == (int) ColorSpace::sRGB, "wax_colorSp
 
 const wax_pixelDescription* wax_pixelFormatToDescription( wax_pixelFormat format )
 {
-	return (const wax_pixelDescription*) &GfxUtil::pixelFormatToDescription((PixelFormat) format);
+	return (const wax_pixelDescription*) &Util::pixelFormatToDescription((PixelFormat) format);
 }
 
 wax_pixelFormat wax_pixelDescriptionToFormat(const wax_pixelDescription * pDescription)
 {
-	return (wax_pixelFormat) GfxUtil::pixelDescriptionToFormat( * reinterpret_cast<const PixelDescription *>(pDescription));
+	return (wax_pixelFormat) Util::pixelDescriptionToFormat( * reinterpret_cast<const PixelDescription *>(pDescription));
 }
 

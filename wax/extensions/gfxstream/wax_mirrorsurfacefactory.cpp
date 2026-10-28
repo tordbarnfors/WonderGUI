@@ -23,7 +23,7 @@
 
 #include <wax_mirrorsurface.h>
 #include <wax_mirrorsurfacefactory.h>
-#include <wax_gfxutil.h>
+#include <wax_util.h>
 
 
 

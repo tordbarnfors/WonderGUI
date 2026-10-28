@@ -15,7 +15,7 @@
 
 #include <wax_softkernels_default.h>
 
-#include <wax_gfxdevice_gen2.h>
+#include <wax_device_gen2.h>
 
 #include <wax_linearbackend.h>
 
@@ -61,7 +61,7 @@ bool MyApp::init(API* pAPI)
 	}
 */
 
-	auto pDeviceGen2 = wax_dynamic_cast<GfxDeviceGen2_p>(Base::defaultGfxDevice());
+	auto pDeviceGen2 = wax_dynamic_cast<GfxDeviceGen2_p>(Base::defaultDevice());
 
 	auto pSoftBackend = wax_dynamic_cast<SoftBackend_p>(pDeviceGen2->backend());
 	if( pSoftBackend )
@@ -927,7 +927,7 @@ bool MyApp::loadStream(std::string path)
 			auto pixbuf = pScreen->allocPixelBuffer();
 			pScreen->pushPixels(pixbuf);
 
-			int pixelBytes = Util::pixelFormatToDescription(pixbuf.format).bits / 8;
+			int pixelBytes = wax::Util::pixelFormatToDescription(pixbuf.format).bits / 8;
 			
 			for( int i = 0 ; i < nSegments ; i++ )
 			{
@@ -971,7 +971,7 @@ bool MyApp::loadStream(std::string path)
 	auto pStreamGfxDevice = GfxDeviceGen2::create(pStreamGfxBackend);
 //	auto pStreamGfxDevice = GfxDeviceGen2::create(pTrimGfxBackend);
 
-//	auto pStreamGfxDevice = wax_dynamic_cast<SoftGfxDevice_p>(Base::defaultGfxDevice());
+//	auto pStreamGfxDevice = wax_dynamic_cast<SoftGfxDevice_p>(Base::defaultDevice());
 
 	addDefaultSoftKernels(pStreamGfxBackend);
 /*
@@ -1535,7 +1535,7 @@ void MyApp::_updateResourcesView()
 
 void MyApp::_updateDebugOverlays()
 {
-	auto pDevice = wax::Core::defaultGfxDevice();
+	auto pDevice = wax::Core::defaultDevice();
 	
 	auto pOverlaySkin = BoxSkin::create( Border(1), HiColor(4096,0,0,1024), HiColor(4096,0,0,4096));
 	

@@ -19,18 +19,18 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#include <wax_gfxbackend.h>
+#include <wax_backend.h>
 
 #include <cstring>
 #include <algorithm>
 
 namespace wax
 {
-	const TypeInfo GfxBackend::TYPEINFO = { "GfxBackend", &Object::TYPEINFO };
+	const TypeInfo Backend::TYPEINFO = { "Backend", &Object::TYPEINFO };
 
 	// Transforms for flipping movement over SOURCE when blitting
 
-const Transform			GfxBackend::s_standardTransforms[NbStandardTransforms] = {
+const Transform			Backend::s_standardTransforms[NbStandardTransforms] = {
 
 	{ 1,0,0,1 },			// Normal
 
@@ -51,20 +51,20 @@ const Transform			GfxBackend::s_standardTransforms[NbStandardTransforms] = {
 	{ 0,0,0,0 },			// FloodXY
 };
 
-const int GfxBackend::s_defaultBlur[9] = { 6553, 6553, 6553, 6553, 6553, 6553, 6553, 6553, 6553 };
-const spx GfxBackend::s_defaultBlurRadius = 4 * 64;
+const int Backend::s_defaultBlur[9] = { 6553, 6553, 6553, 6553, 6553, 6553, 6553, 6553, 6553 };
+const spx Backend::s_defaultBlurRadius = 4 * 64;
 
 
 //____ typeInfo() _________________________________________________________
 
-const TypeInfo& GfxBackend::typeInfo(void) const
+const TypeInfo& Backend::typeInfo(void) const
 {
 	return TYPEINFO;
 }
 
 //____ decodeRoundedBox() _________________________________________________
 
-GfxBackend::RoundedBoxPayload GfxBackend::decodeRoundedBox(const uint16_t* pPayload)
+Backend::RoundedBoxPayload Backend::decodeRoundedBox(const uint16_t* pPayload)
 {
 	spx values[13];
 	std::memcpy(values, pPayload, sizeof(values));
@@ -84,7 +84,7 @@ GfxBackend::RoundedBoxPayload GfxBackend::decodeRoundedBox(const uint16_t* pPayl
 
 //____ decodeRing() _______________________________________________________
 
-GfxBackend::RingPayload GfxBackend::decodeRing(const uint16_t* pPayload)
+Backend::RingPayload Backend::decodeRing(const uint16_t* pPayload)
 {
 	spx values[7];
 	std::memcpy(values, pPayload, sizeof(values));
@@ -104,7 +104,7 @@ GfxBackend::RingPayload GfxBackend::decodeRing(const uint16_t* pPayload)
 
 //____ RingPayload::sliceSize() ___________________________________________
 
-uint32_t GfxBackend::RingPayload::sliceSize(int slice) const
+uint32_t Backend::RingPayload::sliceSize(int slice) const
 {
 	uint32_t size;
 	std::memcpy(&size, pSlices + slice * c_ringSliceWords, 4);
@@ -113,14 +113,14 @@ uint32_t GfxBackend::RingPayload::sliceSize(int slice) const
 
 //____ RingPayload::sliceFlags() __________________________________________
 
-uint16_t GfxBackend::RingPayload::sliceFlags(int slice) const
+uint16_t Backend::RingPayload::sliceFlags(int slice) const
 {
 	return pSlices[slice * c_ringSliceWords + 2];
 }
 
 //____ decodeWarp() _______________________________________________________
 
-const uint16_t* GfxBackend::decodeWarp(Command cmd, const uint16_t* p, WarpParams& params)
+const uint16_t* Backend::decodeWarp(Command cmd, const uint16_t* p, WarpParams& params)
 {
 	params.nRects = *p++;
 
@@ -150,7 +150,7 @@ const uint16_t* GfxBackend::decodeWarp(Command cmd, const uint16_t* p, WarpParam
 
 //____ encodeLineCaps() ___________________________________________________
 
-uint16_t GfxBackend::encodeLineCaps(LineCaps caps)
+uint16_t Backend::encodeLineCaps(LineCaps caps)
 {
 	auto encodeCap = [](LineCap cap) -> uint16_t
 	{
@@ -172,7 +172,7 @@ uint16_t GfxBackend::encodeLineCaps(LineCaps caps)
 
 //____ decodeLineCaps() ___________________________________________________
 
-LineCaps GfxBackend::decodeLineCaps(uint16_t word)
+LineCaps Backend::decodeLineCaps(uint16_t word)
 {
 	auto decodeCap = [](uint16_t bits) -> LineCap
 	{

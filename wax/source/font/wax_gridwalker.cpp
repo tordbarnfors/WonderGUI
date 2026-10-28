@@ -20,7 +20,7 @@
 
 =========================================================================*/
 #include <wax_gridwalker.h>
-#include <wax_gfxutil.h>
+#include <wax_util.h>
 
 namespace wax
 {
@@ -30,7 +30,7 @@ namespace wax
 	{
 		m_pBuffer = &pixelBuffer;
 
-		PixelDescription pixelDescription = GfxUtil::pixelFormatToDescription(m_pBuffer->format);
+		PixelDescription pixelDescription = Util::pixelFormatToDescription(m_pBuffer->format);
 
 		m_pixelBytes = pixelDescription.bits / 8;
 

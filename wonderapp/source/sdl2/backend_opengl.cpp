@@ -85,7 +85,7 @@ bool backend_specific_init()
 
 	auto pGlDevice = GfxDeviceGen2::create(g_pBackend);
 
-	Base::setDefaultGfxDevice(pGlDevice);
+	Base::setDefaultDevice(pGlDevice);
 
 	auto pSurfaceFactory = GlSurfaceFactory::create();
 	Base::setDefaultSurfaceFactory(pSurfaceFactory);

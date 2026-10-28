@@ -19,24 +19,24 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef	WAX_SOFTGFXDEVICEFACTORY_DOT_H
-#define	WAX_SOFTGFXDEVICEFACTORY_DOT_H
+#ifndef	WAX_SOFTDEVICEFACTORY_DOT_H
+#define	WAX_SOFTDEVICEFACTORY_DOT_H
 #pragma once
 
 #include <wax_softbackend.h>
-#include <wax_gfxdevicefactory.h>
+#include <wax_devicefactory.h>
 #include <wax_geo.h>
 
 namespace wax
 {
 
-	class SoftGfxDeviceFactory;
-	typedef	StrongPtr<SoftGfxDeviceFactory>		SoftGfxDeviceFactory_p;
-	typedef	WeakPtr<SoftGfxDeviceFactory>		SoftGfxDeviceFactory_wp;
+	class SoftDeviceFactory;
+	typedef	StrongPtr<SoftDeviceFactory>		SoftDeviceFactory_p;
+	typedef	WeakPtr<SoftDeviceFactory>		SoftDeviceFactory_wp;
 
-	//____ SoftGfxDeviceFactory _____________________________________________________
+	//____ SoftDeviceFactory _____________________________________________________
 
-	class SoftGfxDeviceFactory : public GfxDeviceFactory
+	class SoftDeviceFactory : public DeviceFactory
 	{
 	public:
 
@@ -53,7 +53,7 @@ namespace wax
 
 		//.____ Creation __________________________________________
 
-		static SoftGfxDeviceFactory_p	create(const Blueprint& bp) { return SoftGfxDeviceFactory_p(new SoftGfxDeviceFactory(bp)); }
+		static SoftDeviceFactory_p	create(const Blueprint& bp) { return SoftDeviceFactory_p(new SoftDeviceFactory(bp)); }
 
 		//.____ Identification __________________________________________
 
@@ -62,11 +62,11 @@ namespace wax
 
 		//.____ Misc _______________________________________________________
 
-		GfxDevice_p	createGfxDevice() override;
+		Device_p	createDevice() override;
 
 	protected:
-		SoftGfxDeviceFactory(const Blueprint& bp);
-		virtual ~SoftGfxDeviceFactory() {}
+		SoftDeviceFactory(const Blueprint& bp);
+		virtual ~SoftDeviceFactory() {}
 
 		SoftSurface_p	m_pDefaultCanvasSurface;
 
@@ -78,5 +78,5 @@ namespace wax
 }
 
 
-#endif //WAX_SOFTGFXDEVICEFACTORY_DOT_H
+#endif //WAX_SOFTDEVICEFACTORY_DOT_H
 

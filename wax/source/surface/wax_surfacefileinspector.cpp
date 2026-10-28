@@ -120,21 +120,21 @@ int SurfaceFileInspector::extraDataBytes()
 
 bool SurfaceFileInspector::isPixelDataCompressed()
 {
-	return ( m_header.pixelCompression != GfxUtil::makeEndianSpecificToken( 'N','O','N','E' ));
+	return ( m_header.pixelCompression != Util::makeEndianSpecificToken( 'N','O','N','E' ));
 }
 
 //____ isPaletteDataCompressed() ______________________________________________
 
 bool SurfaceFileInspector::isPaletteDataCompressed()
 {
-	return ( m_header.paletteCompression != GfxUtil::makeEndianSpecificToken( 'N','O','N','E' ));
+	return ( m_header.paletteCompression != Util::makeEndianSpecificToken( 'N','O','N','E' ));
 }
 
 //____ isExtraDataCompressed() ________________________________________________
 
 bool SurfaceFileInspector::isExtraDataCompressed()
 {
-	return ( m_header.extraDataCompression != GfxUtil::makeEndianSpecificToken( 'N','O','N','E' ));
+	return ( m_header.extraDataCompression != Util::makeEndianSpecificToken( 'N','O','N','E' ));
 }
 
 

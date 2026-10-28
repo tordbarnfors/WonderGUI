@@ -19,18 +19,18 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#include <wax_c_gfxbackend.h>
+#include <wax_c_backend.h>
 #include <cstddef>
-#include <wax_gfxbackend.h>
+#include <wax_backend.h>
 
 using namespace wax;
 
-static_assert(sizeof(wax_sessionInfo) == sizeof(GfxBackend::SessionInfo), "wax_sessionInfo differs in size from GfxBackend::SessionInfo!");
-static_assert(offsetof(wax_sessionInfo, nWarpDraws) == offsetof(GfxBackend::SessionInfo, nWarpDraws), "wax_sessionInfo isn't binary equivalent to GfxBackend::SessionInfo!");
-static_assert(offsetof(wax_sessionInfo, nShapeTints) == offsetof(GfxBackend::SessionInfo, nShapeTints), "wax_sessionInfo isn't binary equivalent to GfxBackend::SessionInfo!");
+static_assert(sizeof(wax_sessionInfo) == sizeof(Backend::SessionInfo), "wax_sessionInfo differs in size from Backend::SessionInfo!");
+static_assert(offsetof(wax_sessionInfo, nWarpDraws) == offsetof(Backend::SessionInfo, nWarpDraws), "wax_sessionInfo isn't binary equivalent to Backend::SessionInfo!");
+static_assert(offsetof(wax_sessionInfo, nShapeTints) == offsetof(Backend::SessionInfo, nShapeTints), "wax_sessionInfo isn't binary equivalent to Backend::SessionInfo!");
 
-inline GfxBackend* getPtr(wax_obj obj) {
-	return static_cast<GfxBackend*>(reinterpret_cast<Object*>(obj));
+inline Backend* getPtr(wax_obj obj) {
+	return static_cast<Backend*>(reinterpret_cast<Object*>(obj));
 }
 
 
@@ -46,7 +46,7 @@ void wax_backendEndRender( wax_obj backend )
 
 void wax_backendBeginSession( wax_obj backend, wax_canvasRef canvasRef, wax_obj canvasSurface, int nUpdateRects, const wax_rectSPX * pUpdateRects, const wax_sessionInfo * pInfo )
 {
-	getPtr(backend)->beginSession( (CanvasRef) canvasRef, static_cast<Surface*>(reinterpret_cast<Object*>(canvasSurface)), nUpdateRects, (const RectSPX*) pUpdateRects, (const GfxBackend::SessionInfo *) pInfo );
+	getPtr(backend)->beginSession( (CanvasRef) canvasRef, static_cast<Surface*>(reinterpret_cast<Object*>(canvasSurface)), nUpdateRects, (const RectSPX*) pUpdateRects, (const Backend::SessionInfo *) pInfo );
 }
 
 void wax_backendEndSession( wax_obj backend )

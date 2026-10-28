@@ -407,7 +407,7 @@ namespace wax
 		int dataStart = 0;
 
 
-		uint32_t compression = GfxUtil::makeEndianSpecificToken( 'N','O','N','E' );
+		uint32_t compression = Util::makeEndianSpecificToken( 'N','O','N','E' );
 
 		if( pCompressor )
 		{

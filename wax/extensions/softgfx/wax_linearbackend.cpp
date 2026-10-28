@@ -31,7 +31,7 @@ using namespace std;
 
 namespace wax
 {
-	const TypeInfo LinearBackend::TYPEINFO = { "LinearBackend", &GfxBackend::TYPEINFO };
+	const TypeInfo LinearBackend::TYPEINFO = { "LinearBackend", &Backend::TYPEINFO };
 
 
 	//____ create() _____________________________________________
@@ -178,7 +178,7 @@ namespace wax
 		m_pCanvasPixels		= nullptr;
 		m_canvasSoftFormat	= SoftFormatInfo::softFormat(pInfo->format, pInfo->colorSpace, pInfo->bigEndian);
 		m_canvasPitch		= 0;
-		m_canvasPixelBytes	= GfxUtil::pixelFormatToDescription(pInfo->format).bits/8;
+		m_canvasPixelBytes	= Util::pixelFormatToDescription(pInfo->format).bits/8;
 
 		_resetStates();
 
@@ -602,8 +602,8 @@ namespace wax
 
 					// Lines without caps, from pixel to pixel.
 
-					beg = GfxUtil::roundToPixels(beg);
-					end = GfxUtil::roundToPixels(end);
+					beg = Util::roundToPixels(beg);
+					end = Util::roundToPixels(end);
 
 
 					if (std::abs(beg.x - end.x) > std::abs(beg.y - end.y))
@@ -820,8 +820,8 @@ namespace wax
 				auto& mtx = s_standardTransforms[flip];
 
 				RectI _dest = { 
-					GfxUtil::roundToPixels(destX), 
-					GfxUtil::roundToPixels(destY), 
+					Util::roundToPixels(destX), 
+					Util::roundToPixels(destY), 
 					pEdgemap->m_size.w * int(abs(mtx.xx)) + pEdgemap->m_size.h * int(abs(mtx.yx)),
 					pEdgemap->m_size.w * int(abs(mtx.xy)) + pEdgemap->m_size.h * int(abs(mtx.yy)),
 				};
@@ -949,7 +949,7 @@ namespace wax
 
 				for (int patchIdx = 0; patchIdx < nRects; patchIdx++)
 				{
-					RectI patch = GfxUtil::roundToPixels(pMyRects[patchIdx]);		// Rounded like the position of the edgemap.
+					RectI patch = Util::roundToPixels(pMyRects[patchIdx]);		// Rounded like the position of the edgemap.
 					if (!bTile)
 						patch = RectI::overlap(dest, patch);
 

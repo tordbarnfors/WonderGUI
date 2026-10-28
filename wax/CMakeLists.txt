@@ -22,16 +22,16 @@ set( SOURCES
 	source/wax_enumextras.h
 	source/wax_geo.cpp
 	source/wax_geo.h
-	source/wax_gfxbackend.cpp
-	source/wax_gfxbackend.h
-	source/wax_gfxdevice.cpp
-	source/wax_gfxdevice.h
-	source/wax_gfxdevice_gen2.cpp
-	source/wax_gfxdevice_gen2.h
-	source/wax_gfxdevicefactory.cpp
-	source/wax_gfxdevicefactory.h
-	source/wax_gfxutil.cpp
-	source/wax_gfxutil.h
+	source/wax_backend.cpp
+	source/wax_backend.h
+	source/wax_device.cpp
+	source/wax_device.h
+	source/wax_device_gen2.cpp
+	source/wax_device_gen2.h
+	source/wax_devicefactory.cpp
+	source/wax_devicefactory.h
+	source/wax_util.cpp
+	source/wax_util.h
 	source/wax_gpushapes.cpp
 	source/wax_gpushapes.h
 	source/wax_memheap.cpp
@@ -134,12 +134,12 @@ set( SOURCES
 	c-api/wax_c_font.h
 	c-api/wax_c_geo.cpp
 	c-api/wax_c_geo.h
-	c-api/wax_c_gfxbackend.cpp
-	c-api/wax_c_gfxbackend.h
-	c-api/wax_c_gfxdevice.cpp
-	c-api/wax_c_gfxdevice.h
-	c-api/wax_c_gfxutil.cpp
-	c-api/wax_c_gfxutil.h
+	c-api/wax_c_backend.cpp
+	c-api/wax_c_backend.h
+	c-api/wax_c_device.cpp
+	c-api/wax_c_device.h
+	c-api/wax_c_util.cpp
+	c-api/wax_c_util.h
 	c-api/wax_c_internal.cpp
 	c-api/wax_c_internal.h
 	c-api/wax_c_memheap.cpp

@@ -3,7 +3,7 @@
 #include "softtint.h"
 
 #include <wondergui.h>
-#include <wax_gfxdevice_gen2.h>
+#include <wax_device_gen2.h>
 #include <wax_softbackend.h>
 #include <wax_softkernels_default.h>
 #include <wax_softsurface.h>
@@ -551,7 +551,7 @@ bool SoftTintTest::tintedRenderingTest(std::ostream& output)
 				auto buffer = pCanvas->allocPixelBuffer();
 				pCanvas->pushPixels(buffer);
 
-				int srcPitchAdd = buffer.pitch - canvasSize.w * Util::pixelFormatToDescription(buffer.format).bits / 8;
+				int srcPitchAdd = buffer.pitch - canvasSize.w * wax::Util::pixelFormatToDescription(buffer.format).bits / 8;
 				int dstPaletteEntries = 0;
 
 				bool bOk = PixelTools::copyPixels(canvasSize.w, canvasSize.h, buffer.pixels, buffer.format, buffer.colorSpace, buffer.bigEndian, srcPitchAdd,

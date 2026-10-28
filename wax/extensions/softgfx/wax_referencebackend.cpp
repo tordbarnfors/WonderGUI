@@ -25,7 +25,7 @@
 #include <wax_softedgemapfactory.h>
 #include <wax_softwarpmapfactory.h>
 #include <wax_softwarpmap.h>
-#include <wax_gfxutil.h>
+#include <wax_util.h>
 #include <wax_core.h>
 
 #include <algorithm>
@@ -38,7 +38,7 @@
 
 namespace wax
 {
-	const TypeInfo ReferenceBackend::TYPEINFO = { "ReferenceBackend", &GfxBackend::TYPEINFO };
+	const TypeInfo ReferenceBackend::TYPEINFO = { "ReferenceBackend", &Backend::TYPEINFO };
 
 	// Small helpers for the math.
 
@@ -475,7 +475,7 @@ namespace wax
 	//____ _drawLine() ____________________________________________________________
 	/*
 		Draws a straight line without caps (LineCap::None at both ends), as defined by the
-		GfxBackend contract:
+		Backend contract:
 
 		Begin and end are rounded to whole pixels. A line that mainly runs along the x-axis is
 		drawn as a column of color for every pixel from begin.x up to (but not including) end.x.
@@ -492,8 +492,8 @@ namespace wax
 
 	void ReferenceBackend::_drawLine(CoordSPX _begin, CoordSPX _end, spx thickness, const Color& color, int nClipRects, const RectSPX* pClipRects)
 	{
-		CoordI begin = GfxUtil::roundToPixels(_begin);
-		CoordI end = GfxUtil::roundToPixels(_end);
+		CoordI begin = Util::roundToPixels(_begin);
+		CoordI end = Util::roundToPixels(_end);
 
 		// We draw along the 'major' axis, which is the axis the line mainly runs along,
 		// placing a column of color across the 'minor' axis at each pixel.
@@ -548,7 +548,7 @@ namespace wax
 
 		Each destination pixel reads the source at a position given by the transform, which tells
 		how far we move over the source for each pixel we move along x and y in the destination.
-		The GfxBackend contract defines the position differently for the standard and the custom
+		The Backend contract defines the position differently for the standard and the custom
 		transforms:
 
 		Standard transforms (blits 1:1 with flips and rotations): source is the position of the
@@ -572,7 +572,7 @@ namespace wax
 
 		EdgeMode edgeMode = (cmd == Command::Tile) ? EdgeMode::Tile : (cmd == Command::ClipBlit) ? EdgeMode::Clip : EdgeMode::Clamp;
 
-		CoordI destPixel = GfxUtil::roundToPixels(dest);
+		CoordI destPixel = Util::roundToPixels(dest);
 		RectI pixels = _pixelRect(rect);
 
 		for (int y = pixels.y; y < pixels.y + pixels.h; y++)
@@ -624,7 +624,7 @@ namespace wax
 		top-left corner of the flipped edgemap at origo. When tiling, the edgemap is repeated
 		over all of rect, with one of the copies at origo.
 
-		The GfxBackend contract places edgemaps on whole pixels, so origo is rounded to nearest
+		The Backend contract places edgemaps on whole pixels, so origo is rounded to nearest
 		pixel. Each pixel of the canvas therefore covers exactly one pixel of the edgemap.
 	*/
 
@@ -634,7 +634,7 @@ namespace wax
 			return;
 
 		SizeI mapSize = pEdgemap->pixelSize();
-		CoordI origo = GfxUtil::roundToPixels(_origo);
+		CoordI origo = Util::roundToPixels(_origo);
 
 		// The standard transforms tell how we move over the edgemap when we move over the canvas,
 		// just like for blits. The corner of the edgemap we start from is the one that makes us
@@ -898,7 +898,7 @@ namespace wax
 		if (!pEdgemap && !m_pBlitSource)
 			return;
 
-		CoordI dest = GfxUtil::roundToPixels(params.dest);
+		CoordI dest = Util::roundToPixels(params.dest);
 		SizeI warpSize = pWarpmap->pixelSize();
 
 		// Source rectangle, in pixels of the source.
@@ -1767,7 +1767,7 @@ namespace wax
 
 	ReferenceBackend::Color ReferenceBackend::_readPixel(const PixelBuffer& buffer, int x, int y)
 	{
-		int bytesPerPixel = GfxUtil::pixelFormatToDescription(buffer.format).bits / 8;
+		int bytesPerPixel = Util::pixelFormatToDescription(buffer.format).bits / 8;
 		const uint8_t* p = buffer.pixels + (y - buffer.rect.y) * buffer.pitch + (x - buffer.rect.x) * bytesPerPixel;
 
 		bool bLinear = (buffer.colorSpace == ColorSpace::Linear);			// Undefined is treated as sRGB.
@@ -1839,7 +1839,7 @@ namespace wax
 
 	void ReferenceBackend::_writePixel(const PixelBuffer& buffer, int x, int y, const Color& color)
 	{
-		int bytesPerPixel = GfxUtil::pixelFormatToDescription(buffer.format).bits / 8;
+		int bytesPerPixel = Util::pixelFormatToDescription(buffer.format).bits / 8;
 		uint8_t* p = buffer.pixels + (y - buffer.rect.y) * buffer.pitch + (x - buffer.rect.x) * bytesPerPixel;
 
 		bool bLinear = (buffer.colorSpace == ColorSpace::Linear);			// Undefined is treated as sRGB.
@@ -1908,10 +1908,10 @@ namespace wax
 
 	RectI ReferenceBackend::_pixelRect(const RectSPX& rect)
 	{
-		int left = GfxUtil::roundToPixels(rect.x);
-		int top = GfxUtil::roundToPixels(rect.y);
-		int right = GfxUtil::roundToPixels(rect.x + rect.w);
-		int bottom = GfxUtil::roundToPixels(rect.y + rect.h);
+		int left = Util::roundToPixels(rect.x);
+		int top = Util::roundToPixels(rect.y);
+		int right = Util::roundToPixels(rect.x + rect.w);
+		int bottom = Util::roundToPixels(rect.y + rect.h);
 
 		return RectI(left, top, right - left, bottom - top);
 	}
@@ -1923,7 +1923,7 @@ namespace wax
 
 		Each kind of shape is a class that decodes its payload and defines the shape by
 		segmentAt(), which tells what segment a point of the canvas is in. That is written as
-		plainly as the definition of the shape in GfxDevice.
+		plainly as the definition of the shape in Device.
 
 		To work out how much of a pixel each segment covers we also need the edges of the shape,
 		the straight lines and circles along which one segment can turn into another. They are
@@ -2121,7 +2121,7 @@ namespace wax
 
 	//____ RoundedBoxShape ________________________________________________________
 	/*
-		A box with rounded corners and an outline inside it, see GfxDevice::drawRoundedBox().
+		A box with rounded corners and an outline inside it, see Device::drawRoundedBox().
 
 		The inner edge of the outline is a box of its own: rect inset by the outline, with the
 		radius of each corner reduced by the thicker of the two sides meeting there. Where an
@@ -2194,7 +2194,7 @@ namespace wax
 
 		static std::unique_ptr<Shape> create(const uint16_t* pPayload, const HiColor* pColors)
 		{
-			using Flags = GfxBackend::RoundedBoxFlags;
+			using Flags = Backend::RoundedBoxFlags;
 
 			const RoundedBoxPayload box = decodeRoundedBox(pPayload);
 			auto has = [&box](Flags flag) { return (box.flags & uint16_t(flag)) != 0; };
@@ -2204,13 +2204,13 @@ namespace wax
 			// Geometry, from spx to pixels.
 
 			spx radius[4] = { box.radius[0], box.radius[1], box.radius[2], box.radius[3] };
-			GfxUtil::clampCornerRadii(box.rect.size(), radius);
+			Util::clampCornerRadii(box.rect.size(), radius);
 
 			BorderSPX outline = { std::max(box.outline.top, 0), std::max(box.outline.right, 0),
 								  std::max(box.outline.bottom, 0), std::max(box.outline.left, 0) };
 
 			spx innerRadius[4];
-			GfxUtil::innerCornerRadii(radius, outline, innerRadius);
+			Util::innerCornerRadii(radius, outline, innerRadius);
 
 			const RectSPX& rect = box.rect;
 			Box& outer = pShape->outer;
@@ -2266,7 +2266,7 @@ namespace wax
 
 	//____ RingShape ______________________________________________________________
 	/*
-		A ring, pie, donut or disc, see GfxDevice::drawRing().
+		A ring, pie, donut or disc, see Device::drawRing().
 
 		It is made of four circles around the center of rect. Circle 0 is the outer edge, the
 		largest circle that fits in rect, and circle 3 the inner edge, the edge of the hole.
@@ -2306,8 +2306,8 @@ namespace wax
 
 		static std::unique_ptr<Shape> create(const uint16_t* pPayload, const HiColor* pColors)
 		{
-			using Flags = GfxBackend::RingFlags;
-			using SliceFlags = GfxBackend::RingSliceFlags;
+			using Flags = Backend::RingFlags;
+			using SliceFlags = Backend::RingSliceFlags;
 
 			const RingPayload ring = decodeRing(pPayload);
 			auto has = [&ring](Flags flag) { return (ring.flags & uint16_t(flag)) != 0; };

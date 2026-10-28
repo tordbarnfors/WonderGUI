@@ -21,7 +21,7 @@
 =========================================================================*/
 #include <wax_c_canvaslayers.h>
 #include <wax_canvaslayers.h>
-#include <wax_gfxdevice.h>
+#include <wax_device.h>
 
 using namespace wax;
 
@@ -45,13 +45,13 @@ wax_obj wax_createCanvasLayers(const wax_canvasLayersBP* pBP)
 	void*	pointer = pBP->finalizeCanvasPtr;
 	int		integer = pBP->finalizeCanvasInt;
 	if (func != NULL)
-		bp.finalizeCanvasFunc = [func,pointer,integer](GfxDevice* pDevice) { func(static_cast<Object*>(pDevice),pointer,integer); };
+		bp.finalizeCanvasFunc = [func,pointer,integer](Device* pDevice) { func(static_cast<Object*>(pDevice),pointer,integer); };
 
 	func = pBP->clearCanvasFunc;
 	pointer = pBP->clearCanvasPtr;
 	integer = pBP->clearCanvasInt;
 	if (func != NULL)
-		bp.clearCanvasFunc = [func,pointer,integer](GfxDevice* pDevice) { func(static_cast<Object*>(pDevice),pointer,integer); };
+		bp.clearCanvasFunc = [func,pointer,integer](Device* pDevice) { func(static_cast<Object*>(pDevice),pointer,integer); };
 
 
 	bp.baseLayer = pBP->baseLayer;
@@ -67,25 +67,25 @@ wax_obj wax_createCanvasLayers(const wax_canvasLayersBP* pBP)
 		pointer = pBP->layers[i].preBlendCanvasPtr;
 		integer = pBP->layers[i].preBlendCanvasInt;
 		if( func != NULL )
-			layer.preBlendCanvasFunc = [func,pointer,integer](GfxDevice* pDevice) { func(static_cast<Object*>(pDevice), pointer, integer); };
+			layer.preBlendCanvasFunc = [func,pointer,integer](Device* pDevice) { func(static_cast<Object*>(pDevice), pointer, integer); };
 
 		func = pBP->layers[i].clearFunc;
 		pointer = pBP->layers[i].clearPtr;
 		integer = pBP->layers[i].clearInt;
 		if (func != NULL)
-			layer.clearFunc = [func, pointer, integer](GfxDevice* pDevice) { func(static_cast<Object*>(pDevice), pointer, integer); };
+			layer.clearFunc = [func, pointer, integer](Device* pDevice) { func(static_cast<Object*>(pDevice), pointer, integer); };
 
 		func = pBP->layers[i].blendFunc;
 		pointer = pBP->layers[i].blendPtr;
 		integer = pBP->layers[i].blendInt;
 		if (func != NULL)
-			layer.blendFunc = [func, pointer, integer](GfxDevice* pDevice) { func(static_cast<Object*>(pDevice), pointer, integer); };
+			layer.blendFunc = [func, pointer, integer](Device* pDevice) { func(static_cast<Object*>(pDevice), pointer, integer); };
 
 		func = pBP->layers[i].preBlendFunc;
 		pointer = pBP->layers[i].preBlendPtr;
 		integer = pBP->layers[i].preBlendInt;
 		if (func != NULL)
-			layer.blendFunc = [func, pointer, integer](GfxDevice* pDevice) { func(static_cast<Object*>(pDevice), pointer, integer); };
+			layer.blendFunc = [func, pointer, integer](Device* pDevice) { func(static_cast<Object*>(pDevice), pointer, integer); };
 
 		bp.layers.push_back(layer);
 	}

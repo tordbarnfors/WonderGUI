@@ -42,7 +42,7 @@ void initGfxBackend()
 	addDefaultSoftKernels(pBackend);
 
 	auto pGfxDevice = wg::GfxDeviceGen2::create(pBackend);
-	Base::setDefaultGfxDevice(pGfxDevice);
+	Base::setDefaultDevice(pGfxDevice);
 }
 
 //____ exitGfxBackend() _______________________________________________________

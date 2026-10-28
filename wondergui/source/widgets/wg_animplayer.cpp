@@ -23,7 +23,7 @@
 #include <wg_animplayer.h>
 #include <wg_util.h>
 #include <wg_msgrouter.h>
-#include <wax_gfxdevice.h>
+#include <wax_device.h>
 
 #include <math.h>
 

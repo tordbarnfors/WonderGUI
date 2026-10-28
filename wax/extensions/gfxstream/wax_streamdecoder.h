@@ -28,7 +28,7 @@
 #include <wax_geo.h>
 #include <wax_color.h>
 #include <wax_streamsource.h>
-#include <wax_gfxutil.h>
+#include <wax_util.h>
 
 #include <cstring>
 

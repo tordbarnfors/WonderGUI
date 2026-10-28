@@ -36,7 +36,7 @@
 #include <wg2_root.h>
 #include <wg2_patches.h>
 #include <wg_skin.h>
-#include <wax_gfxdevice.h>
+#include <wax_device.h>
 #include <wax_surface.h>
 
 class WgWidget;

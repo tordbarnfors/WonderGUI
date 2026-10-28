@@ -21,7 +21,7 @@
 =========================================================================*/
 
 #include <wax_rlecompression.h>
-#include <wax_gfxutil.h>
+#include <wax_util.h>
 #include <wax_core.h>
 #include <cstring>
 
@@ -30,8 +30,8 @@ namespace wax
 const TypeInfo RLECompressor::TYPEINFO = { "RLECompressor", &Compressor::TYPEINFO };
 const TypeInfo RLEDecompressor::TYPEINFO = { "RLEDecompressor", &Decompressor::TYPEINFO };
 
-const uint32_t RLECompressor::ID_TOKEN = GfxUtil::makeEndianSpecificToken('R', 'L', 'E', 'x');
-const uint32_t RLEDecompressor::ID_TOKEN = GfxUtil::makeEndianSpecificToken('R', 'L', 'E', 'x');
+const uint32_t RLECompressor::ID_TOKEN = Util::makeEndianSpecificToken('R', 'L', 'E', 'x');
+const uint32_t RLEDecompressor::ID_TOKEN = Util::makeEndianSpecificToken('R', 'L', 'E', 'x');
 
 //____ create() _____________________________________________________________
 

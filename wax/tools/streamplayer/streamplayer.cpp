@@ -11,7 +11,7 @@
 #include <wax_softsurface.h>
 #include <wax_softsurfacefactory.h>
 #include <wax_softedgemapfactory.h>
-#include <wax_gfxdevice_gen2.h>
+#include <wax_device_gen2.h>
 
 #include <wax_c.h>
 #include <waxgfxstream_c.h>

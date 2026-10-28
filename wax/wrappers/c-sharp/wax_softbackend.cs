@@ -3,7 +3,7 @@ using System.Runtime.InteropServices;
 namespace Wax;
 
 
-public class SoftBackend : GfxBackend
+public class SoftBackend : Backend
 {
 
     //____ Constructor() ______________________________________________________

@@ -52,25 +52,25 @@ namespace wax
 		return TYPEINFO;
 	}
 
-	//____ setGfxDevice() ______________________________________________________
+	//____ setDevice() ______________________________________________________
 	/**
-	* @brief Set GfxDevice used for printing
+	* @brief Set Device used for printing
 	* 
-	* A GfxDevice is needed for printing. Printer uses the GfxDevice as is
+	* A Device is needed for printing. Printer uses the Device as is
 	* and issues individual blit-calls for copying characters to the screen.
 	* 
-	* Therefore the GfxDevice needs to be in a mode where beginRender() and beginCanvasUpdate()
+	* Therefore the Device needs to be in a mode where beginRender() and beginCanvasUpdate()
 	* has been called before any of the print-methods can be called.
 	* 
-	* No states of the GfxDevice is changed by Printer (except for changing blitSource) so
+	* No states of the Device is changed by Printer (except for changing blitSource) so
 	* blend modes, tint settings etc are used as they are.
 	* 
-	* To change the color of the printed text you should change the tint color of the GfxDevice.
+	* To change the color of the printed text you should change the tint color of the Device.
 	* 
-	* @param pDevice	Pointer at GfxDevice to use when printing.
+	* @param pDevice	Pointer at Device to use when printing.
 	*/
 
-	void Printer::setGfxDevice(GfxDevice * pDevice)
+	void Printer::setDevice(Device * pDevice)
 	{
 		m_pGfxDevice = pDevice;
 	}

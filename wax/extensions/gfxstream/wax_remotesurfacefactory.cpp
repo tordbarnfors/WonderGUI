@@ -23,7 +23,7 @@
 
 #include <wax_remotesurface.h>
 #include <wax_remotesurfacefactory.h>
-#include <wax_gfxutil.h>
+#include <wax_util.h>
 
 
 

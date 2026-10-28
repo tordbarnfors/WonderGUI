@@ -244,7 +244,7 @@ int main ( int argc, char** argv )
 
 		if( pImage )
 		{
-			PixelDescription desc = GfxUtil::pixelFormatToDescription(PixelFormat::ARGB_8, false);
+			PixelDescription desc = Util::pixelFormatToDescription(PixelFormat::ARGB_8, false);
 
 			swap( desc.B_mask, desc.R_mask);
 

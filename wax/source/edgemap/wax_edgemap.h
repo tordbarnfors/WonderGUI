@@ -48,7 +48,7 @@ namespace wax
 		//
 		// A segment Tint is placed in the rectangle of the Edgemap itself, e.g. (0,0) -> (size.w, size.h)
 		// before any flip or rotation, so it follows the Edgemap when drawn flipped or rotated.
-		// Any Tint set on the GfxDevice is applied on top of that, in canvas space.
+		// Any Tint set on the Device is applied on top of that, in canvas space.
 		//
 		// In the blueprint, 'tints' take precedence over 'colors' for segments that have a
 		// Tint. Segments without either are transparent.

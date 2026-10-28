@@ -21,7 +21,7 @@
 =========================================================================*/
 #include <wax_streamlogger.h>
 #include <wax_tinttools.h>
-#include <wax_gfxbackend.h>
+#include <wax_backend.h>
 
 #include <assert.h>
 
@@ -181,7 +181,7 @@ namespace wax
 
 			case GfxStream::ChunkId::BeginSession:
 			{
-				GfxBackend::SessionInfo sessionInfo;
+				Backend::SessionInfo sessionInfo;
 
 				// Temporary storage for variables that is stored in smaller uints than in SessionInfo
 

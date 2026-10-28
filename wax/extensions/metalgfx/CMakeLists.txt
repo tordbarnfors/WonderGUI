@@ -3,8 +3,8 @@ set(SOURCES
 
 	wax_metalbackend.h
 	wax_metalbackend.mm
-	wax_metalgfxdevicefactory.h
-	wax_metalgfxdevicefactory.mm
+	wax_metaldevicefactory.h
+	wax_metaldevicefactory.mm
 	wax_metalshaders.mm
 	wax_metalshaders.mm.template
 	wax_metalsurface.h

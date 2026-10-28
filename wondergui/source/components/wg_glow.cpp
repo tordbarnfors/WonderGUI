@@ -20,7 +20,7 @@
 
 =========================================================================*/
 #include <wg_glow.h>
-#include <wax_gfxdevice.h>
+#include <wax_device.h>
 #include <cstring>
 
 namespace wg

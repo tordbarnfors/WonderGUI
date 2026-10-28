@@ -27,7 +27,7 @@
 
 
 #include <wg_scrollpanel.h>
-#include <wax_gfxdevice.h>
+#include <wax_device.h>
 #include <wg_util.h>
 #include <wax_patches.h>
 #include <wg_msg.h>

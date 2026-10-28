@@ -57,7 +57,7 @@ bool MyApp::init(wapp::API* pAPI)
 	wg_populatePluginInterface(&c_calls);
 
 	if( !m_pInitClient(&c_calls, Base::hostBridge(), m_pPluginCapsule,
-				  Base::defaultGfxDevice(), Base::defaultSurfaceFactory(), Base::defaultEdgemapFactory()) )
+				  Base::defaultDevice(), Base::defaultSurfaceFactory(), Base::defaultEdgemapFactory()) )
 	{
 		printf("ERROR: Plugin failed to initialize!\n");
 		return false;

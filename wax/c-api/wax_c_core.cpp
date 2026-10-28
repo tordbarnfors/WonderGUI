@@ -104,15 +104,15 @@ wax_obj wax_defaultWarpmapFactory()
 	return (wax_obj) static_cast<Object*>(pFactory);
 }
 
-void wax_setDefaultGfxDevice( wax_obj device )
+void wax_setDefaultDevice( wax_obj device )
 {
-	GfxDevice* pDevice = static_cast<GfxDevice*>(reinterpret_cast<Object*>(device));
-	return Core::setDefaultGfxDevice(pDevice);
+	Device* pDevice = static_cast<Device*>(reinterpret_cast<Object*>(device));
+	return Core::setDefaultDevice(pDevice);
 }
 
-wax_obj wax_defaultGfxDevice()
+wax_obj wax_defaultDevice()
 {
-	GfxDevice * pDevice = Core::defaultGfxDevice();
+	Device * pDevice = Core::defaultDevice();
 	return (wax_obj) static_cast<Object*>(pDevice);
 }
 

@@ -20,7 +20,7 @@
 =========================================================================*/
 
 #include <wax_qoicompression.h>
-#include <wax_gfxutil.h>
+#include <wax_util.h>
 #include <wax_core.h>
 
 #include <climits>
@@ -30,10 +30,10 @@ namespace wax
 const TypeInfo QOICompressor::TYPEINFO = { "QOICompressor", &Compressor::TYPEINFO };
 const TypeInfo QOIDecompressor::TYPEINFO = { "QOIDecompressor", &Decompressor::TYPEINFO };
 
-const uint32_t QOICompressor::ID_TOKEN = GfxUtil::makeEndianSpecificToken('Q', 'O', 'I', 'L');
-const uint32_t QOICompressor::ID_TOKEN_BIG_ENDIAN = GfxUtil::makeEndianSpecificToken('Q', 'O', 'I', 'B');
-const uint32_t QOIDecompressor::ID_TOKEN = GfxUtil::makeEndianSpecificToken('Q', 'O', 'I', 'L');
-const uint32_t QOIDecompressor::ID_TOKEN_BIG_ENDIAN = GfxUtil::makeEndianSpecificToken('Q', 'O', 'I', 'B');
+const uint32_t QOICompressor::ID_TOKEN = Util::makeEndianSpecificToken('Q', 'O', 'I', 'L');
+const uint32_t QOICompressor::ID_TOKEN_BIG_ENDIAN = Util::makeEndianSpecificToken('Q', 'O', 'I', 'B');
+const uint32_t QOIDecompressor::ID_TOKEN = Util::makeEndianSpecificToken('Q', 'O', 'I', 'L');
+const uint32_t QOIDecompressor::ID_TOKEN_BIG_ENDIAN = Util::makeEndianSpecificToken('Q', 'O', 'I', 'B');
 
 static const uint8_t	c_opIndex	= 0x00;
 static const uint8_t	c_opDiff	= 0x40;

@@ -21,7 +21,7 @@
 =========================================================================*/
 
 #include <wax_lzcompression.h>
-#include <wax_gfxutil.h>
+#include <wax_util.h>
 #include <wax_core.h>
 
 #include <algorithm>
@@ -32,8 +32,8 @@ namespace wax
 const TypeInfo LZCompressor::TYPEINFO = { "LZCompressor", &Compressor::TYPEINFO };
 const TypeInfo LZDecompressor::TYPEINFO = { "LZDecompressor", &Decompressor::TYPEINFO };
 
-const uint32_t LZCompressor::ID_TOKEN = GfxUtil::makeEndianSpecificToken('L', 'Z', 'W', 'G');
-const uint32_t LZDecompressor::ID_TOKEN = GfxUtil::makeEndianSpecificToken('L', 'Z', 'W', 'G');
+const uint32_t LZCompressor::ID_TOKEN = Util::makeEndianSpecificToken('L', 'Z', 'W', 'G');
+const uint32_t LZDecompressor::ID_TOKEN = Util::makeEndianSpecificToken('L', 'Z', 'W', 'G');
 
 //____ create() _____________________________________________________________
 

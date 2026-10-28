@@ -25,7 +25,7 @@
 
 #include <wax_pointers.h>
 #include <wax_types.h>
-#include <wax_gfxdevice.h>
+#include <wax_device.h>
 #include <wax_font.h>
 
 namespace wax
@@ -44,15 +44,15 @@ namespace wax
 	 *
 	 * It exists outside the normal text display system and doesn't use TextStyle, Text-objects, Strings
 	 * or TextLayout objects. It just prints UTF-8 strings of text onto the current canvas of its specified
-	 * GfxDevice using the specified font.
+	 * Device using the specified font.
 	 *
-	 * All print-methods are meant to be used within a GfxDevice render-cycle, where things such as Canvas,
+	 * All print-methods are meant to be used within a Device render-cycle, where things such as Canvas,
 	 * BlendMode and TintColor has already been setup.
 	 *
 	 * To change the size of the font between prints you simply change the size in the Font-object itself. If you
-	 * want to print in another color you change tint color of the GfxDevice.
+	 * want to print in another color you change tint color of the Device.
 	 *
-	 * At a minimum you need to set GfxDevice and Font before you can start printing. You should also set
+	 * At a minimum you need to set Device and Font before you can start printing. You should also set
 	 * line width if you want to do aligned printing (since line width needs to be known for alignment).
 	 *
 	 */
@@ -71,8 +71,8 @@ namespace wax
 
 		//.____ Control ________________________________________________
 
-		void		setGfxDevice(GfxDevice * pDevice);
-		GfxDevice_p	gfxDevice() const { return m_pGfxDevice;  }
+		void		setDevice(Device * pDevice);
+		Device_p	device() const { return m_pGfxDevice;  }
 
 		void		setFont(Font * pFont);
 		Font_p		font() const { return m_pFont;  }
@@ -117,7 +117,7 @@ namespace wax
 		const char * _lineEnd( const char * pPos );
 		SizeSPX		_textSize( const char * pBegin, const char * pEnd, bool bWrap = false, spx wrappedLinesIndent = 0 );
 		
-		GfxDevice_p	m_pGfxDevice;
+		Device_p	m_pGfxDevice;
 		Font_p		m_pFont;
 		
 		CoordSPX	m_cursorPos;
