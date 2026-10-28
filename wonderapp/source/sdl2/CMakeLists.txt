@@ -26,7 +26,10 @@ if(NOT SDL2_FOUND AND WONDERGUI_FETCH_DEPS)
         GIT_REPOSITORY https://github.com/libsdl-org/SDL.git
         GIT_TAG        release-2.30.0
     )
-    FetchContent_MakeAvailable(SDL2)
+    block()
+        set(CMAKE_FOLDER thirdparty)
+        FetchContent_MakeAvailable(SDL2)
+    endblock()
     # SDL2 sets up SDL2::SDL2 / SDL2::SDL2main targets itself when built this way
 endif()
 
@@ -42,9 +45,6 @@ endif()
 if(NOT SDL2_LIBS)
     message(FATAL_ERROR "SDL2 not found. Install it, or enable WONDERGUI_FETCH_DEPS to download it.")
 endif()
-
-source_group(Files REGULAR_EXPRESSION ".*")
-
 
 set(SOURCES
 
@@ -92,8 +92,6 @@ target_include_directories(wappsdl2sw PRIVATE
     ${SDL2_INCDIR}
 )
 
-set_target_properties(wappsdl2sw PROPERTIES FOLDER "WonderApp" )
-
 target_link_directories(wappsdl2sw PUBLIC
     ${SDL2_LIBDIR}
     ${FREETYPE2_LIBDIR}
@@ -127,8 +125,6 @@ target_include_directories(wappsdl2gl PRIVATE
     ${WGDEBUGGER_INCDIRS}
     ${SDL2_INCDIR}
 )
-
-set_target_properties(wappsdl2gl PROPERTIES FOLDER "WonderApp" )
 
 target_link_directories(wappsdl2gl PUBLIC
     ${SDL2_LIBDIR}
@@ -166,8 +162,6 @@ if(WAPPLIB STREQUAL "wappsdl2metal")
         ${SDL2_INCDIR}
     )
 
-    set_target_properties(wappsdl2metal PROPERTIES FOLDER "WonderApp" )
-
     target_link_directories(wappsdl2metal PUBLIC
         ${SDL2_LIBDIR}
         ${FREETYPE2_LIBDIR}
@@ -190,3 +184,14 @@ endif()
     set(WAPP_SOURCES ${SOURCES} PARENT_SCOPE)
     set(WAPP_INCDIRS ${INCDIRS} PARENT_SCOPE)
 
+
+# Show the files the way they are laid out in wonderapp/source, with the third
+# party ones in a group of their own.
+
+get_target_property(WAPP_FILES ${WAPPLIB} SOURCES)
+set(THIRDPARTY_FILES ${WAPP_FILES})
+list(FILTER WAPP_FILES EXCLUDE REGEX "/thirdparty/")
+list(FILTER THIRDPARTY_FILES INCLUDE REGEX "/thirdparty/")
+
+source_group(TREE ${PROJECT_SOURCE_DIR}/wonderapp/source FILES ${WAPP_FILES})
+source_group(thirdparty FILES ${THIRDPARTY_FILES})

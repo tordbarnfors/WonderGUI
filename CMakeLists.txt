@@ -107,7 +107,11 @@ if(NOT SDL3_FOUND AND WONDERGUI_FETCH_DEPS)
         GIT_TAG        release-3.4.18
         GIT_SHALLOW    TRUE
     )
-    FetchContent_MakeAvailable(SDL3)
+
+    block()
+        set(CMAKE_FOLDER thirdparty)
+        FetchContent_MakeAvailable(SDL3)
+    endblock()
 endif()
 
 # The CMakeLists below link SDL3 through this variable. It is filled in from the
@@ -154,11 +158,23 @@ if(MSVC)
 endif()
 
 #------------------------------------------------------------------------------
+# SUBDIRECTORIES
+#
+# CMAKE_FOLDER puts the targets of each subdirectory in the IDE folder (Visual
+# Studio solution folder, Xcode group) that matches where it is on disk.
+# Dependencies that are downloaded go into the thirdparty folder.
+#------------------------------------------------------------------------------
 
+set(CMAKE_FOLDER wax)
 add_subdirectory(wax)
+
+set(CMAKE_FOLDER wondergui)
 add_subdirectory(wondergui)
 
+set(CMAKE_FOLDER wondergui/extensions)
 add_subdirectory(wondergui/extensions/debugger)
+
+set(CMAKE_FOLDER wax/extensions)
 
 if( WAPPLIB STREQUAL "wappsdl2metal" OR WAPPLIB STREQUAL "wappsdl3metal" )
 	add_subdirectory(wax/extensions/metalgfx)
@@ -173,11 +189,14 @@ add_subdirectory(wax/extensions/softgfx)
 
 add_subdirectory(wax/extensions/freetypefont)
 
+set(CMAKE_FOLDER wax/tools)
 add_subdirectory(wax/tools)
 
+set(CMAKE_FOLDER wondergui/extensions)
 add_subdirectory(wondergui/extensions/legacygui)
-
 add_subdirectory(wondergui/extensions/plugin)
+
+set(CMAKE_FOLDER wonderapp)
 
 if( WAPPLIB STREQUAL "wappwin32sw" )
 	add_subdirectory(wonderapp/source/win32/sw)
@@ -189,11 +208,19 @@ else()
 	add_subdirectory(wonderapp/source/sdl2)
 endif()
 
+set(CMAKE_FOLDER wonderapp/tools)
 add_subdirectory(wonderapp/tools)
+
+set(CMAKE_FOLDER wonderapp/examples)
 add_subdirectory(wonderapp/examples)
 
+set(CMAKE_FOLDER wondergui/tools)
 add_subdirectory(wondergui/tools)
+
+set(CMAKE_FOLDER wondergui/examples)
 add_subdirectory(wondergui/examples)
+
+unset(CMAKE_FOLDER)
 
 
 #install(TARGETS example01 DESTINATION ${WG_ROOT}/distribution/examples)

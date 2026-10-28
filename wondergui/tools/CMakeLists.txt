@@ -14,18 +14,3 @@ endif()
 if(TARGET wglegacygui AND TARGET waxopenglgfx)
 	add_subdirectory(legacyworkbench)
 endif()
-
-
-set(TOOL_TARGETS
-	embeddedworkbench
-	legacyworkbench
-	streamgendll
-	unittester
-	workbench
-)
-
-foreach(TOOL ${TOOL_TARGETS})
-	if(TARGET ${TOOL})
-		set_target_properties(${TOOL} PROPERTIES FOLDER "Tools")
-	endif()
-endforeach()

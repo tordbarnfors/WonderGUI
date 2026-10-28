@@ -42,8 +42,6 @@ target_include_directories(waxmetalgfx PRIVATE
 	${INCDIRS}
 )
 
-set_target_properties( waxmetalgfx PROPERTIES FOLDER "Extensions" )
-
 list(TRANSFORM SOURCES PREPEND ${CMAKE_CURRENT_LIST_DIR}/ )
 set(WAXMETALGFX_SOURCES ${SOURCES} PARENT_SCOPE)
 set(WAXMETALGFX_INCDIRS ${INCDIRS} PARENT_SCOPE)

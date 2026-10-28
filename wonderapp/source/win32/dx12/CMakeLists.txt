@@ -1,8 +1,5 @@
 set(CMAKE_CXX_STANDARD 20)
 
-source_group(Files REGULAR_EXPRESSION ".*")
-
-
 set(SOURCES
 
     ../../wonderapp.h
@@ -26,6 +23,10 @@ set(SOURCES
     dx12_wrapper.cpp
 )
 
+# Show the files the way they are laid out in wonderapp/source.
+
+source_group(TREE ${PROJECT_SOURCE_DIR}/wonderapp/source FILES ${SOURCES})
+
 set(INCDIRS
 	${CMAKE_CURRENT_LIST_DIR}
 	${WONDERGUI_INCDIRS}
@@ -48,8 +49,6 @@ target_include_directories(wappwin32dx12 PRIVATE
     ${INCDIRS}
     ${DX12GFX_INCDIRS}
 )
-
-set_target_properties(wappwin32dx12 PROPERTIES FOLDER "WonderApp" )
 
 target_link_directories(wappwin32dx12 PUBLIC
     ${FREETYPE2_LIBDIR}

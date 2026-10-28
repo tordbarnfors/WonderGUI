@@ -18,7 +18,10 @@ elseif(WONDERGUI_FETCH_DEPS)
 		GIT_REPOSITORY https://github.com/freetype/freetype.git
 		GIT_TAG        VER-2-14-3
 	)
-	FetchContent_MakeAvailable(freetype)
+	block()
+		set(CMAKE_FOLDER thirdparty)
+		FetchContent_MakeAvailable(freetype)
+	endblock()
 	add_library(Freetype::Freetype ALIAS freetype)
 endif()
 
@@ -55,8 +58,6 @@ target_include_directories(waxfreetypefont PRIVATE
     ${FREETYPE2_INCDIR}
 	"${CMAKE_CURRENT_BINARY_DIR}"  # For generated header
 )
-
-set_target_properties( waxfreetypefont PROPERTIES FOLDER "Extensions" )
 
 
 list(TRANSFORM SOURCES PREPEND ${CMAKE_CURRENT_LIST_DIR}/ )

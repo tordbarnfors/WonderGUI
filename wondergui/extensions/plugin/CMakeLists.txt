@@ -145,8 +145,6 @@ target_include_directories(wgpluginhost PRIVATE
 	"${CMAKE_CURRENT_BINARY_DIR}"  # For generated header
 )
 
-set_target_properties( wgpluginhost wgplugin wglegacyplugin PROPERTIES FOLDER "Extensions" )
-
  
 list(TRANSFORM PLUGIN_SOURCES PREPEND ${CMAKE_CURRENT_LIST_DIR}/ )
 set(WGPLUGIN_SOURCES ${PLUGIN_SOURCES} PARENT_SCOPE)

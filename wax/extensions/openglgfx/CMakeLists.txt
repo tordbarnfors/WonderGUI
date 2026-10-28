@@ -46,7 +46,10 @@ if(NOT APPLE)
 			GIT_REPOSITORY https://github.com/Perlmint/glew-cmake.git
 			GIT_TAG        glew-cmake-2.3.1
 		)
-		FetchContent_MakeAvailable(glew)
+		block()
+			set(CMAKE_FOLDER thirdparty)
+			FetchContent_MakeAvailable(glew)
+		endblock()
 		add_library(GLEW::GLEW ALIAS libglew_static)
 	endif()
 
@@ -71,8 +74,6 @@ target_link_libraries(waxopenglgfx PUBLIC wax OpenGL::GL)
 if(NOT APPLE)
 	target_link_libraries(waxopenglgfx PUBLIC GLEW::GLEW)
 endif()
-
-set_target_properties( waxopenglgfx PROPERTIES FOLDER "Extensions" )
 
 list(TRANSFORM SOURCES PREPEND ${CMAKE_CURRENT_LIST_DIR}/ )
 set(WAXOPENGLGFX_SOURCES ${SOURCES} PARENT_SCOPE)

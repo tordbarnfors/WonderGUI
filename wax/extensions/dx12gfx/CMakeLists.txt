@@ -66,8 +66,6 @@ target_include_directories(waxdx12gfx PRIVATE
 )
 
 
-set_target_properties( waxdx12gfx PROPERTIES FOLDER "Extensions" )
-
 set_source_files_properties( wax_dx12shaders.cpp.template ${SHADERS} PROPERTIES HEADER_FILE_ONLY TRUE )
 
 list(TRANSFORM SOURCES PREPEND ${CMAKE_CURRENT_LIST_DIR}/ )

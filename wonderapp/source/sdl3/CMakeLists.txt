@@ -1,7 +1,5 @@
 set(CMAKE_CXX_STANDARD 20)
 
-source_group(Files REGULAR_EXPRESSION ".*")
-
 if(NOT SDL3_LIBS)
     message(FATAL_ERROR "SDL3 not found. Install it, or enable WONDERGUI_FETCH_DEPS to download it.")
 endif()
@@ -59,8 +57,6 @@ if(WAPPLIB STREQUAL "wappsdl3sw")
 		${SDL3_LIBS}
 	)
 
-	set_target_properties(wappsdl3sw PROPERTIES FOLDER "WonderApp" )
-
 endif()
 
 ### OpenGL version
@@ -84,8 +80,6 @@ if(WAPPLIB STREQUAL "wappsdl3gl")
 		wgdebugger
 		${SDL3_LIBS}
 	)
-
-	set_target_properties(wappsdl3gl PROPERTIES FOLDER "WonderApp" )
 
 endif()
 
@@ -120,8 +114,6 @@ if(WAPPLIB STREQUAL "wappsdl3dx12")
 		${SDL3_LIBS}
 	)
 
-	set_target_properties(wappsdl3dx12 PROPERTIES FOLDER "WonderApp" )
-
 endif()
 
 ### Metal version
@@ -152,10 +144,20 @@ if(WAPPLIB STREQUAL "wappsdl3metal")
 		"-framework QuartzCore"
 	)
 
-	set_target_properties(wappsdl3metal PROPERTIES FOLDER "WonderApp" )
-
 endif()
 
 
 set(WAPP_SOURCES ${SOURCES} PARENT_SCOPE)
 set(WAPP_INCDIRS ${INCDIRS} PARENT_SCOPE)
+
+
+# Show the files the way they are laid out in wonderapp/source, with the third
+# party ones in a group of their own.
+
+get_target_property(WAPP_FILES ${WAPPLIB} SOURCES)
+set(THIRDPARTY_FILES ${WAPP_FILES})
+list(FILTER WAPP_FILES EXCLUDE REGEX "/thirdparty/")
+list(FILTER THIRDPARTY_FILES INCLUDE REGEX "/thirdparty/")
+
+source_group(TREE ${PROJECT_SOURCE_DIR}/wonderapp/source FILES ${WAPP_FILES})
+source_group(thirdparty FILES ${THIRDPARTY_FILES})

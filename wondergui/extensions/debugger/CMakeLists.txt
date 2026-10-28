@@ -233,8 +233,6 @@ target_include_directories(wgdebugger PRIVATE
 	${WG_ROOT}
 )
 
-set_target_properties( wgdebugger PROPERTIES FOLDER "Extensions" )
-
 
 list(TRANSFORM SOURCES PREPEND ${CMAKE_CURRENT_LIST_DIR}/ )
 set(WGDEBUGGER_SOURCES ${SOURCES} PARENT_SCOPE)

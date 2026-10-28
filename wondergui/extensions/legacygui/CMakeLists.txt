@@ -176,8 +176,6 @@ target_include_directories(wglegacygui PRIVATE ${INCDIRS}
 
 target_link_libraries(wglegacygui PUBLIC wondergui )
 
-set_target_properties( wglegacygui PROPERTIES FOLDER "Extensions" )
-
 
 list(TRANSFORM SOURCES PREPEND ${CMAKE_CURRENT_LIST_DIR}/ )
 set(WGLEGACYGUI_SOURCES ${SOURCES} PARENT_SCOPE)

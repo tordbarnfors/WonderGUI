@@ -17,26 +17,3 @@ endif()
 if(TARGET wglegacygui)
 	add_subdirectory(legacyrunner)
 endif()
-
-
-set(TOOL_TARGETS
-	compressbench
-	editera
-	fontgenerator
-	gfxdevicetester
-	legacyrunner
-	legacytestplugin
-	packlayouttester
-	pluginworkbench
-	softkernelgenerator
-	streamanalyzer
-	surfviewer
-	testplugin
-	widgetbench
-)
-
-foreach(TOOL ${TOOL_TARGETS})
-	if(TARGET ${TOOL})
-		set_target_properties(${TOOL} PROPERTIES FOLDER "WonderApp Tools")
-	endif()
-endforeach()

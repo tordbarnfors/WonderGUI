@@ -84,8 +84,6 @@ target_include_directories(waxsoftgfx PRIVATE
 	"${CMAKE_CURRENT_BINARY_DIR}"  # For generated header
 )
 
-set_target_properties( waxsoftgfx PROPERTIES FOLDER "Extensions" )
-
 
 
 list(TRANSFORM SOURCES PREPEND ${CMAKE_CURRENT_LIST_DIR}/ )

@@ -100,7 +100,6 @@ target_include_directories(waxgfxstream PRIVATE ${INCDIRS}
 )
 target_link_libraries(waxgfxstream PUBLIC wax )		# Which brings wax.
 
-set_target_properties( waxgfxstream PROPERTIES FOLDER "Extensions" )
 set_target_properties( waxgfxstream PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS TRUE)
 
 list(TRANSFORM SOURCES PREPEND ${CMAKE_CURRENT_LIST_DIR}/ )
