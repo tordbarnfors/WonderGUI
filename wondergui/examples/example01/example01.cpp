@@ -1,11 +1,11 @@
 /*
- * This example uses SDL2 to setup a minimal framework for WonderGUI and
+ * This example uses SDL3 to setup a minimal framework for WonderGUI and
  * create a clickable button that closes the window. It has no
- * dependencies except SDL2 and WonderGUI.
+ * dependencies except SDL3 and WonderGUI.
  *
  * The intention is to show how WonderGUI easily can be integrated  with
  * any development framework with some simple bindings and pure software
- * rendering. Although SDL2 is used, no WonderGUI code outside this file
+ * rendering. Although SDL3 is used, no WonderGUI code outside this file
  * is dependent on SDL in anyway.
  *
  * In order to keep the example small, we are making some assumptions,
@@ -17,9 +17,9 @@
  * surface from which blocks can be copied and translated to the output
  * format.
  *
- * If you want to use WonderGUI with SDL2, there are better examples to use
- * as a template. Use the SDL2 specific Surface/GfxDevice classes that
- * better integrate with SDL2's video API, giving you better performance
+ * If you want to use WonderGUI with SDL3, there are better examples to use
+ * as a template. Use the SDL3 specific Surface/GfxDevice classes that
+ * better integrate with SDL3's video API, giving you better performance
  * and transparent support for images and windows of other pixel formats.
  *
  * Also note that in order to keep this example short, it doesn't provide a full
@@ -29,11 +29,8 @@
 
 #include <cstdlib>
 
-#ifdef WIN32
-#	include <SDL.h>
-#else
-#	include <SDL2/SDL.h>
-#endif
+#include <SDL3/SDL.h>
+#include <SDL3/SDL_main.h>
 #include <wondergui.h>
 
 #include <wax_softsurface.h>
@@ -61,8 +58,8 @@ int main ( int argc, char** argv )
 
 	SDL_Init(SDL_INIT_VIDEO);
 
-	int posX = 100, posY = 100, width = 320, height = 240;
-	SDL_Window * pWin = SDL_CreateWindow("Hello WonderGUI", posX, posY, width, height, 0);
+	int width = 320, height = 240;
+	SDL_Window * pWin = SDL_CreateWindow("Hello WonderGUI", width, height, 0);
 
 	SDL_Surface * pWinSurf = SDL_GetWindowSurface( pWin );
 
@@ -81,7 +78,7 @@ int main ( int argc, char** argv )
 
 	PixelFormat format = PixelFormat::Undefined;
 
-	if( pWinSurf->format->BitsPerPixel == 32 )
+	if( SDL_BYTESPERPIXEL(pWinSurf->format) == 4 )
 		format = PixelFormat::XRGB_8;			// 24-bit window surfaces are not supported.
 
 	Blob_p pCanvasBlob = Blob::create( pWinSurf->pixels, 0);
@@ -128,7 +125,7 @@ int main ( int argc, char** argv )
 															(unsigned char*) pSDLSurf->pixels,
 														   PixelDescription(24, PixelType::Chunky, 0xFF0000, 0xFF00, 0xFF, 0, false),
 															pSDLSurf->pitch );
-		SDL_FreeSurface(pSDLSurf);
+		SDL_DestroySurface(pSDLSurf);
 
 		// First we create and add a FlexPanel to the RootPanel.
 		// The RootPanel can only take one child, but the FlexPanel
@@ -219,22 +216,22 @@ void translateEvents( RootPanel_p pRoot )
 
 		switch( e.type )
 		{
-			case SDL_QUIT:
+			case SDL_EVENT_QUIT:
 				bQuit = true;
 				break;
 
-			case SDL_MOUSEMOTION:
+			case SDL_EVENT_MOUSE_MOTION:
 			{
 				float scale = pRoot->scale()/64.f;
 				Base::inputHandler()->setPointer( pRoot, Coord(e.motion.x/scale, e.motion.y/scale));
 				break;
 			}
 
-			case SDL_MOUSEBUTTONDOWN:
+			case SDL_EVENT_MOUSE_BUTTON_DOWN:
 				Base::inputHandler()->setButton( translateMouseButton(e.button.button), true );
 				break;
 
-			case SDL_MOUSEBUTTONUP:
+			case SDL_EVENT_MOUSE_BUTTON_UP:
 				Base::inputHandler()->setButton( translateMouseButton(e.button.button), false );
 				break;
 

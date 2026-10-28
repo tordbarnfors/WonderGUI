@@ -20,16 +20,13 @@ target_include_directories(workbench PRIVATE
 	${WAXOPENGLGFX_INCDIRS}
 	${WAXFREETYPEFONT_INCDIRS}
 	${WGDEBUGGER_INCDIRS}
-	${SDL2_INCDIR}
-	${SDL2IMAGE_INCDIR}
+	${STB_INCDIR}
 	${PROJECT_SOURCE_DIR}
 
 
 )
 
 target_link_directories(workbench PRIVATE 
-	${SDL2_LIBDIR}
-	${SDL2IMAGE_LIBDIR}
 	${GLEW_LIBDIR}
 	${FREETYPE2_LIBDIR}
 )
@@ -41,8 +38,7 @@ target_link_libraries(workbench PRIVATE
 	waxopenglgfx
 	waxfreetypefont
 	wondergui 
-	${SDL2_LIBS}
-	${SDL2IMAGE_LIBS}
+	${SDL3_LIBS}
 	${OPENGL_LIBS}
 	${FREETYPE2_LIB}
 )

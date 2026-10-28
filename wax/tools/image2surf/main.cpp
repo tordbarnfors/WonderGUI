@@ -8,7 +8,7 @@
 #include <wax_qoicompression.h>
 
 #define STB_IMAGE_IMPLEMENTATION
-#include "stb_image.h"
+#include <stb_image.h>
 
 #include <utility>
 #include <fstream>

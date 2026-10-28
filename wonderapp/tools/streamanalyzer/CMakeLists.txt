@@ -33,7 +33,6 @@ set(RESOURCES
 
 set(FRAMEWORKS
     ${WG_ROOT}/SDL2.framework
-    ${WG_ROOT}/SDL2_image.framework
 )
 
 

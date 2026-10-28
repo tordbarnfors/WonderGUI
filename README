@@ -39,7 +39,10 @@ you need to specify your debugger working path to the WonderGUI directory.
 **** SATISFYING DEPENDENCIES FOR YOUR OS ****
 *********************************************
 
-WonderGUI and everything related requires C++11 or higher.
+WonderGUI and everything related requires C++17 or higher.
+
+Images are loaded with stb_image, which is included in thirdparty/ together
+with tinyfiledialogs, so neither needs installing.
 
 The WonderGUI base library (wondergui.lib) doesn't have any external 
 dependencies, but separate addon libraries, example files and tools do.
@@ -56,29 +59,27 @@ Linux
 All dependencies should be satisfied by your package manager. Just search,
 download and install the following packages:
 
-libsdl2-dev
-libsdl2-image-dev
+libsdl3-dev
 libfreetype6-dev
 libglew-dev
+
+The SDL2 based WonderApp frameworks also need libsdl2-dev.
 
 
 Windows
 =======
 
-Nothing to install. CMake downloads and builds SDL2, SDL2_image, FreeType
-and GLEW when it doesn't find them (option WONDERGUI_FETCH_DEPS, on by
-default).
+Nothing to install. CMake downloads and builds SDL3, FreeType and GLEW when
+it doesn't find them (option WONDERGUI_FETCH_DEPS, on by default). SDL2 is
+only downloaded if one of the SDL2 based WonderApp frameworks is selected.
 
 
 Mac OSX
 =======
 
-1. Download the SDL2 framework from libsdl.org and copy it to 
-   /Library/Frameworks (or to <Your home directory>/Library/Frameworks if 
-   your access priviliges are not high enough).
-
-2. SDL2_image and FreeType are downloaded and built by CMake when it doesn't
-   find them (option WONDERGUI_FETCH_DEPS, on by default).
+Nothing to install. CMake downloads and builds SDL3 and FreeType when it
+doesn't find them (option WONDERGUI_FETCH_DEPS, on by default). SDL2 is only
+downloaded if one of the SDL2 based WonderApp frameworks is selected.
 
 
 **************************************************

@@ -25,19 +25,14 @@ target_working_directory(embeddedworkbench ${CMAKE_CURRENT_LIST_DIR} )
 target_include_directories(embeddedworkbench PRIVATE
 	${WAX_INCDIRS}
 	${WAXSOFTGFX_INCDIRS}
-	${SDL2_INCDIR}
 	"${CMAKE_CURRENT_BINARY_DIR}"  # For generated header
-)
-
-target_link_directories(embeddedworkbench PRIVATE 
-	${SDL2_LIBDIR}
 )
 
 target_link_libraries(embeddedworkbench PRIVATE
 
 	waxsoftgfx	
 	wax
-	${SDL2_LIBS}
+	${SDL3_LIBS}
 )
 
 

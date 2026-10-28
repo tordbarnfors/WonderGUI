@@ -30,8 +30,7 @@
 #include <wax_freetypefont.h>
 
 
-#define STB_IMAGE_IMPLEMENTATION
-#include <stb_image.h>
+#include <wappimageloader.h>
 
 using namespace wg;
 using namespace wax;
@@ -113,68 +112,7 @@ cleanup:
 
 wg::Surface_p Win32API::loadSurface(const std::string& path, wg::SurfaceFactory* pFactory, const wg::Surface::Blueprint& _bp)
 {
-	if (path.rfind(".surf") == path.size() - 5 || path.rfind(".srf") == path.size() - 4)
-	{
-		std::ifstream input(path, std::ios::binary);
-		if (!input.good())
-			return nullptr;
-
-		auto pReader = SurfaceReader::create({ .factory = pFactory ? pFactory : Base::defaultSurfaceFactory().rawPtr() });
-		Surface_p pSurface = pReader->readSurfaceFromStream(input, _bp);
-		input.close();
-		return pSurface;
-	}
-	else
-	{
-		int width, height, channels;
-		stbi_uc* data = stbi_load(path.c_str(), &width, &height, &channels, 0);
-		if (data)
-		{
-			PixelFormat destFormat;
-			PixelDescription pixelDesc;
-
-			if (channels == 3)
-			{
-				pixelDesc.bits = 24;
-				pixelDesc.type = PixelType::Chunky;
-				pixelDesc.bigEndian = false;				// stb_image gives R, G, B in that order, which little endian masks describe.
-				pixelDesc.R_mask = 0x000000FF;
-				pixelDesc.G_mask = 0x0000FF00;
-				pixelDesc.B_mask = 0x00FF0000;
-				pixelDesc.A_mask = 0x00000000;
-
-				destFormat = PixelFormat::XRGB_8;
-			}
-			else if (channels == 4)
-			{
-				pixelDesc.bits = 32;
-				pixelDesc.type = PixelType::Chunky;
-				pixelDesc.bigEndian = false;				// stb_image gives R, G, B, A in that order, which little endian masks describe.
-				pixelDesc.R_mask = 0x000000FF;
-				pixelDesc.G_mask = 0x0000FF00;
-				pixelDesc.B_mask = 0x00FF0000;
-				pixelDesc.A_mask = 0xFF000000;
-
-				destFormat = PixelFormat::ARGB_8;
-			}
-			else
-			{
-				stbi_image_free(data);
-				return nullptr;
-			}
-
-			auto bp = _bp;
-			bp.format = destFormat;
-			bp.size = { width, height };
-
-			auto pUseFactory = pFactory ? pFactory : Base::defaultSurfaceFactory().rawPtr();
-			Surface_p pSurface = pUseFactory->createSurface(bp, (uint8_t*)data, pixelDesc, 0, nullptr, 0);
-
-			stbi_image_free(data);
-			return pSurface;
-		}
-	}
-	return nullptr;
+	return wappLoadSurface(path, pFactory, _bp);
 }
 
 //____ initDefaultWidgetKit() ____________________________________________________

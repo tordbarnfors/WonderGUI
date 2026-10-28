@@ -2,17 +2,15 @@
 #include <cstdlib>
 #include <stdio.h>
 
-#ifdef WIN32
-#	include <SDL.h>
-#	include <SDL_image.h>
-#elif __APPLE__
-#	include <SDL2/SDL.h>
-#	include <SDL2_image/SDL_image.h>
+#include <SDL3/SDL.h>
+#include <SDL3/SDL_main.h>
+
+#ifdef __APPLE__
 #	include <unistd.h>
-#else
-#	include <SDL2/SDL.h>
-#	include <SDL2/SDL_image.h>
 #endif
+
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb_image.h>
 
 #include <algorithm>
 #include <iostream>
@@ -39,7 +37,7 @@ void			processEvents();
 void			renderOutput( GfxDevice * pDevice, Surface * pWindowCanvas, Surface * pStreamCanvas );
 void * 			loadFile( const char * pPath );
 Blob_p 			loadBlob( const char * pPath );
-void			convertSDLFormat( PixelDescription * pWGFormat, const SDL_PixelFormat * pSDLFormat );
+SoftSurface_p	loadImage( const char * pPath );
 
 void playDelayFrames(GfxDevice_p pDevice, int nFrames);
 
@@ -65,7 +63,7 @@ StreamEncoder_p	s_pEncoder;
 
 void freeSDLSurfCallback( void * pSDLSurf )
 {
-	SDL_FreeSurface( (SDL_Surface*) pSDLSurf );
+	SDL_DestroySurface( (SDL_Surface*) pSDLSurf );
 }
 
 
@@ -84,12 +82,11 @@ int main ( int argc, char** argv )
 
 	SDL_Init(SDL_INIT_VIDEO);
 
-	int posX = 100, posY = 100, width = 1024, height = 600;
-	SDL_Window * pWin = SDL_CreateWindow("Wax Stream Generator", posX, posY, width, height, SDL_WINDOW_ALLOW_HIGHDPI);
+	int width = 1024, height = 600;
+	SDL_Window * pWin = SDL_CreateWindow("Wax Stream Generator", width, height, SDL_WINDOW_HIGH_PIXEL_DENSITY);
 
 	SDL_Surface * pWinSurf = SDL_GetWindowSurface( pWin );
 
-	IMG_Init( IMG_INIT_JPG | IMG_INIT_PNG );
 	 
 	//------------------------------------------------------
 	// Init Wax
@@ -100,7 +97,7 @@ int main ( int argc, char** argv )
 
 	PixelFormat type = PixelFormat::Undefined;
 
-	if( pWinSurf->format->BitsPerPixel == 32 )
+	if( SDL_BYTESPERPIXEL(pWinSurf->format) == 4 )
 		type = PixelFormat::ARGB_8;					// 24-bit window surfaces are not supported.
 		
 	Blob_p pCanvasBlob = Blob::create( pWinSurf->pixels, 0);	
@@ -290,12 +287,9 @@ int main ( int argc, char** argv )
 //	auto pSoftSurfaceFactory = SoftSurfaceFactory::create();
 
 
-	PixelDescription	format;
-
-	auto pSDLSurf = IMG_Load("resources/splash.png");
-	convertSDLFormat(&format, pSDLSurf->format);
-	Surface_p pSplashSurface = pSurfaceFactory->createSurface({ .format = PixelFormat::ARGB_8, .size = SizeI(pSDLSurf->w, pSDLSurf->h) }, (uint8_t *)pSDLSurf->pixels, format, pSDLSurf->pitch);
-	SDL_FreeSurface(pSDLSurf);
+	SoftSurface_p pSplashImage = loadImage("resources/splash.png");
+	Surface_p pSplashSurface = pSurfaceFactory->createSurface({ .format = PixelFormat::ARGB_8, .size = pSplashImage->pixelSize() });
+	pSplashSurface->copy( CoordI(), pSplashImage );
 
 
 
@@ -371,7 +365,6 @@ int main ( int argc, char** argv )
 
 	// Exit SDL
 
-	IMG_Quit();
 	SDL_Quit();
 
     return 0;
@@ -385,7 +378,7 @@ void processEvents()
 	SDL_Event e;
 	while( SDL_PollEvent(&e) )
 	{
-		if( e.type == SDL_QUIT || (e.type == SDL_KEYDOWN && e.key.keysym.sym == SDLK_ESCAPE) )
+		if( e.type == SDL_EVENT_QUIT || (e.type == SDL_EVENT_KEY_DOWN && e.key.key == SDLK_ESCAPE) )
 			bQuit = true;
 	}
 }
@@ -477,33 +470,42 @@ void * loadFile( const char * pPath )
 
 }
 
-//____ convertSDLFormat() ______________________________________________________
+//____ loadImage() _____________________________________________________________
+//
+// Loads an image in any format stb_image supports as an ARGB_8 SoftSurface.
 
-void convertSDLFormat( PixelDescription * pWGFormat, const SDL_PixelFormat * pSDLFormat )
+SoftSurface_p loadImage( const char * pPath )
 {
-	pWGFormat->type = PixelType::Chunky;
-	pWGFormat->bits = pSDLFormat->BitsPerPixel;
-	pWGFormat->bigEndian = (WAX_IS_BIG_ENDIAN == 1);		// SDL masks are for pixels read in native byte order.
+	int width, height, channels;
+	stbi_uc * pPixels = stbi_load( pPath, &width, &height, &channels, 4 );
+	if( !pPixels )
+	{
+		printf( "ERROR: Could not load image '%s'\n", pPath );
+		exit(1);
+	}
 
-	pWGFormat->R_mask = pSDLFormat->Rmask;
-	pWGFormat->G_mask = pSDLFormat->Gmask;
-	pWGFormat->B_mask = pSDLFormat->Bmask;
-	pWGFormat->A_mask = pSDLFormat->Amask;
+	// stb_image gives R, G, B, A in that order, which little endian masks describe.
 
+	PixelDescription desc;
+	desc.type = PixelType::Chunky;
+	desc.bits = 32;
+	desc.bigEndian = false;
+	desc.R_mask = 0x000000FF;
+	desc.G_mask = 0x0000FF00;
+	desc.B_mask = 0x00FF0000;
+	desc.A_mask = 0xFF000000;
+
+	auto pSurface = SoftSurface::create( { .format = PixelFormat::ARGB_8, .size = {width,height} }, pPixels, desc, width*4 );
+	stbi_image_free( pPixels );
+	return pSurface;
 }
 
 //____ playImageStreamingTest() _______________________________________________
 
 void playImageStreamingTest(GfxDevice_p pDevice, CanvasRef canvasRef, SurfaceFactory_p pFactory )
 {
-	SDL_Surface * pLogoImg = IMG_Load( "Flow Studio Boot Image.png" );
-//    convertSDLFormat( &format, pFontSurf->format );
-
-	SizeI logoSize = SizeI(pLogoImg->w,pLogoImg->h);
-
-	SoftSurface_p pOrgSurf = SoftSurface::create({ .format = PixelFormat::ARGB_8, .size = logoSize,  }, (unsigned char*)pLogoImg->pixels, PixelFormat::ARGB_8,  pLogoImg->pitch);
-	
-	SDL_FreeSurface( pLogoImg );
+	SoftSurface_p pOrgSurf = loadImage( "Flow Studio Boot Image.png" );
+	SizeI logoSize = pOrgSurf->pixelSize();
 
 	Surface_p pLogoSurf = pFactory->createSurface({ .format = PixelFormat::ARGB_8, .size = logoSize });
 
@@ -528,14 +530,8 @@ void playImageStreamingTest(GfxDevice_p pDevice, CanvasRef canvasRef, SurfaceFac
 
 void playSurfaceStressTest(GfxDevice_p pDevice, CanvasRef canvasRef, SurfaceFactory_p pFactory )
 {
-    SDL_Surface * pLogoImg = IMG_Load( "resources/logo-200.png" );
-//    convertSDLFormat( &format, pFontSurf->format );
-
-    SizeI logoSize = SizeI(pLogoImg->w,pLogoImg->h);
-
-	SoftSurface_p pOrgSurf = SoftSurface::create({ .format = PixelFormat::ARGB_8, .size = logoSize }, (unsigned char*)pLogoImg->pixels, PixelFormat::ARGB_8, pLogoImg->pitch);
-    
-    SDL_FreeSurface( pLogoImg );
+	SoftSurface_p pOrgSurf = loadImage( "resources/logo-200.png" );
+	SizeI logoSize = pOrgSurf->pixelSize();
 
 	Surface_p pLogoSurf = pFactory->createSurface({ .format = PixelFormat::Alpha_8, .size = logoSize });
 
@@ -601,16 +597,8 @@ void playSurfaceStressTest(GfxDevice_p pDevice, CanvasRef canvasRef, SurfaceFact
 
 void playLogoFadeIn(GfxDevice_p pDevice, CanvasRef canvasRef, SurfaceFactory_p pFactory )
 {
-    SDL_Surface * pLogoImg = IMG_Load( "resources/logo-200.png" );
-//	SDL_Surface * pLogoImg = IMG_Load( "softube_logo_transparent_small.png" );
-
-	//    convertSDLFormat( &format, pFontSurf->format );
-
-    SizeI logoSize = SizeI(pLogoImg->w,pLogoImg->h);
-
-	SoftSurface_p pOrgSurf = SoftSurface::create({ .format = PixelFormat::ARGB_8, .size = logoSize }, (unsigned char*)pLogoImg->pixels, PixelFormat::ARGB_8, pLogoImg->pitch);
-    
-    SDL_FreeSurface( pLogoImg );
+	SoftSurface_p pOrgSurf = loadImage( "resources/logo-200.png" );
+	SizeI logoSize = pOrgSurf->pixelSize();
 
 	Surface_p pLogoSurf = pFactory->createSurface({ .format = PixelFormat::Alpha_8, .size = logoSize });
 

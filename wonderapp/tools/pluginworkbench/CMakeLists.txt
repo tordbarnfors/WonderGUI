@@ -19,7 +19,6 @@ target_include_directories(testplugin PRIVATE
 	${WGPLUGIN_INCDIRS}
 	${WONDERGUI_INCDIRS}
 	${WAXFREETYPEFONT_INCDIRS}
-	${SDL2_INCDIR}
 	"${CMAKE_CURRENT_BINARY_DIR}"  # For generated header
 )
 
@@ -78,7 +77,6 @@ generate_export_header(wax BASE_NAME wax)
 target_include_directories(pluginworkbench PRIVATE 
 	${WAPP_INCDIRS}
 	${WGPLUGIN_INCDIRS}
-	${SDL2_INCDIR}
 	"${CMAKE_CURRENT_BINARY_DIR}"  # For generated header
 )
 
@@ -89,7 +87,7 @@ target_working_directory(pluginworkbench ${WG_ROOT} )
 target_link_libraries(pluginworkbench PRIVATE
 	${WAPPLIB}
 	PRIVATE wgpluginhost
-	${SDL2_LIBS}
+	SDL3::Headers		# For the key codes only, nothing is linked.
 )
 
 

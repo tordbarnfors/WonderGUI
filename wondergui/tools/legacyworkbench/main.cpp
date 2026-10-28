@@ -6,22 +6,13 @@
 #undef max
 
 
+#include <SDL3/SDL.h>
+#include <SDL3/SDL_main.h>
+
 #ifdef WIN32
-#	include <SDL.h>
-#	include <SDL_image.h>
 #	include <GL/glew.h>
-#else
-#	ifdef __APPLE__
-#       pragma clang diagnostic push
-#       pragma clang diagnostic ignored "-Wdocumentation"
-#		include <SDL2/SDL.h>
-#		include <SDL2_image/SDL_image.h>
-#       pragma clang diagnostic pop
-		#include <unistd.h>
-#	else
-#		include <SDL2/SDL.h>
-#		include <SDL2/SDL_image.h>
-#	endif
+#elif __APPLE__
+#	include <unistd.h>
 #endif
 
 #include <wglegacygui.h>
@@ -191,7 +182,7 @@ int main ( int argc, char** argv )
 
 
 #ifdef USE_OPEN_GL
-	SDL_Window * pWin = SDL_CreateWindow("WonderGUI Testbench (OpenGL)", posX, posY, width, height, SDL_WINDOW_OPENGL);
+	SDL_Window * pWin = SDL_CreateWindow("WonderGUI Testbench (OpenGL)", width, height, SDL_WINDOW_OPENGL);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
@@ -217,11 +208,8 @@ int main ( int argc, char** argv )
 
 
 #else
-	SDL_Window * pWin = SDL_CreateWindow("WonderGUI Testbench (Software)", posX, posY, width, height, 0);
+	SDL_Window * pWin = SDL_CreateWindow("WonderGUI Testbench (Software)", width, height, 0);
 #endif
-
-
-	int res = IMG_Init( IMG_INIT_PNG | IMG_INIT_JPG );
 
 
 //	SDL_Thread *thread;
@@ -252,7 +240,7 @@ int main ( int argc, char** argv )
 	
 	WgPixelType type = WgPixelType::Undefined;
 
-	if (pScreen->format->BitsPerPixel == 32)
+	if (SDL_BYTESPERPIXEL(pScreen->format) == 4)
 		type = WgPixelType::ARGB_8;					// 24-bit window surfaces are not supported.
 
 	auto pCanvas = wax::SoftSurface::create( WGBP(Surface,
@@ -490,7 +478,6 @@ int main ( int argc, char** argv )
 	
 	WgBase::Exit();
 
-	IMG_Quit();
 
 	
 
@@ -1670,22 +1657,22 @@ bool eventLoop( WgEventHandler * pHandler )
 		switch (event.type)
 		{
 			// exit if the window is closed
-			case SDL_QUIT:
+			case SDL_EVENT_QUIT:
 				return false;
 
 			// check for keypresses
-			case SDL_KEYDOWN:
+			case SDL_EVENT_KEY_DOWN:
 			{
 				// exit if ESCAPE is pressed
-//				if (event.key.keysym.sym == SDLK_ESCAPE)
+//				if (event.key.key == SDLK_ESCAPE)
 //					return false;
 
-				if (event.key.keysym.sym == SDLK_RIGHT)
+				if (event.key.key == SDLK_RIGHT)
 					g_bRightPressed = true;
 				else
 					g_bRightPressed = false;
 
-				if (event.key.keysym.sym == SDLK_LEFT)
+				if (event.key.key == SDLK_LEFT)
 					g_bLeftPressed = true;
 				else
 					g_bLeftPressed = false;

@@ -25,7 +25,7 @@ alpha_blending_example_files/
 
 
 SDL2.framework/
-SDL2_image.framework/
+SDL3.framework/
 
 build/
 vsbuild/

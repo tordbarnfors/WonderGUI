@@ -2,20 +2,20 @@
 #include <cstdlib>
 #include <stdio.h>
 
+#include <SDL3/SDL.h>
+#include <SDL3/SDL_main.h>
+
 #ifdef WIN32
-#	include <SDL.h>
-#	include <SDL_image.h>
 #    include <GL/glew.h>
 #elif __APPLE__
-#	include <SDL2/SDL.h>
-#	include <SDL2_image/SDL_image.h>
 #	include <dlfcn.h>
 #	include <unistd.h>
 #else
-#	include <SDL2/SDL.h>
-#	include <SDL2/SDL_image.h>
 #   include <GL/glew.h>
 #endif
+
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb_image.h>
 
 
 #include <wondergui.h>
@@ -87,7 +87,8 @@ Blob_p 			loadBlob( const char * pPath );
 Surface_p		loadSurface(const std::string& path, const Surface::Blueprint& blueprint = Surface::Blueprint() );
 bool			savePNG(Surface * pSurface, const char * path);
 
-void			convertSDLFormat( PixelDescription * pWGFormat, const SDL_PixelFormat * pSDLFormat );
+void			convertSDLFormat( PixelDescription * pWGFormat, SDL_PixelFormat pSDLFormat );
+SDL_Surface *	loadImage( const char * pPath );
 
 void addResizablePanel( const FlexPanel_p& pParent, const Widget_p& pChild, const MsgRouter_p& pMsgRouter );
 
@@ -103,7 +104,7 @@ MyHostBridge * g_pHostBridge = nullptr;
 
 void freeSDLSurfCallback( void * pSDLSurf )
 {
-	SDL_FreeSurface( (SDL_Surface*) pSDLSurf );
+	SDL_DestroySurface( (SDL_Surface*) pSDLSurf );
 }
 
 InputHandler * pDebug;
@@ -319,9 +320,8 @@ int main(int argc, char** argv)
 
 #ifdef USE_OPEN_GL
 
-	SDL_Window * pWin = SDL_CreateWindow("Hello WonderGUI", posX, posY, width, height, SDL_WINDOW_OPENGL | SDL_WINDOW_ALLOW_HIGHDPI);
+	SDL_Window * pWin = SDL_CreateWindow("Hello WonderGUI", width, height, SDL_WINDOW_OPENGL | SDL_WINDOW_HIGH_PIXEL_DENSITY);
 
-	IMG_Init(IMG_INIT_JPG | IMG_INIT_PNG);
 
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
@@ -343,7 +343,7 @@ int main(int argc, char** argv)
 
 
 #else
-	SDL_Window * pWin = SDL_CreateWindow("Hello WonderGUI", posX, posY, width, height, 0/*SDL_WINDOW_ALLOW_HIGHDPI*/);
+	SDL_Window * pWin = SDL_CreateWindow("Hello WonderGUI", width, height, 0/*SDL_WINDOW_HIGH_PIXEL_DENSITY*/);
 #endif
 
 
@@ -422,7 +422,7 @@ int main(int argc, char** argv)
 
 			PixelFormat type = PixelFormat::Undefined;
 
-			if (pScreen->format->BitsPerPixel == 32)
+			if (SDL_BYTESPERPIXEL(pScreen->format) == 4)
 				type = PixelFormat::ARGB_8;				// 24-bit window surfaces are not supported.
 
 			Blob_p pBlob = Blob::create(pScreen->pixels, nullptr);
@@ -508,14 +508,14 @@ int main(int argc, char** argv)
 		pInput->mapKey(SDLK_KP_ENTER, Key::Return);
 
 
-		pInput->mapCommand(SDLK_x, ModKeys::Command, EditCmd::Cut);
-		pInput->mapCommand(SDLK_c, ModKeys::Command, EditCmd::Copy);
-		pInput->mapCommand(SDLK_v, ModKeys::Command, EditCmd::Paste);
+		pInput->mapCommand(SDLK_X, ModKeys::Command, EditCmd::Cut);
+		pInput->mapCommand(SDLK_C, ModKeys::Command, EditCmd::Copy);
+		pInput->mapCommand(SDLK_V, ModKeys::Command, EditCmd::Paste);
 
-		pInput->mapCommand(SDLK_a, ModKeys::Command, EditCmd::SelectAll);
+		pInput->mapCommand(SDLK_A, ModKeys::Command, EditCmd::SelectAll);
 
-		pInput->mapCommand(SDLK_z, ModKeys::Command, EditCmd::Undo);
-		pInput->mapCommand(SDLK_z, ModKeys::CommandShift, EditCmd::Redo);
+		pInput->mapCommand(SDLK_Z, ModKeys::Command, EditCmd::Undo);
+		pInput->mapCommand(SDLK_Z, ModKeys::CommandShift, EditCmd::Redo);
 		
 		pInput->mapCommand(SDLK_ESCAPE, ModKeys::None, EditCmd::Escape);
 
@@ -523,9 +523,9 @@ int main(int argc, char** argv)
 		/*
 			PixelFormat format = PixelFormat::Unknown;
 
-				if( pWinSurf->format->BitsPerPixel == 32 )
+				if( SDL_BYTESPERPIXEL(pWinSurf->format) == 4 )
 					format = PixelFormat::ARGB_8;
-				else if( pWinSurf->format->BitsPerPixel == 24 )
+				else if( SDL_BYTESPERPIXEL(pWinSurf->format) == 3 )
 					format = PixelFormat::XRGB_8;
 
 				Blob_p pCanvasBlob = Blob::create( pWinSurf->pixels, 0);
@@ -569,10 +569,10 @@ int main(int argc, char** argv)
 		/*
 			char * pFontSpec = (char*)loadFile("resources/anuvverbubbla_8x8.fnt");
 
-			SDL_Surface * pFontSurf = IMG_Load("resources/anuvverbubbla_8x8.png");
+			SDL_Surface * pFontSurf = loadImage("resources/anuvverbubbla_8x8.png");
 			//	convertSDLFormat( &pixelDesc, pFontSurf->format );
 			Surface_p pFontImg = pSurfaceFactory->createSurface(SizeI(pFontSurf->w, pFontSurf->h), PixelFormat::ARGB_8, (unsigned char*)pFontSurf->pixels, pFontSurf->pitch);
-			SDL_FreeSurface(pFontSurf);
+			SDL_DestroySurface(pFontSurf);
 
 			BitmapFont_p pBmpFont = BitmapFont::create(pFontImg, pFontSpec);
 
@@ -606,10 +606,10 @@ int main(int argc, char** argv)
 
 		// Init skins
 
-		SDL_Surface* pSDLSurf = IMG_Load("resources/simple_button.bmp");
+		SDL_Surface* pSDLSurf = loadImage("resources/simple_button.bmp");
 		convertSDLFormat(&pixelDesc, pSDLSurf->format);
 		Surface_p pButtonSurface = pSurfaceFactory->createSurface({ .format = PixelFormat::XRGB_8, .size = SizeI(pSDLSurf->w, pSDLSurf->h) }, (unsigned char*)pSDLSurf->pixels, pixelDesc, pSDLSurf->pitch);
-		SDL_FreeSurface(pSDLSurf);
+		SDL_DestroySurface(pSDLSurf);
 		m_pSimpleButtonSkin = BlockSkin::create({
 			.axis = wg::Axis::X,
 			.frame = 3,
@@ -618,24 +618,24 @@ int main(int argc, char** argv)
 			.surface = pButtonSurface
 			});
 
-		pSDLSurf = IMG_Load("resources/simple_icon.png");
+		pSDLSurf = loadImage("resources/simple_icon.png");
 		convertSDLFormat(&pixelDesc, pSDLSurf->format);
 		Surface_p pBackgroundSurface = pSurfaceFactory->createSurface({ .format = PixelFormat::XRGB_8, .size = SizeI(pSDLSurf->w, pSDLSurf->h) }, (unsigned char*)pSDLSurf->pixels, pixelDesc, pSDLSurf->pitch);
-		SDL_FreeSurface(pSDLSurf);
+		SDL_DestroySurface(pSDLSurf);
 		BlockSkin_p pBackgroundSkin = BlockSkin::create(pBackgroundSurface);
 
 
-		pSDLSurf = IMG_Load("resources/splash.png");
+		pSDLSurf = loadImage("resources/splash.png");
 		convertSDLFormat(&pixelDesc, pSDLSurf->format);
 		Surface_p pSplashSurface = pSurfaceFactory->createSurface({ .format = PixelFormat::XRGB_8, .size = SizeI(pSDLSurf->w, pSDLSurf->h) }, (unsigned char*)pSDLSurf->pixels, pixelDesc, pSDLSurf->pitch);
-		SDL_FreeSurface(pSDLSurf);
+		SDL_DestroySurface(pSDLSurf);
 		BlockSkin_p pSplashSkin = BlockSkin::create(pSplashSurface);
 
 
-		pSDLSurf = IMG_Load("resources/state_button.bmp");
+		pSDLSurf = loadImage("resources/state_button.bmp");
 		convertSDLFormat(&pixelDesc, pSDLSurf->format);
 		Surface_p pStateButtonSurface = pSurfaceFactory->createSurface({ .format = PixelFormat::XRGB_8, .size = SizeI(pSDLSurf->w, pSDLSurf->h) }, (unsigned char*)pSDLSurf->pixels, pixelDesc, pSDLSurf->pitch);
-		SDL_FreeSurface(pSDLSurf);
+		SDL_DestroySurface(pSDLSurf);
 		//	BlockSkin_p pStateButtonSkin = BlockSkin::create(pStateButtonSurface, { State::Default, State::Hovered, State::Checked, State::Checked + State::Hovered, State::Disabled }, Border(3), Axis::X);
 		auto pStateButtonSkin = BlockSkin::create(BlockSkin::Blueprint
 		{
@@ -649,10 +649,10 @@ int main(int argc, char** argv)
 				.surface = pStateButtonSurface
 		});
 
-		pSDLSurf = IMG_Load("resources/grey_pressable_plate.bmp");
+		pSDLSurf = loadImage("resources/grey_pressable_plate.bmp");
 		convertSDLFormat(&pixelDesc, pSDLSurf->format);
 		Surface_p pPressablePlateSurface = pSurfaceFactory->createSurface({ .format = PixelFormat::XRGB_8, .size = SizeI(pSDLSurf->w, pSDLSurf->h) }, (unsigned char*)pSDLSurf->pixels, pixelDesc, pSDLSurf->pitch);
-		SDL_FreeSurface(pSDLSurf);
+		SDL_DestroySurface(pSDLSurf);
 		//	BlockSkin_p pPressablePlateSkin = BlockSkin::create(pPressablePlateSurface, { State::Default, State::Hovered, State::Pressed, State::Disabled }, Border(3), Axis::X);
 		m_pPressablePlateSkin = BlockSkin::create(BlockSkin::Blueprint
 		{
@@ -665,16 +665,16 @@ int main(int argc, char** argv)
 				.surface = pPressablePlateSurface
 		});
 
-		pSDLSurf = IMG_Load("resources/list_entry.png");
+		pSDLSurf = loadImage("resources/list_entry.png");
 		convertSDLFormat(&pixelDesc, pSDLSurf->format);
 		Surface_p pListEntrySurface = pSurfaceFactory->createSurface({ .format = PixelFormat::ARGB_8, .size = SizeI(pSDLSurf->w, pSDLSurf->h) }, (unsigned char*)pSDLSurf->pixels, pixelDesc, pSDLSurf->pitch);
-		SDL_FreeSurface(pSDLSurf);
+		SDL_DestroySurface(pSDLSurf);
 		Skin_p pListEntrySkin = BlockSkin::create(pListEntrySurface, { State::Default, State::Hovered, State::Selekted, State::Selekted + State::Hovered, State::Disabled }, Border(2), Axis::X);
 
-		pSDLSurf = IMG_Load("resources/splash.png");
+		pSDLSurf = loadImage("resources/splash.png");
 		convertSDLFormat(&pixelDesc, pSDLSurf->format);
 		Surface_p pImgSurface = pSurfaceFactory->createSurface({ .format = PixelFormat::XRGB_8, .sampleMethod = SampleMethod::Bilinear, .size = SizeI(pSDLSurf->w, pSDLSurf->h) }, (unsigned char*)pSDLSurf->pixels, pixelDesc, pSDLSurf->pitch);
-		SDL_FreeSurface(pSDLSurf);
+		SDL_DestroySurface(pSDLSurf);
 		BlockSkin_p pImgSkin = BlockSkin::createStaticFromSurface(pImgSurface);
 
 		//------------------------------------------------------
@@ -876,7 +876,6 @@ int main(int argc, char** argv)
 
 	// Exit SDL
 
-	IMG_Quit();
 	SDL_Quit();
 
 	delete g_pHostBridge;
@@ -896,23 +895,23 @@ void translateEvents( const InputHandler_p& pInput, const RootPanel_p& pRoot )
 
 		switch( e.type )
 		{
-			case SDL_QUIT:
+			case SDL_EVENT_QUIT:
 				bQuit = true;
 				break;
 
-			case SDL_MOUSEMOTION:
+			case SDL_EVENT_MOUSE_MOTION:
 				pInput->setPointer(pRoot, { pts(e.motion.x), pts(e.motion.y) });
 				break;
 
-			case SDL_MOUSEBUTTONDOWN:
+			case SDL_EVENT_MOUSE_BUTTON_DOWN:
 				pInput->setButton( translateMouseButton(e.button.button), true );
 				break;
 
-			case SDL_MOUSEBUTTONUP:
+			case SDL_EVENT_MOUSE_BUTTON_UP:
 				pInput->setButton( translateMouseButton(e.button.button), false );
 				break;
 
-			case SDL_MOUSEWHEEL:
+			case SDL_EVENT_MOUSE_WHEEL:
 			{
 				bool bInvertScroll = false;
 				Coord distance(e.wheel.x, e.wheel.y);
@@ -930,19 +929,19 @@ void translateEvents( const InputHandler_p& pInput, const RootPanel_p& pRoot )
 				break;
 			}
 
-			case SDL_KEYDOWN:
+			case SDL_EVENT_KEY_DOWN:
 			{
-				pInput->setKey( e.key.keysym.sym, true );
+				pInput->setKey( e.key.key, true );
 				break;
 			}
 
-			case SDL_KEYUP:
+			case SDL_EVENT_KEY_UP:
 			{
-				pInput->setKey( e.key.keysym.sym, false );
+				pInput->setKey( e.key.key, false );
 				break;
 			}
 
-			case SDL_TEXTINPUT:
+			case SDL_EVENT_TEXT_INPUT:
 				pInput->putText( e.text.text );
 				break;
 
@@ -1158,18 +1157,40 @@ void addResizablePanel( const FlexPanel_p& pParent, const Widget_p& pChild, cons
 //	pMsgRouter->addRoute( pChild, MsgFunc::create(cbMoveResize, pChild) );
 }
 
+//____ loadImage() _____________________________________________________________
+//
+// Loads an image in any format stb_image supports into an SDL surface with
+// R, G, B, A bytes.
+
+SDL_Surface * loadImage( const char * pPath )
+{
+	int width, height, channels;
+	stbi_uc * pPixels = stbi_load( pPath, &width, &height, &channels, 4 );
+	if( !pPixels )
+		return nullptr;
+
+	SDL_Surface * pSurface = SDL_CreateSurface( width, height, SDL_PIXELFORMAT_RGBA32 );
+	for( int y = 0 ; y < height ; y++ )
+		memcpy( ((uint8_t*) pSurface->pixels) + y * pSurface->pitch, pPixels + y * width * 4, width * 4 );
+
+	stbi_image_free( pPixels );
+	return pSurface;
+}
+
 //____ convertSDLFormat() ______________________________________________________
 
-void convertSDLFormat( PixelDescription * pWGFormat, const SDL_PixelFormat * pSDLFormat )
+void convertSDLFormat( PixelDescription * pWGFormat, SDL_PixelFormat pSDLFormat )
 {
+	const SDL_PixelFormatDetails * pDetails = SDL_GetPixelFormatDetails(pSDLFormat);
+
 	pWGFormat->type = PixelType::Chunky;
-	pWGFormat->bits = pSDLFormat->BitsPerPixel;
+	pWGFormat->bits = pDetails->bits_per_pixel;
 	pWGFormat->bigEndian = (WAX_IS_BIG_ENDIAN == 1);		// SDL masks are for pixels read in native byte order.
 
-	pWGFormat->R_mask = pSDLFormat->Rmask;
-	pWGFormat->G_mask = pSDLFormat->Gmask;
-	pWGFormat->B_mask = pSDLFormat->Bmask;
-	pWGFormat->A_mask = pSDLFormat->Amask;
+	pWGFormat->R_mask = pDetails->Rmask;
+	pWGFormat->G_mask = pDetails->Gmask;
+	pWGFormat->B_mask = pDetails->Bmask;
+	pWGFormat->A_mask = pDetails->Amask;
 
 }
 
@@ -1180,7 +1201,7 @@ Surface_p loadSurface(const std::string& path, const Surface::Blueprint& bluepri
 {
 	PixelDescription	pixelDesc;
 
-	auto pSDLSurf = IMG_Load(path.c_str());
+	auto pSDLSurf = loadImage(path.c_str());
 	if (pSDLSurf == nullptr)
 	{
 		printf("ERROR: Could not load '%s'\n", path.c_str());
@@ -1200,7 +1221,7 @@ Surface_p loadSurface(const std::string& path, const Surface::Blueprint& bluepri
 
 	Surface_p pImgSurface = Base::defaultSurfaceFactory()->createSurface( bp, (unsigned char*)pSDLSurf->pixels, pixelDesc, pSDLSurf->pitch);
 
-	SDL_FreeSurface(pSDLSurf);
+	SDL_DestroySurface(pSDLSurf);
 
 	return pImgSurface;
 }
@@ -1212,11 +1233,9 @@ bool savePNG(Surface * pSurface, const char * path)
 	SizeI size = pSurface->pixelSize();
 	const PixelDescription* pFmt = pSurface->pixelDescription();
 
-	SDL_Surface * pOutput = SDL_CreateRGBSurface(0, size.w, size.h, pFmt->bits, (uint32_t) pFmt->R_mask, (uint32_t) pFmt->G_mask, (uint32_t) pFmt->B_mask, (uint32_t) pFmt->A_mask);
+	SDL_Surface * pOutput = SDL_CreateSurface(size.w, size.h, SDL_GetPixelFormatForMasks(pFmt->bits, (uint32_t) pFmt->R_mask, (uint32_t) pFmt->G_mask, (uint32_t) pFmt->B_mask, (uint32_t) pFmt->A_mask));
 
-
-	int err = SDL_LockSurface(pOutput);
-	if (err != 0)
+	if (!SDL_LockSurface(pOutput))
 		return false;
 
 	auto pixbuf = pSurface->allocPixelBuffer();
@@ -1234,8 +1253,8 @@ bool savePNG(Surface * pSurface, const char * path)
 	SDL_UnlockSurface(pOutput);
 
 
-	IMG_SavePNG(pOutput, path);
-	SDL_FreeSurface(pOutput);
+	SDL_SavePNG(pOutput, path);
+	SDL_DestroySurface(pOutput);
 
 	return true;
 }

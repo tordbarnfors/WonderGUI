@@ -19,5 +19,5 @@ target_working_directory(streamplayer ${WG_ROOT} )
 target_link_libraries(streamplayer PRIVATE
 	waxsoftgfx
 	waxgfxstream
-	${SDL2_LIBS}
+	${SDL3_LIBS}
 )

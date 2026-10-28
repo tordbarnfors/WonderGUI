@@ -18,7 +18,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 set(WG_ROOT ${PROJECT_SOURCE_DIR})
 
-option(WONDERGUI_FETCH_DEPS "Automatically download SDL2, SDL2_image, FreeType and GLEW if not found" ON)
+option(WONDERGUI_FETCH_DEPS "Automatically download SDL3, SDL2, FreeType and GLEW if not found" ON)
 
 
 #------------------------------------------------------------------------------
@@ -28,7 +28,8 @@ option(WONDERGUI_FETCH_DEPS "Automatically download SDL2, SDL2_image, FreeType a
 # applications. Pick one below, or pass -DWAPPLIB=<name> to cmake.
 #
 # Only the selected framework and the rendering extension it needs are built,
-# so OpenGL is only required when wappsdl2gl is selected.
+# so OpenGL is only required when wappsdl2gl or wappsdl3gl is selected, and SDL2
+# only when one of the SDL2 frameworks is.
 #
 #------------------------------------------------------------------------------
 
@@ -42,9 +43,18 @@ if(NOT WAPPLIB)
 									# Works on Windows, Mac and Linux, although deprecated on both Windows and Mac.
 	#set(WAPPLIB wappsdl2metal)		# WonderApp framework based on SDL2, using Metal rendering.
 									# Works on Mac.
+
+	#set(WAPPLIB wappsdl3sw)		# WonderApp framework based on SDL3, using software rendering.
+									# Works on Windows, Mac and Linux.
+	#set(WAPPLIB wappsdl3gl)		# WonderApp framework based on SDL3, using OpenGL rendering.
+									# Works on Windows, Mac and Linux.
+	#set(WAPPLIB wappsdl3dx12)		# WonderApp framework based on SDL3, using DirectX 12 rendering.
+									# Works on Windows.
+	#set(WAPPLIB wappsdl3metal)		# WonderApp framework based on SDL3, using Metal rendering.
+									# Works on Mac.
 endif()
 
-set(WAPPLIBS wappwin32sw wappwin32dx12 wappsdl2sw wappsdl2gl wappsdl2metal)
+set(WAPPLIBS wappwin32sw wappwin32dx12 wappsdl2sw wappsdl2gl wappsdl2metal wappsdl3sw wappsdl3gl wappsdl3dx12 wappsdl3metal)
 
 if(NOT WAPPLIB IN_LIST WAPPLIBS)
 	message(FATAL_ERROR "Unknown WonderApp framework: ${WAPPLIB}. Choose one of: ${WAPPLIBS}")
@@ -57,8 +67,7 @@ message(STATUS "WonderApp framework: ${WAPPLIB}")
 # OUTPUT DIRECTORY
 #
 # Executables and shared libraries all go into bin/ (bin/<Config>/ with Visual
-# Studio and Xcode), including SDL2 and SDL2_image when they are downloaded and
-# built here. Windows has no RPATH, so that is where they have to be for the
+# Studio and Xcode), including SDL when it is downloaded and built here. Windows has no RPATH, so that is where they have to be for the
 # executables to find them. Static libraries stay in their own directories.
 #
 # Set before the dependencies below, so they are built there too.
@@ -69,122 +78,47 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 
 #------------------------------------------------------------------------------
-# DIRECTORIES
+# DEPENDENCIES
 #
-# SDL2, SDL2_image and FreeType libraries are needed by several compile targets,
-# such as tools, workbenches, examples and some WonderApp frameworks. OpenGL and
-# GLEW are looked for by wax/extensions/openglgfx, which is only built for wappsdl2gl.
+# SDL3 is used by the tools and examples that open their own windows, and by
+# the SDL3 WonderApp frameworks. Images are loaded with stb_image, which is
+# included in thirdparty/stb.
 #
-# The base libraries (Wax and WonderGUI) do not need these.
+# The other dependencies are looked for where they are needed, so only when
+# that part is built: SDL2 by the SDL2 WonderApp frameworks, FreeType by
+# wax/extensions/freetypefont and OpenGL and GLEW by wax/extensions/openglgfx.
+#
+# The base libraries (Wax and WonderGUI) do not need any of these.
 #
 #------------------------------------------------------------------------------
 
-# ---------- SDL2 ----------
-find_package(SDL2 CONFIG QUIET)
+# ---------- SDL3 ----------
+find_package(SDL3 CONFIG QUIET)
 
-if(NOT SDL2_FOUND AND WONDERGUI_FETCH_DEPS)
+if(NOT SDL3_FOUND AND WONDERGUI_FETCH_DEPS)
     include(FetchContent)
 
-    # With MSVC, SDL2 builds without the C runtime by default and links its DLL
-    # with /NODEFAULTLIB. It keeps runtime checks (/RTC1), which need the C
-    # runtime, out by removing them from CMAKE_C_FLAGS_DEBUG. CMake 4 (policy
-    # CMP0184, NEW for everything since we require 4.4) adds them through the
-    # MSVC_RUNTIME_CHECKS target property instead, so they stay and the link
-    # fails on _RTC_CheckStackVars. Building SDL2 with the C runtime avoids it.
-
-    set(SDL_LIBC ON CACHE BOOL "Use the system C library" FORCE)
+    set(SDL_TEST_LIBRARY OFF CACHE BOOL "" FORCE)
+    set(SDL_EXAMPLES OFF CACHE BOOL "" FORCE)
 
     FetchContent_Declare(
-        SDL2
+        SDL3
         GIT_REPOSITORY https://github.com/libsdl-org/SDL.git
-        GIT_TAG        release-2.30.0
-    )
-    FetchContent_MakeAvailable(SDL2)
-    # SDL2 sets up SDL2::SDL2 / SDL2::SDL2main targets itself when built this way
-endif()
-
-# ---------- SDL2_image ----------
-find_package(SDL2_image CONFIG QUIET)
-
-if(NOT SDL2_image_FOUND AND WONDERGUI_FETCH_DEPS)
-    include(FetchContent)
-
-    # PNG and JPEG through SDL_image's built-in stb backend is all we need, so
-    # none of its third-party codecs, and none of the submodules they live in.
-
-    set(SDL2IMAGE_VENDORED OFF CACHE BOOL "" FORCE)
-    set(SDL2IMAGE_BACKEND_STB ON CACHE BOOL "" FORCE)
-    set(SDL2IMAGE_AVIF OFF CACHE BOOL "" FORCE)
-    set(SDL2IMAGE_JXL OFF CACHE BOOL "" FORCE)
-    set(SDL2IMAGE_TIF OFF CACHE BOOL "" FORCE)
-    set(SDL2IMAGE_WEBP OFF CACHE BOOL "" FORCE)
-    set(SDL2IMAGE_SAMPLES OFF CACHE BOOL "" FORCE)
-    set(SDL2IMAGE_TESTS OFF CACHE BOOL "" FORCE)
-    set(SDL2IMAGE_INSTALL OFF CACHE BOOL "" FORCE)
-    FetchContent_Declare(
-        SDL2_image
-        GIT_REPOSITORY https://github.com/libsdl-org/SDL_image.git
-        GIT_TAG        release-2.8.8
+        GIT_TAG        release-3.4.18
         GIT_SHALLOW    TRUE
-        GIT_SUBMODULES ""
     )
-    FetchContent_MakeAvailable(SDL2_image)
-
-    # Our sources include SDL_image.h as <SDL2/SDL_image.h> on Linux and as
-    # <SDL2_image/SDL_image.h> on Mac, the way installed packages provide it.
-    # SDL2_image built from source only has it directly in its include
-    # directory, so copies are put in those subdirectories as well.
-
-    set(SDL2IMAGE_PREFIXED_INCLUDE_DIR ${CMAKE_BINARY_DIR}/sdl2_image-include)
-    foreach(prefix SDL2 SDL2_image)
-        configure_file(${sdl2_image_SOURCE_DIR}/include/SDL_image.h
-                       ${SDL2IMAGE_PREFIXED_INCLUDE_DIR}/${prefix}/SDL_image.h COPYONLY)
-    endforeach()
-    target_include_directories(SDL2_image INTERFACE $<BUILD_INTERFACE:${SDL2IMAGE_PREFIXED_INCLUDE_DIR}>)
+    FetchContent_MakeAvailable(SDL3)
 endif()
 
-# The CMakeLists below link SDL through these variables. They are filled in from
-# the packages found above, unless already given on the command line.
-#
-# SDL.h turns main() into SDL_main() on Windows, which SDL2main then calls.
+# The CMakeLists below link SDL3 through this variable. It is filled in from the
+# package found above, unless already given on the command line.
 
-if(NOT SDL2_LIBS AND TARGET SDL2::SDL2)
-    set(SDL2_LIBS SDL2::SDL2)
-    if(WIN32 AND TARGET SDL2::SDL2main)
-        set(SDL2_LIBS SDL2::SDL2main SDL2::SDL2)
-    endif()
+if(NOT SDL3_LIBS AND TARGET SDL3::SDL3)
+    set(SDL3_LIBS SDL3::SDL3)
 endif()
 
-if(NOT SDL2IMAGE_LIBS AND TARGET SDL2_image::SDL2_image)
-    set(SDL2IMAGE_LIBS SDL2_image::SDL2_image)
-endif()
-
-# ---------- FreeType ----------
-find_package(Freetype QUIET)
-
-if(NOT Freetype_FOUND AND WONDERGUI_FETCH_DEPS)
-    include(FetchContent)
-    FetchContent_Declare(
-        freetype
-        GIT_REPOSITORY https://github.com/freetype/freetype.git
-        GIT_TAG        VER-2-14-3
-    )
-    FetchContent_MakeAvailable(freetype)
-    add_library(Freetype::Freetype ALIAS freetype)
-endif()
-
-
-
-
-
-
-
-#    find_library(SDL2_LIBS SDL2)
-#    find_library(SDL2IMAGE_LIBS SDL2_image)
-#    find_library(OPENGL_LIBS OpenGL)
-#    find_library(APPKIT_LIB AppKit)
-#    find_library(METAL_LIB Metal)
-
+# ---------- stb_image ----------
+set(STB_INCDIR ${PROJECT_SOURCE_DIR}/thirdparty/stb)
 
 
 #------------------------------------------------------------------------------
@@ -226,11 +160,11 @@ add_subdirectory(wondergui)
 
 add_subdirectory(wondergui/extensions/debugger)
 
-if( WAPPLIB STREQUAL "wappsdl2metal")
+if( WAPPLIB STREQUAL "wappsdl2metal" OR WAPPLIB STREQUAL "wappsdl3metal" )
 	add_subdirectory(wax/extensions/metalgfx)
-elseif( WAPPLIB STREQUAL "wappwin32dx12" )
+elseif( WAPPLIB STREQUAL "wappwin32dx12" OR WAPPLIB STREQUAL "wappsdl3dx12" )
 	add_subdirectory(wax/extensions/dx12gfx)
-elseif( WAPPLIB STREQUAL "wappsdl2gl" )
+elseif( WAPPLIB STREQUAL "wappsdl2gl" OR WAPPLIB STREQUAL "wappsdl3gl" )
 	add_subdirectory(wax/extensions/openglgfx)
 endif()
 
@@ -249,6 +183,8 @@ if( WAPPLIB STREQUAL "wappwin32sw" )
 	add_subdirectory(wonderapp/source/win32/sw)
 elseif( WAPPLIB STREQUAL "wappwin32dx12" )
 	add_subdirectory(wonderapp/source/win32/dx12)
+elseif( WAPPLIB MATCHES "^wappsdl3" )
+	add_subdirectory(wonderapp/source/sdl3)
 else()
 	add_subdirectory(wonderapp/source/sdl2)
 endif()

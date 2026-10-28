@@ -17,16 +17,6 @@ add_executable(example01 MACOSX_BUNDLE
 	${RESOURCES}
 )
 
-target_include_directories(example01 PRIVATE
-
-	${SDL2_INCDIR}
-)
-
-
-target_link_directories(example01 PRIVATE 
-	${SDL2_LIBDIR}
-)
-
 target_include_directories(example01 PRIVATE 
 	${WONDERGUI_INCDIRS}
 	${WAXSOFTGFX_INCDIRS}
@@ -38,7 +28,7 @@ target_working_directory(example01 ${WG_ROOT} )
 target_link_libraries(example01 PUBLIC
 	waxsoftgfx
 	wondergui 
-	${SDL2_LIBS}
+	${SDL3_LIBS}
 )
 
 SET_SOURCE_FILES_PROPERTIES(${RESOURCES} PROPERTIES MACOSX_PACKAGE_LOCATION Resources)
@@ -59,7 +49,7 @@ set_target_properties(example01 PROPERTIES
     XCODE_ATTRIBUTE_INFOPLIST_KEY_NSMainStoryboardFile "Main"
     XCODE_ATTRIBUTE_INFOPLIST_KEY_NSHumanReadableCopyright "(c) 2024 Nordic UI Technologies AB"
     
-    XCODE_EMBED_FRAMEWORKS          ${WG_ROOT}/SDL2.framework
+    XCODE_EMBED_FRAMEWORKS          ${WG_ROOT}/SDL3.framework
     XCODE_EMBED_FRAMEWORKS_CODE_SIGN_ON_COPY FALSE
     XCODE_EMBED_FRAMEWORKS_REMOVE_HEADERS_ON_COPY TRUE
  

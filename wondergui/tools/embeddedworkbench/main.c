@@ -1,10 +1,7 @@
 
 
-#ifdef WIN32
-#	include <SDL.h>
-#else
-#	include <SDL2/SDL.h>
-#endif
+#include <SDL3/SDL.h>
+#include <SDL3/SDL_main.h>
 
 #include <wax_c_types.h>
 #include <wax_c_core.h>
@@ -34,8 +31,8 @@ int main ( int argc, char** argv )
 
 	SDL_Init(SDL_INIT_VIDEO);
 
-	int posX = 100, posY = 100, width = 240, height = 240;
-	SDL_Window * pWin = SDL_CreateWindow("Hello WonderGUI", posX, posY, width, height, 0);
+	int width = 240, height = 240;
+	SDL_Window * pWin = SDL_CreateWindow("Hello WonderGUI", width, height, 0);
 
 	SDL_Surface * pWinSurf = SDL_GetWindowSurface( pWin );
 
@@ -49,7 +46,7 @@ int main ( int argc, char** argv )
 
 	wax_pixelFormat format = WAX_PIXFMT_UNDEFINED;
 
-	if( pWinSurf->format->BitsPerPixel == 32 )
+	if( SDL_BYTESPERPIXEL(pWinSurf->format) == 4 )
 		format = WAX_PIXFMT_ARGB_8;					// 24-bit window surfaces are not supported.
 
 	wax_sizeI canvasSize;
@@ -182,8 +179,8 @@ int main ( int argc, char** argv )
 
 	// Exit SDL
 
-	SDL_FreeSurface(pLogoSDLSurf);
-	SDL_FreeSurface(pSymbolSDLSurf);
+	SDL_DestroySurface(pLogoSDLSurf);
+	SDL_DestroySurface(pSymbolSDLSurf);
 
 	SDL_Quit();
 
@@ -203,19 +200,19 @@ void translateEvents()
 
 		switch( e.type )
 		{
-			case SDL_QUIT:
+			case SDL_EVENT_QUIT:
 				bQuit = 1;
 				break;
 
-			case SDL_MOUSEMOTION:
+			case SDL_EVENT_MOUSE_MOTION:
 //				Base::inputHandler()->setPointer( pRoot, Coord(MU::fromPX(e.motion.x), MU::fromPX(e.motion.y)));
 				break;
 
-			case SDL_MOUSEBUTTONDOWN:
+			case SDL_EVENT_MOUSE_BUTTON_DOWN:
 //				Base::inputHandler()->setButton( translateMouseButton(e.button.button), true );
 				break;
 
-			case SDL_MOUSEBUTTONUP:
+			case SDL_EVENT_MOUSE_BUTTON_UP:
 //				Base::inputHandler()->setButton( translateMouseButton(e.button.button), false );
 				break;
 

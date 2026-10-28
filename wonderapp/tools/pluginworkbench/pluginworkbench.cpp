@@ -8,13 +8,7 @@
 #include <string>
 #include <fstream>
 
-#ifdef WIN32
-#	include <SDL.h>
-#elif __APPLE__
-#	include <SDL2/SDL.h>
-#else
-#	include <SDL2/SDL.h>
-#endif
+#include <SDL3/SDL_keycode.h>		// Just for the key codes, which SDL2 and SDL3 share.
 
 
 using namespace wg;
@@ -118,14 +112,14 @@ bool MyApp::init(wapp::API* pAPI)
 	
 	pMapKeyFunc(SDLK_KP_ENTER, WG_KEY_RETURN);
 
-	pMapCommandFunc(SDLK_x, WG_MODKEYS_STD_CTRL, WG_EDITCMD_CUT);
-	pMapCommandFunc(SDLK_c, WG_MODKEYS_STD_CTRL, WG_EDITCMD_COPY);
-	pMapCommandFunc(SDLK_v, WG_MODKEYS_STD_CTRL, WG_EDITCMD_PASTE);
+	pMapCommandFunc(SDLK_X, WG_MODKEYS_STD_CTRL, WG_EDITCMD_CUT);
+	pMapCommandFunc(SDLK_C, WG_MODKEYS_STD_CTRL, WG_EDITCMD_COPY);
+	pMapCommandFunc(SDLK_V, WG_MODKEYS_STD_CTRL, WG_EDITCMD_PASTE);
 
-	pMapCommandFunc(SDLK_a, WG_MODKEYS_STD_CTRL, WG_EDITCMD_SELECT_ALL);
+	pMapCommandFunc(SDLK_A, WG_MODKEYS_STD_CTRL, WG_EDITCMD_SELECT_ALL);
 
-	pMapCommandFunc(SDLK_z, WG_MODKEYS_STD_CTRL, WG_EDITCMD_UNDO);
-	pMapCommandFunc(SDLK_z, WG_MODKEYS_STD_CTRL_SHIFT, WG_EDITCMD_REDO);
+	pMapCommandFunc(SDLK_Z, WG_MODKEYS_STD_CTRL, WG_EDITCMD_UNDO);
+	pMapCommandFunc(SDLK_Z, WG_MODKEYS_STD_CTRL_SHIFT, WG_EDITCMD_REDO);
 	
 	pMapCommandFunc(SDLK_ESCAPE, WG_MODKEYS_NONE, WG_EDITCMD_ESCAPE);
 	

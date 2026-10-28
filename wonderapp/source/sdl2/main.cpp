@@ -24,20 +24,18 @@
 #include <wg_debugger.h>
 #include <wax_freetypefont.h>
 #include <widgetkits/wg_oldskool.h>
+#include <wappimageloader.h>
 
 #ifdef WIN32
 #	include <SDL.h>
-#	include <SDL_image.h>
 #	include <Windows.h>
 #	include <libloaderapi.h>
 #elif __APPLE__
 #	include <SDL2/SDL.h>
-#	include <SDL2_image/SDL_image.h>
 #	include <dlfcn.h>
 #	include <unistd.h>
 #else
 #	include <SDL2/SDL.h>
-#	include <SDL2/SDL_image.h>
 #	include <dlfcn.h>
 #endif
 
@@ -102,7 +100,6 @@ public:
 	wapp::WindowAPI::Result _createWindow( wapp::Window * pAPI, wg::Placement origin, wg::Coord pos, wg::Size size, const std::string& title, bool resizable, bool open) override;
 
 protected:
-	void			convertSDLFormat(PixelDescription* pWGFormat, const SDL_PixelFormat* pSDLFormat);
 
 };
 
@@ -488,8 +485,6 @@ bool init_system()
 	
 	// make sure SDL cleans up before exit
 	atexit(SDL_Quit);
- 
-    IMG_Init(IMG_INIT_JPG | IMG_INIT_PNG);
 
 	return true;
 }
@@ -505,8 +500,6 @@ void exit_system()
 		if( g_mousePointers[i] != NULL )
 			SDL_FreeCursor(g_mousePointers[i]);
 	}
-	
-	IMG_Quit();
 }
 
 //____ update_window_rects() __________________________________________________
@@ -737,24 +730,6 @@ MouseButton translateSDLMouseButton(Uint8 button)
 	}
 }
 
-//____ convertSDLFormat() ______________________________________________________
-
-void MyAppAPI::convertSDLFormat(PixelDescription* pWGFormat, const SDL_PixelFormat* pSDLFormat)
-{
-	if( (pSDLFormat->palette != nullptr) )
-		pWGFormat->type = PixelType::Index;
-	else
-		pWGFormat->type = PixelType::Chunky;
-
-	pWGFormat->bits = pSDLFormat->BitsPerPixel;
-	pWGFormat->bigEndian = (WAX_IS_BIG_ENDIAN == 1);		// SDL masks are for pixels read in native byte order.
-	
-	pWGFormat->R_mask = pSDLFormat->Rmask;
-	pWGFormat->G_mask = pSDLFormat->Gmask;
-	pWGFormat->B_mask = pSDLFormat->Bmask;
-	pWGFormat->A_mask = pSDLFormat->Amask;
-}
-
 //____ programArguments() _________________________________________________
 
 std::vector<std::string> MyAppAPI::programArguments() const
@@ -800,94 +775,7 @@ Blob_p MyAppAPI::loadBlob(const std::string& path, bool bNullTerminate)
 
 Surface_p MyAppAPI::loadSurface(const std::string& path, SurfaceFactory* pFactory, const Surface::Blueprint& _bp)
 {
-	if (!pFactory)
-		pFactory = Base::defaultSurfaceFactory();
-
-	if (path.rfind(".surf") == path.size() - 5 || path.rfind(".srf") == path.size() - 4)
-	{
-		std::ifstream input(path, std::ios::binary);
-		if (!input.good())
-			return nullptr;
-
-		auto pReader = SurfaceReader::create({ .factory = pFactory });
-		Surface_p pSurface = pReader->readSurfaceFromStream(input, _bp);
-		input.close();
-		return pSurface;
-	}
-	else
-	{
-		Surface::Blueprint bp = _bp;
-
-		PixelDescription format;
-
-		auto pSDLSurf = IMG_Load(path.c_str());
-		if (pSDLSurf == NULL)
-			return nullptr;
-		convertSDLFormat(&format, pSDLSurf->format);
-
-		PixelFormat px;
-		Color8* pPalette = nullptr;
-
-		Color8 palette[256];
-
-		if (format.type == PixelType::Index)
-		{
-			px = PixelFormat::Index_8;
-
-			for (int i = 0; i < 256; i++)
-			{
-				palette[i].r = pSDLSurf->format->palette->colors[i].r;
-				palette[i].g = pSDLSurf->format->palette->colors[i].g;
-				palette[i].b = pSDLSurf->format->palette->colors[i].b;
-				palette[i].a = pSDLSurf->format->palette->colors[i].a;
-			}
-			pPalette = palette;
-
-			// Special copying of indexed pixels until copyPixels() supports indexed source.
-
-			bp.format = px;
-			bp.palette = pPalette;
-			bp.size = { pSDLSurf->w, pSDLSurf->h };
-
-			auto pSurface = pFactory->createSurface(bp);
-
-			auto pixBuf = pSurface->allocPixelBuffer();
-
-			auto pDest = pixBuf.pixels;
-			uint8_t * pSrc = (uint8_t*) pSDLSurf->pixels;
-
-			for(int y = 0; y < pSDLSurf->h; y++)
-			{
-				memcpy(pDest, pSrc, pSDLSurf->w);
-				pDest += pixBuf.pitch;
-				pSrc += pSDLSurf->pitch;
-			}
-
-			pSurface->pullPixels(pixBuf);
-			pSurface->freePixelBuffer(pixBuf);
-
-			SDL_FreeSurface(pSDLSurf);
-			return pSurface;
-		}
-
-		else if (format.A_mask > 0)
-			px = PixelFormat::ARGB_8;
-		else
-			px = PixelFormat::XRGB_8;
-		
-		if (!pFactory)
-			pFactory = Base::defaultSurfaceFactory();
-
-		bp.format = px;
-		bp.palette = pPalette;
-		bp.size = { pSDLSurf->w, pSDLSurf->h };
-
-		auto pSurface = pFactory->createSurface(bp, (unsigned char*)pSDLSurf->pixels, format, pSDLSurf->pitch);
-		SDL_FreeSurface(pSDLSurf);
-		return pSurface;
-	}
-	
-	
+	return wappLoadSurface(path, pFactory, _bp);
 }
 
 //____ initDefaultWidgetKit() ____________________________________________________

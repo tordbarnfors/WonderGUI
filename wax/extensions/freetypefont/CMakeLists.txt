@@ -1,3 +1,32 @@
+#------------------------------------------------------------------------------
+# FreeType
+#
+# Only looked for here, so nothing needs it unless this extension is built.
+# Code that compiles this extension's sources into its own target (such as
+# streamgendll and the test plugins) links Freetype::Freetype as well, so the
+# target is made visible to the whole build.
+#------------------------------------------------------------------------------
+
+find_package(Freetype QUIET)
+
+if(Freetype_FOUND)
+	set_target_properties(Freetype::Freetype PROPERTIES IMPORTED_GLOBAL TRUE)
+elseif(WONDERGUI_FETCH_DEPS)
+	include(FetchContent)
+	FetchContent_Declare(
+		freetype
+		GIT_REPOSITORY https://github.com/freetype/freetype.git
+		GIT_TAG        VER-2-14-3
+	)
+	FetchContent_MakeAvailable(freetype)
+	add_library(Freetype::Freetype ALIAS freetype)
+endif()
+
+if(NOT TARGET Freetype::Freetype)
+	message(FATAL_ERROR "FreeType not found. Install it, or enable WONDERGUI_FETCH_DEPS to download it.")
+endif()
+
+
 set(SOURCES
     wax_freetypefont.h
     wax_freetypefont.cpp

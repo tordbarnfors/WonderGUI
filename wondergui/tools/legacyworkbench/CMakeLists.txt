@@ -15,8 +15,7 @@ generate_export_header(wax BASE_NAME wg)
 
 
 target_include_directories(legacyworkbench PRIVATE
-	${SDL2_INCDIR}
-	${SDL2IMAGE_INCDIR}
+	${STB_INCDIR}
 	${WGLEGACYGUI_INCDIRS}
 	${GFXSTREAM_INCDIRS}
 	${WAXSOFTGFX_INCDIRS}
@@ -26,8 +25,6 @@ target_include_directories(legacyworkbench PRIVATE
 
 target_link_directories(legacyworkbench PRIVATE 
 	${FREETYPE2_LIBDIR}
-	${SDL2_LIBDIR}
-	${SDL2IMAGE_LIBDIR}
 	${GLEW_LIBDIR}
 )
 
@@ -40,8 +37,7 @@ target_link_libraries(legacyworkbench PRIVATE
 	waxgfxstream
 	wglegacygui
 	waxfreetypefont
-	${SDL2_LIBS}
-	${SDL2IMAGE_LIBS}
+	${SDL3_LIBS}
 	${OPENGL_LIBS}
 	${FREETYPE2_LIB}
 )

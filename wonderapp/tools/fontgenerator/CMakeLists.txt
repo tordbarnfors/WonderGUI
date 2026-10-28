@@ -1,7 +1,3 @@
-### This tool uses SDL2_image for generating PNG-files. Can only be built if
-### SDL2_image development libs and headers are available and linked against
-###a SDL2-based WonderApp framework.
-
 set(CMAKE_CXX_STANDARD 20)
 
 
@@ -19,8 +15,6 @@ add_executable(fontgenerator
 
 target_include_directories(fontgenerator PRIVATE 
 	${WAPP_INCDIRS}
-	${SDL2_INCDIR}
-	${SDL2IMAGE_INCDIR}
 	${FREETYPE2_INCDIR}
 
 )

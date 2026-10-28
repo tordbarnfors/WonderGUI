@@ -1,4 +1,7 @@
 #include "sdl_wglib.h"
+
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb_image.h>
 //#include <wg_surface_sdl.h>
 #include <wax_softsurface.h>
 #include <wax_softsurfacefactory.h>
@@ -61,27 +64,27 @@ namespace sdl_wglib
 		switch (event.type)
 		{
 			// check for keypresses
-			case SDL_KEYDOWN:
+			case SDL_EVENT_KEY_DOWN:
 			{
-				g_pHandler->QueueEvent( new WgEvent::KeyPress( event.key.keysym.sym ) );
-				if( event.key.keysym.sym == SDLK_RETURN )
+				g_pHandler->QueueEvent( new WgEvent::KeyPress( event.key.key ) );
+				if( event.key.key == SDLK_RETURN )
                     g_pHandler->QueueEvent( new WgEvent::Character( 13 ) );
 				break;
 			}
 
-			case SDL_KEYUP:
+			case SDL_EVENT_KEY_UP:
 			{
-				g_pHandler->QueueEvent( new WgEvent::KeyRelease( event.key.keysym.sym ) );
+				g_pHandler->QueueEvent( new WgEvent::KeyRelease( event.key.key ) );
 				break;
 			}
 
-			case	SDL_MOUSEMOTION:
+			case	SDL_EVENT_MOUSE_MOTION:
 			{
 				g_pHandler->QueueEvent( new WgEvent::MouseMove( WgCoord( event.motion.x, event.motion.y ) ) );
 				break;
 			}
 
-			case	SDL_MOUSEBUTTONDOWN:
+			case	SDL_EVENT_MOUSE_BUTTON_DOWN:
 
 				if (event.button.button == 2)
 					g_bStopScroll = !g_bStopScroll;
@@ -100,15 +103,15 @@ namespace sdl_wglib
 				}
 				break;
 
-			case	SDL_MOUSEBUTTONUP:
+			case	SDL_EVENT_MOUSE_BUTTON_UP:
 				if( event.button.button != 4 && event.button.button != 5 )
 					g_pHandler->QueueEvent( new WgEvent::MouseButtonRelease( event.button.button ) );	
 				break;
-			case SDL_TEXTINPUT:
+			case SDL_EVENT_TEXT_INPUT:
 				g_pHandler->QueueEvent(new WgEvent::Character((short)event.text.text[0]));
 				break;
 
-			case SDL_MOUSEWHEEL:
+			case SDL_EVENT_MOUSE_WHEEL:
 			{
 				g_pHandler->QueueEvent(new WgEvent::MouseWheelRoll(1, event.wheel.y));
 				break;
@@ -131,11 +134,9 @@ namespace sdl_wglib
 		WgSize size = pSurface->pixelSize();
 		const WgPixelFormat * pFmt = pSurface->pixelDescription();
 
-		SDL_Surface * pOutput = SDL_CreateRGBSurface(0, size.w, size.h, pFmt->bits, (unsigned int) pFmt->R_mask, (unsigned int) pFmt->G_mask, (unsigned int) pFmt->B_mask, (unsigned int) pFmt->A_mask);
+		SDL_Surface * pOutput = SDL_CreateSurface(size.w, size.h, SDL_GetPixelFormatForMasks(pFmt->bits, (unsigned int) pFmt->R_mask, (unsigned int) pFmt->G_mask, (unsigned int) pFmt->B_mask, (unsigned int) pFmt->A_mask));
 
-
-		int err = SDL_LockSurface(pOutput);
-		if (err != 0)
+		if (!SDL_LockSurface(pOutput))
 			return false;
 
         wg::PixelBuffer pixbuf = pSurface->allocPixelBuffer();
@@ -153,8 +154,8 @@ namespace sdl_wglib
 		SDL_UnlockSurface(pOutput);
 
 
-		int err2 = IMG_SavePNG(pOutput, path);
-		SDL_FreeSurface(pOutput);
+		SDL_SavePNG(pOutput, path);
+		SDL_DestroySurface(pOutput);
 
 		return true;
 	}
@@ -164,10 +165,10 @@ namespace sdl_wglib
 
     wg::Surface_p LoadSurface( const char * path, wg::SurfaceFactory * factory, const wg::Surface::Blueprint& bp )
 	{
-		SDL_Surface* bmp = IMG_Load(path);
+		SDL_Surface* bmp = loadImage(path);
 		if (!bmp)
 		{
-			printf("Unable to load bitmap: %s\n", IMG_GetError());
+			printf("Unable to load bitmap: %s\n", path);
 			return 0;
 		}
 
@@ -175,7 +176,7 @@ namespace sdl_wglib
 
 		WgPixelType type;
 		
-		if( bmp->format->Amask == 0 )
+		if( SDL_GetPixelFormatDetails(bmp->format)->Amask == 0 )
             type = WgPixelType::XRGB_8;
 		else
             type = WgPixelType::ARGB_8;
@@ -198,7 +199,7 @@ namespace sdl_wglib
 			return 0;
 		}
 
-		SDL_FreeSurface( bmp );
+		SDL_DestroySurface( bmp );
 		return pSurf;
 	}
 
@@ -584,17 +585,39 @@ namespace sdl_wglib
 		return pMem;
 	}
 	
+	//____ loadImage() _____________________________________________________________
+	//
+	// Loads an image in any format stb_image supports into an SDL surface with
+	// R, G, B, A bytes.
+	
+	SDL_Surface * loadImage( const char * pPath )
+	{
+		int width, height, channels;
+		stbi_uc * pPixels = stbi_load( pPath, &width, &height, &channels, 4 );
+		if( !pPixels )
+			return nullptr;
+	
+		SDL_Surface * pSurface = SDL_CreateSurface( width, height, SDL_PIXELFORMAT_RGBA32 );
+		for( int y = 0 ; y < height ; y++ )
+			memcpy( ((uint8_t*) pSurface->pixels) + y * pSurface->pitch, pPixels + y * width * 4, width * 4 );
+	
+		stbi_image_free( pPixels );
+		return pSurface;
+	}
+	
 	//____ ConvertPixelFormat() ______________________________________________________
 
-	void ConvertPixelFormat( WgPixelFormat * pWGFormat, const SDL_PixelFormat * pSDLFormat )
+	void ConvertPixelFormat( WgPixelFormat * pWGFormat, SDL_PixelFormat pSDLFormat )
 	{
-		pWGFormat->bits = pSDLFormat->BitsPerPixel;
+		const SDL_PixelFormatDetails * pDetails = SDL_GetPixelFormatDetails(pSDLFormat);
+
+		pWGFormat->bits = pDetails->bits_per_pixel;
 		pWGFormat->type = wg::PixelType::Chunky;
 
-		pWGFormat->R_mask = pSDLFormat->Rmask;
-		pWGFormat->G_mask = pSDLFormat->Gmask;
-		pWGFormat->B_mask = pSDLFormat->Bmask;
-		pWGFormat->A_mask = pSDLFormat->Amask;
+		pWGFormat->R_mask = pDetails->Rmask;
+		pWGFormat->G_mask = pDetails->Gmask;
+		pWGFormat->B_mask = pDetails->Bmask;
+		pWGFormat->A_mask = pDetails->Amask;
 	}
 	
 	

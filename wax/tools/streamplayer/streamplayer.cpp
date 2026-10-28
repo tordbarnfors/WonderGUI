@@ -2,13 +2,8 @@
 #include <cstdlib>
 #include <stdio.h>
 
-#ifdef WIN32
-#	include <SDL.h>
-#elif __APPLE__
-#	include <SDL2/SDL.h>
-#else
-#	include <SDL2/SDL.h>
-#endif
+#include <SDL3/SDL.h>
+#include <SDL3/SDL_main.h>
 
 #include <wax.h>
 #include <wax_softbackend.h>
@@ -82,8 +77,7 @@ int main( int argc, char** argv )
 
 	SDL_Init(SDL_INIT_VIDEO);
 
-	SDL_Window * pWindow = SDL_CreateWindow("Wax Stream Player", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-											c_canvasWidth, c_canvasHeight, 0);
+	SDL_Window * pWindow = SDL_CreateWindow("Wax Stream Player", c_canvasWidth, c_canvasHeight, 0);
 	if( !pWindow )
 	{
 		printf("ERROR: Could not create window: %s\n", SDL_GetError());
@@ -106,7 +100,7 @@ int main( int argc, char** argv )
 				SDL_Event e;
 				while( SDL_PollEvent(&e) )
 				{
-					if( e.type == SDL_QUIT || (e.type == SDL_KEYDOWN && e.key.keysym.sym == SDLK_ESCAPE) )
+					if( e.type == SDL_EVENT_QUIT || (e.type == SDL_EVENT_KEY_DOWN && e.key.key == SDLK_ESCAPE) )
 						bQuit = true;
 				}
 
@@ -145,12 +139,12 @@ static void presentCanvas( Surface * pCanvas, SDL_Window * pWindow )
 	// ARGB_8 is stored as B, G, R, A in memory on little endian machines,
 	// which is what SDL calls ARGB8888.
 
-	SDL_Surface * pSrc = SDL_CreateRGBSurfaceWithFormatFrom( pixbuf.pixels, pixbuf.rect.w, pixbuf.rect.h, 32,
-															  pixbuf.pitch, SDL_PIXELFORMAT_ARGB8888 );
+	SDL_Surface * pSrc = SDL_CreateSurfaceFrom( pixbuf.rect.w, pixbuf.rect.h, SDL_PIXELFORMAT_ARGB8888,
+												pixbuf.pixels, pixbuf.pitch );
 	if( pSrc )
 	{
 		SDL_BlitSurface( pSrc, nullptr, pWinSurf, nullptr );
-		SDL_FreeSurface( pSrc );
+		SDL_DestroySurface( pSrc );
 		SDL_UpdateWindowSurface(pWindow);
 	}
 

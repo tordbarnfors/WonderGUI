@@ -4,7 +4,6 @@ set(CMAKE_CXX_STANDARD 20)
 set( SOURCES
 
 	main.cpp
-	stb_image.h
 )
 
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${SOURCES})
@@ -24,5 +23,6 @@ target_link_libraries(image2surf PRIVATE
 target_include_directories(image2surf PRIVATE
 	${WAX_INCDIRS}
 	${WAXSOFTGFX_INCDIRS}
+	${STB_INCDIR}
 )
 

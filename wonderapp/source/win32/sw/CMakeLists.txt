@@ -10,12 +10,13 @@ set(SOURCES
     ../../wappwindowapi.h
     ../../wappwindow.h
     ../../wappwindow.cpp
+    ../../wappimageloader.h
+    ../../wappimageloader.cpp
 
     ../win32gfxbackend.h
     ../main.cpp
     ../win32api.h
     ../win32api.cpp
-    ../stb_image.h
 
 	win32window.h
     win32window.cpp
@@ -29,6 +30,7 @@ set(INCDIRS
 	${WGDEBUGGER_INCDIRS}
 	${PROJECT_SOURCE_DIR}/wonderapp/source
 	${PROJECT_SOURCE_DIR}/wonderapp/source/win32
+	${STB_INCDIR}
 	${PROJECT_SOURCE_DIR}
 )
 
