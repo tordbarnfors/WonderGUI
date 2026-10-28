@@ -68,7 +68,6 @@ void cursorInViewTest( WgRootPanel * pRoot );
 void flexHookGrowthTest( WgRootPanel * pRoot );
 void packPanelPaddingTest( WgRootPanel * pRoot );
 void packPanelTextWrapTest( WgRootPanel * pRoot );
-bool pianoKeyboardTest(WgRootPanel * pRoot);
 bool rangeSliderTest(WgRootPanel* pRoot);
 bool canvasCapsuleTest(WgRootPanel* pRoot);
 bool tooltipLayerTest(WgRootPanel* pRoot);
@@ -341,7 +340,6 @@ int main ( int argc, char** argv )
 
 
 //    cursorInViewTest( pRoot );
-//	pianoKeyboardTest(pRoot);
 //	rangeSliderTest(pRoot);
 //    canvasCapsuleTest(pRoot);
 //    tooltipLayerTest(pRoot);
@@ -1168,61 +1166,6 @@ void shadowLayerTest( WgRootPanel * pRoot )
 
 }
 
-
-//____ pianoKeyboardTest() ____________________________________________________
-
-bool pianoKeyboardTest(WgRootPanel * pRoot)
-{
-	auto pBaseLayer = new WgFlexPanel();
-	pBaseLayer->SetSkin(wg::ColorSkin::create(wg::Color::PapayaWhip));
-
-	auto pSkin = wg::ColorSkin::create( { .color = wg::Color::Black, .padding = { 60,10,10,10 } });
-	
-	{
-
-		wg::Surface_p pOddWhiteKeys		= sdl_wglib::LoadSurface("resources/whiteoddkeys.png", g_pSurfaceFactory);
-		wg::Surface_p pEvenWhiteKeys	= sdl_wglib::LoadSurface("resources/whiteevenkeys.png", g_pSurfaceFactory);
-		wg::Surface_p pBlackKeys		= sdl_wglib::LoadSurface("resources/blackkeys.png", g_pSurfaceFactory);
-
-		auto pSimplePiano = new WgPianoKeyboard();
-
-		pSimplePiano->SetSkin(pSkin);
-		pSimplePiano->setLayout(7, std::bitset<7>("1101110"));
-		pSimplePiano->setSurfaces(pOddWhiteKeys, pEvenWhiteKeys, pBlackKeys, { wg::State::Default, wg::State::Hovered, wg::State::Pressed });
-
-		pBaseLayer->AddChild(pSimplePiano, { 20,20 });
-	}
-
-	{
-		wg::Surface_p pOddWhiteKeys = sdl_wglib::LoadSurface("resources/NisOddWhite.png", g_pSurfaceFactory);
-		wg::Surface_p pEvenWhiteKeys = sdl_wglib::LoadSurface("resources/NisEvenWhite.png", g_pSurfaceFactory);
-		wg::Surface_p pBlackKeys = sdl_wglib::LoadSurface("resources/NisBlack.png", g_pSurfaceFactory);
-
-		auto pNisPiano = new WgPianoKeyboard();
-		pNisPiano->SetSkin(pSkin);
-		pNisPiano->setLayout(26, std::bitset<7>("1110110"));
-		pNisPiano->setSurfaces(pOddWhiteKeys, pEvenWhiteKeys, pBlackKeys, { wg::State::Default, wg::State::Pressed });
-
-		pNisPiano->setGeoTweak(3, {16,0,0,0});
-		pNisPiano->setGeoTweak(5, {16,0,0,0});
-		pNisPiano->setGeoTweak(10, {16,0,0,0});
-		pNisPiano->setGeoTweak(17, {16,0,0,0});
-
-		pNisPiano->setGeoTweak(25, {-16,0,0,0});
-		pNisPiano->setGeoTweak(29, {16,0,0,0});
-		pNisPiano->setGeoTweak(32, {-16,0,0,0});
-		pNisPiano->setGeoTweak(37,{-16,0,0,0});
-
-		pBaseLayer->AddChild(pNisPiano, { 20,220 });
-
-//		pNisPiano->setFlipKeyOnPress(true);
-	}
-
-	pRoot->SetChild(pBaseLayer);
-	return true;
-}
-
-
 //____ rangeSliderTest() ____________________________________________________
 
 bool rangeSliderTest(WgRootPanel* pRoot)
@@ -1582,21 +1525,8 @@ WgRootPanel * setupGUI(wg::GfxDevice * pDevice)
 	auto pBigImg = sdl_wglib::LoadSurface("resources/frog.jpg", g_pSurfaceFactory);
 	auto pBigBlock = wg::BlockSkin::create(pBigImg);
 
-	auto pPlateImg = sdl_wglib::LoadSurface("resources/grey_pressable_plate.bmp", g_pSurfaceFactory);
 
 	auto pAnimSurf = sdl_wglib::LoadSurface("resources/dummy_anim.png", g_pSurfaceFactory);
-
-	auto pPressablePlateSkin = wg::BlockSkin::create( {
-		.axis = wg::Axis::X,
-		.firstBlock = wg::Rect(0,0,pPlateImg->pointSize().w/3,pPlateImg->pointSize().h),
-		.frame = 3,
-		.states = { wg::State::Default, {},
-				wg::State::Hovered, {},
-				wg::State::Pressed, {}
-				
-		},
-		.surface = pPlateImg
-	} );
 
 //	WgSurface * pInjectWidget = sdl_wglib::LoadSurface("resources/IDR_MOD_INJECT_WIDGET_CHROME.2x.png", *g_pSurfaceFactory);
 //	pInjectWidget->SetScaleFactor(4096 * 2);
