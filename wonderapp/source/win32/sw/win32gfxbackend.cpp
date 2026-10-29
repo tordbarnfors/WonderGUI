@@ -26,6 +26,7 @@
 
 #include <wax_softkernels_default.h>
 #include <wax_softsurfacefactory.h>
+#include <wax_softedgemapfactory.h>
 #include <wax_softbackend.h>
 
 using namespace wg;
@@ -43,6 +44,11 @@ void initGfxBackend()
 
 	auto pGfxDevice = wg::GfxDeviceGen2::create(pBackend);
 	Base::setDefaultDevice(pGfxDevice);
+
+	auto pEdgemapFactory = wax::SoftEdgemapFactory::create();
+	Base::setDefaultEdgemapFactory(pEdgemapFactory);
+
+	Base::setDefaultWarpmapFactory(pBackend->warpmapFactory());
 }
 
 //____ exitGfxBackend() _______________________________________________________

@@ -163,6 +163,9 @@ void initGfxBackend()
 
 	auto pGfxDevice = wg::GfxDeviceGen2::create(pBackend);
 	Base::setDefaultDevice(pGfxDevice);
+
+	Base::setDefaultEdgemapFactory(pBackend->edgemapFactory());
+	Base::setDefaultWarpmapFactory(pBackend->warpmapFactory());
 }
 
 //____ exitGfxBackend() _______________________________________________________
