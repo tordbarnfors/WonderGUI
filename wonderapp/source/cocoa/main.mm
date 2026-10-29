@@ -364,13 +364,10 @@ void init_wondergui()
 
 	pInput->mapCommand(kVK_Escape, ModKeys::None, EditCmd::Escape);
 
-	// Key repeat as set in System Settings.
+	// Key repeat and double click time as set in System Settings.
 
 	pInput->setKeyRepeat( int(NSEvent.keyRepeatDelay * 1000000), int(NSEvent.keyRepeatInterval * 1000000) );
-
-	//TODO: Set the double click time from NSEvent.doubleClickInterval once
-	// InputHandler::setDoubleClickTresholds() can be linked (it is declared inline
-	// but defined in wg_inputhandler.cpp).
+	pInput->setDoubleClickTresholds( int(NSEvent.doubleClickInterval * 1000000), pInput->doubleClickDistanceTreshold() );
 }
 
 //____ exit_wondergui() _______________________________________________________

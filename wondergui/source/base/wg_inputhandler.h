@@ -99,7 +99,7 @@ namespace wg
 		inline int	keyRepeatDelay() { return m_keyRepeatDelay; }
 		inline int	keyRepeatRate() { return m_keyRepeatRate; }
 
-		inline bool	setDoubleClickTresholds(int millisec, int pixels);
+		bool		setDoubleClickTresholds(int microsec, int pixels);
 		inline int	doubleClickTimeTreshold() { return m_doubleClickTimeTreshold; }
 		inline int	doubleClickDistanceTreshold() { return m_doubleClickDistanceTreshold; }
 
