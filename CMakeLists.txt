@@ -37,6 +37,9 @@ if(NOT WAPPLIB)
 	#set(WAPPLIB wappwin32sw)		# WonderApp framework for Win32, using software rendering.
 	#set(WAPPLIB wappwin32dx12)		# WonderApp framework for Win32, using DirectX 12 rendering.
 
+	#set(WAPPLIB wappcocoasw)		# WonderApp framework for macOS (Cocoa), using software rendering.
+	#set(WAPPLIB wappcocoametal)	# WonderApp framework for macOS (Cocoa), using Metal rendering.
+
 	#set(WAPPLIB wappsdl2sw)		# WonderApp framework based on SDL2, using software rendering.
 									# Works on Windows, Mac and Linux.
 	set(WAPPLIB wappsdl2gl)			# WonderApp framework based on SDL2, using OpenGL rendering.
@@ -54,7 +57,7 @@ if(NOT WAPPLIB)
 									# Works on Mac.
 endif()
 
-set(WAPPLIBS wappwin32sw wappwin32dx12 wappsdl2sw wappsdl2gl wappsdl2metal wappsdl3sw wappsdl3gl wappsdl3dx12 wappsdl3metal)
+set(WAPPLIBS wappwin32sw wappwin32dx12 wappcocoasw wappcocoametal wappsdl2sw wappsdl2gl wappsdl2metal wappsdl3sw wappsdl3gl wappsdl3dx12 wappsdl3metal)
 
 if(NOT WAPPLIB IN_LIST WAPPLIBS)
 	message(FATAL_ERROR "Unknown WonderApp framework: ${WAPPLIB}. Choose one of: ${WAPPLIBS}")
@@ -176,7 +179,7 @@ add_subdirectory(wondergui/extensions/debugger)
 
 set(CMAKE_FOLDER wax/extensions)
 
-if( WAPPLIB STREQUAL "wappsdl2metal" OR WAPPLIB STREQUAL "wappsdl3metal" )
+if( WAPPLIB STREQUAL "wappsdl2metal" OR WAPPLIB STREQUAL "wappsdl3metal" OR WAPPLIB STREQUAL "wappcocoametal" )
 	add_subdirectory(wax/extensions/metalgfx)
 elseif( WAPPLIB STREQUAL "wappwin32dx12" OR WAPPLIB STREQUAL "wappsdl3dx12" )
 	add_subdirectory(wax/extensions/dx12gfx)
@@ -202,6 +205,10 @@ if( WAPPLIB STREQUAL "wappwin32sw" )
 	add_subdirectory(wonderapp/source/win32/sw)
 elseif( WAPPLIB STREQUAL "wappwin32dx12" )
 	add_subdirectory(wonderapp/source/win32/dx12)
+elseif( WAPPLIB STREQUAL "wappcocoasw" )
+	add_subdirectory(wonderapp/source/cocoa/sw)
+elseif( WAPPLIB STREQUAL "wappcocoametal" )
+	add_subdirectory(wonderapp/source/cocoa/metal)
 elseif( WAPPLIB MATCHES "^wappsdl3" )
 	add_subdirectory(wonderapp/source/sdl3)
 else()
