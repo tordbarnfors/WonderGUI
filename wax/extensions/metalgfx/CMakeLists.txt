@@ -37,6 +37,14 @@ add_library( waxmetalgfx STATIC ${SOURCES} )
 # MSVC and Apple's linker don't care.
 target_link_libraries( waxmetalgfx PUBLIC wax )
 
+# The Objective-C++ sources use Foundation (NSString, NSAutoreleasePool) as well
+# as Metal and QuartzCore, so anything linking this library needs those too.
+target_link_libraries( waxmetalgfx PUBLIC
+	"-framework Foundation"
+	"-framework Metal"
+	"-framework QuartzCore"
+)
+
 target_include_directories(waxmetalgfx PRIVATE 
 	${WAX_INCDIRS}
 	${INCDIRS}
