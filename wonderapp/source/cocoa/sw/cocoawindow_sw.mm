@@ -29,13 +29,21 @@
 
 #import <QuartzCore/QuartzCore.h>
 
+#include <atomic>
+#include <vector>
+
 using namespace wg;
 using namespace wax;
 
 //____ CocoaWindowSoftware _____________________________________________________
 //
-// Renders into a pixel buffer of our own, which is handed to the layer of the
-// view as an image after each render.
+// Renders into a canvas in memory of our own, which is copied to a buffer that
+// the layer of the view shows as an image.
+//
+// Core Animation may read an image as long as it holds on to it, so we never
+// write to a buffer that an image still uses. We have up to c_maxBuffers of them
+// and keep track of what has changed in the canvas since each of them was last
+// updated, so we only need to copy that.
 
 class CocoaWindowSoftware : public CocoaWindow
 {
@@ -48,8 +56,37 @@ public:
 
 private:
 
+	// Pixels of a buffer, shared by the buffer and the images made from it. Freed
+	// when the last of them lets go, which for an image is when Core Animation is
+	// done with it.
+
+	struct Pixels
+	{
+		std::atomic<int>	refs;
+		uint8_t *			pData;
+		size_t				size;
+	};
+
+	struct Buffer
+	{
+		Pixels *			pPixels = nullptr;
+		std::vector<RectI>	changed;			// Rectangles of the canvas changed since last update.
+		bool				bAllChanged = true;
+
+		bool				isInUse() const { return pPixels->refs > 1; }
+	};
+
+	static const int	c_maxBuffers = 3;
+	static const int	c_maxChangedRects = 64;		// More than this and we copy everything.
+
 	Surface_p		_createCanvas();
+	void			_releaseBuffers();
+	Pixels *		_createPixels();
+	static void		_releasePixels(Pixels * pPixels);
+
+	void			_addChanged(const RectSPX* pRects, int nRects, bool bAll);
 	void			_present();
+	void			_copyRect(uint8_t* pDest, const RectI& rect);
 
 	CALayer *		m_layer = nil;
 	CGColorSpaceRef	m_colorSpace = nullptr;
@@ -57,6 +94,9 @@ private:
 	Blob_p			m_pCanvasBlob;
 	SizeI			m_canvasSize;
 	int				m_canvasPitch = 0;
+
+	std::vector<Buffer>	m_buffers;
+	bool			m_bPresentPending = false;		// Couldn't present last time, all buffers were in use.
 };
 
 //____ initGfxBackend() _______________________________________________________
@@ -123,7 +163,10 @@ CocoaWindowSoftware::CocoaWindowSoftware(wapp::Window* pUserWindow, wg::Placemen
 
 CocoaWindowSoftware::~CocoaWindowSoftware()
 {
+	m_layer.contents = nil;
 	[m_layer release];
+
+	_releaseBuffers();
 
 	if( m_colorSpace )
 		CGColorSpaceRelease(m_colorSpace);
@@ -138,7 +181,12 @@ void CocoaWindowSoftware::render()
 
 	m_pRootPanel->render();
 
-	if( m_pRootPanel->nbUpdatedRects() > 0 )
+	int nRects = m_pRootPanel->nbUpdatedRects();
+
+	if( nRects > 0 )
+		_addChanged(m_pRootPanel->firstUpdatedRect(), nRects, false);
+
+	if( nRects > 0 || m_bPresentPending )
 		_present();
 }
 
@@ -155,6 +203,7 @@ void CocoaWindowSoftware::onWindowSizeUpdated()
 	_notifyUserWindowOfResize();
 
 	m_pRootPanel->render();
+	_addChanged(nullptr, 0, true);
 	_present();
 }
 
@@ -166,6 +215,10 @@ Surface_p CocoaWindowSoftware::_createCanvas()
 	size.w = std::max(size.w, 1);
 	size.h = std::max(size.h, 1);
 
+	// The buffers have the size of the canvas, so we start over with them.
+
+	_releaseBuffers();
+
 	// XRGB_8 is B, G, R, X in memory, which is what Core Graphics calls 32 bit
 	// little endian with the alpha byte skipped first.
 
@@ -176,25 +229,134 @@ Surface_p CocoaWindowSoftware::_createCanvas()
 	return SoftSurface::create( WGBP(Surface, _.size = size, _.format = PixelFormat::XRGB_8, _.canvas = true, _.scale = _scale() ), m_pCanvasBlob, m_canvasPitch);
 }
 
+//____ _releaseBuffers() ______________________________________________________
+
+void CocoaWindowSoftware::_releaseBuffers()
+{
+	for( auto& buffer : m_buffers )
+		_releasePixels(buffer.pPixels);			// Freed when the images using them are released too.
+
+	m_buffers.clear();
+}
+
+//____ _createPixels() ________________________________________________________
+
+CocoaWindowSoftware::Pixels * CocoaWindowSoftware::_createPixels()
+{
+	size_t size = size_t(m_canvasPitch) * m_canvasSize.h;
+
+	auto pData = (uint8_t*) malloc(size);
+	if( !pData )
+		return nullptr;
+
+	auto pPixels = new Pixels;
+	pPixels->refs = 1;
+	pPixels->pData = pData;
+	pPixels->size = size;
+	return pPixels;
+}
+
+//____ _releasePixels() _______________________________________________________
+
+void CocoaWindowSoftware::_releasePixels(Pixels * pPixels)
+{
+	if( --pPixels->refs == 0 )
+	{
+		free(pPixels->pData);
+		delete pPixels;
+	}
+}
+
+//____ _addChanged() __________________________________________________________
+
+void CocoaWindowSoftware::_addChanged(const RectSPX* pRects, int nRects, bool bAll)
+{
+	for( auto& buffer : m_buffers )
+	{
+		if( buffer.bAllChanged )
+			continue;
+
+		if( bAll || buffer.changed.size() + nRects > c_maxChangedRects )
+		{
+			buffer.bAllChanged = true;
+			buffer.changed.clear();
+			continue;
+		}
+
+		for( int i = 0 ; i < nRects ; i++ )
+		{
+			// To whole pixels, rounding outwards, within the canvas.
+
+			const RectSPX& r = pRects[i];
+
+			int x1 = std::max(0, r.x / 64);
+			int y1 = std::max(0, r.y / 64);
+			int x2 = std::min(m_canvasSize.w, (r.x + r.w + 63) / 64);
+			int y2 = std::min(m_canvasSize.h, (r.y + r.h + 63) / 64);
+
+			if( x2 > x1 && y2 > y1 )
+				buffer.changed.push_back({ x1, y1, x2 - x1, y2 - y1 });
+		}
+	}
+}
+
 //____ _present() _____________________________________________________________
-//
-// Core Animation reads the image asynchronously, so it gets a copy of the canvas
-// that we don't touch again.
-//
-//TODO: Only copy the updated rectangles, into a buffer of our own we alternate
-// with, instead of copying everything.
 
 void CocoaWindowSoftware::_present()
 {
-	size_t bytes = size_t(m_canvasPitch) * m_canvasSize.h;
+	// Pick a buffer that no image uses any more. Create one if needed.
 
-	void * pCopy = malloc(bytes);
-	if( !pCopy )
+	int index = -1;
+
+	for( int i = 0 ; i < (int) m_buffers.size() ; i++ )
+	{
+		if( !m_buffers[i].isInUse() )
+		{
+			index = i;
+			break;
+		}
+	}
+
+	if( index < 0 && (int) m_buffers.size() < c_maxBuffers )
+	{
+		Pixels * pPixels = _createPixels();
+		if( pPixels )
+		{
+			m_buffers.push_back( { pPixels, {}, true } );
+			index = int(m_buffers.size()) - 1;
+		}
+	}
+
+	if( index < 0 )
+	{
+		m_bPresentPending = true;			// Try again at next render.
 		return;
+	}
 
-	memcpy(pCopy, m_pCanvasBlob->data(), bytes);
+	// Copy what has changed since the buffer was last updated.
 
-	CGDataProviderRef pProvider = CGDataProviderCreateWithData(nullptr, pCopy, bytes, [](void*, const void* pData, size_t) { free((void*)pData); });
+	Buffer& buffer = m_buffers[index];
+
+	if( buffer.bAllChanged )
+		_copyRect(buffer.pPixels->pData, { 0, 0, m_canvasSize.w, m_canvasSize.h });
+	else
+	{
+		for( auto& rect : buffer.changed )
+			_copyRect(buffer.pPixels->pData, rect);
+	}
+
+	buffer.changed.clear();
+	buffer.bAllChanged = false;
+
+	m_bPresentPending = false;
+
+	// Make an image of the buffer, without copying it. It keeps the pixels in use
+	// until Core Animation releases it.
+
+	buffer.pPixels->refs++;
+
+	CGDataProviderRef pProvider = CGDataProviderCreateWithData( buffer.pPixels, buffer.pPixels->pData, buffer.pPixels->size,
+																[](void* pInfo, const void*, size_t) { _releasePixels((Pixels*) pInfo); });
 
 	CGImageRef image = CGImageCreate( m_canvasSize.w, m_canvasSize.h, 8, 32, m_canvasPitch, m_colorSpace,
 									  CGBitmapInfo(kCGBitmapByteOrder32Little) | CGBitmapInfo(kCGImageAlphaNoneSkipFirst),
@@ -211,4 +373,28 @@ void CocoaWindowSoftware::_present()
 	[CATransaction commit];
 
 	CGImageRelease(image);
+}
+
+//____ _copyRect() ____________________________________________________________
+//
+// The X byte of XRGB_8 is undefined, so we make it opaque while copying.
+
+void CocoaWindowSoftware::_copyRect(uint8_t* pDest, const RectI& rect)
+{
+	size_t offset = size_t(rect.y) * m_canvasPitch + rect.x * 4;
+
+	const uint8_t * pSrcRow = (const uint8_t*) m_pCanvasBlob->data() + offset;
+	uint8_t * pDestRow = pDest + offset;
+
+	for( int y = 0 ; y < rect.h ; y++ )
+	{
+		auto pSrc = (const uint32_t*) pSrcRow;
+		auto pDst = (uint32_t*) pDestRow;
+
+		for( int x = 0 ; x < rect.w ; x++ )
+			pDst[x] = pSrc[x] | 0xFF000000;
+
+		pSrcRow += m_canvasPitch;
+		pDestRow += m_canvasPitch;
+	}
 }
