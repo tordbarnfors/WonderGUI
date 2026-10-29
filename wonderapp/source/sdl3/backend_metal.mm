@@ -27,6 +27,7 @@
 #include <wax_metalbackend.h>
 
 #import <QuartzCore/CAMetalLayer.h>
+#import <AppKit/NSWindow.h>
 
 
 using namespace wg;
@@ -182,7 +183,13 @@ void SDLWindowMetal::onWindowSizeUpdated()
 	}
 
 	_notifyUserWindowOfResize();
-	_present(true);
+
+	// Presenting with a transaction keeps the content in sync with the window
+	// frame during live resize, but outside of that macOS can hold the frame back
+	// for a long time, leaving the window black if nothing else is rendered.
+
+	NSWindow * pNSWindow = (__bridge NSWindow *)SDL_GetPointerProperty(SDL_GetWindowProperties(m_pSDLWindow), SDL_PROP_WINDOW_COCOA_WINDOW_POINTER, NULL);
+	_present( pNSWindow && [pNSWindow inLiveResize] );
 }
 
 //____ _present() _____________________________________________________________

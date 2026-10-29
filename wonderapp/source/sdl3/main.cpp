@@ -213,7 +213,31 @@ int main(int argc, char *argv[] )
 
 	// Initialize the app
 
+	// No events are processed until init() returns. A window shown before then
+	// doesn't become key when macOS activates us, so it gets no mouse motion and
+	// the first click only activates it. So we keep the windows hidden until init()
+	// is done, then show them and raise the first app window to give it focus.
+
+	SDLWindow::s_bHoldShow = true;
+
 	bool bContinue = pApp->init( pAPI );
+
+	SDLWindow::s_bHoldShow = false;
+
+	bool bRaised = false;
+	for (auto& pWin : g_windows)
+	{
+		if (!pWin)
+			continue;
+
+		pWin->showIfHeld();
+
+		if (!bRaised && pWin->userWindow() != g_pDebugWindow && !(SDL_GetWindowFlags(pWin->SDLWindowPtr()) & SDL_WINDOW_HIDDEN))
+		{
+			SDL_RaiseWindow(pWin->SDLWindowPtr());
+			bRaised = true;
+		}
+	}
 
 	// Main loop
 

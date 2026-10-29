@@ -27,6 +27,8 @@ using namespace wg;
 
 //____ constructor ___________________________________________________
 
+bool SDLWindow::s_bHoldShow = false;
+
 SDLWindow::SDLWindow()
 {
 }
@@ -93,9 +95,24 @@ bool SDLWindow::_createSDLWindow( const std::string& title, wg::Placement origin
 	SDL_StartTextInput(m_pSDLWindow);
 
 	if( open )
-		SDL_ShowWindow(m_pSDLWindow);
+	{
+		if( s_bHoldShow )
+			m_bShowHeld = true;
+		else
+			SDL_ShowWindow(m_pSDLWindow);
+	}
 
 	return true;
+}
+
+//____ showIfHeld() ___________________________________________________________
+
+void SDLWindow::showIfHeld()
+{
+	if( m_bShowHeld && m_pSDLWindow )
+		SDL_ShowWindow(m_pSDLWindow);
+
+	m_bShowHeld = false;
 }
 
 //____ _scale() _______________________________________________________________

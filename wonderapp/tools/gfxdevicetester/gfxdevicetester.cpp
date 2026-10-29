@@ -102,13 +102,15 @@ bool GfxDeviceTester::init(wapp::API* pAPI)
 		}
 	}
 
-	// Start out showing the first test we can run.
+	// Start out with the first suite we can run opened in the tree. We don't render
+	// any test here, since some take seconds on the reference backend, which would
+	// delay the window from appearing.
 
-	for (int i = 0; i < (int)m_tests.size(); i++)
+	for (auto& suite : m_suites)
 	{
-		if (m_suites[m_tests[i].suite].bWorking)
+		if (suite.bWorking)
 		{
-			show_in_display(i);
+			suite.pTreeDrawer->openImmediately();
 			break;
 		}
 	}

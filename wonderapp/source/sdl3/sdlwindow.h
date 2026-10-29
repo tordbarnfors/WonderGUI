@@ -62,6 +62,13 @@ public:
 	wg::Coord			windowCoordToPoints( float x, float y );
 	wg::CoordF			pointsToWindowCoord( wg::Coord points );
 
+	// While s_bHoldShow is set, windows created open are kept hidden until
+	// showIfHeld() is called. Used to keep windows hidden while the app
+	// initializes, since no events are processed until then.
+
+	static bool			s_bHoldShow;
+	void				showIfHeld();
+
 protected:
 
 	// Creates the SDL window with the given size in points, placed on its display
@@ -90,5 +97,6 @@ protected:
 	SDL_Window*		m_pSDLWindow = nullptr;
 
 	wapp::Window *	m_pUserWindow = nullptr;
+	bool			m_bShowHeld = false;
 	wg::RootPanel_p	m_pRootPanel;
 };
