@@ -207,8 +207,10 @@ wgmetalgfx      - Addon library for rendering UI using Apples Metal API.
 example01       - Minimal example program.
                   Requires SDL (SimpleDirectMediaLayer, see libsdl.org)
 
-workbench       - My messy program for testing out things.
-                  Requires OpenGL, GLEW, FreeType, SDL and SDL_Image.
+workbench       - For trying things out. Tests are picked from a list
+                  and each one lives in its own file in
+                  wondergui/tools/workbench/tests, see workbench.h.
+                  Software rendered. Requires SDL3 and FreeType.
 
 gfxdevicetester - Compares the native graphics device of the WonderApp
                   framework against the software reference: side by side
