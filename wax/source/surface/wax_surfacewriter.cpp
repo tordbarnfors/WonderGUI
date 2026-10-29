@@ -57,10 +57,10 @@ namespace wax
 
 		// Calculate buffer needed for pixels, palette and extra data
 
-		int bytesNeeded = _safePixelBufferSize(pSurface);
+		int bytesNeeded = _safePixelBufferSize(pSurface) + 3;		// + alignment padding
 
 		if (pSurface->palette())
-			bytesNeeded += _safePaletteBufferSize(pSurface);
+			bytesNeeded += _safePaletteBufferSize(pSurface) + 3;		// + alignment padding
 
 		if (pExtraData && extraDataSize > 0)
 			bytesNeeded += _safeExtrasBufferSize(pExtraData, pExtraData + extraDataSize);
@@ -85,6 +85,8 @@ namespace wax
 
 			for (int i = 0; i < header.paletteDataPadding; i++)
 				*pWrite++ = 0;
+
+			bytesPaletteData = header.paletteBytes;		// Include padding
 		}
 
 		// Pixel data
@@ -96,6 +98,8 @@ namespace wax
 
 		for (int i = 0; i < header.pixelDataPadding; i++)
 			*pWrite++ = 0;
+
+		bytesPixelData = header.pixelBytes;		// Include padding
 
 		// Extra data
 
@@ -131,10 +135,10 @@ namespace wax
 
 		// Calculate buffer needed for pixels, palette and extra data
 
-		int bytesNeeded = _safePixelBufferSize( pSurface );
+		int bytesNeeded = _safePixelBufferSize( pSurface ) + 3;		// + alignment padding
 
 		if (pSurface->palette())
-			bytesNeeded += _safePaletteBufferSize( pSurface );
+			bytesNeeded += _safePaletteBufferSize( pSurface ) + 3;		// + alignment padding
 
 		if( pExtraData && extraDataSize > 0 )
 			bytesNeeded += _safeExtrasBufferSize(pExtraData, pExtraData + extraDataSize);
@@ -157,6 +161,8 @@ namespace wax
 
 			for (int i = 0; i < header.paletteDataPadding; i++)
 				*pWrite++ = 0;
+
+			bytesPaletteData = header.paletteBytes;		// Include padding
 		}
 
 		int bytesPixelData = _encodePixelData(pWrite, pSurface );
@@ -166,6 +172,8 @@ namespace wax
 
 		for (int i = 0; i < header.pixelDataPadding; i++)
 			*pWrite++ = 0;
+
+		bytesPixelData = header.pixelBytes;		// Include padding
 
 		int bytesExtrasData = 0;
 		if( pExtraData && extraDataSize > 0 )

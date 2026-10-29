@@ -278,6 +278,14 @@ namespace wax
 
 		Blueprint			blueprint() const;
 
+		// True if what the surface held was lost together with the device of a
+		// GPU backend, most likely because something rendered into it was never
+		// read back. The surface keeps working, but whoever put that content
+		// there needs to render it again, which is easiest done by replacing the
+		// surface. It doesn't go back to false.
+
+		inline bool			isContentLost() const { return m_bContentLost; }
+
 	protected:
 
 		template<class BP>
@@ -351,6 +359,7 @@ namespace wax
         bool                m_bCanvas = false;
 		bool				m_bBuffered = false;
 		bool				m_bDynamic = false;
+		bool				m_bContentLost = false;			// Set by backends, see isContentLost().
 //		bool				m_bOpaque = false;
 
 		Color8 *			m_pPalette = nullptr;					// Pointer at color lookup table. Always 256 entries long.

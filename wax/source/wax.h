@@ -46,7 +46,10 @@
 #include <wax_dummyfont.h>
 #include <wax_edgemap.h>
 #include <wax_edgemapfactory.h>
-#include <wax_edgemaptools.h>
+#include <wax_edgemapbox.h>
+#include <wax_edgemapring.h>
+#include <wax_edgemapshape.h>
+#include <wax_edgemapwave.h>
 #include <wax_font.h>
 #include <wax_geo.h>
 #include <wax_backend.h>
@@ -76,7 +79,6 @@
 #include <wax_surfacewriter.h>
 #include <wax_sysfont.h>
 #include <wax_transitions.h>
-#include <wax_waveform.h>
 #include <wax_warpgenerator.h>
 #include <wax_warpmap.h>
 #include <wax_warpmapfactory.h>

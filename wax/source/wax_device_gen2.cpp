@@ -30,7 +30,7 @@
 #include <wax_util.h>
 #include <wax_core.h>
 
-#include <wax_waveform.h>
+#include <wax_edgemapwave.h>
 
 using namespace std;
 using namespace wax::Util;
@@ -3235,15 +3235,17 @@ void DeviceGen2::flipDrawWave(const RectSPX& dest, const WaveLine* pTopBorder, c
 
 	RectI pixDest = dest / 64;
 
-	// Create waveform
+	// Create wave
 
-	auto pWave = Waveform::create( WAXBP(Waveform, 
-		_.size = dest.size()/64, 
+	auto pWave = EdgemapWave::create( WAXBP(EdgemapWave,
+		_.size = pixDest.size()*64,
 		_.color = fill,
-		_.topOutlineThickness = pTopBorder->thickness, 
+		_.factory = m_pBackend->edgemapFactory(),
+		_.flip = flip,
+		_.pos = dest.pos(),
+		_.topOutlineThickness = pTopBorder->thickness,
 		_.bottomOutlineThickness = pBottomBorder->thickness,
-		_.outlineColor = pTopBorder->color ),
-		m_pBackend->edgemapFactory() );
+		_.outlineColor = pTopBorder->color ) );
 
 	int samplesWanted = pixDest.w + 1;
 
@@ -3289,9 +3291,8 @@ void DeviceGen2::flipDrawWave(const RectSPX& dest, const WaveLine* pTopBorder, c
 
 	// Render
 
-	auto pEdgemap = pWave->refresh();
-
-	flipDrawEdgemap(dest.pos(), pEdgemap, flip);
+	pWave->refresh();
+	pWave->draw(this);
 }
 
 //____ drawSegments() ________________________________________________________

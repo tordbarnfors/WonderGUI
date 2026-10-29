@@ -97,6 +97,10 @@ namespace wax
 
 		inline int		samples() const { return m_bTiling ? m_size.w : m_size.w + 1; }		// Samples per edge.
 
+		// pSource points at the first sample to import, sample sampleBegin of edge edgeBegin. samplePitch
+		// is the step between samples of an edge (1 if 0) and edgePitch between edges (samplePitch
+		// times the number of samples if 0). Float samples are fractions of the height.
+
 		bool 			importSamples( SampleOrigo origo, const spx * pSource, int edgeBegin, int edgeEnd,
 									  int sampleBegin, int sampleEnd, int edgePitch = 0, int samplePitch = 0 );
 
@@ -111,6 +115,19 @@ namespace wax
 
 		virtual void	exportBounds( spx * pMinMaxOutput, int nSections, int sectionWidth,
 									  int topEdge, int bottomEdge, int mapOffset = 0, int minMaxPitch = 2 );
+
+		//.____ Misc __________________________________________________________
+
+		// Convert samples given relative to origo into spx from the top, as edgemaps store them.
+		// Float samples are fractions of height (half the height for the middle origos).
+
+		static void		convertSamples( spx * pDest, const spx * pSource, SampleOrigo origo, spx height, int nEdges, int nSamples,
+										int srcEdgePitch, int srcSamplePitch, int destEdgePitch, int destSamplePitch );
+		static void		convertSamples( spx * pDest, const float * pSource, SampleOrigo origo, spx height, int nEdges, int nSamples,
+										int srcEdgePitch, int srcSamplePitch, int destEdgePitch, int destSamplePitch );
+
+		static spx		convertSample( spx sample, SampleOrigo origo, spx height );
+		static spx		convertSample( float sample, SampleOrigo origo, spx height );
 
 	protected:
 

@@ -37,6 +37,7 @@ namespace wax
 	const TypeInfo DX12Edgemap::TYPEINFO = { "DX12Edgemap", &Edgemap::TYPEINFO };
 
 	ID3D12Device * DX12Edgemap::s_pDevice = nullptr;
+	DX12Edgemap *  DX12Edgemap::s_pFirstLive = nullptr;
 
 	const int DX12Edgemap::c_tintSlotSize = TintTools::gpuTintBlockMaxSize(Tint::c_maxMixComponents, Tint::c_maxMixComponents * Tint::c_maxStops);
 
@@ -102,7 +103,16 @@ namespace wax
 
 	DX12Edgemap::DX12Edgemap(const Blueprint& bp) : Edgemap(bp)
 	{
+		_link();
+
 		m_samplesSize = bp.size.w * (bp.segments - 1) * 2;			// Edge strips and raw samples.
+
+		// Nothing can be created on a lost device. The edgemap is left without a
+		// buffer, as when creating one fails, and DX12Backend draws nothing for it
+		// until a new device is set, which gives it one, see _migrateAll().
+
+		if( DX12Backend::isDeviceLost() )
+			return;
 
 		if( !s_pDevice )
 		{
@@ -120,8 +130,70 @@ namespace wax
 
 	DX12Edgemap::~DX12Edgemap()
 	{
+		_unlink();
+
 		if( m_buffer && m_pBuffer )
 			m_buffer->Unmap(0, nullptr);
+	}
+
+	//____ _evacuateAll() ________________________________________________________
+
+	void DX12Edgemap::_evacuateAll()
+	{
+		// Releasing the buffer unmaps it. Everything in it is worked out from what
+		// Edgemap keeps in memory, so nothing is lost.
+
+		for( DX12Edgemap * p = s_pFirstLive; p; p = p->m_pNextLive )
+		{
+			p->m_buffer = nullptr;
+			p->m_pBuffer = nullptr;
+			p->m_bHasTintSlots = false;
+		}
+	}
+
+	//____ _migrateAll() _________________________________________________________
+
+	void DX12Edgemap::_migrateAll()
+	{
+		if( !s_pDevice )
+			return;
+
+		for( DX12Edgemap * p = s_pFirstLive; p; p = p->m_pNextLive )
+		{
+			if( !p->m_buffer && p->_createBuffer(p->m_nbTints > 0) )
+			{
+				p->_samplesUpdated(0, p->m_nbSegments - 1, 0, p->samples());
+				p->_writeColors(0, p->m_nbSegments);
+			}
+		}
+	}
+
+	//____ _link() _______________________________________________________________
+
+	void DX12Edgemap::_link()
+	{
+		m_pNextLive = s_pFirstLive;
+
+		if( s_pFirstLive )
+			s_pFirstLive->m_pPrevLive = this;
+
+		s_pFirstLive = this;
+	}
+
+	//____ _unlink() _____________________________________________________________
+
+	void DX12Edgemap::_unlink()
+	{
+		if( m_pPrevLive )
+			m_pPrevLive->m_pNextLive = m_pNextLive;
+		else
+			s_pFirstLive = m_pNextLive;
+
+		if( m_pNextLive )
+			m_pNextLive->m_pPrevLive = m_pPrevLive;
+
+		m_pPrevLive = nullptr;
+		m_pNextLive = nullptr;
 	}
 
 	//____ typeInfo() ____________________________________________________________

@@ -76,10 +76,14 @@ set( SOURCES
 	source/edgemap/wax_edgemap.h
 	source/edgemap/wax_edgemapfactory.cpp
 	source/edgemap/wax_edgemapfactory.h
-	source/edgemap/wax_edgemaptools.cpp
-	source/edgemap/wax_edgemaptools.h
-	source/edgemap/wax_waveform.cpp
-	source/edgemap/wax_waveform.h
+	source/edgemap/wax_edgemapbox.cpp
+	source/edgemap/wax_edgemapbox.h
+	source/edgemap/wax_edgemapring.cpp
+	source/edgemap/wax_edgemapring.h
+	source/edgemap/wax_edgemapshape.cpp
+	source/edgemap/wax_edgemapshape.h
+	source/edgemap/wax_edgemapwave.cpp
+	source/edgemap/wax_edgemapwave.h
 	source/font/wax_bitmapcache.cpp
 	source/font/wax_bitmapcache.h
 	source/font/wax_bitmapfont.cpp

@@ -24,7 +24,7 @@
 #pragma once
 
 #include <wg_chart.h>
-#include <wax_waveform.h>
+#include <wax_edgemapwave.h>
 #include <wax_spans.h>
 
 namespace wg
@@ -163,10 +163,8 @@ namespace wg
 
 		std::vector<SectionBounds>	m_sectionBounds;
 
-		Waveform_p			m_pWaveform;
-		CoordSPX			m_waveformPos;			// Only x has any impact for now, y should be fixed at 0.
-
-		Edgemap_p			m_pEdgemap;				// Edgemap exported by waveform on preRender call.
+		EdgemapWave_p		m_pWave;
+		CoordSPX			m_wavePos;				// In chart before flip. Only x has any impact for now, y should be fixed at 0.
 	};
 
 
@@ -289,7 +287,7 @@ namespace wg
 		void		_didMoveEntries(AreaChartEntry* pFrom, AreaChartEntry* pTo, int nb) override;
 		void		_willEraseEntries(AreaChartEntry* pEntry, int nb) override;
 
-		void		_updateWaveformEdge(int entry, Waveform* pWaveform, bool bTopEdge, int nSamples, float* pSamples, bool bAxisSwapped);
+		void		_updateWaveformEdge(int entry, EdgemapWave* pWave, bool bTopEdge, int nSamples, float* pSamples, bool bAxisSwapped);
 
 		void		_update(int microPassed, int64_t microsecTimestamp) override;
 

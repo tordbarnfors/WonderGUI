@@ -541,7 +541,9 @@ int main(int arch, char * argv[] ) {
 
 		Base::update(timestamp);
 
-		// Render all windows
+		// Render all windows, on a new device if the old one was lost
+
+		updateGfxBackend();
 
 		for (auto pWin : g_win32Windows)
 			pWin->render();

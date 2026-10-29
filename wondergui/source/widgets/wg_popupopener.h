@@ -65,6 +65,7 @@ namespace wg
 			Skin_p			skin;
 			bool			stickyFocus		= false;
 			bool			tabLock			= false;
+			bool			takeFocus		= true;
 			String			tooltip;
 
 		};
@@ -92,6 +93,9 @@ namespace wg
 		void		setOpenOnHover(bool bOpen);
 		bool		openOnHover() const { return m_bOpenOnHover; }
 
+		void		setTakeFocus(bool bTake);
+		bool		takeFocus() const { return m_bTakeFocus; }
+
 		void		setMouseButton(MouseButton button);
 		MouseButton	mouseButton() const { return m_mouseButton; }
 
@@ -117,6 +121,7 @@ namespace wg
 			m_pPopup		= bp.popup;
 			m_bOpenOnHover	= bp.openOnHover;
 			m_bCloseOnSelect= bp.closeOnSelect;
+			m_bTakeFocus	= bp.takeFocus;
 			m_attachPoint	= bp.attachPoint;
 			m_mouseButton	= bp.mouseButton;
 			m_popupOverflow	= bp.popupOverflow;
@@ -150,6 +155,7 @@ namespace wg
 		bool			m_bOpenOnHover = false;
 		bool			m_bOpen = false;
 		bool			m_bCloseOnSelect = true;
+		bool			m_bTakeFocus = true;			// Popup takes keyboard focus when opened.
 		MouseButton		m_mouseButton = MouseButton::Left;
 	};
 

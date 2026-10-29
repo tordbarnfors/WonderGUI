@@ -60,6 +60,13 @@ WgEventHandler::~WgEventHandler()
 
 		m_eventQueue.pop_front();		
 	}
+
+	// The latest button events are kept rather than deleted when they are processed
+	for( int i = 0 ; i <= WG_MAX_BUTTONS ; i++ )
+	{
+		delete m_pLatestPressEvents[i];
+		delete m_pLatestReleaseEvents[i];
+	}
 }
 
 //____ SetModKeyMap() _________________________________________________________

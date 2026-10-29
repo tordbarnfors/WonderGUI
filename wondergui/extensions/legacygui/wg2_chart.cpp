@@ -283,10 +283,10 @@ bool WgChart::SetWaveStyle(int waveId, WgColor fillColor, float topLineThickness
 		p->topLineColor = topLineColor;
 		p->bottomLineColor = bottomLineColor;
 
-		if( p->m_pWaveform )
+		if( p->m_pWave )
 		{
-			p->m_pWaveform->setColor(fillColor);
-			p->m_pWaveform->setOutlineColor(topLineColor);
+			p->m_pWave->setColor(fillColor);
+			p->m_pWave->setOutlineColor(topLineColor);
 		}
 	}
 
@@ -298,7 +298,7 @@ bool WgChart::SetWaveStyle(int waveId, WgColor fillColor, float topLineThickness
 	}
 
 	if( p->topLineThickness != topLineThickness || p->bottomLineThickness != bottomLineThickness )
-		p->m_pWaveform = nullptr;			// We have to create a new waveform when changing outline thickness.
+		p->m_pWave = nullptr;			// We have to create a new waveform when changing outline thickness.
 
 	p->topLineThickness = topLineThickness;
 	p->bottomLineThickness = bottomLineThickness;
@@ -323,10 +323,10 @@ bool WgChart::SetWaveTint(int waveId, wg::Tint * pTint)
 	{
 		p->m_pWaveTint = pTint;
 
-		if( p->m_pWaveform )
+		if( p->m_pWave )
 		{
-			p->m_pWaveform->setTint(pTint);
-			p->m_pWaveform->setOutlineTint(pTint);
+			p->m_pWave->setTint(pTint);
+			p->m_pWave->setOutlineTint(pTint);
 		}
 	}
 
@@ -798,10 +798,10 @@ void WgChart::_onEvent(const WgEvent::Event * pEvent, WgEventHandler * pHandler)
 				// The waveform keeps its own copy of the colors, so pass the faded ones on.
 				// Otherwise it is stuck with the colors it had when it was last created.
 
-				if( p->m_pWaveform && (p->m_pWaveform->color() != wg::HiColor(p->fillColor) || p->m_pWaveform->outlineColor() != wg::HiColor(p->topLineColor)) )
+				if( p->m_pWave && (p->m_pWave->color() != wg::HiColor(p->fillColor) || p->m_pWave->outlineColor() != wg::HiColor(p->topLineColor)) )
 				{
-					p->m_pWaveform->setColor(p->fillColor);
-					p->m_pWaveform->setOutlineColor(p->topLineColor);
+					p->m_pWave->setColor(p->fillColor);
+					p->m_pWave->setOutlineColor(p->topLineColor);
 					isDirty = true;
 				}
 			}
@@ -1106,11 +1106,12 @@ void WgChart::_renderWave( Wave& wave, wg::GfxDevice * pDevice, const WgRect& wa
 
 	if(length >= 1)
 	{
-		if( !wave.m_pWaveform || wave.m_pWaveform->size() != waveCanvas.size() )
+		if( !wave.m_pWave || wave.m_pWave->size() != waveCanvas.size()*64 )
 		{
-			wg::Waveform::Blueprint bp;
+			wg::EdgemapWave::Blueprint bp;
 			
-			bp.size = waveCanvas.size();
+			bp.size = waveCanvas.size()*64;
+			bp.factory = pDevice->edgemapFactory();
 			bp.color = wave.fillColor;
 			bp.bottomOutlineThickness = wave.bottomLineThickness*64*m_scale/WG_SCALE_BASE;
 			bp.optimize = true;
@@ -1123,21 +1124,21 @@ void WgChart::_renderWave( Wave& wave, wg::GfxDevice * pDevice, const WgRect& wa
 				bp.outlineTint = wave.m_pWaveTint;
 			}
 
-			wave.m_pWaveform = wg::Waveform::create(bp, pDevice->edgemapFactory());
+			wave.m_pWave = wg::EdgemapWave::create(bp);
 		}
 
 		if( wave.resampledTop.empty() )
-			wave.m_pWaveform->setFlatTopLine(0, waveCanvas.w+1, wave.resampledDefault );
+			wave.m_pWave->setFlatTopLine(0, waveCanvas.w+1, wave.resampledDefault );
 		else
-			wave.m_pWaveform->setSamples(0, (int) wave.resampledTop.size(), wave.resampledTop.data(), nullptr);
+			wave.m_pWave->setSamples(0, (int) wave.resampledTop.size(), wave.resampledTop.data(), nullptr);
 
 		if( wave.resampledBottom.empty() )
-			wave.m_pWaveform->setFlatBottomLine(0, waveCanvas.w+1, wave.resampledDefault );
+			wave.m_pWave->setFlatBottomLine(0, waveCanvas.w+1, wave.resampledDefault );
 		else
-			wave.m_pWaveform->setSamples(0, (int) wave.resampledBottom.size(), nullptr, wave.resampledBottom.data());
+			wave.m_pWave->setSamples(0, (int) wave.resampledBottom.size(), nullptr, wave.resampledBottom.data());
 
-		auto pEdgemap = wave.m_pWaveform->refresh();
-		pDevice->drawEdgemap(waveCanvas.pos()*64,pEdgemap);
+		wave.m_pWave->refresh();
+		wave.m_pWave->draw(pDevice, waveCanvas.pos()*64);
 /*
 		if(useGradient)
         {

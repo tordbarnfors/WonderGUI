@@ -25,7 +25,6 @@
 #include <wax_object.h>
 #include <wax_bitmapcache.h>
 #include <wax_pixeltools.h>
-#include <wax_edgemaptools.h>
 #include <wax_util.h>
 
 #include <wax_compression.h>

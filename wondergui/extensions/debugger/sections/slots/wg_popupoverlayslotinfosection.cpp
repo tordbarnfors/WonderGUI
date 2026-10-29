@@ -39,6 +39,7 @@ namespace wg
 			textRow  ( "Attach point: ",          [](PopupOverlay::Slot* s) { return toString(s->attachPoint()); } ),
 			boolRow  ( "Peek mode: ",             [](PopupOverlay::Slot* s) { return s->peekMode(); } ),
 			boolRow  ( "Close on select: ",       [](PopupOverlay::Slot* s) { return s->closeOnSelect(); } ),
+			boolRow  ( "Take focus: ",            [](PopupOverlay::Slot* s) { return s->takeFocus(); } ),
 			spxRow   ( "Launcher X (spx): ",      [](PopupOverlay::Slot* s) { return s->launcherGeo().x; } ),
 			spxRow   ( "Launcher Y (spx): ",      [](PopupOverlay::Slot* s) { return s->launcherGeo().y; } ),
 			spxRow   ( "Launcher width (spx): ",  [](PopupOverlay::Slot* s) { return s->launcherGeo().w; } ),

@@ -113,8 +113,8 @@ Win32Window::~Win32Window()
 
 void Win32Window::render()
 {
-	if (m_bHidden || !m_pRootPanel)
-		return;
+	if (m_bHidden || !m_pRootPanel || !m_pSwapChain)
+		return;						// No swap chain while the device is being replaced.
 
 	// A flip-model swap chain decides which buffer is the back buffer. Ask it
 	// every frame instead of keeping our own count, which drifts out of sync as
@@ -201,7 +201,7 @@ void Win32Window::paint()
 	// constructor, and the one after a resize, where the new buffers hold
 	// nothing at all yet.
 
-	if (!m_bPendingPresent)
+	if (!m_bPendingPresent || !m_pSwapChain)
 	{
 		ValidateRect(m_windowHandle, nullptr);
 		return;
@@ -256,13 +256,15 @@ void Win32Window::paint()
 		m_bPresentFullFrame = false;
 		m_bPendingPresent = false;
 
-		if (hr == DXGI_ERROR_DEVICE_REMOVED || hr == DXGI_ERROR_DEVICE_RESET)
+		// A lost device is reported by DX12Backend and recovered from by
+		// updateGfxBackend() before the next frame.
+
+		if (FAILED(hr) && !DX12Backend::handleDeviceLoss(hr))
 		{
 			char buffer[128];
-			sprintf_s(buffer, "Device lost on Present1(), GetDeviceRemovedReason() = 0x%08lX",
-				(unsigned long)m_pDX12Device->GetDeviceRemovedReason());
+			sprintf_s(buffer, "Present1() failed, HRESULT = 0x%08lX", (unsigned long)hr);
 
-			Base::throwError(ErrorLevel::Critical, ErrorCode::RenderFailure, buffer, nullptr, nullptr, __func__, __FILE__, __LINE__);
+			Base::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, buffer, nullptr, nullptr, __func__, __FILE__, __LINE__);
 		}
 	}
 
@@ -275,9 +277,6 @@ void Win32Window::paint()
 
 void Win32Window::onResize(int widthInPixels, int heightInPixels)
 {
-	if (!m_pSwapChain)
-		return;					// WM_SIZE can arrive before the constructor is done.
-
 	// A minimized window has a zero-sized client area, which ResizeBuffers()
 	// doesn't accept. Keep the old buffers until we get a real size again.
 
@@ -286,6 +285,12 @@ void Win32Window::onResize(int widthInPixels, int heightInPixels)
 		m_bHidden = true;
 		return;
 	}
+
+	// WM_SIZE can arrive before the constructor is done, and while the device is
+	// being replaced. restoreDevice() picks up the size.
+
+	if (!m_pSwapChain)
+		return;
 
 	m_width = widthInPixels;
 	m_height = heightInPixels;
@@ -305,9 +310,15 @@ void Win32Window::onResize(int widthInPixels, int heightInPixels)
 	g_pDX12Wrapper->flushRenderQueue();
 
 	_dropSwapChainBuffers();
-	auto retVal = m_pSwapChain->ResizeBuffers(0, widthInPixels, heightInPixels, DXGI_FORMAT_UNKNOWN, 0);	// Flags must match those used at creation.
-	assert(retVal == S_OK);
-	_createSwapChainBuffers();
+	HRESULT hr = m_pSwapChain->ResizeBuffers(0, widthInPixels, heightInPixels, DXGI_FORMAT_UNKNOWN, 0);	// Flags must match those used at creation.
+
+	// On a lost device we go on without buffers. Nothing renders until
+	// updateGfxBackend() has replaced the device and restoreDevice() the swap chain.
+
+	if (SUCCEEDED(hr))
+		_createSwapChainBuffers();
+	else if (!DX12Backend::handleDeviceLoss(hr))
+		assert(false);
 
 	m_currentBuffer = m_pSwapChain->GetCurrentBackBufferIndex();
 
@@ -324,6 +335,67 @@ void Win32Window::onResize(int widthInPixels, int heightInPixels)
 	//
 
 	m_pUserWindow->onResize({ pts(widthInPixels * scale / 64), pts(heightInPixels * scale / 64) });
+}
+
+//____ releaseDevice() _______________________________________________________
+
+void Win32Window::releaseDevice()
+{
+	// The swap chain holds the device through the render queue it was created
+	// on, and D3D12 won't give us a new device until the old one is gone.
+
+	_dropSwapChainBuffers();
+	m_pSwapChain.Reset();
+	m_RTVHeap.Reset();
+	m_pDX12Device.Reset();
+
+	m_dirtyRects.clear();
+	m_bPendingPresent = false;
+}
+
+//____ restoreDevice() _______________________________________________________
+
+void Win32Window::restoreDevice()
+{
+	if (!m_windowHandle || m_pSwapChain)
+		return;
+
+	// The window may have changed size while it had no swap chain.
+
+	RECT clientRect;
+	GetClientRect(m_windowHandle, &clientRect);
+
+	UINT width = clientRect.right - clientRect.left;
+	UINT height = clientRect.bottom - clientRect.top;
+
+	bool bResized = width > 0 && height > 0 && (width != m_width || height != m_height);
+
+	if (bResized)
+	{
+		m_width = width;
+		m_height = height;
+	}
+
+	_createSwapChain(g_pDX12Wrapper, m_windowHandle, m_width, m_height);
+	m_currentBuffer = m_pSwapChain->GetCurrentBackBufferIndex();
+
+	UINT dpi = GetDpiForWindow(m_windowHandle);
+	int scale = dpi * 64 / 96; // 96 DPI is 100% scaling
+
+	_backend()->setDefaultCanvas(m_rtvHandles[m_currentBuffer], m_renderBuffers[m_currentBuffer].Get(), m_rtvFormat, { spx(m_width * 64), spx(m_height * 64) }, scale);
+
+	// Nothing of what was on screen is in the new buffers.
+
+	m_bPresentFullFrame = true;
+
+	if (m_pRootPanel)
+	{
+		m_pRootPanel->setCanvas(CanvasRef::Default);
+		m_pRootPanel->addDirtyPatch({ 0, 0, spx(m_width * 64), spx(m_height * 64) });
+	}
+
+	if (bResized)
+		m_pUserWindow->onResize({ pts(m_width * scale / 64), pts(m_height * scale / 64) });
 }
 
 //____ destroy() _____________________________________________________________

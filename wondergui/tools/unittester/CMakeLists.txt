@@ -22,6 +22,12 @@ set( SOURCES
 	tests/shaperender.cpp
 	tests/shaperender.h
 	tests/shapecoverage.h
+	tests/edgemap.cpp
+	tests/edgemap.h
+	tests/edgemapring.cpp
+	tests/edgemapring.h
+	tests/edgemapbox.cpp
+	tests/edgemapbox.h
 	tests/warpmap.cpp
 	tests/warpmap.h
 	tests/warprender.cpp

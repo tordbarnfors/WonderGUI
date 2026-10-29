@@ -64,6 +64,7 @@ namespace wg
 			Placement	attachPoint() const { return m_attachPoint; }
 			bool		peekMode() const { return m_bPeek; }
 			bool		closeOnSelect() const { return m_bCloseOnSelect; }
+			bool		takeFocus() const { return m_bTakeFocus; }
 			SizeSPX		maxSize() const { return m_maxSize; }
 			Widget_wp	opener() const { return m_pOpener; }
 
@@ -89,11 +90,12 @@ namespace wg
 			Placement	m_attachPoint = Placement::NorthWest;
 			bool		m_bPeek;			// Has been opened in peek-mode.
 			bool		m_bCloseOnSelect = true;	// Close popups on selection.
+			bool		m_bTakeFocus = true;		// Take keyboard focus when opened and give it back when closed.
 			State		m_state;
 			int			m_stateCounter;		// Counts millisec the slot has been in a transitative state (Delay, Opening, Coundown and Closing).
 			SizeSPX		m_maxSize = { spx_max, spx_max };
 			Widget_wp	m_pOpener;			// Widget that opened this popup.
-			Widget_wp	m_pKeyFocus;		// Pointer at widget that held focus when this popup was ontop.
+			Widget_wp	m_pKeyFocus;		// Pointer at widget that held focus before this popup took it.
 		};
 
 
@@ -107,14 +109,14 @@ namespace wg
 
 			//.____ Content _______________________________________________________
 
-			void	pushFront(const Widget_p& pPopup, Widget * pOpener, const Rect& launcherGeo, Placement attachPoint = Placement::NorthEast, bool bPeek = false, bool bCloseOnSelect = true, Size maxSize = Size(1000000, 1000000), Border overflow = Border() );
+			void	pushFront(const Widget_p& pPopup, Widget * pOpener, const Rect& launcherGeo, Placement attachPoint = Placement::NorthEast, bool bPeek = false, bool bCloseOnSelect = true, Size maxSize = Size(1000000, 1000000), Border overflow = Border(), bool bTakeFocus = true );
 			void	pop(int nb = 1);
 			void	pop(Widget * pPopup);
 			void	clear();
 
 			//.____ Internal ______________________________________________________
 
-			void	_pushFront(const Widget_p& pPopup, Widget* pOpener, const RectSPX& launcherGeo, Placement attachPoint, bool bPeek, bool bCloseOnSelect, SizeSPX maxSize, BorderSPX overflow );
+			void	_pushFront(const Widget_p& pPopup, Widget* pOpener, const RectSPX& launcherGeo, Placement attachPoint, bool bPeek, bool bCloseOnSelect, SizeSPX maxSize, BorderSPX overflow, bool bTakeFocus );
 
 
 		protected:
@@ -183,7 +185,7 @@ namespace wg
 		PopupOverlay *	_getPopupOverlay() const override { return const_cast<PopupOverlay*>(this); }
 
 		void			_stealKeyboardFocus();
-		void			_restoreKeyboardFocus();
+		void			_restoreKeyboardFocus( Widget * pFocus );
 		void			_updateGeo(Slot * pSlot, bool bForceResize = false);
 
 		void			_refreshStayEnteredList();
@@ -227,9 +229,7 @@ namespace wg
 		void			_removeSlots(int ofs, int nb);
 		void 			_removeTopSlotAndPeeks();
 
-		void			_addSlot(Widget * pPopup, Widget * pOpener, const RectSPX& launcherGeo, Placement attachPoint, bool bPeek, bool bCloseOnSelect, SizeSPX maxSize, BorderSPX overflow);
-
-		Widget_wp			m_pKeyFocus;	// Pointer at child that held focus before any menu was opened.
+		void			_addSlot(Widget * pPopup, Widget * pOpener, const RectSPX& launcherGeo, Placement attachPoint, bool bPeek, bool bCloseOnSelect, SizeSPX maxSize, BorderSPX overflow, bool bTakeFocus);
 
 		int				m_openingDelayMs = 100;
 		int				m_openingFadeMs = 100;

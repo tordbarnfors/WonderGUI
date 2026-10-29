@@ -194,7 +194,7 @@ namespace wg
 	{
 		if (bGeo)
 		{
-			pAreaChartEntry->m_pWaveform = nullptr;
+			pAreaChartEntry->m_pWave = nullptr;
 		}
 		else
 		{
@@ -217,7 +217,7 @@ namespace wg
 	void AreaChart::_fullRefreshOfChart()
 	{
 		for (auto& graph : entries)
-			graph.m_pWaveform = nullptr;
+			graph.m_pWave = nullptr;
 
 		if (!m_bPreRenderRequested)
 			m_bPreRenderRequested = _requestPreRenderCall();
@@ -233,8 +233,8 @@ namespace wg
 		while( p > entries.begin() )
 		{
 			p--;
-			if (p->m_bVisible && p->m_pEdgemap)
-				pDevice->flipDrawEdgemap(canvas + p->m_waveformPos, p->m_pEdgemap, m_flip );
+			if (p->m_bVisible && p->m_pWave)
+				p->m_pWave->draw(pDevice, canvas.pos());
 		}
 
 		Util::popClipList(pDevice, popData);
@@ -367,33 +367,40 @@ namespace wg
 				bool bNeedsFullRendering = false;
 				spx displayHeight = m_bAxisSwapped ? m_chartCanvas.w : m_chartCanvas.h;
 
-				if (!graph.m_pWaveform)
+				if (!graph.m_pWave)
 				{
-					// Generate waveform
+					// Generate wave
 
 					RectSPX rect = _entryRangeToRect(graph.m_begin, graph.m_end, m_bAxisSwapped);
 
 					if( !rect.isEmpty() )
 					{
-						graph.m_waveformPos = rect.pos();
+						graph.m_wavePos = rect.pos();
 
-						graph.m_pWaveform = Waveform::create(WGBP(Waveform,
-							_.size = rect.size()/64,
+						SizeSPX chartSize = m_chartCanvas.size();
+						if( m_bAxisSwapped )
+							std::swap(chartSize.w, chartSize.h);
+
+						graph.m_pWave = EdgemapWave::create(WGBP(EdgemapWave,
 							_.bottomOutlineThickness = graph.m_bottomOutlineThickness*m_scale,
 							_.color = graph.m_fillColor,
-							_.tint = graph.m_pFillTint,
+							_.factory = m_pEdgemapFactory,
+							_.flip = m_flip,
 							_.origo = SampleOrigo::Top,
 							_.outlineColor = graph.m_outlineColor,
 							_.outlineTint = graph.m_pOutlineTint,
+							_.pos = Util::flipRect(rect, m_flip, chartSize).pos(),
+							_.size = rect.size(),
+							_.tint = graph.m_pFillTint,
 							_.topOutlineThickness = graph.m_topOutlineThickness*m_scale
-						), m_pEdgemapFactory);
+						));
 
 						// Interpolate and set samples
 
-						_updateWaveformEdge(entry, graph.m_pWaveform, true, (int) graph.m_topSamples.size(), graph.m_topSamples.data(), m_bAxisSwapped );
-						_updateWaveformEdge(entry, graph.m_pWaveform, false, (int) graph.m_bottomSamples.size(), graph.m_bottomSamples.data(), m_bAxisSwapped );
+						_updateWaveformEdge(entry, graph.m_pWave, true, (int) graph.m_topSamples.size(), graph.m_topSamples.data(), m_bAxisSwapped );
+						_updateWaveformEdge(entry, graph.m_pWave, false, (int) graph.m_bottomSamples.size(), graph.m_bottomSamples.data(), m_bAxisSwapped );
 
-						graph.m_pEdgemap = graph.m_pWaveform->refresh();
+						graph.m_pWave->refresh();
 						graph.m_bTopSamplesChanged = true;						// So _preRender() will understand.
 						graph.m_bBottomSamplesChanged = true;					// So _preRender() will understand.
 
@@ -405,7 +412,7 @@ namespace wg
 				{
 					if (graph.m_bColorsChanged)
 					{
-						auto pWF = graph.m_pWaveform;
+						auto pWF = graph.m_pWave;
 
 						pWF->setColor(graph.m_fillColor);
 						pWF->setOutlineColor(graph.m_outlineColor);
@@ -420,12 +427,12 @@ namespace wg
 
 					if (graph.m_bTopSamplesChanged)
 					{
-						_updateWaveformEdge(entry, graph.m_pWaveform, true, (int) graph.m_topSamples.size(), graph.m_topSamples.data(), m_bAxisSwapped );
+						_updateWaveformEdge(entry, graph.m_pWave, true, (int) graph.m_topSamples.size(), graph.m_topSamples.data(), m_bAxisSwapped );
 						bSamplesChanged = true;
 					}
 					if (graph.m_bBottomSamplesChanged)
 					{
-						_updateWaveformEdge(entry, graph.m_pWaveform, false, (int) graph.m_bottomSamples.size(), graph.m_bottomSamples.data(), m_bAxisSwapped );
+						_updateWaveformEdge(entry, graph.m_pWave, false, (int) graph.m_bottomSamples.size(), graph.m_bottomSamples.data(), m_bAxisSwapped );
 						bSamplesChanged = true;
 					}
 
@@ -439,11 +446,11 @@ namespace wg
 
 	//____ _updateWaveformEdge() _________________________________________________
 
-	void AreaChart::_updateWaveformEdge(int entry, Waveform* pWaveform, bool bTopEdge, int nSamples, float* pSamples, bool bAxisSwapped )
+	void AreaChart::_updateWaveformEdge(int entry, EdgemapWave* pWave, bool bTopEdge, int nSamples, float* pSamples, bool bAxisSwapped )
 	{
 		// TODO: Better interpolation, especially when shrinking.
 
-		int wfSamples = pWaveform->nbSamples();
+		int wfSamples = pWave->nbSamples();
 
 		int height = bAxisSwapped ? m_chartCanvas.w : m_chartCanvas.h;
 
@@ -454,9 +461,9 @@ namespace wg
 			spx spxSample = (sample - m_displayCeiling) / (m_displayFloor - m_displayCeiling) * height;
 
 			if (bTopEdge)
-				pWaveform->setFlatTopLine(0, wfSamples, spxSample);
+				pWave->setFlatTopLine(0, wfSamples, spxSample);
 			else
-				pWaveform->setFlatBottomLine(0, wfSamples, spxSample);
+				pWave->setFlatBottomLine(0, wfSamples, spxSample);
 		}
 		else
 		{
@@ -537,9 +544,9 @@ namespace wg
 			//
 
 			if (bTopEdge)
-				pWaveform->setSamples(0, wfSamples, pConverted, nullptr);
+				pWave->setSamples(0, wfSamples, pConverted, nullptr);
 			else
-				pWaveform->setSamples(0, wfSamples, nullptr, pConverted);
+				pWave->setSamples(0, wfSamples, nullptr, pConverted);
 
 			Base::memStackFree(wfSamples * sizeof(spx));
 		}
@@ -592,16 +599,16 @@ namespace wg
 
 			for (auto& entry : entries)
 			{
-				if ((entry.m_bTopSamplesChanged || entry.m_bBottomSamplesChanged) && entry.m_bVisible && entry.m_pWaveform )
+				if ((entry.m_bTopSamplesChanged || entry.m_bBottomSamplesChanged) && entry.m_bVisible && entry.m_pWave )
 				{
-					auto pEdgemap = entry.m_pWaveform->refresh();
-					entry.m_pEdgemap = pEdgemap;
+					entry.m_pWave->refresh();
+					Edgemap * pEdgemap = entry.m_pWave->edgemap();
 
 					if( entry.m_sectionBounds.size() == nSections )
 					{
 						auto pBuffer = (SectionBounds*) Base::memStackAlloc(sizeof(SectionBounds) * nSections );
 
-						_importSegmentBounds(pEdgemap, pBuffer, nSections, dirtySectionWidth/64, entry.m_waveformPos.x/64);
+						_importSegmentBounds(pEdgemap, pBuffer, nSections, dirtySectionWidth/64, entry.m_wavePos.x/64);
 
 						SectionBounds * pOld = &entry.m_sectionBounds.front();
 						SectionBounds * pNew = pBuffer;
@@ -633,7 +640,7 @@ namespace wg
 					{
 						entry.m_sectionBounds.resize(nSections);
 
-						_importSegmentBounds(pEdgemap, &entry.m_sectionBounds.front(), nSections, dirtySectionWidth/64, entry.m_waveformPos.x/64);
+						_importSegmentBounds(pEdgemap, &entry.m_sectionBounds.front(), nSections, dirtySectionWidth/64, entry.m_wavePos.x/64);
 
 //						for( int section = 0 ; section < nSections ; section++ )
 //							_requestRenderEntrySection(&entry, section, pBounds[section].topBeg, pBounds[section].bottomEnd);

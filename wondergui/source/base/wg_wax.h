@@ -144,15 +144,35 @@ namespace wg
 	using wax::Edgemap_wp;
 	using wax::Edgemap;
 
+	//____ wax_edgemapbox.h ________________________________________________________
+
+	using wax::EdgemapBox_p;
+	using wax::EdgemapBox_wp;
+	using wax::EdgemapBox;
+
 	//____ wax_edgemapfactory.h ____________________________________________________
 
 	using wax::EdgemapFactory_p;
 	using wax::EdgemapFactory_wp;
 	using wax::EdgemapFactory;
 
-	//____ wax_edgemaptools.h ______________________________________________________
+	//____ wax_edgemapring.h _______________________________________________________
 
-	namespace EdgemapTools = wax::EdgemapTools;
+	using wax::EdgemapRing_p;
+	using wax::EdgemapRing_wp;
+	using wax::EdgemapRing;
+
+	//____ wax_edgemapshape.h ______________________________________________________
+
+	using wax::EdgemapShape_p;
+	using wax::EdgemapShape_wp;
+	using wax::EdgemapShape;
+
+	//____ wax_edgemapwave.h _______________________________________________________
+
+	using wax::EdgemapWave_p;
+	using wax::EdgemapWave_wp;
+	using wax::EdgemapWave;
 
 	//____ wax_enumextras.h ________________________________________________________
 
@@ -511,12 +531,6 @@ namespace wg
 	using wax::WarpmapFactory_p;
 	using wax::WarpmapFactory_wp;
 	using wax::WarpmapFactory;
-
-	//____ wax_waveform.h __________________________________________________________
-
-	using wax::Waveform_p;
-	using wax::Waveform_wp;
-	using wax::Waveform;
 
 	//____ wax_weakptr.h ___________________________________________________________
 

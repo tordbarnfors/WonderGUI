@@ -41,7 +41,7 @@
 #include <wax_surfacefactory.h>
 #include <wg_skin.h>
 #include <wax_tint.h>
-#include <wax_waveform.h>
+#include <wax_edgemapwave.h>
 
 
 //____ WgChart ____________________________________________________________
@@ -185,7 +185,7 @@ protected:
         bool                ignoreDynamicScaling = false;
 
         wg::Tint_p          m_pWaveTint;
-		wg::Waveform_p		m_pWaveform;
+		wg::EdgemapWave_p	m_pWave;
 	};
 
 	struct LabelStyle

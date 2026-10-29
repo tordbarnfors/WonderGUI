@@ -24,7 +24,7 @@
 #pragma once
 
 #include <wg_chart.h>
-#include <wax_waveform.h>
+#include <wax_edgemapwave.h>
 #include <wax_surfacefactory.h>
 
 namespace wg

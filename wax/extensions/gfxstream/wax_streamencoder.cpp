@@ -42,6 +42,7 @@ namespace wax
 	StreamEncoder::~StreamEncoder()
 	{
 		delete[] m_pBuffer;
+		delete[] m_pFreeIdStack;
 	}
 
 	//____ typeInfo() _________________________________________________________

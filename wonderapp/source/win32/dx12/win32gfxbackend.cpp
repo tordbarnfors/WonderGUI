@@ -28,6 +28,11 @@
 #include <wax_dx12backend.h>
 
 #include <dx12_wrapper.h>
+#include <win32window.h>
+
+#include <cstdio>
+#include <cstdlib>
+#include <vector>
 
 using namespace wg;
 
@@ -35,6 +40,111 @@ using namespace wg;
 // the swap chain for each window) reaches it through this extern.
 
 DX12Wrapper* g_pDX12Wrapper = nullptr;
+
+extern std::vector<Win32Window*>	g_win32Windows;
+
+// A new device can't always be had right after the old one was lost - a reset
+// GPU or an updated driver takes a moment to come back - so we try again at
+// this interval until it works.
+
+static const ULONGLONG	c_recoveryRetryInterval = 1000;		// Milliseconds.
+static ULONGLONG		s_nextRecoveryAttempt = 0;
+
+//____ _recoverDevice() _______________________________________________________
+//
+// Everything has to let go of the old device before D3D12 gives us a new one:
+// the windows their swap chains, DX12Backend everything it and the surfaces
+// and edgemaps have on it, and the wrapper the device itself. Then it all
+// comes back on the new device.
+
+static bool _recoverDevice()
+{
+	if (wax::DX12Backend::device())
+	{
+		for (auto pWin : g_win32Windows)
+			pWin->releaseDevice();
+
+		wax::DX12Backend::setDevice(nullptr, nullptr);
+		g_pDX12Wrapper->releaseDevice();
+	}
+
+	if (!g_pDX12Wrapper->createDevice())
+		return false;
+
+	if (!wax::DX12Backend::setDevice(g_pDX12Wrapper->dx12Device(), g_pDX12Wrapper->renderCommandQueue()))
+	{
+		g_pDX12Wrapper->releaseDevice();
+		return false;
+	}
+
+	for (auto pWin : g_win32Windows)
+		pWin->restoreDevice();
+
+	return true;
+}
+
+//____ _simulateDeviceLoss() __________________________________________________
+//
+// Debug aid: set the environment variable WAPP_DX12_SIMULATE_DEVICE_LOSS to a
+// number of seconds, and the device is removed that often, to test recovery.
+
+#ifndef NDEBUG
+static void _simulateDeviceLoss()
+{
+	static ULONGLONG interval = 0;
+	static ULONGLONG nextLoss = 0;
+	static bool bInitialized = false;
+
+	if (!bInitialized)
+	{
+		bInitialized = true;
+
+		char value[32];
+		if (GetEnvironmentVariableA("WAPP_DX12_SIMULATE_DEVICE_LOSS", value, sizeof(value)) > 0)
+			interval = ULONGLONG(atoi(value)) * 1000;
+
+		nextLoss = GetTickCount64() + interval;
+	}
+
+	if (interval == 0 || wax::DX12Backend::isDeviceLost() || GetTickCount64() < nextLoss)
+		return;
+
+	if (wax::DX12Backend::simulateDeviceLoss())
+		OutputDebugStringA("wapp: Simulating device loss\n");
+
+	nextLoss = GetTickCount64() + interval;
+}
+#endif
+
+//____ updateGfxBackend() _____________________________________________________
+
+void updateGfxBackend()
+{
+#ifndef NDEBUG
+	_simulateDeviceLoss();
+#endif
+
+	// DX12Backend notices a lost device on its own, but only once it tries to
+	// use it. Asking every frame catches it before we render into it.
+
+	if (!wax::DX12Backend::checkDeviceLost())
+		return;
+
+	ULONGLONG now = GetTickCount64();
+	if (now < s_nextRecoveryAttempt)
+		return;
+
+	if (_recoverDevice())
+	{
+		OutputDebugStringA("wapp: Recovered from device loss\n");
+		s_nextRecoveryAttempt = 0;
+	}
+	else
+	{
+		OutputDebugStringA("wapp: Failed to recover from device loss, trying again shortly\n");
+		s_nextRecoveryAttempt = now + c_recoveryRetryInterval;
+	}
+}
 
 //____ initGfxBackend() _______________________________________________________
 

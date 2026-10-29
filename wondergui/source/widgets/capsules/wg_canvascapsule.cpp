@@ -340,6 +340,12 @@ namespace wg
 		if (m_pCanvas && bFollowCanvas && m_pCanvas->colorSpace() != colorSpace)
 			m_pCanvas = nullptr;
 
+		// A canvas that lost what we rendered into it, together with the device of
+		// a GPU backend, is no better than none, whoever renders it.
+
+		if (m_pCanvas && m_pCanvas->isContentLost())
+			m_pCanvas = nullptr;
+
 		// Possibly regenerate the canvas
 
 		if (!m_pCanvas)
