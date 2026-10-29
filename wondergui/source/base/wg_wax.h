@@ -500,6 +500,10 @@ namespace wg
 	using wax::WarpGenerator_wp;
 	using wax::WarpGenerator;
 
+	//____ wax_utf8.h ______________________________________________________________
+
+	namespace Utf8 = wax::Utf8;
+
 	//____ wax_warpmap.h ___________________________________________________________
 
 	using wax::Warpmap_p;

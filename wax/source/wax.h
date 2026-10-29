@@ -55,6 +55,7 @@
 #include <wax_devicefactory.h>
 #include <wax_enumextras.h>
 #include <wax_util.h>
+#include <wax_utf8.h>
 #include <wax_gridwalker.h>
 #include <wax_lzcompression.h>
 #include <wax_patches.h>
