@@ -124,6 +124,8 @@ namespace wg
 	TP_CALLBACK_ENVIRON							DX12Backend::s_releaserEnv;
 	bool										DX12Backend::s_bReleaserReady = false;
 	std::atomic<int>							DX12Backend::s_nPendingReleases(0);
+	std::mutex									DX12Backend::s_pendingMutex;
+	std::vector<DX12Backend::PendingRelease*>	DX12Backend::s_pendingReleases;
 	std::vector<DX12Backend*>					DX12Backend::s_backends;
 
 	//____ create() ______________________________________________________________
@@ -164,14 +166,6 @@ namespace wg
 
 	bool DX12Backend::setDevice(ID3D12Device* pDX12Device, ID3D12CommandQueue* pDX12CommandQueue)
 	{
-		if (!s_backends.empty())
-		{
-			GfxBase::throwError(ErrorLevel::Error, ErrorCode::IllegalCall,
-				"Can't change D3D12 device while DX12Backends exist.",
-				nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
-			return false;
-		}
-
 		if ((pDX12Device == nullptr) != (pDX12CommandQueue == nullptr))
 		{
 			GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam,
@@ -180,11 +174,56 @@ namespace wg
 			return false;
 		}
 
+		if (!s_backends.empty())
+		{
+			// The owner of the device has to let go of it in between, see the header.
+
+			if (pDX12Device && s_pDevice)
+			{
+				GfxBase::throwError(ErrorLevel::Error, ErrorCode::IllegalCall,
+					"Can't change D3D12 device while DX12Backends exist without first releasing it with setDevice(nullptr, nullptr).",
+					nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
+				return false;
+			}
+
+			for (auto pBackend : s_backends)
+			{
+				if (pBackend->m_bCommandListOpen || pBackend->m_bInSession)
+				{
+					GfxBase::throwError(ErrorLevel::Error, ErrorCode::IllegalCall,
+						"Can't change D3D12 device in the middle of a frame.",
+						nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
+					return false;
+				}
+			}
+		}
+
+		if (pDX12Device && pDX12Device == s_pDevice.Get() && pDX12CommandQueue == s_pCommandQueue.Get())
+			return true;
+
 		if (s_pDevice)
 		{
+			// Surfaces go first. If the device still works they read back what was
+			// rendered into them, and the backends have to be there to submit and
+			// wait for what is still recorded.
+
+			DX12Surface::evacuateAll();
+			DX12Edgemap::_evacuateAll();
+
+			for (auto pBackend : s_backends)
+				pBackend->_releaseDeviceObjects();
+
+			// The GPU is done with everything the release callbacks still hold, or
+			// gone. Either way it can go now, and with it the last of the device.
+
+			_flushPendingReleases();
+
 			DX12Surface::exitDevice();
 			DX12Edgemap::exitDevice();
+		}
 
+		if (!pDX12Device && s_backends.empty())
+		{
 			for (auto& blob : s_vertexShaderBlobs)
 				blob.Reset();
 			for (auto& blob : s_pixelShaderBlobs)
@@ -198,23 +237,52 @@ namespace wg
 
 		s_pDevice = pDX12Device;
 		s_pCommandQueue = pDX12CommandQueue;
-		s_bImplicitDevice = false;
 
-		// A new device starts out healthy. If it is the one we already had, the
-		// next call on it will tell us again.
+		// A device replaced under the backends is still theirs to release with the
+		// last of them.
 
-		s_bDeviceLost = false;
-		s_deviceRemovedReason = S_OK;
+		if (s_backends.empty())
+			s_bImplicitDevice = false;
 
 		if (pDX12Device)
 		{
+			// A new device starts out healthy. If it is the one we already had, the
+			// next call on it will tell us again. Without one, a lost device stays
+			// lost, so nothing tries to use the missing device in between.
+
+			s_bDeviceLost = false;
+			s_deviceRemovedReason = S_OK;
+
 			// Surfaces and edgemaps create their own resources and need the device for it.
 
 			DX12Surface::setDevice(pDX12Device);
 			DX12Edgemap::setDevice(pDX12Device);
+
+			for (auto pBackend : s_backends)
+				pBackend->_createDeviceObjects(pDX12Device, pDX12CommandQueue);
+
+			DX12Surface::migrateAll();
+			DX12Edgemap::_migrateAll();
 		}
 
 		return true;
+	}
+
+	//____ simulateDeviceLoss() __________________________________________________
+
+	bool DX12Backend::simulateDeviceLoss()
+	{
+#ifdef __ID3D12Device5_INTERFACE_DEFINED__
+		Microsoft::WRL::ComPtr<ID3D12Device5> pDevice5;
+
+		if (!s_pDevice || FAILED(s_pDevice.As(&pDevice5)))
+			return false;
+
+		pDevice5->RemoveDevice();
+		return true;
+#else
+		return false;
+#endif
 	}
 
 	//____ waitForCompletionOfAll() ______________________________________________
@@ -405,7 +473,7 @@ namespace wg
 					continue;
 
 				UINT32 first = nDone > 8 ? nDone - 8 : 0;
-				UINT32 last = std::min(nOps, nDone + 8);
+				UINT32 last = (std::min)(nOps, nDone + 8);		// Parenthesized against windows.h's min macro.
 
 				for (UINT32 i = first; i < last; i++)
 				{
@@ -476,23 +544,40 @@ namespace wg
 		m_pSurfaceFactory = DX12SurfaceFactory::create();
 		m_pEdgemapFactory = DX12EdgemapFactory::create();
 
-		m_pDX12CommandQueue = pDX12CommandQueue;
-		m_pDX12Device = pDX12Device;
-
 		s_backends.push_back(this);
 
 		if (s_backends.size() == 1)
 			_initReleaser();
 
+		m_fenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+
+		_createDeviceObjects(pDX12Device, pDX12CommandQueue);
+	}
+
+	//____ _createDeviceObjects() ________________________________________________
+	//
+	// Everything we have on the device. Called by the constructor, and by
+	// setDevice() when we move to a new device, after _releaseDeviceObjects().
+
+	bool DX12Backend::_createDeviceObjects(ID3D12Device* pDX12Device, ID3D12CommandQueue* pDX12CommandQueue)
+	{
+		m_pDX12CommandQueue = pDX12CommandQueue;
+		m_pDX12Device = pDX12Device;
+
 		m_srvDescriptorSize = pDX12Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 		m_samplerDescriptorSize = pDX12Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
+
+		// The old fence may have set the event after we last waited on it.
+
+		if (m_fenceEvent)
+			ResetEvent(m_fenceEvent);
 
 		// Anything failing here leaves us unable to record, and beginRender() then
 		// does nothing. That is what happens on a device that is already lost,
 		// which CHECK_HR reports once rather than for each call.
 
 		bool bOK = CHECK_HR(pDX12Device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&m_commandFence)), "CreateFence");
-		m_fenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+		m_fenceValue = 0;
 
 		// Create a command allocator for each frame resource.
 		//
@@ -531,10 +616,84 @@ namespace wg
 
 		m_bCommandListOpen = false;
 
-		if (!_createPipelineResources() && !s_bDeviceLost)
-			GfxBase::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to create pipeline resources, nothing will render.",
-				this, &TYPEINFO, __func__, __FILE__, __LINE__);
+		if (!_createPipelineResources())
+		{
+			if (!s_bDeviceLost)
+				GfxBase::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to create pipeline resources, nothing will render.",
+					this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			return false;
+		}
 
+		return m_bDeviceObjectsOK;
+	}
+
+	//____ _releaseDeviceObjects() _______________________________________________
+	//
+	// Lets go of everything we have on the device, and everything we know of
+	// that lives there: buffers, pipelines, the canvases we were pointed at. If
+	// the device still works, we wait for the GPU to finish with it first.
+
+	void DX12Backend::_releaseDeviceObjects()
+	{
+		if (!s_bDeviceLost)
+			waitForCompletion();
+
+		m_bCommandListOpen = false;
+		m_bDeviceObjectsOK = false;
+		m_bInSession = false;
+		m_bSessionOnDefaultCanvas = false;
+
+		m_heldResources.clear();
+		m_blitSourceCanvases.clear();
+		m_objectSRVs.clear();
+
+		m_commandList = nullptr;
+		m_commandFence = nullptr;
+		m_fenceValue = 0;
+
+		for (auto& frame : m_frameResources)
+		{
+			frame.commandAllocator = nullptr;
+			frame.vertexBuffer = nullptr;			// Releasing a buffer unmaps it.
+			frame.colorBuffer = nullptr;
+			frame.extrasBuffer = nullptr;
+			frame.srvHeap = nullptr;
+			frame.srvCapacity = 0;
+			frame.pVertexBufferData = nullptr;
+			frame.pColorBufferData = nullptr;
+			frame.pExtrasBufferData = nullptr;
+			frame.vertexCapacity = 0;
+			frame.colorCapacity = 0;
+			frame.extrasCapacity = 0;
+			frame.nSRVDescriptors = 0;
+			frame.fenceValue = 0;
+		}
+
+		m_pVertexBeg = m_pVertexEnd = m_pVertexPtr = nullptr;
+		m_pColorBeg = m_pColorEnd = m_pColorPtr = nullptr;
+		m_pExtrasBeg = m_pExtrasEnd = m_pExtrasPtr = nullptr;
+
+		m_pipelines.clear();
+		m_mipmapPipelines.clear();
+		m_pActivePipeline = nullptr;
+		m_pRootSignature = nullptr;
+		m_pSamplerHeap = nullptr;
+
+		m_pActiveCanvas = nullptr;
+		m_activeCanvasRTV = {};
+		m_activeCanvasFormat = DXGI_FORMAT_UNKNOWN;
+
+		m_pBlitSource = nullptr;
+		m_bBlitSourceBound = false;
+
+		// The default canvas is a swap chain buffer, which goes with the device.
+		// Its size, scale and format stay, they are still what the window has.
+
+		m_defaultCanvasRTV = {};
+		m_defaultCanvasBuffer = nullptr;
+
+		m_pDX12Device = nullptr;
+		m_pDX12CommandQueue = nullptr;
 	}
 
 	//____ Destructor ____________________________________________________________
@@ -1153,6 +1312,11 @@ namespace wg
 			{
 				pEntry->resources.swap(m_heldResources);
 
+				{
+					std::lock_guard<std::mutex> lock(s_pendingMutex);
+					s_pendingReleases.push_back(pEntry);
+				}
+
 				// Counted before the callback can possibly run. If the GPU got there
 				// in the meantime the event is already set, and the wait fires at once.
 
@@ -1172,9 +1336,9 @@ namespace wg
 
 	//____ _onSubmissionDone() _________________________________________________
 	//
-	// Runs once on a thread pool thread when the GPU has finished a submission.
-	// Touches nothing but its own entry, so it needs no lock. Releasing D3D12
-	// resources is thread safe.
+	// Runs once on a thread pool thread when the GPU has finished a submission,
+	// or when _flushPendingReleases() hurries it along. Only taking the entry off
+	// the pending list needs the lock. Releasing D3D12 resources is thread safe.
 
 	void CALLBACK DX12Backend::_onSubmissionDone(PTP_CALLBACK_INSTANCE pInstance, PVOID pContext, PTP_WAIT pWait, TP_WAIT_RESULT waitResult)
 	{
@@ -1182,6 +1346,11 @@ namespace wg
 		(void) waitResult;					// Always signaled, we set no timeout.
 
 		auto pEntry = static_cast<PendingRelease*>(pContext);
+
+		{
+			std::lock_guard<std::mutex> lock(s_pendingMutex);
+			s_pendingReleases.erase(std::remove(s_pendingReleases.begin(), s_pendingReleases.end(), pEntry), s_pendingReleases.end());
+		}
 
 		pEntry->resources.clear();
 		CloseHandle(pEntry->hEvent);
@@ -1220,24 +1389,44 @@ namespace wg
 	//____ _exitReleaser() _____________________________________________________
 	//
 	// Called by the last backend's destructor, after it has waited for the GPU.
-	// Every submission is then done, so every callback has fired or is about
-	// to, and we only wait for them to finish. On a lost device the fence events
-	// may never come, so the wait is bounded: better to leave a few resources
-	// unreleased than to hang the host. The callback library keeps our module
-	// loaded for any callback still running.
+	// The callback library keeps our module loaded for any callback still
+	// running.
 
 	void DX12Backend::_exitReleaser()
 	{
 		if (!s_bReleaserReady)
 			return;
 
+		_flushPendingReleases();
+
+		DestroyThreadpoolEnvironment(&s_releaserEnv);
+		s_bReleaserReady = false;
+	}
+
+	//____ _flushPendingReleases() ______________________________________________
+	//
+	// For when the GPU is done with every submission, or the device is lost:
+	// sets the events the release callbacks wait for ourselves, then waits for
+	// the callbacks to finish. On a lost device the fence may never set them,
+	// and what they hold would keep the old device alive, which stops a new one
+	// from being created on the same adapter.
+	//
+	// The wait is bounded all the same: better to leave a few resources
+	// unreleased than to hang the host.
+
+	void DX12Backend::_flushPendingReleases()
+	{
+		{
+			std::lock_guard<std::mutex> lock(s_pendingMutex);
+
+			for (auto pEntry : s_pendingReleases)
+				SetEvent(pEntry->hEvent);
+		}
+
 		ULONGLONG deadline = GetTickCount64() + 2000;
 
 		while (s_nPendingReleases > 0 && GetTickCount64() < deadline)
 			Sleep(1);
-
-		DestroyThreadpoolEnvironment(&s_releaserEnv);
-		s_bReleaserReady = false;
 	}
 
 	//____ _setCanvas() _______________________________________________________

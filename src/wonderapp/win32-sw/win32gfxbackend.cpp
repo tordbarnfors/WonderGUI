@@ -50,3 +50,9 @@ void initGfxBackend()
 void exitGfxBackend()
 {
 }
+
+//____ updateGfxBackend() _____________________________________________________
+
+void updateGfxBackend()
+{
+}

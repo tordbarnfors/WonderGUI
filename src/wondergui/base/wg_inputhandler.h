@@ -144,6 +144,8 @@ namespace wg
 		~InputHandler();
 
 		bool		_isInStayEnteredList( Widget * pWidget ) const;
+		void		_releaseStayEntered( const std::vector<Widget_wp>& widgets );
+		void		_resolveReleasedStayEntered( int64_t timestamp );
 
 		Widget *	_updateEnteredWidgets( Widget * pMarkedWidget, int64_t timestamp );
 
@@ -234,6 +236,7 @@ namespace wg
 		//
 
 		std::map<intptr_t,std::vector<Widget_wp>>	m_stayEnteredLists;
+		std::vector<Widget_wp>	m_releasedStayEntered;		// Released from a stay-entered list, kept entered until the pointer has been rechecked.
 
 		//
 		

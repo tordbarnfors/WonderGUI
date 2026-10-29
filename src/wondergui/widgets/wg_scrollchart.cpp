@@ -125,11 +125,13 @@ namespace wg
 		if( m_bAxisSwapped )
 			std::swap(surfaceSize.w,surfaceSize.h);
 
-		// Make sure we have a canvas, in the color space of the canvas we are rendered onto.
+		// Make sure we have a canvas, in the color space of the canvas we are rendered onto
+		// and with what we have scrolled in still there. That goes with the device of a GPU
+		// backend, and then we start over.
 
 		ColorSpace colorSpace = pDevice->canvas().colorSpace;
 
-		if (m_pScrollSurface && m_pScrollSurface->colorSpace() != colorSpace)
+		if (m_pScrollSurface && (m_pScrollSurface->colorSpace() != colorSpace || m_pScrollSurface->isContentLost()))
 			m_pScrollSurface = nullptr;
 
 		if (m_pScrollSurface == nullptr)

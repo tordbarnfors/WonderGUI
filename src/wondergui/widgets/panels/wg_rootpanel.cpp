@@ -41,9 +41,9 @@ namespace wg
 
 	//____ create() ___________________________________________________________
 
-	RootPanel_p	RootPanel::create() 
-	{ 
-		return RootPanel_p(new RootPanel()); 
+	RootPanel_p	RootPanel::create()
+	{
+		return RootPanel_p(new RootPanel());
 	}
 
 	RootPanel_p	RootPanel::create(const Blueprint& bp)
@@ -52,21 +52,21 @@ namespace wg
 	}
 
 	RootPanel_p	RootPanel::create( Surface* pCanvas, GfxDevice* pDevice )
-	{ 
+	{
 		if (!pCanvas)
 		{
 			Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Provided canvas is null.", nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return nullptr;
 		}
 
-		return RootPanel_p(new RootPanel(pCanvas, pDevice)); 
+		return RootPanel_p(new RootPanel(pCanvas, pDevice));
 	}
 
 	RootPanel_p	RootPanel::create( CanvasRef ref, GfxDevice* pDevice )
 	{
 		if( ref < CanvasRef_min || ref > CanvasRef_max || ref == CanvasRef::None )
 		{
-			Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Provided CanvasRef is invalid.", nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);	
+			Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Provided CanvasRef is invalid.", nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return nullptr;
 		}
 
@@ -95,7 +95,7 @@ namespace wg
 		bp.color = HiColor(4096, 0, 0, 2048);
 		bp.outlineThickness = 1;
 		bp.outlineColor = HiColor(4096, 0, 0, 2048);
-		
+
 		BoxSkin::StateBP sbp;
 		sbp.state = State::Focused;
 		sbp.data.color = HiColor(4096, 0, 0, 2048);
@@ -112,7 +112,7 @@ namespace wg
 		m_pGfxDevice = bp.gfxDevice;
 		m_pCanvasLayers = bp.canvasLayers;
 		m_windowRef = bp.windowRef;
-				
+
 		GfxDevice* pUseGfxDevice = bp.gfxDevice ? bp.gfxDevice.rawPtr() : Base::defaultGfxDevice().rawPtr();
 
 		if( bp.canvasRef != CanvasRef::None )
@@ -133,7 +133,7 @@ namespace wg
 			m_scale = bp.scale;
 		else
 			m_scale = m_canvas.scale;
-		
+
 		if( !bp.geo.isEmpty() )
 		{
 			RectSPX geoSpx = RectSPX::overlap(m_canvas.size, align(ptsToSpx(bp.geo,m_scale)));
@@ -143,7 +143,7 @@ namespace wg
 				m_geo = geoSpx;
 			}
 		}
-	
+
 		if( bp.finalizer )
 			setFinalizer(bp.finalizer);
 
@@ -158,7 +158,7 @@ namespace wg
 			bp.color = HiColor(4096, 0, 0, 2048);
 			bp.outlineThickness = 1;
 			bp.outlineColor = HiColor(4096, 0, 0, 2048);
-			
+
 			BoxSkin::StateBP sbp;
 			sbp.state = State::Focused;
 			sbp.data.color = HiColor(4096, 0, 0, 2048);
@@ -236,7 +236,7 @@ namespace wg
 		{
 			return true;
 		}
-		
+
 		int oldScale = m_scale;
 		SizeSPX oldSize = m_geo.size();
 
@@ -267,7 +267,7 @@ namespace wg
 			Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "No GfxDevice provided and no default GfxDevice set.", nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return false;
 		}
-			
+
 		if( pGfxDevice->canvas(canvasRef).size.isEmpty() )
 		{
 			Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Provided CanvasRef does not refer to a valid canvas.", nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
@@ -540,7 +540,7 @@ namespace wg
 			//TODO: Error handling!
 			return false;						// Missing GfxDevice or Canvas or widgets to render.
 		}
-		
+
 		// Make sure we have a vaild clip rectangle (doesn't go outside our geometry and has an area)
 
 		RectSPX geo = m_geo;
@@ -623,7 +623,7 @@ namespace wg
 			return false;
 		}
 
-		
+
 		// Turn dirty patches into update patches
 		//TODO: Optimize by just making a swap.
 
@@ -688,7 +688,7 @@ namespace wg
 
 	void RootPanel::_childOverflowChanged( StaticSlot * pSlot, const BorderSPX& oldOverflow, const BorderSPX& newOverflow )
 	{
-		
+
 	}
 
 
@@ -784,7 +784,7 @@ namespace wg
 	bool RootPanel::_childRequestFocus(StaticSlot* pSlot, Widget* pWidget, bool bRaiseWindow)
 	{
 		// Set new focused widget for this Root
-		
+
 		Widget* pOldFocus = m_pFocusedChild.rawPtr();
 		m_pFocusedChild = pWidget;
 
@@ -797,12 +797,13 @@ namespace wg
 
 			Base::inputHandler()->setFocusedWindow(this);
 		}
-		
-		//
 
+		// Without actually checking the window focus, we could miss requesting
+		// it when required, as pWidget may have initially requested focus with
+		// bRaiseWindow set to false.
 		if( pOldFocus == pWidget )
-			return true;
-		
+			return Base::inputHandler()->focusedWindow() == this;
+
 		return Base::inputHandler()->_focusChanged(this, pOldFocus, pWidget);
 	}
 
@@ -829,7 +830,7 @@ namespace wg
 			Base::inputHandler()->_focusChanged(this, m_pFocusedChild, pNewFocus );
 
 		m_pFocusedChild = pNewFocus;
-		
+
 		return (Base::inputHandler()->focusedWidget() != pWidget);
 	}
 

@@ -117,15 +117,28 @@ void DX12Wrapper::exitDebugger()
 
 DX12Wrapper::DX12Wrapper()
 {
+	m_renderQueueFenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+
+	if (!createDevice())
+		assert(false);
+}
+
+//____ createDevice() __________________________________________________________
+
+bool DX12Wrapper::createDevice()
+{
 	// Create factory. The debug flag requires the debug layer to be installed,
 	// so only ask for it if initDebugger() managed to enable it.
+	//
+	// A new factory every time, since one created before a driver update or a
+	// change of adapters still lists the old ones.
 
 	UINT factoryFlags = g_pD3D12DebugLayer ? DXGI_CREATE_FACTORY_DEBUG : 0;
 
 	if (!_logHR(CreateDXGIFactory2(factoryFlags, IID_PPV_ARGS(&m_pDXGIFactory)), "CreateDXGIFactory2"))
 	{
-		assert(false);
-		return;
+		releaseDevice();
+		return false;
 	}
 
 	// Find adapter
@@ -133,16 +146,26 @@ DX12Wrapper::DX12Wrapper()
 	if (!_findAdapter())
 	{
 		OutputDebugStringA("DX12Wrapper: _findAdapter failed - no suitable DXGI adapter found\n");
-		assert(false);
-		return;
+		releaseDevice();
+		return false;
 	}
 
 	// Create device
 
 	if (!_logHR(D3D12CreateDevice(m_pAdapter.Get(), D3D_FEATURE_LEVEL_12_1, IID_PPV_ARGS(m_pDX12Device.GetAddressOf())), "D3D12CreateDevice"))
 	{
-		assert(false);
-		return;
+		releaseDevice();
+		return false;
+	}
+
+	// If something still holds a device that was removed, D3D12 gives us that
+	// one back rather than a new one.
+
+	if (m_pDX12Device->GetDeviceRemovedReason() != S_OK)
+	{
+		OutputDebugStringA("DX12Wrapper: D3D12CreateDevice returned the removed device, something still holds a reference to it\n");
+		releaseDevice();
+		return false;
 	}
 
 	// Break into the debugger on D3D12 errors (only succeeds if the validation
@@ -163,10 +186,35 @@ DX12Wrapper::DX12Wrapper()
 	if (!_createRenderCommandQueue())
 	{
 		OutputDebugStringA("DX12Wrapper: _createRenderCommandQueue failed\n");
-		assert(false);
-		return;
+		releaseDevice();
+		return false;
 	}
 
+	return true;
+}
+
+//____ releaseDevice() _________________________________________________________
+
+void DX12Wrapper::releaseDevice()
+{
+	m_renderQueueFence.Reset();
+	m_renderQueueFenceValue = 0;
+	m_pRenderCommandQueue.Reset();
+
+	// Whatever is still holding the device keeps it alive, and D3D12CreateDevice()
+	// would hand it back to us. Say so, it is the first thing to look for when
+	// recovery fails.
+
+	ULONG nRefs = m_pDX12Device.Reset();
+	if (nRefs > 0)
+	{
+		char msg[192];
+		sprintf_s(msg, "DX12Wrapper: %lu reference(s) to the released device remain elsewhere\n", (unsigned long)nRefs);
+		OutputDebugStringA(msg);
+	}
+
+	m_pAdapter.Reset();
+	m_pDXGIFactory.Reset();
 }
 
 //____ destructor ______________________________________________________________
@@ -248,9 +296,7 @@ bool DX12Wrapper::_createRenderCommandQueue()
 		return false;
 	}
 
-	m_renderQueueFenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
-	if (!m_renderQueueFenceEvent)
-		return false;
+	// The event outlives the device, see the constructor.
 
-	return true;
+	return m_renderQueueFenceEvent != nullptr;
 }

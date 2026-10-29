@@ -58,6 +58,14 @@ public:
 
 	void				flushRenderQueue();
 
+	// For recovering from a lost device. releaseDevice() lets go of factory,
+	// adapter, device and queue, createDevice() makes new ones. D3D12 hands out
+	// one device per adapter and gives back the old one for as long as anything
+	// holds it, so everything else has to let go of the old device in between.
+
+	bool				createDevice();
+	void				releaseDevice();
+
 protected:
 
 

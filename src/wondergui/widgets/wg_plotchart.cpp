@@ -121,7 +121,10 @@ namespace wg
 		{
 			if (entry.m_bVisible)
 			{
-				if (entry.m_sprite && entry.m_sprite->colorSpace() != colorSpace)
+				// A sprite in the wrong color space, or that lost its content with the
+				// device of a GPU backend, gets drawn again.
+
+				if (entry.m_sprite && (entry.m_sprite->colorSpace() != colorSpace || entry.m_sprite->isContentLost()))
 					entry.m_sprite = nullptr;
 
 				if (!entry.m_sprite)

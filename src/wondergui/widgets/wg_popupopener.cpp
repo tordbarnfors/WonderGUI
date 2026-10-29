@@ -65,6 +65,13 @@ namespace wg
 		m_bOpenOnHover = bOpen;
 	}
 
+	//____ setTakeFocus() _____________________________________________________
+
+	void PopupOpener::setTakeFocus(bool bTake)
+	{
+		m_bTakeFocus = bTake;
+	}
+
 	//____ setMouseButton() ______________________________________________________
 	
 	void PopupOpener::setMouseButton(MouseButton button)
@@ -230,7 +237,7 @@ namespace wg
 		auto pLayer = _parent()->_getPopupOverlay();
 		if (pLayer && m_pPopup)
 		{
-			pLayer->popupSlots.pushFront(m_pPopup, this, pLayer->toLocal(globalGeo()), m_attachPoint, m_bOpenOnHover, m_bCloseOnSelect, Size(1000000, 1000000), m_popupOverflow );
+			pLayer->popupSlots.pushFront(m_pPopup, this, pLayer->toLocal(globalGeo()), m_attachPoint, m_bOpenOnHover, m_bCloseOnSelect, Size(1000000, 1000000), m_popupOverflow, m_bTakeFocus );
 			m_bOpen = true;
 		}
 	}

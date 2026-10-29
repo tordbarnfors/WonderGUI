@@ -71,6 +71,16 @@ namespace wg
 		void	_samplesUpdated(int edgeBegin, int edgeEnd, int sampleBegin, int sampleEnd) override;
 		void	_colorsUpdated(int beginColor, int endColor) override;
 
+		// Used by DX12Backend::setDevice() to move every edgemap from one device to
+		// another. Our buffer only holds what Edgemap already has in memory, so
+		// evacuating just lets go of it and migrating builds it anew.
+
+		static void	_evacuateAll();
+		static void	_migrateAll();
+
+		void	_link();						// Into the list of live edgemaps.
+		void	_unlink();
+
 		// Where DX12Backend finds us. Everything the segments shader reads lives in
 		// one buffer, in float4 entries, which is how the shader indexes it:
 		//
@@ -99,6 +109,14 @@ namespace wg
 
 		int		m_samplesSize = 0;				// Size of the edge strips and raw samples, in float4 entries.
 		bool	m_bHasTintSlots = false;
+
+		// All live edgemaps, linked through themselves, so they can be found when
+		// the device has to be replaced.
+
+		DX12Edgemap *	m_pPrevLive = nullptr;
+		DX12Edgemap *	m_pNextLive = nullptr;
+
+		static DX12Edgemap *	s_pFirstLive;
 
 		static ID3D12Device *	s_pDevice;
 	};
