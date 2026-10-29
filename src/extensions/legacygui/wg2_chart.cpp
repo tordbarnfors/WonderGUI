@@ -798,10 +798,10 @@ void WgChart::_onEvent(const WgEvent::Event * pEvent, WgEventHandler * pHandler)
 				// The waveform keeps its own copy of the colors, so pass the faded ones on.
 				// Otherwise it is stuck with the colors it had when it was last created.
 
-				if( p->m_pWaveform && (p->m_pWaveform->color() != wg::HiColor(p->fillColor) || p->m_pWaveform->outlineColor() != wg::HiColor(p->topLineColor)) )
+				if( p->m_pWave && (p->m_pWave->color() != wg::HiColor(p->fillColor) || p->m_pWave->outlineColor() != wg::HiColor(p->topLineColor)) )
 				{
-					p->m_pWaveform->setColor(p->fillColor);
-					p->m_pWaveform->setOutlineColor(p->topLineColor);
+					p->m_pWave->setColor(p->fillColor);
+					p->m_pWave->setOutlineColor(p->topLineColor);
 					isDirty = true;
 				}
 			}
