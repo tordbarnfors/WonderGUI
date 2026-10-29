@@ -37,6 +37,7 @@ namespace wg
 	const TypeInfo DX12Edgemap::TYPEINFO = { "DX12Edgemap", &Edgemap::TYPEINFO };
 
 	ID3D12Device * DX12Edgemap::s_pDevice = nullptr;
+	DX12Edgemap *  DX12Edgemap::s_pFirstLive = nullptr;
 
 	//____ setDevice() _________________________________________________________
 
@@ -100,6 +101,8 @@ namespace wg
 
 	DX12Edgemap::DX12Edgemap(const Blueprint& bp) : Edgemap(bp)
 	{
+		_link();
+
 		// One buffer holds everything the segments shader reads: an edge strip per
 		// pixel column, then the palette, then a white color. Laid out as floats
 		// here, read as float4 entries by the shader.
@@ -110,7 +113,15 @@ namespace wg
 		m_paletteOfs = samplesSize;
 		m_whiteColorOfs = samplesSize + paletteSize;
 
-		int bufferSize = samplesSize + paletteSize + 4;			// The last 4 are the white color.
+		m_bufferSize = samplesSize + paletteSize + 4;			// The last 4 are the white color.
+
+		// Nothing can be created on a lost device, and trying costs an exception
+		// inside the D3D12 runtime. The edgemap is left without a buffer, as when
+		// creating one fails, and DX12Backend draws nothing for it until a new
+		// device is set, which gives it one, see _migrateAll().
+
+		if( DX12Backend::isDeviceLost() )
+			return;
 
 		if( !s_pDevice )
 		{
@@ -120,19 +131,22 @@ namespace wg
 			return;
 		}
 
-		// Nothing can be created on a lost device, and trying costs an exception
-		// inside the D3D12 runtime. The edgemap is left without a buffer, as when
-		// creating one fails, and DX12Backend draws nothing for it.
+		_createBuffer( false );
+	}
 
-		if( DX12Backend::isDeviceLost() )
-			return;
+	//____ _createBuffer() _______________________________________________________
+	//
+	// Everything in the buffer is worked out from samples and colors Edgemap keeps
+	// in memory, so it can be made again from scratch on a new device.
 
+	bool DX12Edgemap::_createBuffer( bool bConvertSamples )
+	{
 		D3D12_HEAP_PROPERTIES heapProps = {};
 		heapProps.Type = D3D12_HEAP_TYPE_UPLOAD;
 
 		D3D12_RESOURCE_DESC bufDesc = {};
 		bufDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
-		bufDesc.Width = UINT64(bufferSize) * sizeof(float);
+		bufDesc.Width = UINT64(m_bufferSize) * sizeof(float);
 		bufDesc.Height = 1;
 		bufDesc.DepthOrArraySize = 1;
 		bufDesc.MipLevels = 1;
@@ -148,7 +162,7 @@ namespace wg
 			if( !DX12Backend::checkDeviceLost() )
 				GfxBase::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to create buffer for edgemap.",
 					this, &TYPEINFO, __func__, __FILE__, __LINE__);
-			return;
+			return false;
 		}
 
 		// Named after us, so the debug layer's live object report shows where it comes from.
@@ -163,10 +177,11 @@ namespace wg
 		if( FAILED(m_buffer->Map(0, &readRange, (void**) &m_pBuffer)) )
 		{
 			m_buffer = nullptr;
+			m_pBuffer = nullptr;
 			if( !DX12Backend::checkDeviceLost() )
 				GfxBase::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to map buffer for edgemap.",
 					this, &TYPEINFO, __func__, __FILE__, __LINE__);
-			return;
+			return false;
 		}
 
 		// A D3D12 upload buffer comes with whatever was in that memory, unlike an
@@ -176,7 +191,13 @@ namespace wg
 		// can change what the GPU is still reading for the previous frame. Metal
 		// has the same, but our own per-frame buffers show what the fix looks like.
 
-		memset( m_pBuffer, 0, size_t(bufferSize) * sizeof(float) );
+		memset( m_pBuffer, 0, size_t(m_bufferSize) * sizeof(float) );
+
+		// A new edgemap gets its samples converted as they are set. One moving to a
+		// new device has them all already.
+
+		if( bConvertSamples )
+			_samplesUpdated(0, m_nbSegments - 1, 0, m_size.w + 1);
 
 		_colorsUpdated(0, m_paletteSize);
 
@@ -188,12 +209,71 @@ namespace wg
 		*pOut++ = 1.f;
 		*pOut++ = 1.f;
 		*pOut++ = 1.f;
+
+		return true;
+	}
+
+	//____ _evacuateAll() ________________________________________________________
+
+	void DX12Edgemap::_evacuateAll()
+	{
+		// Releasing the buffer unmaps it.
+
+		for( DX12Edgemap * p = s_pFirstLive; p; p = p->m_pNextLive )
+		{
+			p->m_buffer = nullptr;
+			p->m_pBuffer = nullptr;
+		}
+	}
+
+	//____ _migrateAll() _________________________________________________________
+
+	void DX12Edgemap::_migrateAll()
+	{
+		if( !s_pDevice )
+			return;
+
+		for( DX12Edgemap * p = s_pFirstLive; p; p = p->m_pNextLive )
+		{
+			if( !p->m_buffer )
+				p->_createBuffer( true );
+		}
+	}
+
+	//____ _link() _______________________________________________________________
+
+	void DX12Edgemap::_link()
+	{
+		m_pNextLive = s_pFirstLive;
+
+		if( s_pFirstLive )
+			s_pFirstLive->m_pPrevLive = this;
+
+		s_pFirstLive = this;
+	}
+
+	//____ _unlink() _____________________________________________________________
+
+	void DX12Edgemap::_unlink()
+	{
+		if( m_pPrevLive )
+			m_pPrevLive->m_pNextLive = m_pNextLive;
+		else
+			s_pFirstLive = m_pNextLive;
+
+		if( m_pNextLive )
+			m_pNextLive->m_pPrevLive = m_pPrevLive;
+
+		m_pPrevLive = nullptr;
+		m_pNextLive = nullptr;
 	}
 
 	//____ destructor ____________________________________________________________
 
 	DX12Edgemap::~DX12Edgemap()
 	{
+		_unlink();
+
 		if( m_buffer && m_pBuffer )
 			m_buffer->Unmap(0, nullptr);
 	}

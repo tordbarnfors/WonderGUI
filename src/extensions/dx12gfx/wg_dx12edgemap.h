@@ -71,6 +71,18 @@ namespace wg
 		void	_samplesUpdated(int edgeBegin, int edgeEnd, int sampleBegin, int sampleEnd) override;
 		void	_colorsUpdated(int beginColor, int endColor) override;
 
+		bool	_createBuffer( bool bConvertSamples );	// Creates and fills m_buffer from our samples and colors.
+
+		// Used by DX12Backend::setDevice() to move every edgemap from one device to
+		// another. Our buffer only holds what Edgemap already has in memory, so
+		// evacuating just lets go of it and migrating builds it anew.
+
+		static void	_evacuateAll();
+		static void	_migrateAll();
+
+		void	_link();						// Into the list of live edgemaps.
+		void	_unlink();
+
 		// Where DX12Backend finds us. Everything the segments shader reads lives in
 		// one buffer: the edge strips first, then the palette, then a white color
 		// for the axis that has no colorstrip. Offsets are in float4 entries, which
@@ -89,6 +101,15 @@ namespace wg
 
 		int		m_paletteOfs = 0;				// Offset to the palette, in floats.
 		int		m_whiteColorOfs = 0;			// Offset to the white color, in floats.
+		int		m_bufferSize = 0;				// In floats.
+
+		// All live edgemaps, linked through themselves, so they can be found when
+		// the device has to be replaced.
+
+		DX12Edgemap *	m_pPrevLive = nullptr;
+		DX12Edgemap *	m_pNextLive = nullptr;
+
+		static DX12Edgemap *	s_pFirstLive;
 
 		static ID3D12Device *	s_pDevice;
 	};

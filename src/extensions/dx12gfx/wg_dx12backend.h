@@ -33,6 +33,7 @@
 #include <map>
 #include <vector>
 #include <atomic>
+#include <mutex>
 
 namespace wg
 {
@@ -94,9 +95,35 @@ namespace wg
 		//.____ Device _______________________________________________________
 
 		// Sets the device and render queue shared by all backends, surfaces and
-		// edgemaps, holding a reference to both. Can't be changed while any backend
-		// exists. setDevice(nullptr, nullptr) releases them, which should be done
-		// once all backends, surfaces and edgemaps are gone.
+		// edgemaps, holding a reference to both. setDevice(nullptr, nullptr)
+		// releases them, which is done once all backends, surfaces and edgemaps
+		// are gone, or to replace the device, see below.
+		//
+		// Backends, surfaces and edgemaps outlive the device they were made from.
+		// Setting a new one moves them all over to it: they let go of everything
+		// they had on the old device and create it anew on the new one. Surfaces
+		// keep their pixels in plain memory in between. With backends around this
+		// has to be done in two steps, between frames:
+		//
+		//   1. setDevice(nullptr, nullptr). Everything lets go of the device. If it
+		//      still works, what was rendered into canvas surfaces is read back
+		//      first, otherwise that is lost, and they keep the pixels they last
+		//      had. Backends render nothing until step 2.
+		//
+		//   2. setDevice(pNewDevice, pNewQueue). Everything moves onto it.
+		//
+		// D3D12 hands out one device per adapter and process, and gives back the
+		// old one for as long as anything holds it. So in between, whoever owns the
+		// device has to let go of every reference of its own - swap chains, their
+		// buffers and descriptor heaps, queues, fences - before creating the new
+		// one. Afterwards each backend needs setDefaultCanvas() again, since the
+		// default canvas belonged to a swap chain on the old device, and every
+		// window has to be redrawn in full, e.g. with RootPanel::addDirtyPatch().
+		//
+		// That redraw also restores what was rendered into canvas surfaces and lost
+		// with a lost device. Such surfaces say so through Surface::isContentLost(),
+		// and the widgets that keep content in canvases render it again when they
+		// see it. Surfaces of your own that you render into need the same check.
 
 		static bool					setDevice(ID3D12Device * pDX12Device, ID3D12CommandQueue * pDX12CommandQueue);
 		static ID3D12Device *		device() { return s_pDevice.Get(); }
@@ -120,8 +147,8 @@ namespace wg
 		// enabled before the device was created, its breadcrumbs and page fault
 		// in the debugger's output window. From then on all backends, surfaces and
 		// edgemaps stop touching the device and drop their rendering without
-		// complaint, until setDevice() is given a new one. That takes releasing
-		// every backend, surface and edgemap made from the old device first.
+		// complaint, until setDevice() is given a new one, which they all move
+		// onto as described above. isDeviceLost() stays true until then.
 
 		static bool				isDeviceLost() { return s_bDeviceLost; }
 		static HRESULT			deviceRemovedReason() { return s_deviceRemovedReason; }
@@ -136,6 +163,12 @@ namespace wg
 		// caller should skip its own error report in that case.
 
 		static bool				handleDeviceLoss(HRESULT hr);
+
+		// Removes the device for real, for testing recovery. Needs ID3D12Device5,
+		// Windows 10 1809 or later. The loss is found and reported the same way as
+		// any other, by the next call that fails or checkDeviceLost().
+
+		static bool				simulateDeviceLoss();
 
 		//.____ Misc _________________________________________________________
 
@@ -211,6 +244,9 @@ namespace wg
 		void _bindCanvasState();				// Render target, viewport and canvas scale for the active canvas.
 
 		static void _reportDeviceLost(HRESULT hr);		// Sets s_bDeviceLost and reports it, the first time only.
+
+		bool _createDeviceObjects(ID3D12Device* pDX12Device, ID3D12CommandQueue* pDX12CommandQueue);
+		void _releaseDeviceObjects();					// All of it, waiting for the GPU first if it still works.
 		static void _dumpDRED();						// Breadcrumbs and page fault to the debugger, if DRED was on.
 
 
@@ -246,6 +282,7 @@ namespace wg
 
 		static bool _initReleaser();					// With the first backend.
 		static void _exitReleaser();					// With the last one, once the GPU is done.
+		static void _flushPendingReleases();			// Once the GPU is done or gone: releases what callbacks still hold.
 		static void CALLBACK _onSubmissionDone(PTP_CALLBACK_INSTANCE pInstance, PVOID pContext, PTP_WAIT pWait, TP_WAIT_RESULT waitResult);
 
 		void _drawFillRects(const RectSPX* pRects, int nRects, HiColor color);
@@ -455,6 +492,13 @@ namespace wg
 		static bool											s_bReleaserReady;
 		static std::atomic<int>								s_nPendingReleases;		// Callbacks not yet finished.
 
+		// Entries whose callbacks have not yet started, so _flushPendingReleases()
+		// can fire them. A lost device may never signal the fence events they wait
+		// on, and they hold the old device through what they hold.
+
+		static std::mutex									s_pendingMutex;
+		static std::vector<PendingRelease*>					s_pendingReleases;
+
 
 		//
 
@@ -475,7 +519,9 @@ namespace wg
 
 		//
 
-		// Compiled once, shared by all backends. Released by setDevice(nullptr, nullptr).
+		// Compiled once, shared by all backends. Plain bytecode, so they survive a
+		// change of device. Released by setDevice(nullptr, nullptr) once no backend
+		// is left.
 
 		static Microsoft::WRL::ComPtr<ID3DBlob>				s_vertexShaderBlobs[int(PipelineKind::Size)];
 		static Microsoft::WRL::ComPtr<ID3DBlob>				s_pixelShaderBlobs[int(PipelineKind::Size)];
@@ -483,7 +529,7 @@ namespace wg
 		static Microsoft::WRL::ComPtr<ID3D12Device>			s_pDevice;
 		static Microsoft::WRL::ComPtr<ID3D12CommandQueue>	s_pCommandQueue;
 		static bool											s_bImplicitDevice;		// Set by create(device, queue), released with the last backend.
-		static bool											s_bDeviceLost;			// Cleared by setDevice().
+		static bool											s_bDeviceLost;			// Cleared when setDevice() is given a device.
 		static HRESULT										s_deviceRemovedReason;
 		static std::vector<DX12Backend*>					s_backends;				// All that exist. Not thread safe, like the rest of the backend.
 

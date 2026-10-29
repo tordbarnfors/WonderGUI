@@ -224,6 +224,15 @@ namespace wg
 			return;
 
 
+		// Glow builds up over frames, so if either surface lost its content with
+		// the device of a GPU backend, we start over with both.
+
+		if ((m_surface[0] && m_surface[0]->isContentLost()) || (m_surface[1] && m_surface[1]->isContentLost()))
+		{
+			m_surface[0] = nullptr;
+			m_surface[1] = nullptr;
+		}
+
 		// Possibly regenerate the glow surfaces
 
 		if (m_surface[1] == nullptr)
