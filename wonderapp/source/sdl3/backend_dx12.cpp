@@ -29,6 +29,8 @@
 
 #include <vector>
 #include <algorithm>
+#include <cstdio>
+#include <cstdlib>
 
 
 using namespace wg;
@@ -50,6 +52,9 @@ public:
 	void	render() override;
 	void 	onWindowSizeUpdated() override;
 
+	void	releaseDevice();		// Lets go of everything on the device, so that it can be replaced.
+	void	restoreDevice();		// Recreates the swap chain on the new device.
+
 private:
 
 	void	_createSwapChain(HWND hwnd, UINT width, UINT height);
@@ -58,6 +63,7 @@ private:
 
 	void	_present();
 
+	HWND				m_hwnd = nullptr;
 	bool				m_bHidden = false;
 
 	// Areas rendered since the last present, in pixels, presented as the swap
@@ -89,6 +95,15 @@ private:
 
 
 static DX12Wrapper*		g_pDX12Wrapper = nullptr;
+
+static std::vector<SDLWindowDX12*>	s_windows;		// All our windows, to move them to a new device.
+
+// A new device can't always be had right after the old one was lost - a reset
+// GPU or an updated driver takes a moment to come back - so we try again at
+// this interval until it works.
+
+static const Uint64		c_recoveryRetryInterval = 1000;		// Milliseconds.
+static Uint64			s_nextRecoveryAttempt = 0;
 
 //____ _backend() _____________________________________________________________
 
@@ -132,6 +147,102 @@ void backend_specific_exit()
 	DX12Wrapper::exitDebugger();
 }
 
+//____ _recoverDevice() _______________________________________________________
+//
+// Everything has to let go of the old device before D3D12 gives us a new one:
+// the windows their swap chains, DX12Backend everything it and the surfaces
+// and edgemaps have on it, and the wrapper the device itself. Then it all
+// comes back on the new device.
+
+static bool _recoverDevice()
+{
+	if (DX12Backend::device())
+	{
+		for (auto pWin : s_windows)
+			pWin->releaseDevice();
+
+		DX12Backend::setDevice(nullptr, nullptr);
+		g_pDX12Wrapper->releaseDevice();
+	}
+
+	if (!g_pDX12Wrapper->createDevice())
+		return false;
+
+	if (!DX12Backend::setDevice(g_pDX12Wrapper->dx12Device(), g_pDX12Wrapper->renderCommandQueue()))
+	{
+		g_pDX12Wrapper->releaseDevice();
+		return false;
+	}
+
+	for (auto pWin : s_windows)
+		pWin->restoreDevice();
+
+	return true;
+}
+
+//____ _simulateDeviceLoss() __________________________________________________
+//
+// Debug aid: set the environment variable WAPP_DX12_SIMULATE_DEVICE_LOSS to a
+// number of seconds, and the device is removed that often, to test recovery.
+
+#ifndef NDEBUG
+static void _simulateDeviceLoss()
+{
+	static Uint64 interval = 0;
+	static Uint64 nextLoss = 0;
+	static bool bInitialized = false;
+
+	if (!bInitialized)
+	{
+		bInitialized = true;
+
+		const char * pValue = SDL_getenv("WAPP_DX12_SIMULATE_DEVICE_LOSS");
+		if (pValue)
+			interval = Uint64(atoi(pValue)) * 1000;
+
+		nextLoss = SDL_GetTicks() + interval;
+	}
+
+	if (interval == 0 || DX12Backend::isDeviceLost() || SDL_GetTicks() < nextLoss)
+		return;
+
+	if (DX12Backend::simulateDeviceLoss())
+		OutputDebugStringA("wapp: Simulating device loss\n");
+
+	nextLoss = SDL_GetTicks() + interval;
+}
+#endif
+
+//____ backend_specific_update() ______________________________________________
+
+void backend_specific_update()
+{
+#ifndef NDEBUG
+	_simulateDeviceLoss();
+#endif
+
+	// DX12Backend notices a lost device on its own, but only once it tries to
+	// use it. Asking every frame catches it before we render into it.
+
+	if (!DX12Backend::checkDeviceLost())
+		return;
+
+	Uint64 now = SDL_GetTicks();
+	if (now < s_nextRecoveryAttempt)
+		return;
+
+	if (_recoverDevice())
+	{
+		OutputDebugStringA("wapp: Recovered from device loss\n");
+		s_nextRecoveryAttempt = 0;
+	}
+	else
+	{
+		OutputDebugStringA("wapp: Failed to recover from device loss, trying again shortly\n");
+		s_nextRecoveryAttempt = now + c_recoveryRetryInterval;
+	}
+}
+
 //____ create_backend_specific_window() ________________________________________
 
 SDLWindow * create_backend_specific_window(wapp::Window* pUserWindow, wg::Placement origin, wg::Coord pos, wg::Size size, const std::string& title, bool resizable, bool open)
@@ -145,6 +256,8 @@ SDLWindowDX12::SDLWindowDX12(wapp::Window* pUserWindow, wg::Placement origin, wg
 {
 	m_pUserWindow = pUserWindow;
 
+	s_windows.push_back(this);
+
 	if (!_createSDLWindow(title, origin, pos, size, 0, resizable, open))
 		return;
 
@@ -154,6 +267,8 @@ SDLWindowDX12::SDLWindowDX12(wapp::Window* pUserWindow, wg::Placement origin, wg
 		printf("Unable to get HWND of SDL window: %s\n", SDL_GetError());
 		return;
 	}
+
+	m_hwnd = hwnd;
 
 	SizeI pixels = _sizeInPixels();
 	m_width = pixels.w;
@@ -174,6 +289,8 @@ SDLWindowDX12::SDLWindowDX12(wapp::Window* pUserWindow, wg::Placement origin, wg
 
 SDLWindowDX12::~SDLWindowDX12()
 {
+	s_windows.erase(std::remove(s_windows.begin(), s_windows.end(), this), s_windows.end());
+
 	// The GPU might still be working on (or presenting) our swap chain buffers.
 
 	if (g_pDX12Wrapper)
@@ -185,7 +302,7 @@ SDLWindowDX12::~SDLWindowDX12()
 void SDLWindowDX12::render()
 {
 	if (m_bHidden || !m_pRootPanel || !m_pSwapChain)
-		return;
+		return;						// No swap chain while the device is being replaced.
 
 	// A flip-model swap chain decides which buffer is the back buffer. Ask it
 	// every frame instead of keeping our own count.
@@ -261,13 +378,15 @@ void SDLWindowDX12::_present()
 	m_dirtyRects.clear();
 	m_bPresentFullFrame = false;
 
-	if (hr == DXGI_ERROR_DEVICE_REMOVED || hr == DXGI_ERROR_DEVICE_RESET)
+	// A lost device is reported by DX12Backend and recovered from by
+	// backend_specific_update() before the next frame.
+
+	if (FAILED(hr) && !DX12Backend::handleDeviceLoss(hr))
 	{
 		char buffer[128];
-		sprintf_s(buffer, "Device lost on Present1(), GetDeviceRemovedReason() = 0x%08lX",
-			(unsigned long)m_pDX12Device->GetDeviceRemovedReason());
+		sprintf_s(buffer, "Present1() failed, HRESULT = 0x%08lX", (unsigned long)hr);
 
-		Base::throwError(ErrorLevel::Critical, ErrorCode::RenderFailure, buffer, nullptr, nullptr, __func__, __FILE__, __LINE__);
+		Base::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, buffer, nullptr, nullptr, __func__, __FILE__, __LINE__);
 	}
 }
 
@@ -275,6 +394,9 @@ void SDLWindowDX12::_present()
 
 void SDLWindowDX12::onWindowSizeUpdated()
 {
+	// Without a swap chain the device is being replaced, and restoreDevice()
+	// picks up the size.
+
 	if (!m_pSwapChain || !m_pRootPanel)
 		return;
 
@@ -305,9 +427,15 @@ void SDLWindowDX12::onWindowSizeUpdated()
 	g_pDX12Wrapper->flushRenderQueue();
 
 	_dropSwapChainBuffers();
-	auto retVal = m_pSwapChain->ResizeBuffers(0, m_width, m_height, DXGI_FORMAT_UNKNOWN, 0);	// Flags must match those used at creation.
-	assert(retVal == S_OK);
-	_createSwapChainBuffers();
+	HRESULT hr = m_pSwapChain->ResizeBuffers(0, m_width, m_height, DXGI_FORMAT_UNKNOWN, 0);	// Flags must match those used at creation.
+
+	// On a lost device we go on without buffers. Nothing renders until
+	// backend_specific_update() has replaced the device and restoreDevice() the swap chain.
+
+	if (SUCCEEDED(hr))
+		_createSwapChainBuffers();
+	else if (!DX12Backend::handleDeviceLoss(hr))
+		assert(false);
 
 	m_currentBuffer = m_pSwapChain->GetCurrentBackBufferIndex();
 
@@ -318,6 +446,60 @@ void SDLWindowDX12::onWindowSizeUpdated()
 
 	_notifyUserWindowOfResize();
 	render();
+}
+
+//____ releaseDevice() _______________________________________________________
+
+void SDLWindowDX12::releaseDevice()
+{
+	// The swap chain holds the device through the render queue it was created
+	// on, and D3D12 won't give us a new device until the old one is gone.
+
+	_dropSwapChainBuffers();
+	m_pSwapChain.Reset();
+	m_RTVHeap.Reset();
+	m_pDX12Device.Reset();
+
+	m_dirtyRects.clear();
+}
+
+//____ restoreDevice() _______________________________________________________
+
+void SDLWindowDX12::restoreDevice()
+{
+	if (!m_hwnd || m_pSwapChain)
+		return;
+
+	// The window may have changed size while it had no swap chain.
+
+	SizeI pixels = _sizeInPixels();
+
+	bool bResized = pixels.w > 0 && pixels.h > 0 && (UINT(pixels.w) != m_width || UINT(pixels.h) != m_height);
+
+	if (bResized)
+	{
+		m_width = pixels.w;
+		m_height = pixels.h;
+		m_bHidden = false;
+	}
+
+	_createSwapChain(m_hwnd, m_width, m_height);
+	m_currentBuffer = m_pSwapChain->GetCurrentBackBufferIndex();
+
+	_backend()->setDefaultCanvas(m_rtvHandles[m_currentBuffer], m_renderBuffers[m_currentBuffer].Get(), m_rtvFormat, { spx(m_width * 64), spx(m_height * 64) }, _scale());
+
+	// Nothing of what was on screen is in the new buffers.
+
+	m_bPresentFullFrame = true;
+
+	if (m_pRootPanel)
+	{
+		m_pRootPanel->setCanvas(CanvasRef::Default);
+		m_pRootPanel->addDirtyPatch({ 0, 0, spx(m_width * 64), spx(m_height * 64) });
+	}
+
+	if (bResized)
+		_notifyUserWindowOfResize();
 }
 
 //____ _createSwapChain() ______________________________________________________

@@ -118,6 +118,12 @@ void backend_specific_exit()
 	SDL_DestroyWindow(g_pDummyWindow);
 }
 
+//____ backend_specific_update() ______________________________________________
+
+void backend_specific_update()
+{
+}
+
 //____ create_backend_specific_window() ________________________________________
 
 SDLWindow * create_backend_specific_window(wapp::Window* pUserWindow, wg::Placement origin, wg::Coord pos, wg::Size size, const std::string& title, bool resizable, bool open)

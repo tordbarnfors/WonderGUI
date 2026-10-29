@@ -136,6 +136,7 @@ void		exit_wondergui();
 
 bool		backend_specific_init();
 void		backend_specific_exit();
+void		backend_specific_update();
 
 bool		init_debugger(MyAppAPI * pAPI);
 void		exit_debugger();
@@ -270,6 +271,11 @@ int main(int argc, char *argv[] )
 
 			g_windows.erase(std::remove_if(g_windows.begin(), g_windows.end(), [](SDLWindow* p){ if( p->SDLWindowPtr() == nullptr ) { delete p; return true; } return false; }), g_windows.end());
 
+
+			// Let the backend check its state, such as recovering from a lost device,
+			// before we render.
+
+			backend_specific_update();
 
 			// Render. We do this outside the app since we might want to
 			// handle updated rectangles in a system specific way.
