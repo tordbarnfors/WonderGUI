@@ -44,8 +44,10 @@
 	which blend by the rules in "Blending and transparency".
 
 	Positions within a cell are stepped along each row of pixels, since the bilinear mapping is
-	linear along a row of a cell. Positions are int64 to cope with any Warpmap, but only added
-	and compared per pixel, except where coverage is estimated.
+	linear along a row of a cell, and the start of each row is stepped from the row above, since it
+	is linear down a column too. Positions are int64 to cope with any Warpmap, but only added and
+	compared per pixel, except where coverage is estimated. Divisions are made once per row of
+	cells, not per row of pixels, which matters on CPUs without 64-bit division.
 */
 
 #include <wax_softbackend.h>
@@ -66,6 +68,8 @@ namespace wax
 		const int64_t	c_maxPos = int64_t(1) << 40;	// Positions are kept within +-2^24 pixels.
 		const int64_t	c_maxGradient = int64_t(1) << 31;	// Derivatives limited to 2^15 source pixels per pixel for coverage.
 		const int		c_maxSolidColumns = 64;			// Cells spanning more edgemap columns are drawn as mixed.
+		const int		c_warpExtraBits = 16;			// Extra binals of values stepped from row to row.
+		const int64_t	c_warpExtraScale = int64_t(1) << c_warpExtraBits;
 
 		inline int64_t abs64(int64_t v) { return v < 0 ? -v : v; }
 
@@ -82,11 +86,13 @@ namespace wax
 			return -floorDiv(-a, b);
 		}
 
-		// Division rounded to nearest, b > 0.
+		// a * num / den rounded down, without the overflow of a * num, 0 <= num <= den.
 
-		inline int64_t roundDiv(int64_t a, int64_t b)
+		inline int64_t mulDiv(int64_t a, int64_t num, int64_t den)
 		{
-			return floorDiv(a + b / 2, b);
+			int64_t q = floorDiv(a, den);
+			int64_t r = a - q * den;
+			return q * num + (r * num) / den;
 		}
 
 		inline int64_t wrap(int64_t v, int64_t period)
@@ -172,6 +178,10 @@ namespace wax
 
 					pos[a] = low[a] + wrap(pos[a] - low[a], p);
 
+					int64_t last = pos[a] + step[a] * (n - 1);
+					if (last >= low[a] && last < low[a] + p)
+						continue;										// All of it within the period, the common case.
+
 					int64_t m = n;
 					if (step[a] > 0)
 						m = ceilDiv(low[a] + p - pos[a], step[a]);
@@ -191,6 +201,14 @@ namespace wax
 
 		void linearRange(int64_t s, int64_t d, int64_t lo, int64_t hi, int length, int& begin, int& end)
 		{
+			int64_t last = s + d * (length - 1);
+			if (s >= lo && s <= hi && last >= lo && last <= hi)
+			{
+				begin = 0;												// All of it within, the common case.
+				end = length;
+				return;
+			}
+
 			int64_t b, e;
 
 			if (d > 0)
@@ -452,12 +470,23 @@ namespace wax
 			int rowBeg = std::max(cellY, y0);
 			int rowEnd = std::min(cellY + cellH, y1);
 
+			_beginWarpCellRow(rowBeg, area.x, cellY, cellH);
+
 			for (int y = rowBeg; y < rowEnd; y++)
 			{
 				int canvasY = y + w.dest.y;
 				int prefetchRow = (canvasY + 1 < area.y + area.h) ? canvasY + 1 : -1;
 
-				_drawWarpRow(canvasY, area.x, area.x + area.w, cellY, cellH, pOrigin, pitch, prefetchRow);
+				_drawWarpRow(canvasY, area.x, area.x + area.w, pOrigin, pitch, prefetchRow);
+
+				for (WarpCell& cell : m_warpCells)
+				{
+					for (int a = 0; a < 2; a++)
+					{
+						cell.pos[a] += cell.posStep[a];
+						cell.step[a] += cell.stepStep[a];
+					}
+				}
 			}
 		}
 	}
@@ -540,6 +569,72 @@ namespace wax
 				cell.kind = w.pEdgemap ? _warpSolidSegment(lo, hi, copy) : 0;
 			else
 				cell.kind = c_warpMixed;
+		}
+	}
+
+	//____ _beginWarpCellRow() __________________________________________________
+	/*
+		Sets up the cells of a row of cells (cellRowH pixels high, from row cellRowY of the Warpmap)
+		for drawing from pixel column xBeg of canvas rows, starting at row firstRow of the Warpmap:
+		positions and derivatives at the center of the first pixel of the cell in the row, and how
+		they change from one row to the next. All of it is linear down the cell, so _drawWarp() steps
+		pos and step after each row instead of working them out again. They have c_warpExtraBits
+		more binals so that the steps add up to within a fraction of a unit over the cell.
+	*/
+
+	void SoftBackend::_beginWarpCellRow(int firstRow, int xBeg, int cellRowY, int cellRowH)
+	{
+		const WarpSetup& w = m_warp;
+
+		const int64_t fyNum = 2 * int64_t(firstRow - cellRowY) + 1;		// Center of first row within cell, over fyDen.
+		const int64_t fyDen = 2 * int64_t(cellRowH);
+
+		for (WarpCell& cell : m_warpCells)
+		{
+			// Only cells drawn pixel by pixel need it, see _drawWarpRow().
+
+			const int kind = cell.kind;
+
+			if (kind == c_warpOutside || (kind >= 0 && w.pEdgemap && (w.bSkip[kind] || !w.bTinted[kind])))
+			{
+				for (int a = 0; a < 2; a++)
+				{
+					cell.posStep[a] = 0;
+					cell.stepStep[a] = 0;
+				}
+				continue;
+			}
+
+			int beg = std::max(cell.x + w.dest.x, xBeg);
+
+			const int64_t fxNum = 2 * int64_t(beg - w.dest.x - cell.x) + 1;		// Center of first pixel within cell, over fxDen.
+			const int64_t fxDen = 2 * int64_t(cell.w);
+
+			for (int a = 0; a < 2; a++)
+			{
+				// down * fyNum / fyDen and the step of it from row to row (fyNum + 2), from one
+				// division of down, likewise for twist.
+
+				int64_t downQ = floorDiv(cell.down[a] * c_warpExtraScale, fyDen);
+				int64_t downR = cell.down[a] * c_warpExtraScale - downQ * fyDen;
+				int64_t twistQ = floorDiv(cell.twist[a] * c_warpExtraScale, fyDen);
+				int64_t twistR = cell.twist[a] * c_warpExtraScale - twistQ * fyDen;
+
+				int64_t left = cell.tl[a] * c_warpExtraScale + downQ * fyNum + (downR * fyNum) / fyDen;
+				int64_t across = cell.right[a] * c_warpExtraScale + twistQ * fyNum + (twistR * fyNum) / fyDen;
+
+				int64_t leftStep = downQ * 2 + (downR * 2) / fyDen;
+				int64_t acrossStep = twistQ * 2 + (twistR * 2) / fyDen;
+
+				cell.pos[a] = left + mulDiv(across, fxNum, fxDen);
+				cell.posStep[a] = leftStep + mulDiv(acrossStep, fxNum, fxDen);
+				cell.step[a] = floorDiv(across, cell.w);
+				cell.stepStep[a] = floorDiv(acrossStep, cell.w);
+
+				cell.dy[a] = (cell.down[a] * fxDen + cell.twist[a] * fxNum) / (fxDen * cellRowH);
+				cell.dyStep[a] = cell.twist[a] / (int64_t(cell.w) * cellRowH);
+			}
+
 		}
 	}
 
@@ -654,11 +749,11 @@ namespace wax
 
 	//____ _drawWarpRow() _______________________________________________________
 	/*
-		Draws pixels xBeg -> xEnd of canvas row y, which is in the row of cells starting at row
-		cellRowY of the Warpmap, cellRowH pixels high. Cells are set up by _setupWarpCells().
+		Draws pixels xBeg -> xEnd of canvas row y. Cells are set up by _setupWarpCells() and
+		_beginWarpCellRow() and stepped to the row by _drawWarp().
 	*/
 
-	void SoftBackend::_drawWarpRow(int y, int xBeg, int xEnd, int cellRowY, int cellRowH, uint8_t* pOrigin, int pitch, int prefetchRow)
+	void SoftBackend::_drawWarpRow(int y, int xBeg, int xEnd, uint8_t* pOrigin, int pitch, int prefetchRow)
 	{
 		WarpSetup& w = m_warp;
 
@@ -711,8 +806,6 @@ namespace wax
 			addRun(x, x + 1, -1);
 		};
 
-		const int64_t fyNum = 2 * int64_t(y - w.dest.y - cellRowY) + 1;		// Center of row within cell, over fyDen.
-		const int64_t fyDen = 2 * int64_t(cellRowH);
 
 		const int nCells = int(m_warpCells.size());
 
@@ -748,23 +841,16 @@ namespace wax
 				}
 			}
 
-			// Positions and derivatives at the first pixel and steps along the row.
+			// Positions and derivatives at the first pixel and steps along the row, see _beginWarpCellRow().
 
-			const int64_t fxNum = 2 * int64_t(beg - w.dest.x - cell.x) + 1;		// Center of first pixel within cell, over 2 * cell.w.
-			const int64_t fxDen = 2 * int64_t(cell.w);
-
-			int64_t pos[2], step[2], dy[2], dyStep[2];
+			int64_t pos[2], step[2];
+			const int64_t* dy = cell.dy;
+			const int64_t* dyStep = cell.dyStep;
 
 			for (int a = 0; a < 2; a++)
 			{
-				int64_t left = cell.tl[a] + cell.down[a] * fyNum / fyDen;
-				int64_t across = cell.right[a] + cell.twist[a] * fyNum / fyDen;
-
-				pos[a] = left + across * fxNum / fxDen;
-				step[a] = roundDiv(across, cell.w);
-
-				dy[a] = (cell.down[a] * fxDen + cell.twist[a] * fxNum) / (fxDen * cellRowH);
-				dyStep[a] = cell.twist[a] / (int64_t(cell.w) * cellRowH);
+				pos[a] = cell.pos[a] >> c_warpExtraBits;
+				step[a] = (cell.step[a] + (int64_t(1) << (c_warpExtraBits - 1))) >> c_warpExtraBits;
 			}
 
 			if (kind >= 0)

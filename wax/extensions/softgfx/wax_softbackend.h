@@ -379,6 +379,17 @@ namespace wax
 			int64_t		right[2];		// Top-right corner - top-left corner.
 			int64_t		down[2];		// Bottom-left corner - top-left corner.
 			int64_t		twist[2];		// Bottom-right - bottom-left - top-right + top-left.
+
+			// At the first pixel drawn of the current row of pixels, stepped from row to row so that
+			// rows need no divisions, see _beginWarpCellRow(). pos and step have c_warpExtraBits more
+			// binals than positions.
+
+			int64_t		pos[2];			// Position at the center of the first pixel.
+			int64_t		posStep[2];		// Change of pos from one row to the next.
+			int64_t		step[2];		// Change of position from one pixel to the next along the row.
+			int64_t		stepStep[2];	// Change of step from one row to the next.
+			int64_t		dy[2];			// Change of position from one pixel to the one below, at the first pixel.
+			int64_t		dyStep[2];		// Change of dy along the row.
 		};
 
 		struct WarpSetup
@@ -421,8 +432,9 @@ namespace wax
 		bool	_beginWarp(const WarpParams& params, SoftWarpmap* pWarpmap, SoftEdgemap* pEdgemap);
 		void	_drawWarp(const RectI& clip, uint8_t* pOrigin, int pitch);
 		void	_setupWarpCells(int row, int firstColumn, int nColumns);
+		void	_beginWarpCellRow(int firstRow, int xBeg, int cellRowY, int cellRowH);
 		int		_warpSolidSegment(const int64_t lo[2], const int64_t hi[2], const int64_t copy[2]) const;
-		void	_drawWarpRow(int y, int xBeg, int xEnd, int cellRowY, int cellRowH, uint8_t* pOrigin, int pitch, int prefetchRow);
+		void	_drawWarpRow(int y, int xBeg, int xEnd, uint8_t* pOrigin, int pitch, int prefetchRow);
 		int		_warpAxisCoverage(int axis, int64_t s, int64_t gx, int64_t gy) const;
 		int		_warpEdgemapCoverage(int64_t sx, int64_t sy, int64_t ax, int64_t bx, int64_t ay, int64_t by, int* pCoverage, int& solidSegment) const;
 		void	_warpTintSpan(const SoftTint& tint, int64_t x, int64_t y, int64_t dx, int64_t dy, int length, HiColor* pOutput);
