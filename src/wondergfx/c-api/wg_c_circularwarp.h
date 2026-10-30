@@ -78,10 +78,11 @@ extern "C" {
 
 	//.____ Content _______________________________________________________
 
-	// Updates the Warpmap from current settings and returns it. The Warpmap belongs to the
-	// CircularWarp, retain it to keep it after a refresh that replaces it.
+	// Generates the Warpmap from current settings and returns it, see CircularWarp::generate(). The
+	// Warpmap belongs to the CircularWarp, retain it to keep it after a generate that replaces it.
+	// A Warpmap you have retained is never changed by later calls, a new one is created instead.
 
-	WG_EXPORT wg_obj		wg_refreshCircularWarp( wg_obj circularWarp );
+	WG_EXPORT wg_obj		wg_generateCircularWarp( wg_obj circularWarp );
 
 #ifdef __cplusplus
 }

@@ -53,7 +53,7 @@ namespace wg
 	 * precision (max position error in pixels) and detailRadius (the smallest radius where that
 	 * precision is needed) unless set explicitly.
 	 *
-	 * Like EdgemapWave, CircularWarp keeps its Warpmap and updates it when refresh() is called.
+	 * CircularWarp keeps its Warpmap and updates it when generate() is called, see generate().
 	 */
 
 	class CircularWarp : public Object
@@ -115,10 +115,13 @@ namespace wg
 
 		//.____ Content _____________________________________________________
 
-		// Updates the Warpmap from current settings and returns it. A new Warpmap is created
-		// when size or cell size has changed, otherwise the nodes of the existing one are updated.
+		// Generates the Warpmap from current settings, if they have changed since last time, and
+		// returns it. The nodes of the Warpmap are updated in place if nothing but the CircularWarp
+		// holds it and size and cell size are unchanged. Otherwise a new Warpmap is created, so a
+		// Warpmap held elsewhere, such as by a draw that isn't rendered yet, never changes. Draw
+		// what generate() returns rather than keeping it.
 
-		Warpmap_p	refresh();
+		Warpmap_p	generate();
 
 	protected:
 

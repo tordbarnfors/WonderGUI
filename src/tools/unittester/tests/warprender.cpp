@@ -267,7 +267,7 @@ namespace
 											_.topRadius = (size / 2 - 2) * 64,
 											_.bottomRadius = (size / 4) * 64,
 											_.startAngle = startAngle,
-											_.sweep = sweep), pDevice->warpmapFactory())->refresh();
+											_.sweep = sweep), pDevice->warpmapFactory())->generate();
 	}
 
 	// A smooth, non-periodic warp of a rectangle, partly outside the source.
@@ -327,6 +327,42 @@ namespace
 		return SoftWarpmapFactory::create()->createWarpmap(WGBP(Warpmap, _.size = size, _.cellSize = cellSize));
 	}
 
+	// Renders a scene through StreamBackend and StreamPlayer onto a SoftBackend. Resources are
+	// created through the stream.
+
+	Pixels renderStreamed(const Scene& scene)
+	{
+		Pixels streamed(c_canvasSize.w * c_canvasSize.h * 4, 0);
+
+		auto pCanvas = SoftSurface::create(WGBP(Surface, _.size = c_canvasSize, _.format = PixelFormat::ARGB_8, _.colorSpace = ColorSpace::Linear, _.canvas = true));
+
+		auto pBackend = SoftBackend::create();
+		addDefaultSoftKernels(pBackend);
+		pBackend->defineCanvas(CanvasRef::Default, pCanvas);
+
+		auto pStreamPlayer = StreamPlayer::create(pBackend, SoftSurfaceFactory::create(), SoftEdgemapFactory::create());
+		auto pStreamEncoder = StreamEncoder::create({ pStreamPlayer, pStreamPlayer->input });
+		auto pStreamBackend = StreamBackend::create(pStreamEncoder);
+		pStreamBackend->defineCanvas(CanvasRef::Default, c_canvasSize, PixelFormat::ARGB_8, 64, ColorSpace::Linear);
+
+		auto pStreamDevice = GfxDeviceGen2::create(pStreamBackend);
+
+		pStreamDevice->beginRender();
+		pStreamDevice->beginCanvasUpdate(CanvasRef::Default);
+		pStreamDevice->fill(c_background);
+		scene(pStreamDevice);
+		pStreamDevice->endCanvasUpdate();
+		pStreamDevice->endRender();
+
+		auto buffer = pCanvas->allocPixelBuffer();
+		pCanvas->pushPixels(buffer);
+		for (int y = 0; y < c_canvasSize.h; y++)
+			std::memcpy(streamed.data() + y * c_canvasSize.w * 4, buffer.pixels + y * buffer.pitch, c_canvasSize.w * 4);
+		pCanvas->freePixelBuffer(buffer);
+
+		return streamed;
+	}
+
 	// Device used to create resources shared by renderings on all software backends.
 
 	GfxDevice_p resourceDevice()
@@ -353,6 +389,7 @@ WarpRenderTest::WarpRenderTest()
 	ADD_TEST(cApiTest);
 	ADD_TEST(seamColorTest);
 	ADD_TEST(sourceRectTest);
+	ADD_TEST(generateTest);
 }
 
 WarpRenderTest::~WarpRenderTest()
@@ -603,39 +640,7 @@ bool WarpRenderTest::streamTest(std::ostream& output)
 		pDevice->warpDrawEdgemap({ 64 * 110, 64 * 50 }, pWarpmap, makeEdgemap(pDevice, true), { 64 * 30, 0 });
 	};
 
-	auto direct = render(Backend::Soft, scene);
-
-	// Through a stream
-
-	Pixels streamed(c_canvasSize.w * c_canvasSize.h * 4, 0);
-
-	auto pCanvas = SoftSurface::create(WGBP(Surface, _.size = c_canvasSize, _.format = PixelFormat::ARGB_8, _.colorSpace = ColorSpace::Linear, _.canvas = true));
-
-	auto pBackend = SoftBackend::create();
-	addDefaultSoftKernels(pBackend);
-	pBackend->defineCanvas(CanvasRef::Default, pCanvas);
-
-	auto pStreamPlayer = StreamPlayer::create(pBackend, SoftSurfaceFactory::create(), SoftEdgemapFactory::create());
-	auto pStreamEncoder = StreamEncoder::create({ pStreamPlayer, pStreamPlayer->input });
-	auto pStreamBackend = StreamBackend::create(pStreamEncoder);
-	pStreamBackend->defineCanvas(CanvasRef::Default, c_canvasSize, PixelFormat::ARGB_8, 64, ColorSpace::Linear);
-
-	auto pStreamDevice = GfxDeviceGen2::create(pStreamBackend);
-
-	pStreamDevice->beginRender();
-	pStreamDevice->beginCanvasUpdate(CanvasRef::Default);
-	pStreamDevice->fill(c_background);
-	scene(pStreamDevice);
-	pStreamDevice->endCanvasUpdate();
-	pStreamDevice->endRender();
-
-	auto buffer = pCanvas->allocPixelBuffer();
-	pCanvas->pushPixels(buffer);
-	for (int y = 0; y < c_canvasSize.h; y++)
-		std::memcpy(streamed.data() + y * c_canvasSize.w * 4, buffer.pixels + y * buffer.pitch, c_canvasSize.w * 4);
-	pCanvas->freePixelBuffer(buffer);
-
-	return compare(output, "Streamed warps", streamed, "streamed", direct, "direct", 0);
+	return compare(output, "Streamed warps", renderStreamed(scene), "streamed", render(Backend::Soft, scene), "direct", 0);
 }
 
 //____ cApiTest() _____________________________________________________________
@@ -672,7 +677,7 @@ bool WarpRenderTest::cApiTest(std::ostream& output)
 											   _.startAngle = 30.f, _.sweep = 300.f), SoftWarpmapFactory::create());
 		auto pBent = SoftWarpmapFactory::create()->createWarpmap(WGBP(Warpmap, _.size = warpSize, _.cellSize = cellSize, _.uPeriod = bentPeriod), nodeData.data());
 
-		pDevice->warpDrawEdgemap({ 64 * 3, 64 * 4 }, pRing->refresh(), pEdgemap, { 64 * 5, 0 });
+		pDevice->warpDrawEdgemap({ 64 * 3, 64 * 4 }, pRing->generate(), pEdgemap, { 64 * 5, 0 });
 		pDevice->setBlitSource(pSurface);
 		pDevice->warpBlit({ 64 * 60, 64 * 4 }, pBent, { 64 * 2, 64 * 3 });
 		pDevice->warpBlit({ 64 * 110, 64 * 4 }, pBent, { 64 * 4, 64 * 2, 64 * 20, 64 * 12 }, { 0, 0 });
@@ -701,7 +706,7 @@ bool WarpRenderTest::cApiTest(std::ostream& output)
 
 		wg_obj bent = wg_createWarpmapFromNodes(factory, &bentBP, (const wg_coordSPX*) nodeData.data(), 0);
 
-		wg_warpDrawEdgemap(device, { 64 * 3, 64 * 4 }, wg_refreshCircularWarp(ring), (wg_obj) static_cast<Object*>(pEdgemap.rawPtr()), { 64 * 5, 0 });
+		wg_warpDrawEdgemap(device, { 64 * 3, 64 * 4 }, wg_generateCircularWarp(ring), (wg_obj) static_cast<Object*>(pEdgemap.rawPtr()), { 64 * 5, 0 });
 		pDevice->setBlitSource(pSurface);
 		wg_warpBlit(device, { 64 * 60, 64 * 4 }, bent, { 64 * 2, 64 * 3 });
 		wg_rectSPX source = { 64 * 4, 64 * 2, 64 * 20, 64 * 12 };
@@ -839,4 +844,55 @@ bool WarpRenderTest::sourceRectTest(std::ostream& output)
 	}
 
 	return true;
+}
+
+//____ generateTest() _________________________________________________________
+/*
+	Draws are rendered when the canvas update ends, so a CircularWarp drawn several times with
+	different settings within one update must not change the Warpmaps of the earlier draws.
+	generate() makes a new Warpmap when the one it has is held by a draw. Drawn on each backend
+	and through a stream, which sends the nodes as they change.
+*/
+
+bool WarpRenderTest::generateTest(std::ostream& output)
+{
+	const SizeSPX source = c_edgemapSource;
+
+	auto oneGenerator = [=](GfxDevice* pDevice)
+	{
+		auto pEdgemap = makeEdgemap(pDevice, true);
+		auto pWarp = CircularWarp::create(WGBP(CircularWarp, _.size = { 44, 44 }, _.sourceSize = source, _.topRadius = 21 * 64, _.bottomRadius = 10 * 64,
+											   _.sweep = 270.f), pDevice->warpmapFactory());
+
+		pDevice->warpDrawEdgemap({ 2 * 64, 2 * 64 }, pWarp->generate(), pEdgemap);
+		pWarp->setAngles(90.f, 180.f);
+		pDevice->warpDrawEdgemap({ 50 * 64, 2 * 64 }, pWarp->generate(), pEdgemap);
+		pWarp->setRadii(20 * 64, 6 * 64);
+		pDevice->warpDrawEdgemap({ 98 * 64, 2 * 64 }, pWarp->generate(), pEdgemap);
+	};
+
+	auto separateGenerators = [=](GfxDevice* pDevice)
+	{
+		auto pEdgemap = makeEdgemap(pDevice, true);
+		auto pFactory = pDevice->warpmapFactory();
+
+		auto pFirst = CircularWarp::create(WGBP(CircularWarp, _.size = { 44, 44 }, _.sourceSize = source, _.topRadius = 21 * 64, _.bottomRadius = 10 * 64,
+												_.sweep = 270.f), pFactory);
+		auto pSecond = CircularWarp::create(WGBP(CircularWarp, _.size = { 44, 44 }, _.sourceSize = source, _.topRadius = 21 * 64, _.bottomRadius = 10 * 64,
+												 _.startAngle = 90.f, _.sweep = 180.f), pFactory);
+		auto pThird = CircularWarp::create(WGBP(CircularWarp, _.size = { 44, 44 }, _.sourceSize = source, _.topRadius = 20 * 64, _.bottomRadius = 6 * 64,
+												_.startAngle = 90.f, _.sweep = 180.f), pFactory);
+
+		pDevice->warpDrawEdgemap({ 2 * 64, 2 * 64 }, pFirst->generate(), pEdgemap);
+		pDevice->warpDrawEdgemap({ 50 * 64, 2 * 64 }, pSecond->generate(), pEdgemap);
+		pDevice->warpDrawEdgemap({ 98 * 64, 2 * 64 }, pThird->generate(), pEdgemap);
+	};
+
+	for (Backend backend : { Backend::Soft, Backend::Linear, Backend::Reference })
+	{
+		if (!compare(output, "One CircularWarp drawn three times", render(backend, oneGenerator), "one generator", render(backend, separateGenerators), "separate generators", 0))
+			return false;
+	}
+
+	return compare(output, "One CircularWarp drawn three times, streamed", renderStreamed(oneGenerator), "one generator", render(Backend::Soft, separateGenerators), "separate generators", 0);
 }

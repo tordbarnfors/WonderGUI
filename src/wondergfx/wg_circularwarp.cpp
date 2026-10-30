@@ -193,9 +193,13 @@ namespace wg
 		return true;
 	}
 
-	//____ refresh() __________________________________________________________
+	//____ generate() _________________________________________________________
+	/*
+		Draws are rendered when the canvas update ends and read the Warpmap then, so a Warpmap that
+		a draw holds (or anyone else) is left as it is and a new one created in its place.
+	*/
 
-	Warpmap_p CircularWarp::refresh()
+	Warpmap_p CircularWarp::generate()
 	{
 		if (!m_bDirty && m_pWarpmap)
 			return m_pWarpmap;
@@ -203,7 +207,7 @@ namespace wg
 		int cellSize = this->cellSize();
 		spx uPeriod = _uPeriod();
 
-		if (!m_pWarpmap || m_pWarpmap->pixelSize() != m_size || m_pWarpmap->cellSize() != cellSize)
+		if (!m_pWarpmap || m_pWarpmap->refcount() > 1 || m_pWarpmap->pixelSize() != m_size || m_pWarpmap->cellSize() != cellSize)
 		{
 			Warpmap::Blueprint bp;
 			bp.size = m_size;

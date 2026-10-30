@@ -74,6 +74,10 @@ namespace wg
 	 * Warpmaps are created by a WarpmapFactory, which is specific to the backend, or by a generator
 	 * such as CircularWarp.
 	 *
+	 * Draws are rendered when the canvas update ends, and read the Warpmap then. Changing the nodes
+	 * or periods of a Warpmap changes all of its draws that aren't rendered yet, so use a Warpmap
+	 * for each shape drawn within the same canvas update. Generators take care of that.
+	 *
 	 * How a Warpmap is drawn, which all backends follow:
 	 *
 	 * - The Warpmap is placed on whole pixels (dest is rounded to nearest pixel), like edgemaps.

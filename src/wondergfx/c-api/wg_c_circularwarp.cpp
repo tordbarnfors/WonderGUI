@@ -132,8 +132,8 @@ int wg_setCircularWarpPrecision( wg_obj circularWarp, float precision, wg_spx de
 	return getPtr(circularWarp)->setPrecision(precision, detailRadius);
 }
 
-wg_obj wg_refreshCircularWarp( wg_obj circularWarp )
+wg_obj wg_generateCircularWarp( wg_obj circularWarp )
 {
-	Warpmap_p p = getPtr(circularWarp)->refresh();
+	Warpmap_p p = getPtr(circularWarp)->generate();
 	return (wg_obj) static_cast<Object*>(p.rawPtr());
 }
