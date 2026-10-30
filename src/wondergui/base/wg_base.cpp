@@ -329,12 +329,16 @@ namespace wg
 		s_pGUIContext->pInputHandler->_update(timestamp);
 		s_pGUIContext->pSkinSlotManager->update(int(microPassed/1000));
 
-		// Update widgets.
+		// Update widgets. A receiver can make others start receiving updates, which
+		// adds them at the end and may reallocate the vector, so we loop by index over
+		// the receivers we started with. New ones get their first update next time.
 
 		bool bEmptyFound = false;
 
-		for (auto pReceiver : s_pGUIContext->updateReceivers)
+		size_t nbReceivers = s_pGUIContext->updateReceivers.size();
+		for (size_t i = 0; i < nbReceivers; i++)
 		{
+			Receiver * pReceiver = s_pGUIContext->updateReceivers[i];
 			if( pReceiver )
 				pReceiver->_update(int(microPassed), timestamp);
 			else
