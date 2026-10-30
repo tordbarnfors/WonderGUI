@@ -164,15 +164,6 @@ namespace wg
 		double sweep = m_sweep;
 		double period = _uPeriod();
 
-		auto toSpx = [](double value)
-		{
-			if (!(value > -Warpmap::maxNodeValue))				// Also catches NaN.
-				return -Warpmap::maxNodeValue;
-			if (value > Warpmap::maxNodeValue)
-				return Warpmap::maxNodeValue;
-			return spx(std::lround(value));
-		};
-
 		for (int row = 0; row < nodes.h; row++)
 		{
 			double y = std::min(row * cellSize, m_size.h) - cy;
@@ -188,7 +179,7 @@ namespace wg
 				double r = std::sqrt(x * x + y * y);
 				double v = rBottom != rTop ? (r - rTop) / (rBottom - rTop) * height : -Warpmap::maxNodeValue;
 
-				*pNodes++ = { toSpx(u), toSpx(v) };
+				*pNodes++ = { _toNodeValue(u), _toNodeValue(v) };
 			}
 		}
 	}

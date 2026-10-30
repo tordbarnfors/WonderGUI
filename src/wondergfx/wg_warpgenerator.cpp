@@ -186,4 +186,15 @@ namespace wg
 		return int(std::sqrt(8.0 * m_precision * radius));
 	}
 
+	//____ _toNodeValue() _____________________________________________________
+
+	spx WarpGenerator::_toNodeValue(double spxValue)
+	{
+		if (!(spxValue > -Warpmap::maxNodeValue))				// Also catches NaN.
+			return -Warpmap::maxNodeValue;
+		if (spxValue > Warpmap::maxNodeValue)
+			return Warpmap::maxNodeValue;
+		return spx(std::lround(spxValue));
+	}
+
 } // namespace wg

@@ -6,7 +6,9 @@
 #include <wg_softwarpmap.h>
 #include <wg_softwarpmapfactory.h>
 #include <wg_circularwarp.h>
+#include <wg_roundedrectwarp.h>
 
+#include <algorithm>
 #include <cmath>
 #include <vector>
 
@@ -39,6 +41,72 @@ namespace
 
 	const SizeSPX c_sourceSize = { 400 * 64, 32 * 64 };
 
+	// Points along the outline of a rounded rectangle centered on 0,0, half hx wide and hy high with
+	// corners of radius r, every step pixels clockwise from the middle of the top side, with their
+	// position along the outline.
+
+	struct OutlinePoint { double x, y, pos; };
+
+	std::vector<OutlinePoint> sampleOutline(double hx, double hy, double r, double step)
+	{
+		std::vector<OutlinePoint> points;
+		double ax = hx - r, ay = hy - r;
+		double pos = 0;
+
+		auto line = [&](double x0, double y0, double x1, double y1)
+		{
+			double len = std::hypot(x1 - x0, y1 - y0);
+			int n = std::max(1, int(len / step));
+			for (int i = 0; i < n; i++)
+				points.push_back({ x0 + (x1 - x0) * i / n, y0 + (y1 - y0) * i / n, pos + len * i / n });
+			pos += len;
+		};
+
+		auto corner = [&](double cx, double cy, double angle)				// Angle clockwise from up.
+		{
+			double len = r * M_PI / 2;
+			int n = std::max(1, int(len / step));
+			for (int i = 0; i < n; i++)
+			{
+				double a = angle + (M_PI / 2) * i / n;
+				points.push_back({ cx + r * std::sin(a), cy - r * std::cos(a), pos + len * i / n });
+			}
+			pos += len;
+		};
+
+		line(0, -hy, ax, -hy);
+		corner(ax, -ay, 0);
+		line(hx, -ay, hx, ay);
+		corner(ax, ay, M_PI / 2);
+		line(ax, hy, -ax, hy);
+		corner(-ax, ay, M_PI);
+		line(-hx, ay, -hx, -ay);
+		corner(-ax, -ay, M_PI * 3 / 2);
+		line(-ax, -hy, 0, -hy);
+		return points;
+	}
+
+	// Position along the outline of the nearest point of it, found among the sampled points, and
+	// the distance to it, positive outside.
+
+	void nearestOnOutline(const std::vector<OutlinePoint>& outline, double hx, double hy, double r, double x, double y, double& pos, double& dist)
+	{
+		double best = 1e30;
+		for (auto& p : outline)
+		{
+			double d2 = (x - p.x) * (x - p.x) + (y - p.y) * (y - p.y);
+			if (d2 < best)
+			{
+				best = d2;
+				pos = p.pos;
+			}
+		}
+
+		double qx = std::abs(x) - (hx - r), qy = std::abs(y) - (hy - r);
+		bool bInside = std::abs(x) <= hx && std::abs(y) <= hy && !(qx > 0 && qy > 0 && std::hypot(qx, qy) > r);
+		dist = bInside ? -std::sqrt(best) : std::sqrt(best);
+	}
+
 	// Difference in u, taking the period into account.
 
 	double uDiff(double a, double b, double period)
@@ -59,6 +127,7 @@ WarpmapTest::WarpmapTest()
 	ADD_TEST(periodTest);
 	ADD_TEST(circularWarpTest);
 	ADD_TEST(circularWarpGenerateTest);
+	ADD_TEST(roundedRectWarpTest);
 }
 
 WarpmapTest::~WarpmapTest()
@@ -350,5 +419,112 @@ bool WarpmapTest::circularWarpGenerateTest(std::ostream& output)
 	TEST_ASSERT(!pWarp->setCellSize(-1));
 	TEST_ASSERT(!pWarp->setPrecision(0.f));
 	TEST_ASSERT(!pWarp->setSourceSize({ 0, 10 }));
+	return true;
+}
+
+//____ roundedRectWarpTest() __________________________________________________
+// RoundedRectWarp against the nearest points of a sampled outline, and as a circle against CircularWarp.
+
+bool WarpmapTest::roundedRectWarpTest(std::ostream& output)
+{
+	auto pFactory = SoftWarpmapFactory::create();
+
+	// Outline of 100 x 60 pixels with corners of 12, in a band from 6 pixels inside it to 8 outside.
+
+	const double cx = 70, cy = 50, hx = 50, hy = 30, r = 12, top = -6, bottom = 8;
+
+	auto pWarp = RoundedRectWarp::create(WGBP(RoundedRectWarp, _.size = { 140, 100 }, _.sourceSize = c_sourceSize, _.rect = { 20 * 64, 20 * 64, 100 * 64, 60 * 64 },
+											  _.cornerRadius = 12 * 64, _.topDistance = -6 * 64, _.bottomDistance = 8 * 64, _.cellSize = 5), pFactory);
+	TEST_ASSERT(pWarp != nullptr);
+	TEST_ASSERT(pWarp->isInstanceOf(WarpGenerator::TYPEINFO));
+
+	auto pMap = pWarp->generate();
+	TEST_ASSERT(pMap->uPeriod() == c_sourceSize.w);
+
+	// Nodes are where the nearest point of the outline is. Nodes deeper inside than the corners,
+	// where they are mitered and the nearest point can be either side, are skipped.
+
+	const double perimeter = 4 * (hx - r) + 4 * (hy - r) + 2 * M_PI * r;
+	auto outline = sampleOutline(hx, hy, r, 0.01);
+
+	SizeI nodes = pMap->nodes();
+	for (int row = 0; row < nodes.h; row++)
+		for (int col = 0; col < nodes.w; col++)
+		{
+			double x = pMap->nodeX(col) - cx, y = pMap->nodeY(row) - cy;
+			if (std::abs(x) < hx - r && std::abs(y) < hy - r)
+				continue;
+
+			double pos, dist;
+			nearestOnOutline(outline, hx, hy, r, x, y, pos, dist);
+
+			CoordSPX node = pMap->nodeData()[row * nodes.w + col];
+			double nodePos = node.x / double(c_sourceSize.w) * perimeter;
+			double nodeDist = node.y / double(c_sourceSize.h) * (bottom - top) + top;
+
+			if (uDiff(nodePos, pos, perimeter) > 0.05 || !near(nodeDist, dist, 0.05))
+				output << "Node at " << x << ", " << y << " is " << nodePos << ", " << nodeDist << ", nearest point " << pos << ", " << dist << std::endl;
+			TEST_ASSERT(uDiff(nodePos, pos, perimeter) <= 0.05 && near(nodeDist, dist, 0.05));
+		}
+
+	// Start and sweep. The middle of the right side is a quarter of the way round, where the source
+	// starts with a start of 0.25. A sweep of 0.5 makes the period twice the width of the source.
+
+	TEST_ASSERT(pWarp->setSpan(0.25f, 0.5f));
+	pMap = pWarp->generate();
+	TEST_ASSERT(pMap->uPeriod() == c_sourceSize.w * 2);
+
+	CoordF right = pMap->positionAt(cx + hx, cy);
+	TEST_ASSERT(near(right.x, 0, 1) && near(right.y, -top / (bottom - top) * c_sourceSize.h, 1));
+
+	CoordF below = pMap->positionAt(cx, cy + hy + 4);							// Middle of the bottom side, half way round.
+	TEST_ASSERT(near(below.x, c_sourceSize.w * 0.5, 1) && near(below.y, (4 - top) / (bottom - top) * c_sourceSize.h, 1));
+
+	// A square with corners of half its side is a circle, the same as a CircularWarp.
+
+	auto pCircle = CircularWarp::create(WGBP(CircularWarp, _.size = { 100, 100 }, _.sourceSize = c_sourceSize, _.topRadius = 45 * 64, _.bottomRadius = 20 * 64,
+											 _.cellSize = 6, _.startAngle = 30.f, _.sweep = -270.f), pFactory)->generate();
+	auto pRounded = RoundedRectWarp::create(WGBP(RoundedRectWarp, _.size = { 100, 100 }, _.sourceSize = c_sourceSize, _.rect = { 20 * 64, 20 * 64, 60 * 64, 60 * 64 },
+												 _.cornerRadius = 30 * 64, _.topDistance = 15 * 64, _.bottomDistance = -10 * 64, _.cellSize = 6,
+												 _.start = 30.f / 360, _.sweep = -0.75f), pFactory)->generate();
+
+	TEST_ASSERT(pRounded->uPeriod() == pCircle->uPeriod());
+	TEST_ASSERT(pRounded->nodes() == pCircle->nodes());
+
+	nodes = pCircle->nodes();
+	for (int i = 0; i < nodes.w * nodes.h; i++)
+	{
+		CoordSPX a = pCircle->nodeData()[i], b = pRounded->nodeData()[i];
+		TEST_ASSERT(uDiff(a.x, b.x, pCircle->uPeriod()) <= 1 && std::abs(a.y - b.y) <= 1);
+	}
+
+	// Cell size from precision at the tightest corner of the band: the corner radius less the
+	// distance inwards. Sharp corners take half the radius of the outer edge, as a disc.
+
+	auto pAuto = RoundedRectWarp::create(WGBP(RoundedRectWarp, _.size = { 140, 100 }, _.sourceSize = c_sourceSize, _.rect = { 20 * 64, 20 * 64, 100 * 64, 60 * 64 },
+											  _.cornerRadius = 12 * 64, _.topDistance = -6 * 64, _.bottomDistance = 8 * 64, _.precision = 2.f), pFactory);
+	TEST_ASSERT(pAuto->cellSize() == int(std::sqrt(8.0 * 2 * 6)));
+	TEST_ASSERT(pAuto->setOutline({ 20 * 64, 20 * 64, 100 * 64, 60 * 64 }, 0));
+	TEST_ASSERT(pAuto->setDistances(0, 8 * 64));
+	TEST_ASSERT(pAuto->cellSize() == int(std::sqrt(8.0 * 2 * 4)));
+
+	// Equal distances have no band to map the source onto, the nodes are clamped far outside it.
+
+	auto pFlat = RoundedRectWarp::create(WGBP(RoundedRectWarp, _.size = { 40, 40 }, _.sourceSize = c_sourceSize, _.rect = { 640, 640, 1280, 1280 }, _.cellSize = 10), pFactory);
+	auto pFlatMap = pFlat->generate();
+	for (int i = 0; i < pFlatMap->nodes().w * pFlatMap->nodes().h; i++)
+		TEST_ASSERT(pFlatMap->nodeData()[i].y == -Warpmap::maxNodeValue);
+
+	// Invalid values are refused.
+
+	TEST_ASSERT(RoundedRectWarp::create(WGBP(RoundedRectWarp, _.size = { 40, 40 }, _.sourceSize = c_sourceSize, _.sweep = 0.f), pFactory) == nullptr);
+	TEST_ASSERT(RoundedRectWarp::create(WGBP(RoundedRectWarp, _.size = { 40, 40 }, _.sourceSize = c_sourceSize, _.rect = { 0, 0, -64, 64 }), pFactory) == nullptr);
+	TEST_ASSERT(RoundedRectWarp::create(WGBP(RoundedRectWarp, _.size = { 40, 40 }, _.sourceSize = c_sourceSize, _.cornerRadius = -1), pFactory) == nullptr);
+	TEST_ASSERT(RoundedRectWarp::create(WGBP(RoundedRectWarp, _.size = { 40, 40 }), pFactory) == nullptr);			// No source size.
+
+	TEST_ASSERT(!pWarp->setOutline({ 0, 0, 64, -64 }, 0));
+	TEST_ASSERT(!pWarp->setOutline({ 0, 0, 64, 64 }, -1));
+	TEST_ASSERT(!pWarp->setDistances(64, 64));
+	TEST_ASSERT(!pWarp->setSpan(0.f, 0.f));
 	return true;
 }
