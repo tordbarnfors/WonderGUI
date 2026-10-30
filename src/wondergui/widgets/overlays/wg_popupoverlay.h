@@ -131,6 +131,9 @@ namespace wg
 
 		struct Blueprint
 		{
+			int				aimStillTime = 100;						// Millisec without movement before a pointer is no longer considered aiming at a submenu.
+			int				aimTimeout = 300;						// Millisec on the same widget before a pointer is no longer considered aiming at a submenu. 0 disables aiming.
+			pts				aimTolerance = 20;						// Points the near edge of a submenu is extended by at both ends when checking if the pointer aims at it.
 			Object_p		baggage;
 			bool			blockLeftMouseButton = true;			// An open popup blocks other widgets from receiving mouse move and left button events. Other buttons still get through.
 			int				closingDelay = 200;
@@ -169,6 +172,10 @@ namespace wg
 		const TypeInfo&		typeInfo(void) const override;
 		const static TypeInfo	TYPEINFO;
 
+		//.____ Internal ______________________________________________________
+
+		bool			_isAimingPast( Widget * pHovered, const CoordSPX& pointerPos, int64_t timestamp, int64_t hoveredSince );
+
 	protected:
 		PopupOverlay();
 		template<class BP> PopupOverlay(const BP& bp) : popupSlots(this), Overlay(bp)
@@ -179,6 +186,10 @@ namespace wg
 			m_openingFadeMs		= bp.openingFade;
 			m_closingDelayMs	= bp.closingDelay;
 			m_closingFadeMs		= bp.closingFade;
+
+			m_aimStillTimeMs	= bp.aimStillTime;
+			m_aimTimeoutMs		= bp.aimTimeout;
+			m_aimTolerance		= bp.aimTolerance;
 		}
 		virtual ~PopupOverlay();
 
@@ -190,11 +201,19 @@ namespace wg
 
 		void			_refreshStayEnteredList();
 
+		void			_processPointer( const CoordSPX& pointerPos, int64_t timestamp );
+
+		void			_addAimSample( const CoordSPX& pointerPos, int64_t timestamp );
+		Slot *			_slotOf( Widget * pWidget );
+		Slot *			_aimTarget( Widget * pHovered );
+		bool			_isAimingAt( Slot * pTarget, const CoordSPX& pointerPos, int64_t timestamp, int64_t hoveredSince );
+
 		// Overloaded from Container
 
 		const TypeInfo&	_slotTypeInfo(const StaticSlot * pSlot) const override;
 
 		Widget *		_findWidget( const CoordSPX& ofs, SearchMode mode ) override;
+		Widget *		_findWidgetIgnoringAim( const CoordSPX& ofs, SearchMode mode );
 
 
 		// Only base slot can have child replaced, we need error handling...
@@ -237,6 +256,25 @@ namespace wg
 		int				m_closingFadeMs = 200;
 
 		bool			m_bBlockLeftMouseButton = true;
+
+		// Safe triangle: a submenu stays open, and its siblings wait with opening, while the
+		// pointer moves towards it across other entries of the menu it was opened from.
+
+		int				m_aimStillTimeMs = 100;
+		int				m_aimTimeoutMs = 300;
+		pts				m_aimTolerance = 20;
+
+		const static int c_maxAimSamples = 8;
+		const static int c_minAimDistance = 8;			// Points between the pointer and the start of the triangle, unless all samples are closer.
+		const static int c_maxAimSlope = 3;				// Steepest heading that counts as aiming, as distance along the near edge per distance towards it.
+
+		CoordSPX		m_aimSamples[c_maxAimSamples];	// Latest distinct pointer positions, newest first.
+		int				m_nbAimSamples = 0;
+		int64_t			m_aimMoveTimestamp = 0;			// When the pointer last moved.
+		Widget_wp		m_pAimHovered;					// Widget under the pointer when it last moved.
+		int64_t			m_aimHoveredTimestamp = 0;		// When m_pAimHovered came under the pointer.
+		bool			m_bAimHeld = false;				// A popup was kept from closing since the pointer aims at it.
+		bool			m_bAimRedirected = false;		// The opener of a popup the pointer aims at was marked instead of the opener under it.
 	};
 
 } // namespace wg

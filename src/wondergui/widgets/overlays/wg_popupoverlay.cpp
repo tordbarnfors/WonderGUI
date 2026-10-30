@@ -20,6 +20,7 @@
 
 =========================================================================*/
 #include <wg_popupoverlay.h>
+#include <wg_popupopener.h>
 #include <wg_util.h>
 #include <wg_patches.h>
 #include <wg_msgrouter.h>
@@ -30,6 +31,7 @@
 #include <wg_gfxdevice.h>
 
 #include <algorithm>
+#include <cstdlib>
 
 namespace wg
 {
@@ -38,6 +40,29 @@ namespace wg
 
 	const TypeInfo PopupOverlay::TYPEINFO = { "PopupOverlay", &Overlay::TYPEINFO };
 	const TypeInfo PopupOverlay::Slot::TYPEINFO = { "PopupOverlay::Slot", &Overlay::Slot::TYPEINFO };
+
+	//____ isInTriangle() ________________________________________________________
+
+	// Points on an edge count as inside.
+
+	static bool isInTriangle( const CoordSPX& point, const CoordSPX& a, const CoordSPX& b, const CoordSPX& c )
+	{
+		// Which side of the line from-to that point is on, as the sign of their cross product.
+
+		auto side = [&point]( const CoordSPX& from, const CoordSPX& to )
+		{
+			return int64_t(to.x - from.x) * (point.y - from.y) - int64_t(to.y - from.y) * (point.x - from.x);
+		};
+
+		int64_t side1 = side(a, b);
+		int64_t side2 = side(b, c);
+		int64_t side3 = side(c, a);
+
+		bool bNegative = side1 < 0 || side2 < 0 || side3 < 0;
+		bool bPositive = side1 > 0 || side2 > 0 || side3 > 0;
+
+		return !(bNegative && bPositive);
+	}
 
 
 	//____ pushFront() ________________________________________________
@@ -334,7 +359,36 @@ namespace wg
 
 	//____ _findWidget() ____________________________________________________________
 
-	Widget *  PopupOverlay::_findWidget( const CoordSPX& ofs, SearchMode mode )
+	Widget * PopupOverlay::_findWidget( const CoordSPX& ofs, SearchMode mode )
+	{
+		Widget * pResult = _findWidgetIgnoringAim(ofs, mode);
+
+		// Safe triangle: an opener that the pointer only passes on its way to the submenu of
+		// another one shouldn't be marked, or it would light up and open its own. The
+		// opener of the submenu stays marked instead, see _isAimingAt().
+
+		if( mode == SearchMode::ActionTarget && pResult && pResult->isInstanceOf(PopupOpener::TYPEINFO) && static_cast<PopupOpener*>(pResult)->openOnHover() )
+		{
+			Slot * pTarget = _aimTarget(pResult);
+			if( pTarget )
+			{
+				int64_t timestamp = Base::timestamp();
+				int64_t hoveredSince = (pResult == m_pAimHovered.rawPtr()) ? m_aimHoveredTimestamp : timestamp;
+
+				if( _isAimingAt(pTarget, ofs, timestamp, hoveredSince) )
+				{
+					m_bAimRedirected = true;
+					return pTarget->m_pOpener.rawPtr();
+				}
+			}
+		}
+
+		return pResult;
+	}
+
+	//____ _findWidgetIgnoringAim() ___________________________________________________
+
+	Widget *  PopupOverlay::_findWidgetIgnoringAim( const CoordSPX& ofs, SearchMode mode )
 	{
 		// PopupOverlay has its own _findWidget() method since we need special treatment of
 		// searchmode ACTION_TARGET when a menu is open.
@@ -561,140 +615,25 @@ namespace wg
 			case MsgType::MouseEnter:
 			case MsgType::MouseMove:
 			{
+				auto pMsg = static_cast<InputMsg*>(_pMsg);
+				CoordSPX 	pointerPos = _toLocal(pMsg->pointerSpxPos());
+
+				_addAimSample(pointerPos, pMsg->timestamp());
+
 				if (popupSlots.isEmpty())
 					break;
 
-				CoordSPX 	pointerPos = _toLocal(static_cast<InputMsg*>(_pMsg)->pointerSpxPos());
+				_processPointer(pointerPos, pMsg->timestamp());
+			}
+			break;
 
-				// Top popup can be in state PeekOpen or Opening, which needs special attention.
+			case MsgType::MouseLeave:
+			{
+				// No moves reach us while the pointer is outside, so aiming starts over when
+				// it comes back. Popups are left open.
 
-				Slot * pSlot = popupSlots._first();
-				if (pSlot->m_state == Slot::State::PeekOpen)
-				{
-					// Promote popup to state WeakOpen if pointer has entered its geo,
-					// otherwise begin delayed closing if pointer has left launcherGeo.
-
-					if (pSlot->m_geo.contains(pointerPos))
-						pSlot->m_state = Slot::State::WeakOpen;
-					else if (!pSlot->m_launcherGeo.contains(pointerPos))
-					{
-						pSlot->m_state = Slot::State::ClosingDelay;
-						pSlot->m_stateCounter = 0;
-					}
-				}
-				else if(pSlot->m_state == Slot::State::Opening)
-				{
-					if (!pSlot->m_geo.contains(pointerPos) && !pSlot->m_launcherGeo.contains(pointerPos))
-					{
-						pSlot->m_state = Slot::State::Closing;
-
-						if( m_openingFadeMs > 0 && m_closingFadeMs > 0 )
-							pSlot->m_stateCounter = (m_openingFadeMs - pSlot->m_stateCounter) * m_closingFadeMs / m_openingFadeMs;
-						else
-							pSlot->m_stateCounter = 0;
-					}
-				}
-				else if(pSlot->m_state == Slot::State::OpeningDelay)
-				{
-					// Has not been shown yet, just close it immediately
-
-					if (!pSlot->m_geo.contains(pointerPos) && !pSlot->m_launcherGeo.contains(pointerPos))
-					{
-						pSlot->m_state = Slot::State::Closing;
-						pSlot->m_stateCounter = m_closingFadeMs;
-					}
-				}
-
-				// Find the popup beneath the mouse pointer and revert any initiated closing of it.
-				// Also revert closing of a popup if mouse pointer is within its launcherGeo.
-
-				for (Slot * pSlot = popupSlots._begin() ; pSlot != popupSlots._end() ; pSlot++)
-				{
-					Slot& popup = *pSlot;
-
-					if (popup.m_launcherGeo.contains(pointerPos))
-					{
-						if (popup.m_state == Slot::State::ClosingDelay)
-						{
-							// When pointer enters the launcherGeo of a popup in state ClosingDelay, the popup should be promoted to PeekOpen.
-
-							popup.m_state = popup.m_bPeek ? Slot::State::PeekOpen : Slot::State::FixedOpen;
-							popup.m_stateCounter = 0;
-							_requestRender( popup._widget()->_renderBounds() + popup.m_geo.pos() );
-						}
-						else if (popup.m_state == Slot::State::Closing)
-						{
-							// When pointer enters the launcherGeo of a popup in state Closing, the popup should be promoted to Opening.
-
-							popup.m_state = Slot::State::Opening;
-
-							if( m_openingFadeMs > 0 && m_closingFadeMs > 0 )
-								popup.m_stateCounter = (m_closingFadeMs - popup.m_stateCounter) * m_openingFadeMs / m_closingFadeMs;
-							else
-								popup.m_stateCounter = 0;
-						}
-					}
-					else if (popup.m_geo.contains(pointerPos))
-					{
-						if (popup.m_state == Slot::State::ClosingDelay)
-						{
-							// When pointer enters a popup in state ClosingDelay, the popup and its ancestors should be promoted to state WeakOpen.
-
-							Slot * p = &popup;
-							while (p != popupSlots._end() && p->m_state == Slot::State::ClosingDelay)
-							{
-								p->m_state = Slot::State::WeakOpen;
-								p->m_stateCounter = 0;
-								p++;
-							}
-						}
-						else if (popup.m_state == Slot::State::Closing)
-						{
-							// When pointer enters a popup in state Closing, the popup and its ancestors should be promoted to state WeakOpen.
-
-							Slot * p = &popup;
-							while (p != popupSlots._end() && p->m_state == Slot::State::Closing)
-							{
-								_requestRender(p->_widget()->_renderBounds() + p->m_geo.pos());
-								p->m_state = Slot::State::WeakOpen;
-								p->m_stateCounter = 0;
-								p++;
-							}
-						}
-
-						break;		// We have found and acted on our hovered popup, we should not act on any lower popup that might overlap geometrically.
-					}
-				}
-
-				// If pointer has entered a selectable widget of a popup that isn't the top one
-				// and all widgets between them have bPeek=true, they should all enter
-				// state ClosingDelay (unless already in state Closing).
-
-
-//				Widget * pTop = popupSlots._first()->_widget();
-				Widget * pMarked = _findWidget(pointerPos, SearchMode::ActionTarget);
-
-				if (pMarked != this && pMarked->isSelectable() && popupSlots._first()->m_bPeek)
-				{
-					// Trace hierarchy from marked to one of our children.
-
-					while (pMarked->_parent() != this)
-						pMarked = pMarked->_parent();
-
-					//
-
-					auto p = popupSlots._first();
-					while (p->m_bPeek && p->_widget() != pMarked)
-					{
-						if (p->m_state != Slot::State::Closing && p->m_state != Slot::State::ClosingDelay)
-						{
-							p->m_state = Slot::State::ClosingDelay;
-							p->m_stateCounter = 0;
-						}
-						p++;
-					}
-				}
-
+				m_nbAimSamples = 0;
+				m_pAimHovered = nullptr;
 			}
 			break;
 
@@ -854,11 +793,370 @@ namespace wg
 		}
 	}
 
+	//____ _processPointer() ______________________________________________________
+
+	void PopupOverlay::_processPointer( const CoordSPX& pointerPos, int64_t timestamp )
+	{
+		m_bAimHeld = false;
+
+		Widget * pMarked = _findWidgetIgnoringAim(pointerPos, SearchMode::ActionTarget);
+
+		if( pMarked != m_pAimHovered.rawPtr() )
+		{
+			m_pAimHovered = pMarked;
+			m_aimHoveredTimestamp = timestamp;
+		}
+
+		// Top popup can be in state PeekOpen or Opening, which needs special attention.
+		// Neither starts closing while the pointer is on its way to it, see _isAimingAt().
+
+		Slot * pSlot = popupSlots._first();
+		if (pSlot->m_state == Slot::State::PeekOpen)
+		{
+			// Promote popup to state WeakOpen if pointer has entered its geo,
+			// otherwise begin delayed closing if pointer has left launcherGeo.
+
+			if (pSlot->m_geo.contains(pointerPos))
+				pSlot->m_state = Slot::State::WeakOpen;
+			else if (!pSlot->m_launcherGeo.contains(pointerPos))
+			{
+				if( _isAimingAt(pSlot, pointerPos, timestamp, m_aimHoveredTimestamp) )
+					m_bAimHeld = true;
+				else
+				{
+					pSlot->m_state = Slot::State::ClosingDelay;
+					pSlot->m_stateCounter = 0;
+				}
+			}
+		}
+		else if(pSlot->m_state == Slot::State::Opening)
+		{
+			if (!pSlot->m_geo.contains(pointerPos) && !pSlot->m_launcherGeo.contains(pointerPos))
+			{
+				if( _isAimingAt(pSlot, pointerPos, timestamp, m_aimHoveredTimestamp) )
+					m_bAimHeld = true;
+				else
+				{
+					pSlot->m_state = Slot::State::Closing;
+
+					if( m_openingFadeMs > 0 && m_closingFadeMs > 0 )
+						pSlot->m_stateCounter = (m_openingFadeMs - pSlot->m_stateCounter) * m_closingFadeMs / m_openingFadeMs;
+					else
+						pSlot->m_stateCounter = 0;
+				}
+			}
+		}
+		else if(pSlot->m_state == Slot::State::OpeningDelay)
+		{
+			// Has not been shown yet, just close it immediately
+
+			if (!pSlot->m_geo.contains(pointerPos) && !pSlot->m_launcherGeo.contains(pointerPos))
+			{
+				pSlot->m_state = Slot::State::Closing;
+				pSlot->m_stateCounter = m_closingFadeMs;
+			}
+		}
+
+		// Find the popup beneath the mouse pointer and revert any initiated closing of it.
+		// Also revert closing of a popup if mouse pointer is within its launcherGeo.
+
+		for (Slot * pSlot = popupSlots._begin() ; pSlot != popupSlots._end() ; pSlot++)
+		{
+			Slot& popup = *pSlot;
+
+			if (popup.m_launcherGeo.contains(pointerPos))
+			{
+				if (popup.m_state == Slot::State::ClosingDelay)
+				{
+					// When pointer enters the launcherGeo of a popup in state ClosingDelay, the popup should be promoted to PeekOpen.
+
+					popup.m_state = popup.m_bPeek ? Slot::State::PeekOpen : Slot::State::FixedOpen;
+					popup.m_stateCounter = 0;
+					_requestRender( popup._widget()->_renderBounds() + popup.m_geo.pos() );
+				}
+				else if (popup.m_state == Slot::State::Closing)
+				{
+					// When pointer enters the launcherGeo of a popup in state Closing, the popup should be promoted to Opening.
+
+					popup.m_state = Slot::State::Opening;
+
+					if( m_openingFadeMs > 0 && m_closingFadeMs > 0 )
+						popup.m_stateCounter = (m_closingFadeMs - popup.m_stateCounter) * m_openingFadeMs / m_closingFadeMs;
+					else
+						popup.m_stateCounter = 0;
+				}
+			}
+			else if (popup.m_geo.contains(pointerPos))
+			{
+				if (popup.m_state == Slot::State::ClosingDelay)
+				{
+					// When pointer enters a popup in state ClosingDelay, the popup and its ancestors should be promoted to state WeakOpen.
+
+					Slot * p = &popup;
+					while (p != popupSlots._end() && p->m_state == Slot::State::ClosingDelay)
+					{
+						p->m_state = Slot::State::WeakOpen;
+						p->m_stateCounter = 0;
+						p++;
+					}
+				}
+				else if (popup.m_state == Slot::State::Closing)
+				{
+					// When pointer enters a popup in state Closing, the popup and its ancestors should be promoted to state WeakOpen.
+
+					Slot * p = &popup;
+					while (p != popupSlots._end() && p->m_state == Slot::State::Closing)
+					{
+						_requestRender(p->_widget()->_renderBounds() + p->m_geo.pos());
+						p->m_state = Slot::State::WeakOpen;
+						p->m_stateCounter = 0;
+						p++;
+					}
+				}
+
+				break;		// We have found and acted on our hovered popup, we should not act on any lower popup that might overlap geometrically.
+			}
+		}
+
+		// If pointer has entered a selectable widget of a popup that isn't the top one
+		// and all widgets between them have bPeek=true, they should all enter
+		// state ClosingDelay (unless already in state Closing). Not while the pointer
+		// is on its way to a submenu of that popup though.
+
+		if (pMarked && pMarked != this && pMarked->isSelectable() && popupSlots._first()->m_bPeek)
+		{
+			Slot * pTarget = _aimTarget(pMarked);
+
+			if( pTarget && _isAimingAt(pTarget, pointerPos, timestamp, m_aimHoveredTimestamp) )
+				m_bAimHeld = true;
+			else
+			{
+				// Trace hierarchy from marked to one of our children.
+
+				while (pMarked->_parent() != this)
+					pMarked = pMarked->_parent();
+
+				//
+
+				auto p = popupSlots._first();
+				while (p->m_bPeek && p->_widget() != pMarked)
+				{
+					if (p->m_state != Slot::State::Closing && p->m_state != Slot::State::ClosingDelay)
+					{
+						p->m_state = Slot::State::ClosingDelay;
+						p->m_stateCounter = 0;
+					}
+					p++;
+				}
+			}
+		}
+	}
+
+	//____ _isAimingPast() ________________________________________________________
+
+	// Checks if the pointer, at pointerPos in global coordinates, is passing pHovered
+	// on its way to an open submenu of the popup that pHovered is in. A PopupOpener
+	// that opens on hover should then wait with opening, see _isAimingAt().
+
+	bool PopupOverlay::_isAimingPast( Widget * pHovered, const CoordSPX& pointerPos, int64_t timestamp, int64_t hoveredSince )
+	{
+		Slot * pTarget = _aimTarget(pHovered);
+		if( !pTarget )
+			return false;
+
+		return _isAimingAt(pTarget, _toLocal(pointerPos), timestamp, hoveredSince);
+	}
+
+	//____ _isAimingAt() __________________________________________________________
+
+	// Safe triangle: checks if the pointer is on its way to pTarget, a submenu opened from
+	// a popup the pointer is still in. If so, pTarget should stay open and its siblings
+	// wait with opening, even though the pointer crosses their openers on its way.
+	//
+	// The pointer is aiming at the submenu as long as it is inside the triangle between
+	// where it was a short distance back and the near edge of the submenu, keeps moving
+	// and doesn't stay on the same widget for too long.
+
+	bool PopupOverlay::_isAimingAt( Slot * pTarget, const CoordSPX& pointerPos, int64_t timestamp, int64_t hoveredSince )
+	{
+		if( m_aimTimeoutMs <= 0 || m_nbAimSamples == 0 || !pTarget->m_bPeek )
+			return false;
+
+		if( pTarget->m_state != Slot::State::Opening && pTarget->m_state != Slot::State::PeekOpen && pTarget->m_state != Slot::State::WeakOpen )
+			return false;
+
+		Slot * pParent = _slotOf(pTarget->m_pOpener.rawPtr());
+		if( !pParent )
+			return false;
+
+		// Give up once the pointer has stopped or has stayed on one widget too long.
+		// A position that isn't sampled yet is a move happening right now.
+
+		bool bSampled = (pointerPos == m_aimSamples[0]);
+		int64_t moveTimestamp = bSampled ? m_aimMoveTimestamp : timestamp;
+
+		if( timestamp - moveTimestamp > int64_t(m_aimStillTimeMs) * 1000 || timestamp - hoveredSince > int64_t(m_aimTimeoutMs) * 1000 )
+			return false;
+
+		// The triangle starts at the latest sample a few points away. The last few moves
+		// alone are mostly jitter when the pointer moves slowly. It needs to be inside the
+		// popup the submenu was opened from, since coming from elsewhere isn't aiming.
+		// A position that isn't sampled yet skips the sample it will push out, so the
+		// answer is the same before and after sampling.
+
+		spx minDistance = ptsToSpx(pts(c_minAimDistance), m_scale);
+		int nbSamples = bSampled ? m_nbAimSamples : std::min(m_nbAimSamples, c_maxAimSamples - 1);
+
+		CoordSPX apex = m_aimSamples[nbSamples - 1];
+		for( int i = 0 ; i < nbSamples ; i++ )
+		{
+			if( std::abs(pointerPos.x - m_aimSamples[i].x) + std::abs(pointerPos.y - m_aimSamples[i].y) >= minDistance )
+			{
+				apex = m_aimSamples[i];
+				break;
+			}
+		}
+
+		if( apex == pointerPos || !pParent->m_geo.contains(apex) )
+			return false;
+
+		// The triangle ends at the near edge of the submenu, which depends on what side
+		// of its opener it was placed, extended by the tolerance at both ends. But it is
+		// never wider than c_maxAimSlope times its height, or moving along the menu close
+		// to a tall submenu would count as aiming at it.
+
+		RectSPX content = pTarget->m_geo;
+		content -= pTarget->m_popupOverflow;
+
+		if( content.contains(pointerPos) )
+			return false;
+
+		const RectSPX& launcher = pTarget->m_launcherGeo;
+		spx tolerance = ptsToSpx(m_aimTolerance, m_scale);
+
+		CoordSPX corner1, corner2;
+
+		if( content.left() >= launcher.right() || content.right() <= launcher.left() )
+		{
+			spx edge = content.left() >= launcher.right() ? content.left() : content.right();
+			spx reach = std::abs(edge - apex.x) * c_maxAimSlope;
+
+			corner1 = { edge, std::max(content.top() - tolerance, apex.y - reach) };
+			corner2 = { edge, std::min(content.bottom() + tolerance, apex.y + reach) };
+
+			if( corner1.y >= corner2.y )
+				return false;
+		}
+		else if( content.top() >= launcher.bottom() || content.bottom() <= launcher.top() )
+		{
+			spx edge = content.top() >= launcher.bottom() ? content.top() : content.bottom();
+			spx reach = std::abs(edge - apex.y) * c_maxAimSlope;
+
+			corner1 = { std::max(content.left() - tolerance, apex.x - reach), edge };
+			corner2 = { std::min(content.right() + tolerance, apex.x + reach), edge };
+
+			if( corner1.x >= corner2.x )
+				return false;
+		}
+		else
+			return false;		// Submenu has been squeezed over its opener, so there is no side to aim at.
+
+		return isInTriangle(pointerPos, apex, corner1, corner2);
+	}
+
+	//____ _aimTarget() ___________________________________________________________
+
+	// Returns the open submenu of the popup that pHovered is in, unless pHovered is its
+	// opener or part of it.
+
+	PopupOverlay::Slot * PopupOverlay::_aimTarget( Widget * pHovered )
+	{
+		Slot * pParent = _slotOf(pHovered);
+		if( !pParent )
+			return nullptr;
+
+		for( Slot * p = popupSlots._begin() ; p < pParent ; p++ )
+		{
+			if( p->m_state == Slot::State::Closing || p->m_state == Slot::State::ClosingDelay )
+				continue;
+
+			Widget * pOpener = p->m_pOpener.rawPtr();
+			if( pOpener && _slotOf(pOpener) == pParent )
+			{
+				if( pHovered == pOpener || pHovered->isDescendantOf(pOpener) )
+					return nullptr;
+
+				return p;
+			}
+		}
+
+		return nullptr;
+	}
+
+	//____ _slotOf() ______________________________________________________________
+
+	// Returns the slot of the popup that pWidget is in, if any.
+
+	PopupOverlay::Slot * PopupOverlay::_slotOf( Widget * pWidget )
+	{
+		// Trace hierarchy from widget to one of our children.
+
+		while( pWidget && pWidget->_parent() != this )
+			pWidget = pWidget->_parent();
+
+		if( !pWidget )
+			return nullptr;
+
+		int index = popupSlots.index(pWidget);
+		return index >= 0 ? popupSlots._slot(index) : nullptr;
+	}
+
+	//____ _addAimSample() ________________________________________________________
+
+	void PopupOverlay::_addAimSample( const CoordSPX& pointerPos, int64_t timestamp )
+	{
+		if( m_nbAimSamples > 0 && m_aimSamples[0] == pointerPos )
+			return;
+
+		for( int i = c_maxAimSamples - 1 ; i > 0 ; i-- )
+			m_aimSamples[i] = m_aimSamples[i-1];
+
+		m_aimSamples[0] = pointerPos;
+
+		if( m_nbAimSamples < c_maxAimSamples )
+			m_nbAimSamples++;
+
+		m_aimMoveTimestamp = timestamp;
+	}
+
 	//____ _update() _______________________________________________________________
 
 	void PopupOverlay::_update(int microPassed, int64_t microsecTimestamp)
 	{
 		int ms = microPassed / 1000;
+
+		// A popup kept open since the pointer aimed at it should start closing once the
+		// pointer stops, which no message will tell us. So we check again until it does.
+		// The same goes for an opener that was passed over and should now be marked,
+		// which the input handler otherwise would wait with since the pointer is still.
+
+		if( m_bAimHeld || m_bAimRedirected )
+		{
+			bool bRemark = m_bAimRedirected;
+
+			m_bAimHeld = false;
+			m_bAimRedirected = false;
+
+			auto pInputHandler = Base::inputHandler();
+
+			if( !popupSlots.isEmpty() && pInputHandler->isEntered(this) )
+			{
+				_processPointer(_toLocal(pInputHandler->pointerSpxPos()), microsecTimestamp);
+
+				if( bRemark && _root() )
+					pInputHandler->setPointer(_root(), pInputHandler->pointerPos());
+			}
+		}
 
 		// Update state for all open popups
 

@@ -133,10 +133,14 @@ namespace wg
 		void			_resize(const SizeSPX& size, int scale) override;
 		void			_receive(Msg * pMsg) override;
 		void			_setState(State state) override;
+		void			_update(int microPassed, int64_t microsecTimestamp) override;
 
 
 		void			_open();
 		void			_close();
+
+		bool			_isAimingPast(const CoordSPX& pointerPos, int64_t timestamp);
+		void			_setOpenPending(bool bPending);
 
 		CoordSPX		_componentPos(const Component * pComponent) const override;
 		SizeSPX			_componentSize(const Component * pComponent) const override;
@@ -154,6 +158,8 @@ namespace wg
 		Border			m_popupOverflow;
 		bool			m_bOpenOnHover = false;
 		bool			m_bOpen = false;
+		bool			m_bOpenPending = false;			// Hovered, but waits with opening while the pointer aims past us at another popup.
+		int64_t			m_hoverTimestamp = 0;			// When the pointer entered us.
 		bool			m_bCloseOnSelect = true;
 		bool			m_bTakeFocus = true;			// Popup takes keyboard focus when opened.
 		MouseButton		m_mouseButton = MouseButton::Left;

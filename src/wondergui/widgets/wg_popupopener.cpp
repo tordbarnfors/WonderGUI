@@ -55,6 +55,7 @@ namespace wg
 
 	void PopupOpener::setPopup(Widget * pPopup)
 	{
+		_setOpenPending(false);
 		m_pPopup = pPopup;
 	}
 
@@ -62,6 +63,9 @@ namespace wg
 
 	void PopupOpener::setOpenOnHover(bool bOpen)
 	{
+		if( !bOpen )
+			_setOpenPending(false);
+
 		m_bOpenOnHover = bOpen;
 	}
 
@@ -181,7 +185,36 @@ namespace wg
 			case MsgType::MouseEnter:
 			{
 				if (m_bOpenOnHover && !m_bOpen)
-					_open();
+				{
+					// Wait with opening if the pointer just passes us on its way to
+					// the submenu of a sibling.
+
+					auto pInputMsg = static_cast<InputMsg*>(pMsg);
+					m_hoverTimestamp = pInputMsg->timestamp();
+
+					if( _isAimingPast(pInputMsg->pointerSpxPos(), pInputMsg->timestamp()) )
+						_setOpenPending(true);
+					else
+						_open();
+				}
+				break;
+			}
+
+			case MsgType::MouseMove:
+			{
+				if( m_bOpenPending )
+				{
+					auto pInputMsg = static_cast<InputMsg*>(pMsg);
+
+					if( !_isAimingPast(pInputMsg->pointerSpxPos(), pInputMsg->timestamp()) )
+						_open();
+				}
+				break;
+			}
+
+			case MsgType::MouseLeave:
+			{
+				_setOpenPending(false);
 				break;
 			}
 
@@ -199,6 +232,10 @@ namespace wg
 						Base::inputHandler()->_yieldButtonEvents(m_mouseButton, this, m_pPopup);
 						m_bPressed = false;		// We have yielded our press...
 					}
+				}
+				else if( m_bOpenPending && static_cast<MouseButtonMsg*>(pMsg)->button() == m_mouseButton )
+				{
+					_open();		// A click doesn't wait.
 				}
 				break;
 			}
@@ -225,16 +262,65 @@ namespace wg
 
 	void PopupOpener::_setState(State state)
 	{
+		if( state.isDisabled() )
+			_setOpenPending(false);
+
 		Widget::_setState(state);
 		label._setState(state);
 		_requestRender(); //TODO: Only requestRender if text appearance has changed (let text.setState() return if rendering is needed)
+	}
+
+	//____ _update() __________________________________________________________
+
+	void PopupOpener::_update(int microPassed, int64_t microsecTimestamp)
+	{
+		Widget::_update(microPassed, microsecTimestamp);
+
+		// The pointer might stop on us without moving again, so we check again until
+		// it no longer aims past us.
+
+		if( !m_bOpenPending )
+			return;
+
+		if( !Base::inputHandler()->isEntered(this) )
+			_setOpenPending(false);
+		else if( !_isAimingPast(Base::inputHandler()->pointerSpxPos(), microsecTimestamp) )
+			_open();
+	}
+
+	//____ _isAimingPast() ____________________________________________________
+
+	bool PopupOpener::_isAimingPast(const CoordSPX& pointerPos, int64_t timestamp)
+	{
+		auto pLayer = _parent() ? _parent()->_getPopupOverlay() : nullptr;
+		if( !pLayer )
+			return false;
+
+		return pLayer->_isAimingPast(this, pointerPos, timestamp, m_hoverTimestamp);
+	}
+
+	//____ _setOpenPending() __________________________________________________
+
+	void PopupOpener::_setOpenPending(bool bPending)
+	{
+		if( bPending == m_bOpenPending )
+			return;
+
+		m_bOpenPending = bPending;
+
+		if( bPending )
+			_startReceiveUpdates();
+		else
+			_stopReceiveUpdates();
 	}
 
 	//____ _open() ____________________________________________________________
 
 	void PopupOpener::_open()
 	{
-		auto pLayer = _parent()->_getPopupOverlay();
+		_setOpenPending(false);
+
+		auto pLayer = _parent() ? _parent()->_getPopupOverlay() : nullptr;
 		if (pLayer && m_pPopup)
 		{
 			pLayer->popupSlots.pushFront(m_pPopup, this, pLayer->toLocal(globalGeo()), m_attachPoint, m_bOpenOnHover, m_bCloseOnSelect, Size(1000000, 1000000), m_popupOverflow, m_bTakeFocus );
