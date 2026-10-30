@@ -48,6 +48,29 @@ namespace wg
 	HANDLE												DX12Surface::s_copyFenceEvent = nullptr;
 	UINT64												DX12Surface::s_copyFenceValue = 0;
 
+	DX12Surface *										DX12Surface::s_pFirstLive = nullptr;
+
+	//____ _copyFromMapping() ______________________________________________________
+	//
+	// Copies out of a buffer that was mapped on a device that may since have been
+	// removed. In practice the memory of an upload heap stays mapped until the
+	// resource is released, but D3D12 makes no such promise, so an access
+	// violation is caught here and turned into a false. Kept on its own, since
+	// __try can't share a function with objects that need unwinding.
+
+	static bool _copyFromMapping( void * pDst, const void * pSrc, size_t nBytes )
+	{
+		__try
+		{
+			memcpy( pDst, pSrc, nBytes );
+			return true;
+		}
+		__except( GetExceptionCode() == EXCEPTION_ACCESS_VIOLATION ? EXCEPTION_EXECUTE_HANDLER : EXCEPTION_CONTINUE_SEARCH )
+		{
+			return false;
+		}
+	}
+
 	//____ setObjectName() _________________________________________________________
 	//
 	// Names a D3D12 object after the surface owning it, so the debug layer's live
@@ -97,6 +120,62 @@ namespace wg
 
 		s_copyFenceValue = 0;
 		s_pDevice = nullptr;
+	}
+
+	//____ evacuateAll() ___________________________________________________________
+
+	void DX12Surface::evacuateAll()
+	{
+		int nLost = 0;
+
+		for( DX12Surface * p = s_pFirstLive; p; p = p->m_pNextLive )
+		{
+			if( !p->_evacuate() )
+				nLost++;
+		}
+
+		if( nLost > 0 )
+		{
+			char buffer[256];
+			sprintf_s(buffer, "The pixels of %d surface(s) could not be read from the lost device and have been cleared.", nLost);
+			GfxBase::throwError(ErrorLevel::Warning, ErrorCode::RenderFailure, buffer, nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
+		}
+	}
+
+	//____ migrateAll() ____________________________________________________________
+
+	void DX12Surface::migrateAll()
+	{
+		for( DX12Surface * p = s_pFirstLive; p; p = p->m_pNextLive )
+			p->_migrate();
+	}
+
+	//____ _link() _________________________________________________________________
+
+	void DX12Surface::_link()
+	{
+		m_pNextLive = s_pFirstLive;
+
+		if( s_pFirstLive )
+			s_pFirstLive->m_pPrevLive = this;
+
+		s_pFirstLive = this;
+	}
+
+	//____ _unlink() _______________________________________________________________
+
+	void DX12Surface::_unlink()
+	{
+		if( m_pPrevLive )
+			m_pPrevLive->m_pNextLive = m_pNextLive;
+		else
+			s_pFirstLive = m_pNextLive;
+
+		if( m_pNextLive )
+			m_pNextLive->m_pPrevLive = m_pPrevLive;
+
+		m_pPrevLive = nullptr;
+		m_pNextLive = nullptr;
 	}
 
 	//____ _waitForCopyFence() _____________________________________________________
@@ -388,11 +467,15 @@ namespace wg
 
 	DX12Surface::DX12Surface(const Blueprint& bp) : Surface(bp, PixelFormat::BGRA_8, SampleMethod::Bilinear)
 	{
+		_link();
+
 		_setupTexture( nullptr, 0, PixelFormat::Undefined, nullptr, nullptr, bp.palette, 0 );
 	}
 
 	DX12Surface::DX12Surface(const Blueprint& bp, Blob* pBlob, int pitch) : Surface(bp, PixelFormat::BGRA_8, SampleMethod::Bilinear)
 	{
+		_link();
+
 		// The blob holds the format that was asked for, which is not always the one
 		// we end up with, so take note of it before _setupTexture() settles that.
 
@@ -407,6 +490,8 @@ namespace wg
 	DX12Surface::DX12Surface(const Blueprint& bp, const uint8_t* pPixels,
 		PixelFormat format, int pitch, const Color8* pPalette, int paletteSize) : Surface(bp, PixelFormat::BGRA_8, SampleMethod::Bilinear)
 	{
+		_link();
+
 		auto& srcDesc = Util::pixelFormatToDescription(format);
 
 		if( pitch == 0 )
@@ -420,6 +505,8 @@ namespace wg
 	DX12Surface::DX12Surface(const Blueprint& bp, const uint8_t* pPixels,
 		const PixelDescription& pixelDescription, int pitch, const Color8* pPalette, int paletteSize) : Surface(bp, PixelFormat::BGRA_8, SampleMethod::Bilinear)
 	{
+		_link();
+
 		if( pitch == 0 )
 			pitch = bp.size.w * pixelDescription.bits/8;
 
@@ -458,8 +545,6 @@ namespace wg
 			return;
 		}
 
-		DXGI_FORMAT dxgiFormat = m_dxgiFormat;
-
 		// D3D12 wants each line of a texture copy to start on a 256 byte boundary,
 		// so our pixels are stored with a padded pitch. PixelBuffer carries the
 		// pitch, so nothing outside this class needs to care.
@@ -477,9 +562,10 @@ namespace wg
 		// gives us what we ask for below.
 
 		// On a lost device every call below would fail, and each failure costs an
-		// exception inside the D3D12 runtime. Go straight to plain pixels.
+		// exception inside the D3D12 runtime. Go straight to plain pixels. Should a
+		// new device be set, migrateAll() moves them onto it.
 
-		if( !bFormatSupported || DX12Backend::isDeviceLost() || !_initCopyResources() )
+		if( !bFormatSupported || DX12Backend::isDeviceLost() || !_initCopyResources() || !_createDeviceObjects() )
 		{
 			if( !_allocFallbackPixels() )
 				return;
@@ -487,6 +573,40 @@ namespace wg
 			_copyInPixels( pPixels, pitch, srcFormat, pSrcPixelDesc, pSrcPalette, srcPaletteSize );
 			return;
 		}
+
+		memset( m_pUploadData, 0, size_t(m_uploadPitch) * m_size.h );
+
+		_copyInPixels( pPixels, pitch, srcFormat, pSrcPixelDesc, pSrcPalette, srcPaletteSize );
+		_updatePaletteBuffer();
+	}
+
+	//____ _createDeviceObjects() ______________________________________________
+	//
+	// Everything the surface has on the device: the texture, the upload buffer
+	// holding our pixels, the views and, if palette based, the palette buffer.
+	// Either all of it is created or none of it is kept, so a surface is never
+	// left halfway onto a device.
+	//
+	// On success m_pUploadData points into the new upload buffer, which holds
+	// whatever was in that memory. Filling it is up to the caller.
+
+	bool DX12Surface::_createDeviceObjects()
+	{
+		const char * pFunc = __func__;
+
+		auto fail = [this, pFunc]( const char * pMessage )
+		{
+			_dropDeviceObjects();
+
+			// A lost device is reported once by DX12Backend, not by every surface.
+
+			if( pMessage && !DX12Backend::checkDeviceLost() )
+				GfxBase::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, pMessage, this, &TYPEINFO, pFunc, __FILE__, __LINE__);
+
+			return false;
+		};
+
+		DXGI_FORMAT dxgiFormat = m_dxgiFormat;
 
 		// Create the texture
 
@@ -510,18 +630,11 @@ namespace wg
 
 		if( FAILED(s_pDevice->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &texDesc,
 													  D3D12_RESOURCE_STATE_COMMON, nullptr, IID_PPV_ARGS(m_texture.GetAddressOf()))) )
-		{
-			if( !DX12Backend::checkDeviceLost() )
-				GfxBase::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to create texture for surface.",
-					this, &TYPEINFO, __func__, __FILE__, __LINE__);
-
-			if( _allocFallbackPixels() )
-				_copyInPixels( pPixels, pitch, srcFormat, pSrcPixelDesc, pSrcPalette, srcPaletteSize );
-
-			return;
-		}
+			return fail( "Failed to create texture for surface." );
 
 		setObjectName( m_texture.Get(), m_bCanvas ? L"texture (canvas)" : L"texture", this, m_size );
+
+		m_resourceState = D3D12_RESOURCE_STATE_COMMON;
 
 		// Create the buffer holding our pixels
 
@@ -540,37 +653,14 @@ namespace wg
 
 		if( FAILED(s_pDevice->CreateCommittedResource(&uploadProps, D3D12_HEAP_FLAG_NONE, &bufDesc,
 													  D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(m_uploadBuffer.GetAddressOf()))) )
-		{
-			m_texture = nullptr;
-			m_uploadBuffer = nullptr;
-			if( !DX12Backend::checkDeviceLost() )
-				GfxBase::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to create pixel buffer for surface.",
-					this, &TYPEINFO, __func__, __FILE__, __LINE__);
-
-			if( _allocFallbackPixels() )
-				_copyInPixels( pPixels, pitch, srcFormat, pSrcPixelDesc, pSrcPalette, srcPaletteSize );
-
-			return;
-		}
+			return fail( "Failed to create pixel buffer for surface." );
 
 		setObjectName( m_uploadBuffer.Get(), L"upload buffer", this, m_size );
 
-		if( FAILED(m_uploadBuffer->Map(0, nullptr, (void**) &m_pUploadData)) )
-		{
-			m_texture = nullptr;
-			m_uploadBuffer = nullptr;
-			m_pUploadData = nullptr;
-			if( !DX12Backend::checkDeviceLost() )
-				GfxBase::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to map pixel buffer for surface.",
-					this, &TYPEINFO, __func__, __FILE__, __LINE__);
+		uint8_t * pMapped = nullptr;
 
-			if( _allocFallbackPixels() )
-				_copyInPixels( pPixels, pitch, srcFormat, pSrcPixelDesc, pSrcPalette, srcPaletteSize );
-
-			return;
-		}
-
-		memset( m_pUploadData, 0, size_t(m_uploadPitch) * m_size.h );
+		if( FAILED(m_uploadBuffer->Map(0, nullptr, (void**) &pMapped)) )
+			return fail( "Failed to map pixel buffer for surface." );
 
 		// Create the descriptor for the texture. It lives in a heap of its own and
 		// is copied into the shader visible heap by DX12Backend when used.
@@ -581,15 +671,7 @@ namespace wg
 		heapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
 
 		if( FAILED(s_pDevice->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(m_srvHeap.GetAddressOf()))) )
-		{
-			m_texture = nullptr;
-			if( !DX12Backend::checkDeviceLost() )
-				GfxBase::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to create descriptor heap for surface.",
-					this, &TYPEINFO, __func__, __FILE__, __LINE__);
-
-			_copyInPixels( pPixels, pitch, srcFormat, pSrcPixelDesc, pSrcPalette, srcPaletteSize );
-			return;
-		}
+			return fail( "Failed to create descriptor heap for surface." );
 
 		setObjectName( m_srvHeap.Get(), L"SRV heap", this, m_size );
 
@@ -615,15 +697,7 @@ namespace wg
 			rtvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
 
 			if( FAILED(s_pDevice->CreateDescriptorHeap(&rtvHeapDesc, IID_PPV_ARGS(m_rtvHeap.GetAddressOf()))) )
-			{
-				m_texture = nullptr;
-				if( !DX12Backend::checkDeviceLost() )
-					GfxBase::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to create render target heap for canvas surface.",
-						this, &TYPEINFO, __func__, __FILE__, __LINE__);
-
-				_copyInPixels( pPixels, pitch, srcFormat, pSrcPixelDesc, pSrcPalette, srcPaletteSize );
-				return;
-			}
+				return fail( "Failed to create render target heap for canvas surface." );
 
 			setObjectName( m_rtvHeap.Get(), L"RTV heap", this, m_size );
 
@@ -636,15 +710,110 @@ namespace wg
 			s_pDevice->CreateRenderTargetView(m_texture.Get(), &rtvDesc, m_rtvHandle);
 		}
 
+		// _createPaletteBuffer() reports its own failure.
+
 		if( m_bIndexed && (!m_pPalette || !_createPaletteBuffer()) )
+			return fail( nullptr );
+
+		m_pUploadData = pMapped;
+		return true;
+	}
+
+	//____ _dropDeviceObjects() ________________________________________________
+	//
+	// Lets go of everything _createDeviceObjects() made. Our pixels are in
+	// m_pFallbackData from here on, if anywhere. Releasing a resource unmaps it,
+	// which on a lost device is all that can be done with it anyway.
+
+	void DX12Surface::_dropDeviceObjects()
+	{
+		m_texture = nullptr;
+		m_uploadBuffer = nullptr;
+		m_readbackBuffer = nullptr;
+		m_paletteBuffer = nullptr;
+		m_srvHeap = nullptr;
+		m_rtvHeap = nullptr;
+
+		m_srvHandle = {};
+		m_rtvHandle = {};
+		m_resourceState = D3D12_RESOURCE_STATE_COMMON;
+
+		m_pUploadData = m_pFallbackData;
+		m_pPaletteData = nullptr;
+	}
+
+	//____ _evacuate() _________________________________________________________
+	//
+	// Moves our pixels into plain memory and lets go of the device. If the device
+	// still works, whatever was rendered into us is read back first. If it is
+	// lost, that went with it, and the pixels we last had will have to do. We are
+	// then marked as having lost our content, see Surface::isContentLost(), so
+	// whoever rendered into us knows to do it again.
+	//
+	// Returns false if the pixels themselves were lost, which only happens if
+	// the mapping of our upload buffer went with the device.
+	//
+	// Any PixelBuffer handed out before this points into memory that is gone.
+	// That is why this only happens between frames, from DX12Backend::setDevice().
+
+	bool DX12Surface::_evacuate()
+	{
+		if( !m_uploadBuffer )
+			return true;						// Nothing on the device, our pixels are already ours.
+
+		if( m_bBufferNeedsSync && !DX12Backend::isDeviceLost() )
+			_syncBufferAndWait();
+
+		// Still set if the device is lost, or the read back didn't happen. What
+		// was rendered into us since we last read back is gone.
+
+		if( m_bBufferNeedsSync )
+			m_bContentLost = true;
+
+		size_t nBytes = size_t(m_uploadPitch) * m_size.h;
+
+		m_pFallbackData = new uint8_t[nBytes];
+
+		bool bCopied = m_pUploadData && _copyFromMapping( m_pFallbackData, m_pUploadData, nBytes );
+
+		if( !bCopied )
 		{
-			m_texture = nullptr;
-			_copyInPixels( pPixels, pitch, srcFormat, pSrcPixelDesc, pSrcPalette, srcPaletteSize );
-			return;
+			memset( m_pFallbackData, 0, nBytes );
+			m_bContentLost = true;
 		}
 
-		_copyInPixels( pPixels, pitch, srcFormat, pSrcPixelDesc, pSrcPalette, srcPaletteSize );
+		_dropDeviceObjects();
+
+		m_bBufferNeedsSync = false;
+		m_dirtyRect = RectI(0, 0, m_size.w, m_size.h);
+		return bCopied;
+	}
+
+	//____ _migrate() __________________________________________________________
+	//
+	// Puts us back on the device set since we were evacuated, or onto the first
+	// one we get if we were created while there was none. A format D3D12 can't
+	// hold stays in plain memory, as do surfaces D3D12 still won't take.
+
+	void DX12Surface::_migrate()
+	{
+		if( m_uploadBuffer || !m_pFallbackData || m_dxgiFormat == DXGI_FORMAT_UNKNOWN )
+			return;
+
+		if( !_initCopyResources() || !_createDeviceObjects() )
+			return;
+
+		memcpy( m_pUploadData, m_pFallbackData, size_t(m_uploadPitch) * m_size.h );
+
+		delete [] m_pFallbackData;
+		m_pFallbackData = nullptr;
+
 		_updatePaletteBuffer();
+
+		// Everything goes to the new texture on first use.
+
+		m_bBufferNeedsSync = false;
+		m_dirtyRect = RectI(0, 0, m_size.w, m_size.h);
 	}
 
 	//____ _createPaletteBuffer() ______________________________________________
@@ -762,6 +931,8 @@ namespace wg
 
 	DX12Surface::~DX12Surface()
 	{
+		_unlink();
+
 		if( m_uploadBuffer && m_pUploadData && m_pUploadData != m_pFallbackData )
 			m_uploadBuffer->Unmap(0, nullptr);
 

@@ -53,6 +53,13 @@ public:
 
 	void				onResize(int width, int height);
 
+	// For recovering from a lost device. releaseDevice() lets go of the swap
+	// chain and everything else we have on the device, restoreDevice() makes
+	// them again on the new one and has the whole window redrawn.
+
+	void				releaseDevice();
+	void				restoreDevice();
+
 protected:
 
 	// SysCalls interface

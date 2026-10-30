@@ -94,6 +94,14 @@ namespace wg
 		static bool				setDevice( ID3D12Device * pDevice );
 		static void				exitDevice();
 
+		// Used by DX12Backend::setDevice() to move every surface from one device to
+		// another, see there. evacuateAll() takes the pixels of every surface out
+		// into plain memory and lets go of all D3D12 objects, migrateAll() gives
+		// them new ones on the device set since and uploads the pixels again.
+
+		static void				evacuateAll();
+		static void				migrateAll();
+
 		// Used by DX12Backend when the surface is set as blit source or canvas.
 
 		ID3D12Resource*				texture() const { return m_texture.Get(); }
@@ -140,6 +148,13 @@ namespace wg
 
 		bool			_setPixelDetails( PixelFormat format );		// Settles on a format D3D12 can hold.
 		bool			_allocFallbackPixels();						// Plain memory, for when D3D12 wouldn't play along.
+		bool			_createDeviceObjects();						// Texture, pixel buffer, views and palette buffer. All or none.
+		void			_dropDeviceObjects();
+		bool			_evacuate();						// False if our pixels went with the device.
+		void			_migrate();
+
+		void			_link();							// Into the list of live surfaces.
+		void			_unlink();
 		bool			_createPaletteBuffer();
 		void			_updatePaletteBuffer();						// Converts m_pPalette into the palette buffer.
 
@@ -170,6 +185,15 @@ namespace wg
 
 		RectI			m_dirtyRect;					// Area not yet uploaded to the texture. Empty when in sync.
 		bool			m_bBufferNeedsSync = false;		// Texture has changes our pixels don't have yet.
+
+		// All live surfaces, linked through themselves, so they can be found when
+		// the device has to be replaced. Not thread safe, like the rest of the
+		// backend.
+
+		DX12Surface *	m_pPrevLive = nullptr;
+		DX12Surface *	m_pNextLive = nullptr;
+
+		static DX12Surface *									s_pFirstLive;
 
 		//
 

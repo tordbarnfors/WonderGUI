@@ -125,7 +125,11 @@ namespace wg
 		if( m_bAxisSwapped )
 			std::swap(surfaceSize.w,surfaceSize.h);
 
-		// Make sure we have a canvas
+		// Make sure we have a canvas, with what we have scrolled in still there.
+		// It goes with the device of a GPU backend, and then we start over.
+
+		if (m_pScrollSurface && m_pScrollSurface->isContentLost())
+			m_pScrollSurface = nullptr;
 
 		if (m_pScrollSurface == nullptr)
 		{

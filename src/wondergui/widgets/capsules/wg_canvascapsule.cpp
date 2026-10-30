@@ -315,7 +315,11 @@ namespace wg
 
 	Surface* CanvasCapsule::_renderCanvas(GfxDevice* pDevice)
 	{
-		// Possibly regenerate the canvas
+		// Possibly regenerate the canvas. One that lost what we rendered into it,
+		// together with the device of a GPU backend, is no better than none.
+
+		if (m_pCanvas && m_pCanvas->isContentLost())
+			m_pCanvas = nullptr;
 
 		if (!m_pCanvas)
 		{

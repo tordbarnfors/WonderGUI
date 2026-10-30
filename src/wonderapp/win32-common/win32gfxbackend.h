@@ -28,3 +28,10 @@
 
 void initGfxBackend();
 void exitGfxBackend();
+
+//____ updateGfxBackend() _____________________________________________________
+//
+// Called once per frame, before the windows render. Where a backend that can
+// lose its device notices and recovers.
+
+void updateGfxBackend();
