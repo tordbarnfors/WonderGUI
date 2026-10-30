@@ -188,6 +188,12 @@ namespace wg
 				{
 					// Wait with opening if the pointer just passes us on its way to
 					// the submenu of a sibling.
+					//
+					// PopupOverlay usually keeps us from being marked at all then, but it
+					// decides that when the pointer moves, from the positions it has
+					// sampled so far. Those come with the queued MouseMoves, so when
+					// several moves arrive between two dispatches it decides on older
+					// positions than we check here, and can miss that the pointer aims.
 
 					auto pInputMsg = static_cast<InputMsg*>(pMsg);
 					m_hoverTimestamp = pInputMsg->timestamp();

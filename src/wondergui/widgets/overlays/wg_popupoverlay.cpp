@@ -20,7 +20,6 @@
 
 =========================================================================*/
 #include <wg_popupoverlay.h>
-#include <wg_popupopener.h>
 #include <wg_util.h>
 #include <wg_patches.h>
 #include <wg_msgrouter.h>
@@ -363,11 +362,11 @@ namespace wg
 	{
 		Widget * pResult = _findWidgetIgnoringAim(ofs, mode);
 
-		// Safe triangle: an opener that the pointer only passes on its way to the submenu of
-		// another one shouldn't be marked, or it would light up and open its own. The
-		// opener of the submenu stays marked instead, see _isAimingAt().
+		// Safe triangle: a widget that the pointer only passes on its way to a submenu
+		// shouldn't be marked, or it would light up, and an opener would open its own
+		// submenu. The opener of the submenu stays marked instead, see _isAimingAt().
 
-		if( mode == SearchMode::ActionTarget && pResult && pResult->isInstanceOf(PopupOpener::TYPEINFO) && static_cast<PopupOpener*>(pResult)->openOnHover() )
+		if( mode == SearchMode::ActionTarget && pResult )
 		{
 			Slot * pTarget = _aimTarget(pResult);
 			if( pTarget )
@@ -677,8 +676,10 @@ namespace wg
 
 //				auto pSource = static_cast<Widget*>(_pMsg->originalSource().rawPtr());
 
+				// What is released on is what is under the pointer, even while it aims at a submenu.
+
 				CoordSPX 	pointerPos = _toLocal(static_cast<MouseReleaseMsg*>(_pMsg)->pointerSpxPos());
-				auto pSource = _findWidget(pointerPos, SearchMode::ActionTarget);
+				auto pSource = _findWidgetIgnoringAim(pointerPos, SearchMode::ActionTarget);
 
 				if (!pSource || pSource == this)
 				{
