@@ -43,7 +43,7 @@ namespace wax
 		return DX12Warpmap_p(new DX12Warpmap(bp));
 	}
 
-	DX12Warpmap_p DX12Warpmap::create(const Blueprint& bp, const CoordF * pNodes, int pitch)
+	DX12Warpmap_p DX12Warpmap::create(const Blueprint& bp, const CoordSPX * pNodes, int pitch)
 	{
 		if (!_validateBlueprint(bp) || !pNodes)
 			return nullptr;
@@ -163,13 +163,13 @@ namespace wax
 		{
 			for (int column = 0; column < cells.w; column++)
 			{
-				CoordF corners[4];
+				CoordSPX corners[4];
 				cellCorners(column, row, corners);
 
 				for (int i = 0; i < 4; i++)
 				{
-					*pOut++ = corners[i].x;
-					*pOut++ = corners[i].y;
+					*pOut++ = corners[i].x / 64.f;
+					*pOut++ = corners[i].y / 64.f;
 				}
 			}
 		}

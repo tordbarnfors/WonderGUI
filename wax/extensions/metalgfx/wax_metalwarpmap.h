@@ -41,7 +41,8 @@ namespace wax
 	 *
 	 * The cells are kept in a buffer for the shaders, two float4 entries per cell, row by row:
 	 * the top-left and top-right corners, then the bottom-left and bottom-right corners, as
-	 * given by cellCorners(), so already moved by whole periods to be close to the top-left one.
+	 * given by cellCorners(), so already moved by whole periods to be close to the top-left one,
+	 * converted from spx to pixels of the source.
 	 */
 
 	class MetalWarpmap : public Warpmap
@@ -52,7 +53,7 @@ namespace wax
 		//.____ Creation __________________________________________
 
 		static MetalWarpmap_p	create( const Blueprint& blueprint );
-		static MetalWarpmap_p	create( const Blueprint& blueprint, const CoordF * pNodes, int pitch = 0 );
+		static MetalWarpmap_p	create( const Blueprint& blueprint, const CoordSPX * pNodes, int pitch = 0 );
 
 		//.____ Identification __________________________________________
 

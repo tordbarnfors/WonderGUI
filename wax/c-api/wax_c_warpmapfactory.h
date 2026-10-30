@@ -32,7 +32,7 @@ extern "C" {
 	//.____ Misc _______________________________________________________
 
 	WAX_EXPORT wax_obj wax_createWarpmap( wax_obj factory, const wax_warpmapBP* blueprint );
-	WAX_EXPORT wax_obj wax_createWarpmapFromNodes( wax_obj factory, const wax_warpmapBP* blueprint, const wax_coordF* pNodes, int pitch );
+	WAX_EXPORT wax_obj wax_createWarpmapFromNodes( wax_obj factory, const wax_warpmapBP* blueprint, const wax_coordSPX* pNodes, int pitch );
 
 #ifdef __cplusplus
 }

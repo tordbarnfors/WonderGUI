@@ -41,7 +41,7 @@ namespace wax
 		return MetalWarpmap::create(blueprint);
 	}
 
-	Warpmap_p MetalWarpmapFactory::createWarpmap( const Warpmap::Blueprint& blueprint, const CoordF * pNodes, int pitch )
+	Warpmap_p MetalWarpmapFactory::createWarpmap( const Warpmap::Blueprint& blueprint, const CoordSPX * pNodes, int pitch )
 	{
 		return MetalWarpmap::create(blueprint, pNodes, pitch);
 	}

@@ -504,11 +504,11 @@ typedef struct wg_warpmap_calls_struct
 
 	wax_sizeI			(*warpmapPixelSize)(wax_obj warpmap);
 	int					(*warpmapCellSize)(wax_obj warpmap);
-	int					(*setWarpmapPeriods)(wax_obj warpmap, float uPeriod, float vPeriod);
-	float				(*warpmapUPeriod)(wax_obj warpmap);
-	float				(*warpmapVPeriod)(wax_obj warpmap);
-	int					(*importWarpmapNodes)(wax_obj warpmap, const wax_rectI* region, const wax_coordF* pSource, int pitch);
-	int					(*exportWarpmapNodes)(wax_obj warpmap, const wax_rectI* region, wax_coordF* pDestination, int pitch);
+	int					(*setWarpmapPeriods)(wax_obj warpmap, wax_spx uPeriod, wax_spx vPeriod);
+	wax_spx				(*warpmapUPeriod)(wax_obj warpmap);
+	wax_spx				(*warpmapVPeriod)(wax_obj warpmap);
+	int					(*importWarpmapNodes)(wax_obj warpmap, const wax_rectI* region, const wax_coordSPX* pSource, int pitch);
+	int					(*exportWarpmapNodes)(wax_obj warpmap, const wax_rectI* region, wax_coordSPX* pDestination, int pitch);
 
 } wg_warpmap_calls;
 
@@ -520,7 +520,7 @@ typedef struct wg_warpmapfactory_calls_struct
 	int					structSize;
 
 	wax_obj				(*createWarpmap)(wax_obj factory, const wax_warpmapBP* blueprint);
-	wax_obj				(*createWarpmapFromNodes)(wax_obj factory, const wax_warpmapBP* blueprint, const wax_coordF* pNodes, int pitch);
+	wax_obj				(*createWarpmapFromNodes)(wax_obj factory, const wax_warpmapBP* blueprint, const wax_coordSPX* pNodes, int pitch);
 
 } wg_warpmapfactory_calls;
 

@@ -47,7 +47,7 @@ namespace wax
 		//.____ Creation __________________________________________
 
 		static StreamWarpmap_p	create( StreamEncoder * pEncoder, const Blueprint& blueprint );
-		static StreamWarpmap_p	create( StreamEncoder * pEncoder, const Blueprint& blueprint, const CoordF * pNodes, int pitch = 0 );
+		static StreamWarpmap_p	create( StreamEncoder * pEncoder, const Blueprint& blueprint, const CoordSPX * pNodes, int pitch = 0 );
 
 		//.____ Identification __________________________________________
 
@@ -58,7 +58,7 @@ namespace wax
 
 		//.____ Content _______________________________________________________
 
-		bool	setPeriods( float uPeriod, float vPeriod ) override;
+		bool	setPeriods( spx uPeriod, spx vPeriod ) override;
 
 		//.____ Internal ______________________________________________________
 

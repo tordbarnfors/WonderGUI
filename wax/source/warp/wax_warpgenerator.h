@@ -40,6 +40,9 @@ namespace wax
 	 * created when size or cell size has changed, otherwise the nodes and periods of the existing one
 	 * are updated.
 	 *
+	 * The Warpmap is made for a source of sourceSize: the size of the edgemap or of the source
+	 * rectangle of the blit, in spx. The nodes are positions in that source, see Warpmap.
+	 *
 	 * The cell size of the Warpmap decides how closely it follows the shape. It is calculated by the
 	 * generator from precision (max position error in pixels) unless set explicitly, and kept within
 	 * 4 -> 64 pixels.
@@ -62,6 +65,9 @@ namespace wax
 		bool		setSize( SizeI size );
 		SizeI		size() const { return m_size; }
 
+		bool		setSourceSize( SizeSPX sourceSize );
+		SizeSPX		sourceSize() const { return m_sourceSize; }
+
 		//.____ Precision ___________________________________________________
 
 		bool		setCellSize( int cellSize );					// 0 = calculated from precision.
@@ -79,10 +85,10 @@ namespace wax
 
 	protected:
 
-		WarpGenerator( SizeI size, int cellSize, float precision, WarpmapFactory * pFactory );
+		WarpGenerator( SizeI size, SizeSPX sourceSize, int cellSize, float precision, WarpmapFactory * pFactory );
 		virtual ~WarpGenerator();
 
-		static bool		_validateSettings( SizeI size, int cellSize, float precision );
+		static bool		_validateSettings( SizeI size, SizeSPX sourceSize, int cellSize, float precision );
 
 		// Largest cell size that keeps a curve of the given radius (in pixels) within precision.
 
@@ -92,15 +98,16 @@ namespace wax
 
 		virtual int		_calcCellSize() const = 0;
 
-		// Fills pNodes with nodes.w * nodes.h positions, row by row, nodes being cellSize pixels apart
-		// (the last row and column at the edge).
+		// Fills pNodes with nodes.w * nodes.h positions in spx of the source, row by row, nodes being
+		// cellSize pixels apart (the last row and column at the edge). Keep them within Warpmap::maxNodeValue.
 
-		virtual void	_generateNodes( CoordF * pNodes, SizeI nodes, int cellSize ) const = 0;
+		virtual void	_generateNodes( CoordSPX * pNodes, SizeI nodes, int cellSize ) const = 0;
 
-		virtual float	_uPeriod() const { return 0.f; }
-		virtual float	_vPeriod() const { return 0.f; }
+		virtual spx		_uPeriod() const { return 0; }			// In spx of the source, 0 = not periodic.
+		virtual spx		_vPeriod() const { return 0; }
 
 		SizeI		m_size;
+		SizeSPX		m_sourceSize;
 		int			m_cellSize;										// As set, 0 = calculated.
 		float		m_precision;
 

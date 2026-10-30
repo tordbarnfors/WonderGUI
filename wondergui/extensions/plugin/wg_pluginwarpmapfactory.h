@@ -52,7 +52,7 @@ namespace wg
 		//.____ Misc _______________________________________________________
 
 		Warpmap_p createWarpmap( const Warpmap::Blueprint& blueprint ) override;
-		Warpmap_p createWarpmap( const Warpmap::Blueprint& blueprint, const CoordF * pNodes, int pitch = 0 ) override;
+		Warpmap_p createWarpmap( const Warpmap::Blueprint& blueprint, const CoordSPX * pNodes, int pitch = 0 ) override;
 
 	protected:
 		PluginWarpmapFactory( wax_obj cFactory ) : m_cFactory(cFactory) {}

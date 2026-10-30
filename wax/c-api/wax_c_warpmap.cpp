@@ -29,7 +29,7 @@ inline Warpmap* getPtr(wax_obj obj) {
 	return static_cast<Warpmap*>(reinterpret_cast<Object*>(obj));
 }
 
-static_assert(sizeof(wax_coordF) == sizeof(CoordF), "wax_coordF differs in size from wax::CoordF!");
+static_assert(sizeof(wax_coordSPX) == sizeof(CoordSPX), "wax_coordSPX differs in size from wax::CoordSPX!");
 
 wax_sizeI wax_warpmapPixelSize(wax_obj warpmap)
 {
@@ -58,29 +58,29 @@ int wax_warpmapNodeY(wax_obj warpmap, int row)
 	return getPtr(warpmap)->nodeY(row);
 }
 
-int wax_setWarpmapPeriods(wax_obj warpmap, float uPeriod, float vPeriod)
+int wax_setWarpmapPeriods(wax_obj warpmap, wax_spx uPeriod, wax_spx vPeriod)
 {
 	return getPtr(warpmap)->setPeriods(uPeriod, vPeriod);
 }
 
-float wax_warpmapUPeriod(wax_obj warpmap)
+wax_spx wax_warpmapUPeriod(wax_obj warpmap)
 {
 	return getPtr(warpmap)->uPeriod();
 }
 
-float wax_warpmapVPeriod(wax_obj warpmap)
+wax_spx wax_warpmapVPeriod(wax_obj warpmap)
 {
 	return getPtr(warpmap)->vPeriod();
 }
 
-int wax_importWarpmapNodes(wax_obj warpmap, const wax_rectI* region, const wax_coordF* pSource, int pitch)
+int wax_importWarpmapNodes(wax_obj warpmap, const wax_rectI* region, const wax_coordSPX* pSource, int pitch)
 {
-	return getPtr(warpmap)->importNodes(*(const RectI*)region, (const CoordF*)pSource, pitch);
+	return getPtr(warpmap)->importNodes(*(const RectI*)region, (const CoordSPX*)pSource, pitch);
 }
 
-int wax_exportWarpmapNodes(wax_obj warpmap, const wax_rectI* region, wax_coordF* pDestination, int pitch)
+int wax_exportWarpmapNodes(wax_obj warpmap, const wax_rectI* region, wax_coordSPX* pDestination, int pitch)
 {
-	return getPtr(warpmap)->exportNodes(*(const RectI*)region, (CoordF*)pDestination, pitch);
+	return getPtr(warpmap)->exportNodes(*(const RectI*)region, (CoordSPX*)pDestination, pitch);
 }
 
 wax_coordF wax_warpmapPositionAt(wax_obj warpmap, double x, double y)

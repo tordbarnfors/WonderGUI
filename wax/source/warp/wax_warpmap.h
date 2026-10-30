@@ -41,24 +41,29 @@ namespace wax
 	 *
 	 * A Warpmap covers a rectangle of size.w * size.h pixels with a grid of nodes, one node every
 	 * cellSize pixels in both directions plus one at the right and bottom edge. Each node holds
-	 * the position in the source that is drawn at that point, normalized so that 0.0 -> 1.0 covers
-	 * the source, u along its width and v along its height. Positions between nodes are interpolated
-	 * bilinearly. Where a position falls outside 0.0 -> 1.0 nothing is drawn.
+	 * the position in the source that is drawn at that point, in spx of the source (64 per pixel of
+	 * the surface or edgemap, relative to the source rectangle for blits), u along its width and v
+	 * along its height. Positions between nodes are interpolated bilinearly. Where a position falls
+	 * outside the source nothing is drawn.
 	 *
-	 * Node values are floats and not limited to 0.0 -> 1.0. Values outside that range are what makes
-	 * parts of the Warpmap transparent, with the border antialiased where the interpolated position
-	 * crosses 0.0 or 1.0. Values on a periodic axis are brought into 0.0 -> period when imported.
-	 * Backends convert to fixed point per cell corner when drawing, not per pixel. A new Warpmap
-	 * maps its rectangle straight onto the source, u = x / size.w and v = y / size.h.
+	 * Node values are not limited to the source. Values outside it are what makes parts of the
+	 * Warpmap transparent, with the border antialiased where the interpolated position crosses the
+	 * border of the source. Keep values within +-maxNodeValue (16 million pixels). Values on a
+	 * periodic axis are brought into 0 -> period when imported. A new Warpmap maps its rectangle
+	 * straight onto the source, pixel for pixel: u = x * 64 and v = y * 64.
+	 *
+	 * A Warpmap is made for a source of a certain size. A source of another size is not stretched to
+	 * fit, the nodes have to be changed.
 	 *
 	 * Smaller cells follow curved shapes more closely. A circle of radius r is off by
 	 * roughly cellSize^2 / (8 * r) pixels.
 	 *
-	 * An axis can be periodic (uPeriod/vPeriod > 0), as when u is the angle of a ring. Positions are
-	 * then read modulo the period and interpolation between nodes across the seam takes the short way:
-	 * the corners of a cell are taken as the values closest to its top-left corner, give or take whole
-	 * periods. With a period of 1.0 the source wraps around, which for an edgemap is seamless if it is
-	 * tiling. A period larger than 1.0 leaves a gap, such as a 270 degree arc having uPeriod = 360/270.
+	 * An axis can be periodic (uPeriod/vPeriod > 0, in spx of the source), as when u is the angle of
+	 * a ring. Positions are then read modulo the period and interpolation between nodes across the
+	 * seam takes the short way: the corners of a cell are taken as the values closest to its top-left
+	 * corner, give or take whole periods. With a period of the size of the source it wraps around,
+	 * which for an edgemap is seamless if it is tiling. A longer period leaves a gap, such as a
+	 * 270 degree arc of a source w spx wide having uPeriod = w * 360 / 270.
 	 *
 	 * When drawn, a source offset (in spx of the source) is added to the position before reading,
 	 * so a ring can be rotated or a pattern scrolled without changing the Warpmap.
@@ -75,9 +80,8 @@ namespace wax
 	 *   Nothing is drawn outside of its rectangle.
 	 *
 	 * - The position of a point (x,y) of the Warpmap is interpolated from the corners of the cell it
-	 *   is in, see positionAt(). Adding the source offset and multiplying by the size of the source
-	 *   gives the position in the source, in its pixels. A periodic axis is then wrapped into
-	 *   0 -> period * size.
+	 *   is in, see positionAt(). Adding the source offset gives the position in the source. A periodic
+	 *   axis is then wrapped into 0 -> period.
 	 *
 	 * - The part of a pixel that is covered is the part of its area whose position is inside the
 	 *   source: 0 -> width and 0 -> height. For an edgemap, the part covered by each segment is the
@@ -103,9 +107,11 @@ namespace wax
 			int				cellSize	= 16;				// Pixels between nodes.
 			Finalizer_p		finalizer	= nullptr;
 			SizeI			size;							// Mandatory. Size in pixels.
-			float			uPeriod		= 0.f;				// 0 = not periodic.
-			float			vPeriod		= 0.f;				// 0 = not periodic.
+			spx				uPeriod		= 0;				// In spx of the source, 0 = not periodic.
+			spx				vPeriod		= 0;				// In spx of the source, 0 = not periodic.
 		};
+
+		static const spx	maxNodeValue = 1 << 30;			// Node values and periods are kept within +-maxNodeValue.
 
 		//.____ Identification __________________________________________
 
@@ -123,27 +129,27 @@ namespace wax
 
 		//.____ Content _______________________________________________________
 
-		virtual bool	setPeriods( float uPeriod, float vPeriod );
-		inline float	uPeriod() const { return m_uPeriod; }
-		inline float	vPeriod() const { return m_vPeriod; }
+		virtual bool	setPeriods( spx uPeriod, spx vPeriod );
+		inline spx		uPeriod() const { return m_uPeriod; }
+		inline spx		vPeriod() const { return m_vPeriod; }
 
 		// Nodes are stored row by row. Region is given in nodes, pitch is nodes between rows
 		// in source/destination, 0 meaning region.w.
 
-		bool			importNodes( const RectI& region, const CoordF * pSource, int pitch = 0 );
-		bool			exportNodes( const RectI& region, CoordF * pDestination, int pitch = 0 ) const;
+		bool			importNodes( const RectI& region, const CoordSPX * pSource, int pitch = 0 );
+		bool			exportNodes( const RectI& region, CoordSPX * pDestination, int pitch = 0 ) const;
 
-		inline const CoordF*	nodeData() const { return m_pNodes; }
+		inline const CoordSPX*	nodeData() const { return m_pNodes; }
 
 		//.____ Misc __________________________________________________________
 
 		// Corners of a cell (top-left, top-right, bottom-left, bottom-right), with values on periodic
 		// axes moved by whole periods to be as close as possible to the top-left corner.
 
-		void			cellCorners( int column, int row, CoordF * pCorners ) const;
+		void			cellCorners( int column, int row, CoordSPX * pCorners ) const;
 
-		// Interpolated, normalized position at point x,y (in pixels, 0 -> size) of the Warpmap. Not
-		// wrapped into the period.
+		// Interpolated position at point x,y (in pixels, 0 -> size) of the Warpmap, in spx of the source
+		// with fractions. Not wrapped into the period.
 
 		CoordF			positionAt( double x, double y ) const;
 
@@ -153,7 +159,7 @@ namespace wax
 		virtual ~Warpmap();
 
 		static bool		_validateBlueprint( const Blueprint& bp );
-		static float	_unwrapTo( float value, float reference, float period );
+		static spx		_unwrapTo( spx value, spx reference, spx period );
 
 		void			_normalizeNodes( const RectI& region );
 
@@ -165,10 +171,10 @@ namespace wax
 		SizeI			m_size;
 		int				m_cellSize = 16;
 		SizeI			m_nodes;
-		float			m_uPeriod = 0.f;
-		float			m_vPeriod = 0.f;
+		spx				m_uPeriod = 0;
+		spx				m_vPeriod = 0;
 
-		CoordF*			m_pNodes = nullptr;					// m_nodes.w * m_nodes.h, row by row.
+		CoordSPX*		m_pNodes = nullptr;					// m_nodes.w * m_nodes.h, row by row.
 	};
 
 } // namespace wax

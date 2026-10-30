@@ -1875,9 +1875,9 @@ WAX_GL_CANVAS_BLOCK
 "	vec4 top = texelFetch(warpmapId, i);											" \
 "	vec4 bottom = texelFetch(warpmapId, i + 1);										" \
 "	vec2 u = mix(mix(top.xy, top.zw, f.x), mix(bottom.xy, bottom.zw, f.x), f.y);	" \
-"	s = u * e1.zw + e2.xy;															" \
-"	dx = mix(top.zw - top.xy, bottom.zw - bottom.xy, f.y) / (c1.x - c0.x) * e1.zw;	" \
-"	dy = mix(bottom.xy - top.xy, bottom.zw - top.zw, f.x) / (c1.y - c0.y) * e1.zw;	" \
+"	s = u + e2.xy;        															" \
+"	dx = mix(top.zw - top.xy, bottom.zw - bottom.xy, f.y) / (c1.x - c0.x);        	" \
+"	dy = mix(bottom.xy - top.xy, bottom.zw - top.zw, f.x) / (c1.y - c0.y);        	" \
 "	if (e2.z > 0.0)																	" \
 "		s.x -= e2.z * floor(s.x / e2.z);											" \
 "	if (e2.w > 0.0)																	" \

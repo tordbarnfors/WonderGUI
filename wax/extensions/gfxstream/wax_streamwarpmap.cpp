@@ -39,7 +39,7 @@ namespace wax
 		return p;
 	}
 
-	StreamWarpmap_p StreamWarpmap::create( StreamEncoder * pEncoder, const Blueprint& bp, const CoordF * pNodes, int pitch )
+	StreamWarpmap_p StreamWarpmap::create( StreamEncoder * pEncoder, const Blueprint& bp, const CoordSPX * pNodes, int pitch )
 	{
 		if (!pEncoder || !_validateBlueprint(bp) || !pNodes)
 			return nullptr;
@@ -68,8 +68,8 @@ namespace wax
 		encoder << m_inStreamId;
 		encoder << m_size;
 		encoder << (uint16_t) m_cellSize;
-		encoder << m_uPeriod;
-		encoder << m_vPeriod;
+		encoder << (int32_t) m_uPeriod;
+		encoder << (int32_t) m_vPeriod;
 
 		_nodesUpdated({ 0, 0, m_nodes.w, m_nodes.h });
 	}
@@ -100,17 +100,17 @@ namespace wax
 		so that the receiving end doesn't normalize those into the old periods.
 	*/
 
-	bool StreamWarpmap::setPeriods( float uPeriod, float vPeriod )
+	bool StreamWarpmap::setPeriods( spx uPeriod, spx vPeriod )
 	{
-		if (uPeriod < 0.f || vPeriod < 0.f)
+		if (uPeriod < 0 || vPeriod < 0 || uPeriod > maxNodeValue || vPeriod > maxNodeValue)
 			return false;
 
 		auto& encoder = * m_pEncoder;
 
 		encoder << GfxStream::Header{ GfxStream::ChunkId::SetWarpmapPeriods, 0, 10 };
 		encoder << m_inStreamId;
-		encoder << uPeriod;
-		encoder << vPeriod;
+		encoder << (int32_t) uPeriod;
+		encoder << (int32_t) vPeriod;
 
 		return Warpmap::setPeriods(uPeriod, vPeriod);
 	}
@@ -137,11 +137,11 @@ namespace wax
 				encoder << (uint16_t) row;
 				encoder << (uint16_t) n;
 
-				const CoordF* p = m_pNodes + row * m_nodes.w + column;
+				const CoordSPX* p = m_pNodes + row * m_nodes.w + column;
 				for (int i = 0; i < n; i++)
 				{
-					encoder << p[i].x;
-					encoder << p[i].y;
+					encoder << (int32_t) p[i].x;
+					encoder << (int32_t) p[i].y;
 				}
 
 				column += n;

@@ -1009,8 +1009,8 @@ void GlBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, int 
 
 			*pExtrasGL++ = params.sourceOffset.x / 64.f;
 			*pExtrasGL++ = params.sourceOffset.y / 64.f;
-			*pExtrasGL++ = pWarpmap->uPeriod() * srcW;
-			*pExtrasGL++ = pWarpmap->vPeriod() * srcH;
+			*pExtrasGL++ = pWarpmap->uPeriod() / 64.f;
+			*pExtrasGL++ = pWarpmap->vPeriod() / 64.f;
 
 			if (pEdgemap)
 			{

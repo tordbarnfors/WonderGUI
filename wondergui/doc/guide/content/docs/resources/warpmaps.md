@@ -7,7 +7,9 @@ weight: 35
 
 A Warpmap bends a surface or an edgemap into another shape when it is drawn: a gauge or a progress ring from a straight bar, text along an arc, a waving flag. The source is drawn as it is and the Warpmap decides where each part of it ends up.
 
-A Warpmap covers a rectangle of pixels with a grid of nodes, one node every *cellSize* pixels in both directions plus one at the right and bottom edge. Each node holds the position in the source that is drawn at that point, normalized so that 0.0 -> 1.0 covers the source: u along its width and v along its height. Positions between nodes are interpolated. Where a position falls outside the source nothing is drawn, so the shape of what is drawn is given by the nodes, with anti-aliased borders.
+A Warpmap covers a rectangle of pixels with a grid of nodes, one node every *cellSize* pixels in both directions plus one at the right and bottom edge. Each node holds the position in the source that is drawn at that point, in spx of the source (64 per pixel of the edgemap or surface, relative to the source rectangle of a blit): u along its width and v along its height. Positions between nodes are interpolated. Where a position falls outside the source nothing is drawn, so the shape of what is drawn is given by the nodes, with anti-aliased borders.
+
+A Warpmap is made for a source of a certain size. It isn't stretched to fit a source of another size, that takes other nodes.
 
 Warpmaps are *semi-mutable*: size and cell size are set when created, nodes and periods can be changed. Each graphics backend has its own Warpmap subtype, created by its WarpmapFactory (`GfxDevice::warpmapFactory()`), or through a WarpGenerator such as CircularWarp.
 
@@ -25,25 +27,26 @@ Warpmaps are *semi-mutable*: size and cell size are set when created, nodes and 
 
 The Warpmap is placed with its top-left corner at *dest*, rounded to whole pixels, and nothing is drawn outside its rectangle. Blend mode, tint color and tint apply as for any other drawing, the tint in canvas space. Surfaces are read with their sample method. Nothing outside the source rectangle is read, as with stretchBlit(): along its borders the surface is read as if the edge pixels of the rectangle continued outside it. A tiling surface wraps around instead. There is no supersampling when a Warpmap shrinks a surface, use a mipmapped surface for that.
 
-All methods take a *source offset* (in spx of the source) that is added to the position before reading, so a ring can be turned or a pattern scrolled without changing the Warpmap.
+All methods take a *source offset* that is added to the position before reading, so a ring can be turned or a pattern scrolled without changing the Warpmap. It is in spx of the source, like the nodes.
 
 
 
 ## Periods
 
-An axis can be periodic (*uPeriod* or *vPeriod* above 0), as when u is the angle of a ring. Positions are then read modulo the period and interpolation between nodes across the seam takes the short way round.
+An axis can be periodic (*uPeriod* or *vPeriod* above 0, in spx of the source), as when u is the angle of a ring. Positions are then read modulo the period and interpolation between nodes across the seam takes the short way round.
 
-With a period of 1.0 the source wraps around, which for an edgemap or surface that is tiling is seamless. A period larger than 1.0 leaves a gap between the copies of the source, as a 270 degree arc has uPeriod = 360 / 270. A pixel in the gap takes its colors from the nearest copy, so they don't jump where the copies meet.
+With a period of the size of the source it wraps around, which for an edgemap or surface that is tiling is seamless. A longer period leaves a gap between the copies of the source, as a 270 degree arc of a source *w* spx wide has uPeriod = w * 360 / 270. A pixel in the gap takes its colors from the nearest copy, so they don't jump where the copies meet.
 
 
 
 ## CircularWarp
 
-CircularWarp makes and keeps a Warpmap that bends the source around a circle: its width along the circle, from *startAngle* and *sweep* degrees on, its height from *topRadius* to *bottomRadius*.
+CircularWarp makes and keeps a Warpmap that bends the source around a circle: its width along the circle, from *startAngle* and *sweep* degrees on, its height from *topRadius* to *bottomRadius*. *sourceSize* is the size of the source it is made for, in spx.
 
 ```c++
 	auto pGauge = CircularWarp::create( WGBP(CircularWarp,
 										_.size = { 200, 200 },
+										_.sourceSize = pEdgemap->pixelSize() * 64,
 										_.topRadius = 98*64,
 										_.bottomRadius = 70*64,
 										_.startAngle = -135.f,
@@ -72,20 +75,20 @@ To make your own, subclass WarpGenerator and implement _generateNodes(), which f
 	auto pWarpmap = pDevice->warpmapFactory()->createWarpmap( WGBP(Warpmap, _.size = { 160, 120 }, _.cellSize = 8) );
 
 	SizeI nodes = pWarpmap->nodes();
-	std::vector<CoordF> positions( nodes.w * nodes.h );
+	std::vector<CoordSPX> positions( nodes.w * nodes.h );
 
 	for( int row = 0 ; row < nodes.h ; row++ )
 		for( int col = 0 ; col < nodes.w ; col++ )
 		{
-			float u = pWarpmap->nodeX(col) / 160.f;
-			float v = pWarpmap->nodeY(row) / 120.f;
-			positions[row*nodes.w + col] = { u, v + 0.05f * std::sin(u * 12.f) };		// A wave.
+			int x = pWarpmap->nodeX(col);
+			int y = pWarpmap->nodeY(row);
+			positions[row*nodes.w + col] = { x * 64, y * 64 + spx(std::lround(6 * 64 * std::sin(x * 0.1))) };		// A wave, 6 pixels high.
 		}
 
 	pWarpmap->importNodes( { 0, 0, nodes.w, nodes.h }, positions.data() );
 ```
 
-A new Warpmap maps its rectangle straight onto the source. Smaller cells follow curved shapes more closely, a circle of radius r is off by roughly cellSize² / (8 * r) pixels.
+A new Warpmap maps its rectangle straight onto the source, pixel for pixel. Smaller cells follow curved shapes more closely, a circle of radius r is off by roughly cellSize² / (8 * r) pixels.
 
 
 

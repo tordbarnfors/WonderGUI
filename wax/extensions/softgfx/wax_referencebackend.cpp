@@ -870,8 +870,8 @@ namespace wax
 
 		The Warpmap is placed with its top-left corner at dest, rounded to nearest pixel. The
 		position in the source of a point of the Warpmap is interpolated from the corners of its
-		cell (Warpmap::positionAt()), offset by the source offset, scaled to pixels of the source
-		and wrapped on periodic axes.
+		cell (Warpmap::positionAt()), offset by the source offset, converted from spx to pixels of
+		the source and wrapped on periodic axes.
 
 		The part of a pixel that is covered (by the source or by each segment of the edgemap) is
 		measured by sampling the pixel at the points of a Fibonacci lattice, which are spread evenly
@@ -921,8 +921,8 @@ namespace wax
 		double offsetX = params.sourceOffset.x / 64.0;
 		double offsetY = params.sourceOffset.y / 64.0;
 
-		double periodX = pWarpmap->uPeriod() * srcW;
-		double periodY = pWarpmap->vPeriod() * srcH;
+		double periodX = pWarpmap->uPeriod() / 64.0;
+		double periodY = pWarpmap->vPeriod() / 64.0;
 
 		const int cellSize = pWarpmap->cellSize();
 		const SizeI nodes = pWarpmap->nodes();
@@ -934,7 +934,7 @@ namespace wax
 		struct Cell
 		{
 			double	x0, y0, w, h;
-			CoordF	corners[4];
+			CoordSPX	corners[4];
 		};
 
 		auto cellOf = [&](int x, int y)
@@ -953,16 +953,16 @@ namespace wax
 
 		auto sourcePos = [&](const Cell& cell, double x, double y, double& sx, double& sy)
 		{
-			const CoordF* c = cell.corners;
+			const CoordSPX* c = cell.corners;
 
 			double fx = (x - cell.x0) / cell.w;
 			double fy = (y - cell.y0) / cell.h;
 
-			double u = (c[0].x * (1 - fx) + c[1].x * fx) * (1 - fy) + (c[2].x * (1 - fx) + c[3].x * fx) * fy;
-			double v = (c[0].y * (1 - fx) + c[1].y * fx) * (1 - fy) + (c[2].y * (1 - fx) + c[3].y * fx) * fy;
+			double u = (double(c[0].x) * (1 - fx) + double(c[1].x) * fx) * (1 - fy) + (double(c[2].x) * (1 - fx) + double(c[3].x) * fx) * fy;
+			double v = (double(c[0].y) * (1 - fx) + double(c[1].y) * fx) * (1 - fy) + (double(c[2].y) * (1 - fx) + double(c[3].y) * fx) * fy;
 
-			sx = u * srcW + offsetX;
-			sy = v * srcH + offsetY;
+			sx = u / 64.0 + offsetX;
+			sy = v / 64.0 + offsetY;
 
 			if (periodX > 0)
 				sx -= periodX * std::floor(sx / periodX);

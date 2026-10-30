@@ -39,13 +39,13 @@ namespace wax
 		m_nodes.w = (m_size.w + m_cellSize - 1) / m_cellSize + 1;
 		m_nodes.h = (m_size.h + m_cellSize - 1) / m_cellSize + 1;
 
-		m_pNodes = new CoordF[m_nodes.w * m_nodes.h];
+		m_pNodes = new CoordSPX[m_nodes.w * m_nodes.h];
 
-		// Start out mapping the rectangle straight onto the source.
+		// Start out mapping the rectangle straight onto the source, pixel for pixel.
 
 		for (int row = 0; row < m_nodes.h; row++)
 			for (int col = 0; col < m_nodes.w; col++)
-				m_pNodes[row * m_nodes.w + col] = { float(nodeX(col)) / m_size.w, float(nodeY(row)) / m_size.h };
+				m_pNodes[row * m_nodes.w + col] = { nodeX(col) * 64, nodeY(row) * 64 };
 
 		_normalizeNodes({ 0,0,m_nodes.w,m_nodes.h });
 	}
@@ -66,9 +66,9 @@ namespace wax
 
 	//____ setPeriods() _______________________________________________________
 
-	bool Warpmap::setPeriods(float uPeriod, float vPeriod)
+	bool Warpmap::setPeriods(spx uPeriod, spx vPeriod)
 	{
-		if (uPeriod < 0.f || vPeriod < 0.f)
+		if (uPeriod < 0 || vPeriod < 0 || uPeriod > maxNodeValue || vPeriod > maxNodeValue)
 			return false;
 
 		m_uPeriod = uPeriod;
@@ -85,7 +85,7 @@ namespace wax
 
 	//____ importNodes() ______________________________________________________
 
-	bool Warpmap::importNodes(const RectI& region, const CoordF* pSource, int pitch)
+	bool Warpmap::importNodes(const RectI& region, const CoordSPX* pSource, int pitch)
 	{
 		if (!pSource || region.x < 0 || region.y < 0 || region.w < 0 || region.h < 0 ||
 			region.x + region.w > m_nodes.w || region.y + region.h > m_nodes.h)
@@ -97,7 +97,7 @@ namespace wax
 		if (m_pNodes)
 		{
 			for (int row = 0; row < region.h; row++)
-				std::memcpy(m_pNodes + (region.y + row) * m_nodes.w + region.x, pSource + row * pitch, region.w * sizeof(CoordF));
+				std::memcpy(m_pNodes + (region.y + row) * m_nodes.w + region.x, pSource + row * pitch, region.w * sizeof(CoordSPX));
 
 			_normalizeNodes(region);
 		}
@@ -108,7 +108,7 @@ namespace wax
 
 	//____ exportNodes() ______________________________________________________
 
-	bool Warpmap::exportNodes(const RectI& region, CoordF* pDestination, int pitch) const
+	bool Warpmap::exportNodes(const RectI& region, CoordSPX* pDestination, int pitch) const
 	{
 		if (!pDestination || !m_pNodes || region.x < 0 || region.y < 0 || region.w < 0 || region.h < 0 ||
 			region.x + region.w > m_nodes.w || region.y + region.h > m_nodes.h)
@@ -118,16 +118,16 @@ namespace wax
 			pitch = region.w;
 
 		for (int row = 0; row < region.h; row++)
-			std::memcpy(pDestination + row * pitch, m_pNodes + (region.y + row) * m_nodes.w + region.x, region.w * sizeof(CoordF));
+			std::memcpy(pDestination + row * pitch, m_pNodes + (region.y + row) * m_nodes.w + region.x, region.w * sizeof(CoordSPX));
 
 		return true;
 	}
 
 	//____ cellCorners() ______________________________________________________
 
-	void Warpmap::cellCorners(int column, int row, CoordF* pCorners) const
+	void Warpmap::cellCorners(int column, int row, CoordSPX* pCorners) const
 	{
-		const CoordF* p = m_pNodes + row * m_nodes.w + column;
+		const CoordSPX* p = m_pNodes + row * m_nodes.w + column;
 
 		pCorners[0] = p[0];
 		pCorners[1] = p[1];
@@ -148,7 +148,7 @@ namespace wax
 		int column = std::clamp(int(x / m_cellSize), 0, m_nodes.w - 2);
 		int row = std::clamp(int(y / m_cellSize), 0, m_nodes.h - 2);
 
-		CoordF c[4];
+		CoordSPX c[4];
 		cellCorners(column, row, c);
 
 		double x0 = nodeX(column), x1 = nodeX(column + 1);
@@ -157,8 +157,8 @@ namespace wax
 		double fx = (x - x0) / (x1 - x0);
 		double fy = (y - y0) / (y1 - y0);
 
-		double u = (c[0].x * (1 - fx) + c[1].x * fx) * (1 - fy) + (c[2].x * (1 - fx) + c[3].x * fx) * fy;
-		double v = (c[0].y * (1 - fx) + c[1].y * fx) * (1 - fy) + (c[2].y * (1 - fx) + c[3].y * fx) * fy;
+		double u = (double(c[0].x) * (1 - fx) + double(c[1].x) * fx) * (1 - fy) + (double(c[2].x) * (1 - fx) + double(c[3].x) * fx) * fy;
+		double v = (double(c[0].y) * (1 - fx) + double(c[1].y) * fx) * (1 - fy) + (double(c[2].y) * (1 - fx) + double(c[3].y) * fx) * fy;
 
 		return { float(u), float(v) };
 	}
@@ -173,7 +173,7 @@ namespace wax
 		if (bp.cellSize < 1)
 			return false;
 
-		if (bp.uPeriod < 0.f || bp.vPeriod < 0.f)
+		if (bp.uPeriod < 0 || bp.vPeriod < 0 || bp.uPeriod > maxNodeValue || bp.vPeriod > maxNodeValue)
 			return false;
 
 		return true;
@@ -181,15 +181,22 @@ namespace wax
 
 	//____ _unwrapTo() ________________________________________________________
 	/*
-		Moves value by whole periods to be as close as possible to reference.
+		Moves value by whole periods to within reference - period/2 -> reference + period/2 (exclusive).
+		Values are normalized into 0 -> period, so they are moved by at most one period.
 	*/
 
-	float Warpmap::_unwrapTo(float value, float reference, float period)
+	spx Warpmap::_unwrapTo(spx value, spx reference, spx period)
 	{
-		if (period <= 0.f)
+		if (period <= 0)
 			return value;
 
-		return value - period * std::round((value - reference) / period);
+		int64_t diff = int64_t(value) - reference;
+
+		if (2 * diff >= period)
+			return spx(value - int64_t(period));
+		if (2 * diff < -int64_t(period))
+			return spx(value + int64_t(period));
+		return value;
 	}
 
 	//____ _normalizeNodes() __________________________________________________
@@ -199,27 +206,27 @@ namespace wax
 
 	void Warpmap::_normalizeNodes(const RectI& region)
 	{
-		if (m_uPeriod <= 0.f && m_vPeriod <= 0.f)
+		if (m_uPeriod <= 0 && m_vPeriod <= 0)
 			return;
 
 		for (int row = region.y; row < region.y + region.h; row++)
 		{
-			CoordF* p = m_pNodes + row * m_nodes.w + region.x;
+			CoordSPX* p = m_pNodes + row * m_nodes.w + region.x;
 
 			for (int col = 0; col < region.w; col++)
 			{
-				if (m_uPeriod > 0.f)
+				if (m_uPeriod > 0)
 				{
-					p->x -= m_uPeriod * std::floor(p->x / m_uPeriod);
-					if (p->x >= m_uPeriod)
-						p->x = 0.f;
+					p->x %= m_uPeriod;
+					if (p->x < 0)
+						p->x += m_uPeriod;
 				}
 
-				if (m_vPeriod > 0.f)
+				if (m_vPeriod > 0)
 				{
-					p->y -= m_vPeriod * std::floor(p->y / m_vPeriod);
-					if (p->y >= m_vPeriod)
-						p->y = 0.f;
+					p->y %= m_vPeriod;
+					if (p->y < 0)
+						p->y += m_vPeriod;
 				}
 				p++;
 			}

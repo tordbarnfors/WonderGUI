@@ -2776,9 +2776,9 @@ inline float2 warpPosition(constant float4 * pExtras, int ofs, constant float4 *
 	float4 bottom = pWarpmap[i + 1];
 
 	float2 u = mix(mix(top.xy, top.zw, f.x), mix(bottom.xy, bottom.zw, f.x), f.y);
-	float2 s = u * e1.zw + e2.xy;
-	dx = mix(top.zw - top.xy, bottom.zw - bottom.xy, f.y) / (c1.x - c0.x) * e1.zw;
-	dy = mix(bottom.xy - top.xy, bottom.zw - top.zw, f.x) / (c1.y - c0.y) * e1.zw;
+	float2 s = u + e2.xy;
+	dx = mix(top.zw - top.xy, bottom.zw - bottom.xy, f.y) / (c1.x - c0.x);
+	dy = mix(bottom.xy - top.xy, bottom.zw - top.zw, f.x) / (c1.y - c0.y);
 
 	if( e2.z > 0.f )
 		s.x -= e2.z * floor(s.x / e2.z);

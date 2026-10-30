@@ -37,6 +37,9 @@ extern "C" {
 	WAX_EXPORT int			wax_setWarpGeneratorSize( wax_obj warpGenerator, wax_sizeI size );
 	WAX_EXPORT wax_sizeI		wax_warpGeneratorSize( wax_obj warpGenerator );
 
+	WAX_EXPORT int			wax_setWarpGeneratorSourceSize( wax_obj warpGenerator, wax_sizeSPX sourceSize );
+	WAX_EXPORT wax_sizeSPX		wax_warpGeneratorSourceSize( wax_obj warpGenerator );
+
 	//.____ Precision _____________________________________________________
 
 	WAX_EXPORT int			wax_setWarpGeneratorCellSize( wax_obj warpGenerator, int cellSize );	// 0 = calculated from precision.

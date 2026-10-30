@@ -38,6 +38,7 @@ wax_obj wax_createCircularWarp( const wax_circularWarpBP* pCBP, wax_obj warpmapF
 	if (pCBP->precision > 0.f)
 		bp.precision = pCBP->precision;
 	bp.size = { pCBP->size.w, pCBP->size.h };
+	bp.sourceSize = { pCBP->sourceSize.w, pCBP->sourceSize.h };
 	bp.startAngle = pCBP->startAngle;
 	bp.sweep = pCBP->sweep;
 	bp.topRadius = pCBP->topRadius;

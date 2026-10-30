@@ -40,7 +40,7 @@ namespace wax
 		return SoftWarpmap::create(blueprint);
 	}
 
-	Warpmap_p SoftWarpmapFactory::createWarpmap( const Warpmap::Blueprint& blueprint, const CoordF * pNodes, int pitch )
+	Warpmap_p SoftWarpmapFactory::createWarpmap( const Warpmap::Blueprint& blueprint, const CoordSPX * pNodes, int pitch )
 	{
 		return SoftWarpmap::create(blueprint, pNodes, pitch);
 	}

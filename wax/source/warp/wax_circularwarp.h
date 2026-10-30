@@ -40,6 +40,8 @@ namespace wax
 	 * source), either of which can be the larger. With a sweep of 360 degrees the source wraps
 	 * around and an edgemap or surface that is tiling joins seamlessly. A smaller sweep gives an arc.
 	 *
+	 * The Warpmap is made for a source of sourceSize (see WarpGenerator).
+	 *
 	 * A radius of 0 gives a disc. The angle is undefined in the center, so only use a disc with
 	 * content that doesn't change from left to right in the cells closest to the center. Tints that
 	 * vary horizontally will look blocky there. A flat color is fine, as long as no edge comes within
@@ -64,6 +66,7 @@ namespace wax
 			Finalizer_p			finalizer = nullptr;
 			float				precision = 0.25f;				// Max position error in pixels when cellSize is calculated.
 			SizeI				size;							// Mandatory. Size of the Warpmap in pixels.
+			SizeSPX				sourceSize;						// Mandatory. Size of the source (edgemap or source rectangle) in spx.
 			float				startAngle = 0.f;				// Degrees. Where the left side of the source is placed. 0 = up, increasing clockwise.
 			float				sweep = 360.f;					// Degrees covered by the width of the source. Negative goes counter clockwise.
 			spx					topRadius = 0;					// Radius the top of the source is placed at.
@@ -97,8 +100,8 @@ namespace wax
 		virtual ~CircularWarp();
 
 		int			_calcCellSize() const override;
-		void		_generateNodes( CoordF * pNodes, SizeI nodes, int cellSize ) const override;
-		float		_uPeriod() const override;
+		void		_generateNodes( CoordSPX * pNodes, SizeI nodes, int cellSize ) const override;
+		spx			_uPeriod() const override;
 
 		CoordF		m_center;
 		spx			m_topRadius;

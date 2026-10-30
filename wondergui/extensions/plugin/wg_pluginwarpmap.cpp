@@ -55,10 +55,10 @@ namespace wg
 		m_nodes.w = (m_size.w + m_cellSize - 1) / m_cellSize + 1;
 		m_nodes.h = (m_size.h + m_cellSize - 1) / m_cellSize + 1;
 
-		m_pNodes = new CoordF[m_nodes.w * m_nodes.h];
+		m_pNodes = new CoordSPX[m_nodes.w * m_nodes.h];
 
 		wax_rectI all = { 0, 0, m_nodes.w, m_nodes.h };
-		PluginCalls::warpmap->exportWarpmapNodes(object, &all, (wax_coordF*) m_pNodes, 0);
+		PluginCalls::warpmap->exportWarpmapNodes(object, &all, (wax_coordSPX*) m_pNodes, 0);
 
 		m_bConstructed = true;
 	}
@@ -80,7 +80,7 @@ namespace wg
 	//____ setPeriods() _______________________________________________________
 	// The host gets the periods before the nodes normalized into them.
 
-	bool PluginWarpmap::setPeriods( float uPeriod, float vPeriod )
+	bool PluginWarpmap::setPeriods( spx uPeriod, spx vPeriod )
 	{
 		if (!PluginCalls::warpmap->setWarpmapPeriods(m_cWarpmap, uPeriod, vPeriod))
 			return false;
@@ -96,7 +96,7 @@ namespace wg
 			return;
 
 		wax_rectI cRegion = { region.x, region.y, region.w, region.h };
-		PluginCalls::warpmap->importWarpmapNodes(m_cWarpmap, &cRegion, (const wax_coordF*) (m_pNodes + region.y * m_nodes.w + region.x), m_nodes.w);
+		PluginCalls::warpmap->importWarpmapNodes(m_cWarpmap, &cRegion, (const wax_coordSPX*) (m_pNodes + region.y * m_nodes.w + region.x), m_nodes.w);
 	}
 
 } // namespace wg

@@ -34,9 +34,10 @@ namespace wax
 
 	//____ constructor ________________________________________________________
 
-	WarpGenerator::WarpGenerator(SizeI size, int cellSize, float precision, WarpmapFactory* pFactory)
+	WarpGenerator::WarpGenerator(SizeI size, SizeSPX sourceSize, int cellSize, float precision, WarpmapFactory* pFactory)
 	{
 		m_size		= size;
+		m_sourceSize = sourceSize;
 		m_cellSize	= cellSize;
 		m_precision	= precision;
 		m_pFactory	= pFactory;
@@ -65,6 +66,21 @@ namespace wax
 		if (size != m_size)
 		{
 			m_size = size;
+			m_bDirty = true;
+		}
+		return true;
+	}
+
+	//____ setSourceSize() ____________________________________________________
+
+	bool WarpGenerator::setSourceSize(SizeSPX sourceSize)
+	{
+		if (sourceSize.w <= 0 || sourceSize.h <= 0)
+			return false;
+
+		if (sourceSize != m_sourceSize)
+		{
+			m_sourceSize = sourceSize;
 			m_bDirty = true;
 		}
 		return true;
@@ -115,8 +131,8 @@ namespace wax
 			return m_pWarpmap;
 
 		int cellSize = this->cellSize();
-		float uPeriod = _uPeriod();
-		float vPeriod = _vPeriod();
+		spx uPeriod = _uPeriod();
+		spx vPeriod = _vPeriod();
 
 		if (!m_pWarpmap || m_pWarpmap->pixelSize() != m_size || m_pWarpmap->cellSize() != cellSize)
 		{
@@ -127,7 +143,7 @@ namespace wax
 			bp.vPeriod = vPeriod;
 
 			SizeI nodes = { (m_size.w + cellSize - 1) / cellSize + 1, (m_size.h + cellSize - 1) / cellSize + 1 };
-			std::vector<CoordF> buffer(nodes.w * nodes.h);
+			std::vector<CoordSPX> buffer(nodes.w * nodes.h);
 			_generateNodes(buffer.data(), nodes, cellSize);
 
 			m_pWarpmap = m_pFactory->createWarpmap(bp, buffer.data());
@@ -135,7 +151,7 @@ namespace wax
 		else
 		{
 			SizeI nodes = m_pWarpmap->nodes();
-			std::vector<CoordF> buffer(nodes.w * nodes.h);
+			std::vector<CoordSPX> buffer(nodes.w * nodes.h);
 			_generateNodes(buffer.data(), nodes, cellSize);
 
 			if (m_pWarpmap->uPeriod() != uPeriod || m_pWarpmap->vPeriod() != vPeriod)
@@ -150,9 +166,9 @@ namespace wax
 
 	//____ _validateSettings() ________________________________________________
 
-	bool WarpGenerator::_validateSettings(SizeI size, int cellSize, float precision)
+	bool WarpGenerator::_validateSettings(SizeI size, SizeSPX sourceSize, int cellSize, float precision)
 	{
-		return size.w > 0 && size.h > 0 && cellSize >= 0 && precision > 0.f;
+		return size.w > 0 && size.h > 0 && sourceSize.w > 0 && sourceSize.h > 0 && cellSize >= 0 && precision > 0.f;
 	}
 
 	//____ _cellSizeForRadius() _______________________________________________

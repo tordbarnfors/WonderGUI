@@ -36,8 +36,8 @@ extern "C" {
 	{
 		int					cellSize;				// Pixels between nodes. 0 = default (16).
 		wax_sizeI			size;					// Mandatory. Size in pixels.
-		float				uPeriod;				// 0 = not periodic.
-		float				vPeriod;				// 0 = not periodic.
+		wax_spx				uPeriod;				// In spx of the source, 0 = not periodic.
+		wax_spx				vPeriod;				// In spx of the source, 0 = not periodic.
 	} wax_warpmapBP;
 
 	//.____ Geometry ______________________________________________________
@@ -50,16 +50,18 @@ extern "C" {
 
 	//.____ Content _______________________________________________________
 
-	WAX_EXPORT int			wax_setWarpmapPeriods(wax_obj warpmap, float uPeriod, float vPeriod);
-	WAX_EXPORT float			wax_warpmapUPeriod(wax_obj warpmap);
-	WAX_EXPORT float			wax_warpmapVPeriod(wax_obj warpmap);
+	WAX_EXPORT int			wax_setWarpmapPeriods(wax_obj warpmap, wax_spx uPeriod, wax_spx vPeriod);
+	WAX_EXPORT wax_spx			wax_warpmapUPeriod(wax_obj warpmap);
+	WAX_EXPORT wax_spx			wax_warpmapVPeriod(wax_obj warpmap);
 
 	// Region is given in nodes, pitch is nodes between rows in source/destination, 0 meaning region width.
 
-	WAX_EXPORT int			wax_importWarpmapNodes(wax_obj warpmap, const wax_rectI* region, const wax_coordF* pSource, int pitch);
-	WAX_EXPORT int			wax_exportWarpmapNodes(wax_obj warpmap, const wax_rectI* region, wax_coordF* pDestination, int pitch);
+	WAX_EXPORT int			wax_importWarpmapNodes(wax_obj warpmap, const wax_rectI* region, const wax_coordSPX* pSource, int pitch);
+	WAX_EXPORT int			wax_exportWarpmapNodes(wax_obj warpmap, const wax_rectI* region, wax_coordSPX* pDestination, int pitch);
 
 	//.____ Misc __________________________________________________________
+
+	// Position at x,y in spx of the source, with fractions.
 
 	WAX_EXPORT wax_coordF		wax_warpmapPositionAt(wax_obj warpmap, double x, double y);
 
