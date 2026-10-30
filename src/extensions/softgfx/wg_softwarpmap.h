@@ -46,7 +46,7 @@ namespace wg
 		//.____ Creation __________________________________________
 
 		static SoftWarpmap_p	create( const Blueprint& blueprint );
-		static SoftWarpmap_p	create( const Blueprint& blueprint, const CoordF * pNodes, int pitch = 0 );
+		static SoftWarpmap_p	create( const Blueprint& blueprint, const CoordSPX * pNodes, int pitch = 0 );
 
 		//.____ Identification __________________________________________
 

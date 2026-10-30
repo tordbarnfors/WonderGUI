@@ -39,6 +39,7 @@ wg_obj wg_createCircularWarp( const wg_circularWarpBP* pCBP, wg_obj warpmapFacto
 	if (pCBP->precision > 0.f)
 		bp.precision = pCBP->precision;
 	bp.size = { pCBP->size.w, pCBP->size.h };
+	bp.sourceSize = { pCBP->sourceSize.w, pCBP->sourceSize.h };
 	bp.startAngle = pCBP->startAngle;
 	bp.sweep = pCBP->sweep;
 	bp.topRadius = pCBP->topRadius;
@@ -61,6 +62,17 @@ int wg_setCircularWarpSize( wg_obj circularWarp, wg_sizeI size )
 wg_sizeI wg_circularWarpSize( wg_obj circularWarp )
 {
 	SizeI sz = getPtr(circularWarp)->size();
+	return { sz.w, sz.h };
+}
+
+int wg_setCircularWarpSourceSize( wg_obj circularWarp, wg_sizeSPX sourceSize )
+{
+	return getPtr(circularWarp)->setSourceSize({ sourceSize.w, sourceSize.h });
+}
+
+wg_sizeSPX wg_circularWarpSourceSize( wg_obj circularWarp )
+{
+	SizeSPX sz = getPtr(circularWarp)->sourceSize();
 	return { sz.w, sz.h };
 }
 

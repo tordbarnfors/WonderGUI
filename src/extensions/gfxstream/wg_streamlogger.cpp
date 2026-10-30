@@ -631,8 +631,8 @@ namespace wg
 				uint16_t	warpmapId;
 				SizeI		size;
 				uint16_t	cellSize;
-				float		uPeriod;
-				float		vPeriod;
+				int			uPeriod;
+				int			vPeriod;
 
 				decoder >> warpmapId;
 				decoder >> size;
@@ -670,8 +670,8 @@ namespace wg
 			case GfxStream::ChunkId::SetWarpmapPeriods:
 			{
 				uint16_t	warpmapId;
-				float		uPeriod;
-				float		vPeriod;
+				int			uPeriod;
+				int			vPeriod;
 
 				decoder >> warpmapId;
 				decoder >> uPeriod;

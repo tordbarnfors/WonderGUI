@@ -107,60 +107,20 @@ public:
 														 (uint8_t*)pixels.data(), PixelFormat::ARGB_8);
 		}
 
-		// Warpmaps
+		// Warpmaps, a set for each size of source they are drawn with.
 
-		m_pRing = CircularWarp::create(WGBP(CircularWarp, _.size = { 240, 240 }, _.topRadius = 118 * 64, _.bottomRadius = 60 * 64), pWarpmapFactory)->refresh();
-		m_pSmallRing = CircularWarp::create(WGBP(CircularWarp, _.size = { 120, 120 }, _.topRadius = 58 * 64, _.bottomRadius = 25 * 64, _.cellSize = 8), pWarpmapFactory)->refresh();
-		m_pArc = CircularWarp::create(WGBP(CircularWarp, _.size = { 240, 240 }, _.topRadius = 118 * 64, _.bottomRadius = 80 * 64, _.startAngle = -135.f, _.sweep = 270.f), pWarpmapFactory)->refresh();
-		m_pQuarter = CircularWarp::create(WGBP(CircularWarp, _.size = { 240, 240 }, _.center = { 0.f, 1.f }, _.topRadius = 230 * 64, _.bottomRadius = 150 * 64, _.sweep = 90.f), pWarpmapFactory)->refresh();
-		m_pBlendRing = CircularWarp::create(WGBP(CircularWarp, _.size = { 150, 150 }, _.topRadius = 74 * 64, _.bottomRadius = 30 * 64), pWarpmapFactory)->refresh();
-
-		// A smooth bend of a rectangle, partly outside the source.
-
-		{
-			m_pWave = pWarpmapFactory->createWarpmap(WGBP(Warpmap, _.size = { 240, 240 }, _.cellSize = 12));
-
-			SizeI n = m_pWave->nodes();
-			std::vector<CoordF> nodes(n.w * n.h);
-
-			for (int r = 0; r < n.h; r++)
-			{
-				for (int c = 0; c < n.w; c++)
-				{
-					float x = m_pWave->nodeX(c) / 240.f;
-					float y = m_pWave->nodeY(r) / 240.f;
-					nodes[r * n.w + c] = { (x - 0.5f) * 1.2f + 0.5f + 0.08f * std::sin(y * 7.f), (y - 0.5f) * 1.15f + 0.5f + 0.06f * std::sin(x * 6.f) };
-				}
-			}
-
-			m_pWave->importNodes({ 0, 0, n.w, n.h }, nodes.data());
-		}
-
-		// Periodic along v, the edgemap repeated three times down a sloping band.
-
-		{
-			m_pStripes = pWarpmapFactory->createWarpmap(WGBP(Warpmap, _.size = { 200, 240 }, _.cellSize = 10, _.vPeriod = 1.f));
-
-			SizeI n = m_pStripes->nodes();
-			std::vector<CoordF> nodes(n.w * n.h);
-
-			for (int r = 0; r < n.h; r++)
-			{
-				for (int c = 0; c < n.w; c++)
-				{
-					float x = m_pStripes->nodeX(c) / 200.f;
-					float y = m_pStripes->nodeY(r) / 240.f;
-					nodes[r * n.w + c] = { x, y * 3.f + x * 0.7f };
-				}
-			}
-
-			m_pStripes->importNodes({ 0, 0, n.w, n.h }, nodes.data());
-		}
+		m_forGauge = _makeWarps(pWarpmapFactory, m_pGauge->pixelSize() * 64);
+		m_forSmall = _makeWarps(pWarpmapFactory, m_pSmall->pixelSize() * 64);
+		m_forSurface = _makeWarps(pWarpmapFactory, m_pTiling->pixelSize() * 64);
+		m_forRect = _makeWarps(pWarpmapFactory, { 64 * 32, 64 * 24 });
+		m_forWideRect = _makeWarps(pWarpmapFactory, { 64 * 48, 64 * 32 });
+		m_forSmallRect = _makeWarps(pWarpmapFactory, { 64 * 24, 64 * 16 });
+		m_forBlendRect = _makeWarps(pWarpmapFactory, { 64 * 40, 64 * 24 });
 
 		m_pIdentity = pWarpmapFactory->createWarpmap(WGBP(Warpmap, _.size = m_pSmall->pixelSize(), _.cellSize = 9));
 		m_pIdentityBlit = pWarpmapFactory->createWarpmap(WGBP(Warpmap, _.size = { 64, 32 }, _.cellSize = 7));
 
-		return m_pGauge && m_pTintedGauge && m_pSmall && m_pTiling && m_pNearest && m_pBilinear && m_pRing && m_pWave && m_pStripes;
+		return m_pGauge && m_pTintedGauge && m_pSmall && m_pTiling && m_pNearest && m_pBilinear && m_forGauge.ring && m_forGauge.wave && m_forGauge.stripes;
 	}
 
 	bool exit(GfxDevice * pDevice, const RectSPX& canvas)
@@ -171,13 +131,13 @@ public:
 		m_pTiling = nullptr;
 		m_pNearest = nullptr;
 		m_pBilinear = nullptr;
-		m_pRing = nullptr;
-		m_pSmallRing = nullptr;
-		m_pArc = nullptr;
-		m_pQuarter = nullptr;
-		m_pBlendRing = nullptr;
-		m_pWave = nullptr;
-		m_pStripes = nullptr;
+		m_forGauge = {};
+		m_forSmall = {};
+		m_forSurface = {};
+		m_forRect = {};
+		m_forWideRect = {};
+		m_forSmallRect = {};
+		m_forBlendRect = {};
 		m_pIdentity = nullptr;
 		m_pIdentityBlit = nullptr;
 		return true;
@@ -185,41 +145,41 @@ public:
 
 	bool ring(GfxDevice * pDevice, const RectSPX& canvas)
 	{
-		pDevice->warpDrawEdgemap({ 64 * 10, 64 * 10 }, m_pRing, m_pGauge);
-		pDevice->warpDrawEdgemap({ 64 * 270 + 20, 64 * 20 - 10 }, m_pSmallRing, m_pGauge);			// Rounded to whole pixels.
-		pDevice->warpDrawEdgemap({ 64 * 270, 64 * 260 }, m_pRing, m_pGauge, { 64 * 45, 0 });
+		pDevice->warpDrawEdgemap({ 64 * 10, 64 * 10 }, m_forGauge.ring, m_pGauge);
+		pDevice->warpDrawEdgemap({ 64 * 270 + 20, 64 * 20 - 10 }, m_forGauge.smallRing, m_pGauge);			// Rounded to whole pixels.
+		pDevice->warpDrawEdgemap({ 64 * 270, 64 * 260 }, m_forGauge.ring, m_pGauge, { 64 * 45, 0 });
 		return true;
 	}
 
 	bool arcs(GfxDevice * pDevice, const RectSPX& canvas)
 	{
-		pDevice->warpDrawEdgemap({ 64 * 10, 64 * 10 }, m_pArc, m_pGauge);
-		pDevice->warpDrawEdgemap({ 64 * 260, 64 * 10 }, m_pArc, m_pGauge, { 64 * 100, 0 });
-		pDevice->warpDrawEdgemap({ 64 * 10, 64 * 260 }, m_pArc, m_pGauge, { -64 * 300, 64 * 6 });
-		pDevice->warpDrawEdgemap({ 64 * 260, 64 * 260 }, m_pQuarter, m_pGauge);
+		pDevice->warpDrawEdgemap({ 64 * 10, 64 * 10 }, m_forGauge.arc, m_pGauge);
+		pDevice->warpDrawEdgemap({ 64 * 260, 64 * 10 }, m_forGauge.arc, m_pGauge, { 64 * 100, 0 });
+		pDevice->warpDrawEdgemap({ 64 * 10, 64 * 260 }, m_forGauge.arc, m_pGauge, { -64 * 300, 64 * 6 });
+		pDevice->warpDrawEdgemap({ 64 * 260, 64 * 260 }, m_forGauge.quarter, m_pGauge);
 		return true;
 	}
 
 	bool tintedSegments(GfxDevice * pDevice, const RectSPX& canvas)
 	{
-		pDevice->warpDrawEdgemap({ 64 * 10, 64 * 10 }, m_pRing, m_pTintedGauge);
-		pDevice->warpDrawEdgemap({ 64 * 260, 64 * 10 }, m_pArc, m_pTintedGauge, { 64 * 30, 0 });
-		pDevice->warpDrawEdgemap({ 64 * 10, 64 * 260 }, m_pWave, m_pTintedGauge);
-		pDevice->warpDrawEdgemap({ 64 * 260, 64 * 260 }, m_pStripes, m_pTintedGauge);
+		pDevice->warpDrawEdgemap({ 64 * 10, 64 * 10 }, m_forGauge.ring, m_pTintedGauge);
+		pDevice->warpDrawEdgemap({ 64 * 260, 64 * 10 }, m_forGauge.arc, m_pTintedGauge, { 64 * 30, 0 });
+		pDevice->warpDrawEdgemap({ 64 * 10, 64 * 260 }, m_forGauge.wave, m_pTintedGauge);
+		pDevice->warpDrawEdgemap({ 64 * 260, 64 * 260 }, m_forGauge.stripes, m_pTintedGauge);
 		return true;
 	}
 
 	bool deviceTint(GfxDevice * pDevice, const RectSPX& canvas)
 	{
 		pDevice->setTint(canvas, Tint::create(HiColor(4096, 4096, 4096, 4096), HiColor(4096, 1500, 500, 2500), { 0.f, 0.f }, { 1.f, 1.f }));
-		pDevice->warpDrawEdgemap({ 64 * 10, 64 * 10 }, m_pRing, m_pTintedGauge);
+		pDevice->warpDrawEdgemap({ 64 * 10, 64 * 10 }, m_forGauge.ring, m_pTintedGauge);
 		pDevice->setBlitSource(m_pTiling);
-		pDevice->warpBlit({ 64 * 260, 64 * 260 }, m_pRing);
+		pDevice->warpBlit({ 64 * 260, 64 * 260 }, m_forSurface.ring);
 		pDevice->clearTint();
 
 		pDevice->setTintColor(HiColor(2000, 4096, 4096, 3000));
-		pDevice->warpDrawEdgemap({ 64 * 260, 64 * 10 }, m_pArc, m_pGauge);
-		pDevice->warpBlit({ 64 * 10, 64 * 260 }, m_pWave);
+		pDevice->warpDrawEdgemap({ 64 * 260, 64 * 10 }, m_forGauge.arc, m_pGauge);
+		pDevice->warpBlit({ 64 * 10, 64 * 260 }, m_forSurface.wave);
 		pDevice->clearTintColor();
 		return true;
 	}
@@ -227,43 +187,43 @@ public:
 	bool blitRing(GfxDevice * pDevice, const RectSPX& canvas)
 	{
 		pDevice->setBlitSource(m_pTiling);
-		pDevice->warpBlit({ 64 * 10, 64 * 10 }, m_pRing);
-		pDevice->warpBlit({ 64 * 260, 64 * 10 }, m_pRing, { 64 * 13, 64 * 5 });
+		pDevice->warpBlit({ 64 * 10, 64 * 10 }, m_forSurface.ring);
+		pDevice->warpBlit({ 64 * 260, 64 * 10 }, m_forSurface.ring, { 64 * 13, 64 * 5 });
 		pDevice->setBlitSource(m_pBilinear);
-		pDevice->warpBlit({ 64 * 10, 64 * 260 }, m_pRing);
-		pDevice->warpBlit({ 64 * 260, 64 * 260 }, m_pSmallRing);
+		pDevice->warpBlit({ 64 * 10, 64 * 260 }, m_forSurface.ring);
+		pDevice->warpBlit({ 64 * 260, 64 * 260 }, m_forSurface.smallRing);
 		return true;
 	}
 
 	bool blitWave(GfxDevice * pDevice, const RectSPX& canvas)
 	{
 		pDevice->setBlitSource(m_pNearest);
-		pDevice->warpBlit({ 64 * 10, 64 * 10 }, m_pWave);
+		pDevice->warpBlit({ 64 * 10, 64 * 10 }, m_forSurface.wave);
 		pDevice->setBlitSource(m_pBilinear);
-		pDevice->warpBlit({ 64 * 260, 64 * 10 }, m_pWave);
+		pDevice->warpBlit({ 64 * 260, 64 * 10 }, m_forSurface.wave);
 		pDevice->setBlitSource(m_pTiling);
-		pDevice->warpBlit({ 64 * 10, 64 * 260 }, m_pWave);
-		pDevice->warpBlit({ 64 * 260, 64 * 260 }, m_pStripes);
+		pDevice->warpBlit({ 64 * 10, 64 * 260 }, m_forSurface.wave);
+		pDevice->warpBlit({ 64 * 260, 64 * 260 }, m_forSurface.stripes);
 		return true;
 	}
 
 	bool blitSourceRect(GfxDevice * pDevice, const RectSPX& canvas)
 	{
 		pDevice->setBlitSource(m_pBilinear);
-		pDevice->warpBlit({ 64 * 10, 64 * 10 }, m_pArc, { 64 * 16, 64 * 4, 64 * 32, 64 * 24 });
-		pDevice->warpBlit({ 64 * 260, 64 * 10 }, m_pRing, { 64 * 16, 64 * 4, 64 * 32, 64 * 24 }, { 64 * 7, 64 * 3 });
+		pDevice->warpBlit({ 64 * 10, 64 * 10 }, m_forRect.arc, { 64 * 16, 64 * 4, 64 * 32, 64 * 24 });
+		pDevice->warpBlit({ 64 * 260, 64 * 10 }, m_forRect.ring, { 64 * 16, 64 * 4, 64 * 32, 64 * 24 }, { 64 * 7, 64 * 3 });
 		pDevice->setBlitSource(m_pNearest);
-		pDevice->warpBlit({ 64 * 10, 64 * 260 }, m_pQuarter, { 64 * 8, 0, 64 * 48, 64 * 32 });
-		pDevice->warpBlit({ 64 * 260, 64 * 260 }, m_pWave, { 64 * 20, 64 * 8, 64 * 24, 64 * 16 });
+		pDevice->warpBlit({ 64 * 10, 64 * 260 }, m_forWideRect.quarter, { 64 * 8, 0, 64 * 48, 64 * 32 });
+		pDevice->warpBlit({ 64 * 260, 64 * 260 }, m_forSmallRect.wave, { 64 * 20, 64 * 8, 64 * 24, 64 * 16 });
 		return true;
 	}
 
 	bool periodicV(GfxDevice * pDevice, const RectSPX& canvas)
 	{
-		pDevice->warpDrawEdgemap({ 64 * 10, 64 * 10 }, m_pStripes, m_pGauge);
-		pDevice->warpDrawEdgemap({ 64 * 260, 64 * 10 }, m_pStripes, m_pGauge, { 64 * 33, 64 * 17 });
+		pDevice->warpDrawEdgemap({ 64 * 10, 64 * 10 }, m_forGauge.stripes, m_pGauge);
+		pDevice->warpDrawEdgemap({ 64 * 260, 64 * 10 }, m_forGauge.stripes, m_pGauge, { 64 * 33, 64 * 17 });
 		pDevice->setBlitSource(m_pTiling);
-		pDevice->warpBlit({ 64 * 10, 64 * 260 }, m_pStripes, { 64 * 5, 64 * 3 });
+		pDevice->warpBlit({ 64 * 10, 64 * 260 }, m_forSurface.stripes, { 64 * 5, 64 * 3 });
 		return true;
 	}
 
@@ -301,9 +261,9 @@ public:
 			CoordSPX pos = { 64 * (10 + (i % 3) * 165), 64 * (10 + (i / 3) * 165) };
 
 			pDevice->setBlendMode(modes[i]);
-			pDevice->warpDrawEdgemap(pos, m_pBlendRing, m_pSmall);
+			pDevice->warpDrawEdgemap(pos, m_forSmall.blendRing, m_pSmall);
 			pDevice->setBlitSource(m_pBilinear);
-			pDevice->warpBlit(pos + CoordSPX(64 * 45, 64 * 45), m_pSmallRing, { 64 * 10, 64 * 4, 64 * 40, 64 * 24 });
+			pDevice->warpBlit(pos + CoordSPX(64 * 45, 64 * 45), m_forBlendRect.smallRing, { 64 * 10, 64 * 4, 64 * 40, 64 * 24 });
 		}
 
 		pDevice->setBlendMode(BlendMode::Blend);
@@ -320,13 +280,80 @@ private:
 	Surface_p	m_pNearest;
 	Surface_p	m_pBilinear;
 
-	Warpmap_p	m_pRing;
-	Warpmap_p	m_pSmallRing;
-	Warpmap_p	m_pArc;
-	Warpmap_p	m_pQuarter;
-	Warpmap_p	m_pBlendRing;
-	Warpmap_p	m_pWave;
-	Warpmap_p	m_pStripes;
+	// Warpmaps are made for a source of a certain size.
+
+	struct Warps
+	{
+		Warpmap_p	ring;
+		Warpmap_p	smallRing;
+		Warpmap_p	arc;
+		Warpmap_p	quarter;
+		Warpmap_p	blendRing;
+		Warpmap_p	wave;				// A smooth bend of a rectangle, partly outside the source.
+		Warpmap_p	stripes;			// Periodic along v, the source repeated three times down a sloping band.
+	};
+
+	Warps _makeWarps(WarpmapFactory * pFactory, SizeSPX source)
+	{
+		Warps warps;
+
+		warps.ring = CircularWarp::create(WGBP(CircularWarp, _.size = { 240, 240 }, _.sourceSize = source, _.topRadius = 118 * 64, _.bottomRadius = 60 * 64), pFactory)->refresh();
+		warps.smallRing = CircularWarp::create(WGBP(CircularWarp, _.size = { 120, 120 }, _.sourceSize = source, _.topRadius = 58 * 64, _.bottomRadius = 25 * 64, _.cellSize = 8), pFactory)->refresh();
+		warps.arc = CircularWarp::create(WGBP(CircularWarp, _.size = { 240, 240 }, _.sourceSize = source, _.topRadius = 118 * 64, _.bottomRadius = 80 * 64, _.startAngle = -135.f, _.sweep = 270.f), pFactory)->refresh();
+		warps.quarter = CircularWarp::create(WGBP(CircularWarp, _.size = { 240, 240 }, _.sourceSize = source, _.center = { 0.f, 1.f }, _.topRadius = 230 * 64, _.bottomRadius = 150 * 64, _.sweep = 90.f), pFactory)->refresh();
+		warps.blendRing = CircularWarp::create(WGBP(CircularWarp, _.size = { 150, 150 }, _.sourceSize = source, _.topRadius = 74 * 64, _.bottomRadius = 30 * 64), pFactory)->refresh();
+
+		{
+			warps.wave = pFactory->createWarpmap(WGBP(Warpmap, _.size = { 240, 240 }, _.cellSize = 12));
+
+			SizeI n = warps.wave->nodes();
+			std::vector<CoordSPX> nodes(n.w * n.h);
+
+			for (int r = 0; r < n.h; r++)
+			{
+				for (int c = 0; c < n.w; c++)
+				{
+					float x = warps.wave->nodeX(c) / 240.f;
+					float y = warps.wave->nodeY(r) / 240.f;
+					float u = (x - 0.5f) * 1.2f + 0.5f + 0.08f * std::sin(y * 7.f);
+					float v = (y - 0.5f) * 1.15f + 0.5f + 0.06f * std::sin(x * 6.f);
+					nodes[r * n.w + c] = { spx(std::lround(u * source.w)), spx(std::lround(v * source.h)) };
+				}
+			}
+
+			warps.wave->importNodes({ 0, 0, n.w, n.h }, nodes.data());
+		}
+
+		{
+			warps.stripes = pFactory->createWarpmap(WGBP(Warpmap, _.size = { 200, 240 }, _.cellSize = 10, _.vPeriod = source.h));
+
+			SizeI n = warps.stripes->nodes();
+			std::vector<CoordSPX> nodes(n.w * n.h);
+
+			for (int r = 0; r < n.h; r++)
+			{
+				for (int c = 0; c < n.w; c++)
+				{
+					float x = warps.stripes->nodeX(c) / 200.f;
+					float y = warps.stripes->nodeY(r) / 240.f;
+					nodes[r * n.w + c] = { spx(std::lround(x * source.w)), spx(std::lround((y * 3.f + x * 0.7f) * source.h)) };
+				}
+			}
+
+			warps.stripes->importNodes({ 0, 0, n.w, n.h }, nodes.data());
+		}
+
+		return warps;
+	}
+
+	Warps		m_forGauge;
+	Warps		m_forSmall;
+	Warps		m_forSurface;
+	Warps		m_forRect;
+	Warps		m_forWideRect;
+	Warps		m_forSmallRect;
+	Warps		m_forBlendRect;
+
 	Warpmap_p	m_pIdentity;
 	Warpmap_p	m_pIdentityBlit;
 };

@@ -142,10 +142,10 @@ float2 warpPosition(uint ofs, float2 p, out float2 dx, out float2 dy)
     float4 bottom = warpmap[i + 1u];
 
     float2 u = lerp(lerp(top.xy, top.zw, f.x), lerp(bottom.xy, bottom.zw, f.x), f.y);
-    float2 s = u * e1.zw + e2.xy;
+    float2 s = u + e2.xy;
 
-    dx = lerp(top.zw - top.xy, bottom.zw - bottom.xy, f.y) / (c1.x - c0.x) * e1.zw;
-    dy = lerp(bottom.xy - top.xy, bottom.zw - top.zw, f.x) / (c1.y - c0.y) * e1.zw;
+    dx = lerp(top.zw - top.xy, bottom.zw - bottom.xy, f.y) / (c1.x - c0.x);
+    dy = lerp(bottom.xy - top.xy, bottom.zw - top.zw, f.x) / (c1.y - c0.y);
 
     if (e2.z > 0.0f)
         s.x -= e2.z * floor(s.x / e2.z);

@@ -35,7 +35,7 @@ namespace wg
 		return SoftWarpmap_p(new SoftWarpmap(bp));
 	}
 
-	SoftWarpmap_p SoftWarpmap::create( const Blueprint& bp, const CoordF * pNodes, int pitch )
+	SoftWarpmap_p SoftWarpmap::create( const Blueprint& bp, const CoordSPX * pNodes, int pitch )
 	{
 		if (!_validateBlueprint(bp) || !pNodes)
 			return nullptr;

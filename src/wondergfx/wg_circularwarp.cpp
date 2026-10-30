@@ -36,7 +36,7 @@ namespace wg
 
 	CircularWarp_p CircularWarp::create(const Blueprint& bp, WarpmapFactory* pFactory)
 	{
-		if (bp.size.w <= 0 || bp.size.h <= 0 || bp.cellSize < 0 || bp.precision <= 0.f || bp.sweep == 0.f)
+		if (bp.size.w <= 0 || bp.size.h <= 0 || bp.sourceSize.w <= 0 || bp.sourceSize.h <= 0 || bp.cellSize < 0 || bp.precision <= 0.f || bp.sweep == 0.f)
 			return nullptr;
 
 		if (!pFactory)
@@ -56,6 +56,7 @@ namespace wg
 			setFinalizer(bp.finalizer);
 
 		m_size			= bp.size;
+		m_sourceSize	= bp.sourceSize;
 		m_center		= bp.center;
 		m_topRadius		= bp.topRadius;
 		m_bottomRadius	= bp.bottomRadius;
@@ -90,6 +91,21 @@ namespace wg
 		if (size != m_size)
 		{
 			m_size = size;
+			m_bDirty = true;
+		}
+		return true;
+	}
+
+	//____ setSourceSize() ____________________________________________________
+
+	bool CircularWarp::setSourceSize(SizeSPX sourceSize)
+	{
+		if (sourceSize.w <= 0 || sourceSize.h <= 0)
+			return false;
+
+		if (sourceSize != m_sourceSize)
+		{
+			m_sourceSize = sourceSize;
 			m_bDirty = true;
 		}
 		return true;
@@ -185,7 +201,7 @@ namespace wg
 			return m_pWarpmap;
 
 		int cellSize = this->cellSize();
-		float uPeriod = 360.f / std::abs(m_sweep);
+		spx uPeriod = _uPeriod();
 
 		if (!m_pWarpmap || m_pWarpmap->pixelSize() != m_size || m_pWarpmap->cellSize() != cellSize)
 		{
@@ -195,7 +211,7 @@ namespace wg
 			bp.uPeriod = uPeriod;
 
 			SizeI nodes = { (m_size.w + cellSize - 1) / cellSize + 1, (m_size.h + cellSize - 1) / cellSize + 1 };
-			std::vector<CoordF> buffer(nodes.w * nodes.h);
+			std::vector<CoordSPX> buffer(nodes.w * nodes.h);
 			_generateNodes(buffer.data(), nodes, cellSize);
 
 			m_pWarpmap = m_pFactory->createWarpmap(bp, buffer.data());
@@ -203,11 +219,11 @@ namespace wg
 		else
 		{
 			SizeI nodes = m_pWarpmap->nodes();
-			std::vector<CoordF> buffer(nodes.w * nodes.h);
+			std::vector<CoordSPX> buffer(nodes.w * nodes.h);
 			_generateNodes(buffer.data(), nodes, cellSize);
 
-			if (m_pWarpmap->uPeriod() != uPeriod || m_pWarpmap->vPeriod() != 0.f)
-				m_pWarpmap->setPeriods(uPeriod, 0.f);
+			if (m_pWarpmap->uPeriod() != uPeriod || m_pWarpmap->vPeriod() != 0)
+				m_pWarpmap->setPeriods(uPeriod, 0);
 
 			m_pWarpmap->importNodes({ 0,0,nodes.w,nodes.h }, buffer.data());
 		}
@@ -232,14 +248,26 @@ namespace wg
 		return std::clamp(cellSize, c_minCellSize, c_maxCellSize);
 	}
 
-	//____ _generateNodes() ___________________________________________________
+	//____ _uPeriod() _________________________________________________________
 	/*
-		Angle is measured clockwise from straight up. u goes from 0 at startAngle to 1 at
-		startAngle + sweep (counter clockwise for negative sweep) and is periodic with a period
-		of 360 / |sweep|. v goes from 0 at topRadius to 1 at bottomRadius.
+		The width of the source covers |sweep| degrees, so a full turn is width * 360 / |sweep|.
 	*/
 
-	void CircularWarp::_generateNodes(CoordF* pNodes, SizeI nodes, int cellSize) const
+	spx CircularWarp::_uPeriod() const
+	{
+		double period = std::round(m_sourceSize.w * 360.0 / std::abs(double(m_sweep)));
+		return spx(std::clamp(period, 1.0, double(Warpmap::maxNodeValue)));
+	}
+
+	//____ _generateNodes() ___________________________________________________
+	/*
+		Angle is measured clockwise from straight up. u goes from 0 at startAngle to the width of
+		the source at startAngle + sweep (counter clockwise for negative sweep) and is periodic with
+		a period of width * 360 / |sweep|. v goes from 0 at topRadius to the height of the source at
+		bottomRadius. Positions are clamped to what a Warpmap can hold, far outside the source.
+	*/
+
+	void CircularWarp::_generateNodes(CoordSPX* pNodes, SizeI nodes, int cellSize) const
 	{
 		double cx = m_center.x * m_size.w;
 		double cy = m_center.y * m_size.h;
@@ -247,8 +275,20 @@ namespace wg
 		double rTop = m_topRadius / 64.0;
 		double rBottom = m_bottomRadius / 64.0;
 
+		double width = m_sourceSize.w;
+		double height = m_sourceSize.h;
+
 		double sweep = m_sweep;
-		double period = 360.0 / std::abs(sweep);
+		double period = _uPeriod();
+
+		auto toSpx = [](double value)
+		{
+			if (!(value > -Warpmap::maxNodeValue))				// Also catches NaN.
+				return -Warpmap::maxNodeValue;
+			if (value > Warpmap::maxNodeValue)
+				return Warpmap::maxNodeValue;
+			return spx(std::lround(value));
+		};
 
 		for (int row = 0; row < nodes.h; row++)
 		{
@@ -259,13 +299,13 @@ namespace wg
 				double x = std::min(col * cellSize, m_size.w) - cx;
 
 				double angle = std::atan2(x, -y) * 180.0 / 3.14159265358979323846;		// Clockwise from up, -180 -> 180.
-				double u = (angle - m_startAngle) / sweep;
+				double u = (angle - m_startAngle) / sweep * width;
 				u -= period * std::floor(u / period);
 
 				double r = std::sqrt(x * x + y * y);
-				double v = (r - rTop) / (rBottom - rTop);
+				double v = rBottom != rTop ? (r - rTop) / (rBottom - rTop) * height : -Warpmap::maxNodeValue;
 
-				*pNodes++ = { float(u), float(v) };
+				*pNodes++ = { toSpx(u), toSpx(v) };
 			}
 		}
 	}

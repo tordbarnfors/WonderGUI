@@ -29,7 +29,7 @@ inline Warpmap* getPtr(wg_obj obj) {
 	return static_cast<Warpmap*>(reinterpret_cast<Object*>(obj));
 }
 
-static_assert(sizeof(wg_coordF) == sizeof(CoordF), "wg_coordF differs in size from wg::CoordF!");
+static_assert(sizeof(wg_coordSPX) == sizeof(CoordSPX), "wg_coordSPX differs in size from wg::CoordSPX!");
 
 wg_sizeI wg_warpmapPixelSize(wg_obj warpmap)
 {
@@ -58,29 +58,29 @@ int wg_warpmapNodeY(wg_obj warpmap, int row)
 	return getPtr(warpmap)->nodeY(row);
 }
 
-int wg_setWarpmapPeriods(wg_obj warpmap, float uPeriod, float vPeriod)
+int wg_setWarpmapPeriods(wg_obj warpmap, wg_spx uPeriod, wg_spx vPeriod)
 {
 	return getPtr(warpmap)->setPeriods(uPeriod, vPeriod);
 }
 
-float wg_warpmapUPeriod(wg_obj warpmap)
+wg_spx wg_warpmapUPeriod(wg_obj warpmap)
 {
 	return getPtr(warpmap)->uPeriod();
 }
 
-float wg_warpmapVPeriod(wg_obj warpmap)
+wg_spx wg_warpmapVPeriod(wg_obj warpmap)
 {
 	return getPtr(warpmap)->vPeriod();
 }
 
-int wg_importWarpmapNodes(wg_obj warpmap, const wg_rectI* region, const wg_coordF* pSource, int pitch)
+int wg_importWarpmapNodes(wg_obj warpmap, const wg_rectI* region, const wg_coordSPX* pSource, int pitch)
 {
-	return getPtr(warpmap)->importNodes(*(const RectI*)region, (const CoordF*)pSource, pitch);
+	return getPtr(warpmap)->importNodes(*(const RectI*)region, (const CoordSPX*)pSource, pitch);
 }
 
-int wg_exportWarpmapNodes(wg_obj warpmap, const wg_rectI* region, wg_coordF* pDestination, int pitch)
+int wg_exportWarpmapNodes(wg_obj warpmap, const wg_rectI* region, wg_coordSPX* pDestination, int pitch)
 {
-	return getPtr(warpmap)->exportNodes(*(const RectI*)region, (CoordF*)pDestination, pitch);
+	return getPtr(warpmap)->exportNodes(*(const RectI*)region, (CoordSPX*)pDestination, pitch);
 }
 
 wg_coordF wg_warpmapPositionAt(wg_obj warpmap, double x, double y)

@@ -40,6 +40,7 @@ extern "C" {
 		wg_spx				detailRadius;			// Smallest radius where precision is needed. 0 = smallest of the radii.
 		float				precision;				// Max position error in pixels when cellSize is calculated. 0 = default (0.25).
 		wg_sizeI			size;					// Mandatory. Size of the Warpmap in pixels.
+		wg_sizeSPX			sourceSize;				// Mandatory. Size of the source (edgemap or source rectangle) in spx.
 		float				startAngle;				// Degrees. Where the left side of the source is placed. 0 = up, clockwise.
 		float				sweep;					// Degrees covered by the width of the source. Negative goes counter clockwise.
 		wg_spx				topRadius;				// Radius the top of the source is placed at.
@@ -53,6 +54,9 @@ extern "C" {
 
 	WG_EXPORT int			wg_setCircularWarpSize( wg_obj circularWarp, wg_sizeI size );
 	WG_EXPORT wg_sizeI		wg_circularWarpSize( wg_obj circularWarp );
+
+	WG_EXPORT int			wg_setCircularWarpSourceSize( wg_obj circularWarp, wg_sizeSPX sourceSize );
+	WG_EXPORT wg_sizeSPX		wg_circularWarpSourceSize( wg_obj circularWarp );
 
 	WG_EXPORT int			wg_setCircularWarpCenter( wg_obj circularWarp, wg_coordF center );
 	WG_EXPORT wg_coordF		wg_circularWarpCenter( wg_obj circularWarp );

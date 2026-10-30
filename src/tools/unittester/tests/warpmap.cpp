@@ -19,7 +19,7 @@ namespace
 {
 	bool near(double a, double b, double tolerance) { return std::abs(a - b) <= tolerance; }
 
-	// Exact position of CircularWarp at point x,y (pixels), u wrapped into the period.
+	// Exact position (spx of the source) of CircularWarp at point x,y (pixels), u wrapped into the period.
 
 	CoordF exactCircular(const CircularWarp::Blueprint& bp, double x, double y)
 	{
@@ -27,15 +27,17 @@ namespace
 		double dy = y - bp.center.y * bp.size.h;
 
 		double angle = std::atan2(dx, -dy) * 180.0 / M_PI;
-		double period = 360.0 / std::abs(bp.sweep);
-		double u = (angle - bp.startAngle) / bp.sweep;
+		double period = std::round(bp.sourceSize.w * 360.0 / std::abs(bp.sweep));
+		double u = (angle - bp.startAngle) / bp.sweep * bp.sourceSize.w;
 		u -= period * std::floor(u / period);
 
 		double r = std::sqrt(dx * dx + dy * dy);
-		double v = (r - bp.topRadius / 64.0) / (bp.bottomRadius / 64.0 - bp.topRadius / 64.0);
+		double v = (r - bp.topRadius / 64.0) / (bp.bottomRadius / 64.0 - bp.topRadius / 64.0) * bp.sourceSize.h;
 
 		return { float(u), float(v) };
 	}
+
+	const SizeSPX c_sourceSize = { 400 * 64, 32 * 64 };
 
 	// Difference in u, taking the period into account.
 
@@ -64,7 +66,7 @@ WarpmapTest::~WarpmapTest()
 }
 
 //____ defaultNodesTest() _____________________________________________________
-// A new Warpmap maps its rectangle straight onto the source.
+// A new Warpmap maps its rectangle straight onto the source, pixel for pixel.
 
 bool WarpmapTest::defaultNodesTest(std::ostream& output)
 {
@@ -81,14 +83,15 @@ bool WarpmapTest::defaultNodesTest(std::ostream& output)
 		for (double x : { 0.0, 0.5, 15.9, 99.0, 100.0 })
 		{
 			CoordF pos = pMap->positionAt(x, y);
-			TEST_ASSERT(near(pos.x, x / 100, 1e-6) && near(pos.y, y / 50, 1e-6));
+			TEST_ASSERT(near(pos.x, x * 64, 1e-3) && near(pos.y, y * 64, 1e-3));
 		}
 
 	// Invalid blueprints.
 
 	TEST_ASSERT(SoftWarpmap::create({ .cellSize = 0, .size = { 10, 10 } }) == nullptr);
 	TEST_ASSERT(SoftWarpmap::create({ .size = { 0, 10 } }) == nullptr);
-	TEST_ASSERT(SoftWarpmap::create({ .size = { 10, 10 }, .uPeriod = -1.f }) == nullptr);
+	TEST_ASSERT(SoftWarpmap::create({ .size = { 10, 10 }, .uPeriod = -1 }) == nullptr);
+	TEST_ASSERT(SoftWarpmap::create({ .size = { 10, 10 }, .vPeriod = Warpmap::maxNodeValue + 1 }) == nullptr);
 
 	return true;
 }
@@ -101,21 +104,21 @@ bool WarpmapTest::importExportTest(std::ostream& output)
 
 	// Import a 2x2 region from a buffer with a pitch of 5.
 
-	CoordF buffer[10];
+	CoordSPX buffer[10];
 	for (int i = 0; i < 10; i++)
-		buffer[i] = { float(i), float(-i) };
+		buffer[i] = { i, -i };
 
 	TEST_ASSERT(pMap->importNodes({ 1,1,2,2 }, buffer, 5));
 
-	CoordF all[12];
+	CoordSPX all[12];
 	TEST_ASSERT(pMap->exportNodes({ 0,0,4,3 }, all));
 
-	TEST_ASSERT(all[1 * 4 + 1] == CoordF(0, 0));
-	TEST_ASSERT(all[1 * 4 + 2] == CoordF(1, -1));
-	TEST_ASSERT(all[2 * 4 + 1] == CoordF(5, -5));
-	TEST_ASSERT(all[2 * 4 + 2] == CoordF(6, -6));
-	TEST_ASSERT(all[0] == CoordF(0, 0));								// Untouched.
-	TEST_ASSERT(all[3] == CoordF(1, 0));
+	TEST_ASSERT(all[1 * 4 + 1] == CoordSPX(0, 0));
+	TEST_ASSERT(all[1 * 4 + 2] == CoordSPX(1, -1));
+	TEST_ASSERT(all[2 * 4 + 1] == CoordSPX(5, -5));
+	TEST_ASSERT(all[2 * 4 + 2] == CoordSPX(6, -6));
+	TEST_ASSERT(all[0] == CoordSPX(0, 0));								// Untouched.
+	TEST_ASSERT(all[3] == CoordSPX(30 * 64, 0));
 
 	// Interpolation in the middle of cell 1,1, between nodes 0,0 / 1,-1 / 5,-5 / 6,-6.
 
@@ -137,41 +140,50 @@ bool WarpmapTest::importExportTest(std::ostream& output)
 
 bool WarpmapTest::periodTest(std::ostream& output)
 {
-	auto pMap = SoftWarpmap::create({ .cellSize = 10, .size = { 10, 10 }, .uPeriod = 1.f });		// One cell.
+	auto pMap = SoftWarpmap::create({ .cellSize = 10, .size = { 10, 10 }, .uPeriod = 640 });		// One cell, period of 10 pixels.
 
-	CoordF nodes[4] = { { 0.95f, 0.f }, { 1.05f, 0.f }, { -0.05f, 1.f }, { 2.95f, 1.f } };
+	CoordSPX nodes[4] = { { 608, 0 }, { 672, 0 }, { -32, 64 }, { 1888, 64 } };
 	TEST_ASSERT(pMap->importNodes({ 0,0,2,2 }, nodes));
 
-	CoordF stored[4];
+	CoordSPX stored[4];
 	pMap->exportNodes({ 0,0,2,2 }, stored);
 
-	TEST_ASSERT(near(stored[0].x, 0.95, 1e-6));
-	TEST_ASSERT(near(stored[1].x, 0.05, 1e-6));
-	TEST_ASSERT(near(stored[2].x, 0.95, 1e-6));
-	TEST_ASSERT(near(stored[3].x, 0.95, 1e-6));
-	TEST_ASSERT(stored[3].y == 1.f);										// v is not periodic.
+	TEST_ASSERT(stored[0].x == 608);
+	TEST_ASSERT(stored[1].x == 32);
+	TEST_ASSERT(stored[2].x == 608);
+	TEST_ASSERT(stored[3].x == 608);
+	TEST_ASSERT(stored[3].y == 64);										// v is not periodic.
 
 	// Corners are unwrapped to the top-left corner.
 
-	CoordF corners[4];
+	CoordSPX corners[4];
 	pMap->cellCorners(0, 0, corners);
 
-	TEST_ASSERT(near(corners[0].x, 0.95, 1e-6));
-	TEST_ASSERT(near(corners[1].x, 1.05, 1e-6));
-	TEST_ASSERT(near(corners[2].x, 0.95, 1e-6));
-	TEST_ASSERT(near(corners[3].x, 0.95, 1e-6));
+	TEST_ASSERT(corners[0].x == 608);
+	TEST_ASSERT(corners[1].x == 672);
+	TEST_ASSERT(corners[2].x == 608);
+	TEST_ASSERT(corners[3].x == 608);
 
 	// Halfway across the top edge we are on the seam, not halfway around.
 
-	TEST_ASSERT(near(pMap->positionAt(5, 0).x, 1.0, 1e-6));
+	TEST_ASSERT(near(pMap->positionAt(5, 0).x, 640, 1e-3));
+
+	// A corner exactly half a period away is taken below the top-left corner.
+
+	CoordSPX half[4] = { { 0, 0 }, { 320, 0 }, { 0, 64 }, { 0, 64 } };
+	pMap->importNodes({ 0,0,2,2 }, half);
+	pMap->cellCorners(0, 0, corners);
+	TEST_ASSERT(corners[1].x == -320);
 
 	// Changing the period renormalizes.
 
-	TEST_ASSERT(pMap->setPeriods(0.5f, 0.f));
+	pMap->importNodes({ 0,0,2,2 }, nodes);
+	TEST_ASSERT(pMap->setPeriods(320, 0));
 	pMap->exportNodes({ 0,0,2,2 }, stored);
-	TEST_ASSERT(near(stored[0].x, 0.45, 1e-6));
+	TEST_ASSERT(stored[0].x == 288);
 
-	TEST_ASSERT(!pMap->setPeriods(-1.f, 0.f));
+	TEST_ASSERT(!pMap->setPeriods(-1, 0));
+	TEST_ASSERT(!pMap->setPeriods(0, Warpmap::maxNodeValue + 1));
 	return true;
 }
 
@@ -185,11 +197,11 @@ bool WarpmapTest::circularWarpTest(std::ostream& output)
 	struct Case { CircularWarp::Blueprint bp; float tolerance; };
 
 	Case cases[] = {
-		{ WGBP(CircularWarp, _.size = { 200, 200 }, _.topRadius = 98 * 64, _.bottomRadius = 60 * 64), 0.25f },						// Full ring, top outside.
-		{ WGBP(CircularWarp, _.size = { 300, 200 }, _.center = { 0.4f, 0.6f }, _.topRadius = 40 * 64, _.bottomRadius = 90 * 64,
+		{ WGBP(CircularWarp, _.sourceSize = c_sourceSize, _.size = { 200, 200 }, _.topRadius = 98 * 64, _.bottomRadius = 60 * 64), 0.25f },						// Full ring, top outside.
+		{ WGBP(CircularWarp, _.sourceSize = c_sourceSize, _.size = { 300, 200 }, _.center = { 0.4f, 0.6f }, _.topRadius = 40 * 64, _.bottomRadius = 90 * 64,
 			   _.startAngle = -135.f, _.sweep = 270.f), 0.25f },																	// Arc.
-		{ WGBP(CircularWarp, _.size = { 200, 200 }, _.topRadius = 30 * 64, _.bottomRadius = 99 * 64, _.sweep = -90.f, _.precision = 0.1f), 0.1f },	// Counter clockwise, repeats 4 times.
-		{ WGBP(CircularWarp, _.size = { 160, 160 }, _.topRadius = 0, _.bottomRadius = 80 * 64, _.detailRadius = 40 * 64), 0.25f }	// Disc.
+		{ WGBP(CircularWarp, _.sourceSize = c_sourceSize, _.size = { 200, 200 }, _.topRadius = 30 * 64, _.bottomRadius = 99 * 64, _.sweep = -90.f, _.precision = 0.1f), 0.1f },	// Counter clockwise, repeats 4 times.
+		{ WGBP(CircularWarp, _.sourceSize = c_sourceSize, _.size = { 160, 160 }, _.topRadius = 0, _.bottomRadius = 80 * 64, _.detailRadius = 40 * 64), 0.25f }	// Disc.
 	};
 
 	for (auto& c : cases)
@@ -201,8 +213,8 @@ bool WarpmapTest::circularWarpTest(std::ostream& output)
 		TEST_ASSERT(pMap != nullptr);
 		TEST_ASSERT(pMap->pixelSize() == c.bp.size);
 
-		double period = 360.0 / std::abs(c.bp.sweep);
-		TEST_ASSERT(near(pMap->uPeriod(), period, 1e-5));
+		double period = std::round(c_sourceSize.w * 360.0 / std::abs(c.bp.sweep));
+		TEST_ASSERT(pMap->uPeriod() == spx(period));
 
 		// Cell size from precision: sqrt(8 * precision * detail radius), detail radius being the smallest radius by default.
 
@@ -218,12 +230,12 @@ bool WarpmapTest::circularWarpTest(std::ostream& output)
 			for (int col = 0; col < nodes.w; col++)
 			{
 				CoordF exact = exactCircular(c.bp, pMap->nodeX(col), pMap->nodeY(row));
-				CoordF node = pMap->nodeData()[row * nodes.w + col];
-				TEST_ASSERT(uDiff(node.x, exact.x, period) < 1e-5 && near(node.y, exact.y, 1e-5));
+				CoordSPX node = pMap->nodeData()[row * nodes.w + col];
+				TEST_ASSERT(uDiff(node.x, exact.x, period) <= 0.51 && near(node.y, exact.y, 0.51));		// Rounded to spx.
 			}
 
 		// Within precision between nodes, where at least the detail radius from the center. Precision is
-		// in pixels, so we convert the errors in u and v to pixels.
+		// in pixels, so we convert the errors in u and v (spx of the source) to pixels.
 
 		double rTop = c.bp.topRadius / 64.0, rBottom = c.bp.bottomRadius / 64.0;
 		double cx = c.bp.center.x * c.bp.size.w, cy = c.bp.center.y * c.bp.size.h;
@@ -239,8 +251,8 @@ bool WarpmapTest::circularWarpTest(std::ostream& output)
 				CoordF exact = exactCircular(c.bp, x, y);
 				CoordF pos = pMap->positionAt(x, y);
 
-				double tangential = uDiff(pos.x, exact.x, period) * std::abs(c.bp.sweep) / 180.0 * M_PI * r;
-				double radial = std::abs(pos.y - exact.y) * std::abs(rBottom - rTop);
+				double tangential = uDiff(pos.x, exact.x, period) / c_sourceSize.w * std::abs(c.bp.sweep) / 180.0 * M_PI * r;
+				double radial = std::abs(pos.y - exact.y) / c_sourceSize.h * std::abs(rBottom - rTop);
 				maxError = std::max(maxError, std::max(tangential, radial));
 			}
 
@@ -251,13 +263,21 @@ bool WarpmapTest::circularWarpTest(std::ostream& output)
 
 	// Explicit cell size overrides precision.
 
-	auto pWarp = CircularWarp::create(WGBP(CircularWarp, _.size = { 100, 100 }, _.topRadius = 10 * 64, _.bottomRadius = 50 * 64, _.cellSize = 7), pFactory);
+	auto pWarp = CircularWarp::create(WGBP(CircularWarp, _.sourceSize = c_sourceSize, _.size = { 100, 100 }, _.topRadius = 10 * 64, _.bottomRadius = 50 * 64, _.cellSize = 7), pFactory);
 	TEST_ASSERT(pWarp->refresh()->cellSize() == 7);
 
 	// Invalid blueprints.
 
-	TEST_ASSERT(CircularWarp::create(WGBP(CircularWarp, _.size = { 100, 100 }, _.sweep = 0.f), pFactory) == nullptr);
-	TEST_ASSERT(CircularWarp::create(WGBP(CircularWarp, _.size = { 0, 100 }), pFactory) == nullptr);
+	TEST_ASSERT(CircularWarp::create(WGBP(CircularWarp, _.sourceSize = c_sourceSize, _.size = { 100, 100 }, _.sweep = 0.f), pFactory) == nullptr);
+	TEST_ASSERT(CircularWarp::create(WGBP(CircularWarp, _.sourceSize = c_sourceSize, _.size = { 0, 100 }), pFactory) == nullptr);
+	TEST_ASSERT(CircularWarp::create(WGBP(CircularWarp, _.size = { 100, 100 }), pFactory) == nullptr);		// No source size.
+
+	// Equal radii have no band to map the source onto, the nodes are clamped far outside it.
+
+	auto pFlat = CircularWarp::create(WGBP(CircularWarp, _.sourceSize = c_sourceSize, _.size = { 40, 40 }, _.cellSize = 10), pFactory);
+	auto pFlatMap = pFlat->refresh();
+	for (int i = 0; i < pFlatMap->nodes().w * pFlatMap->nodes().h; i++)
+		TEST_ASSERT(pFlatMap->nodeData()[i].y == -Warpmap::maxNodeValue);
 
 	return true;
 }
@@ -268,7 +288,7 @@ bool WarpmapTest::circularWarpRefreshTest(std::ostream& output)
 {
 	auto pFactory = SoftWarpmapFactory::create();
 
-	auto pWarp = CircularWarp::create(WGBP(CircularWarp, _.size = { 100, 100 }, _.topRadius = 20 * 64, _.bottomRadius = 50 * 64, _.cellSize = 10), pFactory);
+	auto pWarp = CircularWarp::create(WGBP(CircularWarp, _.sourceSize = c_sourceSize, _.size = { 100, 100 }, _.topRadius = 20 * 64, _.bottomRadius = 50 * 64, _.cellSize = 10), pFactory);
 
 	auto pMap1 = pWarp->refresh();
 	TEST_ASSERT(pWarp->refresh() == pMap1);								// Nothing changed.
@@ -279,12 +299,19 @@ bool WarpmapTest::circularWarpRefreshTest(std::ostream& output)
 	TEST_ASSERT(pWarp->setAngles(90.f, 180.f));
 	auto pMap2 = pWarp->refresh();
 	TEST_ASSERT(pMap2 == pMap1);
-	TEST_ASSERT(near(pMap2->uPeriod(), 2.0, 1e-6));
+	TEST_ASSERT(pMap2->uPeriod() == c_sourceSize.w * 2);
 
 	// Point straight right of center at radius 25 is u = 0 (90 degrees), v = 0.
 
 	CoordF pos = pMap2->positionAt(75, 50);
-	TEST_ASSERT(near(pos.x, 0.0, 1e-4) && near(pos.y, 0.0, 1e-4));
+	TEST_ASSERT(near(pos.x, 0.0, 1.0) && near(pos.y, 0.0, 1.0));
+
+	// Source size scales the nodes and the period.
+
+	TEST_ASSERT(pWarp->setSourceSize({ c_sourceSize.w / 2, c_sourceSize.h }));
+	TEST_ASSERT(pWarp->refresh() == pMap1);
+	TEST_ASSERT(pMap2->uPeriod() == c_sourceSize.w);
+	TEST_ASSERT(pWarp->setSourceSize(c_sourceSize));
 
 	// Size and cell size give a new Warpmap.
 
@@ -302,5 +329,6 @@ bool WarpmapTest::circularWarpRefreshTest(std::ostream& output)
 	TEST_ASSERT(!pWarp->setRadii(10 * 64, 10 * 64));
 	TEST_ASSERT(!pWarp->setAngles(0.f, 0.f));
 	TEST_ASSERT(!pWarp->setSize({ 0, 10 }));
+	TEST_ASSERT(!pWarp->setSourceSize({ 0, 10 }));
 	return true;
 }

@@ -42,12 +42,12 @@ wg_obj wg_createWarpmap(wg_obj factory, const wg_warpmapBP* pCBP)
 	return (wg_obj) static_cast<Object*>(p.rawPtr());
 }
 
-wg_obj wg_createWarpmapFromNodes(wg_obj factory, const wg_warpmapBP* pCBP, const wg_coordF* pNodes, int pitch)
+wg_obj wg_createWarpmapFromNodes(wg_obj factory, const wg_warpmapBP* pCBP, const wg_coordSPX* pNodes, int pitch)
 {
 	Warpmap::Blueprint	cppBP;
 	convertWarpmapBlueprint(&cppBP, pCBP);
 
-	auto p = getPtr(factory)->createWarpmap(cppBP, (const CoordF*) pNodes, pitch);
+	auto p = getPtr(factory)->createWarpmap(cppBP, (const CoordSPX*) pNodes, pitch);
 	if (!p)
 		return nullptr;
 

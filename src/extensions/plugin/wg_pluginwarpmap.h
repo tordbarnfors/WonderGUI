@@ -56,7 +56,7 @@ namespace wg
 
 		//.____ Content _______________________________________________________
 
-		bool			setPeriods( float uPeriod, float vPeriod ) override;
+		bool			setPeriods( spx uPeriod, spx vPeriod ) override;
 
 		//.____ Misc _________________________________________________________
 

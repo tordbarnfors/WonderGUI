@@ -1128,8 +1128,8 @@ namespace wg
 			uint16_t	objectId;
 			SizeI		size;
 			uint16_t	cellSize;
-			float		uPeriod;
-			float		vPeriod;
+			int			uPeriod;
+			int			vPeriod;
 
 			decoder >> objectId;
 			decoder >> size;
@@ -1184,11 +1184,14 @@ namespace wg
 				break;
 			}
 
-			int memAllocated = sizeof(CoordF) * nNodes;
-			auto * pNodes = (CoordF*) GfxBase::memStackAlloc(memAllocated);
+			int memAllocated = sizeof(CoordSPX) * nNodes;
+			auto * pNodes = (CoordSPX*) GfxBase::memStackAlloc(memAllocated);
 
 			for( int i = 0 ; i < nNodes ; i++ )
-				decoder >> pNodes[i];
+			{
+				decoder >> pNodes[i].x;
+				decoder >> pNodes[i].y;
+			}
 
 			static_cast<Warpmap*>(m_vObjects[objectId].rawPtr())->importNodes({ column, row, nNodes, 1 }, pNodes);
 
@@ -1199,8 +1202,8 @@ namespace wg
 		case GfxStream::ChunkId::SetWarpmapPeriods:
 		{
 			uint16_t	objectId;
-			float		uPeriod;
-			float		vPeriod;
+			int			uPeriod;
+			int			vPeriod;
 
 			decoder >> objectId;
 			decoder >> uPeriod;

@@ -3456,7 +3456,7 @@ namespace wg
 
 		*m_pExtrasPtr++ = { float(dest.x), float(dest.y), float(pWarpmap->cellSize()), pEdgemap ? float(pEdgemap->m_nbRenderSegments - 1) : 0.f };
 		*m_pExtrasPtr++ = { float(warpSize.w), float(warpSize.h), srcW, srcH };
-		*m_pExtrasPtr++ = { params.sourceOffset.x / 64.f, params.sourceOffset.y / 64.f, pWarpmap->uPeriod() * srcW, pWarpmap->vPeriod() * srcH };
+		*m_pExtrasPtr++ = { params.sourceOffset.x / 64.f, params.sourceOffset.y / 64.f, pWarpmap->uPeriod() / 64.f, pWarpmap->vPeriod() / 64.f };
 
 		if (pEdgemap)
 			*m_pExtrasPtr++ = { float(pEdgemap->m_nbSegments - 1), float(pEdgemap->_flatColorsOfs()), float(pEdgemap->_tintTableOfs()), float(pEdgemap->_rawSamplesOfs()) };

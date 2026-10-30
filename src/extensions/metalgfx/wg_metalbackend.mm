@@ -1634,8 +1634,8 @@ void MetalBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, i
 
 				*pExtrasMTL++ = params.sourceOffset.x / 64.f;
 				*pExtrasMTL++ = params.sourceOffset.y / 64.f;
-				*pExtrasMTL++ = pWarpmap->uPeriod() * srcW;
-				*pExtrasMTL++ = pWarpmap->vPeriod() * srcH;
+				*pExtrasMTL++ = pWarpmap->uPeriod() / 64.f;
+				*pExtrasMTL++ = pWarpmap->vPeriod() / 64.f;
 
 				if( pEdgemap )
 				{

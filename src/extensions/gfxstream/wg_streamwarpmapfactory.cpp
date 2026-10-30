@@ -40,7 +40,7 @@ namespace wg
 		return StreamWarpmap::create(m_pEncoder, blueprint);
 	}
 
-	Warpmap_p StreamWarpmapFactory::createWarpmap( const Warpmap::Blueprint& blueprint, const CoordF * pNodes, int pitch )
+	Warpmap_p StreamWarpmapFactory::createWarpmap( const Warpmap::Blueprint& blueprint, const CoordSPX * pNodes, int pitch )
 	{
 		return StreamWarpmap::create(m_pEncoder, blueprint, pNodes, pitch);
 	}

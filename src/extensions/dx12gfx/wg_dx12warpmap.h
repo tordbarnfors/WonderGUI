@@ -42,7 +42,8 @@ namespace wg
 	 *
 	 * The cells are kept in a buffer for the shaders, two float4 entries per cell, row by row:
 	 * the top-left and top-right corners, then the bottom-left and bottom-right corners, as
-	 * given by cellCorners(), so already moved by whole periods to be close to the top-left one.
+	 * given by cellCorners(), so already moved by whole periods to be close to the top-left one,
+	 * converted from spx to pixels of the source.
 	 *
 	 * Needs the device set by DX12Backend::setDevice().
 	 */
@@ -56,7 +57,7 @@ namespace wg
 		//.____ Creation __________________________________________
 
 		static DX12Warpmap_p	create(const Blueprint& blueprint);
-		static DX12Warpmap_p	create(const Blueprint& blueprint, const CoordF * pNodes, int pitch = 0);
+		static DX12Warpmap_p	create(const Blueprint& blueprint, const CoordSPX * pNodes, int pitch = 0);
 
 		//.____ Identification __________________________________________
 

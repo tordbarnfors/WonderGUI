@@ -59,11 +59,11 @@ namespace wg
 		return pWarpmap;
 	}
 
-	Warpmap_p PluginWarpmapFactory::createWarpmap( const Warpmap::Blueprint& blueprint, const CoordF * pNodes, int pitch )
+	Warpmap_p PluginWarpmapFactory::createWarpmap( const Warpmap::Blueprint& blueprint, const CoordSPX * pNodes, int pitch )
 	{
 		wg_warpmapBP cBP = convertBlueprint(blueprint);
 
-		auto obj = PluginCalls::warpmapFactory->createWarpmapFromNodes(m_cFactory, &cBP, (const wg_coordF*) pNodes, pitch);
+		auto obj = PluginCalls::warpmapFactory->createWarpmapFromNodes(m_cFactory, &cBP, (const wg_coordSPX*) pNodes, pitch);
 		if (!obj)
 			return nullptr;
 

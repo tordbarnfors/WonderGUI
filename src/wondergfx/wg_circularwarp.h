@@ -41,6 +41,9 @@ namespace wg
 	 * source), either of which can be the larger. With a sweep of 360 degrees the source wraps
 	 * around and an edgemap or surface that is tiling joins seamlessly. A smaller sweep gives an arc.
 	 *
+	 * The Warpmap is made for a source of sourceSize, which is the size of the edgemap or of the
+	 * source rectangle of the blit, in spx.
+	 *
 	 * A radius of 0 gives a disc. The angle is undefined in the center, so only use a disc with
 	 * content that doesn't change from left to right in the cells closest to the center. Tints that
 	 * vary horizontally will look blocky there. A flat color is fine, as long as no edge comes within
@@ -67,6 +70,7 @@ namespace wg
 			Finalizer_p			finalizer = nullptr;
 			float				precision = 0.25f;				// Max position error in pixels when cellSize is calculated.
 			SizeI				size;							// Mandatory. Size of the Warpmap in pixels.
+			SizeSPX				sourceSize;						// Mandatory. Size of the source (edgemap or source rectangle) in spx.
 			float				startAngle = 0.f;				// Degrees. Where the left side of the source is placed. 0 = up, increasing clockwise.
 			float				sweep = 360.f;					// Degrees covered by the width of the source. Negative goes counter clockwise.
 			spx					topRadius = 0;					// Radius the top of the source is placed at.
@@ -85,6 +89,9 @@ namespace wg
 
 		bool		setSize( SizeI size );
 		SizeI		size() const { return m_size; }
+
+		bool		setSourceSize( SizeSPX sourceSize );
+		SizeSPX		sourceSize() const { return m_sourceSize; }
 
 		bool		setCenter( CoordF center );
 		CoordF		center() const { return m_center; }
@@ -119,9 +126,11 @@ namespace wg
 		virtual ~CircularWarp();
 
 		int			_calcCellSize() const;
-		void		_generateNodes( CoordF * pNodes, SizeI nodes, int cellSize ) const;
+		spx			_uPeriod() const;
+		void		_generateNodes( CoordSPX * pNodes, SizeI nodes, int cellSize ) const;
 
 		SizeI		m_size;
+		SizeSPX		m_sourceSize;
 		CoordF		m_center;
 		spx			m_topRadius;
 		spx			m_bottomRadius;

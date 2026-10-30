@@ -32,7 +32,7 @@ extern "C" {
 	//.____ Misc _______________________________________________________
 
 	WG_EXPORT wg_obj wg_createWarpmap( wg_obj factory, const wg_warpmapBP* blueprint );
-	WG_EXPORT wg_obj wg_createWarpmapFromNodes( wg_obj factory, const wg_warpmapBP* blueprint, const wg_coordF* pNodes, int pitch );
+	WG_EXPORT wg_obj wg_createWarpmapFromNodes( wg_obj factory, const wg_warpmapBP* blueprint, const wg_coordSPX* pNodes, int pitch );
 
 #ifdef __cplusplus
 }

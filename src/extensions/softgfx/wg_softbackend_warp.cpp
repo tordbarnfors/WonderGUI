@@ -25,8 +25,8 @@
 	and LinearBackend, following the definition in Warpmap.
 
 	The Warpmap is processed one row of cells at a time. The corners of each cell are converted
-	to fixed point (pixels of the source with 16 binals), which is the only floating point, and the
-	cell is classified from the bounding box of its corners:
+	from spx to pixels of the source with 16 binals, and the cell is classified from the bounding
+	box of its corners:
 
 	- Outside: no part of the cell reaches into the source. Nothing is drawn.
 
@@ -286,14 +286,12 @@ namespace wg
 		if (w.size[0] <= 0 || w.size[1] <= 0)
 			return false;
 
-		float periods[2] = { pWarpmap->uPeriod(), pWarpmap->vPeriod() };
+		int64_t periods[2] = { int64_t(pWarpmap->uPeriod()) << 10, int64_t(pWarpmap->vPeriod()) << 10 };
 		int64_t offsets[2] = { int64_t(params.sourceOffset.x) << 10, int64_t(params.sourceOffset.y) << 10 };
 
 		for (int a = 0; a < 2; a++)
 		{
-			int64_t period = 0;
-			if (periods[a] > 0.f)
-				period = std::max(int64_t(1), int64_t(std::min(float(c_maxPos), periods[a] * float(w.size[a]))));
+			int64_t period = std::clamp(periods[a], int64_t(0), c_maxPos);
 
 			w.period[a] = period;
 			w.inside[a] = period > 0 ? std::min(w.size[a], period) : w.size[a];
@@ -467,16 +465,13 @@ namespace wg
 	//____ _setupWarpCells() ____________________________________________________
 	/*
 		Converts the corners of cells firstColumn -> firstColumn + nColumns of a row of cells to
-		fixed point and classifies the cells, see top of file.
+		16 binals and classifies the cells, see top of file.
 	*/
 
 	void SoftBackend::_setupWarpCells(int row, int firstColumn, int nColumns)
 	{
 		WarpSetup& w = m_warp;
 		SoftWarpmap* pMap = w.pWarpmap;
-
-		const float scale[2] = { float(w.size[0]), float(w.size[1]) };
-		const float limit = float(c_maxPos);
 
 		const int cellH = pMap->nodeY(row + 1) - pMap->nodeY(row);
 
@@ -488,7 +483,7 @@ namespace wg
 			cell.x = pMap->nodeX(column);
 			cell.w = pMap->nodeX(column + 1) - cell.x;
 
-			CoordF corners[4];
+			CoordSPX corners[4];
 			pMap->cellCorners(column, row, corners);
 
 			int64_t lo[2], hi[2], copy[2];
@@ -500,8 +495,8 @@ namespace wg
 
 				for (int k = 0; k < 4; k++)
 				{
-					float f = (a == 0 ? corners[k].x : corners[k].y) * scale[a];
-					v[k] = int64_t(std::clamp(f, -limit, limit)) + w.offset[a];
+					int64_t pos = int64_t(a == 0 ? corners[k].x : corners[k].y) << 10;
+					v[k] = std::clamp(pos, -c_maxPos, c_maxPos) + w.offset[a];
 				}
 
 				// Top-left corner into the period, the others follow.

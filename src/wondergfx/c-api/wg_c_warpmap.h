@@ -36,8 +36,8 @@ extern "C" {
 	{
 		int					cellSize;				// Pixels between nodes. 0 = default (16).
 		wg_sizeI			size;					// Mandatory. Size in pixels.
-		float				uPeriod;				// 0 = not periodic.
-		float				vPeriod;				// 0 = not periodic.
+		wg_spx				uPeriod;				// In spx of the source, 0 = not periodic.
+		wg_spx				vPeriod;				// In spx of the source, 0 = not periodic.
 	} wg_warpmapBP;
 
 	//.____ Geometry ______________________________________________________
@@ -50,16 +50,18 @@ extern "C" {
 
 	//.____ Content _______________________________________________________
 
-	WG_EXPORT int			wg_setWarpmapPeriods(wg_obj warpmap, float uPeriod, float vPeriod);
-	WG_EXPORT float			wg_warpmapUPeriod(wg_obj warpmap);
-	WG_EXPORT float			wg_warpmapVPeriod(wg_obj warpmap);
+	WG_EXPORT int			wg_setWarpmapPeriods(wg_obj warpmap, wg_spx uPeriod, wg_spx vPeriod);
+	WG_EXPORT wg_spx			wg_warpmapUPeriod(wg_obj warpmap);
+	WG_EXPORT wg_spx			wg_warpmapVPeriod(wg_obj warpmap);
 
 	// Region is given in nodes, pitch is nodes between rows in source/destination, 0 meaning region width.
 
-	WG_EXPORT int			wg_importWarpmapNodes(wg_obj warpmap, const wg_rectI* region, const wg_coordF* pSource, int pitch);
-	WG_EXPORT int			wg_exportWarpmapNodes(wg_obj warpmap, const wg_rectI* region, wg_coordF* pDestination, int pitch);
+	WG_EXPORT int			wg_importWarpmapNodes(wg_obj warpmap, const wg_rectI* region, const wg_coordSPX* pSource, int pitch);
+	WG_EXPORT int			wg_exportWarpmapNodes(wg_obj warpmap, const wg_rectI* region, wg_coordSPX* pDestination, int pitch);
 
 	//.____ Misc __________________________________________________________
+
+	// Position at x,y in spx of the source, with fractions.
 
 	WG_EXPORT wg_coordF		wg_warpmapPositionAt(wg_obj warpmap, double x, double y);
 

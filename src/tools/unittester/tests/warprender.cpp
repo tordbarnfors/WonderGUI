@@ -253,10 +253,17 @@ namespace
 														pixels.data(), PixelFormat::ARGB_8);
 	}
 
-	Warpmap_p makeRing(GfxDevice* pDevice, int size, float sweep = 360.f, float startAngle = 0.f)
+	// Sizes of the sources the Warpmaps are made for: edgemaps, surfaces and the source rectangles used.
+
+	const SizeSPX c_edgemapSource = { 48 * 64, 24 * 64 };
+	const SizeSPX c_surfaceSource = { 32 * 64, 16 * 64 };
+	const SizeSPX c_rectSource = { 16 * 64, 16 * 64 };
+
+	Warpmap_p makeRing(GfxDevice* pDevice, int size, SizeSPX source, float sweep = 360.f, float startAngle = 0.f)
 	{
 		return CircularWarp::create(WGBP(CircularWarp,
 											_.size = { size, size },
+											_.sourceSize = source,
 											_.topRadius = (size / 2 - 2) * 64,
 											_.bottomRadius = (size / 4) * 64,
 											_.startAngle = startAngle,
@@ -265,12 +272,12 @@ namespace
 
 	// A smooth, non-periodic warp of a rectangle, partly outside the source.
 
-	Warpmap_p makeWave(GfxDevice* pDevice, int size)
+	Warpmap_p makeWave(GfxDevice* pDevice, int size, SizeSPX source)
 	{
 		auto pWarpmap = pDevice->warpmapFactory()->createWarpmap(WGBP(Warpmap, _.size = { size, size }, _.cellSize = 8));
 
 		SizeI n = pWarpmap->nodes();
-		std::vector<CoordF> nodes(n.w * n.h);
+		std::vector<CoordSPX> nodes(n.w * n.h);
 
 		for (int r = 0; r < n.h; r++)
 		{
@@ -278,7 +285,9 @@ namespace
 			{
 				float x = pWarpmap->nodeX(c) / float(size);
 				float y = pWarpmap->nodeY(r) / float(size);
-				nodes[r * n.w + c] = { (x - 0.5f) * 1.3f + 0.5f + 0.1f * std::sin(y * 9.f), (y - 0.5f) * 1.25f + 0.5f + 0.08f * std::sin(x * 7.f) };
+				float u = (x - 0.5f) * 1.3f + 0.5f + 0.1f * std::sin(y * 9.f);
+				float v = (y - 0.5f) * 1.25f + 0.5f + 0.08f * std::sin(x * 7.f);
+				nodes[r * n.w + c] = { spx(std::lround(u * source.w)), spx(std::lround(v * source.h)) };
 			}
 		}
 
@@ -292,23 +301,23 @@ namespace
 	{
 		auto pEdgemap = makeEdgemap(pDevice, true);
 		auto pTinted = makeEdgemap(pDevice, false, true);
-		auto pRing = makeRing(pDevice, 44);
-		auto pArc = makeRing(pDevice, 44, 270.f, -135.f);
-		auto pWave = makeWave(pDevice, 44);
+		auto pRing = makeRing(pDevice, 44, c_edgemapSource);
+		auto pArc = makeRing(pDevice, 44, c_edgemapSource, 270.f, -135.f);
+		auto pWave = makeWave(pDevice, 44, c_edgemapSource);
 
 		pDevice->warpDrawEdgemap({ 2 * 64, 2 * 64 }, pRing, pEdgemap);
 		pDevice->warpDrawEdgemap({ 50 * 64, 2 * 64 }, pArc, pEdgemap, { 11 * 64, 3 * 64 });
 		pDevice->warpDrawEdgemap({ 98 * 64, 2 * 64 }, pWave, pTinted);
 
 		pDevice->setBlitSource(makeSurface(pDevice, true, SampleMethod::Bilinear));
-		pDevice->warpBlit({ 2 * 64, 50 * 64 }, pRing);
+		pDevice->warpBlit({ 2 * 64, 50 * 64 }, makeRing(pDevice, 44, c_surfaceSource));
 
 		pDevice->setTint({ 50 * 64, 50 * 64, 44 * 64, 44 * 64 }, Tint::create(HiColor(4096, 4096, 4096, 4096), HiColor(4096, 1000, 1000, 2000)));
-		pDevice->warpBlit({ 50 * 64, 50 * 64 }, pArc, { 8 * 64, 0, 16 * 64, 16 * 64 }, { 5 * 64, 0 });
+		pDevice->warpBlit({ 50 * 64, 50 * 64 }, makeRing(pDevice, 44, c_rectSource, 270.f, -135.f), { 8 * 64, 0, 16 * 64, 16 * 64 }, { 5 * 64, 0 });
 		pDevice->clearTint();
 
 		pDevice->setBlitSource(makeSurface(pDevice, false, SampleMethod::Nearest));
-		pDevice->warpBlit({ 98 * 64, 50 * 64 }, pWave);
+		pDevice->warpBlit({ 98 * 64, 50 * 64 }, makeWave(pDevice, 44, c_surfaceSource));
 	}
 
 	// The default Warpmap: straight onto the source.
@@ -438,8 +447,9 @@ bool WarpRenderTest::blendModesTest(std::ostream& output)
 								BlendMode::Invert, BlendMode::Min, BlendMode::Max, BlendMode::Morph, BlendMode::BlendFixedColor };
 
 	auto pEdgemap = makeEdgemap(pRes, true);
-	auto pRing = makeRing(pRes, 40);
-	auto pWave = makeWave(pRes, 40);
+	auto pRing = makeRing(pRes, 40, c_edgemapSource);
+	auto pBlitRing = makeRing(pRes, 40, c_surfaceSource);
+	auto pWave = makeWave(pRes, 40, c_surfaceSource);
 	auto pSurface = makeSurface(pRes, true, SampleMethod::Bilinear);
 
 	for (BlendMode mode : modes)
@@ -461,7 +471,7 @@ bool WarpRenderTest::blendModesTest(std::ostream& output)
 			pDevice->warpDrawEdgemap({ 4 * 64, 4 * 64 }, pRing, pEdgemap);
 			pDevice->setBlitSource(pSurface);
 			pDevice->warpBlit({ 60 * 64, 4 * 64 }, pWave);
-			pDevice->warpBlit({ 110 * 64, 4 * 64 }, pRing);
+			pDevice->warpBlit({ 110 * 64, 4 * 64 }, pBlitRing);
 		};
 
 		std::string what = std::string("BlendMode::") + toString(mode);
@@ -489,7 +499,8 @@ bool WarpRenderTest::offsetPeriodTest(std::ostream& output)
 	auto pRes = resourceDevice();
 
 	auto pEdgemap = makeEdgemap(pRes, true);
-	auto pArc = makeRing(pRes, 44, 270.f, -135.f);
+	auto pArc = makeRing(pRes, 44, c_edgemapSource, 270.f, -135.f);
+	auto pBlitArc = makeRing(pRes, 44, { 24 * 64, 16 * 64 }, 270.f, -135.f);
 	auto pSurface = makeSurface(pRes, true, SampleMethod::Bilinear);
 
 	// Edgemap is 48 pixels wide, period is 360 / 270 of that: 64 pixels. Source rectangle of the
@@ -501,7 +512,7 @@ bool WarpRenderTest::offsetPeriodTest(std::ostream& output)
 		{
 			pDevice->warpDrawEdgemap({ 2 * 64, 2 * 64 }, pArc, pEdgemap, { edgemapOffset + 7 * 64, 0 });
 			pDevice->setBlitSource(pSurface);
-			pDevice->warpBlit({ 60 * 64, 2 * 64 }, pArc, { 4 * 64, 0, 24 * 64, 16 * 64 }, { blitOffset + 3 * 64, 0 });
+			pDevice->warpBlit({ 60 * 64, 2 * 64 }, pBlitArc, { 4 * 64, 0, 24 * 64, 16 * 64 }, { blitOffset + 3 * 64, 0 });
 		};
 	};
 
@@ -587,8 +598,8 @@ bool WarpRenderTest::streamTest(std::ostream& output)
 
 		// Periods changed after creation, sent before the nodes they normalize.
 
-		auto pWarpmap = makeRing(pDevice, 40, 270.f, -135.f);
-		pWarpmap->setPeriods(2.f, 0.f);
+		auto pWarpmap = makeRing(pDevice, 40, c_edgemapSource, 270.f, -135.f);
+		pWarpmap->setPeriods(c_edgemapSource.w * 2, 0);
 		pDevice->warpDrawEdgemap({ 64 * 110, 64 * 50 }, pWarpmap, makeEdgemap(pDevice, true), { 64 * 30, 0 });
 	};
 
@@ -642,20 +653,24 @@ bool WarpRenderTest::cApiTest(std::ostream& output)
 	const int cellSize = 6;
 	const SizeI nodes = { (warpSize.w + cellSize - 1) / cellSize + 1, (warpSize.h + cellSize - 1) / cellSize + 1 };
 
-	std::vector<CoordF> nodeData(nodes.w * nodes.h);
+	std::vector<CoordSPX> nodeData(nodes.w * nodes.h);
 	for (int r = 0; r < nodes.h; r++)
 		for (int c = 0; c < nodes.w; c++)
 		{
 			float x = std::min(c * cellSize, warpSize.w) / float(warpSize.w);
 			float y = std::min(r * cellSize, warpSize.h) / float(warpSize.h);
-			nodeData[r * nodes.w + c] = { x * 1.1f - 0.05f + 0.07f * std::sin(y * 6.f), y + 0.05f * std::sin(x * 5.f) };
+			float u = x * 1.1f - 0.05f + 0.07f * std::sin(y * 6.f);
+			float v = y + 0.05f * std::sin(x * 5.f);
+			nodeData[r * nodes.w + c] = { spx(std::lround(u * c_surfaceSource.w)), spx(std::lround(v * c_surfaceSource.h)) };
 		}
+
+	const spx bentPeriod = c_surfaceSource.w * 3 / 2;
 
 	auto cpp = [&](GfxDevice* pDevice)
 	{
-		auto pRing = CircularWarp::create(WGBP(CircularWarp, _.size = { 44, 44 }, _.topRadius = 21 * 64, _.bottomRadius = 10 * 64,
+		auto pRing = CircularWarp::create(WGBP(CircularWarp, _.size = { 44, 44 }, _.sourceSize = c_edgemapSource, _.topRadius = 21 * 64, _.bottomRadius = 10 * 64,
 											   _.startAngle = 30.f, _.sweep = 300.f), SoftWarpmapFactory::create());
-		auto pBent = SoftWarpmapFactory::create()->createWarpmap(WGBP(Warpmap, _.size = warpSize, _.cellSize = cellSize, _.uPeriod = 1.5f), nodeData.data());
+		auto pBent = SoftWarpmapFactory::create()->createWarpmap(WGBP(Warpmap, _.size = warpSize, _.cellSize = cellSize, _.uPeriod = bentPeriod), nodeData.data());
 
 		pDevice->warpDrawEdgemap({ 64 * 3, 64 * 4 }, pRing->refresh(), pEdgemap, { 64 * 5, 0 });
 		pDevice->setBlitSource(pSurface);
@@ -670,6 +685,7 @@ bool WarpRenderTest::cApiTest(std::ostream& output)
 
 		wg_circularWarpBP ringBP = {};
 		ringBP.size = { 44, 44 };
+		ringBP.sourceSize = { c_edgemapSource.w, c_edgemapSource.h };
 		ringBP.center = { 0.5f, 0.5f };
 		ringBP.topRadius = 21 * 64;
 		ringBP.bottomRadius = 10 * 64;
@@ -681,9 +697,9 @@ bool WarpRenderTest::cApiTest(std::ostream& output)
 		wg_warpmapBP bentBP = {};
 		bentBP.size = { warpSize.w, warpSize.h };
 		bentBP.cellSize = cellSize;
-		bentBP.uPeriod = 1.5f;
+		bentBP.uPeriod = bentPeriod;
 
-		wg_obj bent = wg_createWarpmapFromNodes(factory, &bentBP, (const wg_coordF*) nodeData.data(), 0);
+		wg_obj bent = wg_createWarpmapFromNodes(factory, &bentBP, (const wg_coordSPX*) nodeData.data(), 0);
 
 		wg_warpDrawEdgemap(device, { 64 * 3, 64 * 4 }, wg_refreshCircularWarp(ring), (wg_obj) static_cast<Object*>(pEdgemap.rawPtr()), { 64 * 5, 0 });
 		pDevice->setBlitSource(pSurface);
@@ -714,7 +730,9 @@ bool WarpRenderTest::seamColorTest(std::ostream& output)
 {
 	auto pRes = resourceDevice();
 
-	auto pArc = makeRing(pRes, 44, 270.f, -135.f);
+	auto pArc = makeRing(pRes, 44, c_surfaceSource, 270.f, -135.f);
+	auto pRectArc = makeRing(pRes, 44, c_rectSource, 270.f, -135.f);
+	auto pEdgemapArc = makeRing(pRes, 44, c_edgemapSource, 270.f, -135.f);
 	auto pTiling = makeSurface(pRes, true, SampleMethod::Bilinear);
 	auto pClamped = makeSurface(pRes, false, SampleMethod::Bilinear);
 
@@ -735,13 +753,13 @@ bool WarpRenderTest::seamColorTest(std::ostream& output)
 	{
 		pDevice->setBlitSource(pTiling);
 		pDevice->warpBlit({ 2 * 64, 2 * 64 }, pArc);
-		pDevice->warpBlit({ 50 * 64, 2 * 64 }, pArc, { 8 * 64, 0, 16 * 64, 16 * 64 });
+		pDevice->warpBlit({ 50 * 64, 2 * 64 }, pRectArc, { 8 * 64, 0, 16 * 64, 16 * 64 });
 
 		pDevice->setBlitSource(pClamped);
 		pDevice->warpBlit({ 98 * 64, 2 * 64 }, pArc);
 
-		pDevice->warpDrawEdgemap({ 2 * 64, 50 * 64 }, pArc, pEdgemap);
-		pDevice->warpDrawEdgemap({ 50 * 64, 50 * 64 }, pArc, pEdgemap, { 7 * 64, 0 });
+		pDevice->warpDrawEdgemap({ 2 * 64, 50 * 64 }, pEdgemapArc, pEdgemap);
+		pDevice->warpDrawEdgemap({ 50 * 64, 50 * 64 }, pEdgemapArc, pEdgemap, { 7 * 64, 0 });
 	};
 
 	return compare(output, "Seams", render(Backend::Soft, scene), "SoftBackend", render(Backend::Reference, scene), "ReferenceBackend", 6, 4, 12);
@@ -788,8 +806,8 @@ bool WarpRenderTest::sourceRectTest(std::ostream& output)
 		}
 	}
 
-	auto pArc = makeRing(pRes, 44, 270.f, -135.f);
-	auto pWave = makeWave(pRes, 44);
+	auto pArc = makeRing(pRes, 44, { w * 64, h * 64 }, 270.f, -135.f);
+	auto pWave = makeWave(pRes, 44, { w * 64, h * 64 });
 
 	for (SampleMethod method : { SampleMethod::Bilinear, SampleMethod::Nearest })
 	{
