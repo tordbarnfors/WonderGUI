@@ -109,6 +109,8 @@ set( SOURCES
 	source/surface/wax_surfacewriter.h
 	source/warp/wax_circularwarp.cpp
 	source/warp/wax_circularwarp.h
+	source/warp/wax_roundedrectwarp.cpp
+	source/warp/wax_roundedrectwarp.h
 	source/warp/wax_warpgenerator.cpp
 	source/warp/wax_warpgenerator.h
 	source/warp/wax_warpmap.cpp
@@ -130,6 +132,8 @@ set( SOURCES
 	c-api/wax_c_canvaslayers.h
 	c-api/wax_c_circularwarp.cpp
 	c-api/wax_c_circularwarp.h
+	c-api/wax_c_roundedrectwarp.cpp
+	c-api/wax_c_roundedrectwarp.h
 	c-api/wax_c_color.cpp
 	c-api/wax_c_color.h
 	c-api/wax_c_edgemap.cpp

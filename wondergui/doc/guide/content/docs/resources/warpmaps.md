@@ -61,9 +61,30 @@ The cell size decides how closely the Warpmap follows the circle and is calculat
 
 
 
+
+## RoundedRectWarp
+
+RoundedRectWarp makes and keeps a Warpmap that bends the source around the outline of a rounded rectangle: *rect* with corners of *cornerRadius*. The width of the source goes along the outline, clockwise from *start* and covering *sweep* of it, both as parts of the whole outline with 0 at the middle of the top side. Its height goes from *topDistance* to *bottomDistance*, distances from the outline that are positive outwards.
+
+```c++
+	auto pFocusRing = RoundedRectWarp::create( WGBP(RoundedRectWarp,
+										_.size = { 140, 60 },
+										_.sourceSize = pEdgemap->pixelSize() * 64,
+										_.rect = { 10*64, 10*64, 120*64, 40*64 },
+										_.cornerRadius = 8*64,
+										_.topDistance = 3*64,
+										_.bottomDistance = -1*64 ), pDevice->warpmapFactory() );
+
+	pDevice->warpDrawEdgemap( { 10*64, 10*64 }, pFocusRing->generate(), pEdgemap, { offset, 0 } );		// Scroll offset for marching ants.
+```
+
+Positions along the outline are those of the nearest point on it. The source keeps its width along the straight sides and is spread or squeezed around the corners, more the further from the outline, so placing the outline in the middle of the band gives the most even result. Corners stay round on the outside. On the inside they become mitered like a picture frame where the band goes deeper than *cornerRadius*, and since a Warpmap interpolates across the miter, that takes small cells to look clean. *cornerRadius* is limited to half the shorter side of *rect*, so a square with corners of half its side is a circle.
+
+
+
 ## WarpGenerators
 
-CircularWarp is a WarpGenerator: it makes a Warpmap from a few settings and keeps it. Size, source size, cell size, precision and generate() are the same for all WarpGenerators.
+CircularWarp and RoundedRectWarp are WarpGenerators: they make a Warpmap from a few settings and keep it. Size, source size, cell size, precision and generate() are the same for all WarpGenerators.
 
 generate() updates the Warpmap after settings have changed and returns it. A Warpmap that is held elsewhere, such as by a draw that isn't rendered yet, is never changed: generate() then makes a new one, as it does when size or cell size has changed. So draw what generate() returns rather than keeping it, and one generator can be drawn several times with different settings within the same canvas update. Unless set, the cell size is calculated from *precision* and the shape, within 4 to 64 pixels.
 

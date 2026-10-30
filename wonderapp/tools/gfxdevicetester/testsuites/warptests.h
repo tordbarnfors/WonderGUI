@@ -2,6 +2,7 @@
 
 #include <wax_tint.h>
 #include <wax_circularwarp.h>
+#include <wax_roundedrectwarp.h>
 
 #include <cmath>
 #include <vector>
@@ -27,6 +28,7 @@ public:
 		addTest("Periodic V", &WarpTests::periodicV);
 		addTest("Identity", &WarpTests::identity);
 		addTest("BlendModes", &WarpTests::blendModes);
+		addTest("Rounded rects", &WarpTests::roundedRects);
 	}
 
 	bool init(GfxDevice * pDevice, const RectSPX& canvas, wapp::API * pAppAPI)
@@ -267,6 +269,32 @@ public:
 		}
 
 		pDevice->setBlendMode(BlendMode::Blend);
+		return true;
+	}
+
+	// RoundedRectWarps: a band across the outline, a band outside an outline with sharp corners, an
+	// arc and a band inside deeper than the corners, which are mitered.
+
+	bool roundedRects(GfxDevice * pDevice, const RectSPX& canvas)
+	{
+		auto pFactory = pDevice->warpmapFactory();
+		SizeSPX gauge = m_pGauge->pixelSize() * 64;
+		SizeSPX surface = m_pTiling->pixelSize() * 64;
+
+		auto pBand = RoundedRectWarp::create(WGBP(RoundedRectWarp, _.size = { 240, 240 }, _.sourceSize = gauge, _.rect = { 64 * 30, 64 * 50, 64 * 180, 64 * 140 },
+												  _.cornerRadius = 64 * 30, _.topDistance = 64 * 25, _.bottomDistance = -64 * 20), pFactory);
+		auto pSharp = RoundedRectWarp::create(WGBP(RoundedRectWarp, _.size = { 240, 240 }, _.sourceSize = surface, _.rect = { 64 * 30, 64 * 50, 64 * 180, 64 * 140 },
+												   _.topDistance = 64 * 24, _.bottomDistance = 0), pFactory);
+		auto pArc = RoundedRectWarp::create(WGBP(RoundedRectWarp, _.size = { 240, 240 }, _.sourceSize = gauge, _.rect = { 64 * 30, 64 * 50, 64 * 180, 64 * 140 },
+												 _.cornerRadius = 64 * 50, _.topDistance = 64 * 25, _.bottomDistance = -64 * 20, _.start = -0.3f, _.sweep = 0.75f), pFactory);
+		auto pFrame = RoundedRectWarp::create(WGBP(RoundedRectWarp, _.size = { 240, 240 }, _.sourceSize = surface, _.rect = { 64 * 10, 64 * 30, 64 * 220, 64 * 180 },
+												  _.cornerRadius = 64 * 8, _.topDistance = 0, _.bottomDistance = -64 * 36, _.cellSize = 4), pFactory);
+
+		pDevice->warpDrawEdgemap({ 64 * 10, 64 * 10 }, pBand->generate(), m_pGauge);
+		pDevice->setBlitSource(m_pTiling);
+		pDevice->warpBlit({ 64 * 260, 64 * 10 }, pSharp->generate());
+		pDevice->warpDrawEdgemap({ 64 * 10, 64 * 260 }, pArc->generate(), m_pTintedGauge);
+		pDevice->warpBlit({ 64 * 260, 64 * 260 }, pFrame->generate());
 		return true;
 	}
 

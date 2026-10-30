@@ -41,6 +41,7 @@
 #include <wax_blurbrush.h>
 #include <wax_canvaslayers.h>
 #include <wax_circularwarp.h>
+#include <wax_roundedrectwarp.h>
 #include <wax_color.h>
 #include <wax_compression.h>
 #include <wax_dummyfont.h>

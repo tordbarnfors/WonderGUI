@@ -390,6 +390,12 @@ namespace wg
 	using wax::RLECompressor;
 	using wax::RLEDecompressor;
 
+	//____ wax_roundedrectwarp.h __________________________________________________
+
+	using wax::RoundedRectWarp_p;
+	using wax::RoundedRectWarp_wp;
+	using wax::RoundedRectWarp;
+
 	//____ wax_spans.h _____________________________________________________________
 
 	using wax::Spans;

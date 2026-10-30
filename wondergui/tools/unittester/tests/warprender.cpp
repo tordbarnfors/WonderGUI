@@ -14,6 +14,7 @@
 #include <wax_softwarpmapfactory.h>
 #include <wax_softkernels_default.h>
 #include <wax_circularwarp.h>
+#include <wax_roundedrectwarp.h>
 #include <wax_c.h>
 #include <wax_c_object.h>
 #include <wax_c_softgfx.h>
@@ -391,6 +392,7 @@ WarpRenderTest::WarpRenderTest()
 	ADD_TEST(seamColorTest);
 	ADD_TEST(sourceRectTest);
 	ADD_TEST(generateTest);
+	ADD_TEST(roundedRectTest);
 }
 
 WarpRenderTest::~WarpRenderTest()
@@ -679,6 +681,10 @@ bool WarpRenderTest::cApiTest(std::ostream& output)
 		auto pBent = SoftWarpmapFactory::create()->createWarpmap(WGBP(Warpmap, _.size = warpSize, _.cellSize = cellSize, _.uPeriod = bentPeriod), nodeData.data());
 
 		pDevice->warpDrawEdgemap({ 64 * 3, 64 * 4 }, pRing->generate(), pEdgemap, { 64 * 5, 0 });
+
+		auto pFrame = RoundedRectWarp::create(WGBP(RoundedRectWarp, _.size = { 44, 40 }, _.sourceSize = c_edgemapSource, _.rect = { 64 * 6, 64 * 6, 64 * 32, 64 * 28 },
+												   _.cornerRadius = 64 * 7, _.topDistance = 64 * 5, _.bottomDistance = -64 * 4, _.start = 0.2f, _.sweep = -0.8f), SoftWarpmapFactory::create());
+		pDevice->warpDrawEdgemap({ 64 * 3, 64 * 50 }, pFrame->generate(), pEdgemap);
 		pDevice->setBlitSource(pSurface);
 		pDevice->warpBlit({ 64 * 60, 64 * 4 }, pBent, { 64 * 2, 64 * 3 });
 		pDevice->warpBlit({ 64 * 110, 64 * 4 }, pBent, { 64 * 4, 64 * 2, 64 * 20, 64 * 12 }, { 0, 0 });
@@ -708,6 +714,20 @@ bool WarpRenderTest::cApiTest(std::ostream& output)
 		wax_obj bent = wax_createWarpmapFromNodes(factory, &bentBP, (const wax_coordSPX*) nodeData.data(), 0);
 
 		wax_warpDrawEdgemap(device, { 64 * 3, 64 * 4 }, wax_generateWarpGenerator(ring), (wax_obj) static_cast<Object*>(pEdgemap.rawPtr()), { 64 * 5, 0 });
+
+		wax_roundedRectWarpBP frameBP = {};
+		frameBP.size = { 44, 40 };
+		frameBP.sourceSize = { c_edgemapSource.w, c_edgemapSource.h };
+		frameBP.rect = { 64 * 6, 64 * 6, 64 * 32, 64 * 28 };
+		frameBP.cornerRadius = 64 * 7;
+		frameBP.topDistance = 64 * 5;
+		frameBP.bottomDistance = -64 * 4;
+		frameBP.start = 0.2f;
+		frameBP.sweep = -0.8f;
+
+		wax_obj frame = wax_createRoundedRectWarp(&frameBP, factory);
+		wax_warpDrawEdgemap(device, { 64 * 3, 64 * 50 }, wax_generateWarpGenerator(frame), (wax_obj) static_cast<Object*>(pEdgemap.rawPtr()), { 0, 0 });
+		wax_release(frame);
 		pDevice->setBlitSource(pSurface);
 		wax_warpBlit(device, { 64 * 60, 64 * 4 }, bent, { 64 * 2, 64 * 3 });
 		wax_rectSPX source = { 64 * 4, 64 * 2, 64 * 20, 64 * 12 };
@@ -896,4 +916,40 @@ bool WarpRenderTest::generateTest(std::ostream& output)
 	}
 
 	return compare(output, "One CircularWarp drawn three times, streamed", renderStreamed(oneGenerator), "one generator", render(TestBackend::Soft, separateGenerators), "separate generators", 0);
+}
+
+//____ roundedRectTest() ______________________________________________________
+/*
+	RoundedRectWarp drawn by SoftBackend close to what ReferenceBackend measures, and by
+	LinearBackend exactly as SoftBackend: an edgemap in a band across the outline, a surface
+	outside an outline with sharp corners and an arc of an edgemap going counter clockwise.
+*/
+
+bool WarpRenderTest::roundedRectTest(std::ostream& output)
+{
+	auto scene = [](GfxDevice* pDevice)
+	{
+		auto pEdgemap = makeEdgemap(pDevice, true);
+		auto pFactory = pDevice->warpmapFactory();
+
+		auto pBand = RoundedRectWarp::create(WGBP(RoundedRectWarp, _.size = { 48, 40 }, _.sourceSize = c_edgemapSource, _.rect = { 64 * 8, 64 * 8, 64 * 32, 64 * 24 },
+												  _.cornerRadius = 64 * 8, _.topDistance = 64 * 6, _.bottomDistance = -64 * 5), pFactory);
+
+		auto pSharp = RoundedRectWarp::create(WGBP(RoundedRectWarp, _.size = { 48, 40 }, _.sourceSize = c_surfaceSource, _.rect = { 64 * 10, 64 * 10, 64 * 28, 64 * 20 },
+												   _.topDistance = 64 * 7, _.bottomDistance = 0, _.start = 0.1f), pFactory);
+
+		auto pArc = RoundedRectWarp::create(WGBP(RoundedRectWarp, _.size = { 48, 40 }, _.sourceSize = c_edgemapSource, _.rect = { 64 * 6, 64 * 6, 64 * 36, 64 * 28 },
+												 _.cornerRadius = 64 * 12, _.topDistance = 64 * 4, _.bottomDistance = -64 * 6, _.start = 0.3f, _.sweep = -0.6f), pFactory);
+
+		pDevice->warpDrawEdgemap({ 2 * 64, 2 * 64 }, pBand->generate(), pEdgemap);
+
+		pDevice->setBlitSource(makeSurface(pDevice, true, SampleMethod::Bilinear));
+		pDevice->warpBlit({ 54 * 64, 2 * 64 }, pSharp->generate());
+
+		pDevice->warpDrawEdgemap({ 106 * 64, 2 * 64 }, pArc->generate(), pEdgemap, { 64 * 9, 0 });
+		pDevice->warpDrawEdgemap({ 2 * 64, 48 * 64 }, pBand->generate(), makeEdgemap(pDevice, false, true));
+	};
+
+	return compare(output, "Rounded rects", render(TestBackend::Soft, scene), "SoftBackend", render(TestBackend::Reference, scene), "ReferenceBackend", 6, 60, 48) &&
+		   compare(output, "Rounded rects", render(TestBackend::Linear, scene), "LinearBackend", render(TestBackend::Soft, scene), "SoftBackend", 0);
 }

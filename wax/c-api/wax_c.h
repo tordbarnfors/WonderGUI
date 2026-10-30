@@ -40,6 +40,7 @@
 #include <wax_c_warpmapfactory.h>
 #include <wax_c_warpgenerator.h>
 #include <wax_c_circularwarp.h>
+#include <wax_c_roundedrectwarp.h>
 #include <wax_c_font.h>
 #include <wax_c_geo.h>
 #include <wax_c_backend.h>

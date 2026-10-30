@@ -95,6 +95,11 @@ namespace wax
 
 		int				_cellSizeForRadius( double radius ) const;
 
+		// A position in spx rounded to a node value, clamped to +-Warpmap::maxNodeValue. NaN, as from a
+		// division by zero, gives -maxNodeValue, far outside the source.
+
+		static spx		_toNodeValue( double spxValue );
+
 		// Cell size from precision and the shape. Clamped by cellSize().
 
 		virtual int		_calcCellSize() const = 0;

@@ -23,4 +23,5 @@ private:
 	bool seamColorTest(std::ostream& output);
 	bool sourceRectTest(std::ostream& output);
 	bool generateTest(std::ostream& output);
+	bool roundedRectTest(std::ostream& output);
 };
