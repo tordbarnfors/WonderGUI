@@ -35,7 +35,6 @@ wg_obj wg_createCircularWarp( const wg_circularWarpBP* pCBP, wg_obj warpmapFacto
 	bp.bottomRadius = pCBP->bottomRadius;
 	bp.cellSize = pCBP->cellSize;
 	bp.center = { pCBP->center.x, pCBP->center.y };
-	bp.detailRadius = pCBP->detailRadius;
 	if (pCBP->precision > 0.f)
 		bp.precision = pCBP->precision;
 	bp.size = { pCBP->size.w, pCBP->size.h };
@@ -52,28 +51,6 @@ wg_obj wg_createCircularWarp( const wg_circularWarpBP* pCBP, wg_obj warpmapFacto
 
 	p->retain();
 	return (wg_obj) static_cast<Object*>(p.rawPtr());
-}
-
-int wg_setCircularWarpSize( wg_obj circularWarp, wg_sizeI size )
-{
-	return getPtr(circularWarp)->setSize({ size.w, size.h });
-}
-
-wg_sizeI wg_circularWarpSize( wg_obj circularWarp )
-{
-	SizeI sz = getPtr(circularWarp)->size();
-	return { sz.w, sz.h };
-}
-
-int wg_setCircularWarpSourceSize( wg_obj circularWarp, wg_sizeSPX sourceSize )
-{
-	return getPtr(circularWarp)->setSourceSize({ sourceSize.w, sourceSize.h });
-}
-
-wg_sizeSPX wg_circularWarpSourceSize( wg_obj circularWarp )
-{
-	SizeSPX sz = getPtr(circularWarp)->sourceSize();
-	return { sz.w, sz.h };
 }
 
 int wg_setCircularWarpCenter( wg_obj circularWarp, wg_coordF center )
@@ -115,25 +92,4 @@ float wg_circularWarpStartAngle( wg_obj circularWarp )
 float wg_circularWarpSweep( wg_obj circularWarp )
 {
 	return getPtr(circularWarp)->sweep();
-}
-
-int wg_setCircularWarpCellSize( wg_obj circularWarp, int cellSize )
-{
-	return getPtr(circularWarp)->setCellSize(cellSize);
-}
-
-int wg_circularWarpCellSize( wg_obj circularWarp )
-{
-	return getPtr(circularWarp)->cellSize();
-}
-
-int wg_setCircularWarpPrecision( wg_obj circularWarp, float precision, wg_spx detailRadius )
-{
-	return getPtr(circularWarp)->setPrecision(precision, detailRadius);
-}
-
-wg_obj wg_generateCircularWarp( wg_obj circularWarp )
-{
-	Warpmap_p p = getPtr(circularWarp)->generate();
-	return (wg_obj) static_cast<Object*>(p.rawPtr());
 }

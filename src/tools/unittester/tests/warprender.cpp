@@ -706,7 +706,7 @@ bool WarpRenderTest::cApiTest(std::ostream& output)
 
 		wg_obj bent = wg_createWarpmapFromNodes(factory, &bentBP, (const wg_coordSPX*) nodeData.data(), 0);
 
-		wg_warpDrawEdgemap(device, { 64 * 3, 64 * 4 }, wg_generateCircularWarp(ring), (wg_obj) static_cast<Object*>(pEdgemap.rawPtr()), { 64 * 5, 0 });
+		wg_warpDrawEdgemap(device, { 64 * 3, 64 * 4 }, wg_generateWarpGenerator(ring), (wg_obj) static_cast<Object*>(pEdgemap.rawPtr()), { 64 * 5, 0 });
 		pDevice->setBlitSource(pSurface);
 		wg_warpBlit(device, { 64 * 60, 64 * 4 }, bent, { 64 * 2, 64 * 3 });
 		wg_rectSPX source = { 64 * 4, 64 * 2, 64 * 20, 64 * 12 };

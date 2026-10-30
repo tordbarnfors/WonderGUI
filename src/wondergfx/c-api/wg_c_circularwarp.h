@@ -35,9 +35,8 @@ extern "C" {
 	typedef struct wg_circularWarpBP_struct		// NOT BINARY EQUIVALENT!
 	{
 		wg_spx				bottomRadius;			// Radius the bottom of the source is placed at.
-		int					cellSize;				// 0 = calculated from precision and detailRadius.
+		int					cellSize;				// 0 = calculated from precision.
 		wg_coordF			center;					// Center of circle, relative to size. Usually { 0.5f, 0.5f }.
-		wg_spx				detailRadius;			// Smallest radius where precision is needed. 0 = smallest of the radii.
 		float				precision;				// Max position error in pixels when cellSize is calculated. 0 = default (0.25).
 		wg_sizeI			size;					// Mandatory. Size of the Warpmap in pixels.
 		wg_sizeSPX			sourceSize;				// Mandatory. Size of the source (edgemap or source rectangle) in spx.
@@ -47,16 +46,11 @@ extern "C" {
 	} wg_circularWarpBP;
 
 	// Factory is the WarpmapFactory to create the Warpmap with, the default one if null.
+	// Size, source size, cell size, precision and generate are set and called through the WarpGenerator functions.
 
 	WG_EXPORT wg_obj		wg_createCircularWarp( const wg_circularWarpBP* blueprint, wg_obj warpmapFactory );
 
 	//.____ Geometry ______________________________________________________
-
-	WG_EXPORT int			wg_setCircularWarpSize( wg_obj circularWarp, wg_sizeI size );
-	WG_EXPORT wg_sizeI		wg_circularWarpSize( wg_obj circularWarp );
-
-	WG_EXPORT int			wg_setCircularWarpSourceSize( wg_obj circularWarp, wg_sizeSPX sourceSize );
-	WG_EXPORT wg_sizeSPX		wg_circularWarpSourceSize( wg_obj circularWarp );
 
 	WG_EXPORT int			wg_setCircularWarpCenter( wg_obj circularWarp, wg_coordF center );
 	WG_EXPORT wg_coordF		wg_circularWarpCenter( wg_obj circularWarp );
@@ -68,21 +62,6 @@ extern "C" {
 	WG_EXPORT int			wg_setCircularWarpAngles( wg_obj circularWarp, float startAngle, float sweep );
 	WG_EXPORT float			wg_circularWarpStartAngle( wg_obj circularWarp );
 	WG_EXPORT float			wg_circularWarpSweep( wg_obj circularWarp );
-
-	//.____ Precision _____________________________________________________
-
-	WG_EXPORT int			wg_setCircularWarpCellSize( wg_obj circularWarp, int cellSize );
-	WG_EXPORT int			wg_circularWarpCellSize( wg_obj circularWarp );
-
-	WG_EXPORT int			wg_setCircularWarpPrecision( wg_obj circularWarp, float precision, wg_spx detailRadius );
-
-	//.____ Content _______________________________________________________
-
-	// Generates the Warpmap from current settings and returns it, see CircularWarp::generate(). The
-	// Warpmap belongs to the CircularWarp, retain it to keep it after a generate that replaces it.
-	// A Warpmap you have retained is never changed by later calls, a new one is created instead.
-
-	WG_EXPORT wg_obj		wg_generateCircularWarp( wg_obj circularWarp );
 
 #ifdef __cplusplus
 }

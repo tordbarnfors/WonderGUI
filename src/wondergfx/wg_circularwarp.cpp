@@ -22,21 +22,18 @@
 #include <wg_circularwarp.h>
 #include <wg_gfxbase.h>
 
+#include <algorithm>
 #include <cmath>
-#include <vector>
 
 namespace wg
 {
-	const TypeInfo CircularWarp::TYPEINFO = { "CircularWarp", &Object::TYPEINFO };
-
-	static const int c_minCellSize = 4;
-	static const int c_maxCellSize = 64;
+	const TypeInfo CircularWarp::TYPEINFO = { "CircularWarp", &WarpGenerator::TYPEINFO };
 
 	//____ create() ___________________________________________________________
 
 	CircularWarp_p CircularWarp::create(const Blueprint& bp, WarpmapFactory* pFactory)
 	{
-		if (bp.size.w <= 0 || bp.size.h <= 0 || bp.sourceSize.w <= 0 || bp.sourceSize.h <= 0 || bp.cellSize < 0 || bp.precision <= 0.f || bp.sweep == 0.f)
+		if (!_validateSettings(bp.size, bp.sourceSize, bp.cellSize, bp.precision) || bp.sweep == 0.f)
 			return nullptr;
 
 		if (!pFactory)
@@ -51,21 +48,16 @@ namespace wg
 	//____ constructor ________________________________________________________
 
 	CircularWarp::CircularWarp(const Blueprint& bp, WarpmapFactory* pFactory)
+		: WarpGenerator(bp.size, bp.sourceSize, bp.cellSize, bp.precision, pFactory)
 	{
 		if (bp.finalizer)
 			setFinalizer(bp.finalizer);
 
-		m_size			= bp.size;
-		m_sourceSize	= bp.sourceSize;
 		m_center		= bp.center;
 		m_topRadius		= bp.topRadius;
 		m_bottomRadius	= bp.bottomRadius;
 		m_startAngle	= bp.startAngle;
 		m_sweep			= bp.sweep;
-		m_cellSize		= bp.cellSize;
-		m_precision		= bp.precision;
-		m_detailRadius	= bp.detailRadius;
-		m_pFactory		= pFactory;
 	}
 
 	//____ destructor _________________________________________________________
@@ -79,36 +71,6 @@ namespace wg
 	const TypeInfo& CircularWarp::typeInfo(void) const
 	{
 		return TYPEINFO;
-	}
-
-	//____ setSize() __________________________________________________________
-
-	bool CircularWarp::setSize(SizeI size)
-	{
-		if (size.w <= 0 || size.h <= 0)
-			return false;
-
-		if (size != m_size)
-		{
-			m_size = size;
-			m_bDirty = true;
-		}
-		return true;
-	}
-
-	//____ setSourceSize() ____________________________________________________
-
-	bool CircularWarp::setSourceSize(SizeSPX sourceSize)
-	{
-		if (sourceSize.w <= 0 || sourceSize.h <= 0)
-			return false;
-
-		if (sourceSize != m_sourceSize)
-		{
-			m_sourceSize = sourceSize;
-			m_bDirty = true;
-		}
-		return true;
 	}
 
 	//____ setCenter() ________________________________________________________
@@ -155,101 +117,18 @@ namespace wg
 		return true;
 	}
 
-	//____ setCellSize() ______________________________________________________
-
-	bool CircularWarp::setCellSize(int cellSize)
-	{
-		if (cellSize < 0)
-			return false;
-
-		if (cellSize != m_cellSize)
-		{
-			m_cellSize = cellSize;
-			m_bDirty = true;
-		}
-		return true;
-	}
-
-	//____ cellSize() _________________________________________________________
-
-	int CircularWarp::cellSize() const
-	{
-		return m_cellSize > 0 ? m_cellSize : _calcCellSize();
-	}
-
-	//____ setPrecision() _____________________________________________________
-
-	bool CircularWarp::setPrecision(float precision, spx detailRadius)
-	{
-		if (precision <= 0.f || detailRadius < 0)
-			return false;
-
-		if (precision != m_precision || detailRadius != m_detailRadius)
-		{
-			m_precision = precision;
-			m_detailRadius = detailRadius;
-			m_bDirty = true;
-		}
-		return true;
-	}
-
-	//____ generate() _________________________________________________________
-	/*
-		Draws are rendered when the canvas update ends and read the Warpmap then, so a Warpmap that
-		a draw holds (or anyone else) is left as it is and a new one created in its place.
-	*/
-
-	Warpmap_p CircularWarp::generate()
-	{
-		if (!m_bDirty && m_pWarpmap)
-			return m_pWarpmap;
-
-		int cellSize = this->cellSize();
-		spx uPeriod = _uPeriod();
-
-		if (!m_pWarpmap || m_pWarpmap->refcount() > 1 || m_pWarpmap->pixelSize() != m_size || m_pWarpmap->cellSize() != cellSize)
-		{
-			Warpmap::Blueprint bp;
-			bp.size = m_size;
-			bp.cellSize = cellSize;
-			bp.uPeriod = uPeriod;
-
-			SizeI nodes = { (m_size.w + cellSize - 1) / cellSize + 1, (m_size.h + cellSize - 1) / cellSize + 1 };
-			std::vector<CoordSPX> buffer(nodes.w * nodes.h);
-			_generateNodes(buffer.data(), nodes, cellSize);
-
-			m_pWarpmap = m_pFactory->createWarpmap(bp, buffer.data());
-		}
-		else
-		{
-			SizeI nodes = m_pWarpmap->nodes();
-			std::vector<CoordSPX> buffer(nodes.w * nodes.h);
-			_generateNodes(buffer.data(), nodes, cellSize);
-
-			if (m_pWarpmap->uPeriod() != uPeriod || m_pWarpmap->vPeriod() != 0)
-				m_pWarpmap->setPeriods(uPeriod, 0);
-
-			m_pWarpmap->importNodes({ 0,0,nodes.w,nodes.h }, buffer.data());
-		}
-
-		m_bDirty = false;
-		return m_pWarpmap;
-	}
-
 	//____ _calcCellSize() ____________________________________________________
 	/*
-		A circle of radius r drawn through cells of size c is off by about c^2 / (8 * r), so the
-		largest cell size that keeps within precision at the detail radius is sqrt(8 * precision * r).
+		Precision is kept at the smaller radius, where the error is largest. A disc has no smaller
+		radius and can't show detail close to its center anyway, so half its radius is used instead.
 	*/
 
 	int CircularWarp::_calcCellSize() const
 	{
-		spx detail = m_detailRadius > 0 ? m_detailRadius : std::min(m_topRadius, m_bottomRadius);
+		spx inner = std::min(m_topRadius, m_bottomRadius);
+		spx outer = std::max(m_topRadius, m_bottomRadius);
 
-		double r = detail / 64.0;
-		int cellSize = int(std::sqrt(8.0 * m_precision * r));
-
-		return std::clamp(cellSize, c_minCellSize, c_maxCellSize);
+		return _cellSizeForRadius((inner > 0 ? inner : outer / 2) / 64.0);
 	}
 
 	//____ _uPeriod() _________________________________________________________

@@ -95,6 +95,8 @@ set( SOURCES
 	wg_warpmapfactory.h
 	wg_circularwarp.cpp
 	wg_circularwarp.h
+	wg_warpgenerator.cpp
+	wg_warpgenerator.h
 	wondergfx.h
 
 	c-api/wg_c_bitmapcache.cpp
@@ -117,6 +119,8 @@ set( SOURCES
 	c-api/wg_c_warpmapfactory.h
 	c-api/wg_c_circularwarp.cpp
 	c-api/wg_c_circularwarp.h
+	c-api/wg_c_warpgenerator.cpp
+	c-api/wg_c_warpgenerator.h
 	c-api/wg_c_font.cpp
 	c-api/wg_c_font.h	
 	c-api/wg_c_geo.cpp
