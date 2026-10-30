@@ -46,7 +46,7 @@ extern "C" {
 	} wax_circularWarpBP;
 
 	// Factory is the WarpmapFactory to create the Warpmap with, the default one if null.
-	// Size, source size, cell size, precision and refresh are set and called through the WarpGenerator functions.
+	// Size, source size, cell size, precision and generate are set and called through the WarpGenerator functions.
 
 	WAX_EXPORT wax_obj		wax_createCircularWarp( const wax_circularWarpBP* blueprint, wax_obj warpmapFactory );
 

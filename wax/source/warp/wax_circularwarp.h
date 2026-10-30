@@ -51,7 +51,7 @@ namespace wax
 	 * is calculated from precision (max position error in pixels) at the smaller radius, where the error
 	 * is largest. For a disc, precision is kept from half the radius and outwards instead.
 	 *
-	 * Like other WarpGenerators, CircularWarp keeps its Warpmap and updates it when refresh() is called.
+	 * Like other WarpGenerators, CircularWarp keeps its Warpmap and updates it when generate() is called.
 	 */
 
 	class CircularWarp : public WarpGenerator

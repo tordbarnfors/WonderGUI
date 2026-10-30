@@ -14,5 +14,5 @@ private:
 	bool importExportTest(std::ostream& output);
 	bool periodTest(std::ostream& output);
 	bool circularWarpTest(std::ostream& output);
-	bool circularWarpRefreshTest(std::ostream& output);
+	bool circularWarpGenerateTest(std::ostream& output);
 };

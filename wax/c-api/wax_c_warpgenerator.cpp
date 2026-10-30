@@ -70,8 +70,8 @@ float wax_warpGeneratorPrecision( wax_obj warpGenerator )
 	return getPtr(warpGenerator)->precision();
 }
 
-wax_obj wax_refreshWarpGenerator( wax_obj warpGenerator )
+wax_obj wax_generateWarpGenerator( wax_obj warpGenerator )
 {
-	Warpmap_p p = getPtr(warpGenerator)->refresh();
+	Warpmap_p p = getPtr(warpGenerator)->generate();
 	return (wax_obj) static_cast<Object*>(p.rawPtr());
 }

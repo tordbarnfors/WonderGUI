@@ -50,10 +50,11 @@ extern "C" {
 
 	//.____ Content _______________________________________________________
 
-	// Updates the Warpmap from current settings and returns it. The Warpmap belongs to the
-	// WarpGenerator, retain it to keep it after a refresh that replaces it.
+	// Generates the Warpmap from current settings and returns it, see WarpGenerator::generate(). The
+	// Warpmap belongs to the WarpGenerator, retain it to keep it after a generate that replaces it.
+	// A Warpmap you have retained is never changed by later calls, a new one is created instead.
 
-	WAX_EXPORT wax_obj		wax_refreshWarpGenerator( wax_obj warpGenerator );
+	WAX_EXPORT wax_obj		wax_generateWarpGenerator( wax_obj warpGenerator );
 
 #ifdef __cplusplus
 }

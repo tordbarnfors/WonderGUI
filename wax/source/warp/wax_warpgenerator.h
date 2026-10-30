@@ -36,9 +36,7 @@ namespace wax
 	/**
 	 * @brief Base class for generators that make a Warpmap from a few settings, such as CircularWarp.
 	 *
-	 * A WarpGenerator keeps its Warpmap and updates it when refresh() is called. A new Warpmap is
-	 * created when size or cell size has changed, otherwise the nodes and periods of the existing one
-	 * are updated.
+	 * A WarpGenerator keeps its Warpmap and updates it when generate() is called, see generate().
 	 *
 	 * The Warpmap is made for a source of sourceSize: the size of the edgemap or of the source
 	 * rectangle of the blit, in spx. The nodes are positions in that source, see Warpmap.
@@ -78,10 +76,13 @@ namespace wax
 
 		//.____ Content _____________________________________________________
 
-		// Updates the Warpmap from current settings and returns it. A new Warpmap is created
-		// when size or cell size has changed, otherwise the nodes of the existing one are updated.
+		// Generates the Warpmap from current settings, if they have changed since last time, and
+		// returns it. The nodes of the Warpmap are updated in place if nothing but the WarpGenerator
+		// holds it and size and cell size are unchanged. Otherwise a new Warpmap is created, so a
+		// Warpmap held elsewhere, such as by a draw that isn't rendered yet, never changes. Draw
+		// what generate() returns rather than keeping it.
 
-		Warpmap_p	refresh();
+		Warpmap_p	generate();
 
 	protected:
 

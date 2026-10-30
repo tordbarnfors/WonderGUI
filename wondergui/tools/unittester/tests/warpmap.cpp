@@ -59,7 +59,7 @@ WarpmapTest::WarpmapTest()
 	ADD_TEST(importExportTest);
 	ADD_TEST(periodTest);
 	ADD_TEST(circularWarpTest);
-	ADD_TEST(circularWarpRefreshTest);
+	ADD_TEST(circularWarpGenerateTest);
 }
 
 WarpmapTest::~WarpmapTest()
@@ -210,7 +210,7 @@ bool WarpmapTest::circularWarpTest(std::ostream& output)
 		auto pWarp = CircularWarp::create(c.bp, pFactory);
 		TEST_ASSERT(pWarp != nullptr);
 
-		auto pMap = pWarp->refresh();
+		auto pMap = pWarp->generate();
 		TEST_ASSERT(pMap != nullptr);
 		TEST_ASSERT(pMap->pixelSize() == c.bp.size);
 
@@ -266,7 +266,7 @@ bool WarpmapTest::circularWarpTest(std::ostream& output)
 	// Explicit cell size overrides precision.
 
 	auto pWarp = CircularWarp::create(WGBP(CircularWarp, _.sourceSize = c_sourceSize, _.size = { 100, 100 }, _.topRadius = 10 * 64, _.bottomRadius = 50 * 64, _.cellSize = 7), pFactory);
-	TEST_ASSERT(pWarp->refresh()->cellSize() == 7);
+	TEST_ASSERT(pWarp->generate()->cellSize() == 7);
 
 	// Invalid blueprints.
 
@@ -277,16 +277,16 @@ bool WarpmapTest::circularWarpTest(std::ostream& output)
 	// Equal radii have no band to map the source onto, the nodes are clamped far outside it.
 
 	auto pFlat = CircularWarp::create(WGBP(CircularWarp, _.sourceSize = c_sourceSize, _.size = { 40, 40 }, _.cellSize = 10), pFactory);
-	auto pFlatMap = pFlat->refresh();
+	auto pFlatMap = pFlat->generate();
 	for (int i = 0; i < pFlatMap->nodes().w * pFlatMap->nodes().h; i++)
 		TEST_ASSERT(pFlatMap->nodeData()[i].y == -Warpmap::maxNodeValue);
 
 	return true;
 }
 
-//____ circularWarpRefreshTest() ______________________________________________
+//____ circularWarpGenerateTest() ______________________________________________
 
-bool WarpmapTest::circularWarpRefreshTest(std::ostream& output)
+bool WarpmapTest::circularWarpGenerateTest(std::ostream& output)
 {
 	auto pFactory = SoftWarpmapFactory::create();
 
@@ -294,38 +294,53 @@ bool WarpmapTest::circularWarpRefreshTest(std::ostream& output)
 
 	TEST_ASSERT(pWarp->isInstanceOf(WarpGenerator::TYPEINFO));
 
-	auto pMap1 = pWarp->refresh();
-	TEST_ASSERT(pWarp->refresh() == pMap1);								// Nothing changed.
+	// A Warpmap that nothing but the CircularWarp holds is updated in place.
 
-	// Radii and angles update the nodes of the same Warpmap.
+	Warpmap* pFirst = pWarp->generate().rawPtr();
+	TEST_ASSERT(pWarp->generate().rawPtr() == pFirst);						// Nothing changed.
 
 	TEST_ASSERT(pWarp->setRadii(25 * 64, 45 * 64));
 	TEST_ASSERT(pWarp->setAngles(90.f, 180.f));
-	auto pMap2 = pWarp->refresh();
-	TEST_ASSERT(pMap2 == pMap1);
-	TEST_ASSERT(pMap2->uPeriod() == c_sourceSize.w * 2);
+	auto pMap1 = pWarp->generate();
+	TEST_ASSERT(pMap1.rawPtr() == pFirst);
+	TEST_ASSERT(pMap1->uPeriod() == c_sourceSize.w * 2);
 
 	// Point straight right of center at radius 25 is u = 0 (90 degrees), v = 0.
 
-	CoordF pos = pMap2->positionAt(75, 50);
+	CoordF pos = pMap1->positionAt(75, 50);
 	TEST_ASSERT(near(pos.x, 0.0, 1.0) && near(pos.y, 0.0, 1.0));
 
-	// Source size scales the nodes and the period.
+	// A Warpmap held elsewhere, as by a draw that isn't rendered yet, is left as it is and a new
+	// one is made. Source size scales the nodes and the period.
+
+	SizeI nodes = pMap1->nodes();
+	std::vector<CoordSPX> before(nodes.w * nodes.h), after(nodes.w * nodes.h);
+	pMap1->exportNodes({ 0, 0, nodes.w, nodes.h }, before.data());
+
+	TEST_ASSERT(pWarp->generate() == pMap1);								// Nothing changed, held or not.
 
 	TEST_ASSERT(pWarp->setSourceSize({ c_sourceSize.w / 2, c_sourceSize.h }));
-	TEST_ASSERT(pWarp->refresh() == pMap1);
+	auto pMap2 = pWarp->generate();
+	TEST_ASSERT(pMap2 != pMap1);
 	TEST_ASSERT(pMap2->uPeriod() == c_sourceSize.w);
+	TEST_ASSERT(pMap2->nodeData()[0].x != pMap1->nodeData()[0].x);
+
+	pMap1->exportNodes({ 0, 0, nodes.w, nodes.h }, after.data());
+	TEST_ASSERT(pMap1->uPeriod() == c_sourceSize.w * 2);
+	TEST_ASSERT(before == after);
+	pMap1 = nullptr;
+
 	TEST_ASSERT(pWarp->setSourceSize(c_sourceSize));
 
 	// Size and cell size give a new Warpmap.
 
 	TEST_ASSERT(pWarp->setSize({ 120, 100 }));
-	auto pMap3 = pWarp->refresh();
+	auto pMap3 = pWarp->generate();
 	TEST_ASSERT(pMap3 != pMap2 && pMap3->pixelSize() == SizeI(120, 100));
 
 	TEST_ASSERT(pWarp->setCellSize(0));
 	TEST_ASSERT(pWarp->setPrecision(1.f));
-	auto pMap4 = pWarp->refresh();
+	auto pMap4 = pWarp->generate();
 	TEST_ASSERT(pMap4 != pMap3 && pMap4->cellSize() == int(std::sqrt(8.0 * 1.0 * 25)));		// At the smaller radius.
 
 	// Invalid values are refused.
