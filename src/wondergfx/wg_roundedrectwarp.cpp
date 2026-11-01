@@ -161,8 +161,8 @@ namespace wg
 	//____ _generateNodes() ___________________________________________________
 	/*
 		Each node is placed by the point of the outline nearest to it: its position along the
-		outline (P, in pixels clockwise from the middle of the top side) and the signed distance to
-		it (d, in pixels, positive outside).
+		outline (pos, clockwise from the middle of the top side) and the signed distance to it
+		(dist, positive outside).
 
 		The outline is made of straight parts, ax and ay from the middle of the sides to where the
 		corners start, and corners of radius r around the corners of the inner rectangle (ax, ay)
@@ -174,81 +174,95 @@ namespace wg
 		u goes from 0 at start to the width of the source at start + sweep and is periodic with a
 		period of width / |sweep|. v goes from 0 at topDistance to the height of the source at
 		bottomDistance.
+
+		Nodes are calculated with integers only. Lengths are in 1/512 spx, which keeps the center
+		and the corners of the inner rectangle exact and leaves the corners precise. Positions along
+		the outline are turned into 1/2^32 of the outline and u is calculated from start in the
+		direction of sweep, within the outline, so the first period is exact even though the period
+		of the Warpmap is rounded to spx.
 	*/
 
 	void RoundedRectWarp::_generateNodes(CoordSPX* pNodes, SizeI nodes, int cellSize) const
 	{
-		const double pi = 3.14159265358979323846;
+		const int c_halfBits = 8;								// Fraction bits of half spx.
+		const double c_pi = 3.14159265358979323846;
 
-		double cx = (m_rect.x + m_rect.w / 2.0) / 64.0;
-		double cy = (m_rect.y + m_rect.h / 2.0) / 64.0;
+		int64_t cx = (int64_t(m_rect.x) * 2 + m_rect.w) << c_halfBits;
+		int64_t cy = (int64_t(m_rect.y) * 2 + m_rect.h) << c_halfBits;
 
-		double r = _cornerRadius();
-		double ax = m_rect.w / 128.0 - r;
-		double ay = m_rect.h / 128.0 - r;
-		double arc = r * pi / 2;								// Length of a corner.
+		int64_t r = std::min(int64_t(m_cornerRadius) * 2, int64_t(std::min(m_rect.w, m_rect.h))) << c_halfBits;
+		int64_t ax = (int64_t(m_rect.w) << c_halfBits) - r;
+		int64_t ay = (int64_t(m_rect.h) << c_halfBits) - r;
+		int64_t arc = _multiply(r, _factor(c_pi / 2));			// Length of a corner.
+		Factor arcFactor = _factor(double(arc) / 0x1p30);		// Quarter turn to length along a corner.
 
-		double perimeter = 4 * ax + 4 * ay + 4 * arc;
-		if (perimeter <= 0.0)
-			perimeter = 1.0;									// A point, every position along it is 0.
+		int64_t perimeter = 4 * ax + 4 * ay + 4 * arc;
+		if (perimeter <= 0)
+			perimeter = 1;										// A point, every position along it is 0.
 
-		double width = m_sourceSize.w;
-		double height = m_sourceSize.h;
-		double period = _uPeriod();
+		uint32_t start = _toTurn(m_start);
 
-		double top = m_topDistance;
-		double bottom = m_bottomDistance;
+		Factor posFactor = _factor(0x1p32 / double(perimeter));
+		Factor uFactor = _factor(double(m_sourceSize.w) / (std::abs(double(m_sweep)) * 0x1p32));
+		bool bClockwise = m_sweep > 0.f;
+		Factor vFactor = _factor(double(m_sourceSize.h) / ((double(m_bottomDistance) - double(m_topDistance)) * (2 << c_halfBits)));
+		bool bFlat = m_bottomDistance == m_topDistance;
+
+		int64_t top = int64_t(m_topDistance) * (2 << c_halfBits);
+		const int64_t c_pixel = 128 << c_halfBits;
 
 		for (int row = 0; row < nodes.h; row++)
 		{
-			double y = std::min(row * cellSize, m_size.h) - cy;
+			int64_t y = std::min(row * cellSize, m_size.h) * c_pixel - cy;
 
 			for (int col = 0; col < nodes.w; col++)
 			{
-				double x = std::min(col * cellSize, m_size.w) - cx;
+				int64_t x = std::min(col * cellSize, m_size.w) * c_pixel - cx;
 
-				double qx = std::abs(x) - ax;
-				double qy = std::abs(y) - ay;
+				int64_t qx = std::abs(x) - ax;
+				int64_t qy = std::abs(y) - ay;
 
-				double pos, dist;
+				int64_t pos, dist;
 
 				if (qx > 0 && qy > 0)
 				{
-					// Corner, angle 0 -> pi/2 clockwise from where it starts.
+					// Corner, angle 0 -> quarter turn clockwise from where it starts.
 
-					dist = std::sqrt(qx * qx + qy * qy) - r;
+					int64_t length;
+					int64_t along = _multiply(_polar(qy, qx, &length), arcFactor);
+					dist = length - r;
 
 					if (x >= 0 && y < 0)
-						pos = ax + r * std::atan2(qx, qy);
+						pos = ax + along;
 					else if (x >= 0)
-						pos = ax + arc + 2 * ay + r * std::atan2(qy, qx);
+						pos = ax + 2 * arc + 2 * ay - along;
 					else if (y >= 0)
-						pos = 3 * ax + 2 * arc + 2 * ay + r * std::atan2(qx, qy);
+						pos = 3 * ax + 2 * arc + 2 * ay + along;
 					else
-						pos = 3 * ax + 3 * arc + 4 * ay + r * std::atan2(qy, qx);
+						pos = 3 * ax + 4 * arc + 4 * ay - along;
 				}
 				else if (qx > qy)
 				{
 					// Left or right side.
 
 					dist = qx - r;
-					double sy = std::clamp(y, -ay, ay);
+					int64_t sy = std::clamp(y, -ay, ay);
 					pos = x >= 0 ? ax + arc + (sy + ay) : 3 * ax + 3 * arc + 2 * ay + (ay - sy);
 				}
 				else
 				{
-					// Top or bottom side. Left of the middle of the top side is negative, which the
-					// period takes care of.
+					// Top or bottom side. Left of the middle of the top side is negative, which
+					// wraps around.
 
 					dist = qy - r;
-					double sx = std::clamp(x, -ax, ax);
+					int64_t sx = std::clamp(x, -ax, ax);
 					pos = y >= 0 ? ax + 2 * arc + 2 * ay + (ax - sx) : sx;
 				}
 
-				double u = (pos / perimeter - m_start) / m_sweep * width;
-				u -= period * std::floor(u / period);
+				uint32_t part = uint32_t(_multiply(pos, posFactor));
 
-				double v = bottom != top ? (dist * 64 - top) / (bottom - top) * height : -Warpmap::maxNodeValue;
+				int64_t u = _multiply(bClockwise ? part - start : start - part, uFactor);
+				int64_t v = bFlat ? -Warpmap::maxNodeValue : _multiply(dist - top, vFactor);
 
 				*pNodes++ = { _toNodeValue(u), _toNodeValue(v) };
 			}

@@ -95,10 +95,34 @@ namespace wg
 
 		int				_cellSizeForRadius( double radius ) const;
 
-		// A position in spx rounded to a node value, clamped to +-Warpmap::maxNodeValue. NaN, as from a
-		// division by zero, gives -maxNodeValue, far outside the source.
+		// Integer maths for _generateNodes(), which runs once per node and so should avoid floating
+		// point on hardware without an FPU. Set up factors with _factor() once per generate.
 
-		static spx		_toNodeValue( double spxValue );
+		struct Factor
+		{
+			uint32_t	mul = 0;									// value * mul / 2^shift.
+			int			shift = 0;
+			bool		bNegative = false;
+		};
+
+		static Factor	_factor( double factor );					// NaN gives a factor of 0.
+
+		// Value multiplied by factor, rounded and clamped to +-2^62.
+
+		static int64_t	_multiply( int64_t value, Factor factor );
+
+		// Angle of x,y in 1/2^32 of a turn, from the x axis towards the y axis, and optionally its
+		// length, rounded. Accurate to a few units of the angle and better than 1/2^26 of the length.
+
+		static uint32_t	_polar( int64_t x, int64_t y, int64_t * pLength = nullptr );
+
+		// Fraction of a turn in 1/2^32 of a turn, whole turns dropped. Not finite gives 0.
+
+		static uint32_t	_toTurn( double turns );
+
+		// A value clamped to +-Warpmap::maxNodeValue.
+
+		static spx		_toNodeValue( int64_t value );
 
 		// Cell size from precision and the shape. Clamped by cellSize().
 

@@ -21,7 +21,9 @@ namespace
 {
 	bool near(double a, double b, double tolerance) { return std::abs(a - b) <= tolerance; }
 
-	// Exact position (spx of the source) of CircularWarp at point x,y (pixels), u wrapped into the period.
+	// Exact position (spx of the source) of CircularWarp at point x,y (pixels), u counted from
+	// startAngle in the direction of sweep and wrapped into a turn. The period of the Warpmap is
+	// rounded to spx, so u can only be exact within its first period.
 
 	CoordF exactCircular(const CircularWarp::Blueprint& bp, double x, double y)
 	{
@@ -29,7 +31,7 @@ namespace
 		double dy = y - bp.center.y * bp.size.h;
 
 		double angle = std::atan2(dx, -dy) * 180.0 / M_PI;
-		double period = std::round(bp.sourceSize.w * 360.0 / std::abs(bp.sweep));
+		double period = bp.sourceSize.w * 360.0 / std::abs(bp.sweep);
 		double u = (angle - bp.startAngle) / bp.sweep * bp.sourceSize.w;
 		u -= period * std::floor(u / period);
 
@@ -299,6 +301,9 @@ bool WarpmapTest::circularWarpTest(std::ostream& output)
 		for (int row = 0; row < nodes.h; row++)
 			for (int col = 0; col < nodes.w; col++)
 			{
+				if (pMap->nodeX(col) == c.bp.center.x * c.bp.size.w && pMap->nodeY(row) == c.bp.center.y * c.bp.size.h)
+					continue;																			// No angle at the center.
+
 				CoordF exact = exactCircular(c.bp, pMap->nodeX(col), pMap->nodeY(row));
 				CoordSPX node = pMap->nodeData()[row * nodes.w + col];
 				TEST_ASSERT(uDiff(node.x, exact.x, period) <= 0.51 && near(node.y, exact.y, 0.51));		// Rounded to spx.

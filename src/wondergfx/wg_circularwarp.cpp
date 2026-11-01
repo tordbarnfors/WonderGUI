@@ -148,36 +148,45 @@ namespace wg
 		the source at startAngle + sweep (counter clockwise for negative sweep) and is periodic with
 		a period of width * 360 / |sweep|. v goes from 0 at topRadius to the height of the source at
 		bottomRadius. Positions are clamped to what a Warpmap can hold, far outside the source.
+
+		Nodes are calculated with integers only, positions in 1/256 spx and angles in 1/2^32 of a
+		turn. u is calculated from the angle to the node from startAngle in the direction of sweep,
+		within a turn, so the first period is exact even though the period of the Warpmap is
+		rounded to spx.
 	*/
 
 	void CircularWarp::_generateNodes(CoordSPX* pNodes, SizeI nodes, int cellSize) const
 	{
-		double cx = m_center.x * m_size.w;
-		double cy = m_center.y * m_size.h;
+		const int c_fractionBits = 8;							// Of spx, so the center isn't rounded.
+		const int64_t c_pixel = 64 << c_fractionBits;
+		const double c_limit = 0x1p52;							// Keeps far away centers within int64 maths.
 
-		double rTop = m_topRadius / 64.0;
-		double rBottom = m_bottomRadius / 64.0;
+		auto toFixed = [c_limit](double value) { return value == value ? int64_t(std::clamp(std::round(value), -c_limit, c_limit)) : 0; };
 
-		double width = m_sourceSize.w;
-		double height = m_sourceSize.h;
+		int64_t cx = toFixed(m_center.x * m_size.w * double(c_pixel));
+		int64_t cy = toFixed(m_center.y * m_size.h * double(c_pixel));
+		int64_t topRadius = int64_t(m_topRadius) << c_fractionBits;
 
-		double sweep = m_sweep;
-		double period = _uPeriod();
+		uint32_t start = _toTurn(m_startAngle / 360.0);
+
+		Factor uFactor = _factor(double(m_sourceSize.w) * 360.0 / (std::abs(double(m_sweep)) * 0x1p32));
+		bool bClockwise = m_sweep > 0.f;
+		Factor vFactor = _factor(double(m_sourceSize.h) / (double(m_bottomRadius - m_topRadius) * (1 << c_fractionBits)));
+		bool bFlat = m_bottomRadius == m_topRadius;
 
 		for (int row = 0; row < nodes.h; row++)
 		{
-			double y = std::min(row * cellSize, m_size.h) - cy;
+			int64_t y = std::min(row * cellSize, m_size.h) * c_pixel - cy;
 
 			for (int col = 0; col < nodes.w; col++)
 			{
-				double x = std::min(col * cellSize, m_size.w) - cx;
+				int64_t x = std::min(col * cellSize, m_size.w) * c_pixel - cx;
 
-				double angle = std::atan2(x, -y) * 180.0 / 3.14159265358979323846;		// Clockwise from up, -180 -> 180.
-				double u = (angle - m_startAngle) / sweep * width;
-				u -= period * std::floor(u / period);
+				int64_t r;
+				uint32_t angle = _polar(-y, x, &r);				// Clockwise from up.
 
-				double r = std::sqrt(x * x + y * y);
-				double v = rBottom != rTop ? (r - rTop) / (rBottom - rTop) * height : -Warpmap::maxNodeValue;
+				int64_t u = _multiply(bClockwise ? angle - start : start - angle, uFactor);
+				int64_t v = bFlat ? -Warpmap::maxNodeValue : _multiply(r - topRadius, vFactor);
 
 				*pNodes++ = { _toNodeValue(u), _toNodeValue(v) };
 			}
