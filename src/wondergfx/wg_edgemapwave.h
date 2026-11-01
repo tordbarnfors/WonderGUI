@@ -41,7 +41,13 @@ namespace wg
 	 * set, which lets it run along y instead or in any direction.
 	 *
 	 * Samples are set as needed and the edgemap updated by generate(), only where samples
-	 * have changed.
+	 * have changed. Colors and tints are updated right away.
+	 *
+	 * Draws are rendered when the canvas update ends and read the edgemap then, so an edgemap that
+	 * is held elsewhere, such as by a draw that isn't rendered yet, is never changed. A new one is
+	 * made in its place instead, with all samples set so far, so one EdgemapWave can be drawn
+	 * several times with different samples or colors within the same canvas update. Draw the wave
+	 * rather than keeping its edgemap().
 	 */
 
 	class EdgemapWave : public EdgemapShape
@@ -114,7 +120,7 @@ namespace wg
 		void		setFlatBottomLine( int sampleBegin, int sampleEnd, spx sample );
 		void		setFlatBottomLine( int sampleBegin, int sampleEnd, float sample );
 
-		void		generate();											// Updates the edgemap with samples set since last generate().
+		void		generate();											// Updates the edgemap with samples set since last generate(), see above.
 
 		Edgemap_p	edgemap() const { return m_pieces[0].pEdgemap; }
 
@@ -135,6 +141,7 @@ namespace wg
 
 		void 		_updateEdgemapColors();
 		void 		_regenEdgemap();
+		bool		_isEdgemapHeld() const;
 
 
 		void		_optimizeRangeSetSamples( spx * pDestBegin, spx * pDestEnd, const spx * pSource, spx * pSampleStart );

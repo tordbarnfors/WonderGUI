@@ -15,6 +15,7 @@
 #include "tests/shaperender.h"
 #include "tests/edgemap.h"
 #include "tests/edgemapring.h"
+#include "tests/edgemapwave.h"
 #include "tests/edgemapbox.h"
 #include "tests/warpmap.h"
 #include "tests/warprender.h"
@@ -39,6 +40,7 @@ TestFramework::TestFramework( std::ostream& output ) :
 	addCollection( new ShapeRenderTest() );
 	addCollection( new EdgemapTest() );
 	addCollection( new EdgemapRingTest() );
+	addCollection( new EdgemapWaveTest() );
 	addCollection( new EdgemapBoxTest() );
 	addCollection( new WarpmapTest() );
 	addCollection( new WarpRenderTest() );
