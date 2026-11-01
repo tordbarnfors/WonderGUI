@@ -112,8 +112,7 @@ namespace wax
 
 		_setupBuffer(size.w + 1, m_bOptimizeDirtRange);
 		m_size = size;
-
-		_regenEdgemap();
+		m_bSizeChanged = true;
 
 		return true;
 	}
@@ -176,7 +175,7 @@ namespace wax
 			return false;
 
 		m_color = col;
-		_updateEdgemapColors();
+		m_bColorsChanged = true;
 		return true;
 	}
 
@@ -191,7 +190,7 @@ namespace wax
 	void EdgemapWave::setTint( Tint * pTint )
 	{
 		m_pTint = pTint;
-		_updateEdgemapColors();
+		m_bColorsChanged = true;
 	}
 
 	//____ setOutlineColor() _____________________________________________________
@@ -202,7 +201,7 @@ namespace wax
 			return false;
 
 		m_outlineColor = col;
-		_updateEdgemapColors();
+		m_bColorsChanged = true;
 		return true;
 	}
 
@@ -216,7 +215,7 @@ namespace wax
 	void EdgemapWave::setOutlineTint( Tint * pTint )
 	{
 		m_pOutlineTint = pTint;
-		_updateEdgemapColors();
+		m_bColorsChanged = true;
 	}
 
 
@@ -388,9 +387,30 @@ namespace wax
 	}
 
 	//____ generate() ____________________________________________________________
+	/*
+		Draws are rendered when the canvas update ends and read the edgemap then, so an edgemap
+		that a draw holds (or anyone else) is left as it is and a new one made in its place, with
+		all samples. A new size also takes a new edgemap. Otherwise colors are set and changed
+		samples imported into the one we have.
+	*/
 
 	void EdgemapWave::generate()
 	{
+		if( m_dirtEnd - m_dirtBegin <= 0 && !m_bColorsChanged && !m_bSizeChanged )
+			return;
+
+		if( m_bSizeChanged || _isEdgemapHeld() )
+		{
+			_regenEdgemap();								// Current size and colors, no samples.
+			m_dirtBegin = 0;
+			m_dirtEnd = m_nbSamples;
+		}
+		else if( m_bColorsChanged )
+			_updateEdgemapColors();
+
+		m_bColorsChanged = false;
+		m_bSizeChanged = false;
+
 		if( m_dirtEnd - m_dirtBegin <= 0  )
 			return;
 
@@ -625,12 +645,6 @@ namespace wax
 	{
 		Edgemap * pEdgemap = m_pieces[0].pEdgemap;
 
-		if( pEdgemap == nullptr )
-		{
-			_regenEdgemap();
-			return;
-		}
-
 		HiColor	colors[5];
 		int nSegments = _generateColorPalette(colors);
 		pEdgemap->setColors( 0, nSegments, colors );
@@ -658,6 +672,14 @@ namespace wax
 		bool bTints = m_pTint || m_pOutlineTint;
 
 		m_pieces[0].pEdgemap = pFactory->createEdgemap( WAXBP(Edgemap, _.colors = colors, _.tints = bTints ? tints : nullptr, _.size = m_size, _.segments = nSegments ) );
+	}
+
+	//____ _isEdgemapHeld() ___________________________________________________
+	// True if anything but the wave holds its edgemap, such as a draw that isn't rendered yet.
+
+	bool EdgemapWave::_isEdgemapHeld() const
+	{
+		return m_pieces[0].pEdgemap && m_pieces[0].pEdgemap->refcount() > 1;
 	}
 
 	//____ _generateColorPalette() _______________________________________________
