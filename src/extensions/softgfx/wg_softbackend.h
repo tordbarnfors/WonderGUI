@@ -427,6 +427,7 @@ namespace wg
 			bool			bBilinear;
 			bool			bTileRead;			// Surface is tiling, read with ReadOp::Tile.
 			TransformBlitOp_p	pReadOp;		// Reads into a HiColor buffer.
+			TransformBlitOp_p	pDirectOp;		// Draws straight onto the canvas, for cells inside the source. Null if not usable, see _beginWarp().
 		};
 
 		bool	_beginWarp(const WarpParams& params, SoftWarpmap* pWarpmap, SoftEdgemap* pEdgemap);
@@ -438,7 +439,8 @@ namespace wg
 		int		_warpAxisCoverage(int axis, int64_t s, int64_t gx, int64_t gy) const;
 		int		_warpEdgemapCoverage(int64_t sx, int64_t sy, int64_t ax, int64_t bx, int64_t ay, int64_t by, int* pCoverage, int& solidSegment) const;
 		void	_warpTintSpan(const SoftTint& tint, int64_t x, int64_t y, int64_t dx, int64_t dy, int length, HiColor* pOutput);
-		void	_warpReadSpan(int64_t x, int64_t y, int64_t dx, int64_t dy, int length, HiColor* pOutput, const int* pCoverage);
+		void	_warpReadSpan(int64_t x, int64_t y, int64_t dx, int64_t dy, int length, HiColor* pOutput, const int* pCoverage,
+								  uint8_t* pDirect = nullptr, CoordI directPos = { 0,0 }, uint8_t* pDrawn = nullptr);
 		int		_warpOpaqueAlpha(int a) const;
 		HiColor* _warpBuffer(int index, int length);
 
@@ -523,6 +525,7 @@ namespace wg
 		std::vector<SoftShapes::Run>	m_warpRuns;
 		std::vector<CoveragePixel>	m_warpPixels;
 		std::vector<int>			m_warpCoverage;
+		std::vector<uint8_t>		m_warpDrawn;						// Pixels of a span drawn by WarpSetup::pDirectOp.
 		std::vector<HiColor>		m_warpBuffers[c_maxSegments + 2];	// Colors of segments, then source or device tint.
 
 

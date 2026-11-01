@@ -782,6 +782,14 @@ namespace wg
 				WarpParams params;
 				p = decodeWarp(cmd, p, params);
 
+				// Blits through Warpmaps can use the blit kernels, see _beginWarp().
+
+				if (cmd == Command::WarpBlit && m_bBlitFunctionNeedsUpdate)
+				{
+					_updateBlitFunctions();
+					m_bBlitFunctionNeedsUpdate = false;
+				}
+
 				auto pWarpmap = static_cast<SoftWarpmap*>(m_pObjectsBeg[params.warpmap]);
 				auto pEdgemap = (cmd == Command::WarpDrawEdgemap) ? static_cast<SoftEdgemap*>(m_pObjectsBeg[params.edgemap]) : nullptr;
 

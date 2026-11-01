@@ -58,6 +58,7 @@
 
 #include <algorithm>
 #include <cstdlib>
+#include <cstring>
 #include <limits>
 
 namespace wg
@@ -404,6 +405,23 @@ namespace wg
 			ReadOp readOp = w.bTileRead ? ReadOp::Tile : ReadOp::Normal;
 
 			w.pReadOp = m_pTransformMoveToHiColorKernels[(int)srcFormat][(int)sampleMethod][(int)readOp];
+
+			// Cells all inside the source are drawn straight onto the canvas by the one-pass kernel of
+			// a transform blit or tile, when it has one, as fast as such a blit and without reading into
+			// a buffer and blending by coverage, which costs about as much again. Not when tinted other
+			// than flat, which blits do in spans of their own, nor for paint modes on a canvas without
+			// alpha, which are drawn by their own rules, see above. The blit functions are up to date,
+			// see processCommands().
+
+			w.pDirectOp = nullptr;
+
+			if (m_softTint.isFlat() && !m_bBlitTintRuns && !w.bOpaquePaint)
+			{
+				if (w.bTileRead && m_pTransformTileOp == &SoftBackend::_onePassTransformBlit)
+					w.pDirectOp = m_pTransformTileFirstPassOp;
+				else if (!w.bTileRead && m_pTransformBlitOp == &SoftBackend::_onePassTransformBlit)
+					w.pDirectOp = m_pTransformBlitFirstPassOp;
+			}
 
 			if (!w.pReadOp)
 			{
@@ -861,6 +879,26 @@ namespace wg
 
 				if (w.pEdgemap)
 					_warpTintSpan(w.pEdgemap->m_segmentTints[kind], pos[0], pos[1], step[0], step[1], length, pColors);
+				else if (w.pDirectOp)
+				{
+					// Straight onto the canvas, except pixels needing reads kept inside the source.
+
+					if ((int)m_warpDrawn.size() < length)
+						m_warpDrawn.resize(length);
+
+					uint8_t* pDrawn = m_warpDrawn.data();
+					std::memset(pDrawn, 0, length);
+
+					_warpReadSpan(pos[0], pos[1], step[0], step[1], length, pColors, nullptr,
+								  pOrigin + y * pitch + beg * m_canvasPixelBytes, { beg, y }, pDrawn);
+
+					for (int k = 0; k < length; k++)
+					{
+						if (!pDrawn[k])
+							addColoredPixel(beg + k, pColors[k]);
+					}
+					continue;
+				}
 				else
 					_warpReadSpan(pos[0], pos[1], step[0], step[1], length, pColors, nullptr);
 
@@ -1237,9 +1275,14 @@ namespace wg
 		WarpSetup::colorLow). A non-tiling surface is read as if the edge pixels of the source
 		rectangle continued outside it, which the kernels can't do, so positions outside are clamped
 		and read one by one. If pCoverage is set, pixels without coverage are not read.
+
+		If pDirect is set (the first pixel of the span on the canvas, at directPos), pixels that the
+		kernel reads as they are are drawn straight onto the canvas by WarpSetup::pDirectOp instead,
+		and marked in pDrawn. Only for spans all covered.
 	*/
 
-	void SoftBackend::_warpReadSpan(int64_t x, int64_t y, int64_t dx, int64_t dy, int length, HiColor* pOutput, const int* pCoverage)
+	void SoftBackend::_warpReadSpan(int64_t x, int64_t y, int64_t dx, int64_t dy, int length, HiColor* pOutput, const int* pCoverage,
+									uint8_t* pDirect, CoordI directPos, uint8_t* pDrawn)
 	{
 		const WarpSetup& w = m_warp;
 		const SoftSurface* pSource = m_pBlitSource;
@@ -1259,6 +1302,22 @@ namespace wg
 				w.pReadOp(pSource, pos, matrix, (uint8_t*)(pOutput + begin + beg), 8, 0, 1, count, m_colTrans, { 0,0 });
 			};
 
+			// Draws straight onto the canvas if pDirect is set, otherwise reads.
+
+			auto draw = [&](int beg, int count, int64_t posX, int64_t posY)
+			{
+				if (!pDirect)
+				{
+					read(beg, count, posX, posY);
+					return;
+				}
+
+				int i = begin + beg;
+				BinalCoord pos = { binalInt(toBinal(posX)), binalInt(toBinal(posY)) };
+				w.pDirectOp(pSource, pos, matrix, pDirect + i * m_canvasPixelBytes, m_canvasPixelBytes, 0, 1, count, m_colTrans, { directPos.x + i, directPos.y });
+				std::memset(pDrawn + i, 1, count);
+			};
+
 			if (w.bTileRead)
 			{
 				// Kernel wraps around the surface.
@@ -1266,7 +1325,7 @@ namespace wg
 				int64_t maskX = (int64_t(pSource->tileMaskX()) << 16) | (c_one - 1);
 				int64_t maskY = (int64_t(pSource->tileMaskY()) << 16) | (c_one - 1);
 
-				read(0, n, sx & maskX, sy & maskY);
+				draw(0, n, sx & maskX, sy & maskY);
 				return;
 			}
 
@@ -1284,7 +1343,7 @@ namespace wg
 			int innerEnd = std::min(endX, endY);
 
 			if (innerBeg < innerEnd)
-				read(innerBeg, innerEnd - innerBeg, sx + dx * innerBeg, sy + dy * innerBeg);
+				draw(innerBeg, innerEnd - innerBeg, sx + dx * innerBeg, sy + dy * innerBeg);
 			else
 				innerBeg = innerEnd = n;
 
