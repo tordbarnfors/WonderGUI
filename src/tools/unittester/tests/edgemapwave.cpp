@@ -15,8 +15,8 @@
 
 using namespace wg;
 
-// EdgemapWave updating its edgemap in place only when nothing else holds it, since draws are
-// rendered when the canvas update ends.
+// EdgemapWave changing its edgemap only in generate(), and in place only when nothing else holds
+// it, since draws are rendered when the canvas update ends.
 
 namespace
 {
@@ -47,6 +47,8 @@ namespace
 		pCanvas->freePixelBuffer(buffer);
 		return out;
 	}
+
+	const int c_fillSegment = 2;					// Transparent, outline, fill, outline, transparent.
 
 	EdgemapWave_p makeWave(HiColor color)
 	{
@@ -82,22 +84,30 @@ EdgemapWaveTest::~EdgemapWaveTest()
 }
 
 //____ heldEdgemapTest() ______________________________________________________
-// The edgemap is updated in place when only the wave holds it, replaced when held elsewhere.
+// Settings reach the edgemap in generate(). It is updated in place when only the wave holds it and
+// replaced when held elsewhere or when the size has changed.
 
 bool EdgemapWaveTest::heldEdgemapTest(std::ostream& output)
 {
-	auto pWave = makeWave(HiColor(4096, 0, 0, 4096));
+	const HiColor red(4096, 0, 0, 4096), blue(0, 0, 4096, 4096), green(0, 4096, 0, 4096);
+
+	auto pWave = makeWave(red);
 	setSamples(pWave, 0.2f);
 	pWave->generate();
 
 	Edgemap* pFirst = pWave->edgemap().rawPtr();
+	TEST_ASSERT(pFirst->flatColors()[c_fillSegment] == red);
+
+	// In place.
 
 	setSamples(pWave, 0.3f);
 	pWave->generate();
 	TEST_ASSERT(pWave->edgemap().rawPtr() == pFirst);
 
-	pWave->setColor(HiColor(0, 0, 4096, 4096));
-	TEST_ASSERT(pWave->edgemap().rawPtr() == pFirst);
+	pWave->setColor(blue);
+	TEST_ASSERT(pFirst->flatColors()[c_fillSegment] == red);					// Not until generate().
+	pWave->generate();
+	TEST_ASSERT(pWave->edgemap().rawPtr() == pFirst && pFirst->flatColors()[c_fillSegment] == blue);
 
 	// Held elsewhere, by samples...
 
@@ -107,24 +117,35 @@ bool EdgemapWaveTest::heldEdgemapTest(std::ostream& output)
 	pWave->generate();
 	TEST_ASSERT(pWave->edgemap() != pHeld);
 
-	// ...and by colors.
+	// ...and by colors, which the held edgemap keeps.
 
 	pHeld = pWave->edgemap();
-	pWave->setColor(HiColor(0, 4096, 0, 4096));
+	pWave->setColor(green);
+	TEST_ASSERT(pWave->edgemap() == pHeld);
+	pWave->generate();
 	TEST_ASSERT(pWave->edgemap() != pHeld);
+	TEST_ASSERT(pHeld->flatColors()[c_fillSegment] == blue && pWave->edgemap()->flatColors()[c_fillSegment] == green);
 
 	// Nothing changed, nothing replaced.
 
 	pHeld = pWave->edgemap();
 	pWave->generate();
 	TEST_ASSERT(pWave->edgemap() == pHeld);
+	pHeld = nullptr;
+
+	// A new size takes a new edgemap, also when not held.
+
+	Edgemap* pBefore = pWave->edgemap().rawPtr();
+	TEST_ASSERT(pWave->setSize({ 50 * 64, 30 * 64 }));
+	TEST_ASSERT(pWave->edgemap().rawPtr() == pBefore);
+	pWave->generate();
+	TEST_ASSERT(pWave->edgemap().rawPtr() != pBefore && pWave->edgemap()->pixelSize() == SizeI(50, 30));
 	return true;
 }
 
 //____ drawnTwiceTest() _______________________________________________________
-// One EdgemapWave drawn three times within one canvas update, with other samples and colors in
-// between, draws as three separate waves. The last one only has its color changed, which applies
-// right away without generate().
+// One EdgemapWave drawn several times within one canvas update, with other samples and colors in
+// between, draws as separate waves. A color set without generate() isn't drawn.
 
 bool EdgemapWaveTest::drawnTwiceTest(std::ostream& output)
 {
@@ -143,7 +164,11 @@ bool EdgemapWaveTest::drawnTwiceTest(std::ostream& output)
 		pWave->draw(pDevice, { 90 * 64, 10 * 64 });
 
 		pWave->setColor(green);
+		pWave->generate();
 		pWave->draw(pDevice, { 10 * 64, 80 * 64 });
+
+		pWave->setColor(red);
+		pWave->draw(pDevice, { 90 * 64, 80 * 64 });
 	});
 
 	auto separate = render([&](GfxDevice* pDevice)
@@ -162,6 +187,7 @@ bool EdgemapWaveTest::drawnTwiceTest(std::ostream& output)
 		setSamples(pThird, 0.45f);
 		pThird->generate();
 		pThird->draw(pDevice, { 10 * 64, 80 * 64 });
+		pThird->draw(pDevice, { 90 * 64, 80 * 64 });
 	});
 
 	for (size_t i = 0; i < one.size(); i++)

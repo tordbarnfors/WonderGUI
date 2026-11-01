@@ -112,8 +112,7 @@ namespace wg
 
 		_setupBuffer(size.w + 1, m_bOptimizeDirtRange);
 		m_size = size;
-
-		_regenEdgemap();
+		m_bSizeChanged = true;
 
 		return true;
 	}
@@ -176,7 +175,7 @@ namespace wg
 			return false;
 
 		m_color = col;
-		_updateEdgemapColors();
+		m_bColorsChanged = true;
 		return true;
 	}
 
@@ -191,7 +190,7 @@ namespace wg
 	void EdgemapWave::setTint( Tint * pTint )
 	{
 		m_pTint = pTint;
-		_updateEdgemapColors();
+		m_bColorsChanged = true;
 	}
 
 	//____ setOutlineColor() _____________________________________________________
@@ -202,7 +201,7 @@ namespace wg
 			return false;
 
 		m_outlineColor = col;
-		_updateEdgemapColors();
+		m_bColorsChanged = true;
 		return true;
 	}
 
@@ -216,7 +215,7 @@ namespace wg
 	void EdgemapWave::setOutlineTint( Tint * pTint )
 	{
 		m_pOutlineTint = pTint;
-		_updateEdgemapColors();
+		m_bColorsChanged = true;
 	}
 
 
@@ -391,20 +390,29 @@ namespace wg
 	/*
 		Draws are rendered when the canvas update ends and read the edgemap then, so an edgemap
 		that a draw holds (or anyone else) is left as it is and a new one made in its place, with
-		all samples.
+		all samples. A new size also takes a new edgemap. Otherwise colors are set and changed
+		samples imported into the one we have.
 	*/
 
 	void EdgemapWave::generate()
 	{
-		if( m_dirtEnd - m_dirtBegin <= 0  )
+		if( m_dirtEnd - m_dirtBegin <= 0 && !m_bColorsChanged && !m_bSizeChanged )
 			return;
 
-		if( _isEdgemapHeld() )
+		if( m_bSizeChanged || _isEdgemapHeld() )
 		{
-			_regenEdgemap();
+			_regenEdgemap();								// Current size and colors, no samples.
 			m_dirtBegin = 0;
 			m_dirtEnd = m_nbSamples;
 		}
+		else if( m_bColorsChanged )
+			_updateEdgemapColors();
+
+		m_bColorsChanged = false;
+		m_bSizeChanged = false;
+
+		if( m_dirtEnd - m_dirtBegin <= 0  )
+			return;
 
 		Edgemap * pEdgemap = m_pieces[0].pEdgemap;
 
@@ -636,24 +644,6 @@ namespace wg
 	void EdgemapWave::_updateEdgemapColors()
 	{
 		Edgemap * pEdgemap = m_pieces[0].pEdgemap;
-
-		if( pEdgemap == nullptr )
-		{
-			_regenEdgemap();
-			return;
-		}
-
-		// An edgemap held elsewhere keeps its colors, see generate(). The new one gets the new
-		// colors and all samples, so that it can be drawn right away as before.
-
-		if( _isEdgemapHeld() )
-		{
-			_regenEdgemap();
-			m_dirtBegin = 0;
-			m_dirtEnd = m_nbSamples;
-			generate();
-			return;
-		}
 
 		HiColor	colors[5];
 		int nSegments = _generateColorPalette(colors);

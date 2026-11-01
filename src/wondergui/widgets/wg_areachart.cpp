@@ -419,6 +419,7 @@ namespace wg
 
 						pWF->setTint(graph.m_pFillTint);
 						pWF->setOutlineTint(graph.m_pOutlineTint);
+						pWF->generate();
 
 						graph.m_bColorsChanged = false;
 

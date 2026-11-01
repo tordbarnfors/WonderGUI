@@ -40,14 +40,15 @@ namespace wg
 	 * along x, and the lines can have outlines. It is drawn as one edgemap, flipped as
 	 * set, which lets it run along y instead or in any direction.
 	 *
-	 * Samples are set as needed and the edgemap updated by generate(), only where samples
-	 * have changed. Colors and tints are updated right away.
+	 * Samples, size, colors and tints can be set at any time, but reach the edgemap only when
+	 * generate() is called. It updates the edgemap where samples have changed, or makes a new one
+	 * if the size has changed.
 	 *
 	 * Draws are rendered when the canvas update ends and read the edgemap then, so an edgemap that
-	 * is held elsewhere, such as by a draw that isn't rendered yet, is never changed. A new one is
-	 * made in its place instead, with all samples set so far, so one EdgemapWave can be drawn
-	 * several times with different samples or colors within the same canvas update. Draw the wave
-	 * rather than keeping its edgemap().
+	 * is held elsewhere, such as by a draw that isn't rendered yet, is never changed. generate()
+	 * makes a new one in its place instead, so one EdgemapWave can be drawn several times with
+	 * different settings within the same canvas update. Draw the wave rather than keeping its
+	 * edgemap().
 	 */
 
 	class EdgemapWave : public EdgemapShape
@@ -82,7 +83,7 @@ namespace wg
 
 		//.____ Geometry ____________________________________________________
 
-		bool		setSize( SizeSPX size );						// Destroys all samples. Will need to be set again.
+		bool		setSize( SizeSPX size );						// Destroys all samples. Will need to be set again before generate().
 		SizeSPX		size() const { return m_size * 64; }
 
 		void		setPos( CoordSPX pos );
@@ -120,9 +121,9 @@ namespace wg
 		void		setFlatBottomLine( int sampleBegin, int sampleEnd, spx sample );
 		void		setFlatBottomLine( int sampleBegin, int sampleEnd, float sample );
 
-		void		generate();											// Updates the edgemap with samples set since last generate(), see above.
+		void		generate();											// Updates the edgemap with all changes since last generate(), see above.
 
-		Edgemap_p	edgemap() const { return m_pieces[0].pEdgemap; }
+		Edgemap_p	edgemap() const { return m_pieces[0].pEdgemap; }	// As of the last generate().
 
 	protected:
 
@@ -160,6 +161,8 @@ namespace wg
 		SampleOrigo	m_origo;
 
 		bool		m_bHasOutlines;
+		bool		m_bColorsChanged = false;		// Colors or tints set since last generate().
+		bool		m_bSizeChanged = false;			// Size set since last generate(), which needs a new edgemap.
 
 		HiColor		m_color = HiColor::Undefined;
 		HiColor		m_outlineColor = HiColor::Undefined;
