@@ -44,20 +44,18 @@ namespace wg
 		if (!pEncoder || !_validateBlueprint(bp) || !pNodes)
 			return nullptr;
 
-		auto p = StreamWarpmap_p(new StreamWarpmap(pEncoder, bp));
-		SizeI nodes = p->nodes();
-		p->importNodes({ 0,0,nodes.w,nodes.h }, pNodes, pitch);
+		auto p = StreamWarpmap_p(new StreamWarpmap(pEncoder, bp, pNodes, pitch));
 		pEncoder->flush();
 		return p;
 	}
 
 	//____ constructor ________________________________________________________
 	/*
-		The receiving end creates its Warpmap with the same nodes, but we send them anyway, so
-		that it gets exactly ours.
+		The receiving end creates its Warpmap with default nodes. We send ours even when they are
+		the defaults, so that it gets exactly ours.
 	*/
 
-	StreamWarpmap::StreamWarpmap( StreamEncoder * pEncoder, const Blueprint& bp ) : Warpmap(bp)
+	StreamWarpmap::StreamWarpmap( StreamEncoder * pEncoder, const Blueprint& bp, const CoordSPX * pNodes, int pitch ) : Warpmap(bp, pNodes, pitch)
 	{
 		m_pEncoder = pEncoder;
 		m_inStreamId = pEncoder->allocObjectId();

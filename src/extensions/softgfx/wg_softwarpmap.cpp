@@ -40,10 +40,7 @@ namespace wg
 		if (!_validateBlueprint(bp) || !pNodes)
 			return nullptr;
 
-		auto p = SoftWarpmap_p(new SoftWarpmap(bp));
-		SizeI nodes = p->nodes();
-		p->importNodes({ 0,0,nodes.w,nodes.h }, pNodes, pitch);
-		return p;
+		return SoftWarpmap_p(new SoftWarpmap(bp, pNodes, pitch));
 	}
 
 	//____ typeInfo() _________________________________________________________

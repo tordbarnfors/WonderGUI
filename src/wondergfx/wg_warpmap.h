@@ -159,7 +159,12 @@ namespace wg
 
 	protected:
 		Warpmap() {};
-		Warpmap( const Blueprint& bp );
+
+		// Nodes are taken from pNodes (pitch as for importNodes()) if given, otherwise they map the
+		// rectangle straight onto the source. Subclasses send them on with _nodesUpdated() when
+		// constructed, so creating with nodes costs a single upload.
+
+		Warpmap( const Blueprint& bp, const CoordSPX * pNodes = nullptr, int pitch = 0 );
 		virtual ~Warpmap();
 
 		static bool		_validateBlueprint( const Blueprint& bp );

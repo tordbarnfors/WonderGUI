@@ -68,7 +68,7 @@ namespace wg
 		const static TypeInfo	TYPEINFO;
 
 	protected:
-		GlWarpmap( const Blueprint& bp );
+		GlWarpmap( const Blueprint& bp, const CoordSPX * pNodes = nullptr, int pitch = 0 );
 		virtual ~GlWarpmap();
 
 		void	_nodesUpdated( const RectI& region ) override;

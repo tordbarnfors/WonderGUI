@@ -31,7 +31,7 @@ namespace wg
 
 	//____ constructor ________________________________________________________
 
-	Warpmap::Warpmap(const Blueprint& bp) : m_size(bp.size), m_cellSize(bp.cellSize), m_uPeriod(bp.uPeriod), m_vPeriod(bp.vPeriod)
+	Warpmap::Warpmap(const Blueprint& bp, const CoordSPX* pNodes, int pitch) : m_size(bp.size), m_cellSize(bp.cellSize), m_uPeriod(bp.uPeriod), m_vPeriod(bp.vPeriod)
 	{
 		if (bp.finalizer)
 			setFinalizer(bp.finalizer);
@@ -41,11 +41,22 @@ namespace wg
 
 		m_pNodes = new CoordSPX[m_nodes.w * m_nodes.h];
 
-		// Start out mapping the rectangle straight onto the source, pixel for pixel.
+		if (pNodes)
+		{
+			if (pitch == 0)
+				pitch = m_nodes.w;
 
-		for (int row = 0; row < m_nodes.h; row++)
-			for (int col = 0; col < m_nodes.w; col++)
-				m_pNodes[row * m_nodes.w + col] = { nodeX(col) * 64, nodeY(row) * 64 };
+			for (int row = 0; row < m_nodes.h; row++)
+				std::memcpy(m_pNodes + row * m_nodes.w, pNodes + row * pitch, m_nodes.w * sizeof(CoordSPX));
+		}
+		else
+		{
+			// Start out mapping the rectangle straight onto the source, pixel for pixel.
+
+			for (int row = 0; row < m_nodes.h; row++)
+				for (int col = 0; col < m_nodes.w; col++)
+					m_pNodes[row * m_nodes.w + col] = { nodeX(col) * 64, nodeY(row) * 64 };
+		}
 
 		_normalizeNodes({ 0,0,m_nodes.w,m_nodes.h });
 	}

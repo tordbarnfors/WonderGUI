@@ -21,6 +21,39 @@ namespace
 {
 	bool near(double a, double b, double tolerance) { return std::abs(a - b) <= tolerance; }
 
+	// Warpmap that counts the nodes it sends on, as a backend uploads them, and a factory for it.
+
+	class CountingWarpmap : public Warpmap
+	{
+	public:
+		CountingWarpmap(const Blueprint& bp, const CoordSPX* pNodes, int pitch) : Warpmap(bp, pNodes, pitch)
+		{
+			_nodesUpdated({ 0, 0, m_nodes.w, m_nodes.h });
+		}
+
+		int		updates = 0;
+		int		nodesSent = 0;
+
+	protected:
+		void _nodesUpdated(const RectI& region) override
+		{
+			updates++;
+			nodesSent += region.w * region.h;
+		}
+	};
+
+	class CountingWarpmapFactory : public WarpmapFactory
+	{
+	public:
+		Warpmap_p createWarpmap(const Warpmap::Blueprint& bp) override { return _created(new CountingWarpmap(bp, nullptr, 0)); }
+		Warpmap_p createWarpmap(const Warpmap::Blueprint& bp, const CoordSPX* pNodes, int pitch) override { return _created(new CountingWarpmap(bp, pNodes, pitch)); }
+
+		int		created = 0;
+
+	private:
+		Warpmap_p _created(Warpmap* p) { created++; return p; }
+	};
+
 	// Exact position (spx of the source) of CircularWarp at point x,y (pixels), u counted from
 	// startAngle in the direction of sweep and wrapped into a turn. The period of the Warpmap is
 	// rounded to spx, so u can only be exact within its first period.
@@ -126,6 +159,7 @@ WarpmapTest::WarpmapTest()
 {
 	ADD_TEST(defaultNodesTest);
 	ADD_TEST(importExportTest);
+	ADD_TEST(createWithNodesTest);
 	ADD_TEST(periodTest);
 	ADD_TEST(circularWarpTest);
 	ADD_TEST(circularWarpGenerateTest);
@@ -202,6 +236,49 @@ bool WarpmapTest::importExportTest(std::ostream& output)
 	TEST_ASSERT(!pMap->importNodes({ -1,0,1,1 }, buffer));
 	TEST_ASSERT(!pMap->exportNodes({ 0,2,1,2 }, all));
 	TEST_ASSERT(!pMap->importNodes({ 0,0,1,1 }, nullptr));
+
+	return true;
+}
+
+//____ createWithNodesTest() __________________________________________________
+// A Warpmap created with nodes starts out with them, normalized, and sends them on once.
+
+bool WarpmapTest::createWithNodesTest(std::ostream& output)
+{
+	Warpmap::Blueprint bp = { .cellSize = 10, .size = { 30, 20 }, .uPeriod = 640 };		// 4 x 3 nodes.
+
+	// Nodes in a buffer with a pitch of 5, some outside the period.
+
+	CoordSPX buffer[15];
+	for (int i = 0; i < 15; i++)
+		buffer[i] = { i * 100 - 700, -i };
+
+	auto pFactory = StrongPtr<CountingWarpmapFactory>(new CountingWarpmapFactory());
+	auto pMap = pFactory->createWarpmap(bp, buffer, 5);
+	auto pCounting = static_cast<CountingWarpmap*>(pMap.rawPtr());
+
+	TEST_ASSERT(pCounting->updates == 1);
+	TEST_ASSERT(pCounting->nodesSent == 12);
+
+	for (int row = 0; row < 3; row++)
+		for (int col = 0; col < 4; col++)
+		{
+			CoordSPX expected = buffer[row * 5 + col];
+			expected.x = ((expected.x % 640) + 640) % 640;
+			TEST_ASSERT(pMap->nodeData()[row * 4 + col] == expected);
+		}
+
+	// Same as a backend creating with nodes.
+
+	auto pSoft = SoftWarpmap::create(bp, buffer, 5);
+	TEST_ASSERT(pSoft != nullptr);
+	TEST_ASSERT(std::equal(pSoft->nodeData(), pSoft->nodeData() + 12, pMap->nodeData()));
+
+	// Without nodes it maps straight onto the source, also sent on once.
+
+	auto pDefault = pFactory->createWarpmap(bp);
+	TEST_ASSERT(static_cast<CountingWarpmap*>(pDefault.rawPtr())->updates == 1);
+	TEST_ASSERT(pFactory->created == 2);
 
 	return true;
 }

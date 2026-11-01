@@ -65,7 +65,7 @@ namespace wg
 		static constexpr int	c_maxNodesPerChunk = 128;
 
 	protected:
-		StreamWarpmap( StreamEncoder * pEncoder, const Blueprint& bp );
+		StreamWarpmap( StreamEncoder * pEncoder, const Blueprint& bp, const CoordSPX * pNodes = nullptr, int pitch = 0 );
 		~StreamWarpmap();
 
 		void	_nodesUpdated( const RectI& region ) override;

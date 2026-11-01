@@ -54,7 +54,7 @@ namespace wg
 		const static TypeInfo	TYPEINFO;
 
 	protected:
-		SoftWarpmap( const Blueprint& bp ) : Warpmap(bp) {}
+		SoftWarpmap( const Blueprint& bp, const CoordSPX * pNodes = nullptr, int pitch = 0 ) : Warpmap(bp, pNodes, pitch) {}
 		virtual ~SoftWarpmap() {}
 
 		void	_nodesUpdated( const RectI& region ) override {}

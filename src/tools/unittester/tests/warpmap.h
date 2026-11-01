@@ -12,6 +12,7 @@ private:
 
 	bool defaultNodesTest(std::ostream& output);
 	bool importExportTest(std::ostream& output);
+	bool createWithNodesTest(std::ostream& output);
 	bool periodTest(std::ostream& output);
 	bool circularWarpTest(std::ostream& output);
 	bool circularWarpGenerateTest(std::ostream& output);
