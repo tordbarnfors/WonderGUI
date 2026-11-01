@@ -25,6 +25,7 @@
 
 #include <wg_warpmap.h>
 #include <wg_streamencoder.h>
+#include <wg_nodecompression.h>
 
 namespace wg
 {
@@ -36,8 +37,9 @@ namespace wg
 	/**
 	 * @brief Warpmap that is mirrored in a stream.
 	 *
-	 * Creation, nodes, periods and deletion are sent in CreateWarpmap, WarpmapNodes,
-	 * SetWarpmapPeriods and DeleteWarpmap chunks.
+	 * Creation, nodes, periods and deletion are sent in CreateWarpmap, WarpmapUpdate,
+	 * WarpmapNodes, SetWarpmapPeriods and DeleteWarpmap chunks. Nodes that change together are
+	 * sent together, compressed by NodeCompressor, and are applied at once by the receiver.
 	 */
 
 	class StreamWarpmap : public Warpmap
@@ -60,10 +62,6 @@ namespace wg
 
 		bool	setPeriods( spx uPeriod, spx vPeriod ) override;
 
-		//.____ Internal ______________________________________________________
-
-		static constexpr int	c_maxNodesPerChunk = 128;
-
 	protected:
 		StreamWarpmap( StreamEncoder * pEncoder, const Blueprint& bp, const CoordSPX * pNodes = nullptr, int pitch = 0 );
 		~StreamWarpmap();
@@ -72,6 +70,7 @@ namespace wg
 
 		StreamEncoder_p		m_pEncoder;
 		uint16_t			m_inStreamId;		// Id of this warpmap in the stream.
+		NodeCompressor_p	m_pCompressor;
 	};
 
 } // namespace wg

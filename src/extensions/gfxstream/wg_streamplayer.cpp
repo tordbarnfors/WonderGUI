@@ -104,6 +104,7 @@ namespace wg
 		m_surfaceDataBuffers.clear();
 		m_edgemapDataBuffers.clear();
 		m_pendingSurfaces.clear();
+		m_warpmapDataBuffers.clear();
 
 		m_updateObject = 0;
 		m_updateCanvasRef = CanvasRef::None;
@@ -1137,65 +1138,122 @@ namespace wg
 			decoder >> uPeriod;
 			decoder >> vPeriod;
 
-			if (objectId >= m_vObjects.size() )
+			if (objectId >= m_vObjects.size())
 				m_vObjects.resize(objectId + 16, nullptr);
-			else if( m_vObjects[objectId] != nullptr )
+			else if (m_vObjects[objectId] != nullptr || _findWarpmapDataBuffer(objectId))
 			{
 				GfxBase::throwError(ErrorLevel::Warning, ErrorCode::InvalidParam, "CreateWarpmap with objectId that already is in use. The old object will be replaced.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			}
 
-			auto pFactory = m_pBackend->warpmapFactory();
+			m_vObjects[objectId] = nullptr;
 
-			if( !pFactory )
+			auto it = std::remove_if(m_warpmapDataBuffers.begin(), m_warpmapDataBuffers.end(), [objectId](const WarpmapDataBuffer& b) { return b.objectId == objectId; });
+			m_warpmapDataBuffers.erase(it, m_warpmapDataBuffers.end());
+
+			if (!m_pBackend->warpmapFactory())
 			{
 				GfxBase::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "CreateWarpmap, but backend has no WarpmapFactory.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
-				m_vObjects[objectId] = nullptr;
 				break;
 			}
 
-			Warpmap::Blueprint	bp;
+			// Created when its nodes have arrived.
 
-			bp.size = size;
-			bp.cellSize = cellSize;
-			bp.uPeriod = uPeriod;
-			bp.vPeriod = vPeriod;
+			auto& pending = m_warpmapDataBuffers.emplace_back();
+			pending.objectId = objectId;
+			pending.bCreate = true;
+			pending.blueprint.size = size;
+			pending.blueprint.cellSize = cellSize;
+			pending.blueprint.uPeriod = uPeriod;
+			pending.blueprint.vPeriod = vPeriod;
+			break;
+		}
 
-			m_vObjects[objectId] = pFactory->createWarpmap(bp);
+		case GfxStream::ChunkId::WarpmapUpdate:
+		{
+			uint16_t	objectId;
+			uint16_t	x, y, w, h;
+
+			decoder >> objectId;
+			decoder >> x;
+			decoder >> y;
+			decoder >> w;
+			decoder >> h;
+
+			auto pData = _findWarpmapDataBuffer(objectId);
+
+			if (!pData)
+			{
+				if (objectId >= m_vObjects.size() || m_vObjects[objectId] == nullptr || !m_vObjects[objectId]->isInstanceOf(Warpmap::TYPEINFO))
+				{
+					GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "WarpmapUpdate with invalid objectId", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+					break;
+				}
+
+				pData = &m_warpmapDataBuffers.emplace_back();
+				pData->objectId = objectId;
+			}
+			else if (!pData->region.isEmpty())
+				GfxBase::throwError(ErrorLevel::Warning, ErrorCode::InvalidParam, "WarpmapUpdate before nodes of previous update had arrived. They are dropped.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+
+			pData->region = { x, y, w, h };
+			pData->buffer.size = 0;
 			break;
 		}
 
 		case GfxStream::ChunkId::WarpmapNodes:
 		{
-			uint16_t	objectId;
-			uint16_t	column;
-			uint16_t	row;
-			uint16_t	nNodes;
+			GfxStream::DataInfo dataInfo;
+			decoder >> dataInfo;
 
-			decoder >> objectId;
-			decoder >> column;
-			decoder >> row;
-			decoder >> nNodes;
+			uint16_t objectId = uint16_t(dataInfo.objectId);
+			auto pData = _findWarpmapDataBuffer(objectId);
 
-			if( objectId >= m_vObjects.size() || m_vObjects[objectId] == nullptr || !m_vObjects[objectId]->isInstanceOf(Warpmap::TYPEINFO) ||
-				header.size != 8 + nNodes * 8 )
+			if (!pData || pData->region.isEmpty())
 			{
-				GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "WarpmapNodes with invalid objectId or size", this, &TYPEINFO, __func__, __FILE__, __LINE__);
-				m_pDecoder->skip(header.size - 8);
+				GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "WarpmapNodes without preceding WarpmapUpdate", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				m_pDecoder->skip(header.size - dataInfo.encodedSize);
 				break;
 			}
 
-			int memAllocated = sizeof(CoordSPX) * nNodes;
-			auto * pNodes = (CoordSPX*) GfxBase::memStackAlloc(memAllocated);
+			_loadIntoDataBuffer(dataInfo, pData->buffer, header.size - dataInfo.encodedSize);
 
-			for( int i = 0 ; i < nNodes ; i++ )
+			if (!dataInfo.bLastChunk)
+				break;
+
+			RectI region = pData->region;
+			auto pNodes = (const CoordSPX*) pData->buffer.pBuffer;
+
+			if (pData->buffer.size != region.w * region.h * int(sizeof(CoordSPX)))
+				GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "WarpmapNodes don't match size of region", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			else if (pData->bCreate)
 			{
-				decoder >> pNodes[i].x;
-				decoder >> pNodes[i].y;
+				auto pFactory = m_pBackend->warpmapFactory();
+				auto& bp = pData->blueprint;
+
+				SizeI nodes = { (bp.size.w + bp.cellSize - 1) / std::max(1, bp.cellSize) + 1, (bp.size.h + bp.cellSize - 1) / std::max(1, bp.cellSize) + 1 };
+
+				Warpmap_p pWarpmap;
+				if (region == RectI(0, 0, nodes.w, nodes.h))
+					pWarpmap = pFactory->createWarpmap(bp, pNodes);
+				else
+				{
+					pWarpmap = pFactory->createWarpmap(bp);
+					if (pWarpmap && !pWarpmap->importNodes(region, pNodes))
+						GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "WarpmapUpdate with region outside the Warpmap", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				}
+
+				if (!pWarpmap)
+					GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "CreateWarpmap with invalid parameters", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+
+				m_vObjects[objectId] = pWarpmap;
+			}
+			else if (objectId < m_vObjects.size() && m_vObjects[objectId] != nullptr)
+			{
+				if (!static_cast<Warpmap*>(m_vObjects[objectId].rawPtr())->importNodes(region, pNodes))
+					GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "WarpmapUpdate with region outside the Warpmap", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			}
 
-			static_cast<Warpmap*>(m_vObjects[objectId].rawPtr())->importNodes({ column, row, nNodes, 1 }, pNodes);
-
-			GfxBase::memStackFree(memAllocated);
+			m_warpmapDataBuffers.erase(m_warpmapDataBuffers.begin() + (pData - m_warpmapDataBuffers.data()));
 			break;
 		}
 
@@ -1208,6 +1266,14 @@ namespace wg
 			decoder >> objectId;
 			decoder >> uPeriod;
 			decoder >> vPeriod;
+
+			auto pData = _findWarpmapDataBuffer(objectId);
+			if( pData && pData->bCreate )
+			{
+				pData->blueprint.uPeriod = uPeriod;
+				pData->blueprint.vPeriod = vPeriod;
+				break;
+			}
 
 			if( objectId >= m_vObjects.size() || m_vObjects[objectId] == nullptr || !m_vObjects[objectId]->isInstanceOf(Warpmap::TYPEINFO) )
 			{
@@ -1224,6 +1290,16 @@ namespace wg
 			uint16_t	objectId;
 
 			decoder >> objectId;
+
+			auto pData = _findWarpmapDataBuffer(objectId);
+			if( pData )
+			{
+				bool bCreate = pData->bCreate;
+				m_warpmapDataBuffers.erase(m_warpmapDataBuffers.begin() + (pData - m_warpmapDataBuffers.data()));
+
+				if( bCreate )
+					break;											// Never created.
+			}
 
 			if( objectId >= m_vObjects.size() || m_vObjects[objectId] == nullptr || !m_vObjects[objectId]->isInstanceOf(Warpmap::TYPEINFO) )
 			{
@@ -1243,6 +1319,17 @@ namespace wg
 		}
 
 		return true;
+	}
+
+	//____ _findWarpmapDataBuffer() _____________________________________________
+
+	StreamPlayer::WarpmapDataBuffer * StreamPlayer::_findWarpmapDataBuffer( uint16_t objectId )
+	{
+		for( auto& data : m_warpmapDataBuffers )
+			if( data.objectId == objectId )
+				return &data;
+
+		return nullptr;
 	}
 
 	//____ _loadIntoDataBuffer() ________________________________________________

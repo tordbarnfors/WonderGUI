@@ -59,6 +59,7 @@ const char * toString(GfxStream::ChunkId i)
 		"SetEdgemapTint",
 		"SurfacePalette",
 		"CreateWarpmap",
+		"WarpmapUpdate",
 		"WarpmapNodes",
 		"SetWarpmapPeriods",
 		"DeleteWarpmap"

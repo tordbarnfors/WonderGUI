@@ -647,23 +647,26 @@ namespace wg
 				break;
 			}
 
-			case GfxStream::ChunkId::WarpmapNodes:
+			case GfxStream::ChunkId::WarpmapUpdate:
 			{
 				uint16_t	warpmapId;
-				uint16_t	column;
-				uint16_t	row;
-				uint16_t	nNodes;
+				uint16_t	x, y, w, h;
 
 				decoder >> warpmapId;
-				decoder >> column;
-				decoder >> row;
-				decoder >> nNodes;
+				decoder >> x;
+				decoder >> y;
+				decoder >> w;
+				decoder >> h;
 
 				m_charStream << "    warpmapId   = " << warpmapId << std::endl;
-				m_charStream << "    first node  = " << column << ", " << row << std::endl;
-				m_charStream << "    nodes       = " << nNodes << std::endl;
+				m_charStream << "    region      = " << x << ", " << y << ", " << w << ", " << h << " (nodes)" << std::endl;
+				break;
+			}
 
-				decoder.skip(header.size - 8);
+			case GfxStream::ChunkId::WarpmapNodes:
+			{
+				int toSkip = _readPrintDataInfo(header.size);
+				decoder.skip(toSkip);
 				break;
 			}
 

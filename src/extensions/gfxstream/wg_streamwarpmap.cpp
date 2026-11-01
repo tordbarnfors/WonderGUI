@@ -20,8 +20,11 @@
 
 =========================================================================*/
 #include <wg_streamwarpmap.h>
+#include <wg_streambackend.h>
+#include <wg_gfxbase.h>
 
 #include <algorithm>
+#include <cstring>
 
 namespace wg
 {
@@ -59,6 +62,7 @@ namespace wg
 	{
 		m_pEncoder = pEncoder;
 		m_inStreamId = pEncoder->allocObjectId();
+		m_pCompressor = NodeCompressor::create();
 
 		auto& encoder = * m_pEncoder;
 
@@ -114,37 +118,45 @@ namespace wg
 	}
 
 	//____ _nodesUpdated() ____________________________________________________
-	// Sends the nodes of region, row by row, in chunks of at most c_maxNodesPerChunk nodes.
+	/*
+		Sends the nodes of region in one WarpmapUpdate, followed by WarpmapNodes chunks with the
+		nodes compressed. Rows narrower than the Warpmap are gathered first.
+	*/
 
 	void StreamWarpmap::_nodesUpdated( const RectI& region )
 	{
+		if (region.w <= 0 || region.h <= 0)
+			return;
+
 		auto& encoder = * m_pEncoder;
 
-		for (int row = region.y; row < region.y + region.h; row++)
+		encoder << GfxStream::Header{ GfxStream::ChunkId::WarpmapUpdate, 0, 10 };
+		encoder << m_inStreamId;
+		encoder << (uint16_t) region.x;
+		encoder << (uint16_t) region.y;
+		encoder << (uint16_t) region.w;
+		encoder << (uint16_t) region.h;
+
+		const CoordSPX* pBeg = m_pNodes + region.y * m_nodes.w + region.x;
+		int nNodes = region.w * region.h;
+		int bytes = 0;
+
+		if (region.w != m_nodes.w)
 		{
-			int column = region.x;
-			int end = region.x + region.w;
+			bytes = nNodes * sizeof(CoordSPX);
+			auto pGathered = (CoordSPX*) GfxBase::memStackAlloc(bytes);
 
-			while (column < end)
-			{
-				int n = std::min(end - column, c_maxNodesPerChunk);
+			for (int row = 0; row < region.h; row++)
+				std::memcpy(pGathered + row * region.w, pBeg + row * m_nodes.w, region.w * sizeof(CoordSPX));
 
-				encoder << GfxStream::Header{ GfxStream::ChunkId::WarpmapNodes, 0, 8 + n * 8 };
-				encoder << m_inStreamId;
-				encoder << (uint16_t) column;
-				encoder << (uint16_t) row;
-				encoder << (uint16_t) n;
-
-				const CoordSPX* p = m_pNodes + row * m_nodes.w + column;
-				for (int i = 0; i < n; i++)
-				{
-					encoder << (int32_t) p[i].x;
-					encoder << (int32_t) p[i].y;
-				}
-
-				column += n;
-			}
+			pBeg = pGathered;
 		}
+
+		m_pCompressor->setRowLength(region.w);
+		StreamBackend::_compressSplitAndEncode(m_pEncoder, GfxStream::ChunkId::WarpmapNodes, m_inStreamId, m_pCompressor, pBeg, pBeg + nNodes);
+
+		if (bytes > 0)
+			GfxBase::memStackFree(bytes);
 	}
 
 } // namespace wg

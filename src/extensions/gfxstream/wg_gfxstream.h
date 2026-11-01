@@ -91,10 +91,11 @@ namespace wg
 			SetEdgemapTint = 29,
 			SurfacePalette = 30,		// Palette of surface just created, split over chunks like SurfacePixels.
 
-			CreateWarpmap = 31,			// Since 3.4.
-			WarpmapNodes = 32,			// Nodes of part of a row of a Warpmap.
-			SetWarpmapPeriods = 33,
-			DeleteWarpmap = 34
+			CreateWarpmap = 31,			// Since 3.4. Followed by WarpmapUpdate and WarpmapNodes with all its nodes.
+			WarpmapUpdate = 32,			// Region of nodes that following WarpmapNodes chunks hold.
+			WarpmapNodes = 33,			// Nodes of a region, row by row, split over chunks like EdgemapSamples. Compressed by NodeCompressor.
+			SetWarpmapPeriods = 34,
+			DeleteWarpmap = 35
 		};
 
 		const static ChunkId      ChunkId_min      = ChunkId::OutOfData;

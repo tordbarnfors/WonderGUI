@@ -387,6 +387,7 @@ WarpRenderTest::WarpRenderTest()
 	ADD_TEST(clipTest);
 	ADD_TEST(opaqueCanvasTest);
 	ADD_TEST(streamTest);
+	ADD_TEST(streamNodesTest);
 	ADD_TEST(cApiTest);
 	ADD_TEST(seamColorTest);
 	ADD_TEST(sourceRectTest);
@@ -643,6 +644,165 @@ bool WarpRenderTest::streamTest(std::ostream& output)
 	};
 
 	return compare(output, "Streamed warps", renderStreamed(scene), "streamed", render(Backend::Soft, scene), "direct", 0);
+}
+
+//____ streamNodesTest() ______________________________________________________
+// Nodes are streamed compressed, one update at a time, and the receiver creates a Warpmap with its
+// nodes and applies each update at once, exactly.
+
+namespace
+{
+	// Receiving end: SoftWarpmaps that count their updates, from a SoftBackend that makes them.
+
+	class CountingSoftWarpmap : public SoftWarpmap
+	{
+	public:
+		CountingSoftWarpmap(const Blueprint& bp, const CoordSPX* pNodes, int pitch) : SoftWarpmap(bp, pNodes, pitch) {}
+
+		int		updates = 0;
+
+	protected:
+		void _nodesUpdated(const RectI& region) override { updates++; }
+	};
+
+	class CountingSoftWarpmapFactory : public WarpmapFactory
+	{
+	public:
+		Warpmap_p createWarpmap(const Warpmap::Blueprint& bp) override { return _created(new CountingSoftWarpmap(bp, nullptr, 0), false); }
+		Warpmap_p createWarpmap(const Warpmap::Blueprint& bp, const CoordSPX* pNodes, int pitch) override { return _created(new CountingSoftWarpmap(bp, pNodes, pitch), true); }
+
+		std::vector<CountingSoftWarpmap*>	created;		// Kept alive by the test through the stream.
+		int									createdWithNodes = 0;
+
+	private:
+		Warpmap_p _created(CountingSoftWarpmap* p, bool bWithNodes) { created.push_back(p); createdWithNodes += bWithNodes; return p; }
+	};
+
+	class CountingSoftBackend : public SoftBackend
+	{
+	public:
+		WarpmapFactory_p warpmapFactory() override { return pWarpmapFactory; }
+
+		StrongPtr<CountingSoftWarpmapFactory>	pWarpmapFactory = new CountingSoftWarpmapFactory();
+	};
+
+	// Counts chunks and their bytes by type on their way to the player.
+
+	class ChunkCounter : public Object, protected StreamSink::Holder
+	{
+	public:
+		ChunkCounter(StreamSink_p next) : input(this), m_next(next) {}
+
+		StreamSink	input;
+
+		int		chunks[256] = {};
+		int		bytes[256] = {};
+
+		int count(GfxStream::ChunkId id) const { return chunks[int(id)]; }
+		int size(GfxStream::ChunkId id) const { return bytes[int(id)]; }
+		void clear() { std::fill(std::begin(chunks), std::end(chunks), 0); std::fill(std::begin(bytes), std::end(bytes), 0); }
+
+	protected:
+		void _processStreamChunks(const uint8_t* pBegin, const uint8_t* pEnd) override
+		{
+			for (auto p = pBegin; p < pEnd; p += GfxStream::chunkSize(p))
+			{
+				chunks[p[0]]++;
+				bytes[p[0]] += GfxStream::chunkSize(p);
+			}
+			m_next->processChunks(pBegin, pEnd);
+		}
+
+		StreamSink_p	m_next;
+	};
+}
+
+bool WarpRenderTest::streamNodesTest(std::ostream& output)
+{
+	using Id = GfxStream::ChunkId;
+
+	StrongPtr<CountingSoftBackend> pReceiver = new CountingSoftBackend();
+	auto pReceived = pReceiver->pWarpmapFactory;
+
+	auto pPlayer = StreamPlayer::create(pReceiver, SoftSurfaceFactory::create(), SoftEdgemapFactory::create());
+	StrongPtr<ChunkCounter> pCounter = new ChunkCounter({ pPlayer, pPlayer->input });
+	auto pEncoder = StreamEncoder::create({ pCounter, pCounter->input });
+	auto pStreamBackend = StreamBackend::create(pEncoder);
+
+	auto pWarp = CircularWarp::create(WGBP(CircularWarp, _.size = { 200, 200 }, _.sourceSize = c_edgemapSource, _.topRadius = 98 * 64, _.bottomRadius = 40 * 64,
+										   _.cellSize = 4), pStreamBackend->warpmapFactory());
+
+	auto sameNodes = [&](Warpmap* pSent, CountingSoftWarpmap* pGot)
+	{
+		SizeI nodes = pSent->nodes();
+		return pGot->nodes() == nodes && pGot->uPeriod() == pSent->uPeriod() && pGot->vPeriod() == pSent->vPeriod() &&
+			std::equal(pSent->nodeData(), pSent->nodeData() + nodes.w * nodes.h, pGot->nodeData());
+	};
+
+	// Created with all its nodes, compressed.
+
+	pCounter->clear();
+	Warpmap_p pSent = pWarp->generate();
+	pEncoder->flush();
+
+	int rawBytes = pSent->nodes().w * pSent->nodes().h * int(sizeof(CoordSPX));
+
+	TEST_ASSERT(pCounter->count(Id::CreateWarpmap) == 1);
+	TEST_ASSERT(pCounter->count(Id::WarpmapUpdate) == 1);
+	TEST_ASSERT(pCounter->count(Id::WarpmapNodes) >= 1);
+	TEST_ASSERT(pCounter->size(Id::WarpmapNodes) * 3 < rawBytes);
+	TEST_ASSERT(pReceived->created.size() == 1 && pReceived->createdWithNodes == 1);
+
+	CountingSoftWarpmap* pGot = pReceived->created[0];
+	TEST_ASSERT(pGot->updates == 0);
+	TEST_ASSERT(sameNodes(pSent, pGot));
+
+	// Updated in place, applied at once.
+
+	pSent = nullptr;
+	pCounter->clear();
+	TEST_ASSERT(pWarp->setRadii(90 * 64, 50 * 64));
+	pSent = pWarp->generate();
+	pEncoder->flush();
+
+	TEST_ASSERT(pCounter->count(Id::CreateWarpmap) == 0 && pCounter->count(Id::WarpmapUpdate) == 1);
+	TEST_ASSERT(pReceived->created.size() == 1);
+	TEST_ASSERT(pGot->updates == 1);
+	TEST_ASSERT(sameNodes(pSent, pGot));
+
+	// New periods are sent before the nodes.
+
+	pSent = nullptr;
+	TEST_ASSERT(pWarp->setAngles(-60.f, 210.f));
+	pSent = pWarp->generate();
+	pEncoder->flush();
+
+	TEST_ASSERT(pReceived->created.size() == 1);
+	TEST_ASSERT(sameNodes(pSent, pGot));
+
+	// A region narrower than the Warpmap.
+
+	std::vector<CoordSPX> patch(7 * 3);
+	for (int i = 0; i < int(patch.size()); i++)
+		patch[i] = { i * 640, -i * 64 };
+
+	int updates = pGot->updates;
+	pCounter->clear();
+	TEST_ASSERT(pSent->importNodes({ 5, 9, 7, 3 }, patch.data()));
+	pEncoder->flush();
+
+	TEST_ASSERT(pCounter->count(Id::WarpmapUpdate) == 1);
+	TEST_ASSERT(pGot->updates == updates + 1);
+	TEST_ASSERT(sameNodes(pSent, pGot));
+
+	// Created without nodes, with the default ones.
+
+	auto pDefault = pStreamBackend->warpmapFactory()->createWarpmap({ .cellSize = 8, .size = { 30, 20 }, .uPeriod = 1000 });
+	pEncoder->flush();
+	TEST_ASSERT(pReceived->created.size() == 2 && pReceived->createdWithNodes == 2);
+	TEST_ASSERT(sameNodes(pDefault, pReceived->created[1]));
+
+	return true;
 }
 
 //____ cApiTest() _____________________________________________________________

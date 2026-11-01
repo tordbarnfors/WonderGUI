@@ -30,6 +30,7 @@
 #include <wg_gfxbackend.h>
 #include <wg_patches.h>
 #include <wg_compression.h>
+#include <wg_warpmap.h>
 
 #include <vector>
 #include <tuple>
@@ -208,6 +209,22 @@ namespace wg
 
 		std::vector<PendingSurface>		m_pendingSurfaces;
 		std::vector<EdgemapDataBuffer>	m_edgemapDataBuffers;
+
+		// Nodes of a Warpmap are applied once all of them have arrived. A Warpmap is created then,
+		// with its nodes, so CreateWarpmap only leaves its blueprint here.
+
+		struct WarpmapDataBuffer
+		{
+			uint16_t			objectId = 0;
+			bool				bCreate = false;
+			Warpmap::Blueprint	blueprint;					// For bCreate.
+			RectI				region;						// Nodes in buffer, empty until WarpmapUpdate.
+			DataBuffer			buffer;
+		};
+
+		std::vector<WarpmapDataBuffer>	m_warpmapDataBuffers;
+
+		WarpmapDataBuffer *	_findWarpmapDataBuffer( uint16_t objectId );
 
 
 		GfxBackend::SessionInfo	m_sessionInfo;			// Temporary for BeginSession/UpdateRects

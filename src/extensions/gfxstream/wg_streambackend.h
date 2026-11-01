@@ -42,6 +42,7 @@ namespace wg
 		friend class RemoteSurface;
 		friend class MirrorSurface;
 		friend class StreamEdgemap;
+		friend class StreamWarpmap;
 
 	public:
 
