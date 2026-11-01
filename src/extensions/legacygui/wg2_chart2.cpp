@@ -1047,7 +1047,7 @@ void WgChart2::_renderWave( Wave& wave, wg::GfxDevice * pDevice, const WgRect& w
 		wave.pWave->setFlatBottomLine(samplesEnd, samples, wave.resampledDefault);
 
 	
-	wave.pWave->refresh();
+	wave.pWave->generate();
 	
 	wave.pWave->draw( pDevice, {(waveCanvas.x + wave.resampledFirst)*64, waveCanvas.y*64 });
 }

@@ -3291,7 +3291,7 @@ void GfxDeviceGen2::flipDrawWave(const RectSPX& dest, const WaveLine* pTopBorder
 
 	// Render
 
-	pWave->refresh();
+	pWave->generate();
 	pWave->draw(this);
 }
 

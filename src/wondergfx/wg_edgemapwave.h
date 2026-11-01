@@ -40,7 +40,7 @@ namespace wg
 	 * along x, and the lines can have outlines. It is drawn as one edgemap, flipped as
 	 * set, which lets it run along y instead or in any direction.
 	 *
-	 * Samples are set as needed and the edgemap updated by refresh(), only where samples
+	 * Samples are set as needed and the edgemap updated by generate(), only where samples
 	 * have changed.
 	 */
 
@@ -114,7 +114,7 @@ namespace wg
 		void		setFlatBottomLine( int sampleBegin, int sampleEnd, spx sample );
 		void		setFlatBottomLine( int sampleBegin, int sampleEnd, float sample );
 
-		void		refresh();											// Updates the edgemap with samples set since last refresh.
+		void		generate();											// Updates the edgemap with samples set since last generate().
 
 		Edgemap_p	edgemap() const { return m_pieces[0].pEdgemap; }
 
