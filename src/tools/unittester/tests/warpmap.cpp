@@ -7,6 +7,8 @@
 #include <wg_softwarpmapfactory.h>
 #include <wg_circularwarp.h>
 #include <wg_roundedrectwarp.h>
+#include <wg_nodecompression.h>
+#include <cstring>
 
 #include <algorithm>
 #include <cmath>
@@ -165,6 +167,7 @@ WarpmapTest::WarpmapTest()
 	ADD_TEST(circularWarpGenerateTest);
 	ADD_TEST(generateUpdatesTest);
 	ADD_TEST(roundedRectWarpTest);
+	ADD_TEST(nodeCompressionTest);
 }
 
 WarpmapTest::~WarpmapTest()
@@ -670,5 +673,92 @@ bool WarpmapTest::roundedRectWarpTest(std::ostream& output)
 	TEST_ASSERT(!pWarp->setOutline({ 0, 0, 64, 64 }, -1));
 	TEST_ASSERT(!pWarp->setDistances(64, 64));
 	TEST_ASSERT(!pWarp->setSpan(0.f, 0.f));
+	return true;
+}
+
+//____ nodeCompressionTest() __________________________________________________
+// NodeCompressor restores nodes exactly, also when decompressed in place from the end of a buffer
+// of maxCompressedSize() as GfxStream does, compresses smooth nodes well and stores what it can't
+// compress as it is.
+
+bool WarpmapTest::nodeCompressionTest(std::ostream& output)
+{
+	auto pCompressor = NodeCompressor::create();
+	auto pDecompressor = NodeDecompressor::create();
+
+	TEST_ASSERT(GfxBase::getDecompressor(NodeCompressor::ID_TOKEN) != nullptr);
+	TEST_ASSERT(!pCompressor->setRowLength(0));
+
+	// Compresses and decompresses in place, returns compressed size or -1 if not restored.
+
+	auto roundTrip = [&](const std::vector<int32_t>& values, int rowLength) -> int
+	{
+		pCompressor->setRowLength(rowLength);
+
+		int raw = int(values.size() * 4);
+		int bufferSize = pCompressor->maxCompressedSize(raw);
+		std::vector<uint8_t> compressed(bufferSize);
+		int size = pCompressor->compress(compressed.data(), values.data(), values.data() + values.size());
+		if (size > bufferSize)
+			return -1;
+
+		const int guard = 16;
+		std::vector<uint8_t> buffer(bufferSize + guard, 0xCD);
+		std::memcpy(buffer.data() + bufferSize - size, compressed.data(), size);
+
+		int restored = pDecompressor->decompress(buffer.data(), buffer.data() + bufferSize - size, buffer.data() + bufferSize);
+		if (restored != raw || std::memcmp(buffer.data(), values.data(), raw) != 0)
+			return -1;
+
+		for (int i = 0; i < guard; i++)
+			if (buffer[bufferSize + i] != 0xCD)
+				return -1;
+
+		return size;
+	};
+
+	// Nodes of a ring, less than a third of their raw size (about 2.3 of 8 bytes per node).
+
+	auto pMap = CircularWarp::create(WGBP(CircularWarp, _.sourceSize = c_sourceSize, _.size = { 200, 160 }, _.topRadius = 78 * 64, _.bottomRadius = 30 * 64,
+		_.startAngle = 20.f, _.sweep = 300.f, _.cellSize = 6), SoftWarpmapFactory::create())->generate();
+
+	SizeI nodes = pMap->nodes();
+	std::vector<int32_t> ring((const int32_t*) pMap->nodeData(), (const int32_t*) (pMap->nodeData() + nodes.w * nodes.h));
+
+	int size = roundTrip(ring, nodes.w);
+	TEST_ASSERT(size > 0);
+	TEST_ASSERT(size * 3 < int(ring.size() * 4));
+	TEST_ASSERT(roundTrip(ring, nodes.w * nodes.h) > 0);						// As one row.
+
+	// Random and extreme values, which are stored as they are, and constant ones.
+
+	uint32_t seed = 77;
+	auto random = [&seed]() { seed = seed * 1664525 + 1013904223; return seed; };
+
+	for (int i = 0; i < 200; i++)
+	{
+		int w = 1 + random() % 23, h = 1 + random() % 17;
+		std::vector<int32_t> values(w * h * 2);
+
+		for (auto& v : values)
+		{
+			switch (i % 4)
+			{
+				case 0: v = int32_t(random()); break;
+				case 1: v = (random() & 1) ? INT32_MIN : INT32_MAX; break;
+				case 2: v = int32_t(random() % 256) - 128; break;
+				default: v = 12345; break;
+			}
+		}
+
+		size = roundTrip(values, w);
+		TEST_ASSERT(size > 0 && size <= 1 + int(values.size() * 4));
+	}
+
+	// Not whole rows or pairs, stored as they are.
+
+	TEST_ASSERT(roundTrip(std::vector<int32_t>(12, 5), 4) == 1 + 48);
+	TEST_ASSERT(roundTrip(std::vector<int32_t>{ 1, 2, 3 }, 1) == 1 + 12);
+
 	return true;
 }
