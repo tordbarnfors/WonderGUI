@@ -48,7 +48,7 @@ namespace wax
 	{
 		EdgemapRing_p p( new EdgemapRing(blueprint) );
 
-		if (!p->_setSpec(spec))
+		if (!p->_setSpec(spec) || !p->_applyBuilds())
 			return nullptr;
 
 		return p;
@@ -73,11 +73,12 @@ namespace wax
 	/**
 	 * @brief Change the ring.
 	 *
-	 * The edgemaps of the pieces are updated where they can, so that only what changed is
-	 * imported, which is all that is streamed through a StreamEdgemapFactory.
+	 * The change reaches the edgemaps when generated, see EdgemapShape. They are updated where
+	 * they can, so that only what changed is imported, which is all that is streamed through a
+	 * StreamEdgemapFactory.
 	 *
 	 * @return False if the spec is invalid or has too many slices in a quarter, in which case
-	 * the ring is left as it was, or if an edgemap couldn't be created.
+	 * the ring is left as it was.
 	 */
 
 	bool EdgemapRing::update( const RingSpec& spec )
@@ -113,13 +114,9 @@ namespace wax
 				return true;
 
 			case BuildResult::TooManySegments:
+			default:
 				_prepare(oldSpec);
 				Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Too many slices in a quarter of the ring.",
-					this, &TYPEINFO, __func__, __FILE__, __LINE__);
-				return false;
-
-			default:
-				Core::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "Failed to create edgemap.",
 					this, &TYPEINFO, __func__, __FILE__, __LINE__);
 				return false;
 		}

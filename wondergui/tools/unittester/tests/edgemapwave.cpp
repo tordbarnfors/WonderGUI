@@ -146,7 +146,7 @@ bool EdgemapWaveTest::heldEdgemapTest(std::ostream& output)
 
 //____ drawnTwiceTest() _______________________________________________________
 // One EdgemapWave drawn several times within one canvas update, with other samples and colors in
-// between, draws as separate waves. A color set without generate() isn't drawn.
+// between, draws as separate waves. draw() generates, so a color set without generate() is drawn.
 
 bool EdgemapWaveTest::drawnTwiceTest(std::ostream& output)
 {
@@ -188,7 +188,10 @@ bool EdgemapWaveTest::drawnTwiceTest(std::ostream& output)
 		setSamples(pThird, 0.45f);
 		pThird->generate();
 		pThird->draw(pDevice, { 10 * 64, 80 * 64 });
-		pThird->draw(pDevice, { 90 * 64, 80 * 64 });
+
+		auto pFourth = makeWave(red);
+		setSamples(pFourth, 0.45f);
+		pFourth->draw(pDevice, { 90 * 64, 80 * 64 });
 	});
 
 	for (size_t i = 0; i < one.size(); i++)

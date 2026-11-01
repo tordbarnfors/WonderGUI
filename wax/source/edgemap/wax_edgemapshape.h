@@ -44,9 +44,16 @@ namespace wax
 	/**
 	 * @brief Base class for shapes made into edgemaps.
 	 *
-	 * The shape is made into edgemaps when created or updated, so drawing it is just drawing
-	 * edgemaps. With a StreamEdgemapFactory the edgemaps are created on the receiving end
-	 * of the stream, which then only needs to draw them.
+	 * The shape is made into edgemaps when generated, so drawing it is just drawing edgemaps.
+	 * With a StreamEdgemapFactory the edgemaps are created on the receiving end of the stream,
+	 * which then only needs to draw them.
+	 *
+	 * Changes to the shape reach its edgemaps only when generate() is called, which draw() does
+	 * first. Call generate() yourself to choose when the work is done, or before looking at
+	 * pieces() or bounds(), which are as of the last generate(). Draws are rendered when the
+	 * canvas update ends and read the edgemaps then, so an edgemap that is held elsewhere, such as
+	 * by a draw that isn't rendered yet, is never changed. A new one is made in its place instead,
+	 * so a shape can be drawn several times with different settings within the same canvas update.
 	 *
 	 * A shape consists of one or more pieces, each an edgemap drawn flipped at a position
 	 * of the canvas. Pieces don't overlap.
@@ -75,15 +82,17 @@ namespace wax
 
 		//.____ Geometry ____________________________________________________
 
-		RectSPX		bounds() const;
+		RectSPX		bounds() const;									// As of the last generate().
 
 		//.____ Content _____________________________________________________
 
-		const std::vector<Piece>&	pieces() const { return m_pieces; }
+		const std::vector<Piece>&	pieces() const { return m_pieces; }	// As of the last generate().
+
+		virtual void	generate();									// Makes changes since the last generate() into edgemaps, see above.
 
 		//.____ Rendering ___________________________________________________
 
-		void		draw( Device * pDevice, CoordSPX offset = { 0,0 } ) const;
+		void		draw( Device * pDevice, CoordSPX offset = { 0,0 } );	// Calls generate() first.
 
 	protected:
 		EdgemapShape() {}
@@ -95,7 +104,7 @@ namespace wax
 		//.____ Building pieces _____________________________________________
 		//
 		// A subclass can describe its shape by the regions met along lines through it and let
-		// _buildPieces() make the edgemaps of the pieces it lays out. The edgemap of a piece runs
+		// _buildPieces() build the pieces it lays out, which generate() then makes into edgemaps. The edgemap of a piece runs
 		// either along canvas rows (drawn transposed) or along canvas columns. Samples are taken
 		// along the lines between its rows or columns, and the regions between them become the
 		// segments of the edgemap.
@@ -125,11 +134,16 @@ namespace wax
 		enum class BuildResult
 		{
 			Ok,
-			TooManySegments,			// Regions don't fit the segments of an edgemap. Nothing is changed.
-			Failed						// An edgemap couldn't be created.
+			TooManySegments				// Regions don't fit the segments of an edgemap. Nothing is changed.
 		};
 
+		// Builds the pieces, kept until generate() makes them into edgemaps with pFactory.
+
 		BuildResult	_buildPieces( const std::vector<Layout>& layout, const RegionFunc& regions, const HiColor * pColors, EdgemapFactory * pFactory );
+
+		// Makes the pieces built into edgemaps, if any. Returns false if an edgemap couldn't be created.
+
+		bool		_applyBuilds();
 
 		struct Build				// A piece built, before it is made into an edgemap.
 		{
@@ -154,6 +168,10 @@ namespace wax
 
 		std::vector<Piece>	m_pieces;
 		std::vector<Stored>	m_stored;			// Content of the edgemap of each piece made by _buildPieces().
+
+		bool				m_bBuilt = false;	// Pieces built by _buildPieces() not yet made into edgemaps.
+		std::vector<Build>	m_builds;
+		EdgemapFactory_p	m_pBuildFactory;
 	};
 
 } // namespace wax

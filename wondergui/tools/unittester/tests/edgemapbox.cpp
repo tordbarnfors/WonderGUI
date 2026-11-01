@@ -94,6 +94,7 @@ EdgemapBoxTest::EdgemapBoxTest()
 	ADD_TEST(accuracyTest);
 	ADD_TEST(updateTest);
 	ADD_TEST(nothingDrawnTest);
+	ADD_TEST(drawnTwiceTest);
 }
 
 EdgemapBoxTest::~EdgemapBoxTest()
@@ -209,7 +210,70 @@ bool EdgemapBoxTest::nothingDrawnTest(std::ostream& output)
 	spec.rect = {};
 	spec.fillColor = Color::Red;
 	TEST_ASSERT(pBox->update(spec));
+	pBox->generate();
 	TEST_ASSERT(pBox->pieces().empty());
 
+	return true;
+}
+
+//____ drawnTwiceTest() _______________________________________________________
+// Updates reach the edgemaps only when generated, and an edgemap held elsewhere isn't changed, so
+// one box drawn twice within one canvas update with an update in between draws as two boxes.
+
+bool EdgemapBoxTest::drawnTwiceTest(std::ostream& output)
+{
+	auto pSoft = createSoftDevice();
+	auto pFactory = SoftEdgemapFactory::create();
+
+	RoundedBoxSpec first = cases()[1].spec;
+	RoundedBoxSpec second = first;
+	second.fillColor = Color::Blue;
+	second.outlineColor = Color::Yellow;
+
+	// Not until generated.
+
+	auto colorsOf = [](Edgemap* pEdgemap)
+	{
+		return std::vector<HiColor>(pEdgemap->flatColors(), pEdgemap->flatColors() + pEdgemap->renderSegments());
+	};
+
+	auto pBox = EdgemapBox::create(WGBP(EdgemapBox, _.factory = pFactory), first);
+	Edgemap* pBefore = pBox->pieces()[0].pEdgemap;
+	auto colorsBefore = colorsOf(pBefore);
+
+	TEST_ASSERT(pBox->update(second));
+	TEST_ASSERT(pBox->pieces()[0].pEdgemap == pBefore && colorsOf(pBefore) == colorsBefore);
+
+	// Recolored in place when nothing else holds the edgemaps, replaced when held.
+
+	pBox->generate();
+	TEST_ASSERT(pBox->pieces()[0].pEdgemap == pBefore && colorsOf(pBefore) != colorsBefore);
+
+	Edgemap_p pHeld = pBox->pieces()[0].pEdgemap;
+	TEST_ASSERT(pBox->update(first));
+	pBox->generate();
+	TEST_ASSERT(pBox->pieces()[0].pEdgemap != pHeld);
+	pHeld = nullptr;
+
+	// Drawn twice.
+
+	auto one = render(pSoft, [&](GfxDevice* p)
+	{
+		pBox->update(first);
+		pBox->draw(p);
+		pBox->update(second);
+		pBox->draw(p, { 0, 2 * 64 });
+	});
+
+	auto pFirst = EdgemapBox::create(WGBP(EdgemapBox, _.factory = pFactory), first);
+	auto pSecond = EdgemapBox::create(WGBP(EdgemapBox, _.factory = pFactory), second);
+
+	auto separate = render(pSoft, [&](GfxDevice* p)
+	{
+		pFirst->draw(p);
+		pSecond->draw(p, { 0, 2 * 64 });
+	});
+
+	TEST_ASSERT(one == separate);
 	return true;
 }
