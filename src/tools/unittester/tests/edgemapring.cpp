@@ -102,6 +102,7 @@ EdgemapRingTest::EdgemapRingTest()
 	ADD_TEST(updateTest);
 	ADD_TEST(nothingDrawnTest);
 	ADD_TEST(tooManySlicesTest);
+	ADD_TEST(drawnTwiceTest);
 }
 
 EdgemapRingTest::~EdgemapRingTest()
@@ -234,6 +235,7 @@ bool EdgemapRingTest::nothingDrawnTest(std::ostream& output)
 	spec.rect = {};
 	slice.color = Color::Red;
 	TEST_ASSERT(pRing->update(spec));
+	pRing->generate();
 	TEST_ASSERT(pRing->pieces().empty());
 	TEST_ASSERT(pRing->bounds().isEmpty());
 
@@ -287,5 +289,62 @@ bool EdgemapRingTest::tooManySlicesTest(std::ostream& output)
 	auto fresh = render(pSoft, [&](GfxDevice* p) { pFresh->draw(p); });
 	TEST_ASSERT(updated == fresh);
 
+	return true;
+}
+
+//____ drawnTwiceTest() _______________________________________________________
+// Updates reach the edgemaps only when generated, and an edgemap held elsewhere isn't changed, so
+// one ring drawn twice within one canvas update with an update in between draws as two rings.
+
+bool EdgemapRingTest::drawnTwiceTest(std::ostream& output)
+{
+	auto pSoft = createSoftDevice();
+	auto pFactory = SoftEdgemapFactory::create();
+
+	auto all = cases();
+	Case& from = all[3];			// Donut.
+
+	std::vector<RingSlice> recolored = from.slices;
+	for (auto& slice : recolored)
+		slice.color = Color::Blue;
+
+	RingSpec first = from.spec;
+	first.nSlices = int(from.slices.size());
+	first.pSlices = from.slices.data();
+
+	RingSpec second = first;
+	second.pSlices = recolored.data();
+
+	// Not until generated, and replaced when held.
+
+	auto pRing = EdgemapRing::create(WGBP(EdgemapRing, _.factory = pFactory), first);
+	Edgemap_p pHeld = pRing->pieces()[0].pEdgemap;
+
+	TEST_ASSERT(pRing->update(second));
+	TEST_ASSERT(pRing->pieces()[0].pEdgemap == pHeld);
+	pRing->generate();
+	TEST_ASSERT(pRing->pieces()[0].pEdgemap != pHeld);
+	pHeld = nullptr;
+
+	// Drawn twice.
+
+	auto one = render(pSoft, [&](GfxDevice* p)
+	{
+		pRing->update(first);
+		pRing->draw(p);
+		pRing->update(second);
+		pRing->draw(p, { 0, 2 * 64 });
+	});
+
+	auto pFirst = EdgemapRing::create(WGBP(EdgemapRing, _.factory = pFactory), first);
+	auto pSecond = EdgemapRing::create(WGBP(EdgemapRing, _.factory = pFactory), second);
+
+	auto separate = render(pSoft, [&](GfxDevice* p)
+	{
+		pFirst->draw(p);
+		pSecond->draw(p, { 0, 2 * 64 });
+	});
+
+	TEST_ASSERT(one == separate);
 	return true;
 }

@@ -60,15 +60,48 @@ namespace wg
 	/**
 	 * @brief Draw the shape.
 	 *
-	 * Draws the edgemaps of all pieces, moved by offset, which is rounded to whole pixels.
+	 * Calls generate(), then draws the edgemaps of all pieces, moved by offset, which is rounded
+	 * to whole pixels.
 	 */
 
-	void EdgemapShape::draw( GfxDevice * pDevice, CoordSPX offset ) const
+	void EdgemapShape::draw( GfxDevice * pDevice, CoordSPX offset )
 	{
+		generate();
+
 		offset = Util::roundToPixels(offset) * 64;
 
 		for( auto& piece : m_pieces )
 			pDevice->flipDrawEdgemap(piece.pos + offset, piece.pEdgemap, piece.flip);
+	}
+
+	//____ generate() ____________________________________________________________
+	/**
+	 * @brief Make changes to the shape into edgemaps.
+	 *
+	 * Does nothing if nothing has changed since the last generate(). If an edgemap can't be
+	 * created, that is reported as an error.
+	 */
+
+	void EdgemapShape::generate()
+	{
+		_applyBuilds();
+	}
+
+	//____ _applyBuilds() _________________________________________________________
+
+	bool EdgemapShape::_applyBuilds()
+	{
+		if (!m_bBuilt)
+			return true;
+
+		m_bBuilt = false;
+		bool bOk = _applyPieces(m_builds, m_pBuildFactory);
+		m_builds.clear();
+
+		if (!bOk)
+			GfxBase::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "Failed to create edgemap.",
+				this, &typeInfo(), __func__, __FILE__, __LINE__);
+		return bOk;
 	}
 
 	//____ _pieceRect() __________________________________________________________
@@ -87,12 +120,11 @@ namespace wg
 
 	//____ _buildPieces() ________________________________________________________
 	/*
-		Makes the pieces of the shape as laid out, from the regions along lines through them,
-		reusing the edgemaps of the current pieces where possible. Pieces where nothing is drawn
-		are left out.
+		Builds the pieces of the shape as laid out, from the regions along lines through them, for
+		generate() to make into edgemaps. Pieces where nothing is drawn are left out.
 
-		All pieces are built before any edgemap is touched, so the shape is left as it was if
-		the regions of a piece don't fit the segments of an edgemap.
+		No edgemap is touched, and if the regions of a piece don't fit the segments of an edgemap
+		nothing is changed, not even pieces built before and not yet generated.
 	*/
 
 	EdgemapShape::BuildResult EdgemapShape::_buildPieces( const std::vector<Layout>& layout, const RegionFunc& regions, const HiColor * pColors, EdgemapFactory * pFactory )
@@ -112,7 +144,10 @@ namespace wg
 				builds.push_back(std::move(build));
 		}
 
-		return _applyPieces(builds, pFactory) ? BuildResult::Ok : BuildResult::Failed;
+		m_builds = std::move(builds);
+		m_pBuildFactory = pFactory;
+		m_bBuilt = true;
+		return BuildResult::Ok;
 	}
 
 	//____ _buildPiece() _________________________________________________________
@@ -332,8 +367,9 @@ namespace wg
 	//____ _applyPieces() ________________________________________________________
 	/*
 		Makes builds the pieces of the shape. The edgemap of a piece already in the same place
-		is kept if it has segments enough, and only colors and samples that differ are updated
-		in it. Otherwise a new edgemap is created.
+		is kept if it has segments enough and nothing else holds it (such as a draw that isn't
+		rendered yet), and only colors and samples that differ are updated in it. Otherwise a new
+		edgemap is created.
 
 		Returns false if an edgemap couldn't be created.
 	*/
@@ -354,8 +390,9 @@ namespace wg
 			int nSamples = (build.bRows ? build.rect.h : build.rect.w) + 1;
 
 			bool bSamePlace = piece.pEdgemap && stored.rect == build.rect && stored.bRows == build.bRows;
+			bool bHeld = piece.pEdgemap && piece.pEdgemap->refcount() > 1;
 
-			if (bSamePlace && stored.capacity >= nSegments)
+			if (bSamePlace && stored.capacity >= nSegments && !bHeld)
 			{
 				Edgemap* pEdgemap = piece.pEdgemap;
 
@@ -390,8 +427,11 @@ namespace wg
 			else
 			{
 				// Room for a couple more segments if it outgrew its edgemap, so it doesn't need to be recreated again.
+				// One replaced since it was held keeps its room.
 
-				int capacity = bSamePlace ? std::min(nSegments + 2, int(Edgemap::maxSegments)) : nSegments;
+				int capacity = nSegments;
+				if (bSamePlace)
+					capacity = stored.capacity >= nSegments ? stored.capacity : std::min(nSegments + 2, int(Edgemap::maxSegments));
 
 				std::vector<HiColor> colors = build.colors;
 				colors.resize(capacity, build.colors.back());

@@ -45,7 +45,7 @@ namespace wg
 	{
 		EdgemapBox_p p( new EdgemapBox(blueprint) );
 
-		if (!p->_setSpec(spec))
+		if (!p->_setSpec(spec) || !p->_applyBuilds())
 			return nullptr;
 
 		return p;
@@ -70,10 +70,11 @@ namespace wg
 	/**
 	 * @brief Change the box.
 	 *
-	 * The edgemaps of the pieces are updated where they can, so that only what changed is
-	 * imported, which is all that is streamed through a StreamEdgemapFactory.
+	 * The change reaches the edgemaps when generated, see EdgemapShape. They are updated where
+	 * they can, so that only what changed is imported, which is all that is streamed through a
+	 * StreamEdgemapFactory.
 	 *
-	 * @return False if an edgemap couldn't be created.
+	 * @return False if the box can't be made into edgemaps, in which case it is left as it was.
 	 */
 
 	bool EdgemapBox::update( const RoundedBoxSpec& spec )
@@ -189,7 +190,7 @@ namespace wg
 
 		if (_buildPieces(layout, regions, m_colors, m_pFactory) != BuildResult::Ok)
 		{
-			GfxBase::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "Failed to create edgemap.",
+			GfxBase::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "Box can't be made into edgemaps.",
 				this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return false;
 		}

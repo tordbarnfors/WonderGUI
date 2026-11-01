@@ -14,4 +14,5 @@ private:
 	bool updateTest(std::ostream& output);
 	bool nothingDrawnTest(std::ostream& output);
 	bool tooManySlicesTest(std::ostream& output);
+	bool drawnTwiceTest(std::ostream& output);
 };

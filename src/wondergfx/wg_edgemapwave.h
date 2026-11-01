@@ -41,8 +41,8 @@ namespace wg
 	 * set, which lets it run along y instead or in any direction.
 	 *
 	 * Samples, size, colors and tints can be set at any time, but reach the edgemap only when
-	 * generate() is called. It updates the edgemap where samples have changed, or makes a new one
-	 * if the size has changed.
+	 * generate() is called, which draw() does first. It updates the edgemap where samples have
+	 * changed, or makes a new one if the size has changed.
 	 *
 	 * Draws are rendered when the canvas update ends and read the edgemap then, so an edgemap that
 	 * is held elsewhere, such as by a draw that isn't rendered yet, is never changed. generate()
@@ -121,7 +121,7 @@ namespace wg
 		void		setFlatBottomLine( int sampleBegin, int sampleEnd, spx sample );
 		void		setFlatBottomLine( int sampleBegin, int sampleEnd, float sample );
 
-		void		generate();											// Updates the edgemap with all changes since last generate(), see above.
+		void		generate() override;								// Updates the edgemap with all changes since last generate(), see above.
 
 		Edgemap_p	edgemap() const { return m_pieces[0].pEdgemap; }	// As of the last generate().
 
