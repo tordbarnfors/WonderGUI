@@ -77,8 +77,9 @@ namespace wg
 		//.____ Content _____________________________________________________
 
 		// Generates the Warpmap from current settings, if they have changed since last time, and
-		// returns it. The nodes of the Warpmap are updated in place if nothing but the WarpGenerator
-		// holds it and size and cell size are unchanged. Otherwise a new Warpmap is created, so a
+		// returns it. The nodes of the Warpmap are updated in place, without copying and sent on to
+		// the backend once, if nothing but the WarpGenerator holds it and size and cell size are
+		// unchanged. Otherwise a new Warpmap is created, so a
 		// Warpmap held elsewhere, such as by a draw that isn't rendered yet, never changes. Draw
 		// what generate() returns rather than keeping it.
 

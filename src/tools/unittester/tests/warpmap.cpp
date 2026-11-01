@@ -163,6 +163,7 @@ WarpmapTest::WarpmapTest()
 	ADD_TEST(periodTest);
 	ADD_TEST(circularWarpTest);
 	ADD_TEST(circularWarpGenerateTest);
+	ADD_TEST(generateUpdatesTest);
 	ADD_TEST(roundedRectWarpTest);
 }
 
@@ -501,6 +502,67 @@ bool WarpmapTest::circularWarpGenerateTest(std::ostream& output)
 	TEST_ASSERT(!pWarp->setCellSize(-1));
 	TEST_ASSERT(!pWarp->setPrecision(0.f));
 	TEST_ASSERT(!pWarp->setSourceSize({ 0, 10 }));
+	return true;
+}
+
+//____ generateUpdatesTest() __________________________________________________
+// generate() sends the nodes on once, whether it creates a Warpmap, updates one in place or changes
+// its periods, and nodes updated in place are the same as those of a new Warpmap.
+
+bool WarpmapTest::generateUpdatesTest(std::ostream& output)
+{
+	auto pCounting = StrongPtr<CountingWarpmapFactory>(new CountingWarpmapFactory());
+	auto pSoft = SoftWarpmapFactory::create();
+
+	auto bp = WGBP(CircularWarp, _.sourceSize = c_sourceSize, _.size = { 100, 80 }, _.topRadius = 20 * 64, _.bottomRadius = 45 * 64, _.cellSize = 10);
+	auto pWarp = CircularWarp::create(bp, pCounting);
+
+	auto counts = [](Warpmap* p) { return static_cast<CountingWarpmap*>(p); };
+
+	// Created with its nodes.
+
+	Warpmap* pMap = pWarp->generate();
+	int nodes = pMap->nodes().w * pMap->nodes().h;
+	TEST_ASSERT(pCounting->created == 1);
+	TEST_ASSERT(counts(pMap)->updates == 1 && counts(pMap)->nodesSent == nodes);
+
+	// Updated in place, and with new periods.
+
+	auto sameAsNew = [&](Warpmap* pMap, const CircularWarp::Blueprint& bp)
+	{
+		auto pFresh = CircularWarp::create(bp, pSoft)->generate();
+		return pFresh->uPeriod() == pMap->uPeriod() && std::equal(pMap->nodeData(), pMap->nodeData() + nodes, pFresh->nodeData());
+	};
+
+	TEST_ASSERT(pWarp->setRadii(25 * 64, 40 * 64));
+	TEST_ASSERT(pWarp->generate() == pMap);
+	TEST_ASSERT(counts(pMap)->updates == 2 && counts(pMap)->nodesSent == 2 * nodes);
+	bp.topRadius = 25 * 64;
+	bp.bottomRadius = 40 * 64;
+	TEST_ASSERT(sameAsNew(pMap, bp));
+
+	spx oldPeriod = pMap->uPeriod();
+	TEST_ASSERT(pWarp->setAngles(30.f, 120.f));
+	TEST_ASSERT(pWarp->generate() == pMap);
+	TEST_ASSERT(pMap->uPeriod() != oldPeriod);
+	TEST_ASSERT(counts(pMap)->updates == 3 && counts(pMap)->nodesSent == 3 * nodes);
+	bp.startAngle = 30.f;
+	bp.sweep = 120.f;
+	TEST_ASSERT(sameAsNew(pMap, bp));
+
+	// Nothing changed, nothing sent.
+
+	TEST_ASSERT(pWarp->generate() == pMap);
+	TEST_ASSERT(counts(pMap)->updates == 3);
+
+	// A held Warpmap is left alone, a new one is created with the nodes.
+
+	Warpmap_p pHeld = pMap;
+	TEST_ASSERT(pWarp->setRadii(10 * 64, 40 * 64));
+	Warpmap* pNew = pWarp->generate();
+	TEST_ASSERT(pNew != pMap && pCounting->created == 2);
+	TEST_ASSERT(counts(pNew)->updates == 1 && counts(pHeld)->updates == 3);
+
 	return true;
 }
 

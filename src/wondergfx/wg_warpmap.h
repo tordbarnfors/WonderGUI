@@ -104,6 +104,8 @@ namespace wg
 
 	class Warpmap : public Object
 	{
+		friend class WarpGenerator;							// Writes nodes in place when generating.
+
 	public:
 
 		struct Blueprint
