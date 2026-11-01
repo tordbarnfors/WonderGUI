@@ -292,7 +292,7 @@ namespace wg
 			_updateWaveformEdge(pWave, firstEdgeTimestamp, microsecPerPixel, true, &(*pSample));
 			_updateWaveformEdge(pWave, firstEdgeTimestamp, microsecPerPixel, false, &(*pSample));
 
-			pWave->refresh();
+			pWave->generate();
 
 			//
 

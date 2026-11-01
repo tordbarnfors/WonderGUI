@@ -387,9 +387,9 @@ namespace wax
 		_setFlatLine(m_pBottomSamples, sampleBegin, sampleEnd, out);
 	}
 
-	//____ refresh() _____________________________________________________________
+	//____ generate() ____________________________________________________________
 
-	void EdgemapWave::refresh()
+	void EdgemapWave::generate()
 	{
 		if( m_dirtEnd - m_dirtBegin <= 0  )
 			return;

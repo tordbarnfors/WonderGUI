@@ -1137,7 +1137,7 @@ void WgChart::_renderWave( Wave& wave, wg::GfxDevice * pDevice, const WgRect& wa
 		else
 			wave.m_pWave->setSamples(0, (int) wave.resampledBottom.size(), nullptr, wave.resampledBottom.data());
 
-		wave.m_pWave->refresh();
+		wave.m_pWave->generate();
 		wave.m_pWave->draw(pDevice, waveCanvas.pos()*64);
 /*
 		if(useGradient)

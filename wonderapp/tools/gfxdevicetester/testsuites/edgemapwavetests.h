@@ -47,7 +47,7 @@ public:
 
 	bool basicWave(GfxDevice * pDevice, const RectI& canvas)
 	{
-		m_pWave->refresh();
+		m_pWave->generate();
 		
 		m_pWave->draw(pDevice, canvas.pos());
 		return true;

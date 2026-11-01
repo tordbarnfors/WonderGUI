@@ -400,7 +400,7 @@ namespace wg
 						_updateWaveformEdge(entry, graph.m_pWave, true, (int) graph.m_topSamples.size(), graph.m_topSamples.data(), m_bAxisSwapped );
 						_updateWaveformEdge(entry, graph.m_pWave, false, (int) graph.m_bottomSamples.size(), graph.m_bottomSamples.data(), m_bAxisSwapped );
 
-						graph.m_pWave->refresh();
+						graph.m_pWave->generate();
 						graph.m_bTopSamplesChanged = true;						// So _preRender() will understand.
 						graph.m_bBottomSamplesChanged = true;					// So _preRender() will understand.
 
@@ -601,7 +601,7 @@ namespace wg
 			{
 				if ((entry.m_bTopSamplesChanged || entry.m_bBottomSamplesChanged) && entry.m_bVisible && entry.m_pWave )
 				{
-					entry.m_pWave->refresh();
+					entry.m_pWave->generate();
 					Edgemap * pEdgemap = entry.m_pWave->edgemap();
 
 					if( entry.m_sectionBounds.size() == nSections )
