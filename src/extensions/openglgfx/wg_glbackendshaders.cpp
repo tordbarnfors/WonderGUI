@@ -1815,6 +1815,12 @@ WG_GL_CANVAS_BLOCK
 // warpNearestCopy() moves a center in the gap between copies on a periodic axis to the nearest
 // copy, which is where colors are taken and edges evaluated.
 
+// The canvas position of the center of the pixel, exact rather than interpolated, so it doesn't
+// depend on the triangles drawn.
+
+#define WG_GL_WARP_CANVAS_POS \
+"	canvasPos = vec2(gl_FragCoord.x, (gl_FragCoord.y - canvasYOfs) / canvasYMul);	"
+
 #define WG_GL_WARP_FUNCS \
 "vec4 warpEntry(int i) { return texelFetch(extrasBufferId, warpOfs + i); }			" \
 "float warpHalfPlane(float f, vec2 g)												" \
@@ -1952,7 +1958,7 @@ WG_GL_OUTPUT
 "uniform samplerBuffer warpmapId;				"
 "flat in int warpOfs;							"
 "flat in int tintOfs;							"
-"in vec2 canvasPos;								"
+"vec2 canvasPos;									"
 "flat in vec4 flatTint;							"
 WG_GL_TINT_FUNC
 WG_GL_SEGCOLOR_FUNC
@@ -1960,6 +1966,7 @@ WG_GL_SEGPART_FUNC
 WG_GL_WARP_FUNCS
 "void main()									"
 "{												"
+WG_GL_WARP_CANVAS_POS
 "	vec4 tint = premul((tintOfs >= 0 ? evalTint(tintmapBufferId, tintOfs, canvasPos) : vec4(1.0)) * flatTint);	"
 "	vec4 acc = vec4(0.0);						"
 "	float keep = 0.0;							"
@@ -1986,13 +1993,14 @@ WG_GL_OUTPUT_A8
 "uniform samplerBuffer warpmapId;				"
 "flat in int warpOfs;							"
 "flat in int tintOfs;							"
-"in vec2 canvasPos;								"
+"vec2 canvasPos;									"
 "flat in vec4 flatTint;							"
 WG_GL_TINT_FUNC
 WG_GL_SEGCOLOR_FUNC
 WG_GL_WARP_FUNCS
 "void main()									"
 "{												"
+WG_GL_WARP_CANVAS_POS
 "	float acc = 0.0;							"
 "	float covered = 0.0;						"
 WG_GL_WARP_SEGMENTS("{ acc += segColor(e, flatColorsOfs, tintTableOfs, sc).a * part; covered += part; }")
@@ -2071,13 +2079,14 @@ WG_GL_OUTPUT
 "uniform samplerBuffer warpmapId;				"
 "flat in int warpOfs;							"
 "flat in int tintOfs;							"
-"in vec2 canvasPos;								"
+"vec2 canvasPos;									"
 "flat in vec4 flatTint;							"
 WG_GL_TINT_FUNC
 WG_GL_WARP_FUNCS
 WG_GL_WARP_SAMPLE
 "void main()									"
 "{												"
+WG_GL_WARP_CANVAS_POS
 WG_GL_WARP_BLIT_COVERAGE
 "	writeColor(c * premul(tint) * cov, cov);	"
 "}";
@@ -2091,13 +2100,14 @@ WG_GL_OUTPUT_A8
 "uniform samplerBuffer warpmapId;				"
 "flat in int warpOfs;							"
 "flat in int tintOfs;							"
-"in vec2 canvasPos;								"
+"vec2 canvasPos;									"
 "flat in vec4 flatTint;							"
 WG_GL_TINT_FUNC
 WG_GL_WARP_FUNCS
 WG_GL_WARP_SAMPLE
 "void main()									"
 "{												"
+WG_GL_WARP_CANVAS_POS
 WG_GL_WARP_BLIT_COVERAGE
 "	writeAlpha(c.a * tint.a * cov, cov);		"
 "}";
