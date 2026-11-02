@@ -1129,14 +1129,10 @@ namespace wg
 			uint16_t	objectId;
 			SizeI		size;
 			uint16_t	cellSize;
-			int			uPeriod;
-			int			vPeriod;
 
 			decoder >> objectId;
 			decoder >> size;
 			decoder >> cellSize;
-			decoder >> uPeriod;
-			decoder >> vPeriod;
 
 			if (objectId >= m_vObjects.size())
 				m_vObjects.resize(objectId + 16, nullptr);
@@ -1156,15 +1152,13 @@ namespace wg
 				break;
 			}
 
-			// Created when its nodes have arrived.
+			// Created when its nodes have arrived, with the periods that come with them.
 
 			auto& pending = m_warpmapDataBuffers.emplace_back();
 			pending.objectId = objectId;
 			pending.bCreate = true;
 			pending.blueprint.size = size;
 			pending.blueprint.cellSize = cellSize;
-			pending.blueprint.uPeriod = uPeriod;
-			pending.blueprint.vPeriod = vPeriod;
 			break;
 		}
 

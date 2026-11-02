@@ -631,19 +631,14 @@ namespace wg
 				uint16_t	warpmapId;
 				SizeI		size;
 				uint16_t	cellSize;
-				int			uPeriod;
-				int			vPeriod;
 
 				decoder >> warpmapId;
 				decoder >> size;
 				decoder >> cellSize;
-				decoder >> uPeriod;
-				decoder >> vPeriod;
 
 				m_charStream << "    warpmapId   = " << warpmapId << std::endl;
 				m_charStream << "    size        = " << size.w << ", " << size.h << std::endl;
 				m_charStream << "    cellSize    = " << cellSize << std::endl;
-				m_charStream << "    periods     = " << uPeriod << ", " << vPeriod << std::endl;
 				break;
 			}
 
