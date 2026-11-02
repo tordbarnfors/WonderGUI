@@ -36,8 +36,8 @@ namespace wg
 		if (bp.finalizer)
 			setFinalizer(bp.finalizer);
 
-		m_nodes.w = (m_size.w + m_cellSize - 1) / m_cellSize + 1;
-		m_nodes.h = (m_size.h + m_cellSize - 1) / m_cellSize + 1;
+		m_nodes.w = (m_size.w + m_cellSize.w - 1) / m_cellSize.w + 1;
+		m_nodes.h = (m_size.h + m_cellSize.h - 1) / m_cellSize.h + 1;
 
 		m_pNodes = new CoordSPX[m_nodes.w * m_nodes.h];
 
@@ -164,8 +164,8 @@ namespace wg
 
 	CoordF Warpmap::positionAt(double x, double y) const
 	{
-		int column = std::clamp(int(x / m_cellSize), 0, m_nodes.w - 2);
-		int row = std::clamp(int(y / m_cellSize), 0, m_nodes.h - 2);
+		int column = std::clamp(int(x / m_cellSize.w), 0, m_nodes.w - 2);
+		int row = std::clamp(int(y / m_cellSize.h), 0, m_nodes.h - 2);
 
 		CoordSPX c[4];
 		cellCorners(column, row, c);
@@ -189,7 +189,7 @@ namespace wg
 		if (bp.size.w <= 0 || bp.size.h <= 0)
 			return false;
 
-		if (bp.cellSize < 1)
+		if (bp.cellSize.w < 1 || bp.cellSize.h < 1)
 			return false;
 
 		if (bp.uPeriod < 0 || bp.vPeriod < 0 || bp.uPeriod > maxNodeValue || bp.vPeriod > maxNodeValue)

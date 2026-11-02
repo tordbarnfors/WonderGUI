@@ -1128,11 +1128,12 @@ namespace wg
 		{
 			uint16_t	objectId;
 			SizeI		size;
-			uint16_t	cellSize;
+			uint16_t	cellWidth, cellHeight;
 
 			decoder >> objectId;
 			decoder >> size;
-			decoder >> cellSize;
+			decoder >> cellWidth;
+			decoder >> cellHeight;
 
 			if (objectId >= m_vObjects.size())
 				m_vObjects.resize(objectId + 16, nullptr);
@@ -1158,7 +1159,7 @@ namespace wg
 			pending.objectId = objectId;
 			pending.bCreate = true;
 			pending.blueprint.size = size;
-			pending.blueprint.cellSize = cellSize;
+			pending.blueprint.cellSize = { cellWidth, cellHeight };
 			break;
 		}
 
@@ -1231,7 +1232,8 @@ namespace wg
 				bp.uPeriod = pData->uPeriod;
 				bp.vPeriod = pData->vPeriod;
 
-				SizeI nodes = { (bp.size.w + bp.cellSize - 1) / std::max(1, bp.cellSize) + 1, (bp.size.h + bp.cellSize - 1) / std::max(1, bp.cellSize) + 1 };
+				SizeI cell = { std::max(1, bp.cellSize.w), std::max(1, bp.cellSize.h) };
+				SizeI nodes = { (bp.size.w + cell.w - 1) / cell.w + 1, (bp.size.h + cell.h - 1) / cell.h + 1 };
 
 				Warpmap_p pWarpmap;
 				if (region == RectI(0, 0, nodes.w, nodes.h))

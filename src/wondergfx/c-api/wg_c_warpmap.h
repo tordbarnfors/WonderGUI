@@ -34,7 +34,7 @@ extern "C" {
 
 	typedef struct wg_warpmapBP_struct			// NOT BINARY EQUIVALENT!
 	{
-		int					cellSize;				// Pixels between nodes. 0 = default (16).
+		wg_sizeI			cellSize;				// Pixels between nodes, horizontally and vertically. 0 = default (16).
 		wg_sizeI			size;					// Mandatory. Size in pixels.
 		wg_spx				uPeriod;				// In spx of the source, 0 = not periodic.
 		wg_spx				vPeriod;				// In spx of the source, 0 = not periodic.
@@ -43,7 +43,7 @@ extern "C" {
 	//.____ Geometry ______________________________________________________
 
 	WG_EXPORT wg_sizeI		wg_warpmapPixelSize(wg_obj warpmap);
-	WG_EXPORT int			wg_warpmapCellSize(wg_obj warpmap);
+	WG_EXPORT wg_sizeI		wg_warpmapCellSize(wg_obj warpmap);
 	WG_EXPORT wg_sizeI		wg_warpmapNodes(wg_obj warpmap);					// Nodes horizontally and vertically.
 	WG_EXPORT int			wg_warpmapNodeX(wg_obj warpmap, int column);		// Pixel position of a column of nodes.
 	WG_EXPORT int			wg_warpmapNodeY(wg_obj warpmap, int row);

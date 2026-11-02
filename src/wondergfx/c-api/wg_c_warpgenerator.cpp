@@ -50,14 +50,15 @@ wg_sizeSPX wg_warpGeneratorSourceSize( wg_obj warpGenerator )
 	return { sz.w, sz.h };
 }
 
-int wg_setWarpGeneratorCellSize( wg_obj warpGenerator, int cellSize )
+int wg_setWarpGeneratorCellSize( wg_obj warpGenerator, wg_sizeI cellSize )
 {
-	return getPtr(warpGenerator)->setCellSize(cellSize);
+	return getPtr(warpGenerator)->setCellSize({ cellSize.w, cellSize.h });
 }
 
-int wg_warpGeneratorCellSize( wg_obj warpGenerator )
+wg_sizeI wg_warpGeneratorCellSize( wg_obj warpGenerator )
 {
-	return getPtr(warpGenerator)->cellSize();
+	SizeI cellSize = getPtr(warpGenerator)->cellSize();
+	return { cellSize.w, cellSize.h };
 }
 
 int wg_setWarpGeneratorPrecision( wg_obj warpGenerator, float precision )

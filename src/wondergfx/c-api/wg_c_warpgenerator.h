@@ -42,8 +42,8 @@ extern "C" {
 
 	//.____ Precision _____________________________________________________
 
-	WG_EXPORT int			wg_setWarpGeneratorCellSize( wg_obj warpGenerator, int cellSize );	// 0 = calculated from precision.
-	WG_EXPORT int			wg_warpGeneratorCellSize( wg_obj warpGenerator );					// Cell size in use, calculated or set.
+	WG_EXPORT int			wg_setWarpGeneratorCellSize( wg_obj warpGenerator, wg_sizeI cellSize );	// 0 for width or height = calculated from precision.
+	WG_EXPORT wg_sizeI		wg_warpGeneratorCellSize( wg_obj warpGenerator );						// Cell size in use, calculated or set.
 
 	WG_EXPORT int			wg_setWarpGeneratorPrecision( wg_obj warpGenerator, float precision );
 	WG_EXPORT float			wg_warpGeneratorPrecision( wg_obj warpGenerator );

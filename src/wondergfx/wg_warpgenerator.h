@@ -41,9 +41,10 @@ namespace wg
 	 * The Warpmap is made for a source of sourceSize: the size of the edgemap or of the source
 	 * rectangle of the blit, in spx. The nodes are positions in that source, see Warpmap.
 	 *
-	 * The cell size of the Warpmap decides how closely it follows the shape. It is calculated by the
-	 * generator from precision (max position error in pixels) unless set explicitly, and kept within
-	 * 4 -> 64 pixels.
+	 * The cell size of the Warpmap decides how closely it follows the shape. Width and height of
+	 * cells are calculated by the generator from precision (max position error in pixels) unless
+	 * set explicitly, at least 4 and at most the size of the Warpmap. Along curves it is kept within
+	 * 4 -> 64 pixels, along straight axes cells can span the Warpmap.
 	 *
 	 * When subclassing, implement _generateNodes() and _calcCellSize(), override _uPeriod() and
 	 * _vPeriod() for periodic axes and set m_bDirty when a setting changes.
@@ -68,8 +69,8 @@ namespace wg
 
 		//.____ Precision ___________________________________________________
 
-		bool		setCellSize( int cellSize );					// 0 = calculated from precision.
-		int			cellSize() const;								// Cell size in use, calculated or set.
+		bool		setCellSize( SizeI cellSize );					// 0 for width or height = calculated from precision.
+		SizeI		cellSize() const;								// Cell size in use, calculated or set.
 
 		bool		setPrecision( float precision );
 		float		precision() const { return m_precision; }
@@ -87,12 +88,13 @@ namespace wg
 
 	protected:
 
-		WarpGenerator( SizeI size, SizeSPX sourceSize, int cellSize, float precision, WarpmapFactory * pFactory );
+		WarpGenerator( SizeI size, SizeSPX sourceSize, SizeI cellSize, float precision, WarpmapFactory * pFactory );
 		virtual ~WarpGenerator();
 
-		static bool		_validateSettings( SizeI size, SizeSPX sourceSize, int cellSize, float precision );
+		static bool		_validateSettings( SizeI size, SizeSPX sourceSize, SizeI cellSize, float precision );
 
-		// Largest cell size that keeps a curve of the given radius (in pixels) within precision.
+		// Largest cell size that keeps a curve of the given radius (in pixels) within precision,
+		// within 4 -> 64 pixels.
 
 		int				_cellSizeForRadius( double radius ) const;
 
@@ -125,14 +127,16 @@ namespace wg
 
 		static spx		_toNodeValue( int64_t value );
 
-		// Cell size from precision and the shape. Clamped by cellSize().
+		// Cell width and height from precision and the shape. Kept within 4 -> size of the Warpmap
+		// by cellSize().
 
-		virtual int		_calcCellSize() const = 0;
+		virtual SizeI	_calcCellSize() const = 0;
 
 		// Fills pNodes with nodes.w * nodes.h positions in spx of the source, row by row, nodes being
-		// cellSize pixels apart (the last row and column at the edge). Keep them within Warpmap::maxNodeValue.
+		// cellSize.w pixels apart horizontally and cellSize.h vertically (the last row and column at
+		// the edge). Keep them within Warpmap::maxNodeValue.
 
-		virtual void	_generateNodes( CoordSPX * pNodes, SizeI nodes, int cellSize ) const = 0;
+		virtual void	_generateNodes( CoordSPX * pNodes, SizeI nodes, SizeI cellSize ) const = 0;
 
 		virtual spx		_uPeriod() const { return 0; }			// In spx of the source, 0 = not periodic.
 		virtual spx		_vPeriod() const { return 0; }
@@ -150,7 +154,7 @@ namespace wg
 		SizeI		m_size;
 		SizeSPX		m_sourceSize;
 		SizeSPX		m_generatedSourceSize;							// Source size of the generated Warpmap.
-		int			m_cellSize;										// As set, 0 = calculated.
+		SizeI		m_cellSize;										// As set, 0 = calculated.
 		float		m_precision;
 
 		bool		m_bDirty = true;

@@ -924,7 +924,7 @@ namespace wg
 		double periodX = pWarpmap->uPeriod() / 64.0;
 		double periodY = pWarpmap->vPeriod() / 64.0;
 
-		const int cellSize = pWarpmap->cellSize();
+		const SizeI cellSize = pWarpmap->cellSize();
 		const SizeI nodes = pWarpmap->nodes();
 
 		// Position in the source (relative to the source rectangle) at point x,y of the Warpmap,
@@ -940,8 +940,8 @@ namespace wg
 		auto cellOf = [&](int x, int y)
 		{
 			Cell cell;
-			int column = std::clamp(x / cellSize, 0, nodes.w - 2);
-			int row = std::clamp(y / cellSize, 0, nodes.h - 2);
+			int column = std::clamp(x / cellSize.w, 0, nodes.w - 2);
+			int row = std::clamp(y / cellSize.h, 0, nodes.h - 2);
 
 			pWarpmap->cellCorners(column, row, cell.corners);
 			cell.x0 = pWarpmap->nodeX(column);

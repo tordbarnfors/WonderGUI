@@ -119,8 +119,8 @@ public:
 		m_forSmallRect = _makeWarps(pWarpmapFactory, { 64 * 24, 64 * 16 });
 		m_forBlendRect = _makeWarps(pWarpmapFactory, { 64 * 40, 64 * 24 });
 
-		m_pIdentity = pWarpmapFactory->createWarpmap(WGBP(Warpmap, _.size = m_pSmall->pixelSize(), _.cellSize = 9));
-		m_pIdentityBlit = pWarpmapFactory->createWarpmap(WGBP(Warpmap, _.size = { 64, 32 }, _.cellSize = 7));
+		m_pIdentity = pWarpmapFactory->createWarpmap(WGBP(Warpmap, _.size = m_pSmall->pixelSize(), _.cellSize = { 9, 9 }));
+		m_pIdentityBlit = pWarpmapFactory->createWarpmap(WGBP(Warpmap, _.size = { 64, 32 }, _.cellSize = { 7, 7 }));
 
 		return m_pGauge && m_pTintedGauge && m_pSmall && m_pTiling && m_pNearest && m_pBilinear && m_forGauge.ring && m_forGauge.wave && m_forGauge.stripes;
 	}
@@ -288,7 +288,7 @@ public:
 		auto pArc = RoundedRectWarp::create(WGBP(RoundedRectWarp, _.size = { 240, 240 }, _.sourceSize = gauge, _.rect = { 64 * 30, 64 * 50, 64 * 180, 64 * 140 },
 												 _.cornerRadius = 64 * 50, _.topDistance = 64 * 25, _.bottomDistance = -64 * 20, _.start = -0.3f, _.sweep = 0.75f), pFactory);
 		auto pFrame = RoundedRectWarp::create(WGBP(RoundedRectWarp, _.size = { 240, 240 }, _.sourceSize = surface, _.rect = { 64 * 10, 64 * 30, 64 * 220, 64 * 180 },
-												  _.cornerRadius = 64 * 8, _.topDistance = 0, _.bottomDistance = -64 * 36, _.cellSize = 4), pFactory);
+												  _.cornerRadius = 64 * 8, _.topDistance = 0, _.bottomDistance = -64 * 36, _.cellSize = { 4, 4 }), pFactory);
 
 		pDevice->warpDrawEdgemap({ 64 * 10, 64 * 10 }, pBand->generate(), m_pGauge);
 		pDevice->setBlitSource(m_pTiling);
@@ -326,13 +326,13 @@ private:
 		Warps warps;
 
 		warps.ring = CircularWarp::create(WGBP(CircularWarp, _.size = { 240, 240 }, _.sourceSize = source, _.topRadius = 118 * 64, _.bottomRadius = 60 * 64), pFactory)->generate();
-		warps.smallRing = CircularWarp::create(WGBP(CircularWarp, _.size = { 120, 120 }, _.sourceSize = source, _.topRadius = 58 * 64, _.bottomRadius = 25 * 64, _.cellSize = 8), pFactory)->generate();
+		warps.smallRing = CircularWarp::create(WGBP(CircularWarp, _.size = { 120, 120 }, _.sourceSize = source, _.topRadius = 58 * 64, _.bottomRadius = 25 * 64, _.cellSize = { 8, 8 }), pFactory)->generate();
 		warps.arc = CircularWarp::create(WGBP(CircularWarp, _.size = { 240, 240 }, _.sourceSize = source, _.topRadius = 118 * 64, _.bottomRadius = 80 * 64, _.startAngle = -135.f, _.sweep = 270.f), pFactory)->generate();
 		warps.quarter = CircularWarp::create(WGBP(CircularWarp, _.size = { 240, 240 }, _.sourceSize = source, _.center = { 0.f, 1.f }, _.topRadius = 230 * 64, _.bottomRadius = 150 * 64, _.sweep = 90.f), pFactory)->generate();
 		warps.blendRing = CircularWarp::create(WGBP(CircularWarp, _.size = { 150, 150 }, _.sourceSize = source, _.topRadius = 74 * 64, _.bottomRadius = 30 * 64), pFactory)->generate();
 
 		{
-			warps.wave = pFactory->createWarpmap(WGBP(Warpmap, _.size = { 240, 240 }, _.cellSize = 12));
+			warps.wave = pFactory->createWarpmap(WGBP(Warpmap, _.size = { 240, 240 }, _.cellSize = { 12, 12 }));
 
 			SizeI n = warps.wave->nodes();
 			std::vector<CoordSPX> nodes(n.w * n.h);
@@ -353,7 +353,7 @@ private:
 		}
 
 		{
-			warps.stripes = pFactory->createWarpmap(WGBP(Warpmap, _.size = { 200, 240 }, _.cellSize = 10, _.vPeriod = source.h));
+			warps.stripes = pFactory->createWarpmap(WGBP(Warpmap, _.size = { 200, 240 }, _.cellSize = { 10, 10 }, _.vPeriod = source.h));
 
 			SizeI n = warps.stripes->nodes();
 			std::vector<CoordSPX> nodes(n.w * n.h);

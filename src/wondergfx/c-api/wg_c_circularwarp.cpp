@@ -33,7 +33,7 @@ wg_obj wg_createCircularWarp( const wg_circularWarpBP* pCBP, wg_obj warpmapFacto
 	CircularWarp::Blueprint bp;
 
 	bp.bottomRadius = pCBP->bottomRadius;
-	bp.cellSize = pCBP->cellSize;
+	bp.cellSize = { pCBP->cellSize.w, pCBP->cellSize.h };
 	bp.center = { pCBP->center.x, pCBP->center.y };
 	if (pCBP->precision > 0.f)
 		bp.precision = pCBP->precision;

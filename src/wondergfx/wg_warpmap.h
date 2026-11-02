@@ -40,7 +40,8 @@ namespace wg
 	 * @brief Bends a surface or an edgemap into another shape when drawn.
 	 *
 	 * A Warpmap covers a rectangle of size.w * size.h pixels with a grid of nodes, one node every
-	 * cellSize pixels in both directions plus one at the right and bottom edge. Each node holds
+	 * cellSize.w pixels horizontally and cellSize.h pixels vertically, plus one at the right and
+	 * bottom edge. Each node holds
 	 * the position in the source that is drawn at that point, in spx of the source (64 per pixel of
 	 * the surface or edgemap, relative to the source rectangle for blits), u along its width and v
 	 * along its height. Positions between nodes are interpolated bilinearly. Where a position falls
@@ -57,7 +58,8 @@ namespace wg
 	 * fit, the nodes have to be changed.
 	 *
 	 * Smaller cells follow curved shapes more closely. A circle of radius r is off by
-	 * roughly cellSize^2 / (8 * r) pixels.
+	 * roughly cellSize^2 / (8 * r) pixels. Where positions change linearly along an axis, as along
+	 * a cylinder, cells can be as long as the Warpmap that way.
 	 *
 	 * An axis can be periodic (uPeriod/vPeriod > 0, in spx of the source), as when u is the angle of
 	 * a ring. Positions are then read modulo the period and interpolation between nodes across the
@@ -111,7 +113,7 @@ namespace wg
 
 		struct Blueprint
 		{
-			int				cellSize	= 16;				// Pixels between nodes.
+			SizeI			cellSize	= { 16, 16 };		// Pixels between nodes, horizontally and vertically.
 			Finalizer_p		finalizer	= nullptr;
 			SizeI			size;							// Mandatory. Size in pixels.
 			spx				uPeriod		= 0;				// In spx of the source, 0 = not periodic.
@@ -128,11 +130,11 @@ namespace wg
 		//.____ Geometry ______________________________________________________
 
 		inline SizeI	pixelSize() const { return m_size; }
-		inline int		cellSize() const { return m_cellSize; }
+		inline SizeI	cellSize() const { return m_cellSize; }
 		inline SizeI	nodes() const { return m_nodes; }				// Nodes horizontally and vertically.
 
-		inline int		nodeX( int column ) const { return std::min( column * m_cellSize, m_size.w ); }	// Pixel position of a column of nodes.
-		inline int		nodeY( int row ) const { return std::min( row * m_cellSize, m_size.h ); }
+		inline int		nodeX( int column ) const { return std::min( column * m_cellSize.w, m_size.w ); }	// Pixel position of a column of nodes.
+		inline int		nodeY( int row ) const { return std::min( row * m_cellSize.h, m_size.h ); }
 
 		//.____ Content _______________________________________________________
 
@@ -185,7 +187,7 @@ namespace wg
 		virtual void	_nodesUpdated( const RectI& region ) = 0;
 
 		SizeI			m_size;
-		int				m_cellSize = 16;
+		SizeI			m_cellSize = { 16, 16 };
 		SizeI			m_nodes;
 		spx				m_uPeriod = 0;
 		spx				m_vPeriod = 0;

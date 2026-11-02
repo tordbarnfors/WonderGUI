@@ -66,10 +66,11 @@ namespace wg
 
 		auto& encoder = * m_pEncoder;
 
-		encoder << GfxStream::Header{ GfxStream::ChunkId::CreateWarpmap, 0, 12 };
+		encoder << GfxStream::Header{ GfxStream::ChunkId::CreateWarpmap, 0, 14 };
 		encoder << m_inStreamId;
 		encoder << m_size;
-		encoder << (uint16_t) m_cellSize;
+		encoder << (uint16_t) m_cellSize.w;
+		encoder << (uint16_t) m_cellSize.h;
 
 		_nodesUpdated({ 0, 0, m_nodes.w, m_nodes.h });
 	}

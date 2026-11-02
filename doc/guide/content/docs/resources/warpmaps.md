@@ -7,7 +7,7 @@ weight: 35
 
 A Warpmap bends a surface or an edgemap into another shape when it is drawn: a gauge or a progress ring from a straight bar, text along an arc, a waving flag. The source is drawn as it is and the Warpmap decides where each part of it ends up.
 
-A Warpmap covers a rectangle of pixels with a grid of nodes, one node every *cellSize* pixels in both directions plus one at the right and bottom edge. Each node holds the position in the source that is drawn at that point, in spx of the source (64 per pixel of the edgemap or surface, relative to the source rectangle of a blit): u along its width and v along its height. Positions between nodes are interpolated. Where a position falls outside the source nothing is drawn, so the shape of what is drawn is given by the nodes, with anti-aliased borders.
+A Warpmap covers a rectangle of pixels with a grid of nodes, one node every *cellSize.w* pixels horizontally and *cellSize.h* pixels vertically, plus one at the right and bottom edge. Each node holds the position in the source that is drawn at that point, in spx of the source (64 per pixel of the edgemap or surface, relative to the source rectangle of a blit): u along its width and v along its height. Positions between nodes are interpolated. Where a position falls outside the source nothing is drawn, so the shape of what is drawn is given by the nodes, with anti-aliased borders.
 
 A Warpmap is made for a source of a certain size. It isn't stretched to fit a source of another size, that takes other nodes.
 
@@ -102,16 +102,16 @@ Positions along the outline are those of the nearest point on it. The source kee
 
 CircularWarp and RoundedRectWarp are WarpGenerators: they make a Warpmap from a few settings and keep it. Size, source size, cell size, precision and generate() are the same for all WarpGenerators.
 
-generate() updates the Warpmap after settings have changed and returns it. A Warpmap that is held elsewhere, such as by a draw that isn't rendered yet, is never changed: generate() then makes a new one, as it does when size or cell size has changed. So draw what generate() returns rather than keeping it, and one generator can be drawn several times with different settings within the same canvas update. Unless set, the cell size is calculated from *precision* and the shape, within 4 to 64 pixels.
+generate() updates the Warpmap after settings have changed and returns it. A Warpmap that is held elsewhere, such as by a draw that isn't rendered yet, is never changed: generate() then makes a new one, as it does when size or cell size has changed. So draw what generate() returns rather than keeping it, and one generator can be drawn several times with different settings within the same canvas update. Unless set, the cell size is calculated from *precision* and the shape: within 4 to 64 pixels along curves, and up to the size of the Warpmap along axes where positions change linearly. Width and height can be set separately, a 0 for either has it calculated.
 
-To make your own, subclass WarpGenerator and implement _generateNodes(), which fills in the positions of all nodes, and _calcCellSize(), which picks a cell size from *precision*. _cellSizeForRadius() gives the cell size for a curve of a given radius. Override _uPeriod() and _vPeriod() if an axis is periodic, and set *m_bDirty* when one of your settings changes.
+To make your own, subclass WarpGenerator and implement _generateNodes(), which fills in the positions of all nodes, and _calcCellSize(), which picks the width and height of cells from *precision*. _cellSizeForRadius() gives the cell size for a curve of a given radius. Override _uPeriod() and _vPeriod() if an axis is periodic, and set *m_bDirty* when one of your settings changes.
 
 
 
 ## Making your own
 
 ```c++
-	auto pWarpmap = pDevice->warpmapFactory()->createWarpmap( WGBP(Warpmap, _.size = { 160, 120 }, _.cellSize = 8) );
+	auto pWarpmap = pDevice->warpmapFactory()->createWarpmap( WGBP(Warpmap, _.size = { 160, 120 }, _.cellSize = { 8, 8 }) );
 
 	SizeI nodes = pWarpmap->nodes();
 	std::vector<CoordSPX> positions( nodes.w * nodes.h );
@@ -127,7 +127,7 @@ To make your own, subclass WarpGenerator and implement _generateNodes(), which f
 	pWarpmap->importNodes( { 0, 0, nodes.w, nodes.h }, positions.data() );
 ```
 
-A new Warpmap maps its rectangle straight onto the source, pixel for pixel. Smaller cells follow curved shapes more closely, a circle of radius r is off by roughly cellSize² / (8 * r) pixels.
+A new Warpmap maps its rectangle straight onto the source, pixel for pixel. Smaller cells follow curved shapes more closely, a circle of radius r is off by roughly cellSize² / (8 * r) pixels. Cells can be wider than high, or the other way around: where positions change linearly along one axis, as along a cylinder, a cell can span the Warpmap that way, which means fewer nodes and less work drawing.
 
 
 

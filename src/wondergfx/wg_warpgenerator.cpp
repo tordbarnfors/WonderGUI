@@ -34,7 +34,7 @@ namespace wg
 
 	//____ constructor ________________________________________________________
 
-	WarpGenerator::WarpGenerator(SizeI size, SizeSPX sourceSize, int cellSize, float precision, WarpmapFactory* pFactory)
+	WarpGenerator::WarpGenerator(SizeI size, SizeSPX sourceSize, SizeI cellSize, float precision, WarpmapFactory* pFactory)
 	{
 		m_size		= size;
 		m_sourceSize = sourceSize;
@@ -89,9 +89,9 @@ namespace wg
 
 	//____ setCellSize() ______________________________________________________
 
-	bool WarpGenerator::setCellSize(int cellSize)
+	bool WarpGenerator::setCellSize(SizeI cellSize)
 	{
-		if (cellSize < 0)
+		if (cellSize.w < 0 || cellSize.h < 0)
 			return false;
 
 		if (cellSize != m_cellSize)
@@ -104,9 +104,15 @@ namespace wg
 
 	//____ cellSize() _________________________________________________________
 
-	int WarpGenerator::cellSize() const
+	SizeI WarpGenerator::cellSize() const
 	{
-		return m_cellSize > 0 ? m_cellSize : std::clamp(_calcCellSize(), c_minCellSize, c_maxCellSize);
+		if (m_cellSize.w > 0 && m_cellSize.h > 0)
+			return m_cellSize;
+
+		SizeI calculated = _calcCellSize();
+
+		return { m_cellSize.w > 0 ? m_cellSize.w : std::clamp(calculated.w, c_minCellSize, std::max(c_minCellSize, m_size.w)),
+				 m_cellSize.h > 0 ? m_cellSize.h : std::clamp(calculated.h, c_minCellSize, std::max(c_minCellSize, m_size.h)) };
 	}
 
 	//____ setPrecision() _____________________________________________________
@@ -138,7 +144,7 @@ namespace wg
 		if (!m_bDirty && m_pWarpmap)
 			return m_pWarpmap;
 
-		int cellSize = this->cellSize();
+		SizeI cellSize = this->cellSize();
 		spx uPeriod = _uPeriod();
 		spx vPeriod = _vPeriod();
 
@@ -150,7 +156,7 @@ namespace wg
 			bp.uPeriod = uPeriod;
 			bp.vPeriod = vPeriod;
 
-			SizeI nodes = { (m_size.w + cellSize - 1) / cellSize + 1, (m_size.h + cellSize - 1) / cellSize + 1 };
+			SizeI nodes = { (m_size.w + cellSize.w - 1) / cellSize.w + 1, (m_size.h + cellSize.h - 1) / cellSize.h + 1 };
 			std::vector<CoordSPX> buffer(nodes.w * nodes.h);
 			_generateNodes(buffer.data(), nodes, cellSize);
 
@@ -190,9 +196,9 @@ namespace wg
 
 	//____ _validateSettings() ________________________________________________
 
-	bool WarpGenerator::_validateSettings(SizeI size, SizeSPX sourceSize, int cellSize, float precision)
+	bool WarpGenerator::_validateSettings(SizeI size, SizeSPX sourceSize, SizeI cellSize, float precision)
 	{
-		return size.w > 0 && size.h > 0 && sourceSize.w > 0 && sourceSize.h > 0 && cellSize >= 0 && precision > 0.f;
+		return size.w > 0 && size.h > 0 && sourceSize.w > 0 && sourceSize.h > 0 && cellSize.w >= 0 && cellSize.h >= 0 && precision > 0.f;
 	}
 
 	//____ _cellSizeForRadius() _______________________________________________
@@ -203,7 +209,7 @@ namespace wg
 
 	int WarpGenerator::_cellSizeForRadius(double radius) const
 	{
-		return int(std::sqrt(8.0 * m_precision * radius));
+		return std::clamp(int(std::sqrt(8.0 * m_precision * radius)), c_minCellSize, c_maxCellSize);
 	}
 
 	//____ _factor() __________________________________________________________

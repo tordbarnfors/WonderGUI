@@ -67,7 +67,7 @@ namespace wg
 		struct Blueprint
 		{
 			spx					bottomDistance = 0;				// Distance from the outline of the bottom of the source, positive outwards.
-			int					cellSize = 0;					// Pixels between nodes of the Warpmap. 0 = calculated, see above.
+			SizeI				cellSize;						// Pixels between nodes of the Warpmap. 0 = calculated, see above.
 			spx					cornerRadius = 0;				// Radius of the corners of the outline, at most half its shorter side.
 			Finalizer_p			finalizer = nullptr;
 			float				precision = 0.25f;				// Max position error in pixels when cellSize is calculated.
@@ -116,8 +116,8 @@ namespace wg
 		RoundedRectWarp( const Blueprint& bp, WarpmapFactory * pFactory );
 		virtual ~RoundedRectWarp();
 
-		int			_calcCellSize() const override;
-		void		_generateNodes( CoordSPX * pNodes, SizeI nodes, int cellSize ) const override;
+		SizeI		_calcCellSize() const override;
+		void		_generateNodes( CoordSPX * pNodes, SizeI nodes, SizeI cellSize ) const override;
 		spx			_uPeriod() const override;
 		void		_generated() override { m_generatedSweep = m_sweep; }
 

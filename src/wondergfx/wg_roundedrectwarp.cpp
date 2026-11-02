@@ -146,13 +146,14 @@ namespace wg
 		of its outer edge is used instead, as for a disc.
 	*/
 
-	int RoundedRectWarp::_calcCellSize() const
+	SizeI RoundedRectWarp::_calcCellSize() const
 	{
 		double r = _cornerRadius();
 		double inner = r + std::min(m_topDistance, m_bottomDistance) / 64.0;
 		double outer = r + std::max(m_topDistance, m_bottomDistance) / 64.0;
 
-		return _cellSizeForRadius(inner > 0 ? inner : std::max(outer, 0.0) / 2);
+		int cellSize = _cellSizeForRadius(inner > 0 ? inner : std::max(outer, 0.0) / 2);
+		return { cellSize, cellSize };
 	}
 
 	//____ _uPeriod() _________________________________________________________
@@ -190,7 +191,7 @@ namespace wg
 		of the Warpmap is rounded to spx.
 	*/
 
-	void RoundedRectWarp::_generateNodes(CoordSPX* pNodes, SizeI nodes, int cellSize) const
+	void RoundedRectWarp::_generateNodes(CoordSPX* pNodes, SizeI nodes, SizeI cellSize) const
 	{
 		const int c_halfBits = 8;								// Fraction bits of half spx.
 		const double c_pi = 3.14159265358979323846;
@@ -221,11 +222,11 @@ namespace wg
 
 		for (int row = 0; row < nodes.h; row++)
 		{
-			int64_t y = std::min(row * cellSize, m_size.h) * c_pixel - cy;
+			int64_t y = std::min(row * cellSize.h, m_size.h) * c_pixel - cy;
 
 			for (int col = 0; col < nodes.w; col++)
 			{
-				int64_t x = std::min(col * cellSize, m_size.w) * c_pixel - cx;
+				int64_t x = std::min(col * cellSize.w, m_size.w) * c_pixel - cx;
 
 				int64_t qx = std::abs(x) - ax;
 				int64_t qy = std::abs(y) - ay;

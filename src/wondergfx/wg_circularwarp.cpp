@@ -131,12 +131,13 @@ namespace wg
 		radius and can't show detail close to its center anyway, so half its radius is used instead.
 	*/
 
-	int CircularWarp::_calcCellSize() const
+	SizeI CircularWarp::_calcCellSize() const
 	{
 		spx inner = std::min(m_topRadius, m_bottomRadius);
 		spx outer = std::max(m_topRadius, m_bottomRadius);
 
-		return _cellSizeForRadius((inner > 0 ? inner : outer / 2) / 64.0);
+		int cellSize = _cellSizeForRadius((inner > 0 ? inner : outer / 2) / 64.0);
+		return { cellSize, cellSize };
 	}
 
 	//____ _uPeriod() _________________________________________________________
@@ -163,7 +164,7 @@ namespace wg
 		rounded to spx.
 	*/
 
-	void CircularWarp::_generateNodes(CoordSPX* pNodes, SizeI nodes, int cellSize) const
+	void CircularWarp::_generateNodes(CoordSPX* pNodes, SizeI nodes, SizeI cellSize) const
 	{
 		const int c_fractionBits = 8;							// Of spx, so the center isn't rounded.
 		const int64_t c_pixel = 64 << c_fractionBits;
@@ -184,11 +185,11 @@ namespace wg
 
 		for (int row = 0; row < nodes.h; row++)
 		{
-			int64_t y = std::min(row * cellSize, m_size.h) * c_pixel - cy;
+			int64_t y = std::min(row * cellSize.h, m_size.h) * c_pixel - cy;
 
 			for (int col = 0; col < nodes.w; col++)
 			{
-				int64_t x = std::min(col * cellSize, m_size.w) * c_pixel - cx;
+				int64_t x = std::min(col * cellSize.w, m_size.w) * c_pixel - cx;
 
 				int64_t r;
 				uint32_t angle = _polar(-y, x, &r);				// Clockwise from up.

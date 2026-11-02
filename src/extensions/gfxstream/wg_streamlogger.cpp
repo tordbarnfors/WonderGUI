@@ -630,15 +630,16 @@ namespace wg
 			{
 				uint16_t	warpmapId;
 				SizeI		size;
-				uint16_t	cellSize;
+				uint16_t	cellWidth, cellHeight;
 
 				decoder >> warpmapId;
 				decoder >> size;
-				decoder >> cellSize;
+				decoder >> cellWidth;
+				decoder >> cellHeight;
 
 				m_charStream << "    warpmapId   = " << warpmapId << std::endl;
 				m_charStream << "    size        = " << size.w << ", " << size.h << std::endl;
-				m_charStream << "    cellSize    = " << cellSize << std::endl;
+				m_charStream << "    cellSize    = " << cellWidth << ", " << cellHeight << std::endl;
 				break;
 			}
 

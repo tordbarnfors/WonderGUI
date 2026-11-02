@@ -48,12 +48,13 @@ namespace wg
 
 		wg_sizeI size	= PluginCalls::warpmap->warpmapPixelSize(object);
 		m_size			= { size.w, size.h };
-		m_cellSize		= std::max(1, PluginCalls::warpmap->warpmapCellSize(object));
+		wg_sizeI cellSize = PluginCalls::warpmap->warpmapCellSize(object);
+		m_cellSize		= { std::max(1, cellSize.w), std::max(1, cellSize.h) };
 		m_uPeriod		= PluginCalls::warpmap->warpmapUPeriod(object);
 		m_vPeriod		= PluginCalls::warpmap->warpmapVPeriod(object);
 
-		m_nodes.w = (m_size.w + m_cellSize - 1) / m_cellSize + 1;
-		m_nodes.h = (m_size.h + m_cellSize - 1) / m_cellSize + 1;
+		m_nodes.w = (m_size.w + m_cellSize.w - 1) / m_cellSize.w + 1;
+		m_nodes.h = (m_size.h + m_cellSize.h - 1) / m_cellSize.h + 1;
 
 		m_pNodes = new CoordSPX[m_nodes.w * m_nodes.h];
 

@@ -1769,13 +1769,14 @@ WG_GL_SHAPE_FUNCS
 // Each pixel finds the cell of the Warpmap it is in and interpolates the position in the source
 // at its center, and how fast that changes along x and y of the canvas. Coverage is worked out
 // from those, taking each border of the source and each edge of an edgemap as straight over the
-// pixel. Extras of a warp, four entries:
+// pixel. Extras of a warp, five entries:
 //
-//   0: position of Warpmap on canvas, cell size, number of edges.
+//   0: position of Warpmap on canvas, cell width, number of edges.
 //   1: size of Warpmap, size of source in pixels.
 //   2: source offset in pixels of the source, periods in pixels of the source (0 if none).
 //   3: edgemaps: edges per column, offsets of flat colors, tint table and raw samples in the
 //      edgemap buffer. Blits: position of source rectangle in the surface.
+//   4: cell height.
 //
 // The cells of the Warpmap are in its buffer, see GlWarpmap.
 
@@ -1871,11 +1872,11 @@ WG_GL_CANVAS_BLOCK
 "	vec4 e1 = warpEntry(1);															" \
 "	vec4 e2 = warpEntry(2);															" \
 "	vec2 q = p - e0.xy;																" \
-"	int cellSize = int(e0.z);														" \
+"	ivec2 cellSize = ivec2(int(e0.z), int(warpEntry(4).x));							" \
 "	ivec2 cells = (ivec2(e1.xy) + cellSize - 1) / cellSize;							" \
 "	ivec2 cell = clamp(ivec2(floor(max(q, vec2(0.0)))) / cellSize, ivec2(0), cells - 1);	" \
 "	vec2 c0 = vec2(cell * cellSize);												" \
-"	vec2 c1 = min(c0 + float(cellSize), e1.xy);										" \
+"	vec2 c1 = min(c0 + vec2(cellSize), e1.xy);										" \
 "	vec2 f = (q - c0) / (c1 - c0);													" \
 "	int i = (cell.y * cells.x + cell.x) * 2;										" \
 "	vec4 top = texelFetch(warpmapId, i);											" \

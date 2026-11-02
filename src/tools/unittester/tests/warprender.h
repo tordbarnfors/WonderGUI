@@ -20,6 +20,7 @@ private:
 	bool opaqueCanvasTest(std::ostream& output);
 	bool streamTest(std::ostream& output);
 	bool streamNodesTest(std::ostream& output);
+	bool nonSquareCellsTest(std::ostream& output);
 	bool cApiTest(std::ostream& output);
 	bool seamColorTest(std::ostream& output);
 	bool sourceRectTest(std::ostream& output);

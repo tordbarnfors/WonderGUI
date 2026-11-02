@@ -33,7 +33,7 @@ wg_obj wg_createRoundedRectWarp( const wg_roundedRectWarpBP* pCBP, wg_obj warpma
 	RoundedRectWarp::Blueprint bp;
 
 	bp.bottomDistance = pCBP->bottomDistance;
-	bp.cellSize = pCBP->cellSize;
+	bp.cellSize = { pCBP->cellSize.w, pCBP->cellSize.h };
 	bp.cornerRadius = pCBP->cornerRadius;
 	if (pCBP->precision > 0.f)
 		bp.precision = pCBP->precision;

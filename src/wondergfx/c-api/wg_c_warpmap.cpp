@@ -37,9 +37,10 @@ wg_sizeI wg_warpmapPixelSize(wg_obj warpmap)
 	return { sz.w, sz.h };
 }
 
-int wg_warpmapCellSize(wg_obj warpmap)
+wg_sizeI wg_warpmapCellSize(wg_obj warpmap)
 {
-	return getPtr(warpmap)->cellSize();
+	SizeI cellSize = getPtr(warpmap)->cellSize();
+	return { cellSize.w, cellSize.h };
 }
 
 wg_sizeI wg_warpmapNodes(wg_obj warpmap)

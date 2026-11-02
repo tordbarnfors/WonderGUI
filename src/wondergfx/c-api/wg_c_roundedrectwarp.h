@@ -35,7 +35,7 @@ extern "C" {
 	typedef struct wg_roundedRectWarpBP_struct		// NOT BINARY EQUIVALENT!
 	{
 		wg_spx				bottomDistance;			// Distance from the outline of the bottom of the source, positive outwards.
-		int					cellSize;				// 0 = calculated from precision.
+		wg_sizeI			cellSize;				// 0 for width or height = calculated from precision.
 		wg_spx				cornerRadius;			// Radius of the corners of the outline, at most half its shorter side.
 		float				precision;				// Max position error in pixels when cellSize is calculated. 0 = default (0.25).
 		wg_rectSPX			rect;					// Mandatory. The outline, relative to the top-left corner of the Warpmap.

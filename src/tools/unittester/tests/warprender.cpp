@@ -275,7 +275,7 @@ namespace
 
 	Warpmap_p makeWave(GfxDevice* pDevice, int size, SizeSPX source)
 	{
-		auto pWarpmap = pDevice->warpmapFactory()->createWarpmap(WGBP(Warpmap, _.size = { size, size }, _.cellSize = 8));
+		auto pWarpmap = pDevice->warpmapFactory()->createWarpmap(WGBP(Warpmap, _.size = { size, size }, _.cellSize = { 8, 8 }));
 
 		SizeI n = pWarpmap->nodes();
 		std::vector<CoordSPX> nodes(n.w * n.h);
@@ -325,7 +325,7 @@ namespace
 
 	Warpmap_p identity(SizeI size, int cellSize)
 	{
-		return SoftWarpmapFactory::create()->createWarpmap(WGBP(Warpmap, _.size = size, _.cellSize = cellSize));
+		return SoftWarpmapFactory::create()->createWarpmap(WGBP(Warpmap, _.size = size, _.cellSize = { cellSize, cellSize }));
 	}
 
 	// Renders a scene through StreamBackend and StreamPlayer onto a SoftBackend. Resources are
@@ -388,6 +388,7 @@ WarpRenderTest::WarpRenderTest()
 	ADD_TEST(opaqueCanvasTest);
 	ADD_TEST(streamTest);
 	ADD_TEST(streamNodesTest);
+	ADD_TEST(nonSquareCellsTest);
 	ADD_TEST(cApiTest);
 	ADD_TEST(seamColorTest);
 	ADD_TEST(sourceRectTest);
@@ -733,7 +734,7 @@ bool WarpRenderTest::streamNodesTest(std::ostream& output)
 	auto pStreamBackend = StreamBackend::create(pEncoder);
 
 	auto pWarp = CircularWarp::create(WGBP(CircularWarp, _.size = { 200, 200 }, _.sourceSize = c_edgemapSource, _.topRadius = 98 * 64, _.bottomRadius = 40 * 64,
-										   _.cellSize = 4), pStreamBackend->warpmapFactory());
+										   _.cellSize = { 4, 4 }), pStreamBackend->warpmapFactory());
 
 	auto sameNodes = [&](Warpmap* pSent, CountingSoftWarpmap* pGot)
 	{
@@ -805,12 +806,70 @@ bool WarpRenderTest::streamNodesTest(std::ostream& output)
 
 	// Created without nodes, with the default ones.
 
-	auto pDefault = pStreamBackend->warpmapFactory()->createWarpmap({ .cellSize = 8, .size = { 30, 20 }, .uPeriod = 1000 });
+	auto pDefault = pStreamBackend->warpmapFactory()->createWarpmap({ .cellSize = { 8, 8 }, .size = { 30, 20 }, .uPeriod = 1000 });
 	pEncoder->flush();
 	TEST_ASSERT(pReceived->created.size() == 2 && pReceived->createdWithNodes == 2);
 	TEST_ASSERT(sameNodes(pDefault, pReceived->created[1]));
 
 	return true;
+}
+
+//____ nonSquareCellsTest() ___________________________________________________
+// Cells can have another width than height. A sheared and scaled mapping is linear, so any cells
+// give the same positions and draw the same, in all backends and streamed. SoftBackend steps
+// positions from the corners of each cell in fixed point, so rounding can differ by a unit and
+// colors by a level.
+
+bool WarpRenderTest::nonSquareCellsTest(std::ostream& output)
+{
+	const SizeI size = { 60, 50 };
+
+	// Linear in x and y, whole spx at every pixel, partly outside the source.
+
+	auto sheared = [&](GfxDevice* pDevice, SizeI cellSize)
+	{
+		auto pWarpmap = pDevice->warpmapFactory()->createWarpmap(WGBP(Warpmap, _.size = size, _.cellSize = cellSize));
+
+		SizeI n = pWarpmap->nodes();
+		std::vector<CoordSPX> nodes(n.w * n.h);
+		for (int r = 0; r < n.h; r++)
+			for (int c = 0; c < n.w; c++)
+			{
+				int x = pWarpmap->nodeX(c), y = pWarpmap->nodeY(r);
+				nodes[r * n.w + c] = { 59 * x + 13 * y - 320, 9 * x + 31 * y - 200 };
+			}
+
+		pWarpmap->importNodes({ 0, 0, n.w, n.h }, nodes.data());
+		return pWarpmap;
+	};
+
+	auto scene = [&](SizeI cellSize)
+	{
+		return [=](GfxDevice* pDevice)
+		{
+			// Resources made by the device drawn with, so they are streamed too.
+
+			pDevice->warpDrawEdgemap({ 4 * 64, 4 * 64 }, sheared(pDevice, cellSize), makeEdgemap(pDevice, true));
+			pDevice->setBlitSource(makeSurface(pDevice, true, SampleMethod::Bilinear));
+			pDevice->warpBlit({ 80 * 64, 4 * 64 }, sheared(pDevice, cellSize), { 64 * 2, 64 * 1, 64 * 24, 64 * 12 }, { 64 * 3, 0 });
+		};
+	};
+
+	const SizeI shapes[] = { { 60, 4 }, { 3, 50 }, { 17, 11 }, { 100, 100 } };
+
+	for (Backend backend : { Backend::Soft, Backend::Linear, Backend::Reference })
+	{
+		auto square = render(backend, scene({ 5, 5 }));
+
+		for (SizeI cellSize : shapes)
+		{
+			std::string what = "Cells of " + std::to_string(cellSize.w) + " x " + std::to_string(cellSize.h);
+			if (!compare(output, what.c_str(), render(backend, scene(cellSize)), "these cells", square, "5 x 5 cells", 1))
+				return false;
+		}
+	}
+
+	return compare(output, "Cells of 60 x 4, streamed", renderStreamed(scene({ 60, 4 })), "streamed", render(Backend::Soft, scene({ 60, 4 })), "direct", 0);
 }
 
 //____ cApiTest() _____________________________________________________________
@@ -845,7 +904,7 @@ bool WarpRenderTest::cApiTest(std::ostream& output)
 	{
 		auto pRing = CircularWarp::create(WGBP(CircularWarp, _.size = { 44, 44 }, _.sourceSize = c_edgemapSource, _.topRadius = 21 * 64, _.bottomRadius = 10 * 64,
 											   _.startAngle = 30.f, _.sweep = 300.f), SoftWarpmapFactory::create());
-		auto pBent = SoftWarpmapFactory::create()->createWarpmap(WGBP(Warpmap, _.size = warpSize, _.cellSize = cellSize, _.uPeriod = bentPeriod), nodeData.data());
+		auto pBent = SoftWarpmapFactory::create()->createWarpmap(WGBP(Warpmap, _.size = warpSize, _.cellSize = { cellSize, cellSize }, _.uPeriod = bentPeriod), nodeData.data());
 
 		pDevice->warpDrawEdgemap({ 64 * 3, 64 * 4 }, pRing->generate(), pEdgemap, { 64 * 5, 0 });
 
@@ -875,7 +934,7 @@ bool WarpRenderTest::cApiTest(std::ostream& output)
 
 		wg_warpmapBP bentBP = {};
 		bentBP.size = { warpSize.w, warpSize.h };
-		bentBP.cellSize = cellSize;
+		bentBP.cellSize = { cellSize, cellSize };
 		bentBP.uPeriod = bentPeriod;
 
 		wg_obj bent = wg_createWarpmapFromNodes(factory, &bentBP, (const wg_coordSPX*) nodeData.data(), 0);

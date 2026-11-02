@@ -471,7 +471,7 @@ namespace wg
 		if (area.w <= 0 || area.h <= 0)
 			return;
 
-		const int cellSize = pMap->cellSize();
+		const SizeI cellSize = pMap->cellSize();
 		const SizeI nodes = pMap->nodes();
 
 		// Area in pixels of the Warpmap.
@@ -481,10 +481,10 @@ namespace wg
 		int y0 = area.y - w.dest.y;
 		int y1 = y0 + area.h;
 
-		int firstColumn = std::min(x0 / cellSize, nodes.w - 2);
-		int lastColumn = std::min((x1 - 1) / cellSize, nodes.w - 2);
-		int firstRow = std::min(y0 / cellSize, nodes.h - 2);
-		int lastRow = std::min((y1 - 1) / cellSize, nodes.h - 2);
+		int firstColumn = std::min(x0 / cellSize.w, nodes.w - 2);
+		int lastColumn = std::min((x1 - 1) / cellSize.w, nodes.w - 2);
+		int firstRow = std::min(y0 / cellSize.h, nodes.h - 2);
+		int lastRow = std::min((y1 - 1) / cellSize.h, nodes.h - 2);
 
 		int nColumns = lastColumn - firstColumn + 1;
 

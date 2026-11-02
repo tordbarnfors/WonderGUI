@@ -35,7 +35,7 @@ extern "C" {
 	typedef struct wg_circularWarpBP_struct		// NOT BINARY EQUIVALENT!
 	{
 		wg_spx				bottomRadius;			// Radius the bottom of the source is placed at.
-		int					cellSize;				// 0 = calculated from precision.
+		wg_sizeI			cellSize;				// 0 for width or height = calculated from precision.
 		wg_coordF			center;					// Center of circle, relative to size. Usually { 0.5f, 0.5f }.
 		float				precision;				// Max position error in pixels when cellSize is calculated. 0 = default (0.25).
 		wg_sizeI			size;					// Mandatory. Size of the Warpmap in pixels.

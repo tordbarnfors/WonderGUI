@@ -5,14 +5,15 @@
 // Each pixel finds the cell of the Warpmap it is in and interpolates the position in
 // the source at its center, and how fast that changes along x and y of the canvas.
 // Coverage is worked out from those, taking each border of the source and each edge
-// of an edgemap as straight over the pixel. Extras of a warp, four entries:
+// of an edgemap as straight over the pixel. Extras of a warp, five entries:
 //
-//   0: position of Warpmap on canvas, cell size, number of edges.
+//   0: position of Warpmap on canvas, cell width, number of edges.
 //   1: size of Warpmap, size of source in pixels.
 //   2: source offset in pixels of the source, periods in pixels of the source (0 if none).
 //   3: edgemaps: edges per column, offsets of flat colors, tint table and raw samples in
 //      the edgemap buffer. Blits: position of source rectangle in the surface, how far inside
 //      its edges positions are kept (0 for a tiling surface, see warpBlitCoverage()).
+//   4: cell height.
 //
 // The cells of the Warpmap are in its buffer, see DX12Warpmap.
 //
@@ -130,11 +131,11 @@ float2 warpPosition(uint ofs, float2 p, out float2 dx, out float2 dy)
     float4 e2 = extras[ofs + 2];
 
     float2 q = p - e0.xy;
-    uint cellSize = uint(e0.z);
+    uint2 cellSize = uint2(uint(e0.z), uint(extras[ofs + 4].x));
     uint2 cells = (uint2(e1.xy) + cellSize - 1u) / cellSize;
     uint2 cell = min(uint2(floor(max(q, 0.0f))) / cellSize, cells - 1u);
     float2 c0 = float2(cell * cellSize);
-    float2 c1 = min(c0 + float(cellSize), e1.xy);
+    float2 c1 = min(c0 + float2(cellSize), e1.xy);
     float2 f = (q - c0) / (c1 - c0);
 
     uint i = (cell.y * cells.x + cell.x) * 2u;
