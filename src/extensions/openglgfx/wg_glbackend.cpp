@@ -1027,16 +1027,10 @@ void GlBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, int 
 				*pExtrasGL++ = 0.f;
 			}
 
-			// Vertices, a quad for the part of each clip rectangle covered by the Warpmap, which
-			// is drawn once for each block of cells it touches, see warpVertexShader. The patch
-			// goes along to the shader in uv and colorstripOfs.
+			// Vertices, a quad for the part of each clip rectangle covered by the Warpmap.
 
 			int flatTintOfs = m_tintColorOfs >= 0 ? m_tintColorOfs : 0;		// Entry 0 is white.
-			int blockSize = GlWarpmap::_blockCells(pWarpmap->cellSize()) * pWarpmap->cellSize();
-
-			*pCommandGL++ = pEdgemap ? CommandGL::WarpEdgemap : CommandGL::WarpBlit;
-			int* pPatchCount = pCommandGL++;
-			*pPatchCount = 0;
+			int nVertices = 0;
 
 			for (int i = 0; i < params.nRects; i++)
 			{
@@ -1045,30 +1039,29 @@ void GlBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, int 
 				if (patch.w <= 0 || patch.h <= 0)
 					continue;
 
-				int columns = (patch.x + patch.w - 1 - dest.x) / blockSize - (patch.x - dest.x) / blockSize + 1;
-				int rows = (patch.y + patch.h - 1 - dest.y) / blockSize - (patch.y - dest.y) / blockSize + 1;
-
-				*pCommandGL++ = columns * rows;
-				(*pPatchCount)++;
-
 				CoordI corners[6] = {	{ patch.x, patch.y }, { patch.x + patch.w, patch.y }, { patch.x + patch.w, patch.y + patch.h },
 										{ patch.x, patch.y }, { patch.x + patch.w, patch.y + patch.h }, { patch.x, patch.y + patch.h } };
 
 				for (auto& corner : corners)
 				{
 					pVertexGL->coord = corner;
-					pVertexGL->uv = { float(patch.x), float(patch.y) };
+					pVertexGL->uv = { 0.f, 0.f };
 					pVertexGL->colorsOfs = flatTintOfs;
 					pVertexGL->extrasOfs = extrasOfs;
 					pVertexGL->tintmapOfs = { float(m_tintOfs), 0.f };
-					pVertexGL->colorstripOfs = { float(patch.w), float(patch.h) };
+					pVertexGL->colorstripOfs = { 0.f, 0.f };
 					pVertexGL++;
 				}
+
+				nVertices += 6;
 			}
 
 			m_objects.push_back(pWarpmap);
 			if (pEdgemap)
 				m_objects.push_back(pEdgemap);
+
+			*pCommandGL++ = pEdgemap ? CommandGL::WarpEdgemap : CommandGL::WarpBlit;
+			*pCommandGL++ = nVertices;
 			break;
 		}
 
@@ -2020,7 +2013,7 @@ void GlBackend::beginSession( CanvasRef canvasRef, Surface * pCanvasSurface, int
 		+ (pInfo->nLines * 3 + pInfo->nLineClipRects * 4) * 2		// Lines with and without caps in separate commands.
 		+ pInfo->nEdgemapDraws * 3
 		+ pInfo->nShapeDraws * 2
-		+ pInfo->nWarpDraws * 2 + pInfo->nRects		// Warps have a count of blocks for each clip rectangle.
+		+ pInfo->nWarpDraws * 2
 		+ pInfo->nSetCanvas];
 
 	m_commandQueueSize = 0;
@@ -2422,17 +2415,11 @@ void GlBackend::endSession()
 
 				glActiveTexture(GL_TEXTURE0);
 
+				int nVertices = *pCmd++;
 				_setPartialCoverage(true);
 
-				// One instance per block of cells of each patch, see warpVertexShader.
-
-				int nPatches = *pCmd++;
-				for (int i = 0; i < nPatches; i++)
-				{
-					int nBlocks = *pCmd++;
-					glDrawArraysInstanced(GL_TRIANGLES, vertexOfs, 6, nBlocks);
-					vertexOfs += 6;
-				}
+				glDrawArrays(GL_TRIANGLES, vertexOfs, nVertices);
+				vertexOfs += nVertices;
 				break;
 			}
 
