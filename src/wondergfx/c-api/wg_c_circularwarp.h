@@ -63,6 +63,12 @@ extern "C" {
 	WG_EXPORT float			wg_circularWarpStartAngle( wg_obj circularWarp );
 	WG_EXPORT float			wg_circularWarpSweep( wg_obj circularWarp );
 
+	//.____ Drawing _______________________________________________________
+
+	// Source offset that turns the ring by degrees, clockwise if positive, as if startAngle was that much larger.
+
+	WG_EXPORT wg_coordSPX	wg_circularWarpRotationOffset( wg_obj circularWarp, float degrees );
+
 #ifdef __cplusplus
 }
 #endif

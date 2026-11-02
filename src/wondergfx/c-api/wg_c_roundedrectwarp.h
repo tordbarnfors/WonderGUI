@@ -65,6 +65,12 @@ extern "C" {
 	WG_EXPORT float			wg_roundedRectWarpStart( wg_obj roundedRectWarp );
 	WG_EXPORT float			wg_roundedRectWarpSweep( wg_obj roundedRectWarp );
 
+	//.____ Drawing _______________________________________________________
+
+	// Source offset that moves the source part of the outline along it, clockwise if positive, as if start was that much larger.
+
+	WG_EXPORT wg_coordSPX	wg_roundedRectWarpShiftOffset( wg_obj roundedRectWarp, float part );
+
 #ifdef __cplusplus
 }
 #endif

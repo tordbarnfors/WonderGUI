@@ -392,6 +392,7 @@ WarpRenderTest::WarpRenderTest()
 	ADD_TEST(seamColorTest);
 	ADD_TEST(sourceRectTest);
 	ADD_TEST(generateTest);
+	ADD_TEST(rotationOffsetTest);
 	ADD_TEST(roundedRectTest);
 }
 
@@ -1090,6 +1091,56 @@ bool WarpRenderTest::generateTest(std::ostream& output)
 	}
 
 	return compare(output, "One CircularWarp drawn three times, streamed", renderStreamed(oneGenerator), "one generator", render(Backend::Soft, separateGenerators), "separate generators", 0);
+}
+
+//____ rotationOffsetTest() ___________________________________________________
+// A ring turned by rotationOffset() and a frame moved by shiftOffset() draw as generated with a
+// larger start, also through the C API.
+
+bool WarpRenderTest::rotationOffsetTest(std::ostream& output)
+{
+	auto pRes = resourceDevice();
+	auto pEdgemap = makeEdgemap(pRes, true);
+	auto pFactory = SoftWarpmapFactory::create();
+
+	auto ringBP = WGBP(CircularWarp, _.size = { 44, 44 }, _.sourceSize = c_edgemapSource, _.topRadius = 21 * 64, _.bottomRadius = 10 * 64,
+					   _.startAngle = 20.f, _.sweep = 300.f);
+	auto frameBP = WGBP(RoundedRectWarp, _.size = { 60, 44 }, _.sourceSize = c_edgemapSource, _.rect = { 64 * 8, 64 * 8, 64 * 44, 64 * 28 },
+						_.cornerRadius = 64 * 8, _.topDistance = 64 * 5, _.bottomDistance = -64 * 4, _.start = 0.1f, _.sweep = 0.8f);
+
+	auto pRing = CircularWarp::create(ringBP, pFactory);
+	auto pFrame = RoundedRectWarp::create(frameBP, pFactory);
+
+	ringBP.startAngle += 75.f;
+	frameBP.start += 0.3f;
+	auto pTurnedRing = CircularWarp::create(ringBP, pFactory);
+	auto pMovedFrame = RoundedRectWarp::create(frameBP, pFactory);
+
+	auto turned = [&](GfxDevice* pDevice)
+	{
+		pDevice->warpDrawEdgemap({ 2 * 64, 2 * 64 }, pRing->generate(), pEdgemap, pRing->rotationOffset(75.f));
+		pDevice->warpDrawEdgemap({ 60 * 64, 2 * 64 }, pFrame->generate(), pEdgemap, pFrame->shiftOffset(0.3f));
+	};
+
+	auto generated = [&](GfxDevice* pDevice)
+	{
+		pDevice->warpDrawEdgemap({ 2 * 64, 2 * 64 }, pTurnedRing->generate(), pEdgemap);
+		pDevice->warpDrawEdgemap({ 60 * 64, 2 * 64 }, pMovedFrame->generate(), pEdgemap);
+	};
+
+	// Nodes of the two differ by rounding to spx, so a few pixels by a level or two.
+
+	if (!compare(output, "Turned by offset", render(Backend::Soft, turned), "offset", render(Backend::Soft, generated), "generated", 2, 40, 4))
+		return false;
+
+	// C API gives the same offsets.
+
+	wg_coordSPX ringOffset = wg_circularWarpRotationOffset((wg_obj) static_cast<Object*>(pRing.rawPtr()), 75.f);
+	wg_coordSPX frameOffset = wg_roundedRectWarpShiftOffset((wg_obj) static_cast<Object*>(pFrame.rawPtr()), 0.3f);
+
+	TEST_ASSERT(ringOffset.x == pRing->rotationOffset(75.f).x && ringOffset.y == 0);
+	TEST_ASSERT(frameOffset.x == pFrame->shiftOffset(0.3f).x && frameOffset.y == 0);
+	return true;
 }
 
 //____ roundedRectTest() ______________________________________________________

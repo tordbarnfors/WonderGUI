@@ -94,6 +94,14 @@ namespace wg
 		float		startAngle() const { return m_startAngle; }
 		float		sweep() const { return m_sweep; }
 
+		//.____ Drawing _____________________________________________________
+
+		// Source offset that turns the ring by degrees, clockwise if positive, as if startAngle
+		// was that much larger. Pass it when drawing to turn the ring without generating it again.
+		// Goes by the sweep and source size of the generated Warpmap.
+
+		CoordSPX	rotationOffset( float degrees ) const;
+
 	protected:
 
 		CircularWarp( const Blueprint& bp, WarpmapFactory * pFactory );
@@ -102,12 +110,14 @@ namespace wg
 		int			_calcCellSize() const override;
 		void		_generateNodes( CoordSPX * pNodes, SizeI nodes, int cellSize ) const override;
 		spx			_uPeriod() const override;
+		void		_generated() override { m_generatedSweep = m_sweep; }
 
 		CoordF		m_center;
 		spx			m_topRadius;
 		spx			m_bottomRadius;
 		float		m_startAngle;
 		float		m_sweep;
+		float		m_generatedSweep;							// Sweep of the generated Warpmap.
 	};
 
 } // namespace wg

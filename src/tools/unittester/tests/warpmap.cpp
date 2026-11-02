@@ -168,6 +168,7 @@ WarpmapTest::WarpmapTest()
 	ADD_TEST(generateUpdatesTest);
 	ADD_TEST(roundedRectWarpTest);
 	ADD_TEST(nodeCompressionTest);
+	ADD_TEST(offsetTest);
 }
 
 WarpmapTest::~WarpmapTest()
@@ -770,5 +771,79 @@ bool WarpmapTest::nodeCompressionTest(std::ostream& output)
 	TEST_ASSERT(roundTrip(std::vector<int32_t>(12, 5), 4) == 1 + 48);
 	TEST_ASSERT(roundTrip(std::vector<int32_t>{ 1, 2, 3 }, 1) == 1 + 12);
 
+	return true;
+}
+
+//____ offsetTest() ___________________________________________________________
+// rotationOffset() and shiftOffset() give the offset that moves u as moving the start would, by the
+// settings of the generated Warpmap.
+
+bool WarpmapTest::offsetTest(std::ostream& output)
+{
+	auto pFactory = SoftWarpmapFactory::create();
+	const spx width = c_sourceSize.w;											// 25600 spx.
+
+	// Offsets by sweep and direction, whole turns dropped.
+
+	auto pRing = CircularWarp::create(WGBP(CircularWarp, _.sourceSize = c_sourceSize, _.size = { 100, 100 }, _.topRadius = 45 * 64, _.bottomRadius = 20 * 64), pFactory);
+	TEST_ASSERT(pRing->rotationOffset(90.f) == CoordSPX(-width / 4, 0));
+	TEST_ASSERT(pRing->rotationOffset(-90.f) == CoordSPX(width / 4, 0));
+	TEST_ASSERT(pRing->rotationOffset(90.f + 360.f * 1000) == pRing->rotationOffset(90.f));
+	TEST_ASSERT(pRing->rotationOffset(std::nanf("")) == CoordSPX(0, 0));
+
+	// Settings count once generated.
+
+	TEST_ASSERT(pRing->setAngles(0.f, -90.f));
+	TEST_ASSERT(pRing->rotationOffset(45.f) == CoordSPX(-width / 8, 0));
+	pRing->generate();
+	TEST_ASSERT(pRing->rotationOffset(45.f) == CoordSPX(width / 2, 0));			// Counter clockwise source, turned clockwise.
+
+	TEST_ASSERT(pRing->setSourceSize({ width * 2, c_sourceSize.h }));
+	TEST_ASSERT(pRing->rotationOffset(45.f) == CoordSPX(width / 2, 0));
+	pRing->generate();
+	TEST_ASSERT(pRing->rotationOffset(45.f) == CoordSPX(width, 0));
+
+	// Turning by offset gives the nodes of a larger start, give or take rounding.
+
+	auto sameButOffset = [](Warpmap* pMoved, Warpmap* pBase, spx offset, CoordF skip)
+	{
+		SizeI nodes = pBase->nodes();
+		for (int row = 0; row < nodes.h; row++)
+			for (int col = 0; col < nodes.w; col++)
+			{
+				if (pBase->nodeX(col) == skip.x && pBase->nodeY(row) == skip.y)
+					continue;
+
+				CoordSPX a = pBase->nodeData()[row * nodes.w + col];
+				CoordSPX b = pMoved->nodeData()[row * nodes.w + col];
+				if (uDiff(b.x, a.x + offset, pBase->uPeriod()) > 1 || std::abs(b.y - a.y) > 1)
+					return false;
+			}
+		return true;
+	};
+
+	auto ringBP = WGBP(CircularWarp, _.sourceSize = c_sourceSize, _.size = { 100, 100 }, _.topRadius = 45 * 64, _.bottomRadius = 20 * 64,
+					   _.startAngle = 10.f, _.sweep = 300.f, _.cellSize = 5);
+	auto pBase = CircularWarp::create(ringBP, pFactory);
+	spx offset = pBase->rotationOffset(45.f).x;
+	TEST_ASSERT(offset == -width * 45 / 300);
+	ringBP.startAngle += 45.f;
+	TEST_ASSERT(sameButOffset(CircularWarp::create(ringBP, pFactory)->generate(), pBase->generate(), offset, { 50, 50 }));
+
+	// The same along a rounded rectangle, in parts of the outline.
+
+	auto frameBP = WGBP(RoundedRectWarp, _.size = { 140, 100 }, _.sourceSize = c_sourceSize, _.rect = { 20 * 64, 20 * 64, 100 * 64, 60 * 64 },
+						_.cornerRadius = 15 * 64, _.topDistance = -10 * 64, _.bottomDistance = 10 * 64, _.start = 0.1f, _.sweep = 0.5f, _.cellSize = 5);
+	auto pFrame = RoundedRectWarp::create(frameBP, pFactory);
+	TEST_ASSERT(pFrame->shiftOffset(0.25f) == CoordSPX(-width / 2, 0));
+	TEST_ASSERT(pFrame->shiftOffset(3.25f) == CoordSPX(-width / 2, 0));
+
+	offset = pFrame->shiftOffset(0.125f).x;
+	TEST_ASSERT(offset == -width / 4);
+	frameBP.start += 0.125f;
+	TEST_ASSERT(sameButOffset(RoundedRectWarp::create(frameBP, pFactory)->generate(), pFrame->generate(), offset, { -1, -1 }));
+
+	frameBP.sweep = -0.5f;
+	TEST_ASSERT(RoundedRectWarp::create(frameBP, pFactory)->shiftOffset(0.25f) == CoordSPX(width / 2, 0));
 	return true;
 }

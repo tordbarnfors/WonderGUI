@@ -19,4 +19,5 @@ private:
 	bool generateUpdatesTest(std::ostream& output);
 	bool roundedRectWarpTest(std::ostream& output);
 	bool nodeCompressionTest(std::ostream& output);
+	bool offsetTest(std::ostream& output);
 };

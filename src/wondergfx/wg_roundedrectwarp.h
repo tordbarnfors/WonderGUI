@@ -102,6 +102,15 @@ namespace wg
 		float		start() const { return m_start; }
 		float		sweep() const { return m_sweep; }
 
+		//.____ Drawing _____________________________________________________
+
+		// Source offset that moves the source part of the outline along it, clockwise if
+		// positive, as if start was that much larger. Pass it when drawing to move the source
+		// around the outline without generating again, as for marching ants. Goes by the sweep
+		// and source size of the generated Warpmap.
+
+		CoordSPX	shiftOffset( float part ) const;
+
 	protected:
 
 		RoundedRectWarp( const Blueprint& bp, WarpmapFactory * pFactory );
@@ -110,6 +119,7 @@ namespace wg
 		int			_calcCellSize() const override;
 		void		_generateNodes( CoordSPX * pNodes, SizeI nodes, int cellSize ) const override;
 		spx			_uPeriod() const override;
+		void		_generated() override { m_generatedSweep = m_sweep; }
 
 		double		_cornerRadius() const;
 
@@ -119,6 +129,7 @@ namespace wg
 		spx			m_bottomDistance;
 		float		m_start;
 		float		m_sweep;
+		float		m_generatedSweep;							// Sweep of the generated Warpmap.
 	};
 
 } // namespace wg

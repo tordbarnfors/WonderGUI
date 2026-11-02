@@ -93,3 +93,9 @@ float wg_circularWarpSweep( wg_obj circularWarp )
 {
 	return getPtr(circularWarp)->sweep();
 }
+
+wg_coordSPX wg_circularWarpRotationOffset( wg_obj circularWarp, float degrees )
+{
+	CoordSPX offset = getPtr(circularWarp)->rotationOffset(degrees);
+	return { offset.x, offset.y };
+}

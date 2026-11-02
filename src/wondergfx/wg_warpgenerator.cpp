@@ -38,6 +38,7 @@ namespace wg
 	{
 		m_size		= size;
 		m_sourceSize = sourceSize;
+		m_generatedSourceSize = sourceSize;
 		m_cellSize	= cellSize;
 		m_precision	= precision;
 		m_pFactory	= pFactory;
@@ -179,6 +180,9 @@ namespace wg
 				pMap->importAllNodes(buffer.data(), uPeriod, vPeriod);
 			}
 		}
+
+		m_generatedSourceSize = m_sourceSize;
+		_generated();
 
 		m_bDirty = false;
 		return m_pWarpmap;
@@ -360,6 +364,23 @@ namespace wg
 		}
 
 		return angle + uint32_t(z);
+	}
+
+	//____ _uOffset() _________________________________________________________
+	/*
+		u is (position - start) / sweep * width, so moving start by shift moves u by -shift / sweep
+		* width. Whole turns move it by whole periods, which the renderer wraps away, so they are
+		dropped first to keep the offset small and exact.
+	*/
+
+	spx WarpGenerator::_uOffset(double shift, double sweep, double turn) const
+	{
+		shift = std::fmod(shift, turn);
+		if (!std::isfinite(shift) || sweep == 0.0)
+			return 0;
+
+		double offset = -shift / sweep * m_generatedSourceSize.w;
+		return spx(std::llround(std::clamp(offset, -double(Warpmap::maxNodeValue), double(Warpmap::maxNodeValue))));
 	}
 
 	//____ _toTurn() __________________________________________________________

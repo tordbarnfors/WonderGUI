@@ -137,8 +137,19 @@ namespace wg
 		virtual spx		_uPeriod() const { return 0; }			// In spx of the source, 0 = not periodic.
 		virtual spx		_vPeriod() const { return 0; }
 
+		// Called when the Warpmap has been generated, to keep settings that what is drawn with it
+		// depends on, such as for offsets. m_generatedSourceSize is kept already.
+
+		virtual void	_generated() {}
+
+		// Offset along u that moves the source as if its start was moved by shift, given in the
+		// same unit as sweep, which turn is a whole round of. Rounded to spx.
+
+		spx				_uOffset( double shift, double sweep, double turn ) const;
+
 		SizeI		m_size;
 		SizeSPX		m_sourceSize;
+		SizeSPX		m_generatedSourceSize;							// Source size of the generated Warpmap.
 		int			m_cellSize;										// As set, 0 = calculated.
 		float		m_precision;
 

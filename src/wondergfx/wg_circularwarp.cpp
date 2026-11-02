@@ -58,6 +58,7 @@ namespace wg
 		m_bottomRadius	= bp.bottomRadius;
 		m_startAngle	= bp.startAngle;
 		m_sweep			= bp.sweep;
+		m_generatedSweep = bp.sweep;
 	}
 
 	//____ destructor _________________________________________________________
@@ -115,6 +116,13 @@ namespace wg
 			m_bDirty = true;
 		}
 		return true;
+	}
+
+	//____ rotationOffset() ___________________________________________________
+
+	CoordSPX CircularWarp::rotationOffset(float degrees) const
+	{
+		return { _uOffset(degrees, m_generatedSweep, 360.0), 0 };
 	}
 
 	//____ _calcCellSize() ____________________________________________________

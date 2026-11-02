@@ -66,6 +66,13 @@ CircularWarp makes and keeps a Warpmap that bends the source around a circle: it
 
 The cell size decides how closely the Warpmap follows the circle and is calculated from *precision* (largest position error in pixels) at the smaller radius unless set. For a disc, precision is kept from half its radius and outwards. A radius of 0 gives a disc, which only works for content that doesn't change from left to right close to the center.
 
+To turn the ring, draw it with the offset from `rotationOffset()` rather than generating it again. It turns the ring by a number of degrees, clockwise if positive, as if *startAngle* was that much larger, which costs nothing but the draw:
+
+```c++
+	angle += speed * seconds;
+	pDevice->warpDrawEdgemap( { 10*64, 10*64 }, pGauge->generate(), pEdgemap, pGauge->rotationOffset(angle) );
+```
+
 
 
 
@@ -82,10 +89,12 @@ RoundedRectWarp makes and keeps a Warpmap that bends the source around the outli
 										_.topDistance = 3*64,
 										_.bottomDistance = -1*64 ), pDevice->warpmapFactory() );
 
-	pDevice->warpDrawEdgemap( { 10*64, 10*64 }, pFocusRing->generate(), pEdgemap, { offset, 0 } );		// Scroll offset for marching ants.
+	pDevice->warpDrawEdgemap( { 10*64, 10*64 }, pFocusRing->generate(), pEdgemap, pFocusRing->shiftOffset(part) );		// Marching ants.
 ```
 
 Positions along the outline are those of the nearest point on it. The source keeps its width along the straight sides and is spread or squeezed around the corners, more the further from the outline, so placing the outline in the middle of the band gives the most even result. Corners stay round on the outside. On the inside they become mitered like a picture frame where the band goes deeper than *cornerRadius*, and since a Warpmap interpolates across the miter, that takes small cells to look clean. *cornerRadius* is limited to half the shorter side of *rect*, so a square with corners of half its side is a circle.
+
+`shiftOffset()` gives the offset that moves the source along the outline by a part of it, clockwise if positive, as if *start* was that much larger. Both offsets go by the sweep and source size of the generated Warpmap.
 
 
 

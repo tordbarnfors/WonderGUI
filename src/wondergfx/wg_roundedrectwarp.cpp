@@ -60,6 +60,7 @@ namespace wg
 		m_bottomDistance	= bp.bottomDistance;
 		m_start				= bp.start;
 		m_sweep				= bp.sweep;
+		m_generatedSweep	= bp.sweep;
 	}
 
 	//____ destructor _________________________________________________________
@@ -121,6 +122,13 @@ namespace wg
 			m_bDirty = true;
 		}
 		return true;
+	}
+
+	//____ shiftOffset() ______________________________________________________
+
+	CoordSPX RoundedRectWarp::shiftOffset(float part) const
+	{
+		return { _uOffset(part, m_generatedSweep, 1.0), 0 };
 	}
 
 	//____ _cornerRadius() ____________________________________________________

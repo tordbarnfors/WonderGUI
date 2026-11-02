@@ -100,3 +100,9 @@ float wg_roundedRectWarpSweep( wg_obj roundedRectWarp )
 {
 	return getPtr(roundedRectWarp)->sweep();
 }
+
+wg_coordSPX wg_roundedRectWarpShiftOffset( wg_obj roundedRectWarp, float part )
+{
+	CoordSPX offset = getPtr(roundedRectWarp)->shiftOffset(part);
+	return { offset.x, offset.y };
+}
