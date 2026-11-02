@@ -1,0 +1,69 @@
+# Known issues
+
+Bugs and limitations we know about but haven't fixed yet. Add an entry when you
+find one, and remove it in the same commit that fixes it.
+
+Each entry says what happens, where in the code, and anything known about the cause.
+
+## Text system
+
+### Markdown: code fence lines show as empty lines
+
+In `MarkdownTextLayout`'s rendered mode the ```` ``` ```` lines of a fenced code block are
+hidden, but their newline isn't, so each fence leaves an empty line above and below the code.
+Hidden runs may not span a newline (see `FlowTextLayout::Run`), so fixing this needs a way to
+hide a whole line.
+
+`wondergui/source/textlayouts/wg_markdowntextlayout.cpp`
+
+### Markdown: code background only covers the text
+
+The `codeBlock` style's back color is drawn behind the characters only, not across the
+width of the block. `FlowTextLayout` has no block backgrounds yet.
+
+`wondergui/source/textlayouts/wg_flowtextlayout.cpp` (`_renderBack()`)
+
+### Markdown: tables, images and raw HTML are not supported
+
+Tables display as plain text with their pipes, images display their alt text, and raw
+HTML is displayed as text (`MD_FLAG_NOHTML`).
+
+### Text layout works on codepoints, not graphemes
+
+There is no shaping, grapheme clustering or bidirectional text. Combining marks and emoji
+sequences (ZWJ, skin tones, flags) are laid out and stepped over one codepoint at a time,
+and right-to-left text is displayed left-to-right. All positions are byte offsets and the
+layout decides where the caret may go, so this can be added without changing the API.
+
+### `FreeTypeFont` glyph cache misses non-integer pixel sizes
+
+`_findGlyph()` picks the size slot with `(size+32)/64` while `_addGlyph()` uses `size/64`.
+For sizes that aren't a whole number of pixels, like 13 pt at 150% scale (19.5 px), a glyph
+is stored in one slot and looked for in another, so it is never found and gets added again
+each time, hitting the `assert` in `_addGlyph()` in debug builds.
+
+`wax/extensions/freetypefont/wax_freetypefont.h` and `.cpp`
+
+### `StaticText::_setSize()` ignores a scale change if the size is the same
+
+It returns early when `size == m_size`, even if the scale changed, so the `TextLayout`
+isn't told about the new scale.
+
+`wondergui/source/components/wg_statictext.cpp`
+
+## Widgets
+
+### `ScrollCapsule::viewOffset()` returns the negated offset
+
+`viewOffset()` returns `childCanvas.pos - viewRegion.pos`, the opposite sign of what
+`setViewOffset()` takes, so `setViewOffset(viewOffset())` jumps instead of staying.
+
+`wondergui/source/widgets/capsules/wg_scrollcapsule.h`
+
+## Not yet verified
+
+### Text system rewrite on macOS
+
+The UTF-8 text system was built and tested on Linux (SDL2 software and OpenGL) and has
+been run on Win32/DX12. The macOS frameworks (Cocoa software/Metal, SDL2 Metal) haven't
+been built with it yet.

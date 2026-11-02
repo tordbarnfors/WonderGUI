@@ -466,7 +466,7 @@ namespace wg
 		Undefined is only used in styles, to inherit decorations without adding any.
 	*/
 
-	enum class TextDecoration : uint8_t	//. AutoExtras
+	enum class TextDecoration : uint8_t
 	{
 		None			= 0,
 		Underline		= 1 << 0,
