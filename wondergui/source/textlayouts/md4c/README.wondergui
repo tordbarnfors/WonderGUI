@@ -1,0 +1,4 @@
+md4c 0.5.2 (https://github.com/mity/md4c), commit 729e6b8b320caa96328968ab27d7db2235e4fb47.
+
+Unmodified copies of src/md4c.c and src/md4c.h. Used by MarkdownTextLayout.
+MIT licensed, see LICENSE.md.

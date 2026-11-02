@@ -77,6 +77,7 @@ namespace wg
 		m_pLink = bp.link;
 		m_blendMode = bp.blendMode;
 		m_backBlendMode = bp.backBlendMode;
+		m_sizeScale = bp.sizeScale;
 
 
 		// Generate lists of states that affects size, color backColor and decoration.
@@ -274,6 +275,9 @@ namespace wg
 		{
 			pts defSize = s_pDefaultStyle->_getSize(state);
 			pDest->size = ptsToSpx((defSize >= 0 ? defSize : 12),scale);				// Default to size 12.
+
+			if( m_sizeScale != 1.f )
+				pDest->size = Util::align( spx(pDest->size * m_sizeScale) );
 		}
 
 		if( pDest->color == HiColor::Undefined )
@@ -289,7 +293,7 @@ namespace wg
 		}
 
 		if (pDest->backColor == HiColor::Undefined)
-			pDest->color = s_pDefaultStyle->_getBackColor(state);
+			pDest->backColor = s_pDefaultStyle->_getBackColor(state);
 
 		if (pDest->blendMode == BlendMode::Undefined)
 			pDest->blendMode = s_pDefaultStyle->m_blendMode == BlendMode::Undefined ? BlendMode::Blend : s_pDefaultStyle->m_blendMode;			// Default to Blend.
@@ -315,10 +319,16 @@ namespace wg
 		pts size = _getSize(state);
 		if( size >= 0 )
 			pDest->size	= ptsToSpx(size,scale);
+		else if( m_sizeScale != 1.f )
+			pDest->size = Util::align( spx(pDest->size * m_sizeScale) );
+
+		// Decorations add up, but None removes inherited ones.
 
 		TextDecoration decoration = _getDecoration(state);
-		if( decoration != TextDecoration::Undefined )
-			pDest->decoration = decoration;
+		if( decoration == TextDecoration::None )
+			pDest->decoration = TextDecoration::None;
+		else if( decoration != TextDecoration::Undefined )
+			pDest->decoration |= decoration;
 
 		HiColor color = _getColor(state);
 		if( color != HiColor::Undefined )
@@ -344,7 +354,8 @@ namespace wg
 	bool TextStyle::isIdentical( TextStyle * pOther )
 	{
 		if (m_pFont != pOther->m_pFont || m_pLink != pOther->m_pLink ||
-			m_blendMode != pOther->m_blendMode || m_backBlendMode != pOther->m_backBlendMode)
+			m_blendMode != pOther->m_blendMode || m_backBlendMode != pOther->m_backBlendMode ||
+			m_sizeScale != pOther->m_sizeScale)
 			return false;
 
 		for (int i = 0; i < State::NbStates; i++)
@@ -366,7 +377,8 @@ namespace wg
 	bool TextStyle::isIdenticalForState( TextStyle * pOther, State state )
 	{
 		if (m_pFont != pOther->m_pFont || m_pLink != pOther->m_pLink ||
-			m_blendMode != pOther->m_blendMode || m_backBlendMode != pOther->m_backBlendMode)
+			m_blendMode != pOther->m_blendMode || m_backBlendMode != pOther->m_backBlendMode ||
+			m_sizeScale != pOther->m_sizeScale)
 			return false;
 
 		State i = state;
@@ -390,6 +402,7 @@ namespace wg
 		bp.blendMode = m_blendMode;
 		bp.link = m_pLink;
 		bp.font = m_pFont;
+		bp.sizeScale = m_sizeScale;
 		
 		int idx = State::Default;
 

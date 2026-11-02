@@ -20,6 +20,7 @@
 #include "tests/warpmap.h"
 #include "tests/warprender.h"
 #include "tests/linerender.h"
+#include "tests/textsystem.h"
 
 
 
@@ -45,6 +46,7 @@ TestFramework::TestFramework( std::ostream& output ) :
 	addCollection( new WarpmapTest() );
 	addCollection( new WarpRenderTest() );
 	addCollection( new LineRenderTest() );
+	addCollection( new TextSystemTest() );
 }
 
 //____ Destructor ______________________________________________________________

@@ -20,6 +20,7 @@
 
 =========================================================================*/
 #include <wg_columnheader.h>
+#include <wax_utf8.h>
 #include <wg_msg.h>
 #include <wg_inputhandler.h>
 
@@ -81,18 +82,14 @@ namespace wg
 
 	//____ setText() __________________________________________________________
 
-	void ColumnHeader::setText(const CharSeq& seq)
+	void ColumnHeader::setText(std::string_view text)
 	{
-		int removed = m_text.length();
-		m_text = seq;
-		_layout()->onTextModified(this, 0, removed, m_text.length());
-	}
+		if( text == m_text )
+			return;
 
-	void ColumnHeader::setText(const String& str)
-	{
-		int removed = m_text.length();
-		m_text = str;
-		_layout()->onTextModified(this, 0, removed, m_text.length());
+		int removed = int(m_text.size());
+		m_text = Utf8::isValid(text) ? std::string(text) : Utf8::sanitize(text);
+		_layout()->onTextModified(this, 0, removed, int(m_text.size()));
 	}
 
 	//____ setStyle() _________________________________________________________
@@ -338,15 +335,6 @@ namespace wg
 		return m_pStyle;
 	}
 
-	const Char* ColumnHeader::_textBegin() const
-	{
-		return m_text.chars();
-	}
-
-	int ColumnHeader::_textLength() const
-	{
-		return m_text.length();
-	}
 
 	bool ColumnHeader::_caretVisible() const
 	{

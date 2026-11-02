@@ -32,10 +32,6 @@
 namespace wg
 {
 
-	class String;
-	class CharSeq;
-	class CharBuffer;
-
 
 	//____ DynamicText __________________________________________________________________
 
@@ -49,7 +45,7 @@ namespace wg
 		{
 			TextLayout_p	layout;
 			TextStyle_p		style;
-			String			text;
+			std::string		text;
 		};
 
 		DynamicText(Widget * pWidget) : StaticText(pWidget) {}
@@ -65,23 +61,12 @@ namespace wg
 
 		inline void			clear() { _clear(); }
 
-		inline void			setText(const char * str) { _setText(CharSeq(str)); }
-		inline void			setText(const CharSeq& seq) { _setText(seq); }
-		inline void			setText(const CharBuffer * buffer) { _setText(buffer); }
-		inline void			setText(const String& str) { _setText(str); }
+		inline void			setText(std::string_view text) { _setText(text); }			///< Set UTF-8 encoded text, which may contain markup.
 
-		inline int			append(const CharSeq& seq) { return _append(seq); }
-		inline int			insert(int ofs, const CharSeq& seq) { return _insert(ofs, seq); }
-		inline int			replace(int ofs, int nDelete, const CharSeq& seq) { return _replace(ofs, nDelete, seq); }
+		inline int			append(std::string_view text) { return _append(text); }
+		inline int			insert(int ofs, std::string_view text) { return _insert(ofs, text); }
+		inline int			replace(int ofs, int nDelete, std::string_view text) { return _replace(ofs, nDelete, text); }
 		inline int			erase(int ofs, int len) { return _erase(ofs, len); }
-
-		//.____ Appearance _____________________________________________
-
-		inline void			setCharStyle(TextStyle * pStyle) { _setCharStyle(pStyle); }
-		inline void			setCharStyle(TextStyle * pStyle, int ofs, int len) { _setCharStyle(pStyle, ofs, len); }
-
-		inline void			clearCharStyle() { _clearCharStyle(); }
-		inline void			clearCharStyle(int ofs, int len) { _clearCharStyle(ofs, len); }
 
 		//.____ Internal ______________________________________________________
 

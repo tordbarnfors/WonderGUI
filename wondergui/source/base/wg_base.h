@@ -29,7 +29,8 @@
 
 #include <wg_types.h>
 #include <wg_hostbridge.h>
-#include <wg_string.h>
+#include <string>
+#include <string_view>
 
 #include <string>
 #include <functional>
@@ -140,8 +141,8 @@ namespace wg
 		static void			setDefaultPackLayout( PackLayout * pPackLayout );
 		static PackLayout_p defaultPackLayout();
 		
-		static void			setClipboardText( const String& text );
-		static String		getClipboardText();
+		static void			setClipboardText( std::string_view text );
+		static std::string	getClipboardText();
 		
 		static void			setHostBridge( HostBridge * pHostBridge );
 		static HostBridge *	hostBridge() { return s_pGUIContext->pHostBridge; }
@@ -171,7 +172,7 @@ namespace wg
 	private:
 
 		static	int				s_guiInitCounter;		
-		static	String			s_clipboardText;
+		static	std::string		s_clipboardText;
 
 	};
 

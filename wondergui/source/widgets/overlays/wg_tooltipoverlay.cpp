@@ -93,7 +93,7 @@ namespace wg
 			return;
 
 		Widget* pHovered = _findWidget(m_hoverPos, SearchMode::ActionTarget);
-		if (pHovered == nullptr || pHovered->tooltip().isEmpty() )
+		if (pHovered == nullptr || pHovered->tooltip().empty() )
 			return;
 
 		RectSPX hoveredGeo = _toLocal(pHovered->_globalGeo());
@@ -203,7 +203,7 @@ namespace wg
 			CoordSPX mousePos = _toLocal(static_cast<InputMsg*>(_pMsg)->pointerSpxPos());
 			Widget* pHovered = _findWidget(mousePos, SearchMode::ActionTarget);
 
-			if (pHovered == nullptr || pHovered->tooltip().isEmpty())
+			if (pHovered == nullptr || pHovered->tooltip().empty())
 				pHovered = nullptr;
 
 			if (!m_tooltipSlot.isEmpty())

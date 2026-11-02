@@ -70,7 +70,7 @@ namespace wg
 
 	//____ _createDrawer() ________________________________________________________
 
-	DrawerPanel_p InfoSection::_createDrawer(const CharSeq& label, Widget* pHeaderValue, Widget* pContent)
+	DrawerPanel_p InfoSection::_createDrawer(std::string_view label, Widget* pHeaderValue, Widget* pContent)
 	{
 		auto pDrawer = WGCREATE(dbgkit::TreeListDrawer, _.skin = m_pIndentationSkin, _.buttonOfs.x -= 16);
 
@@ -94,7 +94,7 @@ namespace wg
 
 	//____ _createColorDrawer() _________________________________________________
 
-	DrawerPanel_p InfoSection::_createColorDrawer(const CharSeq& label, const HiColor& color)
+	DrawerPanel_p InfoSection::_createColorDrawer(std::string_view label, const HiColor& color)
 	{
 		bool bValid = color.isValid();
 		bool bUndefined = color.isUndefined();
@@ -142,7 +142,7 @@ namespace wg
 
 	//____ _createRectDrawer() _________________________________________________
 
-	DrawerPanel_p InfoSection::_createRectDrawer(const CharSeq& label, const Rect& rect)
+	DrawerPanel_p InfoSection::_createRectDrawer(std::string_view label, const Rect& rect)
 	{
 		bool bEmpty = rect.isEmpty();
 		bool bValid = rect.isValid();
@@ -193,7 +193,7 @@ namespace wg
 
 	//____ _createBorderDrawer() ________________________________________________________
 
-	DrawerPanel_p InfoSection::_createBorderDrawer(const CharSeq& label, const Border& border)
+	DrawerPanel_p InfoSection::_createBorderDrawer(std::string_view label, const Border& border)
 	{
 		auto pHeaderValue = WGCREATE(TextDisplay, _ = m_pContext->theme().listEntryText, _.display.text = border.isEmpty() ? "none" : "");
 
@@ -235,7 +235,7 @@ namespace wg
 
 	//____ _createComponentDrawer() _________________________________________________
 
-	DrawerPanel_p InfoSection::_createComponentDrawer(const CharSeq& label, Component* pComponent)
+	DrawerPanel_p InfoSection::_createComponentDrawer(std::string_view label, Component* pComponent)
 	{
 		auto pComponentParts = WGCREATE(PackPanel, _.axis = Axis::Y);
 		m_pContext->addComponentInfoSections(pComponentParts, pComponent);
@@ -318,7 +318,7 @@ namespace wg
 
 	//____ _refreshTextEntry() ___________________________________________________
 
-	void InfoSection::_refreshTextEntry(TablePanel* pTable, int row, const CharSeq& string)
+	void InfoSection::_refreshTextEntry(TablePanel* pTable, int row, std::string_view string)
 	{
 		static_cast<TextDisplay*>(pTable->slots[row][1]._widget())->display.setText(string);
 	}
@@ -391,18 +391,13 @@ namespace wg
 
 		pSavedPointer = pPointer;
 
-		CharBuffer	buff(128);
+		auto pDisplay = static_cast<TextDisplay*>(pTable->slots[row][1]._widget());
+		TextStyle_p pEntryStyle = m_pContext->theme().listEntryText.display.style;
 
 		if (pPointer)
 		{
-			buff.pushBack(pPointer->typeInfo().className);
-			buff.setStyle(dbgkit::TextStyles::FinePrint, 0, 1000);
-
-			int ofs = buff.nbChars();
-
 			char temp[32];
 			std::snprintf(temp, sizeof(temp), " 0x%" PRIxPTR, reinterpret_cast<std::uintptr_t>(pPointer));
-			buff.pushBack(temp);
 
 			TextLink_p 	pLink = TextLink::create();
 			IDebugContext*	pContext = m_pContext;
@@ -411,20 +406,27 @@ namespace wg
 				pContext->objectSelected(pPointer, nullptr);
 			});
 
-			TextStyle_p pStyle = WGCREATE(TextStyle, _.link = pLink, _.color = Color::DarkRed, _.decoration = TextDecoration::Underline);
+			// The whole entry is the link, since plain text can't be styled per character.
 
-			buff.setStyle(pStyle, ofs, 1000);
+			TextStyle::Blueprint bp = pEntryStyle ? pEntryStyle->blueprint() : TextStyle::Blueprint();
+			bp.link = pLink;
+			bp.color = Color::DarkRed;
+			bp.decoration = TextDecoration::Underline;
+
+			pDisplay->display.setStyle( TextStyle::create(bp) );
+			pDisplay->display.setText( std::string(pPointer->typeInfo().className) + temp );
 		}
 		else
-			buff.pushBack("null");
-
-		static_cast<TextDisplay*>(pTable->slots[row][1]._widget())->display.setText(&buff);
+		{
+			pDisplay->display.setStyle( pEntryStyle );
+			pDisplay->display.setText("null");
+		}
 	}
 
 
 	//____ createSingleSlotDrawer() ___________________________________________________
 
-	DrawerPanel_p InfoSection::_createSingleSlotDrawer(const CharSeq& label, StaticSlot* pSlot)
+	DrawerPanel_p InfoSection::_createSingleSlotDrawer(std::string_view label, StaticSlot* pSlot)
 	{
 		auto pSlotContent = WGCREATE(PackPanel, _.axis = Axis::Y);
 		m_pContext->addSlotInfoSections(pSlotContent, pSlot);

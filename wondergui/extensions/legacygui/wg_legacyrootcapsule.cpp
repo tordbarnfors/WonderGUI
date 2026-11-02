@@ -24,6 +24,7 @@
 #include <wg_msg.h>
 #include <wg_msgrouter.h>
 #include <wg_base.h>
+#include <wax_utf8.h>
 
 #include <wg2_eventhandler.h>
 #include <wg2_event.h>
@@ -96,11 +97,11 @@ namespace wg
 
 	//____ tooltip() __________________________________________________________
 
-	String LegacyRootCapsule::tooltip() const
+	std::string LegacyRootCapsule::tooltip() const
 	{
 		//TODO: Implement!!!
 
-		return String();
+		return std::string();
 	}
 
 	//____ pointerStyle() _____________________________________________________
@@ -362,22 +363,17 @@ namespace wg
 			case MsgType::TextInput:
 			{
 				auto pMess = static_cast<TextInputMsg*>(pMsg);
-				String str = pMess->text();
+				const std::string& str = pMess->text();
 
-				int maxSize = str.length()*4;
-				char * pDest = (char*) Base::memStackAlloc(maxSize);
-
-				TextTool::getTextUTF8(str.chars(), pDest, maxSize);
-
-				const char * p = pDest;
-
-				while( * p != 0 )
+				int ofs = 0;
+				while( ofs < int(str.size()) )
 				{
-					int chr = wg::TextTool::readChar(p);
-					m_pEventHandler->QueueEvent( new WgEvent::Character( chr ) );
-				}
+					char32_t chr = Utf8::decode(str, ofs);
+					if( chr > 0xFFFF )
+						chr = Utf8::ReplacementChar;			// Legacy GUI only supports the Basic Multilingual Plane.
 
-				Base::memStackFree(maxSize);
+					m_pEventHandler->QueueEvent( new WgEvent::Character( int(chr) ) );
+				}
 				break;
 			}
 

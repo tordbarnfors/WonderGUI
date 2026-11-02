@@ -25,7 +25,7 @@
 
 #include <wax_font.h>
 #include <wg_textstyle.h>
-#include <wg_basictextlayout.h>
+#include <wg_plaintextlayout.h>
 #include <wg_blockskin.h>
 #include <wg_boxskin.h>
 #include <wg_colorskin.h>
@@ -180,7 +180,7 @@ namespace wg::oldskool
 			Skin_p			skin = Skins::Button;
 			bool			stickyFocus = false;
 			bool			tabLock = false;
-			String			tooltip;
+			std::string			tooltip;
 		};
 
 		inline static wg::Button_p	create() { return new Button(Blueprint()); }
@@ -221,7 +221,7 @@ namespace wg::oldskool
 			Skin_p			skin = Skins::ToggleButton;
 			bool			stickyFocus = false;
 			bool			tabLock = false;
-			String			tooltip;
+			std::string			tooltip;
 		};
 
 		inline static wg::ToggleButton_p	create() { return new ToggleButton(Blueprint()); }
@@ -261,7 +261,7 @@ namespace wg::oldskool
 			Skin_p			skin;
 			bool			stickyFocus = false;
 			bool			tabLock = false;
-			String			tooltip;
+			std::string			tooltip;
 		};
 
 		inline static wg::ToggleButton_p	create() { return new Checkbox(Blueprint()); }
@@ -301,7 +301,7 @@ namespace wg::oldskool
 			Skin_p			skin = Skins::RadioButton;
 			bool			stickyFocus = false;
 			bool			tabLock = false;
-			String			tooltip;
+			std::string			tooltip;
 		};
 
 		inline static wg::ToggleButton_p	create(const Blueprint& blueprint) { return new RadioButton(blueprint); }
@@ -341,7 +341,7 @@ namespace wg::oldskool
 			bool			stickyFocus = false;
 			bool			tabLock = false;
 			bool			takesFocusFromChild = true;
-			String			tooltip;
+			std::string			tooltip;
 			bool			usePickHandles = false;
 
 		};
@@ -382,7 +382,7 @@ namespace wg::oldskool
 			bool			stickyFocus = false;
 			bool			tabLock = false;
 			bool			takesFocusFromChild = true;
-			String			tooltip;
+			std::string			tooltip;
 			bool			usePickHandles = false;
 
 		};
@@ -438,7 +438,7 @@ namespace wg::oldskool
 			bool				stickyFocus = false;
 			bool				tabLock = false;
 			bool				takesFocusFromChild = true;
-			String				tooltip;
+			std::string				tooltip;
 			CoordTransition_p	transition;
 			bool				usePickHandles = false;
 
@@ -505,7 +505,7 @@ namespace wg::oldskool
 			bool				stickyFocus = false;
 			bool				tabLock = false;
 			bool				takesFocusFromChild = true;
-			String				tooltip;
+			std::string				tooltip;
 			CoordTransition_p	transition;
 			bool				usePickHandles = false;
 
@@ -572,7 +572,7 @@ namespace wg::oldskool
 			bool				stickyFocus = false;
 			bool				tabLock = false;
 			bool				takesFocusFromChild = true;
-			String				tooltip;
+			std::string				tooltip;
 			CoordTransition_p	transition;
 			bool				usePickHandles = false;
 
@@ -624,7 +624,7 @@ namespace wg::oldskool
 			bool			stickyFocus = false;
 			bool			tabLock = false;
 			bool			takesFocusFromChild = false;
-			String			tooltip;
+			std::string			tooltip;
 			bool			usePickHandles = false;
 
 		};
@@ -665,7 +665,7 @@ namespace wg::oldskool
 			bool			stickyFocus = false;
 			bool			tabLock = false;
 			bool			takesFocusFromChild = false;
-			String			tooltip;
+			std::string			tooltip;
 			bool			usePickHandles = false;
 
 		};
@@ -707,7 +707,7 @@ namespace wg::oldskool
 			bool				stickyFocus = false;
 			bool				tabLock = false;
 			bool				takesFocusFromChild = true;
-			String				tooltip;
+			std::string				tooltip;
 			ValueTransition_p	transition = Transitions::openClose;
 			bool				usePickHandles = false;
 		};
@@ -746,7 +746,7 @@ namespace wg::oldskool
 			bool			stickyFocus = false;
 			bool			tabLock = false;
 			bool			takesFocusFromChild = true;
-			String			tooltip;
+			std::string			tooltip;
 			bool			usePickHandles = false;
 		};
 
@@ -800,7 +800,7 @@ namespace wg::oldskool
 			bool			stickyFocus = false;
 			bool			tabLock = false;
 			bool			takesFocusFromChild = true;
-			String			tooltip;
+			std::string			tooltip;
 			bool			usePickHandles = false;
 
 		};
@@ -840,7 +840,7 @@ namespace wg::oldskool
 			Skin_p			skin = Skins::Canvas;
 			bool			stickyFocus = false;
 			bool			tabLock = false;
-			String			tooltip;
+			std::string			tooltip;
 		};
 
 		inline static wg::TextEditor_p	create() { return new TextEditor(Blueprint()); }
@@ -879,7 +879,7 @@ namespace wg::oldskool
 			Skin_p			skin = Skins::Canvas;
 			bool			stickyFocus = false;
 			bool			tabLock = false;
-			String			tooltip;
+			std::string			tooltip;
 		};
 
 		inline static wg::LineEditor_p	create() { return new LineEditor(Blueprint()); }
@@ -918,7 +918,7 @@ namespace wg::oldskool
 			Skin_p			skin = Skins::SelectBox;
 			bool			stickyFocus = false;
 			bool			tabLock = false;
-			String			tooltip;
+			std::string			tooltip;
 		};
 
 		inline static wg::SelectBox_p	create() { return new SelectBox(Blueprint()); }
@@ -952,7 +952,7 @@ namespace wg::oldskool
 			Skin_p			skin = Skins::Titlebar;
 			bool			stickyFocus = false;
 			bool			tabLock = false;
-			String			tooltip;
+			std::string			tooltip;
 		};
 
 		inline static wg::TextDisplay_p	create() { return new WindowTitleBar(Blueprint()); }

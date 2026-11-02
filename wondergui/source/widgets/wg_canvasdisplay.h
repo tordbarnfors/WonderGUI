@@ -76,7 +76,7 @@ namespace wg
 			bool			tabLock = false;
 			HiColor			tintColor		= HiColor::Undefined;
 			Tint_p		tint;
-			String			tooltip;
+			std::string			tooltip;
 		};
 
 

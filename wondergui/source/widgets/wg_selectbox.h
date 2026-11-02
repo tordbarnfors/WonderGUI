@@ -44,14 +44,14 @@ namespace wg
 		struct Blueprint
 		{
 			int		id;
-			String	text;
+			std::string	text;
 		};
 		
 		SelectBoxEntry( const Blueprint& bp ) : m_id(bp.id), m_string(bp.text) {};
 		virtual ~SelectBoxEntry() = default;
 		
 		inline int		id() const { return m_id; }
-		inline String	text() const { return m_string; }
+		inline const std::string&	text() const { return m_string; }
 
 	protected:
 
@@ -61,8 +61,7 @@ namespace wg
 		State		_textState() const override;
 		TextStyle * _textStyle() const override;
 
-		const Char *_textBegin() const override;
-		int 		_textLength() const override;
+		const std::string& _text() const override { return m_string; }
 
 		bool		_caretVisible() const override;
 		int			_caretOffset() const override;
@@ -76,7 +75,7 @@ namespace wg
 
 		int			m_id;
 		spx			m_height;
-		String 		m_string;
+		std::string	m_string;
 		SelectBox * m_pParent = nullptr;
 		State		m_state = State::Default;
 	};
@@ -117,7 +116,7 @@ namespace wg
 			Skin_p			skin;
 			bool			stickyFocus = false;
 			bool			tabLock = false;
-			String			tooltip;
+			std::string			tooltip;
 		};
 
 		//.____ Creation ____________________________________________________________

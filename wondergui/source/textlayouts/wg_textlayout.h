@@ -25,7 +25,11 @@
 
 #include <wax_pointers.h>
 #include <wax_geo.h>
-#include <wg_string.h>
+#include <wg_state.h>
+#include <wg_textstyle.h>
+#include <wg_textlink.h>
+
+#include <string>
 #include <wg_key.h>
 #include <wg_receiver.h>
 
@@ -38,8 +42,17 @@ namespace wg
 {
 	class EditState;
 
-	class CharBuffer;
 	class TextStyle;
+
+	//____ TextItem ___________________________________________________________
+	/**
+		Interface between a text component and its TextLayout.
+
+		The text is UTF-8 encoded and may contain markup that the TextLayout
+		interprets. All character offsets passed between TextItem and TextLayout
+		are byte offsets into the text. The text is always followed by a
+		virtual terminator at offset length(), which is a valid caret position.
+	*/
 
 	class TextItem
 	{
@@ -50,8 +63,7 @@ namespace wg
 		virtual State		_textState() const = 0;
 		virtual TextStyle * _textStyle() const = 0;
 		
-		virtual const Char *_textBegin() const = 0;
-		virtual int 		_textLength() const = 0;
+		virtual const std::string& _text() const = 0;
 
 		virtual bool		_caretVisible() const = 0;
 		virtual int			_caretOffset() const = 0;
@@ -77,6 +89,18 @@ namespace wg
 	class TextLayout;
 	typedef	StrongPtr<TextLayout>	TextLayout_p;
 	typedef	WeakPtr<TextLayout>	TextLayout_wp;
+
+	//____ TextLayout _________________________________________________________
+	/**
+		Base class for objects laying out, rendering and navigating texts.
+
+		A TextLayout is shared between any number of texts. It is responsible for
+		interpreting any markup in the text, deciding where lines break, rendering
+		the text and translating between positions and character offsets.
+
+		All character offsets are byte offsets into the UTF-8 text. A TextLayout only
+		returns offsets on codepoint boundaries that are valid caret positions.
+	*/
 
 	class TextLayout : public Receiver
 	{
@@ -117,7 +141,6 @@ namespace wg
 		virtual void	onResized( TextItem * pText, SizeSPX newSize, SizeSPX oldSize, int newScale, int oldScale ) = 0;
 		virtual void	onStateChanged( TextItem * pText, State newState, State oldState ) = 0;
 		virtual void	onStyleChanged( TextItem * pText, TextStyle * pNewStyle, TextStyle * pOldStyle ) = 0;
-		virtual void	onCharStyleChanged( TextItem * pText, int ofs = 0, int len = INT_MAX ) = 0;
 
 
 		virtual SizeSPX	defaultSize( const TextItem * pText, int scale ) const = 0;
@@ -128,7 +151,8 @@ namespace wg
 		virtual RectSPX	rectForCaret( const TextItem * pText ) const = 0;
 		virtual RectSPX	rectForCaretWithMargin( const TextItem * pText, int whitespacesBeforeAfter ) const = 0;
 
-		virtual String	tooltip( const TextItem * pText ) const;
+		virtual std::string	tooltip( const TextItem * pText ) const;
+		virtual TextLink_p	linkAt( const TextItem * pText, int charOfs ) const;		// Link at character, or nullptr.
 
 
 		// Methods for supporting a caret
@@ -151,14 +175,14 @@ namespace wg
 		virtual ~TextLayout() {};
 
 		SizeSPX				_size( const TextItem * pText ) const;
-		int					_length( const TextItem * pText ) const;
+		int					_length( const TextItem * pText ) const;			// Length of text in bytes.
 		int					_scale(const TextItem * pText) const;
 
 		bool				_caretVisible( const TextItem * pText ) const;
 		int					_caretOfs( const TextItem * pText ) const;
 		std::tuple<int,int>	_selection( const TextItem * pText ) const;		// Begin/end of selection
 
-		const Char *  		_chars( const TextItem * pText ) const;
+		const std::string&	_text( const TextItem * pText ) const;
 		const void *		_dataBlock( const TextItem * pText) const;
 		void *				_dataBlock( TextItem * pText) const;
 		int					_dataInt( const TextItem * pText ) const;

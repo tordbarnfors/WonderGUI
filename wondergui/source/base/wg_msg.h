@@ -607,14 +607,14 @@ namespace wg
 
 		//.____ Content ________________________________________________________
 
-		String	text() const;
+		const std::string&	text() const;
 		char	inputId() const { return m_inputId; }
 
 	protected:
-		TextInputMsg( char inputId, String text, Widget * pWidget );
+		TextInputMsg( char inputId, std::string_view text, Widget * pWidget );
 	protected:
 		char	m_inputId;
-		String	m_text;
+		std::string	m_text;
 	};
 
 	//____ EditCommandMsg ________________________________________________________

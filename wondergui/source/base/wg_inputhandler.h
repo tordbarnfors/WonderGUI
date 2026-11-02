@@ -72,7 +72,7 @@ namespace wg
 
 		void 		setKey(int nativeKeyCode, bool bPressed, int64_t timestamp = 0);
 
-		bool		putText(const CharSeq& text);
+		bool		putText(std::string_view text);			// UTF-8 encoded text.
 
 		bool		lockHidePointer();
 		bool		unlockShowPointer();

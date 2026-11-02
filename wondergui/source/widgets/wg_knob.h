@@ -68,7 +68,7 @@ namespace wg
 			int				steps = 0;
 			bool			stickyFocus = false;
 			bool			tabLock		= false;
-			String			tooltip;
+			std::string			tooltip;
 			float			value = 0.f;
 			float			wheelStepSize = 0.01f;
 		};

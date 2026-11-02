@@ -89,7 +89,7 @@ namespace wg
 			bool			takesFocusFromChild = true;
 			HiColor			tintColor		= HiColor::Undefined;
 			Tint_p		tint;
-			String			tooltip;
+			std::string			tooltip;
 			bool			usePickHandles = false;
 		};
 

@@ -59,7 +59,7 @@ namespace wg
 
 		//.____ Content _______________________________________________________
 
-		String					title() const { return m_title; };
+		std::string					title() const { return m_title; };
 
 
 	protected:
@@ -72,7 +72,7 @@ namespace wg
 		PackPanel_p			_createButtonRow( bool bAutoRefresh = false, bool bRefresh = false );
 
 		Widget_p			_createObjectHeader(Object* pObject) const;
-		String				_createObjectTitle(Object* pObject) const;
+		std::string				_createObjectTitle(Object* pObject) const;
 
 		Widget_p			_createClassInfoSections(const DebugTheme& bp, Object* pObject) const;
 
@@ -81,7 +81,7 @@ namespace wg
 
 		bool		m_bAutoRefresh = false;
 
-		String		m_title;
+		std::string		m_title;
 	};
 
 

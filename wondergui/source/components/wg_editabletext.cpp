@@ -21,7 +21,7 @@
 =========================================================================*/
 #include <algorithm>
 #include <wg_editabletext.h>
-#include <wg_charseq.h>
+#include <wax_utf8.h>
 #include <wg_msg.h>
 #include <wg_inputhandler.h>
 #include <wg_util.h>
@@ -96,7 +96,7 @@ namespace wg
 		if (bp.layout)
 			setLayout(bp.layout);
 
-		if (!bp.text.isEmpty())
+		if (!bp.text.empty())
 			_setText(bp.text);
 
 		m_editMode = bp.editMode;
@@ -320,62 +320,49 @@ namespace wg
 
 	//____ _setText() ___________________________________________________________________
 
-	void EditableText::_setText( const CharSeq& seq )
+	void EditableText::_setText( std::string_view text )
 	{
 		//TODO: Cut sequence if too many lines or chars.
 
-		DynamicText::_setText( seq );
-		_caretToEnd();
-	}
-
-	void EditableText::_setText( const CharBuffer * pBuffer )
-	{
-		//TODO: Cut sequence if too many lines or chars.
-
-		DynamicText::_setText( pBuffer );
-		_caretToEnd();
-	}
-
-	void EditableText::_setText( const String& str )
-	{
-		//TODO: Cut sequence if too many lines or chars.
-
-		DynamicText::_setText( str );
+		DynamicText::_setText( text );
 		_caretToEnd();
 	}
 
 	//____ _append() ________________________________________________________________
 
-	int EditableText::_append( const CharSeq& seq )
+	int EditableText::_append( std::string_view text )
 	{
 		//TODO: Cut sequence if too many lines or chars.
 
 		// Appending text should move carret if carret is at end of text and nothing is selected,
 		// otherwise not affect caret or selection.
 
-		if( m_editState.caretOfs == m_editState.selectOfs && m_editState.caretOfs == m_charBuffer.length() )
+		if( m_editState.caretOfs == m_editState.selectOfs && m_editState.caretOfs == int(m_text.size()) )
 		{
-			int newOfs = m_editState.caretOfs + DynamicText::_append( seq );
+			int added = DynamicText::_append( text );
+			int newOfs = m_editState.caretOfs + added;
 			_layout()->caretMove( this, newOfs, m_editState.caretOfs );
 
 			m_editState.caretOfs = newOfs;
 			m_editState.selectOfs = newOfs;
 			m_editState.wantedOfs = -1;
 			_updateDisplayArea();
+			return added;
 		}
 
-		return DynamicText::_append( seq );
+		return DynamicText::_append( text );
 	}
 
 	//____ _insert() ________________________________________________________________
 
-	int EditableText::_insert( int ofs, const CharSeq& seq )
+	int EditableText::_insert( int ofs, std::string_view text )
 	{
 		//TODO: Cut sequence if too many lines or chars.
 
-		limit( ofs, 0, m_charBuffer.length() );
+		int len = 0;
+		_clampRange( ofs, len );
 
-		int added = DynamicText::_insert(ofs,seq);
+		int added = DynamicText::_insert(ofs,text);
 
 		/* Inserting text should affect the selection as little as possible. Therefore:
 		 *
@@ -424,16 +411,13 @@ namespace wg
 
 	//____ _replace() _______________________________________________________________
 
-	int EditableText::_replace( int ofs, int nDelete, const CharSeq& seq )
+	int EditableText::_replace( int ofs, int nDelete, std::string_view text )
 	{
 		//TODO: Cut sequence if too many lines or chars.
-		//TODO: Implement correctly!!!
 
+		_clampRange( ofs, nDelete );
 
-		limit( ofs, 0, m_charBuffer.length() );
-		limit( nDelete, 0, m_charBuffer.length() - ofs );
-
-		int sizeModif = DynamicText::_replace(ofs,nDelete,seq);
+		int sizeModif = DynamicText::_replace(ofs,nDelete,text);
 
 		// Replacing text should not affect caret or selection except where necessary.
 
@@ -455,8 +439,7 @@ namespace wg
 
 	int EditableText::_erase( int ofs, int len )
 	{
-		limit( ofs, 0, m_charBuffer.length() );
-		limit( len, 0, m_charBuffer.length() - ofs );
+		_clampRange( ofs, len );
 
 		/* Inserting text should affect the selection as little as possible. Therefore:
 		 *
@@ -513,14 +496,9 @@ namespace wg
 				// Enable and place caret
 
 				m_editState.bCaret = true;
-//				m_editState.caretOfs = m_charBuffer.length();		//TODO: Not always reset caretOfs.
+//				m_editState.caretOfs = int(m_text.size());		//TODO: Not always reset caretOfs.
 //				m_editState.selectOfs = m_editState.caretOfs;
 				m_editState.wantedOfs = -1;
-
-				// Update carets charstyle
-
-				int ofs = m_editState.caretOfs > 0 ? m_editState.caretOfs-1 : 0;
-				m_editState.pCharStyle = m_charBuffer.chars()[ofs].stylePtr();
 
 				// Check modifier keys, update status
 
@@ -595,10 +573,13 @@ namespace wg
 		if( m_editMode == TextEditMode::Static )
 			return false;
 
-		int max = m_charBuffer.length();
+		int max = int(m_text.size());
 
 		limit( beg, 0, max );
 		limit( end, 0, max );
+
+		beg = Utf8::alignToCodepoint( m_text, beg );
+		end = Utf8::alignToCodepoint( m_text, end );
 
 		if( beg != m_editState.selectOfs || end != m_editState.caretOfs )
 		{
@@ -616,7 +597,7 @@ namespace wg
 
 	bool EditableText::selectAll()
 	{
-		return select( 0, m_charBuffer.length() );
+		return select( 0, int(m_text.size()) );
 	}
 
 	//____ unselect() __________________________________________________________
@@ -659,18 +640,18 @@ namespace wg
 
 	//____ getSelection() _______________________________________________________
 
-	String EditableText::getSelection() const
+	std::string EditableText::getSelection() const
 	{
 		int beg = m_editState.selectOfs;
 		int end = m_editState.caretOfs;
 		
 		if( beg == end )
-			return String();
+			return std::string();
 
 		if( beg > end )
 			std::swap( beg, end );
 
-		return String(CharSeq(&m_charBuffer, beg, end-beg));
+		return m_text.substr(beg, end-beg);
 	}
 
 
@@ -701,7 +682,8 @@ namespace wg
 		if( m_editMode != TextEditMode::Editable )
 			return false;
 
-		limit( ofs, 0, m_charBuffer.length() );
+		limit( ofs, 0, int(m_text.size()) );
+		ofs = Utf8::alignToCodepoint( m_text, ofs );
 
 		return _moveCaret( ofs, MoveMethod::ApiCall );
 	}
@@ -717,31 +699,18 @@ namespace wg
 	}
 	//____ caretPut() __________________________________________________________
 
-	int EditableText::caretPut( const CharSeq& seq )
+	int EditableText::caretPut( std::string_view _text )
 	{
 		if( !m_editState.bCaret )
 			return 0;
 
-		// Copy sequence to a buffer for manipulation (this is a slow way of doing it)
-
-		CharBuffer 	buffer;
-		buffer.pushBack(seq);
+		std::string text = Utf8::isValid(_text) ? std::string(_text) : Utf8::sanitize(_text);
 
 		// Remove any newline characters if we only have one line (special case)
 
 		if( m_maxLines == 1 )
 		{
-			const Char * p = buffer.chars();
-			int len = buffer.length();
-
-			for( int i = 0 ; i < len ; i++ )
-			{
-				if( p[i].isEndOfLine() )
-				{
-					buffer.remove(i);
-					i--; len--;
-				}
-			}
+			text.erase( std::remove_if(text.begin(), text.end(), [](char c) { return c == '\n' || c == '\r'; }), text.end() );
 		}
 		else if( m_maxLines > 1 )	// Limit input to lines that will fit
 		{
@@ -752,20 +721,14 @@ namespace wg
 
 		if( m_maxChars > 0 )
 		{
-			int max = m_maxChars - m_charBuffer.length() + selectionSize();
-			if( buffer.length() > max )
-				buffer.remove(max, INT_MAX );
+			int selBeg = std::min(m_editState.selectOfs, m_editState.caretOfs);
+			int selEnd = std::max(m_editState.selectOfs, m_editState.caretOfs);
+
+			int nbChars = Utf8::countCodepoints(m_text) - Utf8::countCodepoints( std::string_view(m_text).substr(selBeg, selEnd-selBeg) );
+			int max = std::max( 0, m_maxChars - nbChars );
+
+			text.resize( Utf8::offsetOfCodepoint(text, max) );
 		}
-
-		// Apply carets styling to all unstyled characters
-
-		if( m_editState.pCharStyle )
-		{
-			for( int i = 0 ; i < buffer.length() ; i++ )
-				if( buffer[i].styleHandle() == 0 )
-					buffer[i].setStyle( m_editState.pCharStyle );
-		}
-
 
 		//
 
@@ -779,25 +742,24 @@ namespace wg
 			if( beg > end )
 				std::swap( beg, end );
 			
-			retVal = replace( beg, end-beg, &buffer );
+			retVal = replace( beg, end-beg, text );
 			
-			int newPos = beg + buffer.length();
+			int newPos = beg + int(text.size());
 			m_editState.caretOfs = newPos;
 			m_editState.selectOfs = newPos;
 		}
 		else													// Just insert the put content
 		{
-			retVal = insert( m_editState.caretOfs, &buffer );
+			retVal = insert( m_editState.caretOfs, text );
 		}
 //		_updateDisplayArea();		// Already done in both replace() and insert().
 
 		return retVal;
 	}
 
-	bool EditableText::caretPut( uint16_t c )
+	bool EditableText::caretPut( char32_t c )
 	{
-		//TODO: Implement
-		return false;
+		return caretPut( Utf8::fromCodepoint(c) ) > 0;
 	}
 
 	//____ caretUp() ___________________________________________________________
@@ -897,9 +859,10 @@ namespace wg
 			eraseSelected();
 			return true;
 		}
-		else if( m_editState.caretOfs < m_charBuffer.length() )
+		else if( m_editState.caretOfs < int(m_text.size()) )
 		{
-			erase( m_editState.caretOfs, 1 );
+			int next = _layout()->caretRight( this, m_editState.caretOfs, m_editState.wantedOfs );
+			erase( m_editState.caretOfs, next - m_editState.caretOfs );
 			return true;
 		}
 
@@ -927,8 +890,8 @@ namespace wg
 		}
 		else
 		{
-			caretOfs--;
-			erase(caretOfs, 1);
+			int prev = _layout()->caretLeft( this, caretOfs, m_editState.wantedOfs );
+			erase(prev, caretOfs - prev);
 			return true;
 		}
 	}
@@ -992,7 +955,7 @@ namespace wg
 		if( !m_editState.bCaret )
 			return false;
 
-		int caretOfs = m_charBuffer.length();		// Caret placed on terminator char following the string.
+		int caretOfs = int(m_text.size());		// Caret placed on terminator char following the string.
 		m_editState.wantedOfs = -1;
 
 		return _moveCaret( caretOfs, MoveMethod::Keyboard );
@@ -1002,10 +965,9 @@ namespace wg
 
 	void EditableText::_caretToEnd()
 	{
-		m_editState.caretOfs = m_charBuffer.length();		// Caret placed on terminator char following the string.
+		m_editState.caretOfs = int(m_text.size());		// Caret placed on terminator char following the string.
 		m_editState.selectOfs = m_editState.caretOfs;
 		m_editState.wantedOfs = -1;
-		_updateInsertStyle();
 		_updateDisplayArea();
 	}
 
@@ -1063,23 +1025,12 @@ namespace wg
 		else
 			_layout()->caretMove( this, caretOfs, m_editState.caretOfs );
 
-		// Set charStyle to first in selection or character left of caret if there is no selection.
-
-		int ofs;
-		if( selectOfs != caretOfs )
-			ofs = std::min( selectOfs, caretOfs );
-		else
-			ofs = caretOfs > 0 ? caretOfs-1 : 0;
-
-		m_editState.pCharStyle = m_charBuffer.chars()[ofs].stylePtr();
-
 		// Finalize
 
 		bool ret = (m_editState.caretOfs == caretOfs);
 
 		m_editState.caretOfs = caretOfs;
 		m_editState.selectOfs = selectOfs;
-		_updateInsertStyle();
 		_updateDisplayArea();
 
 		return ret;
@@ -1105,13 +1056,5 @@ namespace wg
 		
 		_requestVisibility(mustHave, niceToHave);
 	}
-
-	//____ _updateInsertStyle() ________________________________________________
-
-	void EditableText::_updateInsertStyle()
-	{
-
-	}
-
 
 } // namespace wg

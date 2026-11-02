@@ -80,11 +80,11 @@ namespace wg
 
 	//____ tooltip() __________________________________________________________
 
-	String PluginCapsule::tooltip() const
+	std::string PluginCapsule::tooltip() const
 	{
 		//TODO: Implement!!!
 
-		return String();
+		return std::string();
 	}
 
 	//____ pointerStyle() _____________________________________________________
@@ -302,15 +302,7 @@ namespace wg
 			case MsgType::TextInput:
 			{
 				auto pMess = static_cast<TextInputMsg*>(pMsg);
-				String str = pMess->text();
-
-				int maxSize = str.length()*4;
-				char * pDest = (char*) Base::memStackAlloc(maxSize);
-
-				TextTool::getTextUTF8(str.chars(), pDest, maxSize);
-
-				m_calls.putText(m_pPluginRoot,pDest);
-				Base::memStackFree(maxSize);
+				m_calls.putText(m_pPluginRoot, pMess->text().c_str());
 				break;
 			}
 

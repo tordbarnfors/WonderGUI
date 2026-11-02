@@ -729,16 +729,6 @@ namespace wg
 		return m_pParent->m_pEntryStyle ? m_pParent->m_pEntryStyle : Base::defaultStyle();
 	}
 
-	const Char * SelectBoxEntry::_textBegin() const
-	{
-		return m_string.chars();
-	}
-
-	int SelectBoxEntry::_textLength() const
-	{
-		return m_string.length();
-	}
-
 	bool SelectBoxEntry::_caretVisible() const
 	{
 		return false;

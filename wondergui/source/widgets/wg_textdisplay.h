@@ -57,7 +57,7 @@ namespace wg
 			Skin_p			skin;
 			bool			stickyFocus = false;
 			bool			tabLock = false;
-			String			tooltip;
+			std::string			tooltip;
 		};
 
 		//.____ Creation __________________________________________
@@ -77,7 +77,7 @@ namespace wg
 		//.____ Appearance _________________________________________________
 
 		PointerStyle	pointerStyle() const override;
-		String			tooltip() const override;
+		std::string		tooltip() const override;
 
 		//.____ Internal _________________________________________________
 

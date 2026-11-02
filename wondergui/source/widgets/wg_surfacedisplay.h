@@ -70,7 +70,7 @@ namespace wg
 			Coord			surfaceOffset;
 			Placement		surfacePlacement = Placement::Center;
 			bool			tabLock = false;
-			String			tooltip;
+			std::string			tooltip;
 			float			zoom = 1.f;
 			bool			zoomToFit = false;
 		};

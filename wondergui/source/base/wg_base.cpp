@@ -22,7 +22,7 @@
 #include <wg_base.h>
 
 #include <wg_msgrouter.h>
-#include <wg_basictextlayout.h>
+#include <wg_plaintextlayout.h>
 #include <wg_basicnumberlayout.h>
 #include <wg_inputhandler.h>
 
@@ -30,7 +30,6 @@
 #include <wax_memstack.h>
 #include <wax_mempool.h>
 #include <wg_textstyle.h>
-#include <wg_texttool.h>
 #include <wg_textstylemanager.h>
 #include <wg_skinslotmanager.h>
 #include <wax_bitmapcache.h>
@@ -47,7 +46,7 @@ namespace wg
 
 	GUIContext_p	Base::s_pGUIContext;
 
-	String			Base::s_clipboardText;
+	std::string		Base::s_clipboardText;
 
 	//____ init() __________________________________________________________________
 
@@ -67,13 +66,12 @@ namespace wg
 
 		s_pGUIContext->pHostBridge = pHostBridge;
 
-		TextTool::setDefaultBreakRules();
 
 		TextStyleManager::init();
 
 		s_pGUIContext->pDefaultCaret = Caret::create();
 
-		s_pGUIContext->pDefaultTextLayout = BasicTextLayout::create({});
+		s_pGUIContext->pDefaultTextLayout = PlainTextLayout::create({});
 
 		TextStyle::Blueprint textStyleBP;
 		textStyleBP.font = DummyFont::create();
@@ -155,7 +153,7 @@ namespace wg
 
 			p->pDefaultCaret = Caret::create();
 
-			p->pDefaultTextLayout = BasicTextLayout::create({});
+			p->pDefaultTextLayout = PlainTextLayout::create({});
 			
 			TextStyle::Blueprint textStyleBP;
 			textStyleBP.font = DummyFont::create();
@@ -275,15 +273,11 @@ namespace wg
 
 	//____ setClipboardText() ____________________________________________________
 
-	void Base::setClipboardText( const String& text )
+	void Base::setClipboardText( std::string_view text )
 	{
 		s_clipboardText = text;
 		if( s_pGUIContext->pHostBridge )
-		{
-			auto stdString = CharSeq(text).getStdString();
-
-			s_pGUIContext->pHostBridge->setClipboardText(stdString);
-		}
+			s_pGUIContext->pHostBridge->setClipboardText(s_clipboardText);
 	}
 
 	//____ setHostBridge() _______________________________________________________
@@ -296,14 +290,10 @@ namespace wg
 
 	//____ getClipboardText() ____________________________________________________
 
-	String Base::getClipboardText()
+	std::string Base::getClipboardText()
 	{
 		if( s_pGUIContext->pHostBridge )
-		{
-			auto stdString = s_pGUIContext->pHostBridge->getClipboardText();
-
-			return String(stdString);
-		}
+			return s_pGUIContext->pHostBridge->getClipboardText();
 		else
 		{
 			return s_clipboardText;

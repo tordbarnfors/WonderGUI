@@ -102,7 +102,7 @@ namespace wg
 
 	//____ setLabel() ____________________________________________________________
 
-	void DebugWindow::setLabel( String label )
+	void DebugWindow::setLabel( std::string_view label )
 	{
 		m_pLabel->display.setText(label);
 	}

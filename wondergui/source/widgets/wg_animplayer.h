@@ -65,7 +65,7 @@ namespace wg
 			float			speed = 1.f;
 			bool			stickyFocus = false;
 			bool			tabLock = false;
-			String			tooltip;
+			std::string			tooltip;
 		};
 
 		//.____ Creation __________________________________________

@@ -315,7 +315,7 @@ bool canvasCapsuleGlowTest(ComponentPtr<DynamicSlot> pEntry)
 	pBack->slots.pushBack(pGlowCapsule, { .pos = {  50, 50}, .size = {300,0} });
 
 
-	auto pWrapTextLayout = BasicTextLayout::create({ .wrap = true });
+	auto pWrapTextLayout = PlainTextLayout::create({ .wrap = true });
 
 
 	auto pContent = TextEditor::create({ .editor = {.layout = pWrapTextLayout, .style = pMyStyle, .text = "HEJ" } });

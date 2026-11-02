@@ -67,17 +67,13 @@ bool TextBuffer::loadFromFile(const std::string& path)
 
 bool TextBuffer::saveToFile(const std::string& path)
 {
-	String decoratedText = m_pEditor->editor.text();
-
-	CharSeq	converter(decoratedText);
-
-	auto basket = converter.getUtf8();
+	const std::string& text = m_pEditor->editor.text();
 
 	FILE* fp = fopen(path.c_str(), "w");
 	if (!fp)
 		return false;
 
-	size_t elementsWritten = fwrite(basket.ptr, basket.length, 1, fp);
+	size_t elementsWritten = fwrite(text.data(), text.size(), 1, fp);
 	fclose(fp);
 
 	if (elementsWritten != 1)

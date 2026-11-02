@@ -77,7 +77,7 @@ bool MyApp::_setupGUI(API* pAPI)
 		.size = 14,
 	});
 
-	m_pTextLayoutCentered = BasicTextLayout::create({ .placement = Placement::Center });
+	m_pTextLayoutCentered = PlainTextLayout::create({ .placement = Placement::Center });
 
 	//
 

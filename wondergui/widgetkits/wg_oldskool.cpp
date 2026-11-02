@@ -83,12 +83,12 @@ namespace wg::oldskool
 		TextStyles::Heading5 = TextStyle::create(WGBP(TextStyle, _.font = Fonts::Bold, _.color = HiColor::Black, _.size = 14));
 		TextStyles::Heading6 = TextStyle::create(WGBP(TextStyle, _.font = Fonts::Normal, _.color = HiColor::Black, _.size = 14));
 
-		TextLayouts::LeftNoWrap = BasicTextLayout::create(WGBP(BasicTextLayout,
+		TextLayouts::LeftNoWrap = PlainTextLayout::create(WGBP(PlainTextLayout,
 			_.autoEllipsis = true,
 			_.placement = Placement::West,
 			_.wrap = false));
 
-		TextLayouts::CenteredNoWrap = BasicTextLayout::create(WGBP(BasicTextLayout,
+		TextLayouts::CenteredNoWrap = PlainTextLayout::create(WGBP(PlainTextLayout,
 			_.autoEllipsis = true,
 			_.placement = Placement::Center,
 			_.wrap = false));

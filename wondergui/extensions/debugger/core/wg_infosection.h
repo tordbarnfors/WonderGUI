@@ -72,29 +72,29 @@ namespace wg
 
 
 		TablePanel_p		_createTable(int rows, int columns);
-		DrawerPanel_p		_createDrawer(const CharSeq& label, Widget * pHeaderValue, Widget * pContent );
+		DrawerPanel_p		_createDrawer(std::string_view label, Widget * pHeaderValue, Widget * pContent );
 		void				_setDrawerHeaderValue(DrawerPanel* pDrawer, Widget* pHeaderValue);
 
-		DrawerPanel_p		_createRectDrawer(const CharSeq& label, const Rect& rect);
+		DrawerPanel_p		_createRectDrawer(std::string_view label, const Rect& rect);
 		void				_refreshRectDrawer(DrawerPanel* pRectDrawer, const Rect& rect, Rect& displayedRect);
 
-		DrawerPanel_p		_createColorDrawer(const CharSeq& label, const HiColor& color);
+		DrawerPanel_p		_createColorDrawer(std::string_view label, const HiColor& color);
 		void				_refreshColorDrawer(DrawerPanel* pColorDrawer, const HiColor& color, HiColor& displayedColor );
 
-		DrawerPanel_p		_createBorderDrawer(const CharSeq& label, const Border& border);
+		DrawerPanel_p		_createBorderDrawer(std::string_view label, const Border& border);
 		void				_refreshBorderDrawer(DrawerPanel* pBorderDrawer, const Border& border, Border& displayedBorder );
 
-		DrawerPanel_p		_createComponentDrawer(const CharSeq& label, Component* pComponent);
+		DrawerPanel_p		_createComponentDrawer(std::string_view label, Component* pComponent);
 		void				_refreshComponentDrawer(DrawerPanel * pComponentDrawer );
 
 		template<typename Iterator>
-		DrawerPanel_p		_createSlotsDrawer(const CharSeq& label, Iterator slotsBegin, Iterator slotsEnd);
+		DrawerPanel_p		_createSlotsDrawer(std::string_view label, Iterator slotsBegin, Iterator slotsEnd);
 		template<typename Iterator>
 		void				_refreshSlotsDrawer(DrawerPanel * pDrawer, Iterator slotsBegin, Iterator slotsEnd);
 		template<typename Iterator>
 		void				_addSlotInfoSections(PackPanel * pPanel, int numberingStart, Iterator slotsBegin, Iterator slotsEnd);
 
-		DrawerPanel_p		_createSingleSlotDrawer(const CharSeq& label, StaticSlot * pSlot);
+		DrawerPanel_p		_createSingleSlotDrawer(std::string_view label, StaticSlot * pSlot);
 		void				_refreshSingleSlotDrawer(DrawerPanel* pDrawer, StaticSlot * pSlot);
 
 
@@ -113,7 +113,7 @@ namespace wg
 		void _initPointerEntry(TablePanel* pTable, int row, const char* pLabel);
 		void _initObjectPointerEntry(TablePanel* pTable, int row, const char* pLabel);
 
-		void _refreshTextEntry(TablePanel* pTable, int row, const CharSeq& string);
+		void _refreshTextEntry(TablePanel* pTable, int row, std::string_view string);
 		void _refreshIntegerEntry(TablePanel * pTable, int row, int value);
 		void _refreshDecimalEntry(TablePanel* pTable, int row, float value);
 		void _refreshPtsEntry(TablePanel* pTable, int row, pts value);
@@ -130,7 +130,7 @@ namespace wg
 	//____ createSlotsDrawer() ___________________________________________________
 
 	template<typename Iterator>
-	DrawerPanel_p InfoSection::_createSlotsDrawer(const CharSeq& label, Iterator slotsBegin, Iterator slotsEnd)
+	DrawerPanel_p InfoSection::_createSlotsDrawer(std::string_view label, Iterator slotsBegin, Iterator slotsEnd)
 	{
 		auto pSlotList = WGCREATE(PackPanel, _.axis = Axis::Y);
 

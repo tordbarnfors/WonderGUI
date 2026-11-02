@@ -67,7 +67,7 @@ namespace wg
 			Edgemap_p		edgemap;
 			Placement		edgemapPlacement = Placement::Center;
 			bool			tabLock = false;
-			String			tooltip;
+			std::string			tooltip;
 		};
 
 		//.____ Creation ______________________________________________________

@@ -22,6 +22,9 @@
 #include <wg_numberlayout.h>
 #include <wax_device.h>
 #include <wg_util.h>
+#include <wax_utf8.h>
+
+#include <algorithm>
 
 namespace wg
 {
@@ -38,129 +41,133 @@ namespace wg
 		return TYPEINFO;
 	}
 
-	//____ _renderString() ____________________________________________________
+	//____ _renderSegments() ____________________________________________________
 
-	void NumberLayout::_renderString(GfxDevice* pDevice, const Char* pChar, TextStyle* pStyle, CoordSPX pos, int scale, State state)
+	void NumberLayout::_renderSegments(GfxDevice* pDevice, const std::vector<Segment>& segments, const TextStyle * pBaseStyle, CoordSPX pos, int scale, State state) const
 	{
 		TextAttr		baseAttr;
-		pStyle->exportAttr(state, &baseAttr, scale);
-
-		TextAttr		attr;
-		Font_p 			pFont;
-		TextStyle_h		hStyle = 0xFFFF;
+		pBaseStyle->exportAttr(state, &baseAttr, scale);
 
 		HiColor	baseTint = pDevice->tintColor();
-		HiColor	localTint = HiColor::White;
-
-		BlendMode renderMode = pDevice->blendMode();
-
-		// Render back colors
-
-//		_renderBack(pText, pDevice, canvas);
-
-		//
-
-		const RectSPX& clip = pDevice->clipBounds();
 
 		Glyph glyph[2];
 		Glyph* pGlyph = &glyph[0];
 		Glyph* pPrevGlyph = &glyph[1];
 
-		bool bRecalcColor = false;
-		bool bInSelection = false;
+		Font_p pFont;
+		spx fontSize = -1;
 
-		while( !pChar->isEndOfText() )
+		for( auto& segment : segments )
 		{
-			// TODO: Include handling of special characters
-			// TODO: Support char textcolor and background color and effects.
+			TextAttr attr = baseAttr;
+			if( segment.pStyle )
+				segment.pStyle->addToAttr(state, &attr, scale);
 
-			if (pChar->styleHandle() != hStyle)
+			if( pFont != attr.pFont || fontSize != attr.size )
 			{
-				spx oldFontSize = attr.size;
-				HiColor oldBackColor = attr.backColor;
+				pFont = attr.pFont;
+				fontSize = attr.size;
+				pFont->setSize(attr.size);
+				pPrevGlyph->advance = 0;					// No kerning across different fonts or character of different size.
+			}
 
-				attr = baseAttr;
+			pDevice->setTintColor(baseTint * attr.color);
 
-				if (pChar->styleHandle() != 0)
-					pChar->stylePtr()->addToAttr(state, &attr, scale);
+			const char * p = segment.text.c_str();
+			const char * pEnd = p + segment.text.size();
 
-				if (pFont != attr.pFont || attr.size != oldFontSize)
+			while( p < pEnd )
+			{
+				char32_t charCode = Utf8::decodeUnchecked(p);
+
+				if( charCode > 32 )
 				{
+					pFont->getGlyphWithBitmap(charCode, * pGlyph);
 
-					if (!pFont || (pFont->isMonochrome() != attr.pFont->isMonochrome()))
-						bRecalcColor = true;		// Font tint-color is changed.
+					pos.x += pFont->kerning(* pPrevGlyph, * pGlyph);
 
-					pFont = attr.pFont;
-					pFont->setSize(attr.size);
-					pPrevGlyph->advance = 0;								// No kerning across different fonts or character of different size.
+					if( pGlyph->pSurface )
+					{
+						pDevice->setBlitSource(pGlyph->pSurface);
+						pDevice->blit(CoordSPX(pos.x + pGlyph->bearingX, pos.y + pGlyph->bearingY), pGlyph->rect);
+					}
+					pos.x += pGlyph->advance;
+				}
+				else
+				{
+					pGlyph->advance = 0;
+					if (charCode == 32)
+						pos.x += pFont->whitespaceAdvance();
 				}
 
-				if (attr.color != localTint)
-				{
-					localTint = attr.color;
-					bRecalcColor = true;
-				}
+				std::swap( pPrevGlyph, pGlyph );
 			}
-
-			//
-/*
-			if (pChar == pSelBeg)
-			{
-				bInSelection = true;
-				bRecalcColor = true;
-			}
-			else if (pChar == pSelEnd)
-			{
-				bInSelection = false;
-				bRecalcColor = true;
-			}
-*/
-			if (bRecalcColor)
-			{
-//				if (bInSelection)
-//					pDevice->setTintColor(baseTint * HiColor::blend(localTint, m_selectionCharColor, m_selectionCharBlend));
-//				else
-					pDevice->setTintColor(baseTint * localTint);
-
-				bRecalcColor = false;
-			}
-
-			//
-
-			uint16_t charCode = pChar->code();
-			pFont->getGlyphWithBitmap(charCode, * pGlyph);
-
-			if (pGlyph && charCode > 32)
-			{
-				pos.x += pFont->kerning(* pPrevGlyph, * pGlyph);
-
-				pDevice->setBlitSource(pGlyph->pSurface);
-				pDevice->blit(CoordSPX(pos.x + pGlyph->bearingX, pos.y + pGlyph->bearingY), pGlyph->rect);
-				pos.x += pGlyph->advance;
-			}
-			else if (pChar->code() == 32)
-				pos.x += pFont->whitespaceAdvance();
-
-			std::swap( pPrevGlyph, pGlyph );
-			pChar++;
 		}
 
 		pDevice->setTintColor(baseTint);
-
-
-		// Render caret (if there is any)
-/*
-		if (_caretVisible(pText))
-		{
-			Caret* pCaret = m_pCaret ? m_pCaret : Base::defaultCaret();
-
-			if (pCaret)
-			{
-				pCaret->render(pDevice, charRect(pText, _caretOfs(pText)) + canvas.pos(), _scale(pText));
-			}
-		}
-*/
 	}
 
+	//____ _segmentsSizeBaseline() ____________________________________________
+
+	std::tuple<SizeSPX, spx> NumberLayout::_segmentsSizeBaseline(const std::vector<Segment>& segments, const TextStyle * pBaseStyle, int scale, State state) const
+	{
+		TextAttr		baseAttr;
+		pBaseStyle->exportAttr(state, &baseAttr, scale);
+
+		Glyph glyph[2];
+		Glyph* pGlyph = &glyph[0];
+		Glyph* pPrevGlyph = &glyph[1];
+
+		Font_p pFont;
+		spx fontSize = -1;
+
+		spx maxAscend = 0;
+		spx maxDescend = 0;
+		spx width = 0;
+
+		for( auto& segment : segments )
+		{
+			TextAttr attr = baseAttr;
+			if( segment.pStyle )
+				segment.pStyle->addToAttr(state, &attr, scale);
+
+			if( pFont != attr.pFont || fontSize != attr.size )
+			{
+				pFont = attr.pFont;
+				fontSize = attr.size;
+				pFont->setSize(attr.size);
+				pPrevGlyph->advance = 0;					// No kerning across different fonts or fontsizes.
+			}
+
+			maxAscend = std::max(maxAscend, pFont->maxAscend());
+			maxDescend = std::max(maxDescend, pFont->maxDescend());
+
+			const char * p = segment.text.c_str();
+			const char * pEnd = p + segment.text.size();
+
+			while( p < pEnd )
+			{
+				char32_t charCode = Utf8::decodeUnchecked(p);
+
+				if( charCode > 32 )
+				{
+					pFont->getGlyphWithoutBitmap(charCode, *pGlyph);
+					width += pFont->kerning(* pPrevGlyph, * pGlyph);
+					width += pGlyph->advance;
+				}
+				else
+				{
+					pGlyph->advance = 0;
+					if (charCode == 32)
+						width += pFont->whitespaceAdvance();
+				}
+
+				std::swap( pPrevGlyph, pGlyph );
+			}
+		}
+
+		SizeSPX size( width, maxAscend + maxDescend );
+		return  std::make_tuple(Util::alignUp(size),maxAscend);
+	}
 
 } // namespace wg

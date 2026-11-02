@@ -68,7 +68,7 @@ namespace wg
 			bool			stickyFocus		= false;
 			bool			tabLock			= false;
 			bool			takesFocusFromChild = false;
-			String			tooltip;
+			std::string			tooltip;
 			bool			usePickHandles	= false;
 		};
 

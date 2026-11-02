@@ -25,7 +25,11 @@
 
 #include <wax_object.h>
 #include <wax_pointers.h>
-#include <wg_string.h>
+#include <wg_textstyle.h>
+
+#include <vector>
+#include <string>
+#include <tuple>
 
 namespace wg
 {
@@ -54,7 +58,14 @@ namespace wg
 	protected:
 		~NumberLayout() {}
 		
-		void	_renderString(GfxDevice * pDevice, const Char* pString, TextStyle* pStyle, CoordSPX pos, int scale, State state );
+		struct Segment
+		{
+			std::string			text;						// UTF-8 encoded.
+			const TextStyle *	pStyle = nullptr;			// Added to base style, nullptr for base style only.
+		};
+
+		void	_renderSegments(GfxDevice * pDevice, const std::vector<Segment>& segments, const TextStyle * pBaseStyle, CoordSPX pos, int scale, State state ) const;
+		std::tuple<SizeSPX, spx> _segmentsSizeBaseline(const std::vector<Segment>& segments, const TextStyle * pBaseStyle, int scale, State state) const;
 
 	};
 

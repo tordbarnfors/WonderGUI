@@ -45,10 +45,10 @@ namespace wg
 		{
 			TextEditMode	editMode = TextEditMode::Editable;
 			TextLayout_p	layout;
-			int				maxChars = 0;
+			int				maxChars = 0;					// Max number of characters (codepoints), 0 = no limit.
 			int				maxLines = 0;
 			TextStyle_p		style;
-			String			text;
+			std::string		text;
 
 		};
 
@@ -69,8 +69,8 @@ namespace wg
 
 		//.____ Content _____________________________________________
 
-		int				caretPut(const CharSeq& seq);	// Will insert or overwrite depending on caret mode
-		bool			caretPut(uint16_t c);			// " -
+		int				caretPut(std::string_view text);	// Will insert or overwrite depending on caret mode
+		bool			caretPut(char32_t c);				// " -
 
 		inline int		eraseSelected();
 
@@ -93,7 +93,7 @@ namespace wg
 		int				selectionEnd() const;
 		int				selectionSize() const;				// Number of characters that are selected.
 
-		String			getSelection() const;
+		std::string		getSelection() const;
 
 		// These methods will fail unless caret is present
 
@@ -120,13 +120,11 @@ namespace wg
 
 		void			_clear() override;
 
-		void			_setText(const CharSeq& seq) override;
-		void			_setText(const CharBuffer * buffer) override;
-		void			_setText(const String& str) override;
+		void			_setText(std::string_view text) override;
 
-		int				_append(const CharSeq& seq) override;
-		int				_insert(int ofs, const CharSeq& seq) override;
-		int				_replace(int ofs, int nDelete, const CharSeq& seq) override;
+		int				_append(std::string_view text) override;
+		int				_insert(int ofs, std::string_view text) override;
+		int				_replace(int ofs, int nDelete, std::string_view text) override;
 		int				_erase(int ofs, int len) override;
 
 
@@ -177,7 +175,6 @@ namespace wg
 
 		bool			_moveCaret( int caretOfs, MoveMethod method );
 		void			_updateDisplayArea();
-		void			_updateInsertStyle();
 
 
 		void			_caretToEnd();

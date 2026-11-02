@@ -57,7 +57,7 @@ namespace wg
 		ChartInfoSection(const DebugTheme& theme, IDebugContext* pContext, Chart * pInspected );
 		~ChartInfoSection() {}
 
-		DrawerPanel_p	_createGridLinesDrawer(const CharSeq& label, DynamicVector<GridLine>& lines);
+		DrawerPanel_p	_createGridLinesDrawer(std::string_view label, DynamicVector<GridLine>& lines);
 		void			_refreshGridLinesDrawer(DrawerPanel* pDrawer, DynamicVector<GridLine>& lines);
 		void			_addGridLineDrawers(PackPanel* pList, DynamicVector<GridLine>& lines, int begin);
 

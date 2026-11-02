@@ -92,7 +92,7 @@ namespace wg
 	// One drawer per line, each holding a GridLineInfoSection. Header shows the
 	// number of lines.
 
-	DrawerPanel_p ChartInfoSection::_createGridLinesDrawer(const CharSeq& label, DynamicVector<GridLine>& lines)
+	DrawerPanel_p ChartInfoSection::_createGridLinesDrawer(std::string_view label, DynamicVector<GridLine>& lines)
 	{
 		auto pLineList = WGCREATE(PackPanel, _.axis = Axis::Y);
 

@@ -22,6 +22,7 @@
 #include <wg_statictext.h>
 #include <wg_msg.h>
 #include <wg_msgrouter.h>
+#include <wax_utf8.h>
 
 
 namespace wg
@@ -135,16 +136,12 @@ namespace wg
 		{
 			TextLink_p pLink;
 
-			// Get link from character properties
+			// Get link from the layout, which knows about links in markup and styles.
 
 			CoordSPX localPos = _toLocal(static_cast<InputMsg*>(pMsg)->pointerSpxPos());
 			int markedChar = _layout()->charAtPos(this, localPos);
 			if (markedChar >= 0)
-			{
-				TextStyle_p pStyle = m_charBuffer.chars()[markedChar].stylePtr();
-				if (pStyle)
-					pLink = pStyle->link();
-			}
+				pLink = _layout()->linkAt(this, markedChar);
 
 			// Fall back to parts default style
 
@@ -336,144 +333,137 @@ namespace wg
 
 	//____ _tooltip() _______________________________________________________________
 
-	String StaticText::_tooltip() const
+	std::string StaticText::_tooltip() const
 	{
 		return _layout()->tooltip(this);
-	}
-
-	//____ _getString() ___________________________________________________________________
-
-	String StaticText::_getString() const
-	{
-		return String(&m_charBuffer);
 	}
 
 	//____ _clear() _________________________________________________________________
 
 	void StaticText::_clear()
 	{
-		int removed = m_charBuffer.length();
-		m_charBuffer.clear();
+		int removed = int(m_text.size());
+		m_text.clear();
 		_modified(0, removed, 0);
 	}
 
 	//___ _setText() ____________________________________________________________________
 
-	void StaticText::_setText(const CharSeq& seq)
+	void StaticText::_setText(std::string_view text)
 	{
-		CharSeq::CharBasket chars = seq.getChars();
-
-		if( chars.length == m_charBuffer.length() )
-		{
-			auto p1 = m_charBuffer.chars();
-			auto p2 = chars.ptr;
-			for( int i = 0 ; i < chars.length ; i++ )
-				if( (* p1++).equals(* p2++) == false )
-				{
-					p2--;
-					break;
-				}
-
-			if( p2 == chars.ptr + chars.length )
-				return;
-		}
-
-		int removed = m_charBuffer.length();
-		m_charBuffer = seq;
-		_modified(0, removed, m_charBuffer.length());
-	}
-
-	void StaticText::_setText(const CharBuffer * buffer)
-	{
-		if( m_charBuffer.compareTo(buffer) == 0 )
+		if( text == m_text )
 			return;
 
-		int removed = m_charBuffer.length();
-		m_charBuffer = *buffer;
-		_modified(0, removed, m_charBuffer.length());
-	}
+		int removed = int(m_text.size());
 
-	void StaticText::_setText(const String& str)
-	{
-		if( TextTool::strcmp( m_charBuffer.chars(), str.chars() ) == 0 )
-			return;
+		if( Utf8::isValid(text) )
+			m_text = text;
+		else
+			m_text = Utf8::sanitize(text);
 
-		int removed = m_charBuffer.length();
-		m_charBuffer = str;
-		_modified(0, removed, m_charBuffer.length());
+		_modified(0, removed, int(m_text.size()));
 	}
 
 	//____ _append() ________________________________________________________________
 
-	int StaticText::_append(const CharSeq& seq)
+	int StaticText::_append(std::string_view text)
 	{
-		//TODO: Check and respect boundaries. Guarantee correct parameters to _modified()
-
-		int ofs = m_charBuffer.length();
-		int len = m_charBuffer.pushBack(seq);
-		_modified(ofs, 0, len);
-		return len;
+		return _insert( int(m_text.size()), text );
 	}
 
 	//____ _insert() ________________________________________________________________
 
-	int StaticText::_insert(int ofs, const CharSeq& seq)
+	int StaticText::_insert(int ofs, std::string_view text)
 	{
-		//TODO: Check and respect boundaries. Guarantee correct parameters to _modified()
+		int len = 0;
+		_clampRange(ofs, len);
 
-		int len = m_charBuffer.insert(ofs, seq);
-		_modified(ofs, 0, seq.length());
-		return len;
+		if( text.empty() )
+			return 0;
+
+		int added;
+
+		if( Utf8::isValid(text) )
+		{
+			m_text.insert(ofs, text);
+			added = int(text.size());
+		}
+		else
+		{
+			std::string sanitized = Utf8::sanitize(text);
+			m_text.insert(ofs, sanitized);
+			added = int(sanitized.size());
+		}
+
+		_modified(ofs, 0, added);
+		return added;
 	}
 
 	//____ _replace() ___________________________________________________________
 
-	int StaticText::_replace(int ofs, int nDelete, const CharSeq& seq)
+	int StaticText::_replace(int ofs, int nDelete, std::string_view text)
 	{
-		//TODO: Check and respect boundaries. Guarantee correct parameters to _modified()
+		_clampRange(ofs, nDelete);
 
-		int diff = m_charBuffer.replace(ofs, nDelete, seq);
-		_modified(ofs, nDelete, seq.length());
-		return diff;
+		int added;
+
+		if( Utf8::isValid(text) )
+		{
+			m_text.replace(ofs, nDelete, text);
+			added = int(text.size());
+		}
+		else
+		{
+			std::string sanitized = Utf8::sanitize(text);
+			m_text.replace(ofs, nDelete, sanitized);
+			added = int(sanitized.size());
+		}
+
+		_modified(ofs, nDelete, added);
+		return added - nDelete;
 	}
 
 	//____ _erase() ____________________________________________________________
 
 	int StaticText::_erase(int ofs, int len)
 	{
-		//TODO: Check and respect boundaries. Guarantee correct parameters to _modified()
+		_clampRange(ofs, len);
 
-		int removed = m_charBuffer.remove(ofs, len);
+		if( len == 0 )
+			return 0;
+
+		m_text.erase(ofs, len);
 		_modified(ofs, len, 0);
-		return removed;
+		return len;
 	}
 
-	//____ _setCharStyle() ______________________________________________________
+	//____ _clampRange() _______________________________________________________
 
-	void StaticText::_setCharStyle(TextStyle * pStyle)
+	void StaticText::_clampRange( int& ofs, int& len ) const
 	{
-		m_charBuffer.setStyle(pStyle);
-		_layout()->onCharStyleChanged(this);
-	}
+		int textLen = int(m_text.size());
 
-	void StaticText::_setCharStyle(TextStyle * pStyle, int ofs, int len)
-	{
-		m_charBuffer.setStyle(pStyle, ofs, len);
-		_layout()->onCharStyleChanged(this, ofs, len);
-	}
+		if( ofs < 0 )
+		{
+			len += ofs;
+			ofs = 0;
+		}
 
-	//____ _clearCharStyle() ____________________________________________________
+		if( ofs > textLen )
+			ofs = textLen;
 
-	void StaticText::_clearCharStyle()
-	{
-		m_charBuffer.clearStyle();
-		_layout()->onCharStyleChanged(this);
-	}
+		if( len < 0 )
+			len = 0;
 
-	void StaticText::_clearCharStyle(int ofs, int len)
-	{
-		m_charBuffer.clearStyle(ofs, len);
-		_layout()->onCharStyleChanged(this, ofs, len);
+		if( len > textLen - ofs )
+			len = textLen - ofs;
+
+		int end = Utf8::alignToCodepoint( m_text, ofs + len );
+		if( end < ofs + len )
+			end = Utf8::next( m_text, end );			// Include whole codepoint at end of range.
+
+		ofs = Utf8::alignToCodepoint( m_text, ofs );
+		len = end - ofs;
 	}
 
 	//____ _mapperRequestRender() _______________________________________________

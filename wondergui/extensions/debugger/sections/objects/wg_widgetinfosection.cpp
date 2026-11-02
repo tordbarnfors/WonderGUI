@@ -32,14 +32,14 @@ namespace wg
 
 	//____ slotAddressString() ___________________________________________________
 
-	static String slotAddressString(StaticSlot* pSlot)
+	static std::string slotAddressString(StaticSlot* pSlot)
 	{
 		if( !pSlot )
-			return String("null");
+			return std::string("null");
 
 		char temp[64];
 		snprintf(temp, sizeof(temp), "0x%p", (void*) pSlot);
-		return String(temp);
+		return std::string(temp);
 	}
 
 

@@ -31,8 +31,8 @@ public:
 	bool		saveBitmapFont();
 
 	bool		generateBitmapFont();
-	bool		generateFontSpec( wax::FreeTypeFont * pFont, wg::String& charmap );
-	bool		generateFontSurface( wax::FreeTypeFont * pFont, wg::String& charmap );
+	bool		generateFontSpec( wax::FreeTypeFont * pFont, const std::u32string& charmap );
+	bool		generateFontSurface( wax::FreeTypeFont * pFont, const std::u32string& charmap );
 	void		displayBitmapFont();
 
 private:

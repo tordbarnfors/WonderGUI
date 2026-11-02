@@ -66,7 +66,7 @@ namespace wg
 			bool			stickyFocus		= false;
 			bool			tabLock			= false;
 			bool			takeFocus		= true;
-			String			tooltip;
+			std::string		tooltip;
 
 		};
 

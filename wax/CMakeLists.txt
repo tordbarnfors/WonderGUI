@@ -32,6 +32,8 @@ set( SOURCES
 	source/wax_devicefactory.h
 	source/wax_util.cpp
 	source/wax_util.h
+	source/wax_utf8.cpp
+	source/wax_utf8.h
 	source/wax_gpushapes.cpp
 	source/wax_gpushapes.h
 	source/wax_memheap.cpp

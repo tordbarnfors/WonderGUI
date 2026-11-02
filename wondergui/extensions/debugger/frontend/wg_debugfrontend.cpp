@@ -27,7 +27,7 @@
 
 #include <wondergui.h>
 
-#include <wg_basictextlayout.h>
+#include <wg_plaintextlayout.h>
 #include <wg_basicnumberlayout.h>
 #include <wg_blockskin.h>
 #include <wg_colorskin.h>
