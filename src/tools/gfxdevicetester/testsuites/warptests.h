@@ -111,6 +111,40 @@ public:
 														 (uint8_t*)pixels.data(), PixelFormat::ARGB_8);
 		}
 
+		// A reel strip of 8 slots, each a colored diamond between dark separators, and the same
+		// turned on its side as a label. Even slots that get closer towards the rims is what shows
+		// a cylinder. Sizes are powers of two, as tiling surfaces need to wrap the same everywhere.
+
+		{
+			const int w = 64, h = 256, slot = 32;
+			const Color8 hues[8] = { Color8(220, 40, 40, 255), Color8(240, 160, 20, 255), Color8(220, 210, 30, 255), Color8(60, 180, 60, 255),
+									 Color8(40, 170, 200, 255), Color8(50, 80, 220, 255), Color8(150, 60, 200, 255), Color8(220, 70, 160, 255) };
+
+			std::vector<Color8> strip(w * h), label(h * w);
+
+			for (int y = 0; y < h; y++)
+			{
+				for (int x = 0; x < w; x++)
+				{
+					int ly = y % slot;
+					Color8 c = Color8(235, 228, 210, 255);
+
+					if (ly < 2 || ly >= slot - 2)
+						c = Color8(40, 36, 32, 255);
+					else if (std::abs(x - w / 2) * slot / w + std::abs(ly - slot / 2) < slot / 2 - 4)
+						c = hues[y / slot];
+
+					strip[y * w + x] = c;
+					label[x * h + y] = c;
+				}
+			}
+
+			m_pReelStrip = pSurfaceFactory->createSurface(WGBP(Surface, _.size = { w, h }, _.format = PixelFormat::ARGB_8, _.sampleMethod = SampleMethod::Bilinear, _.tiling = true),
+														  (uint8_t*)strip.data(), PixelFormat::ARGB_8);
+			m_pReelLabel = pSurfaceFactory->createSurface(WGBP(Surface, _.size = { h, w }, _.format = PixelFormat::ARGB_8, _.sampleMethod = SampleMethod::Bilinear, _.tiling = true),
+														  (uint8_t*)label.data(), PixelFormat::ARGB_8);
+		}
+
 		// Warpmaps, a set for each size of source they are drawn with.
 
 		m_forGauge = _makeWarps(pWarpmapFactory, m_pGauge->pixelSize() * 64);
@@ -124,7 +158,8 @@ public:
 		m_pIdentity = pWarpmapFactory->createWarpmap(WGBP(Warpmap, _.size = m_pSmall->pixelSize(), _.cellSize = { 9, 9 }));
 		m_pIdentityBlit = pWarpmapFactory->createWarpmap(WGBP(Warpmap, _.size = { 64, 32 }, _.cellSize = { 7, 7 }));
 
-		return m_pGauge && m_pTintedGauge && m_pSmall && m_pTiling && m_pNearest && m_pBilinear && m_forGauge.ring && m_forGauge.wave && m_forGauge.stripes;
+		return m_pGauge && m_pTintedGauge && m_pSmall && m_pTiling && m_pNearest && m_pBilinear && m_pReelStrip && m_pReelLabel &&
+			   m_forGauge.ring && m_forGauge.wave && m_forGauge.stripes;
 	}
 
 	bool exit(GfxDevice * pDevice, const RectSPX& canvas)
@@ -300,26 +335,50 @@ public:
 		return true;
 	}
 
-	// Two reels turned by offset, a wide cylinder close to the rims and a standing one, with long
-	// cells along their axes.
+	// Top: the reel strip flat, then wrapped around reels: plain, turned and shaded darker towards
+	// the rims as a cylinder would be drawn, and one seen almost to its rims. Bottom: the strip on
+	// its side around a standing cylinder, plain and turned and shaded.
 
 	bool cylinders(GfxDevice * pDevice, const RectSPX& canvas)
 	{
 		auto pFactory = pDevice->warpmapFactory();
-		SizeSPX gauge = m_pGauge->pixelSize() * 64;
-		SizeSPX surface = m_pTiling->pixelSize() * 64;
+		SizeSPX strip = m_pReelStrip->pixelSize() * 64;
+		SizeSPX label = m_pReelLabel->pixelSize() * 64;
 
-		auto pReel = CylinderWarp::create(WGBP(CylinderWarp, _.size = { 110, 240 }, _.sourceSize = surface, _.span = 110.f), pFactory);
-		auto pWide = CylinderWarp::create(WGBP(CylinderWarp, _.size = { 110, 240 }, _.sourceSize = surface, _.span = 170.f, _.sweep = 180.f), pFactory);
-		auto pStanding = CylinderWarp::create(WGBP(CylinderWarp, _.size = { 240, 110 }, _.sourceSize = gauge, _.axis = Axis::Y, _.span = 150.f,
-													_.startAngle = -60.f, _.sweep = 270.f), pFactory);
+		auto pReel = CylinderWarp::create(WGBP(CylinderWarp, _.size = { 90, 240 }, _.sourceSize = strip, _.span = 110.f), pFactory);
+		auto pWide = CylinderWarp::create(WGBP(CylinderWarp, _.size = { 90, 240 }, _.sourceSize = strip, _.span = 170.f), pFactory);
+		auto pStanding = CylinderWarp::create(WGBP(CylinderWarp, _.size = { 240, 110 }, _.sourceSize = label, _.axis = Axis::Y, _.span = 150.f), pFactory);
 
-		pDevice->setBlitSource(m_pTiling);
-		pDevice->warpBlit({ 64 * 10, 64 * 10 }, pReel->generate());
-		pDevice->warpBlit({ 64 * 130, 64 * 10 }, pReel->generate(), pReel->rotationOffset(25.f));
-		pDevice->warpBlit({ 64 * 260, 64 * 10 }, pWide->generate(), pWide->rotationOffset(-40.f));
-		pDevice->warpDrawEdgemap({ 64 * 10, 64 * 270 }, pStanding->generate(), m_pGauge);
-		pDevice->warpDrawEdgemap({ 64 * 260, 64 * 270 }, pStanding->generate(), m_pTintedGauge, pStanding->rotationOffset(90.f));
+		HiColor rim(1200, 1200, 1300, 4096), light = HiColor::White;
+		auto shadeAcross = [&](CoordSPX pos, SizeI size, bool bVertical)
+		{
+			pDevice->setTint({ pos, size * 64 }, Tint::create({ { 0.f, rim }, { 0.5f, light }, { 1.f, rim } }, { 0.f, 0.f }, bVertical ? CoordF(0.f, 1.f) : CoordF(1.f, 0.f)));
+		};
+
+		// The strip flat, for comparison.
+
+		pDevice->setBlitSource(m_pReelStrip);
+		pDevice->blit({ 64 * 10, 64 * 10 }, { 0, 0, 64 * 64, 64 * 240 });
+
+		// Reels.
+
+		pDevice->warpBlit({ 64 * 90, 64 * 10 }, pReel->generate());
+
+		shadeAcross({ 64 * 195, 64 * 10 }, { 90, 240 }, true);
+		pDevice->warpBlit({ 64 * 195, 64 * 10 }, pReel->generate(), pReel->rotationOffset(20.f));
+
+		shadeAcross({ 64 * 300, 64 * 10 }, { 90, 240 }, true);
+		pDevice->warpBlit({ 64 * 300, 64 * 10 }, pWide->generate(), pWide->rotationOffset(20.f));
+		pDevice->clearTint();
+
+		// Standing.
+
+		pDevice->setBlitSource(m_pReelLabel);
+		pDevice->warpBlit({ 64 * 10, 64 * 270 }, pStanding->generate());
+
+		shadeAcross({ 64 * 260, 64 * 270 }, { 240, 110 }, false);
+		pDevice->warpBlit({ 64 * 260, 64 * 270 }, pStanding->generate(), pStanding->rotationOffset(20.f));
+		pDevice->clearTint();
 		return true;
 	}
 
@@ -332,6 +391,8 @@ private:
 	Surface_p	m_pTiling;
 	Surface_p	m_pNearest;
 	Surface_p	m_pBilinear;
+	Surface_p	m_pReelStrip;
+	Surface_p	m_pReelLabel;
 
 	// Warpmaps are made for a source of a certain size.
 
