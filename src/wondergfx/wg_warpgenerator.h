@@ -93,10 +93,10 @@ namespace wg
 
 		static bool		_validateSettings( SizeI size, SizeSPX sourceSize, SizeI cellSize, float precision );
 
-		// Largest cell size that keeps a curve of the given radius (in pixels) within precision,
-		// within 4 -> 64 pixels.
+		// Largest cell size that keeps a curve of the given radius (in spx) within precision,
+		// within 4 -> 64 pixels. Integers only.
 
-		int				_cellSizeForRadius( double radius ) const;
+		int				_cellSizeForRadius( int64_t radius ) const;
 
 		// Integer maths for _generateNodes(), which runs once per node and so should avoid floating
 		// point on hardware without an FPU. Set up factors with _factor() once per generate.
@@ -118,6 +118,10 @@ namespace wg
 		// length, rounded. Accurate to a few units of the angle and better than 1/2^26 of the length.
 
 		static uint32_t	_polar( int64_t x, int64_t y, int64_t * pLength = nullptr );
+
+		// Sine and cosine of an angle in 1/2^32 of a turn, with 30 binals. Accurate to a few units.
+
+		static void		_sinCos( uint32_t angle, int32_t& sin, int32_t& cos );
 
 		// Square root rounded down.
 
@@ -146,21 +150,22 @@ namespace wg
 		virtual spx		_vPeriod() const { return 0; }
 
 		// Called when the Warpmap has been generated, to keep settings that what is drawn with it
-		// depends on, such as for offsets. m_generatedSourceSize is kept already.
+		// depends on, such as for offsets.
 
 		virtual void	_generated() {}
 
-		// Offset along an axis of the source that moves it as if its start was moved by shift, given
-		// in the same unit as sweep, which turn is a whole round of. length is the length of the
-		// source along the axis, in spx. Rounded to spx.
+		// Offsets along an axis of the source that move it as if its start was moved: _offsetFactor()
+		// once per generate, from sweep in turns and the length of the source along the axis (spx),
+		// then _offsetFor() for a shift in 1/2^32 of a turn (see _toTurn()), with integers only.
 
-		static spx		_offsetFor( double shift, double sweep, double turn, spx length );
+		static Factor	_offsetFactor( double sweepTurns, spx length );
+		static spx		_offsetFor( uint32_t shift, Factor factor );
 
 		SizeI		m_size;
 		SizeSPX		m_sourceSize;
-		SizeSPX		m_generatedSourceSize;							// Source size of the generated Warpmap.
 		SizeI		m_cellSize;										// As set, 0 = calculated.
 		float		m_precision;
+		int64_t		m_precisionFixed;								// Precision with 16 binals, for _cellSizeForRadius().
 
 		bool		m_bDirty = true;
 

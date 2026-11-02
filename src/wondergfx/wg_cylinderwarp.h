@@ -116,7 +116,10 @@ namespace wg
 		void		_generateNodes( CoordSPX * pNodes, SizeI nodes, SizeI cellSize ) const override;
 		spx			_uPeriod() const override;
 		spx			_vPeriod() const override;
-		void		_generated() override { m_generatedAxis = m_axis; m_generatedSweep = m_sweep; }
+		void		_generated() override { m_generatedAxis = m_axis; m_offsetFactor = _offsetFactor(m_sweep / 360.0, _lengthAcross(m_axis, m_sourceSize)); }
+
+		static spx	_lengthAcross( Axis axis, SizeSPX source ) { return axis == Axis::X ? source.h : source.w; }
+		void		_rim( int32_t& sin, int32_t& cos ) const;
 
 		spx			_periodAcross() const;
 
@@ -125,8 +128,8 @@ namespace wg
 		float		m_startAngle;
 		float		m_sweep;
 
-		Axis		m_generatedAxis;							// Axis and sweep of the generated Warpmap.
-		float		m_generatedSweep;
+		Axis		m_generatedAxis;							// For rotationOffset(), by the generated Warpmap.
+		Factor		m_offsetFactor;
 	};
 
 } // namespace wg

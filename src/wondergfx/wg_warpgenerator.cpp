@@ -38,9 +38,9 @@ namespace wg
 	{
 		m_size		= size;
 		m_sourceSize = sourceSize;
-		m_generatedSourceSize = sourceSize;
 		m_cellSize	= cellSize;
 		m_precision	= precision;
+		m_precisionFixed = int64_t(double(precision) * 65536.0 + 0.5);
 		m_pFactory	= pFactory;
 	}
 
@@ -125,6 +125,7 @@ namespace wg
 		if (precision != m_precision)
 		{
 			m_precision = precision;
+			m_precisionFixed = int64_t(double(precision) * 65536.0 + 0.5);
 			m_bDirty = true;
 		}
 		return true;
@@ -187,7 +188,6 @@ namespace wg
 			}
 		}
 
-		m_generatedSourceSize = m_sourceSize;
 		_generated();
 
 		m_bDirty = false;
@@ -207,9 +207,18 @@ namespace wg
 		largest cell size that keeps within precision is sqrt(8 * precision * r).
 	*/
 
-	int WarpGenerator::_cellSizeForRadius(double radius) const
+	int WarpGenerator::_cellSizeForRadius(int64_t radius) const
 	{
-		return std::clamp(int(std::sqrt(8.0 * m_precision * radius)), c_minCellSize, c_maxCellSize);
+		// 8 * precision * radius in pixels^2 is precision (16 binals) * radius (spx) / 2^19. Its
+		// square root rounded down is that of the value rounded down.
+
+		if (radius <= 0)
+			return c_minCellSize;
+
+		const int64_t c_limit = int64_t(1) << 40;				// Far beyond the largest cell, and no overflow.
+		int64_t value = m_precisionFixed > 0 && radius > c_limit / m_precisionFixed ? c_limit : (m_precisionFixed * radius) >> 19;
+
+		return std::clamp(int(_sqrt(uint64_t(value))), c_minCellSize, c_maxCellSize);
 	}
 
 	//____ _factor() __________________________________________________________
@@ -372,21 +381,27 @@ namespace wg
 		return angle + uint32_t(z);
 	}
 
-	//____ _offsetFor() _______________________________________________________
+	//____ _offsetFactor() ____________________________________________________
 	/*
 		A position along the axis is (position - start) / sweep * length, so moving start by shift
-		moves it by -shift / sweep * length. Whole turns move it by whole periods, which the renderer
-		wraps away, so they are dropped first to keep the offset small and exact.
+		moves it by -shift / sweep * length. With shift in 1/2^32 of a turn that is shift times
+		length / (sweep * 2^32), sweep in turns.
 	*/
 
-	spx WarpGenerator::_offsetFor(double shift, double sweep, double turn, spx length)
+	WarpGenerator::Factor WarpGenerator::_offsetFactor(double sweepTurns, spx length)
 	{
-		shift = std::fmod(shift, turn);
-		if (!std::isfinite(shift) || sweep == 0.0)
-			return 0;
+		return _factor(double(length) / (sweepTurns * 0x1p32));
+	}
 
-		double offset = -shift / sweep * length;
-		return spx(std::llround(std::clamp(offset, -double(Warpmap::maxNodeValue), double(Warpmap::maxNodeValue))));
+	//____ _offsetFor() _______________________________________________________
+	/*
+		The shift is taken within half a turn either way, so the offset stays small. Whole turns
+		move positions by whole periods, which the renderer wraps away.
+	*/
+
+	spx WarpGenerator::_offsetFor(uint32_t shift, Factor factor)
+	{
+		return _toNodeValue(-_multiply(int32_t(shift), factor));
 	}
 
 	//____ _sqrt() ____________________________________________________________
@@ -415,13 +430,57 @@ namespace wg
 	}
 
 	//____ _toTurn() __________________________________________________________
+	/*
+		turns * 2^32 as an integer, of which the low 32 bits are the fraction of a turn, without
+		floor() and the like.
+	*/
 
 	uint32_t WarpGenerator::_toTurn(double turns)
 	{
-		if (!std::isfinite(turns))
+		if (!(turns > -0x1p30 && turns < 0x1p30))				// Also NaN.
 			return 0;
 
-		return uint32_t(int64_t((turns - std::floor(turns)) * 0x1p32));		// 2^32 wraps to 0.
+		return uint32_t(uint64_t(int64_t(turns * 0x1p32)));
+	}
+
+	//____ _sinCos() __________________________________________________________
+	/*
+		CORDIC in rotation mode: a vector of length 1 (prescaled by the gain of the rotations) is
+		rotated by angles of atan(2^-i) until the angle is used up. The angle is first brought
+		within a quarter turn either way, the rest is half a turn and negates both.
+	*/
+
+	void WarpGenerator::_sinCos(uint32_t angle, int32_t& sin, int32_t& cos)
+	{
+		static const int32_t c_atan[] = {	536870912, 316933406, 167458907, 85004756, 42667331, 21354465, 10679838, 5340245,
+											2670163, 1335087, 667544, 333772, 166886, 83443, 41722, 20861, 10430, 5215, 2608,
+											1304, 652, 326, 163, 81, 41, 20, 10, 5, 3, 1 };	// atan(2^-i) in 1/2^32 of a turn.
+
+		int32_t z = int32_t(angle);
+		bool bHalfTurn = false;
+
+		if (z > 0x40000000 || z < -0x40000000)
+		{
+			z = int32_t(angle + 0x80000000u);
+			bHalfTurn = true;
+		}
+
+		int32_t x = 652032874;									// 2^30 / gain of the rotations.
+		int32_t y = 0;
+
+		for (int i = 0; i < 30; i++)
+		{
+			int32_t sign = z >> 31;								// Rotate towards the angle left: -1 if negative.
+			int32_t dx = ((y >> i) ^ sign) - sign;
+			int32_t dy = ((x >> i) ^ sign) - sign;
+
+			x -= dx;
+			y += dy;
+			z -= (c_atan[i] ^ sign) - sign;
+		}
+
+		cos = bHalfTurn ? -x : x;
+		sin = bHalfTurn ? -y : y;
 	}
 
 	//____ _toNodeValue() _____________________________________________________

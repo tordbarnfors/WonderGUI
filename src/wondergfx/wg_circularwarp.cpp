@@ -58,7 +58,7 @@ namespace wg
 		m_bottomRadius	= bp.bottomRadius;
 		m_startAngle	= bp.startAngle;
 		m_sweep			= bp.sweep;
-		m_generatedSweep = bp.sweep;
+		m_offsetFactor = _offsetFactor(bp.sweep / 360.0, bp.sourceSize.w);
 	}
 
 	//____ destructor _________________________________________________________
@@ -122,7 +122,7 @@ namespace wg
 
 	CoordSPX CircularWarp::rotationOffset(float degrees) const
 	{
-		return { _offsetFor(degrees, m_generatedSweep, 360.0, m_generatedSourceSize.w), 0 };
+		return { _offsetFor(_toTurn(degrees * (1.0 / 360)), m_offsetFactor), 0 };
 	}
 
 	//____ _calcCellSize() ____________________________________________________
@@ -136,7 +136,7 @@ namespace wg
 		spx inner = std::min(m_topRadius, m_bottomRadius);
 		spx outer = std::max(m_topRadius, m_bottomRadius);
 
-		int cellSize = _cellSizeForRadius((inner > 0 ? inner : outer / 2) / 64.0);
+		int cellSize = _cellSizeForRadius(inner > 0 ? inner : outer / 2);
 		return { cellSize, cellSize };
 	}
 
@@ -147,7 +147,7 @@ namespace wg
 
 	spx CircularWarp::_uPeriod() const
 	{
-		double period = std::round(m_sourceSize.w * 360.0 / std::abs(double(m_sweep)));
+		double period = m_sourceSize.w * 360.0 / std::abs(double(m_sweep)) + 0.5;
 		return spx(std::clamp(period, 1.0, double(Warpmap::maxNodeValue)));
 	}
 
@@ -170,7 +170,7 @@ namespace wg
 		const int64_t c_pixel = 64 << c_fractionBits;
 		const double c_limit = 0x1p52;							// Keeps far away centers within int64 maths.
 
-		auto toFixed = [c_limit](double value) { return value == value ? int64_t(std::clamp(std::round(value), -c_limit, c_limit)) : 0; };
+		auto toFixed = [c_limit](double value) { return value == value ? int64_t(std::clamp(value + (value < 0 ? -0.5 : 0.5), -c_limit, c_limit)) : 0; };
 
 		int64_t cx = toFixed(m_center.x * m_size.w * double(c_pixel));
 		int64_t cy = toFixed(m_center.y * m_size.h * double(c_pixel));

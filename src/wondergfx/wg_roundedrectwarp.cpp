@@ -60,7 +60,7 @@ namespace wg
 		m_bottomDistance	= bp.bottomDistance;
 		m_start				= bp.start;
 		m_sweep				= bp.sweep;
-		m_generatedSweep	= bp.sweep;
+		m_offsetFactor		= _offsetFactor(bp.sweep, bp.sourceSize.w);
 	}
 
 	//____ destructor _________________________________________________________
@@ -128,15 +128,15 @@ namespace wg
 
 	CoordSPX RoundedRectWarp::shiftOffset(float part) const
 	{
-		return { _offsetFor(part, m_generatedSweep, 1.0, m_generatedSourceSize.w), 0 };
+		return { _offsetFor(_toTurn(part), m_offsetFactor), 0 };
 	}
 
 	//____ _cornerRadius() ____________________________________________________
 	// Radius of the corners of the outline in pixels, at most half its shorter side.
 
-	double RoundedRectWarp::_cornerRadius() const
+	spx RoundedRectWarp::_cornerRadius() const
 	{
-		return std::min(m_cornerRadius / 64.0, std::min(m_rect.w, m_rect.h) / 128.0);
+		return std::min(m_cornerRadius, std::min(m_rect.w, m_rect.h) / 2);
 	}
 
 	//____ _calcCellSize() ____________________________________________________
@@ -148,11 +148,11 @@ namespace wg
 
 	SizeI RoundedRectWarp::_calcCellSize() const
 	{
-		double r = _cornerRadius();
-		double inner = r + std::min(m_topDistance, m_bottomDistance) / 64.0;
-		double outer = r + std::max(m_topDistance, m_bottomDistance) / 64.0;
+		int64_t r = _cornerRadius();
+		int64_t inner = r + std::min(m_topDistance, m_bottomDistance);
+		int64_t outer = r + std::max(m_topDistance, m_bottomDistance);
 
-		int cellSize = _cellSizeForRadius(inner > 0 ? inner : std::max(outer, 0.0) / 2);
+		int cellSize = _cellSizeForRadius(inner > 0 ? inner : std::max(outer, int64_t(0)) / 2);
 		return { cellSize, cellSize };
 	}
 
@@ -163,7 +163,7 @@ namespace wg
 
 	spx RoundedRectWarp::_uPeriod() const
 	{
-		double period = std::round(m_sourceSize.w / std::abs(double(m_sweep)));
+		double period = m_sourceSize.w / std::abs(double(m_sweep)) + 0.5;
 		return spx(std::clamp(period, 1.0, double(Warpmap::maxNodeValue)));
 	}
 

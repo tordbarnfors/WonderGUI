@@ -30,8 +30,6 @@ namespace wg
 {
 	const TypeInfo CylinderWarp::TYPEINFO = { "CylinderWarp", &WarpGenerator::TYPEINFO };
 
-	static const double c_degreesToRadians = 3.14159265358979323846 / 180.0;
-
 	//____ create() ___________________________________________________________
 
 	CylinderWarp_p CylinderWarp::create(const Blueprint& bp, WarpmapFactory* pFactory)
@@ -63,7 +61,7 @@ namespace wg
 		m_sweep			= bp.sweep;
 
 		m_generatedAxis		= bp.axis;
-		m_generatedSweep	= bp.sweep;
+		m_offsetFactor		= _offsetFactor(bp.sweep / 360.0, _lengthAcross(bp.axis, bp.sourceSize));
 	}
 
 	//____ destructor _________________________________________________________
@@ -129,10 +127,8 @@ namespace wg
 
 	CoordSPX CylinderWarp::rotationOffset(float degrees) const
 	{
-		if (m_generatedAxis == Axis::X)
-			return { 0, _offsetFor(degrees, m_generatedSweep, 360.0, m_generatedSourceSize.h) };
-		else
-			return { _offsetFor(degrees, m_generatedSweep, 360.0, m_generatedSourceSize.w), 0 };
+		spx offset = _offsetFor(_toTurn(degrees * (1.0 / 360)), m_offsetFactor);
+		return m_generatedAxis == Axis::X ? CoordSPX(0, offset) : CoordSPX(offset, 0);
 	}
 
 	//____ _calcCellSize() ____________________________________________________
@@ -146,13 +142,35 @@ namespace wg
 
 	SizeI CylinderWarp::_calcCellSize() const
 	{
-		double rim = m_span / 2 * c_degreesToRadians;
 		int across = m_axis == Axis::X ? m_size.h : m_size.w;
 
-		double radius = across / 2.0 / std::sin(rim);
-		int cell = _cellSizeForRadius(radius * std::cos(rim) * std::cos(rim) / std::sin(rim));
+		// R * cos^2 / sin = half the size across * (cos / sin)^2, with (cos / sin)^2 in 24 binals.
+		// Spans so small that it is above 2^16, or sizes beyond 2^15, give cells of the largest
+		// size anyway.
+
+		int32_t sin, cos;
+		_rim(sin, cos);
+
+		uint64_t cot = (uint64_t(cos) << 24) / uint32_t(sin);
+		int cell = 64;
+
+		if (cot < (uint64_t(1) << 32) && across < (1 << 15))
+		{
+			uint64_t cot2 = (cot * cot + (uint64_t(1) << 23)) >> 24;
+			uint64_t radius = (uint64_t(across) * 32 * cot2 + (uint64_t(1) << 23)) >> 24;		// In spx.
+			cell = _cellSizeForRadius(int64_t(radius));
+		}
 
 		return m_axis == Axis::X ? SizeI(m_size.w, cell) : SizeI(cell, m_size.h);
+	}
+
+	//____ _rim() _____________________________________________________________
+	// Sine and cosine (30 binals) of the angle to the rims, half the span.
+
+	void CylinderWarp::_rim(int32_t& sin, int32_t& cos) const
+	{
+		_sinCos(_toTurn(m_span * (1.0 / 720)), sin, cos);
+		sin = std::max(sin, 1);
 	}
 
 	//____ _periodAcross() ____________________________________________________
@@ -164,7 +182,7 @@ namespace wg
 	spx CylinderWarp::_periodAcross() const
 	{
 		spx length = m_axis == Axis::X ? m_sourceSize.h : m_sourceSize.w;
-		double period = std::round(length * 360.0 / std::abs(double(m_sweep)));
+		double period = length * 360.0 / std::abs(double(m_sweep)) + 0.5;
 		return spx(std::clamp(period, 1.0, double(Warpmap::maxNodeValue)));
 	}
 
@@ -222,9 +240,11 @@ namespace wg
 
 		// Across the axis.
 
-		double rim = m_span / 2 * c_degreesToRadians;
-		int64_t radius = std::llround(lengthAcross * c_pixel / 2.0 / std::sin(rim));
+		int32_t sin, cos;
+		_rim(sin, cos);
+
 		int64_t middle = lengthAcross * c_pixel / 2;
+		int64_t radius = ((middle << 30) + sin / 2) / sin;			// Half the size across / sin(span / 2).
 
 		int shift = 0;											// Keeps radius^2 within 64 bits.
 		while ((radius >> shift) >= (int64_t(1) << 31))

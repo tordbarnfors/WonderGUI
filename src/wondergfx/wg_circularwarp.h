@@ -110,14 +110,14 @@ namespace wg
 		SizeI		_calcCellSize() const override;
 		void		_generateNodes( CoordSPX * pNodes, SizeI nodes, SizeI cellSize ) const override;
 		spx			_uPeriod() const override;
-		void		_generated() override { m_generatedSweep = m_sweep; }
+		void		_generated() override { m_offsetFactor = _offsetFactor(m_sweep / 360.0, m_sourceSize.w); }
 
 		CoordF		m_center;
 		spx			m_topRadius;
 		spx			m_bottomRadius;
 		float		m_startAngle;
 		float		m_sweep;
-		float		m_generatedSweep;							// Sweep of the generated Warpmap.
+		Factor		m_offsetFactor;								// For rotationOffset(), by the generated Warpmap.
 	};
 
 } // namespace wg
