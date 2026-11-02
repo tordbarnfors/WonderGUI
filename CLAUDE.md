@@ -28,5 +28,29 @@
 
 ## Conventions
 
-- Files use both LF and CRLF line endings. Keep each file's existing endings when editing.
+- Files should use LF line endings. Make corrections as you discover.
+- Tab width is 4 and we use tabs for indentation. Make corrections as you discover.
 - Blueprint struct members are in alphabetical order.
+
+- LegacyGUI is only there to make old code downstream still compile. No new features goes here unless specifically requested.
+
+
+
+## WAX Design
+
+- Meant to run on anything from 68030-based machines with 16-bit graphics, a few megabytes of memory and no FPU, up to modern high end machines with GPU acceleration.
+- spx (short for subpixel) is the primary measure unit for the API and is 1/64 pixel. Pixel for surface, edgemap and warpmap sizes.
+- All code should be big/little endian agnostic.
+- Avoid floating point calculations and only use floats in API where it makes a lot of sense and costs little. Floats in range 0.0-1.0 are more acceptable.
+- Minimal reliance on external libraries. Some std libraries are already accepted.
+- Avoid memory trashing.
+- Content of Bitmaps, Edgemaps and Warpmaps can be modified while being in flight for render, with consequences. This is accepted per design.
+- origin for drawing operations are top/left corner.
+
+## WonderGUI Design
+
+- pts (short for points) is the primary measure unit for the external API and is by default float. Plan is to swap it to integers on low end systems where we don't use scaling and pts = pixels.
+- Skins, TextLayouts, TextStyles are immutable objects once created.
+- A widget provides the functionality, but the look and interaction feedback is decided by chosen Skin, TextStyle and TextLayout.
+- Low end target is the same as WAX, so no reliance on FPU and be cautious with memory in the base system. Individual non-essential widgets and other classes are allowed to break this rule.
+

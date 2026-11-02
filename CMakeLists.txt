@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 4.4)
+cmake_minimum_required(VERSION 4.2.3...4.4)
 
 include(GenerateExportHeader)
 
