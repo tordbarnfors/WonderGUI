@@ -99,6 +99,8 @@ set( SOURCES
 	wg_circularwarp.h
 	wg_roundedrectwarp.cpp
 	wg_roundedrectwarp.h
+	wg_cylinderwarp.cpp
+	wg_cylinderwarp.h
 	wg_warpgenerator.cpp
 	wg_warpgenerator.h
 	wondergfx.h
@@ -125,6 +127,8 @@ set( SOURCES
 	c-api/wg_c_circularwarp.h
 	c-api/wg_c_roundedrectwarp.cpp
 	c-api/wg_c_roundedrectwarp.h
+	c-api/wg_c_cylinderwarp.cpp
+	c-api/wg_c_cylinderwarp.h
 	c-api/wg_c_warpgenerator.cpp
 	c-api/wg_c_warpgenerator.h
 	c-api/wg_c_font.cpp

@@ -119,6 +119,10 @@ namespace wg
 
 		static uint32_t	_polar( int64_t x, int64_t y, int64_t * pLength = nullptr );
 
+		// Square root rounded down.
+
+		static uint64_t	_sqrt( uint64_t value );
+
 		// Fraction of a turn in 1/2^32 of a turn, whole turns dropped. Not finite gives 0.
 
 		static uint32_t	_toTurn( double turns );
@@ -146,10 +150,11 @@ namespace wg
 
 		virtual void	_generated() {}
 
-		// Offset along u that moves the source as if its start was moved by shift, given in the
-		// same unit as sweep, which turn is a whole round of. Rounded to spx.
+		// Offset along an axis of the source that moves it as if its start was moved by shift, given
+		// in the same unit as sweep, which turn is a whole round of. length is the length of the
+		// source along the axis, in spx. Rounded to spx.
 
-		spx				_uOffset( double shift, double sweep, double turn ) const;
+		static spx		_offsetFor( double shift, double sweep, double turn, spx length );
 
 		SizeI		m_size;
 		SizeSPX		m_sourceSize;

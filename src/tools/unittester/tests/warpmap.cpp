@@ -7,6 +7,7 @@
 #include <wg_softwarpmapfactory.h>
 #include <wg_circularwarp.h>
 #include <wg_roundedrectwarp.h>
+#include <wg_cylinderwarp.h>
 #include <wg_nodecompression.h>
 #include <cstring>
 
@@ -170,6 +171,7 @@ WarpmapTest::WarpmapTest()
 	ADD_TEST(nodeCompressionTest);
 	ADD_TEST(offsetTest);
 	ADD_TEST(nonSquareCellsTest);
+	ADD_TEST(cylinderWarpTest);
 }
 
 WarpmapTest::~WarpmapTest()
@@ -898,5 +900,154 @@ bool WarpmapTest::nonSquareCellsTest(std::ostream& output)
 
 	auto pSmall = CircularWarp::create(WGBP(CircularWarp, _.sourceSize = c_sourceSize, _.size = { 30, 10 }, _.topRadius = 5000 * 64, _.bottomRadius = 4000 * 64), pFactory);
 	TEST_ASSERT(pSmall->cellSize() == SizeI(30, 10));
+	return true;
+}
+
+//____ cylinderWarpTest() _____________________________________________________
+// CylinderWarp against exact geometry: along the axis the source is stretched, across it the angle
+// at distance y from the middle is asin(y / R), R = half the size across / sin(span / 2).
+
+namespace
+{
+	struct CylinderGeometry
+	{
+		bool	bAxisX;
+		double	lengthAlong, lengthAcross, sourceAlong, sourceAcross, radius, period;
+	};
+
+	CylinderGeometry cylinderGeometry(const CylinderWarp::Blueprint& bp)
+	{
+		CylinderGeometry g;
+		g.bAxisX = bp.axis == Axis::X;
+		g.lengthAlong = g.bAxisX ? bp.size.w : bp.size.h;
+		g.lengthAcross = g.bAxisX ? bp.size.h : bp.size.w;
+		g.sourceAlong = g.bAxisX ? bp.sourceSize.w : bp.sourceSize.h;
+		g.sourceAcross = g.bAxisX ? bp.sourceSize.h : bp.sourceSize.w;
+		g.radius = g.lengthAcross / 2 / std::sin(bp.span / 2 * M_PI / 180);
+		g.period = g.sourceAcross * 360 / std::abs(bp.sweep);
+		return g;
+	}
+
+	// Angle in degrees at a position across, and the exact position in the source (spx), the part
+	// across wrapped into the true period.
+
+	double cylinderAngle(const CylinderGeometry& g, double across)
+	{
+		return std::asin((across - g.lengthAcross / 2) / g.radius) * 180 / M_PI;
+	}
+
+	CoordF exactCylinder(const CylinderWarp::Blueprint& bp, double x, double y)
+	{
+		CylinderGeometry g = cylinderGeometry(bp);
+		double along = (g.bAxisX ? x : y) / g.lengthAlong * g.sourceAlong;
+		double across = (cylinderAngle(g, g.bAxisX ? y : x) - bp.startAngle) / bp.sweep * g.sourceAcross;
+		across -= g.period * std::floor(across / g.period);
+		return g.bAxisX ? CoordF(float(along), float(across)) : CoordF(float(across), float(along));
+	}
+}
+
+bool WarpmapTest::cylinderWarpTest(std::ostream& output)
+{
+	auto pFactory = SoftWarpmapFactory::create();
+	const SizeSPX source = { 48 * 64, 240 * 64 };
+
+	CylinderWarp::Blueprint cases[] = {
+		WGBP(CylinderWarp, _.size = { 80, 200 }, _.sourceSize = source),															// A reel.
+		WGBP(CylinderWarp, _.size = { 200, 90 }, _.sourceSize = { 240 * 64, 32 * 64 }, _.axis = Axis::Y, _.span = 150.f, _.startAngle = 30.f, _.sweep = -200.f),
+		WGBP(CylinderWarp, _.size = { 60, 120 }, _.sourceSize = source, _.span = 60.f, _.startAngle = -45.f, _.sweep = 90.f, _.precision = 0.1f)
+	};
+
+	for (auto& bp : cases)
+	{
+		auto pWarp = CylinderWarp::create(bp, pFactory);
+		TEST_ASSERT(pWarp != nullptr);
+
+		auto pMap = pWarp->generate();
+		CylinderGeometry g = cylinderGeometry(bp);
+		bool bX = g.bAxisX;
+
+		// Periodic across the axis only.
+
+		spx period = spx(std::round(g.period));
+		TEST_ASSERT(pMap->uPeriod() == (bX ? 0 : period) && pMap->vPeriod() == (bX ? period : 0));
+
+		// One cell along the axis, across it from precision at the rims.
+
+		double rim = bp.span / 2 * M_PI / 180;
+		int across = std::clamp(int(std::sqrt(8.0 * bp.precision * g.radius * std::cos(rim) * std::cos(rim) / std::sin(rim))), 4, 64);
+		TEST_ASSERT(pMap->cellSize() == (bX ? SizeI(bp.size.w, across) : SizeI(across, bp.size.h)));
+		TEST_ASSERT(pMap->nodes() == (bX ? SizeI(2, pMap->nodes().h) : SizeI(pMap->nodes().w, 2)));
+
+		// Exact at nodes.
+
+		SizeI nodes = pMap->nodes();
+		for (int row = 0; row < nodes.h; row++)
+			for (int col = 0; col < nodes.w; col++)
+			{
+				CoordF exact = exactCylinder(bp, pMap->nodeX(col), pMap->nodeY(row));
+				CoordSPX node = pMap->nodeData()[row * nodes.w + col];
+				TEST_ASSERT(uDiff(node.x, exact.x, pMap->uPeriod()) <= 0.51 && uDiff(node.y, exact.y, pMap->vPeriod()) <= 0.51);
+			}
+
+		// Within precision between nodes, as positions on screen: an error in angle of da (radians)
+		// is R * cos(angle) * da pixels across.
+
+		double maxError = 0.0;
+		for (double a = 0.5; a < g.lengthAcross; a += 1.0)
+			for (double l : { 0.5, g.lengthAlong / 2 })
+			{
+				double x = bX ? l : a, y = bX ? a : l;
+				CoordF pos = pMap->positionAt(x, y);
+				CoordF exact = exactCylinder(bp, x, y);
+				double diff = bX ? uDiff(pos.y, exact.y, pMap->vPeriod()) : uDiff(pos.x, exact.x, pMap->uPeriod());
+				double angle = cylinderAngle(g, a) * M_PI / 180;
+				double error = diff / g.sourceAcross * std::abs(bp.sweep) * M_PI / 180 * g.radius * std::cos(angle);
+				maxError = std::max(maxError, error);
+
+				double alongDiff = std::abs((bX ? pos.x : pos.y) - (bX ? exact.x : exact.y));
+				TEST_ASSERT(alongDiff <= 0.51);
+			}
+
+		if (maxError > bp.precision * 1.5)
+			output << "Max position error " << maxError << " px, precision " << bp.precision << std::endl;
+		TEST_ASSERT(maxError <= bp.precision * 1.5);
+
+		// Turning by offset gives the nodes of a larger start, within rounding.
+
+		CoordSPX offset = pWarp->rotationOffset(20.f);
+		double expected = -20.0 / bp.sweep * g.sourceAcross;
+		TEST_ASSERT(bX ? (offset.x == 0 && std::abs(offset.y - expected) <= 0.5) : (offset.y == 0 && std::abs(offset.x - expected) <= 0.5));
+
+		auto turnedBP = bp;
+		turnedBP.startAngle += 20.f;
+		auto pTurned = CylinderWarp::create(turnedBP, pFactory)->generate();
+		for (int i = 0; i < nodes.w * nodes.h; i++)
+		{
+			CoordSPX a = pMap->nodeData()[i], b = pTurned->nodeData()[i];
+			TEST_ASSERT(uDiff(b.x, a.x + offset.x, pMap->uPeriod()) <= 1 && uDiff(b.y, a.y + offset.y, pMap->vPeriod()) <= 1);
+		}
+	}
+
+	// Settings count once generated.
+
+	auto pWarp = CylinderWarp::create(cases[0], pFactory);
+	CoordSPX before = pWarp->rotationOffset(90.f);
+	TEST_ASSERT(pWarp->setAxis(Axis::Y));
+	TEST_ASSERT(pWarp->setAngles(0.f, 180.f));
+	TEST_ASSERT(pWarp->rotationOffset(90.f) == before);
+	pWarp->generate();
+	TEST_ASSERT(pWarp->rotationOffset(90.f) == CoordSPX(-source.w / 2, 0));
+
+	// Settings, invalid ones refused.
+
+	TEST_ASSERT(pWarp->setSpan(170.f) && pWarp->span() == 170.f);
+	TEST_ASSERT(!pWarp->setSpan(180.f) && !pWarp->setSpan(0.f));
+	TEST_ASSERT(!pWarp->setAxis(Axis::Undefined));
+	TEST_ASSERT(!pWarp->setAngles(10.f, 0.f));
+
+	TEST_ASSERT(CylinderWarp::create(WGBP(CylinderWarp, _.size = { 40, 40 }, _.sourceSize = source, _.span = 180.f), pFactory) == nullptr);
+	TEST_ASSERT(CylinderWarp::create(WGBP(CylinderWarp, _.size = { 40, 40 }, _.sourceSize = source, _.axis = Axis::Undefined), pFactory) == nullptr);
+	TEST_ASSERT(CylinderWarp::create(WGBP(CylinderWarp, _.size = { 40, 40 }, _.sourceSize = source, _.sweep = 0.f), pFactory) == nullptr);
+	TEST_ASSERT(CylinderWarp::create(WGBP(CylinderWarp, _.size = { 40, 40 }), pFactory) == nullptr);			// No source size.
 	return true;
 }

@@ -27,4 +27,5 @@ private:
 	bool generateTest(std::ostream& output);
 	bool rotationOffsetTest(std::ostream& output);
 	bool roundedRectTest(std::ostream& output);
+	bool cylinderTest(std::ostream& output);
 };

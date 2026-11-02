@@ -372,21 +372,46 @@ namespace wg
 		return angle + uint32_t(z);
 	}
 
-	//____ _uOffset() _________________________________________________________
+	//____ _offsetFor() _______________________________________________________
 	/*
-		u is (position - start) / sweep * width, so moving start by shift moves u by -shift / sweep
-		* width. Whole turns move it by whole periods, which the renderer wraps away, so they are
-		dropped first to keep the offset small and exact.
+		A position along the axis is (position - start) / sweep * length, so moving start by shift
+		moves it by -shift / sweep * length. Whole turns move it by whole periods, which the renderer
+		wraps away, so they are dropped first to keep the offset small and exact.
 	*/
 
-	spx WarpGenerator::_uOffset(double shift, double sweep, double turn) const
+	spx WarpGenerator::_offsetFor(double shift, double sweep, double turn, spx length)
 	{
 		shift = std::fmod(shift, turn);
 		if (!std::isfinite(shift) || sweep == 0.0)
 			return 0;
 
-		double offset = -shift / sweep * m_generatedSourceSize.w;
+		double offset = -shift / sweep * length;
 		return spx(std::llround(std::clamp(offset, -double(Warpmap::maxNodeValue), double(Warpmap::maxNodeValue))));
+	}
+
+	//____ _sqrt() ____________________________________________________________
+
+	uint64_t WarpGenerator::_sqrt(uint64_t value)
+	{
+		uint64_t result = 0;
+		uint64_t bit = uint64_t(1) << 62;
+
+		while (bit > value)
+			bit >>= 2;
+
+		while (bit != 0)
+		{
+			if (value >= result + bit)
+			{
+				value -= result + bit;
+				result = (result >> 1) + bit;
+			}
+			else
+				result >>= 1;
+
+			bit >>= 2;
+		}
+		return result;
 	}
 
 	//____ _toTurn() __________________________________________________________

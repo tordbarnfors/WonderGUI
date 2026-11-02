@@ -60,6 +60,15 @@ typedef enum
 	WG_TINT_GRADIENT_XY
 } wg_tintMode;
 
+//____ wg_axis ________________________________________________________________
+
+typedef enum
+{
+	WG_AXIS_UNDEFINED = 0,
+	WG_AXIS_X,
+	WG_AXIS_Y
+} wg_axis;
+
 //____ wg_tintShape ___________________________________________________________
 
 typedef enum

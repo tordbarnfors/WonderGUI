@@ -37,6 +37,7 @@
 #include <wg_c_warpgenerator.h>
 #include <wg_c_circularwarp.h>
 #include <wg_c_roundedrectwarp.h>
+#include <wg_c_cylinderwarp.h>
 #include <wg_c_font.h>
 #include <wg_c_geo.h>
 #include <wg_c_gfxbackend.h>

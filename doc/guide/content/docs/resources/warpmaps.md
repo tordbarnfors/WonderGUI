@@ -98,9 +98,30 @@ Positions along the outline are those of the nearest point on it. The source kee
 
 
 
+## CylinderWarp
+
+CylinderWarp makes and keeps a Warpmap that wraps the source around a cylinder seen from the side, such as the reel of a slot machine. The cylinder fills the Warpmap: with *axis* X it lies down and turns up and down, with *axis* Y it stands up and turns sideways. Along the axis the source is stretched to the length of the cylinder. Across it, *span* degrees of the cylinder are seen, centered on the side facing the viewer, and the source is squeezed more and more towards the rims. Around the cylinder the source covers *sweep* degrees from *startAngle*, angles counted from the side facing the viewer, downwards or to the right. That axis of the source is periodic, so with a sweep of 360 it wraps around the cylinder seamlessly.
+
+```c++
+	auto pReel = CylinderWarp::create( WGBP(CylinderWarp,
+										_.size = { 80, 200 },
+										_.sourceSize = pReelStrip->pixelSize() * 64,
+										_.span = 110.f ), pDevice->warpmapFactory() );
+
+	auto pMap = pReel->generate();
+
+	angle += speed * seconds;
+	pDevice->setBlitSource( pReelStrip );
+	pDevice->warpBlit( { 10*64, 10*64 }, pMap, pReel->rotationOffset(angle) );
+```
+
+`rotationOffset()` turns the cylinder by a number of degrees as if *startAngle* was that much larger, so a spinning reel is generated once. Positions change linearly along the axis, so cells span the length of the cylinder unless set, and across it the cell size is calculated from *precision* at the rims, where the cylinder curves away the most. A *span* close to 180 degrees therefore takes small cells. The view is straight from the side, without perspective, and the cylinder isn't shaded: draw it with a tint that gets darker towards the rims for that.
+
+
+
 ## WarpGenerators
 
-CircularWarp and RoundedRectWarp are WarpGenerators: they make a Warpmap from a few settings and keep it. Size, source size, cell size, precision and generate() are the same for all WarpGenerators.
+CircularWarp, RoundedRectWarp and CylinderWarp are WarpGenerators: they make a Warpmap from a few settings and keep it. Size, source size, cell size, precision and generate() are the same for all WarpGenerators.
 
 generate() updates the Warpmap after settings have changed and returns it. A Warpmap that is held elsewhere, such as by a draw that isn't rendered yet, is never changed: generate() then makes a new one, as it does when size or cell size has changed. So draw what generate() returns rather than keeping it, and one generator can be drawn several times with different settings within the same canvas update. Unless set, the cell size is calculated from *precision* and the shape: within 4 to 64 pixels along curves, and up to the size of the Warpmap along axes where positions change linearly. Width and height can be set separately, a 0 for either has it calculated.
 

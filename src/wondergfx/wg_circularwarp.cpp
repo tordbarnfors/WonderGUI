@@ -122,7 +122,7 @@ namespace wg
 
 	CoordSPX CircularWarp::rotationOffset(float degrees) const
 	{
-		return { _uOffset(degrees, m_generatedSweep, 360.0), 0 };
+		return { _offsetFor(degrees, m_generatedSweep, 360.0, m_generatedSourceSize.w), 0 };
 	}
 
 	//____ _calcCellSize() ____________________________________________________

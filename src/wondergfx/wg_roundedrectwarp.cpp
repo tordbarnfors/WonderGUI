@@ -128,7 +128,7 @@ namespace wg
 
 	CoordSPX RoundedRectWarp::shiftOffset(float part) const
 	{
-		return { _uOffset(part, m_generatedSweep, 1.0), 0 };
+		return { _offsetFor(part, m_generatedSweep, 1.0, m_generatedSourceSize.w), 0 };
 	}
 
 	//____ _cornerRadius() ____________________________________________________

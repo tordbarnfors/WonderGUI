@@ -3,6 +3,7 @@
 #include <wg_tint.h>
 #include <wg_circularwarp.h>
 #include <wg_roundedrectwarp.h>
+#include <wg_cylinderwarp.h>
 
 #include <cmath>
 #include <vector>
@@ -29,6 +30,7 @@ public:
 		addTest("Identity", &WarpTests::identity);
 		addTest("BlendModes", &WarpTests::blendModes);
 		addTest("Rounded rects", &WarpTests::roundedRects);
+		addTest("Cylinders", &WarpTests::cylinders);
 	}
 
 	bool init(GfxDevice * pDevice, const RectSPX& canvas, wapp::API * pAppAPI)
@@ -295,6 +297,29 @@ public:
 		pDevice->warpBlit({ 64 * 260, 64 * 10 }, pSharp->generate());
 		pDevice->warpDrawEdgemap({ 64 * 10, 64 * 260 }, pArc->generate(), m_pTintedGauge);
 		pDevice->warpBlit({ 64 * 260, 64 * 260 }, pFrame->generate());
+		return true;
+	}
+
+	// Two reels turned by offset, a wide cylinder close to the rims and a standing one, with long
+	// cells along their axes.
+
+	bool cylinders(GfxDevice * pDevice, const RectSPX& canvas)
+	{
+		auto pFactory = pDevice->warpmapFactory();
+		SizeSPX gauge = m_pGauge->pixelSize() * 64;
+		SizeSPX surface = m_pTiling->pixelSize() * 64;
+
+		auto pReel = CylinderWarp::create(WGBP(CylinderWarp, _.size = { 110, 240 }, _.sourceSize = surface, _.span = 110.f), pFactory);
+		auto pWide = CylinderWarp::create(WGBP(CylinderWarp, _.size = { 110, 240 }, _.sourceSize = surface, _.span = 170.f, _.sweep = 180.f), pFactory);
+		auto pStanding = CylinderWarp::create(WGBP(CylinderWarp, _.size = { 240, 110 }, _.sourceSize = gauge, _.axis = Axis::Y, _.span = 150.f,
+													_.startAngle = -60.f, _.sweep = 270.f), pFactory);
+
+		pDevice->setBlitSource(m_pTiling);
+		pDevice->warpBlit({ 64 * 10, 64 * 10 }, pReel->generate());
+		pDevice->warpBlit({ 64 * 130, 64 * 10 }, pReel->generate(), pReel->rotationOffset(25.f));
+		pDevice->warpBlit({ 64 * 260, 64 * 10 }, pWide->generate(), pWide->rotationOffset(-40.f));
+		pDevice->warpDrawEdgemap({ 64 * 10, 64 * 270 }, pStanding->generate(), m_pGauge);
+		pDevice->warpDrawEdgemap({ 64 * 260, 64 * 270 }, pStanding->generate(), m_pTintedGauge, pStanding->rotationOffset(90.f));
 		return true;
 	}
 

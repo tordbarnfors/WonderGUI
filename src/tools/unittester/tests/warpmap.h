@@ -21,4 +21,5 @@ private:
 	bool nodeCompressionTest(std::ostream& output);
 	bool offsetTest(std::ostream& output);
 	bool nonSquareCellsTest(std::ostream& output);
+	bool cylinderWarpTest(std::ostream& output);
 };

@@ -15,6 +15,8 @@
 #include <wg_softkernels_default.h>
 #include <wg_circularwarp.h>
 #include <wg_roundedrectwarp.h>
+#include <wg_cylinderwarp.h>
+#include <wg_c_cylinderwarp.h>
 #include <wondergfx_c.h>
 #include <wg_c_object.h>
 #include <wg_c_softgfx.h>
@@ -395,6 +397,7 @@ WarpRenderTest::WarpRenderTest()
 	ADD_TEST(generateTest);
 	ADD_TEST(rotationOffsetTest);
 	ADD_TEST(roundedRectTest);
+	ADD_TEST(cylinderTest);
 }
 
 WarpRenderTest::~WarpRenderTest()
@@ -1236,4 +1239,75 @@ bool WarpRenderTest::roundedRectTest(std::ostream& output)
 
 	return compare(output, "Rounded rects", render(Backend::Soft, scene), "SoftBackend", render(Backend::Reference, scene), "ReferenceBackend", 6, 60, 48) &&
 		   compare(output, "Rounded rects", render(Backend::Linear, scene), "LinearBackend", render(Backend::Soft, scene), "SoftBackend", 0);
+}
+
+//____ cylinderTest() _________________________________________________________
+// Cylinders lying and standing, turned by offset, as SoftBackend draws them against
+// ReferenceBackend, streamed and through the C API.
+
+bool WarpRenderTest::cylinderTest(std::ostream& output)
+{
+	auto reel = WGBP(CylinderWarp, _.size = { 30, 60 }, _.sourceSize = { 24 * 64, 48 * 64 }, _.span = 110.f);
+	auto can = WGBP(CylinderWarp, _.size = { 60, 36 }, _.sourceSize = c_edgemapSource, _.axis = Axis::Y, _.span = 150.f, _.startAngle = -40.f, _.sweep = 240.f);
+
+	auto scene = [=](GfxDevice* pDevice)
+	{
+		auto pFactory = pDevice->warpmapFactory();
+		auto pReel = CylinderWarp::create(reel, pFactory);
+		auto pCan = CylinderWarp::create(can, pFactory);
+
+		pDevice->setBlitSource(makeSurface(pDevice, true, SampleMethod::Bilinear));
+		pDevice->warpBlit({ 2 * 64, 2 * 64 }, pReel->generate(), pReel->rotationOffset(35.f));
+		pDevice->warpBlit({ 36 * 64, 2 * 64 }, pReel->generate(), pReel->rotationOffset(-200.f));
+
+		auto pEdgemap = makeEdgemap(pDevice, true);
+		pDevice->warpDrawEdgemap({ 70 * 64, 2 * 64 }, pCan->generate(), pEdgemap);
+		pDevice->warpDrawEdgemap({ 70 * 64, 42 * 64 }, pCan->generate(), pEdgemap, pCan->rotationOffset(60.f));
+	};
+
+	if (!compare(output, "Cylinders", render(Backend::Soft, scene), "SoftBackend", render(Backend::Reference, scene), "ReferenceBackend", 6, 60, 48) ||
+		!compare(output, "Cylinders", render(Backend::Linear, scene), "LinearBackend", render(Backend::Soft, scene), "SoftBackend", 0) ||
+		!compare(output, "Cylinders, streamed", renderStreamed(scene), "streamed", render(Backend::Soft, scene), "direct", 0))
+		return false;
+
+	// Through the C API.
+
+	auto c = [&](GfxDevice* pDevice)
+	{
+		wg_obj factory = (wg_obj) static_cast<Object*>(pDevice->warpmapFactory().rawPtr());
+
+		wg_cylinderWarpBP reelBP = {};
+		reelBP.size = { reel.size.w, reel.size.h };
+		reelBP.sourceSize = { reel.sourceSize.w, reel.sourceSize.h };
+		reelBP.span = reel.span;
+
+		wg_cylinderWarpBP canBP = {};
+		canBP.axis = WG_AXIS_Y;
+		canBP.size = { can.size.w, can.size.h };
+		canBP.sourceSize = { can.sourceSize.w, can.sourceSize.h };
+		canBP.span = can.span;
+		canBP.startAngle = can.startAngle;
+		canBP.sweep = can.sweep;
+
+		wg_obj cReel = wg_createCylinderWarp(&reelBP, factory);
+		wg_obj cCan = wg_createCylinderWarp(&canBP, factory);
+		wg_obj device = (wg_obj) static_cast<Object*>(pDevice);
+
+		pDevice->setBlitSource(makeSurface(pDevice, true, SampleMethod::Bilinear));
+		wg_warpBlit(device, { 2 * 64, 2 * 64 }, wg_generateWarpGenerator(cReel), wg_cylinderWarpRotationOffset(cReel, 35.f));
+		wg_warpBlit(device, { 36 * 64, 2 * 64 }, wg_generateWarpGenerator(cReel), wg_cylinderWarpRotationOffset(cReel, -200.f));
+
+		auto pEdgemap = makeEdgemap(pDevice, true);
+		wg_obj edgemap = (wg_obj) static_cast<Object*>(pEdgemap.rawPtr());
+		wg_warpDrawEdgemap(device, { 70 * 64, 2 * 64 }, wg_generateWarpGenerator(cCan), edgemap, { 0, 0 });
+		wg_warpDrawEdgemap(device, { 70 * 64, 42 * 64 }, wg_generateWarpGenerator(cCan), edgemap, wg_cylinderWarpRotationOffset(cCan, 60.f));
+
+		TEST_ASSERT(wg_cylinderWarpAxis(cCan) == WG_AXIS_Y && wg_cylinderWarpSpan(cReel) == 110.f && wg_cylinderWarpSweep(cReel) == 360.f);
+
+		wg_release(cCan);
+		wg_release(cReel);
+		return true;
+	};
+
+	return compare(output, "Cylinders through the C API", render(Backend::Soft, [&](GfxDevice* p) { c(p); }), "C API", render(Backend::Soft, scene), "C++", 0);
 }
