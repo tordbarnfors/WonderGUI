@@ -941,10 +941,27 @@ namespace wg
 				int* pCoverage = m_warpCoverage.data();
 				bool bAny = false;
 
+				// Pixels known to be fully covered, worked out for the row rather than pixel by pixel.
+
+				int insideBeg, insideEnd;
+				_warpInsideRange(pos, step, dy, dyStep, length, insideBeg, insideEnd);
+
 				int64_t sx = pos[0], sy = pos[1], bx = dy[0], by = dy[1];
 
 				for (int k = 0; k < length; k++)
 				{
+					if (k >= insideBeg && k < insideEnd)
+					{
+						pCoverage[k] = 4096;
+						bAny = true;
+
+						sx += step[0];
+						sy += step[1];
+						bx += dyStep[0];
+						by += dyStep[1];
+						continue;
+					}
+
 					int64_t gbx = std::clamp(bx, -c_maxGradient, c_maxGradient);
 					int64_t gby = std::clamp(by, -c_maxGradient, c_maxGradient);
 
@@ -964,7 +981,63 @@ namespace wg
 					continue;
 
 				HiColor* pColors = _warpBuffer(c_maxSegments, length);
-				_warpReadSpan(pos[0], pos[1], step[0], step[1], length, pColors, pCoverage);
+
+				// Runs of fully covered pixels go straight onto the canvas as for solid cells, when the
+				// blit allows it, which long cells with the border of the source in them need to be fast.
+				// Pixels drawn are left out of the rest.
+
+				if (w.pDirectOp)
+				{
+					if ((int)m_warpDrawn.size() < length)
+						m_warpDrawn.resize(length);
+
+					uint8_t* pDrawn = m_warpDrawn.data();
+					std::memset(pDrawn, 0, length);
+
+					for (int k = 0; k < length; )
+					{
+						if (pCoverage[k] < 4096)
+						{
+							k++;
+							continue;
+						}
+
+						int runEnd = k + 1;
+						while (runEnd < length && pCoverage[runEnd] == 4096)
+							runEnd++;
+
+						_warpReadSpan(pos[0] + step[0] * k, pos[1] + step[1] * k, step[0], step[1], runEnd - k, pColors + k, nullptr,
+									  pOrigin + y * pitch + (beg + k) * m_canvasPixelBytes, { beg + k, y }, pDrawn + k);
+
+						for (int j = k; j < runEnd; j++)
+						{
+							if (pDrawn[j])
+								pCoverage[j] = 0;
+						}
+
+						k = runEnd;
+					}
+
+					// The rest, in runs of pixels still covered.
+
+					for (int k = 0; k < length; )
+					{
+						if (pCoverage[k] == 0)
+						{
+							k++;
+							continue;
+						}
+
+						int runEnd = k + 1;
+						while (runEnd < length && pCoverage[runEnd] != 0)
+							runEnd++;
+
+						_warpReadSpan(pos[0] + step[0] * k, pos[1] + step[1] * k, step[0], step[1], runEnd - k, pColors + k, pCoverage + k);
+						k = runEnd;
+					}
+				}
+				else
+					_warpReadSpan(pos[0], pos[1], step[0], step[1], length, pColors, pCoverage);
 
 				for (int k = 0; k < length; k++)
 				{
@@ -1141,6 +1214,65 @@ namespace wg
 		}
 
 		return std::min(coverage, 4096);
+	}
+
+	//____ _warpInsideRange() ___________________________________________________
+	/*
+		Range of pixels insideBeg -> insideEnd of a span along a row of a cell that are fully inside
+		the source, which _warpAxisCoverage() would give 4096 for. Positions are pos + step * k and
+		derivatives along y dy + dyStep * k for pixel k, so per axis that is a range of k, found with
+		the largest extent of a pixel over the span, which makes it at most as large as pixel by
+		pixel. A periodic axis with a gap between copies isn't worked out, its range is empty.
+	*/
+
+	void SoftBackend::_warpInsideRange(const int64_t* pos, const int64_t* step, const int64_t* dy, const int64_t* dyStep, int length, int& insideBeg, int& insideEnd) const
+	{
+		const WarpSetup& w = m_warp;
+
+		insideBeg = 0;
+		insideEnd = length;
+
+		for (int a = 0; a < 2 && insideBeg < insideEnd; a++)
+		{
+			if (w.bAlwaysInside[a])
+				continue;
+
+			if (w.period[a] > 0)
+			{
+				insideEnd = 0;
+				return;
+			}
+
+			int64_t dyEnd = dy[a] + dyStep[a] * (length - 1);
+			int64_t extent = (abs64(step[a]) + std::max(abs64(dy[a]), abs64(dyEnd))) / 2 + 1;
+
+			int64_t lo = extent - pos[a];							// step * k >= lo
+			int64_t hi = w.inside[a] - extent - pos[a];				// step * k <= hi
+
+			int64_t beg, end;
+
+			if (step[a] > 0)
+			{
+				beg = ceilDiv(lo, step[a]);
+				end = floorDiv(hi, step[a]) + 1;
+			}
+			else if (step[a] < 0)
+			{
+				beg = ceilDiv(-hi, -step[a]);
+				end = floorDiv(-lo, -step[a]) + 1;
+			}
+			else
+			{
+				beg = 0;
+				end = (lo <= 0 && hi >= 0) ? length : 0;
+			}
+
+			insideBeg = int(std::clamp(beg, int64_t(insideBeg), int64_t(length)));
+			insideEnd = int(std::clamp(end, int64_t(0), int64_t(insideEnd)));
+		}
+
+		if (insideEnd < insideBeg)
+			insideEnd = insideBeg;
 	}
 
 	//____ _warpEdgemapCoverage() _______________________________________________

@@ -437,6 +437,7 @@ namespace wg
 		int		_warpSolidSegment(const int64_t lo[2], const int64_t hi[2], const int64_t copy[2]) const;
 		void	_drawWarpRow(int y, int xBeg, int xEnd, uint8_t* pOrigin, int pitch, int prefetchRow);
 		int		_warpAxisCoverage(int axis, int64_t s, int64_t gx, int64_t gy) const;
+		void			_warpInsideRange( const int64_t * pos, const int64_t * step, const int64_t * dy, const int64_t * dyStep, int length, int& insideBeg, int& insideEnd ) const;
 		int		_warpEdgemapCoverage(int64_t sx, int64_t sy, int64_t ax, int64_t bx, int64_t ay, int64_t by, int* pCoverage, int& solidSegment) const;
 		void	_warpTintSpan(const SoftTint& tint, int64_t x, int64_t y, int64_t dx, int64_t dy, int length, HiColor* pOutput);
 		void	_warpReadSpan(int64_t x, int64_t y, int64_t dx, int64_t dy, int length, HiColor* pOutput, const int* pCoverage,
