@@ -11,7 +11,7 @@ A Warpmap covers a rectangle of pixels with a grid of nodes, one node every *cel
 
 A Warpmap is made for a source of a certain size. It isn't stretched to fit a source of another size, that takes other nodes.
 
-Warpmaps are *semi-mutable*: size and cell size are set when created, nodes and periods can be changed. Each graphics backend has its own Warpmap subtype, created by its WarpmapFactory (`GfxDevice::warpmapFactory()`), or through a WarpGenerator such as CircularWarp.
+Warpmaps are *semi-mutable*: size and cell size are set when created, nodes can be changed and periods can be changed together with all nodes. Each graphics backend has its own Warpmap subtype, created by its WarpmapFactory (`GfxDevice::warpmapFactory()`), or through a WarpGenerator such as CircularWarp.
 
 
 
@@ -38,6 +38,13 @@ All methods take a *source offset* that is added to the position before reading,
 An axis can be periodic (*uPeriod* or *vPeriod* above 0, in spx of the source), as when u is the angle of a ring. Positions are then read modulo the period and interpolation between nodes across the seam takes the short way round.
 
 With a period of the size of the source it wraps around, which for an edgemap or surface that is tiling is seamless. A longer period leaves a gap between the copies of the source, as a 270 degree arc of a source *w* spx wide has uPeriod = w * 360 / 270. A pixel in the gap takes its colors from the nearest copy, so they don't jump where the copies meet.
+
+Values on a periodic axis are stored brought into 0 -> period, so periods are given together with all nodes: in the blueprint when created, or with `importAllNodes()`. Nodes for one period don't mean the same with another, so there is no changing periods alone.
+
+```c++
+	pWarpmap->importNodes( region, pNodes );						// Some nodes, same periods.
+	pWarpmap->importAllNodes( pNodes, uPeriod, vPeriod );			// All nodes, new periods.
+```
 
 
 

@@ -75,25 +75,6 @@ namespace wg
 		return TYPEINFO;
 	}
 
-	//____ setPeriods() _______________________________________________________
-
-	bool Warpmap::setPeriods(spx uPeriod, spx vPeriod)
-	{
-		if (uPeriod < 0 || vPeriod < 0 || uPeriod > maxNodeValue || vPeriod > maxNodeValue)
-			return false;
-
-		m_uPeriod = uPeriod;
-		m_vPeriod = vPeriod;
-
-		RectI all = { 0,0,m_nodes.w,m_nodes.h };
-
-		if (m_pNodes)
-			_normalizeNodes(all);
-
-		_nodesUpdated(all);
-		return true;
-	}
-
 	//____ importNodes() ______________________________________________________
 
 	bool Warpmap::importNodes(const RectI& region, const CoordSPX* pSource, int pitch)
@@ -114,6 +95,33 @@ namespace wg
 		}
 
 		_nodesUpdated(region);
+		return true;
+	}
+
+	//____ importAllNodes() ___________________________________________________
+
+	bool Warpmap::importAllNodes(const CoordSPX* pSource, spx uPeriod, spx vPeriod, int pitch)
+	{
+		if (!pSource || uPeriod < 0 || vPeriod < 0 || uPeriod > maxNodeValue || vPeriod > maxNodeValue)
+			return false;
+
+		if (pitch == 0)
+			pitch = m_nodes.w;
+
+		m_uPeriod = uPeriod;
+		m_vPeriod = vPeriod;
+
+		RectI all = { 0, 0, m_nodes.w, m_nodes.h };
+
+		if (m_pNodes)
+		{
+			for (int row = 0; row < m_nodes.h; row++)
+				std::memcpy(m_pNodes + row * m_nodes.w, pSource + row * pitch, m_nodes.w * sizeof(CoordSPX));
+
+			_normalizeNodes(all);
+		}
+
+		_nodesUpdated(all);
 		return true;
 	}
 

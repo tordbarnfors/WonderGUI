@@ -327,15 +327,25 @@ bool WarpmapTest::periodTest(std::ostream& output)
 	pMap->cellCorners(0, 0, corners);
 	TEST_ASSERT(corners[1].x == -320);
 
-	// Changing the period renormalizes.
+	// New periods come with all nodes, normalized into them.
 
-	pMap->importNodes({ 0,0,2,2 }, nodes);
-	TEST_ASSERT(pMap->setPeriods(320, 0));
+	TEST_ASSERT(pMap->importAllNodes(nodes, 320, 0));
+	TEST_ASSERT(pMap->uPeriod() == 320 && pMap->vPeriod() == 0);
 	pMap->exportNodes({ 0,0,2,2 }, stored);
-	TEST_ASSERT(stored[0].x == 288);
+	TEST_ASSERT(stored[0].x == 288 && stored[1].x == 32 && stored[2].x == 288 && stored[3].x == 288);
 
-	TEST_ASSERT(!pMap->setPeriods(-1, 0));
-	TEST_ASSERT(!pMap->setPeriods(0, Warpmap::maxNodeValue + 1));
+	// Again, from the same nodes and not from the stored ones.
+
+	TEST_ASSERT(pMap->importAllNodes(nodes, 640, 0));
+	pMap->exportNodes({ 0,0,2,2 }, stored);
+	TEST_ASSERT(stored[0].x == 608 && stored[1].x == 32 && stored[2].x == 608 && stored[3].x == 608);
+
+	// Invalid periods are refused and change nothing.
+
+	TEST_ASSERT(!pMap->importAllNodes(nodes, -1, 0));
+	TEST_ASSERT(!pMap->importAllNodes(nodes, 0, Warpmap::maxNodeValue + 1));
+	TEST_ASSERT(!pMap->importAllNodes(nullptr, 320, 0));
+	TEST_ASSERT(pMap->uPeriod() == 640);
 	return true;
 }
 

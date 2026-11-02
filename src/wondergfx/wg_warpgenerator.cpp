@@ -128,9 +128,8 @@ namespace wg
 		Draws are rendered when the canvas update ends and read the Warpmap then, so a Warpmap that
 		a draw holds (or anyone else) is left as it is and a new one created in its place.
 
-		A Warpmap that only we hold has its nodes written in place, then normalized and sent on
-		once. If its periods change, setPeriods() does both for the new periods, so that's done
-		after the nodes are written.
+		A Warpmap that only we hold has its nodes and periods written in place, then normalized and
+		sent on once.
 	*/
 
 	Warpmap_p WarpGenerator::generate()
@@ -160,32 +159,24 @@ namespace wg
 		{
 			Warpmap* pMap = m_pWarpmap;
 			SizeI nodes = pMap->nodes();
-			RectI all = { 0, 0, nodes.w, nodes.h };
-			bool bNewPeriods = pMap->uPeriod() != uPeriod || pMap->vPeriod() != vPeriod;
 
 			if (pMap->m_pNodes)
 			{
-				_generateNodes(pMap->m_pNodes, nodes, cellSize);
+				RectI all = { 0, 0, nodes.w, nodes.h };
 
-				if (bNewPeriods)
-					pMap->setPeriods(uPeriod, vPeriod);
-				else
-				{
-					pMap->_normalizeNodes(all);
-					pMap->_nodesUpdated(all);
-				}
+				_generateNodes(pMap->m_pNodes, nodes, cellSize);
+				pMap->m_uPeriod = uPeriod;
+				pMap->m_vPeriod = vPeriod;
+				pMap->_normalizeNodes(all);
+				pMap->_nodesUpdated(all);
 			}
 			else
 			{
-				// No nodes of its own to write to, they go through importNodes().
+				// No nodes of its own to write to, they go through importAllNodes().
 
 				std::vector<CoordSPX> buffer(nodes.w * nodes.h);
 				_generateNodes(buffer.data(), nodes, cellSize);
-
-				if (bNewPeriods)
-					pMap->setPeriods(uPeriod, vPeriod);
-
-				pMap->importNodes(all, buffer.data());
+				pMap->importAllNodes(buffer.data(), uPeriod, vPeriod);
 			}
 		}
 

@@ -49,7 +49,8 @@ namespace wg
 	 * Node values are not limited to the source. Values outside it are what makes parts of the
 	 * Warpmap transparent, with the border antialiased where the interpolated position crosses the
 	 * border of the source. Keep values within +-maxNodeValue (16 million pixels). Values on a
-	 * periodic axis are brought into 0 -> period when imported. A new Warpmap maps its rectangle
+	 * periodic axis are brought into 0 -> period when imported, so periods are set together with
+	 * all nodes, see importAllNodes(). A new Warpmap maps its rectangle
 	 * straight onto the source, pixel for pixel: u = x * 64 and v = y * 64.
 	 *
 	 * A Warpmap is made for a source of a certain size. A source of another size is not stretched to
@@ -135,7 +136,6 @@ namespace wg
 
 		//.____ Content _______________________________________________________
 
-		virtual bool	setPeriods( spx uPeriod, spx vPeriod );
 		inline spx		uPeriod() const { return m_uPeriod; }
 		inline spx		vPeriod() const { return m_vPeriod; }
 
@@ -143,6 +143,11 @@ namespace wg
 		// in source/destination, 0 meaning region.w.
 
 		bool			importNodes( const RectI& region, const CoordSPX * pSource, int pitch = 0 );
+
+		// Imports all nodes and sets the periods they are for. Periods can only change together
+		// with all nodes, since nodes are stored brought into their periods.
+
+		bool			importAllNodes( const CoordSPX * pSource, spx uPeriod, spx vPeriod, int pitch = 0 );
 		bool			exportNodes( const RectI& region, CoordSPX * pDestination, int pitch = 0 ) const;
 
 		inline const CoordSPX*	nodeData() const { return m_pNodes; }
@@ -174,8 +179,8 @@ namespace wg
 
 		void			_normalizeNodes( const RectI& region );
 
-		// Called when nodes in region or the periods have changed (region is then all nodes).
-		// Typically all you need to override when subclassing.
+		// Called when nodes in region have changed. Periods only change together with all nodes,
+		// and region is then all nodes. Typically all you need to override when subclassing.
 
 		virtual void	_nodesUpdated( const RectI& region ) = 0;
 

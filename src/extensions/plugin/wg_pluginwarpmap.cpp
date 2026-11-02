@@ -77,23 +77,21 @@ namespace wg
 		return TYPEINFO;
 	}
 
-	//____ setPeriods() _______________________________________________________
-	// The host gets the periods before the nodes normalized into them.
-
-	bool PluginWarpmap::setPeriods( spx uPeriod, spx vPeriod )
-	{
-		if (!PluginCalls::warpmap->setWarpmapPeriods(m_cWarpmap, uPeriod, vPeriod))
-			return false;
-
-		return Warpmap::setPeriods(uPeriod, vPeriod);
-	}
-
 	//____ _nodesUpdated() ____________________________________________________
+	// New periods come with all nodes and go to the host together with them.
 
 	void PluginWarpmap::_nodesUpdated( const RectI& region )
 	{
 		if (!m_bConstructed)
 			return;
+
+		auto pCalls = PluginCalls::warpmap;
+
+		if (m_uPeriod != pCalls->warpmapUPeriod(m_cWarpmap) || m_vPeriod != pCalls->warpmapVPeriod(m_cWarpmap))
+		{
+			pCalls->importAllWarpmapNodes(m_cWarpmap, (const wg_coordSPX*) m_pNodes, m_uPeriod, m_vPeriod, m_nodes.w);
+			return;
+		}
 
 		wg_rectI cRegion = { region.x, region.y, region.w, region.h };
 		PluginCalls::warpmap->importWarpmapNodes(m_cWarpmap, &cRegion, (const wg_coordSPX*) (m_pNodes + region.y * m_nodes.w + region.x), m_nodes.w);

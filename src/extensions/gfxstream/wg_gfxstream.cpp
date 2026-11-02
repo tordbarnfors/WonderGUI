@@ -61,7 +61,6 @@ const char * toString(GfxStream::ChunkId i)
 		"CreateWarpmap",
 		"WarpmapUpdate",
 		"WarpmapNodes",
-		"SetWarpmapPeriods",
 		"DeleteWarpmap"
 	};
 

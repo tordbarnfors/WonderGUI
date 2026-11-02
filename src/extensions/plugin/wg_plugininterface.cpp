@@ -420,10 +420,10 @@ static void populateBody(wg_c_calls_body * pBody)
 	pBody->warpmap.structSize				= sizeof(wg_warpmap_calls);
 	pBody->warpmap.warpmapPixelSize			= LOCKED(wg_warpmapPixelSize);
 	pBody->warpmap.warpmapCellSize			= LOCKED(wg_warpmapCellSize);
-	pBody->warpmap.setWarpmapPeriods		= LOCKED(wg_setWarpmapPeriods);
 	pBody->warpmap.warpmapUPeriod			= LOCKED(wg_warpmapUPeriod);
 	pBody->warpmap.warpmapVPeriod			= LOCKED(wg_warpmapVPeriod);
 	pBody->warpmap.importWarpmapNodes		= LOCKED(wg_importWarpmapNodes);
+	pBody->warpmap.importAllWarpmapNodes	= LOCKED(wg_importAllWarpmapNodes);
 	pBody->warpmap.exportWarpmapNodes		= LOCKED(wg_exportWarpmapNodes);
 
 	pBody->warpmapFactory.structSize		= sizeof(wg_warpmapfactory_calls);

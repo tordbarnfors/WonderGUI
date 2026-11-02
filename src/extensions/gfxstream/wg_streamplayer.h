@@ -219,6 +219,8 @@ namespace wg
 			bool				bCreate = false;
 			Warpmap::Blueprint	blueprint;					// For bCreate.
 			RectI				region;						// Nodes in buffer, empty until WarpmapUpdate.
+			spx					uPeriod = 0;				// Periods the nodes are for.
+			spx					vPeriod = 0;
 			DataBuffer			buffer;
 		};
 

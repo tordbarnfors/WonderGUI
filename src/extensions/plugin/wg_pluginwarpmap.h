@@ -54,10 +54,6 @@ namespace wg
 		const TypeInfo&	typeInfo(void) const override;
 		const static TypeInfo	TYPEINFO;
 
-		//.____ Content _______________________________________________________
-
-		bool			setPeriods( spx uPeriod, spx vPeriod ) override;
-
 		//.____ Misc _________________________________________________________
 
 		inline wg_obj	cObject() { return m_cWarpmap; }

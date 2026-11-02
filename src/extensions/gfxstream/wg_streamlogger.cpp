@@ -651,15 +651,19 @@ namespace wg
 			{
 				uint16_t	warpmapId;
 				uint16_t	x, y, w, h;
+				int			uPeriod, vPeriod;
 
 				decoder >> warpmapId;
 				decoder >> x;
 				decoder >> y;
 				decoder >> w;
 				decoder >> h;
+				decoder >> uPeriod;
+				decoder >> vPeriod;
 
 				m_charStream << "    warpmapId   = " << warpmapId << std::endl;
 				m_charStream << "    region      = " << x << ", " << y << ", " << w << ", " << h << " (nodes)" << std::endl;
+				m_charStream << "    periods     = " << uPeriod << ", " << vPeriod << std::endl;
 				break;
 			}
 
@@ -667,21 +671,6 @@ namespace wg
 			{
 				int toSkip = _readPrintDataInfo(header.size);
 				decoder.skip(toSkip);
-				break;
-			}
-
-			case GfxStream::ChunkId::SetWarpmapPeriods:
-			{
-				uint16_t	warpmapId;
-				int			uPeriod;
-				int			vPeriod;
-
-				decoder >> warpmapId;
-				decoder >> uPeriod;
-				decoder >> vPeriod;
-
-				m_charStream << "    warpmapId   = " << warpmapId << std::endl;
-				m_charStream << "    periods     = " << uPeriod << ", " << vPeriod << std::endl;
 				break;
 			}
 

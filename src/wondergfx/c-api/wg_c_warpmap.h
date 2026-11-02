@@ -50,13 +50,16 @@ extern "C" {
 
 	//.____ Content _______________________________________________________
 
-	WG_EXPORT int			wg_setWarpmapPeriods(wg_obj warpmap, wg_spx uPeriod, wg_spx vPeriod);
 	WG_EXPORT wg_spx			wg_warpmapUPeriod(wg_obj warpmap);
 	WG_EXPORT wg_spx			wg_warpmapVPeriod(wg_obj warpmap);
 
 	// Region is given in nodes, pitch is nodes between rows in source/destination, 0 meaning region width.
 
 	WG_EXPORT int			wg_importWarpmapNodes(wg_obj warpmap, const wg_rectI* region, const wg_coordSPX* pSource, int pitch);
+
+	// All nodes and the periods they are for. Periods can only change together with all nodes.
+
+	WG_EXPORT int			wg_importAllWarpmapNodes(wg_obj warpmap, const wg_coordSPX* pSource, wg_spx uPeriod, wg_spx vPeriod, int pitch);
 	WG_EXPORT int			wg_exportWarpmapNodes(wg_obj warpmap, const wg_rectI* region, wg_coordSPX* pDestination, int pitch);
 
 	//.____ Misc __________________________________________________________

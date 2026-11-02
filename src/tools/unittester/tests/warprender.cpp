@@ -636,10 +636,12 @@ bool WarpRenderTest::streamTest(std::ostream& output)
 	{
 		warpScene(pDevice);
 
-		// Periods changed after creation, sent before the nodes they normalize.
+		// Periods changed after creation, sent with the nodes.
 
 		auto pWarpmap = makeRing(pDevice, 40, c_edgemapSource, 270.f, -135.f);
-		pWarpmap->setPeriods(c_edgemapSource.w * 2, 0);
+		std::vector<CoordSPX> nodes(pWarpmap->nodes().w * pWarpmap->nodes().h);
+		pWarpmap->exportNodes({ 0, 0, pWarpmap->nodes().w, pWarpmap->nodes().h }, nodes.data());
+		pWarpmap->importAllNodes(nodes.data(), c_edgemapSource.w * 2, 0);
 		pDevice->warpDrawEdgemap({ 64 * 110, 64 * 50 }, pWarpmap, makeEdgemap(pDevice, true), { 64 * 30, 0 });
 	};
 
@@ -770,14 +772,19 @@ bool WarpRenderTest::streamNodesTest(std::ostream& output)
 	TEST_ASSERT(pGot->updates == 1);
 	TEST_ASSERT(sameNodes(pSent, pGot));
 
-	// New periods are sent before the nodes.
+	// New periods are sent with the nodes and applied together with them.
 
 	pSent = nullptr;
+	pCounter->clear();
+	spx oldPeriod = pGot->uPeriod();
 	TEST_ASSERT(pWarp->setAngles(-60.f, 210.f));
 	pSent = pWarp->generate();
 	pEncoder->flush();
 
+	TEST_ASSERT(pCounter->count(Id::WarpmapUpdate) == 1);
 	TEST_ASSERT(pReceived->created.size() == 1);
+	TEST_ASSERT(pGot->uPeriod() != oldPeriod);
+	TEST_ASSERT(pGot->updates == 2);
 	TEST_ASSERT(sameNodes(pSent, pGot));
 
 	// A region narrower than the Warpmap.
@@ -872,6 +879,13 @@ bool WarpRenderTest::cApiTest(std::ostream& output)
 
 		wg_obj bent = wg_createWarpmapFromNodes(factory, &bentBP, (const wg_coordSPX*) nodeData.data(), 0);
 
+		// The same, given its nodes and periods after creation.
+
+		wg_warpmapBP plainBP = bentBP;
+		plainBP.uPeriod = 0;
+		wg_obj bentLater = wg_createWarpmap(factory, &plainBP);
+		wg_importAllWarpmapNodes(bentLater, (const wg_coordSPX*) nodeData.data(), bentPeriod, 0, 0);
+
 		wg_warpDrawEdgemap(device, { 64 * 3, 64 * 4 }, wg_generateWarpGenerator(ring), (wg_obj) static_cast<Object*>(pEdgemap.rawPtr()), { 64 * 5, 0 });
 
 		wg_roundedRectWarpBP frameBP = {};
@@ -890,8 +904,9 @@ bool WarpRenderTest::cApiTest(std::ostream& output)
 		pDevice->setBlitSource(pSurface);
 		wg_warpBlit(device, { 64 * 60, 64 * 4 }, bent, { 64 * 2, 64 * 3 });
 		wg_rectSPX source = { 64 * 4, 64 * 2, 64 * 20, 64 * 12 };
-		wg_warpBlitRect(device, { 64 * 110, 64 * 4 }, bent, &source, { 0, 0 });
+		wg_warpBlitRect(device, { 64 * 110, 64 * 4 }, bentLater, &source, { 0, 0 });
 
+		wg_release(bentLater);
 		wg_release(bent);
 		wg_release(ring);
 		wg_release(factory);

@@ -1172,12 +1172,15 @@ namespace wg
 		{
 			uint16_t	objectId;
 			uint16_t	x, y, w, h;
+			int			uPeriod, vPeriod;
 
 			decoder >> objectId;
 			decoder >> x;
 			decoder >> y;
 			decoder >> w;
 			decoder >> h;
+			decoder >> uPeriod;
+			decoder >> vPeriod;
 
 			auto pData = _findWarpmapDataBuffer(objectId);
 
@@ -1196,6 +1199,8 @@ namespace wg
 				GfxBase::throwError(ErrorLevel::Warning, ErrorCode::InvalidParam, "WarpmapUpdate before nodes of previous update had arrived. They are dropped.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 
 			pData->region = { x, y, w, h };
+			pData->uPeriod = uPeriod;
+			pData->vPeriod = vPeriod;
 			pData->buffer.size = 0;
 			break;
 		}
@@ -1229,6 +1234,8 @@ namespace wg
 			{
 				auto pFactory = m_pBackend->warpmapFactory();
 				auto& bp = pData->blueprint;
+				bp.uPeriod = pData->uPeriod;
+				bp.vPeriod = pData->vPeriod;
 
 				SizeI nodes = { (bp.size.w + bp.cellSize - 1) / std::max(1, bp.cellSize) + 1, (bp.size.h + bp.cellSize - 1) / std::max(1, bp.cellSize) + 1 };
 
@@ -1249,39 +1256,20 @@ namespace wg
 			}
 			else if (objectId < m_vObjects.size() && m_vObjects[objectId] != nullptr)
 			{
-				if (!static_cast<Warpmap*>(m_vObjects[objectId].rawPtr())->importNodes(region, pNodes))
-					GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "WarpmapUpdate with region outside the Warpmap", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				auto pWarpmap = static_cast<Warpmap*>(m_vObjects[objectId].rawPtr());
+				SizeI nodes = pWarpmap->nodes();
+
+				bool bOk;
+				if (pData->uPeriod != pWarpmap->uPeriod() || pData->vPeriod != pWarpmap->vPeriod())
+					bOk = region == RectI(0, 0, nodes.w, nodes.h) && pWarpmap->importAllNodes(pNodes, pData->uPeriod, pData->vPeriod);
+				else
+					bOk = pWarpmap->importNodes(region, pNodes);
+
+				if (!bOk)
+					GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "WarpmapUpdate with region outside the Warpmap, or new periods for only some nodes", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			}
 
 			m_warpmapDataBuffers.erase(m_warpmapDataBuffers.begin() + (pData - m_warpmapDataBuffers.data()));
-			break;
-		}
-
-		case GfxStream::ChunkId::SetWarpmapPeriods:
-		{
-			uint16_t	objectId;
-			int			uPeriod;
-			int			vPeriod;
-
-			decoder >> objectId;
-			decoder >> uPeriod;
-			decoder >> vPeriod;
-
-			auto pData = _findWarpmapDataBuffer(objectId);
-			if( pData && pData->bCreate )
-			{
-				pData->blueprint.uPeriod = uPeriod;
-				pData->blueprint.vPeriod = vPeriod;
-				break;
-			}
-
-			if( objectId >= m_vObjects.size() || m_vObjects[objectId] == nullptr || !m_vObjects[objectId]->isInstanceOf(Warpmap::TYPEINFO) )
-			{
-				GfxBase::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "SetWarpmapPeriods with invalid objectId", this, &TYPEINFO, __func__, __FILE__, __LINE__);
-				break;
-			}
-
-			static_cast<Warpmap*>(m_vObjects[objectId].rawPtr())->setPeriods(uPeriod, vPeriod);
 			break;
 		}
 

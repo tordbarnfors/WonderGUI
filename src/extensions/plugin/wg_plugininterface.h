@@ -504,10 +504,10 @@ typedef struct wg_warpmap_calls_struct
 
 	wg_sizeI			(*warpmapPixelSize)(wg_obj warpmap);
 	int					(*warpmapCellSize)(wg_obj warpmap);
-	int					(*setWarpmapPeriods)(wg_obj warpmap, wg_spx uPeriod, wg_spx vPeriod);
 	wg_spx				(*warpmapUPeriod)(wg_obj warpmap);
 	wg_spx				(*warpmapVPeriod)(wg_obj warpmap);
 	int					(*importWarpmapNodes)(wg_obj warpmap, const wg_rectI* region, const wg_coordSPX* pSource, int pitch);
+	int					(*importAllWarpmapNodes)(wg_obj warpmap, const wg_coordSPX* pSource, wg_spx uPeriod, wg_spx vPeriod, int pitch);
 	int					(*exportWarpmapNodes)(wg_obj warpmap, const wg_rectI* region, wg_coordSPX* pDestination, int pitch);
 
 } wg_warpmap_calls;

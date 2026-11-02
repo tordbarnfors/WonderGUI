@@ -58,11 +58,6 @@ int wg_warpmapNodeY(wg_obj warpmap, int row)
 	return getPtr(warpmap)->nodeY(row);
 }
 
-int wg_setWarpmapPeriods(wg_obj warpmap, wg_spx uPeriod, wg_spx vPeriod)
-{
-	return getPtr(warpmap)->setPeriods(uPeriod, vPeriod);
-}
-
 wg_spx wg_warpmapUPeriod(wg_obj warpmap)
 {
 	return getPtr(warpmap)->uPeriod();
@@ -76,6 +71,11 @@ wg_spx wg_warpmapVPeriod(wg_obj warpmap)
 int wg_importWarpmapNodes(wg_obj warpmap, const wg_rectI* region, const wg_coordSPX* pSource, int pitch)
 {
 	return getPtr(warpmap)->importNodes(*(const RectI*)region, (const CoordSPX*)pSource, pitch);
+}
+
+int wg_importAllWarpmapNodes(wg_obj warpmap, const wg_coordSPX* pSource, wg_spx uPeriod, wg_spx vPeriod, int pitch)
+{
+	return getPtr(warpmap)->importAllNodes((const CoordSPX*)pSource, uPeriod, vPeriod, pitch);
 }
 
 int wg_exportWarpmapNodes(wg_obj warpmap, const wg_rectI* region, wg_coordSPX* pDestination, int pitch)

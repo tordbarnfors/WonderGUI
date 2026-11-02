@@ -96,31 +96,11 @@ namespace wg
 		return TYPEINFO;
 	}
 
-	//____ setPeriods() _______________________________________________________
-	/*
-		The periods are sent before the nodes that Warpmap::setPeriods() normalizes into them,
-		so that the receiving end doesn't normalize those into the old periods.
-	*/
-
-	bool StreamWarpmap::setPeriods( spx uPeriod, spx vPeriod )
-	{
-		if (uPeriod < 0 || vPeriod < 0 || uPeriod > maxNodeValue || vPeriod > maxNodeValue)
-			return false;
-
-		auto& encoder = * m_pEncoder;
-
-		encoder << GfxStream::Header{ GfxStream::ChunkId::SetWarpmapPeriods, 0, 10 };
-		encoder << m_inStreamId;
-		encoder << (int32_t) uPeriod;
-		encoder << (int32_t) vPeriod;
-
-		return Warpmap::setPeriods(uPeriod, vPeriod);
-	}
-
 	//____ _nodesUpdated() ____________________________________________________
 	/*
-		Sends the nodes of region in one WarpmapUpdate, followed by WarpmapNodes chunks with the
-		nodes compressed. Rows narrower than the Warpmap are gathered first.
+		Sends the region and periods in a WarpmapUpdate, followed by WarpmapNodes chunks with the
+		nodes compressed. Rows narrower than the Warpmap are gathered first. Periods only change
+		together with all nodes, so the receiver applies them together.
 	*/
 
 	void StreamWarpmap::_nodesUpdated( const RectI& region )
@@ -130,12 +110,14 @@ namespace wg
 
 		auto& encoder = * m_pEncoder;
 
-		encoder << GfxStream::Header{ GfxStream::ChunkId::WarpmapUpdate, 0, 10 };
+		encoder << GfxStream::Header{ GfxStream::ChunkId::WarpmapUpdate, 0, 18 };
 		encoder << m_inStreamId;
 		encoder << (uint16_t) region.x;
 		encoder << (uint16_t) region.y;
 		encoder << (uint16_t) region.w;
 		encoder << (uint16_t) region.h;
+		encoder << (int32_t) m_uPeriod;
+		encoder << (int32_t) m_vPeriod;
 
 		const CoordSPX* pBeg = m_pNodes + region.y * m_nodes.w + region.x;
 		int nNodes = region.w * region.h;

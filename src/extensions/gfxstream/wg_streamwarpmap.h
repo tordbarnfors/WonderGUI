@@ -37,9 +37,9 @@ namespace wg
 	/**
 	 * @brief Warpmap that is mirrored in a stream.
 	 *
-	 * Creation, nodes, periods and deletion are sent in CreateWarpmap, WarpmapUpdate,
-	 * WarpmapNodes, SetWarpmapPeriods and DeleteWarpmap chunks. Nodes that change together are
-	 * sent together, compressed by NodeCompressor, and are applied at once by the receiver.
+	 * Creation, nodes and deletion are sent in CreateWarpmap, WarpmapUpdate, WarpmapNodes and
+	 * DeleteWarpmap chunks. Nodes that change together are sent together, compressed by
+	 * NodeCompressor, with the periods they are for, and are applied at once by the receiver.
 	 */
 
 	class StreamWarpmap : public Warpmap
@@ -57,10 +57,6 @@ namespace wg
 		const static TypeInfo   TYPEINFO;
 
 		uint16_t		inStreamId() const { return m_inStreamId; }
-
-		//.____ Content _______________________________________________________
-
-		bool	setPeriods( spx uPeriod, spx vPeriod ) override;
 
 	protected:
 		StreamWarpmap( StreamEncoder * pEncoder, const Blueprint& bp, const CoordSPX * pNodes = nullptr, int pitch = 0 );
