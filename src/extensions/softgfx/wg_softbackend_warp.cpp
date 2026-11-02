@@ -134,24 +134,42 @@ namespace wg
 			if (2 * f <= -sum)
 				return 0;
 
-			// |f| < a here. Drop precision so that the products below fit.
+			// |f| < a here. Keep 16 bits of a, more than the 12 bits of the result need, so that
+			// the rest fits in 32 bits and takes 32 bit divisions only. 32 bit CPUs divide those
+			// in hardware or a short routine, 64 bit ones in a much longer one.
 
-			while (a >= (int64_t(1) << 20))
+			while (a >= (int64_t(1) << 24))
+			{
+				a >>= 8;
+				b >>= 8;
+				f >>= 8;
+			}
+
+			while (a >= (int64_t(1) << 16))
 			{
 				a >>= 1;
 				b >>= 1;
 				f >>= 1;
 			}
 
-			int64_t absF = abs64(f);
+			int32_t a32 = int32_t(a);
+			int32_t b32 = int32_t(b);
+			int32_t f32 = int32_t(f);
+			int32_t absF = f32 < 0 ? -f32 : f32;
 
-			if (2 * absF <= a - b)
-				return int(2048 + (f * 4096) / a);
+			if (b32 == 0 || 2 * absF <= a32 - b32)
+				return std::clamp(2048 + (f32 * 4096) / a32, 0, 4096);
 
-			int64_t t = a + b - 2 * absF;						// Twice the height of the corner triangle.
-			int corner = int((t * t * 4096) / (8 * a * b));
+			// The corner triangle has the area t^2 / (8ab), t being twice its height, up to 2b, which
+			// rounding above can take it just outside of. t / a and t / b, at most 2, are taken with
+			// 14 binals, so they multiply within 32 bits.
 
-			return f > 0 ? 4096 - corner : corner;
+			uint32_t t = uint32_t(std::clamp(a32 + b32 - 2 * absF, 0, 2 * b32));
+			uint32_t ta = (t << 14) / uint32_t(a32);
+			uint32_t tb = (t << 14) / uint32_t(b32);
+			int corner = int((ta * tb) >> 19);
+
+			return f32 > 0 ? 4096 - corner : corner;
 		}
 
 		//____ forWrappedSpans() ______________________________________________
@@ -1372,11 +1390,16 @@ namespace wg
 
 		if (m >= 4096)
 			return 4096;
+		if (m <= 0 || a <= 0)
+			return 0;
 
-		int64_t am = int64_t(a) * m;
-		int64_t den = int64_t(4096 - m) * 4096 + am;
+		// am * 4096 / den, divided by 16 above and below to fit a 32 bit division. den is at least
+		// 4096 here, so den / 16 keeps plenty of precision.
 
-		return den > 0 ? int((am * 4096) / den) : 0;
+		uint32_t am = uint32_t(a) * uint32_t(m);
+		uint32_t den = uint32_t(4096 - m) * 4096 + am;
+
+		return int((am << 8) / (den >> 4));
 	}
 
 	//____ _warpBuffer() ________________________________________________________
