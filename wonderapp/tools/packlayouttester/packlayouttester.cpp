@@ -77,7 +77,7 @@ bool MyApp::_setupGUI(wapp::API* pAPI)
 									_.color = Color8::Black));
 
 
-	Base::setDefaultStyle(m_pTextStyle);
+	wg::Base::setDefaultStyle(m_pTextStyle);
 
 	m_pTextLayoutCentered = BasicTextLayout::create(WGBP(BasicTextLayout,
 		_.placement = Placement::Center));
@@ -249,7 +249,7 @@ Widget_p MyApp::_createControlPanel()
 	m_pMaxSizeSourceSelector->selectEntryById(int(PackLayout::SizeSource::Item));
 
 
-	auto pRouter = Base::msgRouter();
+	auto pRouter = wg::Base::msgRouter();
 
 	pRouter->addRoute(m_pStartSizeSelector, MsgType::Select, [this](Msg* pMsg) { this->_updateLayout();  });
 	pRouter->addRoute(m_pExpandFactorSelector, MsgType::Select, [this](Msg* pMsg) { this->_updateLayout();  });
@@ -317,12 +317,12 @@ Widget_p MyApp::_createStretchPanel()
 
 	pBase->slots.pushBack(pHandle, { .pin1 = {Placement::NorthEast, {-8,0}}, .pin2 = Placement::SouthEast });
 
-	Base::msgRouter()->addRoute(pHandle, MsgType::MousePress, [this,pBase](Msg* _pMsg) {
+	wg::Base::msgRouter()->addRoute(pHandle, MsgType::MousePress, [this,pBase](Msg* _pMsg) {
 			auto pMsg = static_cast<MousePressMsg*>(_pMsg);
 			this->m_dragStartSize = pBase->size();
 		});
 
-	Base::msgRouter()->addRoute(pHandle, MsgType::MouseDrag, [this,pBase](Msg* _pMsg) {
+	wg::Base::msgRouter()->addRoute(pHandle, MsgType::MouseDrag, [this,pBase](Msg* _pMsg) {
 		auto pMsg = static_cast<MouseDragMsg*>(_pMsg);
 
 		Coord dragged = pMsg->draggedTotal();

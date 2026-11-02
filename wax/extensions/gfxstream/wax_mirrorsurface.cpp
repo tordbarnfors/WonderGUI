@@ -21,7 +21,7 @@
 =========================================================================*/
 #include <wax_mirrorsurface.h>
 #include <wax_streambackend.h>
-#include <wax_core.h>
+#include <wax_base.h>
 
 namespace wax
 {
@@ -35,13 +35,13 @@ namespace wax
 	{
 		if (!blueprint.encoder)
 		{
-			Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "You must provide a StreamEncoder in the blueprint.", nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
+			Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "You must provide a StreamEncoder in the blueprint.", nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return nullptr;
 		}
 
 		if (!blueprint.surface)
 		{
-			Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "You must provide a Surface in the blueprint.", nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
+			Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "You must provide a Surface in the blueprint.", nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return nullptr;
 		}
 
@@ -225,7 +225,7 @@ namespace wax
 		for( int i = 0 ; i < nRects ; i++ )
 			allocSize += pRects[i].w * pRects[i].h * pixelDescription.bits / 8;
 
-		auto pBuffer = (uint8_t *) Core::memStackAlloc(allocSize);
+		auto pBuffer = (uint8_t *) Base::memStackAlloc(allocSize);
 
 		// Copy pixels from rectangles to continuous buffer memory.
 
@@ -266,7 +266,7 @@ namespace wax
 
 		// Cleanup
 
-		Core::memStackFree(allocSize);
+		Base::memStackFree(allocSize);
 		m_pSurface->freePixelBuffer(pixelBuffer);
 	}
 

@@ -121,7 +121,7 @@ bool CocoaAPI::initDefaultWidgetKit()
 
 		if (!wkit::init(pFont1, pFont2, pFont3, pFont4))
 		{
-			Base::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "Failed to init default widget kit", nullptr, nullptr, __func__, __FILE__, __LINE__);
+			wg::Base::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "Failed to init default widget kit", nullptr, nullptr, __func__, __FILE__, __LINE__);
 			return false;
 		}
 	}
@@ -164,7 +164,7 @@ wapp::DialogButton CocoaAPI::messageBox(	const std::string& title, const std::st
 		defaultButton = buttons.front();
 	else if( std::find(buttons.begin(), buttons.end(), defaultButton) == buttons.end() )
 	{
-		Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Default button isn't a button of specified dialog type", nullptr, nullptr, __func__, __FILE__, __LINE__);
+		wg::Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Default button isn't a button of specified dialog type", nullptr, nullptr, __func__, __FILE__, __LINE__);
 		return wapp::DialogButton::Undefined;
 	}
 

@@ -24,7 +24,7 @@
 #include <wax_surface.h>
 #include <wax_dataset.h>
 #include <wax_util.h>
-#include <wax_core.h>
+#include <wax_base.h>
 #include <wax_pixeltools.h>
 
 namespace wax
@@ -274,7 +274,7 @@ namespace wax
 		bool bPushed = pSrcSurface->pushPixels(srcbuf);
 		if (!bPushed)
 		{
-			Core::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "Failed to access pixels of source surface.",
+			Base::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "Failed to access pixels of source surface.",
 				this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			//TODO: Error handling.
 		}
@@ -306,11 +306,11 @@ namespace wax
 	Surface_p Surface::convert( const Surface::Blueprint& _bp, SurfaceFactory* pFactory)
 	{
 		if (!pFactory)
-			pFactory = Core::defaultSurfaceFactory();
+			pFactory = Base::defaultSurfaceFactory();
 
 		if (!pFactory)
 		{
-			Core::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No surface factory available for surface conversion.",
+			Base::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "No surface factory available for surface conversion.",
 				this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return Surface_p();
 		}

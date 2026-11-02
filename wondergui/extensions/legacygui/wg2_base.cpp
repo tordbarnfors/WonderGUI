@@ -20,7 +20,7 @@
 
 =========================================================================*/
 #include <wg2_base.h>
-#include <wax_core.h>
+#include <wax_base.h>
 #include <wg_textstyle.h>
 #include <wg_texttool.h>
 #include <wg_textstylemanager.h>
@@ -54,11 +54,11 @@ void WgBase::Init( wg::HostBridge * pHostBridge)
 	if(s_iSoftubeNumberOfInstances != 1)
 		return;
 	
-	wax::Core::init();
+	wax::Base::init();
 
 	s_pContext = new WgContext();
 
-	s_pContext->pWaxContext = wax::Core::context();
+	s_pContext->pWaxContext = wax::Base::context();
 	
 	s_pContext->pHostBridge = pHostBridge;
 
@@ -83,7 +83,7 @@ void WgBase::Exit()
 	s_pContext = nullptr;
 	
 	wg::TextStyleManager::exit();
-	wax::Core::exit();
+	wax::Base::exit();
 }
 
 //____ setContext() ________________________________________________________
@@ -96,7 +96,7 @@ WgContext_p WgBase::setContext( const WgContext_p& pNewContext )
 	{
 		s_pContext = pNewContext;
 
-		wax::Core::setContext(pNewContext->pWaxContext);
+		wax::Base::setContext(pNewContext->pWaxContext);
 	}
 	else
 	{
@@ -106,8 +106,8 @@ WgContext_p WgBase::setContext( const WgContext_p& pNewContext )
 		textStyleBP.font = wg::DummyFont::create();
 		s_pContext->pDefaultTextStyle = wg::TextStyle::create( textStyleBP );
 
-		wax::Core::setContext(nullptr);
-		s_pContext->pWaxContext = wax::Core::context();
+		wax::Base::setContext(nullptr);
+		s_pContext->pWaxContext = wax::Base::context();
 	}
 
 	wg::TextStyle::s_pDefaultStyle = s_pContext->pDefaultTextStyle;

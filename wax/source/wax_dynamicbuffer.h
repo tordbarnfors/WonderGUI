@@ -231,4 +231,4 @@ private:
 */
 
 } // namespace wax
-#endif //WAX_CORE_DOT_H
+#endif //WAX_BASE_DOT_H

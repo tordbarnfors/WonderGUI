@@ -19,8 +19,8 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef	WAX_CORE_DOT_H
-#define	WAX_CORE_DOT_H
+#ifndef	WAX_BASE_DOT_H
+#define	WAX_BASE_DOT_H
 #pragma once
 
 #include <assert.h>
@@ -72,7 +72,7 @@ namespace wax
 
 	class Context : public Object
 	{
-		friend class Core;
+		friend class Base;
 
 		std::function<void(Error&)>	pErrorHandler = nullptr;
 
@@ -87,19 +87,19 @@ namespace wax
 	typedef	StrongPtr<Context>	Context_p;
 	typedef	WeakPtr<Context>	Context_wp;
 
-	//____ Core _______________________________________________________________
+	//____ Base _______________________________________________________________
 	/**
 	 * @brief	Static core class for Wax.
 	 *
 	 * A static base class for Wax that handles initialization and general
 	 * housekeeping and resource allocation.
 	 *
-	 * The first thing that you need to do when starting Wax is to call Core::init()
-	 * and the last thing you should do is to call Core::exit().
+	 * The first thing that you need to do when starting Wax is to call Base::init()
+	 * and the last thing you should do is to call Base::exit().
 	 *
 	 */
 
-	class Core
+	class Base
 	{
 //		friend class Object_wp;
 		friend class Object;
@@ -214,4 +214,4 @@ namespace wax
 
 
 } // namespace wax
-#endif //WAX_CORE_DOT_H
+#endif //WAX_BASE_DOT_H

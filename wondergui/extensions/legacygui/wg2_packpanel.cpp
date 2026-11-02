@@ -220,7 +220,7 @@ int WgPackPanel::MatchingPixelHeight( int width ) const
 			// Allocate and populate SizeBroker array
 
 			int arrayBytes = sizeof(WgSizeBrokerItem)*m_hooks.size();
-			WgSizeBrokerItem * pItemArea = reinterpret_cast<WgSizeBrokerItem*>(wax::Core::memStackAlloc(arrayBytes));
+			WgSizeBrokerItem * pItemArea = reinterpret_cast<WgSizeBrokerItem*>(wax::Base::memStackAlloc(arrayBytes));
 
 			int nItems = _populateSizeBrokerArray(pItemArea);
 
@@ -276,7 +276,7 @@ int WgPackPanel::MatchingPixelHeight( int width ) const
 
 			// Release temporary memory area
 
-			wax::Core::memStackFree(arrayBytes);
+			wax::Base::memStackFree(arrayBytes);
 		}
 		else
 		{
@@ -354,7 +354,7 @@ int WgPackPanel::MatchingPixelWidth( int height ) const
 			// Allocate and populate SizeBroker array
 
 			int arrayBytes = sizeof(WgSizeBrokerItem)*m_hooks.size();
-			WgSizeBrokerItem * pItemArea = reinterpret_cast<WgSizeBrokerItem*>(wax::Core::memStackAlloc(arrayBytes));
+			WgSizeBrokerItem * pItemArea = reinterpret_cast<WgSizeBrokerItem*>(wax::Base::memStackAlloc(arrayBytes));
 
 			int nItems = _populateSizeBrokerArray(pItemArea);
 
@@ -409,7 +409,7 @@ int WgPackPanel::MatchingPixelWidth( int height ) const
 
 			// Release temporary memory area
 
-			wax::Core::memStackFree(arrayBytes);
+			wax::Base::memStackFree(arrayBytes);
 		}
 		else
 		{
@@ -945,7 +945,7 @@ void WgPackPanel::_refreshChildGeo()
 	// Allocate temporary space for childrens individual sizes
 
 	int childGeosBytes = sizeof(WgRect)*m_hooks.size();
-	WgRect * pChildGeos = reinterpret_cast<WgRect*>(wax::Core::memStackAlloc(childGeosBytes));
+	WgRect * pChildGeos = reinterpret_cast<WgRect*>(wax::Base::memStackAlloc(childGeosBytes));
 
 	// Optimized special case, just copy preferred to length.
 
@@ -1015,7 +1015,7 @@ void WgPackPanel::_refreshChildGeo()
 		// Allocate and populate SizeBroker array
 
 		int arrayBytes = sizeof(WgSizeBrokerItem)*m_hooks.size();
-		WgSizeBrokerItem * pItemArea = reinterpret_cast<WgSizeBrokerItem*>(wax::Core::memStackAlloc(arrayBytes));
+		WgSizeBrokerItem * pItemArea = reinterpret_cast<WgSizeBrokerItem*>(wax::Base::memStackAlloc(arrayBytes));
 
 		int nItems = _populateSizeBrokerArray(pItemArea, givenBreadth);
 
@@ -1070,7 +1070,7 @@ void WgPackPanel::_refreshChildGeo()
 
 		// Release SizeBroker array
 
-		wax::Core::memStackFree(arrayBytes);
+		wax::Base::memStackFree(arrayBytes);
 	}
 
 	// Make adjustments to breadth according to mode and possibly adjust position.
@@ -1213,7 +1213,7 @@ void WgPackPanel::_refreshChildGeo()
 
 	// Release temporary memory
 
-	wax::Core::memStackFree(childGeosBytes);
+	wax::Base::memStackFree(childGeosBytes);
 }
 
 //____ _populateSizeBrokerArray() ___________________________________________

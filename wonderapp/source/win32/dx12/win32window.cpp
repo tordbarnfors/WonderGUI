@@ -25,7 +25,7 @@
 #include <dx12_wrapper.h>
 
 #include <wax_device.h>
-#include <wax_core.h>
+#include <wax_base.h>
 #include <wax_dx12backend.h>
 
 #include <cstdio>
@@ -48,7 +48,7 @@ static constexpr bool c_bPresentFullFrames = false;
 
 static DX12Backend_p _backend()
 {
-	return wax_static_cast<DX12Backend_p>(wax_static_cast<GfxDeviceGen2_p>(Base::defaultDevice())->backend());
+	return wax_static_cast<DX12Backend_p>(wax_static_cast<GfxDeviceGen2_p>(wg::Base::defaultDevice())->backend());
 }
 
 
@@ -84,7 +84,7 @@ Win32Window::Win32Window(wapp::Window* pUserWindow, wg::Placement origin, wg::Co
 		int scale = dpi * 64 / 96; // 96 DPI is 100% scaling
 
 		_backend()->setDefaultCanvas(m_rtvHandles[m_currentBuffer], m_renderBuffers[m_currentBuffer].Get(), m_rtvFormat, { spx(m_width * 64), spx(m_height * 64) }, scale);
-		m_pRootPanel = RootPanel::create(CanvasRef::Default, Base::defaultDevice());
+		m_pRootPanel = RootPanel::create(CanvasRef::Default, wg::Base::defaultDevice());
 		assert(m_pRootPanel);
 
 
@@ -264,7 +264,7 @@ void Win32Window::paint()
 			char buffer[128];
 			sprintf_s(buffer, "Present1() failed, HRESULT = 0x%08lX", (unsigned long)hr);
 
-			Base::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, buffer, nullptr, nullptr, __func__, __FILE__, __LINE__);
+			wg::Base::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, buffer, nullptr, nullptr, __func__, __FILE__, __LINE__);
 		}
 	}
 

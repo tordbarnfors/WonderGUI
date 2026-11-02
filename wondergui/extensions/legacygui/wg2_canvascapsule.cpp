@@ -23,7 +23,7 @@
 #include <wg2_gfxdevice.h>
 #include <wg2_eventhandler.h>
 
-#include <wax_core.h>
+#include <wax_base.h>
 
 static const char    c_widgetType[] = {"CanvasCapsule"};
 
@@ -386,7 +386,7 @@ void WgCanvasCapsule::_renderPatches( wg::GfxDevice * pDevice, const WgRect& _ca
 
 	if (!m_pCanvas)
 	{
-        wg::SurfaceFactory_p pFactory = m_pFactory ? m_pFactory : wax::Core::defaultSurfaceFactory();
+        wg::SurfaceFactory_p pFactory = m_pFactory ? m_pFactory : wax::Base::defaultSurfaceFactory();
         
 		if (!pFactory)
 			return;                            // No SurfaceFactory set!
@@ -454,7 +454,7 @@ void WgCanvasCapsule::_renderPatches( wg::GfxDevice * pDevice, const WgRect& _ca
 		
 		int nBytesReserved = nRects*sizeof(wg::RectSPX);
 		
-		wg::RectSPX * pClipRects = (wg::RectSPX*) wax::Core::memStackAlloc(nBytesReserved);
+		wg::RectSPX * pClipRects = (wg::RectSPX*) wax::Base::memStackAlloc(nBytesReserved);
 		
 		for(int i = 0 ; i < nRects ; i++)
 			pClipRects[i] = pRects[i]*64;
@@ -477,7 +477,7 @@ void WgCanvasCapsule::_renderPatches( wg::GfxDevice * pDevice, const WgRect& _ca
 //		_popAndReleaseClipList( pDevice, bytesToRelease);
         pDevice->endCanvasUpdate();
 
-		wax::Core::memStackFree(nBytesReserved);
+		wax::Base::memStackFree(nBytesReserved);
 	}
 
 	// Set our tint color and blend mode for blitting from back canvas to screen.

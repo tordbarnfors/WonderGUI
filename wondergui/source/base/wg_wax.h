@@ -113,7 +113,7 @@ namespace wg
 	using wax::Compressor;
 	using wax::Decompressor;
 
-	//____ wax_core.h ______________________________________________________________
+	//____ wax_base.h ______________________________________________________________
 
 	using wax::SurfaceFactory_p;
 	using GfxDeviceFactory_p = wax::DeviceFactory_p;
@@ -561,7 +561,7 @@ namespace wg
 
 	//____ Not brought in _______________________________________________________
 	//
-	// Core       WonderGUI has its own Base, which inherits wax::Core.
+	// Base       WonderGUI has its own Base, which inherits wax::Base.
 	// Context    WonderGUI has its own GUIContext, which holds a wax::Context.
 	// Util       wg::Util extends it, see wg_util.h.
 }

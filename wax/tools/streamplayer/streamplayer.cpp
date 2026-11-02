@@ -85,7 +85,7 @@ int main( int argc, char** argv )
 		return 1;
 	}
 
-	Core::init();
+	Base::init();
 
 	int result = 0;
 
@@ -118,7 +118,7 @@ int main( int argc, char** argv )
 		player.exit();
 	}
 
-	Core::exit();
+	Base::exit();
 
 	SDL_DestroyWindow(pWindow);
 	SDL_Quit();

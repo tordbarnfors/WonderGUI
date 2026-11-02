@@ -21,7 +21,7 @@
 =========================================================================*/
 #include <wax_color.h>
 #include <wax_util.h>
-#include <wax_core.h>
+#include <wax_base.h>
 
 #include <algorithm>
 #include <math.h>

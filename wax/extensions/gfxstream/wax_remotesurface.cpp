@@ -25,7 +25,7 @@
 #include <wax_util.h>
 #include <wax_blob.h>
 #include <wax_pixeltools.h>
-#include <wax_core.h>
+#include <wax_base.h>
 #include <wax_streambackend.h>
 
 #include <assert.h>
@@ -311,7 +311,7 @@ namespace wax
 
 		int allocSize = dataSize;		// Increase if needed by future compression
 
-		auto pBuffer = (uint8_t *) Core::memStackAlloc(allocSize);
+		auto pBuffer = (uint8_t *) Base::memStackAlloc(allocSize);
 
 		auto pLine = pSource;
 		auto pDest = pBuffer;
@@ -336,7 +336,7 @@ namespace wax
 
 		StreamBackend::_compressSplitAndEncode(pEncoder, GfxStream::ChunkId::SurfacePixels, m_inStreamId, nullptr, pBuffer, pBuffer + dataSize);
 
-		Core::memStackFree(allocSize);
+		Base::memStackFree(allocSize);
 	}
 
 	//____ _sendDeleteSurface() _______________________________________________

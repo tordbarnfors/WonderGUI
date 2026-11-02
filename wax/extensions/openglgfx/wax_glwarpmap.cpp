@@ -20,7 +20,7 @@
 
 =========================================================================*/
 #include <wax_glwarpmap.h>
-#include <wax_core.h>
+#include <wax_base.h>
 
 #include <algorithm>
 
@@ -94,7 +94,7 @@ namespace wax
 			return;
 
 		int bytes = (rowEnd - rowBeg) * cells.w * 2 * 4 * sizeof(GLfloat);
-		auto pBuffer = (GLfloat*) Core::memStackAlloc(bytes);
+		auto pBuffer = (GLfloat*) Base::memStackAlloc(bytes);
 		GLfloat* pOut = pBuffer;
 
 		for (int row = rowBeg; row < rowEnd; row++)
@@ -116,7 +116,7 @@ namespace wax
 		glBufferSubData(GL_TEXTURE_BUFFER, rowBeg * cells.w * 2 * 4 * sizeof(GLfloat), bytes, pBuffer);
 		glBindBuffer(GL_TEXTURE_BUFFER, 0);
 
-		Core::memStackFree(bytes);
+		Base::memStackFree(bytes);
 	}
 
 } // namespace wax

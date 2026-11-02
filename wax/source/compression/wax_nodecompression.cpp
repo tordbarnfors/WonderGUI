@@ -22,7 +22,7 @@
 
 #include <wax_nodecompression.h>
 #include <wax_util.h>
-#include <wax_core.h>
+#include <wax_base.h>
 
 #include <cstring>
 
@@ -264,7 +264,7 @@ int NodeDecompressor::decompress( void * _pDest, const void * _pBegin, const voi
 
 	if (mode != Mode::Predicted)
 	{
-		Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Unknown mode of compressed nodes.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+		Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Unknown mode of compressed nodes.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 		return 0;
 	}
 
@@ -272,7 +272,7 @@ int NodeDecompressor::decompress( void * _pDest, const void * _pBegin, const voi
 	p = readCode(p, pEnd, rowLength);
 	if (!p || rowLength == 0 || rowLength > (1u << 24))
 	{
-		Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Invalid row length of compressed nodes.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+		Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Invalid row length of compressed nodes.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 		return 0;
 	}
 
@@ -286,7 +286,7 @@ int NodeDecompressor::decompress( void * _pDest, const void * _pBegin, const voi
 		p = readCode(p, pEnd, code);
 		if (!p)
 		{
-			Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Compressed nodes end in the middle of a value.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Compressed nodes end in the middle of a value.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			break;
 		}
 

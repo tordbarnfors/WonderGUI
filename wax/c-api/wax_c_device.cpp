@@ -23,7 +23,7 @@
 #include <algorithm>
 #include <new>
 #include <wax_device_gen2.h>
-#include <wax_core.h>
+#include <wax_base.h>
 
 #include <wax_c_blurbrush.h>
 
@@ -586,7 +586,7 @@ void wax_drawRing(wax_obj device, const wax_ringSpec* spec)
 	int nCopied = spec->pSlices ? std::max(nSlices, 0) : 0;
 
 	int bufferSize = sizeof(RingSlice) * std::max(nCopied, 1);
-	auto slices = (RingSlice*) Core::memStackAlloc(bufferSize);
+	auto slices = (RingSlice*) Base::memStackAlloc(bufferSize);
 
 	for (int i = 0; i < nCopied; i++)
 	{
@@ -612,7 +612,7 @@ void wax_drawRing(wax_obj device, const wax_ringSpec* spec)
 
 	getPtr(device)->drawRing(ring);
 
-	Core::memStackFree(bufferSize);
+	Base::memStackFree(bufferSize);
 }
 
 void wax_blitNinePatch(wax_obj device, const wax_rectSPX* dstRect, const wax_borderSPX* dstFrame, const wax_ninePatch* patch, int scale)

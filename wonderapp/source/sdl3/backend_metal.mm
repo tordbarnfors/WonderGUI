@@ -69,15 +69,15 @@ bool backend_specific_init()
 
 	auto pBackend = MetalBackend::create();
 	auto pDevice = GfxDeviceGen2::create(pBackend);
-	Base::setDefaultDevice(pDevice);
+	wg::Base::setDefaultDevice(pDevice);
 
 	auto pSurfaceFactory = MetalSurfaceFactory::create();
-	Base::setDefaultSurfaceFactory(pSurfaceFactory);
+	wg::Base::setDefaultSurfaceFactory(pSurfaceFactory);
 
 	auto pEdgemapFactory = MetalEdgemapFactory::create();
-	Base::setDefaultEdgemapFactory(pEdgemapFactory);
+	wg::Base::setDefaultEdgemapFactory(pEdgemapFactory);
 
-	Base::setDefaultWarpmapFactory(pBackend->warpmapFactory());
+	wg::Base::setDefaultWarpmapFactory(pBackend->warpmapFactory());
 
 	return true;
 }
@@ -127,7 +127,7 @@ SDLWindowMetal::SDLWindowMetal(wapp::Window* pUserWindow, wg::Placement origin, 
 		layer.pixelFormat = MTLPixelFormatBGRA8Unorm_sRGB;
 		layer.drawableSize = CGSizeMake(pixels.w, pixels.h);
 
-		m_pBackend = wax_static_cast<MetalBackend_p>(static_cast<GfxDeviceGen2*>(Base::defaultDevice().rawPtr())->backend());
+		m_pBackend = wax_static_cast<MetalBackend_p>(static_cast<GfxDeviceGen2*>(wg::Base::defaultDevice().rawPtr())->backend());
 		m_pBackend->setDefaultCanvas(nullptr, pixels, PixelFormat::ARGB_8);
 
 		m_pCanvas = MetalSurface::create({.canvas = true, .format = PixelFormat::ARGB_8, .scale = scale, .size = pixels });
@@ -137,7 +137,7 @@ SDLWindowMetal::SDLWindowMetal(wapp::Window* pUserWindow, wg::Placement origin, 
 
 	//TODO: This is ugly. It should be handled when windows gets focused.
 
-	Base::inputHandler()->setFocusedWindow(m_pRootPanel);
+	wg::Base::inputHandler()->setFocusedWindow(m_pRootPanel);
 }
 
 //____ ~SDLWindowMetal() ______________________________________________________
@@ -220,7 +220,7 @@ void SDLWindowMetal::_present(bool bWithTransaction)
 
 		m_pBackend->autopresent(surface);
 
-		auto pDevice = Base::defaultDevice();
+		auto pDevice = wg::Base::defaultDevice();
 
 		pDevice->beginRender();
 		pDevice->beginCanvasUpdate(CanvasRef::Default);

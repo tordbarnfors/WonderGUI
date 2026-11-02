@@ -63,7 +63,7 @@ namespace wax
 
 		struct Blueprint
 		{
-			EdgemapFactory_p	factory;								// Default edgemap factory of Core if not set.
+			EdgemapFactory_p	factory;								// Default edgemap factory of Base if not set.
 			Finalizer_p			finalizer = nullptr;
 		};
 

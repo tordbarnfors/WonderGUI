@@ -23,7 +23,7 @@
 #define	WG_BASE_DOT_H
 #pragma once
 
-#include <wax_core.h>
+#include <wax_base.h>
 
 #include <assert.h>
 
@@ -103,7 +103,7 @@ namespace wg
 	 *
 	 */
 
-	class Base : public wax::Core
+	class Base : public wax::Base
 	{
 //		friend class Object_wp;
 		friend class Object;

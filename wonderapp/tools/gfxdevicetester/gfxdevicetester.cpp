@@ -143,7 +143,7 @@ bool GfxDeviceTester::update()
 void GfxDeviceTester::exit()
 {
 	for (auto route : m_routes)
-		Base::msgRouter()->deleteRoute(route);
+		wg::Base::msgRouter()->deleteRoute(route);
 	m_routes.clear();
 
 	destroy_tests();
@@ -176,7 +176,7 @@ void GfxDeviceTester::setup_backends()
 	// Testee: The native device of the WonderApp framework.
 
 	{
-		auto pDevice = Base::defaultDevice();
+		auto pDevice = wg::Base::defaultDevice();
 
 		string name = string("Native (") + pDevice->typeInfo().className;
 
@@ -188,7 +188,7 @@ void GfxDeviceTester::setup_backends()
 		}
 		name += ")";
 
-		m_backends[TESTEE] = { name, pDevice, Base::defaultSurfaceFactory()->createSurface(canvasBP) };
+		m_backends[TESTEE] = { name, pDevice, wg::Base::defaultSurfaceFactory()->createSurface(canvasBP) };
 	}
 
 	// Reference: GfxDeviceGen2 with ReferenceBackend.
@@ -343,7 +343,7 @@ bool GfxDeviceTester::setup_chrome()
 		pNavBar->slots.pushBack(pButton, { .weight = 0 });
 
 		View view = View(i);
-		m_routes.push_back(Base::msgRouter()->addRoute(pButton, MsgType::Toggle, [this, view](Msg* pMsg) {
+		m_routes.push_back(wg::Base::msgRouter()->addRoute(pButton, MsgType::Toggle, [this, view](Msg* pMsg) {
 			if (static_cast<ToggleMsg*>(pMsg)->isChecked())
 				select_view(view);
 		}));
@@ -373,7 +373,7 @@ bool GfxDeviceTester::setup_chrome()
 	// Clicks on the cells of the accuracy and performance tables select their row.
 	// Each cell has the index of its test as id, headings have -1.
 
-	m_routes.push_back(Base::msgRouter()->addRoute(MsgType::MouseClick, [this](Msg* pMsg) {
+	m_routes.push_back(wg::Base::msgRouter()->addRoute(MsgType::MouseClick, [this](Msg* pMsg) {
 		auto pSource = pMsg->sourceRawPtr();
 		if (!pSource || !pSource->isInstanceOf(Widget::TYPEINFO))
 			return;
@@ -418,7 +418,7 @@ Widget_p GfxDeviceTester::create_display_view()
 		pTopBar->slots.pushBack(pButton, { .weight = 0 });
 
 		Background background = Background(i);
-		m_routes.push_back(Base::msgRouter()->addRoute(pButton, MsgType::Toggle, [this, background](Msg* pMsg) {
+		m_routes.push_back(wg::Base::msgRouter()->addRoute(pButton, MsgType::Toggle, [this, background](Msg* pMsg) {
 			if (static_cast<ToggleMsg*>(pMsg)->isChecked() && m_displayViewer.background != background)
 			{
 				m_displayViewer.background = background;
@@ -446,7 +446,7 @@ Widget_p GfxDeviceTester::create_display_view()
 		pTopBar->slots.pushBack(pButton, { .weight = 0 });
 
 		ClipList clipList = ClipList(i);
-		m_routes.push_back(Base::msgRouter()->addRoute(pButton, MsgType::Toggle, [this, clipList](Msg* pMsg) {
+		m_routes.push_back(wg::Base::msgRouter()->addRoute(pButton, MsgType::Toggle, [this, clipList](Msg* pMsg) {
 			if (static_cast<ToggleMsg*>(pMsg)->isChecked() && m_displayViewer.clipList != clipList)
 			{
 				m_displayViewer.clipList = clipList;
@@ -529,7 +529,7 @@ Widget_p GfxDeviceTester::create_test_tree()
 
 	m_pTestTreeSelector = pSelector;
 
-	m_routes.push_back(Base::msgRouter()->addRoute(pSelector, MsgType::Selected, [this](Msg* pMsg) {
+	m_routes.push_back(wg::Base::msgRouter()->addRoute(pSelector, MsgType::Selected, [this](Msg* pMsg) {
 		auto p = static_cast<SelectedMsg*>(pMsg);
 		if (p->nbSelected() > 0)
 			show_test(m_displayViewer, p->selected()[0]->id());
@@ -557,7 +557,7 @@ void GfxDeviceTester::create_viewer(Viewer& viewer)
 
 	for (int i = 0; i < 3; i++)
 	{
-		viewer.pImages[i] = Base::defaultSurfaceFactory()->createSurface(bp);
+		viewer.pImages[i] = wg::Base::defaultSurfaceFactory()->createSurface(bp);
 		viewer.pImages[i]->fill(Color::Black);
 	}
 
@@ -575,7 +575,7 @@ void GfxDeviceTester::create_viewer(Viewer& viewer)
 	viewer.pDiffFactorLabel = TextDisplay::create({ .display = {.style = wkit::TextStyles::Strong, .text = "1x" } });
 
 	Viewer* pViewer = &viewer;
-	m_routes.push_back(Base::msgRouter()->addRoute(pSlider, MsgType::ValueUpdate, [this, pViewer](Msg* pMsg) {
+	m_routes.push_back(wg::Base::msgRouter()->addRoute(pSlider, MsgType::ValueUpdate, [this, pViewer](Msg* pMsg) {
 		float value = static_cast<ValueUpdateMsg*>(pMsg)->value();
 		int factor = 1 + int(std::lround(value * (c_maxDiffFactor - 1)));
 
@@ -679,7 +679,7 @@ Widget_p GfxDeviceTester::create_accuracy_view()
 	pTopRow->slots.pushBack(create_image_box(m_accuracyViewer, REFERENCE, 0.5f), { .weight = 0 });
 
 	auto pShowButton = WGCREATE(wkit::Button, _.label.text = "Show in Display view");
-	m_routes.push_back(Base::msgRouter()->addRoute(pShowButton, MsgType::Select, [this](Msg* pMsg) {
+	m_routes.push_back(wg::Base::msgRouter()->addRoute(pShowButton, MsgType::Select, [this](Msg* pMsg) {
 		if (m_accuracySelected >= 0)
 			show_in_display(m_accuracySelected);
 	}));
@@ -706,7 +706,7 @@ Widget_p GfxDeviceTester::create_accuracy_view()
 	m_pAccuracySummary = TextDisplay::create({ .display = {.style = wkit::TextStyles::Default } });
 
 	m_pAccuracyRunButton = WGCREATE(wkit::Button, _.label.text = "RUN ALL");
-	m_routes.push_back(Base::msgRouter()->addRoute(m_pAccuracyRunButton, MsgType::Select, [this](Msg* pMsg) {
+	m_routes.push_back(wg::Base::msgRouter()->addRoute(m_pAccuracyRunButton, MsgType::Select, [this](Msg* pMsg) {
 		if (m_bAccuracyRunning)
 		{
 			m_bAccuracyRunning = false;
@@ -781,7 +781,7 @@ Widget_p GfxDeviceTester::create_performance_view()
 	m_pPerformanceDetails = TextDisplay::create({ .display = {.style = wkit::TextStyles::Default, .text = "Select a test to see it here." } });
 
 	auto pRunSelectedButton = WGCREATE(wkit::Button, _.label.text = "RUN SELECTED TEST");
-	m_routes.push_back(Base::msgRouter()->addRoute(pRunSelectedButton, MsgType::Select, [this](Msg* pMsg) {
+	m_routes.push_back(wg::Base::msgRouter()->addRoute(pRunSelectedButton, MsgType::Select, [this](Msg* pMsg) {
 		if (!m_bPerformanceRunning && m_performanceSelected >= 0)
 			start_performance_run({ m_performanceSelected });
 	}));
@@ -804,10 +804,10 @@ Widget_p GfxDeviceTester::create_performance_view()
 	auto pFileBar = PackPanel::create({ .axis = Axis::X, .layout = m_pLayout, .skin = wkit::Skins::Plate, .spacing = 8 });
 
 	auto pSaveButton = WGCREATE(wkit::Button, _.label.text = "SAVE RESULTS...");
-	m_routes.push_back(Base::msgRouter()->addRoute(pSaveButton, MsgType::Select, [this](Msg* pMsg) { save_performance_results(); }));
+	m_routes.push_back(wg::Base::msgRouter()->addRoute(pSaveButton, MsgType::Select, [this](Msg* pMsg) { save_performance_results(); }));
 
 	auto pLoadButton = WGCREATE(wkit::Button, _.label.text = "LOAD RESULTS...");
-	m_routes.push_back(Base::msgRouter()->addRoute(pLoadButton, MsgType::Select, [this](Msg* pMsg) { load_performance_results(); }));
+	m_routes.push_back(wg::Base::msgRouter()->addRoute(pLoadButton, MsgType::Select, [this](Msg* pMsg) { load_performance_results(); }));
 
 	m_pPerformanceLoadedLabel = TextDisplay::create({ .display = {.style = wkit::TextStyles::Default, .text = "No results loaded to compare with." } });
 
@@ -831,7 +831,7 @@ Widget_p GfxDeviceTester::create_performance_view()
 
 		pFileBar->slots.pushBack(pButton, { .weight = 0 });
 
-		m_routes.push_back(Base::msgRouter()->addRoute(pButton, MsgType::Toggle, [this, passes](Msg* pMsg) {
+		m_routes.push_back(wg::Base::msgRouter()->addRoute(pButton, MsgType::Toggle, [this, passes](Msg* pMsg) {
 			if (static_cast<ToggleMsg*>(pMsg)->isChecked())
 				m_performancePasses = passes;
 		}));
@@ -845,7 +845,7 @@ Widget_p GfxDeviceTester::create_performance_view()
 		.text = "Times each test on the testee only. Init and exit are not included." } });
 
 	m_pPerformanceRunButton = WGCREATE(wkit::Button, _.label.text = "RUN ALL TESTS");
-	m_routes.push_back(Base::msgRouter()->addRoute(m_pPerformanceRunButton, MsgType::Select, [this](Msg* pMsg) {
+	m_routes.push_back(wg::Base::msgRouter()->addRoute(m_pPerformanceRunButton, MsgType::Select, [this](Msg* pMsg) {
 		if (m_bPerformanceRunning)
 		{
 			m_bPerformanceRunning = false;

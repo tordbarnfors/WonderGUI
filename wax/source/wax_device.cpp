@@ -26,7 +26,7 @@
 #include <wax_device.h>
 #include <wax_geo.h>
 #include <wax_util.h>
-#include <wax_core.h>
+#include <wax_base.h>
 
 using namespace std;
 using namespace wax::Util;

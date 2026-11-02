@@ -22,7 +22,7 @@
 
 #include <wax_q565compression.h>
 #include <wax_util.h>
-#include <wax_core.h>
+#include <wax_base.h>
 
 namespace wax
 {
@@ -121,7 +121,7 @@ int Q565Compressor::compress( void * pDest, const void * pBegin, const void * pE
 {
 	if( ((intptr_t(pBegin) | intptr_t(pEnd) ) &0x1) == 1 )
 	{
-		Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Data to compress must start/stop on WORD boundary.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+		Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Data to compress must start/stop on WORD boundary.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 		return 0;
 	}
 

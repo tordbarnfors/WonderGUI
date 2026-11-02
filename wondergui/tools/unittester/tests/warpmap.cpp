@@ -701,7 +701,7 @@ bool WarpmapTest::nodeCompressionTest(std::ostream& output)
 	auto pCompressor = NodeCompressor::create();
 	auto pDecompressor = NodeDecompressor::create();
 
-	TEST_ASSERT(Core::getDecompressor(NodeCompressor::ID_TOKEN) != nullptr);
+	TEST_ASSERT(wax::Base::getDecompressor(NodeCompressor::ID_TOKEN) != nullptr);
 	TEST_ASSERT(!pCompressor->setRowLength(0));
 
 	// Compresses and decompresses in place, returns compressed size or -1 if not restored.

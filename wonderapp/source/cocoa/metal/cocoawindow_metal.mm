@@ -72,15 +72,15 @@ bool initGfxBackend()
 
 	auto pBackend = MetalBackend::create();
 	auto pDevice = GfxDeviceGen2::create(pBackend);
-	Base::setDefaultDevice(pDevice);
+	wg::Base::setDefaultDevice(pDevice);
 
 	auto pSurfaceFactory = MetalSurfaceFactory::create();
-	Base::setDefaultSurfaceFactory(pSurfaceFactory);
+	wg::Base::setDefaultSurfaceFactory(pSurfaceFactory);
 
 	auto pEdgemapFactory = MetalEdgemapFactory::create();
-	Base::setDefaultEdgemapFactory(pEdgemapFactory);
+	wg::Base::setDefaultEdgemapFactory(pEdgemapFactory);
 
-	Base::setDefaultWarpmapFactory(pBackend->warpmapFactory());
+	wg::Base::setDefaultWarpmapFactory(pBackend->warpmapFactory());
 
 	return true;
 }
@@ -120,7 +120,7 @@ CocoaWindowMetal::CocoaWindowMetal(wapp::Window* pUserWindow, wg::Placement orig
 	[m_view setLayer:m_layer];
 	[m_view setWantsLayer:YES];
 
-	m_pBackend = wax_static_cast<MetalBackend_p>(static_cast<GfxDeviceGen2*>(Base::defaultDevice().rawPtr())->backend());
+	m_pBackend = wax_static_cast<MetalBackend_p>(static_cast<GfxDeviceGen2*>(wg::Base::defaultDevice().rawPtr())->backend());
 	m_pBackend->setDefaultCanvas(nullptr, pixels, PixelFormat::ARGB_8);
 
 	m_pCanvas = MetalSurface::create({.canvas = true, .format = PixelFormat::ARGB_8, .scale = _scale(), .size = pixels });
@@ -198,7 +198,7 @@ void CocoaWindowMetal::_present()
 
 		m_pBackend->autopresent(drawable);
 
-		auto pDevice = Base::defaultDevice();
+		auto pDevice = wg::Base::defaultDevice();
 
 		pDevice->beginRender();
 		pDevice->beginCanvasUpdate(CanvasRef::Default);

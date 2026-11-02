@@ -21,31 +21,31 @@
 =========================================================================*/
 #include <string>
 
-#include <wax_c_core.h>
-#include <wax_core.h>
+#include <wax_c_base.h>
+#include <wax_base.h>
 #include <wax_bitmapcache.h>
 
 using namespace wax;
 
-int wax_initCore()
+int wax_initBase()
 {
-	return Core::init();
+	return Base::init();
 }
 
-int wax_exitCore()
+int wax_exitBase()
 {
-	return Core::exit();
+	return Base::exit();
 }
 
-int wax_isCoreInitialized()
+int wax_isBaseInitialized()
 {
-	return Core::isInitialized();
+	return Base::isInitialized();
 }
 
 void wax_setErrorHandler( void (*errorHandler)(const wax_errorInfo * pError) )
 {
 
-	Core::setErrorHandler( [errorHandler](Error& error)
+	Base::setErrorHandler( [errorHandler](Error& error)
 	{
 		wax_errorInfo	errorInfo;
 
@@ -64,55 +64,55 @@ void wax_setErrorHandler( void (*errorHandler)(const wax_errorInfo * pError) )
 
 wax_obj wax_defaultBitmapCache()
 {
-	BitmapCache* pCache = Core::defaultBitmapCache();
+	BitmapCache* pCache = Base::defaultBitmapCache();
 	return (wax_obj) static_cast<Object*>(pCache);
 }
 
 void wax_setDefaultSurfaceFactory( wax_obj factory )
 {
 	SurfaceFactory* pFactory = static_cast<SurfaceFactory*>(reinterpret_cast<Object*>(factory));
-	return Core::setDefaultSurfaceFactory(pFactory);
+	return Base::setDefaultSurfaceFactory(pFactory);
 }
 
 wax_obj wax_defaultSurfaceFactory()
 {
-	SurfaceFactory * pFactory = Core::defaultSurfaceFactory();
+	SurfaceFactory * pFactory = Base::defaultSurfaceFactory();
 	return (wax_obj) static_cast<Object*>(pFactory);
 }
 
 void wax_setDefaultEdgemapFactory( wax_obj factory )
 {
 	EdgemapFactory* pFactory = static_cast<EdgemapFactory*>(reinterpret_cast<Object*>(factory));
-	return Core::setDefaultEdgemapFactory(pFactory);
+	return Base::setDefaultEdgemapFactory(pFactory);
 }
 
 wax_obj wax_defaultEdgemapFactory()
 {
-	EdgemapFactory * pFactory = Core::defaultEdgemapFactory();
+	EdgemapFactory * pFactory = Base::defaultEdgemapFactory();
 	return (wax_obj) static_cast<Object*>(pFactory);
 }
 
 void wax_setDefaultWarpmapFactory( wax_obj factory )
 {
 	WarpmapFactory* pFactory = static_cast<WarpmapFactory*>(reinterpret_cast<Object*>(factory));
-	return Core::setDefaultWarpmapFactory(pFactory);
+	return Base::setDefaultWarpmapFactory(pFactory);
 }
 
 wax_obj wax_defaultWarpmapFactory()
 {
-	WarpmapFactory * pFactory = Core::defaultWarpmapFactory();
+	WarpmapFactory * pFactory = Base::defaultWarpmapFactory();
 	return (wax_obj) static_cast<Object*>(pFactory);
 }
 
 void wax_setDefaultDevice( wax_obj device )
 {
 	Device* pDevice = static_cast<Device*>(reinterpret_cast<Object*>(device));
-	return Core::setDefaultDevice(pDevice);
+	return Base::setDefaultDevice(pDevice);
 }
 
 wax_obj wax_defaultDevice()
 {
-	Device * pDevice = Core::defaultDevice();
+	Device * pDevice = Base::defaultDevice();
 	return (wax_obj) static_cast<Object*>(pDevice);
 }
 

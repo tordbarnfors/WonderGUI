@@ -27,7 +27,7 @@
 #include <wax_chain.h>
 #include <wax_dataset.h>
 #include <wax_dynamicbuffer.h>
-#include <wax_core.h>
+#include <wax_base.h>
 #include <wax_types.h>
 #include <wax_memheap.h>
 #include <wax_mempool.h>

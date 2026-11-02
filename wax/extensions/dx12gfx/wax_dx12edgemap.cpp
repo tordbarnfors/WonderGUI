@@ -24,7 +24,7 @@
 #include <wax_dx12edgemap.h>
 #include <wax_dx12backend.h>
 #include <wax_tinttools.h>
-#include <wax_core.h>
+#include <wax_base.h>
 
 #include <cstring>
 #include <cwchar>
@@ -116,7 +116,7 @@ namespace wax
 
 		if( !s_pDevice )
 		{
-			Core::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite,
+			Base::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite,
 				"No D3D12 device set. DX12Backend must be created before any edgemap.",
 				this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return;
@@ -355,7 +355,7 @@ namespace wax
 			// A lost device is reported once by DX12Backend, not by every edgemap.
 
 			if( !DX12Backend::checkDeviceLost() )
-				Core::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to create buffer for edgemap.",
+				Base::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to create buffer for edgemap.",
 					this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return false;
 		}
@@ -372,7 +372,7 @@ namespace wax
 		if( FAILED(buffer->Map(0, &readRange, (void**) &pBuffer)) )
 		{
 			if( !DX12Backend::checkDeviceLost() )
-				Core::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to map buffer for edgemap.",
+				Base::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to map buffer for edgemap.",
 					this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return false;
 		}

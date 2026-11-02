@@ -20,7 +20,7 @@
 
 =========================================================================*/
 #include <wax_surfacereader.h>
-#include <wax_core.h>
+#include <wax_base.h>
 #include <wax_util.h>
 #include <wax_pixeltools.h>
 
@@ -75,7 +75,7 @@ namespace wax
 		else if (*(uint32_t*)id_QOI == *(uint32_t*)identifier)
 			return _readQOIFromStream(stream, _bp);
 
-		Core::throwError(ErrorLevel::Error, ErrorCode::Other, "Stream is not a supported image format.", this, &TYPEINFO, __func__, __FILE__, __LINE__ );
+		Base::throwError(ErrorLevel::Error, ErrorCode::Other, "Stream is not a supported image format.", this, &TYPEINFO, __func__, __FILE__, __LINE__ );
 		return nullptr;
 	}
 
@@ -97,12 +97,12 @@ namespace wax
 
 		int dataBytes = header.paletteBytes + header.pixelBytes;
 
-		char * pData = Core::memStackAlloc(dataBytes);
+		char * pData = Base::memStackAlloc(dataBytes);
 		stream.read( pData, dataBytes );
 
 		auto pSurface = _createSurface(header, pData, _bp);
 
-		Core::memStackFree(dataBytes);
+		Base::memStackFree(dataBytes);
 		return pSurface;
 	}
 
@@ -118,7 +118,7 @@ namespace wax
 
 		if( !stream.good() )
 		{
-			Core::throwError(ErrorLevel::Error, ErrorCode::Other, "QOI image ended before end of header.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			Base::throwError(ErrorLevel::Error, ErrorCode::Other, "QOI image ended before end of header.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return nullptr;
 		}
 
@@ -170,7 +170,7 @@ namespace wax
 		if( pixelsLeft > 0 || pBuffer->sgetn((char*) &data[ofs], 8) != 8 )
 		{
 			stream.setstate(std::ios::eofbit | std::ios::failbit);
-			Core::throwError(ErrorLevel::Error, ErrorCode::Other, "QOI image ended before all pixels were read.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			Base::throwError(ErrorLevel::Error, ErrorCode::Other, "QOI image ended before all pixels were read.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return nullptr;
 		}
 
@@ -183,7 +183,7 @@ namespace wax
 	{
 		if( pDataEnd && pDataEnd - pData < c_qoiHeaderSize )
 		{
-			Core::throwError(ErrorLevel::Error, ErrorCode::Other, "QOI image is too small to contain a header.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			Base::throwError(ErrorLevel::Error, ErrorCode::Other, "QOI image is too small to contain a header.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return nullptr;
 		}
 
@@ -216,7 +216,7 @@ namespace wax
 		if( std::memcmp(p, "qoif", 4) != 0 || width == 0 || height == 0 || height >= c_qoiMaxPixels / width ||
 		   (header.channels != 3 && header.channels != 4) || header.colorspace > 1 )
 		{
-			Core::throwError(ErrorLevel::Error, ErrorCode::Other, "Invalid or unsupported QOI header.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			Base::throwError(ErrorLevel::Error, ErrorCode::Other, "Invalid or unsupported QOI header.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return false;
 		}
 
@@ -238,7 +238,7 @@ namespace wax
 
 		if (_addFlagsFromOtherBlueprint(bp, _bp) != 0)
 		{
-			Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Provided blueprint can not alter size, format or palette of loaded surface but have one or more of these parameters set.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Provided blueprint can not alter size, format or palette of loaded surface but have one or more of these parameters set.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return nullptr;
 		}
 
@@ -260,7 +260,7 @@ namespace wax
 
 		auto pDecompressor = QOIDecompressor::create( WAXBP(QOIDecompressor, _.bigEndian = bSameLayout ? pixbuf.bigEndian : false ) );
 
-		uint8_t *	pDecompressed = bSameLayout ? pixbuf.pixels : (uint8_t*) Core::memStackAlloc(nPixels * 4);
+		uint8_t *	pDecompressed = bSameLayout ? pixbuf.pixels : (uint8_t*) Base::memStackAlloc(nPixels * 4);
 
 		int bytes = pDecompressor->decompress(pDecompressed, nPixels * 4, pChunks, pChunksEnd);
 
@@ -268,7 +268,7 @@ namespace wax
 
 		if( bytes != nPixels * 4 )
 		{
-			Core::throwError(ErrorLevel::Error, ErrorCode::Other, "QOI data ended before all pixels were decoded.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			Base::throwError(ErrorLevel::Error, ErrorCode::Other, "QOI data ended before all pixels were decoded.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			bOk = false;
 		}
 		else if( !bSameLayout )
@@ -282,11 +282,11 @@ namespace wax
 										 const_cast<Color8*>(pixbuf.palette), paletteEntries, pSurface->paletteCapacity());
 
 			if( !bOk )
-				Core::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "Failed to convert pixels of QOI image to surface.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				Base::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "Failed to convert pixels of QOI image to surface.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 		}
 
 		if( !bSameLayout )
-			Core::memStackFree(nPixels * 4);
+			Base::memStackFree(nPixels * 4);
 
 		if( !bOk )
 		{
@@ -346,7 +346,7 @@ namespace wax
 	{
 		if( header.versionNumber < 1 || header.versionNumber > 2 )
 		{
-			Core::throwError(ErrorLevel::Error, ErrorCode::Other, "Unsupported version of surface file.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			Base::throwError(ErrorLevel::Error, ErrorCode::Other, "Unsupported version of surface file.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return nullptr;
 		}
 
@@ -354,7 +354,7 @@ namespace wax
 
 		if( layout.format == PixelFormat::Undefined )
 		{
-			Core::throwError(ErrorLevel::Error, ErrorCode::Other, "Pixel format of surface file is not supported.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			Base::throwError(ErrorLevel::Error, ErrorCode::Other, "Pixel format of surface file is not supported.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return nullptr;
 		}
 
@@ -363,7 +363,7 @@ namespace wax
 		Surface::Blueprint bp = _blueprintFromHeader(&header, layout);
 		if (_addFlagsFromOtherBlueprint(bp, _bp) != 0)
 		{
-			Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Provided blueprint can not alter size, format or palette of loaded surface but have one or more of these parameters set.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Provided blueprint can not alter size, format or palette of loaded surface but have one or more of these parameters set.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return nullptr;
 		}
 
@@ -378,14 +378,14 @@ namespace wax
 
 			if (header.paletteCompression != Util::makeEndianSpecificToken( 'N','O','N','E' ))
 			{
-				Decompressor * pDecompressor = Core::getDecompressor(header.paletteCompression);
+				Decompressor * pDecompressor = Base::getDecompressor(header.paletteCompression);
 
 				if( !pDecompressor )
 				{
 					char msg[] = "Don't know how to decompress 'XXXX'.";
 					* (uint32_t*)&msg[30] = header.paletteCompression;
 
-					Core::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, msg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+					Base::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, msg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 					return nullptr;
 				}
 
@@ -421,14 +421,14 @@ namespace wax
 
 		if (header.pixelCompression != Util::makeEndianSpecificToken( 'N','O','N','E' ))
 		{
-			Decompressor * pDecompressor = Core::getDecompressor(header.pixelCompression);
+			Decompressor * pDecompressor = Base::getDecompressor(header.pixelCompression);
 
 			if( !pDecompressor )
 			{
 				char msg[] = "Don't know how to decompress 'XXXX'.";
 				* (uint32_t*)&msg[30] = header.pixelCompression;
 
-				Core::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, msg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				Base::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, msg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 				pSurface->freePixelBuffer(pixbuf);
 				return nullptr;
 			}
@@ -446,7 +446,7 @@ namespace wax
 			}
 
 			decompressedBytes = fileLineBytes * header.height + header.pixelDecompressMargin;
-			char * pDecompressed = Core::memStackAlloc(decompressedBytes);
+			char * pDecompressed = Base::memStackAlloc(decompressedBytes);
 			pDecompressor->decompress(pDecompressed, pBegin, pEnd);
 			pPixels = pDecompressed;
 		}
@@ -469,11 +469,11 @@ namespace wax
 		}
 
 		if( decompressedBytes > 0 )
-			Core::memStackFree(decompressedBytes);
+			Base::memStackFree(decompressedBytes);
 
 		if( !bOk )
 		{
-			Core::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "Failed to convert pixels of surface file to surface.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			Base::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "Failed to convert pixels of surface file to surface.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			pSurface->freePixelBuffer(pixbuf);
 			return nullptr;
 		}

@@ -33,7 +33,7 @@
 #include <wax_glwarpmap.h>
 #include <wax_glwarpmapfactory.h>
 #include <wax_gpushapes.h>
-#include <wax_core.h>
+#include <wax_base.h>
 #include <wax_util.h>
 
 using namespace std;
@@ -116,7 +116,7 @@ void GlBackend::onGlError(GLenum errorCode, const Object * pObject, const TypeIn
 
 
 	snprintf( buffer, 1024, "OpenGL error 0x%x: %s", errorCode, pErrorName );
-	Core::throwError(ErrorLevel::SilentError, ErrorCode::OpenGL, buffer, pObject, pClassType, func, file, line);
+	Base::throwError(ErrorLevel::SilentError, ErrorCode::OpenGL, buffer, pObject, pClassType, func, file, line);
 }
 
 
@@ -144,7 +144,7 @@ void GlBackend::setCanvas(CanvasRef ref)
 	}
 	else
 	{
-		Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "GlBackend::setCanvas(CanvasRef) only supports CanvasRef::Default.",
+		Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "GlBackend::setCanvas(CanvasRef) only supports CanvasRef::Default.",
 			this, &TYPEINFO, __func__, __FILE__, __LINE__);
 	}
 }
@@ -884,7 +884,7 @@ void GlBackend::processCommands(const uint16_t* pBeg, const uint16_t* pEnd, int 
 
 			if (maxEntries == 0)
 			{
-				Core::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, "Failed DrawShape operation. Unsupported kind of shape.",
+				Base::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, "Failed DrawShape operation. Unsupported kind of shape.",
 					this, &TYPEINFO, __func__, __FILE__, __LINE__);
 				break;
 			}
@@ -1839,7 +1839,7 @@ const CanvasInfo * GlBackend::canvasInfo(CanvasRef ref) const
 		return &m_defaultCanvas;
 	else
 	{
-		Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Only Default canvas is supported.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+		Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Only Default canvas is supported.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 		return &m_dummyCanvas;
 	}
 }
@@ -1855,7 +1855,7 @@ void GlBackend::beginRender()
 
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 	{
-		Core::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "Framebuffer is not complete.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+		Base::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "Framebuffer is not complete.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 		return;
 	}
 
@@ -2925,7 +2925,7 @@ GLuint GlBackend::_loadOrCompileProgram(int programNb, const char* pVertexShader
 			char	buffer[2048 * 3 + 256];
 
 			snprintf(buffer, 2048*3+256, "Failed compiling OpenGL shader\nVertexShaderLog: %s\nFragmentShaderLog: %s\nProgramInfoLog: %s", vertexShaderLog, fragmentShaderLog, programInfoLog);
-			Core::throwError(ErrorLevel::SilentError, ErrorCode::OpenGL, buffer, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			Base::throwError(ErrorLevel::SilentError, ErrorCode::OpenGL, buffer, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 		}
 
 		glDetachShader(programID, vertexShaderID);

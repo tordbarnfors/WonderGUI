@@ -24,7 +24,7 @@
 #pragma once
 
 #include <wax_c_blob.h>
-#include <wax_c_core.h>
+#include <wax_c_base.h>
 #include <wax_c_types.h>
 #include <wax_c_memheap.h>
 #include <wax_c_object.h>

@@ -91,7 +91,7 @@ bool MyApp::_setupGUI(wapp::API* pAPI)
 									_.color = Color8::Black));
 
 
-	Base::setDefaultStyle(m_pTextStyle);
+	wg::Base::setDefaultStyle(m_pTextStyle);
 
 	m_pTextLayoutCentered = BasicTextLayout::create(WGBP(BasicTextLayout,
 		_.placement = Placement::Center));
@@ -175,15 +175,15 @@ Widget_p MyApp::createTopBar()
 	
 
 
-	Base::msgRouter()->addRoute( pLoadButton, MsgType::Select, [this](Msg*pMsg){this->selectAndLoadImage();});
+	wg::Base::msgRouter()->addRoute( pLoadButton, MsgType::Select, [this](Msg*pMsg){this->selectAndLoadImage();});
 
-	Base::msgRouter()->addRoute(pLeftButton, MsgType::Select, [this](Msg* pMsg) 
+	wg::Base::msgRouter()->addRoute(pLeftButton, MsgType::Select, [this](Msg* pMsg) 
 		{
 			if (m_imageIdx > 0)
 				this->loadImage(--m_imageIdx);
 		});
 
-	Base::msgRouter()->addRoute(pRightButton, MsgType::Select, [this](Msg* pMsg)
+	wg::Base::msgRouter()->addRoute(pRightButton, MsgType::Select, [this](Msg* pMsg)
 		{
 			if (m_imageIdx < m_imagePaths.size()-1 )
 				this->loadImage(++m_imageIdx);

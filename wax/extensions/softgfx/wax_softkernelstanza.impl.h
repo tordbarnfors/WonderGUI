@@ -1,7 +1,7 @@
 
 #include <wax_softbackend.h>
 #include <wax_util.h>
-#include <wax_core.h>
+#include <wax_base.h>
 
 #include <algorithm>
 #include <cstring>
@@ -2078,7 +2078,7 @@ void _scale_blit_bilinear(const SoftSurface* WAX_RESTRICT pSrcSurf, BinalCoord p
 	// Buffer for two unpacked rows, which are kept as long as they are sampled.
 
 	int bufferBytes = nColumns * 4 * int(sizeof(int16_t)) * 2;
-	int16_t* pBuffer = (int16_t*)Core::memStackAlloc(bufferBytes);
+	int16_t* pBuffer = (int16_t*)Base::memStackAlloc(bufferBytes);
 
 	int16_t* pRows[2] = { pBuffer, pBuffer + nColumns * 4 };
 	int rowIndex[2] = { -1, -1 };
@@ -2196,7 +2196,7 @@ void _scale_blit_bilinear(const SoftSurface* WAX_RESTRICT pSrcSurf, BinalCoord p
 		pDst += dstPitchY;
 	}
 
-	Core::memStackFree(bufferBytes);
+	Base::memStackFree(bufferBytes);
 }
 
 //____ _transform_blit __________________________________________

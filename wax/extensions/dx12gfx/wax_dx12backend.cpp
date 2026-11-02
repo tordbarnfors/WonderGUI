@@ -41,7 +41,7 @@
 #include <utility>
 #include <algorithm>
 
-#include <wax_core.h>
+#include <wax_base.h>
 #include <wax_util.h>
 
 
@@ -102,7 +102,7 @@ namespace wax
 
 			char buffer[256];
 			sprintf_s(buffer, "%s failed, HRESULT = 0x%08lX", what, (unsigned long)hr);
-			Core::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, buffer, pObject, pClassType, func, file, line);
+			Base::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, buffer, pObject, pClassType, func, file, line);
 			assert(false);
 			return false;
 		}
@@ -134,7 +134,7 @@ namespace wax
 	{
 		if (!s_pDevice || !s_pCommandQueue)
 		{
-			Core::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite,
+			Base::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite,
 				"No D3D12 device set. Call DX12Backend::setDevice() before creating a backend.",
 				nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return nullptr;
@@ -153,7 +153,7 @@ namespace wax
 		}
 		else if (s_pDevice.Get() != pDX12Device || s_pCommandQueue.Get() != pDX12CommandQueue)
 		{
-			Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam,
+			Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam,
 				"All backends must share the device and command queue set by DX12Backend::setDevice().",
 				nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return nullptr;
@@ -168,7 +168,7 @@ namespace wax
 	{
 		if ((pDX12Device == nullptr) != (pDX12CommandQueue == nullptr))
 		{
-			Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam,
+			Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam,
 				"Device and command queue must both be set or both be null.",
 				nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return false;
@@ -180,7 +180,7 @@ namespace wax
 
 			if (pDX12Device && s_pDevice)
 			{
-				Core::throwError(ErrorLevel::Error, ErrorCode::IllegalCall,
+				Base::throwError(ErrorLevel::Error, ErrorCode::IllegalCall,
 					"Can't change D3D12 device while DX12Backends exist without first releasing it with setDevice(nullptr, nullptr).",
 					nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
 				return false;
@@ -190,7 +190,7 @@ namespace wax
 			{
 				if (pBackend->m_bCommandListOpen || pBackend->m_bInSession)
 				{
-					Core::throwError(ErrorLevel::Error, ErrorCode::IllegalCall,
+					Base::throwError(ErrorLevel::Error, ErrorCode::IllegalCall,
 						"Can't change D3D12 device in the middle of a frame.",
 						nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
 					return false;
@@ -391,7 +391,7 @@ namespace wax
 		sprintf_s(buffer, "D3D12 device lost: 0x%08lX, %s. DX12 rendering stops until a new device is set.",
 				  (unsigned long)reason, pMeaning);
 
-		Core::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, buffer, nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
+		Base::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, buffer, nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
 	}
 
 	//____ _dumpDRED() ___________________________________________________________
@@ -619,7 +619,7 @@ namespace wax
 		if (!_createPipelineResources())
 		{
 			if (!s_bDeviceLost)
-				Core::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to create pipeline resources, nothing will render.",
+				Base::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to create pipeline resources, nothing will render.",
 					this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return false;
 		}
@@ -1046,7 +1046,7 @@ namespace wax
 			if (_isDX12Surface(pCanvas))
 				pCanvasSurface = static_cast<DX12Surface*>(pCanvas);
 			else
-				Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Canvas is not a DX12Surface, rendering to default canvas instead.",
+				Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Canvas is not a DX12Surface, rendering to default canvas instead.",
 					this, &TYPEINFO, __func__, __FILE__, __LINE__);
 		}
 
@@ -1173,7 +1173,7 @@ namespace wax
 	{
 		if (pSurface && !_isDX12Surface(pSurface))
 		{
-			Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Canvas is not a DX12Surface.",
+			Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Canvas is not a DX12Surface.",
 				this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return;
 		}
@@ -1196,7 +1196,7 @@ namespace wax
 			}
 		}
 		else
-			Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Only CanvasRef::Default is supported.",
+			Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Only CanvasRef::Default is supported.",
 				this, &TYPEINFO, __func__, __FILE__, __LINE__);
 	}
 
@@ -1438,7 +1438,7 @@ namespace wax
 	{
 		if (pCanvas && (!pCanvas->texture() || !pCanvas->canBeCanvas() || pCanvas->renderTargetView().ptr == 0))
 		{
-			Core::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "Surface can not be used as canvas.",
+			Base::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "Surface can not be used as canvas.",
 				this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			pCanvas = nullptr;
 		}
@@ -1744,7 +1744,7 @@ namespace wax
 					{
 						char buffer[128];
 						sprintf_s(buffer, "Command %d is unknown, rest of session dropped.", (int)cmd);
-						Core::throwError(ErrorLevel::Error, ErrorCode::Other, buffer, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+						Base::throwError(ErrorLevel::Error, ErrorCode::Other, buffer, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 						bReported = true;
 					}
 
@@ -1811,7 +1811,7 @@ namespace wax
 				static bool bReported = false;
 				if (!bReported && _blameSessionInfo())
 				{
-					Core::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, "Vertex buffer full, fills dropped. SessionInfo underestimated what the session needs.",
+					Base::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, "Vertex buffer full, fills dropped. SessionInfo underestimated what the session needs.",
 						this, &TYPEINFO, __func__, __FILE__, __LINE__);
 					bReported = true;
 				}
@@ -1938,7 +1938,7 @@ namespace wax
 				static bool bReported = false;
 				if (!bReported && _blameSessionInfo())
 				{
-					Core::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, "Vertex buffer full, lines dropped. SessionInfo underestimated what the session needs.",
+					Base::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, "Vertex buffer full, lines dropped. SessionInfo underestimated what the session needs.",
 						this, &TYPEINFO, __func__, __FILE__, __LINE__);
 					bReported = true;
 				}
@@ -2125,7 +2125,7 @@ namespace wax
 				static bool bReported = false;
 				if (!bReported && _blameSessionInfo())
 				{
-					Core::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, "Buffer full, lines dropped. SessionInfo underestimated what the session needs.",
+					Base::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, "Buffer full, lines dropped. SessionInfo underestimated what the session needs.",
 						this, &TYPEINFO, __func__, __FILE__, __LINE__);
 					bReported = true;
 				}
@@ -2183,7 +2183,7 @@ namespace wax
 			static bool bReported = false;
 			if (!bReported && _blameSessionInfo())
 			{
-				Core::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, "Color buffer full, draws dropped. SessionInfo underestimated what the session needs.",
+				Base::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, "Color buffer full, draws dropped. SessionInfo underestimated what the session needs.",
 					this, &TYPEINFO, __func__, __FILE__, __LINE__);
 				bReported = true;
 			}
@@ -2220,7 +2220,7 @@ namespace wax
 			static bool bReported = false;
 			if (!bReported && _blameSessionInfo())
 			{
-				Core::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, "Color buffer full, tint ignored. SessionInfo underestimated what the session needs.",
+				Base::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, "Color buffer full, tint ignored. SessionInfo underestimated what the session needs.",
 					this, &TYPEINFO, __func__, __FILE__, __LINE__);
 				bReported = true;
 			}
@@ -2298,7 +2298,7 @@ namespace wax
 			static bool bReported = false;
 			if (!bReported && _blameSessionInfo() && m_pExtrasPtr)
 			{
-				Core::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, "Extras buffer full, draws dropped. SessionInfo underestimated what the session needs.",
+				Base::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, "Extras buffer full, draws dropped. SessionInfo underestimated what the session needs.",
 					this, &TYPEINFO, __func__, __FILE__, __LINE__);
 				bReported = true;
 			}
@@ -2322,7 +2322,7 @@ namespace wax
 			static bool bReported = false;
 			if (!bReported && _blameSessionInfo() && m_pExtrasPtr)
 			{
-				Core::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, "Extras buffer full, blurs dropped. SessionInfo underestimated what the session needs.",
+				Base::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, "Extras buffer full, blurs dropped. SessionInfo underestimated what the session needs.",
 					this, &TYPEINFO, __func__, __FILE__, __LINE__);
 				bReported = true;
 			}
@@ -2382,7 +2382,7 @@ namespace wax
 			static bool bReported = false;
 			if (!bReported && _blameSessionInfo())
 			{
-				Core::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, "Extras buffer full, blits dropped. SessionInfo underestimated what the session needs.",
+				Base::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, "Extras buffer full, blits dropped. SessionInfo underestimated what the session needs.",
 					this, &TYPEINFO, __func__, __FILE__, __LINE__);
 				bReported = true;
 			}
@@ -2415,7 +2415,7 @@ namespace wax
 
 		if (pSurface == m_pActiveCanvas)
 		{
-			Core::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite,
+			Base::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite,
 				"Can't blit from the surface we are rendering into.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			m_pBlitSource = nullptr;
 			return;
@@ -2494,7 +2494,7 @@ namespace wax
 				static bool bReported = false;
 				if (!bReported && !s_bDeviceLost)
 				{
-					Core::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, "Out of blit source descriptors and couldn't make room for more, blits dropped.",
+					Base::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, "Out of blit source descriptors and couldn't make room for more, blits dropped.",
 						this, &TYPEINFO, __func__, __FILE__, __LINE__);
 					bReported = true;
 				}
@@ -2942,7 +2942,7 @@ namespace wax
 				static bool bReported = false;
 				if (!bReported && _blameSessionInfo())
 				{
-					Core::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, "Vertex buffer full, blits dropped. SessionInfo underestimated what the session needs.",
+					Base::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, "Vertex buffer full, blits dropped. SessionInfo underestimated what the session needs.",
 						this, &TYPEINFO, __func__, __FILE__, __LINE__);
 					bReported = true;
 				}
@@ -3047,7 +3047,7 @@ namespace wax
 
 				char buffer[256];
 				sprintf_s(buffer, "Can't draw edgemap, %s.", pReason);
-				Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, buffer, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, buffer, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 				bReported = true;
 			}
 
@@ -3144,7 +3144,7 @@ namespace wax
 			static bool bReported = false;
 			if (!bReported && _blameSessionInfo())
 			{
-				Core::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, "Vertex buffer full, edgemaps dropped. SessionInfo underestimated what the session needs.",
+				Base::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, "Vertex buffer full, edgemaps dropped. SessionInfo underestimated what the session needs.",
 					this, &TYPEINFO, __func__, __FILE__, __LINE__);
 				bReported = true;
 			}
@@ -3240,7 +3240,7 @@ namespace wax
 
 		if (maxEntries == 0)
 		{
-			Core::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, "Failed DrawShape operation. Unsupported kind of shape.",
+			Base::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, "Failed DrawShape operation. Unsupported kind of shape.",
 				this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return;
 		}
@@ -3257,7 +3257,7 @@ namespace wax
 			{
 				char buffer[256];
 				sprintf_s(buffer, "%s buffer full, shapes dropped. SessionInfo underestimated what the session needs.", pBuffer);
-				Core::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, buffer, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				Base::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, buffer, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 				bReported = true;
 			}
 		};
@@ -3386,7 +3386,7 @@ namespace wax
 
 				char buffer[256];
 				sprintf_s(buffer, "Can't draw warp, %s.", pReason);
-				Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, buffer, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, buffer, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 				bReported = true;
 			}
 
@@ -3426,7 +3426,7 @@ namespace wax
 			{
 				char buffer[256];
 				sprintf_s(buffer, "%s buffer full, warps dropped. SessionInfo underestimated what the session needs.", pBuffer);
-				Core::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, buffer, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				Base::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, buffer, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 				bReported = true;
 			}
 		};
@@ -3651,7 +3651,7 @@ namespace wax
 			return &m_defaultCanvas;
 		else
 		{
-			Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Only Default canvas is supported.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Only Default canvas is supported.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return &m_dummyCanvas;
 		}
 	}
@@ -3846,7 +3846,7 @@ namespace wax
 				char buffer[256];
 				sprintf_s(buffer, "Couldn't make room for %d vertices, %d colors and %d extras, draws that don't fit are dropped.",
 						  nVertices, nColors, nExtras);
-				Core::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, buffer, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				Base::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, buffer, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 				bReported = true;
 			}
 		}
@@ -3894,7 +3894,7 @@ namespace wax
 				char buffer[256];
 				sprintf_s(buffer, "SessionInfo underestimated what the session needs: room was made for %d %s, the session wrote %d.",
 						  usage[i].reserved, usage[i].pWhat, usage[i].used);
-				Core::throwError(ErrorLevel::Warning, ErrorCode::Internal, buffer, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				Base::throwError(ErrorLevel::Warning, ErrorCode::Internal, buffer, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 				bReported[i] = true;
 			}
 		}
@@ -4135,7 +4135,7 @@ namespace wax
 			const char* pErrorMsg = pErrorBlob ? (const char*)pErrorBlob->GetBufferPointer() : "Unknown error";
 			char buffer[512];
 			sprintf_s(buffer, "D3D12SerializeVersionedRootSignature failed, HRESULT = 0x%08lX: %s", (unsigned long)hr, pErrorMsg);
-			Core::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, buffer, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			Base::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, buffer, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			assert(false);
 			return false;
 		}
@@ -4349,7 +4349,7 @@ namespace wax
 			{
 				char buffer[128];
 				sprintf_s(buffer, "BlendMode %d is unknown, using Blend.", (int) blendMode);
-				Core::throwError(ErrorLevel::Warning, ErrorCode::Other, buffer, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				Base::throwError(ErrorLevel::Warning, ErrorCode::Other, buffer, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 
 				srcBlend = D3D12_BLEND_ONE;
 				destBlend = D3D12_BLEND_INV_SRC_ALPHA;
@@ -4499,7 +4499,7 @@ namespace wax
 			const char* pError = errorMsg ? (const char*)errorMsg->GetBufferPointer() : "Unknown error";
 			char buffer[1024];
 			sprintf_s(buffer, "Vertex shader compile failed, HRESULT = 0x%08lX: %s", (unsigned long)hr, pError);
-			Core::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, buffer, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			Base::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, buffer, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			assert(false);
 			return false;
 		}
@@ -4527,7 +4527,7 @@ namespace wax
 
 			char buffer[1024];
 			sprintf_s(buffer, "Pixel shader compile failed, HRESULT = 0x%08lX: %s", (unsigned long)hr, pError);
-			Core::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, buffer, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			Base::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, buffer, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			assert(false);
 			return false;
 		}

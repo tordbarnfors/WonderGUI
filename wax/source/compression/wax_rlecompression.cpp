@@ -22,7 +22,7 @@
 
 #include <wax_rlecompression.h>
 #include <wax_util.h>
-#include <wax_core.h>
+#include <wax_base.h>
 #include <cstring>
 
 namespace wax
@@ -94,7 +94,7 @@ int RLECompressor::compress( void * pDest, const void * pBegin, const void * pEn
 {
 	if( (((int8_t*) pEnd) - ((int8_t*) pBegin)) % m_primSize != 0 )
 	{
-		Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Size of data to compress is not a multiple of primSize.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+		Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Size of data to compress is not a multiple of primSize.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 		return -1;
 	}
 

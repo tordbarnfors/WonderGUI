@@ -41,7 +41,7 @@
 
 namespace wg
 {
-	const TypeInfo	Base::TYPEINFO = { "Base", &wax::Core::TYPEINFO };
+	const TypeInfo	Base::TYPEINFO = { "Base", &wax::Base::TYPEINFO };
 
 	int				Base::s_guiInitCounter = 0;
 
@@ -59,11 +59,11 @@ namespace wg
 			return true;
 		}
 
-		if( !wax::Core::init() )
+		if( !wax::Base::init() )
 			return false;
 
 		s_pGUIContext = new GUIContext();
-		s_pGUIContext->pWaxContext = wax::Core::context();
+		s_pGUIContext->pWaxContext = wax::Base::context();
 
 		s_pGUIContext->pHostBridge = pHostBridge;
 
@@ -110,7 +110,7 @@ namespace wg
 
 		if( s_guiInitCounter > 1 )
 		{
-			s_guiInitCounter--;			// This belongs to wax::Core, but we do like this anyway.
+			s_guiInitCounter--;			// This belongs to wax::Base, but we do like this anyway.
 			return true;
 		}
 
@@ -132,7 +132,7 @@ namespace wg
 		TextStyleManager::exit();
 
 		s_guiInitCounter = 0;
-		return wax::Core::exit();
+		return wax::Base::exit();
 	}
 
 	//____ setContext() _______________________________________________________
@@ -144,14 +144,14 @@ namespace wg
 		if( pNewContext )
 		{
 			s_pGUIContext = pNewContext;
-			wax::Core::setContext(pNewContext->pWaxContext);
+			wax::Base::setContext(pNewContext->pWaxContext);
 		}
 		else
 		{
 			auto p = new GUIContext();
 
-			wax::Core::setContext(nullptr);
-			p->pWaxContext = wax::Core::context();
+			wax::Base::setContext(nullptr);
+			p->pWaxContext = wax::Base::context();
 
 			p->pDefaultCaret = Caret::create();
 

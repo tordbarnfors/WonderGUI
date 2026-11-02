@@ -2,8 +2,8 @@ set( SOURCES
 
 	source/wax_backendlogger.cpp
 	source/wax_backendlogger.h
-	source/wax_core.cpp
-	source/wax_core.h
+	source/wax_base.cpp
+	source/wax_base.h
 	source/wax_blob.cpp
 	source/wax_blob.h
 	source/wax_blurbrush.cpp
@@ -122,8 +122,8 @@ set( SOURCES
 	source/warp/wax_warpmapfactory.cpp
 	source/warp/wax_warpmapfactory.h
 	c-api/wax_c.h
-	c-api/wax_c_core.cpp
-	c-api/wax_c_core.h
+	c-api/wax_c_base.cpp
+	c-api/wax_c_base.h
 	c-api/wax_c_bitmapcache.cpp
 	c-api/wax_c_bitmapcache.h
 	c-api/wax_c_bitmapfont.cpp

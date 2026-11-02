@@ -21,7 +21,7 @@
 =========================================================================*/
 #include <wax_object.h>
 #include <wax_pointers.h>
-#include <wax_core.h>
+#include <wax_base.h>
 
 namespace wax
 {
@@ -36,7 +36,7 @@ namespace wax
 		WeakPtrHub * pHub;
 		if( !pObj->m_pWeakPtrHub )
 		{
-			pHub = Core::_allocWeakPtrHub();
+			pHub = Base::_allocWeakPtrHub();
 			pHub->refCnt = 1;
 			pHub->pObj = pObj;
 			pHub->pFinalizer = nullptr;
@@ -60,7 +60,7 @@ namespace wax
 			{
 				if( pHub->pObj )
 					pHub->pObj->m_pWeakPtrHub = nullptr;
-				Core::_freeWeakPtrHub(pHub);
+				Base::_freeWeakPtrHub(pHub);
 			}
 		}
 	}
@@ -73,7 +73,7 @@ namespace wax
 			pHub->pObj = nullptr;
 			pHub->pFinalizer = nullptr;
 			if (pHub->refCnt == 0)
-				Core::_freeWeakPtrHub(pHub);
+				Base::_freeWeakPtrHub(pHub);
 		}
 		else
 			pHub->pObj = nullptr;
@@ -88,7 +88,7 @@ namespace wax
 		}
 		else
 		{
-			pHub = Core::_allocWeakPtrHub();
+			pHub = Base::_allocWeakPtrHub();
 			pHub->refCnt = 0;
 			pHub->pObj = pObj;
 			pObj->m_pWeakPtrHub = pHub;
@@ -109,7 +109,7 @@ namespace wax
 
 	Object::Object() : m_refCount(0)
 	{
-		Core::_objectWasCreated(this);
+		Base::_objectWasCreated(this);
 	}
 
 	//____ isInstanceOf() _____________________________________________________
@@ -163,7 +163,7 @@ namespace wax
 
 	void Object::_destroy()
 	{
-		Core::_objectWillDestroy(this);
+		Base::_objectWillDestroy(this);
 
 		if (m_pWeakPtrHub)
 			WeakPtrHub::objectWillDestroy(m_pWeakPtrHub);

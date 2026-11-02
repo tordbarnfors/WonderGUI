@@ -20,7 +20,7 @@
 
 =========================================================================*/
 #include <wax_c_internal.h>
-#include <wax_core.h>
+#include <wax_base.h>
 
 using namespace wax;
 

@@ -20,7 +20,7 @@
 
 =========================================================================*/
 #include <wax_memheap.h>
-#include <wax_core.h>
+#include <wax_base.h>
 #include <cstddef>
 #include <algorithm>
 
@@ -91,7 +91,7 @@ namespace wax
 
 		if( !pHead )
 		{
-			Core::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, "Failed to allocate memory. This MemHeap can not provide a continous area of that many bytes.", nullptr, nullptr, __func__, __FILE__, __LINE__);
+			Base::throwError(ErrorLevel::Error, ErrorCode::ResourceExhausted, "Failed to allocate memory. This MemHeap can not provide a continous area of that many bytes.", nullptr, nullptr, __func__, __FILE__, __LINE__);
 			return nullptr;
 		}
 
@@ -138,7 +138,7 @@ namespace wax
 		{
 			if( ((char*)pHead) < m_pBuffer || ((char*)&pHead[1]) + bytes > ((char*)m_pBuffer) + m_capacity + sizeof(Header) )
 			{
-				Core::throwError(ErrorLevel::Critical, ErrorCode::Internal, "Reserved memory outside buffer", nullptr, nullptr, __func__, __FILE__, __LINE__);
+				Base::throwError(ErrorLevel::Critical, ErrorCode::Internal, "Reserved memory outside buffer", nullptr, nullptr, __func__, __FILE__, __LINE__);
 			}
 			  
 			_checkIntegrity();
@@ -160,17 +160,17 @@ namespace wax
 		{
 			if( pBuffer < m_pBuffer || pBuffer > (char*)m_pBuffer + m_capacity )
 			{
-				Core::throwError(ErrorLevel::Critical, ErrorCode::InvalidParam, "Pointer to memory to free is outside bounds and therefre do not point to memory allocated by this MemHeap object.", nullptr, nullptr, __func__, __FILE__, __LINE__);
+				Base::throwError(ErrorLevel::Critical, ErrorCode::InvalidParam, "Pointer to memory to free is outside bounds and therefre do not point to memory allocated by this MemHeap object.", nullptr, nullptr, __func__, __FILE__, __LINE__);
 			}
 		  
 			if( pHead->boundsGuard != 0xDEADBEEF )
 			{
-				Core::throwError(ErrorLevel::Critical, ErrorCode::Internal, "Header of block being freed is corrupt. Either provided pointer is wrong or we have an out-of-bounds write somewhere.", nullptr, nullptr, __func__, __FILE__, __LINE__);
+				Base::throwError(ErrorLevel::Critical, ErrorCode::Internal, "Header of block being freed is corrupt. Either provided pointer is wrong or we have an out-of-bounds write somewhere.", nullptr, nullptr, __func__, __FILE__, __LINE__);
 			}
 
 			if( pHead->pNextBlock->boundsGuard != 0xDEADBEEF )
 			{
-				Core::throwError(ErrorLevel::Critical, ErrorCode::Internal, "Bytes immediately following block being freed have been overwritten. Have we written too far?", nullptr, nullptr, __func__, __FILE__, __LINE__);
+				Base::throwError(ErrorLevel::Critical, ErrorCode::Internal, "Bytes immediately following block being freed have been overwritten. Have we written too far?", nullptr, nullptr, __func__, __FILE__, __LINE__);
 			}
 
 			if( m_debugLevel > 1 )
@@ -401,42 +401,42 @@ void MemHeap::_checkIntegrity()
 	{
 		if( ((char*)pBlock > (char*)m_pBuffer + m_capacity + sizeof(Header)) || (char*)pBlock < m_pBuffer )
 		{
-			Core::throwError(ErrorLevel::Critical, ErrorCode::Internal, "Memory Block outside bounds", nullptr, nullptr, __func__, __FILE__, __LINE__);
+			Base::throwError(ErrorLevel::Critical, ErrorCode::Internal, "Memory Block outside bounds", nullptr, nullptr, __func__, __FILE__, __LINE__);
 		}
 		
 		if( pBlock->boundsGuard != 0xDEADBEEF )
 		{
-			Core::throwError(ErrorLevel::Critical, ErrorCode::Internal, "Write outside allocated memory detected", nullptr, nullptr, __func__, __FILE__, __LINE__);
+			Base::throwError(ErrorLevel::Critical, ErrorCode::Internal, "Write outside allocated memory detected", nullptr, nullptr, __func__, __FILE__, __LINE__);
 		}
 		
 		if( pBlock->pNextBlock < &pBlock[1] && pBlock->pNextBlock != nullptr )
 		{
-			Core::throwError(ErrorLevel::Critical, ErrorCode::Internal, "Header::pNextBlock has illegal value", nullptr, nullptr, __func__, __FILE__, __LINE__);
+			Base::throwError(ErrorLevel::Critical, ErrorCode::Internal, "Header::pNextBlock has illegal value", nullptr, nullptr, __func__, __FILE__, __LINE__);
 		}
 		
 		if( pBlock->pNextBlock && pBlock->pNextBlock->pPrevBlock != pBlock )
 		{
-			Core::throwError(ErrorLevel::Critical, ErrorCode::Internal, "Block chain broken. Next block does not point back at us", nullptr, nullptr, __func__, __FILE__, __LINE__);
+			Base::throwError(ErrorLevel::Critical, ErrorCode::Internal, "Block chain broken. Next block does not point back at us", nullptr, nullptr, __func__, __FILE__, __LINE__);
 		}
 		
 		if( pBlock->pPrevBlock && pBlock->pPrevBlock->pNextBlock != pBlock )
 		{
-			Core::throwError(ErrorLevel::Critical, ErrorCode::Internal, "Block chain broken. Prev block does not point to us", nullptr, nullptr, __func__, __FILE__, __LINE__);
+			Base::throwError(ErrorLevel::Critical, ErrorCode::Internal, "Block chain broken. Prev block does not point to us", nullptr, nullptr, __func__, __FILE__, __LINE__);
 		}
 		
 		if( pBlock->pNextFree && pBlock->pNextFree->pPrevFree != pBlock )
 		{
-			Core::throwError(ErrorLevel::Critical, ErrorCode::Internal, "Block chain for free blocks broken. Next block does not point back to us", nullptr, nullptr, __func__, __FILE__, __LINE__);
+			Base::throwError(ErrorLevel::Critical, ErrorCode::Internal, "Block chain for free blocks broken. Next block does not point back to us", nullptr, nullptr, __func__, __FILE__, __LINE__);
 		}
 
 		if( pBlock->pPrevFree && pBlock->pPrevFree->pNextFree != pBlock )
 		{
-			Core::throwError(ErrorLevel::Critical, ErrorCode::Internal, "Block chain for free blocks broken. Prev block does not point to us", nullptr, nullptr, __func__, __FILE__, __LINE__);
+			Base::throwError(ErrorLevel::Critical, ErrorCode::Internal, "Block chain for free blocks broken. Prev block does not point to us", nullptr, nullptr, __func__, __FILE__, __LINE__);
 		}
 		
 		if( pBlock->pNextFree && !pBlock->pPrevFree && pBlock != m_pFirstFree )
 		{
-			Core::throwError(ErrorLevel::Critical, ErrorCode::Internal, "Block chain for free blocks broken. Free block not really part of the chain", nullptr, nullptr, __func__, __FILE__, __LINE__);
+			Base::throwError(ErrorLevel::Critical, ErrorCode::Internal, "Block chain for free blocks broken. Free block not really part of the chain", nullptr, nullptr, __func__, __FILE__, __LINE__);
 		}
 	}
 	

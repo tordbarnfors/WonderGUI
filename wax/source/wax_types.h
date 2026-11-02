@@ -93,7 +93,7 @@ template<typename T, typename T2, typename T3> inline void limit(T& x, T2 min, T
 
 
 
-#define WAXTRACK(pObj) wax::Core::_trackObj(pObj, __FILE__, __LINE__ ) 
+#define WAXTRACK(pObj) wax::Base::_trackObj(pObj, __FILE__, __LINE__ ) 
 
 
 	//____ ErrorLevel ________________________________________________

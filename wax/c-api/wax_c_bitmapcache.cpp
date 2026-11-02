@@ -21,7 +21,7 @@
 =========================================================================*/
 #include <wax_c_bitmapcache.h>
 #include <wax_bitmapcache.h>
-#include <wax_core.h>
+#include <wax_base.h>
 
 using namespace wax;
 
@@ -38,14 +38,14 @@ public:
 	void _cacheSurfaceAdded(Surface* pSurface) override { m_data.addFunc(static_cast<Object*>(pSurface),m_data.addPtr,m_data.addInt); }
 	void _cacheSurfacesRemoved(int nSurfaces, Surface* pSurfaces[]) override
 	{
-		wax_obj * pObjects = (wax_obj*) Core::memStackAlloc(sizeof(wax_obj)*nSurfaces);
+		wax_obj * pObjects = (wax_obj*) Base::memStackAlloc(sizeof(wax_obj)*nSurfaces);
 		
 		for( int i = 0 ; i < nSurfaces ; i++ )
 			pObjects[i] = static_cast<Object*>(pSurfaces[i]);
 		
 		m_data.removeFunc(nSurfaces,pObjects,m_data.removePtr,m_data.removeInt);
 		
-		Core::memStackFree(sizeof(wax_obj)*nSurfaces);
+		Base::memStackFree(sizeof(wax_obj)*nSurfaces);
 	}
 	void _cacheCleared() override { m_data.clearFunc( m_data.addPtr, m_data.addInt ); }
 	

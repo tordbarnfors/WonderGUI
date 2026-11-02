@@ -33,7 +33,7 @@
 #include <wax_font.h>
 #include <wax_blob.h>
 #include <wax_bitmapcache.h>
-#include <wax_core.h>
+#include <wax_base.h>
 
 
 typedef struct FT_LibraryRec_  *FT_Library;

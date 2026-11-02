@@ -59,7 +59,7 @@ namespace wax
 		{
 			spx					bottomOutlineThickness = 64;
 			HiColor				color = Color8::LightGrey;
-			EdgemapFactory_p	factory;								// Default edgemap factory of Core if not set.
+			EdgemapFactory_p	factory;								// Default edgemap factory of Base if not set.
 			Finalizer_p			finalizer = nullptr;
 			GfxFlip				flip = GfxFlip::None;					// Flip of the wave, which runs along x before it.
 			bool				optimize = true;						// Check for re-setting of same values to minimize updated regions.

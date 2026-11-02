@@ -26,7 +26,7 @@
 #include <wax_dx12surface.h>
 #include <wax_dx12backend.h>
 
-#include <wax_core.h>
+#include <wax_base.h>
 #include <wax_util.h>
 #include <wax_pixeltools.h>
 
@@ -193,7 +193,7 @@ namespace wax
 		{
 			char buffer[256];
 			sprintf_s(buffer, "The pixels of %d surface(s) could not be read from the lost device and have been cleared.", nLost);
-			Core::throwError(ErrorLevel::Warning, ErrorCode::RenderFailure, buffer, nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
+			Base::throwError(ErrorLevel::Warning, ErrorCode::RenderFailure, buffer, nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
 		}
 	}
 
@@ -266,7 +266,7 @@ namespace wax
 			// was reported then, and is no news to every surface created after.
 
 			if( !DX12Backend::isDeviceLost() )
-				Core::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite,
+				Base::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite,
 					"No D3D12 device set. Call DX12Backend::setDevice() before creating any surface.",
 					nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return false;
@@ -286,7 +286,7 @@ namespace wax
 			// The same goes for the failures further down.
 
 			if( !DX12Backend::checkDeviceLost() )
-				Core::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to create resources for surface uploads.",
+				Base::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to create resources for surface uploads.",
 					nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return false;
 		}
@@ -365,7 +365,7 @@ namespace wax
 			{
 				char buffer[256];
 				sprintf_s(buffer, "Pixel format %s is not supported by DX12Backend. The surface will have no texture.", toString(format));
-				Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, buffer, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, buffer, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 
 				m_dxgiFormat = DXGI_FORMAT_UNKNOWN;
 				bSupported = false;
@@ -526,7 +526,7 @@ namespace wax
 
 			char buffer[256];
 			sprintf_s(buffer, "Can't create a %dx%d surface with %d bits per pixel.", m_size.w, m_size.h, m_pPixelDescription->bits);
-			Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, buffer, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, buffer, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return;
 		}
 
@@ -586,7 +586,7 @@ namespace wax
 			// A lost device is reported once by DX12Backend, not by every surface.
 
 			if( pMessage && !DX12Backend::checkDeviceLost() )
-				Core::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, pMessage, this, &TYPEINFO, pFunc, __FILE__, __LINE__);
+				Base::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, pMessage, this, &TYPEINFO, pFunc, __FILE__, __LINE__);
 
 			return false;
 		};
@@ -864,7 +864,7 @@ namespace wax
 			m_paletteBuffer = nullptr;
 			m_pPaletteData = nullptr;
 			if( !DX12Backend::checkDeviceLost() )
-				Core::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to create palette buffer for surface.",
+				Base::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to create palette buffer for surface.",
 					this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return false;
 		}
@@ -1007,7 +1007,7 @@ namespace wax
 
 		if( m_resourceState != D3D12_RESOURCE_STATE_COMMON )
 		{
-			Core::throwError(ErrorLevel::Error, ErrorCode::Internal,
+			Base::throwError(ErrorLevel::Error, ErrorCode::Internal,
 				"Can't upload to a surface that is in use by the backend.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return;
 		}
@@ -1051,7 +1051,7 @@ namespace wax
 				FAILED(premultiplied->Map(0, nullptr, (void**) &pDest)) )
 			{
 				if( !DX12Backend::checkDeviceLost() )
-					Core::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to create buffer for premultiplied pixels, colors of transparent pixels will be off.",
+					Base::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to create buffer for premultiplied pixels, colors of transparent pixels will be off.",
 						this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			}
 			else
@@ -1172,7 +1172,7 @@ namespace wax
 													  D3D12_RESOURCE_STATE_COPY_DEST, nullptr, IID_PPV_ARGS(m_readbackBuffer.GetAddressOf()))) )
 		{
 			if( !DX12Backend::checkDeviceLost() )
-				Core::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to create readback buffer for canvas surface.",
+				Base::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to create readback buffer for canvas surface.",
 					this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return false;
 		}
@@ -1206,7 +1206,7 @@ namespace wax
 
 		if( m_resourceState != D3D12_RESOURCE_STATE_COMMON )
 		{
-			Core::throwError(ErrorLevel::Error, ErrorCode::Internal,
+			Base::throwError(ErrorLevel::Error, ErrorCode::Internal,
 				"Can't read back a surface that is in use by the backend.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return;
 		}

@@ -20,7 +20,7 @@
 
 =========================================================================*/
 #include <wax_circularwarp.h>
-#include <wax_core.h>
+#include <wax_base.h>
 
 #include <algorithm>
 #include <cmath>
@@ -37,7 +37,7 @@ namespace wax
 			return nullptr;
 
 		if (!pFactory)
-			pFactory = Core::defaultWarpmapFactory();
+			pFactory = Base::defaultWarpmapFactory();
 
 		if (!pFactory)
 			return nullptr;

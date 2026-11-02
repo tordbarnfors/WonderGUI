@@ -56,8 +56,8 @@ bool MyApp::init(wapp::API* pAPI)
 	wg_plugin_interface	c_calls;
 	wg_populatePluginInterface(&c_calls);
 
-	if( !m_pInitClient(&c_calls, Base::hostBridge(), m_pPluginCapsule,
-				  Base::defaultDevice(), Base::defaultSurfaceFactory(), Base::defaultEdgemapFactory()) )
+	if( !m_pInitClient(&c_calls, wg::Base::hostBridge(), m_pPluginCapsule,
+				  wg::Base::defaultDevice(), wg::Base::defaultSurfaceFactory(), wg::Base::defaultEdgemapFactory()) )
 	{
 		printf("ERROR: Plugin failed to initialize!\n");
 		return false;
@@ -179,7 +179,7 @@ bool MyApp::_setupGUI(wapp::API* pAPI)
 									_.color = Color8::Black));
 
 
-	Base::setDefaultStyle(m_pTextStyle);
+	wg::Base::setDefaultStyle(m_pTextStyle);
 
 	m_pTextLayoutCentered = BasicTextLayout::create(WGBP(BasicTextLayout,
 		_.placement = Placement::Center));

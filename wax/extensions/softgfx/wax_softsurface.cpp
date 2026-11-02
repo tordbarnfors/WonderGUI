@@ -24,7 +24,7 @@
 #include <memory.h>
 #include <wax_softsurface.h>
 #include <wax_util.h>
-#include <wax_core.h>
+#include <wax_base.h>
 #include <wax_pixeltools.h>
 
 namespace wax
@@ -245,7 +245,7 @@ namespace wax
 
 			if (m_size.w != 1 << xBits || m_size.h != 1 << yBits)
 			{
-				Core::throwError(ErrorLevel::Warning, ErrorCode::FailedPrerequisite, "Surface of non-two-factor size set to tile. Tiling will happen at largest two-factor boundary.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				Base::throwError(ErrorLevel::Warning, ErrorCode::FailedPrerequisite, "Surface of non-two-factor size set to tile. Tiling will happen at largest two-factor boundary.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			}
 
 			m_srcPosMaskX = (1 << xBits) -1;

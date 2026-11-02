@@ -22,7 +22,7 @@
 #include <wax_streampump.h>
 #include <wax_surface.h>
 #include <wax_patches.h>
-#include <wax_core.h>
+#include <wax_base.h>
 
 
 #include <vector>
@@ -118,7 +118,7 @@ namespace wax
 
 //		char temp[128];
 //		snprintf(temp, 128, "Added %d credits.", credits);
-//		Core::throwError(ErrorLevel::Warning, ErrorCode::Other, temp, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+//		Base::throwError(ErrorLevel::Warning, ErrorCode::Other, temp, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 	}
 
 
@@ -432,14 +432,14 @@ namespace wax
 					GfxStream::DataInfo info = GfxStream::readDataInfo(p+GfxStream::HeaderSize);
 
 					if( info.bFirstChunk )
-						pBuffer = (uint8_t*) Core::memStackAlloc(info.bufferSize);
+						pBuffer = (uint8_t*) Base::memStackAlloc(info.bufferSize);
 
 					GfxStream::loadDecompressData(info, pBuffer, p+GfxStream::HeaderSize+info.encodedSize, GfxStream::dataSize(p) - info.encodedSize);
 
 					if (info.bLastChunk)
 					{
 						pTrimBackend->addMaskingSession(canvasRef, nullptr, nUpdateRects, (RectSPX*) pBuffer);
-						Core::memStackFree(info.bufferSize);
+						Base::memStackFree(info.bufferSize);
 					}
 				}
 
@@ -569,7 +569,7 @@ namespace wax
 
 //						char temp[128];
 //						snprintf(temp, 128, "Sending a fence as part of flow control. Id = %d, Value = %d. %d credits left", m_fenceId, m_fenceValueSent, m_credits);
-//						Core::throwError(ErrorLevel::Warning, ErrorCode::Other, temp, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+//						Base::throwError(ErrorLevel::Warning, ErrorCode::Other, temp, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 					}
 
 				}

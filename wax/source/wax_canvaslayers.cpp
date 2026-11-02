@@ -20,7 +20,7 @@
 
 =========================================================================*/
 #include <wax_canvaslayers.h>
-#include <wax_core.h>
+#include <wax_base.h>
 
 namespace wax
 {
@@ -53,7 +53,7 @@ namespace wax
 		
 		if( bp.layers.size() > c_maxLayers )
 		{
-			Core::throwError(ErrorLevel::SilentError, ErrorCode::InvalidParam, "Number of layers exceeds maximum", nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
+			Base::throwError(ErrorLevel::SilentError, ErrorCode::InvalidParam, "Number of layers exceeds maximum", nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return nullptr;
 		}
 		
@@ -65,7 +65,7 @@ namespace wax
 
 			if (type == PixelType::Index || type == PixelType::Bitplanes)
 			{
-				Core::throwError(ErrorLevel::SilentError, ErrorCode::InvalidParam, "Canvas layers can not be palette-based", nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
+				Base::throwError(ErrorLevel::SilentError, ErrorCode::InvalidParam, "Canvas layers can not be palette-based", nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
 				return nullptr;
 			}
 						
@@ -73,7 +73,7 @@ namespace wax
 
 		if (bp.baseLayer < 0 || bp.baseLayer > (int)bp.layers.size())
 		{
-			Core::throwError(ErrorLevel::Critical, ErrorCode::InvalidParam, "Default layer is out of bounds.", nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
+			Base::throwError(ErrorLevel::Critical, ErrorCode::InvalidParam, "Default layer is out of bounds.", nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return nullptr;
 		}
 
@@ -115,7 +115,7 @@ namespace wax
 	{
 		if (layer < 1 || layer > (int)m_layers.size())
 		{
-			Core::throwError(ErrorLevel::SilentError, ErrorCode::InvalidParam, "Layer does not exist.", nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
+			Base::throwError(ErrorLevel::SilentError, ErrorCode::InvalidParam, "Layer does not exist.", nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return PixelFormat::Undefined;
 		}
 

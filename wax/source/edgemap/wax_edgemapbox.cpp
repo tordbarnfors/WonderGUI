@@ -20,7 +20,7 @@
 
 =========================================================================*/
 #include <wax_edgemapbox.h>
-#include <wax_core.h>
+#include <wax_base.h>
 #include <wax_util.h>
 
 #include <algorithm>
@@ -190,7 +190,7 @@ namespace wax
 
 		if (_buildPieces(layout, regions, m_colors, m_pFactory) != BuildResult::Ok)
 		{
-			Core::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "Box can't be made into edgemaps.",
+			Base::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "Box can't be made into edgemaps.",
 				this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return false;
 		}

@@ -79,7 +79,7 @@ bool MyApp::_setupGUI(wapp::API* pAPI)
 									_.color = Color8::Black));
 
 
-	Base::setDefaultStyle(m_pTextStyle);
+	wg::Base::setDefaultStyle(m_pTextStyle);
 
 	m_pTextLayoutCentered = BasicTextLayout::create(WGBP(BasicTextLayout,
 		_.placement = Placement::Center));
@@ -364,8 +364,8 @@ bool MyApp::generateFontSurface( FreeTypeFont * pFont, String& chars )
 	
 	// Generate and fill in surface
 	
-	auto pSurface = Base::defaultSurfaceFactory()->createSurface( { .canvas = true, .colorSpace = outputColorSpace, .format = PixelFormat::ARGB_8, .size = surfaceSize });
-	auto pDevice = Base::defaultDevice();
+	auto pSurface = wg::Base::defaultSurfaceFactory()->createSurface( { .canvas = true, .colorSpace = outputColorSpace, .format = PixelFormat::ARGB_8, .size = surfaceSize });
+	auto pDevice = wg::Base::defaultDevice();
 
 	HiColor lineColor(1024,0,0,4096);
 	
@@ -424,7 +424,7 @@ bool MyApp::generateFontSurface( FreeTypeFont * pFont, String& chars )
 	
 	m_pBitmapFontSurface = pSurface;
 	
-	m_pFontDisplaySurface = Base::defaultSurfaceFactory()->createSurface( { .canvas = true, .format = PixelFormat::ARGB_8, .size = surfaceSize });
+	m_pFontDisplaySurface = wg::Base::defaultSurfaceFactory()->createSurface( { .canvas = true, .format = PixelFormat::ARGB_8, .size = surfaceSize });
 
 	pDevice->beginRender();
 	pDevice->beginCanvasUpdate(m_pFontDisplaySurface);
@@ -560,7 +560,7 @@ Widget_p MyApp::createInputPanel()
 	m_pModeSelector->selectEntryById(int(FreeTypeFont::RenderMode::BestShapes));
 	m_pStemDarkeningSelector->selectEntryByIndex(0);
 
-	Base::msgRouter()->addRoute( pLoadButton, MsgType::Select, [this](Msg*pMsg){this->selectAndLoadTTF();});
+	wg::Base::msgRouter()->addRoute( pLoadButton, MsgType::Select, [this](Msg*pMsg){this->selectAndLoadTTF();});
 
 	return pBase;
 }
@@ -640,7 +640,7 @@ Widget_p MyApp::createOutputPanel()
 	
 	auto pSaveButton = Button::create( { .label = { .text = String("Save")}, .skin = m_pButtonSkin } );
 
-	Base::msgRouter()->addRoute(pGenerateButton, MsgType::Select, [this](Msg*pMsg){this->generateBitmapFont();this->displayBitmapFont();} );
+	wg::Base::msgRouter()->addRoute(pGenerateButton, MsgType::Select, [this](Msg*pMsg){this->generateBitmapFont();this->displayBitmapFont();} );
 	
 	
 	pTopPanel->slots << pLabel;
@@ -681,7 +681,7 @@ Widget_p MyApp::createOutputPanel()
 	pWindow->slot = m_pBitmapDisplay;
 	
 	
-	Base::msgRouter()->addRoute( pSaveButton, MsgType::Select, [this](Msg*pMsg){this->saveBitmapFont();});
+	wg::Base::msgRouter()->addRoute( pSaveButton, MsgType::Select, [this](Msg*pMsg){this->saveBitmapFont();});
 
 
 	

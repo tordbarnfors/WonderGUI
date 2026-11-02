@@ -20,7 +20,7 @@
 
 =========================================================================*/
 #include <wax_edgemapring.h>
-#include <wax_core.h>
+#include <wax_base.h>
 #include <wax_backend.h>
 
 #include <algorithm>
@@ -92,7 +92,7 @@ namespace wax
 	{
 		if (spec.nSlices < 0 || (spec.nSlices > 0 && !spec.pSlices))
 		{
-			Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Invalid slices.",
+			Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Invalid slices.",
 				this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return false;
 		}
@@ -116,7 +116,7 @@ namespace wax
 			case BuildResult::TooManySegments:
 			default:
 				_prepare(oldSpec);
-				Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Too many slices in a quarter of the ring.",
+				Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Too many slices in a quarter of the ring.",
 					this, &TYPEINFO, __func__, __FILE__, __LINE__);
 				return false;
 		}

@@ -240,11 +240,11 @@ int main(int argc, char *argv[] )
 
 			// Dispatch messages
 
-			Base::msgRouter()->dispatch();
+			wg::Base::msgRouter()->dispatch();
 
 			// Periodic update
 
-			Base::update(SDL_GetPerformanceCounter() * 1000000 / SDL_GetPerformanceFrequency());
+			wg::Base::update(SDL_GetPerformanceCounter() * 1000000 / SDL_GetPerformanceFrequency());
 
 			// Remove any windows pointers for erased windows.
 
@@ -275,7 +275,7 @@ int main(int argc, char *argv[] )
 
 	pApp = nullptr;
 
-	Base::setErrorHandler(nullptr);		//TODO: WAPP-framework should have its own error-handler.
+	wg::Base::setErrorHandler(nullptr);		//TODO: WAPP-framework should have its own error-handler.
 
 	g_windows.clear();
 
@@ -295,14 +295,14 @@ bool init_wondergui()
 {
 	g_pHostBridge = new MyHostBridge();
 	
-	Base::init(g_pHostBridge);
+	wg::Base::init(g_pHostBridge);
 
-	Base::setErrorHandler([](Error& e) 
+	wg::Base::setErrorHandler([](Error& e) 
 	{ 
 		std::cerr << "ERROR:" << e.message << std::endl;  
 	});
 
-	InputHandler_p pInput = Base::inputHandler();
+	InputHandler_p pInput = wg::Base::inputHandler();
 	
 	pInput->mapKey(SDLK_LEFT, Key::Left);
 	pInput->mapKey(SDLK_RIGHT, Key::Right);
@@ -377,7 +377,7 @@ bool init_wondergui()
 void exit_wondergui()
 {
 	wkit::exit();
-	Base::exit();
+	wg::Base::exit();
 	delete g_pHostBridge;
 	g_pHostBridge = nullptr;
 }
@@ -393,7 +393,7 @@ bool init_debugger(MyAppAPI* pAPI)
 
 	g_pDebugFrontend = WGCREATE(DebugFrontend, _.backend = g_pDebugBackend );
 
-	Base::msgRouter()->addRoute(MsgType::KeyPress, [pAPI](Msg * _pMsg) {
+	wg::Base::msgRouter()->addRoute(MsgType::KeyPress, [pAPI](Msg * _pMsg) {
 
 		KeyPressMsg * pMsg = static_cast<KeyPressMsg*>(_pMsg);
 
@@ -542,7 +542,7 @@ bool process_system_events(WonderApp * pApp)
 
 	// Process all the SDL events in a loop
 
-	InputHandler_p pInput = Base::inputHandler();
+	InputHandler_p pInput = wg::Base::inputHandler();
 
 	SDL_Event e;
 	while (SDL_PollEvent(&e)) {
@@ -680,14 +680,14 @@ bool process_system_events(WonderApp * pApp)
 				case SDL_WINDOWEVENT_FOCUS_GAINED:
 				{
 					g_pFocusedWindow = pWindow->SDLWindowPtr();
-					Base::inputHandler()->setFocusedWindow(pWindow->rootPanel());
+					wg::Base::inputHandler()->setFocusedWindow(pWindow->rootPanel());
 					break;
 				}
 
 				case SDL_WINDOWEVENT_FOCUS_LOST:
 				{
 					g_pFocusedWindow = nullptr;
-					Base::inputHandler()->setFocusedWindow(nullptr);
+					wg::Base::inputHandler()->setFocusedWindow(nullptr);
 					break;
 				}
 
@@ -799,7 +799,7 @@ bool MyAppAPI::initDefaultWidgetKit()
 
 		if (!wkit::init(pFont1, pFont2, pFont3, pFont4))
 		{
-			Base::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "Failed to init default widget kit", nullptr, nullptr, __func__, __FILE__, __LINE__);
+			wg::Base::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "Failed to init default widget kit", nullptr, nullptr, __func__, __FILE__, __LINE__);
 			return false;
 		}
 	}
@@ -912,7 +912,7 @@ wapp::DialogButton	MyAppAPI::messageBox(	const std::string& title, const std::st
 
 wrongDefaultButton:
 	
-	Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Default button isn't a button of specified dialog type", nullptr, nullptr, __func__, __FILE__, __LINE__);
+	wg::Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Default button isn't a button of specified dialog type", nullptr, nullptr, __func__, __FILE__, __LINE__);
 	
 	return wapp::DialogButton::Undefined;
 

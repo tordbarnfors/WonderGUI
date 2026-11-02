@@ -34,7 +34,7 @@
 #include <string.h>
 #include <wax_bitmapfont.h>
 #include <wax_gridwalker.h>
-#include <wax_core.h>
+#include <wax_base.h>
 
 
 inline int readUTF8Char( const char *& _pStr )
@@ -258,28 +258,28 @@ namespace wax
 
 		if (!pInfoBeg)
 		{
-			Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Missing [INFO BEGIN] section.",
+			Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Missing [INFO BEGIN] section.",
 				this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return;
 		}
 
 		if (!pInfoEnd)
 		{
-			Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Missing [INFO END] section.",
+			Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Missing [INFO END] section.",
 				this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return;
 		}
 
 		if (!pCharmapBeg)
 		{
-			Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Missing [CHARMAP BEGIN] section.",
+			Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Missing [CHARMAP BEGIN] section.",
 				this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return;
 		}
 
 		if (!pCharmapEnd)
 		{
-			Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Missing [CHARMAP END] section.",
+			Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Missing [CHARMAP END] section.",
 				this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return;
 		}

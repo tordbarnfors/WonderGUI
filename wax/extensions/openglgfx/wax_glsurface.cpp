@@ -26,7 +26,7 @@
 #include <wax_util.h>
 #include <wax_pixeltools.h>
 #include <wax_blob.h>
-#include <wax_core.h>
+#include <wax_base.h>
 #include <assert.h>
 #include <vector>
 #include <algorithm>
@@ -788,7 +788,7 @@ namespace wax
 			glBindFramebuffer(GL_READ_FRAMEBUFFER, m_framebufferId);
 			if (glCheckFramebufferStatus(GL_READ_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 			{
-				Core::throwError(ErrorLevel::SilentError, ErrorCode::OpenGL, "Can not read pixel from surface for unknow reason, returning 4096 as alpha value.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				Base::throwError(ErrorLevel::SilentError, ErrorCode::OpenGL, "Can not read pixel from surface for unknow reason, returning 4096 as alpha value.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 
 				return 4096;
 			}

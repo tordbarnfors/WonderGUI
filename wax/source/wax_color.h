@@ -268,7 +268,7 @@ namespace wax
 
 	class HiColor
 	{
-		friend class Core;
+		friend class Base;
 	public:
 
 		//.____ Creation __________________________________________

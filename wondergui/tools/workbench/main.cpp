@@ -131,15 +131,15 @@ namespace workbench
 			return false;
 
 		m_pHostBridge = new SDLHostBridge();
-		Base::init(m_pHostBridge);
+		wg::Base::init(m_pHostBridge);
 
 		auto pBackend = SoftBackend::create();
 		addDefaultSoftKernels(pBackend);
 
-		Base::setDefaultDevice(GfxDeviceGen2::create(pBackend));
-		Base::setDefaultSurfaceFactory(SoftSurfaceFactory::create());
-		Base::setDefaultEdgemapFactory(SoftEdgemapFactory::create());
-		Base::setDefaultWarpmapFactory(pBackend->warpmapFactory());
+		wg::Base::setDefaultDevice(GfxDeviceGen2::create(pBackend));
+		wg::Base::setDefaultSurfaceFactory(SoftSurfaceFactory::create());
+		wg::Base::setDefaultEdgemapFactory(SoftEdgemapFactory::create());
+		wg::Base::setDefaultWarpmapFactory(pBackend->warpmapFactory());
 
 		_mapKeys();
 
@@ -221,12 +221,12 @@ namespace workbench
 			return false;
 		}
 
-		Base::setDefaultStyle(oldskool::TextStyles::Default);
+		wg::Base::setDefaultStyle(oldskool::TextStyles::Default);
 
 		m_pRoot = RootPanel::create();
 		_updateCanvas();
 
-		Base::inputHandler()->setFocusedWindow(m_pRoot);
+		wg::Base::inputHandler()->setFocusedWindow(m_pRoot);
 
 		// Root -> debugger -> drag'n'drop -> popups -> browser | test
 
@@ -266,7 +266,7 @@ namespace workbench
 	{
 		m_pFilter = oldskool::LineEditor::create(WGBP(oldskool::LineEditor, _.defaultLengthInChars = 0));
 
-		Base::msgRouter()->addRoute(m_pFilter, MsgType::TextEdit, [this](Msg* pMsg)
+		wg::Base::msgRouter()->addRoute(m_pFilter, MsgType::TextEdit, [this](Msg* pMsg)
 		{
 			const String& text = m_pFilter->editor.text();
 
@@ -277,7 +277,7 @@ namespace workbench
 
 		m_pTestList = SelectCapsule::create(WGBP(SelectCapsule, _.recursive = true));
 
-		Base::msgRouter()->addRoute(m_pTestList, MsgType::Selected, [this](Msg* pMsg)
+		wg::Base::msgRouter()->addRoute(m_pTestList, MsgType::Selected, [this](Msg* pMsg)
 		{
 			auto pSelected = static_cast<SelectedMsg*>(pMsg);
 			if (pSelected->nbSelected() == 0)
@@ -484,7 +484,7 @@ namespace workbench
 			if (m_pContext)
 				m_pContext->_update(microsec);
 
-			Base::update(microsec);
+			wg::Base::update(microsec);
 			m_pRoot->render();
 			_updateWindowRects();
 
@@ -496,7 +496,7 @@ namespace workbench
 
 	void App::exit()
 	{
-		if (Base::isInitialized())
+		if (wg::Base::isInitialized())
 		{
 			_stopTest();
 
@@ -509,7 +509,7 @@ namespace workbench
 
 			oldskool::exit();
 
-			Base::exit();
+			wg::Base::exit();
 		}
 
 		delete m_pHostBridge;
@@ -525,7 +525,7 @@ namespace workbench
 
 	void App::_processEvents()
 	{
-		auto pInput = Base::inputHandler();
+		auto pInput = wg::Base::inputHandler();
 
 		SDL_Event e;
 		while (SDL_PollEvent(&e))
@@ -593,7 +593,7 @@ namespace workbench
 			}
 		}
 
-		Base::msgRouter()->dispatch();
+		wg::Base::msgRouter()->dispatch();
 	}
 
 	//____ _handleWorkbenchKey() ______________________________________________
@@ -636,7 +636,7 @@ namespace workbench
 
 	void App::_mapKeys()
 	{
-		auto pInput = Base::inputHandler();
+		auto pInput = wg::Base::inputHandler();
 
 		pInput->mapKey(SDLK_LEFT, Key::Left);
 		pInput->mapKey(SDLK_RIGHT, Key::Right);

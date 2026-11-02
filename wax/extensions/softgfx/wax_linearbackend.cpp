@@ -23,7 +23,7 @@
 #include <wax_linearbackend.h>
 #include <wax_softedgemap.h>
 #include <wax_softwarpmap.h>
-#include <wax_core.h>
+#include <wax_base.h>
 #include <cstring>
 
 
@@ -341,7 +341,7 @@ namespace wax
 						toString(mode),
 						toString(m_canvasSoftFormat));
 
-					Core::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, errorMsg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+					Base::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, errorMsg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 				};
 
 				bool bRuns;
@@ -536,7 +536,7 @@ namespace wax
 						toString(m_blendMode),
 						toString(m_canvasSoftFormat));
 
-					Core::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, errorMsg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+					Base::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, errorMsg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 					return;
 				}
 
@@ -949,7 +949,7 @@ namespace wax
 						toString(m_blendMode),
 						toString(m_canvasSoftFormat));
 
-					Core::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, errorMsg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+					Base::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, errorMsg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 					break;
 				}
 
@@ -1275,7 +1275,7 @@ namespace wax
 
 		int memBufferSize = chunkLines * width*8;
 
-		uint8_t * pChunkBuffer = (uint8_t*) Core::memStackAlloc(memBufferSize);
+		uint8_t * pChunkBuffer = (uint8_t*) Base::memStackAlloc(memBufferSize);
 
 		int line = 0;
 
@@ -1295,7 +1295,7 @@ namespace wax
 			pDst += destPitch*thisChunkLines;
 		}
 
-		Core::memStackFree(memBufferSize);
+		Base::memStackFree(memBufferSize);
 	}
 
 	//____ _dummyLinearStraightBlit() _____________________________________________
@@ -1352,7 +1352,7 @@ namespace wax
 
 		int memBufferSize = chunkLines * destWidth * 8;
 
-		uint8_t * pChunkBuffer = (uint8_t*)Core::memStackAlloc(memBufferSize);
+		uint8_t * pChunkBuffer = (uint8_t*)Base::memStackAlloc(memBufferSize);
 
 		int line = 0;
 
@@ -1374,7 +1374,7 @@ namespace wax
 			pDst += destPitch*thisChunkLines;
 		}
 
-		Core::memStackFree(memBufferSize);
+		Base::memStackFree(memBufferSize);
 	}
 
 

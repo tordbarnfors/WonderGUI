@@ -21,7 +21,7 @@
 =========================================================================*/
 #include <wax_streamplayer.h>
 #include <wax_tinttools.h>
-#include <wax_core.h>
+#include <wax_base.h>
 #include <wax_util.h>
 #include <wax_pixeltools.h>
 #include <assert.h>
@@ -175,7 +175,7 @@ namespace wax
 					char msg[128];
 					snprintf(msg, sizeof(msg), "Skipping %s chunk, next chunk will be processed.", toString(header.type) );
 
-					Core::throwError(ErrorLevel::Warning, ErrorCode::SystemIntegrity, msg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+					Base::throwError(ErrorLevel::Warning, ErrorCode::SystemIntegrity, msg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 					m_pDecoder->skip(header.size);
 					return true;
 				}
@@ -187,7 +187,7 @@ namespace wax
 					char msg[128];
 					snprintf(msg, sizeof(msg), "Skipping %s chunk, continue processing %s next %s.", toString(header.type), m_bSkipEndInclusive ? "after" : "on", toString(m_skipEndId) );
 
-					Core::throwError(ErrorLevel::Warning, ErrorCode::SystemIntegrity, msg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+					Base::throwError(ErrorLevel::Warning, ErrorCode::SystemIntegrity, msg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 				}
 				m_pDecoder->skip(header.size);
 				return true;
@@ -217,7 +217,7 @@ namespace wax
 				char msg[160];
 				snprintf(msg, sizeof(msg), "Stream protocol version %d.%d is not supported, %d.%d or later is needed. Skipping stream up to next ProtocolVersion.",
 						 m_streamMajorVersion, m_streamMinorVersion, c_minProtocolVersion/256, c_minProtocolVersion & 0xFF );
-				Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, msg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, msg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 
 				m_bSkip = true;
 				m_bSkipEndInclusive = false;
@@ -360,7 +360,7 @@ namespace wax
 
 			if( canvasId > 0 && ( canvasId >= m_vObjects.size() || m_vObjects[canvasId] == nullptr ))
 			{
-				Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "BeginSession with invalid canvasId, will skip this session.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "BeginSession with invalid canvasId, will skip this session.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 
 				m_bSkip = true;
 				m_bSkipEndInclusive = true;
@@ -446,7 +446,7 @@ namespace wax
 			{
 				if( objectId >= m_vObjects.size() || m_vObjects[objectId] == nullptr )
 				{
-					Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "SetCanvas with invalid objectId, ignored.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+					Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "SetCanvas with invalid objectId, ignored.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 					break;
 				}
 
@@ -480,7 +480,7 @@ namespace wax
 
 					if( id >= m_vObjects.size() || m_vObjects[id] == nullptr )
 					{
-						Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Invalid objectId in Objects chunk, will skip session.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+						Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Invalid objectId in Objects chunk, will skip session.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 
 						m_bSkip = true;
 						m_bSkipEndInclusive = false;
@@ -624,7 +624,7 @@ namespace wax
 				m_vObjects.resize(objectId + 16, nullptr);
 			else if( m_vObjects[objectId] != nullptr )
 			{
-				Core::throwError(ErrorLevel::Warning, ErrorCode::InvalidParam, "CreateSurface with objectId that already is in use. The old object will be replaced.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				Base::throwError(ErrorLevel::Warning, ErrorCode::InvalidParam, "CreateSurface with objectId that already is in use. The old object will be replaced.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			}
 
 			// A palette follows in SurfacePalette chunks. The surface is created once all of it
@@ -656,7 +656,7 @@ namespace wax
 			auto it = std::find_if(m_pendingSurfaces.begin(), m_pendingSurfaces.end(), [objectId](const PendingSurface& p) { return p.objectId == objectId; });
 			if (it == m_pendingSurfaces.end())
 			{
-				Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "SurfacePalette chunk for a surface that isn't waiting for its palette.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "SurfacePalette chunk for a surface that isn't waiting for its palette.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 				m_pDecoder->skip(header.size - dataInfo.encodedSize);
 				break;
 			}
@@ -679,7 +679,7 @@ namespace wax
 					m_vObjects[objectId] = m_pSurfaceFactory->createSurface(bp);
 				}
 				else
-					Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "SurfacePalette size doesn't match the palette size given in CreateSurface. Surface not created.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+					Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "SurfacePalette size doesn't match the palette size given in CreateSurface. Surface not created.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 
 				m_pendingSurfaces.erase(it);
 			}
@@ -697,7 +697,7 @@ namespace wax
 
 			if( objectId >= m_vObjects.size() || m_vObjects[objectId] == nullptr )
 			{
-				Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "SurfaceUpdate with invalid objectId", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "SurfaceUpdate with invalid objectId", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 				break;
 			}
 
@@ -708,7 +708,7 @@ namespace wax
 
 			if (m_updateCanvasRef != CanvasRef::None)
 			{
-				Core::throwError(ErrorLevel::Critical, ErrorCode::IllegalCall, "Received old-style SurfaceUpdate chunk while CanvasRef-based SurfaceUpdate in progress. These can not be processed in parallel, system is now unstable!", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				Base::throwError(ErrorLevel::Critical, ErrorCode::IllegalCall, "Received old-style SurfaceUpdate chunk while CanvasRef-based SurfaceUpdate in progress. These can not be processed in parallel, system is now unstable!", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			}
 
 			m_updateObject = objectId;
@@ -741,7 +741,7 @@ namespace wax
 				pSurf = wax_static_cast<Surface_p>(m_vObjects[surfaceId]);
 			else
 			{
-				Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "SurfaceUpdate2 with invalid surfaceId", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "SurfaceUpdate2 with invalid surfaceId", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 				m_pDecoder->skip(nRects * 16);	// Skip rects
 				break;
 			}
@@ -771,7 +771,7 @@ namespace wax
 			{
 				if( dataInfo.objectId >= m_vObjects.size() || m_vObjects[dataInfo.objectId] == nullptr )
 				{
-					Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "SurfacePixel with invalid objectId", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+					Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "SurfacePixel with invalid objectId", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 					m_pDecoder->skip(header.size - dataInfo.encodedSize);
 					break;
 				}
@@ -786,7 +786,7 @@ namespace wax
 					pSurface = wax_static_cast<Surface_p>(m_vObjects[m_updateObject]);
 				else
 				{
-					Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "SurfacePixel chunk with no valid surface reference", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+					Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "SurfacePixel chunk with no valid surface reference", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 					m_pDecoder->skip(header.size - dataInfo.encodedSize);
 					break;
 				}
@@ -798,7 +798,7 @@ namespace wax
 
 			if( it == m_surfaceDataBuffers.end() )
 			{
-				Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "SurfacePixel chunk, but surface has not been prepared by preceeding SurfaceUpdate chunk", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "SurfacePixel chunk, but surface has not been prepared by preceeding SurfaceUpdate chunk", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 				m_pDecoder->skip(header.size - dataInfo.encodedSize);
 				break;
 			}
@@ -879,7 +879,7 @@ namespace wax
 
 			if( objectId >= m_vObjects.size() || m_vObjects[objectId] == nullptr )
 			{
-				Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "FillSurface with invalid objectId", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "FillSurface with invalid objectId", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 				break;
 			}
 
@@ -923,7 +923,7 @@ namespace wax
 
 			if( objectId >= m_vObjects.size() || m_vObjects[objectId] == nullptr || !m_vObjects[objectId]->isInstanceOf(Surface::TYPEINFO) )
 			{
-				Core::throwError(ErrorLevel::Warning, ErrorCode::InvalidParam, "DeleteSurface with invalid objectId", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				Base::throwError(ErrorLevel::Warning, ErrorCode::InvalidParam, "DeleteSurface with invalid objectId", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 				break;
 			}
 
@@ -948,7 +948,7 @@ namespace wax
 				m_vObjects.resize(objectId + 16, nullptr);
 			else if( m_vObjects[objectId] != nullptr )
 			{
-				Core::throwError(ErrorLevel::Warning, ErrorCode::InvalidParam, "CreateEdgemap with objectId that already is in use. The old object will be replaced.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				Base::throwError(ErrorLevel::Warning, ErrorCode::InvalidParam, "CreateEdgemap with objectId that already is in use. The old object will be replaced.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			}
 
 			Edgemap::Blueprint		bp;
@@ -971,7 +971,7 @@ namespace wax
 
 			if( objectId >= m_vObjects.size() || m_vObjects[objectId] == nullptr )
 			{
-				Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "SetEdgemapRenderSegments with invalid objectId", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "SetEdgemapRenderSegments with invalid objectId", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 				break;
 			}
 
@@ -993,21 +993,21 @@ namespace wax
 
 			if( objectId >= m_vObjects.size() || m_vObjects[objectId] == nullptr )
 			{
-				Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "SetEdgemapColors with invalid objectId", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "SetEdgemapColors with invalid objectId", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 
 				m_pDecoder->skip(sizeof(HiColor)*nColors);
 				break;
 			}
 
 			int memAllocated = sizeof(HiColor)*nColors;
-			auto * pColors = (HiColor*) Core::memStackAlloc(memAllocated);
+			auto * pColors = (HiColor*) Base::memStackAlloc(memAllocated);
 			
 			for( int i = 0 ; i < nColors ; i++ )
 				decoder >> pColors[i];
 
 			static_cast<Edgemap*>(m_vObjects[objectId].rawPtr())->setColors(begin, end, pColors);
 
-			Core::memStackFree(memAllocated);
+			Base::memStackFree(memAllocated);
 			break;
 		}
 
@@ -1023,7 +1023,7 @@ namespace wax
 
 			if( objectId >= m_vObjects.size() || m_vObjects[objectId] == nullptr || nBytes <= 0 || nBytes > TintTools::c_maxSerializedTintBytes )
 			{
-				Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "SetEdgemapTint with invalid objectId or size", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "SetEdgemapTint with invalid objectId or size", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 
 				if( nBytes > 0 )
 					m_pDecoder->skip(nBytes);
@@ -1060,7 +1060,7 @@ namespace wax
 
 			if( objectId >= m_vObjects.size() || m_vObjects[objectId] == nullptr )
 			{
-				Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "EdgemapUpdate with invalid objectId", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "EdgemapUpdate with invalid objectId", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 				break;
 			}
 
@@ -1079,7 +1079,7 @@ namespace wax
 
 			if( objectId >= m_vObjects.size() || m_vObjects[objectId] == nullptr )
 			{
-				Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "EdgemapSamples with invalid objectId", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "EdgemapSamples with invalid objectId", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 				m_pDecoder->skip(header.size - dataInfo.encodedSize);
 				break;
 			}
@@ -1092,7 +1092,7 @@ namespace wax
 
 			if( it == m_edgemapDataBuffers.end() )
 			{
-				Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "EdgemapSamples chunk, but edgemap has not been prepared by preceeding EdgemapUpdate chunk", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "EdgemapSamples chunk, but edgemap has not been prepared by preceeding EdgemapUpdate chunk", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 				m_pDecoder->skip(header.size - dataInfo.encodedSize);
 				break;
 			}
@@ -1116,7 +1116,7 @@ namespace wax
 
 			if( objectId >= m_vObjects.size() || m_vObjects[objectId] == nullptr || !m_vObjects[objectId]->isInstanceOf(Edgemap::TYPEINFO) )
 			{
-				Core::throwError(ErrorLevel::Warning, ErrorCode::InvalidParam, "DeleteEdgemap with invalid objectId", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				Base::throwError(ErrorLevel::Warning, ErrorCode::InvalidParam, "DeleteEdgemap with invalid objectId", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 				break;
 			}
 
@@ -1139,7 +1139,7 @@ namespace wax
 				m_vObjects.resize(objectId + 16, nullptr);
 			else if (m_vObjects[objectId] != nullptr || _findWarpmapDataBuffer(objectId))
 			{
-				Core::throwError(ErrorLevel::Warning, ErrorCode::InvalidParam, "CreateWarpmap with objectId that already is in use. The old object will be replaced.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				Base::throwError(ErrorLevel::Warning, ErrorCode::InvalidParam, "CreateWarpmap with objectId that already is in use. The old object will be replaced.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			}
 
 			m_vObjects[objectId] = nullptr;
@@ -1149,7 +1149,7 @@ namespace wax
 
 			if (!m_pBackend->warpmapFactory())
 			{
-				Core::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "CreateWarpmap, but backend has no WarpmapFactory.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				Base::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "CreateWarpmap, but backend has no WarpmapFactory.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 				break;
 			}
 
@@ -1183,7 +1183,7 @@ namespace wax
 			{
 				if (objectId >= m_vObjects.size() || m_vObjects[objectId] == nullptr || !m_vObjects[objectId]->isInstanceOf(Warpmap::TYPEINFO))
 				{
-					Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "WarpmapUpdate with invalid objectId", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+					Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "WarpmapUpdate with invalid objectId", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 					break;
 				}
 
@@ -1191,7 +1191,7 @@ namespace wax
 				pData->objectId = objectId;
 			}
 			else if (!pData->region.isEmpty())
-				Core::throwError(ErrorLevel::Warning, ErrorCode::InvalidParam, "WarpmapUpdate before nodes of previous update had arrived. They are dropped.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				Base::throwError(ErrorLevel::Warning, ErrorCode::InvalidParam, "WarpmapUpdate before nodes of previous update had arrived. They are dropped.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 
 			pData->region = { x, y, w, h };
 			pData->uPeriod = uPeriod;
@@ -1210,7 +1210,7 @@ namespace wax
 
 			if (!pData || pData->region.isEmpty())
 			{
-				Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "WarpmapNodes without preceding WarpmapUpdate", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "WarpmapNodes without preceding WarpmapUpdate", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 				m_pDecoder->skip(header.size - dataInfo.encodedSize);
 				break;
 			}
@@ -1224,7 +1224,7 @@ namespace wax
 			auto pNodes = (const CoordSPX*) pData->buffer.pBuffer;
 
 			if (pData->buffer.size != region.w * region.h * int(sizeof(CoordSPX)))
-				Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "WarpmapNodes don't match size of region", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "WarpmapNodes don't match size of region", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			else if (pData->bCreate)
 			{
 				auto pFactory = m_pBackend->warpmapFactory();
@@ -1242,11 +1242,11 @@ namespace wax
 				{
 					pWarpmap = pFactory->createWarpmap(bp);
 					if (pWarpmap && !pWarpmap->importNodes(region, pNodes))
-						Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "WarpmapUpdate with region outside the Warpmap", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+						Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "WarpmapUpdate with region outside the Warpmap", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 				}
 
 				if (!pWarpmap)
-					Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "CreateWarpmap with invalid parameters", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+					Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "CreateWarpmap with invalid parameters", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 
 				m_vObjects[objectId] = pWarpmap;
 			}
@@ -1262,7 +1262,7 @@ namespace wax
 					bOk = pWarpmap->importNodes(region, pNodes);
 
 				if (!bOk)
-					Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "WarpmapUpdate with region outside the Warpmap, or new periods for only some nodes", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+					Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "WarpmapUpdate with region outside the Warpmap, or new periods for only some nodes", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			}
 
 			m_warpmapDataBuffers.erase(m_warpmapDataBuffers.begin() + (pData - m_warpmapDataBuffers.data()));
@@ -1287,7 +1287,7 @@ namespace wax
 
 			if( objectId >= m_vObjects.size() || m_vObjects[objectId] == nullptr || !m_vObjects[objectId]->isInstanceOf(Warpmap::TYPEINFO) )
 			{
-				Core::throwError(ErrorLevel::Warning, ErrorCode::InvalidParam, "DeleteWarpmap with invalid objectId", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				Base::throwError(ErrorLevel::Warning, ErrorCode::InvalidParam, "DeleteWarpmap with invalid objectId", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 				break;
 			}
 

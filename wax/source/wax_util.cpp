@@ -25,7 +25,7 @@
 #include <wax_surface.h>
 #include <wax_device.h>
 #include <wax_patches.h>
-#include <wax_core.h>
+#include <wax_base.h>
 
 #include <algorithm>
 

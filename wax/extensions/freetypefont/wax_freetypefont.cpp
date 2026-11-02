@@ -67,7 +67,7 @@ namespace wax
 	{
 		if( !blueprint.blob )
 		{
-			Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Blueprint must contain a blob with the font", nullptr, &FreeTypeFont::TYPEINFO, __func__, __FILE__, __LINE__);
+			Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Blueprint must contain a blob with the font", nullptr, &FreeTypeFont::TYPEINFO, __func__, __FILE__, __LINE__);
 			return nullptr;
 		}
 
@@ -83,13 +83,13 @@ namespace wax
             FT_Error err = FT_Init_FreeType(&s_freeTypeLibrary);
             if (err != 0)
             {
-				Core::throwError(ErrorLevel::Critical, ErrorCode::Internal, "Failed to init FreeType", this, &FreeTypeFont::TYPEINFO, __func__, __FILE__, __LINE__);
+				Base::throwError(ErrorLevel::Critical, ErrorCode::Internal, "Failed to init FreeType", this, &FreeTypeFont::TYPEINFO, __func__, __FILE__, __LINE__);
             }
         }
         s_nInstances++;
 
 		m_pFontFile = bp.blob;
-		m_pCache 	=  bp.cache ? BitmapCache_p(bp.cache) : Core::defaultBitmapCache();
+		m_pCache 	=  bp.cache ? BitmapCache_p(bp.cache) : Base::defaultBitmapCache();
 		m_size 			= 0;
 		m_xDPI		= bp.xDPI;
 		m_yDPI		= bp.yDPI;
@@ -103,7 +103,7 @@ namespace wax
 											&m_ftFace );
 		if( err )
 		{
-			Core::throwError(ErrorLevel::Critical, ErrorCode::InvalidParam, "FreeType failed to initialize font in blob", this, &FreeTypeFont::TYPEINFO, __func__, __FILE__, __LINE__);
+			Base::throwError(ErrorLevel::Critical, ErrorCode::InvalidParam, "FreeType failed to initialize font in blob", this, &FreeTypeFont::TYPEINFO, __func__, __FILE__, __LINE__);
 		}
 
 		m_renderMode = bp.renderMode;
@@ -475,7 +475,7 @@ namespace wax
 		err = FT_Load_Glyph( m_ftFace, pGlyph->kerningIndex, FT_LOAD_RENDER | FT_LOAD_COLOR | m_renderFlags );
 		if( err )
         {
-			Core::throwError(ErrorLevel::Error, ErrorCode::Internal, "FreeType failed to load glyph for bitmap generation", this, &FreeTypeFont::TYPEINFO, __func__, __FILE__, __LINE__);
+			Base::throwError(ErrorLevel::Error, ErrorCode::Internal, "FreeType failed to load glyph for bitmap generation", this, &FreeTypeFont::TYPEINFO, __func__, __FILE__, __LINE__);
 			
             if( bDifferentSize )
                 FT_Set_Char_Size( m_ftFace, m_size, 0, 0,0 );

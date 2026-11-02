@@ -2393,8 +2393,8 @@ wg::TextStyle_p WgText::_cloneBaseStyle() const
     if( m_pBaseStyle )
         return m_pBaseStyle->clone();
 
-    if( wax::Core::defaultStyle() )
-        return wax::Core::defaultStyle()->clone();
+    if( wax::Base::defaultStyle() )
+        return wax::Base::defaultStyle()->clone();
 
     return wg::TextStyle::create();
 }

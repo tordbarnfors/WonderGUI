@@ -27,7 +27,7 @@
 #include <wax_softwarpmapfactory.h>
 #include <wax_softwarpmap.h>
 #include <algorithm>
-#include <wax_core.h>
+#include <wax_base.h>
 #include <cstring>
 
 // Prefetches memory about to be written, nothing where not supported. Keep it in code doing
@@ -430,7 +430,7 @@ namespace wax
 						toString(mode),
 						toString(m_canvasSoftFormat));
 
-					Core::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, errorMsg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+					Base::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, errorMsg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 				};
 
 				// Fills a rectangle of whole pixels with given kernel, taking tint into account.
@@ -608,7 +608,7 @@ namespace wax
 						toString(m_blendMode),
 						toString(m_canvasSoftFormat));
 
-					Core::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, errorMsg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+					Base::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, errorMsg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 					return;
 				}
 
@@ -957,7 +957,7 @@ namespace wax
 						toString(m_blendMode),
 						toString(m_canvasSoftFormat));
 
-					Core::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, errorMsg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+					Base::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, errorMsg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 					break;
 				}
 
@@ -1439,7 +1439,7 @@ namespace wax
 
 		int memBufferSize = chunkLines * dest.w * 8;
 
-		uint8_t* pChunkBuffer = (uint8_t*)Core::memStackAlloc(memBufferSize);
+		uint8_t* pChunkBuffer = (uint8_t*)Base::memStackAlloc(memBufferSize);
 
 		int line = 0;
 
@@ -1458,7 +1458,7 @@ namespace wax
 			line += thisChunkLines;
 		}
 
-		Core::memStackFree(memBufferSize);
+		Base::memStackFree(memBufferSize);
 	}
 
 	//____ _onePassTransformBlit() ____________________________________________
@@ -1503,7 +1503,7 @@ namespace wax
 
 		int memBufferSize = chunkLines * dest.w * 8;
 
-		uint8_t* pChunkBuffer = (uint8_t*)Core::memStackAlloc(memBufferSize);
+		uint8_t* pChunkBuffer = (uint8_t*)Base::memStackAlloc(memBufferSize);
 
 		int line = 0;
 
@@ -1523,7 +1523,7 @@ namespace wax
 			line += thisChunkLines;
 		}
 
-		Core::memStackFree(memBufferSize);
+		Base::memStackFree(memBufferSize);
 	}
 
 	//____ _dummyStraightBlit() _________________________________________________
@@ -1548,7 +1548,7 @@ namespace wax
 				toString(m_canvasSoftFormat));
 		}
 
-		Core::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, errorMsg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+		Base::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, errorMsg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 	}
 
 	//____ _dummyTransformBlit() ________________________________________________
@@ -1590,7 +1590,7 @@ namespace wax
 			toString(m_blendMode),
 			toString(m_canvasSoftFormat));
 
-		Core::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, errorMsg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+		Base::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, errorMsg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 
 	}
 
@@ -1974,7 +1974,7 @@ namespace wax
 
 			t.pitch = length;
 			t.bufferBytes = sizeof(HiColor) * (nSegments + 1) * length;
-			t.pColumns = (HiColor*)Core::memStackAlloc(t.bufferBytes);
+			t.pColumns = (HiColor*)Base::memStackAlloc(t.bufferBytes);
 			t.pGlobal = t.pColumns + nSegments * length;
 		}
 	}
@@ -2195,7 +2195,7 @@ namespace wax
 		static bool bWarned = false;
 		if (!bWarned)
 		{
-			Core::throwError(ErrorLevel::Warning, ErrorCode::RenderFailure, "Kernels for tinted edgemaps missing, tints on edgemaps are approximated with flat colors.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			Base::throwError(ErrorLevel::Warning, ErrorCode::RenderFailure, "Kernels for tinted edgemaps missing, tints on edgemaps are approximated with flat colors.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			bWarned = true;
 		}
 	}
@@ -2374,7 +2374,7 @@ namespace wax
 	void SoftBackend::_endEdgemapTinting(EdgemapTinting& t)
 	{
 		if (t.bufferBytes > 0)
-			Core::memStackFree(t.bufferBytes);
+			Base::memStackFree(t.bufferBytes);
 
 		t.bufferBytes = 0;
 	}
@@ -2523,7 +2523,7 @@ namespace wax
 
 		if (kind != ShapeKind::RoundedBox && kind != ShapeKind::Ring)
 		{
-			Core::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, "Failed DrawShape operation. Unsupported kind of shape.",
+			Base::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, "Failed DrawShape operation. Unsupported kind of shape.",
 				this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return false;
 		}
@@ -2540,7 +2540,7 @@ namespace wax
 				toString(m_blendMode),
 				toString(m_canvasSoftFormat));
 
-			Core::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, errorMsg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			Base::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, errorMsg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return false;
 		}
 
@@ -3079,7 +3079,7 @@ namespace wax
 				toString(m_blendMode),
 				toString(m_canvasSoftFormat));
 
-			Core::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, errorMsg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			Base::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, errorMsg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return false;
 		}
 

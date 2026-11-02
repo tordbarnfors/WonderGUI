@@ -21,7 +21,7 @@
 =========================================================================*/
 #include <wax_streamedgemap.h>
 #include <wax_streambackend.h>
-#include <wax_core.h>
+#include <wax_base.h>
 #include <wax_tinttools.h>
 
 #include <cstring>
@@ -169,7 +169,7 @@ void StreamEdgemap::_samplesUpdated(int edgeBegin, int edgeEnd, int sampleBegin,
 		int samples = (edgeEnd - edgeBegin) * (sampleEnd - sampleBegin);
 		int bufferBytes = sizeof(spx) * samples;
 
-		spx * pBuffer = (spx*) Core::memStackAlloc(bufferBytes);
+		spx * pBuffer = (spx*) Base::memStackAlloc(bufferBytes);
 
 		spx* pDest = pBuffer;
 		spx* pSource = m_pSamples + sampleBegin * nbEdges + edgeBegin;
@@ -188,7 +188,7 @@ void StreamEdgemap::_samplesUpdated(int edgeBegin, int edgeEnd, int sampleBegin,
 
 		// Release temporary buffer
 
-		Core::memStackFree(bufferBytes);	// pBuffer
+		Base::memStackFree(bufferBytes);	// pBuffer
 	}
 }
 

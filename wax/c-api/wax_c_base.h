@@ -19,8 +19,8 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#ifndef WAX_C_CORE_DOT_H
-#define WAX_C_CORE_DOT_H
+#ifndef WAX_C_BASE_DOT_H
+#define WAX_C_BASE_DOT_H
 #pragma once
 
 #include <wax_c_types.h>
@@ -30,9 +30,9 @@ extern "C" {
 #endif
 
 
-WAX_EXPORT int		wax_initCore(void);
-WAX_EXPORT int		wax_exitCore(void);
-WAX_EXPORT int		wax_isCoreInitialized(void);
+WAX_EXPORT int		wax_initBase(void);
+WAX_EXPORT int		wax_exitBase(void);
+WAX_EXPORT int		wax_isBaseInitialized(void);
 
 WAX_EXPORT void		wax_setErrorHandler(void (*errorHandler)(const wax_errorInfo * pError) );
 
@@ -56,4 +56,4 @@ WAX_EXPORT wax_obj	wax_defaultDevice();
 }
 #endif
 
-#endif //WAX_C_CORE_DOT_H
+#endif //WAX_C_BASE_DOT_H

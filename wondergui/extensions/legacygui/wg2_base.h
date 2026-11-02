@@ -41,7 +41,7 @@
 #	include <wg2_key.h>
 #endif
 
-#include <wax_core.h>
+#include <wax_base.h>
 #include <wg_textstyle.h>
 #include <wg_hostbridge.h>
 
@@ -102,7 +102,7 @@ typedef	wg::StrongPtr<WgContext>	WgContext_p;
 typedef	wg::WeakPtr<WgContext>		WgContext_wp;
 
 
-class WgBase : public wax::Core
+class WgBase : public wax::Base
 {
 	friend class WgWidget;
 	

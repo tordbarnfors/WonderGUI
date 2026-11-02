@@ -21,7 +21,7 @@
 =========================================================================*/
 #include <wax_streamwarpmap.h>
 #include <wax_streambackend.h>
-#include <wax_core.h>
+#include <wax_base.h>
 
 #include <algorithm>
 #include <cstring>
@@ -125,7 +125,7 @@ namespace wax
 		if (region.w != m_nodes.w)
 		{
 			bytes = nNodes * sizeof(CoordSPX);
-			auto pGathered = (CoordSPX*) Core::memStackAlloc(bytes);
+			auto pGathered = (CoordSPX*) Base::memStackAlloc(bytes);
 
 			for (int row = 0; row < region.h; row++)
 				std::memcpy(pGathered + row * region.w, pBeg + row * m_nodes.w, region.w * sizeof(CoordSPX));
@@ -137,7 +137,7 @@ namespace wax
 		StreamBackend::_compressSplitAndEncode(m_pEncoder, GfxStream::ChunkId::WarpmapNodes, m_inStreamId, m_pCompressor, pBeg, pBeg + nNodes);
 
 		if (bytes > 0)
-			Core::memStackFree(bytes);
+			Base::memStackFree(bytes);
 	}
 
 } // namespace wax

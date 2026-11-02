@@ -21,7 +21,7 @@
 =========================================================================*/
 #include <wax_edgemapshape.h>
 #include <wax_device.h>
-#include <wax_core.h>
+#include <wax_base.h>
 #include <wax_util.h>
 
 #include <algorithm>
@@ -99,7 +99,7 @@ namespace wax
 		m_builds.clear();
 
 		if (!bOk)
-			Core::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "Failed to create edgemap.",
+			Base::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "Failed to create edgemap.",
 				this, &typeInfo(), __func__, __FILE__, __LINE__);
 		return bOk;
 	}
@@ -115,7 +115,7 @@ namespace wax
 
 	EdgemapFactory_p EdgemapShape::_factoryOrDefault( EdgemapFactory * pFactory )
 	{
-		return pFactory ? EdgemapFactory_p(pFactory) : Core::defaultEdgemapFactory();
+		return pFactory ? EdgemapFactory_p(pFactory) : Base::defaultEdgemapFactory();
 	}
 
 	//____ _buildPieces() ________________________________________________________

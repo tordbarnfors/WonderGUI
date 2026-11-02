@@ -109,7 +109,7 @@ static Uint64			s_nextRecoveryAttempt = 0;
 
 static DX12Backend_p _backend()
 {
-	return wax_static_cast<DX12Backend_p>(wax_static_cast<GfxDeviceGen2_p>(Base::defaultDevice())->backend());
+	return wax_static_cast<DX12Backend_p>(wax_static_cast<GfxDeviceGen2_p>(wg::Base::defaultDevice())->backend());
 }
 
 //____ backend_specific_init() ________________________________________________
@@ -125,13 +125,13 @@ bool backend_specific_init()
 	auto pBackend = DX12Backend::create(g_pDX12Wrapper->dx12Device(), g_pDX12Wrapper->renderCommandQueue());
 
 	auto pGfxDevice = GfxDeviceGen2::create(pBackend);
-	Base::setDefaultDevice(pGfxDevice);
+	wg::Base::setDefaultDevice(pGfxDevice);
 
 	auto pSurfaceFactory = DX12SurfaceFactory::create();
-	Base::setDefaultSurfaceFactory(pSurfaceFactory);
+	wg::Base::setDefaultSurfaceFactory(pSurfaceFactory);
 
-	Base::setDefaultEdgemapFactory(pBackend->edgemapFactory());
-	Base::setDefaultWarpmapFactory(pBackend->warpmapFactory());
+	wg::Base::setDefaultEdgemapFactory(pBackend->edgemapFactory());
+	wg::Base::setDefaultWarpmapFactory(pBackend->warpmapFactory());
 
 	return true;
 }
@@ -278,11 +278,11 @@ SDLWindowDX12::SDLWindowDX12(wapp::Window* pUserWindow, wg::Placement origin, wg
 	m_currentBuffer = m_pSwapChain->GetCurrentBackBufferIndex();
 
 	_backend()->setDefaultCanvas(m_rtvHandles[m_currentBuffer], m_renderBuffers[m_currentBuffer].Get(), m_rtvFormat, { spx(m_width * 64), spx(m_height * 64) }, _scale());
-	m_pRootPanel = RootPanel::create(CanvasRef::Default, Base::defaultDevice());
+	m_pRootPanel = RootPanel::create(CanvasRef::Default, wg::Base::defaultDevice());
 
 	//TODO: This is ugly. It should be handled when windows gets focused.
 
-	Base::inputHandler()->setFocusedWindow(m_pRootPanel);
+	wg::Base::inputHandler()->setFocusedWindow(m_pRootPanel);
 }
 
 //____ ~SDLWindowDX12() _______________________________________________________
@@ -386,7 +386,7 @@ void SDLWindowDX12::_present()
 		char buffer[128];
 		sprintf_s(buffer, "Present1() failed, HRESULT = 0x%08lX", (unsigned long)hr);
 
-		Base::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, buffer, nullptr, nullptr, __func__, __FILE__, __LINE__);
+		wg::Base::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, buffer, nullptr, nullptr, __func__, __FILE__, __LINE__);
 	}
 }
 

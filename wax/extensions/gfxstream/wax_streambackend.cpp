@@ -30,7 +30,7 @@
 #include <wax_streamedgemapfactory.h>
 #include <wax_streamwarpmap.h>
 #include <wax_streamwarpmapfactory.h>
-#include <wax_core.h>
+#include <wax_base.h>
 
 #include <assert.h>
 
@@ -200,7 +200,7 @@ namespace wax
 				* it++ = static_cast<StreamWarpmap*>(pObj)->inStreamId();
 			else
 			{
-				Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Unknown object type in object list.", this, &StreamBackend::TYPEINFO, __func__, __FILE__, __LINE__);				
+				Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Unknown object type in object list.", this, &StreamBackend::TYPEINFO, __func__, __FILE__, __LINE__);				
 				return;
 			}
 		}
@@ -412,7 +412,7 @@ namespace wax
 		if( pCompressor )
 		{
 			memStackAllocated = pCompressor->maxCompressedSize(int(pEnd - pBeg));
-			auto pBuffer = Core::memStackAlloc(memStackAllocated);
+			auto pBuffer = Base::memStackAlloc(memStackAllocated);
 
 			int size = pCompressor->compress(pBuffer, _pBeg, _pEnd );
 			pBeg = (char *) pBuffer;
@@ -453,7 +453,7 @@ namespace wax
 			p += bytesOfData;
 		}
 
-		Core::memStackFree(memStackAllocated);
+		Base::memStackFree(memStackAllocated);
 	}
 
 } // namespace wax

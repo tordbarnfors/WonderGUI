@@ -21,7 +21,7 @@
 =========================================================================*/
 #include <wax_bitmapcache.h>
 #include <wax_device.h>
-#include <wax_core.h>
+#include <wax_base.h>
 
 #include <algorithm>
 
@@ -78,7 +78,7 @@ namespace wax
 	{
 		if (maxBytes < 0)
 		{
-			Core::throwError(ErrorLevel::SilentError, ErrorCode::InvalidParam, "You can not set cache to a negative size!", nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
+			Base::throwError(ErrorLevel::SilentError, ErrorCode::InvalidParam, "You can not set cache to a negative size!", nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return;
 		}
 
@@ -170,7 +170,7 @@ namespace wax
 
 	BitmapCache::CacheSurf * BitmapCache::_addCacheSurface( int category, int width, int height )
 	{
-		auto pFactory = m_pFactory ? m_pFactory : Core::defaultSurfaceFactory();
+		auto pFactory = m_pFactory ? m_pFactory : Base::defaultSurfaceFactory();
 		
 		Surface_p pSurf;
 		

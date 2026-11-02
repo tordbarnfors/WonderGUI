@@ -26,7 +26,7 @@
 #include <wax_softwarpmapfactory.h>
 #include <wax_softwarpmap.h>
 #include <wax_util.h>
-#include <wax_core.h>
+#include <wax_base.h>
 
 #include <algorithm>
 #include <cfloat>
@@ -151,7 +151,7 @@ namespace wax
 
 		if (!pInfo)
 		{
-			Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Canvas reference has not been defined.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Canvas reference has not been defined.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return;
 		}
 
@@ -178,7 +178,7 @@ namespace wax
 			if (format != PixelFormat::ARGB_8 && format != PixelFormat::XRGB_8 && format != PixelFormat::RGB_565 &&
 				format != PixelFormat::BGR_565 && format != PixelFormat::Alpha_8)
 			{
-				Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "ReferenceBackend can't render to surfaces of this pixel format.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "ReferenceBackend can't render to surfaces of this pixel format.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			}
 			else
 			{

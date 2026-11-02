@@ -57,15 +57,15 @@ bool backend_specific_init()
 
 	auto pSoftDevice = GfxDeviceGen2::create(pBackend);
 
-	Base::setDefaultDevice(pSoftDevice);
+	wg::Base::setDefaultDevice(pSoftDevice);
 
 	auto pSurfaceFactory = SoftSurfaceFactory::create();
-	Base::setDefaultSurfaceFactory(pSurfaceFactory);
+	wg::Base::setDefaultSurfaceFactory(pSurfaceFactory);
 
 	auto pEdgemapFactory = SoftEdgemapFactory::create();
-	Base::setDefaultEdgemapFactory(pEdgemapFactory);
+	wg::Base::setDefaultEdgemapFactory(pEdgemapFactory);
 
-	Base::setDefaultWarpmapFactory(pBackend->warpmapFactory());
+	wg::Base::setDefaultWarpmapFactory(pBackend->warpmapFactory());
 
 	return true;
 }
@@ -111,7 +111,7 @@ SDLWindowSoftware::SDLWindowSoftware(wapp::Window* pUserWindow, wg::Placement or
 
 	//TODO: This is ugly. It should be handled when windows gets focused.
 
-	Base::inputHandler()->setFocusedWindow(m_pRootPanel);
+	wg::Base::inputHandler()->setFocusedWindow(m_pRootPanel);
 }
 
 //____ render() _______________________________________________________________
@@ -128,7 +128,7 @@ void SDLWindowSoftware::render()
     if( nRects > 0 )
     {
         const RectSPX* pUpdatedRects = m_pRootPanel->firstUpdatedRect();
-        SDL_Rect* pSDLRects = (SDL_Rect*)Base::memStackAlloc(sizeof(SDL_Rect) * nRects);
+        SDL_Rect* pSDLRects = (SDL_Rect*)wg::Base::memStackAlloc(sizeof(SDL_Rect) * nRects);
 
         for (int i = 0; i < nRects; i++)
         {
@@ -140,7 +140,7 @@ void SDLWindowSoftware::render()
 
         SDL_UpdateWindowSurfaceRects(m_pSDLWindow, pSDLRects, nRects);
 
-        Base::memStackFree(sizeof(SDL_Rect) * nRects);
+        wg::Base::memStackFree(sizeof(SDL_Rect) * nRects);
     }
 }
 

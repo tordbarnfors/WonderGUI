@@ -222,7 +222,7 @@ int main ( int argc, char** argv )
 
 	// Init wg
 
-	wax::Core::init();
+	wax::Base::init();
 
 	// Load image
 
@@ -255,7 +255,7 @@ int main ( int argc, char** argv )
 	if( pOrg == nullptr )
 	{
 		printf( "Error loading/decoding '%s'\n", g_pInputFileName );
-		wax::Core::exit();
+		wax::Base::exit();
 		return -1;
 	}
 
@@ -286,7 +286,7 @@ exit:
 	pOrg = nullptr;
 	pConverted = nullptr;
 	g_pPixelCompressor = nullptr;
-	wax::Core::exit();
+	wax::Base::exit();
 	if( pImage )
 		stbi_image_free(pImage);
     return 0;

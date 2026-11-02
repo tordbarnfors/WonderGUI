@@ -92,7 +92,7 @@ int main ( int argc, char** argv )
 	// Init Wax
 	//------------------------------------------------------
 
-	Core::init();
+	Base::init();
 
 
 	PixelFormat type = PixelFormat::Undefined;
@@ -361,7 +361,7 @@ int main ( int argc, char** argv )
 
 	// Exit Wax
 
-	Core::exit();
+	Base::exit();
 
 	// Exit SDL
 

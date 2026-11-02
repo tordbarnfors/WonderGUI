@@ -1005,7 +1005,7 @@ void WgScrollChart::_renderWaveSegment(wg::GfxDevice * pDevice, const WgRect& _c
 	int nSamples = (_canvas.w+1) + margin*2;
 	int bufferSize = nSamples * sizeof(int) * 2;
 
-	int * pTopBuffer = (int*) wax::Core::memStackAlloc(bufferSize);
+	int * pTopBuffer = (int*) wax::Base::memStackAlloc(bufferSize);
 	int * pBottomBuffer = pTopBuffer + nSamples;
 
 	// Calculate yOfs, chart floor and valueFactor
@@ -1059,7 +1059,7 @@ void WgScrollChart::_renderWaveSegment(wg::GfxDevice * pDevice, const WgRect& _c
 		}
 	}
 
-	wax::Core::memStackFree(bufferSize);
+	wax::Base::memStackFree(bufferSize);
 }
 
 //____ _resampleWavePortion() _________________________________________________
@@ -1210,7 +1210,7 @@ void WgScrollChart::_onRender(wg::GfxDevice * pDevice, const WgRect& _canvas, co
 				int     oldClipListSize = pDevice->clipListSize();
 
 				int allocSize = oldClipListSize*sizeof(WgRect)*4;
-				WgRect * pRects = (WgRect*) wax::Core::memStackAlloc( allocSize );
+				WgRect * pRects = (WgRect*) wax::Base::memStackAlloc( allocSize );
 				int nRects = 0;
 
 				for( int i = 0 ; i < oldClipListSize ; i++ )
@@ -1233,7 +1233,7 @@ void WgScrollChart::_onRender(wg::GfxDevice * pDevice, const WgRect& _canvas, co
 				_renderSkin( m_pSkin, pDevice, WgStateEnum::Default, _canvas, m_scale);
 
 				pDevice->setClipList(oldClipListSize, pOldClipList);
-				wax::Core::memStackFree(allocSize);
+				wax::Base::memStackFree(allocSize);
 			}
 		}
 		else
@@ -1500,7 +1500,7 @@ void WgScrollChart::_regenCanvas()
 
 		if (colorSpace == wg::ColorSpace::Undefined)
 		{
-			auto pDevice = wax::Core::defaultDevice();
+			auto pDevice = wax::Base::defaultDevice();
 			colorSpace = pDevice ? pDevice->canvas(wg::CanvasRef::Default).colorSpace : wg::ColorSpace::sRGB;
 		}
 

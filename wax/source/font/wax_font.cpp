@@ -23,7 +23,7 @@
 #include <limits.h>
 #include <string.h>
 #include <wax_font.h>
-#include <wax_core.h>
+#include <wax_base.h>
 
 namespace wax
 {
@@ -55,7 +55,7 @@ namespace wax
 			return nullptr;
 		
 		if( pFactory == nullptr )
-			pFactory = Core::defaultSurfaceFactory();
+			pFactory = Base::defaultSurfaceFactory();
 		
 		if( !pFactory )
 			return nullptr;
@@ -81,7 +81,7 @@ namespace wax
 
 		if (p == this)
 		{
-			Core::throwError( ErrorLevel::Error, ErrorCode::InvalidParam, "Can't set backup font, would create cyclic fallback.", this, &TYPEINFO, __func__, __FILE__, __LINE__ );
+			Base::throwError( ErrorLevel::Error, ErrorCode::InvalidParam, "Can't set backup font, would create cyclic fallback.", this, &TYPEINFO, __func__, __FILE__, __LINE__ );
 			return;
 		}
 

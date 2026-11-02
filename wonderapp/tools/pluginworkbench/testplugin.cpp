@@ -49,9 +49,9 @@ DLLEXPORTPREFIX int init( wg_plugin_interface * pInterface, void * pRealHostBrid
 	auto pEdgemapFactory	= PluginEdgemapFactory::create(hEdgemapFactory);
 	auto pGfxDevice 		= PluginGfxDevice::create(hGfxDevice, pSurfaceFactory, pEdgemapFactory);
 	
-	Base::setDefaultSurfaceFactory(pSurfaceFactory);
-	Base::setDefaultEdgemapFactory(pEdgemapFactory);
-	Base::setDefaultDevice(pGfxDevice);
+	wg::Base::setDefaultSurfaceFactory(pSurfaceFactory);
+	wg::Base::setDefaultEdgemapFactory(pEdgemapFactory);
+	wg::Base::setDefaultDevice(pGfxDevice);
 	
 	
 	auto pPluginRoot = PluginRoot::create(hPluginCapsule, PluginBase::context());
@@ -66,7 +66,7 @@ DLLEXPORTPREFIX int init( wg_plugin_interface * pInterface, void * pRealHostBrid
 									_.states = {{State::Disabled, Color8::DarkGrey}
 	} ));
 
-	Base::setDefaultStyle(g_pTextStyle);
+	wg::Base::setDefaultStyle(g_pTextStyle);
 
 	
 	
@@ -128,14 +128,14 @@ DLLEXPORTPREFIX void exitX(void)
 
 DLLEXPORTPREFIX void mapInputKey(uint32_t native_keycode, wg_key translated_keycode)
 {
-	Base::inputHandler()->mapKey(native_keycode, (Key) translated_keycode);
+	wg::Base::inputHandler()->mapKey(native_keycode, (Key) translated_keycode);
 }
 
 //____ mapInputCommand() ___________________________________________________
 
 DLLEXPORTPREFIX void mapInputCommand(uint32_t native_keycode, wg_modkeys modkeys, wg_editCommand command)
 {
-	Base::inputHandler()->mapCommand(native_keycode, (ModKeys) modkeys, (EditCmd) command);
+	wg::Base::inputHandler()->mapCommand(native_keycode, (ModKeys) modkeys, (EditCmd) command);
 }
 
 
@@ -285,7 +285,7 @@ bool canvasCapsuleGlowTest(ComponentPtr<DynamicSlot> pEntry)
 	auto pBack = FlexPanel::create({ .skin = ColorSkin::create(Color::Black) });
 	*pEntry = pBack;
 
-	auto pMyStyle = TextStyle::create( WGOVR(Base::defaultStyle()->blueprint(), _.size = 30, _.color = Color::White ));
+	auto pMyStyle = TextStyle::create( WGOVR(wg::Base::defaultStyle()->blueprint(), _.size = 30, _.color = Color::White ));
 
 	auto pSimpleButtonSkin = ColorSkin::create( Color::Blue );
 	
@@ -330,13 +330,13 @@ bool canvasCapsuleGlowTest(ComponentPtr<DynamicSlot> pEntry)
 	auto pGradientWhite = Button::create({ .label = {.text = "GRADIENT WHITE" }, .skin = pSimpleButtonSkin });
 	auto pGradientBlack = Button::create({ .label = {.text = "GRADIENT BLACK" }, .skin = pSimpleButtonSkin });
 
-	Base::msgRouter()->addRoute(pTintWhite, MsgType::Select, [pGlowCapsule,pTransition](Msg* pMsg) {pGlowCapsule->setTintColor(Color::White, pTransition); });
-	Base::msgRouter()->addRoute(pTintBlack, MsgType::Select, [pGlowCapsule, pTransition](Msg* pMsg) {pGlowCapsule->setTintColor(Color::Black, pTransition); });
+	wg::Base::msgRouter()->addRoute(pTintWhite, MsgType::Select, [pGlowCapsule,pTransition](Msg* pMsg) {pGlowCapsule->setTintColor(Color::White, pTransition); });
+	wg::Base::msgRouter()->addRoute(pTintBlack, MsgType::Select, [pGlowCapsule, pTransition](Msg* pMsg) {pGlowCapsule->setTintColor(Color::Black, pTransition); });
 
 	auto pTintTransition = ValueTransition::create(1000*1000, TransitionCurve::EaseOut);
 
-	Base::msgRouter()->addRoute(pGradientWhite, MsgType::Select, [pGlowCapsule, pTintTransition](Msg* pMsg) {pGlowCapsule->setTint(Tint::create(HiColor::White, HiColor::Black, {0,0}, {1,1}), pTintTransition); });
-	Base::msgRouter()->addRoute(pGradientBlack, MsgType::Select, [pGlowCapsule, pTintTransition](Msg* pMsg) {pGlowCapsule->setTint(Tint::create(HiColor::White, HiColor::Black, {1,1}, {0,0}), pTintTransition); });
+	wg::Base::msgRouter()->addRoute(pGradientWhite, MsgType::Select, [pGlowCapsule, pTintTransition](Msg* pMsg) {pGlowCapsule->setTint(Tint::create(HiColor::White, HiColor::Black, {0,0}, {1,1}), pTintTransition); });
+	wg::Base::msgRouter()->addRoute(pGradientBlack, MsgType::Select, [pGlowCapsule, pTintTransition](Msg* pMsg) {pGlowCapsule->setTint(Tint::create(HiColor::White, HiColor::Black, {1,1}, {0,0}), pTintTransition); });
 
 
 	auto pButtons = PackPanel::create({ .axis = Axis::X });

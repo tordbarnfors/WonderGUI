@@ -3,7 +3,7 @@ using System.Runtime.InteropServices;
 
 namespace Wax;
 
-public static class Core
+public static class Base
 {
     private const string NativeLib = "streamgendll";
 
@@ -11,7 +11,7 @@ public static class Core
 
     static public bool Init()
     {
-        int ret = wax_initCore();
+        int ret = wax_initBase();
 
         return (ret == 1);
     }
@@ -20,7 +20,7 @@ public static class Core
 
     static public bool Exit()
     {
-        int ret = wax_exitCore();
+        int ret = wax_exitBase();
 
         return (ret == 1);
     }
@@ -29,7 +29,7 @@ public static class Core
 
     static public bool IsInitialized()
     {
-        int ret = wax_initCore();
+        int ret = wax_initBase();
 
         return (ret == 1);
     }
@@ -144,13 +144,13 @@ public static class Core
     //____ DLL functions ______________________________________________________
 
     [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-    private static extern int wax_initCore();
+    private static extern int wax_initBase();
 
     [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-    private static extern int wax_exitCore();
+    private static extern int wax_exitBase();
 
     [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
-    private static extern int wax_isCoreInitialized();
+    private static extern int wax_isBaseInitialized();
 
     [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
     public static extern IntPtr	wax_defaultBitmapCache();

@@ -22,7 +22,7 @@
 
 #include <wax_dx12warpmap.h>
 #include <wax_dx12backend.h>
-#include <wax_core.h>
+#include <wax_base.h>
 
 #include <cstring>
 #include <cwchar>
@@ -59,7 +59,7 @@ namespace wax
 
 		if (!pDevice)
 		{
-			Core::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite,
+			Base::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite,
 				"No D3D12 device set. DX12Backend::setDevice() must be called before any warpmap is created.",
 				this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return;
@@ -93,7 +93,7 @@ namespace wax
 			// A lost device is reported once by DX12Backend, not by every warpmap.
 
 			if (!DX12Backend::checkDeviceLost())
-				Core::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to create buffer for warpmap.",
+				Base::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to create buffer for warpmap.",
 					this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			m_buffer = nullptr;
 			return;
@@ -111,7 +111,7 @@ namespace wax
 		if (FAILED(m_buffer->Map(0, &readRange, (void**) &m_pBuffer)))
 		{
 			if (!DX12Backend::checkDeviceLost())
-				Core::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to map buffer for warpmap.",
+				Base::throwError(ErrorLevel::Error, ErrorCode::RenderFailure, "Failed to map buffer for warpmap.",
 					this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			m_buffer = nullptr;
 			m_pBuffer = nullptr;

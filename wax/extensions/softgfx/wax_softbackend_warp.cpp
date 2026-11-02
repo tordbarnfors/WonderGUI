@@ -53,7 +53,7 @@
 #include <wax_softbackend.h>
 #include <wax_softedgemap.h>
 #include <wax_softwarpmap.h>
-#include <wax_core.h>
+#include <wax_base.h>
 #include <wax_util.h>
 
 #include <algorithm>
@@ -277,7 +277,7 @@ namespace wax
 				toString(m_blendMode),
 				toString(m_canvasSoftFormat));
 
-			Core::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, errorMsg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			Base::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, errorMsg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return false;
 		}
 
@@ -448,7 +448,7 @@ namespace wax
 				snprintf(errorMsg, 1024, "Failed WarpBlit operation. SoftBackend is missing transform kernel reading %s into HiColor buffer.",
 					toString(srcFormat));
 
-				Core::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, errorMsg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+				Base::throwError(ErrorLevel::SilentError, ErrorCode::RenderFailure, errorMsg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 				return false;
 			}
 

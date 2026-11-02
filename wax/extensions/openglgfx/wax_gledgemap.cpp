@@ -20,7 +20,7 @@
 
 =========================================================================*/
 #include <wax_gledgemap.h>
-#include <wax_core.h>
+#include <wax_base.h>
 
 #include <cstring>
 
@@ -126,7 +126,7 @@ namespace wax
 
 		int outBytes = nPixelColumns * (m_nbSegments - 1) * 4 * sizeof(GLfloat);
 
-		auto pBuffer = (GLfloat*)Core::memStackAlloc(outBytes);
+		auto pBuffer = (GLfloat*)Base::memStackAlloc(outBytes);
 
 		auto pOut = pBuffer;
 
@@ -202,7 +202,7 @@ namespace wax
 
 		// Release temp buffer
 
-		Core::memStackFree(outBytes);
+		Base::memStackFree(outBytes);
 	}
 
 	//____ _colorsUpdated() ____________________________________________________
@@ -241,7 +241,7 @@ namespace wax
 
 		int paletteBytes = nEntries * 4 * sizeof(GLfloat);
 
-		auto pBuffer = (GLfloat*)Core::memStackAlloc(paletteBytes);
+		auto pBuffer = (GLfloat*)Base::memStackAlloc(paletteBytes);
 		auto pOut = pBuffer;
 
 		for (int seg = 0; seg < m_nbSegments; seg++)
@@ -280,7 +280,7 @@ namespace wax
 		glBufferSubData(GL_TEXTURE_BUFFER, m_paletteOfs, paletteBytes, pBuffer);
 		glBindBuffer(GL_TEXTURE_BUFFER, 0);
 
-		Core::memStackFree(paletteBytes);
+		Base::memStackFree(paletteBytes);
 
 		// A reallocated buffer has lost its samples.
 

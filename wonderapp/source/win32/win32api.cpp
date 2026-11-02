@@ -106,7 +106,7 @@ cleanup:
 //____ loadSurface() __________________________________________________________
 //
 // NOTE: Surfaces are created through the SurfaceFactory (the one passed in,
-// or Base::defaultSurfaceFactory() otherwise) rather than a hardcoded surface
+// or wg::Base::defaultSurfaceFactory() otherwise) rather than a hardcoded surface
 // class, so this works correctly regardless of which rendering backend
 // (software, DX12, ...) is currently active.
 
@@ -135,7 +135,7 @@ bool Win32API::initDefaultWidgetKit()
 
 		if (!wkit::init(pFont1, pFont2, pFont3, pFont4))
 		{
-			Base::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "Failed to init default widget kit", nullptr, nullptr, __func__, __FILE__, __LINE__);
+			wg::Base::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "Failed to init default widget kit", nullptr, nullptr, __func__, __FILE__, __LINE__);
 			return false;
 		}
 	}

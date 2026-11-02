@@ -25,7 +25,7 @@
 #include <wg_pluginedgemap.h>
 #include <wg_pluginedgemapfactory.h>
 
-#include <wax_core.h>
+#include <wax_base.h>
 
 
 namespace wg

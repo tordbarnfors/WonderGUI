@@ -26,7 +26,7 @@
 #include <wax_metalbackend.h>
 #include <wax_util.h>
 #include <wax_blob.h>
-#include <wax_core.h>
+#include <wax_base.h>
 #include <wax_pixeltools.h>
 
 #include <assert.h>
@@ -444,7 +444,7 @@ namespace wax
 				break;
 
 			default:
-                Core::throwError( ErrorLevel::Critical, ErrorCode::InvalidParam, "Specified PixelFormat not supported", this, &TYPEINFO, __func__, __FILE__, __LINE__ );
+                Base::throwError( ErrorLevel::Critical, ErrorCode::InvalidParam, "Specified PixelFormat not supported", this, &TYPEINFO, __func__, __FILE__, __LINE__ );
 				assert(false);           // Just to really catch this in a clear way during development.
 				break;
 		}

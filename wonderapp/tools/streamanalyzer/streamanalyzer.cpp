@@ -61,7 +61,7 @@ bool MyApp::init(API* pAPI)
 	}
 */
 
-	auto pDeviceGen2 = wax_dynamic_cast<GfxDeviceGen2_p>(Base::defaultDevice());
+	auto pDeviceGen2 = wax_dynamic_cast<GfxDeviceGen2_p>(wg::Base::defaultDevice());
 
 	auto pSoftBackend = wax_dynamic_cast<SoftBackend_p>(pDeviceGen2->backend());
 	if( pSoftBackend )
@@ -85,7 +85,7 @@ bool MyApp::update()
 
 void MyApp::exit()
 {
-	Base::setErrorHandler( nullptr );
+	wg::Base::setErrorHandler( nullptr );
 }
 
 //____ closeWindow() __________________________________________________________
@@ -134,7 +134,7 @@ bool MyApp::_setupGUI(API* pAPI)
 
 	
 
-	Base::setDefaultStyle(m_pTextStyle);
+	wg::Base::setDefaultStyle(m_pTextStyle);
 
 	m_pTextLayoutCentered = BasicTextLayout::create(WGBP(BasicTextLayout,
 		_.placement = Placement::Center));
@@ -236,7 +236,7 @@ Widget_p MyApp::createTopBar()
 	
 
 
-	Base::msgRouter()->addRoute( pLoadButton, MsgType::Select, [this](Msg*pMsg){this->selectAndLoadStream();});
+	wg::Base::msgRouter()->addRoute( pLoadButton, MsgType::Select, [this](Msg*pMsg){this->selectAndLoadStream();});
 
 
 	return pBar;
@@ -356,49 +356,49 @@ Widget_p MyApp::createLogPanel()
 	pToggleGroup->add(pStatisticsButton);
 	pToggleGroup->add(pErrorLogButton);
 
-	Base::msgRouter()->addRoute(pFrameLogButton, MsgType::Toggle, [this](Msg* pMsg)
+	wg::Base::msgRouter()->addRoute(pFrameLogButton, MsgType::Toggle, [this](Msg* pMsg)
 		{
 			if( static_cast<ToggleMsg*>(pMsg)->isChecked() )
 				this->showFrameLog();
 		});
 
-	Base::msgRouter()->addRoute(pBackendLogButton, MsgType::Toggle, [this](Msg* pMsg)
+	wg::Base::msgRouter()->addRoute(pBackendLogButton, MsgType::Toggle, [this](Msg* pMsg)
 		{
 			if( static_cast<ToggleMsg*>(pMsg)->isChecked() )
 				this->showBackendLog();
 		});
 
-	Base::msgRouter()->addRoute(pFullLogButton, MsgType::Toggle, [this](Msg* pMsg)
+	wg::Base::msgRouter()->addRoute(pFullLogButton, MsgType::Toggle, [this](Msg* pMsg)
 		{
 			if( static_cast<ToggleMsg*>(pMsg)->isChecked() )
 				this->showFullLog();
 		});
 
-	Base::msgRouter()->addRoute(pOptimizerInLogButton, MsgType::Toggle, [this](Msg* pMsg)
+	wg::Base::msgRouter()->addRoute(pOptimizerInLogButton, MsgType::Toggle, [this](Msg* pMsg)
 		{
 			if( static_cast<ToggleMsg*>(pMsg)->isChecked() )
 				this->showOptimizerInLog();
 		});
 	
-	Base::msgRouter()->addRoute(pOptimizerOutLogButton, MsgType::Toggle, [this](Msg* pMsg)
+	wg::Base::msgRouter()->addRoute(pOptimizerOutLogButton, MsgType::Toggle, [this](Msg* pMsg)
 		{
 			if( static_cast<ToggleMsg*>(pMsg)->isChecked() )
 				this->showOptimizerOutLog();
 		});
 	
-	Base::msgRouter()->addRoute(pResourcesButton, MsgType::Toggle, [this](Msg* pMsg)
+	wg::Base::msgRouter()->addRoute(pResourcesButton, MsgType::Toggle, [this](Msg* pMsg)
 		{
 			if( static_cast<ToggleMsg*>(pMsg)->isChecked() )
 				this->showResources();
 		});
 
-	Base::msgRouter()->addRoute(pStatisticsButton, MsgType::Toggle, [this](Msg* pMsg)
+	wg::Base::msgRouter()->addRoute(pStatisticsButton, MsgType::Toggle, [this](Msg* pMsg)
 		{
 			if( static_cast<ToggleMsg*>(pMsg)->isChecked() )
 				this->showStatistics();
 		});
 
-	Base::msgRouter()->addRoute(pErrorLogButton, MsgType::Toggle, [this](Msg* pMsg)
+	wg::Base::msgRouter()->addRoute(pErrorLogButton, MsgType::Toggle, [this](Msg* pMsg)
 		{
 			if( static_cast<ToggleMsg*>(pMsg)->isChecked() )
 				this->showErrors();
@@ -486,7 +486,7 @@ Widget_p MyApp::createLogPanel()
 
 	m_pErrorsContainer = pErrorsWindow;
 	
-	Base::setErrorHandler( [this](Error& err)
+	wg::Base::setErrorHandler( [this](Error& err)
 	{
 		char temp[1024];
 		
@@ -561,7 +561,7 @@ Widget_p MyApp::createNavigationPanel()
 									 .skin = ColorSkin::create(Color::Black)
 		});
 
-	Base::msgRouter()->addRoute(pSlider, MsgType::ValueUpdate, [this](Msg* pMsg)
+	wg::Base::msgRouter()->addRoute(pSlider, MsgType::ValueUpdate, [this](Msg* pMsg)
 		{
 			auto pMyMsg = static_cast<ValueUpdateMsg*>(pMsg);
 	this->setFrame(int(pMyMsg->value() * this->m_frames.size() + 0.5f));
@@ -614,22 +614,22 @@ Widget_p MyApp::createNavigationPanel()
 
 	pPlayButtons->setSlotWeight(1, 5, 0.f);
 
-	Base::msgRouter()->addRoute(pLongLeftButton, MsgType::Select, [this](Msg* pMsg)
+	wg::Base::msgRouter()->addRoute(pLongLeftButton, MsgType::Select, [this](Msg* pMsg)
 		{
 			this->setFrame(this->m_currentFrame - 5);
 		});
 
-	Base::msgRouter()->addRoute(pLeftButton, MsgType::Select, [this](Msg* pMsg)
+	wg::Base::msgRouter()->addRoute(pLeftButton, MsgType::Select, [this](Msg* pMsg)
 		{
 			this->setFrame(this->m_currentFrame - 1);
 		});
 
-	Base::msgRouter()->addRoute(pRightButton, MsgType::Select, [this](Msg* pMsg)
+	wg::Base::msgRouter()->addRoute(pRightButton, MsgType::Select, [this](Msg* pMsg)
 		{
 			this->setFrame(this->m_currentFrame + 1);
 		});
 
-	Base::msgRouter()->addRoute(pLongRightButton, MsgType::Select, [this](Msg* pMsg)
+	wg::Base::msgRouter()->addRoute(pLongRightButton, MsgType::Select, [this](Msg* pMsg)
 		{
 			this->setFrame(this->m_currentFrame + 5);
 		});
@@ -655,7 +655,7 @@ Widget_p MyApp::createNavigationPanel()
 		pSkipButtons->slots << pButton;
 
 		int skip = skipButtonAdvances[i];
-		Base::msgRouter()->addRoute(pButton, MsgType::Select, [this,skip](Msg* pMsg)
+		wg::Base::msgRouter()->addRoute(pButton, MsgType::Select, [this,skip](Msg* pMsg)
 			{
 				m_recordedSteps.clear();
 				this->m_bRecordSteps = this->m_pRecordStepsToggle->isChecked();
@@ -681,7 +681,7 @@ Widget_p MyApp::createNavigationPanel()
 		_.icon = WGBP(Icon, _.skin = m_pToggleButtonSkin, _.spacing = 8 )
 	));
 
-	Base::msgRouter()->addRoute(pRectToggle, MsgType::Toggle, [this](Msg* pMsg)
+	wg::Base::msgRouter()->addRoute(pRectToggle, MsgType::Toggle, [this](Msg* pMsg)
 		{
 			this->toggleDebugRects(static_cast<ToggleMsg*>(pMsg)->isChecked());
 		});
@@ -709,7 +709,7 @@ Widget_p MyApp::createNavigationPanel()
 		.skin = m_pButtonSkin
 	});
 
-	Base::msgRouter()->addRoute(pShowRecordedSteps, MsgType::Select, [this](Msg* pMsg)
+	wg::Base::msgRouter()->addRoute(pShowRecordedSteps, MsgType::Select, [this](Msg* pMsg)
 	{
 		this->openRecordedStepsWindow();
 	});
@@ -723,7 +723,7 @@ Widget_p MyApp::createNavigationPanel()
 		.skin = m_pButtonSkin
 	});
 
-	Base::msgRouter()->addRoute(pSkipTo, MsgType::Select, [this](Msg* pMsg)
+	wg::Base::msgRouter()->addRoute(pSkipTo, MsgType::Select, [this](Msg* pMsg)
 	{
 
 		m_recordedSteps.clear();
@@ -771,7 +771,7 @@ Widget_p MyApp::createNavigationPanel()
 		.skin = m_pButtonSkin
 		});
 
-	Base::msgRouter()->addRoute(pLog8Frames, MsgType::Select, [this](Msg* pMsg)
+	wg::Base::msgRouter()->addRoute(pLog8Frames, MsgType::Select, [this](Msg* pMsg)
 		{
 			_logFrames(m_currentFrame, m_currentFrame +8, false, m_pOptimizerInLogDisplay);
 			_logFrames(m_currentFrame, m_currentFrame +8, true, m_pOptimizerOutLogDisplay);
@@ -971,7 +971,7 @@ bool MyApp::loadStream(std::string path)
 	auto pStreamGfxDevice = GfxDeviceGen2::create(pStreamGfxBackend);
 //	auto pStreamGfxDevice = GfxDeviceGen2::create(pTrimGfxBackend);
 
-//	auto pStreamGfxDevice = wax_dynamic_cast<SoftGfxDevice_p>(Base::defaultDevice());
+//	auto pStreamGfxDevice = wax_dynamic_cast<SoftGfxDevice_p>(wg::Base::defaultDevice());
 
 	addDefaultSoftKernels(pStreamGfxBackend);
 /*
@@ -1040,7 +1040,7 @@ bool MyApp::loadStream(std::string path)
 
 void MyApp::setupScreens(const CanvasInfo* pBeg, const CanvasInfo* pEnd)
 {
-	SurfaceFactory_p	pFactory = wax::Core::defaultSurfaceFactory();
+	SurfaceFactory_p	pFactory = wax::Base::defaultSurfaceFactory();
 
 	// Ugly typecast! Will only work with SoftGfxDevice!
 
@@ -1067,7 +1067,7 @@ void MyApp::setupScreens(const CanvasInfo* pBeg, const CanvasInfo* pEnd)
 
 void MyApp::setupScreens()
 {
-	SurfaceFactory_p	pFactory = wax::Core::defaultSurfaceFactory();
+	SurfaceFactory_p	pFactory = wax::Base::defaultSurfaceFactory();
 
 	// Ugly typecast! Will only work with SoftGfxDevice!
 	
@@ -1103,7 +1103,7 @@ void MyApp::updateGUIAfterReload()
 	m_overlayDisplays.clear();
 
 
-	auto pSurfFactory = wax::Core::defaultSurfaceFactory();
+	auto pSurfFactory = wax::Base::defaultSurfaceFactory();
 
 
 	int toggleNb = 0;
@@ -1155,7 +1155,7 @@ void MyApp::updateGUIAfterReload()
 											) );
 
 		auto pScreenLineup = m_pScreenLineup;
-		Base::msgRouter()->addRoute(pToggle, MsgType::Toggle, [toggleNb, pScreenLineup](Msg* pMsg)
+		wg::Base::msgRouter()->addRoute(pToggle, MsgType::Toggle, [toggleNb, pScreenLineup](Msg* pMsg)
 			{
 				auto pMessage = static_cast<ToggleMsg*>(pMsg);
 				pScreenLineup->slots[toggleNb].setVisible(pMessage->isChecked());
@@ -1535,7 +1535,7 @@ void MyApp::_updateResourcesView()
 
 void MyApp::_updateDebugOverlays()
 {
-	auto pDevice = wax::Core::defaultDevice();
+	auto pDevice = wax::Base::defaultDevice();
 	
 	auto pOverlaySkin = BoxSkin::create( Border(1), HiColor(4096,0,0,1024), HiColor(4096,0,0,4096));
 	
@@ -1701,7 +1701,7 @@ void MyApp::_generateFrameStatistics()
 				int nUpdateRects = (header.size - 4) / 16;
 				int allocBytes = nUpdateRects*sizeof(RectSPX);
 				
-				RectSPX * pRects = (RectSPX *) Base::memStackAlloc(allocBytes);
+				RectSPX * pRects = (RectSPX *) wg::Base::memStackAlloc(allocBytes);
 				* pDecoder >> GfxStream::ReadSpxField{ nUpdateRects*4, header.spxFormat, (spx*) pRects };
 				
 				auto& frame = m_frameStatistics.back();
@@ -1711,7 +1711,7 @@ void MyApp::_generateFrameStatistics()
 				
 				frame.canvasRects[(int)canvasRef] = nUpdateRects;
 				
-				Base::memStackFree(allocBytes);
+				wg::Base::memStackFree(allocBytes);
 				break;
 			}
  */

@@ -25,7 +25,7 @@ WonderApp_p WonderApp::create()
 
 bool MyApp::init(wapp::API* pAPI)
 {
-	WgBase::Init( Base::hostBridge() );
+	WgBase::Init( wg::Base::hostBridge() );
 	
 	if (!_setupGUI(pAPI))
 	{
@@ -83,7 +83,7 @@ bool MyApp::_setupGUI(wapp::API* pAPI)
 									_.color = Color8::Black));
 
 
-	Base::setDefaultStyle(m_pTextStyle);
+	wg::Base::setDefaultStyle(m_pTextStyle);
 
 	m_pTextLayoutCentered = BasicTextLayout::create(WGBP(BasicTextLayout,
 		_.placement = Placement::Center));
@@ -121,7 +121,7 @@ bool MyApp::_setupGUI(wapp::API* pAPI)
 
 void MyApp::_setupLegacyKeyMap()
 {
-	auto pInput = Base::inputHandler();
+	auto pInput = wg::Base::inputHandler();
 	for( auto key = Key::Left ; key < Key::Unmapped ; key = (Key) (int(key)+1) )
 	{
 		int native = pInput->nativeKeyCode(key);
@@ -149,7 +149,7 @@ WgWidget * MyApp::_buildLegacyGUI()
 	pPanel->AddChild(pDisplay);
 	
 	
-	auto pKnob = new WgKnob( Base::defaultSurfaceFactory() );
+	auto pKnob = new WgKnob( wg::Base::defaultSurfaceFactory() );
 	
 	pPanel->AddChild(pKnob);
 	

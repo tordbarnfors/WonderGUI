@@ -20,7 +20,7 @@
 
 =========================================================================*/
 #include <wax_gfxstream.h>
-#include <wax_core.h>
+#include <wax_base.h>
 
 namespace wax
 {
@@ -163,13 +163,13 @@ int GfxStream::loadDecompressData( DataInfo& dataInfo, uint8_t * pBuffer, const 
 
 		if(dataInfo.compression != Util::makeEndianSpecificToken('N','O','N','E') )
 		{
-			auto pCompressor = Core::getDecompressor(dataInfo.compression);
+			auto pCompressor = Base::getDecompressor(dataInfo.compression);
 
 			if( pCompressor )
 				return pCompressor->decompress(pBuffer, pBuffer + dataInfo.dataStart, pBuffer + dataInfo.bufferSize);
 			else
 			{
-				Core::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "Don't know how to decompress data in chunk, add matching decompressor to Core.", nullptr, nullptr, __func__, __FILE__, __LINE__ );
+				Base::throwError(ErrorLevel::Error, ErrorCode::FailedPrerequisite, "Don't know how to decompress data in chunk, add matching decompressor to Base.", nullptr, nullptr, __func__, __FILE__, __LINE__ );
 				return -1;
 			}
 		}

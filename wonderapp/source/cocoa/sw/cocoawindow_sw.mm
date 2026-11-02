@@ -108,15 +108,15 @@ bool initGfxBackend()
 
 	auto pSoftDevice = GfxDeviceGen2::create(pBackend);
 
-	Base::setDefaultDevice(pSoftDevice);
+	wg::Base::setDefaultDevice(pSoftDevice);
 
 	auto pSurfaceFactory = SoftSurfaceFactory::create();
-	Base::setDefaultSurfaceFactory(pSurfaceFactory);
+	wg::Base::setDefaultSurfaceFactory(pSurfaceFactory);
 
 	auto pEdgemapFactory = SoftEdgemapFactory::create();
-	Base::setDefaultEdgemapFactory(pEdgemapFactory);
+	wg::Base::setDefaultEdgemapFactory(pEdgemapFactory);
 
-	Base::setDefaultWarpmapFactory(pBackend->warpmapFactory());
+	wg::Base::setDefaultWarpmapFactory(pBackend->warpmapFactory());
 
 	return true;
 }

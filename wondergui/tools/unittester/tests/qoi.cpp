@@ -208,10 +208,10 @@ bool QOITest::decompressTest(std::ostream& output)
 	for( int i = 0 ; i < pixelBytes ; i += 4 )
 		TEST_ASSERT( buffer[i] == le[i] && buffer[i+1] == le[i+1] && buffer[i+2] == le[i+2] && buffer[i+3] == 255 );
 
-	// wax::Core knows about both byte orders.
+	// wax::Base knows about both byte orders.
 
-	TEST_ASSERT( wax::Core::getDecompressor(QOIDecompressor::ID_TOKEN)->idToken() == QOIDecompressor::ID_TOKEN );
-	TEST_ASSERT( wax::Core::getDecompressor(QOIDecompressor::ID_TOKEN_BIG_ENDIAN)->idToken() == QOIDecompressor::ID_TOKEN_BIG_ENDIAN );
+	TEST_ASSERT( wax::Base::getDecompressor(QOIDecompressor::ID_TOKEN)->idToken() == QOIDecompressor::ID_TOKEN );
+	TEST_ASSERT( wax::Base::getDecompressor(QOIDecompressor::ID_TOKEN_BIG_ENDIAN)->idToken() == QOIDecompressor::ID_TOKEN_BIG_ENDIAN );
 
 	return true;
 }

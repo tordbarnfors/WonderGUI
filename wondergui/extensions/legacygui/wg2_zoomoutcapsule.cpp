@@ -377,7 +377,7 @@ void WgZoomOutCapsule::_onEvent( const WgEvent::Event * pEvent, WgEventHandler *
 
 				// We need a separate surface that will belong to our image.
 
-				auto pSurface = wax::Core::defaultSurfaceFactory()->createSurface( WGBP(Surface,
+				auto pSurface = wax::Base::defaultSurfaceFactory()->createSurface( WGBP(Surface,
 																						  _.size = m_pScreenshot->pixelSize(),
 																						  _.format = WgPixelType::ARGB_8,
 																						  _.colorSpace = m_pScreenshot->colorSpace(),

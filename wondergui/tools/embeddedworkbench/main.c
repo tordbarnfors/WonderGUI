@@ -4,7 +4,7 @@
 #include <SDL3/SDL_main.h>
 
 #include <wax_c_types.h>
-#include <wax_c_core.h>
+#include <wax_c_base.h>
 #include <wax_c_blob.h>
 #include <wax_c_geo.h>
 #include <wax_c_object.h>
@@ -40,7 +40,7 @@ int main ( int argc, char** argv )
 	// Init WonderGUI
 	//------------------------------------------------------
 
-	wax_initCore();
+	wax_initBase();
 
 
 
@@ -174,7 +174,7 @@ int main ( int argc, char** argv )
 
 	// Exit WonderGUI
 
-	wax_exitCore();
+	wax_exitBase();
 	exit_cpp_necessities();
 
 	// Exit SDL

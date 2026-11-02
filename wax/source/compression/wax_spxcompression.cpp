@@ -22,7 +22,7 @@
 
 #include <wax_spxcompression.h>
 #include <wax_util.h>
-#include <wax_core.h>
+#include <wax_base.h>
 
 #include <cstring>
 
@@ -70,7 +70,7 @@ int SPXCompressor::compress( void * _pDest, const void * _pBegin, const void * _
 {
 	if( ((intptr_t(_pBegin) | intptr_t(_pEnd) ) &0x01) == 1 )
 	{
-		Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Data to compress must start/stop on WORD boundary.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+		Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Data to compress must start/stop on WORD boundary.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 		return 0;
 	}
 

@@ -20,7 +20,7 @@
 
 =========================================================================*/
 #include <wax_surfacewriter.h>
-#include <wax_core.h>
+#include <wax_base.h>
 #include <wax_util.h>
 #include <wax_pixeltools.h>
 #include <wax_qoicompression.h>
@@ -67,7 +67,7 @@ namespace wax
 
 		// Allocate buffer
 
-		char* pBuffer = Core::memStackAlloc(bytesNeeded);
+		char* pBuffer = Base::memStackAlloc(bytesNeeded);
 		auto pWrite = pBuffer;
 
 		// Encode data into buffer and update header info
@@ -121,7 +121,7 @@ namespace wax
 
 		// Release temp buffer
 
-		Core::memStackFree(bytesNeeded);
+		Base::memStackFree(bytesNeeded);
 	}
 
 	//____ _writeSurfaceToBlob() _________________________________________________
@@ -145,7 +145,7 @@ namespace wax
 
 		// Allocate buffer
 
-		char * pBuffer = Core::memStackAlloc(bytesNeeded);
+		char * pBuffer = Base::memStackAlloc(bytesNeeded);
 		auto pWrite = pBuffer;
 
 		// Encode data into buffer and update header info
@@ -203,7 +203,7 @@ namespace wax
 
 		// Release temp buffer
 
-		Core::memStackFree(bytesNeeded);
+		Base::memStackFree(bytesNeeded);
 
 		return pBlob;
 	}
@@ -217,12 +217,12 @@ namespace wax
 		if( bufferSize == 0 )
 			return false;
 
-		char * pBuffer = Core::memStackAlloc(bufferSize);
+		char * pBuffer = Base::memStackAlloc(bufferSize);
 
 		int bytes = _encodeQOI(pBuffer, pSurface);
 		stream.write(pBuffer, bytes);
 
-		Core::memStackFree(bufferSize);
+		Base::memStackFree(bufferSize);
 		return stream.good();
 	}
 
@@ -234,14 +234,14 @@ namespace wax
 		if( bufferSize == 0 )
 			return nullptr;
 
-		char * pBuffer = Core::memStackAlloc(bufferSize);
+		char * pBuffer = Base::memStackAlloc(bufferSize);
 
 		int bytes = _encodeQOI(pBuffer, pSurface);
 
 		Blob_p pBlob = Blob::create(bytes);
 		std::memcpy(pBlob->data(), pBuffer, bytes);
 
-		Core::memStackFree(bufferSize);
+		Base::memStackFree(bufferSize);
 		return pBlob;
 	}
 
@@ -411,7 +411,7 @@ namespace wax
 		if( pixbuf.format != pSurface->pixelFormat() || pixbuf.colorSpace != pSurface->colorSpace() || pixbuf.bigEndian != pSurface->isBigEndian() )
 		{
 			convertedBytes = lineBytes * size.h;
-			uint8_t * pConverted = (uint8_t*) Core::memStackAlloc(convertedBytes);
+			uint8_t * pConverted = (uint8_t*) Base::memStackAlloc(convertedBytes);
 
 			auto bufDesc = Util::pixelFormatToDescription(pixbuf.format, pixbuf.bigEndian);
 			int paletteEntries = pSurface->paletteSize();
@@ -428,7 +428,7 @@ namespace wax
 			// Compressors need the pixels without the padding at the end of each line.
 
 			convertedBytes = lineBytes * size.h;
-			uint8_t * pPacked = (uint8_t*) Core::memStackAlloc(convertedBytes);
+			uint8_t * pPacked = (uint8_t*) Base::memStackAlloc(convertedBytes);
 
 			for (int y = 0; y < size.h; y++)
 				std::memcpy(pPacked + y * lineBytes, pPixels + y * pitch, lineBytes);
@@ -465,7 +465,7 @@ namespace wax
 		}
 
 		if( convertedBytes > 0 )
-			Core::memStackFree(convertedBytes);
+			Base::memStackFree(convertedBytes);
 
 		pSurface->freePixelBuffer(pixbuf);
 
@@ -513,7 +513,7 @@ namespace wax
 
 		if( size.w <= 0 || size.h <= 0 || uint32_t(size.h) >= c_qoiMaxPixels / uint32_t(size.w) )
 		{
-			Core::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Surface is empty or too large to be saved as a QOI image.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			Base::throwError(ErrorLevel::Error, ErrorCode::InvalidParam, "Surface is empty or too large to be saved as a QOI image.", this, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return 0;
 		}
 
@@ -582,7 +582,7 @@ namespace wax
 		if( !bSameLayout )
 		{
 			convertedBytes = lineBytes * size.h;
-			uint8_t * pConverted = (uint8_t*) Core::memStackAlloc(convertedBytes);
+			uint8_t * pConverted = (uint8_t*) Base::memStackAlloc(convertedBytes);
 
 			auto bufDesc = Util::pixelFormatToDescription(pixbuf.format, pixbuf.bigEndian);
 			int dummyPaletteEntries = 0;
@@ -602,7 +602,7 @@ namespace wax
 		pWrite += pCompressor->compress(pWrite, pPixels, pPixels + lineBytes * size.h);
 
 		if( convertedBytes > 0 )
-			Core::memStackFree(convertedBytes);
+			Base::memStackFree(convertedBytes);
 
 		pSurface->freePixelBuffer(pixbuf);
 

@@ -71,7 +71,7 @@ int main ( int argc, char** argv )
 	// Normally we would provide a HostBridge-interface, but 
 	// for this simple example we skip it and pass null.
 
-	Base::init(nullptr);
+	wg::Base::init(nullptr);
 
 	// The software renderer needs a SoftSurface as its canvas,
 	// so we wrap the SDL WindowSurface into a SoftSurface.
@@ -153,7 +153,7 @@ int main ( int argc, char** argv )
 
 		// Finally we add a callback to the click-event of the button.
 
-		Base::msgRouter()->addRoute(pButton, MsgType::Select, [&](Msg * pMsg) { bQuit = true; } );
+		wg::Base::msgRouter()->addRoute(pButton, MsgType::Select, [&](Msg * pMsg) { bQuit = true; } );
 	}
 
 
@@ -170,7 +170,7 @@ int main ( int argc, char** argv )
 
 		// Let WonderGUI perform periodic updates
 
-		Base::update(int64_t(SDL_GetTicks()) * 1000);
+		wg::Base::update(int64_t(SDL_GetTicks()) * 1000);
 
 		// Let WonderGUI render any updated/dirty regions of the screen.
 
@@ -186,7 +186,7 @@ int main ( int argc, char** argv )
 	}
 
 	// Cleanup. We should null all our smartpointers so that all objects are
-	// deleted before calling Base::exit().
+	// deleted before calling wg::Base::exit().
 
 	pCanvas = nullptr;
 	pCanvasBlob = nullptr;
@@ -194,7 +194,7 @@ int main ( int argc, char** argv )
 
 	// Exit WonderGUI
 
-	Base::exit();
+	wg::Base::exit();
 
 	// Exit SDL
 
@@ -223,16 +223,16 @@ void translateEvents( RootPanel_p pRoot )
 			case SDL_EVENT_MOUSE_MOTION:
 			{
 				float scale = pRoot->scale()/64.f;
-				Base::inputHandler()->setPointer( pRoot, Coord(e.motion.x/scale, e.motion.y/scale));
+				wg::Base::inputHandler()->setPointer( pRoot, Coord(e.motion.x/scale, e.motion.y/scale));
 				break;
 			}
 
 			case SDL_EVENT_MOUSE_BUTTON_DOWN:
-				Base::inputHandler()->setButton( translateMouseButton(e.button.button), true );
+				wg::Base::inputHandler()->setButton( translateMouseButton(e.button.button), true );
 				break;
 
 			case SDL_EVENT_MOUSE_BUTTON_UP:
-				Base::inputHandler()->setButton( translateMouseButton(e.button.button), false );
+				wg::Base::inputHandler()->setButton( translateMouseButton(e.button.button), false );
 				break;
 
 			default:
@@ -240,7 +240,7 @@ void translateEvents( RootPanel_p pRoot )
 		}
 	}
 
-	Base::msgRouter()->dispatch();
+	wg::Base::msgRouter()->dispatch();
 }
 
 //____ translateMouseButton() __________________________________________________
@@ -277,7 +277,7 @@ void updateWindowRects( RootPanel_p pRoot, SDL_Window * pWindow )
 		return;
 
 	const RectSPX * pUpdatedRects = pRoot->firstUpdatedRect();
-	SDL_Rect * pSDLRects = (SDL_Rect*) Base::memStackAlloc( sizeof(SDL_Rect) * nRects );
+	SDL_Rect * pSDLRects = (SDL_Rect*) wg::Base::memStackAlloc( sizeof(SDL_Rect) * nRects );
 
 	for( int i = 0 ; i < nRects ; i++ )
 	{
@@ -289,6 +289,6 @@ void updateWindowRects( RootPanel_p pRoot, SDL_Window * pWindow )
 
 	SDL_UpdateWindowSurfaceRects( pWindow, pSDLRects, nRects );
 
-	Base::memStackFree( sizeof(SDL_Rect) * nRects );
+	wg::Base::memStackFree( sizeof(SDL_Rect) * nRects );
 }
 

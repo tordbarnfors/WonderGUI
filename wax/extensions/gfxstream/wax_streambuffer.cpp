@@ -22,7 +22,7 @@
 #include <cstring>
 
 #include <wax_streambuffer.h>
-#include <wax_core.h>
+#include <wax_base.h>
 
 namespace wax
 {
@@ -127,7 +127,7 @@ namespace wax
 		{
 			char	msg[64];
 			snprintf( msg, 64, "StreamBuffer reallocated to %d bytes", bufferSizeNeeded);
-			Core::throwError(ErrorLevel::Warning, ErrorCode::Performance, msg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
+			Base::throwError(ErrorLevel::Warning, ErrorCode::Performance, msg, this, &TYPEINFO, __func__, __FILE__, __LINE__);
 
 			_resizeBuffer(bufferSizeNeeded);
 		}

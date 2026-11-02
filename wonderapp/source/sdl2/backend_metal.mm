@@ -64,15 +64,15 @@ bool backend_specific_init()
 
 	auto pBackend = MetalBackend::create();
 	auto pDevice = GfxDeviceGen2::create(pBackend);
-	Base::setDefaultDevice(pDevice);
+	wg::Base::setDefaultDevice(pDevice);
 
 	auto pSurfaceFactory = MetalSurfaceFactory::create();
-	Base::setDefaultSurfaceFactory(pSurfaceFactory);
+	wg::Base::setDefaultSurfaceFactory(pSurfaceFactory);
 
 	auto pEdgemapFactory = MetalEdgemapFactory::create();
-	Base::setDefaultEdgemapFactory(pEdgemapFactory);
+	wg::Base::setDefaultEdgemapFactory(pEdgemapFactory);
 
-	Base::setDefaultWarpmapFactory(pBackend->warpmapFactory());
+	wg::Base::setDefaultWarpmapFactory(pBackend->warpmapFactory());
 
 
 	return true;
@@ -126,9 +126,9 @@ SDLWindowMetal::SDLWindowMetal(wapp::Window* pUserWindow, wg::Placement origin, 
 
 		CGFloat scaleFactor = layer.contentsScale;
 
-		auto pDevice = Base::defaultDevice();
+		auto pDevice = wg::Base::defaultDevice();
 
-		m_pBackend = wax_static_cast<MetalBackend_p>(static_cast<GfxDeviceGen2*>(Base::defaultDevice().rawPtr())->backend());
+		m_pBackend = wax_static_cast<MetalBackend_p>(static_cast<GfxDeviceGen2*>(wg::Base::defaultDevice().rawPtr())->backend());
 		m_pBackend->setDefaultCanvas(nullptr, {int(geo.w),int(geo.h)}, PixelFormat::ARGB_8);
 
 		m_pCanvas = MetalSurface::create({.canvas = true, .format = PixelFormat::ARGB_8, .scale = int(scaleFactor)*64, .size = {int(geo.w*scaleFactor),int(geo.h*scaleFactor)} });
@@ -141,7 +141,7 @@ SDLWindowMetal::SDLWindowMetal(wapp::Window* pUserWindow, wg::Placement origin, 
 
 	//TODO: This is ugly. It should be handled when windows gets focused.
 
-	Base::inputHandler()->setFocusedWindow(m_pRootPanel);
+	wg::Base::inputHandler()->setFocusedWindow(m_pRootPanel);
 
 	m_pRootPanel = pRootPanel;
 	m_pSDLWindow = pSDLWindow;
@@ -177,7 +177,7 @@ void SDLWindowMetal::render()
 
 		m_pBackend->autopresent(surface);
 
-		auto pDevice = Base::defaultDevice();
+		auto pDevice = wg::Base::defaultDevice();
 
 		pDevice->beginRender();
 		pDevice->beginCanvasUpdate(CanvasRef::Default);
@@ -222,7 +222,7 @@ void SDLWindowMetal::onWindowSizeUpdated( int w, int h )
 		m_pBackend->setDefaultCanvas(pass, size/64, wg::PixelFormat::ARGB_8);
 		m_pBackend->autopresent(surface);
 
-		auto pDevice = Base::defaultDevice();
+		auto pDevice = wg::Base::defaultDevice();
 
 		pDevice->beginRender();
 		pDevice->beginCanvasUpdate(CanvasRef::Default);

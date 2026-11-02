@@ -95,15 +95,15 @@ bool backend_specific_init()
 
 	auto pGlDevice = GfxDeviceGen2::create(g_pBackend);
 
-	Base::setDefaultDevice(pGlDevice);
+	wg::Base::setDefaultDevice(pGlDevice);
 
 	auto pSurfaceFactory = GlSurfaceFactory::create();
-	Base::setDefaultSurfaceFactory(pSurfaceFactory);
+	wg::Base::setDefaultSurfaceFactory(pSurfaceFactory);
 
 	auto pEdgemapFactory = GlEdgemapFactory::create();
-	Base::setDefaultEdgemapFactory(pEdgemapFactory);
+	wg::Base::setDefaultEdgemapFactory(pEdgemapFactory);
 
-	Base::setDefaultWarpmapFactory(g_pBackend->warpmapFactory());
+	wg::Base::setDefaultWarpmapFactory(g_pBackend->warpmapFactory());
 
 	return true;
 }
@@ -147,7 +147,7 @@ SDLWindowGL::SDLWindowGL(wapp::Window* pUserWindow, wg::Placement origin, wg::Co
 
 	//TODO: This is ugly. It should be handled when windows gets focused.
 
-	Base::inputHandler()->setFocusedWindow(m_pRootPanel);
+	wg::Base::inputHandler()->setFocusedWindow(m_pRootPanel);
 }
 
 //____ render() _______________________________________________________________

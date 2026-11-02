@@ -20,7 +20,7 @@
 
 =========================================================================*/
 #include <wax_edgemapwave.h>
-#include <wax_core.h>
+#include <wax_base.h>
 #include <wax_util.h>
 
 #include <algorithm>
@@ -288,7 +288,7 @@ namespace wax
 
 		int nbSamples = int(pDestEnd - pDestBegin);
 		int allocBytes= nbSamples * sizeof(spx);
-		spx * pConverted = (spx*) Core::memStackAlloc(allocBytes);
+		spx * pConverted = (spx*) Base::memStackAlloc(allocBytes);
 		Edgemap::convertSamples(pConverted, pSource, m_origo, m_size.h*64, 1, nbSamples, 0, 1, 0, 1);
 
 		int bufferBeg = 0;
@@ -314,7 +314,7 @@ namespace wax
 			m_dirtEnd = std::max(int(pDestEnd - pSampleStart),m_dirtEnd);
 		}
 
-		Core::memStackFree(allocBytes);
+		Base::memStackFree(allocBytes);
 	}
 
 	void EdgemapWave::_optimizeRangeSetSamples( spx * _pDestBegin, spx * _pDestEnd, const float * pSource, spx * pSampleStart )
@@ -324,7 +324,7 @@ namespace wax
 
 		int nbSamples = int(pDestEnd - pDestBegin);
 		int allocBytes= nbSamples * sizeof(spx);
-		spx * pConverted = (spx*) Core::memStackAlloc(allocBytes);
+		spx * pConverted = (spx*) Base::memStackAlloc(allocBytes);
 		Edgemap::convertSamples(pConverted, pSource, m_origo, m_size.h*64, 1, nbSamples, 0, 1, 0, 1);
 
 		int bufferBeg = 0;
@@ -350,7 +350,7 @@ namespace wax
 			m_dirtEnd = std::max(int(pDestEnd - pSampleStart),m_dirtEnd);
 		}
 
-		Core::memStackFree(allocBytes);
+		Base::memStackFree(allocBytes);
 	}
 
 
@@ -454,7 +454,7 @@ namespace wax
 		{
 			int allocated = (dirtSize)*2*sizeof(spx);
 
-			spx * pBuffer = (spx*) Core::memStackAlloc(allocated);
+			spx * pBuffer = (spx*) Base::memStackAlloc(allocated);
 
 			memcpy(pBuffer, m_pTopSamples + dirtBegin, dirtSize*sizeof(spx) );
 			memcpy(pBuffer+dirtSize, m_pBottomSamples + dirtBegin, dirtSize*sizeof(spx) );
@@ -475,13 +475,13 @@ namespace wax
 			pEdgemap->importSamples(SampleOrigo::Top, pBuffer, 0, 1, dirtBegin, dirtEnd);
 			pEdgemap->importSamples(SampleOrigo::Top, pBuffer + dirtSize, 1, 2, dirtBegin, dirtEnd);
 
-			Core::memStackFree(allocated);
+			Base::memStackFree(allocated);
 		}
 		else
 		{
 			int allocated = (dirtSize)*4*sizeof(spx);
 
-			spx * pBuffer = (spx*) Core::memStackAlloc(allocated);
+			spx * pBuffer = (spx*) Base::memStackAlloc(allocated);
 
 			_drawLine(m_pTopSamples + dirtBegin, pBuffer, pBuffer + dirtSize, dirtSize, m_topBrush );
 			_drawLine(m_pBottomSamples + dirtBegin, pBuffer+dirtSize*2, pBuffer + dirtSize*3, dirtSize, m_bottomBrush );
@@ -513,7 +513,7 @@ namespace wax
 			pEdgemap->importSamples(SampleOrigo::Top, pBuffer, 0, 2, dirtBegin, dirtEnd);
 			pEdgemap->importSamples(SampleOrigo::Top, pBuffer + dirtSize*2, 2, 4, dirtBegin, dirtEnd);
 
-			Core::memStackFree(allocated);
+			Base::memStackFree(allocated);
 		}
 
 		m_dirtBegin = m_nbSamples;
@@ -621,8 +621,8 @@ namespace wax
 
 	void EdgemapWave::_generateInfluenceSlope(Brush& brush)
 	{
-		auto pCurveTab = Core::curveTab();
-		int curveTabSize = Core::curveTabSize();
+		auto pCurveTab = Base::curveTab();
+		int curveTabSize = Base::curveTabSize();
 
 		int radius = brush.thickness / 2;
 

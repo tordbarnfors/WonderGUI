@@ -19,7 +19,7 @@
   should contact Bärnfors Technology AB [www.barnfors.com] for details.
 
 =========================================================================*/
-#include <wax_core.h>
+#include <wax_base.h>
 #include <wax_memstack.h>
 #include <wax_mempool.h>
 #include <wax_object.h>
@@ -41,26 +41,26 @@
 
 namespace wax
 {
-	const TypeInfo	Core::TYPEINFO = { "Core", nullptr };
+	const TypeInfo	Base::TYPEINFO = { "Base", nullptr };
 
-	int							Core::s_initCounter = 0;
+	int							Base::s_initCounter = 0;
 
-	Context_p					Core::s_pContext;
+	Context_p					Base::s_pContext;
 
-	MemPool *					Core::s_pPtrPool = nullptr;
-	MemStack *					Core::s_pMemStack = nullptr;
+	MemPool *					Base::s_pPtrPool = nullptr;
+	MemStack *					Base::s_pMemStack = nullptr;
 
-	std::atomic<unsigned int>	Core::s_objectsCreated;
-	std::atomic<unsigned int>	Core::s_objectsDestroyed;
+	std::atomic<unsigned int>	Base::s_objectsCreated;
+	std::atomic<unsigned int>	Base::s_objectsDestroyed;
 
 
-	bool						Core::s_bTrackingObjects = false;
+	bool						Base::s_bTrackingObjects = false;
 
-	std::unordered_map<Object*, Core::ObjectInfo>	Core::s_trackedObjects;
+	std::unordered_map<Object*, Base::ObjectInfo>	Base::s_trackedObjects;
 
-	int 						Core::s_curveTab[c_nCurveTabEntries];
+	int 						Base::s_curveTab[c_nCurveTabEntries];
 
-	std::vector<Decompressor_p> Core::s_decompressors;
+	std::vector<Decompressor_p> Base::s_decompressors;
 
 
 	namespace PixelTools
@@ -72,7 +72,7 @@ namespace wax
 
 	//____ init() __________________________________________________________________
 
-	bool Core::init()
+	bool Base::init()
 	{
 		if( s_initCounter == 0 )
 		{
@@ -94,11 +94,11 @@ namespace wax
 
 	//____ exit() __________________________________________________________________
 
-	bool Core::exit()
+	bool Base::exit()
 	{
 		if( s_initCounter <= 0 )
 		{
-			throwError(ErrorLevel::SilentError, ErrorCode::IllegalCall, "Call to Core::exit() ignored, not initialized or already exited.", nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
+			throwError(ErrorLevel::SilentError, ErrorCode::IllegalCall, "Call to Base::exit() ignored, not initialized or already exited.", nullptr, &TYPEINFO, __func__, __FILE__, __LINE__);
 			return false;
 		}
 
@@ -154,7 +154,7 @@ namespace wax
 
 	//____ setContext() _______________________________________________________
 
-	Context_p Core::setContext( const Context_p& pNewContext )
+	Context_p Base::setContext( const Context_p& pNewContext )
 	{
 		Context_p p = s_pContext;
 
@@ -167,7 +167,7 @@ namespace wax
 
 	//____ throwError() _________________________________________________________
 
-	void Core::throwError(ErrorLevel severity, ErrorCode code, const char * msg, const Object * pObject, const TypeInfo* pClassType, const char * function, const char * file, int line)
+	void Base::throwError(ErrorLevel severity, ErrorCode code, const char * msg, const Object * pObject, const TypeInfo* pClassType, const char * function, const char * file, int line)
 	{
 		if (s_pContext != nullptr && s_pContext->pErrorHandler)
 		{
@@ -188,14 +188,14 @@ namespace wax
 
 	//____ beginObjectTracking() _________________________________________________
 
-	void Core::beginObjectTracking()
+	void Base::beginObjectTracking()
 	{
 		s_bTrackingObjects = true;
 	}
 
 	//____ endObjectTracking() __________________________________________________
 
-	void Core::endObjectTracking()
+	void Base::endObjectTracking()
 	{
 		s_bTrackingObjects = false;
 		s_trackedObjects.clear();
@@ -203,7 +203,7 @@ namespace wax
 
 	//____ printObjects() ________________________________________________
 
-	void Core::printObjects(std::ostream& stream)
+	void Base::printObjects(std::ostream& stream)
 	{
 
 		stream << "Objects created: " << s_objectsCreated << std::endl;
@@ -233,21 +233,21 @@ namespace wax
 
 	//____ setErrorHandler() _________________________________________________________
 
-	void Core::setErrorHandler(std::function<void(Error&)> handler)
+	void Base::setErrorHandler(std::function<void(Error&)> handler)
 	{
 		s_pContext->pErrorHandler = handler;
 	}
 
 	//____ errorHandler() ____________________________________________________________
 
-	std::function<void(Error&)>	Core::errorHandler()
+	std::function<void(Error&)>	Base::errorHandler()
 	{
 		return s_pContext->pErrorHandler;
 	}
 
 	//____ memStackAlloc() ________________________________________________________
 
-	char * Core::memStackAlloc( int bytes )
+	char * Base::memStackAlloc( int bytes )
 	{
 		assert(s_pMemStack != nullptr);
 		return s_pMemStack->allocBytes(bytes);
@@ -255,14 +255,14 @@ namespace wax
 
 	//____ memStackFree() ______________________________________________________
 
-	void Core::memStackFree( int bytes )
+	void Base::memStackFree( int bytes )
 	{	assert(s_pMemStack != nullptr);
 		return s_pMemStack->releaseBytes(bytes);
 	}
 
 	//____ _trackObject() ________________________________________________________
 
-	void Core::_trackObject(Object* pObject, const char* pFileName, int lineNb)
+	void Base::_trackObject(Object* pObject, const char* pFileName, int lineNb)
 	{
         if( s_bTrackingObjects )
             s_trackedObjects[pObject] = { pFileName, lineNb, s_objectsCreated };
@@ -270,7 +270,7 @@ namespace wax
 
 	//____ _allocWeakPtrHub() ______________________________________________________
 
-	WeakPtrHub * Core::_allocWeakPtrHub()
+	WeakPtrHub * Base::_allocWeakPtrHub()
 	{
 		assert( s_pPtrPool != nullptr );
 		WeakPtrHub * pHub = (WeakPtrHub*) s_pPtrPool->allocEntry();
@@ -282,7 +282,7 @@ namespace wax
 
 	//____ _freeWeakPtrHub() _______________________________________________________
 
-	void Core::_freeWeakPtrHub( WeakPtrHub * pHub )
+	void Base::_freeWeakPtrHub( WeakPtrHub * pHub )
 	{
 		assert( s_pPtrPool != nullptr );
 		pHub->~WeakPtrHub();
@@ -292,7 +292,7 @@ namespace wax
 
 //____ defaultBitmapCache() __________________________________________________
 
-	BitmapCache_p Core::defaultBitmapCache()
+	BitmapCache_p Base::defaultBitmapCache()
 	{
 		if( s_pContext->pDefaultBitmapCache == nullptr )
 			s_pContext->pDefaultBitmapCache = BitmapCache::create(16*1024*1024);
@@ -302,42 +302,42 @@ namespace wax
 
 	//____ setDefaultSurfaceFactory() ____________________________________________
 
-	void Core::setDefaultSurfaceFactory( SurfaceFactory * pFactory )
+	void Base::setDefaultSurfaceFactory( SurfaceFactory * pFactory )
 	{
 		s_pContext->pDefaultSurfaceFactory = pFactory;
 	}
 
 	//____ setDefaultEdgemapFactory() ____________________________________________
 
-	void Core::setDefaultEdgemapFactory(EdgemapFactory* pFactory)
+	void Base::setDefaultEdgemapFactory(EdgemapFactory* pFactory)
 	{
 		s_pContext->pDefaultEdgemapFactory = pFactory;
 	}
 
 	//____ setDefaultWarpmapFactory() ____________________________________________
 
-	void Core::setDefaultWarpmapFactory(WarpmapFactory* pFactory)
+	void Base::setDefaultWarpmapFactory(WarpmapFactory* pFactory)
 	{
 		s_pContext->pDefaultWarpmapFactory = pFactory;
 	}
 
 	//____ setDefaultDeviceFactory() ____________________________________________
 
-	void Core::setDefaultDeviceFactory(DeviceFactory* pFactory)
+	void Base::setDefaultDeviceFactory(DeviceFactory* pFactory)
 	{
 		s_pContext->pDefaultDeviceFactory = pFactory;
 	}
 
 	//____ setDefaultDevice() _________________________________________________
 
-	void Core::setDefaultDevice( Device * pDevice )
+	void Base::setDefaultDevice( Device * pDevice )
 	{
 		s_pContext->pDefaultDevice = pDevice;
 	}
 
 	//____ getDecompressor() _______________________________________________________
 
-	Decompressor_p Core::getDecompressor( uint32_t idToken )
+	Decompressor_p Base::getDecompressor( uint32_t idToken )
 	{
 		for( auto& p : s_decompressors )
 			if( p->idToken() == idToken )
@@ -370,14 +370,14 @@ namespace wax
 
 	//____ addDecompressor() _______________________________________________________
 
-	void Core::addDecompressor( Decompressor * pDecompressor )
+	void Base::addDecompressor( Decompressor * pDecompressor )
 	{
 		s_decompressors.push_back(pDecompressor);
 	}
 
 	//____ _genCurveTab() ___________________________________________________________
 
-	void Core::_genCurveTab()
+	void Base::_genCurveTab()
 	{
 		//		double factor = 3.14159265 / (2.0 * c_nCurveTabEntries);
 
